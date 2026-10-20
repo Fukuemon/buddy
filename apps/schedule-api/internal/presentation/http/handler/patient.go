@@ -2,13 +2,9 @@ package handler
 
 import (
 	"context"
-	"log/slog"
-	"net/http"
-	"time"
-
-	"github.com/gin-gonic/gin"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/patient"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/presentation/http/openapi"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/usecase"
 )
 
@@ -18,113 +14,66 @@ type PatientUsecase interface {
 	List(ctx context.Context, facilityID string, q patient.ListQuery) ([]patient.Detail, error)
 }
 
-type patientResponse struct {
-	ID                string    `json:"id"`
-	FacilityID        string    `json:"facility_id"`
-	Name              string    `json:"name"`
-	PreferredTime     string    `json:"preferred_time"`
-	PreferredGender   string    `json:"preferred_gender"`
-	ServiceCodeID     string    `json:"service_code_id"`
-	ServiceCode       string    `json:"service_code"`
-	AssignedStaffID   string    `json:"assigned_staff_id"`
-	AssignedStaffName string    `json:"assigned_staff_name"`
-	CreatedAt         time.Time `json:"created_at"`
-	UpdatedAt         time.Time `json:"updated_at"`
-}
-
-type createPatientRequest struct {
-	Name            string `json:"name" binding:"required,max=255"`
-	PreferredTime   string `json:"preferred_time" binding:"required"`
-	PreferredGender string `json:"preferred_gender" binding:"required"`
-	ServiceCodeID   string `json:"service_code_id" binding:"required,ulid"`
-	AssignedStaffID string `json:"assigned_staff_id" binding:"required,ulid"`
-}
-
-func toPatient(p patient.Detail) patientResponse {
-	return patientResponse{
-		ID:                p.ID,
-		FacilityID:        p.FacilityID,
+func toPatient(p patient.Detail) openapi.Patient {
+	return openapi.Patient{
+		Id:                p.ID,
+		FacilityId:        p.FacilityID,
 		Name:              p.Name,
-		PreferredTime:     string(p.PreferredTime),
-		PreferredGender:   string(p.PreferredGender),
-		ServiceCodeID:     p.ServiceCodeID,
+		PreferredTime:     openapi.PreferredTime(p.PreferredTime),
+		PreferredGender:   openapi.PreferredGender(p.PreferredGender),
+		ServiceCodeId:     p.ServiceCodeID,
 		ServiceCode:       p.ServiceCode,
-		AssignedStaffID:   p.AssignedStaffID,
+		AssignedStaffId:   p.AssignedStaffID,
 		AssignedStaffName: p.AssignedStaffName,
 		CreatedAt:         p.CreatedAt,
 		UpdatedAt:         p.UpdatedAt,
 	}
 }
 
-type patientHandler struct {
-	uc  PatientUsecase
-	log *slog.Logger
-}
-
-func (h patientHandler) register(r gin.IRouter) {
-	r.GET("/facilities/:facility_id/patients", h.list)
-	r.POST("/facilities/:facility_id/patients", h.create)
-}
-
-func (h patientHandler) list(c *gin.Context) {
-	id, ok := pathID(c, "facility_id")
-	if !ok {
-		return
-	}
-	sort, err := patient.ParseSort(c.Query("sort_field"), c.Query("sort_order"))
+func (s server) ListPatients(ctx context.Context, req openapi.ListPatientsRequestObject) (openapi.ListPatientsResponseObject, error) {
+	p := req.Params
+	sort, err := patient.ParseSort(value(p.SortField), value(p.SortOrder))
 	if err != nil {
-		writeError(c, h.log, err)
-		return
+		return nil, err
 	}
 	q := patient.ListQuery{
-		Name:          optionalQuery(c, "name"),
-		AssignedStaff: optionalQuery(c, "assigned_staff"),
+		Name:          nonEmpty(p.Name),
+		AssignedStaff: nonEmpty(p.AssignedStaff),
 		Sort:          sort,
 	}
-	if v := c.Query("preferred_time"); v != "" {
+	if v := value(p.PreferredTime); v != "" {
 		t := patient.PreferredTime(v)
 		if !t.Valid() {
-			badRequest(c, "preferred_time は 午前 か 午後 です")
-			return
+			return nil, invalidRequest("preferred_time は 午前 か 午後 です")
 		}
 		q.PreferredTime = &t
 	}
-	if v := c.Query("preferred_gender"); v != "" {
+	if v := value(p.PreferredGender); v != "" {
 		g := patient.PreferredGender(v)
 		if !g.Valid() {
-			badRequest(c, "preferred_gender は 男性 か 女性 です")
-			return
+			return nil, invalidRequest("preferred_gender は 男性 か 女性 です")
 		}
 		q.PreferredGender = &g
 	}
-	ps, err := h.uc.List(c.Request.Context(), id, q)
+	ps, err := s.u.Patients.List(ctx, req.FacilityId, q)
 	if err != nil {
-		writeError(c, h.log, err)
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusOK, mapSlice(ps, toPatient))
+	return openapi.ListPatients200JSONResponse(mapSlice(ps, toPatient)), nil
 }
 
-func (h patientHandler) create(c *gin.Context) {
-	id, ok := pathID(c, "facility_id")
-	if !ok {
-		return
-	}
-	var req createPatientRequest
-	if !bindJSON(c, &req) {
-		return
-	}
-	p, err := h.uc.Create(c.Request.Context(), usecase.CreatePatientInput{
-		FacilityID:      id,
-		Name:            req.Name,
-		PreferredTime:   patient.PreferredTime(req.PreferredTime),
-		PreferredGender: patient.PreferredGender(req.PreferredGender),
-		ServiceCodeID:   req.ServiceCodeID,
-		AssignedStaffID: req.AssignedStaffID,
+func (s server) CreatePatient(ctx context.Context, req openapi.CreatePatientRequestObject) (openapi.CreatePatientResponseObject, error) {
+	b := req.Body
+	p, err := s.u.Patients.Create(ctx, usecase.CreatePatientInput{
+		FacilityID:      req.FacilityId,
+		Name:            b.Name,
+		PreferredTime:   patient.PreferredTime(b.PreferredTime),
+		PreferredGender: patient.PreferredGender(b.PreferredGender),
+		ServiceCodeID:   b.ServiceCodeId,
+		AssignedStaffID: b.AssignedStaffId,
 	})
 	if err != nil {
-		writeError(c, h.log, err)
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusCreated, toPatient(p))
+	return openapi.CreatePatient201JSONResponse(toPatient(p)), nil
 }

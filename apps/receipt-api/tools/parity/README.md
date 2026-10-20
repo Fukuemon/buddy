@@ -19,6 +19,7 @@ RECEIPT_CHECKER_LIBS=<receipt-checker>/server/libs tools/parity/run.sh
 ```
 
 各ケースで `<ケース>: 行 N、差分 0` を出す。差分があると、区分、行、列、両方の値を出し、終了コード 1 で終わる。  
+ヘッダーと列の数が違う行があるときは、セルを比べずに、その行を差分として出す。  
 ケースを足したとき、または Python の側が変わったときは、`--update` を付けて `expected.csv` を書き直す。
 
 ```sh

@@ -71,7 +71,7 @@ func (m authMiddleware) authenticate(c *gin.Context) {
 }
 
 // checkFacility は、パスの ID が指すリソースの事業所が、職員の事業所と違うときに 403 を返す。
-// ID の形が誤っているときとリソースが見つからないときは、ハンドラが 400 と 404 を返すよう、そのまま通す。
+// ID の形が誤っているときとリソースが見つからないときは、requireULIDParams とハンドラが 400 と 404 を返すよう、そのまま通す。
 // pathResources にない引数を持つ経路は、確かめられないので 500 を返す。
 func (m authMiddleware) checkFacility(c *gin.Context) {
 	p, ok := auth.PrincipalFrom(c.Request.Context())
