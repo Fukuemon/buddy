@@ -3,6 +3,8 @@ type: feature-design
 title: 予定の管理
 description: schedule-api の表の構成（ER）、認証から認可までの流れ、繰り返しの予定の展開
 status: draft
+governs: apps/schedule-api
+verified_commit: unverified
 ---
 
 # 予定の管理
@@ -10,7 +12,7 @@ status: draft
 ## Overview
 
 schedule-api は、事業所ごとの予定、職員、利用者、権限を持ち、web に API で渡す。  
-全体の中での責務と依存は [buddy Design Doc](../../DesignDoc.md) にある。
+全体の中での責務と依存は [buddy Design Doc](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md) にある。
 
 ## Scope
 
@@ -216,7 +218,7 @@ erDiagram
 
 役職の既定を職員に写す規則は、ADR-0002 にある。
 
-- ADR-0002: [権限を役職の既定と職員ごとの上書きで持つ（PBAC）](../../../adr/0002-pbac.md)
+- ADR-0002: [権限を役職の既定と職員ごとの上書きで持つ（PBAC）](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0002-pbac.md)
 
 ### 認証から認可までの流れ
 
@@ -295,4 +297,4 @@ sequenceDiagram
 
 - API のパスは `/v1/facilities/{facility_id}/...` の形にする。主な資源は `schedules`、`recurring-schedules`、`users`、`patients`、`users/{user_id}/policies`。
 - 一覧の並べ替えは、許可した列の名前だけを受け、それ以外は 400 を返す。
-- 環境変数、ヘルスチェック、マイグレーションのコマンドは [buddy Design Doc の Interfaces](../../DesignDoc.md#interfaces) にある。
+- 環境変数、ヘルスチェック、マイグレーションのコマンドは [buddy Design Doc の Interfaces](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md#interfaces) にある。

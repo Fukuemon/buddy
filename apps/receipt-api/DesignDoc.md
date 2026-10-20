@@ -13,8 +13,8 @@ verified_commit: 9c49946
 
 receipt-api は、訪問の予定と電子カルテ（iBow）の実績を比べ、食い違いを 4 つの区分に分けて JSON で返す。  
 照合の規則は、receipt-checker の `server/libs`（Python、pandas）と、予定の CSV を作る GAS から写した。  
-全体の中での責務と依存は [buddy Design Doc](../../docs/design/DesignDoc.md) にある。  
-起動と API の使い方は [README.md](README.md) にある。
+全体の中での責務と依存は [buddy Design Doc](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md) にある。  
+起動と API の使い方は [README.md](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/README.md) にある。
 
 ## Scope
 
@@ -250,7 +250,7 @@ JSON と並べて記号つきの CSV も返す案は、表示の都合が API �
   - 入力の CSV の誤り: 422 の `invalid_csv`。行ごとの誤り（`errors` の `source`、`line`、`column`、`message`）を持つ
   - Calendar API の呼び出しに失敗した: 502 の `schedule_source_failed`
   - Google カレンダーの設定がないのに `month` で呼ばれた: 503 の `calendar_not_configured`。要求の形は正しく、照合できない原因がサーバーの設定にあるので、400 にしない
-- 照合に固有の環境変数は [README.md](README.md) にあり、全体で共通の環境変数は [buddy Design Doc の Interfaces](../../docs/design/DesignDoc.md#interfaces) にある。ヘルスチェックは、今は `GET /health` である。
+- 照合に固有の環境変数は [README.md](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/README.md) にあり、全体で共通の環境変数は [buddy Design Doc の Interfaces](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md#interfaces) にある。ヘルスチェックは、今は `GET /health` である。
 
 ## Verification
 
@@ -277,5 +277,5 @@ JSON と並べて記号つきの CSV も返す案は、表示の都合が API �
 
 - 期間と職員で予定と実績を絞る（`from`、`to`、`user_ids`）かは決めていない。今の実装は絞らないので、予定にない職員の実績は全て実績のみに入る。
 - 予定を schedule-api から取る形は、職員が画面で予定を入れるようになってから選ぶ。
-- receipt-api は、まだ access token を検証せず、パスに事業所を持たない。[buddy Design Doc の事業所の分離](../../docs/design/DesignDoc.md#事業所の分離)に合わせる作業は残っている。
+- receipt-api は、まだ access token を検証せず、パスに事業所を持たない。[buddy Design Doc の事業所の分離](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md#事業所の分離)に合わせる作業は残っている。
 - iBow が出す訪問日の形は、手元の資料で確かめていない（未確認）。

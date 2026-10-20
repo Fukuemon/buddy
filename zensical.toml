@@ -13,8 +13,8 @@ nav = [
   { "PRD" = "PRD.md" },
   { "Design Doc" = [
     { "全体" = "design/DesignDoc.md" },
-    { "予定の管理" = "design/features/schedule/DesignDoc.md" },
-    { "レセプトの照合" = "design/features/receipt-check/DesignDoc.md" },
+    { "予定の管理" = "design/apps/schedule-api.md" },
+    { "レセプトの照合" = "design/apps/receipt-api.md" },
   ] },
   { "ADR" = [
     "adr/0001-auth.md",
