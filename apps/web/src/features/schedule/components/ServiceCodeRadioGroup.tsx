@@ -10,15 +10,15 @@ export type ServiceCodeRadioGroupProps = {
 /** 訪問のサービスコードを 1 つ選ぶ。 */
 export const ServiceCodeRadioGroup = ({ value, onChange }: ServiceCodeRadioGroupProps) => (
   <fieldset className="flex flex-col gap-3">
-    <legend className="mb-3 font-bold">サービスコードを選んでください</legend>
+    <legend className="mb-3 text-heading-sm">サービスコードを選んでください</legend>
     <div className="flex flex-wrap gap-2">
       {SERVICE_CODES.map((code) => (
         <label
           className={clsx(
-            'cursor-pointer rounded-xl px-3 py-2 text-sm ring-1 ring-inset',
+            'cursor-pointer rounded-8 px-3 py-2 text-body-dense ring-1 ring-inset has-[:focus-visible]:focus-ring',
             code === value
-              ? 'bg-action-bg font-bold text-action-main ring-action-main'
-              : 'ring-gray-200',
+              ? 'bg-primary-surface font-bold text-primary ring-2 ring-primary'
+              : 'ring-border-field',
           )}
           key={code}
         >

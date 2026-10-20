@@ -7,8 +7,8 @@ export type SiteHeaderProps = {
 
 /** buddy の画面の上端の帯。 */
 export const SiteHeader = ({ actions }: SiteHeaderProps) => (
-  <header className="flex h-14 shrink-0 items-center justify-between border-b border-gray-100 bg-gray-0 px-6">
-    <span className="text-lg font-bold tracking-wide text-action-main">buddy</span>
+  <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-surface px-6">
+    <span className="text-heading-sm text-primary">buddy</span>
     {actions}
   </header>
 )

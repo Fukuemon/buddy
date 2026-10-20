@@ -1,0 +1,50 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { TimePicker } from './TimePicker'
+import * as Stories from './TimePicker.stories'
+
+<Meta of={Stories} />
+
+# TimePicker
+
+時刻を 1 つ入力する欄。ブラウザの `input type="time"` を使い、値は `HH:mm` の文字列。React Hook Form の `control` と `name` を受ける。
+
+## 使う場面
+
+- 予定の開始と終了の時刻を入力する
+
+## 使わない場面
+
+- 時間の長さ（`NumberPicker` を使う）
+
+## Do
+
+- `label` に項目の名前を渡す
+
+## Don't
+
+- ラベルを空にする
+
+## 状態
+
+### 既定
+
+<Canvas of={Stories.Default} />
+
+### エラー
+
+<Canvas of={Stories.WithError} />
+
+### 無効
+
+<Canvas of={Stories.Disabled} />
+
+## キーボードの操作
+
+- Tab で欄に移る
+- ブラウザの時刻の入力欄の操作に従う
+- エラーがあると `aria-invalid` を付け、`aria-describedby` でエラーの文を指す
+
+## props
+
+<ArgTypes of={TimePicker} />

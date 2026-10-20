@@ -7,7 +7,7 @@ import { storyPatients, storySchedules, storyStaff } from './storyData'
 const [visit, , normal] = storySchedules
 
 const meta = {
-  title: 'Schedule/ScheduleDetailModal',
+  title: '画面/Schedule/ScheduleDetailModal',
   component: ScheduleDetailModal,
   args: {
     schedule: visit!,

@@ -5,7 +5,7 @@ import { ScheduleCalendarToolbar } from './ScheduleCalendarToolbar'
 import { STORY_DATE } from './storyData'
 
 const meta = {
-  title: 'Schedule/ScheduleCalendarToolbar',
+  title: '画面/Schedule/ScheduleCalendarToolbar',
   component: ScheduleCalendarToolbar,
   args: {
     view: 'month',

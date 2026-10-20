@@ -1,15 +1,15 @@
 /* FullCalendar の見た目の上書き。FullCalendar の DOM にはクラスを渡せないため、ここだけ CSS で書く。 */
 
 .schedule-calendar .fc {
-  --fc-border-color: var(--color-gray-200);
-  --fc-today-bg-color: var(--color-action-bg);
-  --fc-now-indicator-color: var(--color-incorrect-main);
+  --fc-border-color: var(--buddy-color-border);
+  --fc-today-bg-color: var(--buddy-color-primary-surface);
+  --fc-now-indicator-color: var(--buddy-color-danger);
 
   height: 100%;
 }
 
 .schedule-calendar .fc-scrollgrid-section-header.fc-scrollgrid-section-sticky {
-  box-shadow: 2px 0 4px 0 rgb(0 0 0 / 10%);
+  @apply shadow-1;
 }
 
 .schedule-calendar .fc-daygrid-day-top {
@@ -17,7 +17,7 @@
 }
 
 .schedule-calendar .fc-daygrid-day:hover {
-  background-color: var(--color-gray-10);
+  @apply bg-surface-subtle;
   cursor: pointer;
 }
 

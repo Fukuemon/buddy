@@ -5,7 +5,7 @@ import { StaffScheduleDayGrid } from './StaffScheduleDayGrid'
 import { storyEvents, storyStaff } from './storyData'
 
 const meta = {
-  title: 'Schedule/StaffScheduleDayGrid',
+  title: '画面/Schedule/StaffScheduleDayGrid',
   component: StaffScheduleDayGrid,
   args: {
     staffList: storyStaff,

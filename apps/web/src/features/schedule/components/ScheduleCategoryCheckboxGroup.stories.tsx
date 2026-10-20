@@ -4,7 +4,7 @@ import { fn } from 'storybook/test'
 import { ScheduleCategoryCheckboxGroup } from './ScheduleCategoryCheckboxGroup'
 
 const meta = {
-  title: 'Schedule/ScheduleCategoryCheckboxGroup',
+  title: '画面/Schedule/ScheduleCategoryCheckboxGroup',
   component: ScheduleCategoryCheckboxGroup,
   args: { value: [], onChange: fn() },
 } satisfies Meta<typeof ScheduleCategoryCheckboxGroup>

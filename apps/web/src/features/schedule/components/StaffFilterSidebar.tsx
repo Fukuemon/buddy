@@ -45,9 +45,9 @@ export const StaffFilterSidebar = ({
       data-testid="staff-filter-sidebar"
     >
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold text-text-secondary">職員</h2>
+        <h2 className="text-caption font-bold text-text-secondary">職員</h2>
         <button
-          className="text-xs text-action-main disabled:text-gray-400"
+          className="text-caption text-primary underline disabled:text-text-disabled disabled:no-underline"
           data-testid="staff-filter-reset"
           disabled={isAll}
           onClick={() => onChange([])}
@@ -76,7 +76,7 @@ export const StaffFilterSidebar = ({
               {team.name}
             </label>
             {members.map((staff) => (
-              <label className="flex items-center gap-2 pl-6 text-sm" key={staff.id}>
+              <label className="flex items-center gap-2 pl-6 text-body-dense" key={staff.id}>
                 <input
                   checked={isSelected(staff.id)}
                   data-testid={`staff-filter-staff-${staff.id}`}

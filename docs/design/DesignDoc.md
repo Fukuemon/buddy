@@ -174,6 +174,8 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 │   │   └── migrations/
 │   └── receipt-api/     # Go
 │       └── DesignDoc.md # レセプトの照合の Design Doc
+├── packages/
+│   └── ui/              # デザインシステム。トークン、Base と Case のコンポーネント、Storybook
 ├── docs/                # Zensical のサイトの元。PRD、Design Doc、ADR
 │   ├── PRD.md
 │   ├── design/

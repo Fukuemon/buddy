@@ -1,0 +1,52 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { DatePicker } from './DatePicker'
+import * as Stories from './DatePicker.stories'
+
+<Meta of={Stories} />
+
+# DatePicker
+
+日付を 1 つ入力する欄。ブラウザの `input type="date"` を使い、値は `YYYY-MM-DD` の文字列。React Hook Form の `control` と `name` を受ける。
+
+## 使う場面
+
+- 予定の日付のように、近い日付を 1 つ入力する
+
+## 使わない場面
+
+- 生年月日のように遠い日付
+
+## Do
+
+- `label` に項目の名前を渡す
+
+## Don't
+
+- ラベルを空にする
+
+## 状態
+
+フォーカスは枠に `focus-ring` を出す。DADS は年、月、日を 3 つの欄に分けるよう勧めるが、buddy はブラウザのカレンダーから選ぶ。
+
+### 既定
+
+<Canvas of={Stories.Default} />
+
+### エラー
+
+<Canvas of={Stories.WithError} />
+
+### 無効
+
+<Canvas of={Stories.Disabled} />
+
+## キーボードの操作
+
+- Tab で欄に移る
+- ブラウザの日付の入力欄の操作に従う
+- エラーがあると `aria-invalid` を付け、`aria-describedby` でエラーの文を指す
+
+## props
+
+<ArgTypes of={DatePicker} />

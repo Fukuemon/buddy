@@ -5,7 +5,7 @@ import { StaffFilterSidebar } from './StaffFilterSidebar'
 import { storyStaff, storyTeams } from './storyData'
 
 const meta = {
-  title: 'Schedule/StaffFilterSidebar',
+  title: '画面/Schedule/StaffFilterSidebar',
   component: StaffFilterSidebar,
   args: {
     teams: storyTeams,

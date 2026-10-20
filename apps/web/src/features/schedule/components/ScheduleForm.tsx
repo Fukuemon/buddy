@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Controller, useWatch, type UseFormReturn } from 'react-hook-form'
 
 import type { Patient, Staff } from '#/api/types'
-import { TextareaField } from '#/components/form/TextareaField'
+import { TextareaField } from '@buddy/ui'
 
 import { SCHEDULE_CATEGORY_LABEL } from '../constants/scheduleLabels'
 import { visitEndTime } from '../lib/scheduleFormMapper'
@@ -110,7 +110,7 @@ export const ScheduleForm = ({ id, form, staffList, patients, onSubmit }: Schedu
 
   return (
     <form
-      className="grid gap-6 p-5 lg:grid-cols-[16rem_minmax(0,1fr)]"
+      className="grid gap-6 p-5 desktop:grid-cols-[16rem_minmax(0,1fr)]"
       data-testid="schedule-form"
       id={id}
       noValidate

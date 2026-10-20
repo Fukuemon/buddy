@@ -1,11 +1,10 @@
-import { Button } from '#/components/base/Button'
-import { TextTab } from '#/components/base/TextTab'
+import { Button, SegmentedControl } from '@buddy/ui'
 import PrevIcon from '#/assets/icons/arrow-left.svg?react'
 import NextIcon from '#/assets/icons/arrow-right.svg?react'
 
 import { CALENDAR_VIEWS, CALENDAR_VIEW_LABEL, type CalendarView } from '../constants/calendarView'
 
-const VIEW_TABS = CALENDAR_VIEWS.map((view) => ({ id: view, label: CALENDAR_VIEW_LABEL[view] }))
+const VIEW_OPTIONS = CALENDAR_VIEWS.map((view) => ({ id: view, label: CALENDAR_VIEW_LABEL[view] }))
 
 export type ScheduleCalendarToolbarProps = {
   view: CalendarView
@@ -31,11 +30,11 @@ export const ScheduleCalendarToolbar = ({
   onDateChange,
   onCreate,
 }: ScheduleCalendarToolbarProps) => (
-  <div className="flex h-16 items-center justify-between gap-4 md:gap-10">
+  <div className="flex h-16 items-center justify-between gap-4 desktop:gap-10">
     <div className="flex items-center gap-2">
       <button
         aria-label="前へ"
-        className="grid size-10 place-items-center rounded-lg hover:bg-gray-10"
+        className="grid size-11 place-items-center rounded-8 hover:bg-surface-subtle focus-visible:focus-ring"
         data-testid="calendar-prev"
         onClick={onPrev}
         type="button"
@@ -47,7 +46,7 @@ export const ScheduleCalendarToolbar = ({
       </Button>
       <button
         aria-label="次へ"
-        className="grid size-10 place-items-center rounded-lg hover:bg-gray-10"
+        className="grid size-11 place-items-center rounded-8 hover:bg-surface-subtle focus-visible:focus-ring"
         data-testid="calendar-next"
         onClick={onNext}
         type="button"
@@ -56,7 +55,7 @@ export const ScheduleCalendarToolbar = ({
       </button>
       <input
         aria-label="表示する日付"
-        className="ml-2 h-10 rounded-xl px-3 ring-1 ring-gray-200 ring-inset"
+        className="ml-2 h-11 rounded-8 px-3 text-body-dense ring-1 ring-border-field ring-inset outline-none focus-visible:focus-ring"
         data-testid="calendar-date"
         onChange={(event) => {
           if (event.target.value !== '') onDateChange(event.target.value)
@@ -67,11 +66,12 @@ export const ScheduleCalendarToolbar = ({
     </div>
     <div className="flex items-center gap-4">
       <div className="w-48">
-        <TextTab
-          activeTabId={view}
+        <SegmentedControl
           data-testid="calendar-view"
-          onTabChange={onViewChange}
-          tabs={VIEW_TABS}
+          label="表示の単位"
+          onChange={onViewChange}
+          options={VIEW_OPTIONS}
+          value={view}
         />
       </div>
       {onCreate !== undefined && (

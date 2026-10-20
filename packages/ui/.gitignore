@@ -1,0 +1,4 @@
+# Vitest のブラウザのテストが失敗したときのスクリーンショット
+.vitest
+storybook-static
+*storybook.log

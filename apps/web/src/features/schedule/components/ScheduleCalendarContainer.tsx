@@ -3,7 +3,7 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { useBuddyApi } from '#/api/useBuddyApi'
-import { Loading } from '#/components/base/Loading'
+import { Loading } from '@buddy/ui'
 
 import { getCalendarRange, shiftCalendarDate } from '../lib/calendarRange'
 import { toDateKey } from '../lib/dateTime'
@@ -75,7 +75,7 @@ export const ScheduleCalendarContainer = () => {
         {schedulesQuery.isPending || staffQuery.isPending ? (
           <Loading description="カレンダーを表示中..." />
         ) : schedulesQuery.isError || staffQuery.isError ? (
-          <p className="p-4 text-incorrect-main" role="alert">
+          <p className="p-4 text-danger" role="alert">
             予定を取得できませんでした。
           </p>
         ) : search.view === 'day' ? (

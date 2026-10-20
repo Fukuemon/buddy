@@ -1,0 +1,61 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { Modal } from './Modal'
+import * as Stories from './Modal.stories'
+
+<Meta of={Stories} />
+
+# Modal
+
+今の画面の上に重ねて出すモーダルのダイアログ。`<dialog>` の `showModal()` で開き、後ろの画面を操作できなくする。
+
+## 使う場面
+
+- 今の画面の上で、予定の詳細や入力を行い、閉じて元の画面に戻る
+
+## 使わない場面
+
+- 完了の通知
+- ナビゲーション
+
+## Do
+
+- `title` を渡し、ダイアログの名前にする
+- 送信のボタンは `stickyFooter` に置く
+- 入力の途中で閉じると変更が消えるときは `isDirty` を渡す
+
+## Don't
+
+- ダイアログの中から別のダイアログを開く
+- 閉じるボタンを消す
+
+## 状態
+
+DADS はモーダルのダイアログをフォームに使わないとしているが、buddy は予定の作成と編集に使う。理由は DESIGN.md の「DADS の指針から外れるところ」にある。
+
+### 既定
+
+<Canvas of={Stories.Default} />
+
+### 下端の固定の領域
+
+<Canvas of={Stories.WithStickyFooter} />
+
+### 長い本文
+
+<Canvas of={Stories.LongContent} />
+
+### 開くボタンから開く
+
+<Canvas of={Stories.WithOpener} />
+
+## キーボードの操作
+
+- 開くと題にフォーカスが移る
+- Tab と Shift+Tab はダイアログの中だけを回る
+- Esc で閉じる要求（`onCloseRequest`）を出す。閉じるかは呼び出す側が決める
+- 閉じると、開いたボタンにフォーカスが戻る
+
+## props
+
+<ArgTypes of={Modal} />

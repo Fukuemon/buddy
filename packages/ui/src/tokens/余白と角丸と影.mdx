@@ -1,0 +1,69 @@
+import { Meta } from '@storybook/addon-docs/blocks'
+
+<Meta title="トークン/余白と角丸と影" />
+
+# 余白と角丸と影
+
+## 余白
+
+余白は Tailwind の既定の段（1 段 4px）で書き、トークンを足さない。ブロックの間は 8px の倍数（`gap-2`、`gap-4`、`gap-6`）にする。
+
+- 出典: [DADS の余白](https://design.digital.go.jp/dads/foundations/spacing/)
+
+<div className="flex flex-col gap-2 p-4">
+  {[2, 4, 6].map((step) => (
+    <div className="flex items-center gap-4" key={step}>
+      <span className="w-16 text-caption">{<code>gap-${step}</code>}</span>
+      <span className="h-4 bg-primary" style={{ width: <code>${step * 4}px</code> }} />
+      <span className="text-caption text-text-secondary">{<code>${step * 4}px</code>}</span>
+    </div>
+  ))}
+</div>
+
+## 角丸
+
+<div className="flex flex-wrap gap-6 p-4">
+  <div className="flex flex-col items-center gap-2">
+    <div className="size-16 rounded-8 border border-border-field bg-surface" />
+    <span className="text-caption">
+      <code>rounded-8</code>: ボタン、入力欄、選択肢のカード、ダイアログ
+    </span>
+  </div>
+  <div className="flex flex-col items-center gap-2">
+    <div className="size-16 rounded-6 border border-border-field bg-surface" />
+    <span className="text-caption">
+      <code>rounded-6</code>: 枠の内側に置くもの
+    </span>
+  </div>
+  <div className="flex flex-col items-center gap-2">
+    <div className="size-16 rounded-4 border border-border-field bg-surface" />
+    <span className="text-caption">
+      <code>rounded-4</code>: カレンダーの予定のような小さい面
+    </span>
+  </div>
+  <div className="flex flex-col items-center gap-2">
+    <div className="size-16 rounded-full border border-border-field bg-surface" />
+    <span className="text-caption">
+      <code>rounded-full</code>: 読み込みの輪、丸いアイコン
+    </span>
+  </div>
+</div>
+
+## 影
+
+影は、重なりの高さを示すときだけ使い、ボタンと入力欄の飾りには使わない。重ねて出すものは、下のコンポーネントより 2 段以上高い影にする。
+
+- 出典: [DADS のエレベーション](https://design.digital.go.jp/dads/foundations/elevation/)
+
+<div className="flex flex-wrap gap-8 p-6">
+  <div className="grid size-32 place-items-center rounded-8 bg-surface p-2 text-center text-caption shadow-1">
+    <code>shadow-1</code>: スクロールしても上に残る見出しの行
+  </div>
+  <div className="grid size-32 place-items-center rounded-8 bg-surface p-2 text-center text-caption shadow-3">
+    <code>shadow-3</code>: ダイアログ
+  </div>
+</div>
+
+## ブレークポイント
+
+`desktop:` は幅 768px 以上に当たる。未満では、ダイアログを画面いっぱいに出し、段組みを 1 列にする。

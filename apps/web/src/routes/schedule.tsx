@@ -22,7 +22,7 @@ function SchedulePage() {
     <div className="flex h-dvh flex-col">
       <SiteHeader />
       <div className="flex min-h-0 grow">
-        <aside className="w-56 shrink-0 overflow-auto border-r border-gray-100">
+        <aside className="w-56 shrink-0 overflow-auto border-r border-border">
           <StaffFilterSidebarContainer />
         </aside>
         <main className="min-w-0 grow">

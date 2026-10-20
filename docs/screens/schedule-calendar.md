@@ -59,7 +59,7 @@ web の型（`apps/web/src/api/types.ts`）は偽物の API に合わせた形�
 | 3-2 | 今日のボタン | 「今日」 | なし | なし | `calendar-today` |
 | 3-3 | 次へ | 右向きの矢印（`aria-label="次へ"`） | なし | なし | `calendar-next` |
 | 3-4 | 日付の入力 | 表示の基準の日付 | search params の `date` | なし | `calendar-date` |
-| 3-5 | 表示の種類の `TextTab` | 「月」「週」「日」 | search params の `view` | なし | `calendar-view`、タブは `calendar-view-month` など |
+| 3-5 | 表示の種類の `SegmentedControl` | 「月」「週」「日」 | search params の `view` | なし | `calendar-view`、タブは `calendar-view-month` など |
 | 3-6 | 予定を作成のボタン | 「予定を作成」 | なし | なし | `schedule-create-open` |
 | 4 | `ScheduleCalendar` | 月と週のカレンダー | なし | なし | `schedule-calendar` |
 | 4-1 | 予定（月、週） | 開始の時刻と題 | `Schedule.startsAt`、`Schedule.title`、`visit.patientId` | `date`、`start_time`、`title`、`visit_info.patient_name` | `schedule-event-{予定の id}` |

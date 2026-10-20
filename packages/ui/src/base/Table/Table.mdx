@@ -1,0 +1,42 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { Table } from './Table'
+import * as Stories from './Table.stories'
+
+<Meta of={Stories} />
+
+# Table
+
+同じ項目を持つ行を並べる表。`Table.Header`、`Table.Body`、`Table.Row`、`Table.HeaderCell`、`Table.Cell` で組む。
+
+## 使う場面
+
+- 同じ項目を持つ行を並べる
+
+## 使わない場面
+
+- 項目名と値の組（`dl` を使う）
+- 段組みの配置
+
+## Do
+
+- 見出しの行には `Table.HeaderCell` を使う
+
+## Don't
+
+- `Table.Cell` を見出しに使う
+- table の要素の display を変える
+
+## 状態
+
+### 既定
+
+<Canvas of={Stories.Default} />
+
+## キーボードの操作
+
+- コンポーネントの操作はない。見出しのセルは `th` で、表の役割を保つ
+
+## props
+
+<ArgTypes of={Table} />

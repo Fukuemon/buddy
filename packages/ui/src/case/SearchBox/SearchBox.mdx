@@ -1,0 +1,46 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { SearchBox } from './SearchBox'
+import * as Stories from './SearchBox.stories'
+
+<Meta of={Stories} />
+
+# SearchBox
+
+一覧を語で絞り込む検索欄。入力のたびに `onSearch` を呼ぶ。
+
+## 使う場面
+
+- 職員や利用者の一覧を、名前の語で絞り込む
+
+## 使わない場面
+
+- 決まった選択肢から選ぶ（`SegmentedControl` か選択肢のカード）
+
+## Do
+
+- `aria-label` に何を検索するかを書く（例は「職員を検索」）
+- 間引きが要るときは呼び出す側で行う
+
+## Don't
+
+- プレースホルダーだけで用途を伝える
+
+## 状態
+
+### 既定
+
+<Canvas of={Stories.Default} />
+
+### 語の入った状態
+
+<Canvas of={Stories.WithValue} />
+
+## キーボードの操作
+
+- Tab で欄に移る
+- Esc で語を消す。見えるラベルがないので `aria-label` を渡す
+
+## props
+
+<ArgTypes of={SearchBox} />

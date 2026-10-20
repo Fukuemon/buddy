@@ -37,10 +37,10 @@ export const StaffScheduleDayGrid = ({
       className="grid min-w-max"
       style={{ gridTemplateColumns: `4rem repeat(${staffList.length}, minmax(10rem, 1fr))` }}
     >
-      <div className="sticky top-0 z-10 border-b border-gray-200 bg-gray-0" />
+      <div className="sticky top-0 z-10 border-b border-border bg-surface" />
       {staffList.map((staff) => (
         <div
-          className="sticky top-0 z-10 truncate border-b border-l border-gray-200 bg-gray-0 px-2 py-2 text-center text-sm font-bold"
+          className="sticky top-0 z-10 truncate border-b border-l border-border bg-surface px-2 py-2 text-center text-caption font-bold"
           key={staff.id}
         >
           {staff.name}
@@ -50,7 +50,7 @@ export const StaffScheduleDayGrid = ({
       <div className="relative">
         {SLOT_TIMES.filter((time) => time.endsWith(':00')).map((time) => (
           <div
-            className="pr-2 text-right text-xs text-text-secondary"
+            className="pr-2 text-right text-caption text-text-secondary"
             key={time}
             style={{ height: HOUR_HEIGHT_PX }}
           >
@@ -59,11 +59,11 @@ export const StaffScheduleDayGrid = ({
         ))}
       </div>
       {staffList.map((staff) => (
-        <div className="relative border-l border-gray-200" key={staff.id}>
+        <div className="relative border-l border-border" key={staff.id}>
           {SLOT_TIMES.map((time) => (
             <button
               aria-label={`${staff.name} ${time} に予定を作成`}
-              className="block w-full border-b border-gray-100 hover:bg-gray-10"
+              className="block w-full border-b border-border hover:bg-surface-subtle focus-visible:focus-ring"
               data-testid={`day-grid-slot-${staff.id}-${time}`}
               key={time}
               onClick={() => onSlotClick(staff.id, time)}
@@ -82,7 +82,7 @@ export const StaffScheduleDayGrid = ({
               )
               return (
                 <button
-                  className="absolute inset-x-1 overflow-hidden rounded-md px-1.5 py-0.5 text-left text-[11px] leading-tight text-white"
+                  className="absolute inset-x-1 overflow-hidden rounded-4 px-1.5 py-0.5 text-left text-caption text-text-inverse focus-visible:focus-ring"
                   data-testid={`schedule-event-${event.id}`}
                   key={event.id}
                   onClick={() => onEventClick(event.id)}

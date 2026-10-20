@@ -4,7 +4,7 @@ import { fn } from 'storybook/test'
 import { ServiceCodeRadioGroup } from './ServiceCodeRadioGroup'
 
 const meta = {
-  title: 'Schedule/ServiceCodeRadioGroup',
+  title: '画面/Schedule/ServiceCodeRadioGroup',
   component: ServiceCodeRadioGroup,
   args: { value: '訪看I2', onChange: fn() },
 } satisfies Meta<typeof ServiceCodeRadioGroup>

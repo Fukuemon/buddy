@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { SiteHeader } from './SiteHeader'
 
 const meta = {
-  title: 'Site/SiteHeader',
+  title: '画面/Common/SiteHeader',
   component: SiteHeader,
 } satisfies Meta<typeof SiteHeader>
 

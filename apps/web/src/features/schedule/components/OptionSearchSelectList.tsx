@@ -1,7 +1,6 @@
 import { useState } from 'react'
 
-import { Table } from '#/components/base/Table'
-import { SearchBox } from '#/components/form/SearchBox'
+import { SearchBox, Table } from '@buddy/ui'
 
 export type SelectOption = {
   id: string
@@ -32,7 +31,7 @@ export const OptionSearchSelectList = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-lg font-bold">{heading}</h2>
+      <h2 className="text-heading-sm">{heading}</h2>
       <SearchBox
         aria-label={searchPlaceholder}
         data-testid={`${testIdPrefix}-search`}
@@ -42,7 +41,7 @@ export const OptionSearchSelectList = ({
       <Table>
         <Table.Header>
           <Table.Row>
-            <Table.Cell expanded>名前</Table.Cell>
+            <Table.HeaderCell expanded>名前</Table.HeaderCell>
           </Table.Row>
         </Table.Header>
         <Table.Body>
@@ -66,7 +65,7 @@ export const OptionSearchSelectList = ({
         </Table.Body>
       </Table>
       {visible.length === 0 && (
-        <p className="text-sm text-text-secondary">該当する名前がありません。</p>
+        <p className="text-caption text-text-secondary">該当する名前がありません。</p>
       )}
     </div>
   )

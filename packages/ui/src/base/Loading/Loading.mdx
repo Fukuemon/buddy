@@ -1,0 +1,47 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { Loading } from './Loading'
+import * as Stories from './Loading.stories'
+
+<Meta of={Stories} />
+
+# Loading
+
+画面全体かダイアログの中身を待つ間に出す、回転するインジケーター。
+
+## 使う場面
+
+- 画面全体かダイアログの中身を待つ
+
+## 使わない場面
+
+- ボタンを押した後の待ち（`Button` の `isLoading` を使う）
+- 画面の一部の待ち
+
+## Do
+
+- 待つ時間が長いときは `description` で何を待つかを書く
+
+## Don't
+
+- 1 つの画面に複数並べる
+
+## 状態
+
+DADS は回転する表示を画面全体の待ちに限るが、buddy はダイアログの中身の待ちにも使う。
+
+### 既定
+
+<Canvas of={Stories.Default} />
+
+### 文つき
+
+<Canvas of={Stories.WithDescription} />
+
+## キーボードの操作
+
+- 操作はない。`aria-live` で待ちを伝える
+
+## props
+
+<ArgTypes of={Loading} />

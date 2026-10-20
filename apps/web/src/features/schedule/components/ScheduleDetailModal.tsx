@@ -1,6 +1,5 @@
 import type { Patient, Schedule, Staff } from '#/api/types'
-import { Button } from '#/components/base/Button'
-import { Modal } from '#/components/base/Modal'
+import { Button, Modal } from '@buddy/ui'
 
 import { SCHEDULE_CATEGORY_LABEL, SCHEDULE_KIND_LABEL } from '../constants/scheduleLabels'
 import { toDateKey, toTimeKey } from '../lib/dateTime'
@@ -14,8 +13,8 @@ export type ScheduleDetailModalProps = {
 }
 
 const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4 border-b border-gray-100 py-3">
-    <dt className="text-sm text-text-secondary">{label}</dt>
+  <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4 border-b border-border py-3">
+    <dt className="text-caption text-text-secondary">{label}</dt>
     <dd className="whitespace-pre-wrap">{children}</dd>
   </div>
 )

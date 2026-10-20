@@ -5,7 +5,7 @@ import { PatientSelectList } from './PatientSelectList'
 import { storyPatients } from './storyData'
 
 const meta = {
-  title: 'Schedule/PatientSelectList',
+  title: '画面/Schedule/PatientSelectList',
   component: PatientSelectList,
   args: { patients: storyPatients, value: '', onChange: fn() },
 } satisfies Meta<typeof PatientSelectList>

@@ -1,19 +1,17 @@
 import { SCHEDULE_KINDS, type ScheduleKind } from '#/api/types'
-import { Button } from '#/components/base/Button'
-import { Modal } from '#/components/base/Modal'
-import { TextTab } from '#/components/base/TextTab'
+import { Button, Modal, SegmentedControl } from '@buddy/ui'
 
 import { SCHEDULE_KIND_LABEL } from '../constants/scheduleLabels'
 import { ScheduleForm, type ScheduleFormProps } from './ScheduleForm'
 
-const KIND_TABS = SCHEDULE_KINDS.map((kind) => ({ id: kind, label: SCHEDULE_KIND_LABEL[kind] }))
+const KIND_OPTIONS = SCHEDULE_KINDS.map((kind) => ({ id: kind, label: SCHEDULE_KIND_LABEL[kind] }))
 
 export type ScheduleFormModalProps = Omit<ScheduleFormProps, 'id'> & {
   title: string
   submitLabel: string
   /** 送信のボタンの data-testid。作成と編集で分ける。 */
   submitTestId: string
-  /** 渡したときだけ、通常と訪問を切り替えるタブを出す。 */
+  /** 渡したときだけ、通常と訪問を切り替える SegmentedControl を出す。 */
   onKindChange?: (kind: ScheduleKind) => void
   /** 送信に失敗したときの文。 */
   submitError?: string
@@ -41,11 +39,12 @@ export const ScheduleFormModal = ({
       headerContent={
         onKindChange === undefined ? undefined : (
           <div className="max-w-60">
-            <TextTab
-              activeTabId={kind}
+            <SegmentedControl
               data-testid="schedule-kind-tab"
-              onTabChange={onKindChange}
-              tabs={KIND_TABS}
+              label="予定の種類"
+              onChange={onKindChange}
+              options={KIND_OPTIONS}
+              value={kind}
               variant="white"
             />
           </div>
@@ -57,7 +56,7 @@ export const ScheduleFormModal = ({
       stickyFooter={
         <>
           {submitError !== undefined && (
-            <p className="mr-auto self-center text-sm text-incorrect-main" role="alert">
+            <p className="mr-auto self-center text-caption text-danger" role="alert">
               {submitError}
             </p>
           )}
