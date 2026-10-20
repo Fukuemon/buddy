@@ -191,4 +191,5 @@ apps/web は packages/ui に依存するので、依存の向きを変えずに 
 - コンポーネントを移すときに、Tailwind の既定のユーティリティ（`text-sm`、`rounded-xl` など）を使う箇所を全て書き換える必要がある。
 - DADS のバージョンを上げるたびに、`tokens.css` の名前と値の差分を確かめる必要がある。
 - カタログを Access で許可した人に見せるため、Cloudflare のアカウント、API トークン、Access の許可の設定を保つ必要がある。カタログの Worker の名前を変えると、新しい Worker は Access なしで出る。
+- pull request のプレビューのため、書き込みの権限を持つ人は Cloudflare のトークンを読める。トークンを Worker `buddy-docs` の Editor に絞り、漏れたときに書き換えられるものを、このサイトの中身と設定に限る。
 - story のデータを作る人が、架空のデータに限る規則を守る必要がある。
