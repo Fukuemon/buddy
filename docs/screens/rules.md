@@ -101,7 +101,7 @@ docs/screens/
 ```
 
 - head で `../../_common/mock.css`、`../../_common/wireframe.css`、`<画面 ID>.css` をこの順に読む。
-- `body` の `data-view` は最初に見せる端末にする。`mobile`（390px）、`tablet`（768px）、`tablet-wide`（1024px）、`desktop`（1440px）から選ぶ。値は `mock.js` の `VIEWS` にだけ書く。
+- `body` の `data-view` は最初に見せる端末にする。表示の幅が 600px 未満のとき（スマートフォンで仕様書を読むとき）は、`data-view` によらずモバイルで描く。`mobile`（390px）、`tablet`（768px）、`tablet-wide`（1024px）、`desktop`（1440px）から選ぶ。値は `mock.js` の `VIEWS` にだけ書く。
 - サイトのヘッダーとナビゲーション（`SiteHeader`、`SiteNav`）は、その画面の構成要素にするときだけ描く。
 
 ### 構成番号と data-testid
@@ -114,9 +114,10 @@ docs/screens/
 ### 幅と配置
 
 - 幅による切り替えは `@container screen (width < 768px)` のように `.screen` の幅で書く。viewport の寸法の `@media`、`vh` と `vw` は使わない。モックの中では、viewport の幅は端末の幅と一致しない。
-- スクロールする場所は作らず、画面の高さは中身に合わせる。
+- スクロールする場所は作らず、画面の高さは中身に合わせる。ただし、実装が横に送る表は、モックでも横に送ってよい。
 - ダイアログ、覆い、トーストは、`.screen` の中に `position: absolute` で置く。`position: fixed` は使わない。
 - 色は `wireframe.css` の変数（`--wf-*`）で書く。
+- 画面だけの見た目は `mocks/<画面 ID>.css` に書く。2 つ以上の画面で使う見た目は `_common/wireframe.css` に移す。
 
 ### 禁止
 

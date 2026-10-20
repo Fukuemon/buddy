@@ -2,6 +2,7 @@
  * 画面のモックの共通の処理。モックの HTML の body の末尾で読む。
  *
  * - body の data-view の端末の幅で .screen を描く。URL の ?view= が data-view より優先する。
+ *   ?view= が無く、表示の幅が NARROW_WIDTH 未満（スマートフォンで仕様書を読むとき）は、モバイルで描く。
  * - data-m を持つ要素の左上に、構成番号の印を .markers に重ねる。data-testid があれば、印の横に出せる。
  * - 端末、番号、testid、幅に合わせるかを切り替えるツールバーを body の末尾に作る。
  * - 埋め込んだ親のページに、中身の高さを postMessage で知らせる（docs/javascripts/embed-mock.js が受ける）。
@@ -17,6 +18,7 @@
     desktop: { label: 'PC', width: 1440, height: 900 },
   }
   const DEFAULT_VIEW = 'desktop'
+  const NARROW_WIDTH = 600
 
   const params = new URLSearchParams(location.search)
   const body = document.body
@@ -28,7 +30,10 @@
   }
 
   const state = {
-    view: pickView(params.get('view') ?? body.dataset.view),
+    view: pickView(
+      params.get('view') ??
+        (document.documentElement.clientWidth < NARROW_WIDTH ? 'mobile' : body.dataset.view),
+    ),
     markers: params.get('markers') !== 'off',
     testids: params.get('testids') === 'on',
     fit: params.get('fit') !== 'off',
