@@ -14,9 +14,24 @@ import (
 )
 
 // ScheduleSource は、照合に使う予定を返す。返す Record は normalize.Schedules を通した後の値である。
-// 入力の誤りは *record.InputError で返す。
+// 照合に使わなかった予定は record.Warning で返す。
+// 入力の誤りは *record.InputError で、取得元から予定を取れないときは *SourceError で返す。
 type ScheduleSource interface {
-	Schedules(ctx context.Context) ([]record.Record, error)
+	Schedules(ctx context.Context) ([]record.Record, []record.Warning, error)
+}
+
+// SourceError は、予定の取得元から予定を取れないことを表す。入力の誤りではない。
+type SourceError struct {
+	Message string
+	Err     error
+}
+
+func (e *SourceError) Error() string {
+	return e.Message + ": " + e.Err.Error()
+}
+
+func (e *SourceError) Unwrap() error {
+	return e.Err
 }
 
 // CSVSchedules は、予定の CSV から予定を読む ScheduleSource である。
@@ -24,17 +39,17 @@ type CSVSchedules struct {
 	Data []byte
 }
 
-// Schedules は、Data を予定の CSV として読む。
-func (s CSVSchedules) Schedules(_ context.Context) ([]record.Record, error) {
+// Schedules は、Data を予定の CSV として読む。警告は返さない。
+func (s CSVSchedules) Schedules(_ context.Context) ([]record.Record, []record.Warning, error) {
 	rows, err := csvio.ReadTable(s.Data, record.SourceSchedule, csvio.ScheduleColumns())
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	recs, rowErrs := normalize.Schedules(rows)
 	if len(rowErrs) > 0 {
-		return nil, &record.InputError{Message: "予定の CSV に誤りがある", Rows: rowErrs}
+		return nil, nil, &record.InputError{Message: "予定の CSV に誤りがある", Rows: rowErrs}
 	}
-	return recs, nil
+	return recs, nil, nil
 }
 
 // Summary は、区分ごとの行の数である。
@@ -49,10 +64,13 @@ type Summary struct {
 type Report struct {
 	Summary Summary        `json:"summary"`
 	Rows    []judge.Result `json:"rows"`
+	// Warnings は、予定の取得元が照合に使わなかった予定である。無ければ空の配列である。
+	Warnings []record.Warning `json:"warnings"`
 }
 
 // Run は、実績の CSV の visits と、schedules の予定を照合する。
 // 実績と予定のどちらかに入力の誤りがあれば、両方の誤りをまとめた *record.InputError を返す。
+// 予定の取得元のそのほかのエラー（*SourceError など）は、そのまま返す。
 func Run(ctx context.Context, visits []byte, schedules ScheduleSource) (Report, error) {
 	var inputErrs []*record.InputError
 
@@ -64,7 +82,7 @@ func Run(ctx context.Context, visits []byte, schedules ScheduleSource) (Report, 
 		}
 		inputErrs = append(inputErrs, ie)
 	}
-	scheduleRecs, err := schedules.Schedules(ctx)
+	scheduleRecs, warnings, err := schedules.Schedules(ctx)
 	if err != nil {
 		var ie *record.InputError
 		if !errors.As(err, &ie) {
@@ -84,7 +102,10 @@ func Run(ctx context.Context, visits []byte, schedules ScheduleSource) (Report, 
 	}
 
 	results := judge.All(match.Pairs(scheduleRecs, visitRecs))
-	rep := Report{Rows: results}
+	rep := Report{Rows: results, Warnings: warnings}
+	if rep.Warnings == nil {
+		rep.Warnings = []record.Warning{}
+	}
 	for _, r := range results {
 		switch r.Category {
 		case judge.Mismatch:

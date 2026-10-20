@@ -11,6 +11,7 @@ import (
 
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/check"
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/record"
+	"github.com/Fukuemon/buddy/apps/receipt-api/internal/source"
 )
 
 // エラーの応答の code の値。
@@ -21,12 +22,18 @@ const (
 	CodeInvalidCSV      = "invalid_csv"
 	CodeNotFound        = "not_found"
 	CodeInternal        = "internal"
+	// CodeCalendarNotConfigured は、対象の月で呼ばれたが、サーバーに Google カレンダーの設定がないことを表す。
+	CodeCalendarNotConfigured = "calendar_not_configured"
+	// CodeScheduleSourceFailed は、予定の取得元（Google カレンダー）から予定を取れないことを表す。
+	CodeScheduleSourceFailed = "schedule_source_failed"
 )
 
-// 照合の入力のファイルを受ける multipart のフィールド名。
+// 照合の入力を受ける multipart のフィールド名。
 const (
 	FieldVisits    = "visits"
 	FieldSchedules = "schedules"
+	// FieldMonth は、Google カレンダーから予定を取る対象の月（`2024-04`）を受けるフォームの値である。
+	FieldMonth = "month"
 )
 
 // ErrorResponse は、エラーの応答の本文である。
@@ -41,6 +48,8 @@ type ErrorResponse struct {
 type Config struct {
 	// MaxUploadBytes は、POST /v1/checks の本文の上限のバイト数である。
 	MaxUploadBytes int64
+	// Sources は、要求から予定の取得元を選ぶ。ゼロ値は予定の CSV だけを受ける。
+	Sources source.Selector
 }
 
 type server struct {
@@ -51,7 +60,8 @@ type server struct {
 // NewHandler は、次のエンドポイントを持つ http.Handler を返す。
 //
 //   - GET /health: {"status":"ok"} を返す。
-//   - POST /v1/checks: multipart の visits（実績の CSV）と schedules（予定の CSV）を照合する。
+//   - POST /v1/checks: multipart の visits（実績の CSV）と予定を照合する。
+//     予定の取得元は、schedules（予定の CSV）か month（対象の月）から Config.Sources が選ぶ。
 //     結果は Accept によらず check.Report の JSON で返す。
 //
 // エラーは ErrorResponse の JSON で返す。
@@ -90,16 +100,34 @@ func (s *server) checks(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	schedules, ok := s.readFile(w, r, FieldSchedules)
-	if !ok {
+	req := source.Request{}
+	if _, has := r.MultipartForm.File[FieldSchedules]; has {
+		req.HasSchedules = true
+		if req.Schedules, ok = s.readFile(w, r, FieldSchedules); !ok {
+			return
+		}
+	}
+	if v := r.MultipartForm.Value[FieldMonth]; len(v) > 0 {
+		req.Month = v[0]
+	}
+	src, err := s.cfg.Sources.Select(req)
+	if err != nil {
+		s.writeSelectError(w, r, err)
 		return
 	}
 
-	rep, err := check.Run(r.Context(), visits, check.CSVSchedules{Data: schedules})
+	rep, err := check.Run(r.Context(), visits, src)
 	if err != nil {
 		if ie, ok := errors.AsType[*record.InputError](err); ok {
 			s.writeJSON(w, http.StatusUnprocessableEntity, ErrorResponse{
 				Code: CodeInvalidCSV, Message: ie.Message, Errors: ie.Rows,
+			})
+			return
+		}
+		if _, ok := errors.AsType[*check.SourceError](err); ok {
+			s.logger.ErrorContext(r.Context(), "予定を取れない", "error", err)
+			s.writeJSON(w, http.StatusBadGateway, ErrorResponse{
+				Code: CodeScheduleSourceFailed, Message: "Google カレンダーから予定を取れない",
 			})
 			return
 		}
@@ -109,6 +137,25 @@ func (s *server) checks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.writeJSON(w, http.StatusOK, rep)
+}
+
+func (s *server) writeSelectError(w http.ResponseWriter, r *http.Request, err error) {
+	_, invalidMonth := errors.AsType[*source.InvalidMonthError](err)
+	switch {
+	case errors.Is(err, source.ErrNoSchedules):
+		s.writeJSON(w, http.StatusBadRequest, ErrorResponse{
+			Code: CodeMissingFile, Message: "ファイルのフィールド " + FieldSchedules + " か、フォームの値 " + FieldMonth + " がない",
+		})
+	case errors.Is(err, source.ErrCalendarNotConfigured):
+		s.writeJSON(w, http.StatusServiceUnavailable, ErrorResponse{
+			Code: CodeCalendarNotConfigured, Message: "サーバーに Google カレンダーの設定がないので、" + FieldMonth + " では照合できない",
+		})
+	case invalidMonth:
+		s.writeJSON(w, http.StatusBadRequest, ErrorResponse{Code: CodeBadRequest, Message: err.Error()})
+	default:
+		s.logger.ErrorContext(r.Context(), "予定の取得元を選べない", "error", err)
+		s.writeJSON(w, http.StatusInternalServerError, ErrorResponse{Code: CodeInternal, Message: "照合に失敗した"})
+	}
 }
 
 func (s *server) readFile(w http.ResponseWriter, r *http.Request, field string) ([]byte, bool) {

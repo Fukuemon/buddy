@@ -5,6 +5,9 @@
 //   - PORT: 待ち受けるポート。既定は 8080。
 //   - MAX_UPLOAD_BYTES: POST /v1/checks の本文の上限のバイト数。既定は 10485760（10 MiB）。
 //   - LOG_LEVEL: debug、info、warn、error のいずれか。既定は info。
+//   - GOOGLE_CALENDARS_FILE: 照合の対象のカレンダーの設定（JSON）のパス。空なら Google カレンダーを使わない。
+//     形は gcal.LoadCalendars にある。認証は Application Default Credentials で読む。
+//   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。偽物の API で試すためのもので、認証をしない。
 //
 // SIGINT か SIGTERM を受けると、処理中の要求を待ってから終了する。設定の誤りと起動の失敗では終了コード 1 で終わる。
 package main
@@ -21,13 +24,21 @@ import (
 	"syscall"
 	"time"
 
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/calendar/v3"
+	"google.golang.org/api/option"
+
+	"github.com/Fukuemon/buddy/apps/receipt-api/internal/gcal"
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/httpapi"
+	"github.com/Fukuemon/buddy/apps/receipt-api/internal/source"
 )
 
 type config struct {
-	port           string
-	maxUploadBytes int64
-	logLevel       slog.Level
+	port             string
+	maxUploadBytes   int64
+	logLevel         slog.Level
+	calendarsFile    string
+	calendarEndpoint string
 }
 
 func loadConfig(getenv func(string) string) (config, error) {
@@ -47,7 +58,38 @@ func loadConfig(getenv func(string) string) (config, error) {
 			return config{}, fmt.Errorf("LOG_LEVEL が不正: %w", err)
 		}
 	}
+	cfg.calendarsFile = getenv("GOOGLE_CALENDARS_FILE")
+	cfg.calendarEndpoint = getenv("GOOGLE_CALENDAR_ENDPOINT")
+	if cfg.calendarEndpoint != "" && cfg.calendarsFile == "" {
+		return config{}, errors.New("GOOGLE_CALENDAR_ENDPOINT は GOOGLE_CALENDARS_FILE と一緒に渡す")
+	}
 	return cfg, nil
+}
+
+// newCalendarReader は、cfg.calendarsFile のカレンダーを読む gcal.Reader を返す。設定が無ければ nil を返す。
+func newCalendarReader(ctx context.Context, cfg config) (*gcal.Reader, error) {
+	if cfg.calendarsFile == "" {
+		return nil, nil
+	}
+	cals, err := gcal.LoadCalendars(cfg.calendarsFile)
+	if err != nil {
+		return nil, err
+	}
+	var opts []option.ClientOption
+	if cfg.calendarEndpoint != "" {
+		opts = append(opts, option.WithEndpoint(cfg.calendarEndpoint), option.WithoutAuthentication())
+	} else {
+		creds, err := google.FindDefaultCredentials(ctx, calendar.CalendarReadonlyScope)
+		if err != nil {
+			return nil, fmt.Errorf("application default credentials を読めない: %w", err)
+		}
+		opts = append(opts, option.WithCredentials(creds))
+	}
+	svc, err := calendar.NewService(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return gcal.NewReader(svc, cals), nil
 }
 
 func main() {
@@ -64,9 +106,18 @@ func run() error {
 	}
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: cfg.logLevel}))
 
+	reader, err := newCalendarReader(context.Background(), cfg)
+	if err != nil {
+		return err
+	}
+	logger.Info("Google カレンダーの取得元の設定を読んだ", "enabled", reader != nil)
+
 	srv := &http.Server{
-		Addr:              ":" + cfg.port,
-		Handler:           httpapi.NewHandler(logger, httpapi.Config{MaxUploadBytes: cfg.maxUploadBytes}),
+		Addr: ":" + cfg.port,
+		Handler: httpapi.NewHandler(logger, httpapi.Config{
+			MaxUploadBytes: cfg.maxUploadBytes,
+			Sources:        source.Selector{Calendar: reader},
+		}),
 		ReadHeaderTimeout: 10 * time.Second,
 		ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelError),
 	}

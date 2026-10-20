@@ -3,3 +3,4 @@ Dockerfile
 testdata/
 **/*_test.go
 tools/
+.secrets/
