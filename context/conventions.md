@@ -26,3 +26,13 @@ status: draft
 ## Check Exclusions
 
 <!-- 自動チェックから除外しているものと、その理由 -->
+
+## E2E
+
+E2E のテストのコード（`packages/e2e/tests/`）の書き方は、スキル write-e2e-test と [E2E のテストのコードの設計](../packages/e2e/DesignDoc.md) に従う。ここには、buddy で決めた値だけを書く。
+
+- testid は、画面仕様書（`docs/screens/<画面 ID>.md`）の構成要素の表の `data-testid` の列を正本にする。testid を足すときは、同じ pull request で仕様書の表とワイヤーフレームの `data-testid` にも足す。
+  - 形は、小文字の英語と `-` で、`<画面か部品>-<要素>` にする（例: `receipt-check-submit`）。一覧の行のように同じ要素が並ぶものは、末尾に ID を付ける（例: `staff-filter-staff-{職員の id}`）。
+- 画面 ID の形は、`docs/screens/index.md` の「画面の ID の規則」にある。`widgets/` に書いてはいけない画面 ID は、`packages/e2e/eslint.config.mjs` の `screenIdPattern` に並べる。画面を足したら、ここにも足す。
+- 固定の待ちを許すファイルは無い。
+- 待つ時間の名前は、`packages/e2e/tests/fixtures/timeouts.ts` に置く。
