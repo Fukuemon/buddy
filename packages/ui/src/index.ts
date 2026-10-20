@@ -13,10 +13,13 @@ export { Modal } from './base/Modal/Modal'
 export type { ModalProps } from './base/Modal/Modal'
 export { NumberPicker } from './base/NumberPicker/NumberPicker'
 export type { NumberPickerProps } from './base/NumberPicker/NumberPicker'
+export { SegmentedControl } from './base/SegmentedControl/SegmentedControl'
+export type {
+  SegmentedControlOption,
+  SegmentedControlProps,
+} from './base/SegmentedControl/SegmentedControl'
 export { Table } from './base/Table/Table'
 export type { TableCellProps, TableProps } from './base/Table/Table'
-export { TextTab } from './base/TextTab/TextTab'
-export type { TextTabItem, TextTabProps } from './base/TextTab/TextTab'
 export { TextareaField } from './base/TextareaField/TextareaField'
 export type { TextareaFieldProps } from './base/TextareaField/TextareaField'
 export { TimePicker } from './base/TimePicker/TimePicker'

@@ -1,10 +1,10 @@
-import { Button, TextTab } from '@buddy/ui'
+import { Button, SegmentedControl } from '@buddy/ui'
 import PrevIcon from '#/assets/icons/arrow-left.svg?react'
 import NextIcon from '#/assets/icons/arrow-right.svg?react'
 
 import { CALENDAR_VIEWS, CALENDAR_VIEW_LABEL, type CalendarView } from '../constants/calendarView'
 
-const VIEW_TABS = CALENDAR_VIEWS.map((view) => ({ id: view, label: CALENDAR_VIEW_LABEL[view] }))
+const VIEW_OPTIONS = CALENDAR_VIEWS.map((view) => ({ id: view, label: CALENDAR_VIEW_LABEL[view] }))
 
 export type ScheduleCalendarToolbarProps = {
   view: CalendarView
@@ -66,11 +66,12 @@ export const ScheduleCalendarToolbar = ({
     </div>
     <div className="flex items-center gap-4">
       <div className="w-48">
-        <TextTab
-          activeTabId={view}
+        <SegmentedControl
           data-testid="calendar-view"
-          onTabChange={onViewChange}
-          tabs={VIEW_TABS}
+          label="表示の単位"
+          onChange={onViewChange}
+          options={VIEW_OPTIONS}
+          value={view}
         />
       </div>
       {onCreate !== undefined && (
