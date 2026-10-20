@@ -5,34 +5,12 @@ import { useState } from 'react'
 import { MAX_RECEIPT_UPLOAD_BYTES } from '#/api/bff/receiptCall'
 import { ApiError, type ReceiptCheckInput } from '#/api/client'
 
+import { TOO_LARGE_MESSAGE, checkErrorMessage } from '../lib/errorMessage'
 import { isMonth, previousMonth } from '../lib/month'
 import { receiptResultKey, type ReceiptResult } from '../queries'
 import { ReceiptCheckForm, type ScheduleSource } from './ReceiptCheckForm'
 
-/** 照合の失敗を、職員が次にすることの分かる文にする。 */
-const errorMessageOf = (error: unknown) => {
-  if (!(error instanceof ApiError))
-    return '照合できませんでした。時間をおいて、もう一度照合してください。'
-  switch (error.status) {
-    case 400:
-      return error.message
-    case 413:
-      return 'ファイルが大きすぎます。10 MB までのファイルにしてください。'
-    case 422:
-      // 行ごとの誤りは一覧で出す。列が無いような、ファイル全体の誤りは API の文で伝える
-      return error.rowErrors.length > 0
-        ? '入力の CSV に誤りがあります。次の行を直して、もう一度照合してください。'
-        : `入力の CSV に誤りがあります。${error.message}`
-    case 502:
-      return 'Google カレンダーから予定を取れませんでした。時間をおいて、もう一度照合してください。'
-    case 503:
-      return 'Google カレンダーの設定がありません。予定の CSV で照合してください。'
-    default:
-      return '照合できませんでした。時間をおいて、もう一度照合してください。'
-  }
-}
-
-/** 照合の入力を持ち、照合の API に送り、結果の画面へ移る。 */
+/** 照合の入力を持ち、照合の API に送り、結果の画面へ移る。入力を変えたら、前の失敗の文を消す。 */
 export const ReceiptCheckFormContainer = () => {
   const { receiptApi } = useRouteContext({ from: '__root__' })
   const navigate = useNavigate()
@@ -58,6 +36,12 @@ export const ReceiptCheckFormContainer = () => {
   const scheduleFile = source === 'csv' ? schedules : null
   const tooLarge = (visits?.size ?? 0) + (scheduleFile?.size ?? 0) > MAX_RECEIPT_UPLOAD_BYTES
   const ready = visits !== null && (source === 'calendar' ? isMonth(month) : scheduleFile !== null)
+  const changed =
+    <T,>(set: (value: T) => void) =>
+    (value: T) => {
+      set(value)
+      check.reset()
+    }
 
   const submit = () => {
     if (visits === null) return
@@ -69,25 +53,21 @@ export const ReceiptCheckFormContainer = () => {
   return (
     <ReceiptCheckForm
       source={source}
-      onSourceChange={(next) => {
+      onSourceChange={changed((next: ScheduleSource) => {
         setSource(next)
         setSchedules(null)
-      }}
+      })}
       month={month}
-      onMonthChange={setMonth}
-      onSchedulesChange={setSchedules}
-      onVisitsChange={setVisits}
+      onMonthChange={changed(setMonth)}
+      onSchedulesChange={changed(setSchedules)}
+      onVisitsChange={changed(setVisits)}
       canSubmit={ready && !tooLarge}
       isSubmitting={check.isPending}
       onSubmit={submit}
       errorMessage={
-        tooLarge
-          ? 'ファイルが大きすぎます。10 MB までのファイルにしてください。'
-          : check.isError
-            ? errorMessageOf(check.error)
-            : undefined
+        tooLarge ? TOO_LARGE_MESSAGE : check.isError ? checkErrorMessage(check.error) : undefined
       }
-      rowErrors={check.error instanceof ApiError ? check.error.rowErrors : []}
+      rowErrors={!tooLarge && check.error instanceof ApiError ? check.error.rowErrors : []}
     />
   )
 }

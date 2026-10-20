@@ -1,6 +1,5 @@
 import { Table } from '@buddy/ui'
 import { clsx } from 'clsx'
-import { Fragment } from 'react'
 
 import type { ReceiptRow } from '#/api/types'
 
@@ -10,7 +9,7 @@ export type ReceiptResultTableProps = {
   rows: readonly ReceiptRow[]
 }
 
-/** 照合の結果の表。区分ごとに見出しの行を置き、その下に区分の行を並べる。印の付いたセルは背景の色を変える。 */
+/** 照合の結果の表。区分ごとに tbody を分け、先頭に区分の見出しの行を置く。印の付いたセルは背景の色を変える。 */
 export const ReceiptResultTable = ({ rows }: ReceiptResultTableProps) => (
   <div className="overflow-auto rounded-8 ring-1 ring-border" data-testid="receipt-result-table">
     <Table stickyColumn>
@@ -21,47 +20,43 @@ export const ReceiptResultTable = ({ rows }: ReceiptResultTableProps) => (
           ))}
         </Table.Row>
       </Table.Header>
-      <Table.Body>
-        {RECEIPT_CATEGORIES.map(({ category, label }) => {
-          const inCategory = rows.filter((row) => row.category === category)
-          return (
-            <Fragment key={category}>
-              <tr
-                className="border-b border-border bg-surface-subtle"
-                data-testid={`receipt-category-${category}`}
+      {RECEIPT_CATEGORIES.map(({ category, label }) => {
+        const inCategory = rows
+          .map((row, index) => ({ row, index }))
+          .filter(({ row }) => row.category === category)
+        return (
+          <tbody key={category}>
+            <tr className="border-b border-border" data-testid={`receipt-category-${category}`}>
+              {/* Table の stickyColumn が先頭のセルに当てる bg-surface より強くするため、! を付ける */}
+              <th
+                className="sticky left-0 !bg-surface-subtle px-5 py-2 text-left text-label"
+                colSpan={RECEIPT_COLUMNS.length}
+                scope="rowgroup"
               >
-                <th
-                  className="sticky left-0 bg-surface-subtle px-5 py-2 text-left text-label"
-                  colSpan={RECEIPT_COLUMNS.length}
-                  scope="colgroup"
-                >
-                  {label}（{inCategory.length} 件）
-                </th>
-              </tr>
-              {inCategory.map((row) => (
-                <Table.Row
-                  key={`${row.date}-${row.client}-${row.staff}-${row.schedule?.line ?? 0}-${row.visit?.line ?? 0}`}
-                >
-                  {reportRowCells(row).map((cell, i) => (
-                    <Table.Cell key={RECEIPT_COLUMNS[i]}>
-                      <span
-                        className={clsx(
-                          'rounded-4 px-1',
-                          cell.includes('❌') && 'bg-danger-surface',
-                          !cell.includes('❌') && cell.includes('※') && 'bg-warning-surface',
-                          cell === 'データなし' && 'text-text-secondary',
-                        )}
-                      >
-                        {cell}
-                      </span>
-                    </Table.Cell>
-                  ))}
-                </Table.Row>
-              ))}
-            </Fragment>
-          )
-        })}
-      </Table.Body>
+                {label}（{inCategory.length} 件）
+              </th>
+            </tr>
+            {inCategory.map(({ row, index }) => (
+              <Table.Row key={index}>
+                {reportRowCells(row).map((cell, i) => (
+                  <Table.Cell key={RECEIPT_COLUMNS[i]}>
+                    <span
+                      className={clsx(
+                        'rounded-4 px-1',
+                        cell.includes('❌') && 'bg-danger-surface',
+                        !cell.includes('❌') && cell.includes('※') && 'bg-warning-surface',
+                        cell === 'データなし' && 'text-text-secondary',
+                      )}
+                    >
+                      {cell}
+                    </span>
+                  </Table.Cell>
+                ))}
+              </Table.Row>
+            ))}
+          </tbody>
+        )
+      })}
     </Table>
   </div>
 )

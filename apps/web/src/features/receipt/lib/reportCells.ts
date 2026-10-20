@@ -103,8 +103,12 @@ export const reportRowCells = (row: ReceiptRow): string[] => {
   ]
 }
 
+/** Excel が UTF-8 と読むための BOM。整形の道具が見えない文字に置き換えないよう、符号で書く。 */
+const BOM = String.fromCharCode(0xfeff)
+
+/** Go の encoding/csv と同じ条件で引用する。区切り、引用符、改行を含む値と、空白で始まる値である。 */
 const csvCell = (value: string) =>
-  /[",\r\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value
+  /[",\r\n]/.test(value) || /^[ \t]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value
 
 /**
  * 照合の結果を CSV の文字列にする。先頭に BOM を付け、行は CRLF で区切る。
@@ -119,5 +123,5 @@ export const toReceiptCsv = (report: ReceiptReport) => {
       lines.push(reportRowCells(row).map(csvCell).join(','))
     }
   }
-  return `﻿${lines.join('\r\n')}\r\n`
+  return `${BOM}${lines.join('\r\n')}\r\n`
 }

@@ -5,5 +5,6 @@ export const downloadText = (text: string, filename: string, type: string) => {
   a.href = url
   a.download = filename
   a.click()
-  URL.revokeObjectURL(url)
+  // click の直後に消すと、保存が始まる前に URL が無くなるブラウザがある
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }

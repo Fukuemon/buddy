@@ -57,8 +57,9 @@ pnpm --filter @buddy/web dev
 照合の画面（`/receipt`）と結果の画面（`/receipt/result`）は `src/features/receipt/` にある。画面の仕様は `docs/screens/receipt-upload.md` と `docs/screens/receipt-result.md` にある。
 
 - 照合の API は判定の JSON だけを返す。結果の表の印（❌、※、許容範囲）と CSV は、画面の `src/features/receipt/lib/reportCells.ts` が作る。
-  - 印の付け方は、照合の API の `tools/parity/report` と同じにし、同じ期待値のテストで確かめる。
+  - 印の付け方と値の引用は、照合の API の `tools/parity/report` と同じにし、同じ期待値のテストで確かめる。行の区切りだけは、Excel で開くために CRLF にした（Go は LF）。
 - 照合の結果は保存せず、query の cache にだけ置く。結果の画面を読み直すと消える。
+- ファイルの合計の上限は、照合の API の `MAX_UPLOAD_BYTES` の既定（10 MiB）から multipart の分の 64 KiB を引いた値にする。server function の本文は、読む前に `src/start.ts` が 10 MiB を超えるものと長さの分からないものを 413 で拒む。
 - 偽物の API（`fake`）の照合は、入力によらず `src/api/fake/fakeReceiptApi.ts` の結果を返す。
 
 ## 確かめる

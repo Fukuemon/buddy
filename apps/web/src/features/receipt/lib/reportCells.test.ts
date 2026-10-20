@@ -21,7 +21,8 @@ describe('reportRowCells', () => {
 describe('toReceiptCsv', () => {
   it('BOM、見出し、区分の区切りの行、CRLF で書く', () => {
     const csv = toReceiptCsv(fakeReceiptReport)
-    expect(csv.startsWith('﻿訪問日,利用者名,主訪問者,')).toBe(true)
+    expect(csv.charCodeAt(0)).toBe(0xfeff)
+    expect(csv.slice(1).startsWith('訪問日,利用者名,主訪問者,')).toBe(true)
     const lines = csv.slice(1).split('\r\n')
     const sep = (label: string) => label + ',---'.repeat(11)
     expect(lines.slice(1)).toEqual([
@@ -37,9 +38,50 @@ describe('toReceiptCsv', () => {
     ])
   })
 
-  it('カンマと引用符を含む値を引用符で囲む', () => {
-    const row = { ...fakeReceiptReport.rows[1], client: '加藤, "春子"' }
-    const csv = toReceiptCsv({ ...fakeReceiptReport, rows: [row] })
+  it('Go の encoding/csv と同じく、区切り、引用符、改行を含む値と空白で始まる値を引用する', () => {
+    const [mismatch, scheduleOnly] = fakeReceiptReport.rows
+    const rows = [
+      { ...scheduleOnly, client: '加藤, "春子"' },
+      { ...scheduleOnly, client: '改行\nあり' },
+      { ...mismatch, visit: { ...mismatch.visit!, additions: '' } },
+    ]
+    const csv = toReceiptCsv({ ...fakeReceiptReport, rows })
     expect(csv).toContain('"加藤, ""春子"""')
+    expect(csv).toContain('"改行\nあり"')
+    expect(csv).toContain('," ※"\r\n')
+  })
+})
+
+describe('reportRowCells の偽物の結果に無い入力', () => {
+  const mismatch = fakeReceiptReport.rows[0]
+  const checks = mismatch.checks!
+
+  it('範囲を持たないサービス内容は ❌ だけを付ける', () => {
+    const row = {
+      ...mismatch,
+      checks: { ...checks, visit_duration: { ok: false, minutes: 35, range: null } },
+    }
+    expect(reportRowCells(row)[10]).toBe('35 ❌ ❌')
+  })
+
+  it('両側の提供時間が空なら、データなしに印を付ける', () => {
+    const range = { min: 20, max: 29 }
+    const row = {
+      ...mismatch,
+      schedule: { ...mismatch.schedule!, duration: null },
+      visit: { ...mismatch.visit!, duration: null },
+      checks: {
+        ...checks,
+        schedule_duration: { ok: false, minutes: null, range },
+        visit_duration: { ok: false, minutes: null, range },
+      },
+    }
+    const cells = reportRowCells(row)
+    expect([cells[6], cells[10]]).toEqual(['データなし ❌ ❌ (20~29)', 'データなし ❌ ❌ (20~29)'])
+  })
+
+  it('加算が空の不整合の行は、印だけにする', () => {
+    const row = { ...mismatch, visit: { ...mismatch.visit!, additions: '' } }
+    expect(reportRowCells(row)[11]).toBe(' ※')
   })
 })
