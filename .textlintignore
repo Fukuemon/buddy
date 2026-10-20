@@ -5,6 +5,9 @@ apm_modules/**
 .venv/**
 site/**
 .wt/**
+.cache/**
+packages/e2e/test-results/**
+packages/e2e/playwright-report/**
 # apm が配置するスキル。元のリポジトリで直す
 .claude/skills/setup-*/**
 .claude/skills/write-comments/**

@@ -227,7 +227,7 @@ JSON と並べて記号つきの CSV も返す案は、表示の都合が API �
 
 ### 画面が JSON から作る表示
 
-画面（apps/web）は、結果の JSON から次の表示を作る。記号の規則は API ではなく画面が持ち、`apps/web/src/features/receipt/lib/reportCells.ts` が作る。
+画面（apps/web）は、結果の JSON から次の表示を作る。記号の規則は API ではなく画面が持ち、[reportCells.ts](https://github.com/Fukuemon/buddy/blob/develop/apps/web/src/features/receipt/lib/reportCells.ts) が作る。
 
 - 規則に合わない値の後ろに、不一致の印を付ける。許容範囲があれば「(20~29)」を続ける。
 - 整合の行で、提供時間か終了時間の値が両側で違うが、両方が許容範囲に入るときは、注意の印「 ※」を付ける。
