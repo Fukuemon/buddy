@@ -45,7 +45,7 @@ status: stable
 | サービス内容 | 照合で比べるサービスの表記（`訪看I２` など） | `Record.Service`、`servicerule.Lookup` |
 | 許容範囲 | サービス内容ごとに許す分の範囲。両端を含む | `servicerule.Range` |
 | 加算 | 実績の加算①から加算⑤ | `Record.Additions` |
-| 注意の印 | 値は違うが両方が許容範囲に入る値に付ける「 ※」 | `Checks.DurationEqual`、`EndEqual` |
+| 注意の印 | 「 ※」。整合の行で値は違うが両方が許容範囲に入る値と、不整合の行で規則に合わない加算に付ける | `Checks.DurationEqual`、`EndEqual`、`Additions` |
 | 対象の月 | Google カレンダーから予定を取る月 | `source.Request.Month`、API `month` |
 
 ### 呼び方の対応

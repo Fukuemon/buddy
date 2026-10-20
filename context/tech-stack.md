@@ -56,6 +56,6 @@ status: stable
   - `go.mod` のモジュールのパス（`github.com/Fukuemon/buddy/apps/<名前>`）と、`.golangci.yml` の goimports の `local-prefixes`
   - `openapi.yaml`、`oapi-codegen.yaml`、`generate.go` の `go:generate`
   - `/healthz`、`/readyz`、`api healthcheck` のサブコマンド（compose のヘルスチェックが使う）
-  - ルートの `compose.yml` のサービス、`scripts/check-generated.sh` の生成と対象、`mise.toml` の Go の対象
+  - ルートの `compose.yml` のサービス、`scripts/check-generated.sh` の生成と対象
 - pnpm のパッケージは、UI のライブラリなら `packages/ui`、テストのコードと kit なら `packages/e2e` を写す。名前は `@buddy/<名前>`、`"private": true`、`"type": "module"` にし、依存は `workspace:*` で指す。整形と lint の設定は、ルートの `vite.config.ts` を使う。
 - 新しいアプリを足したら、README を「準備、動かす、テストとチェック、コードの生成、文書」の見出しで書き、機能の Design Doc を隣に置く（[CONTRIBUTING.md](../CONTRIBUTING.md) の「文書を直すとき」）。

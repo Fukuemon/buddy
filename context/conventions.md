@@ -12,7 +12,7 @@ status: stable
 - web のコンポーネントの名前は、BCD Design の「ドメイン、場面、基本の語」の順に並べる（例 `StaffFilterSidebar`、`ServiceCodeRadioGroup`）。Base と Case か Domain かは、名前の接頭辞ではなく置き場（`packages/ui` か `features/<機能>/components/`）で表す。
 - Container は Presentational の名前に `Container` を付ける。対になる Presentational が無い Container（モーダルを開いて閉じるだけのものなど）は、使うコンポーネントの名前に `Container` を付けない別の名前にしてよい。
 - query の hook は `use<動詞><対象>`、query options は `<対象>QueryOptions` と名付け、機能の `queries.ts` に置く。
-- web の API の実装は、種類を接頭辞にする（`fakeBuddyApi`、`httpBuddyApi`、`bffBuddyApi`）。
+- web の API の実装のファイルは、種類を接頭辞にする（`fakeBuddyApi.ts`、`httpBuddyApi.ts`、`bffBuddyApi.ts`）。照合の API の HTTP の実装（`http/receiptApi.ts`）だけは接頭辞を持たない。
 - web の import は `#/` の別名で書く。tsconfig の `@/` は使わない。
 - Go のテストのための偽物は、`<パッケージ>test` のパッケージに置く（`oidctest`、`gcaltest`）。
 - API の operationId は、lowerCamel の「動詞と名詞」にする。動詞は `get`、`list`、`create`、`update`、`cancel`、`change` から選ぶ。パスは `/v1` の下の複数形の snake_case で、事業所に属する一覧と作成は `/v1/facilities/{facility_id}/<資源>`、1 件は `/v1/<資源>/{<資源>_id}` に置く。動作はサブパス（`/cancel`）で表す。
@@ -31,7 +31,7 @@ status: stable
 
 文書の書き方は、スキル write-prose と write-design-docs に従う。buddy だけの規則は次のとおり。
 
-- 文書の置き場は `context/project.yml` の `docs` にある。PRD、全体の Design Doc、ADR、画面仕様書は `docs/` に置き、Zensical のサイトで読む。
+- PRD は `docs/PRD.md`、全体の Design Doc は `docs/design/`、ADR は `docs/adr/`、画面仕様書は `docs/screens/` に置き、Zensical のサイトで読む。Design Doc と ADR の置き場は `context/project.yml` の `docs` と同じにする。
 - 機能ごとの Design Doc は、コードの隣（`apps/<アプリ>/DesignDoc.md`、`packages/<パッケージ>/DesignDoc.md`）に置く。サイトには、`docs/design/apps/` か `docs/design/packages/` のファイル単位のシンボリックリンクで載せる。リンク先は `zensical.toml` の `watch` にも並べる。
 - 機能ごとの Design Doc と ADR から `docs/` と `apps/` の文書へのリンクは、GitHub の `develop` の URL で書く。相対リンクは、GitHub とサイトで指す先が変わり、どちらかで切れる。
 - 見出しのアンカーは、日本語のまま残す（`zensical.toml` の toc の slugify）。見出しを変えるときは、ほかの文書からのリンクを探して直す。
@@ -70,6 +70,6 @@ E2E のテストのコード（`packages/e2e/tests/`）の書き方は、スキ�
 - testid は、画面仕様書（`docs/screens/<画面 ID>.md`）の構成要素の表の `data-testid` の列を正本にする。testid を足すときは、同じ pull request で仕様書の表とワイヤーフレームの `data-testid` にも足す。
   - 形は、小文字の英語と `-` で、`<画面か部品>-<要素>` にする（例: `receipt-check-submit`）。一覧の行のように同じ要素が並ぶものは、末尾に ID を付ける（例: `staff-filter-staff-{職員の id}`）。
 - 画面 ID の形は、`docs/screens/index.md` の「画面の ID の規則」にある。`packages/e2e/eslint.config.mjs` の `screenIdPattern` は、その表のドメインと種類の組を止める。ドメインか種類を足したら、`screenIdPattern` にも足す。
-  - `schedule-calendar` や `receipt-result-table` のように、画面 ID で始まる testid は `widgets/` に直に書けない。`widgets/` では testid の接頭辞を引数で受ける。
+  - `schedule-calendar` や `receipt-result-table` のように、画面 ID で始まる testid は `widgets/` に直に書けない。`widgets/` を作るときは、testid の接頭辞を引数で受ける。
 - 固定の待ちを許すファイルは無い。
 - 待つ時間の名前は、`packages/e2e/tests/fixtures/timeouts.ts` に置く。

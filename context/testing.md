@@ -18,7 +18,7 @@ status: stable
 | Go のハンドラのテスト | 状態コード、応答の本文、認証と事業所の確認 | `internal/presentation/http/handler`、`internal/httpapi` | 同上 |
 | 照合の互換のテスト | Go の照合が、元の Python の実装と同じ結果を返す | `apps/receipt-api/internal/check/parity_test.go` と `testdata/parity/` | `go test ./...`。期待値の作り直しは `tools/parity/run.sh` |
 | web の単体とコンポーネントのテスト | 変換、表示の規則（照合の印と CSV）、コンポーネントの操作 | 対象の隣の `*.test.ts(x)`。コンポーネントは story を `composeStories` で使う | `pnpm --filter @buddy/web test`（jsdom） |
-| デザインシステムのテスト | トークンのコントラスト、押せる領域とフォーカスの移り方、story の描画とアクセシビリティ | `packages/ui/src` の `*.test.ts(x)` と story | `pnpm --filter @buddy/ui test`（ブラウザ） |
+| デザインシステムのテスト | トークンのコントラスト、押せる領域とフォーカスの移り方、story の描画とアクセシビリティ | `packages/ui/src` の `*.test.ts(x)` と story | `pnpm --filter @buddy/ui test`（トークンは node、コンポーネントと story はブラウザ） |
 | E2E | ログインから画面の操作までの流れが、compose の全体で動く | `packages/e2e/tests/` | `pnpm e2e`（下の E2E の節） |
 | 生成物のそろい | `openapi.yaml` と SQL から生成したコードが最新である | `scripts/check-generated.sh` | `pnpm check:generated` |
 
@@ -42,7 +42,7 @@ status: stable
 - テストのデータは、架空の値だけを使う。実在の事業所、人、連絡先を入れず、メールは `example.com` にする。
 - schedule-api のシードは `apps/schedule-api/db/seed/seed.sql` にあり、結合テストと compose が同じシードを当てる。全ての環境で同じマスタは、シードではなくマイグレーションが入れる。
 - 照合の入力の CSV は `apps/receipt-api/testdata/` に、互換のテストのケースは `testdata/parity/<ケース>/` に置く。
-- web の story のデータは `features/<機能>/components/storyData.ts` に置き、API を呼ぶ story は作らない。
+- web の story は、架空のデータだけを使い、API を呼ぶ story は作らない。データは、schedule が `features/schedule/components/storyData.ts`、receipt が偽物の API の `fakeReceiptReport` である。
 
 ## Required Tests
 

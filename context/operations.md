@@ -25,12 +25,12 @@ status: stable
 - デプロイする単位は、アプリごとのイメージである。リリースは、`main` のコミットに付けたアプリごとのタグ（`apps/<アプリ>/vX.Y.Z`）で指す。
 - 取り込む前に、変えたアプリのテストとチェック、`pnpm check:generated` が通っている（[テスト](testing.md)）。
 - API と画面を一緒に変えたときは、API を先にデプロイする。画面は、デプロイ済みの API が持つ項目だけを使う。
-- schedule-api のマイグレーションは、新しいイメージを動かす前に、同じイメージの `migrate up` で 1 回当てる。マイグレーションは、前のバージョンのアプリが動いたまま当てられる変更（列と表の追加）だけにする。
+- マイグレーションの当て方と、ヘルスチェックの約束は、[buddy Design Doc の Interfaces](../docs/design/DesignDoc.md#interfaces) にある。
 
 ## Health and Monitoring
 
-- 3 つのアプリは、`GET /healthz`（プロセスが応答できる）と `GET /readyz`（依存先に届く）を返す。schedule-api は MySQL、web は Valkey を確かめ、receipt-api は依存先を持たない。
-- ログは標準出力に JSON で書く。トークン、cookie、DB の接続の設定、利用者の名前、CSV の中身をログに出さない。
+- 正常かは `GET /readyz` で判断する。返す条件は Design Doc の Interfaces にある。
+- ログは JSON で書く。schedule-api は標準出力、receipt-api と web は標準エラーに書く。トークン、cookie、DB の接続の設定、利用者の名前、CSV の中身をログに出さない。
 - ログとメトリクスを集める先と、通知の条件は buddy-infra が決める。
 
 ## Rollback

@@ -26,14 +26,14 @@ status: stable
   - domain は標準ライブラリだけに依存する。
   - usecase は domain のインターフェイスだけに依存し、トランザクションは `domain.Transactor` で受ける。
   - infrastructure は domain のインターフェイスを実装する。presentation から infrastructure を import するのは、テストのファイルだけにする。
-- receipt-api の依存は、`record` と `civil` を末端にして、読み込み、正規化、対の作成、判定、つなぐ段（`check`）、取得元、HTTP の順の 1 方向に限る。
+- receipt-api の依存は、`record` と `civil` を末端にして、読み込み、正規化、対の作成、判定、つなぐ段（`check`）、取得元、HTTP の順の 1 方向に限る。判定はサービスの規則（`servicerule`）を、取得元は Google カレンダー（`gcal`）を使う。
 - 依存の向きを確かめる lint は入れていない。レビューで確かめる。E2E の層の向きだけは、`packages/e2e/eslint/e2e-authoring-rule.mjs` が止める。
 
 ## State Ownership
 
 | 状態 | 置き場 | 持ち主 |
 | --- | --- | --- |
-| 事業所、職員、利用者、予定、権限 | MySQL | schedule-api だけ。全ての問い合わせを事業所の ID で絞る |
+| 事業所、職員、利用者、予定、権限 | MySQL | schedule-api だけ。一覧と作成は事業所の ID で絞り、1 件を指す要求は資源の事業所を確かめる |
 | ログインのセッションとトークン | Valkey | web の BFF。ブラウザには署名した cookie でセッションの ID だけを渡す |
 | 照合の入力の CSV と結果 | 保存しない | receipt-api は 1 回の要求で返し、web は query の cache にだけ置く。画面を読み直すと消える |
 | 画面の表示の条件（表示の単位、日付、絞り込みの職員） | URL の search params | web の route。zod で検証し、既定の値は URL に書かない |
@@ -45,7 +45,7 @@ status: stable
 - web の機能のコードは `src/features/<機能>/` に置き、中を `components/`、`lib/`、`schema/`、`constants/`、`queries.ts` に分ける。
   - 画面のコンポーネントは、表示だけを持つ Presentational（`<名前>.tsx`）と、query と router を読んで渡す Container（`<名前>Container.tsx`）を同じディレクトリに並べる。route のファイルは Container を呼ぶ。
   - テストと story は対象の隣に置く（コロケーション）。
-- web の API の呼び出しは `src/api/` に置く。生成した型は `generated/`、実装は `fake/`、`http/`、`bff/` に分け、`VITE_API_MODE` で切り替える。サーバーだけで動く処理は `src/server/` に置く。
+- web の API の呼び出しは `src/api/` に置く。生成した型は `generated/` に置く。`VITE_API_MODE` で、ブラウザのメモリで動く偽物（`fake/`）と、BFF の server function を呼ぶ実装（`bff/`）を切り替える。`http/` は、サーバーから API を呼ぶ実装で、`src/server/` から使う。サーバーだけで動く処理は `src/server/` に置く。
 - `packages/ui` へ移すのは、業務の名前を持たず、2 つ以上の画面で同じ形で使うコンポーネントだけにする。移すときは Base か Case かを [DESIGN.md](../packages/ui/DESIGN.md) の基準で決める。
 - schedule-api のハンドラは `internal/presentation/http/handler` に、生成したインターフェイスのメソッドとして書く。クエリは `db/queries`、マイグレーションは `db/migrations`、シードは `db/seed` に置く。
 - receipt-api に照合の段を足すときは、段ごとに `internal/` の下にパッケージを作り、`check` でつなぐ。
