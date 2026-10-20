@@ -44,6 +44,8 @@ var _ openapi.StrictServerInterface = server{}
 func NewRouter(u Usecases, cfg RouterConfig) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
+	// 生成した strict handler は *gin.Context を context として usecase に渡すので、要求の取り消しと値を要求の context から引かせる
+	r.ContextWithFallback = true
 	r.Use(requestLog(cfg.Logger), gin.CustomRecovery(func(c *gin.Context, recovered any) {
 		cfg.Logger.ErrorContext(c.Request.Context(), "panic", slog.Any("recovered", recovered), slog.String("path", c.FullPath()))
 		c.AbortWithStatusJSON(http.StatusInternalServerError, errorResponse{Code: "internal", Message: "サーバーでエラーが発生しました"})
