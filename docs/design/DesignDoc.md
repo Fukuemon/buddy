@@ -83,14 +83,14 @@ flowchart TB
 - access token の検証、職員の特定、事業所の確認、ポリシーによる認可を行う。
 - 繰り返しの予定を、求められた期間の予定に展開して返す。
 - 持たないもの: 照合の規則。
-- 内部の構成と ER は [予定の管理の Design Doc](features/schedule/DesignDoc.md) にある。
+- 内部の構成と ER は [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/apps/schedule-api/DesignDoc.md) にある。
 
 ### receipt-api
 
 - 予定と実績の CSV を正規化し、対にし、判定して、4 つの区分の結果を返す。
 - 予定は、予定の CSV か Google カレンダーから取る。
 - 持たないもの: 予定と職員のデータ。DB。
-- 規則は [レセプトの照合の Design Doc](features/receipt-check/DesignDoc.md) にある。
+- 規則は [レセプトの照合の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/DesignDoc.md) にある。
 
 ## Interfaces
 
@@ -170,13 +170,15 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 ├── apps/
 │   ├── web/             # TanStack Start、React、Vite+
 │   ├── schedule-api/    # Go、gin、sqlc、golang-migrate
+│   │   ├── DesignDoc.md # 予定の管理の Design Doc
 │   │   └── migrations/
 │   └── receipt-api/     # Go
+│       └── DesignDoc.md # レセプトの照合の Design Doc
 ├── docs/                # Zensical のサイトの元。PRD、Design Doc、ADR
 │   ├── PRD.md
 │   ├── design/
 │   │   ├── DesignDoc.md
-│   │   └── features/    # コードがまだない機能の Design Doc
+│   │   └── apps/        # apps/ の Design Doc へのシンボリックリンク
 │   └── adr/
 ├── context/             # 作業の中で参照する規約と事実
 ├── compose.yml          # 手元で全部を動かす

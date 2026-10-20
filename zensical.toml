@@ -4,6 +4,12 @@ site_name = "buddy"
 site_description = "予定の管理とレセプトの照合の設計書"
 docs_dir = "docs"
 site_dir = "site"
+# docs/design/ のシンボリックリンクの先を、プレビューでたどって再読み込みする
+watch = [
+  "apps/schedule-api/DesignDoc.md",
+  "apps/receipt-api/DesignDoc.md",
+  "packages/ui/DESIGN.md",
+]
 # ADR、画面仕様書、ワイヤーフレームの雛形は文書ではないので、サイトに載せない
 exclude_docs = """
 adr/template.md
@@ -17,8 +23,8 @@ nav = [
   { "PRD" = "PRD.md" },
   { "Design Doc" = [
     { "全体" = "design/DesignDoc.md" },
-    { "予定の管理" = "design/features/schedule/DesignDoc.md" },
-    { "レセプトの照合" = "design/features/receipt-check/DesignDoc.md" },
+    { "予定の管理" = "design/apps/schedule-api.md" },
+    { "レセプトの照合" = "design/apps/receipt-api.md" },
   ] },
   { "デザインシステム" = "design/packages/ui.md" },
   { "画面仕様書" = [
