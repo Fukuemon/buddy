@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/check"
+	"github.com/Fukuemon/buddy/apps/receipt-api/internal/httpapi/openapi"
 )
 
 func newHandler() http.Handler {
@@ -104,13 +105,13 @@ func TestChecksErrors(t *testing.T) {
 		name       string
 		files      map[string][]byte
 		wantStatus int
-		wantCode   string
+		wantCode   openapi.ErrorCode
 		wantRows   int
 	}{
-		{"schedules がない", map[string][]byte{FieldVisits: testdata(t, "visits_utf8.csv")}, http.StatusBadRequest, CodeMissingFile, 0},
-		{"visits がない", map[string][]byte{FieldSchedules: testdata(t, "schedules_utf8.csv")}, http.StatusBadRequest, CodeMissingFile, 0},
-		{"列が足りない", map[string][]byte{FieldVisits: []byte("訪問日\n2024/04/01\n"), FieldSchedules: testdata(t, "schedules_utf8.csv")}, http.StatusUnprocessableEntity, CodeInvalidCSV, 0},
-		{"行の誤り", map[string][]byte{FieldVisits: badVisits, FieldSchedules: testdata(t, "schedules_utf8.csv")}, http.StatusUnprocessableEntity, CodeInvalidCSV, 1},
+		{"schedules がない", map[string][]byte{FieldVisits: testdata(t, "visits_utf8.csv")}, http.StatusBadRequest, openapi.MissingFile, 0},
+		{"visits がない", map[string][]byte{FieldSchedules: testdata(t, "schedules_utf8.csv")}, http.StatusBadRequest, openapi.MissingFile, 0},
+		{"列が足りない", map[string][]byte{FieldVisits: []byte("訪問日\n2024/04/01\n"), FieldSchedules: testdata(t, "schedules_utf8.csv")}, http.StatusUnprocessableEntity, openapi.InvalidCsv, 0},
+		{"行の誤り", map[string][]byte{FieldVisits: badVisits, FieldSchedules: testdata(t, "schedules_utf8.csv")}, http.StatusUnprocessableEntity, openapi.InvalidCsv, 1},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -118,15 +119,19 @@ func TestChecksErrors(t *testing.T) {
 			if rec.Code != tt.wantStatus {
 				t.Fatalf("status %d body %s", rec.Code, rec.Body)
 			}
-			var body ErrorResponse
+			var body openapi.Error
 			if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 				t.Fatal(err)
 			}
-			if body.Code != tt.wantCode || body.Message == "" || len(body.Errors) != tt.wantRows {
+			var rows []openapi.RowError
+			if body.Errors != nil {
+				rows = *body.Errors
+			}
+			if body.Code != tt.wantCode || body.Message == "" || len(rows) != tt.wantRows {
 				t.Errorf("body = %+v", body)
 			}
-			if tt.wantRows > 0 && (body.Errors[0].Line != 2 || body.Errors[0].Column != "終了時間") {
-				t.Errorf("行の誤り = %+v", body.Errors[0])
+			if tt.wantRows > 0 && (rows[0].Line != 2 || rows[0].Column == nil || *rows[0].Column != "終了時間") {
+				t.Errorf("行の誤り = %+v", rows[0])
 			}
 		})
 	}
@@ -137,7 +142,7 @@ func TestChecksNotMultipart(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	newHandler().ServeHTTP(rec, req)
-	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), CodeBadRequest) {
+	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), string(openapi.BadRequest)) {
 		t.Errorf("status %d body %s", rec.Code, rec.Body)
 	}
 }
@@ -145,7 +150,7 @@ func TestChecksNotMultipart(t *testing.T) {
 func TestChecksTooLarge(t *testing.T) {
 	h := NewHandler(slog.New(slog.NewTextHandler(io.Discard, nil)), Config{MaxUploadBytes: 100})
 	rec := post(t, h, validFiles(t), "")
-	if rec.Code != http.StatusRequestEntityTooLarge || !strings.Contains(rec.Body.String(), CodePayloadTooLarge) {
+	if rec.Code != http.StatusRequestEntityTooLarge || !strings.Contains(rec.Body.String(), string(openapi.PayloadTooLarge)) {
 		t.Errorf("status %d body %s", rec.Code, rec.Body)
 	}
 }
@@ -153,7 +158,7 @@ func TestChecksTooLarge(t *testing.T) {
 func TestNotFound(t *testing.T) {
 	rec := httptest.NewRecorder()
 	newHandler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/nowhere", nil))
-	if rec.Code != http.StatusNotFound || !strings.Contains(rec.Body.String(), CodeNotFound) {
+	if rec.Code != http.StatusNotFound || !strings.Contains(rec.Body.String(), string(openapi.NotFound)) {
 		t.Errorf("status %d body %s", rec.Code, rec.Body)
 	}
 }

@@ -1,31 +1,21 @@
 // Package httpapi は、照合の HTTP の API を提供する。
+// エンドポイントと応答の形は openapi.yaml が正本で、server は生成した openapi.StrictServerInterface を実装する。
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
 	"log/slog"
+	"mime/multipart"
 	"net/http"
 	"time"
 
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/check"
+	"github.com/Fukuemon/buddy/apps/receipt-api/internal/httpapi/openapi"
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/record"
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/source"
-)
-
-// エラーの応答の code の値。
-const (
-	CodeBadRequest      = "bad_request"
-	CodeMissingFile     = "missing_file"
-	CodePayloadTooLarge = "payload_too_large"
-	CodeInvalidCSV      = "invalid_csv"
-	CodeNotFound        = "not_found"
-	CodeInternal        = "internal"
-	// CodeCalendarNotConfigured は、対象の月で呼ばれたが、サーバーに Google カレンダーの設定がないことを表す。
-	CodeCalendarNotConfigured = "calendar_not_configured"
-	// CodeScheduleSourceFailed は、予定の取得元（Google カレンダー）から予定を取れないことを表す。
-	CodeScheduleSourceFailed = "schedule_source_failed"
 )
 
 // 照合の入力を受ける multipart のフィールド名。
@@ -36,17 +26,9 @@ const (
 	FieldMonth = "month"
 )
 
-// ErrorResponse は、エラーの応答の本文である。
-type ErrorResponse struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-	// Errors は、入力の CSV の行ごとの誤りである。CodeInvalidCSV のときだけ持つ。
-	Errors []record.RowError `json:"errors,omitempty"`
-}
-
 // Config は、Handler の設定である。
 type Config struct {
-	// MaxUploadBytes は、POST /v1/checks の本文の上限のバイト数である。
+	// MaxUploadBytes は、要求の本文の上限のバイト数である。
 	MaxUploadBytes int64
 	// Sources は、要求から予定の取得元を選ぶ。ゼロ値は予定の CSV だけを受ける。
 	Sources source.Selector
@@ -57,128 +39,141 @@ type server struct {
 	cfg    Config
 }
 
-// NewHandler は、次のエンドポイントを持つ http.Handler を返す。
-//
-//   - GET /health: {"status":"ok"} を返す。
-//   - POST /v1/checks: multipart の visits（実績の CSV）と予定を照合する。
-//     予定の取得元は、schedules（予定の CSV）か month（対象の月）から Config.Sources が選ぶ。
-//     結果は Accept によらず check.Report の JSON で返す。
-//
-// エラーは ErrorResponse の JSON で返す。
+var _ openapi.StrictServerInterface = (*server)(nil)
+
+// NewHandler は、openapi.yaml の GET /health と POST /v1/checks を持つ http.Handler を返す。
+// 定義にないパスとメソッドには、404 の openapi.Error を返す。
 func NewHandler(logger *slog.Logger, cfg Config) http.Handler {
 	s := &server{logger: logger, cfg: cfg}
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /health", s.health)
-	mux.HandleFunc("POST /v1/checks", s.checks)
 	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
-		s.writeJSON(w, http.StatusNotFound, ErrorResponse{Code: CodeNotFound, Message: "該当する API がない"})
+		s.writeJSON(w, http.StatusNotFound, errorBody(openapi.NotFound, "該当する API がない"))
+	})
+	strict := openapi.NewStrictHandlerWithOptions(s, nil, openapi.StrictHTTPServerOptions{
+		RequestErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, _ error) {
+			s.writeJSON(w, http.StatusBadRequest, errorBody(openapi.BadRequest, "multipart/form-data の本文を読めない"))
+		},
+		ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+			s.logger.ErrorContext(r.Context(), "応答を書けない", "error", err)
+			s.writeJSON(w, http.StatusInternalServerError, errorBody(openapi.Internal, "照合に失敗した"))
+		},
+	})
+	openapi.HandlerWithOptions(strict, openapi.StdHTTPServerOptions{
+		BaseRouter:  mux,
+		Middlewares: []openapi.MiddlewareFunc{s.limitBody},
 	})
 	return s.logRequests(mux)
 }
 
-func (s *server) health(w http.ResponseWriter, _ *http.Request) {
-	s.writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+// GetHealth は、{"status":"ok"} を返す。
+func (s *server) GetHealth(_ context.Context, _ openapi.GetHealthRequestObject) (openapi.GetHealthResponseObject, error) {
+	return openapi.GetHealth200JSONResponse{Status: openapi.Ok}, nil
 }
 
-func (s *server) checks(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, s.cfg.MaxUploadBytes)
-	if err := r.ParseMultipartForm(s.cfg.MaxUploadBytes); err != nil {
-		if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
-			s.writeJSON(w, http.StatusRequestEntityTooLarge, ErrorResponse{
-				Code: CodePayloadTooLarge, Message: "本文が上限を超えている",
-			})
-			return
-		}
-		s.writeJSON(w, http.StatusBadRequest, ErrorResponse{
-			Code: CodeBadRequest, Message: "multipart/form-data の本文を読めない",
-		})
-		return
-	}
-	defer func() { _ = r.MultipartForm.RemoveAll() }()
-
-	visits, ok := s.readFile(w, r, FieldVisits)
-	if !ok {
-		return
-	}
-	req := source.Request{}
-	if _, has := r.MultipartForm.File[FieldSchedules]; has {
-		req.HasSchedules = true
-		if req.Schedules, ok = s.readFile(w, r, FieldSchedules); !ok {
-			return
-		}
-	}
-	if v := r.MultipartForm.Value[FieldMonth]; len(v) > 0 {
-		req.Month = v[0]
-	}
-	src, err := s.cfg.Sources.Select(req)
+// CreateCheck は、multipart の visits（実績の CSV）と予定を照合する。
+// 予定の取得元は、schedules（予定の CSV）か month（対象の月）から Config.Sources が選ぶ。
+func (s *server) CreateCheck(ctx context.Context, req openapi.CreateCheckRequestObject) (openapi.CreateCheckResponseObject, error) {
+	f, err := readForm(req.Body)
 	if err != nil {
-		s.writeSelectError(w, r, err)
-		return
+		if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
+			return openapi.CreateCheck413JSONResponse(errorBody(openapi.PayloadTooLarge, "本文が上限を超えている")), nil
+		}
+		return openapi.CreateCheck400JSONResponse(errorBody(openapi.BadRequest, "multipart/form-data の本文を読めない")), nil
 	}
 
-	rep, err := check.Run(r.Context(), visits, src)
+	visits, ok := f.files[FieldVisits]
+	if !ok {
+		return openapi.CreateCheck400JSONResponse(errorBody(openapi.MissingFile, "ファイルのフィールド "+FieldVisits+" がない")), nil
+	}
+	sreq := source.Request{Month: f.values[FieldMonth]}
+	sreq.Schedules, sreq.HasSchedules = f.files[FieldSchedules]
+	src, err := s.cfg.Sources.Select(sreq)
+	if err != nil {
+		return s.selectError(ctx, err), nil
+	}
+
+	rep, err := check.Run(ctx, visits, src)
 	if err != nil {
 		if ie, ok := errors.AsType[*record.InputError](err); ok {
-			s.writeJSON(w, http.StatusUnprocessableEntity, ErrorResponse{
-				Code: CodeInvalidCSV, Message: ie.Message, Errors: ie.Rows,
-			})
-			return
+			body := errorBody(openapi.InvalidCsv, ie.Message)
+			if len(ie.Rows) > 0 {
+				rows := rowErrors(ie.Rows)
+				body.Errors = &rows
+			}
+			return openapi.CreateCheck422JSONResponse(body), nil
 		}
 		if _, ok := errors.AsType[*check.SourceError](err); ok {
-			s.logger.ErrorContext(r.Context(), "予定を取れない", "error", err)
-			s.writeJSON(w, http.StatusBadGateway, ErrorResponse{
-				Code: CodeScheduleSourceFailed, Message: "Google カレンダーから予定を取れない",
-			})
-			return
+			s.logger.ErrorContext(ctx, "予定を取れない", "error", err)
+			return openapi.CreateCheck502JSONResponse(errorBody(openapi.ScheduleSourceFailed, "Google カレンダーから予定を取れない")), nil
 		}
-		s.logger.ErrorContext(r.Context(), "照合に失敗した", "error", err)
-		s.writeJSON(w, http.StatusInternalServerError, ErrorResponse{Code: CodeInternal, Message: "照合に失敗した"})
-		return
+		s.logger.ErrorContext(ctx, "照合に失敗した", "error", err)
+		return openapi.CreateCheck500JSONResponse(errorBody(openapi.Internal, "照合に失敗した")), nil
 	}
-
-	s.writeJSON(w, http.StatusOK, rep)
+	return openapi.CreateCheck200JSONResponse(report(rep)), nil
 }
 
-func (s *server) writeSelectError(w http.ResponseWriter, r *http.Request, err error) {
+func (s *server) selectError(ctx context.Context, err error) openapi.CreateCheckResponseObject {
 	_, invalidMonth := errors.AsType[*source.InvalidMonthError](err)
 	switch {
 	case errors.Is(err, source.ErrNoSchedules):
-		s.writeJSON(w, http.StatusBadRequest, ErrorResponse{
-			Code: CodeMissingFile, Message: "ファイルのフィールド " + FieldSchedules + " か、フォームの値 " + FieldMonth + " がない",
-		})
+		return openapi.CreateCheck400JSONResponse(errorBody(openapi.MissingFile,
+			"ファイルのフィールド "+FieldSchedules+" か、フォームの値 "+FieldMonth+" がない"))
 	case errors.Is(err, source.ErrCalendarNotConfigured):
-		s.writeJSON(w, http.StatusServiceUnavailable, ErrorResponse{
-			Code: CodeCalendarNotConfigured, Message: "サーバーに Google カレンダーの設定がないので、" + FieldMonth + " では照合できない",
-		})
+		return openapi.CreateCheck503JSONResponse(errorBody(openapi.CalendarNotConfigured,
+			"サーバーに Google カレンダーの設定がないので、"+FieldMonth+" では照合できない"))
 	case invalidMonth:
-		s.writeJSON(w, http.StatusBadRequest, ErrorResponse{Code: CodeBadRequest, Message: err.Error()})
+		return openapi.CreateCheck400JSONResponse(errorBody(openapi.BadRequest, err.Error()))
 	default:
-		s.logger.ErrorContext(r.Context(), "予定の取得元を選べない", "error", err)
-		s.writeJSON(w, http.StatusInternalServerError, ErrorResponse{Code: CodeInternal, Message: "照合に失敗した"})
+		s.logger.ErrorContext(ctx, "予定の取得元を選べない", "error", err)
+		return openapi.CreateCheck500JSONResponse(errorBody(openapi.Internal, "照合に失敗した"))
 	}
 }
 
-func (s *server) readFile(w http.ResponseWriter, r *http.Request, field string) ([]byte, bool) {
-	f, _, err := r.FormFile(field)
-	if err != nil {
-		s.writeJSON(w, http.StatusBadRequest, ErrorResponse{
-			Code: CodeMissingFile, Message: "ファイルのフィールド " + field + " がない",
-		})
-		return nil, false
+// form は、multipart の本文のファイルと値である。同じ名前が 2 回以上あれば、最初のものを持つ。
+type form struct {
+	files  map[string][]byte
+	values map[string]string
+}
+
+// readForm は、mr の全てのパートを読む。ファイル名を持つパートをファイル、持たないパートを値とする。
+func readForm(mr *multipart.Reader) (form, error) {
+	f := form{files: map[string][]byte{}, values: map[string]string{}}
+	for {
+		p, err := mr.NextPart()
+		if errors.Is(err, io.EOF) {
+			return f, nil
+		}
+		if err != nil {
+			return form{}, err
+		}
+		data, err := io.ReadAll(p)
+		if err != nil {
+			return form{}, err
+		}
+		name := p.FormName()
+		if p.FileName() != "" {
+			if _, dup := f.files[name]; !dup {
+				f.files[name] = data
+			}
+		} else if _, dup := f.values[name]; !dup {
+			f.values[name] = string(data)
+		}
 	}
-	defer func() { _ = f.Close() }()
-	data, err := io.ReadAll(f)
-	if err != nil {
-		s.writeJSON(w, http.StatusBadRequest, ErrorResponse{
-			Code: CodeBadRequest, Message: "ファイルのフィールド " + field + " を読めない",
-		})
-		return nil, false
-	}
-	return data, true
+}
+
+func errorBody(code openapi.ErrorCode, message string) openapi.Error {
+	return openapi.Error{Code: code, Message: message}
+}
+
+func (s *server) limitBody(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.Body = http.MaxBytesReader(w, r.Body, s.cfg.MaxUploadBytes)
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (s *server) writeJSON(w http.ResponseWriter, status int, body any) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(body); err != nil {
 		s.logger.Error("応答を書けない", "error", err)

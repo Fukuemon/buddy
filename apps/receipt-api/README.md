@@ -21,6 +21,19 @@ go vet ./...
 golangci-lint run
 ```
 
+## コードの生成
+
+API の定義の正本は [openapi.yaml](openapi.yaml) である。oapi-codegen が、そこから net/http の strict server のインターフェイスと型を `internal/httpapi/openapi/openapi.gen.go` に生成し、`internal/httpapi` がそのインターフェイスを実装する。  
+oapi-codegen は `go.mod` の `tool` で版を固定し、`go tool` で動かす。設定は [oapi-codegen.yaml](oapi-codegen.yaml) にある。
+
+openapi.yaml を変えたら、`apps/receipt-api` で生成し直し、生成物も一緒にコミットする。
+
+```sh
+go generate ./...
+```
+
+画面の型も同じ openapi.yaml から生成する。両方の API と画面の生成物がそろっているかは、リポジトリのルートの `pnpm check:generated` で確かめる（[CONTRIBUTING.md](../../CONTRIBUTING.md)）。
+
 ## 起動
 
 ```sh
@@ -44,6 +57,8 @@ docker run --rm -p 8080:8080 receipt-api
 ```
 
 ## API
+
+要求と応答の項目の定義は [openapi.yaml](openapi.yaml) にある。
 
 - `GET /health`: `{"status":"ok"}` を返す
 - `POST /v1/checks`: multipart/form-data の `visits`（実訪問の CSV）と予定を照合する
