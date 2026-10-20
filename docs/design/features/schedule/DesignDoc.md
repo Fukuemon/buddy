@@ -9,7 +9,7 @@ status: draft
 
 ## Overview
 
-schedule-api は、事業所ごとの予定、職員、利用者、権限を持ち、web と receipt-api に API で渡す。  
+schedule-api は、事業所ごとの予定、職員、利用者、権限を持ち、web に API で渡す。  
 全体の中での責務と依存は [buddy Design Doc](../../DesignDoc.md) にある。
 
 ## Scope
@@ -195,7 +195,7 @@ erDiagram
 ```
 
 - `departments`、`teams`、`positions` は事業所ごとに持つ。名前が同じ部署でも、事業所が違えば別の行にする。事業所の間で部署を共有すると、事業所が部署の名前を変えたときにほかの事業所に波及するためである。
-- `users.name` は、電子カルテの職員名と同じ表記で登録する。receipt-api は、この名前を実績の主訪問者と比べる。
+- `users.name` は、電子カルテの職員名と同じ表記で登録する。
 - `user_policy_targets` は、`target_user_id` と `target_team_id` のどちらか 1 つだけを持つ。
 - 訪問のカテゴリは、訪問 1 件に 1 つだけ付ける。
 - `policies` の 7 行と `schedule_types` の 2 行は、マイグレーションで入れる。事業所ごとには持たない。
@@ -271,16 +271,15 @@ sequenceDiagram
   - `monthly` で `week_of_month` と `day_of_week` がある: 毎月の第 n 週のその曜日
 - `start_date` より前、`end_date` より後、`exclusion_dates` にある日は展開しない。
 - 繰り返しの 1 回だけを変えるときは、その日を `exclusion_dates` に足し、`recurring_schedule_id` で元を指す単発の予定を作る。
-- 展開を schedule-api に置くのは、web と receipt-api が同じ規則で予定を読むためである。
+- 展開を schedule-api に置くのは、予定を読む全ての画面が同じ規則で予定を読むためである。
 
 ### キャンセル
 
 - 予定をキャンセルすると、`schedule_cancels` に理由とともに 1 行を足す。予定の行は消さない。
-- キャンセルした予定は、カレンダーにはキャンセルの印つきで出し、照合の予定には含めない。
+- キャンセルした予定は、カレンダーにキャンセルの印つきで出す。
 
 ## Interface
 
 - API のパスは `/v1/facilities/{facility_id}/...` の形にする。主な資源は `schedules`、`recurring-schedules`、`users`、`patients`、`users/{user_id}/policies`。
 - 一覧の並べ替えは、許可した列の名前だけを受け、それ以外は 400 を返す。
-- 照合のために、訪問の予定を期間と職員で絞って返す `GET /v1/facilities/{facility_id}/visits?from=&to=&user_id=` を持つ。キャンセルした予定を含めず、繰り返しの予定を展開して返す。
 - 環境変数、ヘルスチェック、マイグレーションのコマンドは [buddy Design Doc の Interfaces](../../DesignDoc.md#interfaces) にある。

@@ -20,7 +20,7 @@ buddy は、訪問看護の事業所の職員が使う、予定の管理とレ�
 - 1 つのモノレポに、web、schedule-api、receipt-api を置き、`compose.yml` で全部を手元で動かせる。
 - 認証は OIDC のブローカーに任せ、web だけがトークンをサーバー側で持つ。
 - 全ての API が、リクエストの事業所とトークンの組織を比べ、ほかの事業所のデータを返さない。
-- receipt-api は、照合の予定を schedule-api から取る。
+- receipt-api は、照合の予定を予定の CSV か Google カレンダーから取る。
 
 ### Non-Goals
 
@@ -35,6 +35,7 @@ buddy は、訪問看護の事業所の職員が使う、予定の管理とレ�
 - 1 つの事業所の職員は 100 人前後で、同時に使う職員は事業所あたり数十人である。
 - 日付と時刻は日本の時間（Asia/Tokyo）だけを扱う。
 - 電子カルテ（iBow）とは API でつながず、職員が書き出した CSV を受ける。
+- 職員は訪問の予定を Google カレンダーに入れている。
 
 ## Architecture
 
@@ -51,20 +52,21 @@ flowchart TB
   schedule["schedule-api<br/>Go。予定、職員、利用者、権限"]
   receipt["receipt-api<br/>Go。照合"]
   mysql[("MySQL 8<br/>schedule-api のデータ")]
+  gcal["Google Calendar API<br/>職員が入れた予定"]
 
   browser -- "HTTPS。cookie のセッション ID" --> web
   web -- "認可コードフロー" --> broker
   web -- "セッションを読み書きする" --> valkey
   web -- "Bearer の access token" --> schedule
   web -- "Bearer の access token。CSV" --> receipt
-  receipt -- "職員の access token で予定を取る" --> schedule
+  receipt -- "サービスアカウントで予定を取る" --> gcal
   schedule -- "SQL" --> mysql
   schedule -. "JWKS を取る" .-> broker
   receipt -. "JWKS を取る" .-> broker
 ```
 
 - web だけがブラウザと話し、API はブラウザから直接は呼ばれない。
-- receipt-api は、受けたリクエストの access token をそのまま schedule-api に渡す。schedule-api は、職員本人が予定を読む場合と同じ権限で応答する。
+- receipt-api は、サービスアカウントに閲覧の権限で共有された職員のカレンダーだけを読む。
 - receipt-api は DB を持たない。上げた CSV と照合の結果を保存しない。
 
 ## Components
@@ -86,7 +88,7 @@ flowchart TB
 ### receipt-api
 
 - 予定と実績の CSV を正規化し、対にし、判定して、4 つの区分の結果を返す。
-- 予定は schedule-api から取る。予定の CSV も受ける。
+- 予定は、予定の CSV か Google カレンダーから取る。
 - 持たないもの: 予定と職員のデータ。DB。
 - 規則は [レセプトの照合の Design Doc](features/receipt-check/DesignDoc.md) にある。
 
@@ -112,7 +114,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 | `OIDC_CLIENT_SECRET` | 使う | 使わない | 使わない | web のクライアントの秘密の値 |
 | `SESSION_STORE_URL` | 使う | 使わない | 使わない | Valkey の接続先 |
 | `SESSION_SECRET` | 使う | 使わない | 使わない | cookie の署名の鍵 |
-| `SCHEDULE_API_URL` | 使う | 使わない | 使う | schedule-api の URL |
+| `SCHEDULE_API_URL` | 使う | 使わない | 使わない | schedule-api の URL |
 | `RECEIPT_API_URL` | 使う | 使わない | 使わない | receipt-api の URL |
 | `DATABASE_URL` | 使わない | 使う | 使わない | MySQL の接続先 |
 
@@ -123,6 +125,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 - `GET /healthz`: プロセスが応答できれば 200 を返す。依存先を確かめない。
 - `GET /readyz`: 依存先に届けば 200、届かなければ 503 を返す。schedule-api は MySQL、web は Valkey を確かめる。
 - 2 つとも認証を求めない。
+- receipt-api は、今は `GET /health` だけを持つ。`/healthz` と `/readyz` に合わせる作業は残っている。
 
 ### マイグレーション
 
