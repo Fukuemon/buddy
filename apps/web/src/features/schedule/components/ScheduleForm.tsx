@@ -119,7 +119,12 @@ export const ScheduleForm = ({ id, form, staffList, patients, onSubmit }: Schedu
       <ScheduleFieldSummaryList activeId={visibleField} items={items} onSelect={setActiveField} />
       <div>
         {visibleField === 'title' && (
-          <TextareaField control={control} label="タイトル" name="title" />
+          <TextareaField
+            control={control}
+            data-testid="schedule-form-title"
+            label="タイトル"
+            name="title"
+          />
         )}
         {visibleField === 'dateTime' && <ScheduleDateTimeEdit form={form} />}
         {visibleField === 'patient' && (
@@ -158,7 +163,12 @@ export const ScheduleForm = ({ id, form, staffList, patients, onSubmit }: Schedu
           />
         )}
         {visibleField === 'description' && (
-          <TextareaField control={control} label="メモ" name="description" />
+          <TextareaField
+            control={control}
+            data-testid="schedule-form-description"
+            label="メモ"
+            name="description"
+          />
         )}
       </div>
     </form>

@@ -67,7 +67,7 @@ API の列は、`createSchedule`（`POST /v1/facilities/{facility_id}/schedules`
 | 2 | モーダルの背景 | 暗くぼかした背景 | なし | なし | `modal-overlay` |
 | 3 | `ScheduleFieldSummaryList` の項目 | 項目の名前、今の値の要約、誤りの文 | なし | なし | `schedule-field-{title、dateTime、patient、staff、category、description}` |
 | 4 | 右の入力 | 要約の一覧で選んだ項目の入力 | なし | なし | なし |
-| 4-1 | タイトルの `TextareaField` | 入力したタイトル | `title` | `title` | なし（`id="title"`） |
+| 4-1 | タイトルの `TextareaField` | 入力したタイトル | `title` | `title` | `schedule-form-title` |
 | 4-2 | 日付の `DatePicker` | 「日付」か「訪問日」 | `startsAt` の日付 | `date` | `schedule-form-date` |
 | 4-3 | 開始時間の `TimePicker` | 開始時間 | `startsAt` の時刻 | `start_time` | `schedule-form-start-time` |
 | 4-4 | 終了時間の `TimePicker`（通常） | 終了時間 | `endsAt` の時刻 | `end_time` | `schedule-form-end-time` |
@@ -77,7 +77,7 @@ API の列は、`createSchedule`（`POST /v1/facilities/{facility_id}/schedules`
 | 4-8 | `PatientSelectList`（訪問） | 名前で絞れる利用者の一覧 | `visit.patientId` | `visit_info.patient_id` | `patient-select-search`、`patient-select-option-{利用者の id}` |
 | 4-9 | `StaffSelectList` | 名前で絞れる職員の一覧 | `staffId` | `staff_id`、`visit_info.assigned_staff_id` | `staff-select-search`、`staff-select-option-{職員の id}` |
 | 4-10 | `ScheduleCategoryCheckboxGroup`（訪問） | 夜勤、緊急、入院 | `visit.categories` | `visit_info.visit_category_ids` | `schedule-category-{night、emergency、hospitalization}` |
-| 4-11 | メモの `TextareaField` | 入力したメモ | `description` | `description` | なし（`id="description"`） |
+| 4-11 | メモの `TextareaField` | 入力したメモ | `description` | `description` | `schedule-form-description` |
 | 4-12 | 「該当する名前がありません。」 | 利用者と職員の選択肢が 0 件のときの文 | なし | なし | なし |
 
 - 訪問の予定のタイトルは、画面で入力せず「訪問」を送る。

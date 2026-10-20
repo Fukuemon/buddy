@@ -9,6 +9,8 @@ export type TextareaFieldProps<T extends FieldValues> = {
   name: FieldPath<T>
   label: string
   placeholder?: string
+  /** textarea に付ける data-testid。 */
+  'data-testid'?: string
 }
 
 /** 見出しつきの複数行の入力。React Hook Form のフィールドに結び付ける。 */
@@ -17,6 +19,7 @@ export const TextareaField = <T extends FieldValues>({
   name,
   label,
   placeholder = label,
+  'data-testid': testId,
 }: TextareaFieldProps<T>) => {
   const { field, fieldState } = useController({ control, name })
   const error = fieldState.error?.message
@@ -35,6 +38,7 @@ export const TextareaField = <T extends FieldValues>({
           'min-h-40 rounded-8 p-3 text-body ring-1 ring-border-field ring-inset outline-none focus-visible:focus-ring',
           error !== undefined && 'ring-2 ring-danger',
         )}
+        data-testid={testId}
         id={inputId}
         placeholder={placeholder}
         value={(field.value as string | undefined) ?? ''}
