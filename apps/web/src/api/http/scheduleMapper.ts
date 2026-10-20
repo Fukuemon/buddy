@@ -36,8 +36,11 @@ const CATEGORY_TO_API: Record<ScheduleCategory, string> = {
 const OFFSET = '+09:00'
 const OFFSET_MS = 9 * 60 * 60 * 1000
 
+/** 全角と半角の数字の表記の違いを吸収して比べる。古いシードは全角（訪看I２）で入っている。 */
+const sameServiceCode = (a: string, b: string) => a.normalize('NFKC') === b.normalize('NFKC')
+
 const toServiceCode = (code: string): ServiceCode => {
-  const found = SERVICE_CODES.find((c) => c === code)
+  const found = SERVICE_CODES.find((c) => sameServiceCode(c, code))
   if (found === undefined) throw new Error(`画面が知らないサービスコード ${code} を受けた`)
   return found
 }
@@ -131,7 +134,7 @@ export const toSlotRequest = (input: ScheduleInput, masters: ScheduleMasters): A
             companion_id: null,
             service_code_id: idOf(
               masters.serviceCodes,
-              (c) => c.code === visit.serviceCode,
+              (c) => sameServiceCode(c.code, visit.serviceCode),
               `サービスコード ${visit.serviceCode}`,
             ),
             visit_category_ids: visit.categories.map((category) =>

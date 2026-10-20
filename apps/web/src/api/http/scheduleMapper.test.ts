@@ -86,6 +86,25 @@ describe('fromApiSchedule', () => {
     })
   })
 
+  it('全角の数字のサービスコードも画面の表記に読み替える', () => {
+    const visitInfo = {
+      id: 'visit-1',
+      patient_id: 'patient-1',
+      patient_name: '',
+      assigned_staff_id: 'staff-1',
+      assigned_staff_name: '',
+      companion_id: null,
+      companion_name: null,
+      service_code_id: 'code-i2',
+      service_code: '訪看I２',
+      visit_categories: [],
+    }
+    expect(
+      fromApiSchedule(apiSchedule({ schedule_type: '訪問', visit_info: visitInfo })).visit
+        ?.serviceCode,
+    ).toBe('訪看I2')
+  })
+
   it('画面が知らないサービスコードなら Error を投げる', () => {
     const visitInfo = {
       id: 'visit-1',
