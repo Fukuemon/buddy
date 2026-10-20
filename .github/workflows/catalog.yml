@@ -1,0 +1,73 @@
+# Storybook のカタログを Cloudflare に出す。手順と Access の設定は apps/catalog/README.md にある。
+# pull request ではプレビューを出して URL をコメントし、develop に入ったら本番に出す。
+
+name: Storybook のカタログ
+
+on:
+  pull_request:
+    paths:
+      - apps/web/**
+      - packages/ui/**
+      - apps/catalog/**
+      - pnpm-lock.yaml
+      - .github/workflows/catalog.yml
+  push:
+    branches: [develop]
+    paths:
+      - apps/web/**
+      - packages/ui/**
+      - apps/catalog/**
+      - pnpm-lock.yaml
+      - .github/workflows/catalog.yml
+
+concurrency:
+  group: catalog-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CF_SEND_TELEMETRY: 'false'
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm storybook:pages
+
+      - name: プレビューを出す
+        if: github.event_name == 'pull_request'
+        id: preview
+        working-directory: apps/catalog
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          pnpm run deploy:preview "pr-${{ github.event.pull_request.number }}" | tee preview.log
+          url=$(grep -oE 'https://[A-Za-z0-9.-]+\.workers\.dev' preview.log | head -1)
+          test -n "$url"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: プレビューの URL を pull request にコメントする
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment "${{ github.event.pull_request.number }}" --edit-last --create-if-none --body "Storybook のカタログのプレビュー: ${{ steps.preview.outputs.url }}
+          （Cloudflare Access で許可した人だけが開ける。コミット ${{ github.event.pull_request.head.sha }}）"
+
+      - name: 本番に出す
+        if: github.event_name == 'push'
+        working-directory: apps/catalog
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: pnpm run deploy:production
