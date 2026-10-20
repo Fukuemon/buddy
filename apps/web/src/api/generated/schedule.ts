@@ -581,6 +581,7 @@ export interface components {
         /**
          * @description weekly は day_of_week だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
          *     指定しない項目は、最初の日付の曜日や日から決める。
+         *     最初の日付が規則の回に当たらない組み合わせ（火曜の最初の日付に毎週の月曜など）は、入力の誤りにする。
          */
         RecurringRule: {
             /** @enum {string} */

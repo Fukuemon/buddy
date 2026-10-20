@@ -358,6 +358,7 @@ type PreferredTime string
 
 // RecurringRule weekly は day_of_week だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
 // 指定しない項目は、最初の日付の曜日や日から決める。
+// 最初の日付が規則の回に当たらない組み合わせ（火曜の最初の日付に毎週の月曜など）は、入力の誤りにする。
 type RecurringRule struct {
 	DayOfMonth *int `json:"day_of_month"`
 
@@ -394,6 +395,7 @@ type RecurringSchedule struct {
 
 	// RecurringRule weekly は day_of_week だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
 	// 指定しない項目は、最初の日付の曜日や日から決める。
+	// 最初の日付が規則の回に当たらない組み合わせ（火曜の最初の日付に毎週の月曜など）は、入力の誤りにする。
 	RecurringRule RecurringRule `json:"recurring_rule"`
 
 	// ScheduleType 通常の予定はタイトルを、訪問の予定は訪問の情報を必須とする
@@ -740,6 +742,7 @@ type CreateRecurringScheduleJSONBody struct {
 
 	// RecurringRule weekly は day_of_week だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
 	// 指定しない項目は、最初の日付の曜日や日から決める。
+	// 最初の日付が規則の回に当たらない組み合わせ（火曜の最初の日付に毎週の月曜など）は、入力の誤りにする。
 	RecurringRule RecurringRule `json:"recurring_rule"`
 
 	// ScheduleTypeId Example: 01M3TC5H00QV17BC0J9V3393ZP
