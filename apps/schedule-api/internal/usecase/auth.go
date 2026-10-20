@@ -8,14 +8,33 @@ import (
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/auth"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/organization"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/schedule"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/staff"
 )
 
 // AuthRepositories は、Auth が使うリポジトリである。
 type AuthRepositories struct {
-	Facilities organization.FacilityRepository
-	Staff      staff.Repository
+	Facilities  organization.FacilityRepository
+	Departments organization.DepartmentRepository
+	Teams       organization.TeamRepository
+	Positions   organization.PositionRepository
+	Staff       staff.Repository
+	Schedules   schedule.Repository
 }
+
+// Resource は、パスの ID が指すリソースの種類である。
+type Resource int
+
+// FacilityOf が事業所を求められるリソース。
+const (
+	ResourceFacility Resource = iota + 1
+	ResourceDepartment
+	ResourceTeam
+	ResourcePosition
+	ResourceStaff
+	ResourceSchedule
+	ResourceRecurringSchedule
+)
 
 // Auth は、検証したトークンから職員を特定する操作である。
 type Auth struct {
@@ -73,4 +92,33 @@ func (a *Auth) link(ctx context.Context, facilityID string, id auth.Identity) (s
 		return "", fmt.Errorf("%w: 登録された職員がいません", domain.ErrForbidden)
 	}
 	return staffID, err
+}
+
+// FacilityOf は、種類 r の ID が id のリソースが属する事業所の ID を返す。ResourceFacility なら id をそのまま返す。
+// リソースが見つからないときは domain.ErrNotFound を返す。
+func (a *Auth) FacilityOf(ctx context.Context, r Resource, id string) (string, error) {
+	switch r {
+	case ResourceFacility:
+		return id, nil
+	case ResourceDepartment:
+		d, err := a.repos.Departments.Get(ctx, id)
+		return d.FacilityID, err
+	case ResourceTeam:
+		t, err := a.repos.Teams.Get(ctx, id)
+		return t.FacilityID, err
+	case ResourcePosition:
+		p, err := a.repos.Positions.Get(ctx, id)
+		return p.FacilityID, err
+	case ResourceStaff:
+		s, err := a.repos.Staff.Get(ctx, id)
+		return s.FacilityID, err
+	case ResourceSchedule:
+		s, err := a.repos.Schedules.Get(ctx, id)
+		return s.FacilityID, err
+	case ResourceRecurringSchedule:
+		s, err := a.repos.Schedules.GetRecurring(ctx, id)
+		return s.FacilityID, err
+	default:
+		return "", fmt.Errorf("事業所を求められないリソースの種類 %d です", r)
+	}
 }

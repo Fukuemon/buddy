@@ -7,6 +7,8 @@ import (
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/auth"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/organization"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/schedule"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/usecase"
 )
 
@@ -27,7 +29,10 @@ func authStore() *store {
 }
 
 func newAuth(s *store) *usecase.Auth {
-	return usecase.NewAuth(usecase.AuthRepositories{Facilities: facilities{s}, Staff: staffRepo{s}})
+	return usecase.NewAuth(usecase.AuthRepositories{
+		Facilities: facilities{s}, Departments: departments{s}, Teams: teams{s}, Positions: positions{s},
+		Staff: staffRepo{s}, Schedules: schedules{s},
+	})
 }
 
 func TestAuthenticateLinksSubByVerifiedEmail(t *testing.T) {
@@ -98,5 +103,36 @@ func TestAuthenticateForbidden(t *testing.T) {
 				tt.check(t, s)
 			}
 		})
+	}
+}
+
+func TestFacilityOf(t *testing.T) {
+	s := authStore()
+	s.departments["DEP"] = organization.Department{ID: "DEP", FacilityID: otherFacilityID}
+	s.teams["TEAM"] = organization.Team{ID: "TEAM", FacilityID: facilityID}
+	s.positions["POS"] = organization.Position{ID: "POS", FacilityID: otherFacilityID}
+	s.schedules["SCH"] = schedule.Detail{Schedule: schedule.Schedule{ID: "SCH", Slot: schedule.Slot{FacilityID: otherFacilityID}}}
+	a := newAuth(s)
+	tests := []struct {
+		r    usecase.Resource
+		id   string
+		want string
+	}{
+		{r: usecase.ResourceFacility, id: otherFacilityID, want: otherFacilityID},
+		{r: usecase.ResourceDepartment, id: "DEP", want: otherFacilityID},
+		{r: usecase.ResourceTeam, id: "TEAM", want: facilityID},
+		{r: usecase.ResourcePosition, id: "POS", want: otherFacilityID},
+		{r: usecase.ResourceStaff, id: otherStaffID, want: otherFacilityID},
+		{r: usecase.ResourceSchedule, id: "SCH", want: otherFacilityID},
+		{r: usecase.ResourceRecurringSchedule, id: recurringID, want: facilityID},
+	}
+	for _, tt := range tests {
+		got, err := a.FacilityOf(context.Background(), tt.r, tt.id)
+		if err != nil || got != tt.want {
+			t.Errorf("FacilityOf(%d, %s) = %q, %v, want %q", tt.r, tt.id, got, err, tt.want)
+		}
+	}
+	if _, err := a.FacilityOf(context.Background(), usecase.ResourceSchedule, "NONE"); !errors.Is(err, domain.ErrNotFound) {
+		t.Errorf("err = %v, want ErrNotFound", err)
 	}
 }

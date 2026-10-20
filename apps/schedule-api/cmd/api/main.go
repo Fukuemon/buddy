@@ -15,6 +15,7 @@ import (
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/config"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/infrastructure/mysql"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/infrastructure/oidc"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/infrastructure/ulid"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/presentation/http/handler"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/usecase"
@@ -49,6 +50,11 @@ func run() error {
 		}
 	}()
 
+	verifier, err := oidc.NewVerifier(ctx, cfg.OIDC, nil, log)
+	if err != nil {
+		return err
+	}
+
 	tx := mysql.NewTransactor(db)
 	ids := ulid.Generator{}
 	facilities := mysql.NewFacilityRepository(db)
@@ -75,7 +81,11 @@ func run() error {
 		Schedules: usecase.NewSchedules(usecase.ScheduleRepositories{
 			Facilities: facilities, Staff: staff, Patients: patients, Visits: visits, Schedules: schedules,
 		}, tx, ids),
-	}, handler.RouterConfig{Logger: log, AllowOrigins: cfg.AllowOrigins})
+		Auth: usecase.NewAuth(usecase.AuthRepositories{
+			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions,
+			Staff: staff, Schedules: schedules,
+		}),
+	}, handler.RouterConfig{Logger: log, AllowOrigins: cfg.AllowOrigins, Verifier: verifier})
 
 	srv := &http.Server{
 		Addr:              net.JoinHostPort("", cfg.Port),
