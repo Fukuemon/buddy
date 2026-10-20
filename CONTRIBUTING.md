@@ -34,7 +34,8 @@ uv run zensical build   # 出力の最後が "No issues found" になること�
 
 - `zensical build` は、リンクの先のページと見出しのアンカーがないと "Warning" を出す。警告が残ったまま取り込まない。
 - ページを足したら、`zensical.toml` の `nav` に足す。`nav` にないページはナビゲーションから開けない。
-- コードの隣に置く機能ごとの Design Doc（`apps/<アプリ>/DesignDoc.md`）は、`docs/` の外にあるのでサイトに載らない。`nav` に GitHub の `develop` のファイルへのリンクを足して開けるようにする。
+- 機能ごとの Design Doc は、コードの隣（`apps/<アプリ>/DesignDoc.md`）に置く。サイトには、`docs/design/apps/<アプリ>.md` のファイル単位のシンボリックリンクを置き、`nav` に足して載せる。
+  - 機能ごとの Design Doc から `docs/` と `apps/` の文書へのリンクは、GitHub の `develop` の URL で書く。相対リンクは、GitHub とサイトで指す先が変わり、どちらかで切れるためである。
 
 ## API の定義を変えるとき
 
