@@ -135,23 +135,26 @@ func TestRecurringOccurs(t *testing.T) {
 	if w := date(t, start).Weekday(); w != time.Monday {
 		t.Fatalf("%s は %s", start, w)
 	}
+	// start が空の行は、月曜の start から始める。規則は最初の日付を回に含むものにする。
 	tests := []struct {
-		name string
-		rule schedule.Rule
-		day  string
-		want bool
+		name  string
+		start string
+		rule  schedule.Rule
+		day   string
+		want  bool
 	}{
 		{name: "毎週の既定は最初の日の曜日", rule: schedule.Rule{Frequency: schedule.Weekly}, day: "2026-10-12", want: true},
 		{name: "毎週の既定で別の曜日", rule: schedule.Rule{Frequency: schedule.Weekly}, day: "2026-10-13", want: false},
-		{name: "毎週の水曜", rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(3)}, day: "2026-10-07", want: true},
-		{name: "毎週の日曜は 7", rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(7)}, day: "2026-10-11", want: true},
+		{name: "毎週の水曜", start: "2026-10-07", rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(3)}, day: "2026-10-14", want: true},
+		{name: "毎週の日曜は 7", start: "2026-10-11", rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(7)}, day: "2026-10-18", want: true},
 		{name: "最初の日より前", rule: schedule.Rule{Frequency: schedule.Weekly}, day: "2026-09-28", want: false},
 		{name: "終了日の当日", rule: schedule.Rule{Frequency: schedule.Weekly, EndDate: ptr(civil.Date{Year: 2026, Month: 10, Day: 19})}, day: "2026-10-19", want: true},
 		{name: "終了日より後", rule: schedule.Rule{Frequency: schedule.Weekly, EndDate: ptr(civil.Date{Year: 2026, Month: 10, Day: 19})}, day: "2026-10-26", want: false},
 		{name: "毎月の既定は最初の日の日", rule: schedule.Rule{Frequency: schedule.Monthly}, day: "2026-11-05", want: true},
-		{name: "毎月の 31 日", rule: schedule.Rule{Frequency: schedule.Monthly, DayOfMonth: ptr(31)}, day: "2026-10-31", want: true},
-		{name: "毎月の第 2 火曜", rule: schedule.Rule{Frequency: schedule.Monthly, WeekOfMonth: ptr(2), DayOfWeek: ptr(2)}, day: "2026-11-10", want: true},
-		{name: "毎月の第 2 火曜で第 1 火曜", rule: schedule.Rule{Frequency: schedule.Monthly, WeekOfMonth: ptr(2), DayOfWeek: ptr(2)}, day: "2026-11-03", want: false},
+		{name: "毎月の 31 日", start: "2026-10-31", rule: schedule.Rule{Frequency: schedule.Monthly, DayOfMonth: ptr(31)}, day: "2026-12-31", want: true},
+		{name: "毎月の 31 日で 30 日までの月", start: "2026-10-31", rule: schedule.Rule{Frequency: schedule.Monthly, DayOfMonth: ptr(31)}, day: "2026-11-30", want: false},
+		{name: "毎月の第 2 火曜", start: "2026-10-13", rule: schedule.Rule{Frequency: schedule.Monthly, WeekOfMonth: ptr(2), DayOfWeek: ptr(2)}, day: "2026-11-10", want: true},
+		{name: "毎月の第 2 火曜で第 1 火曜", start: "2026-10-13", rule: schedule.Rule{Frequency: schedule.Monthly, WeekOfMonth: ptr(2), DayOfWeek: ptr(2)}, day: "2026-11-03", want: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -159,8 +162,12 @@ func TestRecurringOccurs(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			first := start
+			if tt.start != "" {
+				first = tt.start
+			}
 			rs, err := schedule.NewRecurring("ID", schedule.Slot{
-				Date: date(t, start), StartTime: clock(9, 0), EndTime: clock(10, 0), Title: ptr("定例"),
+				Date: date(t, first), StartTime: clock(9, 0), EndTime: clock(10, 0), Title: ptr("定例"),
 			}, normalType, rule)
 			if err != nil {
 				t.Fatal(err)
@@ -179,6 +186,43 @@ func TestNewRecurringEndDateBeforeStart(t *testing.T) {
 	}, normalType, rule)
 	if !errors.Is(err, domain.ErrInvalidInput) {
 		t.Fatalf("err = %v, want ErrInvalidInput", err)
+	}
+}
+
+func TestNewRecurringFirstDate(t *testing.T) {
+	start := "2026-10-06"
+	if w := date(t, start).Weekday(); w != time.Tuesday {
+		t.Fatalf("%s は %s", start, w)
+	}
+	tests := []struct {
+		name    string
+		rule    schedule.Rule
+		wantErr bool
+	}{
+		{name: "毎週の既定", rule: schedule.Rule{Frequency: schedule.Weekly}},
+		{name: "毎週の火曜", rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(2)}},
+		{name: "毎週の月曜", rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(1)}, wantErr: true},
+		{name: "毎月の既定", rule: schedule.Rule{Frequency: schedule.Monthly}},
+		{name: "毎月の 6 日", rule: schedule.Rule{Frequency: schedule.Monthly, DayOfMonth: ptr(6)}},
+		{name: "毎月の 7 日", rule: schedule.Rule{Frequency: schedule.Monthly, DayOfMonth: ptr(7)}, wantErr: true},
+		{name: "毎月の第 1 火曜", rule: schedule.Rule{Frequency: schedule.Monthly, WeekOfMonth: ptr(1), DayOfWeek: ptr(2)}},
+		{name: "毎月の第 2 火曜", rule: schedule.Rule{Frequency: schedule.Monthly, WeekOfMonth: ptr(2), DayOfWeek: ptr(2)}, wantErr: true},
+		{name: "毎月の第 1 月曜", rule: schedule.Rule{Frequency: schedule.Monthly, WeekOfMonth: ptr(1), DayOfWeek: ptr(1)}, wantErr: true},
+		{name: "終了日が最初の日付", rule: schedule.Rule{Frequency: schedule.Weekly, EndDate: ptr(date(t, start))}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rule, err := schedule.NewRule(tt.rule)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, err = schedule.NewRecurring("ID", schedule.Slot{
+				Date: date(t, start), StartTime: clock(9, 0), EndTime: clock(10, 0), Title: ptr("定例"),
+			}, normalType, rule)
+			if tt.wantErr != errors.Is(err, domain.ErrInvalidInput) || (!tt.wantErr && err != nil) {
+				t.Fatalf("err = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
 	}
 }
 
