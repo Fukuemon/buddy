@@ -28,6 +28,7 @@ apm lifecycle trust
 
 ## コミットするとき
 
+- commit-msg のフックが、メッセージの形式を commitlint で確かめる。形式は `commitlint.config.mjs` にある。フックは `pnpm install` の `prepare` が入れる。
 - 変更の分け方とメッセージの書き方は、スキル write-commit に従う。
 
 ## ブランチとリリース

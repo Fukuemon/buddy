@@ -26,3 +26,4 @@ apm_modules/
 /.codex/hooks/core/
 /.codex/hooks/docs/
 
+node_modules/

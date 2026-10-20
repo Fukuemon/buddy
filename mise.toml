@@ -1,0 +1,5 @@
+# ランタイムとツールのバージョン。pnpm のバージョンは package.json の packageManager にある
+# apm は agent-harness のスキルとフックを配置する
+[tools]
+node = "24"
+"pipx:apm-cli" = "0.32.0"

@@ -1,0 +1,6 @@
+# git hooks。有効化: pnpm install (prepare が lefthook install を実行する)
+
+commit-msg:
+  commands:
+    commitlint:
+      run: pnpm exec commitlint --edit {1}
