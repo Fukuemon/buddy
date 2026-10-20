@@ -241,7 +241,17 @@
     <input checked class="wf-switch" id="view-week" name="view" type="radio" />
     <input class="wf-switch" id="view-day" name="view" type="radio" />
 
-    <header class="cal-header" data-component="SiteHeader" data-ref="1">buddy</header>
+    <header class="cal-header" data-component="SiteHeader" data-ref="1">
+      <span>buddy</span>
+      <nav style="display: flex; gap: 16px; margin-left: 32px; font-size: 14px; font-weight: 400" data-component="SiteNav" data-ref="1-1" data-testid="site-nav">
+        <span style="text-decoration: underline; font-weight: 700" aria-current="page">予定</span>
+        <span>照合</span>
+      </nav>
+      <span style="display: flex; gap: 12px; align-items: center; margin-left: auto; font-size: 14px; font-weight: 400" data-component="ViewerMenu" data-ref="1-2" data-testid="viewer-menu">
+        <span class="wf-text wf-text--s"></span>
+        <span class="wf-btn">ログアウト</span>
+      </span>
+    </header>
 
     <div class="cal-body">
       <nav
