@@ -86,8 +86,10 @@ func NewPosition(id, facilityID, name string, policies []Policy) (Position, erro
 }
 
 // FacilityRepository は、事業所を読む。見つからないときは domain.ErrNotFound を返す。
+// GetByOrgID は、認証のブローカーの組織の ID に結び付けた事業所を返す。
 type FacilityRepository interface {
 	Get(ctx context.Context, id string) (Facility, error)
+	GetByOrgID(ctx context.Context, orgID string) (Facility, error)
 }
 
 // DepartmentRepository は、部署を読む。見つからないときは domain.ErrNotFound を返す。

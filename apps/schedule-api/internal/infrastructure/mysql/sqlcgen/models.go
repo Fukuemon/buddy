@@ -22,6 +22,7 @@ type Facility struct {
 	Name      string
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	OrgID     sql.NullString
 }
 
 type Patient struct {

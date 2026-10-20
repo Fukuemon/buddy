@@ -1,6 +1,9 @@
 -- name: GetFacility :one
 SELECT * FROM facilities WHERE id = ?;
 
+-- name: GetFacilityByOrgID :one
+SELECT * FROM facilities WHERE org_id = ?;
+
 -- name: GetDepartment :one
 SELECT * FROM departments WHERE id = ?;
 

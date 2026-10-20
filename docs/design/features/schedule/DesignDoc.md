@@ -71,7 +71,7 @@ erDiagram
   facilities {
     binary id PK
     string name "事業所名"
-    string organization_id UK "ブローカーの組織の ID"
+    string org_id UK "ブローカーの組織の ID。結び付けるまで NULL"
   }
   departments {
     binary id PK
@@ -230,28 +230,41 @@ sequenceDiagram
   participant DB as MySQL
 
   W->>M: GET /v1/facilities/{facility_id}/schedules（Bearer）
-  M->>M: JWKS で署名、iss、aud、exp を確かめる
-  alt 検証に失敗
+  M->>M: JWKS で署名、iss、aud、exp、nbf を確かめる
+  alt トークンがない、または検証に失敗
     M-->>W: 401
+  end
+  M->>DB: トークンの組織のクレームで事業所を探す
+  alt 組織のクレームがない、または事業所がない
+    M-->>W: 403
   end
   M->>DB: sub で職員を探す
   alt sub の職員がいない
-    M->>DB: 組織の事業所で、email が一致し sub が NULL の職員を探す
-    alt 職員がいない、または email が未確認
+    alt email が未確認
       M-->>W: 403
     end
-    M->>DB: 職員に sub を書く
+    M->>DB: 組織の事業所で、email が一致し sub が NULL の職員にだけ sub を書く
+    M->>DB: sub で職員を探し直す
+    alt 職員がいない
+      M-->>W: 403
+    end
   end
-  M->>M: パスの facility_id と職員の事業所を比べる
+  M->>M: 職員の事業所と組織の事業所を比べる
+  M->>DB: パスの ID が予定や職員なら、その事業所を読む
+  M->>M: パスが指す事業所と職員の事業所を比べる
   alt 事業所が違う
     M-->>W: 403
   end
-  M->>U: 職員と事業所を渡す
+  M->>U: 職員と権限を request の context で渡す
   U->>DB: 職員の user_policies と対象を読む
   U->>U: 見てよい職員の範囲を決める
   U->>DB: 範囲の職員の予定を、事業所の ID で絞って読む
   U-->>W: 200 予定の一覧
 ```
+
+- 組織の ID を持つクレームの名前は `OIDC_ORG_CLAIM` で決め、既定は `org_id` にする。ブローカーごとにクレームの名前が違うためである。
+- sub を書く UPDATE は `sub IS NULL` を条件にする。同じ職員の初回のログインが同時に 2 つ来ても、書くのは 1 回だけになる。
+- パスの ID のリソースが見つからないときは、ミドルウェアは通し、ハンドラが 404 を返す。
 
 予定を見てよいかは、次の順で決める。編集の権限は、同じ範囲の閲覧を含む。
 

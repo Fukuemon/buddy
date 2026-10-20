@@ -96,17 +96,27 @@ func (f *fakePatients) List(context.Context, string, patient.ListQuery) ([]patie
 }
 
 func newRouter(s *fakeSchedules, st *fakeStaff, p *fakePatients) http.Handler {
-	return handler.NewRouter(handler.Usecases{Schedules: s, Staff: st, Patients: p}, handler.RouterConfig{
-		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+	return handler.NewRouter(handler.Usecases{Schedules: s, Staff: st, Patients: p, Auth: fakeAuth{}}, handler.RouterConfig{
+		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Verifier: testVerifier,
 	})
 }
 
+// do は、事業所 facilityID の職員のトークンを付けて h に要求を送る。
 func do(t *testing.T, h http.Handler, method, target, body string) (*httptest.ResponseRecorder, map[string]any) {
+	t.Helper()
+	return doWithToken(t, h, method, target, body, token(t, testOrgID))
+}
+
+// doWithToken は、raw が空でなければ Bearer のトークンとして付けて h に要求を送る。
+func doWithToken(t *testing.T, h http.Handler, method, target, body, raw string) (*httptest.ResponseRecorder, map[string]any) {
 	t.Helper()
 	req := httptest.NewRequest(method, target, strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
-	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, req)
+	if raw != "" {
+		req.Header.Set("Authorization", "Bearer "+raw)
+	}
+	rec := serve(h, req)
 	var got map[string]any
 	if strings.HasPrefix(strings.TrimSpace(rec.Body.String()), "{") {
 		if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
@@ -114,6 +124,12 @@ func do(t *testing.T, h http.Handler, method, target, body string) (*httptest.Re
 		}
 	}
 	return rec, got
+}
+
+func serve(h http.Handler, req *http.Request) *httptest.ResponseRecorder {
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	return rec
 }
 
 func TestListSchedulesRejectsUnsafeSort(t *testing.T) {
@@ -271,7 +287,7 @@ func TestCreateSchedule(t *testing.T) {
 }
 
 func TestHealth(t *testing.T) {
-	rec, body := do(t, newRouter(nil, nil, nil), http.MethodGet, "/health", "")
+	rec, body := doWithToken(t, newRouter(nil, nil, nil), http.MethodGet, "/health", "", "")
 	if rec.Code != http.StatusOK || body["status"] != "ok" {
 		t.Fatalf("status = %d, body = %v", rec.Code, body)
 	}

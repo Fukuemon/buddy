@@ -3,13 +3,17 @@ module github.com/Fukuemon/buddy/apps/schedule-api
 go 1.27
 
 require (
+	github.com/MicahParks/jwkset v0.11.3
+	github.com/MicahParks/keyfunc/v3 v3.8.2
 	github.com/gin-contrib/cors v1.7.9
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-playground/validator/v10 v10.30.5
 	github.com/go-sql-driver/mysql v1.10.1
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/golang-migrate/migrate/v4 v4.20.1
 	github.com/oklog/ulid/v2 v2.1.2
 	github.com/testcontainers/testcontainers-go/modules/mysql v0.44.0
+	golang.org/x/time v0.15.0
 )
 
 require (

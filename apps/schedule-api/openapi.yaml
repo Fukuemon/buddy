@@ -3,14 +3,17 @@ info:
   title: buddy schedule API
   version: 0.1.0
   description: |
-    訪問看護の事業所の予定を管理する API。認証はまだない。
+    訪問看護の事業所の予定を管理する API。
 
     - ID は 26 文字の ULID である。
     - 値がない項目は、項目を省かず null で返す。
     - 日付は YYYY-MM-DD、時刻は HH:MM である。
-    - エラーは Error の形で返す。`code` は invalid_input、not_found、conflict、internal のいずれかである。
+    - エラーは Error の形で返す。`code` は invalid_input、unauthenticated、forbidden、not_found、conflict、internal のいずれかである。
+    - `/v1` は全て、OIDC のブローカーが発行した access token（JWT）を `Authorization: Bearer` で求める。
+      トークンがないか検証に失敗したときは 401 を、トークンの組織と職員の事業所が、パスの指す事業所と違うときは 403 を返す。
     - 読めないクエリ（例は `;` を含むもの）は 400 を返す。
-security: []
+security:
+  - bearerAuth: []
 servers:
   - url: http://localhost:8080
 tags:
@@ -32,6 +35,7 @@ paths:
       tags: [health]
       operationId: getHealth
       summary: ヘルスチェック
+      security: []
       responses:
         "200":
           description: 動いている
@@ -58,6 +62,8 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Facility" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
 
@@ -76,6 +82,8 @@ paths:
                 type: array
                 items: { $ref: "#/components/schemas/Unit" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
 
@@ -93,6 +101,8 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Unit" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
 
@@ -111,6 +121,8 @@ paths:
                 type: array
                 items: { $ref: "#/components/schemas/Unit" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
     post:
@@ -130,6 +142,8 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Unit" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "500": { $ref: "#/components/responses/InternalError" }
@@ -148,6 +162,8 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Unit" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
 
@@ -166,6 +182,8 @@ paths:
                 type: array
                 items: { $ref: "#/components/schemas/Position" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
     post:
@@ -193,6 +211,8 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Position" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "500": { $ref: "#/components/responses/InternalError" }
@@ -211,6 +231,8 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Position" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
 
@@ -227,6 +249,8 @@ paths:
               schema:
                 type: array
                 items: { $ref: "#/components/schemas/Policy" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "500": { $ref: "#/components/responses/InternalError" }
     post:
       tags: [organization]
@@ -244,6 +268,8 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Policy" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "409": { $ref: "#/components/responses/Conflict" }
         "500": { $ref: "#/components/responses/InternalError" }
 
@@ -261,6 +287,8 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Policy" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
 
@@ -289,6 +317,8 @@ paths:
                 type: array
                 items: { $ref: "#/components/schemas/Staff" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
     post:
@@ -320,6 +350,8 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/StaffDetail" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "500": { $ref: "#/components/responses/InternalError" }
@@ -338,6 +370,8 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/StaffDetail" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
 
@@ -366,6 +400,8 @@ paths:
                 type: array
                 items: { $ref: "#/components/schemas/Patient" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
     post:
@@ -393,6 +429,8 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Patient" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
 
@@ -409,6 +447,8 @@ paths:
               schema:
                 type: array
                 items: { $ref: "#/components/schemas/ServiceCode" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/visit_infos/visit_categories:
@@ -424,6 +464,8 @@ paths:
               schema:
                 type: array
                 items: { $ref: "#/components/schemas/VisitCategory" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/schedule_types:
@@ -439,6 +481,8 @@ paths:
               schema:
                 type: array
                 items: { $ref: "#/components/schemas/ScheduleType" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/facilities/{facility_id}/schedules:
@@ -475,6 +519,8 @@ paths:
                     type: array
                     items: { $ref: "#/components/schemas/RecurringSchedule" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
     post:
@@ -494,6 +540,8 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Schedule" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
 
@@ -521,6 +569,8 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/RecurringSchedule" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
 
@@ -537,6 +587,8 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Schedule" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
 
@@ -562,6 +614,8 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Cancel" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409":
           description: キャンセル済み
@@ -583,6 +637,8 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/RecurringSchedule" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
 
@@ -616,6 +672,8 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Schedule" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409":
           description: その回はすでに置き換えた
@@ -625,6 +683,14 @@ paths:
         "500": { $ref: "#/components/responses/InternalError" }
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        OIDC のブローカーが発行した access token。署名（RS256 か ES256）、iss、aud、exp、nbf を確かめる。
+        `sub` で職員を探し、初回は確認済みの `email` で登録済みの職員に結び付ける。組織のクレーム（既定は `org_id`）が事業所を決める。
   parameters:
     FacilityID:
       name: facility_id
@@ -650,6 +716,20 @@ components:
   responses:
     BadRequest:
       description: 入力の誤り
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: トークンがないか、検証に失敗した。`code` は unauthenticated
+      headers:
+        WWW-Authenticate:
+          description: RFC 6750 の challenge。トークンがないときは `Bearer`、検証に失敗したときは `Bearer error="invalid_token"`
+          schema: { type: string }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Forbidden:
+      description: 職員を特定できないか、パスが指す事業所が職員の事業所と違う。`code` は forbidden
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
@@ -687,7 +767,7 @@ components:
       properties:
         code:
           type: string
-          enum: [invalid_input, not_found, conflict, internal]
+          enum: [invalid_input, unauthenticated, forbidden, not_found, conflict, internal]
         message: { type: string }
     CreateNameRequest:
       type: object
