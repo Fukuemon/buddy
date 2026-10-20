@@ -1,12 +1,4 @@
-import {
-  useEffect,
-  useId,
-  useRef,
-  type KeyboardEvent,
-  type MouseEvent,
-  type ReactNode,
-  type SyntheticEvent,
-} from 'react'
+import { useEffect, useEffectEvent, useId, useRef, type ReactNode } from 'react'
 
 import { CloseIcon } from '../../icons/CloseIcon'
 
@@ -62,13 +54,61 @@ export const Modal = ({
   const titleRef = useRef<HTMLHeadingElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
+  const requestClose = () => {
+    if (isDirty && !window.confirm(DISCARD_CONFIRM_MESSAGE)) return
+    onCloseRequest?.()
+  }
+  const requestCloseFromDialog = useEffectEvent(requestClose)
+
   useEffect(() => {
     const dialog = dialogRef.current
     if (!isOpen || dialog === null) return
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+
+    // Escape の既定の動きはダイアログを閉じるので止め、閉じるかを呼び出す側に任せる。
+    const handleCancel = (event: Event) => {
+      event.preventDefault()
+      requestCloseFromDialog()
+    }
+    // Escape を続けて押すと、ブラウザは cancel を止めさせずにダイアログを閉じる。閉じる要求として扱い、開き直す。
+    const handleClose = () => {
+      if (dialog.open || !dialog.isConnected) return
+      requestCloseFromDialog()
+      if (dialog.isConnected && !dialog.open) dialog.showModal()
+    }
+    // ::backdrop を押すと、クリックの対象は dialog 自身になる。中身は内側の div が受ける。
+    const handleClick = (event: MouseEvent) => {
+      if (event.target === dialog) requestCloseFromDialog()
+    }
+    // showModal は後ろを操作できなくするが、最後の要素からの Tab はブラウザの UI へ抜けるので、先頭へ戻す。
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return
+      const elements = focusableElements(dialog)
+      const first = elements[0]
+      const last = elements.at(-1)
+      if (first === undefined || last === undefined) return
+      const active = document.activeElement
+      if (event.shiftKey && (active === first || active === titleRef.current)) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    dialog.addEventListener('cancel', handleCancel)
+    dialog.addEventListener('close', handleClose)
+    dialog.addEventListener('click', handleClick)
+    dialog.addEventListener('keydown', handleKeyDown)
     if (!dialog.open) dialog.showModal()
     ;(titleRef.current ?? closeButtonRef.current)?.focus()
+
     return () => {
+      dialog.removeEventListener('cancel', handleCancel)
+      dialog.removeEventListener('close', handleClose)
+      dialog.removeEventListener('click', handleClick)
+      dialog.removeEventListener('keydown', handleKeyDown)
       if (dialog.open) dialog.close()
       if (opener?.isConnected) opener.focus()
     }
@@ -76,56 +116,11 @@ export const Modal = ({
 
   if (!isOpen) return null
 
-  const requestClose = () => {
-    if (isDirty && !window.confirm(DISCARD_CONFIRM_MESSAGE)) return
-    onCloseRequest?.()
-  }
-
-  // Escape の既定の動きはダイアログを閉じるので止め、閉じるかを呼び出す側に任せる。
-  const handleCancel = (event: SyntheticEvent<HTMLDialogElement>) => {
-    event.preventDefault()
-    requestClose()
-  }
-
-  // Escape を続けて押すと、ブラウザは cancel を止めさせずにダイアログを閉じる。閉じる要求として扱い、開いたままなら開き直す。
-  const handleClose = (event: SyntheticEvent<HTMLDialogElement>) => {
-    const dialog = event.currentTarget
-    if (dialog.open) return
-    requestClose()
-    if (dialog.isConnected && !dialog.open) dialog.showModal()
-  }
-
-  // ::backdrop を押すと、クリックの対象は dialog 自身になる。中身は内側の div が受ける。
-  const handleClick = (event: MouseEvent<HTMLDialogElement>) => {
-    if (event.target === event.currentTarget) requestClose()
-  }
-
-  // showModal は後ろを操作できなくするが、最後の要素からの Tab はブラウザの UI へ抜けるので、先頭へ戻す。
-  const handleKeyDown = (event: KeyboardEvent<HTMLDialogElement>) => {
-    if (event.key !== 'Tab') return
-    const elements = focusableElements(event.currentTarget)
-    const first = elements[0]
-    const last = elements.at(-1)
-    if (first === undefined || last === undefined) return
-    const active = document.activeElement
-    if (event.shiftKey && (active === first || active === titleRef.current)) {
-      event.preventDefault()
-      last.focus()
-    } else if (!event.shiftKey && active === last) {
-      event.preventDefault()
-      first.focus()
-    }
-  }
-
   return (
     <dialog
       aria-labelledby={title === undefined ? undefined : titleId}
       className="m-0 mt-auto h-[99dvh] max-h-none w-full max-w-none overflow-hidden rounded-t-8 border-0 bg-surface p-0 text-text shadow-3 backdrop:bg-overlay backdrop:backdrop-blur-lg desktop:m-auto desktop:h-auto desktop:max-h-[90dvh] desktop:w-[720px] desktop:rounded-8"
       data-testid={testId}
-      onCancel={handleCancel}
-      onClick={handleClick}
-      onClose={handleClose}
-      onKeyDown={handleKeyDown}
       ref={dialogRef}
     >
       <div className="flex h-full max-h-[inherit] flex-col overflow-auto">
