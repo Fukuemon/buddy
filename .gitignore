@@ -33,6 +33,10 @@ apm_modules/
 
 node_modules/
 
+# Go のワークスペース。手元のエディタのために各自が作る
+go.work
+go.work.sum
+
 # E2E のログインの状態と結果
 packages/e2e/.auth/
 packages/e2e/test-results/

@@ -80,7 +80,7 @@ flowchart TB
 ### schedule-api
 
 - 事業所、部署、チーム、役職、権限、職員、利用者、予定を持つ。
-- access token の検証、職員の特定、事業所の確認、ポリシーによる認可を行う。
+- access token の検証、職員の特定、事業所の確認、権限による認可を行う。
 - 繰り返しの予定を、求められた期間の予定に展開して返す。
 - 持たないもの: 照合の規則。
 - 内部の構成と ER は [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/apps/schedule-api/DesignDoc.md) にある。

@@ -5,7 +5,7 @@ description: 人手検証のシナリオ(前提、もし、かつ、ならば �
 
 # write-verification-spec
 
-撮る仕組み、置き場、名前の決まりは、`packages/e2e/kit/` の `recording` と `evidence` と、その録画の Design Doc（`packages/e2e/kit/recording/DesignDoc.md`）が持つ。  
+撮る仕組み、置き場、名前の決まりは、`packages/e2e/kit/` の `recording` と `evidence` が持つ。録画の設計は `packages/e2e/kit/recording/DesignDoc.md` にある。  
 このスキルは、spec を書いて撮るときの判断だけを持つ。コードの層と待ち方は write-e2e-test に従う。
 
 ## 始める前に読むもの

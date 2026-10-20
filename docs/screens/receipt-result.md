@@ -40,7 +40,7 @@ API の列は、`createCheck`（`POST /v1/checks`）の応答の `Report` の項
 | 1-1 | `SiteNav` | 「予定」と「照合」のリンク。「照合」に `aria-current="page"` | なし | なし | `site-nav` |
 | 1-2 | `ViewerMenu` | ログインした職員の名前とログアウトのボタン。幅 768px 未満では名前を出さない | `Viewer.staffName` | `getMe` の `username` | `viewer-menu`、ログアウトのボタンは `viewer-logout` |
 | 2 | `ReceiptResultView` | 照合の結果 | `ReceiptResult` | `Report` | `receipt-result` |
-| 2-1 | 題と予定の取り方 | 「照合の結果」と、「2024 年 4 月の Google カレンダー」か「予定の CSV」 | `ReceiptResult.month` | `month` | なし |
+| 2-1 | 題と予定の取り方 | 「照合の結果」と、「<年> 年 <月> 月の Google カレンダー」か「予定の CSV」 | `ReceiptResult.month` | `month` | なし |
 | 2-2 | 照合し直すリンク | 「別のファイルで照合する」 | なし | なし | なし |
 | 2-3 | ダウンロードのボタン | 「CSV をダウンロード」 | なし | なし | `receipt-download` |
 | 2-4 | 区分ごとの件数 | 不整合データ、予定のみ、実績のみ、整合データの件数 | `ReceiptReport.summary` | `summary` | `receipt-summary`、件数は `receipt-summary-{category}` |

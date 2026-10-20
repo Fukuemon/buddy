@@ -101,7 +101,7 @@ migrate -path db/migrations \
 ## API の定義を変えたとき
 
 oapi-codegen が、openapi.yaml から gin の strict server のインターフェイスと型を `internal/presentation/http/openapi/openapi.gen.go` に生成する。  
-oapi-codegen は `go.mod` の `tool` で版を固定し、`go tool` で動かす。設定は [oapi-codegen.yaml](oapi-codegen.yaml) にある。  
+oapi-codegen は `go.mod` の `tool` でバージョンを固定し、`go tool` で動かす。設定は [oapi-codegen.yaml](oapi-codegen.yaml) にある。  
 openapi.yaml を変えたら、生成し直し、生成物も同じコミットに入れる。
 
 ```sh
@@ -117,7 +117,7 @@ go generate ./...
 - usecase のエラーは、そのまま `error` として返す。`writeError` が、domain のエラーから状態コードと `{code,message}` を決める。
 - 本文の検証の規則は、`validate.go` の `bodyRules` に、生成した型の項目の名前で書く。生成した型はタグを持たないためである。
   日付と時刻は文字列で受け、ハンドラが `civil` で読むときに形を確かめる。
-- 認証、事業所の確認、パスの ID の形の確認は、`/v1` の全ての経路に当てる gin のミドルウェアが受け持つ。ハンドラでは繰り返さない。
+- 認証、事業所の確認、パスの ID の形の確認は、`/v1` の全てのパスに当てる gin のミドルウェアが受け持つ。ハンドラでは繰り返さない。
 
 ## SQL を変えたとき
 
@@ -158,7 +158,7 @@ golangci-lint run
 docker build -t buddy-schedule-api .
 ```
 
-イメージは distroless の上に `api` と `migrate` の 2 つのバイナリを持ち、既定で `api` を起動する。  
+イメージは distroless の上に `api` と `migrate` の 2 つのバイナリを持つ。エントリポイントは `api` である。  
 マイグレーションは `--entrypoint /usr/local/bin/migrate` を指定して実行する。
 
 ## コードの層

@@ -8,6 +8,8 @@
 mise install
 ```
 
+Go のモジュールは `apps/schedule-api` と `apps/receipt-api` の 2 つである。エディタで両方を読むときは、ルートで `go work init ./apps/receipt-api ./apps/schedule-api` を流す。`go.work` は追跡しない。2 つのモジュールが共有する依存のバージョンが高い方にそろい、コンテナのイメージ（各 `go.mod` だけでビルドする）とずれるためである。テストと lint は、各アプリのディレクトリで `GOWORK=off` を付けて流す。`go.work` の下でビルドすると各アプリの `go.sum` に行が増えるので、コミットに含めない。
+
 <!-- 次は apm で導入した場合。コーディングエージェントの標準の方法で導入したなら、その導入の手順に書き換える -->
 
 スキルとフックは apm で配置し、Git で追跡しない。clone した後の最初のセッションで、セッションの開始のフックが配置する。手で配置するときは次を実行する。
@@ -90,6 +92,20 @@ uv run zensical build   # 出力の最後が "No issues found" になること�
 - ページを足したら、`zensical.toml` の `nav` に足す。`nav` にないページはナビゲーションから開けない。
 - 機能ごとの Design Doc は、コードの隣（`apps/<アプリ>/DesignDoc.md`）に置く。サイトには、`docs/design/apps/<アプリ>.md` のファイル単位のシンボリックリンクを置き、`nav` に足して載せる。
   - 機能ごとの Design Doc から `docs/` と `apps/` の文書へのリンクは、GitHub の `develop` の URL で書く。相対リンクは、GitHub とサイトで指す先が変わり、どちらかで切れるためである。
+
+文章の規則は textlint で、経緯の混入とリンクは docs のスクリプトで確かめる。指摘された語は言い換え、`--fix` は使わない。プロジェクトの用語と見出しの語が指摘されたときは、言い換えずに、`.textlintrc.json` の `allows` に足すかをメンテナーと決める。
+
+```sh
+pnpm exec textlint "**/*.md"
+node .claude/hooks/docs/hooks/check-history.mjs
+node .claude/hooks/docs/hooks/check-links.mjs
+```
+
+- pre-commit のフックが、ステージした Markdown に textlint を流す。
+- `.textlintignore` は、Git で追跡しないものと、`docs/design/` の下のシンボリックリンクを外す。シンボリックリンクの先の文書は、元の場所で確かめる。
+- `docs/` のスクリプトは apm が `.claude/hooks/docs/` に配置する。無ければ `apm install --frozen` を流す。
+
+`verified_commit` の後に実装が変わった文書は、`node .claude/hooks/docs/hooks/list-drift.mjs` で一覧する。実装と読み比べてから `verified_commit` を進める。
 
 ## API の定義を変えるとき
 
