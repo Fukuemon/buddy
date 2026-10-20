@@ -12,7 +12,7 @@ export const ViewerMenu = ({ staffName, canLogout }: ViewerMenuProps) => (
     <span className="hidden text-body whitespace-nowrap desktop:inline">{staffName}</span>
     {canLogout && (
       <form method="post" action="/auth/logout">
-        <Button type="submit" variant="secondary" size="S">
+        <Button type="submit" variant="secondary" size="S" data-testid="viewer-logout">
           ログアウト
         </Button>
       </form>
