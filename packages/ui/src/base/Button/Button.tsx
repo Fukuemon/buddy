@@ -17,13 +17,15 @@ const variantClassName: Record<ButtonVariant, string> = {
 }
 
 const sizeClassName: Record<ButtonSize, string> = {
-  S: 'h-10 rounded-8 px-4',
+  // 見た目は 40px のまま、上下に 2px ずつ押せる領域を広げて 44px にする
+  S: 'h-10 min-w-11 rounded-8 px-4 after:absolute after:inset-x-0 after:-inset-y-0.5',
   M: 'h-12 rounded-8 px-5',
   L: 'h-14 rounded-8 px-6',
 }
 
 /**
  * Button と同じ見た目のクラス名を返す。Link のように button でない要素をボタンの見た目にするときに使う。
+ * 無効の見た目は `aria-disabled="true"` の要素に付く。
  */
 export const buttonClassName = ({
   variant = 'primary',
@@ -33,7 +35,8 @@ export const buttonClassName = ({
   clsx(
     'relative inline-flex cursor-pointer items-center justify-center text-label transition duration-100 ease-in',
     'focus-visible:focus-ring',
-    'active:enabled:scale-[0.98] disabled:cursor-not-allowed disabled:bg-surface-disabled disabled:text-text-disabled disabled:ring-0',
+    'not-aria-disabled:hover:underline not-aria-disabled:active:scale-[0.98]',
+    'aria-disabled:cursor-not-allowed aria-disabled:bg-surface-disabled aria-disabled:text-text-disabled aria-disabled:ring-0',
     variantClassName[variant],
     sizeClassName[size],
     isWide && 'w-full',
@@ -41,11 +44,14 @@ export const buttonClassName = ({
 
 export type ButtonProps = ComponentPropsWithoutRef<'button'> &
   ButtonStyleOptions & {
-    /** true の間は子の代わりに回転するインジケーターを出し、クリックを無視する。 */
+    /** true の間は子の上に回転するインジケーターを重ね、クリックを無視する。子の文はボタンの名前として残す。 */
     isLoading?: boolean
   }
 
-/** 操作のボタン。type の既定は button である。 */
+/**
+ * 操作のボタン。type の既定は button である。
+ * disabled は `aria-disabled` で表し、フォーカスを受けたまま、クリックと送信を止める。
+ */
 export const Button = ({
   variant,
   size,
@@ -55,10 +61,11 @@ export const Button = ({
   children,
   onClick,
   type = 'button',
+  disabled = false,
   ...props
 }: ButtonProps) => {
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
-    if (isLoading) {
+    if (disabled || isLoading) {
       event.preventDefault()
       return
     }
@@ -69,14 +76,17 @@ export const Button = ({
     <button
       {...props}
       aria-busy={isLoading || undefined}
+      aria-disabled={disabled || undefined}
       className={clsx(buttonClassName({ variant, size, isWide }), className)}
       onClick={handleClick}
       type={type}
     >
-      {isLoading ? (
-        <span className="size-5 animate-spin rounded-full border-3 border-surface-disabled border-t-text-secondary" />
-      ) : (
-        children
+      <span className={clsx(isLoading && 'opacity-0')}>{children}</span>
+      {isLoading && (
+        <span
+          aria-hidden
+          className="absolute size-5 animate-spin rounded-full border-3 border-surface-disabled border-t-text-secondary"
+        />
       )}
     </button>
   )
