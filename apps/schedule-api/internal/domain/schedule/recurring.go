@@ -80,7 +80,8 @@ type RecurringSchedule struct {
 	Rule Rule
 }
 
-// NewRecurring は、予定の項目と、終了日が最初の日付より前でないことを検証して RecurringSchedule を作る。
+// NewRecurring は、予定の項目と、終了日が最初の日付より前でないことと、最初の日付が規則の回に当たることを
+// 検証して RecurringSchedule を作る。最初の日付が回に当たらないと、Slot.Date の回を置き換えられない。
 func NewRecurring(id string, s Slot, typ Type, rule Rule) (RecurringSchedule, error) {
 	slot, err := newSlot(s, typ)
 	if err != nil {
@@ -89,7 +90,11 @@ func NewRecurring(id string, s Slot, typ Type, rule Rule) (RecurringSchedule, er
 	if rule.EndDate != nil && rule.EndDate.Before(slot.Date) {
 		return RecurringSchedule{}, domain.Invalid("繰り返しの終了日は最初の日付以降にします")
 	}
-	return RecurringSchedule{ID: id, Slot: slot, Rule: rule}, nil
+	rs := RecurringSchedule{ID: id, Slot: slot, Rule: rule}
+	if !rs.Occurs(slot.Date) {
+		return RecurringSchedule{}, domain.Invalid("最初の日付 %s が繰り返しの規則の回に当たりません", slot.Date)
+	}
+	return rs, nil
 }
 
 // Occurs は、d が繰り返しの回に当たるかを返す。除外した日付は考えない。
