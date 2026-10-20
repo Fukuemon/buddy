@@ -10,7 +10,7 @@ description: 人手検証のシナリオ(前提、もし、かつ、ならば �
 
 ## 始める前に読むもの
 
-- `context/testing.md` の証跡の節。次の値が書いてある。無ければ利用者に尋ね、context に書いてもらう
+- `context/testing.md` のEvidence の節。次の値が書いてある。無ければ利用者に尋ね、context に書いてもらう
   - 検証シナリオのファイルと pull request の置き場
   - spec の置き場(`<root>/<issue>/`)と、spec の名前の付け方
   - 撮る URL、改修前の URL、実施日、環境の名前を渡す環境変数

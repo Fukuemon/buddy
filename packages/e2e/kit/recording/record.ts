@@ -134,12 +134,17 @@ export const recordEvidence = async <T>(
     scenario: s.scenario,
     captions,
     elapsed,
-    failure:
-      failure === undefined
-        ? undefined
-        : failure instanceof Error
-          ? String(failure)
-          : JSON.stringify(failure),
+    failure: failure === undefined ? undefined : describeFailure(failure),
   })
   if (failure !== undefined) throw failure
+}
+
+/** README に出す失敗の文。Error と文字列はそのまま、ほかの値は JSON にし、JSON にできなければ型の名前にする。 */
+const describeFailure = (failure: unknown) => {
+  if (failure instanceof Error || typeof failure === 'string') return String(failure)
+  try {
+    return JSON.stringify(failure) ?? typeof failure
+  } catch {
+    return typeof failure
+  }
 }

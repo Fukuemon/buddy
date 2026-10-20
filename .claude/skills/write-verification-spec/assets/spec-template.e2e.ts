@@ -1,4 +1,4 @@
-// 証跡を撮る spec のひな形。context/testing.md の証跡の節にある spec の置き場に写し、<…> を埋める。
+// 証跡を撮る spec のひな形。context/testing.md のEvidence の節にある spec の置き場に写し、<…> を埋める。
 // シナリオアウトラインでないシナリオは、CASES を消し、recordEvidence に example を渡さない。
 // recordEvidence と variants は、packages/e2e の薄い層(置き場、アプリの値、環境変数を渡すもの)から import する。
 import { test, type Page } from '@playwright/test';

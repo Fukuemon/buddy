@@ -36,7 +36,7 @@ const run = (cmd: string, args: string[]): string => {
     return execFileSync(cmd, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
   } catch (e) {
     throw new Error(
-      `${cmd} が失敗した。ffmpeg と ffprobe を入れる(README のセットアップ): ${String(e)}`,
+      `${cmd} が失敗した。ffmpeg と ffprobe を入れる(packages/e2e/README.md): ${String(e)}`,
     )
   }
 }
