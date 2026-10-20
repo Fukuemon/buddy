@@ -1,0 +1,31 @@
+/* FullCalendar の見た目の上書き。FullCalendar の DOM にはクラスを渡せないため、ここだけ CSS で書く。 */
+
+.schedule-calendar .fc {
+  --fc-border-color: var(--color-gray-200);
+  --fc-today-bg-color: var(--color-action-bg);
+  --fc-now-indicator-color: var(--color-incorrect-main);
+
+  height: 100%;
+}
+
+.schedule-calendar .fc-scrollgrid-section-header.fc-scrollgrid-section-sticky {
+  box-shadow: 2px 0 4px 0 rgb(0 0 0 / 10%);
+}
+
+.schedule-calendar .fc-daygrid-day-top {
+  justify-content: center;
+}
+
+.schedule-calendar .fc-daygrid-day:hover {
+  background-color: var(--color-gray-10);
+  cursor: pointer;
+}
+
+.schedule-calendar .fc-event {
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+
+.schedule-calendar .fc-event:hover {
+  filter: brightness(0.92);
+}

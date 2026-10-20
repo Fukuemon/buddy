@@ -14,7 +14,13 @@ const config = defineConfig({
   plugins: lazyPlugins(() =>
     isTest
       ? [svgr(), viteReact()]
-      : [devtools(), tailwindcss(), svgr(), tanstackStart(), viteReact()],
+      : [
+          devtools({ injectSource: { enabled: false } }),
+          tailwindcss(),
+          svgr(),
+          tanstackStart(),
+          viteReact(),
+        ],
   ),
   test: {
     environment: 'jsdom',
