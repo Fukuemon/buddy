@@ -33,7 +33,7 @@ API とマイグレーションは、次の環境変数を読む。
 
 ## 認証
 
-`/v1` の API は全て、OIDC のブローカーが発行した access token の JWT を `Authorization: Bearer` で求める。`GET /health` は認証を求めない。
+`/v1` の API は全て、OIDC のブローカーが発行した access token の JWT を `Authorization: Bearer` で求める。`GET /healthz` と `GET /readyz` は認証を求めない。`/readyz` は、MySQL に届かなければ 503 を返す。
 
 - 署名、`iss`、`aud`、`exp`、`nbf` を確かめる。署名のアルゴリズムは RS256 と ES256 だけを受け付ける。
 - JWKS は起動のときに discovery の文書から場所を読み、1 時間ごとに取り直す。知らない `kid` のトークンが来たときも取り直すが、間隔は 1 分以上あける。
@@ -66,7 +66,7 @@ export OIDC_ISSUER=http://127.0.0.1:9000 OIDC_AUDIENCE=schedule-api
 go run ./cmd/api
 ```
 
-`curl localhost:8080/health` が `{"status":"ok"}` を返せば、起動できている。  
+`curl localhost:8080/readyz` が `{"status":"ok"}` を返せば、起動できている。  
 API は SIGINT か SIGTERM を受けると、処理中のリクエストを最大 30 秒待ってから止まる。
 
 `cmd/devissuer` は、`GET /token` で署名したトークンを返す。  
@@ -86,7 +86,7 @@ curl -H "Authorization: Bearer $TOKEN" localhost:8080/v1/facilities/01M3TC5H00QV
 
 - `go run ./cmd/migrate up` は、未適用のマイグレーションをすべて当てる。事業所に属さず全ての環境で同じ値のマスタ（予定の種類、サービスコード、訪問の区分）も、マイグレーションが入れる。
 - `go run ./cmd/migrate down [N]` は、マイグレーションを N 版戻す。N の既定は 1。
-- `go run ./cmd/migrate seed` は、架空のデータを入れる。同じ ID の行があると失敗するので、空のデータベースに 1 度だけ当てる。
+- `go run ./cmd/migrate seed` は、架空のデータを入れる。事業所の行が既にあれば、何もせずに終わる。
 
 migrate の CLI を直接使うときは、次のように実行する。
 

@@ -30,24 +30,38 @@ tags:
     description: 予定（単発、繰り返し、キャンセル）
 
 paths:
-  /health:
+  /healthz:
     get:
       tags: [health]
-      operationId: getHealth
-      summary: ヘルスチェック
+      operationId: getHealthz
+      summary: プロセスが応答できるかを返す
+      description: 依存先を確かめない。
       security: []
       responses:
         "200":
-          description: 動いている
+          description: 応答できる
           content:
             application/json:
-              schema:
-                type: object
-                required: [status]
-                properties:
-                  status:
-                    type: string
-                    enum: [ok]
+              schema: { $ref: "#/components/schemas/Health" }
+
+  /readyz:
+    get:
+      tags: [health]
+      operationId: getReadyz
+      summary: 要求を受けられるかを返す
+      description: MySQL に届けば 200、届かなければ 503 を返す。
+      security: []
+      responses:
+        "200":
+          description: 要求を受けられる
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+        "503":
+          description: MySQL に届かない
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
 
   /v1/facilities/{facility_id}:
     get:
@@ -751,6 +765,14 @@ components:
           schema: { $ref: "#/components/schemas/Error" }
 
   schemas:
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok, unavailable]
+
     ID:
       type: string
       pattern: "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"

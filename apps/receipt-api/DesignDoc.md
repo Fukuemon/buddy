@@ -44,7 +44,7 @@ receipt-api は、訪問の予定と電子カルテ（iBow）の実績を比べ�
 - `internal/check`: 上の 4 つをつなぐ。予定の取得元は `ScheduleSource` で受ける
 - `internal/gcal`: Google カレンダーの予定を、予定の CSV と同じ `csvio.Row` にしてから `normalize.Schedules` に通す
 - `internal/source`: 要求の `schedules` と `month` から、予定の取得元（`CSVSchedules` か `internal/gcal`）を選ぶ
-- `internal/httpapi`: `GET /health` と `POST /v1/checks`
+- `internal/httpapi`: `GET /healthz`、`GET /readyz`、`POST /v1/checks`
 
 ### 処理の流れ
 
@@ -252,7 +252,7 @@ API の定義の正本は [openapi.yaml](https://github.com/Fukuemon/buddy/blob/
   - 入力の CSV の誤り: 422 の `invalid_csv`。行ごとの誤り（`errors` の `source`、`line`、`column`、`message`）を持つ
   - Calendar API の呼び出しに失敗した: 502 の `schedule_source_failed`
   - Google カレンダーの設定がないのに `month` で呼ばれた: 503 の `calendar_not_configured`。要求の形は正しく、照合できない原因がサーバーの設定にあるので、400 にしない
-- 照合に固有の環境変数は [README.md](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/README.md) にあり、全体で共通の環境変数は [buddy Design Doc の Interfaces](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md#interfaces) にある。ヘルスチェックは、今は `GET /health` である。
+- 照合に固有の環境変数は [README.md](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/README.md) にあり、全体で共通の環境変数は [buddy Design Doc の Interfaces](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md#interfaces) にある。
 
 ## Verification
 

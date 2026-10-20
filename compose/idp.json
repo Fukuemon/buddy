@@ -1,0 +1,21 @@
+{
+  "interactiveLogin": true,
+  "tokenCallbacks": [
+    {
+      "issuerId": "buddy",
+      "tokenExpiry": 3600,
+      "requestMappings": [
+        {
+          "requestParam": "grant_type",
+          "match": "*",
+          "claims": {
+            "aud": ["web", "schedule-api", "receipt-api"],
+            "email": "hina.aoki@example.com",
+            "email_verified": true,
+            "org_id": "org-sample"
+          }
+        }
+      ]
+    }
+  ]
+}

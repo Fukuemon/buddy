@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/presentation/http/openapi"
@@ -42,9 +43,20 @@ func toPosition(p organization.Position) openapi.Position {
 	}
 }
 
-// GetHealth は、{"status":"ok"} を返す。
-func (s server) GetHealth(context.Context, openapi.GetHealthRequestObject) (openapi.GetHealthResponseObject, error) {
-	return openapi.GetHealth200JSONResponse{Status: openapi.Ok}, nil
+// GetHealthz は、{"status":"ok"} を返す。
+func (s server) GetHealthz(context.Context, openapi.GetHealthzRequestObject) (openapi.GetHealthzResponseObject, error) {
+	return openapi.GetHealthz200JSONResponse{Status: openapi.Ok}, nil
+}
+
+// GetReadyz は、依存先に届けば 200 を、届かなければ 503 を返す。
+func (s server) GetReadyz(ctx context.Context, _ openapi.GetReadyzRequestObject) (openapi.GetReadyzResponseObject, error) {
+	if s.ready != nil {
+		if err := s.ready(ctx); err != nil {
+			s.log.WarnContext(ctx, "not ready", slog.Any("error", err))
+			return openapi.GetReadyz503JSONResponse{Status: openapi.Unavailable}, nil
+		}
+	}
+	return openapi.GetReadyz200JSONResponse{Status: openapi.Ok}, nil
 }
 
 func (s server) GetFacility(ctx context.Context, req openapi.GetFacilityRequestObject) (openapi.GetFacilityResponseObject, error) {

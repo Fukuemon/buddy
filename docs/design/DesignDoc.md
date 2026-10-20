@@ -124,9 +124,9 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 ### ヘルスチェック
 
 - `GET /healthz`: プロセスが応答できれば 200 を返す。依存先を確かめない。
-- `GET /readyz`: 依存先に届けば 200、届かなければ 503 を返す。schedule-api は MySQL、web は Valkey を確かめる。
+- `GET /readyz`: 依存先に届けば 200、届かなければ 503 を返す。schedule-api は MySQL、web は Valkey を確かめる。receipt-api は起動に要る依存先を持たないので、応答できれば 200 を返す。
 - 2 つとも認証を求めない。
-- receipt-api は、今は `GET /health` だけを持つ。`/healthz` と `/readyz` に合わせる作業は残っている。
+- web は、今は 2 つとも持たない。BFF のセッションと一緒に足す。
 
 ### マイグレーション
 

@@ -4,15 +4,38 @@
  */
 
 export interface paths {
-    "/health": {
+    "/healthz": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** ヘルスチェック */
-        get: operations["getHealth"];
+        /**
+         * プロセスが応答できるかを返す
+         * @description 依存先を確かめない。
+         */
+        get: operations["getHealthz"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/readyz": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 要求を受けられるかを返す
+         * @description MySQL に届けば 200、届かなければ 503 を返す。
+         */
+        get: operations["getReadyz"];
         put?: never;
         post?: never;
         delete?: never;
@@ -399,6 +422,10 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        Health: {
+            /** @enum {string} */
+            status: "ok" | "unavailable";
+        };
         /** @example 01M3TC5H00QV17BC0J9V3393ZP */
         ID: string;
         /** Format: date */
@@ -688,7 +715,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    getHealth: {
+    getHealthz: {
         parameters: {
             query?: never;
             header?: never;
@@ -697,16 +724,42 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 動いている */
+            /** @description 応答できる */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        /** @enum {string} */
-                        status: "ok";
-                    };
+                    "application/json": components["schemas"]["Health"];
+                };
+            };
+        };
+    };
+    getReadyz: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 要求を受けられる */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Health"];
+                };
+            };
+            /** @description MySQL に届かない */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Health"];
                 };
             };
         };

@@ -45,6 +45,24 @@ func (e ErrorCode) Valid() bool {
 	}
 }
 
+// Defines values for HealthStatus.
+const (
+	Ok          HealthStatus = "ok"
+	Unavailable HealthStatus = "unavailable"
+)
+
+// Valid indicates whether the value is a known member of the HealthStatus enum.
+func (e HealthStatus) Valid() bool {
+	switch e {
+	case Ok:
+		return true
+	case Unavailable:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PreferredGender.
 const (
 	PreferredGenderEmpty PreferredGender = "男性"
@@ -129,21 +147,6 @@ func (e SortOrder) Valid() bool {
 	case SortOrderAsc:
 		return true
 	case SortOrderDesc:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for GetHealth200JSONResponseBodyStatus.
-const (
-	Ok GetHealth200JSONResponseBodyStatus = "ok"
-)
-
-// Valid indicates whether the value is a known member of the GetHealth200JSONResponseBodyStatus enum.
-func (e GetHealth200JSONResponseBodyStatus) Valid() bool {
-	switch e {
-	case Ok:
 		return true
 	default:
 		return false
@@ -300,6 +303,14 @@ type Facility struct {
 	Name      string    `json:"name"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
+// Health defines model for Health.
+type Health struct {
+	Status HealthStatus `json:"status"`
+}
+
+// HealthStatus defines model for Health.Status.
+type HealthStatus string
 
 // ID Example: 01M3TC5H00QV17BC0J9V3393ZP
 type ID = string
@@ -653,14 +664,6 @@ type NotFound = Error
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = Error
 
-// GetHealth200JSONResponseBodyStatus defines parameters for GetHealth.
-type GetHealth200JSONResponseBodyStatus string
-
-// GetHealth200JSONResponseBody defines parameters for GetHealth.
-type GetHealth200JSONResponseBody struct {
-	Status GetHealth200JSONResponseBodyStatus `json:"status"`
-}
-
 // ListPatientsParams defines parameters for ListPatients.
 type ListPatientsParams struct {
 	Name            *string          `form:"name,omitempty" json:"name,omitempty"`
@@ -858,9 +861,12 @@ type CancelScheduleJSONRequestBody CancelScheduleJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// GetHealth ヘルスチェック
-	// (GET /health)
-	GetHealth(c *gin.Context)
+	// GetHealthz プロセスが応答できるかを返す
+	// (GET /healthz)
+	GetHealthz(c *gin.Context)
+	// GetReadyz 要求を受けられるかを返す
+	// (GET /readyz)
+	GetReadyz(c *gin.Context)
 	// GetDepartment 部署を取得する
 	// (GET /v1/departments/{department_id})
 	GetDepartment(c *gin.Context, departmentId ID)
@@ -953,8 +959,8 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(c *gin.Context)
 
-// GetHealth operation middleware
-func (siw *ServerInterfaceWrapper) GetHealth(c *gin.Context) {
+// GetHealthz operation middleware
+func (siw *ServerInterfaceWrapper) GetHealthz(c *gin.Context) {
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -963,7 +969,20 @@ func (siw *ServerInterfaceWrapper) GetHealth(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetHealth(c)
+	siw.Handler.GetHealthz(c)
+}
+
+// GetReadyz operation middleware
+func (siw *ServerInterfaceWrapper) GetReadyz(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetReadyz(c)
 }
 
 // GetDepartment operation middleware
@@ -1753,7 +1772,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
-	router.GET(options.BaseURL+"/health", wrapper.GetHealth)
+	router.GET(options.BaseURL+"/healthz", wrapper.GetHealthz)
+	router.GET(options.BaseURL+"/readyz", wrapper.GetReadyz)
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id", wrapper.GetFacility)
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id/departments", wrapper.ListDepartments)
 	router.GET(options.BaseURL+"/v1/departments/:department_id", wrapper.GetDepartment)
@@ -1802,16 +1822,16 @@ type UnauthorizedJSONResponse struct {
 	Headers UnauthorizedResponseHeaders
 }
 
-type GetHealthRequestObject struct {
+type GetHealthzRequestObject struct {
 }
 
-type GetHealthResponseObject interface {
-	VisitGetHealthResponse(w http.ResponseWriter) error
+type GetHealthzResponseObject interface {
+	VisitGetHealthzResponse(w http.ResponseWriter) error
 }
 
-type GetHealth200JSONResponse = GetHealth200JSONResponseBody
+type GetHealthz200JSONResponse Health
 
-func (response GetHealth200JSONResponse) VisitGetHealthResponse(w http.ResponseWriter) error {
+func (response GetHealthz200JSONResponse) VisitGetHealthzResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -1819,6 +1839,41 @@ func (response GetHealth200JSONResponse) VisitGetHealthResponse(w http.ResponseW
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetReadyzRequestObject struct {
+}
+
+type GetReadyzResponseObject interface {
+	VisitGetReadyzResponse(w http.ResponseWriter) error
+}
+
+type GetReadyz200JSONResponse Health
+
+func (response GetReadyz200JSONResponse) VisitGetReadyzResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetReadyz503JSONResponse Health
+
+func (response GetReadyz503JSONResponse) VisitGetReadyzResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -4355,9 +4410,12 @@ func (response ListVisitCategories500JSONResponse) VisitListVisitCategoriesRespo
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
-	// GetHealth ヘルスチェック
-	// (GET /health)
-	GetHealth(ctx context.Context, request GetHealthRequestObject) (GetHealthResponseObject, error)
+	// GetHealthz プロセスが応答できるかを返す
+	// (GET /healthz)
+	GetHealthz(ctx context.Context, request GetHealthzRequestObject) (GetHealthzResponseObject, error)
+	// GetReadyz 要求を受けられるかを返す
+	// (GET /readyz)
+	GetReadyz(ctx context.Context, request GetReadyzRequestObject) (GetReadyzResponseObject, error)
 	// GetDepartment 部署を取得する
 	// (GET /v1/departments/{department_id})
 	GetDepartment(ctx context.Context, request GetDepartmentRequestObject) (GetDepartmentResponseObject, error)
@@ -4498,23 +4556,47 @@ type strictHandler struct {
 	options     StrictGinServerOptions
 }
 
-// GetHealth operation middleware
-func (sh *strictHandler) GetHealth(ctx *gin.Context) {
-	var request GetHealthRequestObject
+// GetHealthz operation middleware
+func (sh *strictHandler) GetHealthz(ctx *gin.Context) {
+	var request GetHealthzRequestObject
 
 	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.GetHealth(ctx, request.(GetHealthRequestObject))
+		return sh.ssi.GetHealthz(ctx, request.(GetHealthzRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetHealth")
+		handler = middleware(handler, "GetHealthz")
 	}
 
 	response, err := handler(ctx, request)
 
 	if err != nil {
 		sh.options.HandlerErrorFunc(ctx, err)
-	} else if validResponse, ok := response.(GetHealthResponseObject); ok {
-		if err := validResponse.VisitGetHealthResponse(ctx.Writer); err != nil {
+	} else if validResponse, ok := response.(GetHealthzResponseObject); ok {
+		if err := validResponse.VisitGetHealthzResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetReadyz operation middleware
+func (sh *strictHandler) GetReadyz(ctx *gin.Context) {
+	var request GetReadyzRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetReadyz(ctx, request.(GetReadyzRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetReadyz")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetReadyzResponseObject); ok {
+		if err := validResponse.VisitGetReadyzResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {

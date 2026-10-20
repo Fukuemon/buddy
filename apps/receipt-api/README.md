@@ -60,7 +60,7 @@ docker run --rm -p 8080:8080 receipt-api
 
 要求と応答の項目の定義は [openapi.yaml](openapi.yaml) にある。
 
-- `GET /health`: `{"status":"ok"}` を返す
+- `GET /healthz`、`GET /readyz`: `{"status":"ok"}` を返す。照合の API は起動に要る依存先を持たないので、`/readyz` も応答できれば 200 を返す
 - `POST /v1/checks`: multipart/form-data の `visits`（実訪問の CSV）と予定を照合する
   - 予定は、ファイル `schedules`（予定の CSV）があればそれを使う。無くてフォームの値 `month`（`2024-04` の形）があれば、その月の予定を Google カレンダーから取る
   - Google カレンダーの予定のうち、題名を解釈できずに照合に使わなかったものは、`warnings` にカレンダー ID、予定の ID、開始の日時で返す

@@ -4,15 +4,35 @@
  */
 
 export interface paths {
-    "/health": {
+    "/healthz": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** ヘルスチェック */
-        get: operations["getHealth"];
+        /** プロセスが応答できるかを返す */
+        get: operations["getHealthz"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/readyz": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 要求を受けられるかを返す
+         * @description 照合の API は、起動に要る依存先を持たないので、応答できれば 200 を返す。
+         */
+        get: operations["getReadyz"];
         put?: never;
         post?: never;
         delete?: never;
@@ -165,7 +185,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    getHealth: {
+    getHealthz: {
         parameters: {
             query?: never;
             header?: never;
@@ -174,7 +194,27 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 動いている */
+            /** @description 応答できる */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Health"];
+                };
+            };
+        };
+    };
+    getReadyz: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 要求を受けられる */
             200: {
                 headers: {
                     [name: string]: unknown;

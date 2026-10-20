@@ -1,0 +1,141 @@
+# 手元で全部を動かす構成。手順は CONTRIBUTING.md の「手元で全部を動かす」にある。
+# 値は全て開発用の架空のもので、ほかの環境で使わない。
+
+name: buddy
+
+x-db-env: &db-env
+  DB_HOST: mysql
+  DB_PORT: '3306'
+  DB_USER: buddy
+  DB_PASSWORD: buddy-dev
+  DB_NAME: buddy
+
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: buddy
+      MYSQL_USER: buddy
+      MYSQL_PASSWORD: buddy-dev
+      MYSQL_RANDOM_ROOT_PASSWORD: 'yes'
+    ports: ['127.0.0.1:${MYSQL_PORT:-13306}:3306']
+    volumes: [mysql:/var/lib/mysql]
+    healthcheck:
+      # 初期化の間の一時のサーバーは TCP で待ち受けないので、127.0.0.1 に届けば初期化が終わっている
+      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-ubuddy', '-pbuddy-dev']
+      interval: 2s
+      timeout: 5s
+      retries: 60
+
+  valkey:
+    image: valkey/valkey:9.1.2
+    ports: ['127.0.0.1:${VALKEY_PORT:-6379}:6379']
+    healthcheck:
+      test: ['CMD', 'valkey-cli', 'ping']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  # 開発用の OIDC の IdP。ログインの画面で入れた名前が sub になり、ほかのクレームは compose/idp.json の値になる
+  idp:
+    image: ghcr.io/navikt/mock-oauth2-server:6.0.4
+    environment:
+      SERVER_PORT: '9000'
+      JSON_CONFIG_PATH: /config/idp.json
+    ports: ['127.0.0.1:${IDP_PORT:-9000}:9000']
+    volumes: [./compose/idp.json:/config/idp.json:ro]
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'wget',
+          '-q',
+          '-O',
+          '/dev/null',
+          'http://127.0.0.1:9000/buddy/.well-known/openid-configuration',
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  schedule-api-migrate:
+    build: apps/schedule-api
+    image: buddy-compose-schedule-api
+    entrypoint: ['/usr/local/bin/migrate']
+    command: ['up']
+    environment: *db-env
+    depends_on:
+      mysql: { condition: service_healthy }
+
+  schedule-api-seed:
+    image: buddy-compose-schedule-api
+    # イメージは schedule-api-migrate がビルドする
+    pull_policy: never
+    entrypoint: ['/usr/local/bin/migrate']
+    command: ['seed']
+    environment: *db-env
+    depends_on:
+      schedule-api-migrate: { condition: service_completed_successfully }
+
+  schedule-api:
+    image: buddy-compose-schedule-api
+    # イメージは schedule-api-migrate がビルドする
+    pull_policy: never
+    environment:
+      <<: *db-env
+      # トークンの iss は、IdP がトークンの要求の Host から決める。API とトークンを取る web は、コンテナの間の名前 idp で呼ぶ
+      OIDC_ISSUER: http://idp:9000/buddy
+      OIDC_AUDIENCE: schedule-api
+      CORS_ALLOW_ORIGINS: http://localhost:${WEB_PORT:-3000}
+    ports: ['127.0.0.1:${SCHEDULE_API_PORT:-8080}:8080']
+    healthcheck:
+      test: ['CMD', '/usr/local/bin/api', 'healthcheck']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    depends_on:
+      schedule-api-seed: { condition: service_completed_successfully }
+      idp: { condition: service_healthy }
+
+  receipt-api:
+    build: apps/receipt-api
+    ports: ['127.0.0.1:${RECEIPT_API_PORT:-8090}:8080']
+    healthcheck:
+      test: ['CMD', '/api', 'healthcheck']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    # web は、まだ偽物の API で動き、次の値を読まない。BFF のログインを入れるときに読む（#7）
+    environment:
+      OIDC_ISSUER: http://idp:9000/buddy
+      OIDC_CLIENT_ID: web
+      OIDC_CLIENT_SECRET: web-dev
+      SESSION_STORE_URL: redis://valkey:6379
+      SESSION_SECRET: buddy-dev-session-secret
+      SCHEDULE_API_URL: http://schedule-api:8080
+      RECEIPT_API_URL: http://receipt-api:8080
+    ports: ['127.0.0.1:${WEB_PORT:-3000}:3000']
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    depends_on:
+      valkey: { condition: service_healthy }
+      idp: { condition: service_healthy }
+      schedule-api: { condition: service_healthy }
+      receipt-api: { condition: service_healthy }
+
+volumes:
+  mysql:

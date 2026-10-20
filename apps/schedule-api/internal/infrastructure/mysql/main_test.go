@@ -18,6 +18,9 @@ import (
 // testDB は、TestMain が起動した MySQL 8.4 に、マイグレーションとシードを当てた接続である。
 var testDB *sql.DB
 
+// testConfig は、testDB の接続の設定である。
+var testConfig Config
+
 func TestMain(m *testing.M) {
 	flag.Parse()
 	if testing.Short() {
@@ -51,10 +54,11 @@ func runWithMySQL(m *testing.M) int {
 		log.Print(err)
 		return 1
 	}
-	if err := Seed(ctx, cfg, db.Seed); err != nil {
-		log.Print(err)
+	if applied, err := Seed(ctx, cfg, db.Seed); err != nil || !applied {
+		log.Printf("seed: applied = %v, err = %v", applied, err)
 		return 1
 	}
+	testConfig = cfg
 	testDB, err = Open(ctx, cfg)
 	if err != nil {
 		log.Print(err)
@@ -100,4 +104,67 @@ func TestDSNKeepsPassword(t *testing.T) {
 	if parsed.Passwd != cfg.Password || parsed.Addr != "db:3306" || parsed.DBName != "buddy" || !parsed.ParseTime {
 		t.Fatalf("parsed = %+v", parsed)
 	}
+}
+
+func TestSeedSkipsWhenFacilitiesExist(t *testing.T) {
+	if testDB == nil {
+		t.Skip("MySQL を使うテストは -short では動かさない")
+	}
+	before := countFacilities(t)
+	applied, err := Seed(context.Background(), testConfig, db.Seed)
+	if err != nil || applied {
+		t.Fatalf("applied = %v, err = %v", applied, err)
+	}
+	if after := countFacilities(t); after != before {
+		t.Errorf("facilities = %d, want %d", after, before)
+	}
+}
+
+func TestSeedRollsBackOnFailure(t *testing.T) {
+	if testDB == nil {
+		t.Skip("MySQL を使うテストは -short では動かさない")
+	}
+	ctx := context.Background()
+	// testcontainers の MySQL は、root のパスワードを利用者のパスワードと同じにする
+	rootCfg := testConfig
+	rootCfg.User = "root"
+	root, err := Open(ctx, rootCfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_, _ = root.ExecContext(ctx, "DROP DATABASE seed_rollback")
+		_ = root.Close()
+	})
+	for _, q := range []string{
+		"CREATE DATABASE seed_rollback",
+		"CREATE TABLE seed_rollback.facilities (name VARCHAR(10) NOT NULL)",
+		"GRANT ALL ON seed_rollback.* TO 'buddy'@'%'",
+	} {
+		if _, err := root.ExecContext(ctx, q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cfg := testConfig
+	cfg.Name = "seed_rollback"
+	broken := []byte("INSERT INTO facilities (name) VALUES ('a'); INSERT INTO missing_table VALUES (1);")
+	if applied, err := Seed(ctx, cfg, broken); err == nil || applied {
+		t.Fatalf("applied = %v, err = %v", applied, err)
+	}
+	var n int
+	if err := testDB.QueryRowContext(ctx, "SELECT COUNT(*) FROM seed_rollback.facilities").Scan(&n); err != nil {
+		t.Fatal(err)
+	}
+	if n != 0 {
+		t.Errorf("失敗したシードの行が %d 行残った", n)
+	}
+}
+
+func countFacilities(t *testing.T) int {
+	t.Helper()
+	var n int
+	if err := testDB.QueryRowContext(context.Background(), "SELECT COUNT(*) FROM facilities").Scan(&n); err != nil {
+		t.Fatal(err)
+	}
+	return n
 }

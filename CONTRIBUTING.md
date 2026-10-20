@@ -22,6 +22,45 @@ apm install --frozen
 apm lifecycle trust
 ```
 
+## 手元で全部を動かす
+
+画面、2 つの API、MySQL、Valkey、開発用の OIDC の IdP は、リポジトリのルートの `compose.yml` で一緒に起動する。Docker が要る。
+
+```sh
+docker compose up --build --wait
+```
+
+`--wait` は、全てのサービスのヘルスチェックが通るまで待つ。schedule-api は、起動の前にマイグレーションとシードを当てる。シードは、事業所の行が既にあれば当てない。
+
+ポートは `127.0.0.1` にだけ公開する。
+
+| サービス | 手元の URL | ポートを変える環境変数 |
+| --- | --- | --- |
+| web | `http://localhost:3000` | `WEB_PORT` |
+| schedule-api | `http://localhost:8080` | `SCHEDULE_API_PORT` |
+| receipt-api | `http://localhost:8090` | `RECEIPT_API_PORT` |
+| idp | `http://localhost:9000/buddy` | `IDP_PORT` |
+| mysql | `localhost:13306` | `MYSQL_PORT` |
+| valkey | `localhost:6379` | `VALKEY_PORT` |
+
+- IdP は navikt/mock-oauth2-server である。ログインの画面で入れた名前が `sub` になり、ほかのクレームは `compose/idp.json` の値になる。
+  - 既定のクレームは、シードの職員の青木 陽菜（組織 `org-sample`）を指す。ほかの職員で入るときは、ログインの画面のクレームの欄に `{"email": "kenta.mori@example.com"}` のように書く。クレームの欄の値は、既定のクレームを上書きする。
+  - 職員ごとに別の名前で入る。schedule-api は、初回のログインで `sub` を職員に結び付けるため、同じ名前でメールを替えても最初の職員として扱う。
+- API が受けるトークンの `iss` は `http://idp:9000/buddy` である。IdP は `iss` をトークンの要求の Host から決めるため、トークンはコンテナの間の名前 `idp` で取る。
+- 画面は、まだ偽物の API で動く。
+- データを消して最初からにするときは、`docker compose down -v` で MySQL のボリュームを消す。
+
+予定の API を手で呼ぶときは、認可コードのフローでトークンを取る。
+
+```sh
+CODE=$(curl -s -o /dev/null -w '%{redirect_url}' -X POST \
+  'localhost:9000/buddy/authorize?client_id=web&response_type=code&redirect_uri=http://localhost:3000/cb&scope=openid&state=s' \
+  -d username=dev-aoki | sed -E 's/.*code=([^&]+).*/\1/')
+TOKEN=$(docker compose exec -T idp wget -qO- --post-data "grant_type=authorization_code&code=$CODE&redirect_uri=http://localhost:3000/cb&client_id=web&client_secret=web-dev" \
+  http://idp:9000/buddy/token | jq -r .access_token)
+curl -H "Authorization: Bearer $TOKEN" localhost:8080/v1/facilities/01M3TC5H00QV17BC0J9V3393ZP
+```
+
 ## 文書を直すとき
 
 PRD、Design Doc、ADR は `docs/` にあり、Zensical のサイトとして読む。

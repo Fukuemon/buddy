@@ -1,0 +1,32 @@
+package main
+
+import (
+	"fmt"
+	"net/http"
+	"os"
+	"strconv"
+	"time"
+)
+
+// healthcheck は、同じコンテナで動く API の GET /readyz を呼び、200 なら 0、それ以外なら 1 を返す。
+// curl の無いイメージで、compose のヘルスチェックに使う。ポートは API と同じ環境変数 PORT から読む。
+func healthcheck() int {
+	port := 8080
+	if v := os.Getenv("PORT"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil {
+			return 1
+		}
+		port = n
+	}
+	client := &http.Client{Timeout: 3 * time.Second}
+	res, err := client.Get(fmt.Sprintf("http://127.0.0.1:%d/readyz", port)) //nolint:gosec // G704 の誤検知。宛先は 127.0.0.1 に固定で、環境変数はポートだけを決める
+	if err != nil {
+		return 1
+	}
+	_ = res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return 1
+	}
+	return 0
+}
