@@ -5,7 +5,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./theme.css": "./src/tokens/theme.css",
-    "./fonts.css": "./src/tokens/fonts.css"
+    "./fonts.css": "./src/tokens/fonts.css",
+    "./storybook-preview": "./.storybook/sharedPreview.ts"
   },
   "scripts": {
     "test": "vp test run",

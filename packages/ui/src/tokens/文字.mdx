@@ -1,0 +1,80 @@
+import { Meta, Typeset } from '@storybook/addon-docs/blocks'
+
+<Meta title="トークン/文字" />
+
+# 文字
+
+書体は `font-sans`（Noto Sans JP）だけを使う。書体のファイルは `@fontsource/noto-sans-jp` から読み込み、外部の CDN に頼らない。
+文字の大きさは、次の 6 つのユーティリティで、大きさと行高と文字の間隔をまとめて決める。太さを変えるときだけ `font-bold` を足す。
+
+- 出典: [DADS のタイポグラフィ](https://design.digital.go.jp/dads/foundations/typography/)
+
+## 大きさ
+
+{/* Typeset の大きさのラベルは Storybook の薄い灰色で、白の上で 4.5:1 に届かない。このページの中だけ text-secondary にする */}
+
+<style>
+  {
+    '.typeset-sample .docblock-typeset > div > div:first-child { color: var(--buddy-color-text-secondary); }'
+  }
+</style>
+
+<div className="typeset-sample">
+<Typeset
+  fontFamily="'Noto Sans JP', sans-serif"
+  fontSizes={['14px', '16px', '18px', '20px']}
+  fontWeight={400}
+  sampleText="訪問看護の予定を作成する"
+/>
+
+<Typeset
+  fontFamily="'Noto Sans JP', sans-serif"
+  fontSizes={['14px', '16px', '18px', '20px']}
+  fontWeight={700}
+  sampleText="訪問看護の予定を作成する"
+/>
+
+</div>
+
+## ユーティリティ
+
+<div className="flex flex-col gap-4">
+  <div>
+    <div className="text-caption text-text-secondary">
+      <code>text-caption</code>（Dns-14N-130）: 補足の文、エラーの文、時刻の目盛り、カレンダーの予定
+    </div>
+    <div className="text-caption">2026-10-20 09:00 から 09:29</div>
+  </div>
+  <div>
+    <div className="text-caption text-text-secondary">
+      <code>text-body-dense</code>（Dns-16N-130）: 表のセル、入力欄の値、選択肢の文字
+    </div>
+    <div className="text-body-dense">青木 一郎</div>
+  </div>
+  <div>
+    <div className="text-caption text-text-secondary">
+      <code>text-body</code>（Std-16N-170）: 本文。body の既定
+    </div>
+    <div className="text-body">
+      予定は、カレンダーの空いた日や時間を押して作成する。作成した予定は、押すと詳細を開ける。
+    </div>
+  </div>
+  <div>
+    <div className="text-caption text-text-secondary">
+      <code>text-label</code>（Oln-16B-100）: ボタン、切り替えの選択肢
+    </div>
+    <div className="text-label">予定を作成</div>
+  </div>
+  <div>
+    <div className="text-caption text-text-secondary">
+      <code>text-heading-sm</code>（Std-18B-160）: 節の見出し、ダイアログの題、ロゴ
+    </div>
+    <div className="text-heading-sm">予定の詳細</div>
+  </div>
+  <div>
+    <div className="text-caption text-text-secondary">
+      <code>text-heading-md</code>（Std-20B-150）: 画面全体の待ちの文
+    </div>
+    <div className="text-heading-md">カレンダーを表示中...</div>
+  </div>
+</div>

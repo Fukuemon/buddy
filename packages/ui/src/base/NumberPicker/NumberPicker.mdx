@@ -1,0 +1,51 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { NumberPicker } from './NumberPicker'
+import * as Stories from './NumberPicker.stories'
+
+<Meta of={Stories} />
+
+# NumberPicker
+
+単位の決まった数を入力する欄。値は number。React Hook Form の `control` と `name` を受ける。
+
+## 使う場面
+
+- 提供時間（分）のような、単位の決まった数を入力する
+
+## 使わない場面
+
+- 電話番号や番号のように、計算しない数字
+
+## Do
+
+- 単位を `label` に書く（例は「提供時間（分）」）
+- `min` と `max` で範囲を渡す
+
+## Don't
+
+- 単位を書かずに数だけを求める
+
+## 状態
+
+### 既定
+
+<Canvas of={Stories.Default} />
+
+### エラー
+
+<Canvas of={Stories.WithError} />
+
+### 無効
+
+<Canvas of={Stories.Disabled} />
+
+## キーボードの操作
+
+- Tab で欄に移る
+- ↑ と ↓ で数を増減する（ブラウザの操作）
+- エラーがあると `aria-invalid` を付け、`aria-describedby` でエラーの文を指す
+
+## props
+
+<ArgTypes of={NumberPicker} />

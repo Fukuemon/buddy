@@ -37,7 +37,7 @@ const ScheduleFormModalSample = ({ kind, ...props }: SampleProps) => {
 }
 
 const meta = {
-  title: 'Schedule/ScheduleFormModal',
+  title: '画面/Schedule/ScheduleFormModal',
   component: ScheduleFormModalSample,
   args: { kind: 'visit', onSubmit: fn(), onClose: fn(), onKindChange: fn() },
 } satisfies Meta<typeof ScheduleFormModalSample>

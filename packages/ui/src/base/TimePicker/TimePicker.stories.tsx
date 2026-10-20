@@ -14,6 +14,7 @@ type SampleProps = {
 /** React Hook Form のフォームに TimePicker を 1 つ置いた見本。 */
 const TimePickerSample = ({ error, disabled }: SampleProps) => {
   const { control } = useForm<Values>({
+    shouldFocusError: false,
     defaultValues: { time: '09:00' },
     errors: error === undefined ? undefined : { time: { type: 'validate', message: error } },
   })

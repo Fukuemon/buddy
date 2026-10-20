@@ -13,6 +13,7 @@ type SampleProps = {
 /** React Hook Form のフォームに TextareaField を 1 つ置いた見本。 */
 const TextareaFieldSample = ({ error }: SampleProps) => {
   const { control } = useForm<Values>({
+    shouldFocusError: false,
     defaultValues: { memo: '' },
     errors: error === undefined ? undefined : { memo: { type: 'validate', message: error } },
   })

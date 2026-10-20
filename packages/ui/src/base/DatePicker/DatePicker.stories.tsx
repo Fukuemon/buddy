@@ -14,6 +14,7 @@ type SampleProps = {
 /** React Hook Form のフォームに DatePicker を 1 つ置いた見本。 */
 const DatePickerSample = ({ error, disabled }: SampleProps) => {
   const { control } = useForm<Values>({
+    shouldFocusError: false,
     defaultValues: { date: '2026-10-20' },
     errors: error === undefined ? undefined : { date: { type: 'validate', message: error } },
   })

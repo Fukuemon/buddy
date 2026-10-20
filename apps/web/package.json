@@ -44,6 +44,8 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@storybook/addon-a11y": "10.6.3",
+    "@storybook/addon-docs": "10.6.3",
     "@storybook/react-vite": "^10.6.3",
     "@tanstack/devtools-vite": "0.8.5",
     "@tanstack/router-cli": "^1.132.0",

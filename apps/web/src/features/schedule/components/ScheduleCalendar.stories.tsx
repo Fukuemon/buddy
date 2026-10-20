@@ -5,7 +5,7 @@ import { ScheduleCalendar } from './ScheduleCalendar'
 import { STORY_DATE, storyEvents } from './storyData'
 
 const meta = {
-  title: 'Schedule/ScheduleCalendar',
+  title: '画面/Schedule/ScheduleCalendar',
   component: ScheduleCalendar,
   args: {
     view: 'month',

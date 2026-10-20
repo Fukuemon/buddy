@@ -5,7 +5,7 @@ import { StaffSelectList } from './StaffSelectList'
 import { storyStaff } from './storyData'
 
 const meta = {
-  title: 'Schedule/StaffSelectList',
+  title: '画面/Schedule/StaffSelectList',
   component: StaffSelectList,
   args: { staffList: storyStaff, value: 'staff-2', onChange: fn() },
 } satisfies Meta<typeof StaffSelectList>

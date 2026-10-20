@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Loading } from './Loading'
 
 const meta = {
-  title: 'Base/Loading',
+  title: 'コンポーネント/Base/Loading',
   component: Loading,
 } satisfies Meta<typeof Loading>
 

@@ -1,3 +1,4 @@
+import { storybookTest } from '@storybook/addon-vitest/vitest-plugin'
 import tailwindcss from '@tailwindcss/vite'
 import viteReact from '@vitejs/plugin-react'
 import { defineConfig } from 'vite-plus'
@@ -18,6 +19,20 @@ export default defineConfig({
           name: 'component',
           include: ['src/**/*.test.tsx'],
           setupFiles: ['src/test/setup.ts'],
+          browser: {
+            enabled: true,
+            provider: playwright(),
+            headless: true,
+            instances: [{ browser: 'chromium' }],
+          },
+        },
+      },
+      {
+        // story を描画し、play 関数と a11y のアドオン（axe）の確認をテストとして動かす。
+        extends: true,
+        plugins: [storybookTest({ configDir: '.storybook' })],
+        test: {
+          name: 'storybook',
           browser: {
             enabled: true,
             provider: playwright(),

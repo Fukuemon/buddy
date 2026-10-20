@@ -1,0 +1,150 @@
+import { ColorItem, ColorPalette, Meta } from '@storybook/addon-docs/blocks'
+
+<Meta title="トークン/色" />
+
+# 色
+
+画面とコンポーネントは、意味のトークンだけを使う。
+ユーティリティの名前は、Tailwind の `bg-`、`text-`、`border-`、`ring-` の後ろに、意味のトークンの名前を付けたもの（`bg-primary`、`text-text-secondary`）。
+値は DADS の `@digital-go-jp/design-tokens` の変数を参照し、参照の対応は `src/tokens/semantic.css` にある。
+
+- 出典: [DADS の色](https://design.digital.go.jp/dads/foundations/color/)
+
+## 面と線
+
+<ColorPalette>
+  <ColorItem
+    title="surface"
+    subtitle="画面、カード、入力欄、ダイアログの地"
+    colors={{ surface: 'var(--buddy-color-surface)' }}
+  />
+  <ColorItem
+    title="surface-subtle"
+    subtitle="切り替えの溝、押せる行の hover"
+    colors={{ 'surface-subtle': 'var(--buddy-color-surface-subtle)' }}
+  />
+  <ColorItem
+    title="surface-disabled"
+    subtitle="無効のボタンの地"
+    colors={{ 'surface-disabled': 'var(--buddy-color-surface-disabled)' }}
+  />
+  <ColorItem
+    title="overlay"
+    subtitle="ダイアログの後ろの幕"
+    colors={{ overlay: 'var(--buddy-color-overlay)' }}
+  />
+  <ColorItem
+    title="border"
+    subtitle="行と帯の区切り、格子の線。押せるものの境界には使わない"
+    colors={{ border: 'var(--buddy-color-border)' }}
+  />
+  <ColorItem
+    title="border-field"
+    subtitle="入力欄、副のボタン、選択肢の枠。surface の上で 3:1 以上"
+    colors={{ 'border-field': 'var(--buddy-color-border-field)' }}
+  />
+</ColorPalette>
+
+## 文字
+
+文字の色は、`surface` の上で 4.5:1 以上になる。`text-disabled` だけは、WCAG の文字のコントラストの対象外の、無効のコンポーネントに限って使う。
+
+<ColorPalette>
+  <ColorItem
+    title="text"
+    subtitle="本文、見出し、入力した値"
+    colors={{ text: 'var(--buddy-color-text)' }}
+  />
+  <ColorItem
+    title="text-secondary"
+    subtitle="補足、項目のラベル、表の見出し、プレースホルダー"
+    colors={{ 'text-secondary': 'var(--buddy-color-text-secondary)' }}
+  />
+  <ColorItem
+    title="text-disabled"
+    subtitle="無効のコンポーネントの文字だけ"
+    colors={{ 'text-disabled': 'var(--buddy-color-text-disabled)' }}
+  />
+  <ColorItem
+    title="text-inverse"
+    subtitle="primary と categorical-* の面の上の文字"
+    colors={{ 'text-inverse': 'var(--buddy-color-text-inverse)' }}
+  />
+</ColorPalette>
+
+## 状態
+
+状態の色は、文字の色と、同じ系統の薄い面の組で使う。`*-surface` の面の上の文字は、同じ系統の文字の色か `text` にする。
+状態を色だけで伝えず、文と印を一緒に出す。
+
+<ColorPalette>
+  <ColorItem
+    title="primary"
+    subtitle="主のボタンの面、副のボタンの文字、選ばれている選択肢の枠、リンク"
+    colors={{
+      primary: 'var(--buddy-color-primary)',
+      'primary-surface': 'var(--buddy-color-primary-surface)',
+    }}
+  />
+  <ColorItem
+    title="danger"
+    subtitle="エラーの文と枠、取り消せない操作のボタン"
+    colors={{
+      danger: 'var(--buddy-color-danger)',
+      'danger-surface': 'var(--buddy-color-danger-surface)',
+    }}
+  />
+  <ColorItem
+    title="warning"
+    subtitle="確かめてほしい値。誤りではないもの"
+    colors={{
+      warning: 'var(--buddy-color-warning)',
+      'warning-surface': 'var(--buddy-color-warning-surface)',
+    }}
+  />
+  <ColorItem
+    title="success"
+    subtitle="完了と整合"
+    colors={{
+      success: 'var(--buddy-color-success)',
+      'success-surface': 'var(--buddy-color-success-surface)',
+    }}
+  />
+</ColorPalette>
+
+## 区別
+
+職員のように、意味を持たない並びを色で分ける。番号の順に割り当て、11 個目からは 1 に戻る。どの色も、白の文字（`text-inverse`）で 4.5:1 以上になる。
+
+<ColorPalette>
+  <ColorItem
+    title="categorical-1 から 5"
+    subtitle="職員の予定の面"
+    colors={{
+      'categorical-1': 'var(--buddy-color-categorical-1)',
+      'categorical-2': 'var(--buddy-color-categorical-2)',
+      'categorical-3': 'var(--buddy-color-categorical-3)',
+      'categorical-4': 'var(--buddy-color-categorical-4)',
+      'categorical-5': 'var(--buddy-color-categorical-5)',
+    }}
+  />
+  <ColorItem
+    title="categorical-6 から 10"
+    subtitle="職員の予定の面"
+    colors={{
+      'categorical-6': 'var(--buddy-color-categorical-6)',
+      'categorical-7': 'var(--buddy-color-categorical-7)',
+      'categorical-8': 'var(--buddy-color-categorical-8)',
+      'categorical-9': 'var(--buddy-color-categorical-9)',
+      'categorical-10': 'var(--buddy-color-categorical-10)',
+    }}
+  />
+</ColorPalette>
+
+## フォーカス
+
+フォーカスの表示は `focus-ring` のユーティリティだけを使う。黄色の輪（`--buddy-color-focus-halo`）と、その外の黒の枠（`--buddy-color-focus-outline`）の 2 重の表示である。
+
+<div className="flex gap-6 p-4">
+  <span className="rounded-8 px-4 py-2 text-label focus-ring">focus-ring</span>
+</div>

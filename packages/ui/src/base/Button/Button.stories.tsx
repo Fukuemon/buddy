@@ -4,7 +4,7 @@ import { fn } from 'storybook/test'
 import { Button } from './Button'
 
 const meta = {
-  title: 'Base/Button',
+  title: 'コンポーネント/Base/Button',
   component: Button,
   args: { children: '保存', onClick: fn() },
 } satisfies Meta<typeof Button>

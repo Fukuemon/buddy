@@ -6,8 +6,10 @@ import { Button } from '../Button/Button'
 import { Modal } from './Modal'
 
 const meta = {
-  title: 'Base/Modal',
+  title: 'コンポーネント/Base/Modal',
   component: Modal,
+  // showModal は文書の全体を操作できなくするので、Docs のページでは story ごとに iframe で描く
+  parameters: { docs: { story: { inline: false, iframeHeight: 480 } } },
   args: {
     isOpen: true,
     title: '予定の詳細',

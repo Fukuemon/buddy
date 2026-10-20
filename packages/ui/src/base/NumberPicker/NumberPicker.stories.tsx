@@ -14,6 +14,7 @@ type SampleProps = {
 /** React Hook Form のフォームに NumberPicker を 1 つ置いた見本。 */
 const NumberPickerSample = ({ error, disabled }: SampleProps) => {
   const { control } = useForm<Values>({
+    shouldFocusError: false,
     defaultValues: { minutes: 30 },
     errors: error === undefined ? undefined : { minutes: { type: 'validate', message: error } },
   })

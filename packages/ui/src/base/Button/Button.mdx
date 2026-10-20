@@ -1,0 +1,73 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { Button } from './Button'
+import * as Stories from './Button.stories'
+
+<Meta of={Stories} />
+
+# Button
+
+操作を 1 つ実行するボタン。`variant` で主、副、削除を、`size` で S、M、L を選ぶ。
+
+## 使う場面
+
+- フォームを送る、ダイアログを開くなど、操作を 1 つ実行する
+
+## 使わない場面
+
+- 画面を移る。`Link` に `buttonClassName` を渡してボタンの見た目にする
+
+## Do
+
+- 主のボタン（`variant="primary"`）は、1 つの画面かダイアログに 1 つまでにする
+- 押せない理由があるときは `disabled` にし、理由の文を近くに出す
+- 押した後の待ちは `isLoading` で示す
+
+## Don't
+
+- 主のボタンを並べて、どれが主の操作か分からなくする
+- 削除のような取り消せない操作に `variant="primary"` を使う
+- `className` で色や角丸を変える
+
+## 状態
+
+hover は文字に下線が付き、フォーカスは `focus-ring` を出す。story の上で操作して確かめる。
+
+### 既定（主）
+
+<Canvas of={Stories.Primary} />
+
+### 副
+
+<Canvas of={Stories.Secondary} />
+
+### 削除
+
+<Canvas of={Stories.Destructive} />
+
+### 無効
+
+<Canvas of={Stories.PrimaryDisabled} />
+
+### 読み込み
+
+<Canvas of={Stories.Loading} />
+
+### S
+
+<Canvas of={Stories.Small} />
+
+### L
+
+<Canvas of={Stories.Large} />
+
+## キーボードの操作
+
+- Tab でボタンに移る
+- Enter と Space で押す
+- 無効の間は `aria-disabled="true"` にし、フォーカスは受けるが押しても何もしない
+- 読み込みの間は `aria-busy="true"` にし、押しても何もしない
+
+## props
+
+<ArgTypes of={Button} />

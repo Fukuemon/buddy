@@ -1,0 +1,53 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { SegmentedControl } from './SegmentedControl'
+import * as Stories from './SegmentedControl.stories'
+
+<Meta of={Stories} />
+
+# SegmentedControl
+
+2 から 4 個の選択肢から 1 つを選び、すぐに表示を切り替える。ラジオボタンの組として振る舞う。
+
+## 使う場面
+
+- 表示の単位（月、週、日）や予定の種類（通常、訪問）を切り替える
+
+## 使わない場面
+
+- 選択肢が 5 個以上
+- 送信するまで反映しない入力
+- 同じ主題の内容を観点で切り替える（タブを使う）
+
+## Do
+
+- `label` に選択肢の組の名前を渡す
+- 選択肢の文は短い語にする
+
+## Don't
+
+- 選択肢を 1 つだけにする
+- 選んでも表示が変わらない使い方をする
+
+## 状態
+
+### 既定
+
+<Canvas of={Stories.Default} />
+
+### 3 つの選択肢
+
+<Canvas of={Stories.ThreeOptions} />
+
+### surface-subtle の上
+
+<Canvas of={Stories.White} />
+
+## キーボードの操作
+
+- Tab で選ばれている選択肢に移る
+- ← と →（↑ と ↓）で選び直す
+
+## props
+
+<ArgTypes of={SegmentedControl} />
