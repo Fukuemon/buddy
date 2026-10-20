@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vp dev --port 3000",
     "generate-routes": "tsr generate",
+    "generate:api": "openapi-typescript ../schedule-api/openapi.yaml -o src/api/generated/schedule.ts && openapi-typescript ../receipt-api/openapi.yaml -o src/api/generated/receipt.ts",
     "build": "vp build",
     "preview": "vp preview",
     "lint": "vp lint",
@@ -34,6 +35,7 @@
     "@tanstack/react-start": "1.169.3",
     "clsx": "^2.1.1",
     "jotai": "^3.0.1",
+    "openapi-fetch": "0.17.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.90.0",
@@ -53,6 +55,7 @@
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.0.1",
     "jsdom": "^30.1.3",
+    "openapi-typescript": "7.13.0",
     "storybook": "^10.6.3",
     "typescript": "^6.0.2",
     "vite": "catalog:",

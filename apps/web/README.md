@@ -35,6 +35,23 @@ pnpm --filter @buddy/web storybook
 
 Storybook は `.storybook/vite.config.ts` で動く。アプリの `vite.config.ts` は TanStack Start の plugin を持ち、Storybook の中では動かないため、設定を分けている。
 
+## API の型を生成する
+
+API の型は、各 API の openapi.yaml から openapi-typescript で生成し、`src/api/generated/` に置く。生成物はコミットする。
+
+| 生成物 | 元の定義 |
+| --- | --- |
+| `src/api/generated/schedule.ts` | `apps/schedule-api/openapi.yaml`（予定の API） |
+| `src/api/generated/receipt.ts` | `apps/receipt-api/openapi.yaml`（照合の API） |
+
+openapi.yaml が変わったら、生成し直す。
+
+```sh
+pnpm --filter @buddy/web generate:api
+```
+
+生成物は整形と lint の対象から外してある（ルートの `vite.config.ts` の `ignorePatterns`）。
+
 ## route を足す
 
 route は `src/routes/` のファイルから TanStack Router が生成する。  
