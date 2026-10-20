@@ -5,3 +5,4 @@
 - [PRD](PRD.md) — 誰のどの課題を、どの機能で解決するか
 - [Design Doc](design/DesignDoc.md) — 構成要素の責務と、要素の間の依存
 
+- ADR — [認証の方式](adr/0001-auth.md)、[権限の方式](adr/0002-pbac.md)
