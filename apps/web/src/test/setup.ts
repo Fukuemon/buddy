@@ -7,7 +7,7 @@ import preview from '../../.storybook/preview'
 
 setProjectAnnotations(preview)
 
-// jsdom は <dialog> の showModal と close を持たない（jsdom/jsdom#3294）。開閉の属性だけを切り替える。
+// jsdom は <dialog> の showModal と close を持たない（https://github.com/jsdom/jsdom/issues/3294）。開閉の属性だけを切り替える。
 if (typeof HTMLDialogElement !== 'undefined' && !('showModal' in HTMLDialogElement.prototype)) {
   Object.assign(HTMLDialogElement.prototype, {
     showModal(this: HTMLDialogElement) {
