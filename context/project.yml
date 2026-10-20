@@ -1,0 +1,14 @@
+version: 2
+
+docs:
+  design: design
+  adr: adr
+  spec: specs
+
+process:
+  defaults:
+    processes: [requirements, design, implementation, verification-design, verification, integration, release]
+    reflect_at: design
+    breakdown_at: design
+    review: [requirements, design, integration]
+  additional: []
