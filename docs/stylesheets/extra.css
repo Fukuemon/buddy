@@ -1,5 +1,6 @@
 /* 画面仕様書に埋め込むモック。高さは embed-mock.js が中身に合わせる */
 iframe.mock {
+  box-sizing: border-box;
   display: block;
   width: 100%;
   height: 480px;

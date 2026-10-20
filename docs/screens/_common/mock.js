@@ -53,6 +53,7 @@
     const origin = stage.getBoundingClientRect()
     for (const el of screen.querySelectorAll('[data-m]')) {
       if (el.getClientRects().length === 0) continue
+      if (el.checkVisibility && !el.checkVisibility({ visibilityProperty: true })) continue
       const rect = el.getBoundingClientRect()
       const marker = document.createElement('span')
       marker.className = 'marker'
@@ -72,12 +73,15 @@
     }
   }
 
+  let sentHeight = 0
+
   function notifyParent() {
     if (window.parent === window) return
-    window.parent.postMessage(
-      { source: 'buddy-mock', type: 'resize', height: document.documentElement.scrollHeight },
-      '*',
-    )
+    // documentElement.scrollHeight は iframe の高さより小さくならないので、body の高さを送る
+    const height = Math.ceil(body.getBoundingClientRect().height)
+    if (height === sentHeight) return
+    sentHeight = height
+    window.parent.postMessage({ source: 'buddy-mock', type: 'resize', height }, '*')
   }
 
   function syncUrl() {
