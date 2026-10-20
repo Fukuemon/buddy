@@ -20,7 +20,7 @@
 | `staff-new` | 職員の登録 | 未決 | マネージャー | なし |
 | `staff-edit` | 職員の編集（権限の変更を含む） | 未決 | マネージャー | なし |
 | `receipt-upload` | 照合（対象の月の選択、CSV のアップロード） | `/receipt` | 全ての職員 | [照合](receipt-upload.md) |
-| `receipt-result` | 照合の結果 | `/receipt/result` | 全ての職員 | [照合の結果](receipt-result.md) |
+| `receipt-result` | 照合の結果 | `/receipt/result` | 全ての職員 | [照合の結果](receipt-result_照合の結果/index.md) |
 | `account-login` | ログイン | `/auth/login` | 全ての職員 | なし。ブローカーの画面へ転送し、buddy は画面を持たない |
 | `account-error` | ログインの失敗 | `/auth/error` | 全ての職員 | なし |
 | `account-profile` | プロフィール | 未決 | 全ての職員 | なし |

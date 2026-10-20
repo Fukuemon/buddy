@@ -422,3 +422,45 @@
   border: 2px solid var(--wf-ink);
   background: var(--wf-fill);
 }
+
+/* サイトのヘッダー（SiteHeader）。左にサイトの名前とナビゲーション、右にログインした職員を置く */
+.wf-site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--wf-line-soft);
+}
+
+.wf-site-header__brand {
+  display: flex;
+  align-items: center;
+}
+
+.wf-site-header nav {
+  display: flex;
+  gap: 16px;
+  margin-left: 32px;
+}
+
+.wf-site-header [aria-current='page'] {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.wf-site-header__viewer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+@container screen (width < 768px) {
+  .wf-site-header {
+    padding: 0 16px;
+  }
+
+  .wf-site-header__viewer .wf-text {
+    display: none;
+  }
+}

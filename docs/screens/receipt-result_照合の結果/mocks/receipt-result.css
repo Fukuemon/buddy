@@ -1,0 +1,62 @@
+/* 照合の結果のモックだけの見た目 */
+.rc-main {
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+}
+
+.rc-title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rc-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.rc-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0;
+}
+
+.rc-summary div {
+  min-width: 120px;
+  padding: 12px;
+  border: 1px solid var(--wf-line);
+  border-radius: var(--wf-radius);
+}
+
+.rc-summary dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.rc-table-wrap {
+  overflow: auto;
+}
+
+.rc-sep th {
+  background: var(--wf-fill);
+}
+
+.rc-ng {
+  background: var(--wf-fill);
+}
+
+.rc-note {
+  outline: 1px dashed var(--wf-ink);
+  outline-offset: -4px;
+}
+
+.rc-empty {
+  display: grid;
+  gap: 12px;
+  max-width: 480px;
+  padding: 24px;
+}
