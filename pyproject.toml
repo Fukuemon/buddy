@@ -1,0 +1,13 @@
+# 文書のサイトを組む Zensical を uv で入れる。Python のパッケージは作らない
+[project]
+name = "buddy-docs"
+version = "0.0.0"
+requires-python = ">=3.13"
+
+[dependency-groups]
+dev = [
+    "zensical>=0.0.71",
+]
+
+[tool.uv]
+package = false

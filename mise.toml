@@ -7,3 +7,5 @@ go = "1.27"
 "aqua:sqlc-dev/sqlc" = "1.31.1"
 "aqua:golang-migrate/migrate" = "4.20.1"
 golangci-lint = "2.15.0"
+# uv は文書のサイトの Zensical を入れて動かす
+uv = "0.13"
