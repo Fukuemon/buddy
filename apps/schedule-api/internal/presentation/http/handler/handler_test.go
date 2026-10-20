@@ -291,9 +291,32 @@ func TestCreateSchedule(t *testing.T) {
 }
 
 func TestHealth(t *testing.T) {
-	rec, body := doWithToken(t, newRouter(nil, nil, nil), http.MethodGet, "/health", "", "")
-	if rec.Code != http.StatusOK || body["status"] != "ok" {
-		t.Fatalf("status = %d, body = %v", rec.Code, body)
+	routerWithReady := func(err error) http.Handler {
+		return handler.NewRouter(handler.Usecases{Auth: fakeAuth{}}, handler.RouterConfig{
+			Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
+			Verifier: testVerifier,
+			Ready:    func(context.Context) error { return err },
+		})
+	}
+	tests := []struct {
+		name       string
+		h          http.Handler
+		path       string
+		wantCode   int
+		wantStatus string
+	}{
+		{"healthz は依存先を確かめない", routerWithReady(errors.New("down")), "/healthz", http.StatusOK, "ok"},
+		{"readyz は依存先に届けば 200", routerWithReady(nil), "/readyz", http.StatusOK, "ok"},
+		{"readyz は依存先に届かなければ 503", routerWithReady(errors.New("down")), "/readyz", http.StatusServiceUnavailable, "unavailable"},
+		{"Ready が nil の readyz は 200", newRouter(nil, nil, nil), "/readyz", http.StatusOK, "ok"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec, body := doWithToken(t, tt.h, http.MethodGet, tt.path, "", "")
+			if rec.Code != tt.wantCode || body["status"] != tt.wantStatus {
+				t.Fatalf("status = %d, body = %v", rec.Code, body)
+			}
+		})
 	}
 }
 

@@ -9,6 +9,8 @@
 //     形は gcal.LoadCalendars にある。認証は Application Default Credentials で読む。
 //   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。偽物の API で試すためのもので、認証をしない。
 //
+// `api healthcheck` は、サーバーを起動せず、動いているサーバーの GET /readyz を確かめて終わる。
+//
 // SIGINT か SIGTERM を受けると、処理中の要求を待ってから終了する。設定の誤りと起動の失敗では終了コード 1 で終わる。
 package main
 
@@ -93,6 +95,9 @@ func newCalendarReader(ctx context.Context, cfg config) (*gcal.Reader, error) {
 }
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
+		os.Exit(healthcheck())
+	}
 	if err := run(); err != nil {
 		slog.Error("終了する", "error", err)
 		os.Exit(1)

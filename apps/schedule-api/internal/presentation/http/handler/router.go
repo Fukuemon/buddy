@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -25,22 +26,26 @@ type Usecases struct {
 }
 
 // RouterConfig は、ルーターの設定である。AllowOrigins が空なら CORS のヘッダーを返さない。
+// Ready は GET /readyz が依存先を確かめる関数で、nil なら常に要求を受けられるとみなす。
 type RouterConfig struct {
 	Logger       *slog.Logger
 	AllowOrigins []string
 	Verifier     TokenVerifier
+	Ready        func(context.Context) error
 }
 
 // server は、openapi.yaml から生成した openapi.StrictServerInterface を実装する。
 // usecase が返したエラーは、そのまま返して writeError に状態コードを決めさせる。
 type server struct {
-	u Usecases
+	u     Usecases
+	ready func(context.Context) error
+	log   *slog.Logger
 }
 
 var _ openapi.StrictServerInterface = server{}
 
-// NewRouter は、openapi.yaml の GET /health と /v1 の API を持つルーターを作る。/v1 は全て、Bearer のトークンと、
-// パスが指す事業所が職員の事業所と一致することを求める。GET /health は認証を求めない。
+// NewRouter は、openapi.yaml の GET /healthz、GET /readyz と /v1 の API を持つルーターを作る。/v1 は全て、Bearer のトークンと、
+// パスが指す事業所が職員の事業所と一致することを求める。/healthz と /readyz は認証を求めない。
 func NewRouter(u Usecases, cfg RouterConfig) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
@@ -64,7 +69,7 @@ func NewRouter(u Usecases, cfg RouterConfig) *gin.Engine {
 	am := authMiddleware{verifier: cfg.Verifier, uc: u.Auth, log: cfg.Logger}
 	r.Use(v1Only(am.authenticate), v1Only(am.checkFacility), v1Only(requireULIDParams))
 
-	strict := openapi.NewStrictHandlerWithOptions(server{u: u}, []openapi.StrictMiddlewareFunc{validateBody},
+	strict := openapi.NewStrictHandlerWithOptions(server{u: u, ready: cfg.Ready, log: cfg.Logger}, []openapi.StrictMiddlewareFunc{validateBody},
 		openapi.StrictGinServerOptions{
 			RequestErrorHandlerFunc: func(c *gin.Context, err error) {
 				badRequest(c, bodyErrorPrefix+err.Error())

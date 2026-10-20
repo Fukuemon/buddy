@@ -16,14 +16,27 @@ tags:
     description: 照合
 
 paths:
-  /health:
+  /healthz:
     get:
       tags: [health]
-      operationId: getHealth
-      summary: ヘルスチェック
+      operationId: getHealthz
+      summary: プロセスが応答できるかを返す
       responses:
         "200":
-          description: 動いている
+          description: 応答できる
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+
+  /readyz:
+    get:
+      tags: [health]
+      operationId: getReadyz
+      summary: 要求を受けられるかを返す
+      description: 照合の API は、起動に要る依存先を持たないので、応答できれば 200 を返す。
+      responses:
+        "200":
+          description: 要求を受けられる
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Health" }

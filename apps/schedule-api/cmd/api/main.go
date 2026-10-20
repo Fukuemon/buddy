@@ -1,5 +1,6 @@
 // Command api は、予定の API の HTTP サーバーを起動する。SIGINT か SIGTERM を受けると、
 // 処理中のリクエストを最大 30 秒待ってから止まる。設定は internal/config の Load が読む環境変数である。
+// `api healthcheck` は、サーバーを起動せず、動いているサーバーの GET /readyz を確かめて終わる。
 package main
 
 import (
@@ -21,9 +22,15 @@ import (
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/usecase"
 )
 
-const shutdownTimeout = 30 * time.Second
+const (
+	shutdownTimeout = 30 * time.Second
+	readyTimeout    = 2 * time.Second
+)
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
+		os.Exit(healthcheck())
+	}
 	if err := run(); err != nil {
 		slog.Error("api stopped", slog.Any("error", err))
 		os.Exit(1)
@@ -85,7 +92,11 @@ func run() error {
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions,
 			Staff: staff, Schedules: schedules,
 		}),
-	}, handler.RouterConfig{Logger: log, AllowOrigins: cfg.AllowOrigins, Verifier: verifier})
+	}, handler.RouterConfig{Logger: log, AllowOrigins: cfg.AllowOrigins, Verifier: verifier, Ready: func(ctx context.Context) error {
+		ctx, cancel := context.WithTimeout(ctx, readyTimeout)
+		defer cancel()
+		return db.PingContext(ctx)
+	}})
 
 	srv := &http.Server{
 		Addr:              net.JoinHostPort("", cfg.Port),

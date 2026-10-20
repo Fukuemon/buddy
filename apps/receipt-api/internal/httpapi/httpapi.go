@@ -41,7 +41,7 @@ type server struct {
 
 var _ openapi.StrictServerInterface = (*server)(nil)
 
-// NewHandler は、openapi.yaml の GET /health と POST /v1/checks を持つ http.Handler を返す。
+// NewHandler は、openapi.yaml の GET /healthz、GET /readyz と POST /v1/checks を持つ http.Handler を返す。
 // 定義にないパスとメソッドには、404 の openapi.Error を返す。
 func NewHandler(logger *slog.Logger, cfg Config) http.Handler {
 	s := &server{logger: logger, cfg: cfg}
@@ -65,9 +65,14 @@ func NewHandler(logger *slog.Logger, cfg Config) http.Handler {
 	return s.logRequests(mux)
 }
 
-// GetHealth は、{"status":"ok"} を返す。
-func (s *server) GetHealth(_ context.Context, _ openapi.GetHealthRequestObject) (openapi.GetHealthResponseObject, error) {
-	return openapi.GetHealth200JSONResponse{Status: openapi.Ok}, nil
+// GetHealthz は、{"status":"ok"} を返す。
+func (s *server) GetHealthz(_ context.Context, _ openapi.GetHealthzRequestObject) (openapi.GetHealthzResponseObject, error) {
+	return openapi.GetHealthz200JSONResponse{Status: openapi.Ok}, nil
+}
+
+// GetReadyz は、{"status":"ok"} を返す。起動に要る依存先が無いので、応答できれば要求を受けられる。
+func (s *server) GetReadyz(_ context.Context, _ openapi.GetReadyzRequestObject) (openapi.GetReadyzResponseObject, error) {
+	return openapi.GetReadyz200JSONResponse{Status: openapi.Ok}, nil
 }
 
 // CreateCheck は、multipart の visits（実績の CSV）と予定を照合する。

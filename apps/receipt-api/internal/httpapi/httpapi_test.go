@@ -70,10 +70,12 @@ func validFiles(t *testing.T) map[string][]byte {
 }
 
 func TestHealth(t *testing.T) {
-	rec := httptest.NewRecorder()
-	newHandler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/health", nil))
-	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"ok"`) {
-		t.Errorf("status %d body %s", rec.Code, rec.Body)
+	for _, path := range []string{"/healthz", "/readyz"} {
+		rec := httptest.NewRecorder()
+		newHandler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+		if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"ok"`) {
+			t.Errorf("%s: status %d body %s", path, rec.Code, rec.Body)
+		}
 	}
 }
 
