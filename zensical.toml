@@ -4,6 +4,11 @@ site_name = "buddy"
 site_description = "予定の管理とレセプトの照合の設計書"
 docs_dir = "docs"
 site_dir = "site"
+# docs/design/apps/ のシンボリックリンクの先を、プレビューでたどって再読み込みする
+watch = [
+  "apps/schedule-api/DesignDoc.md",
+  "apps/receipt-api/DesignDoc.md",
+]
 # ADR の雛形は文書ではないので、サイトに載せない
 exclude_docs = """
 adr/template.md
