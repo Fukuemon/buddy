@@ -60,7 +60,6 @@
         padding: 8px 24px 16px;
       }
 
-      /* 実装は折り返さない。幅の狭い端末での配置は未決のため、ワイヤーフレームでは折り返して描く */
       .cal-toolbar {
         display: flex;
         flex-wrap: wrap;
@@ -78,12 +77,23 @@
         max-width: 100%;
       }
 
-      @media (width < 720px) {
+      @media (width < 768px) {
+        .cal-body {
+          flex-direction: column;
+        }
+
+        .cal-side {
+          width: auto;
+          max-height: 160px;
+          overflow: auto;
+          border-right: 0;
+          border-bottom: 1px solid var(--wf-line-soft);
+        }
+
         .cal-main {
           padding: 8px;
         }
 
-        .cal-date,
         .cal-view-tabs {
           width: 100%;
         }

@@ -29,3 +29,8 @@
 .schedule-calendar .fc-event:hover {
   filter: brightness(0.92);
 }
+
+/* 週の表示の 30 分の枠を、日の表示と同じく押せる領域の下限の 44px にする（packages/ui/DESIGN.md） */
+.schedule-calendar .fc-timegrid-slot {
+  height: 44px;
+}

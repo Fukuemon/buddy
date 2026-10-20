@@ -17,11 +17,11 @@ export const SERVICE_CODE_DURATION: Record<ServiceCode, { min: number; max: numb
   訪看I3: { min: 30, max: 59 },
   訪看I4: { min: 60, max: 89 },
   訪看I5: { min: 21, max: 40 },
-  '訪看I5・2超': { min: 31, max: 60 },
+  '訪看I5・2超': { min: 41, max: 60 },
   予防看I2: { min: 20, max: 29 },
   予防看I3: { min: 30, max: 59 },
   予防看I4: { min: 60, max: 89 },
   予防看I5: { min: 21, max: 40 },
-  '予防看I5・2超': { min: 31, max: 60 },
+  '予防看I5・2超': { min: 41, max: 60 },
   医: { min: 30, max: 90 },
 }

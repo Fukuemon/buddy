@@ -41,13 +41,13 @@ export const StaffFilterSidebar = ({
   return (
     <nav
       aria-label="職員の絞り込み"
-      className="flex flex-col gap-4 p-4"
+      className="flex flex-col gap-2 p-2 desktop:gap-4 desktop:p-4"
       data-testid="staff-filter-sidebar"
     >
       <div className="flex items-center justify-between">
         <h2 className="text-caption font-bold text-text-secondary">職員</h2>
         <button
-          className="text-caption text-primary underline disabled:text-text-disabled disabled:no-underline"
+          className="min-h-11 px-2 text-caption text-primary underline disabled:text-text-disabled disabled:no-underline"
           data-testid="staff-filter-reset"
           disabled={isAll}
           onClick={() => onChange([])}
@@ -60,8 +60,8 @@ export const StaffFilterSidebar = ({
         const members = staffList.filter((staff) => staff.teamId === team.id)
         const checkedCount = members.filter((staff) => isSelected(staff.id)).length
         return (
-          <fieldset className="flex flex-col gap-1" key={team.id}>
-            <label className="flex items-center gap-2 font-bold">
+          <fieldset className="flex flex-col" key={team.id}>
+            <label className="flex min-h-11 items-center gap-2 font-bold">
               <input
                 checked={members.length > 0 && checkedCount === members.length}
                 data-testid={`staff-filter-team-${team.id}`}
@@ -76,7 +76,10 @@ export const StaffFilterSidebar = ({
               {team.name}
             </label>
             {members.map((staff) => (
-              <label className="flex items-center gap-2 pl-6 text-body-dense" key={staff.id}>
+              <label
+                className="flex min-h-11 items-center gap-2 pl-6 text-body-dense"
+                key={staff.id}
+              >
                 <input
                   checked={isSelected(staff.id)}
                   data-testid={`staff-filter-staff-${staff.id}`}

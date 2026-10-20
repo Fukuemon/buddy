@@ -59,7 +59,7 @@ export const ScheduleCalendarContainer = () => {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="px-6 py-2">
+      <div className="px-2 py-2 desktop:px-6">
         <ScheduleCalendarToolbar
           date={date}
           onDateChange={(dateKey) => updateSearch({ date: dateKey })}
@@ -71,7 +71,7 @@ export const ScheduleCalendarContainer = () => {
           view={search.view}
         />
       </div>
-      <div className="min-h-0 grow px-6 pb-4">
+      <div className="min-h-0 grow px-2 pb-4 desktop:px-6">
         {schedulesQuery.isPending || staffQuery.isPending ? (
           <Loading description="カレンダーを表示中..." />
         ) : schedulesQuery.isError || staffQuery.isError ? (

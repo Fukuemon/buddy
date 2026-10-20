@@ -30,8 +30,8 @@ export const ScheduleCalendarToolbar = ({
   onDateChange,
   onCreate,
 }: ScheduleCalendarToolbarProps) => (
-  <div className="flex h-16 items-center justify-between gap-4 desktop:gap-10">
-    <div className="flex items-center gap-2">
+  <div className="flex min-h-16 flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2 desktop:gap-x-10">
+    <div className="flex flex-wrap items-center gap-2">
       <button
         aria-label="前へ"
         className="grid size-11 place-items-center rounded-8 hover:bg-surface-subtle focus-visible:focus-ring"
@@ -64,8 +64,8 @@ export const ScheduleCalendarToolbar = ({
         value={date}
       />
     </div>
-    <div className="flex items-center gap-4">
-      <div className="w-48">
+    <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-2 desktop:w-auto">
+      <div className="w-full desktop:w-48">
         <SegmentedControl
           data-testid="calendar-view"
           label="表示の単位"
