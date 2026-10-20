@@ -1,0 +1,21 @@
+version: "2"
+sql:
+  - engine: mysql
+    schema: db/migrations
+    queries: db/queries
+    gen:
+      go:
+        package: sqlcgen
+        out: internal/infrastructure/mysql/sqlcgen
+        emit_interface: false
+        emit_empty_slices: true
+        overrides:
+          # go-sql-driver/mysql は parseTime=true でも TIME を time.Time に変換しない。
+          # https://github.com/go-sql-driver/mysql#timetime-support
+          - db_type: time
+            go_type: string
+          - db_type: time
+            nullable: true
+            go_type:
+              type: string
+              pointer: true
