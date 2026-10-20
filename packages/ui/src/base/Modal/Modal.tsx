@@ -66,7 +66,9 @@ export const Modal = ({
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
 
     // Escape の既定の動きはダイアログを閉じるので止め、閉じるかを呼び出す側に任せる。
+    // 止められない cancel（Escape を続けて押したとき）は、続く close に任せ、要求を 2 回出さない。
     const handleCancel = (event: Event) => {
+      if (!event.cancelable) return
       event.preventDefault()
       requestCloseFromDialog()
     }

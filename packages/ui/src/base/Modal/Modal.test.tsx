@@ -36,6 +36,20 @@ describe('Modal', () => {
     expect(onCloseRequest).not.toHaveBeenCalled()
   })
 
+  it('止められない cancel と続く close では、onCloseRequest を 1 回だけ呼ぶ', async () => {
+    const onCloseRequest = fn()
+    render(<Default onCloseRequest={onCloseRequest} />)
+    const dialog = screen.getByRole<HTMLDialogElement>('dialog')
+    const closed = new Promise((resolve) =>
+      dialog.addEventListener('close', resolve, { once: true }),
+    )
+    dialog.dispatchEvent(new Event('cancel', { cancelable: false }))
+    dialog.close()
+    await closed
+    expect(onCloseRequest).toHaveBeenCalledTimes(1)
+    expect(dialog).toHaveProperty('open', true)
+  })
+
   it('Tab と Shift+Tab は、ダイアログの中だけを回る', async () => {
     render(<WithOpener />)
     await userEvent.click(screen.getByRole('button', { name: '予定を開く' }))
