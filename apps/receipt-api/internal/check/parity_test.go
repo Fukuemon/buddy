@@ -8,7 +8,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/csvio"
+	"github.com/Fukuemon/buddy/apps/receipt-api/tools/parity/report"
 )
 
 // TestRunParity は、testdata/parity の各ケースの結果の CSV を、Python の結果から作った expected.csv と比べる。
@@ -32,7 +32,7 @@ func TestRunParity(t *testing.T) {
 			}
 			rep := run(t, read("visits.csv"), read("schedules.csv"))
 			var buf bytes.Buffer
-			if err := csvio.WriteReport(&buf, rep.Rows); err != nil {
+			if err := report.Write(&buf, rep.Rows); err != nil {
 				t.Fatal(err)
 			}
 			got := parseReport(t, buf.Bytes())

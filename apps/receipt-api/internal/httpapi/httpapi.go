@@ -6,13 +6,10 @@ import (
 	"errors"
 	"io"
 	"log/slog"
-	"mime"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/check"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/csvio"
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/record"
 )
 
@@ -55,7 +52,7 @@ type server struct {
 //
 //   - GET /health: {"status":"ok"} を返す。
 //   - POST /v1/checks: multipart の visits（実績の CSV）と schedules（予定の CSV）を照合する。
-//     Accept に text/csv があれば結果を CSV で、なければ JSON で返す。
+//     結果は Accept によらず check.Report の JSON で返す。
 //
 // エラーは ErrorResponse の JSON で返す。
 func NewHandler(logger *slog.Logger, cfg Config) http.Handler {
@@ -111,14 +108,6 @@ func (s *server) checks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if acceptsCSV(r.Header.Values("Accept")) {
-		w.Header().Set("Content-Type", "text/csv; charset=utf-8")
-		w.Header().Set("Content-Disposition", `attachment; filename="checks.csv"`)
-		if err := csvio.WriteReport(w, rep.Rows); err != nil {
-			s.logger.ErrorContext(r.Context(), "結果の CSV を書けない", "error", err)
-		}
-		return
-	}
 	s.writeJSON(w, http.StatusOK, rep)
 }
 
@@ -139,18 +128,6 @@ func (s *server) readFile(w http.ResponseWriter, r *http.Request, field string) 
 		return nil, false
 	}
 	return data, true
-}
-
-func acceptsCSV(accept []string) bool {
-	for _, v := range accept {
-		for part := range strings.SplitSeq(v, ",") {
-			mt, _, err := mime.ParseMediaType(strings.TrimSpace(part))
-			if err == nil && mt == "text/csv" {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func (s *server) writeJSON(w http.ResponseWriter, status int, body any) {

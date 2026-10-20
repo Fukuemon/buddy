@@ -1,5 +1,4 @@
-// Command goreport は、実績と予定の CSV を照合し、結果の CSV を標準出力に書く。
-// POST /v1/checks に Accept: text/csv で送ったときと同じ CSV を返す。
+// Command goreport は、実績と予定の CSV を照合し、Python の結果と同じ形の記号つきの CSV を標準出力に書く。
 //
 //	go run ./tools/parity/goreport VISITS SCHEDULES > OUT
 //
@@ -12,7 +11,7 @@ import (
 	"os"
 
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/check"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/csvio"
+	"github.com/Fukuemon/buddy/apps/receipt-api/tools/parity/report"
 )
 
 func main() {
@@ -38,5 +37,5 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
-	return csvio.WriteReport(os.Stdout, rep.Rows)
+	return report.Write(os.Stdout, rep.Rows)
 }

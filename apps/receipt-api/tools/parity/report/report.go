@@ -1,4 +1,6 @@
-package csvio
+// Package report は、照合の結果を、元の Python のツールと同じ記号つきの CSV に書く。
+// Python の結果と比べるためだけに使う。API は記号を付けない。
+package report
 
 import (
 	"encoding/csv"
@@ -9,13 +11,14 @@ import (
 )
 
 const (
+	utf8BOM  = "\xEF\xBB\xBF"
 	noData   = "データなし"
 	ngMark   = " ❌"
 	noteMark = " ※"
 )
 
-// ReportHeader は、結果の CSV のヘッダーを返す。
-func ReportHeader() []string {
+// Header は、結果の CSV のヘッダーを返す。
+func Header() []string {
 	return []string{
 		"訪問日", "利用者名", "主訪問者",
 		"サービス内容_予定", "開始時間_予定", "終了時間_予定", "提供時間_予定",
@@ -38,16 +41,16 @@ func CategoryLabel(c judge.Category) string {
 	}
 }
 
-// WriteReport は、結果を BOM 付きの UTF-8 の CSV で w に書く。
+// Write は、結果を BOM 付きの UTF-8 の CSV で w に書く。
 // 区分ごとに、訪問日の列に区分の名前を、ほかの列に `---` を書いた区切りの行を置く。
 // 不整合のセルには ` ❌` を、許容範囲を外れたセルにはさらに `(20~29)` の形の範囲を付ける。
 // 整合の行で提供時間か終了時間の値が両側で違うときは ` ※` を付ける。加算が `通常` でないときも ` ※` を付ける。
-func WriteReport(w io.Writer, results []judge.Result) error {
+func Write(w io.Writer, results []judge.Result) error {
 	if _, err := io.WriteString(w, utf8BOM); err != nil {
 		return err
 	}
 	cw := csv.NewWriter(w)
-	header := ReportHeader()
+	header := Header()
 	if err := cw.Write(header); err != nil {
 		return err
 	}

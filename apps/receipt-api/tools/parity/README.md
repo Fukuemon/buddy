@@ -4,9 +4,10 @@ receipt-checker の Python（pandas）の照合と、この Go の照合に同�
 比べるケースは `testdata/parity/<ケース>/` にあり、各ケースは `visits.csv`、`schedules.csv`、`expected.csv` を持つ。
 
 - `run_python.py`: receipt-checker の `server/libs` の `receipt_check` を呼ぶ。予定は GAS から取らず、`schedules.csv` を読んで渡す。`requests` の送信は例外にしてあり、ネットワークに出ない
-- `goreport/`: `check.Run` と `csvio.WriteReport` で、API の CSV と同じ結果を書く
+- `report/`: 照合の結果を、Python の結果と同じ記号つきの CSV に書く。API は記号を付けず、JSON だけを返すので、このパッケージは比べるためだけにある
+- `goreport/`: `check.Run` の結果を `report` で CSV に書く
 - `compare.py`: Python の結果を Go の形にそろえてから比べる。`--golden` で、そろえた結果を `expected.csv` として書く
-- `run.sh`: 全ケースで上の 3 つを流す
+- `run.sh`: 全ケースで `run_python.py`、`goreport`、`compare.py` を流す
 
 ## 実行
 
@@ -28,7 +29,7 @@ RECEIPT_CHECKER_LIBS=<receipt-checker>/server/libs tools/parity/run.sh --update
 
 ## 吸収する違い
 
-`compare.py` は、Python の結果に次の置き換えをしてから比べる。どれも [DesignDoc.md](../../DesignDoc.md) の「元の Python から挙動を変えた点」に当たる。ただし提供時間の `.0` は DesignDoc.md に書いていない。
+`compare.py` は、Python の結果に次の置き換えをしてから比べる。列名、区切りの行、記号の違いは、`report` の CSV の形の違いで、API の挙動ではない。並べ直しは [DesignDoc.md](../../DesignDoc.md) の「元の Python から挙動を変えた点」に当たる。提供時間の `.0` は pandas の型の都合である。
 
 - 列名の接尾辞 `_カレンダー` と `_Ibow` を `_予定` と `_実績` に、区切りの行の `カレンダーのみ` と `Ibowのみ` を `予定のみ` と `実績のみ` にする
 - 範囲を持たないサービス内容の ` ❌ ()` を ` ❌` に、予定の提供時間の `  ❌` を ` ❌` にする
