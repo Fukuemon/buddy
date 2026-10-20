@@ -55,7 +55,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh pr comment "${{ github.event.pull_request.number }}" --edit-last --create-if-none --body "文書のサイトのプレビュー: ${{ steps.preview.outputs.url }}（カタログは ${{ steps.preview.outputs.url }}/storybook/）
+          gh pr comment "${{ github.event.pull_request.number }}" --edit-last --create-if-none --body "文書のサイトのプレビュー
+
+          - 文書のサイト: ${{ steps.preview.outputs.url }}/
+          - カタログ: ${{ steps.preview.outputs.url }}/storybook/
+
           Cloudflare Access で許可した人だけが開ける。コミット ${{ github.event.pull_request.head.sha }}"
 
       - name: 本番に出す
