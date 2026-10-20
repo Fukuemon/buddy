@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/civil"
@@ -193,6 +194,44 @@ func (s *Schedules) Cancel(ctx context.Context, scheduleID, reason string) (sche
 		return schedule.Cancel{}, err
 	}
 	return c, nil
+}
+
+// Update は、単発の予定の枠を in の内容に置き換える。訪問の情報は in の内容で作り直し、前の訪問の情報は消す。
+// 予定が見つからないときは domain.ErrNotFound を、キャンセル済みのときは domain.ErrConflict を、
+// 参照が見つからないか別の事業所のものであるときは入力の誤りを返す。
+func (s *Schedules) Update(ctx context.Context, scheduleID string, in SlotInput) (schedule.Detail, error) {
+	var updated schedule.Detail
+	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
+		if err := s.repos.Schedules.Lock(ctx, scheduleID); err != nil {
+			return err
+		}
+		cur, err := s.repos.Schedules.Get(ctx, scheduleID)
+		if err != nil {
+			return err
+		}
+		if cur.Cancel != nil {
+			return fmt.Errorf("%w: キャンセル済みの予定は変えられません", domain.ErrConflict)
+		}
+		slot, typ, err := s.prepareSlot(ctx, cur.FacilityID, in)
+		if err != nil {
+			return err
+		}
+		sc, err := schedule.New(cur.ID, slot, typ)
+		if err != nil {
+			return err
+		}
+		if err := s.repos.Schedules.Update(ctx, sc); err != nil {
+			return err
+		}
+		if cur.VisitInfoID != nil {
+			if err := s.repos.Visits.DeleteInfoIfUnused(ctx, *cur.VisitInfoID); err != nil {
+				return err
+			}
+		}
+		updated, err = s.repos.Schedules.Get(ctx, cur.ID)
+		return err
+	})
+	return updated, err
 }
 
 func (s *Schedules) createSchedule(ctx context.Context, facilityID string, in SlotInput, recurringScheduleID *string) (schedule.Detail, error) {

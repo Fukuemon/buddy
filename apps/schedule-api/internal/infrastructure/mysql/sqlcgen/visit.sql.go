@@ -49,6 +49,18 @@ func (q *Queries) CreateVisitInfo(ctx context.Context, arg CreateVisitInfoParams
 	return err
 }
 
+const deleteUnusedVisitInfo = `-- name: DeleteUnusedVisitInfo :exec
+DELETE vi FROM visit_infos vi
+LEFT JOIN schedules s ON s.visit_info_id = vi.id
+LEFT JOIN recurring_schedules rs ON rs.visit_info_id = vi.id
+WHERE vi.id = ? AND s.id IS NULL AND rs.id IS NULL
+`
+
+func (q *Queries) DeleteUnusedVisitInfo(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, deleteUnusedVisitInfo, id)
+	return err
+}
+
 const getServiceCode = `-- name: GetServiceCode :one
 SELECT id, code, service_time_range_start, service_time_range_end, created_at, updated_at FROM service_codes WHERE id = ?
 `

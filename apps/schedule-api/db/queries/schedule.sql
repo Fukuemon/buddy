@@ -69,3 +69,12 @@ ORDER BY date;
 
 -- name: CreateScheduleCancel :exec
 INSERT INTO schedule_cancels (id, schedule_id, reason) VALUES (?, ?, ?);
+
+-- name: UpdateSchedule :exec
+UPDATE schedules
+SET staff_id = ?, schedule_type_id = ?, date = ?, start_time = ?, end_time = ?,
+    visit_info_id = ?, title = ?, description = ?, is_over_time_work = ?
+WHERE id = ?;
+
+-- name: LockSchedule :one
+SELECT id FROM schedules WHERE id = ? FOR UPDATE;

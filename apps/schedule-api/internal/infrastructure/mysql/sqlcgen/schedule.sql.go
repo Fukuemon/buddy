@@ -492,3 +492,50 @@ func (q *Queries) ListScheduleTypes(ctx context.Context) ([]ScheduleType, error)
 	}
 	return items, nil
 }
+
+const lockSchedule = `-- name: LockSchedule :one
+SELECT id FROM schedules WHERE id = ? FOR UPDATE
+`
+
+func (q *Queries) LockSchedule(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRowContext(ctx, lockSchedule, id)
+	var id_2 string
+	err := row.Scan(&id_2)
+	return id_2, err
+}
+
+const updateSchedule = `-- name: UpdateSchedule :exec
+UPDATE schedules
+SET staff_id = ?, schedule_type_id = ?, date = ?, start_time = ?, end_time = ?,
+    visit_info_id = ?, title = ?, description = ?, is_over_time_work = ?
+WHERE id = ?
+`
+
+type UpdateScheduleParams struct {
+	StaffID        string
+	ScheduleTypeID string
+	Date           time.Time
+	StartTime      string
+	EndTime        string
+	VisitInfoID    sql.NullString
+	Title          sql.NullString
+	Description    sql.NullString
+	IsOverTimeWork bool
+	ID             string
+}
+
+func (q *Queries) UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) error {
+	_, err := q.db.ExecContext(ctx, updateSchedule,
+		arg.StaffID,
+		arg.ScheduleTypeID,
+		arg.Date,
+		arg.StartTime,
+		arg.EndTime,
+		arg.VisitInfoID,
+		arg.Title,
+		arg.Description,
+		arg.IsOverTimeWork,
+		arg.ID,
+	)
+	return err
+}

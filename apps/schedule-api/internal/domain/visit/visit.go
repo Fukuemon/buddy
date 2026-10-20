@@ -64,6 +64,8 @@ type Detail struct {
 // ListCategoriesByIDs は、見つかったものだけを返す。
 type Repository interface {
 	CreateInfo(ctx context.Context, i Info) error
+	// DeleteInfoIfUnused は、どの予定も指していない訪問の情報を消す。指されているか、無いときは何もしない。
+	DeleteInfoIfUnused(ctx context.Context, id string) error
 	GetServiceCode(ctx context.Context, id string) (ServiceCode, error)
 	ListServiceCodes(ctx context.Context) ([]ServiceCode, error)
 	ListCategories(ctx context.Context) ([]Category, error)

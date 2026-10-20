@@ -29,11 +29,10 @@ pnpm --filter @buddy/web dev
 VITE_API_MODE=http VITE_FACILITY_ID=<事業所の ID> pnpm --filter @buddy/web dev
 ```
 
-`http` の実装は、画面の型（`src/api/types.ts`）と API の型（`src/api/generated/`）の違いを `src/api/http/scheduleMapper.ts` で変換する。予定の API にまだ無い操作と、変換の制限は次のとおり。
+`http` の実装は、画面の型（`src/api/types.ts`）と API の型（`src/api/generated/`）の違いを `src/api/http/scheduleMapper.ts` で変換する。変換の制限は次のとおり。
 
-- 予定の更新は、予定の API に無いので、status が 501 の `ApiError` になる。
 - 繰り返しの予定は、回に展開していないので一覧に出ない。キャンセルした予定も出さない。
-- 予定の作成では、予定の種類、サービスコード、訪問の区分を、予定の API のマスタの名前から ID に引く。
+- 予定の作成と更新では、予定の種類、サービスコード、訪問の区分を、予定の API のマスタの名前から ID に引く。
 
 今の `http` の実装は、ブラウザとサーバーの両方から API を直に呼び、トークンを付けない。認証を入れるときに、BFF の server function を通して呼ぶ形に替える。
 

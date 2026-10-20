@@ -2,7 +2,9 @@ package handler
 
 import (
 	"context"
+	"errors"
 
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/auth"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/staff"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/presentation/http/openapi"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/usecase"
@@ -50,6 +52,15 @@ func toStaffDetail(d staff.Detail) openapi.StaffDetail {
 			}
 		}),
 	}
+}
+
+// GetMe は、認証のミドルウェアが特定した職員を返す。
+func (s server) GetMe(ctx context.Context, _ openapi.GetMeRequestObject) (openapi.GetMeResponseObject, error) {
+	p, ok := auth.PrincipalFrom(ctx)
+	if !ok {
+		return nil, errors.New("認証のミドルウェアを通らずに GET /v1/me を呼びました")
+	}
+	return openapi.GetMe200JSONResponse(toStaffDetail(p.Staff)), nil
 }
 
 func (s server) GetUser(ctx context.Context, req openapi.GetUserRequestObject) (openapi.GetUserResponseObject, error) {

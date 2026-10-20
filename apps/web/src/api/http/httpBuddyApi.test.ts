@@ -123,7 +123,79 @@ describe('createHttpBuddyApi', () => {
     expect(new URL(requests[0].url).searchParams.has('name')).toBe(false)
   })
 
-  it('失敗の状態と、ほかの事業所の予定と、予定の更新で ApiError を投げる', async () => {
+  it('マスタの ID を引いて予定を置き換える', async () => {
+    let sent: unknown
+    const { fetch } = fakeFetch({
+      'GET /v1/schedule_types': () => [{ id: 'type-normal', name: '通常' }],
+      'GET /v1/visit_infos/service_codes': () => [],
+      'GET /v1/visit_infos/visit_categories': () => [],
+      'GET /v1/schedules/target': () => schedule('target'),
+      'PUT /v1/schedules/target': async (_, request) => {
+        sent = await request.json()
+        return schedule('target', { title: '研修' })
+      },
+    })
+    const api = createHttpBuddyApi({ baseUrl: 'http://api.test', fetch })
+    const updated = await api.schedules.update('facility-1', 'target', {
+      kind: 'normal',
+      title: '研修',
+      staffId: 'staff-1',
+      startsAt: '2026-10-20T09:00:00+09:00',
+      endsAt: '2026-10-20T10:00:00+09:00',
+      description: '',
+    })
+    expect(sent).toMatchObject({ schedule_type_id: 'type-normal', title: '研修' })
+    expect(updated).toMatchObject({ id: 'target', title: '研修' })
+  })
+
+  it('訪問の予定を置き換えるときに同行者とタイトルと別の担当を引き継ぎ、409 で ApiError を投げる', async () => {
+    let sent: { title?: unknown; visit_info?: Record<string, unknown> } = {}
+    const visitInfo = {
+      id: 'vi',
+      patient_id: 'patient-1',
+      patient_name: '',
+      assigned_staff_id: 'staff-9',
+      assigned_staff_name: '',
+      companion_id: 'staff-3',
+      companion_name: '',
+      service_code_id: 'code-1',
+      service_code: '訪看I2',
+      visit_categories: [],
+    }
+    const { fetch } = fakeFetch({
+      'GET /v1/schedule_types': () => [{ id: 'type-visit', name: '訪問' }],
+      'GET /v1/visit_infos/service_codes': () => [{ id: 'code-1', code: '訪看I2' }],
+      'GET /v1/visit_infos/visit_categories': () => [],
+      'GET /v1/schedules/visit': () =>
+        schedule('visit', { schedule_type: '訪問', title: null, visit_info: visitInfo }),
+      'PUT /v1/schedules/visit': async (_, request) => {
+        sent = await request.json()
+        return schedule('visit', { schedule_type: '訪問', title: null, visit_info: visitInfo })
+      },
+      'GET /v1/schedules/cancelled': () => schedule('cancelled'),
+      'PUT /v1/schedules/cancelled': () =>
+        json({ code: 'conflict', message: 'キャンセル済み' }, 409),
+    })
+    const api = createHttpBuddyApi({ baseUrl: 'http://api.test', fetch })
+    const input = {
+      kind: 'visit' as const,
+      title: '訪問',
+      staffId: 'staff-1',
+      startsAt: '2026-10-20T09:00:00+09:00',
+      endsAt: '2026-10-20T09:30:00+09:00',
+      description: '',
+      visit: { patientId: 'patient-1', serviceCode: '訪看I2' as const, categories: [] },
+    }
+    await api.schedules.update('facility-1', 'visit', input)
+    expect(sent.title).toBeNull()
+    expect(sent.visit_info).toMatchObject({ companion_id: 'staff-3', assigned_staff_id: 'staff-9' })
+    await expect(api.schedules.update('facility-1', 'cancelled', input)).rejects.toHaveProperty(
+      'status',
+      409,
+    )
+  })
+
+  it('失敗の状態と、ほかの事業所の予定で ApiError を投げる', async () => {
     const { fetch } = fakeFetch({
       'GET /v1/schedules/other': () => schedule('other', { facility_id: 'facility-2' }),
     })
@@ -132,15 +204,5 @@ describe('createHttpBuddyApi', () => {
       new ApiError(404, 'ない'),
     )
     await expect(api.schedules.get('facility-1', 'other')).rejects.toHaveProperty('status', 403)
-    await expect(
-      api.schedules.update('facility-1', 'x', {
-        kind: 'normal',
-        title: '',
-        staffId: '',
-        startsAt: '',
-        endsAt: '',
-        description: '',
-      }),
-    ).rejects.toHaveProperty('status', 501)
   })
 })

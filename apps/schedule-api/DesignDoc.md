@@ -288,6 +288,14 @@ sequenceDiagram
 - 繰り返しの 1 回だけを変えるときは、その日を `exclusion_dates` に足し、`recurring_schedule_id` で元を指す単発の予定を作る。
 - 展開を schedule-api に置くのは、予定を読む全ての画面が同じ規則で予定を読むためである。
 
+### 予定の変更
+
+- 単発の予定の変更は、予定の枠を本文の内容に置き換える。部分の更新は持たない。画面のフォームは予定の全ての項目を送るためである。
+- 訪問の情報は、予定ごとに 1 行を持つ。変更では本文の内容で新しい行を作り、どの予定も指さなくなった前の行を消す。
+- 繰り返しの回を置き換えた予定は、変更しても `recurring_schedule_id` を保つ。
+- キャンセルした予定は変更できず、409 を返す。
+- 変更は、最初に予定の行に排他のロックを取る。同時の変更とキャンセルが、読んだ後の訪問の情報とキャンセルの有無を食い違わせないためである。同時の変更は、後に来た方の内容になる。
+
 ### キャンセル
 
 - 予定をキャンセルすると、`schedule_cancels` に理由とともに 1 行を足す。予定の行は消さない。
@@ -297,4 +305,5 @@ sequenceDiagram
 
 - API のパスは `/v1/facilities/{facility_id}/...` の形にする。主な資源は `schedules`、`recurring-schedules`、`users`、`patients`、`users/{user_id}/policies`。
 - 一覧の並べ替えは、許可した列の名前だけを受け、それ以外は 400 を返す。
+- `GET /v1/me` は、トークンの職員と権限を返す。画面は、ログインの後にこれを呼んで事業所を決める。
 - 環境変数、ヘルスチェック、マイグレーションのコマンドは [buddy Design Doc の Interfaces](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md#interfaces) にある。

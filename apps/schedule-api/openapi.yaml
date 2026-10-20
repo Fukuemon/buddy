@@ -390,6 +390,22 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
 
+  /v1/me:
+    get:
+      tags: [staff]
+      operationId: getMe
+      summary: トークンの職員を取得する
+      description: 画面が、ログインした職員と事業所を知るために呼ぶ。
+      responses:
+        "200":
+          description: 職員と権限
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
   /v1/facilities/{facility_id}/patients:
     get:
       tags: [patient]
@@ -605,6 +621,36 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+    put:
+      tags: [schedule]
+      operationId: updateSchedule
+      summary: 単発の予定を置き換える
+      description: |
+        予定の枠を本文の内容に置き換える。訪問の情報は、本文の内容で作り直す。
+        繰り返しの予定の回を置き換えた予定は、元の繰り返しの予定への結び付きを保つ。
+      parameters: [$ref: "#/components/parameters/ScheduleID"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SlotRequest" }
+      responses:
+        "200":
+          description: 置き換えた予定
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Schedule" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: キャンセル済み
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/schedules/{schedule_id}/cancel:
