@@ -43,7 +43,7 @@ API の列は、`createCheck`（`POST /v1/checks`）の応答の `Report` の項
 | 2-1 | 題と予定の取り方 | 「照合の結果」と、「2024 年 4 月の Google カレンダー」か「予定の CSV」 | `ReceiptResult.month` | `month` | なし |
 | 2-2 | 照合し直すリンク | 「別のファイルで照合する」 | なし | なし | なし |
 | 2-3 | ダウンロードのボタン | 「CSV をダウンロード」 | なし | なし | `receipt-download` |
-| 2-4 | 区分ごとの件数 | 不整合データ、予定のみ、実績のみ、整合データの件数 | `ReceiptReport.summary` | `summary` | `receipt-summary` |
+| 2-4 | 区分ごとの件数 | 不整合データ、予定のみ、実績のみ、整合データの件数 | `ReceiptReport.summary` | `summary` | `receipt-summary`、件数は `receipt-summary-{category}` |
 | 2-5 | 照合に使わなかった予定 | 件数、直す案内、予定の開始の日時と理由の一覧 | `ReceiptReport.warnings` | `warnings[].start`、`warnings[].message` | `receipt-warnings` |
 | 2-6 | `ReceiptResultTable` | 結果の表。列は下の一覧 | `ReceiptReport.rows` | `rows` | `receipt-result-table` |
 | 2-6-1 | 区分の見出しの行 | 「不整合データ（3 件）」の形。行の無い区分も出す | `ReceiptRow.category` | `rows[].category` | `receipt-category-{category}` |
@@ -55,7 +55,7 @@ API の列は、`createCheck`（`POST /v1/checks`）の応答の `Report` の項
 - 訪問日、利用者名、主訪問者: `date`、`client`、`staff`
 - サービス内容、開始時間、終了時間、提供時間の予定の値: `schedule` の `service`、`start`、`end`、`duration`
 - サービス内容、開始時間、終了時間、提供時間の実績の値: `visit` の `service`、`start`、`end`、`duration`
-- 加算: `visit.additions`
+- 加算: `visit.additions`。実績に加算が無ければ空欄にする（照合の API の `tools/parity/report` と同じ）
 - 片側の無い行の、無い側の値と、空の提供時間は「データなし」にする
 
 値に付ける印は、`checks` から次のように決める。印の付いたセルは、❌ なら危険、※ なら注意の背景の色にする。
@@ -86,6 +86,7 @@ API の列は、`createCheck`（`POST /v1/checks`）の応答の `Report` の項
 
 結果の CSV は次のとおり。元の照合のアプリの CSV と、行と印を同じにする。
 
+- 値は、Go の encoding/csv と同じく、区切り、引用符、改行を含む値と空白で始まる値を引用符で囲む
 - ファイル名は `照合結果_<対象の月>.csv`。予定の CSV で照合したときは `照合結果_<照合した日の YYYY-MM-DD>.csv`
 - 文字コードは BOM 付きの UTF-8 で、行は CRLF で区切る。Excel で開いても文字化けしないためである
 - 1 行目は列の名前。その後に区分ごとに、区分の名前と `---` の区切りの行、区分の行を並べる
@@ -97,6 +98,8 @@ API の列は、`createCheck`（`POST /v1/checks`）の応答の `Report` の項
 - フォーカスは `body` にある。search params は読まない。
 
 ## 未決
+
+- PRD は値の無い欄を「データなし」とするが、加算の無い実績は空欄にしている。元の照合のアプリで加算の無い実績がどう出ていたかは確かめていない。
 
 - 区分で行を絞る操作を足すか。元の照合のアプリには無い。
 - 結果の表が数千行になったときに、表示を分けるか。
