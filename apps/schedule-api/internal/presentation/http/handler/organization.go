@@ -2,13 +2,9 @@ package handler
 
 import (
 	"context"
-	"log/slog"
-	"net/http"
-	"time"
-
-	"github.com/gin-gonic/gin"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/organization"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/presentation/http/openapi"
 )
 
 // OrganizationUsecase は、事業所、部署、チーム、役職、権限のハンドラが使う操作である。
@@ -27,250 +23,126 @@ type OrganizationUsecase interface {
 	CreatePolicy(ctx context.Context, name string) (organization.Policy, error)
 }
 
-type facilityResponse struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+func toDepartment(d organization.Department) openapi.Unit {
+	return openapi.Unit{Id: d.ID, FacilityId: d.FacilityID, Name: d.Name, CreatedAt: d.CreatedAt, UpdatedAt: d.UpdatedAt}
 }
 
-// unitResponse は、部署とチームのレスポンスである。
-type unitResponse struct {
-	ID         string    `json:"id"`
-	FacilityID string    `json:"facility_id"`
-	Name       string    `json:"name"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+func toTeam(t organization.Team) openapi.Unit {
+	return openapi.Unit{Id: t.ID, FacilityId: t.FacilityID, Name: t.Name, CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt}
 }
 
-type policyResponse struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+func toPolicy(p organization.Policy) openapi.Policy {
+	return openapi.Policy{Id: p.ID, Name: p.Name, CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt}
 }
 
-type positionResponse struct {
-	ID         string           `json:"id"`
-	FacilityID string           `json:"facility_id"`
-	Name       string           `json:"name"`
-	Policies   []policyResponse `json:"policies"`
-	CreatedAt  time.Time        `json:"created_at"`
-	UpdatedAt  time.Time        `json:"updated_at"`
-}
-
-type createNameRequest struct {
-	Name string `json:"name" binding:"required,max=255"`
-}
-
-type createPositionRequest struct {
-	Name      string   `json:"name" binding:"required,max=255"`
-	PolicyIDs []string `json:"policy_ids" binding:"omitempty,dive,ulid"`
-}
-
-func toDepartment(d organization.Department) unitResponse {
-	return unitResponse{ID: d.ID, FacilityID: d.FacilityID, Name: d.Name, CreatedAt: d.CreatedAt, UpdatedAt: d.UpdatedAt}
-}
-
-func toTeam(t organization.Team) unitResponse {
-	return unitResponse{ID: t.ID, FacilityID: t.FacilityID, Name: t.Name, CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt}
-}
-
-func toPolicy(p organization.Policy) policyResponse {
-	return policyResponse{ID: p.ID, Name: p.Name, CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt}
-}
-
-func toPosition(p organization.Position) positionResponse {
-	return positionResponse{
-		ID: p.ID, FacilityID: p.FacilityID, Name: p.Name, Policies: mapSlice(p.Policies, toPolicy),
+func toPosition(p organization.Position) openapi.Position {
+	return openapi.Position{
+		Id: p.ID, FacilityId: p.FacilityID, Name: p.Name, Policies: mapSlice(p.Policies, toPolicy),
 		CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt,
 	}
 }
 
-func mapSlice[T, U any](in []T, f func(T) U) []U {
-	out := make([]U, len(in))
-	for i, v := range in {
-		out[i] = f(v)
-	}
-	return out
+// GetHealth は、{"status":"ok"} を返す。
+func (s server) GetHealth(context.Context, openapi.GetHealthRequestObject) (openapi.GetHealthResponseObject, error) {
+	return openapi.GetHealth200JSONResponse{Status: openapi.Ok}, nil
 }
 
-type organizationHandler struct {
-	uc  OrganizationUsecase
-	log *slog.Logger
-}
-
-func (h organizationHandler) register(r gin.IRouter) {
-	r.GET("/facilities/:facility_id", h.getFacility)
-	r.GET("/facilities/:facility_id/departments", h.listDepartments)
-	r.GET("/departments/:department_id", h.getDepartment)
-	r.GET("/facilities/:facility_id/teams", h.listTeams)
-	r.POST("/facilities/:facility_id/teams", h.createTeam)
-	r.GET("/teams/:team_id", h.getTeam)
-	r.GET("/facilities/:facility_id/positions", h.listPositions)
-	r.POST("/facilities/:facility_id/positions", h.createPosition)
-	r.GET("/positions/:position_id", h.getPosition)
-	r.GET("/policies", h.listPolicies)
-	r.POST("/policies", h.createPolicy)
-	r.GET("/policies/:policy_id", h.getPolicy)
-}
-
-func (h organizationHandler) getFacility(c *gin.Context) {
-	id, ok := pathID(c, "facility_id")
-	if !ok {
-		return
-	}
-	f, err := h.uc.GetFacility(c.Request.Context(), id)
+func (s server) GetFacility(ctx context.Context, req openapi.GetFacilityRequestObject) (openapi.GetFacilityResponseObject, error) {
+	f, err := s.u.Organization.GetFacility(ctx, req.FacilityId)
 	if err != nil {
-		writeError(c, h.log, err)
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusOK, facilityResponse(f))
+	return openapi.GetFacility200JSONResponse{Id: f.ID, Name: f.Name, CreatedAt: f.CreatedAt, UpdatedAt: f.UpdatedAt}, nil
 }
 
-func (h organizationHandler) getDepartment(c *gin.Context) {
-	id, ok := pathID(c, "department_id")
-	if !ok {
-		return
-	}
-	d, err := h.uc.GetDepartment(c.Request.Context(), id)
+func (s server) GetDepartment(ctx context.Context, req openapi.GetDepartmentRequestObject) (openapi.GetDepartmentResponseObject, error) {
+	d, err := s.u.Organization.GetDepartment(ctx, req.DepartmentId)
 	if err != nil {
-		writeError(c, h.log, err)
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusOK, toDepartment(d))
+	return openapi.GetDepartment200JSONResponse(toDepartment(d)), nil
 }
 
-func (h organizationHandler) listDepartments(c *gin.Context) {
-	id, ok := pathID(c, "facility_id")
-	if !ok {
-		return
-	}
-	ds, err := h.uc.ListDepartments(c.Request.Context(), id)
+func (s server) ListDepartments(ctx context.Context, req openapi.ListDepartmentsRequestObject) (openapi.ListDepartmentsResponseObject, error) {
+	ds, err := s.u.Organization.ListDepartments(ctx, req.FacilityId)
 	if err != nil {
-		writeError(c, h.log, err)
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusOK, mapSlice(ds, toDepartment))
+	return openapi.ListDepartments200JSONResponse(mapSlice(ds, toDepartment)), nil
 }
 
-func (h organizationHandler) getTeam(c *gin.Context) {
-	id, ok := pathID(c, "team_id")
-	if !ok {
-		return
-	}
-	t, err := h.uc.GetTeam(c.Request.Context(), id)
+func (s server) GetTeam(ctx context.Context, req openapi.GetTeamRequestObject) (openapi.GetTeamResponseObject, error) {
+	t, err := s.u.Organization.GetTeam(ctx, req.TeamId)
 	if err != nil {
-		writeError(c, h.log, err)
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusOK, toTeam(t))
+	return openapi.GetTeam200JSONResponse(toTeam(t)), nil
 }
 
-func (h organizationHandler) listTeams(c *gin.Context) {
-	id, ok := pathID(c, "facility_id")
-	if !ok {
-		return
-	}
-	ts, err := h.uc.ListTeams(c.Request.Context(), id)
+func (s server) ListTeams(ctx context.Context, req openapi.ListTeamsRequestObject) (openapi.ListTeamsResponseObject, error) {
+	ts, err := s.u.Organization.ListTeams(ctx, req.FacilityId)
 	if err != nil {
-		writeError(c, h.log, err)
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusOK, mapSlice(ts, toTeam))
+	return openapi.ListTeams200JSONResponse(mapSlice(ts, toTeam)), nil
 }
 
-func (h organizationHandler) createTeam(c *gin.Context) {
-	id, ok := pathID(c, "facility_id")
-	if !ok {
-		return
-	}
-	var req createNameRequest
-	if !bindJSON(c, &req) {
-		return
-	}
-	t, err := h.uc.CreateTeam(c.Request.Context(), id, req.Name)
+func (s server) CreateTeam(ctx context.Context, req openapi.CreateTeamRequestObject) (openapi.CreateTeamResponseObject, error) {
+	t, err := s.u.Organization.CreateTeam(ctx, req.FacilityId, req.Body.Name)
 	if err != nil {
-		writeError(c, h.log, err)
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusCreated, toTeam(t))
+	return openapi.CreateTeam201JSONResponse(toTeam(t)), nil
 }
 
-func (h organizationHandler) getPosition(c *gin.Context) {
-	id, ok := pathID(c, "position_id")
-	if !ok {
-		return
-	}
-	p, err := h.uc.GetPosition(c.Request.Context(), id)
+func (s server) GetPosition(ctx context.Context, req openapi.GetPositionRequestObject) (openapi.GetPositionResponseObject, error) {
+	p, err := s.u.Organization.GetPosition(ctx, req.PositionId)
 	if err != nil {
-		writeError(c, h.log, err)
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusOK, toPosition(p))
+	return openapi.GetPosition200JSONResponse(toPosition(p)), nil
 }
 
-func (h organizationHandler) listPositions(c *gin.Context) {
-	id, ok := pathID(c, "facility_id")
-	if !ok {
-		return
-	}
-	ps, err := h.uc.ListPositions(c.Request.Context(), id)
+func (s server) ListPositions(ctx context.Context, req openapi.ListPositionsRequestObject) (openapi.ListPositionsResponseObject, error) {
+	ps, err := s.u.Organization.ListPositions(ctx, req.FacilityId)
 	if err != nil {
-		writeError(c, h.log, err)
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusOK, mapSlice(ps, toPosition))
+	return openapi.ListPositions200JSONResponse(mapSlice(ps, toPosition)), nil
 }
 
-func (h organizationHandler) createPosition(c *gin.Context) {
-	id, ok := pathID(c, "facility_id")
-	if !ok {
-		return
+func (s server) CreatePosition(ctx context.Context, req openapi.CreatePositionRequestObject) (openapi.CreatePositionResponseObject, error) {
+	var policyIDs []string
+	if req.Body.PolicyIds != nil {
+		policyIDs = *req.Body.PolicyIds
 	}
-	var req createPositionRequest
-	if !bindJSON(c, &req) {
-		return
-	}
-	p, err := h.uc.CreatePosition(c.Request.Context(), id, req.Name, req.PolicyIDs)
+	p, err := s.u.Organization.CreatePosition(ctx, req.FacilityId, req.Body.Name, policyIDs)
 	if err != nil {
-		writeError(c, h.log, err)
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusCreated, toPosition(p))
+	return openapi.CreatePosition201JSONResponse(toPosition(p)), nil
 }
 
-func (h organizationHandler) getPolicy(c *gin.Context) {
-	id, ok := pathID(c, "policy_id")
-	if !ok {
-		return
-	}
-	p, err := h.uc.GetPolicy(c.Request.Context(), id)
+func (s server) GetPolicy(ctx context.Context, req openapi.GetPolicyRequestObject) (openapi.GetPolicyResponseObject, error) {
+	p, err := s.u.Organization.GetPolicy(ctx, req.PolicyId)
 	if err != nil {
-		writeError(c, h.log, err)
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusOK, toPolicy(p))
+	return openapi.GetPolicy200JSONResponse(toPolicy(p)), nil
 }
 
-func (h organizationHandler) listPolicies(c *gin.Context) {
-	ps, err := h.uc.ListPolicies(c.Request.Context())
+func (s server) ListPolicies(ctx context.Context, _ openapi.ListPoliciesRequestObject) (openapi.ListPoliciesResponseObject, error) {
+	ps, err := s.u.Organization.ListPolicies(ctx)
 	if err != nil {
-		writeError(c, h.log, err)
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusOK, mapSlice(ps, toPolicy))
+	return openapi.ListPolicies200JSONResponse(mapSlice(ps, toPolicy)), nil
 }
 
-func (h organizationHandler) createPolicy(c *gin.Context) {
-	var req createNameRequest
-	if !bindJSON(c, &req) {
-		return
-	}
-	p, err := h.uc.CreatePolicy(c.Request.Context(), req.Name)
+func (s server) CreatePolicy(ctx context.Context, req openapi.CreatePolicyRequestObject) (openapi.CreatePolicyResponseObject, error) {
+	p, err := s.u.Organization.CreatePolicy(ctx, req.Body.Name)
 	if err != nil {
-		writeError(c, h.log, err)
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusCreated, toPolicy(p))
+	return openapi.CreatePolicy201JSONResponse(toPolicy(p)), nil
 }
