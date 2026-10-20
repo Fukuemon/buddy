@@ -1,0 +1,1015 @@
+openapi: 3.1.0
+info:
+  title: buddy schedule API
+  version: 0.1.0
+  description: |
+    訪問看護の事業所の予定を管理する API。認証はまだない。
+
+    - ID は 26 文字の ULID である。
+    - 値がない項目は、項目を省かず null で返す。
+    - 日付は YYYY-MM-DD、時刻は HH:MM である。
+    - エラーは Error の形で返す。`code` は invalid_input、not_found、conflict、internal のいずれかである。
+    - 読めないクエリ（例は `;` を含むもの）は 400 を返す。
+security: []
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: health
+  - name: organization
+    description: 事業所、部署、チーム、役職、権限
+  - name: staff
+    description: 職員
+  - name: patient
+    description: 利用者
+  - name: visit
+    description: 訪問の情報のマスタ
+  - name: schedule
+    description: 予定（単発、繰り返し、キャンセル）
+
+paths:
+  /health:
+    get:
+      tags: [health]
+      operationId: getHealth
+      summary: ヘルスチェック
+      responses:
+        "200":
+          description: 動いている
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    const: ok
+
+  /v1/facilities/{facility_id}:
+    get:
+      tags: [organization]
+      operationId: getFacility
+      summary: 事業所を取得する
+      parameters: [$ref: "#/components/parameters/FacilityID"]
+      responses:
+        "200":
+          description: 事業所
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Facility" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/facilities/{facility_id}/departments:
+    get:
+      tags: [organization]
+      operationId: listDepartments
+      summary: 事業所の部署を一覧する
+      parameters: [$ref: "#/components/parameters/FacilityID"]
+      responses:
+        "200":
+          description: 事業所の部署。名前の順
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Unit" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/departments/{department_id}:
+    get:
+      tags: [organization]
+      operationId: getDepartment
+      summary: 部署を取得する
+      parameters:
+        - { name: department_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
+      responses:
+        "200":
+          description: 部署
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Unit" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/facilities/{facility_id}/teams:
+    get:
+      tags: [organization]
+      operationId: listTeams
+      summary: 事業所のチームを一覧する
+      parameters: [$ref: "#/components/parameters/FacilityID"]
+      responses:
+        "200":
+          description: 事業所のチーム。名前の順
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Unit" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+    post:
+      tags: [organization]
+      operationId: createTeam
+      summary: チームを作る
+      parameters: [$ref: "#/components/parameters/FacilityID"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateNameRequest" }
+      responses:
+        "201":
+          description: 作ったチーム
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Unit" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/teams/{team_id}:
+    get:
+      tags: [organization]
+      operationId: getTeam
+      summary: チームを取得する
+      parameters:
+        - { name: team_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
+      responses:
+        "200":
+          description: チーム
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Unit" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/facilities/{facility_id}/positions:
+    get:
+      tags: [organization]
+      operationId: listPositions
+      summary: 事業所の役職を一覧する
+      parameters: [$ref: "#/components/parameters/FacilityID"]
+      responses:
+        "200":
+          description: 事業所の役職。名前の順
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Position" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+    post:
+      tags: [organization]
+      operationId: createPosition
+      summary: 役職を作る
+      parameters: [$ref: "#/components/parameters/FacilityID"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 255 }
+                policy_ids:
+                  type: array
+                  description: 役職の職員に既定で与える権限
+                  items: { $ref: "#/components/schemas/ID" }
+      responses:
+        "201":
+          description: 作った役職
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Position" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/positions/{position_id}:
+    get:
+      tags: [organization]
+      operationId: getPosition
+      summary: 役職を取得する
+      parameters:
+        - { name: position_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
+      responses:
+        "200":
+          description: 役職
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Position" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/policies:
+    get:
+      tags: [organization]
+      operationId: listPolicies
+      summary: 権限を一覧する
+      responses:
+        "200":
+          description: すべての権限。名前の順
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Policy" }
+        "500": { $ref: "#/components/responses/InternalError" }
+    post:
+      tags: [organization]
+      operationId: createPolicy
+      summary: 権限を作る
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateNameRequest" }
+      responses:
+        "201":
+          description: 作った権限
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Policy" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/policies/{policy_id}:
+    get:
+      tags: [organization]
+      operationId: getPolicy
+      summary: 権限を取得する
+      parameters:
+        - { name: policy_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
+      responses:
+        "200":
+          description: 権限
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Policy" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/facilities/{facility_id}/users:
+    get:
+      tags: [staff]
+      operationId: listUsers
+      summary: 事業所の職員を一覧する
+      parameters:
+        - $ref: "#/components/parameters/FacilityID"
+        - { name: username, in: query, description: 名前で一致させる, schema: { type: string } }
+        - { name: position, in: query, description: 役職の名前で一致させる, schema: { type: string } }
+        - { name: department, in: query, description: 部署の名前で一致させる, schema: { type: string } }
+        - { name: team, in: query, description: チームの名前で一致させる, schema: { type: string } }
+        - name: sort_field
+          in: query
+          description: 省くと updated_at の降順
+          schema: { type: string, enum: [username, created_at, updated_at] }
+        - $ref: "#/components/parameters/SortOrder"
+      responses:
+        "200":
+          description: 事業所の職員
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Staff" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+    post:
+      tags: [staff]
+      operationId: createUser
+      summary: 職員を作る
+      description: 職員を作り、役職の既定の権限を与える。部署、チーム、役職は同じ事業所のものに限る。
+      parameters: [$ref: "#/components/parameters/FacilityID"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, department_id, team_id, position_id]
+              properties:
+                username: { type: string, maxLength: 128 }
+                email: { type: string, format: email, maxLength: 320 }
+                phone_number:
+                  type: [string, "null"]
+                  description: 11 桁以内の数字。先頭の + は省いてよい
+                department_id: { $ref: "#/components/schemas/ID" }
+                team_id: { $ref: "#/components/schemas/ID" }
+                position_id: { $ref: "#/components/schemas/ID" }
+      responses:
+        "201":
+          description: 作った職員
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffDetail" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/users/{user_id}:
+    get:
+      tags: [staff]
+      operationId: getUser
+      summary: 職員を取得する
+      parameters:
+        - { name: user_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
+      responses:
+        "200":
+          description: 職員と権限
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffDetail" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/facilities/{facility_id}/patients:
+    get:
+      tags: [patient]
+      operationId: listPatients
+      summary: 事業所の利用者を一覧する
+      parameters:
+        - $ref: "#/components/parameters/FacilityID"
+        - { name: name, in: query, schema: { type: string } }
+        - { name: preferred_time, in: query, schema: { $ref: "#/components/schemas/PreferredTime" } }
+        - { name: preferred_gender, in: query, schema: { $ref: "#/components/schemas/PreferredGender" } }
+        - { name: assigned_staff, in: query, description: 担当の職員の名前で一致させる, schema: { type: string } }
+        - name: sort_field
+          in: query
+          description: 省くと name の昇順
+          schema: { type: string, enum: [name, created_at] }
+        - $ref: "#/components/parameters/SortOrder"
+      responses:
+        "200":
+          description: 事業所の利用者
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Patient" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+    post:
+      tags: [patient]
+      operationId: createPatient
+      summary: 利用者を作る
+      parameters: [$ref: "#/components/parameters/FacilityID"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, preferred_time, preferred_gender, service_code_id, assigned_staff_id]
+              properties:
+                name: { type: string, maxLength: 255 }
+                preferred_time: { $ref: "#/components/schemas/PreferredTime" }
+                preferred_gender: { $ref: "#/components/schemas/PreferredGender" }
+                service_code_id: { $ref: "#/components/schemas/ID" }
+                assigned_staff_id: { $ref: "#/components/schemas/ID" }
+      responses:
+        "201":
+          description: 作った利用者
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Patient" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/visit_infos/service_codes:
+    get:
+      tags: [visit]
+      operationId: listServiceCodes
+      summary: サービスコードを一覧する
+      responses:
+        "200":
+          description: サービスコード
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ServiceCode" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/visit_infos/visit_categories:
+    get:
+      tags: [visit]
+      operationId: listVisitCategories
+      summary: 訪問の区分を一覧する
+      responses:
+        "200":
+          description: 訪問の区分
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/VisitCategory" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/schedule_types:
+    get:
+      tags: [schedule]
+      operationId: listScheduleTypes
+      summary: 予定の種類を一覧する
+      responses:
+        "200":
+          description: 予定の種類
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ScheduleType" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/facilities/{facility_id}/schedules:
+    get:
+      tags: [schedule]
+      operationId: listSchedules
+      summary: 事業所の予定を一覧する
+      description: |
+        事業所の単発の予定と繰り返しの予定を返す。sort_field と sort_order は許可した値だけを受け付け、
+        ほかの値は 400 を返す。date_from と date_to は単発の予定だけを絞る。
+      parameters:
+        - $ref: "#/components/parameters/FacilityID"
+        - { name: schedule_type, in: query, schema: { $ref: "#/components/schemas/ScheduleTypeName" } }
+        - { name: date_from, in: query, description: この日を含む, schema: { type: string, format: date } }
+        - { name: date_to, in: query, description: この日を含む, schema: { type: string, format: date } }
+        - name: sort_field
+          in: query
+          description: 省くと date の昇順。date は日付の後に開始の時刻で並べる
+          schema: { type: string, enum: [date, start_time, created_at] }
+        - $ref: "#/components/parameters/SortOrder"
+      responses:
+        "200":
+          description: 予定
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [schedules, recurring_schedules]
+                properties:
+                  schedules:
+                    type: array
+                    items: { $ref: "#/components/schemas/Schedule" }
+                  recurring_schedules:
+                    type: array
+                    items: { $ref: "#/components/schemas/RecurringSchedule" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+    post:
+      tags: [schedule]
+      operationId: createSchedule
+      summary: 単発の予定を作る
+      parameters: [$ref: "#/components/parameters/FacilityID"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SlotRequest" }
+      responses:
+        "201":
+          description: 作った予定
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Schedule" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/facilities/{facility_id}/schedules/recurring:
+    post:
+      tags: [schedule]
+      operationId: createRecurringSchedule
+      summary: 繰り返しの予定を作る
+      parameters: [$ref: "#/components/parameters/FacilityID"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/SlotRequest"
+                - type: object
+                  required: [recurring_rule]
+                  properties:
+                    recurring_rule: { $ref: "#/components/schemas/RecurringRule" }
+      responses:
+        "201":
+          description: 作った繰り返しの予定
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecurringSchedule" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/schedules/{schedule_id}:
+    get:
+      tags: [schedule]
+      operationId: getSchedule
+      summary: 単発の予定を取得する
+      parameters: [$ref: "#/components/parameters/ScheduleID"]
+      responses:
+        "200":
+          description: 予定
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Schedule" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/schedules/{schedule_id}/cancel:
+    post:
+      tags: [schedule]
+      operationId: cancelSchedule
+      summary: 単発の予定をキャンセルする
+      parameters: [$ref: "#/components/parameters/ScheduleID"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, maxLength: 255 }
+      responses:
+        "201":
+          description: キャンセル
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Cancel" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: キャンセル済み
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/schedules/recurring/{recurring_schedule_id}:
+    get:
+      tags: [schedule]
+      operationId: getRecurringSchedule
+      summary: 繰り返しの予定を取得する
+      parameters: [$ref: "#/components/parameters/RecurringScheduleID"]
+      responses:
+        "200":
+          description: 繰り返しの予定
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecurringSchedule" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/schedules/recurring/{recurring_schedule_id}/occurrences:
+    post:
+      tags: [schedule]
+      operationId: changeOccurrence
+      summary: 繰り返しの予定の 1 回を置き換える
+      description: |
+        繰り返しの予定の original_date の回を、本文の内容の単発の予定に置き換える。
+        元の回は exclusion_dates に加わり、作った予定は recurring_schedule_id で元の繰り返しの予定を指す。
+      parameters: [$ref: "#/components/parameters/RecurringScheduleID"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/SlotRequest"
+                - type: object
+                  required: [original_date]
+                  properties:
+                    original_date:
+                      type: string
+                      format: date
+                      description: 置き換える回の日付。繰り返しの規則に当たる日に限る
+      responses:
+        "201":
+          description: 置き換えた単発の予定
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Schedule" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: その回はすでに置き換えた
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+components:
+  parameters:
+    FacilityID:
+      name: facility_id
+      in: path
+      required: true
+      schema: { $ref: "#/components/schemas/ID" }
+    ScheduleID:
+      name: schedule_id
+      in: path
+      required: true
+      schema: { $ref: "#/components/schemas/ID" }
+    RecurringScheduleID:
+      name: recurring_schedule_id
+      in: path
+      required: true
+      schema: { $ref: "#/components/schemas/ID" }
+    SortOrder:
+      name: sort_order
+      in: query
+      description: 省くと昇順。sort_field を省いたときは既定の列に向きだけを当てる
+      schema: { type: string, enum: [asc, desc] }
+
+  responses:
+    BadRequest:
+      description: 入力の誤り
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: パスで指したリソースがない
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Conflict:
+      description: 名前などの一意の値が重なる
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    InternalError:
+      description: サーバーの誤り
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    ID:
+      type: string
+      pattern: "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+      examples: ["01M3TC5H00QV17BC0J9V3393ZP"]
+    Date:
+      type: string
+      format: date
+    Time:
+      type: string
+      pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+      examples: ["09:30"]
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          enum: [invalid_input, not_found, conflict, internal]
+        message: { type: string }
+    CreateNameRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, maxLength: 255 }
+    Facility:
+      type: object
+      required: [id, name, created_at, updated_at]
+      properties:
+        id: { $ref: "#/components/schemas/ID" }
+        name: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Unit:
+      description: 部署かチーム
+      type: object
+      required: [id, facility_id, name, created_at, updated_at]
+      properties:
+        id: { $ref: "#/components/schemas/ID" }
+        facility_id: { $ref: "#/components/schemas/ID" }
+        name: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Policy:
+      type: object
+      required: [id, name, created_at, updated_at]
+      properties:
+        id: { $ref: "#/components/schemas/ID" }
+        name: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Position:
+      type: object
+      required: [id, facility_id, name, policies, created_at, updated_at]
+      properties:
+        id: { $ref: "#/components/schemas/ID" }
+        facility_id: { $ref: "#/components/schemas/ID" }
+        name: { type: string }
+        policies:
+          type: array
+          items: { $ref: "#/components/schemas/Policy" }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Ref:
+      type: object
+      required: [id, name]
+      properties:
+        id: { $ref: "#/components/schemas/ID" }
+        name: { type: string }
+    Staff:
+      type: object
+      required: [id, username, email, phone_number, facility_id, department, team, position, created_at, updated_at]
+      properties:
+        id: { $ref: "#/components/schemas/ID" }
+        username: { type: string }
+        email: { type: string, format: email }
+        phone_number: { type: [string, "null"], examples: ["+09000000000"] }
+        facility_id: { $ref: "#/components/schemas/ID" }
+        department: { $ref: "#/components/schemas/Ref" }
+        team: { $ref: "#/components/schemas/Ref" }
+        position: { $ref: "#/components/schemas/Ref" }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    StaffDetail:
+      allOf:
+        - $ref: "#/components/schemas/Staff"
+        - type: object
+          required: [sub, policies]
+          properties:
+            sub:
+              type: [string, "null"]
+              description: 認証の基盤の利用者の識別子。結び付ける前は null
+            policies:
+              type: array
+              items:
+                type: object
+                required: [user_policy_id, policy_id, name, target_user_ids]
+                properties:
+                  user_policy_id: { $ref: "#/components/schemas/ID" }
+                  policy_id: { $ref: "#/components/schemas/ID" }
+                  name: { type: string }
+                  target_user_ids:
+                    type: array
+                    description: 権限が及ぶ職員。空なら対象を限らない
+                    items: { $ref: "#/components/schemas/ID" }
+    PreferredTime:
+      type: string
+      enum: [午前, 午後]
+    PreferredGender:
+      type: string
+      enum: [男性, 女性]
+    Patient:
+      type: object
+      required:
+        - id
+        - facility_id
+        - name
+        - preferred_time
+        - preferred_gender
+        - service_code_id
+        - service_code
+        - assigned_staff_id
+        - assigned_staff_name
+        - created_at
+        - updated_at
+      properties:
+        id: { $ref: "#/components/schemas/ID" }
+        facility_id: { $ref: "#/components/schemas/ID" }
+        name: { type: string }
+        preferred_time: { $ref: "#/components/schemas/PreferredTime" }
+        preferred_gender: { $ref: "#/components/schemas/PreferredGender" }
+        service_code_id: { $ref: "#/components/schemas/ID" }
+        service_code: { type: string }
+        assigned_staff_id: { $ref: "#/components/schemas/ID" }
+        assigned_staff_name: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    ServiceCode:
+      type: object
+      required: [id, code, service_time_range_start, service_time_range_end]
+      properties:
+        id: { $ref: "#/components/schemas/ID" }
+        code: { type: string }
+        service_time_range_start: { type: integer, description: 分 }
+        service_time_range_end: { type: integer, description: 分 }
+    VisitCategory:
+      type: object
+      required: [id, name]
+      properties:
+        id: { $ref: "#/components/schemas/ID" }
+        name: { type: string }
+    ScheduleTypeName:
+      type: string
+      enum: [通常, 訪問]
+      description: 通常の予定はタイトルを、訪問の予定は訪問の情報を必須とする
+    ScheduleType:
+      type: object
+      required: [id, name]
+      properties:
+        id: { $ref: "#/components/schemas/ID" }
+        name: { $ref: "#/components/schemas/ScheduleTypeName" }
+    VisitInfoRequest:
+      type: object
+      required: [patient_id, assigned_staff_id, service_code_id]
+      properties:
+        patient_id: { $ref: "#/components/schemas/ID" }
+        assigned_staff_id: { $ref: "#/components/schemas/ID" }
+        companion_id:
+          oneOf:
+            - $ref: "#/components/schemas/ID"
+            - type: "null"
+        service_code_id: { $ref: "#/components/schemas/ID" }
+        visit_category_ids:
+          type: array
+          items: { $ref: "#/components/schemas/ID" }
+    SlotRequest:
+      type: object
+      required: [schedule_type_id, date, start_time, end_time, staff_id]
+      properties:
+        schedule_type_id: { $ref: "#/components/schemas/ID" }
+        date: { $ref: "#/components/schemas/Date" }
+        start_time: { $ref: "#/components/schemas/Time" }
+        end_time:
+          $ref: "#/components/schemas/Time"
+          description: start_time より後
+        staff_id: { $ref: "#/components/schemas/ID" }
+        title: { type: [string, "null"], maxLength: 255 }
+        description: { type: [string, "null"], maxLength: 2000 }
+        visit_info:
+          oneOf:
+            - $ref: "#/components/schemas/VisitInfoRequest"
+            - type: "null"
+    VisitInfo:
+      type: object
+      required:
+        - id
+        - patient_id
+        - patient_name
+        - assigned_staff_id
+        - assigned_staff_name
+        - companion_id
+        - companion_name
+        - service_code_id
+        - service_code
+        - visit_categories
+      properties:
+        id: { $ref: "#/components/schemas/ID" }
+        patient_id: { $ref: "#/components/schemas/ID" }
+        patient_name: { type: string }
+        assigned_staff_id: { $ref: "#/components/schemas/ID" }
+        assigned_staff_name: { type: string }
+        companion_id:
+          oneOf:
+            - $ref: "#/components/schemas/ID"
+            - type: "null"
+        companion_name: { type: [string, "null"] }
+        service_code_id: { $ref: "#/components/schemas/ID" }
+        service_code: { type: string }
+        visit_categories:
+          type: array
+          items: { $ref: "#/components/schemas/VisitCategory" }
+    Cancel:
+      type: object
+      required: [id, schedule_id, reason]
+      properties:
+        id: { $ref: "#/components/schemas/ID" }
+        schedule_id: { $ref: "#/components/schemas/ID" }
+        reason: { type: string }
+    Schedule:
+      type: object
+      required:
+        - id
+        - facility_id
+        - schedule_type_id
+        - schedule_type
+        - date
+        - start_time
+        - end_time
+        - is_over_time_work
+        - staff_id
+        - staff_name
+        - title
+        - description
+        - recurring_schedule_id
+        - visit_info
+        - cancel
+        - created_at
+        - updated_at
+      properties:
+        id: { $ref: "#/components/schemas/ID" }
+        facility_id: { $ref: "#/components/schemas/ID" }
+        schedule_type_id: { $ref: "#/components/schemas/ID" }
+        schedule_type: { $ref: "#/components/schemas/ScheduleTypeName" }
+        date: { $ref: "#/components/schemas/Date" }
+        start_time: { $ref: "#/components/schemas/Time" }
+        end_time: { $ref: "#/components/schemas/Time" }
+        is_over_time_work:
+          type: boolean
+          description: 17 時以降に始まる予定のとき true
+        staff_id: { $ref: "#/components/schemas/ID" }
+        staff_name: { type: string }
+        title: { type: [string, "null"] }
+        description: { type: [string, "null"] }
+        recurring_schedule_id:
+          description: 繰り返しの予定の 1 回を置き換えた予定のとき、元の繰り返しの予定
+          oneOf:
+            - $ref: "#/components/schemas/ID"
+            - type: "null"
+        visit_info:
+          oneOf:
+            - $ref: "#/components/schemas/VisitInfo"
+            - type: "null"
+        cancel:
+          oneOf:
+            - $ref: "#/components/schemas/Cancel"
+            - type: "null"
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    RecurringRule:
+      type: object
+      required: [frequency]
+      description: |
+        weekly は day_of_week だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
+        指定しない項目は、最初の日付の曜日や日から決める。
+      properties:
+        frequency: { type: string, enum: [weekly, monthly] }
+        day_of_week:
+          type: [integer, "null"]
+          minimum: 1
+          maximum: 7
+          description: 1 が月曜、7 が日曜
+        day_of_month: { type: [integer, "null"], minimum: 1, maximum: 31 }
+        week_of_month: { type: [integer, "null"], minimum: 1, maximum: 5 }
+        end_date:
+          description: この日を含む
+          oneOf:
+            - $ref: "#/components/schemas/Date"
+            - type: "null"
+    RecurringSchedule:
+      type: object
+      required:
+        - id
+        - facility_id
+        - schedule_type_id
+        - schedule_type
+        - date
+        - start_time
+        - end_time
+        - is_over_time_work
+        - staff_id
+        - staff_name
+        - title
+        - description
+        - visit_info
+        - recurring_rule
+        - exclusion_dates
+        - created_at
+        - updated_at
+      properties:
+        id: { $ref: "#/components/schemas/ID" }
+        facility_id: { $ref: "#/components/schemas/ID" }
+        schedule_type_id: { $ref: "#/components/schemas/ID" }
+        schedule_type: { $ref: "#/components/schemas/ScheduleTypeName" }
+        date:
+          $ref: "#/components/schemas/Date"
+          description: 最初の回の日付
+        start_time: { $ref: "#/components/schemas/Time" }
+        end_time: { $ref: "#/components/schemas/Time" }
+        is_over_time_work: { type: boolean }
+        staff_id: { $ref: "#/components/schemas/ID" }
+        staff_name: { type: string }
+        title: { type: [string, "null"] }
+        description: { type: [string, "null"] }
+        visit_info:
+          oneOf:
+            - $ref: "#/components/schemas/VisitInfo"
+            - type: "null"
+        recurring_rule: { $ref: "#/components/schemas/RecurringRule" }
+        exclusion_dates:
+          type: array
+          description: 単発の予定に置き換えたため、繰り返しから外した日付
+          items: { $ref: "#/components/schemas/Date" }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }

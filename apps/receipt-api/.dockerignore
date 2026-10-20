@@ -1,0 +1,6 @@
+Dockerfile
+.dockerignore
+testdata/
+**/*_test.go
+tools/
+.secrets/
