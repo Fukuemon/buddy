@@ -20,12 +20,28 @@ API とマイグレーションは、次の環境変数を読む。
 | `DB_USER` | はい | なし | MySQL の利用者 |
 | `DB_PASSWORD` | はい | なし | MySQL のパスワード |
 | `DB_NAME` | はい | なし | データベースの名前 |
+| `OIDC_ISSUER` | はい | なし | ブローカーの発行者の URL。トークンの `iss` と一致させ、`<OIDC_ISSUER>/.well-known/openid-configuration` から JWKS の場所を読む |
+| `OIDC_AUDIENCE` | はい | なし | トークンの `aud` に求める値 |
+| `OIDC_ORG_CLAIM` | いいえ | `org_id` | 組織の ID を持つクレームの名前 |
 | `PORT` | いいえ | `8080` | API が待ち受けるポート |
 | `CORS_ALLOW_ORIGINS` | いいえ | 空 | カンマで区切ったオリジン。空なら CORS のヘッダーを返さない |
 | `LOG_LEVEL` | いいえ | `info` | `debug`、`info`、`warn`、`error` のいずれか |
 
 パスワードはコードに既定値を持たない。  
-ログは標準出力に JSON で書き、接続の設定は書かない。
+ログは標準出力に JSON で書き、接続の設定とトークンは書かない。  
+`cmd/migrate` は `DB_` で始まる変数だけを読む。
+
+## 認証
+
+`/v1` の API は全て、OIDC のブローカーが発行した access token の JWT を `Authorization: Bearer` で求める。`GET /health` は認証を求めない。
+
+- 署名、`iss`、`aud`、`exp`、`nbf` を確かめる。署名のアルゴリズムは RS256 と ES256 だけを受け付ける。
+- JWKS は起動のときに discovery の文書から場所を読み、1 時間ごとに取り直す。知らない `kid` のトークンが来たときも取り直すが、間隔は 1 分以上あける。
+- 職員は、トークンの `sub` で探す。いなければ、`email_verified` が true のときに限り、組織の事業所で `email` が同じで `sub` がまだない職員に `sub` を結び付ける。
+- 事業所は `facilities.org_id` で組織に結び付ける。トークンの組織の事業所、職員の事業所、パスが指すリソースの事業所の 3 つが一致しないと 403 を返す。
+- トークンがないか検証に失敗したときは、`WWW-Authenticate: Bearer` を付けて 401 を返す。
+
+権限（`user_policies`）による判定はまだしない。特定した職員と権限は、request の context に `auth.Principal` として入れる。
 
 ## 手元で起動する
 
@@ -42,11 +58,26 @@ docker run -d --rm --name buddy-db -p 3306:3306 \
 
 go run ./cmd/migrate up
 go run ./cmd/migrate seed
+
+# ブローカーの代わりに、偽物の発行者を別の端末で動かす
+go run ./cmd/devissuer -addr 127.0.0.1:9000
+
+export OIDC_ISSUER=http://127.0.0.1:9000 OIDC_AUDIENCE=schedule-api
 go run ./cmd/api
 ```
 
 `curl localhost:8080/health` が `{"status":"ok"}` を返せば、起動できている。  
 API は SIGINT か SIGTERM を受けると、処理中のリクエストを最大 30 秒待ってから止まる。
+
+`cmd/devissuer` は、`GET /token` で署名したトークンを返す。  
+シードの事業所は組織 `org-sample` に結び付いているので、シードの職員のメールでトークンを作れば API を呼べる。
+
+```sh
+TOKEN=$(curl -s '127.0.0.1:9000/token?sub=dev-aoki&email=hina.aoki@example.com&org_id=org-sample' | jq -r .access_token)
+curl -H "Authorization: Bearer $TOKEN" localhost:8080/v1/facilities/01M3TC5H00QV17BC0J9V3393ZP/schedules
+```
+
+偽物の発行者は、起動のたびに鍵を作り直す。発行者を起動し直したら、API も起動し直す。
 
 ## マイグレーション
 
@@ -98,6 +129,7 @@ golangci-lint run
 - usecase の手順は、`internal/usecase` のテストが、リポジトリのメモリ上の偽物で確かめる。
 - リポジトリの SQL は、`internal/infrastructure/mysql` のテストが、マイグレーションとシードを当てた MySQL で確かめる。
 - ハンドラの状態コードと本文は、`internal/presentation/http/handler` のテストが、httptest で確かめる。
+- トークンの検証は、`internal/infrastructure/oidc` のテストが、テストの中で鍵を作る偽物の発行者で確かめる。
 
 ## コンテナのイメージ
 
@@ -115,5 +147,7 @@ docker build -t buddy-schedule-api .
 - `internal/domain` は、エンティティ、値の検証、リポジトリのインターフェイスを持ち、標準ライブラリだけに依存する。
 - `internal/usecase` は、domain のインターフェイスだけに依存する。トランザクションは `domain.Transactor` で受け取る。
 - `internal/infrastructure/mysql` は、domain のリポジトリを sqlc の生成コードで実装する。
+- `internal/infrastructure/oidc` は、access token をブローカーの JWKS で検証する。`oidctest` は、テストと `cmd/devissuer` が使う偽物の発行者である。
 - `internal/presentation/http/handler` は、gin のハンドラと、リクエストとレスポンスの型を持つ。
 - `cmd/api` は、設定を読み、依存を組み立てて、サーバーを起動する。
+- `cmd/devissuer` は、手元で試すための偽物の発行者で、イメージに入れない。
