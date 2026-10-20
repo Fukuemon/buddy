@@ -1,0 +1,14 @@
+*
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!apps/web/
+!packages/ui/
+**/node_modules
+**/dist
+**/storybook-static
+**/.tanstack
+**/.nitro
+**/.output
+**/*.test.ts
+**/*.test.tsx

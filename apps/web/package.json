@@ -10,6 +10,7 @@
     "generate-routes": "tsr generate",
     "generate:api": "node scripts/generate-api.ts",
     "build": "vp build",
+    "start": "srvx serve --prod --entry dist/server/server.js --static ../client",
     "preview": "vp preview",
     "lint": "vp lint",
     "check": "vp check",
@@ -40,6 +41,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.90.0",
+    "srvx": "1.0.6",
     "tailwindcss": "^4.1.18",
     "zod": "^4.6.7"
   },
