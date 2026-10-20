@@ -3,3 +3,7 @@
 [tools]
 node = "24"
 "pipx:apm-cli" = "0.32.0"
+go = "1.27"
+"aqua:sqlc-dev/sqlc" = "1.31.1"
+"aqua:golang-migrate/migrate" = "4.20.1"
+golangci-lint = "2.15.0"
