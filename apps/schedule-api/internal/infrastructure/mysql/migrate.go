@@ -63,23 +63,32 @@ func MigrateDown(c Config, steps int) error {
 	return nil
 }
 
-// Seed は、架空のデータを入れ、入れたら true を返す。事業所の行が 1 つでもあれば、何もせず false を返す。
-// compose が起動のたびに当てても、入れたデータと手で足したデータを壊さないためである。
+// Seed は、架空のデータを 1 つのトランザクションで入れ、入れたら true を返す。事業所の行が 1 つでもあれば、
+// 何もせず false を返す。compose が起動のたびに当てても、入れたデータと手で足したデータを壊さないためである。
+// seed は DML だけにする。DDL は暗黙にコミットされ、失敗したときに巻き戻せない。
 func Seed(ctx context.Context, c Config, seed []byte) (bool, error) {
 	conn, err := sql.Open("mysql", c.DSN(true))
 	if err != nil {
 		return false, fmt.Errorf("open mysql: %w", err)
 	}
 	defer func() { _ = conn.Close() }()
+	tx, err := conn.BeginTx(ctx, nil)
+	if err != nil {
+		return false, fmt.Errorf("begin seed: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
 	var seeded bool
-	if err := conn.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM facilities)").Scan(&seeded); err != nil {
+	if err := tx.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM facilities)").Scan(&seeded); err != nil {
 		return false, fmt.Errorf("check seed: %w", err)
 	}
 	if seeded {
 		return false, nil
 	}
-	if _, err := conn.ExecContext(ctx, string(seed)); err != nil {
+	if _, err := tx.ExecContext(ctx, string(seed)); err != nil {
 		return false, fmt.Errorf("seed: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return false, fmt.Errorf("commit seed: %w", err)
 	}
 	return true, nil
 }
