@@ -4,7 +4,7 @@
 
 | 項目 | 値 |
 | --- | --- |
-| 画面の ID | <!-- docs/screens/index.md の ID と同じ値 --> |
+| 画面の ID | <!-- docs/screens/index.md の一覧の ID と同じ値。新しい画面は、一覧の「画面の ID の規則」で決める --> |
 | URL | <!-- route のパス。search params は「初期状態でのインタラクション」に書く --> |
 | 使う人 | <!-- PRD の役職と、開くのに要る権限 --> |
 | 実装 | <!-- route のファイルと、画面を組み立てる Container のパス --> |

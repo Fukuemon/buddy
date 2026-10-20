@@ -6,24 +6,47 @@
 
 ## 画面の一覧
 
-| 画面の ID | 名前 | URL | 使う人 | 仕様書 | 状態 |
-| --- | --- | --- | --- | --- | --- |
-| `login` | ログイン | 未決 | 全ての職員 | なし | 未実装 |
-| `schedule-calendar` | 予定のカレンダー | `/schedule` | 全ての職員。表示する予定は権限で決まる | [予定のカレンダー](schedule-calendar.md) | 実装済み |
-| `schedule-new` | 予定の作成 | `/schedule/new` | 全ての職員。予定を作れる職員の範囲は権限で決まる | [予定の作成](schedule-new.md) | 実装済み |
-| `schedule-detail` | 予定の詳細 | `/schedule/$scheduleId` | 予定を見る権限を持つ職員 | [予定の詳細](schedule-detail.md) | 実装済み |
-| `schedule-edit` | 予定の編集 | `/schedule/$scheduleId/edit` | 予定を編集する権限を持つ職員 | [予定の編集](schedule-edit.md) | 実装済み |
-| `schedule-cancel` | 予定のキャンセル | 未決 | 予定を編集する権限を持つ職員 | なし | 未実装 |
-| `patient-list` | 利用者の一覧 | 未決 | 全ての職員 | なし | 未実装 |
-| `patient-form` | 利用者の登録と編集 | 未決 | マネージャー | なし | 未実装 |
-| `staff-list` | 職員の一覧と詳細 | 未決 | マネージャー | なし | 未実装 |
-| `staff-form` | 職員の登録と編集（権限の変更を含む） | 未決 | マネージャー | なし | 未実装 |
-| `profile` | プロフィール | 未決 | 全ての職員 | なし | 未実装 |
-| `receipt-check` | 照合（対象の月の選択、CSV のアップロード） | 未決 | 全ての職員 | なし | 未実装 |
-| `receipt-check-result` | 照合の結果 | 未決 | 全ての職員 | なし | 未実装 |
+| 画面の ID | 名前 | URL | 使う人 | 仕様書 |
+| --- | --- | --- | --- | --- |
+| `schedule-calendar` | 予定のカレンダー | `/schedule` | 全ての職員。表示する予定は権限で決まる | [予定のカレンダー](schedule-calendar.md) |
+| `schedule-new` | 予定の作成 | `/schedule/new` | 全ての職員。予定を作れる職員の範囲は権限で決まる | [予定の作成](schedule-new.md) |
+| `schedule-detail` | 予定の詳細 | `/schedule/$scheduleId` | 予定を見る権限を持つ職員 | [予定の詳細](schedule-detail.md) |
+| `schedule-edit` | 予定の編集 | `/schedule/$scheduleId/edit` | 予定を編集する権限を持つ職員 | [予定の編集](schedule-edit.md) |
+| `patient-list` | 利用者の一覧 | 未決 | 全ての職員 | なし |
+| `patient-new` | 利用者の登録 | 未決 | マネージャー | なし |
+| `patient-edit` | 利用者の編集 | 未決 | マネージャー | なし |
+| `staff-list` | 職員の一覧 | 未決 | マネージャー | なし |
+| `staff-detail` | 職員の詳細 | 未決 | マネージャー | なし |
+| `staff-new` | 職員の登録 | 未決 | マネージャー | なし |
+| `staff-edit` | 職員の編集（権限の変更を含む） | 未決 | マネージャー | なし |
+| `receipt-upload` | 照合（対象の月の選択、CSV のアップロード） | 未決 | 全ての職員 | なし |
+| `receipt-result` | 照合の結果 | 未決 | 全ての職員 | なし |
+| `account-login` | ログイン | 未決 | 全ての職員 | なし |
+| `account-profile` | プロフィール | 未決 | 全ての職員 | なし |
 
 - 役職と権限の対応は、PRD の役職ごとの権限にある。マネージャーだけが開ける画面は、PRD で仮決定である。
 - 予定の作成、詳細、編集は、予定のカレンダーの上にモーダルとして重ねて出す。URL は `/schedule` の子で、カレンダーの search params を引き継ぐ。
+
+## 画面の ID の規則
+
+- 形は `<ドメイン>-<種類>` にする。小文字の英語と `-` だけを使う。
+- ドメインは BCD Design の Domain の名詞にする。今使うのは `schedule`、`patient`、`staff`、`receipt`、`account`。
+- 種類は次の語から選ぶ。足すときはこの表に足す。
+
+| 種類 | 意味 |
+| --- | --- |
+| `list` | 一覧 |
+| `calendar` | カレンダーの表示 |
+| `detail` | 1 件の詳細 |
+| `new` | 作成 |
+| `edit` | 編集 |
+| `upload` | ファイルを受け取る |
+| `result` | 処理の結果 |
+| `login`、`profile` | `account` のドメインだけで使う |
+
+- 固有の URL を持つものを 1 つの画面に数える。URL を持つモーダルも画面にする。URL を持たない確認のダイアログ（予定のキャンセルなど）は、親の画面の構成要素にする。
+- URL と ID をそろえる。`/schedule/new` は `schedule-new` にする。
+- 一度決めた ID は、画面の名前を変えても変えない。仕様書のファイル名、ワイヤーフレーム、E2E のシナリオの ID が ID を使うため。
 
 ## 画面の間の遷移
 
