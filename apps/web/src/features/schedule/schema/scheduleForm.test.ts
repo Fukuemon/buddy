@@ -29,17 +29,21 @@ describe('scheduleFormSchema', () => {
     })
   })
 
-  it('訪看I5・2超 は照合の規則と同じ 41 分から 60 分にする', () => {
-    const values = {
-      ...createScheduleFormValues({ kind: 'visit', date: '2026-10-20', staffId: 'staff-1' }),
-      patientId: 'patient-1',
-      serviceCode: '訪看I5・2超' as const,
-    }
-    expect(messagesOf({ ...values, serviceTime: 40 })).toEqual({
-      serviceTime: '訪看I5・2超 の提供時間は 41 分から 60 分です',
-    })
-    expect(messagesOf({ ...values, serviceTime: 41 })).toEqual({})
-  })
+  it.each(['訪看I5・2超', '予防看I5・2超'] as const)(
+    '%s は照合の規則と同じ 41 分から 60 分にする',
+    (serviceCode) => {
+      const values = {
+        ...createScheduleFormValues({ kind: 'visit', date: '2026-10-20', staffId: 'staff-1' }),
+        patientId: 'patient-1',
+        serviceCode,
+      }
+      const message = `${serviceCode} の提供時間は 41 分から 60 分です`
+      expect(messagesOf({ ...values, serviceTime: 40 })).toEqual({ serviceTime: message })
+      expect(messagesOf({ ...values, serviceTime: 41 })).toEqual({})
+      expect(messagesOf({ ...values, serviceTime: 60 })).toEqual({})
+      expect(messagesOf({ ...values, serviceTime: 61 })).toEqual({ serviceTime: message })
+    },
+  )
 
   it('通常の予定はタイトルを必須にし、終了時間を開始時間より後にさせる', () => {
     const values = {

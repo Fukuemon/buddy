@@ -41,13 +41,13 @@ export const StaffFilterSidebar = ({
   return (
     <nav
       aria-label="職員の絞り込み"
-      className="flex flex-col gap-4 p-4"
+      className="flex flex-col gap-2 p-2 desktop:gap-4 desktop:p-4"
       data-testid="staff-filter-sidebar"
     >
       <div className="flex items-center justify-between">
         <h2 className="text-caption font-bold text-text-secondary">職員</h2>
         <button
-          className="text-caption text-primary underline disabled:text-text-disabled disabled:no-underline"
+          className="min-h-11 px-2 text-caption text-primary underline disabled:text-text-disabled disabled:no-underline"
           data-testid="staff-filter-reset"
           disabled={isAll}
           onClick={() => onChange([])}

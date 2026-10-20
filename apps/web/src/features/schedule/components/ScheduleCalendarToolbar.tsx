@@ -64,8 +64,8 @@ export const ScheduleCalendarToolbar = ({
         value={date}
       />
     </div>
-    <div className="flex items-center gap-4">
-      <div className="w-48">
+    <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-2 desktop:w-auto">
+      <div className="w-full desktop:w-48">
         <SegmentedControl
           data-testid="calendar-view"
           label="表示の単位"
