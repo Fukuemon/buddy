@@ -2,12 +2,14 @@
 
 ## 開発の準備
 
-必要なものは mise と Docker である。ランタイムとツール（Node、Go、sqlc、golang-migrate、golangci-lint、uv、apm）のバージョンは `mise.toml` にある。pnpm のバージョンは `package.json` の `packageManager` にある。文書のサイトを組む Zensical は、mise が入れる `uv` で動かす。
+必要なものは mise と Docker である。ランタイムとツール（Node、pnpm、Go、sqlc、golang-migrate、golangci-lint、uv、apm）のバージョンは `mise.toml` にある。pnpm は `package.json` の `packageManager` と同じバージョンにする。文書のサイトを組む Zensical は、mise が入れる `uv` で動かす。
 
 ```sh
 mise install
 pnpm install
 ```
+
+アプリとパッケージの README は、「準備、動かす、テストとチェック、コードの生成、文書」の順に見出しを置き、当てはまらない節は省く。
 
 `pnpm install` の `prepare` が、lefthook の Git のフック（commit-msg の commitlint、pre-commit の textlint）を入れる。
 
