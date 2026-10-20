@@ -16,6 +16,7 @@ nav = [
     { "予定の管理" = "design/features/schedule/DesignDoc.md" },
     { "レセプトの照合" = "design/features/receipt-check/DesignDoc.md" },
   ] },
+  { "デザインシステム" = "design/packages/ui.md" },
   { "ADR" = [
     "adr/0001-auth.md",
     "adr/0002-pbac.md",
