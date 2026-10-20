@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url'
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const SCREENS_DIR = relative(process.cwd(), join(ROOT, 'docs/screens')) || '.'
 const WIREFRAMES_DIR = join(SCREENS_DIR, 'wireframes')
-const NOT_SCREENS = new Set(['index.md', 'template.md'])
+const NOT_SCREENS = new Set(['index.md', 'template.md', 'rules.md'])
 const COMPONENTS = '構成要素'
 const REFERRING = ['構成要素ごとの活性条件と表示条件', 'インタラクション']
 const REF = /^\d+(-\d+)*$/
