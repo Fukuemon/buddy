@@ -79,8 +79,14 @@ export const Modal = ({
       if (dialog.isConnected && !dialog.open) dialog.showModal()
     }
     // ::backdrop を押すと、クリックの対象は dialog 自身になる。中身は内側の div が受ける。
+    // 中身から背景へドラッグしたときも click は dialog に届くので、押し始めも背景だったときだけ閉じる。
+    let pressedOnBackdrop = false
+    const handlePointerDown = (event: PointerEvent) => {
+      pressedOnBackdrop = event.target === dialog
+    }
     const handleClick = (event: MouseEvent) => {
-      if (event.target === dialog) requestCloseFromDialog()
+      if (event.target === dialog && pressedOnBackdrop) requestCloseFromDialog()
+      pressedOnBackdrop = false
     }
     // showModal は後ろを操作できなくするが、最後の要素からの Tab はブラウザの UI へ抜けるので、先頭へ戻す。
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -101,6 +107,7 @@ export const Modal = ({
 
     dialog.addEventListener('cancel', handleCancel)
     dialog.addEventListener('close', handleClose)
+    dialog.addEventListener('pointerdown', handlePointerDown)
     dialog.addEventListener('click', handleClick)
     dialog.addEventListener('keydown', handleKeyDown)
     if (!dialog.open) dialog.showModal()
@@ -109,6 +116,7 @@ export const Modal = ({
     return () => {
       dialog.removeEventListener('cancel', handleCancel)
       dialog.removeEventListener('close', handleClose)
+      dialog.removeEventListener('pointerdown', handlePointerDown)
       dialog.removeEventListener('click', handleClick)
       dialog.removeEventListener('keydown', handleKeyDown)
       if (dialog.open) dialog.close()

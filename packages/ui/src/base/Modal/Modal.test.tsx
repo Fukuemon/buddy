@@ -50,6 +50,17 @@ describe('Modal', () => {
     expect(dialog).toHaveProperty('open', true)
   })
 
+  it('中身で押して背景で離しても、onCloseRequest を呼ばない', () => {
+    const onCloseRequest = fn()
+    render(<Default onCloseRequest={onCloseRequest} />)
+    const dialog = screen.getByRole('dialog')
+    screen
+      .getByText('モーダルの本文。')
+      .dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    dialog.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(onCloseRequest).not.toHaveBeenCalled()
+  })
+
   it('Tab と Shift+Tab は、ダイアログの中だけを回る', async () => {
     render(<WithOpener />)
     await userEvent.click(screen.getByRole('button', { name: '予定を開く' }))
