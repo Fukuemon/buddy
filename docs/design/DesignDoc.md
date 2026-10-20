@@ -116,6 +116,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 | `OIDC_AUTHORIZATION_ENDPOINT` | 任意 | 使わない | 使わない | ブラウザを転送する認可の URL。web とブラウザから届く IdP の URL が違う手元の環境だけで渡す |
 | `SESSION_STORE_URL` | 使う | 使わない | 使わない | Valkey の接続先 |
 | `SESSION_SECRET` | 使う | 使わない | 使わない | cookie の署名の鍵。32 バイト以上 |
+| `SESSION_COOKIE_SECURE` | 任意 | 使わない | 使わない | `false` のときだけ、セッションの cookie に Secure を付けない。https でない手元の環境で使う |
 | `SCHEDULE_API_URL` | 使う | 使わない | 使わない | schedule-api の URL |
 | `RECEIPT_API_URL` | 使う | 使わない | 使わない | receipt-api の URL |
 | `DATABASE_URL` | 使わない | 使う | 使わない | MySQL の接続先 |

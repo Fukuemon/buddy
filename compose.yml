@@ -118,6 +118,8 @@ services:
       OIDC_CLIENT_SECRET: web-dev
       SESSION_STORE_URL: redis://valkey:6379
       SESSION_SECRET: buddy-dev-session-secret-for-compose-only
+      # 手元は https でないので、cookie に Secure を付けない
+      SESSION_COOKIE_SECURE: 'false'
       SCHEDULE_API_URL: http://schedule-api:8080
       RECEIPT_API_URL: http://receipt-api:8080
     ports: ['127.0.0.1:${WEB_PORT:-3000}:3000']
