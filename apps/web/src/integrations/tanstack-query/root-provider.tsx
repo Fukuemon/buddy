@@ -1,15 +1,13 @@
 import { QueryClient } from '@tanstack/react-query'
 
 import type { BuddyApi } from '#/api/client'
-import { createBuddyApi } from '#/api/createBuddyApi'
-import type { FacilityId } from '#/api/types'
+import { createBuddyApi, type ApiMode } from '#/api/createBuddyApi'
 
-/** route の loader と部品が共有する値。 */
+/** route の loader と部品が共有する値。ログインした職員は、root の route の beforeLoad が足す。 */
 export type AppRouterContext = {
   queryClient: QueryClient
   api: BuddyApi
-  /** ログインした職員の事業所。ログインを入れるまでは環境変数か架空の事業所に固定する。 */
-  facilityId: FacilityId
+  mode: ApiMode
 }
 
 export function getContext(): AppRouterContext {
