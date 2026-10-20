@@ -123,7 +123,31 @@ describe('createHttpBuddyApi', () => {
     expect(new URL(requests[0].url).searchParams.has('name')).toBe(false)
   })
 
-  it('失敗の状態と、ほかの事業所の予定と、予定の更新で ApiError を投げる', async () => {
+  it('マスタの ID を引いて予定を置き換える', async () => {
+    let sent: unknown
+    const { fetch } = fakeFetch({
+      'GET /v1/schedule_types': () => [{ id: 'type-normal', name: '通常' }],
+      'GET /v1/visit_infos/service_codes': () => [],
+      'GET /v1/visit_infos/visit_categories': () => [],
+      'PUT /v1/schedules/target': async (_, request) => {
+        sent = await request.json()
+        return schedule('target', { title: '研修' })
+      },
+    })
+    const api = createHttpBuddyApi({ baseUrl: 'http://api.test', fetch })
+    const updated = await api.schedules.update('facility-1', 'target', {
+      kind: 'normal',
+      title: '研修',
+      staffId: 'staff-1',
+      startsAt: '2026-10-20T09:00:00+09:00',
+      endsAt: '2026-10-20T10:00:00+09:00',
+      description: '',
+    })
+    expect(sent).toMatchObject({ schedule_type_id: 'type-normal', title: '研修' })
+    expect(updated).toMatchObject({ id: 'target', title: '研修' })
+  })
+
+  it('失敗の状態と、ほかの事業所の予定で ApiError を投げる', async () => {
     const { fetch } = fakeFetch({
       'GET /v1/schedules/other': () => schedule('other', { facility_id: 'facility-2' }),
     })
@@ -132,15 +156,5 @@ describe('createHttpBuddyApi', () => {
       new ApiError(404, 'ない'),
     )
     await expect(api.schedules.get('facility-1', 'other')).rejects.toHaveProperty('status', 403)
-    await expect(
-      api.schedules.update('facility-1', 'x', {
-        kind: 'normal',
-        title: '',
-        staffId: '',
-        startsAt: '',
-        endsAt: '',
-        description: '',
-      }),
-    ).rejects.toHaveProperty('status', 501)
   })
 })

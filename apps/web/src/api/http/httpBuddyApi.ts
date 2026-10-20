@@ -30,7 +30,6 @@ export const unwrap = async <T>(promise: Promise<Result<T>>): Promise<T> => {
 /**
  * 予定の API を openapi-fetch で呼ぶ BuddyApi を作る。トークンは付けない。
  *
- * 予定の API は予定の更新を持たないので、schedules.update は status が 501 の ApiError を投げる。
  * schedules.get は、ほかの事業所の予定を指すと status が 403 の ApiError を投げる。
  * schedules.list は、キャンセルした予定を返さない。画面の予定はキャンセルの状態を持たないため。
  */
@@ -96,8 +95,15 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
         )
         return fromApiSchedule(created)
       },
-      update: async () => {
-        throw new ApiError(501, '予定の API に予定の更新がありません')
+      update: async (_facilityId, scheduleId, input) => {
+        const body = toSlotRequest(input, await loadMasters())
+        const updated = await unwrap(
+          client.PUT('/v1/schedules/{schedule_id}', {
+            params: { path: { schedule_id: scheduleId } },
+            body,
+          }),
+        )
+        return fromApiSchedule(updated)
       },
     },
     staff: {

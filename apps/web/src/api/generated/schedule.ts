@@ -238,6 +238,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * トークンの職員を取得する
+         * @description 画面が、ログインした職員と事業所を知るために呼ぶ。
+         */
+        get: operations["getMe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/facilities/{facility_id}/patients": {
         parameters: {
             query?: never;
@@ -355,7 +375,12 @@ export interface paths {
         };
         /** 単発の予定を取得する */
         get: operations["getSchedule"];
-        put?: never;
+        /**
+         * 単発の予定を置き換える
+         * @description 予定の枠を本文の内容に置き換える。訪問の情報は、本文の内容で作り直す。
+         *     繰り返しの予定の回を置き換えた予定は、元の繰り返しの予定への結び付きを保つ。
+         */
+        put: operations["updateSchedule"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1208,6 +1233,29 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    getMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 職員と権限 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalError"];
+        };
+    };
     listPatients: {
         parameters: {
             query?: {
@@ -1479,6 +1527,46 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    updateSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schedule_id: components["parameters"]["ScheduleID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SlotRequest"];
+            };
+        };
+        responses: {
+            /** @description 置き換えた予定 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Schedule"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description キャンセル済み */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
