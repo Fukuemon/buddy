@@ -17,6 +17,7 @@ kit、規則、スキル、Design Doc は、[Fukuemon/verification](https://gith
 
 | コマンド | 確かめること |
 | --- | --- |
+| `pnpm e2e`（ルート） | compose に向けて、ログイン、予定の作成、照合の流れを流す。先に `docker compose up --build --wait` で起動する |
 | `pnpm --filter @buddy/e2e check` | 整形と lint（Vite+）、E2E の書き方の規則（ESLint）、型のチェック |
 | `pnpm --filter @buddy/e2e test:rules` | ESLint の規則のテスト |
 

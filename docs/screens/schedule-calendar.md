@@ -53,7 +53,7 @@ web の型（`apps/web/src/api/types.ts`）は偽物の API に合わせた形�
 | --- | --- | --- | --- | --- | --- |
 | 1 | `SiteHeader` | 「buddy」 | なし | なし | なし |
 | 1-1 | `SiteNav` | 「予定」と「照合」のリンク。「予定」に `aria-current="page"` | なし | なし | `site-nav` |
-| 1-2 | `ViewerMenu` | ログインした職員の名前とログアウトのボタン。幅 768px 未満では名前を出さない | `Viewer.staffName` | `getMe` の `username` | `viewer-menu` |
+| 1-2 | `ViewerMenu` | ログインした職員の名前とログアウトのボタン。幅 768px 未満では名前を出さない | `Viewer.staffName` | `getMe` の `username` | `viewer-menu`、ログアウトのボタンは `viewer-logout` |
 | 2 | `StaffFilterSidebar` | 見出し「職員」 | なし | なし | `staff-filter-sidebar` |
 | 2-1 | 全員を表示のボタン | 「全員を表示」 | なし | なし | `staff-filter-reset` |
 | 2-2 | チームのチェックボックス | チームの名前 | `Team.name` | `listTeams` の `Unit.name` | `staff-filter-team-{チームの id}` |
