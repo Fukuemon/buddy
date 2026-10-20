@@ -98,13 +98,7 @@ golangci-lint run
 `go test ./...` は、リポジトリの結合テストのために、testcontainers-go で MySQL 8.4 のコンテナを起動する。  
 `-short` を付けると、コンテナを使うテストを飛ばす。
 
-テストの種類と置き場は次のとおり。
-
-- domain の値の検証と繰り返しの規則は、`internal/domain` の表駆動のテストが確かめる。
-- usecase の手順は、`internal/usecase` のテストが、リポジトリのメモリ上の偽物で確かめる。
-- リポジトリの SQL は、`internal/infrastructure/mysql` のテストが、マイグレーションとシードを当てた MySQL で確かめる。
-- ハンドラの状態コードと本文は、`internal/presentation/http/handler` のテストが、httptest で確かめる。
-- トークンの検証は、`internal/infrastructure/oidc` のテストが、テストの中で鍵を作る偽物の発行者で確かめる。
+テストの種類ごとに保証することと置き場は、[テスト](../../context/testing.md) にある。
 
 ## コードの生成
 
@@ -165,7 +159,7 @@ docker build -t buddy-schedule-api .
 
 ## コードの層
 
-依存してよい向きは、presentation、usecase、domain の順の 1 方向に限る。
+依存してよい向きは、[コードベースの構造](../../context/codebase.md) にある。
 
 - `internal/domain` は、エンティティ、値の検証、リポジトリのインターフェイスを持ち、標準ライブラリだけに依存する。
 - `internal/usecase` は、domain のインターフェイスだけに依存する。トランザクションは `domain.Transactor` で受け取る。

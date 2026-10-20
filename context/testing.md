@@ -2,26 +2,63 @@
 type: context
 title: テスト
 description: テストの種類ごとの責務、実行に要る環境の条件、置き換えの方針、変更に足すテスト
-status: draft
+status: stable
 ---
 
 # テスト
 
 ## Test Types and Guarantees
 
-<!-- テストの種類ごとに、何を保証し、どこに置くか。テストの基盤の構成は Design Doc へリンクする -->
+| 種類 | 保証すること | 置き場 | 流し方 |
+| --- | --- | --- | --- |
+| Go の単体テスト（domain） | 値の検証、繰り返しの規則、照合の判定の規則 | 対象のパッケージの隣の `*_test.go`（表駆動） | 各 API で `go test ./...` |
+| Go の単体テスト（usecase） | 手順と、事業所をまたぐ参照の拒否 | `apps/schedule-api/internal/usecase` | 同上 |
+| Go の結合テスト（リポジトリ） | SQL が、マイグレーションとシードを当てた MySQL で期待どおりに動く | `apps/schedule-api/internal/infrastructure/mysql` | 同上（`-short` で飛ばす） |
+| Go のトークンの検証のテスト | access token の署名、`iss`、`aud`、期限の検証 | `apps/schedule-api/internal/infrastructure/oidc`（テストの中で鍵を作る偽物の発行者） | 同上 |
+| Go のハンドラのテスト | 状態コード、応答の本文、認証と事業所の確認 | `internal/presentation/http/handler`、`internal/httpapi` | 同上 |
+| 照合の互換のテスト | Go の照合が、元の Python の実装と同じ結果を返す | `apps/receipt-api/internal/check/parity_test.go` と `testdata/parity/` | `go test ./...`。期待値の作り直しは `tools/parity/run.sh` |
+| web の単体とコンポーネントのテスト | 変換、表示の規則（照合の印と CSV）、コンポーネントの操作 | 対象の隣の `*.test.ts(x)`。コンポーネントは story を `composeStories` で使う | `pnpm --filter @buddy/web test`（jsdom） |
+| デザインシステムのテスト | トークンのコントラスト、押せる領域とフォーカスの移り方、story の描画とアクセシビリティ | `packages/ui/src` の `*.test.ts(x)` と story | `pnpm --filter @buddy/ui test`（トークンは node、コンポーネントと story はブラウザ） |
+| E2E | ログインから画面の操作までの流れが、compose の全体で動く | `packages/e2e/tests/` | `pnpm e2e`（下の E2E の節） |
+| 生成物のそろい | `openapi.yaml` と SQL から生成したコードが最新である | `scripts/check-generated.sh` | `pnpm check:generated` |
 
 ## Runtime Requirements
 
-<!-- 実行に要る環境。環境変数、ポート、外部のサービス -->
+- schedule-api の結合テストは Docker が要る。testcontainers-go が MySQL のコンテナを起動し、接続の値はテストの中に固定してある。環境変数は要らない。
+- receipt-api のテストと web の Vitest は、ネットワークと環境変数を要らない。web は `VITE_API_MODE` を指定しなければ偽物の API で動く。
+- `packages/ui` のテストは、Playwright の chromium が要る（`pnpm --filter @buddy/ui exec playwright install chromium`）。
+- E2E は、ルートの compose の全体（ポートは [CONTRIBUTING.md](../CONTRIBUTING.md) の「手元で全部を動かす」）と、Playwright の chromium が要る。
+- 照合の互換のテストの期待値を作り直すときだけ、元の Python の実装のチェックアウトと uv が要る（`apps/receipt-api/tools/parity/README.md`）。
 
 ## Mocking and Test Data
 
-<!-- 何を本物で動かし、何を置き換えるか。テストのデータの用意の仕方 -->
+| 対象 | 単体とコンポーネントのテスト | E2E |
+| --- | --- | --- |
+| MySQL | usecase はメモリ上の偽物、リポジトリのテストは testcontainers の本物 | compose の本物 |
+| OIDC の発行者 | `oidctest` の偽物（テストの中で鍵を作る） | compose の mock-oauth2-server |
+| Google Calendar API | `gcaltest` の偽物 | 使わない（compose の receipt-api はカレンダーを設定していない） |
+| web から見た API | `src/api/fake/` の偽物 | compose の本物 |
+
+- テストのデータは、架空の値だけを使う。実在の事業所、人、連絡先を入れず、メールは `example.com` にする。
+- schedule-api のシードは `apps/schedule-api/db/seed/seed.sql` にあり、結合テストと compose が同じシードを当てる。全ての環境で同じマスタは、シードではなくマイグレーションが入れる。
+- 照合の入力の CSV は `apps/receipt-api/testdata/` に、互換のテストのケースは `testdata/parity/<ケース>/` に置く。
+- web の story は、架空のデータだけを使い、API を呼ぶ story は作らない。データは、schedule が `features/schedule/components/storyData.ts`、receipt が偽物の API の `fakeReceiptReport` である。
 
 ## Required Tests
 
-<!-- どの変更にどの種類のテストを足すか。リリースの前に通すテスト -->
+| 変えたもの | 足すか流すテスト |
+| --- | --- |
+| domain の規則、照合の判定 | 表駆動の単体テストにケースを足す |
+| SQL、マイグレーション | リポジトリの結合テスト（`-short` を付けずに流す） |
+| ハンドラ、認証、事業所の確認 | ハンドラのテスト |
+| 照合の正規化と判定 | 互換のテストを流し、結果が変わるなら期待値を作り直した理由を pull request に書く |
+| web の変換と表示の規則 | 対象の隣の単体テスト |
+| 画面のコンポーネント | story と、操作を確かめるコンポーネントのテスト |
+| `packages/ui` のコンポーネント | story（play 関数）とコンポーネントのテスト |
+| 画面の流れ、testid | その画面の E2E を流す |
+| `openapi.yaml`、SQL | `pnpm check:generated` |
+
+取り込む前に、変えたアプリの `test` と `check`（Go は `go test ./...`、`go vet ./...`、`golangci-lint run`）を流す。CI は無く、リリースの前に通すテストの一覧は、検証環境ができてから決める（[証跡](testing/evidence.md) と同じ時期）。
 
 ## E2E
 
@@ -34,14 +71,4 @@ status: draft
 - lint と型のチェックは、`packages/e2e` で `pnpm check` を流す。ESLint の規則（`packages/e2e/eslint/e2e-authoring-rule.mjs`）と、その規則のテスト（`pnpm test:rules`）もここにある。
   - 規則は ESLint の cwd から見た `tests/` だけを見る。ルートやエディタから流すと、違反があっても何も言わずに通る。
 
-## Evidence
-
-人手検証の証跡は、`packages/e2e/kit/` の `recording` と `evidence` で撮る。撮り方は、スキル write-verification-spec と run-verification-scenarios にある。次の値は、どれも未定である。検証環境ができてから決める。
-
-- 検証シナリオのファイルと pull request の置き場
-- 証跡の spec の置き場（`evidenceDir` の `<root>` と、その下の `<issue>/`）と、spec の名前の付け方
-- 撮る URL、改修前の URL、実施日、環境の名前を渡す環境変数
-- 証跡の格納先と、フォルダの名前の決まり
-- ログインの手順と、テストデータを作る手順
-- 撮るコマンド
-- kit を呼ぶ薄い層（`recordEvidence` に置き場とアプリの値を付けて呼ぶもの、`variants` に環境変数を渡すもの）の置き場
+人手検証の証跡の取り決めは、[証跡](testing/evidence.md) にある。
