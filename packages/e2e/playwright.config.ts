@@ -5,7 +5,7 @@ import { TIMEOUTS } from './tests/fixtures/timeouts'
 
 /**
  * ルートの compose で立てた全体に向けて流す。先に `docker compose up --build --wait` で起動しておく。
- * テストのデータを予定の API に作るので、worker は 1 つにする。
+ * spec はログインの状態のファイルを 1 つ共有するので、worker は 1 つにする（kit の ensureSavedLogin の文書コメント）。
  */
 export default defineConfig({
   testDir: 'tests',
@@ -19,11 +19,11 @@ export default defineConfig({
     ? [['list'], ['junit', { outputFile: 'test-results/junit.xml' }]]
     : 'list',
   use: {
+    ...devices['Desktop Chrome'],
     baseURL: BASE_URL,
     actionTimeout: TIMEOUTS.action,
     navigationTimeout: TIMEOUTS.navigation,
     trace: 'retain-on-failure',
-    ...devices['Desktop Chrome'],
   },
   projects: [
     { name: 'setup', testMatch: /setup\/.*\.setup\.ts/ },

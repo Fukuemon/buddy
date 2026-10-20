@@ -2,6 +2,7 @@ import { test as setup } from '@playwright/test'
 
 import { ensureSavedLogin } from '../../kit/auth/index.js'
 import { BASE_URL, LOGIN_NAME, LOGIN_STATE } from '../fixtures/env'
+import { TIMEOUTS } from '../fixtures/timeouts'
 import { signInAtIdp } from '../screens/login'
 
 setup('compose の IdP にログインした状態を保存する', async ({ browser }) => {
@@ -10,7 +11,12 @@ setup('compose の IdP にログインした状態を保存する', async ({ bro
     baseUrl: BASE_URL,
     isLoggedIn: async (page) => {
       await page.goto('/schedule')
-      return new URL(page.url()).pathname === '/schedule'
+      if (new URL(page.url()).pathname !== '/schedule') return false
+      return page
+        .getByTestId('viewer-menu')
+        .waitFor({ timeout: TIMEOUTS.expect })
+        .then(() => true)
+        .catch(() => false)
     },
     login: async (page) => {
       await page.goto('/schedule')

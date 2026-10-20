@@ -4,7 +4,7 @@ import { expect, test } from '@playwright/test'
 
 import { RECEIPT_TESTDATA } from '../../fixtures/env'
 
-test.describe('照合', () => {
+test.describe('照合の結果', () => {
   test.describe('予定の CSV での照合', () => {
     test.beforeEach(async ({ page }) => {
       await page.goto('/receipt')
@@ -35,7 +35,7 @@ test.describe('照合', () => {
       const bytes = await readFile(file)
       expect([...bytes.subarray(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
       const csv = bytes.subarray(3).toString('utf8')
-      expect(csv.startsWith('訪問日,利用者名,主訪問者,')).toBe(true)
+      expect(csv).toMatch(/^訪問日,利用者名,主訪問者,/)
       expect(csv).toContain('\r\n不整合データ,---,')
       expect(csv).toContain('\r\n整合データ,---,')
     })

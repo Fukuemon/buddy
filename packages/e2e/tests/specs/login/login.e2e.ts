@@ -26,6 +26,8 @@ test.describe('予定のカレンダー', () => {
       await expect(page.getByTestId('viewer-menu')).toContainText(LOGIN_STAFF.name)
 
       await page.getByTestId('viewer-logout').click()
+      await expect(idpLogin(page).username).toBeVisible()
+      await page.goto('/schedule')
 
       await expect(idpLogin(page).username).toBeVisible()
     })
