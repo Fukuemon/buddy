@@ -1,10 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vite-plus/test'
 
-import { parseBffCall } from '#/api/bff/bffCall'
+import { invalidBffArgs, parseBffCall } from '#/api/bff/bffCall'
 
 import { loadServerConfig } from './config'
-import { isCrossSiteWrite } from './sameOrigin'
+import { isSameHostOrigin } from './sameOrigin'
 import { signValue, verifySignedValue } from './signedValue'
 
 const env = {
@@ -44,23 +44,13 @@ describe('signValue', () => {
   })
 })
 
-describe('isCrossSiteWrite', () => {
-  const post = (headers: Record<string, string>) =>
-    new Request('http://web.test/auth/logout', {
-      method: 'POST',
-      headers: { Host: 'web.test', ...headers },
-    })
+describe('isSameHostOrigin', () => {
+  const request = new Request('http://web.internal/auth/logout', { headers: { Host: 'web.test' } })
 
-  it('ほかのオリジンの POST を拒み、同じ host と読み取りは通す', () => {
-    expect(isCrossSiteWrite(post({ Origin: 'http://evil.test' }))).toBe(true)
-    expect(isCrossSiteWrite(post({ Origin: 'https://web.test' }))).toBe(false)
-    expect(isCrossSiteWrite(post({ 'Sec-Fetch-Site': 'cross-site' }))).toBe(true)
-    expect(isCrossSiteWrite(post({}))).toBe(false)
-    expect(
-      isCrossSiteWrite(
-        new Request('http://web.test/', { headers: { Origin: 'http://evil.test' } }),
-      ),
-    ).toBe(false)
+  it('scheme を問わず Host と同じ host だけを同じとみなす', () => {
+    expect(isSameHostOrigin('https://web.test', request)).toBe(true)
+    expect(isSameHostOrigin('http://evil.test', request)).toBe(false)
+    expect(isSameHostOrigin('null', request)).toBe(false)
   })
 })
 
@@ -73,5 +63,29 @@ describe('parseBffCall', () => {
     expect(() => parseBffCall({ op: 'schedules.delete', args: [] })).toThrow('schedules.delete')
     expect(() => parseBffCall({ op: 'teams.list' })).toThrow('配列')
     expect(() => parseBffCall(null)).toThrow('形が正しくない')
+  })
+})
+
+describe('invalidBffArgs', () => {
+  it('操作ごとの引数の形を確かめる', () => {
+    expect(invalidBffArgs({ op: 'staff.list', args: ['f'] })).toBeUndefined()
+    expect(invalidBffArgs({ op: 'staff.list', args: ['f', { name: '青木' }] })).toBeUndefined()
+    expect(invalidBffArgs({ op: 'schedules.list', args: ['f'] })).toBeDefined()
+    expect(
+      invalidBffArgs({
+        op: 'schedules.create',
+        args: [
+          'f',
+          { kind: 'other', title: '', staffId: 's', startsAt: 'a', endsAt: 'b', description: '' },
+        ],
+      }),
+    ).toContain('kind')
+  })
+})
+
+describe('secureCookie', () => {
+  it('既定で Secure を付け、SESSION_COOKIE_SECURE=false のときだけ外す', () => {
+    expect(loadServerConfig(env).secureCookie).toBe(true)
+    expect(loadServerConfig({ ...env, SESSION_COOKIE_SECURE: 'false' }).secureCookie).toBe(false)
   })
 })

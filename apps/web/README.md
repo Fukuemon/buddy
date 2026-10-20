@@ -32,10 +32,11 @@ pnpm --filter @buddy/web dev
 `bff` では、web が BFF としてブローカーと認可コードフロー（PKCE つき）でやり取りする。
 
 - `/auth/login` は、ブローカーの認可の画面へ転送する。`/auth/callback` は、トークンを取り、予定の API の `GET /v1/me` で職員と事業所を引いてセッションを作る。
-- セッションは Valkey に置き、ブラウザには署名つきの cookie でセッションの ID だけを渡す。cookie は HttpOnly と SameSite=Lax で、https のときは Secure を付ける。
+- セッションは Valkey に置き、ブラウザには署名つきの cookie でセッションの ID だけを渡す。cookie は HttpOnly、SameSite=Lax、Secure で、Secure は `SESSION_COOKIE_SECURE=false` のときだけ外す。
 - 画面の API の呼び出しは、server function（`src/api/bff/serverFns.ts`）を通る。サーバーは、画面が渡した事業所の代わりにセッションの事業所を使う。
-- access token の期限が 1 分を切ったら、refresh token で取り直す。取り直せなければセッションを消し、画面はログインへ移る。
-- ほかのサイトのページからの POST は 403 を返す（`src/start.ts`）。
+- access token の期限が 1 分を切ったら、refresh token で取り直す。同じセッションの取り直しは、Valkey の鍵で 1 本にまとめる。ブローカーが refresh token を拒めばセッションを消し、画面はログインへ移る。
+- ほかのサイトのページからの POST は、TanStack Start の CSRF の middleware で 403 を返す（`src/start.ts`）。
+- 画面の引数は、server function で操作ごとの形を確かめ、合わなければ 400 を返す。
 - 事業所に登録されていない職員は、`/auth/error?reason=forbidden` に案内を出す。
 
 サーバーが読む環境変数は、設計書の環境変数の表にある。手元の compose のように、ブラウザと web から届く IdP の URL が違うときは、`OIDC_AUTHORIZATION_ENDPOINT` でブラウザを転送する認可の URL を渡す。

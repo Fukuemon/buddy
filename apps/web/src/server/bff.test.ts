@@ -10,15 +10,20 @@ const SECRET = 'x'.repeat(32)
 
 const setup = async () => {
   const store = createMemorySessionStore()
-  await store.set('session:id-1', {
-    staffId: 'staff-1',
-    staffName: '青木 陽菜',
-    facilityId: 'facility-1',
-    accessToken: 'access-1',
-  })
+  await store.set(
+    'session:id-1',
+    {
+      staffId: 'staff-1',
+      staffName: '青木 陽菜',
+      facilityId: 'facility-1',
+      accessToken: 'access-1',
+    },
+    60,
+  )
   const auth: AuthDeps = {
     store,
     secret: SECRET,
+    secureCookie: false,
     oidc: {} as AuthDeps['oidc'],
     fetchMe: async () => ({ ok: false, reason: 'failed' }),
   }
@@ -60,6 +65,17 @@ describe('callBff', () => {
       { auth, scheduleApiUrl: 'http://api.test', fetch },
     )
     expect(result).toEqual({ ok: false, status: 403, message: 'この操作は許可されていません' })
+  })
+
+  it('引数の形が操作に合わなければ 400 を返し、API を呼ばない', async () => {
+    const { auth, fetch, requests } = await setup()
+    const result = await callBff(
+      withCookie(`buddy_session=${signValue('id-1', SECRET)}`),
+      { op: 'schedules.list', args: ['facility-1'] },
+      { auth, scheduleApiUrl: 'http://api.test', fetch },
+    )
+    expect(result).toMatchObject({ ok: false, status: 400 })
+    expect(requests).toHaveLength(0)
   })
 
   it('セッションが無ければ 401 を返し、API を呼ばない', async () => {

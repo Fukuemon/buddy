@@ -18,6 +18,8 @@ export const createBffBuddyApi = (callBff: CallBff = (data) => callBffFn({ data 
       if (result.ok) return result.data as never
       if (result.status === 401 && typeof window !== 'undefined') {
         window.location.assign(loginHref(window.location.pathname + window.location.search))
+        // 画面が移るまでの間に、呼び出し元がエラーの表示を出さないよう、終わらない Promise を返す
+        return new Promise<never>(() => {})
       }
       throw new ApiError(result.status, result.message)
     }

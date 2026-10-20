@@ -1,3 +1,7 @@
+import { z } from 'zod'
+
+import { SCHEDULE_CATEGORIES, SCHEDULE_KINDS, SERVICE_CODES } from '../types'
+
 /** BFF が中継する BuddyApi の操作。 */
 export const BFF_OPERATIONS = [
   'schedules.list',
@@ -16,6 +20,45 @@ export type BffCall = { op: BffOperation; args: unknown[] }
 
 /** BuddyApi の操作が返す値。JSON にできる値に限る。 */
 export type BffData = string | number | boolean | null | BffData[] | { [key: string]: BffData }
+
+const id = z.string().min(1).max(64)
+const dateTime = z.string().min(1).max(64)
+const scheduleInput = z.object({
+  kind: z.enum(SCHEDULE_KINDS),
+  title: z.string().max(255),
+  staffId: id,
+  startsAt: dateTime,
+  endsAt: dateTime,
+  description: z.string().max(10_000),
+  visit: z
+    .object({
+      patientId: id,
+      serviceCode: z.enum(SERVICE_CODES),
+      categories: z.array(z.enum(SCHEDULE_CATEGORIES)).max(SCHEDULE_CATEGORIES.length),
+    })
+    .optional(),
+})
+const nameSearch = z.object({ name: z.string().max(100).optional() }).optional()
+
+/** 操作ごとの引数の形。先頭は事業所で、BFF がセッションの事業所に替える。 */
+const ARGS: Record<BffOperation, z.ZodType> = {
+  'schedules.list': z.tuple([
+    id,
+    z.object({ from: dateTime, to: dateTime, staffIds: z.array(id).max(500).optional() }),
+  ]),
+  'schedules.get': z.tuple([id, id]),
+  'schedules.create': z.tuple([id, scheduleInput]),
+  'schedules.update': z.tuple([id, id, scheduleInput]),
+  'staff.list': z.tuple([id, nameSearch]),
+  'teams.list': z.tuple([id]),
+  'patients.list': z.tuple([id, nameSearch]),
+}
+
+/** call の引数が操作の形に合わなければ、その理由を返す。合えば undefined を返す。 */
+export const invalidBffArgs = (call: BffCall) => {
+  const result = ARGS[call.op].safeParse(call.args)
+  return result.success ? undefined : z.prettifyError(result.error)
+}
 
 /** BFF の応答。ApiError は class のままでは server function を越えられないので、値にして返す。 */
 export type BffResult = { ok: true; data: BffData } | { ok: false; status: number; message: string }
