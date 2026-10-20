@@ -1,4 +1,4 @@
-// Package csvio は、照合の入力の CSV を読み、結果を CSV に書く。
+// Package csvio は、照合の入力の CSV を読む。
 package csvio
 
 import (

@@ -77,7 +77,7 @@ func TestHealth(t *testing.T) {
 }
 
 func TestChecksJSON(t *testing.T) {
-	for _, accept := range []string{"", "application/json", "*/*"} {
+	for _, accept := range []string{"", "application/json", "*/*", "text/plain"} {
 		t.Run(accept, func(t *testing.T) {
 			rec := post(t, newHandler(), validFiles(t), accept)
 			if rec.Code != http.StatusOK {
@@ -92,29 +92,6 @@ func TestChecksJSON(t *testing.T) {
 			}
 			if want := (check.Summary{Mismatch: 3, ScheduleOnly: 1, VisitOnly: 1, Match: 3}); rep.Summary != want {
 				t.Errorf("Summary = %+v", rep.Summary)
-			}
-		})
-	}
-}
-
-func TestChecksCSV(t *testing.T) {
-	for _, accept := range []string{"text/csv", "application/json;q=0.5, text/csv"} {
-		t.Run(accept, func(t *testing.T) {
-			rec := post(t, newHandler(), validFiles(t), accept)
-			if rec.Code != http.StatusOK {
-				t.Fatalf("status %d body %s", rec.Code, rec.Body)
-			}
-			if ct := rec.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/csv") {
-				t.Errorf("Content-Type = %s", ct)
-			}
-			body := rec.Body.String()
-			if !strings.HasPrefix(body, "\xEF\xBB\xBF訪問日,") {
-				t.Errorf("BOM とヘッダーで始まらない: %q", body[:min(len(body), 40)])
-			}
-			for _, label := range []string{"不整合データ", "予定のみ", "実績のみ", "整合データ"} {
-				if !strings.Contains(body, label+",---") {
-					t.Errorf("区切りの行 %s がない", label)
-				}
 			}
 		})
 	}
