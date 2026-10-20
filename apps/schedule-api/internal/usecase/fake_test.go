@@ -209,6 +209,16 @@ func (s visits) CreateInfo(_ context.Context, i visit.Info) error {
 	return nil
 }
 
+func (s visits) DeleteInfoIfUnused(_ context.Context, id string) error {
+	for _, d := range s.schedules {
+		if d.VisitInfoID != nil && *d.VisitInfoID == id {
+			return nil
+		}
+	}
+	delete(s.infos, id)
+	return nil
+}
+
 func (s visits) GetServiceCode(_ context.Context, id string) (visit.ServiceCode, error) {
 	return get(s.codes, id)
 }
@@ -240,8 +250,22 @@ func (s schedules) Create(_ context.Context, sc schedule.Schedule) error {
 	return nil
 }
 
+func (s schedules) Update(_ context.Context, sc schedule.Schedule) error {
+	cur, ok := s.schedules[sc.ID]
+	if !ok {
+		return domain.ErrNotFound
+	}
+	sc.RecurringScheduleID = cur.RecurringScheduleID
+	s.schedules[sc.ID] = schedule.Detail{Schedule: sc, TypeName: s.types[sc.TypeID].Name}
+	return nil
+}
+
 func (s schedules) Get(_ context.Context, id string) (schedule.Detail, error) {
-	return get(s.schedules, id)
+	d, err := get(s.schedules, id)
+	if c, ok := s.cancels[id]; ok {
+		d.Cancel = &c
+	}
+	return d, err
 }
 
 func (s schedules) ListByFacility(context.Context, string, schedule.ListQuery) ([]schedule.Detail, error) {

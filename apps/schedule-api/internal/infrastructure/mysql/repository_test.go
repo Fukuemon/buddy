@@ -494,6 +494,55 @@ func TestScheduleCancel(t *testing.T) {
 	}
 }
 
+func TestScheduleUpdateAndDeleteUnusedVisitInfo(t *testing.T) {
+	ctx := txContext(t)
+	r := NewScheduleRepository(testDB)
+	visits := NewVisitRepository(testDB)
+	cur, err := r.Get(ctx, seedVisitSchedule)
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldInfo := *cur.VisitInfoID
+	countInfo := func() int {
+		t.Helper()
+		var n int
+		tx := ctx.Value(txKey{}).(*sql.Tx)
+		if err := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM visit_infos WHERE id = ?", oldInfo).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	if err := visits.DeleteInfoIfUnused(ctx, oldInfo); err != nil {
+		t.Fatal(err)
+	}
+	if countInfo() != 1 {
+		t.Fatal("予定が指している訪問の情報を消した")
+	}
+
+	updated := schedule.Schedule{ID: seedVisitSchedule, Slot: schedule.Slot{
+		StaffID: seedAoki, TypeID: seedNormalType, Date: civil.Date{Year: 2026, Month: 10, Day: 22},
+		StartTime: civil.Time{Hour: 13}, EndTime: civil.Time{Hour: 14}, Title: ptr("記録の整理"),
+	}}
+	if err := r.Update(ctx, updated); err != nil {
+		t.Fatal(err)
+	}
+	got, err := r.Get(ctx, seedVisitSchedule)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.TypeName != schedule.Normal || got.StaffID != seedAoki || got.Date.String() != "2026-10-22" ||
+		got.Title == nil || *got.Title != "記録の整理" || got.VisitInfoID != nil || got.FacilityID != seedFacility {
+		t.Errorf("got %+v", got)
+	}
+
+	if err := visits.DeleteInfoIfUnused(ctx, oldInfo); err != nil {
+		t.Fatal(err)
+	}
+	if countInfo() != 0 {
+		t.Error("どの予定も指さない訪問の情報が残った")
+	}
+}
+
 func TestTransactorRollsBack(t *testing.T) {
 	if testDB == nil {
 		t.Skip("MySQL を使うテストは -short では動かさない")

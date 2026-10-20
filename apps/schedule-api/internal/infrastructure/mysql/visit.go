@@ -36,6 +36,10 @@ func (r *VisitRepository) CreateInfo(ctx context.Context, i visit.Info) error {
 	return nil
 }
 
+func (r *VisitRepository) DeleteInfoIfUnused(ctx context.Context, id string) error {
+	return translate("delete visit info", r.q(ctx).DeleteUnusedVisitInfo(ctx, id))
+}
+
 func (r *VisitRepository) GetServiceCode(ctx context.Context, id string) (visit.ServiceCode, error) {
 	c, err := r.q(ctx).GetServiceCode(ctx, id)
 	if err != nil {

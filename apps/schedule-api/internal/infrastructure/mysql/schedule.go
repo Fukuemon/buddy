@@ -53,6 +53,22 @@ func (r *ScheduleRepository) Create(ctx context.Context, s schedule.Schedule) er
 	return translate("create schedule", err)
 }
 
+func (r *ScheduleRepository) Update(ctx context.Context, s schedule.Schedule) error {
+	err := r.q(ctx).UpdateSchedule(ctx, sqlcgen.UpdateScheduleParams{
+		ID:             s.ID,
+		StaffID:        s.StaffID,
+		ScheduleTypeID: s.TypeID,
+		Date:           s.Date.Time(),
+		StartTime:      timeOfDay(s.StartTime),
+		EndTime:        timeOfDay(s.EndTime),
+		VisitInfoID:    nullString(s.VisitInfoID),
+		Title:          nullString(s.Title),
+		Description:    nullString(s.Description),
+		IsOverTimeWork: s.IsOverTimeWork,
+	})
+	return translate("update schedule", err)
+}
+
 func (r *ScheduleRepository) Get(ctx context.Context, id string) (schedule.Detail, error) {
 	row, err := r.q(ctx).GetScheduleDetail(ctx, id)
 	if err != nil {

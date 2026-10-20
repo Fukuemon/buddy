@@ -856,6 +856,9 @@ type CreatePolicyJSONRequestBody = CreateNameRequest
 // ChangeOccurrenceJSONRequestBody defines body for ChangeOccurrence for application/json ContentType.
 type ChangeOccurrenceJSONRequestBody ChangeOccurrenceJSONBody
 
+// UpdateScheduleJSONRequestBody defines body for UpdateSchedule for application/json ContentType.
+type UpdateScheduleJSONRequestBody = SlotRequest
+
 // CancelScheduleJSONRequestBody defines body for CancelSchedule for application/json ContentType.
 type CancelScheduleJSONRequestBody CancelScheduleJSONBody
 
@@ -909,6 +912,9 @@ type ServerInterface interface {
 	// CreateUser 職員を作る
 	// (POST /v1/facilities/{facility_id}/users)
 	CreateUser(c *gin.Context, facilityId FacilityID)
+	// GetMe トークンの職員を取得する
+	// (GET /v1/me)
+	GetMe(c *gin.Context)
 	// ListPolicies 権限を一覧する
 	// (GET /v1/policies)
 	ListPolicies(c *gin.Context)
@@ -933,6 +939,9 @@ type ServerInterface interface {
 	// GetSchedule 単発の予定を取得する
 	// (GET /v1/schedules/{schedule_id})
 	GetSchedule(c *gin.Context, scheduleId ScheduleID)
+	// UpdateSchedule 単発の予定を置き換える
+	// (PUT /v1/schedules/{schedule_id})
+	UpdateSchedule(c *gin.Context, scheduleId ScheduleID)
 	// CancelSchedule 単発の予定をキャンセルする
 	// (POST /v1/schedules/{schedule_id}/cancel)
 	CancelSchedule(c *gin.Context, scheduleId ScheduleID)
@@ -1480,6 +1489,19 @@ func (siw *ServerInterfaceWrapper) CreateUser(c *gin.Context) {
 	siw.Handler.CreateUser(c, facilityId)
 }
 
+// GetMe operation middleware
+func (siw *ServerInterfaceWrapper) GetMe(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetMe(c)
+}
+
 // ListPolicies operation middleware
 func (siw *ServerInterfaceWrapper) ListPolicies(c *gin.Context) {
 
@@ -1644,6 +1666,31 @@ func (siw *ServerInterfaceWrapper) GetSchedule(c *gin.Context) {
 	siw.Handler.GetSchedule(c, scheduleId)
 }
 
+// UpdateSchedule operation middleware
+func (siw *ServerInterfaceWrapper) UpdateSchedule(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "schedule_id" -------------
+	var scheduleId ScheduleID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schedule_id", c.Param("schedule_id"), &scheduleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter schedule_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdateSchedule(c, scheduleId)
+}
+
 // CancelSchedule operation middleware
 func (siw *ServerInterfaceWrapper) CancelSchedule(c *gin.Context) {
 
@@ -1789,6 +1836,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id/users", wrapper.ListUsers)
 	router.POST(options.BaseURL+"/v1/facilities/:facility_id/users", wrapper.CreateUser)
 	router.GET(options.BaseURL+"/v1/users/:user_id", wrapper.GetUser)
+	router.GET(options.BaseURL+"/v1/me", wrapper.GetMe)
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id/patients", wrapper.ListPatients)
 	router.POST(options.BaseURL+"/v1/facilities/:facility_id/patients", wrapper.CreatePatient)
 	router.GET(options.BaseURL+"/v1/visit_infos/service_codes", wrapper.ListServiceCodes)
@@ -1798,6 +1846,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/v1/facilities/:facility_id/schedules", wrapper.CreateSchedule)
 	router.POST(options.BaseURL+"/v1/facilities/:facility_id/schedules/recurring", wrapper.CreateRecurringSchedule)
 	router.GET(options.BaseURL+"/v1/schedules/:schedule_id", wrapper.GetSchedule)
+	router.PUT(options.BaseURL+"/v1/schedules/:schedule_id", wrapper.UpdateSchedule)
 	router.POST(options.BaseURL+"/v1/schedules/:schedule_id/cancel", wrapper.CancelSchedule)
 	router.GET(options.BaseURL+"/v1/schedules/recurring/:recurring_schedule_id", wrapper.GetRecurringSchedule)
 	router.POST(options.BaseURL+"/v1/schedules/recurring/:recurring_schedule_id/occurrences", wrapper.ChangeOccurrence)
@@ -3259,6 +3308,72 @@ func (response CreateUser500JSONResponse) VisitCreateUserResponse(w http.Respons
 	return err
 }
 
+type GetMeRequestObject struct {
+}
+
+type GetMeResponseObject interface {
+	VisitGetMeResponse(w http.ResponseWriter) error
+}
+
+type GetMe200JSONResponse StaffDetail
+
+func (response GetMe200JSONResponse) VisitGetMeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMe401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetMe401JSONResponse) VisitGetMeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMe403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetMe403JSONResponse) VisitGetMeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMe500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response GetMe500JSONResponse) VisitGetMeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListPoliciesRequestObject struct {
 }
 
@@ -3976,6 +4091,116 @@ func (response GetSchedule500JSONResponse) VisitGetScheduleResponse(w http.Respo
 	return err
 }
 
+type UpdateScheduleRequestObject struct {
+	ScheduleId ScheduleID `json:"schedule_id"`
+	Body       *UpdateScheduleJSONRequestBody
+}
+
+type UpdateScheduleResponseObject interface {
+	VisitUpdateScheduleResponse(w http.ResponseWriter) error
+}
+
+type UpdateSchedule200JSONResponse Schedule
+
+func (response UpdateSchedule200JSONResponse) VisitUpdateScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSchedule400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateSchedule400JSONResponse) VisitUpdateScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSchedule401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateSchedule401JSONResponse) VisitUpdateScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSchedule403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateSchedule403JSONResponse) VisitUpdateScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSchedule404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateSchedule404JSONResponse) VisitUpdateScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSchedule409JSONResponse Error
+
+func (response UpdateSchedule409JSONResponse) VisitUpdateScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSchedule500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response UpdateSchedule500JSONResponse) VisitUpdateScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CancelScheduleRequestObject struct {
 	ScheduleId ScheduleID `json:"schedule_id"`
 	Body       *CancelScheduleJSONRequestBody
@@ -4458,6 +4683,9 @@ type StrictServerInterface interface {
 	// CreateUser 職員を作る
 	// (POST /v1/facilities/{facility_id}/users)
 	CreateUser(ctx context.Context, request CreateUserRequestObject) (CreateUserResponseObject, error)
+	// GetMe トークンの職員を取得する
+	// (GET /v1/me)
+	GetMe(ctx context.Context, request GetMeRequestObject) (GetMeResponseObject, error)
 	// ListPolicies 権限を一覧する
 	// (GET /v1/policies)
 	ListPolicies(ctx context.Context, request ListPoliciesRequestObject) (ListPoliciesResponseObject, error)
@@ -4482,6 +4710,9 @@ type StrictServerInterface interface {
 	// GetSchedule 単発の予定を取得する
 	// (GET /v1/schedules/{schedule_id})
 	GetSchedule(ctx context.Context, request GetScheduleRequestObject) (GetScheduleResponseObject, error)
+	// UpdateSchedule 単発の予定を置き換える
+	// (PUT /v1/schedules/{schedule_id})
+	UpdateSchedule(ctx context.Context, request UpdateScheduleRequestObject) (UpdateScheduleResponseObject, error)
 	// CancelSchedule 単発の予定をキャンセルする
 	// (POST /v1/schedules/{schedule_id}/cancel)
 	CancelSchedule(ctx context.Context, request CancelScheduleRequestObject) (CancelScheduleResponseObject, error)
@@ -5013,6 +5244,30 @@ func (sh *strictHandler) CreateUser(ctx *gin.Context, facilityId FacilityID) {
 	}
 }
 
+// GetMe operation middleware
+func (sh *strictHandler) GetMe(ctx *gin.Context) {
+	var request GetMeRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMe(ctx, request.(GetMeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMe")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetMeResponseObject); ok {
+		if err := validResponse.VisitGetMeResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListPolicies operation middleware
 func (sh *strictHandler) ListPolicies(ctx *gin.Context) {
 	var request ListPoliciesRequestObject
@@ -5222,6 +5477,39 @@ func (sh *strictHandler) GetSchedule(ctx *gin.Context, scheduleId ScheduleID) {
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(GetScheduleResponseObject); ok {
 		if err := validResponse.VisitGetScheduleResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateSchedule operation middleware
+func (sh *strictHandler) UpdateSchedule(ctx *gin.Context, scheduleId ScheduleID) {
+	var request UpdateScheduleRequestObject
+
+	request.ScheduleId = scheduleId
+
+	var body UpdateScheduleJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateSchedule(ctx, request.(UpdateScheduleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateSchedule")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(UpdateScheduleResponseObject); ok {
+		if err := validResponse.VisitUpdateScheduleResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {

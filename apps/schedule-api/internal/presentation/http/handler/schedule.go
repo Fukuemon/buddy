@@ -19,6 +19,7 @@ type ScheduleUsecase interface {
 	CreateRecurring(ctx context.Context, facilityID string, in usecase.SlotInput, rule usecase.RuleInput) (schedule.RecurringDetail, error)
 	ChangeOccurrence(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in usecase.SlotInput) (schedule.Detail, error)
 	Cancel(ctx context.Context, scheduleID, reason string) (schedule.Cancel, error)
+	Update(ctx context.Context, scheduleID string, in usecase.SlotInput) (schedule.Detail, error)
 }
 
 // slotInput は、検証した本文の予定の枠を usecase の入力に変える。日付と時刻の形が誤っていれば 400 になるエラーを返す。
@@ -173,6 +174,18 @@ func (s server) ChangeOccurrence(ctx context.Context, req openapi.ChangeOccurren
 		return nil, err
 	}
 	return openapi.ChangeOccurrence201JSONResponse(toSchedule(d)), nil
+}
+
+func (s server) UpdateSchedule(ctx context.Context, req openapi.UpdateScheduleRequestObject) (openapi.UpdateScheduleResponseObject, error) {
+	in, err := slotInput(*req.Body)
+	if err != nil {
+		return nil, err
+	}
+	d, err := s.u.Schedules.Update(ctx, req.ScheduleId, in)
+	if err != nil {
+		return nil, err
+	}
+	return openapi.UpdateSchedule200JSONResponse(toSchedule(d)), nil
 }
 
 func (s server) CancelSchedule(ctx context.Context, req openapi.CancelScheduleRequestObject) (openapi.CancelScheduleResponseObject, error) {

@@ -13,6 +13,8 @@ type Repository interface {
 	ListTypes(ctx context.Context) ([]Type, error)
 
 	Create(ctx context.Context, s Schedule) error
+	// Update は、ID が s.ID の予定の枠を s の値に置き換える。RecurringScheduleID は変えない。
+	Update(ctx context.Context, s Schedule) error
 	Get(ctx context.Context, id string) (Detail, error)
 	ListByFacility(ctx context.Context, facilityID string, q ListQuery) ([]Detail, error)
 

@@ -71,6 +71,11 @@ func (f *fakeSchedules) Cancel(context.Context, string, string) (schedule.Cancel
 	return schedule.Cancel{}, f.err
 }
 
+func (f *fakeSchedules) Update(_ context.Context, _ string, in usecase.SlotInput) (schedule.Detail, error) {
+	f.lastSlot = in
+	return f.detail, f.err
+}
+
 type fakeStaff struct {
 	listCalls int
 	lastQuery staff.ListQuery
@@ -233,6 +238,8 @@ func TestErrorStatus(t *testing.T) {
 			wantCode: http.StatusNotFound, wantBody: "not_found"},
 		{name: "キャンセル済み", err: domain.ErrConflict, method: http.MethodPost, target: "/v1/schedules/" + scheduleID + "/cancel",
 			body: `{"reason":"体調不良"}`, wantCode: http.StatusConflict, wantBody: "conflict"},
+		{name: "キャンセル済みの予定を変える", err: domain.ErrConflict, method: http.MethodPut, target: "/v1/schedules/" + scheduleID,
+			body: validSlotBody, wantCode: http.StatusConflict, wantBody: "conflict"},
 		{name: "domain の検証", err: domain.Invalid("通常の予定にはタイトルが必須です"), method: http.MethodGet, target: "/v1/schedules/" + scheduleID,
 			wantCode: http.StatusBadRequest, wantBody: "invalid_input"},
 		{name: "想定外のエラー", err: errors.New("dial tcp: connection refused"), method: http.MethodGet, target: "/v1/schedules/" + scheduleID,
@@ -254,9 +261,37 @@ func TestErrorStatus(t *testing.T) {
 	}
 }
 
+const validSlotBody = `{"schedule_type_id":"` + typeID + `","date":"2026-10-20","start_time":"09:00","end_time":"10:00",` +
+	`"staff_id":"` + staffID + `","title":"会議"}`
+
+func TestUpdateSchedule(t *testing.T) {
+	s := &fakeSchedules{detail: schedule.Detail{Schedule: schedule.Schedule{ID: scheduleID}}}
+	rec, body := do(t, newRouter(s, nil, nil), http.MethodPut, "/v1/schedules/"+scheduleID, validSlotBody)
+	if rec.Code != http.StatusOK || body["id"] != scheduleID {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
+	}
+	if s.lastSlot.StaffID != staffID || s.lastSlot.Title == nil || *s.lastSlot.Title != "会議" {
+		t.Errorf("slot = %+v", s.lastSlot)
+	}
+	rec, _ = do(t, newRouter(s, nil, nil), http.MethodPut, "/v1/schedules/"+scheduleID, `{"date":"2026-10-20"}`)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("必須の項目がない本文: status = %d", rec.Code)
+	}
+}
+
+func TestGetMe(t *testing.T) {
+	rec, body := do(t, newRouter(nil, nil, nil), http.MethodGet, "/v1/me", "")
+	if rec.Code != http.StatusOK || body["id"] != staffID || body["facility_id"] != facilityID {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
+	}
+	rec, _ = doWithToken(t, newRouter(nil, nil, nil), http.MethodGet, "/v1/me", "", "")
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("トークンなし: status = %d", rec.Code)
+	}
+}
+
 func TestCreateSchedule(t *testing.T) {
-	valid := `{"schedule_type_id":"` + typeID + `","date":"2026-10-20","start_time":"09:00","end_time":"10:00",` +
-		`"staff_id":"` + staffID + `","title":"会議"}`
+	valid := validSlotBody
 	tests := []struct {
 		name        string
 		body        string

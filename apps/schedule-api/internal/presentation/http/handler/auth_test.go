@@ -143,6 +143,7 @@ func TestForbidden(t *testing.T) {
 		{name: "ほかの事業所の予定の一覧", method: http.MethodGet, target: "/v1/facilities/" + otherFacilityID + "/schedules", org: testOrgID},
 		{name: "ほかの事業所に予定を作る", method: http.MethodPost, target: "/v1/facilities/" + otherFacilityID + "/schedules", body: "{}", org: testOrgID},
 		{name: "ほかの事業所の予定", method: http.MethodGet, target: "/v1/schedules/" + otherScheduleID, org: testOrgID},
+		{name: "ほかの事業所の予定の更新", method: http.MethodPut, target: "/v1/schedules/" + otherScheduleID, body: validSlotBody, org: testOrgID},
 		{name: "ほかの事業所の予定のキャンセル", method: http.MethodPost, target: "/v1/schedules/" + otherScheduleID + "/cancel",
 			body: `{"reason":"体調不良"}`, org: testOrgID},
 		{name: "組織のクレームがない", method: http.MethodGet, target: "/v1/facilities/" + facilityID + "/schedules"},

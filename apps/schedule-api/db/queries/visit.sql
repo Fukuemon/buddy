@@ -23,3 +23,9 @@ SELECT * FROM visit_categories ORDER BY name, id;
 
 -- name: ListVisitCategoriesByIDs :many
 SELECT * FROM visit_categories WHERE id IN (sqlc.slice('ids')) ORDER BY name, id;
+
+-- name: DeleteUnusedVisitInfo :exec
+DELETE vi FROM visit_infos vi
+LEFT JOIN schedules s ON s.visit_info_id = vi.id
+LEFT JOIN recurring_schedules rs ON rs.visit_info_id = vi.id
+WHERE vi.id = ? AND s.id IS NULL AND rs.id IS NULL;
