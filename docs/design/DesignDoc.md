@@ -176,12 +176,15 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 │   └── receipt-api/     # Go
 │       └── DesignDoc.md # レセプトの照合の Design Doc
 ├── packages/
-│   └── ui/              # デザインシステム。トークン、Base と Case のコンポーネント、Storybook
+│   ├── ui/              # デザインシステム。トークン、Base と Case のコンポーネント、Storybook
+│   └── e2e/             # E2E のテストと、人手検証の証跡を撮る kit
+│       └── DesignDoc.md # E2E のテストのコードの設計
 ├── docs/                # Zensical のサイトの元。PRD、Design Doc、ADR
 │   ├── PRD.md
 │   ├── design/
 │   │   ├── DesignDoc.md
-│   │   └── apps/        # apps/ の Design Doc へのシンボリックリンク
+│   │   ├── apps/        # apps/ の Design Doc へのシンボリックリンク
+│   │   └── packages/    # packages/ の Design Doc へのシンボリックリンク
 │   └── adr/
 ├── context/             # 作業の中で参照する規約と事実
 ├── compose.yml          # 手元で全部を動かす

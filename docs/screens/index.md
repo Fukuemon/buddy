@@ -43,7 +43,7 @@
 | `edit` | 編集 |
 | `upload` | ファイルを受け取る |
 | `result` | 処理の結果 |
-| `login`、`profile` | `account` のドメインだけで使う |
+| `login`、`profile`、`error` | `account` のドメインだけで使う。`error` はログインの失敗 |
 
 - 固有の URL を持つものを 1 つの画面に数える。URL を持つモーダルも画面にする。URL を持たない確認のダイアログ（予定のキャンセルなど）は、親の画面の構成要素にする。
 - URL と ID をそろえる。`/schedule/new` は `schedule-new` にする。

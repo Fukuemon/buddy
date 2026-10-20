@@ -33,6 +33,7 @@ E2E のテストのコード（`packages/e2e/tests/`）の書き方は、スキ�
 
 - testid は、画面仕様書（`docs/screens/<画面 ID>.md`）の構成要素の表の `data-testid` の列を正本にする。testid を足すときは、同じ pull request で仕様書の表とワイヤーフレームの `data-testid` にも足す。
   - 形は、小文字の英語と `-` で、`<画面か部品>-<要素>` にする（例: `receipt-check-submit`）。一覧の行のように同じ要素が並ぶものは、末尾に ID を付ける（例: `staff-filter-staff-{職員の id}`）。
-- 画面 ID の形は、`docs/screens/index.md` の「画面の ID の規則」にある。`widgets/` に書いてはいけない画面 ID は、`packages/e2e/eslint.config.mjs` の `screenIdPattern` に並べる。画面を足したら、ここにも足す。
+- 画面 ID の形は、`docs/screens/index.md` の「画面の ID の規則」にある。`packages/e2e/eslint.config.mjs` の `screenIdPattern` は、その表のドメインと種類の組を止める。ドメインか種類を足したら、`screenIdPattern` にも足す。
+  - `schedule-calendar` や `receipt-result-table` のように、画面 ID で始まる testid は `widgets/` に直に書けない。`widgets/` では testid の接頭辞を引数で受ける。
 - 固定の待ちを許すファイルは無い。
 - 待つ時間の名前は、`packages/e2e/tests/fixtures/timeouts.ts` に置く。

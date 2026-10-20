@@ -35,9 +35,9 @@ AI が書くときの手順は、スキル `write-e2e-test` が持つ。この�
 
 持たないもの。
 
-- testid の名前の規則。プロダクトの規約が持つ
-- 流すコマンド、環境、テストデータの中身。プロダクトの `context/testing.md` が持つ
-- リグレッションテストの寿命と、実行の契機。frontend のリポジトリが決める
+- testid の名前の規則。`context/conventions.md` の E2E の節が持つ
+- 流すコマンド、環境、テストデータの中身。`context/testing.md` の E2E の節が持つ
+- リグレッションテストの寿命と、実行の契機。`context/testing.md` が持つ
 - API の mock の置き方。デプロイ済みの環境に向けて流すテストでは使わない
 
 ## Design
@@ -59,7 +59,7 @@ AI が書くときの手順は、スキル `write-e2e-test` が持つ。この�
 
 ```mermaid
 flowchart TB
-  subgraph product["プロダクトのリポジトリ"]
+  subgraph product["packages/e2e/tests/"]
     specs["specs/<br/>何を確かめるか"]
     setup["setup/<br/>テストデータを作る"]
     screens["screens/<br/>画面を開く、モードを変える"]
@@ -82,7 +82,7 @@ flowchart TB
 - `specs/<dir>/` に置く spec 以外のファイルは、値だけを持つ。要求ごとの値をどの要求にも使う `fixtures/` に置くと、要求に関わるものが置き場に分かれるためである。証跡の spec の例は、改修前と違ってよい差の文(`specs/<issue>/differences.ts`)である。
 - `screens/` と `widgets/` は `route` を持たない。同じ関数を、どの環境に向けた spec からも使える。
 - `widgets/` は画面を知らない。URL と画面 ID を持たず、testid の接頭辞は引数で受け取る。同じ UI が複数の画面に埋め込まれるためである。
-- ログインと録画は kit が持つ。プロダクトの `widgets/` と `screens/` には、プロダクトに固有の操作と待ちだけを置く。
+- ログインと録画は kit が持つ。`widgets/` と `screens/` には、buddy の画面に固有の操作と待ちだけを置く。
 - `widgets/<UI>/` の中は、操作(`actions/`)と待ち(`waits/`)のディレクトリに分ける。依存は `actions/` から `waits/` の向きだけにする。操作は中で待ち切るので、呼ぶ側は待ちを書かない。操作しないテストは、spec から `waits/` を直接呼ぶ。
 
 ### 配置先の決め方
@@ -127,7 +127,7 @@ spec の置き場とテストの名前は、テストが守る振る舞いで付
 | テストの名前 | 「{条件}の場合、{期待}であること」 | 観点の ID と規約の ID。対応は設計書と issue が持つ |
 
 アクターの違いは、機能の中の `describe` で表す。アクターでディレクトリを切ると、1 つの機能の確かめが複数のディレクトリに散る。  
-人手検証の証跡を撮る spec は、検証シナリオに合わせて置き場と名前を決める。決め方はプロダクトの context が持つ。
+人手検証の証跡を撮る spec は、検証シナリオに合わせて置き場と名前を決める。決め方は `context/testing.md` の Evidence の節が持つ。
 
 ### 1 本の証跡の spec が層を通る流れ
 
@@ -268,7 +268,7 @@ testid は、テストのコードではなくアプリのコンポーネント�
 spec に時間を書かない。全体と project の時間は Playwright の設定に、個別の時間は `fixtures/` の名前で置く。  
 内側から、`expect` の時間 < 操作の時間(`actionTimeout`)< 外部の読み込み(IdP のログインなど)< テストの全体の時間、の順に長くする。こうすると、どの層で落ちたかを失敗の形から見分けられる。
 
-値はプロダクトが決める。勘で決めず、成功したテストの所要時間を測って決める。
+値は `tests/fixtures/timeouts.ts` に置く。勘で決めず、成功したテストの所要時間を測って決める。
 
 1. CI のテストごとの所要時間を集める。Playwright の JUnit か JSON のレポートが、テストごとの所要時間を持つ。CI の成果物に残せば、ジョブが失敗していても取れる。
 2. 1 回の CI の実行では決めない。runner の状態で所要が振れ、実行の間で 2 倍近く違うことがある。複数の実行の値を集める。
@@ -304,15 +304,15 @@ Page Object は、要素の取得と待ちを自前で書くための書き方�
 
 ### ESLint の規則
 
-`packages/e2e/eslint.config.mjs` で、規則を `tests/**/*.ts` に当てる。規則は、ESLint の cwd（`packages/e2e`）から見た `tests/` の下だけを見る。
+`packages/e2e/eslint.config.mjs` で、規則を `tests/**/*.ts` に当てる。規則は、ESLint の cwd から見た `tests/` の下だけを見る。cwd が `packages/e2e` でないと、違反があっても何も言わずに通るので、`packages/e2e` で流す。
 
-プロダクトは、規則の options で次の値を渡す。
+`eslint.config.mjs` は、規則の options で次の値を渡す。
 
 | option | 渡す値 | buddy の値 |
 | --- | --- | --- |
 | `fixedWaitAllowedFiles` | 固定の待ちを許すファイル。人の入力を待つときのように、画面の状態を条件にできないものだけ | なし |
 | `timeoutDefinitionFile` | 待つ時間の名前を定めるファイル。無ければ、待つ時間の数値を確かめない | `tests/fixtures/timeouts.ts` |
-| `screenIdPattern` | `widgets/` に書いてはいけない画面 ID の形。無ければ確かめない | `docs/screens/index.md` の画面 ID の形（`<ドメイン>-<種類>`） |
+| `screenIdPattern` | `widgets/` に書いてはいけない画面 ID の形。無ければ確かめない | `docs/screens/index.md` のドメインと種類の組（`<ドメイン>-<種類>`） |
 | `widgetGotoAllowedUrl` | `widgets/` が `goto` で開いてよい URL。既定は `/` | `/` |
 
 ### スキル

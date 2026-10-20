@@ -13,4 +13,6 @@
 
 - [buddy Design Doc](../docs/design/DesignDoc.md) — web と schedule-api と receipt-api の責務と依存、認証と事業所の分離、インフラとの約束（draft）
 - [予定の管理](../apps/schedule-api/DesignDoc.md) — schedule-api の表の構成（ER）、認証から認可までの流れ、繰り返しの予定の展開（draft）
+- [E2E のテストのコードの設計](../packages/e2e/DesignDoc.md) — packages/e2e の層、配置先、名前、待ち方、確かめ方、禁止する書き方、タイムアウト（draft）
+- [証跡の録画](../packages/e2e/kit/recording/DesignDoc.md) — 人手検証の証跡を撮る録画の処理と置き場（draft）
 - [レセプトの照合](../apps/receipt-api/DesignDoc.md) — receipt-api のパッケージの構成、予定の取得元、入力の CSV の列、正規化、予定と実績の対の作り方、判定の規則、サービスごとの許容範囲、結果の JSON と画面の表示、元の実装との違い（draft）
