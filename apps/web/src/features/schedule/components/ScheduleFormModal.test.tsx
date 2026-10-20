@@ -1,0 +1,71 @@
+import { composeStories } from '@storybook/react-vite'
+import { render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { fn } from 'storybook/test'
+import { describe, expect, it } from 'vite-plus/test'
+
+import * as stories from './ScheduleFormModal.stories'
+
+const { Visit, Normal, SubmitError } = composeStories(stories)
+
+describe('ScheduleFormModal', () => {
+  it('必須の項目が空なら送らず、項目の一覧にエラーを出す', async () => {
+    const onSubmit = fn()
+    render(<Visit onSubmit={onSubmit} />)
+
+    await userEvent.click(screen.getByTestId('schedule-create-submit'))
+    expect(
+      await within(screen.getByTestId('schedule-field-patient')).findByText(
+        '利用者を選んでください',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('schedule-field-staff')).getByText('担当者を選んでください'),
+    ).toBeInTheDocument()
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('利用者と担当者を選ぶと、フォームの値で onSubmit を呼ぶ', async () => {
+    const onSubmit = fn()
+    render(<Visit onSubmit={onSubmit} />)
+
+    await userEvent.click(screen.getByTestId('schedule-field-patient'))
+    await userEvent.click(screen.getByTestId('patient-select-option-patient-2'))
+    await userEvent.click(screen.getByTestId('schedule-field-staff'))
+    await userEvent.type(screen.getByTestId('staff-select-search'), '上田')
+    await userEvent.click(screen.getByTestId('staff-select-option-staff-3'))
+    await userEvent.click(screen.getByTestId('schedule-create-submit'))
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledOnce())
+    expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({
+      kind: 'visit',
+      patientId: 'patient-2',
+      staffId: 'staff-3',
+      scheduleDate: '2026-10-20',
+      startTime: '09:00',
+      serviceTime: 29,
+    })
+  })
+
+  it('サービスコードを変えると、提供時間をそのコードの上限にする', async () => {
+    render(<Visit />)
+    await userEvent.click(screen.getByTestId('service-code-訪看I4'))
+    expect(screen.getByTestId('schedule-form-service-time')).toHaveValue(89)
+    expect(screen.getByTestId('schedule-form-end-time')).toHaveTextContent('10:29')
+  })
+
+  it('通常の予定はタイトルの項目を出し、訪問のタブを押すと onKindChange を呼ぶ', async () => {
+    const onKindChange = fn()
+    render(<Normal onKindChange={onKindChange} />)
+    expect(screen.getByTestId('schedule-field-title')).toBeInTheDocument()
+    expect(screen.queryByTestId('schedule-field-patient')).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByTestId('schedule-kind-tab-visit'))
+    expect(onKindChange).toHaveBeenCalledWith('visit')
+  })
+
+  it('送信の失敗の文を出す', () => {
+    render(<SubmitError />)
+    expect(screen.getByText('予定を保存できませんでした。')).toBeInTheDocument()
+  })
+})
