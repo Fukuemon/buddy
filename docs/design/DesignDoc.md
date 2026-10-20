@@ -58,7 +58,7 @@ flowchart TB
   web -- "認可コードフロー" --> broker
   web -- "セッションを読み書きする" --> valkey
   web -- "Bearer の access token" --> schedule
-  web -- "CSV" --> receipt
+  web -- "Bearer の access token。CSV" --> receipt
   receipt -- "サービスアカウントで予定を取る" --> gcal
   schedule -- "SQL" --> mysql
   schedule -. "JWKS を取る" .-> broker
@@ -107,8 +107,8 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 
 | 変数 | web | schedule-api | receipt-api | 中身 |
 | --- | --- | --- | --- | --- |
-| `PORT` | 使う | 使う | 使う | 待ち受けるポート |
-| `LOG_LEVEL` | 使わない | 使う | 使う | ログの段階 |
+| `PORT` | 使う | 任意 | 任意 | 待ち受けるポート。API の既定は `8080`。web のイメージは `3000` を入れる |
+| `LOG_LEVEL` | 使わない | 任意 | 任意 | ログの段階。既定は `info` |
 | `OIDC_ISSUER` | 使う | 使う | 使わない | ブローカーの発行者の URL。JWKS の場所もここから求める |
 | `OIDC_AUDIENCE` | 使わない | 使う | 使わない | access token の `aud` に求める値 |
 | `OIDC_ORG_CLAIM` | 使わない | 任意 | 使わない | access token で組織の ID を持つクレームの名前。既定は `org_id` |
@@ -149,7 +149,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 ### 認証
 
 - web は認可コードフローでログインし、トークンを Valkey のセッションに置く。ブラウザには cookie でセッションの ID だけを渡す。
-- schedule-api は access token の JWT を JWKS で検証し、署名、`iss`、`aud`、`exp` を確かめる。署名のアルゴリズムは RS256 と ES256 だけを受け付ける。失敗したら 401 を返す。
+- schedule-api は access token の JWT を JWKS で検証し、署名、`iss`、`aud`、`exp`、`nbf` を確かめる。署名のアルゴリズムは RS256 と ES256 だけを受け付ける。失敗したら 401 を返す。
 - 職員は事前にメールアドレスで登録し、初回のログインで `sub` と結び付く。
   - ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにする](../adr/0001-auth.md)
 

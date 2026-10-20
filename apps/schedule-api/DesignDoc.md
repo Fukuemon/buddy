@@ -38,7 +38,7 @@ schedule-api は、事業所ごとの予定、職員、利用者、権限を持�
 
 | 層 | パッケージ | 持つもの |
 | --- | --- | --- |
-| domain | `internal/domain/<概念>` | エンティティ、値の検証、リポジトリのインターフェイス |
+| domain | `internal/domain`、`internal/domain/<概念>` | 共通の誤りと `Transactor`、概念ごとのエンティティ、値の検証、リポジトリのインターフェイス |
 | usecase | `internal/usecase` | 手順とトランザクションの範囲。トランザクションは `domain.Transactor` で受ける |
 | infrastructure | `internal/infrastructure/mysql` | domain のリポジトリを、sqlc の生成コード（`sqlcgen`）で実装する |
 | infrastructure | `internal/infrastructure/oidc` | access token を JWKS で検証する。`oidctest` は、テストと `cmd/devissuer` が使う偽物の発行者 |
@@ -158,8 +158,8 @@ erDiagram
     time end_time
     char recurring_schedule_id FK "繰り返しの 1 回を置き換えたときだけ"
     char visit_info_id FK "訪問のときだけ"
-    string title
-    string description
+    string title "NULL 可"
+    string description "NULL 可"
     boolean is_over_time_work "開始が 17 時以降"
   }
   schedule_cancels {
@@ -170,9 +170,9 @@ erDiagram
   recurring_rules {
     char id PK
     string frequency "weekly、monthly"
-    int day_of_week "1（月曜）から 7"
-    int day_of_month "1 から 31"
-    int week_of_month "1 から 5"
+    int day_of_week "1（月曜）から 7。NULL 可"
+    int day_of_month "1 から 31。NULL 可"
+    int week_of_month "1 から 5。NULL 可"
     date end_date "NULL なら終わりなし"
   }
   recurring_schedules {
@@ -185,8 +185,8 @@ erDiagram
     time start_time
     time end_time
     char visit_info_id FK "訪問のときだけ"
-    string title
-    string description
+    string title "NULL 可"
+    string description "NULL 可"
     boolean is_over_time_work
   }
   recurring_schedule_exclusions {
