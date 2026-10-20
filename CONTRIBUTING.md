@@ -2,7 +2,7 @@
 
 <!-- 次は既定。バージョンの管理に mise を使わないなら書き換える。必要なランタイムとツールの名前、最初に実行するコマンド -->
 
-必要なものは mise である。ランタイムとツールのバージョンは `mise.toml` にある。
+必要なものは mise である。ランタイムとツールのバージョンは `mise.toml` にある。文書のサイトを組む Zensical は、mise が入れる `uv` で動かす。
 
 ```sh
 mise install
@@ -24,7 +24,17 @@ apm lifecycle trust
 
 ## 文書を直すとき
 
-<!-- 文書のチェックの実行方法 -->
+PRD、Design Doc、ADR は `docs/` にあり、Zensical のサイトとして読む。
+Zensical は `uv` で入れ、バージョンは `pyproject.toml` と `uv.lock` にある。
+
+```sh
+uv run zensical serve   # http://localhost:8000 で読みながら直す
+uv run zensical build   # 出力の最後が "No issues found" になることを確かめる
+```
+
+- `zensical build` は、リンクの先のページと見出しのアンカーがないと "Warning" を出す。警告が残ったまま取り込まない。
+- ページを足したら、`zensical.toml` の `nav` に足す。`nav` にないページはナビゲーションから開けない。
+- コードの隣に置く機能ごとの Design Doc（`apps/<アプリ>/DesignDoc.md`）は、`docs/` の外にあるのでサイトに載らない。`nav` に GitHub の `develop` のファイルへのリンクを足して開けるようにする。
 
 ## コミットするとき
 

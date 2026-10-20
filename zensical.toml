@@ -1,0 +1,28 @@
+# 文書のサイトの設定。文書の置き場は context/project.yml の docs と揃える
+[project]
+site_name = "buddy"
+site_description = "予定の管理とレセプトの照合の設計書"
+docs_dir = "docs"
+site_dir = "site"
+# ADR の雛形は文書ではないので、サイトに載せない
+exclude_docs = """
+adr/template.md
+"""
+nav = [
+  { "トップ" = "index.md" },
+  { "PRD" = "PRD.md" },
+  { "Design Doc" = [
+    { "全体" = "design/DesignDoc.md" },
+  ] },
+]
+
+[project.markdown_extensions.pymdownx.superfences]
+custom_fences = [
+  { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
+]
+
+# 見出しのアンカーを GitHub と同じく日本語のまま残し、どちらで読んでもリンクが切れないようにする
+[project.markdown_extensions.toc]
+permalink = true
+slugify.object = "pymdownx.slugs.slugify"
+slugify.kwds.case = "lower"
