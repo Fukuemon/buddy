@@ -4,7 +4,7 @@ title: レセプトの照合
 description: receipt-api のパッケージの構成、予定の取得元、入力の CSV の列、正規化、予定と実績の対の作り方、判定の規則、サービスごとの許容範囲、結果の JSON と画面の表示、元の実装との違い
 status: draft
 governs: apps/receipt-api
-verified_commit: 9c49946
+verified_commit: bde1891
 ---
 
 # レセプトの照合
@@ -101,7 +101,7 @@ receipt-api は、Google Calendar API を直接呼ぶ。GAS は使わない。GA
 
 次の予定は、解釈できない予定として照合に混ぜず、結果の `warnings` に入れる。
 
-- `】` が `【` より前にある予定
+- 題名に `【…】` の組が無い予定（`】` が `【` より前にあるだけの題名など）。`】メモ【訪看I３】架空太郎` のように、後ろに組があれば普通の予定として使う
 - サービス内容か利用者名が空の予定
 - 日付をまたぐ予定
 - 開始と終了の日時を読めない予定と、正規化で誤りになる予定
@@ -222,12 +222,12 @@ JSON と並べて記号つきの CSV も返す案は、表示の都合が API �
 - `rows` の 1 行は、次の値を持つ。
   - `category`: 区分（`mismatch`、`schedule_only`、`visit_only`、`match`）
   - `date`、`client`、`staff`: 訪問日、利用者名、主訪問者
-  - `schedule` と `visit`: 両側の入力の行番号、開始時間、終了時間、提供時間、サービス内容。実績の側は加算（`additions`）も持つ。片側がない行では `null`
+  - `schedule` と `visit`: 両側の入力の行番号（Google カレンダーから取った予定では 0）、開始時間、終了時間、提供時間、サービス内容。実績の側は加算（`additions`）も持つ。片側がない行では `null`
   - `checks`: 両側があるときだけ持つ。開始時間、サービス内容、加算の `ok`。終了時間から開始時間を引いた分と提供時間の、判定した分（`minutes`）、許容範囲（`range`）、`ok`。提供時間と終了時間の値が両側で同じか（`duration_equal`、`end_equal`）
 
 ### 画面が JSON から作る表示
 
-画面（apps/web）は、結果の JSON から次の表示を作る。記号の規則は API ではなく画面が持つ。
+画面（apps/web）は、結果の JSON から次の表示を作る。記号の規則は API ではなく画面が持つ。画面の側は未実装で、今の apps/web にあるのは API を呼ぶクライアント（src/api/http/receiptApi.ts）だけである（#7 で作る）。
 
 - 規則に合わない値の後ろに、不一致の印を付ける。許容範囲があれば「(20~29)」を続ける。
 - 整合の行で、提供時間か終了時間の値が両側で違うが、両方が許容範囲に入るときは、注意の印「 ※」を付ける。
@@ -238,6 +238,8 @@ JSON と並べて記号つきの CSV も返す案は、表示の都合が API �
 - 不一致の印を、元のツールに合わせて「 ❌」にするか、「 ×」にするかは画面で決める。
 
 ## Interface
+
+API の定義の正本は [openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/openapi.yaml) である。
 
 - `POST /v1/checks`
   - `multipart/form-data` で、ファイル `visits`（実績の CSV）と予定を受ける。
