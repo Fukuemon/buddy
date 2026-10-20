@@ -110,13 +110,16 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
-    # web は、まだ偽物の API で動き、次の値を読まない。BFF のログインを入れるときに読む（#7）
     environment:
       OIDC_ISSUER: http://idp:9000/buddy
+      # ブラウザは idp の名前を引けないので、認可の画面だけ手元のポートへ転送する
+      OIDC_AUTHORIZATION_ENDPOINT: http://localhost:${IDP_PORT:-9000}/buddy/authorize
       OIDC_CLIENT_ID: web
       OIDC_CLIENT_SECRET: web-dev
       SESSION_STORE_URL: redis://valkey:6379
-      SESSION_SECRET: buddy-dev-session-secret
+      SESSION_SECRET: buddy-dev-session-secret-for-compose-only
+      # 手元は https でないので、cookie に Secure を付けない
+      SESSION_COOKIE_SECURE: 'false'
       SCHEDULE_API_URL: http://schedule-api:8080
       RECEIPT_API_URL: http://receipt-api:8080
     ports: ['127.0.0.1:${WEB_PORT:-3000}:3000']
@@ -126,7 +129,7 @@ services:
           'CMD',
           'node',
           '-e',
-          "fetch('http://127.0.0.1:3000/').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+          "fetch('http://127.0.0.1:3000/readyz').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
         ]
       interval: 2s
       timeout: 5s

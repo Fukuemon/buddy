@@ -1,7 +1,14 @@
-import type { FacilityId, Patient, Schedule, Staff, Team } from '../types'
+import type { FacilityId, Patient, Schedule, Staff, Team, Viewer } from '../types'
 
 /** 手元で使う架空の事業所。 */
 export const FAKE_FACILITY_ID: FacilityId = 'facility-demo'
+
+/** 偽物の API のときにログインしているとみなす職員。 */
+export const FAKE_VIEWER: Viewer = {
+  staffId: 'staff-1',
+  staffName: '青木 一郎',
+  facilityId: FAKE_FACILITY_ID,
+}
 
 export const fakeTeams: Team[] = [
   { id: 'team-a', name: 'A チーム' },

@@ -1,6 +1,7 @@
 import { Outlet, createFileRoute, stripSearchParams } from '@tanstack/react-router'
 
 import { SiteHeader } from '#/components/site/SiteHeader'
+import { ViewerMenu } from '#/components/site/ViewerMenu'
 import { ScheduleCalendarContainer } from '#/features/schedule/components/ScheduleCalendarContainer'
 import { StaffFilterSidebarContainer } from '#/features/schedule/components/StaffFilterSidebarContainer'
 import {
@@ -11,16 +12,21 @@ import {
 export const Route = createFileRoute('/schedule')({
   validateSearch: scheduleSearchSchema,
   search: { middlewares: [stripSearchParams(scheduleSearchDefaults)] },
-  // 予定は手元の偽物の API がブラウザのメモリに持つため、サーバーで描画しない。HTTP の API に替えたら見直す。
+  // 偽物の API は予定をブラウザのメモリに持つため、サーバーで描画しない。bff ではサーバーで描画できるので見直す。
   ssr: false,
   head: () => ({ meta: [{ title: '予定 | buddy' }] }),
   component: SchedulePage,
 })
 
 function SchedulePage() {
+  const { viewer, mode } = Route.useRouteContext()
   return (
     <div className="flex h-dvh flex-col">
-      <SiteHeader />
+      <SiteHeader
+        actions={
+          viewer !== null && <ViewerMenu staffName={viewer.staffName} canLogout={mode === 'bff'} />
+        }
+      />
       <div className="flex min-h-0 grow">
         <aside className="w-56 shrink-0 overflow-auto border-r border-border">
           <StaffFilterSidebarContainer />

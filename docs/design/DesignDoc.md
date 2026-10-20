@@ -113,8 +113,10 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 | `OIDC_ORG_CLAIM` | 使わない | 使う | 使う | access token で組織の ID を持つクレームの名前。既定は `org_id` |
 | `OIDC_CLIENT_ID` | 使う | 使わない | 使わない | web のクライアントの ID |
 | `OIDC_CLIENT_SECRET` | 使う | 使わない | 使わない | web のクライアントの秘密の値 |
+| `OIDC_AUTHORIZATION_ENDPOINT` | 任意 | 使わない | 使わない | ブラウザを転送する認可の URL。web とブラウザから届く IdP の URL が違う手元の環境だけで渡す |
 | `SESSION_STORE_URL` | 使う | 使わない | 使わない | Valkey の接続先 |
-| `SESSION_SECRET` | 使う | 使わない | 使わない | cookie の署名の鍵 |
+| `SESSION_SECRET` | 使う | 使わない | 使わない | cookie の署名の鍵。32 バイト以上 |
+| `SESSION_COOKIE_SECURE` | 任意 | 使わない | 使わない | `false` のときだけ、セッションの cookie に Secure を付けない。https でない手元の環境で使う |
 | `SCHEDULE_API_URL` | 使う | 使わない | 使わない | schedule-api の URL |
 | `RECEIPT_API_URL` | 使う | 使わない | 使わない | receipt-api の URL |
 | `DATABASE_URL` | 使わない | 使う | 使わない | MySQL の接続先 |
@@ -126,7 +128,6 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 - `GET /healthz`: プロセスが応答できれば 200 を返す。依存先を確かめない。
 - `GET /readyz`: 依存先に届けば 200、届かなければ 503 を返す。schedule-api は MySQL、web は Valkey を確かめる。receipt-api は起動に要る依存先を持たないので、応答できれば 200 を返す。
 - 2 つとも認証を求めない。
-- web は、今は 2 つとも持たない。BFF のセッションと一緒に足す。
 
 ### マイグレーション
 

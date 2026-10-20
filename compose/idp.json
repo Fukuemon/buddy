@@ -10,6 +10,7 @@
           "match": "*",
           "claims": {
             "aud": ["web", "schedule-api", "receipt-api"],
+            "azp": "web",
             "email": "hina.aoki@example.com",
             "email_verified": true,
             "org_id": "org-sample"

@@ -1,0 +1,16 @@
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+import { AuthErrorMessage } from './AuthErrorMessage'
+
+const meta = {
+  title: '画面/Common/AuthErrorMessage',
+  component: AuthErrorMessage,
+  args: { reason: 'failed', loginHref: '/auth/login' },
+} satisfies Meta<typeof AuthErrorMessage>
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+export const Failed: Story = {}
+
+export const Forbidden: Story = { args: { reason: 'forbidden' } }

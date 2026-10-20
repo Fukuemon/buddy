@@ -10,7 +10,13 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as HealthzRouteImport } from './routes/healthz'
+import { Route as ReadyzRouteImport } from './routes/readyz'
 import { Route as ScheduleRouteImport } from './routes/schedule'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as AuthErrorRouteImport } from './routes/auth.error'
+import { Route as AuthLoginRouteImport } from './routes/auth.login'
+import { Route as AuthLogoutRouteImport } from './routes/auth.logout'
 import { Route as ScheduleNewRouteImport } from './routes/schedule.new'
 import { Route as ScheduleScheduleIdIndexRouteImport } from './routes/schedule.$scheduleId.index'
 import { Route as ScheduleScheduleIdEditRouteImport } from './routes/schedule.$scheduleId.edit'
@@ -20,9 +26,39 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HealthzRoute = HealthzRouteImport.update({
+  id: '/healthz',
+  path: '/healthz',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReadyzRoute = ReadyzRouteImport.update({
+  id: '/readyz',
+  path: '/readyz',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ScheduleRoute = ScheduleRouteImport.update({
   id: '/schedule',
   path: '/schedule',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthErrorRoute = AuthErrorRouteImport.update({
+  id: '/auth/error',
+  path: '/auth/error',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/auth/login',
+  path: '/auth/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthLogoutRoute = AuthLogoutRouteImport.update({
+  id: '/auth/logout',
+  path: '/auth/logout',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ScheduleNewRoute = ScheduleNewRouteImport.update({
@@ -43,14 +79,26 @@ const ScheduleScheduleIdEditRoute = ScheduleScheduleIdEditRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/healthz': typeof HealthzRoute
+  '/readyz': typeof ReadyzRoute
   '/schedule': typeof ScheduleRouteWithChildren
+  '/auth/callback': typeof AuthCallbackRoute
+  '/auth/error': typeof AuthErrorRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/logout': typeof AuthLogoutRoute
   '/schedule/new': typeof ScheduleNewRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
   '/schedule/$scheduleId/': typeof ScheduleScheduleIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/healthz': typeof HealthzRoute
+  '/readyz': typeof ReadyzRoute
   '/schedule': typeof ScheduleRouteWithChildren
+  '/auth/callback': typeof AuthCallbackRoute
+  '/auth/error': typeof AuthErrorRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/logout': typeof AuthLogoutRoute
   '/schedule/new': typeof ScheduleNewRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
   '/schedule/$scheduleId': typeof ScheduleScheduleIdIndexRoute
@@ -58,7 +106,13 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/healthz': typeof HealthzRoute
+  '/readyz': typeof ReadyzRoute
   '/schedule': typeof ScheduleRouteWithChildren
+  '/auth/callback': typeof AuthCallbackRoute
+  '/auth/error': typeof AuthErrorRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/logout': typeof AuthLogoutRoute
   '/schedule/new': typeof ScheduleNewRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
   '/schedule/$scheduleId/': typeof ScheduleScheduleIdIndexRoute
@@ -67,21 +121,39 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/healthz'
+    | '/readyz'
     | '/schedule'
+    | '/auth/callback'
+    | '/auth/error'
+    | '/auth/login'
+    | '/auth/logout'
     | '/schedule/new'
     | '/schedule/$scheduleId/edit'
     | '/schedule/$scheduleId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/healthz'
+    | '/readyz'
     | '/schedule'
+    | '/auth/callback'
+    | '/auth/error'
+    | '/auth/login'
+    | '/auth/logout'
     | '/schedule/new'
     | '/schedule/$scheduleId/edit'
     | '/schedule/$scheduleId'
   id:
     | '__root__'
     | '/'
+    | '/healthz'
+    | '/readyz'
     | '/schedule'
+    | '/auth/callback'
+    | '/auth/error'
+    | '/auth/login'
+    | '/auth/logout'
     | '/schedule/new'
     | '/schedule/$scheduleId/edit'
     | '/schedule/$scheduleId/'
@@ -89,7 +161,13 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  HealthzRoute: typeof HealthzRoute
+  ReadyzRoute: typeof ReadyzRoute
   ScheduleRoute: typeof ScheduleRouteWithChildren
+  AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthErrorRoute: typeof AuthErrorRoute
+  AuthLoginRoute: typeof AuthLoginRoute
+  AuthLogoutRoute: typeof AuthLogoutRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -101,11 +179,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/healthz': {
+      id: '/healthz'
+      path: '/healthz'
+      fullPath: '/healthz'
+      preLoaderRoute: typeof HealthzRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/readyz': {
+      id: '/readyz'
+      path: '/readyz'
+      fullPath: '/readyz'
+      preLoaderRoute: typeof ReadyzRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/schedule': {
       id: '/schedule'
       path: '/schedule'
       fullPath: '/schedule'
       preLoaderRoute: typeof ScheduleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/error': {
+      id: '/auth/error'
+      path: '/auth/error'
+      fullPath: '/auth/error'
+      preLoaderRoute: typeof AuthErrorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/auth/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/logout': {
+      id: '/auth/logout'
+      path: '/auth/logout'
+      fullPath: '/auth/logout'
+      preLoaderRoute: typeof AuthLogoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/schedule/new': {
@@ -150,17 +270,24 @@ const ScheduleRouteWithChildren = ScheduleRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  HealthzRoute: HealthzRoute,
+  ReadyzRoute: ReadyzRoute,
   ScheduleRoute: ScheduleRouteWithChildren,
+  AuthCallbackRoute: AuthCallbackRoute,
+  AuthErrorRoute: AuthErrorRoute,
+  AuthLoginRoute: AuthLoginRoute,
+  AuthLogoutRoute: AuthLogoutRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
+import type { startInstance } from './start.ts'
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }

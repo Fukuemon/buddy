@@ -1,6 +1,13 @@
 /** 事業所の ID。API の `/v1/facilities/{facility_id}` に入る。 */
 export type FacilityId = string
 
+/** ログインした職員。 */
+export type Viewer = {
+  staffId: string
+  staffName: string
+  facilityId: FacilityId
+}
+
 export type Team = {
   id: string
   name: string

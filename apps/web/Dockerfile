@@ -3,7 +3,9 @@
 # 例: docker build -f apps/web/Dockerfile -t buddy-web .
 
 FROM node:24-slim AS build
-ENV CI=true
+# 画面は BFF を通して API を呼ぶ。VITE_ の値はビルドのときに埋め込まれる
+ARG VITE_API_MODE=bff
+ENV CI=true VITE_API_MODE=$VITE_API_MODE
 RUN corepack enable
 WORKDIR /src
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./

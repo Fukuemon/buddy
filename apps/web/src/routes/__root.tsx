@@ -1,6 +1,16 @@
-import { HeadContent, Scripts, createRootRouteWithContext } from '@tanstack/react-router'
+import {
+  HeadContent,
+  Scripts,
+  createRootRouteWithContext,
+  redirect,
+  useRouterState,
+} from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
+
+import { loginHref, viewerQueryOptions } from '#/api/viewer'
+import { PageErrorMessage } from '#/components/site/PageErrorMessage'
+import { SiteHeader } from '#/components/site/SiteHeader'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
@@ -9,6 +19,13 @@ import appCss from '../styles.css?url'
 import type { AppRouterContext } from '../integrations/tanstack-query/root-provider'
 
 export const Route = createRootRouteWithContext<AppRouterContext>()({
+  // /auth/ の下はログインの前と失敗の画面なので、職員を求めない
+  beforeLoad: async ({ context, location }) => {
+    if (location.pathname.startsWith('/auth/')) return { viewer: null }
+    const viewer = await context.queryClient.ensureQueryData(viewerQueryOptions(context.mode))
+    if (viewer === null) throw redirect({ href: loginHref(location.href), reloadDocument: true })
+    return { viewer }
+  },
   head: () => ({
     meta: [
       {
@@ -30,6 +47,7 @@ export const Route = createRootRouteWithContext<AppRouterContext>()({
     ],
   }),
   shellComponent: RootDocument,
+  errorComponent: RootError,
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
@@ -55,5 +73,17 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <Scripts />
       </body>
     </html>
+  )
+}
+
+function RootError() {
+  const href = useRouterState({ select: (state) => state.location.href })
+  return (
+    <div className="flex h-dvh flex-col">
+      <SiteHeader />
+      <main className="grow">
+        <PageErrorMessage reloadHref={href} />
+      </main>
+    </div>
   )
 }
