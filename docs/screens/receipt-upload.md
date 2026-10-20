@@ -45,7 +45,7 @@ API の列は、`createCheck`（`POST /v1/checks`）の本文と応答で書く�
 | --- | --- | --- | --- | --- | --- |
 | 1 | `SiteHeader` | 「buddy」 | なし | なし | なし |
 | 1-1 | `SiteNav` | 「予定」と「照合」のリンク。今の画面に `aria-current="page"` | なし | なし | `site-nav` |
-| 1-2 | `ViewerMenu` | ログインした職員の名前とログアウトのボタン | `Viewer.staffName` | `getMe` の `username` | `viewer-menu` |
+| 1-2 | `ViewerMenu` | ログインした職員の名前とログアウトのボタン。幅 768px 未満では名前を出さない | `Viewer.staffName` | `getMe` の `username` | `viewer-menu` |
 | 2 | 説明の文 | 照合で何をするかの文 | なし | なし | なし |
 | 3 | `ReceiptCheckForm` | 照合の入力のフォーム | なし | なし | `receipt-check-form` |
 | 3-1 | 予定の取り方の `SegmentedControl` | 「Google カレンダー」と「予定の CSV」 | なし | なし | `receipt-source` |

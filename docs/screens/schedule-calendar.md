@@ -15,8 +15,8 @@
 画面は、上端のヘッダー、左の職員の絞り込み、右のカレンダーの 3 つに分かれる。  
 カレンダーの上に、表示する期間と表示の種類を変えるツールバーを置く。  
 予定の作成、詳細、編集は、この画面の上にモーダルで重ねて出す。  
-幅 768px（デザインシステムの `desktop` の breakpoint）未満では、職員の絞り込みをカレンダーの上に高さ 160px で置き、ツールバーを折り返す。ページは横に送らず、日の表示の職員の列はカレンダーの中で横に送る。  
-日の表示の 30 分の枠と、職員の絞り込みのチェックボックスの行は、押せる領域を 44px にする。
+幅 768px（デザインシステムの `desktop` の breakpoint）未満では、職員の絞り込みをカレンダーの上に高さ 160px で置き、ツールバーを折り返し、表示の切り替えを幅いっぱいにし、左右の余白を 8px にする。ページは幅 320px でも横に送らず、日の表示の職員の列はカレンダーの中で横に送る。  
+週と日の表示の 30 分の枠、職員の絞り込みのチェックボックスの行と「全員を表示」のボタンは、押せる領域を 44px 以上にする。予定のボタンは予定の長さで高さが決まり、30 分未満の予定は 44px に届かない。
 
 <iframe class="wireframe-viewer" src="wireframes/viewer.html?screen=schedule-calendar&state=ready" title="予定のカレンダーのワイヤーフレーム" width="100%" height="720" loading="lazy"></iframe>
 
@@ -53,7 +53,7 @@ web の型（`apps/web/src/api/types.ts`）は偽物の API に合わせた形�
 | --- | --- | --- | --- | --- | --- |
 | 1 | `SiteHeader` | 「buddy」 | なし | なし | なし |
 | 1-1 | `SiteNav` | 「予定」と「照合」のリンク。「予定」に `aria-current="page"` | なし | なし | `site-nav` |
-| 1-2 | `ViewerMenu` | ログインした職員の名前とログアウトのボタン | `Viewer.staffName` | `getMe` の `username` | `viewer-menu` |
+| 1-2 | `ViewerMenu` | ログインした職員の名前とログアウトのボタン。幅 768px 未満では名前を出さない | `Viewer.staffName` | `getMe` の `username` | `viewer-menu` |
 | 2 | `StaffFilterSidebar` | 見出し「職員」 | なし | なし | `staff-filter-sidebar` |
 | 2-1 | 全員を表示のボタン | 「全員を表示」 | なし | なし | `staff-filter-reset` |
 | 2-2 | チームのチェックボックス | チームの名前 | `Team.name` | `listTeams` の `Unit.name` | `staff-filter-team-{チームの id}` |
