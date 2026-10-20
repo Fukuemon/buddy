@@ -44,7 +44,7 @@ docker run --rm -p 8080:8080 receipt-api
 
 - `GET /health`: `{"status":"ok"}` を返す
 - `POST /v1/checks`: multipart/form-data の `visits`（実訪問の CSV）と `schedules`（予定の CSV）を照合する
-  - `Accept: text/csv` なら、BOM 付きの UTF-8 の CSV を返す。ほかは JSON を返す
+  - 結果は、`Accept` によらず JSON で返す。行ごとに区分、両側の値、項目ごとの判定を持つ。記号と CSV の書き出しは画面が持つ（[DesignDoc.md](DesignDoc.md)）
   - 入力の CSV は、UTF-8（BOM の有無を問わない）と CP932 を受ける
 
 `testdata/` の架空の CSV で試すときは、次を実行する。
@@ -52,8 +52,8 @@ docker run --rm -p 8080:8080 receipt-api
 ```sh
 curl -s -F visits=@testdata/visits_utf8.csv -F schedules=@testdata/schedules_utf8.csv \
   http://localhost:8080/v1/checks
-curl -s -H 'Accept: text/csv' -F visits=@testdata/visits_cp932.csv -F schedules=@testdata/schedules_cp932.csv \
-  http://localhost:8080/v1/checks -o checks.csv
+curl -s -F visits=@testdata/visits_cp932.csv -F schedules=@testdata/schedules_cp932.csv \
+  http://localhost:8080/v1/checks
 ```
 
 エラーは `{"code","message"}` の JSON で返す。  
