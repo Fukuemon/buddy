@@ -63,15 +63,23 @@ func MigrateDown(c Config, steps int) error {
 	return nil
 }
 
-// Seed は、架空のデータを入れる。同じ ID の行があると失敗するので、空のデータベースに 1 度だけ当てる。
-func Seed(ctx context.Context, c Config, seed []byte) error {
+// Seed は、架空のデータを入れ、入れたら true を返す。事業所の行が 1 つでもあれば、何もせず false を返す。
+// compose が起動のたびに当てても、入れたデータと手で足したデータを壊さないためである。
+func Seed(ctx context.Context, c Config, seed []byte) (bool, error) {
 	conn, err := sql.Open("mysql", c.DSN(true))
 	if err != nil {
-		return fmt.Errorf("open mysql: %w", err)
+		return false, fmt.Errorf("open mysql: %w", err)
 	}
 	defer func() { _ = conn.Close() }()
-	if _, err := conn.ExecContext(ctx, string(seed)); err != nil {
-		return fmt.Errorf("seed: %w", err)
+	var seeded bool
+	if err := conn.QueryRowContext(ctx, "SELECT EXISTS (SELECT 1 FROM facilities)").Scan(&seeded); err != nil {
+		return false, fmt.Errorf("check seed: %w", err)
 	}
-	return nil
+	if seeded {
+		return false, nil
+	}
+	if _, err := conn.ExecContext(ctx, string(seed)); err != nil {
+		return false, fmt.Errorf("seed: %w", err)
+	}
+	return true, nil
 }

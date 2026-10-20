@@ -18,6 +18,9 @@ import (
 // testDB は、TestMain が起動した MySQL 8.4 に、マイグレーションとシードを当てた接続である。
 var testDB *sql.DB
 
+// testConfig は、testDB の接続の設定である。
+var testConfig Config
+
 func TestMain(m *testing.M) {
 	flag.Parse()
 	if testing.Short() {
@@ -51,10 +54,11 @@ func runWithMySQL(m *testing.M) int {
 		log.Print(err)
 		return 1
 	}
-	if err := Seed(ctx, cfg, db.Seed); err != nil {
-		log.Print(err)
+	if applied, err := Seed(ctx, cfg, db.Seed); err != nil || !applied {
+		log.Printf("seed: applied = %v, err = %v", applied, err)
 		return 1
 	}
+	testConfig = cfg
 	testDB, err = Open(ctx, cfg)
 	if err != nil {
 		log.Print(err)
@@ -99,5 +103,15 @@ func TestDSNKeepsPassword(t *testing.T) {
 	}
 	if parsed.Passwd != cfg.Password || parsed.Addr != "db:3306" || parsed.DBName != "buddy" || !parsed.ParseTime {
 		t.Fatalf("parsed = %+v", parsed)
+	}
+}
+
+func TestSeedSkipsWhenFacilitiesExist(t *testing.T) {
+	if testDB == nil {
+		t.Skip("MySQL を使うテストは -short では動かさない")
+	}
+	applied, err := Seed(context.Background(), testConfig, db.Seed)
+	if err != nil || applied {
+		t.Fatalf("applied = %v, err = %v", applied, err)
 	}
 }

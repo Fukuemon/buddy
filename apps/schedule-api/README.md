@@ -86,7 +86,7 @@ curl -H "Authorization: Bearer $TOKEN" localhost:8080/v1/facilities/01M3TC5H00QV
 
 - `go run ./cmd/migrate up` は、未適用のマイグレーションをすべて当てる。事業所に属さず全ての環境で同じ値のマスタ（予定の種類、サービスコード、訪問の区分）も、マイグレーションが入れる。
 - `go run ./cmd/migrate down [N]` は、マイグレーションを N 版戻す。N の既定は 1。
-- `go run ./cmd/migrate seed` は、架空のデータを入れる。同じ ID の行があると失敗するので、空のデータベースに 1 度だけ当てる。
+- `go run ./cmd/migrate seed` は、架空のデータを入れる。事業所の行が既にあれば、何もせずに終わる。
 
 migrate の CLI を直接使うときは、次のように実行する。
 
