@@ -21,7 +21,7 @@ export class ApiError extends Error {
 }
 
 /**
- * 画面が使う API の操作。手元では createFakeBuddyApi の実装を使う。
+ * 画面が使う API の操作。実装は createFakeBuddyApi と createHttpBuddyApi で、createBuddyApi が環境変数で選ぶ。
  *
  * どの操作も、事業所が見つからない、ほかの事業所のものを指した、のような失敗で ApiError を投げる。
  */
