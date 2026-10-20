@@ -19,7 +19,19 @@ func (r *FacilityRepository) Get(ctx context.Context, id string) (organization.F
 	if err != nil {
 		return organization.Facility{}, translate("get facility", err)
 	}
-	return organization.Facility(f), nil
+	return toFacility(f), nil
+}
+
+func (r *FacilityRepository) GetByOrgID(ctx context.Context, orgID string) (organization.Facility, error) {
+	f, err := r.q(ctx).GetFacilityByOrgID(ctx, sql.NullString{String: orgID, Valid: true})
+	if err != nil {
+		return organization.Facility{}, translate("get facility by org", err)
+	}
+	return toFacility(f), nil
+}
+
+func toFacility(f sqlcgen.Facility) organization.Facility {
+	return organization.Facility{ID: f.ID, Name: f.Name, CreatedAt: f.CreatedAt, UpdatedAt: f.UpdatedAt}
 }
 
 // DepartmentRepository は、organization.DepartmentRepository を実装する。

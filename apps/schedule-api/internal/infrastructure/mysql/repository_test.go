@@ -55,6 +55,21 @@ func TestFacilityGet(t *testing.T) {
 	}
 }
 
+func TestFacilityGetByOrgID(t *testing.T) {
+	ctx := txContext(t)
+	r := NewFacilityRepository(testDB)
+	f, err := r.GetByOrgID(ctx, "org-sample")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f.ID != seedFacility {
+		t.Errorf("got %+v", f)
+	}
+	if _, err := r.GetByOrgID(ctx, "org-unknown"); !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("err = %v, want ErrNotFound", err)
+	}
+}
+
 func TestPositionCreateAndGet(t *testing.T) {
 	ctx := txContext(t)
 	r := NewPositionRepository(testDB)

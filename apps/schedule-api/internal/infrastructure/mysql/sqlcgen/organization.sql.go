@@ -7,6 +7,7 @@ package sqlcgen
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 	"time"
 )
@@ -87,7 +88,7 @@ func (q *Queries) GetDepartment(ctx context.Context, id string) (Department, err
 }
 
 const getFacility = `-- name: GetFacility :one
-SELECT id, name, created_at, updated_at FROM facilities WHERE id = ?
+SELECT id, name, created_at, updated_at, org_id FROM facilities WHERE id = ?
 `
 
 func (q *Queries) GetFacility(ctx context.Context, id string) (Facility, error) {
@@ -98,6 +99,24 @@ func (q *Queries) GetFacility(ctx context.Context, id string) (Facility, error) 
 		&i.Name,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OrgID,
+	)
+	return i, err
+}
+
+const getFacilityByOrgID = `-- name: GetFacilityByOrgID :one
+SELECT id, name, created_at, updated_at, org_id FROM facilities WHERE org_id = ?
+`
+
+func (q *Queries) GetFacilityByOrgID(ctx context.Context, orgID sql.NullString) (Facility, error) {
+	row := q.db.QueryRowContext(ctx, getFacilityByOrgID, orgID)
+	var i Facility
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }

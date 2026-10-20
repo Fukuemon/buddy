@@ -1,7 +1,7 @@
 -- 開発とテストに使う架空のデータ。実在の事業所、人、連絡先を入れない。
 
-INSERT INTO facilities (id, name) VALUES
-    ('01M3TC5H00QV17BC0J9V3393ZP', 'サンプル訪問看護ステーション');
+INSERT INTO facilities (id, name, org_id) VALUES
+    ('01M3TC5H00QV17BC0J9V3393ZP', 'サンプル訪問看護ステーション', 'org-sample');
 
 INSERT INTO departments (id, facility_id, name) VALUES
     ('01M3TC5HZ8A18D2TP3PTKDXJMN', '01M3TC5H00QV17BC0J9V3393ZP', '看護'),
