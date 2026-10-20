@@ -1,0 +1,85 @@
+import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
+
+import type { BuddyApi } from '#/api/client'
+import type {
+  FacilityId,
+  NameSearchParams,
+  Schedule,
+  ScheduleInput,
+  ScheduleListParams,
+} from '#/api/types'
+import { useBuddyApi } from '#/api/useBuddyApi'
+
+/** TanStack Query のキー。事業所ごとに分ける。 */
+export const queryKeys = {
+  schedules: (facilityId: FacilityId) => ['facilities', facilityId, 'schedules'] as const,
+  staff: (facilityId: FacilityId) => ['facilities', facilityId, 'staff'] as const,
+  teams: (facilityId: FacilityId) => ['facilities', facilityId, 'teams'] as const,
+  patients: (facilityId: FacilityId) => ['facilities', facilityId, 'patients'] as const,
+}
+
+export const scheduleListQueryOptions = (
+  api: BuddyApi,
+  facilityId: FacilityId,
+  params: ScheduleListParams,
+) =>
+  queryOptions({
+    queryKey: [...queryKeys.schedules(facilityId), 'list', params],
+    queryFn: () => api.schedules.list(facilityId, params),
+  })
+
+export const scheduleQueryOptions = (
+  api: BuddyApi,
+  facilityId: FacilityId,
+  scheduleId: Schedule['id'],
+) =>
+  queryOptions({
+    queryKey: [...queryKeys.schedules(facilityId), 'detail', scheduleId],
+    queryFn: () => api.schedules.get(facilityId, scheduleId),
+  })
+
+export const staffListQueryOptions = (
+  api: BuddyApi,
+  facilityId: FacilityId,
+  params: NameSearchParams = {},
+) =>
+  queryOptions({
+    queryKey: [...queryKeys.staff(facilityId), params],
+    queryFn: () => api.staff.list(facilityId, params),
+  })
+
+export const teamListQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
+  queryOptions({
+    queryKey: queryKeys.teams(facilityId),
+    queryFn: () => api.teams.list(facilityId),
+  })
+
+export const patientListQueryOptions = (
+  api: BuddyApi,
+  facilityId: FacilityId,
+  params: NameSearchParams = {},
+) =>
+  queryOptions({
+    queryKey: [...queryKeys.patients(facilityId), params],
+    queryFn: () => api.patients.list(facilityId, params),
+  })
+
+/** 予定を作る。成功すると、事業所の予定の取得の結果を捨てて取り直す。 */
+export const useCreateSchedule = () => {
+  const { api, facilityId } = useBuddyApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: ScheduleInput) => api.schedules.create(facilityId, input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.schedules(facilityId) }),
+  })
+}
+
+/** 予定を更新する。成功すると、事業所の予定の取得の結果を捨てて取り直す。 */
+export const useUpdateSchedule = (scheduleId: Schedule['id']) => {
+  const { api, facilityId } = useBuddyApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: ScheduleInput) => api.schedules.update(facilityId, scheduleId, input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.schedules(facilityId) }),
+  })
+}
