@@ -13,43 +13,14 @@
 ## UI
 
 画面は、上端のヘッダー、左の職員の絞り込み、右のカレンダーの 3 つに分かれる。  
-カレンダーの上に、表示する期間と表示の種類を変えるツールバーを置く。
+カレンダーの上に、表示する期間と表示の種類を変えるツールバーを置く。  
+予定の作成、詳細、編集は、この画面の上にモーダルで重ねて出す。
 
-```text
-+---------------------------------------------------------------------+
-| SiteHeader: buddy                                                   |
-+------------------+--------------------------------------------------+
-| StaffFilter      | ScheduleCalendarToolbar                          |
-| Sidebar          | [<] [今日] [>] [日付]    [月|週|日] [予定を作成] |
-|                  +--------------------------------------------------+
-| 職員 [全員を表示]| ScheduleCalendar（月、週）                       |
-| [x] A チーム     |   または                                         |
-|   [x] 職員       | StaffScheduleDayGrid（日）                       |
-|   [x] 職員       |                                                  |
-| [x] B チーム     |                                                  |
-|   [x] 職員       |                                                  |
-+------------------+--------------------------------------------------+
-| Outlet: 作成、詳細、編集のモーダルを重ねる                          |
-+---------------------------------------------------------------------+
-```
+<iframe class="wireframe-viewer" src="wireframes/viewer.html?screen=schedule-calendar&state=ready" title="予定のカレンダーのワイヤーフレーム" width="100%" height="720" loading="lazy"></iframe>
 
-偽物の API につないだ状態で、開発サーバーから撮った画面は次のとおり。
-
-月の表示（`/schedule?date=2026-10-21`）
-
-![月の表示](images/schedule-calendar-month.png)
-
-週の表示（`/schedule?view=week&date=2026-10-21`）
-
-![週の表示](images/schedule-calendar-week.png)
-
-日の表示（`/schedule?view=day&date=2026-10-21`）
-
-![日の表示](images/schedule-calendar-day.png)
-
-A チームの 2 人に絞り込んだ月の表示（`/schedule?date=2026-10-21&staff=staff-1&staff=staff-2`）
-
-![職員を絞り込んだ月の表示](images/schedule-calendar-filtered.png)
+GitHub の画面では iframe を表示しないため、ワイヤーフレームは文書のサイトで見る。  
+ワイヤーフレームの HTML は [wireframes/schedule-calendar.html](wireframes/schedule-calendar.html) にある。  
+月、週、日の表示は、ワイヤーフレームの中の表示の種類のタブで切り替える。
 
 ## 状態ごとの UI
 
@@ -76,26 +47,29 @@ A チームの 2 人に絞り込んだ月の表示（`/schedule?date=2026-10-21&
 予定の API の列は、`apps/schedule-api/openapi.yaml` の項目の名前で書く。  
 web の型（`apps/web/src/api/types.ts`）は偽物の API に合わせた形で、OpenAPI と名前が違う。
 
-| 構成要素 | 表示する値 | web の型の項目 | OpenAPI の項目 | `data-testid` |
-| --- | --- | --- | --- | --- |
-| `SiteHeader` | 「buddy」 | なし | なし | なし |
-| `StaffFilterSidebar` | 見出し「職員」 | なし | なし | `staff-filter-sidebar` |
-| 全員を表示のボタン | 「全員を表示」 | なし | なし | `staff-filter-reset` |
-| チームのチェックボックス | チームの名前 | `Team.name` | `listTeams` の `Unit.name` | `staff-filter-team-{チームの id}` |
-| 職員のチェックボックス | 職員の名前 | `Staff.name`、`Staff.teamId` | `listUsers` の `Staff.username`、`Staff.team.id` | `staff-filter-staff-{職員の id}` |
-| `ScheduleCalendarToolbar` の前へ | 左向きの矢印（`aria-label="前へ"`） | なし | なし | `calendar-prev` |
-| 今日のボタン | 「今日」 | なし | なし | `calendar-today` |
-| 次へ | 右向きの矢印（`aria-label="次へ"`） | なし | なし | `calendar-next` |
-| 日付の入力 | 表示の基準の日付 | search params の `date` | なし | `calendar-date` |
-| 表示の種類の `TextTab` | 「月」「週」「日」 | search params の `view` | なし | `calendar-view`、タブは `calendar-view-month` など |
-| 予定を作成のボタン | 「予定を作成」 | なし | なし | `schedule-create-open` |
-| `ScheduleCalendar` | 月と週のカレンダー | なし | なし | `schedule-calendar` |
-| 予定（月、週） | 開始の時刻と題 | `Schedule.startsAt`、`Schedule.title`、`visit.patientId` | `date`、`start_time`、`title`、`visit_info.patient_name` | `schedule-event-{予定の id}` |
-| `StaffScheduleDayGrid` | 職員ごとの列と 6 時から 22 時の時刻 | `Staff.name` | `Staff.username` | `staff-schedule-day-grid` |
-| 時間の枠（日） | 30 分の枠 | なし | なし | `day-grid-slot-{職員の id}-{HH:mm}` |
-| 予定（日） | 開始と終了の時刻と題 | `Schedule.startsAt`、`Schedule.endsAt`、`Schedule.title` | `date`、`start_time`、`end_time`、`title` | `schedule-event-{予定の id}` |
-| `Loading` | 「カレンダーを表示中...」 | なし | なし | なし |
-| 取得の失敗の文 | 「予定を取得できませんでした。」 | なし | なし | なし |
+| 番号 | 構成要素 | 表示する値 | web の型の項目 | OpenAPI の項目 | `data-testid` |
+| --- | --- | --- | --- | --- | --- |
+| 1 | `SiteHeader` | 「buddy」 | なし | なし | なし |
+| 2 | `StaffFilterSidebar` | 見出し「職員」 | なし | なし | `staff-filter-sidebar` |
+| 2-1 | 全員を表示のボタン | 「全員を表示」 | なし | なし | `staff-filter-reset` |
+| 2-2 | チームのチェックボックス | チームの名前 | `Team.name` | `listTeams` の `Unit.name` | `staff-filter-team-{チームの id}` |
+| 2-3 | 職員のチェックボックス | 職員の名前 | `Staff.name`、`Staff.teamId` | `listUsers` の `Staff.username`、`Staff.team.id` | `staff-filter-staff-{職員の id}` |
+| 3 | `ScheduleCalendarToolbar` | 前後への移動、今日、日付、表示の種類、予定の作成 | なし | なし | なし |
+| 3-1 | 前へ | 左向きの矢印（`aria-label="前へ"`） | なし | なし | `calendar-prev` |
+| 3-2 | 今日のボタン | 「今日」 | なし | なし | `calendar-today` |
+| 3-3 | 次へ | 右向きの矢印（`aria-label="次へ"`） | なし | なし | `calendar-next` |
+| 3-4 | 日付の入力 | 表示の基準の日付 | search params の `date` | なし | `calendar-date` |
+| 3-5 | 表示の種類の `TextTab` | 「月」「週」「日」 | search params の `view` | なし | `calendar-view`、タブは `calendar-view-month` など |
+| 3-6 | 予定を作成のボタン | 「予定を作成」 | なし | なし | `schedule-create-open` |
+| 4 | `ScheduleCalendar` | 月と週のカレンダー | なし | なし | `schedule-calendar` |
+| 4-1 | 予定（月、週） | 開始の時刻と題 | `Schedule.startsAt`、`Schedule.title`、`visit.patientId` | `date`、`start_time`、`title`、`visit_info.patient_name` | `schedule-event-{予定の id}` |
+| 4-2 | 空いた日（月）、空いた時間（週） | 予定の無い日の枠と時間の枠 | なし | なし | なし |
+| 5 | `StaffScheduleDayGrid` | 職員ごとの列と 6 時から 22 時の時刻 | `Staff.name` | `Staff.username` | `staff-schedule-day-grid` |
+| 5-1 | 職員の列 | 列の見出しに職員の名前 | `Staff.name` | `Staff.username` | なし |
+| 5-2 | 時間の枠（日） | 30 分の枠 | なし | なし | `day-grid-slot-{職員の id}-{HH:mm}` |
+| 5-3 | 予定（日） | 開始と終了の時刻と題 | `Schedule.startsAt`、`Schedule.endsAt`、`Schedule.title` | `date`、`start_time`、`end_time`、`title` | `schedule-event-{予定の id}` |
+| 6 | `Loading` | 「カレンダーを表示中...」 | なし | なし | なし |
+| 7 | 取得の失敗の文 | 「予定を取得できませんでした。」 | なし | なし | なし |
 
 - 予定の題は、訪問の予定なら「{利用者の名前} 訪問」、通常の予定なら予定のタイトルにする。
 - 予定の色は、職員の一覧の並びの位置から色相を等分して決める。職員の一覧に無い職員の予定は灰色にする。
@@ -104,45 +78,45 @@ web の型（`apps/web/src/api/types.ts`）は偽物の API に合わせた形�
 
 ## 構成要素ごとの活性条件と表示条件
 
-| 構成要素 | 表示する条件 | 押せる（入力できる）条件 |
-| --- | --- | --- |
-| 全員を表示のボタン | 常に | `staff` が空でない（絞り込んでいる） |
-| チームのチェックボックス | チームの取得が成功した。チームの下の職員は、職員の取得が成功した後に出る | 常に。ただし外すと表示する職員が 0 人になる操作は受け付けない |
-| チームのチェックボックスの印 | なし | チームの職員が全員選ばれていれば付く。一部なら中間の印 |
-| 職員のチェックボックス | 職員がチームに属する | 常に。ただし最後の 1 人を外す操作は受け付けない |
-| 前へ、今日、次へ、日付の入力、表示の種類 | 常に | 常に（読み込み中も押せる） |
-| 予定を作成のボタン | 常に | 常に。権限による出し分けは未決 |
-| `ScheduleCalendar` | `view` が `month` か `week`、かつ取得が成功した | なし |
-| `StaffScheduleDayGrid` | `view` が `day`、かつ取得が成功した | なし |
-| 日の表示の職員の列 | `staff` が空なら全ての職員、空でなければ `staff` に含まれる職員 | なし |
-| 予定 | 期間に重なり、`staff` が空か `staff` に担当の職員を含む | 常に |
-| 時間の枠（日）、空いた日と時間（月、週） | 取得が成功した | 常に |
+| 番号 | 構成要素 | 表示する条件 | 押せる（入力できる）条件 |
+| --- | --- | --- | --- |
+| 2-1 | 全員を表示のボタン | 常に | `staff` が空でない（絞り込んでいる） |
+| 2-2 | チームのチェックボックス | チームの取得が成功した。チームの下の職員は、職員の取得が成功した後に出る | 常に。ただし外すと表示する職員が 0 人になる操作は受け付けない |
+| 2-2 | チームのチェックボックスの印 | なし | チームの職員が全員選ばれていれば付く。一部なら中間の印 |
+| 2-3 | 職員のチェックボックス | 職員がチームに属する | 常に。ただし最後の 1 人を外す操作は受け付けない |
+| 3-1、3-2、3-3、3-4、3-5 | 前へ、今日、次へ、日付の入力、表示の種類 | 常に | 常に（読み込み中も押せる） |
+| 3-6 | 予定を作成のボタン | 常に | 常に。権限による出し分けは未決 |
+| 4 | `ScheduleCalendar` | `view` が `month` か `week`、かつ取得が成功した | なし |
+| 5 | `StaffScheduleDayGrid` | `view` が `day`、かつ取得が成功した | なし |
+| 5-1 | 日の表示の職員の列 | `staff` が空なら全ての職員、空でなければ `staff` に含まれる職員 | なし |
+| 4-1、5-3 | 予定 | 期間に重なり、`staff` が空か `staff` に担当の職員を含む | 常に |
+| 5-2、4-2 | 時間の枠（日）、空いた日と時間（月、週） | 取得が成功した | 常に |
 
 API につないだ後の権限による条件は次のとおり。  
 権限の名前は、PRD の役職ごとの権限にある 7 つの権限を指す。
 
-| 構成要素 | 条件 |
-| --- | --- |
-| 予定 | 自分の予定は常に出す。ほかの職員の予定は、全ての予定の閲覧、指定した職員の予定の閲覧、指定したチームの職員の予定の閲覧のどれかで対象のときだけ出す。編集の権限は同じ範囲の閲覧を含む |
-| 職員のチェックボックス | 閲覧の権限の外の職員を出すかは未決 |
-| 予定を作成のボタン、時間の枠 | 編集の権限が自分の予定だけのときに、ほかの職員の列の枠を押せるかは未決 |
+| 番号 | 構成要素 | 条件 |
+| --- | --- | --- |
+| 4-1、5-3 | 予定 | 自分の予定は常に出す。ほかの職員の予定は、全ての予定の閲覧、指定した職員の予定の閲覧、指定したチームの職員の予定の閲覧のどれかで対象のときだけ出す。編集の権限は同じ範囲の閲覧を含む |
+| 2-3 | 職員のチェックボックス | 閲覧の権限の外の職員を出すかは未決 |
+| 3-6、5-2 | 予定を作成のボタン、時間の枠 | 編集の権限が自分の予定だけのときに、ほかの職員の列の枠を押せるかは未決 |
 
 ## インタラクション
 
-| 操作 | 前提 | 結果 |
-| --- | --- | --- |
-| 前へ、次へを押す | なし | `date` を、月の表示なら前後の月の 1 日、週なら 7 日、日なら 1 日動かす。URL の `date` が変わり、その期間の予定を取る |
-| 今日を押す | なし | URL から `date` を消し、今日の期間を出す |
-| 日付の入力で日付を選ぶ | なし | URL の `date` を選んだ日にする。入力を空にしたときは何もしない |
-| 表示の種類を押す | なし | URL の `view` を変える。`month` は既定の値なので URL から消える |
-| 月の表示で空いた日を押す | なし | その日の日の表示に移る。URL は `view=day&date={押した日}` |
-| 週の表示で空いた時間を押す | なし | 予定の作成を開く。URL は `/schedule/new?start={日付}&time={時刻}` にカレンダーの search params を足したもの |
-| 日の表示で時間の枠を押す | なし | 予定の作成を開く。URL の search params に `start`、`time`、`staffId` を足す |
-| 予定を作成を押す | なし | 予定の作成を開く。URL の `start` は表示の基準の日付で、`time` と `staffId` は付かない |
-| 予定を押す | なし | 予定の詳細を開く。URL は `/schedule/{予定の id}` に `view`、`date`、`staff` を引き継ぐ |
-| 職員のチェックボックスを外す、付ける | 外すときは、ほかに選ばれた職員がいる | URL の `staff` を選んだ職員の id の並びにする。全員を選ぶと `staff` を消す |
-| チームのチェックボックスを外す、付ける | 外すときは、チームの外に選ばれた職員がいる | チームの職員をまとめて外す、付ける。URL の変化は職員のチェックボックスと同じ |
-| 全員を表示を押す | 絞り込んでいる | URL から `staff` を消し、全ての職員を出す |
+| 番号 | 操作 | 前提 | 結果 |
+| --- | --- | --- | --- |
+| 3-1、3-3 | 前へ、次へを押す | なし | `date` を、月の表示なら前後の月の 1 日、週なら 7 日、日なら 1 日動かす。URL の `date` が変わり、その期間の予定を取る |
+| 3-2 | 今日を押す | なし | URL から `date` を消し、今日の期間を出す |
+| 3-4 | 日付の入力で日付を選ぶ | なし | URL の `date` を選んだ日にする。入力を空にしたときは何もしない |
+| 3-5 | 表示の種類を押す | なし | URL の `view` を変える。`month` は既定の値なので URL から消える |
+| 4-2 | 月の表示で空いた日を押す | なし | その日の日の表示に移る。URL は `view=day&date={押した日}` |
+| 4-2 | 週の表示で空いた時間を押す | なし | 予定の作成を開く。URL は `/schedule/new?start={日付}&time={時刻}` にカレンダーの search params を足したもの |
+| 5-2 | 日の表示で時間の枠を押す | なし | 予定の作成を開く。URL の search params に `start`、`time`、`staffId` を足す |
+| 3-6 | 予定を作成を押す | なし | 予定の作成を開く。URL の `start` は表示の基準の日付で、`time` と `staffId` は付かない |
+| 4-1、5-3 | 予定を押す | なし | 予定の詳細を開く。URL は `/schedule/{予定の id}` に `view`、`date`、`staff` を引き継ぐ |
+| 2-3 | 職員のチェックボックスを外す、付ける | 外すときは、ほかに選ばれた職員がいる | URL の `staff` を選んだ職員の id の並びにする。全員を選ぶと `staff` を消す |
+| 2-2 | チームのチェックボックスを外す、付ける | 外すときは、チームの外に選ばれた職員がいる | チームの職員をまとめて外す、付ける。URL の変化は職員のチェックボックスと同じ |
+| 2-1 | 全員を表示を押す | 絞り込んでいる | URL から `staff` を消し、全ての職員を出す |
 
 - URL を変える操作は、どれも履歴に積む。ブラウザの戻るで前の表示に戻る。
 - 予定の一覧の取得は `GET /v1/facilities/{facility_id}/schedules` に当たる。web は期間を `from`、`to` の日時で、職員を `staffIds` で渡すが、OpenAPI は `date_from`、`date_to` の日付だけを受け、職員で絞る引数を持たない。
@@ -179,6 +153,7 @@ PRD と実装の食い違い
 - 401 を受けたときに、ログインの画面へ移すか、その場で案内を出すか。
 - 403 と 404 も、取得の失敗として 3 回取り直してから表示している。4xx を取り直さないかが決まっていない。
 - 403 を、ほかの取得の失敗と同じ文で出すか、権限が無いことを示す文に分けるか。
+- 幅 720px 未満の配置。今の実装は、職員の絞り込みを 224px の幅のまま左に置き、ツールバーを折り返さない。モバイルの幅では、ツールバーとカレンダーが画面からはみ出る。ワイヤーフレームは、ツールバーを折り返して描いた。
 - 週と日の表示は 6 時から 22 時だけを出す。夜勤のようにその外の時刻にかかる予定を、どう見せるか。
 - チームに属さない職員（`users.team_id` が NULL）を、サイドバーのどこに出すか。今の実装は出さない。
 - 予定の一覧の期間と職員の絞り込みを、API で絞るか画面で絞るか。OpenAPI の `listSchedules` は日付の範囲だけを受ける。
