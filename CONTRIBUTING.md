@@ -37,6 +37,23 @@ uv run zensical build   # 出力の最後が "No issues found" になること�
 - ページを足したら、`zensical.toml` の `nav` に足す。`nav` にないページはナビゲーションから開けない。
 - コードの隣に置く機能ごとの Design Doc（`apps/<アプリ>/DesignDoc.md`）は、`docs/` の外にあるのでサイトに載らない。`nav` に GitHub の `develop` のファイルへのリンクを足して開けるようにする。
 
+## API の定義を変えるとき
+
+各 API の定義の正本は、`apps/schedule-api/openapi.yaml` と `apps/receipt-api/openapi.yaml` である。サーバーの Go のコードと画面の型は、そこから生成してコミットする。  
+openapi.yaml を変えたら、同じコミットで生成物も生成し直す。
+
+| 変えたもの | 生成のコマンド | 生成物 |
+| --- | --- | --- |
+| `apps/receipt-api/openapi.yaml` | `apps/receipt-api` で `go generate ./...` | `apps/receipt-api/internal/httpapi/openapi/` |
+| `apps/schedule-api/db/` の SQL | `apps/schedule-api` で `sqlc generate` | `apps/schedule-api/internal/infrastructure/mysql/sqlcgen/` |
+| どちらかの openapi.yaml | `pnpm --filter @buddy/web generate:api` | `apps/web/src/api/generated/` |
+
+取り込む前に、生成物がそろっているかをリポジトリのルートで確かめる。全ての生成を流し直し、差分か追跡していない生成物があれば 1 で終わる。
+
+```sh
+pnpm check:generated
+```
+
 ## コミットするとき
 
 - commit-msg のフックが、メッセージの形式を commitlint で確かめる。形式は `commitlint.config.mjs` にある。フックは `pnpm install` の `prepare` が入れる。

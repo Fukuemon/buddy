@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "prepare": "[ -n \"$CI\" ] || lefthook install",
+    "check:generated": "sh scripts/check-generated.sh",
     "check:screens": "node scripts/check-screen-refs.mjs"
   },
   "devDependencies": {

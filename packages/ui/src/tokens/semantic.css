@@ -1,0 +1,50 @@
+/*
+ * buddy の意味のトークン。値は持たず、DADS の基本のトークンを参照するだけにする。
+ * DADS の基本のトークンは @digital-go-jp/design-tokens の dist/tokens.css が :root に定義する。
+ * コンポーネントと画面は、この層を Tailwind のユーティリティ（theme.css）を通して使い、DADS の名前を直に書かない。
+ */
+
+@import '@digital-go-jp/design-tokens/dist/tokens.css';
+
+:root {
+  --buddy-color-surface: var(--color-neutral-white);
+  --buddy-color-surface-subtle: var(--color-neutral-solid-gray-50);
+  --buddy-color-surface-disabled: var(--color-neutral-solid-gray-100);
+  --buddy-color-overlay: var(--color-neutral-opacity-gray-500);
+
+  /* 文字: 白の面の上で 4.5:1 以上。disabled だけは WCAG 1.4.3 の対象外 */
+  --buddy-color-text: var(--color-neutral-solid-gray-900);
+  --buddy-color-text-secondary: var(--color-neutral-solid-gray-600);
+  --buddy-color-text-disabled: var(--color-neutral-solid-gray-420);
+  --buddy-color-text-inverse: var(--color-neutral-white);
+
+  /* 線: field は入力欄と押せる枠の境界で 3:1 以上。border は飾りの区切り */
+  --buddy-color-border: var(--color-neutral-solid-gray-100);
+  --buddy-color-border-field: var(--color-neutral-solid-gray-600);
+
+  /* 状態の色: 文字の色と、同じ系統の薄い面の組。面の上の文字でも 4.5:1 以上 */
+  --buddy-color-primary: var(--color-key-800);
+  --buddy-color-primary-surface: var(--color-key-50);
+  --buddy-color-danger: var(--color-primitive-red-900);
+  --buddy-color-danger-surface: var(--color-primitive-red-50);
+  --buddy-color-warning: var(--color-primitive-orange-900);
+  --buddy-color-warning-surface: var(--color-primitive-orange-50);
+  --buddy-color-success: var(--color-primitive-green-800);
+  --buddy-color-success-surface: var(--color-primitive-green-50);
+
+  /* フォーカス: DADS の指針の 2 重の表示。要素に接する黄色の輪と、その外の黒の枠 */
+  --buddy-color-focus-outline: var(--color-neutral-black);
+  --buddy-color-focus-halo: var(--color-primitive-yellow-300);
+
+  /* 区別の色: 職員のように、意味を持たない並びを色で分ける。白の文字で 4.5:1 以上 */
+  --buddy-color-categorical-1: var(--color-primitive-blue-800);
+  --buddy-color-categorical-2: var(--color-primitive-light-blue-900);
+  --buddy-color-categorical-3: var(--color-primitive-cyan-900);
+  --buddy-color-categorical-4: var(--color-primitive-green-800);
+  --buddy-color-categorical-5: var(--color-primitive-lime-900);
+  --buddy-color-categorical-6: var(--color-primitive-yellow-1000);
+  --buddy-color-categorical-7: var(--color-primitive-orange-900);
+  --buddy-color-categorical-8: var(--color-primitive-red-900);
+  --buddy-color-categorical-9: var(--color-primitive-magenta-800);
+  --buddy-color-categorical-10: var(--color-primitive-purple-800);
+}
