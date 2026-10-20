@@ -1,0 +1,305 @@
+openapi: 3.0.3
+info:
+  title: buddy receipt API
+  version: 0.1.0
+  description: |
+    iBow から出した実訪問の CSV と予定を照合し、不整合、予定のみ、実績のみ、整合の 4 つに分けて返す API。認証はまだない。
+
+    - 日付は YYYY-MM-DD、時刻は HH:MM である。
+    - 値がない項目は、`additions` と `column` と `errors` を除き、項目を省かず null で返す。
+    - エラーは Error の形で返す。
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: health
+  - name: check
+    description: 照合
+
+paths:
+  /health:
+    get:
+      tags: [health]
+      operationId: getHealth
+      summary: ヘルスチェック
+      responses:
+        "200":
+          description: 動いている
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+
+  /v1/checks:
+    post:
+      tags: [check]
+      operationId: createCheck
+      summary: 実訪問の CSV と予定を照合する
+      description: |
+        予定は、ファイル `schedules` があればそれを使う。無くてフォームの値 `month` があれば、その月の予定を Google カレンダーから取る。
+        結果は Accept によらず JSON で返す。入力の CSV は、UTF-8（BOM の有無を問わない）と CP932 を受ける。
+        本文の上限のバイト数は、サーバーの設定 `MAX_UPLOAD_BYTES` で決まる。
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [visits]
+              properties:
+                visits:
+                  type: string
+                  format: binary
+                  description: 実訪問の CSV
+                schedules:
+                  type: string
+                  format: binary
+                  description: 予定の CSV
+                month:
+                  type: string
+                  description: Google カレンダーから予定を取る対象の月。`schedules` があれば使わない
+                  example: "2024-04"
+      responses:
+        "200":
+          description: 照合の結果
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Report" }
+        "400":
+          description: |
+            本文が multipart/form-data でない、`visits` が無い、`schedules` も `month` も無い（`missing_file`）、`month` の形が違う（`bad_request`）
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "413":
+          description: 本文が上限を超えている（`payload_too_large`）
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "422":
+          description: 入力の CSV に誤りがある（`invalid_csv`）。行の誤りは `errors` に行番号つきで入る
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "500":
+          description: サーバーの誤り（`internal`）
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "502":
+          description: Google カレンダーから予定を取れない（`schedule_source_failed`）
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "503":
+          description: サーバーに Google カレンダーの設定がないのに `month` で呼ばれた（`calendar_not_configured`）
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+components:
+  schemas:
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          enum:
+            - bad_request
+            - missing_file
+            - payload_too_large
+            - invalid_csv
+            - not_found
+            - internal
+            - calendar_not_configured
+            - schedule_source_failed
+        message: { type: string }
+        errors:
+          type: array
+          description: 入力の CSV の行ごとの誤り。`invalid_csv` のときだけ持つ
+          items: { $ref: "#/components/schemas/RowError" }
+
+    RowError:
+      type: object
+      required: [source, line, message]
+      properties:
+        source: { $ref: "#/components/schemas/InputSource" }
+        line:
+          type: integer
+          description: 入力の CSV の行番号。ヘッダーが 1 行目
+        column:
+          type: string
+          description: 誤りのある列の名前。行全体の誤りでは省く
+        message: { type: string }
+
+    InputSource:
+      type: string
+      enum: [schedules, visits]
+
+    Date:
+      type: string
+      pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+      example: "2024-04-01"
+
+    Clock:
+      type: string
+      pattern: "^[0-9]{2}:[0-9]{2}$"
+      example: "09:30"
+
+    Report:
+      type: object
+      required: [summary, rows, warnings]
+      properties:
+        summary: { $ref: "#/components/schemas/Summary" }
+        rows:
+          type: array
+          description: 区分（mismatch、schedule_only、visit_only、match）の順、訪問日、開始時間、利用者名、主訪問者の順に並ぶ
+          items: { $ref: "#/components/schemas/Result" }
+        warnings:
+          type: array
+          description: 予定の取得元が解釈できず、照合に使わなかった予定。無ければ空の配列
+          items: { $ref: "#/components/schemas/Warning" }
+
+    Summary:
+      type: object
+      description: 区分ごとの行の数
+      required: [mismatch, schedule_only, visit_only, match]
+      properties:
+        mismatch: { type: integer }
+        schedule_only: { type: integer }
+        visit_only: { type: integer }
+        match: { type: integer }
+
+    Category:
+      type: string
+      enum: [mismatch, schedule_only, visit_only, match]
+
+    Result:
+      type: object
+      required: [category, date, client, staff, schedule, visit, checks]
+      properties:
+        category: { $ref: "#/components/schemas/Category" }
+        date: { $ref: "#/components/schemas/Date" }
+        client:
+          type: string
+          description: 利用者名
+        staff:
+          type: string
+          description: 主訪問者
+        schedule:
+          allOf: [$ref: "#/components/schemas/Side"]
+          nullable: true
+          description: 予定の側。実績のみの行では null
+        visit:
+          allOf: [$ref: "#/components/schemas/Side"]
+          nullable: true
+          description: 実績の側。予定のみの行では null
+        checks:
+          allOf: [$ref: "#/components/schemas/Checks"]
+          nullable: true
+          description: 予定と実績の両方があるときだけ持つ。片側だけの行では null
+
+    Side:
+      type: object
+      required: [line, start, end, duration, service]
+      properties:
+        line:
+          type: integer
+          description: 入力の CSV の行番号。Google カレンダーから来た予定では 0
+        start: { $ref: "#/components/schemas/Clock" }
+        end: { $ref: "#/components/schemas/Clock" }
+        duration:
+          type: integer
+          nullable: true
+          description: 提供時間（分）。入力が空なら null
+        service:
+          type: string
+          description: サービス内容
+        additions:
+          type: string
+          description: 実績の加算①〜加算⑤のうち空でない値を ", " でつないだもの。予定の側では省く
+
+    Checks:
+      type: object
+      description: 予定と実績の対の、項目ごとの判定
+      required:
+        - start
+        - service
+        - schedule_elapsed
+        - visit_elapsed
+        - schedule_duration
+        - visit_duration
+        - additions
+        - duration_equal
+        - end_equal
+      properties:
+        start: { $ref: "#/components/schemas/Check" }
+        service: { $ref: "#/components/schemas/Check" }
+        schedule_elapsed:
+          allOf: [$ref: "#/components/schemas/RangeCheck"]
+          description: 予定の終了時間から開始時間を引いた分の判定
+        visit_elapsed:
+          allOf: [$ref: "#/components/schemas/RangeCheck"]
+          description: 実績の終了時間から開始時間を引いた分の判定
+        schedule_duration:
+          allOf: [$ref: "#/components/schemas/RangeCheck"]
+          description: 予定の提供時間の判定
+        visit_duration:
+          allOf: [$ref: "#/components/schemas/RangeCheck"]
+          description: 実績の提供時間の判定
+        additions:
+          allOf: [$ref: "#/components/schemas/Check"]
+          description: 加算①〜加算⑤のうち `通常` のちょうど 1 つだけが入っているか
+        duration_equal:
+          type: boolean
+          description: 両側の提供時間が同じか。区分には影響しない
+        end_equal:
+          type: boolean
+          description: 両側の終了時間が同じか。区分には影響しない
+
+    Check:
+      type: object
+      required: [ok]
+      properties:
+        ok: { type: boolean }
+
+    RangeCheck:
+      type: object
+      required: [ok, minutes, range]
+      properties:
+        ok: { type: boolean }
+        minutes:
+          type: integer
+          nullable: true
+          description: 判定した分。提供時間が空なら null
+        range:
+          allOf: [$ref: "#/components/schemas/Range"]
+          nullable: true
+          description: 許容範囲。範囲を持たないサービス内容なら null
+
+    Range:
+      type: object
+      description: 許容する分の範囲。両端を含む
+      required: [min, max]
+      properties:
+        min: { type: integer }
+        max: { type: integer }
+
+    Warning:
+      type: object
+      description: 照合に使わなかった Google カレンダーの予定。利用者名を含むので、予定の題名は持たない
+      required: [calendar_id, event_id, start, message]
+      properties:
+        calendar_id: { type: string }
+        event_id: { type: string }
+        start:
+          type: string
+          description: 予定の開始の日時（RFC 3339）
+        message: { type: string }
