@@ -1,7 +1,7 @@
-import type { ComponentPropsWithoutRef } from 'react'
+import { useId, type ComponentPropsWithoutRef } from 'react'
 import { useController, type Control, type FieldPath, type FieldValues } from 'react-hook-form'
 
-import { FieldFrame, fieldInputClassName } from '../FieldFrame/FieldFrame'
+import { FieldFrame, fieldErrorProps, fieldInputClassName } from '../FieldFrame/FieldFrame'
 
 export type NumberPickerProps<T extends FieldValues> = Omit<
   ComponentPropsWithoutRef<'input'>,
@@ -22,17 +22,15 @@ export const NumberPicker = <T extends FieldValues>({
   ...props
 }: NumberPickerProps<T>) => {
   const { field, fieldState } = useController({ name, control })
+  const error = fieldState.error?.message
+  const errorId = useId()
 
   return (
-    <FieldFrame
-      error={fieldState.error?.message}
-      htmlFor={field.name}
-      isWide={isWide}
-      label={label}
-    >
+    <FieldFrame error={error} errorId={errorId} htmlFor={field.name} isWide={isWide} label={label}>
       <input
         {...props}
         {...field}
+        {...fieldErrorProps(error, errorId)}
         className={fieldInputClassName}
         id={field.name}
         onChange={(event) => field.onChange(event.target.valueAsNumber)}

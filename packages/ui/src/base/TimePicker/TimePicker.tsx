@@ -1,9 +1,9 @@
-import type { ComponentPropsWithoutRef } from 'react'
+import { useId, type ComponentPropsWithoutRef } from 'react'
 import { useController, type Control, type FieldPath, type FieldValues } from 'react-hook-form'
 
 import { TimerIcon } from '../../icons/TimerIcon'
 
-import { FieldFrame, fieldInputClassName } from '../FieldFrame/FieldFrame'
+import { FieldFrame, fieldErrorProps, fieldInputClassName } from '../FieldFrame/FieldFrame'
 
 export type TimePickerProps<T extends FieldValues> = Omit<
   ComponentPropsWithoutRef<'input'>,
@@ -24,10 +24,13 @@ export const TimePicker = <T extends FieldValues>({
   ...props
 }: TimePickerProps<T>) => {
   const { field, fieldState } = useController({ name, control })
+  const error = fieldState.error?.message
+  const errorId = useId()
 
   return (
     <FieldFrame
-      error={fieldState.error?.message}
+      error={error}
+      errorId={errorId}
       htmlFor={field.name}
       icon={<TimerIcon className="text-text-secondary" height={20} width={20} />}
       isWide={isWide}
@@ -36,6 +39,7 @@ export const TimePicker = <T extends FieldValues>({
       <input
         {...props}
         {...field}
+        {...fieldErrorProps(error, errorId)}
         className={fieldInputClassName}
         id={field.name}
         type="time"
