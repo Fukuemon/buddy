@@ -23,8 +23,9 @@ golangci-lint run
 
 ## コードの生成
 
-API の定義の正本は [openapi.yaml](openapi.yaml) である。oapi-codegen が、そこから net/http の strict server のインターフェイスと型を `internal/httpapi/openapi/openapi.gen.go` に生成し、`internal/httpapi` がそのインターフェイスを実装する。  
-oapi-codegen は `go.mod` の `tool` で版を固定し、`go tool` で動かす。設定は [oapi-codegen.yaml](oapi-codegen.yaml) にある。
+API の定義の正本は [openapi.yaml](openapi.yaml) である。  
+oapi-codegen が、そこから net/http の strict server のインターフェイスと型を `internal/httpapi/openapi/openapi.gen.go` に生成する。`internal/httpapi` がそのインターフェイスを実装する。  
+oapi-codegen は `go.mod` の `tool` でバージョンを固定し、`go tool` で動かす。設定は [oapi-codegen.yaml](oapi-codegen.yaml) にある。
 
 openapi.yaml を変えたら、`apps/receipt-api` で生成し直し、生成物も一緒にコミットする。
 

@@ -1,7 +1,7 @@
 # @buddy/web
 
 予定の管理とレセプトの照合の画面。TanStack Start で作り、ツールチェーンに Vite+ を使う。  
-既定ではデータを手元の偽物の API（`src/api/fake/`）から取る。BFF を通して予定の API を呼ぶように切り替えられる（「API を切り替える」）。
+`VITE_API_MODE` を指定しなければ、データを手元の偽物の API（`src/api/fake/`）から取る。BFF を通して予定の API を呼ぶように切り替えられる（「API を切り替える」）。
 
 ## 起動する
 

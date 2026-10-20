@@ -227,7 +227,7 @@ JSON と並べて記号つきの CSV も返す案は、表示の都合が API �
 
 ### 画面が JSON から作る表示
 
-画面（apps/web）は、結果の JSON から次の表示を作る。記号の規則は API ではなく画面が持つ。画面の側は未実装で、今の apps/web にあるのは API を呼ぶクライアント（src/api/http/receiptApi.ts）だけである（#7 で作る）。
+画面（apps/web）は、結果の JSON から次の表示を作る。記号の規則は API ではなく画面が持ち、`apps/web/src/features/receipt/lib/reportCells.ts` が作る。
 
 - 規則に合わない値の後ろに、不一致の印を付ける。許容範囲があれば「(20~29)」を続ける。
 - 整合の行で、提供時間か終了時間の値が両側で違うが、両方が許容範囲に入るときは、注意の印「 ※」を付ける。
@@ -235,7 +235,7 @@ JSON と並べて記号つきの CSV も返す案は、表示の都合が API �
 - 片側がない欄は「データなし」と表示する。
 - 区分の間に、区分の名前の区切りを入れる。
 - 結果の CSV は、画面が同じ表示を書き出す。
-- 不一致の印を、元のツールに合わせて「 ❌」にするか、「 ×」にするかは画面で決める。
+- 不一致の印は、元のツールに合わせて「 ❌」にする。
 
 ## Interface
 
@@ -256,7 +256,7 @@ API の定義の正本は [openapi.yaml](https://github.com/Fukuemon/buddy/blob/
 
 ## Verification
 
-元の Python と比べる道具（`tools/parity`）は、Python の結果とセルごとに比べるため、記号つきの CSV を `tools/parity/report` で書く。API はこのパッケージを使わない。  
+元の Python との比較（`tools/parity`）は、Python の結果とセルごとに比べるため、記号つきの CSV を `tools/parity/report` で書く。API はこのパッケージを使わない。  
 次の点は、元の Python と GAS の実装から挙動を変えたので、比べるときに差分として扱う。
 
 - 予定の取得元に、アップロードする予定の CSV を足した。Google カレンダーからは、GAS を経由せずに取る。
