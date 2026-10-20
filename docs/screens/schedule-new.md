@@ -141,9 +141,6 @@ PRD と実装の食い違い
 
 - PRD は、訪問の予定に同行者を持たせる。実装のフォームは同行者を持たない。OpenAPI は `visit_info.companion_id` を持つ。
 - PRD は、毎週と毎月の繰り返しの予定を作れるとしている。実装は単発の予定だけを作る。OpenAPI は `createRecurringSchedule` を持つ。
-- PRD の時間外の勤務の印を、フォームで付けられない。OpenAPI の `is_over_time_work` は「17 時以降に始まる予定のとき true」で、入力の項目ではない。PRD の「印を付けられる」と食い違う。
-- 実装は訪問の種類を複数選べる。Design Doc の予定の管理は訪問 1 件に 1 つとし、OpenAPI の `visit_category_ids` は配列である。
-- 実装は提供時間を入力し、終了時間を計算する。OpenAPI の `SlotRequest` は提供時間を持たず、`end_time` を受ける。Design Doc の予定の管理の `visit_infos` は `service_time` を持つ。
 - サービスコードの表記と提供時間の範囲を、画面が定数で持つ。PRD と Design Doc は「訪看I２」のように全角の数字で書き、実装は半角の数字で書く。範囲を `listServiceCodes` から取るかが決まっていない。
 
 決まっていないこと
