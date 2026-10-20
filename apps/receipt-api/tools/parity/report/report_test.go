@@ -1,4 +1,4 @@
-package csvio_test
+package report_test
 
 import (
 	"bytes"
@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/csvio"
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/judge"
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/match"
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/record"
+	"github.com/Fukuemon/buddy/apps/receipt-api/tools/parity/report"
 )
 
 func rec(t *testing.T, client, start, end string, duration *int, service string, additions []string) *record.Record {
@@ -30,7 +30,7 @@ func rec(t *testing.T, client, start, end string, duration *int, service string,
 	}
 }
 
-func TestWriteReport(t *testing.T) {
+func TestWrite(t *testing.T) {
 	normal := []string{"通常"}
 	pairs := []match.Pair{
 		{
@@ -45,7 +45,7 @@ func TestWriteReport(t *testing.T) {
 		},
 	}
 	var buf bytes.Buffer
-	if err := csvio.WriteReport(&buf, judge.All(pairs)); err != nil {
+	if err := report.Write(&buf, judge.All(pairs)); err != nil {
 		t.Fatal(err)
 	}
 	b, ok := bytes.CutPrefix(buf.Bytes(), []byte("\xEF\xBB\xBF"))
@@ -58,7 +58,7 @@ func TestWriteReport(t *testing.T) {
 	}
 	sep := func(label string) string { return label + strings.Repeat(",---", 11) }
 	want := []string{
-		strings.Join(csvio.ReportHeader(), ","),
+		strings.Join(report.Header(), ","),
 		sep("不整合データ"),
 		"2024-04-01,利用者C,職員B,訪看I２,10:00 ❌,10:29,29 ❌,訪看I２,10:05 ❌,10:40 ❌ (20~29),35 ❌ ❌ (20~29),緊急 ※",
 		sep("予定のみ"),
