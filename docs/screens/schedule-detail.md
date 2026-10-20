@@ -12,38 +12,14 @@
 
 ## UI
 
-モーダルは、上端に閉じるボタンと題、本文に項目の名前と値の行、下端に編集のボタンを置く。
+モーダルは、上端に閉じるボタンと題、本文に項目の名前と値の行、下端に編集のボタンを置く。  
+幅 720px 未満では、モーダルを画面いっぱいに出す。
 
-```text
-+------------------------------------------------------------+
-| [x]  予定の詳細                                            |
-+------------------------------------------------------------+
-| 種類            訪問                                       |
-| タイトル        （通常の予定だけ）                         |
-| 日時            YYYY-MM-DD HH:mm - HH:mm                   |
-| 利用者          （訪問の予定だけ）                         |
-| サービスコード  （訪問の予定だけ）                         |
-| 訪問の種類      （訪問の予定だけ）                         |
-| 担当者 / 予定者 職員の名前                                 |
-| メモ            メモか「なし」                             |
-+------------------------------------------------------------+
-|                                                    [編集]  |
-+------------------------------------------------------------+
-```
+<iframe class="wireframe-viewer" src="wireframes/viewer.html?screen=schedule-detail&state=ready" title="予定の詳細のワイヤーフレーム" width="100%" height="720" loading="lazy"></iframe>
 
-偽物の API につないだ状態で、開発サーバーから撮った画面は次のとおり。
-
-訪問の予定（`/schedule/schedule-1?date=2026-10-21`）
-
-![予定の詳細](images/schedule-detail.png)
-
-読み込み中（予定の取得を取り直している間）
-
-![予定の詳細の読み込み中](images/schedule-detail-loading.png)
-
-予定が見つからない（`/schedule/no-such-id?date=2026-10-21`）
-
-![予定が見つからない](images/schedule-detail-not-found.png)
+GitHub の画面では iframe を表示しないため、ワイヤーフレームは文書のサイトで見る。  
+ワイヤーフレームの HTML は [wireframes/schedule-detail.html](wireframes/schedule-detail.html) にある。  
+予定の種類で出し分ける行は、点線の枠と条件の文で示す。
 
 ## 状態ごとの UI
 
@@ -63,46 +39,48 @@
 
 API の列は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の `Schedule` の項目で書く。
 
-| 構成要素 | 表示する値 | web の型の項目 | OpenAPI の項目 | `data-testid` |
-| --- | --- | --- | --- | --- |
-| `Modal` | 題「予定の詳細」 | なし | なし | `schedule-detail-modal` |
-| 閉じるボタン | ×（`aria-label="閉じる"`） | なし | なし | `modal-close` |
-| 種類の行 | 「通常」か「訪問」 | `Schedule.kind` | `schedule_type` | なし |
-| タイトルの行 | タイトル | `Schedule.title` | `title` | なし |
-| 日時の行 | `YYYY-MM-DD HH:mm - HH:mm` | `Schedule.startsAt`、`Schedule.endsAt` | `date`、`start_time`、`end_time` | `schedule-detail-datetime` |
-| 利用者の行 | 利用者の名前 | `visit.patientId` を利用者の一覧で引く | `visit_info.patient_name` | なし |
-| サービスコードの行 | サービスコード | `visit.serviceCode` | `visit_info.service_code` | なし |
-| 訪問の種類の行 | 夜勤、緊急、入院を「、」でつなぐ。無ければ「通常」 | `visit.categories` | `visit_info.visit_categories[].name` | なし |
-| 担当者、予定者の行 | 職員の名前 | `Schedule.staffId` を職員の一覧で引く | `staff_name` | なし |
-| メモの行 | メモ。空なら「なし」 | `Schedule.description` | `description` | なし |
-| 編集のボタン | 「編集」 | なし | なし | `schedule-detail-edit` |
-| 失敗の文 | 「予定が見つかりません。」か「予定を取得できませんでした。」 | なし | なし | なし |
+| 番号 | 構成要素 | 表示する値 | web の型の項目 | OpenAPI の項目 | `data-testid` |
+| --- | --- | --- | --- | --- | --- |
+| 1 | `Modal` | 題「予定の詳細」 | なし | なし | `schedule-detail-modal` |
+| 1-1 | 閉じるボタン | ×（`aria-label="閉じる"`） | なし | なし | `modal-close` |
+| 1-2 | 種類の行 | 「通常」か「訪問」 | `Schedule.kind` | `schedule_type` | なし |
+| 1-3 | タイトルの行 | タイトル | `Schedule.title` | `title` | なし |
+| 1-4 | 日時の行 | `YYYY-MM-DD HH:mm - HH:mm` | `Schedule.startsAt`、`Schedule.endsAt` | `date`、`start_time`、`end_time` | `schedule-detail-datetime` |
+| 1-5 | 利用者の行 | 利用者の名前 | `visit.patientId` を利用者の一覧で引く | `visit_info.patient_name` | なし |
+| 1-6 | サービスコードの行 | サービスコード | `visit.serviceCode` | `visit_info.service_code` | なし |
+| 1-7 | 訪問の種類の行 | 夜勤、緊急、入院を「、」でつなぐ。無ければ「通常」 | `visit.categories` | `visit_info.visit_categories[].name` | なし |
+| 1-8 | 担当者、予定者の行 | 職員の名前 | `Schedule.staffId` を職員の一覧で引く | `staff_name` | なし |
+| 1-9 | メモの行 | メモ。空なら「なし」 | `Schedule.description` | `description` | なし |
+| 1-10 | 編集のボタン | 「編集」 | なし | なし | `schedule-detail-edit` |
+| 1-11 | 失敗の文 | 「予定が見つかりません。」か「予定を取得できませんでした。」 | なし | なし | なし |
+| 1-12 | `Loading` | インジケーターだけ | なし | なし | なし |
+| 2 | モーダルの背景 | 暗くぼかした背景 | なし | なし | `modal-overlay` |
 
 - 行の名前は、訪問の予定なら「担当者」、通常の予定なら「予定者」にする。
 - 訪問の予定のタイトル（「訪問」）は出さない。
 
 ## 構成要素ごとの活性条件と表示条件
 
-| 構成要素 | 表示する条件 | 押せる条件 |
-| --- | --- | --- |
-| タイトルの行 | 種類が通常 | なし |
-| 利用者、サービスコード、訪問の種類の行 | 予定が訪問の情報を持つ | なし |
-| 編集のボタン | 予定の取得が成功した | 常に。権限による出し分けは未決 |
-| 閉じるボタン | 常に | 常に |
+| 番号 | 構成要素 | 表示する条件 | 押せる条件 |
+| --- | --- | --- | --- |
+| 1-3 | タイトルの行 | 種類が通常 | なし |
+| 1-5、1-6、1-7 | 利用者、サービスコード、訪問の種類の行 | 予定が訪問の情報を持つ | なし |
+| 1-10 | 編集のボタン | 予定の取得が成功した | 常に。権限による出し分けは未決 |
+| 1-1 | 閉じるボタン | 常に | 常に |
 
 API につないだ後の権限による条件は次のとおり。
 
-| 構成要素 | 条件 |
-| --- | --- |
-| 予定の全体 | 予定の担当の職員が自分か、閲覧か編集の権限の対象のときだけ出す。対象の外なら API が 403 を返す |
-| 編集のボタン | 自分の予定なら自分の予定の編集、ほかの職員の予定なら、全ての予定の編集、指定した職員の予定の編集、指定したチームの職員の予定の編集のどれかで対象のときに出すかは未決 |
+| 番号 | 構成要素 | 条件 |
+| --- | --- | --- |
+| 1 | 予定の全体 | 予定の担当の職員が自分か、閲覧か編集の権限の対象のときだけ出す。対象の外なら API が 403 を返す |
+| 1-10 | 編集のボタン | 自分の予定なら自分の予定の編集、ほかの職員の予定なら、全ての予定の編集、指定した職員の予定の編集、指定したチームの職員の予定の編集のどれかで対象のときに出すかは未決 |
 
 ## インタラクション
 
-| 操作 | 前提 | 結果 |
-| --- | --- | --- |
-| 編集を押す | 予定の取得が成功した | 予定の編集を開く。URL は `/schedule/{予定の id}/edit` に `view`、`date`、`staff` を引き継ぐ（履歴に積む） |
-| 閉じるボタン、背景、Escape キー | なし | `/schedule` に `view`、`date`、`staff` を引き継いで戻る。確認は出さない |
+| 番号 | 操作 | 前提 | 結果 |
+| --- | --- | --- | --- |
+| 1-10 | 編集を押す | 予定の取得が成功した | 予定の編集を開く。URL は `/schedule/{予定の id}/edit` に `view`、`date`、`staff` を引き継ぐ（履歴に積む） |
+| 1-1、2 | 閉じるボタン、背景、Escape キー | なし | `/schedule` に `view`、`date`、`staff` を引き継いで戻る。確認は出さない |
 
 ## 初期状態でのインタラクション
 

@@ -13,39 +13,13 @@
 ## UI
 
 モーダルは、上端に閉じるボタンと種類のタブと題、左に項目の要約の一覧、右に選んだ項目の入力、下端に送信のボタンを置く。  
-幅 720px 未満では、モーダルを画面いっぱいに出す。
+幅 720px 未満では、モーダルを画面いっぱいに出し、要約の一覧の下に入力を置く。
 
-```text
-+------------------------------------------------------------+
-| [x]  [通常|訪問]                               予定の作成  |
-+----------------------+-------------------------------------+
-| ScheduleFieldSummary | 右の入力（選んだ項目だけ）          |
-| List                 |                                     |
-| [訪問日時]           | ScheduleDateTimeEdit                |
-| [利用者]             |   訪問日 / 開始時間 / 提供時間（分）|
-| [担当者]             |   終了時間（訪問は計算の結果）      |
-| [訪問の種類]         |   ServiceCodeRadioGroup             |
-| [メモ]               | PatientSelectList / StaffSelectList |
-|                      | ScheduleCategoryCheckboxGroup       |
-|                      | TextareaField                       |
-+----------------------+-------------------------------------+
-| （送信の失敗の文）                                  [作成] |
-+------------------------------------------------------------+
-```
+<iframe class="wireframe-viewer" src="wireframes/viewer.html?screen=schedule-new" title="予定の作成のワイヤーフレーム" width="100%" height="720" loading="lazy"></iframe>
 
-偽物の API につないだ状態で、開発サーバーから撮った画面は次のとおり。
-
-訪問の予定（日の表示の時間の枠から開いた。`/schedule/new?date=2026-10-21&start=2026-10-21&time=10:00&staffId=staff-1`）
-
-![訪問の予定の作成](images/schedule-new-visit.png)
-
-通常の予定（`/schedule/new?date=2026-10-21&kind=normal`）
-
-![通常の予定の作成](images/schedule-new-normal.png)
-
-利用者と担当者を選ばずに作成を押した後
-
-![入力の誤り](images/schedule-new-invalid.png)
+GitHub の画面では iframe を表示しないため、ワイヤーフレームは文書のサイトで見る。  
+ワイヤーフレームの HTML は [wireframes/schedule-new.html](wireframes/schedule-new.html) にある。  
+通常と訪問の切り替えと、右に出す入力の切り替えは、ワイヤーフレームの中の種類のタブと要約の一覧で行う。
 
 ## 状態ごとの UI
 
@@ -83,26 +57,28 @@
 
 API の列は、`createSchedule`（`POST /v1/facilities/{facility_id}/schedules`）の `SlotRequest` の項目で書く。
 
-| 構成要素 | 表示する値 | web の型の項目 | OpenAPI の項目 | `data-testid` |
-| --- | --- | --- | --- | --- |
-| `Modal` | 題「予定の作成」 | なし | なし | `schedule-form-modal` |
-| 閉じるボタン | ×（`aria-label="閉じる"`） | なし | なし | `modal-close` |
-| モーダルの背景 | 暗くぼかした背景 | なし | なし | `modal-overlay` |
-| 種類の `TextTab` | 「通常」「訪問」 | `ScheduleInput.kind` | `schedule_type_id` | `schedule-kind-tab`、タブは `schedule-kind-tab-normal`、`schedule-kind-tab-visit` |
-| `ScheduleFieldSummaryList` の項目 | 項目の名前、今の値の要約、誤りの文 | なし | なし | `schedule-field-{title、dateTime、patient、staff、category、description}` |
-| タイトルの `TextareaField` | 入力したタイトル | `title` | `title` | なし（`id="title"`） |
-| 日付の `DatePicker` | 「日付」か「訪問日」 | `startsAt` の日付 | `date` | `schedule-form-date` |
-| 開始時間の `TimePicker` | 開始時間 | `startsAt` の時刻 | `start_time` | `schedule-form-start-time` |
-| 終了時間の `TimePicker`（通常） | 終了時間 | `endsAt` の時刻 | `end_time` | `schedule-form-end-time` |
-| 終了時間の文（訪問） | 「終了時間 {開始時間 + 提供時間}」 | `endsAt` の時刻 | `end_time` | `schedule-form-end-time` |
-| 提供時間の `NumberPicker`（訪問） | 提供時間（分） | なし（`endsAt` に換算する） | なし | `schedule-form-service-time` |
-| `ServiceCodeRadioGroup`（訪問） | 11 のサービスコード | `visit.serviceCode` | `visit_info.service_code_id` | `service-code-{コード}` |
-| `PatientSelectList`（訪問） | 名前で絞れる利用者の一覧 | `visit.patientId` | `visit_info.patient_id` | `patient-select-search`、`patient-select-option-{利用者の id}` |
-| `StaffSelectList` | 名前で絞れる職員の一覧 | `staffId` | `staff_id`、`visit_info.assigned_staff_id` | `staff-select-search`、`staff-select-option-{職員の id}` |
-| `ScheduleCategoryCheckboxGroup`（訪問） | 夜勤、緊急、入院 | `visit.categories` | `visit_info.visit_category_ids` | `schedule-category-{night、emergency、hospitalization}` |
-| メモの `TextareaField` | 入力したメモ | `description` | `description` | なし（`id="description"`） |
-| 送信の失敗の文 | 「予定を作成できませんでした。」 | なし | なし | なし |
-| 作成のボタン | 「作成」 | なし | なし | `schedule-create-submit` |
+| 番号 | 構成要素 | 表示する値 | web の型の項目 | OpenAPI の項目 | `data-testid` |
+| --- | --- | --- | --- | --- | --- |
+| 1 | `Modal` | 題「予定の作成」 | なし | なし | `schedule-form-modal` |
+| 1-1 | 閉じるボタン | ×（`aria-label="閉じる"`） | なし | なし | `modal-close` |
+| 1-2 | 種類の `TextTab` | 「通常」「訪問」 | `ScheduleInput.kind` | `schedule_type_id` | `schedule-kind-tab`、タブは `schedule-kind-tab-normal`、`schedule-kind-tab-visit` |
+| 1-3 | 送信の失敗の文 | 「予定を作成できませんでした。」 | なし | なし | なし |
+| 1-4 | 作成のボタン | 「作成」 | なし | なし | `schedule-create-submit` |
+| 2 | モーダルの背景 | 暗くぼかした背景 | なし | なし | `modal-overlay` |
+| 3 | `ScheduleFieldSummaryList` の項目 | 項目の名前、今の値の要約、誤りの文 | なし | なし | `schedule-field-{title、dateTime、patient、staff、category、description}` |
+| 4 | 右の入力 | 要約の一覧で選んだ項目の入力 | なし | なし | なし |
+| 4-1 | タイトルの `TextareaField` | 入力したタイトル | `title` | `title` | なし（`id="title"`） |
+| 4-2 | 日付の `DatePicker` | 「日付」か「訪問日」 | `startsAt` の日付 | `date` | `schedule-form-date` |
+| 4-3 | 開始時間の `TimePicker` | 開始時間 | `startsAt` の時刻 | `start_time` | `schedule-form-start-time` |
+| 4-4 | 終了時間の `TimePicker`（通常） | 終了時間 | `endsAt` の時刻 | `end_time` | `schedule-form-end-time` |
+| 4-5 | 終了時間の文（訪問） | 「終了時間 {開始時間 + 提供時間}」 | `endsAt` の時刻 | `end_time` | `schedule-form-end-time` |
+| 4-6 | 提供時間の `NumberPicker`（訪問） | 提供時間（分） | なし（`endsAt` に換算する） | なし | `schedule-form-service-time` |
+| 4-7 | `ServiceCodeRadioGroup`（訪問） | 11 のサービスコード | `visit.serviceCode` | `visit_info.service_code_id` | `service-code-{コード}` |
+| 4-8 | `PatientSelectList`（訪問） | 名前で絞れる利用者の一覧 | `visit.patientId` | `visit_info.patient_id` | `patient-select-search`、`patient-select-option-{利用者の id}` |
+| 4-9 | `StaffSelectList` | 名前で絞れる職員の一覧 | `staffId` | `staff_id`、`visit_info.assigned_staff_id` | `staff-select-search`、`staff-select-option-{職員の id}` |
+| 4-10 | `ScheduleCategoryCheckboxGroup`（訪問） | 夜勤、緊急、入院 | `visit.categories` | `visit_info.visit_category_ids` | `schedule-category-{night、emergency、hospitalization}` |
+| 4-11 | メモの `TextareaField` | 入力したメモ | `description` | `description` | なし（`id="description"`） |
+| 4-12 | 「該当する名前がありません。」 | 利用者と職員の選択肢が 0 件のときの文 | なし | なし | なし |
 
 - 訪問の予定のタイトルは、画面で入力せず「訪問」を送る。
 - 要約の一覧の値は、未選択の項目を「未選択」、メモが空なら「なし」、訪問の種類が空なら「通常」と出す。
@@ -110,37 +86,37 @@ API の列は、`createSchedule`（`POST /v1/facilities/{facility_id}/schedules`
 
 ## 構成要素ごとの活性条件と表示条件
 
-| 構成要素 | 表示する条件 | 押せる（入力できる）条件 |
-| --- | --- | --- |
-| 種類の `TextTab` | 常に（作成だけ） | 常に |
-| 要約の一覧の「タイトル」、右の `TextareaField` | 種類が通常 | 常に |
-| 要約の一覧の「利用者」「訪問の種類」 | 種類が訪問 | 常に |
-| 右の入力 | 要約の一覧で選んだ項目の 1 つだけ。選んだ項目が種類の切り替えで消えたら「訪問日時」か「予定日時」 | 常に |
-| 終了時間の `TimePicker` | 種類が通常 | 常に |
-| 提供時間の `NumberPicker`、終了時間の文、`ServiceCodeRadioGroup` | 種類が訪問 | 常に |
-| 終了時間の文の値 | 提供時間が数のとき。数でなければ「-」 | なし |
-| 利用者と職員の選択肢 | 名前に検索の語を含む。語が空なら全て | 常に |
-| 「該当する名前がありません。」 | 選択肢が 0 件 | なし |
-| 送信の失敗の文 | 最後の送信が失敗した | なし |
-| 作成のボタン | 常に | 送信中でない |
+| 番号 | 構成要素 | 表示する条件 | 押せる（入力できる）条件 |
+| --- | --- | --- | --- |
+| 1-2 | 種類の `TextTab` | 常に（作成だけ） | 常に |
+| 3、4-1 | 要約の一覧の「タイトル」、右の `TextareaField` | 種類が通常 | 常に |
+| 3 | 要約の一覧の「利用者」「訪問の種類」 | 種類が訪問 | 常に |
+| 4 | 右の入力 | 要約の一覧で選んだ項目の 1 つだけ。選んだ項目が種類の切り替えで消えたら「訪問日時」か「予定日時」 | 常に |
+| 4-4 | 終了時間の `TimePicker` | 種類が通常 | 常に |
+| 4-6、4-5、4-7 | 提供時間の `NumberPicker`、終了時間の文、`ServiceCodeRadioGroup` | 種類が訪問 | 常に |
+| 4-5 | 終了時間の文の値 | 提供時間が数のとき。数でなければ「-」 | なし |
+| 4-8、4-9 | 利用者と職員の選択肢 | 名前に検索の語を含む。語が空なら全て | 常に |
+| 4-12 | 「該当する名前がありません。」 | 選択肢が 0 件 | なし |
+| 1-3 | 送信の失敗の文 | 最後の送信が失敗した | なし |
+| 1-4 | 作成のボタン | 常に | 送信中でない |
 
 API につないだ後の権限による条件は、決まっていない。  
 編集の権限の外の職員を担当者の一覧に出すか、出して API の 403 で止めるかは、未決の節に置く。
 
 ## インタラクション
 
-| 操作 | 前提 | 結果 |
-| --- | --- | --- |
-| 種類のタブを押す | なし | フォームを選んだ種類の初期値に戻す。日付、開始時間、担当者は残し、タイトル、利用者、提供時間、訪問の種類、メモは初期値に戻る。URL の `kind` を置き換える（履歴に積まない） |
-| 要約の一覧の項目を押す | なし | 右の入力をその項目に替える。URL は変わらない |
-| サービスコードを選ぶ | 種類が訪問 | 提供時間を、そのコードの上限にして、検証し直す |
-| 開始時間か提供時間を変える | 種類が訪問 | 終了時間の文を、開始時間に提供時間を足した時刻にする |
-| 利用者か職員の検索の欄に入力する | なし | 名前に入力の語を含む選択肢だけを出す。API は呼ばない |
-| 作成を押す | 検証に通らない | 入力の誤りを出す。API は呼ばない |
-| 作成を押す | 検証に通る | `createSchedule` を呼ぶ。成功したら予定の一覧の取得の結果を捨てて取り直し、`/schedule` に `view`、`staff` を引き継ぎ、`date` を作った予定の日にして戻る（履歴に積む） |
-| 作成を押す | 送信が失敗する | 送信の失敗の文を出し、モーダルを開いたままにする |
-| 閉じるボタン、背景、Escape キー | 入力を変えていない | `/schedule` に `view`、`date`、`staff` を引き継いで戻る |
-| 閉じるボタン、背景、Escape キー | 入力を変えた | 「変更が破棄されますがよろしいですか？」の確認を出す。OK なら戻り、キャンセルならモーダルに留まる |
+| 番号 | 操作 | 前提 | 結果 |
+| --- | --- | --- | --- |
+| 1-2 | 種類のタブを押す | なし | フォームを選んだ種類の初期値に戻す。日付、開始時間、担当者は残し、タイトル、利用者、提供時間、訪問の種類、メモは初期値に戻る。URL の `kind` を置き換える（履歴に積まない） |
+| 3 | 要約の一覧の項目を押す | なし | 右の入力をその項目に替える。URL は変わらない |
+| 4-7 | サービスコードを選ぶ | 種類が訪問 | 提供時間を、そのコードの上限にして、検証し直す |
+| 4-3、4-6 | 開始時間か提供時間を変える | 種類が訪問 | 終了時間の文を、開始時間に提供時間を足した時刻にする |
+| 4-8、4-9 | 利用者か職員の検索の欄に入力する | なし | 名前に入力の語を含む選択肢だけを出す。API は呼ばない |
+| 1-4 | 作成を押す | 検証に通らない | 入力の誤りを出す。API は呼ばない |
+| 1-4 | 作成を押す | 検証に通る | `createSchedule` を呼ぶ。成功したら予定の一覧の取得の結果を捨てて取り直し、`/schedule` に `view`、`staff` を引き継ぎ、`date` を作った予定の日にして戻る（履歴に積む） |
+| 1-4 | 作成を押す | 送信が失敗する | 送信の失敗の文を出し、モーダルを開いたままにする |
+| 1-1、2 | 閉じるボタン、背景、Escape キー | 入力を変えていない | `/schedule` に `view`、`date`、`staff` を引き継いで戻る |
+| 1-1、2 | 閉じるボタン、背景、Escape キー | 入力を変えた | 「変更が破棄されますがよろしいですか？」の確認を出す。OK なら戻り、キャンセルならモーダルに留まる |
 
 ## 初期状態でのインタラクション
 

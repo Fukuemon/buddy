@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"slices"
 	"testing"
@@ -208,6 +209,62 @@ func TestStaffCreate(t *testing.T) {
 	}
 }
 
+// TestStaffUniqueness は、名前の重なりを許し、メールの重なりを事業所の中でだけ拒むことと、
+// 別の事業所に同じメールの職員がいても、結び付けが指定の事業所の職員にだけ書くことを確かめる。
+func TestStaffUniqueness(t *testing.T) {
+	ctx := txContext(t)
+	tx := ctx.Value(txKey{}).(*sql.Tx)
+	const (
+		otherFacility   = "01M3TD00000000000000000020"
+		otherDepartment = "01M3TD00000000000000000021"
+		otherTeam       = "01M3TD00000000000000000022"
+		otherPosition   = "01M3TD00000000000000000023"
+	)
+	for _, q := range []string{
+		"INSERT INTO facilities (id, name) VALUES ('" + otherFacility + "', '別の事業所')",
+		"INSERT INTO departments (id, facility_id, name) VALUES ('" + otherDepartment + "', '" + otherFacility + "', '看護')",
+		"INSERT INTO teams (id, facility_id, name) VALUES ('" + otherTeam + "', '" + otherFacility + "', 'A')",
+		"INSERT INTO positions (id, facility_id, name) VALUES ('" + otherPosition + "', '" + otherFacility + "', 'メンバー')",
+	} {
+		if _, err := tx.ExecContext(ctx, q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	r := NewStaffRepository(testDB)
+	sameFacility := func(id, name, email string) staff.Staff {
+		return staff.Staff{ID: id, Username: name, Email: email, FacilityID: seedFacility,
+			DepartmentID: seedDepartment, TeamID: seedTeam, PositionID: seedLeader}
+	}
+	otherAoki := staff.Staff{ID: "01M3TD00000000000000000026", Username: "青木 陽菜", Email: "hina.aoki@example.com",
+		FacilityID: otherFacility, DepartmentID: otherDepartment, TeamID: otherTeam, PositionID: otherPosition}
+	tests := []struct {
+		name    string
+		s       staff.Staff
+		wantErr error
+	}{
+		{name: "同じ事業所に同じ名前", s: sameFacility("01M3TD00000000000000000024", "青木 陽菜", "hina.aoki2@example.com")},
+		{name: "同じ事業所に同じメール", s: sameFacility("01M3TD00000000000000000025", "別の名前", "hina.aoki@example.com"),
+			wantErr: domain.ErrConflict},
+		{name: "別の事業所に同じメール", s: otherAoki},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := r.Create(ctx, tt.s, nil); !errors.Is(err, tt.wantErr) {
+				t.Fatalf("err = %v, want %v", err, tt.wantErr)
+			}
+		})
+	}
+	if err := r.LinkSub(ctx, otherFacility, "hina.aoki@example.com", "sub-other-aoki"); err != nil {
+		t.Fatal(err)
+	}
+	if id, err := r.FindIDBySub(ctx, "sub-other-aoki"); err != nil || id != otherAoki.ID {
+		t.Fatalf("id = %q, err = %v, want %q", id, err, otherAoki.ID)
+	}
+	if got, err := r.Get(ctx, seedAoki); err != nil || got.Sub != nil {
+		t.Fatalf("別の事業所の職員に sub を書いた: got %+v, err = %v", got.Summary, err)
+	}
+}
+
 func TestStaffList(t *testing.T) {
 	ctx := txContext(t)
 	r := NewStaffRepository(testDB)
@@ -254,7 +311,7 @@ func TestPatientList(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(rows) != 1 || rows[0].ID != seedPatient || rows[0].AssignedStaffName != "森 健太" || rows[0].ServiceCode != "訪看I２" {
+	if len(rows) != 1 || rows[0].ID != seedPatient || rows[0].AssignedStaffName != "森 健太" || rows[0].ServiceCode != "訪看I2" {
 		t.Errorf("rows = %+v", rows)
 	}
 	err = r.Create(ctx, patient.Patient{

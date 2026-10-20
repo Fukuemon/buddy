@@ -33,8 +33,10 @@ uv run zensical build   # 出力の最後が "No issues found" になること�
 ```
 
 - `zensical build` は、リンクの先のページと見出しのアンカーがないと "Warning" を出す。警告が残ったまま取り込まない。
+- 画面仕様書かワイヤーフレーム（`docs/screens/wireframes/`）を直したら、`pnpm check:screens` で、表の構成番号と `data-ref` が食い違っていないことを確かめる。
 - ページを足したら、`zensical.toml` の `nav` に足す。`nav` にないページはナビゲーションから開けない。
-- コードの隣に置く機能ごとの Design Doc（`apps/<アプリ>/DesignDoc.md`）は、`docs/` の外にあるのでサイトに載らない。`nav` に GitHub の `develop` のファイルへのリンクを足して開けるようにする。
+- 機能ごとの Design Doc は、コードの隣（`apps/<アプリ>/DesignDoc.md`）に置く。サイトには、`docs/design/apps/<アプリ>.md` のファイル単位のシンボリックリンクを置き、`nav` に足して載せる。
+  - 機能ごとの Design Doc から `docs/` と `apps/` の文書へのリンクは、GitHub の `develop` の URL で書く。相対リンクは、GitHub とサイトで指す先が変わり、どちらかで切れるためである。
 
 ## API の定義を変えるとき
 
@@ -44,6 +46,7 @@ openapi.yaml を変えたら、同じコミットで生成物も生成し直す�
 | 変えたもの | 生成のコマンド | 生成物 |
 | --- | --- | --- |
 | `apps/receipt-api/openapi.yaml` | `apps/receipt-api` で `go generate ./...` | `apps/receipt-api/internal/httpapi/openapi/` |
+| `apps/schedule-api/openapi.yaml` | `apps/schedule-api` で `go generate ./...` | `apps/schedule-api/internal/presentation/http/openapi/` |
 | `apps/schedule-api/db/` の SQL | `apps/schedule-api` で `sqlc generate` | `apps/schedule-api/internal/infrastructure/mysql/sqlcgen/` |
 | どちらかの openapi.yaml | `pnpm --filter @buddy/web generate:api` | `apps/web/src/api/generated/` |
 

@@ -19,6 +19,7 @@ RECEIPT_CHECKER_LIBS=<receipt-checker>/server/libs tools/parity/run.sh
 ```
 
 各ケースで `<ケース>: 行 N、差分 0` を出す。差分があると、区分、行、列、両方の値を出し、終了コード 1 で終わる。  
+ヘッダーと列の数が違う行があるときは、セルを比べずに、その行を差分として出す。  
 ケースを足したとき、または Python の側が変わったときは、`--update` を付けて `expected.csv` を書き直す。
 
 ```sh
@@ -29,7 +30,7 @@ RECEIPT_CHECKER_LIBS=<receipt-checker>/server/libs tools/parity/run.sh --update
 
 ## 吸収する違い
 
-`compare.py` は、Python の結果に次の置き換えをしてから比べる。列名、区切りの行、記号の違いは、`report` の CSV の形の違いで、API の挙動ではない。並べ直しは [DesignDoc.md](../../DesignDoc.md) の「元の Python から挙動を変えた点」に当たる。提供時間の `.0` は pandas の型の都合である。
+`compare.py` は、Python の結果に次の置き換えをしてから比べる。列名、区切りの行、記号の違いは、`report` の CSV の形の違いで、API の挙動ではない。並べ直しは [DesignDoc.md の Verification](../../DesignDoc.md#verification) の、元の Python と GAS から挙動を変えた点の一覧に当たる。提供時間の `.0` は pandas の型の都合である。
 
 - 列名の接尾辞 `_カレンダー` と `_Ibow` を `_予定` と `_実績` に、区切りの行の `カレンダーのみ` と `Ibowのみ` を `予定のみ` と `実績のみ` にする
 - 範囲を持たないサービス内容の ` ❌ ()` を ` ❌` に、予定の提供時間の `  ❌` を ` ❌` にする
