@@ -11,6 +11,28 @@ Go と golangci-lint のバージョンは、リポジトリのルートの `mis
 mise install go golangci-lint
 ```
 
+## 動かす
+
+```sh
+go run ./cmd/api
+```
+
+設定は環境変数で渡す。
+
+- `PORT`: 待ち受けるポート。既定は `8080`
+- `MAX_UPLOAD_BYTES`: `POST /v1/checks` の本文の上限のバイト数。既定は 10 MiB
+- `LOG_LEVEL`: `debug`、`info`、`warn`、`error` のいずれか。既定は `info`
+- `GOOGLE_CALENDARS_FILE`: 照合の対象のカレンダーの設定（JSON）のパス。空なら Google カレンダーを使わない
+- `GOOGLE_APPLICATION_CREDENTIALS`: Application Default Credentials が読む認証情報のファイルのパス
+- `GOOGLE_CALENDAR_ENDPOINT`: Calendar API の代わりに呼ぶ URL。偽物の API で試すためのもので、認証をしない
+
+コンテナで動かすときは、次を実行する。
+
+```sh
+docker build -t receipt-api .
+docker run --rm -p 8080:8080 receipt-api
+```
+
 ## テストとチェック
 
 `apps/receipt-api` で実行する。
@@ -34,28 +56,6 @@ go generate ./...
 ```
 
 画面の型も同じ openapi.yaml から生成する。両方の API と画面の生成物がそろっているかは、リポジトリのルートの `pnpm check:generated` で確かめる（[CONTRIBUTING.md](../../CONTRIBUTING.md)）。
-
-## 起動
-
-```sh
-go run ./cmd/api
-```
-
-設定は環境変数で渡す。
-
-- `PORT`: 待ち受けるポート。既定は `8080`
-- `MAX_UPLOAD_BYTES`: `POST /v1/checks` の本文の上限のバイト数。既定は 10 MiB
-- `LOG_LEVEL`: `debug`、`info`、`warn`、`error` のいずれか。既定は `info`
-- `GOOGLE_CALENDARS_FILE`: 照合の対象のカレンダーの設定（JSON）のパス。空なら Google カレンダーを使わない
-- `GOOGLE_APPLICATION_CREDENTIALS`: Application Default Credentials が読む認証情報のファイルのパス
-- `GOOGLE_CALENDAR_ENDPOINT`: Calendar API の代わりに呼ぶ URL。偽物の API で試すためのもので、認証をしない
-
-コンテナで動かすときは、次を実行する。
-
-```sh
-docker build -t receipt-api .
-docker run --rm -p 8080:8080 receipt-api
-```
 
 ## API
 
@@ -122,3 +122,9 @@ go run ./cmd/api
 
 EKS では鍵のファイルを使わず、Workload Identity Federation の外部アカウントの設定のファイルを `GOOGLE_APPLICATION_CREDENTIALS` に渡す。Application Default Credentials が同じ環境変数から読む。  
 Workload Identity Federation のプールとプロバイダーの作り方は、インフラのリポジトリが持つ。
+
+## 文書
+
+- [DesignDoc.md](DesignDoc.md): パッケージの構成、入力の CSV、判定の規則、元の実装との違い
+- [tools/parity/README.md](tools/parity/README.md): 元の Python の実装と結果を比べる手順
+- [全体の Design Doc](../../docs/design/DesignDoc.md): 画面と 2 つの API の責務、インフラとの約束

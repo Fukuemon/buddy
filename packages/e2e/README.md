@@ -8,12 +8,7 @@ buddy の E2E のテストと、人手検証の証跡を撮る仕組み。
 
 書き方は、スキル write-e2e-test、write-verification-spec、run-verification-scenarios（`.claude/skills/`）が持つ。buddy で決めた値は `context/conventions.md` と `context/testing.md` の E2E の節にある。
 
-## 元のリポジトリ
-
-kit、規則、スキル、Design Doc は、[Fukuemon/verification](https://github.com/Fukuemon/verification) のコミット 0376e6b から写した。依存として入れず、buddy で使いながら直し、後で汎用の形に戻す。  
-地図の操作（`map/google`）は、buddy に地図が無いので写していない。
-
-## 確かめる
+## テストとチェック
 
 | コマンド | 確かめること |
 | --- | --- |
@@ -22,3 +17,14 @@ kit、規則、スキル、Design Doc は、[Fukuemon/verification](https://gith
 | `pnpm --filter @buddy/e2e test:rules` | ESLint の規則のテスト |
 
 録画には、`ffmpeg` と `ffprobe` が要る。
+
+## 元のリポジトリ
+
+kit、規則、スキル、Design Doc は、[Fukuemon/verification](https://github.com/Fukuemon/verification) のコミット 0376e6b から写した。依存として入れず、buddy で使いながら直し、後で汎用の形に戻す。  
+地図の操作（`map/google`）は、buddy に地図が無いので写していない。
+
+## 文書
+
+- [DesignDoc.md](DesignDoc.md): テストのコードの層、配置先、名前、待ち方、確かめ方
+- [kit/recording/DesignDoc.md](kit/recording/DesignDoc.md): 人手検証の証跡を撮る録画
+- 流し方は [CONTRIBUTING.md](../../CONTRIBUTING.md) の「E2E のテストを流す」にある
