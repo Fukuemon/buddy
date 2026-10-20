@@ -17,9 +17,11 @@ exclude_docs = """
 adr/template.md
 screens/template.md
 screens/wireframes/template.html
+screens/_template/
 """
-# 画面仕様書に埋め込んだワイヤーフレームのビューアの高さを、中身に合わせる
-extra_javascript = ["screens/wireframes/embed.js"]
+# 画面仕様書に埋め込んだワイヤーフレームとモックの iframe の高さを、中身に合わせる
+extra_javascript = ["screens/wireframes/embed.js", "javascripts/embed-mock.js"]
+extra_css = ["stylesheets/extra.css"]
 nav = [
   { "トップ" = "index.md" },
   { "PRD" = "PRD.md" },
@@ -33,6 +35,7 @@ nav = [
   { "デザインシステム" = "design/packages/ui.md" },
   { "画面仕様書" = [
     { "画面の一覧" = "screens/index.md" },
+    { "画面仕様書の規約" = "screens/rules.md" },
     { "予定のカレンダー" = "screens/schedule-calendar.md" },
     { "予定の作成" = "screens/schedule-new.md" },
     { "予定の詳細" = "screens/schedule-detail.md" },
