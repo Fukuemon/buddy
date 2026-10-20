@@ -1,3 +1,5 @@
+import { randomBytes } from 'node:crypto'
+
 import Valkey from 'iovalkey'
 
 /** セッションと、ログインの途中の値を置く場所。値は JSON にして置く。 */
@@ -6,8 +8,12 @@ export interface SessionStore {
   set(key: string, value: unknown, ttlSeconds: number): Promise<void>
   /** 今ある値だけを、期限を保って置き換える。無ければ置かずに false を返す。 */
   replace(key: string, value: unknown): Promise<boolean>
-  /** key の鍵を ttlMs の間だけ取る。ほかが取っていれば false を返す。 */
-  lock(key: string, ttlMs: number): Promise<boolean>
+  /** key の鍵を ttlMs の間だけ取り、放すときに渡す値を返す。ほかが取っていれば undefined を返す。 */
+  lock(key: string, ttlMs: number): Promise<string | undefined>
+  /** lock が返した値の鍵だけを放す。期限が切れてほかが取り直した鍵は放さない。 */
+  unlock(key: string, token: string): Promise<void>
+  /** key の鍵か値があれば true を返す。 */
+  exists(key: string): Promise<boolean>
   /** 値を返して消す。無ければ undefined を返す。 */
   take<T>(key: string): Promise<T | undefined>
   delete(key: string): Promise<void>
@@ -17,6 +23,10 @@ export interface SessionStore {
 
 const parse = <T>(raw: string | null): T | undefined =>
   raw === null ? undefined : (JSON.parse(raw) as T)
+
+/** 値が token のときだけ鍵を消す。get と del の間にほかが取り直した鍵を消さないよう、1 つの命令にする。 */
+const UNLOCK_SCRIPT =
+  "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) end return 0"
 
 /** url（`redis://host:port`）の Valkey に置く SessionStore を作る。 */
 export const createValkeySessionStore = (url: string): SessionStore => {
@@ -35,7 +45,14 @@ export const createValkeySessionStore = (url: string): SessionStore => {
     },
     replace: async (key, value) =>
       (await client.set(key, JSON.stringify(value), 'KEEPTTL', 'XX')) === 'OK',
-    lock: async (key, ttlMs) => (await client.set(key, '1', 'PX', ttlMs, 'NX')) === 'OK',
+    lock: async (key, ttlMs) => {
+      const token = randomBytes(16).toString('base64url')
+      return (await client.set(key, token, 'PX', ttlMs, 'NX')) === 'OK' ? token : undefined
+    },
+    unlock: async (key, token) => {
+      await client.eval(UNLOCK_SCRIPT, 1, key, token)
+    },
+    exists: async (key) => (await client.exists(key)) === 1,
     take: async (key) => parse(await client.getdel(key)),
     delete: async (key) => {
       await client.del(key)
@@ -61,10 +78,15 @@ export const createMemorySessionStore = (): SessionStore & { values: Map<string,
       return true
     },
     lock: async (key) => {
-      if (values.has(key)) return false
-      values.set(key, '1')
-      return true
+      if (values.has(key)) return undefined
+      const token = randomBytes(16).toString('base64url')
+      values.set(key, JSON.stringify(token))
+      return token
     },
+    unlock: async (key, token) => {
+      if (values.get(key) === JSON.stringify(token)) values.delete(key)
+    },
+    exists: async (key) => values.has(key),
     take: async (key) => {
       const raw = values.get(key) ?? null
       values.delete(key)

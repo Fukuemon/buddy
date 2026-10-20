@@ -1,9 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vite-plus/test'
 
-import { invalidBffArgs, parseBffCall } from '#/api/bff/bffCall'
+import { parseBffArgs, parseBffCall } from '#/api/bff/bffCall'
 
 import { loadServerConfig } from './config'
+import { createMemorySessionStore } from './sessionStore'
 import { isSameHostOrigin } from './sameOrigin'
 import { signValue, verifySignedValue } from './signedValue'
 
@@ -66,20 +67,23 @@ describe('parseBffCall', () => {
   })
 })
 
-describe('invalidBffArgs', () => {
+describe('parseBffArgs', () => {
   it('操作ごとの引数の形を確かめる', () => {
-    expect(invalidBffArgs({ op: 'staff.list', args: ['f'] })).toBeUndefined()
-    expect(invalidBffArgs({ op: 'staff.list', args: ['f', { name: '青木' }] })).toBeUndefined()
-    expect(invalidBffArgs({ op: 'schedules.list', args: ['f'] })).toBeDefined()
+    expect(parseBffArgs({ op: 'staff.list', args: ['f'] })).toEqual({ ok: true, args: ['f'] })
+    expect(parseBffArgs({ op: 'staff.list', args: ['f', { name: '青木', extra: 1 }] })).toEqual({
+      ok: true,
+      args: ['f', { name: '青木' }],
+    })
+    expect(parseBffArgs({ op: 'schedules.list', args: ['f'] })).toMatchObject({ ok: false })
     expect(
-      invalidBffArgs({
+      parseBffArgs({
         op: 'schedules.create',
         args: [
           'f',
           { kind: 'other', title: '', staffId: 's', startsAt: 'a', endsAt: 'b', description: '' },
         ],
       }),
-    ).toContain('kind')
+    ).toMatchObject({ ok: false, message: expect.stringContaining('kind') })
   })
 })
 
@@ -87,5 +91,17 @@ describe('secureCookie', () => {
   it('既定で Secure を付け、SESSION_COOKIE_SECURE=false のときだけ外す', () => {
     expect(loadServerConfig(env).secureCookie).toBe(true)
     expect(loadServerConfig({ ...env, SESSION_COOKIE_SECURE: 'false' }).secureCookie).toBe(false)
+  })
+})
+
+describe('createMemorySessionStore の鍵', () => {
+  it('自分の値の鍵だけを放す', async () => {
+    const store = createMemorySessionStore()
+    const token = await store.lock('k', 1000)
+    expect(await store.lock('k', 1000)).toBeUndefined()
+    await store.unlock('k', 'other')
+    expect(await store.exists('k')).toBe(true)
+    await store.unlock('k', token as string)
+    expect(await store.exists('k')).toBe(false)
   })
 })

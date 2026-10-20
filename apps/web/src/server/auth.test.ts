@@ -160,6 +160,11 @@ describe('ログイン', () => {
       '/\t/evil.test',
       '/\n/evil.test',
       '/\r\n/evil.test',
+      '/.//evil.test',
+      '/..//evil.test',
+      '/a/..//evil.test',
+      '/%2e//evil.test',
+      '/./\\evil.test',
     ]) {
       expect(safeReturnTo(bad)).toBe('/')
     }
@@ -229,6 +234,47 @@ describe('readSession', () => {
     }
     expect((await readSession(req, deps))?.accessToken).toBe('by-other')
     expect(refresh).not.toHaveBeenCalled()
+  })
+
+  it('鍵を取る前にほかの要求が取り直し終えていたら、古い refresh token を送らない', async () => {
+    const refresh = vi.fn<OidcClient['refresh']>()
+    const { deps } = setup({ oidc: fakeOidc({ refresh }) })
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 + 30_000 },
+      deps,
+    )
+    const get = deps.store.get.bind(deps.store)
+    let reads = 0
+    deps.store.get = async <T>(key: string) => {
+      reads++
+      // readSession の 1 回目の読み取りの後に、ほかの要求が取り直し終えたとする
+      if (reads === 2) {
+        await deps.store.set(
+          'session:id-1',
+          { ...VIEWER, accessToken: 'by-other', refreshToken: 'r2' },
+          60,
+        )
+      }
+      return get<T>(key)
+    }
+    expect((await readSession(req, deps))?.accessToken).toBe('by-other')
+    expect(refresh).not.toHaveBeenCalled()
+  })
+
+  it('鍵が放されたら待つのをやめる', async () => {
+    const { deps } = setup()
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 + 30_000 },
+      deps,
+    )
+    const token = await deps.store.lock('refresh-lock:id-1', 1000)
+    let waits = 0
+    deps.wait = async () => {
+      waits++
+      await deps.store.unlock('refresh-lock:id-1', token as string)
+    }
+    expect((await readSession(req, deps))?.accessToken).toBe('old')
+    expect(waits).toBe(1)
   })
 
   it('取り直しの間にセッションが消えたら、置き直さない', async () => {

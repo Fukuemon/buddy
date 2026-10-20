@@ -1,5 +1,5 @@
 import { ApiError, type BuddyApi } from '#/api/client'
-import { invalidBffArgs, type BffCall, type BffData, type BffResult } from '#/api/bff/bffCall'
+import { parseBffArgs, type BffCall, type BffData, type BffResult } from '#/api/bff/bffCall'
 import { createHttpBuddyApi } from '#/api/http/httpBuddyApi'
 
 import { readSession, type AuthDeps } from './auth'
@@ -16,8 +16,8 @@ export const callBff = async (
   call: BffCall,
   deps: { auth: AuthDeps; scheduleApiUrl: string; fetch?: typeof globalThis.fetch },
 ): Promise<BffResult> => {
-  const invalid = invalidBffArgs(call)
-  if (invalid !== undefined) return { ok: false, status: 400, message: invalid }
+  const parsed = parseBffArgs(call)
+  if (!parsed.ok) return { ok: false, status: 400, message: parsed.message }
   const session = await readSession(request, deps.auth)
   if (session === undefined) return { ok: false, status: 401, message: 'ログインが必要です' }
   const send = deps.fetch ?? globalThis.fetch
@@ -34,7 +34,7 @@ export const callBff = async (
   try {
     return {
       ok: true,
-      data: (await operation(session.facilityId, ...call.args.slice(1))) as BffData,
+      data: (await operation(session.facilityId, ...parsed.args.slice(1))) as BffData,
     }
   } catch (error) {
     if (error instanceof ApiError)

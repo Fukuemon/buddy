@@ -35,6 +35,9 @@ export interface OidcClient {
   refresh(refreshToken: string): Promise<Tokens>
 }
 
+/** ブローカーへの要求を待つ上限。auth.ts の取り直しの鍵の期限より短くする。 */
+export const OIDC_TIMEOUT_SECONDS = 5
+
 const toTokens = (res: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers) => ({
   accessToken: res.access_token,
   refreshToken: res.refresh_token,
@@ -54,7 +57,7 @@ export const createOidcClient = async (cfg: ServerConfig['oidc']): Promise<OidcC
     cfg.clientId,
     undefined,
     client.ClientSecretBasic(cfg.clientSecret),
-    insecure ? { execute: [client.allowInsecureRequests] } : undefined,
+    { timeout: OIDC_TIMEOUT_SECONDS, execute: insecure ? [client.allowInsecureRequests] : [] },
   )
   return {
     authorizationUrl: ({ redirectUri, state, nonce, codeChallenge }) => {

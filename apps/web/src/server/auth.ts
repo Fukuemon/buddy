@@ -4,6 +4,7 @@ import type { Viewer } from '#/api/types'
 
 import {
   GrantRejectedError,
+  OIDC_TIMEOUT_SECONDS,
   codeChallengeOf,
   randomCodeVerifier,
   randomNonce,
@@ -46,11 +47,10 @@ const SESSION_TTL_SECONDS = 12 * 60 * 60
 const LOGIN_TTL_SECONDS = 10 * 60
 /** 期限まで、この長さを切った access token は、使う前に取り直す。 */
 const REFRESH_MARGIN_MS = 60 * 1000
-/** 取り直しの鍵を持つ長さ。ブローカーの応答を待つ上限より長くする。 */
-const REFRESH_LOCK_MS = 10 * 1000
-/** ほかの要求の取り直しを待つ間隔と回数。 */
+/** 取り直しの鍵を持つ長さ。ブローカーの応答を待つ上限の 2 倍にする。 */
+const REFRESH_LOCK_MS = OIDC_TIMEOUT_SECONDS * 2 * 1000
+/** ほかの要求の取り直しを待つ間隔。待つのは、鍵が放されるか期限が切れるまでである。 */
 const REFRESH_POLL_MS = 200
-const REFRESH_POLL_TIMES = 25
 
 const sessionKey = (id: string) => `session:${id}`
 const loginKey = (state: string) => `login:${state}`
@@ -94,7 +94,9 @@ export const safeReturnTo = (value: string | null) => {
   if (value === null || !value.startsWith('/')) return '/'
   try {
     const url = new URL(value, RETURN_TO_BASE)
-    return url.origin === RETURN_TO_BASE ? url.pathname + url.search + url.hash : '/'
+    const path = url.pathname + url.search + url.hash
+    // `/.//evil.example` は、解析で `.` が畳まれて `//evil.example` になり、ブラウザはほかのホストとして読む
+    return url.origin === RETURN_TO_BASE && !path.startsWith('//') ? path : '/'
   } catch {
     return '/'
   }
@@ -221,7 +223,7 @@ const refreshOnce = (id: string, session: Session, now: number, deps: AuthDeps) 
 
 /**
  * Valkey の鍵で、ほかのプロセスとも取り直しを 1 本にする。refresh token を回すブローカーは、使い回しを拒むためである。
- * 鍵を取れなかった要求は、取り直した値が置かれるのを待つ。
+ * 鍵を取れなかった要求は、取り直した値が置かれるか鍵が放されるまで待つ。
  */
 const refresh = async (
   id: string,
@@ -229,34 +231,44 @@ const refresh = async (
   now: number,
   deps: AuthDeps,
 ): Promise<Session | undefined> => {
-  const stillValid = session.expiresAt !== undefined && session.expiresAt > now
-  if (!(await deps.store.lock(refreshLockKey(id), REFRESH_LOCK_MS))) {
-    for (let i = 0; i < REFRESH_POLL_TIMES; i++) {
+  const stillValid = (s: Session) => s.expiresAt !== undefined && s.expiresAt > now
+  const lockKey = refreshLockKey(id)
+  const token = await deps.store.lock(lockKey, REFRESH_LOCK_MS)
+  if (token === undefined) {
+    for (let waited = 0; waited < REFRESH_LOCK_MS; waited += REFRESH_POLL_MS) {
       await (deps.wait ?? sleep)(REFRESH_POLL_MS)
       const latest = await deps.store.get<Session>(sessionKey(id))
       if (latest === undefined) return undefined
       if (latest.accessToken !== session.accessToken) return latest
+      if (!(await deps.store.exists(lockKey))) break
     }
-    return stillValid ? session : undefined
+    return stillValid(session) ? session : undefined
   }
   try {
-    const tokens = await deps.oidc.refresh(session.refreshToken as string)
-    const refreshed: Session = {
-      ...session,
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken ?? session.refreshToken,
-      expiresAt: expiresAtOf(tokens, now),
+    // 鍵を取る前に、ほかの要求が取り直し終えていることがある。古い refresh token を送らないよう読み直す
+    const latest = await deps.store.get<Session>(sessionKey(id))
+    if (latest === undefined) return undefined
+    if (latest.accessToken !== session.accessToken || latest.refreshToken === undefined)
+      return latest
+    try {
+      const tokens = await deps.oidc.refresh(latest.refreshToken)
+      const refreshed: Session = {
+        ...latest,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken ?? latest.refreshToken,
+        expiresAt: expiresAtOf(tokens, now),
+      }
+      return (await deps.store.replace(sessionKey(id), refreshed)) ? refreshed : undefined
+    } catch (error) {
+      if (error instanceof GrantRejectedError) {
+        await deps.store.delete(sessionKey(id))
+        return undefined
+      }
+      if (stillValid(latest)) return latest
+      throw error
     }
-    return (await deps.store.replace(sessionKey(id), refreshed)) ? refreshed : undefined
-  } catch (error) {
-    if (error instanceof GrantRejectedError) {
-      await deps.store.delete(sessionKey(id))
-      return undefined
-    }
-    if (stillValid) return session
-    throw error
   } finally {
-    await deps.store.delete(refreshLockKey(id))
+    await deps.store.unlock(lockKey, token)
   }
 }
 

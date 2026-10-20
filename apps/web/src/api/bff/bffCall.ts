@@ -54,10 +54,14 @@ const ARGS: Record<BffOperation, z.ZodType> = {
   'patients.list': z.tuple([id, nameSearch]),
 }
 
-/** call の引数が操作の形に合わなければ、その理由を返す。合えば undefined を返す。 */
-export const invalidBffArgs = (call: BffCall) => {
+/** call の引数を操作の形で読む。合えば知らないキーを除いた引数を、合わなければ理由を返す。 */
+export const parseBffArgs = (
+  call: BffCall,
+): { ok: true; args: unknown[] } | { ok: false; message: string } => {
   const result = ARGS[call.op].safeParse(call.args)
-  return result.success ? undefined : z.prettifyError(result.error)
+  return result.success
+    ? { ok: true, args: result.data as unknown[] }
+    : { ok: false, message: z.prettifyError(result.error) }
 }
 
 /** BFF の応答。ApiError は class のままでは server function を越えられないので、値にして返す。 */
