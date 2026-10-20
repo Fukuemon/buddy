@@ -14,8 +14,8 @@ a.mock-open {
   font-size: 0.85em;
 }
 
-/* スマートフォンでは、表のセルの余白を詰めて列を画面に収める */
-@media (max-width: 600px) {
+/* スマートフォンでは、表のセルの余白を詰めて列を画面に収める。モックがモバイルで描かれる幅（iframe が 600px 未満）とそろえる */
+@media (max-width: 649px) {
   .md-typeset table:not([class]) th,
   .md-typeset table:not([class]) td {
     padding: 0.5em 0.6em;

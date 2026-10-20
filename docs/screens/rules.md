@@ -114,9 +114,10 @@ docs/screens/
 ### 幅と配置
 
 - 幅による切り替えは `@container screen (width < 768px)` のように `.screen` の幅で書く。viewport の寸法の `@media`、`vh` と `vw` は使わない。モックの中では、viewport の幅は端末の幅と一致しない。
-- スクロールする場所は作らず、画面の高さは中身に合わせる。
+- スクロールする場所は作らず、画面の高さは中身に合わせる。ただし、実装が横に送る表は、モックでも横に送ってよい。
 - ダイアログ、覆い、トーストは、`.screen` の中に `position: absolute` で置く。`position: fixed` は使わない。
 - 色は `wireframe.css` の変数（`--wf-*`）で書く。
+- 画面だけの見た目は `mocks/<画面 ID>.css` に書く。2 つ以上の画面で使う見た目は `_common/wireframe.css` に移す。
 
 ### 禁止
 
