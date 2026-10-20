@@ -13,6 +13,8 @@ export type ServerConfig = {
   }
   sessionStoreUrl: string
   sessionSecret: string
+  /** セッションの cookie に Secure を付けるか。https でない手元の環境だけ false にする。 */
+  secureCookie: boolean
   scheduleApiUrl: string
   receiptApiUrl: string
 }
@@ -51,6 +53,7 @@ export const loadServerConfig = (env: Record<string, string | undefined>): Serve
     },
     sessionStoreUrl: get('SESSION_STORE_URL'),
     sessionSecret: get('SESSION_SECRET'),
+    secureCookie: env.SESSION_COOKIE_SECURE !== 'false',
     scheduleApiUrl: get('SCHEDULE_API_URL'),
     receiptApiUrl: get('RECEIPT_API_URL'),
   }

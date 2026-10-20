@@ -54,6 +54,7 @@ export const getAuthDeps = async (): Promise<AuthDeps> => {
     store,
     oidc: await getOidc(config),
     secret: config.sessionSecret,
+    secureCookie: config.secureCookie,
     fetchMe: (accessToken) => fetchMe(config.scheduleApiUrl, accessToken),
   }
 }

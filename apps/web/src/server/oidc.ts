@@ -2,6 +2,14 @@ import * as client from 'openid-client'
 
 import type { ServerConfig } from './config'
 
+/** ブローカーが refresh token を拒んだ（invalid_grant）ときに投げる。セッションを捨ててよい。 */
+export class GrantRejectedError extends Error {
+  constructor() {
+    super('ブローカーが refresh token を拒んだ')
+    this.name = 'GrantRejectedError'
+  }
+}
+
 /** トークンのエンドポイントの応答のうち、BFF が使う値。 */
 export type Tokens = {
   accessToken: string
@@ -23,7 +31,7 @@ export interface OidcClient {
     currentUrl: URL,
     checks: { codeVerifier: string; state: string; nonce: string },
   ): Promise<Tokens>
-  /** refresh token で access token を取り直す。失敗すると Error を投げる。 */
+  /** refresh token で access token を取り直す。拒まれたら GrantRejectedError を、通信の失敗などはそのほかの Error を投げる。 */
   refresh(refreshToken: string): Promise<Tokens>
 }
 
@@ -72,7 +80,16 @@ export const createOidcClient = async (cfg: ServerConfig['oidc']): Promise<OidcC
           idTokenExpected: true,
         }),
       ),
-    refresh: async (refreshToken) => toTokens(await client.refreshTokenGrant(config, refreshToken)),
+    refresh: async (refreshToken) => {
+      try {
+        return toTokens(await client.refreshTokenGrant(config, refreshToken))
+      } catch (error) {
+        if (error instanceof client.ResponseBodyError && error.error === 'invalid_grant') {
+          throw new GrantRejectedError()
+        }
+        throw error
+      }
+    },
   }
 }
 

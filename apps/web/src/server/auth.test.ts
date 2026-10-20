@@ -11,7 +11,7 @@ import {
   type AuthDeps,
   type Session,
 } from './auth'
-import type { OidcClient } from './oidc'
+import { GrantRejectedError, type OidcClient } from './oidc'
 import { createMemorySessionStore } from './sessionStore'
 import { signValue } from './signedValue'
 
@@ -38,8 +38,10 @@ const setup = (overrides: Partial<AuthDeps> = {}) => {
     store,
     oidc: fakeOidc(),
     secret: SECRET,
+    secureCookie: false,
     fetchMe: async () => ({ ok: true, viewer: VIEWER }),
     now: () => 1_000_000,
+    wait: async () => {},
     ...overrides,
   }
   return { store, deps }
@@ -91,10 +93,27 @@ describe('ログイン', () => {
     expect([...store.values.keys()].filter((k) => k.startsWith('login:'))).toEqual([])
   })
 
-  it('https では cookie に Secure を付ける', async () => {
-    const { deps } = setup()
-    const start = await startLogin(new Request('https://web.test/auth/login'), deps)
+  it('secureCookie なら cookie に Secure を付ける', async () => {
+    const { deps } = setup({ secureCookie: true })
+    const start = await startLogin(new Request('http://web.test/auth/login'), deps)
     expect(start.headers.getSetCookie()[0]).toContain('Secure')
+  })
+
+  it('もう一度ログインすると前のセッションを消す', async () => {
+    const { store, deps } = setup()
+    const first = await login(deps)
+    const start = await startLogin(
+      new Request('http://web.test/auth/login', { headers: { Cookie: cookiesOf(first) } }),
+      deps,
+    )
+    const state = new URL(start.headers.get('Location') ?? '').searchParams.get('state')
+    await finishLogin(
+      new Request(`http://web.test/auth/callback?code=c&state=${state}`, {
+        headers: { Cookie: `${cookiesOf(first)}; ${cookiesOf(start)}` },
+      }),
+      deps,
+    )
+    expect([...store.values.keys()].filter((k) => k.startsWith('session:'))).toHaveLength(1)
   })
 
   it('state が cookie と違えば、トークンを取らずに失敗へ転送する', async () => {
@@ -132,7 +151,16 @@ describe('ログイン', () => {
 
   it('戻る先はほかのオリジンにしない', () => {
     expect(safeReturnTo('/schedule?date=2026-10-21')).toBe('/schedule?date=2026-10-21')
-    for (const bad of [null, 'http://evil.test/', '//evil.test/', '/\\evil.test']) {
+    expect(safeReturnTo('/schedule/../auth/error')).toBe('/auth/error')
+    for (const bad of [
+      null,
+      'http://evil.test/',
+      '//evil.test/',
+      '/\\evil.test',
+      '/\t/evil.test',
+      '/\n/evil.test',
+      '/\r\n/evil.test',
+    ]) {
       expect(safeReturnTo(bad)).toBe('/')
     }
   })
@@ -140,7 +168,7 @@ describe('ログイン', () => {
 
 describe('readSession', () => {
   const withSession = async (session: Session, deps: AuthDeps) => {
-    await deps.store.set('session:id-1', session)
+    await deps.store.set('session:id-1', session, 60)
     return new Request('http://web.test/', {
       headers: { Cookie: `buddy_session=${encodeURIComponent(signValue('id-1', SECRET))}` },
     })
@@ -148,7 +176,7 @@ describe('readSession', () => {
 
   it('署名の誤った cookie は読まない', async () => {
     const { deps } = setup()
-    await deps.store.set('session:id-1', { ...VIEWER, accessToken: 'a' })
+    await deps.store.set('session:id-1', { ...VIEWER, accessToken: 'a' }, 60)
     const forged = new Request('http://web.test/', {
       headers: { Cookie: `buddy_session=${signValue('id-1', 'y'.repeat(32))}` },
     })
@@ -168,11 +196,79 @@ describe('readSession', () => {
     expect(await deps.store.get('session:id-1')).toMatchObject({ accessToken: 'access-2' })
   })
 
-  it('取り直せなければセッションを消す', async () => {
+  it('同じセッションの取り直しを 1 本にまとめる', async () => {
+    const refresh = vi.fn<OidcClient['refresh']>(async () => ({
+      accessToken: 'access-2',
+      expiresIn: 3600,
+    }))
+    const { deps } = setup({ oidc: fakeOidc({ refresh }) })
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 + 30_000 },
+      deps,
+    )
+    const results = await Promise.all([readSession(req, deps), readSession(req, deps)])
+    expect(results.map((s) => s?.accessToken)).toEqual(['access-2', 'access-2'])
+    expect(refresh).toHaveBeenCalledTimes(1)
+    expect(await deps.store.get('refresh-lock:id-1')).toBeUndefined()
+  })
+
+  it('ほかのプロセスが取り直している間は、置かれた値を待って使う', async () => {
+    const refresh = vi.fn<OidcClient['refresh']>()
+    const { deps } = setup({ oidc: fakeOidc({ refresh }) })
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 + 30_000 },
+      deps,
+    )
+    await deps.store.lock('refresh-lock:id-1', 1000)
+    deps.wait = async () => {
+      await deps.store.set(
+        'session:id-1',
+        { ...VIEWER, accessToken: 'by-other', refreshToken: 'r2' },
+        60,
+      )
+    }
+    expect((await readSession(req, deps))?.accessToken).toBe('by-other')
+    expect(refresh).not.toHaveBeenCalled()
+  })
+
+  it('取り直しの間にセッションが消えたら、置き直さない', async () => {
     const { deps } = setup({
       oidc: fakeOidc({
         refresh: async () => {
-          throw new Error('invalid_grant')
+          await deps.store.delete('session:id-1')
+          return { accessToken: 'access-2', expiresIn: 3600 }
+        },
+      }),
+    })
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 + 30_000 },
+      deps,
+    )
+    expect(await readSession(req, deps)).toBeUndefined()
+    expect(await deps.store.get('session:id-1')).toBeUndefined()
+  })
+
+  it('通信の失敗ではセッションを消さず、まだ使える token を返す', async () => {
+    const { deps } = setup({
+      oidc: fakeOidc({
+        refresh: async () => {
+          throw new Error('ECONNRESET')
+        },
+      }),
+    })
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 + 30_000 },
+      deps,
+    )
+    expect((await readSession(req, deps))?.accessToken).toBe('old')
+    expect(await deps.store.get('session:id-1')).toBeDefined()
+  })
+
+  it('refresh token を拒まれたらセッションを消す', async () => {
+    const { deps } = setup({
+      oidc: fakeOidc({
+        refresh: async () => {
+          throw new GrantRejectedError()
         },
       }),
     })
@@ -198,5 +294,6 @@ describe('readCookie', () => {
   it('名前の一致する cookie だけを読む', () => {
     expect(readCookie('a=1; buddy_session=x%2Ey; b=2', 'buddy_session')).toBe('x.y')
     expect(readCookie(null, 'buddy_session')).toBeUndefined()
+    expect(readCookie('buddy_session=%E0', 'buddy_session')).toBeUndefined()
   })
 })
