@@ -119,7 +119,7 @@ export const Modal = ({
   return (
     <dialog
       aria-labelledby={title === undefined ? undefined : titleId}
-      className="m-0 mt-auto h-[99dvh] max-h-none w-full max-w-none overflow-hidden rounded-t-8 border-0 bg-surface p-0 text-text shadow-3 backdrop:bg-overlay backdrop:backdrop-blur-lg desktop:m-auto desktop:h-auto desktop:max-h-[90dvh] desktop:w-[720px] desktop:rounded-8"
+      className="m-0 mt-auto h-[99dvh] max-h-none w-full max-w-none overflow-hidden rounded-t-8 border-0 bg-surface p-0 text-text shadow-3 backdrop:bg-overlay backdrop:backdrop-blur-lg desktop:m-auto desktop:h-fit desktop:max-h-[90dvh] desktop:w-[720px] desktop:rounded-8"
       data-testid={testId}
       ref={dialogRef}
     >
