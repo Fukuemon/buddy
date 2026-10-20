@@ -1,7 +1,7 @@
 # schedule-api
 
 訪問看護の事業所の予定を管理する HTTP の API。  
-API の定義は [openapi.yaml](openapi.yaml) にあり、web はこのファイルからクライアントを生成する。
+API の定義の正本は [openapi.yaml](openapi.yaml) である。サーバーのハンドラのインターフェイスと型、web のクライアントの型は、このファイルから生成する。
 
 ## 必要なもの
 
@@ -98,6 +98,27 @@ migrate -path db/migrations \
 新しいマイグレーションは `migrate create -ext sql -dir db/migrations -seq <名前>` で作る。  
 シードには実在の事業所、人、連絡先を入れず、メールは `example.com` を使う。
 
+## API の定義を変えたとき
+
+oapi-codegen が、openapi.yaml から gin の strict server のインターフェイスと型を `internal/presentation/http/openapi/openapi.gen.go` に生成する。  
+oapi-codegen は `go.mod` の `tool` で版を固定し、`go tool` で動かす。設定は [oapi-codegen.yaml](oapi-codegen.yaml) にある。  
+openapi.yaml を変えたら、生成し直し、生成物も同じコミットに入れる。
+
+```sh
+go generate ./...
+```
+
+画面の型も同じ openapi.yaml から生成する。生成物がそろっているかは、リポジトリのルートの `pnpm check:generated` で確かめる（[CONTRIBUTING.md](../../CONTRIBUTING.md)）。
+
+ハンドラは `internal/presentation/http/handler` の `server` に、生成した `openapi.StrictServerInterface` のメソッドとして書く。
+
+- 操作を足したら、生成し直すと `server` がインターフェイスを満たさなくなり、コンパイルが失敗する。メソッドを足して直す。
+- 成功の応答は、生成した `<操作>200JSONResponse` か `<操作>201JSONResponse` で返す。
+- usecase のエラーは、そのまま `error` として返す。`writeError` が、domain のエラーから状態コードと `{code,message}` を決める。
+- 本文の検証の規則は、`validate.go` の `bodyRules` に、生成した型の項目の名前で書く。生成した型はタグを持たないためである。
+  日付と時刻は文字列で受け、ハンドラが `civil` で読むときに形を確かめる。
+- 認証、事業所の確認、パスの ID の形の確認は、`/v1` の全ての経路に当てる gin のミドルウェアが受け持つ。ハンドラでは繰り返さない。
+
 ## SQL を変えたとき
 
 クエリは `db/queries` に書き、sqlc が `internal/infrastructure/mysql/sqlcgen` に Go のコードを生成する。  
@@ -148,6 +169,7 @@ docker build -t buddy-schedule-api .
 - `internal/usecase` は、domain のインターフェイスだけに依存する。トランザクションは `domain.Transactor` で受け取る。
 - `internal/infrastructure/mysql` は、domain のリポジトリを sqlc の生成コードで実装する。
 - `internal/infrastructure/oidc` は、access token をブローカーの JWKS で検証する。`oidctest` は、テストと `cmd/devissuer` が使う偽物の発行者である。
-- `internal/presentation/http/handler` は、gin のハンドラと、リクエストとレスポンスの型を持つ。
+- `internal/presentation/http/openapi` は、openapi.yaml から生成したリクエストとレスポンスの型と、strict server のインターフェイスを持つ。手で書き換えない。
+- `internal/presentation/http/handler` は、生成したインターフェイスを実装するハンドラと、gin のミドルウェアを持つ。
 - `cmd/api` は、設定を読み、依存を組み立てて、サーバーを起動する。
 - `cmd/devissuer` は、手元で試すための偽物の発行者で、イメージに入れない。
