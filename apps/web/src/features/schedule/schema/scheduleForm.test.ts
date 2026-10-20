@@ -48,4 +48,17 @@ describe('scheduleFormSchema', () => {
     }
     expect(scheduleFormSchema.safeParse(values).success).toBe(true)
   })
+
+  it('時と分の範囲の外の時刻を弾く', () => {
+    const values = {
+      ...createScheduleFormValues({ kind: 'normal', date: '2026-10-20', staffId: 'staff-1' }),
+      title: '研修',
+      startTime: '24:00',
+      endTime: '99:99',
+    }
+    expect(messagesOf(values)).toMatchObject({
+      startTime: '開始時間を入力してください',
+      endTime: '終了時間を入力してください',
+    })
+  })
 })

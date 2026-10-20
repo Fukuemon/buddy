@@ -5,12 +5,10 @@ import { SCHEDULE_CATEGORIES, SERVICE_CODES } from '#/api/types'
 import { SERVICE_CODE_DURATION } from '../constants/scheduleLabels'
 import { diffMinutes } from '../lib/dateTime'
 
-const TIME_PATTERN = /^\d{2}:\d{2}$/
-
 const baseFields = {
   staffId: z.string().min(1, '担当者を選んでください'),
   scheduleDate: z.iso.date({ error: '日付を入力してください' }),
-  startTime: z.string().regex(TIME_PATTERN, '開始時間を入力してください'),
+  startTime: z.iso.time({ precision: -1, error: '開始時間を入力してください' }),
   description: z.string(),
 }
 
@@ -19,7 +17,7 @@ export const normalScheduleFormSchema = z
     ...baseFields,
     kind: z.literal('normal'),
     title: z.string().trim().min(1, 'タイトルを入力してください'),
-    endTime: z.string().regex(TIME_PATTERN, '終了時間を入力してください'),
+    endTime: z.iso.time({ precision: -1, error: '終了時間を入力してください' }),
   })
   .refine((values) => diffMinutes(values.startTime, values.endTime) > 0, {
     path: ['endTime'],

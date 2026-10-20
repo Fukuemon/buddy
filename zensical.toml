@@ -4,9 +4,10 @@ site_name = "buddy"
 site_description = "予定の管理とレセプトの照合の設計書"
 docs_dir = "docs"
 site_dir = "site"
-# ADR の雛形は文書ではないので、サイトに載せない
+# ADR と画面仕様書の雛形は文書ではないので、サイトに載せない
 exclude_docs = """
 adr/template.md
+screens/template.md
 """
 nav = [
   { "トップ" = "index.md" },
@@ -15,6 +16,13 @@ nav = [
     { "全体" = "design/DesignDoc.md" },
     { "予定の管理" = "design/features/schedule/DesignDoc.md" },
     { "レセプトの照合" = "design/features/receipt-check/DesignDoc.md" },
+  ] },
+  { "画面仕様書" = [
+    { "画面の一覧" = "screens/index.md" },
+    { "予定のカレンダー" = "screens/schedule-calendar.md" },
+    { "予定の作成" = "screens/schedule-new.md" },
+    { "予定の詳細" = "screens/schedule-detail.md" },
+    { "予定の編集" = "screens/schedule-edit.md" },
   ] },
   { "ADR" = [
     "adr/0001-auth.md",

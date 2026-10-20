@@ -15,11 +15,7 @@ export const scheduleCreateSearchSchema = z.object({
     .default(scheduleCreateSearchDefaults.kind)
     .catch(scheduleCreateSearchDefaults.kind),
   start: z.iso.date().optional().catch(undefined),
-  time: z
-    .string()
-    .regex(/^\d{2}:\d{2}$/)
-    .optional()
-    .catch(undefined),
+  time: z.iso.time({ precision: -1 }).optional().catch(undefined),
   staffId: z.string().optional().catch(undefined),
 })
 
