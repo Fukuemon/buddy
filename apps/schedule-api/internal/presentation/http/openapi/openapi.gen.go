@@ -359,15 +359,15 @@ type PreferredTime string
 // RecurringRule weekly は day_of_week だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
 // 指定しない項目は、最初の日付の曜日や日から決める。
 type RecurringRule struct {
-	DayOfMonth *int `json:"day_of_month,omitempty"`
+	DayOfMonth *int `json:"day_of_month"`
 
 	// DayOfWeek 1 が月曜、7 が日曜
-	DayOfWeek *int `json:"day_of_week,omitempty"`
+	DayOfWeek *int `json:"day_of_week"`
 
 	// EndDate この日を含む
-	EndDate     *Date                  `json:"end_date,omitempty"`
+	EndDate     *Date                  `json:"end_date"`
 	Frequency   RecurringRuleFrequency `json:"frequency"`
-	WeekOfMonth *int                   `json:"week_of_month,omitempty"`
+	WeekOfMonth *int                   `json:"week_of_month"`
 }
 
 // RecurringRuleFrequency defines model for RecurringRule.Frequency.
