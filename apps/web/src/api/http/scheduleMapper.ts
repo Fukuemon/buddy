@@ -147,3 +147,26 @@ export const toSlotRequest = (input: ScheduleInput, masters: ScheduleMasters): A
           },
   }
 }
+
+/**
+ * 予定の置き換えの本文に、画面が持たない今の予定の値を引き継ぐ。
+ *
+ * 訪問の予定どうしの置き換えでは、同行者とタイトルを今の値のままにする。担当は、今の担当が予定の職員と同じなら新しい予定の職員に、違えば今の担当のままにする。
+ */
+export const keepCurrentVisit = (body: ApiSlotRequest, current: ApiSchedule): ApiSlotRequest => {
+  const visit = body.visit_info
+  const currentVisit = current.visit_info
+  if (visit === null || visit === undefined || currentVisit === null) return body
+  return {
+    ...body,
+    title: current.title,
+    visit_info: {
+      ...visit,
+      companion_id: currentVisit.companion_id,
+      assigned_staff_id:
+        currentVisit.assigned_staff_id === current.staff_id
+          ? body.staff_id
+          : currentVisit.assigned_staff_id,
+    },
+  }
+}

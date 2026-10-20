@@ -3,7 +3,7 @@ import createClient from 'openapi-fetch'
 import { ApiError, type BuddyApi } from '../client'
 import { matchesName } from '../nameSearch'
 import type { paths } from '../generated/schedule'
-import { fromApiSchedule, splitDateTime, toSlotRequest } from './scheduleMapper'
+import { fromApiSchedule, keepCurrentVisit, splitDateTime, toSlotRequest } from './scheduleMapper'
 
 export type HttpApiOptions = {
   /** API の URL。例は `http://localhost:8080`。 */
@@ -30,6 +30,7 @@ export const unwrap = async <T>(promise: Promise<Result<T>>): Promise<T> => {
 /**
  * 予定の API を openapi-fetch で呼ぶ BuddyApi を作る。トークンは付けない。
  *
+ * schedules.update は、今の予定を読んでから置き換え、画面が持たない同行者などを keepCurrentVisit で引き継ぐ。
  * schedules.get は、ほかの事業所の予定を指すと status が 403 の ApiError を投げる。
  * schedules.list は、キャンセルした予定を返さない。画面の予定はキャンセルの状態を持たないため。
  */
@@ -96,7 +97,15 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
         return fromApiSchedule(created)
       },
       update: async (_facilityId, scheduleId, input) => {
-        const body = toSlotRequest(input, await loadMasters())
+        const [current, masters] = await Promise.all([
+          unwrap(
+            client.GET('/v1/schedules/{schedule_id}', {
+              params: { path: { schedule_id: scheduleId } },
+            }),
+          ),
+          loadMasters(),
+        ])
+        const body = keepCurrentVisit(toSlotRequest(input, masters), current)
         const updated = await unwrap(
           client.PUT('/v1/schedules/{schedule_id}', {
             params: { path: { schedule_id: scheduleId } },
