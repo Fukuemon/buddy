@@ -1,5 +1,10 @@
 .ai-out/
 
+# 文書のサイト。uv の仮想環境、Zensical の出力とキャッシュ
+.venv/
+site/
+.cache/
+
 
 # APM dependencies
 apm_modules/

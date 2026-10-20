@@ -5,3 +5,5 @@ node = "24"
 "pipx:apm-cli" = "0.32.0"
 go = "1.27"
 golangci-lint = "2.15.0"
+# uv は文書のサイトの Zensical を入れて動かす
+uv = "0.13"
