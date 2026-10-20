@@ -17,15 +17,18 @@ type Usecases struct {
 	Patients     PatientUsecase
 	VisitMasters VisitMasterUsecase
 	Schedules    ScheduleUsecase
+	Auth         AuthUsecase
 }
 
 // RouterConfig は、ルーターの設定である。AllowOrigins が空なら CORS のヘッダーを返さない。
 type RouterConfig struct {
 	Logger       *slog.Logger
 	AllowOrigins []string
+	Verifier     TokenVerifier
 }
 
-// NewRouter は、GET /health と /v1 の API を持つルーターを作る。
+// NewRouter は、GET /health と /v1 の API を持つルーターを作る。/v1 は全て、Bearer のトークンと、
+// パスが指す事業所が職員の事業所と一致することを求める。GET /health は認証を求めない。
 func NewRouter(u Usecases, cfg RouterConfig) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
@@ -46,7 +49,8 @@ func NewRouter(u Usecases, cfg RouterConfig) *gin.Engine {
 
 	r.GET("/health", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
 
-	v1 := r.Group("/v1")
+	am := authMiddleware{verifier: cfg.Verifier, uc: u.Auth, log: cfg.Logger}
+	v1 := r.Group("/v1", am.authenticate, am.checkFacility)
 	organizationHandler{uc: u.Organization, log: cfg.Logger}.register(v1)
 	staffHandler{uc: u.Staff, log: cfg.Logger}.register(v1)
 	patientHandler{uc: u.Patients, log: cfg.Logger}.register(v1)

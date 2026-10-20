@@ -15,6 +15,7 @@ var (
 	ErrNotFound     = errors.New("リソースが見つかりません")
 	ErrInvalidInput = errors.New("入力の内容が不正です")
 	ErrConflict     = errors.New("リソースがすでに存在します")
+	ErrForbidden    = errors.New("この操作は許可されていません")
 )
 
 // ValidationError は、入力が不正な理由を表す。errors.Is では ErrInvalidInput として扱われる。
