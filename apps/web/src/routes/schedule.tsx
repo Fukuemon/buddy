@@ -27,11 +27,11 @@ function SchedulePage() {
           viewer !== null && <ViewerMenu staffName={viewer.staffName} canLogout={mode === 'bff'} />
         }
       />
-      <div className="flex min-h-0 grow">
-        <aside className="w-56 shrink-0 overflow-auto border-r border-border">
+      <div className="flex min-h-0 grow flex-col desktop:flex-row">
+        <aside className="max-h-40 w-full shrink-0 overflow-auto border-b border-border desktop:max-h-none desktop:w-56 desktop:border-r desktop:border-b-0">
           <StaffFilterSidebarContainer />
         </aside>
-        <main className="min-w-0 grow">
+        <main className="min-h-0 min-w-0 grow">
           <ScheduleCalendarContainer />
         </main>
       </div>

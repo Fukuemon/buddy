@@ -6,7 +6,8 @@ import type { ScheduleCalendarEvent } from '../lib/toCalendarEvents'
 const START_HOUR = 6
 const END_HOUR = 22
 const SLOT_MINUTES = 30
-const HOUR_HEIGHT_PX = 48
+// 30 分の枠を、押せる領域の下限の 44px にする（packages/ui/DESIGN.md）
+const HOUR_HEIGHT_PX = 88
 
 const SLOT_TIMES = Array.from({ length: ((END_HOUR - START_HOUR) * 60) / SLOT_MINUTES }, (_, i) =>
   addMinutesToTimeKey(`${String(START_HOUR).padStart(2, '0')}:00`, i * SLOT_MINUTES),

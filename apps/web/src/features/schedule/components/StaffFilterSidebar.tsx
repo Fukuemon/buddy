@@ -60,8 +60,8 @@ export const StaffFilterSidebar = ({
         const members = staffList.filter((staff) => staff.teamId === team.id)
         const checkedCount = members.filter((staff) => isSelected(staff.id)).length
         return (
-          <fieldset className="flex flex-col gap-1" key={team.id}>
-            <label className="flex items-center gap-2 font-bold">
+          <fieldset className="flex flex-col" key={team.id}>
+            <label className="flex min-h-11 items-center gap-2 font-bold">
               <input
                 checked={members.length > 0 && checkedCount === members.length}
                 data-testid={`staff-filter-team-${team.id}`}
@@ -76,7 +76,10 @@ export const StaffFilterSidebar = ({
               {team.name}
             </label>
             {members.map((staff) => (
-              <label className="flex items-center gap-2 pl-6 text-body-dense" key={staff.id}>
+              <label
+                className="flex min-h-11 items-center gap-2 pl-6 text-body-dense"
+                key={staff.id}
+              >
                 <input
                   checked={isSelected(staff.id)}
                   data-testid={`staff-filter-staff-${staff.id}`}
