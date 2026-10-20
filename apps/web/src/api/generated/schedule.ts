@@ -703,7 +703,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        /** @constant */
+                        /** @enum {string} */
                         status: "ok";
                     };
                 };
