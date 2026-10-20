@@ -10,7 +10,7 @@ const meta = {
       <>
         <Table.Header>
           <Table.Row>
-            <Table.Cell expanded>名前</Table.Cell>
+            <Table.HeaderCell expanded>名前</Table.HeaderCell>
           </Table.Row>
         </Table.Header>
         <Table.Body>
