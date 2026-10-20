@@ -199,12 +199,12 @@ export interface operations {
                      * Format: binary
                      * @description 実訪問の CSV
                      */
-                    visits: string;
+                    visits: Blob;
                     /**
                      * Format: binary
                      * @description 予定の CSV
                      */
-                    schedules?: string;
+                    schedules?: Blob;
                     /**
                      * @description Google カレンダーから予定を取る対象の月。`schedules` があれば使わない
                      * @example 2024-04
