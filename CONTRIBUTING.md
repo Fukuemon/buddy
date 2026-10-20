@@ -176,4 +176,4 @@ gitGraph
 - 題と本文の書き方は、スキル write-issue-pr に従う。本文は `.github/pull_request_template.md` の節で書く。
 - レビューの指摘に対応してから取り込む。直したコミットと、対応しない指摘の理由を pull request のコメントに残す。差分が変わったら、本文も差分に合わせて直す。
 - `develop` への取り込みは merge commit にする（`gh pr merge --merge`）。
-- 既定のブランチが `main` なので、`develop` への取り込みでは本文の `Closes` が issue を閉じない。issue の作業が全部入ったら、issue を手で閉じる。
+- 既定のブランチは `develop` である。1 つの pull request で issue の作業が終わるときは、本文に `Closes #<番号>` を書き、取り込みで issue を閉じる。複数の pull request に分けたときは、最後の pull request に `Closes` を書く。
