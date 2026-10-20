@@ -1,0 +1,1 @@
+../../../packages/e2e/kit/recording/DesignDoc.md
