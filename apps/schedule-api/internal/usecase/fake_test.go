@@ -29,40 +29,42 @@ func (s *seqIDs) NewID() string {
 
 // store は、usecase のテストに使う全リポジトリのメモリ上の実装である。
 type store struct {
-	facilities  map[string]organization.Facility
-	departments map[string]organization.Department
-	teams       map[string]organization.Team
-	positions   map[string]organization.Position
-	policies    map[string]organization.Policy
-	staff       map[string]staff.Detail
-	grants      map[string][]staff.Grant
-	patients    map[string]patient.Detail
-	codes       map[string]visit.ServiceCode
-	categories  map[string]visit.Category
-	infos       map[string]visit.Info
-	types       map[string]schedule.Type
-	schedules   map[string]schedule.Detail
-	recurring   map[string]schedule.RecurringDetail
-	cancels     map[string]schedule.Cancel
+	facilities    map[string]organization.Facility
+	facilityByOrg map[string]string
+	departments   map[string]organization.Department
+	teams         map[string]organization.Team
+	positions     map[string]organization.Position
+	policies      map[string]organization.Policy
+	staff         map[string]staff.Detail
+	grants        map[string][]staff.Grant
+	patients      map[string]patient.Detail
+	codes         map[string]visit.ServiceCode
+	categories    map[string]visit.Category
+	infos         map[string]visit.Info
+	types         map[string]schedule.Type
+	schedules     map[string]schedule.Detail
+	recurring     map[string]schedule.RecurringDetail
+	cancels       map[string]schedule.Cancel
 }
 
 func newStore() *store {
 	return &store{
-		facilities:  map[string]organization.Facility{},
-		departments: map[string]organization.Department{},
-		teams:       map[string]organization.Team{},
-		positions:   map[string]organization.Position{},
-		policies:    map[string]organization.Policy{},
-		staff:       map[string]staff.Detail{},
-		grants:      map[string][]staff.Grant{},
-		patients:    map[string]patient.Detail{},
-		codes:       map[string]visit.ServiceCode{},
-		categories:  map[string]visit.Category{},
-		infos:       map[string]visit.Info{},
-		types:       map[string]schedule.Type{},
-		schedules:   map[string]schedule.Detail{},
-		recurring:   map[string]schedule.RecurringDetail{},
-		cancels:     map[string]schedule.Cancel{},
+		facilities:    map[string]organization.Facility{},
+		facilityByOrg: map[string]string{},
+		departments:   map[string]organization.Department{},
+		teams:         map[string]organization.Team{},
+		positions:     map[string]organization.Position{},
+		policies:      map[string]organization.Policy{},
+		staff:         map[string]staff.Detail{},
+		grants:        map[string][]staff.Grant{},
+		patients:      map[string]patient.Detail{},
+		codes:         map[string]visit.ServiceCode{},
+		categories:    map[string]visit.Category{},
+		infos:         map[string]visit.Info{},
+		types:         map[string]schedule.Type{},
+		schedules:     map[string]schedule.Detail{},
+		recurring:     map[string]schedule.RecurringDetail{},
+		cancels:       map[string]schedule.Cancel{},
 	}
 }
 
@@ -79,6 +81,10 @@ type facilities struct{ *store }
 
 func (s facilities) Get(_ context.Context, id string) (organization.Facility, error) {
 	return get(s.facilities, id)
+}
+
+func (s facilities) GetByOrgID(_ context.Context, orgID string) (organization.Facility, error) {
+	return get(s.facilities, s.facilityByOrg[orgID])
 }
 
 type departments struct{ *store }
@@ -160,6 +166,25 @@ func (s staffRepo) Get(_ context.Context, id string) (staff.Detail, error) { ret
 
 func (s staffRepo) ListByFacility(context.Context, string, staff.ListQuery) ([]staff.Summary, error) {
 	return nil, nil
+}
+
+func (s staffRepo) FindIDBySub(_ context.Context, sub string) (string, error) {
+	for id, d := range s.staff {
+		if d.Sub != nil && *d.Sub == sub {
+			return id, nil
+		}
+	}
+	return "", domain.ErrNotFound
+}
+
+func (s staffRepo) LinkSub(_ context.Context, facilityID, email, sub string) error {
+	for id, d := range s.staff {
+		if d.FacilityID == facilityID && d.Email == email && d.Sub == nil {
+			d.Sub = &sub
+			s.staff[id] = d
+		}
+	}
+	return nil
 }
 
 type patients struct{ *store }

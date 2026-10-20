@@ -26,13 +26,13 @@ func main() {
 	if len(os.Args) < 2 {
 		usage()
 	}
-	cfg, err := config.Load(os.Getenv)
+	cfg, err := config.LoadDB(os.Getenv)
 	if err != nil {
 		fail(err)
 	}
 	switch os.Args[1] {
 	case "up":
-		err = mysql.MigrateUp(cfg.DB)
+		err = mysql.MigrateUp(cfg)
 	case "down":
 		steps := 1
 		if len(os.Args) > 2 {
@@ -40,9 +40,9 @@ func main() {
 				usage()
 			}
 		}
-		err = mysql.MigrateDown(cfg.DB, steps)
+		err = mysql.MigrateDown(cfg, steps)
 	case "seed":
-		err = mysql.Seed(context.Background(), cfg.DB, db.Seed)
+		err = mysql.Seed(context.Background(), cfg, db.Seed)
 	default:
 		usage()
 	}

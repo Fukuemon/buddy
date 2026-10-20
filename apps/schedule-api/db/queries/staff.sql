@@ -54,3 +54,11 @@ FROM user_policy_targets upt
 JOIN user_policies up ON up.id = upt.user_policy_id
 WHERE up.user_id = ?
 ORDER BY upt.target_user_id;
+
+-- name: GetUserIDBySub :one
+SELECT id FROM users WHERE sub = ?;
+
+-- name: LinkUserSub :exec
+-- 条件の sub IS NULL で、同時に来た初回のログインのうち 1 つだけが書く。
+UPDATE users SET sub = sqlc.arg(sub)
+WHERE facility_id = sqlc.arg(facility_id) AND email = sqlc.arg(email) AND sub IS NULL;

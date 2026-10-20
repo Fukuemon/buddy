@@ -142,8 +142,13 @@ type ListQuery struct {
 
 // Repository は、職員を読み書きする。見つからないときは domain.ErrNotFound を、
 // 名前かメールか Sub が重なるときは domain.ErrConflict を返す。
+//
+// LinkSub は、事業所 facilityID の、メールが email で Sub がまだない職員にだけ sub を書く。
+// 当たる職員がいなければ何もせず、エラーも返さない。
 type Repository interface {
 	Create(ctx context.Context, s Staff, grants []Grant) error
 	Get(ctx context.Context, id string) (Detail, error)
 	ListByFacility(ctx context.Context, facilityID string, q ListQuery) ([]Summary, error)
+	FindIDBySub(ctx context.Context, sub string) (string, error)
+	LinkSub(ctx context.Context, facilityID, email, sub string) error
 }
