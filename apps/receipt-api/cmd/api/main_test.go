@@ -17,7 +17,14 @@ func TestLoadConfig(t *testing.T) {
 	if err != nil || cfg.port != "9000" || cfg.maxUploadBytes != 2048 || cfg.logLevel != slog.LevelDebug {
 		t.Errorf("設定 = %+v, %v", cfg, err)
 	}
-	for _, bad := range []map[string]string{{"MAX_UPLOAD_BYTES": "0"}, {"MAX_UPLOAD_BYTES": "x"}, {"LOG_LEVEL": "loud"}} {
+	cfg, err = loadConfig(env(map[string]string{"GOOGLE_CALENDARS_FILE": "calendars.json", "GOOGLE_CALENDAR_ENDPOINT": "http://localhost:9000/"}))
+	if err != nil || cfg.calendarsFile != "calendars.json" || cfg.calendarEndpoint != "http://localhost:9000/" {
+		t.Errorf("カレンダーの設定 = %+v, %v", cfg, err)
+	}
+	for _, bad := range []map[string]string{
+		{"MAX_UPLOAD_BYTES": "0"}, {"MAX_UPLOAD_BYTES": "x"}, {"LOG_LEVEL": "loud"},
+		{"GOOGLE_CALENDAR_ENDPOINT": "http://localhost:9000/"},
+	} {
 		if _, err := loadConfig(env(bad)); err == nil {
 			t.Errorf("%v でエラーにならない", bad)
 		}
