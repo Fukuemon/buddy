@@ -147,31 +147,14 @@ docker build -t buddy-schedule-api .
 
 ## 認証
 
-`/v1` の API は全て、OIDC のブローカーが発行した access token の JWT を `Authorization: Bearer` で求める。`GET /healthz` と `GET /readyz` は認証を求めない。`/readyz` は、MySQL に届かなければ 503 を返す。
-
-- 署名、`iss`、`aud`、`exp`、`nbf` を確かめる。署名のアルゴリズムは RS256 と ES256 だけを受け付ける。
-- JWKS は起動のときに discovery の文書から場所を読み、1 時間ごとに取り直す。知らない `kid` のトークンが来たときも取り直すが、間隔は 1 分以上あける。
-- 職員は、トークンの `sub` で探す。いなければ、`email_verified` が true のときに限り、組織の事業所で `email` が同じで `sub` がまだない職員に `sub` を結び付ける。
-- 事業所は `facilities.org_id` で組織に結び付ける。トークンの組織の事業所、職員の事業所、パスが指すリソースの事業所の 3 つが一致しないと 403 を返す。
-- トークンがないか検証に失敗したときは、`WWW-Authenticate: Bearer` を付けて 401 を返す。
-
-権限（`user_policies`）による判定はまだしない。特定した職員と権限は、request の context に `auth.Principal` として入れる。
+認証から事業所の確認までの流れは、[DesignDoc.md](DesignDoc.md) の「認証から事業所の確認までの流れ」にある。`GET /healthz` と `GET /readyz` は認証を求めない。`/readyz` は、MySQL に届かなければ 503 を返す。
 
 ## コードの層
 
-依存してよい向きは、[コードベースの構造](../../context/codebase.md) にある。
-
-- `internal/domain` は、エンティティ、値の検証、リポジトリのインターフェイスを持ち、標準ライブラリだけに依存する。
-- `internal/usecase` は、domain のインターフェイスだけに依存する。トランザクションは `domain.Transactor` で受け取る。
-- `internal/infrastructure/mysql` は、domain のリポジトリを sqlc の生成コードで実装する。
-- `internal/infrastructure/oidc` は、access token をブローカーの JWKS で検証する。`oidctest` は、テストと `cmd/devissuer` が使う偽物の発行者である。
-- `internal/presentation/http/openapi` は、openapi.yaml から生成したリクエストとレスポンスの型と、strict server のインターフェイスを持つ。手で書き換えない。
-- `internal/presentation/http/handler` は、生成したインターフェイスを実装するハンドラと、gin のミドルウェアを持つ。
-- `cmd/api` は、設定を読み、依存を組み立てて、サーバーを起動する。
-- `cmd/devissuer` は、手元で試すための偽物の発行者で、イメージに入れない。
+層ごとに持つものは [DesignDoc.md](DesignDoc.md) の「コードの層」に、依存してよい向きは [コードベースの構造](../../context/codebase.md) にある。
 
 ## 文書
 
-- [DesignDoc.md](DesignDoc.md): 表の構成、認証から認可までの流れ、繰り返しの予定の展開
+- [DesignDoc.md](DesignDoc.md): コードの層、表の構成、認証から事業所の確認までの流れ、繰り返しの予定
 - [全体の Design Doc](../../docs/design/DesignDoc.md): 画面と 2 つの API の責務、インフラとの約束
 - [ADR-0002](../../docs/adr/0002-pbac.md): 権限を役職の既定と職員ごとの上書きで持つ判断
