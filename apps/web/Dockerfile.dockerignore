@@ -5,6 +5,8 @@
 !apps/web/
 !packages/ui/
 **/node_modules
+**/.env*
+**/*.local
 **/dist
 **/storybook-static
 **/.tanstack

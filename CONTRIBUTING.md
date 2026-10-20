@@ -32,6 +32,8 @@ docker compose up --build --wait
 
 `--wait` は、全てのサービスのヘルスチェックが通るまで待つ。schedule-api は、起動の前にマイグレーションとシードを当てる。シードは、事業所の行が既にあれば当てない。
 
+ポートは `127.0.0.1` にだけ公開する。
+
 | サービス | 手元の URL | ポートを変える環境変数 |
 | --- | --- | --- |
 | web | `http://localhost:3000` | `WEB_PORT` |
@@ -42,7 +44,8 @@ docker compose up --build --wait
 | valkey | `localhost:6379` | `VALKEY_PORT` |
 
 - IdP は navikt/mock-oauth2-server である。ログインの画面で入れた名前が `sub` になり、ほかのクレームは `compose/idp.json` の値になる。
-  - 既定のクレームは、シードの職員の青木 陽菜（組織 `org-sample`）を指す。ほかの職員で入るときは、ログインの画面のクレームの欄に `{"email": "kenta.mori@example.com"}` のように書く。
+  - 既定のクレームは、シードの職員の青木 陽菜（組織 `org-sample`）を指す。ほかの職員で入るときは、ログインの画面のクレームの欄に `{"email": "kenta.mori@example.com"}` のように書く。クレームの欄の値は、既定のクレームを上書きする。
+  - 職員ごとに別の名前で入る。schedule-api は、初回のログインで `sub` を職員に結び付けるため、同じ名前でメールを替えても最初の職員として扱う。
 - API が受けるトークンの `iss` は `http://idp:9000/buddy` である。IdP は `iss` をトークンの要求の Host から決めるため、トークンはコンテナの間の名前 `idp` で取る。
 - 画面は、まだ偽物の API で動く。
 - データを消して最初からにするときは、`docker compose down -v` で MySQL のボリュームを消す。
