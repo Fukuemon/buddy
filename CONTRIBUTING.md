@@ -1,16 +1,17 @@
-# 開発の準備
+# 変更を取り込むまで
 
-<!-- 次は既定。バージョンの管理に mise を使わないなら書き換える。必要なランタイムとツールの名前、最初に実行するコマンド -->
+## 開発の準備
 
-必要なものは mise である。ランタイムとツールのバージョンは `mise.toml` にある。文書のサイトを組む Zensical は、mise が入れる `uv` で動かす。
+必要なものは mise と Docker である。ランタイムとツール（Node、Go、sqlc、golang-migrate、golangci-lint、uv、apm）のバージョンは `mise.toml` にある。pnpm のバージョンは `package.json` の `packageManager` にある。文書のサイトを組む Zensical は、mise が入れる `uv` で動かす。
 
 ```sh
 mise install
+pnpm install
 ```
 
-Go のモジュールは `apps/schedule-api` と `apps/receipt-api` の 2 つである。エディタで両方を読むときは、ルートで `go work init ./apps/receipt-api ./apps/schedule-api` を流す。`go.work` は追跡しない。2 つのモジュールが共有する依存のバージョンが高い方にそろい、コンテナのイメージ（各 `go.mod` だけでビルドする）とずれるためである。テストと lint は、各アプリのディレクトリで `GOWORK=off` を付けて流す。`go.work` の下でビルドすると各アプリの `go.sum` に行が増えるので、コミットに含めない。
+`pnpm install` の `prepare` が、lefthook の Git のフック（commit-msg の commitlint、pre-commit の textlint）を入れる。
 
-<!-- 次は apm で導入した場合。コーディングエージェントの標準の方法で導入したなら、その導入の手順に書き換える -->
+Go のモジュールは `apps/schedule-api` と `apps/receipt-api` の 2 つである。エディタで両方を読むときは、ルートで `go work init ./apps/receipt-api ./apps/schedule-api` を流す。`go.work` は追跡しない。2 つのモジュールが共有する依存のバージョンが高い方にそろい、コンテナのイメージ（各 `go.mod` だけでビルドする）とずれるためである。テストと lint は、各アプリのディレクトリで `GOWORK=off` を付けて流す。`go.work` の下でビルドすると各アプリの `go.sum` に行が増えるので、コミットに含めない。
 
 スキルとフックは apm で配置し、Git で追跡しない。clone した後の最初のセッションで、セッションの開始のフックが配置する。手で配置するときは次を実行する。
 
@@ -132,22 +133,20 @@ pnpm check:generated
 
 ## ブランチとリリース
 
-<!-- 次は既定の運用。運用が違えば本文と図を書き換える -->
-
-ブランチは、`main`、`develop`、issue ごとの作業用のブランチにする。
+ブランチは、`main`、`develop`、issue ごとの作業用のブランチにする。運用とリリースの方針を決めた理由は [ADR-0003](docs/adr/0003-branch-and-release.md) にある。
 
 - `main` はリリース済みの状態を指す。`develop` は次のリリースに向けて変更を集める。
-- 作業用のブランチは `develop` から切る。名前は `feature/<issue 番号>` にし、不具合は `fix/<issue 番号>` にする。`develop` へは、pull request を通して取り込む。
-- リリースは、`develop` を `main` へ pull request で取り込み、`main` のコミットにタグを付ける。バージョンはセマンティック バージョニングに従う。
+- 検証環境ができたら、`develop` の状態を検証環境に、`main` の状態を本番環境に反映する。今は検証環境が無く、手元の compose で確かめる。
+- 作業用のブランチは `develop` から切る。名前は `feature/<issue 番号>` にし、不具合は `fix/<issue 番号>` にする。1 つの issue を複数の pull request に分けるときは、`feature/<issue 番号>-<短い名前>` にする。
+- リリースは、検証した `develop` を `main` へ pull request で取り込み、`main` のコミットにアプリごとのタグを付ける。タグは `apps/<アプリ>/vX.Y.Z` の形で、バージョンはセマンティック バージョニングに従う。リリースの仕組みはまだ無く、タグは手で付ける。
+- API の互換の規則（項目の追加は同じパス、削除と意味の変更は新しいパス、API を先にデプロイする）は ADR-0003 にある。
 - リリース後の緊急の修正は、`main` から `hotfix/<issue 番号>` を切り、`main` と `develop` の両方へ取り込む。
-- 保護するブランチは `main`、`develop` である。直接はコミットせず、pull request を通して取り込む。直接コミットを許す場面があれば、この行の下に場面と理由を書く。
+- 保護するブランチは `main`、`develop` である。直接はコミットせず、pull request を通して取り込む。
   - リポジトリを作った直後の、agent-harness の導入のコミットだけは `main` へ直接積んだ。`develop` はこのコミットから切った。
-
-<!-- 次のバージョンを何から決めるか。コミットメッセージからなら release-please、変更ごとの記述からなら changesets -->
 
 ```mermaid
 gitGraph
-    commit id: "v1.0.0" tag: "v1.0.0"
+    commit id: "init"
     branch develop
     checkout develop
     commit id: "dev-1"
@@ -165,12 +164,14 @@ gitGraph
     checkout develop
     merge "feature/12" id: "PR #12"
     checkout main
-    merge develop id: "release" tag: "v1.1.0"
+    merge develop id: "release" tag: "apps/web/v1.0.0"
 ```
 
 ## issue と pull request
 
-<!-- issue の種類とラベル、pull request との対応 -->
-
-- 作業は issue から始める。pull request は 1 つの issue に対応させる。
-- 題と本文の書き方は、スキル write-issue-pr に従う。
+- 作業は issue から始める。issue は、雛形（`.github/ISSUE_TEMPLATE/`）の要求、不具合、タスクから選ぶ。種類は `type:` のラベル、対象のアプリとパッケージは `pkg:` のラベルで示す。
+- pull request は 1 つの issue に対応させる。大きい issue は、関心事ごとに複数の pull request に分け、本文で issue を `Refs #<番号>` で指す。
+- 題と本文の書き方は、スキル write-issue-pr に従う。本文は `.github/pull_request_template.md` の節で書く。
+- レビューの指摘に対応してから取り込む。直したコミットと、対応しない指摘の理由を pull request のコメントに残す。差分が変わったら、本文も差分に合わせて直す。
+- `develop` への取り込みは merge commit にする（`gh pr merge --merge`）。
+- 既定のブランチが `main` なので、`develop` への取り込みでは本文の `Closes` が issue を閉じない。issue の作業が全部入ったら、issue を手で閉じる。
