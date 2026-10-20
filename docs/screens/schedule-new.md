@@ -61,7 +61,7 @@ API の列は、`createSchedule`（`POST /v1/facilities/{facility_id}/schedules`
 | --- | --- | --- | --- | --- | --- |
 | 1 | `Modal` | 題「予定の作成」 | なし | なし | `schedule-form-modal` |
 | 1-1 | 閉じるボタン | ×（`aria-label="閉じる"`） | なし | なし | `modal-close` |
-| 1-2 | 種類の `TextTab` | 「通常」「訪問」 | `ScheduleInput.kind` | `schedule_type_id` | `schedule-kind-tab`、タブは `schedule-kind-tab-normal`、`schedule-kind-tab-visit` |
+| 1-2 | 種類の `SegmentedControl` | 「通常」「訪問」 | `ScheduleInput.kind` | `schedule_type_id` | `schedule-kind-tab`、タブは `schedule-kind-tab-normal`、`schedule-kind-tab-visit` |
 | 1-3 | 送信の失敗の文 | 「予定を作成できませんでした。」 | なし | なし | なし |
 | 1-4 | 作成のボタン | 「作成」 | なし | なし | `schedule-create-submit` |
 | 2 | モーダルの背景 | 暗くぼかした背景 | なし | なし | `modal-overlay` |
@@ -88,7 +88,7 @@ API の列は、`createSchedule`（`POST /v1/facilities/{facility_id}/schedules`
 
 | 番号 | 構成要素 | 表示する条件 | 押せる（入力できる）条件 |
 | --- | --- | --- | --- |
-| 1-2 | 種類の `TextTab` | 常に（作成だけ） | 常に |
+| 1-2 | 種類の `SegmentedControl` | 常に（作成だけ） | 常に |
 | 3、4-1 | 要約の一覧の「タイトル」、右の `TextareaField` | 種類が通常 | 常に |
 | 3 | 要約の一覧の「利用者」「訪問の種類」 | 種類が訪問 | 常に |
 | 4 | 右の入力 | 要約の一覧で選んだ項目の 1 つだけ。選んだ項目が種類の切り替えで消えたら「訪問日時」か「予定日時」 | 常に |
