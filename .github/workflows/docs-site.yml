@@ -1,0 +1,66 @@
+# 文書のサイトと Storybook のカタログを、1 つの Worker（buddy-docs）として Cloudflare に出す。
+# 手順と Access の設定は apps/docs-site/README.md にある。
+# pull request ではプレビューを出して URL をコメントし、develop に入ったら本番に出す。
+# 文書の元は docs/ のほか、各アプリの Design Doc にも散るので、変えた場所で絞らない。
+
+name: 文書のサイト
+
+on:
+  pull_request:
+  push:
+    branches: [develop]
+
+concurrency:
+  group: docs-site-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  docs-site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CF_SEND_TELEMETRY: 'false'
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          version: '0.13'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm site:build
+
+      - name: プレビューを出す
+        if: github.event_name == 'pull_request'
+        id: preview
+        working-directory: apps/docs-site
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          pnpm run deploy:preview "pr-${{ github.event.pull_request.number }}" | tee preview.log
+          url=$(grep -oE 'https://[A-Za-z0-9.-]+\.workers\.dev' preview.log | head -1)
+          test -n "$url"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: プレビューの URL を pull request にコメントする
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment "${{ github.event.pull_request.number }}" --edit-last --create-if-none --body "文書のサイトのプレビュー: ${{ steps.preview.outputs.url }}（カタログは ${{ steps.preview.outputs.url }}/storybook/）
+          Cloudflare Access で許可した人だけが開ける。コミット ${{ github.event.pull_request.head.sha }}"
+
+      - name: 本番に出す
+        if: github.event_name == 'push'
+        working-directory: apps/docs-site
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: pnpm run deploy:production

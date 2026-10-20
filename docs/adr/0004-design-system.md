@@ -16,7 +16,7 @@
   - 出典: [@digital-go-jp/design-tokens](https://www.npmjs.com/package/@digital-go-jp/design-tokens)
 - DADS の Tailwind の plugin `@digital-go-jp/tailwind-theme-plugin` 1.0.1 は、v4 の `@theme` を持つ。原色の全ての段を `--color-blue-900` のような名前で Tailwind のテーマに入れる。
   - 出典: [@digital-go-jp/tailwind-theme-plugin](https://www.npmjs.com/package/@digital-go-jp/tailwind-theme-plugin)
-- Storybook のカタログは GitHub Pages に公開する。buddy のリポジトリは private だが、Pages の URL を知る人は誰でも開ける。
+- buddy のリポジトリは private で、GitHub の無料のプランでは private のリポジトリから GitHub Pages を公開できない。Pro にしても、Pages の URL を知る人は誰でも開ける。
 
 ## Decision
 
@@ -129,7 +129,8 @@ apps/web は packages/ui に依存するので、依存の向きを変えずに 
 - カタログのページは、はじめに、トークン、コンポーネント、パターン、画面の 5 つに分ける。DADS のサイトと SmartHR Design System のように、原則とトークンとコンポーネントの使い方を読めるサイトにする。
   - 出典: [SmartHR Design System](https://smarthr.design/)
 - title は、ファイルの置き場から機械的に決める。規則は DESIGN.md にある。
-- カタログに載せるのは、コンポーネントと架空のデータだけにする。Pages の URL を知る人は誰でも開けるためである。
+- カタログは、文書のサイトと 1 つの Cloudflare Worker の静的なファイルとして公開し（`/storybook/`）、Cloudflare Access で許可した人だけが開けるようにする。pull request ごとにプレビューを出し、develop に入ったら本番に出す。仕組みは `apps/docs-site/README.md` にある。
+- Access で絞っても、カタログに載せるのはコンポーネントと架空のデータだけにする。許可した人の範囲は変わりうるためである。
 
 ## Considered Options
 
@@ -147,9 +148,20 @@ apps/web は packages/ui に依存するので、依存の向きを変えずに 
 | 選択肢 | 強み | 弱み |
 | --- | --- | --- |
 | **採用:** apps/web の Storybook に packages/ui の MDX と story も読ませる | 1 回のビルドで 1 つのサイトになる。原則から画面までを 1 つのサイドバーと検索でたどれる | packages/ui の story を 2 つの Storybook でビルドする |
-| Storybook の refs で、apps/web から packages/ui の Storybook を合成する | 2 つの Storybook を独立にビルドできる | 2 つのビルドと公開先を揃える必要がある。refs の URL は開発の時と Pages とで違う。相対の URL で動くかは未確認 |
+| Storybook の refs で、apps/web から packages/ui の Storybook を合成する | 2 つの Storybook を独立にビルドできる | 2 つのビルドと公開先を揃える必要がある。refs の URL は開発の時と公開先とで違う。相対の URL で動くかは未確認 |
 | 2 つの Storybook を別々に公開し、一覧のページから 2 つへリンクする（kufu-apps の形） | 公開の仕組みが単純になる | 原則とトークンとコンポーネントのサイトと、画面のサイトが分かれ、行き来できない |
 | packages/ui の Storybook に apps/web の story も読ませる | packages/ui の中でカタログが完結する | packages/ui が apps/web の import の別名と plugin に依存し、依存の向きが逆になる |
+
+### カタログの公開先
+
+| 選択肢 | 強み | 弱み |
+| --- | --- | --- |
+| **採用:** 文書のサイトと 1 つの Cloudflare Worker にまとめ、Worker の Cloudflare Access で守る | 無料のプランで private のリポジトリから出せる。Access で開ける人を絞れ、プレビューの URL も同じ Access で守れる | Cloudflare のアカウントと Access の設定を保つ必要がある。どちらかを変えると、両方をビルドし直す |
+| 文書のサイトとカタログを、別々の Worker に出す | 変えた方だけを出せる | Worker の作成と Access の設定、URL、プレビューのコメントが 2 つずつになる。文書からカタログへ相対のリンクで行き来できない |
+| Cloudflare Pages と Access | 静的なサイトの公開の仕組みとして長く使われている | Worker の Access のように、本番とプレビューの URL を 1 つの設定でまとめて守る仕組みが、Pages には文書で確かめられなかった。CLI の `cf` は Pages を `cf pages deploy` として、Worker の設定（`cloudflare.config.ts`）と別に扱う |
+| GitHub Pages | GitHub だけで完結する | 無料のプランでは private のリポジトリから出せない。Pro にしても、URL を知る人は誰でも開ける |
+| Chromatic | Storybook のための公開とレビューの仕組みが揃う | 開ける人を絞るには有料のプランが要る。照合と予定のアプリのほかに、サービスの契約が増える |
+| ビルドの成果物だけを public のリポジトリに出す | 無料で GitHub Pages を使える | 成果物の中身が誰にでも見える。2 つのリポジトリの同期が要る |
 
 ### 文書の分け方
 
@@ -178,4 +190,6 @@ apps/web は packages/ui に依存するので、依存の向きを変えずに 
 - 主の色、枠、角丸、フォーカス、書体が変わり、今の画面と見た目が大きく違う。
 - コンポーネントを移すときに、Tailwind の既定のユーティリティ（`text-sm`、`rounded-xl` など）を使う箇所を全て書き換える必要がある。
 - DADS のバージョンを上げるたびに、`tokens.css` の名前と値の差分を確かめる必要がある。
-- カタログに実際の利用者や職員のデータを載せると、URL を知る人に見える。story のデータを作る人が、架空のデータに限る規則を守る必要がある。
+- カタログを Access で許可した人に見せるため、Cloudflare のアカウント、API トークン、Access の許可の設定を保つ必要がある。カタログの Worker の名前を変えると、新しい Worker は Access なしで出る。
+- pull request のプレビューのため、書き込みの権限を持つ人は Cloudflare のトークンを読める。トークンを Worker `buddy-docs` の Editor に絞り、漏れたときに書き換えられるものを、このサイトの中身と設定に限る。
+- story のデータを作る人が、架空のデータに限る規則を守る必要がある。

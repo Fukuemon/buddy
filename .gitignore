@@ -37,6 +37,10 @@ node_modules/
 go.work
 go.work.sum
 
+# 文書のサイトとカタログの成果物（scripts/build-docs-site.mjs と cf build）
+apps/docs-site/public/
+apps/docs-site/.cloudflare/
+
 # E2E のログインの状態と結果
 packages/e2e/.auth/
 packages/e2e/test-results/
