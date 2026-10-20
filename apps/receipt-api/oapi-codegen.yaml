@@ -1,0 +1,7 @@
+# internal/httpapi/openapi の go:generate が、そのディレクトリで読む。output はそこからの相対パスである
+package: openapi
+output: openapi.gen.go
+generate:
+  std-http-server: true
+  strict-server: true
+  models: true

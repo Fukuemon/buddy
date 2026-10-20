@@ -15,6 +15,7 @@ import (
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/check"
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/gcal"
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/gcal/gcaltest"
+	"github.com/Fukuemon/buddy/apps/receipt-api/internal/httpapi/openapi"
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/source"
 )
 
@@ -137,12 +138,12 @@ func TestChecksCalendarErrors(t *testing.T) {
 		h          http.Handler
 		values     map[string]string
 		wantStatus int
-		wantCode   string
+		wantCode   openapi.ErrorCode
 	}{
-		{"schedules も month もない", calendarHandler(t), nil, http.StatusBadRequest, CodeMissingFile},
-		{"month の形が違う", calendarHandler(t), map[string]string{FieldMonth: "2024/04"}, http.StatusBadRequest, CodeBadRequest},
-		{"カレンダーの設定がない", newHandler(), map[string]string{FieldMonth: "2024-04"}, http.StatusServiceUnavailable, CodeCalendarNotConfigured},
-		{"Calendar API が失敗する", failing, map[string]string{FieldMonth: "2024-04"}, http.StatusBadGateway, CodeScheduleSourceFailed},
+		{"schedules も month もない", calendarHandler(t), nil, http.StatusBadRequest, openapi.MissingFile},
+		{"month の形が違う", calendarHandler(t), map[string]string{FieldMonth: "2024/04"}, http.StatusBadRequest, openapi.BadRequest},
+		{"カレンダーの設定がない", newHandler(), map[string]string{FieldMonth: "2024-04"}, http.StatusServiceUnavailable, openapi.CalendarNotConfigured},
+		{"Calendar API が失敗する", failing, map[string]string{FieldMonth: "2024-04"}, http.StatusBadGateway, openapi.ScheduleSourceFailed},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -150,7 +151,7 @@ func TestChecksCalendarErrors(t *testing.T) {
 			if rec.Code != tt.wantStatus {
 				t.Fatalf("status %d body %s", rec.Code, rec.Body)
 			}
-			var body ErrorResponse
+			var body openapi.Error
 			if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 				t.Fatal(err)
 			}

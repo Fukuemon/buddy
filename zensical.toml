@@ -4,14 +4,16 @@ site_name = "buddy"
 site_description = "予定の管理とレセプトの照合の設計書"
 docs_dir = "docs"
 site_dir = "site"
-# docs/design/apps/ のシンボリックリンクの先を、プレビューでたどって再読み込みする
+# docs/design/ のシンボリックリンクの先を、プレビューでたどって再読み込みする
 watch = [
   "apps/schedule-api/DesignDoc.md",
   "apps/receipt-api/DesignDoc.md",
+  "packages/ui/DESIGN.md",
 ]
-# ADR の雛形は文書ではないので、サイトに載せない
+# ADR と画面仕様書の雛形は文書ではないので、サイトに載せない
 exclude_docs = """
 adr/template.md
+screens/template.md
 """
 nav = [
   { "トップ" = "index.md" },
@@ -21,9 +23,18 @@ nav = [
     { "予定の管理" = "design/apps/schedule-api.md" },
     { "レセプトの照合" = "design/apps/receipt-api.md" },
   ] },
+  { "デザインシステム" = "design/packages/ui.md" },
+  { "画面仕様書" = [
+    { "画面の一覧" = "screens/index.md" },
+    { "予定のカレンダー" = "screens/schedule-calendar.md" },
+    { "予定の作成" = "screens/schedule-new.md" },
+    { "予定の詳細" = "screens/schedule-detail.md" },
+    { "予定の編集" = "screens/schedule-edit.md" },
+  ] },
   { "ADR" = [
     "adr/0001-auth.md",
     "adr/0002-pbac.md",
+    "adr/0004-design-system.md",
   ] },
 ]
 
