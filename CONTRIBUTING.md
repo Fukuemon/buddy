@@ -80,12 +80,12 @@ pnpm e2e
 - 環境変数と、テストのデータの扱いは `context/testing.md` の E2E の節にある。
 - 失敗したテストの trace は `packages/e2e/test-results/` に残る。`pnpm --filter @buddy/e2e exec playwright show-trace <trace.zip>` で開く。trace.zip は、`packages/e2e` からの相対パス（Playwright が出す `test-results/...`）で渡す。
 
-## Storybook のカタログを確かめる
+## 公開した文書のサイトとカタログを確かめる
 
-apps/web、packages/ui、apps/catalog を変える pull request では、ワークフロー「Storybook のカタログ」がプレビューを出し、URL を pull request にコメントする。プレビューと本番のカタログは、Cloudflare Access で許可した人だけが開ける。
+pull request を作ると、ワークフロー「文書のサイト」が、文書のサイトと Storybook のカタログ（`/storybook/`）のプレビューを出し、URL を pull request にコメントする。プレビューと本番は、Cloudflare Access で許可した人だけが開ける。
 
-- 手元で成果物を作るときは、ルートで `pnpm storybook:pages` を実行する。
-- 公開の仕組みと Cloudflare の準備は、[apps/catalog/README.md](apps/catalog/README.md) にある。
+- 手元で成果物を作るときは、ルートで `pnpm site:build` を実行する。
+- 公開の仕組みと Cloudflare の準備は、[apps/docs-site/README.md](apps/docs-site/README.md) にある。
 
 ## 文書を直すとき
 

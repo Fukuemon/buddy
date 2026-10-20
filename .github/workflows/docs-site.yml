@@ -1,27 +1,17 @@
-# Storybook のカタログを Cloudflare に出す。手順と Access の設定は apps/catalog/README.md にある。
+# 文書のサイトと Storybook のカタログを、1 つの Worker（buddy-docs）として Cloudflare に出す。
+# 手順と Access の設定は apps/docs-site/README.md にある。
 # pull request ではプレビューを出して URL をコメントし、develop に入ったら本番に出す。
+# 文書の元は docs/ のほか、各アプリの Design Doc にも散るので、変えた場所で絞らない。
 
-name: Storybook のカタログ
+name: 文書のサイト
 
 on:
   pull_request:
-    paths:
-      - apps/web/**
-      - packages/ui/**
-      - apps/catalog/**
-      - pnpm-lock.yaml
-      - .github/workflows/catalog.yml
   push:
     branches: [develop]
-    paths:
-      - apps/web/**
-      - packages/ui/**
-      - apps/catalog/**
-      - pnpm-lock.yaml
-      - .github/workflows/catalog.yml
 
 concurrency:
-  group: catalog-${{ github.ref }}
+  group: docs-site-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -29,7 +19,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  catalog:
+  docs-site:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -42,13 +32,16 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
+      - uses: astral-sh/setup-uv@v10
+        with:
+          version: '0.13'
       - run: pnpm install --frozen-lockfile
-      - run: pnpm storybook:pages
+      - run: pnpm site:build
 
       - name: プレビューを出す
         if: github.event_name == 'pull_request'
         id: preview
-        working-directory: apps/catalog
+        working-directory: apps/docs-site
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
@@ -62,12 +55,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh pr comment "${{ github.event.pull_request.number }}" --edit-last --create-if-none --body "Storybook のカタログのプレビュー: ${{ steps.preview.outputs.url }}
-          （Cloudflare Access で許可した人だけが開ける。コミット ${{ github.event.pull_request.head.sha }}）"
+          gh pr comment "${{ github.event.pull_request.number }}" --edit-last --create-if-none --body "文書のサイトのプレビュー: ${{ steps.preview.outputs.url }}（カタログは ${{ steps.preview.outputs.url }}/storybook/）
+          Cloudflare Access で許可した人だけが開ける。コミット ${{ github.event.pull_request.head.sha }}"
 
       - name: 本番に出す
         if: github.event_name == 'push'
-        working-directory: apps/catalog
+        working-directory: apps/docs-site
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: pnpm run deploy:production

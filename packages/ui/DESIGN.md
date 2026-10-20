@@ -167,7 +167,7 @@ title は、ファイルの置き場から機械的に決め、story を作る�
 
 ### カタログに載せてよいもの
 
-カタログは Cloudflare に公開し、Cloudflare Access で許可した人だけが開ける（`apps/catalog/README.md`）。許可した人の範囲は変わりうるので、story と MDX には、コンポーネントと架空のデータだけを載せる。
+カタログは文書のサイトの `/storybook/` として Cloudflare に公開し、Cloudflare Access で許可した人だけが開ける（`apps/docs-site/README.md`）。許可した人の範囲は変わりうるので、story と MDX には、コンポーネントと架空のデータだけを載せる。
 
 - 利用者と職員の名前、事業所、予定は、`青木 一郎` のような架空の値にする。実際の画面やデータベースから写さない。
 - API を呼ぶ story を作らない。データは story の中か、架空のデータのファイルから渡す。

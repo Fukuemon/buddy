@@ -2,5 +2,5 @@
 import { defineWranglerConfig } from 'wrangler/experimental-config'
 
 export default defineWranglerConfig({
-  assetsDirectory: '../web/storybook-static',
+  assetsDirectory: 'public',
 })

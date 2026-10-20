@@ -129,7 +129,7 @@ apps/web は packages/ui に依存するので、依存の向きを変えずに 
 - カタログのページは、はじめに、トークン、コンポーネント、パターン、画面の 5 つに分ける。DADS のサイトと SmartHR Design System のように、原則とトークンとコンポーネントの使い方を読めるサイトにする。
   - 出典: [SmartHR Design System](https://smarthr.design/)
 - title は、ファイルの置き場から機械的に決める。規則は DESIGN.md にある。
-- カタログは Cloudflare Workers の静的なファイルとして公開し、Cloudflare Access で許可した人だけが開けるようにする。pull request ごとにプレビューを出し、develop に入ったら本番に出す。仕組みは `apps/catalog/README.md` にある。
+- カタログは、文書のサイトと 1 つの Cloudflare Worker の静的なファイルとして公開し（`/storybook/`）、Cloudflare Access で許可した人だけが開けるようにする。pull request ごとにプレビューを出し、develop に入ったら本番に出す。仕組みは `apps/docs-site/README.md` にある。
 - Access で絞っても、カタログに載せるのはコンポーネントと架空のデータだけにする。許可した人の範囲は変わりうるためである。
 
 ## Considered Options
@@ -156,7 +156,8 @@ apps/web は packages/ui に依存するので、依存の向きを変えずに 
 
 | 選択肢 | 強み | 弱み |
 | --- | --- | --- |
-| **採用:** Cloudflare Workers の静的なファイルと、Worker ごとの Cloudflare Access | 無料のプランで private のリポジトリから出せる。Access で開ける人を絞れ、プレビューの URL も同じ Access で守れる | Cloudflare のアカウントと Access の設定を保つ必要がある |
+| **採用:** 文書のサイトと 1 つの Cloudflare Worker にまとめ、Worker の Cloudflare Access で守る | 無料のプランで private のリポジトリから出せる。Access で開ける人を絞れ、プレビューの URL も同じ Access で守れる | Cloudflare のアカウントと Access の設定を保つ必要がある。どちらかを変えると、両方をビルドし直す |
+| 文書のサイトとカタログを、別々の Worker に出す | 変えた方だけを出せる | Worker の作成と Access の設定、URL、プレビューのコメントが 2 つずつになる。文書からカタログへ相対のリンクで行き来できない |
 | Cloudflare Pages と Access | 静的なサイトの公開の仕組みとして長く使われている | Worker の Access のように、本番とプレビューの URL を 1 つの設定でまとめて守る仕組みが、Pages には文書で確かめられなかった。CLI の `cf` は Pages を `cf pages deploy` として、Worker の設定（`cloudflare.config.ts`）と別に扱う |
 | GitHub Pages | GitHub だけで完結する | 無料のプランでは private のリポジトリから出せない。Pro にしても、URL を知る人は誰でも開ける |
 | Chromatic | Storybook のための公開とレビューの仕組みが揃う | 開ける人を絞るには有料のプランが要る。照合と予定のアプリのほかに、サービスの契約が増える |

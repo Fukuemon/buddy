@@ -1,5 +1,5 @@
 {
-  "name": "@buddy/catalog",
+  "name": "@buddy/docs-site",
   "private": true,
   "type": "module",
   "scripts": {
