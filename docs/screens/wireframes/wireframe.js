@@ -91,7 +91,7 @@
       renderNotes()
       if (embedded) {
         window.parent.postMessage(
-          { source: 'wireframe', type: 'resize', height: Math.ceil(root.scrollHeight) },
+          { source: 'wireframe', type: 'resize', height: Math.ceil(document.body.getBoundingClientRect().height) },
           '*',
         )
       }

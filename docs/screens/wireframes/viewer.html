@@ -187,7 +187,7 @@
             {
               source: 'wireframe-viewer',
               type: 'resize',
-              height: Math.ceil(document.documentElement.scrollHeight),
+              height: Math.ceil(document.body.getBoundingClientRect().height),
             },
             '*',
           )
