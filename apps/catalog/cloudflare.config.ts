@@ -6,5 +6,8 @@ export default defineConfig({
   worker: {
     name: 'buddy-storybook',
     compatibilityDate: '2026-10-01',
+    // 本番の workers.dev の URL と、pull request ごとのプレビューの URL を出す。どちらも Access で守る
+    workersDev: true,
+    previewUrls: true,
   },
 })
