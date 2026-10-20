@@ -86,7 +86,12 @@ for (const spec of specs) {
     if (!specRefs.has(ref)) problems.push(`${wireframePath}: data-ref ${ref} が ${specPath} の「${COMPONENTS}」の表に無い`)
   }
   for (const section of REFERRING) {
-    for (const ref of sections.get(section) ?? []) {
+    const refs = sections.get(section)
+    if (refs === undefined || refs.size === 0) {
+      problems.push(`${specPath}: 「${section}」の節に、1 列目が番号の表が無い`)
+      continue
+    }
+    for (const ref of refs) {
       if (REF.test(ref) && !specRefs.has(ref)) {
         problems.push(`${specPath}: 「${section}」の構成番号 ${ref} が「${COMPONENTS}」の表に無い`)
       }
