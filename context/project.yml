@@ -1,9 +1,9 @@
 version: 2
 
 docs:
-  design: design
-  adr: adr
-  spec: specs
+  design: docs/design
+  adr: docs/adr
+  spec: docs/specs
 
 process:
   defaults:

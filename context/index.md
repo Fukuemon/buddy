@@ -11,4 +11,4 @@
 
 ## Design Doc
 
-- [buddy Design Doc](../design/DesignDoc.md) — <何の全体像か。構成要素の一覧と責務、共通の方針。1 行>（draft）
+- [buddy Design Doc](../docs/design/DesignDoc.md) — <何の全体像か。構成要素の一覧と責務、共通の方針。1 行>（draft）
