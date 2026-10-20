@@ -1,0 +1,8 @@
+/*
+ * 書体 Noto Sans JP の読み込み。DADS の --font-family-sans が名指す名前と同じ 'Noto Sans JP' で登録する。
+ * 外部の CDN に頼らず、@fontsource/noto-sans-jp の woff2 をアプリと一緒に配る。
+ * 太さは theme.css の文字のスタイルが使う 400 と 700 だけを読む。
+ */
+
+@import '@fontsource/noto-sans-jp/400.css';
+@import '@fontsource/noto-sans-jp/700.css';
