@@ -89,10 +89,10 @@ export const StaffScheduleDayGrid = ({
                   style={{ top, height, backgroundColor: event.color }}
                   type="button"
                 >
-                  <span className="block">
-                    {toTimeKey(new Date(event.start))} - {toTimeKey(new Date(event.end))}
+                  <span className="block truncate">
+                    {toTimeKey(new Date(event.start))}-{toTimeKey(new Date(event.end))}{' '}
+                    <span className="font-bold">{event.title}</span>
                   </span>
-                  <span className="block truncate font-bold">{event.title}</span>
                 </button>
               )
             })}

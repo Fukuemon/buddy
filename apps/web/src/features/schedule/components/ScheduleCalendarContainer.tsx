@@ -13,7 +13,7 @@ import {
   scheduleListQueryOptions,
   staffListQueryOptions,
 } from '../queries'
-import type { ScheduleSearch } from '../schema/scheduleSearch'
+import { pickCalendarSearch, type ScheduleSearch } from '../schema/scheduleSearch'
 import { ScheduleCalendar } from './ScheduleCalendar'
 import { ScheduleCalendarToolbar } from './ScheduleCalendarToolbar'
 import { StaffScheduleDayGrid } from './StaffScheduleDayGrid'
@@ -37,6 +37,19 @@ export const ScheduleCalendarContainer = () => {
   const updateSearch = (patch: Partial<ScheduleSearch>) =>
     navigate({ search: (prev) => ({ ...prev, ...patch }) })
 
+  const openCreate = (start: string, time?: string, staffId?: string) =>
+    navigate({
+      to: '/schedule/new',
+      search: { ...pickCalendarSearch(search), start, time, staffId },
+    })
+
+  const openDetail = (scheduleId: string) =>
+    navigate({
+      to: '/schedule/$scheduleId',
+      params: { scheduleId },
+      search: pickCalendarSearch(search),
+    })
+
   const staffList = staffQuery.data ?? []
   const visibleStaff =
     search.staff.length === 0
@@ -52,6 +65,7 @@ export const ScheduleCalendarContainer = () => {
           onDateChange={(dateKey) => updateSearch({ date: dateKey })}
           onNext={() => updateSearch({ date: shiftCalendarDate(search.view, date, 1) })}
           onPrev={() => updateSearch({ date: shiftCalendarDate(search.view, date, -1) })}
+          onCreate={() => openCreate(date)}
           onToday={() => updateSearch({ date: undefined })}
           onViewChange={(view) => updateSearch({ view })}
           view={search.view}
@@ -67,16 +81,20 @@ export const ScheduleCalendarContainer = () => {
         ) : search.view === 'day' ? (
           <StaffScheduleDayGrid
             events={events}
-            onEventClick={() => {}}
-            onSlotClick={() => {}}
+            onEventClick={openDetail}
+            onSlotClick={(staffId, time) => openCreate(date, time, staffId)}
             staffList={visibleStaff}
           />
         ) : (
           <ScheduleCalendar
             date={date}
             events={events}
-            onDateClick={(dateKey) => updateSearch({ view: 'day', date: dateKey })}
-            onEventClick={() => {}}
+            onDateClick={(dateKey, time) =>
+              time === undefined
+                ? updateSearch({ view: 'day', date: dateKey })
+                : openCreate(dateKey, time)
+            }
+            onEventClick={openDetail}
             view={search.view}
           />
         )}

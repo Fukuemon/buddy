@@ -22,3 +22,10 @@ export const scheduleSearchSchema = z.object({
 })
 
 export type ScheduleSearch = z.infer<typeof scheduleSearchSchema>
+
+/** search params から、カレンダーの表示に使う項目だけを取り出す。モーダルを閉じるときに使う。 */
+export const pickCalendarSearch = ({ view, date, staff }: ScheduleSearch): ScheduleSearch => ({
+  view,
+  date,
+  staff,
+})
