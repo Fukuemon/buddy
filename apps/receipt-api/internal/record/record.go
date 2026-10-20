@@ -69,3 +69,13 @@ func (e *InputError) Error() string {
 	}
 	return fmt.Sprintf("%s（%d 件の行の誤り）", e.Message, len(e.Rows))
 }
+
+// Warning は、予定の取得元が解釈できず、照合に使わなかった予定の 1 件である。
+// 利用者名を含むので、予定の題名は持たない。
+type Warning struct {
+	CalendarID string `json:"calendar_id"`
+	EventID    string `json:"event_id"`
+	// Start は、予定の開始の日時（RFC 3339）である。
+	Start   string `json:"start"`
+	Message string `json:"message"`
+}
