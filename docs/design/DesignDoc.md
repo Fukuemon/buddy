@@ -172,6 +172,8 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 │   ├── schedule-api/    # Go、gin、sqlc、golang-migrate
 │   │   └── migrations/
 │   └── receipt-api/     # Go
+├── packages/
+│   └── ui/              # デザインシステム。トークン、Base と Case のコンポーネント、Storybook
 ├── docs/                # Zensical のサイトの元。PRD、Design Doc、ADR
 │   ├── PRD.md
 │   ├── design/
