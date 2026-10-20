@@ -13,7 +13,7 @@
 ## UI
 
 モーダルは、上端に閉じるボタンと種類のタブと題、左に項目の要約の一覧、右に選んだ項目の入力、下端に送信のボタンを置く。  
-幅 720px 未満では、モーダルを画面いっぱいに出し、要約の一覧の下に入力を置く。
+幅 768px 未満では、モーダルを画面いっぱいに出し、要約の一覧の下に入力を置く。
 
 <iframe class="wireframe-viewer" src="wireframes/viewer.html?screen=schedule-new" title="予定の作成のワイヤーフレーム" width="100%" height="720" loading="lazy"></iframe>
 

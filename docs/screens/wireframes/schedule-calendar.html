@@ -78,7 +78,19 @@
         max-width: 100%;
       }
 
-      @media (width < 720px) {
+      @media (width < 768px) {
+        .cal-body {
+          flex-direction: column;
+        }
+
+        .cal-side {
+          width: auto;
+          max-height: 160px;
+          overflow: auto;
+          border-right: 0;
+          border-bottom: 1px solid var(--wf-line-soft);
+        }
+
         .cal-main {
           padding: 8px;
         }

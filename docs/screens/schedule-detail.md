@@ -13,7 +13,7 @@
 ## UI
 
 モーダルは、上端に閉じるボタンと題、本文に項目の名前と値の行、下端に編集のボタンを置く。  
-幅 720px 未満では、モーダルを画面いっぱいに出す。
+幅 768px 未満では、モーダルを画面いっぱいに出す。
 
 <iframe class="wireframe-viewer" src="wireframes/viewer.html?screen=schedule-detail&state=ready" title="予定の詳細のワイヤーフレーム" width="100%" height="720" loading="lazy"></iframe>
 
