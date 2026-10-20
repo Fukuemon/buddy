@@ -23,16 +23,17 @@ export const NumberPicker = <T extends FieldValues>({
 }: NumberPickerProps<T>) => {
   const { field, fieldState } = useController({ name, control })
   const error = fieldState.error?.message
+  const inputId = useId()
   const errorId = useId()
 
   return (
-    <FieldFrame error={error} errorId={errorId} htmlFor={field.name} isWide={isWide} label={label}>
+    <FieldFrame error={error} errorId={errorId} htmlFor={inputId} isWide={isWide} label={label}>
       <input
         {...props}
         {...field}
         {...fieldErrorProps(error, errorId)}
         className={fieldInputClassName}
-        id={field.name}
+        id={inputId}
         onChange={(event) => field.onChange(event.target.valueAsNumber)}
         type="number"
         value={Number.isNaN(field.value) ? '' : (field.value as number)}

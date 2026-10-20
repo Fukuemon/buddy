@@ -25,13 +25,14 @@ export const TimePicker = <T extends FieldValues>({
 }: TimePickerProps<T>) => {
   const { field, fieldState } = useController({ name, control })
   const error = fieldState.error?.message
+  const inputId = useId()
   const errorId = useId()
 
   return (
     <FieldFrame
       error={error}
       errorId={errorId}
-      htmlFor={field.name}
+      htmlFor={inputId}
       icon={<TimerIcon className="text-text-secondary" height={20} width={20} />}
       isWide={isWide}
       label={label}
@@ -41,7 +42,7 @@ export const TimePicker = <T extends FieldValues>({
         {...field}
         {...fieldErrorProps(error, errorId)}
         className={fieldInputClassName}
-        id={field.name}
+        id={inputId}
         type="time"
         value={(field.value as string | undefined) ?? ''}
       />

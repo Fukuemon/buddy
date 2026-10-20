@@ -20,11 +20,12 @@ export const TextareaField = <T extends FieldValues>({
 }: TextareaFieldProps<T>) => {
   const { field, fieldState } = useController({ control, name })
   const error = fieldState.error?.message
+  const inputId = useId()
   const errorId = useId()
 
   return (
     <div className="flex flex-col gap-3">
-      <label className="text-heading-sm" htmlFor={field.name}>
+      <label className="text-heading-sm" htmlFor={inputId}>
         {label}
       </label>
       <textarea
@@ -34,7 +35,7 @@ export const TextareaField = <T extends FieldValues>({
           'min-h-40 rounded-8 p-3 text-body ring-1 ring-border-field ring-inset outline-none focus-visible:focus-ring',
           error !== undefined && 'ring-2 ring-danger',
         )}
-        id={field.name}
+        id={inputId}
         placeholder={placeholder}
         value={(field.value as string | undefined) ?? ''}
       />

@@ -25,13 +25,14 @@ export const DatePicker = <T extends FieldValues>({
 }: DatePickerProps<T>) => {
   const { field, fieldState } = useController({ name, control })
   const error = fieldState.error?.message
+  const inputId = useId()
   const errorId = useId()
 
   return (
     <FieldFrame
       error={error}
       errorId={errorId}
-      htmlFor={field.name}
+      htmlFor={inputId}
       icon={<CalendarIcon height={20} width={20} />}
       isWide={isWide}
       label={label}
@@ -41,7 +42,7 @@ export const DatePicker = <T extends FieldValues>({
         {...field}
         {...fieldErrorProps(error, errorId)}
         className={fieldInputClassName}
-        id={field.name}
+        id={inputId}
         type="date"
         value={(field.value as string | undefined) ?? ''}
       />
