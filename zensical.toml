@@ -43,6 +43,7 @@ nav = [
   { "ADR" = [
     "adr/0001-auth.md",
     "adr/0002-pbac.md",
+    "adr/0003-branch-and-release.md",
     "adr/0004-design-system.md",
   ] },
 ]
