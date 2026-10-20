@@ -12,7 +12,10 @@
     "preview": "vp preview",
     "lint": "vp lint",
     "check": "vp check",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vp test run",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.22",
