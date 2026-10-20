@@ -60,7 +60,11 @@ export const StaffScheduleDayGrid = ({
         ))}
       </div>
       {staffList.map((staff) => (
-        <div className="relative border-l border-border" key={staff.id}>
+        <div
+          className="relative border-l border-border"
+          data-testid={`day-grid-staff-${staff.id}`}
+          key={staff.id}
+        >
           {SLOT_TIMES.map((time) => (
             <button
               aria-label={`${staff.name} ${time} に予定を作成`}

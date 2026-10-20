@@ -61,6 +61,20 @@ TOKEN=$(docker compose exec -T idp wget -qO- --post-data "grant_type=authorizati
 curl -H "Authorization: Bearer $TOKEN" localhost:8080/v1/facilities/01M3TC5H00QV17BC0J9V3393ZP
 ```
 
+## E2E のテストを流す
+
+E2E のテストは `packages/e2e` にあり、ルートの compose で立てた全体に向けて流す。初めて流すときは、Playwright のブラウザを入れる。
+
+```sh
+pnpm --filter @buddy/e2e exec playwright install chromium
+docker compose up --build --wait
+pnpm e2e
+```
+
+- 書き方は、スキル write-e2e-test に従う。書いたら `pnpm --filter @buddy/e2e check` で、整形、lint、E2E の書き方の規則、型を確かめる。
+- 環境変数と、テストのデータの扱いは `context/testing.md` の E2E の節にある。
+- 失敗したテストの trace は `packages/e2e/test-results/` に残る。`pnpm --filter @buddy/e2e exec playwright show-trace <trace.zip>` で開く。trace.zip は、`packages/e2e` からの相対パス（Playwright が出す `test-results/...`）で渡す。
+
 ## 文書を直すとき
 
 PRD、Design Doc、ADR は `docs/` にあり、Zensical のサイトとして読む。

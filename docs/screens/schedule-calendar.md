@@ -53,7 +53,7 @@ web の型（`apps/web/src/api/types.ts`）は偽物の API に合わせた形�
 | --- | --- | --- | --- | --- | --- |
 | 1 | `SiteHeader` | 「buddy」 | なし | なし | なし |
 | 1-1 | `SiteNav` | 「予定」と「照合」のリンク。「予定」に `aria-current="page"` | なし | なし | `site-nav` |
-| 1-2 | `ViewerMenu` | ログインした職員の名前とログアウトのボタン。幅 768px 未満では名前を出さない | `Viewer.staffName` | `getMe` の `username` | `viewer-menu` |
+| 1-2 | `ViewerMenu` | ログインした職員の名前とログアウトのボタン。幅 768px 未満では名前を出さない | `Viewer.staffName` | `getMe` の `username` | `viewer-menu`、ログアウトのボタンは `viewer-logout` |
 | 2 | `StaffFilterSidebar` | 見出し「職員」 | なし | なし | `staff-filter-sidebar` |
 | 2-1 | 全員を表示のボタン | 「全員を表示」 | なし | なし | `staff-filter-reset` |
 | 2-2 | チームのチェックボックス | チームの名前 | `Team.name` | `listTeams` の `Unit.name` | `staff-filter-team-{チームの id}` |
@@ -72,6 +72,7 @@ web の型（`apps/web/src/api/types.ts`）は偽物の API に合わせた形�
 | 5-1 | 職員の列 | 列の見出しに職員の名前 | `Staff.name` | `Staff.username` | なし |
 | 5-2 | 時間の枠（日） | 30 分の枠 | なし | なし | `day-grid-slot-{職員の id}-{HH:mm}` |
 | 5-3 | 予定（日） | 開始と終了の時刻と題 | `Schedule.startsAt`、`Schedule.endsAt`、`Schedule.title` | `date`、`start_time`、`end_time`、`title` | `schedule-event-{予定の id}` |
+| 5-4 | 職員の予定の列（日） | 職員の時間の枠と予定 | `Schedule.staffId` | `staff_id` | `day-grid-staff-{職員の id}` |
 | 6 | `Loading` | 「カレンダーを表示中...」 | なし | なし | なし |
 | 7 | 取得の失敗の文 | 「予定を取得できませんでした。」 | なし | なし | なし |
 

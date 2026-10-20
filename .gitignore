@@ -32,3 +32,8 @@ apm_modules/
 /.codex/hooks/docs/
 
 node_modules/
+
+# E2E のログインの状態と結果
+packages/e2e/.auth/
+packages/e2e/test-results/
+packages/e2e/playwright-report/
