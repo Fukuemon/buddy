@@ -8,7 +8,7 @@
 mise install
 ```
 
-Go のモジュールは `apps/schedule-api` と `apps/receipt-api` の 2 つで、ルートの `go.work` がエディタと手元のビルドのためにまとめる。コンテナのイメージは、各アプリの `go.mod` だけでビルドする。
+Go のモジュールは `apps/schedule-api` と `apps/receipt-api` の 2 つである。エディタで両方を読むときは、ルートで `go work init ./apps/receipt-api ./apps/schedule-api` を流す。`go.work` は追跡しない。2 つのモジュールが共有する依存のバージョンが高い方にそろい、コンテナのイメージ（各 `go.mod` だけでビルドする）とずれるためである。テストと lint は、各アプリのディレクトリで `GOWORK=off` を付けて流す。`go.work` の下でビルドすると各アプリの `go.sum` に行が増えるので、コミットに含めない。
 
 <!-- 次は apm で導入した場合。コーディングエージェントの標準の方法で導入したなら、その導入の手順に書き換える -->
 
