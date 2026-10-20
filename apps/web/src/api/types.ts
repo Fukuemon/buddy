@@ -1,3 +1,5 @@
+import type { components as ReceiptComponents } from './generated/receipt'
+
 /** 事業所の ID。API の `/v1/facilities/{facility_id}` に入る。 */
 export type FacilityId = string
 
@@ -83,3 +85,9 @@ export type NameSearchParams = {
   /** 名前の部分一致。空か未指定のときは全件を返す。 */
   name?: string
 }
+
+/** 照合の結果。照合の API の Report をそのまま使う。 */
+export type ReceiptReport = ReceiptComponents['schemas']['Report']
+export type ReceiptRow = ReceiptComponents['schemas']['Result']
+export type ReceiptCategory = ReceiptComponents['schemas']['Category']
+export type ReceiptRowError = ReceiptComponents['schemas']['RowError']

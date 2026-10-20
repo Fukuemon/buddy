@@ -1,7 +1,6 @@
 import { Outlet, createFileRoute, stripSearchParams } from '@tanstack/react-router'
 
-import { SiteHeader } from '#/components/site/SiteHeader'
-import { ViewerMenu } from '#/components/site/ViewerMenu'
+import { SiteHeaderContainer } from '#/components/site/SiteHeaderContainer'
 import { ScheduleCalendarContainer } from '#/features/schedule/components/ScheduleCalendarContainer'
 import { StaffFilterSidebarContainer } from '#/features/schedule/components/StaffFilterSidebarContainer'
 import {
@@ -19,14 +18,9 @@ export const Route = createFileRoute('/schedule')({
 })
 
 function SchedulePage() {
-  const { viewer, mode } = Route.useRouteContext()
   return (
     <div className="flex h-dvh flex-col">
-      <SiteHeader
-        actions={
-          viewer !== null && <ViewerMenu staffName={viewer.staffName} canLogout={mode === 'bff'} />
-        }
-      />
+      <SiteHeaderContainer current="/schedule" />
       <div className="flex min-h-0 grow flex-col desktop:flex-row">
         <aside className="max-h-40 w-full shrink-0 overflow-auto border-b border-border desktop:max-h-none desktop:w-56 desktop:border-r desktop:border-b-0">
           <StaffFilterSidebarContainer />

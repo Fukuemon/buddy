@@ -5,6 +5,7 @@ import { parseBffArgs, parseBffCall } from '#/api/bff/bffCall'
 
 import { loadServerConfig } from './config'
 import { createMemorySessionStore } from './sessionStore'
+import { exceedsBodyLimit } from './bodyLimit'
 import { isSameHostOrigin } from './sameOrigin'
 import { signValue, verifySignedValue } from './signedValue'
 
@@ -103,5 +104,18 @@ describe('createMemorySessionStore の鍵', () => {
     expect(await store.exists('k')).toBe(true)
     await store.unlock('k', token as string)
     expect(await store.exists('k')).toBe(false)
+  })
+})
+
+describe('exceedsBodyLimit', () => {
+  const post = (headers: Record<string, string>) =>
+    new Request('http://web.test/_serverFn/x', { method: 'POST', headers })
+
+  it('Content-Length が上限を超えるか、長さの分からない本文を拒む', () => {
+    expect(exceedsBodyLimit(post({ 'Content-Length': '100' }), 100)).toBe(false)
+    expect(exceedsBodyLimit(post({ 'Content-Length': '101' }), 100)).toBe(true)
+    expect(exceedsBodyLimit(post({ 'Content-Length': 'x' }), 100)).toBe(true)
+    expect(exceedsBodyLimit(post({ 'Transfer-Encoding': 'chunked' }), 100)).toBe(true)
+    expect(exceedsBodyLimit(post({}), 100)).toBe(false)
   })
 })

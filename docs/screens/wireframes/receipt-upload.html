@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="wireframe-states"
+      content="initial:初期表示,csv:予定の CSV,ready:入力がそろった,submitting:送信中,error-rows:行の誤り（422）,error-file:ファイルの誤り（422、413、400）,error-calendar:カレンダーの失敗（502、503）,error:照合の失敗,error-401:未認証（401）"
+    />
+    <title>照合</title>
+    <link rel="stylesheet" href="wireframe.css" />
+    <style>
+      .rc-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 56px;
+        padding: 0 24px;
+        border-bottom: 1px solid var(--wf-line-soft);
+      }
+      .rc-header nav {
+        display: flex;
+        gap: 16px;
+        margin-left: 32px;
+      }
+      .rc-form {
+        display: grid;
+        gap: 20px;
+        max-width: 560px;
+      }
+      .rc-field {
+        display: grid;
+        gap: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="rc-header" data-component="SiteHeader" data-ref="1">
+      <div style="display: flex; align-items: center">
+        <strong>buddy</strong>
+        <nav data-component="SiteNav" data-ref="1-1" data-testid="site-nav">
+          <span>予定</span>
+          <span style="text-decoration: underline; font-weight: 700" aria-current="page">照合</span>
+        </nav>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: center" data-component="ViewerMenu" data-ref="1-2" data-testid="viewer-menu">
+        <span class="wf-text wf-text--s"></span>
+        <span class="wf-btn">ログアウト</span>
+      </div>
+    </header>
+
+    <main style="display: grid; gap: 16px; padding: 24px">
+      <h1 class="wf-heading">照合</h1>
+      <p data-component="説明の文" data-ref="2"><span class="wf-text wf-text--full"></span></p>
+
+      <p class="wf-note" data-show-when="error-401">セッションが切れていれば、照合のボタンを押したときにログインの画面へ移る。</p>
+
+      <form class="rc-form" data-component="ReceiptCheckForm" data-ref="3" data-testid="receipt-check-form">
+        <div class="rc-field">
+          <span>予定の取り方</span>
+          <div class="wf-tabs" data-component="予定の取り方の SegmentedControl" data-ref="3-1" data-testid="receipt-source">
+            <span class="wf-tab is-active" data-hide-when="csv">Google カレンダー</span>
+            <span class="wf-tab" data-show-when="csv">Google カレンダー</span>
+            <span class="wf-tab" data-hide-when="csv">予定の CSV</span>
+            <span class="wf-tab is-active" data-show-when="csv">予定の CSV</span>
+          </div>
+        </div>
+
+        <div class="rc-field" data-hide-when="csv" data-component="対象の月" data-ref="3-2" data-testid="receipt-month">
+          <span>対象の月</span>
+          <span class="wf-input" style="width: 200px">2024 年 04 月</span>
+          <span class="wf-hint">その月の 1 日から月末までの予定を、職員の Google カレンダーから取ります。</span>
+        </div>
+
+        <div class="rc-field" data-show-when="csv" data-component="予定の CSV の CsvFileField" data-ref="3-3" data-testid="receipt-schedules-file">
+          <span>予定の CSV</span>
+          <span class="wf-input"><span class="wf-btn">ファイルを選択</span> schedules.csv</span>
+        </div>
+
+        <div class="rc-field" data-component="実績の CSV の CsvFileField" data-ref="3-4" data-testid="receipt-visits-file">
+          <span>実績の CSV</span>
+          <span class="wf-input">
+            <span class="wf-btn">ファイルを選択</span>
+            <span data-show-when="initial csv">選択されていません</span>
+            <span data-hide-when="initial csv">visits.csv</span>
+          </span>
+          <span class="wf-hint">電子カルテから書き出した CSV。UTF-8 か Shift_JIS で、10 MB まで。</span>
+        </div>
+
+        <div role="alert" data-component="失敗の文" data-ref="3-5" data-testid="receipt-check-error" data-show-when="error-rows error-file error-calendar error">
+          <p class="wf-alert" data-show-when="error-rows">入力の CSV に誤りがあります。次の行を直して、もう一度照合してください。</p>
+          <ul class="wf-alert" data-show-when="error-rows">
+            <li>実績の CSV の 3 行目の「訪問日」: 暦にない日付: 2024-13-01</li>
+            <li>実績の CSV の 3 行目の「利用者名」: 空である</li>
+          </ul>
+          <p class="wf-alert" data-show-when="error-file">入力の CSV に誤りがあります。visits の CSV に列がない: 開始時間</p>
+          <p class="wf-note" data-show-when="error-file">413 は「ファイルが大きすぎます。10 MB までのファイルにしてください。」、400 は「入力を読めませんでした。ファイルを選び直して、もう一度照合してください。」</p>
+          <p class="wf-alert" data-show-when="error-calendar">Google カレンダーから予定を取れませんでした。時間をおいて、もう一度照合してください。</p>
+          <p class="wf-note" data-show-when="error-calendar">503 は「Google カレンダーの設定がありません。予定の CSV で照合してください。」</p>
+          <p class="wf-alert" data-show-when="error">照合できませんでした。時間をおいて、もう一度照合してください。</p>
+        </div>
+
+        <div>
+          <span class="wf-btn wf-btn--primary" data-component="照合のボタン" data-ref="3-6" data-testid="receipt-check-submit">
+            <span data-hide-when="submitting">照合する</span>
+            <span data-show-when="submitting" class="wf-btn--busy">照合する（送信中）</span>
+          </span>
+          <span class="wf-note" data-show-when="initial csv">入力がそろうまで押せない</span>
+        </div>
+      </form>
+    </main>
+    <script src="wireframe.js"></script>
+  </body>
+</html>

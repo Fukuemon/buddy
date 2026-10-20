@@ -1,6 +1,6 @@
 # @buddy/web
 
-予定の管理の画面。TanStack Start で作り、ツールチェーンに Vite+ を使う。  
+予定の管理とレセプトの照合の画面。TanStack Start で作り、ツールチェーンに Vite+ を使う。  
 既定ではデータを手元の偽物の API（`src/api/fake/`）から取る。BFF を通して予定の API を呼ぶように切り替えられる（「API を切り替える」）。
 
 ## 起動する
@@ -50,7 +50,17 @@ pnpm --filter @buddy/web dev
 - 繰り返しの予定は、回に展開していないので一覧に出ない。キャンセルした予定も出さない。
 - 予定の作成と更新では、予定の種類、サービスコード、訪問の区分を、予定の API のマスタの名前から ID に引く。
 
-照合の API のクライアント（`src/api/http/receiptApi.ts`）もここにある。照合の画面はまだ無いので、呼ぶところは無い。
+照合の API のクライアント（`src/api/http/receiptApi.ts`）もここにある。BFF の照合の server function（`checkReceiptFn`）がサーバーで使う。
+
+## 照合の画面
+
+照合の画面（`/receipt`）と結果の画面（`/receipt/result`）は `src/features/receipt/` にある。画面の仕様は `docs/screens/receipt-upload.md` と `docs/screens/receipt-result.md` にある。
+
+- 照合の API は判定の JSON だけを返す。結果の表の印（❌、※、許容範囲）と CSV は、画面の `src/features/receipt/lib/reportCells.ts` が作る。
+  - 印の付け方と値の引用は、照合の API の `tools/parity/report` と同じにし、同じ期待値のテストで確かめる。行の区切りだけは、Excel で開くために CRLF にした（Go は LF）。
+- 照合の結果は保存せず、query の cache にだけ置く。結果の画面を読み直すと消える。
+- ファイルの合計の上限は、照合の API の `MAX_UPLOAD_BYTES` の既定（10 MiB）から multipart の分の 64 KiB を引いた値にする。server function の本文は、読む前に `src/start.ts` が 10 MiB を超えるものと長さの分からないものを 413 で拒む。
+- 偽物の API（`fake`）の照合は、入力によらず `src/api/fake/fakeReceiptApi.ts` の結果を返す。
 
 ## 確かめる
 
