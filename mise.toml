@@ -1,7 +1,8 @@
-# ランタイムとツールのバージョン。pnpm のバージョンは package.json の packageManager にある
+# ランタイムとツールのバージョン。pnpm は package.json の packageManager と同じバージョンにする
 # apm は agent-harness のスキルとフックを配置する
 [tools]
 node = "24"
+pnpm = "10.27.0"
 "pipx:apm-cli" = "0.32.0"
 go = "1.27"
 "aqua:sqlc-dev/sqlc" = "1.31.1"

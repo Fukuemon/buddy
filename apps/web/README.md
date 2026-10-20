@@ -3,7 +3,7 @@
 予定の管理とレセプトの照合の画面。TanStack Start で作り、ツールチェーンに Vite+ を使う。  
 `VITE_API_MODE` を指定しなければ、データを手元の偽物の API（`src/api/fake/`）から取る。BFF を通して予定の API を呼ぶように切り替えられる（「API を切り替える」）。
 
-## 起動する
+## 動かす
 
 リポジトリのルートで依存を入れてから、開発サーバーを起動する。
 
@@ -26,6 +26,48 @@ pnpm --filter @buddy/web dev
 
 コンテナのイメージは `bff` でビルドする。`bff` の動きは、リポジトリのルートの compose で確かめる（CONTRIBUTING.md の「手元で全部を動かす」）。  
 開発サーバーを `bff` で動かすと、トークンの `iss` が compose の API の求める値と合わないので、手元の開発サーバーは `fake` で使う。
+
+## テストとチェック
+
+| コマンド | 確かめること |
+| --- | --- |
+| `pnpm --filter @buddy/web build` | 本番向けのビルドが通る |
+| `pnpm --filter @buddy/web test` | Vitest のテストが通る |
+| `pnpm --filter @buddy/web lint` | Oxlint の指摘がない |
+| `pnpm --filter @buddy/web typecheck` | `tsc` の型のチェックが通る |
+| `pnpm --filter @buddy/web check` | 整形、lint、型のチェックを Vite+ でまとめて実行する |
+
+`vp check --fix` は整形を直す。整形と lint の設定は、ルートの `vite.config.ts` にある。
+
+## Storybook を開く
+
+```sh
+pnpm --filter @buddy/web storybook
+```
+
+Storybook は `.storybook/vite.config.ts` で動く。アプリの `vite.config.ts` は TanStack Start の plugin を持ち、Storybook の中では動かないため、設定を分けている。
+
+## コードの生成
+
+API の型は、各 API の openapi.yaml から openapi-typescript で生成し、`src/api/generated/` に置く。生成物はコミットする。
+
+| 生成物 | 元の定義 |
+| --- | --- |
+| `src/api/generated/schedule.ts` | `apps/schedule-api/openapi.yaml`（予定の API） |
+| `src/api/generated/receipt.ts` | `apps/receipt-api/openapi.yaml`（照合の API） |
+
+openapi.yaml が変わったら、生成し直す。
+
+```sh
+pnpm --filter @buddy/web generate:api
+```
+
+生成物は整形と lint の対象から外してある（ルートの `vite.config.ts` の `ignorePatterns`）。
+
+## route を足す
+
+route は `src/routes/` のファイルから TanStack Router が生成する。  
+生成物の `src/routeTree.gen.ts` は、開発サーバーとビルドが書き直す。開発サーバーを止めたまま型のチェックを通すときは、`pnpm --filter @buddy/web generate-routes` で作り直す。
 
 ## ログインとセッション（BFF）
 
@@ -62,44 +104,8 @@ pnpm --filter @buddy/web dev
 - ファイルの合計の上限は、照合の API の `MAX_UPLOAD_BYTES` の既定（10 MiB）から multipart の分の 64 KiB を引いた値にする。server function の本文は、読む前に `src/start.ts` が 10 MiB を超えるものと長さの分からないものを 413 で拒む。
 - 偽物の API（`fake`）の照合は、入力によらず `src/api/fake/fakeReceiptApi.ts` の結果を返す。
 
-## 確かめる
+## 文書
 
-| コマンド | 確かめること |
-| --- | --- |
-| `pnpm --filter @buddy/web build` | 本番向けのビルドが通る |
-| `pnpm --filter @buddy/web test` | Vitest のテストが通る |
-| `pnpm --filter @buddy/web lint` | Oxlint の指摘がない |
-| `pnpm --filter @buddy/web typecheck` | `tsc` の型のチェックが通る |
-| `pnpm --filter @buddy/web check` | 整形、lint、型のチェックを Vite+ でまとめて実行する |
-
-`vp check --fix` は整形を直す。整形と lint の設定は、ルートの `vite.config.ts` にある。
-
-## Storybook を開く
-
-```sh
-pnpm --filter @buddy/web storybook
-```
-
-Storybook は `.storybook/vite.config.ts` で動く。アプリの `vite.config.ts` は TanStack Start の plugin を持ち、Storybook の中では動かないため、設定を分けている。
-
-## API の型を生成する
-
-API の型は、各 API の openapi.yaml から openapi-typescript で生成し、`src/api/generated/` に置く。生成物はコミットする。
-
-| 生成物 | 元の定義 |
-| --- | --- |
-| `src/api/generated/schedule.ts` | `apps/schedule-api/openapi.yaml`（予定の API） |
-| `src/api/generated/receipt.ts` | `apps/receipt-api/openapi.yaml`（照合の API） |
-
-openapi.yaml が変わったら、生成し直す。
-
-```sh
-pnpm --filter @buddy/web generate:api
-```
-
-生成物は整形と lint の対象から外してある（ルートの `vite.config.ts` の `ignorePatterns`）。
-
-## route を足す
-
-route は `src/routes/` のファイルから TanStack Router が生成する。  
-生成物の `src/routeTree.gen.ts` は、開発サーバーとビルドが書き直す。開発サーバーを止めたまま型のチェックを通すときは、`pnpm --filter @buddy/web generate-routes` で作り直す。
+- [画面仕様書](../../docs/screens/index.md): 画面ごとの表示と操作、構成要素の `data-testid`
+- [全体の Design Doc](../../docs/design/DesignDoc.md): 画面と BFF の責務、認証とセッション
+- [デザインシステム](../../packages/ui/DESIGN.md): トークンと、Base と Case のコンポーネント
