@@ -57,7 +57,7 @@ export const ScheduleFormModal = ({
       stickyFooter={
         <>
           {submitError !== undefined && (
-            <p className="mr-auto self-center text-sm text-incorrect-main" role="alert">
+            <p className="mr-auto self-center text-caption text-danger" role="alert">
               {submitError}
             </p>
           )}

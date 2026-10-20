@@ -7,12 +7,18 @@ export type ScheduleCalendarEvent = {
   staffId: Staff['id']
   start: string
   end: string
+  /** 予定の面の色。CSS の色の値で、上に白の文字（text-inverse）を置ける。 */
   color: string
 }
 
-/** 職員の並びの位置から、色相を等分した色を返す。 */
-export const staffColor = (index: number, total: number) =>
-  `hsl(${Math.round((index * 360) / Math.max(total, 1))} 65% 45%)`
+const CATEGORICAL_COLOR_COUNT = 10
+
+/**
+ * 職員の並びの位置から、区別の色（categorical-1 から categorical-10）の CSS の変数を返す。
+ * 11 人目からは 1 に戻り、色が重なる。
+ */
+export const staffColor = (index: number) =>
+  `var(--buddy-color-categorical-${(index % CATEGORICAL_COLOR_COUNT) + 1})`
 
 /** 予定を、カレンダーに置く形にする。訪問の予定は利用者の名前を題にする。 */
 export const toCalendarEvents = (
@@ -20,9 +26,7 @@ export const toCalendarEvents = (
   staffList: Staff[],
   patients: Patient[],
 ): ScheduleCalendarEvent[] => {
-  const colorByStaff = new Map(
-    staffList.map((staff, index) => [staff.id, staffColor(index, staffList.length)]),
-  )
+  const colorByStaff = new Map(staffList.map((staff, index) => [staff.id, staffColor(index)]))
   const patientName = new Map(patients.map((patient) => [patient.id, patient.name]))
 
   return schedules.map((schedule) => ({
@@ -34,6 +38,6 @@ export const toCalendarEvents = (
     staffId: schedule.staffId,
     start: schedule.startsAt,
     end: schedule.endsAt,
-    color: colorByStaff.get(schedule.staffId) ?? 'var(--color-gray-500)',
+    color: colorByStaff.get(schedule.staffId) ?? 'var(--buddy-color-text-secondary)',
   }))
 }

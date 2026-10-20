@@ -75,7 +75,7 @@ export const ScheduleCalendarContainer = () => {
         {schedulesQuery.isPending || staffQuery.isPending ? (
           <Loading description="カレンダーを表示中..." />
         ) : schedulesQuery.isError || staffQuery.isError ? (
-          <p className="p-4 text-incorrect-main" role="alert">
+          <p className="p-4 text-danger" role="alert">
             予定を取得できませんでした。
           </p>
         ) : search.view === 'day' ? (

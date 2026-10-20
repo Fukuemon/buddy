@@ -27,20 +27,20 @@ export const ScheduleFieldSummaryList = <Id extends string>({
         <button
           aria-current={item.id === activeId || undefined}
           className={clsx(
-            'flex w-full flex-col gap-1 rounded-xl px-4 py-3 text-left ring-1 ring-inset',
+            'flex w-full flex-col gap-1 rounded-8 px-4 py-3 text-left ring-1 ring-inset focus-visible:focus-ring',
             item.id === activeId
-              ? 'bg-action-bg ring-action-main'
-              : 'ring-gray-200 hover:bg-gray-10',
-            item.error !== undefined && 'ring-incorrect-main',
+              ? 'bg-primary-surface ring-2 ring-primary'
+              : 'ring-border-field hover:bg-surface-subtle',
+            item.error !== undefined && 'ring-2 ring-danger',
           )}
           data-testid={`schedule-field-${item.id}`}
           onClick={() => onSelect(item.id)}
           type="button"
         >
-          <span className="text-xs text-text-secondary">{item.label}</span>
-          <span className="text-sm">{item.content}</span>
+          <span className="text-caption text-text-secondary">{item.label}</span>
+          <span className="text-body-dense">{item.content}</span>
           {item.error !== undefined && (
-            <span className="text-xs text-incorrect-main" role="alert">
+            <span className="text-caption text-danger" role="alert">
               {item.error}
             </span>
           )}

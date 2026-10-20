@@ -31,11 +31,11 @@ export const ScheduleCalendarToolbar = ({
   onDateChange,
   onCreate,
 }: ScheduleCalendarToolbarProps) => (
-  <div className="flex h-16 items-center justify-between gap-4 md:gap-10">
+  <div className="flex h-16 items-center justify-between gap-4 desktop:gap-10">
     <div className="flex items-center gap-2">
       <button
         aria-label="前へ"
-        className="grid size-10 place-items-center rounded-lg hover:bg-gray-10"
+        className="grid size-11 place-items-center rounded-8 hover:bg-surface-subtle focus-visible:focus-ring"
         data-testid="calendar-prev"
         onClick={onPrev}
         type="button"
@@ -47,7 +47,7 @@ export const ScheduleCalendarToolbar = ({
       </Button>
       <button
         aria-label="次へ"
-        className="grid size-10 place-items-center rounded-lg hover:bg-gray-10"
+        className="grid size-11 place-items-center rounded-8 hover:bg-surface-subtle focus-visible:focus-ring"
         data-testid="calendar-next"
         onClick={onNext}
         type="button"
@@ -56,7 +56,7 @@ export const ScheduleCalendarToolbar = ({
       </button>
       <input
         aria-label="表示する日付"
-        className="ml-2 h-10 rounded-xl px-3 ring-1 ring-gray-200 ring-inset"
+        className="ml-2 h-11 rounded-8 px-3 text-body-dense ring-1 ring-border-field ring-inset outline-none focus-visible:focus-ring"
         data-testid="calendar-date"
         onChange={(event) => {
           if (event.target.value !== '') onDateChange(event.target.value)

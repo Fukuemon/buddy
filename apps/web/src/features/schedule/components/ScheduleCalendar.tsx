@@ -41,7 +41,7 @@ export const ScheduleCalendar = ({
       eventDisplay="block"
       eventClick={(arg) => onEventClick(arg.event.id)}
       eventContent={(arg) => (
-        <span className="truncate px-1 text-xs" data-testid={`schedule-event-${arg.event.id}`}>
+        <span className="truncate px-1 text-caption" data-testid={`schedule-event-${arg.event.id}`}>
           {arg.timeText} {arg.event.title}
         </span>
       )}
@@ -52,7 +52,7 @@ export const ScheduleCalendar = ({
         end: event.end,
         backgroundColor: event.color,
         borderColor: event.color,
-        textColor: '#fff',
+        textColor: 'var(--buddy-color-text-inverse)',
       }))}
       headerToolbar={false}
       height="100%"

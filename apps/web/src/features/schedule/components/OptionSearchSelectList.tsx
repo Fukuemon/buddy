@@ -32,7 +32,7 @@ export const OptionSearchSelectList = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-lg font-bold">{heading}</h2>
+      <h2 className="text-heading-sm">{heading}</h2>
       <SearchBox
         aria-label={searchPlaceholder}
         data-testid={`${testIdPrefix}-search`}
@@ -66,7 +66,7 @@ export const OptionSearchSelectList = ({
         </Table.Body>
       </Table>
       {visible.length === 0 && (
-        <p className="text-sm text-text-secondary">該当する名前がありません。</p>
+        <p className="text-caption text-text-secondary">該当する名前がありません。</p>
       )}
     </div>
   )

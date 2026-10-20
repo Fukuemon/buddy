@@ -87,7 +87,7 @@ export const ScheduleEditModalContainer = ({ scheduleId }: { scheduleId: Schedul
         onCloseRequest={() => navigate({ to: '/schedule', search: calendarSearch })}
         title="予定の編集"
       >
-        <p className="p-5 text-incorrect-main" role="alert">
+        <p className="p-5 text-danger" role="alert">
           予定を取得できませんでした。
         </p>
       </Modal>

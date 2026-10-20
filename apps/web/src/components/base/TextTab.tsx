@@ -29,8 +29,8 @@ export const TextTab = <Id extends string>({
   return (
     <div
       className={clsx(
-        'relative flex h-12 w-full gap-1 overflow-hidden rounded-xl border p-0.5',
-        variant === 'white' ? 'border-gray-0 bg-gray-0' : 'border-gray-100 bg-gray-10',
+        'relative flex h-12 w-full gap-1 overflow-hidden rounded-8 border p-0.5',
+        variant === 'white' ? 'border-surface bg-surface' : 'border-border bg-surface-subtle',
       )}
       data-testid={testId}
       role="tablist"
@@ -38,8 +38,8 @@ export const TextTab = <Id extends string>({
       <div
         aria-hidden
         className={clsx(
-          'absolute top-0.5 h-[42px] rounded-[10px] shadow-[0_1px_2px_0_rgb(0_0_0/4%)] transition-transform duration-200',
-          variant === 'white' ? 'bg-gray-10' : 'bg-gray-0',
+          'absolute top-0.5 h-[42px] rounded-6 border border-border-field transition-transform duration-200',
+          variant === 'white' ? 'bg-surface-subtle' : 'bg-surface',
         )}
         style={{
           width: `calc(${100 / tabs.length}% - 1px)`,
@@ -50,8 +50,8 @@ export const TextTab = <Id extends string>({
         <button
           aria-selected={tab.id === activeTabId}
           className={clsx(
-            'relative flex flex-1 cursor-pointer items-center justify-center text-[15px] font-bold transition-colors',
-            tab.id === activeTabId ? 'text-gray-1000' : 'text-gray-400',
+            'relative flex flex-1 cursor-pointer items-center justify-center text-label transition-colors',
+            tab.id === activeTabId ? 'text-text' : 'text-text-secondary',
           )}
           data-testid={testId === undefined ? undefined : `${testId}-${tab.id}`}
           key={tab.id}

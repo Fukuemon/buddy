@@ -6,11 +6,9 @@ export type LoadingProps = {
 export const Loading = ({ description }: LoadingProps) => (
   <output
     aria-live="polite"
-    className="flex h-full min-h-40 flex-col items-center justify-center gap-5 bg-gray-0/80"
+    className="flex h-full min-h-40 flex-col items-center justify-center gap-5 bg-surface/80"
   >
-    <div className="size-12 animate-spin rounded-full border-6 border-gray-100 border-t-action-main" />
-    {description !== undefined && (
-      <div className="text-xl font-bold text-action-main">{description}</div>
-    )}
+    <div className="size-12 animate-spin rounded-full border-6 border-surface-disabled border-t-primary" />
+    {description !== undefined && <div className="text-heading-md text-primary">{description}</div>}
   </output>
 )

@@ -11,16 +11,15 @@ export type ButtonStyleOptions = {
 }
 
 const variantClassName: Record<ButtonVariant, string> = {
-  primary:
-    'bg-action-main text-gray-0 shadow-[inset_0_-2px_0_0_rgb(0_0_0/16%),0_2px_4px_0_rgb(9_9_11/4%)]',
-  secondary: 'bg-gray-0 text-action-main ring-1 ring-gray-200 ring-inset shadow-sm',
-  destructive: 'bg-gray-0 text-text-critical ring-1 ring-gray-200 ring-inset shadow-sm',
+  primary: 'bg-primary text-text-inverse',
+  secondary: 'bg-surface text-primary ring-1 ring-border-field ring-inset',
+  destructive: 'bg-surface text-danger ring-1 ring-border-field ring-inset',
 }
 
 const sizeClassName: Record<ButtonSize, string> = {
-  S: 'h-10 rounded-xl px-4',
-  M: 'h-12 rounded-[15px] px-5',
-  L: 'h-14 rounded-[15px] px-6',
+  S: 'h-10 rounded-8 px-4',
+  M: 'h-12 rounded-8 px-5',
+  L: 'h-14 rounded-8 px-6',
 }
 
 /**
@@ -32,9 +31,9 @@ export const buttonClassName = ({
   isWide = false,
 }: ButtonStyleOptions = {}) =>
   clsx(
-    'relative inline-flex cursor-pointer items-center justify-center text-[15px] font-bold tracking-[0.04em] transition duration-100 ease-in',
-    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action-main',
-    'active:enabled:scale-[0.98] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 disabled:shadow-none disabled:ring-0',
+    'relative inline-flex cursor-pointer items-center justify-center text-label transition duration-100 ease-in',
+    'focus-visible:focus-ring',
+    'active:enabled:scale-[0.98] disabled:cursor-not-allowed disabled:bg-surface-disabled disabled:text-text-disabled disabled:ring-0',
     variantClassName[variant],
     sizeClassName[size],
     isWide && 'w-full',
@@ -75,7 +74,7 @@ export const Button = ({
       type={type}
     >
       {isLoading ? (
-        <span className="size-5 animate-spin rounded-full border-3 border-gray-100 border-t-gray-500" />
+        <span className="size-5 animate-spin rounded-full border-3 border-surface-disabled border-t-text-secondary" />
       ) : (
         children
       )}

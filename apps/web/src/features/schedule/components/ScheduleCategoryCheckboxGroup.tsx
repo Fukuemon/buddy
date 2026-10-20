@@ -15,14 +15,14 @@ export const ScheduleCategoryCheckboxGroup = ({
   onChange,
 }: ScheduleCategoryCheckboxGroupProps) => (
   <fieldset className="flex flex-col gap-3">
-    <legend className="mb-3 text-lg font-bold">訪問の種類を選んでください</legend>
+    <legend className="mb-3 text-heading-sm">訪問の種類を選んでください</legend>
     {SCHEDULE_CATEGORIES.map((category) => {
       const checked = value.includes(category)
       return (
         <label
           className={clsx(
-            'flex cursor-pointer items-center gap-3 rounded-xl px-4 py-3 ring-1 ring-inset',
-            checked ? 'bg-action-bg ring-action-main' : 'ring-gray-200',
+            'flex cursor-pointer items-center gap-3 rounded-8 px-4 py-3 ring-1 ring-inset has-[:focus-visible]:focus-ring',
+            checked ? 'bg-primary-surface ring-2 ring-primary' : 'ring-border-field',
           )}
           key={category}
         >

@@ -18,18 +18,18 @@ export const TextareaField = <T extends FieldValues>({
 
   return (
     <div className="flex flex-col gap-3">
-      <label className="text-lg font-bold" htmlFor={field.name}>
+      <label className="text-heading-sm" htmlFor={field.name}>
         {label}
       </label>
       <textarea
         {...field}
-        className="min-h-40 rounded-xl p-3 ring-1 ring-gray-200 outline-none focus:ring-2 focus:ring-action-main"
+        className="min-h-40 rounded-8 p-3 text-body ring-1 ring-border-field ring-inset outline-none focus-visible:focus-ring"
         id={field.name}
         placeholder={placeholder}
         value={(field.value as string | undefined) ?? ''}
       />
       {fieldState.error?.message !== undefined && (
-        <span className="text-xs text-incorrect-main" role="alert">
+        <span className="text-caption text-danger" role="alert">
           {fieldState.error.message}
         </span>
       )}

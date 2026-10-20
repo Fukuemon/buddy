@@ -26,7 +26,7 @@ export const ScheduleDateTimeEdit = ({ form }: ScheduleDateTimeEditProps) => {
 
   return (
     <div className="flex flex-col gap-6">
-      <h2 className="text-lg font-bold">{isVisit ? '訪問日時' : '予定日時'}</h2>
+      <h2 className="text-heading-sm">{isVisit ? '訪問日時' : '予定日時'}</h2>
       <div className="flex flex-col gap-4">
         <DatePicker
           control={control}
@@ -55,7 +55,7 @@ export const ScheduleDateTimeEdit = ({ form }: ScheduleDateTimeEditProps) => {
           )}
         </div>
         {isVisit ? (
-          <p className="text-sm text-text-secondary" data-testid="schedule-form-end-time">
+          <p className="text-caption text-text-secondary" data-testid="schedule-form-end-time">
             終了時間{' '}
             {serviceTime === undefined || Number.isNaN(serviceTime)
               ? '-'

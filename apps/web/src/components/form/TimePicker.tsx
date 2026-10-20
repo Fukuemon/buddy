@@ -29,7 +29,7 @@ export const TimePicker = <T extends FieldValues>({
     <FieldFrame
       error={fieldState.error?.message}
       htmlFor={field.name}
-      icon={<TimerIcon className="text-gray-500" height={20} width={20} />}
+      icon={<TimerIcon className="text-text-secondary" height={20} width={20} />}
       isWide={isWide}
       label={label}
     >

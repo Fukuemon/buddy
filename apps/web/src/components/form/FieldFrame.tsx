@@ -22,13 +22,13 @@ export const FieldFrame = ({
   <div className={clsx('font-normal', isWide ? 'w-full' : 'w-80')}>
     <label
       className={clsx(
-        'relative flex h-14 cursor-pointer flex-col justify-center rounded-[15px] bg-gray-0 px-4 shadow-[0_1px_2px_0_#e5e5e8] ring-1 ring-gray-200 transition duration-100 ring-inset',
-        'focus-within:bg-action-bg focus-within:ring-2 focus-within:ring-action-main',
-        error !== undefined && 'ring-incorrect-main',
+        'relative flex h-14 cursor-pointer flex-col justify-center rounded-8 bg-surface px-4 ring-1 ring-border-field transition duration-100 ring-inset',
+        'focus-within:bg-primary-surface has-[:focus-visible]:focus-ring',
+        error !== undefined && 'ring-2 ring-danger',
       )}
       htmlFor={htmlFor}
     >
-      <span className="pointer-events-none text-[11px] text-text-secondary">{label}</span>
+      <span className="pointer-events-none text-caption text-text-secondary">{label}</span>
       {children}
       {icon !== undefined && (
         <span className="pointer-events-none absolute inset-y-0 right-1.5 my-auto grid size-10 place-items-center">
@@ -37,7 +37,7 @@ export const FieldFrame = ({
       )}
     </label>
     {error !== undefined && (
-      <span className="mt-1 block text-xs text-incorrect-main" role="alert">
+      <span className="mt-1 block text-caption text-danger" role="alert">
         {error}
       </span>
     )}
@@ -46,4 +46,4 @@ export const FieldFrame = ({
 
 /** FieldFrame の中に置く input のクラス名。 */
 export const fieldInputClassName =
-  'w-full bg-transparent pr-10 text-[15px] outline-none disabled:text-gray-400 [&::-webkit-calendar-picker-indicator]:opacity-0'
+  'w-full bg-transparent pr-10 text-body-dense outline-none disabled:text-text-disabled [&::-webkit-calendar-picker-indicator]:opacity-0'

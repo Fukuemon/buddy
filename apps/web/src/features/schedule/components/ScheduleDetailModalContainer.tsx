@@ -33,7 +33,7 @@ export const ScheduleDetailModalContainer = ({ scheduleId }: { scheduleId: Sched
     const notFound = scheduleQuery.error instanceof ApiError && scheduleQuery.error.status === 404
     return (
       <Modal isOpen onCloseRequest={close} title="予定の詳細">
-        <p className="p-5 text-incorrect-main" role="alert">
+        <p className="p-5 text-danger" role="alert">
           {notFound ? '予定が見つかりません。' : '予定を取得できませんでした。'}
         </p>
       </Modal>

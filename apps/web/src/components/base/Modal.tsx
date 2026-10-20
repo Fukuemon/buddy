@@ -51,21 +51,21 @@ export const Modal = ({
     <div className="fixed inset-0 z-50">
       <div
         aria-hidden
-        className="absolute inset-0 bg-black/56 backdrop-blur-lg"
+        className="absolute inset-0 bg-overlay backdrop-blur-lg"
         data-testid="modal-overlay"
         onClick={requestClose}
       />
       <dialog
         aria-labelledby={title === undefined ? undefined : titleId}
         aria-modal
-        className="absolute m-0 max-h-none max-w-none border-0 p-0 inset-x-0 bottom-0 top-[1dvh] flex flex-col overflow-auto rounded-t-xl bg-gray-0 lg:inset-auto lg:top-1/2 lg:left-1/2 lg:max-h-[90dvh] lg:w-[720px] lg:-translate-1/2 lg:rounded-3xl"
+        className="absolute m-0 max-h-none max-w-none border-0 p-0 inset-x-0 bottom-0 top-[1dvh] flex flex-col overflow-auto rounded-t-8 bg-surface shadow-3 desktop:inset-auto desktop:top-1/2 desktop:left-1/2 desktop:max-h-[90dvh] desktop:w-[720px] desktop:-translate-1/2 desktop:rounded-8"
         data-testid={testId}
         open
       >
-        <div className="sticky top-0 z-10 flex items-center gap-4 rounded-t-3xl border-b border-gray-100 bg-gray-0 p-3">
+        <div className="sticky top-0 z-10 flex items-center gap-4 rounded-t-8 border-b border-border bg-surface p-3">
           <button
             aria-label="閉じる"
-            className="grid place-items-center rounded-lg p-2 hover:bg-gray-10"
+            className="grid place-items-center rounded-8 p-2 hover:bg-surface-subtle focus-visible:focus-ring"
             data-testid="modal-close"
             onClick={requestClose}
             type="button"
@@ -74,14 +74,14 @@ export const Modal = ({
           </button>
           {headerContent !== undefined && <div className="flex-1">{headerContent}</div>}
           {title !== undefined && (
-            <h3 className="text-[15px] font-bold" id={titleId}>
+            <h3 className="text-heading-sm" id={titleId}>
               {title}
             </h3>
           )}
         </div>
         <div className="flex-1">{children}</div>
         {stickyFooter !== undefined && (
-          <div className="sticky bottom-0 flex justify-end gap-3 rounded-b-3xl border-t border-gray-100 bg-gray-0 px-5 py-4">
+          <div className="sticky bottom-0 flex justify-end gap-3 rounded-b-8 border-t border-border bg-surface px-5 py-4">
             {stickyFooter}
           </div>
         )}

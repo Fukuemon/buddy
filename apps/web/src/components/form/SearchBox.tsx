@@ -17,8 +17,8 @@ export const SearchBox = ({
 }: SearchBoxProps) => (
   <label
     className={clsx(
-      'grid grid-cols-[24px_minmax(0,1fr)] gap-x-2 rounded-[14px] bg-gray-0 px-4 py-3 text-base shadow-[0_1px_2px_0_#e5e5e8] ring-1 ring-gray-200 ring-inset',
-      'focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-action-main',
+      'grid grid-cols-[24px_minmax(0,1fr)] gap-x-2 rounded-8 bg-surface px-4 py-3 text-body-dense ring-1 ring-border-field ring-inset',
+      'has-[:focus-visible]:focus-ring',
       isWide && 'w-full',
     )}
   >
@@ -27,7 +27,7 @@ export const SearchBox = ({
     </span>
     <input
       {...props}
-      className="outline-none placeholder:text-gray-500"
+      className="outline-none placeholder:text-text-secondary"
       onChange={(event) => onSearch(event.target.value)}
       placeholder={placeholder}
       type="search"

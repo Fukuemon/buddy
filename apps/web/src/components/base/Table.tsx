@@ -28,9 +28,7 @@ const TableBody = ({ children }: { children: ReactNode }) => (
 )
 
 const TableRow = ({ children, className }: { children: ReactNode; className?: string }) => (
-  <tr
-    className={clsx('grid items-center gap-5 border-b border-gray-100 bg-gray-0 px-5', className)}
-  >
+  <tr className={clsx('grid items-center gap-5 border-b border-border bg-surface px-5', className)}>
     {children}
   </tr>
 )
@@ -45,7 +43,7 @@ export type TableCellProps = {
 const TableCell = ({ children, expanded = false, width }: TableCellProps) => (
   <td
     className={clsx(
-      'grid py-2 text-left align-middle text-[15px] whitespace-nowrap',
+      'grid py-2 text-left align-middle text-body-dense whitespace-nowrap',
       expanded && 'w-full',
     )}
     style={{ minWidth: width }}
