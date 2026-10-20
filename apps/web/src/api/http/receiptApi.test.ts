@@ -37,9 +37,24 @@ describe('createReceiptApi', () => {
           headers: { 'Content-Type': 'application/json' },
         }),
     })
-    await expect(api.check({ visits: new Blob(['']) })).rejects.toMatchObject({
+    await expect(api.check({ visits: new Blob(['']), month: '2024-04' })).rejects.toMatchObject({
       status: 400,
       message: 'ない',
     })
+  })
+
+  it('入力の CSV の行の誤りを rowErrors で渡す', async () => {
+    const errors = [{ source: 'visits', line: 3, column: '訪問日', message: '日付を読めない' }]
+    const api = createReceiptApi({
+      baseUrl: 'http://api.test',
+      fetch: async () =>
+        Response.json(
+          { code: 'invalid_csv', message: 'CSV に誤りがある', errors },
+          { status: 422 },
+        ),
+    })
+    await expect(
+      api.check({ visits: new Blob(['']), schedules: new Blob(['']) }),
+    ).rejects.toMatchObject({ status: 422, rowErrors: errors })
   })
 })
