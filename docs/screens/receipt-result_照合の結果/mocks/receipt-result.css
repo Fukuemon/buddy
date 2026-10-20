@@ -60,3 +60,19 @@
   max-width: 480px;
   padding: 24px;
 }
+
+/* 結果の表は折り返さず横に送り、訪問日の列を左端に残す（apps/web の Table の stickyColumn と同じ） */
+.rc-table-wrap th,
+.rc-table-wrap td {
+  white-space: nowrap;
+}
+
+.rc-table-wrap tr > :first-child {
+  position: sticky;
+  left: 0;
+  background: var(--wf-surface);
+}
+
+.rc-table-wrap .rc-sep > :first-child {
+  background: var(--wf-fill);
+}
