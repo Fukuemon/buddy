@@ -2,13 +2,9 @@ package handler
 
 import (
 	"context"
-	"log/slog"
-	"net/http"
-	"time"
-
-	"github.com/gin-gonic/gin"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/staff"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/presentation/http/openapi"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/usecase"
 )
 
@@ -19,142 +15,83 @@ type StaffUsecase interface {
 	List(ctx context.Context, facilityID string, q staff.ListQuery) ([]staff.Summary, error)
 }
 
-type refResponse struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
-
-type staffResponse struct {
-	ID          string      `json:"id"`
-	Username    string      `json:"username"`
-	Email       string      `json:"email"`
-	PhoneNumber *string     `json:"phone_number"`
-	FacilityID  string      `json:"facility_id"`
-	Department  refResponse `json:"department"`
-	Team        refResponse `json:"team"`
-	Position    refResponse `json:"position"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
-}
-
-type staffPolicyResponse struct {
-	UserPolicyID  string   `json:"user_policy_id"`
-	PolicyID      string   `json:"policy_id"`
-	Name          string   `json:"name"`
-	TargetUserIDs []string `json:"target_user_ids"`
-}
-
-type staffDetailResponse struct {
-	staffResponse
-	Sub      *string               `json:"sub"`
-	Policies []staffPolicyResponse `json:"policies"`
-}
-
-type createStaffRequest struct {
-	Username     string  `json:"username" binding:"required,max=128"`
-	Email        string  `json:"email" binding:"required,email,max=320"`
-	PhoneNumber  *string `json:"phone_number" binding:"omitempty,max=12"`
-	DepartmentID string  `json:"department_id" binding:"required,ulid"`
-	TeamID       string  `json:"team_id" binding:"required,ulid"`
-	PositionID   string  `json:"position_id" binding:"required,ulid"`
-}
-
-func toStaff(s staff.Summary) staffResponse {
-	return staffResponse{
-		ID:          s.ID,
+func toStaff(s staff.Summary) openapi.Staff {
+	return openapi.Staff{
+		Id:          s.ID,
 		Username:    s.Username,
 		Email:       s.Email,
 		PhoneNumber: s.PhoneNumber,
-		FacilityID:  s.FacilityID,
-		Department:  refResponse{ID: s.DepartmentID, Name: s.DepartmentName},
-		Team:        refResponse{ID: s.TeamID, Name: s.TeamName},
-		Position:    refResponse{ID: s.PositionID, Name: s.PositionName},
+		FacilityId:  s.FacilityID,
+		Department:  openapi.Ref{Id: s.DepartmentID, Name: s.DepartmentName},
+		Team:        openapi.Ref{Id: s.TeamID, Name: s.TeamName},
+		Position:    openapi.Ref{Id: s.PositionID, Name: s.PositionName},
 		CreatedAt:   s.CreatedAt,
 		UpdatedAt:   s.UpdatedAt,
 	}
 }
 
-func toStaffDetail(d staff.Detail) staffDetailResponse {
-	return staffDetailResponse{
-		staffResponse: toStaff(d.Summary),
-		Sub:           d.Sub,
-		Policies: mapSlice(d.Policies, func(p staff.PolicyGrant) staffPolicyResponse {
-			return staffPolicyResponse{
-				UserPolicyID: p.UserPolicyID, PolicyID: p.PolicyID, Name: p.PolicyName, TargetUserIDs: p.TargetUserIDs,
+func toStaffDetail(d staff.Detail) openapi.StaffDetail {
+	s := toStaff(d.Summary)
+	return openapi.StaffDetail{
+		Id:          s.Id,
+		Username:    s.Username,
+		Email:       s.Email,
+		PhoneNumber: s.PhoneNumber,
+		FacilityId:  s.FacilityId,
+		Department:  s.Department,
+		Team:        s.Team,
+		Position:    s.Position,
+		CreatedAt:   s.CreatedAt,
+		UpdatedAt:   s.UpdatedAt,
+		Sub:         d.Sub,
+		Policies: mapSlice(d.Policies, func(p staff.PolicyGrant) openapi.StaffDetail_Policies {
+			return openapi.StaffDetail_Policies{
+				UserPolicyId: p.UserPolicyID, PolicyId: p.PolicyID, Name: p.PolicyName, TargetUserIds: p.TargetUserIDs,
 			}
 		}),
 	}
 }
 
-type staffHandler struct {
-	uc  StaffUsecase
-	log *slog.Logger
-}
-
-func (h staffHandler) register(r gin.IRouter) {
-	r.GET("/facilities/:facility_id/users", h.list)
-	r.POST("/facilities/:facility_id/users", h.create)
-	r.GET("/users/:user_id", h.get)
-}
-
-func (h staffHandler) get(c *gin.Context) {
-	id, ok := pathID(c, "user_id")
-	if !ok {
-		return
-	}
-	d, err := h.uc.Get(c.Request.Context(), id)
+func (s server) GetUser(ctx context.Context, req openapi.GetUserRequestObject) (openapi.GetUserResponseObject, error) {
+	d, err := s.u.Staff.Get(ctx, req.UserId)
 	if err != nil {
-		writeError(c, h.log, err)
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusOK, toStaffDetail(d))
+	return openapi.GetUser200JSONResponse(toStaffDetail(d)), nil
 }
 
-func (h staffHandler) list(c *gin.Context) {
-	id, ok := pathID(c, "facility_id")
-	if !ok {
-		return
-	}
-	sort, err := staff.ParseSort(c.Query("sort_field"), c.Query("sort_order"))
+func (s server) ListUsers(ctx context.Context, req openapi.ListUsersRequestObject) (openapi.ListUsersResponseObject, error) {
+	p := req.Params
+	sort, err := staff.ParseSort(value(p.SortField), value(p.SortOrder))
 	if err != nil {
-		writeError(c, h.log, err)
-		return
+		return nil, err
 	}
-	ss, err := h.uc.List(c.Request.Context(), id, staff.ListQuery{
-		Username:   optionalQuery(c, "username"),
-		Position:   optionalQuery(c, "position"),
-		Department: optionalQuery(c, "department"),
-		Team:       optionalQuery(c, "team"),
+	ss, err := s.u.Staff.List(ctx, req.FacilityId, staff.ListQuery{
+		Username:   nonEmpty(p.Username),
+		Position:   nonEmpty(p.Position),
+		Department: nonEmpty(p.Department),
+		Team:       nonEmpty(p.Team),
 		Sort:       sort,
 	})
 	if err != nil {
-		writeError(c, h.log, err)
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusOK, mapSlice(ss, toStaff))
+	return openapi.ListUsers200JSONResponse(mapSlice(ss, toStaff)), nil
 }
 
-func (h staffHandler) create(c *gin.Context) {
-	id, ok := pathID(c, "facility_id")
-	if !ok {
-		return
-	}
-	var req createStaffRequest
-	if !bindJSON(c, &req) {
-		return
-	}
-	d, err := h.uc.Create(c.Request.Context(), usecase.CreateStaffInput{
-		FacilityID:   id,
-		Username:     req.Username,
-		Email:        req.Email,
-		PhoneNumber:  req.PhoneNumber,
-		DepartmentID: req.DepartmentID,
-		TeamID:       req.TeamID,
-		PositionID:   req.PositionID,
+func (s server) CreateUser(ctx context.Context, req openapi.CreateUserRequestObject) (openapi.CreateUserResponseObject, error) {
+	b := req.Body
+	d, err := s.u.Staff.Create(ctx, usecase.CreateStaffInput{
+		FacilityID:   req.FacilityId,
+		Username:     b.Username,
+		Email:        b.Email,
+		PhoneNumber:  b.PhoneNumber,
+		DepartmentID: b.DepartmentId,
+		TeamID:       b.TeamId,
+		PositionID:   b.PositionId,
 	})
 	if err != nil {
-		writeError(c, h.log, err)
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusCreated, toStaffDetail(d))
+	return openapi.CreateUser201JSONResponse(toStaffDetail(d)), nil
 }

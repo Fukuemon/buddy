@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -24,6 +25,17 @@ func TestEveryPathParamHasResource(t *testing.T) {
 				if _, known := pathResources[name]; !known {
 					t.Errorf("%s %s: 引数 %s の事業所を確かめられない", route.Method, route.Path, name)
 				}
+			}
+		}
+	}
+}
+
+func TestBodyRulesNameFields(t *testing.T) {
+	for _, r := range bodyRules {
+		typ := reflect.TypeOf(r.of)
+		for name := range r.rules {
+			if _, ok := typ.FieldByName(name); !ok {
+				t.Errorf("%s に項目 %s がない", typ, name)
 			}
 		}
 	}

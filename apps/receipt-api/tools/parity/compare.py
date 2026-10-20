@@ -85,10 +85,23 @@ def flatten(header: list[str], secs: dict[str, list[list[str]]]) -> list[list[st
     return out
 
 
+def ragged(side: str, rows: list[list[str]]) -> list[str]:
+    """ヘッダーと列の数が違う行を返す。zip で比べると、短い行の欠けたセルを黙って読み飛ばす。"""
+    width = len(rows[0])
+    return [
+        f"{side} の {n} 行目: 列の数 {len(row)}、ヘッダーは {width}: {row}"
+        for n, row in enumerate(rows[1:], start=2)
+        if len(row) != width
+    ]
+
+
 def diff(py: list[list[str]], go: list[list[str]]) -> list[str]:
     msgs = []
     if py[0] != go[0]:
         msgs.append(f"ヘッダー: python={py[0]} go={go[0]}")
+        return msgs
+    msgs = ragged("python", py) + ragged("go", go)
+    if msgs:
         return msgs
     header = py[0]
     ps, gs = sections(py), sections(go)
@@ -125,7 +138,7 @@ def main() -> int:
 
     go = read(args.go_csv)
     msgs = diff(py, go)
-    rows = sum(len(v) for v in sections(py).values())
+    rows = sum(1 for r in py[1:] if not (r and r[0] in LABELS and all(c == "---" for c in r[1:])))
     for m in msgs:
         print(m)
     print(f"{args.python_csv.parent.name}: 行 {rows}、差分 {len(msgs)}")

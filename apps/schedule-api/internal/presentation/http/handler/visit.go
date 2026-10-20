@@ -2,12 +2,9 @@ package handler
 
 import (
 	"context"
-	"log/slog"
-	"net/http"
-
-	"github.com/gin-gonic/gin"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/visit"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/presentation/http/openapi"
 )
 
 // VisitMasterUsecase は、訪問の情報のマスタのハンドラが使う操作である。
@@ -16,50 +13,26 @@ type VisitMasterUsecase interface {
 	ListCategories(ctx context.Context) ([]visit.Category, error)
 }
 
-type serviceCodeResponse struct {
-	ID                    string `json:"id"`
-	Code                  string `json:"code"`
-	ServiceTimeRangeStart int    `json:"service_time_range_start"`
-	ServiceTimeRangeEnd   int    `json:"service_time_range_end"`
+func toServiceCode(s visit.ServiceCode) openapi.ServiceCode {
+	return openapi.ServiceCode{Id: s.ID, Code: s.Code, ServiceTimeRangeStart: s.StartMinutes, ServiceTimeRangeEnd: s.EndMinutes}
 }
 
-type visitCategoryResponse struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+func toVisitCategory(c visit.Category) openapi.VisitCategory {
+	return openapi.VisitCategory{Id: c.ID, Name: c.Name}
 }
 
-func toServiceCode(s visit.ServiceCode) serviceCodeResponse {
-	return serviceCodeResponse{ID: s.ID, Code: s.Code, ServiceTimeRangeStart: s.StartMinutes, ServiceTimeRangeEnd: s.EndMinutes}
-}
-
-func toVisitCategory(c visit.Category) visitCategoryResponse {
-	return visitCategoryResponse(c)
-}
-
-type visitHandler struct {
-	uc  VisitMasterUsecase
-	log *slog.Logger
-}
-
-func (h visitHandler) register(r gin.IRouter) {
-	r.GET("/visit_infos/service_codes", h.listServiceCodes)
-	r.GET("/visit_infos/visit_categories", h.listCategories)
-}
-
-func (h visitHandler) listServiceCodes(c *gin.Context) {
-	cs, err := h.uc.ListServiceCodes(c.Request.Context())
+func (s server) ListServiceCodes(ctx context.Context, _ openapi.ListServiceCodesRequestObject) (openapi.ListServiceCodesResponseObject, error) {
+	cs, err := s.u.VisitMasters.ListServiceCodes(ctx)
 	if err != nil {
-		writeError(c, h.log, err)
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusOK, mapSlice(cs, toServiceCode))
+	return openapi.ListServiceCodes200JSONResponse(mapSlice(cs, toServiceCode)), nil
 }
 
-func (h visitHandler) listCategories(c *gin.Context) {
-	cs, err := h.uc.ListCategories(c.Request.Context())
+func (s server) ListVisitCategories(ctx context.Context, _ openapi.ListVisitCategoriesRequestObject) (openapi.ListVisitCategoriesResponseObject, error) {
+	cs, err := s.u.VisitMasters.ListCategories(ctx)
 	if err != nil {
-		writeError(c, h.log, err)
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusOK, mapSlice(cs, toVisitCategory))
+	return openapi.ListVisitCategories200JSONResponse(mapSlice(cs, toVisitCategory)), nil
 }
