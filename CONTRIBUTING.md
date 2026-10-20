@@ -33,6 +33,7 @@ uv run zensical build   # 出力の最後が "No issues found" になること�
 ```
 
 - `zensical build` は、リンクの先のページと見出しのアンカーがないと "Warning" を出す。警告が残ったまま取り込まない。
+- 画面仕様書かワイヤーフレーム（`docs/screens/wireframes/`）を直したら、`pnpm check:screens` で、表の構成番号と `data-ref` が食い違っていないことを確かめる。
 - ページを足したら、`zensical.toml` の `nav` に足す。`nav` にないページはナビゲーションから開けない。
 - コードの隣に置く機能ごとの Design Doc（`apps/<アプリ>/DesignDoc.md`）は、`docs/` の外にあるのでサイトに載らない。`nav` に GitHub の `develop` のファイルへのリンクを足して開けるようにする。
 
