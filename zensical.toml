@@ -10,11 +10,14 @@ watch = [
   "apps/receipt-api/DesignDoc.md",
   "packages/ui/DESIGN.md",
 ]
-# ADR と画面仕様書の雛形は文書ではないので、サイトに載せない
+# ADR、画面仕様書、ワイヤーフレームの雛形は文書ではないので、サイトに載せない
 exclude_docs = """
 adr/template.md
 screens/template.md
+screens/wireframes/template.html
 """
+# 画面仕様書に埋め込んだワイヤーフレームのビューアの高さを、中身に合わせる
+extra_javascript = ["screens/wireframes/embed.js"]
 nav = [
   { "トップ" = "index.md" },
   { "PRD" = "PRD.md" },

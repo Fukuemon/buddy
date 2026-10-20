@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="wireframe-states"
+      content="loading:読み込み中,ready:予定がある,empty:予定が無い,no-staff:表示する職員が無い,error:取得の失敗,error-401:未認証（401）,error-403:権限なし（403）,network-error:ネットワークの失敗"
+    />
+    <title>予定のカレンダー</title>
+    <link rel="stylesheet" href="wireframe.css" />
+    <style>
+      .cal-header {
+        display: flex;
+        align-items: center;
+        height: 56px;
+        padding: 0 24px;
+        border-bottom: 1px solid var(--wf-line-soft);
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .cal-body {
+        display: flex;
+        min-height: 720px;
+      }
+
+      .cal-side {
+        display: flex;
+        flex: none;
+        flex-direction: column;
+        gap: 16px;
+        width: 224px;
+        padding: 16px;
+        border-right: 1px solid var(--wf-line-soft);
+      }
+
+      .cal-side__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .cal-team {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .cal-team > .wf-check + .wf-check,
+      .cal-team > .wf-check ~ .wf-check {
+        padding-left: 24px;
+      }
+
+      .cal-main {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 0;
+        padding: 8px 24px 16px;
+      }
+
+      /* 実装は折り返さない。幅の狭い端末での配置は未決のため、ワイヤーフレームでは折り返して描く */
+      .cal-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px 16px;
+        min-height: 64px;
+      }
+
+      .cal-toolbar__group {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        max-width: 100%;
+      }
+
+      @media (width < 720px) {
+        .cal-main {
+          padding: 8px;
+        }
+
+        .cal-date,
+        .cal-view-tabs {
+          width: 100%;
+        }
+      }
+
+      .cal-date {
+        min-height: 40px;
+        width: 160px;
+      }
+
+      .cal-view-tabs {
+        width: 192px;
+      }
+
+      .cal-view-tabs > label {
+        flex: 1;
+      }
+
+      .cal-area {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .cal-month,
+      .cal-week,
+      .cal-day {
+        border: 1px solid var(--wf-line-soft);
+      }
+
+      .cal-month {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+      }
+
+      .cal-month > div {
+        min-height: 88px;
+        overflow: hidden;
+        padding: 4px;
+        border-right: 1px solid var(--wf-line-soft);
+        border-bottom: 1px solid var(--wf-line-soft);
+      }
+
+      .cal-month > .cal-head {
+        min-height: 0;
+        text-align: center;
+      }
+
+      .cal-week {
+        display: grid;
+        grid-template-columns: 48px repeat(7, minmax(0, 1fr));
+      }
+
+      .cal-day {
+        display: grid;
+        grid-template-columns: 4rem repeat(4, minmax(10rem, 1fr));
+        overflow-x: auto;
+      }
+
+      .cal-day--empty {
+        grid-template-columns: 4rem;
+      }
+
+      .cal-head {
+        padding: 6px 4px;
+        overflow: hidden;
+        border-right: 1px solid var(--wf-line-soft);
+        border-bottom: 1px solid var(--wf-line-soft);
+        text-align: center;
+      }
+
+      .cal-times > div {
+        height: 32px;
+        padding-right: 6px;
+        color: var(--wf-muted);
+        font-size: 12px;
+        text-align: right;
+      }
+
+      .cal-col {
+        position: relative;
+        height: 512px;
+        border-right: 1px solid var(--wf-line-soft);
+        background: repeating-linear-gradient(var(--wf-line-soft) 0 1px, transparent 1px 16px);
+      }
+
+      .cal-slot {
+        position: absolute;
+        right: 2px;
+        left: 2px;
+        height: 16px;
+        border: 1px dashed var(--wf-line);
+      }
+
+      .cal-event {
+        display: block;
+        overflow: hidden;
+        margin-top: 2px;
+        padding: 2px 4px;
+        border-radius: 3px;
+        background: var(--wf-line);
+        white-space: nowrap;
+      }
+
+      .cal-event > .wf-text {
+        background: var(--wf-surface);
+      }
+
+      .cal-col > .cal-event {
+        position: absolute;
+        right: 2px;
+        left: 2px;
+        margin: 0;
+      }
+
+      .cal-free {
+        outline: 1px dashed var(--wf-line);
+        outline-offset: -3px;
+      }
+
+      /* 表示の種類のタブ。ラジオボタンで月、週、日の表を出し分ける */
+      html:not(:has(#view-month:checked)) .cal-month,
+      html:not(:has(#view-week:checked)) .cal-week,
+      html:not(:has(#view-day:checked)) .cal-views > .cal-day {
+        display: none;
+      }
+
+      html:has(#view-month:checked) label[for='view-month'],
+      html:has(#view-week:checked) label[for='view-week'],
+      html:has(#view-day:checked) label[for='view-day'],
+      html[data-state='no-staff'] label[for='view-day'] {
+        background: var(--wf-surface);
+        color: var(--wf-ink);
+        font-weight: 700;
+      }
+
+      html[data-state='no-staff']:has(#view-month) label[for='view-month'],
+      html[data-state='no-staff']:has(#view-week) label[for='view-week'] {
+        background: none;
+        color: var(--wf-muted);
+        font-weight: 400;
+      }
+
+      /* 絞り込んでいる状態だけ、全員を表示を押せる。表示する職員が無い状態は、全ての職員を外した後に当たる */
+      html[data-state='no-staff'] .cal-reset {
+        opacity: 1;
+      }
+
+      html[data-state='no-staff'] .cal-side .wf-check.is-on::before {
+        background: none;
+      }
+    </style>
+  </head>
+  <body>
+    <input class="wf-switch" id="view-month" name="view" type="radio" />
+    <input checked class="wf-switch" id="view-week" name="view" type="radio" />
+    <input class="wf-switch" id="view-day" name="view" type="radio" />
+
+    <header class="cal-header" data-component="SiteHeader" data-ref="1">buddy</header>
+
+    <div class="cal-body">
+      <nav
+        aria-label="職員の絞り込み"
+        class="cal-side"
+        data-component="StaffFilterSidebar"
+        data-ref="2"
+        data-testid="staff-filter-sidebar"
+      >
+        <div class="cal-side__head">
+          <strong class="wf-label">職員</strong>
+          <span
+            aria-disabled="true"
+            class="wf-btn wf-btn--text cal-reset"
+            data-component="全員を表示のボタン"
+            data-ref="2-1"
+            data-testid="staff-filter-reset"
+            >全員を表示</span
+          >
+        </div>
+        <div class="cal-team" data-hide-when="loading">
+          <span
+            class="wf-check is-on"
+            data-component="チームのチェックボックス"
+            data-ref="2-2"
+            data-testid="staff-filter-team-{チームの id}"
+            ><span class="wf-text"></span
+          ></span>
+          <span
+            class="wf-check is-on"
+            data-component="職員のチェックボックス"
+            data-ref="2-3"
+            data-testid="staff-filter-staff-{職員の id}"
+            ><span class="wf-text"></span
+          ></span>
+          <span class="wf-check is-on"><span class="wf-text"></span></span>
+        </div>
+        <div class="cal-team" data-hide-when="loading">
+          <span class="wf-check is-on"><span class="wf-text"></span></span>
+          <span class="wf-check is-on"><span class="wf-text"></span></span>
+          <span class="wf-check is-on"><span class="wf-text"></span></span>
+        </div>
+      </nav>
+
+      <main class="cal-main">
+        <div class="cal-toolbar" data-component="ScheduleCalendarToolbar" data-ref="3">
+          <div class="cal-toolbar__group">
+            <span aria-label="前へ" class="wf-btn wf-btn--icon" data-component="前へ" data-ref="3-1" data-testid="calendar-prev">‹</span>
+            <span class="wf-btn" data-component="今日のボタン" data-ref="3-2" data-testid="calendar-today">今日</span>
+            <span aria-label="次へ" class="wf-btn wf-btn--icon" data-component="次へ" data-ref="3-3" data-testid="calendar-next">›</span>
+            <span class="wf-input cal-date" data-component="日付の入力" data-ref="3-4" data-testid="calendar-date"
+              ><span class="wf-text"></span
+            ></span>
+          </div>
+          <div class="cal-toolbar__group">
+            <div
+              class="wf-tabs cal-view-tabs"
+              data-component="表示の種類の TextTab"
+              data-ref="3-5"
+              data-testid="calendar-view"
+            >
+              <label class="wf-tab" for="view-month">月</label>
+              <label class="wf-tab" for="view-week">週</label>
+              <label class="wf-tab" for="view-day">日</label>
+            </div>
+            <span class="wf-btn wf-btn--primary" data-component="予定を作成のボタン" data-ref="3-6" data-testid="schedule-create-open"
+              >予定を作成</span
+            >
+          </div>
+        </div>
+
+        <div class="cal-area">
+          <div class="wf-loading" data-component="Loading" data-ref="6" data-show-when="loading">カレンダーを表示中...</div>
+          <p
+            class="wf-alert"
+            data-component="取得の失敗の文"
+            data-ref="7"
+            data-show-when="error error-403 network-error"
+            role="alert"
+          >
+            予定を取得できませんでした。
+          </p>
+          <p class="wf-undecided" data-show-when="error-401">
+            ログインの画面へ移すか、その場で案内を出すか。今の実装は 401 を扱わない。
+          </p>
+
+          <div class="cal-views" data-show-when="ready empty">
+            <div class="cal-month" data-component="ScheduleCalendar" data-ref="4" data-testid="schedule-calendar">
+              <div class="cal-head"><span class="wf-text wf-text--s"></span></div>
+              <div class="cal-head"><span class="wf-text wf-text--s"></span></div>
+              <div class="cal-head"><span class="wf-text wf-text--s"></span></div>
+              <div class="cal-head"><span class="wf-text wf-text--s"></span></div>
+              <div class="cal-head"><span class="wf-text wf-text--s"></span></div>
+              <div class="cal-head"><span class="wf-text wf-text--s"></span></div>
+              <div class="cal-head"><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div class="cal-free" data-component="空いた日（月）、空いた時間（週）" data-ref="4-2"><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div>
+                <span class="wf-text wf-text--s"></span>
+                <span
+                  class="cal-event"
+                  data-component="予定（月、週）"
+                  data-hide-when="empty"
+                  data-ref="4-1"
+                  data-testid="schedule-event-{予定の id}"
+                  ><span class="wf-text wf-text--full"></span
+                ></span>
+                <span class="cal-event" data-hide-when="empty"><span class="wf-text wf-text--full"></span></span>
+              </div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div>
+                <span class="wf-text wf-text--s"></span>
+                <span class="cal-event" data-hide-when="empty"><span class="wf-text wf-text--full"></span></span>
+              </div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div>
+                <span class="wf-text wf-text--s"></span>
+                <span class="cal-event" data-hide-when="empty"><span class="wf-text wf-text--full"></span></span>
+              </div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+              <div><span class="wf-text wf-text--s"></span></div>
+            </div>
+
+            <div class="cal-week" data-component="ScheduleCalendar" data-ref="4" data-testid="schedule-calendar">
+              <div class="cal-head"></div>
+              <div class="cal-head"><span class="wf-text wf-text--s"></span></div>
+              <div class="cal-head"><span class="wf-text wf-text--s"></span></div>
+              <div class="cal-head"><span class="wf-text wf-text--s"></span></div>
+              <div class="cal-head"><span class="wf-text wf-text--s"></span></div>
+              <div class="cal-head"><span class="wf-text wf-text--s"></span></div>
+              <div class="cal-head"><span class="wf-text wf-text--s"></span></div>
+              <div class="cal-head"><span class="wf-text wf-text--s"></span></div>
+              <div class="cal-times">
+                <div>6時</div><div>7時</div><div>8時</div><div>9時</div><div>10時</div><div>11時</div><div>12時</div><div>13時</div>
+                <div>14時</div><div>15時</div><div>16時</div><div>17時</div><div>18時</div><div>19時</div><div>20時</div><div>21時</div>
+              </div>
+              <div class="cal-col"></div>
+              <div class="cal-col">
+                <span class="cal-event" data-hide-when="empty" style="top: 256px; height: 64px"><span class="wf-text"></span></span>
+              </div>
+              <div class="cal-col">
+                <span class="cal-slot" data-component="空いた日（月）、空いた時間（週）" data-ref="4-2" style="top: 128px"></span>
+              </div>
+              <div class="cal-col">
+                <span
+                  class="cal-event"
+                  data-component="予定（月、週）"
+                  data-hide-when="empty"
+                  data-ref="4-1"
+                  data-testid="schedule-event-{予定の id}"
+                  style="top: 96px; height: 16px"
+                  ><span class="wf-text"></span
+                ></span>
+                <span class="cal-event" data-hide-when="empty" style="top: 144px; height: 32px"><span class="wf-text"></span></span>
+              </div>
+              <div class="cal-col">
+                <span class="cal-event" data-hide-when="empty" style="top: 288px; height: 48px"><span class="wf-text"></span></span>
+              </div>
+              <div class="cal-col"></div>
+              <div class="cal-col"></div>
+            </div>
+
+            <div class="cal-day" data-component="StaffScheduleDayGrid" data-ref="5" data-testid="staff-schedule-day-grid">
+              <div class="cal-head"></div>
+              <div class="cal-head" data-component="職員の列" data-ref="5-1"><span class="wf-text"></span></div>
+              <div class="cal-head"><span class="wf-text"></span></div>
+              <div class="cal-head"><span class="wf-text"></span></div>
+              <div class="cal-head"><span class="wf-text"></span></div>
+              <div class="cal-times">
+                <div>06:00</div><div>07:00</div><div>08:00</div><div>09:00</div><div>10:00</div><div>11:00</div><div>12:00</div><div>13:00</div>
+                <div>14:00</div><div>15:00</div><div>16:00</div><div>17:00</div><div>18:00</div><div>19:00</div><div>20:00</div><div>21:00</div>
+              </div>
+              <div class="cal-col">
+                <span
+                  class="cal-event"
+                  data-component="予定（日）"
+                  data-hide-when="empty"
+                  data-ref="5-3"
+                  data-testid="schedule-event-{予定の id}"
+                  style="top: 96px; height: 16px"
+                  ><span class="wf-text"></span
+                ></span>
+                <span
+                  class="cal-slot"
+                  data-component="時間の枠（日）"
+                  data-ref="5-2"
+                  data-testid="day-grid-slot-{職員の id}-{HH:mm}"
+                  style="top: 160px"
+                ></span>
+              </div>
+              <div class="cal-col">
+                <span class="cal-event" data-hide-when="empty" style="top: 144px; height: 32px"><span class="wf-text"></span></span>
+              </div>
+              <div class="cal-col">
+                <span class="cal-event" data-hide-when="empty" style="top: 224px; height: 32px"><span class="wf-text"></span></span>
+              </div>
+              <div class="cal-col"></div>
+            </div>
+          </div>
+
+          <div
+            class="cal-day cal-day--empty"
+            data-component="StaffScheduleDayGrid"
+            data-ref="5"
+            data-show-when="no-staff"
+            data-testid="staff-schedule-day-grid"
+          >
+            <div class="cal-head"></div>
+            <div class="cal-times">
+              <div>06:00</div><div>07:00</div><div>08:00</div><div>09:00</div><div>10:00</div><div>11:00</div><div>12:00</div><div>13:00</div>
+              <div>14:00</div><div>15:00</div><div>16:00</div><div>17:00</div><div>18:00</div><div>19:00</div><div>20:00</div><div>21:00</div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+    <script src="wireframe.js"></script>
+  </body>
+</html>

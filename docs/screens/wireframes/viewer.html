@@ -1,0 +1,291 @@
+<!doctype html>
+<!--
+  画面のワイヤーフレームを、端末の幅、状態、注記を切り替えて見る枠。
+  viewer.html?screen=<画面の ID>&device=<pc|ipad-landscape|ipad-portrait|mobile>&state=<状態>&notes=<on|off> で開く。
+  選んだ値は URL の search params に書き戻す。画面仕様書に iframe で埋め込んだときは、中身の高さを親へ送る。
+-->
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ワイヤーフレームのビューア</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #f4f4f4;
+        color: #222;
+        font: 13px/1.5 system-ui, -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+      }
+
+      .bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 16px;
+        padding: 8px 12px;
+        border-bottom: 1px solid #ccc;
+        background: #fff;
+      }
+
+      .group {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px;
+        margin: 0;
+        padding: 0;
+        border: 0;
+      }
+
+      .group > legend {
+        float: left;
+        margin-right: 4px;
+        padding: 0;
+        color: #666;
+      }
+
+      .group button {
+        padding: 3px 8px;
+        border: 1px solid #bbb;
+        border-radius: 4px;
+        background: #fff;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .group button[aria-pressed='true'] {
+        border-color: #222;
+        background: #222;
+        color: #fff;
+      }
+
+      select {
+        font: inherit;
+      }
+
+      .open {
+        margin-left: auto;
+        color: inherit;
+      }
+
+      .stage {
+        padding: 12px;
+      }
+
+      .frame-box {
+        margin: 0 auto;
+        overflow: hidden;
+        background: #fff;
+        box-shadow: 0 0 0 1px #bbb;
+      }
+
+      .frame-box > iframe {
+        display: block;
+        border: 0;
+        transform-origin: 0 0;
+      }
+
+      .size {
+        margin: 0 0 8px;
+        color: #666;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bar">
+      <label>
+        画面
+        <select id="screen">
+          <option value="schedule-calendar">予定のカレンダー</option>
+          <option value="schedule-new">予定の作成</option>
+          <option value="schedule-detail">予定の詳細</option>
+          <option value="schedule-edit">予定の編集</option>
+        </select>
+      </label>
+      <fieldset class="group" id="devices">
+        <legend>端末</legend>
+      </fieldset>
+      <fieldset class="group" id="states">
+        <legend>状態</legend>
+      </fieldset>
+      <label><input id="notes" type="checkbox" /> 注記</label>
+      <a class="open" id="open" rel="noopener" target="_blank">このビューを開く</a>
+    </div>
+    <div class="stage" id="stage">
+      <p class="size" id="size"></p>
+      <div class="frame-box" id="frame-box">
+        <iframe id="frame" title="ワイヤーフレーム"></iframe>
+      </div>
+    </div>
+    <script>
+      ;(() => {
+        const DEVICES = {
+          pc: { label: 'PC', width: 1440 },
+          'ipad-landscape': { label: 'iPad 横', width: 1024 },
+          'ipad-portrait': { label: 'iPad 縦', width: 768 },
+          mobile: { label: 'モバイル', width: 390 },
+        }
+        // 画面の ID の規則（docs/screens/index.md）に合う値だけを、iframe の src に使う
+        const SCREEN_ID = /^[a-z]+(-[a-z]+)+$/
+
+        const screenSelect = document.getElementById('screen')
+        const devicesGroup = document.getElementById('devices')
+        const statesGroup = document.getElementById('states')
+        const notesInput = document.getElementById('notes')
+        const openLink = document.getElementById('open')
+        const stage = document.getElementById('stage')
+        const sizeText = document.getElementById('size')
+        const box = document.getElementById('frame-box')
+        const frame = document.getElementById('frame')
+
+        const params = new URLSearchParams(location.search)
+        const view = {
+          screen: params.get('screen') ?? '',
+          device: params.get('device') ?? '',
+          state: params.get('state') ?? '',
+          notes: params.get('notes') === 'on',
+        }
+        if (!SCREEN_ID.test(view.screen)) view.screen = screenSelect.options[0].value
+        if (![...screenSelect.options].some((option) => option.value === view.screen)) {
+          screenSelect.add(new Option(view.screen, view.screen))
+        }
+        if (!(view.device in DEVICES)) view.device = 'pc'
+
+        let states = []
+        let frameHeight = 600
+        let scale = 1
+
+        const writeUrl = () => {
+          const next = new URLSearchParams({
+            screen: view.screen,
+            device: view.device,
+            ...(view.state === '' ? {} : { state: view.state }),
+            notes: view.notes ? 'on' : 'off',
+          })
+          history.replaceState(null, '', `?${next}`)
+          openLink.href = location.href
+        }
+
+        const sendSet = () => {
+          frame.contentWindow?.postMessage(
+            { source: 'wireframe-viewer', type: 'set', state: view.state, notes: view.notes, scale },
+            '*',
+          )
+        }
+
+        const reportHeight = () => {
+          if (window.parent === window) return
+          window.parent.postMessage(
+            {
+              source: 'wireframe-viewer',
+              type: 'resize',
+              height: Math.ceil(document.body.getBoundingClientRect().height),
+            },
+            '*',
+          )
+        }
+
+        const layout = () => {
+          const width = DEVICES[view.device].width
+          const available = stage.clientWidth - 24
+          const nextScale = Math.min(1, available / width)
+          frame.style.width = `${width}px`
+          frame.style.height = `${frameHeight}px`
+          frame.style.transform = `scale(${nextScale})`
+          box.style.width = `${width * nextScale}px`
+          box.style.height = `${frameHeight * nextScale}px`
+          sizeText.textContent = `${DEVICES[view.device].label} ${width}px${nextScale < 1 ? `（${Math.round(nextScale * 100)}% に縮小）` : ''}`
+          if (nextScale !== scale) {
+            scale = nextScale
+            sendSet()
+          }
+          reportHeight()
+        }
+
+        const renderButtons = (group, items, selected, onSelect) => {
+          group.querySelectorAll('button').forEach((button) => button.remove())
+          for (const item of items) {
+            const button = document.createElement('button')
+            button.type = 'button'
+            button.textContent = item.label
+            button.dataset.value = item.id
+            button.setAttribute('aria-pressed', String(item.id === selected))
+            button.addEventListener('click', () => onSelect(item.id))
+            group.append(button)
+          }
+        }
+
+        const renderDevices = () =>
+          renderButtons(
+            devicesGroup,
+            Object.entries(DEVICES).map(([id, device]) => ({ id, label: device.label })),
+            view.device,
+            (id) => {
+              view.device = id
+              renderDevices()
+              writeUrl()
+              layout()
+            },
+          )
+
+        const renderStates = () =>
+          renderButtons(statesGroup, states, view.state, (id) => {
+            view.state = id
+            renderStates()
+            writeUrl()
+            sendSet()
+          })
+
+        const loadScreen = () => {
+          states = []
+          renderStates()
+          screenSelect.value = view.screen
+          frame.src = `${view.screen}.html`
+        }
+
+        window.addEventListener('message', (event) => {
+          const data = event.data
+          if (event.source !== frame.contentWindow || data?.source !== 'wireframe') return
+          if (data.type === 'ready') {
+            states = Array.isArray(data.states) ? data.states : []
+            if (!states.some((state) => state.id === view.state)) view.state = states[0]?.id ?? ''
+            renderStates()
+            writeUrl()
+            sendSet()
+          } else if (data.type === 'resize') {
+            frameHeight = Number(data.height) || frameHeight
+            layout()
+          }
+        })
+
+        screenSelect.addEventListener('change', () => {
+          view.screen = screenSelect.value
+          view.state = ''
+          writeUrl()
+          loadScreen()
+        })
+        notesInput.checked = view.notes
+        notesInput.addEventListener('change', () => {
+          view.notes = notesInput.checked
+          writeUrl()
+          sendSet()
+        })
+        new ResizeObserver(layout).observe(stage)
+        new ResizeObserver(reportHeight).observe(document.body)
+
+        renderDevices()
+        writeUrl()
+        loadScreen()
+        layout()
+      })()
+    </script>
+  </body>
+</html>
