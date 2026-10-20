@@ -1,6 +1,13 @@
 {
   "rules": {
-    "preset-ai-words-ja": true,
+    "preset-ai-words-ja": {
+      "no-ai-words": {
+        "allows": [
+          "照合",
+          "正本"
+        ]
+      }
+    },
     "prh": {
       "rulePaths": [
         "./prh.yml"
