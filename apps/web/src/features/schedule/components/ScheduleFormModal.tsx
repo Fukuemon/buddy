@@ -1,7 +1,5 @@
 import { SCHEDULE_KINDS, type ScheduleKind } from '#/api/types'
-import { Button } from '#/components/base/Button'
-import { Modal } from '#/components/base/Modal'
-import { TextTab } from '#/components/base/TextTab'
+import { Button, Modal, TextTab } from '@buddy/ui'
 
 import { SCHEDULE_KIND_LABEL } from '../constants/scheduleLabels'
 import { ScheduleForm, type ScheduleFormProps } from './ScheduleForm'

@@ -1,5 +1,4 @@
-import { Button } from '#/components/base/Button'
-import { TextTab } from '#/components/base/TextTab'
+import { Button, TextTab } from '@buddy/ui'
 import PrevIcon from '#/assets/icons/arrow-left.svg?react'
 import NextIcon from '#/assets/icons/arrow-right.svg?react'
 

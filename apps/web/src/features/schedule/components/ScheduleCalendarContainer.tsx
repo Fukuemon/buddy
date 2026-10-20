@@ -3,7 +3,7 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { useBuddyApi } from '#/api/useBuddyApi'
-import { Loading } from '#/components/base/Loading'
+import { Loading } from '@buddy/ui'
 
 import { getCalendarRange, shiftCalendarDate } from '../lib/calendarRange'
 import { toDateKey } from '../lib/dateTime'

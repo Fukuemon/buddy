@@ -1,9 +1,9 @@
 import type { ComponentPropsWithoutRef } from 'react'
 import { useController, type Control, type FieldPath, type FieldValues } from 'react-hook-form'
 
-import CalendarIcon from '#/assets/icons/calendar.svg?react'
+import { CalendarIcon } from '../../icons/CalendarIcon'
 
-import { FieldFrame, fieldInputClassName } from './FieldFrame'
+import { FieldFrame, fieldInputClassName } from '../FieldFrame/FieldFrame'
 
 export type DatePickerProps<T extends FieldValues> = Omit<
   ComponentPropsWithoutRef<'input'>,

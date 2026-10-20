@@ -5,8 +5,7 @@ import { useForm } from 'react-hook-form'
 
 import type { Patient, Schedule, Staff } from '#/api/types'
 import { useBuddyApi } from '#/api/useBuddyApi'
-import { Loading } from '#/components/base/Loading'
-import { Modal } from '#/components/base/Modal'
+import { Loading, Modal } from '@buddy/ui'
 
 import { toScheduleFormValues, toScheduleInput } from '../lib/scheduleFormMapper'
 import {

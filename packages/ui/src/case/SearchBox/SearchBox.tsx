@@ -1,7 +1,7 @@
 import { clsx } from 'clsx'
 import type { ComponentPropsWithoutRef } from 'react'
 
-import SearchIcon from '#/assets/icons/search.svg?react'
+import { SearchIcon } from '../../icons/SearchIcon'
 
 export type SearchBoxProps = Omit<ComponentPropsWithoutRef<'input'>, 'type' | 'onChange'> & {
   onSearch: (value: string) => void

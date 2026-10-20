@@ -1,7 +1,6 @@
 import { useState } from 'react'
 
-import { Table } from '#/components/base/Table'
-import { SearchBox } from '#/components/form/SearchBox'
+import { SearchBox, Table } from '@buddy/ui'
 
 export type SelectOption = {
   id: string

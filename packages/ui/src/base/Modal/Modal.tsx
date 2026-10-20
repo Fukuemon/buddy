@@ -1,6 +1,6 @@
 import { useEffect, useId, type ReactNode } from 'react'
 
-import CloseIcon from '#/assets/icons/close.svg?react'
+import { CloseIcon } from '../../icons/CloseIcon'
 
 export type ModalProps = {
   isOpen: boolean

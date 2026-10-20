@@ -1,9 +1,9 @@
 import type { ComponentPropsWithoutRef } from 'react'
 import { useController, type Control, type FieldPath, type FieldValues } from 'react-hook-form'
 
-import TimerIcon from '#/assets/icons/timer.svg?react'
+import { TimerIcon } from '../../icons/TimerIcon'
 
-import { FieldFrame, fieldInputClassName } from './FieldFrame'
+import { FieldFrame, fieldInputClassName } from '../FieldFrame/FieldFrame'
 
 export type TimePickerProps<T extends FieldValues> = Omit<
   ComponentPropsWithoutRef<'input'>,

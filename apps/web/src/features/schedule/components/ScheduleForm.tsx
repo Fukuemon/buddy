@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Controller, useWatch, type UseFormReturn } from 'react-hook-form'
 
 import type { Patient, Staff } from '#/api/types'
-import { TextareaField } from '#/components/form/TextareaField'
+import { TextareaField } from '@buddy/ui'
 
 import { SCHEDULE_CATEGORY_LABEL } from '../constants/scheduleLabels'
 import { visitEndTime } from '../lib/scheduleFormMapper'

@@ -1,6 +1,5 @@
 import type { Patient, Schedule, Staff } from '#/api/types'
-import { Button } from '#/components/base/Button'
-import { Modal } from '#/components/base/Modal'
+import { Button, Modal } from '@buddy/ui'
 
 import { SCHEDULE_CATEGORY_LABEL, SCHEDULE_KIND_LABEL } from '../constants/scheduleLabels'
 import { toDateKey, toTimeKey } from '../lib/dateTime'

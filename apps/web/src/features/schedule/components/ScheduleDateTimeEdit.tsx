@@ -1,8 +1,6 @@
 import { Controller, useWatch, type UseFormReturn } from 'react-hook-form'
 
-import { DatePicker } from '#/components/form/DatePicker'
-import { NumberPicker } from '#/components/form/NumberPicker'
-import { TimePicker } from '#/components/form/TimePicker'
+import { DatePicker, NumberPicker, TimePicker } from '@buddy/ui'
 
 import { SERVICE_CODE_DURATION } from '../constants/scheduleLabels'
 import { visitEndTime } from '../lib/scheduleFormMapper'
