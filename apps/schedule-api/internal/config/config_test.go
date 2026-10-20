@@ -78,3 +78,16 @@ func TestLoadOrgClaim(t *testing.T) {
 		t.Errorf("OrgClaim = %q", c.OIDC.OrgClaim)
 	}
 }
+
+func TestLoadDBDoesNotRequireOIDC(t *testing.T) {
+	c, err := config.LoadDB(env(map[string]string{"DB_USER": "app", "DB_PASSWORD": "secret", "DB_NAME": "buddy"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.User != "app" || c.Host != "localhost" {
+		t.Errorf("got %+v", c)
+	}
+	if _, err := config.LoadDB(env(map[string]string{"DB_USER": "app"})); err == nil || !strings.Contains(err.Error(), "DB_PASSWORD") {
+		t.Errorf("err = %v", err)
+	}
+}

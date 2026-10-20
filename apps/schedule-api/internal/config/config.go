@@ -36,6 +36,16 @@ type Config struct {
 //   - CORS_ALLOW_ORIGINS: カンマで区切ったオリジン。空なら CORS のヘッダーを返さない
 //   - LOG_LEVEL: debug、info、warn、error。既定は info
 func Load(getenv func(string) string) (Config, error) {
+	return load(getenv, true)
+}
+
+// LoadDB は、Load と同じ規則で MySQL の接続の設定だけを読む。マイグレーションのコマンドが使い、OIDC の環境変数を求めない。
+func LoadDB(getenv func(string) string) (mysql.Config, error) {
+	c, err := load(getenv, false)
+	return c.DB, err
+}
+
+func load(getenv func(string) string, api bool) (Config, error) {
 	get := func(key, def string) string {
 		if v := getenv(key); v != "" {
 			return v
@@ -57,8 +67,12 @@ func Load(getenv func(string) string) (Config, error) {
 			OrgClaim: get("OIDC_ORG_CLAIM", "org_id"),
 		},
 	}
+	required := []string{"DB_USER", "DB_PASSWORD", "DB_NAME"}
+	if api {
+		required = append(required, "OIDC_ISSUER", "OIDC_AUDIENCE")
+	}
 	var missing []string
-	for _, key := range []string{"DB_USER", "DB_PASSWORD", "DB_NAME", "OIDC_ISSUER", "OIDC_AUDIENCE"} {
+	for _, key := range required {
 		if getenv(key) == "" {
 			missing = append(missing, key)
 		}
@@ -71,7 +85,7 @@ func Load(getenv func(string) string) (Config, error) {
 			return Config{}, fmt.Errorf("ポート %q は 1 から 65535 の数です", p)
 		}
 	}
-	if u, err := url.Parse(c.OIDC.Issuer); err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" {
+	if u, err := url.Parse(c.OIDC.Issuer); api && (err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "") {
 		return Config{}, fmt.Errorf("OIDC_ISSUER %q は http か https の URL です", c.OIDC.Issuer)
 	}
 	for _, o := range strings.Split(getenv("CORS_ALLOW_ORIGINS"), ",") {
