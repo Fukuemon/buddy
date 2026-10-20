@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { useState } from 'react'
 import { fn } from 'storybook/test'
 
 import { Button } from '../Button/Button'
@@ -37,3 +38,25 @@ export const LongContent: Story = {
 }
 
 export const Closed: Story = { args: { isOpen: false } }
+
+/** 開くボタンから開き、閉じるとフォーカスが開くボタンへ戻る。 */
+export const WithOpener: Story = {
+  args: { isOpen: false },
+  render: function Render(args) {
+    const [isOpen, setIsOpen] = useState(args.isOpen)
+    return (
+      <>
+        <Button onClick={() => setIsOpen(true)}>予定を開く</Button>
+        <Modal
+          {...args}
+          isOpen={isOpen}
+          onCloseRequest={() => {
+            args.onCloseRequest?.()
+            setIsOpen(false)
+          }}
+          stickyFooter={<Button>編集</Button>}
+        />
+      </>
+    )
+  },
+}
