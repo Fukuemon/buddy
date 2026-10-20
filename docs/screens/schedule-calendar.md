@@ -72,6 +72,7 @@ web の型（`apps/web/src/api/types.ts`）は偽物の API に合わせた形�
 | 5-1 | 職員の列 | 列の見出しに職員の名前 | `Staff.name` | `Staff.username` | なし |
 | 5-2 | 時間の枠（日） | 30 分の枠 | なし | なし | `day-grid-slot-{職員の id}-{HH:mm}` |
 | 5-3 | 予定（日） | 開始と終了の時刻と題 | `Schedule.startsAt`、`Schedule.endsAt`、`Schedule.title` | `date`、`start_time`、`end_time`、`title` | `schedule-event-{予定の id}` |
+| 5-4 | 職員の予定の列（日） | 職員の時間の枠と予定 | `Schedule.staffId` | `staff_id` | `day-grid-staff-{職員の id}` |
 | 6 | `Loading` | 「カレンダーを表示中...」 | なし | なし | なし |
 | 7 | 取得の失敗の文 | 「予定を取得できませんでした。」 | なし | なし | なし |
 

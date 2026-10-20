@@ -60,7 +60,7 @@ export const SegmentedControl = <Id extends string>({
             <input
               checked={checked}
               // 見えない radio を選択肢の全面に重ね、押した位置の要素を radio にする
-              className="absolute inset-0 m-0 cursor-pointer opacity-0"
+              className="absolute inset-0 m-0 size-full cursor-pointer opacity-0"
               data-testid={testId === undefined ? undefined : `${testId}-${option.id}`}
               name={name}
               onChange={() => onChange(option.id)}
