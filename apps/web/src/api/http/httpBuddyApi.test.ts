@@ -94,17 +94,33 @@ describe('createHttpBuddyApi', () => {
     expect(created).toMatchObject({ id: 'created', startsAt: '2026-10-20T15:00:00+09:00' })
   })
 
-  it('職員の名前とチームを画面の型にし、空の名前は送らない', async () => {
+  it('職員の名前とチームを画面の型にし、名前は API に送らず部分一致で絞る', async () => {
     const { fetch, requests } = fakeFetch({
       'GET /v1/facilities/facility-1/users': () => [
         { id: 'staff-1', username: '青木 一郎', team: { id: 'team-a', name: 'A' } },
+        { id: 'staff-2', username: '石田 二郎', team: { id: 'team-a', name: 'A' } },
       ],
     })
     const api = createHttpBuddyApi({ baseUrl: 'http://api.test', fetch })
-    await expect(api.staff.list('facility-1', { name: '' })).resolves.toEqual([
+    await expect(api.staff.list('facility-1', { name: '青木' })).resolves.toEqual([
       { id: 'staff-1', name: '青木 一郎', teamId: 'team-a' },
     ])
+    await expect(api.staff.list('facility-1', { name: '' })).resolves.toHaveLength(2)
     expect(new URL(requests[0].url).searchParams.has('username')).toBe(false)
+  })
+
+  it('利用者は名前の一部で絞る', async () => {
+    const { fetch, requests } = fakeFetch({
+      'GET /v1/facilities/facility-1/patients': () => [
+        { id: 'patient-1', name: '利用者 A' },
+        { id: 'patient-2', name: '利用者 B' },
+      ],
+    })
+    const api = createHttpBuddyApi({ baseUrl: 'http://api.test', fetch })
+    await expect(api.patients.list('facility-1', { name: 'B' })).resolves.toEqual([
+      { id: 'patient-2', name: '利用者 B' },
+    ])
+    expect(new URL(requests[0].url).searchParams.has('name')).toBe(false)
   })
 
   it('失敗の状態と、ほかの事業所の予定と、予定の更新で ApiError を投げる', async () => {

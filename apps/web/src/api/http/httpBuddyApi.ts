@@ -1,6 +1,7 @@
 import createClient from 'openapi-fetch'
 
 import { ApiError, type BuddyApi } from '../client'
+import { matchesName } from '../nameSearch'
 import type { paths } from '../generated/schedule'
 import { fromApiSchedule, splitDateTime, toSlotRequest } from './scheduleMapper'
 
@@ -25,9 +26,6 @@ export const unwrap = async <T>(promise: Promise<Result<T>>): Promise<T> => {
   }
   return data
 }
-
-/** 指定がないときに API へ送らないよう、空の文字列を undefined にする。 */
-const nonEmpty = (value?: string) => (value === undefined || value === '' ? undefined : value)
 
 /**
  * 予定の API を openapi-fetch で呼ぶ BuddyApi を作る。トークンは付けない。
@@ -106,13 +104,13 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
       list: async (facilityId, params) => {
         const users = await unwrap(
           client.GET('/v1/facilities/{facility_id}/users', {
-            params: {
-              path: { facility_id: facilityId },
-              query: { username: nonEmpty(params?.name) },
-            },
+            params: { path: { facility_id: facilityId } },
           }),
         )
-        return users.map((user) => ({ id: user.id, name: user.username, teamId: user.team.id }))
+        // API の username と name は完全一致なので、全件を取って部分一致で絞る
+        return users
+          .map((user) => ({ id: user.id, name: user.username, teamId: user.team.id }))
+          .filter((staff) => matchesName(staff.name, params))
       },
     },
     teams: {
@@ -129,13 +127,12 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
       list: async (facilityId, params) => {
         const patients = await unwrap(
           client.GET('/v1/facilities/{facility_id}/patients', {
-            params: {
-              path: { facility_id: facilityId },
-              query: { name: nonEmpty(params?.name) },
-            },
+            params: { path: { facility_id: facilityId } },
           }),
         )
-        return patients.map((patient) => ({ id: patient.id, name: patient.name }))
+        return patients
+          .map((patient) => ({ id: patient.id, name: patient.name }))
+          .filter((patient) => matchesName(patient.name, params))
       },
     },
   }

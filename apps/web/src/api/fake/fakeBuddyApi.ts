@@ -1,5 +1,6 @@
 import { ApiError, type BuddyApi } from '../client'
-import type { FacilityId, NameSearchParams, Schedule } from '../types'
+import { matchesName } from '../nameSearch'
+import type { FacilityId, Schedule } from '../types'
 import {
   FAKE_FACILITY_ID,
   createFakeSchedules,
@@ -18,9 +19,6 @@ const assertFacility = (facilityId: FacilityId) => {
     throw new ApiError(403, `事業所 ${facilityId} の操作は許可されていません`)
   }
 }
-
-const matchesName = (name: string, params?: NameSearchParams) =>
-  params?.name === undefined || params.name === '' || name.includes(params.name)
 
 /**
  * メモリの上で動く BuddyApi を作る。データは呼び出しごとに独立し、ページを読み直すと初期の状態に戻る。
