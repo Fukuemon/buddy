@@ -53,6 +53,11 @@ func (r *ScheduleRepository) Create(ctx context.Context, s schedule.Schedule) er
 	return translate("create schedule", err)
 }
 
+func (r *ScheduleRepository) Lock(ctx context.Context, id string) error {
+	_, err := r.q(ctx).LockSchedule(ctx, id)
+	return translate("lock schedule", err)
+}
+
 func (r *ScheduleRepository) Update(ctx context.Context, s schedule.Schedule) error {
 	err := r.q(ctx).UpdateSchedule(ctx, sqlcgen.UpdateScheduleParams{
 		ID:             s.ID,

@@ -202,6 +202,9 @@ func (s *Schedules) Cancel(ctx context.Context, scheduleID, reason string) (sche
 func (s *Schedules) Update(ctx context.Context, scheduleID string, in SlotInput) (schedule.Detail, error) {
 	var updated schedule.Detail
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
+		if err := s.repos.Schedules.Lock(ctx, scheduleID); err != nil {
+			return err
+		}
 		cur, err := s.repos.Schedules.Get(ctx, scheduleID)
 		if err != nil {
 			return err

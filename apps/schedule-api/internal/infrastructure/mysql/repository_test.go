@@ -6,6 +6,7 @@ import (
 	"errors"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/civil"
@@ -540,6 +541,89 @@ func TestScheduleUpdateAndDeleteUnusedVisitInfo(t *testing.T) {
 	}
 	if countInfo() != 0 {
 		t.Error("どの予定も指さない訪問の情報が残った")
+	}
+}
+
+func TestScheduleUpdateKeepsRecurringAndSharedVisitInfo(t *testing.T) {
+	ctx := txContext(t)
+	tx := ctx.Value(txKey{}).(*sql.Tx)
+	r := NewScheduleRepository(testDB)
+	visits := NewVisitRepository(testDB)
+	cur, err := r.Get(ctx, seedVisitSchedule)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, q := range []string{
+		"UPDATE recurring_schedules SET visit_info_id = '" + *cur.VisitInfoID + "' WHERE id = '" + seedRecurring + "'",
+		"UPDATE schedules SET recurring_schedule_id = '" + seedRecurring + "' WHERE id = '" + seedVisitSchedule + "'",
+	} {
+		if _, err := tx.ExecContext(ctx, q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	updated := schedule.Schedule{ID: seedVisitSchedule, Slot: schedule.Slot{
+		StaffID: seedMori, TypeID: seedNormalType, Date: civil.Date{Year: 2026, Month: 10, Day: 22},
+		StartTime: civil.Time{Hour: 13}, EndTime: civil.Time{Hour: 14}, Title: ptr("記録の整理"),
+	}}
+	if err := r.Update(ctx, updated); err != nil {
+		t.Fatal(err)
+	}
+	got, err := r.Get(ctx, seedVisitSchedule)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.RecurringScheduleID == nil || *got.RecurringScheduleID != seedRecurring {
+		t.Errorf("RecurringScheduleID = %v", got.RecurringScheduleID)
+	}
+	if err := visits.DeleteInfoIfUnused(ctx, *cur.VisitInfoID); err != nil {
+		t.Fatal(err)
+	}
+	var n int
+	if err := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM visit_infos WHERE id = ?", *cur.VisitInfoID).Scan(&n); err != nil {
+		t.Fatal(err)
+	}
+	if n != 1 {
+		t.Error("繰り返しの予定が指している訪問の情報を消した")
+	}
+}
+
+func TestScheduleLockBlocksCancel(t *testing.T) {
+	if testDB == nil {
+		t.Skip("MySQL を使うテストは -short では動かさない")
+	}
+	bg := context.Background()
+	r := NewScheduleRepository(testDB)
+	if err := r.Lock(bg, unknownID); !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("無い予定のロック: err = %v, want ErrNotFound", err)
+	}
+	locker, err := testDB.BeginTx(bg, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = locker.Rollback() }()
+	if err := r.Lock(context.WithValue(bg, txKey{}, locker), seedConference); err != nil {
+		t.Fatal(err)
+	}
+	canceler, err := testDB.BeginTx(bg, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = canceler.Rollback() }()
+	done := make(chan error, 1)
+	go func() {
+		done <- r.CreateCancel(context.WithValue(bg, txKey{}, canceler),
+			schedule.Cancel{ID: "01M3TD00000000000000000070", ScheduleID: seedConference, Reason: "体調不良"})
+	}()
+	select {
+	case err := <-done:
+		t.Fatalf("ロックの間にキャンセルが終わった: err = %v", err)
+	case <-time.After(300 * time.Millisecond):
+	}
+	if err := locker.Rollback(); err != nil {
+		t.Fatal(err)
+	}
+	if err := <-done; err != nil {
+		t.Fatal(err)
 	}
 }
 

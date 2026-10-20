@@ -493,6 +493,17 @@ func (q *Queries) ListScheduleTypes(ctx context.Context) ([]ScheduleType, error)
 	return items, nil
 }
 
+const lockSchedule = `-- name: LockSchedule :one
+SELECT id FROM schedules WHERE id = ? FOR UPDATE
+`
+
+func (q *Queries) LockSchedule(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRowContext(ctx, lockSchedule, id)
+	var id_2 string
+	err := row.Scan(&id_2)
+	return id_2, err
+}
+
 const updateSchedule = `-- name: UpdateSchedule :exec
 UPDATE schedules
 SET staff_id = ?, schedule_type_id = ?, date = ?, start_time = ?, end_time = ?,

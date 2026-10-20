@@ -250,6 +250,11 @@ func (s schedules) Create(_ context.Context, sc schedule.Schedule) error {
 	return nil
 }
 
+func (s schedules) Lock(_ context.Context, id string) error {
+	_, err := get(s.schedules, id)
+	return err
+}
+
 func (s schedules) Update(_ context.Context, sc schedule.Schedule) error {
 	cur, ok := s.schedules[sc.ID]
 	if !ok {
