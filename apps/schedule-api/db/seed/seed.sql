@@ -1,4 +1,5 @@
 -- 開発とテストに使う架空のデータ。実在の事業所、人、連絡先を入れない。
+-- 予定の種類、サービスコード、訪問の区分は、全ての環境で同じ値なのでマイグレーション 000007 が入れる。
 
 INSERT INTO facilities (id, name, org_id) VALUES
     ('01M3TC5H00QV17BC0J9V3393ZP', 'サンプル訪問看護ステーション', 'org-sample');
@@ -41,25 +42,11 @@ INSERT INTO user_policies (id, user_id, policy_id) VALUES
 INSERT INTO user_policy_targets (user_policy_id, target_user_id) VALUES
     ('01M3TC5ZMRRY639KSB3B4T0V19', '01M3TC5WQ08KWBZX85WAZ1C4N7');
 
-INSERT INTO service_codes (id, code, service_time_range_start, service_time_range_end) VALUES
-    ('01M3TC60M0XC173N54CJQRKFVR', '訪看I２', 20, 29),
-    ('01M3TC61K82WSVMKHFBEVC4NYM', '訪看I３', 30, 59),
-    ('01M3TC62JGSGQN3D5JKQYJR08M', '訪看I４', 60, 89);
-
-INSERT INTO visit_categories (id, name) VALUES
-    ('01M3TC63HR6H7CP0CVRZGED7BB', '夜勤'),
-    ('01M3TC64H0JJHBDMJQPGBX9FM7', '緊急'),
-    ('01M3TC65G8G68GS870DAANGEBG', '入院');
-
 INSERT INTO patients (id, facility_id, name, preferred_time, preferred_gender, service_code_id, assigned_staff_id) VALUES
     ('01M3TC66FGZVK39Y7GRVZSGWS1', '01M3TC5H00QV17BC0J9V3393ZP', '見本 一郎', '午前', '男性',
      '01M3TC60M0XC173N54CJQRKFVR', '01M3TC5VQR3MKFF9AA4BVKF44Z'),
     ('01M3TC67EREWP3ED55WDTKD23Z', '01M3TC5H00QV17BC0J9V3393ZP', '見本 二葉', '午後', '女性',
      '01M3TC61K82WSVMKHFBEVC4NYM', '01M3TC5WQ08KWBZX85WAZ1C4N7');
-
-INSERT INTO schedule_types (id, name) VALUES
-    ('01M3TC68E05E1N46YCCBT6ZQB2', '通常'),
-    ('01M3TC69D8KB2938F3GS7WBVT5', '訪問');
 
 INSERT INTO visit_infos (id, patient_id, assigned_staff_id, companion_id, service_code_id) VALUES
     ('01M3TC6ACG2Z0J6Y2DFBS8QRR9', '01M3TC66FGZVK39Y7GRVZSGWS1', '01M3TC5VQR3MKFF9AA4BVKF44Z',

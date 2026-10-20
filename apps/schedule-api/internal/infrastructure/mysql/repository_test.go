@@ -254,7 +254,7 @@ func TestPatientList(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(rows) != 1 || rows[0].ID != seedPatient || rows[0].AssignedStaffName != "森 健太" || rows[0].ServiceCode != "訪看I２" {
+	if len(rows) != 1 || rows[0].ID != seedPatient || rows[0].AssignedStaffName != "森 健太" || rows[0].ServiceCode != "訪看I2" {
 		t.Errorf("rows = %+v", rows)
 	}
 	err = r.Create(ctx, patient.Patient{
