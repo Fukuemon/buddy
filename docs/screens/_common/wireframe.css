@@ -1,0 +1,460 @@
+/*
+ * モックの中の画面の共通の見た目。mock.css の後に読む。
+ * 配置と状態だけを示すため、灰色の箱と線で描き、デザインのトークン（packages/ui）には寄せない。
+ * 画面の幅による切り替えは、.screen の幅を測る @container screen で書く。
+ */
+
+:root {
+  --wf-ink: #333;
+  --wf-line: #9a9a9a;
+  --wf-line-soft: #d4d4d4;
+  --wf-fill: #ececec;
+  --wf-fill-strong: #c8c8c8;
+  --wf-surface: #fff;
+  --wf-muted: #777;
+  --wf-radius: 6px;
+
+  color: var(--wf-ink);
+  font-family: system-ui, -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* 画面の中の切り替え（表示の種類、フォームの種類）に使うラジオボタン。見せずに label で操作する */
+.wf-switch {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.wf-box {
+  border: 1px solid var(--wf-line);
+  border-radius: var(--wf-radius);
+  background: var(--wf-fill);
+}
+
+.wf-panel {
+  border: 1px solid var(--wf-line-soft);
+  border-radius: var(--wf-radius);
+  background: var(--wf-surface);
+}
+
+.wf-divider {
+  border: 0;
+  border-top: 1px solid var(--wf-line-soft);
+  margin: 0;
+}
+
+/* 仮の文字。値が変わる文字の代わりに棒を置く */
+.wf-text {
+  display: inline-block;
+  width: 6em;
+  height: 0.75em;
+  border-radius: 2px;
+  background: var(--wf-fill-strong);
+  vertical-align: middle;
+}
+
+.wf-text--s {
+  width: 3em;
+}
+
+.wf-text--l {
+  width: 10em;
+}
+
+.wf-text--full {
+  width: 100%;
+}
+
+.wf-label {
+  color: var(--wf-muted);
+  font-size: 12px;
+}
+
+.wf-heading {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.wf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--wf-ink);
+  border-radius: var(--wf-radius);
+  background: var(--wf-surface);
+  color: var(--wf-ink);
+  font: inherit;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.wf-btn--primary {
+  background: var(--wf-ink);
+  color: var(--wf-surface);
+}
+
+.wf-btn--icon {
+  width: 36px;
+  padding: 0;
+  border-color: transparent;
+}
+
+.wf-btn--text {
+  height: auto;
+  padding: 0;
+  border-color: transparent;
+  font-size: 12px;
+  text-decoration: underline;
+}
+
+.wf-btn[aria-disabled='true'] {
+  opacity: 0.4;
+}
+
+/* 送信中のボタン。文字の前に回転の印を出す */
+.wf-btn--busy::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentcolor;
+  border-right-color: transparent;
+  border-radius: 50%;
+}
+
+.wf-input {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-height: 48px;
+  padding: 6px 12px;
+  border: 1px solid var(--wf-line);
+  border-radius: var(--wf-radius);
+  background: var(--wf-surface);
+}
+
+.wf-input--area {
+  justify-content: flex-start;
+  min-height: 120px;
+}
+
+.wf-input--invalid {
+  border: 2px solid var(--wf-ink);
+}
+
+.wf-error {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.wf-error::before {
+  content: '! ';
+}
+
+.wf-tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--wf-line);
+  border-radius: 8px;
+  background: var(--wf-fill);
+}
+
+.wf-tab {
+  min-width: 48px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  color: var(--wf-muted);
+  text-align: center;
+}
+
+.wf-tab.is-active,
+.wf-tab[aria-selected='true'] {
+  background: var(--wf-surface);
+  color: var(--wf-ink);
+  font-weight: 700;
+}
+
+.wf-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wf-check::before {
+  content: '';
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--wf-ink);
+  border-radius: 2px;
+}
+
+.wf-check.is-on::before {
+  background: var(--wf-ink);
+}
+
+.wf-check.is-mixed::before {
+  background: linear-gradient(var(--wf-ink), var(--wf-ink)) center / 8px 2px no-repeat;
+}
+
+.wf-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--wf-line);
+  border-radius: var(--wf-radius);
+}
+
+.wf-chip.is-on {
+  border: 2px solid var(--wf-ink);
+  font-weight: 700;
+}
+
+.wf-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.wf-table th,
+.wf-table td {
+  padding: 8px;
+  border: 1px solid var(--wf-line-soft);
+  text-align: left;
+}
+
+.wf-rows {
+  margin: 0;
+}
+
+.wf-row {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr);
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--wf-line-soft);
+}
+
+.wf-row dt {
+  color: var(--wf-muted);
+  font-size: 13px;
+}
+
+.wf-row dd {
+  margin: 0;
+}
+
+.wf-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 160px;
+  color: var(--wf-muted);
+}
+
+.wf-loading::before {
+  content: '';
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--wf-fill-strong);
+  border-top-color: var(--wf-ink);
+  border-radius: 50%;
+}
+
+.wf-alert {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 4px solid var(--wf-ink);
+  background: var(--wf-fill);
+  font-weight: 700;
+}
+
+/* 仕様が決まっていない箇所。未決の内容を枠の中に書く */
+.wf-undecided {
+  padding: 10px 12px;
+  border: 1px dashed var(--wf-ink);
+  border-radius: var(--wf-radius);
+  color: var(--wf-muted);
+  font-size: 12px;
+}
+
+.wf-undecided::before {
+  content: '未決: ';
+  color: var(--wf-ink);
+  font-weight: 700;
+}
+
+/* 条件つきで出す要素。data-cond に条件を書くと、枠の右上に出す */
+.wf-cond {
+  position: relative;
+  outline: 1px dashed var(--wf-line);
+  outline-offset: -1px;
+}
+
+.wf-cond::after {
+  content: attr(data-cond);
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  color: var(--wf-muted);
+  font-size: 11px;
+}
+
+/* 出さない要素。仕様書の構成番号を振るために、場所だけを示す */
+.wf-absent {
+  padding: 4px 8px;
+  border: 1px dashed var(--wf-line);
+  border-radius: var(--wf-radius);
+  color: var(--wf-muted);
+  font-size: 12px;
+  text-decoration: line-through;
+}
+
+/* 状態の補足。初期の見え方では違いが見えない状態に、何が変わるかを書く */
+.wf-hint {
+  padding: 6px 10px;
+  border: 1px dashed var(--wf-line);
+  border-radius: var(--wf-radius);
+  background: var(--wf-surface);
+  color: var(--wf-muted);
+  font-size: 12px;
+}
+
+/* モーダル。幅 768px 未満では、画面いっぱいのシートにする（apps/web の Modal と同じ切り替え） */
+.wf-modal-stage {
+  position: relative;
+  min-height: 760px;
+  padding: 56px 16px;
+}
+
+.wf-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 0.4);
+}
+
+.wf-modal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 720px;
+  margin: 0 auto;
+  border-radius: 20px;
+  background: var(--wf-surface);
+  box-shadow: 0 0 0 1px var(--wf-line);
+}
+
+.wf-modal__header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  border-bottom: 1px solid var(--wf-line-soft);
+}
+
+.wf-modal__title {
+  margin: 0 0 0 auto;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.wf-modal__header > .wf-btn--icon + .wf-modal__title {
+  margin-left: 0;
+}
+
+.wf-modal__body {
+  flex: 1;
+  padding: 20px;
+}
+
+.wf-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--wf-line-soft);
+}
+
+.wf-modal__footer > .wf-alert {
+  margin-right: auto;
+}
+
+@container screen (width < 768px) {
+  .wf-modal-stage {
+    padding: 8px 0 0;
+  }
+
+  .wf-modal {
+    width: 100%;
+    min-height: 752px;
+    border-radius: 12px 12px 0 0;
+  }
+}
+
+/* モーダルの背後に薄く描く予定のカレンダー。ヘッダー、職員の絞り込み、ツールバー、表の線だけを描く */
+.wf-bg-calendar {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(var(--wf-fill-strong), var(--wf-fill-strong)) 0 0 / 100% 56px no-repeat,
+    linear-gradient(var(--wf-fill), var(--wf-fill)) 0 56px / 224px 100% no-repeat,
+    linear-gradient(var(--wf-fill), var(--wf-fill)) 248px 72px / calc(100% - 272px) 40px no-repeat,
+    repeating-linear-gradient(90deg, var(--wf-line-soft) 0 1px, transparent 1px 120px) 248px 128px /
+      calc(100% - 272px) calc(100% - 144px) no-repeat,
+    repeating-linear-gradient(var(--wf-line-soft) 0 1px, transparent 1px 48px) 248px 128px /
+      calc(100% - 272px) calc(100% - 144px) no-repeat,
+    var(--wf-surface);
+}
+
+/* 左に項目の一覧、右に選んだ項目の中身を置く配置。幅 768px 未満では縦に積む（apps/web の ScheduleForm と同じ切り替え） */
+.wf-split {
+  display: grid;
+  gap: 24px;
+}
+
+@container screen (width >= 768px) {
+  .wf-split {
+    grid-template-columns: 16rem minmax(0, 1fr);
+  }
+}
+
+.wf-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 項目の要約。label を押すと、対応するラジオボタン（.wf-switch）が選ばれる */
+.wf-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  border: 1px solid var(--wf-line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.wf-summary.is-active {
+  border: 2px solid var(--wf-ink);
+  background: var(--wf-fill);
+}

@@ -1,0 +1,121 @@
+/*
+ * 画面のモックの外枠。モックの HTML の head で、wireframe.css と画面の CSS より先に読む。
+ * .stage の中に、端末の幅の .screen と、構成番号を重ねる .markers を置く。端末の幅は mock.js が決める。
+ */
+
+html {
+  background: #f2f2f2;
+}
+
+body {
+  margin: 0;
+  padding: 16px 16px 0;
+}
+
+.stage {
+  position: relative;
+  width: max-content;
+  margin: 0 auto;
+}
+
+/* 端末の画面。幅による切り替えは @container screen で書く */
+.screen {
+  position: relative;
+  container: screen / inline-size;
+  width: var(--mock-width, 1440px);
+  min-height: var(--mock-height, 900px);
+  overflow: hidden;
+  border: 1px solid #b0b0b0;
+  background: var(--wf-surface, #fff);
+}
+
+.screen-body {
+  position: relative;
+}
+
+/* 構成番号の印。mock.js が data-m を持つ要素の左上に置く */
+.markers {
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.marker {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transform: translate(-6px, -6px);
+}
+
+.marker__number {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 4px;
+  border-radius: 11px;
+  background: #d6336c;
+  color: #fff;
+  font: 700 12px / 1 system-ui, sans-serif;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.marker__testid {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 0.75);
+  color: #fff;
+  font: 11px / 1.4 ui-monospace, monospace;
+  white-space: nowrap;
+}
+
+body:not([data-markers='on']) .markers {
+  display: none;
+}
+
+body:not([data-testids='on']) .marker__testid {
+  display: none;
+}
+
+/* 端末と番号の切り替え。mock.js が body の末尾に作る */
+.mock-toolbar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin: 16px -16px 0;
+  padding: 8px 16px;
+  border-top: 1px solid #d0d0d0;
+  background: #fafafa;
+  font: 13px / 1.4 system-ui, sans-serif;
+}
+
+.mock-toolbar__views {
+  display: flex;
+  gap: 4px;
+}
+
+.mock-toolbar button {
+  padding: 4px 10px;
+  border: 1px solid #b0b0b0;
+  border-radius: 4px;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.mock-toolbar button[aria-pressed='true'] {
+  border-color: #333;
+  background: #333;
+  color: #fff;
+}
+
+.mock-toolbar label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
