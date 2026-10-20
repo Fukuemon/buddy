@@ -168,6 +168,25 @@ func (s staffRepo) ListByFacility(context.Context, string, staff.ListQuery) ([]s
 	return nil, nil
 }
 
+func (s staffRepo) FindIDBySub(_ context.Context, sub string) (string, error) {
+	for id, d := range s.staff {
+		if d.Sub != nil && *d.Sub == sub {
+			return id, nil
+		}
+	}
+	return "", domain.ErrNotFound
+}
+
+func (s staffRepo) LinkSub(_ context.Context, facilityID, email, sub string) error {
+	for id, d := range s.staff {
+		if d.FacilityID == facilityID && d.Email == email && d.Sub == nil {
+			d.Sub = &sub
+			s.staff[id] = d
+		}
+	}
+	return nil
+}
+
 type patients struct{ *store }
 
 func (s patients) Create(_ context.Context, p patient.Patient) error {

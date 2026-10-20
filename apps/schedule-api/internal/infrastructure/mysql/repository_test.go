@@ -121,6 +121,62 @@ func TestStaffGetWithPolicies(t *testing.T) {
 	}
 }
 
+func TestStaffLinkSub(t *testing.T) {
+	ctx := txContext(t)
+	r := NewStaffRepository(testDB)
+	if err := r.LinkSub(ctx, unknownID, "hina.aoki@example.com", "sub-other-facility"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.FindIDBySub(ctx, "sub-other-facility"); !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("ほかの事業所の指定で結び付けた: err = %v", err)
+	}
+	if err := r.LinkSub(ctx, seedFacility, "hina.aoki@example.com", "sub-1"); err != nil {
+		t.Fatal(err)
+	}
+	if id, err := r.FindIDBySub(ctx, "sub-1"); err != nil || id != seedAoki {
+		t.Fatalf("id = %q, err = %v", id, err)
+	}
+	if err := r.LinkSub(ctx, seedFacility, "hina.aoki@example.com", "sub-2"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.FindIDBySub(ctx, "sub-2"); !errors.Is(err, domain.ErrNotFound) {
+		t.Fatalf("結び付け済みの sub を書き換えた: err = %v", err)
+	}
+}
+
+// TestStaffLinkSubConcurrent は、トランザクションの外で同時に結び付け、書かれた sub が 1 つだけであることを確かめる。
+func TestStaffLinkSubConcurrent(t *testing.T) {
+	if testDB == nil {
+		t.Skip("MySQL を使うテストは -short では動かさない")
+	}
+	ctx := context.Background()
+	t.Cleanup(func() {
+		if _, err := testDB.ExecContext(ctx, "UPDATE users SET sub = NULL WHERE id = ?", seedHayashi); err != nil {
+			t.Error(err)
+		}
+	})
+	r := NewStaffRepository(testDB)
+	subs := []string{"sub-a", "sub-b", "sub-c", "sub-d"}
+	errs := make(chan error, len(subs))
+	for _, sub := range subs {
+		go func() { errs <- r.LinkSub(ctx, seedFacility, "sakura.hayashi@example.com", sub) }()
+	}
+	for range subs {
+		if err := <-errs; err != nil {
+			t.Fatal(err)
+		}
+	}
+	found := 0
+	for _, sub := range subs {
+		if id, err := r.FindIDBySub(ctx, sub); err == nil && id == seedHayashi {
+			found++
+		}
+	}
+	if found != 1 {
+		t.Fatalf("結び付いた sub = %d 個, want 1", found)
+	}
+}
+
 func TestStaffCreate(t *testing.T) {
 	ctx := txContext(t)
 	r := NewStaffRepository(testDB)

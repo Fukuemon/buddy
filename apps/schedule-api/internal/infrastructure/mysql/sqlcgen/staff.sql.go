@@ -111,6 +111,34 @@ func (q *Queries) GetUser(ctx context.Context, id string) (GetUserRow, error) {
 	return i, err
 }
 
+const getUserIDBySub = `-- name: GetUserIDBySub :one
+SELECT id FROM users WHERE sub = ?
+`
+
+func (q *Queries) GetUserIDBySub(ctx context.Context, sub sql.NullString) (string, error) {
+	row := q.db.QueryRowContext(ctx, getUserIDBySub, sub)
+	var id string
+	err := row.Scan(&id)
+	return id, err
+}
+
+const linkUserSub = `-- name: LinkUserSub :exec
+UPDATE users SET sub = ?
+WHERE facility_id = ? AND email = ? AND sub IS NULL
+`
+
+type LinkUserSubParams struct {
+	Sub        sql.NullString
+	FacilityID string
+	Email      string
+}
+
+// 条件の sub IS NULL で、同時に来た初回のログインのうち 1 つだけが書く。
+func (q *Queries) LinkUserSub(ctx context.Context, arg LinkUserSubParams) error {
+	_, err := q.db.ExecContext(ctx, linkUserSub, arg.Sub, arg.FacilityID, arg.Email)
+	return err
+}
+
 const listUserPolicies = `-- name: ListUserPolicies :many
 SELECT up.id AS user_policy_id, up.user_id, p.id AS policy_id, p.name AS policy_name
 FROM user_policies up

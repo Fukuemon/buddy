@@ -109,3 +109,15 @@ func staffSummary(u sqlcgen.ListUsersByFacilityRow) staff.Summary {
 		UpdatedAt:      u.UpdatedAt,
 	}
 }
+
+func (r *StaffRepository) FindIDBySub(ctx context.Context, sub string) (string, error) {
+	id, err := r.q(ctx).GetUserIDBySub(ctx, sql.NullString{String: sub, Valid: true})
+	return id, translate("get user by sub", err)
+}
+
+func (r *StaffRepository) LinkSub(ctx context.Context, facilityID, email, sub string) error {
+	err := r.q(ctx).LinkUserSub(ctx, sqlcgen.LinkUserSubParams{
+		Sub: sql.NullString{String: sub, Valid: true}, FacilityID: facilityID, Email: email,
+	})
+	return translate("link user sub", err)
+}
