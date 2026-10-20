@@ -4,7 +4,8 @@
   "scripts": {
     "prepare": "[ -n \"$CI\" ] || lefthook install",
     "check:generated": "sh scripts/check-generated.sh",
-    "check:screens": "node scripts/check-screen-refs.mjs"
+    "check:screens": "node scripts/check-screen-refs.mjs",
+    "e2e": "pnpm --filter @buddy/e2e test"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.4",

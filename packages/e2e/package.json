@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "playwright test",
     "check": "vp check && eslint && tsc --noEmit",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
