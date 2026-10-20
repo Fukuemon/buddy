@@ -6,11 +6,12 @@
 set -eu
 
 (cd apps/receipt-api && go generate ./...)
-(cd apps/schedule-api && sqlc generate)
+(cd apps/schedule-api && go generate ./... && sqlc generate)
 pnpm --filter @buddy/web generate:api
 
 set -- \
   apps/receipt-api/internal/httpapi/openapi \
+  apps/schedule-api/internal/presentation/http/openapi \
   apps/schedule-api/internal/infrastructure/mysql/sqlcgen \
   apps/web/src/api/generated
 

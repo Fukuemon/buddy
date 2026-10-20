@@ -29,6 +29,7 @@ const (
 
 // fakeSchedules は、受け取った引数を記録し、err があればそれを返す。
 type fakeSchedules struct {
+	lastCtx   context.Context
 	err       error
 	listCalls int
 	lastQuery schedule.ListQuery
@@ -36,7 +37,10 @@ type fakeSchedules struct {
 	detail    schedule.Detail
 }
 
-func (f *fakeSchedules) ListTypes(context.Context) ([]schedule.Type, error) { return nil, f.err }
+func (f *fakeSchedules) ListTypes(ctx context.Context) ([]schedule.Type, error) {
+	f.lastCtx = ctx
+	return nil, f.err
+}
 
 func (f *fakeSchedules) Get(context.Context, string) (schedule.Detail, error) { return f.detail, f.err }
 
@@ -290,5 +294,21 @@ func TestHealth(t *testing.T) {
 	rec, body := doWithToken(t, newRouter(nil, nil, nil), http.MethodGet, "/health", "", "")
 	if rec.Code != http.StatusOK || body["status"] != "ok" {
 		t.Fatalf("status = %d, body = %v", rec.Code, body)
+	}
+}
+
+func TestUsecaseReceivesRequestCancellation(t *testing.T) {
+	s := &fakeSchedules{}
+	h := newRouter(s, &fakeStaff{}, &fakePatients{})
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	req := httptest.NewRequest(http.MethodGet, "/v1/schedule_types", nil).WithContext(ctx)
+	req.Header.Set("Authorization", "Bearer "+token(t, testOrgID))
+	serve(h, req)
+	if s.lastCtx == nil {
+		t.Fatal("usecase が呼ばれなかった")
+	}
+	if !errors.Is(s.lastCtx.Err(), context.Canceled) {
+		t.Fatalf("usecase の context が要求の取り消しを受けない: %v", s.lastCtx.Err())
 	}
 }
