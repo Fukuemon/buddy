@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>schedule-calendar 予定が無い</title>
+    <link rel="stylesheet" href="../../_common/mock.css" />
+    <link rel="stylesheet" href="../../_common/wireframe.css" />
+    <link rel="stylesheet" href="schedule-calendar.css" />
+  </head>
+  <body data-view="desktop">
+    <div class="stage">
+      <div class="screen">
+        <div class="screen-body">
+          <header class="wf-site-header">
+            <div class="wf-site-header__brand">
+              <strong>buddy</strong>
+              <nav data-m="1" data-testid="site-nav">
+                <span aria-current="page">予定</span>
+                <span>照合</span>
+              </nav>
+            </div>
+            <div class="wf-site-header__viewer" data-m="2" data-testid="viewer-menu">
+              <span class="wf-text wf-text--s"></span>
+              <span class="wf-btn" data-m="3" data-testid="viewer-logout">ログアウト</span>
+            </div>
+          </header>
+          <div class="sc-body">
+            <nav class="sc-side" aria-label="職員の絞り込み" data-m="4" data-testid="staff-filter-sidebar">
+              <div class="sc-side__head">
+                <strong class="wf-label">職員</strong>
+                <span class="wf-btn wf-btn--text" aria-disabled="true" data-m="5" data-testid="staff-filter-reset">全員を表示</span>
+              </div>
+              <div class="sc-team">
+                <span class="wf-check is-on" data-m="6" data-testid="staff-filter-team-{チームの id}"><span class="wf-text"></span></span>
+                <span class="wf-check is-on sc-member" data-m="7" data-testid="staff-filter-staff-{職員の id}"><span class="wf-text"></span></span>
+                <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}"><span class="wf-text"></span></span>
+                <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}"><span class="wf-text"></span></span>
+              </div>
+              <div class="sc-team">
+                <span class="wf-check is-on" data-testid="staff-filter-team-{チームの id}"><span class="wf-text"></span></span>
+                <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}"><span class="wf-text"></span></span>
+                <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}"><span class="wf-text"></span></span>
+                <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}"><span class="wf-text"></span></span>
+              </div>
+            </nav>
+            <main class="sc-main">
+              <div class="sc-toolbar">
+                <div class="sc-toolbar__group">
+                  <span class="wf-btn wf-btn--icon sc-icon-btn" aria-label="前へ" data-m="8" data-testid="calendar-prev"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M12 4 6 10l6 6" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
+                  <span class="wf-btn" data-m="9" data-testid="calendar-today">今日</span>
+                  <span class="wf-btn wf-btn--icon sc-icon-btn" aria-label="次へ" data-m="10" data-testid="calendar-next"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 4l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
+                  <span class="wf-input sc-date" data-m="11" data-testid="calendar-date">2026/10/21</span>
+                </div>
+                <div class="sc-toolbar__group">
+                  <div class="wf-tabs sc-view" data-m="12" data-testid="calendar-view">
+                    <span class="wf-tab is-active" data-testid="calendar-view-month">月</span>
+                    <span class="wf-tab" data-testid="calendar-view-week">週</span>
+                    <span class="wf-tab" data-testid="calendar-view-day">日</span>
+                  </div>
+                  <span class="wf-btn wf-btn--primary" data-m="13" data-testid="schedule-create-open">予定を作成</span>
+                </div>
+              </div>
+              <div class="sc-month" data-m="14" data-testid="schedule-calendar">
+                <div class="sc-head">日</div>
+                <div class="sc-head">月</div>
+                <div class="sc-head">火</div>
+                <div class="sc-head">水</div>
+                <div class="sc-head">木</div>
+                <div class="sc-head">金</div>
+                <div class="sc-head">土</div>
+                <div class="sc-out">27</div>
+                <div class="sc-out">28</div>
+                <div class="sc-out">29</div>
+                <div class="sc-out">30</div>
+                <div>1</div>
+                <div>2</div>
+                <div>3</div>
+                <div>4</div>
+                <div>5</div>
+                <div>6</div>
+                <div>7</div>
+                <div>8</div>
+                <div>9</div>
+                <div>10</div>
+                <div>11</div>
+                <div>12</div>
+                <div>13</div>
+                <div>14</div>
+                <div>15</div>
+                <div>16</div>
+                <div>17</div>
+                <div>18</div>
+                <div>19</div>
+                <div class="sc-free" data-m="15">20</div>
+                <div class="sc-today">21</div>
+                <div>22</div>
+                <div>23</div>
+                <div>24</div>
+                <div>25</div>
+                <div>26</div>
+                <div>27</div>
+                <div>28</div>
+                <div>29</div>
+                <div>30</div>
+                <div>31</div>
+                <div class="sc-out">1</div>
+                <div class="sc-out">2</div>
+                <div class="sc-out">3</div>
+                <div class="sc-out">4</div>
+                <div class="sc-out">5</div>
+                <div class="sc-out">6</div>
+                <div class="sc-out">7</div>
+              </div>
+            </main>
+          </div>
+        </div>
+      </div>
+      <div class="markers"></div>
+    </div>
+    <script src="../../_common/mock.js"></script>
+  </body>
+</html>
