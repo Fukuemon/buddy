@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useRef } from 'react'
+import { useEffect, useEffectEvent, useRef, type RefObject } from 'react'
 
 const FOCUSABLE_SELECTOR = [
   'a[href]',
@@ -20,6 +20,8 @@ type UseModalDialogOptions = {
   onCloseRequest: () => void
   /** 開いたときにフォーカスを移す要素を返す。 */
   getInitialFocus: () => HTMLElement | null
+  /** Tab で移れない（tabIndex が -1 の）題。ここからの Shift+Tab を最後の要素へ回す。 */
+  titleRef: RefObject<HTMLElement | null>
 }
 
 /**
@@ -31,6 +33,7 @@ export const useModalDialog = ({
   isOpen,
   onCloseRequest,
   getInitialFocus,
+  titleRef,
 }: UseModalDialogOptions) => {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const requestClose = useEffectEvent(onCloseRequest)
@@ -65,7 +68,6 @@ export const useModalDialog = ({
       pressedOnBackdrop = false
     }
     // showModal は後ろを操作できなくするが、最後の要素からの Tab はブラウザの UI へ抜けるので、先頭へ戻す。
-    // Tab で移れない要素（tabIndex が -1 の題）からの Shift+Tab も、最後の要素へ回す。
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Tab') return
       const elements = focusableElements(dialog)
@@ -73,8 +75,7 @@ export const useModalDialog = ({
       const last = elements.at(-1)
       if (first === undefined || last === undefined) return
       const active = document.activeElement
-      const isOutsideCycle = !(active instanceof HTMLElement) || !elements.includes(active)
-      if (event.shiftKey && (active === first || isOutsideCycle)) {
+      if (event.shiftKey && (active === first || active === titleRef.current)) {
         event.preventDefault()
         last.focus()
       } else if (!event.shiftKey && active === last) {
@@ -100,7 +101,7 @@ export const useModalDialog = ({
       if (dialog.open) dialog.close()
       if (opener?.isConnected) opener.focus()
     }
-  }, [isOpen])
+  }, [isOpen, titleRef])
 
   return dialogRef
 }

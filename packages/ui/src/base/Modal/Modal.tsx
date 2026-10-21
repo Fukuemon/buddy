@@ -1,7 +1,7 @@
 import { useId, useRef, type ReactNode } from 'react'
 
 import { CloseIcon } from '../../icons/CloseIcon'
-import { useModalDialog } from './useModalDialog'
+import { useModalDialog } from '../ModalDialog/useModalDialog'
 
 export type ModalProps = {
   isOpen: boolean
@@ -48,6 +48,7 @@ export const Modal = ({
     isOpen,
     onCloseRequest: requestClose,
     getInitialFocus: () => titleRef.current ?? closeButtonRef.current,
+    titleRef,
   })
 
   if (!isOpen) return null

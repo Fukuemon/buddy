@@ -1,7 +1,7 @@
 import { useId, useRef, type ReactNode } from 'react'
 
 import { CloseIcon } from '../../icons/CloseIcon'
-import { useModalDialog } from '../Modal/useModalDialog'
+import { useModalDialog } from '../ModalDialog/useModalDialog'
 
 export type DrawerProps = {
   /** `<dialog>` の id。開くボタンの `aria-controls` に渡す。 */
@@ -36,6 +36,7 @@ export const Drawer = ({
     isOpen,
     onCloseRequest,
     getInitialFocus: () => titleRef.current,
+    titleRef,
   })
 
   return (
