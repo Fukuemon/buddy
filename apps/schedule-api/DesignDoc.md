@@ -40,10 +40,10 @@ schedule-api は、事業所ごとの予定、職員、利用者、権限を持�
 | --- | --- | --- |
 | domain | `internal/domain`、`internal/domain/<概念>` | 共通の誤りと `Transactor`、概念ごとのエンティティ、値の検証、リポジトリのインターフェイス |
 | usecase | `internal/usecase` | 手順とトランザクションの範囲。トランザクションは `domain.Transactor` で受ける |
-| infrastructure | `internal/infrastructure/mysql` | domain のリポジトリを、sqlc の生成コード（`sqlcgen`）で実装する |
-| infrastructure | `internal/infrastructure/oidc` | access token を JWKS で検証する。`oidctest` は、テストと `cmd/devissuer` が使う偽物の発行者 |
-| presentation | `internal/presentation/http/openapi` | `openapi.yaml` から生成した型と strict server のインターフェイス |
-| presentation | `internal/presentation/http/handler` | 生成したインターフェイスを実装するハンドラと、gin のミドルウェア |
+| アダプタ | `internal/mysql` | domain のリポジトリを、sqlc の生成コード（`sqlcgen`）で実装する |
+| アダプタ | `internal/oidc` | access token を JWKS で検証する。`oidctest` は、テストと `cmd/devissuer` が使う偽物の発行者 |
+| アダプタ | `internal/httpapi/openapi` | `openapi.yaml` から生成した型と strict server のインターフェイス |
+| アダプタ | `internal/httpapi` | 生成したインターフェイスを実装するハンドラと、gin のミドルウェア |
 | cmd | `cmd/api`、`cmd/migrate`、`cmd/devissuer` | 起動、マイグレーションとシード、手元で試すための偽物の発行者（イメージに入れない） |
 
 ### 表の構成

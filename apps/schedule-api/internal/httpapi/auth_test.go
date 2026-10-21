@@ -1,4 +1,4 @@
-package handler_test
+package httpapi_test
 
 import (
 	"context"
@@ -14,8 +14,8 @@ import (
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/auth"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/staff"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/infrastructure/oidc"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/infrastructure/oidc/oidctest"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/oidc"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/oidc/oidctest"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/usecase"
 )
 

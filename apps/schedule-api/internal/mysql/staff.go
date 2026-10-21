@@ -6,7 +6,7 @@ import (
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/staff"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/infrastructure/mysql/sqlcgen"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql/sqlcgen"
 )
 
 // StaffRepository は、staff.Repository を実装する。

@@ -1,6 +1,6 @@
-// Package handler は、API の HTTP のハンドラを持つ。エンドポイントとリクエストとレスポンスの型は openapi.yaml が正本で、
-// handler は openapi パッケージに生成したインターフェイスを実装する。
-package handler
+// Package httpapi は、API の HTTP のハンドラを持つ。エンドポイントとリクエストとレスポンスの型は openapi.yaml が正本で、
+// httpapi は openapi パッケージに生成したインターフェイスを実装する。
+package httpapi
 
 import (
 	"errors"

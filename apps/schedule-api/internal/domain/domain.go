@@ -10,7 +10,7 @@ import (
 	"unicode/utf8"
 )
 
-// presentation の層が HTTP のステータスに対応させる番兵のエラー。
+// httpapi が HTTP のステータスに対応させる番兵のエラー。
 var (
 	ErrNotFound     = errors.New("リソースが見つかりません")
 	ErrInvalidInput = errors.New("入力の内容が不正です")

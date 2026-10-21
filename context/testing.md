@@ -13,9 +13,9 @@ status: stable
 | --- | --- | --- | --- |
 | Go の単体テスト（domain） | 値の検証、繰り返しの規則、照合の判定の規則 | 対象のパッケージの隣の `*_test.go`（表駆動） | 各 API で `go test ./...` |
 | Go の単体テスト（usecase） | 手順と、事業所をまたぐ参照の拒否 | `apps/schedule-api/internal/usecase` | 同上 |
-| Go の結合テスト（リポジトリ） | SQL が、マイグレーションとシードを当てた MySQL で期待どおりに動く | `apps/schedule-api/internal/infrastructure/mysql` | 同上（`-short` で飛ばす） |
-| Go のトークンの検証のテスト | access token の署名、`iss`、`aud`、期限の検証 | `apps/schedule-api/internal/infrastructure/oidc`（テストの中で鍵を作る偽物の発行者） | 同上 |
-| Go のハンドラのテスト | 状態コード、応答の本文、認証と事業所の確認 | `internal/presentation/http/handler`、`internal/httpapi` | 同上 |
+| Go の結合テスト（リポジトリ） | SQL が、マイグレーションとシードを当てた MySQL で期待どおりに動く | `apps/schedule-api/internal/mysql` | 同上（`-short` で飛ばす） |
+| Go のトークンの検証のテスト | access token の署名、`iss`、`aud`、期限の検証 | `apps/schedule-api/internal/oidc`（テストの中で鍵を作る偽物の発行者） | 同上 |
+| Go のハンドラのテスト | 状態コード、応答の本文、認証と事業所の確認 | `apps/schedule-api/internal/httpapi`、`apps/receipt-api/internal/httpapi` | 同上 |
 | 照合の互換のテスト | Go の照合が、元の Python の実装と同じ結果を返す | `apps/receipt-api/internal/check/parity_test.go` と `testdata/parity/` | `go test ./...`。期待値の作り直しは `tools/parity/run.sh` |
 | web の単体とコンポーネントのテスト | 変換、表示の規則（照合の印と CSV）、コンポーネントの操作 | 対象の隣の `*.test.ts(x)`。コンポーネントは story を `composeStories` で使う | `pnpm --filter @buddy/web test`（jsdom） |
 | デザインシステムのテスト | トークンのコントラスト、押せる領域とフォーカスの移り方、story の描画とアクセシビリティ | `packages/ui/src` の `*.test.ts(x)` と story | `pnpm --filter @buddy/ui test`（トークンは node、コンポーネントと story はブラウザ） |

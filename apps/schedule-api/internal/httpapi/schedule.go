@@ -1,11 +1,11 @@
-package handler
+package httpapi
 
 import (
 	"context"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/civil"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/schedule"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/presentation/http/openapi"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi/openapi"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/usecase"
 )
 

@@ -20,7 +20,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/infrastructure/oidc/oidctest"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/oidc/oidctest"
 )
 
 func main() {
