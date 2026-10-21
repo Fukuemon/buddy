@@ -80,9 +80,9 @@ docs/screens/
 ```
 
 - 4 つの欄は、既定の値（常に活性、常に表示）でも省かない。
-- カタログの欄のリンクの先は、要素を描くコンポーネントのうち、story のあるいちばん小さいものにする。要素を直に描くコンポーネントに story が無ければ、それを中に持つコンポーネントの story を選ぶ。story は、仕様書の状態に近いものを選ぶ。route に直に書いた要素のように、描くコンポーネントに story が無ければ欄ごと省く。
+- カタログの欄のリンクの先は、画面の文言とデータで要素を見せる、apps/web のコンポーネントの story にする。要素を描く apps/web のコンポーネントのうち、story があり、その story に要素が出るいちばん小さいものを選ぶ。story は、仕様書の状態に近いものを選ぶ。apps/web のどの story にも要素が出ないときだけ、packages/ui のコンポーネントの story を選ぶ。route に直に書いた要素のように、どの story にも出なければ欄ごと省く。
   - リンクは本番のカタログ（`https://buddy-docs.emon-apps.workers.dev/storybook/`）の URL で書く。手元の `zensical serve` にはカタログが無く、`/storybook/` で始まるリンクはリンクのチェックが手元のファイルとして探して失敗するためである。pull request のプレビューから開くと、develop のカタログが開く。
-  - story の ID は、Storybook の画面の URL の `path=/story/` の後ろの値である。story の `title` と export の名前から決まる。
+  - story の ID は、Storybook の画面の URL の `path=/story/` の後ろの値である。story の `title` と export の名前から決まる。日本語は、ブラウザの URL のように `%` でエンコードせずに書く。
   - packages/ui のコンポーネントの使い方のページ（`.mdx`）へは、`path=/docs/<title の ID>--docs` でリンクしてよい。
   - 1 つの要素を 2 つ以上のコンポーネントが描くとき、仕様書の 2 つ以上の状態を別の story が描くときは、リンクを「、」でつなぐ。
 - インタラクションは、操作を起点に画面が変わるものだけを書く。無ければ節ごと省く。
@@ -148,7 +148,7 @@ docs/screens/
 
 - 名前と仕様書: ディレクトリとファイルの名前、仕様書の 1 行目と生の HTML、状態のタブ、iframe と別タブのリンク、構成要素の表の見出し
 - 番号: 表の番号とモックの `data-m` の一致、`data-m` の連番
-- カタログ: カタログの欄のリンクの story の ID が、packages/ui と apps/web の story のファイルにあるか
+- カタログ: カタログの欄にリンクがあり、全てが本番のカタログの URL か。リンクの story の ID が、packages/ui と apps/web の story のファイルにあるか。story のファイルの meta の title を読めるか
 - E2E: 全ての画面を見るとき、`packages/e2e/tests` の `getByTestId` の testid が、どれかのモックの `data-testid` にあるか
 - モック: 構造と読み込みの順、`data-view`、`data-testid` の形、禁止の記述と幅と配置の規則（外部の URL、`position: fixed`、viewport の単位と寸法の `@media`、ダークモード）
 - 雛形の `<…>` の消し忘れ（`index.md`、`api.md`、モック、画面の CSS）
