@@ -22,7 +22,7 @@ func allow(context.Context) error { return nil }
 
 func deny(context.Context) error { return domain.ErrForbidden }
 
-func newService(s *inmem.Store, guard staff.Guard) *staff.Service {
+func newService(s *inmem.Store, guard organization.Guard) *staff.Service {
 	return staff.NewService(staff.Repositories{
 		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
 		Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},

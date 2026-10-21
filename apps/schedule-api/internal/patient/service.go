@@ -21,11 +21,11 @@ type Repositories struct {
 type Service struct {
 	repos Repositories
 	ids   domain.IDGenerator
-	guard staff.Guard
+	guard organization.Guard
 }
 
 // NewService は Service を作る。
-func NewService(repos Repositories, ids domain.IDGenerator, guard staff.Guard) *Service {
+func NewService(repos Repositories, ids domain.IDGenerator, guard organization.Guard) *Service {
 	return &Service{repos: repos, ids: ids, guard: guard}
 }
 

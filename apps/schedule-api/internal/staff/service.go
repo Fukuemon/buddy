@@ -17,20 +17,16 @@ type Repositories struct {
 	Staff       Repository
 }
 
-// Guard は、ctx の職員が職員の管理を許されているかを確かめ、許されないときは domain.ErrForbidden を返す。
-// auth が staff に依存するので、staff は auth の判定を import せずに受け取る。
-type Guard func(ctx context.Context) error
-
 // Service は、職員の操作である。職員の登録と、職員の権限と役職を変える操作は、guard が許すときだけ行う（ADR-0006）。
 type Service struct {
 	repos Repositories
 	tx    domain.Transactor
 	ids   domain.IDGenerator
-	guard Guard
+	guard organization.Guard
 }
 
 // NewService は Service を作る。
-func NewService(repos Repositories, tx domain.Transactor, ids domain.IDGenerator, guard Guard) *Service {
+func NewService(repos Repositories, tx domain.Transactor, ids domain.IDGenerator, guard organization.Guard) *Service {
 	return &Service{repos: repos, tx: tx, ids: ids, guard: guard}
 }
 

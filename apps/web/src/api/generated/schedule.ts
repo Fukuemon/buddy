@@ -140,7 +140,10 @@ export interface paths {
         /** 事業所の役職を一覧する */
         get: operations["listPositions"];
         put?: never;
-        /** 役職を作る */
+        /**
+         * 役職を作る
+         * @description 職員の管理の権限（staff.manage）を持つ職員だけが呼べる。役職の既定で権限を配れるためである。
+         */
         post: operations["createPosition"];
         delete?: never;
         options?: never;

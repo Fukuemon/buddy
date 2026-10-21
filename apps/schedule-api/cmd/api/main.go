@@ -83,7 +83,7 @@ func run() error {
 	router := httpapi.NewRouter(httpapi.Usecases{
 		Organization: organization.NewService(organization.Repositories{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions, Policies: policies,
-		}, tx, ids),
+		}, tx, ids, auth.RequireStaffManage),
 		Staff: staff.NewService(staff.Repositories{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions, Policies: policies, Staff: staffRepo,
 		}, tx, ids, auth.RequireStaffManage),

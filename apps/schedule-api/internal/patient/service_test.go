@@ -7,11 +7,11 @@ import (
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/inmem"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 )
 
-func newService(s *inmem.Store, guard staff.Guard) *patient.Service {
+func newService(s *inmem.Store, guard organization.Guard) *patient.Service {
 	return patient.NewService(patient.Repositories{
 		Facilities: inmem.Facilities{Store: s}, Staff: inmem.Staff{Store: s}, Visits: inmem.Visits{Store: s}, Patients: inmem.Patients{Store: s},
 	}, &inmem.SeqIDs{}, guard)

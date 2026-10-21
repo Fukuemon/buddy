@@ -104,7 +104,7 @@ func (f *fakeStaff) ChangePosition(_ context.Context, _, positionID string) (sta
 }
 
 func (f *fakeStaff) Create(context.Context, staff.CreateInput) (staff.Detail, error) {
-	return staff.Detail{}, nil
+	return staff.Detail{Policies: []staff.PolicyGrant{}}, f.err
 }
 
 func (f *fakeStaff) Get(context.Context, string) (staff.Detail, error) { return staff.Detail{}, nil }
@@ -115,10 +115,13 @@ func (f *fakeStaff) List(_ context.Context, _ string, q staff.ListQuery) ([]staf
 	return []staff.Summary{}, nil
 }
 
-type fakePatients struct{ listCalls int }
+type fakePatients struct {
+	listCalls int
+	err       error
+}
 
 func (f *fakePatients) Create(context.Context, patient.CreateInput) (patient.Detail, error) {
-	return patient.Detail{}, nil
+	return patient.Detail{}, f.err
 }
 
 func (f *fakePatients) List(context.Context, string, patient.ListQuery) ([]patient.Detail, error) {
@@ -484,6 +487,21 @@ func TestCORSPreflight(t *testing.T) {
 		rec := serve(h, req)
 		if rec.Code >= 300 || !strings.Contains(rec.Header().Get("Access-Control-Allow-Methods"), method) {
 			t.Errorf("%s: status = %d, Allow-Methods = %q", method, rec.Code, rec.Header().Get("Access-Control-Allow-Methods"))
+		}
+	}
+}
+
+// TestCreateForbidden は、職員の管理の権限が無いときに、職員と利用者の登録が 403 になることを確かめる。
+func TestCreateForbidden(t *testing.T) {
+	h := newRouter(&fakeSchedules{}, &fakeStaff{err: domain.ErrForbidden}, &fakePatients{err: domain.ErrForbidden})
+	for target, body := range map[string]string{
+		"/v1/facilities/" + facilityID + "/users": `{"username":"新人","email":"new@example.com","department_id":"` + staffID +
+			`","team_id":"` + staffID + `","position_id":"` + staffID + `"}`,
+		"/v1/facilities/" + facilityID + "/patients": `{"name":"見本","preferred_time":"午前","preferred_gender":"男性","service_code_id":"` + staffID +
+			`","assigned_staff_id":"` + staffID + `"}`,
+	} {
+		if rec, got := do(t, h, http.MethodPost, target, body); rec.Code != http.StatusForbidden || got["code"] != "forbidden" {
+			t.Errorf("%s: status = %d, body = %v", target, rec.Code, got)
 		}
 	}
 }

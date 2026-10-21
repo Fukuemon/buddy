@@ -204,6 +204,7 @@ paths:
       tags: [organization]
       operationId: createPosition
       summary: 役職を作る
+      description: 職員の管理の権限（staff.manage）を持つ職員だけが呼べる。役職の既定で権限を配れるためである。
       parameters: [$ref: "#/components/parameters/FacilityID"]
       requestBody:
         required: true
