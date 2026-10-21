@@ -13,6 +13,15 @@ const findEvent = async (request: APIRequestContext, summary: string) => {
   return items.find((event) => event.summary === summary)
 }
 
+/** 偽物の Google が、変わった予定を予定の API に渡すかを変える。 */
+const holdChanges = async (request: APIRequestContext, hold: boolean) => {
+  const res = await request.post(`${FAKE_GOOGLE_URL}/view/hold`, {
+    form: { calendar: HAYASHI.calendarId, hold: String(hold) },
+    maxRedirects: 0,
+  })
+  expect(res.status()).toBe(303)
+}
+
 test.describe('確かめが要る予定', () => {
   test.describe('Google カレンダーへの書き出し', () => {
     test('Google カレンダーで直された予定を buddy で変えた場合、確かめが要る予定に出て、書き直すと Google カレンダーが buddy の内容になること', async ({
@@ -54,6 +63,8 @@ test.describe('確かめが要る予定', () => {
       })
 
       await test.step('職員が Google カレンダーで予定を直した後に buddy で変えると、確かめが要る予定に出る', async () => {
+        // 予定の API が Google の変更を先に読んで buddy に当てないよう、偽物の Google に変更を渡させない
+        await holdChanges(request, true)
         // 偽物の Google の画面の操作と同じく、時刻を 1 時間遅らせて etag を変える
         const shifted = await request.post(`${FAKE_GOOGLE_URL}/view/shift`, {
           form: { calendar: HAYASHI.calendarId, event: eventId },
@@ -80,8 +91,9 @@ test.describe('確かめが要る予定', () => {
           await expect(row).toBeVisible()
         }).toPass()
         await expect(row.getByTestId(/^calendar-review-reason-/)).toHaveText(
-          'Google カレンダーで予定が直されたので、buddy の変更を書き出していません。',
+          'buddy と Google カレンダーの両方で予定が変わりました。どちらの内容に合わせるかを選んでください。',
         )
+        await holdChanges(request, false)
         // 一覧は Google カレンダーの題名を出さない
         await expect(page.getByTestId('calendar-review-table')).not.toContainText(created)
         await expect(page.getByTestId('calendar-review-table')).not.toContainText(changed)

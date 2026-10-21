@@ -86,7 +86,8 @@
         }
       ]
     ],
-    "sakura.hayashi@example.com": [[]]
+    "sakura.hayashi@example.com": [[]],
+    "misaki.sato@example.com": [[]]
   },
   "instances": {
     "biweekly": [
