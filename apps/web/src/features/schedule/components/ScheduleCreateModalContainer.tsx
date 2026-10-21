@@ -28,26 +28,25 @@ export const ScheduleCreateModalContainer = () => {
   const patientsQuery = useQuery(patientListQueryOptions(api, facilityId))
   const createSchedule = useCreateSchedule()
 
+  const [initial] = useState(() => ({
+    date: search.start ?? search.date ?? today,
+    time: search.time,
+    staffId: search.staffId,
+  }))
   const form = useForm<ScheduleFormValues>({
-    defaultValues: createScheduleFormValues({
-      kind: search.kind,
-      date: search.start ?? search.date ?? today,
-      time: search.time,
-      staffId: search.staffId,
-    }),
+    defaultValues: createScheduleFormValues({ kind: search.kind, ...initial }),
     resolver: zodResolver(scheduleFormSchema),
   })
 
   const changeKind = (kind: ScheduleKind) => {
     const current = form.getValues()
-    form.reset(
-      createScheduleFormValues({
-        kind,
-        date: current.scheduleDate,
-        time: current.startTime,
-        staffId: current.staffId,
-      }),
-    )
+    // 初期値は開いたときの値のままにし、残す項目を変えていれば変更ありとして閉じるときに確認を出す
+    form.reset(createScheduleFormValues({ kind, ...initial }))
+    for (const field of ['scheduleDate', 'startTime', 'staffId'] as const) {
+      if (current[field] !== form.getValues(field)) {
+        form.setValue(field, current[field], { shouldDirty: true })
+      }
+    }
     void navigate({ search: (prev) => ({ ...prev, kind }), replace: true })
   }
 

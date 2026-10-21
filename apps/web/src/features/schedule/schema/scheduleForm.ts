@@ -5,6 +5,8 @@ import { SCHEDULE_CATEGORIES, SERVICE_CODES } from '#/api/types'
 import { SERVICE_CODE_DURATION } from '../constants/scheduleLabels'
 import { diffMinutes } from '../lib/dateTime'
 
+const MINUTES_PER_DAY = 24 * 60
+
 const baseFields = {
   staffId: z.string().min(1, '担当者を選んでください'),
   scheduleDate: z.iso.date({ error: '日付を入力してください' }),
@@ -40,6 +42,14 @@ export const visitScheduleFormSchema = z
         code: 'custom',
         path: ['serviceTime'],
         message: `${values.serviceCode} の提供時間は ${min} 分から ${max} 分です`,
+      })
+    }
+    // API は終了を開始より後に求めるので、開始に提供時間を足して日をまたぐ予定は送らない
+    if (diffMinutes('00:00', values.startTime) + values.serviceTime >= MINUTES_PER_DAY) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['serviceTime'],
+        message: '終了が日をまたがないよう、開始時間か提供時間を変えてください',
       })
     }
   })

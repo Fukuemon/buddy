@@ -43,11 +43,13 @@ export const ScheduleForm = ({ id, form, staffList, patients, onSubmit }: Schedu
 
   const dateTimeSummary = (() => {
     if (values.kind === 'visit') {
+      // 提供時間の欄を空にすると NaN が入るので、数でない値は未入力として「-」にする
+      const serviceTime = Number.isFinite(values.serviceTime) ? values.serviceTime : undefined
       const end =
-        values.startTime !== undefined && values.serviceTime !== undefined
-          ? visitEndTime(values.startTime, values.serviceTime)
+        values.startTime !== undefined && serviceTime !== undefined
+          ? visitEndTime(values.startTime, serviceTime)
           : '-'
-      return `${values.scheduleDate ?? ''} ${values.startTime ?? ''} - ${end}（${values.serviceTime ?? '-'} 分、${values.serviceCode ?? ''}）`
+      return `${values.scheduleDate ?? ''} ${values.startTime ?? ''} - ${end}（${serviceTime ?? '-'} 分、${values.serviceCode ?? ''}）`
     }
     return `${values.scheduleDate ?? ''} ${values.startTime ?? ''} - ${values.kind === 'normal' ? (values.endTime ?? '') : ''}`
   })()
