@@ -6,7 +6,7 @@
 | --- | --- |
 | URL | `/receipt` |
 | 使う人 | 全ての職員 |
-| 実装 | `apps/web/src/routes/receipt.index.tsx`、`ReceiptCheckFormContainer`、`ReceiptCheckForm`、`CsvFileField` |
+| 実装 | `apps/web/src/routes/receipt.index.tsx`、`apps/web/src/features/receipt/components/ReceiptCheckFormContainer.tsx`、`apps/web/src/features/receipt/components/ReceiptCheckForm.tsx`、`apps/web/src/features/receipt/components/CsvFileField.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
 
@@ -132,7 +132,7 @@
 
 === "ファイルの誤り"
 
-    照合の API が、列が無いなどのファイル全体の誤り（422）、ファイルが大きすぎること（413）、本文を読めないこと（400）を返したとき。3 つは失敗の文だけが違う。モックは 422 を描く。
+    照合の API が、列が無いなどのファイル全体の誤り（422）、ファイルが大きすぎること（413）、入力を読めないこと（400）を返したとき。400 は、本文の形が違う、実績の CSV が無い、予定の CSV も対象の月も無い、対象の月の形が違う、のどれかである。3 つは失敗の文だけが違う。モックは 422 を描く。
 
     <iframe class="mock" title="照合の、ファイルの誤り" src="mocks/07-file-error.html"></iframe>
     <a class="mock-open" href="mocks/07-file-error.html" target="_blank">別タブで開く</a>
@@ -240,7 +240,8 @@
 
 #### 1. 押す
 
-1. ログアウトし、ログインの画面へ移る。
+1. ログアウトし、`/` へ移る。`/` は `/schedule` へ転送し、ログインしていないのでログインの画面へ移る。
+2. ログインした後は、予定のカレンダーに戻る。
 
 ## ページの題
 
