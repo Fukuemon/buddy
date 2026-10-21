@@ -8,6 +8,7 @@
 //   - OIDC_ISSUER: 必須。ブローカーの発行者の URL。トークンの iss と一致させ、discovery の文書をここから読む。
 //   - OIDC_AUDIENCE: 必須。トークンの aud に求める値。
 //   - OIDC_ORG_CLAIM: 組織の ID を持つクレームの名前。既定は org_id。
+//   - CORS_ALLOW_ORIGINS: CORS で応答を読ませるオリジンを、カンマで区切って並べる。空なら CORS のヘッダーを返さない。
 //   - GOOGLE_CALENDARS_FILE: 照合の対象のカレンダーの設定（JSON）のパス。空なら Google カレンダーを使わない。
 //     形は gcal.LoadCalendars にある。トークンの組織に結び付けたカレンダーだけを読む。認証は Application Default Credentials で読む。
 //   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。偽物の API で試すためのもので、認証をしない。
@@ -50,6 +51,7 @@ type config struct {
 	calendarsFile    string
 	calendarEndpoint string
 	oidc             oidc.Config
+	allowOrigins     []string
 }
 
 func loadConfig(getenv func(string) string) (config, error) {
@@ -81,6 +83,11 @@ func loadConfig(getenv func(string) string) (config, error) {
 	if v := getenv("LOG_LEVEL"); v != "" {
 		if err := cfg.logLevel.UnmarshalText([]byte(v)); err != nil {
 			return config{}, fmt.Errorf("LOG_LEVEL が不正: %w", err)
+		}
+	}
+	for _, o := range strings.Split(getenv("CORS_ALLOW_ORIGINS"), ",") {
+		if o = strings.TrimSpace(o); o != "" {
+			cfg.allowOrigins = append(cfg.allowOrigins, o)
 		}
 	}
 	cfg.calendarsFile = getenv("GOOGLE_CALENDARS_FILE")
@@ -154,6 +161,7 @@ func run() error {
 			MaxUploadBytes: cfg.maxUploadBytes,
 			Sources:        source.Selector{Calendar: reader},
 			Verifier:       verifier,
+			AllowOrigins:   cfg.allowOrigins,
 		}),
 		ReadHeaderTimeout: 10 * time.Second,
 		ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelError),
