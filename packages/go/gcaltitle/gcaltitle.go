@@ -1,5 +1,6 @@
-// Package gcal は、Google カレンダーの予定を照合の予定として読む。
-package gcal
+// Package gcaltitle は、Google カレンダーの予定の題名を、`【サービス内容】利用者名` の形で読む。
+// 照合の API と予定の API が同じ規則で訪問の予定を見分けるために共有する。
+package gcaltitle
 
 import (
 	"errors"
