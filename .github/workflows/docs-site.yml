@@ -1,4 +1,4 @@
-# 文書のサイトと Storybook のカタログを、1 つの Worker（buddy-docs）として Cloudflare に出す。
+# 文書のサイトと、Storybook のカタログと、表の ER 図を、1 つの Worker（buddy-docs）として Cloudflare に出す。
 # 手順と Access の設定は apps/docs-site/README.md にある。
 # pull request ではプレビューを出して URL をコメントし、develop に入ったら本番に出す。
 # 文書の元は docs/ のほか、各アプリの Design Doc にも散るので、変えた場所で絞らない。
@@ -59,6 +59,7 @@ jobs:
 
           - 文書のサイト: ${{ steps.preview.outputs.url }}/
           - カタログ: ${{ steps.preview.outputs.url }}/storybook/
+          - ER 図: ${{ steps.preview.outputs.url }}/erd/
 
           Cloudflare Access で許可した人だけが開ける。コミット ${{ github.event.pull_request.head.sha }}"
 

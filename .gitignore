@@ -37,6 +37,9 @@ node_modules/
 go.work
 go.work.sum
 
+# 表の ER 図のサイト（pnpm build:erd）
+/erd/
+
 # 文書のサイトとカタログの成果物（scripts/build-docs-site.mjs と cf build）
 apps/docs-site/public/
 apps/docs-site/.cloudflare/
