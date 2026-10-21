@@ -200,6 +200,8 @@
 
 **表示条件**: 常に表示
 
+**カタログ**: [SiteNav の Receipt](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-sitenav--receipt)
+
 ### インタラクション
 
 #### 1. 「予定」を押す
@@ -220,6 +222,8 @@
 
 **表示条件**: ログインしているとき。幅 768px 未満では出さない
 
+**カタログ**: [ViewerMenu の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-viewermenu--default)
+
 ## ログアウト
 
 **概要**: ログアウトする。
@@ -229,6 +233,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: BFF を通して API を呼ぶ動かし方で、ログインしているとき
+
+**カタログ**: [ViewerMenu の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-viewermenu--default)
 
 ### インタラクション
 
@@ -270,6 +276,8 @@
 
 **表示条件**: 常に表示
 
+**カタログ**: [ReceiptCheckForm の Calendar](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-receipt-receiptcheckform--calendar)
+
 ### インタラクション
 
 #### 1. 「予定の CSV」を選ぶ
@@ -297,6 +305,8 @@
 
 **表示条件**: 予定の取り方が「Google カレンダー」のとき
 
+**カタログ**: [ReceiptCheckForm の Calendar](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-receipt-receiptcheckform--calendar)
+
 ### インタラクション
 
 #### 1. 月を変える
@@ -313,6 +323,8 @@
 
 **表示条件**: 予定の取り方が「予定の CSV」のとき
 
+**カタログ**: [CsvFileField の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-receipt-csvfilefield--default)
+
 ### インタラクション
 
 #### 1. ファイルを選ぶ
@@ -328,6 +340,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: 常に表示
+
+**カタログ**: [CsvFileField の WithDescription](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-receipt-csvfilefield--with-description)
 
 ### インタラクション
 
@@ -360,6 +374,8 @@
 
 **表示条件**: 最後の照合が失敗したか、選んだファイルの合計が上限を超えたとき
 
+**カタログ**: [ReceiptCheckForm の RowErrors](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-receipt-receiptcheckform--row-errors)
+
 ## 照合する
 
 **概要**: 選んだ入力で照合し、結果の画面へ移る。
@@ -369,6 +385,8 @@
 **活性条件**: 実績の CSV と、対象の月か予定の CSV がそろい、ファイルの合計が上限以下で、送信中でないとき
 
 **表示条件**: 常に表示
+
+**カタログ**: [ReceiptCheckForm の Calendar](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-receipt-receiptcheckform--calendar)
 
 ### インタラクション
 

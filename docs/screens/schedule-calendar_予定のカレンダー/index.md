@@ -199,6 +199,8 @@
 
 **表示条件**: 常に表示
 
+**カタログ**: [SiteNav の Schedule](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-sitenav--schedule)
+
 ### インタラクション
 
 #### 1. 「予定」を押す
@@ -219,6 +221,8 @@
 
 **表示条件**: ログインしているとき。幅 768px 未満では出さない
 
+**カタログ**: [ViewerMenu の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-viewermenu--default)
+
 ## ログアウト
 
 **概要**: ログアウトする。
@@ -228,6 +232,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: BFF を通して API を呼ぶ動かし方で、ログインしているとき
+
+**カタログ**: [ViewerMenu の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-viewermenu--default)
 
 ### インタラクション
 
@@ -245,6 +251,8 @@
 
 **表示条件**: 常に表示。取得の結果によらず、取れた分だけを出す。チームと職員の取得が終わるまでは、見出しと「全員を表示」だけを出す。幅 768px 未満では、カレンダーの上に高さ 160px までで置き、超えた分は中で縦に送る
 
+**カタログ**: [StaffFilterSidebar の AllStaff](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-stafffiltersidebar--all-staff)
+
 ## 全員を表示
 
 **概要**: 絞り込みを解き、全ての職員の予定を出す。
@@ -254,6 +262,8 @@
 **活性条件**: URL の `staff` が空でない（絞り込んでいる）とき
 
 **表示条件**: 常に表示
+
+**カタログ**: [StaffFilterSidebar の AllStaff](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-stafffiltersidebar--all-staff)
 
 ### インタラクション
 
@@ -270,6 +280,8 @@
 **活性条件**: 常に活性。ただし、外すと表示する職員が 0 人になる操作は受け付けない
 
 **表示条件**: チームの取得が成功したとき。チームの下の職員は、職員の取得が成功した後に出る。API につないだ後に閲覧の権限の外の職員を出すかは未決
+
+**カタログ**: [StaffFilterSidebar の AllStaff](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-stafffiltersidebar--all-staff)
 
 ### インタラクション
 
@@ -288,6 +300,8 @@
 
 **表示条件**: 職員の取得が成功し、職員がチームに属するとき。閲覧の権限の外の職員を出すかは未決
 
+**カタログ**: [StaffFilterSidebar の AllStaff](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-stafffiltersidebar--all-staff)
+
 ### インタラクション
 
 #### 1. 外す、付ける
@@ -304,6 +318,8 @@
 **活性条件**: 常に活性（読み込み中も押せる）
 
 **表示条件**: 常に表示
+
+**カタログ**: [ScheduleCalendarToolbar の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecalendartoolbar--default)
 
 ### インタラクション
 
@@ -322,6 +338,8 @@
 
 **表示条件**: 常に表示
 
+**カタログ**: [ScheduleCalendarToolbar の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecalendartoolbar--default)
+
 ### インタラクション
 
 #### 1. 押す
@@ -337,6 +355,8 @@
 **活性条件**: 常に活性（読み込み中も押せる）
 
 **表示条件**: 常に表示
+
+**カタログ**: [ScheduleCalendarToolbar の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecalendartoolbar--default)
 
 ### インタラクション
 
@@ -355,6 +375,8 @@
 
 **表示条件**: 常に表示
 
+**カタログ**: [ScheduleCalendarToolbar の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecalendartoolbar--default)
+
 ### インタラクション
 
 #### 1. 日付を選ぶ
@@ -372,6 +394,8 @@
 
 **表示条件**: 常に表示。幅 768px 未満では幅いっぱいにする
 
+**カタログ**: [ScheduleCalendarToolbar の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecalendartoolbar--default)
+
 ### インタラクション
 
 #### 1. 押す
@@ -387,6 +411,8 @@
 **活性条件**: 常に活性。権限による出し分けは未決
 
 **表示条件**: 常に表示
+
+**カタログ**: [ScheduleCalendarToolbar の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecalendartoolbar--default)
 
 ### インタラクション
 
@@ -404,6 +430,8 @@
 
 **表示条件**: 表示の単位が月か週で、予定と職員の取得が成功したとき
 
+**カタログ**: [ScheduleCalendar の Month](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecalendar--month)
+
 ## 予定
 
 **概要**: 1 件の予定を示し、詳細を開く。
@@ -417,6 +445,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: 予定が表示の期間に重なり、URL の `staff` が空か、`staff` に担当の職員を含むとき。API につないだ後は、自分の予定を常に出す。ほかの職員の予定は、全ての予定の閲覧、指定した職員の予定の閲覧、指定したチームの職員の予定の閲覧のどれかで対象のときだけ出す。権限の名前は、PRD の役職ごとの権限にある 7 つの権限を指す。編集の権限は同じ範囲の閲覧を含む。閲覧の権限が無い職員の予定は API が一覧から除き、画面は案内の文を出さない
+
+**カタログ**: [ScheduleCalendar の Month](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecalendar--month)、[StaffScheduleDayGrid の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-staffscheduledaygrid--default)
 
 ### インタラクション
 
@@ -434,6 +464,8 @@
 
 **表示条件**: 表示の単位が月で、予定と職員の取得が成功したとき
 
+**カタログ**: [ScheduleCalendar の Month](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecalendar--month)
+
 ### インタラクション
 
 #### 1. 押す
@@ -449,6 +481,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: 表示の単位が週で、予定と職員の取得が成功したとき
+
+**カタログ**: [ScheduleCalendar の Week](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecalendar--week)
 
 ### インタラクション
 
@@ -466,6 +500,8 @@
 
 **表示条件**: 表示の単位が日で、予定と職員の取得が成功したとき。職員の列が入りきらないときは、表の中で横に送る
 
+**カタログ**: [StaffScheduleDayGrid の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-staffscheduledaygrid--default)
+
 ## 職員の列
 
 **概要**: どの職員の列かを示す。
@@ -475,6 +511,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: URL の `staff` が空なら全ての職員、空でなければ `staff` に含まれる職員の分を、職員の一覧の順に出す
+
+**カタログ**: [StaffScheduleDayGrid の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-staffscheduledaygrid--default)
 
 ## 職員の予定の列
 
@@ -486,6 +524,8 @@
 
 **表示条件**: 職員の列と同じ
 
+**カタログ**: [StaffScheduleDayGrid の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-staffscheduledaygrid--default)
+
 ## 時間の枠
 
 **概要**: 日の表示で、職員と日時を決めて予定の作成を開く。
@@ -495,6 +535,8 @@
 **活性条件**: 常に活性。編集の権限が自分の予定だけの職員が、ほかの職員の列の枠を押せるかは未決
 
 **表示条件**: 表示の単位が日で、予定と職員の取得が成功したとき
+
+**カタログ**: [StaffScheduleDayGrid の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-staffscheduledaygrid--default)
 
 ### インタラクション
 
@@ -512,6 +554,8 @@
 
 **表示条件**: 予定か職員の取得が終わっていないとき。取得の失敗は 3 回まで取り直してから出すので、取り直しの間もこの表示が続く
 
+**カタログ**: [ScheduleCalendarContainer の Loading](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecalendarcontainer--loading)
+
 ## 取得の失敗の文
 
 **概要**: 予定か職員を取れなかったことを伝える。
@@ -521,6 +565,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: 予定か職員の取得が失敗したとき。403 と、API に届かないときを含む
+
+**カタログ**: [ScheduleCalendarContainer の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecalendarcontainer--failed)
 
 ## 全体動作
 

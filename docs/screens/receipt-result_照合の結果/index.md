@@ -78,6 +78,8 @@
 
 **表示条件**: 常に表示
 
+**カタログ**: [SiteNav の Receipt](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-sitenav--receipt)
+
 ### インタラクション
 
 #### 1. 「予定」を押す
@@ -98,6 +100,8 @@
 
 **表示条件**: ログインしているとき。幅 768px 未満では出さない
 
+**カタログ**: [ViewerMenu の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-viewermenu--default)
+
 ## ログアウト
 
 **概要**: ログアウトする。
@@ -107,6 +111,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: BFF を通して API を呼ぶ動かし方で、ログインしているとき
+
+**カタログ**: [ViewerMenu の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-viewermenu--default)
 
 ### インタラクション
 
@@ -124,6 +130,8 @@
 
 **表示条件**: 照合の結果があるとき
 
+**カタログ**: [ReceiptResultView の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-receipt-receiptresultview--default)
+
 ## 別のファイルで照合する
 
 **概要**: 照合の画面に戻り、照合し直す。
@@ -133,6 +141,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: 照合の結果があるとき
+
+**カタログ**: [ReceiptResultView の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-receipt-receiptresultview--default)
 
 ### インタラクション
 
@@ -149,6 +159,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: 照合の結果があるとき
+
+**カタログ**: [ReceiptResultView の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-receipt-receiptresultview--default)
 
 ### インタラクション
 
@@ -171,6 +183,8 @@
 
 **表示条件**: 照合の結果があるとき
 
+**カタログ**: [ReceiptResultView の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-receipt-receiptresultview--default)
+
 ## 照合に使わなかった予定
 
 **概要**: Google カレンダーの予定のうち、照合に使わなかったものを示し、直すよう案内する。
@@ -180,6 +194,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: 照合に使わなかった予定が 1 件以上あるとき
+
+**カタログ**: [ReceiptResultView の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-receipt-receiptresultview--default)
 
 ## 結果の表
 
@@ -201,6 +217,8 @@
 
 **表示条件**: 照合の結果があるとき
 
+**カタログ**: [ReceiptResultView の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-receipt-receiptresultview--default)
+
 ## 区分の見出しの行
 
 **概要**: 区分の区切りを示す。
@@ -210,6 +228,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: 照合の結果があるとき。4 つの区分ごとに 1 行
+
+**カタログ**: [ReceiptResultView の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-receipt-receiptresultview--default)
 
 ## 結果の行
 
@@ -221,6 +241,8 @@
 
 **表示条件**: 照合の結果があるとき。区分の中の対ごとに 1 行
 
+**カタログ**: [ReceiptResultView の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-receipt-receiptresultview--default)
+
 ## 結果が無いことの題
 
 **概要**: 照合の結果が無いことを伝える。
@@ -231,6 +253,8 @@
 
 **表示条件**: 照合の結果が無いとき
 
+**カタログ**: [ReceiptResultEmpty の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-receipt-receiptresultempty--default)
+
 ## 照合の画面へ
 
 **概要**: 照合の画面に戻る。
@@ -240,6 +264,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: 照合の結果が無いとき
+
+**カタログ**: [ReceiptResultEmpty の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-receipt-receiptresultempty--default)
 
 ### インタラクション
 
