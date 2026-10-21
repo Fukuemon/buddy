@@ -5,11 +5,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/inmem"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
@@ -32,21 +32,32 @@ const (
 
 // editorCtx は、事業所の全ての予定を編集できる職員を持つ ctx を返す。権限の判定のほかのテストに使う。
 func editorCtx() context.Context {
-	return auth.WithPrincipal(context.Background(), auth.Principal{Staff: staff.Detail{
+	return principal.With(context.Background(), principal.Principal{Staff: staff.Detail{
 		Summary:  staff.Summary{Staff: staff.Staff{ID: "EDITOR", FacilityID: facilityID}},
 		Policies: []staff.PolicyGrant{{PolicyCode: organization.ScheduleAllEdit}},
 	}})
 }
 
-func newSchedules(s *inmem.Store) (*schedule.Service, *inmem.Tx) {
+func newSchedules(s *inmem.Store) (*schedule.Usecase, *inmem.Tx) {
 	tx := &inmem.Tx{}
-	return schedule.NewService(schedule.Repositories{
+	ids := &inmem.SeqIDs{}
+	visits := visit.NewWriter(visit.WriterDeps{
+		Staff: inmem.StaffRefs{Store: s},
+		Patients: func(ctx context.Context, id string) (string, string, error) {
+			pa, err := inmem.Patients{Store: s}.Get(ctx, id)
+			return pa.ID, pa.FacilityID, err
+		},
+		Infos:   inmem.VisitInfos{Store: s},
+		Masters: inmem.VisitMasters{Store: s},
+	}, ids)
+	return schedule.NewUsecase(schedule.Deps{
 		Facilities: inmem.Facilities{Store: s},
-		Staff:      inmem.Staff{Store: s},
-		Patients:   inmem.Patients{Store: s},
-		Visits:     inmem.Visits{Store: s},
+		Staff:      inmem.StaffRefs{Store: s},
+		Visits:     visits,
 		Schedules:  inmem.Schedules{Store: s},
-	}, tx, &inmem.SeqIDs{}), tx
+		Recurring:  inmem.RecurringSchedules{Store: s},
+		Types:      inmem.ScheduleTypes{Store: s},
+	}, tx, ids), tx
 }
 
 func normalSlot() schedule.SlotInput {
@@ -85,43 +96,43 @@ func TestSchedulesCreate(t *testing.T) {
 	}{
 		{name: "通常の予定", facilityID: facilityID, in: normalSlot},
 		{name: "訪問の予定", facilityID: facilityID, in: func() schedule.SlotInput { return visitSlot(validVisit()) }, wantInfos: 1},
-		{name: "事業所がない", facilityID: "MISSING", in: normalSlot, wantErr: domain.ErrNotFound},
+		{name: "事業所がない", facilityID: "MISSING", in: normalSlot, wantErr: apperr.ErrNotFound},
 		{name: "予定の種類がない", facilityID: facilityID, in: func() schedule.SlotInput {
 			in := normalSlot()
 			in.TypeID = "MISSING"
 			return in
-		}, wantErr: domain.ErrInvalidInput},
+		}, wantErr: apperr.ErrInvalidInput},
 		{name: "別の事業所の職員", facilityID: facilityID, in: func() schedule.SlotInput {
 			in := normalSlot()
 			in.StaffID = otherStaffID
 			return in
-		}, wantErr: domain.ErrInvalidInput},
+		}, wantErr: apperr.ErrInvalidInput},
 		{name: "通常の予定に訪問の情報", facilityID: facilityID, in: func() schedule.SlotInput {
 			in := normalSlot()
 			v := validVisit()
 			in.Visit = &v
 			return in
-		}, wantErr: domain.ErrInvalidInput},
+		}, wantErr: apperr.ErrInvalidInput},
 		{name: "別の事業所の利用者", facilityID: facilityID, in: func() schedule.SlotInput {
 			v := validVisit()
 			v.PatientID = otherPatientID
 			return visitSlot(v)
-		}, wantErr: domain.ErrInvalidInput},
+		}, wantErr: apperr.ErrInvalidInput},
 		{name: "別の事業所の同行者", facilityID: facilityID, in: func() schedule.SlotInput {
 			v := validVisit()
 			v.CompanionID = ptr(otherStaffID)
 			return visitSlot(v)
-		}, wantErr: domain.ErrInvalidInput},
+		}, wantErr: apperr.ErrInvalidInput},
 		{name: "訪問の区分がない", facilityID: facilityID, in: func() schedule.SlotInput {
 			v := validVisit()
 			v.CategoryIDs = []string{"MISSING"}
 			return visitSlot(v)
-		}, wantErr: domain.ErrInvalidInput},
+		}, wantErr: apperr.ErrInvalidInput},
 		{name: "サービスコードがない", facilityID: facilityID, in: func() schedule.SlotInput {
 			v := validVisit()
 			v.ServiceCodeID = "MISSING"
 			return visitSlot(v)
-		}, wantErr: domain.ErrInvalidInput},
+		}, wantErr: apperr.ErrInvalidInput},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -173,7 +184,7 @@ func TestSchedulesCreateRecurring(t *testing.T) {
 
 	_, err = uc.CreateRecurring(editorCtx(), facilityID, normalSlot(),
 		schedule.RuleInput{Frequency: schedule.Monthly, DayOfWeek: ptr(2)})
-	if !errors.Is(err, domain.ErrInvalidInput) {
+	if !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Fatalf("err = %v, want ErrInvalidInput", err)
 	}
 }
@@ -189,10 +200,10 @@ func TestSchedulesChangeOccurrence(t *testing.T) {
 		wantMsg     string
 	}{
 		{name: "回を置き換える", recurringID: recurringID, date: monday},
-		{name: "同じ回を 2 度置き換える", recurringID: recurringID, date: monday, repeat: true, wantErr: domain.ErrConflict,
+		{name: "同じ回を 2 度置き換える", recurringID: recurringID, date: monday, repeat: true, wantErr: apperr.ErrConflict,
 			wantMsg: "2026-10-12 の回はすでに置き換えられています"},
-		{name: "回に当たらない日", recurringID: recurringID, date: civil.Date{Year: 2026, Month: 10, Day: 13}, wantErr: domain.ErrInvalidInput},
-		{name: "繰り返しの予定がない", recurringID: "MISSING", date: monday, wantErr: domain.ErrNotFound},
+		{name: "回に当たらない日", recurringID: recurringID, date: civil.Date{Year: 2026, Month: 10, Day: 13}, wantErr: apperr.ErrInvalidInput},
+		{name: "繰り返しの予定がない", recurringID: "MISSING", date: monday, wantErr: apperr.ErrNotFound},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -236,10 +247,10 @@ func TestSchedulesCancel(t *testing.T) {
 		t.Fatal(err)
 	}
 	before := tx.Calls
-	if _, err := uc.Cancel(ctx, "MISSING", "体調不良"); !errors.Is(err, domain.ErrNotFound) {
+	if _, err := uc.Cancel(ctx, "MISSING", "体調不良"); !errors.Is(err, apperr.ErrNotFound) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
 	}
-	if _, err := uc.Cancel(ctx, created.ID, ""); !errors.Is(err, domain.ErrInvalidInput) {
+	if _, err := uc.Cancel(ctx, created.ID, ""); !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Fatalf("err = %v, want ErrInvalidInput", err)
 	}
 	if _, err := uc.Cancel(ctx, created.ID, "体調不良"); err != nil {
@@ -248,7 +259,7 @@ func TestSchedulesCancel(t *testing.T) {
 	if tx.Calls == before {
 		t.Error("キャンセルがトランザクションの中で予定をロックしていない")
 	}
-	if _, err := uc.Cancel(ctx, created.ID, "体調不良"); !errors.Is(err, domain.ErrConflict) || err.Error() != "この予定はすでにキャンセルされています" {
+	if _, err := uc.Cancel(ctx, created.ID, "体調不良"); !errors.Is(err, apperr.ErrConflict) || err.Error() != "この予定はすでにキャンセルされています" {
 		t.Fatalf("err = %v, want キャンセル済みの ErrConflict", err)
 	}
 }
@@ -267,13 +278,13 @@ func TestSchedulesUpdate(t *testing.T) {
 		{name: "訪問の予定を通常の予定にすると訪問の情報を消す", in: normalSlot},
 		{name: "訪問の情報を作り直す", in: func() schedule.SlotInput { return visitSlot(validVisit()) }, wantInfos: 1},
 		{name: "繰り返しに属さない予定", in: normalSlot, single: true},
-		{name: "キャンセル済み", in: normalSlot, cancel: true, wantErr: domain.ErrConflict, wantMsg: "キャンセル済みの予定は変えられません", wantInfos: 1},
-		{name: "予定がない", in: normalSlot, missing: true, wantErr: domain.ErrNotFound, wantInfos: 1},
+		{name: "キャンセル済み", in: normalSlot, cancel: true, wantErr: apperr.ErrConflict, wantMsg: "キャンセル済みの予定は変えられません", wantInfos: 1},
+		{name: "予定がない", in: normalSlot, missing: true, wantErr: apperr.ErrNotFound, wantInfos: 1},
 		{name: "別の事業所の職員", in: func() schedule.SlotInput {
 			in := normalSlot()
 			in.StaffID = otherStaffID
 			return in
-		}, wantErr: domain.ErrInvalidInput, wantInfos: 1},
+		}, wantErr: apperr.ErrInvalidInput, wantInfos: 1},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -337,10 +348,10 @@ func TestSchedulesList(t *testing.T) {
 	uc, _ := newSchedules(s)
 	ctx := editorCtx()
 	from, to := civil.Date{Year: 2026, Month: 10, Day: 20}, civil.Date{Year: 2026, Month: 10, Day: 1}
-	if _, err := uc.List(ctx, facilityID, schedule.ListQuery{DateFrom: &from, DateTo: &to}); !errors.Is(err, domain.ErrInvalidInput) {
+	if _, err := uc.List(ctx, facilityID, schedule.ListQuery{DateFrom: &from, DateTo: &to}); !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Fatalf("err = %v, want ErrInvalidInput", err)
 	}
-	if _, err := uc.List(ctx, "MISSING", schedule.ListQuery{}); !errors.Is(err, domain.ErrNotFound) {
+	if _, err := uc.List(ctx, "MISSING", schedule.ListQuery{}); !errors.Is(err, apperr.ErrNotFound) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
 	}
 }

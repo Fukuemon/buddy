@@ -10,14 +10,21 @@ import (
 	"strings"
 
 	"github.com/Fukuemon/buddy/packages/go/oidc"
-
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql"
 )
+
+// DB は、DB への接続の値である。DB のアダプタは、cmd がこの値から自分の設定を作る。
+type DB struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
+	Name     string
+}
 
 // Config は、API とマイグレーションの設定である。
 type Config struct {
 	Port         string
-	DB           mysql.Config
+	DB           DB
 	OIDC         oidc.Config
 	AllowOrigins []string
 	LogLevel     slog.Level
@@ -40,8 +47,8 @@ func Load(getenv func(string) string) (Config, error) {
 	return load(getenv, true)
 }
 
-// LoadDB は、Load と同じ規則で MySQL の接続の設定だけを読む。マイグレーションのコマンドが使い、OIDC の環境変数を求めない。
-func LoadDB(getenv func(string) string) (mysql.Config, error) {
+// LoadDB は、Load と同じ規則で DB の接続の値だけを読む。マイグレーションのコマンドが使い、OIDC の環境変数を求めない。
+func LoadDB(getenv func(string) string) (DB, error) {
 	c, err := load(getenv, false)
 	return c.DB, err
 }
@@ -55,7 +62,7 @@ func load(getenv func(string) string, api bool) (Config, error) {
 	}
 	c := Config{
 		Port: get("PORT", "8080"),
-		DB: mysql.Config{
+		DB: DB{
 			Host:     get("DB_HOST", "localhost"),
 			Port:     get("DB_PORT", "3306"),
 			User:     getenv("DB_USER"),

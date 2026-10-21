@@ -13,8 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/access"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi/openapi"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 )
 
@@ -63,29 +63,29 @@ func TestEveryPathParamHasResource(t *testing.T) {
 
 type stubVerifier struct{}
 
-func (stubVerifier) Verify(context.Context, string) (auth.Identity, error) {
-	return auth.Identity{Subject: "sub-1", OrgID: "org-a"}, nil
+func (stubVerifier) Verify(context.Context, string) (principal.Identity, error) {
+	return principal.Identity{Subject: "sub-1", OrgID: "org-a"}, nil
 }
 
-type stubAuth struct{ principal auth.Principal }
+type stubAuth struct{ principal principal.Principal }
 
-func (s stubAuth) Authenticate(context.Context, auth.Identity) (auth.Principal, error) {
+func (s stubAuth) Authenticate(context.Context, principal.Identity) (principal.Principal, error) {
 	return s.principal, nil
 }
 
 func (stubAuth) FacilityOf(context.Context, access.Resource, string) (string, error) { return "", nil }
 
 func TestAuthenticatePutsPrincipalInContext(t *testing.T) {
-	want := auth.Principal{Staff: staff.Detail{
+	want := principal.Principal{Staff: staff.Detail{
 		Summary:  staff.Summary{Staff: staff.Staff{ID: "STAFF", FacilityID: "FACILITY"}},
 		Policies: []staff.PolicyGrant{{PolicyID: "POLICY", PolicyName: "すべてのカレンダーの閲覧"}},
 	}}
 	m := authMiddleware{verifier: stubVerifier{}, uc: stubAuth{principal: want}, log: slog.New(slog.NewTextHandler(io.Discard, nil))}
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
-	var got auth.Principal
+	var got principal.Principal
 	var ok bool
-	r.GET("/", m.authenticate, func(c *gin.Context) { got, ok = auth.PrincipalFrom(c.Request.Context()) })
+	r.GET("/", m.authenticate, func(c *gin.Context) { got, ok = principal.From(c.Request.Context()) })
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Authorization", "Bearer x")
 	r.ServeHTTP(httptest.NewRecorder(), req)

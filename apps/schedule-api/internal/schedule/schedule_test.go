@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
 )
 
@@ -79,7 +79,7 @@ func TestNew(t *testing.T) {
 			tt.edit(&s)
 			got, err := schedule.New("ID", s, tt.typ)
 			if tt.wantErr {
-				if !errors.Is(err, domain.ErrInvalidInput) {
+				if !errors.Is(err, apperr.ErrInvalidInput) {
 					t.Fatalf("err = %v, want ErrInvalidInput", err)
 				}
 				return
@@ -123,7 +123,7 @@ func TestNewRule(t *testing.T) {
 			if tt.wantErr != (err != nil) {
 				t.Fatalf("err = %v, wantErr %v", err, tt.wantErr)
 			}
-			if err != nil && !errors.Is(err, domain.ErrInvalidInput) {
+			if err != nil && !errors.Is(err, apperr.ErrInvalidInput) {
 				t.Errorf("err = %v, want ErrInvalidInput", err)
 			}
 		})
@@ -184,7 +184,7 @@ func TestNewRecurringEndDateBeforeStart(t *testing.T) {
 	_, err := schedule.NewRecurring("ID", schedule.Slot{
 		Date: date(t, "2026-10-05"), StartTime: clock(9, 0), EndTime: clock(10, 0), Title: ptr("定例"),
 	}, normalType, rule)
-	if !errors.Is(err, domain.ErrInvalidInput) {
+	if !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Fatalf("err = %v, want ErrInvalidInput", err)
 	}
 }
@@ -219,7 +219,7 @@ func TestNewRecurringFirstDate(t *testing.T) {
 			_, err = schedule.NewRecurring("ID", schedule.Slot{
 				Date: date(t, start), StartTime: clock(9, 0), EndTime: clock(10, 0), Title: ptr("定例"),
 			}, normalType, rule)
-			if tt.wantErr != errors.Is(err, domain.ErrInvalidInput) || (!tt.wantErr && err != nil) {
+			if tt.wantErr != errors.Is(err, apperr.ErrInvalidInput) || (!tt.wantErr && err != nil) {
 				t.Fatalf("err = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -230,14 +230,14 @@ func TestNewCancel(t *testing.T) {
 	if _, err := schedule.NewCancel("ID", "S", "体調不良"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := schedule.NewCancel("ID", "S", ""); !errors.Is(err, domain.ErrInvalidInput) {
+	if _, err := schedule.NewCancel("ID", "S", ""); !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Fatalf("err = %v, want ErrInvalidInput", err)
 	}
 }
 
 func TestListQueryValidate(t *testing.T) {
 	from, to := date(t, "2026-10-20"), date(t, "2026-10-19")
-	if err := (schedule.ListQuery{DateFrom: &from, DateTo: &to}).Validate(); !errors.Is(err, domain.ErrInvalidInput) {
+	if err := (schedule.ListQuery{DateFrom: &from, DateTo: &to}).Validate(); !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Fatalf("err = %v, want ErrInvalidInput", err)
 	}
 	if err := (schedule.ListQuery{DateFrom: &to, DateTo: &from}).Validate(); err != nil {

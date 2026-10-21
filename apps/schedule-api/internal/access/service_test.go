@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/access"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/inmem"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
 )
 
@@ -38,16 +38,16 @@ func authStore() *inmem.Store {
 }
 
 func newAuth(s *inmem.Store) *access.Service {
-	return access.NewService(access.Repositories{
+	return access.NewService(access.Deps{
 		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s}, Positions: inmem.Positions{Store: s},
-		Staff: inmem.Staff{Store: s}, Schedules: inmem.Schedules{Store: s},
+		Staff: inmem.Staff{Store: s}, StaffRefs: inmem.StaffRefs{Store: s}, Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s},
 	})
 }
 
 func TestAuthenticateLinksSubByVerifiedEmail(t *testing.T) {
 	s := authStore()
 	a := newAuth(s)
-	id := auth.Identity{Subject: "sub-1", Email: email, EmailVerified: true, OrgID: orgID}
+	id := principal.Identity{Subject: "sub-1", Email: email, EmailVerified: true, OrgID: orgID}
 	p, err := a.Authenticate(context.Background(), id)
 	if err != nil {
 		t.Fatal(err)
@@ -56,7 +56,7 @@ func TestAuthenticateLinksSubByVerifiedEmail(t *testing.T) {
 		t.Fatalf("principal = %+v, sub = %v", p, s.Staff[staffID].Sub)
 	}
 
-	p, err = a.Authenticate(context.Background(), auth.Identity{Subject: "sub-1", OrgID: orgID})
+	p, err = a.Authenticate(context.Background(), principal.Identity{Subject: "sub-1", OrgID: orgID})
 	if err != nil || p.Staff.ID != staffID {
 		t.Fatalf("結び付けた後に、メールのないトークンの sub で引けない: principal = %+v, err = %v", p, err)
 	}
@@ -71,32 +71,32 @@ func TestAuthenticateForbidden(t *testing.T) {
 	tests := []struct {
 		name  string
 		edit  func(*inmem.Store)
-		id    auth.Identity
+		id    principal.Identity
 		check func(t *testing.T, s *inmem.Store)
 	}{
-		{name: "組織のクレームがない", id: auth.Identity{Subject: "sub-1", Email: email, EmailVerified: true}},
-		{name: "組織が事業所に結び付いていない", id: auth.Identity{Subject: "sub-1", Email: email, EmailVerified: true, OrgID: "org-x"}},
-		{name: "メールが未確認", id: auth.Identity{Subject: "sub-1", Email: email, OrgID: orgID},
+		{name: "組織のクレームがない", id: principal.Identity{Subject: "sub-1", Email: email, EmailVerified: true}},
+		{name: "組織が事業所に結び付いていない", id: principal.Identity{Subject: "sub-1", Email: email, EmailVerified: true, OrgID: "org-x"}},
+		{name: "メールが未確認", id: principal.Identity{Subject: "sub-1", Email: email, OrgID: orgID},
 			check: func(t *testing.T, s *inmem.Store) {
 				if s.Staff[staffID].Sub != nil {
 					t.Error("未確認のメールで sub を結び付けた")
 				}
 			}},
-		{name: "メールの職員がいない", id: auth.Identity{Subject: "sub-1", Email: "nobody@example.com", EmailVerified: true, OrgID: orgID}},
-		{name: "ほかの組織の事業所の職員のメール", id: auth.Identity{Subject: "sub-1", Email: email, EmailVerified: true, OrgID: otherOrgID},
+		{name: "メールの職員がいない", id: principal.Identity{Subject: "sub-1", Email: "nobody@example.com", EmailVerified: true, OrgID: orgID}},
+		{name: "ほかの組織の事業所の職員のメール", id: principal.Identity{Subject: "sub-1", Email: email, EmailVerified: true, OrgID: otherOrgID},
 			check: func(t *testing.T, s *inmem.Store) {
 				if s.Staff[staffID].Sub != nil {
 					t.Error("ほかの事業所の職員に sub を結び付けた")
 				}
 			}},
 		{name: "結び付け済みの職員に別の sub", edit: linked,
-			id: auth.Identity{Subject: "sub-2", Email: email, EmailVerified: true, OrgID: orgID},
+			id: principal.Identity{Subject: "sub-2", Email: email, EmailVerified: true, OrgID: orgID},
 			check: func(t *testing.T, s *inmem.Store) {
 				if *s.Staff[staffID].Sub != "sub-linked" {
 					t.Error("結び付け済みの sub を書き換えた")
 				}
 			}},
-		{name: "sub の職員がほかの組織の事業所", edit: linked, id: auth.Identity{Subject: "sub-linked", OrgID: otherOrgID}},
+		{name: "sub の職員がほかの組織の事業所", edit: linked, id: principal.Identity{Subject: "sub-linked", OrgID: otherOrgID}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -105,7 +105,7 @@ func TestAuthenticateForbidden(t *testing.T) {
 				tt.edit(s)
 			}
 			_, err := newAuth(s).Authenticate(context.Background(), tt.id)
-			if !errors.Is(err, domain.ErrForbidden) {
+			if !errors.Is(err, apperr.ErrForbidden) {
 				t.Fatalf("err = %v, want ErrForbidden", err)
 			}
 			if tt.check != nil {
@@ -141,7 +141,7 @@ func TestFacilityOf(t *testing.T) {
 			t.Errorf("FacilityOf(%d, %s) = %q, %v, want %q", tt.r, tt.id, got, err, tt.want)
 		}
 	}
-	if _, err := a.FacilityOf(context.Background(), access.ResourceSchedule, "NONE"); !errors.Is(err, domain.ErrNotFound) {
+	if _, err := a.FacilityOf(context.Background(), access.ResourceSchedule, "NONE"); !errors.Is(err, apperr.ErrNotFound) {
 		t.Errorf("err = %v, want ErrNotFound", err)
 	}
 }

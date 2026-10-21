@@ -14,7 +14,7 @@ type FacilityRepository struct{ conn }
 // NewFacilityRepository は FacilityRepository を作る。
 func NewFacilityRepository(db *sql.DB) *FacilityRepository { return &FacilityRepository{conn{db}} }
 
-// Get は、ID が id の事業所を返す。無いときは domain.ErrNotFound を返す。
+// Get は、ID が id の事業所を返す。無いときは apperr.ErrNotFound を返す。
 func (r *FacilityRepository) Get(ctx context.Context, id string) (organization.Facility, error) {
 	f, err := r.q(ctx).GetFacility(ctx, id)
 	if err != nil {
@@ -23,7 +23,7 @@ func (r *FacilityRepository) Get(ctx context.Context, id string) (organization.F
 	return toFacility(f), nil
 }
 
-// GetByOrgID は、認証のブローカーの組織の ID が orgID の事業所を返す。結び付いた事業所が無いときは domain.ErrNotFound を返す。
+// GetByOrgID は、認証のブローカーの組織の ID が orgID の事業所を返す。結び付いた事業所が無いときは apperr.ErrNotFound を返す。
 func (r *FacilityRepository) GetByOrgID(ctx context.Context, orgID string) (organization.Facility, error) {
 	f, err := r.q(ctx).GetFacilityByOrgID(ctx, sql.NullString{String: orgID, Valid: true})
 	if err != nil {
@@ -44,7 +44,7 @@ func NewDepartmentRepository(db *sql.DB) *DepartmentRepository {
 	return &DepartmentRepository{conn{db}}
 }
 
-// Get は、ID が id の部署を返す。無いときは domain.ErrNotFound を返す。
+// Get は、ID が id の部署を返す。無いときは apperr.ErrNotFound を返す。
 func (r *DepartmentRepository) Get(ctx context.Context, id string) (organization.Department, error) {
 	d, err := r.q(ctx).GetDepartment(ctx, id)
 	if err != nil {
@@ -72,7 +72,7 @@ type TeamRepository struct{ conn }
 // NewTeamRepository は TeamRepository を作る。
 func NewTeamRepository(db *sql.DB) *TeamRepository { return &TeamRepository{conn{db}} }
 
-// Get は、ID が id のチームを返す。無いときは domain.ErrNotFound を返す。
+// Get は、ID が id のチームを返す。無いときは apperr.ErrNotFound を返す。
 func (r *TeamRepository) Get(ctx context.Context, id string) (organization.Team, error) {
 	t, err := r.q(ctx).GetTeam(ctx, id)
 	if err != nil {
@@ -94,7 +94,7 @@ func (r *TeamRepository) ListByFacility(ctx context.Context, facilityID string) 
 	return out, nil
 }
 
-// Create は、チームを書く。同じ事業所に同じ名前があるときは domain.ErrConflict を、事業所が無いときは domain.ErrInvalidInput のエラーを返す。
+// Create は、チームを書く。同じ事業所に同じ名前があるときは apperr.ErrConflict を、事業所が無いときは apperr.ErrInvalidInput のエラーを返す。
 func (r *TeamRepository) Create(ctx context.Context, t organization.Team) error {
 	err := r.q(ctx).CreateTeam(ctx, sqlcgen.CreateTeamParams{ID: t.ID, FacilityID: t.FacilityID, Name: t.Name})
 	return translate("create team", err)
@@ -106,7 +106,7 @@ type PositionRepository struct{ conn }
 // NewPositionRepository は PositionRepository を作る。
 func NewPositionRepository(db *sql.DB) *PositionRepository { return &PositionRepository{conn{db}} }
 
-// Get は、ID が id の役職を、既定の権限（名前の順）を付けて返す。無いときは domain.ErrNotFound を返す。
+// Get は、ID が id の役職を、既定の権限（名前の順）を付けて返す。無いときは apperr.ErrNotFound を返す。
 func (r *PositionRepository) Get(ctx context.Context, id string) (organization.Position, error) {
 	p, err := r.q(ctx).GetPosition(ctx, id)
 	if err != nil {
@@ -180,7 +180,7 @@ type PolicyRepository struct{ conn }
 // NewPolicyRepository は PolicyRepository を作る。
 func NewPolicyRepository(db *sql.DB) *PolicyRepository { return &PolicyRepository{conn{db}} }
 
-// Get は、ID が id の権限を返す。無いときは domain.ErrNotFound を返す。
+// Get は、ID が id の権限を返す。無いときは apperr.ErrNotFound を返す。
 func (r *PolicyRepository) Get(ctx context.Context, id string) (organization.Policy, error) {
 	p, err := r.q(ctx).GetPolicy(ctx, id)
 	if err != nil {

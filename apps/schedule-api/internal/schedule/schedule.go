@@ -4,8 +4,9 @@ package schedule
 import (
 	"time"
 
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/kernel"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
 )
 
@@ -49,27 +50,27 @@ type Slot struct {
 
 func newSlot(s Slot, typ Type) (Slot, error) {
 	if s.Date.IsZero() {
-		return Slot{}, domain.Invalid("日付は必須です")
+		return Slot{}, apperr.Invalid("日付は必須です")
 	}
 	if !s.StartTime.Before(s.EndTime) {
-		return Slot{}, domain.Invalid("終了の時刻は開始の時刻より後にします")
+		return Slot{}, apperr.Invalid("終了の時刻は開始の時刻より後にします")
 	}
 	if s.Title != nil {
-		if err := domain.RequireText("タイトル", *s.Title, maxTitleLen); err != nil {
+		if err := kernel.RequireText("タイトル", *s.Title, maxTitleLen); err != nil {
 			return Slot{}, err
 		}
 	}
 	switch typ.Name {
 	case Normal:
 		if s.Title == nil {
-			return Slot{}, domain.Invalid("通常の予定にはタイトルが必須です")
+			return Slot{}, apperr.Invalid("通常の予定にはタイトルが必須です")
 		}
 		if s.VisitInfoID != nil {
-			return Slot{}, domain.Invalid("通常の予定には訪問の情報を付けられません")
+			return Slot{}, apperr.Invalid("通常の予定には訪問の情報を付けられません")
 		}
 	case Visit:
 		if s.VisitInfoID == nil {
-			return Slot{}, domain.Invalid("訪問の予定には訪問の情報が必須です")
+			return Slot{}, apperr.Invalid("訪問の予定には訪問の情報が必須です")
 		}
 	}
 	s.TypeID = typ.ID
@@ -102,7 +103,7 @@ type Cancel struct {
 
 // NewCancel は、理由を検証して Cancel を作る。
 func NewCancel(id, scheduleID, reason string) (Cancel, error) {
-	if err := domain.RequireText("キャンセルの理由", reason, maxReasonLen); err != nil {
+	if err := kernel.RequireText("キャンセルの理由", reason, maxReasonLen); err != nil {
 		return Cancel{}, err
 	}
 	return Cancel{ID: id, ScheduleID: scheduleID, Reason: reason}, nil
@@ -121,10 +122,10 @@ type Detail struct {
 
 // ParseSort は、予定の一覧の並べ替えを読む。列は date、start_time、created_at だけを受け付ける。
 // date は日付の後に開始の時刻で並べる。列を指定しないときは日付の順にする。
-func ParseSort(field, order string) (domain.Sort, error) {
-	return domain.ParseSort(field, order,
+func ParseSort(field, order string) (kernel.Sort, error) {
+	return kernel.ParseSort(field, order,
 		[]string{"date", "start_time", "created_at"},
-		domain.Sort{Field: "date"})
+		kernel.Sort{Field: "date"})
 }
 
 // ListQuery は、予定の一覧の絞り込みと並べ替えである。nil の絞り込みは使わない。
@@ -133,13 +134,13 @@ type ListQuery struct {
 	TypeName *TypeName
 	DateFrom *civil.Date
 	DateTo   *civil.Date
-	Sort     domain.Sort
+	Sort     kernel.Sort
 }
 
 // Validate は、日付の範囲の前後を検証する。
 func (q ListQuery) Validate() error {
 	if q.DateFrom != nil && q.DateTo != nil && q.DateTo.Before(*q.DateFrom) {
-		return domain.Invalid("date_to は date_from 以降の日付にします")
+		return apperr.Invalid("date_to は date_from 以降の日付にします")
 	}
 	return nil
 }

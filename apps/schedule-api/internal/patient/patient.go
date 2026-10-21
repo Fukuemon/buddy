@@ -5,7 +5,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/kernel"
 )
 
 const maxNameLen = 255
@@ -47,14 +48,14 @@ type Patient struct {
 
 // New は、名前と希望の値を検証して Patient を作る。
 func New(p Patient) (Patient, error) {
-	if err := domain.RequireText("利用者の名前", p.Name, maxNameLen); err != nil {
+	if err := kernel.RequireText("利用者の名前", p.Name, maxNameLen); err != nil {
 		return Patient{}, err
 	}
 	if !p.PreferredTime.Valid() {
-		return Patient{}, domain.Invalid("希望の時間帯は %s か %s です", Morning, Afternoon)
+		return Patient{}, apperr.Invalid("希望の時間帯は %s か %s です", Morning, Afternoon)
 	}
 	if !p.PreferredGender.Valid() {
-		return Patient{}, domain.Invalid("希望の性別は %s か %s です", Male, Female)
+		return Patient{}, apperr.Invalid("希望の性別は %s か %s です", Male, Female)
 	}
 	return p, nil
 }
@@ -70,10 +71,10 @@ type Detail struct {
 
 // ParseSort は、利用者の一覧の並べ替えを読む。列は name、created_at だけを受け付ける。
 // 列を指定しないときは名前の順にする。
-func ParseSort(field, order string) (domain.Sort, error) {
-	return domain.ParseSort(field, order,
+func ParseSort(field, order string) (kernel.Sort, error) {
+	return kernel.ParseSort(field, order,
 		[]string{"name", "created_at"},
-		domain.Sort{Field: "name"})
+		kernel.Sort{Field: "name"})
 }
 
 // ListQuery は、利用者の一覧の絞り込みと並べ替えである。nil の絞り込みは使わない。
@@ -83,10 +84,10 @@ type ListQuery struct {
 	PreferredTime   *PreferredTime
 	PreferredGender *PreferredGender
 	AssignedStaff   *string
-	Sort            domain.Sort
+	Sort            kernel.Sort
 }
 
-// Repository は、利用者を読み書きする。見つからないときは domain.ErrNotFound を返す。
+// Repository は、利用者を読み書きする。見つからないときは apperr.ErrNotFound を返す。
 type Repository interface {
 	Create(ctx context.Context, p Patient) error
 	Get(ctx context.Context, id string) (Detail, error)

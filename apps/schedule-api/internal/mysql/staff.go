@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql/sqlcgen"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
@@ -60,7 +60,7 @@ func (r *StaffRepository) RemoveGrant(ctx context.Context, id, userPolicyID stri
 		return translate("delete user policy", err)
 	}
 	if n == 0 {
-		return domain.ErrNotFound
+		return apperr.ErrNotFound
 	}
 	return nil
 }
@@ -82,7 +82,7 @@ func addGrants(ctx context.Context, q *sqlcgen.Queries, userID string, grants []
 	return nil
 }
 
-// Get は、ID が id の職員を、部署、チーム、役職の名前と、権限（名前の順）と権限の対象の職員を付けて返す。無いときは domain.ErrNotFound を返す。
+// Get は、ID が id の職員を、部署、チーム、役職の名前と、権限（名前の順）と権限の対象の職員を付けて返す。無いときは apperr.ErrNotFound を返す。
 func (r *StaffRepository) Get(ctx context.Context, id string) (staff.Detail, error) {
 	q := r.q(ctx)
 	u, err := q.GetUser(ctx, id)
@@ -163,17 +163,45 @@ func staffSummary(u sqlcgen.ListUsersByFacilityRow) staff.Summary {
 	}
 }
 
-// FindIDBySub は、認証のブローカーの Sub が sub の職員の ID を返す。無いときは domain.ErrNotFound を返す。
+// FindIDBySub は、認証のブローカーの Sub が sub の職員の ID を返す。無いときは apperr.ErrNotFound を返す。
 func (r *StaffRepository) FindIDBySub(ctx context.Context, sub string) (string, error) {
 	id, err := r.q(ctx).GetUserIDBySub(ctx, sql.NullString{String: sub, Valid: true})
 	return id, translate("get user by sub", err)
 }
 
 // LinkSub は、事業所 facilityID の、メールが email で Sub がまだない職員にだけ sub を書く。当たる職員がいなければ何もせず、エラーも返さない。
-// 同時に呼ばれても書くのは 1 回だけである。sub が別の職員と重なるときは domain.ErrConflict を返す。
+// 同時に呼ばれても書くのは 1 回だけである。sub が別の職員と重なるときは apperr.ErrConflict を返す。
 func (r *StaffRepository) LinkSub(ctx context.Context, facilityID, email, sub string) error {
 	err := r.q(ctx).LinkUserSub(ctx, sqlcgen.LinkUserSubParams{
 		Sub: sql.NullString{String: sub, Valid: true}, FacilityID: facilityID, Email: email,
 	})
 	return translate("link user sub", err)
+}
+
+// StaffRefRepository は、ほかの機能が職員を参照するための kernel.Finder[staff.Ref] を実装する。
+type StaffRefRepository struct{ conn }
+
+// NewStaffRefRepository は StaffRefRepository を作る。
+func NewStaffRefRepository(db *sql.DB) *StaffRefRepository { return &StaffRefRepository{conn{db}} }
+
+// Get は、ID が id の職員の事業所とチームを返す。無いときは apperr.ErrNotFound を返す。
+func (r *StaffRefRepository) Get(ctx context.Context, id string) (staff.Ref, error) {
+	row, err := r.q(ctx).GetUserRef(ctx, id)
+	if err != nil {
+		return staff.Ref{}, translate("get user ref", err)
+	}
+	return staff.Ref{ID: row.ID, FacilityID: row.FacilityID, TeamID: row.TeamID}, nil
+}
+
+// ListByFacility は、事業所 facilityID の職員の事業所とチームを ID の順に返す。
+func (r *StaffRefRepository) ListByFacility(ctx context.Context, facilityID string) ([]staff.Ref, error) {
+	rows, err := r.q(ctx).ListUserRefsByFacility(ctx, facilityID)
+	if err != nil {
+		return nil, translate("list user refs", err)
+	}
+	out := make([]staff.Ref, len(rows))
+	for i, row := range rows {
+		out[i] = staff.Ref{ID: row.ID, FacilityID: row.FacilityID, TeamID: row.TeamID}
+	}
+	return out, nil
 }

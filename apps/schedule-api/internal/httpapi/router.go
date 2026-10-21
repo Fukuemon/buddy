@@ -11,8 +11,8 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi/openapi"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/ulid"
 )
 
 // Usecases は、ルーターがハンドラに渡す操作である。
@@ -129,7 +129,7 @@ func rejectMalformedQuery(c *gin.Context) {
 // requireULIDParams は、パスの引数が ULID でないときに 400 を返す。/v1 のパスの引数は全て ID である。
 func requireULIDParams(c *gin.Context) {
 	for _, p := range c.Params {
-		if !domain.ValidID(p.Value) {
+		if !ulid.Valid(p.Value) {
 			badRequest(c, p.Key+" は ULID です")
 			return
 		}

@@ -26,10 +26,11 @@ func main() {
 	if len(os.Args) < 2 {
 		usage()
 	}
-	cfg, err := config.LoadDB(os.Getenv)
+	dbCfg, err := config.LoadDB(os.Getenv)
 	if err != nil {
 		fail(err)
 	}
+	cfg := mysql.Config(dbCfg)
 	switch os.Args[1] {
 	case "up":
 		err = mysql.MigrateUp(cfg)

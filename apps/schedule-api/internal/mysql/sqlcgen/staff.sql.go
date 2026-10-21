@@ -171,6 +171,24 @@ func (q *Queries) GetUserIDBySub(ctx context.Context, sub sql.NullString) (strin
 	return id, err
 }
 
+const getUserRef = `-- name: GetUserRef :one
+SELECT id, facility_id, team_id FROM users WHERE id = ?
+`
+
+type GetUserRefRow struct {
+	ID         string
+	FacilityID string
+	TeamID     string
+}
+
+// ほかの機能が職員を参照するときに要る列だけを読む。
+func (q *Queries) GetUserRef(ctx context.Context, id string) (GetUserRefRow, error) {
+	row := q.db.QueryRowContext(ctx, getUserRef, id)
+	var i GetUserRefRow
+	err := row.Scan(&i.ID, &i.FacilityID, &i.TeamID)
+	return i, err
+}
+
 const linkUserSub = `-- name: LinkUserSub :exec
 UPDATE users SET sub = ?
 WHERE facility_id = ? AND email = ? AND sub IS NULL
@@ -267,6 +285,39 @@ func (q *Queries) ListUserPolicyTargets(ctx context.Context, userID string) ([]L
 	for rows.Next() {
 		var i ListUserPolicyTargetsRow
 		if err := rows.Scan(&i.UserPolicyID, &i.TargetUserID, &i.TargetTeamID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listUserRefsByFacility = `-- name: ListUserRefsByFacility :many
+SELECT id, facility_id, team_id FROM users WHERE facility_id = ? ORDER BY id
+`
+
+type ListUserRefsByFacilityRow struct {
+	ID         string
+	FacilityID string
+	TeamID     string
+}
+
+func (q *Queries) ListUserRefsByFacility(ctx context.Context, facilityID string) ([]ListUserRefsByFacilityRow, error) {
+	rows, err := q.db.QueryContext(ctx, listUserRefsByFacility, facilityID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListUserRefsByFacilityRow{}
+	for rows.Next() {
+		var i ListUserRefsByFacilityRow
+		if err := rows.Scan(&i.ID, &i.FacilityID, &i.TeamID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
