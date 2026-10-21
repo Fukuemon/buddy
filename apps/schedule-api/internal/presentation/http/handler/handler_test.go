@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/auth"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/civil"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/patient"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/schedule"
@@ -42,7 +43,10 @@ func (f *fakeSchedules) ListTypes(ctx context.Context) ([]schedule.Type, error) 
 	return nil, f.err
 }
 
-func (f *fakeSchedules) Get(context.Context, string) (schedule.Detail, error) { return f.detail, f.err }
+func (f *fakeSchedules) Get(ctx context.Context, _ string) (schedule.Detail, error) {
+	f.lastCtx = ctx
+	return f.detail, f.err
+}
 
 func (f *fakeSchedules) GetRecurring(context.Context, string) (schedule.RecurringDetail, error) {
 	return schedule.RecurringDetail{}, f.err
@@ -240,6 +244,14 @@ func TestErrorStatus(t *testing.T) {
 			body: `{"reason":"体調不良"}`, wantCode: http.StatusConflict, wantBody: "conflict"},
 		{name: "キャンセル済みの予定を変える", err: domain.ErrConflict, method: http.MethodPut, target: "/v1/schedules/" + scheduleID,
 			body: validSlotBody, wantCode: http.StatusConflict, wantBody: "conflict"},
+		{name: "予定を見る権限がない", err: domain.ErrForbidden, method: http.MethodGet, target: "/v1/schedules/" + scheduleID,
+			wantCode: http.StatusForbidden, wantBody: "forbidden"},
+		{name: "予定を作る権限がない", err: domain.ErrForbidden, method: http.MethodPost, target: "/v1/facilities/" + facilityID + "/schedules",
+			body: validSlotBody, wantCode: http.StatusForbidden, wantBody: "forbidden"},
+		{name: "予定を変える権限がない", err: domain.ErrForbidden, method: http.MethodPut, target: "/v1/schedules/" + scheduleID,
+			body: validSlotBody, wantCode: http.StatusForbidden, wantBody: "forbidden"},
+		{name: "予定をキャンセルする権限がない", err: domain.ErrForbidden, method: http.MethodPost, target: "/v1/schedules/" + scheduleID + "/cancel",
+			body: `{"reason":"体調不良"}`, wantCode: http.StatusForbidden, wantBody: "forbidden"},
 		{name: "domain の検証", err: domain.Invalid("通常の予定にはタイトルが必須です"), method: http.MethodGet, target: "/v1/schedules/" + scheduleID,
 			wantCode: http.StatusBadRequest, wantBody: "invalid_input"},
 		{name: "想定外のエラー", err: errors.New("dial tcp: connection refused"), method: http.MethodGet, target: "/v1/schedules/" + scheduleID,
@@ -352,6 +364,18 @@ func TestHealth(t *testing.T) {
 				t.Fatalf("status = %d, body = %v", rec.Code, body)
 			}
 		})
+	}
+}
+
+// TestUsecaseReceivesPrincipal は、usecase が権限を判定できるよう、認証のミドルウェアが特定した職員を ctx で渡すことを確かめる。
+func TestUsecaseReceivesPrincipal(t *testing.T) {
+	s := &fakeSchedules{}
+	do(t, newRouter(s, &fakeStaff{}, &fakePatients{}), http.MethodGet, "/v1/schedules/"+scheduleID, "")
+	if s.lastCtx == nil {
+		t.Fatal("usecase が呼ばれなかった")
+	}
+	if p, ok := auth.PrincipalFrom(s.lastCtx); !ok || p.Staff.ID != staffID {
+		t.Fatalf("usecase の ctx の職員 = %+v, %v", p, ok)
 	}
 }
 

@@ -3,7 +3,9 @@ package auth
 
 import (
 	"context"
+	"slices"
 
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/staff"
 )
 
@@ -21,6 +23,51 @@ type Identity struct {
 // 権限は Staff.Policies にある。
 type Principal struct {
 	Staff staff.Detail
+}
+
+// CanRead は、チーム teamID に属する職員 staffID の予定を見てよいかを返す。
+// 自分の予定は、権限によらず見てよい。編集の権限は、同じ範囲の閲覧を含む。
+func (p Principal) CanRead(staffID, teamID string) bool {
+	return staffID == p.Staff.ID || p.allows(staffID, teamID, false)
+}
+
+// CanEdit は、チーム teamID に属する職員 staffID の予定を作り、変え、キャンセルしてよいかを返す。
+func (p Principal) CanEdit(staffID, teamID string) bool {
+	return p.allows(staffID, teamID, true)
+}
+
+// CanReadAll は、事業所の全ての職員の予定を見てよいかを返す。
+func (p Principal) CanReadAll() bool {
+	return slices.ContainsFunc(p.Staff.Policies, func(g staff.PolicyGrant) bool {
+		return g.PolicyCode == organization.ScheduleAllRead || g.PolicyCode == organization.ScheduleAllEdit
+	})
+}
+
+// allows は、職員の権限（user_policies）だけを見て判定する。役職は見ない。
+func (p Principal) allows(staffID, teamID string, edit bool) bool {
+	for _, g := range p.Staff.Policies {
+		var ok bool
+		switch g.PolicyCode {
+		case organization.ScheduleSelfEdit:
+			ok = staffID == p.Staff.ID
+		case organization.ScheduleAllEdit:
+			ok = true
+		case organization.ScheduleAllRead:
+			ok = !edit
+		case organization.ScheduleUserEdit:
+			ok = slices.Contains(g.TargetUserIDs, staffID)
+		case organization.ScheduleUserRead:
+			ok = !edit && slices.Contains(g.TargetUserIDs, staffID)
+		case organization.ScheduleTeamEdit:
+			ok = slices.Contains(g.TargetTeamIDs, teamID)
+		case organization.ScheduleTeamRead:
+			ok = !edit && slices.Contains(g.TargetTeamIDs, teamID)
+		}
+		if ok {
+			return true
+		}
+	}
+	return false
 }
 
 type principalKey struct{}

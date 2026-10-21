@@ -159,8 +159,14 @@ func (s staffRepo) Create(_ context.Context, st staff.Staff, grants []staff.Gran
 
 func (s staffRepo) Get(_ context.Context, id string) (staff.Detail, error) { return get(s.staff, id) }
 
-func (s staffRepo) ListByFacility(context.Context, string, staff.ListQuery) ([]staff.Summary, error) {
-	return nil, nil
+func (s staffRepo) ListByFacility(_ context.Context, facilityID string, _ staff.ListQuery) ([]staff.Summary, error) {
+	var out []staff.Summary
+	for _, d := range s.staff {
+		if d.FacilityID == facilityID {
+			out = append(out, d.Summary)
+		}
+	}
+	return out, nil
 }
 
 func (s staffRepo) FindIDBySub(_ context.Context, sub string) (string, error) {
@@ -268,8 +274,14 @@ func (s schedules) Get(_ context.Context, id string) (schedule.Detail, error) {
 	return d, err
 }
 
-func (s schedules) ListByFacility(context.Context, string, schedule.ListQuery) ([]schedule.Detail, error) {
-	return nil, nil
+func (s schedules) ListByFacility(_ context.Context, facilityID string, _ schedule.ListQuery) ([]schedule.Detail, error) {
+	var out []schedule.Detail
+	for _, d := range s.schedules {
+		if d.FacilityID == facilityID {
+			out = append(out, d)
+		}
+	}
+	return out, nil
 }
 
 func (s schedules) CreateRecurring(_ context.Context, rs schedule.RecurringSchedule) error {
@@ -281,8 +293,14 @@ func (s schedules) GetRecurring(_ context.Context, id string) (schedule.Recurrin
 	return get(s.recurring, id)
 }
 
-func (s schedules) ListRecurringByFacility(context.Context, string, schedule.ListQuery) ([]schedule.RecurringDetail, error) {
-	return nil, nil
+func (s schedules) ListRecurringByFacility(_ context.Context, facilityID string, _ schedule.ListQuery) ([]schedule.RecurringDetail, error) {
+	var out []schedule.RecurringDetail
+	for _, d := range s.recurring {
+		if d.FacilityID == facilityID {
+			out = append(out, d)
+		}
+	}
+	return out, nil
 }
 
 func (s schedules) AddExclusion(_ context.Context, id string, d civil.Date) error {

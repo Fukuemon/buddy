@@ -39,6 +39,8 @@ func writeError(c *gin.Context, log *slog.Logger, err error) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, errorResponse{Code: "invalid_input", Message: ve.Message})
 	case errors.Is(err, domain.ErrInvalidInput):
 		c.AbortWithStatusJSON(http.StatusBadRequest, errorResponse{Code: "invalid_input", Message: err.Error()})
+	case errors.Is(err, domain.ErrForbidden):
+		c.AbortWithStatusJSON(http.StatusForbidden, errorResponse{Code: "forbidden", Message: domain.ErrForbidden.Error()})
 	case errors.Is(err, domain.ErrNotFound):
 		c.AbortWithStatusJSON(http.StatusNotFound, errorResponse{Code: "not_found", Message: domain.ErrNotFound.Error()})
 	case errors.Is(err, domain.ErrConflict):
