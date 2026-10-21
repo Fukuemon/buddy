@@ -528,6 +528,7 @@ export interface components {
         Error: {
             /** @enum {string} */
             code: "invalid_input" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "internal";
+            /** @description 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う */
             message: string;
         };
         CreateNameRequest: {
@@ -750,7 +751,7 @@ export interface components {
         };
     };
     responses: {
-        /** @description 入力の誤り */
+        /** @description 入力の誤り。`code` は invalid_input。`message` は誤りの箇所と理由で、入力によって変わる */
         BadRequest: {
             headers: {
                 [name: string]: unknown;
@@ -770,39 +771,63 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
-        /** @description 職員を特定できないか、パスが指す事業所が職員の事業所と違うか、職員の権限で予定を見るか編集できない。`code` は forbidden */
+        /** @description 職員を特定できないか、パスが指す事業所が職員の事業所と違うか、職員の権限で操作できない。`code` は forbidden */
         Forbidden: {
             headers: {
                 [name: string]: unknown;
             };
             content: {
+                /**
+                 * @example {
+                 *       "code": "forbidden",
+                 *       "message": "この操作は許可されていません"
+                 *     }
+                 */
                 "application/json": components["schemas"]["Error"];
             };
         };
-        /** @description パスで指したリソースがない */
+        /** @description パスで指したリソースがない。`code` は not_found */
         NotFound: {
             headers: {
                 [name: string]: unknown;
             };
             content: {
+                /**
+                 * @example {
+                 *       "code": "not_found",
+                 *       "message": "リソースが見つかりません"
+                 *     }
+                 */
                 "application/json": components["schemas"]["Error"];
             };
         };
-        /** @description 名前などの一意の値が重なる */
+        /** @description 名前などの一意の値が重なるか、キャンセル済みの予定を変えるかキャンセルしようとしたか、繰り返しの回をすでに置き換えた。`code` は conflict */
         Conflict: {
             headers: {
                 [name: string]: unknown;
             };
             content: {
+                /**
+                 * @example {
+                 *       "code": "conflict",
+                 *       "message": "リソースがすでに存在します"
+                 *     }
+                 */
                 "application/json": components["schemas"]["Error"];
             };
         };
-        /** @description サーバーの誤り */
+        /** @description サーバーの誤り。`code` は internal */
         InternalError: {
             headers: {
                 [name: string]: unknown;
             };
             content: {
+                /**
+                 * @example {
+                 *       "code": "internal",
+                 *       "message": "サーバーでエラーが発生しました"
+                 *     }
+                 */
                 "application/json": components["schemas"]["Error"];
             };
         };

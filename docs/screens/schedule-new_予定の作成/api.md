@@ -18,7 +18,9 @@
 
 - 訪問の予定の `title` は、画面で入れず「訪問」を送る。
 - 職員と利用者の一覧は、`listUsers` と `listPatients` から取る。名前の絞り込みは画面の中で行い、`username` と `name` の検索の項目は使わない。
-- サービスコードの一覧と提供時間の範囲は、画面の定数（`apps/web/src/features/schedule/constants/scheduleLabels.ts`）で持ち、`listServiceCodes` を使っていない。
+- サービスコードの一覧と提供時間の範囲は、画面の定数（`apps/web/src/features/schedule/constants/scheduleLabels.ts`）で持つ。`listServiceCodes` の範囲（`service_time_range_start`、`service_time_range_end`）は使わない。
+- 送る前に、web のサーバー（BFF、`apps/web/src/api/http/httpBuddyApi.ts`）がマスタを取る。マスタは `listScheduleTypes`、`listServiceCodes`、`listVisitCategories` で、予定の種類、サービスコード、訪問の区分を ID にするために使う。サービスコードは全角と半角の数字の違いを無視して比べる。マスタを取れないか、当たる値が無いと、`createSchedule` を呼ばずに失敗する。
+- 作成に成功すると、事業所の予定の取得の結果を捨てる。開いているカレンダーの予定の一覧（`listSchedules`）を取り直してから、カレンダーに戻る。
 - フォームの値から `ScheduleInput` への変換は `apps/web/src/features/schedule/lib/scheduleFormMapper.ts` にある。
 - 同行者は `SlotRequest` の `visit_info.companion_id` に当たる。この画面は同行者を入れず、`null` を送る。
 - 繰り返しの予定は `createRecurringSchedule` で作る。この画面は呼ばず、単発の予定だけを `createSchedule` で作る。

@@ -11,11 +11,14 @@
 | 表示の単位 | 月、週、日 | search params の `view` | なし |
 | 予定 | 日付と開始の時刻 | `Schedule.startsAt` | `listSchedules` の `Schedule.date`、`start_time` |
 | 予定 | 終了の時刻（日の表示） | `Schedule.endsAt` | `listSchedules` の `Schedule.end_time` |
-| 予定 | 題 | `Schedule.title`、`Schedule.kind`、`Schedule.visit.patientId` と `Patient.name` | `listSchedules` の `Schedule.title`、`visit_info.patient_name` |
+| 予定 | 題 | `Schedule.title`、`Schedule.kind`、`Schedule.visit.patientId` と `Patient.name` | `listSchedules` の `Schedule.title`、`schedule_type`、`visit_info.patient_id` と、`listPatients` の `Patient.name` |
 | 予定 | 色と、置く列 | `Schedule.staffId` | `listSchedules` の `Schedule.staff_id` |
 | 職員の列 | 職員の名前 | `Staff.name` | `listUsers` の `Staff.username` |
 | 職員の予定の列 | 職員 | `Staff.id` | `listUsers` の `Staff.id` |
 
-- 予定の一覧の取得は、`listSchedules`（`GET /v1/facilities/{facility_id}/schedules`）に当たる。web は期間を `ScheduleListParams` の `from`、`to` の日時で、職員を `staffIds` で渡す。OpenAPI は `date_from`、`date_to` の日付だけを受け、職員で絞る引数を持たない。
-- 訪問の予定の題に使う利用者の名前は、web では利用者の一覧（`Patient`）で id を名前に置き換える。OpenAPI は予定に `visit_info.patient_name` を持つ。
+- 予定の一覧の取得は、`listSchedules`（`GET /v1/facilities/{facility_id}/schedules`）に当たる。web の画面は、期間を `ScheduleListParams` の `from`、`to` の日時で、職員を `staffIds` で渡す。OpenAPI は `date_from`、`date_to` の日付だけを受け、職員で絞る引数を持たない。
+- web のサーバー（BFF、`apps/web/src/api/http/httpBuddyApi.ts`）は、`from` と `to` を `date_from`、`date_to` の日付に直して `listSchedules` を呼ぶ。`to` は含まないので、`date_to` は `to` の前の日にする。期間に重なるかと職員の絞り込みは、応答を受けた後に web のサーバーが行う。
+- web のサーバーは、`cancel` が `null` でない予定（キャンセルした予定）を除く。`recurring_schedules`（繰り返しの予定）は使わない。
+- 訪問の予定の題に使う利用者の名前は、web では `visit_info.patient_id` を利用者の一覧（`listPatients`）で名前に置き換える。OpenAPI の予定は `visit_info.patient_name` も持つが、web は使わない。
+- 予定の種類は `schedule_type` が「訪問」かどうかで決める。
 - PRD の時間外の勤務の印（`Schedule.is_over_time_work`）は、web の型に無く、画面に出していない。

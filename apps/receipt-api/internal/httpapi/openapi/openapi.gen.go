@@ -160,8 +160,10 @@ type Error struct {
 	Code ErrorCode `json:"code"`
 
 	// Errors 入力の CSV の行ごとの誤り。`invalid_csv` のときだけ持つ
-	Errors  *[]RowError `json:"errors,omitempty"`
-	Message string      `json:"message"`
+	Errors *[]RowError `json:"errors,omitempty"`
+
+	// Message 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う
+	Message string `json:"message"`
 }
 
 // ErrorCode defines model for Error.Code.
@@ -565,15 +567,25 @@ func (response CreateCheck400JSONResponse) VisitCreateCheckResponse(w http.Respo
 	return err
 }
 
-type CreateCheck401JSONResponse Error
+type CreateCheck401ResponseHeaders struct {
+	WWWAuthenticate *string
+}
+
+type CreateCheck401JSONResponse struct {
+	Body    Error
+	Headers CreateCheck401ResponseHeaders
+}
 
 func (response CreateCheck401JSONResponse) VisitCreateCheckResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
 		return err
 	}
 	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
 	w.WriteHeader(401)
 	_, err := buf.WriteTo(w)
 	return err

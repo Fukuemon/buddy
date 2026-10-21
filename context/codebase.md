@@ -14,7 +14,7 @@ status: stable
 - `apps/` の 3 つのアプリは、HTTP だけでつながる。web と API の間の型は、各 API の `openapi.yaml` から生成し、手で書かない。
 - 業務の規則と認可は API が持つ。web は、画面の表示の規則（照合の印と CSV の書き出しを含む）だけを持ち、拒否の判断を API に任せる。
 - `packages/ui` は、BCD Design の Base と Case のコンポーネントとトークンだけを持つ。業務の名前（予定、照合など）を持つ Domain のコンポーネントは、`apps/web` の `features/<機能>/components/` に置く（[ADR-0004](../docs/adr/0004-design-system.md)）。
-- `packages/e2e` の `kit/` は、Fukuemon/verification から写したもので、buddy の画面の名前を持たない。buddy の画面に依存するコードは `tests/` に置く。
+- `packages/e2e` の `kit/` は、別のリポジトリ（非公開）から写したもので、buddy の画面の名前を持たない。buddy の画面に依存するコードは `tests/` に置く。
 - schedule-api は、規則と手順を機能ごとのパッケージ（`organization`、`staff`、`patient`、`visit`、`schedule`）に置く。DB と HTTP のアダプタ（`mysql`、`httpapi`）は 1 つずつ置く（[ADR-0005](../docs/adr/0005-schedule-api-packages.md)）。receipt-api は、照合の段（読み込み、正規化、対の作成、判定）ごとにパッケージを分ける。
 
 ## Dependency Rules

@@ -4,7 +4,7 @@ title: 予定の管理
 description: schedule-api のコードの層、表の構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更とキャンセル
 status: stable
 governs: apps/schedule-api
-verified_commit: 453287d
+verified_commit: ff293e9
 ---
 
 # 予定の管理
@@ -46,6 +46,8 @@ schedule-api は、事業所ごとの予定、職員、利用者、権限を持�
 | 認証 | `internal/access` | トークンから職員を特定する手順と、パスが指す資源の事業所を引く手順 |
 | テスト | `internal/inmem` | 機能のパッケージのテストが共有する、メモリ上のリポジトリ |
 | アダプタ | `internal/mysql` | 機能のパッケージのリポジトリを、sqlc の生成コード（`sqlcgen`）で実装する |
+| アダプタ | `internal/ulid` | `IDGenerator` を ULID で実装する |
+| 設定 | `internal/config` | 環境変数から API とマイグレーションの設定を読む |
 | 共有 | `packages/go/oidc`、`packages/go/healthcheck`（別の module） | access token の JWKS での検証、テストと `cmd/devissuer` が使う偽物の発行者（`oidctest`）、`api healthcheck`。receipt-api と共有する（ADR-0007） |
 | アダプタ | `internal/httpapi/openapi` | `openapi.yaml` から生成した型と strict server のインターフェイス |
 | アダプタ | `internal/httpapi` | 生成したインターフェイスを実装するハンドラと、gin のミドルウェア。要求は、埋め込んだ `openapi.yaml` の定義で確かめる |
@@ -53,7 +55,12 @@ schedule-api は、事業所ごとの予定、職員、利用者、権限を持�
 
 ### 表の構成
 
-次の図は、schedule-api の全ての表と、その間の関係を示す。全ての表の主キー `id` は ULID で、`CHAR(26)` に置く。結合の表は、2 つの外部キーの組を主キーにする。カラム、制約、索引は、マイグレーションから生成した[表の文書](https://github.com/Fukuemon/buddy/blob/develop/docs/db/schedule-api/README.md)（文書のサイトでは「DB の設計」の「表の一覧」）にある。
+次の図は、schedule-api の全ての表と、その間の関係を示す。カラム、制約、索引は、マイグレーションから生成した[表の文書](https://github.com/Fukuemon/buddy/blob/develop/docs/db/schedule-api/README.md)（文書のサイトでは「DB の設計」の「表の一覧」）にある。表の文書の Viewpoints は、事業所と組織、職員と権限、利用者、予定と訪問、繰り返しの予定の観点ごとに、表を絞った ER 図を持つ。
+
+- 主キーは、多くの表が ULID の `id`（`CHAR(26)`）である。
+- `position_policies` と `visit_info_visit_categories` は、2 つの外部キーの組を主キーにする。
+- `recurring_schedule_exclusions` は、`recurring_schedule_id` と `date` の組を主キーにする。
+- `user_policy_targets` は、`id` を主キーにする。対象の列（`target_user_id` と `target_team_id`）のどちらかが NULL になり、主キーに入れられないためである。
 
 ```mermaid
 erDiagram
@@ -72,8 +79,8 @@ erDiagram
   policies ||--o{ user_policies : "含まれる"
   users ||--o{ user_policies : "持つ"
   user_policies ||--o{ user_policy_targets : "対象を持つ"
-  users ||--o{ user_policy_targets : "対象になる"
-  teams ||--o{ user_policy_targets : "対象になる"
+  users |o--o{ user_policy_targets : "対象になる"
+  teams |o--o{ user_policy_targets : "対象になる"
   users ||--o{ schedules : "持つ"
   users ||--o{ recurring_schedules : "持つ"
   schedule_types ||--o{ schedules : "分類する"
@@ -95,7 +102,9 @@ erDiagram
 ```
 
 - `departments`、`teams`、`positions` は事業所ごとに持つ。名前が同じ部署でも、事業所が違えば別の行にする。事業所の間で部署を共有すると、事業所が部署の名前を変えたときにほかの事業所に波及するためである。
-- `users.username` は、電子カルテの職員名と同じ表記で登録する。照合が、予定の主訪問者と実績の主訪問者を名前で比べるためである。
+- `facilities.org_id` は、認証の基盤の組織の ID を持つ。NULL を許し、値があれば一意にする。認証のミドルウェアは、トークンの組織のクレームでこの列を探す。
+- `users.sub` は、認証の基盤の利用者の識別子を持つ。初回のログインまでは NULL で、値があれば全ての事業所を通じて一意にする。
+- `users.email` は、事業所の中で一意にする（`facility_id` と `email` の組）。初回のログインは事業所とメールで職員を探すので、当たる職員は 1 人に限られる。`users.username` は表示名で、一意にしない。
 - 訪問の区分は、`visit_info_visit_categories` で 1 件の訪問に複数を付けられる。
 - 一覧の読み出しには、予定と訪問の情報と名前を結合したビュー（`schedule_details`、`recurring_schedule_details`、`visit_info_details`）を使う。
 - `schedule_types`、`service_codes`、`visit_categories` の行は、マイグレーションで入れる。事業所ごとには持たない。サービスコードの提供時間の範囲は、照合の許容範囲と同じ値にする。
@@ -117,17 +126,17 @@ erDiagram
 | `schedule.all.edit` | 事業所の全ての予定の編集 | false |
 | `staff.manage` | 職員の管理 | false |
 
-職員を登録すると、役職の既定の権限を職員に写す。チームの権限（`schedule.team.*`）は、職員の所属のチームを対象にして写す。職員の権限（`schedule.user.*`）は、写すときに対象を決められないので、役職の既定にできない。規則は ADR-0002 にある。
-
-職員の役職を変える（`PUT /v1/users/{user_id}/position`）と、職員の権限と対象を全て消し、新しい役職の既定を同じ規則で写し直す。職員ごとに足した権限も消える。
-
-職員ごとに権限を足す（`POST /v1/users/{user_id}/policies`）ときは、`needs_target` が true の権限に、code に合わせて職員かチームの対象を 1 つ以上付ける。対象は同じ事業所のものに限る。外す（`DELETE /v1/users/{user_id}/policies/{user_policy_id}`）と、対象も消える。
-
-職員と利用者の登録、役職の作成、役職を変える操作、権限を足し外す操作は、`staff.manage` を持つ職員だけに許す。`staff.manage` は、それだけでは予定の判定に及ばないが、自分に予定の権限を足せるので、事実上の最上位の権限である。判断は ADR-0006 にある。
-
-- ADR-0006: [職員と利用者の登録と、職員の権限と役職を変える操作を、職員の管理の権限で許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0006-staff-manage-policy.md)
+役職の既定を写す規則、役職を変えたときに写し直す規則、`staff.manage` の扱いは [権限](https://github.com/Fukuemon/buddy/blob/develop/context/domain/permission.md) にある。  
+職員の権限（`schedule.user.*`）は、写すときに対象を決められないので、役職の既定にできない。
 
 - ADR-0002: [権限を役職の既定と職員ごとの上書きで持つ（PBAC）](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0002-pbac.md)
+
+職員の役職は `PUT /v1/users/{user_id}/position` で変える。  
+職員ごとに権限を足す（`POST /v1/users/{user_id}/policies`）ときは、`needs_target` が true の権限に、code に合わせて職員かチームの対象を 1 つ以上付ける。対象は同じ事業所のものに限る。外す（`DELETE /v1/users/{user_id}/policies/{user_policy_id}`）と、対象も消える。
+
+職員と利用者の登録、役職の作成、役職を変える操作、権限を足し外す操作は、`staff.manage` を持つ職員だけに許す。
+
+- ADR-0006: [職員と利用者の登録と、職員の権限と役職を変える操作を、職員の管理の権限で許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0006-staff-manage-policy.md)
 
 ### 認証から事業所の確認までの流れ
 
@@ -161,7 +170,10 @@ sequenceDiagram
     end
   end
   M->>M: 職員の事業所と組織の事業所を比べる
-  M->>DB: パスの ID が予定や職員なら、その事業所を読む
+  alt 職員の事業所が組織の事業所と違う
+    M-->>W: 403
+  end
+  M->>DB: パスの ID が指すリソースの事業所を読む
   M->>M: パスが指す事業所と職員の事業所を比べる
   alt 事業所が違う
     M-->>W: 403
@@ -176,10 +188,22 @@ sequenceDiagram
 
 - `/v1` の全ての API は、`Authorization: Bearer` の access token を求める。`/healthz` と `/readyz` は認証を求めない。
 - 署名のアルゴリズムは RS256 と ES256 だけを受け付ける。JWKS は、起動のときに discovery の文書から場所を読み、1 時間ごとに取り直す。知らない `kid` のトークンが来たときも取り直すが、間隔は 1 分以上あける。
-- トークンが無いか検証に失敗したときは、`WWW-Authenticate: Bearer` を付けて 401 を返す。
+- トークンが無いときは `WWW-Authenticate: Bearer` を、検証に失敗したときは `WWW-Authenticate: Bearer error="invalid_token"` を付けて、401 を返す。
 - 組織の ID を持つクレームの名前は `OIDC_ORG_CLAIM` で決め、既定は `org_id` にする。ブローカーごとにクレームの名前が違うためである。
 - sub を書く UPDATE は `sub IS NULL` を条件にする。同じ職員の初回のログインが同時に 2 つ来ても、書くのは 1 回だけになる。
-- パスの ID のリソースが見つからないときは、ミドルウェアは通し、ハンドラが 404 を返す。
+- ミドルウェアは、パスの引数ごとに、指すリソースの事業所を職員の事業所と比べる。
+  - `facility_id` は、値をそのまま職員の事業所と比べる。
+  - `department_id`、`team_id`、`position_id`、`user_id`、`schedule_id`、`recurring_schedule_id` は、リソースを読んでその事業所と比べる。
+  - `policy_id` は、事業所に属さないので確かめない。`user_policy_id` は、同じパスの `user_id` で事業所を確かめ、`staff.Service` が職員の権限かを確かめる。
+  - この一覧に無い引数を持つパスは、事業所を確かめられないので 500 を返す。
+- パスの ID が ULID でないときと、リソースが見つからないときは、ミドルウェアは通す。ULID でない ID は次のミドルウェアが 400 を返し、見つからないリソースはハンドラが 404 を返す。
+- `/v1` の要求は、次の順に確かめる。先に失敗した段の応答を返すので、トークンの 401 と事業所の 403 は、パスの ID と定義の 400 より先に返る。
+  1. Origin を許すか（403）。`CORS_ALLOW_ORIGINS` を設定したときだけ当てる。規則は [Interface](#interface) の CORS にある
+  2. クエリを読めるか（400）。`/v1` 以外のパスにも当てる
+  3. トークン（401）と、職員と組織の事業所（403）
+  4. パスが指す事業所（403）
+  5. パスの ID が ULID か（400）
+  6. 要求が `openapi.yaml` の定義に合うか（400）
 
 ### 予定の認可
 
@@ -193,7 +217,7 @@ sequenceDiagram
 - 一覧は、見てよくない職員の予定を除いて返す。1 件を指す操作（取得、変更、キャンセル、回の置き換え）は 403 を返す。
 - 作成と変更は、予定の職員の予定を編集する権限を求める。変更と回の置き換えは、元の予定の職員と、新しい予定の職員の両方の編集の権限を求める。
 - 権限の判定は、事業所の分離の後に行う。事業所が違えば、ミドルウェアが先に 403 を返す。
-- 職員と利用者の登録と、職員の権限と役職を変える操作は `staff.manage` で判定する（[権限の行](#権限の行)）。それ以外の職員、利用者、訪問の情報、組織の API は、権限で判定せず、事業所の分離だけを確かめる。
+- 職員と利用者の登録、役職の作成、職員の権限と役職を変える操作は `staff.manage` で判定する（[権限の行](#権限の行)）。それ以外の職員、利用者、訪問の情報、組織の API は、権限で判定せず、事業所の分離だけを確かめる。
 
 ### 繰り返しの予定
 
@@ -201,7 +225,7 @@ sequenceDiagram
 - 繰り返しの規則は次の 3 つ。規則に値が無いときは、最初の回の日付から曜日か日を決める。
   - `weekly`: `day_of_week` の曜日ごと
   - `monthly` で `day_of_month` がある: 毎月のその日。その日がない月は回にしない
-  - `monthly` で `week_of_month` と `day_of_week` がある: 毎月の第 n 週のその曜日
+  - `monthly` で `week_of_month` と `day_of_week` がある: 毎月の n 回目のその曜日。n は日から `(日 - 1) / 7 + 1` で決め、1 から 5 を受ける。5 回目のない月は回にしない
 - 最初の回の日付より前と、`end_date` より後は回にしない。最初の回の日付は、規則の回に当たらなければならない。
 - 繰り返しの 1 回だけを変えるときは、その日を `recurring_schedule_exclusions` に足し、`recurring_schedule_id` で元を指す単発の予定を作る。2 つは 1 つのトランザクションで行う。
 - 予定の一覧の API は、単発の予定と繰り返しの予定を別々に返す。繰り返しの予定を期間の回に展開しない。`date_from` と `date_to` は単発の予定だけを絞る。
@@ -221,8 +245,18 @@ sequenceDiagram
 
 ## Interface
 
-- 事業所に属する一覧と作成のパスは `/v1/facilities/{facility_id}/<資源>`、1 件を指すパスは `/v1/<資源>/{<資源>_id}` の形にする。主な資源は `schedules`、`schedules/recurring`、`users`、`patients`、`departments`、`teams`、`positions` である。
+- 事業所に属する一覧と作成のパスは `/v1/facilities/{facility_id}/<資源>`、1 件を指すパスは `/v1/<資源>/{<資源>_id}` の形にする。主な資源は `schedules`、`schedules/recurring`、`users`、`patients`、`departments`、`teams`、`positions` である。資源ごとにどのパスを持つかは `openapi.yaml` にある。
 - 事業所に属さないマスタは `/v1/policies`、`/v1/schedule_types`、`/v1/visit_infos/service_codes`、`/v1/visit_infos/visit_categories` で読む。
 - 一覧の並べ替えは、許可した列の名前だけを受け、それ以外は 400 を返す。
 - `GET /v1/me` は、トークンの職員と権限を返す。画面は、ログインの後にこれを呼んで事業所を決める。
+- エラーは `{"code","message"}` の JSON で返す。`message` は人が読む説明で、文言は変わることがあるので、利用者は `code` で分岐する。
+  - 400 の `invalid_input`: クエリを読めない、パスの ID が ULID でない、要求が `openapi.yaml` の定義に合わない、本文の値が規則に合わない、本文が指す参照が見つからないか別の事業所のもの
+  - 401 の `unauthenticated`: トークンが無いか、検証に失敗した
+  - 403 の `forbidden`: 職員を特定できない、事業所が違う、権限で許されない
+  - 404 の `not_found`: パスで指したリソースが無い
+  - 409 の `conflict`: 一意の値が重なる、キャンセル済みの予定を変えるかキャンセルする、繰り返しの回をすでに置き換えた
+  - 500 の `internal`: サーバーの誤り
+- CORS は、`CORS_ALLOW_ORIGINS` に並べた Origin だけに許す。空なら CORS のヘッダーを返さない。
+  - 許す Origin の事前の要求には、トークンを求めずに 204 を返す。許すメソッドは GET、POST、PUT、DELETE、OPTIONS、ヘッダーは `Content-Type` と `Authorization` にする。
+  - 許さない Origin の要求は、本文を持たない 403 で止める。Origin が要求の Host と同じ要求は、CORS の要求として扱わずに通す。
 - 環境変数とマイグレーションのコマンドは [README](https://github.com/Fukuemon/buddy/blob/develop/apps/schedule-api/README.md) に、インフラとの約束は [buddy Design Doc のインフラとの約束](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md#インフラとの約束) にある。
