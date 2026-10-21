@@ -31,6 +31,7 @@ func invalidRequest(message string) error { return &requestError{message: messag
 
 func writeError(c *gin.Context, log *slog.Logger, err error) {
 	var ve *domain.ValidationError
+	var ce *domain.ConflictError
 	var re *requestError
 	switch {
 	case errors.As(err, &re):
@@ -43,6 +44,8 @@ func writeError(c *gin.Context, log *slog.Logger, err error) {
 		c.AbortWithStatusJSON(http.StatusForbidden, errorResponse{Code: "forbidden", Message: domain.ErrForbidden.Error()})
 	case errors.Is(err, domain.ErrNotFound):
 		c.AbortWithStatusJSON(http.StatusNotFound, errorResponse{Code: "not_found", Message: domain.ErrNotFound.Error()})
+	case errors.As(err, &ce):
+		c.AbortWithStatusJSON(http.StatusConflict, errorResponse{Code: "conflict", Message: ce.Message})
 	case errors.Is(err, domain.ErrConflict):
 		c.AbortWithStatusJSON(http.StatusConflict, errorResponse{Code: "conflict", Message: domain.ErrConflict.Error()})
 	default:

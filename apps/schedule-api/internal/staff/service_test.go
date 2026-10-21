@@ -70,6 +70,11 @@ func TestStaffCreate(t *testing.T) {
 		t.Errorf("チームの閲覧の対象 = %+v, want 所属のチーム %s", ts, teamID)
 	}
 
+	if _, err := newUC(s).Create(context.Background(), in); !errors.Is(err, domain.ErrConflict) ||
+		err.Error() != "メール kenta.mori@example.com の職員はこの事業所にすでにいます" {
+		t.Errorf("同じメール: err = %v, want メールの重なりの ErrConflict", err)
+	}
+
 	other := in
 	other.DepartmentID = otherDepID
 	if _, err := newUC(setup()).Create(context.Background(), other); !errors.Is(err, domain.ErrInvalidInput) {
@@ -184,8 +189,9 @@ func TestStaffAddGrant(t *testing.T) {
 	if _, err := uc.AddGrant(ctx, staffID, staff.GrantInput{PolicyID: "SELF"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := uc.AddGrant(ctx, staffID, staff.GrantInput{PolicyID: "SELF"}); !errors.Is(err, domain.ErrConflict) {
-		t.Errorf("同じ権限を 2 回: err = %v, want ErrConflict", err)
+	if _, err := uc.AddGrant(ctx, staffID, staff.GrantInput{PolicyID: "SELF"}); !errors.Is(err, domain.ErrConflict) ||
+		err.Error() != "職員はすでに権限 SELF を持っています" {
+		t.Errorf("同じ権限を 2 回: err = %v, want 権限の重なりの ErrConflict", err)
 	}
 	if _, err := uc.AddGrant(ctx, "MISSING", staff.GrantInput{PolicyID: "SELF"}); !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("無い職員: err = %v, want ErrNotFound", err)

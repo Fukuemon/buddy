@@ -31,6 +31,25 @@ func TestOrganizationCreatePosition(t *testing.T) {
 	if len(got.Policies) != 1 {
 		t.Errorf("Policies = %+v", got.Policies)
 	}
+	if _, err := uc.CreatePosition(ctx, facilityID, "リーダー", nil); !errors.Is(err, domain.ErrConflict) ||
+		err.Error() != "役職 リーダー はこの事業所にすでにあります" {
+		t.Errorf("同じ名前: err = %v, want 名前の重なりの ErrConflict", err)
+	}
+}
+
+func TestOrganizationCreateTeam(t *testing.T) {
+	s := inmem.Seeded()
+	uc := organization.NewService(organization.Repositories{
+		Facilities: inmem.Facilities{Store: s}, Teams: inmem.Teams{Store: s},
+	}, &inmem.Tx{}, &inmem.SeqIDs{}, func(context.Context) error { return nil })
+	ctx := context.Background()
+	if _, err := uc.CreateTeam(ctx, facilityID, "訪問"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := uc.CreateTeam(ctx, facilityID, "訪問"); !errors.Is(err, domain.ErrConflict) ||
+		err.Error() != "チーム 訪問 はこの事業所にすでにあります" {
+		t.Errorf("同じ名前: err = %v, want 名前の重なりの ErrConflict", err)
+	}
 }
 
 // TestOrganizationCreatePositionForbidden は、職員の管理を許されない職員が役職を作れないことを確かめる。

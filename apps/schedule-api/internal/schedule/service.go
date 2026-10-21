@@ -263,7 +263,7 @@ func (s *Service) ChangeOccurrence(ctx context.Context, recurringScheduleID stri
 	var created Detail
 	err = s.tx.WithinTx(ctx, func(ctx context.Context) error {
 		if err := s.repos.Schedules.AddExclusion(ctx, rs.ID, originalDate); err != nil {
-			return err
+			return domain.AsConflict(err, "%s の回はすでに置き換えられています", originalDate)
 		}
 		var err error
 		created, err = s.createSchedule(ctx, rs.FacilityID, in, &rs.ID)
@@ -291,7 +291,7 @@ func (s *Service) Cancel(ctx context.Context, scheduleID, reason string) (Cancel
 		if err := s.authorize(ctx, cur.StaffID, true); err != nil {
 			return err
 		}
-		return s.repos.Schedules.CreateCancel(ctx, c)
+		return domain.AsConflict(s.repos.Schedules.CreateCancel(ctx, c), "この予定はすでにキャンセルされています")
 	})
 	if err != nil {
 		return Cancel{}, err
@@ -316,7 +316,7 @@ func (s *Service) Update(ctx context.Context, scheduleID string, in SlotInput) (
 			return err
 		}
 		if cur.Cancel != nil {
-			return fmt.Errorf("%w: キャンセル済みの予定は変えられません", domain.ErrConflict)
+			return domain.Conflict("キャンセル済みの予定は変えられません")
 		}
 		slot, typ, err := s.prepareSlot(ctx, cur.FacilityID, in)
 		if err != nil {

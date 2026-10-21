@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -254,6 +255,7 @@ func TestErrorStatus(t *testing.T) {
 		body     string
 		wantCode int
 		wantBody string
+		wantMsg  string
 	}{
 		{name: "パスの ID が ULID でない", method: http.MethodGet, target: "/v1/schedules/not-a-ulid",
 			wantCode: http.StatusBadRequest, wantBody: "invalid_input"},
@@ -261,10 +263,14 @@ func TestErrorStatus(t *testing.T) {
 			wantCode: http.StatusNotFound, wantBody: "not_found"},
 		{name: "繰り返しの予定がない", err: domain.ErrNotFound, method: http.MethodGet, target: "/v1/schedules/recurring/" + scheduleID,
 			wantCode: http.StatusNotFound, wantBody: "not_found"},
-		{name: "キャンセル済み", err: domain.ErrConflict, method: http.MethodPost, target: "/v1/schedules/" + scheduleID + "/cancel",
-			body: `{"reason":"体調不良"}`, wantCode: http.StatusConflict, wantBody: "conflict"},
-		{name: "キャンセル済みの予定を変える", err: domain.ErrConflict, method: http.MethodPut, target: "/v1/schedules/" + scheduleID,
-			body: validSlotBody, wantCode: http.StatusConflict, wantBody: "conflict"},
+		{name: "キャンセル済み", err: domain.Conflict("この予定はすでにキャンセルされています"), method: http.MethodPost,
+			target: "/v1/schedules/" + scheduleID + "/cancel", body: `{"reason":"体調不良"}`,
+			wantCode: http.StatusConflict, wantBody: "conflict", wantMsg: "この予定はすでにキャンセルされています"},
+		{name: "キャンセル済みの予定を変える", err: fmt.Errorf("update: %w", domain.Conflict("キャンセル済みの予定は変えられません")),
+			method: http.MethodPut, target: "/v1/schedules/" + scheduleID, body: validSlotBody,
+			wantCode: http.StatusConflict, wantBody: "conflict", wantMsg: "キャンセル済みの予定は変えられません"},
+		{name: "原因の文のない衝突", err: domain.ErrConflict, method: http.MethodPut, target: "/v1/schedules/" + scheduleID,
+			body: validSlotBody, wantCode: http.StatusConflict, wantBody: "conflict", wantMsg: "同じ内容のデータがすでにあります"},
 		{name: "予定を見る権限がない", err: domain.ErrForbidden, method: http.MethodGet, target: "/v1/schedules/" + scheduleID,
 			wantCode: http.StatusForbidden, wantBody: "forbidden"},
 		{name: "予定を作る権限がない", err: domain.ErrForbidden, method: http.MethodPost, target: "/v1/facilities/" + facilityID + "/schedules",
@@ -286,6 +292,9 @@ func TestErrorStatus(t *testing.T) {
 			}
 			if body["code"] != tt.wantBody {
 				t.Errorf("body = %v", body)
+			}
+			if tt.wantMsg != "" && body["message"] != tt.wantMsg {
+				t.Errorf("message = %v, want %q", body["message"], tt.wantMsg)
 			}
 			if strings.Contains(rec.Body.String(), "connection refused") {
 				t.Error("内部のエラーの文を返した")

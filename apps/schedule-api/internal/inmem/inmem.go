@@ -126,8 +126,13 @@ func (s Teams) ListByFacility(context.Context, string) ([]organization.Team, err
 	return nil, nil
 }
 
-// Create は、チームを保存する。
+// Create は、チームを保存する。同じ事業所に同じ名前のチームがあれば domain.ErrConflict を返す。
 func (s Teams) Create(_ context.Context, t organization.Team) error {
+	for _, cur := range s.Teams {
+		if cur.FacilityID == t.FacilityID && cur.Name == t.Name {
+			return domain.ErrConflict
+		}
+	}
 	s.Teams[t.ID] = t
 	return nil
 }
@@ -145,8 +150,13 @@ func (s Positions) ListByFacility(context.Context, string) ([]organization.Posit
 	return nil, nil
 }
 
-// Create は、役職を保存する。
+// Create は、役職を保存する。同じ事業所に同じ名前の役職があれば domain.ErrConflict を返す。
 func (s Positions) Create(_ context.Context, p organization.Position) error {
+	for _, cur := range s.Positions {
+		if cur.FacilityID == p.FacilityID && cur.Name == p.Name {
+			return domain.ErrConflict
+		}
+	}
 	s.Positions[p.ID] = p
 	return nil
 }
@@ -176,8 +186,13 @@ func (s Policies) ListByIDs(_ context.Context, ids []string) ([]organization.Pol
 // Staff は、staff.Repository のメモリ上の実装である。
 type Staff struct{ *Store }
 
-// Create は、職員と権限を保存する。
+// Create は、職員と権限を保存する。同じ事業所に同じメールの職員がいれば domain.ErrConflict を返す。
 func (s Staff) Create(_ context.Context, st staff.Staff, grants []staff.Grant) error {
+	for _, cur := range s.Staff {
+		if cur.FacilityID == st.FacilityID && cur.Email == st.Email {
+			return domain.ErrConflict
+		}
+	}
 	s.Staff[st.ID] = staff.Detail{Summary: staff.Summary{Staff: st}}
 	s.Grants[st.ID] = grants
 	return nil

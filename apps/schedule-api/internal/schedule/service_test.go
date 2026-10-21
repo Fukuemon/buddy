@@ -186,9 +186,11 @@ func TestSchedulesChangeOccurrence(t *testing.T) {
 		date        civil.Date
 		repeat      bool
 		wantErr     error
+		wantMsg     string
 	}{
 		{name: "回を置き換える", recurringID: recurringID, date: monday},
-		{name: "同じ回を 2 度置き換える", recurringID: recurringID, date: monday, repeat: true, wantErr: domain.ErrConflict},
+		{name: "同じ回を 2 度置き換える", recurringID: recurringID, date: monday, repeat: true, wantErr: domain.ErrConflict,
+			wantMsg: "2026-10-12 の回はすでに置き換えられています"},
 		{name: "回に当たらない日", recurringID: recurringID, date: civil.Date{Year: 2026, Month: 10, Day: 13}, wantErr: domain.ErrInvalidInput},
 		{name: "繰り返しの予定がない", recurringID: "MISSING", date: monday, wantErr: domain.ErrNotFound},
 	}
@@ -206,6 +208,9 @@ func TestSchedulesChangeOccurrence(t *testing.T) {
 			if tt.wantErr != nil {
 				if !errors.Is(err, tt.wantErr) {
 					t.Fatalf("err = %v, want %v", err, tt.wantErr)
+				}
+				if tt.wantMsg != "" && err.Error() != tt.wantMsg {
+					t.Errorf("message = %q, want %q", err.Error(), tt.wantMsg)
 				}
 				return
 			}
@@ -243,8 +248,8 @@ func TestSchedulesCancel(t *testing.T) {
 	if tx.Calls == before {
 		t.Error("キャンセルがトランザクションの中で予定をロックしていない")
 	}
-	if _, err := uc.Cancel(ctx, created.ID, "体調不良"); !errors.Is(err, domain.ErrConflict) {
-		t.Fatalf("err = %v, want ErrConflict", err)
+	if _, err := uc.Cancel(ctx, created.ID, "体調不良"); !errors.Is(err, domain.ErrConflict) || err.Error() != "この予定はすでにキャンセルされています" {
+		t.Fatalf("err = %v, want キャンセル済みの ErrConflict", err)
 	}
 }
 
@@ -256,12 +261,13 @@ func TestSchedulesUpdate(t *testing.T) {
 		missing   bool
 		single    bool
 		wantErr   error
+		wantMsg   string
 		wantInfos int
 	}{
 		{name: "訪問の予定を通常の予定にすると訪問の情報を消す", in: normalSlot},
 		{name: "訪問の情報を作り直す", in: func() schedule.SlotInput { return visitSlot(validVisit()) }, wantInfos: 1},
 		{name: "繰り返しに属さない予定", in: normalSlot, single: true},
-		{name: "キャンセル済み", in: normalSlot, cancel: true, wantErr: domain.ErrConflict, wantInfos: 1},
+		{name: "キャンセル済み", in: normalSlot, cancel: true, wantErr: domain.ErrConflict, wantMsg: "キャンセル済みの予定は変えられません", wantInfos: 1},
 		{name: "予定がない", in: normalSlot, missing: true, wantErr: domain.ErrNotFound, wantInfos: 1},
 		{name: "別の事業所の職員", in: func() schedule.SlotInput {
 			in := normalSlot()
@@ -301,6 +307,9 @@ func TestSchedulesUpdate(t *testing.T) {
 			if tt.wantErr != nil {
 				if !errors.Is(err, tt.wantErr) {
 					t.Fatalf("err = %v, want %v", err, tt.wantErr)
+				}
+				if tt.wantMsg != "" && err.Error() != tt.wantMsg {
+					t.Errorf("message = %q, want %q", err.Error(), tt.wantMsg)
 				}
 				return
 			}
