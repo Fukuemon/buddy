@@ -73,6 +73,9 @@ nav = [
     "adr/0006-staff-manage-policy.md",
     "adr/0007-go-shared-module.md",
     "adr/0008-web-view-types.md",
+    "adr/0009-google-calendar-sync.md",
+    "adr/0010-schedule-api-usecase-boundaries.md",
+    "adr/0011-schedule-api-postgresql.md",
   ] },
 ]
 
