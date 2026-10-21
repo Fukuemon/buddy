@@ -3,6 +3,7 @@ package main
 import (
 	"html/template"
 	"net/http"
+	"net/url"
 	"slices"
 	"strings"
 	"time"
@@ -136,6 +137,6 @@ func shiftHandler(s *gcaltest.Server) http.HandlerFunc {
 			http.NotFound(w, r)
 			return
 		}
-		http.Redirect(w, r, "/view?calendar="+cal, http.StatusSeeOther)
+		http.Redirect(w, r, "/view?"+url.Values{"calendar": {cal}}.Encode(), http.StatusSeeOther)
 	}
 }
