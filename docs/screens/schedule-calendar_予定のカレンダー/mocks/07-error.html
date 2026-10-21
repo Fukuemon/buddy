@@ -27,24 +27,31 @@
             </div>
           </header>
           <div class="sc-body">
-            <nav class="sc-side" aria-label="職員の絞り込み" data-m="4" data-testid="staff-filter-sidebar">
-              <div class="sc-side__head">
-                <strong class="wf-label">職員</strong>
-                <span class="wf-btn wf-btn--text" aria-disabled="true" data-m="5" data-testid="staff-filter-reset">全員を表示</span>
+            <div class="sc-drawer" role="dialog" aria-label="職員の絞り込み" data-m="16" data-testid="staff-filter-drawer">
+              <div class="sc-drawer__head">
+                <strong class="sc-drawer__title">職員の絞り込み</strong>
+                <span class="wf-btn wf-btn--icon sc-icon-btn" aria-label="閉じる" data-drawer="close" data-m="17" data-testid="staff-filter-close"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
               </div>
-              <div class="sc-team">
-                <span class="wf-check is-on" data-m="6" data-testid="staff-filter-team-{チームの id}"><span class="wf-text"></span></span>
-                <span class="wf-check is-on sc-member" data-m="7" data-testid="staff-filter-staff-{職員の id}"><span class="wf-text"></span></span>
-                <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}"><span class="wf-text"></span></span>
-                <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}"><span class="wf-text"></span></span>
-              </div>
-              <div class="sc-team">
-                <span class="wf-check is-on" data-testid="staff-filter-team-{チームの id}"><span class="wf-text"></span></span>
-                <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}"><span class="wf-text"></span></span>
-                <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}"><span class="wf-text"></span></span>
-                <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}"><span class="wf-text"></span></span>
-              </div>
-            </nav>
+              <nav class="sc-side" aria-label="職員の絞り込み" data-m="4" data-testid="staff-filter-sidebar">
+                <div class="sc-side__head">
+                  <strong class="wf-label">職員</strong>
+                  <span class="wf-btn wf-btn--text" aria-disabled="true" data-m="5" data-testid="staff-filter-reset">全員を表示</span>
+                </div>
+                <div class="sc-team">
+                  <span class="wf-check is-on" data-m="6" data-testid="staff-filter-team-{チームの id}">チーム 1</span>
+                  <span class="wf-check is-on sc-member" data-m="7" data-testid="staff-filter-staff-{職員の id}">職員 A</span>
+                  <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}">職員 B</span>
+                  <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}">職員 C</span>
+                </div>
+                <div class="sc-team">
+                  <span class="wf-check is-on" data-testid="staff-filter-team-{チームの id}">チーム 2</span>
+                  <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}">職員 D</span>
+                  <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}">職員 E</span>
+                  <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}">職員 F</span>
+                </div>
+              </nav>
+            </div>
+            <div class="wf-overlay sc-drawer-overlay" data-drawer="close"></div>
             <main class="sc-main">
               <div class="sc-toolbar">
                 <div class="sc-toolbar__group">
@@ -59,6 +66,7 @@
                     <span class="wf-tab" data-testid="calendar-view-week">週</span>
                     <span class="wf-tab" data-testid="calendar-view-day">日</span>
                   </div>
+                  <span class="wf-btn sc-filter-open" aria-expanded="false" data-drawer="open" data-m="15" data-testid="staff-filter-open">職員の絞り込み</span>
                   <span class="wf-btn wf-btn--primary" data-m="13" data-testid="schedule-create-open">予定を作成</span>
                 </div>
               </div>
@@ -70,5 +78,38 @@
       <div class="markers"></div>
     </div>
     <script src="../../_common/mock.js"></script>
+    <script>
+      // 幅 768px 未満で、職員の絞り込みのドロワーを開閉する。開く、閉じる、背景、Escape で切り替え、端末を変えると閉じる
+      ;(() => {
+        const body = document.querySelector('.sc-body')
+        const opener = document.querySelector('[data-testid="staff-filter-open"]')
+        const setOpen = (isOpen) => {
+          body.classList.toggle('is-drawer-open', isOpen)
+          opener.setAttribute('aria-expanded', String(isOpen))
+          // 開いている間は、覆いの後ろの要素に番号の印を出さない
+          for (const el of document.querySelectorAll('.screen [data-m], .screen [data-m-covered]')) {
+            if (el.closest('.sc-drawer')) continue
+            if (isOpen && el.dataset.m) {
+              el.dataset.mCovered = el.dataset.m
+              delete el.dataset.m
+            } else if (!isOpen && el.dataset.mCovered) {
+              el.dataset.m = el.dataset.mCovered
+              delete el.dataset.mCovered
+            }
+          }
+          mockRefresh()
+        }
+        body.addEventListener('click', (event) => {
+          const toggle = event.target.closest('[data-drawer]')
+          if (toggle) setOpen(toggle.dataset.drawer === 'open')
+        })
+        document.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape' && body.classList.contains('is-drawer-open')) setOpen(false)
+        })
+        document.querySelector('.mock-toolbar').addEventListener('click', (event) => {
+          if (event.target.closest('[data-view-name]')) setOpen(false)
+        })
+      })()
+    </script>
   </body>
 </html>

@@ -7,6 +7,8 @@ export type {
 } from './base/Button/Button'
 export { DatePicker } from './base/DatePicker/DatePicker'
 export type { DatePickerProps } from './base/DatePicker/DatePicker'
+export { Drawer } from './base/Drawer/Drawer'
+export type { DrawerProps } from './base/Drawer/Drawer'
 export { Loading } from './base/Loading/Loading'
 export type { LoadingProps } from './base/Loading/Loading'
 export { Modal } from './base/Modal/Modal'

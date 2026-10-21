@@ -15,11 +15,18 @@ import {
 } from '../queries'
 import { pickCalendarSearch, type ScheduleSearch } from '../schema/scheduleSearch'
 import { ScheduleCalendar } from './ScheduleCalendar'
-import { ScheduleCalendarToolbar } from './ScheduleCalendarToolbar'
+import { ScheduleCalendarToolbar, type StaffFilterToggle } from './ScheduleCalendarToolbar'
 import { StaffScheduleDayGrid } from './StaffScheduleDayGrid'
 
+export type ScheduleCalendarContainerProps = {
+  /** 渡したときだけ、ツールバーに職員の絞り込みを開くボタンを出す。 */
+  staffFilterToggle?: StaffFilterToggle
+}
+
 /** `/schedule` の search params を読み、予定を取ってカレンダーに出す。 */
-export const ScheduleCalendarContainer = () => {
+export const ScheduleCalendarContainer = ({
+  staffFilterToggle,
+}: ScheduleCalendarContainerProps) => {
   const search = useSearch({ from: '/schedule' })
   const navigate = useNavigate({ from: '/schedule' })
   const { api, facilityId } = useBuddyApi()
@@ -68,6 +75,7 @@ export const ScheduleCalendarContainer = () => {
           onCreate={() => openCreate(date)}
           onToday={() => updateSearch({ date: undefined })}
           onViewChange={(view) => updateSearch({ view })}
+          staffFilterToggle={staffFilterToggle}
           view={search.view}
         />
       </div>
