@@ -7,7 +7,7 @@ status: stable
 
 # 基盤と運用
 
-基盤の構成、デプロイの手順、監視のツールは、インフラのリポジトリ [Fukuemon/buddy-infra](https://github.com/Fukuemon/buddy-infra) が持つ。buddy はデプロイ先を知らず、インフラとの約束は [buddy Design Doc の Interfaces](../docs/design/DesignDoc.md#interfaces)（イメージ、環境変数、ヘルスチェック、マイグレーション）だけである。ここには、buddy の側が守る取り決めを書く。
+基盤の構成、デプロイの手順、監視のツールは、インフラのリポジトリ [Fukuemon/buddy-infra](https://github.com/Fukuemon/buddy-infra) が持つ。buddy はデプロイ先を知らず、インフラとの約束は [buddy Design Doc のインフラとの約束](../docs/design/DesignDoc.md#インフラとの約束)（イメージ、環境変数、ヘルスチェック、マイグレーション）だけである。ここには、buddy の側が守る取り決めを書く。
 
 ## Environments
 
@@ -25,7 +25,7 @@ status: stable
 - デプロイする単位は、アプリごとのイメージである。リリースは、`main` のコミットに付けたアプリごとのタグ（`apps/<アプリ>/vX.Y.Z`）で指す。
 - 取り込む前に、変えたアプリのテストとチェック、`pnpm check:generated` が通っている（[テスト](testing.md)）。
 - API と画面を一緒に変えたときは、API を先にデプロイする。画面は、デプロイ済みの API が持つ項目だけを使う。
-- マイグレーションの当て方と、ヘルスチェックの約束は、[buddy Design Doc の Interfaces](../docs/design/DesignDoc.md#interfaces) にある。
+- マイグレーションの当て方と、ヘルスチェックの約束は、[buddy Design Doc のインフラとの約束](../docs/design/DesignDoc.md#インフラとの約束) にある。
 
 ## Health and Monitoring
 
