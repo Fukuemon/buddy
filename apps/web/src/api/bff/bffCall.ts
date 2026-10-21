@@ -18,6 +18,8 @@ export const BFF_OPERATIONS = [
   'calendars.unlink',
   'calendars.preview',
   'calendars.import',
+  'calendars.exportIssues',
+  'calendars.retryExport',
 ] as const
 
 /** BFF が中継する操作の名前。 */
@@ -80,6 +82,8 @@ const ARGS: Record<BffOperation, z.ZodType> = {
     id,
     importRange.extend({ decisions: z.array(decision).max(10_000) }),
   ]),
+  'calendars.exportIssues': z.tuple([id]),
+  'calendars.retryExport': z.tuple([id, id]),
 }
 
 /** call の引数を操作の形で読む。合えば知らないキーを除いた引数を、合わなければ理由を返す。 */

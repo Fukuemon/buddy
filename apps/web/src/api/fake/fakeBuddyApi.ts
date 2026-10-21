@@ -2,13 +2,20 @@ import {
   createMockImportPreview,
   createMockImportResult,
   createMockImportedPreview,
+  mockExportIssues,
   mockExternalCalendars,
   mockServiceAccount,
 } from '#/mocks/scheduleData'
 
 import { ApiError, type BuddyApi } from '../client'
 import { matchesName } from '../nameSearch'
-import type { ExternalCalendar, FacilityId, ImportPreview, Schedule } from '../types'
+import type {
+  CalendarExportIssue,
+  ExternalCalendar,
+  FacilityId,
+  ImportPreview,
+  Schedule,
+} from '../types'
 import {
   FAKE_FACILITY_ID,
   createFakeSchedules,
@@ -49,6 +56,9 @@ export const createFakeBuddyApi = ({
     mockExternalCalendars.map((c) => [c.id, structuredClone(c)]),
   )
   const disabled = new Map<ExternalCalendar['id'], ExternalCalendar>()
+  const exportIssues = new Map<CalendarExportIssue['id'], CalendarExportIssue>(
+    mockExportIssues.map((i) => [i.id, structuredClone(i)]),
+  )
   const imported = new Set<string>()
 
   const findCalendar = (id: ExternalCalendar['id']) => {
@@ -206,6 +216,26 @@ export const createFakeBuddyApi = ({
         const { already_imported_count: _, external_calendar_id: __, ...run } = result
         calendars.set(calendar.id, { ...calendar, last_import: run })
         return result
+      },
+      exportIssues: async (facilityId) => {
+        assertFacility(facilityId)
+        return [...exportIssues.values()]
+      },
+      retryExport: async (facilityId, exportId) => {
+        assertFacility(facilityId)
+        const issue = exportIssues.get(exportId)
+        if (issue === undefined)
+          throw conflict('export_not_in_review', 'この予定は、確かめが要る書き出しではありません')
+        exportIssues.delete(exportId)
+        const {
+          staff_id: _,
+          staff_name: __,
+          date: ___,
+          start_time: ____,
+          end_time: _____,
+          ...rest
+        } = issue
+        return { ...rest, status: 'pending', error_code: null, attempts: 0 }
       },
     },
   }

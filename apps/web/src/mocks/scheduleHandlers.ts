@@ -7,6 +7,7 @@ import {
   createMockImportPreview,
   createMockImportResult,
   createMockSchedules,
+  mockExportIssues,
   mockExternalCalendars,
   mockMe,
   mockServiceAccount,
@@ -127,6 +128,30 @@ export const createScheduleHandlers = (baseUrl: string) => {
             decisions,
           ),
         )
+      }),
+    ),
+    http.get(
+      '/v1/facilities/{facility_id}/calendar_export_issues',
+      withAuth(({ response }) => response(200).json({ items: mockExportIssues })),
+    ),
+    http.post(
+      '/v1/calendar_exports/{calendar_export_id}/retries',
+      withAuth(({ params, response }) => {
+        const {
+          staff_id: _,
+          staff_name: __,
+          date: ___,
+          start_time: ____,
+          end_time: _____,
+          ...issue
+        } = mockExportIssues.find((i) => i.id === params.calendar_export_id) ?? mockExportIssues[0]
+        return response(202).json({
+          ...issue,
+          id: params.calendar_export_id,
+          status: 'pending',
+          error_code: null,
+          attempts: 0,
+        })
       }),
     ),
   ]

@@ -41,6 +41,8 @@ export const createBffBuddyApi = (callBff: CallBff = (data) => callBffFn({ data 
       unlink: call('calendars.unlink'),
       preview: call('calendars.preview'),
       import: call('calendars.import'),
+      exportIssues: call('calendars.exportIssues'),
+      retryExport: call('calendars.retryExport'),
     },
   }
 }

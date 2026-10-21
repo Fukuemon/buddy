@@ -38,6 +38,7 @@ export type StoryRouteId =
   | '/receipt/result'
   | '/schedule_/link'
   | '/schedule_/import'
+  | '/schedule_/review'
 
 /** story の parameters の appRouter に渡す値。 */
 export type AppRouterParameters = {
@@ -125,6 +126,11 @@ const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
     validateSearch: calendarImportSearchSchema,
     component: at('/schedule_/import'),
   })
+  const scheduleReview = createRoute({
+    getParentRoute: () => root,
+    path: 'schedule/review',
+    component: at('/schedule_/review'),
+  })
 
   const router = createRouter({
     routeTree: root.addChildren([
@@ -133,6 +139,7 @@ const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
       receiptResult,
       scheduleLink,
       scheduleImport,
+      scheduleReview,
     ]),
     history: createMemoryHistory({ initialEntries: [params.url] }),
     context,
@@ -169,7 +176,7 @@ export const emptyBuddyApi = (base: BuddyApi = createFakeBuddyApi()): BuddyApi =
   staff: { ...base.staff, list: async () => [] },
   teams: { ...base.teams, list: async () => [] },
   patients: { ...base.patients, list: async () => [] },
-  calendars: { ...base.calendars, list: async () => [] },
+  calendars: { ...base.calendars, list: async () => [], exportIssues: async () => [] },
 })
 
 /** 全ての操作が status の ApiError で失敗する偽物の API を作る。 */
@@ -190,6 +197,8 @@ export const failingBuddyApi = (status = 500): BuddyApi => {
       unlink: fail,
       preview: fail,
       import: fail,
+      exportIssues: fail,
+      retryExport: fail,
     },
   }
 }
@@ -210,6 +219,8 @@ export const pendingBuddyApi = (): BuddyApi => {
       unlink: wait,
       preview: wait,
       import: wait,
+      exportIssues: wait,
+      retryExport: wait,
     },
   }
 }
