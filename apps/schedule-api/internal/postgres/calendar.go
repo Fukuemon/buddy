@@ -220,6 +220,17 @@ func (r *CalendarRepository) LinkBySchedule(ctx context.Context, scheduleID stri
 	return toLink(l), nil
 }
 
+// LinkByEvent は、カレンダー externalCalendarID の外部の予定 eventID の予定の対応を返す。無いときは apperr.ErrNotFound を返す。
+func (r *CalendarRepository) LinkByEvent(ctx context.Context, externalCalendarID, eventID string) (calendar.Link, error) {
+	l, err := r.q(ctx).GetExternalEventLinkByEvent(ctx, sqlcgen.GetExternalEventLinkByEventParams{
+		ExternalCalendarID: externalCalendarID, ExternalEventID: eventID,
+	})
+	if err != nil {
+		return calendar.Link{}, translate("get external event link", err)
+	}
+	return toLink(l), nil
+}
+
 // LinkByRecurringSchedule は、繰り返しの予定 recurringScheduleID の予定の対応を返す。無いときは apperr.ErrNotFound を返す。
 func (r *CalendarRepository) LinkByRecurringSchedule(ctx context.Context, recurringScheduleID string) (calendar.Link, error) {
 	l, err := r.q(ctx).GetExternalEventLinkByRecurringSchedule(ctx, &recurringScheduleID)

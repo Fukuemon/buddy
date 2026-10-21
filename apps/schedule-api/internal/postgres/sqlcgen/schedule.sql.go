@@ -460,6 +460,17 @@ func (q *Queries) ListScheduleTypes(ctx context.Context) ([]ScheduleType, error)
 	return items, nil
 }
 
+const lockRecurringSchedule = `-- name: LockRecurringSchedule :one
+SELECT id FROM recurring_schedules WHERE id = $1 FOR UPDATE
+`
+
+func (q *Queries) LockRecurringSchedule(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRow(ctx, lockRecurringSchedule, id)
+	var id_2 string
+	err := row.Scan(&id_2)
+	return id_2, err
+}
+
 const lockSchedule = `-- name: LockSchedule :one
 SELECT id FROM schedules WHERE id = $1 FOR UPDATE
 `

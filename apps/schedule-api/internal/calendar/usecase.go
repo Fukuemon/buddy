@@ -36,6 +36,11 @@ const (
 	CodeReviewChanged = "import_preview_changed"
 	// CodeExportNotInReview は、書き直そうとした書き出しが、確かめが要る状態でないことを表す。
 	CodeExportNotInReview = "export_not_in_review"
+	// CodeExportNotAcceptable は、外部のカレンダーの内容を buddy に当てられない書き出しであることを表す。
+	// 繰り返しの予定と、書けなかった（failed）書き出しが当たる。
+	CodeExportNotAcceptable = "export_not_acceptable"
+	// CodeExternalChangeUnappliable は、外部のカレンダーの予定を buddy の予定に読み替えられないことを表す。
+	CodeExternalChangeUnappliable = "external_change_unappliable"
 )
 
 // staleRunAfter を過ぎても running の取り込みは、止まった取り込みとみなし、次の取り込みを止めない。
@@ -56,9 +61,9 @@ type Types interface {
 	List(ctx context.Context) ([]schedule.Type, error)
 }
 
-// Schedules は、取り込んだ単発の予定を書く。
+// Schedules は、取り込んだ単発の予定を書き、外部のカレンダーの内容を当てる予定を読み書きする。
 type Schedules interface {
-	Create(ctx context.Context, s schedule.Schedule) error
+	ScheduleStore
 }
 
 // Recurring は、取り込んだ繰り返しの予定と除外する日を書く。
@@ -70,7 +75,7 @@ type Recurring interface {
 
 // VisitInfos は、取り込んだ訪問の予定の訪問の情報を書く。実装は visit.Writer である。
 type VisitInfos interface {
-	Create(ctx context.Context, facilityID string, in visit.Input) (string, error)
+	VisitStore
 }
 
 // Deps は、Usecase が使うリポジトリと、ほかの機能のデータを読み書きする小さなインターフェイスである。
@@ -99,11 +104,15 @@ type Usecase struct {
 	tx    tx.Transactor
 	ids   kernel.IDGenerator
 	guard organization.Guard
+	apply applier
 }
 
 // NewUsecase は Usecase を作る。
 func NewUsecase(deps Deps, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) *Usecase {
-	return &Usecase{deps: deps, tx: tx, ids: ids, guard: guard}
+	return &Usecase{deps: deps, tx: tx, ids: ids, guard: guard, apply: applier{
+		calendars: deps.Calendars, exports: deps.Exports, schedules: deps.Schedules, types: deps.Types,
+		patients: deps.Patients, serviceCodes: deps.ServiceCodes, visits: deps.Visits, ids: ids, now: time.Now,
+	}}
 }
 
 // ServiceAccount は、職員がカレンダーを共有する相手のメールアドレスを返す。設定が無ければ ErrNotConfigured を返す。
@@ -544,9 +553,74 @@ func (u *Usecase) RetryExport(ctx context.Context, id string) (Export, error) {
 	}
 	if err := u.deps.Exports.Retry(ctx, id); err != nil {
 		if errors.Is(err, apperr.ErrConflict) {
-			return Export{}, apperr.ConflictCode(CodeExportNotInReview, "この予定は、確かめが要る書き出しではありません")
+			return Export{}, errNotInReview
 		}
 		return Export{}, err
 	}
 	return u.deps.Exports.Get(ctx, id)
 }
+
+// AcceptExport は、確かめが要る書き出し id の予定を、buddy での変更によらず外部のカレンダーの今の内容にし、待ちを終えて返す。
+// 外部のカレンダーで消された予定は、キャンセルする。
+// 待ちが見つからないときは apperr.ErrNotFound を、確かめが要る待ちでないときと、外部の内容を当てられない待ちのとき、
+// 外部の予定を buddy の予定に読み替えられないときは apperr.ErrConflict を返す。外部のカレンダーを読めないときは Preview と同じである。
+func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
+	if err := u.guard(ctx); err != nil {
+		return Export{}, err
+	}
+	e, err := u.deps.Exports.Get(ctx, id)
+	if err != nil {
+		return Export{}, err
+	}
+	if !e.InReview() {
+		return Export{}, errNotInReview
+	}
+	if !e.Acceptable() {
+		return Export{}, errNotAcceptable
+	}
+	if u.deps.Source == nil {
+		return Export{}, ErrNotConfigured
+	}
+	l, err := u.deps.Calendars.LinkBySchedule(ctx, e.ScheduleID)
+	if errors.Is(err, apperr.ErrNotFound) {
+		return Export{}, errNotAcceptable
+	}
+	if err != nil {
+		return Export{}, err
+	}
+	c, err := u.deps.Calendars.Get(ctx, l.ExternalCalendarID)
+	if err != nil {
+		return Export{}, err
+	}
+	ev, err := u.deps.Source.Event(ctx, c.CalendarID, l.ExternalEventID)
+	if err != nil {
+		return Export{}, err
+	}
+	err = u.tx.WithinTx(ctx, func(ctx context.Context) error {
+		err := u.apply.acceptSchedule(ctx, l, ev)
+		if errors.Is(err, errUnappliable) {
+			return apperr.ConflictCode(CodeExternalChangeUnappliable,
+				"Google カレンダーの予定を、buddy の予定に読み替えられません。buddy の内容で書き直してください")
+		}
+		if err != nil {
+			return err
+		}
+		// 待ちを読んだ後に、ほかの職員が解いていれば、予定を変えずに戻す。
+		if err := u.deps.Exports.Resolve(ctx, id); errors.Is(err, apperr.ErrConflict) {
+			return errNotInReview
+		} else if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return Export{}, err
+	}
+	return u.deps.Exports.Get(ctx, id)
+}
+
+var (
+	errNotInReview   = apperr.ConflictCode(CodeExportNotInReview, "この予定は、確かめが要る書き出しではありません")
+	errNotAcceptable = apperr.ConflictCode(CodeExportNotAcceptable,
+		"この予定は、Google カレンダーの内容を buddy に当てられません。buddy の内容で書き直してください")
+)

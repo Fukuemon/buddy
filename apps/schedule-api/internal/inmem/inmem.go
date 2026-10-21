@@ -58,6 +58,8 @@ type Store struct {
 	Runs          map[string]calendar.ImportRun
 	Links         map[string]calendar.Link
 	Exports       map[string]calendar.Export
+	// SyncResults は、カレンダーの ID ごとの、最後に同期した結果である。
+	SyncResults map[string]calendar.SyncResult
 }
 
 // NewStore は、空の Store を作る。
@@ -83,6 +85,7 @@ func NewStore() *Store {
 		Runs:          map[string]calendar.ImportRun{},
 		Links:         map[string]calendar.Link{},
 		Exports:       map[string]calendar.Export{},
+		SyncResults:   map[string]calendar.SyncResult{},
 	}
 }
 
@@ -494,6 +497,11 @@ func (s RecurringSchedules) Create(_ context.Context, rs schedule.RecurringSched
 	return nil
 }
 
+// GetForUpdate は、Get と同じ値を返す。メモリ上の実装はロックを取らない。
+func (s RecurringSchedules) GetForUpdate(ctx context.Context, id string) (schedule.RecurringDetail, error) {
+	return s.Get(ctx, id)
+}
+
 // Get は、繰り返しの予定を返す。
 func (s RecurringSchedules) Get(_ context.Context, id string) (schedule.RecurringDetail, error) {
 	return get(s.Recurring, id)
@@ -678,6 +686,16 @@ func (s Calendars) LinkByRecurringSchedule(_ context.Context, recurringScheduleI
 	return s.linkBy(func(l calendar.Link) *string { return l.RecurringScheduleID }, recurringScheduleID)
 }
 
+// LinkByEvent は、カレンダーの外部の予定の対応を返す。
+func (s Calendars) LinkByEvent(_ context.Context, externalCalendarID, eventID string) (calendar.Link, error) {
+	for _, l := range s.Links {
+		if l.ExternalCalendarID == externalCalendarID && l.ExternalEventID == eventID {
+			return l, nil
+		}
+	}
+	return calendar.Link{}, apperr.ErrNotFound
+}
+
 func (s Calendars) linkBy(target func(calendar.Link) *string, id string) (calendar.Link, error) {
 	for _, l := range s.Links {
 		if t := target(l); t != nil && *t == id {
@@ -812,5 +830,65 @@ func (s Exports) Retry(_ context.Context, id string) error {
 	}
 	e.Status, e.Overwrite, e.Attempts, e.ErrorCode, e.NextAttemptAt = calendar.ExportPending, true, 0, nil, time.Now()
 	s.Exports[id] = e
+	return nil
+}
+
+// Open は、t の終わっていない待ちを返す。
+func (s Exports) Open(_ context.Context, t calendar.Target) (calendar.Export, error) {
+	if e, ok := s.open(t); ok {
+		return e, nil
+	}
+	return calendar.Export{}, apperr.ErrNotFound
+}
+
+// Hold は、t の終わっていない待ちを確かめが要る待ちにするか、確かめが要る待ちを足す。
+func (s Exports) Hold(_ context.Context, id string, t calendar.Target, code calendar.ExportErrorCode) error {
+	e, ok := s.open(t)
+	if !ok {
+		e = calendar.Export{ID: id, Target: t, NextAttemptAt: time.Now()}
+	}
+	e.Revision++
+	e.Status, e.ErrorCode, e.Overwrite, e.LockedUntil = calendar.ExportConflict, &code, false, nil
+	s.Exports[e.ID] = e
+	return nil
+}
+
+// Resolve は、確かめが要る待ちを終えた待ちにする。
+func (s Exports) Resolve(_ context.Context, id string) error {
+	e, err := get(s.Exports, id)
+	if err != nil {
+		return err
+	}
+	if !e.InReview() {
+		return apperr.ErrConflict
+	}
+	e.Status, e.ErrorCode, e.Overwrite = calendar.ExportSucceeded, nil, false
+	s.Exports[id] = e
+	return nil
+}
+
+// Syncs は、calendar.SyncRepository のメモリ上の実装である。読む時刻と lease を持たず、取るたびに外していない全てのカレンダーを返す。
+type Syncs struct{ *Store }
+
+// Claim は、外していないカレンダーを ID の順に max 件まで、最後に同期した結果のトークンを付けて返す。
+func (s Syncs) Claim(_ context.Context, max int, _ time.Duration) ([]calendar.SyncState, error) {
+	var out []calendar.SyncState
+	for _, c := range s.Calendars {
+		if c.DisabledAt != nil {
+			continue
+		}
+		st := calendar.SyncState{Calendar: c, LastStatus: calendar.SyncNever}
+		if r, ok := s.SyncResults[c.ID]; ok {
+			st.SyncToken, st.LastStatus = r.SyncToken, r.Status
+		}
+		out = append(out, st)
+	}
+	slices.SortFunc(out, func(a, b calendar.SyncState) int { return strings.Compare(a.Calendar.ID, b.Calendar.ID) })
+	return out[:min(max, len(out))], nil
+}
+
+// Finish は、同期した結果を書く。
+func (s Syncs) Finish(_ context.Context, st calendar.SyncState, r calendar.SyncResult) error {
+	s.SyncResults[st.Calendar.ID] = r
 	return nil
 }

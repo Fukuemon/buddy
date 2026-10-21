@@ -40,6 +40,9 @@ const (
 	ErrorForbidden ExportErrorCode = "forbidden"
 	// ErrorUnavailable は、外部のカレンダーに届かないか、外部のカレンダーが一時的な誤りを返したことを表す。
 	ErrorUnavailable ExportErrorCode = "unavailable"
+	// ErrorUnappliable は、外部のカレンダーでの予定の変更を、buddy の予定に読み替えられなかったことを表す。
+	// 終日にした予定、題名の利用者を引けない予定、繰り返しの予定そのものの変更が当たる。
+	ErrorUnappliable ExportErrorCode = "unappliable"
 )
 
 // Target は、書き出す予定である。ScheduleID と RecurringScheduleID のどちらか 1 つを持つ。
@@ -62,7 +65,28 @@ type Export struct {
 	Overwrite     bool
 	ErrorCode     *ExportErrorCode
 	NextAttemptAt time.Time
-	UpdatedAt     time.Time
+	// LockedUntil は、書いている処理が待ちを持つ期限で、取られていなければ nil である。
+	LockedUntil *time.Time
+	UpdatedAt   time.Time
+}
+
+// InReview は、待ちが確かめの要る状態（conflict か failed）かを返す。
+func (e Export) InReview() bool {
+	return e.Status == ExportConflict || e.Status == ExportFailed
+}
+
+// Writing は、書き出しの処理が、時刻 now に待ちを取って外部のカレンダーに書いているかを返す。
+func (e Export) Writing(now time.Time) bool {
+	return e.Status == ExportPending && e.LockedUntil != nil && e.LockedUntil.After(now)
+}
+
+// Acceptable は、外部のカレンダーの内容を buddy の予定に当てて、待ちを解けるかを返す。
+// 単発の予定で、外部のカレンダーで予定が変わっていたか消えていた待ちだけが当たる。
+func (e Export) Acceptable() bool {
+	if e.ScheduleID == "" || e.Status != ExportConflict || e.ErrorCode == nil {
+		return false
+	}
+	return *e.ErrorCode == ErrorPreconditionFailed || *e.ErrorCode == ErrorNotFound
 }
 
 // ExportResult は、1 回書こうとした結果である。Status が ExportPending なら、RetryAfter の後に書き直す。
@@ -101,6 +125,14 @@ type ExportRepository interface {
 	ListIssues(ctx context.Context, facilityID string) ([]ExportIssue, error)
 	// Retry は、確かめが要る待ち id を、buddy の内容で書き直す pending の待ちにする。確かめが要る待ちでなければ apperr.ErrConflict を返す。
 	Retry(ctx context.Context, id string) error
+	// Open は、t の終わっていない待ちを返す。無いときは apperr.ErrNotFound を返す。
+	Open(ctx context.Context, t Target) (Export, error)
+	// Hold は、t の終わっていない待ちを、理由が code の確かめが要る待ち（conflict）にする。無ければ ID が id の待ちを足す。
+	// Revision を 1 つ増やし、書いている処理の結果を捨てさせる。
+	Hold(ctx context.Context, id string, t Target, code ExportErrorCode) error
+	// Resolve は、確かめが要る待ち id を、外部のカレンダーの内容を buddy に当てて終えた待ちにする。
+	// 確かめが要る待ちでなければ apperr.ErrConflict を返す。
+	Resolve(ctx context.Context, id string) error
 }
 
 // ExportCalendars は、書き出しの待ちを積むかを決めるために、職員のカレンダーと予定の対応を読む。

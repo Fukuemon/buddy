@@ -158,7 +158,7 @@ func (x *Exporter) exportRecurring(ctx context.Context, e Export) error {
 	}
 	exdates := rs.ExclusionDates
 	if link != nil {
-		if exdates, err = x.withoutInstances(ctx, *link, rs.ExclusionDates); err != nil {
+		if exdates, err = exportedExclusions(ctx, x.deps.Calendars, x.deps.Schedules, *link, rs.ExclusionDates); err != nil {
 			return err
 		}
 	}
@@ -166,19 +166,21 @@ func (x *Exporter) exportRecurring(ctx context.Context, e Export) error {
 	return x.sync(ctx, e, item{staffID: rs.StaffID, id: rs.ID, version: rs.Version, link: link, body: &b, recurringScheduleID: &rs.ID})
 }
 
-// withoutInstances は、除外する日 dates から、取り込んだ外部の例外の回が置き換えた日を除く。
-// その日を EXDATE にすると、外部の例外の回が消えるためである。
-func (x *Exporter) withoutInstances(ctx context.Context, parent Link, dates []civil.Date) ([]civil.Date, error) {
-	links, err := x.deps.Calendars.ListLinks(ctx, parent.ExternalCalendarID)
+// exportedExclusions は、繰り返しの予定 parent の除外する日 dates から、外部の例外の回と対応する予定が置き換えた日を除き、
+// 外部の予定の EXDATE に書く日を返す。その日を EXDATE にすると、外部の例外の回が消えるためである。
+func exportedExclusions(ctx context.Context, links interface {
+	ListLinks(ctx context.Context, externalCalendarID string) ([]Link, error)
+}, schedules kernel.Finder[schedule.Detail], parent Link, dates []civil.Date) ([]civil.Date, error) {
+	all, err := links.ListLinks(ctx, parent.ExternalCalendarID)
 	if err != nil {
 		return nil, err
 	}
 	replaced := map[civil.Date]bool{}
-	for _, l := range links {
+	for _, l := range all {
 		if l.RecurringEventID == nil || *l.RecurringEventID != parent.ExternalEventID || l.ScheduleID == nil {
 			continue
 		}
-		d, err := x.deps.Schedules.Get(ctx, *l.ScheduleID)
+		d, err := schedules.Get(ctx, *l.ScheduleID)
 		if err != nil {
 			return nil, err
 		}

@@ -28,7 +28,7 @@ type CalendarExport struct {
 	LockedUntil *time.Time
 	// 外部の予定の etag を比べずに、buddy の内容で書き直すか
 	Overwrite bool
-	// 最後に書けなかった理由。外部の予定の題名とカレンダーの ID を含めない
+	// 最後に書けなかった理由。外部の予定の題名とカレンダーの ID を含めない。unappliable は、外部の変更を buddy の予定に読み替えられなかったこと
 	ErrorCode  *string
 	FinishedAt *time.Time
 	CreatedAt  time.Time
@@ -43,11 +43,15 @@ type CalendarSyncState struct {
 	SyncToken *string
 	// never、succeeded、failed
 	LastStatus string
-	// 最後の失敗の理由。外部の予定の題名を含めない
+	// 最後の失敗の理由。unreadable（共有が無い）か unavailable（届かない）。外部の予定の題名とカレンダーの ID を含めない
 	LastError    *string
 	LastSyncedAt *time.Time
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
+	// この時刻より後に、外部のカレンダーの変わった予定を読む
+	NextSyncAt time.Time
+	// 読んでいる処理が持つ期限。過ぎたら、ほかの処理が読んでよい
+	LockedUntil *time.Time
 }
 
 // 事業所の部署

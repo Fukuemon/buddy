@@ -168,6 +168,109 @@ func (q *Queries) GetCalendarExport(ctx context.Context, id string) (CalendarExp
 	return i, err
 }
 
+const getOpenRecurringScheduleExport = `-- name: GetOpenRecurringScheduleExport :one
+SELECT id, facility_id, schedule_id, recurring_schedule_id, status, revision, attempts, next_attempt_at, locked_until, overwrite, error_code, finished_at, created_at, updated_at FROM calendar_exports WHERE recurring_schedule_id = $1 AND status <> 'succeeded'
+`
+
+func (q *Queries) GetOpenRecurringScheduleExport(ctx context.Context, recurringScheduleID *string) (CalendarExport, error) {
+	row := q.db.QueryRow(ctx, getOpenRecurringScheduleExport, recurringScheduleID)
+	var i CalendarExport
+	err := row.Scan(
+		&i.ID,
+		&i.FacilityID,
+		&i.ScheduleID,
+		&i.RecurringScheduleID,
+		&i.Status,
+		&i.Revision,
+		&i.Attempts,
+		&i.NextAttemptAt,
+		&i.LockedUntil,
+		&i.Overwrite,
+		&i.ErrorCode,
+		&i.FinishedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getOpenScheduleExport = `-- name: GetOpenScheduleExport :one
+SELECT id, facility_id, schedule_id, recurring_schedule_id, status, revision, attempts, next_attempt_at, locked_until, overwrite, error_code, finished_at, created_at, updated_at FROM calendar_exports WHERE schedule_id = $1 AND status <> 'succeeded'
+`
+
+func (q *Queries) GetOpenScheduleExport(ctx context.Context, scheduleID *string) (CalendarExport, error) {
+	row := q.db.QueryRow(ctx, getOpenScheduleExport, scheduleID)
+	var i CalendarExport
+	err := row.Scan(
+		&i.ID,
+		&i.FacilityID,
+		&i.ScheduleID,
+		&i.RecurringScheduleID,
+		&i.Status,
+		&i.Revision,
+		&i.Attempts,
+		&i.NextAttemptAt,
+		&i.LockedUntil,
+		&i.Overwrite,
+		&i.ErrorCode,
+		&i.FinishedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const holdRecurringScheduleExport = `-- name: HoldRecurringScheduleExport :exec
+INSERT INTO calendar_exports (id, facility_id, recurring_schedule_id, status, error_code) VALUES ($1, $2, $3, 'conflict', $4)
+ON CONFLICT (recurring_schedule_id) WHERE status <> 'succeeded' AND recurring_schedule_id IS NOT NULL
+DO UPDATE SET
+    revision = calendar_exports.revision + 1, status = 'conflict', error_code = EXCLUDED.error_code,
+    overwrite = false, locked_until = NULL
+`
+
+type HoldRecurringScheduleExportParams struct {
+	ID                  string
+	FacilityID          string
+	RecurringScheduleID *string
+	ErrorCode           *string
+}
+
+func (q *Queries) HoldRecurringScheduleExport(ctx context.Context, arg HoldRecurringScheduleExportParams) error {
+	_, err := q.db.Exec(ctx, holdRecurringScheduleExport,
+		arg.ID,
+		arg.FacilityID,
+		arg.RecurringScheduleID,
+		arg.ErrorCode,
+	)
+	return err
+}
+
+const holdScheduleExport = `-- name: HoldScheduleExport :exec
+INSERT INTO calendar_exports (id, facility_id, schedule_id, status, error_code) VALUES ($1, $2, $3, 'conflict', $4)
+ON CONFLICT (schedule_id) WHERE status <> 'succeeded' AND schedule_id IS NOT NULL
+DO UPDATE SET
+    revision = calendar_exports.revision + 1, status = 'conflict', error_code = EXCLUDED.error_code,
+    overwrite = false, locked_until = NULL
+`
+
+type HoldScheduleExportParams struct {
+	ID         string
+	FacilityID string
+	ScheduleID *string
+	ErrorCode  *string
+}
+
+// 外部の変更と buddy の変更が重なった予定を、確かめが要る待ちにする。書いている処理の結果は revision の違いで捨てる。
+func (q *Queries) HoldScheduleExport(ctx context.Context, arg HoldScheduleExportParams) error {
+	_, err := q.db.Exec(ctx, holdScheduleExport,
+		arg.ID,
+		arg.FacilityID,
+		arg.ScheduleID,
+		arg.ErrorCode,
+	)
+	return err
+}
+
 const listCalendarExportIssues = `-- name: ListCalendarExportIssues :many
 SELECT e.id, e.facility_id, e.schedule_id, e.recurring_schedule_id, e.status, e.revision, e.attempts, e.next_attempt_at, e.locked_until, e.overwrite, e.error_code, e.finished_at, e.created_at, e.updated_at,
        u.id AS staff_id, u.username AS staff_name,
@@ -259,6 +362,21 @@ type ReleaseCalendarExportParams struct {
 func (q *Queries) ReleaseCalendarExport(ctx context.Context, arg ReleaseCalendarExportParams) error {
 	_, err := q.db.Exec(ctx, releaseCalendarExport, arg.ID, arg.Attempts)
 	return err
+}
+
+const resolveCalendarExport = `-- name: ResolveCalendarExport :execrows
+UPDATE calendar_exports
+SET status = 'succeeded', error_code = NULL, overwrite = false, locked_until = NULL, finished_at = now()
+WHERE id = $1 AND status IN ('conflict', 'failed')
+`
+
+// 外部の内容を buddy に当てた、確かめが要る待ちを終える。
+func (q *Queries) ResolveCalendarExport(ctx context.Context, id string) (int64, error) {
+	result, err := q.db.Exec(ctx, resolveCalendarExport, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const retryCalendarExport = `-- name: RetryCalendarExport :execrows

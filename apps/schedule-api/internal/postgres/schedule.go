@@ -228,6 +228,15 @@ func (r *RecurringScheduleRepository) Create(ctx context.Context, rs schedule.Re
 	return translate("create recurring schedule", r.q(ctx).CreateRecurringSchedule(ctx, params))
 }
 
+// GetForUpdate は、トランザクションの終わりまで繰り返しの予定の行に排他のロックを取ってから、Get と同じ値を返す。
+// 繰り返しの予定が無いときは apperr.ErrNotFound を返す。トランザクションの中で呼ぶ。
+func (r *RecurringScheduleRepository) GetForUpdate(ctx context.Context, id string) (schedule.RecurringDetail, error) {
+	if _, err := r.q(ctx).LockRecurringSchedule(ctx, id); err != nil {
+		return schedule.RecurringDetail{}, translate("lock recurring schedule", err)
+	}
+	return r.Get(ctx, id)
+}
+
 // Get は、ID が id の繰り返しの予定を、種類と職員の名前、規則、除外する日付（日付の順）、訪問の情報と区分を付けて返す。無いときは apperr.ErrNotFound を返す。
 func (r *RecurringScheduleRepository) Get(ctx context.Context, id string) (schedule.RecurringDetail, error) {
 	row, err := r.q(ctx).GetRecurringScheduleDetail(ctx, id)

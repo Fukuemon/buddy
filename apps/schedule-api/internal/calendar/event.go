@@ -35,6 +35,24 @@ type When struct {
 	TimeZone string
 }
 
+// localDateTime は、オフセットの無い日時の形である。予定の TimeZone の暦で読む。
+const localDateTime = "2006-01-02T15:04:05"
+
+// Instant は、時刻のある予定の日時を返す。DateTime は RFC 3339 で読み、オフセットが無ければ TimeZone の暦で読む。
+// Google は、予定を読む要求にタイムゾーンを付けると、オフセットの付いた日時を返す。オフセットの無い日時は、buddy が書いた予定を
+// 偽物の API から読むときに当たる。
+func (w When) Instant() (time.Time, error) {
+	t, err := time.Parse(time.RFC3339, w.DateTime)
+	if err == nil || w.TimeZone == "" {
+		return t, err
+	}
+	loc, lerr := time.LoadLocation(w.TimeZone)
+	if lerr != nil {
+		return time.Time{}, err
+	}
+	return time.ParseInLocation(localDateTime, w.DateTime, loc)
+}
+
 // Event は、外部のカレンダーの 1 つの予定である。繰り返しの予定は、親の予定と、変えるか取り消した回（例外）に分かれて来る。
 type Event struct {
 	ID      string
@@ -61,7 +79,15 @@ var (
 	ErrUnavailable = errors.New("外部のカレンダーから予定を読めませんでした")
 	// ErrNotConfigured は、外部のカレンダーを読む認証の情報が設定されていないことを表す。
 	ErrNotConfigured = errors.New("外部のカレンダーを読む設定がありません")
+	// ErrSyncTokenExpired は、増分の取得に使うトークンが切れたこと（410）を表す。全ての予定を読み直す。
+	ErrSyncTokenExpired = errors.New("同期のトークンが切れました")
 )
+
+// Changes は、外部のカレンダーの変わった予定と、次の増分の取得に使うトークンである。
+type Changes struct {
+	Events        []Event
+	NextSyncToken string
+}
 
 // EventSource は、外部のカレンダーから期間の予定を読む。誤りは ErrUnreadable か ErrUnavailable を包む。
 type EventSource interface {
@@ -73,4 +99,10 @@ type EventSource interface {
 	Instances(ctx context.Context, calendarID, eventID string, timeMin, timeMax time.Time) ([]Event, error)
 	// Check は、calendarID のカレンダーの予定を読めるかを確かめる。
 	Check(ctx context.Context, calendarID string) error
+	// Changes は、calendarID のカレンダーの、syncToken を受け取った後に変わった予定を、消した予定と繰り返しの例外の回を含めて、
+	// 繰り返しを展開せずに返す。syncToken が空なら、消した予定を含む全ての予定を返す。
+	// トークンが切れていれば ErrSyncTokenExpired を包んだエラーを返す。
+	Changes(ctx context.Context, calendarID, syncToken string) (Changes, error)
+	// Event は、calendarID のカレンダーの予定 eventID を返す。消した予定は、Status が cancelled で返る。
+	Event(ctx context.Context, calendarID, eventID string) (Event, error)
 }

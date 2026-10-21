@@ -88,6 +88,53 @@ func (r *Reader) Check(ctx context.Context, calendarID string) error {
 	return checkAccess(page)
 }
 
+// Changes は、calendarID のカレンダーの、syncToken を受け取った後に変わった予定を、全てのページを読んで返す。
+// syncToken が空なら、消した予定を含む全ての予定を読む。繰り返しの予定は展開しない。日時は Asia/Tokyo で返る。
+// トークンが切れていれば（410）calendar.ErrSyncTokenExpired を包んだエラーを返す。ほかのエラーは Events と同じである。
+// 出典: https://developers.google.com/workspace/calendar/api/guides/sync
+func (r *Reader) Changes(ctx context.Context, calendarID, syncToken string) (calendar.Changes, error) {
+	var out calendar.Changes
+	// syncToken と一緒に、期間（timeMin、timeMax）は渡せない。
+	call := r.svc.Events.List(calendarID).
+		TimeZone(calendar.TimeZone).
+		SingleEvents(false).
+		ShowDeleted(true).
+		MaxResults(2500)
+	if syncToken != "" {
+		call.SyncToken(syncToken)
+	}
+	err := call.Pages(ctx, func(page *calendarv3.Events) error {
+		if err := checkAccess(page); err != nil {
+			return err
+		}
+		for _, ev := range page.Items {
+			out.Events = append(out.Events, toEvent(ev))
+		}
+		if page.NextSyncToken != "" {
+			out.NextSyncToken = page.NextSyncToken
+		}
+		return nil
+	})
+	var gerr *googleapi.Error
+	if errors.As(err, &gerr) && gerr.Code == http.StatusGone {
+		return calendar.Changes{}, fmt.Errorf("変わった予定を取れない: %w", calendar.ErrSyncTokenExpired)
+	}
+	if err != nil {
+		return calendar.Changes{}, wrap("変わった予定を取れない", err)
+	}
+	return out, nil
+}
+
+// Event は、calendarID のカレンダーの予定 eventID を返す。消した予定は、Status が cancelled で返る。エラーは Events と同じである。
+// 出典: https://developers.google.com/workspace/calendar/api/v3/reference/events/get
+func (r *Reader) Event(ctx context.Context, calendarID, eventID string) (calendar.Event, error) {
+	ev, err := r.svc.Events.Get(calendarID, eventID).TimeZone(calendar.TimeZone).Context(ctx).Do()
+	if err != nil {
+		return calendar.Event{}, wrap("予定を取れない", err)
+	}
+	return toEvent(ev), nil
+}
+
 // errFreeBusy は、カレンダーが空き時間だけの共有であることを表す。
 var errFreeBusy = fmt.Errorf("%w: 空き時間だけの共有である", calendar.ErrUnreadable)
 

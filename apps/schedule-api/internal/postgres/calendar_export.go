@@ -35,6 +35,7 @@ func toExport(e sqlcgen.CalendarExport) calendar.Export {
 		Attempts:      int(e.Attempts),
 		Overwrite:     e.Overwrite,
 		NextAttemptAt: e.NextAttemptAt,
+		LockedUntil:   e.LockedUntil,
 		UpdatedAt:     e.UpdatedAt,
 	}
 	if e.ErrorCode != nil {
@@ -153,6 +154,48 @@ func (r *CalendarExportRepository) Retry(ctx context.Context, id string) error {
 	n, err := r.q(ctx).RetryCalendarExport(ctx, id)
 	if err != nil {
 		return translate("retry calendar export", err)
+	}
+	if n == 0 {
+		return apperr.ErrConflict
+	}
+	return nil
+}
+
+// Open は、t の終わっていない待ちを返す。無いときは apperr.ErrNotFound を返す。
+func (r *CalendarExportRepository) Open(ctx context.Context, t calendar.Target) (calendar.Export, error) {
+	var (
+		e   sqlcgen.CalendarExport
+		err error
+	)
+	if t.ScheduleID != "" {
+		e, err = r.q(ctx).GetOpenScheduleExport(ctx, &t.ScheduleID)
+	} else {
+		e, err = r.q(ctx).GetOpenRecurringScheduleExport(ctx, &t.RecurringScheduleID)
+	}
+	if err != nil {
+		return calendar.Export{}, translate("get open calendar export", err)
+	}
+	return toExport(e), nil
+}
+
+// Hold は、t の終わっていない待ちを、理由が code の確かめが要る待ちにするか、ID が id の確かめが要る待ちを足す。
+func (r *CalendarExportRepository) Hold(ctx context.Context, id string, t calendar.Target, code calendar.ExportErrorCode) error {
+	c := string(code)
+	if t.ScheduleID != "" {
+		return translate("hold schedule export", r.q(ctx).HoldScheduleExport(ctx, sqlcgen.HoldScheduleExportParams{
+			ID: id, FacilityID: t.FacilityID, ScheduleID: &t.ScheduleID, ErrorCode: &c,
+		}))
+	}
+	return translate("hold recurring schedule export", r.q(ctx).HoldRecurringScheduleExport(ctx, sqlcgen.HoldRecurringScheduleExportParams{
+		ID: id, FacilityID: t.FacilityID, RecurringScheduleID: &t.RecurringScheduleID, ErrorCode: &c,
+	}))
+}
+
+// Resolve は、確かめが要る待ち id を終えた待ちにする。確かめが要る待ちでなければ apperr.ErrConflict を返す。
+func (r *CalendarExportRepository) Resolve(ctx context.Context, id string) error {
+	n, err := r.q(ctx).ResolveCalendarExport(ctx, id)
+	if err != nil {
+		return translate("resolve calendar export", err)
 	}
 	if n == 0 {
 		return apperr.ErrConflict
