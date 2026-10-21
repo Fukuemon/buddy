@@ -7,9 +7,6 @@ import * as stories from './ScheduleCreateModalContainer.stories'
 
 const { Visit } = composeStories(stories)
 
-/** 開いたときの日付と違う日付。開いたときの日付は今日なので、固定の日付だと今日に重なる日に変更にならない */
-const otherDate = (opened: string) => (opened === '2000-01-01' ? '2000-01-02' : '2000-01-01')
-
 describe('ScheduleCreateModalContainer', () => {
   afterEach(() => {
     vi.restoreAllMocks()
@@ -19,11 +16,11 @@ describe('ScheduleCreateModalContainer', () => {
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
     render(<Visit />)
 
-    const date = await screen.findByTestId('schedule-form-date')
-    const changed = otherDate((date as HTMLInputElement).value)
-    fireEvent.change(date, { target: { value: changed } })
+    fireEvent.change(await screen.findByTestId('schedule-form-date'), {
+      target: { value: '2000-01-01' },
+    })
     await userEvent.click(screen.getByTestId('schedule-kind-tab-normal'))
-    expect(screen.getByTestId('schedule-form-date')).toHaveValue(changed)
+    expect(screen.getByTestId('schedule-form-date')).toHaveValue('2000-01-01')
     await userEvent.click(screen.getByTestId('modal-close'))
 
     expect(confirm).toHaveBeenCalledOnce()
@@ -46,7 +43,7 @@ describe('ScheduleCreateModalContainer', () => {
 
     const date = await screen.findByTestId('schedule-form-date')
     const opened = (date as HTMLInputElement).value
-    fireEvent.change(date, { target: { value: otherDate(opened) } })
+    fireEvent.change(date, { target: { value: '2000-01-01' } })
     fireEvent.change(date, { target: { value: opened } })
     await userEvent.click(screen.getByTestId('schedule-kind-tab-normal'))
     await userEvent.click(screen.getByTestId('modal-close'))

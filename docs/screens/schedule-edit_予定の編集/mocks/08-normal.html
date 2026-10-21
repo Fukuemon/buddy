@@ -15,16 +15,16 @@
         <div class="screen-body">
           <div class="wf-modal-stage">
             <div aria-hidden="true" class="wf-bg-calendar"></div>
-            <div class="wf-overlay" data-m="1"></div>
+            <div class="wf-overlay" data-m="1" tabindex="-1" data-go="../../schedule-detail_予定の詳細/mocks/02-normal.html"></div>
             <div aria-label="予定の編集" class="wf-modal" data-testid="schedule-form-modal" role="dialog">
               <div class="wf-modal__header">
-                <span aria-label="閉じる" class="wf-btn wf-btn--icon" data-m="2" data-testid="modal-close"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+                <span aria-label="閉じる" class="wf-btn wf-btn--icon" data-m="2" data-testid="modal-close" data-escape data-go="../../schedule-detail_予定の詳細/mocks/02-normal.html"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
                 <h2 class="wf-modal__title" data-m="3">予定の編集</h2>
               </div>
               <div class="wf-modal__body">
                 <div class="wf-split" data-testid="schedule-form">
                   <div class="wf-stack">
-                    <span class="wf-summary" data-m="4" data-testid="schedule-field-title">
+                    <span class="wf-summary" data-m="4" data-testid="schedule-field-title" data-go="09-normal-title.html">
                       <span class="wf-label">タイトル</span>
                       <span><span class="wf-text wf-text--l"></span></span>
                     </span>
@@ -70,5 +70,6 @@
       <div class="markers"></div>
     </div>
     <script src="../../_common/mock.js"></script>
+    <script src="../../_common/interact.js"></script>
   </body>
 </html>

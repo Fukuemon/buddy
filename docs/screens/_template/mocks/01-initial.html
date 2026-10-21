@@ -14,11 +14,13 @@
       <div class="screen">
         <div class="screen-body">
           <!-- 画面を書く。構成要素の表の要素に data-m="<番号>" を、E2E が指す要素に data-testid を付ける -->
+          <!-- 画面の中の操作は、data-go、data-toggle、data-choice、data-open と data-close で付ける。書き方は画面仕様書の規約の「画面の中の操作」にある -->
           <button type="button" class="wf-btn" data-m="1" data-testid="<画面 ID>-<要素>">ボタン</button>
         </div>
       </div>
       <div class="markers"></div>
     </div>
     <script src="../../_common/mock.js"></script>
+    <script src="../../_common/interact.js"></script>
   </body>
 </html>

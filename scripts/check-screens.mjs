@@ -25,6 +25,8 @@ const VIEWS = new Set(
     ),
   ].map((m) => m[1]),
 )
+const SCRIPTS = ['../../_common/mock.js', '../../_common/interact.js']
+const GO_TARGET = /^(\.\.\/\.\.\/[a-z]+-[a-z]+_[^/]+\/mocks\/)?\d{2}-[a-z0-9-]+\.html$/
 const TESTID = /^[a-z][a-z0-9]*(-([a-z0-9]+(_[a-z0-9]+)*|\{[^}]+\}))+$/
 const TABLE_HEADER = ['番号', '種別', '要素名', '仕様']
 const FORBIDDEN = [
@@ -222,6 +224,33 @@ const readStates = (markdown, specPath) => {
   return states
 }
 
+/** 画面の中の操作の属性を確かめる。値が空でないか、data-escape を操作の属性を持つ要素に付けたか、data-go の先がモックとしてあるか、data-open と data-close の先の data-panel があるか */
+const checkInteractions = (code, mockPath) => {
+  for (const match of code.matchAll(/\sdata-go="([^"]*)"/g)) {
+    const target = match[1]
+    if (!GO_TARGET.test(target)) {
+      report(
+        mockPath,
+        `data-go="${target}" を <モック>.html か ../../<画面のディレクトリ>/mocks/<モック>.html にする`,
+      )
+      continue
+    }
+    if (!existsSync(join(dirname(mockPath), target)))
+      report(mockPath, `data-go="${target}" のモックが無い`)
+  }
+  for (const match of code.matchAll(/\sdata-(go|choice|panel|open|close)(?:=(?:""|'')|(?=[\s/>]))/g))
+    report(mockPath, `data-${match[1]} の値が空である`)
+  for (const tag of code.matchAll(/<[a-z][^>]*\sdata-escape\b[^>]*>/g)) {
+    if (!/\sdata-(go|toggle|choice|open|close)\b/.test(tag[0]))
+      report(mockPath, `data-escape を操作の属性の無い要素に付けている: ${tag[0]}`)
+  }
+  const panels = new Set([...code.matchAll(/\sdata-panel="([^"]*)"/g)].map((m) => m[1]))
+  for (const match of code.matchAll(/\sdata-(open|close)="([^"]*)"/g)) {
+    if (!panels.has(match[2]))
+      report(mockPath, `data-${match[1]}="${match[2]}" の data-panel が無い`)
+  }
+}
+
 const checkMock = (mockPath, screenId) => {
   const html = readFileSync(mockPath, 'utf8')
   const code = stripComments(html)
@@ -244,8 +273,10 @@ const checkMock = (mockPath, screenId) => {
       report(mockPath, `class="${cls}" の要素が無い`)
   }
   if (!/<div class="markers">\s*<\/div>/.test(html)) report(mockPath, '.markers は空にする')
-  const scripts = [...html.matchAll(/<script\b[^>]*\bsrc="([^"]*)"/g)].map((m) => m[1])
-  if (scripts[0] !== '../../_common/mock.js') report(mockPath, '../../_common/mock.js を読む')
+  const scripts = [...code.matchAll(/<script\b[^>]*>/g)].map((m) => attr(m[0], 'src'))
+  if (scripts.join() !== SCRIPTS.join())
+    report(mockPath, `script は ${SCRIPTS.join('、')} だけをこの順に読む`)
+  checkInteractions(code, mockPath)
   for (const [pattern, label] of FORBIDDEN) {
     if (pattern.test(code)) report(mockPath, `${label}を使わない`)
   }

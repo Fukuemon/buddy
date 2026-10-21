@@ -79,6 +79,15 @@ body:not([data-testids='on']) .marker__testid {
   display: none;
 }
 
+/* 画面の中の操作で押せる要素。操作は interact.js が data-* の属性で決める */
+.screen :is([data-go], [data-toggle], [data-choice], [data-open], [data-close]) {
+  cursor: pointer;
+}
+
+.screen [aria-disabled='true'] {
+  cursor: default;
+}
+
 /* 端末と番号の切り替え。mock.js が body の末尾に作る */
 .mock-toolbar {
   position: sticky;
