@@ -801,18 +801,12 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
-        /** @description 名前などの一意の値が重なるか、キャンセル済みの予定を変えるかキャンセルしようとしたか、繰り返しの回をすでに置き換えた。`code` は conflict */
+        /** @description 名前などの一意の値が重なるか、キャンセル済みの予定を変えるかキャンセルしようとしたか、繰り返しの回をすでに置き換えた。`code` は conflict。`message` は衝突の原因で、操作によって変わる */
         Conflict: {
             headers: {
                 [name: string]: unknown;
             };
             content: {
-                /**
-                 * @example {
-                 *       "code": "conflict",
-                 *       "message": "リソースがすでに存在します"
-                 *     }
-                 */
                 "application/json": components["schemas"]["Error"];
             };
         };
@@ -1737,6 +1731,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "code": "conflict",
+                     *       "message": "キャンセル済みの予定は変えられません"
+                     *     }
+                     */
                     "application/json": components["schemas"]["Error"];
                 };
             };
@@ -1779,6 +1779,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "code": "conflict",
+                     *       "message": "この予定はすでにキャンセルされています"
+                     *     }
+                     */
                     "application/json": components["schemas"]["Error"];
                 };
             };
@@ -1852,6 +1858,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "code": "conflict",
+                     *       "message": "2026-10-12 の回はすでに置き換えられています"
+                     *     }
+                     */
                     "application/json": components["schemas"]["Error"];
                 };
             };

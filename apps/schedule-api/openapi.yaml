@@ -726,6 +726,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { code: conflict, message: "キャンセル済みの予定は変えられません" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/schedules/{schedule_id}/cancel:
@@ -758,6 +759,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { code: conflict, message: "この予定はすでにキャンセルされています" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/schedules/recurring/{recurring_schedule_id}:
@@ -816,6 +818,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { code: conflict, message: "2026-10-12 の回はすでに置き換えられています" }
         "500": { $ref: "#/components/responses/InternalError" }
 
 components:
@@ -897,11 +900,26 @@ components:
           schema: { $ref: "#/components/schemas/Error" }
           example: { code: not_found, message: "リソースが見つかりません" }
     Conflict:
-      description: 名前などの一意の値が重なるか、キャンセル済みの予定を変えるかキャンセルしようとしたか、繰り返しの回をすでに置き換えた。`code` は conflict
+      description: 名前などの一意の値が重なるか、キャンセル済みの予定を変えるかキャンセルしようとしたか、繰り返しの回をすでに置き換えた。`code` は conflict。`message` は衝突の原因で、操作によって変わる
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
-          example: { code: conflict, message: "リソースがすでに存在します" }
+          examples:
+            team:
+              summary: 同じ事業所に同じ名前のチームがある
+              value: { code: conflict, message: "チーム 訪問看護 はこの事業所にすでにあります" }
+            position:
+              summary: 同じ事業所に同じ名前の役職がある
+              value: { code: conflict, message: "役職 チームリーダー はこの事業所にすでにあります" }
+            user:
+              summary: 同じ事業所に同じメールの職員がいる
+              value: { code: conflict, message: "メール staff@example.com の職員はこの事業所にすでにいます" }
+            policy:
+              summary: 職員が同じ権限をすでに持っている
+              value: { code: conflict, message: "職員はすでに権限 01M3TC5H00QV17BC0J9V3393ZP を持っています" }
+            duplicate:
+              summary: 原因を特定できない一意の値の重なり
+              value: { code: conflict, message: "同じ内容のデータがすでにあります" }
     InternalError:
       description: サーバーの誤り。`code` は internal
       content:
