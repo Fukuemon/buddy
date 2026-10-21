@@ -28,7 +28,7 @@ status: stable
   - 機能のパッケージの間は、`organization`、`staff`、`visit`、`patient`、`schedule`、`calendar` の順にだけ import する。`principal` は `organization` と `staff` に依存し、`schedule`、`access`、`httpapi`、`cmd` から使う。
   - 機能のパッケージは、自分の集約のリポジトリのインターフェイスと、使う側で定義した小さなインターフェイス（`kernel.Finder` か 1〜2 のメソッド）だけに依存する。ほかの機能のリポジトリのインターフェイスは import しない。トランザクションは `tx.Transactor` で受ける。アダプタを import しない。`access` は機能のパッケージではないので、この規則の対象の外にする。
   - `config` は DB のアダプタを import しない。`cmd` が `config` の値をアダプタの設定に写す。
-  - `mysql`、`oidc`、`ulid` は機能のパッケージのインターフェイスを実装する。`httpapi` から `mysql` と `oidc` を import するのは、テストのファイルだけにする。`httpapi` は、パスの ID の形の確認に `ulid` を使う。
+  - `mysql`、`oidc`、`ulid`、`gcal` は機能のパッケージのインターフェイスを実装する。`httpapi` から `mysql` と `oidc` を import するのは、テストのファイルだけにする。`httpapi` は、パスの ID の形の確認に `ulid` を使う。
   - `inmem` を import するのは、テストのファイルだけにする。
 - receipt-api の依存は、`record` と `civil` を末端にして、読み込み、正規化、対の作成、判定、つなぐ段（`check`）、取得元、HTTP の順の 1 方向に限る。判定はサービスの規則（`servicerule`）を、取得元は Google カレンダー（`gcal`）を使う。
 - 依存の向きを確かめる lint は入れていない。レビューで確かめる。E2E の層の向きだけは、`packages/e2e/eslint/e2e-authoring-rule.mjs` が止める。
