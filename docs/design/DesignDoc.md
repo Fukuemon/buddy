@@ -62,12 +62,13 @@ flowchart TB
   receipt -- "サービスアカウントで予定を取る" --> gcal
   schedule -- "SQL" --> mysql
   schedule -. "JWKS を取る" .-> broker
+  receipt -. "JWKS を取る" .-> broker
 ```
 
 - web だけがブラウザと話し、API はブラウザから直接は呼ばれない。
 - receipt-api は、サービスアカウントに閲覧の権限で共有された職員のカレンダーだけを読む。
 - receipt-api は DB を持たない。上げた CSV と照合の結果を保存しない。
-- receipt-api は、まだ access token を確かめない（#47）。web の BFF からだけ呼ぶ。
+- receipt-api は、トークンの組織に結び付けたカレンダーだけを読む。
 
 ## Components
 
@@ -89,6 +90,7 @@ flowchart TB
 
 - 予定と実績の CSV を正規化し、対にし、判定して、4 つの区分の結果を返す。
 - 予定は、予定の CSV か Google カレンダーから取る。
+- access token を検証する。事業所のデータを持たないので、職員の特定と事業所の確認はしない。Google カレンダーは、トークンの組織に結び付けたカレンダーだけを読む。
 - 持たないもの: 予定と職員のデータ。DB。
 - 規則は [レセプトの照合の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/DesignDoc.md) にある。
 
@@ -109,9 +111,9 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 | --- | --- | --- | --- | --- |
 | `PORT` | 使う | 任意 | 任意 | 待ち受けるポート。API の既定は `8080`。web のイメージは `3000` を入れる |
 | `LOG_LEVEL` | 使わない | 任意 | 任意 | ログの段階。既定は `info` |
-| `OIDC_ISSUER` | 使う | 使う | 使わない | ブローカーの発行者の URL。JWKS の場所もここから求める |
-| `OIDC_AUDIENCE` | 使わない | 使う | 使わない | access token の `aud` に求める値 |
-| `OIDC_ORG_CLAIM` | 使わない | 任意 | 使わない | access token で組織の ID を持つクレームの名前。既定は `org_id` |
+| `OIDC_ISSUER` | 使う | 使う | 使う | ブローカーの発行者の URL。JWKS の場所もここから求める |
+| `OIDC_AUDIENCE` | 使わない | 使う | 使う | access token の `aud` に求める値 |
+| `OIDC_ORG_CLAIM` | 使わない | 任意 | 任意 | access token で組織の ID を持つクレームの名前。既定は `org_id` |
 | `OIDC_CLIENT_ID` | 使う | 使わない | 使わない | web のクライアントの ID |
 | `OIDC_CLIENT_SECRET` | 使う | 使わない | 使わない | web のクライアントの秘密の値 |
 | `OIDC_AUTHORIZATION_ENDPOINT` | 任意 | 使わない | 使わない | ブラウザを転送する認可の URL。web とブラウザから届く IdP の URL が違う手元の環境だけで渡す |
@@ -124,7 +126,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 | `DB_USER`、`DB_PASSWORD`、`DB_NAME` | 使わない | 使う | 使わない | MySQL の利用者、パスワード、データベースの名前 |
 | `CORS_ALLOW_ORIGINS` | 使わない | 任意 | 使わない | CORS を許すオリジン。空なら CORS のヘッダーを返さない |
 | `MAX_UPLOAD_BYTES` | 使わない | 使わない | 任意 | 照合の要求の本文の上限。既定は 10 MiB |
-| `GOOGLE_CALENDARS_FILE` | 使わない | 使わない | 任意 | 職員とカレンダーの対応の JSON。空なら Google カレンダーから予定を取らない |
+| `GOOGLE_CALENDARS_FILE` | 使わない | 使わない | 任意 | 職員とカレンダーと組織の対応の JSON。空なら Google カレンダーから予定を取らない |
 | `GOOGLE_CALENDAR_ENDPOINT` | 使わない | 使わない | 任意 | Calendar API の代わりに呼ぶ URL。テストの偽物に向けるときだけ渡す |
 
 - web の `VITE_API_MODE` は、イメージのビルドのときに埋め込む値で、実行のときには読まない。イメージは `bff` でビルドする。
@@ -149,7 +151,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 ### 認証
 
 - web は認可コードフローでログインし、トークンを Valkey のセッションに置く。ブラウザには cookie でセッションの ID だけを渡す。
-- schedule-api は access token の JWT を JWKS で検証し、署名、`iss`、`aud`、`exp`、`nbf` を確かめる。署名のアルゴリズムは RS256 と ES256 だけを受け付ける。失敗したら 401 を返す。
+- schedule-api と receipt-api は access token の JWT を JWKS で検証し、署名、`iss`、`aud`、`exp`、`nbf` を確かめる。署名のアルゴリズムは RS256 と ES256 だけを受け付ける。失敗したら 401 を返す。
 - 職員は事前にメールアドレスで登録し、初回のログインで `sub` と結び付く。
   - ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにする](../adr/0001-auth.md)
 

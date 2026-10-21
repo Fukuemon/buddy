@@ -3,9 +3,13 @@ module github.com/Fukuemon/buddy/apps/receipt-api
 go 1.27
 
 require (
+	github.com/MicahParks/jwkset v0.11.3
+	github.com/MicahParks/keyfunc/v3 v3.8.2
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/oapi-codegen/runtime v1.7.0
 	golang.org/x/oauth2 v0.37.0
 	golang.org/x/text v0.43.0
+	golang.org/x/time v0.16.0
 	google.golang.org/api v0.305.0
 )
 

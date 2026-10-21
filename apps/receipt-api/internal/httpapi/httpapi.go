@@ -32,6 +32,8 @@ type Config struct {
 	MaxUploadBytes int64
 	// Sources は、要求から予定の取得元を選ぶ。ゼロ値は予定の CSV だけを受ける。
 	Sources source.Selector
+	// Verifier は、/healthz と /readyz 以外の要求の access token を検証する。
+	Verifier TokenVerifier
 }
 
 type server struct {
@@ -42,7 +44,7 @@ type server struct {
 var _ openapi.StrictServerInterface = (*server)(nil)
 
 // NewHandler は、openapi.yaml の GET /healthz、GET /readyz と POST /v1/checks を持つ http.Handler を返す。
-// 定義にないパスとメソッドには、404 の openapi.Error を返す。
+// 定義にないパスとメソッドには、404 の openapi.Error を返す。/v1 の要求は、cfg.Verifier でトークンを確かめる。
 func NewHandler(logger *slog.Logger, cfg Config) http.Handler {
 	s := &server{logger: logger, cfg: cfg}
 	mux := http.NewServeMux()
@@ -60,7 +62,7 @@ func NewHandler(logger *slog.Logger, cfg Config) http.Handler {
 	})
 	openapi.HandlerWithOptions(strict, openapi.StdHTTPServerOptions{
 		BaseRouter:  mux,
-		Middlewares: []openapi.MiddlewareFunc{s.limitBody},
+		Middlewares: []openapi.MiddlewareFunc{s.limitBody, s.authenticate},
 	})
 	return s.logRequests(mux)
 }
@@ -90,7 +92,7 @@ func (s *server) CreateCheck(ctx context.Context, req openapi.CreateCheckRequest
 	if !ok {
 		return openapi.CreateCheck400JSONResponse(errorBody(openapi.MissingFile, "ファイルのフィールド "+FieldVisits+" がない")), nil
 	}
-	sreq := source.Request{Month: f.values[FieldMonth]}
+	sreq := source.Request{Month: f.values[FieldMonth], OrgID: identityFrom(ctx).OrgID}
 	sreq.Schedules, sreq.HasSchedules = f.files[FieldSchedules]
 	src, err := s.cfg.Sources.Select(sreq)
 	if err != nil {
@@ -123,9 +125,12 @@ func (s *server) selectError(ctx context.Context, err error) openapi.CreateCheck
 	case errors.Is(err, source.ErrNoSchedules):
 		return openapi.CreateCheck400JSONResponse(errorBody(openapi.MissingFile,
 			"ファイルのフィールド "+FieldSchedules+" か、フォームの値 "+FieldMonth+" がない"))
+	case errors.Is(err, source.ErrNoOrg):
+		return openapi.CreateCheck403JSONResponse(errorBody(openapi.Forbidden,
+			"トークンに組織がないので、"+FieldMonth+" では照合できない"))
 	case errors.Is(err, source.ErrCalendarNotConfigured):
 		return openapi.CreateCheck503JSONResponse(errorBody(openapi.CalendarNotConfigured,
-			"サーバーに Google カレンダーの設定がないので、"+FieldMonth+" では照合できない"))
+			"サーバーに事業所の Google カレンダーの設定がないので、"+FieldMonth+" では照合できない"))
 	case invalidMonth:
 		return openapi.CreateCheck400JSONResponse(errorBody(openapi.BadRequest, err.Error()))
 	default:

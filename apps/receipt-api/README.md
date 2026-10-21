@@ -14,7 +14,18 @@ mise install go golangci-lint
 ## 動かす
 
 ```sh
+# ブローカーの代わりに、偽物の発行者を別の端末で動かす
+go run ./cmd/devissuer -addr 127.0.0.1:9000
+
+export OIDC_ISSUER=http://127.0.0.1:9000 OIDC_AUDIENCE=receipt-api
 go run ./cmd/api
+```
+
+`curl localhost:8080/readyz` が `{"status":"ok"}` を返せば、起動できている。  
+`cmd/devissuer` は、`GET /token` で署名したトークンを返す。偽物の発行者は起動のたびに鍵を作り直すので、発行者を起動し直したら API も起動し直す。
+
+```sh
+TOKEN=$(curl -s '127.0.0.1:9000/token?sub=dev-aoki&org_id=org-sample' | jq -r .access_token)
 ```
 
 設定は環境変数で渡す。
@@ -22,6 +33,9 @@ go run ./cmd/api
 - `PORT`: 待ち受けるポート。既定は `8080`
 - `MAX_UPLOAD_BYTES`: `POST /v1/checks` の本文の上限のバイト数。既定は 10 MiB
 - `LOG_LEVEL`: `debug`、`info`、`warn`、`error` のいずれか。既定は `info`
+- `OIDC_ISSUER`: 必須。ブローカーの発行者の URL。トークンの `iss` と一致させ、discovery の文書をここから読む
+- `OIDC_AUDIENCE`: 必須。トークンの `aud` に求める値
+- `OIDC_ORG_CLAIM`: 組織の ID を持つクレームの名前。既定は `org_id`
 - `GOOGLE_CALENDARS_FILE`: 照合の対象のカレンダーの設定（JSON）のパス。空なら Google カレンダーを使わない
 - `GOOGLE_APPLICATION_CREDENTIALS`: Application Default Credentials が読む認証情報のファイルのパス
 - `GOOGLE_CALENDAR_ENDPOINT`: Calendar API の代わりに呼ぶ URL。偽物の API で試すためのもので、認証をしない
@@ -30,7 +44,7 @@ go run ./cmd/api
 
 ```sh
 docker build -t receipt-api .
-docker run --rm -p 8080:8080 receipt-api
+docker run --rm -p 8080:8080 -e OIDC_ISSUER=<発行者の URL> -e OIDC_AUDIENCE=receipt-api receipt-api
 ```
 
 ## テストとチェック
@@ -63,6 +77,7 @@ go generate ./...
 
 - `GET /healthz`、`GET /readyz`: `{"status":"ok"}` を返す。照合の API は起動に要る依存先を持たないので、`/readyz` も応答できれば 200 を返す
 - `POST /v1/checks`: multipart/form-data の `visits`（実訪問の CSV）と予定を照合する
+  - `Authorization: Bearer` の access token を求める
   - 予定は、ファイル `schedules`（予定の CSV）があればそれを使う。無くてフォームの値 `month`（`2024-04` の形）があれば、その月の予定を Google カレンダーから取る
   - Google カレンダーの予定のうち、題名を解釈できずに照合に使わなかったものは、`warnings` にカレンダー ID、予定の ID、開始の日時で返す
   - 結果は、`Accept` によらず JSON で返す。行ごとに区分、両側の値、項目ごとの判定を持つ。記号と CSV の書き出しは画面が持つ（[DesignDoc.md](DesignDoc.md)）
@@ -71,23 +86,27 @@ go generate ./...
 `testdata/` の架空の CSV で試すときは、次を実行する。
 
 ```sh
-curl -s -F visits=@testdata/visits_utf8.csv -F schedules=@testdata/schedules_utf8.csv \
+curl -s -H "Authorization: Bearer $TOKEN" \
+  -F visits=@testdata/visits_utf8.csv -F schedules=@testdata/schedules_utf8.csv \
   http://localhost:8080/v1/checks
-curl -s -F visits=@testdata/visits_cp932.csv -F schedules=@testdata/schedules_cp932.csv \
+curl -s -H "Authorization: Bearer $TOKEN" \
+  -F visits=@testdata/visits_cp932.csv -F schedules=@testdata/schedules_cp932.csv \
   http://localhost:8080/v1/checks
 ```
 
-Google カレンダーから取るときは、`schedules` の代わりに `month` を送る。
+Google カレンダーから取るときは、`schedules` の代わりに `month` を送る。トークンの組織に結び付けたカレンダーだけを読む。
 
 ```sh
-curl -s -F visits=@testdata/visits_utf8.csv -F month=2024-04 http://localhost:8080/v1/checks
+curl -s -H "Authorization: Bearer $TOKEN" -F visits=@testdata/visits_utf8.csv -F month=2024-04 http://localhost:8080/v1/checks
 ```
 
 エラーは `{"code","message"}` の JSON で返す。
 
+- トークンが無いか、検証に失敗した: 401 の `unauthenticated`
+- `month` を送ったが、トークンに組織が無い: 403 の `forbidden`
 - `schedules` も `month` も無い: 400 の `missing_file`
 - `month` の形が違う: 400 の `bad_request`
-- Google カレンダーの設定が無いのに `month` を送った: 503 の `calendar_not_configured`
+- Google カレンダーの設定が無いか、トークンの組織のカレンダーが無いのに `month` を送った: 503 の `calendar_not_configured`
 - Calendar API の呼び出しに失敗した: 502 の `schedule_source_failed`
 - 入力の CSV の行の誤り: 422 の `invalid_csv` と、行番号つきの `errors`
 
@@ -108,6 +127,7 @@ curl -s -F visits=@testdata/visits_utf8.csv -F month=2024-04 http://localhost:80
 2. 職員ごとに、Google カレンダーの「特定のユーザーとの共有」にサービスアカウントのメールアドレスを足し、権限を「予定の表示（すべての予定の詳細）」にする。
 3. 照合の対象のカレンダーを JSON に書き、`apps/receipt-api/.secrets/calendars.json` に置く。形は [calendars.example.json](calendars.example.json) にある。
    - `calendar_id` はカレンダーの設定の「カレンダーの統合」にあるカレンダー ID
+   - `org_id` はカレンダーを使う事業所の、ブローカーの組織の ID。access token の組織のクレームと同じ値にする。この組織のトークンの要求だけが、このカレンダーを読む
    - `staff_name` は主訪問者の名前で、iBow の主訪問者と同じ表記にする。省くとカレンダーの表示名を使う
 4. サービスアカウントの鍵のファイル（JSON）を作り、`apps/receipt-api/.secrets/` に置く。`.secrets/` は、鍵と職員のカレンダー ID を持つので Git で追跡しない。
 5. 環境変数で設定と鍵のファイルを渡して起動する。

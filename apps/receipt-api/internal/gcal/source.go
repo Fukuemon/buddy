@@ -34,13 +34,15 @@ func mustLoadLocation(name string) *time.Location {
 // Calendar は、照合の対象のカレンダーである。
 type Calendar struct {
 	ID string `json:"calendar_id"`
+	// OrgID は、カレンダーを使う事業所の、認証のブローカーの組織の ID である。この組織のトークンの要求だけが読む。
+	OrgID string `json:"org_id"`
 	// StaffName は主訪問者の名前である。空なら、カレンダーの表示名を主訪問者にする。
 	StaffName string `json:"staff_name,omitempty"`
 }
 
 // LoadCalendars は、照合の対象のカレンダーの一覧を JSON のファイルから読む。
-// 形は [{"calendar_id": "...", "staff_name": "..."}] である。
-// 一覧が空、calendar_id が空か重なる、知らないキーがある、のいずれかではエラーを返す。
+// 形は [{"calendar_id": "...", "org_id": "...", "staff_name": "..."}] である。
+// 一覧が空、calendar_id が空か重なる、org_id が空、知らないキーがある、のいずれかではエラーを返す。
 func LoadCalendars(path string) ([]Calendar, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -60,6 +62,9 @@ func LoadCalendars(path string) ([]Calendar, error) {
 	for i, c := range cals {
 		if strings.TrimSpace(c.ID) == "" {
 			return nil, fmt.Errorf("カレンダーの設定 %s の %d 件目の calendar_id が空である", path, i+1)
+		}
+		if strings.TrimSpace(c.OrgID) == "" {
+			return nil, fmt.Errorf("カレンダーの設定 %s の calendar_id %s の org_id が空である", path, c.ID)
 		}
 		if seen[c.ID] {
 			return nil, fmt.Errorf("カレンダーの設定 %s の calendar_id %s が重なっている", path, c.ID)
@@ -101,14 +106,25 @@ func NewReader(svc *calendar.Service, calendars []Calendar) *Reader {
 	return &Reader{svc: svc, calendars: calendars}
 }
 
-// Month は、month の 1 日 00:00 から月末 24:00（Asia/Tokyo）に始まる予定を返す check.ScheduleSource である。
-func (r *Reader) Month(month Month) check.ScheduleSource {
+// Month は、組織 orgID のカレンダーから、month の 1 日 00:00 から月末 24:00（Asia/Tokyo）に始まる予定を返す
+// check.ScheduleSource である。orgID のカレンダーが無ければ false を返す。
+func (r *Reader) Month(orgID string, month Month) (check.ScheduleSource, bool) {
+	var cals []Calendar
+	for _, c := range r.calendars {
+		if c.OrgID == orgID {
+			cals = append(cals, c)
+		}
+	}
+	if len(cals) == 0 {
+		return nil, false
+	}
 	start := time.Date(month.Year, month.Month, 1, 0, 0, 0, 0, tokyo)
-	return monthSource{reader: r, start: start, end: start.AddDate(0, 1, 0)}
+	return monthSource{svc: r.svc, calendars: cals, start: start, end: start.AddDate(0, 1, 0)}, true
 }
 
 type monthSource struct {
-	reader     *Reader
+	svc        *calendar.Service
+	calendars  []Calendar
 	start, end time.Time
 }
 
@@ -121,9 +137,9 @@ func (s monthSource) Schedules(ctx context.Context) ([]record.Record, []record.W
 		recs  []record.Record
 		warns []record.Warning
 	)
-	for _, cal := range s.reader.calendars {
+	for _, cal := range s.calendars {
 		staff := cal.StaffName
-		err := s.reader.svc.Events.List(cal.ID).
+		err := s.svc.Events.List(cal.ID).
 			TimeMin(s.start.Format(time.RFC3339)).
 			TimeMax(s.end.Format(time.RFC3339)).
 			TimeZone(TimeZone).

@@ -44,12 +44,14 @@ func (e Category) Valid() bool {
 const (
 	BadRequest            ErrorCode = "bad_request"
 	CalendarNotConfigured ErrorCode = "calendar_not_configured"
+	Forbidden             ErrorCode = "forbidden"
 	Internal              ErrorCode = "internal"
 	InvalidCsv            ErrorCode = "invalid_csv"
 	MissingFile           ErrorCode = "missing_file"
 	NotFound              ErrorCode = "not_found"
 	PayloadTooLarge       ErrorCode = "payload_too_large"
 	ScheduleSourceFailed  ErrorCode = "schedule_source_failed"
+	Unauthenticated       ErrorCode = "unauthenticated"
 )
 
 // Valid indicates whether the value is a known member of the ErrorCode enum.
@@ -58,6 +60,8 @@ func (e ErrorCode) Valid() bool {
 	case BadRequest:
 		return true
 	case CalendarNotConfigured:
+		return true
+	case Forbidden:
 		return true
 	case Internal:
 		return true
@@ -70,6 +74,8 @@ func (e ErrorCode) Valid() bool {
 	case PayloadTooLarge:
 		return true
 	case ScheduleSourceFailed:
+		return true
+	case Unauthenticated:
 		return true
 	default:
 		return false
@@ -555,6 +561,34 @@ func (response CreateCheck400JSONResponse) VisitCreateCheckResponse(w http.Respo
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCheck401JSONResponse Error
+
+func (response CreateCheck401JSONResponse) VisitCreateCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCheck403JSONResponse Error
+
+func (response CreateCheck403JSONResponse) VisitCreateCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 	_, err := buf.WriteTo(w)
 	return err
 }

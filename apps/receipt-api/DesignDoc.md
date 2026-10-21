@@ -43,8 +43,9 @@ receipt-api は、訪問の予定と電子カルテ（iBow）の実績を比べ�
 - `internal/judge`: 対ごとに項目を判定し、不整合、予定のみ、実績のみ、整合に分ける
 - `internal/check`: 上の 4 つをつなぐ。予定の取得元は `ScheduleSource` で受ける
 - `internal/gcal`: Google カレンダーの予定を、予定の CSV と同じ `csvio.Row` にしてから `normalize.Schedules` に通す
-- `internal/source`: 要求の `schedules` と `month` から、予定の取得元（`CSVSchedules` か `internal/gcal`）を選ぶ
-- `internal/httpapi`: `GET /healthz`、`GET /readyz`、`POST /v1/checks`
+- `internal/source`: 要求の `schedules` と `month` とトークンの組織から、予定の取得元（`CSVSchedules` か `internal/gcal`）を選ぶ
+- `internal/oidc`: access token を JWKS で検証する。schedule-api の同じパッケージを写した
+- `internal/httpapi`: `GET /healthz`、`GET /readyz`、`POST /v1/checks`。`/v1` の要求のトークンを `internal/oidc` で確かめる
 
 ### 処理の流れ
 
@@ -85,6 +86,7 @@ receipt-api は、Google Calendar API を直接呼ぶ。GAS は使わない。GA
 - 認証は Application Default Credentials で、スコープは `calendar.readonly` だけにする。手元ではサービスアカウントの鍵のファイル、クラスタでは Workload Identity Federation を使う。
 - ドメイン全体の委任は使わない。職員のカレンダーを、サービスアカウントに閲覧の権限で共有する。サービスアカウントが読めるカレンダーを、照合に使うものだけに絞るためである。
 - 照合の対象のカレンダーは、サーバーの設定のファイル（`GOOGLE_CALENDARS_FILE`）に置き、要求で受けない。任意のカレンダーを読ませないためである。
+- 設定のカレンダーごとに、使う事業所の組織の ID（`org_id`）を持たせる。要求の access token の組織と同じ `org_id` のカレンダーだけを読む。1 つの receipt-api を複数の事業所で使っても、別の事業所の職員の予定を読ませないためである。
 
 カレンダーの予定は、次の規則で照合の予定にする。
 
@@ -242,16 +244,19 @@ JSON と並べて記号つきの CSV も返す案は、表示の都合が API �
 API の定義の正本は [openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/openapi.yaml) である。
 
 - `POST /v1/checks`
+  - `Authorization: Bearer` の access token を求める。署名、`iss`、`aud`、`exp`、`nbf` を JWKS で確かめる。
   - `multipart/form-data` で、ファイル `visits`（実績の CSV）と予定を受ける。
   - 予定は、ファイル `schedules`（予定の CSV）があればそれを使う。なくてフォームの値 `month`（`2026-10` の形）があれば、その月の予定を Google カレンダーから取る。
   - 結果は、`Accept` によらず結果の JSON で返す。
 - エラーは `{"code","message"}` の JSON で返す。
+  - トークンがないか、検証に失敗した: 401 の `unauthenticated`。`WWW-Authenticate` を付ける
+  - `month` で呼ばれたが、トークンに組織がない: 403 の `forbidden`。読むカレンダーを決められないためである
   - 本文が multipart として読めない、`month` の形が違う: 400 の `bad_request`
   - `visits` がない、`schedules` も `month` もない: 400 の `missing_file`
   - 本文が上限（`MAX_UPLOAD_BYTES`）を超える: 413 の `payload_too_large`
   - 入力の CSV の誤り: 422 の `invalid_csv`。行ごとの誤り（`errors` の `source`、`line`、`column`、`message`）を持つ
   - Calendar API の呼び出しに失敗した: 502 の `schedule_source_failed`
-  - Google カレンダーの設定がないのに `month` で呼ばれた: 503 の `calendar_not_configured`。要求の形は正しく、照合できない原因がサーバーの設定にあるので、400 にしない
+  - Google カレンダーの設定がないか、トークンの組織のカレンダーがないのに `month` で呼ばれた: 503 の `calendar_not_configured`。要求の形は正しく、照合できない原因がサーバーの設定にあるので、400 にしない
 - 照合に固有の環境変数は [README.md](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/README.md) にあり、全体で共通の環境変数は [buddy Design Doc の Interfaces](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md#interfaces) にある。
 
 ## Verification
@@ -279,5 +284,4 @@ API の定義の正本は [openapi.yaml](https://github.com/Fukuemon/buddy/blob/
 
 - 期間と職員で予定と実績を絞る（`from`、`to`、`user_ids`）かは決めていない。今の実装は絞らないので、予定にない職員の実績は全て実績のみに入る。
 - 予定を schedule-api から取る形は、職員が画面で予定を入れるようになってから選ぶ。
-- receipt-api は、まだ access token を検証せず、パスに事業所を持たない。[buddy Design Doc の事業所の分離](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md#事業所の分離)に合わせる作業は残っている。
 - iBow が出す訪問日の形は、手元の資料で確かめていない（未確認）。

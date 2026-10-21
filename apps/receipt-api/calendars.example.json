@@ -1,4 +1,4 @@
 [
-  { "calendar_id": "staff-a@example.com", "staff_name": "職員A" },
-  { "calendar_id": "staff-b@example.com" }
+  { "calendar_id": "staff-a@example.com", "org_id": "org-sample", "staff_name": "職員A" },
+  { "calendar_id": "staff-b@example.com", "org_id": "org-sample" }
 ]

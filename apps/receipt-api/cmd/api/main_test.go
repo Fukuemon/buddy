@@ -7,15 +7,23 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	env := func(m map[string]string) func(string) string {
-		return func(k string) string { return m[k] }
+		return func(k string) string {
+			if v, ok := m[k]; ok {
+				return v
+			}
+			return map[string]string{"OIDC_ISSUER": "http://idp/buddy", "OIDC_AUDIENCE": "receipt-api"}[k]
+		}
 	}
 	cfg, err := loadConfig(env(nil))
-	if err != nil || cfg.port != "8080" || cfg.maxUploadBytes != 10<<20 || cfg.logLevel != slog.LevelInfo {
+	if err != nil || cfg.port != "8080" || cfg.maxUploadBytes != 10<<20 || cfg.logLevel != slog.LevelInfo || cfg.oidc.OrgClaim != "org_id" {
 		t.Errorf("既定値 = %+v, %v", cfg, err)
 	}
-	cfg, err = loadConfig(env(map[string]string{"PORT": "9000", "MAX_UPLOAD_BYTES": "2048", "LOG_LEVEL": "debug"}))
-	if err != nil || cfg.port != "9000" || cfg.maxUploadBytes != 2048 || cfg.logLevel != slog.LevelDebug {
+	cfg, err = loadConfig(env(map[string]string{"PORT": "9000", "MAX_UPLOAD_BYTES": "2048", "LOG_LEVEL": "debug", "OIDC_ORG_CLAIM": "organization"}))
+	if err != nil || cfg.port != "9000" || cfg.maxUploadBytes != 2048 || cfg.logLevel != slog.LevelDebug || cfg.oidc.OrgClaim != "organization" {
 		t.Errorf("設定 = %+v, %v", cfg, err)
+	}
+	if cfg.oidc.Issuer != "http://idp/buddy" || cfg.oidc.Audience != "receipt-api" {
+		t.Errorf("OIDC の設定 = %+v", cfg.oidc)
 	}
 	cfg, err = loadConfig(env(map[string]string{"GOOGLE_CALENDARS_FILE": "calendars.json", "GOOGLE_CALENDAR_ENDPOINT": "http://localhost:9000/"}))
 	if err != nil || cfg.calendarsFile != "calendars.json" || cfg.calendarEndpoint != "http://localhost:9000/" {
@@ -24,6 +32,7 @@ func TestLoadConfig(t *testing.T) {
 	for _, bad := range []map[string]string{
 		{"MAX_UPLOAD_BYTES": "0"}, {"MAX_UPLOAD_BYTES": "x"}, {"LOG_LEVEL": "loud"},
 		{"GOOGLE_CALENDAR_ENDPOINT": "http://localhost:9000/"},
+		{"OIDC_ISSUER": ""}, {"OIDC_AUDIENCE": ""},
 	} {
 		if _, err := loadConfig(env(bad)); err == nil {
 			t.Errorf("%v でエラーにならない", bad)

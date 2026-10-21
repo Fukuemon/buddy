@@ -5,8 +5,11 @@
 //   - PORT: 待ち受けるポート。既定は 8080。
 //   - MAX_UPLOAD_BYTES: POST /v1/checks の本文の上限のバイト数。既定は 10485760（10 MiB）。
 //   - LOG_LEVEL: debug、info、warn、error のいずれか。既定は info。
+//   - OIDC_ISSUER: 必須。ブローカーの発行者の URL。トークンの iss と一致させ、discovery の文書をここから読む。
+//   - OIDC_AUDIENCE: 必須。トークンの aud に求める値。
+//   - OIDC_ORG_CLAIM: 組織の ID を持つクレームの名前。既定は org_id。
 //   - GOOGLE_CALENDARS_FILE: 照合の対象のカレンダーの設定（JSON）のパス。空なら Google カレンダーを使わない。
-//     形は gcal.LoadCalendars にある。認証は Application Default Credentials で読む。
+//     形は gcal.LoadCalendars にある。トークンの組織に結び付けたカレンダーだけを読む。認証は Application Default Credentials で読む。
 //   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。偽物の API で試すためのもので、認証をしない。
 //
 // `api healthcheck` は、サーバーを起動せず、動いているサーバーの GET /readyz を確かめて終わる。
@@ -23,6 +26,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -32,6 +36,7 @@ import (
 
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/gcal"
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/httpapi"
+	"github.com/Fukuemon/buddy/apps/receipt-api/internal/oidc"
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/source"
 )
 
@@ -41,10 +46,25 @@ type config struct {
 	logLevel         slog.Level
 	calendarsFile    string
 	calendarEndpoint string
+	oidc             oidc.Config
 }
 
 func loadConfig(getenv func(string) string) (config, error) {
 	cfg := config{port: "8080", maxUploadBytes: 10 << 20, logLevel: slog.LevelInfo}
+	cfg.oidc = oidc.Config{Issuer: getenv("OIDC_ISSUER"), Audience: getenv("OIDC_AUDIENCE"), OrgClaim: getenv("OIDC_ORG_CLAIM")}
+	var missing []string
+	if cfg.oidc.Issuer == "" {
+		missing = append(missing, "OIDC_ISSUER")
+	}
+	if cfg.oidc.Audience == "" {
+		missing = append(missing, "OIDC_AUDIENCE")
+	}
+	if len(missing) > 0 {
+		return config{}, fmt.Errorf("環境変数 %s が必要である", strings.Join(missing, "、"))
+	}
+	if cfg.oidc.OrgClaim == "" {
+		cfg.oidc.OrgClaim = "org_id"
+	}
 	if v := getenv("PORT"); v != "" {
 		cfg.port = v
 	}
@@ -111,24 +131,30 @@ func run() error {
 	}
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: cfg.logLevel}))
 
-	reader, err := newCalendarReader(context.Background(), cfg)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	reader, err := newCalendarReader(ctx, cfg)
 	if err != nil {
 		return err
 	}
 	logger.Info("Google カレンダーの取得元の設定を読んだ", "enabled", reader != nil)
+
+	verifier, err := oidc.NewVerifier(ctx, cfg.oidc, nil, logger)
+	if err != nil {
+		return err
+	}
 
 	srv := &http.Server{
 		Addr: ":" + cfg.port,
 		Handler: httpapi.NewHandler(logger, httpapi.Config{
 			MaxUploadBytes: cfg.maxUploadBytes,
 			Sources:        source.Selector{Calendar: reader},
+			Verifier:       verifier,
 		}),
 		ReadHeaderTimeout: 10 * time.Second,
 		ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelError),
 	}
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 
 	errCh := make(chan error, 1)
 	go func() {
