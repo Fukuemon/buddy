@@ -9,6 +9,7 @@ import { PageForbiddenMessage } from '#/components/site/PageForbiddenMessage'
 import {
   IMPORT_LOAD_ERROR_MESSAGE,
   importErrorMessage,
+  PATIENTS_ERROR_MESSAGE,
   loadErrorMessage,
   previewErrorMessage,
 } from '../lib/errorMessage'
@@ -120,7 +121,13 @@ const CalendarImportContent = ({ staffId, onStaffChange }: CalendarImportContain
           {previewed !== undefined && runImport.data === undefined && (
             <CalendarImportPreview
               choices={choices}
-              errorMessage={runImport.isError ? importErrorMessage(runImport.error) : undefined}
+              errorMessage={
+                runImport.isError
+                  ? importErrorMessage(runImport.error)
+                  : patientsQuery.isError
+                    ? PATIENTS_ERROR_MESSAGE
+                    : undefined
+              }
               isSubmitting={runImport.isPending}
               onChoiceChange={(eventId, choice) => {
                 setChoices((prev) => ({ ...prev, [eventId]: choice }))

@@ -204,6 +204,22 @@ func classifyParent(ev Event) (parentMode, Candidate, *Recurrence) {
 	return parentRule, c, &rec
 }
 
+// modeOf は、親の予定の取り込み方を、前の取り込みの予定の対応に合わせて決める。
+// 親に対応が無く、親の回か例外の回に対応があれば、前の取り込みで親を繰り返しにしていないので、回ごとにする。
+// 規則に写せる形に変わっていても規則ごと作ると、前に取り込んだ回と重なるためである。
+func modeOf(ev Event, links map[string]Link) (parentMode, Candidate, *Recurrence) {
+	mode, c, rec := classifyParent(ev)
+	if mode != parentRule {
+		return mode, c, rec
+	}
+	for _, l := range links {
+		if l.RecurringEventID != nil && *l.RecurringEventID == ev.ID {
+			return parentExpanded, c, nil
+		}
+	}
+	return mode, c, rec
+}
+
 // parentsToExpand は、events のうち、回ごとにする繰り返しの親の予定の ID を返す。前の取り込みで結び付けた親は除く。
 func parentsToExpand(events []Event, links map[string]Link) []string {
 	var ids []string
@@ -214,7 +230,7 @@ func parentsToExpand(events []Event, links map[string]Link) []string {
 		if _, ok := links[ev.ID]; ok {
 			continue
 		}
-		if mode, _, _ := classifyParent(ev); mode == parentExpanded {
+		if mode, _, _ := modeOf(ev, links); mode == parentExpanded {
 			ids = append(ids, ev.ID)
 		}
 	}
@@ -291,7 +307,7 @@ func (b *planner) addParent(ev Event) {
 	if ev.Status == StatusCancelled || b.linked(ev.ID) {
 		return
 	}
-	mode, c, rec := classifyParent(ev)
+	mode, c, rec := modeOf(ev, b.in.links)
 	switch mode {
 	case parentSkipped:
 		b.skip(c)

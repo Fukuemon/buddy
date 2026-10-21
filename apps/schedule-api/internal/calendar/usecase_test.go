@@ -436,3 +436,100 @@ func ExampleRange() {
 	fmt.Println(r.TimeMin().Format("2006-01-02T15:04:05Z07:00"), r.TimeMax().Format("2006-01-02T15:04:05Z07:00"))
 	// Output: 2026-11-01T00:00:00+09:00 2026-12-01T00:00:00+09:00
 }
+
+// reviewSeries は、利用者を 1 人に決められない毎週の繰り返しと、題名が親と同じ変えた回と、題名を変えた回である。
+func reviewSeries() *gcaltest.Server {
+	return &gcaltest.Server{
+		Calendars: map[string][][]*calendarv3.Event{googleCalID: {{
+			grecurring(gevent("series", "【訪看I2】利用者B", "2026-11-02T09:00:00+09:00", "2026-11-02T09:30:00+09:00"),
+				"RRULE:FREQ=WEEKLY;BYDAY=MO"),
+			gexception("series_1109", "series", "【訪看I2】利用者B", "2026-11-09T10:00:00+09:00", "2026-11-09T10:30:00+09:00", "2026-11-09T09:00:00+09:00"),
+			gexception("series_1116", "series", "会議", "2026-11-16T15:00:00+09:00", "2026-11-16T16:00:00+09:00", "2026-11-16T09:00:00+09:00"),
+		}}},
+		Instances: map[string][]*calendarv3.Event{"series": {
+			gexception("series_1102", "series", "【訪看I2】利用者B", "2026-11-02T09:00:00+09:00", "2026-11-02T09:30:00+09:00", "2026-11-02T09:00:00+09:00"),
+			gexception("series_1109", "series", "【訪看I2】利用者B", "2026-11-09T10:00:00+09:00", "2026-11-09T10:30:00+09:00", "2026-11-09T09:00:00+09:00"),
+			gexception("series_1116", "series", "会議", "2026-11-16T15:00:00+09:00", "2026-11-16T16:00:00+09:00", "2026-11-16T09:00:00+09:00"),
+			gexception("series_1123", "series", "【訪看I2】利用者B", "2026-11-23T09:00:00+09:00", "2026-11-23T09:30:00+09:00", "2026-11-23T09:00:00+09:00"),
+			gexception("series_1130", "series", "【訪看I2】利用者B", "2026-11-30T09:00:00+09:00", "2026-11-30T09:30:00+09:00", "2026-11-30T09:00:00+09:00"),
+		}},
+	}
+}
+
+func TestImportReviewedRecurring(t *testing.T) {
+	t.Run("題名が親と同じ回は、親の確かめにまとめ、選んだ利用者を規則と回に当てる", func(t *testing.T) {
+		e := newEnv(t, reviewSeries())
+		p, err := e.uc.Preview(e.ctx, calID, e.rng)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := reviewIDs(p.NeedsReview); !slices.Equal(got, []string{"series"}) || p.NeedsReview[0].Recurrence == nil {
+			t.Fatalf("NeedsReview = %+v", p.NeedsReview)
+		}
+		res, err := e.uc.Import(e.ctx, calID, e.rng, []calendar.Decision{{ExternalEventID: "series", Action: calendar.ActionPatient, PatientID: "PB1"}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		// 繰り返し、11-09 の置き換え、11-16 の置き換え（通常の予定）
+		if res.Run.ImportedCount != 3 {
+			t.Errorf("Run = %+v", res.Run)
+		}
+		rs := recurringOf(t, e, "series")
+		if e.store.Infos[*rs.VisitInfoID].PatientID != "PB1" || len(rs.ExclusionDates) != 2 {
+			t.Errorf("繰り返し = %+v", rs)
+		}
+		if moved := scheduleOf(t, e, "series_1109"); e.store.Infos[*moved.VisitInfoID].PatientID != "PB1" || moved.RecurringScheduleID == nil {
+			t.Errorf("11-09 の置き換え = %+v", moved)
+		}
+	})
+
+	t.Run("親を取り込まないと選んだ後に親を取り込むと、回ごとにして前に取り込んだ回と重ねない", func(t *testing.T) {
+		e := newEnv(t, reviewSeries())
+		res, err := e.uc.Import(e.ctx, calID, e.rng, []calendar.Decision{{ExternalEventID: "series", Action: calendar.ActionSkip}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		// 題名を変えた 11-16 の回だけが、置き換える繰り返しの無い単発の予定になる
+		if res.Run.ImportedCount != 1 || res.Run.SkippedCount != 2 {
+			t.Fatalf("1 回目 = %+v", res.Run)
+		}
+		if moved := scheduleOf(t, e, "series_1116"); moved.RecurringScheduleID != nil {
+			t.Errorf("11-16 = %+v, want 単発の予定", moved)
+		}
+
+		p, err := e.uc.Preview(e.ctx, calID, e.rng)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if p.Counts.RecurringAsRule != 0 || p.Counts.NeedsReview != 1 || p.NeedsReview[0].Recurrence != nil || p.Counts.AlreadyImported != 1 {
+			t.Errorf("2 回目の下見の件数 = %+v", p.Counts)
+		}
+		res, err = e.uc.Import(e.ctx, calID, e.rng, []calendar.Decision{{ExternalEventID: "series", Action: calendar.ActionPatient, PatientID: "PB1"}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if res.Run.ImportedCount != 4 || res.AlreadyImported != 1 {
+			t.Errorf("2 回目 = %+v, AlreadyImported = %d", res.Run, res.AlreadyImported)
+		}
+		if len(e.store.Recurring) != 1 {
+			t.Errorf("繰り返しの予定を作った: %d 件（Seeded の 1 件だけのはず）", len(e.store.Recurring))
+		}
+		var on1116 int
+		for _, s := range e.store.Schedules {
+			if s.Date == (civil.Date{Year: 2026, Month: 11, Day: 16}) {
+				on1116++
+			}
+		}
+		if on1116 != 1 {
+			t.Errorf("11-16 の予定 = %d 件, want 1", on1116)
+		}
+	})
+}
+
+func TestImportIgnoresStaleRun(t *testing.T) {
+	e := newEnv(t, fixture())
+	e.store.Runs["STALE"] = calendar.ImportRun{ID: "STALE", ExternalCalendarID: calID, Status: calendar.RunRunning, StartedAt: time.Now().Add(-11 * time.Minute)}
+	if _, err := e.uc.Import(e.ctx, calID, e.rng, decisions()); err != nil {
+		t.Fatalf("10 分より前の running があるとき: err = %v", err)
+	}
+}

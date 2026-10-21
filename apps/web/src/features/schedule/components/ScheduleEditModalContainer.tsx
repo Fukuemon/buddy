@@ -38,20 +38,21 @@ const ScheduleEditForm = ({
     resolver: zodResolver(scheduleFormSchema),
   })
 
-  const backToDetail = () =>
+  // 繰り返しの回を保存すると、回は新しい単発の予定に置き換わるので、保存した予定の ID の詳細へ戻る
+  const backToDetail = (scheduleId: Schedule['id'] = schedule.id) =>
     navigate({
       to: '/schedule/$scheduleId',
-      params: { scheduleId: schedule.id },
+      params: { scheduleId },
       search: calendarSearch,
     })
 
   return (
     <ScheduleFormModal
       form={form}
-      onClose={backToDetail}
+      onClose={() => backToDetail()}
       onSubmit={async (values) => {
-        await updateSchedule.mutateAsync(toScheduleInput(values))
-        await backToDetail()
+        const saved = await updateSchedule.mutateAsync(toScheduleInput(values))
+        await backToDetail(saved.id)
       }}
       patients={patients}
       staffList={staffList}

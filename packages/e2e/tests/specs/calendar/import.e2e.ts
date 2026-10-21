@@ -85,6 +85,19 @@ test.describe('予定の取り込み', () => {
         // 繰り返しの回の ID は日付で終わる。11-11 は取り消した回、11-18 は 14:00 の単発の予定に置き換えた回である
         await expect(page.getByTestId(/^schedule-event-.+-2026-11-11$/)).toHaveCount(0)
         await expect(page.getByTestId(/^schedule-event-.+-2026-11-18$/)).toHaveCount(0)
+        await expect(
+          page.getByTestId(/^schedule-event-/).filter({ hasText: '14時 見本 二葉' }),
+        ).toBeVisible()
+      })
+
+      await test.step('繰り返しの回を開いて保存すると、その回を置き換えた予定の詳細に戻る', async () => {
+        await page.getByTestId(/^schedule-event-.+-2026-11-25$/).click()
+        await expect(page.getByTestId('schedule-detail-datetime')).toContainText('2026-11-25')
+        await page.getByTestId('schedule-detail-edit').click()
+        await page.getByTestId('schedule-edit-submit').click()
+        await expect(page.getByTestId('schedule-detail-modal')).toBeVisible()
+        await expect(page).toHaveURL(/\/schedule\/[0-9A-HJKMNP-TV-Z]{26}\?/)
+        await expect(page.getByTestId('schedule-detail-datetime')).toContainText('2026-11-25')
       })
 
       await test.step('同じ期間をもう一度下見すると、全て取り込み済みになる', async () => {

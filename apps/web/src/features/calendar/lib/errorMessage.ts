@@ -60,6 +60,10 @@ export const previewErrorMessage = (error: unknown, staffName: string) => {
   }
 }
 
+/** 確かめが要る予定の利用者を選ぶための、利用者の一覧を読めなかったときの文。 */
+export const PATIENTS_ERROR_MESSAGE =
+  '利用者の一覧を読み込めませんでした。時間をおいて、もう一度下見してください。'
+
 /** 取り込みの失敗を、失敗の文にする。どの失敗でも、予定は 1 件も書いていない。 */
 export const importErrorMessage = (error: unknown) => {
   if (statusOf(error) === 403) return FORBIDDEN_MESSAGE
@@ -68,8 +72,11 @@ export const importErrorMessage = (error: unknown) => {
       return '下見の後に、Google カレンダーの予定が変わりました。もう一度下見してから取り込んでください。予定は 1 件も取り込んでいません。'
     case 'import_running':
       return 'この職員の取り込みが、ほかの画面で進んでいます。終わってから、もう一度下見してください。予定は 1 件も取り込んでいません。'
+    // 画面は期間と取り込み方の値を確かめてから送るので、残る入力の誤りは、選んだ利用者がいないことである
     case 'invalid_input':
       return '選んだ利用者が見つかりません。利用者を選び直してください。予定は 1 件も取り込んでいません。'
+    case 'not_found':
+      return 'この職員のカレンダーの結び付けが外れています。画面を読み直してください。予定は 1 件も取り込んでいません。'
     default:
       return '取り込めませんでした。時間をおいて、もう一度取り込んでください。予定は 1 件も取り込んでいません。'
   }
