@@ -237,6 +237,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/users/{user_id}/position": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 職員の役職を変える
+         * @description 職員の役職を変え、職員の権限を新しい役職の既定で写し直す。職員ごとに足した権限と対象は消える。
+         *     チームを対象にする権限は、職員の所属のチームを対象にする。
+         */
+        put: operations["changeUserPosition"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me": {
         parameters: {
             query?: never;
@@ -1200,6 +1221,39 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description 職員と権限 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffDetail"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    changeUserPosition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["ID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    position_id: components["schemas"]["ID"];
+                };
+            };
+        };
+        responses: {
+            /** @description 役職を変えた職員と権限 */
             200: {
                 headers: {
                     [name: string]: unknown;

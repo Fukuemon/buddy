@@ -80,15 +80,7 @@ func (s *Staff) Create(ctx context.Context, in CreateStaffInput) (staff.Detail, 
 	if err != nil {
 		return staff.Detail{}, err
 	}
-	grants := make([]staff.Grant, 0, len(pos.Policies))
-	for _, p := range pos.Policies {
-		g := staff.Grant{ID: s.ids.NewID(), PolicyID: p.ID}
-		// ADR-0002 のとおり、役職の既定から写すチームの権限は、職員の所属のチームを対象にする。
-		if p.Code.TargetsTeam() {
-			g.Targets = []staff.Target{{ID: s.ids.NewID(), TeamID: team.ID}}
-		}
-		grants = append(grants, g)
-	}
+	grants := s.defaultGrants(pos, team.ID)
 	var created staff.Detail
 	err = s.tx.WithinTx(ctx, func(ctx context.Context) error {
 		if err := s.repos.Staff.Create(ctx, st, grants); err != nil {
@@ -98,6 +90,46 @@ func (s *Staff) Create(ctx context.Context, in CreateStaffInput) (staff.Detail, 
 		return err
 	})
 	return created, err
+}
+
+// ChangePosition は、職員の役職を positionID にし、職員の権限を新しい役職の既定で写し直す。
+// ADR-0002 のとおり、職員ごとに足した権限と対象は消える。職員が見つからないときは domain.ErrNotFound を、
+// 役職が見つからないか別の事業所のものであるときは入力の誤りを返す。
+func (s *Staff) ChangePosition(ctx context.Context, id, positionID string) (staff.Detail, error) {
+	var changed staff.Detail
+	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
+		cur, err := s.repos.Staff.Get(ctx, id)
+		if err != nil {
+			return err
+		}
+		pos, err := s.repos.Positions.Get(ctx, positionID)
+		if err != nil {
+			return reference("役職", positionID, err)
+		}
+		if err := sameFacility("役職", pos.ID, pos.FacilityID, cur.FacilityID); err != nil {
+			return err
+		}
+		if err := s.repos.Staff.ChangePosition(ctx, cur.ID, pos.ID, s.defaultGrants(pos, cur.TeamID)); err != nil {
+			return err
+		}
+		changed, err = s.repos.Staff.Get(ctx, cur.ID)
+		return err
+	})
+	return changed, err
+}
+
+// defaultGrants は、役職の既定の権限から、職員に与える権限を作る。
+// ADR-0002 のとおり、チームを対象にする権限は、職員の所属のチーム teamID を対象にする。
+func (s *Staff) defaultGrants(pos organization.Position, teamID string) []staff.Grant {
+	grants := make([]staff.Grant, 0, len(pos.Policies))
+	for _, p := range pos.Policies {
+		g := staff.Grant{ID: s.ids.NewID(), PolicyID: p.ID}
+		if p.Code.TargetsTeam() {
+			g.Targets = []staff.Target{{ID: s.ids.NewID(), TeamID: teamID}}
+		}
+		grants = append(grants, g)
+	}
+	return grants
 }
 
 // Get は、職員と権限を返す。

@@ -844,6 +844,12 @@ type CancelScheduleJSONBody struct {
 	Reason string `json:"reason"`
 }
 
+// ChangeUserPositionJSONBody defines parameters for ChangeUserPosition.
+type ChangeUserPositionJSONBody struct {
+	// PositionId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	PositionId ID `json:"position_id"`
+}
+
 // CreatePatientJSONRequestBody defines body for CreatePatient for application/json ContentType.
 type CreatePatientJSONRequestBody CreatePatientJSONBody
 
@@ -870,6 +876,9 @@ type UpdateScheduleJSONRequestBody = SlotRequest
 
 // CancelScheduleJSONRequestBody defines body for CancelSchedule for application/json ContentType.
 type CancelScheduleJSONRequestBody CancelScheduleJSONBody
+
+// ChangeUserPositionJSONRequestBody defines body for ChangeUserPosition for application/json ContentType.
+type ChangeUserPositionJSONRequestBody ChangeUserPositionJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -957,6 +966,9 @@ type ServerInterface interface {
 	// GetUser 職員を取得する
 	// (GET /v1/users/{user_id})
 	GetUser(c *gin.Context, userId ID)
+	// ChangeUserPosition 職員の役職を変える
+	// (PUT /v1/users/{user_id}/position)
+	ChangeUserPosition(c *gin.Context, userId ID)
 	// ListServiceCodes サービスコードを一覧する
 	// (GET /v1/visit_infos/service_codes)
 	ListServiceCodes(c *gin.Context)
@@ -1759,6 +1771,31 @@ func (siw *ServerInterfaceWrapper) GetUser(c *gin.Context) {
 	siw.Handler.GetUser(c, userId)
 }
 
+// ChangeUserPosition operation middleware
+func (siw *ServerInterfaceWrapper) ChangeUserPosition(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "user_id" -------------
+	var userId ID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", c.Param("user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter user_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ChangeUserPosition(c, userId)
+}
+
 // ListServiceCodes operation middleware
 func (siw *ServerInterfaceWrapper) ListServiceCodes(c *gin.Context) {
 
@@ -1828,6 +1865,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id/users", wrapper.ListUsers)
 	router.POST(options.BaseURL+"/v1/facilities/:facility_id/users", wrapper.CreateUser)
 	router.GET(options.BaseURL+"/v1/users/:user_id", wrapper.GetUser)
+	router.PUT(options.BaseURL+"/v1/users/:user_id/position", wrapper.ChangeUserPosition)
 	router.GET(options.BaseURL+"/v1/me", wrapper.GetMe)
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id/patients", wrapper.ListPatients)
 	router.POST(options.BaseURL+"/v1/facilities/:facility_id/patients", wrapper.CreatePatient)
@@ -4398,6 +4436,102 @@ func (response GetUser500JSONResponse) VisitGetUserResponse(w http.ResponseWrite
 	return err
 }
 
+type ChangeUserPositionRequestObject struct {
+	UserId ID `json:"user_id"`
+	Body   *ChangeUserPositionJSONRequestBody
+}
+
+type ChangeUserPositionResponseObject interface {
+	VisitChangeUserPositionResponse(w http.ResponseWriter) error
+}
+
+type ChangeUserPosition200JSONResponse StaffDetail
+
+func (response ChangeUserPosition200JSONResponse) VisitChangeUserPositionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeUserPosition400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ChangeUserPosition400JSONResponse) VisitChangeUserPositionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeUserPosition401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ChangeUserPosition401JSONResponse) VisitChangeUserPositionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeUserPosition403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ChangeUserPosition403JSONResponse) VisitChangeUserPositionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeUserPosition404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ChangeUserPosition404JSONResponse) VisitChangeUserPositionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeUserPosition500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response ChangeUserPosition500JSONResponse) VisitChangeUserPositionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListServiceCodesRequestObject struct {
 }
 
@@ -4616,6 +4750,9 @@ type StrictServerInterface interface {
 	// GetUser 職員を取得する
 	// (GET /v1/users/{user_id})
 	GetUser(ctx context.Context, request GetUserRequestObject) (GetUserResponseObject, error)
+	// ChangeUserPosition 職員の役職を変える
+	// (PUT /v1/users/{user_id}/position)
+	ChangeUserPosition(ctx context.Context, request ChangeUserPositionRequestObject) (ChangeUserPositionResponseObject, error)
 	// ListServiceCodes サービスコードを一覧する
 	// (GET /v1/visit_infos/service_codes)
 	ListServiceCodes(ctx context.Context, request ListServiceCodesRequestObject) (ListServiceCodesResponseObject, error)
@@ -5458,6 +5595,39 @@ func (sh *strictHandler) GetUser(ctx *gin.Context, userId ID) {
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(GetUserResponseObject); ok {
 		if err := validResponse.VisitGetUserResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ChangeUserPosition operation middleware
+func (sh *strictHandler) ChangeUserPosition(ctx *gin.Context, userId ID) {
+	var request ChangeUserPositionRequestObject
+
+	request.UserId = userId
+
+	var body ChangeUserPositionJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ChangeUserPosition(ctx, request.(ChangeUserPositionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ChangeUserPosition")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ChangeUserPositionResponseObject); ok {
+		if err := validResponse.VisitChangeUserPositionResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {

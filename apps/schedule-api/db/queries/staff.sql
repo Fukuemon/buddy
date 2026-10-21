@@ -5,6 +5,13 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 -- name: AddUserPolicy :exec
 INSERT INTO user_policies (id, user_id, policy_id) VALUES (?, ?, ?);
 
+-- name: UpdateUserPosition :exec
+UPDATE users SET position_id = sqlc.arg(position_id) WHERE id = sqlc.arg(id);
+
+-- name: DeleteUserPolicies :exec
+-- user_policy_targets は外部キーの ON DELETE CASCADE で消える。
+DELETE FROM user_policies WHERE user_id = ?;
+
 -- name: AddUserPolicyTarget :exec
 INSERT INTO user_policy_targets (id, user_policy_id, target_user_id, target_team_id) VALUES (?, ?, ?, ?);
 

@@ -32,8 +32,24 @@ func (r *StaffRepository) Create(ctx context.Context, s staff.Staff, grants []st
 	if err != nil {
 		return translate("create user", err)
 	}
+	return addGrants(ctx, q, s.ID, grants)
+}
+
+// ChangePosition は、役職の更新、権限の削除、権限の追加を続けて書く。途中で失敗したときに残さないよう、呼び出し側がトランザクションの中で呼ぶ。
+func (r *StaffRepository) ChangePosition(ctx context.Context, id, positionID string, grants []staff.Grant) error {
+	q := r.q(ctx)
+	if err := q.UpdateUserPosition(ctx, sqlcgen.UpdateUserPositionParams{ID: id, PositionID: positionID}); err != nil {
+		return translate("update user position", err)
+	}
+	if err := q.DeleteUserPolicies(ctx, id); err != nil {
+		return translate("delete user policies", err)
+	}
+	return addGrants(ctx, q, id, grants)
+}
+
+func addGrants(ctx context.Context, q *sqlcgen.Queries, userID string, grants []staff.Grant) error {
 	for _, g := range grants {
-		if err := q.AddUserPolicy(ctx, sqlcgen.AddUserPolicyParams{ID: g.ID, UserID: s.ID, PolicyID: g.PolicyID}); err != nil {
+		if err := q.AddUserPolicy(ctx, sqlcgen.AddUserPolicyParams{ID: g.ID, UserID: userID, PolicyID: g.PolicyID}); err != nil {
 			return translate("add user policy", err)
 		}
 		for _, t := range g.Targets {

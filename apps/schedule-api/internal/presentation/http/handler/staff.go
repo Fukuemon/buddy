@@ -15,6 +15,7 @@ type StaffUsecase interface {
 	Create(ctx context.Context, in usecase.CreateStaffInput) (staff.Detail, error)
 	Get(ctx context.Context, id string) (staff.Detail, error)
 	List(ctx context.Context, facilityID string, q staff.ListQuery) ([]staff.Summary, error)
+	ChangePosition(ctx context.Context, id, positionID string) (staff.Detail, error)
 }
 
 func toStaff(s staff.Summary) openapi.Staff {
@@ -106,4 +107,13 @@ func (s server) CreateUser(ctx context.Context, req openapi.CreateUserRequestObj
 		return nil, err
 	}
 	return openapi.CreateUser201JSONResponse(toStaffDetail(d)), nil
+}
+
+// ChangeUserPosition は、職員の役職を変え、権限を新しい役職の既定で写し直した職員を返す。
+func (s server) ChangeUserPosition(ctx context.Context, req openapi.ChangeUserPositionRequestObject) (openapi.ChangeUserPositionResponseObject, error) {
+	d, err := s.u.Staff.ChangePosition(ctx, req.UserId, req.Body.PositionId)
+	if err != nil {
+		return nil, err
+	}
+	return openapi.ChangeUserPosition200JSONResponse(toStaffDetail(d)), nil
 }

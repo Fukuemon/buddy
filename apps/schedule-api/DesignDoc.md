@@ -245,6 +245,8 @@ erDiagram
 
 職員を登録すると、役職の既定の権限を職員に写す。チームの権限（`schedule.team.*`）は、職員の所属のチームを対象にして写す。職員の権限（`schedule.user.*`）は、写すときに対象を決められないので、役職の既定にできない。規則は ADR-0002 にある。
 
+職員の役職を変える（`PUT /v1/users/{user_id}/position`）と、職員の権限と対象を全て消し、新しい役職の既定を同じ規則で写し直す。職員ごとに足した権限も消える。
+
 - ADR-0002: [権限を役職の既定と職員ごとの上書きで持つ（PBAC）](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0002-pbac.md)
 
 ### 認証から事業所の確認までの流れ
