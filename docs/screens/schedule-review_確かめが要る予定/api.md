@@ -10,7 +10,7 @@
 | 予定の日時 | 日付、時刻、繰り返しか | `CalendarExportIssue.date`、`start_time`、`end_time`、`recurring_schedule_id` | `CalendarExportIssue` の `date`、`start_time`、`end_time`、`recurring_schedule_id`。繰り返しの予定の `date` は最初の回の日付 |
 | 職員 | 職員の名前 | `CalendarExportIssue.staff_name` | `CalendarExportIssue` の `staff_name` |
 | 理由 | 理由ごとの文 | `CalendarExportIssue.error_code`、`status` | `CalendarExport` の `error_code`（`precondition_failed`、`not_found`、`forbidden`、`unavailable`）と `status`（`conflict`、`failed`） |
-| 気付いた日時 | 日時 | `CalendarExportIssue.updated_at` | `CalendarExport` の `updated_at` |
+| 最後に変わった日時 | 日時 | `CalendarExportIssue.updated_at` | `CalendarExport` の `updated_at` |
 | 予定を開く | 出すかと、移る先の予定 | `CalendarExportIssue.schedule_id` | `CalendarExport` の `schedule_id`。繰り返しの予定では `null` |
 | buddy の内容で書き直す | なし | `CalendarExportIssue.id` | `CalendarExport` の `id` |
 | 書き直す予定 | 日時と職員の名前 | `CalendarExportIssue` の日時の項目と `staff_name` | 予定の日時と職員と同じ |

@@ -19,7 +19,7 @@ test.describe('確かめが要る予定', () => {
       page,
       request,
     }) => {
-      // 走らせるたびに予定が増えるので、題名で今回の予定を見分ける
+      // 林にカレンダーを結び付けたまま残すので、同じ DB で 2 回目を流すと落ちる。流し直すときは DB を作り直す
       const stamp = Date.now()
       const created = `E2E の書き出し ${stamp}`
       const changed = `E2E の書き出し（buddy で変更）${stamp}`
@@ -83,6 +83,7 @@ test.describe('確かめが要る予定', () => {
           'Google カレンダーで予定が直されたので、buddy の変更を書き出していません。',
         )
         // 一覧は Google カレンダーの題名を出さない
+        await expect(page.getByTestId('calendar-review-table')).not.toContainText(created)
         await expect(page.getByTestId('calendar-review-table')).not.toContainText(changed)
         expect((await findEvent(request, created))?.status).toBe('confirmed')
       })
@@ -94,7 +95,7 @@ test.describe('確かめが要る予定', () => {
           .getByTestId(/^calendar-review-rewrite-/)
           .click()
         const dialog = page.getByTestId('calendar-rewrite-dialog')
-        await expect(dialog).toContainText('Google カレンダーで直した内容は消えます。')
+        await expect(dialog).toContainText('Google カレンダーで直した題名と日時は消えます。')
         await page.getByTestId('calendar-rewrite-submit').click()
         await expect(dialog).toBeHidden()
         await expect(
