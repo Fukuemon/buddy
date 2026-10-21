@@ -19,7 +19,7 @@ import (
 // 定義に合わなければ、handler を呼ばずに 400（code は invalid_input）を返す。
 // トークンの確認は authenticate が受け持つので、定義の security はここでは確かめない。
 func newRequestValidator() (gin.HandlerFunc, error) {
-	spec, err := openapi.GetSwagger()
+	spec, err := openapi.GetSpec()
 	if err != nil {
 		return nil, fmt.Errorf("load openapi spec: %w", err)
 	}
