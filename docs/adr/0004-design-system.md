@@ -2,7 +2,7 @@
 
 ## Status
 
-提案
+承認
 
 ## Context
 
@@ -129,7 +129,7 @@ apps/web は packages/ui に依存するので、依存の向きを変えずに 
 - カタログのページは、はじめに、トークン、コンポーネント、パターン、画面の 5 つに分ける。DADS のサイトと SmartHR Design System のように、原則とトークンとコンポーネントの使い方を読めるサイトにする。
   - 出典: [SmartHR Design System](https://smarthr.design/)
 - title は、ファイルの置き場から機械的に決める。規則は DESIGN.md にある。
-- カタログは、文書のサイトと 1 つの Cloudflare Worker の静的なファイルとして公開し（`/storybook/`）、Cloudflare Access で許可した人だけが開けるようにする。pull request ごとにプレビューを出し、develop に入ったら本番に出す。仕組みは `apps/docs-site/README.md` にある。
+- カタログは、文書のサイトと 1 つの Cloudflare Worker の静的なファイルとして公開し（`/storybook/`）、Cloudflare Access で許可した人だけが開けるようにする。公開の仕組みは `apps/docs-site/README.md` にある。
 - Access で絞っても、カタログに載せるのはコンポーネントと架空のデータだけにする。許可した人の範囲は変わりうるためである。
 
 ## Considered Options
@@ -149,7 +149,7 @@ apps/web は packages/ui に依存するので、依存の向きを変えずに 
 | --- | --- | --- |
 | **採用:** apps/web の Storybook に packages/ui の MDX と story も読ませる | 1 回のビルドで 1 つのサイトになる。原則から画面までを 1 つのサイドバーと検索でたどれる | packages/ui の story を 2 つの Storybook でビルドする |
 | Storybook の refs で、apps/web から packages/ui の Storybook を合成する | 2 つの Storybook を独立にビルドできる | 2 つのビルドと公開先を揃える必要がある。refs の URL は開発の時と公開先とで違う。相対の URL で動くかは未確認 |
-| 2 つの Storybook を別々に公開し、一覧のページから 2 つへリンクする（kufu-apps の形） | 公開の仕組みが単純になる | 原則とトークンとコンポーネントのサイトと、画面のサイトが分かれ、行き来できない |
+| 2 つの Storybook を別々に公開し、一覧のページから 2 つへリンクする | 公開の仕組みが単純になる | 原則とトークンとコンポーネントのサイトと、画面のサイトが分かれ、行き来できない |
 | packages/ui の Storybook に apps/web の story も読ませる | packages/ui の中でカタログが完結する | packages/ui が apps/web の import の別名と plugin に依存し、依存の向きが逆になる |
 
 ### カタログの公開先
@@ -191,5 +191,5 @@ apps/web は packages/ui に依存するので、依存の向きを変えずに 
 - コンポーネントを移すときに、Tailwind の既定のユーティリティ（`text-sm`、`rounded-xl` など）を使う箇所を全て書き換える必要がある。
 - DADS のバージョンを上げるたびに、`tokens.css` の名前と値の差分を確かめる必要がある。
 - カタログを Access で許可した人に見せるため、Cloudflare のアカウント、API トークン、Access の許可の設定を保つ必要がある。カタログの Worker の名前を変えると、新しい Worker は Access なしで出る。
-- pull request のプレビューのため、書き込みの権限を持つ人は Cloudflare のトークンを読める。トークンを Worker `buddy-docs` の Editor に絞り、漏れたときに書き換えられるものを、このサイトの中身と設定に限る。
+- pull request のプレビューのため、書き込みの権限を持つ人は Cloudflare のトークンを読める。漏れたときに書き換えられるものを、このサイトの中身と設定に限るよう、トークンの範囲を絞る必要がある。
 - story のデータを作る人が、架空のデータに限る規則を守る必要がある。
