@@ -21,6 +21,9 @@ status: stable
   - 事業所に属する一覧と作成は `/v1/facilities/{facility_id}/<資源>`、1 件は `/v1/<資源>/{<資源>_id}` に置く。
   - 事業所に属さず全ての環境で同じマスタは、`/v1/<資源>`（`/v1/policies`、`/v1/schedule_types`）か、まとまりの下（`/v1/visit_infos/service_codes`）に置く。
   - 職員の属性と結び付きは、職員の 1 件の下のサブパス（`/v1/users/{user_id}/position`、`/v1/users/{user_id}/policies`）に置く。
+  - 繰り返しの予定は、予定の下の `recurring` に置く。作成は `/v1/facilities/{facility_id}/schedules/recurring`、1 件は `/v1/schedules/recurring/{recurring_schedule_id}` に置く。
+    - 繰り返しの予定の 1 回の置き換えは、1 件の下の `/occurrences` に置く。
+  - ログインした職員自身は、ID を持たない `/v1/me` で表す。
   - 動作はサブパス（`/cancel`）で表す。
 - DB の表は複数形の snake_case、ID は ULID の `CHAR(26)`、真偽の列は `is_` で始める。職員の表の名前は `users` で、Go の側は `staff` と呼ぶ。
 - 業務の用語の表記は [業務の知識](domain.md) の用語にそろえる。文書の表記の揺れは `prh.yml` の規則が止める。

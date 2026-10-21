@@ -71,12 +71,13 @@ status: stable
 | 画面仕様書、モック、story の `title` と export の名前、E2E の testid | `pnpm check:screens` |
 
 取り込む前に、変えたアプリの `test` と `check`（Go は `go test ./...`、`go vet ./...`、`golangci-lint run`）を流す。  
-Go は `GOWORK=off` を付けて流す。理由は [CONTRIBUTING.md](../CONTRIBUTING.md) の「開発の準備」にある。  
+Go のテストと lint は `GOWORK=off` を付けて流す。  
+理由は [CONTRIBUTING.md](../CONTRIBUTING.md) の「開発の準備」にある。  
 `packages/go` を変えたときは、2 つの API でも流す。
 
 pull request と develop への push では、CI（[ci.yml](../.github/workflows/ci.yml)）が、変えた場所によらず全ての仕事を流す。1 つでも失敗した pull request は取り込まない。
 
-リリースの前に通すテストの一覧は、検証環境ができてから決める（[証跡](testing/evidence.md) と同じ時期）。
+リリースの前に通すテストの一覧は未定である。[証跡](testing/evidence.md) の取り決めと同じ時期に決める。
 
 ## E2E
 

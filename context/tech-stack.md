@@ -12,7 +12,7 @@ status: stable
 | 役割 | ツール | バージョンの所在 |
 | --- | --- | --- |
 | ランタイムとツールの管理 | mise | `mise.toml` |
-| web と packages のランタイム | Node | `mise.toml`、`apps/web/Dockerfile` |
+| web と packages のランタイム | Node | `mise.toml`、`apps/web/Dockerfile`、`.github/workflows/ci.yml` と `.github/workflows/docs-site.yml` の `node-version`（同じメジャーバージョンにする） |
 | JavaScript のパッケージ管理 | pnpm | `mise.toml` と `package.json` の `packageManager`（同じバージョンにする） |
 | 2 つの API のランタイム | Go | `mise.toml`、`apps/*/go.mod`、`packages/go/go.mod`、`apps/*/Dockerfile` |
 | ビルド、開発サーバー、整形、lint、Vitest | Vite+（`vp`） | `pnpm-workspace.yaml` の catalog |
@@ -62,6 +62,8 @@ status: stable
   - MySQL のタグは、`compose.yml`、`apps/schedule-api/internal/mysql/main_test.go`、`scripts/build-db-docs.sh` の 3 か所にある。3 か所のマイナーバージョンをそろえる。
   - `scripts/build-db-docs.sh` だけは、表の文書に MySQL のバージョンが入るので、パッチバージョンまで固定している。上げたら `pnpm generate:db-docs` で表の文書を生成し直し、コミットする。
 - uv を上げたら、`mise.toml` と `.github/workflows/docs-site.yml` の setup-uv の `version` をそろえる。
+- tbls か Liam ERD CLI を上げたら、`pnpm generate:db-docs` と `pnpm build:erd` を流す。
+  - `scripts/build-erd.mjs` は、Liam ERD が tbls の viewpoint の `id` を拒むので、`id` を外してから渡している。上げた後もこの処理が要るかを確かめる。
 
 ## Scaffolding
 

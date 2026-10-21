@@ -111,7 +111,8 @@ pnpm e2e
 pull request を作ると、ワークフロー「文書のサイト」がプレビューを出し、URL を pull request にコメントする。プレビューには、文書のサイトと、Storybook のカタログ（`/storybook/`）と、表の ER 図（`/erd/`）がある。プレビューと本番は、Cloudflare Access で許可した人だけが開ける。
 
 - 手元で成果物を作るときは、ルートで `pnpm site:build` を実行する。
-- ER 図だけを手元で見るときは、ルートで `pnpm build:erd` を実行して `erd/` を作り、静的なファイルとして配信して開く。ER 図は `docs/db/schedule-api/schema.json` から作るので、表を変えたときは先に `pnpm generate:db-docs` を流す。
+- ER 図だけを手元で見るときは、ルートで `pnpm build:erd` を実行して `erd/` を作り、静的なファイルとして配信して開く。
+  - ER 図は `docs/db/schedule-api/schema.json` から作るので、表を変えたときは先に `pnpm generate:db-docs` を流す。
 
   ```sh
   pnpm build:erd
@@ -188,7 +189,8 @@ pnpm check:generated
 
 ## 取り込む前に CI で確かめること
 
-pull request では、CI（[ci.yml](.github/workflows/ci.yml)）が次を流す。全部が通るまで取り込まない。  
+pull request では、CI（[ci.yml](.github/workflows/ci.yml)）が次を流す。  
+全部が通るまで取り込まない。  
 変更ごとに手元で流すテストは `context/testing.md` の Required Tests にある。
 
 - OpenAPI の lint（`pnpm lint:openapi`）と、画面仕様書の点検（`pnpm check:screens`）
@@ -208,7 +210,8 @@ E2E が CI だけで失敗したときは、ワークフローの実行の画面
 ブランチは、`main`、`develop`、issue ごとの作業用のブランチにする。運用とリリースの方針を決めた理由は [ADR-0003](docs/adr/0003-branch-and-release.md) にある。
 
 - `main` はリリース済みの状態を指す。`develop` は次のリリースに向けて変更を集める。
-- `develop` の状態を検証環境に、`main` の状態を本番環境に反映する。検証環境が無いあいだは、手元の compose で確かめる。
+- `develop` の状態を検証環境に、`main` の状態を本番環境に反映する。
+  - 検証環境で確かめる前の変更は、手元の compose で確かめる。
 - 作業用のブランチは `develop` から切る。名前は `feature/<issue 番号>` にし、不具合は `fix/<issue 番号>` にする。1 つの issue を複数の pull request に分けるときは、`feature/<issue 番号>-<短い名前>` にする。
 - リリースは、検証した `develop` を `main` へ pull request で取り込み、`main` のコミットにアプリごとのタグを付ける。タグは `apps/<アプリ>/vX.Y.Z` の形で、バージョンはセマンティック バージョニングに従う。タグは手で付ける。
 - API の互換の規則（項目の追加は同じパス、削除と意味の変更は新しいパス、API を先にデプロイする）は ADR-0003 にある。
