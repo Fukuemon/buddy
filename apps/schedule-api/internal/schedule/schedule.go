@@ -17,20 +17,30 @@ const (
 	overtimeStartHour = 17
 )
 
-// TypeName は、予定の種類の名前である。種類ごとに必須の項目が変わる。
+// TypeName は、予定の種類の表示の名前である。一覧の絞り込みと応答に使う。
 type TypeName string
 
 // 予定の種類の名前。
 const (
-	// Normal の予定はタイトルを必須とする。
 	Normal TypeName = "通常"
-	// Visit の予定は訪問の情報を必須とする。
-	Visit TypeName = "訪問"
+	Visit  TypeName = "訪問"
+)
+
+// TypeCode は、予定の種類の識別子である。種類ごとの必須の項目は、名前ではなくこの値で決める。
+type TypeCode string
+
+// 予定の種類の識別子。
+const (
+	// CodeNormal の予定はタイトルを必須とする。
+	CodeNormal TypeCode = "normal"
+	// CodeVisit の予定は訪問の情報を必須とする。
+	CodeVisit TypeCode = "visit"
 )
 
 // Type は、予定の種類である。
 type Type struct {
 	ID   string
+	Code TypeCode
 	Name TypeName
 }
 
@@ -60,15 +70,15 @@ func newSlot(s Slot, typ Type) (Slot, error) {
 			return Slot{}, err
 		}
 	}
-	switch typ.Name {
-	case Normal:
+	switch typ.Code {
+	case CodeNormal:
 		if s.Title == nil {
 			return Slot{}, apperr.Invalid("通常の予定にはタイトルが必須です")
 		}
 		if s.VisitInfoID != nil {
 			return Slot{}, apperr.Invalid("通常の予定には訪問の情報を付けられません")
 		}
-	case Visit:
+	case CodeVisit:
 		if s.VisitInfoID == nil {
 			return Slot{}, apperr.Invalid("訪問の予定には訪問の情報が必須です")
 		}
@@ -78,11 +88,13 @@ func newSlot(s Slot, typ Type) (Slot, error) {
 	return s, nil
 }
 
-// Schedule は、単発の予定である。RecurringScheduleID は、繰り返しの予定の 1 回を置き換えた予定のときに、元の繰り返しの予定を指す。
+// Schedule は、単発の予定である。RecurringScheduleID と OriginalDate は、繰り返しの予定の 1 回を置き換えた予定のときに、
+// 元の繰り返しの予定と、置き換えた元の回の日付を指す。2 つは組で持ち、置き換えでない予定では両方とも nil である。
 type Schedule struct {
 	ID string
 	Slot
 	RecurringScheduleID *string
+	OriginalDate        *civil.Date
 }
 
 // New は、種類ごとの必須の項目と時刻の前後を検証して Schedule を作る。IsOverTimeWork は開始の時刻から決める。

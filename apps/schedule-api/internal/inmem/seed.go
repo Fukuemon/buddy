@@ -37,8 +37,8 @@ func Seeded() *Store {
 	s.Patients[OtherPatientID] = patient.Detail{Patient: patient.Patient{ID: OtherPatientID, FacilityID: OtherFacilityID}}
 	s.Codes[CodeID] = visit.ServiceCode{ID: CodeID}
 	s.Categories[CategoryID] = visit.Category{ID: CategoryID}
-	s.Types[NormalTypeID] = schedule.Type{ID: NormalTypeID, Name: schedule.Normal}
-	s.Types[VisitTypeID] = schedule.Type{ID: VisitTypeID, Name: schedule.Visit}
+	s.Types[NormalTypeID] = schedule.Type{ID: NormalTypeID, Code: schedule.CodeNormal, Name: schedule.Normal}
+	s.Types[VisitTypeID] = schedule.Type{ID: VisitTypeID, Code: schedule.CodeVisit, Name: schedule.Visit}
 	s.Recurring[RecurringID] = schedule.RecurringDetail{RecurringSchedule: schedule.RecurringSchedule{
 		ID:   RecurringID,
 		Slot: schedule.Slot{FacilityID: FacilityID, StaffID: StaffID, Date: civil.Date{Year: 2026, Month: 10, Day: 5}},

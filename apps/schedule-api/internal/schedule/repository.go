@@ -15,14 +15,14 @@ type Repository interface {
 	// GetForUpdate は、トランザクションの終わりまで予定の行に排他のロックを取り、ロックを取った後の値を返す。
 	// トランザクションの最初に呼ぶ。
 	GetForUpdate(ctx context.Context, id string) (Detail, error)
-	// Update は、ID が s.ID の予定の枠を s の値に置き換える。事業所と RecurringScheduleID は変えない。予定が無くてもエラーにしない。
+	// Update は、ID が s.ID の予定の枠を s の値に置き換える。事業所と、RecurringScheduleID と OriginalDate は変えない。予定が無くてもエラーにしない。
 	Update(ctx context.Context, s Schedule) error
 	Get(ctx context.Context, id string) (Detail, error)
 	ListByFacility(ctx context.Context, facilityID string, q ListQuery) ([]Detail, error)
 	CreateCancel(ctx context.Context, c Cancel) error
 }
 
-// RecurringRepository は、繰り返しの予定と、その規則と除外する日付を読み書きする。見つからないときは apperr.ErrNotFound を返す。
+// RecurringRepository は、繰り返しの予定と規則と、除外する日付を読み書きする。見つからないときは apperr.ErrNotFound を返す。
 // AddExclusion は、同じ日付をすでに除外しているときに apperr.ErrConflict を返す。
 type RecurringRepository interface {
 	Create(ctx context.Context, rs RecurringSchedule) error

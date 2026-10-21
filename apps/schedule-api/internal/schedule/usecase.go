@@ -186,14 +186,7 @@ func (s *Usecase) CreateRecurring(ctx context.Context, facilityID string, in Slo
 	if _, err := s.deps.Facilities.Get(ctx, facilityID); err != nil {
 		return RecurringDetail{}, err
 	}
-	r, err := NewRule(Rule{
-		ID:          s.ids.NewID(),
-		Frequency:   rule.Frequency,
-		DayOfWeek:   rule.DayOfWeek,
-		DayOfMonth:  rule.DayOfMonth,
-		WeekOfMonth: rule.WeekOfMonth,
-		EndDate:     rule.EndDate,
-	})
+	r, err := NewRule(Rule(rule))
 	if err != nil {
 		return RecurringDetail{}, err
 	}
@@ -237,7 +230,7 @@ func (s *Usecase) ChangeOccurrence(ctx context.Context, recurringScheduleID stri
 			return apperr.AsConflict(err, "%s の回はすでに置き換えられています", originalDate)
 		}
 		var err error
-		created, err = s.createSchedule(ctx, rs.FacilityID, in, &rs.ID)
+		created, err = s.createSchedule(ctx, rs.FacilityID, in, &occurrence{recurringScheduleID: rs.ID, originalDate: originalDate})
 		return err
 	})
 	return created, err
@@ -305,7 +298,14 @@ func (s *Usecase) Update(ctx context.Context, scheduleID string, in SlotInput) (
 	return updated, err
 }
 
-func (s *Usecase) createSchedule(ctx context.Context, facilityID string, in SlotInput, recurringScheduleID *string) (Detail, error) {
+// occurrence は、単発の予定が置き換える繰り返しの予定の回である。
+type occurrence struct {
+	recurringScheduleID string
+	originalDate        civil.Date
+}
+
+// createSchedule は、単発の予定を作る。replaces は、繰り返しの予定の回を置き換えるときだけ指定する。
+func (s *Usecase) createSchedule(ctx context.Context, facilityID string, in SlotInput, replaces *occurrence) (Detail, error) {
 	slot, typ, err := s.prepareSlot(ctx, facilityID, in)
 	if err != nil {
 		return Detail{}, err
@@ -314,7 +314,10 @@ func (s *Usecase) createSchedule(ctx context.Context, facilityID string, in Slot
 	if err != nil {
 		return Detail{}, err
 	}
-	sc.RecurringScheduleID = recurringScheduleID
+	if replaces != nil {
+		sc.RecurringScheduleID = &replaces.recurringScheduleID
+		sc.OriginalDate = &replaces.originalDate
+	}
 	if err := s.deps.Schedules.Create(ctx, sc); err != nil {
 		return Detail{}, err
 	}
@@ -352,7 +355,7 @@ func (s *Usecase) prepareSlot(ctx context.Context, facilityID string, in SlotInp
 		Description: in.Description,
 	}
 	if in.Visit != nil {
-		if typ.Name != Visit {
+		if typ.Code != CodeVisit {
 			return Slot{}, Type{}, apperr.Invalid("訪問の情報は訪問の予定にだけ付けられます")
 		}
 		id, err := s.deps.Visits.Create(ctx, facilityID, *in.Visit)

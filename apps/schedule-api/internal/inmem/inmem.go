@@ -4,6 +4,7 @@ package inmem
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
@@ -127,7 +128,7 @@ func (s Teams) ListByFacility(context.Context, string) ([]organization.Team, err
 }
 
 // Create は、チームを保存する。同じ事業所に名前が完全に一致するチームがあれば apperr.ErrConflict を返す。
-// MySQL の照合順序（大小文字などを区別しない）は真似ず、完全一致の重なりだけを見る。
+// DB の一意の制約と同じく、完全に一致する名前だけを重なりとみなす。
 func (s Teams) Create(_ context.Context, t organization.Team) error {
 	for _, cur := range s.Teams {
 		if cur.FacilityID == t.FacilityID && cur.Name == t.Name {
@@ -152,7 +153,7 @@ func (s Positions) ListByFacility(context.Context, string) ([]organization.Posit
 }
 
 // Create は、役職を保存する。同じ事業所に名前が完全に一致する役職があれば apperr.ErrConflict を返す。
-// MySQL の照合順序（大小文字などを区別しない）は真似ず、完全一致の重なりだけを見る。
+// DB の一意の制約と同じく、完全に一致する名前だけを重なりとみなす。
 func (s Positions) Create(_ context.Context, p organization.Position) error {
 	for _, cur := range s.Positions {
 		if cur.FacilityID == p.FacilityID && cur.Name == p.Name {
@@ -189,8 +190,11 @@ func (s Policies) ListByIDs(_ context.Context, ids []string) ([]organization.Pol
 type Staff struct{ *Store }
 
 // Create は、職員と権限を保存する。同じ事業所にメールが完全に一致する職員がいれば apperr.ErrConflict を返す。
-// MySQL の照合順序（大小文字などを区別しない）は真似ず、完全一致の重なりだけを見る。
+// DB の検査の制約と同じく、小文字にそろえていないメールは入力の誤りにする。
 func (s Staff) Create(_ context.Context, st staff.Staff, grants []staff.Grant) error {
+	if st.Email != strings.ToLower(st.Email) {
+		return apperr.Invalid("値が列の制約に合いません")
+	}
 	for _, cur := range s.Staff {
 		if cur.FacilityID == st.FacilityID && cur.Email == st.Email {
 			return apperr.ErrConflict
@@ -280,7 +284,7 @@ func (s Staff) FindIDBySub(_ context.Context, sub string) (string, error) {
 	return "", apperr.ErrNotFound
 }
 
-// LinkSub は、事業所の同じメールで sub がまだない職員に sub を結び付ける。
+// LinkSub は、事業所の同じメールで sub がまだない職員に sub を結び付ける。DB と同じく、メールは完全に一致する値だけを比べる。
 func (s Staff) LinkSub(_ context.Context, facilityID, email, sub string) error {
 	for id, d := range s.Staff {
 		if d.FacilityID == facilityID && d.Email == email && d.Sub == nil {
@@ -339,9 +343,14 @@ func (s VisitInfos) Create(_ context.Context, i visit.Info) error {
 	return nil
 }
 
-// DeleteIfUnused は、どの予定も指していない訪問の情報を消す。
+// DeleteIfUnused は、どの予定と繰り返しの予定も指していない訪問の情報を消す。
 func (s VisitInfos) DeleteIfUnused(_ context.Context, id string) error {
 	for _, d := range s.Schedules {
+		if d.VisitInfoID != nil && *d.VisitInfoID == id {
+			return nil
+		}
+	}
+	for _, d := range s.Recurring {
 		if d.VisitInfoID != nil && *d.VisitInfoID == id {
 			return nil
 		}
@@ -400,13 +409,14 @@ func (s Schedules) GetForUpdate(ctx context.Context, id string) (schedule.Detail
 	return s.Get(ctx, id)
 }
 
-// Update は、単発の予定を置き換える。繰り返しの予定への参照は前のままにする。
+// Update は、単発の予定を置き換える。繰り返しの予定と元の回の日付は前のままにする。
 func (s Schedules) Update(_ context.Context, sc schedule.Schedule) error {
 	cur, ok := s.Schedules[sc.ID]
 	if !ok {
 		return apperr.ErrNotFound
 	}
 	sc.RecurringScheduleID = cur.RecurringScheduleID
+	sc.OriginalDate = cur.OriginalDate
 	s.Schedules[sc.ID] = schedule.Detail{Schedule: sc, TypeName: s.Types[sc.TypeID].Name}
 	return nil
 }

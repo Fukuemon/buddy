@@ -50,7 +50,7 @@ paths:
       tags: [health]
       operationId: getReadyz
       summary: 要求を受けられるかを返す
-      description: MySQL に届けば 200、届かなければ 503 を返す。
+      description: DB に届けば 200、届かなければ 503 を返す。
       security: []
       responses:
         "200":
@@ -59,7 +59,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Health" }
         "503":
-          description: MySQL に届かない
+          description: DB に届かない
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Health" }
@@ -342,7 +342,12 @@ paths:
               required: [username, email, department_id, team_id, position_id]
               properties:
                 username: { type: string, minLength: 1, maxLength: 128 }
-                email: { type: string, format: email, minLength: 1, maxLength: 320 }
+                email:
+                  type: string
+                  format: email
+                  minLength: 1
+                  maxLength: 320
+                  description: 小文字にそろえて保存し、応答でも小文字で返す。大文字と小文字だけが違うメールは、同じメールとみなす
                 phone_number:
                   type: string
                   nullable: true

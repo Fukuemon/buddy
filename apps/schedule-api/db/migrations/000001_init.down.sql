@@ -1,0 +1,29 @@
+DROP VIEW recurring_schedule_details;
+DROP VIEW schedule_details;
+DROP VIEW visit_info_details;
+
+DROP TABLE import_runs;
+DROP TABLE external_event_links;
+DROP TABLE calendar_sync_states;
+DROP TABLE external_calendars;
+DROP TABLE schedule_cancels;
+DROP TABLE schedules;
+DROP TABLE recurring_schedule_exclusions;
+DROP TABLE recurring_schedules;
+DROP TABLE schedule_types;
+DROP TABLE visit_info_visit_categories;
+DROP TABLE visit_infos;
+DROP TABLE patients;
+DROP TABLE visit_categories;
+DROP TABLE service_codes;
+DROP TABLE user_policy_targets;
+DROP TABLE user_policies;
+DROP TABLE users;
+DROP TABLE position_policies;
+DROP TABLE policies;
+DROP TABLE positions;
+DROP TABLE teams;
+DROP TABLE departments;
+DROP TABLE facilities;
+
+DROP FUNCTION set_updated_at();

@@ -47,7 +47,7 @@ schedule-api は、事業所ごとの予定、職員、利用者、権限を持�
 | 認可 | `internal/principal` | トークンの主張（`Identity`）、職員（`Principal`）、職員の管理の判定 |
 | 認証 | `internal/access` | トークンから職員を特定する手順と、パスが指す資源の事業所を引く手順 |
 | テスト | `internal/inmem` | 機能のパッケージのテストが共有する、メモリ上のリポジトリ |
-| アダプタ | `internal/mysql` | 機能のパッケージのリポジトリを、sqlc の生成コード（`sqlcgen`）で実装する |
+| アダプタ | `internal/postgres` | 機能のパッケージのリポジトリを、pgx/v5 の接続のプールと sqlc の生成コード（`sqlcgen`）で実装する |
 | アダプタ | `internal/ulid` | `IDGenerator` を ULID で実装し、ID の形を確かめる |
 | アダプタ | `internal/gcal` | `calendar.EventSource` を Google Calendar API で実装する。繰り返しの予定を展開せずに、親の予定と例外の回を読む。認証した `calendar.Service` は `cmd` が渡す。テストの偽物の API は `internal/gcal/gcaltest` に置く |
 | 設定 | `internal/config` | 環境変数から API とマイグレーションの設定を読む。DB の接続の値は自分の型で持ち、`cmd` がアダプタの設定に写す |
@@ -62,9 +62,12 @@ schedule-api は、事業所ごとの予定、職員、利用者、権限を持�
 
 ### 表の構成
 
-次の図は、schedule-api の全ての表と、その間の関係を示す。カラム、制約、索引は、マイグレーションから生成した[表の文書](https://github.com/Fukuemon/buddy/blob/develop/docs/db/schedule-api/README.md)（文書のサイトでは「DB の設計」の「表の一覧」）にある。表の文書の Viewpoints は、事業所と組織、職員と権限、利用者、予定と訪問、繰り返しの予定の観点ごとに、表を絞った ER 図を持つ。
+次の図は、schedule-api の全ての表と、その間の関係を示す。カラム、制約、索引は、マイグレーションから生成した[表の文書](https://github.com/Fukuemon/buddy/blob/develop/docs/db/schedule-api/README.md)（文書のサイトでは「DB の設計」の「表の一覧」）にある。表の文書の Viewpoints は、事業所と組織、職員と権限、利用者、予定と訪問、繰り返しの予定、外部のカレンダーの取り込みの観点ごとに、表を絞った ER 図を持つ。  
+DB は PostgreSQL 18 で、表は 1 本の初期のマイグレーションで作る（ADR-0011）。表とカラムの説明は、マイグレーションの `COMMENT ON` に書く。
 
-- 主キーは、多くの表が ULID の `id`（`CHAR(26)`）である。
+- ADR-0011: [予定の API の DB を PostgreSQL にし、見直した表でマイグレーションを作り直す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0011-schedule-api-postgresql.md)
+
+- 主キーは、多くの表が ULID の `id`（`text COLLATE "C"`）である。主キーだけに ULID の形の CHECK を付ける。
 - `position_policies` と `visit_info_visit_categories` は、2 つの外部キーの組を主キーにする。
 - `recurring_schedule_exclusions` は、`recurring_schedule_id` と `date` の組を主キーにする。
 - `user_policy_targets` は、`id` を主キーにする。対象の列（`target_user_id` と `target_team_id`）のどちらかが NULL になり、主キーに入れられないためである。
@@ -92,7 +95,6 @@ erDiagram
   users ||--o{ recurring_schedules : "持つ"
   schedule_types ||--o{ schedules : "分類する"
   schedule_types ||--o{ recurring_schedules : "分類する"
-  recurring_rules ||--o{ recurring_schedules : "繰り返す"
   recurring_schedules ||--o{ recurring_schedule_exclusions : "除外する日"
   recurring_schedules |o--o{ schedules : "1 回だけ置き換えた予定"
   schedules ||--o| schedule_cancels : "取り消される"
@@ -106,13 +108,30 @@ erDiagram
   visit_infos ||--o{ visit_info_visit_categories : "区分を持つ"
   visit_categories ||--o{ visit_info_visit_categories : "分類する"
   users ||--o{ patients : "主に担当する"
+  users ||--o{ external_calendars : "外部のカレンダー"
+  external_calendars ||--o| calendar_sync_states : "同期の状態"
+  external_calendars ||--o{ external_event_links : "外部の予定"
+  schedules |o--o| external_event_links : "対応する"
+  recurring_schedules |o--o| external_event_links : "対応する"
+  external_calendars ||--o{ import_runs : "取り込みの記録"
+  users ||--o{ import_runs : "確定する"
 ```
 
+- 事業所の中の行を指す外部キーは、`(facility_id, id)` の組で指す。別の事業所の職員や利用者を指す行は、アプリの確認に加えて DB も拒む。
+- 名前の列は既定の決定的な照合順序のままにし、完全に一致する値だけを同じとみなす。清音と濁音、全角と半角、大文字と小文字は別の名前である。メモリ上のリポジトリ（`inmem`）も同じ比べ方をする。
+- 日時の監査の列は `timestamptz` にし、`updated_at` はトリガーで付ける。予定の日付と時刻は、事業所の現地の時刻として `date` と `time` で持つ。
+- 区分値（`frequency`、`preferred_time` など）は `text` と CHECK で持つ。名前の付いた CHECK と一意の制約は `<表>_<意味>_{key,fkey,check}` の名前にする。
 - `departments`、`teams`、`positions` は事業所ごとに持つ。名前が同じ部署でも、事業所が違えば別の行にする。事業所の間で部署を共有すると、事業所が部署の名前を変えたときにほかの事業所に波及するためである。
 - `facilities.org_id` は、認証の基盤の組織の ID を持つ。NULL を許し、値があれば一意にする。認証のミドルウェアは、トークンの組織のクレームでこの列を探す。
 - `users.sub` は、認証の基盤の利用者の識別子を持つ。初回のログインまでは NULL で、値があれば全ての事業所を通じて一意にする。
-- `users.email` は、事業所の中で一意にする（`facility_id` と `email` の組）。初回のログインは事業所とメールで職員を探すので、当たる職員は 1 人に限られる。`users.username` は表示名で、一意にしない。
+- `users.email` は、事業所の中で一意にする（`facility_id` と `email` の組）。初回のログインは事業所とメールで職員を探すので、当たる職員は 1 人に限られる。予定の API は、メールを小文字にそろえてから保存し、比べる。そろえ忘れた書き込みは CHECK が拒む。`users.username` は表示名で、一意にしない。
 - 訪問の区分は、`visit_info_visit_categories` で 1 件の訪問に複数を付けられる。
+- 予定の種類の規則（通常はタイトルが必須、訪問は訪問の情報が必須）は、`schedule_types.code`（`normal`、`visit`）で読む。`name` は表示と一覧の絞り込みに使う。
+- 1 つの訪問の情報は、1 つの予定か 1 つの繰り返しの予定だけが指す（`visit_info_id` の一意の制約）。
+- `is_over_time_work` は、開始の時刻から DB が生成する列である。書き込みには含めない。
+- 外部キーの列には、引く向きに使うものに index を置く。行を消さない固定のマスタ（権限、サービスコード、訪問の区分、予定の種類）を指す列には置かない。
+- 監査の日時は UTC で読み、応答はマイクロ秒までの RFC 3339 の形で返す。
+- `external_calendars`、`calendar_sync_states`、`external_event_links`、`import_runs` は、Google カレンダーの取り込み（ADR-0009 の段階 1）で使う。外部の予定の題名と本文は、利用者の名前を含むので保存しない。カレンダーを外すときは行を消さずに `external_calendars.disabled_at` を入れ、外部の予定との対応を残す。結び付け直して同じ期間を取り込んでも、予定が重ならないためである。外していないカレンダーは、職員ごとに 1 つにする（部分の一意の index）。
 - 一覧の読み出しには、予定と訪問の情報と名前を結合したビュー（`schedule_details`、`recurring_schedule_details`、`visit_info_details`）を使う。
 - `schedule_types`、`service_codes`、`visit_categories` の行は、マイグレーションで入れる。事業所ごとには持たない。サービスコードの提供時間の範囲は、照合の許容範囲と同じ値にする。
 - `policies` の 8 行は、マイグレーションで入れる。事業所ごとには持たず、API では作らない。認可は `code` で権限を読むので、行が環境ごとに違うと判定がずれるためである。
@@ -154,7 +173,7 @@ sequenceDiagram
   participant W as web
   participant M as 認証のミドルウェア
   participant U as schedule.Usecase
-  participant DB as MySQL
+  participant DB as PostgreSQL
 
   W->>M: GET /v1/facilities/{facility_id}/schedules（Bearer）
   M->>M: JWKS で署名、iss、aud、exp、nbf を確かめる
@@ -228,13 +247,13 @@ sequenceDiagram
 
 ### 繰り返しの予定
 
-- 繰り返しの予定は、最初の回の日付（`recurring_schedules.date`）と規則（`recurring_rules`）で回を決める。回は保存しない。
+- 繰り返しの予定は、最初の回の日付（`recurring_schedules.date`）と、同じ行の規則の列（`frequency` から `end_date`）で回を決める。回は保存しない。頻度ごとの列の組み合わせは CHECK で確かめる。
 - 繰り返しの規則は次の 3 つ。規則に値が無いときは、最初の回の日付から曜日か日を決める。
   - `weekly`: `day_of_week` の曜日ごと
   - `monthly` で `day_of_month` がある: 毎月のその日。その日がない月は回にしない
   - `monthly` で `week_of_month` と `day_of_week` がある: 毎月の n 回目のその曜日。n は日から `(日 - 1) / 7 + 1` で決め、1 から 5 を受ける。5 回目のない月は回にしない
 - 最初の回の日付より前と、`end_date` より後は回にしない。最初の回の日付は、規則の回に当たらなければならない。
-- 繰り返しの 1 回だけを変えるときは、その日を `recurring_schedule_exclusions` に足し、`recurring_schedule_id` で元を指す単発の予定を作る。2 つは 1 つのトランザクションで行う。
+- 繰り返しの 1 回だけを変えるときは、その日を `recurring_schedule_exclusions` に足し、`recurring_schedule_id` と元の回の日付（`original_date`）で元を指す単発の予定を作る。2 つは 1 つのトランザクションで行う。2 つの列は組で持ち、同じ回は 1 度だけ置き換えられる（一意の制約）。
 - 予定の一覧の API は、単発の予定と繰り返しの予定を別々に返す。繰り返しの予定を期間の回に展開しない。`date_from` と `date_to` は単発の予定だけを絞る。
 
 ### 予定の変更

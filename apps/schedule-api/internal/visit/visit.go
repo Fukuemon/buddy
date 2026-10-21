@@ -24,6 +24,7 @@ type Category struct {
 // Info は、訪問の予定に付く訪問の情報である。CompanionID は同行する職員で、いないときは nil である。
 type Info struct {
 	ID              string
+	FacilityID      string
 	PatientID       string
 	AssignedStaffID string
 	CompanionID     *string
