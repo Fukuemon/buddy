@@ -1,6 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vite-plus/test'
 
+import { scheduleHttp, server, TEST_SCHEDULE_API_URL } from '#/test/server'
+
 import type { AuthDeps } from './auth'
 import { callBff } from './bff'
 import { createMemorySessionStore } from './sessionStore'
@@ -27,69 +29,77 @@ const setup = async () => {
     oidc: {} as AuthDeps['oidc'],
     fetchMe: async () => ({ ok: false, reason: 'failed' }),
   }
-  const requests: Request[] = []
-  const fetch = async (input: RequestInfo | URL) => {
-    const request = input as Request
-    requests.push(request)
-    if (new URL(request.url).pathname === '/v1/facilities/facility-1/teams') {
-      return Response.json([{ id: 'team-a', name: 'A' }])
-    }
-    return Response.json(
-      { code: 'forbidden', message: 'この操作は許可されていません' },
-      { status: 403 },
-    )
-  }
-  return { auth, fetch, requests }
+  return { auth, scheduleApiUrl: TEST_SCHEDULE_API_URL }
 }
 
 const withCookie = (cookie?: string) =>
   new Request('http://web.test/_serverFn', cookie ? { headers: { Cookie: cookie } } : {})
 
+const signedIn = () => withCookie(`buddy_session=${signValue('id-1', SECRET)}`)
+
+/** 呼ばれてはいけない操作の handler。呼ばれると 500 を返し、テストの期待と食い違う。 */
+const mustNotCall = () =>
+  scheduleHttp.get('/v1/facilities/{facility_id}/teams', ({ response }) =>
+    response(500).json({ code: 'internal', message: '呼ばれてはいけない' }),
+  )
+
 describe('callBff', () => {
   it('セッションの token と事業所で予定の API を呼ぶ', async () => {
-    const { auth, fetch, requests } = await setup()
+    server.use(
+      scheduleHttp.get('/v1/facilities/{facility_id}/teams', ({ params, request, response }) =>
+        params.facility_id === 'facility-1' &&
+        request.headers.get('Authorization') === 'Bearer access-1'
+          ? response(200).json([
+              {
+                id: 'team-a',
+                facility_id: 'facility-1',
+                name: 'A',
+                created_at: '2026-10-01T00:00:00Z',
+                updated_at: '2026-10-01T00:00:00Z',
+              },
+            ])
+          : response(403).json({ code: 'forbidden', message: '事業所か token が違う' }),
+      ),
+    )
     const result = await callBff(
-      withCookie(`buddy_session=${signValue('id-1', SECRET)}`),
+      signedIn(),
       { op: 'teams.list', args: ['facility-other'] },
-      { auth, scheduleApiUrl: 'http://api.test', fetch },
+      await setup(),
     )
     expect(result).toEqual({ ok: true, data: [{ id: 'team-a', name: 'A' }] })
-    expect(requests[0].headers.get('Authorization')).toBe('Bearer access-1')
   })
 
   it('API の失敗は status と文を値で返す', async () => {
-    const { auth, fetch } = await setup()
+    server.use(
+      scheduleHttp.get('/v1/schedules/{schedule_id}', ({ response }) =>
+        response(403).json({ code: 'forbidden', message: 'この操作は許可されていません' }),
+      ),
+    )
     const result = await callBff(
-      withCookie(`buddy_session=${signValue('id-1', SECRET)}`),
+      signedIn(),
       { op: 'schedules.get', args: ['facility-1', 'x'] },
-      { auth, scheduleApiUrl: 'http://api.test', fetch },
+      await setup(),
     )
     expect(result).toEqual({ ok: false, status: 403, message: 'この操作は許可されていません' })
   })
 
   it('引数の形が操作に合わなければ 400 を返し、API を呼ばない', async () => {
-    const { auth, fetch, requests } = await setup()
+    server.use(mustNotCall())
     const result = await callBff(
-      withCookie(`buddy_session=${signValue('id-1', SECRET)}`),
+      signedIn(),
       { op: 'schedules.list', args: ['facility-1'] },
-      { auth, scheduleApiUrl: 'http://api.test', fetch },
+      await setup(),
     )
     expect(result).toMatchObject({ ok: false, status: 400 })
-    expect(requests).toHaveLength(0)
   })
 
   it('セッションが無ければ 401 を返し、API を呼ばない', async () => {
-    const { auth, fetch, requests } = await setup()
+    server.use(mustNotCall())
     const result = await callBff(
       withCookie(),
       { op: 'teams.list', args: ['facility-1'] },
-      {
-        auth,
-        scheduleApiUrl: 'http://api.test',
-        fetch,
-      },
+      await setup(),
     )
     expect(result).toMatchObject({ ok: false, status: 401 })
-    expect(requests).toHaveLength(0)
   })
 })

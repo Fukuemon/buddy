@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import { MAX_RECEIPT_UPLOAD_BYTES, parseReceiptForm } from '#/api/bff/receiptCall'
 import { fakeReceiptReport } from '#/api/fake/fakeReceiptApi'
+import { receiptHttp, server, TEST_RECEIPT_API_URL } from '#/test/server'
 
 import type { AuthDeps } from './auth'
 import { checkReceipt } from './receipt'
@@ -59,54 +60,49 @@ describe('checkReceipt', () => {
     new Request('http://web.test/_serverFn', cookie ? { headers: { Cookie: cookie } } : {})
 
   it('セッションの token を付けて照合の API に送り、結果を返す', async () => {
-    const auth = await setup()
-    let sent: Request | undefined
+    server.use(
+      receiptHttp.post('/v1/checks', async ({ request, response }) => {
+        const sent = await request.formData()
+        return request.headers.get('Authorization') === 'Bearer access-1' &&
+          sent.get('month') === '2024-04'
+          ? response(200).json(fakeReceiptReport)
+          : response(400).json({ code: 'bad_request', message: 'token か月が違う' })
+      }),
+    )
     const result = await checkReceipt(
       request(`buddy_session=${signValue('id-1', SECRET)}`),
       form({ visits: new Blob(['v']), month: '2024-04' }),
-      {
-        auth,
-        receiptApiUrl: 'http://receipt.test',
-        fetch: async (input) => {
-          sent = input as Request
-          return Response.json(fakeReceiptReport)
-        },
-      },
+      { auth: await setup(), receiptApiUrl: TEST_RECEIPT_API_URL },
     )
     expect(result).toEqual({ ok: true, report: fakeReceiptReport })
-    expect(sent?.headers.get('Authorization')).toBe('Bearer access-1')
-    expect((await sent?.formData())?.get('month')).toBe('2024-04')
   })
 
-  it('行の誤りを rowErrors で返し、セッションが無ければ API を呼ばない', async () => {
-    const auth = await setup()
-    const errors = [{ source: 'visits', line: 2, message: 'x' }]
+  it('行の誤りを rowErrors で返す', async () => {
+    const errors = [{ source: 'visits' as const, line: 2, message: 'x' }]
+    server.use(
+      receiptHttp.post('/v1/checks', ({ response }) =>
+        response(422).json({ code: 'invalid_csv', message: 'm', errors }),
+      ),
+    )
     const failed = await checkReceipt(
       request(`buddy_session=${signValue('id-1', SECRET)}`),
       form({ visits: new Blob(['v']), schedules: new Blob(['s']) }),
-      {
-        auth,
-        receiptApiUrl: 'http://receipt.test',
-        fetch: async () =>
-          Response.json({ code: 'invalid_csv', message: 'm', errors }, { status: 422 }),
-      },
+      { auth: await setup(), receiptApiUrl: TEST_RECEIPT_API_URL },
     )
     expect(failed).toEqual({ ok: false, status: 422, message: 'm', rowErrors: errors })
+  })
 
-    let called = false
+  it('セッションが無ければ 401 を返し、API を呼ばない', async () => {
+    server.use(
+      receiptHttp.post('/v1/checks', ({ response }) =>
+        response(500).json({ code: 'internal', message: '呼ばれてはいけない' }),
+      ),
+    )
     const anonymous = await checkReceipt(
       request(),
       form({ visits: new Blob(['v']), month: '2024-04' }),
-      {
-        auth,
-        receiptApiUrl: 'http://receipt.test',
-        fetch: async () => {
-          called = true
-          return Response.json({})
-        },
-      },
+      { auth: await setup(), receiptApiUrl: TEST_RECEIPT_API_URL },
     )
     expect(anonymous).toMatchObject({ ok: false, status: 401 })
-    expect(called).toBe(false)
   })
 })

@@ -7,6 +7,14 @@ import { loadServerConfig, type ServerConfig } from './config'
 import { createOidcClient, type OidcClient } from './oidc'
 import { createValkeySessionStore, type SessionStore } from './sessionStore'
 
+// 開発サーバーを msw の mode で起動したときだけ、.env.msw を読み、2 つの API を偽物に替える。
+// 本番のビルドでは import.meta.env.DEV が false になり、この分岐は msw ごとビルドから消える
+if (import.meta.env.DEV && import.meta.env.MODE === 'msw') {
+  process.loadEnvFile('.env.msw')
+  const { startApiMocks } = await import('#/mocks/node')
+  startApiMocks(process.env)
+}
+
 type Runtime = { config: ServerConfig; store: SessionStore }
 
 let runtime: Runtime | undefined

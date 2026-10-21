@@ -13,19 +13,18 @@ import { readSession, type AuthDeps } from './auth'
 export const checkReceipt = async (
   request: Request,
   form: FormData,
-  deps: { auth: AuthDeps; receiptApiUrl: string; fetch?: typeof globalThis.fetch },
+  deps: { auth: AuthDeps; receiptApiUrl: string },
 ): Promise<ReceiptCheckResult> => {
   const session = await readSession(request, deps.auth)
   if (session === undefined) {
     return { ok: false, status: 401, message: 'ログインが必要です', rowErrors: [] }
   }
-  const send = deps.fetch ?? globalThis.fetch
   const api = createReceiptApi({
     baseUrl: deps.receiptApiUrl,
     fetch: (input, init) => {
       const authorized = new Request(input, init)
       authorized.headers.set('Authorization', `Bearer ${session.accessToken}`)
-      return send(authorized)
+      return globalThis.fetch(authorized)
     },
   })
   const visits = form.get('visits') as Blob
