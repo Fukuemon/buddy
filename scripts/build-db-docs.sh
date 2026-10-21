@@ -31,9 +31,15 @@ done
 tbls doc --rm-dist --config apps/schedule-api/.tbls.yml "mysql://root:$password@127.0.0.1:$port/buddy?charset=utf8mb4"
 tbls lint --config apps/schedule-api/.tbls.yml "mysql://root:$password@127.0.0.1:$port/buddy?charset=utf8mb4"
 
+# nav をコメントにした行に当たらないよう、コメントの行を外してから照合する
+nav=$(grep -v '^[[:space:]]*#' zensical.toml)
 missing=0
 for doc in docs/db/schedule-api/viewpoint-*.md; do
-  if ! grep -qF "\"${doc#docs/}\"" zensical.toml; then
+  if [ ! -e "$doc" ]; then
+    echo "viewpoint の文書が生成されていない" >&2
+    exit 1
+  fi
+  if ! printf '%s\n' "$nav" | grep -qF "\"${doc#docs/}\""; then
     echo "zensical.toml の nav に ${doc#docs/} が無い" >&2
     missing=1
   fi

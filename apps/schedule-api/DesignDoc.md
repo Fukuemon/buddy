@@ -53,7 +53,7 @@ schedule-api は、事業所ごとの予定、職員、利用者、権限を持�
 
 ### 表の構成
 
-次の図は、schedule-api の全ての表と、その間の関係を示す。全ての表の主キー `id` は ULID で、`CHAR(26)` に置く。結合の表は、2 つの外部キーの組を主キーにする。カラム、制約、索引は、マイグレーションから生成した[表の文書](https://github.com/Fukuemon/buddy/blob/develop/docs/db/schedule-api/README.md)（文書のサイトでは「予定の管理の表」）にある。
+次の図は、schedule-api の全ての表と、その間の関係を示す。全ての表の主キー `id` は ULID で、`CHAR(26)` に置く。結合の表は、2 つの外部キーの組を主キーにする。カラム、制約、索引は、マイグレーションから生成した[表の文書](https://github.com/Fukuemon/buddy/blob/develop/docs/db/schedule-api/README.md)（文書のサイトでは「DB の設計」の「表の一覧」）にある。
 
 ```mermaid
 erDiagram
