@@ -3,7 +3,7 @@ version: 1
 
 rules:
   - expected: 名前で指す
-    pattern: /\b(?!S3\b|M[1-4]\b|V8\b|D1\b|R2\b)(?:DQ|[GSMQRVD])\d{1,2}\b/
+    pattern: /\b(?!S3\b|M[1-6]\b|V8\b|D1\b|R2\b)(?:DQ|[GSMQRVD])\d{1,2}\b/
     prh: 記号の採番は使わない。記号だけでは、その文が単独で意味を持たない。名前や節の見出しで指す
   - expected: この文書に必要な事実だけを書く
     pattern: /(?:詳細|実現方法|調査結果|選定|結果|書式)は、?\s?(?:DesignDoc|Design Doc|PRD|ADR)(?:\.md)?\s?(?:に|で)(?:書|定め|記載)/
