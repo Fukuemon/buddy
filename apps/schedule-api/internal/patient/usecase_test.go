@@ -12,8 +12,8 @@ import (
 )
 
 func newService(s *inmem.Store, guard organization.Guard) *patient.Usecase {
-	return patient.NewUsecase(patient.Repositories{
-		Facilities: inmem.Facilities{Store: s}, Staff: inmem.Staff{Store: s}, Visits: inmem.Visits{Store: s}, Patients: inmem.Patients{Store: s},
+	return patient.NewUsecase(patient.Deps{
+		Facilities: inmem.Facilities{Store: s}, Staff: inmem.StaffRefs{Store: s}, ServiceCodes: inmem.VisitMasters{Store: s}, Patients: inmem.Patients{Store: s},
 	}, &inmem.SeqIDs{}, guard)
 }
 

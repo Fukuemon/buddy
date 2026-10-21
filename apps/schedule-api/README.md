@@ -122,7 +122,7 @@ go generate ./...
 
 - 操作を足したら、生成し直すと `server` がインターフェイスを満たさなくなり、コンパイルが失敗する。メソッドを足して直す。
 - 成功の応答は、生成した `<操作>200JSONResponse` か `<操作>201JSONResponse` で返す。
-- 機能のパッケージの `Service` のエラーは、そのまま `error` として返す。`writeError` が、domain のエラーから状態コードと `{code,message}` を決める。
+- 機能のパッケージの `Usecase` のエラーは、そのまま `error` として返す。`writeError` が、`apperr` のエラーから状態コードと `{code,message}` を決める。
 - 要求の検証の規則（必須、長さ、ID の形、列挙）は、`openapi.yaml` の schema に書く。`openapi_validate.go` のミドルウェアが、埋め込んだ定義でパスの引数、クエリ、本文を確かめ、合わなければ 400（`invalid_input`）を返す。
   - 必須の文字列で空を拒むときは、`required` に加えて `minLength: 1` を書く。`required` は項目があることしか求めない。
   - 本文は `Content-Type: application/json` で、1 MiB までを受ける。空の値のクエリ（`?date_from=` など）は、定義では確かめず、ハンドラが指定なしとして扱う。

@@ -8,14 +8,22 @@ import (
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
 )
 
-// VisitRepository は、visit.Repository を実装する。
-type VisitRepository struct{ conn }
+// VisitInfoRepository は、visit.InfoRepository を実装する。
+type VisitInfoRepository struct{ conn }
 
-// NewVisitRepository は VisitRepository を作る。
-func NewVisitRepository(db *sql.DB) *VisitRepository { return &VisitRepository{conn{db}} }
+// NewVisitInfoRepository は VisitInfoRepository を作る。
+func NewVisitInfoRepository(db *sql.DB) *VisitInfoRepository { return &VisitInfoRepository{conn{db}} }
 
-// CreateInfo は、訪問の情報と区分を続けて書く。途中で失敗したときに残さないよう、呼び出し側がトランザクションの中で呼ぶ。
-func (r *VisitRepository) CreateInfo(ctx context.Context, i visit.Info) error {
+// VisitMasterRepository は、visit.MasterRepository を実装する。
+type VisitMasterRepository struct{ conn }
+
+// NewVisitMasterRepository は VisitMasterRepository を作る。
+func NewVisitMasterRepository(db *sql.DB) *VisitMasterRepository {
+	return &VisitMasterRepository{conn{db}}
+}
+
+// Create は、訪問の情報と区分を続けて書く。途中で失敗したときに残さないよう、呼び出し側がトランザクションの中で呼ぶ。
+func (r *VisitInfoRepository) Create(ctx context.Context, i visit.Info) error {
 	q := r.q(ctx)
 	err := q.CreateVisitInfo(ctx, sqlcgen.CreateVisitInfoParams{
 		ID:              i.ID,
@@ -36,14 +44,14 @@ func (r *VisitRepository) CreateInfo(ctx context.Context, i visit.Info) error {
 	return nil
 }
 
-// DeleteInfoIfUnused は、予定と繰り返しの予定のどれも指していない訪問の情報 id を、区分の結び付きごと消す。
+// DeleteIfUnused は、予定と繰り返しの予定のどれも指していない訪問の情報 id を、区分の結び付きごと消す。
 // 指されているか、無いときは何もせず、エラーも返さない。
-func (r *VisitRepository) DeleteInfoIfUnused(ctx context.Context, id string) error {
+func (r *VisitInfoRepository) DeleteIfUnused(ctx context.Context, id string) error {
 	return translate("delete visit info", r.q(ctx).DeleteUnusedVisitInfo(ctx, id))
 }
 
 // GetServiceCode は、ID が id のサービスコードを返す。無いときは apperr.ErrNotFound を返す。
-func (r *VisitRepository) GetServiceCode(ctx context.Context, id string) (visit.ServiceCode, error) {
+func (r *VisitMasterRepository) GetServiceCode(ctx context.Context, id string) (visit.ServiceCode, error) {
 	c, err := r.q(ctx).GetServiceCode(ctx, id)
 	if err != nil {
 		return visit.ServiceCode{}, translate("get service code", err)
@@ -52,7 +60,7 @@ func (r *VisitRepository) GetServiceCode(ctx context.Context, id string) (visit.
 }
 
 // ListServiceCodes は、すべてのサービスコードをコード、ID の順に返す。
-func (r *VisitRepository) ListServiceCodes(ctx context.Context) ([]visit.ServiceCode, error) {
+func (r *VisitMasterRepository) ListServiceCodes(ctx context.Context) ([]visit.ServiceCode, error) {
 	rows, err := r.q(ctx).ListServiceCodes(ctx)
 	if err != nil {
 		return nil, translate("list service codes", err)
@@ -65,7 +73,7 @@ func (r *VisitRepository) ListServiceCodes(ctx context.Context) ([]visit.Service
 }
 
 // ListCategories は、すべての訪問の区分を名前、ID の順に返す。
-func (r *VisitRepository) ListCategories(ctx context.Context) ([]visit.Category, error) {
+func (r *VisitMasterRepository) ListCategories(ctx context.Context) ([]visit.Category, error) {
 	rows, err := r.q(ctx).ListVisitCategories(ctx)
 	if err != nil {
 		return nil, translate("list visit categories", err)
@@ -74,7 +82,7 @@ func (r *VisitRepository) ListCategories(ctx context.Context) ([]visit.Category,
 }
 
 // ListCategoriesByIDs は、ids のうち見つかった区分だけを名前、ID の順に返す。ids が空のときは問い合わせずに空のスライスを返す。
-func (r *VisitRepository) ListCategoriesByIDs(ctx context.Context, ids []string) ([]visit.Category, error) {
+func (r *VisitMasterRepository) ListCategoriesByIDs(ctx context.Context, ids []string) ([]visit.Category, error) {
 	if len(ids) == 0 {
 		return []visit.Category{}, nil
 	}

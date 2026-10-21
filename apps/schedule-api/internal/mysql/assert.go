@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/kernel"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
@@ -17,7 +18,12 @@ var (
 	_ organization.PositionRepository   = (*PositionRepository)(nil)
 	_ organization.PolicyRepository     = (*PolicyRepository)(nil)
 	_ staff.Repository                  = (*StaffRepository)(nil)
+	_ kernel.Finder[staff.Ref]          = (*StaffRefRepository)(nil)
+	_ schedule.StaffRefs                = (*StaffRefRepository)(nil)
 	_ patient.Repository                = (*PatientRepository)(nil)
-	_ visit.Repository                  = (*VisitRepository)(nil)
+	_ visit.InfoRepository              = (*VisitInfoRepository)(nil)
+	_ visit.MasterRepository            = (*VisitMasterRepository)(nil)
 	_ schedule.Repository               = (*ScheduleRepository)(nil)
+	_ schedule.RecurringRepository      = (*RecurringScheduleRepository)(nil)
+	_ schedule.TypeRepository           = (*ScheduleTypeRepository)(nil)
 )

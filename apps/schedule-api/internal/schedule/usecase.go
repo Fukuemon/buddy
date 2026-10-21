@@ -8,43 +8,32 @@ import (
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/kernel"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/tx"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
 )
 
-// Repositories は、Usecase が使うリポジトリである。
-type Repositories struct {
-	Facilities organization.FacilityRepository
-	Staff      staff.Repository
-	Patients   patient.Repository
-	Visits     visit.Repository
+// Deps は、Usecase が使うリポジトリと、ほかの機能のデータを読む小さなインターフェイスである。
+type Deps struct {
+	Facilities kernel.Finder[organization.Facility]
+	Staff      StaffRefs
+	Visits     VisitInfos
 	Schedules  Repository
+	Recurring  RecurringRepository
+	Types      TypeRepository
 }
 
 // Usecase は、予定の操作である。操作は、ctx の職員（principal.Principal）の権限で判定する。
 // 見てよくない予定は一覧から除き、1 件を指す操作には apperr.ErrForbidden を返す。ctx に職員がいなければ apperr.ErrForbidden を返す。
 type Usecase struct {
-	repos  Repositories
-	tx     tx.Transactor
-	ids    kernel.IDGenerator
-	visits visit.Writer
+	deps Deps
+	tx   tx.Transactor
+	ids  kernel.IDGenerator
 }
 
 // NewUsecase は Usecase を作る。
-func NewUsecase(repos Repositories, tx tx.Transactor, ids kernel.IDGenerator) *Usecase {
-	findPatient := func(ctx context.Context, id string) (string, string, error) {
-		pa, err := repos.Patients.Get(ctx, id)
-		return pa.ID, pa.FacilityID, err
-	}
-	return &Usecase{
-		repos:  repos,
-		tx:     tx,
-		ids:    ids,
-		visits: visit.NewWriter(repos.Staff, findPatient, repos.Visits, ids),
-	}
+func NewUsecase(deps Deps, tx tx.Transactor, ids kernel.IDGenerator) *Usecase {
+	return &Usecase{deps: deps, tx: tx, ids: ids}
 }
 
 // SlotInput は、単発と繰り返しの予定に共通の入力である。Visit は、訪問の予定のときに指定する。
@@ -76,12 +65,12 @@ type List struct {
 
 // ListTypes は、予定の種類を返す。
 func (s *Usecase) ListTypes(ctx context.Context) ([]Type, error) {
-	return s.repos.Schedules.ListTypes(ctx)
+	return s.deps.Types.List(ctx)
 }
 
 // Get は、単発の予定を返す。
 func (s *Usecase) Get(ctx context.Context, id string) (Detail, error) {
-	d, err := s.repos.Schedules.Get(ctx, id)
+	d, err := s.deps.Schedules.Get(ctx, id)
 	if err != nil {
 		return Detail{}, err
 	}
@@ -93,7 +82,7 @@ func (s *Usecase) Get(ctx context.Context, id string) (Detail, error) {
 
 // GetRecurring は、繰り返しの予定を返す。
 func (s *Usecase) GetRecurring(ctx context.Context, id string) (RecurringDetail, error) {
-	d, err := s.repos.Schedules.GetRecurring(ctx, id)
+	d, err := s.deps.Recurring.Get(ctx, id)
 	if err != nil {
 		return RecurringDetail{}, err
 	}
@@ -112,18 +101,18 @@ func (s *Usecase) List(ctx context.Context, facilityID string, q ListQuery) (Lis
 	if err != nil {
 		return List{}, err
 	}
-	if _, err := s.repos.Facilities.Get(ctx, facilityID); err != nil {
+	if _, err := s.deps.Facilities.Get(ctx, facilityID); err != nil {
 		return List{}, err
 	}
 	readable, err := s.readable(ctx, p, facilityID)
 	if err != nil {
 		return List{}, err
 	}
-	single, err := s.repos.Schedules.ListByFacility(ctx, facilityID, q)
+	single, err := s.deps.Schedules.ListByFacility(ctx, facilityID, q)
 	if err != nil {
 		return List{}, err
 	}
-	recurring, err := s.repos.Schedules.ListRecurringByFacility(ctx, facilityID, q)
+	recurring, err := s.deps.Recurring.ListByFacility(ctx, facilityID, q)
 	if err != nil {
 		return List{}, err
 	}
@@ -135,24 +124,14 @@ func (s *Usecase) List(ctx context.Context, facilityID string, q ListQuery) (Lis
 
 // readable は、事業所の職員のうち、p が予定を見てよい職員かを返す関数を返す。
 func (s *Usecase) readable(ctx context.Context, p principal.Principal, facilityID string) (func(staffID string) bool, error) {
-	if p.CanReadAll() {
+	if CanReadAll(p) {
 		return func(string) bool { return true }, nil
 	}
-	sort, err := staff.ParseSort("", "")
+	members, err := s.deps.Staff.ListByFacility(ctx, facilityID)
 	if err != nil {
 		return nil, err
 	}
-	members, err := s.repos.Staff.ListByFacility(ctx, facilityID, staff.ListQuery{Sort: sort})
-	if err != nil {
-		return nil, err
-	}
-	ok := map[string]bool{p.Staff.ID: true}
-	for _, m := range members {
-		if p.CanRead(m.ID, m.TeamID) {
-			ok[m.ID] = true
-		}
-	}
-	return func(staffID string) bool { return ok[staffID] }, nil
+	return readable(p, members), nil
 }
 
 func filter[T any](items []T, keep func(T) bool) []T {
@@ -180,27 +159,17 @@ func (s *Usecase) authorize(ctx context.Context, staffID string, edit bool) erro
 	if err != nil {
 		return err
 	}
-	st, err := s.repos.Staff.Get(ctx, staffID)
+	st, err := s.deps.Staff.Get(ctx, staffID)
 	if err != nil {
 		return err
 	}
-	return allow(p, st.ID, st.TeamID, edit)
-}
-
-func allow(p principal.Principal, staffID, teamID string, edit bool) error {
-	if edit && !p.CanEdit(staffID, teamID) {
-		return fmt.Errorf("%w: この職員の予定を編集する権限がありません", apperr.ErrForbidden)
-	}
-	if !edit && !p.CanRead(staffID, teamID) {
-		return fmt.Errorf("%w: この職員の予定を見る権限がありません", apperr.ErrForbidden)
-	}
-	return nil
+	return allow(p, st, edit)
 }
 
 // Create は、事業所に単発の予定を作る。訪問の情報があれば同じトランザクションで保存する。
 // 事業所が見つからないときは apperr.ErrNotFound を、参照が見つからないか別の事業所のものであるときは入力の誤りを返す。
 func (s *Usecase) Create(ctx context.Context, facilityID string, in SlotInput) (Detail, error) {
-	if _, err := s.repos.Facilities.Get(ctx, facilityID); err != nil {
+	if _, err := s.deps.Facilities.Get(ctx, facilityID); err != nil {
 		return Detail{}, err
 	}
 	var created Detail
@@ -214,7 +183,7 @@ func (s *Usecase) Create(ctx context.Context, facilityID string, in SlotInput) (
 
 // CreateRecurring は、事業所に繰り返しの予定を作る。エラーは Create と同じである。
 func (s *Usecase) CreateRecurring(ctx context.Context, facilityID string, in SlotInput, rule RuleInput) (RecurringDetail, error) {
-	if _, err := s.repos.Facilities.Get(ctx, facilityID); err != nil {
+	if _, err := s.deps.Facilities.Get(ctx, facilityID); err != nil {
 		return RecurringDetail{}, err
 	}
 	r, err := NewRule(Rule{
@@ -238,10 +207,10 @@ func (s *Usecase) CreateRecurring(ctx context.Context, facilityID string, in Slo
 		if err != nil {
 			return err
 		}
-		if err := s.repos.Schedules.CreateRecurring(ctx, rs); err != nil {
+		if err := s.deps.Recurring.Create(ctx, rs); err != nil {
 			return err
 		}
-		created, err = s.repos.Schedules.GetRecurring(ctx, rs.ID)
+		created, err = s.deps.Recurring.Get(ctx, rs.ID)
 		return err
 	})
 	return created, err
@@ -252,7 +221,7 @@ func (s *Usecase) CreateRecurring(ctx context.Context, facilityID string, in Slo
 // 繰り返しの予定が見つからないときは apperr.ErrNotFound を、originalDate が回に当たらないときは入力の誤りを、
 // その回をすでに置き換えたときは apperr.ErrConflict を返す。
 func (s *Usecase) ChangeOccurrence(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in SlotInput) (Detail, error) {
-	rs, err := s.repos.Schedules.GetRecurring(ctx, recurringScheduleID)
+	rs, err := s.deps.Recurring.Get(ctx, recurringScheduleID)
 	if err != nil {
 		return Detail{}, err
 	}
@@ -264,7 +233,7 @@ func (s *Usecase) ChangeOccurrence(ctx context.Context, recurringScheduleID stri
 	}
 	var created Detail
 	err = s.tx.WithinTx(ctx, func(ctx context.Context) error {
-		if err := s.repos.Schedules.AddExclusion(ctx, rs.ID, originalDate); err != nil {
+		if err := s.deps.Recurring.AddExclusion(ctx, rs.ID, originalDate); err != nil {
 			return apperr.AsConflict(err, "%s の回はすでに置き換えられています", originalDate)
 		}
 		var err error
@@ -283,17 +252,14 @@ func (s *Usecase) Cancel(ctx context.Context, scheduleID, reason string) (Cancel
 	}
 	// Update と同じ行のロックの中で権限を確かめ、確かめた後に予定の職員が替わらないようにする。
 	err = s.tx.WithinTx(ctx, func(ctx context.Context) error {
-		if err := s.repos.Schedules.Lock(ctx, scheduleID); err != nil {
-			return err
-		}
-		cur, err := s.repos.Schedules.Get(ctx, scheduleID)
+		cur, err := s.deps.Schedules.GetForUpdate(ctx, scheduleID)
 		if err != nil {
 			return err
 		}
 		if err := s.authorize(ctx, cur.StaffID, true); err != nil {
 			return err
 		}
-		return apperr.AsConflict(s.repos.Schedules.CreateCancel(ctx, c), "この予定はすでにキャンセルされています")
+		return apperr.AsConflict(s.deps.Schedules.CreateCancel(ctx, c), "この予定はすでにキャンセルされています")
 	})
 	if err != nil {
 		return Cancel{}, err
@@ -307,10 +273,7 @@ func (s *Usecase) Cancel(ctx context.Context, scheduleID, reason string) (Cancel
 func (s *Usecase) Update(ctx context.Context, scheduleID string, in SlotInput) (Detail, error) {
 	var updated Detail
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
-		if err := s.repos.Schedules.Lock(ctx, scheduleID); err != nil {
-			return err
-		}
-		cur, err := s.repos.Schedules.Get(ctx, scheduleID)
+		cur, err := s.deps.Schedules.GetForUpdate(ctx, scheduleID)
 		if err != nil {
 			return err
 		}
@@ -328,15 +291,15 @@ func (s *Usecase) Update(ctx context.Context, scheduleID string, in SlotInput) (
 		if err != nil {
 			return err
 		}
-		if err := s.repos.Schedules.Update(ctx, sc); err != nil {
+		if err := s.deps.Schedules.Update(ctx, sc); err != nil {
 			return err
 		}
 		if cur.VisitInfoID != nil {
-			if err := s.repos.Visits.DeleteInfoIfUnused(ctx, *cur.VisitInfoID); err != nil {
+			if err := s.deps.Visits.DeleteIfUnused(ctx, *cur.VisitInfoID); err != nil {
 				return err
 			}
 		}
-		updated, err = s.repos.Schedules.Get(ctx, cur.ID)
+		updated, err = s.deps.Schedules.Get(ctx, cur.ID)
 		return err
 	})
 	return updated, err
@@ -352,20 +315,20 @@ func (s *Usecase) createSchedule(ctx context.Context, facilityID string, in Slot
 		return Detail{}, err
 	}
 	sc.RecurringScheduleID = recurringScheduleID
-	if err := s.repos.Schedules.Create(ctx, sc); err != nil {
+	if err := s.deps.Schedules.Create(ctx, sc); err != nil {
 		return Detail{}, err
 	}
-	return s.repos.Schedules.Get(ctx, sc.ID)
+	return s.deps.Schedules.Get(ctx, sc.ID)
 }
 
 // prepareSlot は、予定の種類と職員と、職員の予定を編集する権限を確かめ、訪問の情報があれば保存して、予定の属性を組み立てる。
 // 訪問の情報を保存するので、トランザクションの中で呼ぶ。
 func (s *Usecase) prepareSlot(ctx context.Context, facilityID string, in SlotInput) (Slot, Type, error) {
-	typ, err := s.repos.Schedules.GetType(ctx, in.TypeID)
+	typ, err := s.deps.Types.Get(ctx, in.TypeID)
 	if err != nil {
 		return Slot{}, Type{}, apperr.Reference("予定の種類", in.TypeID, err)
 	}
-	st, err := s.repos.Staff.Get(ctx, in.StaffID)
+	st, err := s.deps.Staff.Get(ctx, in.StaffID)
 	if err != nil {
 		return Slot{}, Type{}, apperr.Reference("職員", in.StaffID, err)
 	}
@@ -376,7 +339,7 @@ func (s *Usecase) prepareSlot(ctx context.Context, facilityID string, in SlotInp
 	if err != nil {
 		return Slot{}, Type{}, err
 	}
-	if err := allow(p, st.ID, st.TeamID, true); err != nil {
+	if err := allow(p, st, true); err != nil {
 		return Slot{}, Type{}, err
 	}
 	slot := Slot{
@@ -392,7 +355,7 @@ func (s *Usecase) prepareSlot(ctx context.Context, facilityID string, in SlotInp
 		if typ.Name != Visit {
 			return Slot{}, Type{}, apperr.Invalid("訪問の情報は訪問の予定にだけ付けられます")
 		}
-		id, err := s.visits.Create(ctx, facilityID, *in.Visit)
+		id, err := s.deps.Visits.Create(ctx, facilityID, *in.Visit)
 		if err != nil {
 			return Slot{}, Type{}, err
 		}

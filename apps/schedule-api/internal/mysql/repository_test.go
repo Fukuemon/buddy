@@ -6,6 +6,7 @@ import (
 	"errors"
 	"maps"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -147,6 +148,29 @@ func TestStaffGetWithPolicies(t *testing.T) {
 	}
 	if _, err := r.Get(ctx, unknownID); !errors.Is(err, apperr.ErrNotFound) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
+	}
+}
+
+func TestStaffRef(t *testing.T) {
+	ctx := txContext(t)
+	r := NewStaffRefRepository(testDB)
+	got, err := r.Get(ctx, seedMori)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != (staff.Ref{ID: seedMori, FacilityID: seedFacility, TeamID: seedTeamB}) {
+		t.Errorf("got %+v", got)
+	}
+	if _, err := r.Get(ctx, unknownID); !errors.Is(err, apperr.ErrNotFound) {
+		t.Fatalf("err = %v, want ErrNotFound", err)
+	}
+	refs, err := r.ListByFacility(ctx, seedFacility)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.ContainsFunc(refs, func(ref staff.Ref) bool { return ref == got }) ||
+		!slices.IsSortedFunc(refs, func(a, b staff.Ref) int { return strings.Compare(a.ID, b.ID) }) {
+		t.Errorf("refs = %+v, want 森を含む ID の順", refs)
 	}
 }
 
@@ -372,12 +396,12 @@ func TestPatientList(t *testing.T) {
 
 func TestVisitCreateInfo(t *testing.T) {
 	ctx := txContext(t)
-	r := NewVisitRepository(testDB)
+	r := NewVisitInfoRepository(testDB)
 	info := visit.Info{
 		ID: "01M3TD00000000000000000030", PatientID: seedPatient, AssignedStaffID: seedMori,
 		ServiceCodeID: seedServiceCode, CategoryIDs: []string{seedEmergency, seedNight},
 	}
-	if err := r.CreateInfo(ctx, info); err != nil {
+	if err := r.Create(ctx, info); err != nil {
 		t.Fatal(err)
 	}
 	cats, err := r.visitCategories(ctx, []string{info.ID})
@@ -387,7 +411,7 @@ func TestVisitCreateInfo(t *testing.T) {
 	if len(cats[info.ID]) != 2 {
 		t.Errorf("categories = %+v", cats)
 	}
-	found, err := r.ListCategoriesByIDs(ctx, []string{seedNight, unknownID})
+	found, err := NewVisitMasterRepository(testDB).ListCategoriesByIDs(ctx, []string{seedNight, unknownID})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -476,7 +500,7 @@ func TestScheduleList(t *testing.T) {
 
 func TestRecurringScheduleAndExclusion(t *testing.T) {
 	ctx := txContext(t)
-	r := NewScheduleRepository(testDB)
+	r := NewRecurringScheduleRepository(testDB)
 	rs := schedule.RecurringSchedule{
 		ID: "01M3TD00000000000000000050",
 		Slot: schedule.Slot{
@@ -487,7 +511,7 @@ func TestRecurringScheduleAndExclusion(t *testing.T) {
 		Rule: schedule.Rule{ID: "01M3TD00000000000000000051", Frequency: schedule.Monthly,
 			WeekOfMonth: ptr(1), DayOfWeek: ptr(1), EndDate: &civil.Date{Year: 2027, Month: 3, Day: 31}},
 	}
-	if err := r.CreateRecurring(ctx, rs); err != nil {
+	if err := r.Create(ctx, rs); err != nil {
 		t.Fatal(err)
 	}
 	day := civil.Date{Year: 2026, Month: 12, Day: 7}
@@ -497,7 +521,7 @@ func TestRecurringScheduleAndExclusion(t *testing.T) {
 	if err := r.AddExclusion(ctx, rs.ID, day); !errors.Is(err, apperr.ErrConflict) {
 		t.Fatalf("同じ日の除外: err = %v, want ErrConflict", err)
 	}
-	got, err := r.GetRecurring(ctx, rs.ID)
+	got, err := r.Get(ctx, rs.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -509,7 +533,7 @@ func TestRecurringScheduleAndExclusion(t *testing.T) {
 		t.Errorf("ExclusionDates = %v", got.ExclusionDates)
 	}
 
-	list, err := r.ListRecurringByFacility(ctx, seedFacility, schedule.ListQuery{Sort: kernel.Sort{Field: "date"}})
+	list, err := r.ListByFacility(ctx, seedFacility, schedule.ListQuery{Sort: kernel.Sort{Field: "date"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -544,7 +568,7 @@ func TestScheduleCancel(t *testing.T) {
 func TestScheduleUpdateAndDeleteUnusedVisitInfo(t *testing.T) {
 	ctx := txContext(t)
 	r := NewScheduleRepository(testDB)
-	visits := NewVisitRepository(testDB)
+	visits := NewVisitInfoRepository(testDB)
 	cur, err := r.Get(ctx, seedVisitSchedule)
 	if err != nil {
 		t.Fatal(err)
@@ -559,7 +583,7 @@ func TestScheduleUpdateAndDeleteUnusedVisitInfo(t *testing.T) {
 		}
 		return n
 	}
-	if err := visits.DeleteInfoIfUnused(ctx, oldInfo); err != nil {
+	if err := visits.DeleteIfUnused(ctx, oldInfo); err != nil {
 		t.Fatal(err)
 	}
 	if countInfo() != 1 {
@@ -582,7 +606,7 @@ func TestScheduleUpdateAndDeleteUnusedVisitInfo(t *testing.T) {
 		t.Errorf("got %+v", got)
 	}
 
-	if err := visits.DeleteInfoIfUnused(ctx, oldInfo); err != nil {
+	if err := visits.DeleteIfUnused(ctx, oldInfo); err != nil {
 		t.Fatal(err)
 	}
 	if countInfo() != 0 {
@@ -594,7 +618,7 @@ func TestScheduleUpdateKeepsRecurringAndSharedVisitInfo(t *testing.T) {
 	ctx := txContext(t)
 	tx := ctx.Value(txKey{}).(*sql.Tx)
 	r := NewScheduleRepository(testDB)
-	visits := NewVisitRepository(testDB)
+	visits := NewVisitInfoRepository(testDB)
 	cur, err := r.Get(ctx, seedVisitSchedule)
 	if err != nil {
 		t.Fatal(err)
@@ -621,7 +645,7 @@ func TestScheduleUpdateKeepsRecurringAndSharedVisitInfo(t *testing.T) {
 	if got.RecurringScheduleID == nil || *got.RecurringScheduleID != seedRecurring {
 		t.Errorf("RecurringScheduleID = %v", got.RecurringScheduleID)
 	}
-	if err := visits.DeleteInfoIfUnused(ctx, *cur.VisitInfoID); err != nil {
+	if err := visits.DeleteIfUnused(ctx, *cur.VisitInfoID); err != nil {
 		t.Fatal(err)
 	}
 	var n int
@@ -633,13 +657,13 @@ func TestScheduleUpdateKeepsRecurringAndSharedVisitInfo(t *testing.T) {
 	}
 }
 
-func TestScheduleLockBlocksCancel(t *testing.T) {
+func TestScheduleGetForUpdateBlocksCancel(t *testing.T) {
 	if testDB == nil {
 		t.Skip("MySQL を使うテストは -short では動かさない")
 	}
 	bg := context.Background()
 	r := NewScheduleRepository(testDB)
-	if err := r.Lock(bg, unknownID); !errors.Is(err, apperr.ErrNotFound) {
+	if _, err := r.GetForUpdate(bg, unknownID); !errors.Is(err, apperr.ErrNotFound) {
 		t.Fatalf("無い予定のロック: err = %v, want ErrNotFound", err)
 	}
 	locker, err := testDB.BeginTx(bg, nil)
@@ -647,7 +671,7 @@ func TestScheduleLockBlocksCancel(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() { _ = locker.Rollback() }()
-	if err := r.Lock(context.WithValue(bg, txKey{}, locker), seedConference); err != nil {
+	if _, err := r.GetForUpdate(context.WithValue(bg, txKey{}, locker), seedConference); err != nil {
 		t.Fatal(err)
 	}
 	canceler, err := testDB.BeginTx(bg, nil)
@@ -832,7 +856,7 @@ func TestGrantAllowsReadingTarget(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if (principal.Principal{Staff: before}).CanRead(hayashi.ID, hayashi.TeamID) {
+	if schedule.CanRead(principal.Principal{Staff: before}, hayashi.ID, hayashi.TeamID) {
 		t.Fatal("森は、権限を足す前から林の予定を見られた")
 	}
 	g := staff.Grant{ID: "01M3TD00000000000000000050", PolicyID: seedUserRead,
@@ -845,7 +869,7 @@ func TestGrantAllowsReadingTarget(t *testing.T) {
 		t.Fatal(err)
 	}
 	p := principal.Principal{Staff: after}
-	if !p.CanRead(hayashi.ID, hayashi.TeamID) || p.CanEdit(hayashi.ID, hayashi.TeamID) {
+	if !schedule.CanRead(p, hayashi.ID, hayashi.TeamID) || schedule.CanEdit(p, hayashi.ID, hayashi.TeamID) {
 		t.Errorf("森の権限 = %+v, want 林の予定の閲覧だけ", after.Policies)
 	}
 }

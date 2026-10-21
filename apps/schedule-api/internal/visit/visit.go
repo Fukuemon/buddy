@@ -60,12 +60,16 @@ type Detail struct {
 	Categories        []Category
 }
 
-// Repository は、訪問の情報とマスタを読み書きする。GetServiceCode は、見つからないときに apperr.ErrNotFound を返す。
+// InfoRepository は、訪問の情報を書く。
+type InfoRepository interface {
+	Create(ctx context.Context, i Info) error
+	// DeleteIfUnused は、どの予定と繰り返しの予定も指していない訪問の情報を消す。指されているか、無いときは何もしない。
+	DeleteIfUnused(ctx context.Context, id string) error
+}
+
+// MasterRepository は、サービスコードと訪問の区分のマスタを読む。GetServiceCode は、見つからないときに apperr.ErrNotFound を返す。
 // ListCategoriesByIDs は、見つかったものだけを返す。
-type Repository interface {
-	CreateInfo(ctx context.Context, i Info) error
-	// DeleteInfoIfUnused は、どの予定と繰り返しの予定も指していない訪問の情報を消す。指されているか、無いときは何もしない。
-	DeleteInfoIfUnused(ctx context.Context, id string) error
+type MasterRepository interface {
 	GetServiceCode(ctx context.Context, id string) (ServiceCode, error)
 	ListServiceCodes(ctx context.Context) ([]ServiceCode, error)
 	ListCategories(ctx context.Context) ([]Category, error)

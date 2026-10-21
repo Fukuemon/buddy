@@ -177,3 +177,31 @@ func (r *StaffRepository) LinkSub(ctx context.Context, facilityID, email, sub st
 	})
 	return translate("link user sub", err)
 }
+
+// StaffRefRepository は、ほかの機能が職員を参照するための kernel.Finder[staff.Ref] を実装する。
+type StaffRefRepository struct{ conn }
+
+// NewStaffRefRepository は StaffRefRepository を作る。
+func NewStaffRefRepository(db *sql.DB) *StaffRefRepository { return &StaffRefRepository{conn{db}} }
+
+// Get は、ID が id の職員の事業所とチームを返す。無いときは apperr.ErrNotFound を返す。
+func (r *StaffRefRepository) Get(ctx context.Context, id string) (staff.Ref, error) {
+	row, err := r.q(ctx).GetUserRef(ctx, id)
+	if err != nil {
+		return staff.Ref{}, translate("get user ref", err)
+	}
+	return staff.Ref{ID: row.ID, FacilityID: row.FacilityID, TeamID: row.TeamID}, nil
+}
+
+// ListByFacility は、事業所 facilityID の職員の事業所とチームを ID の順に返す。
+func (r *StaffRefRepository) ListByFacility(ctx context.Context, facilityID string) ([]staff.Ref, error) {
+	rows, err := r.q(ctx).ListUserRefsByFacility(ctx, facilityID)
+	if err != nil {
+		return nil, translate("list user refs", err)
+	}
+	out := make([]staff.Ref, len(rows))
+	for i, row := range rows {
+		out[i] = staff.Ref{ID: row.ID, FacilityID: row.FacilityID, TeamID: row.TeamID}
+	}
+	return out, nil
+}

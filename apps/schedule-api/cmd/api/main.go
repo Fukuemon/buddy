@@ -79,27 +79,39 @@ func run() error {
 	positions := mysql.NewPositionRepository(db)
 	policies := mysql.NewPolicyRepository(db)
 	staffRepo := mysql.NewStaffRepository(db)
+	staffRefs := mysql.NewStaffRefRepository(db)
 	patients := mysql.NewPatientRepository(db)
-	visits := mysql.NewVisitRepository(db)
+	visitMasters := mysql.NewVisitMasterRepository(db)
 	schedules := mysql.NewScheduleRepository(db)
+	recurring := mysql.NewRecurringScheduleRepository(db)
+	visitInfos := visit.NewWriter(visit.WriterDeps{
+		Staff: staffRefs,
+		Patients: func(ctx context.Context, id string) (string, string, error) {
+			pa, err := patients.Get(ctx, id)
+			return pa.ID, pa.FacilityID, err
+		},
+		Infos:   mysql.NewVisitInfoRepository(db),
+		Masters: visitMasters,
+	}, ids)
 
 	router := httpapi.NewRouter(httpapi.Usecases{
-		Organization: organization.NewUsecase(organization.Repositories{
+		Organization: organization.NewUsecase(organization.Deps{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions, Policies: policies,
 		}, tx, ids, principal.RequireStaffManage),
-		Staff: staff.NewUsecase(staff.Repositories{
+		Staff: staff.NewUsecase(staff.Deps{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions, Policies: policies, Staff: staffRepo,
 		}, tx, ids, principal.RequireStaffManage),
-		Patients: patient.NewUsecase(patient.Repositories{
-			Facilities: facilities, Staff: staffRepo, Visits: visits, Patients: patients,
+		Patients: patient.NewUsecase(patient.Deps{
+			Facilities: facilities, Staff: staffRefs, ServiceCodes: visitMasters, Patients: patients,
 		}, ids, principal.RequireStaffManage),
-		VisitMasters: visit.NewUsecase(visits),
-		Schedules: schedule.NewUsecase(schedule.Repositories{
-			Facilities: facilities, Staff: staffRepo, Patients: patients, Visits: visits, Schedules: schedules,
+		VisitMasters: visit.NewUsecase(visitMasters),
+		Schedules: schedule.NewUsecase(schedule.Deps{
+			Facilities: facilities, Staff: staffRefs, Visits: visitInfos,
+			Schedules: schedules, Recurring: recurring, Types: mysql.NewScheduleTypeRepository(db),
 		}, tx, ids),
-		Auth: authn.NewUsecase(authn.Repositories{
+		Auth: authn.NewUsecase(authn.Deps{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions,
-			Staff: staffRepo, Schedules: schedules,
+			Staff: staffRepo, StaffRefs: staffRefs, Schedules: schedules, Recurring: recurring,
 		}),
 	}, httpapi.RouterConfig{Logger: log, AllowOrigins: cfg.AllowOrigins, Verifier: tokenVerifier{verifier}, Ready: func(ctx context.Context) error {
 		ctx, cancel := context.WithTimeout(ctx, readyTimeout)

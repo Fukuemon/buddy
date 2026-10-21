@@ -38,9 +38,9 @@ func authStore() *inmem.Store {
 }
 
 func newAuth(s *inmem.Store) *authn.Usecase {
-	return authn.NewUsecase(authn.Repositories{
+	return authn.NewUsecase(authn.Deps{
 		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s}, Positions: inmem.Positions{Store: s},
-		Staff: inmem.Staff{Store: s}, Schedules: inmem.Schedules{Store: s},
+		Staff: inmem.Staff{Store: s}, StaffRefs: inmem.StaffRefs{Store: s}, Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s},
 	})
 }
 

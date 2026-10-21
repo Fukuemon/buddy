@@ -15,7 +15,7 @@ status: stable
 - 業務の規則と認可は API が持つ。web は、画面の表示の規則（照合の印と CSV の書き出しを含む）だけを持ち、拒否の判断を API に任せる。
 - `packages/ui` は、BCD Design の Base と Case のコンポーネントとトークンだけを持つ。業務の名前（予定、照合など）を持つ Domain のコンポーネントは、`apps/web` の `features/<機能>/components/` に置く（[ADR-0004](../docs/adr/0004-design-system.md)）。
 - `packages/e2e` の `kit/` は、別のリポジトリ（非公開）から写したもので、buddy の画面の名前を持たない。buddy の画面に依存するコードは `tests/` に置く。
-- schedule-api は、規則と手順を機能ごとのパッケージ（`organization`、`staff`、`patient`、`visit`、`schedule`）に置く。DB と HTTP のアダプタ（`mysql`、`httpapi`）は 1 つずつ置く（[ADR-0005](../docs/adr/0005-schedule-api-packages.md)）。receipt-api は、照合の段（読み込み、正規化、対の作成、判定）ごとにパッケージを分ける。
+- schedule-api は、規則と手順を機能ごとのパッケージ（`organization`、`staff`、`patient`、`visit`、`schedule`）に置く。DB と HTTP のアダプタ（`mysql`、`httpapi`）は 1 つずつ置く（[ADR-0005](../docs/adr/0005-schedule-api-packages.md)）。機能のパッケージの中は、手順（`Usecase`）、規則の関数、集約の単位のリポジトリに分ける（[ADR-0010](../docs/adr/0010-schedule-api-usecase-boundaries.md)）。receipt-api は、照合の段（読み込み、正規化、対の作成、判定）ごとにパッケージを分ける。
 
 ## Dependency Rules
 
@@ -23,11 +23,12 @@ status: stable
   - 2 つの Go の API が共有するコードは、別の module の `packages/go` にだけ置き、`go.mod` の `replace` で読む（[ADR-0007](../docs/adr/0007-go-shared-module.md)）。`packages/go` は、トークンの検証（`oidc`、`oidc/oidctest`）とヘルスチェック（`healthcheck`）を持ち、`apps/` を import しない。
 - web は `@buddy/ui` に依存してよい。`packages/ui` から `apps/` へは依存しない。
 - web の `features/<機能>/` の間は import しない。2 つの機能が使うものは、`components/site/`（サイト共通のコンポーネント）か `@buddy/ui` に置く。
-- schedule-api の依存は、アダプタ（`httpapi`、`mysql`）、`access`、機能のパッケージ、`domain` と `civil` の 1 方向に限る。
-  - `domain` と `civil` は標準ライブラリだけに依存する。
-  - 機能のパッケージの間は、`organization`、`staff`、`visit`、`patient`、`schedule` の順にだけ import する。`auth` は `organization` と `staff` に依存し、`schedule` と `access` から使う。
-  - 機能のパッケージは、自分のリポジトリのインターフェイスだけに依存し、トランザクションは `domain.Transactor` で受ける。アダプタを import しない。
-  - `mysql`、`oidc`、`ulid` は機能のパッケージのインターフェイスを実装する。`httpapi` から `mysql` と `oidc` を import するのは、テストのファイルだけにする。
+- schedule-api の依存は、アダプタ（`httpapi`、`mysql`）、`authn`、機能のパッケージ、共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）の 1 方向に限る。
+  - 共通のパッケージは、標準ライブラリと、共通のパッケージの間（`kernel` から `apperr`）だけに依存する。
+  - 機能のパッケージの間は、`organization`、`staff`、`visit`、`patient`、`schedule` の順にだけ import する。`principal` は `organization` と `staff` に依存し、`schedule` と `authn` から使う。
+  - 機能のパッケージは、自分の集約のリポジトリのインターフェイスと、使う側で定義した小さなインターフェイス（`kernel.Finder` か 1〜2 のメソッド）だけに依存する。ほかの機能のリポジトリのインターフェイスは import しない。トランザクションは `tx.Transactor` で受ける。アダプタを import しない。
+  - `config` は DB のアダプタを import しない。`cmd` が `config` の値をアダプタの設定に写す。
+  - `mysql`、`oidc`、`ulid` は機能のパッケージのインターフェイスを実装する。`httpapi` から `mysql` と `oidc` を import するのは、テストのファイルだけにする。`httpapi` は、パスの ID の形の確認に `ulid` を使う。
   - `inmem` を import するのは、テストのファイルだけにする。
 - receipt-api の依存は、`record` と `civil` を末端にして、読み込み、正規化、対の作成、判定、つなぐ段（`check`）、取得元、HTTP の順の 1 方向に限る。判定はサービスの規則（`servicerule`）を、取得元は Google カレンダー（`gcal`）を使う。
 - 依存の向きを確かめる lint は入れていない。レビューで確かめる。E2E の層の向きだけは、`packages/e2e/eslint/e2e-authoring-rule.mjs` が止める。

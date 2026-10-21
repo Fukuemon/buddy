@@ -10,22 +10,22 @@ import (
 
 // Usecase は、訪問の情報のマスタの操作である。
 type Usecase struct {
-	visits Repository
+	masters MasterRepository
 }
 
 // NewUsecase は Usecase を作る。
-func NewUsecase(visits Repository) *Usecase {
-	return &Usecase{visits: visits}
+func NewUsecase(masters MasterRepository) *Usecase {
+	return &Usecase{masters: masters}
 }
 
 // ListServiceCodes は、すべてのサービスコードを返す。
 func (v *Usecase) ListServiceCodes(ctx context.Context) ([]ServiceCode, error) {
-	return v.visits.ListServiceCodes(ctx)
+	return v.masters.ListServiceCodes(ctx)
 }
 
 // ListCategories は、すべての訪問の区分を返す。
 func (v *Usecase) ListCategories(ctx context.Context) ([]Category, error) {
-	return v.visits.ListCategories(ctx)
+	return v.masters.ListCategories(ctx)
 }
 
 // Input は、訪問の予定に付ける訪問の情報の入力である。
@@ -39,25 +39,31 @@ type Input struct {
 
 // PatientFinder は、ID が id の利用者を探し、利用者の ID と、利用者が属する事業所の ID を返す。
 // 利用者が見つからないときは apperr.ErrNotFound を返す。
-// patient が visit に依存するので、visit は patient.Repository を直接は受け取らない。
+// patient が visit に依存するので、visit は patient を import せずに関数で受け取る。
 type PatientFinder func(ctx context.Context, id string) (patientID, facilityID string, err error)
 
-// Writer は、参照を検証して訪問の情報を保存する。
+// WriterDeps は、Writer が使うリポジトリと、ほかの機能のデータを読むインターフェイスである。
+type WriterDeps struct {
+	Staff    kernel.Finder[staff.Ref]
+	Patients PatientFinder
+	Infos    InfoRepository
+	Masters  MasterRepository
+}
+
+// Writer は、参照を検証して訪問の情報を保存し、使われなくなった訪問の情報を消す。予定の操作の手順から呼ぶ。
 type Writer struct {
-	staff    staff.Repository
-	patients PatientFinder
-	visits   Repository
-	ids      kernel.IDGenerator
+	deps WriterDeps
+	ids  kernel.IDGenerator
 }
 
 // NewWriter は Writer を作る。
-func NewWriter(staffRepo staff.Repository, patients PatientFinder, visits Repository, ids kernel.IDGenerator) Writer {
-	return Writer{staff: staffRepo, patients: patients, visits: visits, ids: ids}
+func NewWriter(deps WriterDeps, ids kernel.IDGenerator) Writer {
+	return Writer{deps: deps, ids: ids}
 }
 
 // Create は、in の参照が facilityID の事業所に属することを確かめて訪問の情報を保存し、その ID を返す。
 func (w Writer) Create(ctx context.Context, facilityID string, in Input) (string, error) {
-	patientID, patientFacilityID, err := w.patients(ctx, in.PatientID)
+	patientID, patientFacilityID, err := w.deps.Patients(ctx, in.PatientID)
 	if err != nil {
 		return "", apperr.Reference("利用者", in.PatientID, err)
 	}
@@ -69,7 +75,7 @@ func (w Writer) Create(ctx context.Context, facilityID string, in Input) (string
 		staffIDs = append(staffIDs, *in.CompanionID)
 	}
 	for _, id := range staffIDs {
-		st, err := w.staff.Get(ctx, id)
+		st, err := w.deps.Staff.Get(ctx, id)
 		if err != nil {
 			return "", apperr.Reference("職員", id, err)
 		}
@@ -77,11 +83,11 @@ func (w Writer) Create(ctx context.Context, facilityID string, in Input) (string
 			return "", err
 		}
 	}
-	if _, err := w.visits.GetServiceCode(ctx, in.ServiceCodeID); err != nil {
+	if _, err := w.deps.Masters.GetServiceCode(ctx, in.ServiceCodeID); err != nil {
 		return "", apperr.Reference("サービスコード", in.ServiceCodeID, err)
 	}
 	if len(in.CategoryIDs) > 0 {
-		found, err := w.visits.ListCategoriesByIDs(ctx, in.CategoryIDs)
+		found, err := w.deps.Masters.ListCategoriesByIDs(ctx, in.CategoryIDs)
 		if err != nil {
 			return "", err
 		}
@@ -106,8 +112,13 @@ func (w Writer) Create(ctx context.Context, facilityID string, in Input) (string
 	if err != nil {
 		return "", err
 	}
-	if err := w.visits.CreateInfo(ctx, info); err != nil {
+	if err := w.deps.Infos.Create(ctx, info); err != nil {
 		return "", err
 	}
 	return info.ID, nil
+}
+
+// DeleteIfUnused は、どの予定と繰り返しの予定も指していない訪問の情報 id を消す。指されているか、無いときは何もしない。
+func (w Writer) DeleteIfUnused(ctx context.Context, id string) error {
+	return w.deps.Infos.DeleteIfUnused(ctx, id)
 }

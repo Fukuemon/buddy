@@ -17,7 +17,7 @@ const (
 func TestOrganizationCreatePosition(t *testing.T) {
 	s := inmem.Seeded()
 	s.Policies["P1"] = organization.Policy{ID: "P1"}
-	uc := organization.NewUsecase(organization.Repositories{
+	uc := organization.NewUsecase(organization.Deps{
 		Facilities: inmem.Facilities{Store: s}, Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s},
 	}, &inmem.Tx{}, &inmem.SeqIDs{}, func(context.Context) error { return nil })
 	ctx := context.Background()
@@ -39,7 +39,7 @@ func TestOrganizationCreatePosition(t *testing.T) {
 
 func TestOrganizationCreateTeam(t *testing.T) {
 	s := inmem.Seeded()
-	uc := organization.NewUsecase(organization.Repositories{
+	uc := organization.NewUsecase(organization.Deps{
 		Facilities: inmem.Facilities{Store: s}, Teams: inmem.Teams{Store: s},
 	}, &inmem.Tx{}, &inmem.SeqIDs{}, func(context.Context) error { return nil })
 	ctx := context.Background()
@@ -56,7 +56,7 @@ func TestOrganizationCreateTeam(t *testing.T) {
 // 役職の既定に職員の管理の権限を入れて、ほかの職員に配れないようにするためである（ADR-0006）。
 func TestOrganizationCreatePositionForbidden(t *testing.T) {
 	s := inmem.Seeded()
-	uc := organization.NewUsecase(organization.Repositories{
+	uc := organization.NewUsecase(organization.Deps{
 		Facilities: inmem.Facilities{Store: s}, Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s},
 	}, &inmem.Tx{}, &inmem.SeqIDs{}, func(context.Context) error { return apperr.ErrForbidden })
 	if _, err := uc.CreatePosition(context.Background(), facilityID, "主任", nil); !errors.Is(err, apperr.ErrForbidden) {

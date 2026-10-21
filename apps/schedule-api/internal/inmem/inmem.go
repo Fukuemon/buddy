@@ -291,6 +291,26 @@ func (s Staff) LinkSub(_ context.Context, facilityID, email, sub string) error {
 	return nil
 }
 
+// StaffRefs は、kernel.Finder[staff.Ref] と、予定が使う職員の一覧のメモリ上の実装である。
+type StaffRefs struct{ *Store }
+
+// Get は、職員の事業所とチームを返す。
+func (s StaffRefs) Get(_ context.Context, id string) (staff.Ref, error) {
+	d, err := get(s.Staff, id)
+	return staff.Ref{ID: d.ID, FacilityID: d.FacilityID, TeamID: d.TeamID}, err
+}
+
+// ListByFacility は、事業所の職員の事業所とチームを返す。
+func (s StaffRefs) ListByFacility(_ context.Context, facilityID string) ([]staff.Ref, error) {
+	var out []staff.Ref
+	for _, d := range s.Staff {
+		if d.FacilityID == facilityID {
+			out = append(out, staff.Ref{ID: d.ID, FacilityID: d.FacilityID, TeamID: d.TeamID})
+		}
+	}
+	return out, nil
+}
+
 // Patients は、patient.Repository のメモリ上の実装である。
 type Patients struct{ *Store }
 
@@ -310,17 +330,17 @@ func (s Patients) ListByFacility(context.Context, string, patient.ListQuery) ([]
 	return nil, nil
 }
 
-// Visits は、visit.Repository のメモリ上の実装である。
-type Visits struct{ *Store }
+// VisitInfos は、visit.InfoRepository のメモリ上の実装である。
+type VisitInfos struct{ *Store }
 
-// CreateInfo は、訪問の情報を保存する。
-func (s Visits) CreateInfo(_ context.Context, i visit.Info) error {
+// Create は、訪問の情報を保存する。
+func (s VisitInfos) Create(_ context.Context, i visit.Info) error {
 	s.Infos[i.ID] = i
 	return nil
 }
 
-// DeleteInfoIfUnused は、どの予定も指していない訪問の情報を消す。
-func (s Visits) DeleteInfoIfUnused(_ context.Context, id string) error {
+// DeleteIfUnused は、どの予定も指していない訪問の情報を消す。
+func (s VisitInfos) DeleteIfUnused(_ context.Context, id string) error {
 	for _, d := range s.Schedules {
 		if d.VisitInfoID != nil && *d.VisitInfoID == id {
 			return nil
@@ -330,19 +350,22 @@ func (s Visits) DeleteInfoIfUnused(_ context.Context, id string) error {
 	return nil
 }
 
+// VisitMasters は、visit.MasterRepository のメモリ上の実装である。
+type VisitMasters struct{ *Store }
+
 // GetServiceCode は、サービスコードを返す。
-func (s Visits) GetServiceCode(_ context.Context, id string) (visit.ServiceCode, error) {
+func (s VisitMasters) GetServiceCode(_ context.Context, id string) (visit.ServiceCode, error) {
 	return get(s.Codes, id)
 }
 
 // ListServiceCodes は、常に空を返す。
-func (s Visits) ListServiceCodes(context.Context) ([]visit.ServiceCode, error) { return nil, nil }
+func (s VisitMasters) ListServiceCodes(context.Context) ([]visit.ServiceCode, error) { return nil, nil }
 
 // ListCategories は、常に空を返す。
-func (s Visits) ListCategories(context.Context) ([]visit.Category, error) { return nil, nil }
+func (s VisitMasters) ListCategories(context.Context) ([]visit.Category, error) { return nil, nil }
 
 // ListCategoriesByIDs は、ids のうち見つかった訪問の区分を返す。
-func (s Visits) ListCategoriesByIDs(_ context.Context, ids []string) ([]visit.Category, error) {
+func (s VisitMasters) ListCategoriesByIDs(_ context.Context, ids []string) ([]visit.Category, error) {
 	var out []visit.Category
 	for _, id := range ids {
 		if c, ok := s.Categories[id]; ok {
@@ -352,16 +375,19 @@ func (s Visits) ListCategoriesByIDs(_ context.Context, ids []string) ([]visit.Ca
 	return out, nil
 }
 
-// Schedules は、schedule.Repository のメモリ上の実装である。
-type Schedules struct{ *Store }
+// ScheduleTypes は、schedule.TypeRepository のメモリ上の実装である。
+type ScheduleTypes struct{ *Store }
 
-// GetType は、予定の種類を返す。
-func (s Schedules) GetType(_ context.Context, id string) (schedule.Type, error) {
+// Get は、予定の種類を返す。
+func (s ScheduleTypes) Get(_ context.Context, id string) (schedule.Type, error) {
 	return get(s.Types, id)
 }
 
-// ListTypes は、常に空を返す。
-func (s Schedules) ListTypes(context.Context) ([]schedule.Type, error) { return nil, nil }
+// List は、常に空を返す。
+func (s ScheduleTypes) List(context.Context) ([]schedule.Type, error) { return nil, nil }
+
+// Schedules は、schedule.Repository のメモリ上の実装である。
+type Schedules struct{ *Store }
 
 // Create は、単発の予定を保存する。
 func (s Schedules) Create(_ context.Context, sc schedule.Schedule) error {
@@ -369,10 +395,9 @@ func (s Schedules) Create(_ context.Context, sc schedule.Schedule) error {
 	return nil
 }
 
-// Lock は、予定がなければ apperr.ErrNotFound を返す。
-func (s Schedules) Lock(_ context.Context, id string) error {
-	_, err := get(s.Schedules, id)
-	return err
+// GetForUpdate は、Get と同じ値を返す。メモリ上の実装はロックを取らない。
+func (s Schedules) GetForUpdate(ctx context.Context, id string) (schedule.Detail, error) {
+	return s.Get(ctx, id)
 }
 
 // Update は、単発の予定を置き換える。繰り返しの予定への参照は前のままにする。
@@ -406,19 +431,31 @@ func (s Schedules) ListByFacility(_ context.Context, facilityID string, _ schedu
 	return out, nil
 }
 
-// CreateRecurring は、繰り返しの予定を保存する。
-func (s Schedules) CreateRecurring(_ context.Context, rs schedule.RecurringSchedule) error {
+// CreateCancel は、キャンセルを保存する。キャンセル済みなら apperr.ErrConflict を返す。
+func (s Schedules) CreateCancel(_ context.Context, c schedule.Cancel) error {
+	if _, ok := s.Cancels[c.ScheduleID]; ok {
+		return apperr.ErrConflict
+	}
+	s.Cancels[c.ScheduleID] = c
+	return nil
+}
+
+// RecurringSchedules は、schedule.RecurringRepository のメモリ上の実装である。
+type RecurringSchedules struct{ *Store }
+
+// Create は、繰り返しの予定を保存する。
+func (s RecurringSchedules) Create(_ context.Context, rs schedule.RecurringSchedule) error {
 	s.Recurring[rs.ID] = schedule.RecurringDetail{RecurringSchedule: rs, TypeName: s.Types[rs.TypeID].Name}
 	return nil
 }
 
-// GetRecurring は、繰り返しの予定を返す。
-func (s Schedules) GetRecurring(_ context.Context, id string) (schedule.RecurringDetail, error) {
+// Get は、繰り返しの予定を返す。
+func (s RecurringSchedules) Get(_ context.Context, id string) (schedule.RecurringDetail, error) {
 	return get(s.Recurring, id)
 }
 
-// ListRecurringByFacility は、事業所の繰り返しの予定を返す。
-func (s Schedules) ListRecurringByFacility(_ context.Context, facilityID string, _ schedule.ListQuery) ([]schedule.RecurringDetail, error) {
+// ListByFacility は、事業所の繰り返しの予定を返す。
+func (s RecurringSchedules) ListByFacility(_ context.Context, facilityID string, _ schedule.ListQuery) ([]schedule.RecurringDetail, error) {
 	var out []schedule.RecurringDetail
 	for _, d := range s.Recurring {
 		if d.FacilityID == facilityID {
@@ -429,7 +466,7 @@ func (s Schedules) ListRecurringByFacility(_ context.Context, facilityID string,
 }
 
 // AddExclusion は、繰り返しの予定から d の回を除外する。除外済みなら apperr.ErrConflict を返す。
-func (s Schedules) AddExclusion(_ context.Context, id string, d civil.Date) error {
+func (s RecurringSchedules) AddExclusion(_ context.Context, id string, d civil.Date) error {
 	rs := s.Recurring[id]
 	for _, e := range rs.ExclusionDates {
 		if e == d {
@@ -438,14 +475,5 @@ func (s Schedules) AddExclusion(_ context.Context, id string, d civil.Date) erro
 	}
 	rs.ExclusionDates = append(rs.ExclusionDates, d)
 	s.Recurring[id] = rs
-	return nil
-}
-
-// CreateCancel は、キャンセルを保存する。キャンセル済みなら apperr.ErrConflict を返す。
-func (s Schedules) CreateCancel(_ context.Context, c schedule.Cancel) error {
-	if _, ok := s.Cancels[c.ScheduleID]; ok {
-		return apperr.ErrConflict
-	}
-	s.Cancels[c.ScheduleID] = c
 	return nil
 }

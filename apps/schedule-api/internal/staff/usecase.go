@@ -9,27 +9,27 @@ import (
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/tx"
 )
 
-// Repositories は、Usecase が使うリポジトリである。
-type Repositories struct {
-	Facilities  organization.FacilityRepository
-	Departments organization.DepartmentRepository
-	Teams       organization.TeamRepository
-	Positions   organization.PositionRepository
-	Policies    organization.PolicyRepository
+// Deps は、Usecase が使うリポジトリと、事業所の中の組織を読む小さなインターフェイスである。
+type Deps struct {
+	Facilities  kernel.Finder[organization.Facility]
+	Departments kernel.Finder[organization.Department]
+	Teams       kernel.Finder[organization.Team]
+	Positions   kernel.Finder[organization.Position]
+	Policies    kernel.Finder[organization.Policy]
 	Staff       Repository
 }
 
 // Usecase は、職員の操作である。職員の登録と、職員の権限と役職を変える操作は、guard が許すときだけ行う（ADR-0006）。
 type Usecase struct {
-	repos Repositories
+	deps  Deps
 	tx    tx.Transactor
 	ids   kernel.IDGenerator
 	guard organization.Guard
 }
 
 // NewUsecase は Usecase を作る。
-func NewUsecase(repos Repositories, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) *Usecase {
-	return &Usecase{repos: repos, tx: tx, ids: ids, guard: guard}
+func NewUsecase(deps Deps, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) *Usecase {
+	return &Usecase{deps: deps, tx: tx, ids: ids, guard: guard}
 }
 
 // CreateInput は、職員の作成の入力である。
@@ -50,24 +50,24 @@ func (s *Usecase) Create(ctx context.Context, in CreateInput) (Detail, error) {
 	if err := s.guard(ctx); err != nil {
 		return Detail{}, err
 	}
-	if _, err := s.repos.Facilities.Get(ctx, in.FacilityID); err != nil {
+	if _, err := s.deps.Facilities.Get(ctx, in.FacilityID); err != nil {
 		return Detail{}, err
 	}
-	dep, err := s.repos.Departments.Get(ctx, in.DepartmentID)
+	dep, err := s.deps.Departments.Get(ctx, in.DepartmentID)
 	if err != nil {
 		return Detail{}, apperr.Reference("部署", in.DepartmentID, err)
 	}
 	if err := apperr.SameFacility("部署", dep.ID, dep.FacilityID, in.FacilityID); err != nil {
 		return Detail{}, err
 	}
-	team, err := s.repos.Teams.Get(ctx, in.TeamID)
+	team, err := s.deps.Teams.Get(ctx, in.TeamID)
 	if err != nil {
 		return Detail{}, apperr.Reference("チーム", in.TeamID, err)
 	}
 	if err := apperr.SameFacility("チーム", team.ID, team.FacilityID, in.FacilityID); err != nil {
 		return Detail{}, err
 	}
-	pos, err := s.repos.Positions.Get(ctx, in.PositionID)
+	pos, err := s.deps.Positions.Get(ctx, in.PositionID)
 	if err != nil {
 		return Detail{}, apperr.Reference("役職", in.PositionID, err)
 	}
@@ -87,13 +87,13 @@ func (s *Usecase) Create(ctx context.Context, in CreateInput) (Detail, error) {
 	if err != nil {
 		return Detail{}, err
 	}
-	grants := s.defaultGrants(pos, team.ID)
+	grants := DefaultGrants(pos, team.ID, s.ids)
 	var created Detail
 	err = s.tx.WithinTx(ctx, func(ctx context.Context) error {
-		if err := s.repos.Staff.Create(ctx, st, grants); err != nil {
+		if err := s.deps.Staff.Create(ctx, st, grants); err != nil {
 			return apperr.AsConflict(err, "メール %s の職員はこの事業所にすでにいます", st.Email)
 		}
-		created, err = s.repos.Staff.Get(ctx, st.ID)
+		created, err = s.deps.Staff.Get(ctx, st.ID)
 		return err
 	})
 	return created, err
@@ -108,21 +108,21 @@ func (s *Usecase) ChangePosition(ctx context.Context, id, positionID string) (De
 	}
 	var changed Detail
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
-		cur, err := s.repos.Staff.Get(ctx, id)
+		cur, err := s.deps.Staff.Get(ctx, id)
 		if err != nil {
 			return err
 		}
-		pos, err := s.repos.Positions.Get(ctx, positionID)
+		pos, err := s.deps.Positions.Get(ctx, positionID)
 		if err != nil {
 			return apperr.Reference("役職", positionID, err)
 		}
 		if err := apperr.SameFacility("役職", pos.ID, pos.FacilityID, cur.FacilityID); err != nil {
 			return err
 		}
-		if err := s.repos.Staff.ChangePosition(ctx, cur.ID, pos.ID, s.defaultGrants(pos, cur.TeamID)); err != nil {
+		if err := s.deps.Staff.ChangePosition(ctx, cur.ID, pos.ID, DefaultGrants(pos, cur.TeamID, s.ids)); err != nil {
 			return err
 		}
-		changed, err = s.repos.Staff.Get(ctx, cur.ID)
+		changed, err = s.deps.Staff.Get(ctx, cur.ID)
 		return err
 	})
 	return changed, err
@@ -145,11 +145,11 @@ func (s *Usecase) AddGrant(ctx context.Context, id string, in GrantInput) (Detai
 	}
 	var changed Detail
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
-		cur, err := s.repos.Staff.Get(ctx, id)
+		cur, err := s.deps.Staff.Get(ctx, id)
 		if err != nil {
 			return err
 		}
-		p, err := s.repos.Policies.Get(ctx, in.PolicyID)
+		p, err := s.deps.Policies.Get(ctx, in.PolicyID)
 		if err != nil {
 			return apperr.Reference("権限", in.PolicyID, err)
 		}
@@ -158,10 +158,10 @@ func (s *Usecase) AddGrant(ctx context.Context, id string, in GrantInput) (Detai
 		if err != nil {
 			return err
 		}
-		if err := s.repos.Staff.AddGrant(ctx, cur.ID, g); err != nil {
+		if err := s.deps.Staff.AddGrant(ctx, cur.ID, g); err != nil {
 			return apperr.AsConflict(err, "職員はすでに権限 %s を持っています", p.Name)
 		}
-		changed, err = s.repos.Staff.Get(ctx, cur.ID)
+		changed, err = s.deps.Staff.Get(ctx, cur.ID)
 		return err
 	})
 	return changed, err
@@ -188,7 +188,7 @@ func (s *Usecase) targets(ctx context.Context, p organization.Policy, facilityID
 	out := make([]Target, 0, len(users)+len(teams))
 	seen := make(map[string]bool, cap(out))
 	for _, uid := range users {
-		st, err := s.repos.Staff.Get(ctx, uid)
+		st, err := s.deps.Staff.Get(ctx, uid)
 		if err != nil {
 			return nil, apperr.Reference("職員", uid, err)
 		}
@@ -202,7 +202,7 @@ func (s *Usecase) targets(ctx context.Context, p organization.Policy, facilityID
 		out = append(out, Target{ID: s.ids.NewID(), UserID: st.ID})
 	}
 	for _, tid := range teams {
-		t, err := s.repos.Teams.Get(ctx, tid)
+		t, err := s.deps.Teams.Get(ctx, tid)
 		if err != nil {
 			return nil, apperr.Reference("チーム", tid, err)
 		}
@@ -226,39 +226,25 @@ func (s *Usecase) RemoveGrant(ctx context.Context, id, userPolicyID string) (Det
 	}
 	var changed Detail
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
-		if err := s.repos.Staff.RemoveGrant(ctx, id, userPolicyID); err != nil {
+		if err := s.deps.Staff.RemoveGrant(ctx, id, userPolicyID); err != nil {
 			return err
 		}
 		var err error
-		changed, err = s.repos.Staff.Get(ctx, id)
+		changed, err = s.deps.Staff.Get(ctx, id)
 		return err
 	})
 	return changed, err
 }
 
-// defaultGrants は、役職の既定の権限から、職員に与える権限を作る。
-// ADR-0002 のとおり、チームを対象にする権限は、職員の所属のチーム teamID を対象にする。
-func (s *Usecase) defaultGrants(pos organization.Position, teamID string) []Grant {
-	grants := make([]Grant, 0, len(pos.Policies))
-	for _, p := range pos.Policies {
-		g := Grant{ID: s.ids.NewID(), PolicyID: p.ID}
-		if p.Code.TargetsTeam() {
-			g.Targets = []Target{{ID: s.ids.NewID(), TeamID: teamID}}
-		}
-		grants = append(grants, g)
-	}
-	return grants
-}
-
 // Get は、職員と権限を返す。
 func (s *Usecase) Get(ctx context.Context, id string) (Detail, error) {
-	return s.repos.Staff.Get(ctx, id)
+	return s.deps.Staff.Get(ctx, id)
 }
 
 // List は、事業所の職員を返す。事業所が見つからないときは apperr.ErrNotFound を返す。
 func (s *Usecase) List(ctx context.Context, facilityID string, q ListQuery) ([]Summary, error) {
-	if _, err := s.repos.Facilities.Get(ctx, facilityID); err != nil {
+	if _, err := s.deps.Facilities.Get(ctx, facilityID); err != nil {
 		return nil, err
 	}
-	return s.repos.Staff.ListByFacility(ctx, facilityID, q)
+	return s.deps.Staff.ListByFacility(ctx, facilityID, q)
 }

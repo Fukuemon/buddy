@@ -12,7 +12,7 @@ status: stable
 | 種類 | 保証すること | 置き場 | 流し方 |
 | --- | --- | --- | --- |
 | Go の単体テスト（domain） | 値の検証、繰り返しの規則、照合の判定の規則 | 対象のパッケージの隣の `*_test.go`（表駆動） | 各 API で `go test ./...` |
-| Go の単体テスト（機能のパッケージ） | 手順、権限の判定、事業所をまたぐ参照の拒否 | `apps/schedule-api/internal/<機能>`、`internal/access`（`internal/inmem` のメモリ上のリポジトリ） | 同上 |
+| Go の単体テスト（機能のパッケージ） | 手順、権限の判定、事業所をまたぐ参照の拒否 | `apps/schedule-api/internal/<機能>`、`internal/authn`（`internal/inmem` のメモリ上のリポジトリ） | 同上 |
 | Go の結合テスト（リポジトリ） | SQL が、マイグレーションとシードを当てた MySQL で期待どおりに動く | `apps/schedule-api/internal/mysql` | 同上（`-short` で飛ばす） |
 | Go のトークンの検証のテスト | access token の署名、`iss`、`aud`、期限の検証 | `packages/go/oidc`（テストの中で鍵を作る偽物の発行者） | 同上 |
 | Go のハンドラのテスト | 状態コード、応答の本文、認証と事業所の確認 | `apps/schedule-api/internal/httpapi`、`apps/receipt-api/internal/httpapi` | 同上 |

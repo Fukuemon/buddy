@@ -94,6 +94,13 @@ func normalizePhone(phone string) (string, error) {
 	return "+" + digits, nil
 }
 
+// Ref は、ほかの機能が職員を参照するときに要る項目である。事業所とチームは、参照の確認と予定の権限の判定に使う。
+type Ref struct {
+	ID         string
+	FacilityID string
+	TeamID     string
+}
+
 // Grant は、職員に与える 1 つの権限と、その対象である。
 type Grant struct {
 	ID       string

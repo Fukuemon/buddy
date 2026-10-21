@@ -23,7 +23,7 @@ func allow(context.Context) error { return nil }
 func deny(context.Context) error { return apperr.ErrForbidden }
 
 func newService(s *inmem.Store, guard organization.Guard) *staff.Usecase {
-	return staff.NewUsecase(staff.Repositories{
+	return staff.NewUsecase(staff.Deps{
 		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
 		Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
 	}, &inmem.Tx{}, &inmem.SeqIDs{}, guard)
@@ -44,7 +44,7 @@ func TestStaffCreate(t *testing.T) {
 		return s
 	}
 	newUC := func(s *inmem.Store) *staff.Usecase {
-		return staff.NewUsecase(staff.Repositories{
+		return staff.NewUsecase(staff.Deps{
 			Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
 			Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
 		}, &inmem.Tx{}, &inmem.SeqIDs{}, allow)
@@ -99,7 +99,7 @@ func TestStaffChangePosition(t *testing.T) {
 		return s
 	}
 	newUC := func(s *inmem.Store) *staff.Usecase {
-		return staff.NewUsecase(staff.Repositories{
+		return staff.NewUsecase(staff.Deps{
 			Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
 			Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
 		}, &inmem.Tx{}, &inmem.SeqIDs{}, allow)

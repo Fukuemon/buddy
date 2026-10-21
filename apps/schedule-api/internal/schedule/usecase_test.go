@@ -40,13 +40,24 @@ func editorCtx() context.Context {
 
 func newSchedules(s *inmem.Store) (*schedule.Usecase, *inmem.Tx) {
 	tx := &inmem.Tx{}
-	return schedule.NewUsecase(schedule.Repositories{
+	ids := &inmem.SeqIDs{}
+	visits := visit.NewWriter(visit.WriterDeps{
+		Staff: inmem.StaffRefs{Store: s},
+		Patients: func(ctx context.Context, id string) (string, string, error) {
+			pa, err := inmem.Patients{Store: s}.Get(ctx, id)
+			return pa.ID, pa.FacilityID, err
+		},
+		Infos:   inmem.VisitInfos{Store: s},
+		Masters: inmem.VisitMasters{Store: s},
+	}, ids)
+	return schedule.NewUsecase(schedule.Deps{
 		Facilities: inmem.Facilities{Store: s},
-		Staff:      inmem.Staff{Store: s},
-		Patients:   inmem.Patients{Store: s},
-		Visits:     inmem.Visits{Store: s},
+		Staff:      inmem.StaffRefs{Store: s},
+		Visits:     visits,
 		Schedules:  inmem.Schedules{Store: s},
-	}, tx, &inmem.SeqIDs{}), tx
+		Recurring:  inmem.RecurringSchedules{Store: s},
+		Types:      inmem.ScheduleTypes{Store: s},
+	}, tx, ids), tx
 }
 
 func normalSlot() schedule.SlotInput {
