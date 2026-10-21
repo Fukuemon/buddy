@@ -113,7 +113,7 @@
   }
 
   /* ドロワーと覆いは、画面の上端から下端まで届かせる。--mock-height は mock.js が .screen に置く端末の高さ。2px は枠線 */
-  .sc-body.is-drawer-open .sc-drawer {
+  .sc-drawer.is-open {
     position: absolute;
     top: 0;
     left: 0;
@@ -126,7 +126,7 @@
     box-shadow: 0 0 0 1px var(--wf-line);
   }
 
-  .sc-body.is-drawer-open .sc-drawer-overlay {
+  .sc-drawer.is-open + .sc-drawer-overlay {
     z-index: 1;
     display: block;
     min-height: calc(var(--mock-height, 844px) - 2px);

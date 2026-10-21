@@ -15,16 +15,16 @@
         <div class="screen-body">
           <div class="wf-modal-stage">
             <div aria-hidden="true" class="wf-bg-calendar"></div>
-            <div class="wf-overlay" data-m="1"></div>
+            <div class="wf-overlay" data-m="1" tabindex="-1" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html"></div>
             <div aria-label="予定の編集" class="wf-modal" data-testid="schedule-form-modal" role="dialog">
               <div class="wf-modal__header">
-                <span aria-label="閉じる" class="wf-btn wf-btn--icon" data-m="2" data-testid="modal-close"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+                <span aria-label="閉じる" class="wf-btn wf-btn--icon" data-m="2" data-testid="modal-close" data-escape data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
                 <h2 class="wf-modal__title" data-m="3">予定の編集</h2>
               </div>
               <div class="wf-modal__body">
                 <div class="wf-split" data-testid="schedule-form">
                   <div class="wf-stack">
-                    <span class="wf-summary" data-m="4" data-testid="schedule-field-date-time">
+                    <span class="wf-summary" data-m="4" data-testid="schedule-field-date-time" data-go="03-initial.html">
                       <span class="wf-label">訪問日時</span>
                       <span>2026-10-20 09:00 - 09:29（29 分、訪看I2）</span>
                     </span>
@@ -32,15 +32,15 @@
                       <span class="wf-label">利用者</span>
                       <span><span class="wf-text"></span></span>
                     </span>
-                    <span class="wf-summary" data-m="4" data-testid="schedule-field-staff">
+                    <span class="wf-summary" data-m="4" data-testid="schedule-field-staff" data-go="05-staff.html">
                       <span class="wf-label">担当者</span>
                       <span><span class="wf-text"></span></span>
                     </span>
-                    <span class="wf-summary" data-m="4" data-testid="schedule-field-category">
+                    <span class="wf-summary" data-m="4" data-testid="schedule-field-category" data-go="06-category.html">
                       <span class="wf-label">訪問の種類</span>
                       <span>緊急</span>
                     </span>
-                    <span class="wf-summary" data-m="4" data-testid="schedule-field-description">
+                    <span class="wf-summary" data-m="4" data-testid="schedule-field-description" data-go="07-description.html">
                       <span class="wf-label">メモ</span>
                       <span><span class="wf-text wf-text--l"></span></span>
                     </span>
@@ -54,9 +54,9 @@
                       <table class="wf-table" data-m="6">
                         <thead><tr><th>名前</th></tr></thead>
                         <tbody>
-                          <tr><td><span class="wf-radio is-on" data-testid="patient-select-option-{利用者の id}"><span class="wf-text"></span></span></td></tr>
-                          <tr><td><span class="wf-radio" data-testid="patient-select-option-{利用者の id}"><span class="wf-text"></span></span></td></tr>
-                          <tr><td><span class="wf-radio" data-testid="patient-select-option-{利用者の id}"><span class="wf-text wf-text--s"></span></span></td></tr>
+                          <tr><td><span class="wf-radio is-on" data-testid="patient-select-option-{利用者の id}" data-choice="patient"><span class="wf-text"></span></span></td></tr>
+                          <tr><td><span class="wf-radio" data-testid="patient-select-option-{利用者の id}" data-choice="patient"><span class="wf-text"></span></span></td></tr>
+                          <tr><td><span class="wf-radio" data-testid="patient-select-option-{利用者の id}" data-choice="patient"><span class="wf-text wf-text--s"></span></span></td></tr>
                         </tbody>
                       </table>
                     </div>
@@ -64,7 +64,7 @@
                 </div>
               </div>
               <div class="wf-modal__footer">
-                <span class="wf-btn wf-btn--primary" data-m="7" data-testid="schedule-edit-submit">保存</span>
+                <span class="wf-btn wf-btn--primary" data-m="7" data-testid="schedule-edit-submit" data-go="11-submitting.html">保存</span>
               </div>
             </div>
           </div>
@@ -73,5 +73,6 @@
       <div class="markers"></div>
     </div>
     <script src="../../_common/mock.js"></script>
+    <script src="../../_common/interact.js"></script>
   </body>
 </html>

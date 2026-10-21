@@ -17,10 +17,10 @@ describe('ScheduleCreateModalContainer', () => {
     render(<Visit />)
 
     fireEvent.change(await screen.findByTestId('schedule-form-date'), {
-      target: { value: '2026-10-22' },
+      target: { value: '2000-01-01' },
     })
     await userEvent.click(screen.getByTestId('schedule-kind-tab-normal'))
-    expect(screen.getByTestId('schedule-form-date')).toHaveValue('2026-10-22')
+    expect(screen.getByTestId('schedule-form-date')).toHaveValue('2000-01-01')
     await userEvent.click(screen.getByTestId('modal-close'))
 
     expect(confirm).toHaveBeenCalledOnce()
@@ -43,7 +43,7 @@ describe('ScheduleCreateModalContainer', () => {
 
     const date = await screen.findByTestId('schedule-form-date')
     const opened = (date as HTMLInputElement).value
-    fireEvent.change(date, { target: { value: '2026-10-22' } })
+    fireEvent.change(date, { target: { value: '2000-01-01' } })
     fireEvent.change(date, { target: { value: opened } })
     await userEvent.click(screen.getByTestId('schedule-kind-tab-normal'))
     await userEvent.click(screen.getByTestId('modal-close'))

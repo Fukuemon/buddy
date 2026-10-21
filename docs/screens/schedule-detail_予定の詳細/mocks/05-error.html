@@ -15,11 +15,11 @@
         <div class="screen-body">
           <div class="wf-modal-stage">
             <div aria-hidden="true" class="wf-bg-calendar"></div>
-            <div class="wf-overlay" data-m="1"></div>
+            <div class="wf-overlay" data-m="1" tabindex="-1" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html"></div>
             <!-- 実装は、失敗のダイアログに schedule-detail-modal を付けていない -->
             <div aria-label="予定の詳細" class="wf-modal" data-m="2" role="dialog">
               <div class="wf-modal__header">
-                <span aria-label="閉じる" class="wf-btn wf-btn--icon" data-m="3" data-testid="modal-close">×</span>
+                <span aria-label="閉じる" class="wf-btn wf-btn--icon" data-m="3" data-testid="modal-close" data-escape data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html">×</span>
                 <h2 class="wf-modal__title" data-m="4">予定の詳細</h2>
               </div>
               <div class="wf-modal__body">
@@ -32,5 +32,6 @@
       <div class="markers"></div>
     </div>
     <script src="../../_common/mock.js"></script>
+    <script src="../../_common/interact.js"></script>
   </body>
 </html>
