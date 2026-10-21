@@ -48,6 +48,7 @@ receipt-api は、訪問の予定と電子カルテ（iBow）の実績を比べ�
 - `internal/gcal/gcaltest`: テストと手元の確認に使う、Calendar API の events.list の偽物
 - `internal/source`: 要求の `schedules` と `month` とトークンの組織から、予定の取得元（`CSVSchedules` か `internal/gcal`）を選ぶ
 - access token の検証は、共有の module の `packages/go/oidc` を使う（[ADR-0007](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0007-go-shared-module.md)）
+- 題名の解釈（`IsVisitTitle`、`ParseTitle`）は、予定の API と共有する `packages/go/gcaltitle` を使う
 - `internal/httpapi`: `GET /healthz`、`GET /readyz`、`POST /v1/checks`。`/healthz` と `/readyz` 以外の要求のトークンを `packages/go/oidc` で確かめる
 - `cmd/api`: 環境変数を読んで API のサーバーを起動する
 - `cmd/devissuer`: 手元で API を試すための偽物の OIDC の発行者。イメージに入れない
