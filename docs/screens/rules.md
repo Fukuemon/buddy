@@ -10,7 +10,8 @@
 docs/screens/
 ├── _common/                    # 全ての画面のモックが読む CSS と JS。画面のディレクトリに写さない
 │   ├── mock.css                # 外枠、構成番号の印、ツールバー
-│   ├── wireframe.css           # 灰色の箱と線の見た目（wf-*）
+│   ├── tokens.css              # DADS と buddy の意味のトークン。生成物
+│   ├── wireframe.css           # 箱と線の見た目（wf-*）。色はトークンに当てる
 │   └── mock.js                 # 端末の切り替え、構成番号の印、親のページへの高さの通知
 ├── _template/                  # 雛形。サイトに載せない
 └── <画面 ID>_<画面の名前>/
@@ -100,7 +101,7 @@ docs/screens/
 </body>
 ```
 
-- head で `../../_common/mock.css`、`../../_common/wireframe.css`、`<画面 ID>.css` をこの順に読む。
+- head で `../../_common/mock.css`、`../../_common/tokens.css`、`../../_common/wireframe.css`、`<画面 ID>.css` をこの順に読む。
 - `body` の `data-view` は最初に見せる端末にする。表示の幅が 600px 未満のとき（スマートフォンで仕様書を読むとき）は、`data-view` によらずモバイルで描く。`mobile`（390px）、`tablet`（768px）、`tablet-wide`（1024px）、`desktop`（1440px）から選ぶ。値は `mock.js` の `VIEWS` にだけ書く。
 - サイトのヘッダーとナビゲーション（`SiteHeader`、`SiteNav`）は、その画面の構成要素にするときだけ描く。
 
@@ -108,7 +109,7 @@ docs/screens/
 
 - 構成要素の表の要素に `data-m="<番号>"` を付ける。座標は書かない。`mock.js` が要素の左上に番号の印を重ねる。
 - 構成番号は、その状態で見える要素にだけ付ける。
-- E2E が指す要素に `data-testid` を付ける。新しい形の画面では、モックの `data-testid` を画面の testid の正本にする。全ての画面を移すまでは、古い形の画面の testid は仕様書の表の列が正本のままである。形は [コードと文書の規約の E2E](https://github.com/Fukuemon/buddy/blob/develop/context/conventions.md#e2e) にある。
+- E2E が指す要素に `data-testid` を付ける。モックの `data-testid` を画面の testid の正本にする。E2E が使う testid は、どれかのモックにある値か、モックの `x-{…}` の形と同じ始まりにする（`pnpm check:screens` が確かめる）。形は [コードと文書の規約の E2E](https://github.com/Fukuemon/buddy/blob/develop/context/conventions.md#e2e) にある。
 - ツールバーの「data-testid」を入れると、番号の印の横に testid を出す。
 
 ### 幅と配置
@@ -116,7 +117,8 @@ docs/screens/
 - 幅による切り替えは `@container screen (width < 768px)` のように `.screen` の幅で書く。viewport の寸法の `@media`、`vh` と `vw` は使わない。モックの中では、viewport の幅は端末の幅と一致しない。
 - スクロールする場所は作らず、画面の高さは中身に合わせる。ただし、実装が横に送る表は、モックでも横に送ってよい。
 - ダイアログ、覆い、トーストは、`.screen` の中に `position: absolute` で置く。`position: fixed` は使わない。
-- 色は `wireframe.css` の変数（`--wf-*`）で書く。
+- 色と角丸は `wireframe.css` の変数（`--wf-*`）で書く。`--wf-*` は、`tokens.css` の buddy の意味のトークン（`packages/ui/src/tokens/semantic.css` と同じ値）に当ててある。足りない色は、意味のトークンを `--wf-*` に当てて足す。DADS の基本のトークンと 16 進の色を直に書かない。
+- `tokens.css` は `node scripts/build-mock-tokens.mjs` が作る生成物である。意味のトークンを変えたら作り直す（`pnpm check:generated` が食い違いを見つける）。
 - 画面だけの見た目は `mocks/<画面 ID>.css` に書く。2 つ以上の画面で使う見た目は `_common/wireframe.css` に移す。
 
 ### 禁止

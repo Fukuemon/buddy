@@ -42,6 +42,8 @@ const stripComments = (text) =>
 const PLACEHOLDER = /<(画面|要素|操作|状態)[^>]*>/
 
 const problems = []
+/** 全てのモックの data-testid。E2E が使う testid との照合に使う */
+const mockTestIds = new Set()
 const report = (path, message) => problems.push(`${path}: ${message}`)
 
 /** 1 から欠番なく続く整数の集合かを確かめる。 */
@@ -144,7 +146,12 @@ const checkMock = (mockPath, screenId) => {
   const sheets = [...html.matchAll(/<link\b[^>]*rel="stylesheet"[^>]*>/g)].map((m) =>
     attr(m[0], 'href'),
   )
-  const expected = ['../../_common/mock.css', '../../_common/wireframe.css', `${screenId}.css`]
+  const expected = [
+    '../../_common/mock.css',
+    '../../_common/tokens.css',
+    '../../_common/wireframe.css',
+    `${screenId}.css`,
+  ]
   if (sheets.join() !== expected.join())
     report(mockPath, `stylesheet を ${expected.join('、')} の順に読む`)
   const body = html.match(/<body\b[^>]*>/)?.[0] ?? ''
@@ -172,6 +179,7 @@ const checkMock = (mockPath, screenId) => {
   if (!isContiguous(numbers))
     report(mockPath, `data-m が 1 から欠番なく続いていない（${[...numbers].join('、')}）`)
   for (const match of html.matchAll(/\bdata-testid="([^"]*)"/g)) {
+    mockTestIds.add(match[1])
     if (!TESTID.test(match[1])) report(mockPath, `data-testid="${match[1]}" の形が規約と違う`)
   }
   return numbers
@@ -277,6 +285,35 @@ const targets =
         .filter((path) => statSync(path).isDirectory())
 
 for (const dir of targets) checkScreen(dir)
+
+/** packages/e2e/tests の .ts のファイルを全て返す。 */
+const e2eFiles = (dir) =>
+  readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name)
+    if (entry.isDirectory()) return e2eFiles(path)
+    return entry.name.endsWith('.ts') ? [path] : []
+  })
+
+// 全ての画面を見るときだけ、E2E が指す testid がどれかのモックにあるかを確かめる。
+// 文字列のままの testid は同じ値を、`x-${…}` と /^x-/ は x- で始まる値（モックの x-{…} を含む）を探す
+if (process.argv.length <= 2) {
+  const E2E_DIR = relative(process.cwd(), join(ROOT, 'packages/e2e/tests')) || '.'
+  for (const file of e2eFiles(E2E_DIR)) {
+    const code = readFileSync(file, 'utf8')
+    for (const match of code.matchAll(
+      /getByTestId\(\s*(?:'([^']+)'|`([^`$]*)\$\{|\/\^([^/]+)\/)/g,
+    )) {
+      const [, exact, templatePrefix, regexPrefix] = match
+      const prefix = templatePrefix ?? regexPrefix
+      const found =
+        exact !== undefined
+          ? mockTestIds.has(exact)
+          : [...mockTestIds].some((id) => id.startsWith(prefix))
+      if (!found)
+        report(file, `E2E の testid ${exact ?? `${prefix}…`} がどのモックの data-testid にも無い`)
+    }
+  }
+}
 
 if (problems.length > 0) {
   console.error(`画面仕様書の規約の違反が ${problems.length} 件ある。`)

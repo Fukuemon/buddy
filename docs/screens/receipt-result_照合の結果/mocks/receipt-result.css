@@ -46,12 +46,11 @@
 }
 
 .rc-ng {
-  background: var(--wf-fill);
+  background: var(--wf-danger-surface);
 }
 
 .rc-note {
-  outline: 1px dashed var(--wf-ink);
-  outline-offset: -4px;
+  background: var(--wf-warning-surface);
 }
 
 .rc-empty {
