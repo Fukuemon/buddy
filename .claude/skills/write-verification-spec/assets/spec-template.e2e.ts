@@ -19,7 +19,7 @@ const SCENARIO: Scenario = {
   issue: '<要求の issue 番号>',
   id: '<@scenario-id>',
   actor: '<アクター>',
-  // 証跡の格納先のフォルダの名前と同じにする
+  // 置き場のフォルダの名前（<issue>/<アクター>/S<n>_<シナリオ名>/）になる。検証シナリオの pull request の証跡の名前と同じにする
   no: 0,
   title: '<シナリオ名>',
   // どの静止画にも映りうる、改修前と違ってよい差。<root>/<issue>/differences.ts から import する。比べないときは消す
