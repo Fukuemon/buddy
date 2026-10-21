@@ -133,9 +133,9 @@ func (r *PositionRepository) withPolicies(ctx context.Context, rows []sqlcgen.Po
 	}
 	byPosition := make(map[string][]organization.Policy, len(rows))
 	for _, l := range links {
-		byPosition[l.PositionID] = append(byPosition[l.PositionID], organization.Policy{
-			ID: l.ID, Name: l.Name, CreatedAt: l.CreatedAt, UpdatedAt: l.UpdatedAt,
-		})
+		byPosition[l.PositionID] = append(byPosition[l.PositionID], policy(sqlcgen.Policy{
+			ID: l.ID, Code: l.Code, Name: l.Name, NeedsTarget: l.NeedsTarget, CreatedAt: l.CreatedAt, UpdatedAt: l.UpdatedAt,
+		}))
 	}
 	out := make([]organization.Position, len(rows))
 	for i, p := range rows {
@@ -176,7 +176,7 @@ func (r *PolicyRepository) Get(ctx context.Context, id string) (organization.Pol
 	if err != nil {
 		return organization.Policy{}, translate("get policy", err)
 	}
-	return organization.Policy(p), nil
+	return policy(p), nil
 }
 
 func (r *PolicyRepository) List(ctx context.Context) ([]organization.Policy, error) {
@@ -198,14 +198,17 @@ func (r *PolicyRepository) ListByIDs(ctx context.Context, ids []string) ([]organ
 	return policies(rows), nil
 }
 
-func (r *PolicyRepository) Create(ctx context.Context, p organization.Policy) error {
-	return translate("create policy", r.q(ctx).CreatePolicy(ctx, sqlcgen.CreatePolicyParams{ID: p.ID, Name: p.Name}))
-}
-
 func policies(rows []sqlcgen.Policy) []organization.Policy {
 	out := make([]organization.Policy, len(rows))
 	for i, p := range rows {
-		out[i] = organization.Policy(p)
+		out[i] = policy(p)
 	}
 	return out
+}
+
+func policy(p sqlcgen.Policy) organization.Policy {
+	return organization.Policy{
+		ID: p.ID, Code: organization.PolicyCode(p.Code), Name: p.Name, NeedsTarget: p.NeedsTarget,
+		CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt,
+	}
 }

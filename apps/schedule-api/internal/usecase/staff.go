@@ -40,7 +40,7 @@ type CreateStaffInput struct {
 	PositionID   string
 }
 
-// Create は、職員を作り、役職の既定の権限を与える。事業所が見つからないときは domain.ErrNotFound を、
+// Create は、職員を作り、役職の既定の権限を与える。チームを対象にする権限は、職員の所属のチームを対象にする。事業所が見つからないときは domain.ErrNotFound を、
 // 部署、チーム、役職が見つからないか別の事業所のものであるときは入力の誤りを返す。
 func (s *Staff) Create(ctx context.Context, in CreateStaffInput) (staff.Detail, error) {
 	if _, err := s.repos.Facilities.Get(ctx, in.FacilityID); err != nil {
@@ -82,7 +82,12 @@ func (s *Staff) Create(ctx context.Context, in CreateStaffInput) (staff.Detail, 
 	}
 	grants := make([]staff.Grant, 0, len(pos.Policies))
 	for _, p := range pos.Policies {
-		grants = append(grants, staff.Grant{ID: s.ids.NewID(), PolicyID: p.ID})
+		g := staff.Grant{ID: s.ids.NewID(), PolicyID: p.ID}
+		// ADR-0002 のとおり、役職の既定から写すチームの権限は、職員の所属のチームを対象にする。
+		if p.Code.TargetsTeam() {
+			g.Targets = []staff.Target{{ID: s.ids.NewID(), TeamID: team.ID}}
+		}
+		grants = append(grants, g)
 	}
 	var created staff.Detail
 	err = s.tx.WithinTx(ctx, func(ctx context.Context) error {

@@ -27,6 +27,27 @@ func (q *Queries) AddUserPolicy(ctx context.Context, arg AddUserPolicyParams) er
 	return err
 }
 
+const addUserPolicyTarget = `-- name: AddUserPolicyTarget :exec
+INSERT INTO user_policy_targets (id, user_policy_id, target_user_id, target_team_id) VALUES (?, ?, ?, ?)
+`
+
+type AddUserPolicyTargetParams struct {
+	ID           string
+	UserPolicyID string
+	TargetUserID sql.NullString
+	TargetTeamID sql.NullString
+}
+
+func (q *Queries) AddUserPolicyTarget(ctx context.Context, arg AddUserPolicyTargetParams) error {
+	_, err := q.db.ExecContext(ctx, addUserPolicyTarget,
+		arg.ID,
+		arg.UserPolicyID,
+		arg.TargetUserID,
+		arg.TargetTeamID,
+	)
+	return err
+}
+
 const createUser = `-- name: CreateUser :exec
 INSERT INTO users (id, sub, username, email, phone_number, facility_id, department_id, team_id, position_id)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -140,7 +161,7 @@ func (q *Queries) LinkUserSub(ctx context.Context, arg LinkUserSubParams) error 
 }
 
 const listUserPolicies = `-- name: ListUserPolicies :many
-SELECT up.id AS user_policy_id, up.user_id, p.id AS policy_id, p.name AS policy_name
+SELECT up.id AS user_policy_id, up.user_id, p.id AS policy_id, p.code AS policy_code, p.name AS policy_name
 FROM user_policies up
 JOIN policies p ON p.id = up.policy_id
 WHERE up.user_id IN (/*SLICE:user_ids*/?)
@@ -151,6 +172,7 @@ type ListUserPoliciesRow struct {
 	UserPolicyID string
 	UserID       string
 	PolicyID     string
+	PolicyCode   string
 	PolicyName   string
 }
 
@@ -177,6 +199,7 @@ func (q *Queries) ListUserPolicies(ctx context.Context, userIds []string) ([]Lis
 			&i.UserPolicyID,
 			&i.UserID,
 			&i.PolicyID,
+			&i.PolicyCode,
 			&i.PolicyName,
 		); err != nil {
 			return nil, err
@@ -193,23 +216,29 @@ func (q *Queries) ListUserPolicies(ctx context.Context, userIds []string) ([]Lis
 }
 
 const listUserPolicyTargets = `-- name: ListUserPolicyTargets :many
-SELECT upt.user_policy_id, upt.target_user_id
+SELECT upt.user_policy_id, upt.target_user_id, upt.target_team_id
 FROM user_policy_targets upt
 JOIN user_policies up ON up.id = upt.user_policy_id
 WHERE up.user_id = ?
-ORDER BY upt.target_user_id
+ORDER BY upt.target_user_id, upt.target_team_id
 `
 
-func (q *Queries) ListUserPolicyTargets(ctx context.Context, userID string) ([]UserPolicyTarget, error) {
+type ListUserPolicyTargetsRow struct {
+	UserPolicyID string
+	TargetUserID sql.NullString
+	TargetTeamID sql.NullString
+}
+
+func (q *Queries) ListUserPolicyTargets(ctx context.Context, userID string) ([]ListUserPolicyTargetsRow, error) {
 	rows, err := q.db.QueryContext(ctx, listUserPolicyTargets, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []UserPolicyTarget{}
+	items := []ListUserPolicyTargetsRow{}
 	for rows.Next() {
-		var i UserPolicyTarget
-		if err := rows.Scan(&i.UserPolicyID, &i.TargetUserID); err != nil {
+		var i ListUserPolicyTargetsRow
+		if err := rows.Scan(&i.UserPolicyID, &i.TargetUserID, &i.TargetTeamID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

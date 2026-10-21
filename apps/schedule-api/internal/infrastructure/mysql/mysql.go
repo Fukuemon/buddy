@@ -151,6 +151,19 @@ func stringPtr(s sql.NullString) *string {
 	return &s.String
 }
 
+// optional は、空の文字列を NULL にする。
+func optional(s string) sql.NullString {
+	return sql.NullString{String: s, Valid: s != ""}
+}
+
+// nonNil は、nil を空のスライスにする。応答の JSON で null ではなく [] にするためである。
+func nonNil(s []string) []string {
+	if s == nil {
+		return []string{}
+	}
+	return s
+}
+
 func nullInt16(v *int) (sql.NullInt16, error) {
 	if v == nil {
 		return sql.NullInt16{}, nil

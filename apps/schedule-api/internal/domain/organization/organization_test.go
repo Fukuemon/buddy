@@ -35,11 +35,22 @@ func TestNewPosition(t *testing.T) {
 	}
 }
 
-func TestNewTeamAndPolicy(t *testing.T) {
+func TestNewTeam(t *testing.T) {
 	if _, err := organization.NewTeam("ID", "F", ""); !errors.Is(err, domain.ErrInvalidInput) {
 		t.Errorf("NewTeam err = %v", err)
 	}
-	if _, err := organization.NewPolicy("ID", " "); !errors.Is(err, domain.ErrInvalidInput) {
-		t.Errorf("NewPolicy err = %v", err)
+}
+
+func TestPolicyCodeTargetsTeam(t *testing.T) {
+	for code, want := range map[organization.PolicyCode]bool{
+		organization.ScheduleTeamRead: true,
+		organization.ScheduleTeamEdit: true,
+		organization.ScheduleUserRead: false,
+		organization.ScheduleAllEdit:  false,
+		organization.ScheduleSelfEdit: false,
+	} {
+		if got := code.TargetsTeam(); got != want {
+			t.Errorf("%s.TargetsTeam() = %v", code, got)
+		}
 	}
 }

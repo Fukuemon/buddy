@@ -48,7 +48,8 @@ func toStaffDetail(d staff.Detail) openapi.StaffDetail {
 		Sub:         d.Sub,
 		Policies: mapSlice(d.Policies, func(p staff.PolicyGrant) openapi.StaffDetail_Policies {
 			return openapi.StaffDetail_Policies{
-				UserPolicyId: p.UserPolicyID, PolicyId: p.PolicyID, Name: p.PolicyName, TargetUserIds: p.TargetUserIDs,
+				UserPolicyId: p.UserPolicyID, PolicyId: p.PolicyID, Code: string(p.PolicyCode), Name: p.PolicyName,
+				TargetUserIds: p.TargetUserIDs, TargetTeamIds: p.TargetTeamIDs,
 			}
 		}),
 	}

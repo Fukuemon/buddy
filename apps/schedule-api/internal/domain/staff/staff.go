@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/organization"
 )
 
 const (
@@ -92,10 +93,18 @@ func normalizePhone(phone string) (string, error) {
 	return "+" + digits, nil
 }
 
-// Grant は、職員に与える 1 つの権限である。
+// Grant は、職員に与える 1 つの権限と、その対象である。
 type Grant struct {
 	ID       string
 	PolicyID string
+	Targets  []Target
+}
+
+// Target は、権限が及ぶ職員かチームである。UserID と TeamID は、どちらか 1 つだけを持つ。
+type Target struct {
+	ID     string
+	UserID string
+	TeamID string
 }
 
 // Summary は、職員と、所属の名前である。
@@ -108,12 +117,14 @@ type Summary struct {
 	UpdatedAt      time.Time
 }
 
-// PolicyGrant は、職員が持つ権限と、その権限が及ぶ職員である。
+// PolicyGrant は、職員が持つ権限と、その権限が及ぶ職員とチームである。
 type PolicyGrant struct {
 	UserPolicyID  string
 	PolicyID      string
+	PolicyCode    organization.PolicyCode
 	PolicyName    string
 	TargetUserIDs []string
+	TargetTeamIDs []string
 }
 
 // Detail は、職員と、所属の名前と、持っている権限である。
