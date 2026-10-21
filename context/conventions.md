@@ -15,7 +15,16 @@ status: stable
 - web の API の実装のファイルは、種類を接頭辞にする（`fakeBuddyApi.ts`、`httpBuddyApi.ts`、`bffBuddyApi.ts`）。照合の API の HTTP の実装（`http/receiptApi.ts`）だけは接頭辞を持たない。
 - web の import は `#/` の別名で書く。tsconfig の `@/` は使わない。
 - Go のテストのための偽物は、`<パッケージ>test` のパッケージに置く（`oidctest`、`gcaltest`）。
-- API の operationId は、lowerCamel の「動詞と名詞」にする。動詞は `get`、`list`、`create`、`update`、`cancel`、`change` から選ぶ。パスは `/v1` の下の複数形の snake_case で、事業所に属する一覧と作成は `/v1/facilities/{facility_id}/<資源>`、1 件は `/v1/<資源>/{<資源>_id}` に置く。動作はサブパス（`/cancel`）で表す。
+- API の operationId は、lowerCamel の「動詞と名詞」にする。動詞は `get`、`list`、`create`、`update`、`cancel`、`change`、`add`、`remove` から選ぶ。
+  - `add` と `remove` は、職員に権限を足す、外すのように、資源の結び付きを足して外す操作に使う（`addUserPolicy`、`removeUserPolicy`）。
+- API のパスは `/v1` の下の複数形の snake_case にする。
+  - 事業所に属する一覧と作成は `/v1/facilities/{facility_id}/<資源>`、1 件は `/v1/<資源>/{<資源>_id}` に置く。
+  - 事業所に属さず全ての環境で同じマスタは、`/v1/<資源>`（`/v1/policies`、`/v1/schedule_types`）か、まとまりの下（`/v1/visit_infos/service_codes`）に置く。
+  - 職員の属性と結び付きは、職員の 1 件の下のサブパス（`/v1/users/{user_id}/position`、`/v1/users/{user_id}/policies`）に置く。
+  - 繰り返しの予定は、予定の下の `recurring` に置く。作成は `/v1/facilities/{facility_id}/schedules/recurring`、1 件は `/v1/schedules/recurring/{recurring_schedule_id}` に置く。
+    - 繰り返しの予定の 1 回の置き換えは、1 件の下の `/occurrences` に置く。
+  - ログインした職員自身は、ID を持たない `/v1/me` で表す。
+  - 動作はサブパス（`/cancel`）で表す。
 - DB の表は複数形の snake_case、ID は ULID の `CHAR(26)`、真偽の列は `is_` で始める。職員の表の名前は `users` で、Go の側は `staff` と呼ぶ。
 - 業務の用語の表記は [業務の知識](domain.md) の用語にそろえる。文書の表記の揺れは `prh.yml` の規則が止める。
 
@@ -23,7 +32,7 @@ status: stable
 
 コメントの書き方は、スキル write-comments に従う。言語は日本語の常体にする。
 
-- Go は、文書コメントの有無を receipt-api と schedule-api の revive（`exported`、`package-comments`）で確かめる。生成物（`// Code generated ... DO NOT EDIT.` のファイル）とテストは、revive が対象にしない。
+- Go は、文書コメントの有無を receipt-api、schedule-api、`packages/go` の revive（`exported`、`package-comments`）で確かめる。生成物（`// Code generated ... DO NOT EDIT.` のファイル）とテストは、revive が対象にしない。
 - TypeScript は、文書コメントの有無を、ルートの `vite.config.ts` の `lint` で確かめる。Oxlint の jsdoc のプラグインに require-jsdoc が無いので、eslint-plugin-jsdoc を `jsPlugins` で読ませる。対象は export する関数、クラス、型で、名前が `Props` で終わる型は除く。Props の型は、コンポーネントの文書コメントが説明するからである。生成物は lint の対象から外してある。呼び出しで包んで作る関数（`createServerFn(...)`、`memo(...)`）と、クラスのメソッドは確かめない。確かめるのは web、ui、e2e の check である。
 - Go の文書コメントは、`// Package <名前> は、…。`、`// <名前> は、…。` の形で書く。
 - 外部の制約を書く実装のコメントには、出典の URL を添える。
@@ -33,10 +42,11 @@ status: stable
 文書の書き方は、スキル write-prose と write-design-docs に従う。buddy だけの規則は次のとおり。
 
 - PRD は `docs/PRD.md`、全体の Design Doc は `docs/design/`、ADR は `docs/adr/`、画面仕様書は `docs/screens/` に置き、Zensical のサイトで読む。Design Doc と ADR の置き場は `context/project.yml` の `docs` と同じにする。
+- アプリとパッケージの README は、「準備、動かす、テストとチェック、コードの生成、文書」の順に見出しを置き、当てはまらない節は省く。
 - 機能ごとの Design Doc は、コードの隣（`apps/<アプリ>/DesignDoc.md`、`packages/<パッケージ>/DesignDoc.md`）に置く。サイトには、`docs/design/apps/` か `docs/design/packages/` のファイル単位のシンボリックリンクで載せる。リンク先は `zensical.toml` の `watch` にも並べる。
 - 機能ごとの Design Doc と ADR から `docs/` と `apps/` の文書へのリンクは、GitHub の `develop` の URL で書く。相対リンクは、GitHub とサイトで指す先が変わり、どちらかで切れる。
 - 見出しのアンカーは、日本語のまま残す（`zensical.toml` の toc の slugify）。見出しを変えるときは、ほかの文書からのリンクを探して直す。
-- 画面仕様書の画面 ID と節の規則は、[画面仕様書の目次](../docs/screens/index.md) にある。
+- 画面仕様書の画面 ID の規則は [画面仕様書の目次](../docs/screens/index.md) の「画面の ID の規則」に、ページの節の規則は [画面仕様書の規約](../docs/screens/rules.md) の「仕様書のページ」にある。
 - 文章のチェックは textlint で、業務の用語「照合」「正本」を許す語にしている（`.textlintrc.json`）。
 
 ## Shared Configuration

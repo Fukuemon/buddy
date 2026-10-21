@@ -13,6 +13,9 @@ mise install go golangci-lint
 
 ## 動かす
 
+API の 8080 と偽物の発行者の 9000 は、ルートの compose の schedule-api と IdP と重なる。  
+compose を動かしているときは、重なる 2 つを `docker compose stop schedule-api idp` で止めてから実行する。
+
 ```sh
 # ブローカーの代わりに、偽物の発行者を別の端末で動かす
 go run ./cmd/devissuer -addr 127.0.0.1:9000
@@ -39,7 +42,7 @@ TOKEN=$(curl -s '127.0.0.1:9000/token?sub=dev-aoki&org_id=org-sample' | jq -r .a
 - `CORS_ALLOW_ORIGINS`: CORS で応答を読ませるオリジンを、カンマで区切って並べる。空なら CORS のヘッダーを返さない
 - `GOOGLE_CALENDARS_FILE`: 照合の対象のカレンダーの設定（JSON）のパス。空なら Google カレンダーを使わない
 - `GOOGLE_APPLICATION_CREDENTIALS`: Application Default Credentials が読む認証情報のファイルのパス
-- `GOOGLE_CALENDAR_ENDPOINT`: Calendar API の代わりに呼ぶ URL。偽物の API で試すためのもので、認証をしない
+- `GOOGLE_CALENDAR_ENDPOINT`: Calendar API の代わりに呼ぶ URL。偽物の API で試すためのもので、認証をしない。`GOOGLE_CALENDARS_FILE` を渡さずにこれだけを渡すと、起動しない
 
 コンテナで動かすときは、このディレクトリで次を実行する。ビルドの文脈はリポジトリの直下である（`packages/go` を読むため）。
 
@@ -57,6 +60,9 @@ go test ./...
 go vet ./...
 golangci-lint run
 ```
+
+テストと lint は `GOWORK=off` を付けて流す。  
+理由は [CONTRIBUTING.md](../../CONTRIBUTING.md) の「開発の準備」にある。
 
 ## コードの生成
 
@@ -107,6 +113,7 @@ curl -s -H "Authorization: Bearer $TOKEN" -F visits=@testdata/visits_utf8.csv -F
 - `month` を送ったが、トークンに組織が無い: 403 の `forbidden`
 - `schedules` も `month` も無い: 400 の `missing_file`
 - `month` の形が違う: 400 の `bad_request`
+- 本文が `MAX_UPLOAD_BYTES` を超えた: 413 の `payload_too_large`
 - Google カレンダーの設定が無いか、トークンの組織のカレンダーが無いのに `month` を送った: 503 の `calendar_not_configured`
 - Calendar API の呼び出しに失敗した: 502 の `schedule_source_failed`
 - 入力の CSV の行の誤り: 422 の `invalid_csv` と、行番号つきの `errors`
@@ -141,7 +148,7 @@ go run ./cmd/api
 
 予定の題名は `【サービス内容】利用者名` の形にする。照合の対象にする予定の規則は [DesignDoc.md](DesignDoc.md) にある。
 
-EKS では鍵のファイルを使わず、Workload Identity Federation の外部アカウントの設定のファイルを `GOOGLE_APPLICATION_CREDENTIALS` に渡す。Application Default Credentials が同じ環境変数から読む。  
+デプロイした環境では鍵のファイルを使わず、Workload Identity Federation の外部アカウントの設定のファイルを `GOOGLE_APPLICATION_CREDENTIALS` に渡す。Application Default Credentials が同じ環境変数から読む。  
 Workload Identity Federation のプールとプロバイダーの作り方は、インフラのリポジトリが持つ。
 
 ## 文書
