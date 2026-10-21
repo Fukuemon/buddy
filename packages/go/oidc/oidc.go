@@ -1,4 +1,5 @@
 // Package oidc は、OIDC のブローカーが発行した access token の JWT を、ブローカーの JWKS で検証する。
+// schedule-api と receipt-api が共有する module packages/go にある（ADR-0007）。
 package oidc
 
 import (
@@ -15,8 +16,6 @@ import (
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/time/rate"
-
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
 )
 
 const (
@@ -30,6 +29,16 @@ const (
 )
 
 var allowedAlgs = []string{"RS256", "ES256"}
+
+// Identity は、署名と有効期限を検証した access token の主張である。
+// Email は、EmailVerified が true のときだけ、職員を結び付ける根拠に使える。
+// OrgID は、認証のブローカーの組織の ID で、トークンに組織がないときは空である。
+type Identity struct {
+	Subject       string
+	Email         string
+	EmailVerified bool
+	OrgID         string
+}
 
 // Config は、検証の設定である。
 type Config struct {
@@ -89,16 +98,16 @@ func NewVerifier(ctx context.Context, cfg Config, client *http.Client, log *slog
 
 // Verify は、raw の署名、iss、aud、exp、nbf を確かめ、主張を返す。検証に失敗したときと sub がないときはエラーを返す。
 // 組織のクレームがないか文字列でないときは、エラーにせず OrgID を空にする。
-func (v *Verifier) Verify(ctx context.Context, raw string) (auth.Identity, error) {
+func (v *Verifier) Verify(ctx context.Context, raw string) (Identity, error) {
 	claims := jwt.MapClaims{}
 	if _, err := v.parser.ParseWithClaims(raw, claims, v.keys.KeyfuncCtx(ctx)); err != nil {
-		return auth.Identity{}, fmt.Errorf("verify token: %w", err)
+		return Identity{}, fmt.Errorf("verify token: %w", err)
 	}
 	sub, err := claims.GetSubject()
 	if err != nil || sub == "" {
-		return auth.Identity{}, errors.New("verify token: sub がありません")
+		return Identity{}, errors.New("verify token: sub がありません")
 	}
-	id := auth.Identity{Subject: sub}
+	id := Identity{Subject: sub}
 	id.Email, _ = claims["email"].(string)
 	id.EmailVerified, _ = claims["email_verified"].(bool)
 	id.OrgID, _ = claims[v.cfg.OrgClaim].(string)

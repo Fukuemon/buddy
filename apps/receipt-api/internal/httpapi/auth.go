@@ -5,8 +5,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Fukuemon/buddy/packages/go/oidc"
+
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/httpapi/openapi"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/oidc"
 )
 
 // TokenVerifier は、Authorization ヘッダーの Bearer のトークンを検証する。検証に失敗したときはエラーを返す。

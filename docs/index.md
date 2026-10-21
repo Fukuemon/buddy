@@ -7,4 +7,4 @@
 - [画面仕様書](screens/index.md) — 画面ごとに、何を表示し、何ができるか
 - <a href="storybook/">デザインシステムのカタログ</a> — トークンとコンポーネントの使い方と、画面のコンポーネントの Storybook。公開したサイトだけで開ける（手元の `zensical serve` には無い）
 
-- ADR — [認証の方式](adr/0001-auth.md)、[権限の方式](adr/0002-pbac.md)、[ブランチとリリースの方式](adr/0003-branch-and-release.md)、[デザインシステムのトークンとコンポーネントの置き場](adr/0004-design-system.md)、[schedule-api のパッケージの構成](adr/0005-schedule-api-packages.md)、[職員の管理の権限](adr/0006-staff-manage-policy.md)
+- ADR — [認証の方式](adr/0001-auth.md)、[権限の方式](adr/0002-pbac.md)、[ブランチとリリースの方式](adr/0003-branch-and-release.md)、[デザインシステムのトークンとコンポーネントの置き場](adr/0004-design-system.md)、[schedule-api のパッケージの構成](adr/0005-schedule-api-packages.md)、[職員の管理の権限](adr/0006-staff-manage-policy.md)、[Go の共有の module](adr/0007-go-shared-module.md)

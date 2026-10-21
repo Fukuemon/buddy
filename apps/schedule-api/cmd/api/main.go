@@ -14,12 +14,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Fukuemon/buddy/packages/go/healthcheck"
+
+	"github.com/Fukuemon/buddy/packages/go/oidc"
+
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/access"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/config"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/oidc"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
@@ -35,7 +38,7 @@ const (
 
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
-		os.Exit(healthcheck())
+		os.Exit(healthcheck.Run())
 	}
 	if err := run(); err != nil {
 		slog.Error("api stopped", slog.Any("error", err))
@@ -98,7 +101,7 @@ func run() error {
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions,
 			Staff: staffRepo, Schedules: schedules,
 		}),
-	}, httpapi.RouterConfig{Logger: log, AllowOrigins: cfg.AllowOrigins, Verifier: verifier, Ready: func(ctx context.Context) error {
+	}, httpapi.RouterConfig{Logger: log, AllowOrigins: cfg.AllowOrigins, Verifier: tokenVerifier{verifier}, Ready: func(ctx context.Context) error {
 		ctx, cancel := context.WithTimeout(ctx, readyTimeout)
 		defer cancel()
 		return db.PingContext(ctx)
@@ -133,4 +136,13 @@ func run() error {
 		return err
 	}
 	return nil
+}
+
+// tokenVerifier は、共有の oidc.Verifier を httpapi.TokenVerifier にする。httpapi は oidc を import しないので、主張の型をここで写す。
+type tokenVerifier struct{ v *oidc.Verifier }
+
+// Verify は、トークンを検証し、主張を auth.Identity にして返す。
+func (t tokenVerifier) Verify(ctx context.Context, raw string) (auth.Identity, error) {
+	id, err := t.v.Verify(ctx, raw)
+	return auth.Identity(id), err
 }

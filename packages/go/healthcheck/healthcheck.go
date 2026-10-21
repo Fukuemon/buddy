@@ -1,4 +1,6 @@
-package main
+// Package healthcheck は、イメージの中で API が要求を受けられるかを確かめる、`api healthcheck` のサブコマンドを持つ。
+// schedule-api と receipt-api が共有する module packages/go にある（ADR-0007）。
+package healthcheck
 
 import (
 	"fmt"
@@ -8,9 +10,9 @@ import (
 	"time"
 )
 
-// healthcheck は、同じコンテナで動く API の GET /readyz を呼び、200 なら 0、それ以外なら 1 を返す。
+// Run は、同じコンテナで動く API の GET /readyz を呼び、200 なら 0、それ以外なら 1 を返す。
 // curl の無いイメージで、compose のヘルスチェックに使う。ポートは API と同じ環境変数 PORT から読む。
-func healthcheck() int {
+func Run() int {
 	port := 8080
 	if v := os.Getenv("PORT"); v != "" {
 		n, err := strconv.Atoi(v)

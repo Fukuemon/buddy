@@ -47,7 +47,7 @@ status: stable
 | TypeScript の型 | 各パッケージの `tsconfig.json` | 共有の元は無い。`apps/web` と `packages/ui` は同じオプションを写して持つ |
 | Vitest | 各パッケージの `vite.config.ts` の `test` | web の Storybook は `.storybook/vite.config.ts` に分ける（TanStack Start の plugin が Storybook の中で動かない） |
 | E2E の書き方の規則 | `packages/e2e/eslint.config.mjs` | `packages/e2e` で流したときだけ規則が当たる |
-| Go の lint と整形 | `apps/*/.golangci.yml` | API ごとに置き、ルートには無い |
+| Go の lint と整形 | `apps/*/.golangci.yml`、`packages/go/.golangci.yml` | module ごとに置き、ルートには無い |
 | 文章 | `.textlintrc.json`、`prh.yml`、`.textlintignore` | ルートで `pnpm exec textlint` |
 | コミットの形式 | `commitlint.config.mjs` | lefthook の commit-msg |
 | Vite+ と vite のバージョン | `pnpm-workspace.yaml` の catalog | 各パッケージは `catalog:` で指す |
@@ -61,7 +61,7 @@ status: stable
 | `dist`、`storybook-static` | lint | ビルドの出力である |
 | Go の生成物 | golangci-lint（`exclusions.generated: lax`） | 生成物である |
 | schedule-api の `_test.go` の gosec G101 | golangci-lint | テストの接続の設定は、使い捨てのコンテナの値である |
-| 両方の API の `cmd/api/healthcheck.go` の gosec | golangci-lint（`//nolint:gosec`） | 宛先を `127.0.0.1` に固定し、環境変数はポートだけを決める。誤検知である |
+| `packages/go/healthcheck/healthcheck.go` の gosec | golangci-lint（`//nolint:gosec`） | 宛先を `127.0.0.1` に固定し、環境変数はポートだけを決める。誤検知である |
 | `docs/design/` の下のシンボリックリンク、Git で追跡しないもの | textlint（`.textlintignore`） | 同じ文書を 2 回見ないため。元の文書は元の場所で見る |
 
 ## E2E

@@ -11,11 +11,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Fukuemon/buddy/packages/go/oidc"
+	"github.com/Fukuemon/buddy/packages/go/oidc/oidctest"
+
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/access"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/oidc"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/oidc/oidctest"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 )
 
@@ -28,7 +29,7 @@ const (
 
 var (
 	testIssuer   *oidctest.Issuer
-	testVerifier *oidc.Verifier
+	testVerifier tokenVerifier
 )
 
 func TestMain(m *testing.M) {
@@ -45,7 +46,7 @@ func run(m *testing.M) int {
 	defer testIssuer.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	testVerifier, err = oidc.NewVerifier(ctx, oidc.Config{Issuer: testIssuer.URL(), Audience: testAudience, OrgClaim: "org_id"},
+	testVerifier.v, err = oidc.NewVerifier(ctx, oidc.Config{Issuer: testIssuer.URL(), Audience: testAudience, OrgClaim: "org_id"},
 		testIssuer.Client(), slog.New(slog.NewTextHandler(io.Discard, nil)))
 	if err != nil {
 		log.Print(err)
@@ -175,4 +176,12 @@ func TestAuthenticatedPassesThrough(t *testing.T) {
 			t.Errorf("%s: status = %d, body = %s", target, rec.Code, rec.Body)
 		}
 	}
+}
+
+// tokenVerifier は、共有の oidc.Verifier を httpapi.TokenVerifier にする。cmd/api の同じ名前の型と同じ働きをする。
+type tokenVerifier struct{ v *oidc.Verifier }
+
+func (t tokenVerifier) Verify(ctx context.Context, raw string) (auth.Identity, error) {
+	id, err := t.v.Verify(ctx, raw)
+	return auth.Identity(id), err
 }

@@ -30,13 +30,16 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Fukuemon/buddy/packages/go/healthcheck"
+
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/option"
 
+	"github.com/Fukuemon/buddy/packages/go/oidc"
+
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/gcal"
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/httpapi"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/oidc"
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/source"
 )
 
@@ -116,7 +119,7 @@ func newCalendarReader(ctx context.Context, cfg config) (*gcal.Reader, error) {
 
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
-		os.Exit(healthcheck())
+		os.Exit(healthcheck.Run())
 	}
 	if err := run(); err != nil {
 		slog.Error("終了する", "error", err)
