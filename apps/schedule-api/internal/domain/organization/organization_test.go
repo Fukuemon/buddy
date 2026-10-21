@@ -11,6 +11,8 @@ import (
 func TestNewPosition(t *testing.T) {
 	p1 := organization.Policy{ID: "P1"}
 	p2 := organization.Policy{ID: "P2"}
+	team := organization.Policy{ID: "TEAM", Code: organization.ScheduleTeamRead, NeedsTarget: true}
+	user := organization.Policy{ID: "USER", Code: organization.ScheduleUserRead, NeedsTarget: true}
 	tests := []struct {
 		name     string
 		posName  string
@@ -20,6 +22,8 @@ func TestNewPosition(t *testing.T) {
 		{name: "権限なし", posName: "リーダー"},
 		{name: "権限あり", posName: "リーダー", policies: []organization.Policy{p1, p2}},
 		{name: "権限が重なる", posName: "リーダー", policies: []organization.Policy{p1, p1}, wantErr: true},
+		{name: "チームを対象にする権限", posName: "リーダー", policies: []organization.Policy{team}},
+		{name: "職員を対象にする権限", posName: "リーダー", policies: []organization.Policy{user}, wantErr: true},
 		{name: "名前がない", posName: "", wantErr: true},
 	}
 	for _, tt := range tests {

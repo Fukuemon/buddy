@@ -84,6 +84,7 @@ type Position struct {
 }
 
 // NewPosition は、名前と権限の重なりを検証して Position を作る。
+// 対象の職員を指定する権限は、職員に写すときに対象を決められないので、既定にできない。
 func NewPosition(id, facilityID, name string, policies []Policy) (Position, error) {
 	if err := domain.RequireText("役職の名前", name, maxNameLen); err != nil {
 		return Position{}, err
@@ -92,6 +93,9 @@ func NewPosition(id, facilityID, name string, policies []Policy) (Position, erro
 	for _, p := range policies {
 		if seen[p.ID] {
 			return Position{}, domain.Invalid("権限 %s が重なっています", p.ID)
+		}
+		if p.NeedsTarget && !p.Code.TargetsTeam() {
+			return Position{}, domain.Invalid("権限 %s は対象の職員を指定するので、役職の既定にできません", p.ID)
 		}
 		seen[p.ID] = true
 	}
