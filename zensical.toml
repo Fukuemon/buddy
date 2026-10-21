@@ -62,6 +62,7 @@ nav = [
     { "予定の編集" = "screens/schedule-edit_予定の編集/index.md" },
     { "照合" = "screens/receipt-upload_照合/index.md" },
     { "照合の結果" = "screens/receipt-result_照合の結果/index.md" },
+    { "ログインの失敗" = "screens/account-error_ログインの失敗/index.md" },
   ] },
   { "ADR" = [
     "adr/0001-auth.md",
