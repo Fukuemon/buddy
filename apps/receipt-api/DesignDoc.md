@@ -246,6 +246,7 @@ API の定義の正本は [openapi.yaml](https://github.com/Fukuemon/buddy/blob/
 
 - `POST /v1/checks`
   - `Authorization: Bearer` の access token を求める。署名、`iss`、`aud`、`exp`、`nbf` を JWKS で確かめる。
+  - 署名のアルゴリズムは RS256 と ES256 だけを受け付ける。
   - `multipart/form-data` で、ファイル `visits`（実績の CSV）と予定を受ける。
   - 予定は、ファイル `schedules`（予定の CSV）があればそれを使う。なくてフォームの値 `month`（`2026-10` の形）があれば、その月の予定を Google カレンダーから取る。
   - 結果は、`Accept` によらず結果の JSON で返す。

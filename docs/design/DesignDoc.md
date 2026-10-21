@@ -11,7 +11,8 @@ status: draft
 
 buddy は、訪問看護の事業所の職員が使う、予定の管理とレセプトの照合のアプリである。  
 職員はブラウザで web を開き、web が schedule-api と receipt-api を呼ぶ。  
-誰のどの課題を解くかと、提供する機能と画面は [PRD](../PRD.md) にある。
+誰のどの課題を解くかと、提供する機能と画面は [PRD](../PRD.md) にある。  
+文書のサイトとカタログを公開する仕組み（`apps/docs-site`）は、[apps/docs-site/README.md](https://github.com/Fukuemon/buddy/blob/develop/apps/docs-site/README.md) にある。
 
 ## Goals and Non-Goals
 
@@ -26,7 +27,6 @@ buddy は、訪問看護の事業所の職員が使う、予定の管理とレ�
 
 - どのコンテナをどの種類の基盤で動かすかと、クラスタの構成。
   - インフラのリポジトリ [Fukuemon/buddy-infra](https://github.com/Fukuemon/buddy-infra) が持ち、buddy は [インフラとの約束](#インフラとの約束) だけを守る。
-- 文書のサイト（`apps/docs-site`）の公開の仕組み。[apps/docs-site/README.md](https://github.com/Fukuemon/buddy/blob/develop/apps/docs-site/README.md) にある。
 
 ## Assumptions and Constraints
 
@@ -41,7 +41,8 @@ buddy は、訪問看護の事業所の職員が使う、予定の管理とレ�
 
 作るものが全体として何をするかは、[PRD の System Context](../PRD.md#system-context) にある。
 
-次の図は、buddy のコンテナと、その間のデータの流れを示す。破線の枠が buddy の境界で、灰色は buddy の外のシステムである。
+次の図は、buddy のコンテナと、その間のデータの流れを示す。  
+破線の枠が buddy の境界で、灰色は buddy の外のシステムである。
 
 ```mermaid
 flowchart TB
@@ -72,7 +73,8 @@ flowchart TB
   style buddy fill:none,stroke:#0b4884,stroke-dasharray:5 5
 ```
 
-矢印ごとの約束は、[コンテナの間の契約](#コンテナの間の契約) にある。
+矢印ごとの約束は、[コンテナの間の契約](#コンテナの間の契約) にある。  
+図に描いていない流れが 1 つある。schedule-api と receipt-api は、access token を検証するために、ブローカーの JWKS を読む。
 
 ### 業務の区切りとコンテナ
 
@@ -199,7 +201,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 
 - 事業所は、ブローカーの組織に対応する。
 - schedule-api は、要求が指す事業所がトークンの組織の事業所と違えば、403 を返す。
-  - パスの形と規則は、[事業所の分離](https://github.com/Fukuemon/buddy/blob/develop/context/domain/facility.md) にある。
+  - 拒否する規則は [事業所の分離](https://github.com/Fukuemon/buddy/blob/develop/context/domain/facility.md) に、パスの形は [予定の管理の Design Doc の Interface](https://github.com/Fukuemon/buddy/blob/develop/apps/schedule-api/DesignDoc.md#interface) にある。
 - receipt-api は、カレンダーに組織を結び付け、トークンの組織のカレンダーだけを読む。予定の CSV での照合は、組織を問わない。
 
 ### 認可

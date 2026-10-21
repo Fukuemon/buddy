@@ -33,7 +33,7 @@ status: stable
 | キャンセル | 予定の取り消し。理由を持つ | `schedule.Cancel`、表 `schedule_cancels` |
 | 時間外の勤務 | 17 時以降に始まる予定 | `Slot.IsOverTimeWork`、列 `is_over_time_work` |
 | 訪問の情報 | 訪問の予定に付く、利用者、主訪問者、同行者、サービスコード、訪問の区分 | Go `visit.Info`、表 `visit_infos`、API `VisitInfo`、web `VisitDetail` |
-| 主訪問者 | 訪問する職員。予定の管理では訪問の情報の担当の職員、照合では実績の CSV の「主訪問者」の列 | `Info.AssignedStaffID`、照合の `Key.Staff` |
+| 主訪問者 | 訪問する職員。業務の役割で、役職を問わない。予定の管理では訪問の情報の担当の職員、照合では実績の CSV の「主訪問者」の列 | `Info.AssignedStaffID`、照合の `Key.Staff` |
 | 同行者 | 訪問に同行する職員 | `Info.CompanionID` |
 | サービスコード | レセプトのサービスの種類と、提供時間の範囲（分） | Go `visit.ServiceCode`、表 `service_codes`、web `SERVICE_CODES` |
 | 訪問の区分 | 夜勤、緊急、入院 | Go `visit.Category`、表 `visit_categories`、web `ScheduleCategory` |
