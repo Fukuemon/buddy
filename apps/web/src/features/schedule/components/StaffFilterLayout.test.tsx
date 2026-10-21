@@ -1,5 +1,5 @@
 import { composeStories } from '@storybook/react-vite'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
 
@@ -7,14 +7,26 @@ import * as stories from './StaffFilterLayout.stories'
 
 const { Desktop, Mobile } = composeStories(stories)
 
-// jsdom は matchMedia を持たない。表示の幅が 768px 以上かを、テストごとに決める。
+// jsdom は matchMedia を持たない。表示の幅が 768px 以上かを決め、resize で変えて change を送る。
 const stubViewport = (isDesktop: boolean) => {
+  const listeners = new Set<() => void>()
+  let matches = isDesktop
   vi.stubGlobal('matchMedia', (query: string) => ({
-    matches: isDesktop,
+    get matches() {
+      return matches
+    },
     media: query,
-    addEventListener: () => {},
-    removeEventListener: () => {},
+    addEventListener: (_type: 'change', listener: () => void) => listeners.add(listener),
+    removeEventListener: (_type: 'change', listener: () => void) => listeners.delete(listener),
   }))
+  return {
+    resize: (nextIsDesktop: boolean) => {
+      matches = nextIsDesktop
+      act(() => {
+        for (const listener of listeners) listener()
+      })
+    },
+  }
 }
 
 afterEach(() => {
@@ -63,6 +75,21 @@ describe('StaffFilterLayout', () => {
 
     // jsdom は Escape で cancel を出さないので、ブラウザが出す cancel を直に送る
     fireEvent(screen.getByRole('dialog'), new Event('cancel', { cancelable: true }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByTestId('staff-filter-open')).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('開いたまま PC の幅にしてからスマートフォンの幅に戻すと、ドロワーは閉じている', async () => {
+    const viewport = stubViewport(false)
+    render(<Mobile />)
+    await userEvent.click(screen.getByTestId('staff-filter-open'))
+    expect(screen.getByRole('dialog', { name: '職員の絞り込み' })).toBeInTheDocument()
+
+    viewport.resize(true)
+    expect(screen.queryByTestId('staff-filter-open')).not.toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: '職員の絞り込み' })).toBeVisible()
+
+    viewport.resize(false)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.getByTestId('staff-filter-open')).toHaveAttribute('aria-expanded', 'false')
   })

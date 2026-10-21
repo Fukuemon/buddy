@@ -14,11 +14,13 @@ export type StaffFilterLayoutProps = {
 /**
  * 職員の絞り込みとカレンダーを並べる。
  * 幅 768px 以上では、絞り込みを左のサイドバーに常に出す。未満では、左端から開くドロワーに入れ、閉じた状態で始める。
+ * ドロワーを開いたまま 768px 以上になると、ドロワーを閉じる。
  */
 export const StaffFilterLayout = ({ staffFilter, renderCalendar }: StaffFilterLayoutProps) => {
   const isDesktop = useIsDesktop()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const drawerId = useId()
+  if (isDesktop && isDrawerOpen) setIsDrawerOpen(false)
 
   return (
     <div className="flex min-h-0 grow flex-col desktop:flex-row">
