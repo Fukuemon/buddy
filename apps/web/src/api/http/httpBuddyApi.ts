@@ -3,7 +3,15 @@ import createClient from 'openapi-fetch'
 import { ApiError, type BuddyApi } from '../client'
 import { matchesName } from '../nameSearch'
 import type { paths } from '../generated/schedule'
-import { fromApiSchedule, keepCurrentVisit, splitDateTime, toSlotRequest } from './scheduleMapper'
+import {
+  fromApiPatient,
+  fromApiSchedule,
+  fromApiStaff,
+  fromApiTeam,
+  keepCurrentVisit,
+  splitDateTime,
+  toSlotRequest,
+} from './scheduleMapper'
 
 export type HttpApiOptions = {
   /** API の URL。例は `http://localhost:8080`。 */
@@ -123,9 +131,7 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
           }),
         )
         // API の username と name は完全一致なので、全件を取って部分一致で絞る
-        return users
-          .map((user) => ({ id: user.id, name: user.username, teamId: user.team.id }))
-          .filter((staff) => matchesName(staff.name, params))
+        return users.map(fromApiStaff).filter((staff) => matchesName(staff.name, params))
       },
     },
     teams: {
@@ -135,7 +141,7 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
             params: { path: { facility_id: facilityId } },
           }),
         )
-        return teams.map((team) => ({ id: team.id, name: team.name }))
+        return teams.map(fromApiTeam)
       },
     },
     patients: {
@@ -145,9 +151,7 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
             params: { path: { facility_id: facilityId } },
           }),
         )
-        return patients
-          .map((patient) => ({ id: patient.id, name: patient.name }))
-          .filter((patient) => matchesName(patient.name, params))
+        return patients.map(fromApiPatient).filter((patient) => matchesName(patient.name, params))
       },
     },
   }

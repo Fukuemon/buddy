@@ -47,10 +47,27 @@ export const mockScheduleTypes: Schemas['ScheduleType'][] = [
   { id: 'type-visit', name: '訪問' },
 ]
 
-export const mockServiceCodes: Schemas['ServiceCode'][] = [
-  { id: 'code-i2', code: '訪看I2', service_time_range_start: 20, service_time_range_end: 29 },
-  { id: 'code-i3', code: '訪看I3', service_time_range_start: 30, service_time_range_end: 59 },
-]
+/** サービスコード。表記と提供時間の範囲は、schedule-api のマイグレーション（000007）と同じにする。 */
+export const mockServiceCodes: Schemas['ServiceCode'][] = (
+  [
+    ['code-i2', '訪看I2', 20, 29],
+    ['code-i3', '訪看I3', 30, 59],
+    ['code-i4', '訪看I4', 60, 89],
+    ['code-i5', '訪看I5', 21, 40],
+    ['code-i5-2', '訪看I5・2超', 41, 60],
+    ['code-p2', '予防看I2', 20, 29],
+    ['code-p3', '予防看I3', 30, 59],
+    ['code-p4', '予防看I4', 60, 89],
+    ['code-p5', '予防看I5', 21, 40],
+    ['code-p5-2', '予防看I5・2超', 41, 60],
+    ['code-medical', '医', 30, 90],
+  ] as const
+).map(([id, code, start, end]) => ({
+  id,
+  code,
+  service_time_range_start: start,
+  service_time_range_end: end,
+}))
 
 export const mockVisitCategories: Schemas['VisitCategory'][] = [
   { id: 'category-night', name: '夜勤' },
@@ -113,31 +130,39 @@ export const createMockSchedules = (base: Date): Schemas['Schedule'][] => {
     ...stamps,
     ...detail,
   })
-  const visit = (patientIndex: number, staffIndex: number): Partial<Schemas['Schedule']> => ({
-    schedule_type_id: 'type-visit',
-    schedule_type: '訪問',
-    visit_info: {
-      id: `visit-${patientIndex}`,
-      patient_id: mockPatients[patientIndex].id,
-      patient_name: mockPatients[patientIndex].name,
-      assigned_staff_id: mockStaff[staffIndex].id,
-      assigned_staff_name: mockStaff[staffIndex].username,
-      companion_id: null,
-      companion_name: null,
-      service_code_id: 'code-i2',
-      service_code: '訪看I2',
-      visit_categories: [],
-    },
-  })
+  const visit = (
+    patientIndex: number,
+    staffIndex: number,
+    code: string,
+    categoryIds: string[] = [],
+  ): Partial<Schemas['Schedule']> => {
+    const serviceCode = mockServiceCodes.find((c) => c.code === code) ?? mockServiceCodes[0]
+    return {
+      schedule_type_id: 'type-visit',
+      schedule_type: '訪問',
+      visit_info: {
+        id: `visit-${patientIndex}`,
+        patient_id: mockPatients[patientIndex].id,
+        patient_name: mockPatients[patientIndex].name,
+        assigned_staff_id: mockStaff[staffIndex].id,
+        assigned_staff_name: mockStaff[staffIndex].username,
+        companion_id: null,
+        companion_name: null,
+        service_code_id: serviceCode.id,
+        service_code: serviceCode.code,
+        visit_categories: mockVisitCategories.filter((c) => categoryIds.includes(c.id)),
+      },
+    }
+  }
   return [
-    schedule('schedule-1', 0, 0, ['09:00', '09:29'], visit(0, 0)),
-    schedule('schedule-2', 0, 1, ['10:30', '10:59'], visit(1, 1)),
+    schedule('schedule-1', 0, 0, ['09:00', '09:29'], visit(0, 0, '訪看I2')),
+    schedule('schedule-2', 0, 1, ['10:30', '11:29'], visit(1, 1, '訪看I3', ['category-emergency'])),
     schedule('schedule-3', 0, 2, ['13:00', '14:00'], {
       title: 'カンファレンス',
       description: '事業所の会議室',
     }),
-    schedule('schedule-4', 1, 3, ['09:30', '09:59'], visit(2, 3)),
-    schedule('schedule-5', -1, 0, ['15:00', '16:00'], { title: '研修' }),
+    schedule('schedule-4', 1, 3, ['15:00', '16:29'], visit(2, 3, '訪看I4')),
+    schedule('schedule-5', -2, 0, ['14:00', '16:00'], { title: '研修' }),
   ]
 }
 
