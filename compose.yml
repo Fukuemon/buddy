@@ -58,6 +58,16 @@ services:
       timeout: 5s
       retries: 30
 
+  # 予定の API が Google Calendar API の代わりに呼ぶ偽物。予定は compose/fake-google-calendar.json にある
+  fake-google:
+    build: { context: ., dockerfile: apps/schedule-api/Dockerfile, target: fakegcal }
+    volumes: [./compose/fake-google-calendar.json:/config/fake-google-calendar.json:ro]
+    healthcheck:
+      test: ['CMD', '/usr/local/bin/fakegcal', 'healthcheck']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
   schedule-api-migrate:
     build: { context: ., dockerfile: apps/schedule-api/Dockerfile }
     image: buddy-compose-schedule-api
@@ -88,6 +98,9 @@ services:
       OIDC_AUDIENCE: schedule-api
       # web と、API の仕様のページで要求を試す手元の文書のサイト（zensical serve）に許す
       CORS_ALLOW_ORIGINS: http://localhost:${WEB_PORT:-3000},http://localhost:8000
+      # 架空のサービスアカウント。偽物の Calendar API は認証を求めない
+      GOOGLE_CALENDAR_SERVICE_ACCOUNT: buddy-calendar@example.iam.gserviceaccount.com
+      GOOGLE_CALENDAR_ENDPOINT: http://fake-google:8080/
     ports: ['127.0.0.1:${SCHEDULE_API_PORT:-8080}:8080']
     healthcheck:
       test: ['CMD', '/usr/local/bin/api', 'healthcheck']
@@ -97,6 +110,7 @@ services:
     depends_on:
       schedule-api-seed: { condition: service_completed_successfully }
       idp: { condition: service_healthy }
+      fake-google: { condition: service_healthy }
 
   receipt-api:
     build: { context: ., dockerfile: apps/receipt-api/Dockerfile }

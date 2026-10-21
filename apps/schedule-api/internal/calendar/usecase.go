@@ -45,11 +45,10 @@ type Schedules interface {
 	Create(ctx context.Context, s schedule.Schedule) error
 }
 
-// Recurring は、取り込んだ繰り返しの予定と除外する日を書き、前の取り込みの繰り返しの予定を読む。
+// Recurring は、取り込んだ繰り返しの予定と除外する日を書く。
 // AddExclusion は、同じ日付をすでに除外しているときに apperr.ErrConflict を返す。
 type Recurring interface {
 	Create(ctx context.Context, rs schedule.RecurringSchedule) error
-	Get(ctx context.Context, id string) (schedule.RecurringDetail, error)
 	AddExclusion(ctx context.Context, recurringScheduleID string, d civil.Date) error
 }
 
@@ -71,7 +70,9 @@ type Deps struct {
 	Types          Types
 	Schedules      Schedules
 	Recurring      Recurring
-	Visits         VisitInfos
+	// RecurringSchedules は、前の取り込みで繰り返しのまま取り込んだ予定と、その除外の日を読む。
+	RecurringSchedules kernel.Finder[schedule.RecurringDetail]
+	Visits             VisitInfos
 }
 
 // Usecase は、外部のカレンダーの結び付けと、予定の取り込みの操作である。全ての操作は、guard が許すときだけ行う（ADR-0006）。
@@ -330,7 +331,7 @@ func (u *Usecase) plan(ctx context.Context, c ExternalCalendar, rng Range) (plan
 		if _, done := in.linkedRecurring[ev.RecurringEventID]; done {
 			continue
 		}
-		rs, err := u.deps.Recurring.Get(ctx, *l.RecurringScheduleID)
+		rs, err := u.deps.RecurringSchedules.Get(ctx, *l.RecurringScheduleID)
 		if err != nil {
 			return plan{}, nil, err
 		}

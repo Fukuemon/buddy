@@ -110,7 +110,7 @@ func newEnv(t *testing.T, srv *gcaltest.Server) env {
 	uc := calendar.NewUsecase(calendar.Deps{
 		Calendars: inmem.Calendars{Store: s}, Source: source, ServiceAccount: "buddy@example.iam.gserviceaccount.com",
 		Staff: inmem.StaffRefs{Store: s}, Patients: inmem.Patients{Store: s}, ServiceCodes: inmem.VisitMasters{Store: s},
-		Types: inmem.ScheduleTypes{Store: s}, Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s},
+		Types: inmem.ScheduleTypes{Store: s}, Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, RecurringSchedules: inmem.RecurringSchedules{Store: s},
 		Visits: visit.NewWriter(visit.WriterDeps{
 			Staff: inmem.StaffRefs{Store: s},
 			Patients: func(_ context.Context, id string) (string, string, error) {

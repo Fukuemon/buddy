@@ -26,6 +26,8 @@ API とマイグレーションは、次の環境変数を読む。
 | `PORT` | いいえ | `8080` | API が待ち受けるポート |
 | `CORS_ALLOW_ORIGINS` | いいえ | 空 | カンマで区切ったオリジン。空なら CORS のヘッダーを返さない |
 | `LOG_LEVEL` | いいえ | `info` | `debug`、`info`、`warn`、`error` のいずれか |
+| `GOOGLE_CALENDAR_SERVICE_ACCOUNT` | いいえ | 空 | 職員がカレンダーを共有する相手のサービスアカウントのメールアドレス。空なら Google カレンダーを読まず、カレンダーを読む操作は 503 を返す。認証の情報は Application Default Credentials で読む |
+| `GOOGLE_CALENDAR_ENDPOINT` | いいえ | 空 | Calendar API の代わりに呼ぶ URL。偽物の API で試すためのもので、認証をしない。`GOOGLE_CALENDAR_SERVICE_ACCOUNT` と一緒に渡す |
 
 パスワードはコードに既定値を持たない。  
 ログは標準出力に JSON で書き、接続の設定とトークンは書かない。  
@@ -67,6 +69,17 @@ curl -H "Authorization: Bearer $TOKEN" localhost:8080/v1/facilities/01M3TC5H00QV
 ```
 
 偽物の発行者は、起動のたびに鍵を作り直す。発行者を起動し直したら、API も起動し直す。
+
+Google カレンダーの取り込みを手元で試すときは、Calendar API の偽物 `cmd/fakegcal` を別の端末で動かし、API に向ける。  
+偽物は、ルートの `compose/fake-google-calendar.json` の予定を返す。compose は同じ偽物を `fake-google` として動かす。
+
+```sh
+go run ./cmd/fakegcal -addr 127.0.0.1:8085 -file ../../compose/fake-google-calendar.json
+
+export GOOGLE_CALENDAR_SERVICE_ACCOUNT=buddy-calendar@example.iam.gserviceaccount.com
+export GOOGLE_CALENDAR_ENDPOINT=http://127.0.0.1:8085/
+go run ./cmd/api
+```
 
 ## マイグレーション
 

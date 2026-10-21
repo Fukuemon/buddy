@@ -64,6 +64,7 @@ flowchart TB
   web -- "access token を付けて呼ぶ" --> receipt
   schedule -- "SQL" --> postgres
   receipt -- "予定を読む" --> gcal
+  schedule -- "取り込む予定を読む" --> gcal
   classDef person fill:#08427b,stroke:#052e56,color:#fff
   classDef container fill:#438dd5,stroke:#2e6295,color:#fff
   classDef external fill:#8a8a8a,stroke:#6b6b6b,color:#fff
@@ -103,6 +104,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 
 - 事業所、部署、チーム、役職、権限、職員、利用者、予定を持つ。
 - access token の検証、職員の特定、事業所の確認、職員の権限による予定の閲覧と編集の判定を行う。
+- 職員に結び付けた Google カレンダーの予定を、期間を選んで予定に取り込む（ADR-0009 の段階 1）。
 - 持たないもの: 照合の規則。
 - 内部の構成と ER は [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/apps/schedule-api/DesignDoc.md) にある。
 
@@ -132,7 +134,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
   - 契約を変えるときの互換の規則は ADR-0003 にある。
   - ADR-0003: [git flow で取り込み、アプリごとのバージョンでリリースする](../adr/0003-branch-and-release.md)
 - schedule-api、receipt-api とブローカー: 発行者の discovery と JWKS を読み、access token を検証する。検証に失敗したら 401 を返す。
-- receipt-api と Google Calendar API: サービスアカウントで、閲覧の権限で共有されたカレンダーの予定を読む。
+- receipt-api、schedule-api と Google Calendar API: サービスアカウントで、閲覧の権限で共有されたカレンダーの予定を読む。schedule-api は、取り込みの下見と確定のときだけ読む。
 - schedule-api と PostgreSQL: schedule-api だけが読み書きする。
 
 ### インフラとの約束
@@ -169,10 +171,11 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 | `CORS_ALLOW_ORIGINS` | 使わない | 任意 | 任意 | CORS を許すオリジン。カンマで区切る。空なら CORS のヘッダーを返さない |
 | `MAX_UPLOAD_BYTES` | 使わない | 使わない | 任意 | 照合の要求の本文の上限。既定は 10 MiB |
 | `GOOGLE_CALENDARS_FILE` | 使わない | 使わない | 任意 | 職員とカレンダーと組織の対応の JSON。空なら Google カレンダーから予定を取らない |
-| `GOOGLE_CALENDAR_ENDPOINT` | 使わない | 使わない | 任意 | Calendar API の代わりに呼ぶ URL。テストの偽物に向けるときだけ渡す |
+| `GOOGLE_CALENDAR_SERVICE_ACCOUNT` | 使わない | 任意 | 使わない | 職員がカレンダーを共有する相手のサービスアカウントのメールアドレス。空なら、カレンダーを読む操作は 503 を返す |
+| `GOOGLE_CALENDAR_ENDPOINT` | 使わない | 任意 | 任意 | Calendar API の代わりに呼ぶ URL。テストの偽物に向けるときだけ渡す。schedule-api では `GOOGLE_CALENDAR_SERVICE_ACCOUNT` と一緒に渡す |
 
 - web の `VITE_API_MODE` は、イメージのビルドのときに埋め込む値で、実行のときには読まない。イメージは `bff` でビルドする。
-- receipt-api は、Google の認証情報を Application Default Credentials（`GOOGLE_APPLICATION_CREDENTIALS` など）で読む。
+- receipt-api と schedule-api は、Google の認証情報を Application Default Credentials（`GOOGLE_APPLICATION_CREDENTIALS` など）で読む。schedule-api は、`GOOGLE_CALENDAR_SERVICE_ACCOUNT` があるときだけ読み、読めなければ起動しない。
 
 秘密の値（`OIDC_CLIENT_SECRET`、`SESSION_SECRET`、`DB_PASSWORD`、Google のサービスアカウントの認証情報）は、インフラのリポジトリが秘密の情報の置き場から渡す。buddy のリポジトリには置かない。
 

@@ -122,7 +122,7 @@ func run() error {
 		Calendars: calendar.NewUsecase(calendar.Deps{
 			Calendars: calendars, Source: source, ServiceAccount: cfg.Calendar.ServiceAccount,
 			Staff: staffRefs, Patients: patients, ServiceCodes: visitMasters, Types: scheduleTypes,
-			Schedules: schedules, Recurring: recurring, Visits: visitInfos,
+			Schedules: schedules, Recurring: recurring, RecurringSchedules: recurring, Visits: visitInfos,
 		}, tx, ids, principal.RequireStaffManage),
 		Auth: access.NewService(access.Deps{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions,

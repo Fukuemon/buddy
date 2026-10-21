@@ -176,7 +176,7 @@ func TestCalendarImportInOneTransaction(t *testing.T) {
 	uc := calendar.NewUsecase(calendar.Deps{
 		Calendars: calendars, Source: gcal.NewReader(gcaltest.Start(t, srv)), ServiceAccount: "buddy@example.com",
 		Staff: staffRefs, Patients: patients, ServiceCodes: masters, Types: NewScheduleTypeRepository(testDB),
-		Schedules: schedules, Recurring: recurring,
+		Schedules: schedules, Recurring: recurring, RecurringSchedules: recurring,
 		Visits: visit.NewWriter(visit.WriterDeps{
 			Staff: staffRefs,
 			Patients: func(ctx context.Context, id string) (string, string, error) {
