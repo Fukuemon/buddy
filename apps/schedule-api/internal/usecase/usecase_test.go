@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/auth"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/civil"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/patient"
@@ -47,10 +48,18 @@ func seeded() *store {
 	s.types[visitTypeID] = schedule.Type{ID: visitTypeID, Name: schedule.Visit}
 	s.recurring[recurringID] = schedule.RecurringDetail{RecurringSchedule: schedule.RecurringSchedule{
 		ID:   recurringID,
-		Slot: schedule.Slot{FacilityID: facilityID, Date: civil.Date{Year: 2026, Month: 10, Day: 5}},
+		Slot: schedule.Slot{FacilityID: facilityID, StaffID: staffID, Date: civil.Date{Year: 2026, Month: 10, Day: 5}},
 		Rule: schedule.Rule{Frequency: schedule.Weekly},
 	}}
 	return s
+}
+
+// editorCtx は、事業所の全ての予定を編集できる職員を持つ ctx を返す。権限の判定のほかのテストに使う。
+func editorCtx() context.Context {
+	return auth.WithPrincipal(context.Background(), auth.Principal{Staff: staff.Detail{
+		Summary:  staff.Summary{Staff: staff.Staff{ID: "EDITOR", FacilityID: facilityID}},
+		Policies: []staff.PolicyGrant{{PolicyCode: organization.ScheduleAllEdit}},
+	}})
 }
 
 func newSchedules(s *store) (*usecase.Schedules, *fakeTx) {
@@ -142,7 +151,7 @@ func TestSchedulesCreate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s := seeded()
 			uc, tx := newSchedules(s)
-			got, err := uc.Create(context.Background(), tt.facilityID, tt.in())
+			got, err := uc.Create(editorCtx(), tt.facilityID, tt.in())
 			if tt.wantErr != nil {
 				if !errors.Is(err, tt.wantErr) {
 					t.Fatalf("err = %v, want %v", err, tt.wantErr)
@@ -177,7 +186,7 @@ func TestSchedulesCreate(t *testing.T) {
 func TestSchedulesCreateRecurring(t *testing.T) {
 	s := seeded()
 	uc, _ := newSchedules(s)
-	got, err := uc.CreateRecurring(context.Background(), facilityID, normalSlot(),
+	got, err := uc.CreateRecurring(editorCtx(), facilityID, normalSlot(),
 		usecase.RuleInput{Frequency: schedule.Weekly, DayOfWeek: ptr(2)})
 	if err != nil {
 		t.Fatal(err)
@@ -186,7 +195,7 @@ func TestSchedulesCreateRecurring(t *testing.T) {
 		t.Errorf("Rule = %+v", got.Rule)
 	}
 
-	_, err = uc.CreateRecurring(context.Background(), facilityID, normalSlot(),
+	_, err = uc.CreateRecurring(editorCtx(), facilityID, normalSlot(),
 		usecase.RuleInput{Frequency: schedule.Monthly, DayOfWeek: ptr(2)})
 	if !errors.Is(err, domain.ErrInvalidInput) {
 		t.Fatalf("err = %v, want ErrInvalidInput", err)
@@ -211,7 +220,7 @@ func TestSchedulesChangeOccurrence(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s := seeded()
 			uc, _ := newSchedules(s)
-			ctx := context.Background()
+			ctx := editorCtx()
 			if tt.repeat {
 				if _, err := uc.ChangeOccurrence(ctx, tt.recurringID, tt.date, normalSlot()); err != nil {
 					t.Fatal(err)
@@ -239,12 +248,13 @@ func TestSchedulesChangeOccurrence(t *testing.T) {
 
 func TestSchedulesCancel(t *testing.T) {
 	s := seeded()
-	uc, _ := newSchedules(s)
-	ctx := context.Background()
+	uc, tx := newSchedules(s)
+	ctx := editorCtx()
 	created, err := uc.Create(ctx, facilityID, normalSlot())
 	if err != nil {
 		t.Fatal(err)
 	}
+	before := tx.calls
 	if _, err := uc.Cancel(ctx, "MISSING", "体調不良"); !errors.Is(err, domain.ErrNotFound) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
 	}
@@ -253,6 +263,9 @@ func TestSchedulesCancel(t *testing.T) {
 	}
 	if _, err := uc.Cancel(ctx, created.ID, "体調不良"); err != nil {
 		t.Fatal(err)
+	}
+	if tx.calls == before {
+		t.Error("キャンセルがトランザクションの中で予定をロックしていない")
 	}
 	if _, err := uc.Cancel(ctx, created.ID, "体調不良"); !errors.Is(err, domain.ErrConflict) {
 		t.Fatalf("err = %v, want ErrConflict", err)
@@ -284,7 +297,7 @@ func TestSchedulesUpdate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s := seeded()
 			uc, tx := newSchedules(s)
-			ctx := context.Background()
+			ctx := editorCtx()
 			create := func() (schedule.Detail, error) {
 				return uc.ChangeOccurrence(ctx, recurringID, civil.Date{Year: 2026, Month: 10, Day: 12}, visitSlot(validVisit()))
 			}
@@ -337,7 +350,7 @@ func TestSchedulesUpdate(t *testing.T) {
 func TestSchedulesList(t *testing.T) {
 	s := seeded()
 	uc, _ := newSchedules(s)
-	ctx := context.Background()
+	ctx := editorCtx()
 	from, to := civil.Date{Year: 2026, Month: 10, Day: 20}, civil.Date{Year: 2026, Month: 10, Day: 1}
 	if _, err := uc.List(ctx, facilityID, schedule.ListQuery{DateFrom: &from, DateTo: &to}); !errors.Is(err, domain.ErrInvalidInput) {
 		t.Fatalf("err = %v, want ErrInvalidInput", err)

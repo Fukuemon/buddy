@@ -335,8 +335,8 @@ export interface paths {
         };
         /**
          * 事業所の予定を一覧する
-         * @description 事業所の単発の予定と繰り返しの予定を返す。sort_field と sort_order は許可した値だけを受け付け、
-         *     ほかの値は 400 を返す。date_from と date_to は単発の予定だけを絞る。
+         * @description 事業所の単発の予定と繰り返しの予定のうち、職員が見てよい予定を返す。見てよくない職員の予定は除く。
+         *     sort_field と sort_order は許可した値だけを受け付け、ほかの値は 400 を返す。date_from と date_to は単発の予定だけを絞る。
          */
         get: operations["listSchedules"];
         put?: never;
@@ -701,7 +701,7 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
-        /** @description 職員を特定できないか、パスが指す事業所が職員の事業所と違う。`code` は forbidden */
+        /** @description 職員を特定できないか、パスが指す事業所が職員の事業所と違うか、職員の権限で予定を見るか編集できない。`code` は forbidden */
         Forbidden: {
             headers: {
                 [name: string]: unknown;

@@ -81,7 +81,7 @@ flowchart TB
 ### schedule-api
 
 - 事業所、部署、チーム、役職、権限、職員、利用者、予定を持つ。
-- access token の検証、職員の特定、事業所の確認を行う。権限による判定はまだ行わない（#45）。
+- access token の検証、職員の特定、事業所の確認、職員の権限による予定の閲覧と編集の判定を行う。
 - 繰り返しの予定は、回に展開せずに返す。
 - 持たないもの: 照合の規則。
 - 内部の構成と ER は [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/apps/schedule-api/DesignDoc.md) にある。
@@ -163,7 +163,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 
 ### 認可
 
-- 予定の閲覧と編集は、職員の `user_policies` で決める方式にした。判定はまだ実装していない（#45）。今の認可は、事業所の分離だけである。
+- 予定の閲覧と編集は、職員の `user_policies` で決める。schedule-api の usecase が判定し、見てよくない予定は一覧から除き、1 件を指す操作には 403 を返す。規則は [予定の管理の Design Doc](apps/schedule-api.md#予定の認可) にある。
   - ADR-0002: [権限を役職の既定と職員ごとの上書きで持つ（PBAC）](../adr/0002-pbac.md)
 
 ### ログと個人情報

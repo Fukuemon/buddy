@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/auth"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/civil"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/patient"
@@ -22,7 +23,8 @@ type ScheduleRepositories struct {
 	Schedules  schedule.Repository
 }
 
-// Schedules は、予定の操作である。
+// Schedules は、予定の操作である。操作は、ctx の職員（auth.Principal）の権限で判定する。
+// 見てよくない予定は一覧から除き、1 件を指す操作には domain.ErrForbidden を返す。ctx に職員がいなければ domain.ErrForbidden を返す。
 type Schedules struct {
 	repos  ScheduleRepositories
 	tx     domain.Transactor
@@ -79,20 +81,42 @@ func (s *Schedules) ListTypes(ctx context.Context) ([]schedule.Type, error) {
 
 // Get は、単発の予定を返す。
 func (s *Schedules) Get(ctx context.Context, id string) (schedule.Detail, error) {
-	return s.repos.Schedules.Get(ctx, id)
+	d, err := s.repos.Schedules.Get(ctx, id)
+	if err != nil {
+		return schedule.Detail{}, err
+	}
+	if err := s.authorize(ctx, d.StaffID, false); err != nil {
+		return schedule.Detail{}, err
+	}
+	return d, nil
 }
 
 // GetRecurring は、繰り返しの予定を返す。
 func (s *Schedules) GetRecurring(ctx context.Context, id string) (schedule.RecurringDetail, error) {
-	return s.repos.Schedules.GetRecurring(ctx, id)
+	d, err := s.repos.Schedules.GetRecurring(ctx, id)
+	if err != nil {
+		return schedule.RecurringDetail{}, err
+	}
+	if err := s.authorize(ctx, d.StaffID, false); err != nil {
+		return schedule.RecurringDetail{}, err
+	}
+	return d, nil
 }
 
-// List は、事業所の予定を返す。事業所が見つからないときは domain.ErrNotFound を返す。
+// List は、事業所の予定のうち、見てよい職員の予定を返す。事業所が見つからないときは domain.ErrNotFound を返す。
 func (s *Schedules) List(ctx context.Context, facilityID string, q schedule.ListQuery) (List, error) {
 	if err := q.Validate(); err != nil {
 		return List{}, err
 	}
+	p, err := principal(ctx)
+	if err != nil {
+		return List{}, err
+	}
 	if _, err := s.repos.Facilities.Get(ctx, facilityID); err != nil {
+		return List{}, err
+	}
+	readable, err := s.readable(ctx, p, facilityID)
+	if err != nil {
 		return List{}, err
 	}
 	single, err := s.repos.Schedules.ListByFacility(ctx, facilityID, q)
@@ -103,7 +127,74 @@ func (s *Schedules) List(ctx context.Context, facilityID string, q schedule.List
 	if err != nil {
 		return List{}, err
 	}
-	return List{Schedules: single, RecurringSchedules: recurring}, nil
+	return List{
+		Schedules:          filter(single, func(d schedule.Detail) bool { return readable(d.StaffID) }),
+		RecurringSchedules: filter(recurring, func(d schedule.RecurringDetail) bool { return readable(d.StaffID) }),
+	}, nil
+}
+
+// readable は、事業所の職員のうち、p が予定を見てよい職員かを返す関数を返す。
+func (s *Schedules) readable(ctx context.Context, p auth.Principal, facilityID string) (func(staffID string) bool, error) {
+	if p.CanReadAll() {
+		return func(string) bool { return true }, nil
+	}
+	sort, err := staff.ParseSort("", "")
+	if err != nil {
+		return nil, err
+	}
+	members, err := s.repos.Staff.ListByFacility(ctx, facilityID, staff.ListQuery{Sort: sort})
+	if err != nil {
+		return nil, err
+	}
+	ok := map[string]bool{p.Staff.ID: true}
+	for _, m := range members {
+		if p.CanRead(m.ID, m.TeamID) {
+			ok[m.ID] = true
+		}
+	}
+	return func(staffID string) bool { return ok[staffID] }, nil
+}
+
+func filter[T any](items []T, keep func(T) bool) []T {
+	out := make([]T, 0, len(items))
+	for _, it := range items {
+		if keep(it) {
+			out = append(out, it)
+		}
+	}
+	return out
+}
+
+// principal は、認証のミドルウェアが ctx に入れた職員を返す。入っていなければ domain.ErrForbidden を返す。
+func principal(ctx context.Context) (auth.Principal, error) {
+	p, ok := auth.PrincipalFrom(ctx)
+	if !ok {
+		return auth.Principal{}, fmt.Errorf("%w: 職員を特定できません", domain.ErrForbidden)
+	}
+	return p, nil
+}
+
+// authorize は、ctx の職員が、職員 staffID の予定を見てよいか（edit なら編集してよいか）を確かめる。
+func (s *Schedules) authorize(ctx context.Context, staffID string, edit bool) error {
+	p, err := principal(ctx)
+	if err != nil {
+		return err
+	}
+	st, err := s.repos.Staff.Get(ctx, staffID)
+	if err != nil {
+		return err
+	}
+	return allow(p, st.ID, st.TeamID, edit)
+}
+
+func allow(p auth.Principal, staffID, teamID string, edit bool) error {
+	if edit && !p.CanEdit(staffID, teamID) {
+		return fmt.Errorf("%w: この職員の予定を編集する権限がありません", domain.ErrForbidden)
+	}
+	if !edit && !p.CanRead(staffID, teamID) {
+		return fmt.Errorf("%w: この職員の予定を見る権限がありません", domain.ErrForbidden)
+	}
+	return nil
 }
 
 // Create は、事業所に単発の予定を作る。訪問の情報があれば同じトランザクションで保存する。
@@ -165,6 +256,9 @@ func (s *Schedules) ChangeOccurrence(ctx context.Context, recurringScheduleID st
 	if err != nil {
 		return schedule.Detail{}, err
 	}
+	if err := s.authorize(ctx, rs.StaffID, true); err != nil {
+		return schedule.Detail{}, err
+	}
 	if !rs.Occurs(originalDate) {
 		return schedule.Detail{}, domain.Invalid("%s は繰り返しの予定の回に当たりません", originalDate)
 	}
@@ -183,14 +277,25 @@ func (s *Schedules) ChangeOccurrence(ctx context.Context, recurringScheduleID st
 // Cancel は、単発の予定をキャンセルする。予定が見つからないときは domain.ErrNotFound を、
 // キャンセル済みのときは domain.ErrConflict を返す。
 func (s *Schedules) Cancel(ctx context.Context, scheduleID, reason string) (schedule.Cancel, error) {
-	if _, err := s.repos.Schedules.Get(ctx, scheduleID); err != nil {
-		return schedule.Cancel{}, err
-	}
 	c, err := schedule.NewCancel(s.ids.NewID(), scheduleID, reason)
 	if err != nil {
 		return schedule.Cancel{}, err
 	}
-	if err := s.repos.Schedules.CreateCancel(ctx, c); err != nil {
+	// Update と同じ行のロックの中で権限を確かめ、確かめた後に予定の職員が替わらないようにする。
+	err = s.tx.WithinTx(ctx, func(ctx context.Context) error {
+		if err := s.repos.Schedules.Lock(ctx, scheduleID); err != nil {
+			return err
+		}
+		cur, err := s.repos.Schedules.Get(ctx, scheduleID)
+		if err != nil {
+			return err
+		}
+		if err := s.authorize(ctx, cur.StaffID, true); err != nil {
+			return err
+		}
+		return s.repos.Schedules.CreateCancel(ctx, c)
+	})
+	if err != nil {
 		return schedule.Cancel{}, err
 	}
 	return c, nil
@@ -207,6 +312,9 @@ func (s *Schedules) Update(ctx context.Context, scheduleID string, in SlotInput)
 		}
 		cur, err := s.repos.Schedules.Get(ctx, scheduleID)
 		if err != nil {
+			return err
+		}
+		if err := s.authorize(ctx, cur.StaffID, true); err != nil {
 			return err
 		}
 		if cur.Cancel != nil {
@@ -250,7 +358,7 @@ func (s *Schedules) createSchedule(ctx context.Context, facilityID string, in Sl
 	return s.repos.Schedules.Get(ctx, sc.ID)
 }
 
-// prepareSlot は、予定の種類と職員を確かめ、訪問の情報があれば保存して、予定の属性を組み立てる。
+// prepareSlot は、予定の種類と職員と、職員の予定を編集する権限を確かめ、訪問の情報があれば保存して、予定の属性を組み立てる。
 // 訪問の情報を保存するので、トランザクションの中で呼ぶ。
 func (s *Schedules) prepareSlot(ctx context.Context, facilityID string, in SlotInput) (schedule.Slot, schedule.Type, error) {
 	typ, err := s.repos.Schedules.GetType(ctx, in.TypeID)
@@ -262,6 +370,13 @@ func (s *Schedules) prepareSlot(ctx context.Context, facilityID string, in SlotI
 		return schedule.Slot{}, schedule.Type{}, reference("職員", in.StaffID, err)
 	}
 	if err := sameFacility("職員", st.ID, st.FacilityID, facilityID); err != nil {
+		return schedule.Slot{}, schedule.Type{}, err
+	}
+	p, err := principal(ctx)
+	if err != nil {
+		return schedule.Slot{}, schedule.Type{}, err
+	}
+	if err := allow(p, st.ID, st.TeamID, true); err != nil {
 		return schedule.Slot{}, schedule.Type{}, err
 	}
 	slot := schedule.Slot{
