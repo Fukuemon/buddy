@@ -19,7 +19,7 @@ status: stable
 
 ## Dependency Rules
 
-- apps 同士はコードで依存しない。Go のモジュール同士の import と、web から Go のコードの参照は無い。
+- apps 同士はコードで依存しない。2 つの Go の API は 1 つの module だが、互いのパッケージを import しない。2 つの API が共有するコードは、リポジトリの直下の `internal/` にだけ置く（[ADR-0007](../docs/adr/0007-go-single-module.md)）。web から Go のコードの参照は無い。
 - web は `@buddy/ui` に依存してよい。`packages/ui` から `apps/` へは依存しない。
 - web の `features/<機能>/` の間は import しない。2 つの機能が使うものは、`components/site/`（サイト共通のコンポーネント）か `@buddy/ui` に置く。
 - schedule-api の依存は、アダプタ（`httpapi`、`mysql`）、`access`、機能のパッケージ、`domain` と `civil` の 1 方向に限る。

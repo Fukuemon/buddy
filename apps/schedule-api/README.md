@@ -105,7 +105,7 @@ golangci-lint run
 ### API の定義を変えたとき
 
 oapi-codegen が、openapi.yaml から gin の strict server のインターフェイスと型を `internal/httpapi/openapi/openapi.gen.go` に生成する。  
-oapi-codegen は `go.mod` の `tool` でバージョンを固定し、`go tool` で動かす。設定は [oapi-codegen.yaml](oapi-codegen.yaml) にある。  
+oapi-codegen は、リポジトリの直下の `go.mod` の `tool` でバージョンを固定し、`go tool` で動かす。設定は [oapi-codegen.yaml](oapi-codegen.yaml) にある。  
 openapi.yaml を変えたら、生成し直し、生成物も同じコミットに入れる。
 
 ```sh
@@ -139,7 +139,7 @@ sqlc diff
 ## コンテナのイメージ
 
 ```sh
-docker build -t buddy-schedule-api .
+docker build -f apps/schedule-api/Dockerfile -t buddy-schedule-api ../..
 ```
 
 イメージは distroless の上に `api` と `migrate` の 2 つのバイナリを持つ。エントリポイントは `api` である。  

@@ -14,7 +14,7 @@ status: stable
 | ランタイムとツールの管理 | mise | `mise.toml` |
 | web と packages のランタイム | Node | `mise.toml`、`apps/web/Dockerfile` |
 | JavaScript のパッケージ管理 | pnpm | `mise.toml` と `package.json` の `packageManager`（同じバージョンにする） |
-| 2 つの API のランタイム | Go | `mise.toml`、`apps/*/go.mod`、`apps/*/Dockerfile` |
+| 2 つの API のランタイム | Go | `mise.toml`、`go.mod`、`apps/*/Dockerfile` |
 | ビルド、開発サーバー、整形、lint、Vitest | Vite+（`vp`） | `pnpm-workspace.yaml` の catalog |
 | 型のチェック | TypeScript | 各パッケージの `package.json` |
 | 画面 | TanStack Start、Router、Query、React、Tailwind CSS | `apps/web/package.json` |
@@ -22,12 +22,12 @@ status: stable
 | コンポーネントのカタログ | Storybook | `apps/web/package.json`、`packages/ui/package.json` |
 | E2E とブラウザのテスト | Playwright | `packages/e2e/package.json`、`packages/ui/package.json`（同じバージョンにする） |
 | E2E の書き方の規則 | ESLint | `packages/e2e/package.json` |
-| 予定の API の HTTP | gin | `apps/schedule-api/go.mod` |
-| API のサーバーの生成 | oapi-codegen（`go tool`） | 各 `go.mod` の `tool` |
+| 予定の API の HTTP | gin | `go.mod` |
+| API のサーバーの生成 | oapi-codegen（`go tool`） | `go.mod` の `tool` |
 | 画面の API の型の生成 | openapi-typescript | `apps/web/package.json` |
 | SQL からの Go の生成 | sqlc | `mise.toml` |
-| マイグレーション | golang-migrate | `mise.toml`（CLI）、`apps/schedule-api/go.mod`（ライブラリ） |
-| Go の lint と整形 | golangci-lint | `mise.toml`、設定は `apps/*/.golangci.yml` |
+| マイグレーション | golang-migrate | `mise.toml`（CLI）、`go.mod`（ライブラリ） |
+| Go の lint と整形 | golangci-lint | `mise.toml`、設定は `.golangci.yml` |
 | 文書のサイト | Zensical（uv で動かす） | `pyproject.toml`、`uv.lock`、uv は `mise.toml` |
 | 文章のチェック | textlint | `package.json` |
 | Git のフック、コミットの形式 | lefthook、commitlint | `package.json` |
@@ -41,7 +41,7 @@ status: stable
 ## Upgrade Checks
 
 - 生成のツール（oapi-codegen、sqlc、openapi-typescript）を上げたら、`pnpm check:generated` で生成し直し、差分を読んでからコミットする。oapi-codegen は、`apps/schedule-api/oapi-codegen.yaml` の型の置き換え（日付とメールを文字列にする）が生成物に反映されているかを見る。
-- Go を上げるときは、`mise.toml`、2 つの `go.mod`、2 つの `Dockerfile` の 5 か所をそろえる。
+- Go を上げるときは、`mise.toml`、`go.mod`、2 つの `Dockerfile` の 4 か所をそろえる。
 - Playwright は、`packages/e2e` と `packages/ui` を同じバージョンにし、`pnpm-lock.yaml` に 1 つのバージョンだけがあることを確かめる。Vite+ も Playwright を peer で取り込むので、Vite+ を上げたときも確かめる。
 - Vite+ は、`pnpm-workspace.yaml` の catalog の `vite-plus` と `vite`（`@voidzero-dev/vite-plus-core` への別名）を一緒に上げる。
 - TanStack の Router、Query、Start は、`apps/web/package.json` に厳密なバージョンで書いてある。上げたら、`pnpm --filter @buddy/web check`、`test`、`build` と、compose での画面の確かめ（`pnpm e2e`）を流す。
@@ -53,7 +53,8 @@ status: stable
 公式の雛形のコマンドは使わず、既存のモジュールを写して始める。
 
 - DB を持たない Go の API は `apps/receipt-api`、DB と層を持つ Go の API は `apps/schedule-api` を写す。写した後に次をそろえる。
-  - `go.mod` のモジュールのパス（`github.com/Fukuemon/buddy/apps/<名前>`）と、`.golangci.yml` の goimports の `local-prefixes`
+  - Go の import のパス（`github.com/Fukuemon/buddy/apps/<名前>`）。module はリポジトリの直下の 1 つなので、`go.mod` は写さない
+  - `Dockerfile` と `Dockerfile.dockerignore` のアプリのパス（ビルドの文脈はリポジトリの直下）
   - `openapi.yaml`、`oapi-codegen.yaml`、`generate.go` の `go:generate`
   - `/healthz`、`/readyz`、`api healthcheck` のサブコマンド（compose のヘルスチェックが使う）
   - ルートの `compose.yml` のサービス、`scripts/check-generated.sh` の生成と対象

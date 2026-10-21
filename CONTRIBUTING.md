@@ -13,7 +13,7 @@ pnpm install
 
 `pnpm install` の `prepare` が、lefthook の Git のフック（commit-msg の commitlint、pre-commit の textlint）を入れる。
 
-Go のモジュールは `apps/schedule-api` と `apps/receipt-api` の 2 つである。エディタで両方を読むときは、ルートで `go work init ./apps/receipt-api ./apps/schedule-api` を流す。`go.work` は追跡しない。2 つのモジュールが共有する依存のバージョンが高い方にそろい、コンテナのイメージ（各 `go.mod` だけでビルドする）とずれるためである。テストと lint は、各アプリのディレクトリで `GOWORK=off` を付けて流す。`go.work` の下でビルドすると各アプリの `go.sum` に行が増えるので、コミットに含めない。
+Go のモジュールは、リポジトリの直下の `go.mod` の 1 つで、schedule-api と receipt-api を含む（[ADR-0007](docs/adr/0007-go-single-module.md)）。テストと lint は、直下か各アプリのディレクトリで `go test ./...` と `golangci-lint run ./...` を流す。`go.work` は使わない。
 
 スキルとフックは apm で配置し、Git で追跡しない。clone した後の最初のセッションで、セッションの開始のフックが配置する。手で配置するときは次を実行する。
 

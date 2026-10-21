@@ -47,7 +47,7 @@ status: stable
 | TypeScript の型 | 各パッケージの `tsconfig.json` | 共有の元は無い。`apps/web` と `packages/ui` は同じオプションを写して持つ |
 | Vitest | 各パッケージの `vite.config.ts` の `test` | web の Storybook は `.storybook/vite.config.ts` に分ける（TanStack Start の plugin が Storybook の中で動かない） |
 | E2E の書き方の規則 | `packages/e2e/eslint.config.mjs` | `packages/e2e` で流したときだけ規則が当たる |
-| Go の lint と整形 | `apps/*/.golangci.yml` | API ごとに置き、ルートには無い |
+| Go の lint と整形 | `.golangci.yml` | ルートに 1 つ置き、2 つの API に当てる |
 | 文章 | `.textlintrc.json`、`prh.yml`、`.textlintignore` | ルートで `pnpm exec textlint` |
 | コミットの形式 | `commitlint.config.mjs` | lefthook の commit-msg |
 | Vite+ と vite のバージョン | `pnpm-workspace.yaml` の catalog | 各パッケージは `catalog:` で指す |

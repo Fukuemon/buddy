@@ -43,7 +43,7 @@ TOKEN=$(curl -s '127.0.0.1:9000/token?sub=dev-aoki&org_id=org-sample' | jq -r .a
 コンテナで動かすときは、次を実行する。
 
 ```sh
-docker build -t receipt-api .
+docker build -f apps/receipt-api/Dockerfile -t receipt-api ../..
 docker run --rm -p 8080:8080 -e OIDC_ISSUER=<発行者の URL> -e OIDC_AUDIENCE=receipt-api receipt-api
 ```
 
@@ -61,7 +61,7 @@ golangci-lint run
 
 API の定義の正本は [openapi.yaml](openapi.yaml) である。  
 oapi-codegen が、そこから net/http の strict server のインターフェイスと型を `internal/httpapi/openapi/openapi.gen.go` に生成する。`internal/httpapi` がそのインターフェイスを実装する。  
-oapi-codegen は `go.mod` の `tool` でバージョンを固定し、`go tool` で動かす。設定は [oapi-codegen.yaml](oapi-codegen.yaml) にある。
+oapi-codegen は、リポジトリの直下の `go.mod` の `tool` でバージョンを固定し、`go tool` で動かす。設定は [oapi-codegen.yaml](oapi-codegen.yaml) にある。
 
 openapi.yaml を変えたら、`apps/receipt-api` で生成し直し、生成物も一緒にコミットする。
 
