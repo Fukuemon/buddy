@@ -401,3 +401,102 @@ func TestExportRecurringWithReplacedOccurrence(t *testing.T) {
 		t.Errorf("置き換えた回 = %+v", single)
 	}
 }
+
+func TestExportRecreatesEventMissingInGoogle(t *testing.T) {
+	e := newExportEnv(t)
+	d := e.create(t, "カンファレンス")
+	e.run(t)
+	// Google が予定を見つけられない（404）。書き直しでも見つからなければ、対応を消して作り直す
+	e.srv.Failures = []int{http.StatusNotFound}
+	e.update(t, d.ID, "buddy で変更", inmem.StaffID)
+	e.run(t)
+	x := e.export(t, d.ID)
+	if x.Status != calendar.ExportConflict || *x.ErrorCode != calendar.ErrorNotFound {
+		t.Fatalf("待ち = %+v", x)
+	}
+	e.srv.Failures = []int{http.StatusNotFound}
+	if _, err := e.uc.RetryExport(e.ctx, x.ID); err != nil {
+		t.Fatal(err)
+	}
+	e.run(t)
+	if x := e.export(t, d.ID); x.Status != calendar.ExportSucceeded {
+		t.Fatalf("書き直した待ち = %+v", x)
+	}
+	// 作り直しは同じ ID の予定に当たり（409）、buddy の内容で更新する
+	if ev := e.srv.Event(googleCalID, eventID(t, d.ID)); ev.Summary != "buddy で変更" {
+		t.Errorf("作り直した予定 = %+v", ev)
+	}
+	if l, err := (inmem.Calendars{Store: e.store}).LinkBySchedule(t.Context(), d.ID); err != nil || l.ExternalEventID != eventID(t, d.ID) {
+		t.Errorf("作り直した対応 = %+v, %v", l, err)
+	}
+}
+
+func TestExportAdoptsEventWrittenBeforeLink(t *testing.T) {
+	e := newExportEnv(t)
+	d := e.create(t, "カンファレンス")
+	e.run(t)
+	// 作った後に対応を書けなかったときと同じにする
+	clear(e.store.Links)
+	e.update(t, d.ID, "対応の無いまま変更", inmem.StaffID)
+	e.run(t)
+	if x := e.export(t, d.ID); x.Status != calendar.ExportSucceeded {
+		t.Fatalf("待ち = %+v", x)
+	}
+	if n := len(e.srv.Events(googleCalID)); n != 1 {
+		t.Errorf("Google の予定の数 = %d", n)
+	}
+	if ev := e.srv.Event(googleCalID, eventID(t, d.ID)); ev.Summary != "対応の無いまま変更" {
+		t.Errorf("予定 = %+v", ev)
+	}
+}
+
+func TestExportCancelConflictWhenChangedInGoogle(t *testing.T) {
+	e := newExportEnv(t)
+	d := e.create(t, "カンファレンス")
+	e.run(t)
+	e.srv.Edit(googleCalID, eventID(t, d.ID), func(ev *calendarv3.Event) { ev.Summary = "Google で変更" })
+	if _, err := e.schedules.Cancel(e.ctx, d.ID, "中止"); err != nil {
+		t.Fatal(err)
+	}
+	e.run(t)
+	if x := e.export(t, d.ID); x.Status != calendar.ExportConflict || *x.ErrorCode != calendar.ErrorPreconditionFailed {
+		t.Errorf("待ち = %+v", x)
+	}
+	if ev := e.srv.Event(googleCalID, eventID(t, d.ID)); ev.Status != "confirmed" {
+		t.Errorf("Google で直した予定を消した: %+v", ev)
+	}
+}
+
+func TestExportRecurringKeepsImportedExceptions(t *testing.T) {
+	e := newExportEnv(t)
+	moved, skipped := civil.Date{Year: 2026, Month: 11, Day: 9}, civil.Date{Year: 2026, Month: 11, Day: 16}
+	const rsID, replacementID = "01K8CCCCCCCCCCCCCCCCCCCCCC", "01K8DDDDDDDDDDDDDDDDDDDDDD"
+	title := "定例"
+	e.store.Recurring[rsID] = schedule.RecurringDetail{
+		RecurringSchedule: schedule.RecurringSchedule{ID: rsID, Slot: schedule.Slot{
+			FacilityID: inmem.FacilityID, StaffID: inmem.StaffID, TypeID: inmem.NormalTypeID, Title: &title,
+			Date: civil.Date{Year: 2026, Month: 11, Day: 2}, StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10},
+		}, Rule: schedule.Rule{Frequency: schedule.Weekly}},
+		ExclusionDates: []civil.Date{moved, skipped}, Version: 3,
+	}
+	rid := rsID
+	e.store.Schedules[replacementID] = schedule.Detail{Schedule: schedule.Schedule{
+		ID: replacementID, RecurringScheduleID: &rid, OriginalDate: &moved,
+		Slot: schedule.Slot{FacilityID: inmem.FacilityID, StaffID: inmem.StaffID, Date: moved},
+	}}
+	parent := grecurring(gevent("weekly", "定例", "2026-11-02T09:00:00+09:00", "2026-11-02T10:00:00+09:00"), "RRULE:FREQ=WEEKLY;BYDAY=MO")
+	e.srv.Calendars[googleCalID] = [][]*calendarv3.Event{{parent,
+		gexception("weekly_20261109", "weekly", "定例", "2026-11-09T14:00:00+09:00", "2026-11-09T15:00:00+09:00", "2026-11-09T09:00:00+09:00")}}
+	parentEventID, sid := "weekly", replacementID
+	e.store.Links["LP"] = calendar.Link{ID: "LP", FacilityID: inmem.FacilityID, ExternalCalendarID: calID, ExternalEventID: "weekly", ETag: `"weekly"`, RecurringScheduleID: &rid}
+	e.store.Links["LX"] = calendar.Link{ID: "LX", FacilityID: inmem.FacilityID, ExternalCalendarID: calID, ExternalEventID: "weekly_20261109", RecurringEventID: &parentEventID, ETag: `"weekly_20261109"`, ScheduleID: &sid}
+	if err := (inmem.Exports{Store: e.store}).Enqueue(t.Context(), "X1", calendar.Target{FacilityID: inmem.FacilityID, RecurringScheduleID: rsID}); err != nil {
+		t.Fatal(err)
+	}
+	e.run(t)
+	ev := e.srv.Event(googleCalID, "weekly")
+	// 取り込んだ例外の回が置き換えた 11/9 は EXDATE にせず、buddy で除いた 11/16 だけを EXDATE にする
+	if len(ev.Recurrence) != 2 || ev.Recurrence[1] != "EXDATE;TZID=Asia/Tokyo:20261116T090000" {
+		t.Errorf("繰り返し = %v", ev.Recurrence)
+	}
+}

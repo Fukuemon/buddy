@@ -208,3 +208,66 @@ func TestReaderRejectsFreeBusy(t *testing.T) {
 		t.Errorf("Events: err = %v, want カレンダー ID を含まない ErrUnreadable", err)
 	}
 }
+
+func TestWriterErrorKinds(t *testing.T) {
+	tests := []struct {
+		name   string
+		status int
+		reason string
+		want   error
+	}{
+		{"412", http.StatusPreconditionFailed, "conditionNotMet", schedcal.ErrEventChanged},
+		{"404", http.StatusNotFound, "notFound", schedcal.ErrEventGone},
+		{"410", http.StatusGone, "deleted", schedcal.ErrEventGone},
+		{"409", http.StatusConflict, "duplicate", schedcal.ErrEventExists},
+		{"400", http.StatusBadRequest, "invalid", schedcal.ErrUnwritable},
+		{"共有の権限が無い 403", http.StatusForbidden, "forbidden", schedcal.ErrUnwritable},
+		{"上限の 403", http.StatusForbidden, "rateLimitExceeded", schedcal.ErrUnavailable},
+		{"429", http.StatusTooManyRequests, "rateLimitExceeded", schedcal.ErrUnavailable},
+		{"500", http.StatusInternalServerError, "backendError", schedcal.ErrUnavailable},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.status)
+				_, _ = w.Write([]byte(`{"error":{"code":` + strconv.Itoa(tt.status) + `,"message":"x","errors":[{"reason":"` + tt.reason + `"}]}}`))
+			}))
+			defer ts.Close()
+			svc, err := calendar.NewService(t.Context(), option.WithEndpoint(ts.URL+"/"), option.WithHTTPClient(ts.Client()))
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, err = gcal.NewWriter(svc).Update(t.Context(), "staff@example.com", "ev1", `"1"`, schedcal.EventBody{})
+			if !errors.Is(err, tt.want) {
+				t.Errorf("err = %v, want %v", err, tt.want)
+			}
+			if strings.Contains(err.Error(), "staff@example.com") {
+				t.Errorf("誤りの文がカレンダーの ID を含む: %v", err)
+			}
+		})
+	}
+}
+
+func TestWriterSendsIfMatch(t *testing.T) {
+	f := &gcaltest.Server{Calendars: map[string][][]*calendar.Event{"staff@example.com": {{
+		{Id: "ev1", Etag: `"1"`, Status: "confirmed", Summary: "前"},
+	}}}}
+	w := gcal.NewWriter(gcaltest.Start(t, f))
+	if _, err := w.Update(t.Context(), "staff@example.com", "ev1", `"old"`, schedcal.EventBody{Summary: "後"}); !errors.Is(err, schedcal.ErrEventChanged) {
+		t.Fatalf("古い etag: err = %v", err)
+	}
+	etag, err := w.Update(t.Context(), "staff@example.com", "ev1", `"1"`, schedcal.EventBody{Summary: "後"})
+	if err != nil || etag == `"1"` || f.Event("staff@example.com", "ev1").Summary != "後" {
+		t.Fatalf("今の etag: etag = %q, err = %v", etag, err)
+	}
+	if err := w.Delete(t.Context(), "staff@example.com", "ev1", `"1"`); !errors.Is(err, schedcal.ErrEventChanged) {
+		t.Errorf("古い etag の削除: err = %v", err)
+	}
+	if err := w.Delete(t.Context(), "staff@example.com", "ev1", etag); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.Insert(t.Context(), "staff@example.com", "ev1", schedcal.EventBody{Summary: "再"}); !errors.Is(err, schedcal.ErrEventExists) {
+		t.Errorf("消した予定と同じ ID: err = %v", err)
+	}
+}
