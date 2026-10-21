@@ -30,7 +30,7 @@
 
 === "取得の失敗"
 
-    予定、職員、利用者の 3 つの取得のどれかが失敗したとき。予定が無い（404）、権限が無い（403）ときと、ほかの事業所の予定を指して web のサーバーが 403 にしたときも、この状態になる。BFF を通すときに API が 401 を返したら、ログインの画面へ移るまで「読み込み中」の状態が続く。
+    予定、職員、利用者の 3 つの取得のどれかが失敗したとき。予定が無い（404）、権限が無い（403）ときと、ほかの事業所の予定を指して web のサーバーが 403 にしたときも、この状態になる。BFF を通すときに、セッションが切れているか API が 401 を返したら、ログインの画面へ移るまで「読み込み中」の状態が続く。
 
     <iframe class="mock" title="予定の編集の、取得の失敗" src="mocks/02-fetch-error.html"></iframe>
     <a class="mock-open" href="mocks/02-fetch-error.html" target="_blank">別タブで開く</a>
@@ -208,10 +208,10 @@
 
     - 予定を直す API が失敗を返したか、API に届かない。権限が無い（403）と入力の誤り（400）の応答を含む。
     - 保存の前に今の予定を読み直すときに、web のサーバーが予定を取れない。
-    - 予定の種類、サービスコード、訪問の区分の一覧（マスタ）を、web のサーバーが取れない。
-    - 選んだ種類、サービスコード、訪問の区分に当たる値が、マスタに無い。
+    - 予定の種類、サービスコード、訪問の種類の一覧（マスタ）を、web のサーバーが取れない。
+    - 選んだ予定の種類、サービスコード、訪問の種類に当たる値が、マスタに無い。
 
-    BFF を通すときに API が 401 を返したら、この状態にならず、ログインの画面へ移るまで「送信中」の状態が続く。
+    BFF を通すときに、セッションが切れているか API が 401 を返したら、この状態にならず、ログインの画面へ移るまで「送信中」の状態が続く。
 
     <iframe class="mock" title="予定の編集の、送信の失敗" src="mocks/12-submit-error.html"></iframe>
     <a class="mock-open" href="mocks/12-submit-error.html" target="_blank">別タブで開く</a>
@@ -351,7 +351,7 @@
 
 **表示条件**: 3 つの取得が成功したとき。開いた直後は「訪問日時」か「予定日時」を選んだ状態にする
 
-**カタログ**: [ScheduleEditModalContainer の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--visit)
+**カタログ**: [ScheduleEditModalContainer の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--visit)、[ScheduleEditModalContainer の Normal](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--normal)
 
 ### インタラクション
 
@@ -369,7 +369,7 @@
 
 **表示条件**: 項目の一覧で「訪問日時」か「予定日時」を選んでいるとき
 
-**カタログ**: [ScheduleEditModalContainer の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--visit)
+**カタログ**: [ScheduleEditModalContainer の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--visit)、[ScheduleEditModalContainer の Normal](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--normal)
 
 ## 開始時間
 
@@ -381,7 +381,7 @@
 
 **表示条件**: 項目の一覧で「訪問日時」か「予定日時」を選んでいるとき
 
-**カタログ**: [ScheduleEditModalContainer の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--visit)
+**カタログ**: [ScheduleEditModalContainer の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--visit)、[ScheduleEditModalContainer の Normal](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--normal)
 
 ### インタラクション
 
@@ -417,7 +417,7 @@
 
 **表示条件**: 項目の一覧で「訪問日時」か「予定日時」を選んでいるとき
 
-**カタログ**: [ScheduleEditModalContainer の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--visit)
+**カタログ**: [ScheduleEditModalContainer の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--visit)、[ScheduleEditModalContainer の Normal](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--normal)
 
 ## サービスコード
 

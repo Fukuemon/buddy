@@ -79,7 +79,7 @@ flowchart TB
 ```
 
 ログインしていないときと、ログインに失敗したときの遷移は次のとおり。
-ログアウトすると `/` へ移り、ログインしていないのでログインへ進む。
+ログアウトすると `/` へ移り、ログインしていないので、`/` からそのままログインへ進む。ログインした後は、`/` を経て予定のカレンダーに戻る。
 
 ```mermaid
 flowchart TB
@@ -107,6 +107,6 @@ flowchart TB
 - ヘッダーは「buddy」だけを出し、ナビゲーションとログインした職員は出さない。
 - 題は「画面を表示できませんでした」、説明の文は「時間をおいて、読み直してください。」。
 - 「読み直す」のリンクを押すと、今の画面の URL を読み込み直す。
-- E2E が指す目印は、表示の全体の `page-error`。
+- E2E が指す目印は、表示の全体の `page-error`。この状態はモックを持たないので、`page-error` の正本はこの節である。
 - 実装は `apps/web/src/routes/__root.tsx` の `RootError` と、`apps/web/src/components/site/PageErrorMessage.tsx`。
 - カタログ: [PageErrorMessage の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-pageerrormessage--default)
