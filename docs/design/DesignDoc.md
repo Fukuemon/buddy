@@ -17,8 +17,8 @@ buddy は、訪問看護の事業所の職員が使う、予定の管理とレ�
 
 ### Goals
 
-- 業務の区切りごとに、データと規則を持つ API を分ける。事業所と職員と予定は schedule-api、照合は receipt-api が持つ。
-- web と API の間の契約は、API ごとの `openapi.yaml` に置き、サーバーと画面の型をそこから生成する。
+- 照合を、予定の管理と別の API（receipt-api）に分ける。事業所と職員と予定は、同じ DB を使う schedule-api が持つ。
+- web と API の間の契約は、API ごとの `openapi.yaml` に置く。
 - 認証は OIDC のブローカーに任せ、web だけがトークンをサーバー側で持つ。
 - schedule-api は、リクエストの事業所とトークンの組織を比べ、ほかの事業所のデータを返さない。receipt-api は事業所のデータを持たない。
 - receipt-api は、照合の予定を予定の CSV か Google カレンダーから取る。
@@ -79,9 +79,9 @@ PRD の 3 つの業務の区切りは、次のコンテナと、その中の Com
 | --- | --- | --- | --- |
 | 事業所と職員 | 事業所、部署、チーム、役職、権限、職員、利用者 | schedule-api | `organization`、`staff`、`patient` のパッケージ |
 | 予定 | 単発の予定、繰り返しの予定、キャンセル、訪問の情報 | schedule-api | `schedule`、`visit` のパッケージ |
-| 照合 | 予定と実績の対の作り方、判定の規則 | receipt-api | 正規化、対の作成、判定の段ごとのパッケージ |
+| 照合 | 予定と実績の対の作り方、判定の規則 | receipt-api | `csvio`、`gcal`、`source`、`normalize`、`match`、`judge`、`servicerule`、`check` のパッケージ |
 
-- 事業所と職員と予定は、1 つのコンテナの中で同じ MySQL のデータベースを使う。予定の Component は、職員と利用者の Component のリポジトリで、予定の担当と利用者を読む。
+- 事業所と職員と予定は、同じ MySQL のデータベースを使う。予定の Component は、職員と利用者の Component のリポジトリで、予定の担当と利用者を読む。利用者の Component は、予定の Component のサービスコードを読む。
 - 照合は事業所のデータを持たず、予定の管理のデータを変えない。予定は Google カレンダーか予定の CSV から受ける。
 - 用語と、区切りごとの呼び方の違いは [業務の知識](https://github.com/Fukuemon/buddy/blob/develop/context/domain.md) にある。
 
@@ -113,14 +113,16 @@ PRD の 3 つの業務の区切りは、次のコンテナと、その中の Com
 
 ### コンテナの間の契約
 
-コンテナの間は HTTP だけでつながり、コードで依存しない。
+アプリの間は HTTP だけでつながり、コードで依存しない。
 
-- ブラウザと web: HTTPS で、cookie にはセッションの ID だけを入れる。画面の操作は、web のサーバーの関数（BFF）を呼ぶ。
+- ブラウザと web: HTTPS で、cookie にはセッションの ID を入れ、トークンは入れない。画面の操作は、web のサーバーの関数（BFF）を呼ぶ。
+- web とブローカー: 認可コードフローでログインし、トークンを取得し、更新する。トークンは Valkey のセッションに置く。
 - web と schedule-api、receipt-api: `Authorization` に access token を Bearer で付ける。契約の正本は [schedule-api の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/apps/schedule-api/openapi.yaml) と [receipt-api の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/openapi.yaml) で、サーバーの Go のコードと web の型をそこから生成する。
   - 契約を変えるときの互換の規則（項目の追加は同じパス、削除と意味の変更は新しいパス、API を先にデプロイする）は ADR-0003 にある。
   - ADR-0003: [git flow で取り込み、アプリごとのバージョンでリリースする](../adr/0003-branch-and-release.md)
 - schedule-api、receipt-api とブローカー: 発行者の discovery と JWKS を読み、access token を検証する。
 - receipt-api と Google Calendar API: サービスアカウントで、閲覧の権限で共有されたカレンダーの予定を読む。
+- schedule-api と MySQL: schedule-api だけが読み書きする。表の構成は予定の管理の Design Doc にある。
 
 ### インフラとの約束
 
