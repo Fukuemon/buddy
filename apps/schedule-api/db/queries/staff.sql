@@ -76,3 +76,10 @@ SELECT id FROM users WHERE sub = ?;
 -- 条件の sub IS NULL で、同時に来た初回のログインのうち 1 つだけが書く。
 UPDATE users SET sub = sqlc.arg(sub)
 WHERE facility_id = sqlc.arg(facility_id) AND email = sqlc.arg(email) AND sub IS NULL;
+
+-- name: GetUserRef :one
+-- ほかの機能が職員を参照するときに要る列だけを読む。
+SELECT id, facility_id, team_id FROM users WHERE id = ?;
+
+-- name: ListUserRefsByFacility :many
+SELECT id, facility_id, team_id FROM users WHERE facility_id = ? ORDER BY id;

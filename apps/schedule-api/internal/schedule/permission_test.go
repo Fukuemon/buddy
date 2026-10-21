@@ -1,13 +1,10 @@
-package auth_test
+package schedule
 
 import (
-	"context"
-	"errors"
 	"testing"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 )
 
@@ -18,15 +15,15 @@ const (
 	otherTeam = "TEAM-B"
 )
 
-func principal(grants ...staff.PolicyGrant) auth.Principal {
-	return auth.Principal{Staff: staff.Detail{
+func subject(grants ...staff.PolicyGrant) principal.Principal {
+	return principal.Principal{Staff: staff.Detail{
 		Summary:  staff.Summary{Staff: staff.Staff{ID: self, TeamID: selfTeam}},
 		Policies: grants,
 	}}
 }
 
-// TestPrincipalCan は、7 つの権限ごとに、ほかの職員と自分の予定を見てよいか、編集してよいかを確かめる。
-func TestPrincipalCan(t *testing.T) {
+// TestCan は、7 つの権限ごとに、ほかの職員と自分の予定を見てよいか、編集してよいかを確かめる。
+func TestCan(t *testing.T) {
 	tests := []struct {
 		name      string
 		grant     staff.PolicyGrant
@@ -47,53 +44,64 @@ func TestPrincipalCan(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := principal(tt.grant)
-			if got := p.CanRead(other, otherTeam); got != tt.readOther {
+			p := subject(tt.grant)
+			if got := CanRead(p, other, otherTeam); got != tt.readOther {
 				t.Errorf("CanRead(ほかの職員) = %v", got)
 			}
-			if got := p.CanEdit(other, otherTeam); got != tt.editOther {
+			if got := CanEdit(p, other, otherTeam); got != tt.editOther {
 				t.Errorf("CanEdit(ほかの職員) = %v", got)
 			}
-			if !p.CanRead(self, selfTeam) {
+			if !CanRead(p, self, selfTeam) {
 				t.Error("CanRead(自分) = false, want 権限によらず true")
 			}
-			if got := p.CanEdit(self, selfTeam); got != tt.editSelf {
+			if got := CanEdit(p, self, selfTeam); got != tt.editSelf {
 				t.Errorf("CanEdit(自分) = %v", got)
 			}
 		})
 	}
 }
 
-func TestPrincipalCanReadAll(t *testing.T) {
+func TestCanReadAll(t *testing.T) {
 	for code, want := range map[organization.PolicyCode]bool{
 		organization.ScheduleAllRead:  true,
 		organization.ScheduleAllEdit:  true,
 		organization.ScheduleTeamEdit: false,
 		organization.ScheduleSelfEdit: false,
 	} {
-		if got := principal(staff.PolicyGrant{PolicyCode: code}).CanReadAll(); got != want {
+		if got := CanReadAll(subject(staff.PolicyGrant{PolicyCode: code})); got != want {
 			t.Errorf("%s: CanReadAll() = %v", code, got)
 		}
 	}
 }
 
-func TestRequireStaffManage(t *testing.T) {
-	ctx := context.Background()
-	if err := auth.RequireStaffManage(ctx); !errors.Is(err, domain.ErrForbidden) {
-		t.Errorf("職員がいない: err = %v", err)
-	}
-	if err := auth.RequireStaffManage(auth.WithPrincipal(ctx, principal(staff.PolicyGrant{PolicyCode: organization.ScheduleAllEdit}))); !errors.Is(err, domain.ErrForbidden) {
-		t.Errorf("予定の全ての編集だけ: err = %v", err)
-	}
-	if err := auth.RequireStaffManage(auth.WithPrincipal(ctx, principal(staff.PolicyGrant{PolicyCode: organization.StaffManage}))); err != nil {
-		t.Errorf("職員の管理: err = %v", err)
+// TestStaffManageDoesNotGrantSchedules は、職員の管理の権限が、ほかの職員の予定に及ばないことを確かめる。
+func TestStaffManageDoesNotGrantSchedules(t *testing.T) {
+	p := subject(staff.PolicyGrant{PolicyCode: organization.StaffManage})
+	if CanRead(p, other, otherTeam) || CanEdit(p, other, otherTeam) || CanReadAll(p) {
+		t.Error("職員の管理の権限で、ほかの職員の予定を扱えた")
 	}
 }
 
-// TestStaffManageDoesNotGrantSchedules は、職員の管理の権限が、ほかの職員の予定に及ばないことを確かめる。
-func TestStaffManageDoesNotGrantSchedules(t *testing.T) {
-	p := principal(staff.PolicyGrant{PolicyCode: organization.StaffManage})
-	if p.CanRead(other, otherTeam) || p.CanEdit(other, otherTeam) || p.CanReadAll() {
-		t.Error("職員の管理の権限で、ほかの職員の予定を扱えた")
+// TestReadable は、自分は権限によらず入り、見てよい職員だけが入ることを確かめる。
+func TestReadable(t *testing.T) {
+	members := []staff.Ref{{ID: self, TeamID: selfTeam}, {ID: other, TeamID: otherTeam}, {ID: "THIRD", TeamID: "TEAM-C"}}
+	tests := []struct {
+		name  string
+		grant staff.PolicyGrant
+		want  map[string]bool
+	}{
+		{"権限なし", staff.PolicyGrant{}, map[string]bool{self: true, other: false, "THIRD": false}},
+		{"チーム B の閲覧", staff.PolicyGrant{PolicyCode: organization.ScheduleTeamRead, TargetTeamIDs: []string{otherTeam}}, map[string]bool{self: true, other: true, "THIRD": false}},
+		{"一覧に無い職員", staff.PolicyGrant{PolicyCode: organization.ScheduleUserRead, TargetUserIDs: []string{"OUTSIDE"}}, map[string]bool{self: true, "OUTSIDE": false}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ok := readable(subject(tt.grant), members)
+			for id, want := range tt.want {
+				if got := ok(id); got != want {
+					t.Errorf("readable(%s) = %v, want %v", id, got, want)
+				}
+			}
+		})
 	}
 }

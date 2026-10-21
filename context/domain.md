@@ -14,7 +14,7 @@ status: stable
 | 用語 | 意味 | コードの識別子 |
 | --- | --- | --- |
 | 事業所 | 訪問看護の事業所。データを分ける単位 | Go `organization.Facility`、表 `facilities`、API `Facility` |
-| 組織 | 認証のブローカーが持つ組織。事業所と 1 対 1 に対応し、access token に組織の ID が入る | `facilities.org_id`、`auth.Identity.OrgID`、クレームの名前は `OIDC_ORG_CLAIM` |
+| 組織 | 認証のブローカーが持つ組織。事業所と 1 対 1 に対応し、access token に組織の ID が入る | `facilities.org_id`、`principal.Identity.OrgID`、クレームの名前は `OIDC_ORG_CLAIM` |
 | 部署、チーム | 事業所の中の職員の所属 | `organization.Department`、`organization.Team`、表 `departments`、`teams` |
 | 役職 | 職員の役割。職員に付ける権限の既定を持つ | `organization.Position`、表 `positions`、`position_policies` |
 | マネージャー、チームリーダー、メンバー | PRD が使う役職の 3 つの呼び方。権限の既定が違う | 表 `positions` の行。名前は事業所ごとに決める |

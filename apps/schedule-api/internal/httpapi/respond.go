@@ -9,8 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
 )
 
 // bodyErrorPrefix は、本文を読めないときの 400 の文の先頭である。
@@ -30,24 +30,24 @@ func (e *requestError) Error() string { return e.message }
 func invalidRequest(message string) error { return &requestError{message: message} }
 
 func writeError(c *gin.Context, log *slog.Logger, err error) {
-	var ve *domain.ValidationError
-	var ce *domain.ConflictError
+	var ve *apperr.ValidationError
+	var ce *apperr.ConflictError
 	var re *requestError
 	switch {
 	case errors.As(err, &re):
 		badRequest(c, re.message)
 	case errors.As(err, &ve):
 		c.AbortWithStatusJSON(http.StatusBadRequest, errorResponse{Code: "invalid_input", Message: ve.Message})
-	case errors.Is(err, domain.ErrInvalidInput):
+	case errors.Is(err, apperr.ErrInvalidInput):
 		c.AbortWithStatusJSON(http.StatusBadRequest, errorResponse{Code: "invalid_input", Message: err.Error()})
-	case errors.Is(err, domain.ErrForbidden):
-		c.AbortWithStatusJSON(http.StatusForbidden, errorResponse{Code: "forbidden", Message: domain.ErrForbidden.Error()})
-	case errors.Is(err, domain.ErrNotFound):
-		c.AbortWithStatusJSON(http.StatusNotFound, errorResponse{Code: "not_found", Message: domain.ErrNotFound.Error()})
+	case errors.Is(err, apperr.ErrForbidden):
+		c.AbortWithStatusJSON(http.StatusForbidden, errorResponse{Code: "forbidden", Message: apperr.ErrForbidden.Error()})
+	case errors.Is(err, apperr.ErrNotFound):
+		c.AbortWithStatusJSON(http.StatusNotFound, errorResponse{Code: "not_found", Message: apperr.ErrNotFound.Error()})
 	case errors.As(err, &ce):
 		c.AbortWithStatusJSON(http.StatusConflict, errorResponse{Code: "conflict", Message: ce.Message})
-	case errors.Is(err, domain.ErrConflict):
-		c.AbortWithStatusJSON(http.StatusConflict, errorResponse{Code: "conflict", Message: domain.ErrConflict.Error()})
+	case errors.Is(err, apperr.ErrConflict):
+		c.AbortWithStatusJSON(http.StatusConflict, errorResponse{Code: "conflict", Message: apperr.ErrConflict.Error()})
 	default:
 		log.ErrorContext(c.Request.Context(), "request failed",
 			slog.String("method", c.Request.Method), slog.String("path", c.FullPath()), slog.Any("error", err))

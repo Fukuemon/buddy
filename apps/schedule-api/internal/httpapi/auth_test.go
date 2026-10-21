@@ -15,8 +15,8 @@ import (
 	"github.com/Fukuemon/buddy/packages/go/oidc/oidctest"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/access"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 )
 
@@ -73,11 +73,11 @@ func token(t *testing.T, orgID string) string {
 // FacilityOf は、otherScheduleID だけを事業所 otherFacilityID のものとする。
 type fakeAuth struct{}
 
-func (fakeAuth) Authenticate(_ context.Context, id auth.Identity) (auth.Principal, error) {
+func (fakeAuth) Authenticate(_ context.Context, id principal.Identity) (principal.Principal, error) {
 	if id.OrgID != testOrgID {
-		return auth.Principal{}, domain.ErrForbidden
+		return principal.Principal{}, apperr.ErrForbidden
 	}
-	return auth.Principal{Staff: staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: staffID, FacilityID: facilityID}}}}, nil
+	return principal.Principal{Staff: staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: staffID, FacilityID: facilityID}}}}, nil
 }
 
 func (fakeAuth) FacilityOf(_ context.Context, r access.Resource, id string) (string, error) {
@@ -181,7 +181,7 @@ func TestAuthenticatedPassesThrough(t *testing.T) {
 // tokenVerifier は、共有の oidc.Verifier を httpapi.TokenVerifier にする。cmd/api の同じ名前の型と同じ働きをする。
 type tokenVerifier struct{ v *oidc.Verifier }
 
-func (t tokenVerifier) Verify(ctx context.Context, raw string) (auth.Identity, error) {
+func (t tokenVerifier) Verify(ctx context.Context, raw string) (principal.Identity, error) {
 	id, err := t.v.Verify(ctx, raw)
-	return auth.Identity(id), err
+	return principal.Identity(id), err
 }

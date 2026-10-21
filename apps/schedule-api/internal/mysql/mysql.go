@@ -12,8 +12,8 @@ import (
 
 	driver "github.com/go-sql-driver/mysql"
 
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql/sqlcgen"
 )
 
@@ -59,7 +59,7 @@ func Open(ctx context.Context, c Config) (*sql.DB, error) {
 
 type txKey struct{}
 
-// Transactor は、domain.Transactor を *sql.Tx で実装する。
+// Transactor は、tx.Transactor を *sql.Tx で実装する。
 type Transactor struct {
 	db *sql.DB
 }
@@ -115,23 +115,23 @@ const (
 	erTruncatedWrongVal = 1292
 )
 
-// translate は、ドライバーのエラーを domain のエラーに置き換える。対応しないエラーは文脈を付けて返す。
+// translate は、ドライバーのエラーを apperr のエラーに置き換える。対応しないエラーは文脈を付けて返す。
 func translate(op string, err error) error {
 	if err == nil {
 		return nil
 	}
 	if errors.Is(err, sql.ErrNoRows) {
-		return domain.ErrNotFound
+		return apperr.ErrNotFound
 	}
 	var me *driver.MySQLError
 	if errors.As(err, &me) {
 		switch me.Number {
 		case erDupEntry:
-			return domain.ErrConflict
+			return apperr.ErrConflict
 		case erNoReferencedRow2:
-			return domain.Invalid("参照先が見つかりません")
+			return apperr.Invalid("参照先が見つかりません")
 		case erCheckConstraint, erDataTooLong, erTruncatedWrongVal:
-			return domain.Invalid("値が列の制約に合いません")
+			return apperr.Invalid("値が列の制約に合いません")
 		}
 	}
 	return fmt.Errorf("%s: %w", op, err)
@@ -169,7 +169,7 @@ func nullInt16(v *int) (sql.NullInt16, error) {
 		return sql.NullInt16{}, nil
 	}
 	if *v < math.MinInt16 || *v > math.MaxInt16 {
-		return sql.NullInt16{}, domain.Invalid("値 %d が範囲を超えています", *v)
+		return sql.NullInt16{}, apperr.Invalid("値 %d が範囲を超えています", *v)
 	}
 	return sql.NullInt16{Int16: int16(*v), Valid: true}, nil
 }

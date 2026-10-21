@@ -34,24 +34,29 @@ schedule-api は、事業所ごとの予定、職員、利用者、権限を持�
 
 ### コードの構成
 
-規則と手順は機能ごとのパッケージに置き、DB と HTTP のアダプタは 1 つずつ置く。決めた理由は ADR-0005 にあり、依存してよい向きは [コードベースの構造](https://github.com/Fukuemon/buddy/blob/develop/context/codebase.md) にある。
+規則と手順は機能ごとのパッケージに置き、DB と HTTP のアダプタは 1 つずつ置く。機能のパッケージの中は、手順（`Usecase`）、規則（状態を持たない関数かエンティティのメソッド）、集約の単位のリポジトリに分ける。決めた理由は ADR-0005 と ADR-0010 にあり、依存してよい向きは [コードベースの構造](https://github.com/Fukuemon/buddy/blob/develop/context/codebase.md) にある。
 
 - ADR-0005: [schedule-api の規則と手順を機能ごとのパッケージにまとめる](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0005-schedule-api-packages.md)
+- ADR-0010: [予定の API の機能のパッケージで、手順を usecase、規則を関数、リポジトリを集約の単位に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0010-schedule-api-usecase-boundaries.md)
 
 | 種類 | パッケージ | 持つもの |
 | --- | --- | --- |
-| 共通 | `internal/domain`、`internal/civil` | 共通の誤り、並べ替え、`Transactor`、`IDGenerator`、日付と時刻の値 |
-| 機能 | `internal/organization`、`internal/staff`、`internal/patient`、`internal/visit`、`internal/schedule` | エンティティ、値の検証、リポジトリのインターフェイス、操作（`Service`）とトランザクションの範囲 |
-| 認可 | `internal/auth` | トークンの主張、職員（`Principal`）、予定の閲覧と編集の判定 |
+| 共通 | `internal/apperr`、`internal/tx`、`internal/kernel`、`internal/civil` | 共通の誤りと検証の誤り、`Transactor`、文字の検証と並べ替えと `IDGenerator` と 1 件を読む `Finder`、日付と時刻の値 |
+| 機能 | `internal/organization`、`internal/staff`、`internal/patient`、`internal/visit`、`internal/schedule` | エンティティ、規則の関数、自分の集約のリポジトリのインターフェイス、ほかの機能のデータを読む小さなインターフェイス、手順（`Usecase`）とトランザクションの範囲。予定の閲覧と編集の判定は `schedule` の `permission.go` に置く |
+| 認可 | `internal/principal` | トークンの主張（`Identity`）、職員（`Principal`）、職員の管理の判定 |
 | 認証 | `internal/access` | トークンから職員を特定する手順と、パスが指す資源の事業所を引く手順 |
 | テスト | `internal/inmem` | 機能のパッケージのテストが共有する、メモリ上のリポジトリ |
 | アダプタ | `internal/mysql` | 機能のパッケージのリポジトリを、sqlc の生成コード（`sqlcgen`）で実装する |
-| アダプタ | `internal/ulid` | `IDGenerator` を ULID で実装する |
-| 設定 | `internal/config` | 環境変数から API とマイグレーションの設定を読む |
+| アダプタ | `internal/ulid` | `IDGenerator` を ULID で実装し、ID の形を確かめる |
+| 設定 | `internal/config` | 環境変数から API とマイグレーションの設定を読む。DB の接続の値は自分の型で持ち、`cmd` がアダプタの設定に写す |
 | 共有 | `packages/go/oidc`、`packages/go/healthcheck`（別の module） | access token の JWKS での検証、テストと `cmd/devissuer` が使う偽物の発行者（`oidctest`）、`api healthcheck`。receipt-api と共有する（ADR-0007） |
 | アダプタ | `internal/httpapi/openapi` | `openapi.yaml` から生成した型と strict server のインターフェイス |
 | アダプタ | `internal/httpapi` | 生成したインターフェイスを実装するハンドラと、gin のミドルウェア。要求は、埋め込んだ `openapi.yaml` の定義で確かめる |
 | cmd | `cmd/api`、`cmd/migrate`、`cmd/devissuer` | 起動、マイグレーションとシード、手元で試すための偽物の発行者（イメージに入れない） |
+
+- `kernel` は、ADR-0010 の「`apperr` と同じ段の小さなパッケージ」に当たる。`kernel.Finder[T]` は ID で 1 件を読む 1 つのメソッドのインターフェイスで、機能のパッケージは、ほかの機能のエンティティをこの形で受ける。同じ形のインターフェイスを機能ごとに書かずに済ませるためである。
+- `access` は機能のパッケージではないので、型の名前を `Service` のままにし、`Usecase` への改名と「1〜2 のメソッド」の規則の対象から外す。
+- `access.Staff` は、`FindIDBySub`、`LinkSub`、`Get` の 3 つのメソッドを持つ。初回のログインで sub を職員に結び付け、職員と権限を読むために、3 つともが要る。
 
 ### 表の構成
 
@@ -146,7 +151,7 @@ erDiagram
 sequenceDiagram
   participant W as web
   participant M as 認証のミドルウェア
-  participant U as schedule.Service
+  participant U as schedule.Usecase
   participant DB as MySQL
 
   W->>M: GET /v1/facilities/{facility_id}/schedules（Bearer）
@@ -178,7 +183,7 @@ sequenceDiagram
   alt 事業所が違う
     M-->>W: 403
   end
-  M->>U: 職員と権限を request の context（auth.Principal）で渡す
+  M->>U: 職員と権限を request の context（principal.Principal）で渡す
   U->>DB: 全ての閲覧の権限が無ければ、事業所の職員とチームを読む
   U->>U: 職員の権限で、見てよい職員を決める
   U->>DB: 事業所の ID で絞って予定を読む
@@ -194,7 +199,7 @@ sequenceDiagram
 - ミドルウェアは、パスの引数ごとに、指すリソースの事業所を職員の事業所と比べる。
   - `facility_id` は、値をそのまま職員の事業所と比べる。
   - `department_id`、`team_id`、`position_id`、`user_id`、`schedule_id`、`recurring_schedule_id` は、リソースを読んでその事業所と比べる。
-  - `policy_id` は、事業所に属さないので確かめない。`user_policy_id` は、同じパスの `user_id` で事業所を確かめ、`staff.Service` が職員の権限かを確かめる。
+  - `policy_id` は、事業所に属さないので確かめない。`user_policy_id` は、同じパスの `user_id` で事業所を確かめ、`staff.Usecase` が職員の権限かを確かめる。
   - この一覧に無い引数を持つパスは、事業所を確かめられないので 500 を返す。
 - パスの ID が ULID でないときと、リソースが見つからないときは、ミドルウェアは通す。ULID でない ID は次のミドルウェアが 400 を返し、見つからないリソースはハンドラが 404 を返す。
 - `/v1` の要求は、次の順に確かめる。先に失敗した段の応答を返すので、トークンの 401 と事業所の 403 は、パスの ID と定義の 400 より先に返る。
@@ -207,7 +212,7 @@ sequenceDiagram
 
 ### 予定の認可
 
-予定の操作は、`schedule.Service` が、ミドルウェアが context に入れた職員（`auth.Principal`）の `user_policies` で判定する。役職は見ない。編集の権限は、同じ範囲の閲覧を含む。
+予定の操作は、`schedule.Usecase` が、ミドルウェアが context に入れた職員（`principal.Principal`）の `user_policies` で判定する。判定の規則は `schedule` の `permission.go` の関数にある。役職は見ない。編集の権限は、同じ範囲の閲覧を含む。
 
 1. 自分の予定は、権限によらず見てよい。自分の予定の編集には `schedule.self.edit` が要る。
 2. `schedule.all.read` があれば、事業所の全ての職員の予定を見てよい。`schedule.all.edit` があれば、編集もしてよい。
