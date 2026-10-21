@@ -27,31 +27,30 @@ test.describe('予定のカレンダー', () => {
       page,
     }) => {
       await page.goto('/schedule?view=day')
-      // 予定の無い職員の列は日の表示に出ないので、列ではなく日の表示の全体が出るのを待つ
-      await expect(page.getByTestId('staff-schedule-day-grid')).toBeVisible()
-      // 訪問の予定は題名を持たず、利用者の名前で出るので、作る前の件数と比べる
-      const visitText = `${SEED_PATIENT.name} 訪問`
-      const before = await page
-        .getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)
-        .getByTestId(/^schedule-event-/)
-        .filter({ hasText: visitText })
-        .count()
-
       await page.getByTestId('schedule-create-open').click()
       await expect(page.getByTestId('schedule-form-modal')).toBeVisible()
       await page.getByTestId('schedule-kind-tab-visit').check()
       await page.getByTestId('service-code-訪看I3').check()
+      await expect(page.getByTestId('service-code-訪看I3')).toBeChecked()
+      await expect(page.getByTestId('service-code-訪看I2')).not.toBeChecked()
       await page.getByTestId('schedule-field-patient').click()
-      await page.getByTestId(`patient-select-option-${SEED_PATIENT.id}`).check()
+      const patientOption = page.getByTestId(`patient-select-option-${SEED_PATIENT.id}`)
+      // 利用者の一覧が届くまでは、カレンダーの訪問の題が「利用者不明 訪問」になるので、届いてから数える
+      await expect(patientOption).toBeVisible()
+      // 訪問の予定は題名を持たず、利用者の名前で出るので、作る前の件数と比べる
+      const visits = page
+        .getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)
+        .getByTestId(/^schedule-event-/)
+        .filter({ hasText: `${SEED_PATIENT.name} 訪問` })
+      const before = await visits.count()
+
+      await patientOption.check()
       await page.getByTestId('schedule-field-staff').click()
       await page.getByTestId(`staff-select-option-${LOGIN_STAFF.id}`).check()
       await page.getByTestId('schedule-create-submit').click()
 
       await expect(page.getByTestId('schedule-form-modal')).toBeHidden()
-      const column = page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)
-      await expect(
-        column.getByTestId(/^schedule-event-/).filter({ hasText: visitText }),
-      ).toHaveCount(before + 1)
+      await expect(visits).toHaveCount(before + 1)
     })
   })
 })

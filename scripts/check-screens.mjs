@@ -317,11 +317,15 @@ const readTestIdArg = (arg) => {
   return null
 }
 
-/** モックの x-{…} は末尾にどの値でも入るので、x- で始まる E2E の testid に当てる。 */
+/** モックの x-{…} の {…} にはどの値でも入るので、{…} を 1 文字以上の値に置き換えた形で E2E の testid に当てる。 */
 const matchesPlaceholder = (testId) =>
   [...mockTestIds].some((id) => {
-    const index = id.indexOf('{')
-    return index > 0 && testId.startsWith(id.slice(0, index))
+    if (!id.includes('{')) return false
+    const pattern = id
+      .split(/\{[^}]*\}/)
+      .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      .join('.+')
+    return new RegExp(`^${pattern}$`).test(testId)
   })
 
 // 全ての画面を見るときだけ、E2E が指す testid がどれかのモックにあるかを確かめる。
