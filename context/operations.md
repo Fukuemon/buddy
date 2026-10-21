@@ -17,7 +17,7 @@ status: stable
 | 検証 | リリースの前の確かめと、人手検証の証跡を撮る | `develop` |
 | 本番 | 事業所の職員が使う | `main` |
 
-- 検証環境と本番環境は、buddy-infra が作る。まだ無い。
+- 検証環境と本番環境は、buddy-infra が作る。
 - `develop` から `main` へは、検証環境で確かめた状態をまとめて取り込む（[ADR-0003](../docs/adr/0003-branch-and-release.md)）。
 
 ## Deployment Conditions

@@ -25,17 +25,29 @@ status: stable
 | 予定の API の HTTP | gin | `apps/schedule-api/go.mod` |
 | API のサーバーの生成 | oapi-codegen（`go tool`） | 各 `go.mod` の `tool` |
 | 画面の API の型の生成 | openapi-typescript | `apps/web/package.json` |
+| web のサーバーから見た API の偽物（テストと `dev:msw`） | MSW、openapi-msw | `apps/web/package.json` |
+| OpenAPI の定義の lint | Redocly CLI | `package.json`、規則は `redocly.yaml` |
+| API の仕様のページ | Scalar（jsDelivr から読む） | `docs/api/reference.js` の import の URL |
 | SQL からの Go の生成 | sqlc | `mise.toml` |
 | マイグレーション | golang-migrate | `mise.toml`（CLI）、`apps/schedule-api/go.mod`（ライブラリ） |
 | Go の lint と整形 | golangci-lint | `mise.toml`、設定は `apps/*/.golangci.yml` と `packages/go/.golangci.yml` |
-| 文書のサイト | Zensical（uv で動かす） | `pyproject.toml`、`uv.lock`、uv は `mise.toml` |
+| 表の文書と ER 図の元（`schema.json`）の生成 | tbls | `mise.toml` |
+| 操作できる ER 図のサイト | Liam ERD CLI | `package.json` |
+| 文書のサイト | Zensical（uv で動かす） | `pyproject.toml`、`uv.lock`、uv は `mise.toml` と `.github/workflows/docs-site.yml` の setup-uv（同じバージョンにする） |
+| 文書のサイトの公開 | cf、wrangler | `apps/docs-site/package.json` |
 | 文章のチェック | textlint | `package.json` |
 | Git のフック、コミットの形式 | lefthook、commitlint | `package.json` |
 | スキルとフックの配置 | apm | `mise.toml`、パッケージは `apm.yml` と `apm.lock.yaml` |
 | 手元の全体の起動 | Docker Compose（MySQL、Valkey、mock-oauth2-server） | `compose.yml` のイメージのタグ |
 | 実行のイメージ | distroless（API）、`node:24-slim`（web） | `apps/*/Dockerfile` |
 
-- パッケージマネージャーが管理しないツールは、mise（`mise.toml`）、Go の `tool`（`go.mod`）、Docker のイメージのタグ（`compose.yml`、`Dockerfile`）の 3 か所で固定する。
+- パッケージマネージャーが管理しないツールは、次の場所で固定する。
+  - mise（`mise.toml`）
+  - Go の `tool`（`go.mod`）
+  - Docker のイメージのタグ（`compose.yml`、`Dockerfile`）
+  - MySQL のイメージのタグ（`scripts/build-db-docs.sh`、`apps/schedule-api/internal/mysql/main_test.go`）
+  - CDN の URL（`docs/api/reference.js` の Scalar）
+  - CI の uv（`.github/workflows/docs-site.yml` の setup-uv の `version`）
 - 録画に要る `ffmpeg` と `ffprobe` は、どこでも固定していない。各自が入れる。
 
 ## Upgrade Checks
@@ -46,7 +58,10 @@ status: stable
 - Vite+ は、`pnpm-workspace.yaml` の catalog の `vite-plus` と `vite`（`@voidzero-dev/vite-plus-core` への別名）を一緒に上げる。
 - TanStack の Router、Query、Start は、`apps/web/package.json` に厳密なバージョンで書いてある。上げたら、`pnpm --filter @buddy/web check`、`test`、`build` と、compose での画面の確かめ（`pnpm e2e`）を流す。
 - `@digital-go-jp/design-tokens` は、ADR-0004 の決めたとおり、上げる前にトークンの名前と値の差分を読み、`pnpm --filter @buddy/ui test` でコントラストのテストを流す。
-- MySQL、Valkey、IdP のイメージを上げたら、`docker compose up --build --wait` と `pnpm e2e` を流す。schedule-api のテストの MySQL は `apps/schedule-api/internal/mysql/main_test.go` にもタグがある。
+- MySQL、Valkey、IdP のイメージを上げたら、`docker compose up --build --wait` と `pnpm e2e` を流す。
+  - MySQL のタグは、`compose.yml`、`apps/schedule-api/internal/mysql/main_test.go`、`scripts/build-db-docs.sh` の 3 か所にある。3 か所のマイナーバージョンをそろえる。
+  - `scripts/build-db-docs.sh` だけは、表の文書に MySQL のバージョンが入るので、パッチバージョンまで固定している。上げたら `pnpm generate:db-docs` で表の文書を生成し直し、コミットする。
+- uv を上げたら、`mise.toml` と `.github/workflows/docs-site.yml` の setup-uv の `version` をそろえる。
 
 ## Scaffolding
 
@@ -60,4 +75,4 @@ status: stable
   - `/healthz`、`/readyz`、`api healthcheck` のサブコマンド（compose のヘルスチェックが使う）
   - ルートの `compose.yml` のサービス、`scripts/check-generated.sh` の生成と対象
 - pnpm のパッケージは、UI のライブラリなら `packages/ui`、テストのコードと kit なら `packages/e2e` を写す。名前は `@buddy/<名前>`、`"private": true`、`"type": "module"` にし、依存は `workspace:*` で指す。整形と lint の設定は、ルートの `vite.config.ts` を使う。
-- 新しいアプリを足したら、README を「準備、動かす、テストとチェック、コードの生成、文書」の見出しで書き、機能の Design Doc を隣に置く（[CONTRIBUTING.md](../CONTRIBUTING.md) の「文書を直すとき」）。
+- 新しいアプリを足したら、README を [コードと文書の規約](conventions.md#documents) の見出しの順で書き、機能の Design Doc を隣に置く。

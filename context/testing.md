@@ -21,6 +21,9 @@ status: stable
 | デザインシステムのテスト | トークンのコントラスト、押せる領域とフォーカスの移り方、story の描画とアクセシビリティ | `packages/ui/src` の `*.test.ts(x)` と story | `pnpm --filter @buddy/ui test`（トークンは node、コンポーネントと story はブラウザ） |
 | E2E | ログインから画面の操作までの流れが、compose の全体で動く | `packages/e2e/tests/` | `pnpm e2e`（下の E2E の節） |
 | 生成物のそろい | `openapi.yaml` と SQL から生成したコードが最新である | `scripts/check-generated.sh` | `pnpm check:generated` |
+| 表の文書のそろい | マイグレーションを当てた MySQL から作った表の文書と ER 図の元が、コミットした `docs/db/` と同じである。全ての表がどれかの viewpoint に入る | `scripts/build-db-docs.sh` | `pnpm generate:db-docs`（Docker が要る）。CI の `db-docs` は、生成した後に `docs/db/` の差分を確かめる |
+| OpenAPI の定義の lint | 各 API の `openapi.yaml` が Redocly CLI の `recommended-strict` の規則に合う | `redocly.yaml`、`.redocly.lint-ignore.yaml` | `pnpm lint:openapi` |
+| 画面仕様書の点検 | 画面仕様書の名前と構造、モックの `data-testid`、E2E が使う testid、カタログの欄の story がそろう | `scripts/check-screens.mjs` | `pnpm check:screens` |
 
 ## Runtime Requirements
 
@@ -63,8 +66,13 @@ status: stable
 | `packages/ui` のコンポーネント | story（play 関数）とコンポーネントのテスト |
 | 画面の流れ、testid | その画面の E2E を流す |
 | `openapi.yaml`、SQL | `pnpm check:generated` |
+| `openapi.yaml`、`redocly.yaml`、`.redocly.lint-ignore.yaml` | `pnpm lint:openapi` |
+| マイグレーション、`apps/schedule-api/.tbls.yml` | `pnpm generate:db-docs` で表の文書を生成し直してコミットする |
+| 画面仕様書、モック、story の `title` と export の名前、E2E の testid | `pnpm check:screens` |
 
-取り込む前に、変えたアプリの `test` と `check`（Go は `go test ./...`、`go vet ./...`、`golangci-lint run`）を流す。`packages/go` を変えたときは、2 つの API でも流す。
+取り込む前に、変えたアプリの `test` と `check`（Go は `go test ./...`、`go vet ./...`、`golangci-lint run`）を流す。  
+Go は `GOWORK=off` を付けて流す。理由は [CONTRIBUTING.md](../CONTRIBUTING.md) の「開発の準備」にある。  
+`packages/go` を変えたときは、2 つの API でも流す。
 
 pull request と develop への push では、CI（[ci.yml](../.github/workflows/ci.yml)）が、変えた場所によらず全ての仕事を流す。1 つでも失敗した pull request は取り込まない。
 
