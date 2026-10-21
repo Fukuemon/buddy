@@ -13,7 +13,8 @@ mise install go golangci-lint
 
 ## 動かす
 
-API の 8080 と偽物の発行者の 9000 は、ルートの compose の schedule-api と IdP と重なる。compose の全体を動かしているときは、`docker compose stop` で止めてから実行する。
+API の 8080 と偽物の発行者の 9000 は、ルートの compose の schedule-api と IdP と重なる。  
+compose を動かしているときは、重なる 2 つを `docker compose stop schedule-api idp` で止めてから実行する。
 
 ```sh
 # ブローカーの代わりに、偽物の発行者を別の端末で動かす
@@ -60,7 +61,8 @@ go vet ./...
 golangci-lint run
 ```
 
-手元に `go.work` があるときは、`GOWORK=off` を付けて流す。理由は [CONTRIBUTING.md](../../CONTRIBUTING.md) の「開発の準備」にある。
+テストと lint は `GOWORK=off` を付けて流す。  
+理由は [CONTRIBUTING.md](../../CONTRIBUTING.md) の「開発の準備」にある。
 
 ## コードの生成
 
