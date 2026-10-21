@@ -56,8 +56,8 @@
   background: var(--wf-fill);
 }
 
-/* 誤りのある項目の要約。apps/web では赤い枠になる */
-.se-invalid {
+/* 誤りのある項目の要約。apps/web では枠を赤く太くする。右に出している項目（.wf-summary.is-active の実線）と見分けるため、破線にする */
+.wf-summary.se-invalid {
   border: 2px dashed var(--wf-ink);
 }
 

@@ -15,45 +15,45 @@
           <div class="wf-modal-stage">
             <div aria-hidden="true" class="wf-bg-calendar"></div>
             <div class="wf-overlay" data-m="1"></div>
-            <div class="wf-modal" role="dialog" aria-label="予定の作成" data-m="2" data-testid="schedule-form-modal">
+            <div class="wf-modal" role="dialog" aria-label="予定の作成" data-testid="schedule-form-modal">
               <div class="wf-modal__header">
-                <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-m="3" data-testid="modal-close">×</span>
-                <div class="wf-tabs sn-kind" role="radiogroup" aria-label="予定の種類" data-m="4" data-testid="schedule-kind-tab">
+                <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-m="2" data-testid="modal-close">×</span>
+                <div class="wf-tabs sn-kind" role="radiogroup" aria-label="予定の種類" data-m="3" data-testid="schedule-kind-tab">
                   <span class="wf-tab" data-testid="schedule-kind-tab-normal">通常</span>
                   <span class="wf-tab is-active" data-testid="schedule-kind-tab-visit">訪問</span>
                 </div>
-                <h2 class="wf-modal__title" data-m="5">予定の作成</h2>
+                <h2 class="wf-modal__title" data-m="4">予定の作成</h2>
               </div>
               <div class="wf-modal__body">
                 <div class="wf-split" data-testid="schedule-form">
                   <ul class="wf-stack sn-fields">
                     <li>
-                      <span class="wf-summary is-active" aria-current="true" data-m="6" data-testid="schedule-field-date-time">
-                        <span class="wf-label"></span>
+                      <span class="wf-summary is-active" aria-current="true" data-m="5" data-testid="schedule-field-date-time">
+                        <span class="wf-label">訪問日時</span>
                         <span>2024-04-01 09:00 - 09:29（29 分、訪看I2）</span>
                       </span>
                     </li>
                     <li>
-                      <span class="wf-summary" data-m="6" data-testid="schedule-field-patient">
-                        <span class="wf-label"></span>
+                      <span class="wf-summary" data-m="5" data-testid="schedule-field-patient">
+                        <span class="wf-label">利用者</span>
                         <span>未選択</span>
                       </span>
                     </li>
                     <li>
-                      <span class="wf-summary" data-m="6" data-testid="schedule-field-staff">
-                        <span class="wf-label"></span>
+                      <span class="wf-summary" data-m="5" data-testid="schedule-field-staff">
+                        <span class="wf-label">担当者</span>
                         <span>未選択</span>
                       </span>
                     </li>
                     <li>
-                      <span class="wf-summary" data-m="6" data-testid="schedule-field-category">
-                        <span class="wf-label"></span>
+                      <span class="wf-summary" data-m="5" data-testid="schedule-field-category">
+                        <span class="wf-label">訪問の種類</span>
                         <span>通常</span>
                       </span>
                     </li>
                     <li>
-                      <span class="wf-summary" data-m="6" data-testid="schedule-field-description">
-                        <span class="wf-label"></span>
+                      <span class="wf-summary" data-m="5" data-testid="schedule-field-description">
+                        <span class="wf-label">メモ</span>
                         <span>なし</span>
                       </span>
                     </li>
@@ -61,26 +61,26 @@
                   <div>
                     <div class="sn-pane sn-pane--wide">
                       <h3 class="wf-heading">訪問日時</h3>
-                      <div class="wf-input" data-m="7" data-testid="schedule-form-date"><span class="wf-label">訪問日</span><span>2024-04-01</span></div>
+                      <div class="wf-input" data-m="6" data-testid="schedule-form-date"><span class="wf-label">訪問日</span><span>2024-04-01</span></div>
                       <div class="sn-row">
-                        <div class="wf-input" data-m="8" data-testid="schedule-form-start-time"><span class="wf-label">開始時間</span><span>09:00</span></div>
-                        <div class="wf-input" data-m="9" data-testid="schedule-form-service-time"><span class="wf-label">提供時間（分）</span><span>29</span></div>
+                        <div class="wf-input" data-m="7" data-testid="schedule-form-start-time"><span class="wf-label">開始時間</span><span>09:00</span></div>
+                        <div class="wf-input" data-m="8" data-testid="schedule-form-service-time"><span class="wf-label">提供時間（分）</span><span>29</span></div>
                       </div>
-                      <p class="wf-label sn-end" data-m="10" data-testid="schedule-form-end-time">終了時間 09:29</p>
+                      <p class="wf-label sn-end" data-m="9" data-testid="schedule-form-end-time">終了時間 09:29</p>
                       <fieldset class="sn-pane sn-group">
                         <legend class="wf-heading">サービスコードを選んでください</legend>
                         <div class="sn-chips">
-                          <span class="wf-chip is-on" data-m="11" data-testid="service-code-{コード}">訪看I2</span>
-                          <span class="wf-chip" data-m="11" data-testid="service-code-{コード}">訪看I3</span>
-                          <span class="wf-chip" data-m="11" data-testid="service-code-{コード}">訪看I4</span>
-                          <span class="wf-chip" data-m="11" data-testid="service-code-{コード}">訪看I5</span>
-                          <span class="wf-chip" data-m="11" data-testid="service-code-{コード}">訪看I5・2超</span>
-                          <span class="wf-chip" data-m="11" data-testid="service-code-{コード}">予防看I2</span>
-                          <span class="wf-chip" data-m="11" data-testid="service-code-{コード}">予防看I3</span>
-                          <span class="wf-chip" data-m="11" data-testid="service-code-{コード}">予防看I4</span>
-                          <span class="wf-chip" data-m="11" data-testid="service-code-{コード}">予防看I5</span>
-                          <span class="wf-chip" data-m="11" data-testid="service-code-{コード}">予防看I5・2超</span>
-                          <span class="wf-chip" data-m="11" data-testid="service-code-{コード}">医</span>
+                          <span class="wf-chip is-on" data-m="10" data-testid="service-code-{コード}">訪看I2</span>
+                          <span class="wf-chip" data-m="10" data-testid="service-code-{コード}">訪看I3</span>
+                          <span class="wf-chip" data-m="10" data-testid="service-code-{コード}">訪看I4</span>
+                          <span class="wf-chip" data-m="10" data-testid="service-code-{コード}">訪看I5</span>
+                          <span class="wf-chip" data-m="10" data-testid="service-code-{コード}">訪看I5・2超</span>
+                          <span class="wf-chip" data-m="10" data-testid="service-code-{コード}">予防看I2</span>
+                          <span class="wf-chip" data-m="10" data-testid="service-code-{コード}">予防看I3</span>
+                          <span class="wf-chip" data-m="10" data-testid="service-code-{コード}">予防看I4</span>
+                          <span class="wf-chip" data-m="10" data-testid="service-code-{コード}">予防看I5</span>
+                          <span class="wf-chip" data-m="10" data-testid="service-code-{コード}">予防看I5・2超</span>
+                          <span class="wf-chip" data-m="10" data-testid="service-code-{コード}">医</span>
                         </div>
                       </fieldset>
                     </div>
@@ -88,7 +88,7 @@
                 </div>
               </div>
               <div class="wf-modal__footer">
-                <span class="wf-btn wf-btn--primary" data-m="12" data-testid="schedule-create-submit">作成</span>
+                <span class="wf-btn wf-btn--primary" data-m="11" data-testid="schedule-create-submit">作成</span>
               </div>
             </div>
           </div>
