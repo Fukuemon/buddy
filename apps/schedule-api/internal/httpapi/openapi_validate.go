@@ -15,6 +15,11 @@ import (
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi/openapi"
 )
 
+func init() {
+	// kin-openapi は email の形を既定では確かめないので、登録する。職員のメールは staff.New でも確かめる
+	openapi3.DefineStringFormatValidator("email", openapi3.NewRegexpFormatValidator(openapi3.FormatOfStringForEmail))
+}
+
 // newRequestValidator は、要求のパスの引数、クエリ、本文を openapi.yaml の定義で確かめる gin のミドルウェアを作る。
 // 定義に合わなければ、handler を呼ばずに 400（code は invalid_input）を返す。
 // トークンの確認は authenticate が受け持つので、定義の security はここでは確かめない。

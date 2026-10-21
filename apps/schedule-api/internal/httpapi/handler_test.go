@@ -339,6 +339,11 @@ func TestCreateSchedule(t *testing.T) {
 		{name: "訪問の情報の区分が ULID でない", body: strings.Replace(valid, `"title":"会議"`,
 			`"visit_info":{"patient_id":"`+staffID+`","assigned_staff_id":"`+staffID+`","service_code_id":"`+staffID+`","visit_category_ids":["x"]}`, 1),
 			wantCode: http.StatusBadRequest, wantMessage: "visit_info.visit_category_ids[0]"},
+		{name: "同行者が null", body: strings.Replace(valid, `"title":"会議"`,
+			`"visit_info":{"patient_id":"`+staffID+`","assigned_staff_id":"`+staffID+`","companion_id":null,"service_code_id":"`+staffID+`"}`, 1),
+			wantCode: http.StatusCreated},
+		{name: "題名が長すぎる", body: strings.Replace(valid, `"title":"会議"`, `"title":"`+strings.Repeat("あ", 256)+`"`, 1),
+			wantCode: http.StatusBadRequest, wantMessage: "title"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -350,7 +355,7 @@ func TestCreateSchedule(t *testing.T) {
 			if msg, _ := body["message"].(string); !strings.Contains(msg, tt.wantMessage) {
 				t.Errorf("message = %q, want %q を含む", msg, tt.wantMessage)
 			}
-			if tt.wantCode == http.StatusCreated &&
+			if tt.name == "正しい本文" &&
 				(s.lastSlot.StartTime != civil.Time{Hour: 9} || s.lastSlot.Title == nil || s.lastSlot.Visit != nil) {
 				t.Errorf("slot = %+v", s.lastSlot)
 			}
