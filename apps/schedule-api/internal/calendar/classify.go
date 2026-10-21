@@ -31,6 +31,7 @@ const (
 	SkipMultiDay        SkipReason = "multi_day"
 	SkipUnreadableTime  SkipReason = "unreadable_time"
 	SkipUnreadableTitle SkipReason = "unreadable_title"
+	SkipZeroLength      SkipReason = "zero_length"
 )
 
 // Candidate は、1 つの予定を buddy の予定に読み替えた候補である。
@@ -52,7 +53,8 @@ type Candidate struct {
 
 // Classify は、ev を、訪問の予定、通常の予定、取り込まない予定のどれかに分ける。
 // 題名に `【` と `】` の両方を含む予定を訪問の予定とし、照合の API と同じ規則（gcaltitle）で読む。
-// 取り消した予定、終日の予定、日をまたぐ予定、開始か終了の日時を読めない予定、訪問の題名を読めない予定は取り込まない。
+// 取り消した予定、終日の予定、日をまたぐ予定、開始か終了の日時を読めない予定、分に丸めて長さが 0 以下の予定、
+// 訪問の題名を読めない予定は取り込まない。
 func Classify(ev Event) Candidate {
 	if ev.Status == StatusCancelled {
 		return skipped(SkipCancelled)
@@ -80,6 +82,10 @@ func Classify(ev Event) Candidate {
 	}
 	if civil.DateOf(end) != c.Date {
 		c.Kind, c.SkipReason = KindSkipped, SkipMultiDay
+		return c
+	}
+	if !c.StartTime.Before(c.EndTime) {
+		c.Kind, c.SkipReason = KindSkipped, SkipZeroLength
 		return c
 	}
 	if !gcaltitle.IsVisitTitle(ev.Summary) {

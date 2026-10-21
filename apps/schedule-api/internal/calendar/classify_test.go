@@ -164,6 +164,32 @@ func TestClassify(t *testing.T) {
 			},
 		},
 		{
+			name: "開始と終了が同じ予定",
+			event: func() calendar.Event {
+				s, e := timed("2026-10-20T10:00:00+09:00", "2026-10-20T10:00:00+09:00")
+				return calendar.Event{Start: s, End: e, Summary: "【訪看I2】利用者A"}
+			},
+			want: func(t *testing.T) calendar.Candidate {
+				return calendar.Candidate{
+					Kind: calendar.KindSkipped, Date: date(t, "2026-10-20"),
+					StartTime: clock(10, 0), EndTime: clock(10, 0), SkipReason: calendar.SkipZeroLength,
+				}
+			},
+		},
+		{
+			name: "秒を落とすと開始と終了が同じになる予定",
+			event: func() calendar.Event {
+				s, e := timed("2026-10-20T10:00:10+09:00", "2026-10-20T10:00:50+09:00")
+				return calendar.Event{Start: s, End: e, Summary: "会議"}
+			},
+			want: func(t *testing.T) calendar.Candidate {
+				return calendar.Candidate{
+					Kind: calendar.KindSkipped, Date: date(t, "2026-10-20"),
+					StartTime: clock(10, 0), EndTime: clock(10, 0), SkipReason: calendar.SkipZeroLength,
+				}
+			},
+		},
+		{
 			name: "開始の日時を読めない",
 			event: func() calendar.Event {
 				s, e := timed("2026-10-20 10:00", "2026-10-20T11:00:00+09:00")
