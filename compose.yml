@@ -86,7 +86,8 @@ services:
       # トークンの iss は、IdP がトークンの要求の Host から決める。API とトークンを取る web は、コンテナの間の名前 idp で呼ぶ
       OIDC_ISSUER: http://idp:9000/buddy
       OIDC_AUDIENCE: schedule-api
-      CORS_ALLOW_ORIGINS: http://localhost:${WEB_PORT:-3000}
+      # web と、API の仕様のページで要求を試す手元の文書のサイト（zensical serve）に許す
+      CORS_ALLOW_ORIGINS: http://localhost:${WEB_PORT:-3000},http://localhost:8000
     ports: ['127.0.0.1:${SCHEDULE_API_PORT:-8080}:8080']
     healthcheck:
       test: ['CMD', '/usr/local/bin/api', 'healthcheck']
@@ -102,6 +103,8 @@ services:
     environment:
       OIDC_ISSUER: http://idp:9000/buddy
       OIDC_AUDIENCE: receipt-api
+      # API の仕様のページで要求を試す手元の文書のサイト（zensical serve）に許す
+      CORS_ALLOW_ORIGINS: http://localhost:8000
     ports: ['127.0.0.1:${RECEIPT_API_PORT:-8090}:8080']
     healthcheck:
       test: ['CMD', '/api', 'healthcheck']

@@ -36,6 +36,7 @@ TOKEN=$(curl -s '127.0.0.1:9000/token?sub=dev-aoki&org_id=org-sample' | jq -r .a
 - `OIDC_ISSUER`: 必須。ブローカーの発行者の URL。トークンの `iss` と一致させ、discovery の文書をここから読む
 - `OIDC_AUDIENCE`: 必須。トークンの `aud` に求める値
 - `OIDC_ORG_CLAIM`: 組織の ID を持つクレームの名前。既定は `org_id`
+- `CORS_ALLOW_ORIGINS`: CORS で応答を読ませるオリジンを、カンマで区切って並べる。空なら CORS のヘッダーを返さない
 - `GOOGLE_CALENDARS_FILE`: 照合の対象のカレンダーの設定（JSON）のパス。空なら Google カレンダーを使わない
 - `GOOGLE_APPLICATION_CREDENTIALS`: Application Default Credentials が読む認証情報のファイルのパス
 - `GOOGLE_CALENDAR_ENDPOINT`: Calendar API の代わりに呼ぶ URL。偽物の API で試すためのもので、認証をしない

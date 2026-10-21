@@ -68,6 +68,15 @@ TOKEN=$(docker compose exec -T idp wget -qO- --post-data "grant_type=authorizati
 curl -H "Authorization: Bearer $TOKEN" localhost:8080/v1/facilities/01M3TC5H00QV17BC0J9V3393ZP
 ```
 
+文書のサイトの API の仕様のページからも、手元の API を呼べる。
+
+1. `docker compose up --build --wait schedule-api receipt-api` で API を立てる。
+2. `uv run zensical serve` で、文書のサイトを `http://localhost:8000` で開く。compose の 2 つの API は、このオリジンだけに CORS を許すので、`127.0.0.1` ではなく `localhost` で開く。
+3. 「API の仕様」のページで操作を選び、「Test Request」を押す。
+4. 上の手順で取った `$TOKEN` の値を「Bearer Token」の欄に貼り、「Send」を押す。
+
+公開した文書のサイトからは呼べない。API がそのオリジンに CORS を許していないうえ、https のページから手元の API への要求をブラウザが止めることがあるためである。
+
 ## E2E のテストを流す
 
 E2E のテストは `packages/e2e` にあり、ルートの compose で立てた全体に向けて流す。初めて流すときは、Playwright のブラウザを入れる。

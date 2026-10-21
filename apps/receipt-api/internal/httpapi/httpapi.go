@@ -34,6 +34,8 @@ type Config struct {
 	Sources source.Selector
 	// Verifier は、/healthz と /readyz 以外の要求の access token を検証する。必須である。
 	Verifier TokenVerifier
+	// AllowOrigins は、CORS で応答を読ませる Origin である。空なら CORS のヘッダーを返さない。
+	AllowOrigins []string
 }
 
 type server struct {
@@ -65,7 +67,7 @@ func NewHandler(logger *slog.Logger, cfg Config) http.Handler {
 		Middlewares: []openapi.MiddlewareFunc{s.limitBody},
 	})
 	// 生成物の Middlewares は操作ごとのハンドラーだけを包むので、定義にないパスの 404 にもトークンを求めるよう mux 全体を包む。
-	return s.logRequests(s.authenticate(mux))
+	return s.logRequests(s.cors(s.authenticate(mux)))
 }
 
 // GetHealthz は、{"status":"ok"} を返す。

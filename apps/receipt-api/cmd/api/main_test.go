@@ -2,6 +2,7 @@ package main
 
 import (
 	"log/slog"
+	"slices"
 	"testing"
 )
 
@@ -15,7 +16,7 @@ func TestLoadConfig(t *testing.T) {
 		}
 	}
 	cfg, err := loadConfig(env(nil))
-	if err != nil || cfg.port != "8080" || cfg.maxUploadBytes != 10<<20 || cfg.logLevel != slog.LevelInfo || cfg.oidc.OrgClaim != "org_id" {
+	if err != nil || cfg.port != "8080" || cfg.maxUploadBytes != 10<<20 || cfg.logLevel != slog.LevelInfo || cfg.oidc.OrgClaim != "org_id" || cfg.allowOrigins != nil {
 		t.Errorf("既定値 = %+v, %v", cfg, err)
 	}
 	cfg, err = loadConfig(env(map[string]string{"PORT": "9000", "MAX_UPLOAD_BYTES": "2048", "LOG_LEVEL": "debug", "OIDC_ORG_CLAIM": "organization"}))
@@ -24,6 +25,10 @@ func TestLoadConfig(t *testing.T) {
 	}
 	if cfg.oidc.Issuer != "http://idp/buddy" || cfg.oidc.Audience != "receipt-api" {
 		t.Errorf("OIDC の設定 = %+v", cfg.oidc)
+	}
+	cfg, err = loadConfig(env(map[string]string{"CORS_ALLOW_ORIGINS": " http://a , ,http://b"}))
+	if err != nil || !slices.Equal(cfg.allowOrigins, []string{"http://a", "http://b"}) {
+		t.Errorf("CORS のオリジン = %q, %v", cfg.allowOrigins, err)
 	}
 	cfg, err = loadConfig(env(map[string]string{"GOOGLE_CALENDARS_FILE": "calendars.json", "GOOGLE_CALENDAR_ENDPOINT": "http://localhost:9000/"}))
 	if err != nil || cfg.calendarsFile != "calendars.json" || cfg.calendarEndpoint != "http://localhost:9000/" {
