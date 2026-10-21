@@ -1,42 +1,42 @@
 ---
 name: write-verification-spec
-description: 人手検証のシナリオ(前提、もし、かつ、ならば の文で書いたもの)から、packages/e2e/kit で証跡を撮る spec を書き、1 本撮って直すときに使う。「この検証シナリオの証跡を撮る spec を書いて」「証跡の spec を足して」「spec の操作の位置を直して」で読み込む。spec を流して証跡を確かめるときは run-verification-scenarios を、証跡を撮らない E2E のテストは write-e2e-test を使う。
+description: 手動検証のシナリオ(前提、もし、かつ、ならば の文で書いたもの)から、packages/e2e/kit でエビデンスを撮る spec を書き、1 本撮って直すときに使う。「この検証シナリオのエビデンスを撮る spec を書いて」「エビデンスの spec を足して」「spec の操作の位置を直して」で読み込む。spec を流してエビデンスを確かめるときは run-verification-scenarios を、エビデンスを撮らない E2E のテストは write-e2e-test を使う。
 ---
 
 # write-verification-spec
 
-撮る仕組み、置き場、名前の決まりは、`packages/e2e/kit/` の `recording` と `evidence` が持つ。録画の設計は `packages/e2e/kit/recording/DesignDoc.md` にある。  
+撮る仕組み、配置先、名前の決まりは、`packages/e2e/kit/` の `recording` と `evidence` が持つ。録画の設計は `packages/e2e/kit/recording/DesignDoc.md` にある。  
 このスキルは、spec を書いて撮るときの判断だけを持つ。コードの層と待ち方は write-e2e-test に従う。
 
 ## 始める前に読むもの
 
 - `context/testing/evidence.md`。次の値が書いてある。無ければ利用者に尋ね、context に書いてもらう
-  - 検証シナリオのファイルと pull request の置き場
-  - spec の置き場(`<root>/<issue>/`)と、spec の名前の付け方
+  - 検証シナリオのファイルと pull request の配置先
+  - spec の配置先(`<root>/<issue>/`)と、spec の名前の付け方
   - 撮る URL、改修前の URL、実施日、環境の名前を渡す環境変数
-  - 証跡の格納先（pull request と issue への添付）と、置き場のフォルダの名前の決まり
+  - エビデンスの格納先（pull request と issue への添付）と、配置先のフォルダの名前の決まり
   - ログインのしかたと、テストデータを作る手順
-  - 証跡の spec を CI の E2E から外す方法と、証跡の出力を Git で追跡しない設定
-- kit を呼ぶ薄い層(`recordEvidence` に置き場とアプリの値を付けて呼ぶもの、`variants` に環境変数を渡すもの)。context に置き場があれば読み、spec からはその層を呼ぶ。無ければ、ひな形のとおり spec から `kit/recording` と `kit/evidence` を直に呼び、置き場とアプリの値を spec に書く
-- 既にある証跡の spec のうち、同じアクターか同じ画面のものを 1 本
+  - エビデンスの spec を CI の E2E から外す方法と、エビデンスの出力を Git で追跡しない設定
+- kit を呼ぶ薄い層(`recordEvidence` に配置先とアプリの値を付けて呼ぶもの、`variants` に環境変数を渡すもの)。context に配置先があれば読み、spec からはその層を呼ぶ。無ければ、テンプレートのとおり spec から `kit/recording` と `kit/evidence` を直に呼び、配置先とアプリの値を spec に書く
+- 既にあるエビデンスの spec のうち、同じアクターか同じ画面のものを 1 本
 
-新しい spec は、[assets/spec-template.e2e.ts](assets/spec-template.e2e.ts) を写して始める。
+新しい spec は、[assets/spec-template.e2e.ts](assets/spec-template.e2e.ts) をコピーして始める。
 
-## シナリオから写すもの
+## シナリオからコピーするもの
 
 推測で埋めない。分からなければ利用者に尋ねる。
 
 - 手順の文: シナリオの「前提」「もし」「かつ」「ならば」の文。言い換えずに字幕にし、リンクとコードスパンの書式だけを外す。
 - `Scenario` の `id`: シナリオの `@scenario-id`。
-- `Scenario` の `issue`、`actor`、`no`、`title`: 置き場のフォルダの名前（`<issue>/<アクター>/S<n>_<シナリオ名>/`）になる。検証シナリオの pull request の証跡の名前と同じにする。決まりは context にある。
+- `Scenario` の `issue`、`actor`、`no`、`title`: 配置先のフォルダの名前（`<issue>/<アクター>/S<n>_<シナリオ名>/`）になる。検証シナリオの pull request のエビデンスの名前と同じにする。決まりは context にある。
 - 例の列と値: シナリオアウトラインの例の表と、pull request のチェックの「<列>=<値>」。ファイル名になるので、文言を変えない。
-- 改修前と違ってよい差: シナリオの備考。文は `<root>/<issue>/differences.ts` に写し、その要求の spec から import する。その静止画だけの差は `check` の 2 つ目の引数に、どの静止画にも映りうる差は `Scenario` の `differences` に渡す。備考に無い差が撮れたら、spec に書かずに利用者に示す。
+- 改修前と違ってよい差: シナリオの備考。文は `<root>/<issue>/differences.ts` にコピーし、その要求の spec から import する。そのスクリーンショットだけの差は `check` の 2 つ目の引数に、どのスクリーンショットにも映りうる差は `Scenario` の `differences` に渡す。備考に無い差が撮れたら、spec に書かずに利用者に示す。
 
 ## spec を書く
 
 - シナリオの文ごとに、`step` か `check` を呼んでから操作する。
   - 前提、もし、操作の続きの「かつ」は `step`。字幕を出し、動画の時刻を残す。
-  - ならば、判定の続きの「かつ」は `check`。出し終えた時点の画面を静止画にする。
+  - ならば、判定の続きの「かつ」は `check`。出し終えた時点の画面をスクリーンショットにする。
   - 操作の間に見る判定の文は、操作の前の `step` の 2 行目以降に出す。字幕は次に変えるまで残る。
 - シナリオに無い操作(表を横に送る、隠れた要素を見せるためにカーソルをずらす)は、前に「(撮影のため、…)」の字幕を出してから行う。録画に映らない値(カーソルの形、API のバージョン)も、この字幕に出す。
 - ログインとデータの確かめは `prepare` で行う。録画は、前提の画面を開いてから、前提の字幕で始める。
@@ -54,8 +54,8 @@ description: 人手検証のシナリオ(前提、もし、かつ、ならば �
 
 1. `context/testing.md` の E2E の節にある lint と型のチェックを流す。
 2. 1 本だけ流す。改修前と比べるなら、改修後だけに絞る。
-3. 置き場の `frames/` の静止画で、操作の位置と字幕が合っているかを見て、spec を直す。
+3. 配置先の `frames/` のスクリーンショットで、操作の位置と字幕が合っているかを見て、spec を直す。
 4. 改修前と比べるなら、改修前も撮り、`compare/` の比較の画像で、判定の場面が同じ操作の後になっているかを見る。改修前だけ表示の位置がずれたら、「(撮影のため、…)」の字幕を出して位置を戻す。
-5. 証跡の一覧(要求ごとの README など。置き場は context にある)に、足した spec とシナリオの対応を書く。撮影のための操作も書く。
+5. エビデンスの一覧(要求ごとの README など。配置先は context にある)に、足した spec とシナリオの対応を書く。撮影のための操作も書く。
 
 撮る環境の選び方、確かめ方、シナリオと食い違ったときの扱い、pull request への添付は、run-verification-scenarios にある。
