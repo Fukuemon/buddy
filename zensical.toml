@@ -27,13 +27,21 @@ nav = [
   { "Design Doc" = [
     { "全体" = "design/DesignDoc.md" },
     { "予定の管理" = "design/apps/schedule-api.md" },
-    # tbls の生成物（scripts/build-db-docs.sh）
-    { "予定の管理の表" = "db/schedule-api/README.md" },
-    # Liam ERD で描く、操作できる ER 図（pnpm build:erd）。同じサイトの /erd/ に置き、手元の zensical serve には無い
-    { "予定の管理の表の ER 図（Liam ERD）" = "/erd/" },
     { "レセプトの照合" = "design/apps/receipt-api.md" },
     { "E2E のテストのコード" = "design/packages/e2e.md" },
     { "証跡の録画" = "design/packages/e2e-recording.md" },
+  ] },
+  # 予定の管理の表。tbls の生成物（scripts/build-db-docs.sh）で、viewpoint の文書は全て載せる（build-db-docs.sh が確かめる）。
+  # 表ごとの文書は載せず、表の一覧と viewpoint の文書から開く
+  { "DB の設計" = [
+    { "表の一覧" = "db/schedule-api/README.md" },
+    # Liam ERD で描く、操作できる ER 図（pnpm build:erd）。同じサイトの /erd/ に置き、手元の zensical serve には無い
+    { "ER 図（Liam ERD）" = "/erd/" },
+    { "事業所と組織" = "db/schedule-api/viewpoint-organization.md" },
+    { "職員と権限" = "db/schedule-api/viewpoint-policies.md" },
+    { "利用者" = "db/schedule-api/viewpoint-patients.md" },
+    { "予定と訪問" = "db/schedule-api/viewpoint-schedules.md" },
+    { "繰り返しの予定" = "db/schedule-api/viewpoint-recurring.md" },
   ] },
   { "デザインシステム" = [
     { "使い方" = "design/packages/ui.md" },
