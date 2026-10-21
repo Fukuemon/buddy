@@ -28,7 +28,7 @@ pnpm --filter @buddy/web dev
 コンテナのイメージは `bff` でビルドする。`bff` の動きは、リポジトリのルートの compose で確かめる（CONTRIBUTING.md の「手元で全部を動かす」）。  
 開発サーバーを `bff` で動かすと、トークンの `iss` が compose の API の求める値と合わないので、compose の API には向けない。
 
-BFF の処理を手元の開発サーバーで確かめるときは、`dev:msw` で起動する。ログインは compose の IdP と Valkey を使い、2 つの API への要求は MSW の偽物の handler（`src/mocks/`）が受ける。Go の API と MySQL は立てない。設定は `.env.msw` にある。
+BFF の処理を手元の開発サーバーで確かめるときは、`dev:msw` で起動する。ログインは compose の IdP と Valkey を使い、2 つの API への要求は MSW の偽物の handler（`src/mocks/`）が受ける。Go の API と PostgreSQL は立てない。設定は `.env.msw` にある。
 
 ```sh
 docker compose up -d --wait idp valkey

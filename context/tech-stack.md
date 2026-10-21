@@ -39,14 +39,14 @@ status: stable
 | Git のフック、コミットの形式 | lefthook、commitlint | `package.json` |
 | スキルとフックの配置 | apm | `mise.toml`、パッケージは `apm.yml` と `apm.lock.yaml` |
 | 証跡の動画の添付 | gh | `mise.toml`。CI のワークフローは mise で入れず、ランナーの gh を使う |
-| 手元の全体の起動 | Docker Compose（MySQL、Valkey、mock-oauth2-server） | `compose.yml` のイメージのタグ |
+| 手元の全体の起動 | Docker Compose（PostgreSQL、Valkey、mock-oauth2-server） | `compose.yml` のイメージのタグ |
 | 実行のイメージ | distroless（API）、`node:24-slim`（web） | `apps/*/Dockerfile` |
 
 - パッケージマネージャーが管理しないツールは、次の場所で固定する。
   - mise（`mise.toml`）
   - Go の `tool`（`go.mod`）
   - Docker のイメージのタグ（`compose.yml`、`Dockerfile`）
-  - MySQL のイメージのタグ（`scripts/build-db-docs.sh`、`apps/schedule-api/internal/mysql/main_test.go`）
+  - PostgreSQL のイメージのタグ（`scripts/build-db-docs.sh`、`apps/schedule-api/internal/postgres/main_test.go`）
   - CDN の URL（`docs/api/reference.js` の Scalar）
   - CI の uv（`.github/workflows/docs-site.yml` の setup-uv の `version`）
 - 録画に要る `ffmpeg` と `ffprobe` は、どこでも固定していない。各自が入れる。
@@ -59,9 +59,9 @@ status: stable
 - Vite+ は、`pnpm-workspace.yaml` の catalog の `vite-plus` と `vite`（`@voidzero-dev/vite-plus-core` への別名）を一緒に上げる。
 - TanStack の Router、Query、Start は、`apps/web/package.json` に厳密なバージョンで書いてある。上げたら、`pnpm --filter @buddy/web check`、`test`、`build` と、compose での画面の確かめ（`pnpm e2e`）を流す。
 - `@digital-go-jp/design-tokens` は、ADR-0004 の決めたとおり、上げる前にトークンの名前と値の差分を読み、`pnpm --filter @buddy/ui test` でコントラストのテストを流す。
-- MySQL、Valkey、IdP のイメージを上げたら、`docker compose up --build --wait` と `pnpm e2e` を流す。
-  - MySQL のタグは、`compose.yml`、`apps/schedule-api/internal/mysql/main_test.go`、`scripts/build-db-docs.sh` の 3 か所にある。3 か所のマイナーバージョンをそろえる。
-  - `scripts/build-db-docs.sh` だけは、表の文書に MySQL のバージョンが入るので、パッチバージョンまで固定している。上げたら `pnpm generate:db-docs` で表の文書を生成し直し、コミットする。
+- PostgreSQL、Valkey、IdP のイメージを上げたら、`docker compose up --build --wait` と `pnpm e2e` を流す。
+  - PostgreSQL のタグは、`compose.yml`、`apps/schedule-api/internal/postgres/main_test.go`、`scripts/build-db-docs.sh` の 3 か所にある。3 か所を同じタグにそろえる。
+  - `scripts/build-db-docs.sh` は、表の文書に PostgreSQL のバージョンが入るので、パッチバージョンまで固定している。上げたら `pnpm generate:db-docs` で表の文書を生成し直し、コミットする。
 - uv を上げたら、`mise.toml` と `.github/workflows/docs-site.yml` の setup-uv の `version` をそろえる。
 - tbls か Liam ERD CLI を上げたら、`pnpm generate:db-docs` と `pnpm build:erd` を流す。
   - `scripts/build-erd.mjs` は、Liam ERD が tbls の viewpoint の `id` を拒むので、`id` を外してから渡している。上げた後もこの処理が要るかを確かめる。

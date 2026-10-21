@@ -13,7 +13,7 @@ status: stable
 | --- | --- | --- | --- |
 | Go の単体テスト（規則） | 値の検証、繰り返しの規則、予定の権限の判定、照合の判定の規則 | 対象のパッケージの隣の `*_test.go`（表駆動） | 各 API で `go test ./...` |
 | Go の単体テスト（機能のパッケージ） | 手順、権限の判定、事業所をまたぐ参照の拒否 | `apps/schedule-api/internal/<機能>`、`internal/access`（`internal/inmem` のメモリ上のリポジトリ） | 同上 |
-| Go の結合テスト（リポジトリ） | SQL が、マイグレーションとシードを当てた MySQL で期待どおりに動く | `apps/schedule-api/internal/mysql` | 同上（`-short` で飛ばす） |
+| Go の結合テスト（リポジトリ） | SQL が、マイグレーションとシードを当てた PostgreSQL で期待どおりに動く | `apps/schedule-api/internal/postgres` | 同上（`-short` で飛ばす） |
 | Go のトークンの検証のテスト | access token の署名、`iss`、`aud`、期限の検証 | `packages/go/oidc`（テストの中で鍵を作る偽物の発行者） | 同上 |
 | Go のハンドラのテスト | 状態コード、応答の本文、認証と事業所の確認 | `apps/schedule-api/internal/httpapi`、`apps/receipt-api/internal/httpapi` | 同上 |
 | 照合の互換のテスト | Go の照合が、元の Python の実装と同じ結果を返す | `apps/receipt-api/internal/check/parity_test.go` と `testdata/parity/` | `go test ./...`。期待値の作り直しは `tools/parity/run.sh` |
@@ -21,13 +21,13 @@ status: stable
 | デザインシステムのテスト | トークンのコントラスト、押せる領域とフォーカスの移り方、story の描画とアクセシビリティ | `packages/ui/src` の `*.test.ts(x)` と story | `pnpm --filter @buddy/ui test`（トークンは node、コンポーネントと story はブラウザ） |
 | E2E | ログインから画面の操作までの流れが、compose の全体で動く | `packages/e2e/tests/` | `pnpm e2e`（下の E2E の節） |
 | 生成物のそろい | `openapi.yaml` と SQL から生成したコードが最新である | `scripts/check-generated.sh` | `pnpm check:generated` |
-| 表の文書のそろい | マイグレーションを当てた MySQL から作った表の文書と ER 図の元が、コミットした `docs/db/` と同じである。全ての表がどれかの viewpoint に入る | `scripts/build-db-docs.sh` | `pnpm generate:db-docs`（Docker が要る）。CI の `db-docs` は、生成した後に `docs/db/` の差分を確かめる |
+| 表の文書のそろい | マイグレーションを当てた PostgreSQL から作った表の文書と ER 図の元が、コミットした `docs/db/` と同じである。全ての表がどれかの viewpoint に入る | `scripts/build-db-docs.sh` | `pnpm generate:db-docs`（Docker が要る）。CI の `db-docs` は、生成した後に `docs/db/` の差分を確かめる |
 | OpenAPI の定義の lint | 各 API の `openapi.yaml` が Redocly CLI の `recommended-strict` の規則に合う | `redocly.yaml`、`.redocly.lint-ignore.yaml` | `pnpm lint:openapi` |
 | 画面仕様書の点検 | 画面仕様書の名前と構造、モックの `data-testid`、E2E が使う testid、カタログの欄の story がそろう | `scripts/check-screens.mjs` | `pnpm check:screens` |
 
 ## Runtime Requirements
 
-- schedule-api の結合テストは Docker が要る。testcontainers-go が MySQL のコンテナを起動し、接続の値はテストの中に固定してある。環境変数は要らない。
+- schedule-api の結合テストは Docker が要る。testcontainers-go が PostgreSQL のコンテナを起動し、接続の値はテストの中に固定してある。環境変数は要らない。
 - receipt-api のテストと web の Vitest は、外部のネットワークと環境変数を要らない。receipt-api のテストは、偽物の発行者と Calendar API を loopback で立てる。web は `VITE_API_MODE` を指定しなければ偽物の API で動く。
 - `packages/ui` のテストは、Playwright の chromium が要る（`pnpm --filter @buddy/ui exec playwright install chromium`）。
 - E2E は、ルートの compose の全体（ポートは [CONTRIBUTING.md](../CONTRIBUTING.md) の「手元で全部を動かす」）と、Playwright の chromium が要る。
@@ -37,7 +37,7 @@ status: stable
 
 | 対象 | 単体とコンポーネントのテスト | E2E |
 | --- | --- | --- |
-| MySQL | 機能のパッケージのテストはメモリ上の偽物（`inmem`）、リポジトリのテストは testcontainers の本物 | compose の本物 |
+| PostgreSQL | 機能のパッケージのテストはメモリ上の偽物（`inmem`）、リポジトリのテストは testcontainers の本物 | compose の本物 |
 | OIDC の発行者 | `oidctest` の偽物（テストの中で鍵を作る） | compose の mock-oauth2-server |
 | Google Calendar API | `gcaltest` の偽物 | 使わない（compose の receipt-api はカレンダーを設定していない） |
 | web の画面から見た API（`BuddyApi`） | `src/api/fake/` の偽物 | compose の本物 |

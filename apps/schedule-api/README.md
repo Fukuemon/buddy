@@ -7,7 +7,7 @@ API の定義の正本は [openapi.yaml](openapi.yaml) である。サーバー�
 
 Go、sqlc、golang-migrate、golangci-lint は、リポジトリのルートの `mise.toml` が版を決める。  
 ルートで `mise install` を実行する。  
-MySQL 8.4 とテストは Docker を使う。
+PostgreSQL 18 とテストは Docker を使う。
 
 ## 設定
 
@@ -15,10 +15,10 @@ API とマイグレーションは、次の環境変数を読む。
 
 | 名前 | 必須 | 既定 | 中身 |
 | --- | --- | --- | --- |
-| `DB_HOST` | いいえ | `localhost` | MySQL のホスト |
-| `DB_PORT` | いいえ | `3306` | MySQL のポート |
-| `DB_USER` | はい | なし | MySQL の利用者 |
-| `DB_PASSWORD` | はい | なし | MySQL のパスワード |
+| `DB_HOST` | いいえ | `localhost` | PostgreSQL のホスト |
+| `DB_PORT` | いいえ | `5432` | PostgreSQL のポート |
+| `DB_USER` | はい | なし | PostgreSQL の利用者 |
+| `DB_PASSWORD` | はい | なし | PostgreSQL のパスワード |
 | `DB_NAME` | はい | なし | データベースの名前 |
 | `OIDC_ISSUER` | はい | なし | ブローカーの発行者の URL。トークンの `iss` と一致させ、`<OIDC_ISSUER>/.well-known/openid-configuration` から JWKS の場所を読む |
 | `OIDC_AUDIENCE` | はい | なし | トークンの `aud` に求める値 |
@@ -39,12 +39,11 @@ API の 8080 と偽物の発行者の 9000 は、ルートの compose の schedu
 compose を動かしているときは、重なる 2 つを `docker compose stop schedule-api idp` で止めてから実行する。
 
 ```sh
-export DB_HOST=127.0.0.1 DB_PORT=3306 DB_USER=buddy DB_NAME=buddy
+export DB_HOST=127.0.0.1 DB_PORT=5432 DB_USER=buddy DB_NAME=buddy
 export DB_PASSWORD=<手元で決めた値>
 
-docker run -d --rm --name buddy-db -p 3306:3306 \
-  -e MYSQL_DATABASE="$DB_NAME" -e MYSQL_USER="$DB_USER" -e MYSQL_PASSWORD="$DB_PASSWORD" \
-  -e MYSQL_RANDOM_ROOT_PASSWORD=yes mysql:8.4
+docker run -d --rm --name buddy-db -p 5432:5432 \
+  -e POSTGRES_DB="$DB_NAME" -e POSTGRES_USER="$DB_USER" -e POSTGRES_PASSWORD="$DB_PASSWORD" postgres:18.6
 
 go run ./cmd/migrate up
 go run ./cmd/migrate seed
@@ -82,7 +81,7 @@ migrate の CLI を直接使うときは、次のように実行する。
 
 ```sh
 migrate -path db/migrations \
-  -database "mysql://$DB_USER:$DB_PASSWORD@tcp($DB_HOST:$DB_PORT)/$DB_NAME?multiStatements=true" up
+  -database "pgx5://$DB_USER:$DB_PASSWORD@$DB_HOST:$DB_PORT/$DB_NAME" up
 ```
 
 新しいマイグレーションは `migrate create -ext sql -dir db/migrations -seq <名前>` で作る。  
@@ -97,7 +96,7 @@ go vet ./...
 golangci-lint run
 ```
 
-`go test ./...` は、リポジトリの結合テストのために、testcontainers-go で MySQL 8.4 のコンテナを起動する。  
+`go test ./...` は、リポジトリの結合テストのために、testcontainers-go で PostgreSQL 18 のコンテナを起動する。  
 `-short` を付けると、コンテナを使うテストを飛ばす。  
 テストと lint は `GOWORK=off` を付けて流す。  
 理由は [CONTRIBUTING.md](../../CONTRIBUTING.md) の「開発の準備」にある。
@@ -131,7 +130,7 @@ go generate ./...
 
 ### SQL を変えたとき
 
-クエリは `db/queries` に書き、sqlc が `internal/mysql/sqlcgen` に Go のコードを生成する。  
+クエリは `db/queries` に書き、sqlc が `internal/postgres/sqlcgen` に Go のコードを生成する。  
 生成したコードもコミットする。
 
 ```sh
@@ -155,7 +154,7 @@ docker build -f Dockerfile -t buddy-schedule-api ../..
 
 ## 認証
 
-認証から事業所の確認までの流れは、[DesignDoc.md](DesignDoc.md) の「認証から事業所の確認までの流れ」にある。`GET /healthz` と `GET /readyz` は認証を求めない。`/readyz` は、MySQL に届かなければ 503 を返す。
+認証から事業所の確認までの流れは、[DesignDoc.md](DesignDoc.md) の「認証から事業所の確認までの流れ」にある。`GET /healthz` と `GET /readyz` は認証を求めない。`/readyz` は、PostgreSQL に届かなければ 503 を返す。
 
 ## コードの層
 
