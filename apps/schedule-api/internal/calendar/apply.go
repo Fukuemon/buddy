@@ -34,6 +34,8 @@ type ScheduleStore interface {
 	GetForUpdate(ctx context.Context, id string) (schedule.Detail, error)
 	Update(ctx context.Context, s schedule.Schedule) error
 	CreateCancel(ctx context.Context, c schedule.Cancel) error
+	// ReplacementOf は、繰り返しの予定 recurringScheduleID の d の回を置き換えた単発の予定を返す。無いときは apperr.ErrNotFound を返す。
+	ReplacementOf(ctx context.Context, recurringScheduleID string, d civil.Date) (schedule.Detail, error)
 }
 
 // RecurringStore は、外部の繰り返しの予定の回の変更を当てる繰り返しの予定を読み書きする。
@@ -53,7 +55,8 @@ type VisitStore interface {
 
 // applier は、外部のカレンダーの予定の変更を、予定の対応の etag と更新の番号で比べ、buddy の予定に当てる。ADR-0009 の段階 3 の規則である。
 //   - 外部の予定の etag が予定の対応と同じなら、何もしない。buddy が書いた変更が増分に戻ってきたときもこれに当たる。
-//   - 外部の予定の内容が buddy の予定と同じなら、予定の対応を今の etag と更新の番号にする。
+//   - 外部の予定の内容が buddy の予定と同じなら、予定の対応を今の etag と更新の番号にする。buddy に比べない項目（説明）の
+//     書き出していない変更があれば、etag だけを進めて書き出させる。
 //   - buddy の予定の更新の番号が予定の対応と同じなら、外部だけが変わったので、外部の内容を buddy に当てる。
 //   - 両方が変わったか、外部の変更を buddy の予定に読み替えられないときは、書き出しの待ちを確かめが要る待ちにする。
 //
@@ -82,7 +85,7 @@ func (a applier) applyEvent(ctx context.Context, c ExternalCalendar, ev Event) e
 			return nil
 		}
 		if l.ScheduleID != nil {
-			return a.syncSchedule(ctx, l, ev)
+			return a.syncSchedule(ctx, c, l, ev)
 		}
 		return a.syncRecurring(ctx, l, ev)
 	case !errors.Is(err, apperr.ErrNotFound):
@@ -101,8 +104,8 @@ func (a applier) applyEvent(ctx context.Context, c ExternalCalendar, ev Event) e
 	return a.syncOccurrence(ctx, c, parent, ev)
 }
 
-// syncSchedule は、単発の予定に対応する外部の予定 ev の変更を当てる。
-func (a applier) syncSchedule(ctx context.Context, l Link, ev Event) error {
+// syncSchedule は、カレンダー c の単発の予定に対応する外部の予定 ev の変更を当てる。
+func (a applier) syncSchedule(ctx context.Context, c ExternalCalendar, l Link, ev Event) error {
 	d, err := a.schedules.GetForUpdate(ctx, *l.ScheduleID)
 	if err != nil {
 		return err
@@ -112,11 +115,8 @@ func (a applier) syncSchedule(ctx context.Context, l Link, ev Event) error {
 	if err != nil {
 		return err
 	}
-	if sameSchedule(d, ev) {
-		if err := a.calendars.UpdateLink(ctx, l.ID, ev.ETag, d.Version); err != nil {
-			return err
-		}
-		return a.resolve(ctx, open)
+	if sameSchedule(d, c.StaffID, ev) {
+		return a.sameContent(ctx, l, d.Version, ev, open)
 	}
 	if !synced(l, d.Version) {
 		code := ErrorPreconditionFailed
@@ -138,15 +138,15 @@ func (a applier) syncSchedule(ctx context.Context, l Link, ev Event) error {
 	return a.resolve(ctx, open)
 }
 
-// acceptSchedule は、予定の対応 l の単発の予定を、buddy での変更によらず外部の予定 ev の内容にする。トランザクションの中で呼ぶ。
-// 外部の変更を読み替えられないときは errUnappliable を返す。
-func (a applier) acceptSchedule(ctx context.Context, l Link, ev Event) error {
+// acceptSchedule は、カレンダー c の予定の対応 l の単発の予定を、buddy での変更によらず外部の予定 ev の内容にする。
+// トランザクションの中で呼ぶ。外部の変更を読み替えられないときは errUnappliable を返す。
+func (a applier) acceptSchedule(ctx context.Context, c ExternalCalendar, l Link, ev Event) error {
 	d, err := a.schedules.GetForUpdate(ctx, *l.ScheduleID)
 	if err != nil {
 		return err
 	}
 	version := d.Version
-	if !sameSchedule(d, ev) {
+	if !sameSchedule(d, c.StaffID, ev) {
 		if version, err = a.applySchedule(ctx, d, ev); err != nil {
 			return err
 		}
@@ -166,15 +166,8 @@ func (a applier) syncRecurring(ctx context.Context, l Link, ev Event) error {
 	if err != nil {
 		return err
 	}
-	same, err := a.sameRecurring(ctx, l, rs, ev)
-	if err != nil {
-		return err
-	}
-	if same {
-		if err := a.calendars.UpdateLink(ctx, l.ID, ev.ETag, rs.Version); err != nil {
-			return err
-		}
-		return a.resolve(ctx, open)
+	if sameRecurring(rs, ev) {
+		return a.sameContent(ctx, l, rs.Version, ev, open)
 	}
 	code := ErrorUnappliable
 	switch {
@@ -188,7 +181,8 @@ func (a applier) syncRecurring(ctx context.Context, l Link, ev Event) error {
 
 // syncOccurrence は、繰り返しの予定 parent の回で、まだ buddy の予定と対応の無い外部の例外の回 ev を当てる。
 // 取り消した回は、繰り返しの予定から除外する。変えた回は、元の回を除外し、回を置き換える単発の予定を作って対応を書く。
-// buddy でもその回を除外していれば、両方が変わったので、確かめが要る待ちにする。
+// buddy でもその回を除外していれば、変えた回は両方が変わったので、確かめが要る待ちにする。取り消した回は、buddy が置き換えた回を
+// まだ書き出していないときだけ、確かめが要る待ちにする。書き出した後なら、親の EXDATE が戻ってきたものとみなす。
 func (a applier) syncOccurrence(ctx context.Context, c ExternalCalendar, parent Link, ev Event) error {
 	rs, err := a.recurring.GetForUpdate(ctx, *parent.RecurringScheduleID)
 	if err != nil {
@@ -202,8 +196,15 @@ func (a applier) syncOccurrence(ctx context.Context, c ExternalCalendar, parent 
 	occurs := ok && rs.Occurs(date)
 	excluded := occurs && slices.Contains(rs.ExclusionDates, date)
 	if ev.Status == StatusCancelled {
-		if !occurs || excluded {
+		if !occurs {
 			return nil
+		}
+		if excluded {
+			pending, err := a.replacedUnexported(ctx, rs.ID, date)
+			if err != nil || !pending {
+				return err
+			}
+			return a.exports.Hold(ctx, a.ids.NewID(), t, ErrorPreconditionFailed)
 		}
 		if err := a.recurring.AddExclusion(ctx, rs.ID, date); err != nil {
 			return err
@@ -241,6 +242,26 @@ func (a applier) syncOccurrence(ctx context.Context, c ExternalCalendar, parent 
 	return a.syncedParent(ctx, parent, rs.Version)
 }
 
+// sameContent は、外部の予定 ev が buddy の予定を書き出した内容と同じときに、予定の対応 l を ev の etag にする。
+// buddy の更新の番号 version が対応と同じなら、対応の番号も進め、確かめが要る待ち open を終える。
+// 違えば、比べない項目（説明、繰り返しの除外の日）に書き出していない buddy の変更があるので、番号は進めず、
+// 確かめが要る待ちを書き直す待ちにして、buddy の変更を書き出させる。
+func (a applier) sameContent(ctx context.Context, l Link, version int, ev Event, open *Export) error {
+	if synced(l, version) || l.SyncedVersion == nil {
+		if err := a.calendars.UpdateLink(ctx, l.ID, ev.ETag, version); err != nil {
+			return err
+		}
+		return a.resolve(ctx, open)
+	}
+	if err := a.calendars.UpdateLink(ctx, l.ID, ev.ETag, *l.SyncedVersion); err != nil {
+		return err
+	}
+	if open != nil && open.InReview() {
+		return a.exports.Retry(ctx, open.ID)
+	}
+	return nil
+}
+
 // syncedParent は、外部の回を当てる前の繰り返しの予定の更新の番号 before が予定の対応と同じなら、予定の対応を今の更新の番号にする。
 // 外部の回を当てて増えた番号を、buddy の変更と見誤らないためである。
 func (a applier) syncedParent(ctx context.Context, parent Link, before int) error {
@@ -252,6 +273,26 @@ func (a applier) syncedParent(ctx context.Context, parent Link, before int) erro
 		return err
 	}
 	return a.calendars.UpdateLink(ctx, parent.ID, parent.ETag, rs.Version)
+}
+
+// replacedUnexported は、繰り返しの予定 recurringScheduleID の d の回を buddy で置き換えた単発の予定があり、
+// キャンセルしておらず、外部のカレンダーにまだ同じ内容で書き出していないかを返す。
+func (a applier) replacedUnexported(ctx context.Context, recurringScheduleID string, d civil.Date) (bool, error) {
+	r, err := a.schedules.ReplacementOf(ctx, recurringScheduleID, d)
+	if errors.Is(err, apperr.ErrNotFound) {
+		return false, nil
+	}
+	if err != nil || r.Cancel != nil {
+		return false, err
+	}
+	l, err := a.calendars.LinkBySchedule(ctx, r.ID)
+	if errors.Is(err, apperr.ErrNotFound) {
+		return true, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return !synced(l, r.Version), nil
 }
 
 // open は、t の終わっていない書き出しの待ちを返し、無ければ nil を返す。待ちを書いている処理があれば errExportWriting を返す。
@@ -274,7 +315,7 @@ func (a applier) resolve(ctx context.Context, open *Export) error {
 	if open == nil || !open.InReview() {
 		return nil
 	}
-	return a.exports.Resolve(ctx, open.ID)
+	return a.exports.Resolve(ctx, open.ID, open.Revision)
 }
 
 // applySchedule は、単発の予定 d を外部の予定 ev の内容にし、更新の後の更新の番号を返す。
@@ -455,33 +496,33 @@ func (a applier) version(ctx context.Context, id string) (int, error) {
 }
 
 // sameRecurring は、外部の繰り返しの予定 ev が、繰り返しの予定 rs を書き出した内容と同じかを返す。
-// RRULE と EXDATE は、両方を RecurrenceOf で同じ形にしてから比べる。
-func (a applier) sameRecurring(ctx context.Context, l Link, rs schedule.RecurringDetail, ev Event) (bool, error) {
+// RRULE は、両方を RecurrenceOf で同じ形にしてから比べる。EXDATE は比べない。外部で取り消した回は、親の EXDATE ではなく
+// 例外の回で来るので、buddy の除外の日と親の EXDATE は一致しないためである。回の変更は syncOccurrence が当てる。
+func sameRecurring(rs schedule.RecurringDetail, ev Event) bool {
 	if ev.Status == StatusCancelled {
-		return false, nil
+		return false
 	}
 	c := Classify(ev)
 	if c.Kind == KindSkipped || c.Date != rs.Date || c.StartTime != rs.StartTime || c.EndTime != rs.EndTime {
-		return false, nil
+		return false
 	}
-	exdates, err := exportedExclusions(ctx, a.calendars, a.schedules, l, rs.ExclusionDates)
-	if err != nil {
-		return false, err
-	}
-	want := RecurringBody(rs, exdates)
-	if ev.Summary != want.Summary {
-		return false, nil
+	if ev.Summary != RecurringBody(rs, nil).Summary {
+		return false
 	}
 	rec, err := RuleFromRecurrence(ev)
 	if err != nil {
-		return false, nil
+		return false
 	}
-	got := RecurrenceOf(schedule.RecurringSchedule{Slot: rs.Slot, Rule: rec.Rule}, rec.ExclusionDates)
-	return slices.Equal(got, want.Recurrence), nil
+	got := RecurrenceOf(schedule.RecurringSchedule{Slot: rs.Slot, Rule: rec.Rule}, nil)
+	return slices.Equal(got, RecurrenceOf(rs.RecurringSchedule, nil))
 }
 
-// sameSchedule は、外部の予定 ev が、単発の予定 d を書き出した内容と同じかを返す。説明は比べない。
-func sameSchedule(d schedule.Detail, ev Event) bool {
+// sameSchedule は、職員 staffID のカレンダーの外部の予定 ev が、単発の予定 d を書き出した内容と同じかを返す。
+// buddy で職員を替えた予定は、前の職員のカレンダーの予定と同じとみなさない。説明は比べない。
+func sameSchedule(d schedule.Detail, staffID string, ev Event) bool {
+	if d.StaffID != staffID {
+		return false
+	}
 	if ev.Status == StatusCancelled {
 		return d.Cancel != nil
 	}

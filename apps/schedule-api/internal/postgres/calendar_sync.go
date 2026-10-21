@@ -42,6 +42,10 @@ func (r *CalendarSyncRepository) Claim(ctx context.Context, max int, lease time.
 			SyncToken:  deref(row.SyncToken),
 			LastStatus: calendar.SyncStatus(row.LastStatus),
 		}
+		if row.LastError != nil {
+			code := calendar.SyncErrorCode(*row.LastError)
+			out[i].LastError = &code
+		}
 		if row.LockedUntil != nil {
 			out[i].LockedUntil = *row.LockedUntil
 		}

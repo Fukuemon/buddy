@@ -102,11 +102,19 @@ type ExportResult struct {
 // 予定の題名と利用者名は持たない。
 type ExportIssue struct {
 	Export
+	// Cancelled は、単発の予定が buddy でキャンセルされているかである。
+	Cancelled bool
 	StaffID   string
 	StaffName string
 	Date      civil.Date
 	StartTime civil.Time
 	EndTime   civil.Time
+}
+
+// Acceptable は、外部のカレンダーの内容を buddy の予定に当てて、待ちを解けるかを返す。
+// buddy でキャンセルした予定は、外部の内容に戻せないので当たらない。
+func (i ExportIssue) Acceptable() bool {
+	return i.Export.Acceptable() && !i.Cancelled
 }
 
 // ExportRepository は、書き出しの待ちを読み書きする。見つからないときは apperr.ErrNotFound を返す。
@@ -131,8 +139,8 @@ type ExportRepository interface {
 	// Revision を 1 つ増やし、書いている処理の結果を捨てさせる。
 	Hold(ctx context.Context, id string, t Target, code ExportErrorCode) error
 	// Resolve は、確かめが要る待ち id を、外部のカレンダーの内容を buddy に当てて終えた待ちにする。
-	// 確かめが要る待ちでなければ apperr.ErrConflict を返す。
-	Resolve(ctx context.Context, id string) error
+	// 確かめが要る待ちでないか、Revision が revision でない（読んだ後に積み直されたか保留し直された）ときは apperr.ErrConflict を返す。
+	Resolve(ctx context.Context, id string, revision int) error
 }
 
 // ExportCalendars は、書き出しの待ちを積むかを決めるために、職員のカレンダーと予定の対応を読む。

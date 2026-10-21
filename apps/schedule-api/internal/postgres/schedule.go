@@ -76,6 +76,17 @@ func (r *ScheduleRepository) GetForUpdate(ctx context.Context, id string) (sched
 	return r.Get(ctx, id)
 }
 
+// ReplacementOf は、繰り返しの予定 recurringScheduleID の d の回を置き換えた単発の予定を返す。無いときは apperr.ErrNotFound を返す。
+func (r *ScheduleRepository) ReplacementOf(ctx context.Context, recurringScheduleID string, d civil.Date) (schedule.Detail, error) {
+	id, err := r.q(ctx).GetReplacingScheduleID(ctx, sqlcgen.GetReplacingScheduleIDParams{
+		RecurringScheduleID: &recurringScheduleID, OriginalDate: ptr(d.Time()),
+	})
+	if err != nil {
+		return schedule.Detail{}, translate("get replacing schedule", err)
+	}
+	return r.Get(ctx, id)
+}
+
 // Update は、ID が s.ID の予定の枠を s の値で上書きする。事業所と、RecurringScheduleID と OriginalDate は変えない。予定が無くてもエラーにしない。
 // 参照先（職員、予定の種類、訪問の情報）が無いか、値が列の制約に合わないときは apperr.ErrInvalidInput のエラーを返す。
 func (r *ScheduleRepository) Update(ctx context.Context, s schedule.Schedule) error {

@@ -190,6 +190,22 @@ func (q *Queries) GetRecurringScheduleDetail(ctx context.Context, id string) (Re
 	return i, err
 }
 
+const getReplacingScheduleID = `-- name: GetReplacingScheduleID :one
+SELECT id FROM schedules WHERE recurring_schedule_id = $1 AND original_date = $2
+`
+
+type GetReplacingScheduleIDParams struct {
+	RecurringScheduleID *string
+	OriginalDate        *time.Time
+}
+
+func (q *Queries) GetReplacingScheduleID(ctx context.Context, arg GetReplacingScheduleIDParams) (string, error) {
+	row := q.db.QueryRow(ctx, getReplacingScheduleID, arg.RecurringScheduleID, arg.OriginalDate)
+	var id string
+	err := row.Scan(&id)
+	return id, err
+}
+
 const getScheduleDetail = `-- name: GetScheduleDetail :one
 SELECT id, facility_id, schedule_type_id, schedule_type_code, schedule_type_name, date, start_time, end_time, is_over_time_work, staff_id, staff_name, title, description, recurring_schedule_id, original_date, visit_info_id, patient_id, patient_name, assigned_staff_id, assigned_staff_name, companion_id, companion_name, service_code_id, service_code, cancel_id, cancel_reason, created_at, updated_at, version FROM schedule_details WHERE id = $1
 `

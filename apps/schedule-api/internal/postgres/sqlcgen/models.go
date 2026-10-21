@@ -43,7 +43,7 @@ type CalendarSyncState struct {
 	SyncToken *string
 	// never、succeeded、failed
 	LastStatus string
-	// 最後の失敗の理由。unreadable（共有が無い）か unavailable（届かない）。外部の予定の題名とカレンダーの ID を含めない
+	// 最後の失敗の理由。unreadable（共有が無い）、unavailable（届かない）、apply（予定を当てられない）。外部の予定の題名とカレンダーの ID を含めない
 	LastError    *string
 	LastSyncedAt *time.Time
 	CreatedAt    time.Time

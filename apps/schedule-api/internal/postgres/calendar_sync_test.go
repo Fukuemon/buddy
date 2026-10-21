@@ -116,13 +116,17 @@ func TestCalendarExportHoldAndResolve(t *testing.T) {
 		t.Errorf("終わっていない待ちがあるのに足した: %v", err)
 	}
 
-	if err := r.Resolve(ctx, exportID); err != nil {
+	// 読んだ後に保留し直された待ちは終えない
+	if err := r.Resolve(ctx, exportID, 1); !errors.Is(err, apperr.ErrConflict) {
+		t.Errorf("古い revision で解く: err = %v", err)
+	}
+	if err := r.Resolve(ctx, exportID, 2); err != nil {
 		t.Fatal(err)
 	}
 	if e, _ := r.Get(ctx, exportID); e.Status != calendar.ExportSucceeded {
 		t.Errorf("解いた待ち = %+v", e)
 	}
-	if err := r.Resolve(ctx, exportID); !errors.Is(err, apperr.ErrConflict) {
+	if err := r.Resolve(ctx, exportID, 2); !errors.Is(err, apperr.ErrConflict) {
 		t.Errorf("解いた待ちをもう一度解く: err = %v", err)
 	}
 
@@ -190,7 +194,7 @@ func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
 		t.Fatal(err)
 	}
 	syncer := calendar.NewSyncer(calendar.SyncerDeps{
-		Syncs: NewCalendarSyncRepository(testDB), Calendars: calendars, Exports: NewCalendarExportRepository(testDB), Source: source,
+		Syncs: NewCalendarSyncRepository(testDB), Calendars: calendars, Exports: NewCalendarExportRepository(testDB), Sources: func(context.Context, string) (calendar.EventSource, error) { return source, nil },
 		Schedules: schedules, Recurring: recurring, Types: types, Patients: patients, ServiceCodes: masters, Visits: visits,
 	}, tx, ids, 0, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	sync := func() {

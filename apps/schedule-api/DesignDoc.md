@@ -364,7 +364,7 @@ sequenceDiagram
   participant s as 同期の処理
   participant db as PostgreSQL
   participant g as Google Calendar API
-  loop GOOGLE_CALENDAR_SYNC_INTERVAL ごと
+  loop 読む時刻を過ぎたカレンダーがあるかを、5 秒ごとに確かめる
     s->>db: 読む時刻を過ぎたカレンダーを取る（calendar_sync_states の行のロックと期限）
     s->>g: events.list（syncToken。無いか 410 なら、消した予定を含む全件）
     loop 変わった予定ごとに 1 つのトランザクション
@@ -380,12 +380,12 @@ sequenceDiagram
 ```
 
 - 同期は、`GOOGLE_CALENDAR_SYNC_ENABLED` が `true` のときだけ動く。既定は `false` である。書き出し（`GOOGLE_CALENDAR_EXPORT_ENABLED`）を有効にしないと有効にできない。buddy の変更を書き出さずに Google の変更だけを当てると、buddy で変えた予定が全て両側の変更になるためである。
-- 同期の処理は、書き出しと同じく API のプロセスのゴルーチンで動く。外していないカレンダーを、`FOR UPDATE SKIP LOCKED` と期限（`locked_until`、6 分）で 5 件ずつ取り、1 件を 1 分で打ち切る。結果は、取ったときの期限と比べて書き、期限が切れた後にほかのレプリカが取り直したカレンダーを変えない。
+- 同期の処理は、書き出しと同じく API のプロセスのゴルーチンで動く。読む時刻（`next_sync_at`）を過ぎたカレンダーがあるかを 5 秒（間隔がそれより短ければ間隔）ごとに確かめる。読み終えたカレンダーの読む時刻は、`GOOGLE_CALENDAR_SYNC_INTERVAL` の後である。外していないカレンダーを、`FOR UPDATE SKIP LOCKED` と期限（`locked_until`、6 分）で 5 件ずつ取り、1 件を 1 分で打ち切る。結果は、取ったときの期限と比べて書き、期限が切れた後にほかのレプリカが取り直したカレンダーを変えない。
 - 増分の取得: `events.list` に `syncToken` を付けて、前の後に変わった予定を、消した予定と繰り返しの例外の回を含めて読む。トークンが無いときと、Google が 410 を返したときは、`showDeleted=true` で全ての予定を読み直す。`syncToken` と期間は一緒に渡せないので、カレンダー全体を読む。
-- 予定を当てられなかったときは、トークンを進めずに返し、次に同じ予定から読み直す。予定の対応の etag と比べるので、読み直しても同じ変更を 2 回は当てない。
+- 予定を当てられなかったときは、トークンを進めずに返し、次に同じ予定から読み直す。同期の状態は `failed`（`apply`）にする。予定の対応の etag と比べるので、読み直しても同じ変更を 2 回は当てない。
 - 当て方（`calendar.applier`）
   - 予定の対応の etag が Google の予定と同じなら、何もしない。buddy が書いた変更が増分に戻ってきたとき（エコー）もこれに当たる。
-  - Google の予定の内容（題名、日付、時刻）が buddy の予定を書き出した内容と同じなら、予定の対応を今の etag と更新の番号にするだけにする。書き出しの処理が予定の対応を書く前に、書いた予定が増分に戻ってきたときに当たる。
+  - Google の予定の内容（題名、日付、時刻と、予定の職員のカレンダー）が buddy の予定を書き出した内容と同じなら、予定の対応を今の etag と更新の番号にするだけにし、確かめが要る待ちがあれば終える。buddy の更新の番号が対応と違えば、比べない項目（説明、繰り返しの除外の日）に書き出していない buddy の変更があるので、etag だけを進め、確かめが要る待ちを書き直す待ちにする。
   - 予定の書き出しの待ちを書き出しの処理が持っている間（`locked_until` の前）は、カレンダーを 5 秒後に読み直す。etag を書く前のエコーを、両側の変更と見誤らないためである。
   - buddy の予定の更新の番号が予定の対応の `synced_version` と同じなら、Google だけが変わったので、Google の内容を buddy に当てる。当てた予定は書き出しの待ちに積まない。
   - 両方が変わったときは、書き出しの待ちを `conflict`（`precondition_failed`、消された予定は `not_found`）にする。待ちが無ければ足す。書いている処理の結果を捨てさせるため、`revision` を 1 つ増やす。
@@ -395,14 +395,17 @@ sequenceDiagram
   - 通常の予定は、題名をタイトルにする。訪問の予定は、題名のサービス内容と利用者名が前と同じなら訪問の情報を残し、違えば取り込みと同じ規則でサービスコードと利用者を引いて、訪問の情報を作り直す。主訪問者、同行者、訪問の区分は前のままにする。利用者を 1 人に引けなければ読み替えられない。
   - Google で消された予定は、理由を「Google カレンダーで消されました」にしてキャンセルする。buddy でキャンセルした予定を Google で戻しても、buddy には戻さない（読み替えられない）。
 - 繰り返しの予定
-  - 予定の対応が無く、親の予定の対応が繰り返しの予定を指す例外の回は、buddy の回の変更として当てる。取り消した回は除外の日にする。変えた回は、元の回を除外し、元の回の日付を持つ単発の予定を作って、例外の回との対応を書く。親の予定の対応の `synced_version` も進め、当てた変更を buddy の変更と見誤らないようにする。
-  - buddy でもその回を除外していれば、両方が変わったので、繰り返しの予定の待ちを `conflict`（`precondition_failed`）にする。
-  - 親の予定そのもの（規則、時刻、題名）の変更と削除は、buddy に当てない。書き出した内容と同じでなければ、`conflict`（`unappliable`、消されたときは `not_found`。buddy でも変えていれば `precondition_failed`）にする。規則は、両方を `RecurrenceOf` で同じ形にしてから比べる。
+  - 予定の対応が無く、親の予定の対応が繰り返しの予定を指す例外の回は、buddy の回の変更として当てる。元の日付が規則の回に当たらない取り消しは何もせず、変更は `conflict`（`unappliable`）にする。取り消した回は除外の日にする。変えた回は、元の回を除外し、元の回の日付を持つ単発の予定を作って、例外の回との対応を書く。当てる前に親の予定の対応が buddy と同じ（`synced_version` が更新の番号と同じ）なら、対応の `synced_version` も進め、当てた変更を buddy の変更と見誤らないようにする。
+  - buddy でもその回を除外していれば、変えた回は両方が変わったので、繰り返しの予定の待ちを `conflict`（`precondition_failed`）にする。取り消した回は、buddy が置き換えた単発の予定をまだ書き出していないときだけ `conflict` にし、書き出した後なら何もしない。書き出した親の `EXDATE` が、取り消した回として戻ってくることがあるためである。
+  - 親の予定そのもの（規則、時刻、題名）の変更と削除は、buddy に当てない。書き出した内容と同じでなければ、`conflict`（`unappliable`、消されたときは `not_found`。buddy でも変えていれば `precondition_failed`）にする。規則は、両方を `RecurrenceOf` で同じ形にしてから比べる。`EXDATE` は比べない。Google で取り消した回は親の `EXDATE` ではなく例外の回で来るので、buddy の除外の日と親の `EXDATE` は一致しないためである。
 - 予定の対応の無い予定は当てない。Google で新しく作った予定は、取り込みで buddy に移す。
 - 確かめが要る待ちの解き方
   - 「buddy の内容で書き直す」（`createCalendarExportRetry`）は、書き出しと同じく `If-Match` を付けずに書き直す。
-  - 「Google の内容に合わせる」（`createCalendarExportAcceptance`）は、単発の予定で、理由が `precondition_failed` か `not_found` の待ちだけに使える。Google の今の予定を `events.get` で読み、buddy の予定に当てて、待ちを終える（`succeeded`）。読み替えられなければ 409（`external_change_unappliable`）を返す。
-- カレンダーの同期の状態（`calendar_sync_states`）は、最後の結果（`never`、`succeeded`、`failed`）と、失敗の理由を決まった値（`unreadable`、`unavailable`）で持つ。ログと理由に、予定の題名、利用者名、カレンダーの ID を出さない。
+  - 「Google の内容に合わせる」（`createCalendarExportAcceptance`）は、単発の予定で、理由が `precondition_failed` か `not_found` の待ちだけに使える。buddy でキャンセルした予定には使えない（`acceptable` が false）。Google の今の予定を `events.get` で読み、buddy の予定に当てて、待ちを終える（`succeeded`）。読み替えられなければ 409（`external_change_unappliable`）を返す。
+  - Google が予定に 404 を返し、カレンダーは読めるときは、予定が消されたとみなしてキャンセルする。
+  - 予定の行をロックしてから Google の予定を読む。同期の処理も同じ行をロックするので、読んだ後に Google で変わった予定は、同期が後で比べて当てるか、確かめが要る待ちにする。
+  - buddy で職員を替えた予定は、合わせた後に書き出しの待ちを積み直し、今の職員のカレンダーへ移させる。
+- カレンダーの同期の状態（`calendar_sync_states`）は、最後の結果（`never`、`succeeded`、`failed`）と、失敗の理由を決まった値（`unreadable`、`unavailable`、`apply`）で持つ。ログと理由に、予定の題名、利用者名、カレンダーの ID を出さない。
 
 ## Interface
 

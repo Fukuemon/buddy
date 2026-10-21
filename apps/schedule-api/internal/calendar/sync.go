@@ -20,6 +20,8 @@ const (
 	syncLease = 6 * time.Minute
 	// syncRetryAfter は、予定を書いている書き出しの処理を待って、カレンダーを読み直すまでの時間である。
 	syncRetryAfter = 5 * time.Second
+	// syncPollTick は、読む時刻を過ぎたカレンダーがあるかを確かめる間隔の上限である。読む間隔は、カレンダーごとの読む時刻で決まる。
+	syncPollTick = 5 * time.Second
 )
 
 // SyncStatus は、カレンダーの最後の同期の結果である。
@@ -41,6 +43,8 @@ const (
 	SyncUnreadable SyncErrorCode = "unreadable"
 	// SyncUnavailable は、外部のカレンダーに届かないか、外部のカレンダーが誤りを返したことを表す。
 	SyncUnavailable SyncErrorCode = "unavailable"
+	// SyncApplyFailed は、読んだ予定を buddy に当てられず、トークンを進めなかったことを表す。
+	SyncApplyFailed SyncErrorCode = "apply"
 )
 
 // SyncState は、同期の処理が取った 1 つのカレンダーと、その同期の状態である。
@@ -49,6 +53,7 @@ type SyncState struct {
 	// SyncToken は、次の増分の取得に使うトークンで、全ての予定を読むときは空である。
 	SyncToken  string
 	LastStatus SyncStatus
+	LastError  *SyncErrorCode
 	// LockedUntil は、取ったときに決めた期限である。結果を書くときに、ほかの処理が取り直していないかを比べる。
 	LockedUntil time.Time
 }
@@ -70,12 +75,15 @@ type SyncRepository interface {
 	Finish(ctx context.Context, s SyncState, r SyncResult) error
 }
 
-// SyncerDeps は、Syncer が使うリポジトリと、外部のカレンダーを読む EventSource である。
+// SourceFor は、事業所 facilityID の外部のカレンダーを読む EventSource を返す。
+type SourceFor func(ctx context.Context, facilityID string) (EventSource, error)
+
+// SyncerDeps は、Syncer が使うリポジトリと、外部のカレンダーを読む EventSource を事業所ごとに返す Sources である。
 type SyncerDeps struct {
 	Syncs        SyncRepository
 	Calendars    Repository
 	Exports      ExportRepository
-	Source       EventSource
+	Sources      SourceFor
 	Schedules    ScheduleStore
 	Recurring    RecurringStore
 	Types        Types
@@ -106,9 +114,10 @@ func NewSyncer(deps SyncerDeps, tx tx.Transactor, ids kernel.IDGenerator, interv
 	}
 }
 
-// Run は、ctx が終わるまで、tick ごとに、読む時刻を過ぎたカレンダーを全て同期する。
-func (s *Syncer) Run(ctx context.Context, tick time.Duration) {
-	t := time.NewTicker(tick)
+// Run は、ctx が終わるまで、読む時刻を過ぎたカレンダーを全て同期する。読む時刻は、カレンダーを読み終えた時刻に
+// interval を足した時刻で、確かめる間隔は interval と syncPollTick の短い方である。
+func (s *Syncer) Run(ctx context.Context) {
+	t := time.NewTicker(min(s.interval, syncPollTick))
 	defer t.Stop()
 	for {
 		for {
@@ -141,7 +150,7 @@ func (s *Syncer) SyncDue(ctx context.Context) (int, error) {
 		cancel()
 		// 止める合図で終えられなかったカレンダーは、前の状態のまま返し、次に起動したときにすぐ読む。
 		if ctx.Err() != nil {
-			r = SyncResult{SyncToken: st.SyncToken, Status: st.LastStatus}
+			r = SyncResult{SyncToken: st.SyncToken, Status: st.LastStatus, ErrorCode: st.LastError}
 		}
 		// 取ったカレンダーは、ctx が終わっても結果を書き、lease の間ほかの処理が読めないままにしない。
 		if err := s.deps.Syncs.Finish(context.WithoutCancel(ctx), st, r); err != nil {
@@ -155,12 +164,16 @@ func (s *Syncer) SyncDue(ctx context.Context) (int, error) {
 // 当てられなかった予定があれば、トークンを進めずに返し、次に同じ予定から読み直す。
 func (s *Syncer) sync(ctx context.Context, st SyncState) SyncResult {
 	attrs := []any{slog.String("external_calendar_id", st.Calendar.ID)}
-	ch, err := s.deps.Source.Changes(ctx, st.Calendar.CalendarID, st.SyncToken)
 	token := st.SyncToken
+	src, err := s.deps.Sources(ctx, st.Calendar.FacilityID)
+	var ch Changes
+	if err == nil {
+		ch, err = src.Changes(ctx, st.Calendar.CalendarID, token)
+	}
 	if errors.Is(err, ErrSyncTokenExpired) {
 		s.log.InfoContext(ctx, "calendar sync token expired", attrs...)
 		token = ""
-		ch, err = s.deps.Source.Changes(ctx, st.Calendar.CalendarID, "")
+		ch, err = src.Changes(ctx, st.Calendar.CalendarID, "")
 	}
 	if err != nil {
 		s.log.WarnContext(ctx, "calendar sync failed", append(attrs, slog.Any("error", err))...)
@@ -175,11 +188,12 @@ func (s *Syncer) sync(ctx context.Context, st SyncState) SyncResult {
 			return s.apply.applyEvent(ctx, st.Calendar, ev)
 		})
 		if errors.Is(err, errExportWriting) {
-			return SyncResult{SyncToken: token, Status: st.LastStatus, After: syncRetryAfter}
+			return SyncResult{SyncToken: token, Status: st.LastStatus, ErrorCode: st.LastError, After: syncRetryAfter}
 		}
 		if err != nil {
-			s.log.ErrorContext(ctx, "calendar sync failed", append(attrs, slog.Any("error", err))...)
-			return SyncResult{SyncToken: token, Status: SyncFailed, After: s.interval}
+			s.log.ErrorContext(ctx, "calendar sync failed", append(attrs, slog.String("event_id", ev.ID), slog.Any("error", err))...)
+			code := SyncApplyFailed
+			return SyncResult{SyncToken: token, Status: SyncFailed, ErrorCode: &code, After: s.interval}
 		}
 	}
 	return SyncResult{SyncToken: ch.NextSyncToken, Status: SyncSucceeded, After: s.interval}

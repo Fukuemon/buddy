@@ -139,6 +139,7 @@ func (r *CalendarExportRepository) ListIssues(ctx context.Context, facilityID st
 				Status: row.Status, Revision: row.Revision, Attempts: row.Attempts, NextAttemptAt: row.NextAttemptAt,
 				Overwrite: row.Overwrite, ErrorCode: row.ErrorCode, UpdatedAt: row.UpdatedAt,
 			}),
+			Cancelled: row.Cancelled,
 			StaffID:   row.StaffID,
 			StaffName: row.StaffName,
 			Date:      civil.DateOf(row.Date),
@@ -191,9 +192,13 @@ func (r *CalendarExportRepository) Hold(ctx context.Context, id string, t calend
 	}))
 }
 
-// Resolve は、確かめが要る待ち id を終えた待ちにする。確かめが要る待ちでなければ apperr.ErrConflict を返す。
-func (r *CalendarExportRepository) Resolve(ctx context.Context, id string) error {
-	n, err := r.q(ctx).ResolveCalendarExport(ctx, id)
+// Resolve は、確かめが要る待ち id を終えた待ちにする。確かめが要る待ちでないか、Revision が revision でなければ apperr.ErrConflict を返す。
+func (r *CalendarExportRepository) Resolve(ctx context.Context, id string, revision int) error {
+	rev, err := int32Of(revision)
+	if err != nil {
+		return err
+	}
+	n, err := r.q(ctx).ResolveCalendarExport(ctx, sqlcgen.ResolveCalendarExportParams{ID: id, Revision: rev})
 	if err != nil {
 		return translate("resolve calendar export", err)
 	}

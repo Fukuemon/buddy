@@ -176,12 +176,14 @@ func run() error {
 	}
 	if svc != nil && cfg.Calendar.SyncEnabled {
 		syncer := calendar.NewSyncer(calendar.SyncerDeps{
-			Syncs: postgres.NewCalendarSyncRepository(db), Calendars: calendars, Exports: exports, Source: source,
+			Syncs: postgres.NewCalendarSyncRepository(db), Calendars: calendars, Exports: exports,
+			// 今はサービスアカウントが 1 つなので、全ての事業所で同じ source を使う
+			Sources:   func(context.Context, string) (calendar.EventSource, error) { return source, nil },
 			Schedules: schedules, Recurring: recurring, Types: scheduleTypes, Patients: patients, ServiceCodes: visitMasters, Visits: visitInfos,
 		}, tx, ids, cfg.Calendar.SyncInterval, log)
 		go func() {
 			defer close(syncerDone)
-			syncer.Run(ctx, cfg.Calendar.SyncInterval)
+			syncer.Run(ctx)
 		}()
 	} else {
 		close(syncerDone)

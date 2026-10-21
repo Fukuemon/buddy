@@ -561,8 +561,9 @@ func (u *Usecase) RetryExport(ctx context.Context, id string) (Export, error) {
 }
 
 // AcceptExport は、確かめが要る書き出し id の予定を、buddy での変更によらず外部のカレンダーの今の内容にし、待ちを終えて返す。
-// 外部のカレンダーで消された予定は、キャンセルする。
-// 待ちが見つからないときは apperr.ErrNotFound を、確かめが要る待ちでないときと、外部の内容を当てられない待ちのとき、
+// 外部のカレンダーで消された予定は、キャンセルする。予定の職員が、外部の予定のカレンダーの職員と違えば、書き出しの待ちを積み直し、
+// 今の職員のカレンダーへ移させる。
+// 待ちが見つからないときは apperr.ErrNotFound を、確かめが要る待ちでないとき、外部の内容を当てられない待ちのとき、
 // 外部の予定を buddy の予定に読み替えられないときは apperr.ErrConflict を返す。外部のカレンダーを読めないときは Preview と同じである。
 func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 	if err := u.guard(ctx); err != nil {
@@ -576,6 +577,12 @@ func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 		return Export{}, errNotInReview
 	}
 	if !e.Acceptable() {
+		return Export{}, errNotAcceptable
+	}
+	// buddy でキャンセルした予定は、外部の内容に戻せない。
+	if d, err := u.deps.Schedules.Get(ctx, e.ScheduleID); err != nil {
+		return Export{}, err
+	} else if d.Cancel != nil {
 		return Export{}, errNotAcceptable
 	}
 	if u.deps.Source == nil {
@@ -592,12 +599,27 @@ func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 	if err != nil {
 		return Export{}, err
 	}
-	ev, err := u.deps.Source.Event(ctx, c.CalendarID, l.ExternalEventID)
-	if err != nil {
-		return Export{}, err
-	}
 	err = u.tx.WithinTx(ctx, func(ctx context.Context) error {
-		err := u.apply.acceptSchedule(ctx, l, ev)
+		// 予定の行をロックしてから Google の予定を読む。同期の処理も同じ行をロックして Google の変更を当てるので、
+		// 読んだ後に Google で変わった予定は、同期が後で比べて当てるか確かめが要る待ちにする。
+		if _, err := u.deps.Schedules.GetForUpdate(ctx, e.ScheduleID); err != nil {
+			return err
+		}
+		cur, err := u.deps.Exports.Get(ctx, id)
+		if err != nil {
+			return err
+		}
+		if !cur.InReview() {
+			return errNotInReview
+		}
+		ev, err := u.externalEvent(ctx, c, l)
+		if err != nil {
+			return err
+		}
+		if err := u.deps.Exports.Resolve(ctx, id, cur.Revision); err != nil {
+			return err
+		}
+		err = u.apply.acceptSchedule(ctx, c, l, ev)
 		if errors.Is(err, errUnappliable) {
 			return apperr.ConflictCode(CodeExternalChangeUnappliable,
 				"Google カレンダーの予定を、buddy の予定に読み替えられません。buddy の内容で書き直してください")
@@ -605,18 +627,29 @@ func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 		if err != nil {
 			return err
 		}
-		// 待ちを読んだ後に、ほかの職員が解いていれば、予定を変えずに戻す。
-		if err := u.deps.Exports.Resolve(ctx, id); errors.Is(err, apperr.ErrConflict) {
-			return errNotInReview
-		} else if err != nil {
+		d, err := u.deps.Schedules.Get(ctx, e.ScheduleID)
+		if err != nil || d.StaffID == c.StaffID {
 			return err
 		}
-		return nil
+		return u.deps.Exports.Enqueue(ctx, u.ids.NewID(), e.Target)
 	})
 	if err != nil {
 		return Export{}, err
 	}
 	return u.deps.Exports.Get(ctx, id)
+}
+
+// externalEvent は、予定の対応 l の外部の予定を読む。予定が見つからず、カレンダーは読めるときは、予定が消されたとみなし、
+// 取り消した予定を返す。Google は、消した予定に 404 を返すことがあるためである。
+func (u *Usecase) externalEvent(ctx context.Context, c ExternalCalendar, l Link) (Event, error) {
+	ev, err := u.deps.Source.Event(ctx, c.CalendarID, l.ExternalEventID)
+	if !errors.Is(err, ErrUnreadable) {
+		return ev, err
+	}
+	if cerr := u.deps.Source.Check(ctx, c.CalendarID); cerr != nil {
+		return Event{}, err
+	}
+	return Event{ID: l.ExternalEventID, Status: StatusCancelled, ETag: l.ETag}, nil
 }
 
 var (

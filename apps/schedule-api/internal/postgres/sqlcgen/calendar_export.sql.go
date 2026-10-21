@@ -273,12 +273,14 @@ func (q *Queries) HoldScheduleExport(ctx context.Context, arg HoldScheduleExport
 
 const listCalendarExportIssues = `-- name: ListCalendarExportIssues :many
 SELECT e.id, e.facility_id, e.schedule_id, e.recurring_schedule_id, e.status, e.revision, e.attempts, e.next_attempt_at, e.locked_until, e.overwrite, e.error_code, e.finished_at, e.created_at, e.updated_at,
+       (sc.id IS NOT NULL)::boolean AS cancelled,
        u.id AS staff_id, u.username AS staff_name,
        COALESCE(s.date, rs.date)::date AS date,
        COALESCE(s.start_time, rs.start_time)::time AS start_time,
        COALESCE(s.end_time, rs.end_time)::time AS end_time
 FROM calendar_exports e
 LEFT JOIN schedules s ON s.id = e.schedule_id
+LEFT JOIN schedule_cancels sc ON sc.schedule_id = e.schedule_id
 LEFT JOIN recurring_schedules rs ON rs.id = e.recurring_schedule_id
 JOIN users u ON u.id = COALESCE(s.staff_id, rs.staff_id)
 WHERE e.facility_id = $1 AND e.status IN ('conflict', 'failed')
@@ -300,6 +302,7 @@ type ListCalendarExportIssuesRow struct {
 	FinishedAt          *time.Time
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
+	Cancelled           bool
 	StaffID             string
 	StaffName           string
 	Date                time.Time
@@ -332,6 +335,7 @@ func (q *Queries) ListCalendarExportIssues(ctx context.Context, facilityID strin
 			&i.FinishedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Cancelled,
 			&i.StaffID,
 			&i.StaffName,
 			&i.Date,
@@ -367,12 +371,17 @@ func (q *Queries) ReleaseCalendarExport(ctx context.Context, arg ReleaseCalendar
 const resolveCalendarExport = `-- name: ResolveCalendarExport :execrows
 UPDATE calendar_exports
 SET status = 'succeeded', error_code = NULL, overwrite = false, locked_until = NULL, finished_at = now()
-WHERE id = $1 AND status IN ('conflict', 'failed')
+WHERE id = $1 AND revision = $2 AND status IN ('conflict', 'failed')
 `
 
-// 外部の内容を buddy に当てた、確かめが要る待ちを終える。
-func (q *Queries) ResolveCalendarExport(ctx context.Context, id string) (int64, error) {
-	result, err := q.db.Exec(ctx, resolveCalendarExport, id)
+type ResolveCalendarExportParams struct {
+	ID       string
+	Revision int32
+}
+
+// 外部の内容を buddy に当てた、確かめが要る待ちを終える。読んだ後に積み直されたか保留し直された待ちは終えない。
+func (q *Queries) ResolveCalendarExport(ctx context.Context, arg ResolveCalendarExportParams) (int64, error) {
+	result, err := q.db.Exec(ctx, resolveCalendarExport, arg.ID, arg.Revision)
 	if err != nil {
 		return 0, err
 	}

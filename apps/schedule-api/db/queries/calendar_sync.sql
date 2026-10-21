@@ -18,7 +18,7 @@ WHERE c.id = s.external_calendar_id AND s.external_calendar_id IN (
     LIMIT sqlc.arg(max_count)
     FOR UPDATE OF s2 SKIP LOCKED
 )
-RETURNING s.external_calendar_id AS id, s.sync_token, s.last_status, s.locked_until,
+RETURNING s.external_calendar_id AS id, s.sync_token, s.last_status, s.last_error, s.locked_until,
           c.facility_id, c.staff_id, c.provider, c.external_calendar_id AS calendar_id;
 
 -- name: FinishCalendarSync :execrows

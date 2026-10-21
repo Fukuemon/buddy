@@ -1,6 +1,7 @@
 package calendar_test
 
 import (
+	"context"
 	"errors"
 	"io"
 	"log/slog"
@@ -38,10 +39,14 @@ func newSyncEnv(t *testing.T) syncEnv {
 		Schedules: inmem.Schedules{Store: s}, Types: inmem.ScheduleTypes{Store: s},
 	}, &inmem.Tx{}, ids, principal.RequireStaffManage)
 	syncer := calendar.NewSyncer(calendar.SyncerDeps{
-		Syncs: inmem.Syncs{Store: s}, Calendars: inmem.Calendars{Store: s}, Exports: inmem.Exports{Store: s}, Source: source,
+		Syncs: inmem.Syncs{Store: s}, Calendars: inmem.Calendars{Store: s}, Exports: inmem.Exports{Store: s}, Sources: sourceOf(source),
 		Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, Types: inmem.ScheduleTypes{Store: s},
 	}, &inmem.Tx{}, ids, time.Minute, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	return syncEnv{exportEnv: e, syncer: syncer}
+}
+
+func sourceOf(src calendar.EventSource) calendar.SourceFor {
+	return func(context.Context, string) (calendar.EventSource, error) { return src, nil }
 }
 
 func (e syncEnv) sync(t *testing.T) {
@@ -471,5 +476,154 @@ func TestSyncIgnoresEventsNotLinked(t *testing.T) {
 	e.sync(t)
 	if len(e.store.Schedules) != n {
 		t.Error("対応の無い予定を buddy に作った")
+	}
+}
+
+func TestSyncAcceptRejectsScheduleCancelledInBuddy(t *testing.T) {
+	e := newSyncEnv(t)
+	d := e.created(t)
+	e.srv.Failures = []int{http.StatusServiceUnavailable}
+	if _, err := e.schedules.Cancel(e.ctx, d.ID, "中止"); err != nil {
+		t.Fatal(err)
+	}
+	e.run(t)
+	e.shift(t, eventID(t, d.ID))
+	e.sync(t)
+
+	issues, err := e.uc.ListExportIssues(e.ctx, inmem.FacilityID)
+	if err != nil || len(issues) != 1 || issues[0].Acceptable() {
+		t.Fatalf("キャンセルした予定の確かめが要る書き出し = %+v, %v", issues, err)
+	}
+	var ce *apperr.ConflictError
+	if _, err := e.uc.AcceptExport(e.ctx, issues[0].ID); !errors.As(err, &ce) || ce.Code != calendar.CodeExportNotAcceptable {
+		t.Errorf("キャンセルした予定を Google の内容に合わせる誤り = %v", err)
+	}
+}
+
+func TestSyncAcceptCancelsWhenGoogleReturnsNotFound(t *testing.T) {
+	e := newSyncEnv(t)
+	d := e.created(t)
+	// 書き出しが 404 を受けて止めた待ちと同じ形にする。Google の予定は、共有のあるカレンダーから無くなっている
+	code := calendar.ErrorNotFound
+	x := e.export(t, d.ID)
+	x.ID, x.Status, x.ErrorCode, x.Revision = "NOTFOUND", calendar.ExportConflict, &code, 1
+	e.store.Exports[x.ID] = x
+	e.srv.Calendars[googleCalID] = [][]*calendarv3.Event{{}}
+
+	if _, err := e.uc.AcceptExport(e.ctx, x.ID); err != nil {
+		t.Fatal(err)
+	}
+	if e.schedule(t, d.ID).Cancel == nil {
+		t.Error("Google で見つからない予定をキャンセルしていない")
+	}
+}
+
+func TestSyncAcceptMovesEventWhenStaffChanged(t *testing.T) {
+	e := newSyncEnv(t)
+	e.store.Calendars["CAL2"] = calendar.ExternalCalendar{ID: "CAL2", FacilityID: inmem.FacilityID, StaffID: inmem.CompanionID, Provider: calendar.ProviderGoogle, CalendarID: otherGoogleCalID}
+	d := e.created(t)
+	// buddy で職員を替えて書き出す前に、前の職員の Google カレンダーで予定を遅らせた
+	e.srv.Failures = []int{http.StatusServiceUnavailable}
+	e.update(t, d.ID, "カンファレンス", inmem.CompanionID)
+	e.run(t)
+	e.shift(t, eventID(t, d.ID))
+	e.sync(t)
+	x := e.export(t, d.ID)
+	if x.Status != calendar.ExportConflict {
+		t.Fatalf("職員を替えた予定の待ち = %+v", x)
+	}
+
+	if _, err := e.uc.AcceptExport(e.ctx, x.ID); err != nil {
+		t.Fatal(err)
+	}
+	if got := e.schedule(t, d.ID); got.StaffID != inmem.CompanionID || got.StartTime != (civil.Time{Hour: 11}) {
+		t.Fatalf("Google の内容に合わせた予定 = %+v", got.Slot)
+	}
+	e.run(t)
+	if ev := e.srv.Event(otherGoogleCalID, eventID(t, d.ID)); ev == nil || ev.Start.DateTime != "2026-11-04T11:00:00" {
+		t.Errorf("新しい職員のカレンダーの予定 = %+v", ev)
+	}
+	if ev := e.srv.Event(googleCalID, eventID(t, d.ID)); ev.Status != "cancelled" {
+		t.Errorf("前の職員のカレンダーの予定の状態 = %s", ev.Status)
+	}
+}
+
+func TestSyncKeepsUnexportedDescription(t *testing.T) {
+	e := newSyncEnv(t)
+	d := e.created(t)
+	e.srv.Failures = []int{http.StatusServiceUnavailable}
+	title, memo := "カンファレンス", "資料を持参"
+	if _, err := e.schedules.Update(e.ctx, d.ID, schedule.SlotInput{
+		TypeID: inmem.NormalTypeID, Date: d.Date, StartTime: d.StartTime, EndTime: d.EndTime,
+		StaffID: inmem.StaffID, Title: &title, Description: &memo,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	e.run(t)
+	// Google で、題名と日時を変えずに予定を直した（etag だけが変わる）
+	e.srv.Edit(googleCalID, eventID(t, d.ID), func(*calendarv3.Event) {})
+	e.sync(t)
+	if x := e.export(t, d.ID); x.Status != calendar.ExportPending {
+		t.Fatalf("説明だけを変えた予定の待ち = %+v", x)
+	}
+	e.due()
+	e.run(t)
+	if ev := e.srv.Event(googleCalID, eventID(t, d.ID)); ev.Description != memo {
+		t.Errorf("Google の予定の説明 = %q", ev.Description)
+	}
+}
+
+func TestSyncReadsRecurringWithCancelledOccurrenceAgain(t *testing.T) {
+	e := newSyncEnv(t)
+	rs := e.recurring(t)
+	parent := eventID(t, rs.ID)
+	e.srv.Put(googleCalID, gcancelled(parent+"_20261109T000000Z", parent, "2026-11-09T09:00:00+09:00"))
+	e.sync(t)
+	// トークンが切れて、取り消した回と変わっていない親の予定を読み直す
+	e.srv.ExpireSyncTokens()
+	e.sync(t)
+	if issues, _ := e.uc.ListExportIssues(e.ctx, inmem.FacilityID); len(issues) != 0 {
+		t.Errorf("取り消した回の後に読み直した親の予定を、確かめが要る予定にした: %+v", issues)
+	}
+}
+
+func TestSyncCancelledOccurrenceReplacedInBuddy(t *testing.T) {
+	e := newSyncEnv(t)
+	rs := e.recurring(t)
+	parent := eventID(t, rs.ID)
+	moved := "定例（buddy）"
+	// buddy で 11-16 の回を置き換え、書き出す前に Google で同じ回を取り消した
+	e.srv.Failures = []int{http.StatusServiceUnavailable, http.StatusServiceUnavailable}
+	if _, err := e.schedules.ChangeOccurrence(e.ctx, rs.ID, civil.Date{Year: 2026, Month: 11, Day: 16}, schedule.SlotInput{
+		TypeID: inmem.NormalTypeID, Date: civil.Date{Year: 2026, Month: 11, Day: 16},
+		StartTime: civil.Time{Hour: 11}, EndTime: civil.Time{Hour: 12}, StaffID: inmem.StaffID, Title: &moved,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	e.run(t)
+	e.srv.Put(googleCalID, gcancelled(parent+"_20261116T000000Z", parent, "2026-11-16T09:00:00+09:00"))
+	e.sync(t)
+	if x := e.export(t, rs.ID); x.Status != calendar.ExportConflict || *x.ErrorCode != calendar.ErrorPreconditionFailed {
+		t.Errorf("書き出していない置き換えの回を取り消した待ち = %+v", x)
+	}
+}
+
+func TestSyncCancelledOccurrenceEchoOfExportedReplacement(t *testing.T) {
+	e := newSyncEnv(t)
+	rs := e.recurring(t)
+	parent := eventID(t, rs.ID)
+	moved := "定例（buddy）"
+	if _, err := e.schedules.ChangeOccurrence(e.ctx, rs.ID, civil.Date{Year: 2026, Month: 11, Day: 16}, schedule.SlotInput{
+		TypeID: inmem.NormalTypeID, Date: civil.Date{Year: 2026, Month: 11, Day: 16},
+		StartTime: civil.Time{Hour: 11}, EndTime: civil.Time{Hour: 12}, StaffID: inmem.StaffID, Title: &moved,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	e.run(t)
+	// 書き出した EXDATE を、Google が取り消した回として返したとき
+	e.srv.Put(googleCalID, gcancelled(parent+"_20261116T000000Z", parent, "2026-11-16T09:00:00+09:00"))
+	e.sync(t)
+	if issues, _ := e.uc.ListExportIssues(e.ctx, inmem.FacilityID); len(issues) != 0 {
+		t.Errorf("書き出した置き換えの回の取り消しを、確かめが要る予定にした: %+v", issues)
 	}
 }

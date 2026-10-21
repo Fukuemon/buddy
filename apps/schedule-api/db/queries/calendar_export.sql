@@ -68,12 +68,14 @@ WHERE id = $1 AND status IN ('conflict', 'failed');
 -- name: ListCalendarExportIssues :many
 -- 予定の題名と利用者名は読まない。
 SELECT e.*,
+       (sc.id IS NOT NULL)::boolean AS cancelled,
        u.id AS staff_id, u.username AS staff_name,
        COALESCE(s.date, rs.date)::date AS date,
        COALESCE(s.start_time, rs.start_time)::time AS start_time,
        COALESCE(s.end_time, rs.end_time)::time AS end_time
 FROM calendar_exports e
 LEFT JOIN schedules s ON s.id = e.schedule_id
+LEFT JOIN schedule_cancels sc ON sc.schedule_id = e.schedule_id
 LEFT JOIN recurring_schedules rs ON rs.id = e.recurring_schedule_id
 JOIN users u ON u.id = COALESCE(s.staff_id, rs.staff_id)
 WHERE e.facility_id = $1 AND e.status IN ('conflict', 'failed')
@@ -101,7 +103,7 @@ SELECT * FROM calendar_exports WHERE schedule_id = $1 AND status <> 'succeeded';
 SELECT * FROM calendar_exports WHERE recurring_schedule_id = $1 AND status <> 'succeeded';
 
 -- name: ResolveCalendarExport :execrows
--- 外部の内容を buddy に当てた、確かめが要る待ちを終える。
+-- 外部の内容を buddy に当てた、確かめが要る待ちを終える。読んだ後に積み直されたか保留し直された待ちは終えない。
 UPDATE calendar_exports
 SET status = 'succeeded', error_code = NULL, overwrite = false, locked_until = NULL, finished_at = now()
-WHERE id = $1 AND status IN ('conflict', 'failed');
+WHERE id = sqlc.arg(id) AND revision = sqlc.arg(revision) AND status IN ('conflict', 'failed');

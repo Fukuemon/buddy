@@ -88,3 +88,6 @@ SELECT id FROM schedules WHERE id = $1 FOR UPDATE;
 
 -- name: LockRecurringSchedule :one
 SELECT id FROM recurring_schedules WHERE id = $1 FOR UPDATE;
+
+-- name: GetReplacingScheduleID :one
+SELECT id FROM schedules WHERE recurring_schedule_id = $1 AND original_date = $2;

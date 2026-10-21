@@ -488,6 +488,16 @@ func (s Schedules) CreateCancel(_ context.Context, c schedule.Cancel) error {
 	return nil
 }
 
+// ReplacementOf は、繰り返しの予定の d の回を置き換えた単発の予定を返す。
+func (s Schedules) ReplacementOf(ctx context.Context, recurringScheduleID string, d civil.Date) (schedule.Detail, error) {
+	for id, sc := range s.Schedules {
+		if sc.RecurringScheduleID != nil && *sc.RecurringScheduleID == recurringScheduleID && sc.OriginalDate != nil && *sc.OriginalDate == d {
+			return s.Get(ctx, id)
+		}
+	}
+	return schedule.Detail{}, apperr.ErrNotFound
+}
+
 // RecurringSchedules は、schedule.RecurringRepository のメモリ上の実装である。
 type RecurringSchedules struct{ *Store }
 
@@ -810,8 +820,9 @@ func (s Exports) ListIssues(_ context.Context, facilityID string) ([]calendar.Ex
 		} else {
 			slot = s.Recurring[e.RecurringScheduleID].Slot
 		}
+		_, cancelled := s.Cancels[e.ScheduleID]
 		out = append(out, calendar.ExportIssue{
-			Export: e, StaffID: slot.StaffID, StaffName: s.Staff[slot.StaffID].Username,
+			Export: e, Cancelled: cancelled, StaffID: slot.StaffID, StaffName: s.Staff[slot.StaffID].Username,
 			Date: slot.Date, StartTime: slot.StartTime, EndTime: slot.EndTime,
 		})
 	}
@@ -854,12 +865,12 @@ func (s Exports) Hold(_ context.Context, id string, t calendar.Target, code cale
 }
 
 // Resolve は、確かめが要る待ちを終えた待ちにする。
-func (s Exports) Resolve(_ context.Context, id string) error {
+func (s Exports) Resolve(_ context.Context, id string, revision int) error {
 	e, err := get(s.Exports, id)
 	if err != nil {
 		return err
 	}
-	if !e.InReview() {
+	if !e.InReview() || e.Revision != revision {
 		return apperr.ErrConflict
 	}
 	e.Status, e.ErrorCode, e.Overwrite = calendar.ExportSucceeded, nil, false
@@ -879,7 +890,7 @@ func (s Syncs) Claim(_ context.Context, max int, _ time.Duration) ([]calendar.Sy
 		}
 		st := calendar.SyncState{Calendar: c, LastStatus: calendar.SyncNever}
 		if r, ok := s.SyncResults[c.ID]; ok {
-			st.SyncToken, st.LastStatus = r.SyncToken, r.Status
+			st.SyncToken, st.LastStatus, st.LastError = r.SyncToken, r.Status, r.ErrorCode
 		}
 		out = append(out, st)
 	}
