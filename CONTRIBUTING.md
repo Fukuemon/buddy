@@ -122,7 +122,9 @@ node .claude/hooks/docs/hooks/check-links.mjs
 各 API の定義の正本は、`apps/schedule-api/openapi.yaml` と `apps/receipt-api/openapi.yaml` である。サーバーの Go のコードと画面の型は、そこから生成してコミットする。  
 openapi.yaml を変えたら、同じコミットで生成物も生成し直す。
 
-定義の書き方は Redocly CLI の `recommended-strict` の規則で確かめる。pre-commit のフックが、`openapi.yaml` をステージしたときに流す。規則を外す箇所は `.redocly.lint-ignore.yaml` に理由と一緒に書き、規則ごと外すものは `redocly.yaml` に書く。
+定義の書き方は Redocly CLI の `recommended-strict` の規則で確かめる。pre-commit のフックが、`openapi.yaml` か lint の設定をステージしたときに `pnpm lint:openapi` を流す。
+
+null を許す項目は、`type` と `nullable: true` を同じ階層に置き、参照する型は `allOf` で包む。OpenAPI 3.0 は `type` の無い `nullable` を無視する。サーバーが使う kin-openapi は、外側の `nullable` を見て、`allOf` の中を確かめる前に null を通す。規則を外す箇所は `.redocly.lint-ignore.yaml` に理由と一緒に書き、規則ごと外すものは `redocly.yaml` に書く。
 
 ```sh
 pnpm lint:openapi

@@ -4,7 +4,7 @@ apis:
     root: apps/schedule-api/openapi.yaml
   receipt-api:
     root: apps/receipt-api/openapi.yaml
-# 警告も誤りとして扱い、終了コードを 1 にする
+# recommended-strict は推奨の規則の警告も誤りとして扱い、終了コードを 1 にする
 extends:
   - recommended-strict
 rules:
