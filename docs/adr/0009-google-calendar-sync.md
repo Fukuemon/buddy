@@ -6,18 +6,22 @@
 
 ## Context
 
-職員は、訪問の予定を職員ごとの Google カレンダーに入れている。照合の API は、そのカレンダーをサービスアカウントで読む。予定を buddy へ一度に移すのは職員の負担が大きいので、Google カレンダーの予定を取り込む移行と、Google カレンダーと buddy の併用が求められている（[PRD の Google カレンダーとの連携](../PRD.md#google-カレンダーとの連携)）。
+職員は、訪問の予定を職員ごとの Google カレンダーに入れている。照合の API は、そのカレンダーをサービスアカウントで読む。予定を buddy へ一度に移すのは職員の負担が大きいので、Google カレンダーの予定を取り込む移行と、Google カレンダーと buddy の併用が求められている。
+
+- PRD: [Google カレンダーとの連携](../PRD.md#google-カレンダーとの連携)
+
+決定に関わる事実は次のとおり。
 
 - 訪問の予定は、利用者、主訪問者、同行者、サービスコード、訪問の区分を持ち、予定の API が権限で読み書きを判定する。Google カレンダーの予定は、これらを構造として持てない。
 - 照合の API は、題名を `【サービス内容】利用者名` の形で読む。
-  - [照合の API の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/DesignDoc.md)
+  - 出典: [照合の API の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/DesignDoc.md)
 - buddy はデプロイ先を知らない。Google からの通知を受ける公開の受け口を、buddy の側だけでは用意できない。
 - Google Calendar API は、変わった予定だけを `syncToken` で取れる。`syncToken` が切れると 410 を返し、全件を取り直す必要がある。
-  - [Synchronize resources efficiently](https://developers.google.com/workspace/calendar/api/guides/sync)
+  - 出典: [Synchronize resources efficiently](https://developers.google.com/workspace/calendar/api/guides/sync)
 - 予定の更新に `If-Match` で etag を付けると、Google の側で予定が変わっていたときに 412 を返す。
-  - [Version resources](https://developers.google.com/workspace/calendar/api/guides/version-resources)
-- 通知のチャネルは 7 日で切れ、自動では延びない。通知が届かないこともあるので、定期の同期を続けるよう文書が勧めている。
-  - [Push notifications](https://developers.google.com/workspace/calendar/api/guides/push)
+  - 出典: [Version resources](https://developers.google.com/workspace/calendar/api/guides/version-resources)
+- 通知のチャネルには期限があり、自動では延びない。通知の受け口は、公開の HTTPS の URL でなければならない。
+  - 出典: [Push notifications](https://developers.google.com/workspace/calendar/api/guides/push)
 
 ## Decision
 
@@ -26,12 +30,15 @@
 - 正本: 訪問の情報と権限の判定が予定の API にあるので、buddy の DB を正にする。Google カレンダーでの変更は、buddy の予定への変更として読み替えて当てる。
 - 同期の単位: 職員ごとのカレンダーにする。今の運用と、照合の API の読み方（カレンダー 1 つが職員 1 人）を変えずに済む。
 - 認証: 照合の API と同じく、サービスアカウントと、職員のカレンダーの共有にする。取り込みは閲覧、書き出しは予定の変更の権限で共有する。同意の画面、Google の審査、利用者ごとのトークンの保管が要らない。
-- 予定の対応: buddy の予定と Google の予定の ID の対応を、予定の API の DB に持つ。題名は `【サービス】利用者名` の形を保ち、照合の API が読み続けられるようにする。
+- 予定の対応: buddy の予定と Google の予定の ID の対応を、予定の API の DB に持つ。題名は `【サービス内容】利用者名` の形を保ち、照合の API が読み続けられるようにする。
 - 段階 1（取り込み）: マネージャーが期間を選び、下見してから確定する。同期の起点は手動である。
 - 段階 2（書き出し）: 予定の変更と同じトランザクションで書き出しの待ちを記録し、別の処理が Google に送る。更新には最後に同期した etag を `If-Match` で付け、412 なら確かめが要る予定として示す。
 - 段階 3（双方向）: `syncToken` による増分の取得を、2〜5 分ごとのポーリングで行う。最後に同期した時点の Google の etag と buddy の予定の更新の番号を比べ、片方だけが変わっていればその側に合わせ、両方が変わっていれば手で解く。
 - 繰り返し: buddy の繰り返しの規則（毎週の曜日、毎月の日付、毎月の第何週の曜日）に写せる RRULE だけを繰り返しのまま持ち、ほかの形は回ごとの予定に展開する。1 回だけ変えた回は、buddy の回の置き換えに写す。
-- 段階 2 の前の確認: サービスアカウントが、ドメイン全体の委任なしに、予定の変更の共有だけで予定を書けるかは、公式の文書に書かれていない。段階 2 を始める前に、検証のカレンダー 1 つで確かめる。書けなければ、段階 2 の認証を新しい ADR で決め直す。
+
+## 承認の条件
+
+- 段階 2 の認証: サービスアカウントが、ドメイン全体の委任なしに、予定の変更の共有だけで予定を書けるかは、公式の文書に書かれていない。段階 2 を始める前に、検証のカレンダー 1 つで確かめる。書けなければ、段階 2 の認証を新しい ADR で決め直す。段階 1 と、段階 1 の認証は、この確認を待たずに承認とする。
 
 ## Considered Options
 
@@ -40,7 +47,7 @@
 | **採用:** buddy を正にし、取り込み、書き出し、ポーリングの双方向の順に足す。サービスアカウントと共有で認証する | 移行を先に出せる。照合の API と同じ認証で、トークンを保管しない。公開の受け口が要らない | 職員ごとに共有の操作が要る。反映がポーリングの間隔の分だけ遅れる |
 | Google を正にし、buddy を表示と入力の画面にする | 職員の今の運用を変えない | 訪問の情報を構造として持てず、予定の API の検証と権限の判定が使えない |
 | 最初から双方向にする | 併用の求めに 1 回で応える | 衝突と繰り返しの例外を全て作るまで、移行も出せない |
-| 通知（push）から始める | 反映が速く、呼び出しが少ない | 公開の HTTPS の受け口と、7 日ごとのチャネルの張り直しが要る。取りこぼしに備えて定期の同期も要る |
+| 通知（push）から始める | 反映が速く、呼び出しが少ない | 公開の HTTPS の受け口と、期限の前のチャネルの張り直しが要る。通知が届かなくても同期できる仕組みも要る |
 | ドメイン全体の委任 | 職員の操作なしに全員のカレンダーを読み書きできる | 事業所の全員の全ての予定に届き、範囲が広すぎる |
 | 職員ごとの OAuth | 職員が自分で連携と解除をできる | 更新のトークンを暗号化して保管し、失効を検知する必要がある。Google の審査が要ることがある |
 | 繰り返しを全て回に展開する | 読み替えが単純になる | 毎週の訪問の繰り返しが buddy に残らない |

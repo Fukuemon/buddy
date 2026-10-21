@@ -6,15 +6,27 @@
 
 ## Context
 
-予定の API は、規則と手順を機能のパッケージ（`organization`、`staff`、`patient`、`visit`、`schedule`）にまとめている（[ADR-0005](0005-schedule-api-packages.md)）。後から読む人には、次の点が分かりにくい。この ADR は、ADR-0005 のうち、操作を `Service` と呼ぶ判断と、共通の誤りと `Transactor` を `domain` に残す判断を置き換える。機能のパッケージにまとめる判断と、DB と HTTP のアダプタを 1 つずつ置く判断は保つ。
+予定の API は、規則と手順を機能のパッケージ（`organization`、`staff`、`patient`、`visit`、`schedule`）にまとめている。後から読む人には、次の点が分かりにくい。
+
+- ADR-0005: [schedule-api の規則と手順を機能ごとのパッケージにまとめる](0005-schedule-api-packages.md)
 
 - 機能のパッケージの `Service` は、リポジトリから取り出し、確かめ、保存する手順である。HTTP のアダプタは、同じものを `ScheduleUsecase` のように `Usecase` と呼ぶ。
 - 複数のものを見て決める規則が、3 か所に分かれている。予定の閲覧と編集の判定は `auth.Principal` のメソッド、見てよい職員の絞り込みは `schedule.Service` の非公開のメソッド、役職の既定の権限を写す規則は `staff.Service` の非公開のメソッドにある。
 - `schedule.Repositories` は、ほかの機能のリポジトリのインターフェイスを丸ごと持つ。`schedule` は `staff.Repository` の 8 つのメソッドのうち 2 つしか使わない。
 - リポジトリは表と 1 対 1 ではない（表 20 に対してインターフェイス 9）。ただし、`schedule.Repository` は単発の予定、繰り返しの予定、予定の種類のマスタを 1 つに持ち、`visit.Repository` は訪問の情報とマスタを 1 つに持つ。書き込みの前の確認にも、名前を結合した表示用の `Get` を使う。
-- `domain` は、ドメインのモデルを持たず、共通の誤り、並べ替え、`Transactor`、`IDGenerator` を持つ。`access` は認証を、`auth` は認可を持ち、名前から役割が読めない。
+- `domain` は、ドメインのモデルを持たず、共通の誤り、並べ替え、`Transactor`、`IDGenerator` を持つ。`auth` は、職員の表現と予定の判定を持ち、名前からは認証の手順を持つように読める。認証と、パスが指す資源の事業所の確認は `access` にある。
 - `config` が `mysql` を import するので、DB を替えると設定のパッケージも変わる。
-- DB を PostgreSQL に替え（[ADR-0011](0011-schedule-api-postgresql.md)）、Google カレンダーとの同期のアダプタを足す（[ADR-0009](0009-google-calendar-sync.md)）。
+
+予定の API は、DB を PostgreSQL に替え、Google カレンダーとの同期のアダプタを足す。
+
+- ADR-0011: [予定の API の DB を PostgreSQL にし、見直した表でマイグレーションを作り直す](0011-schedule-api-postgresql.md)
+- ADR-0009: [Google カレンダーとの連携を、buddy を正にする段階の同期にする](0009-google-calendar-sync.md)
+
+この ADR は、ADR-0005 の次の 3 つの判断を置き換える。機能のパッケージにまとめる判断と、DB と HTTP のアダプタを 1 つずつ置く判断は保つ。
+
+- 各パッケージの操作を `Service` と呼ぶ判断
+- 予定の判定を `auth` に置く判断
+- 共通の誤り、並べ替え、`Transactor`、`IDGenerator` を `domain` に残す判断
 
 ## Decision
 
@@ -25,9 +37,9 @@
 - リポジトリ: 自分の集約のリポジトリだけを、そのパッケージに置く。単発の予定（キャンセルを含む）、繰り返しの予定（規則と除外の日を含む）、マスタで分け、表ごとには分けない。行をロックして読む操作は `GetForUpdate` の 1 つにし、名前でロックを示す。
 - ほかの機能のデータ: 使う側で、1〜2 のメソッドの小さなインターフェイスを定義して受ける。例えば `schedule` は、職員の ID、事業所、チームだけを返すインターフェイスで職員を受ける。`Repositories` の束はやめ、`NewUsecase` は使うインターフェイスだけを受ける。
   - Go は、インターフェイスを、値を実装する側ではなく使う側に置くことを勧める。
-  - [Go Code Review Comments の Interfaces](https://go.dev/wiki/CodeReviewComments#interfaces)
+    - 出典: [Go Code Review Comments の Interfaces](https://go.dev/wiki/CodeReviewComments#interfaces)
 - 共通のパッケージ: `domain` を分け、共通の誤りと検証の誤りを `apperr`、`Transactor` を `tx` に置く。`IDGenerator` と並べ替えは、使う機能のパッケージに移すか、`apperr` と同じ段の小さなパッケージに置く。
-- 認証と認可: `access` を `authn`（トークンから職員を特定する）、`auth` を `principal`（職員と権限の一覧）に改める。予定に固有の判定は `principal` から `schedule` に移す。
+- 職員の表現: `auth` を `principal`（職員と権限の一覧）に改める。予定に固有の判定は `principal` から `schedule` に移す。認証と、パスが指す資源の事業所の確認は、今のまま `access` に置く。
 - 設定: `config` は DB の接続の値を自分の型で持ち、DB のアダプタを import しない。`cmd/api` がアダプタに渡す。
 - トランザクション: usecase が始める今の形を保つ。外部の API はトランザクションの中で呼ばない。Google カレンダーへの書き出しは、予定の変更と同じトランザクションで書き出しの待ちを記録し、別の処理が送る。
 
