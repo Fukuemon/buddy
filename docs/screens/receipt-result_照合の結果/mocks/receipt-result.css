@@ -76,3 +76,14 @@
 .rc-table-wrap .rc-sep > :first-child {
   background: var(--wf-fill);
 }
+
+/* 区分の見出しのセルは全ての列にまたがり左端に留まらないので、文字だけを左端に留める（apps/web と同じ） */
+.rc-table-wrap .rc-sep > :first-child {
+  position: static;
+}
+
+.rc-sep-label {
+  position: sticky;
+  left: 8px;
+  display: inline-block;
+}
