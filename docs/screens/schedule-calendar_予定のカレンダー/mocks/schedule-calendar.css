@@ -5,10 +5,6 @@
   display: flex;
 }
 
-.sc-viewer {
-  font-size: 12px;
-}
-
 /* 幅 768px 以上では、ドロワーの枠を持たず、中の職員の絞り込みだけを左に置く */
 .sc-drawer {
   display: contents;
@@ -108,10 +104,6 @@
 }
 
 @container screen (width < 768px) {
-  .sc-viewer {
-    display: none;
-  }
-
   .sc-body {
     flex-direction: column;
   }
