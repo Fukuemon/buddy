@@ -24,6 +24,11 @@ const holdChanges = async (request: APIRequestContext, hold: boolean) => {
 
 test.describe('確かめが要る予定', () => {
   test.describe('Google カレンダーへの書き出し', () => {
+    // 途中で落ちても、後の spec が Google の変更を受け取れるようにする
+    test.afterEach(async ({ request }) => {
+      await holdChanges(request, false)
+    })
+
     test('Google カレンダーで直された予定を buddy で変えた場合、確かめが要る予定に出て、書き直すと Google カレンダーが buddy の内容になること', async ({
       page,
       request,

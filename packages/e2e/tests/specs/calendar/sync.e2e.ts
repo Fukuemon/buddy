@@ -57,11 +57,23 @@ const openSchedule = async (page: Page, title: string) => {
 
 test.describe('確かめが要る予定', () => {
   test.describe('Google カレンダーとの同期', () => {
+    // 途中で落ちても、後の spec が Google の変更を受け取れ、やり直しで佐藤にもう一度結び付けられるようにする
+    test.afterEach(async ({ page, request }) => {
+      await holdChanges(request, false)
+      await page.goto('/schedule/link')
+      const remove = page.getByTestId(`calendar-link-remove-${SATO.id}`)
+      await expect(page.getByTestId(`calendar-link-row-${SATO.id}`)).toBeVisible()
+      if (await remove.isVisible()) {
+        await remove.click()
+        await page.getByTestId('calendar-unlink-submit').click()
+        await expect(remove).toBeHidden()
+      }
+    })
+
     test('Google カレンダーで直した予定が buddy に出て、両方で変わった予定は Google の内容に合わせられること', async ({
       page,
       request,
     }) => {
-      // 佐藤にカレンダーを結び付けたまま残すので、同じ DB で 2 回目を流すと落ちる。流し直すときは DB を作り直す
       const stamp = Date.now()
       const created = `E2E の同期 ${stamp}`
       const changed = `E2E の同期（buddy で変更）${stamp}`
