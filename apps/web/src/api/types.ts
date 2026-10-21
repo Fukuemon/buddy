@@ -1,4 +1,5 @@
 import type { components as ReceiptComponents } from './generated/receipt'
+import type { components as ScheduleComponents } from './generated/schedule'
 
 /** 事業所の ID。API の `/v1/facilities/{facility_id}` に入る。 */
 export type FacilityId = string
@@ -10,10 +11,8 @@ export type Viewer = {
   facilityId: FacilityId
 }
 
-export type Team = {
-  id: string
-  name: string
-}
+/** チーム。API の型の ID と名前だけを使う。 */
+export type Team = Pick<ScheduleComponents['schemas']['Unit'], 'id' | 'name'>
 
 export type Staff = {
   id: string
@@ -21,10 +20,8 @@ export type Staff = {
   teamId: Team['id']
 }
 
-export type Patient = {
-  id: string
-  name: string
-}
+/** 利用者。API の型の ID と名前だけを使う。 */
+export type Patient = Pick<ScheduleComponents['schemas']['Patient'], 'id' | 'name'>
 
 export const SCHEDULE_KINDS = ['normal', 'visit'] as const
 export type ScheduleKind = (typeof SCHEDULE_KINDS)[number]

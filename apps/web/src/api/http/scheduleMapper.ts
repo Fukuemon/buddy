@@ -7,6 +7,9 @@ import {
   type ScheduleInput,
   type ScheduleKind,
   type ServiceCode,
+  type Patient,
+  type Staff,
+  type Team,
 } from '../types'
 
 type Schemas = components['schemas']
@@ -31,6 +34,17 @@ const CATEGORY_TO_API: Record<ScheduleCategory, string> = {
   emergency: '緊急',
   hospitalization: '入院',
 }
+
+/** API の職員を、画面の職員にする。画面は名前を username で表す。 */
+export const fromApiStaff = (user: Schemas['Staff']): Staff => ({
+  id: user.id,
+  name: user.username,
+  teamId: user.team.id,
+})
+
+export const fromApiTeam = ({ id, name }: Schemas['Unit']): Team => ({ id, name })
+
+export const fromApiPatient = ({ id, name }: Schemas['Patient']): Patient => ({ id, name })
 
 /** API の日付と時刻は事業所の現地時刻で、事業所は日本にあるものとする。 */
 const OFFSET = '+09:00'

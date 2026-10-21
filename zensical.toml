@@ -61,6 +61,7 @@ nav = [
     "adr/0005-schedule-api-packages.md",
     "adr/0006-staff-manage-policy.md",
     "adr/0007-go-shared-module.md",
+    "adr/0008-web-view-types.md",
   ] },
 ]
 

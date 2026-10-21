@@ -46,8 +46,11 @@ describe('scheduleFormMapper', () => {
       new Date(2026, 9, 20),
     )) {
       const values = toScheduleFormValues({ ...schedule, id: 'x', facilityId: 'f' })
+      // 訪問の予定の題は、API では空で、フォームが「訪問」に固定する
       expect(toScheduleInput(values)).toEqual(
-        schedule.kind === 'normal' ? { ...schedule, visit: undefined } : schedule,
+        schedule.kind === 'normal'
+          ? { ...schedule, visit: undefined }
+          : { ...schedule, title: '訪問' },
       )
     }
   })
