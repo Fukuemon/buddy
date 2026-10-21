@@ -9,7 +9,8 @@
  * 終了コード: 違反が無ければ 0、あれば 1。違反の一覧を標準エラーに出す。
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { basename, join, relative } from 'node:path'
+import { createRequire } from 'node:module'
+import { basename, dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
@@ -40,6 +41,78 @@ const FORBIDDEN = [
 const stripComments = (text) =>
   text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/<!--[\s\S]*?-->/g, '')
 const PLACEHOLDER = /<(画面|要素|操作|状態)[^>]*>/
+
+// story の ID は Storybook と同じ関数で作る。storybook は apps/web の依存にある。
+// Storybook の内部の API なので、版を上げたら build-storybook の index.json の ID と比べ直す
+const { toId, storyNameFromExport } = createRequire(join(ROOT, 'apps/web/package.json'))(
+  'storybook/internal/csf',
+)
+const STORY_DIRS = ['packages/ui/src', 'apps/web/src']
+// カタログは本番の文書のサイトの /storybook/ にある（apps/docs-site/README.md）
+const STORYBOOK_URL =
+  /^https:\/\/buddy-docs\.emon-apps\.workers\.dev\/storybook\/\?path=\/(story|docs)\/([^)\s]+)$/
+const LINK_TARGET = /\]\(([^)\s]+)\)/g
+
+/** dir の下の *.stories.tsx を全て返す。 */
+const storyFiles = (dir) =>
+  readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name)
+    if (entry.isDirectory()) return storyFiles(path)
+    return entry.name.endsWith('.stories.tsx') ? [path] : []
+  })
+
+/**
+ * カタログの story の ID と、mdx の文書のページの ID を返す。文書のページは、story のファイルの隣に同じ名前の .mdx があるものだけである。
+ * meta の title を読めない story のファイルは違反にする。
+ */
+const readCatalogIds = () => {
+  const stories = new Set()
+  const docs = new Set()
+  for (const file of STORY_DIRS.flatMap((dir) => storyFiles(join(ROOT, dir)))) {
+    const code = readFileSync(file, 'utf8')
+    const title = code.match(/^ {2}title: '([^']+)'/m)?.[1]
+    if (title === undefined) {
+      report(relative(process.cwd(), file), "meta の title を「  title: '…'」の形で書く")
+      continue
+    }
+    for (const match of code.matchAll(/^export const (\w+)/gm))
+      stories.add(toId(title, storyNameFromExport(match[1])))
+    const mdx = join(dirname(file), `${basename(file, '.stories.tsx')}.mdx`)
+    if (existsSync(mdx)) docs.add(toId(title, 'docs'))
+  }
+  return { stories, docs }
+}
+let catalogIds = null
+
+/** 仕様書のカタログの欄のリンクが本番のカタログの URL で、その ID が story のファイルにあるかを確かめる。 */
+const checkCatalogLinks = (markdown, specPath) => {
+  catalogIds ??= readCatalogIds()
+  markdown.split(/\r?\n/).forEach((line, index) => {
+    if (!line.startsWith('**カタログ**:')) return
+    const targets = [...line.matchAll(LINK_TARGET)].map((m) => m[1])
+    if (targets.length === 0) report(specPath, `カタログの欄にリンクが無い（${index + 1} 行目）`)
+    for (const target of targets) {
+      const match = target.match(STORYBOOK_URL)
+      if (match === null) {
+        report(
+          specPath,
+          `カタログの欄のリンク ${target} が本番のカタログの URL でない（${index + 1} 行目）`,
+        )
+        continue
+      }
+      let id
+      try {
+        id = decodeURIComponent(match[2])
+      } catch {
+        report(specPath, `カタログの欄のリンク ${target} の ID を読めない（${index + 1} 行目）`)
+        continue
+      }
+      const ids = match[1] === 'story' ? catalogIds.stories : catalogIds.docs
+      if (!ids.has(id))
+        report(specPath, `カタログの ${match[1]} の ${id} が無い（${index + 1} 行目）`)
+    }
+  })
+}
 
 const problems = []
 /** 全てのモックの data-testid。E2E が使う testid との照合に使う */
@@ -251,6 +324,8 @@ const checkScreen = (dir) => {
     if (!['iframe', 'a'].includes(tag[1].toLowerCase()))
       report(specPath, `生の HTML の <${tag[1]}> を使わない`)
   }
+
+  checkCatalogLinks(markdown, specPath)
 
   const embedded = new Set()
   for (const state of readStates(markdown, specPath)) {
