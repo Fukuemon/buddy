@@ -157,7 +157,7 @@ func (s *Service) AddGrant(ctx context.Context, id string, in GrantInput) (Detai
 			return err
 		}
 		if err := s.repos.Staff.AddGrant(ctx, cur.ID, g); err != nil {
-			return domain.AsConflict(err, "職員はすでに権限 %s を持っています", p.ID)
+			return domain.AsConflict(err, "職員はすでに権限 %s を持っています", p.Name)
 		}
 		changed, err = s.repos.Staff.Get(ctx, cur.ID)
 		return err

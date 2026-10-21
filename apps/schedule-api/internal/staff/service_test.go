@@ -139,7 +139,7 @@ func grantStore() *inmem.Store {
 	s := inmem.Seeded()
 	s.Teams["TEAM"] = organization.Team{ID: "TEAM", FacilityID: facilityID}
 	s.Teams["OTHERTEAM"] = organization.Team{ID: "OTHERTEAM", FacilityID: otherFacilityID}
-	s.Policies["SELF"] = organization.Policy{ID: "SELF", Code: organization.ScheduleSelfEdit}
+	s.Policies["SELF"] = organization.Policy{ID: "SELF", Code: organization.ScheduleSelfEdit, Name: "自分の予定の編集"}
 	s.Policies["USER"] = organization.Policy{ID: "USER", Code: organization.ScheduleUserRead, NeedsTarget: true}
 	s.Policies["TEAM"] = organization.Policy{ID: "TEAM", Code: organization.ScheduleTeamEdit, NeedsTarget: true}
 	return s
@@ -190,7 +190,7 @@ func TestStaffAddGrant(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err := uc.AddGrant(ctx, staffID, staff.GrantInput{PolicyID: "SELF"}); !errors.Is(err, domain.ErrConflict) ||
-		err.Error() != "職員はすでに権限 SELF を持っています" {
+		err.Error() != "職員はすでに権限 自分の予定の編集 を持っています" {
 		t.Errorf("同じ権限を 2 回: err = %v, want 権限の重なりの ErrConflict", err)
 	}
 	if _, err := uc.AddGrant(ctx, "MISSING", staff.GrantInput{PolicyID: "SELF"}); !errors.Is(err, domain.ErrNotFound) {
