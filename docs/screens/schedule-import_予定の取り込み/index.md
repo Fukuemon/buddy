@@ -4,9 +4,9 @@
 
 | 項目 | 値 |
 | --- | --- |
-| URL | `/schedule/import`（案） |
+| URL | `/schedule/import` |
 | 使う人 | 職員の管理の権限を持つ職員（既定はマネージャー） |
-| 実装 | 未実装 |
+| 実装 | `apps/web/src/routes/schedule_.import.tsx`、`apps/web/src/features/calendar/components/CalendarImportContainer.tsx`、`apps/web/src/features/calendar/components/CalendarImportView.tsx`、`apps/web/src/features/calendar/components/CalendarImportForm.tsx`、`apps/web/src/features/calendar/components/CalendarImportPreview.tsx`、`apps/web/src/features/calendar/components/CalendarImportReviewItem.tsx`、`apps/web/src/features/calendar/components/CalendarImportCounts.tsx`、`apps/web/src/features/calendar/components/CalendarImportDone.tsx`、`apps/web/src/components/site/PageForbiddenMessage.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
 
@@ -315,6 +315,8 @@
 
 **表示条件**: 常に表示
 
+**カタログ**: [SiteNav の Import](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-sitenav--import)
+
 ### インタラクション
 
 #### 1. 「予定」を押す
@@ -369,6 +371,8 @@
 
 **表示条件**: 職員の管理の権限を持つとき
 
+**カタログ**: [CalendarImportView の Ready](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportview--ready)
+
 ## 説明の文
 
 **概要**: この画面で何をするかを示す。
@@ -383,6 +387,8 @@
 
 **表示条件**: 職員の管理の権限を持つとき
 
+**カタログ**: [CalendarImportView の Ready](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportview--ready)
+
 ## カレンダーの連携
 
 **概要**: 職員にカレンダーを結び付ける画面へ移る。
@@ -392,6 +398,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: 職員の管理の権限を持つとき
+
+**カタログ**: [CalendarImportView の Ready](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportview--ready)
 
 ### インタラクション
 
@@ -408,6 +416,8 @@
 **活性条件**: 下見中と取り込み中でないとき
 
 **表示条件**: Google カレンダーを結び付けた職員がいるとき
+
+**カタログ**: [CalendarImportForm の Initial](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportform--initial)
 
 ### インタラクション
 
@@ -431,6 +441,8 @@
 
 **表示条件**: Google カレンダーを結び付けた職員がいるとき
 
+**カタログ**: [CalendarImportForm の Initial](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportform--initial)、[CalendarImportForm の StartAfterEnd](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportform--start-after-end)
+
 ### インタラクション
 
 #### 1. 日付を変える
@@ -448,6 +460,8 @@
 
 **表示条件**: Google カレンダーを結び付けた職員がいるとき
 
+**カタログ**: [CalendarImportForm の Initial](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportform--initial)、[CalendarImportForm の TooLong](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportform--too-long)
+
 ### インタラクション
 
 #### 1. 日付を変える
@@ -464,6 +478,8 @@
 **活性条件**: 職員、開始日、終了日がそろい、開始日が終了日より後でなく、期間が 1 年以内で、下見中と取り込み中でないとき
 
 **表示条件**: Google カレンダーを結び付けた職員がいるとき
+
+**カタログ**: [CalendarImportForm の Initial](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportform--initial)
 
 ### インタラクション
 
@@ -487,6 +503,8 @@
 
 **表示条件**: 下見の応答を待っているとき
 
+**カタログ**: [CalendarImportForm の Previewing](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportform--previewing)
+
 ## 下見の結果の題
 
 **概要**: 下見した職員と期間を示す。
@@ -497,6 +515,8 @@
 
 **表示条件**: 下見が成功した後、取り込みが成功するまで
 
+**カタログ**: [CalendarImportPreview の Preview](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportpreview--preview)
+
 ## 件数
 
 **概要**: 確定すると、予定がいくつ取り込まれ、いくつ取り込まれないかを示す。
@@ -505,8 +525,8 @@
 
 | 箱 | 件数 | 補足の文 |
 | --- | --- | --- |
-| 取り込む | 確かめが要る予定を除いて、取り込む予定の数 | 「訪問 15 件、通常 3 件。回ごとにした 4 件を含む」の形。回ごとにした予定は、1 回を 1 件に数える |
-| 繰り返し | 取り込む繰り返しの予定の数 | 「繰り返しのまま 2 件、回ごとにする 1 件」の形 |
+| 取り込む | 確かめが要る予定を除いて、取り込む予定の数 | 「訪問 15 件、通常 3 件。回ごとにした 4 件を含む」の形。回ごとにした予定は、1 回を 1 件に数える。回ごとにした予定が無ければ「。回ごとにした…」を省き、取り込む予定が無ければ「取り込む予定は無い」 |
+| 繰り返し | 取り込む繰り返しの予定の数 | 「繰り返しのまま 2 件、回ごとにする 1 件」の形。取り込む繰り返しの予定が無ければ「取り込む繰り返しは無い」 |
 | 確かめが要る | 利用者を 1 人に決められない予定の数 | 「利用者を選んでから取り込む」 |
 | 取り込まない | 取り込まない予定の数 | 「理由ごとの件数は下にある」 |
 | 取り込み済み | 前の取り込みで取り込んだ予定の数 | 「前の取り込みで取り込んだ予定。もう一度は取り込まない」 |
@@ -517,6 +537,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: 下見が成功した後、取り込みが成功するまで
+
+**カタログ**: [CalendarImportPreview の Preview](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportpreview--preview)、[CalendarImportPreview の AllImported](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportpreview--all-imported)
 
 ## 確かめが要る予定
 
@@ -537,6 +559,8 @@
 
 **表示条件**: 下見の結果に確かめが要る予定があるとき
 
+**カタログ**: [CalendarImportPreview の Preview](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportpreview--preview)
+
 ## 取り込み方
 
 **概要**: 確かめが要る予定 1 件ごとに、どう取り込むかを選ぶ。
@@ -552,6 +576,8 @@
 **活性条件**: 取り込み中でないとき
 
 **表示条件**: 確かめが要る予定ごと
+
+**カタログ**: [CalendarImportPreview の Preview](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportpreview--preview)、[CalendarImportPreview の Resolved](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportpreview--resolved)
 
 ### インタラクション
 
@@ -577,6 +603,8 @@
 
 **表示条件**: 取り込み方で「利用者を選ぶ」を選んだ予定
 
+**カタログ**: [CalendarImportPreview の Resolved](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportpreview--resolved)
+
 ## 理由ごとの件数
 
 **概要**: 取り込まない予定の件数を、理由ごとに示す。
@@ -596,6 +624,8 @@
 
 **表示条件**: 下見の結果に取り込まない予定があるとき
 
+**カタログ**: [CalendarImportPreview の Preview](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportpreview--preview)
+
 ## 取り込まない予定
 
 **概要**: 取り込まない予定を 1 件ずつ、日時と理由で示す。職員が Google カレンダーでその予定を探し、直せるようにする。
@@ -606,6 +636,8 @@
 
 **表示条件**: 下見の結果に取り込まない予定があるとき
 
+**カタログ**: [CalendarImportPreview の Preview](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportpreview--preview)
+
 ## 選び残りの文
 
 **概要**: 確定する前に、取り込み方を選ぶ予定が残っていることを示す。
@@ -615,6 +647,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: 確かめが要る予定のうち、取り込み方を選び終えていない予定があるとき
+
+**カタログ**: [CalendarImportPreview の Preview](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportpreview--preview)
 
 ## 確定して取り込む
 
@@ -630,6 +664,8 @@
 **活性条件**: 取り込む予定か確かめが要る予定があり、確かめが要る予定の全てに取り込み方を選び終え、取り込み中でないとき
 
 **表示条件**: 下見が成功した後、取り込みが成功するまで
+
+**カタログ**: [CalendarImportPreview の Preview](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportpreview--preview)、[CalendarImportPreview の Resolved](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportpreview--resolved)、[CalendarImportPreview の Submitting](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportpreview--submitting)
 
 ### インタラクション
 
@@ -649,6 +685,8 @@
 
 **表示条件**: 取り込みが成功した後
 
+**カタログ**: [CalendarImportDone の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportdone--default)
+
 ## 結果の件数
 
 **概要**: 取り込んだ予定と取り込まなかった予定の件数を示す。
@@ -658,12 +696,14 @@
 | 箱 | 件数 | 補足の文 |
 | --- | --- | --- |
 | 取り込んだ | 取り込んだ予定の数。確かめが要る予定のうち、利用者を選んだ予定と通常の予定にした予定を含む | 「繰り返しの予定 2 件を含む。確かめた 2 件のうち 1 件は利用者を選び、1 件は通常の予定にした」の形 |
-| 取り込まなかった | 取り込まない予定と、取り込まないを選んだ予定の数 | 件数のある理由を「、」でつなぐ |
+| 取り込まなかった | 取り込まない予定と、取り込まないを選んだ予定の数 | 「終日、日をまたぐ、取り込まないを選んだ予定」の形で、件数のある理由を「、」でつなぐ。取り込まないを選んだ予定があれば、「取り込まないを選んだ」を最後に足す |
 | 取り込み済み | 前の取り込みで取り込んでいて、今回は書かなかった予定の数 | 「前の取り込みで取り込んだ予定」 |
 
 **活性条件**: 常に活性
 
 **表示条件**: 取り込みが成功した後
+
+**カタログ**: [CalendarImportDone の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportdone--default)
 
 ## 予定のカレンダーで見る
 
@@ -674,6 +714,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: 取り込みが成功した後
+
+**カタログ**: [CalendarImportDone の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportdone--default)
 
 ### インタラクション
 
@@ -695,6 +737,8 @@
 
 **表示条件**: 下見の結果で、取り込む予定と確かめが要る予定が無く、取り込み済みの予定があるとき
 
+**カタログ**: [CalendarImportPreview の AllImported](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportpreview--all-imported)
+
 ## 失敗の文
 
 **概要**: 下見か取り込みができなかった理由と、次にすることを示す。読み上げでは警告として扱う。
@@ -715,7 +759,9 @@
 
 **活性条件**: 常に活性
 
-**表示条件**: 下見か取り込みが失敗したとき。職員か期間を変えると消す
+**表示条件**: 下見か取り込みが失敗したとき。職員か期間を変えると消す。取り込みの失敗の文は、取り込み方を変えたときも消す
+
+**カタログ**: [CalendarImportForm の PreviewError](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportform--preview-error)、[CalendarImportPreview の SubmitError](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportpreview--submit-error)
 
 ## カレンダーが無いことの文
 
@@ -726,6 +772,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: Google カレンダーを結び付けた職員がいないとき
+
+**カタログ**: [CalendarImportView の NoCalendar](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportview--no-calendar)
 
 ## 読み込み中の表示
 
@@ -741,6 +789,8 @@
 
 **表示条件**: 結び付けたカレンダーと職員を読み終えるまで
 
+**カタログ**: [CalendarImportView の Loading](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportview--loading)
+
 ## 読み込みの失敗の文
 
 **概要**: 職員と期間の欄を出せないことを示す。読み上げでは警告として扱う。
@@ -751,6 +801,8 @@
 
 **表示条件**: 結び付けたカレンダーか職員の一覧を読めなかったとき
 
+**カタログ**: [CalendarImportView の LoadError](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportview--load-error)
+
 ## 読み直す
 
 **概要**: 結び付けたカレンダーと職員を読み直す。
@@ -760,6 +812,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: 読み込みに失敗したとき
+
+**カタログ**: [CalendarImportView の LoadError](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarimportview--load-error)
 
 ### インタラクション
 
@@ -777,6 +831,8 @@
 
 **表示条件**: ログインした職員が職員の管理の権限を持たないとき
 
+**カタログ**: [PageForbiddenMessage の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-pageforbiddenmessage--default)
+
 ## 権限が無いことの説明
 
 **概要**: 誰が開けるかと、どうすればよいかを示す。
@@ -791,6 +847,8 @@
 
 **表示条件**: ログインした職員が職員の管理の権限を持たないとき
 
+**カタログ**: [PageForbiddenMessage の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-pageforbiddenmessage--default)
+
 ## 予定のカレンダーへ
 
 **概要**: 予定のカレンダーへ戻る。
@@ -800,6 +858,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: ログインした職員が職員の管理の権限を持たないとき
+
+**カタログ**: [PageForbiddenMessage の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-pageforbiddenmessage--default)
 
 ### インタラクション
 
@@ -817,6 +877,10 @@
   - 読めなかったときは、「読み込みの失敗」の状態にする。
 - search params の `staff` に職員の ID があり、その職員にカレンダーが結び付いていれば、職員の欄でその職員を選ぶ。無ければ、名前の順で最初の職員を選ぶ。
 - 下見は自動では始めない。
+
+### 権限の確かめ
+
+画面の判定は表示のためだけにする。予定の API も、職員の管理の権限が無い職員の要求を 403 で拒む。画面を開いた後に権限を外された職員が操作したときは、失敗の文か読み込みの失敗の文の位置に、「この操作をする権限がありません。」を出す。
 
 ### 予定の読み替え
 
@@ -843,7 +907,6 @@
 
 ## 未決
 
-- URL は案である。予定のカレンダーの子のモーダルと違い、カレンダーの上に重ねない画面にする。
 - PRD の画面の一覧は、取り込みの利用者の選択を、確かめが要る予定の画面に置く。#141 では、下見の結果の中で選ぶことにした。確かめが要る予定の画面を作るときに、取り込みの選択をそちらへ移すかを決める。
 - 1 回の取り込みで選べる職員は 1 人にした。表の取り込みの記録（`import_runs`）がカレンダーごとであるためである。複数の職員をまとめて取り込むかは、使い始めた事業所の声を聞いて決める。
 - 期間の上限の 1 年と、期間の既定の次の月は案である。

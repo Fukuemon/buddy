@@ -4,9 +4,9 @@
 
 | 項目 | 値 |
 | --- | --- |
-| URL | `/schedule/link`（案） |
+| URL | `/schedule/link` |
 | 使う人 | 職員の管理の権限を持つ職員（既定はマネージャー） |
-| 実装 | 未実装 |
+| 実装 | `apps/web/src/routes/schedule_.link.tsx`、`apps/web/src/features/calendar/components/CalendarLinkContainer.tsx`、`apps/web/src/features/calendar/components/CalendarLinkView.tsx`、`apps/web/src/features/calendar/components/CalendarShareGuide.tsx`、`apps/web/src/features/calendar/components/CalendarLinkTable.tsx`、`apps/web/src/features/calendar/components/CalendarLinkDialog.tsx`、`apps/web/src/features/calendar/components/CalendarUnlinkDialog.tsx`、`apps/web/src/features/calendar/components/CalendarDialog.tsx`、`apps/web/src/components/site/PageForbiddenMessage.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
 
@@ -191,6 +191,8 @@
 
 **表示条件**: 常に表示
 
+**カタログ**: [SiteNav の Import](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-sitenav--import)
+
 ### インタラクション
 
 #### 1. 「予定」を押す
@@ -245,6 +247,8 @@
 
 **表示条件**: 職員の管理の権限を持つとき
 
+**カタログ**: [CalendarLinkView の List](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkview--list)
+
 ## 説明の文
 
 **概要**: この画面で何をするかを示す。
@@ -258,6 +262,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: 職員の管理の権限を持つとき
+
+**カタログ**: [CalendarLinkView の List](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkview--list)
 
 ## 共有の手順
 
@@ -275,6 +281,8 @@
 
 **表示条件**: サービスアカウントが設定されているとき
 
+**カタログ**: [CalendarLinkView の List](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkview--list)
+
 ## サービスアカウントのメールアドレス
 
 **概要**: 職員がカレンダーを共有する相手の、buddy のサービスアカウントのメールアドレスを示す。
@@ -285,6 +293,8 @@
 
 **表示条件**: サービスアカウントが設定されているとき
 
+**カタログ**: [CalendarLinkView の List](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkview--list)
+
 ## コピー
 
 **概要**: サービスアカウントのメールアドレスを、職員に送れるようにクリップボードに写す。
@@ -294,6 +304,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: サービスアカウントが設定されているとき
+
+**カタログ**: [CalendarLinkView の List](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkview--list)、[CalendarLinkView の CopyRejected](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkview--copy-rejected)
 
 ### インタラクション
 
@@ -312,6 +324,8 @@
 
 **表示条件**: 職員とカレンダーを読み終えたとき
 
+**カタログ**: [CalendarLinkView の List](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkview--list)
+
 ## カレンダーの ID
 
 **概要**: 職員に結び付けた Google カレンダーを示す。
@@ -321,6 +335,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: 職員の一覧を出すとき
+
+**カタログ**: [CalendarLinkView の List](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkview--list)
 
 ## 最後の取り込み
 
@@ -332,6 +348,8 @@
 
 **表示条件**: 職員の一覧を出すとき
 
+**カタログ**: [CalendarLinkView の List](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkview--list)
+
 ## 結び付ける
 
 **概要**: 職員に Google カレンダーを結び付けるダイアログを開く。
@@ -341,6 +359,8 @@
 **活性条件**: サービスアカウントが設定されているとき
 
 **表示条件**: カレンダーを結び付けていない職員の行
+
+**カタログ**: [CalendarLinkView の List](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkview--list)、[CalendarLinkView の NotConfigured](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkview--not-configured)
 
 ### インタラクション
 
@@ -358,6 +378,8 @@
 
 **表示条件**: カレンダーを結び付けた職員の行
 
+**カタログ**: [CalendarLinkView の List](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkview--list)
+
 ### インタラクション
 
 #### 1. 押す
@@ -373,6 +395,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: カレンダーを結び付けた職員の行
+
+**カタログ**: [CalendarLinkView の List](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkview--list)
 
 ### インタラクション
 
@@ -390,6 +414,8 @@
 
 **表示条件**: ダイアログを開いているとき
 
+**カタログ**: [CalendarLinkDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkdialog--default)、[CalendarUnlinkDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarunlinkdialog--default)
+
 ### インタラクション
 
 #### 1. 押す
@@ -406,6 +432,8 @@
 
 **表示条件**: 一覧で結び付けるを押した後
 
+**カタログ**: [CalendarLinkDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkdialog--default)
+
 ## 閉じる
 
 **概要**: 結び付けずにダイアログを閉じる。
@@ -415,6 +443,8 @@
 **活性条件**: 結び付けを送っている間は押せない
 
 **表示条件**: 結び付けるダイアログを開いているとき
+
+**カタログ**: [CalendarLinkDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkdialog--default)
 
 ### インタラクション
 
@@ -432,6 +462,8 @@
 
 **表示条件**: 結び付けるダイアログを開いているとき
 
+**カタログ**: [CalendarLinkDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkdialog--default)
+
 ## カレンダーの ID の入力
 
 **概要**: 結び付ける Google カレンダーの ID を入れる。
@@ -446,6 +478,8 @@
 **活性条件**: 結び付けを送っている間は入力できない
 
 **表示条件**: 結び付けるダイアログを開いているとき
+
+**カタログ**: [CalendarLinkDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkdialog--default)
 
 ### インタラクション
 
@@ -462,6 +496,8 @@
 **活性条件**: カレンダーの ID が空でなく、確かめているか結び付けを送っている間でないとき
 
 **表示条件**: 結び付けるダイアログを開いているとき
+
+**カタログ**: [CalendarLinkDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkdialog--default)、[CalendarLinkDialog の Checking](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkdialog--checking)
 
 ### インタラクション
 
@@ -483,12 +519,15 @@
 | 共有されていないか、カレンダーが無い | 「このカレンダーを読めません。カレンダーを buddy のサービスアカウントに共有したかと、カレンダーの ID が合っているかを確かめてください。」 |
 | ほかの職員に結び付いている | 「このカレンダーは、ほかの職員に結び付いています。」 |
 | この職員にほかのカレンダーが結び付いている | 「この職員には、ほかのカレンダーが結び付いています。一覧を読み直してください。」 |
+| このカレンダーがこの職員にすでに結び付いている | 「このカレンダーは、この職員にすでに結び付いています。一覧を読み直してください。」 |
 | Google に届かない | 「Google カレンダーに届きませんでした。時間をおいて、もう一度確かめてください。」 |
 | そのほかの失敗 | 「確かめられませんでした。時間をおいて、もう一度確かめてください。」 |
 
 **活性条件**: 常に活性
 
 **表示条件**: 読めるかを確かめた後か、ダイアログの結び付けるが失敗した後。カレンダーの ID の入力を変えると消す
+
+**カタログ**: [CalendarLinkDialog の Readable](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkdialog--readable)、[CalendarLinkDialog の Unreadable](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkdialog--unreadable)
 
 ## キャンセル
 
@@ -499,6 +538,8 @@
 **活性条件**: 送っている間は押せない
 
 **表示条件**: ダイアログを開いているとき
+
+**カタログ**: [CalendarLinkDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkdialog--default)、[CalendarUnlinkDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarunlinkdialog--default)
 
 ### インタラクション
 
@@ -515,6 +556,8 @@
 **活性条件**: 今の入力で、読めるかを確かめて読めたとき
 
 **表示条件**: 結び付けるダイアログを開いているとき
+
+**カタログ**: [CalendarLinkDialog の Readable](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkdialog--readable)、[CalendarLinkDialog の Submitting](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkdialog--submitting)
 
 ### インタラクション
 
@@ -538,6 +581,8 @@
 
 **表示条件**: 一覧で外すを押した後
 
+**カタログ**: [CalendarUnlinkDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarunlinkdialog--default)
+
 ## 外すときの注意
 
 **概要**: 外すと、何が残り、何が消えるかを示す。
@@ -552,6 +597,8 @@
 
 **表示条件**: 外すダイアログを開いているとき
 
+**カタログ**: [CalendarUnlinkDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarunlinkdialog--default)
+
 ## ダイアログの外す
 
 **概要**: 職員に結び付けたカレンダーを外す。
@@ -561,6 +608,8 @@
 **活性条件**: 送っている間でないとき
 
 **表示条件**: 外すダイアログを開いているとき
+
+**カタログ**: [CalendarUnlinkDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarunlinkdialog--default)、[CalendarUnlinkDialog の Submitting](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarunlinkdialog--submitting)、[CalendarUnlinkDialog の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarunlinkdialog--failed)
 
 ### インタラクション
 
@@ -584,6 +633,8 @@
 
 **表示条件**: 職員とカレンダーとサービスアカウントを読み終えるまで
 
+**カタログ**: [CalendarLinkView の Loading](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkview--loading)
+
 ## 読み込みの失敗の文
 
 **概要**: 一覧を出せないことを示す。読み上げでは警告として扱う。
@@ -594,6 +645,8 @@
 
 **表示条件**: 職員かカレンダーの一覧を読めなかったとき
 
+**カタログ**: [CalendarLinkView の LoadError](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkview--load-error)
+
 ## 読み直す
 
 **概要**: 職員とカレンダーを読み直す。
@@ -603,6 +656,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: 読み込みに失敗したとき
+
+**カタログ**: [CalendarLinkView の LoadError](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkview--load-error)
 
 ### インタラクション
 
@@ -620,6 +675,8 @@
 
 **表示条件**: 予定の API がサービスアカウントの設定が無いと返したとき
 
+**カタログ**: [CalendarLinkView の NotConfigured](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkview--not-configured)
+
 ## 権限が無いことの題
 
 **概要**: この画面を開けないことを示す。
@@ -629,6 +686,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: ログインした職員が職員の管理の権限を持たないとき
+
+**カタログ**: [PageForbiddenMessage の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-pageforbiddenmessage--default)
 
 ## 権限が無いことの説明
 
@@ -644,6 +703,8 @@
 
 **表示条件**: ログインした職員が職員の管理の権限を持たないとき
 
+**カタログ**: [PageForbiddenMessage の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-pageforbiddenmessage--default)
+
 ## 予定のカレンダーへ
 
 **概要**: 予定のカレンダーへ戻る。
@@ -653,6 +714,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: ログインした職員が職員の管理の権限を持たないとき
+
+**カタログ**: [PageForbiddenMessage の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-pageforbiddenmessage--default)
 
 ### インタラクション
 
@@ -676,7 +739,6 @@
 
 ## 未決
 
-- URL は案である。予定のカレンダーの子のモーダルと違い、カレンダーの上に重ねない画面にする。ナビゲーションに「取り込み」を足すかも、実装の前に決める。
 - 結び付けと取り込みを職員の管理の権限で許すか、新しい権限を足すかは、PRD の Open Questions のとおり、M4 を始めるまでに決める。この画面は、職員の管理の権限で書いた。
 - 共有の手順の文言は、Google カレンダーの今の画面の言葉で書いた。Google が画面の言葉を変えたら直す。
 - 職員が Google のアカウントを事業所の外で持っていて、カレンダーを共有できないときの案内は書いていない。PRD の Open Questions のとおり、M4 を始めるまでに決める。
