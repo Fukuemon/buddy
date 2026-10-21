@@ -16,6 +16,7 @@ servers:
   - url: http://localhost:8080
 tags:
   - name: health
+    description: 死活と準備の確認
   - name: check
     description: 照合
 
@@ -235,14 +236,17 @@ components:
           description: 主訪問者
         schedule:
           allOf: [$ref: "#/components/schemas/Side"]
+          type: object
           nullable: true
           description: 予定の側。実績のみの行では null
         visit:
           allOf: [$ref: "#/components/schemas/Side"]
+          type: object
           nullable: true
           description: 実績の側。予定のみの行では null
         checks:
           allOf: [$ref: "#/components/schemas/Checks"]
+          type: object
           nullable: true
           description: 予定と実績の両方があるときだけ持つ。片側だけの行では null
 
@@ -321,6 +325,7 @@ components:
           description: 判定した分。提供時間が空なら null
         range:
           allOf: [$ref: "#/components/schemas/Range"]
+          type: object
           nullable: true
           description: 許容範囲。範囲を持たないサービス内容なら null
 
