@@ -1,6 +1,7 @@
 # 文書のサイトと、Storybook のカタログと、表の ER 図を、1 つの Worker（buddy-docs）として Cloudflare に出す。
 # 手順と Access の設定は apps/docs-site/README.md にある。
 # pull request ではプレビューを出して URL をコメントし、develop に入ったら本番に出す。
+# フォークと Dependabot の pull request には GitHub が secret を渡さないので、ビルドだけを流し、プレビューとコメントを飛ばす。
 # 文書の元は docs/ のほか、各アプリの Design Doc にも散るので、変えた場所で絞らない。
 
 name: 文書のサイト
@@ -39,7 +40,7 @@ jobs:
       - run: pnpm site:build
 
       - name: プレビューを出す
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
         id: preview
         working-directory: apps/docs-site
         env:
@@ -51,7 +52,7 @@ jobs:
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       - name: プレビューの URL を pull request にコメントする
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
