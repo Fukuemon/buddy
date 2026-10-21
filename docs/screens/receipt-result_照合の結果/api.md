@@ -1,11 +1,11 @@
 # receipt-result API との対応
 
-[照合の結果](index.md) の項目と、web の型と OpenAPI の項目の対応。OpenAPI の項目は、`createCheck`（`POST /v1/checks`）の応答の `Report` で書く。
+[照合の結果](index.md) の項目と、web の型と OpenAPI の項目の対応。OpenAPI の項目は、`createCheck`（`POST /v1/checks`）のレスポンスの `Report` で書く。
 
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
 | ログインした職員 | 職員の名前 | `Viewer.staffName` | `getMe` の `username` |
-| ページの題 | 予定の取り方 | `ReceiptResult.month` | 要求の `month` |
+| ページのタイトル | 予定の取り方 | `ReceiptResult.month` | リクエストの `month` |
 | 区分ごとの件数 | 4 つの区分の件数 | `ReceiptReport.summary` | `summary` |
 | 照合に使わなかった予定 | 開始の日時と理由 | `ReceiptReport.warnings` | `warnings[].start`、`warnings[].message` |
 | 結果の表 | 対の一覧 | `ReceiptReport.rows` | `rows` |

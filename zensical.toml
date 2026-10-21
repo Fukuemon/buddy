@@ -32,9 +32,9 @@ nav = [
     { "証跡の録画" = "design/packages/e2e-recording.md" },
   ] },
   # 予定の管理の表。tbls の生成物（scripts/build-db-docs.sh）で、viewpoint の文書は全て載せる（build-db-docs.sh が確かめる）
-  # 表ごとの文書は載せず、表の一覧と viewpoint の文書から開く
+  # テーブルごとの文書は載せず、テーブルの一覧と viewpoint の文書から開く
   { "DB の設計" = [
-    { "表の一覧" = "db/schedule-api/README.md" },
+    { "テーブルの一覧" = "db/schedule-api/README.md" },
     # Liam ERD で描く、操作できる ER 図（pnpm build:erd）。同じサイトの /erd/ に置き、手元の zensical serve には無い
     { "ER 図（Liam ERD）" = "/erd/" },
     { "事業所と組織" = "db/schedule-api/viewpoint-organization.md" },

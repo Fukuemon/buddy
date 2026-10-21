@@ -12,7 +12,7 @@ status: draft
 buddy は、訪問看護の事業所の職員が使う、予定の管理とレセプトの照合のアプリである。  
 職員はブラウザで web を開き、web が schedule-api と receipt-api を呼ぶ。  
 誰のどの課題を解くかと、提供する機能と画面は [PRD](../PRD.md) にある。  
-文書のサイトとカタログを公開する仕組み（`apps/docs-site`）は、[apps/docs-site/README.md](https://github.com/Fukuemon/buddy/blob/develop/apps/docs-site/README.md) にある。
+文書のサイトとカタログのデプロイの構成（`apps/docs-site`）は、[apps/docs-site/README.md](https://github.com/Fukuemon/buddy/blob/develop/apps/docs-site/README.md) にある。
 
 ## Goals and Non-Goals
 
@@ -25,7 +25,7 @@ buddy は、訪問看護の事業所の職員が使う、予定の管理とレ�
 
 ### Non-Goals
 
-- どのコンテナをどの種類の基盤で動かすかと、クラスタの構成。
+- どのコンテナをどの種類の基盤で実行するかと、クラスタの構成。
   - インフラのリポジトリ（非公開）が持ち、buddy は [インフラとの約束](#インフラとの約束) だけを守る。
 
 ## Assumptions and Constraints
@@ -50,10 +50,10 @@ flowchart TB
   broker["OIDC のブローカー<br/>[外部のシステム]<br/>外部の IdP の前に立つ"]
   subgraph buddy["buddy"]
     web["web<br/>[コンテナ: TanStack Start]<br/>画面と BFF"]
-    valkey[("Valkey<br/>[データの置き場]<br/>web のセッション")]
+    valkey[("Valkey<br/>[データの保存先]<br/>web のセッション")]
     schedule["schedule-api<br/>[コンテナ: Go]<br/>事業所、職員、予定、権限"]
     receipt["receipt-api<br/>[コンテナ: Go]<br/>照合"]
-    postgres[("PostgreSQL 18<br/>[データの置き場]<br/>schedule-api のデータ")]
+    postgres[("PostgreSQL 18<br/>[データの保存先]<br/>schedule-api のデータ")]
   end
   gcal["Google Calendar API<br/>[外部のシステム]<br/>職員が入れた予定"]
   staff -- "画面を使う" --> web
@@ -98,7 +98,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 - 画面を描き、BFF としてブローカーとのログインとセッションを持つ。
 - API を呼ぶときに、セッションの access token を付ける。
 - 持たないもの: 業務の規則と認可の判定。
-  - web は職員の権限を画面の出し分けに使うが、要求を拒否するのは API である。
+  - web は職員の権限を画面の出し分けに使うが、リクエストを拒否するのは API である。
 
 ### schedule-api
 
@@ -126,15 +126,15 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 - ブラウザと web: HTTPS でつなぐ。
   - cookie にはセッションの ID を入れ、トークンは入れない。
   - 画面の操作は、web のサーバーの関数（BFF）を呼ぶ。API はブラウザから直接は呼ばれない。
-  - 例外は、開発者が手元で文書のサイトの API の仕様のページから、手元の API を試すときだけである。API は `CORS_ALLOW_ORIGINS` に挙げたオリジンにだけ CORS のヘッダーを返し、手元の compose は、web と手元の文書のサイトのオリジンを挙げる。
+  - 例外は、開発者がローカルで文書のサイトの API の仕様のページから、ローカルの API を試すときだけである。API は `CORS_ALLOW_ORIGINS` に挙げたオリジンにだけ CORS のヘッダーを返し、ローカルの compose は、web とローカルの文書のサイトのオリジンを挙げる。
 - ブラウザとブローカー: ログインのときだけ、web がブラウザをブローカーの認可の画面へ転送する。
 - web とブローカー: 認可コードフローでトークンを取得し、更新する。トークンは Valkey のセッションに置く。
 - web と schedule-api、receipt-api: `Authorization` に access token を Bearer で付ける。
   - 契約の正本は [schedule-api の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/apps/schedule-api/openapi.yaml) と [receipt-api の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/openapi.yaml) である。サーバーの Go のコードと web の型は、そこから生成する。
   - 契約を変えるときの互換の規則は ADR-0003 にある。
-  - ADR-0003: [git flow で取り込み、アプリごとのバージョンでリリースする](../adr/0003-branch-and-release.md)
-- schedule-api、receipt-api とブローカー: 発行者の discovery と JWKS を読み、access token を検証する。検証に失敗したら 401 を返す。
-- receipt-api、schedule-api と Google Calendar API: サービスアカウントで、閲覧の権限で共有されたカレンダーの予定を読む。schedule-api は、取り込みの下見と確定のときだけ読む。
+  - ADR-0003: [git flow でマージし、アプリごとのバージョンでリリースする](../adr/0003-branch-and-release.md)
+- schedule-api、receipt-api とブローカー: Issuer の discovery と JWKS を読み、access token を検証する。検証に失敗したら 401 を返す。
+- receipt-api、schedule-api と Google Calendar API: サービスアカウントで、閲覧の権限で共有されたカレンダーの予定を読む。schedule-api は、取り込みのプレビューと確定のときだけ読む。
 - schedule-api と PostgreSQL: schedule-api だけが読み書きする。
 
 ### インフラとの約束
@@ -153,48 +153,48 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 
 | 変数 | web | schedule-api | receipt-api | 中身 |
 | --- | --- | --- | --- | --- |
-| `PORT` | 使う | 任意 | 任意 | 待ち受けるポート。API の既定は `8080`。web のイメージは `3000` を入れる |
-| `LOG_LEVEL` | 使わない | 任意 | 任意 | ログの段階。既定は `info` |
-| `OIDC_ISSUER` | 使う | 使う | 使う | ブローカーの発行者の URL。JWKS の場所もここから求める |
+| `PORT` | 使う | 任意 | 任意 | 待ち受けるポート。API のデフォルトは `8080`。web のイメージは `3000` を入れる |
+| `LOG_LEVEL` | 使わない | 任意 | 任意 | ログの段階。デフォルトは `info` |
+| `OIDC_ISSUER` | 使う | 使う | 使う | ブローカーの Issuer の URL。JWKS の場所もここから求める |
 | `OIDC_AUDIENCE` | 使わない | 使う | 使う | access token の `aud` に求める値 |
-| `OIDC_ORG_CLAIM` | 使わない | 任意 | 任意 | access token で組織の ID を持つクレームの名前。既定は `org_id` |
+| `OIDC_ORG_CLAIM` | 使わない | 任意 | 任意 | access token で組織の ID を持つクレームの名前。デフォルトは `org_id` |
 | `OIDC_CLIENT_ID` | 使う | 使わない | 使わない | web のクライアントの ID |
-| `OIDC_CLIENT_SECRET` | 使う | 使わない | 使わない | web のクライアントの秘密の値 |
-| `OIDC_AUTHORIZATION_ENDPOINT` | 任意 | 使わない | 使わない | ブラウザを転送する認可の URL。web とブラウザから届く IdP の URL が違う手元の環境だけで渡す |
+| `OIDC_CLIENT_SECRET` | 使う | 使わない | 使わない | web のクライアントのシークレット |
+| `OIDC_AUTHORIZATION_ENDPOINT` | 任意 | 使わない | 使わない | ブラウザを転送する認可の URL。web とブラウザから届く IdP の URL が違うローカル環境だけで渡す |
 | `SESSION_STORE_URL` | 使う | 使わない | 使わない | Valkey の接続先 |
 | `SESSION_SECRET` | 使う | 使わない | 使わない | cookie の署名の鍵。32 バイト以上 |
-| `SESSION_COOKIE_SECURE` | 任意 | 使わない | 使わない | `false` のときだけ、セッションの cookie に Secure を付けない。https でない手元の環境で使う |
+| `SESSION_COOKIE_SECURE` | 任意 | 使わない | 使わない | `false` のときだけ、セッションの cookie に Secure を付けない。https でないローカル環境で使う |
 | `SCHEDULE_API_URL` | 使う | 使わない | 使わない | schedule-api の URL |
 | `RECEIPT_API_URL` | 使う | 使わない | 使わない | receipt-api の URL |
-| `DB_HOST`、`DB_PORT` | 使わない | 任意 | 使わない | PostgreSQL のホストとポート。既定は `localhost` と `5432` |
+| `DB_HOST`、`DB_PORT` | 使わない | 任意 | 使わない | PostgreSQL のホストとポート。デフォルトは `localhost` と `5432` |
 | `DB_USER`、`DB_PASSWORD`、`DB_NAME` | 使わない | 使う | 使わない | PostgreSQL の利用者、パスワード、データベースの名前 |
 | `CORS_ALLOW_ORIGINS` | 使わない | 任意 | 任意 | CORS を許すオリジン。カンマで区切る。空なら CORS のヘッダーを返さない |
-| `MAX_UPLOAD_BYTES` | 使わない | 使わない | 任意 | 照合の要求の本文の上限。既定は 10 MiB |
+| `MAX_UPLOAD_BYTES` | 使わない | 使わない | 任意 | 照合のリクエストの本文の上限。デフォルトは 10 MiB |
 | `GOOGLE_CALENDARS_FILE` | 使わない | 使わない | 任意 | 職員とカレンダーと組織の対応の JSON。空なら Google カレンダーから予定を取らない |
 | `GOOGLE_CALENDAR_SERVICE_ACCOUNT` | 使わない | 任意 | 使わない | 職員がカレンダーを共有する相手のサービスアカウントのメールアドレス。空なら、カレンダーを読む操作は 503 を返し、予定を Google カレンダーに書き出さない |
-| `GOOGLE_CALENDAR_ENDPOINT` | 使わない | 任意 | 任意 | Calendar API の代わりに呼ぶ URL。テストの偽物に向けるときだけ渡す。schedule-api では `GOOGLE_CALENDAR_SERVICE_ACCOUNT` と一緒に渡す |
-| `GOOGLE_CALENDAR_EXPORT_ENABLED` | 使わない | 任意 | 使わない | `true` なら予定を Google カレンダーに書き出す。既定は `false`。サービスアカウントが「予定の変更」の共有だけで書けるかを確かめるまで、本番では `false` にする（ADR-0012 の承認の条件） |
-| `GOOGLE_CALENDAR_EXPORT_INTERVAL` | 使わない | 任意 | 使わない | 予定の書き出しの待ちを確かめる間隔。既定は 30 秒 |
+| `GOOGLE_CALENDAR_ENDPOINT` | 使わない | 任意 | 任意 | Calendar API の代わりに呼ぶ URL。テストのフェイクに向けるときだけ渡す。schedule-api では `GOOGLE_CALENDAR_SERVICE_ACCOUNT` と一緒に渡す |
+| `GOOGLE_CALENDAR_EXPORT_ENABLED` | 使わない | 任意 | 使わない | `true` なら予定を Google カレンダーに書き出す。デフォルトは `false`。サービスアカウントが「予定の変更」の共有だけで書けるかを確かめるまで、本番では `false` にする（ADR-0012 の承認の条件） |
+| `GOOGLE_CALENDAR_EXPORT_INTERVAL` | 使わない | 任意 | 使わない | 予定の書き出しの待ちを確かめる間隔。デフォルトは 30 秒 |
 
 - web の `VITE_API_MODE` は、イメージのビルドのときに埋め込む値で、実行のときには読まない。イメージは `bff` でビルドする。
 - receipt-api と schedule-api は、Google の認証情報を Application Default Credentials（`GOOGLE_APPLICATION_CREDENTIALS` など）で読む。schedule-api は、`GOOGLE_CALENDAR_SERVICE_ACCOUNT` があるときだけ読み、読めなければ起動しない。schedule-api のスコープは、書き出すとき（`GOOGLE_CALENDAR_EXPORT_ENABLED`）は `calendar.events`、ほかは `calendar.readonly` である。
-- schedule-api は、同じプロセスの中で予定の書き出しの処理を動かす。複数のレプリカで動かしても、同じ書き出しの待ちは 1 つのレプリカだけが書く（行のロックと期限）。
+- schedule-api は、同じプロセスの中で予定の書き出しの処理を実行する。複数のレプリカで実行しても、同じ書き出しの待ちは 1 つのレプリカだけが書く（レコードのロックと期限）。
 
-秘密の値（`OIDC_CLIENT_SECRET`、`SESSION_SECRET`、`DB_PASSWORD`、Google のサービスアカウントの認証情報）は、インフラのリポジトリが秘密の情報の置き場から渡す。buddy のリポジトリには置かない。
+シークレット（`OIDC_CLIENT_SECRET`、`SESSION_SECRET`、`DB_PASSWORD`、Google のサービスアカウントの認証情報）は、インフラのリポジトリがシークレットの保存先から渡す。buddy のリポジトリには置かない。
 
 #### ヘルスチェック
 
-- `GET /healthz`: プロセスが応答できれば 200 を返す。依存先を確かめない。
+- `GET /healthz`: プロセスがレスポンスを返せれば 200 を返す。依存先を確かめない。
 - `GET /readyz`: 依存先に届けば 200、届かなければ 503 を返す。schedule-api は PostgreSQL、web は Valkey を確かめる。
-  - receipt-api は起動のときにブローカーの discovery を読み、読めなければ起動しない。起動した後は依存先を確かめず、応答できれば 200 を返す。
+  - receipt-api は起動のときにブローカーの discovery を読み、読めなければ起動しない。起動した後は依存先を確かめず、レスポンスを返せれば 200 を返す。
 - 2 つとも認証を求めない。
 
 #### マイグレーション
 
 - schedule-api のイメージは、`api` と `migrate` の 2 つのバイナリを持ち、エントリポイントは `api` である。
-  - マイグレーションは、エントリポイントを `/usr/local/bin/migrate` にして `up` を渡すと当てて終わる。
+  - マイグレーションは、エントリポイントを `/usr/local/bin/migrate` にして `up` を渡すと適用して終わる。
 - マイグレーションは golang-migrate の形式で `apps/schedule-api/db/migrations/` に置き、バイナリに埋め込む。
-- インフラは、新しいイメージを動かす前に、同じイメージで `migrate up` を 1 回動かす。マイグレーションは、前のバージョンのアプリが動いたまま当てられる変更だけにする。
+- インフラは、新しいイメージを起動する前に、同じイメージで `migrate up` を 1 回実行する。マイグレーションは、前のバージョンのアプリが動いたまま適用できる変更だけにする。
 
 ## Cross-Cutting Concerns
 
@@ -208,7 +208,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 ### 事業所の分離
 
 - 事業所は、ブローカーの組織に対応する。
-- schedule-api は、要求が指す事業所がトークンの組織の事業所と違えば、403 を返す。
+- schedule-api は、リクエストが指す事業所がトークンの組織の事業所と違えば、403 を返す。
   - 拒否する規則は [事業所の分離](https://github.com/Fukuemon/buddy/blob/develop/context/domain/facility.md) に、パスの形は [予定の管理の Design Doc の Interface](https://github.com/Fukuemon/buddy/blob/develop/apps/schedule-api/DesignDoc.md#interface) にある。
 - receipt-api は、カレンダーに組織を結び付け、トークンの組織のカレンダーだけを読む。予定の CSV での照合は、組織を問わない。
 
@@ -216,12 +216,12 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 
 - 予定の閲覧と編集は、職員の権限で schedule-api が判定する。見てよくない予定は一覧から除き、1 件を指す操作には 403 を返す。
   - 規則は [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/apps/schedule-api/DesignDoc.md#予定の認可) にある。
-  - ADR-0002: [権限を役職の既定と職員ごとの上書きで持つ（PBAC）](../adr/0002-pbac.md)
+  - ADR-0002: [権限を役職のデフォルトと職員ごとの上書きで持つ（PBAC）](../adr/0002-pbac.md)
 
 ### ログと個人情報
 
 - トークン、cookie、DB の接続先、利用者の名前、CSV の中身をログに出さない。
-- テストとシードのデータは架空の値で作る。
+- テストとシードのデータはダミーデータで作る。
 
 ## Repository Layout
 
@@ -239,9 +239,9 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 ├── packages/
 │   ├── ui/              # デザインシステム。トークン、Base と Case のコンポーネント、Storybook
 │   │   └── DESIGN.md    # デザインシステムの設計
-│   ├── e2e/             # E2E のテストと、人手検証の証跡を撮る kit
+│   ├── e2e/             # E2E のテストと、手動検証のエビデンスを撮る kit
 │   │   ├── DesignDoc.md # E2E のテストのコードの設計
-│   │   └── kit/recording/DesignDoc.md # 証跡の録画の設計
+│   │   └── kit/recording/DesignDoc.md # エビデンスの録画の設計
 │   └── go/              # 2 つの API が共有する Go の module。OIDC の検証、ヘルスチェック
 ├── docs/                # Zensical のサイトの元。PRD、Design Doc、ADR、画面仕様書、API の仕様、DB の設計
 │   ├── PRD.md
@@ -252,11 +252,11 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 │   ├── adr/
 │   ├── screens/         # 画面仕様書とモック
 │   ├── api/             # 各 API の openapi.yaml へのシンボリックリンクと、それを描くページ
-│   └── db/              # schedule-api のマイグレーションから tbls で生成する表の一覧と ER 図
+│   └── db/              # schedule-api のマイグレーションから tbls で生成するテーブルの一覧と ER 図
 ├── context/             # 作業の中で参照する規約と事実
-├── scripts/             # 生成物と画面仕様書のチェック、サイトの組み立て
-├── compose.yml          # 手元で全部を動かす
-├── compose/             # 手元の IdP の設定
+├── scripts/             # 生成物と画面仕様書のチェック、サイトのビルド
+├── compose.yml          # ローカル環境で全体を起動する
+├── compose/             # ローカルの IdP の設定
 ├── zensical.toml
 └── pyproject.toml       # Zensical を uv で入れる
 ```
