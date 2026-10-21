@@ -36,10 +36,13 @@ func (r *VisitRepository) CreateInfo(ctx context.Context, i visit.Info) error {
 	return nil
 }
 
+// DeleteInfoIfUnused は、予定と繰り返しの予定のどれも指していない訪問の情報 id を、区分の結び付きごと消す。
+// 指されているか、無いときは何もせず、エラーも返さない。
 func (r *VisitRepository) DeleteInfoIfUnused(ctx context.Context, id string) error {
 	return translate("delete visit info", r.q(ctx).DeleteUnusedVisitInfo(ctx, id))
 }
 
+// GetServiceCode は、ID が id のサービスコードを返す。無いときは domain.ErrNotFound を返す。
 func (r *VisitRepository) GetServiceCode(ctx context.Context, id string) (visit.ServiceCode, error) {
 	c, err := r.q(ctx).GetServiceCode(ctx, id)
 	if err != nil {
@@ -48,6 +51,7 @@ func (r *VisitRepository) GetServiceCode(ctx context.Context, id string) (visit.
 	return serviceCode(c), nil
 }
 
+// ListServiceCodes は、すべてのサービスコードをコード、ID の順に返す。
 func (r *VisitRepository) ListServiceCodes(ctx context.Context) ([]visit.ServiceCode, error) {
 	rows, err := r.q(ctx).ListServiceCodes(ctx)
 	if err != nil {
@@ -60,6 +64,7 @@ func (r *VisitRepository) ListServiceCodes(ctx context.Context) ([]visit.Service
 	return out, nil
 }
 
+// ListCategories は、すべての訪問の区分を名前、ID の順に返す。
 func (r *VisitRepository) ListCategories(ctx context.Context) ([]visit.Category, error) {
 	rows, err := r.q(ctx).ListVisitCategories(ctx)
 	if err != nil {
@@ -68,6 +73,7 @@ func (r *VisitRepository) ListCategories(ctx context.Context) ([]visit.Category,
 	return categories(rows), nil
 }
 
+// ListCategoriesByIDs は、ids のうち見つかった区分だけを名前、ID の順に返す。ids が空のときは問い合わせずに空のスライスを返す。
 func (r *VisitRepository) ListCategoriesByIDs(ctx context.Context, ids []string) ([]visit.Category, error) {
 	if len(ids) == 0 {
 		return []visit.Category{}, nil

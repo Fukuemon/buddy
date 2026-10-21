@@ -11,6 +11,12 @@ linters:
     - sqlclosecheck
     - unconvert
     - unparam
+    - revive
+  settings:
+    revive:
+      rules:
+        - name: exported
+        - name: package-comments
   exclusions:
     generated: lax
     rules:
