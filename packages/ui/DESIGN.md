@@ -17,7 +17,7 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 | 色、文字、角丸、影の値 | DADS の `@digital-go-jp/design-tokens` の `dist/tokens.css` |
 | 意味のトークンの名前と、DADS のどの値を指すか | [`src/tokens/semantic.css`](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/src/tokens/semantic.css) |
 | Tailwind のユーティリティの名前 | [`src/tokens/theme.css`](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/src/tokens/theme.css) |
-| 今の画面の値を、どのトークンに置き換えるか | [今の画面のテーマとトークンの対応表](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/src/tokens/current-theme-map.md) |
+| トークンに置き換える前の apps/web の値が、どのトークンになったか | [置き換える前のテーマとトークンの対応表](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/src/tokens/current-theme-map.md) |
 | コンポーネントの props と振る舞い | `src/base/` と `src/case/` のコンポーネントのコードと story |
 | 構成の判断と、却下した案 | `docs/adr/` の ADR |
 
@@ -108,7 +108,10 @@ DADS は、重ねて出すものを下のコンポーネントより 2 段以上
 
 コンポーネントは、BCD Design の Base（基本のコンポーネント）と Case（場面を持つコンポーネント）だけを packages/ui に置く。  
 予定や職員のようなドメインの名前を持つコンポーネントは、apps/web の `features/<機能>/components` に置く。  
-名前は、ドメイン、場面、基本の語の順に並べる（例は `StaffSearchBox`）。
+名前は、ドメイン、場面、基本の語の順に並べる（例は `StaffSearchBox`）。  
+`src/icons/` には、packages/ui のコンポーネントが中で使う印（SVG を描くコンポーネント）を置く。  
+印は `index.ts` から export せず、カタログにも載せない。  
+apps/web の画面だけが使う印は、`apps/web/src/assets/icons/` の SVG を使う。
 
 | コンポーネント | 使う場面 | 使わない場面 | キーボード |
 | --- | --- | --- | --- |
@@ -146,7 +149,7 @@ packages/ui の Storybook は、コンポーネントを単独で開発し、sto
 | はじめに | 原則、アクセシビリティの基準 | `packages/ui/src/docs/*.mdx` |
 | トークン | 色の階調と意味のトークン（`ColorPalette`）、文字（`Typeset`）、余白、角丸、影 | `packages/ui/src/tokens/*.mdx` |
 | コンポーネント | コンポーネントごとの MDX。使う場面、使わない場面、Do と Don't、状態、キーボードの操作 | `packages/ui/src/base/<コンポーネント>/`、`packages/ui/src/case/<コンポーネント>/` |
-| パターン | コンポーネントを組み合わせた形（入力のダイアログ、絞り込みの一覧） | `packages/ui/src/patterns/` |
+| パターン | コンポーネントを組み合わせた形（入力のダイアログ、絞り込みの一覧） | `packages/ui/src/patterns/`。パターンを作るときの置き場で、ディレクトリはパターンを作るときに作る |
 | 画面 | apps/web のコンポーネントと画面の story | `apps/web/src/features/<機能>/components/`、`apps/web/src/components/` |
 
 コンポーネントの MDX の「状態」には、既定、hover、フォーカス、無効、エラー、読み込みのうち、そのコンポーネントが持つものを全て story で並べる。
@@ -173,4 +176,4 @@ title は、ファイルの置き場から機械的に決め、story を作る�
 
 - 利用者と職員の名前、事業所、予定は、`青木 一郎` のような架空の値にする。実際の画面やデータベースから写さない。
 - API を呼ぶ story を作らない。データは story の中か、架空のデータのファイルから渡す。
-- URL、ホスト名、秘密の値を書かない。
+- story と MDX に、URL、ホスト名、秘密の値を書かない。この規則は story と MDX だけに当てはまり、この文書と画面仕様書からカタログへのリンクは、カタログの URL で書く。
