@@ -3,7 +3,9 @@ package gcal
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	calendarv3 "google.golang.org/api/calendar/v3"
@@ -24,7 +26,8 @@ func NewReader(svc *calendarv3.Service) *Reader {
 
 // Events は、calendarID のカレンダーの、timeMin から timeMax までに重なる予定を、全てのページを読んで返す。
 // 繰り返しの予定は展開せず（singleEvents=false）、親の予定と、変えた回と取り消した回を返す。日時は Asia/Tokyo で返る。
-// Calendar API の呼び出しに失敗すると、*googleapi.Error を包んだエラーを返す。
+// Calendar API の呼び出しに失敗するとエラーを返す。HTTP の誤りの応答では、*googleapi.Error を包む。
+// エラーの文はカレンダー ID（職員のメールアドレスのことがある）を含まない。
 func (r *Reader) Events(ctx context.Context, calendarID string, timeMin, timeMax time.Time) ([]calendar.Event, error) {
 	var events []calendar.Event
 	// singleEvents と showDeleted が false のとき、繰り返しの予定の取り消した回は cancelled で返る。
@@ -43,7 +46,12 @@ func (r *Reader) Events(ctx context.Context, calendarID string, timeMin, timeMax
 			return nil
 		})
 	if err != nil {
-		return nil, fmt.Errorf("カレンダー %s の予定を取れない: %w", calendarID, err)
+		// 通信の誤り（*url.Error）の文は、カレンダー ID を含む要求の URL を持つ。
+		var uerr *url.Error
+		if errors.As(err, &uerr) {
+			err = uerr.Err
+		}
+		return nil, fmt.Errorf("カレンダーの予定を取れない: %w", err)
 	}
 	return events, nil
 }

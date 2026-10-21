@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"reflect"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -167,7 +168,23 @@ func TestReaderEventsError(t *testing.T) {
 			if !errors.As(err, &gerr) || gerr.Code != status {
 				t.Fatalf("err = %v, want *googleapi.Error の %d", err, status)
 			}
+			if strings.Contains(err.Error(), "staff") {
+				t.Errorf("err = %v, カレンダー ID を含む", err)
+			}
 		})
+	}
+}
+
+func TestReaderEventsTransportError(t *testing.T) {
+	ts := httptest.NewServer(http.NotFoundHandler())
+	ts.Close()
+	svc, err := calendar.NewService(t.Context(), option.WithEndpoint(ts.URL+"/"), option.WithHTTPClient(ts.Client()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = gcal.NewReader(svc).Events(t.Context(), "staff@example.com", timeMin, timeMax)
+	if err == nil || strings.Contains(err.Error(), "staff") {
+		t.Fatalf("err = %v, want カレンダー ID を含まない誤り", err)
 	}
 }
 
