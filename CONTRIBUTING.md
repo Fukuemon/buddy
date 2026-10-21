@@ -122,6 +122,12 @@ node .claude/hooks/docs/hooks/check-links.mjs
 各 API の定義の正本は、`apps/schedule-api/openapi.yaml` と `apps/receipt-api/openapi.yaml` である。サーバーの Go のコードと画面の型は、そこから生成してコミットする。  
 openapi.yaml を変えたら、同じコミットで生成物も生成し直す。
 
+定義の書き方は Redocly CLI の `recommended-strict` の規則で確かめる。pre-commit のフックが、`openapi.yaml` をステージしたときに流す。規則を外す箇所は `.redocly.lint-ignore.yaml` に理由と一緒に書き、規則ごと外すものは `redocly.yaml` に書く。
+
+```sh
+pnpm lint:openapi
+```
+
 | 変えたもの | 生成のコマンド | 生成物 |
 | --- | --- | --- |
 | `apps/receipt-api/openapi.yaml` | `apps/receipt-api` で `go generate ./...` | `apps/receipt-api/internal/httpapi/openapi/` |

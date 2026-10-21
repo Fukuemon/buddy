@@ -18,6 +18,7 @@ servers:
   - url: http://localhost:8080
 tags:
   - name: health
+    description: 死活と準備の確認
   - name: organization
     description: 事業所、部署、チーム、役職、権限
   - name: staff
@@ -1073,6 +1074,7 @@ components:
         patient_id: { $ref: "#/components/schemas/ID" }
         assigned_staff_id: { $ref: "#/components/schemas/ID" }
         companion_id:
+          type: string
           nullable: true
           allOf:
             - $ref: "#/components/schemas/ID"
@@ -1088,12 +1090,14 @@ components:
         date: { $ref: "#/components/schemas/Date" }
         start_time: { $ref: "#/components/schemas/Time" }
         end_time:
-          $ref: "#/components/schemas/Time"
           description: start_time より後
+          allOf:
+            - $ref: "#/components/schemas/Time"
         staff_id: { $ref: "#/components/schemas/ID" }
         title: { type: string, nullable: true, maxLength: 255 }
         description: { type: string, nullable: true, maxLength: 2000 }
         visit_info:
+          type: object
           nullable: true
           allOf:
             - $ref: "#/components/schemas/VisitInfoRequest"
@@ -1117,6 +1121,7 @@ components:
         assigned_staff_id: { $ref: "#/components/schemas/ID" }
         assigned_staff_name: { type: string }
         companion_id:
+          type: string
           nullable: true
           allOf:
             - $ref: "#/components/schemas/ID"
@@ -1170,14 +1175,17 @@ components:
         description: { type: string, nullable: true }
         recurring_schedule_id:
           description: 繰り返しの予定の 1 回を置き換えた予定のとき、元の繰り返しの予定
+          type: string
           nullable: true
           allOf:
             - $ref: "#/components/schemas/ID"
         visit_info:
+          type: object
           nullable: true
           allOf:
             - $ref: "#/components/schemas/VisitInfo"
         cancel:
+          type: object
           nullable: true
           allOf:
             - $ref: "#/components/schemas/Cancel"
@@ -1204,6 +1212,7 @@ components:
         week_of_month: { type: integer, nullable: true, minimum: 1, maximum: 5, x-omitempty: false }
         end_date:
           description: この日を含む
+          type: string
           nullable: true
           x-omitempty: false
           allOf:
@@ -1234,8 +1243,9 @@ components:
         schedule_type_id: { $ref: "#/components/schemas/ID" }
         schedule_type: { $ref: "#/components/schemas/ScheduleTypeName" }
         date:
-          $ref: "#/components/schemas/Date"
           description: 最初の回の日付
+          allOf:
+            - $ref: "#/components/schemas/Date"
         start_time: { $ref: "#/components/schemas/Time" }
         end_time: { $ref: "#/components/schemas/Time" }
         is_over_time_work: { type: boolean }
@@ -1244,6 +1254,7 @@ components:
         title: { type: string, nullable: true }
         description: { type: string, nullable: true }
         visit_info:
+          type: object
           nullable: true
           allOf:
             - $ref: "#/components/schemas/VisitInfo"
