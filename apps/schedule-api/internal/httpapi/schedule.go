@@ -3,10 +3,10 @@ package httpapi
 import (
 	"context"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/schedule"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi/openapi"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/usecase"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
 )
 
 // ScheduleUsecase は、予定のハンドラが使う操作である。
@@ -14,29 +14,29 @@ type ScheduleUsecase interface {
 	ListTypes(ctx context.Context) ([]schedule.Type, error)
 	Get(ctx context.Context, id string) (schedule.Detail, error)
 	GetRecurring(ctx context.Context, id string) (schedule.RecurringDetail, error)
-	List(ctx context.Context, facilityID string, q schedule.ListQuery) (usecase.List, error)
-	Create(ctx context.Context, facilityID string, in usecase.SlotInput) (schedule.Detail, error)
-	CreateRecurring(ctx context.Context, facilityID string, in usecase.SlotInput, rule usecase.RuleInput) (schedule.RecurringDetail, error)
-	ChangeOccurrence(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in usecase.SlotInput) (schedule.Detail, error)
+	List(ctx context.Context, facilityID string, q schedule.ListQuery) (schedule.List, error)
+	Create(ctx context.Context, facilityID string, in schedule.SlotInput) (schedule.Detail, error)
+	CreateRecurring(ctx context.Context, facilityID string, in schedule.SlotInput, rule schedule.RuleInput) (schedule.RecurringDetail, error)
+	ChangeOccurrence(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in schedule.SlotInput) (schedule.Detail, error)
 	Cancel(ctx context.Context, scheduleID, reason string) (schedule.Cancel, error)
-	Update(ctx context.Context, scheduleID string, in usecase.SlotInput) (schedule.Detail, error)
+	Update(ctx context.Context, scheduleID string, in schedule.SlotInput) (schedule.Detail, error)
 }
 
-// slotInput は、検証した本文の予定の枠を usecase の入力に変える。日付と時刻の形が誤っていれば 400 になるエラーを返す。
-func slotInput(r openapi.SlotRequest) (usecase.SlotInput, error) {
+// slotInput は、検証した本文の予定の枠を schedule.SlotInput に変える。日付と時刻の形が誤っていれば 400 になるエラーを返す。
+func slotInput(r openapi.SlotRequest) (schedule.SlotInput, error) {
 	date, err := bodyDate(r.Date)
 	if err != nil {
-		return usecase.SlotInput{}, err
+		return schedule.SlotInput{}, err
 	}
 	start, err := bodyTime(r.StartTime)
 	if err != nil {
-		return usecase.SlotInput{}, err
+		return schedule.SlotInput{}, err
 	}
 	end, err := bodyTime(r.EndTime)
 	if err != nil {
-		return usecase.SlotInput{}, err
+		return schedule.SlotInput{}, err
 	}
-	in := usecase.SlotInput{
+	in := schedule.SlotInput{
 		TypeID:      r.ScheduleTypeId,
 		Date:        date,
 		StartTime:   start,
@@ -46,7 +46,7 @@ func slotInput(r openapi.SlotRequest) (usecase.SlotInput, error) {
 		Description: r.Description,
 	}
 	if v := r.VisitInfo; v != nil {
-		in.Visit = &usecase.VisitInput{
+		in.Visit = &visit.Input{
 			PatientID:       v.PatientId,
 			AssignedStaffID: v.AssignedStaffId,
 			CompanionID:     v.CompanionId,
@@ -143,7 +143,7 @@ func (s server) CreateRecurringSchedule(ctx context.Context, req openapi.CreateR
 		}
 		endDate = &d
 	}
-	d, err := s.u.Schedules.CreateRecurring(ctx, req.FacilityId, in, usecase.RuleInput{
+	d, err := s.u.Schedules.CreateRecurring(ctx, req.FacilityId, in, schedule.RuleInput{
 		Frequency:   schedule.Frequency(rule.Frequency),
 		DayOfWeek:   rule.DayOfWeek,
 		DayOfMonth:  rule.DayOfMonth,

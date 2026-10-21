@@ -3,14 +3,13 @@ package httpapi
 import (
 	"context"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/patient"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi/openapi"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/usecase"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
 )
 
 // PatientUsecase は、利用者のハンドラが使う操作である。
 type PatientUsecase interface {
-	Create(ctx context.Context, in usecase.CreatePatientInput) (patient.Detail, error)
+	Create(ctx context.Context, in patient.CreateInput) (patient.Detail, error)
 	List(ctx context.Context, facilityID string, q patient.ListQuery) ([]patient.Detail, error)
 }
 
@@ -64,7 +63,7 @@ func (s server) ListPatients(ctx context.Context, req openapi.ListPatientsReques
 
 func (s server) CreatePatient(ctx context.Context, req openapi.CreatePatientRequestObject) (openapi.CreatePatientResponseObject, error) {
 	b := req.Body
-	p, err := s.u.Patients.Create(ctx, usecase.CreatePatientInput{
+	p, err := s.u.Patients.Create(ctx, patient.CreateInput{
 		FacilityID:      req.FacilityId,
 		Name:            b.Name,
 		PreferredTime:   patient.PreferredTime(b.PreferredTime),

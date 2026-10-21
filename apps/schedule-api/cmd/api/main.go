@@ -14,12 +14,17 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/access"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/config"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/oidc"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/ulid"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/usecase"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
 )
 
 const (
@@ -69,28 +74,28 @@ func run() error {
 	teams := mysql.NewTeamRepository(db)
 	positions := mysql.NewPositionRepository(db)
 	policies := mysql.NewPolicyRepository(db)
-	staff := mysql.NewStaffRepository(db)
+	staffRepo := mysql.NewStaffRepository(db)
 	patients := mysql.NewPatientRepository(db)
 	visits := mysql.NewVisitRepository(db)
 	schedules := mysql.NewScheduleRepository(db)
 
 	router := httpapi.NewRouter(httpapi.Usecases{
-		Organization: usecase.NewOrganization(usecase.OrganizationRepositories{
+		Organization: organization.NewService(organization.Repositories{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions, Policies: policies,
 		}, tx, ids),
-		Staff: usecase.NewStaff(usecase.StaffRepositories{
-			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions, Staff: staff,
+		Staff: staff.NewService(staff.Repositories{
+			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions, Staff: staffRepo,
 		}, tx, ids),
-		Patients: usecase.NewPatients(usecase.PatientRepositories{
-			Facilities: facilities, Staff: staff, Visits: visits, Patients: patients,
+		Patients: patient.NewService(patient.Repositories{
+			Facilities: facilities, Staff: staffRepo, Visits: visits, Patients: patients,
 		}, ids),
-		VisitMasters: usecase.NewVisitMasters(visits),
-		Schedules: usecase.NewSchedules(usecase.ScheduleRepositories{
-			Facilities: facilities, Staff: staff, Patients: patients, Visits: visits, Schedules: schedules,
+		VisitMasters: visit.NewService(visits),
+		Schedules: schedule.NewService(schedule.Repositories{
+			Facilities: facilities, Staff: staffRepo, Patients: patients, Visits: visits, Schedules: schedules,
 		}, tx, ids),
-		Auth: usecase.NewAuth(usecase.AuthRepositories{
+		Auth: access.NewService(access.Repositories{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions,
-			Staff: staff, Schedules: schedules,
+			Staff: staffRepo, Schedules: schedules,
 		}),
 	}, httpapi.RouterConfig{Logger: log, AllowOrigins: cfg.AllowOrigins, Verifier: verifier, Ready: func(ctx context.Context) error {
 		ctx, cancel := context.WithTimeout(ctx, readyTimeout)

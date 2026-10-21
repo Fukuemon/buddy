@@ -12,9 +12,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/auth"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/staff"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/usecase"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/access"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 )
 
 func TestEveryPathParamHasResource(t *testing.T) {
@@ -53,7 +53,7 @@ func (s stubAuth) Authenticate(context.Context, auth.Identity) (auth.Principal, 
 	return s.principal, nil
 }
 
-func (stubAuth) FacilityOf(context.Context, usecase.Resource, string) (string, error) { return "", nil }
+func (stubAuth) FacilityOf(context.Context, access.Resource, string) (string, error) { return "", nil }
 
 func TestAuthenticatePutsPrincipalInContext(t *testing.T) {
 	want := auth.Principal{Staff: staff.Detail{

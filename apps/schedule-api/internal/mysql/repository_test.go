@@ -9,13 +9,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/organization"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/patient"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/schedule"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/staff"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/visit"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
 )
 
 // seed.sql の ID。

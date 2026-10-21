@@ -35,7 +35,7 @@ type RouterConfig struct {
 }
 
 // server は、openapi.yaml から生成した openapi.StrictServerInterface を実装する。
-// usecase が返したエラーは、そのまま返して writeError に状態コードを決めさせる。
+// 操作が返したエラーは、そのまま返して writeError に状態コードを決めさせる。
 type server struct {
 	u     Usecases
 	ready func(context.Context) error
@@ -49,7 +49,7 @@ var _ openapi.StrictServerInterface = server{}
 func NewRouter(u Usecases, cfg RouterConfig) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
-	// 生成した strict handler は *gin.Context を context として usecase に渡すので、要求の取り消しと値を要求の context から引かせる
+	// 生成した strict handler は *gin.Context を context として操作に渡すので、要求の取り消しと値を要求の context から引かせる
 	r.ContextWithFallback = true
 	r.Use(requestLog(cfg.Logger), gin.CustomRecovery(func(c *gin.Context, recovered any) {
 		cfg.Logger.ErrorContext(c.Request.Context(), "panic", slog.Any("recovered", recovered), slog.String("path", c.FullPath()))

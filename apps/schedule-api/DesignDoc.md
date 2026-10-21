@@ -32,15 +32,20 @@ schedule-api は、事業所ごとの予定、職員、利用者、権限を持�
 
 ## Design
 
-### コードの層
+### コードの構成
 
-依存してよい向きは [コードベースの構造](https://github.com/Fukuemon/buddy/blob/develop/context/codebase.md) にある。各層は次のものを持つ。
+規則と手順は機能ごとのパッケージに置き、DB と HTTP のアダプタは 1 つずつ置く。決めた理由は ADR-0005 にあり、依存してよい向きは [コードベースの構造](https://github.com/Fukuemon/buddy/blob/develop/context/codebase.md) にある。
 
-| 層 | パッケージ | 持つもの |
+- ADR-0005: [schedule-api の規則と手順を機能ごとのパッケージにまとめる](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0005-schedule-api-packages.md)
+
+| 種類 | パッケージ | 持つもの |
 | --- | --- | --- |
-| domain | `internal/domain`、`internal/domain/<概念>` | 共通の誤りと `Transactor`、概念ごとのエンティティ、値の検証、リポジトリのインターフェイス |
-| usecase | `internal/usecase` | 手順とトランザクションの範囲。トランザクションは `domain.Transactor` で受ける |
-| アダプタ | `internal/mysql` | domain のリポジトリを、sqlc の生成コード（`sqlcgen`）で実装する |
+| 共通 | `internal/domain`、`internal/civil` | 共通の誤り、並べ替え、`Transactor`、`IDGenerator`、日付と時刻の値 |
+| 機能 | `internal/organization`、`internal/staff`、`internal/patient`、`internal/visit`、`internal/schedule` | エンティティ、値の検証、リポジトリのインターフェイス、操作（`Service`）とトランザクションの範囲 |
+| 認可 | `internal/auth` | トークンの主張、職員（`Principal`）、予定の閲覧と編集の判定 |
+| 認証 | `internal/access` | トークンから職員を特定する手順と、パスが指す資源の事業所を引く手順 |
+| テスト | `internal/inmem` | 機能のパッケージのテストが共有する、メモリ上のリポジトリ |
+| アダプタ | `internal/mysql` | 機能のパッケージのリポジトリを、sqlc の生成コード（`sqlcgen`）で実装する |
 | アダプタ | `internal/oidc` | access token を JWKS で検証する。`oidctest` は、テストと `cmd/devissuer` が使う偽物の発行者 |
 | アダプタ | `internal/httpapi/openapi` | `openapi.yaml` から生成した型と strict server のインターフェイス |
 | アダプタ | `internal/httpapi` | 生成したインターフェイスを実装するハンドラと、gin のミドルウェア |
@@ -257,7 +262,7 @@ erDiagram
 sequenceDiagram
   participant W as web
   participant M as 認証のミドルウェア
-  participant U as usecase
+  participant U as schedule.Service
   participant DB as MySQL
 
   W->>M: GET /v1/facilities/{facility_id}/schedules（Bearer）
@@ -303,7 +308,7 @@ sequenceDiagram
 
 ### 予定の認可
 
-予定の操作は、usecase が、ミドルウェアが context に入れた職員（`auth.Principal`）の `user_policies` で判定する。役職は見ない。編集の権限は、同じ範囲の閲覧を含む。
+予定の操作は、`schedule.Service` が、ミドルウェアが context に入れた職員（`auth.Principal`）の `user_policies` で判定する。役職は見ない。編集の権限は、同じ範囲の閲覧を含む。
 
 1. 自分の予定は、権限によらず見てよい。自分の予定の編集には `schedule.self.edit` が要る。
 2. `schedule.all.read` があれば、事業所の全ての職員の予定を見てよい。`schedule.all.edit` があれば、編集もしてよい。

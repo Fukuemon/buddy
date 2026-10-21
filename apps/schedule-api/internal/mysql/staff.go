@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/organization"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/staff"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql/sqlcgen"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 )
 
 // StaffRepository は、staff.Repository を実装する。

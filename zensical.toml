@@ -47,6 +47,7 @@ nav = [
     "adr/0002-pbac.md",
     "adr/0003-branch-and-release.md",
     "adr/0004-design-system.md",
+    "adr/0005-schedule-api-packages.md",
   ] },
 ]
 

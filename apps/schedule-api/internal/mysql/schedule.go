@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/schedule"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql/sqlcgen"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
 )
 
 // ScheduleRepository は、schedule.Repository を実装する。
