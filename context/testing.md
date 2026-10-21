@@ -60,12 +60,7 @@ status: stable
 
 取り込む前に、変えたアプリの `test` と `check`（Go は `go test ./...`、`go vet ./...`、`golangci-lint run`）を流す。`packages/go` を変えたときは、2 つの API でも流す。
 
-pull request と develop への push では、CI（`.github/workflows/ci.yml`）が、変えた場所によらず次を全部流す。どれかが失敗した pull request は取り込まない。
-
-- TypeScript の全てのパッケージの `check`、`typecheck`、`test`（e2e は規則のテストだけ）
-- 3 つの Go のモジュールの `go vet ./...`、`golangci-lint run`、`go test ./...`
-- `pnpm check:generated`
-- compose の全体に向けた E2E。失敗したら、Playwright の結果を artifact に上げる
+pull request と develop への push では、CI（[ci.yml](../.github/workflows/ci.yml)）が、変えた場所によらず全ての仕事を流す。1 つでも失敗した pull request は取り込まない。
 
 リリースの前に通すテストの一覧は、検証環境ができてから決める（[証跡](testing/evidence.md) と同じ時期）。
 

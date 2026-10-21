@@ -138,7 +138,7 @@ pnpm check:generated
 
 ## 取り込む前に CI で確かめること
 
-pull request では、CI（`.github/workflows/ci.yml`）が、lint、型、単体のテスト、Go のテストと lint、生成物のそろい、E2E を流す。全部が通るまで取り込まない。確かめることの一覧と、変更ごとに手元で流すテストは `context/testing.md` の Required Tests にある。
+pull request では、CI（[ci.yml](.github/workflows/ci.yml)）が lint、テスト、生成物、E2E を流す。全部が通るまで取り込まない。変更ごとに手元で流すテストは `context/testing.md` の Required Tests にある。
 
 E2E が CI だけで失敗したときは、ワークフローの実行の画面から artifact の `e2e-test-results` を落とし、中の trace を「E2E のテストを流す」の手順で開く。
 

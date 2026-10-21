@@ -1,6 +1,6 @@
 # pull request と develop への push で、取り込む前に通す検査を流す。
 # 検査の一覧と手元での流し方は context/testing.md と CONTRIBUTING.md にある。
-# Go と sqlc のバージョンは mise.toml から入れ、手元とそろえる。
+# Go、golangci-lint、sqlc のバージョンは mise.toml から入れ、手元とそろえる。Node と pnpm は docs-site.yml と同じ入れ方にする。
 
 name: CI
 
@@ -58,7 +58,7 @@ jobs:
             ~/go/pkg/mod
             ~/.cache/go-build
             ~/.cache/golangci-lint
-          key: go-${{ matrix.module }}-${{ hashFiles(format('{0}/go.sum', matrix.module)) }}
+          key: go-${{ matrix.module }}-${{ hashFiles('mise.toml', format('{0}/go.sum', matrix.module)) }}
           restore-keys: go-${{ matrix.module }}-
       - run: go vet ./...
       - run: golangci-lint run
@@ -83,7 +83,7 @@ jobs:
           path: |
             ~/go/pkg/mod
             ~/.cache/go-build
-          key: go-generated-${{ hashFiles('apps/*/go.sum') }}
+          key: go-generated-${{ hashFiles('mise.toml', 'apps/*/go.sum') }}
           restore-keys: go-generated-
       - run: pnpm install --frozen-lockfile
       - run: pnpm check:generated
