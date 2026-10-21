@@ -37,11 +37,16 @@ status: stable
 | MySQL | 機能のパッケージのテストはメモリ上の偽物（`inmem`）、リポジトリのテストは testcontainers の本物 | compose の本物 |
 | OIDC の発行者 | `oidctest` の偽物（テストの中で鍵を作る） | compose の mock-oauth2-server |
 | Google Calendar API | `gcaltest` の偽物 | 使わない（compose の receipt-api はカレンダーを設定していない） |
-| web から見た API | `src/api/fake/` の偽物 | compose の本物 |
+| web の画面から見た API（`BuddyApi`） | `src/api/fake/` の偽物 | compose の本物 |
+| web のサーバーから見た 2 つの API | MSW の handler（`apps/web/src/mocks/`、`src/test/server.ts`） | compose の本物 |
 
 - テストのデータは、架空の値だけを使う。実在の事業所、人、連絡先を入れず、メールは `example.com` にする。
 - schedule-api のシードは `apps/schedule-api/db/seed/seed.sql` にあり、結合テストと compose が同じシードを当てる。全ての環境で同じマスタは、シードではなくマイグレーションが入れる。
 - 照合の入力の CSV は `apps/receipt-api/testdata/` に、互換のテストのケースは `testdata/parity/<ケース>/` に置く。
+- web のテストで HTTP を受けるのは MSW だけにし、fetch を引数で差し替えない。共通の handler は成功の応答だけを返し、異常系はテストごとに `server.use()` で上書きする。handler の無い要求はテストを失敗させる。
+  - 送った要求の中身はテストの側で確かめない。上書きした handler が中身を確かめ、合わなければ 400 を返して、テストの結果を変える。
+  - API を呼ばないことを確かめるときは、その API の全ての要求に 500 を返す handler（`http.all`）で上書きし、結果が変わらないことを見る。
+  - handler は `openapi-msw` で各 API の `openapi.yaml` から生成した型を使い、応答が API の定義からずれると型のチェックで失敗する。
 - web の story は、架空のデータだけを使い、API を呼ぶ story は作らない。データは、schedule が `features/schedule/components/storyData.ts`、receipt が偽物の API の `fakeReceiptReport` である。
 
 ## Required Tests

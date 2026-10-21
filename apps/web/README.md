@@ -25,7 +25,16 @@ pnpm --filter @buddy/web dev
 | `bff` | サーバーの BFF が、セッションの access token を付けて予定の API を呼ぶ。ログインを求める |
 
 コンテナのイメージは `bff` でビルドする。`bff` の動きは、リポジトリのルートの compose で確かめる（CONTRIBUTING.md の「手元で全部を動かす」）。  
-開発サーバーを `bff` で動かすと、トークンの `iss` が compose の API の求める値と合わないので、手元の開発サーバーは `fake` で使う。
+開発サーバーを `bff` で動かすと、トークンの `iss` が compose の API の求める値と合わないので、compose の API には向けない。
+
+BFF の処理を手元の開発サーバーで確かめるときは、`dev:msw` で起動する。ログインは compose の IdP と Valkey を使い、2 つの API への要求は MSW の偽物の handler（`src/mocks/`）が受ける。Go の API と MySQL は立てない。設定は `.env.msw` にある。
+
+```sh
+docker compose up -d --wait idp valkey
+pnpm --filter @buddy/web dev:msw
+```
+
+偽物の handler は決まった予定を返し、作った予定と置き換えた予定を残さない。本番のビルドには MSW を含めない（`src/server/runtime.ts`）。
 
 ## テストとチェック
 

@@ -1,9 +1,11 @@
 import '@testing-library/jest-dom/vitest'
 import { setProjectAnnotations } from '@storybook/react-vite'
 import { cleanup } from '@testing-library/react'
-import { afterEach } from 'vite-plus/test'
+import { afterAll, afterEach, beforeAll } from 'vite-plus/test'
 
 import preview from '../../.storybook/preview'
+
+import { server } from './server'
 
 setProjectAnnotations(preview)
 
@@ -19,6 +21,12 @@ if (typeof HTMLDialogElement !== 'undefined' && !('showModal' in HTMLDialogEleme
   })
 }
 
+// handler の無い要求はテストの誤りなので、素通しせずに失敗させる
+beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
+
 afterEach(() => {
   cleanup()
+  server.resetHandlers()
 })
+
+afterAll(() => server.close())

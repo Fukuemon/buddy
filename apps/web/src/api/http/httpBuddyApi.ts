@@ -8,7 +8,7 @@ import { fromApiSchedule, keepCurrentVisit, splitDateTime, toSlotRequest } from 
 export type HttpApiOptions = {
   /** API の URL。例は `http://localhost:8080`。 */
   baseUrl: string
-  /** テストで差し替える fetch。既定は globalThis.fetch。 */
+  /** 要求を送る fetch。BFF はトークンを付ける fetch に替える。既定は globalThis.fetch。 */
   fetch?: typeof globalThis.fetch
 }
 

@@ -14,19 +14,18 @@ import { readSession, type AuthDeps } from './auth'
 export const callBff = async (
   request: Request,
   call: BffCall,
-  deps: { auth: AuthDeps; scheduleApiUrl: string; fetch?: typeof globalThis.fetch },
+  deps: { auth: AuthDeps; scheduleApiUrl: string },
 ): Promise<BffResult> => {
   const parsed = parseBffArgs(call)
   if (!parsed.ok) return { ok: false, status: 400, message: parsed.message }
   const session = await readSession(request, deps.auth)
   if (session === undefined) return { ok: false, status: 401, message: 'ログインが必要です' }
-  const send = deps.fetch ?? globalThis.fetch
   const api = createHttpBuddyApi({
     baseUrl: deps.scheduleApiUrl,
     fetch: (input, init) => {
       const authorized = new Request(input, init)
       authorized.headers.set('Authorization', `Bearer ${session.accessToken}`)
-      return send(authorized)
+      return globalThis.fetch(authorized)
     },
   })
   const [group, name] = call.op.split('.') as [keyof BuddyApi, string]

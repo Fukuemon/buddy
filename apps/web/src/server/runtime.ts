@@ -7,6 +7,18 @@ import { loadServerConfig, type ServerConfig } from './config'
 import { createOidcClient, type OidcClient } from './oidc'
 import { createValkeySessionStore, type SessionStore } from './sessionStore'
 
+// 開発サーバーを msw の mode で起動したときだけ、.env.msw を読み、2 つの API を偽物に替える。
+// vp build は NODE_ENV を production にするので import.meta.env.DEV が false になり、この分岐は msw ごとビルドから消える。
+// 開発サーバーはこのファイルを編集のたびに評価し直すので、横取りを重ねないよう、プロセスで 1 度だけ始める
+const mockStarted = Symbol.for('buddy.apiMocksStarted')
+if (import.meta.env.DEV && import.meta.env.MODE === 'msw' && !(mockStarted in globalThis)) {
+  Object.assign(globalThis, { [mockStarted]: true })
+  // シェルで渡した値は .env.msw の値より勝つ
+  process.loadEnvFile(new URL('../../.env.msw', import.meta.url))
+  const { startApiMocks } = await import('#/mocks/node')
+  startApiMocks(process.env)
+}
+
 type Runtime = { config: ServerConfig; store: SessionStore }
 
 let runtime: Runtime | undefined
