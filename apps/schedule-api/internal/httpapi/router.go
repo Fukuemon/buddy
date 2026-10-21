@@ -22,6 +22,7 @@ type Usecases struct {
 	Patients     PatientUsecase
 	VisitMasters VisitMasterUsecase
 	Schedules    ScheduleUsecase
+	Calendars    CalendarUsecase
 	Auth         AuthUsecase
 }
 

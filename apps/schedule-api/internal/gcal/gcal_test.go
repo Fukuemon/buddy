@@ -113,7 +113,11 @@ func TestReaderEvents(t *testing.T) {
 }
 
 func TestReaderEventsError(t *testing.T) {
-	for _, status := range []int{http.StatusForbidden, http.StatusNotFound} {
+	for status, kind := range map[int]error{
+		http.StatusForbidden:           schedcal.ErrUnreadable,
+		http.StatusNotFound:            schedcal.ErrUnreadable,
+		http.StatusInternalServerError: schedcal.ErrUnavailable,
+	} {
 		t.Run(strconv.Itoa(status), func(t *testing.T) {
 			r := start(t, &gcaltest.Server{Status: status})
 			_, err := r.Events(t.Context(), "staff@example.com", timeMin, timeMax)
@@ -121,10 +125,58 @@ func TestReaderEventsError(t *testing.T) {
 			if !errors.As(err, &gerr) || gerr.Code != status {
 				t.Fatalf("err = %v, want *googleapi.Error の %d", err, status)
 			}
+			if !errors.Is(err, kind) {
+				t.Errorf("err = %v, want %v を包む", err, kind)
+			}
 			if strings.Contains(err.Error(), "staff") {
 				t.Errorf("err = %v, カレンダー ID を含む", err)
 			}
 		})
+	}
+}
+
+func TestReaderInstances(t *testing.T) {
+	inst := &calendar.Event{
+		Id: "p1_20261006T010000Z", Status: "confirmed", Summary: "定例", RecurringEventId: "p1",
+		Start:             &calendar.EventDateTime{DateTime: "2026-10-06T10:00:00+09:00"},
+		End:               &calendar.EventDateTime{DateTime: "2026-10-06T11:00:00+09:00"},
+		OriginalStartTime: &calendar.EventDateTime{DateTime: "2026-10-06T10:00:00+09:00"},
+	}
+	f := &gcaltest.Server{
+		Calendars: map[string][][]*calendar.Event{"staff@example.com": {}},
+		Instances: map[string][]*calendar.Event{"p1": {inst}},
+	}
+	r := start(t, f)
+	got, err := r.Instances(t.Context(), "staff@example.com", "p1", timeMin, timeMax)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0].ID != inst.Id || got[0].RecurringEventID != "p1" || got[0].OriginalStart.DateTime != inst.OriginalStartTime.DateTime {
+		t.Errorf("Instances = %+v", got)
+	}
+	q := f.Queries()[0]
+	for k, v := range map[string]string{"timeZone": "Asia/Tokyo", "showDeleted": "false", "timeMin": timeMin.Format(time.RFC3339)} {
+		if q.Get(k) != v {
+			t.Errorf("%s = %q, want %q", k, q.Get(k), v)
+		}
+	}
+	if _, err := r.Instances(t.Context(), "staff@example.com", "nope", timeMin, timeMax); !errors.Is(err, schedcal.ErrUnreadable) {
+		t.Errorf("無い予定: err = %v, want ErrUnreadable", err)
+	}
+}
+
+func TestReaderCheck(t *testing.T) {
+	f := &gcaltest.Server{Calendars: map[string][][]*calendar.Event{"staff@example.com": {}}}
+	r := start(t, f)
+	if err := r.Check(t.Context(), "staff@example.com"); err != nil {
+		t.Errorf("共有されたカレンダー: err = %v", err)
+	}
+	if got := f.Queries()[0].Get("maxResults"); got != "1" {
+		t.Errorf("maxResults = %q, want 1", got)
+	}
+	err := r.Check(t.Context(), "other@example.com")
+	if !errors.Is(err, schedcal.ErrUnreadable) || strings.Contains(err.Error(), "other") {
+		t.Errorf("無いカレンダー: err = %v, want カレンダー ID を含まない ErrUnreadable", err)
 	}
 }
 
@@ -136,8 +188,8 @@ func TestReaderEventsTransportError(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err = gcal.NewReader(svc).Events(t.Context(), "staff@example.com", timeMin, timeMax)
-	if err == nil || strings.Contains(err.Error(), "staff") {
-		t.Fatalf("err = %v, want カレンダー ID を含まない誤り", err)
+	if !errors.Is(err, schedcal.ErrUnavailable) || strings.Contains(err.Error(), "staff") {
+		t.Fatalf("err = %v, want カレンダー ID を含まない ErrUnavailable", err)
 	}
 }
 

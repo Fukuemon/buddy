@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/calendar"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
 )
 
@@ -48,11 +49,24 @@ func writeError(c *gin.Context, log *slog.Logger, err error) {
 		c.AbortWithStatusJSON(http.StatusConflict, errorResponse{Code: "conflict", Message: ce.Message})
 	case errors.Is(err, apperr.ErrConflict):
 		c.AbortWithStatusJSON(http.StatusConflict, errorResponse{Code: "conflict", Message: apperr.ErrConflict.Error()})
+	case errors.Is(err, calendar.ErrUnreadable):
+		calendarError(c, log, err, http.StatusUnprocessableEntity, "calendar_unreadable", calendar.ErrUnreadable)
+	case errors.Is(err, calendar.ErrUnavailable):
+		calendarError(c, log, err, http.StatusBadGateway, "calendar_unavailable", calendar.ErrUnavailable)
+	case errors.Is(err, calendar.ErrNotConfigured):
+		calendarError(c, log, err, http.StatusServiceUnavailable, "calendar_not_configured", calendar.ErrNotConfigured)
 	default:
 		log.ErrorContext(c.Request.Context(), "request failed",
 			slog.String("method", c.Request.Method), slog.String("path", c.FullPath()), slog.Any("error", err))
 		c.AbortWithStatusJSON(http.StatusInternalServerError, errorResponse{Code: "internal", Message: "サーバーでエラーが発生しました"})
 	}
+}
+
+// calendarError は、外部のカレンダーを読めない誤りを返す。応答の文は kind の文にし、外部の応答の本文を返さない。
+// err の文は、カレンダー ID と予定の題名を含まない（gcal と calendar の約束）ので、ログに残す。
+func calendarError(c *gin.Context, log *slog.Logger, err error, status int, code string, kind error) {
+	log.WarnContext(c.Request.Context(), "calendar request failed", slog.String("path", c.FullPath()), slog.Any("error", err))
+	c.AbortWithStatusJSON(status, errorResponse{Code: code, Message: kind.Error()})
 }
 
 // badRequest は、本文やクエリの形の誤りを 400 で返す。
