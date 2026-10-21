@@ -19,7 +19,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/oidc/oidctest"
+	"github.com/Fukuemon/buddy/packages/go/oidc/oidctest"
 )
 
 func main() {

@@ -1,0 +1,9 @@
+*
+!packages/go/
+!apps/schedule-api/go.mod
+!apps/schedule-api/go.sum
+!apps/schedule-api/cmd/
+!apps/schedule-api/internal/
+!apps/schedule-api/db/
+**/*_test.go
+**/.golangci.yml

@@ -59,7 +59,7 @@ services:
       retries: 30
 
   schedule-api-migrate:
-    build: apps/schedule-api
+    build: { context: ., dockerfile: apps/schedule-api/Dockerfile }
     image: buddy-compose-schedule-api
     entrypoint: ['/usr/local/bin/migrate']
     command: ['up']
@@ -98,7 +98,7 @@ services:
       idp: { condition: service_healthy }
 
   receipt-api:
-    build: apps/receipt-api
+    build: { context: ., dockerfile: apps/receipt-api/Dockerfile }
     environment:
       OIDC_ISSUER: http://idp:9000/buddy
       OIDC_AUDIENCE: receipt-api

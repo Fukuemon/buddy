@@ -10,9 +10,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Fukuemon/buddy/packages/go/oidc"
+	"github.com/Fukuemon/buddy/packages/go/oidc/oidctest"
+
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/httpapi/openapi"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/oidc"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/oidc/oidctest"
 )
 
 const (

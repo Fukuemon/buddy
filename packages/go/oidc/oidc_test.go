@@ -10,11 +10,11 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/oidc"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/oidc/oidctest"
+	"github.com/Fukuemon/buddy/packages/go/oidc"
+	"github.com/Fukuemon/buddy/packages/go/oidc/oidctest"
 )
 
-const audience = "receipt-api"
+const audience = "schedule-api"
 
 func setup(t *testing.T) (*oidctest.Issuer, *oidc.Verifier) {
 	t.Helper()
@@ -43,12 +43,14 @@ func sign(t *testing.T, iss *oidctest.Issuer, claims jwt.MapClaims) string {
 func TestVerify(t *testing.T) {
 	iss, v := setup(t)
 	claims := iss.Claims(audience, "sub-1")
+	claims["email"] = "hina.aoki@example.com"
+	claims["email_verified"] = true
 	claims["org_id"] = "org-sample"
 	id, err := v.Verify(context.Background(), sign(t, iss, claims))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if id.Subject != "sub-1" || id.OrgID != "org-sample" {
+	if id.Subject != "sub-1" || id.Email != "hina.aoki@example.com" || !id.EmailVerified || id.OrgID != "org-sample" {
 		t.Errorf("id = %+v", id)
 	}
 }
@@ -96,7 +98,7 @@ func TestVerifyRejects(t *testing.T) {
 			return sign(t, iss, c)
 		}},
 		{name: "aud が違う", token: func(t *testing.T) string {
-			return sign(t, iss, iss.Claims("schedule-api", "sub-1"))
+			return sign(t, iss, iss.Claims("receipt-api", "sub-1"))
 		}},
 		{name: "iss が違う", token: func(t *testing.T) string {
 			c := iss.Claims(audience, "sub-1")

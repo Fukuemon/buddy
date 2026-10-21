@@ -1,4 +1,4 @@
-package main
+package healthcheck
 
 import (
 	"net/http"
@@ -36,8 +36,8 @@ func TestHealthcheck(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv("PORT", tt.port(t))
-			if got := healthcheck(); got != tt.want {
-				t.Errorf("healthcheck() = %d, want %d", got, tt.want)
+			if got := Run(); got != tt.want {
+				t.Errorf("Run() = %d, want %d", got, tt.want)
 			}
 		})
 	}
