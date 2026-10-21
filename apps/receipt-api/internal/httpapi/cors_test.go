@@ -36,18 +36,38 @@ func TestCORSPreflight(t *testing.T) {
 	}
 }
 
-// TestCORSActualRequest は、許した Origin の要求の応答に、401 でも Access-Control-Allow-Origin を付けることを確かめる。
-// 付けないと、ブラウザが 401 の本文を読ませない。
+// TestCORSActualRequest は、事前の要求でない要求に付ける CORS のヘッダーを確かめる。
+// 許した Origin なら、401 でも Access-Control-Allow-Origin を付ける。付けないと、ブラウザが 401 の本文を読ませない。
 func TestCORSActualRequest(t *testing.T) {
-	req := httptest.NewRequest(http.MethodPost, "/v1/checks", nil)
-	req.Header.Set("Origin", originDocs)
-	rec := httptest.NewRecorder()
-	newCORSHandler(originDocs).ServeHTTP(rec, req)
-	if rec.Code != http.StatusUnauthorized {
-		t.Fatalf("status %d", rec.Code)
+	tests := []struct {
+		name         string
+		method, path string
+		origin       string
+		wantStatus   int
+		wantOrigin   string
+	}{
+		{"許した Origin でトークンが無い", http.MethodPost, "/v1/checks", originDocs, http.StatusUnauthorized, originDocs},
+		{"許した Origin で認証の要らないパス", http.MethodGet, "/healthz", originDocs, http.StatusOK, originDocs},
+		{"Origin が無い", http.MethodGet, "/healthz", "", http.StatusOK, ""},
 	}
-	if got := rec.Header().Get("Access-Control-Allow-Origin"); got != originDocs {
-		t.Errorf("Access-Control-Allow-Origin = %q", got)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(tt.method, tt.path, nil)
+			if tt.origin != "" {
+				req.Header.Set("Origin", tt.origin)
+			}
+			rec := httptest.NewRecorder()
+			newCORSHandler(originDocs).ServeHTTP(rec, req)
+			if rec.Code != tt.wantStatus {
+				t.Fatalf("status %d body %s", rec.Code, rec.Body)
+			}
+			if got := rec.Header().Get("Access-Control-Allow-Origin"); got != tt.wantOrigin {
+				t.Errorf("Access-Control-Allow-Origin = %q", got)
+			}
+			if got := rec.Header().Get("Vary"); got != "Origin" {
+				t.Errorf("Vary = %q", got)
+			}
+		})
 	}
 }
 

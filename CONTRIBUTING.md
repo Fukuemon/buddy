@@ -71,7 +71,7 @@ curl -H "Authorization: Bearer $TOKEN" localhost:8080/v1/facilities/01M3TC5H00QV
 文書のサイトの API の仕様のページからも、手元の API を呼べる。
 
 1. `docker compose up --build --wait schedule-api receipt-api` で API を立てる。
-2. `uv run zensical serve` で、文書のサイトを `http://localhost:8000` で開く。compose の 2 つの API は、このオリジンに CORS を許す。
+2. `uv run zensical serve` で、文書のサイトを `http://localhost:8000` で開く。compose の 2 つの API は、このオリジンだけに CORS を許すので、`127.0.0.1` ではなく `localhost` で開く。
 3. 「API の仕様」のページで操作を選び、「Test Request」を押す。
 4. 上の手順で取った `$TOKEN` の値を「Bearer Token」の欄に貼り、「Send」を押す。
 
