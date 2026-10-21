@@ -1,3 +1,4 @@
+// Package gcal は、Google カレンダーの予定を照合の予定として読む。
 package gcal
 
 import (
@@ -11,6 +12,8 @@ import (
 	_ "time/tzdata" // 配布のイメージ（distroless）にタイムゾーンのデータが無くても Asia/Tokyo を読むため。
 
 	"google.golang.org/api/calendar/v3"
+
+	"github.com/Fukuemon/buddy/packages/go/gcaltitle"
 
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/check"
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/csvio"
@@ -180,7 +183,7 @@ func (s monthSource) convert(ev *calendar.Event, staff string) (rec record.Recor
 	if ev.Status == "cancelled" || ev.Start == nil || ev.End == nil || ev.Start.DateTime == "" {
 		return record.Record{}, false, ""
 	}
-	if !IsVisitTitle(ev.Summary) {
+	if !gcaltitle.IsVisitTitle(ev.Summary) {
 		return record.Record{}, false, ""
 	}
 	start, err := time.Parse(time.RFC3339, ev.Start.DateTime)
@@ -195,7 +198,7 @@ func (s monthSource) convert(ev *calendar.Event, staff string) (rec record.Recor
 	if start.Before(s.start) || !start.Before(s.end) {
 		return record.Record{}, false, ""
 	}
-	service, client, err := ParseTitle(ev.Summary)
+	service, client, err := gcaltitle.ParseTitle(ev.Summary)
 	if err != nil {
 		return record.Record{}, false, err.Error()
 	}
