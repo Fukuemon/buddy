@@ -62,6 +62,7 @@ erDiagram
   date end_date
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  integer version
 }
 ```
 

@@ -77,6 +77,7 @@ erDiagram
   boolean is_over_time_work
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  integer version
 }
 ```
 

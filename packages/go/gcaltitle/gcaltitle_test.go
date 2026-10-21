@@ -74,3 +74,14 @@ func TestNormalizeClient(t *testing.T) {
 		}
 	}
 }
+
+func TestFormatRoundTrip(t *testing.T) {
+	title := Format("訪看I2", "利用者A")
+	if title != "【訪看I2】利用者A" {
+		t.Fatalf("Format = %q", title)
+	}
+	service, client, err := ParseTitle(title)
+	if err != nil || service != "訪看I2" || client != "利用者A" {
+		t.Errorf("ParseTitle(Format) = (%q, %q, %v)", service, client, err)
+	}
+}

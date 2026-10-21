@@ -70,13 +70,14 @@ viewpoints:
       - facilities
       - recurring_schedule_details
   - id: calendar-sync
-    name: 外部のカレンダーの取り込み
-    desc: 職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録
+    name: 外部のカレンダーの取り込みと書き出し
+    desc: 職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち
     tables:
       - external_calendars
       - calendar_sync_states
       - external_event_links
       - import_runs
+      - calendar_exports
       - schedules
       - recurring_schedules
       - users

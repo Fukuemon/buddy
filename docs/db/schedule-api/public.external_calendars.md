@@ -19,9 +19,9 @@
 
 ## Viewpoints
 
-| Name                                                     | Definition                                                                 |
-| -------------------------------------------------------- | -------------------------------------------------------------------------- |
-| [外部のカレンダーの取り込み](viewpoint-calendar-sync.md) | 職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録 |
+| Name                                                               | Definition                                                                                 |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| [外部のカレンダーの取り込みと書き出し](viewpoint-calendar-sync.md) | 職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち |
 
 ## Constraints
 
@@ -98,6 +98,7 @@ erDiagram
   text recurring_schedule_id FK
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  integer synced_version
 }
 "public.import_runs" {
   text id

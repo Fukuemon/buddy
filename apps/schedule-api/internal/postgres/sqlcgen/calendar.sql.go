@@ -36,8 +36,8 @@ func (q *Queries) CreateExternalCalendar(ctx context.Context, arg CreateExternal
 
 const createExternalEventLink = `-- name: CreateExternalEventLink :exec
 INSERT INTO external_event_links (
-    id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, synced_version, schedule_id, recurring_schedule_id
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 `
 
 type CreateExternalEventLinkParams struct {
@@ -47,6 +47,7 @@ type CreateExternalEventLinkParams struct {
 	ExternalEventID     string
 	RecurringEventID    *string
 	Etag                string
+	SyncedVersion       *int32
 	ScheduleID          *string
 	RecurringScheduleID *string
 }
@@ -59,6 +60,7 @@ func (q *Queries) CreateExternalEventLink(ctx context.Context, arg CreateExterna
 		arg.ExternalEventID,
 		arg.RecurringEventID,
 		arg.Etag,
+		arg.SyncedVersion,
 		arg.ScheduleID,
 		arg.RecurringScheduleID,
 	)
@@ -90,6 +92,15 @@ func (q *Queries) CreateImportRun(ctx context.Context, arg CreateImportRunParams
 		arg.RangeEnd,
 		arg.Status,
 	)
+	return err
+}
+
+const deleteExternalEventLink = `-- name: DeleteExternalEventLink :exec
+DELETE FROM external_event_links WHERE id = $1
+`
+
+func (q *Queries) DeleteExternalEventLink(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, deleteExternalEventLink, id)
 	return err
 }
 
@@ -196,6 +207,26 @@ func (q *Queries) FinishImportRun(ctx context.Context, arg FinishImportRunParams
 	return i, err
 }
 
+const getActiveExternalCalendarByStaff = `-- name: GetActiveExternalCalendarByStaff :one
+SELECT id, facility_id, staff_id, provider, external_calendar_id, disabled_at, created_at, updated_at FROM external_calendars WHERE staff_id = $1 AND disabled_at IS NULL
+`
+
+func (q *Queries) GetActiveExternalCalendarByStaff(ctx context.Context, staffID string) (ExternalCalendar, error) {
+	row := q.db.QueryRow(ctx, getActiveExternalCalendarByStaff, staffID)
+	var i ExternalCalendar
+	err := row.Scan(
+		&i.ID,
+		&i.FacilityID,
+		&i.StaffID,
+		&i.Provider,
+		&i.ExternalCalendarID,
+		&i.DisabledAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getExternalCalendar = `-- name: GetExternalCalendar :one
 SELECT id, facility_id, staff_id, provider, external_calendar_id, disabled_at, created_at, updated_at FROM external_calendars WHERE id = $1
 `
@@ -212,6 +243,52 @@ func (q *Queries) GetExternalCalendar(ctx context.Context, id string) (ExternalC
 		&i.DisabledAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getExternalEventLinkByRecurringSchedule = `-- name: GetExternalEventLinkByRecurringSchedule :one
+SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version FROM external_event_links WHERE recurring_schedule_id = $1
+`
+
+func (q *Queries) GetExternalEventLinkByRecurringSchedule(ctx context.Context, recurringScheduleID *string) (ExternalEventLink, error) {
+	row := q.db.QueryRow(ctx, getExternalEventLinkByRecurringSchedule, recurringScheduleID)
+	var i ExternalEventLink
+	err := row.Scan(
+		&i.ID,
+		&i.FacilityID,
+		&i.ExternalCalendarID,
+		&i.ExternalEventID,
+		&i.RecurringEventID,
+		&i.Etag,
+		&i.ScheduleID,
+		&i.RecurringScheduleID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.SyncedVersion,
+	)
+	return i, err
+}
+
+const getExternalEventLinkBySchedule = `-- name: GetExternalEventLinkBySchedule :one
+SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version FROM external_event_links WHERE schedule_id = $1
+`
+
+func (q *Queries) GetExternalEventLinkBySchedule(ctx context.Context, scheduleID *string) (ExternalEventLink, error) {
+	row := q.db.QueryRow(ctx, getExternalEventLinkBySchedule, scheduleID)
+	var i ExternalEventLink
+	err := row.Scan(
+		&i.ID,
+		&i.FacilityID,
+		&i.ExternalCalendarID,
+		&i.ExternalEventID,
+		&i.RecurringEventID,
+		&i.Etag,
+		&i.ScheduleID,
+		&i.RecurringScheduleID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.SyncedVersion,
 	)
 	return i, err
 }
@@ -250,7 +327,7 @@ func (q *Queries) ListExternalCalendarsByFacility(ctx context.Context, facilityI
 }
 
 const listExternalEventLinks = `-- name: ListExternalEventLinks :many
-SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at FROM external_event_links WHERE external_calendar_id = $1 ORDER BY id
+SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version FROM external_event_links WHERE external_calendar_id = $1 ORDER BY id
 `
 
 func (q *Queries) ListExternalEventLinks(ctx context.Context, externalCalendarID string) ([]ExternalEventLink, error) {
@@ -273,6 +350,7 @@ func (q *Queries) ListExternalEventLinks(ctx context.Context, externalCalendarID
 			&i.RecurringScheduleID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.SyncedVersion,
 		); err != nil {
 			return nil, err
 		}
@@ -335,4 +413,19 @@ func (q *Queries) LockExternalCalendar(ctx context.Context, id string) (string, 
 	var id_2 string
 	err := row.Scan(&id_2)
 	return id_2, err
+}
+
+const updateExternalEventLink = `-- name: UpdateExternalEventLink :exec
+UPDATE external_event_links SET etag = $2, synced_version = $3 WHERE id = $1
+`
+
+type UpdateExternalEventLinkParams struct {
+	ID            string
+	Etag          string
+	SyncedVersion *int32
+}
+
+func (q *Queries) UpdateExternalEventLink(ctx context.Context, arg UpdateExternalEventLinkParams) error {
+	_, err := q.db.Exec(ctx, updateExternalEventLink, arg.ID, arg.Etag, arg.SyncedVersion)
+	return err
 }

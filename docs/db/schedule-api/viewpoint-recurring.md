@@ -12,10 +12,10 @@
 | [public.users](public.users.md)                                                 | 11      | 職員                                                                   | BASE TABLE |
 | [public.visit_infos](public.visit_infos.md)                                     | 8       | 訪問の情報                                                             | BASE TABLE |
 | [public.schedule_types](public.schedule_types.md)                               | 5       | 予定の種類（通常、訪問）。マイグレーションで入れる                     | BASE TABLE |
-| [public.recurring_schedules](public.recurring_schedules.md)                     | 18      | 繰り返しの予定と、その規則                                             | BASE TABLE |
+| [public.recurring_schedules](public.recurring_schedules.md)                     | 19      | 繰り返しの予定と、その規則                                             | BASE TABLE |
 | [public.recurring_schedule_exclusions](public.recurring_schedule_exclusions.md) | 2       | 繰り返しの予定のうち、回にしない日                                     | BASE TABLE |
-| [public.schedules](public.schedules.md)                                         | 15      | 予定                                                                   | BASE TABLE |
-| [public.recurring_schedule_details](public.recurring_schedule_details.md)       | 29      | 一覧の読み出しに使う、繰り返しの予定と訪問の情報と名前を結合したビュー | VIEW       |
+| [public.schedules](public.schedules.md)                                         | 16      | 予定                                                                   | BASE TABLE |
+| [public.recurring_schedule_details](public.recurring_schedule_details.md)       | 30      | 一覧の読み出しに使う、繰り返しの予定と訪問の情報と名前を結合したビュー | VIEW       |
 
 ## Relations
 
@@ -93,6 +93,7 @@ erDiagram
   date end_date
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  integer version
 }
 "public.recurring_schedule_exclusions" {
   text recurring_schedule_id
@@ -114,6 +115,7 @@ erDiagram
   boolean is_over_time_work
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  integer version
 }
 "public.recurring_schedule_details" {
   text id
@@ -145,6 +147,7 @@ erDiagram
   varchar_255_ service_code
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  integer version
 }
 ```
 

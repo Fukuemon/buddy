@@ -72,6 +72,7 @@ docker compose up --build --wait
 | idp | `http://localhost:9000/buddy` | `IDP_PORT` |
 | postgres | `localhost:15432` | `POSTGRES_PORT` |
 | valkey | `localhost:6379` | `VALKEY_PORT` |
+| fake-google（偽物の Google Calendar API。`/view` で書き出した予定を見る） | `http://localhost:8085/view` | `FAKE_GOOGLE_PORT` |
 
 - IdP は navikt/mock-oauth2-server である。ログインの画面で入れた名前が `sub` になり、ほかのクレームは `compose/idp.json` の値になる。
   - 既定のクレームは、シードの職員の青木 陽菜（組織 `org-sample`）を指す。ログインの画面のクレームの欄に書いた値は、`compose/idp.json` のクレームを上書きしない。

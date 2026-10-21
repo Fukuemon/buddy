@@ -10,6 +10,31 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+// 予定を外部のカレンダーに書き出す待ち。予定の変更と同じトランザクションで積む
+type CalendarExport struct {
+	ID                  string
+	FacilityID          string
+	ScheduleID          *string
+	RecurringScheduleID *string
+	// pending（書く）、succeeded（書いた）、conflict（外部で変わっていた）、failed（書けなかった）
+	Status string
+	// 終わっていない行に積み直した回数に 1 を足した値。書いている間に積み直されたかを比べる
+	Revision int32
+	// 書こうとした回数。再送の間隔と上限に使う
+	Attempts int32
+	// この時刻より後に書く
+	NextAttemptAt time.Time
+	// 書いている処理が持つ期限。過ぎたら、ほかの処理が書いてよい
+	LockedUntil *time.Time
+	// 外部の予定の etag を比べずに、buddy の内容で書き直すか
+	Overwrite bool
+	// 最後に書けなかった理由。外部の予定の題名とカレンダーの ID を含めない
+	ErrorCode  *string
+	FinishedAt *time.Time
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+}
+
 // 外部のカレンダーごとの同期の状態
 type CalendarSyncState struct {
 	ExternalCalendarID string
@@ -64,6 +89,8 @@ type ExternalEventLink struct {
 	RecurringScheduleID *string
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
+	// 最後に外部の予定と同じにした時点の、buddy の予定の更新の番号。この列を足す前の行は NULL
+	SyncedVersion *int32
 }
 
 // 訪問看護の事業所
@@ -176,9 +203,10 @@ type RecurringSchedule struct {
 	EndDate   *time.Time
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	// 更新の番号。回を除外するたびに 1 つ増える
+	Version int32
 }
 
-// 一覧の読み出しに使う、繰り返しの予定と訪問の情報と名前を結合したビュー
 type RecurringScheduleDetail struct {
 	ID                string
 	FacilityID        string
@@ -209,6 +237,7 @@ type RecurringScheduleDetail struct {
 	ServiceCode       *string
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
+	Version           int32
 }
 
 // 繰り返しの予定のうち、回にしない日
@@ -238,6 +267,8 @@ type Schedule struct {
 	IsOverTimeWork bool
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
+	// 更新の番号。予定を変えるかキャンセルするたびに 1 つ増える
+	Version int32
 }
 
 // 予定の取り消し
@@ -249,7 +280,6 @@ type ScheduleCancel struct {
 	UpdatedAt  time.Time
 }
 
-// 一覧の読み出しに使う、予定と訪問の情報と名前を結合したビュー
 type ScheduleDetail struct {
 	ID                  string
 	FacilityID          string
@@ -279,6 +309,7 @@ type ScheduleDetail struct {
 	CancelReason        *string
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
+	Version             int32
 }
 
 // 予定の種類（通常、訪問）。マイグレーションで入れる

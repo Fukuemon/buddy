@@ -52,12 +52,14 @@ type ImportRun struct {
 
 // Link は、取り込んだ外部の予定と、buddy の単発か繰り返しの予定の対応である。ScheduleID と RecurringScheduleID のどちらか 1 つを持つ。
 type Link struct {
-	ID                  string
-	FacilityID          string
-	ExternalCalendarID  string
-	ExternalEventID     string
-	RecurringEventID    *string
-	ETag                string
+	ID                 string
+	FacilityID         string
+	ExternalCalendarID string
+	ExternalEventID    string
+	RecurringEventID   *string
+	ETag               string
+	// SyncedVersion は、最後に外部の予定と同じにした時点の、buddy の予定の更新の番号である。更新の番号を持つ前に書いた対応では nil である。
+	SyncedVersion       *int
 	ScheduleID          *string
 	RecurringScheduleID *string
 }
@@ -90,4 +92,15 @@ type Repository interface {
 	ListLinks(ctx context.Context, externalCalendarID string) ([]Link, error)
 	// CreateLink は、同じ外部の予定の対応があるときに apperr.ErrConflict を返す。
 	CreateLink(ctx context.Context, l Link) error
+
+	// ActiveByStaff は、職員 staffID に結び付けた外していないカレンダーを返す。
+	ActiveByStaff(ctx context.Context, staffID string) (ExternalCalendar, error)
+	// LinkBySchedule は、単発の予定 scheduleID の予定の対応を返す。
+	LinkBySchedule(ctx context.Context, scheduleID string) (Link, error)
+	// LinkByRecurringSchedule は、繰り返しの予定 recurringScheduleID の予定の対応を返す。
+	LinkByRecurringSchedule(ctx context.Context, recurringScheduleID string) (Link, error)
+	// UpdateLink は、予定の対応 id の etag と、同じにした時点の更新の番号を書く。
+	UpdateLink(ctx context.Context, id, etag string, syncedVersion int) error
+	// DeleteLink は、予定の対応 id を消す。無くてもエラーにしない。
+	DeleteLink(ctx context.Context, id string) error
 }

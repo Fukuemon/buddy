@@ -37,7 +37,8 @@ CREATE VIEW recurring_schedule_details AS (
     vid.service_code_id,
     vid.service_code,
     rs.created_at,
-    rs.updated_at
+    rs.updated_at,
+    rs.version
    FROM (((recurring_schedules rs
      JOIN schedule_types st ON ((st.id = rs.schedule_type_id)))
      JOIN users u ON ((u.id = rs.staff_id)))
@@ -80,12 +81,13 @@ CREATE VIEW recurring_schedule_details AS (
 | service_code        | varchar(255)             |         | true     |          |         |         |
 | created_at          | timestamp with time zone |         | true     |          |         |         |
 | updated_at          | timestamp with time zone |         | true     |          |         |         |
+| version             | integer                  |         | true     |          |         |         |
 
 ## Referenced Tables
 
 | Name                                                        | Columns | Comment                                            | Type       |
 | ----------------------------------------------------------- | ------- | -------------------------------------------------- | ---------- |
-| [public.recurring_schedules](public.recurring_schedules.md) | 18      | 繰り返しの予定と、その規則                         | BASE TABLE |
+| [public.recurring_schedules](public.recurring_schedules.md) | 19      | 繰り返しの予定と、その規則                         | BASE TABLE |
 | [public.schedule_types](public.schedule_types.md)           | 5       | 予定の種類（通常、訪問）。マイグレーションで入れる | BASE TABLE |
 | [public.users](public.users.md)                             | 11      | 職員                                               | BASE TABLE |
 | [public.visit_info_details](public.visit_info_details.md)   | 10      | 訪問の情報と名前を結合したビュー                   | VIEW       |
@@ -132,6 +134,7 @@ erDiagram
   varchar_255_ service_code
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  integer version
 }
 ```
 

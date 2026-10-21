@@ -26,8 +26,9 @@ API とマイグレーションは、次の環境変数を読む。
 | `PORT` | いいえ | `8080` | API が待ち受けるポート |
 | `CORS_ALLOW_ORIGINS` | いいえ | 空 | カンマで区切ったオリジン。空なら CORS のヘッダーを返さない |
 | `LOG_LEVEL` | いいえ | `info` | `debug`、`info`、`warn`、`error` のいずれか |
-| `GOOGLE_CALENDAR_SERVICE_ACCOUNT` | いいえ | 空 | 職員がカレンダーを共有する相手のサービスアカウントのメールアドレス。空なら Google カレンダーを読まず、カレンダーを読む操作は 503 を返す。認証の情報は Application Default Credentials で読む |
+| `GOOGLE_CALENDAR_SERVICE_ACCOUNT` | いいえ | 空 | 職員がカレンダーを共有する相手のサービスアカウントのメールアドレス。空なら Google カレンダーを読み書きせず、カレンダーを読む操作は 503 を返し、予定の書き出しの処理を動かさない。認証の情報は Application Default Credentials で、スコープ `calendar.events` で読む |
 | `GOOGLE_CALENDAR_ENDPOINT` | いいえ | 空 | Calendar API の代わりに呼ぶ URL。偽物の API で試すためのもので、認証をしない。`GOOGLE_CALENDAR_SERVICE_ACCOUNT` と一緒に渡す |
+| `GOOGLE_CALENDAR_EXPORT_INTERVAL` | いいえ | `30s` | 予定の書き出しの待ちを確かめる間隔。Go の時間の書式で、`1s` 以上 |
 
 パスワードはコードに既定値を持たない。  
 ログは標準出力に JSON で書き、接続の設定とトークンは書かない。  

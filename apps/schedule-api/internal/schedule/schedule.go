@@ -122,12 +122,14 @@ func NewCancel(id, scheduleID, reason string) (Cancel, error) {
 }
 
 // Detail は、単発の予定と、種類、職員、訪問の情報、キャンセルの内容である。Visit と Cancel は、ないときに nil である。
+// Version は更新の番号で、作ったときに 1 で、変えるかキャンセルするたびに 1 つ増える。
 type Detail struct {
 	Schedule
 	TypeName  TypeName
 	StaffName string
 	Visit     *visit.Detail
 	Cancel    *Cancel
+	Version   int
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

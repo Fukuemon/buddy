@@ -74,9 +74,13 @@ func run() error {
 		return err
 	}
 
-	source, err := newEventSource(ctx, cfg.Calendar)
+	svc, err := newCalendarService(ctx, cfg.Calendar)
 	if err != nil {
 		return err
+	}
+	var source calendar.EventSource
+	if svc != nil {
+		source = gcal.NewReader(svc)
 	}
 
 	tx := postgres.NewTransactor(db)
@@ -94,6 +98,7 @@ func run() error {
 	recurring := postgres.NewRecurringScheduleRepository(db)
 	scheduleTypes := postgres.NewScheduleTypeRepository(db)
 	calendars := postgres.NewCalendarRepository(db)
+	exports := postgres.NewCalendarExportRepository(db)
 	visitInfos := visit.NewWriter(visit.WriterDeps{
 		Staff: staffRefs,
 		Patients: func(ctx context.Context, id string) (string, string, error) {
@@ -118,15 +123,18 @@ func run() error {
 		Schedules: schedule.NewUsecase(schedule.Deps{
 			Facilities: facilities, Staff: staffRefs, Visits: visitInfos,
 			Schedules: schedules, Recurring: recurring, Types: scheduleTypes,
+			Exports: calendar.NewOutbox(exports, calendars, ids),
 		}, tx, ids),
 		Calendars: calendar.NewUsecase(calendar.Deps{
 			Calendars: calendars, Source: source, ServiceAccount: cfg.Calendar.ServiceAccount,
 			Staff: staffRefs, Patients: patients, ServiceCodes: visitMasters, Types: scheduleTypes,
 			Schedules: schedules, Recurring: recurring, RecurringSchedules: recurring, Visits: visitInfos,
+			Exports: exports,
 		}, tx, ids, principal.RequireStaffManage),
 		Auth: access.NewService(access.Deps{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions,
 			Staff: staffRepo, StaffRefs: staffRefs, Schedules: schedules, Recurring: recurring, Calendars: calendars,
+			Exports: exports,
 		}),
 	}, httpapi.RouterConfig{Logger: log, AllowOrigins: cfg.AllowOrigins, Verifier: tokenVerifier{verifier}, Ready: func(ctx context.Context) error {
 		ctx, cancel := context.WithTimeout(ctx, readyTimeout)
@@ -148,6 +156,24 @@ func run() error {
 		serveErr <- srv.ListenAndServe()
 	}()
 
+	// 書き出しの処理は、止まる合図の後、取った待ちの結果を書いてから止まる。DB を閉じる前に止めて待つ。
+	exporterDone := make(chan struct{})
+	if svc != nil {
+		exporter := calendar.NewExporter(calendar.ExporterDeps{
+			Exports: exports, Calendars: calendars, Writer: gcal.NewWriter(svc), Schedules: schedules, Recurring: recurring,
+		}, ids, log)
+		go func() {
+			defer close(exporterDone)
+			exporter.Run(ctx, cfg.Calendar.ExportInterval)
+		}()
+	} else {
+		close(exporterDone)
+	}
+	defer func() {
+		stop()
+		<-exporterDone
+	}()
+
 	select {
 	case err := <-serveErr:
 		return err
@@ -165,9 +191,10 @@ func run() error {
 	return nil
 }
 
-// newEventSource は、Google カレンダーを読む calendar.EventSource を返す。サービスアカウントの設定が無ければ nil を返す。
+// newCalendarService は、Google カレンダーの予定を読み書きする calendarv3.Service を返す。サービスアカウントの設定が無ければ nil を返す。
 // 認証の情報は、照合の API と同じく Application Default Credentials で読む。偽物の API に向けるときは認証をしない。
-func newEventSource(ctx context.Context, cfg config.Calendar) (calendar.EventSource, error) {
+// 予定を書き出すので、スコープは calendar.events にする。
+func newCalendarService(ctx context.Context, cfg config.Calendar) (*calendarv3.Service, error) {
 	if cfg.ServiceAccount == "" {
 		return nil, nil
 	}
@@ -175,17 +202,13 @@ func newEventSource(ctx context.Context, cfg config.Calendar) (calendar.EventSou
 	if cfg.Endpoint != "" {
 		opts = append(opts, option.WithEndpoint(cfg.Endpoint), option.WithoutAuthentication())
 	} else {
-		creds, err := google.FindDefaultCredentials(ctx, calendarv3.CalendarReadonlyScope)
+		creds, err := google.FindDefaultCredentials(ctx, calendarv3.CalendarEventsScope)
 		if err != nil {
 			return nil, fmt.Errorf("application default credentials を読めません: %w", err)
 		}
 		opts = append(opts, option.WithCredentials(creds))
 	}
-	svc, err := calendarv3.NewService(ctx, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return gcal.NewReader(svc), nil
+	return calendarv3.NewService(ctx, opts...)
 }
 
 // tokenVerifier は、共有の oidc.Verifier を httpapi.TokenVerifier にする。httpapi は oidc を import しないので、主張の型をここで写す。

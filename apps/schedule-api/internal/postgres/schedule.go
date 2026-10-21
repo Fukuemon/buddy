@@ -166,6 +166,7 @@ func (r *ScheduleRepository) scheduleDetails(ctx context.Context, rows []sqlcgen
 				CompanionID: s.CompanionID, CompanionName: s.CompanionName,
 				ServiceCodeID: s.ServiceCodeID, ServiceCode: s.ServiceCode,
 			}.detail(cats),
+			Version:   int(s.Version),
 			CreatedAt: s.CreatedAt,
 			UpdatedAt: s.UpdatedAt,
 		}
@@ -177,12 +178,16 @@ func (r *ScheduleRepository) scheduleDetails(ctx context.Context, rows []sqlcgen
 	return out, nil
 }
 
-// CreateCancel は、予定のキャンセルを書く。キャンセル済みのときは apperr.ErrConflict を、予定が無いときは apperr.ErrInvalidInput のエラーを返す。
+// CreateCancel は、予定のキャンセルを書き、予定の更新の番号を 1 つ増やす。キャンセル済みのときは apperr.ErrConflict を、
+// 予定が無いときは apperr.ErrInvalidInput のエラーを返す。2 つの書き込みを揃えるため、トランザクションの中で呼ぶ。
 func (r *ScheduleRepository) CreateCancel(ctx context.Context, c schedule.Cancel) error {
 	err := r.q(ctx).CreateScheduleCancel(ctx, sqlcgen.CreateScheduleCancelParams{
 		ID: c.ID, ScheduleID: c.ScheduleID, Reason: c.Reason,
 	})
-	return translate("create schedule cancel", err)
+	if err != nil {
+		return translate("create schedule cancel", err)
+	}
+	return translate("bump schedule version", r.q(ctx).BumpScheduleVersion(ctx, c.ScheduleID))
 }
 
 // RecurringScheduleRepository は、schedule.RecurringRepository を実装する。
@@ -316,6 +321,7 @@ func (r *RecurringScheduleRepository) recurringDetails(ctx context.Context, rows
 				ServiceCodeID: s.ServiceCodeID, ServiceCode: s.ServiceCode,
 			}.detail(cats),
 			ExclusionDates: ex,
+			Version:        int(s.Version),
 			CreatedAt:      s.CreatedAt,
 			UpdatedAt:      s.UpdatedAt,
 		}
@@ -329,7 +335,10 @@ func (r *RecurringScheduleRepository) AddExclusion(ctx context.Context, recurrin
 	err := r.q(ctx).AddRecurringScheduleExclusion(ctx, sqlcgen.AddRecurringScheduleExclusionParams{
 		RecurringScheduleID: recurringScheduleID, Date: d.Time(),
 	})
-	return translate("add recurring schedule exclusion", err)
+	if err != nil {
+		return translate("add recurring schedule exclusion", err)
+	}
+	return translate("bump recurring schedule version", r.q(ctx).BumpRecurringScheduleVersion(ctx, recurringScheduleID))
 }
 
 func visitInfoIDs[T any](rows []T, id func(T) *string) []string {

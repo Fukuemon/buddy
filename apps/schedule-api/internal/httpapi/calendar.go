@@ -16,6 +16,8 @@ type CalendarUsecase interface {
 	Unlink(ctx context.Context, id string) error
 	Preview(ctx context.Context, id string, rng calendar.Range) (calendar.Preview, error)
 	Import(ctx context.Context, id string, rng calendar.Range, decisions []calendar.Decision) (calendar.ImportResult, error)
+	ListExportIssues(ctx context.Context, facilityID string) ([]calendar.ExportIssue, error)
+	RetryExport(ctx context.Context, id string) (calendar.Export, error)
 }
 
 func toImportRun(r calendar.ImportRun) openapi.ImportRun {
@@ -202,4 +204,65 @@ func (s server) CreateCalendarImport(ctx context.Context, req openapi.CreateCale
 		StartedAt:            run.StartedAt,
 		FinishedAt:           run.FinishedAt,
 	}, nil
+}
+
+func optionalID(id string) *openapi.ID {
+	if id == "" {
+		return nil
+	}
+	return &id
+}
+
+func toCalendarExport(e calendar.Export) openapi.CalendarExport {
+	out := openapi.CalendarExport{
+		Id:                  e.ID,
+		ScheduleId:          optionalID(e.ScheduleID),
+		RecurringScheduleId: optionalID(e.RecurringScheduleID),
+		Status:              openapi.CalendarExportStatus(e.Status),
+		Attempts:            e.Attempts,
+		UpdatedAt:           e.UpdatedAt,
+	}
+	if e.ErrorCode != nil {
+		c := openapi.CalendarExportErrorCode(*e.ErrorCode)
+		out.ErrorCode = &c
+	}
+	return out
+}
+
+func toCalendarExportIssue(i calendar.ExportIssue) openapi.CalendarExportIssue {
+	e := toCalendarExport(i.Export)
+	out := openapi.CalendarExportIssue{
+		Id:                  e.Id,
+		ScheduleId:          e.ScheduleId,
+		RecurringScheduleId: e.RecurringScheduleId,
+		Status:              openapi.CalendarExportIssueStatus(e.Status),
+		Attempts:            e.Attempts,
+		UpdatedAt:           e.UpdatedAt,
+		StaffId:             i.StaffID,
+		StaffName:           i.StaffName,
+		Date:                i.Date.String(),
+		StartTime:           i.StartTime.String(),
+		EndTime:             i.EndTime.String(),
+	}
+	if e.ErrorCode != nil {
+		c := openapi.CalendarExportIssueErrorCode(*e.ErrorCode)
+		out.ErrorCode = &c
+	}
+	return out
+}
+
+func (s server) ListCalendarExportIssues(ctx context.Context, req openapi.ListCalendarExportIssuesRequestObject) (openapi.ListCalendarExportIssuesResponseObject, error) {
+	issues, err := s.u.Calendars.ListExportIssues(ctx, req.FacilityId)
+	if err != nil {
+		return nil, err
+	}
+	return openapi.ListCalendarExportIssues200JSONResponse{Items: mapSlice(issues, toCalendarExportIssue)}, nil
+}
+
+func (s server) CreateCalendarExportRetry(ctx context.Context, req openapi.CreateCalendarExportRetryRequestObject) (openapi.CreateCalendarExportRetryResponseObject, error) {
+	e, err := s.u.Calendars.RetryExport(ctx, req.CalendarExportId)
+	if err != nil {
+		return nil, err
+	}
+	return openapi.CreateCalendarExportRetry202JSONResponse(toCalendarExport(e)), nil
 }

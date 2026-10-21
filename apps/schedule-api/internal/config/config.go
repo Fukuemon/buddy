@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Fukuemon/buddy/packages/go/oidc"
 )
@@ -27,6 +28,8 @@ type Calendar struct {
 	ServiceAccount string
 	// Endpoint は、Calendar API の代わりに呼ぶ URL で、偽物の API に向けるときだけ持つ。
 	Endpoint string
+	// ExportInterval は、予定の書き出しの待ちを確かめる間隔である。
+	ExportInterval time.Duration
 }
 
 // Config は、API とマイグレーションの設定である。
@@ -56,6 +59,7 @@ type Config struct {
 //     空なら Google カレンダーを読まない。認証の情報は Application Default Credentials で読む
 //   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。偽物の API で試すためのもので、認証をしない。
 //     GOOGLE_CALENDAR_SERVICE_ACCOUNT と一緒に渡す
+//   - GOOGLE_CALENDAR_EXPORT_INTERVAL: 予定の書き出しの待ちを確かめる間隔（Go の時間の書式。例は 30s）。既定は 30s。1s 以上にする
 func Load(getenv func(string) string) (Config, error) {
 	return load(getenv, true)
 }
@@ -121,6 +125,11 @@ func load(getenv func(string) string, api bool) (Config, error) {
 		ServiceAccount: strings.TrimSpace(getenv("GOOGLE_CALENDAR_SERVICE_ACCOUNT")),
 		Endpoint:       strings.TrimSpace(getenv("GOOGLE_CALENDAR_ENDPOINT")),
 	}
+	interval, err := time.ParseDuration(get("GOOGLE_CALENDAR_EXPORT_INTERVAL", "30s"))
+	if err != nil || interval < time.Second {
+		return Config{}, errors.New("GOOGLE_CALENDAR_EXPORT_INTERVAL は 1s 以上の時間（例は 30s）です")
+	}
+	c.Calendar.ExportInterval = interval
 	if c.Calendar.Endpoint != "" && c.Calendar.ServiceAccount == "" {
 		return Config{}, errors.New("GOOGLE_CALENDAR_ENDPOINT は GOOGLE_CALENDAR_SERVICE_ACCOUNT と一緒に渡します")
 	}

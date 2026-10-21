@@ -6,14 +6,14 @@
 
 ## Columns
 
-| Name       | Type                     | Default            | Nullable | Children                                                                                                                                                                                                                                                                                      | Parents | Comment                                                 |
-| ---------- | ------------------------ | ------------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ------------------------------------------------------- |
-| id         | text                     |                    | false    | [public.departments](public.departments.md) [public.teams](public.teams.md) [public.positions](public.positions.md) [public.users](public.users.md) [public.patients](public.patients.md) [public.recurring_schedules](public.recurring_schedules.md) [public.schedules](public.schedules.md) |         |                                                         |
-| name       | varchar(255)             |                    | false    |                                                                                                                                                                                                                                                                                               |         | 事業所名                                                |
-| org_id     | varchar(255)             |                    | true     |                                                                                                                                                                                                                                                                                               |         | ブローカーの組織の ID。結び付けるまで NULL              |
-| time_zone  | text                     | 'Asia/Tokyo'::text | false    |                                                                                                                                                                                                                                                                                               |         | 予定の日付と時刻を読む現地のタイムゾーン（IANA の名前） |
-| created_at | timestamp with time zone | now()              | false    |                                                                                                                                                                                                                                                                                               |         |                                                         |
-| updated_at | timestamp with time zone | now()              | false    |                                                                                                                                                                                                                                                                                               |         |                                                         |
+| Name       | Type                     | Default            | Nullable | Children                                                                                                                                                                                                                                                                                                                                            | Parents | Comment                                                 |
+| ---------- | ------------------------ | ------------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ------------------------------------------------------- |
+| id         | text                     |                    | false    | [public.departments](public.departments.md) [public.teams](public.teams.md) [public.positions](public.positions.md) [public.users](public.users.md) [public.patients](public.patients.md) [public.recurring_schedules](public.recurring_schedules.md) [public.schedules](public.schedules.md) [public.calendar_exports](public.calendar_exports.md) |         |                                                         |
+| name       | varchar(255)             |                    | false    |                                                                                                                                                                                                                                                                                                                                                     |         | 事業所名                                                |
+| org_id     | varchar(255)             |                    | true     |                                                                                                                                                                                                                                                                                                                                                     |         | ブローカーの組織の ID。結び付けるまで NULL              |
+| time_zone  | text                     | 'Asia/Tokyo'::text | false    |                                                                                                                                                                                                                                                                                                                                                     |         | 予定の日付と時刻を読む現地のタイムゾーン（IANA の名前） |
+| created_at | timestamp with time zone | now()              | false    |                                                                                                                                                                                                                                                                                                                                                     |         |                                                         |
+| updated_at | timestamp with time zone | now()              | false    |                                                                                                                                                                                                                                                                                                                                                     |         |                                                         |
 
 ## Viewpoints
 
@@ -62,6 +62,7 @@ erDiagram
 "public.patients" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
 "public.recurring_schedules" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
 "public.schedules" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+"public.calendar_exports" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
 
 "public.facilities" {
   text id
@@ -135,6 +136,7 @@ erDiagram
   date end_date
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  integer version
 }
 "public.schedules" {
   text id
@@ -150,6 +152,23 @@ erDiagram
   varchar_255_ title
   text description
   boolean is_over_time_work
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
+  integer version
+}
+"public.calendar_exports" {
+  text id
+  text facility_id FK
+  text schedule_id FK
+  text recurring_schedule_id FK
+  text status
+  integer revision
+  integer attempts
+  timestamp_with_time_zone next_attempt_at
+  timestamp_with_time_zone locked_until
+  boolean overwrite
+  text error_code
+  timestamp_with_time_zone finished_at
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
 }

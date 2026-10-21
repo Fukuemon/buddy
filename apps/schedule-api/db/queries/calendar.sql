@@ -47,5 +47,20 @@ SELECT * FROM external_event_links WHERE external_calendar_id = $1 ORDER BY id;
 
 -- name: CreateExternalEventLink :exec
 INSERT INTO external_event_links (
-    id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
+    id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, synced_version, schedule_id, recurring_schedule_id
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
+
+-- name: GetActiveExternalCalendarByStaff :one
+SELECT * FROM external_calendars WHERE staff_id = $1 AND disabled_at IS NULL;
+
+-- name: GetExternalEventLinkBySchedule :one
+SELECT * FROM external_event_links WHERE schedule_id = $1;
+
+-- name: GetExternalEventLinkByRecurringSchedule :one
+SELECT * FROM external_event_links WHERE recurring_schedule_id = $1;
+
+-- name: UpdateExternalEventLink :exec
+UPDATE external_event_links SET etag = $2, synced_version = $3 WHERE id = $1;
+
+-- name: DeleteExternalEventLink :exec
+DELETE FROM external_event_links WHERE id = $1;
