@@ -225,7 +225,7 @@ export const createFakeBuddyApi = ({
         assertFacility(facilityId)
         const issue = exportIssues.get(exportId)
         if (issue === undefined)
-          throw conflict('export_not_in_review', 'この予定は、確かめが要る書き出しではありません')
+          throw new ApiError(404, 'リソースが見つかりません', [], 'not_found')
         exportIssues.delete(exportId)
         const {
           staff_id: _,

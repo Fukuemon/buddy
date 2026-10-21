@@ -20,10 +20,10 @@ const Cell = ({ label, children }: { label: string; children: ReactNode }) => (
   </td>
 )
 
-const HEADERS = ['予定の日時', '職員', '理由', '気付いた日時'] as const
+const HEADERS = ['予定の日時', '職員', '理由', '最後に変わった日時'] as const
 
 /**
- * Google カレンダーに書き出せなかった予定を、日時、職員、理由、気付いた日時で並べ、予定を開くか buddy の内容で書き直す表。
+ * Google カレンダーに書き出せなかった予定を、日時、職員、理由、最後に変わった日時で並べ、予定を開くか buddy の内容で書き直す表。
  * 予定の題名と利用者名は、Google カレンダーの側の値を出さないため、表に出さない。幅 768px 未満では、行ごとの箱に縦に積む。
  */
 export const CalendarReviewTable = ({
@@ -66,7 +66,7 @@ export const CalendarReviewTable = ({
               {exportIssueReason(issue)}
             </span>
           </Cell>
-          <Cell label="気付いた日時">{formatDateTime(issue.updated_at)}</Cell>
+          <Cell label="最後に変わった日時">{formatDateTime(issue.updated_at)}</Cell>
           <td className="block px-4 py-2 desktop:table-cell desktop:px-5">
             <div className="flex flex-wrap gap-2 desktop:justify-end">
               {issue.schedule_id !== null && (

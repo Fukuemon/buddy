@@ -15,7 +15,9 @@ export const exportIssueReason = (issue: Pick<CalendarExportIssue, 'status' | 'e
     case 'precondition_failed':
       return 'Google カレンダーで予定が直されたので、buddy の変更を書き出していません。'
     case 'not_found':
-      return 'Google カレンダーで予定が消されたので、buddy の変更を書き出していません。'
+      return 'Google カレンダーで予定が見つかりません。予定が消されたか、カレンダーの共有が外れていないかを、職員に確かめてください。'
+    case 'rejected':
+      return 'Google カレンダーが予定の内容を受け付けませんでした。予定を開いて内容を確かめてください。'
     case 'forbidden':
       return 'Google カレンダーに書けません。カレンダーが「予定の変更」の権限で共有されているかを、職員に確かめてください。'
     default:

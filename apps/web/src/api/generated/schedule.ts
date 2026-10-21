@@ -954,11 +954,13 @@ export interface components {
              */
             status: "pending" | "succeeded" | "conflict" | "failed";
             /**
-             * @description 最後に書けなかった理由。precondition_failed は Google カレンダーで予定が変わっていた（412）、not_found は Google カレンダーで予定が消された、
-             *     forbidden はサービスアカウントがカレンダーに書けない、unavailable は Google に届かないか一時的な誤りが続いた
+             * @description 最後に書けなかった理由。precondition_failed は Google カレンダーで予定が変わっていた（412）、
+             *     not_found は Google カレンダーで予定が消されたか、予定かカレンダーが見つからない（410、404）、
+             *     forbidden はサービスアカウントがカレンダーに書けない、rejected は Google が予定の内容を受け付けなかった（400）、
+             *     unavailable は Google に届かないか一時的な誤りが続いた
              * @enum {string|null}
              */
-            error_code: "precondition_failed" | "not_found" | "forbidden" | "unavailable" | null;
+            error_code: "precondition_failed" | "not_found" | "forbidden" | "rejected" | "unavailable" | null;
             /** @description 書こうとした回数 */
             attempts: number;
             /** Format: date-time */

@@ -137,6 +137,9 @@ export const createScheduleHandlers = (baseUrl: string) => {
     http.post(
       '/v1/calendar_exports/{calendar_export_id}/retries',
       withAuth(({ params, response }) => {
+        const found = mockExportIssues.find((i) => i.id === params.calendar_export_id)
+        if (found === undefined)
+          return response(404).json({ code: 'not_found', message: 'リソースが見つかりません' })
         const {
           staff_id: _,
           staff_name: __,
@@ -144,7 +147,7 @@ export const createScheduleHandlers = (baseUrl: string) => {
           start_time: ____,
           end_time: _____,
           ...issue
-        } = mockExportIssues.find((i) => i.id === params.calendar_export_id) ?? mockExportIssues[0]
+        } = found
         return response(202).json({
           ...issue,
           id: params.calendar_export_id,

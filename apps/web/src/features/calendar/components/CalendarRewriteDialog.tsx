@@ -38,8 +38,8 @@ export const CalendarRewriteDialog = ({
         {target}
       </p>
       <p className="text-body">
-        Google カレンダーの予定を buddy の内容にします。Google
-        カレンダーで直した内容は消えます。消された予定は作り直します。書き直しは、数十秒のうちに
+        Google カレンダーの予定の題名と日時を buddy の内容にします。Google
+        カレンダーで直した題名と日時は消えます。消された予定は作り直します。書き直しは、数十秒のうちに
         Google カレンダーに出ます。
       </p>
       {errorMessage !== undefined && (
