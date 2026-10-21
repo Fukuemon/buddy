@@ -37,7 +37,18 @@ docker compose up --build --wait
 - 画面ごとの表示と操作: [画面仕様書](docs/screens/index.md)
 - API の要求と応答: 各 API の `openapi.yaml`（[予定の API](apps/schedule-api/openapi.yaml)、[照合の API](apps/receipt-api/openapi.yaml)）。文書のサイトの [「API の仕様」](https://buddy-docs.emon-apps.workers.dev/api/schedule-api.html) のページで読める
 - 予定の管理の表の構成: [表の一覧](docs/db/schedule-api/README.md)。操作できる ER 図は、文書のサイトの [`/erd/`](https://buddy-docs.emon-apps.workers.dev/erd/) にある
-- 公開した文書のサイト: [buddy-docs](https://buddy-docs.emon-apps.workers.dev)。デザインシステムのカタログは同じサイトの [`/storybook/`](https://buddy-docs.emon-apps.workers.dev/storybook/) にある。Cloudflare Access で許可した人だけが開ける。公開の仕組みは [apps/docs-site](apps/docs-site/README.md) にある
+- 公開した文書のサイト: [buddy-docs](https://buddy-docs.emon-apps.workers.dev)。デザインシステムのカタログは同じサイトの [`/storybook/`](https://buddy-docs.emon-apps.workers.dev/storybook/) にある。Cloudflare Access で許可した人だけが開け、外部の人は開けない。同じサイトは、ルートで `pnpm site:build` を実行すると手元に組める。公開の仕組みは [apps/docs-site](apps/docs-site/README.md) にある
 - 決めた判断と理由: [ADR](docs/adr)
 - 変更を取り込むまでの手順: [CONTRIBUTING.md](CONTRIBUTING.md)
 - 規約と事実の目次: [context/index.md](context/index.md)
+
+## 貢献
+
+今は、外部からの pull request を受け付けていない。  
+不具合と要望は、issue の雛形から報告できる。  
+セキュリティの問題は issue に書かず、[SECURITY.md](SECURITY.md) の手順で届ける。  
+[CONTRIBUTING.md](CONTRIBUTING.md) は、持ち主が変更を取り込むまでの運用を書いた文書である。
+
+## ライセンス
+
+[MIT License](LICENSE) で公開する。

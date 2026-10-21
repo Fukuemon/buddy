@@ -39,7 +39,7 @@ ER 図のサイトは、Liam ERD の CLI が出す静的なファイルで、資
 - develop への push では `cf deploy --prebuilt --mode production` で本番に出す。
 - プレビューの手順は pull request のコードを動かし、そこへ Cloudflare のトークンを渡す。同じリポジトリの pull request には GitHub が secret を渡すため、書き込みの権限を持つ人はワークフローを書き換えてトークンを読める。
   - トークンの範囲を Worker `buddy-docs` の Editor に絞り、漏れたときに書き換えられるものを、このサイトの中身と設定に限る。Access の設定はトークンで変えられない。
-  - fork からの pull request には、GitHub が secret を渡さないため、プレビューは失敗する。
+  - fork と Dependabot の pull request には GitHub が secret を渡さないため、ワークフローはサイトを組むだけで、プレビューとコメントの手順を飛ばす。
 - 文書の元は docs/ のほか、各アプリの Design Doc にも散るので、変えた場所で絞らずに全ての pull request で動かす。
 - `cloudflare.config.ts` が Worker の名前（`buddy-docs`）と、workers.dev とプレビューの URL を有効にする設定を持つ。静的なファイルの置き場は `wrangler.config.ts` にある。`cf` の 1.0.0-beta は、静的なファイルのビルドを wrangler に任せるためである。
 - `cf` は beta なので、バージョンを固定している。上げるときは、pull request のプレビューと `deploy:dry-run` が通ることを確かめる。
