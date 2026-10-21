@@ -5,6 +5,8 @@ generate:
   gin-server: true
   strict-server: true
   models: true
+  # 要求の検証（httpapi の validateRequest）が、openapi.yaml を実行時に読むため
+  embedded-spec: true
 output-options:
   # StaffDetail の policies の要素のような、名前のない schema にも型を作る。無名の struct は httpapi から組み立てられない
   generate-types-for-anonymous-schemas: true

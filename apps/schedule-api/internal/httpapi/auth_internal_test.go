@@ -6,16 +6,47 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/getkin/kin-openapi/routers/gorillamux"
 	"github.com/gin-gonic/gin"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/access"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi/openapi"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 )
+
+// TestEveryV1RouteIsInSpec は、gin に登録した /v1 の経路が全て openapi.yaml の定義にあることを確かめる。
+// 定義に無い経路は、要求の検証を通らずに handler に届くためである。
+func TestEveryV1RouteIsInSpec(t *testing.T) {
+	spec, err := openapi.GetSpec()
+	if err != nil {
+		t.Fatal(err)
+	}
+	spec.Servers = nil
+	router, err := gorillamux.NewRouter(spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := NewRouter(Usecases{}, RouterConfig{Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	for _, route := range r.Routes() {
+		if !strings.HasPrefix(route.Path, "/v1/") {
+			continue
+		}
+		segs := strings.Split(route.Path, "/")
+		for i, seg := range segs {
+			if strings.HasPrefix(seg, ":") {
+				segs[i] = "01M3TC5H00QV17BC0J9V3393ZP"
+			}
+		}
+		req := httptest.NewRequest(route.Method, strings.Join(segs, "/"), nil)
+		if _, _, err := router.FindRoute(req); err != nil {
+			t.Errorf("%s %s: 定義に無い: %v", route.Method, route.Path, err)
+		}
+	}
+}
 
 func TestEveryPathParamHasResource(t *testing.T) {
 	r := NewRouter(Usecases{}, RouterConfig{Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
@@ -25,17 +56,6 @@ func TestEveryPathParamHasResource(t *testing.T) {
 				if _, known := pathResources[name]; !known {
 					t.Errorf("%s %s: 引数 %s の事業所を確かめられない", route.Method, route.Path, name)
 				}
-			}
-		}
-	}
-}
-
-func TestBodyRulesNameFields(t *testing.T) {
-	for _, r := range bodyRules {
-		typ := reflect.TypeOf(r.of)
-		for name := range r.rules {
-			if _, ok := typ.FieldByName(name); !ok {
-				t.Errorf("%s に項目 %s がない", typ, name)
 			}
 		}
 	}

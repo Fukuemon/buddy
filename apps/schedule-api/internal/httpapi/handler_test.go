@@ -294,6 +294,9 @@ func TestErrorStatus(t *testing.T) {
 	}
 }
 
+// bodyErrorPrefixForTest は、本文を読めないときの 400 の文の先頭である（respond.go の bodyErrorPrefix）。
+const bodyErrorPrefixForTest = "リクエストの本文が正しくありません: "
+
 const validSlotBody = `{"schedule_type_id":"` + typeID + `","date":"2026-10-20","start_time":"09:00","end_time":"10:00",` +
 	`"staff_id":"` + staffID + `","title":"会議"}`
 
@@ -339,6 +342,11 @@ func TestCreateSchedule(t *testing.T) {
 		{name: "訪問の情報の区分が ULID でない", body: strings.Replace(valid, `"title":"会議"`,
 			`"visit_info":{"patient_id":"`+staffID+`","assigned_staff_id":"`+staffID+`","service_code_id":"`+staffID+`","visit_category_ids":["x"]}`, 1),
 			wantCode: http.StatusBadRequest, wantMessage: "visit_info.visit_category_ids[0]"},
+		{name: "同行者が null", body: strings.Replace(valid, `"title":"会議"`,
+			`"visit_info":{"patient_id":"`+staffID+`","assigned_staff_id":"`+staffID+`","companion_id":null,"service_code_id":"`+staffID+`"}`, 1),
+			wantCode: http.StatusCreated},
+		{name: "題名が長すぎる", body: strings.Replace(valid, `"title":"会議"`, `"title":"`+strings.Repeat("あ", 256)+`"`, 1),
+			wantCode: http.StatusBadRequest, wantMessage: "title"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -350,7 +358,7 @@ func TestCreateSchedule(t *testing.T) {
 			if msg, _ := body["message"].(string); !strings.Contains(msg, tt.wantMessage) {
 				t.Errorf("message = %q, want %q を含む", msg, tt.wantMessage)
 			}
-			if tt.wantCode == http.StatusCreated &&
+			if tt.name == "正しい本文" &&
 				(s.lastSlot.StartTime != civil.Time{Hour: 9} || s.lastSlot.Title == nil || s.lastSlot.Visit != nil) {
 				t.Errorf("slot = %+v", s.lastSlot)
 			}
@@ -503,5 +511,64 @@ func TestCreateForbidden(t *testing.T) {
 		if rec, got := do(t, h, http.MethodPost, target, body); rec.Code != http.StatusForbidden || got["code"] != "forbidden" {
 			t.Errorf("%s: status = %d, body = %v", target, rec.Code, got)
 		}
+	}
+}
+
+// TestRequestConstraints は、openapi.yaml に書いた本文の制約で、handler を呼ぶ前に 400 を返すことを確かめる。
+func TestRequestConstraints(t *testing.T) {
+	user := `{"username":"新人","email":"new@example.com","department_id":"` + staffID + `","team_id":"` + staffID + `","position_id":"` + staffID + `"`
+	tests := []struct {
+		name, target, body, wantMessage string
+	}{
+		{"チームの名前が空", "/v1/facilities/" + facilityID + "/teams", `{"name":""}`, "name"},
+		{"キャンセルの理由が空", "/v1/schedules/" + scheduleID + "/cancel", `{"reason":""}`, "reason"},
+		{"キャンセルの理由が長すぎる", "/v1/schedules/" + scheduleID + "/cancel", `{"reason":"` + strings.Repeat("あ", 256) + `"}`, "reason"},
+		{"電話番号が長すぎる", "/v1/facilities/" + facilityID + "/users", user + `,"phone_number":"+0900000000000"}`, "phone_number"},
+		{"メールの形でない", "/v1/facilities/" + facilityID + "/users", strings.Replace(user, "new@example.com", "new", 1) + "}", "email"},
+		{"職員の名前が空", "/v1/facilities/" + facilityID + "/users", strings.Replace(user, "新人", "", 1) + "}", "username"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec, body := do(t, newRouter(&fakeSchedules{}, &fakeStaff{}, &fakePatients{}), http.MethodPost, tt.target, tt.body)
+			if rec.Code != http.StatusBadRequest || body["code"] != "invalid_input" {
+				t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
+			}
+			if msg, _ := body["message"].(string); !strings.Contains(msg, tt.wantMessage) {
+				t.Errorf("message = %q, want %q を含む", msg, tt.wantMessage)
+			}
+		})
+	}
+}
+
+// TestRequestValidationMessages は、定義の検証の誤りの文と、空のクエリと大きな本文の扱いを確かめる。
+func TestRequestValidationMessages(t *testing.T) {
+	h := newRouter(&fakeSchedules{}, &fakeStaff{}, &fakePatients{})
+	list := "/v1/facilities/" + facilityID + "/schedules"
+	if rec, _ := do(t, h, http.MethodGet, list+"?date_from=&schedule_type=&sort_field=", ""); rec.Code != http.StatusOK {
+		t.Errorf("空のクエリ: status = %d, body = %s, want 200（指定なし）", rec.Code, rec.Body)
+	}
+	tests := []struct {
+		name, method, target, body string
+		want                       []string
+	}{
+		{"クエリの値が列挙に無い", http.MethodGet, list + "?sort_field=foo", "", []string{"query の sort_field が定義に合いません"}},
+		{"本文の誤りが複数", http.MethodPost, list, `{"date":"x","start_time":"x"}`, []string{"date", "start_time", "schedule_type_id"}},
+		{"本文が JSON でない", http.MethodPost, list, `{bad`, []string{bodyErrorPrefixForTest}},
+		{"本文が大きすぎる", http.MethodPost, "/v1/schedules/" + scheduleID + "/cancel",
+			`{"reason":"` + strings.Repeat("a", 1<<20) + `"}`, []string{"バイトまでです"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec, body := do(t, h, tt.method, tt.target, tt.body)
+			if rec.Code != http.StatusBadRequest || body["code"] != "invalid_input" {
+				t.Fatalf("status = %d, body = %.300s", rec.Code, rec.Body)
+			}
+			msg, _ := body["message"].(string)
+			for _, w := range tt.want {
+				if !strings.Contains(msg, w) {
+					t.Errorf("message = %q, want %q を含む", msg, w)
+				}
+			}
+		})
 	}
 }
