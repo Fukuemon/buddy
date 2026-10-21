@@ -5,7 +5,7 @@ import type { Patient, Staff } from '#/api/types'
 import { TextareaField } from '@buddy/ui'
 
 import { SCHEDULE_CATEGORY_LABEL } from '../constants/scheduleLabels'
-import { visitEndTime } from '../lib/scheduleFormMapper'
+import { visitEndTimeOfInput } from '../lib/scheduleFormMapper'
 import type { ScheduleFormValues } from '../schema/scheduleForm'
 import { PatientSelectList } from './PatientSelectList'
 import { ScheduleCategoryCheckboxGroup } from './ScheduleCategoryCheckboxGroup'
@@ -43,13 +43,9 @@ export const ScheduleForm = ({ id, form, staffList, patients, onSubmit }: Schedu
 
   const dateTimeSummary = (() => {
     if (values.kind === 'visit') {
-      // 提供時間の欄を空にすると NaN が入るので、数でない値は未入力として「-」にする
-      const serviceTime = Number.isFinite(values.serviceTime) ? values.serviceTime : undefined
-      const end =
-        values.startTime !== undefined && serviceTime !== undefined
-          ? visitEndTime(values.startTime, serviceTime)
-          : '-'
-      return `${values.scheduleDate ?? ''} ${values.startTime ?? ''} - ${end}（${serviceTime ?? '-'} 分、${values.serviceCode ?? ''}）`
+      const end = visitEndTimeOfInput(values.startTime, values.serviceTime) ?? '-'
+      const serviceTime = Number.isFinite(values.serviceTime) ? values.serviceTime : '-'
+      return `${values.scheduleDate ?? ''} ${values.startTime ?? ''} - ${end}（${serviceTime} 分、${values.serviceCode ?? ''}）`
     }
     return `${values.scheduleDate ?? ''} ${values.startTime ?? ''} - ${values.kind === 'normal' ? (values.endTime ?? '') : ''}`
   })()

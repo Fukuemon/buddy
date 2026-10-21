@@ -44,8 +44,8 @@ export const visitScheduleFormSchema = z
         message: `${values.serviceCode} の提供時間は ${min} 分から ${max} 分です`,
       })
     }
-    // API は終了を開始より後に求めるので、開始に提供時間を足して日をまたぐ予定は送らない
-    if (diffMinutes('00:00', values.startTime) + values.serviceTime >= MINUTES_PER_DAY) {
+    const end = diffMinutes('00:00', values.startTime) + values.serviceTime
+    if (Number.isFinite(end) && end >= MINUTES_PER_DAY) {
       ctx.addIssue({
         code: 'custom',
         path: ['serviceTime'],

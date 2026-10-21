@@ -62,6 +62,15 @@ describe('ScheduleFormModal', () => {
     )
   })
 
+  it('開始時間の欄を空にすると、要約と終了時間を「-」にする', async () => {
+    render(<Visit />)
+    await userEvent.clear(screen.getByTestId('schedule-form-start-time'))
+    expect(screen.getByTestId('schedule-field-date-time')).toHaveTextContent(
+      '2026-10-20 - -（29 分、訪看I2）',
+    )
+    expect(screen.getByTestId('schedule-form-end-time')).toHaveTextContent('終了時間 -')
+  })
+
   it('通常の予定はタイトルの項目を出し、訪問のタブを押すと onKindChange を呼ぶ', async () => {
     const onKindChange = fn()
     render(<Normal onKindChange={onKindChange} />)

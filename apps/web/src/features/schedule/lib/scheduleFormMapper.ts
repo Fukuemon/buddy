@@ -68,6 +68,18 @@ export const toScheduleFormValues = (schedule: Schedule): ScheduleFormValues => 
 export const visitEndTime = (startTime: string, serviceTime: number) =>
   addMinutesToTimeKey(startTime, serviceTime)
 
+/**
+ * 入力の途中の値から、訪問の予定の終了時間を求める。開始時間か提供時間がそろっていなければ undefined を返す。
+ * 欄を空にすると、開始時間は空の文字列、提供時間は NaN になる。
+ */
+export const visitEndTimeOfInput = (startTime?: string, serviceTime?: number) =>
+  isTimeKey(startTime) && Number.isFinite(serviceTime)
+    ? visitEndTime(startTime, serviceTime as number)
+    : undefined
+
+const isTimeKey = (value?: string): value is string =>
+  value !== undefined && /^\d{2}:\d{2}$/.test(value)
+
 /** 検証を通ったフォームの値を、API に送る値にする。 */
 export const toScheduleInput = (values: ScheduleFormValues): ScheduleInput => {
   const startsAt = combineDateTime(values.scheduleDate, values.startTime)

@@ -40,13 +40,16 @@ export const ScheduleCreateModalContainer = () => {
 
   const changeKind = (kind: ScheduleKind) => {
     const current = form.getValues()
-    // 初期値は開いたときの値のままにし、残す項目を変えていれば変更ありとして閉じるときに確認を出す
     form.reset(createScheduleFormValues({ kind, ...initial }))
-    for (const field of ['scheduleDate', 'startTime', 'staffId'] as const) {
-      if (current[field] !== form.getValues(field)) {
-        form.setValue(field, current[field], { shouldDirty: true })
-      }
-    }
+    form.reset(
+      createScheduleFormValues({
+        kind,
+        date: current.scheduleDate,
+        time: current.startTime,
+        staffId: current.staffId,
+      }),
+      { keepDefaultValues: true },
+    )
     void navigate({ search: (prev) => ({ ...prev, kind }), replace: true })
   }
 

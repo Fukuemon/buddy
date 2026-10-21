@@ -55,6 +55,9 @@ describe('scheduleFormSchema', () => {
     expect(messagesOf(values)).toEqual({
       serviceTime: '終了が日をまたがないよう、開始時間か提供時間を変えてください',
     })
+    expect(messagesOf({ ...values, startTime: '23:31' })).toEqual({
+      serviceTime: '終了が日をまたがないよう、開始時間か提供時間を変えてください',
+    })
     expect(messagesOf({ ...values, startTime: '23:30' })).toEqual({})
   })
 
