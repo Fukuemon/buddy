@@ -431,7 +431,12 @@ func (b *planner) addException(ev Event) {
 		b.skip(c)
 		return
 	}
+	// サービスコードを引けずに取り込まない回も、元の日の回を残さない
+	before := len(b.p.entries)
 	b.add(entry{event: ev, parentID: ev.RecurringEventID, cand: c, replaces: &target})
+	if len(b.p.entries) == before {
+		b.p.exclusions = append(b.p.exclusions, target)
+	}
 }
 
 // replacementTarget は、例外の回 ev が置き換える、繰り返しのまま取り込む予定の回を返す。
@@ -660,6 +665,10 @@ func (p *plan) applyDecisions(decisions []Decision, patients []PatientRef) (int,
 			e.cand.Kind, e.cand.Title = KindNormal, normalTitle(e.event.Summary)
 		case ActionSkip:
 			skipped++
+			// 置き換えの回を取り込まないときも、元の日の回を残さない
+			if e.replaces != nil {
+				p.exclusions = append(p.exclusions, *e.replaces)
+			}
 			continue
 		}
 		e.reviewKey = ""

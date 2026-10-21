@@ -650,3 +650,32 @@ func TestPreviewCountsSeriesOnlyMovedOut(t *testing.T) {
 		t.Errorf("下見の件数 = %+v, want 期間の外へ動かした回だけの繰り返しも 1 件に数える", p.Counts)
 	}
 }
+
+func TestImportExcludesSkippedReplacement(t *testing.T) {
+	series := func(summary string) *gcaltest.Server {
+		return &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{googleCalID: {{
+			grecurring(gevent("weekly", "【訪看I2】利用者A", "2026-11-02T09:00:00+09:00", "2026-11-02T09:30:00+09:00"),
+				"RRULE:FREQ=WEEKLY;BYDAY=MO"),
+			gexception("weekly_1109", "weekly", summary, "2026-11-09T10:00:00+09:00", "2026-11-09T10:30:00+09:00", "2026-11-09T09:00:00+09:00"),
+		}}}}
+	}
+	nov9 := civil.Date{Year: 2026, Month: 11, Day: 9}
+	t.Run("サービスコードを引けない置き換え", func(t *testing.T) {
+		e := newEnv(t, series("【謎】利用者A"))
+		if _, err := e.importDecided(t, e.rng, nil); err != nil {
+			t.Fatal(err)
+		}
+		if rs := recurringOf(t, e, "weekly"); !slices.Contains(rs.ExclusionDates, nov9) {
+			t.Errorf("除外の日 = %v, want 11-09 を含む", rs.ExclusionDates)
+		}
+	})
+	t.Run("取り込まないを選んだ置き換え", func(t *testing.T) {
+		e := newEnv(t, series("【訪看I2】利用者Z"))
+		if _, err := e.importDecided(t, e.rng, []calendar.Decision{{ExternalEventID: "weekly_1109", Action: calendar.ActionSkip}}); err != nil {
+			t.Fatal(err)
+		}
+		if rs := recurringOf(t, e, "weekly"); !slices.Contains(rs.ExclusionDates, nov9) {
+			t.Errorf("除外の日 = %v, want 11-09 を含む", rs.ExclusionDates)
+		}
+	})
+}
