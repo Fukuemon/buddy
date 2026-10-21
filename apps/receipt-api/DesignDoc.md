@@ -12,7 +12,7 @@ verified_commit: bde1891
 ## Overview
 
 receipt-api は、訪問の予定と電子カルテ（iBow）の実績を比べ、食い違いを 4 つの区分に分けて JSON で返す。  
-照合の規則は、receipt-checker の `server/libs`（Python、pandas）と、予定の CSV を作る GAS から写した。  
+照合の規則は、以前に使っていた照合のツール（Python、pandas）と、予定の CSV を作る GAS から写した。  
 全体の中での責務と依存は [buddy Design Doc](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md) にある。  
 起動と API の使い方は [README.md](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/README.md) にある。
 
@@ -36,6 +36,8 @@ receipt-api は、訪問の予定と電子カルテ（iBow）の実績を比べ�
 
 ### パッケージは正規化、対の作成、判定の段ごとに分ける
 
+- `internal/record`: 正規化した後の予定と実績の 1 行、入力の行の誤り、照合に使わなかった予定の警告
+- `internal/civil`: 時差を持たない日付と、1 日の中の時刻
 - `internal/csvio`: 入力の CSV の文字コードの判別と列の取り出し
 - `internal/normalize`: 時刻、利用者名、主訪問者、サービス内容の表記をそろえ、予定の側だけ終了時間と提供時間を調整する
 - `internal/servicerule`: サービス内容ごとの許容範囲、1 分引くサービス内容の一覧、`医` の特例
@@ -43,9 +45,12 @@ receipt-api は、訪問の予定と電子カルテ（iBow）の実績を比べ�
 - `internal/judge`: 対ごとに項目を判定し、不整合、予定のみ、実績のみ、整合に分ける
 - `internal/check`: 上の 4 つをつなぐ。予定の取得元は `ScheduleSource` で受ける
 - `internal/gcal`: Google カレンダーの予定を、予定の CSV と同じ `csvio.Row` にしてから `normalize.Schedules` に通す
+- `internal/gcal/gcaltest`: テストと手元の確認に使う、Calendar API の events.list の偽物
 - `internal/source`: 要求の `schedules` と `month` とトークンの組織から、予定の取得元（`CSVSchedules` か `internal/gcal`）を選ぶ
 - access token の検証は、共有の module の `packages/go/oidc` を使う（[ADR-0007](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0007-go-shared-module.md)）
 - `internal/httpapi`: `GET /healthz`、`GET /readyz`、`POST /v1/checks`。`/healthz` と `/readyz` 以外の要求のトークンを `packages/go/oidc` で確かめる
+- `cmd/api`: 環境変数を読んで API のサーバーを起動する
+- `cmd/devissuer`: 手元で API を試すための偽物の OIDC の発行者。イメージに入れない
 
 ### 処理の流れ
 
@@ -82,7 +87,7 @@ Google カレンダーの予定も、予定の CSV と同じ正規化と照合�
 ### 予定の取得元: Google カレンダー
 
 Google カレンダーは、今も職員が予定を入れる場所なので、照合の予定の取得元として残す。  
-receipt-api は、Google Calendar API を直接呼ぶ。GAS は使わない。GAS の Web アプリは匿名で呼べる設定で公開され、利用者名を含む予定を返していたためである。
+receipt-api は、Google Calendar API を直接呼ぶ。
 
 - 認証は Application Default Credentials で、スコープは `calendar.readonly` だけにする。手元ではサービスアカウントの鍵のファイル、クラスタでは Workload Identity Federation を使う。
 - ドメイン全体の委任は使わない。職員のカレンダーを、サービスアカウントに閲覧の権限で共有する。サービスアカウントが読めるカレンダーを、照合に使うものだけに絞るためである。
@@ -156,7 +161,7 @@ receipt-api は、Google Calendar API を直接呼ぶ。GAS は使わない。GA
 
 予定だけに、次を当てる。
 
-- サービス内容が `訪看I２` から `予防訪看I４` の 12 種類（下の許容範囲の表の 20〜29、30〜59、60〜89 の行）のとき、終了時間と提供時間を 1 分減らす。元の規則のままにした。理由はコードから読み取れない（未確認）。
+- サービス内容が `訪看I２` から `予防訪看I４` の 12 種類（下の許容範囲の表の 20〜29、30〜59、60〜89 の行）のとき、終了時間と提供時間を 1 分減らす。
 
 ### 対の作り方
 
@@ -165,7 +170,7 @@ receipt-api は、Google Calendar API を直接呼ぶ。GAS は使わない。GA
 - 3 つが同じ予定と実績が 1 件ずつなら、その 2 件を対にする。
 - 同じ利用者を同じ職員が 1 日に 2 回以上訪問すると、3 つが同じ予定と実績が複数になる。このときは、開始時間が最も近いものどうしを対にする。
   1. 同じ 3 つを持つ予定と実績の全ての組について、開始時間の差の絶対値を求める。
-  2. 差が最も小さい組を対にし、その予定と実績を候補から除く。差が同じ組が複数あれば、予定の開始時間が早い組を先にし、それも同じなら実績の開始時間が早い組を先にする。
+  2. 差が最も小さい組を対にし、その予定と実績を候補から除く。差が同じ組が複数あれば、予定が先に並ぶ組を先にし、予定が同じなら実績が先に並ぶ組を先にする。予定と実績は、それぞれ開始時間、終了時間、入力の行番号の順に並べる。
   3. 予定か実績のどちらかがなくなるまで 2 を繰り返す。
 - 対にならなかった予定は予定のみに、対にならなかった実績は実績のみに入れる。
 
@@ -210,14 +215,12 @@ receipt-api は、Google Calendar API を直接呼ぶ。GAS は使わない。GA
 | 医 | 30 | 90 |
 | 難病等複数回訪問加算(２回) | 30 | 90 |
 
-下限と上限は、両端を含む。  
-表には `予防訪看I５２超` があり、`予防訪看I５・２超` がない。元の表のままにした（未確認）。
+下限と上限は、両端を含む。
 
 ### 結果の JSON
 
 API は、判定の結果だけを JSON で返す。記号と CSV は返さない。  
-記号は元の Python のデスクトップのツール（tkinter）の表示の名残で、表示を変えるたびに API を変えないためである。  
-JSON と並べて記号つきの CSV も返す案は、表示の都合が API の応答に残るので採らない。
+記号は元の Python のデスクトップのツール（tkinter）の表示の名残で、表示を変えるたびに API を変えないためである。
 
 - `summary` は、区分ごとの行の数を持つ。
 - `rows` は、不整合、予定のみ、実績のみ、整合の順に並べ、区分の中は訪問日、開始時間、利用者名、主訪問者の順に並べる。
@@ -226,7 +229,11 @@ JSON と並べて記号つきの CSV も返す案は、表示の都合が API �
   - `category`: 区分（`mismatch`、`schedule_only`、`visit_only`、`match`）
   - `date`、`client`、`staff`: 訪問日、利用者名、主訪問者
   - `schedule` と `visit`: 両側の入力の行番号（Google カレンダーから取った予定では 0）、開始時間、終了時間、提供時間、サービス内容。実績の側は加算（`additions`）も持つ。片側がない行では `null`
-  - `checks`: 両側があるときだけ持つ。開始時間、サービス内容、加算の `ok`。終了時間から開始時間を引いた分と提供時間の、判定した分（`minutes`）、許容範囲（`range`）、`ok`。提供時間と終了時間の値が両側で同じか（`duration_equal`、`end_equal`）
+  - `checks`: 両側があるときだけ持ち、片側だけの行では `null`。キーは次のとおり。
+    - `start`、`service`、`additions`: 開始時間、サービス内容、加算の判定（`ok`）
+    - `schedule_elapsed`、`visit_elapsed`: 予定と実績の、終了時間から開始時間を引いた分の判定。判定した分（`minutes`）、許容範囲（`range`）、`ok` を持つ
+    - `schedule_duration`、`visit_duration`: 予定と実績の、提供時間の判定。`schedule_elapsed` と同じ形の値を持つ
+    - `duration_equal`、`end_equal`: 提供時間と終了時間の値が両側で同じか
 
 ### 画面が JSON から作る表示
 
@@ -245,20 +252,25 @@ JSON と並べて記号つきの CSV も返す案は、表示の都合が API �
 API の定義の正本は [openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/openapi.yaml) である。
 
 - `POST /v1/checks`
-  - `Authorization: Bearer` の access token を求める。署名、`iss`、`aud`、`exp`、`nbf` を JWKS で確かめる。
+  - `Authorization: Bearer` の access token を求める。署名、`iss`、`aud`、`exp`、`nbf` を JWKS で確かめる。`/healthz` と `/readyz` のほかは、定義に無いパスにもトークンを求める。
   - 署名のアルゴリズムは RS256 と ES256 だけを受け付ける。
   - `multipart/form-data` で、ファイル `visits`（実績の CSV）と予定を受ける。
   - 予定は、ファイル `schedules`（予定の CSV）があればそれを使う。なくてフォームの値 `month`（`2026-10` の形）があれば、その月の予定を Google カレンダーから取る。
   - 結果は、`Accept` によらず結果の JSON で返す。
-- エラーは `{"code","message"}` の JSON で返す。
-  - トークンがないか、検証に失敗した: 401 の `unauthenticated`。`WWW-Authenticate` を付ける
+- エラーは `{"code","message"}` の JSON で返す。`message` は人が読む説明で、文言は変わることがあるので、利用者は `code` で分岐する。
+  - トークンがないか、検証に失敗した: 401 の `unauthenticated`。トークンが無いときは `WWW-Authenticate: Bearer` を、検証に失敗したときは `WWW-Authenticate: Bearer error="invalid_token"` を付ける
+  - 定義に無いパスかメソッド: 404 の `not_found`
   - `month` で呼ばれたが、トークンに組織がない: 403 の `forbidden`。読むカレンダーを決められないためである
   - 本文が multipart として読めない、`month` の形が違う: 400 の `bad_request`
   - `visits` がない、`schedules` も `month` もない: 400 の `missing_file`
   - 本文が上限（`MAX_UPLOAD_BYTES`）を超える: 413 の `payload_too_large`
-  - 入力の CSV の誤り: 422 の `invalid_csv`。行ごとの誤り（`errors` の `source`、`line`、`column`、`message`）を持つ
+  - 入力の CSV の誤り: 422 の `invalid_csv`。行の誤りがあれば、行ごとの誤り（`errors` の `source`、`line`、`column`、`message`）を持つ。CSV が空のとき、列が足りないとき、文字コードを読めないときは `errors` を持たない
   - Calendar API の呼び出しに失敗した: 502 の `schedule_source_failed`
   - Google カレンダーの設定がないか、トークンの組織のカレンダーがないのに `month` で呼ばれた: 503 の `calendar_not_configured`。要求の形は正しく、照合できない原因がサーバーの設定にあるので、400 にしない
+  - 照合の途中のそのほかの誤り: 500 の `internal`
+- CORS は、`CORS_ALLOW_ORIGINS` に並べた Origin だけに許す。空なら CORS のヘッダーを返さない。
+  - 許す Origin の事前の要求（OPTIONS で `Access-Control-Request-Method` を持つ）には、トークンを求めずに 204 を返す。許すメソッドは GET、POST、OPTIONS、ヘッダーは `Authorization` と `Content-Type` にする。
+  - 許さない Origin の要求は、CORS のヘッダーを付けずに通す。ブラウザは、ヘッダーの無い応答を画面に読ませない。
 - 照合に固有の環境変数は [README.md](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/README.md) にあり、全体で共通の環境変数は [buddy Design Doc のインフラとの約束](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md#インフラとの約束) にある。
 
 ## Verification
@@ -279,5 +291,5 @@ API の定義の正本は [openapi.yaml](https://github.com/Fukuemon/buddy/blob/
 - Google カレンダーの期間は、要求の `month` にする。GAS は実行日の 2 か月前の月を取り、月末に動かすと月がずれていた。
 - 終日の予定は除く。GAS は提供時間 1440 分の行にしていた。
 - 取り消された予定は除く。GAS は取り消しの状態を見ていなかった。
-- 解釈できない予定は `warnings` に入れる。GAS は `】` が先の題名で例外を出し、そのカレンダーの処理を止めていた（推測）。
-- 照合の対象のカレンダーは、サーバーの設定に置く。GAS はカレンダー ID をクエリで受け、匿名で誰でも呼べる Web アプリとして公開されていた。
+- 解釈できない予定は `warnings` に入れる。
+- 照合の対象のカレンダーは、サーバーの設定に置く。GAS はカレンダー ID を要求で受けていた。
