@@ -5,6 +5,7 @@
     "prepare": "[ -n \"$CI\" ] || lefthook install",
     "check:generated": "sh scripts/check-generated.sh",
     "check:screens": "node scripts/check-screens.mjs",
+    "generate:db-docs": "sh scripts/build-db-docs.sh",
     "e2e": "pnpm --filter @buddy/e2e test",
     "site:build": "uv run zensical build --clean && pnpm --filter @buddy/web build-storybook && node scripts/build-docs-site.mjs && pnpm --filter @buddy/docs-site build"
   },
