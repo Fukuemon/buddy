@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="wireframe-states"
-      content="initial:初期表示,csv:予定の CSV,ready:入力がそろった,submitting:送信中,error-rows:行の誤り（422）,error-file:ファイルの誤り（422、413、400）,error-calendar:カレンダーの失敗（502、503）,error:照合の失敗,error-401:未認証（401）"
+      content="initial:初期表示,csv:予定の CSV,ready:入力がそろった,submitting:送信中,error-rows:行の誤り（422）,error-file:ファイルの誤り（422、413、400）,error-calendar:カレンダーの失敗（502、503、403）,error:照合の失敗,error-401:未認証（401）"
     />
     <title>照合</title>
     <link rel="stylesheet" href="wireframe.css" />
@@ -96,7 +96,7 @@
           <p class="wf-alert" data-show-when="error-file">入力の CSV に誤りがあります。visits の CSV に列がない: 開始時間</p>
           <p class="wf-note" data-show-when="error-file">413 は「ファイルが大きすぎます。10 MB までのファイルにしてください。」、400 は「入力を読めませんでした。ファイルを選び直して、もう一度照合してください。」</p>
           <p class="wf-alert" data-show-when="error-calendar">Google カレンダーから予定を取れませんでした。時間をおいて、もう一度照合してください。</p>
-          <p class="wf-note" data-show-when="error-calendar">503 は「Google カレンダーの設定がありません。予定の CSV で照合してください。」</p>
+          <p class="wf-note" data-show-when="error-calendar">503 は「事業所の Google カレンダーの設定がありません。予定の CSV で照合してください。」、403 は「アカウントに事業所が結び付いていないので、Google カレンダーから予定を取れません。予定の CSV で照合してください。」</p>
           <p class="wf-alert" data-show-when="error">照合できませんでした。時間をおいて、もう一度照合してください。</p>
         </div>
 
