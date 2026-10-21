@@ -36,6 +36,11 @@ nav = [
     # カタログは同じサイトの /storybook/ に置く（apps/docs-site）。手元の zensical serve には無い
     { "カタログ（Storybook）" = "/storybook/" },
   ] },
+  { "API の仕様" = [
+    # 各アプリの openapi.yaml を Scalar で描く単独のページ（docs/api/）。サイトのテーマの外で開く
+    { "予定の API" = "/api/schedule-api.html" },
+    { "照合の API" = "/api/receipt-api.html" },
+  ] },
   { "画面仕様書" = [
     { "画面の一覧" = "screens/index.md" },
     { "画面仕様書の規約" = "screens/rules.md" },

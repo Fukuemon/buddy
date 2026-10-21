@@ -1,0 +1,44 @@
+/* Scalar の色と字を、文書のサイトと同じ buddy のトークン（tokens.css）に当てる */
+:root {
+  --scalar-custom-header-height: 48px;
+  --scalar-font: var(--font-family-sans);
+  --scalar-font-code: var(--font-family-mono);
+}
+.light-mode,
+.dark-mode {
+  --scalar-color-accent: var(--buddy-color-primary);
+}
+
+body {
+  margin: 0;
+  background: #fff;
+}
+
+/* 文書のサイトへ戻る帯。Scalar はこの高さの分だけ下げて描く */
+.api-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: var(--scalar-custom-header-height);
+  padding: 0 16px;
+  background: var(--buddy-color-primary);
+  color: #fff;
+  font-family: var(--font-family-sans);
+  font-size: 14px;
+}
+.api-header a {
+  color: inherit;
+}
+.api-header nav {
+  display: flex;
+  gap: 12px;
+  margin-left: auto;
+}
+.api-header nav a[aria-current='page'] {
+  font-weight: bold;
+  text-decoration: none;
+}

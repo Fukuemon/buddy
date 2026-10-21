@@ -126,7 +126,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 - ブラウザとブローカー: ログインのときだけ、web がブラウザをブローカーの認可の画面へ転送する。
 - web とブローカー: 認可コードフローでトークンを取得し、更新する。トークンは Valkey のセッションに置く。
 - web と schedule-api、receipt-api: `Authorization` に access token を Bearer で付ける。
-  - 契約の正本は [schedule-api の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/apps/schedule-api/openapi.yaml) と [receipt-api の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/openapi.yaml) である。サーバーの Go のコードと web の型は、そこから生成する。
+  - 契約の正本は [schedule-api の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/apps/schedule-api/openapi.yaml) と [receipt-api の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/openapi.yaml) である。サーバーの Go のコードと web の型は、そこから生成する。文書のサイトでは、サイドバーの「API の仕様」から読める。
   - 契約を変えるときの互換の規則は ADR-0003 にある。
   - ADR-0003: [git flow で取り込み、アプリごとのバージョンでリリースする](../adr/0003-branch-and-release.md)
 - schedule-api、receipt-api とブローカー: 発行者の discovery と JWKS を読み、access token を検証する。検証に失敗したら 401 を返す。
