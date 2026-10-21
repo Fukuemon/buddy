@@ -32,6 +32,12 @@ CREATE TABLE `departments` (
 | created_at  | datetime     | CURRENT_TIMESTAMP | false    | DEFAULT_GENERATED                             |                   |                             |                  |
 | updated_at  | datetime     | CURRENT_TIMESTAMP | false    | DEFAULT_GENERATED on update CURRENT_TIMESTAMP |                   |                             |                  |
 
+## Viewpoints
+
+| Name                                      | Definition                                 |
+| ----------------------------------------- | ------------------------------------------ |
+| [事業所と組織](viewpoint-organization.md) | 事業所と、その中の部署、チーム、役職、職員 |
+
 ## Constraints
 
 | Name                         | Type        | Definition                                                  |

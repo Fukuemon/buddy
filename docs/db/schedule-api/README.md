@@ -1,5 +1,15 @@
 # schedule-api
 
+## Viewpoints
+
+| Name                                      | Description                                                                            |
+| ----------------------------------------- | -------------------------------------------------------------------------------------- |
+| [事業所と組織](viewpoint-organization.md) | 事業所と、その中の部署、チーム、役職、職員                                             |
+| [職員と権限](viewpoint-policies.md)       | 職員が持つ権限と、その対象。職員を登録するとき、役職の既定の権限を写す                 |
+| [利用者](viewpoint-patients.md)           | 利用者と、受けているサービスと、主に担当する職員                                       |
+| [予定と訪問](viewpoint-schedules.md)      | 予定と、訪問のときの訪問の情報と区分、予定の取り消し                                   |
+| [繰り返しの予定](viewpoint-recurring.md)  | 繰り返しの規則と予定、回にしない日。繰り返しの 1 回を置き換えた予定は schedules に入る |
+
 ## Tables
 
 | Name                                                              | Columns | Comment                                                                | Type       |

@@ -36,6 +36,12 @@ CREATE TABLE `user_policy_targets` (
 | target_user_id | char(26) |         | true     |          | [users](users.md)                 | 対象の職員。チームと排他 |
 | target_team_id | char(26) |         | true     |          | [teams](teams.md)                 | 対象のチーム。職員と排他 |
 
+## Viewpoints
+
+| Name                                | Definition                                                             |
+| ----------------------------------- | ---------------------------------------------------------------------- |
+| [職員と権限](viewpoint-policies.md) | 職員が持つ権限と、その対象。職員を登録するとき、役職の既定の権限を写す |
+
 ## Constraints
 
 | Name                               | Type        | Definition                                                              |

@@ -141,6 +141,8 @@ pnpm lint:openapi
 | `apps/schedule-api/db/migrations/`、`apps/schedule-api/.tbls.yml` | `pnpm generate:db-docs`（Docker が要る） | `docs/db/schedule-api/`（表の文書と ER 図） |
 | `packages/ui/src/tokens/semantic.css`、`@digital-go-jp/design-tokens` | `node scripts/build-mock-tokens.mjs` | `docs/screens/_common/tokens.css`（画面のモックが読む） |
 
+表を足したときは、`.tbls.yml` の `viewpoints` のどれかに入れる。どの viewpoint にも入らない表があると、`pnpm generate:db-docs` が tbls lint で 1 で終わる。
+
 取り込む前に、生成物がそろっているかをリポジトリのルートで確かめる。表の文書を除く全ての生成を流し直し、差分か追跡していない生成物があれば 1 で終わる。表の文書は Docker が要るので外しており、CI の `db-docs` の仕事が同じように確かめる。
 
 ```sh

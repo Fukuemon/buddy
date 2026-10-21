@@ -25,6 +25,12 @@ CREATE TABLE `recurring_schedule_exclusions` (
 | recurring_schedule_id | char(26) |         | false    |          | [recurring_schedules](recurring_schedules.md) |         |
 | date                  | date     |         | false    |          |                                               |         |
 
+## Viewpoints
+
+| Name                                     | Definition                                                                             |
+| ---------------------------------------- | -------------------------------------------------------------------------------------- |
+| [繰り返しの予定](viewpoint-recurring.md) | 繰り返しの規則と予定、回にしない日。繰り返しの 1 回を置き換えた予定は schedules に入る |
+
 ## Constraints
 
 | Name                      | Type        | Definition                                                              |
