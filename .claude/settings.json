@@ -1,4 +1,18 @@
 {
+  "permissions": {
+    "deny": [
+      "Read(**/.secrets/**)",
+      "Edit(**/.secrets/**)",
+      "Bash(cat *.secrets/*)",
+      "Bash(head *.secrets/*)",
+      "Bash(tail *.secrets/*)",
+      "Bash(less *.secrets/*)",
+      "Bash(more *.secrets/*)",
+      "Bash(jq *.secrets/*)",
+      "Bash(base64 *.secrets/*)",
+      "Bash(cp *.secrets/*)"
+    ]
+  },
   "hooks": {
     "SessionStart": [
       {
