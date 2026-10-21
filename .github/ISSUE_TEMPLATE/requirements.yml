@@ -53,4 +53,4 @@ body:
     id: process
     attributes:
       label: 進め方
-      description: context/project.yml の既定と違うときだけ書く。行うプロセス、レビューの範囲、spec を置くかどうか
+      description: context/project.yml のデフォルトと違うときだけ書く。行うプロセス、レビューの範囲、spec を置くかどうか
