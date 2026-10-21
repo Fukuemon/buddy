@@ -2,12 +2,16 @@
 -- 前のバージョンのアプリが動いたまま当てられるよう、列は既定値を持たせて足し、ビューは列を末尾に足す。
 
 ALTER TABLE schedules ADD COLUMN version integer NOT NULL DEFAULT 1;
-ALTER TABLE schedules ADD CONSTRAINT schedules_version_check CHECK (version >= 1);
+-- 検査の制約は NOT VALID で足してから確かめ、表を走査する間に書き込みを止めない。
+ALTER TABLE schedules ADD CONSTRAINT schedules_version_check CHECK (version >= 1) NOT VALID;
+ALTER TABLE schedules VALIDATE CONSTRAINT schedules_version_check;
 ALTER TABLE recurring_schedules ADD COLUMN version integer NOT NULL DEFAULT 1;
-ALTER TABLE recurring_schedules ADD CONSTRAINT recurring_schedules_version_check CHECK (version >= 1);
+ALTER TABLE recurring_schedules ADD CONSTRAINT recurring_schedules_version_check CHECK (version >= 1) NOT VALID;
+ALTER TABLE recurring_schedules VALIDATE CONSTRAINT recurring_schedules_version_check;
 
 ALTER TABLE external_event_links ADD COLUMN synced_version integer NULL;
-ALTER TABLE external_event_links ADD CONSTRAINT external_event_links_synced_version_check CHECK (synced_version >= 1);
+ALTER TABLE external_event_links ADD CONSTRAINT external_event_links_synced_version_check CHECK (synced_version >= 1) NOT VALID;
+ALTER TABLE external_event_links VALIDATE CONSTRAINT external_event_links_synced_version_check;
 
 CREATE OR REPLACE VIEW schedule_details AS
 SELECT s.id, s.facility_id,
@@ -68,7 +72,7 @@ CREATE TABLE calendar_exports (
     CONSTRAINT calendar_exports_facility_id_key UNIQUE (facility_id, id),
     CONSTRAINT calendar_exports_target_check CHECK (num_nonnulls(schedule_id, recurring_schedule_id) = 1),
     CONSTRAINT calendar_exports_status_check CHECK (status IN ('pending', 'succeeded', 'conflict', 'failed')),
-    CONSTRAINT calendar_exports_error_code_check CHECK (error_code IN ('precondition_failed', 'not_found', 'forbidden', 'unavailable')),
+    CONSTRAINT calendar_exports_error_code_check CHECK (error_code IN ('precondition_failed', 'not_found', 'forbidden', 'rejected', 'unavailable')),
     CONSTRAINT calendar_exports_count_check CHECK (revision >= 1 AND attempts >= 0),
     CONSTRAINT calendar_exports_finished_check CHECK ((status = 'succeeded') = (finished_at IS NOT NULL)),
     CONSTRAINT calendar_exports_facility_fkey FOREIGN KEY (facility_id) REFERENCES facilities (id),

@@ -32,8 +32,10 @@ type ExportErrorCode string
 const (
 	// ErrorPreconditionFailed は、最後に同期した後に外部のカレンダーで予定が変わったこと（412）を表す。
 	ErrorPreconditionFailed ExportErrorCode = "precondition_failed"
-	// ErrorNotFound は、外部のカレンダーで予定が消されたか見つからないことを表す。
+	// ErrorNotFound は、外部のカレンダーで予定が消されたか、予定かカレンダーが見つからないことを表す。
 	ErrorNotFound ExportErrorCode = "not_found"
+	// ErrorRejected は、外部のカレンダーが予定の内容を受け付けなかったことを表す。
+	ErrorRejected ExportErrorCode = "rejected"
 	// ErrorForbidden は、サービスアカウントがカレンダーに予定を書けないことを表す。
 	ErrorForbidden ExportErrorCode = "forbidden"
 	// ErrorUnavailable は、外部のカレンダーに届かないか、外部のカレンダーが一時的な誤りを返したことを表す。
@@ -64,10 +66,12 @@ type Export struct {
 }
 
 // ExportResult は、1 回書こうとした結果である。Status が ExportPending なら、RetryAfter の後に書き直す。
+// Released は、書こうとした回数に数えずに、すぐにほかの処理に渡すことを表す。止める合図で書けなかったときに使う。
 type ExportResult struct {
 	Status     ExportStatus
 	ErrorCode  *ExportErrorCode
 	RetryAfter time.Duration
+	Released   bool
 }
 
 // ExportIssue は、確かめが要る書き出しの待ちと、その予定の日時と職員である。繰り返しの予定では、日付は最初の回の日付である。
@@ -89,7 +93,8 @@ type ExportRepository interface {
 	// Claim は、書く時刻を過ぎた pending の待ちを max 件まで取り、lease の間はほかの処理に渡さないようにし、
 	// 書こうとした回数を 1 つ増やして返す。
 	Claim(ctx context.Context, max int, lease time.Duration) ([]Export, error)
-	// Finish は、待ち e を書いた結果 r を書く。r が成功で、書いている間に e が積み直されていれば、待ちを pending のまま残す。
+	// Finish は、待ち e を書いた結果 r を書く。書いている間に e が積み直されていれば、結果によらず待ちを pending に戻して数え直す。
+	// e を取った後にほかの処理が同じ待ちを取り直していれば（lease が切れたとき）、何も書かない。
 	Finish(ctx context.Context, e Export, r ExportResult) error
 	Get(ctx context.Context, id string) (Export, error)
 	// ListIssues は、事業所の確かめが要る待ち（conflict と failed）を、新しく変わった順に返す。

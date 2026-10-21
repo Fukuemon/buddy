@@ -31,28 +31,28 @@
 
 ## Constraints
 
-| Name                                      | Type        | Definition                                                                                                                 |
-| ----------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------- |
-| calendar_exports_attempts_not_null        | n           | NOT NULL attempts                                                                                                          |
-| calendar_exports_count_check              | CHECK       | CHECK (((revision >= 1) AND (attempts >= 0)))                                                                              |
-| calendar_exports_created_at_not_null      | n           | NOT NULL created_at                                                                                                        |
-| calendar_exports_error_code_check         | CHECK       | CHECK ((error_code = ANY (ARRAY['precondition_failed'::text, 'not_found'::text, 'forbidden'::text, 'unavailable'::text]))) |
-| calendar_exports_facility_id_not_null     | n           | NOT NULL facility_id                                                                                                       |
-| calendar_exports_finished_check           | CHECK       | CHECK (((status = 'succeeded'::text) = (finished_at IS NOT NULL)))                                                         |
-| calendar_exports_id_check                 | CHECK       | CHECK ((id ~ '^[0-7][0-9A-HJKMNP-TV-Z]{25}$'::text))                                                                       |
-| calendar_exports_id_not_null              | n           | NOT NULL id                                                                                                                |
-| calendar_exports_next_attempt_at_not_null | n           | NOT NULL next_attempt_at                                                                                                   |
-| calendar_exports_overwrite_not_null       | n           | NOT NULL overwrite                                                                                                         |
-| calendar_exports_revision_not_null        | n           | NOT NULL revision                                                                                                          |
-| calendar_exports_status_check             | CHECK       | CHECK ((status = ANY (ARRAY['pending'::text, 'succeeded'::text, 'conflict'::text, 'failed'::text])))                       |
-| calendar_exports_status_not_null          | n           | NOT NULL status                                                                                                            |
-| calendar_exports_target_check             | CHECK       | CHECK ((num_nonnulls(schedule_id, recurring_schedule_id) = 1))                                                             |
-| calendar_exports_updated_at_not_null      | n           | NOT NULL updated_at                                                                                                        |
-| calendar_exports_facility_fkey            | FOREIGN KEY | FOREIGN KEY (facility_id) REFERENCES facilities(id)                                                                        |
-| calendar_exports_recurring_schedule_fkey  | FOREIGN KEY | FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id) ON DELETE CASCADE         |
-| calendar_exports_schedule_fkey            | FOREIGN KEY | FOREIGN KEY (facility_id, schedule_id) REFERENCES schedules(facility_id, id) ON DELETE CASCADE                             |
-| calendar_exports_pkey                     | PRIMARY KEY | PRIMARY KEY (id)                                                                                                           |
-| calendar_exports_facility_id_key          | UNIQUE      | UNIQUE (facility_id, id)                                                                                                   |
+| Name                                      | Type        | Definition                                                                                                                                   |
+| ----------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| calendar_exports_attempts_not_null        | n           | NOT NULL attempts                                                                                                                            |
+| calendar_exports_count_check              | CHECK       | CHECK (((revision >= 1) AND (attempts >= 0)))                                                                                                |
+| calendar_exports_created_at_not_null      | n           | NOT NULL created_at                                                                                                                          |
+| calendar_exports_error_code_check         | CHECK       | CHECK ((error_code = ANY (ARRAY['precondition_failed'::text, 'not_found'::text, 'forbidden'::text, 'rejected'::text, 'unavailable'::text]))) |
+| calendar_exports_facility_id_not_null     | n           | NOT NULL facility_id                                                                                                                         |
+| calendar_exports_finished_check           | CHECK       | CHECK (((status = 'succeeded'::text) = (finished_at IS NOT NULL)))                                                                           |
+| calendar_exports_id_check                 | CHECK       | CHECK ((id ~ '^[0-7][0-9A-HJKMNP-TV-Z]{25}$'::text))                                                                                         |
+| calendar_exports_id_not_null              | n           | NOT NULL id                                                                                                                                  |
+| calendar_exports_next_attempt_at_not_null | n           | NOT NULL next_attempt_at                                                                                                                     |
+| calendar_exports_overwrite_not_null       | n           | NOT NULL overwrite                                                                                                                           |
+| calendar_exports_revision_not_null        | n           | NOT NULL revision                                                                                                                            |
+| calendar_exports_status_check             | CHECK       | CHECK ((status = ANY (ARRAY['pending'::text, 'succeeded'::text, 'conflict'::text, 'failed'::text])))                                         |
+| calendar_exports_status_not_null          | n           | NOT NULL status                                                                                                                              |
+| calendar_exports_target_check             | CHECK       | CHECK ((num_nonnulls(schedule_id, recurring_schedule_id) = 1))                                                                               |
+| calendar_exports_updated_at_not_null      | n           | NOT NULL updated_at                                                                                                                          |
+| calendar_exports_facility_fkey            | FOREIGN KEY | FOREIGN KEY (facility_id) REFERENCES facilities(id)                                                                                          |
+| calendar_exports_recurring_schedule_fkey  | FOREIGN KEY | FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id) ON DELETE CASCADE                           |
+| calendar_exports_schedule_fkey            | FOREIGN KEY | FOREIGN KEY (facility_id, schedule_id) REFERENCES schedules(facility_id, id) ON DELETE CASCADE                                               |
+| calendar_exports_pkey                     | PRIMARY KEY | PRIMARY KEY (id)                                                                                                                             |
+| calendar_exports_facility_id_key          | UNIQUE      | UNIQUE (facility_id, id)                                                                                                                     |
 
 ## Indexes
 

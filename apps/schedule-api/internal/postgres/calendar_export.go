@@ -73,29 +73,38 @@ func (r *CalendarExportRepository) Claim(ctx context.Context, max int, lease tim
 	return out, nil
 }
 
-// Finish は、待ち e を書いた結果 res を書く。
+// Finish は、待ち e を書いた結果 res を書く。書いている間に積み直された待ちは数え直し、ほかの処理が取り直した待ちは変えない。
 func (r *CalendarExportRepository) Finish(ctx context.Context, e calendar.Export, res calendar.ExportResult) error {
+	rev, err := int32Of(e.Revision)
+	if err != nil {
+		return err
+	}
+	attempts, err := int32Of(e.Attempts)
+	if err != nil {
+		return err
+	}
+	if res.Released {
+		return translate("unclaim calendar export", r.q(ctx).UnclaimCalendarExport(ctx, sqlcgen.UnclaimCalendarExportParams{ID: e.ID, Attempts: attempts}))
+	}
+	var n int64
 	if res.Status == calendar.ExportSucceeded {
-		rev, err := int32Of(e.Revision)
-		if err != nil {
-			return err
+		n, err = r.q(ctx).SucceedCalendarExport(ctx, sqlcgen.SucceedCalendarExportParams{ID: e.ID, Revision: rev, Attempts: attempts})
+	} else {
+		var code *string
+		if res.ErrorCode != nil {
+			code = ptr(string(*res.ErrorCode))
 		}
-		n, err := r.q(ctx).SucceedCalendarExport(ctx, sqlcgen.SucceedCalendarExportParams{ID: e.ID, Revision: rev})
-		if err != nil {
-			return translate("succeed calendar export", err)
-		}
-		if n > 0 {
-			return nil
-		}
-		return translate("release calendar export", r.q(ctx).ReleaseCalendarExport(ctx, e.ID))
+		n, err = r.q(ctx).FailCalendarExport(ctx, sqlcgen.FailCalendarExportParams{
+			ID: e.ID, Revision: rev, Attempts: attempts, Status: string(res.Status), ErrorCode: code, RetryAfterSeconds: res.RetryAfter.Seconds(),
+		})
 	}
-	var code *string
-	if res.ErrorCode != nil {
-		code = ptr(string(*res.ErrorCode))
+	if err != nil {
+		return translate("finish calendar export", err)
 	}
-	return translate("fail calendar export", r.q(ctx).FailCalendarExport(ctx, sqlcgen.FailCalendarExportParams{
-		ID: e.ID, Status: string(res.Status), ErrorCode: code, RetryAfterSeconds: res.RetryAfter.Seconds(),
-	}))
+	if n > 0 {
+		return nil
+	}
+	return translate("release calendar export", r.q(ctx).ReleaseCalendarExport(ctx, sqlcgen.ReleaseCalendarExportParams{ID: e.ID, Attempts: attempts}))
 }
 
 // Get は、ID が id の待ちを返す。無いときは apperr.ErrNotFound を返す。

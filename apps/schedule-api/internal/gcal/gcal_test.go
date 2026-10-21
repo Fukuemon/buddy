@@ -217,10 +217,10 @@ func TestWriterErrorKinds(t *testing.T) {
 		want   error
 	}{
 		{"412", http.StatusPreconditionFailed, "conditionNotMet", schedcal.ErrEventChanged},
-		{"404", http.StatusNotFound, "notFound", schedcal.ErrEventGone},
+		{"404", http.StatusNotFound, "notFound", schedcal.ErrEventNotFound},
 		{"410", http.StatusGone, "deleted", schedcal.ErrEventGone},
 		{"409", http.StatusConflict, "duplicate", schedcal.ErrEventExists},
-		{"400", http.StatusBadRequest, "invalid", schedcal.ErrUnwritable},
+		{"400", http.StatusBadRequest, "invalid", schedcal.ErrEventRejected},
 		{"共有の権限が無い 403", http.StatusForbidden, "forbidden", schedcal.ErrUnwritable},
 		{"上限の 403", http.StatusForbidden, "rateLimitExceeded", schedcal.ErrUnavailable},
 		{"429", http.StatusTooManyRequests, "rateLimitExceeded", schedcal.ErrUnavailable},

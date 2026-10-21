@@ -752,17 +752,21 @@ func (s Exports) Claim(_ context.Context, max int, _ time.Duration) ([]calendar.
 	return out, nil
 }
 
-// Finish は、待ちを書いた結果を書く。
+// Finish は、待ちを書いた結果を書く。取り直された待ちは変えず、積み直された待ちは数え直す。
 func (s Exports) Finish(_ context.Context, e calendar.Export, r calendar.ExportResult) error {
 	cur, err := get(s.Exports, e.ID)
 	if err != nil {
 		return err
 	}
 	switch {
-	case r.Status == calendar.ExportSucceeded && cur.Revision == e.Revision:
-		cur.Status, cur.ErrorCode, cur.Overwrite = calendar.ExportSucceeded, nil, false
-	case r.Status == calendar.ExportSucceeded:
+	case cur.Attempts != e.Attempts:
+		return nil
+	case r.Released:
+		cur.Attempts--
+	case cur.Revision != e.Revision:
 		cur.Attempts, cur.Overwrite, cur.ErrorCode, cur.NextAttemptAt = 0, false, nil, time.Now()
+	case r.Status == calendar.ExportSucceeded:
+		cur.Status, cur.ErrorCode, cur.Overwrite = calendar.ExportSucceeded, nil, false
 	default:
 		cur.Status, cur.ErrorCode, cur.NextAttemptAt = r.Status, r.ErrorCode, time.Now().Add(r.RetryAfter)
 	}

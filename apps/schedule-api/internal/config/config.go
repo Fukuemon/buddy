@@ -28,6 +28,8 @@ type Calendar struct {
 	ServiceAccount string
 	// Endpoint は、Calendar API の代わりに呼ぶ URL で、偽物の API に向けるときだけ持つ。
 	Endpoint string
+	// ExportEnabled は、予定を Google カレンダーに書き出すかである。false なら、書き出しの待ちを積まず、書き出しの処理も動かさない。
+	ExportEnabled bool
 	// ExportInterval は、予定の書き出しの待ちを確かめる間隔である。
 	ExportInterval time.Duration
 }
@@ -59,6 +61,8 @@ type Config struct {
 //     空なら Google カレンダーを読まない。認証の情報は Application Default Credentials で読む
 //   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。偽物の API で試すためのもので、認証をしない。
 //     GOOGLE_CALENDAR_SERVICE_ACCOUNT と一緒に渡す
+//   - GOOGLE_CALENDAR_EXPORT_ENABLED: true なら、予定を Google カレンダーに書き出す。既定は false。
+//     GOOGLE_CALENDAR_SERVICE_ACCOUNT と一緒に渡し、認証の情報のスコープは calendar.events になる
 //   - GOOGLE_CALENDAR_EXPORT_INTERVAL: 予定の書き出しの待ちを確かめる間隔（Go の時間の書式。例は 30s）。既定は 30s。1s 以上にする
 func Load(getenv func(string) string) (Config, error) {
 	return load(getenv, true)
@@ -130,6 +134,16 @@ func load(getenv func(string) string, api bool) (Config, error) {
 		return Config{}, errors.New("GOOGLE_CALENDAR_EXPORT_INTERVAL は 1s 以上の時間（例は 30s）です")
 	}
 	c.Calendar.ExportInterval = interval
+	switch v := strings.TrimSpace(getenv("GOOGLE_CALENDAR_EXPORT_ENABLED")); v {
+	case "", "false":
+	case "true":
+		c.Calendar.ExportEnabled = true
+	default:
+		return Config{}, fmt.Errorf("GOOGLE_CALENDAR_EXPORT_ENABLED %q は true か false です", v)
+	}
+	if c.Calendar.ExportEnabled && c.Calendar.ServiceAccount == "" {
+		return Config{}, errors.New("GOOGLE_CALENDAR_EXPORT_ENABLED は GOOGLE_CALENDAR_SERVICE_ACCOUNT と一緒に渡します")
+	}
 	if c.Calendar.Endpoint != "" && c.Calendar.ServiceAccount == "" {
 		return Config{}, errors.New("GOOGLE_CALENDAR_ENDPOINT は GOOGLE_CALENDAR_SERVICE_ACCOUNT と一緒に渡します")
 	}

@@ -132,6 +132,18 @@ func TestLoadExportInterval(t *testing.T) {
 	if err != nil || c.Calendar.ExportInterval != 2*time.Second {
 		t.Errorf("2s = %v, %v", c.Calendar.ExportInterval, err)
 	}
+	c, err = config.Load(getenv(map[string]string{"GOOGLE_CALENDAR_EXPORT_ENABLED": "true", "GOOGLE_CALENDAR_SERVICE_ACCOUNT": "sa@example.com"}))
+	if err != nil || !c.Calendar.ExportEnabled {
+		t.Errorf("書き出しを有効にする = %v, %v", c.Calendar.ExportEnabled, err)
+	}
+	for _, extra := range []map[string]string{
+		{"GOOGLE_CALENDAR_EXPORT_ENABLED": "true"},
+		{"GOOGLE_CALENDAR_EXPORT_ENABLED": "yes", "GOOGLE_CALENDAR_SERVICE_ACCOUNT": "sa@example.com"},
+	} {
+		if _, err := config.Load(getenv(extra)); err == nil {
+			t.Errorf("%v を受けた", extra)
+		}
+	}
 	for _, v := range []string{"500ms", "soon"} {
 		if _, err := config.Load(getenv(map[string]string{"GOOGLE_CALENDAR_EXPORT_INTERVAL": v})); err == nil {
 			t.Errorf("%s を受けた", v)

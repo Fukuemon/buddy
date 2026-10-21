@@ -103,6 +103,7 @@ services:
       # 架空のサービスアカウント。偽物の Calendar API は認証を求めない
       GOOGLE_CALENDAR_SERVICE_ACCOUNT: buddy-calendar@example.iam.gserviceaccount.com
       GOOGLE_CALENDAR_ENDPOINT: http://fake-google:8080/
+      GOOGLE_CALENDAR_EXPORT_ENABLED: 'true'
       # E2E が書き出しを待つ時間を短くする
       GOOGLE_CALENDAR_EXPORT_INTERVAL: 2s
     ports: ['127.0.0.1:${SCHEDULE_API_PORT:-8080}:8080']

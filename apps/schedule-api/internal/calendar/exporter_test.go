@@ -402,11 +402,11 @@ func TestExportRecurringWithReplacedOccurrence(t *testing.T) {
 	}
 }
 
-func TestExportRecreatesEventMissingInGoogle(t *testing.T) {
+func TestExportKeepsLinkWhenGoogleReturnsNotFound(t *testing.T) {
 	e := newExportEnv(t)
 	d := e.create(t, "カンファレンス")
 	e.run(t)
-	// Google が予定を見つけられない（404）。書き直しでも見つからなければ、対応を消して作り直す
+	// 404 は、予定が消されたのか、カレンダーの共有が外れたのかを見分けられない
 	e.srv.Failures = []int{http.StatusNotFound}
 	e.update(t, d.ID, "buddy で変更", inmem.StaffID)
 	e.run(t)
@@ -414,7 +414,52 @@ func TestExportRecreatesEventMissingInGoogle(t *testing.T) {
 	if x.Status != calendar.ExportConflict || *x.ErrorCode != calendar.ErrorNotFound {
 		t.Fatalf("待ち = %+v", x)
 	}
+	// 書き直しでも 404 なら、対応を消さず、別の予定を作らない
 	e.srv.Failures = []int{http.StatusNotFound}
+	if _, err := e.uc.RetryExport(e.ctx, x.ID); err != nil {
+		t.Fatal(err)
+	}
+	e.run(t)
+	if x := e.export(t, d.ID); x.Status != calendar.ExportConflict {
+		t.Fatalf("書き直した待ち = %+v", x)
+	}
+	if _, err := (inmem.Calendars{Store: e.store}).LinkBySchedule(t.Context(), d.ID); err != nil {
+		t.Errorf("404 で対応を消した: %v", err)
+	}
+	if n := len(e.srv.Events(googleCalID)); n != 1 {
+		t.Errorf("Google の予定の数 = %d", n)
+	}
+
+	// キャンセルの削除が 404 でも、対応を消さない
+	e.srv.Failures = []int{http.StatusNotFound, http.StatusNotFound}
+	if _, err := e.uc.RetryExport(e.ctx, x.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.schedules.Cancel(e.ctx, d.ID, "中止"); err != nil {
+		t.Fatal(err)
+	}
+	e.run(t)
+	if x := e.export(t, d.ID); x.Status != calendar.ExportConflict {
+		t.Errorf("キャンセルの待ち = %+v", x)
+	}
+	if _, err := (inmem.Calendars{Store: e.store}).LinkBySchedule(t.Context(), d.ID); err != nil {
+		t.Errorf("キャンセルの 404 で対応を消した: %v", err)
+	}
+}
+
+func TestExportRecreatesEventGoneInGoogle(t *testing.T) {
+	e := newExportEnv(t)
+	d := e.create(t, "カンファレンス")
+	e.run(t)
+	e.srv.Failures = []int{http.StatusGone}
+	e.update(t, d.ID, "buddy で変更", inmem.StaffID)
+	e.run(t)
+	x := e.export(t, d.ID)
+	if x.Status != calendar.ExportConflict || *x.ErrorCode != calendar.ErrorNotFound {
+		t.Fatalf("待ち = %+v", x)
+	}
+	// 書き直しで 410 なら、対応を消して作り直す。作り直しは同じ ID の予定に当たり（409）、buddy の内容で更新する
+	e.srv.Failures = []int{http.StatusGone}
 	if _, err := e.uc.RetryExport(e.ctx, x.ID); err != nil {
 		t.Fatal(err)
 	}
@@ -422,12 +467,57 @@ func TestExportRecreatesEventMissingInGoogle(t *testing.T) {
 	if x := e.export(t, d.ID); x.Status != calendar.ExportSucceeded {
 		t.Fatalf("書き直した待ち = %+v", x)
 	}
-	// 作り直しは同じ ID の予定に当たり（409）、buddy の内容で更新する
 	if ev := e.srv.Event(googleCalID, eventID(t, d.ID)); ev.Summary != "buddy で変更" {
 		t.Errorf("作り直した予定 = %+v", ev)
 	}
-	if l, err := (inmem.Calendars{Store: e.store}).LinkBySchedule(t.Context(), d.ID); err != nil || l.ExternalEventID != eventID(t, d.ID) {
-		t.Errorf("作り直した対応 = %+v, %v", l, err)
+}
+
+func TestExportMovesFromDisabledCalendarWhenStaffChanges(t *testing.T) {
+	e := newExportEnv(t)
+	e.store.Calendars["CAL2"] = calendar.ExternalCalendar{ID: "CAL2", FacilityID: inmem.FacilityID, StaffID: inmem.CompanionID, Provider: calendar.ProviderGoogle, CalendarID: otherGoogleCalID}
+	d := e.create(t, "カンファレンス")
+	e.run(t)
+	if err := (inmem.Calendars{Store: e.store}).Disable(t.Context(), calID); err != nil {
+		t.Fatal(err)
+	}
+	e.update(t, d.ID, "担当を替えた", inmem.CompanionID)
+	e.run(t)
+	if ev := e.srv.Event(googleCalID, eventID(t, d.ID)); ev.Status != "confirmed" {
+		t.Errorf("外したカレンダーの予定を消した: %+v", ev)
+	}
+	if ev := e.srv.Event(otherGoogleCalID, eventID(t, d.ID)); ev == nil || ev.Summary != "担当を替えた" {
+		t.Errorf("新しい職員のカレンダーの予定 = %+v", ev)
+	}
+}
+
+func TestExportRetriesWhenChangedWhileWriting(t *testing.T) {
+	e := newExportEnv(t)
+	e.srv.Failures = []int{http.StatusForbidden}
+	d := e.create(t, "カンファレンス")
+	claimed, err := (inmem.Exports{Store: e.store}).Claim(t.Context(), 10, time.Minute)
+	if err != nil || len(claimed) != 1 {
+		t.Fatalf("Claim = %+v, %v", claimed, err)
+	}
+	// 書いている間に予定が変わると、失敗の結果を書かずに数え直す
+	e.update(t, d.ID, "書いている間に変更", inmem.StaffID)
+	if err := (inmem.Exports{Store: e.store}).Finish(t.Context(), claimed[0], calendar.ExportResult{Status: calendar.ExportFailed}); err != nil {
+		t.Fatal(err)
+	}
+	if x := e.export(t, d.ID); x.Status != calendar.ExportPending || x.Attempts != 0 {
+		t.Errorf("積み直された待ち = %+v", x)
+	}
+}
+
+func TestExportDoesNotCountAttemptsOnShutdown(t *testing.T) {
+	e := newExportEnv(t)
+	d := e.create(t, "カンファレンス")
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	if _, err := e.exporter.ExportDue(ctx); err != nil {
+		t.Logf("止めた後の ExportDue: %v", err)
+	}
+	if x := e.export(t, d.ID); x.Status != calendar.ExportPending || x.Attempts != 0 {
+		t.Errorf("止めた後の待ち = %+v", x)
 	}
 }
 

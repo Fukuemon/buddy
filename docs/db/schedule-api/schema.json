@@ -5560,7 +5560,7 @@
         {
           "name": "calendar_exports_error_code_check",
           "type": "CHECK",
-          "def": "CHECK ((error_code = ANY (ARRAY['precondition_failed'::text, 'not_found'::text, 'forbidden'::text, 'unavailable'::text])))",
+          "def": "CHECK ((error_code = ANY (ARRAY['precondition_failed'::text, 'not_found'::text, 'forbidden'::text, 'rejected'::text, 'unavailable'::text])))",
           "table": "public.calendar_exports",
           "referenced_table": "",
           "columns": [

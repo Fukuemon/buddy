@@ -99,6 +99,11 @@ func run() error {
 	scheduleTypes := postgres.NewScheduleTypeRepository(db)
 	calendars := postgres.NewCalendarRepository(db)
 	exports := postgres.NewCalendarExportRepository(db)
+	// 書き出しを有効にしていなければ、予定の変更を書き出しの待ちに積まない
+	var outbox schedule.Exports
+	if cfg.Calendar.ExportEnabled {
+		outbox = calendar.NewOutbox(exports, calendars, ids)
+	}
 	visitInfos := visit.NewWriter(visit.WriterDeps{
 		Staff: staffRefs,
 		Patients: func(ctx context.Context, id string) (string, string, error) {
@@ -123,7 +128,7 @@ func run() error {
 		Schedules: schedule.NewUsecase(schedule.Deps{
 			Facilities: facilities, Staff: staffRefs, Visits: visitInfos,
 			Schedules: schedules, Recurring: recurring, Types: scheduleTypes,
-			Exports: calendar.NewOutbox(exports, calendars, ids),
+			Exports: outbox,
 		}, tx, ids),
 		Calendars: calendar.NewUsecase(calendar.Deps{
 			Calendars: calendars, Source: source, ServiceAccount: cfg.Calendar.ServiceAccount,
@@ -158,7 +163,7 @@ func run() error {
 
 	// 書き出しの処理は、止まる合図の後、取った待ちの結果を書いてから止まる。DB を閉じる前に止めて待つ。
 	exporterDone := make(chan struct{})
-	if svc != nil {
+	if svc != nil && cfg.Calendar.ExportEnabled {
 		exporter := calendar.NewExporter(calendar.ExporterDeps{
 			Exports: exports, Calendars: calendars, Writer: gcal.NewWriter(svc), Schedules: schedules, Recurring: recurring,
 		}, ids, log)
@@ -193,7 +198,7 @@ func run() error {
 
 // newCalendarService は、Google カレンダーの予定を読み書きする calendarv3.Service を返す。サービスアカウントの設定が無ければ nil を返す。
 // 認証の情報は、照合の API と同じく Application Default Credentials で読む。偽物の API に向けるときは認証をしない。
-// 予定を書き出すので、スコープは calendar.events にする。
+// 予定を書き出すときは、スコープを calendar.events にする。書き出さないときは、読むだけの calendar.readonly にする。
 func newCalendarService(ctx context.Context, cfg config.Calendar) (*calendarv3.Service, error) {
 	if cfg.ServiceAccount == "" {
 		return nil, nil
@@ -202,7 +207,11 @@ func newCalendarService(ctx context.Context, cfg config.Calendar) (*calendarv3.S
 	if cfg.Endpoint != "" {
 		opts = append(opts, option.WithEndpoint(cfg.Endpoint), option.WithoutAuthentication())
 	} else {
-		creds, err := google.FindDefaultCredentials(ctx, calendarv3.CalendarEventsScope)
+		scope := calendarv3.CalendarReadonlyScope
+		if cfg.ExportEnabled {
+			scope = calendarv3.CalendarEventsScope
+		}
+		creds, err := google.FindDefaultCredentials(ctx, scope)
 		if err != nil {
 			return nil, fmt.Errorf("application default credentials を読めません: %w", err)
 		}

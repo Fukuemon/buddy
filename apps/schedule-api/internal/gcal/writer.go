@@ -98,12 +98,14 @@ func writeError(msg string, err error) error {
 		switch gerr.Code {
 		case http.StatusPreconditionFailed:
 			kind = calendar.ErrEventChanged
-		case http.StatusNotFound, http.StatusGone:
+		case http.StatusGone:
 			kind = calendar.ErrEventGone
+		case http.StatusNotFound:
+			kind = calendar.ErrEventNotFound
 		case http.StatusConflict:
 			kind = calendar.ErrEventExists
 		case http.StatusBadRequest:
-			kind = calendar.ErrUnwritable
+			kind = calendar.ErrEventRejected
 		case http.StatusForbidden:
 			kind = calendar.ErrUnwritable
 			for _, e := range gerr.Errors {

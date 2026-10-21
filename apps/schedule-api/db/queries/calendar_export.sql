@@ -32,22 +32,30 @@ WHERE id IN (
 )
 RETURNING *;
 
+-- 結果を書く 3 つのクエリは、取ったときの attempts と比べ、lease が切れた後にほかの処理が取り直した待ちを変えない。
+-- 書いている間に積み直された待ち（revision が違う）は、結果を書かずに ReleaseCalendarExport で数え直す。
+
 -- name: SucceedCalendarExport :execrows
--- 書いている間に積み直された待ちは、書き直すために変えない。
 UPDATE calendar_exports
 SET status = 'succeeded', error_code = NULL, locked_until = NULL, overwrite = false, finished_at = now()
-WHERE id = $1 AND revision = $2;
+WHERE id = sqlc.arg(id) AND revision = sqlc.arg(revision) AND attempts = sqlc.arg(attempts);
+
+-- name: FailCalendarExport :execrows
+UPDATE calendar_exports
+SET status = sqlc.arg(status), error_code = sqlc.narg(error_code), locked_until = NULL,
+    next_attempt_at = now() + make_interval(secs => sqlc.arg(retry_after_seconds)::float8)
+WHERE id = sqlc.arg(id) AND revision = sqlc.arg(revision) AND attempts = sqlc.arg(attempts);
 
 -- name: ReleaseCalendarExport :exec
 UPDATE calendar_exports
 SET locked_until = NULL, attempts = 0, overwrite = false, error_code = NULL, next_attempt_at = now()
-WHERE id = $1;
+WHERE id = sqlc.arg(id) AND attempts = sqlc.arg(attempts) AND status = 'pending';
 
--- name: FailCalendarExport :exec
+-- name: UnclaimCalendarExport :exec
+-- 止める合図で書けなかった待ちを、書こうとした回数に数えずに返す。
 UPDATE calendar_exports
-SET status = sqlc.arg(status), error_code = sqlc.narg(error_code), locked_until = NULL,
-    next_attempt_at = now() + make_interval(secs => sqlc.arg(retry_after_seconds)::float8)
-WHERE id = sqlc.arg(id);
+SET locked_until = NULL, attempts = attempts - 1
+WHERE id = sqlc.arg(id) AND attempts = sqlc.arg(attempts) AND attempts > 0;
 
 -- name: GetCalendarExport :one
 SELECT * FROM calendar_exports WHERE id = $1;

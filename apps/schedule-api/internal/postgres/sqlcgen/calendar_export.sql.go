@@ -111,11 +111,11 @@ func (q *Queries) EnqueueScheduleExport(ctx context.Context, arg EnqueueSchedule
 	return err
 }
 
-const failCalendarExport = `-- name: FailCalendarExport :exec
+const failCalendarExport = `-- name: FailCalendarExport :execrows
 UPDATE calendar_exports
 SET status = $1, error_code = $2, locked_until = NULL,
     next_attempt_at = now() + make_interval(secs => $3::float8)
-WHERE id = $4
+WHERE id = $4 AND revision = $5 AND attempts = $6
 `
 
 type FailCalendarExportParams struct {
@@ -123,16 +123,23 @@ type FailCalendarExportParams struct {
 	ErrorCode         *string
 	RetryAfterSeconds float64
 	ID                string
+	Revision          int32
+	Attempts          int32
 }
 
-func (q *Queries) FailCalendarExport(ctx context.Context, arg FailCalendarExportParams) error {
-	_, err := q.db.Exec(ctx, failCalendarExport,
+func (q *Queries) FailCalendarExport(ctx context.Context, arg FailCalendarExportParams) (int64, error) {
+	result, err := q.db.Exec(ctx, failCalendarExport,
 		arg.Status,
 		arg.ErrorCode,
 		arg.RetryAfterSeconds,
 		arg.ID,
+		arg.Revision,
+		arg.Attempts,
 	)
-	return err
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const getCalendarExport = `-- name: GetCalendarExport :one
@@ -241,11 +248,16 @@ func (q *Queries) ListCalendarExportIssues(ctx context.Context, facilityID strin
 const releaseCalendarExport = `-- name: ReleaseCalendarExport :exec
 UPDATE calendar_exports
 SET locked_until = NULL, attempts = 0, overwrite = false, error_code = NULL, next_attempt_at = now()
-WHERE id = $1
+WHERE id = $1 AND attempts = $2 AND status = 'pending'
 `
 
-func (q *Queries) ReleaseCalendarExport(ctx context.Context, id string) error {
-	_, err := q.db.Exec(ctx, releaseCalendarExport, id)
+type ReleaseCalendarExportParams struct {
+	ID       string
+	Attempts int32
+}
+
+func (q *Queries) ReleaseCalendarExport(ctx context.Context, arg ReleaseCalendarExportParams) error {
+	_, err := q.db.Exec(ctx, releaseCalendarExport, arg.ID, arg.Attempts)
 	return err
 }
 
@@ -264,21 +276,41 @@ func (q *Queries) RetryCalendarExport(ctx context.Context, id string) (int64, er
 }
 
 const succeedCalendarExport = `-- name: SucceedCalendarExport :execrows
+
 UPDATE calendar_exports
 SET status = 'succeeded', error_code = NULL, locked_until = NULL, overwrite = false, finished_at = now()
-WHERE id = $1 AND revision = $2
+WHERE id = $1 AND revision = $2 AND attempts = $3
 `
 
 type SucceedCalendarExportParams struct {
 	ID       string
 	Revision int32
+	Attempts int32
 }
 
-// 書いている間に積み直された待ちは、書き直すために変えない。
+// 結果を書く 3 つのクエリは、取ったときの attempts と比べ、lease が切れた後にほかの処理が取り直した待ちを変えない。
+// 書いている間に積み直された待ち（revision が違う）は、結果を書かずに ReleaseCalendarExport で数え直す。
 func (q *Queries) SucceedCalendarExport(ctx context.Context, arg SucceedCalendarExportParams) (int64, error) {
-	result, err := q.db.Exec(ctx, succeedCalendarExport, arg.ID, arg.Revision)
+	result, err := q.db.Exec(ctx, succeedCalendarExport, arg.ID, arg.Revision, arg.Attempts)
 	if err != nil {
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const unclaimCalendarExport = `-- name: UnclaimCalendarExport :exec
+UPDATE calendar_exports
+SET locked_until = NULL, attempts = attempts - 1
+WHERE id = $1 AND attempts = $2 AND attempts > 0
+`
+
+type UnclaimCalendarExportParams struct {
+	ID       string
+	Attempts int32
+}
+
+// 止める合図で書けなかった待ちを、書こうとした回数に数えずに返す。
+func (q *Queries) UnclaimCalendarExport(ctx context.Context, arg UnclaimCalendarExportParams) error {
+	_, err := q.db.Exec(ctx, unclaimCalendarExport, arg.ID, arg.Attempts)
+	return err
 }

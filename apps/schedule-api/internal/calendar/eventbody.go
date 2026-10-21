@@ -41,16 +41,21 @@ type EventBody struct {
 var (
 	// ErrEventChanged は、If-Match の etag が外部の予定と違ったこと（412）を表す。
 	ErrEventChanged = errors.New("外部のカレンダーで予定が変わっていました")
-	// ErrEventGone は、外部の予定が無いか、消されていることを表す。
-	ErrEventGone = errors.New("外部のカレンダーに予定がありません")
+	// ErrEventGone は、外部の予定が消されていること（410）を表す。
+	ErrEventGone = errors.New("外部のカレンダーで予定が消されています")
+	// ErrEventNotFound は、外部が予定かカレンダーを見つけられないこと（404）を表す。予定が消されたのか、
+	// カレンダーの共有が外れたのかを見分けられない。
+	ErrEventNotFound = errors.New("外部のカレンダーで予定かカレンダーが見つかりません")
+	// ErrEventRejected は、外部が予定の内容を受け付けなかったこと（400）を表す。
+	ErrEventRejected = errors.New("外部のカレンダーが予定の内容を受け付けませんでした")
 	// ErrEventExists は、作ろうとした ID の予定が、消したものを含めて外部のカレンダーにあることを表す。
 	ErrEventExists = errors.New("外部のカレンダーに同じ ID の予定があります")
 	// ErrUnwritable は、サービスアカウントがカレンダーに予定を書けないことを表す。
 	ErrUnwritable = errors.New("カレンダーに予定を書けません。予定の変更の権限で共有されているかを確かめてください")
 )
 
-// EventWriter は、外部のカレンダーに予定を書く。誤りは、ErrEventChanged、ErrEventGone、ErrEventExists、ErrUnwritable、
-// ErrUnavailable のいずれかを包む。
+// EventWriter は、外部のカレンダーに予定を書く。誤りは、ErrEventChanged、ErrEventGone、ErrEventNotFound、ErrEventExists、
+// ErrEventRejected、ErrUnwritable、ErrUnavailable のいずれかを包む。
 type EventWriter interface {
 	// Insert は、ID が eventID の予定を作り、etag を返す。
 	Insert(ctx context.Context, calendarID, eventID string, b EventBody) (string, error)

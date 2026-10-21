@@ -1701,12 +1701,14 @@ components:
             failed は書く権限が無いか、再送の上限まで書けなかった
         error_code:
           type: string
-          enum: [precondition_failed, not_found, forbidden, unavailable]
+          enum: [precondition_failed, not_found, forbidden, rejected, unavailable]
           nullable: true
           x-omitempty: false
           description: |
-            最後に書けなかった理由。precondition_failed は Google カレンダーで予定が変わっていた（412）、not_found は Google カレンダーで予定が消された、
-            forbidden はサービスアカウントがカレンダーに書けない、unavailable は Google に届かないか一時的な誤りが続いた
+            最後に書けなかった理由。precondition_failed は Google カレンダーで予定が変わっていた（412）、
+            not_found は Google カレンダーで予定が消されたか、予定かカレンダーが見つからない（410、404）、
+            forbidden はサービスアカウントがカレンダーに書けない、rejected は Google が予定の内容を受け付けなかった（400）、
+            unavailable は Google に届かないか一時的な誤りが続いた
         attempts:
           type: integer
           minimum: 0

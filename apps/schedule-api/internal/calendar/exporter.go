@@ -14,9 +14,11 @@ import (
 
 // 書き出しの処理の上限と間隔。
 const (
-	// exportBatch は、1 回に取る待ちの数の上限である。
-	exportBatch = 20
-	// exportLease は、取った待ちをほかの処理に渡さない時間である。外部のカレンダーを呼ぶ時間の上限より長くする。
+	// exportBatch は、1 回に取る待ちの数の上限である。exportBatch 件を exportCallTimeout で書き終えても、exportLease を超えない数にする。
+	exportBatch = 5
+	// exportCallTimeout は、1 つの待ちを書く時間の上限である。
+	exportCallTimeout = 20 * time.Second
+	// exportLease は、取った待ちをほかの処理に渡さない時間である。
 	exportLease = 2 * time.Minute
 	// MaxExportAttempts は、一時的な誤りで書き直す回数の上限である。超えた待ちは failed にし、確かめが要る予定に出す。
 	MaxExportAttempts = 5
@@ -69,19 +71,27 @@ func (x *Exporter) ExportDue(ctx context.Context) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	var finishErr error
 	for _, e := range jobs {
-		err := x.export(ctx, e)
+		callCtx, cancel := context.WithTimeout(ctx, exportCallTimeout)
+		err := x.export(callCtx, e)
+		cancel()
 		r := resultOf(e, err)
-		if err != nil {
+		// 止める合図で書けなかった待ちは、書こうとした回数に数えずに返す。
+		if err != nil && ctx.Err() != nil {
+			r = ExportResult{Status: ExportPending, Released: true}
+		}
+		if err != nil && !r.Released {
 			x.log.WarnContext(ctx, "calendar export failed",
 				slog.String("export_id", e.ID), slog.String("status", string(r.Status)), slog.Int("attempts", e.Attempts), slog.Any("error", err))
 		}
 		// 取った待ちは、ctx が終わっても結果を書き、lease の間ほかの処理が書けないままにしない。
+		// 1 つの結果を書けなくても、残りの待ちの結果は書く。
 		if err := x.deps.Exports.Finish(context.WithoutCancel(ctx), e, r); err != nil {
-			return len(jobs), err
+			finishErr = errors.Join(finishErr, err)
 		}
 	}
-	return len(jobs), nil
+	return len(jobs), finishErr
 }
 
 // resultOf は、待ち e を書いた誤り err を、待ちの次の状態にする。
@@ -92,10 +102,12 @@ func resultOf(e Export, err error) ExportResult {
 		return ExportResult{Status: ExportSucceeded}
 	case errors.Is(err, ErrEventChanged):
 		return ExportResult{Status: ExportConflict, ErrorCode: code(ErrorPreconditionFailed)}
-	case errors.Is(err, ErrEventGone):
+	case errors.Is(err, ErrEventGone), errors.Is(err, ErrEventNotFound):
 		return ExportResult{Status: ExportConflict, ErrorCode: code(ErrorNotFound)}
 	case errors.Is(err, ErrUnwritable):
 		return ExportResult{Status: ExportFailed, ErrorCode: code(ErrorForbidden)}
+	case errors.Is(err, ErrEventRejected):
+		return ExportResult{Status: ExportFailed, ErrorCode: code(ErrorRejected)}
 	case e.Attempts >= MaxExportAttempts:
 		return ExportResult{Status: ExportFailed, ErrorCode: code(ErrorUnavailable)}
 	default:
@@ -195,10 +207,13 @@ type item struct {
 }
 
 // sync は、予定 it を、職員が結び付けた外していないカレンダーの内容にそろえる。
-//   - 予定の対応のカレンダーを外していれば、何も書かない。外したカレンダーには書かない。
+//   - 予定の対応のカレンダーを外していれば、そのカレンダーには書かない。職員に別のカレンダーがあれば、対応を消して、そのカレンダーに作る。
 //   - 予定の対応があり、職員のカレンダーが同じなら、外部の予定を更新する。
 //   - 予定を消すか、職員のカレンダーが替わったなら、対応の外部の予定を消して対応も消す。
 //   - 職員にカレンダーがあり、対応が無ければ、予定の ID から決めた ID で外部の予定を作り、対応を書く。
+//
+// 外部が 404 を返したときは、予定が消されたのか、カレンダーの共有が外れたのかを見分けられないので、対応を消さない。
+// 対応を消すのは、予定が消されたこと（410）か、消せたことが分かったときだけである。
 func (x *Exporter) sync(ctx context.Context, e Export, it item) error {
 	cal, err := x.deps.Calendars.ActiveByStaff(ctx, it.staffID)
 	hasCal := err == nil
@@ -210,10 +225,12 @@ func (x *Exporter) sync(ctx context.Context, e Export, it item) error {
 		if err != nil {
 			return err
 		}
-		if lc.DisabledAt != nil {
+		switch {
+		case lc.DisabledAt != nil && (it.body == nil || !hasCal):
 			return nil
-		}
-		if it.body != nil && hasCal && cal.ID == lc.ID {
+		case lc.DisabledAt != nil:
+			// 外したカレンダーの予定は消さずに残し、職員の今のカレンダーに作る
+		case it.body != nil && hasCal && cal.ID == lc.ID:
 			etag, err := x.deps.Writer.Update(ctx, lc.CalendarID, it.link.ExternalEventID, ifMatch(e, *it.link), *it.body)
 			if err == nil {
 				return x.deps.Calendars.UpdateLink(ctx, it.link.ID, etag, it.version)
@@ -222,8 +239,10 @@ func (x *Exporter) sync(ctx context.Context, e Export, it item) error {
 			if !e.Overwrite || !errors.Is(err, ErrEventGone) {
 				return err
 			}
-		} else if err := x.deps.Writer.Delete(ctx, lc.CalendarID, it.link.ExternalEventID, ifMatch(e, *it.link)); err != nil && !errors.Is(err, ErrEventGone) {
-			return err
+		default:
+			if err := x.deps.Writer.Delete(ctx, lc.CalendarID, it.link.ExternalEventID, ifMatch(e, *it.link)); err != nil && !errors.Is(err, ErrEventGone) {
+				return err
+			}
 		}
 		if err := x.deps.Calendars.DeleteLink(ctx, it.link.ID); err != nil {
 			return err
