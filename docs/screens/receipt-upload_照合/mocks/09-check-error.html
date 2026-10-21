@@ -17,8 +17,8 @@
             <div class="wf-site-header__brand">
               <strong>buddy</strong>
               <nav data-m="1" data-testid="site-nav">
-                <span>予定</span>
-                <span aria-current="page">照合</span>
+                <span data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html">予定</span>
+                <span aria-current="page" data-go="01-initial.html">照合</span>
               </nav>
             </div>
             <div class="wf-site-header__viewer" data-testid="viewer-menu">
@@ -34,7 +34,7 @@
                 <span class="wf-label">予定の取り方</span>
                 <div class="wf-tabs" role="radiogroup" aria-label="予定の取り方" data-m="6" data-testid="receipt-source">
                   <span class="wf-tab is-active" data-testid="receipt-source-calendar">Google カレンダー</span>
-                  <span class="wf-tab" data-testid="receipt-source-csv">予定の CSV</span>
+                  <span class="wf-tab" data-testid="receipt-source-csv" data-go="02-csv.html">予定の CSV</span>
                 </div>
               </div>
               <div class="ru-field">
@@ -51,7 +51,7 @@
                 <p class="wf-alert">照合できませんでした。時間をおいて、もう一度照合してください。</p>
               </div>
               <div>
-                <span class="wf-btn wf-btn--primary" data-m="10" data-testid="receipt-check-submit">照合する</span>
+                <span class="wf-btn wf-btn--primary" data-m="10" data-testid="receipt-check-submit" data-go="05-submitting.html">照合する</span>
               </div>
             </form>
           </main>
@@ -60,5 +60,6 @@
       <div class="markers"></div>
     </div>
     <script src="../../_common/mock.js"></script>
+    <script src="../../_common/interact.js"></script>
   </body>
 </html>

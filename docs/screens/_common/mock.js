@@ -115,6 +115,7 @@
     if (!applyView()) return
     body.dataset.markers = state.markers ? 'on' : 'off'
     body.dataset.testids = state.testids ? 'on' : 'off'
+    body.dataset.fit = state.fit ? 'on' : 'off'
     placeMarkers()
     for (const button of document.querySelectorAll('.mock-toolbar [data-view-name]')) {
       button.setAttribute('aria-pressed', String(button.dataset.viewName === state.view))
