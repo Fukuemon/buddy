@@ -50,7 +50,7 @@ apps/web の `src/styles.css` の `@theme` と、コンポーネントのクラ�
 | `text-sm`（14px） | 絞り込みの職員名、サービスコードの選択肢、項目の要約の値 | `text-body-dense`（16px） | 小 |
 | `text-[15px]` と `tracking-[0.04em]` | ボタン、タブ | `text-label`（16px、0.02em） | 小 |
 | `text-[15px]` | 入力欄の値、表のセル | `text-body-dense`（16px） | 小 |
-| `text-[15px]` | ダイアログの題 | `text-heading-sm`（18px） | 小 |
+| `text-[15px]` | ダイアログのタイトル | `text-heading-sm`（18px） | 小 |
 | `text-base/relaxed`（16px、1.625） | 本文 | `text-body`（16px、1.7） | ほぼ同じ |
 | `text-base`（16px） | 検索欄の値 | `text-body-dense`（16px） | ほぼ同じ |
 | `text-lg`（18px） | 一覧と日時の見出し、訪問の種類の見出し、複数行の入力のラベル | `text-heading-sm`（18px） | ほぼ同じ |
@@ -91,4 +91,4 @@ DADS のボタンと入力欄は影を持たないので、コンポーネント
 | 置き換える前の値 | 置き換える前の使い道 | 置き換えた先 | 見た目 |
 | --- | --- | --- | --- |
 | `lg`（45rem、720px） | ダイアログを画面いっぱいに出すかの境、予定の入力の段組み | `desktop`（48rem、768px） | 小。幅 720px から 767px の間で、ダイアログが画面いっぱいになる |
-| `md`（Tailwind の既定の 48rem） | カレンダーの操作の帯の並び | `desktop`（48rem） | 変化なし |
+| `md`（Tailwind のデフォルトの 48rem） | カレンダーの操作の帯の並び | `desktop`（48rem） | 変化なし |

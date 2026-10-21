@@ -3,7 +3,7 @@
 iBow から出した実訪問の CSV と予定（予定の CSV か Google カレンダー）を照合し、不整合、予定のみ、実績のみ、整合の 4 つに分けて返す API。  
 照合の規則と、元の Python との違いは [DesignDoc.md](DesignDoc.md) にある。
 
-## 準備
+## セットアップ
 
 Go と golangci-lint のバージョンは、リポジトリのルートの `mise.toml` にある。
 
@@ -11,13 +11,13 @@ Go と golangci-lint のバージョンは、リポジトリのルートの `mis
 mise install go golangci-lint
 ```
 
-## 動かす
+## 起動する
 
-API の 8080 と偽物の発行者の 9000 は、ルートの compose の schedule-api と IdP と重なる。  
-compose を動かしているときは、重なる 2 つを `docker compose stop schedule-api idp` で止めてから実行する。
+API の 8080 とフェイクの IdP の 9000 は、ルートの compose の schedule-api と IdP と重なる。  
+compose を起動しているときは、重なる 2 つを `docker compose stop schedule-api idp` で止めてから実行する。
 
 ```sh
-# ブローカーの代わりに、偽物の発行者を別の端末で動かす
+# ブローカーの代わりに、フェイクの IdP を別のターミナルで起動する
 go run ./cmd/devissuer -addr 127.0.0.1:9000
 
 export OIDC_ISSUER=http://127.0.0.1:9000 OIDC_AUDIENCE=receipt-api
@@ -25,7 +25,7 @@ go run ./cmd/api
 ```
 
 `curl localhost:8080/readyz` が `{"status":"ok"}` を返せば、起動できている。  
-`cmd/devissuer` は、`GET /token` で署名したトークンを返す。偽物の発行者は起動のたびに鍵を作り直すので、発行者を起動し直したら API も起動し直す。
+`cmd/devissuer` は、`GET /token` で署名したトークンを返す。フェイクの IdP は起動のたびに署名の鍵を作り直すので、IdP を起動し直したら API も起動し直す。
 
 ```sh
 TOKEN=$(curl -s '127.0.0.1:9000/token?sub=dev-aoki&org_id=org-sample' | jq -r .access_token)
@@ -33,22 +33,22 @@ TOKEN=$(curl -s '127.0.0.1:9000/token?sub=dev-aoki&org_id=org-sample' | jq -r .a
 
 設定は環境変数で渡す。
 
-- `PORT`: 待ち受けるポート。既定は `8080`
-- `MAX_UPLOAD_BYTES`: `POST /v1/checks` の本文の上限のバイト数。既定は 10 MiB
-- `LOG_LEVEL`: `debug`、`info`、`warn`、`error` のいずれか。既定は `info`
-- `OIDC_ISSUER`: 必須。ブローカーの発行者の URL。トークンの `iss` と一致させ、discovery の文書をここから読む
+- `PORT`: 待ち受けるポート。デフォルトは `8080`
+- `MAX_UPLOAD_BYTES`: `POST /v1/checks` の本文の上限のバイト数。デフォルトは 10 MiB
+- `LOG_LEVEL`: `debug`、`info`、`warn`、`error` のいずれか。デフォルトは `info`
+- `OIDC_ISSUER`: 必須。ブローカーの Issuer の URL。トークンの `iss` と一致させ、discovery の文書をここから読む
 - `OIDC_AUDIENCE`: 必須。トークンの `aud` に求める値
-- `OIDC_ORG_CLAIM`: 組織の ID を持つクレームの名前。既定は `org_id`
-- `CORS_ALLOW_ORIGINS`: CORS で応答を読ませるオリジンを、カンマで区切って並べる。空なら CORS のヘッダーを返さない
+- `OIDC_ORG_CLAIM`: 組織の ID を持つクレームの名前。デフォルトは `org_id`
+- `CORS_ALLOW_ORIGINS`: CORS でレスポンスを読ませるオリジンを、カンマで区切って並べる。空なら CORS のヘッダーを返さない
 - `GOOGLE_CALENDARS_FILE`: 照合の対象のカレンダーの設定（JSON）のパス。空なら Google カレンダーを使わない
 - `GOOGLE_APPLICATION_CREDENTIALS`: Application Default Credentials が読む認証情報のファイルのパス
-- `GOOGLE_CALENDAR_ENDPOINT`: Calendar API の代わりに呼ぶ URL。偽物の API で試すためのもので、認証をしない。`GOOGLE_CALENDARS_FILE` を渡さずにこれだけを渡すと、起動しない
+- `GOOGLE_CALENDAR_ENDPOINT`: Calendar API の代わりに呼ぶ URL。フェイクの API で試すためのもので、認証をしない。`GOOGLE_CALENDARS_FILE` を渡さずにこれだけを渡すと、起動しない
 
-コンテナで動かすときは、このディレクトリで次を実行する。ビルドの文脈はリポジトリの直下である（`packages/go` を読むため）。
+コンテナで起動するときは、このディレクトリで次を実行する。ビルドの文脈はリポジトリの直下である（`packages/go` を読むため）。
 
 ```sh
 docker build -f Dockerfile -t receipt-api ../..
-docker run --rm -p 8080:8080 -e OIDC_ISSUER=<発行者の URL> -e OIDC_AUDIENCE=receipt-api receipt-api
+docker run --rm -p 8080:8080 -e OIDC_ISSUER=<Issuer の URL> -e OIDC_AUDIENCE=receipt-api receipt-api
 ```
 
 ## テストとチェック
@@ -62,13 +62,13 @@ golangci-lint run
 ```
 
 テストと lint は `GOWORK=off` を付けて流す。  
-理由は [CONTRIBUTING.md](../../CONTRIBUTING.md) の「開発の準備」にある。
+理由は [CONTRIBUTING.md](../../CONTRIBUTING.md) の「開発環境のセットアップ」にある。
 
 ## コードの生成
 
 API の定義の正本は [openapi.yaml](openapi.yaml) である。  
 oapi-codegen が、そこから net/http の strict server のインターフェイスと型を `internal/httpapi/openapi/openapi.gen.go` に生成する。`internal/httpapi` がそのインターフェイスを実装する。  
-oapi-codegen は `go.mod` の `tool` でバージョンを固定し、`go tool` で動かす。設定は [oapi-codegen.yaml](oapi-codegen.yaml) にある。
+oapi-codegen は `go.mod` の `tool` でバージョンを固定し、`go tool` で実行する。設定は [oapi-codegen.yaml](oapi-codegen.yaml) にある。
 
 openapi.yaml を変えたら、`apps/receipt-api` で生成し直し、生成物も一緒にコミットする。
 
@@ -80,17 +80,17 @@ go generate ./...
 
 ## API
 
-要求と応答の項目の定義は [openapi.yaml](openapi.yaml) にある。
+リクエストとレスポンスの項目の定義は [openapi.yaml](openapi.yaml) にある。
 
-- `GET /healthz`、`GET /readyz`: `{"status":"ok"}` を返す。照合の API は起動のときにブローカーの discovery を読み、読めなければ起動しない。起動した後は依存先を確かめないので、応答できれば 200 を返す
+- `GET /healthz`、`GET /readyz`: `{"status":"ok"}` を返す。照合の API は起動のときにブローカーの discovery を読み、読めなければ起動しない。起動した後は依存先を確かめないので、レスポンスを返せれば 200 を返す
 - `POST /v1/checks`: multipart/form-data の `visits`（実訪問の CSV）と予定を照合する
   - `Authorization: Bearer` の access token を求める
   - 予定は、ファイル `schedules`（予定の CSV）があればそれを使う。無くてフォームの値 `month`（`2024-04` の形）があれば、その月の予定を Google カレンダーから取る
-  - Google カレンダーの予定のうち、題名を解釈できずに照合に使わなかったものは、`warnings` にカレンダー ID、予定の ID、開始の日時で返す
+  - Google カレンダーの予定のうち、タイトルを解釈できずに照合に使わなかったものは、`warnings` にカレンダー ID、予定の ID、開始の日時で返す
   - 結果は、`Accept` によらず JSON で返す。行ごとに区分、両側の値、項目ごとの判定を持つ。記号と CSV の書き出しは画面が持つ（[DesignDoc.md](DesignDoc.md)）
   - 入力の CSV は、UTF-8（BOM の有無を問わない）と CP932 を受ける
 
-`testdata/` の架空の CSV で試すときは、次を実行する。
+`testdata/` のダミーの CSV で試すときは、次を実行する。
 
 ```sh
 curl -s -H "Authorization: Bearer $TOKEN" \
@@ -116,7 +116,7 @@ curl -s -H "Authorization: Bearer $TOKEN" -F visits=@testdata/visits_utf8.csv -F
 - 本文が `MAX_UPLOAD_BYTES` を超えた: 413 の `payload_too_large`
 - Google カレンダーの設定が無いか、トークンの組織のカレンダーが無いのに `month` を送った: 503 の `calendar_not_configured`
 - Calendar API の呼び出しに失敗した: 502 の `schedule_source_failed`
-- 入力の CSV の行の誤り: 422 の `invalid_csv` と、行番号つきの `errors`
+- 入力の CSV の行のエラー: 422 の `invalid_csv` と、行番号つきの `errors`
 
 ```json
 {
@@ -135,10 +135,10 @@ curl -s -H "Authorization: Bearer $TOKEN" -F visits=@testdata/visits_utf8.csv -F
 2. 職員ごとに、Google カレンダーの「特定のユーザーとの共有」にサービスアカウントのメールアドレスを足し、権限を「予定の表示（すべての予定の詳細）」にする。
 3. 照合の対象のカレンダーを JSON に書き、`apps/receipt-api/.secrets/calendars.json` に置く。形は [calendars.example.json](calendars.example.json) にある。
    - `calendar_id` はカレンダーの設定の「カレンダーの統合」にあるカレンダー ID
-   - `org_id` はカレンダーを使う事業所の、ブローカーの組織の ID。access token の組織のクレームと同じ値にする。この組織のトークンの要求だけが、このカレンダーを読む
+   - `org_id` はカレンダーを使う事業所の、ブローカーの組織の ID。access token の組織のクレームと同じ値にする。この組織のトークンを持つリクエストだけが、このカレンダーを読む
    - `staff_name` は主訪問者の名前で、iBow の主訪問者と同じ表記にする。省くとカレンダーの表示名を使う
-4. サービスアカウントの鍵のファイル（JSON）を作り、`apps/receipt-api/.secrets/` に置く。`.secrets/` は、鍵と職員のカレンダー ID を持つので Git で追跡しない。
-5. 環境変数で設定と鍵のファイルを渡して起動する。
+4. サービスアカウント キーのファイル（JSON）を作り、`apps/receipt-api/.secrets/` に置く。`.secrets/` は、キーと職員のカレンダー ID を持つので Git で追跡しない。
+5. 環境変数で設定とキーのファイルを渡して起動する。
 
 ```sh
 GOOGLE_CALENDARS_FILE=.secrets/calendars.json \
@@ -146,9 +146,9 @@ GOOGLE_APPLICATION_CREDENTIALS=.secrets/service-account.json \
 go run ./cmd/api
 ```
 
-予定の題名は `【サービス内容】利用者名` の形にする。照合の対象にする予定の規則は [DesignDoc.md](DesignDoc.md) にある。
+予定のタイトルは `【サービス内容】利用者名` の形にする。照合の対象にする予定の規則は [DesignDoc.md](DesignDoc.md) にある。
 
-デプロイした環境では鍵のファイルを使わず、Workload Identity Federation の外部アカウントの設定のファイルを `GOOGLE_APPLICATION_CREDENTIALS` に渡す。Application Default Credentials が同じ環境変数から読む。  
+デプロイした環境ではキーのファイルを使わず、Workload Identity Federation の外部アカウントの設定のファイルを `GOOGLE_APPLICATION_CREDENTIALS` に渡す。Application Default Credentials が同じ環境変数から読む。  
 Workload Identity Federation のプールとプロバイダーの作り方は、インフラのリポジトリが持つ。
 
 ## 文書

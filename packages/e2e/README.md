@@ -1,8 +1,8 @@
 # @buddy/e2e
 
-buddy の E2E のテストと、人手検証の証跡を撮る仕組み。
+buddy の E2E のテストと、手動検証のエビデンスを撮る仕組み。
 
-- `kit/`: 録画（`recording`）、証跡の置き場と名前（`evidence`）、ログインの状態の保存（`auth`）
+- `kit/`: 録画（`recording`）、エビデンスの配置先と名前（`evidence`）、ログインの状態の保存（`auth`）
 - `eslint/`: E2E のテストのコードの書き方の規則（`e2e-authoring-rule.mjs`）と、そのテスト
 - `tests/`: E2E のテスト。層（specs、setup、screens、widgets、selectors、fixtures）は [DesignDoc.md](DesignDoc.md) にある
 
@@ -20,11 +20,11 @@ buddy の E2E のテストと、人手検証の証跡を撮る仕組み。
 
 ## 元のリポジトリ
 
-kit、規則、スキル、Design Doc は、元のリポジトリ（非公開）から写した。依存として入れず、buddy で使いながら直し、後で汎用の形に戻す。  
-地図の操作（`map/google`）は、buddy に地図が無いので写していない。
+kit、規則、スキル、Design Doc は、元のリポジトリ（非公開）からコピーした。依存として入れず、buddy で使いながら直し、後で汎用の形に戻す。  
+地図の操作（`map/google`）は、buddy に地図が無いのでコピーしていない。
 
 ## 文書
 
 - [DesignDoc.md](DesignDoc.md): テストのコードの層、配置先、名前、待ち方、確かめ方
-- [kit/recording/DesignDoc.md](kit/recording/DesignDoc.md): 人手検証の証跡を撮る録画
+- [kit/recording/DesignDoc.md](kit/recording/DesignDoc.md): 手動検証のエビデンスを撮る録画
 - 流し方は [CONTRIBUTING.md](../../CONTRIBUTING.md) の「E2E のテストを流す」にある
