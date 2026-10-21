@@ -30,10 +30,8 @@
   }
 
   const state = {
-    view: pickView(
-      params.get('view') ??
-        (document.documentElement.clientWidth < NARROW_WIDTH ? 'mobile' : body.dataset.view),
-    ),
+    // ?view= が無ければ、幅を測れるようになってから決める（隠れたタブの中では幅が 0 になる）
+    view: params.has('view') ? pickView(params.get('view')) : null,
     markers: params.get('markers') !== 'off',
     testids: params.get('testids') === 'on',
     fit: params.get('fit') !== 'off',
@@ -44,12 +42,18 @@
   }
 
   function applyView() {
+    const width = document.documentElement.clientWidth
+    // 隠れている間は測れないので、見えるようになった後の resize で描く
+    if (width === 0) return false
+    if (state.view === null)
+      state.view = pickView(width < NARROW_WIDTH ? 'mobile' : body.dataset.view)
     const view = VIEWS[state.view]
     body.dataset.view = state.view
     screen.style.setProperty('--mock-width', `${view.width}px`)
     screen.style.setProperty('--mock-height', `${view.height}px`)
-    const available = document.documentElement.clientWidth - 32
+    const available = width - 32
     stage.style.zoom = state.fit && view.width > available ? String(available / view.width) : ''
+    return true
   }
 
   function placeMarkers() {
@@ -91,7 +95,7 @@
 
   function syncUrl() {
     const next = new URLSearchParams(location.search)
-    next.set('view', state.view)
+    if (state.view !== null) next.set('view', state.view)
     for (const [key, on, fallback] of [
       ['markers', state.markers, true],
       ['testids', state.testids, false],
@@ -108,7 +112,7 @@
   }
 
   function refresh() {
-    applyView()
+    if (!applyView()) return
     body.dataset.markers = state.markers ? 'on' : 'off'
     body.dataset.testids = state.testids ? 'on' : 'off'
     placeMarkers()
