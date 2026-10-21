@@ -4,25 +4,25 @@
 name: buddy
 
 x-db-env: &db-env
-  DB_HOST: mysql
-  DB_PORT: '3306'
+  DB_HOST: postgres
+  DB_PORT: '5432'
   DB_USER: buddy
   DB_PASSWORD: buddy-dev
   DB_NAME: buddy
 
 services:
-  mysql:
-    image: mysql:8.4
+  postgres:
+    image: postgres:18.6
     environment:
-      MYSQL_DATABASE: buddy
-      MYSQL_USER: buddy
-      MYSQL_PASSWORD: buddy-dev
-      MYSQL_RANDOM_ROOT_PASSWORD: 'yes'
-    ports: ['127.0.0.1:${MYSQL_PORT:-13306}:3306']
-    volumes: [mysql:/var/lib/mysql]
+      POSTGRES_DB: buddy
+      POSTGRES_USER: buddy
+      POSTGRES_PASSWORD: buddy-dev
+    ports: ['127.0.0.1:${POSTGRES_PORT:-15432}:5432']
+    # 18 からのイメージは、メジャーバージョンごとのディレクトリを /var/lib/postgresql の下に作る
+    volumes: [postgres:/var/lib/postgresql]
     healthcheck:
       # 初期化の間の一時のサーバーは TCP で待ち受けないので、127.0.0.1 に届けば初期化が終わっている
-      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-ubuddy', '-pbuddy-dev']
+      test: ['CMD', 'pg_isready', '-h', '127.0.0.1', '-U', 'buddy', '-d', 'buddy']
       interval: 2s
       timeout: 5s
       retries: 60
@@ -65,7 +65,7 @@ services:
     command: ['up']
     environment: *db-env
     depends_on:
-      mysql: { condition: service_healthy }
+      postgres: { condition: service_healthy }
 
   schedule-api-seed:
     image: buddy-compose-schedule-api
@@ -149,4 +149,4 @@ services:
       receipt-api: { condition: service_healthy }
 
 volumes:
-  mysql:
+  postgres:

@@ -2,153 +2,149 @@
 
 ## Description
 
-繰り返しの規則と予定、回にしない日。繰り返しの 1 回を置き換えた予定は schedules に入る
+繰り返しの予定と規則、回にしない日。繰り返しの 1 回を置き換えた予定は schedules に入る
 
 ## Tables
 
-| Name                                                              | Columns | Comment                                                                | Type       |
-| ----------------------------------------------------------------- | ------- | ---------------------------------------------------------------------- | ---------- |
-| [facilities](facilities.md)                                       | 5       | 訪問看護の事業所                                                       | BASE TABLE |
-| [recurring_rules](recurring_rules.md)                             | 8       | 繰り返しの規則                                                         | BASE TABLE |
-| [recurring_schedule_details](recurring_schedule_details.md)       | 29      | 一覧の読み出しに使う、繰り返しの予定と訪問の情報と名前を結合したビュー | VIEW       |
-| [recurring_schedule_exclusions](recurring_schedule_exclusions.md) | 2       | 繰り返しの予定のうち、回にしない日                                     | BASE TABLE |
-| [recurring_schedules](recurring_schedules.md)                     | 14      | 繰り返しの予定                                                         | BASE TABLE |
-| [schedule_types](schedule_types.md)                               | 4       | 予定の種類（通常、訪問）。マイグレーションで入れる                     | BASE TABLE |
-| [schedules](schedules.md)                                         | 14      | 予定                                                                   | BASE TABLE |
-| [users](users.md)                                                 | 11      | 職員                                                                   | BASE TABLE |
-| [visit_infos](visit_infos.md)                                     | 7       | 訪問の情報                                                             | BASE TABLE |
+| Name                                                                            | Columns | Comment                                                                | Type       |
+| ------------------------------------------------------------------------------- | ------- | ---------------------------------------------------------------------- | ---------- |
+| [public.facilities](public.facilities.md)                                       | 6       | 訪問看護の事業所                                                       | BASE TABLE |
+| [public.users](public.users.md)                                                 | 11      | 職員                                                                   | BASE TABLE |
+| [public.visit_infos](public.visit_infos.md)                                     | 8       | 訪問の情報                                                             | BASE TABLE |
+| [public.schedule_types](public.schedule_types.md)                               | 5       | 予定の種類（通常、訪問）。マイグレーションで入れる                     | BASE TABLE |
+| [public.recurring_schedules](public.recurring_schedules.md)                     | 18      | 繰り返しの予定と、その規則                                             | BASE TABLE |
+| [public.recurring_schedule_exclusions](public.recurring_schedule_exclusions.md) | 2       | 繰り返しの予定のうち、回にしない日                                     | BASE TABLE |
+| [public.schedules](public.schedules.md)                                         | 15      | 予定                                                                   | BASE TABLE |
+| [public.recurring_schedule_details](public.recurring_schedule_details.md)       | 29      | 一覧の読み出しに使う、繰り返しの予定と訪問の情報と名前を結合したビュー | VIEW       |
 
 ## Relations
 
 ```mermaid
 erDiagram
 
-"recurring_schedule_exclusions" }o--|| "recurring_schedules" : "FOREIGN KEY (recurring_schedule_id) REFERENCES recurring_schedules (id)"
-"recurring_schedules" }o--|| "facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities (id)"
-"recurring_schedules" }o--|| "recurring_rules" : "FOREIGN KEY (recurring_rule_id) REFERENCES recurring_rules (id)"
-"recurring_schedules" }o--|| "users" : "FOREIGN KEY (staff_id) REFERENCES users (id)"
-"recurring_schedules" }o--|| "schedule_types" : "FOREIGN KEY (schedule_type_id) REFERENCES schedule_types (id)"
-"recurring_schedules" }o--o| "visit_infos" : "FOREIGN KEY (visit_info_id) REFERENCES visit_infos (id)"
-"schedules" }o--|| "facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities (id)"
-"schedules" }o--o| "recurring_schedules" : "FOREIGN KEY (recurring_schedule_id) REFERENCES recurring_schedules (id)"
-"schedules" }o--|| "users" : "FOREIGN KEY (staff_id) REFERENCES users (id)"
-"schedules" }o--|| "schedule_types" : "FOREIGN KEY (schedule_type_id) REFERENCES schedule_types (id)"
-"schedules" }o--o| "visit_infos" : "FOREIGN KEY (visit_info_id) REFERENCES visit_infos (id)"
-"users" }o--|| "facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities (id)"
-"visit_infos" }o--|| "users" : "FOREIGN KEY (assigned_staff_id) REFERENCES users (id)"
-"visit_infos" }o--o| "users" : "FOREIGN KEY (companion_id) REFERENCES users (id)"
+"public.users" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+"public.visit_infos" }o--|| "public.users" : "FOREIGN KEY (facility_id, assigned_staff_id) REFERENCES users(facility_id, id)"
+"public.visit_infos" }o--|| "public.users" : "FOREIGN KEY (facility_id, companion_id) REFERENCES users(facility_id, id)"
+"public.recurring_schedules" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+"public.recurring_schedules" }o--|| "public.users" : "FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id)"
+"public.recurring_schedules" }o--|| "public.visit_infos" : "FOREIGN KEY (facility_id, visit_info_id) REFERENCES visit_infos(facility_id, id)"
+"public.recurring_schedules" }o--|| "public.schedule_types" : "FOREIGN KEY (schedule_type_id) REFERENCES schedule_types(id)"
+"public.recurring_schedule_exclusions" }o--|| "public.recurring_schedules" : "FOREIGN KEY (recurring_schedule_id) REFERENCES recurring_schedules(id) ON DELETE CASCADE"
+"public.schedules" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+"public.schedules" }o--|| "public.users" : "FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id)"
+"public.schedules" }o--|| "public.visit_infos" : "FOREIGN KEY (facility_id, visit_info_id) REFERENCES visit_infos(facility_id, id)"
+"public.schedules" }o--|| "public.schedule_types" : "FOREIGN KEY (schedule_type_id) REFERENCES schedule_types(id)"
+"public.schedules" }o--|| "public.recurring_schedules" : "FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id)"
 
-"facilities" {
-  char_26_ id
+"public.facilities" {
+  text id
   varchar_255_ name
   varchar_255_ org_id
-  datetime created_at
-  datetime updated_at
+  text time_zone
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
 }
-"recurring_rules" {
-  char_26_ id
-  varchar_16_ frequency
-  tinyint day_of_week
-  tinyint day_of_month
-  tinyint week_of_month
-  date end_date
-  datetime created_at
-  datetime updated_at
-}
-"recurring_schedule_details" {
-  char_26_ id
-  char_26_ facility_id
-  char_26_ schedule_type_id
-  varchar_255_ schedule_type_name
-  date date
-  time start_time
-  time end_time
-  tinyint_1_ is_over_time_work
-  char_26_ staff_id
-  varchar_128_ staff_name
-  varchar_255_ title
-  text description
-  char_26_ recurring_rule_id
-  varchar_16_ frequency
-  tinyint day_of_week
-  tinyint day_of_month
-  tinyint week_of_month
-  date end_date
-  char_26_ visit_info_id
-  char_26_ patient_id
-  varchar_255_ patient_name
-  char_26_ assigned_staff_id
-  varchar_128_ assigned_staff_name
-  char_26_ companion_id
-  varchar_128_ companion_name
-  char_26_ service_code_id
-  varchar_255_ service_code
-  datetime created_at
-  datetime updated_at
-}
-"recurring_schedule_exclusions" {
-  char_26_ recurring_schedule_id
-  date date
-}
-"recurring_schedules" {
-  char_26_ id
-  char_26_ facility_id
-  char_26_ staff_id
-  char_26_ schedule_type_id
-  char_26_ recurring_rule_id
-  date date
-  time start_time
-  time end_time
-  char_26_ visit_info_id
-  varchar_255_ title
-  text description
-  tinyint_1_ is_over_time_work
-  datetime created_at
-  datetime updated_at
-}
-"schedule_types" {
-  char_26_ id
-  varchar_255_ name
-  datetime created_at
-  datetime updated_at
-}
-"schedules" {
-  char_26_ id
-  char_26_ facility_id
-  char_26_ staff_id
-  char_26_ schedule_type_id
-  date date
-  time start_time
-  time end_time
-  char_26_ recurring_schedule_id
-  char_26_ visit_info_id
-  varchar_255_ title
-  text description
-  tinyint_1_ is_over_time_work
-  datetime created_at
-  datetime updated_at
-}
-"users" {
-  char_26_ id
+"public.users" {
+  text id
+  text facility_id
   varchar_255_ sub
   varchar_128_ username
   varchar_320_ email
   varchar_16_ phone_number
-  char_26_ facility_id
-  char_26_ department_id
-  char_26_ team_id
-  char_26_ position_id
-  datetime created_at
-  datetime updated_at
+  text department_id
+  text team_id
+  text position_id
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
 }
-"visit_infos" {
-  char_26_ id
-  char_26_ patient_id
-  char_26_ assigned_staff_id
-  char_26_ companion_id
-  char_26_ service_code_id
-  datetime created_at
-  datetime updated_at
+"public.visit_infos" {
+  text id
+  text facility_id
+  text patient_id
+  text assigned_staff_id
+  text companion_id
+  text service_code_id
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
+}
+"public.schedule_types" {
+  text id
+  text code
+  varchar_255_ name
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
+}
+"public.recurring_schedules" {
+  text id
+  text facility_id
+  text staff_id
+  text schedule_type_id
+  date date
+  time_without_time_zone start_time
+  time_without_time_zone end_time
+  text visit_info_id
+  varchar_255_ title
+  text description
+  boolean is_over_time_work
+  text frequency
+  smallint day_of_week
+  smallint day_of_month
+  smallint week_of_month
+  date end_date
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
+}
+"public.recurring_schedule_exclusions" {
+  text recurring_schedule_id
+  date date
+}
+"public.schedules" {
+  text id
+  text facility_id
+  text staff_id
+  text schedule_type_id
+  date date
+  time_without_time_zone start_time
+  time_without_time_zone end_time
+  text recurring_schedule_id
+  date original_date
+  text visit_info_id
+  varchar_255_ title
+  text description
+  boolean is_over_time_work
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
+}
+"public.recurring_schedule_details" {
+  text id
+  text facility_id
+  text schedule_type_id
+  text schedule_type_code
+  varchar_255_ schedule_type_name
+  date date
+  time_without_time_zone start_time
+  time_without_time_zone end_time
+  boolean is_over_time_work
+  text staff_id
+  varchar_128_ staff_name
+  varchar_255_ title
+  text description
+  text frequency
+  smallint day_of_week
+  smallint day_of_month
+  smallint week_of_month
+  date end_date
+  text visit_info_id
+  text patient_id
+  varchar_255_ patient_name
+  text assigned_staff_id
+  varchar_128_ assigned_staff_name
+  text companion_id
+  varchar_128_ companion_name
+  text service_code_id
+  varchar_255_ service_code
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
 }
 ```
 

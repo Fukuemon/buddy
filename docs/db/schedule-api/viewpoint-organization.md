@@ -6,67 +6,68 @@
 
 ## Tables
 
-| Name                          | Columns | Comment                                                | Type       |
-| ----------------------------- | ------- | ------------------------------------------------------ | ---------- |
-| [departments](departments.md) | 5       | 事業所の部署                                           | BASE TABLE |
-| [facilities](facilities.md)   | 5       | 訪問看護の事業所                                       | BASE TABLE |
-| [positions](positions.md)     | 5       | 事業所の役職。職員を登録するときに写す既定の権限を持つ | BASE TABLE |
-| [teams](teams.md)             | 5       | 事業所のチーム                                         | BASE TABLE |
-| [users](users.md)             | 11      | 職員                                                   | BASE TABLE |
+| Name                                        | Columns | Comment                                                | Type       |
+| ------------------------------------------- | ------- | ------------------------------------------------------ | ---------- |
+| [public.facilities](public.facilities.md)   | 6       | 訪問看護の事業所                                       | BASE TABLE |
+| [public.departments](public.departments.md) | 5       | 事業所の部署                                           | BASE TABLE |
+| [public.teams](public.teams.md)             | 5       | 事業所のチーム                                         | BASE TABLE |
+| [public.positions](public.positions.md)     | 5       | 事業所の役職。職員を登録するときに写す既定の権限を持つ | BASE TABLE |
+| [public.users](public.users.md)             | 11      | 職員                                                   | BASE TABLE |
 
 ## Relations
 
 ```mermaid
 erDiagram
 
-"departments" }o--|| "facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities (id)"
-"positions" }o--|| "facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities (id)"
-"teams" }o--|| "facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities (id)"
-"users" }o--|| "departments" : "FOREIGN KEY (department_id) REFERENCES departments (id)"
-"users" }o--|| "facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities (id)"
-"users" }o--|| "positions" : "FOREIGN KEY (position_id) REFERENCES positions (id)"
-"users" }o--|| "teams" : "FOREIGN KEY (team_id) REFERENCES teams (id)"
+"public.departments" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+"public.teams" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+"public.positions" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+"public.users" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+"public.users" }o--|| "public.departments" : "FOREIGN KEY (facility_id, department_id) REFERENCES departments(facility_id, id)"
+"public.users" }o--|| "public.teams" : "FOREIGN KEY (facility_id, team_id) REFERENCES teams(facility_id, id)"
+"public.users" }o--|| "public.positions" : "FOREIGN KEY (facility_id, position_id) REFERENCES positions(facility_id, id)"
 
-"departments" {
-  char_26_ id
-  char_26_ facility_id
-  varchar_255_ name
-  datetime created_at
-  datetime updated_at
-}
-"facilities" {
-  char_26_ id
+"public.facilities" {
+  text id
   varchar_255_ name
   varchar_255_ org_id
-  datetime created_at
-  datetime updated_at
+  text time_zone
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
 }
-"positions" {
-  char_26_ id
-  char_26_ facility_id
+"public.departments" {
+  text id
+  text facility_id
   varchar_255_ name
-  datetime created_at
-  datetime updated_at
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
 }
-"teams" {
-  char_26_ id
-  char_26_ facility_id
+"public.teams" {
+  text id
+  text facility_id
   varchar_255_ name
-  datetime created_at
-  datetime updated_at
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
 }
-"users" {
-  char_26_ id
+"public.positions" {
+  text id
+  text facility_id
+  varchar_255_ name
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
+}
+"public.users" {
+  text id
+  text facility_id
   varchar_255_ sub
   varchar_128_ username
   varchar_320_ email
   varchar_16_ phone_number
-  char_26_ facility_id
-  char_26_ department_id
-  char_26_ team_id
-  char_26_ position_id
-  datetime created_at
-  datetime updated_at
+  text department_id
+  text team_id
+  text position_id
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
 }
 ```
 
