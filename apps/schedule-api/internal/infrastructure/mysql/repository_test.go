@@ -24,6 +24,7 @@ const (
 	seedDepartment    = "01M3TC5HZ8A18D2TP3PTKDXJMN"
 	seedTeam          = "01M3TC5KXRSEVXQZ2MTJK9FS45"
 	seedLeader        = "01M3TC5PVG7W2H1H20W0T1ZVEJ"
+	seedMember        = "01M3TC5QTRHSXHE7C68HPN6MBH"
 	seedTeamB         = "01M3TC5MX04QJ19X6XR1ZCBZRJ"
 	seedViewPolicy    = "01M5E1S42TTS7QZK05YGS0GYRD"
 	seedEditPolicy    = "01M5E1S42TTS7QZK05YGS0GYRE"
@@ -735,5 +736,33 @@ func TestStaffCreateRejectsTarget(t *testing.T) {
 				t.Fatal("err = nil, want 制約の違反")
 			}
 		})
+	}
+}
+
+// TestStaffChangePosition は、役職を変えると、前の権限と対象が消え、渡した権限だけになることを確かめる。
+func TestStaffChangePosition(t *testing.T) {
+	ctx := txContext(t)
+	r := NewStaffRepository(testDB)
+	grants := []staff.Grant{{ID: "01M3TD00000000000000000030", PolicyID: seedSelfEdit}}
+	if err := r.ChangePosition(ctx, seedMori, seedMember, grants); err != nil {
+		t.Fatal(err)
+	}
+	got, err := r.Get(ctx, seedMori)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.PositionID != seedMember || got.PositionName != "メンバー" {
+		t.Errorf("役職 = %s %s", got.PositionID, got.PositionName)
+	}
+	if len(got.Policies) != 1 || got.Policies[0].PolicyID != seedSelfEdit || len(got.Policies[0].TargetTeamIDs) != 0 {
+		t.Errorf("Policies = %+v, want 自分の予定の編集だけ", got.Policies)
+	}
+	var targets int
+	tx := ctx.Value(txKey{}).(*sql.Tx)
+	if err := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM user_policy_targets upt JOIN user_policies up ON up.id = upt.user_policy_id WHERE up.user_id = ?", seedMori).Scan(&targets); err != nil {
+		t.Fatal(err)
+	}
+	if targets != 0 {
+		t.Errorf("森の対象の行 = %d, want 0", targets)
 	}
 }

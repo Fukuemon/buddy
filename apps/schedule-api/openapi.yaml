@@ -370,6 +370,37 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
 
+  /v1/users/{user_id}/position:
+    put:
+      tags: [staff]
+      operationId: changeUserPosition
+      summary: 職員の役職を変える
+      description: |
+        職員の役職を変え、職員の権限を新しい役職の既定で写し直す。職員ごとに足した権限と対象は消える。
+        チームを対象にする権限は、職員の所属のチームを対象にする。
+      parameters:
+        - { name: user_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [position_id]
+              properties:
+                position_id: { $ref: "#/components/schemas/ID" }
+      responses:
+        "200":
+          description: 役職を変えた職員と権限
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffDetail" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
   /v1/me:
     get:
       tags: [staff]

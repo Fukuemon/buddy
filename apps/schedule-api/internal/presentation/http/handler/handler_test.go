@@ -81,8 +81,14 @@ func (f *fakeSchedules) Update(_ context.Context, _ string, in usecase.SlotInput
 }
 
 type fakeStaff struct {
-	listCalls int
-	lastQuery staff.ListQuery
+	listCalls      int
+	lastQuery      staff.ListQuery
+	lastPositionID string
+}
+
+func (f *fakeStaff) ChangePosition(_ context.Context, _, positionID string) (staff.Detail, error) {
+	f.lastPositionID = positionID
+	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: staffID, PositionID: positionID}}, Policies: []staff.PolicyGrant{}}, nil
 }
 
 func (f *fakeStaff) Create(context.Context, usecase.CreateStaffInput) (staff.Detail, error) {
@@ -364,6 +370,23 @@ func TestHealth(t *testing.T) {
 				t.Fatalf("status = %d, body = %v", rec.Code, body)
 			}
 		})
+	}
+}
+
+func TestChangeUserPosition(t *testing.T) {
+	const positionID = "01M3TC5PVG7W2H1H20W0T1ZVEJ"
+	st := &fakeStaff{}
+	rec, body := do(t, newRouter(&fakeSchedules{}, st, &fakePatients{}), http.MethodPut,
+		"/v1/users/"+staffID+"/position", `{"position_id":"`+positionID+`"}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
+	}
+	if st.lastPositionID != positionID || body["position"].(map[string]any)["id"] != positionID {
+		t.Errorf("役職 = %s, body = %v", st.lastPositionID, body)
+	}
+	rec, _ = do(t, newRouter(&fakeSchedules{}, st, &fakePatients{}), http.MethodPut, "/v1/users/"+staffID+"/position", `{}`)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("position_id が無い: status = %d", rec.Code)
 	}
 }
 

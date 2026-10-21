@@ -404,6 +404,57 @@ func TestStaffCreate(t *testing.T) {
 	}
 }
 
+func TestStaffChangePosition(t *testing.T) {
+	const teamID, leaderID, otherPosID = "TEAM", "LEADER", "OTHERPOS"
+	setup := func() *store {
+		s := seeded()
+		d := s.staff[staffID]
+		d.TeamID = teamID
+		d.PositionID = "MEMBER"
+		d.Policies = []staff.PolicyGrant{{UserPolicyID: "OLD", PolicyCode: organization.ScheduleUserRead, TargetUserIDs: []string{companionID}}}
+		s.staff[staffID] = d
+		s.positions[leaderID] = organization.Position{ID: leaderID, FacilityID: facilityID, Policies: []organization.Policy{
+			{ID: "SELF", Code: organization.ScheduleSelfEdit},
+			{ID: "TEAMEDIT", Code: organization.ScheduleTeamEdit, NeedsTarget: true},
+		}}
+		s.positions[otherPosID] = organization.Position{ID: otherPosID, FacilityID: otherFacilityID}
+		return s
+	}
+	newUC := func(s *store) *usecase.Staff {
+		return usecase.NewStaff(usecase.StaffRepositories{
+			Facilities: facilities{s}, Departments: departments{s}, Teams: teams{s},
+			Positions: positions{s}, Staff: staffRepo{s},
+		}, &fakeTx{}, &seqIDs{})
+	}
+	ctx := context.Background()
+
+	s := setup()
+	got, err := newUC(s).ChangePosition(ctx, staffID, leaderID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.PositionID != leaderID {
+		t.Errorf("PositionID = %s", got.PositionID)
+	}
+	g := s.grants[staffID]
+	if len(g) != 2 || g[0].PolicyID != "SELF" || g[1].PolicyID != "TEAMEDIT" {
+		t.Fatalf("grants = %+v, want 新しい役職の既定だけ", g)
+	}
+	if ts := g[1].Targets; len(ts) != 1 || ts[0].TeamID != teamID {
+		t.Errorf("チームの編集の対象 = %+v, want 所属のチーム", ts)
+	}
+
+	if _, err := newUC(setup()).ChangePosition(ctx, staffID, otherPosID); !errors.Is(err, domain.ErrInvalidInput) {
+		t.Errorf("別の事業所の役職: err = %v, want ErrInvalidInput", err)
+	}
+	if _, err := newUC(setup()).ChangePosition(ctx, staffID, "MISSING"); !errors.Is(err, domain.ErrInvalidInput) {
+		t.Errorf("無い役職: err = %v, want ErrInvalidInput", err)
+	}
+	if _, err := newUC(setup()).ChangePosition(ctx, "MISSING", leaderID); !errors.Is(err, domain.ErrNotFound) {
+		t.Errorf("無い職員: err = %v, want ErrNotFound", err)
+	}
+}
+
 func TestOrganizationCreatePosition(t *testing.T) {
 	s := seeded()
 	s.policies["P1"] = organization.Policy{ID: "P1"}

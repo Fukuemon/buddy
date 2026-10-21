@@ -47,6 +47,7 @@ var bodyRules = []struct {
 		"TeamId":       "required,ulid",
 		"PositionId":   "required,ulid",
 	}},
+	{of: openapi.ChangeUserPositionJSONRequestBody{}, rules: map[string]string{"PositionId": "required,ulid"}},
 	{of: openapi.CreatePatientJSONRequestBody{}, rules: map[string]string{
 		"Name":            "required,max=255",
 		"PreferredTime":   "required",

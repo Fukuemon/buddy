@@ -156,8 +156,11 @@ type ListQuery struct {
 //
 // LinkSub は、事業所 facilityID の、メールが email で Sub がまだない職員にだけ sub を書く。
 // 当たる職員がいなければ何もせず、エラーも返さない。
+//
+// ChangePosition は、職員の役職を positionID にし、職員の権限と対象を全て消してから grants を書く。
 type Repository interface {
 	Create(ctx context.Context, s Staff, grants []Grant) error
+	ChangePosition(ctx context.Context, id, positionID string, grants []Grant) error
 	Get(ctx context.Context, id string) (Detail, error)
 	ListByFacility(ctx context.Context, facilityID string, q ListQuery) ([]Summary, error)
 	FindIDBySub(ctx context.Context, sub string) (string, error)

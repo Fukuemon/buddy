@@ -157,6 +157,18 @@ func (s staffRepo) Create(_ context.Context, st staff.Staff, grants []staff.Gran
 	return nil
 }
 
+func (s staffRepo) ChangePosition(_ context.Context, id, positionID string, grants []staff.Grant) error {
+	d, ok := s.staff[id]
+	if !ok {
+		return domain.ErrNotFound
+	}
+	d.PositionID = positionID
+	d.Policies = nil
+	s.staff[id] = d
+	s.grants[id] = grants
+	return nil
+}
+
 func (s staffRepo) Get(_ context.Context, id string) (staff.Detail, error) { return get(s.staff, id) }
 
 func (s staffRepo) ListByFacility(_ context.Context, facilityID string, _ staff.ListQuery) ([]staff.Summary, error) {

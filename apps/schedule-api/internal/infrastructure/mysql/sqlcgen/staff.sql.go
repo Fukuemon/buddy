@@ -80,6 +80,16 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
 	return err
 }
 
+const deleteUserPolicies = `-- name: DeleteUserPolicies :exec
+DELETE FROM user_policies WHERE user_id = ?
+`
+
+// user_policy_targets は外部キーの ON DELETE CASCADE で消える。
+func (q *Queries) DeleteUserPolicies(ctx context.Context, userID string) error {
+	_, err := q.db.ExecContext(ctx, deleteUserPolicies, userID)
+	return err
+}
+
 const getUser = `-- name: GetUser :one
 SELECT u.id, u.sub, u.username, u.email, u.phone_number, u.facility_id,
        u.department_id, d.name AS department_name,
@@ -355,4 +365,18 @@ func (q *Queries) ListUsersByFacility(ctx context.Context, arg ListUsersByFacili
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateUserPosition = `-- name: UpdateUserPosition :exec
+UPDATE users SET position_id = ? WHERE id = ?
+`
+
+type UpdateUserPositionParams struct {
+	PositionID string
+	ID         string
+}
+
+func (q *Queries) UpdateUserPosition(ctx context.Context, arg UpdateUserPositionParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserPosition, arg.PositionID, arg.ID)
+	return err
 }
