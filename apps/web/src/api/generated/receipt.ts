@@ -315,7 +315,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description 入力の CSV に誤りがある（`invalid_csv`）。行の誤りは `errors` に行番号つきで入る。列が足りないときと文字コードを読めないときは、`errors` を持たない */
+            /** @description 入力の CSV に誤りがある（`invalid_csv`）。行の誤りは `errors` に行番号つきで入る。CSV が空のとき、列が足りないとき、文字コードを読めないときは、`errors` を持たない */
             422: {
                 headers: {
                     [name: string]: unknown;

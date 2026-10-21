@@ -859,6 +859,9 @@ components:
             pathID:
               summary: パスの ID が ULID でない
               value: { code: invalid_input, message: "schedule_id は ULID です" }
+            definition:
+              summary: 要求が openapi.yaml の定義に合わない
+              value: { code: invalid_input, message: "query の sort_field が定義に合いません: value is not one of the allowed values [\"date\",\"start_time\",\"created_at\"]" }
             body:
               summary: 本文の値が規則に合わない
               value: { code: invalid_input, message: "終了の時刻は開始の時刻より後にします" }
