@@ -255,7 +255,7 @@ erDiagram
 
 職員ごとに権限を足す（`POST /v1/users/{user_id}/policies`）ときは、`needs_target` が true の権限に、code に合わせて職員かチームの対象を 1 つ以上付ける。対象は同じ事業所のものに限る。外す（`DELETE /v1/users/{user_id}/policies/{user_policy_id}`）と、対象も消える。
 
-職員と利用者の登録、役職を変える操作、権限を足し外す操作は、`staff.manage` を持つ職員だけに許す。`staff.manage` は予定の範囲に及ばない。判断は ADR-0006 にある。
+職員と利用者の登録、役職の作成、役職を変える操作、権限を足し外す操作は、`staff.manage` を持つ職員だけに許す。`staff.manage` は、それだけでは予定の判定に及ばないが、自分に予定の権限を足せるので、事実上の最上位の権限である。判断は ADR-0006 にある。
 
 - ADR-0006: [職員と利用者の登録と、職員の権限と役職を変える操作を、職員の管理の権限で許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0006-staff-manage-policy.md)
 
