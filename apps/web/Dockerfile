@@ -2,7 +2,7 @@
 # ビルドの文脈はリポジトリのルートである。packages/ui を一緒にビルドするためである。
 # 例: docker build -f apps/web/Dockerfile -t buddy-web .
 
-FROM node:24-slim AS build
+FROM node:25-slim AS build
 # 画面は BFF を通して API を呼ぶ。VITE_ の値はビルドのときに埋め込まれる
 ARG VITE_API_MODE=bff
 ENV CI=true VITE_API_MODE=$VITE_API_MODE
@@ -19,7 +19,7 @@ RUN pnpm --filter @buddy/web build && \
     pnpm --filter @buddy/web deploy --legacy --prod /out && \
     cp -r apps/web/dist /out/dist
 
-FROM node:24-slim
+FROM node:25-slim
 ENV NODE_ENV=production PORT=3000
 WORKDIR /app
 COPY --from=build /out /app
