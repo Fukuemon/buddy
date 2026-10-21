@@ -163,7 +163,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 
 ### 認可
 
-- 予定の閲覧と編集は、職員の `user_policies` で決める。schedule-api の usecase が判定し、見てよくない予定は一覧から除き、1 件を指す操作には 403 を返す。規則は [予定の管理の Design Doc](apps/schedule-api.md#予定の認可) にある。
+- 予定の閲覧と編集は、職員の `user_policies` で決める。schedule-api の `schedule.Service` が判定し、見てよくない予定は一覧から除き、1 件を指す操作には 403 を返す。規則は [予定の管理の Design Doc](apps/schedule-api.md#予定の認可) にある。
   - ADR-0002: [権限を役職の既定と職員ごとの上書きで持つ（PBAC）](../adr/0002-pbac.md)
 
 ### ログと個人情報
