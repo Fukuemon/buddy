@@ -25,7 +25,7 @@ status: stable
 - web の `features/<機能>/` の間は import しない。2 つの機能が使うものは、`components/site/`（サイト共通のコンポーネント）か `@buddy/ui` に置く。
 - schedule-api の依存は、アダプタ（`httpapi`、`mysql`）、`access`、機能のパッケージ、共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）の 1 方向に限る。
   - 共通のパッケージは、標準ライブラリと、共通のパッケージの間（`kernel` から `apperr`）だけに依存する。
-  - 機能のパッケージの間は、`organization`、`staff`、`visit`、`patient`、`schedule` の順にだけ import する。`principal` は `organization` と `staff` に依存し、`schedule`、`access`、`httpapi`、`cmd` から使う。
+  - 機能のパッケージの間は、`organization`、`staff`、`visit`、`patient`、`schedule`、`calendar` の順にだけ import する。`principal` は `organization` と `staff` に依存し、`schedule`、`access`、`httpapi`、`cmd` から使う。
   - 機能のパッケージは、自分の集約のリポジトリのインターフェイスと、使う側で定義した小さなインターフェイス（`kernel.Finder` か 1〜2 のメソッド）だけに依存する。ほかの機能のリポジトリのインターフェイスは import しない。トランザクションは `tx.Transactor` で受ける。アダプタを import しない。`access` は機能のパッケージではないので、この規則の対象の外にする。
   - `config` は DB のアダプタを import しない。`cmd` が `config` の値をアダプタの設定に写す。
   - `mysql`、`oidc`、`ulid` は機能のパッケージのインターフェイスを実装する。`httpapi` から `mysql` と `oidc` を import するのは、テストのファイルだけにする。`httpapi` は、パスの ID の形の確認に `ulid` を使う。
