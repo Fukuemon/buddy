@@ -126,7 +126,8 @@ func (s Teams) ListByFacility(context.Context, string) ([]organization.Team, err
 	return nil, nil
 }
 
-// Create は、チームを保存する。同じ事業所に同じ名前のチームがあれば domain.ErrConflict を返す。
+// Create は、チームを保存する。同じ事業所に名前が完全に一致するチームがあれば domain.ErrConflict を返す。
+// MySQL の照合順序（大小文字などを区別しない）は真似ず、完全一致の重なりだけを見る。
 func (s Teams) Create(_ context.Context, t organization.Team) error {
 	for _, cur := range s.Teams {
 		if cur.FacilityID == t.FacilityID && cur.Name == t.Name {
@@ -150,7 +151,8 @@ func (s Positions) ListByFacility(context.Context, string) ([]organization.Posit
 	return nil, nil
 }
 
-// Create は、役職を保存する。同じ事業所に同じ名前の役職があれば domain.ErrConflict を返す。
+// Create は、役職を保存する。同じ事業所に名前が完全に一致する役職があれば domain.ErrConflict を返す。
+// MySQL の照合順序（大小文字などを区別しない）は真似ず、完全一致の重なりだけを見る。
 func (s Positions) Create(_ context.Context, p organization.Position) error {
 	for _, cur := range s.Positions {
 		if cur.FacilityID == p.FacilityID && cur.Name == p.Name {
@@ -186,7 +188,8 @@ func (s Policies) ListByIDs(_ context.Context, ids []string) ([]organization.Pol
 // Staff は、staff.Repository のメモリ上の実装である。
 type Staff struct{ *Store }
 
-// Create は、職員と権限を保存する。同じ事業所に同じメールの職員がいれば domain.ErrConflict を返す。
+// Create は、職員と権限を保存する。同じ事業所にメールが完全に一致する職員がいれば domain.ErrConflict を返す。
+// MySQL の照合順序（大小文字などを区別しない）は真似ず、完全一致の重なりだけを見る。
 func (s Staff) Create(_ context.Context, st staff.Staff, grants []staff.Grant) error {
 	for _, cur := range s.Staff {
 		if cur.FacilityID == st.FacilityID && cur.Email == st.Email {
