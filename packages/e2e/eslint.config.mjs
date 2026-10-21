@@ -15,7 +15,7 @@ export default [
         {
           timeoutDefinitionFile: 'tests/fixtures/timeouts.ts',
           screenIdPattern:
-            '\\b(schedule|receipt|account|patient|staff)-(list|calendar|detail|new|edit|upload|result|login|error|profile)\\b',
+            '\\b(schedule|receipt|account|patient|staff)-(list|calendar|detail|new|edit|upload|result|login|error|profile|link|import)\\b',
         },
       ],
     },

@@ -20,6 +20,8 @@ import { Route as AuthLogoutRouteImport } from './routes/auth.logout'
 import { Route as ReceiptIndexRouteImport } from './routes/receipt.index'
 import { Route as ReceiptResultRouteImport } from './routes/receipt.result'
 import { Route as ScheduleNewRouteImport } from './routes/schedule.new'
+import { Route as ScheduleImportRouteImport } from './routes/schedule_.import'
+import { Route as ScheduleLinkRouteImport } from './routes/schedule_.link'
 import { Route as ScheduleScheduleIdIndexRouteImport } from './routes/schedule.$scheduleId.index'
 import { Route as ScheduleScheduleIdEditRouteImport } from './routes/schedule.$scheduleId.edit'
 
@@ -78,6 +80,16 @@ const ScheduleNewRoute = ScheduleNewRouteImport.update({
   path: '/new',
   getParentRoute: () => ScheduleRoute,
 } as any)
+const ScheduleImportRoute = ScheduleImportRouteImport.update({
+  id: '/schedule_/import',
+  path: '/schedule/import',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScheduleLinkRoute = ScheduleLinkRouteImport.update({
+  id: '/schedule_/link',
+  path: '/schedule/link',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ScheduleScheduleIdIndexRoute = ScheduleScheduleIdIndexRouteImport.update({
   id: '/$scheduleId/',
   path: '/$scheduleId/',
@@ -100,6 +112,8 @@ export interface FileRoutesByFullPath {
   '/auth/logout': typeof AuthLogoutRoute
   '/receipt/result': typeof ReceiptResultRoute
   '/schedule/new': typeof ScheduleNewRoute
+  '/schedule/import': typeof ScheduleImportRoute
+  '/schedule/link': typeof ScheduleLinkRoute
   '/receipt/': typeof ReceiptIndexRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
   '/schedule/$scheduleId/': typeof ScheduleScheduleIdIndexRoute
@@ -115,6 +129,8 @@ export interface FileRoutesByTo {
   '/auth/logout': typeof AuthLogoutRoute
   '/receipt/result': typeof ReceiptResultRoute
   '/schedule/new': typeof ScheduleNewRoute
+  '/schedule/import': typeof ScheduleImportRoute
+  '/schedule/link': typeof ScheduleLinkRoute
   '/receipt': typeof ReceiptIndexRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
   '/schedule/$scheduleId': typeof ScheduleScheduleIdIndexRoute
@@ -131,6 +147,8 @@ export interface FileRoutesById {
   '/auth/logout': typeof AuthLogoutRoute
   '/receipt/result': typeof ReceiptResultRoute
   '/schedule/new': typeof ScheduleNewRoute
+  '/schedule_/import': typeof ScheduleImportRoute
+  '/schedule_/link': typeof ScheduleLinkRoute
   '/receipt/': typeof ReceiptIndexRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
   '/schedule/$scheduleId/': typeof ScheduleScheduleIdIndexRoute
@@ -148,6 +166,8 @@ export interface FileRouteTypes {
     | '/auth/logout'
     | '/receipt/result'
     | '/schedule/new'
+    | '/schedule/import'
+    | '/schedule/link'
     | '/receipt/'
     | '/schedule/$scheduleId/edit'
     | '/schedule/$scheduleId/'
@@ -163,6 +183,8 @@ export interface FileRouteTypes {
     | '/auth/logout'
     | '/receipt/result'
     | '/schedule/new'
+    | '/schedule/import'
+    | '/schedule/link'
     | '/receipt'
     | '/schedule/$scheduleId/edit'
     | '/schedule/$scheduleId'
@@ -178,6 +200,8 @@ export interface FileRouteTypes {
     | '/auth/logout'
     | '/receipt/result'
     | '/schedule/new'
+    | '/schedule_/import'
+    | '/schedule_/link'
     | '/receipt/'
     | '/schedule/$scheduleId/edit'
     | '/schedule/$scheduleId/'
@@ -193,6 +217,8 @@ export interface RootRouteChildren {
   AuthLoginRoute: typeof AuthLoginRoute
   AuthLogoutRoute: typeof AuthLogoutRoute
   ReceiptResultRoute: typeof ReceiptResultRoute
+  ScheduleImportRoute: typeof ScheduleImportRoute
+  ScheduleLinkRoute: typeof ScheduleLinkRoute
   ReceiptIndexRoute: typeof ReceiptIndexRoute
 }
 
@@ -275,6 +301,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ScheduleNewRouteImport
       parentRoute: typeof ScheduleRoute
     }
+    '/schedule_/import': {
+      id: '/schedule_/import'
+      path: '/schedule/import'
+      fullPath: '/schedule/import'
+      preLoaderRoute: typeof ScheduleImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/schedule_/link': {
+      id: '/schedule_/link'
+      path: '/schedule/link'
+      fullPath: '/schedule/link'
+      preLoaderRoute: typeof ScheduleLinkRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/schedule/$scheduleId/': {
       id: '/schedule/$scheduleId/'
       path: '/$scheduleId'
@@ -318,18 +358,10 @@ const rootRouteChildren: RootRouteChildren = {
   AuthLoginRoute: AuthLoginRoute,
   AuthLogoutRoute: AuthLogoutRoute,
   ReceiptResultRoute: ReceiptResultRoute,
+  ScheduleImportRoute: ScheduleImportRoute,
+  ScheduleLinkRoute: ScheduleLinkRoute,
   ReceiptIndexRoute: ReceiptIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

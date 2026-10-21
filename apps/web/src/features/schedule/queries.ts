@@ -85,6 +85,14 @@ export const useUpdateSchedule = (scheduleId: Schedule['id']) => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: ScheduleInput) => api.schedules.update(facilityId, scheduleId, input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.schedules(facilityId) }),
+    onSuccess: (saved) => {
+      // 繰り返しの回を保存すると、回は別の ID の単発の予定に置き換わり、元の回は読めなくなるので、読み直さずに捨てる
+      if (saved.id !== scheduleId) {
+        queryClient.removeQueries({
+          queryKey: scheduleQueryOptions(api, facilityId, scheduleId).queryKey,
+        })
+      }
+      return queryClient.invalidateQueries({ queryKey: queryKeys.schedules(facilityId) })
+    },
   })
 }

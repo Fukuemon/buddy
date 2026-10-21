@@ -4,9 +4,12 @@ package inmem
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
+	"time"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/calendar"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
@@ -51,6 +54,9 @@ type Store struct {
 	Schedules     map[string]schedule.Detail
 	Recurring     map[string]schedule.RecurringDetail
 	Cancels       map[string]schedule.Cancel
+	Calendars     map[string]calendar.ExternalCalendar
+	Runs          map[string]calendar.ImportRun
+	Links         map[string]calendar.Link
 }
 
 // NewStore は、空の Store を作る。
@@ -72,6 +78,9 @@ func NewStore() *Store {
 		Schedules:     map[string]schedule.Detail{},
 		Recurring:     map[string]schedule.RecurringDetail{},
 		Cancels:       map[string]schedule.Cancel{},
+		Calendars:     map[string]calendar.ExternalCalendar{},
+		Runs:          map[string]calendar.ImportRun{},
+		Links:         map[string]calendar.Link{},
 	}
 }
 
@@ -329,9 +338,16 @@ func (s Patients) Get(_ context.Context, id string) (patient.Detail, error) {
 	return get(s.Patients, id)
 }
 
-// ListByFacility は、常に空を返す。
-func (s Patients) ListByFacility(context.Context, string, patient.ListQuery) ([]patient.Detail, error) {
-	return nil, nil
+// ListByFacility は、事業所の利用者を ID の順に返す。絞り込みと並べ替えは使わない。
+func (s Patients) ListByFacility(_ context.Context, facilityID string, _ patient.ListQuery) ([]patient.Detail, error) {
+	var out []patient.Detail
+	for _, p := range s.Patients {
+		if p.FacilityID == facilityID {
+			out = append(out, p)
+		}
+	}
+	slices.SortFunc(out, func(a, b patient.Detail) int { return strings.Compare(a.ID, b.ID) })
+	return out, nil
 }
 
 // VisitInfos は、visit.InfoRepository のメモリ上の実装である。
@@ -367,8 +383,15 @@ func (s VisitMasters) GetServiceCode(_ context.Context, id string) (visit.Servic
 	return get(s.Codes, id)
 }
 
-// ListServiceCodes は、常に空を返す。
-func (s VisitMasters) ListServiceCodes(context.Context) ([]visit.ServiceCode, error) { return nil, nil }
+// ListServiceCodes は、サービスコードを ID の順に返す。
+func (s VisitMasters) ListServiceCodes(context.Context) ([]visit.ServiceCode, error) {
+	out := make([]visit.ServiceCode, 0, len(s.Codes))
+	for _, c := range s.Codes {
+		out = append(out, c)
+	}
+	slices.SortFunc(out, func(a, b visit.ServiceCode) int { return strings.Compare(a.ID, b.ID) })
+	return out, nil
+}
 
 // ListCategories は、常に空を返す。
 func (s VisitMasters) ListCategories(context.Context) ([]visit.Category, error) { return nil, nil }
@@ -392,8 +415,15 @@ func (s ScheduleTypes) Get(_ context.Context, id string) (schedule.Type, error) 
 	return get(s.Types, id)
 }
 
-// List は、常に空を返す。
-func (s ScheduleTypes) List(context.Context) ([]schedule.Type, error) { return nil, nil }
+// List は、予定の種類を ID の順に返す。
+func (s ScheduleTypes) List(context.Context) ([]schedule.Type, error) {
+	out := make([]schedule.Type, 0, len(s.Types))
+	for _, t := range s.Types {
+		out = append(out, t)
+	}
+	slices.SortFunc(out, func(a, b schedule.Type) int { return strings.Compare(a.ID, b.ID) })
+	return out, nil
+}
 
 // Schedules は、schedule.Repository のメモリ上の実装である。
 type Schedules struct{ *Store }
@@ -485,5 +515,139 @@ func (s RecurringSchedules) AddExclusion(_ context.Context, id string, d civil.D
 	}
 	rs.ExclusionDates = append(rs.ExclusionDates, d)
 	s.Recurring[id] = rs
+	return nil
+}
+
+// Calendars は、calendar.Repository のメモリ上の実装である。ロックは取らない。
+type Calendars struct{ *Store }
+
+// Get は、外したものも含めてカレンダーを返す。
+func (s Calendars) Get(_ context.Context, id string) (calendar.ExternalCalendar, error) {
+	return get(s.Calendars, id)
+}
+
+// GetForUpdate は、Get と同じ値を返す。
+func (s Calendars) GetForUpdate(ctx context.Context, id string) (calendar.ExternalCalendar, error) {
+	return s.Get(ctx, id)
+}
+
+// FindByCalendarID は、provider と calendarID のカレンダーを返す。
+func (s Calendars) FindByCalendarID(_ context.Context, provider, calendarID string) (calendar.ExternalCalendar, error) {
+	for _, c := range s.Calendars {
+		if c.Provider == provider && c.CalendarID == calendarID {
+			return c, nil
+		}
+	}
+	return calendar.ExternalCalendar{}, apperr.ErrNotFound
+}
+
+// ListByFacility は、事業所の外していないカレンダーを、最も新しく始めた取り込みを付けて ID の順に返す。
+func (s Calendars) ListByFacility(_ context.Context, facilityID string) ([]calendar.ExternalCalendar, error) {
+	var out []calendar.ExternalCalendar
+	for _, c := range s.Calendars {
+		if c.FacilityID != facilityID || c.DisabledAt != nil {
+			continue
+		}
+		for _, r := range s.Runs {
+			if r.ExternalCalendarID == c.ID && (c.LastImport == nil || r.StartedAt.After(c.LastImport.StartedAt)) {
+				run := r
+				c.LastImport = &run
+			}
+		}
+		out = append(out, c)
+	}
+	slices.SortFunc(out, func(a, b calendar.ExternalCalendar) int { return strings.Compare(a.ID, b.ID) })
+	return out, nil
+}
+
+// activeOf は、職員に外していないカレンダーがあるかを返す。
+func (s Calendars) activeOf(staffID, exceptID string) bool {
+	for _, c := range s.Calendars {
+		if c.StaffID == staffID && c.DisabledAt == nil && c.ID != exceptID {
+			return true
+		}
+	}
+	return false
+}
+
+// Create は、カレンダーを保存する。職員に外していないカレンダーがあるか、同じカレンダーがあるときは apperr.ErrConflict を返す。
+func (s Calendars) Create(ctx context.Context, c calendar.ExternalCalendar) error {
+	if _, err := s.FindByCalendarID(ctx, c.Provider, c.CalendarID); err == nil || s.activeOf(c.StaffID, "") {
+		return apperr.ErrConflict
+	}
+	s.Calendars[c.ID] = c
+	return nil
+}
+
+// Enable は、外したカレンダーを結び付け直す。職員に外していないカレンダーがあるときは apperr.ErrConflict を返す。
+func (s Calendars) Enable(_ context.Context, id string) error {
+	c := s.Calendars[id]
+	if s.activeOf(c.StaffID, id) {
+		return apperr.ErrConflict
+	}
+	c.DisabledAt = nil
+	s.Calendars[id] = c
+	return nil
+}
+
+// Disable は、カレンダーを外す。
+func (s Calendars) Disable(_ context.Context, id string) error {
+	c := s.Calendars[id]
+	if c.DisabledAt == nil {
+		now := time.Now()
+		c.DisabledAt = &now
+		s.Calendars[id] = c
+	}
+	return nil
+}
+
+// RunningSince は、since より後に始めた running の取り込みがあるかを返す。
+func (s Calendars) RunningSince(_ context.Context, externalCalendarID string, since time.Time) (bool, error) {
+	for _, r := range s.Runs {
+		if r.ExternalCalendarID == externalCalendarID && r.Status == calendar.RunRunning && r.StartedAt.After(since) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// CreateRun は、始めた時刻を今にして取り込みの記録を保存する。
+func (s Calendars) CreateRun(_ context.Context, r calendar.ImportRun) error {
+	r.StartedAt = time.Now()
+	s.Runs[r.ID] = r
+	return nil
+}
+
+// FinishRun は、取り込みの記録の状態と件数を書き、終わった時刻を今にする。
+func (s Calendars) FinishRun(_ context.Context, r calendar.ImportRun) (calendar.ImportRun, error) {
+	cur, err := get(s.Runs, r.ID)
+	if err != nil {
+		return calendar.ImportRun{}, err
+	}
+	now := time.Now()
+	cur.Status, cur.ImportedCount, cur.SkippedCount, cur.FinishedAt = r.Status, r.ImportedCount, r.SkippedCount, &now
+	s.Runs[r.ID] = cur
+	return cur, nil
+}
+
+// ListLinks は、カレンダーの予定の対応を返す。
+func (s Calendars) ListLinks(_ context.Context, externalCalendarID string) ([]calendar.Link, error) {
+	var out []calendar.Link
+	for _, l := range s.Links {
+		if l.ExternalCalendarID == externalCalendarID {
+			out = append(out, l)
+		}
+	}
+	return out, nil
+}
+
+// CreateLink は、予定の対応を保存する。同じ外部の予定の対応があるときは apperr.ErrConflict を返す。
+func (s Calendars) CreateLink(_ context.Context, l calendar.Link) error {
+	for _, cur := range s.Links {
+		if cur.ExternalCalendarID == l.ExternalCalendarID && cur.ExternalEventID == l.ExternalEventID {
+			return apperr.ErrConflict
+		}
+	}
+	s.Links[l.ID] = l
 	return nil
 }

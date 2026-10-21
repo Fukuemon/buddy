@@ -1,6 +1,7 @@
 package calendar_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/calendar"
@@ -42,6 +43,32 @@ func TestClassify(t *testing.T) {
 			},
 			want: func(t *testing.T) calendar.Candidate {
 				return visit(t, "2026-10-20", 10, 0, 11, 0, "訪看I2", "利用者A")
+			},
+		},
+		{
+			name: "題名が空白だけの予定は取り込まない",
+			event: func() calendar.Event {
+				s, e := timed("2026-10-20T10:00:00+09:00", "2026-10-20T11:00:00+09:00")
+				return calendar.Event{Start: s, End: e, Summary: " 　"}
+			},
+			want: func(t *testing.T) calendar.Candidate {
+				return calendar.Candidate{
+					Kind: calendar.KindSkipped, Date: date(t, "2026-10-20"), StartTime: clock(10, 0), EndTime: clock(11, 0),
+					SkipReason: calendar.SkipUnreadableTitle,
+				}
+			},
+		},
+		{
+			name: "通常の予定のタイトルは 255 文字までに切る",
+			event: func() calendar.Event {
+				s, e := timed("2026-10-20T10:00:00+09:00", "2026-10-20T11:00:00+09:00")
+				return calendar.Event{Start: s, End: e, Summary: strings.Repeat("会", 300)}
+			},
+			want: func(t *testing.T) calendar.Candidate {
+				return calendar.Candidate{
+					Kind: calendar.KindNormal, Date: date(t, "2026-10-20"), StartTime: clock(10, 0), EndTime: clock(11, 0),
+					Title: strings.Repeat("会", 255),
+				}
 			},
 		},
 		{

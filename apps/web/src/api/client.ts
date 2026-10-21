@@ -1,5 +1,10 @@
 import type {
+  ExternalCalendar,
   FacilityId,
+  ImportDecision,
+  ImportPreview,
+  ImportRange,
+  ImportResult,
   NameSearchParams,
   Patient,
   ReceiptReport,
@@ -11,15 +16,20 @@ import type {
   Team,
 } from './types'
 
-/** API が失敗の状態を返したときに投げる。rowErrors は、照合の入力の CSV の行ごとの誤り（status が 422）である。 */
+/**
+ * API が失敗の状態を返したときに投げる。code は API の Error の code で、分からなければ undefined である。
+ * rowErrors は、照合の入力の CSV の行ごとの誤り（status が 422）である。
+ */
 export class ApiError extends Error {
   readonly status: number
+  readonly code: string | undefined
   readonly rowErrors: ReceiptRowError[]
 
-  constructor(status: number, message: string, rowErrors: ReceiptRowError[] = []) {
+  constructor(status: number, message: string, rowErrors: ReceiptRowError[] = [], code?: string) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.code = code
     this.rowErrors = rowErrors
   }
 }
@@ -61,5 +71,37 @@ export interface BuddyApi {
   }
   patients: {
     list(facilityId: FacilityId, params?: NameSearchParams): Promise<Patient[]>
+  }
+  /**
+   * Google カレンダーの結び付けと予定の取り込み。全ての操作は、職員の管理の権限が無ければ status が 403 の ApiError を投げる。
+   * カレンダーを読む操作は、読めなければ code が calendar_unreadable、届かなければ calendar_unavailable、
+   * サービスアカウントの設定が無ければ calendar_not_configured の ApiError を投げる。
+   */
+  calendars: {
+    /** 職員がカレンダーを共有する相手のサービスアカウントのメールアドレスを返す。 */
+    serviceAccount(facilityId: FacilityId): Promise<string>
+    /** 外していないカレンダーを、最後の取り込みを付けて返す。 */
+    list(facilityId: FacilityId): Promise<ExternalCalendar[]>
+    /** カレンダーを読めるかを確かめる。読めれば何も返さない。 */
+    check(facilityId: FacilityId, calendarId: string): Promise<void>
+    /** 職員にカレンダーを結び付ける。結び付けられない原因は、status が 409 の ApiError の code にある。 */
+    link(
+      facilityId: FacilityId,
+      input: { staffId: Staff['id']; calendarId: string },
+    ): Promise<ExternalCalendar>
+    /** カレンダーを外す。取り込んだ予定は残る。 */
+    unlink(facilityId: FacilityId, externalCalendarId: ExternalCalendar['id']): Promise<void>
+    /** 期間の予定を読み、取り込むとどうなるかを返す。予定は書かない。 */
+    preview(
+      facilityId: FacilityId,
+      externalCalendarId: ExternalCalendar['id'],
+      range: ImportRange,
+    ): Promise<ImportPreview>
+    /** 期間の予定を取り込む。確定できない原因は、status が 409 の ApiError の code にある。 */
+    import(
+      facilityId: FacilityId,
+      externalCalendarId: ExternalCalendar['id'],
+      input: ImportRange & { decisions: ImportDecision[] },
+    ): Promise<ImportResult>
   }
 }

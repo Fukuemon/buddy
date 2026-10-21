@@ -20,12 +20,12 @@ status: stable
 ## Dependency Rules
 
 - apps 同士はコードで依存しない。Go の API 同士の import と、web から Go のコードの参照は無い。
-  - 2 つの Go の API が共有するコードは、別の module の `packages/go` にだけ置き、`go.mod` の `replace` で読む（[ADR-0007](../docs/adr/0007-go-shared-module.md)）。`packages/go` は、トークンの検証（`oidc`、`oidc/oidctest`）、ヘルスチェック（`healthcheck`）、Google カレンダーの予定の題名の解釈（`gcaltitle`）を持ち、`apps/` を import しない。
+  - 2 つの Go の API が共有するコードは、別の module の `packages/go` にだけ置き、`go.mod` の `replace` で読む（[ADR-0007](../docs/adr/0007-go-shared-module.md)）。`packages/go` は、トークンの検証（`oidc`、`oidc/oidctest`）、ヘルスチェック（`healthcheck`）、Google カレンダーの題名の解釈（`gcaltitle`）を持ち、`apps/` を import しない。`gcaltitle` は、サービス内容と利用者名の表記のそろえ方も持つ。
 - web は `@buddy/ui` に依存してよい。`packages/ui` から `apps/` へは依存しない。
 - web の `features/<機能>/` の間は import しない。2 つの機能が使うものは、`components/site/`（サイト共通のコンポーネント）か `@buddy/ui` に置く。
 - schedule-api の依存は、アダプタ（`httpapi`、`postgres`）、`access`、機能のパッケージ、共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）の 1 方向に限る。
   - 共通のパッケージは、標準ライブラリと、共通のパッケージの間（`kernel` から `apperr`）だけに依存する。
-  - 機能のパッケージの間は、`organization`、`staff`、`visit`、`patient`、`schedule`、`calendar` の順にだけ import する。`principal` は `organization` と `staff` に依存し、`schedule`、`access`、`httpapi`、`cmd` から使う。
+  - 機能のパッケージの間は、`organization`、`staff`、`visit`、`patient`、`schedule`、`calendar` の順にだけ import する。`principal` は `organization` と `staff` に依存し、`schedule`、`calendar`、`access`、`httpapi`、`cmd` から使う。
   - 機能のパッケージは、自分の集約のリポジトリのインターフェイスと、使う側で定義した小さなインターフェイス（`kernel.Finder` か 1〜2 のメソッド）だけに依存する。ほかの機能のリポジトリのインターフェイスは import しない。トランザクションは `tx.Transactor` で受ける。アダプタを import しない。`access` は機能のパッケージではないので、この規則の対象の外にする。
   - `config` は DB のアダプタを import しない。`cmd` が `config` の値をアダプタの設定に写す。
   - `postgres`、`oidc`、`ulid`、`gcal` は機能のパッケージのインターフェイスを実装する。`httpapi` から `postgres` と `oidc` を import するのは、テストのファイルだけにする。`httpapi` は、パスの ID の形の確認に `ulid` を使う。

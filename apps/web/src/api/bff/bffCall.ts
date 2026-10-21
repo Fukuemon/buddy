@@ -11,6 +11,13 @@ export const BFF_OPERATIONS = [
   'staff.list',
   'teams.list',
   'patients.list',
+  'calendars.serviceAccount',
+  'calendars.list',
+  'calendars.check',
+  'calendars.link',
+  'calendars.unlink',
+  'calendars.preview',
+  'calendars.import',
 ] as const
 
 /** BFF が中継する操作の名前。 */
@@ -40,6 +47,15 @@ const scheduleInput = z.object({
     .optional(),
 })
 const nameSearch = z.object({ name: z.string().max(100).optional() }).optional()
+const calendarId = z.string().min(1).max(1024)
+const date = z.iso.date()
+const importRange = z.object({ range_start: date, range_end: date })
+const decision = z.object({
+  external_event_id: z.string().min(1).max(1024),
+  revision: z.string().min(1).max(64),
+  action: z.enum(['patient', 'normal', 'skip']),
+  patient_id: id.optional(),
+})
 
 /** 操作ごとの引数の形。先頭は事業所で、BFF がセッションの事業所に替える。 */
 const ARGS: Record<BffOperation, z.ZodType> = {
@@ -53,6 +69,17 @@ const ARGS: Record<BffOperation, z.ZodType> = {
   'staff.list': z.tuple([id, nameSearch]),
   'teams.list': z.tuple([id]),
   'patients.list': z.tuple([id, nameSearch]),
+  'calendars.serviceAccount': z.tuple([id]),
+  'calendars.list': z.tuple([id]),
+  'calendars.check': z.tuple([id, calendarId]),
+  'calendars.link': z.tuple([id, z.object({ staffId: id, calendarId })]),
+  'calendars.unlink': z.tuple([id, id]),
+  'calendars.preview': z.tuple([id, id, importRange]),
+  'calendars.import': z.tuple([
+    id,
+    id,
+    importRange.extend({ decisions: z.array(decision).max(10_000) }),
+  ]),
 }
 
 /** call の引数を操作の形で読む。合えば知らないキーを除いた引数を、合わなければ理由を返す。 */
@@ -65,8 +92,10 @@ export const parseBffArgs = (
     : { ok: false, message: z.prettifyError(result.error) }
 }
 
-/** BFF の応答。ApiError は class のままでは server function を越えられないので、値にして返す。 */
-export type BffResult = { ok: true; data: BffData } | { ok: false; status: number; message: string }
+/** BFF の応答。ApiError は class のままでは server function を越えられないので、値にして返す。code は API の Error の code である。 */
+export type BffResult =
+  | { ok: true; data: BffData }
+  | { ok: false; status: number; message: string; code?: string }
 
 /** server function の入力を BffCall として読む。知らない操作か形の誤りなら Error を投げる。 */
 export const parseBffCall = (input: unknown): BffCall => {

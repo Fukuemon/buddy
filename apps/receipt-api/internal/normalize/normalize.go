@@ -5,36 +5,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Fukuemon/buddy/packages/go/gcaltitle"
+
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/civil"
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/csvio"
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/record"
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/servicerule"
 )
-
-// Service は、サービス内容の表記をそろえる。
-// 全角スペースを半角にし、`Ⅰ` `１` `1` を `I` に、`･` を `・` に、残った半角数字を全角にする。
-func Service(s string) string {
-	s = strings.ReplaceAll(s, "　", " ")
-	var b strings.Builder
-	for _, r := range s {
-		switch {
-		case r == 'Ⅰ' || r == '１' || r == '1':
-			b.WriteRune('I')
-		case r == '･':
-			b.WriteRune('・')
-		case '0' <= r && r <= '9':
-			b.WriteRune(r - '0' + '０')
-		default:
-			b.WriteRune(r)
-		}
-	}
-	return b.String()
-}
-
-// Client は、利用者名の全角と半角のスペースを除く。
-func Client(s string) string {
-	return strings.ReplaceAll(Staff(s), " ", "")
-}
 
 // Staff は、主訪問者の全角スペースを半角にする。
 func Staff(s string) string {
@@ -96,7 +73,7 @@ func convertRow(row csvio.Row, source record.Source, withAdditions bool) (record
 	}
 	rec.Key = record.Key{
 		Date:   date,
-		Client: Client(row.Get(csvio.ColClient)),
+		Client: gcaltitle.NormalizeClient(row.Get(csvio.ColClient)),
 		Staff:  Staff(row.Get(csvio.ColStaff)),
 	}
 	if rec.Key.Client == "" {
@@ -106,7 +83,7 @@ func convertRow(row csvio.Row, source record.Source, withAdditions bool) (record
 		fail(csvio.ColStaff, "空である")
 	}
 
-	rec.Service = Service(row.Get(csvio.ColService))
+	rec.Service = gcaltitle.NormalizeService(row.Get(csvio.ColService))
 	if strings.TrimSpace(rec.Service) == "" {
 		fail(csvio.ColService, "空である")
 	}

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>schedule-import 下見の失敗</title>
+    <link rel="stylesheet" href="../../_common/mock.css" />
+    <link rel="stylesheet" href="../../_common/tokens.css" />
+    <link rel="stylesheet" href="../../_common/wireframe.css" />
+    <link rel="stylesheet" href="schedule-import.css" />
+  </head>
+  <body data-view="desktop">
+    <div class="stage">
+      <div class="screen">
+        <div class="screen-body">
+          <header class="wf-site-header">
+            <div class="wf-site-header__brand">
+              <strong>buddy</strong>
+              <nav data-m="1" data-testid="site-nav">
+                <span data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html">予定</span>
+                <span data-go="../../receipt-upload_照合/mocks/01-initial.html">照合</span>
+                <span aria-current="page" data-go="../../schedule-import_予定の取り込み/mocks/01-initial.html">取り込み</span>
+              </nav>
+            </div>
+            <div class="wf-site-header__viewer" data-testid="viewer-menu">
+              <span class="wf-text wf-text--s" data-m="2"></span>
+              <span class="wf-btn" data-m="3" data-testid="viewer-logout">ログアウト</span>
+            </div>
+          </header>
+          <main class="wf-page">
+            <div class="si-title">
+              <h1 class="wf-heading" data-m="4">予定の取り込み</h1>
+              <span class="wf-btn wf-btn--text" data-m="6" data-testid="calendar-import-link-settings" data-go="../../schedule-link_カレンダーの連携/mocks/01-list.html">カレンダーの連携</span>
+            </div>
+            <p class="wf-lead" data-m="5">職員の Google カレンダーの予定を、期間を選んで buddy に取り込みます。取り込む前に、取り込む予定と取り込まない予定を下見できます。</p>
+            <form class="si-form" data-testid="calendar-import-form">
+              <div class="si-form__fields">
+                <div class="wf-field">
+                  <span class="wf-label">職員</span>
+                  <div class="wf-input si-select" data-m="7" data-testid="calendar-import-staff"><span>職員 A</span></div>
+                </div>
+                <div class="wf-field">
+                  <span class="wf-label">期間の開始日</span>
+                  <div class="wf-input si-date" data-m="8" data-testid="calendar-import-start">2026/11/01</div>
+                </div>
+                <div class="wf-field">
+                  <span class="wf-label">期間の終了日</span>
+                  <div class="wf-input si-date" data-m="9" data-testid="calendar-import-end">2026/11/30</div>
+                </div>
+              </div>
+              <span class="wf-hint">開始日から終了日までに始まる予定を、職員の Google カレンダーから読みます。</span>
+              <div><span class="wf-btn" data-m="10" data-testid="calendar-import-preview">下見する</span></div>
+            </form>
+            <p class="wf-alert" role="alert" data-m="11" data-testid="calendar-import-error">Google カレンダーから予定を読めませんでした。時間をおいて、もう一度下見してください。</p>
+          </main>
+        </div>
+      </div>
+      <div class="markers"></div>
+    </div>
+    <script src="../../_common/mock.js"></script>
+    <script src="../../_common/interact.js"></script>
+  </body>
+</html>

@@ -42,6 +42,7 @@ export const fromApiStaff = (user: Schemas['Staff']): Staff => ({
   id: user.id,
   name: user.username,
   teamId: user.team.id,
+  email: user.email,
 })
 
 /** API のチームを、画面のチームにする。 */

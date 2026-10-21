@@ -9,6 +9,17 @@ import { createHttpBuddyApi } from './httpBuddyApi'
 
 const api = () => createHttpBuddyApi({ baseUrl: TEST_SCHEDULE_API_URL })
 
+/** BFF と同じく Bearer のトークンを付けて呼ぶ API。共通の handler はトークンを求める。 */
+const authorizedApi = () =>
+  createHttpBuddyApi({
+    baseUrl: TEST_SCHEDULE_API_URL,
+    fetch: (input, init) => {
+      const request = new Request(input, init)
+      request.headers.set('Authorization', 'Bearer test')
+      return globalThis.fetch(request)
+    },
+  })
+
 const invalid = (message: string) => ({ code: 'invalid_input' as const, message })
 
 /** 予定の作成と置き換えが引くマスタを、テストの ID で返す。 */
@@ -76,6 +87,54 @@ describe('createHttpBuddyApi', () => {
     expect(list.map((s) => s.id)).toEqual(['keep'])
   })
 
+  it('繰り返しの予定を期間の回に分けて返し、回を読んで置き換える', async () => {
+    const rs: components['schemas']['RecurringSchedule'] = {
+      ...schedule('01M3TC6E9G4N8Q2R5T7V9W1X3Y', { date: '2026-10-06' }),
+      recurring_rule: { frequency: 'weekly' },
+      exclusion_dates: ['2026-10-13'],
+    }
+    server.use(
+      scheduleHttp.get('/v1/facilities/{facility_id}/schedules', ({ response }) =>
+        response(200).json({ schedules: [], recurring_schedules: [rs] }),
+      ),
+      scheduleHttp.get('/v1/schedules/recurring/{recurring_schedule_id}', ({ response }) =>
+        response(200).json(rs),
+      ),
+      scheduleHttp.post(
+        '/v1/schedules/recurring/{recurring_schedule_id}/occurrences',
+        async ({ request, response }) => {
+          const body = await request.json()
+          return body.original_date === '2026-10-20' && body.start_time === '10:00'
+            ? response(201).json(schedule('replaced', { date: '2026-10-20', start_time: '10:00' }))
+            : response(400).json(invalid('回の日付か時刻が違う'))
+        },
+      ),
+      ...masters([{ id: 'type-normal', name: '通常' }]),
+    )
+    const listed = await api().schedules.list('facility-1', {
+      from: '2026-10-01T00:00:00+09:00',
+      to: '2026-11-01T00:00:00+09:00',
+    })
+    expect(listed.map((s) => s.startsAt.slice(0, 10))).toEqual([
+      '2026-10-06',
+      '2026-10-20',
+      '2026-10-27',
+    ])
+    const occurrence = await api().schedules.get('facility-1', listed[1].id)
+    expect(occurrence.startsAt).toBe('2026-10-20T09:00:00+09:00')
+    await expect(
+      api().schedules.get('facility-1', listed[1].id.replace('10-20', '10-13')),
+    ).rejects.toMatchObject({
+      status: 404,
+    })
+    const replaced = await api().schedules.update('facility-1', listed[1].id, {
+      ...occurrence,
+      startsAt: '2026-10-20T10:00:00+09:00',
+      endsAt: '2026-10-20T11:00:00+09:00',
+    })
+    expect(replaced.id).toBe('replaced')
+  })
+
   it('マスタの ID を引いて予定を作る', async () => {
     server.use(
       ...masters([{ id: 'type-normal', name: '通常' }]),
@@ -118,7 +177,7 @@ describe('createHttpBuddyApi', () => {
       ),
     )
     await expect(api().staff.list('facility-1', { name: '青木' })).resolves.toEqual([
-      { id: 'staff-1', name: '青木 一郎', teamId: 'team-a' },
+      { id: 'staff-1', name: '青木 一郎', teamId: 'team-a', email: 'staff-1@example.com' },
     ])
     await expect(api().staff.list('facility-1', { name: '' })).resolves.toHaveLength(2)
   })
@@ -239,8 +298,33 @@ describe('createHttpBuddyApi', () => {
       ),
     )
     await expect(api().schedules.get('facility-1', 'missing')).rejects.toMatchObject(
-      new ApiError(404, 'ない'),
+      new ApiError(404, 'ない', [], 'not_found'),
     )
     await expect(api().schedules.get('facility-1', 'other')).rejects.toHaveProperty('status', 403)
+  })
+
+  it('カレンダーの下見と取り込みを送り、409 の原因を code で投げる', async () => {
+    server.use(
+      scheduleHttp.post('/v1/external_calendars/{external_calendar_id}/imports', ({ response }) =>
+        response(409).json({ code: 'import_running', message: '進んでいます' }),
+      ),
+    )
+    const range = { range_start: '2026-11-01', range_end: '2026-11-30' }
+    const preview = await authorizedApi().calendars.preview('facility-1', 'calendar-1', range)
+    expect(preview).toMatchObject({ ...range, counts: { needs_review: 2 } })
+    await expect(
+      api().calendars.import('facility-1', 'calendar-1', { ...range, decisions: [] }),
+    ).rejects.toMatchObject({ status: 409, code: 'import_running' })
+  })
+
+  it('カレンダーの確かめと外すは、本文の無い成功で終わる', async () => {
+    const authorized = authorizedApi()
+    await expect(
+      authorized.calendars.check('facility-1', 'staff-1@example.com'),
+    ).resolves.toBeUndefined()
+    await expect(authorized.calendars.unlink('facility-1', 'calendar-1')).resolves.toBeUndefined()
+    await expect(authorized.calendars.serviceAccount('facility-1')).resolves.toMatch(
+      /@example\.iam/,
+    )
   })
 })

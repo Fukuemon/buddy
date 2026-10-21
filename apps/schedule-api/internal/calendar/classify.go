@@ -1,6 +1,7 @@
 package calendar
 
 import (
+	"strings"
 	"time"
 
 	"github.com/Fukuemon/buddy/packages/go/gcaltitle"
@@ -34,7 +35,7 @@ const (
 	SkipMultiDay SkipReason = "multi_day"
 	// SkipUnreadableTime は、開始か終了の日時が無いか、RFC 3339 で読めない予定である。
 	SkipUnreadableTime SkipReason = "unreadable_time"
-	// SkipUnreadableTitle は、題名に `【` と `】` を含むが、サービス内容か利用者名を読めない予定である。
+	// SkipUnreadableTitle は、題名が空白だけの予定と、題名に `【` と `】` を含むがサービス内容か利用者名を読めない予定である。
 	SkipUnreadableTitle SkipReason = "unreadable_title"
 	// SkipZeroLength は、分に丸めると終了が開始より後でない予定である。
 	SkipZeroLength SkipReason = "zero_length"
@@ -57,10 +58,21 @@ type Candidate struct {
 	SkipReason SkipReason
 }
 
+// maxTitleRunes は、通常の予定のタイトルの長さの上限である。予定の API のタイトルの上限と同じにする。
+const maxTitleRunes = 255
+
+// normalTitle は、題名を通常の予定のタイトルにする。上限を超える分は切る。
+func normalTitle(summary string) string {
+	if r := []rune(summary); len(r) > maxTitleRunes {
+		return string(r[:maxTitleRunes])
+	}
+	return summary
+}
+
 // Classify は、ev を、訪問の予定、通常の予定、取り込まない予定のどれかに分ける。
 // 題名に `【` と `】` の両方を含む予定を訪問の予定とし、照合の API と同じ規則（gcaltitle）で読む。
 // 取り消した予定、終日の予定、日をまたぐ予定、開始か終了の日時を読めない予定、分に丸めて長さが 0 以下の予定、
-// 訪問の題名を読めない予定は取り込まない。
+// 題名が空白だけの予定、訪問の題名を読めない予定は取り込まない。通常の予定のタイトルは 255 文字までに切る。
 func Classify(ev Event) Candidate {
 	if ev.Status == StatusCancelled {
 		return skipped(SkipCancelled)
@@ -94,8 +106,12 @@ func Classify(ev Event) Candidate {
 		c.Kind, c.SkipReason = KindSkipped, SkipZeroLength
 		return c
 	}
+	if strings.TrimSpace(ev.Summary) == "" {
+		c.Kind, c.SkipReason = KindSkipped, SkipUnreadableTitle
+		return c
+	}
 	if !gcaltitle.IsVisitTitle(ev.Summary) {
-		c.Kind, c.Title = KindNormal, ev.Summary
+		c.Kind, c.Title = KindNormal, normalTitle(ev.Summary)
 		return c
 	}
 	service, client, err := gcaltitle.ParseTitle(ev.Summary)

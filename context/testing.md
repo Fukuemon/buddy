@@ -39,7 +39,7 @@ status: stable
 | --- | --- | --- |
 | PostgreSQL | 機能のパッケージのテストはメモリ上の偽物（`inmem`）、リポジトリのテストは testcontainers の本物 | compose の本物 |
 | OIDC の発行者 | `oidctest` の偽物（テストの中で鍵を作る） | compose の mock-oauth2-server |
-| Google Calendar API | `gcaltest` の偽物 | 使わない（compose の receipt-api はカレンダーを設定していない） |
+| Google Calendar API | `gcaltest` の偽物 | 予定の API は compose の `fake-google`（`cmd/fakegcal`。予定は `compose/fake-google-calendar.json`）。receipt-api はカレンダーを設定していない |
 | web の画面から見た API（`BuddyApi`） | `src/api/fake/` の偽物 | compose の本物 |
 | web のサーバーから見た 2 つの API | MSW の handler（`apps/web/src/mocks/`、`src/test/server.ts`） | compose の本物 |
 
@@ -87,6 +87,7 @@ pull request と develop への push では、CI（[ci.yml](../.github/workflows
   - `setup` は、青木 陽菜（マネージャー）と森 健太（チームリーダー、名前は `dev-mori`）の 2 人のログインの状態を保存する。リーダーで確かめる spec は、`test.use({ storageState: LEADER_STATE })` で切り替える。
   - 環境変数 `E2E_BASE_URL`（既定は `http://localhost:3000`）と `E2E_LOGIN_NAME`（既定は `dev-aoki`）で、向ける画面とログインの名前を変える。
   - schedule-api は初回のログインで `sub` を職員に結び付ける。手元で青木 陽菜に別の名前で入ったことがあれば、`E2E_LOGIN_NAME` をその名前にするか、`docker compose down -v` でデータを消す。
+  - Google カレンダーの取り込みの spec は、森にカレンダーを結び付けて取り込んだまま残す。同じ DB で 2 回目を流すと落ちるので、流し直すときは `docker compose down -v` で作り直す。
   - シードは空の DB にだけ当たる。`dev-mori` で入れないときや、職員の一覧に佐藤 美咲がいないときは、シードを変える前の DB なので、`docker compose down -v` で作り直す。
 - 画面を変える pull request では、その画面の流れの E2E を流す。testid を変えたら、E2E と画面仕様書の両方を直す。
 - lint と型のチェックは、`packages/e2e` で `pnpm check` を流す。ESLint の規則（`packages/e2e/eslint/e2e-authoring-rule.mjs`）と、その規則のテスト（`pnpm test:rules`）もここにある。

@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
@@ -14,12 +15,18 @@ import (
 	"syscall"
 	"time"
 
+	"golang.org/x/oauth2/google"
+	calendarv3 "google.golang.org/api/calendar/v3"
+	"google.golang.org/api/option"
+
 	"github.com/Fukuemon/buddy/packages/go/healthcheck"
 
 	"github.com/Fukuemon/buddy/packages/go/oidc"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/access"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/calendar"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/config"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/gcal"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
@@ -67,6 +74,11 @@ func run() error {
 		return err
 	}
 
+	source, err := newEventSource(ctx, cfg.Calendar)
+	if err != nil {
+		return err
+	}
+
 	tx := postgres.NewTransactor(db)
 	ids := ulid.Generator{}
 	facilities := postgres.NewFacilityRepository(db)
@@ -80,6 +92,8 @@ func run() error {
 	visitMasters := postgres.NewVisitMasterRepository(db)
 	schedules := postgres.NewScheduleRepository(db)
 	recurring := postgres.NewRecurringScheduleRepository(db)
+	scheduleTypes := postgres.NewScheduleTypeRepository(db)
+	calendars := postgres.NewCalendarRepository(db)
 	visitInfos := visit.NewWriter(visit.WriterDeps{
 		Staff: staffRefs,
 		Patients: func(ctx context.Context, id string) (string, string, error) {
@@ -103,11 +117,16 @@ func run() error {
 		VisitMasters: visit.NewUsecase(visitMasters),
 		Schedules: schedule.NewUsecase(schedule.Deps{
 			Facilities: facilities, Staff: staffRefs, Visits: visitInfos,
-			Schedules: schedules, Recurring: recurring, Types: postgres.NewScheduleTypeRepository(db),
+			Schedules: schedules, Recurring: recurring, Types: scheduleTypes,
 		}, tx, ids),
+		Calendars: calendar.NewUsecase(calendar.Deps{
+			Calendars: calendars, Source: source, ServiceAccount: cfg.Calendar.ServiceAccount,
+			Staff: staffRefs, Patients: patients, ServiceCodes: visitMasters, Types: scheduleTypes,
+			Schedules: schedules, Recurring: recurring, RecurringSchedules: recurring, Visits: visitInfos,
+		}, tx, ids, principal.RequireStaffManage),
 		Auth: access.NewService(access.Deps{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions,
-			Staff: staffRepo, StaffRefs: staffRefs, Schedules: schedules, Recurring: recurring,
+			Staff: staffRepo, StaffRefs: staffRefs, Schedules: schedules, Recurring: recurring, Calendars: calendars,
 		}),
 	}, httpapi.RouterConfig{Logger: log, AllowOrigins: cfg.AllowOrigins, Verifier: tokenVerifier{verifier}, Ready: func(ctx context.Context) error {
 		ctx, cancel := context.WithTimeout(ctx, readyTimeout)
@@ -144,6 +163,29 @@ func run() error {
 		return err
 	}
 	return nil
+}
+
+// newEventSource は、Google カレンダーを読む calendar.EventSource を返す。サービスアカウントの設定が無ければ nil を返す。
+// 認証の情報は、照合の API と同じく Application Default Credentials で読む。偽物の API に向けるときは認証をしない。
+func newEventSource(ctx context.Context, cfg config.Calendar) (calendar.EventSource, error) {
+	if cfg.ServiceAccount == "" {
+		return nil, nil
+	}
+	var opts []option.ClientOption
+	if cfg.Endpoint != "" {
+		opts = append(opts, option.WithEndpoint(cfg.Endpoint), option.WithoutAuthentication())
+	} else {
+		creds, err := google.FindDefaultCredentials(ctx, calendarv3.CalendarReadonlyScope)
+		if err != nil {
+			return nil, fmt.Errorf("application default credentials を読めません: %w", err)
+		}
+		opts = append(opts, option.WithCredentials(creds))
+	}
+	svc, err := calendarv3.NewService(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return gcal.NewReader(svc), nil
 }
 
 // tokenVerifier は、共有の oidc.Verifier を httpapi.TokenVerifier にする。httpapi は oidc を import しないので、主張の型をここで写す。

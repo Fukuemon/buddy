@@ -1,7 +1,7 @@
 ---
 type: feature-design
 title: 予定の管理
-description: schedule-api のコードの層、表の構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更とキャンセル
+description: schedule-api のコードの層、表の構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更とキャンセル、Google カレンダーの取り込み
 status: stable
 governs: apps/schedule-api
 verified_commit: ff293e9
@@ -21,6 +21,7 @@ schedule-api は、事業所ごとの予定、職員、利用者、権限を持�
 - 事業所、部署、チーム、役職と、職員、利用者
 - 権限、役職の既定の権限、職員ごとの権限とその対象
 - 単発の予定、繰り返しの予定と繰り返しの規則、予定のキャンセル
+- 職員と Google カレンダーの結び付けと、Google カレンダーの予定の取り込み
 - 訪問の情報、サービスコード、訪問の区分
 - access token の検証から事業所の確認までのミドルウェア
 
@@ -43,18 +44,18 @@ schedule-api は、事業所ごとの予定、職員、利用者、権限を持�
 | --- | --- | --- |
 | 共通 | `internal/apperr`、`internal/tx`、`internal/kernel`、`internal/civil` | 共通の誤りと検証の誤り、`Transactor`、文字の検証と並べ替えと `IDGenerator` と 1 件を読む `Finder`、日付と時刻の値 |
 | 機能 | `internal/organization`、`internal/staff`、`internal/patient`、`internal/visit`、`internal/schedule` | エンティティ、規則の関数、自分の集約のリポジトリのインターフェイス、ほかの機能のデータを読む小さなインターフェイス、手順（`Usecase`）とトランザクションの範囲。予定の閲覧と編集の判定は `schedule` の `permission.go` に置く |
-| 機能 | `internal/calendar` | 外部のカレンダーの予定（`Event`）と、期間の予定を読む `EventSource`。予定を訪問、通常、取り込まないに分ける `Classify` と、RRULE を繰り返しの規則に写す `RuleFromRecurrence`。題名は `packages/go/gcaltitle` で読む（ADR-0009） |
+| 機能 | `internal/calendar` | 外部のカレンダーの予定（`Event`）と、予定を読む `EventSource`。予定を訪問、通常、取り込まないに分ける `Classify` と、RRULE を繰り返しの規則に写す `RuleFromRecurrence`。結び付けと取り込みの手順（`Usecase`）、下見の読み替え（`plan.go`）、結び付けたカレンダーと取り込みの記録と予定の対応のリポジトリ。題名は `packages/go/gcaltitle` で読む（ADR-0009） |
 | 認可 | `internal/principal` | トークンの主張（`Identity`）、職員（`Principal`）、職員の管理の判定 |
 | 認証 | `internal/access` | トークンから職員を特定する手順と、パスが指す資源の事業所を引く手順 |
 | テスト | `internal/inmem` | 機能のパッケージのテストが共有する、メモリ上のリポジトリ |
 | アダプタ | `internal/postgres` | 機能のパッケージのリポジトリを、pgx/v5 の接続のプールと sqlc の生成コード（`sqlcgen`）で実装する |
 | アダプタ | `internal/ulid` | `IDGenerator` を ULID で実装し、ID の形を確かめる |
-| アダプタ | `internal/gcal` | `calendar.EventSource` を Google Calendar API で実装する。繰り返しの予定を展開せずに、親の予定と例外の回を読む。認証した `calendar.Service` は `cmd` が渡す。テストの偽物の API は `internal/gcal/gcaltest` に置く |
+| アダプタ | `internal/gcal` | `calendar.EventSource` を Google Calendar API で実装する。繰り返しの予定を展開せずに、親の予定と例外の回を読み、回ごとにする繰り返しだけを events.instances で回に展開する。認証した `calendar.Service` は `cmd` が渡す。テストと compose の偽物の API は `internal/gcal/gcaltest` に置く |
 | 設定 | `internal/config` | 環境変数から API とマイグレーションの設定を読む。DB の接続の値は自分の型で持ち、`cmd` がアダプタの設定に写す |
 | 共有 | `packages/go/oidc`、`packages/go/healthcheck`、`packages/go/gcaltitle`（別の module） | access token の JWKS での検証、テストと `cmd/devissuer` が使う偽物の発行者（`oidctest`）、`api healthcheck`、Google カレンダーの予定の題名の解釈。receipt-api と共有する（ADR-0007） |
 | アダプタ | `internal/httpapi/openapi` | `openapi.yaml` から生成した型と strict server のインターフェイス |
 | アダプタ | `internal/httpapi` | 生成したインターフェイスを実装するハンドラと、gin のミドルウェア。要求は、埋め込んだ `openapi.yaml` の定義で確かめる |
-| cmd | `cmd/api`、`cmd/migrate`、`cmd/devissuer` | 起動、マイグレーションとシード、手元で試すための偽物の発行者（イメージに入れない） |
+| cmd | `cmd/api`、`cmd/migrate`、`cmd/devissuer`、`cmd/fakegcal` | 起動、マイグレーションとシード、手元で試すための偽物の発行者と Calendar API（本番のイメージに入れない） |
 
 - `kernel` は、ADR-0010 の「`apperr` と同じ段の小さなパッケージ」に当たる。`kernel.Finder[T]` は ID で 1 件を読む 1 つのメソッドのインターフェイスで、機能のパッケージは、ほかの機能のエンティティをこの形で受ける。同じ形のインターフェイスを機能ごとに書かずに済ませるためである。
 - `access` は機能のパッケージではないので、型の名前を `Service` のままにし、`Usecase` への改名と「1〜2 のメソッド」の規則の対象から外す。
@@ -269,9 +270,45 @@ sequenceDiagram
 - 予定をキャンセルすると、`schedule_cancels` に理由とともに 1 行を足す。予定の行は消さない。
 - キャンセルした予定は、API の応答の `cancel` に理由を持つ。画面は、キャンセルした予定を予定の表示から除く。
 
+### Google カレンダーの取り込み
+
+職員の管理の権限を持つ職員が、職員に Google カレンダーを結び付け、期間を選んで下見し、確定して予定に取り込む（ADR-0009 の段階 1）。読み替えの規則と画面の動きは、画面仕様書の [予定の取り込み](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-import_予定の取り込み/index.md) と [カレンダーの連携](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-link_カレンダーの連携/index.md) にある。
+
+- ADR-0009: [Google カレンダーとの連携を、buddy を正にする段階の同期にする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0009-google-calendar-sync.md)
+
+```mermaid
+sequenceDiagram
+  participant web
+  participant api as schedule-api
+  participant g as Google Calendar API
+  participant db as PostgreSQL
+  web->>api: 下見（期間）
+  api->>g: events.list（singleEvents=false）
+  api->>g: 写せない繰り返しごとに events.instances
+  api->>db: 予定の対応、利用者、サービスコードを読む
+  api-->>web: 件数、確かめが要る予定、取り込まない予定
+  web->>api: 確定（期間、取り込み方）
+  api->>db: 取り込みの記録を running で書く
+  api->>g: 予定を読み直す
+  api->>db: 予定、除外の日、訪問の情報、予定の対応を 1 つのトランザクションで書き、記録を succeeded にする
+  api-->>web: 取り込みの記録
+```
+
+- 下見の結果は保存しない。確定は Google の予定を読み直し、下見と同じ規則で読み替える。確かめが要る予定の集合か版（まとめた予定の ID と etag から作る）が、送られた取り込み方と違えば、何も書かずに 409 を返す。
+- 同じカレンダーの取り込みは、1 つずつ行う。確定の始めにカレンダーの行に排他のロックを取り、10 分以内に始めた `running` の記録があれば 409 を返す。止まった取り込みが次の取り込みを止め続けないよう、10 分より前の `running` は数えない。
+- 取り込んだ Google の予定は、`external_event_links` の対応を持つ。対応のある予定は取り込み済みに数え、もう一度は書かない。
+- 繰り返しは、親の予定の RRULE を buddy の規則に写せれば、規則ごと取り込む。期間の外の回も繰り返しの予定に含まれる。Google が返した取り消した回は除外の日に、期間の中の変えた回は除外の日と、元の回の日付を持つ単発の予定にする。前の取り込みで取り込んだ繰り返しにも、後の期間の取り消しと変更を当てる。
+- 前の取り込みで回か例外の回だけを取り込んだ繰り返しは、規則に写せる形でも回ごとにする。規則ごと作ると、前に取り込んだ回と重なるためである。
+- Google は変えた回を今の日時で期間に絞るので、期間の前後 31 日を広げて例外の回を読み直し、元の日付が期間の中の回も読み替える。期間の中の回を期間の外へ動かしても、元の日に回が残らない。31 日より遠くへ動かした回は読めず、元の日に回が残る。Calendar API は元の日時で予定を絞れず、上限なしに探すと回ごとに API を呼ぶことになるためである。
+- 写せない繰り返しは、events.instances で期間の中の回を読み、回ごとに単発の予定にする。回の対応は、回の ID で持つ。
+- 題名のサービス内容と利用者名は、照合の API と同じ規則で表記をそろえ、サービスコードと事業所の利用者を引く。利用者を 1 人に決められない予定は、下見で取り込み方を選ばせる。取り込んだ訪問の予定の主訪問者は、カレンダーを結び付けた職員である。
+- 予定の題名、利用者名、カレンダーの ID は、取り込まない予定の一覧、誤りの文、ログに出さない。確かめが要る予定だけは、題名から読んだ利用者名とサービス内容を返す。
+- 空き時間だけの共有（`freeBusyReader`）のカレンダーは、読めないとみなす（422 `calendar_unreadable`）。Google は空き時間だけの共有に、繰り返しの親と予定の題名を返さないためである。
+- カレンダーを外しても、行と予定の対応は消さない。同じ職員に結び付け直すと、外した行を使い直す。
+
 ## Interface
 
-- 事業所に属する一覧と作成のパスは `/v1/facilities/{facility_id}/<資源>`、1 件を指すパスは `/v1/<資源>/{<資源>_id}` の形にする。主な資源は `schedules`、`schedules/recurring`、`users`、`patients`、`departments`、`teams`、`positions` である。資源ごとにどのパスを持つかは `openapi.yaml` にある。
+- 事業所に属する一覧と作成のパスは `/v1/facilities/{facility_id}/<資源>`、1 件を指すパスは `/v1/<資源>/{<資源>_id}` の形にする。主な資源は `schedules`、`schedules/recurring`、`users`、`patients`、`departments`、`teams`、`positions`、`external_calendars` である。資源ごとにどのパスを持つかは `openapi.yaml` にある。
 - 事業所に属さないマスタは `/v1/policies`、`/v1/schedule_types`、`/v1/visit_infos/service_codes`、`/v1/visit_infos/visit_categories` で読む。
 - 一覧の並べ替えは、許可した列の名前だけを受け、それ以外は 400 を返す。
 - `GET /v1/me` は、トークンの職員と権限を返す。画面は、ログインの後にこれを呼んで事業所を決める。
@@ -281,7 +318,12 @@ sequenceDiagram
   - 403 の `forbidden`: 職員を特定できない、事業所が違う、権限で許されない
   - 404 の `not_found`: パスで指したリソースが無い
   - 409 の `conflict`: 一意の値が重なる、キャンセル済みの予定を変えるかキャンセルする、繰り返しの回をすでに置き換えた
+  - 409 の `calendar_taken`、`calendar_already_linked`、`staff_has_calendar`: カレンダーを結び付けられない原因
+  - 409 の `import_running`、`import_preview_changed`: 取り込みを確定できない原因
+  - 422 の `calendar_unreadable`: Google カレンダーが無いか、サービスアカウントに共有されていない
   - 500 の `internal`: サーバーの誤り
+  - 502 の `calendar_unavailable`: Google に届かないか、Google が誤りを返した
+  - 503 の `calendar_not_configured`: サービスアカウントが設定されていない
 - CORS は、`CORS_ALLOW_ORIGINS` に並べた Origin だけに許す。空なら CORS のヘッダーを返さない。
   - 許す Origin の事前の要求には、トークンを求めずに 204 を返す。許すメソッドは GET、POST、PUT、DELETE、OPTIONS、ヘッダーは `Content-Type` と `Authorization` にする。
   - 許さない Origin の要求は、本文を持たない 403 で止める。Origin が要求の Host と同じ要求は、CORS の要求として扱わずに通す。

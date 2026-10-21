@@ -191,6 +191,13 @@ func nullInt16(v *int) (*int16, error) {
 	return &i, nil
 }
 
+func int32Of(v int) (int32, error) {
+	if v < math.MinInt32 || v > math.MaxInt32 {
+		return 0, apperr.Invalid("値 %d が範囲を超えています", v)
+	}
+	return int32(v), nil
+}
+
 func intPtr(v *int16) *int {
 	if v == nil {
 		return nil

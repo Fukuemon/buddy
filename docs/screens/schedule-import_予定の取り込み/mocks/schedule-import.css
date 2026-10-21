@@ -1,0 +1,171 @@
+/* 予定の取り込みのモックだけの見た目 */
+.si-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* 職員と期間の入力。幅 768px 以上では横に並べる */
+.si-form {
+  display: grid;
+  gap: 12px;
+}
+
+.si-form__fields {
+  display: grid;
+  gap: 16px;
+}
+
+@container screen (width >= 768px) {
+  .si-form__fields {
+    grid-template-columns: 16rem 11rem 11rem;
+  }
+}
+
+.si-select::after {
+  content: '▾';
+  position: absolute;
+  right: 12px;
+}
+
+.si-select {
+  position: relative;
+  justify-self: stretch;
+}
+
+.si-date {
+  justify-self: stretch;
+}
+
+.si-result {
+  display: grid;
+  gap: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--wf-line-soft);
+}
+
+.si-result__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.si-h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.si-h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* 件数の箱を折り返して並べる */
+.si-counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.si-count {
+  padding: 12px;
+  border: 1px solid var(--wf-line-soft);
+  border-radius: var(--wf-radius);
+}
+
+.si-count dt {
+  color: var(--wf-muted);
+  font-size: 12px;
+}
+
+.si-count dd {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+
+.si-count dd strong {
+  font-size: 18px;
+}
+
+.si-count dd span {
+  color: var(--wf-muted);
+  font-size: 12px;
+}
+
+.si-section {
+  display: grid;
+  gap: 8px;
+}
+
+.si-section > p {
+  margin: 0;
+}
+
+.si-reviews {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 確かめが要る予定 1 件。幅 768px 以上では、左に予定、右に取り込み方を置く */
+.si-review {
+  display: grid;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--wf-line);
+  border-radius: var(--wf-radius);
+  background: var(--wf-warning-surface);
+}
+
+@container screen (width >= 768px) {
+  .si-review {
+    grid-template-columns: minmax(0, 1fr) 18rem;
+  }
+}
+
+.si-review__head {
+  display: grid;
+  gap: 2px;
+}
+
+.si-reason {
+  font-weight: 700;
+}
+
+.si-review__choices {
+  display: grid;
+  gap: 8px;
+}
+
+.si-review__patient {
+  min-height: 40px;
+  margin-left: 22px;
+}
+
+.si-reasons {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.si-submit {
+  display: grid;
+  gap: 12px;
+}
+
+.si-remain {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 4px solid var(--wf-line);
+  background: var(--wf-fill);
+}

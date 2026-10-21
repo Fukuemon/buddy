@@ -59,12 +59,22 @@ func toSchedule(d schedule.Detail) openapi.Schedule {
 	return r
 }
 
-func toRecurringSchedule(d schedule.RecurringDetail) openapi.RecurringSchedule {
+func toRecurringRule(r schedule.Rule) openapi.RecurringRule {
 	var endDate *string
-	if d.Rule.EndDate != nil {
-		s := d.Rule.EndDate.String()
+	if r.EndDate != nil {
+		s := r.EndDate.String()
 		endDate = &s
 	}
+	return openapi.RecurringRule{
+		Frequency:   openapi.RecurringRuleFrequency(r.Frequency),
+		DayOfWeek:   r.DayOfWeek,
+		DayOfMonth:  r.DayOfMonth,
+		WeekOfMonth: r.WeekOfMonth,
+		EndDate:     endDate,
+	}
+}
+
+func toRecurringSchedule(d schedule.RecurringDetail) openapi.RecurringSchedule {
 	var exclusions []string
 	if d.ExclusionDates != nil {
 		exclusions = mapSlice(d.ExclusionDates, civil.Date.String)
@@ -83,13 +93,7 @@ func toRecurringSchedule(d schedule.RecurringDetail) openapi.RecurringSchedule {
 		Title:          d.Title,
 		Description:    d.Description,
 		VisitInfo:      toVisitInfo(d.Visit),
-		RecurringRule: openapi.RecurringRule{
-			Frequency:   openapi.RecurringRuleFrequency(d.Rule.Frequency),
-			DayOfWeek:   d.Rule.DayOfWeek,
-			DayOfMonth:  d.Rule.DayOfMonth,
-			WeekOfMonth: d.Rule.WeekOfMonth,
-			EndDate:     endDate,
-		},
+		RecurringRule:  toRecurringRule(d.Rule),
 		ExclusionDates: exclusions,
 		CreatedAt:      d.CreatedAt,
 		UpdatedAt:      d.UpdatedAt,

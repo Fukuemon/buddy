@@ -31,7 +31,9 @@ func Invalid(format string, args ...any) error {
 }
 
 // ConflictError は、操作が今の状態と衝突する理由を表す。errors.Is では ErrConflict として扱われる。
+// Code は、利用者が原因で分岐するための値で、空なら httpapi は conflict を返す。
 type ConflictError struct {
+	Code    string
 	Message string
 }
 
@@ -43,6 +45,11 @@ func (e *ConflictError) Is(target error) bool { return target == ErrConflict }
 // Conflict は、書式で組み立てた文を持つ ConflictError を返す。
 func Conflict(format string, args ...any) error {
 	return &ConflictError{Message: fmt.Sprintf(format, args...)}
+}
+
+// ConflictCode は、原因の code と、書式で組み立てた文を持つ ConflictError を返す。
+func ConflictCode(code, format string, args ...any) error {
+	return &ConflictError{Code: code, Message: fmt.Sprintf(format, args...)}
 }
 
 // AsConflict は、err が衝突のときに、書式で組み立てた文を持つ ConflictError に置き換える。ほかの err はそのまま返す。

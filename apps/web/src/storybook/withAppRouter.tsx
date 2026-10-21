@@ -16,6 +16,8 @@ import { ApiError, type BuddyApi, type ReceiptApi } from '#/api/client'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import { FAKE_VIEWER } from '#/api/fake/fixtures'
 import { createFakeReceiptApi } from '#/api/fake/fakeReceiptApi'
+import type { Viewer } from '#/api/types'
+import { calendarImportSearchSchema } from '#/features/calendar/schema/calendarImportSearch'
 import {
   scheduleCreateSearchDefaults,
   scheduleCreateSearchSchema,
@@ -34,6 +36,8 @@ export type StoryRouteId =
   | '/schedule/$scheduleId/edit'
   | '/receipt/'
   | '/receipt/result'
+  | '/schedule_/link'
+  | '/schedule_/import'
 
 /** story の parameters の appRouter に渡す値。 */
 export type AppRouterParameters = {
@@ -41,6 +45,8 @@ export type AppRouterParameters = {
   route: StoryRouteId
   /** 最初に開く URL。search params もここに書く。 */
   url: string
+  /** ログインした職員。既定は偽物の API の職員（職員の管理の権限を持つ）。 */
+  viewer?: Viewer
   /** 偽物の API。既定は createFakeBuddyApi の初期の状態。 */
   api?: BuddyApi
   receiptApi?: ReceiptApi
@@ -70,7 +76,7 @@ const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
     }
 
   const root = createRootRouteWithContext<AppRouterContext>()({
-    beforeLoad: () => ({ viewer: FAKE_VIEWER }),
+    beforeLoad: () => ({ viewer: params.viewer ?? FAKE_VIEWER }),
     component: Outlet,
   })
   const schedule = createRoute({
@@ -107,12 +113,26 @@ const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
     path: 'receipt/result',
     component: at('/receipt/result'),
   })
+  // アプリでは `/schedule` の子にしない route なので、root の子に置く
+  const scheduleLink = createRoute({
+    getParentRoute: () => root,
+    path: 'schedule/link',
+    component: at('/schedule_/link'),
+  })
+  const scheduleImport = createRoute({
+    getParentRoute: () => root,
+    path: 'schedule/import',
+    validateSearch: calendarImportSearchSchema,
+    component: at('/schedule_/import'),
+  })
 
   const router = createRouter({
     routeTree: root.addChildren([
       schedule.addChildren([scheduleNew, scheduleDetail, scheduleEdit]),
       receipt,
       receiptResult,
+      scheduleLink,
+      scheduleImport,
     ]),
     history: createMemoryHistory({ initialEntries: [params.url] }),
     context,
@@ -149,6 +169,7 @@ export const emptyBuddyApi = (base: BuddyApi = createFakeBuddyApi()): BuddyApi =
   staff: { ...base.staff, list: async () => [] },
   teams: { ...base.teams, list: async () => [] },
   patients: { ...base.patients, list: async () => [] },
+  calendars: { ...base.calendars, list: async () => [] },
 })
 
 /** 全ての操作が status の ApiError で失敗する偽物の API を作る。 */
@@ -161,6 +182,15 @@ export const failingBuddyApi = (status = 500): BuddyApi => {
     staff: { list: fail },
     teams: { list: fail },
     patients: { list: fail },
+    calendars: {
+      serviceAccount: fail,
+      list: fail,
+      check: fail,
+      link: fail,
+      unlink: fail,
+      preview: fail,
+      import: fail,
+    },
   }
 }
 
@@ -172,5 +202,14 @@ export const pendingBuddyApi = (): BuddyApi => {
     staff: { list: wait },
     teams: { list: wait },
     patients: { list: wait },
+    calendars: {
+      serviceAccount: wait,
+      list: wait,
+      check: wait,
+      link: wait,
+      unlink: wait,
+      preview: wait,
+      import: wait,
+    },
   }
 }

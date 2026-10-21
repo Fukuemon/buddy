@@ -1,6 +1,7 @@
 import createClient from 'openapi-fetch'
 
 import type { paths } from '#/api/generated/schedule'
+import { STAFF_MANAGE } from '#/api/types'
 
 import type { AuthDeps, MeResult } from './auth'
 import { loadServerConfig, type ServerConfig } from './config'
@@ -53,7 +54,12 @@ export const fetchMe = async (scheduleApiUrl: string, accessToken: string): Prom
   if (data !== undefined) {
     return {
       ok: true,
-      viewer: { staffId: data.id, staffName: data.username, facilityId: data.facility_id },
+      viewer: {
+        staffId: data.id,
+        staffName: data.username,
+        facilityId: data.facility_id,
+        canManageStaff: data.policies.some((p) => p.code === STAFF_MANAGE),
+      },
     }
   }
   return { ok: false, reason: response.status === 403 ? 'forbidden' : 'failed' }

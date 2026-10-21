@@ -21,6 +21,14 @@ type DB struct {
 	Name     string
 }
 
+// Calendar は、Google カレンダーを読む設定である。ServiceAccount が空なら、Google カレンダーを読まない。
+type Calendar struct {
+	// ServiceAccount は、職員がカレンダーを共有する相手のサービスアカウントのメールアドレスである。
+	ServiceAccount string
+	// Endpoint は、Calendar API の代わりに呼ぶ URL で、偽物の API に向けるときだけ持つ。
+	Endpoint string
+}
+
 // Config は、API とマイグレーションの設定である。
 type Config struct {
 	Port         string
@@ -28,6 +36,7 @@ type Config struct {
 	OIDC         oidc.Config
 	AllowOrigins []string
 	LogLevel     slog.Level
+	Calendar     Calendar
 }
 
 // Load は、getenv（本番では os.Getenv）から設定を読む。DB_USER、DB_PASSWORD、DB_NAME、OIDC_ISSUER、
@@ -43,6 +52,10 @@ type Config struct {
 //   - OIDC_ORG_CLAIM: 組織の ID を持つクレームの名前。既定は org_id
 //   - CORS_ALLOW_ORIGINS: カンマで区切ったオリジン。空なら CORS のヘッダーを返さない
 //   - LOG_LEVEL: debug、info、warn、error。既定は info
+//   - GOOGLE_CALENDAR_SERVICE_ACCOUNT: 職員がカレンダーを共有する相手のサービスアカウントのメールアドレス。
+//     空なら Google カレンダーを読まない。認証の情報は Application Default Credentials で読む
+//   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。偽物の API で試すためのもので、認証をしない。
+//     GOOGLE_CALENDAR_SERVICE_ACCOUNT と一緒に渡す
 func Load(getenv func(string) string) (Config, error) {
 	return load(getenv, true)
 }
@@ -103,6 +116,13 @@ func load(getenv func(string) string, api bool) (Config, error) {
 	}
 	if err := c.LogLevel.UnmarshalText([]byte(get("LOG_LEVEL", "info"))); err != nil {
 		return Config{}, errors.New("LOG_LEVEL は debug、info、warn、error のいずれかです")
+	}
+	c.Calendar = Calendar{
+		ServiceAccount: strings.TrimSpace(getenv("GOOGLE_CALENDAR_SERVICE_ACCOUNT")),
+		Endpoint:       strings.TrimSpace(getenv("GOOGLE_CALENDAR_ENDPOINT")),
+	}
+	if c.Calendar.Endpoint != "" && c.Calendar.ServiceAccount == "" {
+		return Config{}, errors.New("GOOGLE_CALENDAR_ENDPOINT は GOOGLE_CALENDAR_SERVICE_ACCOUNT と一緒に渡します")
 	}
 	return c, nil
 }

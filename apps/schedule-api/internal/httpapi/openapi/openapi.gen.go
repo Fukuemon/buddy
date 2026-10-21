@@ -23,20 +23,42 @@ import (
 
 // Defines values for ErrorCode.
 const (
-	ErrorCodeConflict        ErrorCode = "conflict"
-	ErrorCodeForbidden       ErrorCode = "forbidden"
-	ErrorCodeInternal        ErrorCode = "internal"
-	ErrorCodeInvalidInput    ErrorCode = "invalid_input"
-	ErrorCodeNotFound        ErrorCode = "not_found"
-	ErrorCodeUnauthenticated ErrorCode = "unauthenticated"
+	ErrorCodeCalendarAlreadyLinked ErrorCode = "calendar_already_linked"
+	ErrorCodeCalendarNotConfigured ErrorCode = "calendar_not_configured"
+	ErrorCodeCalendarTaken         ErrorCode = "calendar_taken"
+	ErrorCodeCalendarUnavailable   ErrorCode = "calendar_unavailable"
+	ErrorCodeCalendarUnreadable    ErrorCode = "calendar_unreadable"
+	ErrorCodeConflict              ErrorCode = "conflict"
+	ErrorCodeForbidden             ErrorCode = "forbidden"
+	ErrorCodeImportPreviewChanged  ErrorCode = "import_preview_changed"
+	ErrorCodeImportRunning         ErrorCode = "import_running"
+	ErrorCodeInternal              ErrorCode = "internal"
+	ErrorCodeInvalidInput          ErrorCode = "invalid_input"
+	ErrorCodeNotFound              ErrorCode = "not_found"
+	ErrorCodeStaffHasCalendar      ErrorCode = "staff_has_calendar"
+	ErrorCodeUnauthenticated       ErrorCode = "unauthenticated"
 )
 
 // Valid indicates whether the value is a known member of the ErrorCode enum.
 func (e ErrorCode) Valid() bool {
 	switch e {
+	case ErrorCodeCalendarAlreadyLinked:
+		return true
+	case ErrorCodeCalendarNotConfigured:
+		return true
+	case ErrorCodeCalendarTaken:
+		return true
+	case ErrorCodeCalendarUnavailable:
+		return true
+	case ErrorCodeCalendarUnreadable:
+		return true
 	case ErrorCodeConflict:
 		return true
 	case ErrorCodeForbidden:
+		return true
+	case ErrorCodeImportPreviewChanged:
+		return true
+	case ErrorCodeImportRunning:
 		return true
 	case ErrorCodeInternal:
 		return true
@@ -44,7 +66,24 @@ func (e ErrorCode) Valid() bool {
 		return true
 	case ErrorCodeNotFound:
 		return true
+	case ErrorCodeStaffHasCalendar:
+		return true
 	case ErrorCodeUnauthenticated:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExternalCalendarProvider.
+const (
+	Google ExternalCalendarProvider = "google"
+)
+
+// Valid indicates whether the value is a known member of the ExternalCalendarProvider enum.
+func (e ExternalCalendarProvider) Valid() bool {
+	switch e {
+	case Google:
 		return true
 	default:
 		return false
@@ -63,6 +102,117 @@ func (e HealthStatus) Valid() bool {
 	case Ok:
 		return true
 	case Unavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ImportDecisionAction.
+const (
+	ImportDecisionActionNormal  ImportDecisionAction = "normal"
+	ImportDecisionActionPatient ImportDecisionAction = "patient"
+	ImportDecisionActionSkip    ImportDecisionAction = "skip"
+)
+
+// Valid indicates whether the value is a known member of the ImportDecisionAction enum.
+func (e ImportDecisionAction) Valid() bool {
+	switch e {
+	case ImportDecisionActionNormal:
+		return true
+	case ImportDecisionActionPatient:
+		return true
+	case ImportDecisionActionSkip:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ImportResultStatus.
+const (
+	ImportResultStatusFailed    ImportResultStatus = "failed"
+	ImportResultStatusRunning   ImportResultStatus = "running"
+	ImportResultStatusSucceeded ImportResultStatus = "succeeded"
+)
+
+// Valid indicates whether the value is a known member of the ImportResultStatus enum.
+func (e ImportResultStatus) Valid() bool {
+	switch e {
+	case ImportResultStatusFailed:
+		return true
+	case ImportResultStatusRunning:
+		return true
+	case ImportResultStatusSucceeded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ImportReviewItemReason.
+const (
+	PatientAmbiguous ImportReviewItemReason = "patient_ambiguous"
+	PatientNotFound  ImportReviewItemReason = "patient_not_found"
+)
+
+// Valid indicates whether the value is a known member of the ImportReviewItemReason enum.
+func (e ImportReviewItemReason) Valid() bool {
+	switch e {
+	case PatientAmbiguous:
+		return true
+	case PatientNotFound:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ImportRunStatus.
+const (
+	ImportRunStatusFailed    ImportRunStatus = "failed"
+	ImportRunStatusRunning   ImportRunStatus = "running"
+	ImportRunStatusSucceeded ImportRunStatus = "succeeded"
+)
+
+// Valid indicates whether the value is a known member of the ImportRunStatus enum.
+func (e ImportRunStatus) Valid() bool {
+	switch e {
+	case ImportRunStatusFailed:
+		return true
+	case ImportRunStatusRunning:
+		return true
+	case ImportRunStatusSucceeded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ImportSkippedItemReason.
+const (
+	AllDay          ImportSkippedItemReason = "all_day"
+	MultiDay        ImportSkippedItemReason = "multi_day"
+	ServiceNotFound ImportSkippedItemReason = "service_not_found"
+	UnreadableTime  ImportSkippedItemReason = "unreadable_time"
+	UnreadableTitle ImportSkippedItemReason = "unreadable_title"
+	ZeroLength      ImportSkippedItemReason = "zero_length"
+)
+
+// Valid indicates whether the value is a known member of the ImportSkippedItemReason enum.
+func (e ImportSkippedItemReason) Valid() bool {
+	switch e {
+	case AllDay:
+		return true
+	case MultiDay:
+		return true
+	case ServiceNotFound:
+		return true
+	case UnreadableTime:
+		return true
+	case UnreadableTitle:
+		return true
+	case ZeroLength:
 		return true
 	default:
 		return false
@@ -153,6 +303,21 @@ func (e SortOrder) Valid() bool {
 	case SortOrderAsc:
 		return true
 	case SortOrderDesc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateExternalCalendarCheck200JSONResponseBodyReadable.
+const (
+	True CreateExternalCalendarCheck200JSONResponseBodyReadable = true
+)
+
+// Valid indicates whether the value is a known member of the CreateExternalCalendarCheck200JSONResponseBodyReadable enum.
+func (e CreateExternalCalendarCheck200JSONResponseBodyReadable) Valid() bool {
+	switch e {
+	case True:
 		return true
 	default:
 		return false
@@ -273,6 +438,11 @@ func (e ListUsersParamsSortOrder) Valid() bool {
 	}
 }
 
+// CalendarID Google のカレンダーの ID。職員のカレンダーでは、職員のメールアドレスのことがある
+//
+// Example: staff@example.com
+type CalendarID = string
+
 // Cancel defines model for Cancel.
 type Cancel struct {
 	// Id Example: 01M3TC5H00QV17BC0J9V3393ZP
@@ -302,6 +472,32 @@ type Error struct {
 // ErrorCode defines model for Error.Code.
 type ErrorCode string
 
+// ExternalCalendar defines model for ExternalCalendar.
+type ExternalCalendar struct {
+	// CalendarId Google のカレンダーの ID。職員のカレンダーでは、職員のメールアドレスのことがある
+	//
+	// Example: staff@example.com
+	CalendarId CalendarID `json:"calendar_id"`
+	CreatedAt  time.Time  `json:"created_at"`
+
+	// FacilityId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	FacilityId ID `json:"facility_id"`
+
+	// Id Example: 01M3TC5H00QV17BC0J9V3393ZP
+	Id ID `json:"id"`
+
+	// LastImport 最も新しく始めた取り込み。取り込んだことが無ければ null
+	LastImport *ImportRun               `json:"last_import"`
+	Provider   ExternalCalendarProvider `json:"provider"`
+
+	// StaffId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	StaffId   ID        `json:"staff_id"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// ExternalCalendarProvider defines model for ExternalCalendar.Provider.
+type ExternalCalendarProvider string
+
 // Facility defines model for Facility.
 type Facility struct {
 	CreatedAt time.Time `json:"created_at"`
@@ -323,6 +519,181 @@ type HealthStatus string
 // ID Example: 01M3TC5H00QV17BC0J9V3393ZP
 type ID = string
 
+// ImportCounts 件数は Google の予定の数で数え、繰り返しのまま取り込む予定は 1 件、回ごとにした予定は 1 回を 1 件に数える。
+type ImportCounts struct {
+	// AlreadyImported 前の取り込みで取り込んだ予定の数
+	AlreadyImported int `json:"already_imported"`
+
+	// ExpandedOccurrences import のうち、繰り返しを回ごとにした回の数
+	ExpandedOccurrences int `json:"expanded_occurrences"`
+
+	// Import 確かめが要る予定を除いて、取り込む予定の数
+	Import int `json:"import"`
+
+	// ImportNormal import のうち、通常の予定の数
+	ImportNormal int `json:"import_normal"`
+
+	// ImportVisit import のうち、訪問の予定の数
+	ImportVisit int `json:"import_visit"`
+
+	// NeedsReview 取り込み方を選ぶ予定の数
+	NeedsReview int `json:"needs_review"`
+
+	// Recurring 取り込む繰り返しの予定の数
+	Recurring int `json:"recurring"`
+
+	// RecurringAsRule recurring のうち、繰り返しのまま取り込む予定の数
+	RecurringAsRule int `json:"recurring_as_rule"`
+
+	// RecurringExpanded recurring のうち、回ごとにする予定の数
+	RecurringExpanded int `json:"recurring_expanded"`
+
+	// Skipped 取り込まない予定の数
+	Skipped int `json:"skipped"`
+}
+
+// ImportDecision defines model for ImportDecision.
+type ImportDecision struct {
+	// Action patient は選んだ利用者の訪問の予定に、normal は題名をタイトルにした通常の予定にし、skip は取り込まない
+	Action          ImportDecisionAction `json:"action"`
+	ExternalEventId string               `json:"external_event_id"`
+
+	// PatientId action が patient のときだけ指定する
+	PatientId *ID `json:"patient_id,omitempty"`
+
+	// Revision 取り込み方を選んだ下見の needs_review の revision。確定のときの版と違えば 409（import_preview_changed）になる
+	Revision string `json:"revision"`
+}
+
+// ImportDecisionAction patient は選んだ利用者の訪問の予定に、normal は題名をタイトルにした通常の予定にし、skip は取り込まない
+type ImportDecisionAction string
+
+// ImportPreview defines model for ImportPreview.
+type ImportPreview struct {
+	// Counts 件数は Google の予定の数で数え、繰り返しのまま取り込む予定は 1 件、回ごとにした予定は 1 回を 1 件に数える。
+	Counts ImportCounts `json:"counts"`
+
+	// NeedsReview 取り込み方を選ぶ予定。日時の順
+	NeedsReview []ImportReviewItem `json:"needs_review"`
+	RangeEnd    Date               `json:"range_end"`
+	RangeStart  Date               `json:"range_start"`
+
+	// Skipped 取り込まない予定。日時の順で、日時の無い予定は最後
+	Skipped []ImportSkippedItem `json:"skipped"`
+}
+
+// ImportRange defines model for ImportRange.
+type ImportRange struct {
+	// RangeEnd 期間の最後の日。この日を含む。range_start 以降で、range_start から 1 年未満の日
+	RangeEnd Date `json:"range_end"`
+
+	// RangeStart 期間の最初の日。この日から range_end までに始まる予定を取り込む
+	RangeStart Date `json:"range_start"`
+}
+
+// ImportResult defines model for ImportResult.
+type ImportResult struct {
+	// AlreadyImportedCount 前の取り込みで取り込んでいて、今回は書かなかった予定の数
+	AlreadyImportedCount int `json:"already_imported_count"`
+
+	// ExternalCalendarId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	ExternalCalendarId ID         `json:"external_calendar_id"`
+	FinishedAt         *time.Time `json:"finished_at"`
+
+	// Id Example: 01M3TC5H00QV17BC0J9V3393ZP
+	Id            ID  `json:"id"`
+	ImportedCount int `json:"imported_count"`
+
+	// RangeEnd この日を含む
+	RangeEnd   Date `json:"range_end"`
+	RangeStart Date `json:"range_start"`
+
+	// SkippedCount 取り込まない予定と、取り込まないを選んだ予定の数
+	SkippedCount int                `json:"skipped_count"`
+	StartedAt    time.Time          `json:"started_at"`
+	Status       ImportResultStatus `json:"status"`
+}
+
+// ImportResultStatus defines model for ImportResult.Status.
+type ImportResultStatus string
+
+// ImportReviewItem defines model for ImportReviewItem.
+type ImportReviewItem struct {
+	// Candidates 同じ名前の利用者。patient_not_found では空
+	Candidates []PatientCandidate `json:"candidates"`
+
+	// ClientName 題名から読んだ利用者名
+	ClientName string `json:"client_name"`
+
+	// Date 予定の日付。繰り返しの予定は最初の回の日付
+	Date Date `json:"date"`
+
+	// EndTime Example: 09:30
+	EndTime Time `json:"end_time"`
+
+	// ExternalEventId 取り込み方を送るときの Google の予定の ID。繰り返しの予定とその回では、親の予定の ID
+	ExternalEventId string `json:"external_event_id"`
+
+	// Reason patient_not_found は利用者がいない、patient_ambiguous は同じ名前の利用者が 2 人以上いる
+	Reason ImportReviewItemReason `json:"reason"`
+
+	// Recurrence 繰り返しのまま取り込む予定の規則。ほかの予定では null
+	Recurrence *RecurringRule `json:"recurrence"`
+
+	// Revision まとめた Google の予定の ID と etag から作る版。取り込み方と一緒に送り返す。下見の後に予定が変わると変わる
+	Revision string `json:"revision"`
+
+	// Service 題名から読んだサービス内容
+	Service string `json:"service"`
+
+	// StartTime Example: 09:30
+	StartTime Time `json:"start_time"`
+}
+
+// ImportReviewItemReason patient_not_found は利用者がいない、patient_ambiguous は同じ名前の利用者が 2 人以上いる
+type ImportReviewItemReason string
+
+// ImportRun defines model for ImportRun.
+type ImportRun struct {
+	FinishedAt *time.Time `json:"finished_at"`
+
+	// Id Example: 01M3TC5H00QV17BC0J9V3393ZP
+	Id            ID  `json:"id"`
+	ImportedCount int `json:"imported_count"`
+
+	// RangeEnd この日を含む
+	RangeEnd   Date `json:"range_end"`
+	RangeStart Date `json:"range_start"`
+
+	// SkippedCount 取り込まない予定と、取り込まないを選んだ予定の数
+	SkippedCount int             `json:"skipped_count"`
+	StartedAt    time.Time       `json:"started_at"`
+	Status       ImportRunStatus `json:"status"`
+}
+
+// ImportRunStatus defines model for ImportRun.Status.
+type ImportRunStatus string
+
+// ImportSkippedItem 取り込まない予定の、読めた日時と理由。題名は利用者名を含むので返さない
+type ImportSkippedItem struct {
+	AllDay bool  `json:"all_day"`
+	Date   *Date `json:"date"`
+
+	// EndTime 日をまたぐ予定では、翌日の時刻
+	EndTime *Time `json:"end_time"`
+
+	// Reason all_day は終日、multi_day は日をまたぐ（24:00 に終わる予定を含む）、unreadable_time は日時を読めない、
+	// zero_length は長さが無い、unreadable_title は題名が空白だけか訪問の題名を読めない、
+	// service_not_found は題名のサービス内容がサービスコードに無い
+	Reason    ImportSkippedItemReason `json:"reason"`
+	StartTime *Time                   `json:"start_time"`
+}
+
+// ImportSkippedItemReason all_day は終日、multi_day は日をまたぐ（24:00 に終わる予定を含む）、unreadable_time は日時を読めない、
+// zero_length は長さが無い、unreadable_title は題名が空白だけか訪問の題名を読めない、
+// service_not_found は題名のサービス内容がサービスコードに無い
+type ImportSkippedItemReason string
+
 // Patient defines model for Patient.
 type Patient struct {
 	// AssignedStaffId Example: 01M3TC5H00QV17BC0J9V3393ZP
@@ -343,6 +714,15 @@ type Patient struct {
 	// ServiceCodeId Example: 01M3TC5H00QV17BC0J9V3393ZP
 	ServiceCodeId ID        `json:"service_code_id"`
 	UpdatedAt     time.Time `json:"updated_at"`
+}
+
+// PatientCandidate defines model for PatientCandidate.
+type PatientCandidate struct {
+	AssignedStaffName string `json:"assigned_staff_name"`
+	Name              string `json:"name"`
+
+	// PatientId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	PatientId ID `json:"patient_id"`
 }
 
 // Policy 職員に与える権限。8 つの行をマイグレーションが入れ、API では作らない
@@ -656,6 +1036,9 @@ type VisitInfoRequest struct {
 	VisitCategoryIds *[]ID `json:"visit_category_ids,omitempty"`
 }
 
+// ExternalCalendarID Example: 01M3TC5H00QV17BC0J9V3393ZP
+type ExternalCalendarID = ID
+
 // FacilityID Example: 01M3TC5H00QV17BC0J9V3393ZP
 type FacilityID = ID
 
@@ -671,6 +1054,15 @@ type SortOrder string
 // BadRequest defines model for BadRequest.
 type BadRequest = Error
 
+// CalendarNotConfigured defines model for CalendarNotConfigured.
+type CalendarNotConfigured = Error
+
+// CalendarUnavailable defines model for CalendarUnavailable.
+type CalendarUnavailable = Error
+
+// CalendarUnreadable defines model for CalendarUnreadable.
+type CalendarUnreadable = Error
+
 // Forbidden defines model for Forbidden.
 type Forbidden = Error
 
@@ -682,6 +1074,55 @@ type NotFound = Error
 
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = Error
+
+// CreateCalendarImportJSONBody defines parameters for CreateCalendarImport.
+type CreateCalendarImportJSONBody struct {
+	// Decisions 下見の needs_review の全ての予定の取り込み方
+	Decisions []ImportDecision `json:"decisions"`
+
+	// RangeEnd 期間の最後の日。この日を含む。range_start 以降で、range_start から 1 年未満の日
+	RangeEnd Date `json:"range_end"`
+
+	// RangeStart 期間の最初の日。この日から range_end までに始まる予定を取り込む
+	RangeStart Date `json:"range_start"`
+}
+
+// GetCalendarServiceAccount200JSONResponseBody defines parameters for GetCalendarServiceAccount.
+type GetCalendarServiceAccount200JSONResponseBody struct {
+	Email string `json:"email"`
+}
+
+// ListExternalCalendars200JSONResponseBody defines parameters for ListExternalCalendars.
+type ListExternalCalendars200JSONResponseBody struct {
+	Items []ExternalCalendar `json:"items"`
+}
+
+// CreateExternalCalendarJSONBody defines parameters for CreateExternalCalendar.
+type CreateExternalCalendarJSONBody struct {
+	// CalendarId Google のカレンダーの ID。職員のカレンダーでは、職員のメールアドレスのことがある
+	//
+	// Example: staff@example.com
+	CalendarId CalendarID `json:"calendar_id"`
+
+	// StaffId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	StaffId ID `json:"staff_id"`
+}
+
+// CreateExternalCalendarCheckJSONBody defines parameters for CreateExternalCalendarCheck.
+type CreateExternalCalendarCheckJSONBody struct {
+	// CalendarId Google のカレンダーの ID。職員のカレンダーでは、職員のメールアドレスのことがある
+	//
+	// Example: staff@example.com
+	CalendarId CalendarID `json:"calendar_id"`
+}
+
+// CreateExternalCalendarCheck200JSONResponseBodyReadable defines parameters for CreateExternalCalendarCheck.
+type CreateExternalCalendarCheck200JSONResponseBodyReadable bool
+
+// CreateExternalCalendarCheck200JSONResponseBody defines parameters for CreateExternalCalendarCheck.
+type CreateExternalCalendarCheck200JSONResponseBody struct {
+	Readable CreateExternalCalendarCheck200JSONResponseBodyReadable `json:"readable"`
+}
 
 // ListPatientsParams defines parameters for ListPatients.
 type ListPatientsParams struct {
@@ -867,6 +1308,18 @@ type ChangeUserPositionJSONBody struct {
 	PositionId ID `json:"position_id"`
 }
 
+// CreateCalendarImportPreviewJSONRequestBody defines body for CreateCalendarImportPreview for application/json ContentType.
+type CreateCalendarImportPreviewJSONRequestBody = ImportRange
+
+// CreateCalendarImportJSONRequestBody defines body for CreateCalendarImport for application/json ContentType.
+type CreateCalendarImportJSONRequestBody CreateCalendarImportJSONBody
+
+// CreateExternalCalendarJSONRequestBody defines body for CreateExternalCalendar for application/json ContentType.
+type CreateExternalCalendarJSONRequestBody CreateExternalCalendarJSONBody
+
+// CreateExternalCalendarCheckJSONRequestBody defines body for CreateExternalCalendarCheck for application/json ContentType.
+type CreateExternalCalendarCheckJSONRequestBody CreateExternalCalendarCheckJSONBody
+
 // CreatePatientJSONRequestBody defines body for CreatePatient for application/json ContentType.
 type CreatePatientJSONRequestBody CreatePatientJSONBody
 
@@ -911,12 +1364,33 @@ type ServerInterface interface {
 	// GetDepartment 部署を取得する
 	// (GET /v1/departments/{department_id})
 	GetDepartment(c *gin.Context, departmentId ID)
+	// RemoveExternalCalendar カレンダーを外す
+	// (DELETE /v1/external_calendars/{external_calendar_id})
+	RemoveExternalCalendar(c *gin.Context, externalCalendarId ExternalCalendarID)
+	// CreateCalendarImportPreview 取り込みを下見する
+	// (POST /v1/external_calendars/{external_calendar_id}/import_previews)
+	CreateCalendarImportPreview(c *gin.Context, externalCalendarId ExternalCalendarID)
+	// CreateCalendarImport 取り込みを確定する
+	// (POST /v1/external_calendars/{external_calendar_id}/imports)
+	CreateCalendarImport(c *gin.Context, externalCalendarId ExternalCalendarID)
 	// GetFacility 事業所を取得する
 	// (GET /v1/facilities/{facility_id})
 	GetFacility(c *gin.Context, facilityId FacilityID)
+	// GetCalendarServiceAccount カレンダーを共有する相手のサービスアカウントを取得する
+	// (GET /v1/facilities/{facility_id}/calendar_service_account)
+	GetCalendarServiceAccount(c *gin.Context, facilityId FacilityID)
 	// ListDepartments 事業所の部署を一覧する
 	// (GET /v1/facilities/{facility_id}/departments)
 	ListDepartments(c *gin.Context, facilityId FacilityID)
+	// ListExternalCalendars 事業所の結び付けたカレンダーを一覧する
+	// (GET /v1/facilities/{facility_id}/external_calendars)
+	ListExternalCalendars(c *gin.Context, facilityId FacilityID)
+	// CreateExternalCalendar 職員にカレンダーを結び付ける
+	// (POST /v1/facilities/{facility_id}/external_calendars)
+	CreateExternalCalendar(c *gin.Context, facilityId FacilityID)
+	// CreateExternalCalendarCheck カレンダーを読めるかを確かめる
+	// (POST /v1/facilities/{facility_id}/external_calendars/check)
+	CreateExternalCalendarCheck(c *gin.Context, facilityId FacilityID)
 	// ListPatients 事業所の利用者を一覧する
 	// (GET /v1/facilities/{facility_id}/patients)
 	ListPatients(c *gin.Context, facilityId FacilityID, params ListPatientsParams)
@@ -1063,6 +1537,81 @@ func (siw *ServerInterfaceWrapper) GetDepartment(c *gin.Context) {
 	siw.Handler.GetDepartment(c, departmentId)
 }
 
+// RemoveExternalCalendar operation middleware
+func (siw *ServerInterfaceWrapper) RemoveExternalCalendar(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "external_calendar_id" -------------
+	var externalCalendarId ExternalCalendarID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "external_calendar_id", c.Param("external_calendar_id"), &externalCalendarId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter external_calendar_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.RemoveExternalCalendar(c, externalCalendarId)
+}
+
+// CreateCalendarImportPreview operation middleware
+func (siw *ServerInterfaceWrapper) CreateCalendarImportPreview(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "external_calendar_id" -------------
+	var externalCalendarId ExternalCalendarID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "external_calendar_id", c.Param("external_calendar_id"), &externalCalendarId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter external_calendar_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateCalendarImportPreview(c, externalCalendarId)
+}
+
+// CreateCalendarImport operation middleware
+func (siw *ServerInterfaceWrapper) CreateCalendarImport(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "external_calendar_id" -------------
+	var externalCalendarId ExternalCalendarID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "external_calendar_id", c.Param("external_calendar_id"), &externalCalendarId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter external_calendar_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateCalendarImport(c, externalCalendarId)
+}
+
 // GetFacility operation middleware
 func (siw *ServerInterfaceWrapper) GetFacility(c *gin.Context) {
 
@@ -1088,6 +1637,31 @@ func (siw *ServerInterfaceWrapper) GetFacility(c *gin.Context) {
 	siw.Handler.GetFacility(c, facilityId)
 }
 
+// GetCalendarServiceAccount operation middleware
+func (siw *ServerInterfaceWrapper) GetCalendarServiceAccount(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "facility_id" -------------
+	var facilityId FacilityID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "facility_id", c.Param("facility_id"), &facilityId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter facility_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetCalendarServiceAccount(c, facilityId)
+}
+
 // ListDepartments operation middleware
 func (siw *ServerInterfaceWrapper) ListDepartments(c *gin.Context) {
 
@@ -1111,6 +1685,81 @@ func (siw *ServerInterfaceWrapper) ListDepartments(c *gin.Context) {
 	}
 
 	siw.Handler.ListDepartments(c, facilityId)
+}
+
+// ListExternalCalendars operation middleware
+func (siw *ServerInterfaceWrapper) ListExternalCalendars(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "facility_id" -------------
+	var facilityId FacilityID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "facility_id", c.Param("facility_id"), &facilityId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter facility_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListExternalCalendars(c, facilityId)
+}
+
+// CreateExternalCalendar operation middleware
+func (siw *ServerInterfaceWrapper) CreateExternalCalendar(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "facility_id" -------------
+	var facilityId FacilityID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "facility_id", c.Param("facility_id"), &facilityId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter facility_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateExternalCalendar(c, facilityId)
+}
+
+// CreateExternalCalendarCheck operation middleware
+func (siw *ServerInterfaceWrapper) CreateExternalCalendarCheck(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "facility_id" -------------
+	var facilityId FacilityID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "facility_id", c.Param("facility_id"), &facilityId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter facility_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateExternalCalendarCheck(c, facilityId)
 }
 
 // ListPatients operation middleware
@@ -1967,9 +2616,22 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/v1/schedules/:schedule_id/cancel", wrapper.CancelSchedule)
 	router.GET(options.BaseURL+"/v1/schedules/recurring/:recurring_schedule_id", wrapper.GetRecurringSchedule)
 	router.POST(options.BaseURL+"/v1/schedules/recurring/:recurring_schedule_id/occurrences", wrapper.ChangeOccurrence)
+	router.GET(options.BaseURL+"/v1/facilities/:facility_id/calendar_service_account", wrapper.GetCalendarServiceAccount)
+	router.GET(options.BaseURL+"/v1/facilities/:facility_id/external_calendars", wrapper.ListExternalCalendars)
+	router.POST(options.BaseURL+"/v1/facilities/:facility_id/external_calendars", wrapper.CreateExternalCalendar)
+	router.POST(options.BaseURL+"/v1/facilities/:facility_id/external_calendars/check", wrapper.CreateExternalCalendarCheck)
+	router.DELETE(options.BaseURL+"/v1/external_calendars/:external_calendar_id", wrapper.RemoveExternalCalendar)
+	router.POST(options.BaseURL+"/v1/external_calendars/:external_calendar_id/import_previews", wrapper.CreateCalendarImportPreview)
+	router.POST(options.BaseURL+"/v1/external_calendars/:external_calendar_id/imports", wrapper.CreateCalendarImport)
 }
 
 type BadRequestJSONResponse Error
+
+type CalendarNotConfiguredJSONResponse Error
+
+type CalendarUnavailableJSONResponse Error
+
+type CalendarUnreadableJSONResponse Error
 
 type ForbiddenJSONResponse Error
 
@@ -2137,6 +2799,393 @@ func (response GetDepartment500JSONResponse) VisitGetDepartmentResponse(w http.R
 	return err
 }
 
+type RemoveExternalCalendarRequestObject struct {
+	ExternalCalendarId ExternalCalendarID `json:"external_calendar_id"`
+}
+
+type RemoveExternalCalendarResponseObject interface {
+	VisitRemoveExternalCalendarResponse(w http.ResponseWriter) error
+}
+
+type RemoveExternalCalendar204Response struct {
+}
+
+func (response RemoveExternalCalendar204Response) VisitRemoveExternalCalendarResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RemoveExternalCalendar400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response RemoveExternalCalendar400JSONResponse) VisitRemoveExternalCalendarResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveExternalCalendar401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RemoveExternalCalendar401JSONResponse) VisitRemoveExternalCalendarResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveExternalCalendar403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RemoveExternalCalendar403JSONResponse) VisitRemoveExternalCalendarResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveExternalCalendar404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RemoveExternalCalendar404JSONResponse) VisitRemoveExternalCalendarResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveExternalCalendar500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response RemoveExternalCalendar500JSONResponse) VisitRemoveExternalCalendarResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarImportPreviewRequestObject struct {
+	ExternalCalendarId ExternalCalendarID `json:"external_calendar_id"`
+	Body               *CreateCalendarImportPreviewJSONRequestBody
+}
+
+type CreateCalendarImportPreviewResponseObject interface {
+	VisitCreateCalendarImportPreviewResponse(w http.ResponseWriter) error
+}
+
+type CreateCalendarImportPreview200JSONResponse ImportPreview
+
+func (response CreateCalendarImportPreview200JSONResponse) VisitCreateCalendarImportPreviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarImportPreview400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateCalendarImportPreview400JSONResponse) VisitCreateCalendarImportPreviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarImportPreview401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateCalendarImportPreview401JSONResponse) VisitCreateCalendarImportPreviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarImportPreview403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateCalendarImportPreview403JSONResponse) VisitCreateCalendarImportPreviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarImportPreview404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateCalendarImportPreview404JSONResponse) VisitCreateCalendarImportPreviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarImportPreview422JSONResponse struct{ CalendarUnreadableJSONResponse }
+
+func (response CreateCalendarImportPreview422JSONResponse) VisitCreateCalendarImportPreviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarImportPreview500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response CreateCalendarImportPreview500JSONResponse) VisitCreateCalendarImportPreviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarImportPreview502JSONResponse struct {
+	CalendarUnavailableJSONResponse
+}
+
+func (response CreateCalendarImportPreview502JSONResponse) VisitCreateCalendarImportPreviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(502)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarImportPreview503JSONResponse struct {
+	CalendarNotConfiguredJSONResponse
+}
+
+func (response CreateCalendarImportPreview503JSONResponse) VisitCreateCalendarImportPreviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarImportRequestObject struct {
+	ExternalCalendarId ExternalCalendarID `json:"external_calendar_id"`
+	Body               *CreateCalendarImportJSONRequestBody
+}
+
+type CreateCalendarImportResponseObject interface {
+	VisitCreateCalendarImportResponse(w http.ResponseWriter) error
+}
+
+type CreateCalendarImport201JSONResponse ImportResult
+
+func (response CreateCalendarImport201JSONResponse) VisitCreateCalendarImportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarImport400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateCalendarImport400JSONResponse) VisitCreateCalendarImportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarImport401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateCalendarImport401JSONResponse) VisitCreateCalendarImportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarImport403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateCalendarImport403JSONResponse) VisitCreateCalendarImportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarImport404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateCalendarImport404JSONResponse) VisitCreateCalendarImportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarImport409JSONResponse Error
+
+func (response CreateCalendarImport409JSONResponse) VisitCreateCalendarImportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarImport422JSONResponse struct{ CalendarUnreadableJSONResponse }
+
+func (response CreateCalendarImport422JSONResponse) VisitCreateCalendarImportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarImport500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response CreateCalendarImport500JSONResponse) VisitCreateCalendarImportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarImport502JSONResponse struct {
+	CalendarUnavailableJSONResponse
+}
+
+func (response CreateCalendarImport502JSONResponse) VisitCreateCalendarImportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(502)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarImport503JSONResponse struct {
+	CalendarNotConfiguredJSONResponse
+}
+
+func (response CreateCalendarImport503JSONResponse) VisitCreateCalendarImportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetFacilityRequestObject struct {
 	FacilityId FacilityID `json:"facility_id"`
 }
@@ -2232,6 +3281,103 @@ func (response GetFacility500JSONResponse) VisitGetFacilityResponse(w http.Respo
 	return err
 }
 
+type GetCalendarServiceAccountRequestObject struct {
+	FacilityId FacilityID `json:"facility_id"`
+}
+
+type GetCalendarServiceAccountResponseObject interface {
+	VisitGetCalendarServiceAccountResponse(w http.ResponseWriter) error
+}
+
+type GetCalendarServiceAccount200JSONResponse = GetCalendarServiceAccount200JSONResponseBody
+
+func (response GetCalendarServiceAccount200JSONResponse) VisitGetCalendarServiceAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCalendarServiceAccount400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetCalendarServiceAccount400JSONResponse) VisitGetCalendarServiceAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCalendarServiceAccount401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetCalendarServiceAccount401JSONResponse) VisitGetCalendarServiceAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCalendarServiceAccount403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetCalendarServiceAccount403JSONResponse) VisitGetCalendarServiceAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCalendarServiceAccount500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response GetCalendarServiceAccount500JSONResponse) VisitGetCalendarServiceAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCalendarServiceAccount503JSONResponse struct {
+	CalendarNotConfiguredJSONResponse
+}
+
+func (response GetCalendarServiceAccount503JSONResponse) VisitGetCalendarServiceAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListDepartmentsRequestObject struct {
 	FacilityId FacilityID `json:"facility_id"`
 }
@@ -2323,6 +3469,357 @@ func (response ListDepartments500JSONResponse) VisitListDepartmentsResponse(w ht
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListExternalCalendarsRequestObject struct {
+	FacilityId FacilityID `json:"facility_id"`
+}
+
+type ListExternalCalendarsResponseObject interface {
+	VisitListExternalCalendarsResponse(w http.ResponseWriter) error
+}
+
+type ListExternalCalendars200JSONResponse = ListExternalCalendars200JSONResponseBody
+
+func (response ListExternalCalendars200JSONResponse) VisitListExternalCalendarsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListExternalCalendars400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListExternalCalendars400JSONResponse) VisitListExternalCalendarsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListExternalCalendars401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListExternalCalendars401JSONResponse) VisitListExternalCalendarsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListExternalCalendars403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListExternalCalendars403JSONResponse) VisitListExternalCalendarsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListExternalCalendars500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response ListExternalCalendars500JSONResponse) VisitListExternalCalendarsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExternalCalendarRequestObject struct {
+	FacilityId FacilityID `json:"facility_id"`
+	Body       *CreateExternalCalendarJSONRequestBody
+}
+
+type CreateExternalCalendarResponseObject interface {
+	VisitCreateExternalCalendarResponse(w http.ResponseWriter) error
+}
+
+type CreateExternalCalendar201JSONResponse ExternalCalendar
+
+func (response CreateExternalCalendar201JSONResponse) VisitCreateExternalCalendarResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExternalCalendar400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateExternalCalendar400JSONResponse) VisitCreateExternalCalendarResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExternalCalendar401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateExternalCalendar401JSONResponse) VisitCreateExternalCalendarResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExternalCalendar403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateExternalCalendar403JSONResponse) VisitCreateExternalCalendarResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExternalCalendar409JSONResponse Error
+
+func (response CreateExternalCalendar409JSONResponse) VisitCreateExternalCalendarResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExternalCalendar422JSONResponse struct{ CalendarUnreadableJSONResponse }
+
+func (response CreateExternalCalendar422JSONResponse) VisitCreateExternalCalendarResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExternalCalendar500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response CreateExternalCalendar500JSONResponse) VisitCreateExternalCalendarResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExternalCalendar502JSONResponse struct {
+	CalendarUnavailableJSONResponse
+}
+
+func (response CreateExternalCalendar502JSONResponse) VisitCreateExternalCalendarResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(502)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExternalCalendar503JSONResponse struct {
+	CalendarNotConfiguredJSONResponse
+}
+
+func (response CreateExternalCalendar503JSONResponse) VisitCreateExternalCalendarResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExternalCalendarCheckRequestObject struct {
+	FacilityId FacilityID `json:"facility_id"`
+	Body       *CreateExternalCalendarCheckJSONRequestBody
+}
+
+type CreateExternalCalendarCheckResponseObject interface {
+	VisitCreateExternalCalendarCheckResponse(w http.ResponseWriter) error
+}
+
+type CreateExternalCalendarCheck200JSONResponse = CreateExternalCalendarCheck200JSONResponseBody
+
+func (response CreateExternalCalendarCheck200JSONResponse) VisitCreateExternalCalendarCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExternalCalendarCheck400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateExternalCalendarCheck400JSONResponse) VisitCreateExternalCalendarCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExternalCalendarCheck401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateExternalCalendarCheck401JSONResponse) VisitCreateExternalCalendarCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExternalCalendarCheck403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateExternalCalendarCheck403JSONResponse) VisitCreateExternalCalendarCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExternalCalendarCheck422JSONResponse struct{ CalendarUnreadableJSONResponse }
+
+func (response CreateExternalCalendarCheck422JSONResponse) VisitCreateExternalCalendarCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExternalCalendarCheck500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response CreateExternalCalendarCheck500JSONResponse) VisitCreateExternalCalendarCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExternalCalendarCheck502JSONResponse struct {
+	CalendarUnavailableJSONResponse
+}
+
+func (response CreateExternalCalendarCheck502JSONResponse) VisitCreateExternalCalendarCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(502)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExternalCalendarCheck503JSONResponse struct {
+	CalendarNotConfiguredJSONResponse
+}
+
+func (response CreateExternalCalendarCheck503JSONResponse) VisitCreateExternalCalendarCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -4966,12 +6463,33 @@ type StrictServerInterface interface {
 	// GetDepartment 部署を取得する
 	// (GET /v1/departments/{department_id})
 	GetDepartment(ctx context.Context, request GetDepartmentRequestObject) (GetDepartmentResponseObject, error)
+	// RemoveExternalCalendar カレンダーを外す
+	// (DELETE /v1/external_calendars/{external_calendar_id})
+	RemoveExternalCalendar(ctx context.Context, request RemoveExternalCalendarRequestObject) (RemoveExternalCalendarResponseObject, error)
+	// CreateCalendarImportPreview 取り込みを下見する
+	// (POST /v1/external_calendars/{external_calendar_id}/import_previews)
+	CreateCalendarImportPreview(ctx context.Context, request CreateCalendarImportPreviewRequestObject) (CreateCalendarImportPreviewResponseObject, error)
+	// CreateCalendarImport 取り込みを確定する
+	// (POST /v1/external_calendars/{external_calendar_id}/imports)
+	CreateCalendarImport(ctx context.Context, request CreateCalendarImportRequestObject) (CreateCalendarImportResponseObject, error)
 	// GetFacility 事業所を取得する
 	// (GET /v1/facilities/{facility_id})
 	GetFacility(ctx context.Context, request GetFacilityRequestObject) (GetFacilityResponseObject, error)
+	// GetCalendarServiceAccount カレンダーを共有する相手のサービスアカウントを取得する
+	// (GET /v1/facilities/{facility_id}/calendar_service_account)
+	GetCalendarServiceAccount(ctx context.Context, request GetCalendarServiceAccountRequestObject) (GetCalendarServiceAccountResponseObject, error)
 	// ListDepartments 事業所の部署を一覧する
 	// (GET /v1/facilities/{facility_id}/departments)
 	ListDepartments(ctx context.Context, request ListDepartmentsRequestObject) (ListDepartmentsResponseObject, error)
+	// ListExternalCalendars 事業所の結び付けたカレンダーを一覧する
+	// (GET /v1/facilities/{facility_id}/external_calendars)
+	ListExternalCalendars(ctx context.Context, request ListExternalCalendarsRequestObject) (ListExternalCalendarsResponseObject, error)
+	// CreateExternalCalendar 職員にカレンダーを結び付ける
+	// (POST /v1/facilities/{facility_id}/external_calendars)
+	CreateExternalCalendar(ctx context.Context, request CreateExternalCalendarRequestObject) (CreateExternalCalendarResponseObject, error)
+	// CreateExternalCalendarCheck カレンダーを読めるかを確かめる
+	// (POST /v1/facilities/{facility_id}/external_calendars/check)
+	CreateExternalCalendarCheck(ctx context.Context, request CreateExternalCalendarCheckRequestObject) (CreateExternalCalendarCheckResponseObject, error)
 	// ListPatients 事業所の利用者を一覧する
 	// (GET /v1/facilities/{facility_id}/patients)
 	ListPatients(ctx context.Context, request ListPatientsRequestObject) (ListPatientsResponseObject, error)
@@ -5189,6 +6707,98 @@ func (sh *strictHandler) GetDepartment(ctx *gin.Context, departmentId ID) {
 	}
 }
 
+// RemoveExternalCalendar operation middleware
+func (sh *strictHandler) RemoveExternalCalendar(ctx *gin.Context, externalCalendarId ExternalCalendarID) {
+	var request RemoveExternalCalendarRequestObject
+
+	request.ExternalCalendarId = externalCalendarId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.RemoveExternalCalendar(ctx, request.(RemoveExternalCalendarRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RemoveExternalCalendar")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(RemoveExternalCalendarResponseObject); ok {
+		if err := validResponse.VisitRemoveExternalCalendarResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateCalendarImportPreview operation middleware
+func (sh *strictHandler) CreateCalendarImportPreview(ctx *gin.Context, externalCalendarId ExternalCalendarID) {
+	var request CreateCalendarImportPreviewRequestObject
+
+	request.ExternalCalendarId = externalCalendarId
+
+	var body CreateCalendarImportPreviewJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateCalendarImportPreview(ctx, request.(CreateCalendarImportPreviewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateCalendarImportPreview")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CreateCalendarImportPreviewResponseObject); ok {
+		if err := validResponse.VisitCreateCalendarImportPreviewResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateCalendarImport operation middleware
+func (sh *strictHandler) CreateCalendarImport(ctx *gin.Context, externalCalendarId ExternalCalendarID) {
+	var request CreateCalendarImportRequestObject
+
+	request.ExternalCalendarId = externalCalendarId
+
+	var body CreateCalendarImportJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateCalendarImport(ctx, request.(CreateCalendarImportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateCalendarImport")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CreateCalendarImportResponseObject); ok {
+		if err := validResponse.VisitCreateCalendarImportResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetFacility operation middleware
 func (sh *strictHandler) GetFacility(ctx *gin.Context, facilityId FacilityID) {
 	var request GetFacilityRequestObject
@@ -5215,6 +6825,32 @@ func (sh *strictHandler) GetFacility(ctx *gin.Context, facilityId FacilityID) {
 	}
 }
 
+// GetCalendarServiceAccount operation middleware
+func (sh *strictHandler) GetCalendarServiceAccount(ctx *gin.Context, facilityId FacilityID) {
+	var request GetCalendarServiceAccountRequestObject
+
+	request.FacilityId = facilityId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCalendarServiceAccount(ctx, request.(GetCalendarServiceAccountRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCalendarServiceAccount")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetCalendarServiceAccountResponseObject); ok {
+		if err := validResponse.VisitGetCalendarServiceAccountResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListDepartments operation middleware
 func (sh *strictHandler) ListDepartments(ctx *gin.Context, facilityId FacilityID) {
 	var request ListDepartmentsRequestObject
@@ -5234,6 +6870,98 @@ func (sh *strictHandler) ListDepartments(ctx *gin.Context, facilityId FacilityID
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(ListDepartmentsResponseObject); ok {
 		if err := validResponse.VisitListDepartmentsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListExternalCalendars operation middleware
+func (sh *strictHandler) ListExternalCalendars(ctx *gin.Context, facilityId FacilityID) {
+	var request ListExternalCalendarsRequestObject
+
+	request.FacilityId = facilityId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListExternalCalendars(ctx, request.(ListExternalCalendarsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListExternalCalendars")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListExternalCalendarsResponseObject); ok {
+		if err := validResponse.VisitListExternalCalendarsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateExternalCalendar operation middleware
+func (sh *strictHandler) CreateExternalCalendar(ctx *gin.Context, facilityId FacilityID) {
+	var request CreateExternalCalendarRequestObject
+
+	request.FacilityId = facilityId
+
+	var body CreateExternalCalendarJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateExternalCalendar(ctx, request.(CreateExternalCalendarRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateExternalCalendar")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CreateExternalCalendarResponseObject); ok {
+		if err := validResponse.VisitCreateExternalCalendarResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateExternalCalendarCheck operation middleware
+func (sh *strictHandler) CreateExternalCalendarCheck(ctx *gin.Context, facilityId FacilityID) {
+	var request CreateExternalCalendarCheckRequestObject
+
+	request.FacilityId = facilityId
+
+	var body CreateExternalCalendarCheckJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateExternalCalendarCheck(ctx, request.(CreateExternalCalendarCheckRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateExternalCalendarCheck")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CreateExternalCalendarCheckResponseObject); ok {
+		if err := validResponse.VisitCreateExternalCalendarCheckResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {
@@ -6045,121 +7773,175 @@ func (sh *strictHandler) ListVisitCategories(ctx *gin.Context) {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
+	"/68BAA==",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

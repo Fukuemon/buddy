@@ -4,8 +4,12 @@ import type { paths } from '#/api/generated/schedule'
 
 import { withAuth } from './withAuth'
 import {
+  createMockImportPreview,
+  createMockImportResult,
   createMockSchedules,
+  mockExternalCalendars,
   mockMe,
+  mockServiceAccount,
   mockPatients,
   mockScheduleTypes,
   mockServiceCodes,
@@ -76,6 +80,54 @@ export const createScheduleHandlers = (baseUrl: string) => {
       withAuth(async ({ params, request, response }) =>
         response(200).json(scheduleFromRequest(params.schedule_id, await request.json())),
       ),
+    ),
+    http.get(
+      '/v1/facilities/{facility_id}/calendar_service_account',
+      withAuth(({ response }) => response(200).json({ email: mockServiceAccount })),
+    ),
+    http.get(
+      '/v1/facilities/{facility_id}/external_calendars',
+      withAuth(({ response }) => response(200).json({ items: mockExternalCalendars })),
+    ),
+    http.post(
+      '/v1/facilities/{facility_id}/external_calendars/check',
+      withAuth(({ response }) => response(200).json({ readable: true })),
+    ),
+    http.post(
+      '/v1/facilities/{facility_id}/external_calendars',
+      withAuth(async ({ params, request, response }) => {
+        const { staff_id, calendar_id } = await request.json()
+        return response(201).json({
+          ...mockExternalCalendars[1],
+          id: 'calendar-created',
+          facility_id: params.facility_id,
+          staff_id,
+          calendar_id,
+        })
+      }),
+    ),
+    http.delete(
+      '/v1/external_calendars/{external_calendar_id}',
+      withAuth(({ response }) => response(204).empty()),
+    ),
+    http.post(
+      '/v1/external_calendars/{external_calendar_id}/import_previews',
+      withAuth(async ({ request, response }) =>
+        response(200).json(createMockImportPreview(await request.json())),
+      ),
+    ),
+    http.post(
+      '/v1/external_calendars/{external_calendar_id}/imports',
+      withAuth(async ({ params, request, response }) => {
+        const { decisions, ...range } = await request.json()
+        return response(201).json(
+          createMockImportResult(
+            params.external_calendar_id,
+            createMockImportPreview(range),
+            decisions,
+          ),
+        )
+      }),
     ),
   ]
 }

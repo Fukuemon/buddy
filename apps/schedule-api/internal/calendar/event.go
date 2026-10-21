@@ -4,6 +4,7 @@ package calendar
 
 import (
 	"context"
+	"errors"
 	"time"
 	_ "time/tzdata" // 配布のイメージ（distroless）にタイムゾーンのデータが無くても Asia/Tokyo を読むため。
 )
@@ -52,9 +53,24 @@ type Event struct {
 	ETag          string
 }
 
-// EventSource は、外部のカレンダーから期間の予定を読む。
+// EventSource が返す誤り。httpapi が状態コードに対応させる。
+var (
+	// ErrUnreadable は、カレンダーが無いか、サービスアカウントに共有されていないことを表す。
+	ErrUnreadable = errors.New("カレンダーを読めません。カレンダーの共有を確かめてください")
+	// ErrUnavailable は、外部のカレンダーに届かないか、外部のカレンダーが誤りを返したことを表す。
+	ErrUnavailable = errors.New("外部のカレンダーから予定を読めませんでした")
+	// ErrNotConfigured は、外部のカレンダーを読む認証の情報が設定されていないことを表す。
+	ErrNotConfigured = errors.New("外部のカレンダーを読む設定がありません")
+)
+
+// EventSource は、外部のカレンダーから期間の予定を読む。誤りは ErrUnreadable か ErrUnavailable を包む。
 type EventSource interface {
 	// Events は、calendarID のカレンダーの、timeMin から timeMax までに重なる予定を、
 	// 繰り返しの親の予定と例外の回を展開せずに返す。
 	Events(ctx context.Context, calendarID string, timeMin, timeMax time.Time) ([]Event, error)
+	// Instances は、繰り返しの親の予定 eventID の、timeMin から timeMax までに重なる回を返す。
+	// 変えた回は例外の回の値で返り、取り消した回は返らない。
+	Instances(ctx context.Context, calendarID, eventID string, timeMin, timeMax time.Time) ([]Event, error)
+	// Check は、calendarID のカレンダーの予定を読めるかを確かめる。
+	Check(ctx context.Context, calendarID string) error
 }

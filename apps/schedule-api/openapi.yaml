@@ -8,7 +8,9 @@ info:
     - ID は 26 文字の ULID である。
     - 値がない項目は、項目を省かず null で返す。
     - 日付は YYYY-MM-DD、時刻は HH:MM である。
-    - エラーは Error の形で返す。`code` は invalid_input、unauthenticated、forbidden、not_found、conflict、internal のいずれかである。
+    - エラーは Error の形で返す。`code` は invalid_input、unauthenticated、forbidden、not_found、conflict、internal と、
+      外部のカレンダーの操作の calendar_unreadable、calendar_unavailable、calendar_not_configured と、
+      409 の原因を分ける calendar_taken、calendar_already_linked、staff_has_calendar、import_running、import_preview_changed のいずれかである。
     - `/v1` は全て、OIDC のブローカーが発行した access token（JWT）を `Authorization: Bearer` で求める。
       トークンがないか検証に失敗したときは 401 を、トークンの組織と職員の事業所が、パスの指す事業所と違うときは 403 を返す。
     - 読めないクエリ（例は `;` を含むもの）は 400 を返す。
@@ -29,6 +31,8 @@ tags:
     description: 訪問の情報のマスタ
   - name: schedule
     description: 予定（単発、繰り返し、キャンセル）
+  - name: calendar
+    description: 外部のカレンダー（Google カレンダー）の結び付けと、予定の取り込み
 
 paths:
   /healthz:
@@ -846,6 +850,232 @@ paths:
               example: { code: conflict, message: "2026-10-12 の回はすでに置き換えられています" }
         "500": { $ref: "#/components/responses/InternalError" }
 
+  /v1/facilities/{facility_id}/calendar_service_account:
+    get:
+      tags: [calendar]
+      operationId: getCalendarServiceAccount
+      summary: カレンダーを共有する相手のサービスアカウントを取得する
+      description: 職員が Google カレンダーを閲覧の権限で共有する相手のメールアドレスを返す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+      parameters: [$ref: "#/components/parameters/FacilityID"]
+      responses:
+        "200":
+          description: サービスアカウント
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [email]
+                properties:
+                  email: { type: string, format: email }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { $ref: "#/components/responses/CalendarNotConfigured" }
+
+  /v1/facilities/{facility_id}/external_calendars:
+    get:
+      tags: [calendar]
+      operationId: listExternalCalendars
+      summary: 事業所の結び付けたカレンダーを一覧する
+      description: 外していないカレンダーを、結び付けた順に返す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+      parameters: [$ref: "#/components/parameters/FacilityID"]
+      responses:
+        "200":
+          description: 結び付けたカレンダー
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/ExternalCalendar" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/InternalError" }
+    post:
+      tags: [calendar]
+      operationId: createExternalCalendar
+      summary: 職員にカレンダーを結び付ける
+      description: |
+        Google Calendar API で予定を 1 件だけ読み、読めることを確かめてから結び付ける。
+        外した同じカレンダーが同じ職員にあれば、結び付け直す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+      parameters: [$ref: "#/components/parameters/FacilityID"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [staff_id, calendar_id]
+              properties:
+                staff_id: { $ref: "#/components/schemas/ID" }
+                calendar_id: { $ref: "#/components/schemas/CalendarID" }
+      responses:
+        "201":
+          description: 結び付けたカレンダー
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExternalCalendar" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: |
+            職員にほかのカレンダーが結び付いている（staff_has_calendar）か、カレンダーがほかの職員に結び付いている（calendar_taken。外したカレンダーを含む）か、
+            すでに結び付いている（calendar_already_linked）
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                staff:
+                  summary: 職員にほかのカレンダーが結び付いている
+                  value: { code: staff_has_calendar, message: "この職員には、ほかのカレンダーが結び付いています" }
+                calendar:
+                  summary: カレンダーがほかの職員に結び付いている
+                  value: { code: calendar_taken, message: "このカレンダーは、ほかの職員に結び付いています" }
+                linked:
+                  summary: すでに結び付いている
+                  value: { code: calendar_already_linked, message: "このカレンダーは、この職員にすでに結び付いています" }
+        "422": { $ref: "#/components/responses/CalendarUnreadable" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "502": { $ref: "#/components/responses/CalendarUnavailable" }
+        "503": { $ref: "#/components/responses/CalendarNotConfigured" }
+
+  /v1/facilities/{facility_id}/external_calendars/check:
+    post:
+      tags: [calendar]
+      operationId: createExternalCalendarCheck
+      summary: カレンダーを読めるかを確かめる
+      description: Google Calendar API で予定を 1 件だけ読む。結び付けない。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+      parameters: [$ref: "#/components/parameters/FacilityID"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [calendar_id]
+              properties:
+                calendar_id: { $ref: "#/components/schemas/CalendarID" }
+      responses:
+        "200":
+          description: 読めた
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [readable]
+                properties:
+                  readable: { type: boolean, enum: [true] }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/CalendarUnreadable" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "502": { $ref: "#/components/responses/CalendarUnavailable" }
+        "503": { $ref: "#/components/responses/CalendarNotConfigured" }
+
+  /v1/external_calendars/{external_calendar_id}:
+    delete:
+      tags: [calendar]
+      operationId: removeExternalCalendar
+      summary: カレンダーを外す
+      description: |
+        行を消さずに外す。取り込んだ予定と、外部の予定との対応は残るので、同じカレンダーを結び付け直して同じ期間を取り込んでも、予定は重ならない。
+        職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+      parameters: [$ref: "#/components/parameters/ExternalCalendarID"]
+      responses:
+        "204": { description: 外した }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/external_calendars/{external_calendar_id}/import_previews:
+    post:
+      tags: [calendar]
+      operationId: createCalendarImportPreview
+      summary: 取り込みを下見する
+      description: |
+        カレンダーの期間の予定を読み、取り込むとどうなるかを返す。予定を書かず、下見の結果も保存しない。
+        読み替えの規則は、画面仕様書の予定の取り込みにある。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+      parameters: [$ref: "#/components/parameters/ExternalCalendarID"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ImportRange" }
+      responses:
+        "200":
+          description: 下見の結果
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportPreview" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/CalendarUnreadable" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "502": { $ref: "#/components/responses/CalendarUnavailable" }
+        "503": { $ref: "#/components/responses/CalendarNotConfigured" }
+
+  /v1/external_calendars/{external_calendar_id}/imports:
+    post:
+      tags: [calendar]
+      operationId: createCalendarImport
+      summary: 取り込みを確定する
+      description: |
+        カレンダーの期間の予定を読み直し、下見と同じ規則で読み替えて、予定と外部の予定との対応を 1 つのトランザクションで書く。
+        前の取り込みで取り込んだ外部の予定は書かない。確かめが要る予定には decisions の取り込み方を当てる。
+        職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+      parameters: [$ref: "#/components/parameters/ExternalCalendarID"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/ImportRange"
+                - type: object
+                  required: [decisions]
+                  properties:
+                    decisions:
+                      type: array
+                      description: 下見の needs_review の全ての予定の取り込み方
+                      items: { $ref: "#/components/schemas/ImportDecision" }
+      responses:
+        "201":
+          description: 取り込みの記録
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: 下見の後に確かめが要る予定が変わった（import_preview_changed）か、同じカレンダーの取り込みが進んでいる（import_running）。何も書いていない
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                changed:
+                  summary: 下見の後に確かめが要る予定が変わった
+                  value: { code: import_preview_changed, message: "下見の後に、外部のカレンダーの確かめが要る予定が変わりました。もう一度下見してください" }
+                running:
+                  summary: 同じカレンダーの取り込みが進んでいる
+                  value: { code: import_running, message: "このカレンダーの取り込みが進んでいます。終わってから、もう一度下見してください" }
+        "422": { $ref: "#/components/responses/CalendarUnreadable" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "502": { $ref: "#/components/responses/CalendarUnavailable" }
+        "503": { $ref: "#/components/responses/CalendarNotConfigured" }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -870,6 +1100,12 @@ components:
       name: recurring_schedule_id
       in: path
       required: true
+      schema: { $ref: "#/components/schemas/ID" }
+    ExternalCalendarID:
+      name: external_calendar_id
+      in: path
+      required: true
+      description: buddy の外部のカレンダーの ID。Google のカレンダーの ID ではない
       schema: { $ref: "#/components/schemas/ID" }
     SortOrder:
       name: sort_order
@@ -930,6 +1166,24 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
           example: { code: internal, message: "サーバーでエラーが発生しました" }
+    CalendarUnreadable:
+      description: カレンダーが無いか、サービスアカウントに共有されていない（Google が 403 か 404 を返した）。`code` は calendar_unreadable
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { code: calendar_unreadable, message: "カレンダーを読めません。カレンダーの共有を確かめてください" }
+    CalendarUnavailable:
+      description: Google に届かないか、Google が誤りを返した。`code` は calendar_unavailable
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { code: calendar_unavailable, message: "外部のカレンダーから予定を読めませんでした" }
+    CalendarNotConfigured:
+      description: Google のサービスアカウントが設定されていない。`code` は calendar_not_configured
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { code: calendar_not_configured, message: "外部のカレンダーを読む設定がありません" }
 
   schemas:
     Health:
@@ -957,7 +1211,21 @@ components:
       properties:
         code:
           type: string
-          enum: [invalid_input, unauthenticated, forbidden, not_found, conflict, internal]
+          enum:
+            - invalid_input
+            - unauthenticated
+            - forbidden
+            - not_found
+            - conflict
+            - internal
+            - calendar_unreadable
+            - calendar_unavailable
+            - calendar_not_configured
+            - calendar_taken
+            - calendar_already_linked
+            - staff_has_calendar
+            - import_running
+            - import_preview_changed
         message:
           type: string
           description: 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う
@@ -1314,3 +1582,204 @@ components:
           items: { $ref: "#/components/schemas/Date" }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
+
+    CalendarID:
+      type: string
+      minLength: 1
+      maxLength: 1024
+      description: Google のカレンダーの ID。職員のカレンダーでは、職員のメールアドレスのことがある
+      example: staff@example.com
+    ImportRun:
+      type: object
+      required: [id, range_start, range_end, status, imported_count, skipped_count, started_at, finished_at]
+      properties:
+        id: { $ref: "#/components/schemas/ID" }
+        range_start: { $ref: "#/components/schemas/Date" }
+        range_end:
+          description: この日を含む
+          allOf:
+            - $ref: "#/components/schemas/Date"
+        status: { type: string, enum: [running, succeeded, failed] }
+        imported_count: { type: integer, minimum: 0 }
+        skipped_count:
+          type: integer
+          minimum: 0
+          description: 取り込まない予定と、取り込まないを選んだ予定の数
+        started_at: { type: string, format: date-time }
+        finished_at:
+          type: string
+          format: date-time
+          nullable: true
+          x-omitempty: false
+    ExternalCalendar:
+      type: object
+      required: [id, facility_id, staff_id, provider, calendar_id, created_at, updated_at, last_import]
+      properties:
+        id: { $ref: "#/components/schemas/ID" }
+        facility_id: { $ref: "#/components/schemas/ID" }
+        staff_id: { $ref: "#/components/schemas/ID" }
+        provider: { type: string, enum: [google] }
+        calendar_id: { $ref: "#/components/schemas/CalendarID" }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        last_import:
+          description: 最も新しく始めた取り込み。取り込んだことが無ければ null
+          type: object
+          nullable: true
+          x-omitempty: false
+          allOf:
+            - $ref: "#/components/schemas/ImportRun"
+    ImportRange:
+      type: object
+      required: [range_start, range_end]
+      properties:
+        range_start:
+          description: 期間の最初の日。この日から range_end までに始まる予定を取り込む
+          allOf:
+            - $ref: "#/components/schemas/Date"
+        range_end:
+          description: 期間の最後の日。この日を含む。range_start 以降で、range_start から 1 年未満の日
+          allOf:
+            - $ref: "#/components/schemas/Date"
+    ImportCounts:
+      type: object
+      description: |
+        件数は Google の予定の数で数え、繰り返しのまま取り込む予定は 1 件、回ごとにした予定は 1 回を 1 件に数える。
+      required:
+        - import
+        - import_visit
+        - import_normal
+        - expanded_occurrences
+        - recurring
+        - recurring_as_rule
+        - recurring_expanded
+        - needs_review
+        - skipped
+        - already_imported
+      properties:
+        import: { type: integer, minimum: 0, description: 確かめが要る予定を除いて、取り込む予定の数 }
+        import_visit: { type: integer, minimum: 0, description: import のうち、訪問の予定の数 }
+        import_normal: { type: integer, minimum: 0, description: import のうち、通常の予定の数 }
+        expanded_occurrences: { type: integer, minimum: 0, description: import のうち、繰り返しを回ごとにした回の数 }
+        recurring: { type: integer, minimum: 0, description: 取り込む繰り返しの予定の数 }
+        recurring_as_rule: { type: integer, minimum: 0, description: recurring のうち、繰り返しのまま取り込む予定の数 }
+        recurring_expanded: { type: integer, minimum: 0, description: recurring のうち、回ごとにする予定の数 }
+        needs_review: { type: integer, minimum: 0, description: 取り込み方を選ぶ予定の数 }
+        skipped: { type: integer, minimum: 0, description: 取り込まない予定の数 }
+        already_imported: { type: integer, minimum: 0, description: 前の取り込みで取り込んだ予定の数 }
+    PatientCandidate:
+      type: object
+      required: [patient_id, name, assigned_staff_name]
+      properties:
+        patient_id: { $ref: "#/components/schemas/ID" }
+        name: { type: string }
+        assigned_staff_name: { type: string }
+    ImportReviewItem:
+      type: object
+      required: [external_event_id, revision, date, start_time, end_time, service, client_name, reason, recurrence, candidates]
+      properties:
+        external_event_id:
+          type: string
+          description: 取り込み方を送るときの Google の予定の ID。繰り返しの予定とその回では、親の予定の ID
+        revision:
+          type: string
+          description: まとめた Google の予定の ID と etag から作る版。取り込み方と一緒に送り返す。下見の後に予定が変わると変わる
+        date:
+          description: 予定の日付。繰り返しの予定は最初の回の日付
+          allOf:
+            - $ref: "#/components/schemas/Date"
+        start_time: { $ref: "#/components/schemas/Time" }
+        end_time: { $ref: "#/components/schemas/Time" }
+        service: { type: string, description: 題名から読んだサービス内容 }
+        client_name: { type: string, description: 題名から読んだ利用者名 }
+        reason:
+          type: string
+          enum: [patient_not_found, patient_ambiguous]
+          description: patient_not_found は利用者がいない、patient_ambiguous は同じ名前の利用者が 2 人以上いる
+        recurrence:
+          description: 繰り返しのまま取り込む予定の規則。ほかの予定では null
+          type: object
+          nullable: true
+          x-omitempty: false
+          allOf:
+            - $ref: "#/components/schemas/RecurringRule"
+        candidates:
+          type: array
+          description: 同じ名前の利用者。patient_not_found では空
+          items: { $ref: "#/components/schemas/PatientCandidate" }
+    ImportSkippedItem:
+      type: object
+      description: 取り込まない予定の、読めた日時と理由。題名は利用者名を含むので返さない
+      required: [date, start_time, end_time, all_day, reason]
+      properties:
+        date:
+          type: string
+          nullable: true
+          x-omitempty: false
+          allOf:
+            - $ref: "#/components/schemas/Date"
+        start_time:
+          type: string
+          nullable: true
+          x-omitempty: false
+          allOf:
+            - $ref: "#/components/schemas/Time"
+        end_time:
+          type: string
+          nullable: true
+          x-omitempty: false
+          description: 日をまたぐ予定では、翌日の時刻
+          allOf:
+            - $ref: "#/components/schemas/Time"
+        all_day: { type: boolean }
+        reason:
+          type: string
+          enum: [all_day, multi_day, unreadable_time, zero_length, unreadable_title, service_not_found]
+          description: |
+            all_day は終日、multi_day は日をまたぐ（24:00 に終わる予定を含む）、unreadable_time は日時を読めない、
+            zero_length は長さが無い、unreadable_title は題名が空白だけか訪問の題名を読めない、
+            service_not_found は題名のサービス内容がサービスコードに無い
+    ImportPreview:
+      type: object
+      required: [range_start, range_end, counts, needs_review, skipped]
+      properties:
+        range_start: { $ref: "#/components/schemas/Date" }
+        range_end: { $ref: "#/components/schemas/Date" }
+        counts: { $ref: "#/components/schemas/ImportCounts" }
+        needs_review:
+          type: array
+          description: 取り込み方を選ぶ予定。日時の順
+          items: { $ref: "#/components/schemas/ImportReviewItem" }
+        skipped:
+          type: array
+          description: 取り込まない予定。日時の順で、日時の無い予定は最後
+          items: { $ref: "#/components/schemas/ImportSkippedItem" }
+    ImportDecision:
+      type: object
+      required: [external_event_id, revision, action]
+      properties:
+        external_event_id: { type: string, minLength: 1, maxLength: 1024 }
+        revision:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: 取り込み方を選んだ下見の needs_review の revision。確定のときの版と違えば 409（import_preview_changed）になる
+        action:
+          type: string
+          enum: [patient, normal, skip]
+          description: patient は選んだ利用者の訪問の予定に、normal は題名をタイトルにした通常の予定にし、skip は取り込まない
+        patient_id:
+          description: action が patient のときだけ指定する
+          allOf:
+            - $ref: "#/components/schemas/ID"
+    ImportResult:
+      allOf:
+        - $ref: "#/components/schemas/ImportRun"
+        - type: object
+          required: [external_calendar_id, already_imported_count]
+          properties:
+            external_calendar_id: { $ref: "#/components/schemas/ID" }
+            already_imported_count:
+              type: integer
+              minimum: 0
+              description: 前の取り込みで取り込んでいて、今回は書かなかった予定の数

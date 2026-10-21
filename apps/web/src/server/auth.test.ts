@@ -39,7 +39,7 @@ const setup = (overrides: Partial<AuthDeps> = {}) => {
     oidc: fakeOidc(),
     secret: SECRET,
     secureCookie: false,
-    fetchMe: async () => ({ ok: true, viewer: VIEWER }),
+    fetchMe: async () => ({ ok: true, viewer: { ...VIEWER, canManageStaff: false } }),
     now: () => 1_000_000,
     wait: async () => {},
     ...overrides,

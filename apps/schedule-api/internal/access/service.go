@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/calendar"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/kernel"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
@@ -36,6 +37,7 @@ type Deps struct {
 	StaffRefs   kernel.Finder[staff.Ref]
 	Schedules   kernel.Finder[schedule.Detail]
 	Recurring   kernel.Finder[schedule.RecurringDetail]
+	Calendars   kernel.Finder[calendar.ExternalCalendar]
 }
 
 // Resource は、パスの ID が指すリソースの種類である。
@@ -50,6 +52,7 @@ const (
 	ResourceStaff
 	ResourceSchedule
 	ResourceRecurringSchedule
+	ResourceExternalCalendar
 )
 
 // Service は、検証したトークンから職員を特定する操作である。
@@ -135,6 +138,9 @@ func (a *Service) FacilityOf(ctx context.Context, r Resource, id string) (string
 	case ResourceRecurringSchedule:
 		s, err := a.deps.Recurring.Get(ctx, id)
 		return s.FacilityID, err
+	case ResourceExternalCalendar:
+		c, err := a.deps.Calendars.Get(ctx, id)
+		return c.FacilityID, err
 	default:
 		return "", fmt.Errorf("事業所を求められないリソースの種類 %d です", r)
 	}
