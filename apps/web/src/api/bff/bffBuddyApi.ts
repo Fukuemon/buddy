@@ -43,6 +43,7 @@ export const createBffBuddyApi = (callBff: CallBff = (data) => callBffFn({ data 
       import: call('calendars.import'),
       exportIssues: call('calendars.exportIssues'),
       retryExport: call('calendars.retryExport'),
+      acceptExport: call('calendars.acceptExport'),
     },
   }
 }

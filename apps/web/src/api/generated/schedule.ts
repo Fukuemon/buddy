@@ -649,8 +649,9 @@ export interface paths {
         };
         /**
          * 確かめが要る書き出しを一覧する
-         * @description Google カレンダーへの書き出しのうち、Google カレンダーで予定が変わっていたか消えていた（conflict）か、書けなかった（failed）ものを、
-         *     新しく変わった順に返す。予定の題名、利用者名、カレンダーの ID は返さない。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         * @description Google カレンダーと食い違った予定のうち、buddy と Google カレンダーの両方で変わったか、Google カレンダーの変更を buddy に読み替えられなかった
+         *     （conflict）か、書けなかった（failed）ものを、新しく変わった順に返す。
+         *     予定の題名、利用者名、カレンダーの ID は返さない。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         get: operations["listCalendarExportIssues"];
         put?: never;
@@ -682,6 +683,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/calendar_exports/{calendar_export_id}/acceptances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 確かめが要る書き出しを Google カレンダーの内容で解く
+         * @description 確かめが要る書き出しの予定を、Google カレンダーの今の内容にそろえ、書き出しを終える。buddy で変えた日時と題名は消える。
+         *     Google カレンダーで消された予定は、buddy でキャンセルする。単発の予定で、error_code が precondition_failed か not_found の
+         *     書き出し（acceptable が true のもの）だけを解ける。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        post: operations["createCalendarExportAcceptance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -698,7 +721,7 @@ export interface components {
         Time: string;
         Error: {
             /** @enum {string} */
-            code: "invalid_input" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "internal" | "calendar_unreadable" | "calendar_unavailable" | "calendar_not_configured" | "calendar_taken" | "calendar_already_linked" | "staff_has_calendar" | "import_running" | "import_preview_changed" | "export_not_in_review";
+            code: "invalid_input" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "internal" | "calendar_unreadable" | "calendar_unavailable" | "calendar_not_configured" | "calendar_taken" | "calendar_already_linked" | "staff_has_calendar" | "import_running" | "import_preview_changed" | "export_not_in_review" | "export_not_acceptable" | "external_change_unappliable";
             /** @description 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う */
             message: string;
         };
@@ -948,19 +971,20 @@ export interface components {
             /** @description 繰り返しの予定。schedule_id と排他 */
             recurring_schedule_id: (string & components["schemas"]["ID"]) | null;
             /**
-             * @description pending は書く待ち、succeeded は書き終えた、conflict は Google カレンダーで予定が変わっていたか消えていたので書かずに止めた、
-             *     failed は書く権限が無いか、再送の上限まで書けなかった
+             * @description pending は書く待ち、succeeded は書き終えた、conflict は Google カレンダーで予定が変わっていたか消えていたので書かずに止めたか、
+             *     Google カレンダーの変更を buddy に当てずに止めた、failed は書く権限が無いか、再送の上限まで書けなかった
              * @enum {string}
              */
             status: "pending" | "succeeded" | "conflict" | "failed";
             /**
-             * @description 最後に書けなかった理由。precondition_failed は Google カレンダーで予定が変わっていた（412）、
+             * @description 最後に書けなかった理由。precondition_failed は buddy と Google カレンダーの両方で予定が変わった（書き出しの 412 を含む）、
              *     not_found は Google カレンダーで予定が消されたか、予定かカレンダーが見つからない（410、404）、
              *     forbidden はサービスアカウントがカレンダーに書けない、rejected は Google が予定の内容を受け付けなかった（400）、
-             *     unavailable は Google に届かないか一時的な誤りが続いた
+             *     unavailable は Google に届かないか一時的な誤りが続いた、unappliable は Google カレンダーの変更を buddy の予定に読み替えられない
+             *     （終日にした予定、題名の利用者を引けない予定、繰り返しの予定そのものの変更）
              * @enum {string|null}
              */
-            error_code: "precondition_failed" | "not_found" | "forbidden" | "rejected" | "unavailable" | null;
+            error_code: "precondition_failed" | "not_found" | "forbidden" | "rejected" | "unavailable" | "unappliable" | null;
             /** @description 書こうとした回数 */
             attempts: number;
             /** Format: date-time */
@@ -973,6 +997,11 @@ export interface components {
             date: components["schemas"]["Date"];
             start_time: components["schemas"]["Time"];
             end_time: components["schemas"]["Time"];
+            /**
+             * @description Google カレンダーの内容で解けるか（POST /v1/calendar_exports/{calendar_export_id}/acceptances）。
+             *     単発の予定で、error_code が precondition_failed か not_found のときに true
+             */
+            acceptable: boolean;
         };
         ExternalCalendar: {
             id: components["schemas"]["ID"];
@@ -2619,6 +2648,48 @@ export interface operations {
                 };
             };
             500: components["responses"]["InternalError"];
+        };
+    };
+    createCalendarExportAcceptance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                calendar_export_id: components["parameters"]["CalendarExportID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Google カレンダーの内容にそろえ、書き出しを終えた */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarExport"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description 確かめが要る書き出しでない（export_not_in_review）か、Google カレンダーの内容で解けない書き出しである（export_not_acceptable）か、
+             *     Google カレンダーの予定を buddy の予定に読み替えられない（external_change_unappliable。終日にした予定、題名の利用者を引けない予定など）
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            422: components["responses"]["CalendarUnreadable"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["CalendarUnavailable"];
+            503: components["responses"]["CalendarNotConfigured"];
         };
     };
 }

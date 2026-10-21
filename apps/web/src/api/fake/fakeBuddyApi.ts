@@ -2,6 +2,7 @@ import {
   createMockImportPreview,
   createMockImportResult,
   createMockImportedPreview,
+  exportOfIssue as exportOf,
   mockExportIssues,
   mockExternalCalendars,
   mockServiceAccount,
@@ -227,15 +228,20 @@ export const createFakeBuddyApi = ({
         if (issue === undefined)
           throw new ApiError(404, 'リソースが見つかりません', [], 'not_found')
         exportIssues.delete(exportId)
-        const {
-          staff_id: _,
-          staff_name: __,
-          date: ___,
-          start_time: ____,
-          end_time: _____,
-          ...rest
-        } = issue
-        return { ...rest, status: 'pending', error_code: null, attempts: 0 }
+        return { ...exportOf(issue), status: 'pending', error_code: null, attempts: 0 }
+      },
+      acceptExport: async (facilityId, exportId) => {
+        assertFacility(facilityId)
+        const issue = exportIssues.get(exportId)
+        if (issue === undefined)
+          throw new ApiError(404, 'リソースが見つかりません', [], 'not_found')
+        if (!issue.acceptable)
+          throw conflict(
+            'export_not_acceptable',
+            'この予定は、Google カレンダーの内容を buddy に当てられません。buddy の内容で書き直してください',
+          )
+        exportIssues.delete(exportId)
+        return { ...exportOf(issue), status: 'succeeded', error_code: null }
       },
     },
   }

@@ -10,12 +10,18 @@ export const formatExportIssueDateTime = (issue: CalendarExportIssue) => {
 }
 
 /** 確かめが要る書き出しの理由を、マネージャーが次にすることの分かる文にする。 */
-export const exportIssueReason = (issue: Pick<CalendarExportIssue, 'status' | 'error_code'>) => {
+export const exportIssueReason = (
+  issue: Pick<CalendarExportIssue, 'status' | 'error_code' | 'acceptable'>,
+) => {
   switch (issue.error_code) {
     case 'precondition_failed':
-      return 'Google カレンダーで予定が直されたので、buddy の変更を書き出していません。'
+      return issue.acceptable
+        ? 'buddy と Google カレンダーの両方で予定が変わりました。どちらの内容に合わせるかを選んでください。'
+        : 'buddy と Google カレンダーの両方で繰り返しの予定が変わりました。buddy の内容で書き直すか、Google カレンダーで元に戻すよう職員に頼んでください。'
     case 'not_found':
       return 'Google カレンダーで予定が見つかりません。予定が消されたか、カレンダーの共有が外れていないかを、職員に確かめてください。'
+    case 'unappliable':
+      return 'Google カレンダーでの変更を、buddy の予定に読み替えられません。終日の予定、題名の利用者が見つからない予定、繰り返しの予定そのものの変更が当たります。buddy の内容で書き直すか、Google カレンダーで直すよう職員に頼んでください。'
     case 'rejected':
       return 'Google カレンダーが予定の内容を受け付けませんでした。予定を開いて内容を確かめてください。'
     case 'forbidden':

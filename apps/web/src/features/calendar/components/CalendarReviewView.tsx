@@ -15,21 +15,24 @@ export type CalendarReviewViewProps = {
   onRetry: () => void
   onOpenSchedule: (scheduleId: string) => void
   onRewrite: (exportId: CalendarExportIssue['id']) => void
+  onAccept: (exportId: CalendarExportIssue['id']) => void
 }
 
-/** 確かめが要る予定の画面の本文。題と説明の文の下に、Google カレンダーに書き出せなかった予定を並べる。 */
+/** 確かめが要る予定の画面の本文。題と説明の文の下に、Google カレンダーと食い違った予定を並べる。 */
 export const CalendarReviewView = ({
   state,
   onRetry,
   onOpenSchedule,
   onRewrite,
+  onAccept,
 }: CalendarReviewViewProps) => (
   <div className="flex flex-col gap-6">
     <h1 className="text-heading-md">確かめが要る予定</h1>
     <p className="max-w-3xl text-body">
-      buddy の予定のうち、Google カレンダーに書き出せなかった予定です。Google
-      カレンダーで直された予定は、buddy に取り込みません。予定を開いて buddy の内容を確かめ、buddy
-      の内容で書き直すと、Google カレンダーの予定の題名と日時を buddy の内容にします。
+      buddy の予定のうち、Google カレンダーに書き出せなかった予定と、buddy と Google
+      カレンダーの両方で変わった予定です。片方だけで変わった予定は、変わった側に合わせるので、ここには出ません。buddy
+      の内容で書き直すと Google カレンダーの予定を buddy の内容にし、Google の内容に合わせると buddy
+      の予定を Google カレンダーの内容にします。
     </p>
     {state.status === 'loading' && (
       <div data-testid="calendar-review-loading">
@@ -54,6 +57,7 @@ export const CalendarReviewView = ({
       ) : (
         <CalendarReviewTable
           issues={state.issues}
+          onAccept={onAccept}
           onOpenSchedule={onOpenSchedule}
           onRewrite={onRewrite}
         />
