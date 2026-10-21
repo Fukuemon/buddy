@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>schedule-edit 訪問の種類を選ぶ</title>
+    <link rel="stylesheet" href="../../_common/mock.css" />
+    <link rel="stylesheet" href="../../_common/wireframe.css" />
+    <link rel="stylesheet" href="schedule-edit.css" />
+  </head>
+  <body data-view="desktop">
+    <div class="stage">
+      <div class="screen">
+        <div class="screen-body">
+          <div class="wf-modal-stage">
+            <div aria-hidden="true" class="wf-bg-calendar"></div>
+            <div class="wf-overlay" data-m="1"></div>
+            <div aria-label="予定の編集" class="wf-modal" data-testid="schedule-form-modal" role="dialog">
+              <div class="wf-modal__header">
+                <span aria-label="閉じる" class="wf-btn wf-btn--icon" data-m="2" data-testid="modal-close"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+                <h2 class="wf-modal__title" data-m="3">予定の編集</h2>
+              </div>
+              <div class="wf-modal__body">
+                <div class="wf-split" data-testid="schedule-form">
+                  <div class="wf-stack">
+                    <span class="wf-summary" data-m="4" data-testid="schedule-field-date-time">
+                      <span class="wf-label"></span>
+                      <span>2026-10-20 09:00 - 09:29（29 分、訪看I2）</span>
+                    </span>
+                    <span class="wf-summary" data-m="4" data-testid="schedule-field-patient">
+                      <span class="wf-label">利用者</span>
+                      <span><span class="wf-text"></span></span>
+                    </span>
+                    <span class="wf-summary" data-m="4" data-testid="schedule-field-staff">
+                      <span class="wf-label">担当者</span>
+                      <span><span class="wf-text"></span></span>
+                    </span>
+                    <span class="wf-summary is-active" data-m="4" data-testid="schedule-field-category">
+                      <span class="wf-label">訪問の種類</span>
+                      <span>緊急</span>
+                    </span>
+                    <span class="wf-summary" data-m="4" data-testid="schedule-field-description">
+                      <span class="wf-label">メモ</span>
+                      <span><span class="wf-text wf-text--l"></span></span>
+                    </span>
+                  </div>
+                  <div>
+                    <div class="se-pane">
+                      <h3 class="wf-heading">訪問の種類を選んでください</h3>
+                      <div class="wf-stack" data-m="5">
+                        <span class="wf-check se-option" data-testid="schedule-category-night">夜勤</span>
+                        <span class="wf-check se-option is-on" data-testid="schedule-category-emergency">緊急</span>
+                        <span class="wf-check se-option" data-testid="schedule-category-hospitalization">入院</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="wf-modal__footer">
+                <span class="wf-btn wf-btn--primary" data-m="6" data-testid="schedule-edit-submit">保存</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="markers"></div>
+    </div>
+    <script src="../../_common/mock.js"></script>
+  </body>
+</html>

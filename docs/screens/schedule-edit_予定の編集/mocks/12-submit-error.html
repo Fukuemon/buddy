@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>schedule-edit 送信の失敗</title>
+    <link rel="stylesheet" href="../../_common/mock.css" />
+    <link rel="stylesheet" href="../../_common/wireframe.css" />
+    <link rel="stylesheet" href="schedule-edit.css" />
+  </head>
+  <body data-view="desktop">
+    <div class="stage">
+      <div class="screen">
+        <div class="screen-body">
+          <div class="wf-modal-stage">
+            <div aria-hidden="true" class="wf-bg-calendar"></div>
+            <div class="wf-overlay" data-m="1"></div>
+            <div aria-label="予定の編集" class="wf-modal" data-testid="schedule-form-modal" role="dialog">
+              <div class="wf-modal__header">
+                <span aria-label="閉じる" class="wf-btn wf-btn--icon" data-m="2" data-testid="modal-close"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+                <h2 class="wf-modal__title" data-m="3">予定の編集</h2>
+              </div>
+              <div class="wf-modal__body">
+                <div class="wf-split" data-testid="schedule-form">
+                  <div class="wf-stack">
+                    <span class="wf-summary is-active" data-m="4" data-testid="schedule-field-date-time">
+                      <span class="wf-label"></span>
+                      <span>2026-10-20 09:00 - 09:29（29 分、訪看I2）</span>
+                    </span>
+                    <span class="wf-summary" data-m="4" data-testid="schedule-field-patient">
+                      <span class="wf-label">利用者</span>
+                      <span><span class="wf-text"></span></span>
+                    </span>
+                    <span class="wf-summary" data-m="4" data-testid="schedule-field-staff">
+                      <span class="wf-label">担当者</span>
+                      <span><span class="wf-text"></span></span>
+                    </span>
+                    <span class="wf-summary" data-m="4" data-testid="schedule-field-category">
+                      <span class="wf-label">訪問の種類</span>
+                      <span>緊急</span>
+                    </span>
+                    <span class="wf-summary" data-m="4" data-testid="schedule-field-description">
+                      <span class="wf-label">メモ</span>
+                      <span><span class="wf-text wf-text--l"></span></span>
+                    </span>
+                  </div>
+                  <div>
+                    <div class="se-pane">
+                      <h3 class="wf-heading">訪問日時</h3>
+                      <div class="wf-input" data-m="5" data-testid="schedule-form-date">
+                        <span class="wf-label">訪問日</span>
+                        <span>2026-10-20</span>
+                      </div>
+                      <div class="se-row">
+                        <div class="wf-input" data-m="6" data-testid="schedule-form-start-time">
+                          <span class="wf-label">開始時間</span>
+                          <span>09:00</span>
+                        </div>
+                        <div class="wf-input" data-m="7" data-testid="schedule-form-service-time">
+                          <span class="wf-label">提供時間（分）</span>
+                          <span>29</span>
+                        </div>
+                      </div>
+                      <p class="wf-label" data-m="8" data-testid="schedule-form-end-time" style="margin: 0">終了時間 09:29</p>
+                      <div class="wf-stack" data-m="9">
+                        <h3 class="wf-heading">サービスコードを選んでください</h3>
+                        <div class="se-chips">
+                          <span class="wf-chip is-on" data-testid="service-code-{コード}">訪看I2</span>
+                          <span class="wf-chip" data-testid="service-code-{コード}">訪看I3</span>
+                          <span class="wf-chip" data-testid="service-code-{コード}">訪看I4</span>
+                          <span class="wf-chip" data-testid="service-code-{コード}">訪看I5</span>
+                          <span class="wf-chip" data-testid="service-code-{コード}">訪看I5・2超</span>
+                          <span class="wf-chip" data-testid="service-code-{コード}">予防看I2</span>
+                          <span class="wf-chip" data-testid="service-code-{コード}">予防看I3</span>
+                          <span class="wf-chip" data-testid="service-code-{コード}">予防看I4</span>
+                          <span class="wf-chip" data-testid="service-code-{コード}">予防看I5</span>
+                          <span class="wf-chip" data-testid="service-code-{コード}">予防看I5・2超</span>
+                          <span class="wf-chip" data-testid="service-code-{コード}">医</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="wf-modal__footer">
+                <p class="wf-alert" data-m="10" role="alert">予定を更新できませんでした。</p>
+                <span class="wf-btn wf-btn--primary" data-m="11" data-testid="schedule-edit-submit">保存</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="markers"></div>
+    </div>
+    <script src="../../_common/mock.js"></script>
+  </body>
+</html>
