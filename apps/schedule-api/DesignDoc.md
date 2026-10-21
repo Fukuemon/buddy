@@ -243,7 +243,7 @@ erDiagram
 | `schedule.all.read` | 事業所の全ての予定の閲覧 | false |
 | `schedule.all.edit` | 事業所の全ての予定の編集 | false |
 
-職員を登録すると、役職の既定の権限を職員に写す。チームの権限（`schedule.team.*`）は、職員の所属のチームを対象にして写す。規則は ADR-0002 にある。
+職員を登録すると、役職の既定の権限を職員に写す。チームの権限（`schedule.team.*`）は、職員の所属のチームを対象にして写す。職員の権限（`schedule.user.*`）は、写すときに対象を決められないので、役職の既定にできない。規則は ADR-0002 にある。
 
 - ADR-0002: [権限を役職の既定と職員ごとの上書きで持つ（PBAC）](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0002-pbac.md)
 

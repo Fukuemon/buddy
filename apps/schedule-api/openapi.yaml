@@ -216,7 +216,7 @@ paths:
                 name: { type: string, maxLength: 255 }
                 policy_ids:
                   type: array
-                  description: 役職の職員に既定で与える権限
+                  description: 役職の職員に既定で与える権限。対象の職員を指定する権限（schedule.user.*）は既定にできない
                   items: { $ref: "#/components/schemas/ID" }
       responses:
         "201":
