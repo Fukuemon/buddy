@@ -35,7 +35,7 @@ docker compose up --build --wait
 - 何のためのアプリか: [PRD](docs/PRD.md)
 - 構成要素の責務と依存: [Design Doc](docs/design/DesignDoc.md)。アプリごとの設計は、各アプリの `DesignDoc.md` にある
 - 画面ごとの表示と操作: [画面仕様書](docs/screens/index.md)
-- 公開した文書のサイト: [buddy-docs](https://buddy-docs.fukuemony029.workers.dev)。デザインシステムのカタログは同じサイトの [`/storybook/`](https://buddy-docs.fukuemony029.workers.dev/storybook/) にある。Cloudflare Access で許可した人だけが開ける。公開の仕組みは [apps/docs-site](apps/docs-site/README.md) にある
+- 公開した文書のサイト: [buddy-docs](https://buddy-docs.emon-apps.workers.dev)。デザインシステムのカタログは同じサイトの [`/storybook/`](https://buddy-docs.emon-apps.workers.dev/storybook/) にある。Cloudflare Access で許可した人だけが開ける。公開の仕組みは [apps/docs-site](apps/docs-site/README.md) にある
 - 決めた判断と理由: [ADR](docs/adr)
 - 変更を取り込むまでの手順: [CONTRIBUTING.md](CONTRIBUTING.md)
 - 規約と事実の目次: [context/index.md](context/index.md)

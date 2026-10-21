@@ -5,7 +5,7 @@
 
 | 環境 | 文書のサイト | カタログ | 出す契機 |
 | --- | --- | --- | --- |
-| 本番 | `https://buddy-docs.fukuemony029.workers.dev` | 同じ URL の `/storybook/` | develop に push したとき |
+| 本番 | `https://buddy-docs.emon-apps.workers.dev` | 同じ URL の `/storybook/` | develop に push したとき |
 | プレビュー | pull request ごとの URL。ワークフローが pull request にコメントする | 同じ URL の `/storybook/` | pull request を作るか、push したとき |
 
 ## 成果物を作る
@@ -58,4 +58,4 @@ pnpm site:build
 
 - アカウント全体の Access（Workers & Pages の概要の「Cloudflare Access」のスイッチ）は使わない。同じアカウントの、公開しているほかの Worker も守られて開けなくなるためである。
 - Worker の名前を変えると、新しい Worker が Access なしで出る。名前を変えるときは、先に手順 2、3、5、6 を新しい名前で行う。
-- Access で守られているかは、`curl -I https://buddy-docs.fukuemony029.workers.dev` が `*.cloudflareaccess.com` への 302 を返すことで確かめる。
+- Access で守られているかは、`curl -I https://buddy-docs.emon-apps.workers.dev` が `*.cloudflareaccess.com` への 302 を返すことで確かめる。
