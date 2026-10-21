@@ -34,7 +34,10 @@ export const ReceiptResultTable = ({ rows }: ReceiptResultTableProps) => (
                 scope="rowgroup"
               >
                 {/* セルは全ての列にまたがり左端に留まらないので、文字だけを送る箱の左端に留める */}
-                <span className="sticky left-5 inline-block">
+                <span
+                  className="sticky left-5 inline-block"
+                  data-testid={`receipt-category-label-${category}`}
+                >
                   {label}（{inCategory.length} 件）
                 </span>
               </th>
