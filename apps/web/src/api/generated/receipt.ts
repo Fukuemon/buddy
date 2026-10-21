@@ -75,6 +75,7 @@ export interface components {
         Error: {
             /** @enum {string} */
             code: "bad_request" | "missing_file" | "payload_too_large" | "unauthenticated" | "forbidden" | "invalid_csv" | "not_found" | "internal" | "calendar_not_configured" | "schedule_source_failed";
+            /** @description 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う */
             message: string;
             /** @description 入力の CSV の行ごとの誤り。`invalid_csv` のときだけ持つ */
             errors?: components["schemas"]["RowError"][];
@@ -264,7 +265,7 @@ export interface operations {
                     "application/json": components["schemas"]["Report"];
                 };
             };
-            /** @description 本文が multipart/form-data でない、`visits` が無い、`schedules` も `month` も無い（`missing_file`）、`month` の形が違う（`bad_request`） */
+            /** @description 本文を multipart/form-data として読めないか、`month` の形が違う（`bad_request`）。`visits` が無いか、`schedules` も `month` も無い（`missing_file`） */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -276,6 +277,8 @@ export interface operations {
             /** @description トークンがないか、検証に失敗した（`unauthenticated`） */
             401: {
                 headers: {
+                    /** @description RFC 6750 の challenge。トークンがないときは `Bearer`、検証に失敗したときは `Bearer error="invalid_token"` */
+                    "WWW-Authenticate"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -288,6 +291,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "code": "forbidden",
+                     *       "message": "トークンに組織がないので、month では照合できない"
+                     *     }
+                     */
                     "application/json": components["schemas"]["Error"];
                 };
             };
@@ -297,10 +306,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "code": "payload_too_large",
+                     *       "message": "本文が上限を超えている"
+                     *     }
+                     */
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description 入力の CSV に誤りがある（`invalid_csv`）。行の誤りは `errors` に行番号つきで入る */
+            /** @description 入力の CSV に誤りがある（`invalid_csv`）。行の誤りは `errors` に行番号つきで入る。列が足りないときと文字コードを読めないときは、`errors` を持たない */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -315,6 +330,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "code": "internal",
+                     *       "message": "照合に失敗した"
+                     *     }
+                     */
                     "application/json": components["schemas"]["Error"];
                 };
             };
@@ -324,6 +345,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "code": "schedule_source_failed",
+                     *       "message": "Google カレンダーから予定を取れない"
+                     *     }
+                     */
                     "application/json": components["schemas"]["Error"];
                 };
             };
@@ -333,6 +360,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "code": "calendar_not_configured",
+                     *       "message": "サーバーに事業所の Google カレンダーの設定がないので、month では照合できない"
+                     *     }
+                     */
                     "application/json": components["schemas"]["Error"];
                 };
             };

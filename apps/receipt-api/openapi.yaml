@@ -87,45 +87,85 @@ paths:
               schema: { $ref: "#/components/schemas/Report" }
         "400":
           description: |
-            本文が multipart/form-data でない、`visits` が無い、`schedules` も `month` も無い（`missing_file`）、`month` の形が違う（`bad_request`）
+            本文を multipart/form-data として読めないか、`month` の形が違う（`bad_request`）。`visits` が無いか、`schedules` も `month` も無い（`missing_file`）
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                badBody:
+                  summary: 本文を multipart/form-data として読めない
+                  value: { code: bad_request, message: "multipart/form-data の本文を読めない" }
+                badMonth:
+                  summary: month の形が違う
+                  value: { code: bad_request, message: "対象の月の形が違う。YYYY-MM にする: \"2024/04\"" }
+                missingVisits:
+                  summary: visits が無い
+                  value: { code: missing_file, message: "ファイルのフィールド visits がない" }
+                missingSchedules:
+                  summary: schedules も month も無い
+                  value: { code: missing_file, message: "ファイルのフィールド schedules か、フォームの値 month がない" }
         "401":
           description: トークンがないか、検証に失敗した（`unauthenticated`）
+          headers:
+            WWW-Authenticate:
+              description: RFC 6750 の challenge。トークンがないときは `Bearer`、検証に失敗したときは `Bearer error="invalid_token"`
+              schema: { type: string }
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                missing:
+                  summary: トークンがない
+                  value: { code: unauthenticated, message: "認証が必要である" }
+                invalid:
+                  summary: トークンの検証に失敗した
+                  value: { code: unauthenticated, message: "トークンが正しくない" }
         "403":
           description: Google カレンダーから取るのに、トークンに組織がない（`forbidden`）
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { code: forbidden, message: "トークンに組織がないので、month では照合できない" }
         "413":
           description: 本文が上限を超えている（`payload_too_large`）
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { code: payload_too_large, message: "本文が上限を超えている" }
         "422":
-          description: 入力の CSV に誤りがある（`invalid_csv`）。行の誤りは `errors` に行番号つきで入る
+          description: 入力の CSV に誤りがある（`invalid_csv`）。行の誤りは `errors` に行番号つきで入る。列が足りないときと文字コードを読めないときは、`errors` を持たない
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                rowErrors:
+                  summary: 行の値に誤りがある
+                  value:
+                    code: invalid_csv
+                    message: 実績の CSV に誤りがある
+                    errors:
+                      - { source: visits, line: 3, column: 利用者名, message: 空である }
+                missingColumn:
+                  summary: 列が足りない
+                  value: { code: invalid_csv, message: "visits の CSV に列がない: 提供時間" }
         "500":
           description: サーバーの誤り（`internal`）
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { code: internal, message: "照合に失敗した" }
         "502":
           description: Google カレンダーから予定を取れない（`schedule_source_failed`）
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { code: schedule_source_failed, message: "Google カレンダーから予定を取れない" }
         "503":
           description: サーバーに、トークンの組織の Google カレンダーの設定がないのに `month` で呼ばれた（`calendar_not_configured`）
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { code: calendar_not_configured, message: "サーバーに事業所の Google カレンダーの設定がないので、month では照合できない" }
 
 components:
   securitySchemes:
@@ -162,7 +202,9 @@ components:
             - internal
             - calendar_not_configured
             - schedule_source_failed
-        message: { type: string }
+        message:
+          type: string
+          description: 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う
         errors:
           type: array
           description: 入力の CSV の行ごとの誤り。`invalid_csv` のときだけ持つ

@@ -851,10 +851,20 @@ components:
 
   responses:
     BadRequest:
-      description: 入力の誤り
+      description: 入力の誤り。`code` は invalid_input。`message` は誤りの箇所と理由で、入力によって変わる
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
+          examples:
+            pathID:
+              summary: パスの ID が ULID でない
+              value: { code: invalid_input, message: "schedule_id は ULID です" }
+            body:
+              summary: 本文の値が規則に合わない
+              value: { code: invalid_input, message: "終了の時刻は開始の時刻より後にします" }
+            query:
+              summary: クエリを読めない
+              value: { code: invalid_input, message: "クエリの形が正しくありません: invalid semicolon separator in query" }
     Unauthorized:
       description: トークンがないか、検証に失敗した。`code` は unauthenticated
       headers:
@@ -864,26 +874,37 @@ components:
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
+          examples:
+            missing:
+              summary: トークンがない
+              value: { code: unauthenticated, message: "認証が必要です" }
+            invalid:
+              summary: トークンの検証に失敗した
+              value: { code: unauthenticated, message: "トークンが正しくありません" }
     Forbidden:
-      description: 職員を特定できないか、パスが指す事業所が職員の事業所と違うか、職員の権限で予定を見るか編集できない。`code` は forbidden
+      description: 職員を特定できないか、パスが指す事業所が職員の事業所と違うか、職員の権限で操作できない。`code` は forbidden
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
+          example: { code: forbidden, message: "この操作は許可されていません" }
     NotFound:
-      description: パスで指したリソースがない
+      description: パスで指したリソースがない。`code` は not_found
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
+          example: { code: not_found, message: "リソースが見つかりません" }
     Conflict:
-      description: 名前などの一意の値が重なる
+      description: 名前などの一意の値が重なるか、キャンセル済みの予定を変えるかキャンセルしようとしたか、繰り返しの回をすでに置き換えた。`code` は conflict
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
+          example: { code: conflict, message: "リソースがすでに存在します" }
     InternalError:
-      description: サーバーの誤り
+      description: サーバーの誤り。`code` は internal
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
+          example: { code: internal, message: "サーバーでエラーが発生しました" }
 
   schemas:
     Health:
@@ -912,7 +933,9 @@ components:
         code:
           type: string
           enum: [invalid_input, unauthenticated, forbidden, not_found, conflict, internal]
-        message: { type: string }
+        message:
+          type: string
+          description: 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う
     CreateNameRequest:
       type: object
       required: [name]
