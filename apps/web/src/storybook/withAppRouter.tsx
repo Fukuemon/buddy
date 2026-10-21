@@ -6,16 +6,24 @@ import {
   createRootRouteWithContext,
   createRoute,
   createRouter,
+  stripSearchParams,
+  useParams,
 } from '@tanstack/react-router'
-import type { Decorator } from '@storybook/react-vite'
-import { useState, type ComponentType } from 'react'
+import type { Decorator, StoryContext } from '@storybook/react-vite'
+import { useState } from 'react'
 
 import { ApiError, type BuddyApi, type ReceiptApi } from '#/api/client'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import { FAKE_VIEWER } from '#/api/fake/fixtures'
 import { createFakeReceiptApi } from '#/api/fake/fakeReceiptApi'
-import { scheduleCreateSearchSchema } from '#/features/schedule/schema/scheduleCreateSearch'
-import { scheduleSearchSchema } from '#/features/schedule/schema/scheduleSearch'
+import {
+  scheduleCreateSearchDefaults,
+  scheduleCreateSearchSchema,
+} from '#/features/schedule/schema/scheduleCreateSearch'
+import {
+  scheduleSearchDefaults,
+  scheduleSearchSchema,
+} from '#/features/schedule/schema/scheduleSearch'
 import type { AppRouterContext } from '#/integrations/tanstack-query/root-provider'
 
 /** story を置く route。アプリの route の ID と同じにし、Container の useSearch と useNavigate が働くようにする。 */
@@ -39,7 +47,10 @@ export type AppRouterParameters = {
   seed?: (queryClient: QueryClient) => void
 }
 
-const buildRouter = (Story: ComponentType, params: AppRouterParameters) => {
+/** decorator が受ける story。route の params を args に足して描けるよう、args を受ける形にする。 */
+type StoryFn = (update?: { args?: Record<string, unknown> }) => React.ReactNode
+
+const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   params.seed?.(queryClient)
   const context: AppRouterContext = {
@@ -48,7 +59,14 @@ const buildRouter = (Story: ComponentType, params: AppRouterParameters) => {
     receiptApi: params.receiptApi ?? createFakeReceiptApi(),
     mode: 'fake',
   }
-  const at = (id: StoryRouteId) => () => (params.route === id ? <Story /> : <Outlet />)
+  // story を置く route の外では何も描かない。story の操作で別の route へ移ると、画面は空になる
+  const at = (id: StoryRouteId) => () => (params.route === id ? Story() : <Outlet />)
+  // アプリの route は params の scheduleId を Container の props に渡すので、story の args にも同じ値を渡す
+  const atScheduleId = (id: StoryRouteId) =>
+    function ScheduleIdRoute() {
+      const { scheduleId } = useParams({ strict: false })
+      return params.route === id ? Story({ args: { scheduleId } }) : <Outlet />
+    }
 
   const root = createRootRouteWithContext<AppRouterContext>()({
     beforeLoad: () => ({ viewer: FAKE_VIEWER }),
@@ -58,23 +76,25 @@ const buildRouter = (Story: ComponentType, params: AppRouterParameters) => {
     getParentRoute: () => root,
     path: 'schedule',
     validateSearch: scheduleSearchSchema,
+    search: { middlewares: [stripSearchParams(scheduleSearchDefaults)] },
     component: at('/schedule'),
   })
   const scheduleNew = createRoute({
     getParentRoute: () => schedule,
     path: 'new',
     validateSearch: scheduleCreateSearchSchema,
+    search: { middlewares: [stripSearchParams(scheduleCreateSearchDefaults)] },
     component: at('/schedule/new'),
   })
   const scheduleDetail = createRoute({
     getParentRoute: () => schedule,
     path: '$scheduleId/',
-    component: at('/schedule/$scheduleId/'),
+    component: atScheduleId('/schedule/$scheduleId/'),
   })
   const scheduleEdit = createRoute({
     getParentRoute: () => schedule,
     path: '$scheduleId/edit',
-    component: at('/schedule/$scheduleId/edit'),
+    component: atScheduleId('/schedule/$scheduleId/edit'),
   })
   const receipt = createRoute({
     getParentRoute: () => root,
@@ -99,12 +119,7 @@ const buildRouter = (Story: ComponentType, params: AppRouterParameters) => {
   return { router, queryClient }
 }
 
-/**
- * Container の story を、アプリと同じ ID の route と、偽物の API を持つ router の中で描く decorator。
- * story の parameters.appRouter で、置く route と最初の URL と API を指す。
- */
-export const withAppRouter: Decorator = (Story, { parameters }) => {
-  const params = parameters.appRouter as AppRouterParameters
+const AppRouterStory = ({ Story, params }: { Story: StoryFn; params: AppRouterParameters }) => {
   const [{ router, queryClient }] = useState(() => buildRouter(Story, params))
   return (
     <QueryClientProvider client={queryClient}>
@@ -112,6 +127,19 @@ export const withAppRouter: Decorator = (Story, { parameters }) => {
     </QueryClientProvider>
   )
 }
+
+/**
+ * Container の story を、アプリと同じ ID の route と、偽物の API を持つ router の中で描く decorator。
+ * story の parameters.appRouter で、置く route と最初の URL と API を指す。
+ * Controls で args を変えると、router を作り直して描き直す。
+ */
+export const withAppRouter: Decorator = (Story, context: StoryContext) => (
+  <AppRouterStory
+    key={JSON.stringify(context.args)}
+    Story={Story as StoryFn}
+    params={context.parameters.appRouter as AppRouterParameters}
+  />
+)
 
 /** 一覧と 1 件の取得を、空の結果にした偽物の API を作る。 */
 export const emptyBuddyApi = (base: BuddyApi = createFakeBuddyApi()): BuddyApi => ({

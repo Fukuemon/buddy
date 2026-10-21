@@ -21,7 +21,8 @@ const meta = {
   title: '画面/Schedule/ScheduleEditModalContainer',
   component: ScheduleEditModalContainer,
   decorators: [withAppRouter],
-  args: { scheduleId: 'schedule-1' },
+  // 描くときは、route の params の scheduleId で上書きする。開く予定は parameters.appRouter.url で選ぶ
+  args: { scheduleId: '' },
   parameters: route({}),
 } satisfies Meta<typeof ScheduleEditModalContainer>
 
@@ -31,7 +32,6 @@ type Story = StoryObj<typeof meta>
 export const Visit: Story = {}
 
 export const Normal: Story = {
-  args: { scheduleId: 'schedule-3' },
   parameters: route({ url: '/schedule/schedule-3/edit' }),
 }
 

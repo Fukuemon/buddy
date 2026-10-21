@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { userEvent, within } from 'storybook/test'
 
 import { ApiError } from '#/api/client'
 import { withAppRouter, type AppRouterParameters } from '#/storybook/withAppRouter'
@@ -21,7 +22,7 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 
-/** 照合の API が入力の CSV の誤りを返す。CSV を選んで照合すると、行ごとの誤りが出る。 */
+/** 照合の API が入力の CSV の誤りを返す。実績の CSV を選んで照合し、行ごとの誤りを出す。 */
 export const RowErrors: Story = {
   parameters: route({
     receiptApi: {
@@ -32,4 +33,11 @@ export const RowErrors: Story = {
       },
     },
   }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const file = new File(['訪問日'], 'visits.csv', { type: 'text/csv' })
+    await userEvent.upload(await canvas.findByTestId('receipt-visits-file'), file)
+    await userEvent.click(canvas.getByTestId('receipt-check-submit'))
+    await canvas.findByTestId('receipt-check-error')
+  },
 }

@@ -18,9 +18,9 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Normal: Story = {}
+export const Visit: Story = {}
 
-export const Visit: Story = { parameters: route({ url: '/schedule/new?kind=visit' }) }
+export const Normal: Story = { parameters: route({ url: '/schedule/new?kind=normal' }) }
 
 export const FromSlot: Story = {
   parameters: route({ url: '/schedule/new?start=2026-10-21&time=13:00&staffId=staff-2' }),
