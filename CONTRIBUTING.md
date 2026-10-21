@@ -54,7 +54,7 @@ apm lifecycle trust
 
 ## 手元で全部を動かす
 
-画面、2 つの API、MySQL、Valkey、開発用の OIDC の IdP は、リポジトリのルートの `compose.yml` で一緒に起動する。Docker が要る。
+画面、2 つの API、PostgreSQL、Valkey、開発用の OIDC の IdP は、リポジトリのルートの `compose.yml` で一緒に起動する。Docker が要る。
 
 ```sh
 docker compose up --build --wait
@@ -70,7 +70,7 @@ docker compose up --build --wait
 | schedule-api | `http://localhost:8080` | `SCHEDULE_API_PORT` |
 | receipt-api | `http://localhost:8090` | `RECEIPT_API_PORT` |
 | idp | `http://localhost:9000/buddy` | `IDP_PORT` |
-| mysql | `localhost:13306` | `MYSQL_PORT` |
+| postgres | `localhost:15432` | `POSTGRES_PORT` |
 | valkey | `localhost:6379` | `VALKEY_PORT` |
 
 - IdP は navikt/mock-oauth2-server である。ログインの画面で入れた名前が `sub` になり、ほかのクレームは `compose/idp.json` の値になる。
@@ -80,7 +80,7 @@ docker compose up --build --wait
   - シードは、事業所の行が無い空の DB にだけ当たる。シードを変えた後は、`docker compose down -v` で DB を作り直す。
 - API が受けるトークンの `iss` は `http://idp:9000/buddy` である。IdP は `iss` をトークンの要求の Host から決めるため、トークンはコンテナの間の名前 `idp` で取る。
 - `http://localhost:3000` を開くと IdP のログインの画面へ移る。名前に `dev-aoki` を入れると、青木 陽菜としてログインする。
-- データを消して最初からにするときは、`docker compose down -v` で MySQL のボリュームを消す。
+- データを消して最初からにするときは、`docker compose down -v` で PostgreSQL のボリュームを消す。
 
 予定の API を手で呼ぶときは、認可コードのフローでトークンを取る。
 
@@ -181,7 +181,7 @@ pnpm lint:openapi
 | --- | --- | --- |
 | `apps/receipt-api/openapi.yaml` | `apps/receipt-api` で `go generate ./...` | `apps/receipt-api/internal/httpapi/openapi/` |
 | `apps/schedule-api/openapi.yaml` | `apps/schedule-api` で `go generate ./...` | `apps/schedule-api/internal/httpapi/openapi/` |
-| `apps/schedule-api/db/` の SQL | `apps/schedule-api` で `sqlc generate` | `apps/schedule-api/internal/mysql/sqlcgen/` |
+| `apps/schedule-api/db/` の SQL | `apps/schedule-api` で `sqlc generate` | `apps/schedule-api/internal/postgres/sqlcgen/` |
 | どちらかの openapi.yaml | `pnpm --filter @buddy/web generate:api` | `apps/web/src/api/generated/` |
 | `apps/schedule-api/db/migrations/`、`apps/schedule-api/.tbls.yml` | `pnpm generate:db-docs`（Docker が要る） | `docs/db/schedule-api/`（表の文書と ER 図） |
 | `packages/ui/src/tokens/semantic.css`、`@digital-go-jp/design-tokens` | `node scripts/build-mock-tokens.mjs` | `docs/screens/_common/tokens.css`（画面のモックが読む） |

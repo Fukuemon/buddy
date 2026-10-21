@@ -103,6 +103,7 @@ func (w Writer) Create(ctx context.Context, facilityID string, in Input) (string
 	}
 	info, err := NewInfo(Info{
 		ID:              w.ids.NewID(),
+		FacilityID:      facilityID,
 		PatientID:       patientID,
 		AssignedStaffID: in.AssignedStaffID,
 		CompanionID:     in.CompanionID,

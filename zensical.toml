@@ -42,6 +42,7 @@ nav = [
     { "利用者" = "db/schedule-api/viewpoint-patients.md" },
     { "予定と訪問" = "db/schedule-api/viewpoint-schedules.md" },
     { "繰り返しの予定" = "db/schedule-api/viewpoint-recurring.md" },
+    { "外部のカレンダーの取り込み" = "db/schedule-api/viewpoint-calendar-sync.md" },
   ] },
   { "デザインシステム" = [
     { "使い方" = "design/packages/ui.md" },

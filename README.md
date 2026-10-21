@@ -8,7 +8,7 @@
 | ディレクトリ | 中身 |
 | --- | --- |
 | [apps/web](apps/web) | 画面と BFF（TanStack Start）。ブラウザと話すのは web だけである |
-| [apps/schedule-api](apps/schedule-api) | 事業所、職員、利用者、予定、権限を持つ API（Go、MySQL） |
+| [apps/schedule-api](apps/schedule-api) | 事業所、職員、利用者、予定、権限を持つ API（Go、PostgreSQL） |
 | [apps/receipt-api](apps/receipt-api) | 予定と実績を照合する API（Go）。データを保存しない |
 | [apps/docs-site](apps/docs-site) | 文書のサイト、apps/web の Storybook（デザインシステムのカタログ）、予定の管理の表の ER 図を Cloudflare に公開する |
 | [packages/ui](packages/ui) | デザインシステムのトークンと、Base と Case のコンポーネント |

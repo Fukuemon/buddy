@@ -1,6 +1,7 @@
 package staff_test
 
 import (
+	"cmp"
 	"errors"
 	"strings"
 	"testing"
@@ -19,6 +20,7 @@ func TestNew(t *testing.T) {
 		edit      func(*staff.NewParams)
 		wantErr   bool
 		wantPhone *string
+		wantEmail string
 	}{
 		{name: "必須だけ", edit: func(*staff.NewParams) {}},
 		{name: "電話番号に + を付ける", edit: func(p *staff.NewParams) { p.PhoneNumber = ptr("09000000000") }, wantPhone: ptr("+09000000000")},
@@ -31,6 +33,7 @@ func TestNew(t *testing.T) {
 		{name: "メールに @ がない", edit: func(p *staff.NewParams) { p.Email = "example.com" }, wantErr: true},
 		{name: "メールのドメインに . がない", edit: func(p *staff.NewParams) { p.Email = "a@example" }, wantErr: true},
 		{name: "メールがない", edit: func(p *staff.NewParams) { p.Email = "" }, wantErr: true},
+		{name: "メールを小文字にそろえる", edit: func(p *staff.NewParams) { p.Email = "Hina.Aoki@Example.COM" }, wantEmail: "hina.aoki@example.com"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -49,6 +52,9 @@ func TestNew(t *testing.T) {
 			if (got.PhoneNumber == nil) != (tt.wantPhone == nil) ||
 				(got.PhoneNumber != nil && *got.PhoneNumber != *tt.wantPhone) {
 				t.Errorf("PhoneNumber = %v, want %v", got.PhoneNumber, tt.wantPhone)
+			}
+			if want := cmp.Or(tt.wantEmail, p.Email); got.Email != want {
+				t.Errorf("Email = %q, want %q", got.Email, want)
 			}
 		})
 	}

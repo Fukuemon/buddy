@@ -19,7 +19,7 @@ import (
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/db"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/config"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/postgres"
 )
 
 func main() {
@@ -30,10 +30,10 @@ func main() {
 	if err != nil {
 		fail(err)
 	}
-	cfg := mysql.Config(dbCfg)
+	cfg := postgres.Config(dbCfg)
 	switch os.Args[1] {
 	case "up":
-		err = mysql.MigrateUp(cfg)
+		err = postgres.MigrateUp(cfg)
 	case "down":
 		steps := 1
 		if len(os.Args) > 2 {
@@ -41,10 +41,10 @@ func main() {
 				usage()
 			}
 		}
-		err = mysql.MigrateDown(cfg, steps)
+		err = postgres.MigrateDown(cfg, steps)
 	case "seed":
 		var applied bool
-		if applied, err = mysql.Seed(context.Background(), cfg, db.Seed); err == nil && !applied {
+		if applied, err = postgres.Seed(context.Background(), cfg, db.Seed); err == nil && !applied {
 			slog.Info("skipped seed: facilities already exist")
 		}
 	default:

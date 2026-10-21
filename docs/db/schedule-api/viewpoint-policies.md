@@ -6,80 +6,82 @@
 
 ## Tables
 
-| Name                                          | Columns | Comment                                                | Type       |
-| --------------------------------------------- | ------- | ------------------------------------------------------ | ---------- |
-| [policies](policies.md)                       | 6       | 権限。マイグレーションで入れ、API では作らない         | BASE TABLE |
-| [position_policies](position_policies.md)     | 2       | 役職の既定の権限                                       | BASE TABLE |
-| [positions](positions.md)                     | 5       | 事業所の役職。職員を登録するときに写す既定の権限を持つ | BASE TABLE |
-| [teams](teams.md)                             | 5       | 事業所のチーム                                         | BASE TABLE |
-| [user_policies](user_policies.md)             | 3       | 職員が持つ権限。職員と権限の組で一意                   | BASE TABLE |
-| [user_policy_targets](user_policy_targets.md) | 4       | 職員の権限の対象                                       | BASE TABLE |
-| [users](users.md)                             | 11      | 職員                                                   | BASE TABLE |
+| Name                                                        | Columns | Comment                                                | Type       |
+| ----------------------------------------------------------- | ------- | ------------------------------------------------------ | ---------- |
+| [public.teams](public.teams.md)                             | 5       | 事業所のチーム                                         | BASE TABLE |
+| [public.positions](public.positions.md)                     | 5       | 事業所の役職。職員を登録するときに写す既定の権限を持つ | BASE TABLE |
+| [public.policies](public.policies.md)                       | 6       | 権限。マイグレーションで入れ、API では作らない         | BASE TABLE |
+| [public.position_policies](public.position_policies.md)     | 2       | 役職の既定の権限                                       | BASE TABLE |
+| [public.users](public.users.md)                             | 11      | 職員                                                   | BASE TABLE |
+| [public.user_policies](public.user_policies.md)             | 4       | 職員が持つ権限。職員と権限の組で一意                   | BASE TABLE |
+| [public.user_policy_targets](public.user_policy_targets.md) | 5       | 職員の権限の対象                                       | BASE TABLE |
 
 ## Relations
 
 ```mermaid
 erDiagram
 
-"position_policies" }o--|| "policies" : "FOREIGN KEY (policy_id) REFERENCES policies (id)"
-"position_policies" }o--|| "positions" : "FOREIGN KEY (position_id) REFERENCES positions (id)"
-"user_policies" }o--|| "policies" : "FOREIGN KEY (policy_id) REFERENCES policies (id)"
-"user_policies" }o--|| "users" : "FOREIGN KEY (user_id) REFERENCES users (id)"
-"user_policy_targets" }o--o| "teams" : "FOREIGN KEY (target_team_id) REFERENCES teams (id)"
-"user_policy_targets" }o--o| "users" : "FOREIGN KEY (target_user_id) REFERENCES users (id)"
-"user_policy_targets" }o--|| "user_policies" : "FOREIGN KEY (user_policy_id) REFERENCES user_policies (id)"
-"users" }o--|| "positions" : "FOREIGN KEY (position_id) REFERENCES positions (id)"
-"users" }o--|| "teams" : "FOREIGN KEY (team_id) REFERENCES teams (id)"
+"public.position_policies" }o--|| "public.positions" : "FOREIGN KEY (position_id) REFERENCES positions(id) ON DELETE CASCADE"
+"public.position_policies" }o--|| "public.policies" : "FOREIGN KEY (policy_id) REFERENCES policies(id)"
+"public.users" }o--|| "public.teams" : "FOREIGN KEY (facility_id, team_id) REFERENCES teams(facility_id, id)"
+"public.users" }o--|| "public.positions" : "FOREIGN KEY (facility_id, position_id) REFERENCES positions(facility_id, id)"
+"public.user_policies" }o--|| "public.policies" : "FOREIGN KEY (policy_id) REFERENCES policies(id)"
+"public.user_policies" }o--|| "public.users" : "FOREIGN KEY (facility_id, user_id) REFERENCES users(facility_id, id) ON DELETE CASCADE"
+"public.user_policy_targets" }o--|| "public.teams" : "FOREIGN KEY (facility_id, target_team_id) REFERENCES teams(facility_id, id) ON DELETE CASCADE"
+"public.user_policy_targets" }o--|| "public.users" : "FOREIGN KEY (facility_id, target_user_id) REFERENCES users(facility_id, id) ON DELETE CASCADE"
+"public.user_policy_targets" }o--|| "public.user_policies" : "FOREIGN KEY (facility_id, user_policy_id) REFERENCES user_policies(facility_id, id) ON DELETE CASCADE"
 
-"policies" {
-  char_26_ id
+"public.teams" {
+  text id
+  text facility_id
+  varchar_255_ name
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
+}
+"public.positions" {
+  text id
+  text facility_id
+  varchar_255_ name
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
+}
+"public.policies" {
+  text id
   varchar_64_ code
   varchar_255_ name
-  tinyint_1_ needs_target
-  datetime created_at
-  datetime updated_at
+  boolean needs_target
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
 }
-"position_policies" {
-  char_26_ position_id
-  char_26_ policy_id
+"public.position_policies" {
+  text position_id
+  text policy_id
 }
-"positions" {
-  char_26_ id
-  char_26_ facility_id
-  varchar_255_ name
-  datetime created_at
-  datetime updated_at
-}
-"teams" {
-  char_26_ id
-  char_26_ facility_id
-  varchar_255_ name
-  datetime created_at
-  datetime updated_at
-}
-"user_policies" {
-  char_26_ id
-  char_26_ user_id
-  char_26_ policy_id
-}
-"user_policy_targets" {
-  char_26_ id
-  char_26_ user_policy_id
-  char_26_ target_user_id
-  char_26_ target_team_id
-}
-"users" {
-  char_26_ id
+"public.users" {
+  text id
+  text facility_id
   varchar_255_ sub
   varchar_128_ username
   varchar_320_ email
   varchar_16_ phone_number
-  char_26_ facility_id
-  char_26_ department_id
-  char_26_ team_id
-  char_26_ position_id
-  datetime created_at
-  datetime updated_at
+  text department_id
+  text team_id
+  text position_id
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
+}
+"public.user_policies" {
+  text id
+  text facility_id
+  text user_id
+  text policy_id
+}
+"public.user_policy_targets" {
+  text id
+  text facility_id
+  text user_policy_id
+  text target_user_id
+  text target_team_id
 }
 ```
 

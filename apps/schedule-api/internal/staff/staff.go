@@ -43,8 +43,9 @@ type NewParams struct {
 	PositionID   string
 }
 
-// New は、名前、メール、電話番号を検証して Staff を作る。電話番号は数字だけを受け付け、先頭に "+" を付ける。
+// New は、名前、メール、電話番号を検証して Staff を作る。メールは小文字にそろえる。電話番号は数字だけを受け付け、先頭に "+" を付ける。
 func New(p NewParams) (Staff, error) {
+	p.Email = NormalizeEmail(p.Email)
 	if err := kernel.RequireText("職員の名前", p.Username, maxUsernameLen); err != nil {
 		return Staff{}, err
 	}
@@ -68,6 +69,11 @@ func New(p NewParams) (Staff, error) {
 		s.PhoneNumber = &phone
 	}
 	return s, nil
+}
+
+// NormalizeEmail は、メールを小文字にそろえる。職員のメールは、そろえた値で保存し、比べる。
+func NormalizeEmail(email string) string {
+	return strings.ToLower(email)
 }
 
 func validateEmail(email string) error {
@@ -162,7 +168,7 @@ type ListQuery struct {
 // Repository は、職員を読み書きする。見つからないときは apperr.ErrNotFound を、
 // 同じ事業所にメールが重なる職員がいるか、Sub が重なるときは apperr.ErrConflict を返す。名前は重なってよい。
 //
-// LinkSub は、事業所 facilityID の、メールが email で Sub がまだない職員にだけ sub を書く。
+// LinkSub は、事業所 facilityID の、メールが email（NormalizeEmail でそろえた値）で Sub がまだない職員にだけ sub を書く。
 // 当たる職員がいなければ何もせず、エラーも返さない。
 //
 // ChangePosition は、職員の役職を positionID にし、職員の権限と対象を全て消してから grants を書く。

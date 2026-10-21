@@ -21,9 +21,9 @@ import (
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/access"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/config"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/postgres"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
@@ -56,41 +56,37 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	db, err := mysql.Open(ctx, mysql.Config(cfg.DB))
+	db, err := postgres.Open(ctx, postgres.Config(cfg.DB))
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if err := db.Close(); err != nil {
-			log.Error("close db", slog.Any("error", err))
-		}
-	}()
+	defer db.Close()
 
 	verifier, err := oidc.NewVerifier(ctx, cfg.OIDC, nil, log)
 	if err != nil {
 		return err
 	}
 
-	tx := mysql.NewTransactor(db)
+	tx := postgres.NewTransactor(db)
 	ids := ulid.Generator{}
-	facilities := mysql.NewFacilityRepository(db)
-	departments := mysql.NewDepartmentRepository(db)
-	teams := mysql.NewTeamRepository(db)
-	positions := mysql.NewPositionRepository(db)
-	policies := mysql.NewPolicyRepository(db)
-	staffRepo := mysql.NewStaffRepository(db)
-	staffRefs := mysql.NewStaffRefRepository(db)
-	patients := mysql.NewPatientRepository(db)
-	visitMasters := mysql.NewVisitMasterRepository(db)
-	schedules := mysql.NewScheduleRepository(db)
-	recurring := mysql.NewRecurringScheduleRepository(db)
+	facilities := postgres.NewFacilityRepository(db)
+	departments := postgres.NewDepartmentRepository(db)
+	teams := postgres.NewTeamRepository(db)
+	positions := postgres.NewPositionRepository(db)
+	policies := postgres.NewPolicyRepository(db)
+	staffRepo := postgres.NewStaffRepository(db)
+	staffRefs := postgres.NewStaffRefRepository(db)
+	patients := postgres.NewPatientRepository(db)
+	visitMasters := postgres.NewVisitMasterRepository(db)
+	schedules := postgres.NewScheduleRepository(db)
+	recurring := postgres.NewRecurringScheduleRepository(db)
 	visitInfos := visit.NewWriter(visit.WriterDeps{
 		Staff: staffRefs,
 		Patients: func(ctx context.Context, id string) (string, string, error) {
 			pa, err := patients.Get(ctx, id)
 			return pa.ID, pa.FacilityID, err
 		},
-		Infos:   mysql.NewVisitInfoRepository(db),
+		Infos:   postgres.NewVisitInfoRepository(db),
 		Masters: visitMasters,
 	}, ids)
 
@@ -107,7 +103,7 @@ func run() error {
 		VisitMasters: visit.NewUsecase(visitMasters),
 		Schedules: schedule.NewUsecase(schedule.Deps{
 			Facilities: facilities, Staff: staffRefs, Visits: visitInfos,
-			Schedules: schedules, Recurring: recurring, Types: mysql.NewScheduleTypeRepository(db),
+			Schedules: schedules, Recurring: recurring, Types: postgres.NewScheduleTypeRepository(db),
 		}, tx, ids),
 		Auth: access.NewService(access.Deps{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions,
@@ -116,7 +112,7 @@ func run() error {
 	}, httpapi.RouterConfig{Logger: log, AllowOrigins: cfg.AllowOrigins, Verifier: tokenVerifier{verifier}, Ready: func(ctx context.Context) error {
 		ctx, cancel := context.WithTimeout(ctx, readyTimeout)
 		defer cancel()
-		return db.PingContext(ctx)
+		return db.Ping(ctx)
 	}})
 
 	srv := &http.Server{

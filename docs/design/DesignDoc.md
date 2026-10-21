@@ -53,7 +53,7 @@ flowchart TB
     valkey[("Valkey<br/>[データの置き場]<br/>web のセッション")]
     schedule["schedule-api<br/>[コンテナ: Go]<br/>事業所、職員、予定、権限"]
     receipt["receipt-api<br/>[コンテナ: Go]<br/>照合"]
-    mysql[("MySQL 8<br/>[データの置き場]<br/>schedule-api のデータ")]
+    postgres[("PostgreSQL 18<br/>[データの置き場]<br/>schedule-api のデータ")]
   end
   gcal["Google Calendar API<br/>[外部のシステム]<br/>職員が入れた予定"]
   staff -- "画面を使う" --> web
@@ -62,13 +62,13 @@ flowchart TB
   web -- "セッションを読み書きする" --> valkey
   web -- "access token を付けて呼ぶ" --> schedule
   web -- "access token を付けて呼ぶ" --> receipt
-  schedule -- "SQL" --> mysql
+  schedule -- "SQL" --> postgres
   receipt -- "予定を読む" --> gcal
   classDef person fill:#08427b,stroke:#052e56,color:#fff
   classDef container fill:#438dd5,stroke:#2e6295,color:#fff
   classDef external fill:#8a8a8a,stroke:#6b6b6b,color:#fff
   class staff person
-  class web,valkey,schedule,receipt,mysql container
+  class web,valkey,schedule,receipt,postgres container
   class broker,gcal external
   style buddy fill:none,stroke:#0b4884,stroke-dasharray:5 5
 ```
@@ -86,7 +86,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 | 予定 | 単発の予定、繰り返しの予定、キャンセル、訪問の情報 | schedule-api |
 | 照合 | 予定と実績の対の作り方、判定の規則 | receipt-api |
 
-- 事業所と職員と予定は、同じ MySQL のデータベースを使い、schedule-api の中でパッケージを分ける。
+- 事業所と職員と予定は、同じ PostgreSQL のデータベースを使い、schedule-api の中でパッケージを分ける。
   - パッケージの構成は [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/apps/schedule-api/DesignDoc.md) にある。
 - 用語と、区切りごとの呼び方の違いは [業務の知識](https://github.com/Fukuemon/buddy/blob/develop/context/domain.md) にある。
 
@@ -133,7 +133,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
   - ADR-0003: [git flow で取り込み、アプリごとのバージョンでリリースする](../adr/0003-branch-and-release.md)
 - schedule-api、receipt-api とブローカー: 発行者の discovery と JWKS を読み、access token を検証する。検証に失敗したら 401 を返す。
 - receipt-api と Google Calendar API: サービスアカウントで、閲覧の権限で共有されたカレンダーの予定を読む。
-- schedule-api と MySQL: schedule-api だけが読み書きする。
+- schedule-api と PostgreSQL: schedule-api だけが読み書きする。
 
 ### インフラとの約束
 
@@ -164,8 +164,8 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 | `SESSION_COOKIE_SECURE` | 任意 | 使わない | 使わない | `false` のときだけ、セッションの cookie に Secure を付けない。https でない手元の環境で使う |
 | `SCHEDULE_API_URL` | 使う | 使わない | 使わない | schedule-api の URL |
 | `RECEIPT_API_URL` | 使う | 使わない | 使わない | receipt-api の URL |
-| `DB_HOST`、`DB_PORT` | 使わない | 任意 | 使わない | MySQL のホストとポート。既定は `localhost` と `3306` |
-| `DB_USER`、`DB_PASSWORD`、`DB_NAME` | 使わない | 使う | 使わない | MySQL の利用者、パスワード、データベースの名前 |
+| `DB_HOST`、`DB_PORT` | 使わない | 任意 | 使わない | PostgreSQL のホストとポート。既定は `localhost` と `5432` |
+| `DB_USER`、`DB_PASSWORD`、`DB_NAME` | 使わない | 使う | 使わない | PostgreSQL の利用者、パスワード、データベースの名前 |
 | `CORS_ALLOW_ORIGINS` | 使わない | 任意 | 任意 | CORS を許すオリジン。カンマで区切る。空なら CORS のヘッダーを返さない |
 | `MAX_UPLOAD_BYTES` | 使わない | 使わない | 任意 | 照合の要求の本文の上限。既定は 10 MiB |
 | `GOOGLE_CALENDARS_FILE` | 使わない | 使わない | 任意 | 職員とカレンダーと組織の対応の JSON。空なら Google カレンダーから予定を取らない |
@@ -179,7 +179,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 #### ヘルスチェック
 
 - `GET /healthz`: プロセスが応答できれば 200 を返す。依存先を確かめない。
-- `GET /readyz`: 依存先に届けば 200、届かなければ 503 を返す。schedule-api は MySQL、web は Valkey を確かめる。
+- `GET /readyz`: 依存先に届けば 200、届かなければ 503 を返す。schedule-api は PostgreSQL、web は Valkey を確かめる。
   - receipt-api は起動のときにブローカーの discovery を読み、読めなければ起動しない。起動した後は依存先を確かめず、応答できれば 200 を返す。
 - 2 つとも認証を求めない。
 

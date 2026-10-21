@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	normalType = schedule.Type{ID: "01JG8Z3XZVD7M11CGETHQNAA6X", Name: schedule.Normal}
-	visitType  = schedule.Type{ID: "01JG8Z3XZVD7M11CGETHQNAA6W", Name: schedule.Visit}
+	normalType = schedule.Type{ID: "01JG8Z3XZVD7M11CGETHQNAA6X", Code: schedule.CodeNormal, Name: schedule.Normal}
+	visitType  = schedule.Type{ID: "01JG8Z3XZVD7M11CGETHQNAA6W", Code: schedule.CodeVisit, Name: schedule.Visit}
 )
 
 func ptr[T any](v T) *T { return &v }

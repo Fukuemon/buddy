@@ -33,7 +33,7 @@ export interface paths {
         };
         /**
          * 要求を受けられるかを返す
-         * @description MySQL に届けば 200、届かなければ 503 を返す。
+         * @description DB に届けば 200、届かなければ 503 を返す。
          */
         get: operations["getReadyz"];
         put?: never;
@@ -868,7 +868,7 @@ export interface operations {
                     "application/json": components["schemas"]["Health"];
                 };
             };
-            /** @description MySQL に届かない */
+            /** @description DB に届かない */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -1267,7 +1267,10 @@ export interface operations {
             content: {
                 "application/json": {
                     username: string;
-                    /** Format: email */
+                    /**
+                     * Format: email
+                     * @description 小文字にそろえて保存し、応答でも小文字で返す。大文字と小文字だけが違うメールは、同じメールとみなす
+                     */
                     email: string;
                     /** @description 11 桁以内の数字。先頭の + は省いてよい */
                     phone_number?: string | null;

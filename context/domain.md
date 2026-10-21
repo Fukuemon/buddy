@@ -28,10 +28,10 @@ status: stable
 | 用語 | 意味 | コードの識別子 |
 | --- | --- | --- |
 | 予定 | 職員の 1 回の予定。種類は通常と訪問 | Go `schedule.Schedule`、表 `schedules`、API `Schedule`、web `ScheduleKind`（`normal`、`visit`） |
-| 繰り返しの予定 | 規則に従って繰り返す予定 | Go `schedule.RecurringSchedule`、表 `recurring_schedules`、`recurring_rules` |
+| 繰り返しの予定 | 規則に従って繰り返す予定 | Go `schedule.RecurringSchedule`、表 `recurring_schedules` |
 | 回の置き換え | 繰り返しの 1 回を、単発の予定に置き換えること | `ChangeOccurrence`、パス `.../occurrences` |
 | キャンセル | 予定の取り消し。理由を持つ | `schedule.Cancel`、表 `schedule_cancels` |
-| 時間外の勤務 | 17 時以降に始まる予定 | `Slot.IsOverTimeWork`、列 `is_over_time_work` |
+| 時間外の勤務 | 17 時以降に始まる予定 | `Slot.IsOverTimeWork`、列 `is_over_time_work`（開始の時刻から DB が生成する） |
 | 訪問の情報 | 訪問の予定に付く、利用者、主訪問者、同行者、サービスコード、訪問の区分 | Go `visit.Info`、表 `visit_infos`、API `VisitInfo`、web `VisitDetail` |
 | 主訪問者 | 訪問する職員。業務の役割で、役職を問わない。予定の管理では訪問の情報の担当の職員、照合では実績の CSV の「主訪問者」の列 | `Info.AssignedStaffID`、照合の `Key.Staff` |
 | 同行者 | 訪問に同行する職員 | `Info.CompanionID` |

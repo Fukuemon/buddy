@@ -23,7 +23,7 @@ func TestLoad(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Port != "8080" || c.DB.Host != "localhost" || c.DB.Port != "3306" || c.LogLevel != slog.LevelDebug {
+	if c.Port != "8080" || c.DB.Host != "localhost" || c.DB.Port != "5432" || c.LogLevel != slog.LevelDebug {
 		t.Errorf("got %+v", c)
 	}
 	if c.OIDC.Issuer != "https://auth.example.com/realms/buddy" || c.OIDC.Audience != "schedule-api" || c.OIDC.OrgClaim != "org_id" {

@@ -178,7 +178,7 @@ func TestSchedulesCreateRecurring(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Rule.Frequency != schedule.Weekly || got.Rule.ID == "" {
+	if got.Rule.Frequency != schedule.Weekly || got.Rule.DayOfWeek == nil || *got.Rule.DayOfWeek != 2 {
 		t.Errorf("Rule = %+v", got.Rule)
 	}
 
@@ -230,6 +230,9 @@ func TestSchedulesChangeOccurrence(t *testing.T) {
 			}
 			if got.RecurringScheduleID == nil || *got.RecurringScheduleID != recurringID {
 				t.Errorf("RecurringScheduleID = %v", got.RecurringScheduleID)
+			}
+			if got.OriginalDate == nil || *got.OriginalDate != tt.date {
+				t.Errorf("OriginalDate = %v, want %v", got.OriginalDate, tt.date)
 			}
 			if ex := s.Recurring[recurringID].ExclusionDates; len(ex) != 1 || ex[0] != tt.date {
 				t.Errorf("ExclusionDates = %v", ex)

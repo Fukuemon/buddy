@@ -6,61 +6,62 @@
 
 ## Tables
 
-| Name                              | Columns | Comment                                  | Type       |
-| --------------------------------- | ------- | ---------------------------------------- | ---------- |
-| [facilities](facilities.md)       | 5       | 訪問看護の事業所                         | BASE TABLE |
-| [patients](patients.md)           | 9       | 利用者                                   | BASE TABLE |
-| [service_codes](service_codes.md) | 6       | サービスコード。マイグレーションで入れる | BASE TABLE |
-| [users](users.md)                 | 11      | 職員                                     | BASE TABLE |
+| Name                                            | Columns | Comment                                  | Type       |
+| ----------------------------------------------- | ------- | ---------------------------------------- | ---------- |
+| [public.facilities](public.facilities.md)       | 6       | 訪問看護の事業所                         | BASE TABLE |
+| [public.users](public.users.md)                 | 11      | 職員                                     | BASE TABLE |
+| [public.service_codes](public.service_codes.md) | 6       | サービスコード。マイグレーションで入れる | BASE TABLE |
+| [public.patients](public.patients.md)           | 9       | 利用者                                   | BASE TABLE |
 
 ## Relations
 
 ```mermaid
 erDiagram
 
-"patients" }o--|| "users" : "FOREIGN KEY (assigned_staff_id) REFERENCES users (id)"
-"patients" }o--|| "facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities (id)"
-"patients" }o--|| "service_codes" : "FOREIGN KEY (service_code_id) REFERENCES service_codes (id)"
-"users" }o--|| "facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities (id)"
+"public.users" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+"public.patients" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+"public.patients" }o--|| "public.users" : "FOREIGN KEY (facility_id, assigned_staff_id) REFERENCES users(facility_id, id)"
+"public.patients" }o--|| "public.service_codes" : "FOREIGN KEY (service_code_id) REFERENCES service_codes(id)"
 
-"facilities" {
-  char_26_ id
+"public.facilities" {
+  text id
   varchar_255_ name
   varchar_255_ org_id
-  datetime created_at
-  datetime updated_at
+  text time_zone
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
 }
-"patients" {
-  char_26_ id
-  char_26_ facility_id
-  varchar_255_ name
-  varchar_8_ preferred_time
-  varchar_8_ preferred_gender
-  char_26_ service_code_id
-  char_26_ assigned_staff_id
-  datetime created_at
-  datetime updated_at
-}
-"service_codes" {
-  char_26_ id
-  varchar_255_ code
-  int service_time_range_start
-  int service_time_range_end
-  datetime created_at
-  datetime updated_at
-}
-"users" {
-  char_26_ id
+"public.users" {
+  text id
+  text facility_id
   varchar_255_ sub
   varchar_128_ username
   varchar_320_ email
   varchar_16_ phone_number
-  char_26_ facility_id
-  char_26_ department_id
-  char_26_ team_id
-  char_26_ position_id
-  datetime created_at
-  datetime updated_at
+  text department_id
+  text team_id
+  text position_id
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
+}
+"public.service_codes" {
+  text id
+  varchar_255_ code
+  integer service_time_range_start
+  integer service_time_range_end
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
+}
+"public.patients" {
+  text id
+  text facility_id
+  varchar_255_ name
+  text preferred_time
+  text preferred_gender
+  text service_code_id
+  text assigned_staff_id
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
 }
 ```
 
