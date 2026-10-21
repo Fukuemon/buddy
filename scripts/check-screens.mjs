@@ -66,6 +66,12 @@ const readStates = (markdown, specPath) => {
   // タブの中身は 4 つの空白で字下げするので、外して読む
   const unindent = (line) => (current !== null ? line.replace(/^ {4}/, '') : line)
   lines.forEach((rawLine, index) => {
+    if (current !== null && rawLine.trim() !== '' && !/^( {4}|=== "|## )/.test(rawLine)) {
+      report(
+        specPath,
+        `「${current.name}」のタブの中身を 4 つの空白で字下げする（${index + 1} 行目）`,
+      )
+    }
     const line = unindent(rawLine)
     const fence = line.match(/^(`{3,}|~{3,})/)
     if (fence && (inFence === null || fence[1].startsWith(inFence))) {
@@ -238,7 +244,7 @@ const checkScreen = (dir) => {
   if (PLACEHOLDER.test(markdown))
     report(specPath, `雛形の ${markdown.match(PLACEHOLDER)[0]} が残っている`)
   const prose = markdown
-    .replace(/^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1[^\n]*$/gm, '')
+    .replace(/^( {0,4})(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1\2[^\n]*$/gm, '')
     .replace(/(`+)[^`\n][\s\S]*?\1/g, '')
     .replace(/\\</g, '')
   for (const tag of prose.matchAll(/<\/?([a-z][a-z0-9-]*)(?=[\s/>])/gi)) {

@@ -2,14 +2,15 @@
 :root {
   --md-primary-fg-color: var(--buddy-color-primary);
   --md-primary-fg-color--light: var(--buddy-color-primary);
-  --md-primary-fg-color--dark: var(--buddy-color-primary);
-  --md-accent-fg-color: var(--buddy-color-primary);
+  /* ホバーで色を変えるため、主の色より 1 段濃い DADS のキーの色にする */
+  --md-primary-fg-color--dark: var(--color-key-900);
+  --md-accent-fg-color: var(--color-key-900);
   --md-accent-fg-color--transparent: var(--buddy-color-primary-surface);
   --md-typeset-a-color: var(--buddy-color-primary);
   --md-default-fg-color: var(--buddy-color-text);
 }
 
-/* 本文の幅を既定の 61rem から広げ、画面仕様書の表とモックを広く見せる */
+/* 本文の幅を既定の 61rem から広げ、画面仕様書の表とモックを広く見せる。全てのページに効く */
 .md-grid {
   max-width: 80rem;
 }

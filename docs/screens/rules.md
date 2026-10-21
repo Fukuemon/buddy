@@ -43,6 +43,7 @@ docs/screens/
 
 - タブは `pymdownx.tabbed` で書き、中身を 4 つの空白で字下げする。タブの名前は状態の名前にする。
 - タブの中の最初に、その状態になる条件を 1 文で書く。
+- 状態はアンカーを持たないので、本文から状態を指すときはリンクにせず、「「<状態の名前>」の状態」と書く。
 - iframe は `<iframe class="mock" title="…" src="mocks/…">` と書く。直後には、`<a class="mock-open" href="mocks/…" target="_blank">別タブで開く</a>` を置く。高さは書かない（`embed-mock.js` が中身に合わせる）。`<details>` の中には入れない。タブの中は、タブを開いたときに `mock.js` が端末と番号を測り直す。
 - ページの中の生の HTML は、この iframe と a だけにする。
 

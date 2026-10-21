@@ -95,7 +95,7 @@
 
   function syncUrl() {
     const next = new URLSearchParams(location.search)
-    next.set('view', state.view)
+    if (state.view !== null) next.set('view', state.view)
     for (const [key, on, fallback] of [
       ['markers', state.markers, true],
       ['testids', state.testids, false],
