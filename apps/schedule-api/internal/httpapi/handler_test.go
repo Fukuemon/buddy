@@ -510,3 +510,29 @@ func TestCreateForbidden(t *testing.T) {
 		}
 	}
 }
+
+// TestRequestConstraints は、openapi.yaml に書いた本文の制約で、handler を呼ぶ前に 400 を返すことを確かめる。
+func TestRequestConstraints(t *testing.T) {
+	user := `{"username":"新人","email":"new@example.com","department_id":"` + staffID + `","team_id":"` + staffID + `","position_id":"` + staffID + `"`
+	tests := []struct {
+		name, target, body, wantMessage string
+	}{
+		{"チームの名前が空", "/v1/facilities/" + facilityID + "/teams", `{"name":""}`, "name"},
+		{"キャンセルの理由が空", "/v1/schedules/" + scheduleID + "/cancel", `{"reason":""}`, "reason"},
+		{"キャンセルの理由が長すぎる", "/v1/schedules/" + scheduleID + "/cancel", `{"reason":"` + strings.Repeat("あ", 256) + `"}`, "reason"},
+		{"電話番号が長すぎる", "/v1/facilities/" + facilityID + "/users", user + `,"phone_number":"+0900000000000"}`, "phone_number"},
+		{"メールの形でない", "/v1/facilities/" + facilityID + "/users", strings.Replace(user, "new@example.com", "new", 1) + "}", "email"},
+		{"職員の名前が空", "/v1/facilities/" + facilityID + "/users", strings.Replace(user, "新人", "", 1) + "}", "username"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec, body := do(t, newRouter(&fakeSchedules{}, &fakeStaff{}, &fakePatients{}), http.MethodPost, tt.target, tt.body)
+			if rec.Code != http.StatusBadRequest || body["code"] != "invalid_input" {
+				t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
+			}
+			if msg, _ := body["message"].(string); !strings.Contains(msg, tt.wantMessage) {
+				t.Errorf("message = %q, want %q を含む", msg, tt.wantMessage)
+			}
+		})
+	}
+}

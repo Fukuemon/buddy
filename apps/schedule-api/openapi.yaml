@@ -215,7 +215,7 @@ paths:
               type: object
               required: [name]
               properties:
-                name: { type: string, maxLength: 255 }
+                name: { type: string, minLength: 1, maxLength: 255 }
                 policy_ids:
                   type: array
                   description: 役職の職員に既定で与える権限。対象の職員を指定する権限（schedule.user.*）は既定にできない
@@ -331,11 +331,12 @@ paths:
               type: object
               required: [username, email, department_id, team_id, position_id]
               properties:
-                username: { type: string, maxLength: 128 }
-                email: { type: string, format: email, maxLength: 320 }
+                username: { type: string, minLength: 1, maxLength: 128 }
+                email: { type: string, format: email, minLength: 1, maxLength: 320 }
                 phone_number:
                   type: string
                   nullable: true
+                  maxLength: 12
                   description: 11 桁以内の数字。先頭の + は省いてよい
                 department_id: { $ref: "#/components/schemas/ID" }
                 team_id: { $ref: "#/components/schemas/ID" }
@@ -522,7 +523,7 @@ paths:
               type: object
               required: [name, preferred_time, preferred_gender, service_code_id, assigned_staff_id]
               properties:
-                name: { type: string, maxLength: 255 }
+                name: { type: string, minLength: 1, maxLength: 255 }
                 preferred_time: { $ref: "#/components/schemas/PreferredTime" }
                 preferred_gender: { $ref: "#/components/schemas/PreferredGender" }
                 service_code_id: { $ref: "#/components/schemas/ID" }
@@ -741,7 +742,7 @@ paths:
               type: object
               required: [reason]
               properties:
-                reason: { type: string, maxLength: 255 }
+                reason: { type: string, minLength: 1, maxLength: 255 }
       responses:
         "201":
           description: キャンセル
@@ -916,7 +917,7 @@ components:
       type: object
       required: [name]
       properties:
-        name: { type: string, maxLength: 255 }
+        name: { type: string, minLength: 1, maxLength: 255 }
     Facility:
       type: object
       required: [id, name, created_at, updated_at]
