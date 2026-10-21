@@ -45,7 +45,7 @@ receipt-api は、訪問の予定と電子カルテ（iBow）の実績を比べ�
 - `internal/gcal`: Google カレンダーの予定を、予定の CSV と同じ `csvio.Row` にしてから `normalize.Schedules` に通す
 - `internal/source`: 要求の `schedules` と `month` とトークンの組織から、予定の取得元（`CSVSchedules` か `internal/gcal`）を選ぶ
 - `internal/oidc`: access token を JWKS で検証する。schedule-api の同じパッケージを写した
-- `internal/httpapi`: `GET /healthz`、`GET /readyz`、`POST /v1/checks`。`/v1` の要求のトークンを `internal/oidc` で確かめる
+- `internal/httpapi`: `GET /healthz`、`GET /readyz`、`POST /v1/checks`。`/healthz` と `/readyz` 以外の要求のトークンを `internal/oidc` で確かめる
 
 ### 処理の流れ
 
@@ -59,11 +59,12 @@ sequenceDiagram
   participant G as Google Calendar API
 
   S->>W: 実績の CSV と、予定の CSV か対象の月を選ぶ
-  W->>R: POST /v1/checks（multipart）
+  W->>R: POST /v1/checks（multipart、Bearer の access token）
+  R->>R: access token を確かめる。正しくなければ 401
   alt 予定の CSV がある
     R->>R: 予定の CSV を読む
   else 対象の月がある
-    R->>G: 設定したカレンダーの、対象の月の予定を取る（サービスアカウント）
+    R->>G: トークンの組織のカレンダーの、対象の月の予定を取る（サービスアカウント）
     G-->>R: 予定
     R->>R: 題名を解釈して予定にする
   end

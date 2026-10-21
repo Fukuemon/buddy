@@ -25,7 +25,7 @@ status: stable
 ## Runtime Requirements
 
 - schedule-api の結合テストは Docker が要る。testcontainers-go が MySQL のコンテナを起動し、接続の値はテストの中に固定してある。環境変数は要らない。
-- receipt-api のテストと web の Vitest は、ネットワークと環境変数を要らない。web は `VITE_API_MODE` を指定しなければ偽物の API で動く。
+- receipt-api のテストと web の Vitest は、外部のネットワークと環境変数を要らない。receipt-api のテストは、偽物の発行者と Calendar API を loopback で立てる。web は `VITE_API_MODE` を指定しなければ偽物の API で動く。
 - `packages/ui` のテストは、Playwright の chromium が要る（`pnpm --filter @buddy/ui exec playwright install chromium`）。
 - E2E は、ルートの compose の全体（ポートは [CONTRIBUTING.md](../CONTRIBUTING.md) の「手元で全部を動かす」）と、Playwright の chromium が要る。
 - 照合の互換のテストの期待値を作り直すときだけ、元の Python の実装のチェックアウトと uv が要る（`apps/receipt-api/tools/parity/README.md`）。

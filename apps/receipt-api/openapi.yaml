@@ -38,7 +38,7 @@ paths:
       tags: [health]
       operationId: getReadyz
       summary: 要求を受けられるかを返す
-      description: 照合の API は、起動に要る依存先を持たないので、応答できれば 200 を返す。
+      description: 照合の API は、起動のときにブローカーの discovery を読み、読めなければ起動しない。起動した後は依存先を確かめないので、応答できれば 200 を返す。
       security: []
       responses:
         "200":

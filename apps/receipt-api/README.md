@@ -75,7 +75,7 @@ go generate ./...
 
 要求と応答の項目の定義は [openapi.yaml](openapi.yaml) にある。
 
-- `GET /healthz`、`GET /readyz`: `{"status":"ok"}` を返す。照合の API は起動に要る依存先を持たないので、`/readyz` も応答できれば 200 を返す
+- `GET /healthz`、`GET /readyz`: `{"status":"ok"}` を返す。照合の API は起動のときにブローカーの discovery を読み、読めなければ起動しない。起動した後は依存先を確かめないので、応答できれば 200 を返す
 - `POST /v1/checks`: multipart/form-data の `visits`（実訪問の CSV）と予定を照合する
   - `Authorization: Bearer` の access token を求める
   - 予定は、ファイル `schedules`（予定の CSV）があればそれを使う。無くてフォームの値 `month`（`2024-04` の形）があれば、その月の予定を Google カレンダーから取る
