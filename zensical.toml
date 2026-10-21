@@ -52,6 +52,7 @@ nav = [
     "adr/0003-branch-and-release.md",
     "adr/0004-design-system.md",
     "adr/0005-schedule-api-packages.md",
+    "adr/0006-staff-manage-policy.md",
   ] },
 ]
 

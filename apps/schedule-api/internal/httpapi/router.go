@@ -58,7 +58,7 @@ func NewRouter(u Usecases, cfg RouterConfig) *gin.Engine {
 	if len(cfg.AllowOrigins) > 0 {
 		r.Use(cors.New(cors.Config{
 			AllowOrigins: cfg.AllowOrigins,
-			AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodOptions},
+			AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions},
 			AllowHeaders: []string{"Content-Type", "Authorization"},
 			MaxAge:       12 * time.Hour,
 		}))

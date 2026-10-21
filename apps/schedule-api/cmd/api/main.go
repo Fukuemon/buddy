@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/access"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/config"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql"
@@ -82,13 +83,13 @@ func run() error {
 	router := httpapi.NewRouter(httpapi.Usecases{
 		Organization: organization.NewService(organization.Repositories{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions, Policies: policies,
-		}, tx, ids),
+		}, tx, ids, auth.RequireStaffManage),
 		Staff: staff.NewService(staff.Repositories{
-			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions, Staff: staffRepo,
-		}, tx, ids),
+			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions, Policies: policies, Staff: staffRepo,
+		}, tx, ids, auth.RequireStaffManage),
 		Patients: patient.NewService(patient.Repositories{
 			Facilities: facilities, Staff: staffRepo, Visits: visits, Patients: patients,
-		}, ids),
+		}, ids, auth.RequireStaffManage),
 		VisitMasters: visit.NewService(visits),
 		Schedules: schedule.NewService(schedule.Repositories{
 			Facilities: facilities, Staff: staffRepo, Patients: patients, Visits: visits, Schedules: schedules,

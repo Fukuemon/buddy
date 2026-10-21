@@ -196,6 +196,48 @@ func (s Staff) ChangePosition(_ context.Context, id, positionID string, grants [
 	return nil
 }
 
+// AddGrant は、職員の権限に g を足す。同じ権限が Grants か職員の Policies にあれば domain.ErrConflict を返す。
+func (s Staff) AddGrant(_ context.Context, id string, g staff.Grant) error {
+	d, ok := s.Staff[id]
+	if !ok {
+		return domain.ErrNotFound
+	}
+	for _, cur := range s.Grants[id] {
+		if cur.PolicyID == g.PolicyID {
+			return domain.ErrConflict
+		}
+	}
+	for _, p := range d.Policies {
+		if p.PolicyID == g.PolicyID {
+			return domain.ErrConflict
+		}
+	}
+	s.Grants[id] = append(s.Grants[id], g)
+	return nil
+}
+
+// RemoveGrant は、職員の権限 userPolicyID を、Grants か職員の Policies から外す。無ければ domain.ErrNotFound を返す。
+func (s Staff) RemoveGrant(_ context.Context, id, userPolicyID string) error {
+	d, ok := s.Staff[id]
+	if !ok {
+		return domain.ErrNotFound
+	}
+	for i, g := range s.Grants[id] {
+		if g.ID == userPolicyID {
+			s.Grants[id] = append(s.Grants[id][:i], s.Grants[id][i+1:]...)
+			return nil
+		}
+	}
+	for i, p := range d.Policies {
+		if p.UserPolicyID == userPolicyID {
+			d.Policies = append(d.Policies[:i:i], d.Policies[i+1:]...)
+			s.Staff[id] = d
+			return nil
+		}
+	}
+	return domain.ErrNotFound
+}
+
 // Get は、職員を返す。
 func (s Staff) Get(_ context.Context, id string) (staff.Detail, error) { return get(s.Staff, id) }
 

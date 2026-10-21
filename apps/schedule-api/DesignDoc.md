@@ -231,12 +231,12 @@ erDiagram
 - 訪問の区分は、`visit_info_visit_categories` で 1 件の訪問に複数を付けられる。
 - 一覧の読み出しには、予定と訪問の情報と名前を結合したビュー（`schedule_details`、`recurring_schedule_details`、`visit_info_details`）を使う。
 - `schedule_types`、`service_codes`、`visit_categories` の行は、マイグレーションで入れる。事業所ごとには持たない。サービスコードの提供時間の範囲は、照合の許容範囲と同じ値にする。
-- `policies` の 7 行は、マイグレーションで入れる。事業所ごとには持たず、API では作らない。認可は `code` で権限を読むので、行が環境ごとに違うと判定がずれるためである。
+- `policies` の 8 行は、マイグレーションで入れる。事業所ごとには持たず、API では作らない。認可は `code` で権限を読むので、行が環境ごとに違うと判定がずれるためである。
 - `user_policy_targets` は、`target_user_id` と `target_team_id` のどちらか 1 つだけを持つ。DB の CHECK 制約で確かめる。
 
 ### 権限の行
 
-`policies` は、PRD の 7 つの権限を次の `code` で持つ。`needs_target` が true の権限は、対象の職員かチームを `user_policy_targets` に持つ。
+`policies` は、PRD の 8 つの権限（予定の 7 つと職員の管理）を次の `code` で持つ。`needs_target` が true の権限は、対象の職員かチームを `user_policy_targets` に持つ。
 
 | `code` | 権限 | `needs_target` |
 | --- | --- | --- |
@@ -247,10 +247,17 @@ erDiagram
 | `schedule.team.edit` | 指定したチームの職員の予定の編集 | true |
 | `schedule.all.read` | 事業所の全ての予定の閲覧 | false |
 | `schedule.all.edit` | 事業所の全ての予定の編集 | false |
+| `staff.manage` | 職員の管理 | false |
 
 職員を登録すると、役職の既定の権限を職員に写す。チームの権限（`schedule.team.*`）は、職員の所属のチームを対象にして写す。職員の権限（`schedule.user.*`）は、写すときに対象を決められないので、役職の既定にできない。規則は ADR-0002 にある。
 
 職員の役職を変える（`PUT /v1/users/{user_id}/position`）と、職員の権限と対象を全て消し、新しい役職の既定を同じ規則で写し直す。職員ごとに足した権限も消える。
+
+職員ごとに権限を足す（`POST /v1/users/{user_id}/policies`）ときは、`needs_target` が true の権限に、code に合わせて職員かチームの対象を 1 つ以上付ける。対象は同じ事業所のものに限る。外す（`DELETE /v1/users/{user_id}/policies/{user_policy_id}`）と、対象も消える。
+
+職員と利用者の登録、役職の作成、役職を変える操作、権限を足し外す操作は、`staff.manage` を持つ職員だけに許す。`staff.manage` は、それだけでは予定の判定に及ばないが、自分に予定の権限を足せるので、事実上の最上位の権限である。判断は ADR-0006 にある。
+
+- ADR-0006: [職員と利用者の登録と、職員の権限と役職を変える操作を、職員の管理の権限で許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0006-staff-manage-policy.md)
 
 - ADR-0002: [権限を役職の既定と職員ごとの上書きで持つ（PBAC）](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0002-pbac.md)
 
@@ -318,7 +325,7 @@ sequenceDiagram
 - 一覧は、見てよくない職員の予定を除いて返す。1 件を指す操作（取得、変更、キャンセル、回の置き換え）は 403 を返す。
 - 作成と変更は、予定の職員の予定を編集する権限を求める。変更と回の置き換えは、元の予定の職員と、新しい予定の職員の両方の編集の権限を求める。
 - 権限の判定は、事業所の分離の後に行う。事業所が違えば、ミドルウェアが先に 403 を返す。
-- 職員、利用者、訪問の情報、組織の API は、権限で判定しない。事業所の分離だけを確かめる。
+- 職員と利用者の登録と、職員の権限と役職を変える操作は `staff.manage` で判定する（[権限の行](#権限の行)）。それ以外の職員、利用者、訪問の情報、組織の API は、権限で判定せず、事業所の分離だけを確かめる。
 
 ### 繰り返しの予定
 
