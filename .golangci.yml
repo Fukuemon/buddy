@@ -20,10 +20,14 @@ linters:
   exclusions:
     generated: lax
     rules:
-      # テストの接続の設定は、使い捨てのコンテナの値である。
+      # テストの接続の設定は、使い捨てのコンテナの値である。テストが読むファイルは、testdata の決まったファイルである。
       - path: _test\.go
         linters: [gosec]
-        text: G101
+        text: G101|G304
+      # 照合の結果を比べる手元の道具は、開発者が引数で渡した CSV を読む。イメージに入れない。
+      - path: apps/receipt-api/tools/
+        linters: [gosec]
+        text: G703
 
 formatters:
   enable:
@@ -32,4 +36,4 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - github.com/Fukuemon/buddy/apps/schedule-api
+        - github.com/Fukuemon/buddy

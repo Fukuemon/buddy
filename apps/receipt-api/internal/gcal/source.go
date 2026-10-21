@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -44,7 +45,7 @@ type Calendar struct {
 // 形は [{"calendar_id": "...", "org_id": "...", "staff_name": "..."}] である。
 // 一覧が空、calendar_id が空か重なる、org_id が空、知らないキーがある、のいずれかではエラーを返す。
 func LoadCalendars(path string) ([]Calendar, error) {
-	f, err := os.Open(path)
+	f, err := os.Open(filepath.Clean(path))
 	if err != nil {
 		return nil, err
 	}

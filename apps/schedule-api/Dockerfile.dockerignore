@@ -1,0 +1,7 @@
+*
+!go.mod
+!go.sum
+!apps/schedule-api/cmd/
+!apps/schedule-api/db/
+!apps/schedule-api/internal/
+**/*_test.go

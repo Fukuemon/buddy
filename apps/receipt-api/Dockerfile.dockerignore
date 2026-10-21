@@ -1,0 +1,6 @@
+*
+!go.mod
+!go.sum
+!apps/receipt-api/cmd/
+!apps/receipt-api/internal/
+**/*_test.go
