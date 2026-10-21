@@ -1,0 +1,15 @@
+# 2 つの API の定義の lint の設定。pnpm lint:openapi が読む
+apis:
+  schedule-api:
+    root: apps/schedule-api/openapi.yaml
+  receipt-api:
+    root: apps/receipt-api/openapi.yaml
+# recommended-strict は推奨の規則の警告も誤りとして扱い、終了コードを 1 にする
+extends:
+  - recommended-strict
+rules:
+  # ライセンスはまだ決めていない。公開するときに info.license を足し、この行を消す
+  info-license: off
+  # servers は手元で動かすときの URL だけを書く。環境ごとの URL は持たない
+  no-server-example.com: off
+# 個別に外す箇所は .redocly.lint-ignore.yaml に、理由のコメントと一緒に置く
