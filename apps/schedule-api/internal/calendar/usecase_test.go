@@ -553,3 +553,55 @@ func TestImportIgnoresStaleRun(t *testing.T) {
 		t.Fatalf("10 分より前の running があるとき: err = %v", err)
 	}
 }
+
+// startFiltered は、Google と同じく、例外の回と単発の予定を今の開始日時で期間に絞る EventSource である。親の予定は絞らない。
+type startFiltered struct{ calendar.EventSource }
+
+func (s startFiltered) Events(ctx context.Context, id string, timeMin, timeMax time.Time) ([]calendar.Event, error) {
+	events, err := s.EventSource.Events(ctx, id, timeMin, timeMax)
+	var out []calendar.Event
+	for _, ev := range events {
+		start, perr := time.Parse(time.RFC3339, ev.Start.DateTime)
+		if len(ev.Recurrence) > 0 || perr != nil || (!start.Before(timeMin) && start.Before(timeMax)) {
+			out = append(out, ev)
+		}
+	}
+	return out, err
+}
+
+func TestImportMovedOutOfRange(t *testing.T) {
+	srv := &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{googleCalID: {{
+		grecurring(gevent("weekly", "【訪看I2】利用者A", "2026-11-02T09:00:00+09:00", "2026-11-02T09:30:00+09:00"),
+			"RRULE:FREQ=WEEKLY;BYDAY=MO"),
+		// 11-30 の回を 12-02 に動かした
+		gexception("weekly_1130", "weekly", "【訪看I2】利用者A", "2026-12-02T09:00:00+09:00", "2026-12-02T09:30:00+09:00", "2026-11-30T09:00:00+09:00"),
+	}}}}
+	e := newEnv(t, nil)
+	ids := &inmem.SeqIDs{}
+	s := e.store
+	e.uc = calendar.NewUsecase(calendar.Deps{
+		Calendars: inmem.Calendars{Store: s}, Source: startFiltered{gcal.NewReader(gcaltest.Start(t, srv))}, ServiceAccount: "buddy@example.com",
+		Staff: inmem.StaffRefs{Store: s}, Patients: inmem.Patients{Store: s}, ServiceCodes: inmem.VisitMasters{Store: s},
+		Types: inmem.ScheduleTypes{Store: s}, Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s},
+		RecurringSchedules: inmem.RecurringSchedules{Store: s},
+		Visits: visit.NewWriter(visit.WriterDeps{
+			Staff: inmem.StaffRefs{Store: s},
+			Patients: func(_ context.Context, id string) (string, string, error) {
+				p := s.Patients[id]
+				return p.ID, p.FacilityID, nil
+			},
+			Infos: inmem.VisitInfos{Store: s}, Masters: inmem.VisitMasters{Store: s},
+		}, ids),
+	}, &inmem.Tx{}, ids, principal.RequireStaffManage)
+
+	if _, err := e.importDecided(t, e.rng, nil); err != nil {
+		t.Fatal(err)
+	}
+	rs := recurringOf(t, e, "weekly")
+	if !slices.Contains(rs.ExclusionDates, civil.Date{Year: 2026, Month: 11, Day: 30}) {
+		t.Errorf("除外の日 = %v, want 期間の外へ動かした 11-30 を含む", rs.ExclusionDates)
+	}
+	if moved := scheduleOf(t, e, "weekly_1130"); moved.Date != (civil.Date{Year: 2026, Month: 12, Day: 2}) || moved.RecurringScheduleID == nil {
+		t.Errorf("動かした回 = %+v", moved)
+	}
+}

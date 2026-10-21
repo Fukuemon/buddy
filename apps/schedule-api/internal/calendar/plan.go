@@ -41,6 +41,15 @@ func (r Range) TimeMin() time.Time { return midnight(r.Start) }
 // TimeMax は、期間の終了日の翌日の始まりの Asia/Tokyo の時刻である。
 func (r Range) TimeMax() time.Time { return midnight(civil.DateOf(r.End.Time().AddDate(0, 0, 1))) }
 
+// movedMargin は、期間の中の回を動かした先として探す、期間の前後の日数である。
+// Google は、変えた回を、元の日時ではなく今の日時で期間に絞るためである。
+const movedMargin = 31
+
+// widened は、期間の前後を movedMargin の日だけ広げた期間である。期間の中の回を外へ動かした例外の回を読むのに使う。
+func (r Range) widened() Range {
+	return Range{Start: civil.DateOf(r.Start.Time().AddDate(0, 0, -movedMargin)), End: civil.DateOf(r.End.Time().AddDate(0, 0, movedMargin))}
+}
+
 // Contains は、d が期間の中の日かを返す。
 func (r Range) Contains(d civil.Date) bool { return !d.Before(r.Start) && !d.After(r.End) }
 
@@ -382,7 +391,7 @@ func (b *planner) addException(ev Event) {
 		return
 	}
 	c := Classify(ev)
-	if !c.Date.IsZero() && !b.in.rng.Contains(c.Date) {
+	if original, ok := originalDate(ev); (c.Date.IsZero() || !b.in.rng.Contains(c.Date)) && (!ok || !b.in.rng.Contains(original)) {
 		return
 	}
 	if b.linked(ev.ID) {
@@ -641,3 +650,21 @@ func (p *plan) applyDecisions(decisions []Decision, patients []PatientRef) (int,
 }
 
 var errReviewChanged = apperr.ConflictCode(CodeReviewChanged, "下見の後に、外部のカレンダーの確かめが要る予定が変わりました。もう一度下見してください")
+
+// withMovedExceptions は、events に、around のうち元の日付が期間の中にある例外の回で、events に無いものを足す。
+func withMovedExceptions(events, around []Event, rng Range) []Event {
+	seen := make(map[string]bool, len(events))
+	for _, ev := range events {
+		seen[ev.ID] = true
+	}
+	for _, ev := range around {
+		if ev.RecurringEventID == "" || seen[ev.ID] {
+			continue
+		}
+		if d, ok := originalDate(ev); ok && rng.Contains(d) {
+			events = append(events, ev)
+			seen[ev.ID] = true
+		}
+	}
+	return events
+}

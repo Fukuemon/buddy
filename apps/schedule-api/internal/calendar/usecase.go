@@ -329,6 +329,13 @@ func (u *Usecase) plan(ctx context.Context, c ExternalCalendar, rng Range) (plan
 	if err != nil {
 		return plan{}, nil, err
 	}
+	// 期間の中の回を期間の外へ動かした例外の回は、期間で読むと返らないので、前後を広げて読み、元の日付が期間の中のものを足す
+	wide := rng.widened()
+	around, err := u.deps.Source.Events(ctx, c.CalendarID, wide.TimeMin(), wide.TimeMax())
+	if err != nil {
+		return plan{}, nil, err
+	}
+	events = withMovedExceptions(events, around, rng)
 	links, err := u.deps.Calendars.ListLinks(ctx, c.ID)
 	if err != nil {
 		return plan{}, nil, err
