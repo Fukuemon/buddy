@@ -26,19 +26,25 @@ type SkipReason string
 
 // SkipReason の値。
 const (
-	SkipCancelled       SkipReason = "cancelled"
-	SkipAllDay          SkipReason = "all_day"
-	SkipMultiDay        SkipReason = "multi_day"
-	SkipUnreadableTime  SkipReason = "unreadable_time"
+	// SkipCancelled は、取り消した予定である。繰り返しの予定の取り消した回を含む。
+	SkipCancelled SkipReason = "cancelled"
+	// SkipAllDay は、時刻の無い終日の予定である。
+	SkipAllDay SkipReason = "all_day"
+	// SkipMultiDay は、Asia/Tokyo で開始と終了の日付が違う予定である。24:00 に終わる予定は翌日の 0:00 に終わるので、これに当たる。
+	SkipMultiDay SkipReason = "multi_day"
+	// SkipUnreadableTime は、開始か終了の日時が無いか、RFC 3339 で読めない予定である。
+	SkipUnreadableTime SkipReason = "unreadable_time"
+	// SkipUnreadableTitle は、題名に `【` と `】` を含むが、サービス内容か利用者名を読めない予定である。
 	SkipUnreadableTitle SkipReason = "unreadable_title"
-	SkipZeroLength      SkipReason = "zero_length"
+	// SkipZeroLength は、分に丸めると終了が開始より後でない予定である。
+	SkipZeroLength SkipReason = "zero_length"
 )
 
 // Candidate は、1 つの予定を buddy の予定に読み替えた候補である。
 type Candidate struct {
 	Kind Kind
 	// Date、StartTime、EndTime は、Asia/Tokyo での日付と時刻である。
-	// 取り込まない予定では、読めた分だけを持つ（終日の予定は Date だけ、日をまたぐ予定は開始の日付と時刻）。
+	// 取り込まない予定では、読めた分だけを持つ（終日の予定は Date だけ、日をまたぐ予定は開始の日付と、両方の時刻）。
 	Date      civil.Date
 	StartTime civil.Time
 	EndTime   civil.Time
