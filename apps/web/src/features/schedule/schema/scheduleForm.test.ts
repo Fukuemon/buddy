@@ -45,6 +45,22 @@ describe('scheduleFormSchema', () => {
     },
   )
 
+  it('開始に提供時間を足して日をまたぐ訪問の予定は弾く', () => {
+    const values = {
+      ...createScheduleFormValues({ kind: 'visit', date: '2026-10-20', staffId: 'staff-1' }),
+      patientId: 'patient-1',
+      startTime: '23:50',
+      serviceTime: 29,
+    }
+    expect(messagesOf(values)).toEqual({
+      serviceTime: '終了が日をまたがないよう、開始時間か提供時間を変えてください',
+    })
+    expect(messagesOf({ ...values, startTime: '23:31' })).toEqual({
+      serviceTime: '終了が日をまたがないよう、開始時間か提供時間を変えてください',
+    })
+    expect(messagesOf({ ...values, startTime: '23:30' })).toEqual({})
+  })
+
   it('通常の予定はタイトルを必須にし、終了時間を開始時間より後にさせる', () => {
     const values = {
       ...createScheduleFormValues({ kind: 'normal', date: '2026-10-20', staffId: 'staff-1' }),

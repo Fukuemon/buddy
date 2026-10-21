@@ -12,13 +12,15 @@ import { STORY_DATE, storyPatients, storyStaff } from './storyData'
 
 type SampleProps = {
   kind: ScheduleKind
+  /** 作成と編集のどちらの題とボタンで描くか。既定は作成 */
+  mode?: 'create' | 'edit'
   submitError?: string
   onSubmit: (values: ScheduleFormValues) => void
   onClose: () => void
   onKindChange?: (kind: ScheduleKind) => void
 }
 
-const ScheduleFormModalSample = ({ kind, ...props }: SampleProps) => {
+const ScheduleFormModalSample = ({ kind, mode = 'create', ...props }: SampleProps) => {
   const form = useForm<ScheduleFormValues>({
     defaultValues: createScheduleFormValues({ kind, date: STORY_DATE }),
     resolver: zodResolver(scheduleFormSchema),
@@ -29,9 +31,9 @@ const ScheduleFormModalSample = ({ kind, ...props }: SampleProps) => {
       form={form}
       patients={storyPatients}
       staffList={storyStaff}
-      submitLabel="作成"
-      submitTestId="schedule-create-submit"
-      title="予定の作成"
+      submitLabel={mode === 'create' ? '作成' : '保存'}
+      submitTestId={mode === 'create' ? 'schedule-create-submit' : 'schedule-edit-submit'}
+      title={mode === 'create' ? '予定の作成' : '予定の編集'}
     />
   )
 }
@@ -49,6 +51,10 @@ export const Visit: Story = {}
 
 export const Normal: Story = { args: { kind: 'normal' } }
 
-export const WithoutKindTab: Story = { args: { onKindChange: undefined } }
+export const WithoutKindTab: Story = { args: { onKindChange: undefined, mode: 'edit' } }
 
-export const SubmitError: Story = { args: { submitError: '予定を保存できませんでした。' } }
+export const SubmitError: Story = { args: { submitError: '予定を作成できませんでした。' } }
+
+export const EditSubmitError: Story = {
+  args: { onKindChange: undefined, mode: 'edit', submitError: '予定を更新できませんでした。' },
+}

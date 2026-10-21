@@ -344,6 +344,7 @@
 | 担当者、予定者 | 選んでいない | 担当者を選んでください |
 | 提供時間（訪問） | 数でないか、整数でない | 提供時間を入力してください |
 | 提供時間（訪問） | サービスコードの範囲の外 | {サービスコード} の提供時間は {下限} 分から {上限} 分です |
+| 提供時間（訪問） | 開始時間に足すと日をまたぐ | 終了が日をまたがないよう、開始時間か提供時間を変えてください |
 
 - タイトルとメモの長さは、画面で確かめない。API の上限（タイトル 255 文字、メモ 2000 文字）を超えると、送信の失敗になる。
 
@@ -563,7 +564,7 @@
 
 **表示条件**: 最後の保存が失敗したとき
 
-**カタログ**: [ScheduleFormModal の SubmitError](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleformmodal--submit-error)
+**カタログ**: [ScheduleFormModal の EditSubmitError](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleformmodal--edit-submit-error)
 
 ## 保存
 
