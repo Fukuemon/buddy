@@ -224,7 +224,7 @@ const readStates = (markdown, specPath) => {
   return states
 }
 
-/** 画面の中の操作の属性を確かめる。data-go の先がモックとしてあるか、data-open と data-close の先の data-panel があるか */
+/** 画面の中の操作の属性を確かめる。値が空でないか、data-escape を操作の属性を持つ要素に付けたか、data-go の先がモックとしてあるか、data-open と data-close の先の data-panel があるか */
 const checkInteractions = (code, mockPath) => {
   for (const match of code.matchAll(/\sdata-go="([^"]*)"/g)) {
     const target = match[1]
@@ -237,6 +237,12 @@ const checkInteractions = (code, mockPath) => {
     }
     if (!existsSync(join(dirname(mockPath), target)))
       report(mockPath, `data-go="${target}" のモックが無い`)
+  }
+  for (const match of code.matchAll(/\sdata-(go|choice|panel|open|close)(?:=(?:""|'')|(?=[\s/>]))/g))
+    report(mockPath, `data-${match[1]} の値が空である`)
+  for (const tag of code.matchAll(/<[a-z][^>]*\sdata-escape\b[^>]*>/g)) {
+    if (!/\sdata-(go|toggle|choice|open|close)\b/.test(tag[0]))
+      report(mockPath, `data-escape を操作の属性の無い要素に付けている: ${tag[0]}`)
   }
   const panels = new Set([...code.matchAll(/\sdata-panel="([^"]*)"/g)].map((m) => m[1]))
   for (const match of code.matchAll(/\sdata-(open|close)="([^"]*)"/g)) {
