@@ -9,7 +9,7 @@ status: stable
 
 ## Glossary
 
-### 予定の管理
+### 事業所と職員
 
 | 用語 | 意味 | コードの識別子 |
 | --- | --- | --- |
@@ -17,10 +17,16 @@ status: stable
 | 組織 | 認証のブローカーが持つ組織。事業所と 1 対 1 に対応し、access token に組織の ID が入る | `facilities.org_id`、`auth.Identity.OrgID`、クレームの名前は `OIDC_ORG_CLAIM` |
 | 部署、チーム | 事業所の中の職員の所属 | `organization.Department`、`organization.Team`、表 `departments`、`teams` |
 | 役職 | 職員の役割。職員に付ける権限の既定を持つ | `organization.Position`、表 `positions`、`position_policies` |
+| マネージャー、チームリーダー、メンバー | 役職の 3 つ。事業所ごとに持つ役職の名前で、権限の既定が違う | 表 `positions` の行 |
 | 権限 | 職員ができる操作と、その対象 | `organization.Policy`、`staff.Grant`、表 `policies`、`user_policies`、`user_policy_targets` |
 | 職員 | 事業所で働き、buddy にログインする人 | Go `staff.Staff`、表 `users`、API `Staff`、パス `/users`、web `Staff`、`Viewer` |
 | 利用者 | 事業所が訪問する相手 | Go `patient.Patient`、表 `patients`、API `Patient` |
 | 担当の職員 | 利用者を主に担当する職員 | `Patient.AssignedStaffID`、`patients.assigned_staff_id` |
+
+### 予定
+
+| 用語 | 意味 | コードの識別子 |
+| --- | --- | --- |
 | 予定 | 職員の 1 回の予定。種類は通常と訪問 | Go `schedule.Schedule`、表 `schedules`、API `Schedule`、web `ScheduleKind`（`normal`、`visit`） |
 | 繰り返しの予定 | 規則に従って繰り返す予定 | Go `schedule.RecurringSchedule`、表 `recurring_schedules`、`recurring_rules` |
 | 回の置き換え | 繰り返しの 1 回を、単発の予定に置き換えること | `ChangeOccurrence`、パス `.../occurrences` |
@@ -37,6 +43,7 @@ status: stable
 
 | 用語 | 意味 | コードの識別子 |
 | --- | --- | --- |
+| 照合の担当 | 月末に予定と実績を比べ、食い違いを直す職員。役職とは別の、業務の役割 | なし（照合の画面は全ての職員が開ける） |
 | 照合 | 予定と実績を対にし、不整合、予定のみ、実績のみ、整合の 4 つの区分に分けること | receipt-api `check.Run`、API `createCheck`、`Report` |
 | 実績 | 電子カルテ（iBow）から書き出した訪問の記録の CSV の行 | `record.SourceVisit`、`csvio.VisitColumns` |
 | 予定（照合の） | 予定の CSV の行か、Google カレンダーの予定 | `record.SourceSchedule`、`check.ScheduleSource` |
