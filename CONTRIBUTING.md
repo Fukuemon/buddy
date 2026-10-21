@@ -3,7 +3,8 @@
 ## 開発の準備
 
 必要なものは mise と Docker である。  
-ランタイムとツール（Node、pnpm、Go、sqlc、golang-migrate、golangci-lint、uv、tbls、apm）のバージョンは `mise.toml` にある。  
+ランタイムとツール（Node、pnpm、Go、sqlc、golang-migrate、golangci-lint、uv、tbls、apm、gh）のバージョンは `mise.toml` にある。  
+gh は、証跡の動画を pull request と issue に添付する `--attach` のために、2.99 以降をそろえる。  
 pnpm は `package.json` の `packageManager` と同じバージョンにする。  
 文書のサイトを組む Zensical は、mise が入れる `uv` で動かす。  
 ほかのツールとバージョンの所在は、[技術スタック](context/tech-stack.md) にある。
@@ -11,6 +12,13 @@ pnpm は `package.json` の `packageManager` と同じバージョンにする�
 ```sh
 mise install
 pnpm install
+```
+
+mise が gh の attestation を確かめるときに `error decoding response body` で失敗することがある。  
+そのときは、mise のエラーに出た zip を `gh attestation verify <zip> --repo cli/cli` で確かめてから、確かめを外して入れる。
+
+```sh
+MISE_AQUA_GITHUB_ATTESTATIONS=false mise install aqua:cli/cli
 ```
 
 `pnpm install` の `prepare` が、lefthook の Git のフック（commit-msg の commitlint、pre-commit の textlint と `pnpm lint:openapi`）を入れる。

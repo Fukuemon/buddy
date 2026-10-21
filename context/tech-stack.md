@@ -38,6 +38,7 @@ status: stable
 | 文章のチェック | textlint | `package.json` |
 | Git のフック、コミットの形式 | lefthook、commitlint | `package.json` |
 | スキルとフックの配置 | apm | `mise.toml`、パッケージは `apm.yml` と `apm.lock.yaml` |
+| 証跡の動画の添付 | gh | `mise.toml`。CI のワークフローは mise で入れず、ランナーの gh を使う |
 | 手元の全体の起動 | Docker Compose（MySQL、Valkey、mock-oauth2-server） | `compose.yml` のイメージのタグ |
 | 実行のイメージ | distroless（API）、`node:24-slim`（web） | `apps/*/Dockerfile` |
 
