@@ -26,7 +26,7 @@ type AuthUsecase interface {
 }
 
 // pathResources は、/v1 のパスの引数の名前と、その ID が指すリソースである。
-// global は、事業所に属さないリソースの引数である。
+// global は、ミドルウェアが事業所を確かめない引数である。事業所に属さないリソースか、同じパスのほかの引数で事業所を確かめるリソースに付ける。
 var pathResources = map[string]struct {
 	resource access.Resource
 	global   bool
@@ -39,6 +39,8 @@ var pathResources = map[string]struct {
 	"schedule_id":           {resource: access.ResourceSchedule},
 	"recurring_schedule_id": {resource: access.ResourceRecurringSchedule},
 	"policy_id":             {global: true},
+	// 職員の権限の ID は、同じパスの user_id で事業所を確かめ、staff.Service が職員の権限かを確かめる。
+	"user_policy_id": {global: true},
 }
 
 type authMiddleware struct {

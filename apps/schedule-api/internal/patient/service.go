@@ -17,15 +17,16 @@ type Repositories struct {
 	Patients   Repository
 }
 
-// Service は、利用者の操作である。
+// Service は、利用者の操作である。利用者の登録は、guard が許すときだけ行う（ADR-0006）。
 type Service struct {
 	repos Repositories
 	ids   domain.IDGenerator
+	guard organization.Guard
 }
 
 // NewService は Service を作る。
-func NewService(repos Repositories, ids domain.IDGenerator) *Service {
-	return &Service{repos: repos, ids: ids}
+func NewService(repos Repositories, ids domain.IDGenerator, guard organization.Guard) *Service {
+	return &Service{repos: repos, ids: ids, guard: guard}
 }
 
 // CreateInput は、利用者の作成の入力である。
@@ -40,7 +41,11 @@ type CreateInput struct {
 
 // Create は、利用者を作る。事業所が見つからないときは domain.ErrNotFound を、
 // サービスコードか担当の職員が見つからないか、職員が別の事業所に属するときは入力の誤りを返す。
+// 職員の管理の権限が無いときは domain.ErrForbidden を返す。
 func (p *Service) Create(ctx context.Context, in CreateInput) (Detail, error) {
+	if err := p.guard(ctx); err != nil {
+		return Detail{}, err
+	}
 	if _, err := p.repos.Facilities.Get(ctx, in.FacilityID); err != nil {
 		return Detail{}, err
 	}

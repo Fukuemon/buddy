@@ -80,9 +80,22 @@ func (f *fakeSchedules) Update(_ context.Context, _ string, in schedule.SlotInpu
 }
 
 type fakeStaff struct {
-	listCalls      int
-	lastQuery      staff.ListQuery
-	lastPositionID string
+	listCalls        int
+	lastQuery        staff.ListQuery
+	lastPositionID   string
+	lastGrant        staff.GrantInput
+	lastUserPolicyID string
+	err              error
+}
+
+func (f *fakeStaff) AddGrant(_ context.Context, _ string, in staff.GrantInput) (staff.Detail, error) {
+	f.lastGrant = in
+	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: staffID}}, Policies: []staff.PolicyGrant{}}, f.err
+}
+
+func (f *fakeStaff) RemoveGrant(_ context.Context, _, userPolicyID string) (staff.Detail, error) {
+	f.lastUserPolicyID = userPolicyID
+	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: staffID}}, Policies: []staff.PolicyGrant{}}, f.err
 }
 
 func (f *fakeStaff) ChangePosition(_ context.Context, _, positionID string) (staff.Detail, error) {
@@ -91,7 +104,7 @@ func (f *fakeStaff) ChangePosition(_ context.Context, _, positionID string) (sta
 }
 
 func (f *fakeStaff) Create(context.Context, staff.CreateInput) (staff.Detail, error) {
-	return staff.Detail{}, nil
+	return staff.Detail{Policies: []staff.PolicyGrant{}}, f.err
 }
 
 func (f *fakeStaff) Get(context.Context, string) (staff.Detail, error) { return staff.Detail{}, nil }
@@ -102,10 +115,13 @@ func (f *fakeStaff) List(_ context.Context, _ string, q staff.ListQuery) ([]staf
 	return []staff.Summary{}, nil
 }
 
-type fakePatients struct{ listCalls int }
+type fakePatients struct {
+	listCalls int
+	err       error
+}
 
 func (f *fakePatients) Create(context.Context, patient.CreateInput) (patient.Detail, error) {
-	return patient.Detail{}, nil
+	return patient.Detail{}, f.err
 }
 
 func (f *fakePatients) List(context.Context, string, patient.ListQuery) ([]patient.Detail, error) {
@@ -389,6 +405,45 @@ func TestChangeUserPosition(t *testing.T) {
 	}
 }
 
+func TestAddUserPolicy(t *testing.T) {
+	const policyID, targetID = "01M5E1S42TTS7QZK05YGS0GYR9", "01M3TC5VQR3MKFF9AA4BVKF44Z"
+	st := &fakeStaff{}
+	h := newRouter(&fakeSchedules{}, st, &fakePatients{})
+	rec, _ := do(t, h, http.MethodPost, "/v1/users/"+staffID+"/policies",
+		`{"policy_id":"`+policyID+`","target_user_ids":["`+targetID+`"]}`)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
+	}
+	if st.lastGrant.PolicyID != policyID || len(st.lastGrant.TargetUserIDs) != 1 || st.lastGrant.TargetUserIDs[0] != targetID {
+		t.Errorf("入力 = %+v", st.lastGrant)
+	}
+	for name, body := range map[string]string{
+		"policy_id が無い": `{}`,
+		"対象の ID の形が誤り":  `{"policy_id":"` + policyID + `","target_team_ids":["x"]}`,
+	} {
+		if rec, _ := do(t, h, http.MethodPost, "/v1/users/"+staffID+"/policies", body); rec.Code != http.StatusBadRequest {
+			t.Errorf("%s: status = %d", name, rec.Code)
+		}
+	}
+	forbidden := newRouter(&fakeSchedules{}, &fakeStaff{err: domain.ErrForbidden}, &fakePatients{})
+	if rec, body := do(t, forbidden, http.MethodPost, "/v1/users/"+staffID+"/policies", `{"policy_id":"`+policyID+`"}`); rec.Code != http.StatusForbidden || body["code"] != "forbidden" {
+		t.Errorf("職員の管理の権限が無い: status = %d, body = %v", rec.Code, body)
+	}
+}
+
+func TestRemoveUserPolicy(t *testing.T) {
+	const userPolicyID = "01M5E1V0KR0WQZ6M3B1C4D5E6K"
+	st := &fakeStaff{}
+	rec, _ := do(t, newRouter(&fakeSchedules{}, st, &fakePatients{}), http.MethodDelete, "/v1/users/"+staffID+"/policies/"+userPolicyID, "")
+	if rec.Code != http.StatusOK || st.lastUserPolicyID != userPolicyID {
+		t.Fatalf("status = %d, 外した権限 = %s", rec.Code, st.lastUserPolicyID)
+	}
+	notFound := newRouter(&fakeSchedules{}, &fakeStaff{err: domain.ErrNotFound}, &fakePatients{})
+	if rec, _ := do(t, notFound, http.MethodDelete, "/v1/users/"+staffID+"/policies/"+userPolicyID, ""); rec.Code != http.StatusNotFound {
+		t.Errorf("職員の権限が無い: status = %d", rec.Code)
+	}
+}
+
 // TestUsecaseReceivesPrincipal は、操作が権限を判定できるよう、認証のミドルウェアが特定した職員を ctx で渡すことを確かめる。
 func TestUsecaseReceivesPrincipal(t *testing.T) {
 	s := &fakeSchedules{}
@@ -414,5 +469,39 @@ func TestUsecaseReceivesRequestCancellation(t *testing.T) {
 	}
 	if !errors.Is(s.lastCtx.Err(), context.Canceled) {
 		t.Fatalf("usecase の context が要求の取り消しを受けない: %v", s.lastCtx.Err())
+	}
+}
+
+// TestCORSPreflight は、許した origin からの事前の要求に、API が使う全てのメソッドを許すことを確かめる。
+func TestCORSPreflight(t *testing.T) {
+	const origin = "http://localhost:3000"
+	h := httpapi.NewRouter(httpapi.Usecases{Auth: fakeAuth{}}, httpapi.RouterConfig{
+		Logger:       slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Verifier:     testVerifier,
+		AllowOrigins: []string{origin},
+	})
+	for _, method := range []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete} {
+		req := httptest.NewRequest(http.MethodOptions, "/v1/users/"+staffID+"/policies/"+scheduleID, nil)
+		req.Header.Set("Origin", origin)
+		req.Header.Set("Access-Control-Request-Method", method)
+		rec := serve(h, req)
+		if rec.Code >= 300 || !strings.Contains(rec.Header().Get("Access-Control-Allow-Methods"), method) {
+			t.Errorf("%s: status = %d, Allow-Methods = %q", method, rec.Code, rec.Header().Get("Access-Control-Allow-Methods"))
+		}
+	}
+}
+
+// TestCreateForbidden は、職員の管理の権限が無いときに、職員と利用者の登録が 403 になることを確かめる。
+func TestCreateForbidden(t *testing.T) {
+	h := newRouter(&fakeSchedules{}, &fakeStaff{err: domain.ErrForbidden}, &fakePatients{err: domain.ErrForbidden})
+	for target, body := range map[string]string{
+		"/v1/facilities/" + facilityID + "/users": `{"username":"新人","email":"new@example.com","department_id":"` + staffID +
+			`","team_id":"` + staffID + `","position_id":"` + staffID + `"}`,
+		"/v1/facilities/" + facilityID + "/patients": `{"name":"見本","preferred_time":"午前","preferred_gender":"男性","service_code_id":"` + staffID +
+			`","assigned_staff_id":"` + staffID + `"}`,
+	} {
+		if rec, got := do(t, h, http.MethodPost, target, body); rec.Code != http.StatusForbidden || got["code"] != "forbidden" {
+			t.Errorf("%s: status = %d, body = %v", target, rec.Code, got)
+		}
 	}
 }

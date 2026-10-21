@@ -15,17 +15,23 @@ type Repositories struct {
 	Policies    PolicyRepository
 }
 
+// Guard は、ctx の職員が職員の管理（StaffManage）を許されているかを確かめ、許されないときは domain.ErrForbidden を返す。
+// auth が organization と staff に依存するので、機能のパッケージは auth の判定を import せずに受け取る（ADR-0006）。
+type Guard func(ctx context.Context) error
+
 // Service は、事業所、部署、チーム、役職、権限の操作である。
 // 事業所ごとの一覧は、事業所が見つからないときに domain.ErrNotFound を返す。
+// 役職の作成は、役職の既定で権限を配るので、guard が許すときだけ行う。
 type Service struct {
 	repos Repositories
 	tx    domain.Transactor
 	ids   domain.IDGenerator
+	guard Guard
 }
 
 // NewService は Service を作る。
-func NewService(repos Repositories, tx domain.Transactor, ids domain.IDGenerator) *Service {
-	return &Service{repos: repos, tx: tx, ids: ids}
+func NewService(repos Repositories, tx domain.Transactor, ids domain.IDGenerator, guard Guard) *Service {
+	return &Service{repos: repos, tx: tx, ids: ids, guard: guard}
 }
 
 // GetFacility は、事業所を返す。
@@ -87,8 +93,11 @@ func (o *Service) ListPositions(ctx context.Context, facilityID string) ([]Posit
 	return o.repos.Positions.ListByFacility(ctx, facilityID)
 }
 
-// CreatePosition は、事業所に役職を作り、保存した役職を返す。policyIDs に見つからない権限があると入力の誤りを返す。
+// CreatePosition は、事業所に役職を作り、保存した役職を返す。policyIDs に見つからない権限があると入力の誤りを、職員の管理の権限が無いときは domain.ErrForbidden を返す。
 func (o *Service) CreatePosition(ctx context.Context, facilityID, name string, policyIDs []string) (Position, error) {
+	if err := o.guard(ctx); err != nil {
+		return Position{}, err
+	}
 	if _, err := o.repos.Facilities.Get(ctx, facilityID); err != nil {
 		return Position{}, err
 	}

@@ -90,6 +90,24 @@ func (q *Queries) DeleteUserPolicies(ctx context.Context, userID string) error {
 	return err
 }
 
+const deleteUserPolicy = `-- name: DeleteUserPolicy :execrows
+DELETE FROM user_policies WHERE id = ? AND user_id = ?
+`
+
+type DeleteUserPolicyParams struct {
+	ID     string
+	UserID string
+}
+
+// user_policy_targets は外部キーの ON DELETE CASCADE で消える。
+func (q *Queries) DeleteUserPolicy(ctx context.Context, arg DeleteUserPolicyParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteUserPolicy, arg.ID, arg.UserID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const getUser = `-- name: GetUser :one
 SELECT u.id, u.sub, u.username, u.email, u.phone_number, u.facility_id,
        u.department_id, d.name AS department_name,

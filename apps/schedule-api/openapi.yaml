@@ -204,6 +204,7 @@ paths:
       tags: [organization]
       operationId: createPosition
       summary: 役職を作る
+      description: 職員の管理の権限（staff.manage）を持つ職員だけが呼べる。役職の既定で権限を配れるためである。
       parameters: [$ref: "#/components/parameters/FacilityID"]
       requestBody:
         required: true
@@ -319,7 +320,7 @@ paths:
       tags: [staff]
       operationId: createUser
       summary: 職員を作る
-      description: 職員を作り、役職の既定の権限を与える。部署、チーム、役職は同じ事業所のものに限る。
+      description: 職員を作り、役職の既定の権限を与える。部署、チーム、役職は同じ事業所のものに限る。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
       parameters: [$ref: "#/components/parameters/FacilityID"]
       requestBody:
         required: true
@@ -377,7 +378,7 @@ paths:
       summary: 職員の役職を変える
       description: |
         職員の役職を変え、職員の権限を新しい役職の既定で写し直す。職員ごとに足した権限と対象は消える。
-        チームを対象にする権限は、職員の所属のチームを対象にする。
+        チームを対象にする権限は、職員の所属のチームを対象にする。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
       parameters:
         - { name: user_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
       requestBody:
@@ -392,6 +393,66 @@ paths:
       responses:
         "200":
           description: 役職を変えた職員と権限
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffDetail" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/users/{user_id}/policies:
+    post:
+      tags: [staff]
+      operationId: addUserPolicy
+      summary: 職員に権限を足す
+      description: |
+        職員に権限を 1 つ足す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+        職員を対象にする権限（schedule.user.*）には target_user_ids を、チームを対象にする権限（schedule.team.*）には
+        target_team_ids を 1 つ以上指定する。対象を指定しない権限には、どちらも指定できない。対象は同じ事業所のものに限る。
+      parameters:
+        - { name: user_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [policy_id]
+              properties:
+                policy_id: { $ref: "#/components/schemas/ID" }
+                target_user_ids:
+                  type: array
+                  items: { $ref: "#/components/schemas/ID" }
+                target_team_ids:
+                  type: array
+                  items: { $ref: "#/components/schemas/ID" }
+      responses:
+        "201":
+          description: 権限を足した職員と権限
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffDetail" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/users/{user_id}/policies/{user_policy_id}:
+    delete:
+      tags: [staff]
+      operationId: removeUserPolicy
+      summary: 職員の権限を外す
+      description: 職員の権限と、その対象を外す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+      parameters:
+        - { name: user_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
+        - { name: user_policy_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
+      responses:
+        "200":
+          description: 権限を外した職員と権限
           content:
             application/json:
               schema: { $ref: "#/components/schemas/StaffDetail" }
@@ -450,6 +511,7 @@ paths:
       tags: [patient]
       operationId: createPatient
       summary: 利用者を作る
+      description: 職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
       parameters: [$ref: "#/components/parameters/FacilityID"]
       requestBody:
         required: true
@@ -874,7 +936,7 @@ components:
         updated_at: { type: string, format: date-time }
     Policy:
       type: object
-      description: 職員に与える権限。7 つの行をマイグレーションが入れ、API では作らない
+      description: 職員に与える権限。8 つの行をマイグレーションが入れ、API では作らない
       required: [id, code, name, needs_target, created_at, updated_at]
       properties:
         id: { $ref: "#/components/schemas/ID" }

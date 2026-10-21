@@ -31,7 +31,11 @@ nav = [
     { "E2E のテストのコード" = "design/packages/e2e.md" },
     { "証跡の録画" = "design/packages/e2e-recording.md" },
   ] },
-  { "デザインシステム" = "design/packages/ui.md" },
+  { "デザインシステム" = [
+    { "使い方" = "design/packages/ui.md" },
+    # カタログは同じサイトの /storybook/ に置く（apps/docs-site）。手元の zensical serve には無い
+    { "カタログ（Storybook）" = "/storybook/" },
+  ] },
   { "画面仕様書" = [
     { "画面の一覧" = "screens/index.md" },
     { "画面仕様書の規約" = "screens/rules.md" },
@@ -48,6 +52,7 @@ nav = [
     "adr/0003-branch-and-release.md",
     "adr/0004-design-system.md",
     "adr/0005-schedule-api-packages.md",
+    "adr/0006-staff-manage-policy.md",
     "adr/0007-go-shared-module.md",
   ] },
 ]

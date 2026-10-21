@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql/sqlcgen"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
@@ -45,6 +46,23 @@ func (r *StaffRepository) ChangePosition(ctx context.Context, id, positionID str
 		return translate("delete user policies", err)
 	}
 	return addGrants(ctx, q, id, grants)
+}
+
+// AddGrant は、権限と対象を続けて書く。途中で失敗したときに残さないよう、呼び出し側がトランザクションの中で呼ぶ。
+func (r *StaffRepository) AddGrant(ctx context.Context, id string, g staff.Grant) error {
+	return addGrants(ctx, r.q(ctx), id, []staff.Grant{g})
+}
+
+// RemoveGrant は、職員 id の権限 userPolicyID を消す。対象は外部キーの ON DELETE CASCADE で消える。
+func (r *StaffRepository) RemoveGrant(ctx context.Context, id, userPolicyID string) error {
+	n, err := r.q(ctx).DeleteUserPolicy(ctx, sqlcgen.DeleteUserPolicyParams{ID: userPolicyID, UserID: id})
+	if err != nil {
+		return translate("delete user policy", err)
+	}
+	if n == 0 {
+		return domain.ErrNotFound
+	}
+	return nil
 }
 
 func addGrants(ctx context.Context, q *sqlcgen.Queries, userID string, grants []staff.Grant) error {

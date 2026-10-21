@@ -1,9 +1,12 @@
 package auth_test
 
 import (
+	"context"
+	"errors"
 	"testing"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 )
@@ -71,5 +74,26 @@ func TestPrincipalCanReadAll(t *testing.T) {
 		if got := principal(staff.PolicyGrant{PolicyCode: code}).CanReadAll(); got != want {
 			t.Errorf("%s: CanReadAll() = %v", code, got)
 		}
+	}
+}
+
+func TestRequireStaffManage(t *testing.T) {
+	ctx := context.Background()
+	if err := auth.RequireStaffManage(ctx); !errors.Is(err, domain.ErrForbidden) {
+		t.Errorf("職員がいない: err = %v", err)
+	}
+	if err := auth.RequireStaffManage(auth.WithPrincipal(ctx, principal(staff.PolicyGrant{PolicyCode: organization.ScheduleAllEdit}))); !errors.Is(err, domain.ErrForbidden) {
+		t.Errorf("予定の全ての編集だけ: err = %v", err)
+	}
+	if err := auth.RequireStaffManage(auth.WithPrincipal(ctx, principal(staff.PolicyGrant{PolicyCode: organization.StaffManage}))); err != nil {
+		t.Errorf("職員の管理: err = %v", err)
+	}
+}
+
+// TestStaffManageDoesNotGrantSchedules は、職員の管理の権限が、ほかの職員の予定に及ばないことを確かめる。
+func TestStaffManageDoesNotGrantSchedules(t *testing.T) {
+	p := principal(staff.PolicyGrant{PolicyCode: organization.StaffManage})
+	if p.CanRead(other, otherTeam) || p.CanEdit(other, otherTeam) || p.CanReadAll() {
+		t.Error("職員の管理の権限で、ほかの職員の予定を扱えた")
 	}
 }

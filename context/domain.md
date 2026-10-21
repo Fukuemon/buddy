@@ -9,7 +9,7 @@ status: stable
 
 ## Glossary
 
-### 予定の管理
+### 事業所と職員
 
 | 用語 | 意味 | コードの識別子 |
 | --- | --- | --- |
@@ -17,17 +17,23 @@ status: stable
 | 組織 | 認証のブローカーが持つ組織。事業所と 1 対 1 に対応し、access token に組織の ID が入る | `facilities.org_id`、`auth.Identity.OrgID`、クレームの名前は `OIDC_ORG_CLAIM` |
 | 部署、チーム | 事業所の中の職員の所属 | `organization.Department`、`organization.Team`、表 `departments`、`teams` |
 | 役職 | 職員の役割。職員に付ける権限の既定を持つ | `organization.Position`、表 `positions`、`position_policies` |
+| マネージャー、チームリーダー、メンバー | PRD が使う役職の 3 つの呼び方。権限の既定が違う | 表 `positions` の行。名前は事業所ごとに決める |
 | 権限 | 職員ができる操作と、その対象 | `organization.Policy`、`staff.Grant`、表 `policies`、`user_policies`、`user_policy_targets` |
 | 職員 | 事業所で働き、buddy にログインする人 | Go `staff.Staff`、表 `users`、API `Staff`、パス `/users`、web `Staff`、`Viewer` |
 | 利用者 | 事業所が訪問する相手 | Go `patient.Patient`、表 `patients`、API `Patient` |
 | 担当の職員 | 利用者を主に担当する職員 | `Patient.AssignedStaffID`、`patients.assigned_staff_id` |
+
+### 予定
+
+| 用語 | 意味 | コードの識別子 |
+| --- | --- | --- |
 | 予定 | 職員の 1 回の予定。種類は通常と訪問 | Go `schedule.Schedule`、表 `schedules`、API `Schedule`、web `ScheduleKind`（`normal`、`visit`） |
 | 繰り返しの予定 | 規則に従って繰り返す予定 | Go `schedule.RecurringSchedule`、表 `recurring_schedules`、`recurring_rules` |
 | 回の置き換え | 繰り返しの 1 回を、単発の予定に置き換えること | `ChangeOccurrence`、パス `.../occurrences` |
 | キャンセル | 予定の取り消し。理由を持つ | `schedule.Cancel`、表 `schedule_cancels` |
 | 時間外の勤務 | 17 時以降に始まる予定 | `Slot.IsOverTimeWork`、列 `is_over_time_work` |
 | 訪問の情報 | 訪問の予定に付く、利用者、主訪問者、同行者、サービスコード、訪問の区分 | Go `visit.Info`、表 `visit_infos`、API `VisitInfo`、web `VisitDetail` |
-| 主訪問者 | 訪問する職員。予定の管理では訪問の情報の担当の職員、照合では実績の CSV の「主訪問者」の列 | `Info.AssignedStaffID`、照合の `Key.Staff` |
+| 主訪問者 | 訪問する職員。業務の役割で、役職を問わない。予定の管理では訪問の情報の担当の職員、照合では実績の CSV の「主訪問者」の列 | `Info.AssignedStaffID`、照合の `Key.Staff` |
 | 同行者 | 訪問に同行する職員 | `Info.CompanionID` |
 | サービスコード | レセプトのサービスの種類と、提供時間の範囲（分） | Go `visit.ServiceCode`、表 `service_codes`、web `SERVICE_CODES` |
 | 訪問の区分 | 夜勤、緊急、入院 | Go `visit.Category`、表 `visit_categories`、web `ScheduleCategory` |
@@ -37,6 +43,7 @@ status: stable
 
 | 用語 | 意味 | コードの識別子 |
 | --- | --- | --- |
+| 照合の担当 | 月末に予定と実績を比べ、食い違いを直す職員。役職とは別の、業務の役割 | なし（照合の画面は全ての職員が開ける） |
 | 照合 | 予定と実績を対にし、不整合、予定のみ、実績のみ、整合の 4 つの区分に分けること | receipt-api `check.Run`、API `createCheck`、`Report` |
 | 実績 | 電子カルテ（iBow）から書き出した訪問の記録の CSV の行 | `record.SourceVisit`、`csvio.VisitColumns` |
 | 予定（照合の） | 予定の CSV の行か、Google カレンダーの予定 | `record.SourceSchedule`、`check.ScheduleSource` |
