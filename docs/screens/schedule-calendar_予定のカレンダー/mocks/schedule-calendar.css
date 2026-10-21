@@ -241,3 +241,18 @@
 .sc-error {
   margin: 16px 0;
 }
+
+/* 週の表示の今日の列。時間の枠の線を残したまま塗る */
+.sc-col.sc-today {
+  background:
+    repeating-linear-gradient(var(--wf-line-soft) 0 1px, transparent 1px 16px),
+    var(--wf-fill);
+}
+
+/* 週の表示の、今の時刻の線 */
+.sc-col > .sc-now {
+  position: absolute;
+  right: 0;
+  left: 0;
+  border-top: 2px solid var(--wf-danger);
+}

@@ -6,7 +6,7 @@
 | --- | --- |
 | URL | `/receipt/result` |
 | 使う人 | 全ての職員 |
-| 実装 | `apps/web/src/routes/receipt.result.tsx`、`ReceiptResultContainer`、`ReceiptResultView`、`ReceiptResultTable` |
+| 実装 | `apps/web/src/routes/receipt.result.tsx`、`apps/web/src/features/receipt/components/ReceiptResultContainer.tsx`、`apps/web/src/features/receipt/components/ReceiptResultView.tsx`、`apps/web/src/features/receipt/components/ReceiptResultTable.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
 
@@ -118,7 +118,8 @@
 
 #### 1. 押す
 
-1. ログアウトし、ログインの画面へ移る。
+1. ログアウトし、`/` へ移る。ログインしていないので、`/` からそのままログインの画面へ移る。
+2. ログインした後は、`/` を経て予定のカレンダーに戻る。
 
 ## ページの題
 
@@ -203,7 +204,7 @@
 
 **値のソース**: 列は「訪問日」「利用者名」「主訪問者」「サービス内容_予定」「開始時間_予定」「終了時間_予定」「提供時間_予定」「サービス内容_実績」「開始時間_実績」「終了時間_実績」「提供時間_実績」「加算」の順。列の名前と並びは、元の照合のアプリの CSV に合わせる。
 
-- 片側の無い行の、無い側の値と、空の提供時間は「データなし」にする。実績に加算が無ければ、加算は空欄にする。
+- 片側の無い行の、無い側の値と、空の提供時間は「データなし」にする。実績の無い行は、加算も「データなし」にする。実績に加算が無ければ、加算は空欄にする。
 - 不整合の行
   - 開始時間、サービス内容、提供時間の一致のどれかが合わなければ、予定と実績の両方に「 ❌」を付ける。
   - 終了時間と提供時間が許容範囲を外れたら、その側に「 ❌ (最小~最大)」を付ける。範囲の無いサービス内容は「 ❌」だけにする。

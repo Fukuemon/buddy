@@ -13,19 +13,19 @@
 | `schedule-detail` | 予定の詳細 | `/schedule/$scheduleId` | 予定を見る権限を持つ職員 | [予定の詳細](schedule-detail_予定の詳細/index.md) |
 | `schedule-edit` | 予定の編集 | `/schedule/$scheduleId/edit` | 予定を編集する権限を持つ職員 | [予定の編集](schedule-edit_予定の編集/index.md) |
 | `patient-list` | 利用者の一覧 | 未決 | 全ての職員 | なし |
-| `patient-new` | 利用者の登録 | 未決 | マネージャー | なし |
-| `patient-edit` | 利用者の編集 | 未決 | マネージャー | なし |
-| `staff-list` | 職員の一覧 | 未決 | マネージャー | なし |
-| `staff-detail` | 職員の詳細 | 未決 | マネージャー | なし |
-| `staff-new` | 職員の登録 | 未決 | マネージャー | なし |
-| `staff-edit` | 職員の編集（権限の変更を含む） | 未決 | マネージャー | なし |
+| `patient-new` | 利用者の登録 | 未決 | 職員の管理の権限を持つ職員（既定はマネージャー） | なし |
+| `patient-edit` | 利用者の編集 | 未決 | 職員の管理の権限を持つ職員（既定はマネージャー） | なし |
+| `staff-list` | 職員の一覧 | 未決 | 全ての職員 | なし |
+| `staff-detail` | 職員の詳細 | 未決 | 全ての職員 | なし |
+| `staff-new` | 職員の登録 | 未決 | 職員の管理の権限を持つ職員（既定はマネージャー） | なし |
+| `staff-edit` | 職員の編集（権限の変更を含む） | 未決 | 職員の管理の権限を持つ職員（既定はマネージャー） | なし |
 | `receipt-upload` | 照合（対象の月の選択、CSV のアップロード） | `/receipt` | 全ての職員 | [照合](receipt-upload_照合/index.md) |
 | `receipt-result` | 照合の結果 | `/receipt/result` | 全ての職員 | [照合の結果](receipt-result_照合の結果/index.md) |
-| `account-login` | ログイン | `/auth/login` | 全ての職員 | なし。ブローカーの画面へ転送し、buddy は画面を持たない |
-| `account-error` | ログインの失敗 | `/auth/error` | 全ての職員 | なし |
+| `account-login` | ログイン | `/auth/login` | 全ての職員 | なし。認証の基盤の画面へ転送し、buddy は画面を持たない |
+| `account-error` | ログインの失敗 | `/auth/error` | 全ての職員 | [ログインの失敗](account-error_ログインの失敗/index.md) |
 | `account-profile` | プロフィール | 未決 | 全ての職員 | なし |
 
-- 役職と権限の対応は、PRD の役職ごとの権限にある。マネージャーだけが開ける画面は、PRD で仮決定である。
+- 役職と権限の対応は、PRD の役職ごとの権限にある。利用者と職員の登録と編集は、職員の管理の権限を持つ職員だけが開ける。この権限をマネージャーに付ける役職の既定は、PRD で仮決定である。
 - 予定の作成、詳細、編集は、予定のカレンダーの上にモーダルとして重ねて出す。URL は `/schedule` の子で、カレンダーの search params を引き継ぐ。
 
 ## 画面の ID の規則
@@ -51,19 +51,62 @@
 
 ## 画面の間の遷移
 
-実装済みの 4 つの画面の間の遷移は次のとおり。
+実装済みの画面の間の遷移は次のとおり。
+予定と照合の画面は、ヘッダーのナビゲーションで互いに移れる。
 
 ```mermaid
 flowchart TB
+  root["/"]
   calendar["予定のカレンダー<br/>/schedule"]
   create["予定の作成<br/>/schedule/new"]
   detail["予定の詳細<br/>/schedule/$scheduleId"]
   edit["予定の編集<br/>/schedule/$scheduleId/edit"]
-  calendar -- "予定を作成、空いた時間の枠" --> create
+  upload["照合<br/>/receipt"]
+  result["照合の結果<br/>/receipt/result"]
+  root -- "転送" --> calendar
+  calendar -- "予定を作成、空いた時間、時間の枠" --> create
   create -- "作成に成功、閉じる" --> calendar
   calendar -- "予定を押す" --> detail
   detail -- "閉じる" --> calendar
   detail -- "編集" --> edit
   edit -- "保存に成功、閉じる" --> detail
   edit -- "取得の失敗から閉じる" --> calendar
+  calendar -- "ナビゲーションの「照合」" --> upload
+  upload -- "ナビゲーションの「予定」" --> calendar
+  upload -- "照合に成功" --> result
+  result -- "別のファイルで照合する、照合の画面へ、ナビゲーションの「照合」" --> upload
+  result -- "ナビゲーションの「予定」" --> calendar
 ```
+
+ログインしていないときと、ログインに失敗したときの遷移は次のとおり。
+ログアウトすると `/` へ移り、ログインしていないので、`/` からそのままログインへ進む。ログインした後は、`/` を経て予定のカレンダーに戻る。
+
+```mermaid
+flowchart TB
+  screen["buddy の画面"]
+  login["ログイン<br/>/auth/login"]
+  broker["認証の基盤のログインの画面"]
+  callback["ログインの後の戻り<br/>/auth/callback"]
+  error["ログインの失敗<br/>/auth/error"]
+  screen -- "ログインしていない" --> login
+  login -- "転送" --> broker
+  broker -- "ログインした" --> callback
+  callback -- "成功" --> screen
+  callback -- "失敗、事業所に登録されていない" --> error
+  error -- "もう一度ログインする" --> login
+```
+
+## 全ての画面に共通する状態
+
+### 画面を表示できない
+
+画面を開く前の処理か画面の描画で、画面が扱っていない失敗が起きたときに、どの画面もこの表示に替わる。
+例えば、BFF を通すときに、ログインした職員を読むためのセッションの置き場に届かないと、この表示になる。
+画面ごとの仕様書は、この状態を状態のタブに数えない。
+
+- ヘッダーは「buddy」だけを出し、ナビゲーションとログインした職員は出さない。
+- 題は「画面を表示できませんでした」、説明の文は「時間をおいて、読み直してください。」。
+- 「読み直す」のリンクを押すと、今の画面の URL を読み込み直す。
+- E2E が指す目印は、表示の全体の `page-error`。この状態はモックを持たないので、`page-error` の正本はこの節である。
+- 実装は `apps/web/src/routes/__root.tsx` の `RootError` と、`apps/web/src/components/site/PageErrorMessage.tsx`。
+- カタログ: [PageErrorMessage の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-pageerrormessage--default)
