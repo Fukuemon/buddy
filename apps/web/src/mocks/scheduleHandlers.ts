@@ -12,6 +12,7 @@ import {
   mockStaff,
   mockTeams,
   mockVisitCategories,
+  scheduleFromRequest,
 } from './scheduleData'
 
 /**
@@ -66,33 +67,15 @@ export const createScheduleHandlers = (baseUrl: string) => {
     ),
     http.post(
       '/v1/facilities/{facility_id}/schedules',
-      withAuth(async ({ request, response }) => {
-        const body = await request.json()
-        const [first] = createMockSchedules(new Date())
-        return response(201).json({
-          ...first,
-          ...body,
-          id: 'schedule-created',
-          title: body.title ?? null,
-          description: body.description ?? null,
-          visit_info: null,
-        })
-      }),
+      withAuth(async ({ request, response }) =>
+        response(201).json(scheduleFromRequest('schedule-created', await request.json())),
+      ),
     ),
     http.put(
       '/v1/schedules/{schedule_id}',
-      withAuth(async ({ params, request, response }) => {
-        const body = await request.json()
-        const [first] = createMockSchedules(new Date())
-        return response(200).json({
-          ...first,
-          ...body,
-          id: params.schedule_id,
-          title: body.title ?? null,
-          description: body.description ?? null,
-          visit_info: null,
-        })
-      }),
+      withAuth(async ({ params, request, response }) =>
+        response(200).json(scheduleFromRequest(params.schedule_id, await request.json())),
+      ),
     ),
   ]
 }

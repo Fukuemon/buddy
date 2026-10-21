@@ -45,6 +45,7 @@ status: stable
 - 照合の入力の CSV は `apps/receipt-api/testdata/` に、互換のテストのケースは `testdata/parity/<ケース>/` に置く。
 - web のテストで HTTP を受けるのは MSW だけにし、fetch を引数で差し替えない。共通の handler は成功の応答だけを返し、異常系はテストごとに `server.use()` で上書きする。handler の無い要求はテストを失敗させる。
   - 送った要求の中身はテストの側で確かめない。上書きした handler が中身を確かめ、合わなければ 400 を返して、テストの結果を変える。
+  - API を呼ばないことを確かめるときは、その API の全ての要求に 500 を返す handler（`http.all`）で上書きし、結果が変わらないことを見る。
   - handler は `openapi-msw` で各 API の `openapi.yaml` から生成した型を使い、応答が API の定義からずれると型のチェックで失敗する。
 - web の story は、架空のデータだけを使い、API を呼ぶ story は作らない。データは、schedule が `features/schedule/components/storyData.ts`、receipt が偽物の API の `fakeReceiptReport` である。
 

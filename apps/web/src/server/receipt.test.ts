@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vite-plus/test'
 
 import { MAX_RECEIPT_UPLOAD_BYTES, parseReceiptForm } from '#/api/bff/receiptCall'
@@ -94,8 +95,8 @@ describe('checkReceipt', () => {
 
   it('セッションが無ければ 401 を返し、API を呼ばない', async () => {
     server.use(
-      receiptHttp.post('/v1/checks', ({ response }) =>
-        response(500).json({ code: 'internal', message: '呼ばれてはいけない' }),
+      http.all(`${TEST_RECEIPT_API_URL}/*`, () =>
+        HttpResponse.json({ code: 'internal', message: '呼ばれてはいけない' }, { status: 500 }),
       ),
     )
     const anonymous = await checkReceipt(

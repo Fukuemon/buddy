@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vite-plus/test'
 
 import { scheduleHttp, server, TEST_SCHEDULE_API_URL } from '#/test/server'
@@ -37,10 +38,10 @@ const withCookie = (cookie?: string) =>
 
 const signedIn = () => withCookie(`buddy_session=${signValue('id-1', SECRET)}`)
 
-/** 呼ばれてはいけない操作の handler。呼ばれると 500 を返し、テストの期待と食い違う。 */
+/** 予定の API への全ての要求に 500 を返す。呼ばれるとテストの期待と食い違う。 */
 const mustNotCall = () =>
-  scheduleHttp.get('/v1/facilities/{facility_id}/teams', ({ response }) =>
-    response(500).json({ code: 'internal', message: '呼ばれてはいけない' }),
+  http.all(`${TEST_SCHEDULE_API_URL}/*`, () =>
+    HttpResponse.json({ code: 'internal', message: '呼ばれてはいけない' }, { status: 500 }),
   )
 
 describe('callBff', () => {

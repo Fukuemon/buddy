@@ -140,3 +140,51 @@ export const createMockSchedules = (base: Date): Schemas['Schedule'][] => {
     schedule('schedule-5', -1, 0, ['15:00', '16:00'], { title: '研修' }),
   ]
 }
+
+const nameOf = <T extends { id: string }>(rows: T[], id: string, name: (row: T) => string) => {
+  const row = rows.find((r) => r.id === id)
+  return row ? name(row) : ''
+}
+
+/** 予定の作成と置き換えの要求から、API が返す予定を組み立てる。名前はマスタと職員と利用者から引く。 */
+export const scheduleFromRequest = (
+  id: string,
+  body: Schemas['SlotRequest'],
+): Schemas['Schedule'] => {
+  const visit = body.visit_info
+  return {
+    id,
+    facility_id: MOCK_FACILITY_ID,
+    schedule_type_id: body.schedule_type_id,
+    schedule_type: visit ? '訪問' : '通常',
+    date: body.date,
+    start_time: body.start_time,
+    end_time: body.end_time,
+    is_over_time_work: body.start_time >= '17:00',
+    staff_id: body.staff_id,
+    staff_name: nameOf(mockStaff, body.staff_id, (s) => s.username),
+    title: body.title ?? null,
+    description: body.description ?? null,
+    recurring_schedule_id: null,
+    visit_info: visit
+      ? {
+          id: `visit-of-${id}`,
+          patient_id: visit.patient_id,
+          patient_name: nameOf(mockPatients, visit.patient_id, (p) => p.name),
+          assigned_staff_id: visit.assigned_staff_id,
+          assigned_staff_name: nameOf(mockStaff, visit.assigned_staff_id, (s) => s.username),
+          companion_id: visit.companion_id ?? null,
+          companion_name: visit.companion_id
+            ? nameOf(mockStaff, visit.companion_id, (s) => s.username)
+            : null,
+          service_code_id: visit.service_code_id,
+          service_code: nameOf(mockServiceCodes, visit.service_code_id, (c) => c.code),
+          visit_categories: mockVisitCategories.filter((c) =>
+            visit.visit_category_ids?.includes(c.id),
+          ),
+        }
+      : null,
+    cancel: null,
+    ...stamps,
+  }
+}
