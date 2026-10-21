@@ -319,7 +319,7 @@ paths:
       tags: [staff]
       operationId: createUser
       summary: 職員を作る
-      description: 職員を作り、役職の既定の権限を与える。部署、チーム、役職は同じ事業所のものに限る。
+      description: 職員を作り、役職の既定の権限を与える。部署、チーム、役職は同じ事業所のものに限る。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
       parameters: [$ref: "#/components/parameters/FacilityID"]
       requestBody:
         required: true
@@ -510,6 +510,7 @@ paths:
       tags: [patient]
       operationId: createPatient
       summary: 利用者を作る
+      description: 職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
       parameters: [$ref: "#/components/parameters/FacilityID"]
       requestBody:
         required: true

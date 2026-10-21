@@ -89,7 +89,7 @@ func run() error {
 		}, tx, ids, auth.RequireStaffManage),
 		Patients: patient.NewService(patient.Repositories{
 			Facilities: facilities, Staff: staffRepo, Visits: visits, Patients: patients,
-		}, ids),
+		}, ids, auth.RequireStaffManage),
 		VisitMasters: visit.NewService(visits),
 		Schedules: schedule.NewService(schedule.Repositories{
 			Facilities: facilities, Staff: staffRepo, Patients: patients, Visits: visits, Schedules: schedules,

@@ -21,7 +21,7 @@ type Repositories struct {
 // auth が staff に依存するので、staff は auth の判定を import せずに受け取る。
 type Guard func(ctx context.Context) error
 
-// Service は、職員の操作である。職員の権限と役職を変える操作は、guard が許すときだけ行う（ADR-0006）。
+// Service は、職員の操作である。職員の登録と、職員の権限と役職を変える操作は、guard が許すときだけ行う（ADR-0006）。
 type Service struct {
 	repos Repositories
 	tx    domain.Transactor
@@ -46,8 +46,11 @@ type CreateInput struct {
 }
 
 // Create は、職員を作り、役職の既定の権限を与える。チームを対象にする権限は、職員の所属のチームを対象にする。事業所が見つからないときは domain.ErrNotFound を、
-// 部署、チーム、役職が見つからないか別の事業所のものであるときは入力の誤りを返す。
+// 部署、チーム、役職が見つからないか別の事業所のものであるときは入力の誤りを、職員の管理の権限が無いときは domain.ErrForbidden を返す。
 func (s *Service) Create(ctx context.Context, in CreateInput) (Detail, error) {
+	if err := s.guard(ctx); err != nil {
+		return Detail{}, err
+	}
 	if _, err := s.repos.Facilities.Get(ctx, in.FacilityID); err != nil {
 		return Detail{}, err
 	}

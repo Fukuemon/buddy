@@ -211,7 +211,7 @@ export interface paths {
         put?: never;
         /**
          * 職員を作る
-         * @description 職員を作り、役職の既定の権限を与える。部署、チーム、役職は同じ事業所のものに限る。
+         * @description 職員を作り、役職の既定の権限を与える。部署、チーム、役職は同じ事業所のものに限る。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         post: operations["createUser"];
         delete?: never;
@@ -330,7 +330,10 @@ export interface paths {
         /** 事業所の利用者を一覧する */
         get: operations["listPatients"];
         put?: never;
-        /** 利用者を作る */
+        /**
+         * 利用者を作る
+         * @description 職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
         post: operations["createPatient"];
         delete?: never;
         options?: never;

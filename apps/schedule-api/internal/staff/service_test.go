@@ -210,7 +210,7 @@ func TestStaffRemoveGrant(t *testing.T) {
 	}
 }
 
-// TestStaffManageForbidden は、職員の管理を許されない職員には、権限と役職を変える操作が domain.ErrForbidden を返すことを確かめる。
+// TestStaffManageForbidden は、職員の管理を許されない職員には、職員の登録と、権限と役職を変える操作が domain.ErrForbidden を返すことを確かめる。
 func TestStaffManageForbidden(t *testing.T) {
 	ctx := context.Background()
 	uc := newService(grantStore(), deny)
@@ -222,5 +222,8 @@ func TestStaffManageForbidden(t *testing.T) {
 	}
 	if _, err := uc.ChangePosition(ctx, staffID, "POS"); !errors.Is(err, domain.ErrForbidden) {
 		t.Errorf("ChangePosition: err = %v", err)
+	}
+	if _, err := uc.Create(ctx, staff.CreateInput{FacilityID: facilityID, Username: "新人", Email: "new@example.com"}); !errors.Is(err, domain.ErrForbidden) {
+		t.Errorf("Create: err = %v", err)
 	}
 }
