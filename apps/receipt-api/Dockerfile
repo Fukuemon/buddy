@@ -7,10 +7,11 @@ WORKDIR /src
 COPY packages/go/go.mod packages/go/go.sum packages/go/
 COPY apps/receipt-api/go.mod apps/receipt-api/go.sum apps/receipt-api/
 WORKDIR /src/apps/receipt-api
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
 COPY packages/go/ /src/packages/go/
 COPY apps/receipt-api/ /src/apps/receipt-api/
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/api ./cmd/api
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/api ./cmd/api
 
 FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=build /out/api /api

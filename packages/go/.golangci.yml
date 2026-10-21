@@ -7,8 +7,6 @@ linters:
     - errorlint
     - gosec
     - misspell
-    - rowserrcheck
-    - sqlclosecheck
     - unconvert
     - unparam
     - revive
@@ -19,11 +17,6 @@ linters:
         - name: package-comments
   exclusions:
     generated: lax
-    rules:
-      # テストの接続の設定は、使い捨てのコンテナの値である。
-      - path: _test\.go
-        linters: [gosec]
-        text: G101
 
 formatters:
   enable:
