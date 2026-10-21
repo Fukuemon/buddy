@@ -117,7 +117,7 @@ docs/screens/
 - 幅による切り替えは `@container screen (width < 768px)` のように `.screen` の幅で書く。viewport の寸法の `@media`、`vh` と `vw` は使わない。モックの中では、viewport の幅は端末の幅と一致しない。
 - スクロールする場所は作らず、画面の高さは中身に合わせる。ただし、実装が横に送る表は、モックでも横に送ってよい。
 - ダイアログ、覆い、トーストは、`.screen` の中に `position: absolute` で置く。`position: fixed` は使わない。
-- 色と角丸は `wireframe.css` の変数（`--wf-*`）で書く。`--wf-*` は、`tokens.css` の buddy の意味のトークン（`packages/ui/src/tokens/semantic.css` と同じ値）に当ててある。足りない色は、意味のトークンを `--wf-*` に当てて足す。DADS の基本のトークンと 16 進の色を直に書かない。
+- 色と角丸は `wireframe.css` の変数（`--wf-*`）で書く。`--wf-*` は、`tokens.css` の buddy の意味のトークン（`packages/ui/src/tokens/semantic.css` と同じ値）に当ててある。足りない色は、意味のトークンを `--wf-*` に当てて足す。DADS の基本のトークンと 16 進の色は、画面の CSS に直に書かない（`wireframe.css` の `:root` で角丸と書体に当てるときだけ使う）。
 - `tokens.css` は `node scripts/build-mock-tokens.mjs` が作る生成物である。意味のトークンを変えたら作り直す（`pnpm check:generated` が食い違いを見つける）。
 - 画面だけの見た目は `mocks/<画面 ID>.css` に書く。2 つ以上の画面で使う見た目は `_common/wireframe.css` に移す。
 
@@ -139,6 +139,7 @@ docs/screens/
 
 - 名前と仕様書: ディレクトリとファイルの名前、仕様書の 1 行目と生の HTML、iframe と別タブのリンク、構成要素の表の見出し
 - 番号: 表の番号とモックの `data-m` の一致、`data-m` の連番
+- E2E: 全ての画面を見るとき、`packages/e2e/tests` の `getByTestId` の testid が、どれかのモックの `data-testid` にあるか
 - モック: 構造と読み込みの順、`data-view`、`data-testid` の形、禁止の記述と幅と配置の規則（外部の URL、`position: fixed`、viewport の単位と寸法の `@media`、ダークモード）
 - 雛形の `<…>` の消し忘れ（`index.md`、`api.md`、モック、画面の CSS）
 

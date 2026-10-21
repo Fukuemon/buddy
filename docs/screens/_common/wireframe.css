@@ -1,6 +1,6 @@
 /*
  * モックの中の画面の共通の見た目。mock.css と tokens.css の後に読む。
- * 色、角丸、文字の書体は、tokens.css の buddy の意味のトークン（packages/ui と同じ値）を --wf-* に当てて使う。
+ * 色は tokens.css の buddy の意味のトークン（packages/ui と同じ値）を、角丸と書体は DADS の基本のトークンを --wf-* に当てて使う。
  * 部品の形は実装を写さず、箱と線で配置と状態だけを示す。
  * 画面の幅による切り替えは、.screen の幅を測る @container screen で書く。
  */
@@ -22,8 +22,12 @@
   --wf-radius: var(--border-radius-8);
 
   color: var(--wf-ink);
-  /* Web フォントは読み込まないので、DADS の書体が無ければ端末の書体で描く */
-  font-family: var(--font-family-sans), system-ui, sans-serif;
+  /* Web フォントは読み込まないので、DADS の書体（Noto Sans JP）が端末に無ければ sans-serif で描く */
+  font-family: var(--font-family-sans);
+}
+
+/* 文字の大きさは body に置き、rem の基準（16px）をトークンの角丸と同じにする */
+body {
   font-size: 14px;
   line-height: 1.5;
 }

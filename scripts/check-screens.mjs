@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 新しい形の画面仕様書（docs/screens/<画面 ID>_<画面の名前>/）を、docs/screens/rules.md の規約で確かめる。
+ * 画面仕様書（docs/screens/<画面 ID>_<画面の名前>/）を、docs/screens/rules.md の規約で確かめる。
  * 見る項目は、規約の「点検」の節にある。
  *
  * 引数でディレクトリを渡すと、そのディレクトリだけを見る。省くと docs/screens/ の下の全ての画面を見る。
@@ -280,7 +280,7 @@ const targets =
   process.argv.length > 2
     ? process.argv.slice(2)
     : readdirSync(SCREENS_DIR)
-        .filter((entry) => !entry.startsWith('_') && entry !== 'wireframes')
+        .filter((entry) => !entry.startsWith('_'))
         .map((entry) => join(SCREENS_DIR, entry))
         .filter((path) => statSync(path).isDirectory())
 
@@ -294,23 +294,45 @@ const e2eFiles = (dir) =>
     return entry.name.endsWith('.ts') ? [path] : []
   })
 
+/** getByTestId の引数から、照合する値を返す。exact は同じ値、prefix は始まり。読めなければ null */
+const readTestIdArg = (arg) => {
+  const quoted = arg.match(/^(['"])([^'"]+)\1/)
+  if (quoted) return { exact: quoted[2] }
+  const template = arg.match(/^`([^`]*)`/)
+  if (template) {
+    const index = template[1].indexOf('${')
+    return index === -1 ? { exact: template[1] } : { prefix: template[1].slice(0, index) }
+  }
+  const regex = arg.match(/^\/\^((?:[^\\/.*+?()[\]{}|$]|\\.)*)/)
+  if (regex) return { prefix: regex[1].replace(/\\(.)/g, '$1') }
+  return null
+}
+
 // 全ての画面を見るときだけ、E2E が指す testid がどれかのモックにあるかを確かめる。
-// 文字列のままの testid は同じ値を、`x-${…}` と /^x-/ は x- で始まる値（モックの x-{…} を含む）を探す
+// 文字列の testid は同じ値を、`x-${…}` と /^x-/ は x- で始まる値（モックの x-{…} を含む）を探す
 if (process.argv.length <= 2) {
   const E2E_DIR = relative(process.cwd(), join(ROOT, 'packages/e2e/tests')) || '.'
   for (const file of e2eFiles(E2E_DIR)) {
     const code = readFileSync(file, 'utf8')
-    for (const match of code.matchAll(
-      /getByTestId\(\s*(?:'([^']+)'|`([^`$]*)\$\{|\/\^([^/]+)\/)/g,
-    )) {
-      const [, exact, templatePrefix, regexPrefix] = match
-      const prefix = templatePrefix ?? regexPrefix
+    for (const match of code.matchAll(/getByTestId\(\s*([^)\n]*)/g)) {
+      const target = readTestIdArg(match[1])
+      if (target === null || target.prefix === '') {
+        report(
+          file,
+          `getByTestId(${match[1].trim()}) の testid を読めない。文字列か、始まりの付いたテンプレートか /^…/ で書く`,
+        )
+        continue
+      }
       const found =
-        exact !== undefined
-          ? mockTestIds.has(exact)
-          : [...mockTestIds].some((id) => id.startsWith(prefix))
-      if (!found)
-        report(file, `E2E の testid ${exact ?? `${prefix}…`} がどのモックの data-testid にも無い`)
+        target.exact !== undefined
+          ? mockTestIds.has(target.exact)
+          : [...mockTestIds].some((id) => id.startsWith(target.prefix))
+      if (!found) {
+        report(
+          file,
+          `E2E の testid ${target.exact ?? `${target.prefix}…`} がどのモックの data-testid にも無い`,
+        )
+      }
     }
   }
 }

@@ -17,9 +17,13 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const require = createRequire(join(ROOT, 'packages/ui/package.json'))
 const dads = readFileSync(require.resolve('@digital-go-jp/design-tokens/dist/tokens.css'), 'utf8')
 const semantic = readFileSync(join(ROOT, 'packages/ui/src/tokens/semantic.css'), 'utf8').replace(
-  /^@import [^;]+;\n/m,
+  /^@import [^;]+;\r?\n/gm,
   '',
 )
+if (/@import/.test(dads + semantic)) {
+  console.error('トークンの CSS に @import が残る。モックはパッケージの CSS を読めない')
+  process.exit(1)
+}
 
 const header = `/*
  * 生成物。手で直さない。scripts/build-mock-tokens.mjs が、DADS の基本のトークンと
