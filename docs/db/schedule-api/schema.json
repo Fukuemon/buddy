@@ -4182,7 +4182,7 @@
           "name": "last_error",
           "type": "text",
           "nullable": true,
-          "comment": "最後の失敗の理由。unreadable（共有が無い）か unavailable（届かない）。外部の予定の題名とカレンダーの ID を含めない"
+          "comment": "最後の失敗の理由。unreadable（共有が無い）、unavailable（届かない）、apply（予定を当てられない）。外部の予定の題名とカレンダーの ID を含めない"
         },
         {
           "name": "last_synced_at",
@@ -4277,7 +4277,7 @@
         {
           "name": "calendar_sync_states_last_error_check",
           "type": "CHECK",
-          "def": "CHECK ((last_error = ANY (ARRAY['unreadable'::text, 'unavailable'::text])))",
+          "def": "CHECK ((last_error = ANY (ARRAY['unreadable'::text, 'unavailable'::text, 'apply'::text])))",
           "table": "public.calendar_sync_states",
           "referenced_table": "",
           "columns": [

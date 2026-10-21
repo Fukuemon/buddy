@@ -47,6 +47,6 @@
     - `unavailable`: Google に届かないか、一時的な誤りが続いた
     - `unappliable`: Google カレンダーの変更を buddy の予定に読み替えられない
 - `CalendarExportIssue` は、`CalendarExport` に、予定の職員（`staff_id`、`staff_name`）と日時（`date`、`start_time`、`end_time`）と `acceptable` を足したものである。
-  - `acceptable` は、Google カレンダーの内容に合わせられるかである。単発の予定で、`status` が `conflict`、`error_code` が `precondition_failed` か `not_found` のときに true である。
+  - `acceptable` は、Google カレンダーの内容に合わせられるかである。単発の予定で、buddy でキャンセルしておらず、`status` が `conflict`、`error_code` が `precondition_failed` か `not_found` のときに true である。
 - `createCalendarExportRetry` は、書き出しを、Google カレンダーの予定の変更を比べずに buddy の今の内容で書き直す待ちにする。書き出しの処理が、次の周期で書く。Google カレンダーで消された予定は作り直す。
 - `createCalendarExportAcceptance` は、予定の API が Google カレンダーの今の予定を読み、buddy の予定をその内容にして、書き出しを終える。Google カレンダーで消された予定は、buddy でキャンセルする。
