@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>receipt-result 結果が無い</title>
+    <link rel="stylesheet" href="../../_common/mock.css" />
+    <link rel="stylesheet" href="../../_common/tokens.css" />
+    <link rel="stylesheet" href="../../_common/wireframe.css" />
+    <link rel="stylesheet" href="receipt-result.css" />
+  </head>
+  <body data-view="desktop">
+    <div class="stage">
+      <div class="screen">
+        <div class="screen-body">
+          <header class="wf-site-header">
+            <div class="wf-site-header__brand">
+              <strong>buddy</strong>
+              <nav data-m="1" data-testid="site-nav">
+                <span>予定</span>
+                <span aria-current="page">照合</span>
+              </nav>
+            </div>
+            <div class="wf-site-header__viewer" data-testid="viewer-menu">
+              <span class="wf-text wf-text--s" data-m="2"></span>
+              <span class="wf-btn" data-m="3" data-testid="viewer-logout">ログアウト</span>
+            </div>
+          </header>
+          <main class="rc-empty" data-testid="receipt-result-empty">
+            <h1 class="wf-heading" data-m="4">照合の結果がありません</h1>
+            <p>照合の結果は保存しません。画面を読み直したときは、もう一度照合してください。</p>
+            <span class="wf-btn" data-m="5">照合の画面へ</span>
+          </main>
+        </div>
+      </div>
+      <div class="markers"></div>
+    </div>
+    <script src="../../_common/mock.js"></script>
+  </body>
+</html>

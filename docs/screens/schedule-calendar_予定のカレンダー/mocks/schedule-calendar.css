@@ -1,0 +1,243 @@
+/* 予定のカレンダーのモックだけの見た目 */
+
+/* 左に職員の絞り込み、右にカレンダーを置く。幅 768px 未満では、絞り込みをカレンダーの上に置く */
+.sc-body {
+  display: flex;
+}
+
+.sc-side {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 16px;
+  width: 224px;
+  padding: 16px;
+  border-right: 1px solid var(--wf-line-soft);
+}
+
+.sc-side__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sc-side .wf-btn--text {
+  min-height: 44px;
+  padding: 0 8px;
+}
+
+.sc-team {
+  display: flex;
+  flex-direction: column;
+}
+
+/* チェックボックスの行は、押せる領域を 44px にする（apps/web の min-h-11） */
+.sc-team .wf-check {
+  min-height: 44px;
+}
+
+.sc-team > .wf-check:first-child {
+  font-weight: 700;
+}
+
+.sc-member {
+  padding-left: 24px;
+}
+
+.sc-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  padding: 8px 24px 16px;
+}
+
+.sc-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 40px;
+  min-height: 64px;
+  padding: 8px 0;
+}
+
+.sc-toolbar__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.sc-toolbar__group:first-child {
+  gap: 8px;
+}
+
+.sc-icon-btn {
+  width: 44px;
+  height: 44px;
+}
+
+.sc-date {
+  min-height: 44px;
+  width: 160px;
+  margin-left: 8px;
+}
+
+.sc-view {
+  width: 192px;
+}
+
+.sc-view > .wf-tab {
+  flex: 1;
+}
+
+@container screen (width < 768px) {
+  .sc-body {
+    flex-direction: column;
+  }
+
+  .sc-side {
+    gap: 8px;
+    width: auto;
+    padding: 8px;
+    border-right: 0;
+    border-bottom: 1px solid var(--wf-line-soft);
+  }
+
+  .sc-main {
+    padding: 8px;
+  }
+
+  .sc-toolbar {
+    gap: 8px 16px;
+  }
+
+  .sc-toolbar__group:last-child,
+  .sc-view {
+    width: 100%;
+  }
+}
+
+/* 予定の箱。実装は職員ごとの色で塗る */
+.sc-event {
+  display: block;
+  overflow: hidden;
+  margin-top: 2px;
+  padding: 2px 4px;
+  border-radius: 3px;
+  background: var(--wf-line);
+  color: var(--wf-surface);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.sc-event > .wf-text {
+  background: var(--wf-surface);
+}
+
+/* 空いた日と時間の枠。押せる場所を点線で示す */
+.sc-free {
+  outline: 1px dashed var(--wf-ink);
+  outline-offset: -3px;
+}
+
+.sc-month {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-top: 1px solid var(--wf-line-soft);
+  border-left: 1px solid var(--wf-line-soft);
+}
+
+.sc-month > div {
+  min-height: 88px;
+  overflow: hidden;
+  padding: 4px;
+  border-right: 1px solid var(--wf-line-soft);
+  border-bottom: 1px solid var(--wf-line-soft);
+  font-size: 12px;
+}
+
+.sc-month > .sc-head {
+  min-height: 0;
+  text-align: center;
+}
+
+.sc-month .sc-out {
+  color: var(--wf-muted);
+}
+
+.sc-today {
+  background: var(--wf-fill);
+}
+
+/* 週と日の表示。1 時間を 32px で描く。実装は 30 分の枠を 44px にする */
+.sc-week,
+.sc-day {
+  display: grid;
+  border-top: 1px solid var(--wf-line-soft);
+  border-left: 1px solid var(--wf-line-soft);
+}
+
+.sc-week {
+  grid-template-columns: 48px repeat(7, minmax(0, 1fr));
+}
+
+/* 日の表示は職員の列を横に並べ、入りきらなければカレンダーの中で横に送る */
+.sc-day-wrap {
+  overflow-x: auto;
+}
+
+.sc-day {
+  grid-template-columns: 4rem repeat(4, minmax(10rem, 1fr));
+  min-width: max-content;
+}
+
+.sc-day--empty {
+  grid-template-columns: 4rem;
+}
+
+.sc-head {
+  overflow: hidden;
+  padding: 6px 4px;
+  border-right: 1px solid var(--wf-line-soft);
+  border-bottom: 1px solid var(--wf-line-soft);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.sc-times {
+  border-right: 1px solid var(--wf-line-soft);
+}
+
+.sc-times > div {
+  height: 32px;
+  padding-right: 6px;
+  color: var(--wf-muted);
+  font-size: 12px;
+  text-align: right;
+}
+
+.sc-col {
+  position: relative;
+  height: 512px;
+  border-right: 1px solid var(--wf-line-soft);
+  background: repeating-linear-gradient(var(--wf-line-soft) 0 1px, transparent 1px 16px);
+}
+
+.sc-col > .sc-event,
+.sc-col > .sc-slot {
+  position: absolute;
+  right: 2px;
+  left: 2px;
+  margin: 0;
+}
+
+.sc-slot {
+  height: 16px;
+}
+
+.sc-error {
+  margin: 16px 0;
+}

@@ -1,0 +1,6 @@
+/* 予定の詳細のモックだけの見た目。状態をまたいで使う。幅による切り替えは @container screen で書く */
+
+/* メモの改行をそのまま出す（apps/web の ScheduleDetailModal の行と同じ） */
+.sd-rows dd {
+  white-space: pre-wrap;
+}

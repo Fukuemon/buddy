@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>receipt-upload 初期表示</title>
+    <link rel="stylesheet" href="../../_common/mock.css" />
+    <link rel="stylesheet" href="../../_common/tokens.css" />
+    <link rel="stylesheet" href="../../_common/wireframe.css" />
+    <link rel="stylesheet" href="receipt-upload.css" />
+  </head>
+  <body data-view="desktop">
+    <div class="stage">
+      <div class="screen">
+        <div class="screen-body">
+          <header class="wf-site-header">
+            <div class="wf-site-header__brand">
+              <strong>buddy</strong>
+              <nav data-m="1" data-testid="site-nav">
+                <span>予定</span>
+                <span aria-current="page">照合</span>
+              </nav>
+            </div>
+            <div class="wf-site-header__viewer" data-testid="viewer-menu">
+              <span class="wf-text wf-text--s" data-m="2"></span>
+              <span class="wf-btn" data-m="3" data-testid="viewer-logout">ログアウト</span>
+            </div>
+          </header>
+          <main class="ru-main">
+            <h1 class="wf-heading" data-m="4">照合</h1>
+            <p class="ru-lead" data-m="5">予定と、電子カルテから書き出した実績の CSV を比べ、食い違いを不整合、予定のみ、実績のみ、整合の 4 つに分けます。</p>
+            <form class="ru-form" data-testid="receipt-check-form">
+              <div class="ru-field">
+                <span class="wf-label">予定の取り方</span>
+                <div class="wf-tabs" role="radiogroup" aria-label="予定の取り方" data-m="6" data-testid="receipt-source">
+                  <span class="wf-tab is-active" data-testid="receipt-source-calendar">Google カレンダー</span>
+                  <span class="wf-tab" data-testid="receipt-source-csv">予定の CSV</span>
+                </div>
+              </div>
+              <div class="ru-field">
+                <span class="wf-label">対象の月</span>
+                <div class="wf-input ru-month" data-m="7" data-testid="receipt-month">2024 年 04 月</div>
+                <span class="ru-hint">その月の 1 日から月末までの予定を、職員の Google カレンダーから取ります。</span>
+              </div>
+              <div class="ru-field">
+                <span class="wf-label">実績の CSV</span>
+                <div class="wf-input ru-file" data-m="8" data-testid="receipt-visits-file"><span class="wf-btn">ファイルを選択</span><span>選択されていません</span></div>
+                <span class="ru-hint">電子カルテから書き出した CSV。UTF-8 か Shift_JIS で、10 MB まで。</span>
+              </div>
+              <div>
+                <span class="wf-btn wf-btn--primary" aria-disabled="true" data-m="9" data-testid="receipt-check-submit">照合する</span>
+              </div>
+            </form>
+          </main>
+        </div>
+      </div>
+      <div class="markers"></div>
+    </div>
+    <script src="../../_common/mock.js"></script>
+  </body>
+</html>

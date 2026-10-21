@@ -98,7 +98,7 @@ uv run zensical build   # 出力の最後が "No issues found" になること�
 ```
 
 - `zensical build` は、リンクの先のページと見出しのアンカーがないと "Warning" を出す。警告が残ったまま取り込まない。
-- 画面仕様書かワイヤーフレーム（`docs/screens/wireframes/`）を直したら、`pnpm check:screens` で、表の構成番号と `data-ref` が食い違っていないことを確かめる。
+- 画面仕様書かモックを直したら、`pnpm check:screens` を流す。[画面仕様書の規約](docs/screens/rules.md) の名前、構造、構成番号、`data-testid` の形と、E2E が使う testid がモックにあるかを確かめる。1 つの画面だけを見るときは `node scripts/check-screens.mjs docs/screens/<ディレクトリ>` を流す（E2E の testid の照合は流れない）。
 - ページを足したら、`zensical.toml` の `nav` に足す。`nav` にないページはナビゲーションから開けない。
 - 機能ごとの Design Doc は、コードの隣（`apps/<アプリ>/DesignDoc.md`）に置く。サイトには、`docs/design/apps/<アプリ>.md` のファイル単位のシンボリックリンクを置き、`nav` に足して載せる。
   - 機能ごとの Design Doc から `docs/` と `apps/` の文書へのリンクは、GitHub の `develop` の URL で書く。相対リンクは、GitHub とサイトで指す先が変わり、どちらかで切れるためである。
@@ -128,6 +128,7 @@ openapi.yaml を変えたら、同じコミットで生成物も生成し直す�
 | `apps/schedule-api/openapi.yaml` | `apps/schedule-api` で `go generate ./...` | `apps/schedule-api/internal/presentation/http/openapi/` |
 | `apps/schedule-api/db/` の SQL | `apps/schedule-api` で `sqlc generate` | `apps/schedule-api/internal/infrastructure/mysql/sqlcgen/` |
 | どちらかの openapi.yaml | `pnpm --filter @buddy/web generate:api` | `apps/web/src/api/generated/` |
+| `packages/ui/src/tokens/semantic.css`、`@digital-go-jp/design-tokens` | `node scripts/build-mock-tokens.mjs` | `docs/screens/_common/tokens.css`（画面のモックが読む） |
 
 取り込む前に、生成物がそろっているかをリポジトリのルートで確かめる。全ての生成を流し直し、差分か追跡していない生成物があれば 1 で終わる。
 

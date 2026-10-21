@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>schedule-new メモの入力</title>
+    <link rel="stylesheet" href="../../_common/mock.css" />
+    <link rel="stylesheet" href="../../_common/tokens.css" />
+    <link rel="stylesheet" href="../../_common/wireframe.css" />
+    <link rel="stylesheet" href="schedule-new.css" />
+  </head>
+  <body data-view="desktop">
+    <div class="stage">
+      <div class="screen">
+        <div class="screen-body">
+          <div class="wf-modal-stage">
+            <div aria-hidden="true" class="wf-bg-calendar"></div>
+            <div class="wf-overlay" data-m="1"></div>
+            <div class="wf-modal" role="dialog" aria-label="予定の作成" data-testid="schedule-form-modal">
+              <div class="wf-modal__header">
+                <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-m="2" data-testid="modal-close">×</span>
+                <div class="wf-tabs sn-kind" role="radiogroup" aria-label="予定の種類" data-m="3" data-testid="schedule-kind-tab">
+                  <span class="wf-tab" data-testid="schedule-kind-tab-normal">通常</span>
+                  <span class="wf-tab is-active" data-testid="schedule-kind-tab-visit">訪問</span>
+                </div>
+                <h2 class="wf-modal__title" data-m="4">予定の作成</h2>
+              </div>
+              <div class="wf-modal__body">
+                <div class="wf-split" data-testid="schedule-form">
+                  <ul class="wf-stack sn-fields">
+                    <li>
+                      <span class="wf-summary" data-m="5" data-testid="schedule-field-date-time">
+                        <span class="wf-label">訪問日時</span>
+                        <span>2024-04-01 09:00 - 09:29（29 分、訪看I2）</span>
+                      </span>
+                    </li>
+                    <li>
+                      <span class="wf-summary" data-m="5" data-testid="schedule-field-patient">
+                        <span class="wf-label">利用者</span>
+                        <span>未選択</span>
+                      </span>
+                    </li>
+                    <li>
+                      <span class="wf-summary" data-m="5" data-testid="schedule-field-staff">
+                        <span class="wf-label">担当者</span>
+                        <span>未選択</span>
+                      </span>
+                    </li>
+                    <li>
+                      <span class="wf-summary" data-m="5" data-testid="schedule-field-category">
+                        <span class="wf-label">訪問の種類</span>
+                        <span>通常</span>
+                      </span>
+                    </li>
+                    <li>
+                      <span class="wf-summary is-active" aria-current="true" data-m="5" data-testid="schedule-field-description">
+                        <span class="wf-label">メモ</span>
+                        <span>なし</span>
+                      </span>
+                    </li>
+                  </ul>
+                  <div>
+                    <div class="wf-input wf-input--area" data-m="6" data-testid="schedule-form-description"><span class="wf-label">メモ</span></div>
+                  </div>
+                </div>
+              </div>
+              <div class="wf-modal__footer">
+                <span class="wf-btn wf-btn--primary" data-m="7" data-testid="schedule-create-submit">作成</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="markers"></div>
+    </div>
+    <script src="../../_common/mock.js"></script>
+  </body>
+</html>

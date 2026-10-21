@@ -10,7 +10,8 @@
 docs/screens/
 ├── _common/                    # 全ての画面のモックが読む CSS と JS。画面のディレクトリに写さない
 │   ├── mock.css                # 外枠、構成番号の印、ツールバー
-│   ├── wireframe.css           # 灰色の箱と線の見た目（wf-*）
+│   ├── tokens.css              # DADS と buddy の意味のトークン。生成物
+│   ├── wireframe.css           # 箱と線の見た目（wf-*）。色はトークンに当てる
 │   └── mock.js                 # 端末の切り替え、構成番号の印、親のページへの高さの通知
 ├── _template/                  # 雛形。サイトに載せない
 └── <画面 ID>_<画面の名前>/
@@ -49,7 +50,7 @@ docs/screens/
 列は `番号 | 種別 | 要素名 | 仕様` にする。
 
 - 番号は、状態ごとに 1 から欠番なく振る。表の番号の集合と、モックの `data-m` の値の集合を同じにする。同じ番号を複数の要素に付けてよい（一覧の行など）。
-- 種別は、画面の上で何を指すかが分かる語にする（ボタン、リンク、テキストボックス、チェックボックス、ラジオボタン、セレクト、表、カラム、ラベル、ダイアログ、メッセージ）。表の列見出しは「カラム」、行の値は「ラベル」と書き分ける。
+- 種別は、画面の上で何を指すかが分かる語にする（ボタン、リンク、テキストボックス、チェックボックス、ラジオボタン、セレクト、表、カラム、ラベル、ダイアログ、覆い、メッセージ）。表の列見出しは「カラム」、行の値は「ラベル」と書き分ける。
 - 要素名は、利用者が画面の上で呼ぶ名前にする。ダイアログの題やページの題のように文言そのものが仕様のものも、要素にする。
 - 仕様の列は、要素ごとの節へのリンクにする。
 - 要素は、それが見える状態の表にだけ載せる。ほかの状態でしか見えない要素を載せない。
@@ -100,23 +101,25 @@ docs/screens/
 </body>
 ```
 
-- head で `../../_common/mock.css`、`../../_common/wireframe.css`、`<画面 ID>.css` をこの順に読む。
-- `body` の `data-view` は最初に見せる端末にする。`mobile`（390px）、`tablet`（768px）、`tablet-wide`（1024px）、`desktop`（1440px）から選ぶ。値は `mock.js` の `VIEWS` にだけ書く。
+- head で `../../_common/mock.css`、`../../_common/tokens.css`、`../../_common/wireframe.css`、`<画面 ID>.css` をこの順に読む。
+- `body` の `data-view` は最初に見せる端末にする。表示の幅が 600px 未満のとき（スマートフォンで仕様書を読むとき）は、`data-view` によらずモバイルで描く。`mobile`（390px）、`tablet`（768px）、`tablet-wide`（1024px）、`desktop`（1440px）から選ぶ。値は `mock.js` の `VIEWS` にだけ書く。
 - サイトのヘッダーとナビゲーション（`SiteHeader`、`SiteNav`）は、その画面の構成要素にするときだけ描く。
 
 ### 構成番号と data-testid
 
 - 構成要素の表の要素に `data-m="<番号>"` を付ける。座標は書かない。`mock.js` が要素の左上に番号の印を重ねる。
 - 構成番号は、その状態で見える要素にだけ付ける。
-- E2E が指す要素に `data-testid` を付ける。新しい形の画面では、モックの `data-testid` を画面の testid の正本にする。全ての画面を移すまでは、古い形の画面の testid は仕様書の表の列が正本のままである。形は [コードと文書の規約の E2E](https://github.com/Fukuemon/buddy/blob/develop/context/conventions.md#e2e) にある。
+- E2E が指す要素に `data-testid` を付ける。モックの `data-testid` を画面の testid の正本にする。E2E が使う testid は、どれかのモックにある値か、モックの `x-{…}` の形と同じ始まりにする（`pnpm check:screens` が確かめる）。形は [コードと文書の規約の E2E](https://github.com/Fukuemon/buddy/blob/develop/context/conventions.md#e2e) にある。
 - ツールバーの「data-testid」を入れると、番号の印の横に testid を出す。
 
 ### 幅と配置
 
 - 幅による切り替えは `@container screen (width < 768px)` のように `.screen` の幅で書く。viewport の寸法の `@media`、`vh` と `vw` は使わない。モックの中では、viewport の幅は端末の幅と一致しない。
-- スクロールする場所は作らず、画面の高さは中身に合わせる。
+- スクロールする場所は作らず、画面の高さは中身に合わせる。ただし、実装が横に送る表は、モックでも横に送ってよい。
 - ダイアログ、覆い、トーストは、`.screen` の中に `position: absolute` で置く。`position: fixed` は使わない。
-- 色は `wireframe.css` の変数（`--wf-*`）で書く。
+- 色と角丸は `wireframe.css` の変数（`--wf-*`）で書く。`--wf-*` は、`tokens.css` の buddy の意味のトークン（`packages/ui/src/tokens/semantic.css` と同じ値）に当ててある。足りない色は、意味のトークンを `--wf-*` に当てて足す。DADS の基本のトークンと 16 進の色は、画面の CSS に直に書かない（`wireframe.css` の `:root` で角丸と書体に当てるときだけ使う）。
+- `tokens.css` は `node scripts/build-mock-tokens.mjs` が作る生成物である。意味のトークンを変えたら作り直す（`pnpm check:generated` が食い違いを見つける）。
+- 画面だけの見た目は `mocks/<画面 ID>.css` に書く。2 つ以上の画面で使う見た目は `_common/wireframe.css` に移す。
 
 ### 禁止
 
@@ -129,3 +132,15 @@ docs/screens/
 画面の中の操作でモックの表示を変えるときは、モックの `<script>` に書き、表示を変えた後に `mockRefresh()` を呼ぶ。番号の印を置き直す。
 
 モックの印の位置は、Chromium と Firefox の今のバージョン（CSS の `zoom` を標準の形で扱うもの）で確かめる。Safari での位置は確かめていない。
+
+## 点検
+
+`pnpm check:screens` が、規約のうち機械的に確かめられるものを見る。
+
+- 名前と仕様書: ディレクトリとファイルの名前、仕様書の 1 行目と生の HTML、iframe と別タブのリンク、構成要素の表の見出し
+- 番号: 表の番号とモックの `data-m` の一致、`data-m` の連番
+- E2E: 全ての画面を見るとき、`packages/e2e/tests` の `getByTestId` の testid が、どれかのモックの `data-testid` にあるか
+- モック: 構造と読み込みの順、`data-view`、`data-testid` の形、禁止の記述と幅と配置の規則（外部の URL、`position: fixed`、viewport の単位と寸法の `@media`、ダークモード）
+- 雛形の `<…>` の消し忘れ（`index.md`、`api.md`、モック、画面の CSS）
+
+見た目（番号の位置、端末ごとの崩れ）は、モックを別タブで開き、ツールバーで端末を切り替えて確かめる。

@@ -1,0 +1,40 @@
+/* 予定の作成のモックだけの見た目 */
+
+/* 種類のタブ。apps/web の headerContent の max-w-60 と同じ幅にする */
+.sn-kind {
+  flex: 0 1 240px;
+}
+
+.sn-kind .wf-tab {
+  flex: 1;
+}
+
+.sn-fields {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sn-fields .wf-summary {
+  cursor: default;
+}
+
+.wf-pane.sn-pane--wide {
+  gap: 24px;
+}
+
+.sn-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.sn-group > legend {
+  margin-bottom: 12px;
+  padding: 0;
+}
+
+.sn-end {
+  margin: 0;
+}
