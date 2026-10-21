@@ -74,6 +74,6 @@ describe('ScheduleFormModal', () => {
 
   it('送信の失敗の文を出す', () => {
     render(<SubmitError />)
-    expect(screen.getByText('予定を保存できませんでした。')).toBeInTheDocument()
+    expect(screen.getByText('予定を作成できませんでした。')).toBeInTheDocument()
   })
 })
