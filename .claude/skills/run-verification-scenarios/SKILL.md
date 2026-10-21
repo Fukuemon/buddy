@@ -5,7 +5,9 @@ description: packages/e2e/kit で書いた証跡の spec を、ローカル環�
 
 # run-verification-scenarios
 
-撮るコマンドと格納先は、`context/testing/evidence.md`が持つ。置き場と名前は、`packages/e2e/kit/` の `evidence` が決める。  
+撮るコマンドと格納先は、`context/testing/evidence.md` が持つ。  
+決まっていない値は、利用者に尋ねる。  
+置き場と名前は、`packages/e2e/kit/` の `evidence` が決める。  
 このスキルは、撮るときと確かめるときの判断だけを持つ。
 
 ## 始める前に読むもの
@@ -21,6 +23,7 @@ description: packages/e2e/kit で書いた証跡の spec を、ローカル環�
 2. 環境(ローカル環境か検証環境)と、改修前と比べるか
    - 比べないとき: 撮る環境の URL だけを渡し、1 つのバージョンを撮る
    - 比べるとき、`apps/web` だけの改修: 改修後と改修前の web を別のポートで起動し、1 回で両方を撮る。起動するブランチを確かめる
+     - 2 つの web を同じ backend につないで起動するコマンドは、決まっていない。`context/testing/evidence.md` に無ければ、1 回ずつ撮る
    - 比べるとき、`apps/*-api` も変わる改修と検証環境: 改修前と改修後の環境で 1 回ずつ流し、2 回目に 1 回目の実施日を渡して同じ置き場にそろえる。今どのバージョンがデプロイされているかを、アプリの画面で確かめる
 3. テストデータを作ってあるか。作っていなければ、context にある手順で先に作る
 4. 検証環境のログインの値と環境のファイルがあるか。値は環境のファイル以外のファイル、コミット、issue、pull request に書かない

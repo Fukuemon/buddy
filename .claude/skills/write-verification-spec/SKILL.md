@@ -16,7 +16,9 @@ description: 人手検証のシナリオ(前提、もし、かつ、ならば �
   - 撮る URL、改修前の URL、実施日、環境の名前を渡す環境変数
   - 証跡の格納先と、フォルダの名前の決まり
   - ログインのしかたと、テストデータを作る手順
-- `packages/e2e/` にある、kit を呼ぶ薄い層(`recordEvidence` に置き場とアプリの値を付けて呼ぶもの、`variants` に環境変数を渡すもの)
+  - 証跡の spec を CI の E2E から外す方法と、証跡の出力を Git で追跡しない設定
+  - kit を呼ぶ薄い層(`recordEvidence` に置き場とアプリの値を付けて呼ぶもの、`variants` に環境変数を渡すもの)の置き場
+- kit を呼ぶ薄い層。context に置き場があれば読み、spec からはその層を呼ぶ。無ければ、ひな形のとおり spec から `kit/recording` と `kit/evidence` を直に呼び、置き場とアプリの値を spec に書く
 - 既にある証跡の spec のうち、同じアクターか同じ画面のものを 1 本
 
 新しい spec は、[assets/spec-template.e2e.ts](assets/spec-template.e2e.ts) を写して始める。
