@@ -6,6 +6,8 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 
 - 出典: [デジタル庁デザインシステム](https://design.digital.go.jp/dads/)
 
+トークンとコンポーネントの見た目と使い方は、[カタログ（Storybook）](https://buddy-docs.emon-apps.workers.dev/storybook/)で見る。カタログは Cloudflare Access で許可した人だけが開ける。手元では `pnpm --filter @buddy/web storybook` で開く。
+
 ## 知りたいことごとの参照先
 
 この文書には、使い方の規則だけを書き、値と振る舞いはコードを参照先にする。
@@ -134,7 +136,7 @@ DADS は、重ねて出すものを下のコンポーネントより 2 段以上
 
 ## Storybook のカタログ
 
-カタログは apps/web の Storybook で組み、packages/ui の MDX と story も読み込む。  
+[カタログ](https://buddy-docs.emon-apps.workers.dev/storybook/)は apps/web の Storybook で組み、packages/ui の MDX と story も読み込む。  
 packages/ui の Storybook は、コンポーネントを単独で開発し、story のテストを動かすために使う。
 
 ### カタログのページ
