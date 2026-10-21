@@ -3,6 +3,7 @@ package httpapi
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -20,9 +21,13 @@ func init() {
 	openapi3.DefineStringFormatValidator("email", openapi3.NewRegexpFormatValidator(openapi3.FormatOfStringForEmail))
 }
 
+// maxBodyBytes は、要求の本文の上限である。検証は本文を全てメモリに読むので、上限を超えた本文は読まずに拒む。
+const maxBodyBytes = 1 << 20
+
 // newRequestValidator は、要求のパスの引数、クエリ、本文を openapi.yaml の定義で確かめる gin のミドルウェアを作る。
 // 定義に合わなければ、handler を呼ばずに 400（code は invalid_input）を返す。
 // トークンの確認は authenticate が受け持つので、定義の security はここでは確かめない。
+// 空の値のクエリ（?date_from= など）は、ハンドラが指定なしとして扱うので、定義では確かめない。
 func newRequestValidator() (gin.HandlerFunc, error) {
 	spec, err := openapi.GetSpec()
 	if err != nil {
@@ -46,13 +51,41 @@ func newRequestValidator() (gin.HandlerFunc, error) {
 			c.Next()
 			return
 		}
-		in := &openapi3filter.RequestValidationInput{Request: c.Request, PathParams: params, Route: route, Options: opts}
+		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxBodyBytes)
+		in := &openapi3filter.RequestValidationInput{Request: withoutEmptyQuery(c.Request), PathParams: params, Route: route, Options: opts}
 		if err := openapi3filter.ValidateRequest(c.Request.Context(), in); err != nil {
+			if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
+				badRequest(c, fmt.Sprintf("%s本文は %d バイトまでです", bodyErrorPrefix, maxBodyBytes))
+				return
+			}
 			badRequest(c, requestErrorMessage(err))
 			return
 		}
+		// 検証に渡した要求の本文は、kin-openapi が読み直せる形に戻している
+		c.Request.Body = in.Request.Body
 		c.Next()
 	}, nil
+}
+
+// withoutEmptyQuery は、空の値のクエリを外した要求の写しを返す。本文は r と同じものを指す。
+func withoutEmptyQuery(r *http.Request) *http.Request {
+	q := r.URL.Query()
+	changed := false
+	for k, vs := range q {
+		if len(vs) == 1 && vs[0] == "" {
+			q.Del(k)
+			changed = true
+		}
+	}
+	if !changed {
+		return r
+	}
+	u := *r.URL
+	u.RawQuery = q.Encode()
+	c := r.Clone(r.Context())
+	c.URL = &u
+	c.Body = r.Body
+	return c
 }
 
 // schemaErrorAt は、allOf などで包まれた誤りをたどり、一番内側の誤りの場所と理由を返す。
@@ -79,27 +112,59 @@ func schemaErrorAt(se *openapi3.SchemaError) (string, string) {
 	return b.String(), se.Reason
 }
 
-// requestErrorMessage は、定義に合わない理由を、項目の場所と理由の 1 行ずつにして「、」でつなぐ。
+// requestErrorMessage は、定義に合わない理由を、誤りごとに項目の場所と理由の 1 つの文にして「、」でつなぐ。
 func requestErrorMessage(err error) string {
-	var me openapi3.MultiError
-	if !errors.As(err, &me) {
-		me = openapi3.MultiError{err}
-	}
-	msgs := make([]string, 0, len(me))
-	for _, e := range me {
+	msgs := []string{}
+	for _, e := range flatten(err) {
+		var re *openapi3filter.RequestError
+		if errors.As(e, &re) && re.Parameter != nil {
+			msgs = append(msgs, re.Parameter.In+" の "+re.Parameter.Name+" が定義に合いません: "+parameterReason(re))
+			continue
+		}
 		var se *openapi3.SchemaError
 		if errors.As(e, &se) {
 			path, reason := schemaErrorAt(se)
 			msgs = append(msgs, path+" が定義に合いません: "+reason)
 			continue
 		}
-		var re *openapi3filter.RequestError
-		if errors.As(e, &re) && re.Parameter != nil {
-			msgs = append(msgs, re.Parameter.In+" の "+re.Parameter.Name+" が定義に合いません: "+re.Reason)
+		if errors.As(e, &re) && re.RequestBody != nil {
+			first, _, _ := strings.Cut(re.Err.Error(), "\n")
+			msgs = append(msgs, bodyErrorPrefix+first)
 			continue
 		}
 		first, _, _ := strings.Cut(e.Error(), "\n")
 		msgs = append(msgs, first)
 	}
 	return strings.Join(msgs, "、")
+}
+
+// flatten は、MultiError と、本文の誤りの束を包んだ RequestError を、1 つずつの誤りに開く。
+func flatten(err error) []error {
+	var me openapi3.MultiError
+	if errors.As(err, &me) {
+		var out []error
+		for _, e := range me {
+			out = append(out, flatten(e)...)
+		}
+		return out
+	}
+	var re *openapi3filter.RequestError
+	if errors.As(err, &re) && re.Parameter == nil && errors.As(re.Err, &me) {
+		return flatten(me)
+	}
+	return []error{err}
+}
+
+// parameterReason は、パスとクエリの引数の誤りの理由を返す。値が定義に合わないときは、その理由を使う。
+func parameterReason(re *openapi3filter.RequestError) string {
+	var se *openapi3.SchemaError
+	if errors.As(re.Err, &se) {
+		_, reason := schemaErrorAt(se)
+		return reason
+	}
+	if re.Reason != "" {
+		return re.Reason
+	}
+	first, _, _ := strings.Cut(re.Err.Error(), "\n")
+	return first
 }
