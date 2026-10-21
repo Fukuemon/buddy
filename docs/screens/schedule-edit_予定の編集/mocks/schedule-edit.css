@@ -1,0 +1,66 @@
+/* 予定の編集のモックだけの見た目 */
+
+/* 右の入力の欄。見出しと入力を縦に積む（apps/web の ScheduleDateTimeEdit と同じ間隔） */
+.se-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 開始時間と提供時間のように、入力を横に並べる */
+.se-row {
+  display: flex;
+  gap: 16px;
+}
+
+.se-row > * {
+  flex: 1;
+}
+
+/* サービスコードの選択肢。折り返して並べる */
+.se-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* 1 つを選ぶ丸い印。wf-check の丸い版 */
+.se-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.se-radio::before {
+  content: '';
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--wf-ink);
+  border-radius: 50%;
+}
+
+.se-radio.is-on::before {
+  background: radial-gradient(var(--wf-ink) 0 3px, transparent 4px);
+}
+
+/* 訪問の種類の選択肢。枠で囲んだチェックボックスを縦に並べる */
+.se-option {
+  padding: 10px 14px;
+  border: 1px solid var(--wf-line);
+  border-radius: 8px;
+}
+
+.se-option.is-on {
+  border: 2px solid var(--wf-ink);
+  background: var(--wf-fill);
+}
+
+/* 誤りのある項目の要約。apps/web では枠を赤く太くする。右に出している項目（.wf-summary.is-active の実線）と見分けるため、破線にする */
+.wf-summary.se-invalid {
+  border: 2px dashed var(--wf-ink);
+}
+
+.se-search {
+  min-height: 40px;
+}
