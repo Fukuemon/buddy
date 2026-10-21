@@ -17,9 +17,12 @@ schedule-api は、domain、usecase、infrastructure、presentation の層でパ
 
 規則と手順を、機能ごとのパッケージ（`organization`、`staff`、`patient`、`visit`、`schedule`）にまとめる。各パッケージは、エンティティ、値の検証、リポジトリのインターフェイス、操作（`Service`）を持つ。DB と HTTP のアダプタ（`mysql`、`httpapi`）は、生成物が 1 つのパッケージなので、機能に分けずに 1 つずつ置く。
 
+操作を `Service` と呼び、ほかの機能のリポジトリを束ねて受ける判断は、[ADR-0010](0010-schedule-api-usecase-boundaries.md) で置き換えた。
+
 - 認証と、パスが指す資源の事業所の確認は、全ての機能を読むので `access` に置く。職員（`auth.Principal`）と予定の判定は `auth` に置き、機能のパッケージから import できるようにする。`auth` に認証の手順を置くと、`schedule` と `auth` が互いを import する。
 - 機能のパッケージのテストが使うメモリ上のリポジトリは、`inmem` に置いて共有する。本番のコードからは import しない。
 - 共通の誤り、並べ替え、`Transactor`、`IDGenerator` は `domain` に残す。
+  - この判断は [ADR-0010](0010-schedule-api-usecase-boundaries.md) で置き換えた。
 
 Go の module の配置の指針は、サーバーのコードを `internal/` に置くことだけを勧め、層や `pkg/` を求めない。
 - Organizing a Go module: [Server project](https://go.dev/doc/modules/layout#server-project)
