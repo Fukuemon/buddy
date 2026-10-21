@@ -137,6 +137,23 @@ func manager() context.Context {
 	}})
 }
 
+// importDecided は、下見の版を取り込み方に付けてから確定する。版を持つ取り込み方は、その版のまま送る。
+func (e env) importDecided(t *testing.T, rng calendar.Range, ds []calendar.Decision) (calendar.ImportResult, error) {
+	t.Helper()
+	if p, err := e.uc.Preview(e.ctx, calID, rng); err == nil {
+		rev := map[string]string{}
+		for _, r := range p.NeedsReview {
+			rev[r.ExternalEventID] = r.Revision
+		}
+		for i := range ds {
+			if ds[i].Revision == "" {
+				ds[i].Revision = rev[ds[i].ExternalEventID]
+			}
+		}
+	}
+	return e.uc.Import(e.ctx, calID, rng, ds)
+}
+
 func decisions() []calendar.Decision {
 	return []calendar.Decision{
 		{ExternalEventID: "ambiguous", Action: calendar.ActionPatient, PatientID: "PB2"},
@@ -191,7 +208,7 @@ func reviewIDs(items []calendar.ReviewItem) []string {
 
 func TestImport(t *testing.T) {
 	e := newEnv(t, fixture())
-	res, err := e.uc.Import(e.ctx, calID, e.rng, decisions())
+	res, err := e.importDecided(t, e.rng, decisions())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -225,7 +242,7 @@ func TestImport(t *testing.T) {
 	}
 
 	// 同じ期間を 2 回確定しても、予定は重ならない。
-	again, err := e.uc.Import(e.ctx, calID, e.rng, nil)
+	again, err := e.importDecided(t, e.rng, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -240,7 +257,7 @@ func TestImport(t *testing.T) {
 func TestImportAppliesLaterExceptionsToLinkedRecurring(t *testing.T) {
 	srv := fixture()
 	e := newEnv(t, srv)
-	if _, err := e.uc.Import(e.ctx, calID, e.rng, decisions()); err != nil {
+	if _, err := e.importDecided(t, e.rng, decisions()); err != nil {
 		t.Fatal(err)
 	}
 	// 12 月の期間には、前の取り込みの繰り返しの親と、12-07 の取り消しと 12-14 の変更が来る。
@@ -254,7 +271,7 @@ func TestImportAppliesLaterExceptionsToLinkedRecurring(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := e.uc.Import(e.ctx, calID, dec, nil)
+	res, err := e.importDecided(t, dec, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -306,6 +323,9 @@ func TestImportRejects(t *testing.T) {
 			decisions: []calendar.Decision{{ExternalEventID: "ambiguous", Action: calendar.ActionPatient, PatientID: inmem.OtherPatientID}, decisions()[1]},
 			want:      apperr.ErrInvalidInput},
 		{name: "取り込みが進んでいる", decisions: decisions(), running: true, want: apperr.ErrConflict},
+		{name: "下見の後に確かめが要る予定が変わった（版が違う）",
+			decisions: []calendar.Decision{{ExternalEventID: "ambiguous", Action: calendar.ActionPatient, PatientID: "PB2", Revision: "stale"}, decisions()[1]},
+			want:      apperr.ErrConflict},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -315,7 +335,7 @@ func TestImportRejects(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			_, err := e.uc.Import(e.ctx, calID, e.rng, tt.decisions)
+			_, err := e.importDecided(t, e.rng, tt.decisions)
 			if !errors.Is(err, tt.want) {
 				t.Fatalf("err = %v, want %v", err, tt.want)
 			}
@@ -466,7 +486,7 @@ func TestImportReviewedRecurring(t *testing.T) {
 		if got := reviewIDs(p.NeedsReview); !slices.Equal(got, []string{"series"}) || p.NeedsReview[0].Recurrence == nil {
 			t.Fatalf("NeedsReview = %+v", p.NeedsReview)
 		}
-		res, err := e.uc.Import(e.ctx, calID, e.rng, []calendar.Decision{{ExternalEventID: "series", Action: calendar.ActionPatient, PatientID: "PB1"}})
+		res, err := e.importDecided(t, e.rng, []calendar.Decision{{ExternalEventID: "series", Action: calendar.ActionPatient, PatientID: "PB1"}})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -485,7 +505,7 @@ func TestImportReviewedRecurring(t *testing.T) {
 
 	t.Run("親を取り込まないと選んだ後に親を取り込むと、回ごとにして前に取り込んだ回と重ねない", func(t *testing.T) {
 		e := newEnv(t, reviewSeries())
-		res, err := e.uc.Import(e.ctx, calID, e.rng, []calendar.Decision{{ExternalEventID: "series", Action: calendar.ActionSkip}})
+		res, err := e.importDecided(t, e.rng, []calendar.Decision{{ExternalEventID: "series", Action: calendar.ActionSkip}})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -504,7 +524,7 @@ func TestImportReviewedRecurring(t *testing.T) {
 		if p.Counts.RecurringAsRule != 0 || p.Counts.NeedsReview != 1 || p.NeedsReview[0].Recurrence != nil || p.Counts.AlreadyImported != 1 {
 			t.Errorf("2 回目の下見の件数 = %+v", p.Counts)
 		}
-		res, err = e.uc.Import(e.ctx, calID, e.rng, []calendar.Decision{{ExternalEventID: "series", Action: calendar.ActionPatient, PatientID: "PB1"}})
+		res, err = e.importDecided(t, e.rng, []calendar.Decision{{ExternalEventID: "series", Action: calendar.ActionPatient, PatientID: "PB1"}})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -529,7 +549,7 @@ func TestImportReviewedRecurring(t *testing.T) {
 func TestImportIgnoresStaleRun(t *testing.T) {
 	e := newEnv(t, fixture())
 	e.store.Runs["STALE"] = calendar.ImportRun{ID: "STALE", ExternalCalendarID: calID, Status: calendar.RunRunning, StartedAt: time.Now().Add(-11 * time.Minute)}
-	if _, err := e.uc.Import(e.ctx, calID, e.rng, decisions()); err != nil {
+	if _, err := e.importDecided(t, e.rng, decisions()); err != nil {
 		t.Fatalf("10 分より前の running があるとき: err = %v", err)
 	}
 }

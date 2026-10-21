@@ -1676,11 +1676,14 @@ components:
         assigned_staff_name: { type: string }
     ImportReviewItem:
       type: object
-      required: [external_event_id, date, start_time, end_time, service, client_name, reason, recurrence, candidates]
+      required: [external_event_id, revision, date, start_time, end_time, service, client_name, reason, recurrence, candidates]
       properties:
         external_event_id:
           type: string
           description: 取り込み方を送るときの Google の予定の ID。繰り返しの予定とその回では、親の予定の ID
+        revision:
+          type: string
+          description: まとめた Google の予定の ID と etag から作る版。取り込み方と一緒に送り返す。下見の後に予定が変わると変わる
         date:
           description: 予定の日付。繰り返しの予定は最初の回の日付
           allOf:
@@ -1753,9 +1756,14 @@ components:
           items: { $ref: "#/components/schemas/ImportSkippedItem" }
     ImportDecision:
       type: object
-      required: [external_event_id, action]
+      required: [external_event_id, revision, action]
       properties:
         external_event_id: { type: string, minLength: 1, maxLength: 1024 }
+        revision:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: 取り込み方を選んだ下見の needs_review の revision。確定のときの版と違えば 409（import_preview_changed）になる
         action:
           type: string
           enum: [patient, normal, skip]

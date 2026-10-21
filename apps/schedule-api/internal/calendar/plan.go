@@ -1,6 +1,8 @@
 package calendar
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"slices"
 	"strings"
 	"time"
@@ -78,6 +80,8 @@ type ReviewItem struct {
 	Recurrence *schedule.Rule
 	// Candidates は、題名の利用者名の利用者で、ReviewPatientAmbiguous のときだけ持つ。
 	Candidates []PatientRef
+	// Revision は、まとめた外部の予定の ID と etag から作る版である。下見の後に予定が変わると変わる。
+	Revision string
 }
 
 // Skipped は、取り込まない予定の、読めた日時と理由である。題名は利用者名を含むので持たない。
@@ -128,10 +132,12 @@ const (
 )
 
 // Decision は、確かめが要る予定 1 件の取り込み方である。PatientID は ActionPatient のときだけ持つ。
+// Revision は、取り込み方を選んだ下見の ReviewItem.Revision である。
 type Decision struct {
 	ExternalEventID string
 	Action          Action
 	PatientID       string
+	Revision        string
 }
 
 // entry は、取り込みで書く予定 1 件である。
@@ -265,8 +271,26 @@ func buildPlan(in planInput) plan {
 	for _, ev := range exceptions {
 		b.addException(ev)
 	}
+	b.setRevisions()
 	b.sortOutputs()
 	return b.p
+}
+
+// setRevisions は、確かめが要る予定ごとに、まとめた外部の予定の ID と etag から版を作る。
+// 確定は版を比べ、下見の後に題名や時刻が変わった予定に、前の取り込み方を当てない。
+func (b *planner) setRevisions() {
+	parts := map[string][]string{}
+	for _, e := range b.p.entries {
+		if e.reviewKey != "" {
+			parts[e.reviewKey] = append(parts[e.reviewKey], e.event.ID+"\x00"+e.event.ETag)
+		}
+	}
+	for i := range b.p.review {
+		ps := parts[b.p.review[i].ExternalEventID]
+		slices.Sort(ps)
+		sum := sha256.Sum256([]byte(strings.Join(ps, "\x01")))
+		b.p.review[i].Revision = hex.EncodeToString(sum[:8])
+	}
 }
 
 type planner struct {
@@ -589,7 +613,7 @@ func (p *plan) applyDecisions(decisions []Decision, patients []PatientRef) (int,
 		return 0, errReviewChanged
 	}
 	for _, r := range p.review {
-		if _, ok := byKey[r.ExternalEventID]; !ok {
+		if d, ok := byKey[r.ExternalEventID]; !ok || d.Revision != r.Revision {
 			return 0, errReviewChanged
 		}
 	}

@@ -85,9 +85,12 @@ test.describe('予定の取り込み', () => {
         // 繰り返しの回の ID は日付で終わる。11-11 は取り消した回、11-18 は 14:00 の単発の予定に置き換えた回である
         await expect(page.getByTestId(/^schedule-event-.+-2026-11-11$/)).toHaveCount(0)
         await expect(page.getByTestId(/^schedule-event-.+-2026-11-18$/)).toHaveCount(0)
+        // 11-18 は、繰り返しの回（ID が日付で終わる）ではなく、置き換えた単発の予定（ID が ULID）として出る
         await expect(
-          page.getByTestId(/^schedule-event-/).filter({ hasText: '14時 見本 二葉' }),
-        ).toBeVisible()
+          page
+            .getByTestId(/^schedule-event-[0-9A-HJKMNP-TV-Z]{26}$/)
+            .filter({ hasText: '見本 二葉' }),
+        ).toHaveCount(1)
       })
 
       await test.step('繰り返しの回を開いて保存すると、その回を置き換えた予定の詳細に戻る', async () => {

@@ -34,8 +34,13 @@ export const storyAllImportedPreview: ImportPreview = createMockImportedPreview(
 
 /** 1 件目に利用者を選び、2 件目を通常の予定にした取り込み方。 */
 export const storyDecisions: ImportDecision[] = [
-  { external_event_id: 'event-ambiguous', action: 'patient', patient_id: 'patient-1' },
-  { external_event_id: 'event-missing', action: 'normal' },
+  {
+    external_event_id: 'event-ambiguous',
+    revision: 'rev-ambiguous',
+    action: 'patient',
+    patient_id: 'patient-1',
+  },
+  { external_event_id: 'event-missing', revision: 'rev-missing', action: 'normal' },
 ]
 
 /** storyDecisions で確定した取り込みの結果。 */

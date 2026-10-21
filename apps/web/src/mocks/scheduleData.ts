@@ -283,6 +283,7 @@ export const createMockImportPreview = (
   needs_review: [
     {
       external_event_id: 'event-ambiguous',
+      revision: 'rev-ambiguous',
       date: '2026-11-04',
       start_time: '10:00',
       end_time: '11:00',
@@ -303,6 +304,7 @@ export const createMockImportPreview = (
     },
     {
       external_event_id: 'event-missing',
+      revision: 'rev-missing',
       date: '2026-11-09',
       start_time: '14:00',
       end_time: '14:30',

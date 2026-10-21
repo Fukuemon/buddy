@@ -22,7 +22,7 @@ export const isChoiceComplete = (choice: ReviewChoice | undefined): choice is Re
 export const countRemaining = (items: readonly ImportReviewItem[], choices: ReviewChoices) =>
   items.filter((item) => !isChoiceComplete(choices[item.external_event_id])).length
 
-/** 選んだ取り込み方を、予定の API に送る形にする。選び終えていない予定は含めない。 */
+/** 選んだ取り込み方を、予定の API に送る形にする。下見の版を付ける。選び終えていない予定は含めない。 */
 export const toDecisions = (
   items: readonly ImportReviewItem[],
   choices: ReviewChoices,
@@ -34,10 +34,15 @@ export const toDecisions = (
       choice.action === 'patient'
         ? {
             external_event_id: item.external_event_id,
+            revision: item.revision,
             action: 'patient',
             patient_id: choice.patientId,
           }
-        : { external_event_id: item.external_event_id, action: choice.action },
+        : {
+            external_event_id: item.external_event_id,
+            revision: item.revision,
+            action: choice.action,
+          },
     ]
   })
 

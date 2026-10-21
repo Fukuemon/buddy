@@ -189,10 +189,12 @@ export const createFakeBuddyApi = ({
         assertFacility(facilityId)
         const calendar = findCalendar(externalCalendarId)
         const preview: ImportPreview = previewOf(externalCalendarId, range)
-        const reviewIds = new Set(preview.needs_review.map((r) => r.external_event_id))
+        const revisions = new Map(
+          preview.needs_review.map((r) => [r.external_event_id, r.revision]),
+        )
         if (
-          decisions.length !== reviewIds.size ||
-          decisions.some((d) => !reviewIds.has(d.external_event_id))
+          decisions.length !== revisions.size ||
+          decisions.some((d) => revisions.get(d.external_event_id) !== d.revision)
         ) {
           throw conflict(
             'import_preview_changed',

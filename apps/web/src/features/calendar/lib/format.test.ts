@@ -33,6 +33,7 @@ describe('formatReviewDateTime', () => {
     expect(
       formatReviewDateTime({
         external_event_id: 'e',
+        revision: 'r',
         date: '2026-11-04',
         start_time: '10:00',
         end_time: '11:00',

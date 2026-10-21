@@ -32,7 +32,7 @@
 | --- | --- |
 | `range_start`、`range_end` | 下見した期間。両端の日を含む |
 | `counts` | `import`、`import_visit`、`import_normal`、`expanded_occurrences`、`recurring`、`recurring_as_rule`、`recurring_expanded`、`needs_review`、`skipped`、`already_imported` |
-| `needs_review[]` | `external_event_id`、`date`、`start_time`、`end_time`、`service`、`client_name`、`reason`（`patient_not_found`、`patient_ambiguous`）、`recurrence`（繰り返しのまま取り込む予定の規則。ほかの予定では `null`）、`candidates[]`（`patient_id`、`name`、`assigned_staff_name`） |
+| `needs_review[]` | `external_event_id`、`revision`（まとめた予定の ID と etag から作る版）、`date`、`start_time`、`end_time`、`service`、`client_name`、`reason`（`patient_not_found`、`patient_ambiguous`）、`recurrence`（繰り返しのまま取り込む予定の規則。ほかの予定では `null`）、`candidates[]`（`patient_id`、`name`、`assigned_staff_name`） |
 | `skipped[]` | `date`、`start_time`、`end_time`（読めた分だけ。読めなければ `null`）、`all_day`、`reason`（`all_day`、`multi_day`、`unreadable_time`、`zero_length`、`unreadable_title`、`service_not_found`） |
 
 - 件数は Google の予定の数で数え、繰り返しのまま取り込む予定は 1 件に数える。回ごとにした予定は 1 回を 1 件に数え、`expanded_occurrences` に回の数を入れる。
@@ -44,11 +44,11 @@
 
 | 項目 | 中身 |
 | --- | --- |
-| `decisions[]` | 確かめが要る予定ごとに、`external_event_id`、`action`（`patient`、`normal`、`skip`）、`patient_id`（`action` が `patient` のときだけ） |
+| `decisions[]` | 確かめが要る予定ごとに、`external_event_id`、`revision`（下見の `needs_review[].revision`）、`action`（`patient`、`normal`、`skip`）、`patient_id`（`action` が `patient` のときだけ） |
 | 応答の `ImportResult` | `id`、`external_calendar_id`、`range_start`、`range_end`、`status`、`imported_count`、`skipped_count`、`already_imported_count`、`started_at`、`finished_at` |
 
 - 予定の API は、Google カレンダーの予定を読み直し、下見と同じ規則で読み替えて、予定と `external_event_links` の行を 1 つのトランザクションで書く。`import_runs` の行は、始めに `running` で足し、終わりに `succeeded` か `failed` にする。
 - 取り込み済みの判定は、`external_event_links` の一意の制約（`external_calendar_id`、`external_event_id`）で行う。同じ期間を 2 回確定しても、2 回目は対応のある予定を書かず、`already_imported_count` に数える。
 - 同じカレンダーに、10 分以内に始めた `running` の `import_runs` があるときは、409 の `import_running` を返す。10 分より前の `running` は、止まった取り込みとみなして数えない。
 - `already_imported_count` は表に無いので、応答だけに入れる。`imported_count` には、書いた予定の数（繰り返しのまま取り込んだ予定は 1 件、回ごとにした予定は 1 回を 1 件）を入れる。`skipped_count` には、取り込まない予定と、`skip` を選んだ予定を足した数を入れる。
-- `decisions[]` の予定の集合が、読み直した確かめが要る予定の集合と違えば、何も書かずに 409 の `import_preview_changed` を返す。
+- `decisions[]` の予定の集合が、読み直した確かめが要る予定の集合と違うか、`revision` が読み直した版と違えば、何も書かずに 409 の `import_preview_changed` を返す。下見の後に Google で題名や時刻を変えた予定に、前の取り込み方を当てないためである。

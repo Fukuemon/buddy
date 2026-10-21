@@ -24,7 +24,7 @@ describe('取り込み方の選択', () => {
     expect(countRemaining(preview.needs_review, choices)).toBe(1)
     expect(canSubmitImport(preview, choices)).toBe(false)
     expect(toDecisions(preview.needs_review, choices)).toEqual([
-      { external_event_id: 'event-missing', action: 'skip' },
+      { external_event_id: 'event-missing', revision: 'rev-missing', action: 'skip' },
     ])
 
     const done = {
@@ -34,6 +34,7 @@ describe('取り込み方の選択', () => {
     expect(canSubmitImport(preview, done)).toBe(true)
     expect(toDecisions(preview.needs_review, done)).toContainEqual({
       external_event_id: 'event-ambiguous',
+      revision: 'rev-ambiguous',
       action: 'patient',
       patient_id: 'patient-1',
     })
@@ -57,8 +58,13 @@ describe('件数の文', () => {
 
   it('取り込みの結果の補足に、取り込み方の内訳と取り込まない理由を入れる', () => {
     const decisions = [
-      { external_event_id: 'event-ambiguous', action: 'patient', patient_id: 'patient-1' },
-      { external_event_id: 'event-missing', action: 'skip' },
+      {
+        external_event_id: 'event-ambiguous',
+        revision: 'r1',
+        action: 'patient',
+        patient_id: 'patient-1',
+      },
+      { external_event_id: 'event-missing', revision: 'r2', action: 'skip' },
     ] as const
     expect(importedNote(preview, decisions)).toBe(
       '繰り返しの予定 3 件を含む。確かめた 2 件のうち 1 件は利用者を選び、1 件は取り込まなかった',

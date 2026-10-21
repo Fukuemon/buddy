@@ -949,6 +949,8 @@ export interface components {
         ImportReviewItem: {
             /** @description 取り込み方を送るときの Google の予定の ID。繰り返しの予定とその回では、親の予定の ID */
             external_event_id: string;
+            /** @description まとめた Google の予定の ID と etag から作る版。取り込み方と一緒に送り返す。下見の後に予定が変わると変わる */
+            revision: string;
             /** @description 予定の日付。繰り返しの予定は最初の回の日付 */
             date: components["schemas"]["Date"];
             start_time: components["schemas"]["Time"];
@@ -993,6 +995,8 @@ export interface components {
         };
         ImportDecision: {
             external_event_id: string;
+            /** @description 取り込み方を選んだ下見の needs_review の revision。確定のときの版と違えば 409（import_preview_changed）になる */
+            revision: string;
             /**
              * @description patient は選んだ利用者の訪問の予定に、normal は題名をタイトルにした通常の予定にし、skip は取り込まない
              * @enum {string}

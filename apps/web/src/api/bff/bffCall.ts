@@ -52,6 +52,7 @@ const date = z.iso.date()
 const importRange = z.object({ range_start: date, range_end: date })
 const decision = z.object({
   external_event_id: z.string().min(1).max(1024),
+  revision: z.string().min(1).max(64),
   action: z.enum(['patient', 'normal', 'skip']),
   patient_id: id.optional(),
 })

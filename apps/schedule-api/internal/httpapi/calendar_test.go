@@ -89,7 +89,7 @@ func TestCalendarErrorStatus(t *testing.T) {
 		{name: "期間が逆", method: http.MethodPost, target: previewTarget, body: `{"range_start":"2026-11-30","range_end":"2026-11-01"}`,
 			wantCode: http.StatusBadRequest, wantBody: "invalid_input"},
 		{name: "取り込み方の値が定義に無い", method: http.MethodPost, target: "/v1/external_calendars/" + calendarID + "/imports",
-			body:     `{"range_start":"2026-11-01","range_end":"2026-11-30","decisions":[{"external_event_id":"e1","action":"maybe"}]}`,
+			body:     `{"range_start":"2026-11-01","range_end":"2026-11-30","decisions":[{"external_event_id":"e1","revision":"r1","action":"maybe"}]}`,
 			wantCode: http.StatusBadRequest, wantBody: "invalid_input"},
 	}
 	for _, tt := range tests {
@@ -143,13 +143,14 @@ func TestCreateCalendarImport(t *testing.T) {
 	f := &fakeCalendars{}
 	rec, body := do(t, newCalendarRouter(f), http.MethodPost, "/v1/external_calendars/"+calendarID+"/imports",
 		`{"range_start":"2026-11-01","range_end":"2026-11-30","decisions":[`+
-			`{"external_event_id":"e1","action":"patient","patient_id":"01M3TC66FGZVK39Y7GRVZSGWS1"},{"external_event_id":"e2","action":"skip"}]}`)
+			`{"external_event_id":"e1","revision":"r1","action":"patient","patient_id":"01M3TC66FGZVK39Y7GRVZSGWS1"},`+
+			`{"external_event_id":"e2","revision":"r2","action":"skip"}]}`)
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
 	}
 	want := []calendar.Decision{
-		{ExternalEventID: "e1", Action: calendar.ActionPatient, PatientID: "01M3TC66FGZVK39Y7GRVZSGWS1"},
-		{ExternalEventID: "e2", Action: calendar.ActionSkip},
+		{ExternalEventID: "e1", Action: calendar.ActionPatient, PatientID: "01M3TC66FGZVK39Y7GRVZSGWS1", Revision: "r1"},
+		{ExternalEventID: "e2", Action: calendar.ActionSkip, Revision: "r2"},
 	}
 	if fmt.Sprint(f.lastDecisions) != fmt.Sprint(want) {
 		t.Errorf("decisions = %+v", f.lastDecisions)

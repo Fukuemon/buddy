@@ -73,6 +73,7 @@ func toImportPreview(p calendar.Preview) openapi.ImportPreview {
 func toImportReviewItem(r calendar.ReviewItem) openapi.ImportReviewItem {
 	out := openapi.ImportReviewItem{
 		ExternalEventId: r.ExternalEventID,
+		Revision:        r.Revision,
 		Date:            r.Date.String(),
 		StartTime:       r.StartTime.String(),
 		EndTime:         r.EndTime.String(),
@@ -179,7 +180,7 @@ func (s server) CreateCalendarImport(ctx context.Context, req openapi.CreateCale
 	}
 	decisions := make([]calendar.Decision, len(b.Decisions))
 	for i, d := range b.Decisions {
-		decisions[i] = calendar.Decision{ExternalEventID: d.ExternalEventId, Action: calendar.Action(d.Action)}
+		decisions[i] = calendar.Decision{ExternalEventID: d.ExternalEventId, Action: calendar.Action(d.Action), Revision: d.Revision}
 		if d.PatientId != nil {
 			decisions[i].PatientID = *d.PatientId
 		}
