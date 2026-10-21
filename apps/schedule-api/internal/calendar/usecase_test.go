@@ -612,6 +612,13 @@ func TestImportExpandedMovedOutOfRange(t *testing.T) {
 	}
 	e := newEnv(t, srv)
 	e.uc = withSource(e, startFiltered{gcal.NewReader(gcaltest.Start(t, srv))})
+	p, err := e.uc.Preview(e.ctx, calID, e.rng)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.Counts.Recurring != 1 || p.Counts.RecurringExpanded != 1 || p.Counts.ExpandedOccurrences != 2 {
+		t.Errorf("下見の件数 = %+v", p.Counts)
+	}
 	res, err := e.importDecided(t, e.rng, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -621,5 +628,25 @@ func TestImportExpandedMovedOutOfRange(t *testing.T) {
 	}
 	if moved := scheduleOf(t, e, "biweekly_1117"); moved.Date != (civil.Date{Year: 2026, Month: 12, Day: 1}) {
 		t.Errorf("動かした回 = %+v", moved)
+	}
+}
+
+func TestPreviewCountsSeriesOnlyMovedOut(t *testing.T) {
+	srv := &gcaltest.Server{
+		Calendars: map[string][][]*calendarv3.Event{googleCalID: {{
+			grecurring(gevent("biweekly", "定例", "2026-11-17T16:00:00+09:00", "2026-11-17T17:00:00+09:00"),
+				"RRULE:FREQ=WEEKLY;INTERVAL=2;COUNT=1"),
+			gexception("biweekly_1117", "biweekly", "定例", "2026-12-01T16:00:00+09:00", "2026-12-01T17:00:00+09:00", "2026-11-17T16:00:00+09:00"),
+		}}},
+		Instances: map[string][]*calendarv3.Event{"biweekly": {}},
+	}
+	e := newEnv(t, srv)
+	e.uc = withSource(e, startFiltered{gcal.NewReader(gcaltest.Start(t, srv))})
+	p, err := e.uc.Preview(e.ctx, calID, e.rng)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.Counts.Import != 1 || p.Counts.Recurring != 1 || p.Counts.RecurringExpanded != 1 {
+		t.Errorf("下見の件数 = %+v, want 期間の外へ動かした回だけの繰り返しも 1 件に数える", p.Counts)
 	}
 }

@@ -257,7 +257,7 @@ func parentsToExpand(events []Event, links map[string]Link) []string {
 func buildPlan(in planInput) plan {
 	b := planner{
 		in: in, reviewIndex: map[string]int{}, parents: map[string]Event{}, ruleParents: map[string]*Recurrence{},
-		expandedParents: map[string]bool{}, instanceIDs: map[string]bool{},
+		expandedParents: map[string]bool{}, instanceIDs: map[string]bool{}, countedParents: map[string]bool{},
 	}
 	b.serviceIDs = make(map[string]string, len(in.serviceCodes))
 	for _, sc := range in.serviceCodes {
@@ -317,6 +317,8 @@ type planner struct {
 	expandedParents map[string]bool
 	// instanceIDs は、回ごとにした親の Instances が返した回の ID である。
 	instanceIDs map[string]bool
+	// countedParents は、取り込む繰り返しの予定として数えた、回ごとにした親の予定である。
+	countedParents map[string]bool
 }
 
 func (b *planner) linked(id string) bool {
@@ -372,10 +374,19 @@ func (b *planner) addParent(ev Event) {
 			}
 		}
 		if imported {
-			b.p.counts.Recurring++
-			b.p.counts.RecurringExpanded++
+			b.countExpanded(ev.ID)
 		}
 	}
+}
+
+// countExpanded は、回ごとにした親の予定を、取り込む繰り返しの予定として 1 回だけ数える。
+func (b *planner) countExpanded(parentID string) {
+	if b.countedParents[parentID] {
+		return
+	}
+	b.countedParents[parentID] = true
+	b.p.counts.Recurring++
+	b.p.counts.RecurringExpanded++
 }
 
 // addException は、繰り返しの予定の変えた回か取り消した回を読み替える。
@@ -386,7 +397,9 @@ func (b *planner) addParent(ev Event) {
 func (b *planner) addException(ev Event) {
 	if b.expandedParents[ev.RecurringEventID] {
 		if ev.Status != StatusCancelled && !b.instanceIDs[ev.ID] && !b.linked(ev.ID) {
-			b.add(entry{event: ev, parentID: ev.RecurringEventID, cand: Classify(ev), expanded: true})
+			if b.add(entry{event: ev, parentID: ev.RecurringEventID, cand: Classify(ev), expanded: true}) {
+				b.countExpanded(ev.RecurringEventID)
+			}
 		}
 		return
 	}
