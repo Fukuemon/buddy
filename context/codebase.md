@@ -15,17 +15,17 @@ status: stable
 - 業務の規則と認可は API が持つ。web は、画面の表示の規則（照合の印と CSV の書き出しを含む）だけを持ち、拒否の判断を API に任せる。
 - `packages/ui` は、BCD Design の Base と Case のコンポーネントとトークンだけを持つ。業務の名前（予定、照合など）を持つ Domain のコンポーネントは、`apps/web` の `features/<機能>/components/` に置く（[ADR-0004](../docs/adr/0004-design-system.md)）。
 - `packages/e2e` の `kit/` は、Fukuemon/verification から写したもので、buddy の画面の名前を持たない。buddy の画面に依存するコードは `tests/` に置く。
-- schedule-api は、domain、usecase、infrastructure、presentation の層で分ける。receipt-api は、照合の段（読み込み、正規化、対の作成、判定）ごとにパッケージを分ける。
+- schedule-api は、domain、usecase と、アダプタ（`mysql`、`oidc`、`ulid`、`httpapi`）で分ける。receipt-api は、照合の段（読み込み、正規化、対の作成、判定）ごとにパッケージを分ける。
 
 ## Dependency Rules
 
 - apps 同士はコードで依存しない。Go のモジュール同士の import と、web から Go のコードの参照は無い。
 - web は `@buddy/ui` に依存してよい。`packages/ui` から `apps/` へは依存しない。
 - web の `features/<機能>/` の間は import しない。2 つの機能が使うものは、`components/site/`（サイト共通のコンポーネント）か `@buddy/ui` に置く。
-- schedule-api の依存は、presentation、usecase、domain の 1 方向に限る。
+- schedule-api の依存は、`httpapi`、usecase、domain の 1 方向に限る。
   - domain は標準ライブラリだけに依存する。
   - usecase は domain のインターフェイスだけに依存し、トランザクションは `domain.Transactor` で受ける。
-  - infrastructure は domain のインターフェイスを実装する。presentation から infrastructure を import するのは、テストのファイルだけにする。
+  - `mysql`、`oidc`、`ulid` は domain のインターフェイスを実装する。`httpapi` から `mysql` と `oidc` を import するのは、テストのファイルだけにする。
 - receipt-api の依存は、`record` と `civil` を末端にして、読み込み、正規化、対の作成、判定、つなぐ段（`check`）、取得元、HTTP の順の 1 方向に限る。判定はサービスの規則（`servicerule`）を、取得元は Google カレンダー（`gcal`）を使う。
 - 依存の向きを確かめる lint は入れていない。レビューで確かめる。E2E の層の向きだけは、`packages/e2e/eslint/e2e-authoring-rule.mjs` が止める。
 
@@ -47,7 +47,7 @@ status: stable
   - テストと story は対象の隣に置く（コロケーション）。
 - web の API の呼び出しは `src/api/` に置く。生成した型は `generated/` に置く。`VITE_API_MODE` で、ブラウザのメモリで動く偽物（`fake/`）と、BFF の server function を呼ぶ実装（`bff/`）を切り替える。`http/` は、サーバーから API を呼ぶ実装で、`src/server/` から使う。サーバーだけで動く処理は `src/server/` に置く。
 - `packages/ui` へ移すのは、業務の名前を持たず、2 つ以上の画面で同じ形で使うコンポーネントだけにする。移すときは Base か Case かを [DESIGN.md](../packages/ui/DESIGN.md) の基準で決める。
-- schedule-api のハンドラは `internal/presentation/http/handler` に、生成したインターフェイスのメソッドとして書く。クエリは `db/queries`、マイグレーションは `db/migrations`、シードは `db/seed` に置く。
+- schedule-api のハンドラは `internal/httpapi` に、生成したインターフェイスのメソッドとして書く。クエリは `db/queries`、マイグレーションは `db/migrations`、シードは `db/seed` に置く。
 - receipt-api に照合の段を足すときは、段ごとに `internal/` の下にパッケージを作り、`check` でつなぐ。
 - E2E のコードの置き場は、[E2E のテストのコードの設計](../packages/e2e/DesignDoc.md) の判断の流れに従う。
 - 機能ごとの Design Doc は、対象のコードの隣に `DesignDoc.md` として置く。
