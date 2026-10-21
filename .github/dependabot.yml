@@ -52,6 +52,10 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+    # node のメジャーは、LTS のバージョンへ mise.toml と CI と Dockerfile をそろえて手で上げる
+    ignore:
+      - dependency-name: node
+        update-types: [version-update:semver-major]
     groups:
       docker:
         patterns: ['*']
