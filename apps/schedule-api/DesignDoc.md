@@ -255,9 +255,9 @@ erDiagram
 
 職員ごとに権限を足す（`POST /v1/users/{user_id}/policies`）ときは、`needs_target` が true の権限に、code に合わせて職員かチームの対象を 1 つ以上付ける。対象は同じ事業所のものに限る。外す（`DELETE /v1/users/{user_id}/policies/{user_policy_id}`）と、対象も消える。
 
-役職を変える操作と、権限を足し外す操作は、`staff.manage` を持つ職員だけに許す。`staff.manage` は予定の範囲に及ばない。判断は ADR-0006 にある。
+職員と利用者の登録、役職を変える操作、権限を足し外す操作は、`staff.manage` を持つ職員だけに許す。`staff.manage` は予定の範囲に及ばない。判断は ADR-0006 にある。
 
-- ADR-0006: [職員の権限と役職を変える操作を、職員の管理の権限で許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0006-staff-manage-policy.md)
+- ADR-0006: [職員と利用者の登録と、職員の権限と役職を変える操作を、職員の管理の権限で許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0006-staff-manage-policy.md)
 
 - ADR-0002: [権限を役職の既定と職員ごとの上書きで持つ（PBAC）](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0002-pbac.md)
 
@@ -325,7 +325,7 @@ sequenceDiagram
 - 一覧は、見てよくない職員の予定を除いて返す。1 件を指す操作（取得、変更、キャンセル、回の置き換え）は 403 を返す。
 - 作成と変更は、予定の職員の予定を編集する権限を求める。変更と回の置き換えは、元の予定の職員と、新しい予定の職員の両方の編集の権限を求める。
 - 権限の判定は、事業所の分離の後に行う。事業所が違えば、ミドルウェアが先に 403 を返す。
-- 職員の権限と役職を変える操作は `staff.manage` で判定する（[権限の行](#権限の行)）。それ以外の職員、利用者、訪問の情報、組織の API は、権限で判定せず、事業所の分離だけを確かめる。
+- 職員と利用者の登録と、職員の権限と役職を変える操作は `staff.manage` で判定する（[権限の行](#権限の行)）。それ以外の職員、利用者、訪問の情報、組織の API は、権限で判定せず、事業所の分離だけを確かめる。
 
 ### 繰り返しの予定
 
