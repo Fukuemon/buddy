@@ -13,7 +13,7 @@ import { ScheduleDateTimeEdit } from './ScheduleDateTimeEdit'
 import { ScheduleFieldSummaryList, type ScheduleFieldSummaryItem } from './ScheduleFieldSummaryList'
 import { StaffSelectList } from './StaffSelectList'
 
-type FieldId = 'title' | 'dateTime' | 'patient' | 'staff' | 'category' | 'description'
+type FieldId = 'title' | 'date-time' | 'patient' | 'staff' | 'category' | 'description'
 
 const UNSELECTED = '未選択'
 
@@ -31,7 +31,7 @@ export type ScheduleFormProps = {
  * 通常と訪問の切り替えは持たず、form の kind の値に従う。
  */
 export const ScheduleForm = ({ id, form, staffList, patients, onSubmit }: ScheduleFormProps) => {
-  const [activeField, setActiveField] = useState<FieldId>('dateTime')
+  const [activeField, setActiveField] = useState<FieldId>('date-time')
   const { control, formState, handleSubmit } = form
   const values = useWatch({ control }) as Partial<ScheduleFormValues>
   const errors = formState.errors as Partial<Record<string, { message?: string }>>
@@ -64,7 +64,7 @@ export const ScheduleForm = ({ id, form, staffList, patients, onSubmit }: Schedu
           },
         ]),
     {
-      id: 'dateTime',
+      id: 'date-time',
       label: isVisit ? '訪問日時' : '予定日時',
       content: dateTimeSummary,
       error:
@@ -106,7 +106,7 @@ export const ScheduleForm = ({ id, form, staffList, patients, onSubmit }: Schedu
     { id: 'description', label: 'メモ', content: values.description || 'なし' },
   ]
 
-  const visibleField = items.some((item) => item.id === activeField) ? activeField : 'dateTime'
+  const visibleField = items.some((item) => item.id === activeField) ? activeField : 'date-time'
 
   return (
     <form
@@ -126,7 +126,7 @@ export const ScheduleForm = ({ id, form, staffList, patients, onSubmit }: Schedu
             name="title"
           />
         )}
-        {visibleField === 'dateTime' && <ScheduleDateTimeEdit form={form} />}
+        {visibleField === 'date-time' && <ScheduleDateTimeEdit form={form} />}
         {visibleField === 'patient' && (
           <Controller
             control={control}
