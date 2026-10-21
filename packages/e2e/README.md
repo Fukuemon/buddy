@@ -20,7 +20,7 @@ buddy の E2E のテストと、人手検証の証跡を撮る仕組み。
 
 ## 元のリポジトリ
 
-kit、規則、スキル、Design Doc は、[Fukuemon/verification](https://github.com/Fukuemon/verification) のコミット 0376e6b から写した。依存として入れず、buddy で使いながら直し、後で汎用の形に戻す。  
+kit、規則、スキル、Design Doc は、元のリポジトリ（非公開）から写した。依存として入れず、buddy で使いながら直し、後で汎用の形に戻す。  
 地図の操作（`map/google`）は、buddy に地図が無いので写していない。
 
 ## 文書

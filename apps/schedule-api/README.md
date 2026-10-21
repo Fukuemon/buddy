@@ -34,7 +34,9 @@ API とマイグレーションは、次の環境変数を読む。
 ## 動かす
 
 コマンドは、このディレクトリで実行する。  
-パスワードは手元でだけ使う値を決めて、環境変数に入れる。
+パスワードは手元でだけ使う値を決めて、環境変数に入れる。  
+API の 8080 と偽物の発行者の 9000 は、ルートの compose の schedule-api と IdP と重なる。  
+compose を動かしているときは、重なる 2 つを `docker compose stop schedule-api idp` で止めてから実行する。
 
 ```sh
 export DB_HOST=127.0.0.1 DB_PORT=3306 DB_USER=buddy DB_NAME=buddy
@@ -96,7 +98,9 @@ golangci-lint run
 ```
 
 `go test ./...` は、リポジトリの結合テストのために、testcontainers-go で MySQL 8.4 のコンテナを起動する。  
-`-short` を付けると、コンテナを使うテストを飛ばす。
+`-short` を付けると、コンテナを使うテストを飛ばす。  
+テストと lint は `GOWORK=off` を付けて流す。  
+理由は [CONTRIBUTING.md](../../CONTRIBUTING.md) の「開発の準備」にある。
 
 テストの種類ごとに保証することと置き場は、[テスト](../../context/testing.md) にある。
 
