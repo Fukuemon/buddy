@@ -25,7 +25,7 @@ description: 機能の追加と改修の pull request と issue に、確かめ�
 ## 撮る
 
 元のファイルは `.ai-out/evidence/<pull request か issue の番号>/` に置く。  
-写すデータは、手元のシードとテストデータだけにする。
+写してよいデータは、`context/testing/evidence.md` の「格納先」に従う。
 
 | 変更 | 撮るもの | 撮り方 |
 | --- | --- | --- |
@@ -59,8 +59,10 @@ agent-browser は WebM で書き出す。
 GitHub の動画のプレイヤーで再生できる形にそろえるため、H.264 の mp4 にする。
 
 ```sh
-ffmpeg -i <名前>.webm -c:v libx264 -pix_fmt yuv420p -movflags +faststart <名前>.mp4
+ffmpeg -i <名前>.webm -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -c:v libx264 -pix_fmt yuv420p -movflags +faststart <名前>.mp4
 ```
+
+`yuv420p` の H.264 は、幅か高さが奇数だと変換に失敗する。`-vf` の `scale` で偶数にそろえる。
 
 E2E の kit は mp4 を書き出すので、変換しない。
 
@@ -79,7 +81,9 @@ E2E の kit は mp4 を書き出すので、変換しない。
 - 画像は `--attach '<パス>#<代替テキスト>'` で代替テキストを付ける。動画には代替テキストを付けられないので、コメントの文で中身を説明する。
 - 本文に同じパスへの参照（`![代替テキスト](./<名前>.png)`）を書くと、gh がその参照を添付したファイルの URL に置き換える。参照の無いファイルは本文の末尾に付く。
 - issue に添付するのは、不具合の再現と改修前の動きのように、pull request より先に示すものだけにする。`gh issue comment <番号> --attach` を使う。
-- 1 回の実行で付けられるのは 50 ファイルまで。一部の添付だけが失敗すると、gh は 0 以外で終わる。終了コードを見て、失敗したファイルだけを付け直す。
+- 一部の添付だけが失敗すると、gh は 0 以外で終わる。失敗したファイルは、次のどちらかで付け直す。
+  - 同じコメントに足す: `gh pr comment <番号> --edit-last -b "<元の文>" --attach <失敗したファイル>`。`--edit-last` は本文を置き換えるので、付いた動画の URL も `-b` の文に残す。
+  - 消して出し直す: `gh pr comment <番号> --delete-last --yes` で消し、全部のファイルを付けて出し直す。
 
 ## 本文の「確認したこと」に書く
 
