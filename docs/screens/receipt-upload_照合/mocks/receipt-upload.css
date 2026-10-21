@@ -1,0 +1,63 @@
+/* 照合のモックだけの見た目 */
+.ru-main {
+  display: grid;
+  gap: 24px;
+  padding: 24px;
+}
+
+.ru-lead {
+  max-width: 672px;
+  margin: 0;
+}
+
+/* 照合の入力のフォーム。項目を縦に並べる */
+.ru-form {
+  display: grid;
+  gap: 24px;
+  max-width: 672px;
+}
+
+.ru-field {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.ru-field > .wf-tabs {
+  justify-self: stretch;
+}
+
+.ru-field > .wf-tabs .wf-tab {
+  flex: 1;
+}
+
+.ru-month {
+  width: 224px;
+}
+
+/* ファイルの選択の欄。左にファイルを選ぶボタン、右に選んだファイルの名前 */
+.ru-file {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  justify-self: stretch;
+}
+
+/* 欄の下の補足 */
+.ru-hint {
+  color: var(--wf-muted);
+  font-size: 12px;
+}
+
+.ru-error {
+  display: grid;
+  gap: 8px;
+}
+
+.ru-error ul {
+  margin: 0;
+  padding-left: 24px;
+  color: var(--wf-danger);
+}

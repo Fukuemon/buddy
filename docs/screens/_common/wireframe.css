@@ -1,21 +1,33 @@
 /*
- * モックの中の画面の共通の見た目。mock.css の後に読む。
- * 配置と状態だけを示すため、灰色の箱と線で描き、デザインのトークン（packages/ui）には寄せない。
+ * モックの中の画面の共通の見た目。mock.css と tokens.css の後に読む。
+ * 色は tokens.css の buddy の意味のトークン（packages/ui と同じ値）を、角丸と書体は DADS の基本のトークンを --wf-* に当てて使う。
+ * 部品の形は実装を写さず、箱と線で配置と状態だけを示す。
  * 画面の幅による切り替えは、.screen の幅を測る @container screen で書く。
  */
 
 :root {
-  --wf-ink: #333;
-  --wf-line: #9a9a9a;
-  --wf-line-soft: #d4d4d4;
-  --wf-fill: #ececec;
-  --wf-fill-strong: #c8c8c8;
-  --wf-surface: #fff;
-  --wf-muted: #777;
-  --wf-radius: 6px;
+  --wf-ink: var(--buddy-color-text);
+  --wf-line: var(--buddy-color-border-field);
+  --wf-line-soft: var(--buddy-color-border);
+  --wf-fill: var(--buddy-color-surface-subtle);
+  --wf-fill-strong: var(--buddy-color-surface-disabled);
+  --wf-surface: var(--buddy-color-surface);
+  --wf-muted: var(--buddy-color-text-secondary);
+  --wf-primary: var(--buddy-color-primary);
+  --wf-primary-surface: var(--buddy-color-primary-surface);
+  --wf-danger: var(--buddy-color-danger);
+  --wf-danger-surface: var(--buddy-color-danger-surface);
+  --wf-warning-surface: var(--buddy-color-warning-surface);
+  --wf-overlay: var(--buddy-color-overlay);
+  --wf-radius: var(--border-radius-8);
 
   color: var(--wf-ink);
-  font-family: system-ui, -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  /* Web フォントは読み込まないので、DADS の書体（Noto Sans JP）が端末に無ければ sans-serif で描く */
+  font-family: var(--font-family-sans);
+}
+
+/* 文字の大きさは body に置き、rem の基準（16px）をトークンの角丸と同じにする */
+body {
   font-size: 14px;
   line-height: 1.5;
 }
@@ -102,7 +114,8 @@
 }
 
 .wf-btn--primary {
-  background: var(--wf-ink);
+  border-color: var(--wf-primary);
+  background: var(--wf-primary);
   color: var(--wf-surface);
 }
 
@@ -281,8 +294,9 @@
 .wf-alert {
   margin: 0;
   padding: 10px 12px;
-  border-left: 4px solid var(--wf-ink);
-  background: var(--wf-fill);
+  border-left: 4px solid var(--wf-danger);
+  background: var(--wf-danger-surface);
+  color: var(--wf-danger);
   font-weight: 700;
 }
 
@@ -312,7 +326,7 @@
 .wf-overlay {
   position: absolute;
   inset: 0;
-  background: rgb(0 0 0 / 0.4);
+  background: var(--wf-overlay);
 }
 
 .wf-modal {
@@ -464,4 +478,86 @@
   .wf-site-header__viewer .wf-text {
     display: none;
   }
+}
+
+/* 右の入力の欄。見出しと入力を縦に積む */
+.wf-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 入力を横に等しい幅で並べる */
+.wf-row {
+  display: flex;
+  gap: 16px;
+}
+
+.wf-row > * {
+  flex: 1;
+}
+
+/* 選択肢を折り返して並べる */
+.wf-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* 1 つを選ぶラジオボタン。.wf-check の丸の版 */
+.wf-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wf-radio::before {
+  content: '';
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--wf-ink);
+  border-radius: 50%;
+}
+
+.wf-radio.is-on::before {
+  background: radial-gradient(var(--wf-primary) 0 3px, transparent 4px);
+  border-color: var(--wf-primary);
+}
+
+/* 枠で囲んだ選択肢 */
+.wf-option {
+  padding: 12px 16px;
+  border: 1px solid var(--wf-line);
+  border-radius: var(--wf-radius);
+}
+
+.wf-option.is-on {
+  border: 2px solid var(--wf-primary);
+  background: var(--wf-primary-surface);
+}
+
+/* 名前で絞り込む検索の欄（packages/ui の SearchBox） */
+.wf-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--wf-line);
+  border-radius: 20px;
+  color: var(--wf-muted);
+}
+
+.wf-search::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--wf-muted);
+  border-radius: 50%;
+}
+
+/* 誤りのある項目の要約。apps/web では枠を危険の色で太くする。右に出している項目（.wf-summary.is-active）と見分けるため、破線にする */
+.wf-summary.is-invalid {
+  border: 2px dashed var(--wf-danger);
 }

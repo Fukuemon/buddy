@@ -2,7 +2,7 @@
 
 画面ごとに、何を表示し、何ができるかを書く。  
 画面の一覧は [PRD の画面の一覧](../PRD.md#画面の一覧)を元にし、PRD がカレンダーにまとめているモーダルは、URL が違うので画面を分けた。  
-新しい画面の仕様書は、雛形の `docs/screens/_template/` を写し、[画面仕様書の規約](rules.md) に従って書く。今ある画面は、古い形（`<画面 ID>.md` と `wireframes/`）から、規約の形へ順に移している。
+新しい画面の仕様書は、雛形の `docs/screens/_template/` を写し、[画面仕様書の規約](rules.md) に従って書く。
 
 ## 画面の一覧
 
@@ -19,7 +19,7 @@
 | `staff-detail` | 職員の詳細 | 未決 | マネージャー | なし |
 | `staff-new` | 職員の登録 | 未決 | マネージャー | なし |
 | `staff-edit` | 職員の編集（権限の変更を含む） | 未決 | マネージャー | なし |
-| `receipt-upload` | 照合（対象の月の選択、CSV のアップロード） | `/receipt` | 全ての職員 | [照合](receipt-upload.md) |
+| `receipt-upload` | 照合（対象の月の選択、CSV のアップロード） | `/receipt` | 全ての職員 | [照合](receipt-upload_照合/index.md) |
 | `receipt-result` | 照合の結果 | `/receipt/result` | 全ての職員 | [照合の結果](receipt-result_照合の結果/index.md) |
 | `account-login` | ログイン | `/auth/login` | 全ての職員 | なし。ブローカーの画面へ転送し、buddy は画面を持たない |
 | `account-error` | ログインの失敗 | `/auth/error` | 全ての職員 | なし |

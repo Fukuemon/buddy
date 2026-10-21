@@ -8,12 +8,14 @@ set -eu
 (cd apps/receipt-api && go generate ./...)
 (cd apps/schedule-api && go generate ./... && sqlc generate)
 pnpm --filter @buddy/web generate:api
+node scripts/build-mock-tokens.mjs
 
 set -- \
   apps/receipt-api/internal/httpapi/openapi \
   apps/schedule-api/internal/presentation/http/openapi \
   apps/schedule-api/internal/infrastructure/mysql/sqlcgen \
-  apps/web/src/api/generated
+  apps/web/src/api/generated \
+  docs/screens/_common/tokens.css
 
 git diff --exit-code -- "$@"
 untracked=$(git ls-files --others --exclude-standard -- "$@")

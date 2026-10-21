@@ -96,7 +96,7 @@ route は `src/routes/` のファイルから TanStack Router が生成する。
 
 ## 照合の画面
 
-照合の画面（`/receipt`）と結果の画面（`/receipt/result`）は `src/features/receipt/` にある。画面の仕様は `docs/screens/receipt-upload.md` と `docs/screens/receipt-result_照合の結果/` にある。
+照合の画面（`/receipt`）と結果の画面（`/receipt/result`）は `src/features/receipt/` にある。画面の仕様は `docs/screens/receipt-upload_照合/` と `docs/screens/receipt-result_照合の結果/` にある。
 
 - 照合の API は判定の JSON だけを返す。結果の表の印（❌、※、許容範囲）と CSV は、画面の `src/features/receipt/lib/reportCells.ts` が作る。
   - 印の付け方と値の引用は、照合の API の `tools/parity/report` と同じにし、同じ期待値のテストで確かめる。行の区切りだけは、Excel で開くために CRLF にした（Go は LF）。
