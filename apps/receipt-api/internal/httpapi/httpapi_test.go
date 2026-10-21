@@ -161,7 +161,9 @@ func TestChecksTooLarge(t *testing.T) {
 
 func TestNotFound(t *testing.T) {
 	rec := httptest.NewRecorder()
-	newHandler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/nowhere", nil))
+	req := httptest.NewRequest(http.MethodGet, "/nowhere", nil)
+	req.Header.Set("Authorization", "Bearer "+tokenSample)
+	newHandler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusNotFound || !strings.Contains(rec.Body.String(), string(openapi.NotFound)) {
 		t.Errorf("status %d body %s", rec.Code, rec.Body)
 	}

@@ -61,11 +61,11 @@ func NewHandler(logger *slog.Logger, cfg Config) http.Handler {
 		},
 	})
 	openapi.HandlerWithOptions(strict, openapi.StdHTTPServerOptions{
-		BaseRouter: mux,
-		// 後ろのものが外側で包むので、本文の上限より先にトークンを確かめる。
-		Middlewares: []openapi.MiddlewareFunc{s.limitBody, s.authenticate},
+		BaseRouter:  mux,
+		Middlewares: []openapi.MiddlewareFunc{s.limitBody},
 	})
-	return s.logRequests(mux)
+	// 生成物の Middlewares は操作ごとのハンドラーだけを包むので、定義にないパスの 404 にもトークンを求めるよう mux 全体を包む。
+	return s.logRequests(s.authenticate(mux))
 }
 
 // GetHealthz は、{"status":"ok"} を返す。

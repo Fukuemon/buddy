@@ -72,6 +72,23 @@ func TestChecksUnauthenticated(t *testing.T) {
 	}
 }
 
+// TestUnknownPathUnauthenticated は、定義にないパスとメソッドも、トークンが無ければ 404 より先に 401 を返すことを確かめる。
+func TestUnknownPathUnauthenticated(t *testing.T) {
+	for _, tt := range []struct{ method, path string }{
+		{http.MethodGet, "/v1/checks"},
+		{http.MethodGet, "/v1/unknown"},
+		{http.MethodGet, "/nowhere"},
+	} {
+		t.Run(tt.method+" "+tt.path, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			newHandler().ServeHTTP(rec, httptest.NewRequest(tt.method, tt.path, nil))
+			if rec.Code != http.StatusUnauthorized {
+				t.Errorf("status %d body %s", rec.Code, rec.Body)
+			}
+		})
+	}
+}
+
 func TestChecksBearerSchemeCaseInsensitive(t *testing.T) {
 	body, ct := multipartBody(t, validFiles(t))
 	req := httptest.NewRequest(http.MethodPost, "/v1/checks", body)
