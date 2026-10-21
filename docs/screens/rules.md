@@ -36,13 +36,14 @@ docs/screens/
 
 | 節 | 書くこと |
 | --- | --- |
-| 構成 | 状態ごとに、`###` の見出し、モックの iframe、別タブで開くリンク、構成要素の表を 1 組ずつ縦に並べる |
+| 構成 | 状態ごとに 1 つのタブ（`=== "状態の名前"`）を置き、中にモックの iframe、別タブで開くリンク、構成要素の表を置く |
 | 要素ごとの節（`## <要素名>`） | 構成要素の表の要素ごとに、概要、値のソース、活性条件、表示条件、インタラクション |
 | 全体動作 | 初期処理、複数の要素にまたがる動き、URL の search params からの復元 |
 | 未決 | PRD と実装が食い違うところと、仕様として決まっていないところ |
 
-- 状態の見出しの直後に、その状態になる条件を 1 文で書く。
-- iframe は `<iframe class="mock" title="…" src="mocks/…">` と書く。直後には、`<a class="mock-open" href="mocks/…" target="_blank">別タブで開く</a>` を置く。高さは書かない（`embed-mock.js` が中身に合わせる）。content tabs や `<details>` の中に入れない。隠れている間は、モックが寸法を測れない。
+- タブは `pymdownx.tabbed` で書き、中身を 4 つの空白で字下げする。タブの名前は状態の名前にする。
+- タブの中の最初に、その状態になる条件を 1 文で書く。
+- iframe は `<iframe class="mock" title="…" src="mocks/…">` と書く。直後には、`<a class="mock-open" href="mocks/…" target="_blank">別タブで開く</a>` を置く。高さは書かない（`embed-mock.js` が中身に合わせる）。`<details>` の中には入れない。タブの中は、タブを開いたときに `mock.js` が端末と番号を測り直す。
 - ページの中の生の HTML は、この iframe と a だけにする。
 
 ### 構成要素の表
@@ -137,7 +138,7 @@ docs/screens/
 
 `pnpm check:screens` が、規約のうち機械的に確かめられるものを見る。
 
-- 名前と仕様書: ディレクトリとファイルの名前、仕様書の 1 行目と生の HTML、iframe と別タブのリンク、構成要素の表の見出し
+- 名前と仕様書: ディレクトリとファイルの名前、仕様書の 1 行目と生の HTML、状態のタブ、iframe と別タブのリンク、構成要素の表の見出し
 - 番号: 表の番号とモックの `data-m` の一致、`data-m` の連番
 - E2E: 全ての画面を見るとき、`packages/e2e/tests` の `getByTestId` の testid が、どれかのモックの `data-testid` にあるか
 - モック: 構造と読み込みの順、`data-view`、`data-testid` の形、禁止の記述と幅と配置の規則（外部の URL、`position: fixed`、viewport の単位と寸法の `@media`、ダークモード）

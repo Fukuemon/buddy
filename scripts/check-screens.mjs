@@ -55,7 +55,7 @@ const isContiguous = (numbers) => {
 /** 開始タグの中の属性の値を返す。 */
 const attr = (tag, name) => tag.match(new RegExp(`(?:^|\\s)${name}="([^"]*)"`))?.[1]
 
-/** 状態ごとの見出し（###）の下の、iframe の src と構成要素の表の番号を返す。 */
+/** 「構成」の節の状態のタブ（=== "状態"）の中の、iframe の src と構成要素の表の番号を返す。 */
 const readStates = (markdown, specPath) => {
   const states = []
   let current = null
@@ -63,7 +63,10 @@ const readStates = (markdown, specPath) => {
   let inTable = false
   const lines = markdown.split(/\r?\n/)
   let inFence = null
-  lines.forEach((line, index) => {
+  // タブの中身は 4 つの空白で字下げするので、外して読む
+  const unindent = (line) => (current !== null ? line.replace(/^ {4}/, '') : line)
+  lines.forEach((rawLine, index) => {
+    const line = unindent(rawLine)
     const fence = line.match(/^(`{3,}|~{3,})/)
     if (fence && (inFence === null || fence[1].startsWith(inFence))) {
       inFence = inFence === null ? fence[1][0].repeat(3) : null
@@ -76,7 +79,7 @@ const readStates = (markdown, specPath) => {
       return
     }
     if (!inComposition) return
-    const heading = line.match(/^### (.+)$/)
+    const heading = rawLine.match(/^=== "(.+)"$/)
     if (heading) {
       current = {
         name: heading[1].trim(),
@@ -102,7 +105,7 @@ const readStates = (markdown, specPath) => {
       if (/\s(height|sandbox|loading)=/.test(iframe[0])) {
         report(specPath, `「${current.name}」の iframe に height、sandbox、loading を書かない`)
       }
-      const next = lines[index + 1] ?? ''
+      const next = unindent(lines[index + 1] ?? '')
       const link = next.match(/^<a\b[^>]*>別タブで開く<\/a>$/)
       if (
         !link ||
