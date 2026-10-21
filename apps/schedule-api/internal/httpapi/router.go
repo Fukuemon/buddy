@@ -67,7 +67,12 @@ func NewRouter(u Usecases, cfg RouterConfig) *gin.Engine {
 	r.Use(rejectMalformedQuery)
 
 	am := authMiddleware{verifier: cfg.Verifier, uc: u.Auth, log: cfg.Logger}
-	r.Use(v1Only(am.authenticate), v1Only(am.checkFacility), v1Only(requireULIDParams))
+	validateRequest, err := newRequestValidator()
+	if err != nil {
+		// 定義はビルドのときに埋め込むので、読めないのはビルドの誤りである
+		panic(err)
+	}
+	r.Use(v1Only(am.authenticate), v1Only(am.checkFacility), v1Only(requireULIDParams), v1Only(validateRequest))
 
 	strict := openapi.NewStrictHandlerWithOptions(server{u: u, ready: cfg.Ready, log: cfg.Logger}, []openapi.StrictMiddlewareFunc{validateBody},
 		openapi.StrictGinServerOptions{
