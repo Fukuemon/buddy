@@ -40,10 +40,10 @@ TOKEN=$(curl -s '127.0.0.1:9000/token?sub=dev-aoki&org_id=org-sample' | jq -r .a
 - `GOOGLE_APPLICATION_CREDENTIALS`: Application Default Credentials が読む認証情報のファイルのパス
 - `GOOGLE_CALENDAR_ENDPOINT`: Calendar API の代わりに呼ぶ URL。偽物の API で試すためのもので、認証をしない
 
-コンテナで動かすときは、次を実行する。
+コンテナで動かすときは、このディレクトリで次を実行する。ビルドの文脈はリポジトリの直下である（`packages/go` を読むため）。
 
 ```sh
-docker build -f apps/receipt-api/Dockerfile -t receipt-api ../..
+docker build -f Dockerfile -t receipt-api ../..
 docker run --rm -p 8080:8080 -e OIDC_ISSUER=<発行者の URL> -e OIDC_AUDIENCE=receipt-api receipt-api
 ```
 
