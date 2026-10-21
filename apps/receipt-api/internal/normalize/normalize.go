@@ -43,14 +43,17 @@ func Staff(s string) string {
 
 // Schedules は、予定の行を Record にする。
 // 終了時間と提供時間から 1 分引くサービス内容（servicerule.AdjustsScheduleEnd）の行は、引いた値にする。
+// 終了時間は開始時間より後のときだけ、提供時間は 1 以上のときだけ引く。
 func Schedules(rows []csvio.Row) ([]record.Record, []record.RowError) {
 	recs, errs := convert(rows, record.SourceSchedule, false)
 	for i := range recs {
 		if !servicerule.AdjustsScheduleEnd(recs[i].Service) {
 			continue
 		}
-		recs[i].End--
-		if recs[i].Duration != nil {
+		if recs[i].End > recs[i].Start {
+			recs[i].End--
+		}
+		if recs[i].Duration != nil && *recs[i].Duration >= 1 {
 			d := *recs[i].Duration - 1
 			recs[i].Duration = &d
 		}

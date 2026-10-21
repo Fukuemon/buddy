@@ -93,6 +93,30 @@ func TestSchedulesAdjust(t *testing.T) {
 	}
 }
 
+func TestSchedulesAdjustBoundary(t *testing.T) {
+	tests := []struct {
+		name, start, end, duration string
+		wantEnd                    string
+		wantDuration               int
+	}{
+		{"通常は両方を引く", "09:00", "09:30", "30", "09:29", 29},
+		{"提供時間 0 は引かない", "09:00", "09:30", "0", "09:29", 0},
+		{"開始と終了が同じなら終了を引かない", "09:00", "09:00", "30", "09:00", 29},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			recs, errs := Schedules([]csvio.Row{row(2, tt.start, tt.end, tt.duration, "訪看I2")})
+			if len(errs) > 0 {
+				t.Fatal(errs)
+			}
+			r := recs[0]
+			if r.End.String() != tt.wantEnd || *r.Duration != tt.wantDuration {
+				t.Errorf("終了 %s 提供 %d, want %s %d", r.End, *r.Duration, tt.wantEnd, tt.wantDuration)
+			}
+		})
+	}
+}
+
 func TestVisitsDoNotAdjust(t *testing.T) {
 	recs, errs := Visits([]csvio.Row{row(2, "9:00", "9:30", "30", "訪看I2")})
 	if len(errs) > 0 {
