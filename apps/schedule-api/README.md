@@ -30,6 +30,8 @@ API とマイグレーションは、次の環境変数を読む。
 | `GOOGLE_CALENDAR_ENDPOINT` | いいえ | 空 | Calendar API の代わりに呼ぶ URL。偽物の API で試すためのもので、認証をしない。`GOOGLE_CALENDAR_SERVICE_ACCOUNT` と一緒に渡す |
 | `GOOGLE_CALENDAR_EXPORT_ENABLED` | いいえ | `false` | `true` なら、予定を Google カレンダーに書き出す。`GOOGLE_CALENDAR_SERVICE_ACCOUNT` と一緒に渡す。`false` のときは書き出しの待ちを積まず、スコープは `calendar.readonly` で読む |
 | `GOOGLE_CALENDAR_EXPORT_INTERVAL` | いいえ | `30s` | 予定の書き出しの待ちを確かめる間隔。Go の時間の書式で、`1s` 以上 |
+| `GOOGLE_CALENDAR_SYNC_ENABLED` | いいえ | `false` | `true` なら、Google カレンダーの変わった予定を読み、buddy の予定に当てる。`GOOGLE_CALENDAR_EXPORT_ENABLED` を `true` にして渡す |
+| `GOOGLE_CALENDAR_SYNC_INTERVAL` | いいえ | `2m` | Google カレンダーの変わった予定を読む間隔。Go の時間の書式で、`1s` 以上 |
 
 パスワードはコードに既定値を持たない。  
 ログは標準出力に JSON で書き、接続の設定とトークンは書かない。  

@@ -35,7 +35,7 @@
 | [public.schedules](public.schedules.md)                                         | 16      | 予定                                                                            | BASE TABLE |
 | [public.schedule_cancels](public.schedule_cancels.md)                           | 5       | 予定の取り消し                                                                  | BASE TABLE |
 | [public.external_calendars](public.external_calendars.md)                       | 8       | 取り込む外部のカレンダーと、その持ち主の職員。外していないものは職員ごとに 1 つ | BASE TABLE |
-| [public.calendar_sync_states](public.calendar_sync_states.md)                   | 8       | 外部のカレンダーごとの同期の状態                                                | BASE TABLE |
+| [public.calendar_sync_states](public.calendar_sync_states.md)                   | 10      | 外部のカレンダーごとの同期の状態                                                | BASE TABLE |
 | [public.external_event_links](public.external_event_links.md)                   | 11      | 外部の予定と、buddy の単発か繰り返しの予定の対応                                | BASE TABLE |
 | [public.import_runs](public.import_runs.md)                                     | 14      | 外部のカレンダーからの取り込みの 1 回ごとの記録                                 | BASE TABLE |
 | [public.visit_info_details](public.visit_info_details.md)                       | 10      | 訪問の情報と名前を結合したビュー                                                | VIEW       |
@@ -281,6 +281,8 @@ erDiagram
   timestamp_with_time_zone last_synced_at
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  timestamp_with_time_zone next_sync_at
+  timestamp_with_time_zone locked_until
 }
 "public.external_event_links" {
   text id
