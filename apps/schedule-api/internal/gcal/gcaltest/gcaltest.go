@@ -22,6 +22,8 @@ type Server struct {
 	Calendars map[string][][]*calendar.Event `json:"calendars"`
 	// Instances は、繰り返しの親の予定の ID ごとの回である。1 ページで返す。無い予定には 404 を返す。
 	Instances map[string][]*calendar.Event `json:"instances"`
+	// AccessRoles は、カレンダー ID ごとの応答の accessRole である。無ければ reader を返す。
+	AccessRoles map[string]string `json:"accessRoles"`
 	// Status が 0 でなければ、全ての要求にその状態の誤りの応答を返す。
 	Status int `json:"status"`
 
@@ -60,7 +62,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	s.queries = append(s.queries, q)
 	s.mu.Unlock()
-	var body calendar.Events
+	body := calendar.Events{AccessRole: "reader"}
+	if role, ok := s.AccessRoles[r.PathValue("id")]; ok {
+		body.AccessRole = role
+	}
 	if page < len(pages) {
 		body.Items = pages[page]
 	}

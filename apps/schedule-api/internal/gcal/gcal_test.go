@@ -194,3 +194,17 @@ func TestReaderEventsTransportError(t *testing.T) {
 }
 
 var _ schedcal.EventSource = (*gcal.Reader)(nil)
+
+func TestReaderRejectsFreeBusy(t *testing.T) {
+	f := &gcaltest.Server{
+		Calendars:   map[string][][]*calendar.Event{"staff@example.com": {{}}},
+		AccessRoles: map[string]string{"staff@example.com": "freeBusyReader"},
+	}
+	r := start(t, f)
+	if err := r.Check(t.Context(), "staff@example.com"); !errors.Is(err, schedcal.ErrUnreadable) {
+		t.Errorf("Check: err = %v, want ErrUnreadable", err)
+	}
+	if _, err := r.Events(t.Context(), "staff@example.com", timeMin, timeMax); !errors.Is(err, schedcal.ErrUnreadable) || strings.Contains(err.Error(), "staff") {
+		t.Errorf("Events: err = %v, want カレンダー ID を含まない ErrUnreadable", err)
+	}
+}

@@ -42,6 +42,9 @@ func (r *Reader) Events(ctx context.Context, calendarID string, timeMin, timeMax
 		ShowDeleted(false).
 		MaxResults(2500).
 		Pages(ctx, func(page *calendarv3.Events) error {
+			if err := checkAccess(page); err != nil {
+				return err
+			}
 			for _, ev := range page.Items {
 				events = append(events, toEvent(ev))
 			}
@@ -78,8 +81,22 @@ func (r *Reader) Instances(ctx context.Context, calendarID, eventID string, time
 
 // Check は、calendarID のカレンダーの予定を 1 件だけ読み、読めるかを確かめる。エラーは Events と同じである。
 func (r *Reader) Check(ctx context.Context, calendarID string) error {
-	if _, err := r.svc.Events.List(calendarID).MaxResults(1).Context(ctx).Do(); err != nil {
+	page, err := r.svc.Events.List(calendarID).MaxResults(1).Context(ctx).Do()
+	if err != nil {
 		return wrap("カレンダーを読めない", err)
+	}
+	return checkAccess(page)
+}
+
+// errFreeBusy は、カレンダーが空き時間だけの共有であることを表す。
+var errFreeBusy = fmt.Errorf("%w: 空き時間だけの共有である", calendar.ErrUnreadable)
+
+// checkAccess は、カレンダーが空き時間だけの共有（freeBusyReader）なら calendar.ErrUnreadable を包んだエラーを返す。
+// 空き時間だけの共有では、events.list が繰り返しの親と予定の題名を返さないためである。
+// 出典: https://developers.google.com/workspace/calendar/api/guides/recurringevents
+func checkAccess(page *calendarv3.Events) error {
+	if page.AccessRole == "freeBusyReader" {
+		return errFreeBusy
 	}
 	return nil
 }
@@ -90,6 +107,9 @@ func wrap(msg string, err error) error {
 	var uerr *url.Error
 	if errors.As(err, &uerr) {
 		err = uerr.Err
+	}
+	if errors.Is(err, calendar.ErrUnreadable) {
+		return fmt.Errorf("%s: %w", msg, err)
 	}
 	kind := calendar.ErrUnavailable
 	var gerr *googleapi.Error
