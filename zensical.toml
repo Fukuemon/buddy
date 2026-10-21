@@ -80,6 +80,7 @@ nav = [
     "adr/0009-google-calendar-sync.md",
     "adr/0010-schedule-api-usecase-boundaries.md",
     "adr/0011-schedule-api-postgresql.md",
+    "adr/0012-google-calendar-facility-service-accounts.md",
   ] },
 ]
 
