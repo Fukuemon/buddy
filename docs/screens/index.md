@@ -12,6 +12,8 @@
 | `schedule-new` | 予定の作成 | `/schedule/new` | 全ての職員。予定を作れる職員の範囲は権限で決まる | [予定の作成](schedule-new_予定の作成/index.md) |
 | `schedule-detail` | 予定の詳細 | `/schedule/$scheduleId` | 予定を見る権限を持つ職員 | [予定の詳細](schedule-detail_予定の詳細/index.md) |
 | `schedule-edit` | 予定の編集 | `/schedule/$scheduleId/edit` | 予定を編集する権限を持つ職員 | [予定の編集](schedule-edit_予定の編集/index.md) |
+| `schedule-link` | カレンダーの連携（職員と Google カレンダーの結び付け） | `/schedule/link`（案） | 職員の管理の権限を持つ職員（既定はマネージャー） | [カレンダーの連携](schedule-link_カレンダーの連携/index.md) |
+| `schedule-import` | 予定の取り込み（期間の選択、下見、確定） | `/schedule/import`（案） | 職員の管理の権限を持つ職員（既定はマネージャー） | [予定の取り込み](schedule-import_予定の取り込み/index.md) |
 | `patient-list` | 利用者の一覧 | 未決 | 全ての職員 | なし |
 | `patient-new` | 利用者の登録 | 未決 | 職員の管理の権限を持つ職員（既定はマネージャー） | なし |
 | `patient-edit` | 利用者の編集 | 未決 | 職員の管理の権限を持つ職員（既定はマネージャー） | なし |
@@ -43,6 +45,8 @@
 | `edit` | 編集 |
 | `upload` | ファイルを受け取る |
 | `result` | 処理の結果 |
+| `link` | 外部のサービスとの結び付け |
+| `import` | 外部のサービスからの取り込み |
 | `login`、`profile`、`error` | `account` のドメインだけで使う。`error` はログインの失敗 |
 
 - 固有の URL を持つものを 1 つの画面に数える。URL を持つモーダルも画面にする。URL を持たない確認のダイアログ（予定のキャンセルなど）は、親の画面の構成要素にする。

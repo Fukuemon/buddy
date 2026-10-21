@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>schedule-import 選び終えた</title>
+    <link rel="stylesheet" href="../../_common/mock.css" />
+    <link rel="stylesheet" href="../../_common/tokens.css" />
+    <link rel="stylesheet" href="../../_common/wireframe.css" />
+    <link rel="stylesheet" href="schedule-import.css" />
+  </head>
+  <body data-view="desktop">
+    <div class="stage">
+      <div class="screen">
+        <div class="screen-body">
+          <header class="wf-site-header">
+            <div class="wf-site-header__brand">
+              <strong>buddy</strong>
+              <nav data-m="1" data-testid="site-nav">
+                <span data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html">予定</span>
+                <span data-go="../../receipt-upload_照合/mocks/01-initial.html">照合</span>
+                <span aria-current="page" data-go="../../schedule-import_予定の取り込み/mocks/01-initial.html">取り込み</span>
+              </nav>
+            </div>
+            <div class="wf-site-header__viewer" data-testid="viewer-menu">
+              <span class="wf-text wf-text--s" data-m="2"></span>
+              <span class="wf-btn" data-m="3" data-testid="viewer-logout">ログアウト</span>
+            </div>
+          </header>
+          <main class="wf-page">
+            <div class="si-title">
+              <h1 class="wf-heading" data-m="4">予定の取り込み</h1>
+              <span class="wf-btn wf-btn--text" data-m="6" data-testid="calendar-import-link-settings" data-go="../../schedule-link_カレンダーの連携/mocks/01-list.html">カレンダーの連携</span>
+            </div>
+            <p class="wf-lead" data-m="5">職員の Google カレンダーの予定を、期間を選んで buddy に取り込みます。取り込む前に、取り込む予定と取り込まない予定を下見できます。</p>
+            <form class="si-form" data-testid="calendar-import-form">
+              <div class="si-form__fields">
+                <div class="wf-field">
+                  <span class="wf-label">職員</span>
+                  <div class="wf-input si-select" data-m="7" data-testid="calendar-import-staff"><span>職員 A</span></div>
+                </div>
+                <div class="wf-field">
+                  <span class="wf-label">期間の開始日</span>
+                  <div class="wf-input si-date" data-m="8" data-testid="calendar-import-start">2026/11/01</div>
+                </div>
+                <div class="wf-field">
+                  <span class="wf-label">期間の終了日</span>
+                  <div class="wf-input si-date" data-m="9" data-testid="calendar-import-end">2026/11/30</div>
+                </div>
+              </div>
+              <span class="wf-hint">開始日から終了日までに始まる予定を、職員の Google カレンダーから読みます。</span>
+              <div><span class="wf-btn" data-m="10" data-testid="calendar-import-preview">下見する</span></div>
+            </form>
+            <section class="si-result" data-testid="calendar-import-result-preview">
+              <div class="si-result__head">
+                <h2 class="si-h2" data-m="11">下見の結果</h2>
+                <span class="wf-hint">職員 A、2026/11/01〜2026/11/30</span>
+              </div>
+              <dl class="si-counts" data-m="12" data-testid="calendar-import-summary">
+                <div class="si-count" data-testid="calendar-import-count-import"><dt>取り込む</dt><dd><strong>18 件</strong><span>訪問 15 件、通常 3 件。回ごとにした 4 件を含む</span></dd></div>
+                <div class="si-count" data-testid="calendar-import-count-recurring"><dt>繰り返し</dt><dd><strong>3 件</strong><span>繰り返しのまま 2 件、回ごとにする 1 件</span></dd></div>
+                <div class="si-count" data-testid="calendar-import-count-needs_review"><dt>確かめが要る</dt><dd><strong>2 件</strong><span>利用者を選んでから取り込む</span></dd></div>
+                <div class="si-count" data-testid="calendar-import-count-skipped"><dt>取り込まない</dt><dd><strong>4 件</strong><span>理由ごとの件数は下にある</span></dd></div>
+                <div class="si-count" data-testid="calendar-import-count-already_imported"><dt>取り込み済み</dt><dd><strong>0 件</strong><span>前の取り込みで取り込んだ予定。もう一度は取り込まない</span></dd></div>
+              </dl>
+              <section class="si-section">
+                <h3 class="si-h3">確かめが要る予定</h3>
+                <p class="wf-hint">題名から利用者を 1 人に決められなかった予定です。予定ごとに、取り込み方を選んでください。</p>
+                <ul class="si-reviews" data-m="13">
+                <li class="si-review" data-testid="calendar-import-review-{外部の予定の id}">
+                  <div class="si-review__head">
+                    <strong>2026/11/04（水）10:00〜11:00</strong>
+                    <span>題名から読んだ利用者: 利用者 C（訪看I2）</span>
+                    <span class="si-reason">同じ名前の利用者が 2 人いる</span>
+                    <span class="wf-hint">毎週水曜日の繰り返し。選んだ取り込み方は全ての回に当てる</span>
+                  </div>
+                  <div class="si-review__choices" role="radiogroup" aria-label="2026/11/04（水）10:00〜11:00の予定の取り込み方">
+                    <span class="wf-radio is-on" data-m="14" data-testid="calendar-import-review-patient-{外部の予定の id}" data-choice="review-0">利用者を選ぶ</span>
+                    <span class="wf-radio" data-testid="calendar-import-review-normal-{外部の予定の id}" data-choice="review-0">通常の予定にする</span>
+                    <span class="wf-radio" data-testid="calendar-import-review-skip-{外部の予定の id}" data-choice="review-0">取り込まない</span>
+                    <div class="wf-input si-select si-review__patient" data-m="15" data-testid="calendar-import-review-patient-select-{外部の予定の id}"><span class="wf-label">利用者</span><span>利用者 C（担当 職員 A）</span></div>
+                  </div>
+                </li>
+                <li class="si-review" data-testid="calendar-import-review-{外部の予定の id}">
+                  <div class="si-review__head">
+                    <strong>2026/11/09（月）14:00〜15:00</strong>
+                    <span>題名から読んだ利用者: 利用者 Z（訪看I3）</span>
+                    <span class="si-reason">利用者が見つからない</span>
+                  </div>
+                  <div class="si-review__choices" role="radiogroup" aria-label="2026/11/09（月）14:00〜15:00の予定の取り込み方">
+                    <span class="wf-radio" data-testid="calendar-import-review-patient-{外部の予定の id}" data-choice="review-1">利用者を選ぶ</span>
+                    <span class="wf-radio is-on" data-testid="calendar-import-review-normal-{外部の予定の id}" data-choice="review-1">通常の予定にする</span>
+                    <span class="wf-radio" data-testid="calendar-import-review-skip-{外部の予定の id}" data-choice="review-1">取り込まない</span>
+                  </div>
+                </li>
+                </ul>
+              </section>
+              <section class="si-section">
+                <h3 class="si-h3">取り込まない予定</h3>
+                <ul class="si-reasons" data-m="16">
+                  <li data-testid="calendar-import-skipped-reason-all_day">終日の予定: 1 件</li>
+                  <li data-testid="calendar-import-skipped-reason-multi_day">日をまたぐ予定: 1 件</li>
+                  <li data-testid="calendar-import-skipped-reason-service_not_found">サービス内容を引けない予定: 1 件</li>
+                  <li data-testid="calendar-import-skipped-reason-zero_length">長さの無い予定: 1 件</li>
+                </ul>
+                <table class="wf-table si-table" data-m="17" data-testid="calendar-import-skipped">
+                  <thead>
+                    <tr><th>日時</th><th>理由</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>2026/11/03（火）終日</td><td>終日の予定</td></tr>
+                    <tr><td>2026/11/12（木）17:00〜翌 09:00</td><td>日をまたぐ予定</td></tr>
+                    <tr><td>2026/11/18（水）13:00〜14:00</td><td>サービス内容を引けない予定</td></tr>
+                    <tr><td>2026/11/20（金）10:00〜10:00</td><td>長さの無い予定</td></tr>
+                  </tbody>
+                </table>
+              </section>
+              <div class="si-submit">
+                <div><span class="wf-btn wf-btn--primary" data-m="18" data-testid="calendar-import-submit">確定して取り込む</span></div>
+              </div>
+            </section>
+          </main>
+        </div>
+      </div>
+      <div class="markers"></div>
+    </div>
+    <script src="../../_common/mock.js"></script>
+    <script src="../../_common/interact.js"></script>
+  </body>
+</html>

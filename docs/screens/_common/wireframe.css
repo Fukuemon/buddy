@@ -561,3 +561,94 @@ body {
 .wf-summary.is-invalid {
   border: 2px dashed var(--wf-danger);
 }
+
+/* ヘッダーの下に、題、説明の文、中身を縦に積むページ（カレンダーの連携、予定の取り込み） */
+.wf-page {
+  display: grid;
+  gap: 24px;
+  max-width: 960px;
+  padding: 24px;
+}
+
+.wf-lead {
+  max-width: 672px;
+  margin: 0;
+}
+
+/* 見出しと入力を縦に積む項目 */
+.wf-fields {
+  display: grid;
+  gap: 16px;
+}
+
+.wf-fields > p {
+  margin: 0;
+}
+
+.wf-field {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+
+.wf-field__input {
+  justify-self: stretch;
+}
+
+/* 欄の下の補足 */
+.wf-hint {
+  color: var(--wf-muted);
+  font-size: 12px;
+}
+
+/* 取り消せない操作のボタン */
+.wf-btn--danger {
+  border-color: var(--wf-danger);
+  background: var(--wf-danger);
+  color: var(--wf-surface);
+}
+
+/* 題、説明の文、リンクを縦に積む、画面の全体の知らせ（権限が無いときなど） */
+.wf-message {
+  display: grid;
+  justify-items: start;
+  gap: 16px;
+  max-width: 576px;
+}
+
+.wf-message > p {
+  margin: 0;
+}
+
+/* URL を持たないダイアログ。ページの上に覆いと一緒に重ねる。幅 768px 未満では、画面の幅いっぱいにする */
+.wf-dialog {
+  position: absolute;
+  top: 80px;
+  left: 50%;
+  width: 560px;
+  transform: translateX(-50%);
+  border-radius: 20px;
+  background: var(--wf-surface);
+  box-shadow: 0 0 0 1px var(--wf-line);
+}
+
+.wf-dialog--narrow {
+  width: 440px;
+}
+
+.wf-dialog__title {
+  flex: 1;
+  margin: 0;
+}
+
+@container screen (width < 768px) {
+  .wf-page {
+    padding: 16px;
+  }
+
+  .wf-dialog,
+  .wf-dialog--narrow {
+    top: 56px;
+    width: calc(100% - 16px);
+  }
+}
