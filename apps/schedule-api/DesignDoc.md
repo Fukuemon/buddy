@@ -314,7 +314,9 @@ sequenceDiagram
   - 401 の `unauthenticated`: トークンが無いか、検証に失敗した
   - 403 の `forbidden`: 職員を特定できない、事業所が違う、権限で許されない
   - 404 の `not_found`: パスで指したリソースが無い
-  - 409 の `conflict`: 一意の値が重なる、キャンセル済みの予定を変えるかキャンセルする、繰り返しの回をすでに置き換えた、下見の後に確かめが要る予定が変わった、同じカレンダーの取り込みが進んでいる
+  - 409 の `conflict`: 一意の値が重なる、キャンセル済みの予定を変えるかキャンセルする、繰り返しの回をすでに置き換えた
+  - 409 の `calendar_taken`、`calendar_already_linked`、`staff_has_calendar`: カレンダーを結び付けられない原因
+  - 409 の `import_running`、`import_preview_changed`: 取り込みを確定できない原因
   - 422 の `calendar_unreadable`: Google カレンダーが無いか、サービスアカウントに共有されていない
   - 500 の `internal`: サーバーの誤り
   - 502 の `calendar_unavailable`: Google に届かないか、Google が誤りを返した

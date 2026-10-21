@@ -9,7 +9,8 @@ info:
     - 値がない項目は、項目を省かず null で返す。
     - 日付は YYYY-MM-DD、時刻は HH:MM である。
     - エラーは Error の形で返す。`code` は invalid_input、unauthenticated、forbidden、not_found、conflict、internal と、
-      外部のカレンダーを読む操作の calendar_unreadable、calendar_unavailable、calendar_not_configured のいずれかである。
+      外部のカレンダーの操作の calendar_unreadable、calendar_unavailable、calendar_not_configured と、
+      409 の原因を分ける calendar_taken、calendar_already_linked、staff_has_calendar、import_running、import_preview_changed のいずれかである。
     - `/v1` は全て、OIDC のブローカーが発行した access token（JWT）を `Authorization: Bearer` で求める。
       トークンがないか検証に失敗したときは 401 を、トークンの組織と職員の事業所が、パスの指す事業所と違うときは 403 を返す。
     - 読めないクエリ（例は `;` を含むもの）は 400 を返す。
@@ -923,20 +924,22 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "409":
-          description: 職員にほかのカレンダーが結び付いているか、カレンダーがほかの職員に結び付いているか、すでに結び付いている。`message` で原因を分ける
+          description: |
+            職員にほかのカレンダーが結び付いている（staff_has_calendar）か、カレンダーがほかの職員に結び付いている（calendar_taken。外したカレンダーを含む）か、
+            すでに結び付いている（calendar_already_linked）
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
               examples:
                 staff:
                   summary: 職員にほかのカレンダーが結び付いている
-                  value: { code: conflict, message: "この職員には、ほかのカレンダーが結び付いています" }
+                  value: { code: staff_has_calendar, message: "この職員には、ほかのカレンダーが結び付いています" }
                 calendar:
                   summary: カレンダーがほかの職員に結び付いている
-                  value: { code: conflict, message: "このカレンダーは、ほかの職員に結び付いています" }
+                  value: { code: calendar_taken, message: "このカレンダーは、ほかの職員に結び付いています" }
                 linked:
                   summary: すでに結び付いている
-                  value: { code: conflict, message: "このカレンダーは、この職員にすでに結び付いています" }
+                  value: { code: calendar_already_linked, message: "このカレンダーは、この職員にすでに結び付いています" }
         "422": { $ref: "#/components/responses/CalendarUnreadable" }
         "500": { $ref: "#/components/responses/InternalError" }
         "502": { $ref: "#/components/responses/CalendarUnavailable" }
@@ -945,7 +948,7 @@ paths:
   /v1/facilities/{facility_id}/external_calendars/check:
     post:
       tags: [calendar]
-      operationId: checkExternalCalendar
+      operationId: createExternalCalendarCheck
       summary: カレンダーを読めるかを確かめる
       description: Google Calendar API で予定を 1 件だけ読む。結び付けない。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
       parameters: [$ref: "#/components/parameters/FacilityID"]
@@ -979,7 +982,7 @@ paths:
   /v1/external_calendars/{external_calendar_id}:
     delete:
       tags: [calendar]
-      operationId: disableExternalCalendar
+      operationId: removeExternalCalendar
       summary: カレンダーを外す
       description: |
         行を消さずに外す。取り込んだ予定と、外部の予定との対応は残るので、同じカレンダーを結び付け直して同じ期間を取り込んでも、予定は重ならない。
@@ -996,7 +999,7 @@ paths:
   /v1/external_calendars/{external_calendar_id}/import_previews:
     post:
       tags: [calendar]
-      operationId: previewCalendarImport
+      operationId: createCalendarImportPreview
       summary: 取り込みを下見する
       description: |
         カレンダーの期間の予定を読み、取り込むとどうなるかを返す。予定を書かず、下見の結果も保存しない。
@@ -1057,17 +1060,17 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409":
-          description: 下見の後に確かめが要る予定が変わったか、同じカレンダーの取り込みが進んでいる。何も書いていない。`message` で原因を分ける
+          description: 下見の後に確かめが要る予定が変わった（import_preview_changed）か、同じカレンダーの取り込みが進んでいる（import_running）。何も書いていない
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
               examples:
                 changed:
                   summary: 下見の後に確かめが要る予定が変わった
-                  value: { code: conflict, message: "下見の後に、外部のカレンダーの確かめが要る予定が変わりました。もう一度下見してください" }
+                  value: { code: import_preview_changed, message: "下見の後に、外部のカレンダーの確かめが要る予定が変わりました。もう一度下見してください" }
                 running:
                   summary: 同じカレンダーの取り込みが進んでいる
-                  value: { code: conflict, message: "このカレンダーの取り込みが進んでいます。終わってから、もう一度下見してください" }
+                  value: { code: import_running, message: "このカレンダーの取り込みが進んでいます。終わってから、もう一度下見してください" }
         "422": { $ref: "#/components/responses/CalendarUnreadable" }
         "500": { $ref: "#/components/responses/InternalError" }
         "502": { $ref: "#/components/responses/CalendarUnavailable" }
@@ -1218,6 +1221,11 @@ components:
             - calendar_unreadable
             - calendar_unavailable
             - calendar_not_configured
+            - calendar_taken
+            - calendar_already_linked
+            - staff_has_calendar
+            - import_running
+            - import_preview_changed
         message:
           type: string
           description: 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う

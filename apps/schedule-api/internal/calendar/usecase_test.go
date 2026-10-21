@@ -378,16 +378,22 @@ func TestLink(t *testing.T) {
 	for _, tt := range []struct {
 		name, staffID, calendarID string
 		want                      error
+		code                      string
 	}{
-		{"すでに結び付いている", inmem.StaffID, googleCalID, apperr.ErrConflict},
-		{"職員にほかのカレンダーがある", inmem.StaffID, "other@example.com", apperr.ErrConflict},
-		{"ほかの職員に結び付いている", inmem.CompanionID, googleCalID, apperr.ErrConflict},
-		{"別の事業所の職員", inmem.OtherStaffID, "other@example.com", apperr.ErrInvalidInput},
-		{"読めないカレンダー", inmem.CompanionID, "nobody@example.com", calendar.ErrUnreadable},
+		{"すでに結び付いている", inmem.StaffID, googleCalID, apperr.ErrConflict, calendar.CodeCalendarLinked},
+		{"職員にほかのカレンダーがある", inmem.StaffID, "other@example.com", apperr.ErrConflict, calendar.CodeStaffHasCalendar},
+		{"ほかの職員に結び付いている", inmem.CompanionID, googleCalID, apperr.ErrConflict, calendar.CodeCalendarTaken},
+		{"別の事業所の職員", inmem.OtherStaffID, "other@example.com", apperr.ErrInvalidInput, ""},
+		{"読めないカレンダー", inmem.CompanionID, "nobody@example.com", calendar.ErrUnreadable, ""},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			if _, err := e.uc.Link(e.ctx, inmem.FacilityID, tt.staffID, tt.calendarID); !errors.Is(err, tt.want) {
-				t.Errorf("err = %v, want %v", err, tt.want)
+			_, err := e.uc.Link(e.ctx, inmem.FacilityID, tt.staffID, tt.calendarID)
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("err = %v, want %v", err, tt.want)
+			}
+			var ce *apperr.ConflictError
+			if tt.code != "" && (!errors.As(err, &ce) || ce.Code != tt.code) {
+				t.Errorf("err = %#v, want code %s", err, tt.code)
 			}
 		})
 	}

@@ -22,6 +22,20 @@ import (
 // maxCalendarIDLen は、外部のカレンダーの ID の長さの上限である。表の列の長さと同じにする。
 const maxCalendarIDLen = 1024
 
+// 衝突の原因の code。httpapi が 409 の応答の code にする。
+const (
+	// CodeCalendarTaken は、カレンダーがほかの職員に結び付いていることを表す。外したカレンダーを含む。
+	CodeCalendarTaken = "calendar_taken"
+	// CodeCalendarLinked は、カレンダーがその職員にすでに結び付いていることを表す。
+	CodeCalendarLinked = "calendar_already_linked"
+	// CodeStaffHasCalendar は、職員にほかのカレンダーが結び付いていることを表す。
+	CodeStaffHasCalendar = "staff_has_calendar"
+	// CodeImportRunning は、同じカレンダーの取り込みが進んでいることを表す。
+	CodeImportRunning = "import_running"
+	// CodeReviewChanged は、下見の後に確かめが要る予定が変わったことを表す。
+	CodeReviewChanged = "import_preview_changed"
+)
+
 // staleRunAfter を過ぎても running の取り込みは、止まった取り込みとみなし、次の取り込みを止めない。
 const staleRunAfter = 10 * time.Minute
 
@@ -152,7 +166,6 @@ func (u *Usecase) Link(ctx context.Context, facilityID, staffID, calendarID stri
 	if err := u.deps.Source.Check(ctx, calendarID); err != nil {
 		return ExternalCalendar{}, err
 	}
-	const staffTaken = "この職員には、ほかのカレンダーが結び付いています"
 	var linked ExternalCalendar
 	err = u.tx.WithinTx(ctx, func(ctx context.Context) error {
 		cur, err := u.deps.Calendars.FindByCalendarID(ctx, ProviderGoogle, calendarID)
@@ -160,24 +173,32 @@ func (u *Usecase) Link(ctx context.Context, facilityID, staffID, calendarID stri
 		case errors.Is(err, apperr.ErrNotFound):
 			c := ExternalCalendar{ID: u.ids.NewID(), FacilityID: facilityID, StaffID: st.ID, Provider: ProviderGoogle, CalendarID: calendarID}
 			if err := u.deps.Calendars.Create(ctx, c); err != nil {
-				return apperr.AsConflict(err, staffTaken)
+				return staffTaken(err)
 			}
 			cur.ID = c.ID
 		case err != nil:
 			return err
 		case cur.StaffID != st.ID:
-			return apperr.Conflict("このカレンダーは、ほかの職員に結び付いています")
+			return apperr.ConflictCode(CodeCalendarTaken, "このカレンダーは、ほかの職員に結び付いています")
 		case cur.DisabledAt == nil:
-			return apperr.Conflict("このカレンダーは、この職員にすでに結び付いています")
+			return apperr.ConflictCode(CodeCalendarLinked, "このカレンダーは、この職員にすでに結び付いています")
 		default:
 			if err := u.deps.Calendars.Enable(ctx, cur.ID); err != nil {
-				return apperr.AsConflict(err, staffTaken)
+				return staffTaken(err)
 			}
 		}
 		linked, err = u.deps.Calendars.Get(ctx, cur.ID)
 		return err
 	})
 	return linked, err
+}
+
+// staffTaken は、カレンダーを書く誤りが衝突なら、職員にほかのカレンダーがあることを表す誤りにする。
+func staffTaken(err error) error {
+	if errors.Is(err, apperr.ErrConflict) {
+		return apperr.ConflictCode(CodeStaffHasCalendar, "この職員には、ほかのカレンダーが結び付いています")
+	}
+	return err
 }
 
 // Unlink は、カレンダーを外す。取り込んだ予定と外部の予定の対応は残す。カレンダーが無いか外したときは apperr.ErrNotFound を返す。
@@ -258,7 +279,7 @@ func (u *Usecase) Import(ctx context.Context, id string, rng Range, decisions []
 			return err
 		}
 		if running {
-			return apperr.Conflict("このカレンダーの取り込みが進んでいます。終わってから、もう一度下見してください")
+			return apperr.ConflictCode(CodeImportRunning, "このカレンダーの取り込みが進んでいます。終わってから、もう一度下見してください")
 		}
 		return u.deps.Calendars.CreateRun(ctx, run)
 	})

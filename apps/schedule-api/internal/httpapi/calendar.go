@@ -145,21 +145,21 @@ func (s server) CreateExternalCalendar(ctx context.Context, req openapi.CreateEx
 	return openapi.CreateExternalCalendar201JSONResponse(toExternalCalendar(c)), nil
 }
 
-func (s server) CheckExternalCalendar(ctx context.Context, req openapi.CheckExternalCalendarRequestObject) (openapi.CheckExternalCalendarResponseObject, error) {
+func (s server) CreateExternalCalendarCheck(ctx context.Context, req openapi.CreateExternalCalendarCheckRequestObject) (openapi.CreateExternalCalendarCheckResponseObject, error) {
 	if err := s.u.Calendars.Check(ctx, req.Body.CalendarId); err != nil {
 		return nil, err
 	}
-	return openapi.CheckExternalCalendar200JSONResponse{Readable: true}, nil
+	return openapi.CreateExternalCalendarCheck200JSONResponse{Readable: true}, nil
 }
 
-func (s server) DisableExternalCalendar(ctx context.Context, req openapi.DisableExternalCalendarRequestObject) (openapi.DisableExternalCalendarResponseObject, error) {
+func (s server) RemoveExternalCalendar(ctx context.Context, req openapi.RemoveExternalCalendarRequestObject) (openapi.RemoveExternalCalendarResponseObject, error) {
 	if err := s.u.Calendars.Unlink(ctx, req.ExternalCalendarId); err != nil {
 		return nil, err
 	}
-	return openapi.DisableExternalCalendar204Response{}, nil
+	return openapi.RemoveExternalCalendar204Response{}, nil
 }
 
-func (s server) PreviewCalendarImport(ctx context.Context, req openapi.PreviewCalendarImportRequestObject) (openapi.PreviewCalendarImportResponseObject, error) {
+func (s server) CreateCalendarImportPreview(ctx context.Context, req openapi.CreateCalendarImportPreviewRequestObject) (openapi.CreateCalendarImportPreviewResponseObject, error) {
 	rng, err := importRange(req.Body.RangeStart, req.Body.RangeEnd)
 	if err != nil {
 		return nil, err
@@ -168,7 +168,7 @@ func (s server) PreviewCalendarImport(ctx context.Context, req openapi.PreviewCa
 	if err != nil {
 		return nil, err
 	}
-	return openapi.PreviewCalendarImport200JSONResponse(toImportPreview(p)), nil
+	return openapi.CreateCalendarImportPreview200JSONResponse(toImportPreview(p)), nil
 }
 
 func (s server) CreateCalendarImport(ctx context.Context, req openapi.CreateCalendarImportRequestObject) (openapi.CreateCalendarImportResponseObject, error) {

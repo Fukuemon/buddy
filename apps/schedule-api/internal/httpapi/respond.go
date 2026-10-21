@@ -46,7 +46,11 @@ func writeError(c *gin.Context, log *slog.Logger, err error) {
 	case errors.Is(err, apperr.ErrNotFound):
 		c.AbortWithStatusJSON(http.StatusNotFound, errorResponse{Code: "not_found", Message: apperr.ErrNotFound.Error()})
 	case errors.As(err, &ce):
-		c.AbortWithStatusJSON(http.StatusConflict, errorResponse{Code: "conflict", Message: ce.Message})
+		code := ce.Code
+		if code == "" {
+			code = "conflict"
+		}
+		c.AbortWithStatusJSON(http.StatusConflict, errorResponse{Code: code, Message: ce.Message})
 	case errors.Is(err, apperr.ErrConflict):
 		c.AbortWithStatusJSON(http.StatusConflict, errorResponse{Code: "conflict", Message: apperr.ErrConflict.Error()})
 	case errors.Is(err, calendar.ErrUnreadable):

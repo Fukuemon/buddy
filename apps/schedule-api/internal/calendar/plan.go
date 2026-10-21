@@ -600,4 +600,4 @@ func (p *plan) applyDecisions(decisions []Decision, patients []PatientRef) (int,
 	return skipped, nil
 }
 
-var errReviewChanged = apperr.Conflict("下見の後に、外部のカレンダーの確かめが要る予定が変わりました。もう一度下見してください")
+var errReviewChanged = apperr.ConflictCode(CodeReviewChanged, "下見の後に、外部のカレンダーの確かめが要る予定が変わりました。もう一度下見してください")

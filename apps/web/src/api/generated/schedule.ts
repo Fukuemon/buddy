@@ -511,6 +511,135 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/facilities/{facility_id}/calendar_service_account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * カレンダーを共有する相手のサービスアカウントを取得する
+         * @description 職員が Google カレンダーを閲覧の権限で共有する相手のメールアドレスを返す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        get: operations["getCalendarServiceAccount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/facilities/{facility_id}/external_calendars": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 事業所の結び付けたカレンダーを一覧する
+         * @description 外していないカレンダーを、結び付けた順に返す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        get: operations["listExternalCalendars"];
+        put?: never;
+        /**
+         * 職員にカレンダーを結び付ける
+         * @description Google Calendar API で予定を 1 件だけ読み、読めることを確かめてから結び付ける。
+         *     外した同じカレンダーが同じ職員にあれば、結び付け直す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        post: operations["createExternalCalendar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/facilities/{facility_id}/external_calendars/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * カレンダーを読めるかを確かめる
+         * @description Google Calendar API で予定を 1 件だけ読む。結び付けない。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        post: operations["createExternalCalendarCheck"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/external_calendars/{external_calendar_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * カレンダーを外す
+         * @description 行を消さずに外す。取り込んだ予定と、外部の予定との対応は残るので、同じカレンダーを結び付け直して同じ期間を取り込んでも、予定は重ならない。
+         *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        delete: operations["removeExternalCalendar"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/external_calendars/{external_calendar_id}/import_previews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 取り込みを下見する
+         * @description カレンダーの期間の予定を読み、取り込むとどうなるかを返す。予定を書かず、下見の結果も保存しない。
+         *     読み替えの規則は、画面仕様書の予定の取り込みにある。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        post: operations["createCalendarImportPreview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/external_calendars/{external_calendar_id}/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 取り込みを確定する
+         * @description カレンダーの期間の予定を読み直し、下見と同じ規則で読み替えて、予定と外部の予定との対応を 1 つのトランザクションで書く。
+         *     前の取り込みで取り込んだ外部の予定は書かない。確かめが要る予定には decisions の取り込み方を当てる。
+         *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        post: operations["createCalendarImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -527,7 +656,7 @@ export interface components {
         Time: string;
         Error: {
             /** @enum {string} */
-            code: "invalid_input" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "internal";
+            code: "invalid_input" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "internal" | "calendar_unreadable" | "calendar_unavailable" | "calendar_not_configured" | "calendar_taken" | "calendar_already_linked" | "staff_has_calendar" | "import_running" | "import_preview_changed";
             /** @description 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う */
             message: string;
         };
@@ -749,6 +878,134 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
+        /**
+         * @description Google のカレンダーの ID。職員のカレンダーでは、職員のメールアドレスのことがある
+         * @example staff@example.com
+         */
+        CalendarID: string;
+        ImportRun: {
+            id: components["schemas"]["ID"];
+            range_start: components["schemas"]["Date"];
+            /** @description この日を含む */
+            range_end: components["schemas"]["Date"];
+            /** @enum {string} */
+            status: "running" | "succeeded" | "failed";
+            imported_count: number;
+            /** @description 取り込まない予定と、取り込まないを選んだ予定の数 */
+            skipped_count: number;
+            /** Format: date-time */
+            started_at: string;
+            /** Format: date-time */
+            finished_at: string | null;
+        };
+        ExternalCalendar: {
+            id: components["schemas"]["ID"];
+            facility_id: components["schemas"]["ID"];
+            staff_id: components["schemas"]["ID"];
+            /** @enum {string} */
+            provider: "google";
+            calendar_id: components["schemas"]["CalendarID"];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** @description 最も新しく始めた取り込み。取り込んだことが無ければ null */
+            last_import: components["schemas"]["ImportRun"] | null;
+        };
+        ImportRange: {
+            /** @description 期間の最初の日。この日から range_end までに始まる予定を取り込む */
+            range_start: components["schemas"]["Date"];
+            /** @description 期間の最後の日。この日を含む。range_start 以降で、range_start から 1 年未満の日 */
+            range_end: components["schemas"]["Date"];
+        };
+        /** @description 件数は Google の予定の数で数え、繰り返しのまま取り込む予定は 1 件、回ごとにした予定は 1 回を 1 件に数える。 */
+        ImportCounts: {
+            /** @description 確かめが要る予定を除いて、取り込む予定の数 */
+            import: number;
+            /** @description import のうち、訪問の予定の数 */
+            import_visit: number;
+            /** @description import のうち、通常の予定の数 */
+            import_normal: number;
+            /** @description import のうち、繰り返しを回ごとにした回の数 */
+            expanded_occurrences: number;
+            /** @description 取り込む繰り返しの予定の数 */
+            recurring: number;
+            /** @description recurring のうち、繰り返しのまま取り込む予定の数 */
+            recurring_as_rule: number;
+            /** @description recurring のうち、回ごとにする予定の数 */
+            recurring_expanded: number;
+            /** @description 取り込み方を選ぶ予定の数 */
+            needs_review: number;
+            /** @description 取り込まない予定の数 */
+            skipped: number;
+            /** @description 前の取り込みで取り込んだ予定の数 */
+            already_imported: number;
+        };
+        PatientCandidate: {
+            patient_id: components["schemas"]["ID"];
+            name: string;
+            assigned_staff_name: string;
+        };
+        ImportReviewItem: {
+            /** @description 取り込み方を送るときの Google の予定の ID。繰り返しの予定とその回では、親の予定の ID */
+            external_event_id: string;
+            /** @description 予定の日付。繰り返しの予定は最初の回の日付 */
+            date: components["schemas"]["Date"];
+            start_time: components["schemas"]["Time"];
+            end_time: components["schemas"]["Time"];
+            /** @description 題名から読んだサービス内容 */
+            service: string;
+            /** @description 題名から読んだ利用者名 */
+            client_name: string;
+            /**
+             * @description patient_not_found は利用者がいない、patient_ambiguous は同じ名前の利用者が 2 人以上いる
+             * @enum {string}
+             */
+            reason: "patient_not_found" | "patient_ambiguous";
+            /** @description 繰り返しのまま取り込む予定の規則。ほかの予定では null */
+            recurrence: components["schemas"]["RecurringRule"] | null;
+            /** @description 同じ名前の利用者。patient_not_found では空 */
+            candidates: components["schemas"]["PatientCandidate"][];
+        };
+        /** @description 取り込まない予定の、読めた日時と理由。題名は利用者名を含むので返さない */
+        ImportSkippedItem: {
+            date: (string & components["schemas"]["Date"]) | null;
+            start_time: (string & components["schemas"]["Time"]) | null;
+            /** @description 日をまたぐ予定では、翌日の時刻 */
+            end_time: (string & components["schemas"]["Time"]) | null;
+            all_day: boolean;
+            /**
+             * @description all_day は終日、multi_day は日をまたぐ（24:00 に終わる予定を含む）、unreadable_time は日時を読めない、
+             *     zero_length は長さが無い、unreadable_title は題名が空白だけか訪問の題名を読めない、
+             *     service_not_found は題名のサービス内容がサービスコードに無い
+             * @enum {string}
+             */
+            reason: "all_day" | "multi_day" | "unreadable_time" | "zero_length" | "unreadable_title" | "service_not_found";
+        };
+        ImportPreview: {
+            range_start: components["schemas"]["Date"];
+            range_end: components["schemas"]["Date"];
+            counts: components["schemas"]["ImportCounts"];
+            /** @description 取り込み方を選ぶ予定。日時の順 */
+            needs_review: components["schemas"]["ImportReviewItem"][];
+            /** @description 取り込まない予定。日時の順で、日時の無い予定は最後 */
+            skipped: components["schemas"]["ImportSkippedItem"][];
+        };
+        ImportDecision: {
+            external_event_id: string;
+            /**
+             * @description patient は選んだ利用者の訪問の予定に、normal は題名をタイトルにした通常の予定にし、skip は取り込まない
+             * @enum {string}
+             */
+            action: "patient" | "normal" | "skip";
+            /** @description action が patient のときだけ指定する */
+            patient_id?: components["schemas"]["ID"];
+        };
+        ImportResult: components["schemas"]["ImportRun"] & {
+            external_calendar_id: components["schemas"]["ID"];
+            /** @description 前の取り込みで取り込んでいて、今回は書かなかった予定の数 */
+            already_imported_count: number;
+        };
     };
     responses: {
         /** @description 入力の誤り。`code` は invalid_input。`message` は誤りの箇所と理由で、入力によって変わる */
@@ -816,11 +1073,58 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
+        /** @description カレンダーが無いか、サービスアカウントに共有されていない（Google が 403 か 404 を返した）。`code` は calendar_unreadable */
+        CalendarUnreadable: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "code": "calendar_unreadable",
+                 *       "message": "カレンダーを読めません。カレンダーの共有を確かめてください"
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Google に届かないか、Google が誤りを返した。`code` は calendar_unavailable */
+        CalendarUnavailable: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "code": "calendar_unavailable",
+                 *       "message": "外部のカレンダーから予定を読めませんでした"
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Google のサービスアカウントが設定されていない。`code` は calendar_not_configured */
+        CalendarNotConfigured: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "code": "calendar_not_configured",
+                 *       "message": "外部のカレンダーを読む設定がありません"
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
     };
     parameters: {
         FacilityID: components["schemas"]["ID"];
         ScheduleID: components["schemas"]["ID"];
         RecurringScheduleID: components["schemas"]["ID"];
+        /** @description buddy の外部のカレンダーの ID。Google のカレンダーの ID ではない */
+        ExternalCalendarID: components["schemas"]["ID"];
         /** @description 省くと昇順。sort_field を省いたときは既定の列に向きだけを当てる */
         SortOrder: "asc" | "desc";
     };
@@ -1918,6 +2222,258 @@ export interface operations {
                 };
             };
             500: components["responses"]["InternalError"];
+        };
+    };
+    getCalendarServiceAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                facility_id: components["parameters"]["FacilityID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description サービスアカウント */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: email */
+                        email: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalError"];
+            503: components["responses"]["CalendarNotConfigured"];
+        };
+    };
+    listExternalCalendars: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                facility_id: components["parameters"]["FacilityID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 結び付けたカレンダー */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["ExternalCalendar"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    createExternalCalendar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                facility_id: components["parameters"]["FacilityID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    staff_id: components["schemas"]["ID"];
+                    calendar_id: components["schemas"]["CalendarID"];
+                };
+            };
+        };
+        responses: {
+            /** @description 結び付けたカレンダー */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExternalCalendar"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /**
+             * @description 職員にほかのカレンダーが結び付いている（staff_has_calendar）か、カレンダーがほかの職員に結び付いている（calendar_taken。外したカレンダーを含む）か、
+             *     すでに結び付いている（calendar_already_linked）
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            422: components["responses"]["CalendarUnreadable"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["CalendarUnavailable"];
+            503: components["responses"]["CalendarNotConfigured"];
+        };
+    };
+    createExternalCalendarCheck: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                facility_id: components["parameters"]["FacilityID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    calendar_id: components["schemas"]["CalendarID"];
+                };
+            };
+        };
+        responses: {
+            /** @description 読めた */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        readable: true;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["CalendarUnreadable"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["CalendarUnavailable"];
+            503: components["responses"]["CalendarNotConfigured"];
+        };
+    };
+    removeExternalCalendar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description buddy の外部のカレンダーの ID。Google のカレンダーの ID ではない */
+                external_calendar_id: components["parameters"]["ExternalCalendarID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 外した */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    createCalendarImportPreview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description buddy の外部のカレンダーの ID。Google のカレンダーの ID ではない */
+                external_calendar_id: components["parameters"]["ExternalCalendarID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportRange"];
+            };
+        };
+        responses: {
+            /** @description 下見の結果 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportPreview"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["CalendarUnreadable"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["CalendarUnavailable"];
+            503: components["responses"]["CalendarNotConfigured"];
+        };
+    };
+    createCalendarImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description buddy の外部のカレンダーの ID。Google のカレンダーの ID ではない */
+                external_calendar_id: components["parameters"]["ExternalCalendarID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportRange"] & {
+                    /** @description 下見の needs_review の全ての予定の取り込み方 */
+                    decisions: components["schemas"]["ImportDecision"][];
+                };
+            };
+        };
+        responses: {
+            /** @description 取り込みの記録 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description 下見の後に確かめが要る予定が変わった（import_preview_changed）か、同じカレンダーの取り込みが進んでいる（import_running）。何も書いていない */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            422: components["responses"]["CalendarUnreadable"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["CalendarUnavailable"];
+            503: components["responses"]["CalendarNotConfigured"];
         };
     };
 }
