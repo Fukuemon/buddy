@@ -111,6 +111,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 - 予定と実績の CSV を正規化し、対にし、判定して、4 つの区分の結果を返す。
 - 予定は、予定の CSV か Google カレンダーから取る。
 - access token を検証するが、職員の特定と事業所の確認はしない。
+  - Google カレンダーから予定を取るときだけ、トークンの組織に結び付けたカレンダーを読む。規則は [事業所の分離](#事業所の分離) にある。
 - 持たないもの: 予定と職員のデータ、DB。上げた CSV と照合の結果を保存しない。
 - 規則は [レセプトの照合の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/DesignDoc.md) にある。
 
@@ -123,6 +124,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 - ブラウザと web: HTTPS でつなぐ。
   - cookie にはセッションの ID を入れ、トークンは入れない。
   - 画面の操作は、web のサーバーの関数（BFF）を呼ぶ。API はブラウザから直接は呼ばれない。
+  - 例外は、開発者が手元で文書のサイトの API の仕様のページから、手元の API を試すときだけである。API は `CORS_ALLOW_ORIGINS` に挙げたオリジンにだけ CORS のヘッダーを返し、手元の compose は手元の文書のサイトのオリジンを挙げる。
 - ブラウザとブローカー: ログインのときだけ、web がブラウザをブローカーの認可の画面へ転送する。
 - web とブローカー: 認可コードフローでトークンを取得し、更新する。トークンは Valkey のセッションに置く。
 - web と schedule-api、receipt-api: `Authorization` に access token を Bearer で付ける。
@@ -164,7 +166,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 | `RECEIPT_API_URL` | 使う | 使わない | 使わない | receipt-api の URL |
 | `DB_HOST`、`DB_PORT` | 使わない | 任意 | 使わない | MySQL のホストとポート。既定は `localhost` と `3306` |
 | `DB_USER`、`DB_PASSWORD`、`DB_NAME` | 使わない | 使う | 使わない | MySQL の利用者、パスワード、データベースの名前 |
-| `CORS_ALLOW_ORIGINS` | 使わない | 任意 | 使わない | CORS を許すオリジン。空なら CORS のヘッダーを返さない |
+| `CORS_ALLOW_ORIGINS` | 使わない | 任意 | 任意 | CORS を許すオリジン。カンマで区切る。空なら CORS のヘッダーを返さない |
 | `MAX_UPLOAD_BYTES` | 使わない | 使わない | 任意 | 照合の要求の本文の上限。既定は 10 MiB |
 | `GOOGLE_CALENDARS_FILE` | 使わない | 使わない | 任意 | 職員とカレンダーと組織の対応の JSON。空なら Google カレンダーから予定を取らない |
 | `GOOGLE_CALENDAR_ENDPOINT` | 使わない | 使わない | 任意 | Calendar API の代わりに呼ぶ URL。テストの偽物に向けるときだけ渡す |
@@ -231,17 +233,20 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 ├── packages/
 │   ├── ui/              # デザインシステム。トークン、Base と Case のコンポーネント、Storybook
 │   │   └── DESIGN.md    # デザインシステムの設計
-│   └── e2e/             # E2E のテストと、人手検証の証跡を撮る kit
-│       ├── DesignDoc.md # E2E のテストのコードの設計
-│       └── kit/recording/DesignDoc.md # 証跡の録画の設計
-├── docs/                # Zensical のサイトの元。PRD、Design Doc、ADR、画面仕様書
+│   ├── e2e/             # E2E のテストと、人手検証の証跡を撮る kit
+│   │   ├── DesignDoc.md # E2E のテストのコードの設計
+│   │   └── kit/recording/DesignDoc.md # 証跡の録画の設計
+│   └── go/              # 2 つの API が共有する Go の module。OIDC の検証、ヘルスチェック
+├── docs/                # Zensical のサイトの元。PRD、Design Doc、ADR、画面仕様書、API の仕様、DB の設計
 │   ├── PRD.md
 │   ├── design/
 │   │   ├── DesignDoc.md
 │   │   ├── apps/        # apps/ の Design Doc へのシンボリックリンク
 │   │   └── packages/    # packages/ の Design Doc へのシンボリックリンク
 │   ├── adr/
-│   └── screens/         # 画面仕様書とモック
+│   ├── screens/         # 画面仕様書とモック
+│   ├── api/             # 各 API の openapi.yaml へのシンボリックリンクと、それを描くページ
+│   └── db/              # schedule-api のマイグレーションから tbls で生成する表の一覧と ER 図
 ├── context/             # 作業の中で参照する規約と事実
 ├── scripts/             # 生成物と画面仕様書のチェック、サイトの組み立て
 ├── compose.yml          # 手元で全部を動かす
