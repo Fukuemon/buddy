@@ -19,7 +19,7 @@ E2E を足すたびに書き方が人によって変わると、失敗したと�
 そこで、処理を置く層と待ち方を決め、機械で判定できるものは ESLint の規則（`packages/e2e/eslint/e2e-authoring-rule.mjs`）で止める。
 
 証跡の録画の流れは [証跡の録画](https://github.com/Fukuemon/buddy/blob/develop/packages/e2e/kit/recording/DesignDoc.md) にある。  
-この文書、kit、規則、スキルは、[Fukuemon/verification](https://github.com/Fukuemon/verification) のコミット 0376e6b から写した。buddy で使いながら直し、後で汎用の形に戻す。地図の操作（`map/google`）は buddy に地図が無いので写していない。  
+この文書、kit、規則、スキルは、元のリポジトリ（非公開）から写した。buddy で使いながら直し、後で汎用の形に戻す。地図の操作（`map/google`）は buddy に地図が無いので写していない。  
 AI が書くときの手順は、スキル `write-e2e-test` が持つ。この文書は、その手順の理由と構成を人に向けて示す。
 
 ## Scope
@@ -121,24 +121,24 @@ spec の置き場とテストの名前は、テストが守る振る舞いで付
 
 | 対象 | 付け方 | 使わない名前 |
 | --- | --- | --- |
-| `specs/` の下のディレクトリ | 機能の名前(例: 一覧の絞り込み、作図) | アクターの名前、検証の観点の名前、issue の番号、変更の向きを表す名前(新しい挙動、移した後) |
-| ファイル | 機能の中の振る舞い(例: 作図、頂点の編集) | 画面の名前。同じ振る舞いを複数の画面で確かめるなら 1 つのファイルにまとめ、同じ画面でも振る舞いが違えば分ける |
+| `specs/` の下のディレクトリ | 機能の名前(例: 予定の `schedule`、照合の `receipt`) | アクターの名前、検証の観点の名前、issue の番号、変更の向きを表す名前(新しい挙動、移した後) |
+| ファイル | 機能の中の振る舞い(例: 予定の作成の `create.e2e.ts`、照合の `check.e2e.ts`) | 画面の名前。同じ振る舞いを複数の画面で確かめるなら 1 つのファイルにまとめ、同じ画面でも振る舞いが違えば分ける |
 | `describe` | 外側を画面、内側を機能の 2 段にする | — |
 | テストの名前 | 「{条件}の場合、{期待}であること」 | 観点の ID と規約の ID。対応は設計書と issue が持つ |
 
 アクターの違いは、機能の中の `describe` で表す。アクターでディレクトリを切ると、1 つの機能の確かめが複数のディレクトリに散る。  
-人手検証の証跡を撮る spec は、検証シナリオに合わせて置き場と名前を決める。決め方は `context/testing.md` の Evidence の節が持つ。
+人手検証の証跡を撮る spec は、検証シナリオに合わせて置き場と名前を決める。決め方は `context/testing/evidence.md` が持つ。
 
 ### 1 本の証跡の spec が層を通る流れ
 
 次の図は、証跡の spec が、層と kit をどの順で呼ぶかを示す。spec が持つのは、操作の順、押す要素、字幕の文だけである。  
-録画は、ログインを録画の外で済ませてから始まる。灰色の帯は録画に映らず、黄色の帯が録画に映る。
+録画は、ログインを録画の外で済ませてから始まる。灰色の帯は録画に映らず、黄色の帯が録画に映る。  
+`prepare` に渡るページは、`recordEvidence` が新しく作るコンテキストのページで、`setup` が保存したログインの状態を持たない。そのため、`prepare` の中でログインする。
 
 ```mermaid
 sequenceDiagram
   participant spec as specs/
   participant rec as kit の recording
-  participant auth as kit の auth
   participant scr as screens/
   participant sel as selectors/
 
@@ -146,7 +146,7 @@ sequenceDiagram
   rect rgb(240, 240, 240)
     Note over spec,sel: 録画の外
     rec->>spec: prepare を呼び返す
-    spec->>auth: 保存したログインの状態で入る
+    spec->>scr: ログインの画面を操作して入る
     spec->>scr: 前提のデータを確かめる
   end
   rect rgb(255, 245, 225)
@@ -219,9 +219,9 @@ flowchart LR
 ```
 
 - タブをまたいで引き継がれるはずの値を確かめるときは、値を元のタブにだけ入れる。両方に入れると、引き継がれたかを確かめられない。
-- 画面の中の移動は、遷移元の描画を待ってから URL のハッシュを書き換えて作る。初めの読み込みが終わる前に書き換えると、ルーターに URL を戻される。
+- 画面の中の移動は、遷移元の描画(行の testid など)を待ってから `page.goto` で path を開いて作る。buddy の画面は path で route を分ける。
 - 新しいタブを開く観点は、遷移先の画面の既存の spec に足す。別のファイルに切ると、遷移先の画面を描くための準備を作り直すことになる。
-- 手元の dev サーバに向けて並べて流すと、画面のコンパイルが詰まり、画面を開く操作が時間切れになる。手元では 1 つずつ流す。
+- 手元の dev サーバに向けて並べて流すと、画面のコンパイルが詰まり、画面を開く操作が時間切れになる。`playwright.config.ts` は worker を 1 つにしているので、`--workers` で増やさない。
 
 ### 時間で動く画面
 
@@ -253,7 +253,7 @@ testid は、テストのコードではなくアプリのコンポーネント�
 | 固定の秒数で待つ(`waitForTimeout`、`setTimeout`) | 6 種類の待ち方から選ぶ | 遅い環境では足りず、速い環境では無駄になる | 規則。options で渡したファイルだけ許す |
 | `selectors/` の外で、CSS や表示の文言で要素を指す(`locator`、`getByRole` など) | testid で指す | 画面の作りや文言を変えると、指せなくなる | 規則 |
 | 「起きないこと」をそのまま確かめる | 前後の確かめを置く | まだ描かれていないだけでも通る | レビュー |
-| 値を読んでから `expect` で比べる | locator をそのまま `expect` に渡す | 読んだ時点と比べる時点がずれ、自動の待ちが働かない | 規則 |
+| 値を読んでから `expect` で比べる | locator をそのまま `expect` に渡す | 読んだ時点と比べる時点がずれ、自動の待ちが働かない | 規則とレビュー。規則は、`innerText`、`textContent`、`inputValue`、`allInnerTexts`、`allTextContents` を `tests/` の全体で止め、`getAttribute` を spec だけで止める。`count()` や `isVisible()` のような、規則が拾わない読み方はレビューで見る。`widgets/` の待ちが属性を読むことと、リクエストの中身や URL のように locator で表せない値を読んでから比べることは許す |
 | 読み込み表示が消えるのだけを待つ | 出てから消えるまでを待つ | 読み込みが始まる前の時点で条件を満たす | レビュー |
 | spec に `timeout` を書く。待つ時間の数値を直に書く | Playwright の設定と、`fixtures/` の名前に集める | 値がばらつくと、全体を調整できない | 規則 |
 | spec を import する。ほかの `specs/<dir>/` のファイルを import する。`specs/` の直下に spec 以外のファイルを置く。`specs/<dir>/` の値のファイルに画面の操作を書く | 共有する操作は `screens/` か `widgets/` に出す。`specs/<dir>/` には値だけを置く | `specs/` はテストの本体で、ほかの層から呼ばれる側ではない | 規則とレビュー。規則は、`page` という名前か `Page`、`Locator`、`BrowserContext`、`Browser` の型の引数を持つ関数と、`@playwright/test` からの型でない import を止める。`screens/` の関数を値のファイルで呼ぶような、規則が拾わない操作はレビューで見る |
