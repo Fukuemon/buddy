@@ -4,7 +4,7 @@ title: レセプトの照合
 description: receipt-api のパッケージの構成、予定の取得元、入力の CSV の列、正規化、予定と実績の対の作り方、判定の規則、サービスごとの許容範囲、結果の JSON と画面の表示、元の実装との違い
 status: draft
 governs: apps/receipt-api
-verified_commit: bde1891
+verified_commit: 085bce9
 ---
 
 # レセプトの照合

@@ -4,7 +4,7 @@ title: 予定の管理
 description: schedule-api のコードの層、表の構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更とキャンセル
 status: stable
 governs: apps/schedule-api
-verified_commit: 453287d
+verified_commit: 085bce9
 ---
 
 # 予定の管理
