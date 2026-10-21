@@ -36,7 +36,9 @@ ADR-0007: [2 つの Go の API が共有するコードを、別の module に�
 
 agent-harness のスキルとフックは apm で配置し、Git で追跡しない。  
 buddy だけのスキルは `.claude/skills/` に置き、Git で追跡する。  
-buddy だけのスキルは、write-e2e-test、write-screen-spec、write-verification-spec、run-verification-scenarios の 4 つである。  
+buddy だけのスキルは次の 5 つ。  
+write-e2e-test、write-screen-spec、write-verification-spec、run-verification-scenarios、attach-evidence。  
+codex が読むよう、`.agents/skills/` に同じ名前のシンボリックリンクを置く。  
 apm のスキルとフックは、clone した後の最初のセッションで、セッションの開始のフックが配置する。  
 手で配置するときは次を実行する。
 
@@ -254,6 +256,7 @@ gitGraph
 - 作業は issue から始める。issue は、雛形（`.github/ISSUE_TEMPLATE/`）の要求、不具合、タスクから選ぶ。種類は `type:` のラベル、対象のアプリとパッケージは `pkg:` のラベルで示す。
 - pull request は 1 つの issue に対応させる。大きい issue は、関心事ごとに複数の pull request に分け、本文で issue を `Refs #<番号>` で指す。
 - 題と本文の書き方は、スキル write-issue-pr に従う。本文は `.github/pull_request_template.md` の節で書く。
+- 機能の追加と改修の pull request には、確かめたことの証跡の動画を添付する。対象と格納先は [証跡](context/testing/evidence.md)、撮り方と添付のしかたはスキル attach-evidence にある。
 - レビューの指摘に対応してから取り込む。直したコミットと、対応しない指摘の理由を pull request のコメントに残す。差分が変わったら、本文も差分に合わせて直す。
 - `develop` への取り込みは merge commit にする（`gh pr merge --merge`）。
 - 既定のブランチは `develop` である。1 つの pull request で issue の作業が終わるときは、本文に `Closes #<番号>` を書き、取り込みで issue を閉じる。複数の pull request に分けたときは、最後の pull request に `Closes` を書く。
