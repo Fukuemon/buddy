@@ -20,7 +20,6 @@ const (
 // Rule は、繰り返しの規則である。DayOfWeek は 1 が月曜、7 が日曜である。
 // 指定しない項目は nil で、そのときは繰り返しの予定の最初の日付から決める。EndDate はその日を含む。
 type Rule struct {
-	ID          string
 	Frequency   Frequency
 	DayOfWeek   *int
 	DayOfMonth  *int

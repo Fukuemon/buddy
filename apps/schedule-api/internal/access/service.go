@@ -63,7 +63,8 @@ func NewService(deps Deps) *Service {
 }
 
 // Authenticate は、id の組織に結び付けた事業所の職員を返す。
-// sub で職員を探し、いなければ、メールが確認済みのときに限り、その事業所の同じメールで sub がまだない職員に sub を結び付ける。
+// sub で職員を探し、いなければ、メールが確認済みのときに限り、その事業所の同じメール（大文字と小文字を区別しない）で
+// sub がまだない職員に sub を結び付ける。
 // 組織がないか事業所に結び付いていないとき、職員が見つからないとき、職員の事業所が組織の事業所と違うときは
 // apperr.ErrForbidden を返す。
 func (a *Service) Authenticate(ctx context.Context, id principal.Identity) (principal.Principal, error) {
@@ -100,7 +101,7 @@ func (a *Service) link(ctx context.Context, facilityID string, id principal.Iden
 	if !id.EmailVerified || id.Email == "" {
 		return "", fmt.Errorf("%w: 確認済みのメールがありません", apperr.ErrForbidden)
 	}
-	if err := a.deps.Staff.LinkSub(ctx, facilityID, id.Email, id.Subject); err != nil && !errors.Is(err, apperr.ErrConflict) {
+	if err := a.deps.Staff.LinkSub(ctx, facilityID, staff.NormalizeEmail(id.Email), id.Subject); err != nil && !errors.Is(err, apperr.ErrConflict) {
 		return "", err
 	}
 	staffID, err := a.deps.Staff.FindIDBySub(ctx, id.Subject)

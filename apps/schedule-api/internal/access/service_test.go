@@ -62,6 +62,18 @@ func TestAuthenticateLinksSubByVerifiedEmail(t *testing.T) {
 	}
 }
 
+func TestAuthenticateLinksSubIgnoringEmailCase(t *testing.T) {
+	s := authStore()
+	id := principal.Identity{Subject: "sub-1", Email: "Hina.Aoki@Example.com", EmailVerified: true, OrgID: orgID}
+	p, err := newAuth(s).Authenticate(context.Background(), id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.Staff.ID != staffID {
+		t.Fatalf("principal = %+v", p)
+	}
+}
+
 func TestAuthenticateForbidden(t *testing.T) {
 	linked := func(s *inmem.Store) {
 		d := s.Staff[staffID]
