@@ -1,6 +1,7 @@
 import { clsx } from 'clsx'
 import { useId } from 'react'
 
+/** 選択肢。id は value と onChange で受け渡す値で、radio の data-testid の末尾にも付く。label は画面に出す文言。 */
 export type SegmentedControlOption<Id extends string> = {
   id: Id
   label: string

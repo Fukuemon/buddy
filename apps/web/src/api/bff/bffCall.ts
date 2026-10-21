@@ -13,6 +13,7 @@ export const BFF_OPERATIONS = [
   'patients.list',
 ] as const
 
+/** BFF が中継する操作の名前。 */
 export type BffOperation = (typeof BFF_OPERATIONS)[number]
 
 /** 画面から BFF への呼び出し。args は BuddyApi の操作の引数で、先頭は事業所である。 */

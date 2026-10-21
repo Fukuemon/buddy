@@ -13,7 +13,9 @@ import {
 } from '../types'
 
 type Schemas = components['schemas']
+/** 予定の API が返す予定。 */
 export type ApiSchedule = Schemas['Schedule']
+/** 予定の API の作成と更新で送る本文。 */
 export type ApiSlotRequest = Schemas['SlotRequest']
 
 /** 予定の作成で、画面の値を API の ID に引くためのマスタ。 */
@@ -42,8 +44,10 @@ export const fromApiStaff = (user: Schemas['Staff']): Staff => ({
   teamId: user.team.id,
 })
 
+/** API のチームを、画面のチームにする。 */
 export const fromApiTeam = ({ id, name }: Schemas['Unit']): Team => ({ id, name })
 
+/** API の利用者を、画面の利用者にする。 */
 export const fromApiPatient = ({ id, name }: Schemas['Patient']): Patient => ({ id, name })
 
 /** API の日付と時刻は事業所の現地時刻で、事業所は日本にあるものとする。 */

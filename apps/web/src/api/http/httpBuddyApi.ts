@@ -13,6 +13,7 @@ import {
   toSlotRequest,
 } from './scheduleMapper'
 
+/** 予定の API を呼ぶ BuddyApi の設定。 */
 export type HttpApiOptions = {
   /** API の URL。例は `http://localhost:8080`。 */
   baseUrl: string

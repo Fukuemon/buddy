@@ -4,6 +4,7 @@ import { routeTree } from './routeTree.gen'
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query'
 import { getContext } from './integrations/tanstack-query/root-provider'
 
+/** router を作る。サーバーでは要求ごとに呼ばれ、要求の間で query の cache を共有しない。 */
 export function getRouter() {
   const context = getContext()
 

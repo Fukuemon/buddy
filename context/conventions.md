@@ -24,7 +24,7 @@ status: stable
 コメントの書き方は、スキル write-comments に従う。言語は日本語の常体にする。
 
 - Go は、文書コメントの有無を receipt-api と schedule-api の revive（`exported`、`package-comments`）で確かめる。生成物（`// Code generated ... DO NOT EDIT.` のファイル）とテストは、revive が対象にしない。
-- TypeScript は、文書コメントの有無をレビューで確かめる。Oxlint（1.88.0）の jsdoc のプラグインに、eslint-plugin-jsdoc の require-jsdoc に当たる規則が無いからである。
+- TypeScript は、文書コメントの有無を、ルートの `vite.config.ts` の `lint` で確かめる。Oxlint の jsdoc のプラグインに require-jsdoc が無いので、eslint-plugin-jsdoc を `jsPlugins` で読ませる。対象は export する関数、クラス、型で、名前が `Props` で終わる型は除く。Props の型は、コンポーネントの文書コメントが説明するからである。生成物は lint の対象から外してある。呼び出しで包んで作る関数（`createServerFn(...)`、`memo(...)`）と、クラスのメソッドは確かめない。確かめるのは web、ui、e2e の check である。
 - Go の文書コメントは、`// Package <名前> は、…。`、`// <名前> は、…。` の形で書く。
 - 外部の制約を書く実装のコメントには、出典の URL を添える。
 
