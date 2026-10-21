@@ -5,12 +5,12 @@ description: packages/e2e/kit で書いた証跡の spec を、ローカル環�
 
 # run-verification-scenarios
 
-撮るコマンドと格納先は、`context/testing.md` のEvidence の節が持つ。置き場と名前は、`packages/e2e/kit/` の `evidence` が決める。  
+撮るコマンドと格納先は、`context/testing/evidence.md`が持つ。置き場と名前は、`packages/e2e/kit/` の `evidence` が決める。  
 このスキルは、撮るときと確かめるときの判断だけを持つ。
 
 ## 始める前に読むもの
 
-- `context/testing.md` のEvidence の節。撮るコマンド、環境変数、格納先、テストデータを作る手順
+- `context/testing/evidence.md`。撮るコマンド、環境変数、格納先、テストデータを作る手順
 - 証跡の一覧(要求ごとの README など)。撮るシナリオ、spec を置かないシナリオ、撮影のための操作
 
 ## 利用者に確かめること
