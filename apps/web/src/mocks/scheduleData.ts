@@ -1,5 +1,5 @@
 import type { components } from '#/api/generated/schedule'
-import type { ServiceCode } from '#/api/types'
+import { STAFF_MANAGE, type ServiceCode } from '#/api/types'
 
 type Schemas = components['schemas']
 
@@ -40,8 +40,21 @@ export const mockStaff: Schemas['Staff'][] = [
   staff('staff-4', '江藤 四郎', teamB),
 ]
 
-/** ログインした職員として GET /v1/me が返す職員。 */
-export const mockMe: Schemas['StaffDetail'] = { ...mockStaff[0], sub: 'dev-aoki', policies: [] }
+/** ログインした職員として GET /v1/me が返す職員。職員の管理の権限を持つ。 */
+export const mockMe: Schemas['StaffDetail'] = {
+  ...mockStaff[0],
+  sub: 'dev-aoki',
+  policies: [
+    {
+      user_policy_id: 'user-policy-1',
+      policy_id: 'policy-staff-manage',
+      code: STAFF_MANAGE,
+      name: '職員の管理',
+      target_user_ids: [],
+      target_team_ids: [],
+    },
+  ],
+}
 
 export const mockScheduleTypes: Schemas['ScheduleType'][] = [
   { id: 'type-normal', name: '通常' },
@@ -213,5 +226,152 @@ export const scheduleFromRequest = (
       : null,
     cancel: null,
     ...stamps,
+  }
+}
+
+/** 職員がカレンダーを共有する相手として返す、架空のサービスアカウント。 */
+export const mockServiceAccount = 'buddy-calendar@example.iam.gserviceaccount.com'
+
+/** 結び付けたカレンダー。青木 一郎は取り込んだことがあり、石川 二葉はまだ取り込んでいない。 */
+export const mockExternalCalendars: Schemas['ExternalCalendar'][] = [
+  {
+    id: 'calendar-1',
+    facility_id: MOCK_FACILITY_ID,
+    staff_id: 'staff-1',
+    provider: 'google',
+    calendar_id: 'staff-1@example.com',
+    ...stamps,
+    last_import: {
+      id: 'import-1',
+      range_start: '2026-10-01',
+      range_end: '2026-10-31',
+      status: 'succeeded',
+      imported_count: 12,
+      skipped_count: 1,
+      started_at: '2026-10-15T01:00:00Z',
+      finished_at: '2026-10-15T01:00:05Z',
+    },
+  },
+  {
+    id: 'calendar-2',
+    facility_id: MOCK_FACILITY_ID,
+    staff_id: 'staff-2',
+    provider: 'google',
+    calendar_id: 'staff-2@example.com',
+    ...stamps,
+    last_import: null,
+  },
+]
+
+/** 下見の結果。利用者を 1 人に決められない予定が 2 件（繰り返し 1 件）と、取り込まない予定が 3 件ある。 */
+export const createMockImportPreview = (
+  range: Schemas['ImportRange'],
+): Schemas['ImportPreview'] => ({
+  ...range,
+  counts: {
+    import: 18,
+    import_visit: 15,
+    import_normal: 3,
+    expanded_occurrences: 4,
+    recurring: 3,
+    recurring_as_rule: 2,
+    recurring_expanded: 1,
+    needs_review: 2,
+    skipped: 3,
+    already_imported: 0,
+  },
+  needs_review: [
+    {
+      external_event_id: 'event-ambiguous',
+      date: '2026-11-04',
+      start_time: '10:00',
+      end_time: '11:00',
+      service: '訪看I2',
+      client_name: '加藤 春子',
+      reason: 'patient_ambiguous',
+      recurrence: {
+        frequency: 'weekly',
+        day_of_week: 3,
+        day_of_month: null,
+        week_of_month: null,
+        end_date: null,
+      },
+      candidates: [
+        { patient_id: 'patient-1', name: '加藤 春子', assigned_staff_name: '青木 一郎' },
+        { patient_id: 'patient-5', name: '加藤 春子', assigned_staff_name: '上田 三奈' },
+      ],
+    },
+    {
+      external_event_id: 'event-missing',
+      date: '2026-11-09',
+      start_time: '14:00',
+      end_time: '14:30',
+      service: '訪看I3',
+      client_name: '架空 太郎',
+      reason: 'patient_not_found',
+      recurrence: null,
+      candidates: [],
+    },
+  ],
+  skipped: [
+    { date: '2026-11-03', start_time: null, end_time: null, all_day: true, reason: 'all_day' },
+    {
+      date: '2026-11-12',
+      start_time: '17:00',
+      end_time: '09:00',
+      all_day: false,
+      reason: 'multi_day',
+    },
+    {
+      date: '2026-11-20',
+      start_time: '10:00',
+      end_time: '10:30',
+      all_day: false,
+      reason: 'service_not_found',
+    },
+  ],
+})
+
+/** 全て取り込み済みの期間の下見の結果。 */
+export const createMockImportedPreview = (
+  range: Schemas['ImportRange'],
+): Schemas['ImportPreview'] => {
+  const preview = createMockImportPreview(range)
+  return {
+    ...preview,
+    counts: {
+      ...preview.counts,
+      import: 0,
+      import_visit: 0,
+      import_normal: 0,
+      expanded_occurrences: 0,
+      recurring: 0,
+      recurring_as_rule: 0,
+      recurring_expanded: 0,
+      needs_review: 0,
+      already_imported: 20,
+    },
+    needs_review: [],
+  }
+}
+
+/** 下見の結果を、取り込み方を当てて確定した結果。取り込まないを選んだ予定は、取り込まなかった件数に足す。 */
+export const createMockImportResult = (
+  externalCalendarId: string,
+  preview: Schemas['ImportPreview'],
+  decisions: Schemas['ImportDecision'][],
+): Schemas['ImportResult'] => {
+  const chosenSkip = decisions.filter((d) => d.action === 'skip').length
+  return {
+    id: 'import-2',
+    external_calendar_id: externalCalendarId,
+    range_start: preview.range_start,
+    range_end: preview.range_end,
+    status: 'succeeded',
+    imported_count: preview.counts.import + decisions.length - chosenSkip,
+    skipped_count: preview.counts.skipped + chosenSkip,
+    already_imported_count: preview.counts.already_imported,
+    started_at: '2026-10-22T01:00:00Z',
+    finished_at: '2026-10-22T01:00:03Z',
   }
 }

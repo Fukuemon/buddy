@@ -4,11 +4,16 @@ import type { components as ScheduleComponents } from './generated/schedule'
 /** 事業所の ID。API の `/v1/facilities/{facility_id}` に入る。 */
 export type FacilityId = string
 
+/** 職員の管理の権限の code。予定の API のマイグレーションが入れる値と同じにする。 */
+export const STAFF_MANAGE = 'staff.manage'
+
 /** ログインした職員。 */
 export type Viewer = {
   staffId: string
   staffName: string
   facilityId: FacilityId
+  /** 職員の管理の権限（staff.manage）を持つか。画面の出し分けだけに使い、拒むのは API である。 */
+  canManageStaff: boolean
 }
 
 /** チーム。API の型の ID と名前だけを使う。 */
@@ -19,6 +24,7 @@ export type Staff = {
   id: string
   name: string
   teamId: Team['id']
+  email: string
 }
 
 /** 利用者。API の型の ID と名前だけを使う。 */
@@ -98,3 +104,20 @@ export type ReceiptRow = ReceiptComponents['schemas']['Result']
 export type ReceiptCategory = ReceiptComponents['schemas']['Category']
 /** CSV の行を読めなかった理由。照合の API の RowError をそのまま使う。 */
 export type ReceiptRowError = ReceiptComponents['schemas']['RowError']
+
+type ScheduleSchemas = ScheduleComponents['schemas']
+
+/** 職員に結び付けた Google カレンダー。予定の API の ExternalCalendar をそのまま使う。 */
+export type ExternalCalendar = ScheduleSchemas['ExternalCalendar']
+/** 取り込みの期間。両端の日を含む YYYY-MM-DD。 */
+export type ImportRange = ScheduleSchemas['ImportRange']
+/** 取り込みの下見。予定の API の ImportPreview をそのまま使う。 */
+export type ImportPreview = ScheduleSchemas['ImportPreview']
+/** 下見の確かめが要る予定。 */
+export type ImportReviewItem = ScheduleSchemas['ImportReviewItem']
+/** 下見の取り込まない予定。 */
+export type ImportSkippedItem = ScheduleSchemas['ImportSkippedItem']
+/** 確かめが要る予定 1 件の取り込み方。 */
+export type ImportDecision = ScheduleSchemas['ImportDecision']
+/** 取り込みの結果。 */
+export type ImportResult = ScheduleSchemas['ImportResult']

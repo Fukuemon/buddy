@@ -23,17 +23,25 @@ export type HttpApiOptions = {
 
 type Result<T> = { data?: T; error?: unknown; response: Response }
 
+/** openapi-fetch の失敗の結果を、API の Error の code と message を持つ ApiError にする。 */
+const apiError = (error: unknown, response: Response) => {
+  const body = typeof error === 'object' && error !== null ? (error as Record<string, unknown>) : {}
+  const message = 'message' in body ? String(body.message) : response.statusText
+  const code = typeof body.code === 'string' ? body.code : undefined
+  return new ApiError(response.status, message, [], code)
+}
+
 /** openapi-fetch の結果から data を取り出す。失敗の状態なら ApiError を投げる。 */
 export const unwrap = async <T>(promise: Promise<Result<T>>): Promise<T> => {
   const { data, error, response } = await promise
-  if (!response.ok || data === undefined) {
-    const message =
-      typeof error === 'object' && error !== null && 'message' in error
-        ? String(error.message)
-        : response.statusText
-    throw new ApiError(response.status, message)
-  }
+  if (!response.ok || data === undefined) throw apiError(error, response)
   return data
+}
+
+/** 本文の無い成功の応答を待つ。失敗の状態なら ApiError を投げる。 */
+const expectOk = async (promise: Promise<Result<unknown>>): Promise<void> => {
+  const { error, response } = await promise
+  if (!response.ok) throw apiError(error, response)
 }
 
 /**
@@ -154,6 +162,59 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
         )
         return patients.map(fromApiPatient).filter((patient) => matchesName(patient.name, params))
       },
+    },
+    calendars: {
+      serviceAccount: async (facilityId) => {
+        const { email } = await unwrap(
+          client.GET('/v1/facilities/{facility_id}/calendar_service_account', {
+            params: { path: { facility_id: facilityId } },
+          }),
+        )
+        return email
+      },
+      list: async (facilityId) => {
+        const { items } = await unwrap(
+          client.GET('/v1/facilities/{facility_id}/external_calendars', {
+            params: { path: { facility_id: facilityId } },
+          }),
+        )
+        return items
+      },
+      check: async (facilityId, calendarId) => {
+        await unwrap(
+          client.POST('/v1/facilities/{facility_id}/external_calendars/check', {
+            params: { path: { facility_id: facilityId } },
+            body: { calendar_id: calendarId },
+          }),
+        )
+      },
+      link: (facilityId, { staffId, calendarId }) =>
+        unwrap(
+          client.POST('/v1/facilities/{facility_id}/external_calendars', {
+            params: { path: { facility_id: facilityId } },
+            body: { staff_id: staffId, calendar_id: calendarId },
+          }),
+        ),
+      unlink: (_facilityId, externalCalendarId) =>
+        expectOk(
+          client.DELETE('/v1/external_calendars/{external_calendar_id}', {
+            params: { path: { external_calendar_id: externalCalendarId } },
+          }),
+        ),
+      preview: (_facilityId, externalCalendarId, range) =>
+        unwrap(
+          client.POST('/v1/external_calendars/{external_calendar_id}/import_previews', {
+            params: { path: { external_calendar_id: externalCalendarId } },
+            body: range,
+          }),
+        ),
+      import: (_facilityId, externalCalendarId, input) =>
+        unwrap(
+          client.POST('/v1/external_calendars/{external_calendar_id}/imports', {
+            params: { path: { external_calendar_id: externalCalendarId } },
+            body: input,
+          }),
+        ),
     },
   }
 }

@@ -1,6 +1,14 @@
+import {
+  createMockImportPreview,
+  createMockImportResult,
+  createMockImportedPreview,
+  mockExternalCalendars,
+  mockServiceAccount,
+} from '#/mocks/scheduleData'
+
 import { ApiError, type BuddyApi } from '../client'
 import { matchesName } from '../nameSearch'
-import type { FacilityId, Schedule } from '../types'
+import type { ExternalCalendar, FacilityId, ImportPreview, Schedule } from '../types'
 import {
   FAKE_FACILITY_ID,
   createFakeSchedules,
@@ -21,10 +29,14 @@ const assertFacility = (facilityId: FacilityId) => {
   }
 }
 
+/** 偽物の API が読めるとみなすカレンダーの ID の末尾。ほかのカレンダーは読めない（calendar_unreadable）。 */
+export const FAKE_READABLE_CALENDAR_SUFFIX = '@example.com'
+
 /**
  * メモリの上で動く BuddyApi を作る。データは呼び出しごとに独立し、ページを読み直すと初期の状態に戻る。
  *
  * FAKE_FACILITY_ID 以外の事業所を指すと、status が 403 の ApiError を投げる。
+ * カレンダーの取り込みは、同じカレンダーの同じ期間を 2 回目に下見すると、全て取り込み済みの結果を返す。
  */
 export const createFakeBuddyApi = ({
   baseDate = new Date(),
@@ -33,6 +45,35 @@ export const createFakeBuddyApi = ({
     createFakeSchedules(baseDate).map((schedule) => [schedule.id, schedule]),
   )
   let sequence = schedules.size
+  const calendars = new Map<ExternalCalendar['id'], ExternalCalendar>(
+    mockExternalCalendars.map((c) => [c.id, structuredClone(c)]),
+  )
+  const disabled = new Map<ExternalCalendar['id'], ExternalCalendar>()
+  const imported = new Set<string>()
+
+  const findCalendar = (id: ExternalCalendar['id']) => {
+    const calendar = calendars.get(id)
+    if (calendar === undefined) throw new ApiError(404, 'リソースが見つかりません', [], 'not_found')
+    return calendar
+  }
+  const assertReadable = (calendarId: string) => {
+    if (!calendarId.endsWith(FAKE_READABLE_CALENDAR_SUFFIX)) {
+      throw new ApiError(
+        422,
+        'カレンダーを読めません。カレンダーの共有を確かめてください',
+        [],
+        'calendar_unreadable',
+      )
+    }
+  }
+  const conflict = (code: string, message: string) => new ApiError(409, message, [], code)
+  const previewOf = (
+    id: ExternalCalendar['id'],
+    range: { range_start: string; range_end: string },
+  ) =>
+    imported.has(`${id}:${range.range_start}:${range.range_end}`)
+      ? createMockImportedPreview(range)
+      : createMockImportPreview(range)
 
   const findSchedule = (scheduleId: Schedule['id']) => {
     const schedule = schedules.get(scheduleId)
@@ -90,6 +131,79 @@ export const createFakeBuddyApi = ({
       list: async (facilityId, params) => {
         assertFacility(facilityId)
         return fakePatients.filter((patient) => matchesName(patient.name, params))
+      },
+    },
+    calendars: {
+      serviceAccount: async (facilityId) => {
+        assertFacility(facilityId)
+        return mockServiceAccount
+      },
+      list: async (facilityId) => {
+        assertFacility(facilityId)
+        return [...calendars.values()]
+      },
+      check: async (facilityId, calendarId) => {
+        assertFacility(facilityId)
+        assertReadable(calendarId)
+      },
+      link: async (facilityId, { staffId, calendarId }) => {
+        assertFacility(facilityId)
+        assertReadable(calendarId)
+        const all = [...calendars.values(), ...disabled.values()]
+        const same = all.find((c) => c.calendar_id === calendarId)
+        if (same !== undefined && same.staff_id !== staffId)
+          throw conflict('calendar_taken', 'このカレンダーは、ほかの職員に結び付いています')
+        if (same !== undefined && calendars.has(same.id))
+          throw conflict(
+            'calendar_already_linked',
+            'このカレンダーは、この職員にすでに結び付いています',
+          )
+        if ([...calendars.values()].some((c) => c.staff_id === staffId))
+          throw conflict('staff_has_calendar', 'この職員には、ほかのカレンダーが結び付いています')
+        sequence += 1
+        const calendar: ExternalCalendar = same ?? {
+          id: `calendar-${sequence}`,
+          facility_id: facilityId,
+          staff_id: staffId,
+          provider: 'google',
+          calendar_id: calendarId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          last_import: null,
+        }
+        disabled.delete(calendar.id)
+        calendars.set(calendar.id, calendar)
+        return calendar
+      },
+      unlink: async (facilityId, externalCalendarId) => {
+        assertFacility(facilityId)
+        disabled.set(externalCalendarId, findCalendar(externalCalendarId))
+        calendars.delete(externalCalendarId)
+      },
+      preview: async (facilityId, externalCalendarId, range) => {
+        assertFacility(facilityId)
+        findCalendar(externalCalendarId)
+        return previewOf(externalCalendarId, range)
+      },
+      import: async (facilityId, externalCalendarId, { decisions, ...range }) => {
+        assertFacility(facilityId)
+        const calendar = findCalendar(externalCalendarId)
+        const preview: ImportPreview = previewOf(externalCalendarId, range)
+        const reviewIds = new Set(preview.needs_review.map((r) => r.external_event_id))
+        if (
+          decisions.length !== reviewIds.size ||
+          decisions.some((d) => !reviewIds.has(d.external_event_id))
+        ) {
+          throw conflict(
+            'import_preview_changed',
+            '下見の後に、外部のカレンダーの確かめが要る予定が変わりました。もう一度下見してください',
+          )
+        }
+        const result = createMockImportResult(externalCalendarId, preview, decisions)
+        imported.add(`${externalCalendarId}:${range.range_start}:${range.range_end}`)
+        const { already_imported_count: _, external_calendar_id: __, ...run } = result
+        calendars.set(calendar.id, { ...calendar, last_import: run })
+        return result
       },
     },
   }

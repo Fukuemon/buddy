@@ -33,11 +33,12 @@ export const callBff = async (
   try {
     return {
       ok: true,
-      data: (await operation(session.facilityId, ...parsed.args.slice(1))) as BffData,
+      // 本文の無い操作（calendars.check、calendars.unlink）は undefined を返すので、JSON にできる null にする
+      data: ((await operation(session.facilityId, ...parsed.args.slice(1))) ?? null) as BffData,
     }
   } catch (error) {
     if (error instanceof ApiError)
-      return { ok: false, status: error.status, message: error.message }
+      return { ok: false, status: error.status, message: error.message, code: error.code }
     throw error
   }
 }

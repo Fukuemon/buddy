@@ -21,7 +21,7 @@ export const createBffBuddyApi = (callBff: CallBff = (data) => callBffFn({ data 
         // 画面が移るまでの間に、呼び出し元がエラーの表示を出さないよう、終わらない Promise を返す
         return new Promise<never>(() => {})
       }
-      throw new ApiError(result.status, result.message)
+      throw new ApiError(result.status, result.message, [], result.code)
     }
   return {
     schedules: {
@@ -33,5 +33,14 @@ export const createBffBuddyApi = (callBff: CallBff = (data) => callBffFn({ data 
     staff: { list: call('staff.list') },
     teams: { list: call('teams.list') },
     patients: { list: call('patients.list') },
+    calendars: {
+      serviceAccount: call('calendars.serviceAccount'),
+      list: call('calendars.list'),
+      check: call('calendars.check'),
+      link: call('calendars.link'),
+      unlink: call('calendars.unlink'),
+      preview: call('calendars.preview'),
+      import: call('calendars.import'),
+    },
   }
 }

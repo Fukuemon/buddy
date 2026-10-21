@@ -149,6 +149,7 @@ export const emptyBuddyApi = (base: BuddyApi = createFakeBuddyApi()): BuddyApi =
   staff: { ...base.staff, list: async () => [] },
   teams: { ...base.teams, list: async () => [] },
   patients: { ...base.patients, list: async () => [] },
+  calendars: { ...base.calendars, list: async () => [] },
 })
 
 /** 全ての操作が status の ApiError で失敗する偽物の API を作る。 */
@@ -161,6 +162,15 @@ export const failingBuddyApi = (status = 500): BuddyApi => {
     staff: { list: fail },
     teams: { list: fail },
     patients: { list: fail },
+    calendars: {
+      serviceAccount: fail,
+      list: fail,
+      check: fail,
+      link: fail,
+      unlink: fail,
+      preview: fail,
+      import: fail,
+    },
   }
 }
 
@@ -172,5 +182,14 @@ export const pendingBuddyApi = (): BuddyApi => {
     staff: { list: wait },
     teams: { list: wait },
     patients: { list: wait },
+    calendars: {
+      serviceAccount: wait,
+      list: wait,
+      check: wait,
+      link: wait,
+      unlink: wait,
+      preview: wait,
+      import: wait,
+    },
   }
 }

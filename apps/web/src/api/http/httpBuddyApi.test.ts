@@ -9,6 +9,17 @@ import { createHttpBuddyApi } from './httpBuddyApi'
 
 const api = () => createHttpBuddyApi({ baseUrl: TEST_SCHEDULE_API_URL })
 
+/** BFF と同じく Bearer のトークンを付けて呼ぶ API。共通の handler はトークンを求める。 */
+const authorizedApi = () =>
+  createHttpBuddyApi({
+    baseUrl: TEST_SCHEDULE_API_URL,
+    fetch: (input, init) => {
+      const request = new Request(input, init)
+      request.headers.set('Authorization', 'Bearer test')
+      return globalThis.fetch(request)
+    },
+  })
+
 const invalid = (message: string) => ({ code: 'invalid_input' as const, message })
 
 /** 予定の作成と置き換えが引くマスタを、テストの ID で返す。 */
@@ -118,7 +129,7 @@ describe('createHttpBuddyApi', () => {
       ),
     )
     await expect(api().staff.list('facility-1', { name: '青木' })).resolves.toEqual([
-      { id: 'staff-1', name: '青木 一郎', teamId: 'team-a' },
+      { id: 'staff-1', name: '青木 一郎', teamId: 'team-a', email: 'staff-1@example.com' },
     ])
     await expect(api().staff.list('facility-1', { name: '' })).resolves.toHaveLength(2)
   })
@@ -239,8 +250,33 @@ describe('createHttpBuddyApi', () => {
       ),
     )
     await expect(api().schedules.get('facility-1', 'missing')).rejects.toMatchObject(
-      new ApiError(404, 'ない'),
+      new ApiError(404, 'ない', [], 'not_found'),
     )
     await expect(api().schedules.get('facility-1', 'other')).rejects.toHaveProperty('status', 403)
+  })
+
+  it('カレンダーの下見と取り込みを送り、409 の原因を code で投げる', async () => {
+    server.use(
+      scheduleHttp.post('/v1/external_calendars/{external_calendar_id}/imports', ({ response }) =>
+        response(409).json({ code: 'import_running', message: '進んでいます' }),
+      ),
+    )
+    const range = { range_start: '2026-11-01', range_end: '2026-11-30' }
+    const preview = await authorizedApi().calendars.preview('facility-1', 'calendar-1', range)
+    expect(preview).toMatchObject({ ...range, counts: { needs_review: 2 } })
+    await expect(
+      api().calendars.import('facility-1', 'calendar-1', { ...range, decisions: [] }),
+    ).rejects.toMatchObject({ status: 409, code: 'import_running' })
+  })
+
+  it('カレンダーの確かめと外すは、本文の無い成功で終わる', async () => {
+    const authorized = authorizedApi()
+    await expect(
+      authorized.calendars.check('facility-1', 'staff-1@example.com'),
+    ).resolves.toBeUndefined()
+    await expect(authorized.calendars.unlink('facility-1', 'calendar-1')).resolves.toBeUndefined()
+    await expect(authorized.calendars.serviceAccount('facility-1')).resolves.toMatch(
+      /@example\.iam/,
+    )
   })
 })

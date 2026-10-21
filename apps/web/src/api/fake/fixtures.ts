@@ -8,7 +8,15 @@ import {
 } from '#/mocks/scheduleData'
 
 import { fromApiPatient, fromApiSchedule, fromApiStaff, fromApiTeam } from '../http/scheduleMapper'
-import type { FacilityId, Patient, Schedule, Staff, Team, Viewer } from '../types'
+import {
+  STAFF_MANAGE,
+  type FacilityId,
+  type Patient,
+  type Schedule,
+  type Staff,
+  type Team,
+  type Viewer,
+} from '../types'
 
 // 架空のデータの正本は、MSW の偽物と共有する API の形のデータ（src/mocks/scheduleData.ts）である。
 // ここでは、それを本物の API と同じ変換で画面の型にする（ADR-0008）。
@@ -21,6 +29,7 @@ export const FAKE_VIEWER: Viewer = {
   staffId: mockMe.id,
   staffName: mockMe.username,
   facilityId: mockMe.facility_id,
+  canManageStaff: mockMe.policies.some((p) => p.code === STAFF_MANAGE),
 }
 
 export const fakeTeams: Team[] = mockTeams.map(fromApiTeam)

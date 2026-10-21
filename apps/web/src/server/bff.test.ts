@@ -81,7 +81,12 @@ describe('callBff', () => {
       { op: 'schedules.get', args: ['facility-1', 'x'] },
       await setup(),
     )
-    expect(result).toEqual({ ok: false, status: 403, message: 'この操作は許可されていません' })
+    expect(result).toEqual({
+      ok: false,
+      status: 403,
+      message: 'この操作は許可されていません',
+      code: 'forbidden',
+    })
   })
 
   it('引数の形が操作に合わなければ 400 を返し、API を呼ばない', async () => {
