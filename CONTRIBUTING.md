@@ -13,7 +13,7 @@ pnpm install
 
 `pnpm install` の `prepare` が、lefthook の Git のフック（commit-msg の commitlint、pre-commit の textlint）を入れる。
 
-Go のモジュールは `apps/schedule-api` と `apps/receipt-api` の 2 つである。エディタで両方を読むときは、ルートで `go work init ./apps/receipt-api ./apps/schedule-api` を流す。`go.work` は追跡しない。2 つのモジュールが共有する依存のバージョンが高い方にそろい、コンテナのイメージ（各 `go.mod` だけでビルドする）とずれるためである。テストと lint は、各アプリのディレクトリで `GOWORK=off` を付けて流す。`go.work` の下でビルドすると各アプリの `go.sum` に行が増えるので、コミットに含めない。
+Go のモジュールは `apps/schedule-api`、`apps/receipt-api` と、2 つの API が共有するコードの `packages/go` の 3 つである（[ADR-0007](docs/adr/0007-go-shared-module.md)）。2 つの API は `packages/go` を `go.mod` の `replace` で読む。エディタで 3 つを読むときは、ルートで `go work init ./apps/receipt-api ./apps/schedule-api ./packages/go` を流す。`go.work` は追跡しない。2 つのモジュールが共有する依存のバージョンが高い方にそろい、コンテナのイメージ（各 `go.mod` だけでビルドする）とずれるためである。テストと lint は、各アプリと `packages/go` のディレクトリで `GOWORK=off` を付けて流す。`packages/go` を変えたときは、2 つの API のテストも流す。`go.work` の下でビルドすると各アプリの `go.sum` に行が増えるので、コミットに含めない。
 
 スキルとフックは apm で配置し、Git で追跡しない。clone した後の最初のセッションで、セッションの開始のフックが配置する。手で配置するときは次を実行する。
 

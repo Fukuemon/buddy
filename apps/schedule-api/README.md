@@ -139,7 +139,7 @@ sqlc diff
 ## コンテナのイメージ
 
 ```sh
-docker build -t buddy-schedule-api .
+docker build -f apps/schedule-api/Dockerfile -t buddy-schedule-api ../..
 ```
 
 イメージは distroless の上に `api` と `migrate` の 2 つのバイナリを持つ。エントリポイントは `api` である。  

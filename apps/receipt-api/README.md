@@ -43,7 +43,7 @@ TOKEN=$(curl -s '127.0.0.1:9000/token?sub=dev-aoki&org_id=org-sample' | jq -r .a
 コンテナで動かすときは、次を実行する。
 
 ```sh
-docker build -t receipt-api .
+docker build -f apps/receipt-api/Dockerfile -t receipt-api ../..
 docker run --rm -p 8080:8080 -e OIDC_ISSUER=<発行者の URL> -e OIDC_AUDIENCE=receipt-api receipt-api
 ```
 

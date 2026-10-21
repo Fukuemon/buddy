@@ -44,8 +44,8 @@ receipt-api は、訪問の予定と電子カルテ（iBow）の実績を比べ�
 - `internal/check`: 上の 4 つをつなぐ。予定の取得元は `ScheduleSource` で受ける
 - `internal/gcal`: Google カレンダーの予定を、予定の CSV と同じ `csvio.Row` にしてから `normalize.Schedules` に通す
 - `internal/source`: 要求の `schedules` と `month` とトークンの組織から、予定の取得元（`CSVSchedules` か `internal/gcal`）を選ぶ
-- `internal/oidc`: access token を JWKS で検証する。schedule-api の同じパッケージを写した
-- `internal/httpapi`: `GET /healthz`、`GET /readyz`、`POST /v1/checks`。`/healthz` と `/readyz` 以外の要求のトークンを `internal/oidc` で確かめる
+- access token の検証は、共有の module の `packages/go/oidc` を使う（[ADR-0007](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0007-go-shared-module.md)）
+- `internal/httpapi`: `GET /healthz`、`GET /readyz`、`POST /v1/checks`。`/healthz` と `/readyz` 以外の要求のトークンを `packages/go/oidc` で確かめる
 
 ### 処理の流れ
 
