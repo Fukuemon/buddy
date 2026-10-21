@@ -41,7 +41,7 @@ export const StaffFilterSidebar = ({
   return (
     <nav
       aria-label="職員の絞り込み"
-      className="flex flex-col gap-2 p-2 desktop:gap-4 desktop:p-4"
+      className="flex flex-col gap-4 p-4"
       data-testid="staff-filter-sidebar"
     >
       <div className="flex items-center justify-between">

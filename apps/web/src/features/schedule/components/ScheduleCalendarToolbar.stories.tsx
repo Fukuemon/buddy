@@ -27,3 +27,7 @@ export const Default: Story = {}
 export const DayView: Story = { args: { view: 'day' } }
 
 export const WithoutCreate: Story = { args: { onCreate: undefined } }
+
+export const WithStaffFilterToggle: Story = {
+  args: { staffFilterToggle: { isOpen: false, controlsId: 'staff-filter-drawer', onOpen: fn() } },
+}

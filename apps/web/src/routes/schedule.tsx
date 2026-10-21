@@ -2,6 +2,7 @@ import { Outlet, createFileRoute, stripSearchParams } from '@tanstack/react-rout
 
 import { SiteHeaderContainer } from '#/components/site/SiteHeaderContainer'
 import { ScheduleCalendarContainer } from '#/features/schedule/components/ScheduleCalendarContainer'
+import { StaffFilterLayout } from '#/features/schedule/components/StaffFilterLayout'
 import { StaffFilterSidebarContainer } from '#/features/schedule/components/StaffFilterSidebarContainer'
 import {
   scheduleSearchDefaults,
@@ -21,14 +22,12 @@ function SchedulePage() {
   return (
     <div className="flex h-dvh flex-col">
       <SiteHeaderContainer current="/schedule" />
-      <div className="flex min-h-0 grow flex-col desktop:flex-row">
-        <aside className="max-h-40 w-full shrink-0 overflow-auto border-b border-border desktop:max-h-none desktop:w-56 desktop:border-r desktop:border-b-0">
-          <StaffFilterSidebarContainer />
-        </aside>
-        <main className="min-h-0 min-w-0 grow">
-          <ScheduleCalendarContainer />
-        </main>
-      </div>
+      <StaffFilterLayout
+        renderCalendar={(staffFilterToggle) => (
+          <ScheduleCalendarContainer staffFilterToggle={staffFilterToggle} />
+        )}
+        staffFilter={<StaffFilterSidebarContainer />}
+      />
       <Outlet />
     </div>
   )
