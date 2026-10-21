@@ -1,5 +1,6 @@
 import { clsx } from 'clsx'
 
+/** 並びの 1 つのリンク。 */
 export type SiteNavItem = { href: string; label: string }
 
 export type SiteNavProps = {

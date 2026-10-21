@@ -1,6 +1,7 @@
 import { clsx } from 'clsx'
 import { useId } from 'react'
 
+/** 選択肢。 */
 export type SegmentedControlOption<Id extends string> = {
   id: Id
   label: string

@@ -35,6 +35,7 @@ export type StoryRouteId =
   | '/receipt/'
   | '/receipt/result'
 
+/** story の parameters の appRouter に渡す値。 */
 export type AppRouterParameters = {
   /** story を置く route。 */
   route: StoryRouteId

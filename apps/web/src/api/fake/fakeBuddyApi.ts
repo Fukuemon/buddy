@@ -9,6 +9,7 @@ import {
   fakeTeams,
 } from './fixtures'
 
+/** createFakeBuddyApi の設定。 */
 export type FakeBuddyApiOptions = {
   /** 予定の架空のデータを散らす基準の日。既定は呼んだ時の日付。 */
   baseDate?: Date

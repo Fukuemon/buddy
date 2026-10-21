@@ -1,5 +1,6 @@
 import { buttonClassName } from '@buddy/ui'
 
+/** ログインできなかった理由。 */
 export type AuthErrorReason = 'failed' | 'forbidden'
 
 export type AuthErrorMessageProps = {

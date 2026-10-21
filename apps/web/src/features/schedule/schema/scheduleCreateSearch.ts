@@ -19,4 +19,5 @@ export const scheduleCreateSearchSchema = z.object({
   staffId: z.string().optional().catch(undefined),
 })
 
+/** 検証した後の `/schedule/new` の search params。 */
 export type ScheduleCreateSearch = z.infer<typeof scheduleCreateSearchSchema>

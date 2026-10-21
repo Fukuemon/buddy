@@ -14,6 +14,7 @@
     "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.4",
     "@redocly/cli": "2.59.0",
+    "eslint-plugin-jsdoc": "65.1.0",
     "lefthook": "^2.2.2",
     "textlint": "^15.8.0",
     "textlint-rule-no-mix-dearu-desumasu": "^6.0.4",

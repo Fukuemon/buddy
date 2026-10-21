@@ -18,6 +18,7 @@ export const queryKeys = {
   patients: (facilityId: FacilityId) => ['facilities', facilityId, 'patients'] as const,
 }
 
+/** 期間と職員で絞った、事業所の予定の一覧の query。 */
 export const scheduleListQueryOptions = (
   api: BuddyApi,
   facilityId: FacilityId,
@@ -28,6 +29,7 @@ export const scheduleListQueryOptions = (
     queryFn: () => api.schedules.list(facilityId, params),
   })
 
+/** 予定 1 件の query。 */
 export const scheduleQueryOptions = (
   api: BuddyApi,
   facilityId: FacilityId,
@@ -38,6 +40,7 @@ export const scheduleQueryOptions = (
     queryFn: () => api.schedules.get(facilityId, scheduleId),
   })
 
+/** 名前で絞った、事業所の職員の一覧の query。 */
 export const staffListQueryOptions = (
   api: BuddyApi,
   facilityId: FacilityId,
@@ -48,12 +51,14 @@ export const staffListQueryOptions = (
     queryFn: () => api.staff.list(facilityId, params),
   })
 
+/** 事業所のチームの一覧の query。 */
 export const teamListQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
     queryKey: queryKeys.teams(facilityId),
     queryFn: () => api.teams.list(facilityId),
   })
 
+/** 名前で絞った、事業所の利用者の一覧の query。 */
 export const patientListQueryOptions = (
   api: BuddyApi,
   facilityId: FacilityId,

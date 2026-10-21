@@ -50,6 +50,9 @@ export const scheduleFormSchema = z.discriminatedUnion('kind', [
   visitScheduleFormSchema,
 ])
 
+/** 通常の予定のフォームの値。 */
 export type NormalScheduleFormValues = z.infer<typeof normalScheduleFormSchema>
+/** 訪問の予定のフォームの値。 */
 export type VisitScheduleFormValues = z.infer<typeof visitScheduleFormSchema>
+/** 予定のフォームの値。kind で通常と訪問を分ける。 */
 export type ScheduleFormValues = z.infer<typeof scheduleFormSchema>

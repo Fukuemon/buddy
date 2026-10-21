@@ -1,6 +1,7 @@
 import { clsx } from 'clsx'
 import type { ReactNode } from 'react'
 
+/** 一覧の 1 項目。content に今の値の要約を渡す。 */
 export type ScheduleFieldSummaryItem<Id extends string> = {
   id: Id
   label: string

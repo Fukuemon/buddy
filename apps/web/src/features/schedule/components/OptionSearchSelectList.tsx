@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 import { SearchBox, Table } from '@buddy/ui'
 
+/** 一覧の選択肢。 */
 export type SelectOption = {
   id: string
   name: string
