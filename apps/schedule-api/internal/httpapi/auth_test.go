@@ -11,12 +11,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/access"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/auth"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/staff"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/oidc"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/oidc/oidctest"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/usecase"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 )
 
 const (
@@ -79,9 +79,9 @@ func (fakeAuth) Authenticate(_ context.Context, id auth.Identity) (auth.Principa
 	return auth.Principal{Staff: staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: staffID, FacilityID: facilityID}}}}, nil
 }
 
-func (fakeAuth) FacilityOf(_ context.Context, r usecase.Resource, id string) (string, error) {
+func (fakeAuth) FacilityOf(_ context.Context, r access.Resource, id string) (string, error) {
 	switch {
-	case r == usecase.ResourceFacility:
+	case r == access.ResourceFacility:
 		return id, nil
 	case id == otherScheduleID:
 		return otherFacilityID, nil

@@ -1,4 +1,4 @@
-// Package mysql は、domain のリポジトリを MySQL と sqlc の生成コードで実装する。
+// Package mysql は、機能のパッケージのリポジトリを MySQL と sqlc の生成コードで実装する。
 package mysql
 
 import (
@@ -12,8 +12,8 @@ import (
 
 	driver "github.com/go-sql-driver/mysql"
 
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/civil"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql/sqlcgen"
 )
 

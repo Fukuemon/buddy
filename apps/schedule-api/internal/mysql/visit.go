@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/visit"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql/sqlcgen"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
 )
 
 // VisitRepository は、visit.Repository を実装する。

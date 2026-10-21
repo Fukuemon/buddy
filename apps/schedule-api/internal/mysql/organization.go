@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql/sqlcgen"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
 )
 
 // FacilityRepository は、organization.FacilityRepository を実装する。

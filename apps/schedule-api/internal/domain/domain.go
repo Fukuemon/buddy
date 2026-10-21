@@ -1,5 +1,5 @@
-// Package domain は、domain のパッケージが共有するエラー、ポート、値の検証を持つ。
-// domain のパッケージは標準ライブラリにだけ依存する。
+// Package domain は、機能のパッケージが共有するエラー、ポート、値の検証を持つ。
+// 標準ライブラリにだけ依存する。
 package domain
 
 import (
@@ -31,6 +31,23 @@ func (e *ValidationError) Is(target error) bool { return target == ErrInvalidInp
 // Invalid は、書式で組み立てた文を持つ ValidationError を返す。
 func Invalid(format string, args ...any) error {
 	return &ValidationError{Message: fmt.Sprintf(format, args...)}
+}
+
+// Reference は、リクエストの本文が指す ID が見つからない err を、入力の誤りに置き換える。
+// パスで指したリソースと違い、本文の ID が見つからないことは 404 ではなく 400 で返す。
+func Reference(label, id string, err error) error {
+	if errors.Is(err, ErrNotFound) {
+		return Invalid("%s %s が見つかりません", label, id)
+	}
+	return err
+}
+
+// SameFacility は、参照した ownerFacilityID が facilityID と違うときに入力の誤りを返す。
+func SameFacility(label, id, ownerFacilityID, facilityID string) error {
+	if ownerFacilityID != facilityID {
+		return Invalid("%s %s はこの事業所に属していません", label, id)
+	}
+	return nil
 }
 
 // IDGenerator は、エンティティの新しい ID を発行する。

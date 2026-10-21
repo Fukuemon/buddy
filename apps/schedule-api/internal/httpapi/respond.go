@@ -9,8 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/civil"
 )
 
 // bodyErrorPrefix は、本文を読めないときの 400 の文の先頭である。

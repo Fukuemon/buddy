@@ -3,8 +3,8 @@ package httpapi
 import (
 	"context"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/visit"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi/openapi"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
 )
 
 // VisitMasterUsecase は、訪問の情報のマスタのハンドラが使う操作である。

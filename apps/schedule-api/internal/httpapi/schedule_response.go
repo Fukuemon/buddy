@@ -1,10 +1,10 @@
 package httpapi
 
 import (
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/schedule"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/visit"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi/openapi"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
 )
 
 func toScheduleType(t schedule.Type) openapi.ScheduleType {

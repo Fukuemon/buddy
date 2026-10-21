@@ -1,0 +1,391 @@
+// Package inmem は、全リポジトリと Transactor と IDGenerator の、テストのためのメモリ上の実装を持つ。本番のコードから使わない。
+package inmem
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
+)
+
+// Tx は、fn をそのまま呼ぶ domain.Transactor である。Calls は WithinTx を呼んだ回数である。
+type Tx struct{ Calls int }
+
+// WithinTx は、呼んだ回数を数えて fn を呼ぶ。
+func (t *Tx) WithinTx(ctx context.Context, fn func(ctx context.Context) error) error {
+	t.Calls++
+	return fn(ctx)
+}
+
+// SeqIDs は、連番の ID を発行する domain.IDGenerator である。
+type SeqIDs struct{ n int }
+
+// NewID は、次の連番の ID を返す。
+func (s *SeqIDs) NewID() string {
+	s.n++
+	return fmt.Sprintf("NEW%023d", s.n)
+}
+
+// Store は、全リポジトリのメモリ上の実装が共有する値である。
+type Store struct {
+	Facilities    map[string]organization.Facility
+	FacilityByOrg map[string]string
+	Departments   map[string]organization.Department
+	Teams         map[string]organization.Team
+	Positions     map[string]organization.Position
+	Policies      map[string]organization.Policy
+	Staff         map[string]staff.Detail
+	Grants        map[string][]staff.Grant
+	Patients      map[string]patient.Detail
+	Codes         map[string]visit.ServiceCode
+	Categories    map[string]visit.Category
+	Infos         map[string]visit.Info
+	Types         map[string]schedule.Type
+	Schedules     map[string]schedule.Detail
+	Recurring     map[string]schedule.RecurringDetail
+	Cancels       map[string]schedule.Cancel
+}
+
+// NewStore は、空の Store を作る。
+func NewStore() *Store {
+	return &Store{
+		Facilities:    map[string]organization.Facility{},
+		FacilityByOrg: map[string]string{},
+		Departments:   map[string]organization.Department{},
+		Teams:         map[string]organization.Team{},
+		Positions:     map[string]organization.Position{},
+		Policies:      map[string]organization.Policy{},
+		Staff:         map[string]staff.Detail{},
+		Grants:        map[string][]staff.Grant{},
+		Patients:      map[string]patient.Detail{},
+		Codes:         map[string]visit.ServiceCode{},
+		Categories:    map[string]visit.Category{},
+		Infos:         map[string]visit.Info{},
+		Types:         map[string]schedule.Type{},
+		Schedules:     map[string]schedule.Detail{},
+		Recurring:     map[string]schedule.RecurringDetail{},
+		Cancels:       map[string]schedule.Cancel{},
+	}
+}
+
+func get[T any](m map[string]T, id string) (T, error) {
+	v, ok := m[id]
+	if !ok {
+		var zero T
+		return zero, domain.ErrNotFound
+	}
+	return v, nil
+}
+
+// Facilities は、organization.FacilityRepository のメモリ上の実装である。
+type Facilities struct{ *Store }
+
+// Get は、事業所を返す。
+func (s Facilities) Get(_ context.Context, id string) (organization.Facility, error) {
+	return get(s.Facilities, id)
+}
+
+// GetByOrgID は、組織に結び付けた事業所を返す。
+func (s Facilities) GetByOrgID(_ context.Context, orgID string) (organization.Facility, error) {
+	return get(s.Facilities, s.FacilityByOrg[orgID])
+}
+
+// Departments は、organization.DepartmentRepository のメモリ上の実装である。
+type Departments struct{ *Store }
+
+// Get は、部署を返す。
+func (s Departments) Get(_ context.Context, id string) (organization.Department, error) {
+	return get(s.Departments, id)
+}
+
+// ListByFacility は、事業所の部署を返す。
+func (s Departments) ListByFacility(_ context.Context, facilityID string) ([]organization.Department, error) {
+	var out []organization.Department
+	for _, d := range s.Departments {
+		if d.FacilityID == facilityID {
+			out = append(out, d)
+		}
+	}
+	return out, nil
+}
+
+// Teams は、organization.TeamRepository のメモリ上の実装である。
+type Teams struct{ *Store }
+
+// Get は、チームを返す。
+func (s Teams) Get(_ context.Context, id string) (organization.Team, error) { return get(s.Teams, id) }
+
+// ListByFacility は、常に空を返す。
+func (s Teams) ListByFacility(context.Context, string) ([]organization.Team, error) {
+	return nil, nil
+}
+
+// Create は、チームを保存する。
+func (s Teams) Create(_ context.Context, t organization.Team) error {
+	s.Teams[t.ID] = t
+	return nil
+}
+
+// Positions は、organization.PositionRepository のメモリ上の実装である。
+type Positions struct{ *Store }
+
+// Get は、役職を返す。
+func (s Positions) Get(_ context.Context, id string) (organization.Position, error) {
+	return get(s.Positions, id)
+}
+
+// ListByFacility は、常に空を返す。
+func (s Positions) ListByFacility(context.Context, string) ([]organization.Position, error) {
+	return nil, nil
+}
+
+// Create は、役職を保存する。
+func (s Positions) Create(_ context.Context, p organization.Position) error {
+	s.Positions[p.ID] = p
+	return nil
+}
+
+// Policies は、organization.PolicyRepository のメモリ上の実装である。
+type Policies struct{ *Store }
+
+// Get は、権限を返す。
+func (s Policies) Get(_ context.Context, id string) (organization.Policy, error) {
+	return get(s.Policies, id)
+}
+
+// List は、常に空を返す。
+func (s Policies) List(context.Context) ([]organization.Policy, error) { return nil, nil }
+
+// ListByIDs は、ids のうち見つかった権限を返す。
+func (s Policies) ListByIDs(_ context.Context, ids []string) ([]organization.Policy, error) {
+	var out []organization.Policy
+	for _, id := range ids {
+		if p, ok := s.Policies[id]; ok {
+			out = append(out, p)
+		}
+	}
+	return out, nil
+}
+
+// Staff は、staff.Repository のメモリ上の実装である。
+type Staff struct{ *Store }
+
+// Create は、職員と権限を保存する。
+func (s Staff) Create(_ context.Context, st staff.Staff, grants []staff.Grant) error {
+	s.Staff[st.ID] = staff.Detail{Summary: staff.Summary{Staff: st}}
+	s.Grants[st.ID] = grants
+	return nil
+}
+
+// ChangePosition は、職員の役職を替え、権限を grants に置き換える。
+func (s Staff) ChangePosition(_ context.Context, id, positionID string, grants []staff.Grant) error {
+	d, ok := s.Staff[id]
+	if !ok {
+		return domain.ErrNotFound
+	}
+	d.PositionID = positionID
+	d.Policies = nil
+	s.Staff[id] = d
+	s.Grants[id] = grants
+	return nil
+}
+
+// Get は、職員を返す。
+func (s Staff) Get(_ context.Context, id string) (staff.Detail, error) { return get(s.Staff, id) }
+
+// ListByFacility は、事業所の職員を返す。
+func (s Staff) ListByFacility(_ context.Context, facilityID string, _ staff.ListQuery) ([]staff.Summary, error) {
+	var out []staff.Summary
+	for _, d := range s.Staff {
+		if d.FacilityID == facilityID {
+			out = append(out, d.Summary)
+		}
+	}
+	return out, nil
+}
+
+// FindIDBySub は、sub を結び付けた職員の ID を返す。
+func (s Staff) FindIDBySub(_ context.Context, sub string) (string, error) {
+	for id, d := range s.Staff {
+		if d.Sub != nil && *d.Sub == sub {
+			return id, nil
+		}
+	}
+	return "", domain.ErrNotFound
+}
+
+// LinkSub は、事業所の同じメールで sub がまだない職員に sub を結び付ける。
+func (s Staff) LinkSub(_ context.Context, facilityID, email, sub string) error {
+	for id, d := range s.Staff {
+		if d.FacilityID == facilityID && d.Email == email && d.Sub == nil {
+			d.Sub = &sub
+			s.Staff[id] = d
+		}
+	}
+	return nil
+}
+
+// Patients は、patient.Repository のメモリ上の実装である。
+type Patients struct{ *Store }
+
+// Create は、利用者を保存する。
+func (s Patients) Create(_ context.Context, p patient.Patient) error {
+	s.Patients[p.ID] = patient.Detail{Patient: p}
+	return nil
+}
+
+// Get は、利用者を返す。
+func (s Patients) Get(_ context.Context, id string) (patient.Detail, error) {
+	return get(s.Patients, id)
+}
+
+// ListByFacility は、常に空を返す。
+func (s Patients) ListByFacility(context.Context, string, patient.ListQuery) ([]patient.Detail, error) {
+	return nil, nil
+}
+
+// Visits は、visit.Repository のメモリ上の実装である。
+type Visits struct{ *Store }
+
+// CreateInfo は、訪問の情報を保存する。
+func (s Visits) CreateInfo(_ context.Context, i visit.Info) error {
+	s.Infos[i.ID] = i
+	return nil
+}
+
+// DeleteInfoIfUnused は、どの予定も指していない訪問の情報を消す。
+func (s Visits) DeleteInfoIfUnused(_ context.Context, id string) error {
+	for _, d := range s.Schedules {
+		if d.VisitInfoID != nil && *d.VisitInfoID == id {
+			return nil
+		}
+	}
+	delete(s.Infos, id)
+	return nil
+}
+
+// GetServiceCode は、サービスコードを返す。
+func (s Visits) GetServiceCode(_ context.Context, id string) (visit.ServiceCode, error) {
+	return get(s.Codes, id)
+}
+
+// ListServiceCodes は、常に空を返す。
+func (s Visits) ListServiceCodes(context.Context) ([]visit.ServiceCode, error) { return nil, nil }
+
+// ListCategories は、常に空を返す。
+func (s Visits) ListCategories(context.Context) ([]visit.Category, error) { return nil, nil }
+
+// ListCategoriesByIDs は、ids のうち見つかった訪問の区分を返す。
+func (s Visits) ListCategoriesByIDs(_ context.Context, ids []string) ([]visit.Category, error) {
+	var out []visit.Category
+	for _, id := range ids {
+		if c, ok := s.Categories[id]; ok {
+			out = append(out, c)
+		}
+	}
+	return out, nil
+}
+
+// Schedules は、schedule.Repository のメモリ上の実装である。
+type Schedules struct{ *Store }
+
+// GetType は、予定の種類を返す。
+func (s Schedules) GetType(_ context.Context, id string) (schedule.Type, error) {
+	return get(s.Types, id)
+}
+
+// ListTypes は、常に空を返す。
+func (s Schedules) ListTypes(context.Context) ([]schedule.Type, error) { return nil, nil }
+
+// Create は、単発の予定を保存する。
+func (s Schedules) Create(_ context.Context, sc schedule.Schedule) error {
+	s.Schedules[sc.ID] = schedule.Detail{Schedule: sc, TypeName: s.Types[sc.TypeID].Name}
+	return nil
+}
+
+// Lock は、予定がなければ domain.ErrNotFound を返す。
+func (s Schedules) Lock(_ context.Context, id string) error {
+	_, err := get(s.Schedules, id)
+	return err
+}
+
+// Update は、単発の予定を置き換える。繰り返しの予定への参照は前のままにする。
+func (s Schedules) Update(_ context.Context, sc schedule.Schedule) error {
+	cur, ok := s.Schedules[sc.ID]
+	if !ok {
+		return domain.ErrNotFound
+	}
+	sc.RecurringScheduleID = cur.RecurringScheduleID
+	s.Schedules[sc.ID] = schedule.Detail{Schedule: sc, TypeName: s.Types[sc.TypeID].Name}
+	return nil
+}
+
+// Get は、単発の予定と、あればキャンセルを返す。
+func (s Schedules) Get(_ context.Context, id string) (schedule.Detail, error) {
+	d, err := get(s.Schedules, id)
+	if c, ok := s.Cancels[id]; ok {
+		d.Cancel = &c
+	}
+	return d, err
+}
+
+// ListByFacility は、事業所の単発の予定を返す。
+func (s Schedules) ListByFacility(_ context.Context, facilityID string, _ schedule.ListQuery) ([]schedule.Detail, error) {
+	var out []schedule.Detail
+	for _, d := range s.Schedules {
+		if d.FacilityID == facilityID {
+			out = append(out, d)
+		}
+	}
+	return out, nil
+}
+
+// CreateRecurring は、繰り返しの予定を保存する。
+func (s Schedules) CreateRecurring(_ context.Context, rs schedule.RecurringSchedule) error {
+	s.Recurring[rs.ID] = schedule.RecurringDetail{RecurringSchedule: rs, TypeName: s.Types[rs.TypeID].Name}
+	return nil
+}
+
+// GetRecurring は、繰り返しの予定を返す。
+func (s Schedules) GetRecurring(_ context.Context, id string) (schedule.RecurringDetail, error) {
+	return get(s.Recurring, id)
+}
+
+// ListRecurringByFacility は、事業所の繰り返しの予定を返す。
+func (s Schedules) ListRecurringByFacility(_ context.Context, facilityID string, _ schedule.ListQuery) ([]schedule.RecurringDetail, error) {
+	var out []schedule.RecurringDetail
+	for _, d := range s.Recurring {
+		if d.FacilityID == facilityID {
+			out = append(out, d)
+		}
+	}
+	return out, nil
+}
+
+// AddExclusion は、繰り返しの予定から d の回を除外する。除外済みなら domain.ErrConflict を返す。
+func (s Schedules) AddExclusion(_ context.Context, id string, d civil.Date) error {
+	rs := s.Recurring[id]
+	for _, e := range rs.ExclusionDates {
+		if e == d {
+			return domain.ErrConflict
+		}
+	}
+	rs.ExclusionDates = append(rs.ExclusionDates, d)
+	s.Recurring[id] = rs
+	return nil
+}
+
+// CreateCancel は、キャンセルを保存する。キャンセル済みなら domain.ErrConflict を返す。
+func (s Schedules) CreateCancel(_ context.Context, c schedule.Cancel) error {
+	if _, ok := s.Cancels[c.ScheduleID]; ok {
+		return domain.ErrConflict
+	}
+	s.Cancels[c.ScheduleID] = c
+	return nil
+}

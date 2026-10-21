@@ -4,15 +4,14 @@ import (
 	"context"
 	"errors"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/auth"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/staff"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi/openapi"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/usecase"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 )
 
 // StaffUsecase は、職員のハンドラが使う操作である。
 type StaffUsecase interface {
-	Create(ctx context.Context, in usecase.CreateStaffInput) (staff.Detail, error)
+	Create(ctx context.Context, in staff.CreateInput) (staff.Detail, error)
 	Get(ctx context.Context, id string) (staff.Detail, error)
 	List(ctx context.Context, facilityID string, q staff.ListQuery) ([]staff.Summary, error)
 	ChangePosition(ctx context.Context, id, positionID string) (staff.Detail, error)
@@ -94,7 +93,7 @@ func (s server) ListUsers(ctx context.Context, req openapi.ListUsersRequestObjec
 
 func (s server) CreateUser(ctx context.Context, req openapi.CreateUserRequestObject) (openapi.CreateUserResponseObject, error) {
 	b := req.Body
-	d, err := s.u.Staff.Create(ctx, usecase.CreateStaffInput{
+	d, err := s.u.Staff.Create(ctx, staff.CreateInput{
 		FacilityID:   req.FacilityId,
 		Username:     b.Username,
 		Email:        b.Email,

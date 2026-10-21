@@ -11,14 +11,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/auth"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/patient"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/schedule"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/staff"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/usecase"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 )
 
 const (
@@ -34,7 +33,7 @@ type fakeSchedules struct {
 	err       error
 	listCalls int
 	lastQuery schedule.ListQuery
-	lastSlot  usecase.SlotInput
+	lastSlot  schedule.SlotInput
 	detail    schedule.Detail
 }
 
@@ -52,22 +51,22 @@ func (f *fakeSchedules) GetRecurring(context.Context, string) (schedule.Recurrin
 	return schedule.RecurringDetail{}, f.err
 }
 
-func (f *fakeSchedules) List(_ context.Context, _ string, q schedule.ListQuery) (usecase.List, error) {
+func (f *fakeSchedules) List(_ context.Context, _ string, q schedule.ListQuery) (schedule.List, error) {
 	f.listCalls++
 	f.lastQuery = q
-	return usecase.List{Schedules: []schedule.Detail{f.detail}, RecurringSchedules: []schedule.RecurringDetail{}}, f.err
+	return schedule.List{Schedules: []schedule.Detail{f.detail}, RecurringSchedules: []schedule.RecurringDetail{}}, f.err
 }
 
-func (f *fakeSchedules) Create(_ context.Context, _ string, in usecase.SlotInput) (schedule.Detail, error) {
+func (f *fakeSchedules) Create(_ context.Context, _ string, in schedule.SlotInput) (schedule.Detail, error) {
 	f.lastSlot = in
 	return f.detail, f.err
 }
 
-func (f *fakeSchedules) CreateRecurring(context.Context, string, usecase.SlotInput, usecase.RuleInput) (schedule.RecurringDetail, error) {
+func (f *fakeSchedules) CreateRecurring(context.Context, string, schedule.SlotInput, schedule.RuleInput) (schedule.RecurringDetail, error) {
 	return schedule.RecurringDetail{}, f.err
 }
 
-func (f *fakeSchedules) ChangeOccurrence(context.Context, string, civil.Date, usecase.SlotInput) (schedule.Detail, error) {
+func (f *fakeSchedules) ChangeOccurrence(context.Context, string, civil.Date, schedule.SlotInput) (schedule.Detail, error) {
 	return f.detail, f.err
 }
 
@@ -75,7 +74,7 @@ func (f *fakeSchedules) Cancel(context.Context, string, string) (schedule.Cancel
 	return schedule.Cancel{}, f.err
 }
 
-func (f *fakeSchedules) Update(_ context.Context, _ string, in usecase.SlotInput) (schedule.Detail, error) {
+func (f *fakeSchedules) Update(_ context.Context, _ string, in schedule.SlotInput) (schedule.Detail, error) {
 	f.lastSlot = in
 	return f.detail, f.err
 }
@@ -91,7 +90,7 @@ func (f *fakeStaff) ChangePosition(_ context.Context, _, positionID string) (sta
 	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: staffID, PositionID: positionID}}, Policies: []staff.PolicyGrant{}}, nil
 }
 
-func (f *fakeStaff) Create(context.Context, usecase.CreateStaffInput) (staff.Detail, error) {
+func (f *fakeStaff) Create(context.Context, staff.CreateInput) (staff.Detail, error) {
 	return staff.Detail{}, nil
 }
 
@@ -105,7 +104,7 @@ func (f *fakeStaff) List(_ context.Context, _ string, q staff.ListQuery) ([]staf
 
 type fakePatients struct{ listCalls int }
 
-func (f *fakePatients) Create(context.Context, usecase.CreatePatientInput) (patient.Detail, error) {
+func (f *fakePatients) Create(context.Context, patient.CreateInput) (patient.Detail, error) {
 	return patient.Detail{}, nil
 }
 
@@ -390,7 +389,7 @@ func TestChangeUserPosition(t *testing.T) {
 	}
 }
 
-// TestUsecaseReceivesPrincipal は、usecase が権限を判定できるよう、認証のミドルウェアが特定した職員を ctx で渡すことを確かめる。
+// TestUsecaseReceivesPrincipal は、操作が権限を判定できるよう、認証のミドルウェアが特定した職員を ctx で渡すことを確かめる。
 func TestUsecaseReceivesPrincipal(t *testing.T) {
 	s := &fakeSchedules{}
 	do(t, newRouter(s, &fakeStaff{}, &fakePatients{}), http.MethodGet, "/v1/schedules/"+scheduleID, "")

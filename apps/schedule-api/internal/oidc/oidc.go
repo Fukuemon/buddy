@@ -16,7 +16,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/time/rate"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/auth"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
 )
 
 const (
