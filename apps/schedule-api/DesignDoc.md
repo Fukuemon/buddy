@@ -48,7 +48,7 @@ schedule-api は、事業所ごとの予定、職員、利用者、権限を持�
 | アダプタ | `internal/mysql` | 機能のパッケージのリポジトリを、sqlc の生成コード（`sqlcgen`）で実装する |
 | 共有 | `packages/go/oidc`、`packages/go/healthcheck`（別の module） | access token の JWKS での検証、テストと `cmd/devissuer` が使う偽物の発行者（`oidctest`）、`api healthcheck`。receipt-api と共有する（ADR-0007） |
 | アダプタ | `internal/httpapi/openapi` | `openapi.yaml` から生成した型と strict server のインターフェイス |
-| アダプタ | `internal/httpapi` | 生成したインターフェイスを実装するハンドラと、gin のミドルウェア |
+| アダプタ | `internal/httpapi` | 生成したインターフェイスを実装するハンドラと、gin のミドルウェア。要求は、埋め込んだ `openapi.yaml` の定義で確かめる |
 | cmd | `cmd/api`、`cmd/migrate`、`cmd/devissuer` | 起動、マイグレーションとシード、手元で試すための偽物の発行者（イメージに入れない） |
 
 ### 表の構成
