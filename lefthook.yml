@@ -10,3 +10,6 @@ pre-commit:
     textlint:
       glob: "*.md"
       run: pnpm exec textlint {staged_files}
+    openapi:
+      glob: "{apps/*/openapi.yaml,redocly.yaml,.redocly.lint-ignore.yaml}"
+      run: pnpm lint:openapi

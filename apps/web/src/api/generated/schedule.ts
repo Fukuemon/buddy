@@ -655,7 +655,7 @@ export interface components {
         VisitInfoRequest: {
             patient_id: components["schemas"]["ID"];
             assigned_staff_id: components["schemas"]["ID"];
-            companion_id?: components["schemas"]["ID"] | null;
+            companion_id?: (string & components["schemas"]["ID"]) | null;
             service_code_id: components["schemas"]["ID"];
             visit_category_ids?: components["schemas"]["ID"][];
         };
@@ -676,7 +676,7 @@ export interface components {
             patient_name: string;
             assigned_staff_id: components["schemas"]["ID"];
             assigned_staff_name: string;
-            companion_id: components["schemas"]["ID"] | null;
+            companion_id: (string & components["schemas"]["ID"]) | null;
             companion_name: string | null;
             service_code_id: components["schemas"]["ID"];
             service_code: string;
@@ -702,7 +702,7 @@ export interface components {
             title: string | null;
             description: string | null;
             /** @description 繰り返しの予定の 1 回を置き換えた予定のとき、元の繰り返しの予定 */
-            recurring_schedule_id: components["schemas"]["ID"] | null;
+            recurring_schedule_id: (string & components["schemas"]["ID"]) | null;
             visit_info: components["schemas"]["VisitInfo"] | null;
             cancel: components["schemas"]["Cancel"] | null;
             /** Format: date-time */
@@ -723,7 +723,7 @@ export interface components {
             day_of_month?: number | null;
             week_of_month?: number | null;
             /** @description この日を含む */
-            end_date?: components["schemas"]["Date"] | null;
+            end_date?: (string & components["schemas"]["Date"]) | null;
         };
         RecurringSchedule: {
             id: components["schemas"]["ID"];

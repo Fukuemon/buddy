@@ -394,9 +394,11 @@ type RecurringRuleFrequency string
 
 // RecurringSchedule defines model for RecurringSchedule.
 type RecurringSchedule struct {
-	CreatedAt   time.Time `json:"created_at"`
-	Date        Date      `json:"date"`
-	Description *string   `json:"description"`
+	CreatedAt time.Time `json:"created_at"`
+
+	// Date 最初の回の日付
+	Date        Date    `json:"date"`
+	Description *string `json:"description"`
 
 	// EndTime Example: 09:30
 	EndTime Time `json:"end_time"`
@@ -510,7 +512,7 @@ type SlotRequest struct {
 	Date        Date    `json:"date"`
 	Description *string `json:"description,omitempty"`
 
-	// EndTime Example: 09:30
+	// EndTime start_time より後
 	EndTime Time `json:"end_time"`
 
 	// ScheduleTypeId Example: 01M3TC5H00QV17BC0J9V3393ZP
@@ -752,7 +754,7 @@ type CreateRecurringScheduleJSONBody struct {
 	Date        Date    `json:"date"`
 	Description *string `json:"description,omitempty"`
 
-	// EndTime Example: 09:30
+	// EndTime start_time より後
 	EndTime Time `json:"end_time"`
 
 	// RecurringRule weekly は day_of_week だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
@@ -821,7 +823,7 @@ type ChangeOccurrenceJSONBody struct {
 	Date        Date    `json:"date"`
 	Description *string `json:"description,omitempty"`
 
-	// EndTime Example: 09:30
+	// EndTime start_time より後
 	EndTime Time `json:"end_time"`
 
 	// OriginalDate 置き換える回の日付。繰り返しの規則に当たる日に限る

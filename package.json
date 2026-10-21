@@ -5,6 +5,7 @@
     "prepare": "[ -n \"$CI\" ] || lefthook install",
     "check:generated": "sh scripts/check-generated.sh",
     "check:screens": "node scripts/check-screens.mjs",
+    "lint:openapi": "redocly lint",
     "generate:db-docs": "sh scripts/build-db-docs.sh",
     "e2e": "pnpm --filter @buddy/e2e test",
     "site:build": "uv run zensical build --clean && pnpm --filter @buddy/web build-storybook && node scripts/build-docs-site.mjs && pnpm --filter @buddy/docs-site build"
@@ -12,6 +13,7 @@
   "devDependencies": {
     "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.4",
+    "@redocly/cli": "2.59.0",
     "lefthook": "^2.2.2",
     "textlint": "^15.8.0",
     "textlint-rule-no-mix-dearu-desumasu": "^6.0.4",
