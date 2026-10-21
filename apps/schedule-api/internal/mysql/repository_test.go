@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
@@ -32,6 +33,7 @@ const (
 	seedTeamRead      = "01M5E1S42TTS7QZK05YGS0GYRB"
 	seedTeamEdit      = "01M5E1S42TTS7QZK05YGS0GYRC"
 	seedUserRead      = "01M5E1S42TTS7QZK05YGS0GYR9"
+	seedStaffManage   = "01M5E5GP6Q8BQYNWN66QHJF60J"
 	seedAoki          = "01M3TC5TRG5200KYWTZW6ER3WN"
 	seedMori          = "01M3TC5VQR3MKFF9AA4BVKF44Z"
 	seedHayashi       = "01M3TC5WQ08KWBZX85WAZ1C4N7"
@@ -713,6 +715,7 @@ func TestPolicyList(t *testing.T) {
 		organization.ScheduleTeamEdit: true,
 		organization.ScheduleAllRead:  false,
 		organization.ScheduleAllEdit:  false,
+		organization.StaffManage:      false,
 	}
 	if len(got) != len(want) || !maps.Equal(needsTarget, want) {
 		t.Errorf("権限 = %+v", got)
@@ -764,5 +767,84 @@ func TestStaffChangePosition(t *testing.T) {
 	}
 	if targets != 0 {
 		t.Errorf("森の対象の行 = %d, want 0", targets)
+	}
+}
+
+// TestStaffAddAndRemoveGrant は、権限と対象を足し、同じ権限の 2 つ目を拒み、外すと対象も消えることを確かめる。
+func TestStaffAddAndRemoveGrant(t *testing.T) {
+	ctx := txContext(t)
+	r := NewStaffRepository(testDB)
+	g := staff.Grant{ID: "01M3TD00000000000000000040", PolicyID: seedUserRead,
+		Targets: []staff.Target{{ID: "01M3TD00000000000000000041", UserID: seedHayashi}}}
+	if err := r.AddGrant(ctx, seedMori, g); err != nil {
+		t.Fatal(err)
+	}
+	got, err := r.Get(ctx, seedMori)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.ContainsFunc(got.Policies, func(p staff.PolicyGrant) bool {
+		return p.UserPolicyID == g.ID && slices.Equal(p.TargetUserIDs, []string{seedHayashi})
+	}) {
+		t.Errorf("Policies = %+v", got.Policies)
+	}
+	dup := staff.Grant{ID: "01M3TD00000000000000000042", PolicyID: seedUserRead}
+	if err := r.AddGrant(ctx, seedMori, dup); !errors.Is(err, domain.ErrConflict) {
+		t.Errorf("同じ権限: err = %v, want ErrConflict", err)
+	}
+	if err := r.RemoveGrant(ctx, seedHayashi, g.ID); !errors.Is(err, domain.ErrNotFound) {
+		t.Errorf("別の職員の権限を外す: err = %v, want ErrNotFound", err)
+	}
+	if err := r.RemoveGrant(ctx, seedMori, g.ID); err != nil {
+		t.Fatal(err)
+	}
+	var targets int
+	tx := ctx.Value(txKey{}).(*sql.Tx)
+	if err := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM user_policy_targets WHERE user_policy_id = ?", g.ID).Scan(&targets); err != nil {
+		t.Fatal(err)
+	}
+	if targets != 0 {
+		t.Errorf("外した権限の対象の行 = %d, want 0", targets)
+	}
+}
+
+func TestSeedStaffManage(t *testing.T) {
+	ctx := txContext(t)
+	got, err := NewStaffRepository(testDB).Get(ctx, seedAoki)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.ContainsFunc(got.Policies, func(p staff.PolicyGrant) bool { return p.PolicyID == seedStaffManage }) {
+		t.Errorf("青木（管理者）の Policies = %+v, want 職員の管理を含む", got.Policies)
+	}
+}
+
+// TestGrantAllowsReadingTarget は、職員の権限を足すと、DB から読み直した職員の判定で対象の職員の予定を見られることを確かめる。
+func TestGrantAllowsReadingTarget(t *testing.T) {
+	ctx := txContext(t)
+	r := NewStaffRepository(testDB)
+	hayashi, err := r.Get(ctx, seedHayashi)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before, err := r.Get(ctx, seedMori)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if (auth.Principal{Staff: before}).CanRead(hayashi.ID, hayashi.TeamID) {
+		t.Fatal("森は、権限を足す前から林の予定を見られた")
+	}
+	g := staff.Grant{ID: "01M3TD00000000000000000050", PolicyID: seedUserRead,
+		Targets: []staff.Target{{ID: "01M3TD00000000000000000051", UserID: seedHayashi}}}
+	if err := r.AddGrant(ctx, seedMori, g); err != nil {
+		t.Fatal(err)
+	}
+	after, err := r.Get(ctx, seedMori)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := auth.Principal{Staff: after}
+	if !p.CanRead(hayashi.ID, hayashi.TeamID) || p.CanEdit(hayashi.ID, hayashi.TeamID) {
+		t.Errorf("森の権限 = %+v, want 林の予定の閲覧だけ", after.Policies)
 	}
 }

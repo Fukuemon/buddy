@@ -18,6 +18,17 @@ const (
 	companionID     = inmem.CompanionID
 )
 
+func allow(context.Context) error { return nil }
+
+func deny(context.Context) error { return domain.ErrForbidden }
+
+func newService(s *inmem.Store, guard staff.Guard) *staff.Service {
+	return staff.NewService(staff.Repositories{
+		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
+		Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
+	}, &inmem.Tx{}, &inmem.SeqIDs{}, guard)
+}
+
 func TestStaffCreate(t *testing.T) {
 	const depID, teamID, posID, otherDepID = "DEP", "TEAM", "POS", "OTHERDEP"
 	setup := func() *inmem.Store {
@@ -35,8 +46,8 @@ func TestStaffCreate(t *testing.T) {
 	newUC := func(s *inmem.Store) *staff.Service {
 		return staff.NewService(staff.Repositories{
 			Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
-			Positions: inmem.Positions{Store: s}, Staff: inmem.Staff{Store: s},
-		}, &inmem.Tx{}, &inmem.SeqIDs{})
+			Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
+		}, &inmem.Tx{}, &inmem.SeqIDs{}, allow)
 	}
 	in := staff.CreateInput{
 		FacilityID: facilityID, Username: "森 健太", Email: "kenta.mori@example.com",
@@ -85,8 +96,8 @@ func TestStaffChangePosition(t *testing.T) {
 	newUC := func(s *inmem.Store) *staff.Service {
 		return staff.NewService(staff.Repositories{
 			Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
-			Positions: inmem.Positions{Store: s}, Staff: inmem.Staff{Store: s},
-		}, &inmem.Tx{}, &inmem.SeqIDs{})
+			Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
+		}, &inmem.Tx{}, &inmem.SeqIDs{}, allow)
 	}
 	ctx := context.Background()
 
@@ -114,5 +125,102 @@ func TestStaffChangePosition(t *testing.T) {
 	}
 	if _, err := newUC(setup()).ChangePosition(ctx, "MISSING", leaderID); !errors.Is(err, domain.ErrNotFound) {
 		t.Errorf("無い職員: err = %v, want ErrNotFound", err)
+	}
+}
+
+// grantStore は、職員 staffID（チーム TEAM）と、同じ事業所の職員 companionID、チーム TEAM と別の事業所のチーム OTHERTEAM、
+// 権限 SELF（対象なし）、USER（職員を対象にする）、TEAM（チームを対象にする）を持つ store を返す。
+func grantStore() *inmem.Store {
+	s := inmem.Seeded()
+	s.Teams["TEAM"] = organization.Team{ID: "TEAM", FacilityID: facilityID}
+	s.Teams["OTHERTEAM"] = organization.Team{ID: "OTHERTEAM", FacilityID: otherFacilityID}
+	s.Policies["SELF"] = organization.Policy{ID: "SELF", Code: organization.ScheduleSelfEdit}
+	s.Policies["USER"] = organization.Policy{ID: "USER", Code: organization.ScheduleUserRead, NeedsTarget: true}
+	s.Policies["TEAM"] = organization.Policy{ID: "TEAM", Code: organization.ScheduleTeamEdit, NeedsTarget: true}
+	return s
+}
+
+func TestStaffAddGrant(t *testing.T) {
+	ctx := context.Background()
+	tests := []struct {
+		name    string
+		in      staff.GrantInput
+		wantErr error
+	}{
+		{"対象なしの権限", staff.GrantInput{PolicyID: "SELF"}, nil},
+		{"職員を対象にする権限", staff.GrantInput{PolicyID: "USER", TargetUserIDs: []string{companionID}}, nil},
+		{"チームを対象にする権限", staff.GrantInput{PolicyID: "TEAM", TargetTeamIDs: []string{"TEAM"}}, nil},
+		{"対象なしの権限に対象", staff.GrantInput{PolicyID: "SELF", TargetUserIDs: []string{companionID}}, domain.ErrInvalidInput},
+		{"職員の権限に対象なし", staff.GrantInput{PolicyID: "USER"}, domain.ErrInvalidInput},
+		{"職員の権限にチーム", staff.GrantInput{PolicyID: "USER", TargetTeamIDs: []string{"TEAM"}}, domain.ErrInvalidInput},
+		{"チームの権限に職員", staff.GrantInput{PolicyID: "TEAM", TargetUserIDs: []string{companionID}}, domain.ErrInvalidInput},
+		{"別の事業所の職員", staff.GrantInput{PolicyID: "USER", TargetUserIDs: []string{inmem.OtherStaffID}}, domain.ErrInvalidInput},
+		{"別の事業所のチーム", staff.GrantInput{PolicyID: "TEAM", TargetTeamIDs: []string{"OTHERTEAM"}}, domain.ErrInvalidInput},
+		{"重なる対象", staff.GrantInput{PolicyID: "USER", TargetUserIDs: []string{companionID, companionID}}, domain.ErrInvalidInput},
+		{"無い権限", staff.GrantInput{PolicyID: "MISSING"}, domain.ErrInvalidInput},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := grantStore()
+			_, err := newService(s, allow).AddGrant(ctx, staffID, tt.in)
+			if tt.wantErr != nil {
+				if !errors.Is(err, tt.wantErr) {
+					t.Fatalf("err = %v, want %v", err, tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			g := s.Grants[staffID]
+			if len(g) != 1 || g[0].PolicyID != tt.in.PolicyID || len(g[0].Targets) != len(tt.in.TargetUserIDs)+len(tt.in.TargetTeamIDs) {
+				t.Errorf("grants = %+v", g)
+			}
+		})
+	}
+
+	s := grantStore()
+	uc := newService(s, allow)
+	if _, err := uc.AddGrant(ctx, staffID, staff.GrantInput{PolicyID: "SELF"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := uc.AddGrant(ctx, staffID, staff.GrantInput{PolicyID: "SELF"}); !errors.Is(err, domain.ErrConflict) {
+		t.Errorf("同じ権限を 2 回: err = %v, want ErrConflict", err)
+	}
+	if _, err := uc.AddGrant(ctx, "MISSING", staff.GrantInput{PolicyID: "SELF"}); !errors.Is(err, domain.ErrNotFound) {
+		t.Errorf("無い職員: err = %v, want ErrNotFound", err)
+	}
+}
+
+func TestStaffRemoveGrant(t *testing.T) {
+	ctx := context.Background()
+	s := grantStore()
+	d := s.Staff[staffID]
+	d.Policies = []staff.PolicyGrant{{UserPolicyID: "UP1", PolicyID: "SELF"}}
+	s.Staff[staffID] = d
+	uc := newService(s, allow)
+	if _, err := uc.RemoveGrant(ctx, staffID, "UP1"); err != nil {
+		t.Fatal(err)
+	}
+	if len(s.Staff[staffID].Policies) != 0 {
+		t.Errorf("Policies = %+v, want なし", s.Staff[staffID].Policies)
+	}
+	if _, err := uc.RemoveGrant(ctx, staffID, "UP1"); !errors.Is(err, domain.ErrNotFound) {
+		t.Errorf("外した権限をもう一度: err = %v, want ErrNotFound", err)
+	}
+}
+
+// TestStaffManageForbidden は、職員の管理を許されない職員には、権限と役職を変える操作が domain.ErrForbidden を返すことを確かめる。
+func TestStaffManageForbidden(t *testing.T) {
+	ctx := context.Background()
+	uc := newService(grantStore(), deny)
+	if _, err := uc.AddGrant(ctx, staffID, staff.GrantInput{PolicyID: "SELF"}); !errors.Is(err, domain.ErrForbidden) {
+		t.Errorf("AddGrant: err = %v", err)
+	}
+	if _, err := uc.RemoveGrant(ctx, staffID, "UP1"); !errors.Is(err, domain.ErrForbidden) {
+		t.Errorf("RemoveGrant: err = %v", err)
+	}
+	if _, err := uc.ChangePosition(ctx, staffID, "POS"); !errors.Is(err, domain.ErrForbidden) {
+		t.Errorf("ChangePosition: err = %v", err)
 	}
 }

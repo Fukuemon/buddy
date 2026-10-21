@@ -248,11 +248,53 @@ export interface paths {
         /**
          * 職員の役職を変える
          * @description 職員の役職を変え、職員の権限を新しい役職の既定で写し直す。職員ごとに足した権限と対象は消える。
-         *     チームを対象にする権限は、職員の所属のチームを対象にする。
+         *     チームを対象にする権限は、職員の所属のチームを対象にする。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         put: operations["changeUserPosition"];
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/users/{user_id}/policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 職員に権限を足す
+         * @description 職員に権限を 1 つ足す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         *     職員を対象にする権限（schedule.user.*）には target_user_ids を、チームを対象にする権限（schedule.team.*）には
+         *     target_team_ids を 1 つ以上指定する。対象を指定しない権限には、どちらも指定できない。対象は同じ事業所のものに限る。
+         */
+        post: operations["addUserPolicy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/users/{user_id}/policies/{user_policy_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * 職員の権限を外す
+         * @description 職員の権限と、その対象を外す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        delete: operations["removeUserPolicy"];
         options?: never;
         head?: never;
         patch?: never;
@@ -503,7 +545,7 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
-        /** @description 職員に与える権限。7 つの行をマイグレーションが入れ、API では作らない */
+        /** @description 職員に与える権限。8 つの行をマイグレーションが入れ、API では作らない */
         Policy: {
             id: components["schemas"]["ID"];
             /**
@@ -1254,6 +1296,70 @@ export interface operations {
         };
         responses: {
             /** @description 役職を変えた職員と権限 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffDetail"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    addUserPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["ID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    policy_id: components["schemas"]["ID"];
+                    target_user_ids?: components["schemas"]["ID"][];
+                    target_team_ids?: components["schemas"]["ID"][];
+                };
+            };
+        };
+        responses: {
+            /** @description 権限を足した職員と権限 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffDetail"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    removeUserPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["ID"];
+                user_policy_id: components["schemas"]["ID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 権限を外した職員と権限 */
             200: {
                 headers: {
                     [name: string]: unknown;

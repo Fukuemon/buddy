@@ -15,6 +15,8 @@ type StaffUsecase interface {
 	Get(ctx context.Context, id string) (staff.Detail, error)
 	List(ctx context.Context, facilityID string, q staff.ListQuery) ([]staff.Summary, error)
 	ChangePosition(ctx context.Context, id, positionID string) (staff.Detail, error)
+	AddGrant(ctx context.Context, id string, in staff.GrantInput) (staff.Detail, error)
+	RemoveGrant(ctx context.Context, id, userPolicyID string) (staff.Detail, error)
 }
 
 func toStaff(s staff.Summary) openapi.Staff {
@@ -115,4 +117,35 @@ func (s server) ChangeUserPosition(ctx context.Context, req openapi.ChangeUserPo
 		return nil, err
 	}
 	return openapi.ChangeUserPosition200JSONResponse(toStaffDetail(d)), nil
+}
+
+// AddUserPolicy は、職員に権限を足し、権限つきの職員を返す。
+func (s server) AddUserPolicy(ctx context.Context, req openapi.AddUserPolicyRequestObject) (openapi.AddUserPolicyResponseObject, error) {
+	b := req.Body
+	d, err := s.u.Staff.AddGrant(ctx, req.UserId, staff.GrantInput{
+		PolicyID:      b.PolicyId,
+		TargetUserIDs: ids(b.TargetUserIds),
+		TargetTeamIDs: ids(b.TargetTeamIds),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return openapi.AddUserPolicy201JSONResponse(toStaffDetail(d)), nil
+}
+
+// RemoveUserPolicy は、職員の権限を外し、権限つきの職員を返す。
+func (s server) RemoveUserPolicy(ctx context.Context, req openapi.RemoveUserPolicyRequestObject) (openapi.RemoveUserPolicyResponseObject, error) {
+	d, err := s.u.Staff.RemoveGrant(ctx, req.UserId, req.UserPolicyId)
+	if err != nil {
+		return nil, err
+	}
+	return openapi.RemoveUserPolicy200JSONResponse(toStaffDetail(d)), nil
+}
+
+// ids は、省略できる ID の配列を返す。省略されたときは nil を返す。
+func ids(p *[]openapi.ID) []string {
+	if p == nil {
+		return nil
+	}
+	return *p
 }

@@ -80,9 +80,22 @@ func (f *fakeSchedules) Update(_ context.Context, _ string, in schedule.SlotInpu
 }
 
 type fakeStaff struct {
-	listCalls      int
-	lastQuery      staff.ListQuery
-	lastPositionID string
+	listCalls        int
+	lastQuery        staff.ListQuery
+	lastPositionID   string
+	lastGrant        staff.GrantInput
+	lastUserPolicyID string
+	err              error
+}
+
+func (f *fakeStaff) AddGrant(_ context.Context, _ string, in staff.GrantInput) (staff.Detail, error) {
+	f.lastGrant = in
+	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: staffID}}, Policies: []staff.PolicyGrant{}}, f.err
+}
+
+func (f *fakeStaff) RemoveGrant(_ context.Context, _, userPolicyID string) (staff.Detail, error) {
+	f.lastUserPolicyID = userPolicyID
+	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: staffID}}, Policies: []staff.PolicyGrant{}}, f.err
 }
 
 func (f *fakeStaff) ChangePosition(_ context.Context, _, positionID string) (staff.Detail, error) {
@@ -386,6 +399,45 @@ func TestChangeUserPosition(t *testing.T) {
 	rec, _ = do(t, newRouter(&fakeSchedules{}, st, &fakePatients{}), http.MethodPut, "/v1/users/"+staffID+"/position", `{}`)
 	if rec.Code != http.StatusBadRequest {
 		t.Errorf("position_id が無い: status = %d", rec.Code)
+	}
+}
+
+func TestAddUserPolicy(t *testing.T) {
+	const policyID, targetID = "01M5E1S42TTS7QZK05YGS0GYR9", "01M3TC5VQR3MKFF9AA4BVKF44Z"
+	st := &fakeStaff{}
+	h := newRouter(&fakeSchedules{}, st, &fakePatients{})
+	rec, _ := do(t, h, http.MethodPost, "/v1/users/"+staffID+"/policies",
+		`{"policy_id":"`+policyID+`","target_user_ids":["`+targetID+`"]}`)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
+	}
+	if st.lastGrant.PolicyID != policyID || len(st.lastGrant.TargetUserIDs) != 1 || st.lastGrant.TargetUserIDs[0] != targetID {
+		t.Errorf("入力 = %+v", st.lastGrant)
+	}
+	for name, body := range map[string]string{
+		"policy_id が無い": `{}`,
+		"対象の ID の形が誤り":  `{"policy_id":"` + policyID + `","target_team_ids":["x"]}`,
+	} {
+		if rec, _ := do(t, h, http.MethodPost, "/v1/users/"+staffID+"/policies", body); rec.Code != http.StatusBadRequest {
+			t.Errorf("%s: status = %d", name, rec.Code)
+		}
+	}
+	forbidden := newRouter(&fakeSchedules{}, &fakeStaff{err: domain.ErrForbidden}, &fakePatients{})
+	if rec, body := do(t, forbidden, http.MethodPost, "/v1/users/"+staffID+"/policies", `{"policy_id":"`+policyID+`"}`); rec.Code != http.StatusForbidden || body["code"] != "forbidden" {
+		t.Errorf("職員の管理の権限が無い: status = %d, body = %v", rec.Code, body)
+	}
+}
+
+func TestRemoveUserPolicy(t *testing.T) {
+	const userPolicyID = "01M5E1V0KR0WQZ6M3B1C4D5E6K"
+	st := &fakeStaff{}
+	rec, _ := do(t, newRouter(&fakeSchedules{}, st, &fakePatients{}), http.MethodDelete, "/v1/users/"+staffID+"/policies/"+userPolicyID, "")
+	if rec.Code != http.StatusOK || st.lastUserPolicyID != userPolicyID {
+		t.Fatalf("status = %d, 外した権限 = %s", rec.Code, st.lastUserPolicyID)
+	}
+	notFound := newRouter(&fakeSchedules{}, &fakeStaff{err: domain.ErrNotFound}, &fakePatients{})
+	if rec, _ := do(t, notFound, http.MethodDelete, "/v1/users/"+staffID+"/policies/"+userPolicyID, ""); rec.Code != http.StatusNotFound {
+		t.Errorf("職員の権限が無い: status = %d", rec.Code)
 	}
 }
 

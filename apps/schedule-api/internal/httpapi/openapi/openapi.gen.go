@@ -337,7 +337,7 @@ type Patient struct {
 	UpdatedAt     time.Time `json:"updated_at"`
 }
 
-// Policy 職員に与える権限。7 つの行をマイグレーションが入れ、API では作らない
+// Policy 職員に与える権限。8 つの行をマイグレーションが入れ、API では作らない
 type Policy struct {
 	// Code 認可が読む権限の識別子
 	//
@@ -844,6 +844,14 @@ type CancelScheduleJSONBody struct {
 	Reason string `json:"reason"`
 }
 
+// AddUserPolicyJSONBody defines parameters for AddUserPolicy.
+type AddUserPolicyJSONBody struct {
+	// PolicyId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	PolicyId      ID    `json:"policy_id"`
+	TargetTeamIds *[]ID `json:"target_team_ids,omitempty"`
+	TargetUserIds *[]ID `json:"target_user_ids,omitempty"`
+}
+
 // ChangeUserPositionJSONBody defines parameters for ChangeUserPosition.
 type ChangeUserPositionJSONBody struct {
 	// PositionId Example: 01M3TC5H00QV17BC0J9V3393ZP
@@ -876,6 +884,9 @@ type UpdateScheduleJSONRequestBody = SlotRequest
 
 // CancelScheduleJSONRequestBody defines body for CancelSchedule for application/json ContentType.
 type CancelScheduleJSONRequestBody CancelScheduleJSONBody
+
+// AddUserPolicyJSONRequestBody defines body for AddUserPolicy for application/json ContentType.
+type AddUserPolicyJSONRequestBody AddUserPolicyJSONBody
 
 // ChangeUserPositionJSONRequestBody defines body for ChangeUserPosition for application/json ContentType.
 type ChangeUserPositionJSONRequestBody ChangeUserPositionJSONBody
@@ -966,6 +977,12 @@ type ServerInterface interface {
 	// GetUser 職員を取得する
 	// (GET /v1/users/{user_id})
 	GetUser(c *gin.Context, userId ID)
+	// AddUserPolicy 職員に権限を足す
+	// (POST /v1/users/{user_id}/policies)
+	AddUserPolicy(c *gin.Context, userId ID)
+	// RemoveUserPolicy 職員の権限を外す
+	// (DELETE /v1/users/{user_id}/policies/{user_policy_id})
+	RemoveUserPolicy(c *gin.Context, userId ID, userPolicyId ID)
 	// ChangeUserPosition 職員の役職を変える
 	// (PUT /v1/users/{user_id}/position)
 	ChangeUserPosition(c *gin.Context, userId ID)
@@ -1771,6 +1788,65 @@ func (siw *ServerInterfaceWrapper) GetUser(c *gin.Context) {
 	siw.Handler.GetUser(c, userId)
 }
 
+// AddUserPolicy operation middleware
+func (siw *ServerInterfaceWrapper) AddUserPolicy(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "user_id" -------------
+	var userId ID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", c.Param("user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter user_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.AddUserPolicy(c, userId)
+}
+
+// RemoveUserPolicy operation middleware
+func (siw *ServerInterfaceWrapper) RemoveUserPolicy(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "user_id" -------------
+	var userId ID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", c.Param("user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter user_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Path parameter "user_policy_id" -------------
+	var userPolicyId ID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_policy_id", c.Param("user_policy_id"), &userPolicyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter user_policy_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.RemoveUserPolicy(c, userId, userPolicyId)
+}
+
 // ChangeUserPosition operation middleware
 func (siw *ServerInterfaceWrapper) ChangeUserPosition(c *gin.Context) {
 
@@ -1866,6 +1942,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/v1/facilities/:facility_id/users", wrapper.CreateUser)
 	router.GET(options.BaseURL+"/v1/users/:user_id", wrapper.GetUser)
 	router.PUT(options.BaseURL+"/v1/users/:user_id/position", wrapper.ChangeUserPosition)
+	router.POST(options.BaseURL+"/v1/users/:user_id/policies", wrapper.AddUserPolicy)
+	router.DELETE(options.BaseURL+"/v1/users/:user_id/policies/:user_policy_id", wrapper.RemoveUserPolicy)
 	router.GET(options.BaseURL+"/v1/me", wrapper.GetMe)
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id/patients", wrapper.ListPatients)
 	router.POST(options.BaseURL+"/v1/facilities/:facility_id/patients", wrapper.CreatePatient)
@@ -4436,6 +4514,212 @@ func (response GetUser500JSONResponse) VisitGetUserResponse(w http.ResponseWrite
 	return err
 }
 
+type AddUserPolicyRequestObject struct {
+	UserId ID `json:"user_id"`
+	Body   *AddUserPolicyJSONRequestBody
+}
+
+type AddUserPolicyResponseObject interface {
+	VisitAddUserPolicyResponse(w http.ResponseWriter) error
+}
+
+type AddUserPolicy201JSONResponse StaffDetail
+
+func (response AddUserPolicy201JSONResponse) VisitAddUserPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddUserPolicy400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response AddUserPolicy400JSONResponse) VisitAddUserPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddUserPolicy401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AddUserPolicy401JSONResponse) VisitAddUserPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddUserPolicy403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AddUserPolicy403JSONResponse) VisitAddUserPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddUserPolicy404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response AddUserPolicy404JSONResponse) VisitAddUserPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddUserPolicy409JSONResponse struct{ ConflictJSONResponse }
+
+func (response AddUserPolicy409JSONResponse) VisitAddUserPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddUserPolicy500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response AddUserPolicy500JSONResponse) VisitAddUserPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveUserPolicyRequestObject struct {
+	UserId       ID `json:"user_id"`
+	UserPolicyId ID `json:"user_policy_id"`
+}
+
+type RemoveUserPolicyResponseObject interface {
+	VisitRemoveUserPolicyResponse(w http.ResponseWriter) error
+}
+
+type RemoveUserPolicy200JSONResponse StaffDetail
+
+func (response RemoveUserPolicy200JSONResponse) VisitRemoveUserPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveUserPolicy400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response RemoveUserPolicy400JSONResponse) VisitRemoveUserPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveUserPolicy401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RemoveUserPolicy401JSONResponse) VisitRemoveUserPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveUserPolicy403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RemoveUserPolicy403JSONResponse) VisitRemoveUserPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveUserPolicy404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RemoveUserPolicy404JSONResponse) VisitRemoveUserPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveUserPolicy500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response RemoveUserPolicy500JSONResponse) VisitRemoveUserPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ChangeUserPositionRequestObject struct {
 	UserId ID `json:"user_id"`
 	Body   *ChangeUserPositionJSONRequestBody
@@ -4750,6 +5034,12 @@ type StrictServerInterface interface {
 	// GetUser 職員を取得する
 	// (GET /v1/users/{user_id})
 	GetUser(ctx context.Context, request GetUserRequestObject) (GetUserResponseObject, error)
+	// AddUserPolicy 職員に権限を足す
+	// (POST /v1/users/{user_id}/policies)
+	AddUserPolicy(ctx context.Context, request AddUserPolicyRequestObject) (AddUserPolicyResponseObject, error)
+	// RemoveUserPolicy 職員の権限を外す
+	// (DELETE /v1/users/{user_id}/policies/{user_policy_id})
+	RemoveUserPolicy(ctx context.Context, request RemoveUserPolicyRequestObject) (RemoveUserPolicyResponseObject, error)
 	// ChangeUserPosition 職員の役職を変える
 	// (PUT /v1/users/{user_id}/position)
 	ChangeUserPosition(ctx context.Context, request ChangeUserPositionRequestObject) (ChangeUserPositionResponseObject, error)
@@ -5595,6 +5885,66 @@ func (sh *strictHandler) GetUser(ctx *gin.Context, userId ID) {
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(GetUserResponseObject); ok {
 		if err := validResponse.VisitGetUserResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddUserPolicy operation middleware
+func (sh *strictHandler) AddUserPolicy(ctx *gin.Context, userId ID) {
+	var request AddUserPolicyRequestObject
+
+	request.UserId = userId
+
+	var body AddUserPolicyJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.AddUserPolicy(ctx, request.(AddUserPolicyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddUserPolicy")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(AddUserPolicyResponseObject); ok {
+		if err := validResponse.VisitAddUserPolicyResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RemoveUserPolicy operation middleware
+func (sh *strictHandler) RemoveUserPolicy(ctx *gin.Context, userId ID, userPolicyId ID) {
+	var request RemoveUserPolicyRequestObject
+
+	request.UserId = userId
+	request.UserPolicyId = userPolicyId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.RemoveUserPolicy(ctx, request.(RemoveUserPolicyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RemoveUserPolicy")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(RemoveUserPolicyResponseObject); ok {
+		if err := validResponse.VisitRemoveUserPolicyResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {

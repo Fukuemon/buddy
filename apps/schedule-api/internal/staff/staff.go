@@ -158,9 +158,14 @@ type ListQuery struct {
 // 当たる職員がいなければ何もせず、エラーも返さない。
 //
 // ChangePosition は、職員の役職を positionID にし、職員の権限と対象を全て消してから grants を書く。
+//
+// AddGrant は、職員に 1 つの権限と対象を書く。同じ権限が既にあるときは domain.ErrConflict を返す。
+// RemoveGrant は、職員の権限 userPolicyID と対象を消す。職員のその権限が無いときは domain.ErrNotFound を返す。
 type Repository interface {
 	Create(ctx context.Context, s Staff, grants []Grant) error
 	ChangePosition(ctx context.Context, id, positionID string, grants []Grant) error
+	AddGrant(ctx context.Context, id string, g Grant) error
+	RemoveGrant(ctx context.Context, id, userPolicyID string) error
 	Get(ctx context.Context, id string) (Detail, error)
 	ListByFacility(ctx context.Context, facilityID string, q ListQuery) ([]Summary, error)
 	FindIDBySub(ctx context.Context, sub string) (string, error)

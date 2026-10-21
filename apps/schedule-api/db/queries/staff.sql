@@ -12,6 +12,10 @@ UPDATE users SET position_id = sqlc.arg(position_id) WHERE id = sqlc.arg(id);
 -- user_policy_targets は外部キーの ON DELETE CASCADE で消える。
 DELETE FROM user_policies WHERE user_id = ?;
 
+-- name: DeleteUserPolicy :execrows
+-- user_policy_targets は外部キーの ON DELETE CASCADE で消える。
+DELETE FROM user_policies WHERE id = sqlc.arg(id) AND user_id = sqlc.arg(user_id);
+
 -- name: AddUserPolicyTarget :exec
 INSERT INTO user_policy_targets (id, user_policy_id, target_user_id, target_team_id) VALUES (?, ?, ?, ?);
 

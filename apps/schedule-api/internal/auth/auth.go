@@ -3,8 +3,10 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 )
@@ -41,6 +43,22 @@ func (p Principal) CanReadAll() bool {
 	return slices.ContainsFunc(p.Staff.Policies, func(g staff.PolicyGrant) bool {
 		return g.PolicyCode == organization.ScheduleAllRead || g.PolicyCode == organization.ScheduleAllEdit
 	})
+}
+
+// CanManageStaff は、職員の権限を足し外し、役職を変えてよいかを返す。
+func (p Principal) CanManageStaff() bool {
+	return slices.ContainsFunc(p.Staff.Policies, func(g staff.PolicyGrant) bool {
+		return g.PolicyCode == organization.StaffManage
+	})
+}
+
+// RequireStaffManage は、ctx の職員が職員の管理の権限を持たないときに domain.ErrForbidden を返す。staff.Guard に渡す。
+func RequireStaffManage(ctx context.Context) error {
+	p, ok := PrincipalFrom(ctx)
+	if !ok || !p.CanManageStaff() {
+		return fmt.Errorf("%w: 職員を管理する権限がありません", domain.ErrForbidden)
+	}
+	return nil
 }
 
 // allows は、職員の権限（user_policies）だけを見て判定する。役職は見ない。

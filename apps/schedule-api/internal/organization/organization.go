@@ -58,6 +58,9 @@ const (
 	ScheduleAllEdit  PolicyCode = "schedule.all.edit"
 )
 
+// StaffManage は、職員の権限を足し外し、役職を変える権限である（ADR-0006）。予定の範囲には及ばない。
+const StaffManage PolicyCode = "staff.manage"
+
 // TargetsTeam は、権限の対象がチームであるかを返す。
 func (c PolicyCode) TargetsTeam() bool {
 	return c == ScheduleTeamRead || c == ScheduleTeamEdit
