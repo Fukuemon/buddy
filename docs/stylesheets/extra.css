@@ -1,3 +1,19 @@
+/* サイトの色を、buddy の意味のトークン（tokens.css）に当てる */
+:root {
+  --md-primary-fg-color: var(--buddy-color-primary);
+  --md-primary-fg-color--light: var(--buddy-color-primary);
+  --md-primary-fg-color--dark: var(--buddy-color-primary);
+  --md-accent-fg-color: var(--buddy-color-primary);
+  --md-accent-fg-color--transparent: var(--buddy-color-primary-surface);
+  --md-typeset-a-color: var(--buddy-color-primary);
+  --md-default-fg-color: var(--buddy-color-text);
+}
+
+/* 本文の幅を既定の 61rem から広げ、画面仕様書の表とモックを広く見せる */
+.md-grid {
+  max-width: 80rem;
+}
+
 /* 画面仕様書に埋め込むモック。高さは embed-mock.js が中身に合わせる */
 iframe.mock {
   box-sizing: border-box;
