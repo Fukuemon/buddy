@@ -255,7 +255,10 @@ func parentsToExpand(events []Event, links map[string]Link) []string {
 // buildPlan は、外部の予定を buddy の予定に読み替え、取り込みで書く予定と下見の内容を作る。
 // 読み替えの規則は、画面仕様書の予定の取り込みの「予定の読み替え」にある。
 func buildPlan(in planInput) plan {
-	b := planner{in: in, reviewIndex: map[string]int{}, parents: map[string]Event{}, ruleParents: map[string]*Recurrence{}}
+	b := planner{
+		in: in, reviewIndex: map[string]int{}, parents: map[string]Event{}, ruleParents: map[string]*Recurrence{},
+		expandedParents: map[string]bool{}, instanceIDs: map[string]bool{},
+	}
 	b.serviceIDs = make(map[string]string, len(in.serviceCodes))
 	for _, sc := range in.serviceCodes {
 		b.serviceIDs[serviceKey(sc.Code)] = sc.ID
@@ -312,6 +315,8 @@ type planner struct {
 	ruleParents map[string]*Recurrence
 	// expandedParents は、この取り込みで回ごとにした親の予定である。
 	expandedParents map[string]bool
+	// instanceIDs は、回ごとにした親の Instances が返した回の ID である。
+	instanceIDs map[string]bool
 }
 
 func (b *planner) linked(id string) bool {
@@ -348,12 +353,10 @@ func (b *planner) addParent(ev Event) {
 		b.ruleParents[ev.ID] = rec
 		b.add(entry{event: ev, cand: c, rule: rec})
 	case parentExpanded:
-		if b.expandedParents == nil {
-			b.expandedParents = map[string]bool{}
-		}
 		b.expandedParents[ev.ID] = true
 		imported := false
 		for _, inst := range b.in.instances[ev.ID] {
+			b.instanceIDs[inst.ID] = true
 			if inst.Status == StatusCancelled {
 				continue
 			}
@@ -376,11 +379,15 @@ func (b *planner) addParent(ev Event) {
 }
 
 // addException は、繰り返しの予定の変えた回か取り消した回を読み替える。
-// 親を回ごとにしたときは、回が Instances に含まれるので何もしない。
+// 親を回ごとにしたときは、回が Instances に含まれるので何もしない。ただし、期間の中の回を期間の外へ動かした回は
+// Instances に含まれないので、回として足す。
 // 親を繰り返しのまま取り込むとき（この取り込みか前の取り込み）は、取り消した回を除外する日にし、変えた回を回の置き換えにする。
 // 親が無いか取り込まないときは、変えた回を単発の予定にし、取り消した回は何もしない。
 func (b *planner) addException(ev Event) {
 	if b.expandedParents[ev.RecurringEventID] {
+		if ev.Status != StatusCancelled && !b.instanceIDs[ev.ID] && !b.linked(ev.ID) {
+			b.add(entry{event: ev, parentID: ev.RecurringEventID, cand: Classify(ev), expanded: true})
+		}
 		return
 	}
 	target, ok := b.replacementTarget(ev)

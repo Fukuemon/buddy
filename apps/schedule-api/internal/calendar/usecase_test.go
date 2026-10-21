@@ -102,12 +102,24 @@ func newEnv(t *testing.T, srv *gcaltest.Server) env {
 		s.Patients[id] = patient.Detail{Patient: patient.Patient{ID: id, FacilityID: inmem.FacilityID, Name: name}}
 	}
 	s.Calendars[calID] = calendar.ExternalCalendar{ID: calID, FacilityID: inmem.FacilityID, StaffID: inmem.StaffID, Provider: calendar.ProviderGoogle, CalendarID: googleCalID}
+	rng, err := calendar.NewRange(civil.Date{Year: 2026, Month: 11, Day: 1}, civil.Date{Year: 2026, Month: 11, Day: 30})
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := env{store: s, ctx: manager(), rng: rng}
 	var source calendar.EventSource
 	if srv != nil {
 		source = gcal.NewReader(gcaltest.Start(t, srv))
 	}
+	e.uc = withSource(e, source)
+	return e
+}
+
+// withSource は、e の Store の上で、source で予定を読む Usecase を作る。
+func withSource(e env, source calendar.EventSource) *calendar.Usecase {
+	s := e.store
 	ids := &inmem.SeqIDs{}
-	uc := calendar.NewUsecase(calendar.Deps{
+	return calendar.NewUsecase(calendar.Deps{
 		Calendars: inmem.Calendars{Store: s}, Source: source, ServiceAccount: "buddy@example.iam.gserviceaccount.com",
 		Staff: inmem.StaffRefs{Store: s}, Patients: inmem.Patients{Store: s}, ServiceCodes: inmem.VisitMasters{Store: s},
 		Types: inmem.ScheduleTypes{Store: s}, Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, RecurringSchedules: inmem.RecurringSchedules{Store: s},
@@ -123,11 +135,6 @@ func newEnv(t *testing.T, srv *gcaltest.Server) env {
 			Infos: inmem.VisitInfos{Store: s}, Masters: inmem.VisitMasters{Store: s},
 		}, ids),
 	}, &inmem.Tx{}, ids, principal.RequireStaffManage)
-	rng, err := calendar.NewRange(civil.Date{Year: 2026, Month: 11, Day: 1}, civil.Date{Year: 2026, Month: 11, Day: 30})
-	if err != nil {
-		t.Fatal(err)
-	}
-	return env{store: s, uc: uc, ctx: manager(), rng: rng}
 }
 
 func manager() context.Context {
@@ -577,22 +584,7 @@ func TestImportMovedOutOfRange(t *testing.T) {
 		gexception("weekly_1130", "weekly", "【訪看I2】利用者A", "2026-12-02T09:00:00+09:00", "2026-12-02T09:30:00+09:00", "2026-11-30T09:00:00+09:00"),
 	}}}}
 	e := newEnv(t, nil)
-	ids := &inmem.SeqIDs{}
-	s := e.store
-	e.uc = calendar.NewUsecase(calendar.Deps{
-		Calendars: inmem.Calendars{Store: s}, Source: startFiltered{gcal.NewReader(gcaltest.Start(t, srv))}, ServiceAccount: "buddy@example.com",
-		Staff: inmem.StaffRefs{Store: s}, Patients: inmem.Patients{Store: s}, ServiceCodes: inmem.VisitMasters{Store: s},
-		Types: inmem.ScheduleTypes{Store: s}, Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s},
-		RecurringSchedules: inmem.RecurringSchedules{Store: s},
-		Visits: visit.NewWriter(visit.WriterDeps{
-			Staff: inmem.StaffRefs{Store: s},
-			Patients: func(_ context.Context, id string) (string, string, error) {
-				p := s.Patients[id]
-				return p.ID, p.FacilityID, nil
-			},
-			Infos: inmem.VisitInfos{Store: s}, Masters: inmem.VisitMasters{Store: s},
-		}, ids),
-	}, &inmem.Tx{}, ids, principal.RequireStaffManage)
+	e.uc = withSource(e, startFiltered{gcal.NewReader(gcaltest.Start(t, srv))})
 
 	if _, err := e.importDecided(t, e.rng, nil); err != nil {
 		t.Fatal(err)
@@ -602,6 +594,32 @@ func TestImportMovedOutOfRange(t *testing.T) {
 		t.Errorf("除外の日 = %v, want 期間の外へ動かした 11-30 を含む", rs.ExclusionDates)
 	}
 	if moved := scheduleOf(t, e, "weekly_1130"); moved.Date != (civil.Date{Year: 2026, Month: 12, Day: 2}) || moved.RecurringScheduleID == nil {
+		t.Errorf("動かした回 = %+v", moved)
+	}
+}
+
+func TestImportExpandedMovedOutOfRange(t *testing.T) {
+	srv := &gcaltest.Server{
+		Calendars: map[string][][]*calendarv3.Event{googleCalID: {{
+			grecurring(gevent("biweekly", "定例", "2026-11-03T16:00:00+09:00", "2026-11-03T17:00:00+09:00"),
+				"RRULE:FREQ=WEEKLY;INTERVAL=2"),
+			// 11-17 の回を 12-01 に動かした。Instances は今の日時で絞るので、期間の 11 月には返らない
+			gexception("biweekly_1117", "biweekly", "定例", "2026-12-01T16:00:00+09:00", "2026-12-01T17:00:00+09:00", "2026-11-17T16:00:00+09:00"),
+		}}},
+		Instances: map[string][]*calendarv3.Event{"biweekly": {
+			gexception("biweekly_1103", "biweekly", "定例", "2026-11-03T16:00:00+09:00", "2026-11-03T17:00:00+09:00", "2026-11-03T16:00:00+09:00"),
+		}},
+	}
+	e := newEnv(t, srv)
+	e.uc = withSource(e, startFiltered{gcal.NewReader(gcaltest.Start(t, srv))})
+	res, err := e.importDecided(t, e.rng, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Run.ImportedCount != 2 {
+		t.Errorf("Run = %+v, want 11-03 の回と 12-01 に動かした回の 2 件", res.Run)
+	}
+	if moved := scheduleOf(t, e, "biweekly_1117"); moved.Date != (civil.Date{Year: 2026, Month: 12, Day: 1}) {
 		t.Errorf("動かした回 = %+v", moved)
 	}
 }
