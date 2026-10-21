@@ -33,6 +33,12 @@ CREATE TABLE `service_codes` (
 | created_at               | datetime     | CURRENT_TIMESTAMP | false    | DEFAULT_GENERATED                             |                                                       |         |                                                    |
 | updated_at               | datetime     | CURRENT_TIMESTAMP | false    | DEFAULT_GENERATED on update CURRENT_TIMESTAMP |                                                       |         |                                                    |
 
+## Viewpoints
+
+| Name                            | Definition                                       |
+| ------------------------------- | ------------------------------------------------ |
+| [利用者](viewpoint-patients.md) | 利用者と、受けているサービスと、主に担当する職員 |
+
 ## Constraints
 
 | Name                  | Type        | Definition                              |

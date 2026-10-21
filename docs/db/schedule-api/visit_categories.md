@@ -29,6 +29,12 @@ CREATE TABLE `visit_categories` (
 | created_at | datetime     | CURRENT_TIMESTAMP | false    | DEFAULT_GENERATED                             |                                                               |         |         |
 | updated_at | datetime     | CURRENT_TIMESTAMP | false    | DEFAULT_GENERATED on update CURRENT_TIMESTAMP |                                                               |         |         |
 
+## Viewpoints
+
+| Name                                 | Definition                                           |
+| ------------------------------------ | ---------------------------------------------------- |
+| [予定と訪問](viewpoint-schedules.md) | 予定と、訪問のときの訪問の情報と区分、予定の取り消し |
+
 ## Constraints
 
 | Name                     | Type        | Definition                                 |

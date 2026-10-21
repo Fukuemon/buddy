@@ -57,6 +57,12 @@ CREATE VIEW recurring_schedule_details AS (select `rs`.`id` AS `id`,`rs`.`facili
 | [recurring_rules](recurring_rules.md)         | 8       | 繰り返しの規則                                     | BASE TABLE |
 | [visit_info_details](visit_info_details.md)   | 9       | 訪問の情報と名前を結合したビュー                   | VIEW       |
 
+## Viewpoints
+
+| Name                                     | Definition                                                                             |
+| ---------------------------------------- | -------------------------------------------------------------------------------------- |
+| [繰り返しの予定](viewpoint-recurring.md) | 繰り返しの規則と予定、回にしない日。繰り返しの 1 回を置き換えた予定は schedules に入る |
+
 ## Relations
 
 ```mermaid

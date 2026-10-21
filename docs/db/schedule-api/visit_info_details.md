@@ -36,6 +36,12 @@ CREATE VIEW visit_info_details AS (select `vi`.`id` AS `id`,`vi`.`patient_id` AS
 | [users](users.md)                 | 11      | 職員                                     | BASE TABLE |
 | [service_codes](service_codes.md) | 6       | サービスコード。マイグレーションで入れる | BASE TABLE |
 
+## Viewpoints
+
+| Name                                 | Definition                                           |
+| ------------------------------------ | ---------------------------------------------------- |
+| [予定と訪問](viewpoint-schedules.md) | 予定と、訪問のときの訪問の情報と区分、予定の取り消し |
+
 ## Relations
 
 ```mermaid

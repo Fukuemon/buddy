@@ -3084,5 +3084,78 @@
         "Functions": "Stored procedures and functions"
       }
     }
-  }
+  },
+  "viewpoints": [
+    {
+      "id": "organization",
+      "name": "事業所と組織",
+      "desc": "事業所と、その中の部署、チーム、役職、職員",
+      "tables": [
+        "facilities",
+        "departments",
+        "teams",
+        "positions",
+        "users"
+      ]
+    },
+    {
+      "id": "policies",
+      "name": "職員と権限",
+      "desc": "職員が持つ権限と、その対象。職員を登録するとき、役職の既定の権限を写す",
+      "tables": [
+        "users",
+        "positions",
+        "teams",
+        "policies",
+        "position_policies",
+        "user_policies",
+        "user_policy_targets"
+      ]
+    },
+    {
+      "id": "patients",
+      "name": "利用者",
+      "desc": "利用者と、受けているサービスと、主に担当する職員",
+      "tables": [
+        "patients",
+        "service_codes",
+        "users",
+        "facilities"
+      ]
+    },
+    {
+      "id": "schedules",
+      "name": "予定と訪問",
+      "desc": "予定と、訪問のときの訪問の情報と区分、予定の取り消し",
+      "tables": [
+        "schedules",
+        "schedule_types",
+        "schedule_cancels",
+        "visit_infos",
+        "visit_categories",
+        "visit_info_visit_categories",
+        "recurring_schedules",
+        "users",
+        "facilities",
+        "schedule_details",
+        "visit_info_details"
+      ]
+    },
+    {
+      "id": "recurring",
+      "name": "繰り返しの予定",
+      "desc": "繰り返しの規則と予定、回にしない日。繰り返しの 1 回を置き換えた予定は schedules に入る",
+      "tables": [
+        "recurring_rules",
+        "recurring_schedules",
+        "recurring_schedule_exclusions",
+        "schedules",
+        "schedule_types",
+        "visit_infos",
+        "users",
+        "facilities",
+        "recurring_schedule_details"
+      ]
+    }
+  ]
 }

@@ -27,6 +27,12 @@ CREATE TABLE `visit_info_visit_categories` (
 | visit_info_id     | char(26) |         | false    |          | [visit_infos](visit_infos.md)           |         |
 | visit_category_id | char(26) |         | false    |          | [visit_categories](visit_categories.md) |         |
 
+## Viewpoints
+
+| Name                                 | Definition                                           |
+| ------------------------------------ | ---------------------------------------------------- |
+| [予定と訪問](viewpoint-schedules.md) | 予定と、訪問のときの訪問の情報と区分、予定の取り消し |
+
 ## Constraints
 
 | Name                   | Type        | Definition                                                       |

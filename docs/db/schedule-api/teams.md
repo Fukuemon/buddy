@@ -32,6 +32,13 @@ CREATE TABLE `teams` (
 | created_at  | datetime     | CURRENT_TIMESTAMP | false    | DEFAULT_GENERATED                             |                                                                 |                             |                  |
 | updated_at  | datetime     | CURRENT_TIMESTAMP | false    | DEFAULT_GENERATED on update CURRENT_TIMESTAMP |                                                                 |                             |                  |
 
+## Viewpoints
+
+| Name                                      | Definition                                                             |
+| ----------------------------------------- | ---------------------------------------------------------------------- |
+| [事業所と組織](viewpoint-organization.md) | 事業所と、その中の部署、チーム、役職、職員                             |
+| [職員と権限](viewpoint-policies.md)       | 職員が持つ権限と、その対象。職員を登録するとき、役職の既定の権限を写す |
+
 ## Constraints
 
 | Name                   | Type        | Definition                                            |
