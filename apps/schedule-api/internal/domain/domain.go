@@ -14,7 +14,7 @@ import (
 var (
 	ErrNotFound     = errors.New("リソースが見つかりません")
 	ErrInvalidInput = errors.New("入力の内容が不正です")
-	ErrConflict     = errors.New("リソースがすでに存在します")
+	ErrConflict     = errors.New("同じ内容のデータがすでにあります")
 	ErrForbidden    = errors.New("この操作は許可されていません")
 )
 
@@ -31,6 +31,30 @@ func (e *ValidationError) Is(target error) bool { return target == ErrInvalidInp
 // Invalid は、書式で組み立てた文を持つ ValidationError を返す。
 func Invalid(format string, args ...any) error {
 	return &ValidationError{Message: fmt.Sprintf(format, args...)}
+}
+
+// ConflictError は、操作が今の状態と衝突する理由を表す。errors.Is では ErrConflict として扱われる。
+type ConflictError struct {
+	Message string
+}
+
+func (e *ConflictError) Error() string { return e.Message }
+
+// Is は、target が ErrConflict のときに true を返す。
+func (e *ConflictError) Is(target error) bool { return target == ErrConflict }
+
+// Conflict は、書式で組み立てた文を持つ ConflictError を返す。
+func Conflict(format string, args ...any) error {
+	return &ConflictError{Message: fmt.Sprintf(format, args...)}
+}
+
+// AsConflict は、err が衝突のときに、書式で組み立てた文を持つ ConflictError に置き換える。ほかの err はそのまま返す。
+// リポジトリが一意の制約から返す原因の分からない衝突に、呼び出し側が原因の文を付ける。
+func AsConflict(err error, format string, args ...any) error {
+	if errors.Is(err, ErrConflict) {
+		return Conflict(format, args...)
+	}
+	return err
 }
 
 // Reference は、リクエストの本文が指す ID が見つからない err を、入力の誤りに置き換える。

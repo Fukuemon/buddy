@@ -42,7 +42,8 @@ type CreateInput struct {
 }
 
 // Create は、職員を作り、役職の既定の権限を与える。チームを対象にする権限は、職員の所属のチームを対象にする。事業所が見つからないときは domain.ErrNotFound を、
-// 部署、チーム、役職が見つからないか別の事業所のものであるときは入力の誤りを、職員の管理の権限が無いときは domain.ErrForbidden を返す。
+// 部署、チーム、役職が見つからないか別の事業所のものであるときは入力の誤りを、職員の管理の権限が無いときは domain.ErrForbidden を、
+// 同じ事業所に同じメールの職員がいるときは domain.ErrConflict を返す。
 func (s *Service) Create(ctx context.Context, in CreateInput) (Detail, error) {
 	if err := s.guard(ctx); err != nil {
 		return Detail{}, err
@@ -88,7 +89,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Detail, error) {
 	var created Detail
 	err = s.tx.WithinTx(ctx, func(ctx context.Context) error {
 		if err := s.repos.Staff.Create(ctx, st, grants); err != nil {
-			return err
+			return domain.AsConflict(err, "メール %s の職員はこの事業所にすでにいます", st.Email)
 		}
 		created, err = s.repos.Staff.Get(ctx, st.ID)
 		return err
@@ -156,7 +157,7 @@ func (s *Service) AddGrant(ctx context.Context, id string, in GrantInput) (Detai
 			return err
 		}
 		if err := s.repos.Staff.AddGrant(ctx, cur.ID, g); err != nil {
-			return err
+			return domain.AsConflict(err, "職員はすでに権限 %s を持っています", p.Name)
 		}
 		changed, err = s.repos.Staff.Get(ctx, cur.ID)
 		return err

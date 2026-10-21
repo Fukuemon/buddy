@@ -801,21 +801,6 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
-        /** @description 名前などの一意の値が重なるか、キャンセル済みの予定を変えるかキャンセルしようとしたか、繰り返しの回をすでに置き換えた。`code` は conflict */
-        Conflict: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                /**
-                 * @example {
-                 *       "code": "conflict",
-                 *       "message": "リソースがすでに存在します"
-                 *     }
-                 */
-                "application/json": components["schemas"]["Error"];
-            };
-        };
         /** @description サーバーの誤り。`code` は internal */
         InternalError: {
             headers: {
@@ -1030,7 +1015,21 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
+            /** @description 同じ事業所に同じ名前のチームがある */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "conflict",
+                     *       "message": "チーム 訪問看護 はこの事業所にすでにあります"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -1120,7 +1119,21 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
+            /** @description 同じ事業所に同じ名前の役職がある */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "conflict",
+                     *       "message": "役職 チームリーダー はこの事業所にすでにあります"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -1278,7 +1291,21 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
+            /** @description 同じ事業所に同じメールの職員がいる */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "conflict",
+                     *       "message": "メール staff@example.com の職員はこの事業所にすでにいます"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -1374,7 +1401,21 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
+            /** @description 職員が同じ権限をすでに持っている */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "conflict",
+                     *       "message": "職員はすでに権限 自分の予定の編集 を持っています"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -1737,6 +1778,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "code": "conflict",
+                     *       "message": "キャンセル済みの予定は変えられません"
+                     *     }
+                     */
                     "application/json": components["schemas"]["Error"];
                 };
             };
@@ -1779,6 +1826,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "code": "conflict",
+                     *       "message": "この予定はすでにキャンセルされています"
+                     *     }
+                     */
                     "application/json": components["schemas"]["Error"];
                 };
             };
@@ -1852,6 +1905,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "code": "conflict",
+                     *       "message": "2026-10-12 の回はすでに置き換えられています"
+                     *     }
+                     */
                     "application/json": components["schemas"]["Error"];
                 };
             };

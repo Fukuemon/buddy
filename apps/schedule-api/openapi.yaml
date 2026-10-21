@@ -160,7 +160,12 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
-        "409": { $ref: "#/components/responses/Conflict" }
+        "409":
+          description: 同じ事業所に同じ名前のチームがある
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { code: conflict, message: "チーム 訪問看護 はこの事業所にすでにあります" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/teams/{team_id}:
@@ -230,7 +235,12 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
-        "409": { $ref: "#/components/responses/Conflict" }
+        "409":
+          description: 同じ事業所に同じ名前の役職がある
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { code: conflict, message: "役職 チームリーダー はこの事業所にすでにあります" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/positions/{position_id}:
@@ -351,7 +361,12 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
-        "409": { $ref: "#/components/responses/Conflict" }
+        "409":
+          description: 同じ事業所に同じメールの職員がいる
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { code: conflict, message: "メール staff@example.com の職員はこの事業所にすでにいます" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/users/{user_id}:
@@ -440,7 +455,12 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
-        "409": { $ref: "#/components/responses/Conflict" }
+        "409":
+          description: 職員が同じ権限をすでに持っている
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { code: conflict, message: "職員はすでに権限 自分の予定の編集 を持っています" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/users/{user_id}/policies/{user_policy_id}:
@@ -726,6 +746,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { code: conflict, message: "キャンセル済みの予定は変えられません" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/schedules/{schedule_id}/cancel:
@@ -758,6 +779,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { code: conflict, message: "この予定はすでにキャンセルされています" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/schedules/recurring/{recurring_schedule_id}:
@@ -816,6 +838,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+              example: { code: conflict, message: "2026-10-12 の回はすでに置き換えられています" }
         "500": { $ref: "#/components/responses/InternalError" }
 
 components:
@@ -896,12 +919,6 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
           example: { code: not_found, message: "リソースが見つかりません" }
-    Conflict:
-      description: 名前などの一意の値が重なるか、キャンセル済みの予定を変えるかキャンセルしようとしたか、繰り返しの回をすでに置き換えた。`code` は conflict
-      content:
-        application/json:
-          schema: { $ref: "#/components/schemas/Error" }
-          example: { code: conflict, message: "リソースがすでに存在します" }
     InternalError:
       description: サーバーの誤り。`code` は internal
       content:

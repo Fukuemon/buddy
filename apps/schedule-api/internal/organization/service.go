@@ -65,7 +65,7 @@ func (o *Service) ListTeams(ctx context.Context, facilityID string) ([]Team, err
 	return o.repos.Teams.ListByFacility(ctx, facilityID)
 }
 
-// CreateTeam は、事業所にチームを作り、保存したチームを返す。
+// CreateTeam は、事業所にチームを作り、保存したチームを返す。同じ事業所に同じ名前のチームがあるときは domain.ErrConflict を返す。
 func (o *Service) CreateTeam(ctx context.Context, facilityID, name string) (Team, error) {
 	if _, err := o.repos.Facilities.Get(ctx, facilityID); err != nil {
 		return Team{}, err
@@ -75,7 +75,7 @@ func (o *Service) CreateTeam(ctx context.Context, facilityID, name string) (Team
 		return Team{}, err
 	}
 	if err := o.repos.Teams.Create(ctx, t); err != nil {
-		return Team{}, err
+		return Team{}, domain.AsConflict(err, "チーム %s はこの事業所にすでにあります", t.Name)
 	}
 	return o.repos.Teams.Get(ctx, t.ID)
 }
@@ -93,7 +93,8 @@ func (o *Service) ListPositions(ctx context.Context, facilityID string) ([]Posit
 	return o.repos.Positions.ListByFacility(ctx, facilityID)
 }
 
-// CreatePosition は、事業所に役職を作り、保存した役職を返す。policyIDs に見つからない権限があると入力の誤りを、職員の管理の権限が無いときは domain.ErrForbidden を返す。
+// CreatePosition は、事業所に役職を作り、保存した役職を返す。policyIDs に見つからない権限があると入力の誤りを、職員の管理の権限が無いときは domain.ErrForbidden を、
+// 同じ事業所に同じ名前の役職があるときは domain.ErrConflict を返す。
 func (o *Service) CreatePosition(ctx context.Context, facilityID, name string, policyIDs []string) (Position, error) {
 	if err := o.guard(ctx); err != nil {
 		return Position{}, err
@@ -121,7 +122,7 @@ func (o *Service) CreatePosition(ctx context.Context, facilityID, name string, p
 	var created Position
 	err = o.tx.WithinTx(ctx, func(ctx context.Context) error {
 		if err := o.repos.Positions.Create(ctx, p); err != nil {
-			return err
+			return domain.AsConflict(err, "役職 %s はこの事業所にすでにあります", p.Name)
 		}
 		created, err = o.repos.Positions.Get(ctx, p.ID)
 		return err
