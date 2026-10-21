@@ -1,6 +1,6 @@
 # pull request と develop への push で、取り込む前に通す検査を流す。
 # 検査の一覧と手元での流し方は context/testing.md と CONTRIBUTING.md にある。
-# Go と sqlc の版は mise.toml から入れ、手元とそろえる。
+# Go と sqlc のバージョンは mise.toml から入れ、手元とそろえる。
 
 name: CI
 
