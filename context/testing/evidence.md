@@ -24,5 +24,7 @@ status: draft
 - 証跡の spec の置き場（`evidenceDir` の `<root>` と、その下の `<issue>/`）と、spec の名前の付け方
 - 撮る URL、改修前の URL、実施日、環境の名前を渡す環境変数
 - ログインの手順と、テストデータを作る手順
-- 撮るコマンド
+- 撮るコマンド。改修前と改修後の web を 2 つ起動して 1 回で両方を撮るときの起動のしかたも含む
+- 証跡の spec を CI の E2E から外す方法。`packages/e2e/playwright.config.ts` の `e2e` の project は、`tests/specs/` の下の `.e2e.ts` を全て流す
+- 証跡の出力（`evidenceDir` の `<root>/<issue>/evidence/`）を Git で追跡しない設定。`.gitignore` には、`<root>` を決めてから足す
 - kit を呼ぶ薄い層（`recordEvidence` に置き場とアプリの値を付けて呼ぶもの、`variants` に環境変数を渡すもの）の置き場
