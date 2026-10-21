@@ -120,7 +120,7 @@ func TestStaffGetWithPolicies(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.PositionName != "リーダー" || got.TeamName != "B" || got.Sub != nil {
+	if got.PositionName != "リーダー" || got.TeamName != "B" || got.Sub == nil || *got.Sub != "dev-mori" {
 		t.Errorf("got %+v", got.Summary)
 	}
 	byID := make(map[string]staff.PolicyGrant, len(got.Policies))
@@ -320,9 +320,9 @@ func TestStaffList(t *testing.T) {
 		want []string
 	}{
 		{name: "名前の昇順", q: staff.ListQuery{Sort: domain.Sort{Field: "username"}},
-			want: []string{"林 さくら", "森 健太", "青木 陽菜"}},
+			want: []string{"佐藤 美咲", "林 さくら", "森 健太", "青木 陽菜"}},
 		{name: "名前の降順", q: staff.ListQuery{Sort: domain.Sort{Field: "username", Desc: true}},
-			want: []string{"青木 陽菜", "森 健太", "林 さくら"}},
+			want: []string{"青木 陽菜", "森 健太", "林 さくら", "佐藤 美咲"}},
 		{name: "チームで絞る", q: staff.ListQuery{Team: ptr("A"), Sort: domain.Sort{Field: "username"}},
 			want: []string{"林 さくら", "青木 陽菜"}},
 		{name: "役職で絞る", q: staff.ListQuery{Position: ptr("リーダー"), Sort: domain.Sort{Field: "username"}},

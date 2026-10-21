@@ -5,7 +5,7 @@ import { TIMEOUTS } from './tests/fixtures/timeouts'
 
 /**
  * ルートの compose で立てた全体に向けて流す。先に `docker compose up --build --wait` で起動しておく。
- * spec はログインの状態のファイルを 1 つ共有するので、worker は 1 つにする（kit の ensureSavedLogin の文書コメント）。
+ * spec は職員ごとのログインの状態のファイルを共有するので、worker は 1 つにする（kit の ensureSavedLogin の文書コメント）。
  */
 export default defineConfig({
   testDir: 'tests',
