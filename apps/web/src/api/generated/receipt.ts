@@ -30,7 +30,7 @@ export interface paths {
         };
         /**
          * 要求を受けられるかを返す
-         * @description 照合の API は、起動に要る依存先を持たないので、応答できれば 200 を返す。
+         * @description 照合の API は、起動のときにブローカーの discovery を読み、読めなければ起動しない。起動した後は依存先を確かめないので、応答できれば 200 を返す。
          */
         get: operations["getReadyz"];
         put?: never;
@@ -53,6 +53,7 @@ export interface paths {
         /**
          * 実訪問の CSV と予定を照合する
          * @description 予定は、ファイル `schedules` があればそれを使う。無くてフォームの値 `month` があれば、その月の予定を Google カレンダーから取る。
+         *     Google カレンダーは、トークンの組織に結び付けたカレンダーだけを読む。
          *     結果は Accept によらず JSON で返す。入力の CSV は、UTF-8（BOM の有無を問わない）と CP932 を受ける。
          *     本文の上限のバイト数は、サーバーの設定 `MAX_UPLOAD_BYTES` で決まる。
          */
@@ -73,7 +74,7 @@ export interface components {
         };
         Error: {
             /** @enum {string} */
-            code: "bad_request" | "missing_file" | "payload_too_large" | "invalid_csv" | "not_found" | "internal" | "calendar_not_configured" | "schedule_source_failed";
+            code: "bad_request" | "missing_file" | "payload_too_large" | "unauthenticated" | "forbidden" | "invalid_csv" | "not_found" | "internal" | "calendar_not_configured" | "schedule_source_failed";
             message: string;
             /** @description 入力の CSV の行ごとの誤り。`invalid_csv` のときだけ持つ */
             errors?: components["schemas"]["RowError"][];
@@ -272,6 +273,24 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
+            /** @description トークンがないか、検証に失敗した（`unauthenticated`） */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Google カレンダーから取るのに、トークンに組織がない（`forbidden`） */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description 本文が上限を超えている（`payload_too_large`） */
             413: {
                 headers: {
@@ -308,7 +327,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description サーバーに Google カレンダーの設定がないのに `month` で呼ばれた（`calendar_not_configured`） */
+            /** @description サーバーに、トークンの組織の Google カレンダーの設定がないのに `month` で呼ばれた（`calendar_not_configured`） */
             503: {
                 headers: {
                     [name: string]: unknown;

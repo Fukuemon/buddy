@@ -3,11 +3,15 @@ info:
   title: buddy receipt API
   version: 0.1.0
   description: |
-    iBow から出した実訪問の CSV と予定を照合し、不整合、予定のみ、実績のみ、整合の 4 つに分けて返す API。認証はまだない。
+    iBow から出した実訪問の CSV と予定を照合し、不整合、予定のみ、実績のみ、整合の 4 つに分けて返す API。
 
     - 日付は YYYY-MM-DD、時刻は HH:MM である。
     - 値がない項目は、`additions` と `column` と `errors` を除き、項目を省かず null で返す。
     - エラーは Error の形で返す。
+    - `/v1` は全て、OIDC のブローカーが発行した access token（JWT）を `Authorization: Bearer` で求める。
+      トークンがないか検証に失敗したときは 401 を返す。
+security:
+  - bearerAuth: []
 servers:
   - url: http://localhost:8080
 tags:
@@ -21,6 +25,7 @@ paths:
       tags: [health]
       operationId: getHealthz
       summary: プロセスが応答できるかを返す
+      security: []
       responses:
         "200":
           description: 応答できる
@@ -33,7 +38,8 @@ paths:
       tags: [health]
       operationId: getReadyz
       summary: 要求を受けられるかを返す
-      description: 照合の API は、起動に要る依存先を持たないので、応答できれば 200 を返す。
+      description: 照合の API は、起動のときにブローカーの discovery を読み、読めなければ起動しない。起動した後は依存先を確かめないので、応答できれば 200 を返す。
+      security: []
       responses:
         "200":
           description: 要求を受けられる
@@ -48,6 +54,7 @@ paths:
       summary: 実訪問の CSV と予定を照合する
       description: |
         予定は、ファイル `schedules` があればそれを使う。無くてフォームの値 `month` があれば、その月の予定を Google カレンダーから取る。
+        Google カレンダーは、トークンの組織に結び付けたカレンダーだけを読む。
         結果は Accept によらず JSON で返す。入力の CSV は、UTF-8（BOM の有無を問わない）と CP932 を受ける。
         本文の上限のバイト数は、サーバーの設定 `MAX_UPLOAD_BYTES` で決まる。
       requestBody:
@@ -82,6 +89,16 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+        "401":
+          description: トークンがないか、検証に失敗した（`unauthenticated`）
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "403":
+          description: Google カレンダーから取るのに、トークンに組織がない（`forbidden`）
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
         "413":
           description: 本文が上限を超えている（`payload_too_large`）
           content:
@@ -103,12 +120,20 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
         "503":
-          description: サーバーに Google カレンダーの設定がないのに `month` で呼ばれた（`calendar_not_configured`）
+          description: サーバーに、トークンの組織の Google カレンダーの設定がないのに `month` で呼ばれた（`calendar_not_configured`）
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        OIDC のブローカーが発行した access token。署名（RS256 か ES256）、iss、aud、exp、nbf を確かめる。
+        組織のクレーム（既定は `org_id`）が、Google カレンダーから読むカレンダーを決める。
   schemas:
     Health:
       type: object
@@ -128,6 +153,8 @@ components:
             - bad_request
             - missing_file
             - payload_too_large
+            - unauthenticated
+            - forbidden
             - invalid_csv
             - not_found
             - internal

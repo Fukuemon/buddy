@@ -45,15 +45,21 @@ func calendarHandler(t *testing.T) http.Handler {
 		}}},
 	})
 	reader := gcal.NewReader(gcaltest.Start(t, srv), []gcal.Calendar{
-		{ID: "staff-b@example.com"},
-		{ID: "staff-e@example.com", StaffName: "職員E"},
+		{ID: "staff-b@example.com", OrgID: orgSample},
+		{ID: "staff-e@example.com", OrgID: orgSample, StaffName: "職員E"},
+		{ID: "staff-x@example.com", OrgID: "org-other"},
 	})
 	return NewHandler(slog.New(slog.NewTextHandler(io.Discard, nil)), Config{
-		MaxUploadBytes: 1 << 20, Sources: source.Selector{Calendar: reader},
+		MaxUploadBytes: 1 << 20, Sources: source.Selector{Calendar: reader}, Verifier: fakeVerifier{},
 	})
 }
 
 func postForm(t *testing.T, h http.Handler, files map[string][]byte, values map[string]string) *httptest.ResponseRecorder {
+	t.Helper()
+	return postFormAs(t, h, tokenSample, files, values)
+}
+
+func postFormAs(t *testing.T, h http.Handler, token string, files map[string][]byte, values map[string]string) *httptest.ResponseRecorder {
 	t.Helper()
 	var buf bytes.Buffer
 	mw := multipart.NewWriter(&buf)
@@ -76,6 +82,7 @@ func postForm(t *testing.T, h http.Handler, files map[string][]byte, values map[
 	}
 	req := httptest.NewRequest(http.MethodPost, "/v1/checks", &buf)
 	req.Header.Set("Content-Type", mw.FormDataContentType())
+	req.Header.Set("Authorization", "Bearer "+token)
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
 	return rec
@@ -130,24 +137,28 @@ func TestChecksCalendarErrors(t *testing.T) {
 	failing := NewHandler(slog.New(slog.NewTextHandler(io.Discard, nil)), Config{
 		MaxUploadBytes: 1 << 20,
 		Sources: source.Selector{Calendar: gcal.NewReader(
-			gcaltest.Start(t, gcaltest.NewServer(nil)), []gcal.Calendar{{ID: "unknown@example.com"}},
+			gcaltest.Start(t, gcaltest.NewServer(nil)), []gcal.Calendar{{ID: "unknown@example.com", OrgID: orgSample}},
 		)},
+		Verifier: fakeVerifier{},
 	})
 	tests := []struct {
 		name       string
 		h          http.Handler
+		token      string
 		values     map[string]string
 		wantStatus int
 		wantCode   openapi.ErrorCode
 	}{
-		{"schedules も month もない", calendarHandler(t), nil, http.StatusBadRequest, openapi.MissingFile},
-		{"month の形が違う", calendarHandler(t), map[string]string{FieldMonth: "2024/04"}, http.StatusBadRequest, openapi.BadRequest},
-		{"カレンダーの設定がない", newHandler(), map[string]string{FieldMonth: "2024-04"}, http.StatusServiceUnavailable, openapi.CalendarNotConfigured},
-		{"Calendar API が失敗する", failing, map[string]string{FieldMonth: "2024-04"}, http.StatusBadGateway, openapi.ScheduleSourceFailed},
+		{"schedules も month もない", calendarHandler(t), tokenSample, nil, http.StatusBadRequest, openapi.MissingFile},
+		{"month の形が違う", calendarHandler(t), tokenSample, map[string]string{FieldMonth: "2024/04"}, http.StatusBadRequest, openapi.BadRequest},
+		{"カレンダーの設定がない", newHandler(), tokenSample, map[string]string{FieldMonth: "2024-04"}, http.StatusServiceUnavailable, openapi.CalendarNotConfigured},
+		{"組織のカレンダーがない", calendarHandler(t), tokenNoCalendar, map[string]string{FieldMonth: "2024-04"}, http.StatusServiceUnavailable, openapi.CalendarNotConfigured},
+		{"トークンに組織がない", calendarHandler(t), tokenNoOrg, map[string]string{FieldMonth: "2024-04"}, http.StatusForbidden, openapi.Forbidden},
+		{"Calendar API が失敗する", failing, tokenSample, map[string]string{FieldMonth: "2024-04"}, http.StatusBadGateway, openapi.ScheduleSourceFailed},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rec := postForm(t, tt.h, visits, tt.values)
+			rec := postFormAs(t, tt.h, tt.token, visits, tt.values)
 			if rec.Code != tt.wantStatus {
 				t.Fatalf("status %d body %s", rec.Code, rec.Body)
 			}

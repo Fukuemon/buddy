@@ -11,6 +11,8 @@ export const checkErrorMessage = (error: unknown) => {
   switch (error.status) {
     case 400:
       return '入力を読めませんでした。ファイルを選び直して、もう一度照合してください。'
+    case 403:
+      return 'アカウントに事業所が結び付いていないので、Google カレンダーから予定を取れません。予定の CSV で照合してください。'
     case 413:
       return TOO_LARGE_MESSAGE
     case 422:
@@ -21,7 +23,7 @@ export const checkErrorMessage = (error: unknown) => {
     case 502:
       return 'Google カレンダーから予定を取れませんでした。時間をおいて、もう一度照合してください。'
     case 503:
-      return 'Google カレンダーの設定がありません。予定の CSV で照合してください。'
+      return '事業所の Google カレンダーの設定がありません。予定の CSV で照合してください。'
     default:
       return RETRY
   }

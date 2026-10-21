@@ -31,10 +31,28 @@ func april(t *testing.T) gcal.Month {
 	return m
 }
 
+const org = "org-sample"
+
+func mustMonth(t *testing.T, r *gcal.Reader, m gcal.Month) check.ScheduleSource {
+	t.Helper()
+	src, ok := r.Month(org, m)
+	if !ok {
+		t.Fatalf("組織 %s のカレンダーがない", org)
+	}
+	return src
+}
+
+func TestMonthOtherOrg(t *testing.T) {
+	r := gcal.NewReader(nil, []gcal.Calendar{{ID: "staff-a@example.com", OrgID: org}})
+	if _, ok := r.Month("org-other", april(t)); ok {
+		t.Error("別の組織のカレンダーを読む")
+	}
+}
+
 func TestSchedulesQuery(t *testing.T) {
 	srv := gcaltest.NewServer(map[string]gcaltest.Calendar{"staff-a@example.com": {Summary: "職員B"}})
-	r := gcal.NewReader(gcaltest.Start(t, srv), []gcal.Calendar{{ID: "staff-a@example.com"}})
-	if _, _, err := r.Month(april(t)).Schedules(t.Context()); err != nil {
+	r := gcal.NewReader(gcaltest.Start(t, srv), []gcal.Calendar{{ID: "staff-a@example.com", OrgID: org}})
+	if _, _, err := mustMonth(t, r, april(t)).Schedules(t.Context()); err != nil {
 		t.Fatal(err)
 	}
 	qs := srv.Queries()
@@ -62,12 +80,12 @@ func TestSchedulesMonthEnd(t *testing.T) {
 		{"2024-12", "2024-12-01T00:00:00+09:00", "2025-01-01T00:00:00+09:00"},
 	} {
 		srv := gcaltest.NewServer(map[string]gcaltest.Calendar{"staff-a@example.com": {}})
-		r := gcal.NewReader(gcaltest.Start(t, srv), []gcal.Calendar{{ID: "staff-a@example.com", StaffName: "職員B"}})
+		r := gcal.NewReader(gcaltest.Start(t, srv), []gcal.Calendar{{ID: "staff-a@example.com", OrgID: org, StaffName: "職員B"}})
 		m, err := gcal.ParseMonth(tt.month)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, _, err := r.Month(m).Schedules(t.Context()); err != nil {
+		if _, _, err := mustMonth(t, r, m).Schedules(t.Context()); err != nil {
 			t.Fatal(err)
 		}
 		if q := srv.Queries()[0]; q.Get("timeMin") != tt.min || q.Get("timeMax") != tt.max {
@@ -113,10 +131,11 @@ func TestSchedulesEvents(t *testing.T) {
 		},
 	})
 	r := gcal.NewReader(gcaltest.Start(t, srv), []gcal.Calendar{
-		{ID: "staff-a@example.com"},
-		{ID: "staff-b@example.com", StaffName: "職員E"},
+		{ID: "staff-a@example.com", OrgID: org},
+		{ID: "staff-b@example.com", OrgID: org, StaffName: "職員E"},
+		{ID: "staff-c@example.com", OrgID: "org-other"},
 	})
-	recs, warns, err := r.Month(april(t)).Schedules(t.Context())
+	recs, warns, err := mustMonth(t, r, april(t)).Schedules(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,8 +184,8 @@ func TestSchedulesEvents(t *testing.T) {
 
 func TestSchedulesSourceError(t *testing.T) {
 	srv := gcaltest.NewServer(nil)
-	r := gcal.NewReader(gcaltest.Start(t, srv), []gcal.Calendar{{ID: "unknown@example.com"}})
-	_, _, err := r.Month(april(t)).Schedules(t.Context())
+	r := gcal.NewReader(gcaltest.Start(t, srv), []gcal.Calendar{{ID: "unknown@example.com", OrgID: org}})
+	_, _, err := mustMonth(t, r, april(t)).Schedules(t.Context())
 	var se *check.SourceError
 	if !errors.As(err, &se) {
 		t.Fatalf("err = %v", err)
@@ -197,15 +216,17 @@ func TestLoadCalendars(t *testing.T) {
 		}
 		return p
 	}
-	cals, err := gcal.LoadCalendars(write(t, `[{"calendar_id":"staff-a@example.com","staff_name":"職員B"},{"calendar_id":"staff-b@example.com"}]`))
-	if err != nil || len(cals) != 2 || cals[0].StaffName != "職員B" || cals[1].StaffName != "" {
+	cals, err := gcal.LoadCalendars(write(t, `[{"calendar_id":"staff-a@example.com","org_id":"org-a","staff_name":"職員B"},{"calendar_id":"staff-b@example.com","org_id":"org-b"}]`))
+	if err != nil || len(cals) != 2 || cals[0].StaffName != "職員B" || cals[0].OrgID != "org-a" || cals[1].StaffName != "" {
 		t.Errorf("= %+v, %v", cals, err)
 	}
 	for _, bad := range []string{
 		`[]`,
-		`[{"calendar_id":""}]`,
-		`[{"calendar_id":"a@example.com"},{"calendar_id":"a@example.com"}]`,
-		`[{"calendar_id":"a@example.com","name":"x"}]`,
+		`[{"calendar_id":"","org_id":"org-a"}]`,
+		`[{"calendar_id":"a@example.com"}]`,
+		`[{"calendar_id":"a@example.com","org_id":" "}]`,
+		`[{"calendar_id":"a@example.com","org_id":"org-a"},{"calendar_id":"a@example.com","org_id":"org-a"}]`,
+		`[{"calendar_id":"a@example.com","org_id":"org-a","name":"x"}]`,
 		`{}`,
 	} {
 		if _, err := gcal.LoadCalendars(write(t, bad)); err == nil {

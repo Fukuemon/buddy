@@ -99,12 +99,17 @@ services:
 
   receipt-api:
     build: apps/receipt-api
+    environment:
+      OIDC_ISSUER: http://idp:9000/buddy
+      OIDC_AUDIENCE: receipt-api
     ports: ['127.0.0.1:${RECEIPT_API_PORT:-8090}:8080']
     healthcheck:
       test: ['CMD', '/api', 'healthcheck']
       interval: 2s
       timeout: 5s
       retries: 30
+    depends_on:
+      idp: { condition: service_healthy }
 
   web:
     build:

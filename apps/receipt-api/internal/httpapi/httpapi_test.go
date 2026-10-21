@@ -18,7 +18,7 @@ import (
 )
 
 func newHandler() http.Handler {
-	return NewHandler(slog.New(slog.NewTextHandler(io.Discard, nil)), Config{MaxUploadBytes: 1 << 20})
+	return NewHandler(slog.New(slog.NewTextHandler(io.Discard, nil)), Config{MaxUploadBytes: 1 << 20, Verifier: fakeVerifier{}})
 }
 
 func testdata(t *testing.T, name string) []byte {
@@ -54,6 +54,7 @@ func post(t *testing.T, h http.Handler, files map[string][]byte, accept string) 
 	body, ct := multipartBody(t, files)
 	req := httptest.NewRequest(http.MethodPost, "/v1/checks", body)
 	req.Header.Set("Content-Type", ct)
+	req.Header.Set("Authorization", "Bearer "+tokenSample)
 	if accept != "" {
 		req.Header.Set("Accept", accept)
 	}
@@ -142,6 +143,7 @@ func TestChecksErrors(t *testing.T) {
 func TestChecksNotMultipart(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/v1/checks", strings.NewReader("{}"))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+tokenSample)
 	rec := httptest.NewRecorder()
 	newHandler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), string(openapi.BadRequest)) {
@@ -150,7 +152,7 @@ func TestChecksNotMultipart(t *testing.T) {
 }
 
 func TestChecksTooLarge(t *testing.T) {
-	h := NewHandler(slog.New(slog.NewTextHandler(io.Discard, nil)), Config{MaxUploadBytes: 100})
+	h := NewHandler(slog.New(slog.NewTextHandler(io.Discard, nil)), Config{MaxUploadBytes: 100, Verifier: fakeVerifier{}})
 	rec := post(t, h, validFiles(t), "")
 	if rec.Code != http.StatusRequestEntityTooLarge || !strings.Contains(rec.Body.String(), string(openapi.PayloadTooLarge)) {
 		t.Errorf("status %d body %s", rec.Code, rec.Body)
@@ -159,7 +161,9 @@ func TestChecksTooLarge(t *testing.T) {
 
 func TestNotFound(t *testing.T) {
 	rec := httptest.NewRecorder()
-	newHandler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/nowhere", nil))
+	req := httptest.NewRequest(http.MethodGet, "/nowhere", nil)
+	req.Header.Set("Authorization", "Bearer "+tokenSample)
+	newHandler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusNotFound || !strings.Contains(rec.Body.String(), string(openapi.NotFound)) {
 		t.Errorf("status %d body %s", rec.Code, rec.Body)
 	}

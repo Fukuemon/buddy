@@ -10,6 +10,7 @@ describe('checkErrorMessage', () => {
     expect(checkErrorMessage(new ApiError(400, 'ファイルのフィールド visits がない'))).toContain(
       '選び直して',
     )
+    expect(checkErrorMessage(new ApiError(403, 'x'))).toContain('事業所が結び付いていない')
     expect(checkErrorMessage(new ApiError(413, 'x'))).toContain('10 MB')
     expect(checkErrorMessage(new ApiError(422, 'x', row))).toContain('次の行を直して')
     expect(checkErrorMessage(new ApiError(422, '列がない: 訪問日'))).toBe(
