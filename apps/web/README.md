@@ -1,7 +1,7 @@
 # @buddy/web
 
 予定の管理とレセプトの照合の画面。TanStack Start で作り、ツールチェーンに Vite+ を使う。  
-`VITE_API_MODE` を指定しなければ、データを手元の偽物の API（`src/api/fake/`）から取る。BFF を通して予定の API を呼ぶように切り替えられる（「API を切り替える」）。
+`VITE_API_MODE` を指定しなければ、データを手元の偽物の API（`src/api/fake/`）から取る。BFF を通して予定の API と照合の API を呼ぶように切り替えられる（「API を切り替える」）。
 
 ## 動かす
 
@@ -13,6 +13,7 @@ pnpm --filter @buddy/web dev
 ```
 
 開発サーバーは `http://localhost:3000` で待ち受ける。`/` は `/schedule` へ転送する。  
+ルートの compose の web も 3000 を使うので、compose の全体を動かしているときは `docker compose stop web` で止めてから起動する。  
 偽物の API はブラウザのメモリにデータを持つため、ページを読み直すと作った予定は消える。
 
 ## API を切り替える
@@ -22,7 +23,7 @@ pnpm --filter @buddy/web dev
 | 値 | 動き |
 | --- | --- |
 | `fake`（既定） | 偽物の API（`src/api/fake/`）を呼ぶ。ログインせず、架空の職員として動く |
-| `bff` | サーバーの BFF が、セッションの access token を付けて予定の API を呼ぶ。ログインを求める |
+| `bff` | サーバーの BFF が、セッションの access token を付けて予定の API と照合の API を呼ぶ。ログインを求める |
 
 コンテナのイメージは `bff` でビルドする。`bff` の動きは、リポジトリのルートの compose で確かめる（CONTRIBUTING.md の「手元で全部を動かす」）。  
 開発サーバーを `bff` で動かすと、トークンの `iss` が compose の API の求める値と合わないので、compose の API には向けない。
@@ -90,7 +91,7 @@ route は `src/routes/` のファイルから TanStack Router が生成する。
 - 画面の引数は、server function で操作ごとの形を確かめ、合わなければ 400 を返す。
 - 事業所に登録されていない職員は、`/auth/error?reason=forbidden` に案内を出す。
 
-サーバーが読む環境変数は、設計書の環境変数の表にある。手元の compose のように、ブラウザと web から届く IdP の URL が違うときは、`OIDC_AUTHORIZATION_ENDPOINT` でブラウザを転送する認可の URL を渡す。
+サーバーが読む環境変数は、[全体の Design Doc の環境変数の表](../../docs/design/DesignDoc.md#環境変数) にある。手元の compose のように、ブラウザと web から届く IdP の URL が違うときは、`OIDC_AUTHORIZATION_ENDPOINT` でブラウザを転送する認可の URL を渡す。
 
 `/healthz` は応答できれば 200 を、`/readyz` は Valkey に届けば 200、届かなければ 503 を返す。
 
