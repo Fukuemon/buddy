@@ -695,8 +695,8 @@ export interface paths {
         /**
          * 確かめが要る書き出しを Google カレンダーの内容で解く
          * @description 確かめが要る書き出しの予定を、Google カレンダーの今の内容にそろえ、書き出しを終える。buddy で変えた日時と題名は消える。
-         *     Google カレンダーで消された予定は、buddy でキャンセルする。単発の予定で、error_code が precondition_failed か not_found の
-         *     書き出し（acceptable が true のもの）だけを解ける。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         *     Google カレンダーで消された予定（予定が 404 で、カレンダーは読めるときを含む）は、buddy でキャンセルする。
+         *     acceptable が true の書き出しだけを解ける。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         post: operations["createCalendarExportAcceptance"];
         delete?: never;
@@ -999,7 +999,7 @@ export interface components {
             end_time: components["schemas"]["Time"];
             /**
              * @description Google カレンダーの内容で解けるか（POST /v1/calendar_exports/{calendar_export_id}/acceptances）。
-             *     単発の予定で、error_code が precondition_failed か not_found のときに true
+             *     単発の予定で、buddy でキャンセルしておらず、error_code が precondition_failed か not_found のときに true
              */
             acceptable: boolean;
         };

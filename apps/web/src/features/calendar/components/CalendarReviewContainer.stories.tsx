@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
+import { ApiError } from '#/api/client'
+import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import { FAKE_VIEWER } from '#/api/fake/fixtures'
 import {
   emptyBuddyApi,
@@ -38,5 +40,27 @@ export const Forbidden: Story = {
   parameters: route({
     api: failingBuddyApi(),
     viewer: { ...FAKE_VIEWER, canManageStaff: false },
+  }),
+}
+
+const unappliable = createFakeBuddyApi()
+
+/** Google の内容に合わせると、Google の予定を buddy の予定に読み替えられずに失敗する。 */
+export const AcceptFailed: Story = {
+  parameters: route({
+    api: {
+      ...unappliable,
+      calendars: {
+        ...unappliable.calendars,
+        acceptExport: async () => {
+          throw new ApiError(
+            409,
+            'Google カレンダーの予定を、buddy の予定に読み替えられません',
+            [],
+            'external_change_unappliable',
+          )
+        },
+      },
+    },
   }),
 }

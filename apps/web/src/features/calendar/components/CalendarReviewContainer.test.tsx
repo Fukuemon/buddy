@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './CalendarReviewContainer.stories'
 
-const { Default, Empty, Forbidden, LoadError } = composeStories(stories)
+const { AcceptFailed, Default, Empty, Forbidden, LoadError } = composeStories(stories)
 
 describe('CalendarReviewContainer', () => {
   it('食い違った予定を、日時、職員、理由で並べ、題名と利用者名を出さない', async () => {
@@ -72,6 +72,17 @@ describe('CalendarReviewContainer', () => {
     await userEvent.click(screen.getByTestId('calendar-rewrite-cancel'))
     expect(screen.queryByTestId('calendar-rewrite-dialog')).toBeNull()
     expect(screen.getByTestId('calendar-review-row-export-2')).toBeInTheDocument()
+  })
+
+  it('Google の内容に合わせられなければ、ダイアログを開いたまま理由を出す', async () => {
+    render(<AcceptFailed />)
+    await userEvent.click(await screen.findByTestId('calendar-review-accept-export-1'))
+    await userEvent.click(screen.getByTestId('calendar-accept-submit'))
+    expect(await screen.findByTestId('calendar-accept-error')).toHaveTextContent(
+      'Google カレンダーの予定を、buddy の予定に読み替えられません。',
+    )
+    expect(screen.getByTestId('calendar-accept-dialog')).toBeInTheDocument()
+    expect(screen.getByTestId('calendar-accept-submit')).toBeEnabled()
   })
 
   it('確かめが要る予定が無ければ、そう示す', async () => {
