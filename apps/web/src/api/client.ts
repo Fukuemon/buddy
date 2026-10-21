@@ -1,4 +1,6 @@
 import type {
+  CalendarExport,
+  CalendarExportIssue,
   ExternalCalendar,
   FacilityId,
   ImportDecision,
@@ -103,5 +105,12 @@ export interface BuddyApi {
       externalCalendarId: ExternalCalendar['id'],
       input: ImportRange & { decisions: ImportDecision[] },
     ): Promise<ImportResult>
+    /** Google カレンダーで予定が変わっていたか消えていたか、書けなかった書き出しを、新しく変わった順に返す。 */
+    exportIssues(facilityId: FacilityId): Promise<CalendarExportIssue[]>
+    /**
+     * 確かめが要る書き出しを、Google カレンダーの変更を比べずに buddy の内容で書き直す待ちにする。
+     * 確かめが要る書き出しでなければ、code が export_not_in_review の ApiError を投げる。
+     */
+    retryExport(facilityId: FacilityId, exportId: CalendarExport['id']): Promise<CalendarExport>
   }
 }

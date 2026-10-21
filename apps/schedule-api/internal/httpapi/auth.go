@@ -40,6 +40,7 @@ var pathResources = map[string]struct {
 	"schedule_id":           {resource: access.ResourceSchedule},
 	"recurring_schedule_id": {resource: access.ResourceRecurringSchedule},
 	"external_calendar_id":  {resource: access.ResourceExternalCalendar},
+	"calendar_export_id":    {resource: access.ResourceCalendarExport},
 	"policy_id":             {global: true},
 	// 職員の権限の ID は、同じパスの user_id で事業所を確かめ、staff.Usecase が職員の権限かを確かめる。
 	"user_policy_id": {global: true},

@@ -126,12 +126,14 @@ func (rs RecurringSchedule) Occurs(d civil.Date) bool {
 }
 
 // RecurringDetail は、繰り返しの予定と、種類、職員、訪問の情報、除外した日付である。Visit は、ないときに nil である。
+// Version は更新の番号で、作ったときに 1 で、回を除外するたびに 1 つ増える。
 type RecurringDetail struct {
 	RecurringSchedule
 	TypeName       TypeName
 	StaffName      string
 	Visit          *visit.Detail
 	ExclusionDates []civil.Date
+	Version        int
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }

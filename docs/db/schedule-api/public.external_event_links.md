@@ -6,24 +6,25 @@
 
 ## Columns
 
-| Name                  | Type                     | Default | Nullable | Children | Parents                                                                                                                                                       | Comment                                          |
-| --------------------- | ------------------------ | ------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| id                    | text                     |         | false    |          |                                                                                                                                                               |                                                  |
-| facility_id           | text                     |         | false    |          | [public.recurring_schedules](public.recurring_schedules.md) [public.schedules](public.schedules.md) [public.external_calendars](public.external_calendars.md) |                                                  |
-| external_calendar_id  | text                     |         | false    |          | [public.external_calendars](public.external_calendars.md)                                                                                                     |                                                  |
-| external_event_id     | varchar(1024)            |         | false    |          |                                                                                                                                                               |                                                  |
-| recurring_event_id    | varchar(1024)            |         | true     |          |                                                                                                                                                               | 繰り返しの 1 回のとき、外部の繰り返しの予定の ID |
-| etag                  | text                     |         | false    |          |                                                                                                                                                               | 最後に同期した時点の外部の予定の etag            |
-| schedule_id           | text                     |         | true     |          | [public.schedules](public.schedules.md)                                                                                                                       |                                                  |
-| recurring_schedule_id | text                     |         | true     |          | [public.recurring_schedules](public.recurring_schedules.md)                                                                                                   |                                                  |
-| created_at            | timestamp with time zone | now()   | false    |          |                                                                                                                                                               |                                                  |
-| updated_at            | timestamp with time zone | now()   | false    |          |                                                                                                                                                               |                                                  |
+| Name                  | Type                     | Default | Nullable | Children | Parents                                                                                                                                                       | Comment                                                                                 |
+| --------------------- | ------------------------ | ------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| id                    | text                     |         | false    |          |                                                                                                                                                               |                                                                                         |
+| facility_id           | text                     |         | false    |          | [public.recurring_schedules](public.recurring_schedules.md) [public.schedules](public.schedules.md) [public.external_calendars](public.external_calendars.md) |                                                                                         |
+| external_calendar_id  | text                     |         | false    |          | [public.external_calendars](public.external_calendars.md)                                                                                                     |                                                                                         |
+| external_event_id     | varchar(1024)            |         | false    |          |                                                                                                                                                               |                                                                                         |
+| recurring_event_id    | varchar(1024)            |         | true     |          |                                                                                                                                                               | 繰り返しの 1 回のとき、外部の繰り返しの予定の ID                                        |
+| etag                  | text                     |         | false    |          |                                                                                                                                                               | 最後に同期した時点の外部の予定の etag                                                   |
+| schedule_id           | text                     |         | true     |          | [public.schedules](public.schedules.md)                                                                                                                       |                                                                                         |
+| recurring_schedule_id | text                     |         | true     |          | [public.recurring_schedules](public.recurring_schedules.md)                                                                                                   |                                                                                         |
+| created_at            | timestamp with time zone | now()   | false    |          |                                                                                                                                                               |                                                                                         |
+| updated_at            | timestamp with time zone | now()   | false    |          |                                                                                                                                                               |                                                                                         |
+| synced_version        | integer                  |         | true     |          |                                                                                                                                                               | 最後に外部の予定と同じにした時点の、buddy の予定の更新の番号。この列を足す前の行は NULL |
 
 ## Viewpoints
 
-| Name                                                     | Definition                                                                 |
-| -------------------------------------------------------- | -------------------------------------------------------------------------- |
-| [外部のカレンダーの取り込み](viewpoint-calendar-sync.md) | 職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録 |
+| Name                                                               | Definition                                                                                 |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| [外部のカレンダーの取り込みと書き出し](viewpoint-calendar-sync.md) | 職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち |
 
 ## Constraints
 
@@ -36,6 +37,7 @@
 | external_event_links_facility_id_not_null          | n           | NOT NULL facility_id                                                                                               |
 | external_event_links_id_check                      | CHECK       | CHECK ((id ~ '^[0-7][0-9A-HJKMNP-TV-Z]{25}$'::text))                                                               |
 | external_event_links_id_not_null                   | n           | NOT NULL id                                                                                                        |
+| external_event_links_synced_version_check          | CHECK       | CHECK ((synced_version >= 1))                                                                                      |
 | external_event_links_target_check                  | CHECK       | CHECK ((num_nonnulls(schedule_id, recurring_schedule_id) = 1))                                                     |
 | external_event_links_updated_at_not_null           | n           | NOT NULL updated_at                                                                                                |
 | external_event_links_recurring_schedule_fkey       | FOREIGN KEY | FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id) ON DELETE CASCADE |
@@ -84,6 +86,7 @@ erDiagram
   text recurring_schedule_id FK
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  integer synced_version
 }
 "public.recurring_schedules" {
   text id
@@ -104,6 +107,7 @@ erDiagram
   date end_date
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  integer version
 }
 "public.schedules" {
   text id
@@ -121,6 +125,7 @@ erDiagram
   boolean is_over_time_work
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  integer version
 }
 "public.external_calendars" {
   text id

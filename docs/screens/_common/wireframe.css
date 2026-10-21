@@ -475,6 +475,13 @@ body {
     padding: 0 16px;
   }
 
+  /* 職員の管理の権限を持つ職員の 4 つのリンクを、幅 390px でも折り返さずに並べる */
+  .wf-site-header nav {
+    gap: 12px;
+    margin-left: 16px;
+    white-space: nowrap;
+  }
+
   .wf-site-header__viewer .wf-text {
     display: none;
   }

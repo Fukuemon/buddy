@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-import { LEADER, SEED_PATIENT } from '../../fixtures/env'
+import { FAKE_GOOGLE_URL, LEADER, SEED_PATIENT } from '../../fixtures/env'
 
 // compose の偽物の Google（compose/fake-google-calendar.json）は、森のカレンダーに 2026 年 11 月の予定を持つ。
 const MORI = LEADER.staff
@@ -10,6 +10,7 @@ test.describe('予定の取り込み', () => {
   test.describe('Google カレンダーの取り込み', () => {
     test('職員にカレンダーを結び付けて期間を取り込んだ場合、繰り返しの回がカレンダーに出て、2 回目の下見は全て取り込み済みになること', async ({
       page,
+      request,
     }) => {
       await test.step('読めないカレンダーは結び付けられず、森のカレンダーは結び付けられる', async () => {
         await page.goto('/schedule/link')
@@ -104,13 +105,27 @@ test.describe('予定の取り込み', () => {
       })
 
       await test.step('同じ期間をもう一度下見すると、全て取り込み済みになる', async () => {
+        // 回を置き換えた予定は、予定の API が森の Google カレンダーに書き出し、書き出した予定も取り込み済みに数える。
+        // 書き出しは別の処理が行うので、書き出した予定が出るまで待つ
+        await expect
+          .poll(async () => {
+            const res = await request.get(
+              `${FAKE_GOOGLE_URL}/calendars/${encodeURIComponent(MORI_CALENDAR)}/events`,
+            )
+            const { items = [] } = (await res.json()) as {
+              items?: { extendedProperties?: { private?: Record<string, string> } }[]
+            }
+            return items.filter((event) => event.extendedProperties?.private?.buddyScheduleId)
+              .length
+          })
+          .toBe(1)
         await page.goto(`/schedule/import?staff=${MORI.id}`)
         await page.getByTestId('calendar-import-start').fill('2026-11-01')
         await page.getByTestId('calendar-import-end').fill('2026-11-30')
         await page.getByTestId('calendar-import-preview').click()
         await expect(page.getByTestId('calendar-import-all-imported')).toBeVisible()
         await expect(page.getByTestId('calendar-import-count-already_imported')).toContainText(
-          '7 件',
+          '8 件',
         )
       })
     })

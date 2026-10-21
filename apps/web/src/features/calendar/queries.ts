@@ -1,7 +1,14 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { ApiError, type BuddyApi } from '#/api/client'
-import type { ExternalCalendar, FacilityId, ImportDecision, ImportRange, Staff } from '#/api/types'
+import type {
+  CalendarExport,
+  ExternalCalendar,
+  FacilityId,
+  ImportDecision,
+  ImportRange,
+  Staff,
+} from '#/api/types'
 import { useBuddyApi } from '#/api/useBuddyApi'
 
 /** TanStack Query のキー。事業所ごとに分ける。 */
@@ -11,6 +18,8 @@ export const calendarQueryKeys = {
     ['facilities', facilityId, 'calendar-service-account'] as const,
   staff: (facilityId: FacilityId) => ['facilities', facilityId, 'staff', {}] as const,
   patients: (facilityId: FacilityId) => ['facilities', facilityId, 'patients', {}] as const,
+  exportIssues: (facilityId: FacilityId) =>
+    ['facilities', facilityId, 'calendar-export-issues'] as const,
 }
 
 /** 事業所の、外していないカレンダーの一覧の query。 */
@@ -33,6 +42,24 @@ export const serviceAccountQueryOptions = (api: BuddyApi, facilityId: FacilityId
       }
     },
   })
+
+/** 事業所の確かめが要る書き出しの query。 */
+export const exportIssueListQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
+  queryOptions({
+    queryKey: calendarQueryKeys.exportIssues(facilityId),
+    queryFn: () => api.calendars.exportIssues(facilityId),
+  })
+
+/** 確かめが要る書き出しを、buddy の内容で書き直す待ちにする mutation。成否によらず、一覧を読み直す。 */
+export const useRetryExport = () => {
+  const { api, facilityId } = useBuddyApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (exportId: CalendarExport['id']) => api.calendars.retryExport(facilityId, exportId),
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: calendarQueryKeys.exportIssues(facilityId) }),
+  })
+}
 
 /** 事業所の全ての職員の query。 */
 export const staffListQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>

@@ -121,3 +121,7 @@ export type ImportSkippedItem = ScheduleSchemas['ImportSkippedItem']
 export type ImportDecision = ScheduleSchemas['ImportDecision']
 /** 取り込みの結果。 */
 export type ImportResult = ScheduleSchemas['ImportResult']
+/** 予定を Google カレンダーに書き出す待ち。予定の API の CalendarExport をそのまま使う。 */
+export type CalendarExport = ScheduleSchemas['CalendarExport']
+/** 確かめが要る書き出しと、その予定の日時と職員。予定の題名と利用者名は持たない。 */
+export type CalendarExportIssue = ScheduleSchemas['CalendarExportIssue']

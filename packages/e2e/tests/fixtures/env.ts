@@ -29,6 +29,19 @@ export const LEADER = {
 /** シードの、リーダーの森と同じチーム B のメンバー。森が予定を割り振る相手である。 */
 export const TEAM_MEMBER = { id: '01M5EF5AAYN3P4PYNAT0RJQYCR', name: '佐藤 美咲' }
 
+/** シードの職員の林。Google カレンダーへの書き出しの spec が、林にカレンダーを結び付ける。 */
+export const HAYASHI = {
+  id: '01M3TC5WQ08KWBZX85WAZ1C4N7',
+  name: '林 さくら',
+  calendarId: 'sakura.hayashi@example.com',
+}
+
+/**
+ * compose の偽物の Google Calendar API の URL。spec は、予定の API が書いた予定を、ここから読んで確かめる。
+ * 既定はルートの compose の fake-google である。
+ */
+export const FAKE_GOOGLE_URL = process.env.E2E_FAKE_GOOGLE_URL ?? 'http://localhost:8085'
+
 /** シードの利用者。訪問の予定を作るときに選ぶ。 */
 export const SEED_PATIENT = { id: '01M3TC66FGZVK39Y7GRVZSGWS1', name: '見本 一郎' }
 

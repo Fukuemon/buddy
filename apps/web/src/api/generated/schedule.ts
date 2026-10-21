@@ -640,6 +640,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/facilities/{facility_id}/calendar_export_issues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 確かめが要る書き出しを一覧する
+         * @description Google カレンダーへの書き出しのうち、Google カレンダーで予定が変わっていたか消えていた（conflict）か、書けなかった（failed）ものを、
+         *     新しく変わった順に返す。予定の題名、利用者名、カレンダーの ID は返さない。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        get: operations["listCalendarExportIssues"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/calendar_exports/{calendar_export_id}/retries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 確かめが要る書き出しを buddy の内容で書き直す
+         * @description 確かめが要る書き出しを、Google カレンダーの予定の変更を比べずに、buddy の今の内容で書き直す待ちにする。書き出しの処理が、次の周期で書く。
+         *     Google カレンダーで消された予定は作り直す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        post: operations["createCalendarExportRetry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -656,7 +698,7 @@ export interface components {
         Time: string;
         Error: {
             /** @enum {string} */
-            code: "invalid_input" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "internal" | "calendar_unreadable" | "calendar_unavailable" | "calendar_not_configured" | "calendar_taken" | "calendar_already_linked" | "staff_has_calendar" | "import_running" | "import_preview_changed";
+            code: "invalid_input" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "internal" | "calendar_unreadable" | "calendar_unavailable" | "calendar_not_configured" | "calendar_taken" | "calendar_already_linked" | "staff_has_calendar" | "import_running" | "import_preview_changed" | "export_not_in_review";
             /** @description 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う */
             message: string;
         };
@@ -898,6 +940,40 @@ export interface components {
             /** Format: date-time */
             finished_at: string | null;
         };
+        /** @description 1 つの予定を Google カレンダーに書き出す待ち。書くときは、書く時点の予定の内容を書く */
+        CalendarExport: {
+            id: components["schemas"]["ID"];
+            /** @description 単発の予定。recurring_schedule_id と排他 */
+            schedule_id: (string & components["schemas"]["ID"]) | null;
+            /** @description 繰り返しの予定。schedule_id と排他 */
+            recurring_schedule_id: (string & components["schemas"]["ID"]) | null;
+            /**
+             * @description pending は書く待ち、succeeded は書き終えた、conflict は Google カレンダーで予定が変わっていたか消えていたので書かずに止めた、
+             *     failed は書く権限が無いか、再送の上限まで書けなかった
+             * @enum {string}
+             */
+            status: "pending" | "succeeded" | "conflict" | "failed";
+            /**
+             * @description 最後に書けなかった理由。precondition_failed は Google カレンダーで予定が変わっていた（412）、
+             *     not_found は Google カレンダーで予定が消されたか、予定かカレンダーが見つからない（410、404）、
+             *     forbidden はサービスアカウントがカレンダーに書けない、rejected は Google が予定の内容を受け付けなかった（400）、
+             *     unavailable は Google に届かないか一時的な誤りが続いた
+             * @enum {string|null}
+             */
+            error_code: "precondition_failed" | "not_found" | "forbidden" | "rejected" | "unavailable" | null;
+            /** @description 書こうとした回数 */
+            attempts: number;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /** @description 確かめが要る書き出しと、その予定の日時と職員。繰り返しの予定の date は最初の回の日付 */
+        CalendarExportIssue: components["schemas"]["CalendarExport"] & {
+            staff_id: components["schemas"]["ID"];
+            staff_name: string;
+            date: components["schemas"]["Date"];
+            start_time: components["schemas"]["Time"];
+            end_time: components["schemas"]["Time"];
+        };
         ExternalCalendar: {
             id: components["schemas"]["ID"];
             facility_id: components["schemas"]["ID"];
@@ -1129,6 +1205,7 @@ export interface components {
         RecurringScheduleID: components["schemas"]["ID"];
         /** @description buddy の外部のカレンダーの ID。Google のカレンダーの ID ではない */
         ExternalCalendarID: components["schemas"]["ID"];
+        CalendarExportID: components["schemas"]["ID"];
         /** @description 省くと昇順。sort_field を省いたときは既定の列に向きだけを当てる */
         SortOrder: "asc" | "desc";
     };
@@ -2478,6 +2555,70 @@ export interface operations {
             500: components["responses"]["InternalError"];
             502: components["responses"]["CalendarUnavailable"];
             503: components["responses"]["CalendarNotConfigured"];
+        };
+    };
+    listCalendarExportIssues: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                facility_id: components["parameters"]["FacilityID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 確かめが要る書き出し */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["CalendarExportIssue"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    createCalendarExportRetry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                calendar_export_id: components["parameters"]["CalendarExportID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 書き直す待ちにした */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarExport"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description 確かめが要る書き出しでない（export_not_in_review）。すでに書き直す待ちにしたか、書き終えた */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            500: components["responses"]["InternalError"];
         };
     };
 }

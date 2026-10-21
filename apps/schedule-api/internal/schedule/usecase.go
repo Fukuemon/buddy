@@ -21,6 +21,8 @@ type Deps struct {
 	Schedules  Repository
 	Recurring  RecurringRepository
 	Types      TypeRepository
+	// Exports は、予定の変更を外部のカレンダーへの書き出しの待ちに積む。nil なら積まない。
+	Exports Exports
 }
 
 // Usecase は、予定の操作である。操作は、ctx の職員（principal.Principal）の権限で判定する。
@@ -203,6 +205,9 @@ func (s *Usecase) CreateRecurring(ctx context.Context, facilityID string, in Slo
 		if err := s.deps.Recurring.Create(ctx, rs); err != nil {
 			return err
 		}
+		if err := s.recurringChanged(ctx, rs.Slot, rs.ID); err != nil {
+			return err
+		}
 		created, err = s.deps.Recurring.Get(ctx, rs.ID)
 		return err
 	})
@@ -231,7 +236,10 @@ func (s *Usecase) ChangeOccurrence(ctx context.Context, recurringScheduleID stri
 		}
 		var err error
 		created, err = s.createSchedule(ctx, rs.FacilityID, in, &occurrence{recurringScheduleID: rs.ID, originalDate: originalDate})
-		return err
+		if err != nil {
+			return err
+		}
+		return s.recurringChanged(ctx, rs.Slot, rs.ID)
 	})
 	return created, err
 }
@@ -252,7 +260,10 @@ func (s *Usecase) Cancel(ctx context.Context, scheduleID, reason string) (Cancel
 		if err := s.authorize(ctx, cur.StaffID, true); err != nil {
 			return err
 		}
-		return apperr.AsConflict(s.deps.Schedules.CreateCancel(ctx, c), "この予定はすでにキャンセルされています")
+		if err := apperr.AsConflict(s.deps.Schedules.CreateCancel(ctx, c), "この予定はすでにキャンセルされています"); err != nil {
+			return err
+		}
+		return s.scheduleChanged(ctx, cur.Slot, cur.ID)
 	})
 	if err != nil {
 		return Cancel{}, err
@@ -292,6 +303,10 @@ func (s *Usecase) Update(ctx context.Context, scheduleID string, in SlotInput) (
 				return err
 			}
 		}
+		// 職員が替わったときも、前の職員のカレンダーの予定は対応から消せるので、新しい職員で積む。
+		if err := s.scheduleChanged(ctx, sc.Slot, sc.ID); err != nil {
+			return err
+		}
 		updated, err = s.deps.Schedules.Get(ctx, cur.ID)
 		return err
 	})
@@ -321,7 +336,26 @@ func (s *Usecase) createSchedule(ctx context.Context, facilityID string, in Slot
 	if err := s.deps.Schedules.Create(ctx, sc); err != nil {
 		return Detail{}, err
 	}
+	if err := s.scheduleChanged(ctx, sc.Slot, sc.ID); err != nil {
+		return Detail{}, err
+	}
 	return s.deps.Schedules.Get(ctx, sc.ID)
+}
+
+// scheduleChanged は、単発の予定 id の変更を書き出しの待ちに積む。トランザクションの中で呼ぶ。
+func (s *Usecase) scheduleChanged(ctx context.Context, slot Slot, id string) error {
+	if s.deps.Exports == nil {
+		return nil
+	}
+	return s.deps.Exports.ScheduleChanged(ctx, slot.FacilityID, slot.StaffID, id)
+}
+
+// recurringChanged は、繰り返しの予定 id の変更を書き出しの待ちに積む。トランザクションの中で呼ぶ。
+func (s *Usecase) recurringChanged(ctx context.Context, slot Slot, id string) error {
+	if s.deps.Exports == nil {
+		return nil
+	}
+	return s.deps.Exports.RecurringChanged(ctx, slot.FacilityID, slot.StaffID, id)
 }
 
 // prepareSlot は、予定の種類と職員と、職員の予定を編集する権限を確かめ、訪問の情報があれば保存して、予定の属性を組み立てる。

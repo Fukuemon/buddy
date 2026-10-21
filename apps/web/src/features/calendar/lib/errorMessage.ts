@@ -60,6 +60,22 @@ export const previewErrorMessage = (error: unknown, staffName: string) => {
   }
 }
 
+/** 確かめが要る予定の、書き出しの一覧を読めなかったときの文。 */
+export const REVIEW_LOAD_ERROR_MESSAGE =
+  '確かめが要る予定を読み込めませんでした。時間をおいて、読み直してください。'
+
+/** buddy の内容で書き直せなかったときの文。ほかの画面で書き直したときは、一覧を読み直させる。 */
+export const rewriteErrorMessage = (error: unknown) => {
+  if (statusOf(error) === 403) return FORBIDDEN_MESSAGE
+  switch (codeOf(error)) {
+    case 'export_not_in_review':
+    case 'not_found':
+      return 'この予定は、すでに書き直す待ちにしたか、書き出し終えています。一覧を読み直してください。'
+    default:
+      return '書き直す待ちにできませんでした。時間をおいて、もう一度書き直してください。'
+  }
+}
+
 /** 確かめが要る予定の利用者を選ぶための、利用者の一覧を読めなかったときの文。 */
 export const PATIENTS_ERROR_MESSAGE =
   '利用者の一覧を読み込めませんでした。時間をおいて、もう一度下見してください。'

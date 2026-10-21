@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/config"
 )
@@ -32,7 +33,7 @@ func TestLoad(t *testing.T) {
 	if !slices.Equal(c.AllowOrigins, []string{"http://localhost:3000", "http://localhost:5173"}) {
 		t.Errorf("AllowOrigins = %v", c.AllowOrigins)
 	}
-	if c.Calendar != (config.Calendar{}) {
+	if c.Calendar != (config.Calendar{ExportInterval: 30 * time.Second}) {
 		t.Errorf("Calendar = %+v, want 設定なし", c.Calendar)
 	}
 }
@@ -46,7 +47,7 @@ func TestLoadCalendar(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Calendar != (config.Calendar{ServiceAccount: "buddy@example.iam.gserviceaccount.com", Endpoint: "http://fake-google:8080/"}) {
+	if c.Calendar != (config.Calendar{ServiceAccount: "buddy@example.iam.gserviceaccount.com", Endpoint: "http://fake-google:8080/", ExportInterval: 30 * time.Second}) {
 		t.Errorf("Calendar = %+v", c.Calendar)
 	}
 }
@@ -108,5 +109,44 @@ func TestLoadDBDoesNotRequireOIDC(t *testing.T) {
 	}
 	if _, err := config.LoadDB(env(map[string]string{"DB_USER": "app"})); err == nil || !strings.Contains(err.Error(), "DB_PASSWORD") {
 		t.Errorf("err = %v", err)
+	}
+}
+
+func TestLoadExportInterval(t *testing.T) {
+	base := map[string]string{
+		"DB_USER": "u", "DB_PASSWORD": "p", "DB_NAME": "n", "OIDC_ISSUER": "http://idp", "OIDC_AUDIENCE": "a",
+	}
+	getenv := func(extra map[string]string) func(string) string {
+		return func(k string) string {
+			if v, ok := extra[k]; ok {
+				return v
+			}
+			return base[k]
+		}
+	}
+	c, err := config.Load(getenv(nil))
+	if err != nil || c.Calendar.ExportInterval != 30*time.Second {
+		t.Fatalf("既定の間隔 = %v, %v", c.Calendar.ExportInterval, err)
+	}
+	c, err = config.Load(getenv(map[string]string{"GOOGLE_CALENDAR_EXPORT_INTERVAL": "2s"}))
+	if err != nil || c.Calendar.ExportInterval != 2*time.Second {
+		t.Errorf("2s = %v, %v", c.Calendar.ExportInterval, err)
+	}
+	c, err = config.Load(getenv(map[string]string{"GOOGLE_CALENDAR_EXPORT_ENABLED": "true", "GOOGLE_CALENDAR_SERVICE_ACCOUNT": "sa@example.com"}))
+	if err != nil || !c.Calendar.ExportEnabled {
+		t.Errorf("書き出しを有効にする = %v, %v", c.Calendar.ExportEnabled, err)
+	}
+	for _, extra := range []map[string]string{
+		{"GOOGLE_CALENDAR_EXPORT_ENABLED": "true"},
+		{"GOOGLE_CALENDAR_EXPORT_ENABLED": "yes", "GOOGLE_CALENDAR_SERVICE_ACCOUNT": "sa@example.com"},
+	} {
+		if _, err := config.Load(getenv(extra)); err == nil {
+			t.Errorf("%v を受けた", extra)
+		}
+	}
+	for _, v := range []string{"500ms", "soon"} {
+		if _, err := config.Load(getenv(map[string]string{"GOOGLE_CALENDAR_EXPORT_INTERVAL": v})); err == nil {
+			t.Errorf("%s を受けた", v)
+		}
 	}
 }

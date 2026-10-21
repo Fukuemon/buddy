@@ -38,6 +38,7 @@ type Deps struct {
 	Schedules   kernel.Finder[schedule.Detail]
 	Recurring   kernel.Finder[schedule.RecurringDetail]
 	Calendars   kernel.Finder[calendar.ExternalCalendar]
+	Exports     kernel.Finder[calendar.Export]
 }
 
 // Resource は、パスの ID が指すリソースの種類である。
@@ -53,6 +54,7 @@ const (
 	ResourceSchedule
 	ResourceRecurringSchedule
 	ResourceExternalCalendar
+	ResourceCalendarExport
 )
 
 // Service は、検証したトークンから職員を特定する操作である。
@@ -141,6 +143,9 @@ func (a *Service) FacilityOf(ctx context.Context, r Resource, id string) (string
 	case ResourceExternalCalendar:
 		c, err := a.deps.Calendars.Get(ctx, id)
 		return c.FacilityID, err
+	case ResourceCalendarExport:
+		e, err := a.deps.Exports.Get(ctx, id)
+		return e.FacilityID, err
 	default:
 		return "", fmt.Errorf("事業所を求められないリソースの種類 %d です", r)
 	}

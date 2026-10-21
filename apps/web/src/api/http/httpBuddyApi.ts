@@ -250,6 +250,20 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
             body: input,
           }),
         ),
+      exportIssues: async (facilityId) => {
+        const { items } = await unwrap(
+          client.GET('/v1/facilities/{facility_id}/calendar_export_issues', {
+            params: { path: { facility_id: facilityId } },
+          }),
+        )
+        return items
+      },
+      retryExport: (_facilityId, exportId) =>
+        unwrap(
+          client.POST('/v1/calendar_exports/{calendar_export_id}/retries', {
+            params: { path: { calendar_export_id: exportId } },
+          }),
+        ),
     },
   }
 }

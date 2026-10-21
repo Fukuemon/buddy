@@ -171,11 +171,14 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 | `CORS_ALLOW_ORIGINS` | 使わない | 任意 | 任意 | CORS を許すオリジン。カンマで区切る。空なら CORS のヘッダーを返さない |
 | `MAX_UPLOAD_BYTES` | 使わない | 使わない | 任意 | 照合の要求の本文の上限。既定は 10 MiB |
 | `GOOGLE_CALENDARS_FILE` | 使わない | 使わない | 任意 | 職員とカレンダーと組織の対応の JSON。空なら Google カレンダーから予定を取らない |
-| `GOOGLE_CALENDAR_SERVICE_ACCOUNT` | 使わない | 任意 | 使わない | 職員がカレンダーを共有する相手のサービスアカウントのメールアドレス。空なら、カレンダーを読む操作は 503 を返す |
+| `GOOGLE_CALENDAR_SERVICE_ACCOUNT` | 使わない | 任意 | 使わない | 職員がカレンダーを共有する相手のサービスアカウントのメールアドレス。空なら、カレンダーを読む操作は 503 を返し、予定を Google カレンダーに書き出さない |
 | `GOOGLE_CALENDAR_ENDPOINT` | 使わない | 任意 | 任意 | Calendar API の代わりに呼ぶ URL。テストの偽物に向けるときだけ渡す。schedule-api では `GOOGLE_CALENDAR_SERVICE_ACCOUNT` と一緒に渡す |
+| `GOOGLE_CALENDAR_EXPORT_ENABLED` | 使わない | 任意 | 使わない | `true` なら予定を Google カレンダーに書き出す。既定は `false`。サービスアカウントが「予定の変更」の共有だけで書けるかを確かめるまで、本番では `false` にする（ADR-0009 の承認の条件） |
+| `GOOGLE_CALENDAR_EXPORT_INTERVAL` | 使わない | 任意 | 使わない | 予定の書き出しの待ちを確かめる間隔。既定は 30 秒 |
 
 - web の `VITE_API_MODE` は、イメージのビルドのときに埋め込む値で、実行のときには読まない。イメージは `bff` でビルドする。
-- receipt-api と schedule-api は、Google の認証情報を Application Default Credentials（`GOOGLE_APPLICATION_CREDENTIALS` など）で読む。schedule-api は、`GOOGLE_CALENDAR_SERVICE_ACCOUNT` があるときだけ読み、読めなければ起動しない。
+- receipt-api と schedule-api は、Google の認証情報を Application Default Credentials（`GOOGLE_APPLICATION_CREDENTIALS` など）で読む。schedule-api は、`GOOGLE_CALENDAR_SERVICE_ACCOUNT` があるときだけ読み、読めなければ起動しない。schedule-api のスコープは、書き出すとき（`GOOGLE_CALENDAR_EXPORT_ENABLED`）は `calendar.events`、ほかは `calendar.readonly` である。
+- schedule-api は、同じプロセスの中で予定の書き出しの処理を動かす。複数のレプリカで動かしても、同じ書き出しの待ちは 1 つのレプリカだけが書く（行のロックと期限）。
 
 秘密の値（`OIDC_CLIENT_SECRET`、`SESSION_SECRET`、`DB_PASSWORD`、Google のサービスアカウントの認証情報）は、インフラのリポジトリが秘密の情報の置き場から渡す。buddy のリポジトリには置かない。
 

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>schedule-review 空</title>
+    <link rel="stylesheet" href="../../_common/mock.css" />
+    <link rel="stylesheet" href="../../_common/tokens.css" />
+    <link rel="stylesheet" href="../../_common/wireframe.css" />
+    <link rel="stylesheet" href="schedule-review.css" />
+  </head>
+  <body data-view="desktop">
+    <div class="stage">
+      <div class="screen">
+        <div class="screen-body">
+          <header class="wf-site-header">
+            <div class="wf-site-header__brand">
+              <strong>buddy</strong>
+              <nav data-m="1" data-testid="site-nav">
+                <span data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html">予定</span>
+                <span data-go="../../receipt-upload_照合/mocks/01-initial.html">照合</span>
+                <span data-go="../../schedule-import_予定の取り込み/mocks/01-initial.html">取り込み</span>
+                <span aria-current="page" data-go="01-list.html">要確認</span>
+              </nav>
+            </div>
+            <div class="wf-site-header__viewer" data-testid="viewer-menu">
+              <span class="wf-text wf-text--s" data-m="2"></span>
+              <span class="wf-btn" data-m="3" data-testid="viewer-logout">ログアウト</span>
+            </div>
+          </header>
+          <main class="wf-page">
+            <h1 class="wf-heading" data-m="4">確かめが要る予定</h1>
+            <p class="wf-lead" data-m="5">buddy の予定のうち、Google カレンダーに書き出せなかった予定です。Google カレンダーで直された予定は、buddy に取り込みません。予定を開いて buddy の内容を確かめ、buddy の内容で書き直すと、Google カレンダーの予定の題名と日時を buddy の内容にします。</p>
+            <p class="sr-muted" data-m="6" data-testid="calendar-review-empty">確かめが要る予定はありません。</p>
+          </main>
+        </div>
+      </div>
+      <div class="markers"></div>
+    </div>
+    <script src="../../_common/mock.js"></script>
+    <script src="../../_common/interact.js"></script>
+  </body>
+</html>

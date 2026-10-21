@@ -73,8 +73,15 @@ INSERT INTO schedule_cancels (id, schedule_id, reason) VALUES ($1, $2, $3);
 UPDATE schedules
 SET staff_id = sqlc.arg(staff_id), schedule_type_id = sqlc.arg(schedule_type_id), date = sqlc.arg(date),
     start_time = sqlc.arg(start_time), end_time = sqlc.arg(end_time),
-    visit_info_id = sqlc.narg(visit_info_id), title = sqlc.narg(title), description = sqlc.narg(description)
+    visit_info_id = sqlc.narg(visit_info_id), title = sqlc.narg(title), description = sqlc.narg(description),
+    version = version + 1
 WHERE id = sqlc.arg(id);
+
+-- name: BumpScheduleVersion :exec
+UPDATE schedules SET version = version + 1 WHERE id = $1;
+
+-- name: BumpRecurringScheduleVersion :exec
+UPDATE recurring_schedules SET version = version + 1 WHERE id = $1;
 
 -- name: LockSchedule :one
 SELECT id FROM schedules WHERE id = $1 FOR UPDATE;

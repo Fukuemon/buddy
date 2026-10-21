@@ -1,4 +1,4 @@
-// Package gcaltitle は、Google カレンダーの予定の題名を、`【サービス内容】利用者名` の形で読む。
+// Package gcaltitle は、Google カレンダーの予定の題名を、`【サービス内容】利用者名` の形で読み書きする。
 // 照合の API と予定の API が同じ規則で訪問の予定を見分けるために共有する。
 package gcaltitle
 
@@ -36,6 +36,11 @@ func ParseTitle(title string) (service, client string, err error) {
 		return "", "", errors.New("題名の利用者名が空である")
 	}
 	return service, client, nil
+}
+
+// Format は、訪問の予定の題名を `【サービス内容】利用者名` の形で作る。ParseTitle で読むと、service と client に戻る。
+func Format(service, client string) string {
+	return "【" + service + "】" + client
 }
 
 // NormalizeService は、サービス内容の表記をそろえる。照合の API が予定と実績を比べるときと、予定の API がサービスコードを引くときに使う。

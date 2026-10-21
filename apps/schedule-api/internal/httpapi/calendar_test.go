@@ -54,6 +54,21 @@ func (f *fakeCalendars) Import(_ context.Context, _ string, rng calendar.Range, 
 	return calendar.ImportResult{Run: calendar.ImportRun{ID: calendarID, ExternalCalendarID: calendarID, RangeStart: rng.Start, RangeEnd: rng.End, Status: calendar.RunSucceeded, ImportedCount: 2}, AlreadyImported: 1}, f.err
 }
 
+func (f *fakeCalendars) ListExportIssues(context.Context, string) ([]calendar.ExportIssue, error) {
+	code := calendar.ErrorPreconditionFailed
+	return []calendar.ExportIssue{{
+		Export: calendar.Export{
+			ID: calendarID, Target: calendar.Target{ScheduleID: scheduleID}, Status: calendar.ExportConflict, Attempts: 1, ErrorCode: &code,
+		},
+		StaffID: staffID, StaffName: "職員A", Date: civil.Date{Year: 2026, Month: 11, Day: 4},
+		StartTime: civil.Time{Hour: 10}, EndTime: civil.Time{Hour: 11},
+	}}, f.err
+}
+
+func (f *fakeCalendars) RetryExport(_ context.Context, id string) (calendar.Export, error) {
+	return calendar.Export{ID: id, Target: calendar.Target{ScheduleID: scheduleID}, Status: calendar.ExportPending, Overwrite: true}, f.err
+}
+
 func newCalendarRouter(c *fakeCalendars) http.Handler {
 	return httpapi.NewRouter(httpapi.Usecases{Calendars: c, Auth: fakeAuth{}}, httpapi.RouterConfig{
 		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
@@ -86,6 +101,8 @@ func TestCalendarErrorStatus(t *testing.T) {
 		{name: "取り込みが進んでいる", err: apperr.ConflictCode(calendar.CodeImportRunning, "進んでいます"), method: http.MethodPost,
 			target: "/v1/external_calendars/" + calendarID + "/imports", body: `{"range_start":"2026-11-01","range_end":"2026-11-30","decisions":[]}`,
 			wantCode: http.StatusConflict, wantBody: "import_running"},
+		{name: "確かめが要る書き出しでない", err: apperr.ConflictCode(calendar.CodeExportNotInReview, "確かめが要る書き出しではありません"), method: http.MethodPost,
+			target: "/v1/calendar_exports/" + calendarID + "/retries", wantCode: http.StatusConflict, wantBody: "export_not_in_review"},
 		{name: "期間が逆", method: http.MethodPost, target: previewTarget, body: `{"range_start":"2026-11-30","range_end":"2026-11-01"}`,
 			wantCode: http.StatusBadRequest, wantBody: "invalid_input"},
 		{name: "取り込み方の値が定義に無い", method: http.MethodPost, target: "/v1/external_calendars/" + calendarID + "/imports",
@@ -157,5 +174,28 @@ func TestCreateCalendarImport(t *testing.T) {
 	}
 	if body["imported_count"] != float64(2) || body["already_imported_count"] != float64(1) || body["status"] != "succeeded" {
 		t.Errorf("body = %v", body)
+	}
+}
+
+func TestCalendarExportIssues(t *testing.T) {
+	rec, body := do(t, newCalendarRouter(&fakeCalendars{}), http.MethodGet, "/v1/facilities/"+facilityID+"/calendar_export_issues", "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
+	}
+	items := body["items"].([]any)
+	got := items[0].(map[string]any)
+	want := map[string]any{
+		"id": calendarID, "schedule_id": scheduleID, "recurring_schedule_id": nil, "status": "conflict", "error_code": "precondition_failed",
+		"attempts": float64(1), "staff_id": staffID, "staff_name": "職員A", "date": "2026-11-04", "start_time": "10:00", "end_time": "11:00",
+	}
+	for k, v := range want {
+		if got[k] != v {
+			t.Errorf("%s = %v, want %v", k, got[k], v)
+		}
+	}
+
+	rec, body = do(t, newCalendarRouter(&fakeCalendars{}), http.MethodPost, "/v1/calendar_exports/"+calendarID+"/retries", "")
+	if rec.Code != http.StatusAccepted || body["status"] != "pending" || body["error_code"] != nil {
+		t.Errorf("書き直し: status = %d, body = %v", rec.Code, body)
 	}
 }

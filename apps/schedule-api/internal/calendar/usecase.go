@@ -34,6 +34,8 @@ const (
 	CodeImportRunning = "import_running"
 	// CodeReviewChanged は、下見の後に確かめが要る予定が変わったことを表す。
 	CodeReviewChanged = "import_preview_changed"
+	// CodeExportNotInReview は、書き直そうとした書き出しが、確かめが要る状態でないことを表す。
+	CodeExportNotInReview = "export_not_in_review"
 )
 
 // staleRunAfter を過ぎても running の取り込みは、止まった取り込みとみなし、次の取り込みを止めない。
@@ -87,9 +89,11 @@ type Deps struct {
 	// RecurringSchedules は、前の取り込みで繰り返しのまま取り込んだ予定と、その除外の日を読む。
 	RecurringSchedules kernel.Finder[schedule.RecurringDetail]
 	Visits             VisitInfos
+	// Exports は、Google カレンダーへの書き出しの待ちを読み、書き直す待ちにする。
+	Exports ExportRepository
 }
 
-// Usecase は、外部のカレンダーの結び付けと、予定の取り込みの操作である。全ての操作は、guard が許すときだけ行う（ADR-0006）。
+// Usecase は、外部のカレンダーの結び付けと、予定の取り込みと、確かめが要る書き出しの操作である。全ての操作は、guard が許すときだけ行う（ADR-0006）。
 type Usecase struct {
 	deps  Deps
 	tx    tx.Transactor
@@ -508,13 +512,41 @@ func (u *Usecase) slot(ctx context.Context, c ExternalCalendar, e entry, types m
 }
 
 func (u *Usecase) link(ctx context.Context, c ExternalCalendar, e entry, scheduleID, recurringScheduleID *string) error {
+	// 取り込んだ予定は作ったばかりで、更新の番号は 1 である。
+	synced := 1
 	l := Link{
 		ID: u.ids.NewID(), FacilityID: c.FacilityID, ExternalCalendarID: c.ID, ExternalEventID: e.event.ID,
-		ETag: e.event.ETag, ScheduleID: scheduleID, RecurringScheduleID: recurringScheduleID,
+		ETag: e.event.ETag, SyncedVersion: &synced, ScheduleID: scheduleID, RecurringScheduleID: recurringScheduleID,
 	}
 	if e.parentID != "" {
 		parent := e.parentID
 		l.RecurringEventID = &parent
 	}
 	return u.deps.Calendars.CreateLink(ctx, l)
+}
+
+// ListExportIssues は、事業所の確かめが要る書き出し（外部のカレンダーで変わっていたか、書けなかった予定）を返す。
+func (u *Usecase) ListExportIssues(ctx context.Context, facilityID string) ([]ExportIssue, error) {
+	if err := u.guard(ctx); err != nil {
+		return nil, err
+	}
+	return u.deps.Exports.ListIssues(ctx, facilityID)
+}
+
+// RetryExport は、確かめが要る書き出し id を、外部の予定の変更を比べずに buddy の内容で書き直す待ちにして、待ちを返す。
+// 待ちが見つからないときは apperr.ErrNotFound を、確かめが要る待ちでないときは apperr.ErrConflict を返す。
+func (u *Usecase) RetryExport(ctx context.Context, id string) (Export, error) {
+	if err := u.guard(ctx); err != nil {
+		return Export{}, err
+	}
+	if _, err := u.deps.Exports.Get(ctx, id); err != nil {
+		return Export{}, err
+	}
+	if err := u.deps.Exports.Retry(ctx, id); err != nil {
+		if errors.Is(err, apperr.ErrConflict) {
+			return Export{}, apperr.ConflictCode(CodeExportNotInReview, "この予定は、確かめが要る書き出しではありません")
+		}
+		return Export{}, err
+	}
+	return u.deps.Exports.Get(ctx, id)
 }

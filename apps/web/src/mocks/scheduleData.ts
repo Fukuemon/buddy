@@ -263,6 +263,55 @@ export const mockExternalCalendars: Schemas['ExternalCalendar'][] = [
   },
 ]
 
+/**
+ * 確かめが要る書き出し。schedule-1 は Google カレンダーで変わっていて、schedule-5 は書く権限が無く、
+ * 繰り返しの予定 recurring-1 は Google カレンダーで消されていた。
+ */
+export const mockExportIssues: Schemas['CalendarExportIssue'][] = [
+  {
+    id: 'export-1',
+    schedule_id: 'schedule-1',
+    recurring_schedule_id: null,
+    status: 'conflict',
+    error_code: 'precondition_failed',
+    attempts: 1,
+    updated_at: '2026-10-22T01:00:00Z',
+    staff_id: 'staff-1',
+    staff_name: '青木 一郎',
+    date: '2026-11-04',
+    start_time: '09:00',
+    end_time: '09:29',
+  },
+  {
+    id: 'export-2',
+    schedule_id: 'schedule-5',
+    recurring_schedule_id: null,
+    status: 'failed',
+    error_code: 'forbidden',
+    attempts: 1,
+    updated_at: '2026-10-21T23:30:00Z',
+    staff_id: 'staff-1',
+    staff_name: '青木 一郎',
+    date: '2026-11-02',
+    start_time: '14:00',
+    end_time: '16:00',
+  },
+  {
+    id: 'export-3',
+    schedule_id: null,
+    recurring_schedule_id: 'recurring-1',
+    status: 'conflict',
+    error_code: 'not_found',
+    attempts: 1,
+    updated_at: '2026-10-21T22:00:00Z',
+    staff_id: 'staff-2',
+    staff_name: '石川 二葉',
+    date: '2026-11-03',
+    start_time: '10:00',
+    end_time: '11:00',
+  },
+]
+
 /** 下見の結果。利用者を 1 人に決められない予定が 2 件（繰り返し 1 件）と、取り込まない予定が 3 件ある。 */
 export const createMockImportPreview = (
   range: Schemas['ImportRange'],

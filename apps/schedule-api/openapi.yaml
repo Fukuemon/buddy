@@ -10,7 +10,7 @@ info:
     - 日付は YYYY-MM-DD、時刻は HH:MM である。
     - エラーは Error の形で返す。`code` は invalid_input、unauthenticated、forbidden、not_found、conflict、internal と、
       外部のカレンダーの操作の calendar_unreadable、calendar_unavailable、calendar_not_configured と、
-      409 の原因を分ける calendar_taken、calendar_already_linked、staff_has_calendar、import_running、import_preview_changed のいずれかである。
+      409 の原因を分ける calendar_taken、calendar_already_linked、staff_has_calendar、import_running、import_preview_changed、export_not_in_review のいずれかである。
     - `/v1` は全て、OIDC のブローカーが発行した access token（JWT）を `Authorization: Bearer` で求める。
       トークンがないか検証に失敗したときは 401 を、トークンの組織と職員の事業所が、パスの指す事業所と違うときは 403 を返す。
     - 読めないクエリ（例は `;` を含むもの）は 400 を返す。
@@ -1076,6 +1076,62 @@ paths:
         "502": { $ref: "#/components/responses/CalendarUnavailable" }
         "503": { $ref: "#/components/responses/CalendarNotConfigured" }
 
+  /v1/facilities/{facility_id}/calendar_export_issues:
+    get:
+      tags: [calendar]
+      operationId: listCalendarExportIssues
+      summary: 確かめが要る書き出しを一覧する
+      description: |
+        Google カレンダーへの書き出しのうち、Google カレンダーで予定が変わっていたか消えていた（conflict）か、書けなかった（failed）ものを、
+        新しく変わった順に返す。予定の題名、利用者名、カレンダーの ID は返さない。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+      parameters: [$ref: "#/components/parameters/FacilityID"]
+      responses:
+        "200":
+          description: 確かめが要る書き出し
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/CalendarExportIssue" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/calendar_exports/{calendar_export_id}/retries:
+    post:
+      tags: [calendar]
+      operationId: createCalendarExportRetry
+      summary: 確かめが要る書き出しを buddy の内容で書き直す
+      description: |
+        確かめが要る書き出しを、Google カレンダーの予定の変更を比べずに、buddy の今の内容で書き直す待ちにする。書き出しの処理が、次の周期で書く。
+        Google カレンダーで消された予定は作り直す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+      parameters: [$ref: "#/components/parameters/CalendarExportID"]
+      responses:
+        "202":
+          description: 書き直す待ちにした
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CalendarExport" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: 確かめが要る書き出しでない（export_not_in_review）。すでに書き直す待ちにしたか、書き終えた
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                notInReview:
+                  summary: 確かめが要る書き出しでない
+                  value: { code: export_not_in_review, message: "この予定は、確かめが要る書き出しではありません" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -1106,6 +1162,11 @@ components:
       in: path
       required: true
       description: buddy の外部のカレンダーの ID。Google のカレンダーの ID ではない
+      schema: { $ref: "#/components/schemas/ID" }
+    CalendarExportID:
+      name: calendar_export_id
+      in: path
+      required: true
       schema: { $ref: "#/components/schemas/ID" }
     SortOrder:
       name: sort_order
@@ -1226,6 +1287,7 @@ components:
             - staff_has_calendar
             - import_running
             - import_preview_changed
+            - export_not_in_review
         message:
           type: string
           description: 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う
@@ -1611,6 +1673,59 @@ components:
           format: date-time
           nullable: true
           x-omitempty: false
+    CalendarExport:
+      type: object
+      description: 1 つの予定を Google カレンダーに書き出す待ち。書くときは、書く時点の予定の内容を書く
+      required: [id, schedule_id, recurring_schedule_id, status, error_code, attempts, updated_at]
+      properties:
+        id: { $ref: "#/components/schemas/ID" }
+        schedule_id:
+          description: 単発の予定。recurring_schedule_id と排他
+          type: string
+          nullable: true
+          x-omitempty: false
+          allOf:
+            - $ref: "#/components/schemas/ID"
+        recurring_schedule_id:
+          description: 繰り返しの予定。schedule_id と排他
+          type: string
+          nullable: true
+          x-omitempty: false
+          allOf:
+            - $ref: "#/components/schemas/ID"
+        status:
+          type: string
+          enum: [pending, succeeded, conflict, failed]
+          description: |
+            pending は書く待ち、succeeded は書き終えた、conflict は Google カレンダーで予定が変わっていたか消えていたので書かずに止めた、
+            failed は書く権限が無いか、再送の上限まで書けなかった
+        error_code:
+          type: string
+          enum: [precondition_failed, not_found, forbidden, rejected, unavailable]
+          nullable: true
+          x-omitempty: false
+          description: |
+            最後に書けなかった理由。precondition_failed は Google カレンダーで予定が変わっていた（412）、
+            not_found は Google カレンダーで予定が消されたか、予定かカレンダーが見つからない（410、404）、
+            forbidden はサービスアカウントがカレンダーに書けない、rejected は Google が予定の内容を受け付けなかった（400）、
+            unavailable は Google に届かないか一時的な誤りが続いた
+        attempts:
+          type: integer
+          minimum: 0
+          description: 書こうとした回数
+        updated_at: { type: string, format: date-time }
+    CalendarExportIssue:
+      description: 確かめが要る書き出しと、その予定の日時と職員。繰り返しの予定の date は最初の回の日付
+      allOf:
+        - $ref: "#/components/schemas/CalendarExport"
+        - type: object
+          required: [staff_id, staff_name, date, start_time, end_time]
+          properties:
+            staff_id: { $ref: "#/components/schemas/ID" }
+            staff_name: { type: string }
+            date: { $ref: "#/components/schemas/Date" }
+            start_time: { $ref: "#/components/schemas/Time" }
+            end_time: { $ref: "#/components/schemas/Time" }
     ExternalCalendar:
       type: object
       required: [id, facility_id, staff_id, provider, calendar_id, created_at, updated_at, last_import]

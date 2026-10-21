@@ -1,7 +1,7 @@
 ---
 type: feature-design
 title: 予定の管理
-description: schedule-api のコードの層、表の構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更とキャンセル、Google カレンダーの取り込み
+description: schedule-api のコードの層、表の構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更とキャンセル、Google カレンダーの取り込みと書き出し
 status: stable
 governs: apps/schedule-api
 verified_commit: ff293e9
@@ -21,7 +21,7 @@ schedule-api は、事業所ごとの予定、職員、利用者、権限を持�
 - 事業所、部署、チーム、役職と、職員、利用者
 - 権限、役職の既定の権限、職員ごとの権限とその対象
 - 単発の予定、繰り返しの予定と繰り返しの規則、予定のキャンセル
-- 職員と Google カレンダーの結び付けと、Google カレンダーの予定の取り込み
+- 職員と Google カレンダーの結び付けと、Google カレンダーの予定の取り込み、buddy の予定の Google カレンダーへの書き出し
 - 訪問の情報、サービスコード、訪問の区分
 - access token の検証から事業所の確認までのミドルウェア
 
@@ -44,13 +44,13 @@ schedule-api は、事業所ごとの予定、職員、利用者、権限を持�
 | --- | --- | --- |
 | 共通 | `internal/apperr`、`internal/tx`、`internal/kernel`、`internal/civil` | 共通の誤りと検証の誤り、`Transactor`、文字の検証と並べ替えと `IDGenerator` と 1 件を読む `Finder`、日付と時刻の値 |
 | 機能 | `internal/organization`、`internal/staff`、`internal/patient`、`internal/visit`、`internal/schedule` | エンティティ、規則の関数、自分の集約のリポジトリのインターフェイス、ほかの機能のデータを読む小さなインターフェイス、手順（`Usecase`）とトランザクションの範囲。予定の閲覧と編集の判定は `schedule` の `permission.go` に置く |
-| 機能 | `internal/calendar` | 外部のカレンダーの予定（`Event`）と、予定を読む `EventSource`。予定を訪問、通常、取り込まないに分ける `Classify` と、RRULE を繰り返しの規則に写す `RuleFromRecurrence`。結び付けと取り込みの手順（`Usecase`）、下見の読み替え（`plan.go`）、結び付けたカレンダーと取り込みの記録と予定の対応のリポジトリ。題名は `packages/go/gcaltitle` で読む（ADR-0009） |
+| 機能 | `internal/calendar` | 外部のカレンダーの予定（`Event`）と、予定を読む `EventSource`。予定を訪問、通常、取り込まないに分ける `Classify` と、RRULE を繰り返しの規則に写す `RuleFromRecurrence`。結び付けと取り込みと確かめが要る書き出しの手順（`Usecase`）、下見の読み替え（`plan.go`）、書き出しの待ちを積む `Outbox` と、待ちを書く `Exporter`、予定を外部の予定の内容にする `ScheduleBody` と `RecurrenceOf`。結び付けたカレンダーと取り込みの記録と予定の対応のリポジトリ、書き出しの待ちのリポジトリ。題名は `packages/go/gcaltitle` で読み書きする（ADR-0009） |
 | 認可 | `internal/principal` | トークンの主張（`Identity`）、職員（`Principal`）、職員の管理の判定 |
 | 認証 | `internal/access` | トークンから職員を特定する手順と、パスが指す資源の事業所を引く手順 |
 | テスト | `internal/inmem` | 機能のパッケージのテストが共有する、メモリ上のリポジトリ |
 | アダプタ | `internal/postgres` | 機能のパッケージのリポジトリを、pgx/v5 の接続のプールと sqlc の生成コード（`sqlcgen`）で実装する |
 | アダプタ | `internal/ulid` | `IDGenerator` を ULID で実装し、ID の形を確かめる |
-| アダプタ | `internal/gcal` | `calendar.EventSource` を Google Calendar API で実装する。繰り返しの予定を展開せずに、親の予定と例外の回を読み、回ごとにする繰り返しだけを events.instances で回に展開する。認証した `calendar.Service` は `cmd` が渡す。テストと compose の偽物の API は `internal/gcal/gcaltest` に置く |
+| アダプタ | `internal/gcal` | `calendar.EventSource`（`Reader`）と `calendar.EventWriter`（`Writer`）を Google Calendar API で実装する。繰り返しの予定を展開せずに、親の予定と例外の回を読み、回ごとにする繰り返しだけを events.instances で回に展開する。認証した `calendar.Service` は `cmd` が渡す。テストと compose の偽物の API は `internal/gcal/gcaltest` に置く |
 | 設定 | `internal/config` | 環境変数から API とマイグレーションの設定を読む。DB の接続の値は自分の型で持ち、`cmd` がアダプタの設定に写す |
 | 共有 | `packages/go/oidc`、`packages/go/healthcheck`、`packages/go/gcaltitle`（別の module） | access token の JWKS での検証、テストと `cmd/devissuer` が使う偽物の発行者（`oidctest`）、`api healthcheck`、Google カレンダーの予定の題名の解釈。receipt-api と共有する（ADR-0007） |
 | アダプタ | `internal/httpapi/openapi` | `openapi.yaml` から生成した型と strict server のインターフェイス |
@@ -306,9 +306,58 @@ sequenceDiagram
 - 空き時間だけの共有（`freeBusyReader`）のカレンダーは、読めないとみなす（422 `calendar_unreadable`）。Google は空き時間だけの共有に、繰り返しの親と予定の題名を返さないためである。
 - カレンダーを外しても、行と予定の対応は消さない。同じ職員に結び付け直すと、外した行を使い直す。
 
+### Google カレンダーへの書き出し
+
+buddy で作り、変え、キャンセルした予定を、予定の職員が結び付けた Google カレンダーに書く（ADR-0009 の段階 2）。Google カレンダーで直された予定は buddy に当てず、確かめが要る予定に出す。
+
+```mermaid
+sequenceDiagram
+  participant web
+  participant api as schedule-api
+  participant db as PostgreSQL
+  participant x as 書き出しの処理
+  participant g as Google Calendar API
+  web->>api: 予定の作成、変更、キャンセル、回の置き換え
+  api->>db: 予定と、書き出しの待ち（calendar_exports）を 1 つのトランザクションで書く
+  loop GOOGLE_CALENDAR_EXPORT_INTERVAL ごと
+    x->>db: 書く時刻を過ぎた待ちを取る（行のロックと期限）
+    x->>db: 予定の今の内容と予定の対応を読む
+    x->>g: insert、patch（If-Match に最後の etag）、delete
+    x->>db: 予定の対応の etag と更新の番号、待ちの結果を書く
+  end
+```
+
+- 書き出しは、`GOOGLE_CALENDAR_EXPORT_ENABLED` が `true` のときだけ動く。既定は `false` で、そのときは待ちを積まず、書き出しの処理も動かさない。サービスアカウントが「予定の変更」の共有だけで書けるかを確かめるまで（ADR-0009 の承認の条件）、本番では有効にしない。
+- 待ちを積む: 予定の操作（`schedule.Usecase`）は、予定を書くのと同じトランザクションで `Outbox` に積む。積むのは、予定の職員に外していないカレンダーがあるときと、予定の対応のカレンダーを外していないとき（職員を替えて、前のカレンダーの予定を消すとき）だけである。取り込みで書いた予定は積まない。
+- 待ちは予定ごとに終わっていないものを 1 つだけ持ち、積み直すと `revision` が増える。書くときは、積んだ時点ではなく書く時点の予定の内容を書く。書いている間に積み直されたら、結果によらず待ちを pending に戻して数え直し、もう一度書く。
+- 書き出しの処理は、API と同じプロセスのゴルーチンで動く。待ちは `FOR UPDATE SKIP LOCKED` と期限（`locked_until`、2 分）で 5 件ずつ取り、1 件を 20 秒で打ち切るので、期限のうちに書き終える。結果は、取ったときの回数（`attempts`）と比べて書き、期限が切れた後にほかのレプリカが取り直した待ちを変えない。外部の API はトランザクションの外で呼ぶ。
+- 止める合図で書けなかった待ちは、書こうとした回数に数えずに返す。
+- 予定の更新の番号（`version`）は、単発の予定の変更とキャンセル、繰り返しの予定の回の除外のたびに 1 つ増える。書いた後に、予定の対応（`external_event_links`）に Google の etag と更新の番号（`synced_version`）を書く。段階 3 で、どちらの側が変わったかを比べるのに使う。
+- 書く先は、予定の職員（`staff_id`）が結び付けたカレンダーである。訪問の予定では、画面が主訪問者を予定の職員と同じにする。
+- 書く先
+  - 予定の対応があり、職員のカレンダーが対応のカレンダーと同じなら、Google の予定を部分更新する。取り込んだ予定もこの形で更新する。
+  - キャンセルした予定と、職員を替えた予定は、対応の Google の予定を消し、対応も消す。職員を替えた予定は、新しい職員のカレンダーに作る。
+  - 対応のカレンダーを外していれば、そのカレンダーには書かない。職員に今のカレンダーがあれば、対応を消してそのカレンダーに作る。外したカレンダーの予定は残る。対応が無く、職員にカレンダーがあれば作る。
+  - 作る予定の ID は、buddy の予定の ULID を base32hex にした値にする。作った後に対応を書けずに書き直しても、Google の予定は 2 つにならない。同じ ID の予定があれば（409）、buddy の内容で更新する。
+- 内容
+  - 題名は、訪問の予定なら `【サービス内容】利用者名`（`packages/go/gcaltitle.Format`）、通常の予定ならタイトルである。照合の API が同じ題名を読む。
+  - 日時は、タイムゾーン `Asia/Tokyo` とオフセットの無い日時で書く。`extendedProperties.private` に buddy の予定の ID だけを置く。
+  - 説明は、buddy の予定に説明があるときだけ書く。取り込んだ予定の Google の説明を消さないためである。buddy で説明を消しても、Google の説明は残る。
+  - 参加者は書かず、通知を送らない（`sendUpdates=none`）。
+- 繰り返し: buddy の繰り返しの規則は、全て RRULE に写せる（`RecurrenceOf`、取り込みの `RuleFromRecurrence` の逆）。規則に無い曜日と日は最初の回の日付から決め、終了日はその日の 23:59:59（Asia/Tokyo）を UTC にした `UNTIL` にする。除外の日は `EXDATE;TZID=Asia/Tokyo` にする。
+  - 回の置き換えは、Google の例外の回にせず、親の予定の `EXDATE` と、別の単発の予定にする。buddy が持つ形（除外の日と、元の回を指す単発の予定）と同じである。
+  - 取り込んだ Google の例外の回が置き換えた日は、`EXDATE` にしない。`EXDATE` にすると、Google の例外の回が消えるためである。
+- 衝突と誤り
+  - 更新と削除には、予定の対応の etag を `If-Match` に付ける。412 は Google カレンダーで予定が変わったとみなし、書かずに待ちを `conflict`（`precondition_failed`）にする。Google で消された予定（410）と、Google が予定かカレンダーを見つけられないとき（404）も `conflict`（`not_found`）にする。
+  - `conflict` の待ちは、buddy で予定を変えても書かない。職員の管理の権限を持つ職員が、確かめが要る予定の一覧から「buddy の内容で書き直す」を選ぶと、`If-Match` を付けずに書き直す。消された予定（410）は作り直す。
+  - 404 では予定の対応を消さない。Google は、予定が消されたときと、カレンダーの共有が外れたときの両方で 404 を返すので、対応を消すと、共有を戻した後に予定が 2 つになるためである。キャンセルの削除が 404 でも、対応を消さずに `conflict` にする。
+  - 429、5xx、通信の誤り、403 の上限の誤りは、30 秒から倍にしながら書き直し、5 回で `failed`（`unavailable`）にする。403 は書き直さずに `failed`（`forbidden`）に、400 は `failed`（`rejected`）にする。`failed` の待ちは、buddy で予定を変えると数え直して書く。
+  - 待ちの誤りは決まった値（`error_code`）だけを持ち、確かめが要る予定の一覧とログに、予定の題名、利用者名、カレンダーの ID を出さない。
+- カレンダーを結び付ける前に作った予定は書き出さない。結び付けた後にその予定を変えると書く。
+
 ## Interface
 
-- 事業所に属する一覧と作成のパスは `/v1/facilities/{facility_id}/<資源>`、1 件を指すパスは `/v1/<資源>/{<資源>_id}` の形にする。主な資源は `schedules`、`schedules/recurring`、`users`、`patients`、`departments`、`teams`、`positions`、`external_calendars` である。資源ごとにどのパスを持つかは `openapi.yaml` にある。
+- 事業所に属する一覧と作成のパスは `/v1/facilities/{facility_id}/<資源>`、1 件を指すパスは `/v1/<資源>/{<資源>_id}` の形にする。主な資源は `schedules`、`schedules/recurring`、`users`、`patients`、`departments`、`teams`、`positions`、`external_calendars`、`calendar_exports` である。資源ごとにどのパスを持つかは `openapi.yaml` にある。
 - 事業所に属さないマスタは `/v1/policies`、`/v1/schedule_types`、`/v1/visit_infos/service_codes`、`/v1/visit_infos/visit_categories` で読む。
 - 一覧の並べ替えは、許可した列の名前だけを受け、それ以外は 400 を返す。
 - `GET /v1/me` は、トークンの職員と権限を返す。画面は、ログインの後にこれを呼んで事業所を決める。
@@ -320,6 +369,7 @@ sequenceDiagram
   - 409 の `conflict`: 一意の値が重なる、キャンセル済みの予定を変えるかキャンセルする、繰り返しの回をすでに置き換えた
   - 409 の `calendar_taken`、`calendar_already_linked`、`staff_has_calendar`: カレンダーを結び付けられない原因
   - 409 の `import_running`、`import_preview_changed`: 取り込みを確定できない原因
+  - 409 の `export_not_in_review`: 書き直そうとした書き出しが、確かめが要る状態でない
   - 422 の `calendar_unreadable`: Google カレンダーが無いか、サービスアカウントに共有されていない
   - 500 の `internal`: サーバーの誤り
   - 502 の `calendar_unavailable`: Google に届かないか、Google が誤りを返した

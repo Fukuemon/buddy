@@ -2900,6 +2900,13 @@
           "type": "timestamp with time zone",
           "nullable": false,
           "default": "now()"
+        },
+        {
+          "name": "version",
+          "type": "integer",
+          "nullable": false,
+          "default": "1",
+          "comment": "更新の番号。回を除外するたびに 1 つ増える"
         }
       ],
       "indexes": [
@@ -3122,6 +3129,26 @@
           "referenced_table": "",
           "columns": [
             "updated_at"
+          ]
+        },
+        {
+          "name": "recurring_schedules_version_check",
+          "type": "CHECK",
+          "def": "CHECK ((version \u003e= 1))",
+          "table": "public.recurring_schedules",
+          "referenced_table": "",
+          "columns": [
+            "version"
+          ]
+        },
+        {
+          "name": "recurring_schedules_version_not_null",
+          "type": "n",
+          "def": "NOT NULL version",
+          "table": "public.recurring_schedules",
+          "referenced_table": "",
+          "columns": [
+            "version"
           ]
         },
         {
@@ -3389,6 +3416,13 @@
           "type": "timestamp with time zone",
           "nullable": false,
           "default": "now()"
+        },
+        {
+          "name": "version",
+          "type": "integer",
+          "nullable": false,
+          "default": "1",
+          "comment": "更新の番号。予定を変えるかキャンセルするたびに 1 つ増える"
         }
       ],
       "indexes": [
@@ -3578,6 +3612,26 @@
           "referenced_table": "",
           "columns": [
             "updated_at"
+          ]
+        },
+        {
+          "name": "schedules_version_check",
+          "type": "CHECK",
+          "def": "CHECK ((version \u003e= 1))",
+          "table": "public.schedules",
+          "referenced_table": "",
+          "columns": [
+            "version"
+          ]
+        },
+        {
+          "name": "schedules_version_not_null",
+          "type": "n",
+          "def": "NOT NULL version",
+          "table": "public.schedules",
+          "referenced_table": "",
+          "columns": [
+            "version"
           ]
         },
         {
@@ -4319,6 +4373,12 @@
           "type": "timestamp with time zone",
           "nullable": false,
           "default": "now()"
+        },
+        {
+          "name": "synced_version",
+          "type": "integer",
+          "nullable": true,
+          "comment": "最後に外部の予定と同じにした時点の、buddy の予定の更新の番号。この列を足す前の行は NULL"
         }
       ],
       "indexes": [
@@ -4452,6 +4512,16 @@
           "referenced_table": "",
           "columns": [
             "id"
+          ]
+        },
+        {
+          "name": "external_event_links_synced_version_check",
+          "type": "CHECK",
+          "def": "CHECK ((synced_version \u003e= 1))",
+          "table": "public.external_event_links",
+          "referenced_table": "",
+          "columns": [
+            "synced_version"
           ]
         },
         {
@@ -5114,9 +5184,14 @@
           "name": "updated_at",
           "type": "timestamp with time zone",
           "nullable": true
+        },
+        {
+          "name": "version",
+          "type": "integer",
+          "nullable": true
         }
       ],
-      "def": "CREATE VIEW schedule_details AS (\n SELECT s.id,\n    s.facility_id,\n    s.schedule_type_id,\n    st.code AS schedule_type_code,\n    st.name AS schedule_type_name,\n    s.date,\n    s.start_time,\n    s.end_time,\n    s.is_over_time_work,\n    s.staff_id,\n    u.username AS staff_name,\n    s.title,\n    s.description,\n    s.recurring_schedule_id,\n    s.original_date,\n    s.visit_info_id,\n    vid.patient_id,\n    vid.patient_name,\n    vid.assigned_staff_id,\n    vid.assigned_staff_name,\n    vid.companion_id,\n    vid.companion_name,\n    vid.service_code_id,\n    vid.service_code,\n    c.id AS cancel_id,\n    c.reason AS cancel_reason,\n    s.created_at,\n    s.updated_at\n   FROM ((((schedules s\n     JOIN schedule_types st ON ((st.id = s.schedule_type_id)))\n     JOIN users u ON ((u.id = s.staff_id)))\n     LEFT JOIN visit_info_details vid ON ((vid.id = s.visit_info_id)))\n     LEFT JOIN schedule_cancels c ON ((c.schedule_id = s.id)))\n)",
+      "def": "CREATE VIEW schedule_details AS (\n SELECT s.id,\n    s.facility_id,\n    s.schedule_type_id,\n    st.code AS schedule_type_code,\n    st.name AS schedule_type_name,\n    s.date,\n    s.start_time,\n    s.end_time,\n    s.is_over_time_work,\n    s.staff_id,\n    u.username AS staff_name,\n    s.title,\n    s.description,\n    s.recurring_schedule_id,\n    s.original_date,\n    s.visit_info_id,\n    vid.patient_id,\n    vid.patient_name,\n    vid.assigned_staff_id,\n    vid.assigned_staff_name,\n    vid.companion_id,\n    vid.companion_name,\n    vid.service_code_id,\n    vid.service_code,\n    c.id AS cancel_id,\n    c.reason AS cancel_reason,\n    s.created_at,\n    s.updated_at,\n    s.version\n   FROM ((((schedules s\n     JOIN schedule_types st ON ((st.id = s.schedule_type_id)))\n     JOIN users u ON ((u.id = s.staff_id)))\n     LEFT JOIN visit_info_details vid ON ((vid.id = s.visit_info_id)))\n     LEFT JOIN schedule_cancels c ON ((c.schedule_id = s.id)))\n)",
       "referenced_tables": [
         "public.schedules",
         "public.schedule_types",
@@ -5274,14 +5349,406 @@
           "name": "updated_at",
           "type": "timestamp with time zone",
           "nullable": true
+        },
+        {
+          "name": "version",
+          "type": "integer",
+          "nullable": true
         }
       ],
-      "def": "CREATE VIEW recurring_schedule_details AS (\n SELECT rs.id,\n    rs.facility_id,\n    rs.schedule_type_id,\n    st.code AS schedule_type_code,\n    st.name AS schedule_type_name,\n    rs.date,\n    rs.start_time,\n    rs.end_time,\n    rs.is_over_time_work,\n    rs.staff_id,\n    u.username AS staff_name,\n    rs.title,\n    rs.description,\n    rs.frequency,\n    rs.day_of_week,\n    rs.day_of_month,\n    rs.week_of_month,\n    rs.end_date,\n    rs.visit_info_id,\n    vid.patient_id,\n    vid.patient_name,\n    vid.assigned_staff_id,\n    vid.assigned_staff_name,\n    vid.companion_id,\n    vid.companion_name,\n    vid.service_code_id,\n    vid.service_code,\n    rs.created_at,\n    rs.updated_at\n   FROM (((recurring_schedules rs\n     JOIN schedule_types st ON ((st.id = rs.schedule_type_id)))\n     JOIN users u ON ((u.id = rs.staff_id)))\n     LEFT JOIN visit_info_details vid ON ((vid.id = rs.visit_info_id)))\n)",
+      "def": "CREATE VIEW recurring_schedule_details AS (\n SELECT rs.id,\n    rs.facility_id,\n    rs.schedule_type_id,\n    st.code AS schedule_type_code,\n    st.name AS schedule_type_name,\n    rs.date,\n    rs.start_time,\n    rs.end_time,\n    rs.is_over_time_work,\n    rs.staff_id,\n    u.username AS staff_name,\n    rs.title,\n    rs.description,\n    rs.frequency,\n    rs.day_of_week,\n    rs.day_of_month,\n    rs.week_of_month,\n    rs.end_date,\n    rs.visit_info_id,\n    vid.patient_id,\n    vid.patient_name,\n    vid.assigned_staff_id,\n    vid.assigned_staff_name,\n    vid.companion_id,\n    vid.companion_name,\n    vid.service_code_id,\n    vid.service_code,\n    rs.created_at,\n    rs.updated_at,\n    rs.version\n   FROM (((recurring_schedules rs\n     JOIN schedule_types st ON ((st.id = rs.schedule_type_id)))\n     JOIN users u ON ((u.id = rs.staff_id)))\n     LEFT JOIN visit_info_details vid ON ((vid.id = rs.visit_info_id)))\n)",
       "referenced_tables": [
         "public.recurring_schedules",
         "public.schedule_types",
         "public.users",
         "public.visit_info_details"
+      ]
+    },
+    {
+      "name": "public.calendar_exports",
+      "type": "BASE TABLE",
+      "comment": "予定を外部のカレンダーに書き出す待ち。予定の変更と同じトランザクションで積む",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "facility_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "schedule_id",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "recurring_schedule_id",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "default": "'pending'::text",
+          "comment": "pending（書く）、succeeded（書いた）、conflict（外部で変わっていた）、failed（書けなかった）"
+        },
+        {
+          "name": "revision",
+          "type": "integer",
+          "nullable": false,
+          "default": "1",
+          "comment": "終わっていない行に積み直した回数に 1 を足した値。書いている間に積み直されたかを比べる"
+        },
+        {
+          "name": "attempts",
+          "type": "integer",
+          "nullable": false,
+          "default": "0",
+          "comment": "書こうとした回数。再送の間隔と上限に使う"
+        },
+        {
+          "name": "next_attempt_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()",
+          "comment": "この時刻より後に書く"
+        },
+        {
+          "name": "locked_until",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "comment": "書いている処理が持つ期限。過ぎたら、ほかの処理が書いてよい"
+        },
+        {
+          "name": "overwrite",
+          "type": "boolean",
+          "nullable": false,
+          "default": "false",
+          "comment": "外部の予定の etag を比べずに、buddy の内容で書き直すか"
+        },
+        {
+          "name": "error_code",
+          "type": "text",
+          "nullable": true,
+          "comment": "最後に書けなかった理由。外部の予定の題名とカレンダーの ID を含めない"
+        },
+        {
+          "name": "finished_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "calendar_exports_pkey",
+          "def": "CREATE UNIQUE INDEX calendar_exports_pkey ON public.calendar_exports USING btree (id)",
+          "table": "public.calendar_exports",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_exports_facility_id_key",
+          "def": "CREATE UNIQUE INDEX calendar_exports_facility_id_key ON public.calendar_exports USING btree (facility_id, id)",
+          "table": "public.calendar_exports",
+          "columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_exports_open_schedule_key",
+          "def": "CREATE UNIQUE INDEX calendar_exports_open_schedule_key ON public.calendar_exports USING btree (schedule_id) WHERE ((status \u003c\u003e 'succeeded'::text) AND (schedule_id IS NOT NULL))",
+          "table": "public.calendar_exports",
+          "columns": [
+            "schedule_id"
+          ]
+        },
+        {
+          "name": "calendar_exports_open_recurring_schedule_key",
+          "def": "CREATE UNIQUE INDEX calendar_exports_open_recurring_schedule_key ON public.calendar_exports USING btree (recurring_schedule_id) WHERE ((status \u003c\u003e 'succeeded'::text) AND (recurring_schedule_id IS NOT NULL))",
+          "table": "public.calendar_exports",
+          "columns": [
+            "recurring_schedule_id"
+          ]
+        },
+        {
+          "name": "calendar_exports_due_idx",
+          "def": "CREATE INDEX calendar_exports_due_idx ON public.calendar_exports USING btree (next_attempt_at, id) WHERE (status = 'pending'::text)",
+          "table": "public.calendar_exports",
+          "columns": [
+            "next_attempt_at",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_exports_facility_status_idx",
+          "def": "CREATE INDEX calendar_exports_facility_status_idx ON public.calendar_exports USING btree (facility_id, status)",
+          "table": "public.calendar_exports",
+          "columns": [
+            "facility_id",
+            "status"
+          ]
+        },
+        {
+          "name": "calendar_exports_facility_schedule_idx",
+          "def": "CREATE INDEX calendar_exports_facility_schedule_idx ON public.calendar_exports USING btree (facility_id, schedule_id) WHERE (schedule_id IS NOT NULL)",
+          "table": "public.calendar_exports",
+          "columns": [
+            "facility_id",
+            "schedule_id"
+          ]
+        },
+        {
+          "name": "calendar_exports_facility_recurring_schedule_idx",
+          "def": "CREATE INDEX calendar_exports_facility_recurring_schedule_idx ON public.calendar_exports USING btree (facility_id, recurring_schedule_id) WHERE (recurring_schedule_id IS NOT NULL)",
+          "table": "public.calendar_exports",
+          "columns": [
+            "facility_id",
+            "recurring_schedule_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "calendar_exports_attempts_not_null",
+          "type": "n",
+          "def": "NOT NULL attempts",
+          "table": "public.calendar_exports",
+          "referenced_table": "",
+          "columns": [
+            "attempts"
+          ]
+        },
+        {
+          "name": "calendar_exports_count_check",
+          "type": "CHECK",
+          "def": "CHECK (((revision \u003e= 1) AND (attempts \u003e= 0)))",
+          "table": "public.calendar_exports",
+          "referenced_table": "",
+          "columns": [
+            "revision",
+            "attempts"
+          ]
+        },
+        {
+          "name": "calendar_exports_created_at_not_null",
+          "type": "n",
+          "def": "NOT NULL created_at",
+          "table": "public.calendar_exports",
+          "referenced_table": "",
+          "columns": [
+            "created_at"
+          ]
+        },
+        {
+          "name": "calendar_exports_error_code_check",
+          "type": "CHECK",
+          "def": "CHECK ((error_code = ANY (ARRAY['precondition_failed'::text, 'not_found'::text, 'forbidden'::text, 'rejected'::text, 'unavailable'::text])))",
+          "table": "public.calendar_exports",
+          "referenced_table": "",
+          "columns": [
+            "error_code"
+          ]
+        },
+        {
+          "name": "calendar_exports_facility_id_not_null",
+          "type": "n",
+          "def": "NOT NULL facility_id",
+          "table": "public.calendar_exports",
+          "referenced_table": "",
+          "columns": [
+            "facility_id"
+          ]
+        },
+        {
+          "name": "calendar_exports_finished_check",
+          "type": "CHECK",
+          "def": "CHECK (((status = 'succeeded'::text) = (finished_at IS NOT NULL)))",
+          "table": "public.calendar_exports",
+          "referenced_table": "",
+          "columns": [
+            "status",
+            "finished_at"
+          ]
+        },
+        {
+          "name": "calendar_exports_id_check",
+          "type": "CHECK",
+          "def": "CHECK ((id ~ '^[0-7][0-9A-HJKMNP-TV-Z]{25}$'::text))",
+          "table": "public.calendar_exports",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_exports_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.calendar_exports",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_exports_next_attempt_at_not_null",
+          "type": "n",
+          "def": "NOT NULL next_attempt_at",
+          "table": "public.calendar_exports",
+          "referenced_table": "",
+          "columns": [
+            "next_attempt_at"
+          ]
+        },
+        {
+          "name": "calendar_exports_overwrite_not_null",
+          "type": "n",
+          "def": "NOT NULL overwrite",
+          "table": "public.calendar_exports",
+          "referenced_table": "",
+          "columns": [
+            "overwrite"
+          ]
+        },
+        {
+          "name": "calendar_exports_revision_not_null",
+          "type": "n",
+          "def": "NOT NULL revision",
+          "table": "public.calendar_exports",
+          "referenced_table": "",
+          "columns": [
+            "revision"
+          ]
+        },
+        {
+          "name": "calendar_exports_status_check",
+          "type": "CHECK",
+          "def": "CHECK ((status = ANY (ARRAY['pending'::text, 'succeeded'::text, 'conflict'::text, 'failed'::text])))",
+          "table": "public.calendar_exports",
+          "referenced_table": "",
+          "columns": [
+            "status"
+          ]
+        },
+        {
+          "name": "calendar_exports_status_not_null",
+          "type": "n",
+          "def": "NOT NULL status",
+          "table": "public.calendar_exports",
+          "referenced_table": "",
+          "columns": [
+            "status"
+          ]
+        },
+        {
+          "name": "calendar_exports_target_check",
+          "type": "CHECK",
+          "def": "CHECK ((num_nonnulls(schedule_id, recurring_schedule_id) = 1))",
+          "table": "public.calendar_exports",
+          "referenced_table": "",
+          "columns": [
+            "schedule_id",
+            "recurring_schedule_id"
+          ]
+        },
+        {
+          "name": "calendar_exports_updated_at_not_null",
+          "type": "n",
+          "def": "NOT NULL updated_at",
+          "table": "public.calendar_exports",
+          "referenced_table": "",
+          "columns": [
+            "updated_at"
+          ]
+        },
+        {
+          "name": "calendar_exports_facility_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id) REFERENCES facilities(id)",
+          "table": "public.calendar_exports",
+          "referenced_table": "public.facilities",
+          "columns": [
+            "facility_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_exports_recurring_schedule_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id) ON DELETE CASCADE",
+          "table": "public.calendar_exports",
+          "referenced_table": "public.recurring_schedules",
+          "columns": [
+            "facility_id",
+            "recurring_schedule_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_exports_schedule_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, schedule_id) REFERENCES schedules(facility_id, id) ON DELETE CASCADE",
+          "table": "public.calendar_exports",
+          "referenced_table": "public.schedules",
+          "columns": [
+            "facility_id",
+            "schedule_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_exports_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.calendar_exports",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_exports_facility_id_key",
+          "type": "UNIQUE",
+          "def": "UNIQUE (facility_id, id)",
+          "table": "public.calendar_exports",
+          "referenced_table": "",
+          "columns": [
+            "facility_id",
+            "id"
+          ]
+        }
+      ],
+      "triggers": [
+        {
+          "name": "calendar_exports_set_updated_at",
+          "def": "CREATE TRIGGER calendar_exports_set_updated_at BEFORE UPDATE ON public.calendar_exports FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+        }
       ]
     }
   ],
@@ -5864,6 +6331,49 @@
       ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.calendar_exports",
+      "columns": [
+        "facility_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.facilities",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+    },
+    {
+      "table": "public.calendar_exports",
+      "columns": [
+        "facility_id",
+        "recurring_schedule_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.recurring_schedules",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.calendar_exports",
+      "columns": [
+        "facility_id",
+        "schedule_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.schedules",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, schedule_id) REFERENCES schedules(facility_id, id) ON DELETE CASCADE"
     }
   ],
   "functions": [
@@ -5963,13 +6473,14 @@
     },
     {
       "id": "calendar-sync",
-      "name": "外部のカレンダーの取り込み",
-      "desc": "職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録",
+      "name": "外部のカレンダーの取り込みと書き出し",
+      "desc": "職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち",
       "tables": [
         "public.external_calendars",
         "public.calendar_sync_states",
         "public.external_event_links",
         "public.import_runs",
+        "public.calendar_exports",
         "public.schedules",
         "public.recurring_schedules",
         "public.users"

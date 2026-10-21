@@ -22,6 +22,7 @@ import { Route as ReceiptResultRouteImport } from './routes/receipt.result'
 import { Route as ScheduleNewRouteImport } from './routes/schedule.new'
 import { Route as ScheduleImportRouteImport } from './routes/schedule_.import'
 import { Route as ScheduleLinkRouteImport } from './routes/schedule_.link'
+import { Route as ScheduleReviewRouteImport } from './routes/schedule_.review'
 import { Route as ScheduleScheduleIdIndexRouteImport } from './routes/schedule.$scheduleId.index'
 import { Route as ScheduleScheduleIdEditRouteImport } from './routes/schedule.$scheduleId.edit'
 
@@ -90,6 +91,11 @@ const ScheduleLinkRoute = ScheduleLinkRouteImport.update({
   path: '/schedule/link',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ScheduleReviewRoute = ScheduleReviewRouteImport.update({
+  id: '/schedule_/review',
+  path: '/schedule/review',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ScheduleScheduleIdIndexRoute = ScheduleScheduleIdIndexRouteImport.update({
   id: '/$scheduleId/',
   path: '/$scheduleId/',
@@ -114,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/schedule/new': typeof ScheduleNewRoute
   '/schedule/import': typeof ScheduleImportRoute
   '/schedule/link': typeof ScheduleLinkRoute
+  '/schedule/review': typeof ScheduleReviewRoute
   '/receipt/': typeof ReceiptIndexRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
   '/schedule/$scheduleId/': typeof ScheduleScheduleIdIndexRoute
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/schedule/new': typeof ScheduleNewRoute
   '/schedule/import': typeof ScheduleImportRoute
   '/schedule/link': typeof ScheduleLinkRoute
+  '/schedule/review': typeof ScheduleReviewRoute
   '/receipt': typeof ReceiptIndexRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
   '/schedule/$scheduleId': typeof ScheduleScheduleIdIndexRoute
@@ -149,6 +157,7 @@ export interface FileRoutesById {
   '/schedule/new': typeof ScheduleNewRoute
   '/schedule_/import': typeof ScheduleImportRoute
   '/schedule_/link': typeof ScheduleLinkRoute
+  '/schedule_/review': typeof ScheduleReviewRoute
   '/receipt/': typeof ReceiptIndexRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
   '/schedule/$scheduleId/': typeof ScheduleScheduleIdIndexRoute
@@ -168,6 +177,7 @@ export interface FileRouteTypes {
     | '/schedule/new'
     | '/schedule/import'
     | '/schedule/link'
+    | '/schedule/review'
     | '/receipt/'
     | '/schedule/$scheduleId/edit'
     | '/schedule/$scheduleId/'
@@ -185,6 +195,7 @@ export interface FileRouteTypes {
     | '/schedule/new'
     | '/schedule/import'
     | '/schedule/link'
+    | '/schedule/review'
     | '/receipt'
     | '/schedule/$scheduleId/edit'
     | '/schedule/$scheduleId'
@@ -202,6 +213,7 @@ export interface FileRouteTypes {
     | '/schedule/new'
     | '/schedule_/import'
     | '/schedule_/link'
+    | '/schedule_/review'
     | '/receipt/'
     | '/schedule/$scheduleId/edit'
     | '/schedule/$scheduleId/'
@@ -219,6 +231,7 @@ export interface RootRouteChildren {
   ReceiptResultRoute: typeof ReceiptResultRoute
   ScheduleImportRoute: typeof ScheduleImportRoute
   ScheduleLinkRoute: typeof ScheduleLinkRoute
+  ScheduleReviewRoute: typeof ScheduleReviewRoute
   ReceiptIndexRoute: typeof ReceiptIndexRoute
 }
 
@@ -315,6 +328,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ScheduleLinkRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/schedule_/review': {
+      id: '/schedule_/review'
+      path: '/schedule/review'
+      fullPath: '/schedule/review'
+      preLoaderRoute: typeof ScheduleReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/schedule/$scheduleId/': {
       id: '/schedule/$scheduleId/'
       path: '/$scheduleId'
@@ -360,8 +380,19 @@ const rootRouteChildren: RootRouteChildren = {
   ReceiptResultRoute: ReceiptResultRoute,
   ScheduleImportRoute: ScheduleImportRoute,
   ScheduleLinkRoute: ScheduleLinkRoute,
+  ScheduleReviewRoute: ScheduleReviewRoute,
   ReceiptIndexRoute: ReceiptIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
