@@ -1,5 +1,5 @@
 // 証跡を撮る spec のひな形。context/testing/evidence.md にある spec の置き場に写し、<…> を埋める。
-// シナリオアウトラインでないシナリオは、CASES を消し、recordEvidence に example を渡さない。
+// シナリオアウトラインでないシナリオは、CASES を消し、body の c を外してシナリオの文と操作を直に書き、recordEvidence に example を渡さない。
 // context に kit を呼ぶ薄い層があれば、TARGET と VARIANTS をその層から import して置き換える。
 import { test, type Page } from '@playwright/test'
 import {
@@ -22,6 +22,8 @@ const SCENARIO: Scenario = {
   // 証跡の格納先のフォルダの名前と同じにする
   no: 0,
   title: '<シナリオ名>',
+  // どの静止画にも映りうる、改修前と違ってよい差。<root>/<issue>/differences.ts から import する。比べないときは消す
+  // differences: [],
 }
 
 // 撮る URL、改修前の URL、撮る版、実施日、環境の名前は、context/testing/evidence.md にある環境変数から読む

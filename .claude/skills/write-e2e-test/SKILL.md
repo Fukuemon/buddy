@@ -58,7 +58,7 @@ E2E のテストのコードを、落ちにくく、直す場所が 1 か所で�
 
 - 通信が 2 つある画面では、両方の応答を待つ。
 - 値を読んでから比べない。locator をそのまま `expect` に渡す。
-  - 規則が止めるのは `innerText`、`textContent`、`inputValue` などの一部の読み方だけなので、`count()` と `isVisible()` も自分で避ける。
+  - 規則が止めるのは一部の読み方だけ(`packages/e2e/eslint/e2e-authoring-rule.mjs`)なので、`count()` と `isVisible()` も自分で避ける。
   - リクエストの中身や URL のように、locator で表せない値は、読んでから比べてよい。
 
 ## 確かめ方

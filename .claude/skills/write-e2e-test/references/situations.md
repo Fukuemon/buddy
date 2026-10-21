@@ -4,7 +4,7 @@
 
 1. 新しいタブは `context.waitForEvent('page')` で受け取る。ブラウザの API は差し替えない。
 2. タブをまたいで引き継がれるはずの値は、`addInitScript` で元のタブにだけ入れる。`window.open` で開いたタブは `sessionStorage` の写しを受け取り、`window.name` は受け取らない。
-3. 画面の中の移動は、遷移元の描画(行の testid など)を待ってから `page.goto` で path を開いて作る。buddy の画面は path で route を分ける。
+3. 画面の中の移動は、`page.goto` で path を開いて作る。buddy の画面は path で route を分ける。
 4. 観点は、遷移先の画面の既存の spec に足す。
 5. 手元の dev サーバに向けて流すときは、`--workers` で worker を増やさない。`playwright.config.ts` は worker を 1 つにしている。
 

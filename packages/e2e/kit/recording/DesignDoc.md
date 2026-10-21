@@ -15,7 +15,9 @@ verified_commit: unverified
 
 人手検証のシナリオの「例」の行ごとに 1 本ずつ録画し、mp4、判定の静止画、README を置き場へ書き出す。  
 ふつうは、デプロイされた 1 つのバージョンだけを撮る。振る舞いを変えない改修を確かめる要求では、改修前のバージョンも同じ操作で撮り、判定の静止画を並べて比べる。  
-プロダクトの spec は、シナリオの手順の操作と、字幕に出す文だけを持つ。録画の開始と終了、ログインの状態の持ち込み、字幕とカーソルの描画、形式の変換、README の書き出しは、`packages/e2e/kit/recording/` が持つ。置き場とファイル名は `packages/e2e/kit/evidence/` が決める。
+プロダクトの spec は、シナリオの手順の操作と、字幕に出す文だけを持つ。  
+kit を呼ぶ薄い層が無い間は、置き場とアプリの値(`RecordingTarget`)も spec が持つ。  
+録画の開始と終了、ログインの状態の持ち込み、字幕とカーソルの描画、形式の変換、README の書き出しは、`packages/e2e/kit/recording/` が持つ。置き場とファイル名は `packages/e2e/kit/evidence/` が決める。
 
 E2E のテストのコードの層の中での位置づけは、[E2E のテストのコードの設計](https://github.com/Fukuemon/buddy/blob/develop/packages/e2e/DesignDoc.md) にある。
 

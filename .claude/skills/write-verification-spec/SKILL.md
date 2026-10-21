@@ -17,8 +17,7 @@ description: 人手検証のシナリオ(前提、もし、かつ、ならば �
   - 証跡の格納先と、フォルダの名前の決まり
   - ログインのしかたと、テストデータを作る手順
   - 証跡の spec を CI の E2E から外す方法と、証跡の出力を Git で追跡しない設定
-  - kit を呼ぶ薄い層(`recordEvidence` に置き場とアプリの値を付けて呼ぶもの、`variants` に環境変数を渡すもの)の置き場
-- kit を呼ぶ薄い層。context に置き場があれば読み、spec からはその層を呼ぶ。無ければ、ひな形のとおり spec から `kit/recording` と `kit/evidence` を直に呼び、置き場とアプリの値を spec に書く
+- kit を呼ぶ薄い層(`recordEvidence` に置き場とアプリの値を付けて呼ぶもの、`variants` に環境変数を渡すもの)。context に置き場があれば読み、spec からはその層を呼ぶ。無ければ、ひな形のとおり spec から `kit/recording` と `kit/evidence` を直に呼び、置き場とアプリの値を spec に書く
 - 既にある証跡の spec のうち、同じアクターか同じ画面のものを 1 本
 
 新しい spec は、[assets/spec-template.e2e.ts](assets/spec-template.e2e.ts) を写して始める。
@@ -31,7 +30,7 @@ description: 人手検証のシナリオ(前提、もし、かつ、ならば �
 - `Scenario` の `id`: シナリオの `@scenario-id`。
 - `Scenario` の `issue`、`actor`、`no`、`title`: 証跡の格納先のフォルダの名前と同じにする。決まりは context にある。
 - 例の列と値: シナリオアウトラインの例の表と、pull request のチェックの「<列>=<値>」。ファイル名になるので、文言を変えない。
-- 改修前と違ってよい差: シナリオの備考。文は `specs/<issue>/differences.ts` に写し、その要求の spec から import する。その静止画だけの差は `check` の 2 つ目の引数に、どの静止画にも映りうる差は `Scenario` の `differences` に渡す。備考に無い差が撮れたら、spec に書かずに利用者に示す。
+- 改修前と違ってよい差: シナリオの備考。文は `<root>/<issue>/differences.ts` に写し、その要求の spec から import する。その静止画だけの差は `check` の 2 つ目の引数に、どの静止画にも映りうる差は `Scenario` の `differences` に渡す。備考に無い差が撮れたら、spec に書かずに利用者に示す。
 
 ## spec を書く
 
