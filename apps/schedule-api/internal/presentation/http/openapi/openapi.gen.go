@@ -714,7 +714,7 @@ type CreatePatientJSONBody struct {
 type CreatePositionJSONBody struct {
 	Name string `json:"name"`
 
-	// PolicyIds 役職の職員に既定で与える権限
+	// PolicyIds 役職の職員に既定で与える権限。対象の職員を指定する権限（schedule.user.*）は既定にできない
 	PolicyIds *[]ID `json:"policy_ids,omitempty"`
 }
 
