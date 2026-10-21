@@ -7,8 +7,11 @@
 set -eu
 
 password=tbls-dev
-container=$(docker run -d --rm -e MYSQL_ROOT_PASSWORD=$password -e MYSQL_DATABASE=buddy -p 127.0.0.1::3306 mysql:8.4)
+# 生成物に MySQL の版が入るので、パッチ版まで固定する。上げるときは文書も生成し直す
+container=$(docker run -d --rm -e MYSQL_ROOT_PASSWORD=$password -e MYSQL_DATABASE=buddy -p 127.0.0.1::3306 mysql:8.4.11)
 trap 'docker rm -f "$container" >/dev/null' EXIT
+# dash は割り込みで止まると EXIT の trap を流さないので、exit を経由させてコンテナを消す
+trap 'exit 130' INT TERM
 port=$(docker port "$container" 3306/tcp | head -n 1 | sed 's/.*://')
 
 # 初期化の途中で MySQL が 1 度再起動するので、TCP で応答するまで待つ
@@ -23,4 +26,4 @@ until docker exec "$container" mysqladmin ping -h 127.0.0.1 -uroot -p$password -
 done
 
 (cd apps/schedule-api && GOWORK=off DB_HOST=127.0.0.1 DB_PORT=$port DB_USER=root DB_PASSWORD=$password DB_NAME=buddy go run ./cmd/migrate up)
-tbls doc --rm-dist --config apps/schedule-api/.tbls.yml "mysql://root:$password@127.0.0.1:$port/buddy"
+tbls doc --rm-dist --config apps/schedule-api/.tbls.yml "mysql://root:$password@127.0.0.1:$port/buddy?charset=utf8mb4"
