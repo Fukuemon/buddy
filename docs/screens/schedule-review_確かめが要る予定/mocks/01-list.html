@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>schedule-review 一覧</title>
+    <link rel="stylesheet" href="../../_common/mock.css" />
+    <link rel="stylesheet" href="../../_common/tokens.css" />
+    <link rel="stylesheet" href="../../_common/wireframe.css" />
+    <link rel="stylesheet" href="schedule-review.css" />
+  </head>
+  <body data-view="desktop">
+    <div class="stage">
+      <div class="screen">
+        <div class="screen-body">
+          <header class="wf-site-header">
+            <div class="wf-site-header__brand">
+              <strong>buddy</strong>
+              <nav data-m="1" data-testid="site-nav">
+                <span data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html">予定</span>
+                <span data-go="../../receipt-upload_照合/mocks/01-initial.html">照合</span>
+                <span data-go="../../schedule-import_予定の取り込み/mocks/01-initial.html">取り込み</span>
+                <span aria-current="page" data-go="01-list.html">要確認</span>
+              </nav>
+            </div>
+            <div class="wf-site-header__viewer" data-testid="viewer-menu">
+              <span class="wf-text wf-text--s" data-m="2"></span>
+              <span class="wf-btn" data-m="3" data-testid="viewer-logout">ログアウト</span>
+            </div>
+          </header>
+          <main class="wf-page">
+            <h1 class="wf-heading" data-m="4">確かめが要る予定</h1>
+            <p class="wf-lead" data-m="5">buddy の予定のうち、Google カレンダーに書き出せなかった予定です。Google カレンダーで直された予定は、buddy に取り込みません。予定を開いて buddy の内容を確かめ、buddy の内容で書き直すと、Google カレンダーの予定を buddy の内容にします。</p>
+            <table class="wf-table sr-table" data-m="6" data-testid="calendar-review-table">
+              <thead>
+                <tr>
+                  <th>予定の日時</th>
+                  <th>職員</th>
+                  <th>理由</th>
+                  <th>気付いた日時</th>
+                  <th><span class="sr-visually-hidden">操作</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-testid="calendar-review-row-export-1">
+                  <td data-label="予定の日時"><span data-m="7" data-testid="calendar-review-datetime-export-1">2026/11/04（水）09:00〜09:29</span></td>
+                  <td data-label="職員"><span data-m="8">青木 一郎</span></td>
+                  <td data-label="理由"><span data-m="9" data-testid="calendar-review-reason-export-1">Google カレンダーで予定が直されたので、buddy の変更を書き出していません。</span></td>
+                  <td data-label="気付いた日時"><span data-m="10">2026/10/22 10:00</span></td>
+                  <td class="sr-actions">
+                    <div class="sr-actions__inner">
+                      <span class="wf-btn" data-m="11" data-testid="calendar-review-open-export-1" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html">予定を開く</span>
+                      <span class="wf-btn wf-btn--primary" data-m="12" data-testid="calendar-review-rewrite-export-1" data-go="05-rewrite.html">buddy の内容で書き直す</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr data-testid="calendar-review-row-export-2">
+                  <td data-label="予定の日時"><span data-testid="calendar-review-datetime-export-2">2026/11/02（月）14:00〜16:00</span></td>
+                  <td data-label="職員"><span>青木 一郎</span></td>
+                  <td data-label="理由"><span data-testid="calendar-review-reason-export-2">Google カレンダーに書けません。カレンダーが「予定の変更」の権限で共有されているかを、職員に確かめてください。</span></td>
+                  <td data-label="気付いた日時"><span>2026/10/22 08:30</span></td>
+                  <td class="sr-actions">
+                    <div class="sr-actions__inner">
+                      <span class="wf-btn" data-testid="calendar-review-open-export-2" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html">予定を開く</span>
+                      <span class="wf-btn wf-btn--primary" data-testid="calendar-review-rewrite-export-2" data-go="05-rewrite.html">buddy の内容で書き直す</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr data-testid="calendar-review-row-export-3">
+                  <td data-label="予定の日時"><span data-testid="calendar-review-datetime-export-3">2026/11/03（火）から毎回 10:00〜11:00</span></td>
+                  <td data-label="職員"><span>石川 二葉</span></td>
+                  <td data-label="理由"><span data-testid="calendar-review-reason-export-3">Google カレンダーで予定が消されたので、buddy の変更を書き出していません。</span></td>
+                  <td data-label="気付いた日時"><span>2026/10/22 07:00</span></td>
+                  <td class="sr-actions">
+                    <div class="sr-actions__inner">
+                      <span class="wf-btn wf-btn--primary" data-testid="calendar-review-rewrite-export-3" data-go="05-rewrite.html">buddy の内容で書き直す</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </main>
+        </div>
+      </div>
+      <div class="markers"></div>
+    </div>
+    <script src="../../_common/mock.js"></script>
+    <script src="../../_common/interact.js"></script>
+  </body>
+</html>
