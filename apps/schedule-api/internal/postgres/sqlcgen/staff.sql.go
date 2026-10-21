@@ -32,7 +32,7 @@ func (q *Queries) AddUserPolicy(ctx context.Context, arg AddUserPolicyParams) (i
 	return result.RowsAffected(), nil
 }
 
-const addUserPolicyTarget = `-- name: AddUserPolicyTarget :exec
+const addUserPolicyTarget = `-- name: AddUserPolicyTarget :execrows
 INSERT INTO user_policy_targets (id, facility_id, user_policy_id, target_user_id, target_team_id)
 SELECT $1, up.facility_id, up.id, $2, $3
 FROM user_policies up
@@ -46,15 +46,18 @@ type AddUserPolicyTargetParams struct {
 	UserPolicyID string
 }
 
-// 事業所は職員の権限の行から写す。
-func (q *Queries) AddUserPolicyTarget(ctx context.Context, arg AddUserPolicyTargetParams) error {
-	_, err := q.db.Exec(ctx, addUserPolicyTarget,
+// 事業所は職員の権限の行から写す。職員の権限が無ければ書かない。
+func (q *Queries) AddUserPolicyTarget(ctx context.Context, arg AddUserPolicyTargetParams) (int64, error) {
+	result, err := q.db.Exec(ctx, addUserPolicyTarget,
 		arg.ID,
 		arg.TargetUserID,
 		arg.TargetTeamID,
 		arg.UserPolicyID,
 	)
-	return err
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const createUser = `-- name: CreateUser :exec

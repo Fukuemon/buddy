@@ -76,11 +76,14 @@ func addGrants(ctx context.Context, q *sqlcgen.Queries, userID string, grants []
 			return apperr.Invalid("職員 %s が見つかりません", userID)
 		}
 		for _, t := range g.Targets {
-			err := q.AddUserPolicyTarget(ctx, sqlcgen.AddUserPolicyTargetParams{
+			n, err := q.AddUserPolicyTarget(ctx, sqlcgen.AddUserPolicyTargetParams{
 				ID: t.ID, UserPolicyID: g.ID, TargetUserID: optional(t.UserID), TargetTeamID: optional(t.TeamID),
 			})
 			if err != nil {
 				return translate("add user policy target", err)
+			}
+			if n == 0 {
+				return apperr.Invalid("職員の権限 %s が見つかりません", g.ID)
 			}
 		}
 	}

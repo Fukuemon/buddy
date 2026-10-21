@@ -20,8 +20,8 @@ DELETE FROM user_policies WHERE user_id = $1;
 -- user_policy_targets は外部キーの ON DELETE CASCADE で消える。
 DELETE FROM user_policies WHERE id = sqlc.arg(id) AND user_id = sqlc.arg(user_id);
 
--- name: AddUserPolicyTarget :exec
--- 事業所は職員の権限の行から写す。
+-- name: AddUserPolicyTarget :execrows
+-- 事業所は職員の権限の行から写す。職員の権限が無ければ書かない。
 INSERT INTO user_policy_targets (id, facility_id, user_policy_id, target_user_id, target_team_id)
 SELECT sqlc.arg(id), up.facility_id, up.id, sqlc.narg(target_user_id), sqlc.narg(target_team_id)
 FROM user_policies up

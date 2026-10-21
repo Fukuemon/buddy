@@ -104,6 +104,8 @@ func txContext(t *testing.T) context.Context {
 }
 
 // savepointTx は、Exec と QueryRow の 1 文ごとにセーブポイントを置く pgx.Tx である。
+// Query（sqlc の :many）は包まない。今の :many は読み出しだけで、制約の違反で失敗しないためである。
+// 本番のトランザクションは失敗した文の後に止まるが、このテストでは続けられる。失敗を握りつぶして続ける手順は、このテストでは見つからない。
 type savepointTx struct{ pgx.Tx }
 
 func (s savepointTx) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {

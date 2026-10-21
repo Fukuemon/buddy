@@ -1267,7 +1267,10 @@ export interface operations {
             content: {
                 "application/json": {
                     username: string;
-                    /** Format: email */
+                    /**
+                     * Format: email
+                     * @description 小文字にそろえて保存し、応答でも小文字で返す。大文字と小文字だけが違うメールは、同じメールとみなす
+                     */
                     email: string;
                     /** @description 11 桁以内の数字。先頭の + は省いてよい */
                     phone_number?: string | null;

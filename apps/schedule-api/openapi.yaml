@@ -342,7 +342,12 @@ paths:
               required: [username, email, department_id, team_id, position_id]
               properties:
                 username: { type: string, minLength: 1, maxLength: 128 }
-                email: { type: string, format: email, minLength: 1, maxLength: 320 }
+                email:
+                  type: string
+                  format: email
+                  minLength: 1
+                  maxLength: 320
+                  description: 小文字にそろえて保存し、応答でも小文字で返す。大文字と小文字だけが違うメールは、同じメールとみなす
                 phone_number:
                   type: string
                   nullable: true

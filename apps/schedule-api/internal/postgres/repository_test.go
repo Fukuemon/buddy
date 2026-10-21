@@ -1016,3 +1016,30 @@ func TestExternalCalendarsOneActivePerStaff(t *testing.T) {
 		t.Fatalf("外した後の 2 つ目: err = %v", err)
 	}
 }
+
+func TestTranslateRejectsNUL(t *testing.T) {
+	ctx := txContext(t)
+	team := organization.Team{ID: "01M3TD000000000000000000G0", FacilityID: seedFacility, Name: "a\x00b"}
+	if err := NewTeamRepository(testDB).Create(ctx, team); !errors.Is(err, apperr.ErrInvalidInput) {
+		t.Fatalf("NUL を含む名前: err = %v, want ErrInvalidInput", err)
+	}
+}
+
+func TestTimestampsAreUTC(t *testing.T) {
+	ctx := txContext(t)
+	f, err := NewFacilityRepository(testDB).Get(ctx, seedFacility)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f.CreatedAt.Location() != time.UTC {
+		t.Errorf("CreatedAt の場所 = %v, want UTC", f.CreatedAt.Location())
+	}
+}
+
+func TestStaffAddGrantToUnknownStaff(t *testing.T) {
+	ctx := txContext(t)
+	g := staff.Grant{ID: "01M3TD000000000000000000G1", PolicyID: seedSelfEdit}
+	if err := NewStaffRepository(testDB).AddGrant(ctx, unknownID, g); !errors.Is(err, apperr.ErrInvalidInput) {
+		t.Fatalf("いない職員への権限: err = %v, want ErrInvalidInput", err)
+	}
+}

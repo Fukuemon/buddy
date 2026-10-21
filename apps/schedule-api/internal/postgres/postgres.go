@@ -49,6 +49,10 @@ func Open(ctx context.Context, c Config) (*pgxpool.Pool, error) {
 	}
 	cfg.MaxConns = 25
 	cfg.MaxConnLifetime = 5 * time.Minute
+	cfg.AfterConnect = func(_ context.Context, conn *pgx.Conn) error {
+		scanTimestamptzInUTC(conn)
+		return nil
+	}
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("open postgres: %w", err)
@@ -58,6 +62,16 @@ func Open(ctx context.Context, c Config) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("ping postgres: %w", err)
 	}
 	return pool, nil
+}
+
+// scanTimestamptzInUTC は、timestamptz を UTC の time.Time で読むようにする。pgx の既定は time.Local で、
+// 応答の日時のオフセットがプロセスのタイムゾーンで変わるためである。
+func scanTimestamptzInUTC(conn *pgx.Conn) {
+	conn.TypeMap().RegisterType(&pgtype.Type{
+		Name:  "timestamptz",
+		OID:   pgtype.TimestamptzOID,
+		Codec: &pgtype.TimestamptzCodec{ScanLocation: time.UTC},
+	})
 }
 
 type txKey struct{}
@@ -111,12 +125,13 @@ func (c conn) q(ctx context.Context) *sqlcgen.Queries {
 
 // PostgreSQL の SQLSTATE。https://www.postgresql.org/docs/18/errcodes-appendix.html
 const (
-	uniqueViolation        = "23505"
-	foreignKeyViolation    = "23503"
-	checkViolation         = "23514"
-	notNullViolation       = "23502"
-	stringDataRightTrunc   = "22001"
-	numericValueOutOfRange = "22003"
+	uniqueViolation          = "23505"
+	foreignKeyViolation      = "23503"
+	checkViolation           = "23514"
+	notNullViolation         = "23502"
+	stringDataRightTrunc     = "22001"
+	characterNotInRepertoire = "22021"
+	numericValueOutOfRange   = "22003"
 )
 
 // translate は、ドライバーのエラーを apperr のエラーに置き換える。対応しないエラーは、文脈と制約の名前を付けて返す。
@@ -136,6 +151,9 @@ func translate(op string, err error) error {
 			return apperr.Invalid("参照先が見つかりません")
 		case checkViolation, notNullViolation, stringDataRightTrunc, numericValueOutOfRange:
 			return apperr.Invalid("値が列の制約に合いません")
+		case characterNotInRepertoire:
+			// text は NUL（U+0000）を受け付けない
+			return apperr.Invalid("値に使えない文字が含まれています")
 		}
 		if pe.ConstraintName != "" {
 			return fmt.Errorf("%s (%s): %w", op, pe.ConstraintName, err)
