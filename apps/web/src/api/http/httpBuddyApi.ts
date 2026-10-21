@@ -3,6 +3,7 @@ import createClient from 'openapi-fetch'
 import { ApiError, type BuddyApi } from '../client'
 import { matchesName } from '../nameSearch'
 import type { paths } from '../generated/schedule'
+import { expandRecurring, occurrenceOf, occurs, parseOccurrenceId } from './recurrence'
 import {
   fromApiPatient,
   fromApiSchedule,
@@ -47,12 +48,27 @@ const expectOk = async (promise: Promise<Result<unknown>>): Promise<void> => {
 /**
  * 予定の API を openapi-fetch で呼ぶ BuddyApi を作る。トークンは付けない。
  *
+ * schedules.list は、繰り返しの予定を期間の回に分け、occurrenceId の ID を持つ単発の予定として返す。
+ * キャンセルした予定は返さない。画面の予定はキャンセルの状態を持たないため。
+ * schedules.get と schedules.update は、回の ID を受けると、繰り返しの予定のその回を読み、その回を置き換える。
  * schedules.update は、今の予定を読んでから置き換え、画面が持たない同行者などを keepCurrentVisit で引き継ぐ。
  * schedules.get は、ほかの事業所の予定を指すと status が 403 の ApiError を投げる。
- * schedules.list は、キャンセルした予定を返さない。画面の予定はキャンセルの状態を持たないため。
  */
 export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi => {
   const client = createClient<paths>({ baseUrl, fetch })
+
+  /** 回の ID が指す繰り返しの予定の回を読む。回が無ければ status が 404 の ApiError を投げる。 */
+  const loadOccurrence = async (recurringId: string, date: string) => {
+    const rs = await unwrap(
+      client.GET('/v1/schedules/recurring/{recurring_schedule_id}', {
+        params: { path: { recurring_schedule_id: recurringId } },
+      }),
+    )
+    if (!occurs(rs, date) || rs.exclusion_dates.includes(date)) {
+      throw new ApiError(404, `繰り返しの予定の ${date} の回はありません`, [], 'not_found')
+    }
+    return occurrenceOf(rs, date)
+  }
 
   const loadMasters = async () => {
     const [scheduleTypes, serviceCodes, visitCategories] = await Promise.all([
@@ -68,19 +84,17 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
       list: async (facilityId, { from, to, staffIds }) => {
         const fromTime = Date.parse(from)
         const toTime = Date.parse(to)
-        const { schedules } = await unwrap(
+        const dateFrom = splitDateTime(from).date
+        const dateTo = splitDateTime(new Date(toTime - 1).toISOString()).date
+        const { schedules, recurring_schedules: recurring } = await unwrap(
           client.GET('/v1/facilities/{facility_id}/schedules', {
             params: {
               path: { facility_id: facilityId },
-              query: {
-                date_from: splitDateTime(from).date,
-                date_to: splitDateTime(new Date(toTime - 1).toISOString()).date,
-              },
+              query: { date_from: dateFrom, date_to: dateTo },
             },
           }),
         )
-        // shortcut: 繰り返しの予定（recurring_schedules）は回に展開していないので出さない。展開は予定の API の後半の作業で決める。
-        return schedules
+        return [...schedules, ...recurring.flatMap((rs) => expandRecurring(rs, dateFrom, dateTo))]
           .filter((schedule) => schedule.cancel === null)
           .map(fromApiSchedule)
           .filter(
@@ -93,11 +107,15 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
           )
       },
       get: async (facilityId, scheduleId) => {
-        const schedule = await unwrap(
-          client.GET('/v1/schedules/{schedule_id}', {
-            params: { path: { schedule_id: scheduleId } },
-          }),
-        )
+        const occurrence = parseOccurrenceId(scheduleId)
+        const schedule =
+          occurrence !== undefined
+            ? await loadOccurrence(occurrence.recurringId, occurrence.date)
+            : await unwrap(
+                client.GET('/v1/schedules/{schedule_id}', {
+                  params: { path: { schedule_id: scheduleId } },
+                }),
+              )
         if (schedule.facility_id !== facilityId) {
           throw new ApiError(403, `事業所 ${facilityId} の操作は許可されていません`)
         }
@@ -114,6 +132,23 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
         return fromApiSchedule(created)
       },
       update: async (_facilityId, scheduleId, input) => {
+        const occurrence = parseOccurrenceId(scheduleId)
+        if (occurrence !== undefined) {
+          const [current, masters] = await Promise.all([
+            loadOccurrence(occurrence.recurringId, occurrence.date),
+            loadMasters(),
+          ])
+          const replaced = await unwrap(
+            client.POST('/v1/schedules/recurring/{recurring_schedule_id}/occurrences', {
+              params: { path: { recurring_schedule_id: occurrence.recurringId } },
+              body: {
+                ...keepCurrentVisit(toSlotRequest(input, masters), current),
+                original_date: occurrence.date,
+              },
+            }),
+          )
+          return fromApiSchedule(replaced)
+        }
         const [current, masters] = await Promise.all([
           unwrap(
             client.GET('/v1/schedules/{schedule_id}', {

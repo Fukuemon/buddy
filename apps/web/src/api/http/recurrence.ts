@@ -1,0 +1,87 @@
+import type { components } from '../generated/schedule'
+
+type Schemas = components['schemas']
+/** 予定の API が返す繰り返しの予定。 */
+export type ApiRecurringSchedule = Schemas['RecurringSchedule']
+
+const OCCURRENCE_PREFIX = 'recurring-'
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/**
+ * 繰り返しの予定の 1 回を指す ID。予定の詳細と編集の route で、単発の予定の ID と並べて使う。
+ * 単発の予定の ID は ULID なので、この形とは重ならない。
+ */
+export const occurrenceId = (recurringId: string, date: string) =>
+  `${OCCURRENCE_PREFIX}${recurringId}-${date}`
+
+/** occurrenceId の ID を、繰り返しの予定の ID と回の日付に分ける。回の ID でなければ undefined を返す。 */
+export const parseOccurrenceId = (
+  id: string,
+): { recurringId: string; date: string } | undefined => {
+  const match = /^recurring-(.+)-(\d{4}-\d{2}-\d{2})$/.exec(id)
+  return match === null ? undefined : { recurringId: match[1], date: match[2] }
+}
+
+const dayOf = (date: string) => Date.parse(`${date}T00:00:00Z`)
+const dateOf = (time: number) => new Date(time).toISOString().slice(0, 10)
+
+/** 月曜を 1、日曜を 7 とする曜日。 */
+const isoWeekday = (time: number) => new Date(time).getUTCDay() || 7
+
+/**
+ * 繰り返しの予定が date（YYYY-MM-DD）に回を持つかを返す。除外した日は考えない。
+ * 規則は予定の API の繰り返しの規則（DesignDoc の繰り返しの予定）と同じにする。
+ */
+export const occurs = (rs: ApiRecurringSchedule, date: string): boolean => {
+  const { recurring_rule: rule } = rs
+  if (date < rs.date) return false
+  if (rule.end_date != null && date > rule.end_date) return false
+  const day = new Date(dayOf(date)).getUTCDate()
+  const weekday = rule.day_of_week ?? isoWeekday(dayOf(rs.date))
+  if (rule.frequency === 'weekly') return isoWeekday(dayOf(date)) === weekday
+  if (rule.day_of_month != null) return day === rule.day_of_month
+  if (rule.week_of_month != null)
+    return (
+      isoWeekday(dayOf(date)) === weekday && Math.floor((day - 1) / 7) + 1 === rule.week_of_month
+    )
+  return day === new Date(dayOf(rs.date)).getUTCDate()
+}
+
+/** 繰り返しの予定の date の回を、単発の予定の形にする。ID は occurrenceId で作る。 */
+export const occurrenceOf = (rs: ApiRecurringSchedule, date: string): Schemas['Schedule'] => ({
+  id: occurrenceId(rs.id, date),
+  facility_id: rs.facility_id,
+  schedule_type_id: rs.schedule_type_id,
+  schedule_type: rs.schedule_type,
+  date,
+  start_time: rs.start_time,
+  end_time: rs.end_time,
+  is_over_time_work: rs.is_over_time_work,
+  staff_id: rs.staff_id,
+  staff_name: rs.staff_name,
+  title: rs.title,
+  description: rs.description,
+  recurring_schedule_id: rs.id,
+  visit_info: rs.visit_info,
+  cancel: null,
+  created_at: rs.created_at,
+  updated_at: rs.updated_at,
+})
+
+/**
+ * 繰り返しの予定の、from から to まで（両端を含む YYYY-MM-DD）の回を、単発の予定の形で返す。
+ * 除外した日（1 回だけ置き換えた日を含む）は返さない。
+ */
+export const expandRecurring = (
+  rs: ApiRecurringSchedule,
+  from: string,
+  to: string,
+): Schemas['Schedule'][] => {
+  const excluded = new Set(rs.exclusion_dates)
+  const out: Schemas['Schedule'][] = []
+  for (let time = dayOf(from > rs.date ? from : rs.date); time <= dayOf(to); time += DAY_MS) {
+    const date = dateOf(time)
+    if (!excluded.has(date) && occurs(rs, date)) out.push(occurrenceOf(rs, date))
+  }
+  return out
+}
