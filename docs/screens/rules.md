@@ -160,12 +160,15 @@ docs/screens/
   - 先は、インタラクションの節の結果に最も近い状態のモックにする。予定の詳細の閉じるボタンなら、予定のカレンダーの月の表示へ移る。
   - 端末、構成番号、data-testid、幅に合わせるかの選択は、URL の search params で移った先に引き継ぐ。仕様書のページの iframe の中では、iframe の中で移る。
   - 移った先は、その状態のモックの値で描く。前のモックで変えたチェックと選択は引き継がない。
+  - ファイルの選択は、ファイルの選択のダイアログを開かず、ファイルを選んだ後の状態のモックへ移す。
 - 次の操作には属性を付けない。
-  - API の呼び出し、保存、ダウンロード、ログアウト、ファイルの選択のダイアログ、ブラウザの確認のダイアログ
+  - API の呼び出し、保存、ダウンロード、ログアウト、ブラウザの確認のダイアログ
   - 当たる状態のモックが無い操作。期間を変える操作、文字の入力、送信中の状態から結果への移り
 - 押せる要素には `interact.js` が `tabindex="0"` を付け、Enter と Space でも動かす。背景のように、キーボードで押さなくてよい要素には `tabindex="-1"` を書く。`aria-disabled="true"` の要素は押しても動かない。
+- `interact.js` は、role の無い押せる要素に role を付ける。`data-toggle` には `checkbox`、`data-choice` には `radio`、ほかには `button` を付け、`checkbox` と `radio` の `aria-checked` を `is-on` に合わせる。role を書いた要素、`tabindex="-1"` の要素、`button` と `a` と `input` には付けない。
 - `interact.js` は、表示を変えた後に `mockRefresh()` を呼び、番号の印を置き直す。
 - `data-panel` に `data-panel-modal` も付けると、開いている間は panel の外の要素の印を出さない。端末を切り替えると、開いている panel を閉じる。
+- panel を開くと、panel の中の最初のフォーカスできる要素へフォーカスを移す。閉じると、見えている開くボタンへフォーカスを戻す。
 - 属性で書けない操作が要るときは、モックに script を書かず、`interact.js` に属性を足す。
 
 モックの印の位置は、Chromium と Firefox の今のバージョン（CSS の `zoom` を標準の形で扱うもの）で確かめる。Safari での位置は確かめていない。
@@ -178,7 +181,7 @@ docs/screens/
 - 番号: 表の番号とモックの `data-m` の一致、`data-m` の連番
 - カタログ: カタログの欄にリンクがあり、全てが本番のカタログの URL か。リンクの story の ID が、packages/ui と apps/web の story のファイルにあるか。story のファイルの meta の title を読めるか
 - E2E: 全ての画面を見るとき、`packages/e2e/tests` の `getByTestId` の testid が、どれかのモックの `data-testid` にあるか
-- 操作: `data-go` の先のモックがあるか、`data-open` と `data-close` の名前の `data-panel` があるか
+- 操作: `data-go` の先のモックがあるか、`data-open` と `data-close` の名前の `data-panel` があるか、属性の値が空でないか、`data-escape` を操作の属性を持つ要素に付けたか
 - モック: 構造と読み込みの順、`data-view`、`data-testid` の形、禁止の記述と幅と配置の規則（外部の URL、`position: fixed`、viewport の単位と寸法の `@media`、ダークモード）
 - 雛形の `<…>` の消し忘れ（`index.md`、`api.md`、モック、画面の CSS）
 
