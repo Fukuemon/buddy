@@ -143,6 +143,8 @@ viewpoints:
       - visit_categories
       - visit_info_visit_categories
       - recurring_schedules
+      - patients
+      - service_codes
       - users
       - facilities
       - schedule_details
@@ -160,7 +162,6 @@ viewpoints:
       - users
       - facilities
       - recurring_schedule_details
-# どの viewpoint にも入らない表があれば、tbls lint で失敗させる
 lint:
   requireViewpoints:
     enabled: true

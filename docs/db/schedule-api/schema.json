@@ -3135,6 +3135,8 @@
         "visit_categories",
         "visit_info_visit_categories",
         "recurring_schedules",
+        "patients",
+        "service_codes",
         "users",
         "facilities",
         "schedule_details",
