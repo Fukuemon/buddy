@@ -26,21 +26,29 @@ const maxCountDays = 100 * 366
 
 var weekdays = map[string]int{"MO": 1, "TU": 2, "WE": 3, "TH": 4, "FR": 5, "SA": 6, "SU": 7}
 
-// RuleFromRecurrence は、親の繰り返しの予定の recurrence の行を、buddy の繰り返しの規則と除外する日に写す。
-// first と start は、最初の回の日付と開始の時刻（Asia/Tokyo）で、UNTIL と COUNT から終了日を決めるのに使う。
+// RuleFromRecurrence は、親の繰り返しの予定 parent の Recurrence を、buddy の繰り返しの規則と除外する日に写す。
+// parent.Start を最初の回とし、UNTIL と COUNT から終了日を決めるのに使う。
+// RRULE は親の予定のタイムゾーンの暦で数えるので、タイムゾーンが Asia/Tokyo でない予定は写さない。
+// タイムゾーンは parent.Start.TimeZone で、空なら parent.Start.DateTime のオフセット（+09:00 か）で見る。
+//
+// 出典: https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10
 //
 // 写せるのは、間隔が 1 の FREQ=WEEKLY で BYDAY が 1 つか無いもの、FREQ=MONTHLY で BYMONTHDAY が 1 つのもの、
 // FREQ=MONTHLY で BYDAY が 1〜5 の週の曜日 1 つのもの、BY の無い FREQ=MONTHLY だけである。
 // UNTIL はその時刻までに始まる最後の回の日付を、COUNT は最後の回の日付を終了日にする。EXDATE は Asia/Tokyo の日付にする。
 // ほかの形（隔週、複数の曜日、最終週、RDATE、ほかの FREQ）、最初の日付が回に当たらない規則、回の無い規則、
-// 読めない行では、ErrNeedsExpansion を包んだエラーを返す。
-func RuleFromRecurrence(lines []string, first civil.Date, start civil.Time) (Recurrence, error) {
+// 終日か開始の日時を読めない予定、読めない行では、ErrNeedsExpansion を包んだエラーを返す。
+func RuleFromRecurrence(parent Event) (Recurrence, error) {
+	first, start, err := tokyoStart(parent.Start)
+	if err != nil {
+		return Recurrence{}, err
+	}
 	var (
 		rrule string
 		rules int
 		out   Recurrence
 	)
-	for _, line := range lines {
+	for _, line := range parent.Recurrence {
 		head, value, ok := strings.Cut(line, ":")
 		if !ok {
 			return Recurrence{}, expansion("行の形が違う: %q", line)
@@ -96,6 +104,22 @@ func RuleFromRecurrence(lines []string, first civil.Date, start civil.Time) (Rec
 	slices.SortFunc(out.ExclusionDates, func(a, b civil.Date) int { return a.Time().Compare(b.Time()) })
 	out.ExclusionDates = slices.Compact(out.ExclusionDates)
 	return out, nil
+}
+
+// tokyoStart は、w が Asia/Tokyo の日時なら、その日付と時刻を返す。
+func tokyoStart(w When) (civil.Date, civil.Time, error) {
+	t, err := time.Parse(time.RFC3339, w.DateTime)
+	if err != nil {
+		return civil.Date{}, civil.Time{}, expansion("開始の日時 %q を読めない", w.DateTime)
+	}
+	if w.TimeZone != "" && w.TimeZone != TimeZone {
+		return civil.Date{}, civil.Time{}, expansion("タイムゾーン %s の予定は写せない", w.TimeZone)
+	}
+	if _, offset := t.Zone(); w.TimeZone == "" && offset != 9*60*60 {
+		return civil.Date{}, civil.Time{}, expansion("開始の日時 %s のオフセットが +09:00 でない", w.DateTime)
+	}
+	t = t.In(tokyo)
+	return civil.DateOf(t), clockOf(t), nil
 }
 
 func expansion(format string, args ...any) error {
@@ -174,7 +198,6 @@ func parseRRule(value string) (rule schedule.Rule, until string, count int, err 
 
 // untilDate は、UNTIL の時刻までに start に始まる最後の回の日付を返す。
 // UNTIL は、日付、UTC の日時、タイムゾーンの無い日時（Asia/Tokyo として読む）のどれかである。
-// 出典: https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10
 func untilDate(until string, start civil.Time) (civil.Date, error) {
 	if d, err := time.ParseInLocation("20060102", until, tokyo); err == nil {
 		return civil.DateOf(d), nil

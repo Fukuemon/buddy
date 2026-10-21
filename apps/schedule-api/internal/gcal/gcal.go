@@ -67,5 +67,5 @@ func toWhen(t *calendarv3.EventDateTime) calendar.When {
 	if t == nil {
 		return calendar.When{}
 	}
-	return calendar.When{Date: t.Date, DateTime: t.DateTime}
+	return calendar.When{Date: t.Date, DateTime: t.DateTime, TimeZone: t.TimeZone}
 }

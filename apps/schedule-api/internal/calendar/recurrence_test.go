@@ -20,6 +20,7 @@ func TestRuleFromRecurrence(t *testing.T) {
 		lines   []string
 		first   string
 		start   civil.Time
+		when    *calendar.When
 		want    schedule.Rule
 		end     string
 		exdates []string
@@ -109,6 +110,23 @@ func TestRuleFromRecurrence(t *testing.T) {
 			want:    schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(tue)},
 			exdates: []string{"2026-10-27", "2026-11-10", "2026-11-17", "2026-11-24"},
 		},
+		{
+			name: "タイムゾーンが空でオフセットが +09:00 の予定", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU"}, first: "2026-10-20",
+			when: &calendar.When{DateTime: "2026-10-20T10:00:00+09:00"},
+			want: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(tue)},
+		},
+		{
+			name: "Asia/Tokyo 以外のタイムゾーンの予定", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU"}, first: "2026-10-20",
+			when: &calendar.When{DateTime: "2026-10-20T10:00:00+09:00", TimeZone: "America/New_York"}, expand: true,
+		},
+		{
+			name: "タイムゾーンが空でオフセットが +09:00 でない予定", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU"}, first: "2026-10-20",
+			when: &calendar.When{DateTime: "2026-10-20T01:00:00Z"}, expand: true,
+		},
+		{
+			name: "終日の予定", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU"}, first: "2026-10-20",
+			when: &calendar.When{Date: "2026-10-20"}, expand: true,
+		},
 		{name: "隔週", lines: []string{"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU"}, first: "2026-10-20", expand: true},
 		{name: "複数の曜日", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU,TH"}, first: "2026-10-20", expand: true},
 		{name: "最終週", lines: []string{"RRULE:FREQ=MONTHLY;BYDAY=-1TU"}, first: "2026-10-27", expand: true},
@@ -132,7 +150,11 @@ func TestRuleFromRecurrence(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := calendar.RuleFromRecurrence(tt.lines, date(t, tt.first), tt.start)
+			start := calendar.When{DateTime: tt.first + "T" + tt.start.String() + ":00+09:00", TimeZone: calendar.TimeZone}
+			if tt.when != nil {
+				start = *tt.when
+			}
+			got, err := calendar.RuleFromRecurrence(calendar.Event{Start: start, Recurrence: tt.lines})
 			if tt.expand {
 				if !errors.Is(err, calendar.ErrNeedsExpansion) {
 					t.Fatalf("err = %v, want ErrNeedsExpansion", err)

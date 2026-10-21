@@ -111,8 +111,8 @@ func TestReaderEvents(t *testing.T) {
 	want := []schedcal.Event{
 		{
 			ID: "p1", ICalUID: "p1@google.com", Status: "confirmed", ETag: `"1"`, Summary: "【訪看I2】利用者A",
-			Start:      schedcal.When{DateTime: "2026-10-06T10:00:00+09:00"},
-			End:        schedcal.When{DateTime: "2026-10-06T11:00:00+09:00"},
+			Start:      schedcal.When{DateTime: "2026-10-06T10:00:00+09:00", TimeZone: "Asia/Tokyo"},
+			End:        schedcal.When{DateTime: "2026-10-06T11:00:00+09:00", TimeZone: "Asia/Tokyo"},
 			Recurrence: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU", "EXDATE;TZID=Asia/Tokyo:20261013T100000"},
 		},
 		{

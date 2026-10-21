@@ -30,6 +30,8 @@ type When struct {
 	Date string
 	// DateTime は、時刻のある予定の日時で、RFC 3339 の形である。
 	DateTime string
+	// TimeZone は、予定に付いた IANA のタイムゾーンの名前で、無ければ空である。繰り返しの規則はこの暦で数える。
+	TimeZone string
 }
 
 // Event は、外部のカレンダーの 1 つの予定である。繰り返しの予定は、親の予定と、変えるか取り消した回（例外）に分かれて来る。
