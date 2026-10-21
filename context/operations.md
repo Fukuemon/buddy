@@ -7,7 +7,7 @@ status: stable
 
 # 基盤と運用
 
-基盤の構成、デプロイの手順、監視のツールは、インフラのリポジトリ [Fukuemon/buddy-infra](https://github.com/Fukuemon/buddy-infra) が持つ。buddy はデプロイ先を知らず、インフラとの約束は [buddy Design Doc のインフラとの約束](../docs/design/DesignDoc.md#インフラとの約束)（イメージ、環境変数、ヘルスチェック、マイグレーション）だけである。ここには、buddy の側が守る取り決めを書く。
+基盤の構成、デプロイの手順、監視のツールは、インフラのリポジトリ（非公開）が持つ。buddy はデプロイ先を知らず、インフラとの約束は [buddy Design Doc のインフラとの約束](../docs/design/DesignDoc.md#インフラとの約束)（イメージ、環境変数、ヘルスチェック、マイグレーション）だけである。ここには、buddy の側が守る取り決めを書く。
 
 ## Environments
 
