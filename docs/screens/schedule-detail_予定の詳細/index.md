@@ -6,7 +6,7 @@
 | --- | --- |
 | URL | `/schedule/$scheduleId`。`/schedule` の子で、カレンダーの search params を引き継ぐ |
 | 使う人 | 予定を見る権限を持つ職員。自分の予定は全ての職員が見られる |
-| 実装 | `apps/web/src/routes/schedule.$scheduleId.index.tsx`、`ScheduleDetailModalContainer`、`ScheduleDetailModal` |
+| 実装 | `apps/web/src/routes/schedule.$scheduleId.index.tsx`、`apps/web/src/features/schedule/components/ScheduleDetailModalContainer.tsx`、`apps/web/src/features/schedule/components/ScheduleDetailModal.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
 
@@ -86,7 +86,7 @@
 
 === "取得の失敗"
 
-    404 以外の失敗を API が返したか、API に届かないとき。権限の外の予定かほかの事業所の予定を指して 403 が返ったときも、この状態になる。
+    404 以外の失敗を API が返したか、API に届かないとき。権限の外の予定を指して API が 403 を返したときと、ほかの事業所の予定を指して web のサーバーが 403 にしたときも、この状態になる。
 
     <iframe class="mock" title="予定の詳細の、取得の失敗" src="mocks/05-error.html"></iframe>
     <a class="mock-open" href="mocks/05-error.html" target="_blank">別タブで開く</a>
@@ -109,7 +109,7 @@
 
 **表示条件**: 常に表示
 
-**カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)
+**カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)、[ScheduleDetailModalContainer の Loading](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--loading)、[ScheduleDetailModalContainer の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--failed)
 
 ### インタラクション
 
@@ -125,9 +125,9 @@
 
 **活性条件**: 常に活性
 
-**表示条件**: 常に表示。予定を取れなかったときは、中に失敗の文を出す（権限の外の予定は API が 403 を返し、取得の失敗の状態になる）
+**表示条件**: 常に表示。予定を取れなかったときは、中に失敗の文を出す
 
-**カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)
+**カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)、[ScheduleDetailModalContainer の Loading](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--loading)、[ScheduleDetailModalContainer の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--failed)
 
 ### インタラクション
 
@@ -145,13 +145,13 @@
 
 **表示条件**: 常に表示
 
-**カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)
+**カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)、[ScheduleDetailModalContainer の Loading](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--loading)、[ScheduleDetailModalContainer の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--failed)
 
 ### インタラクション
 
 #### 1. 押す
 
-1. 確認を出さずに、`/schedule` に戻る。search params の `view`、`date`、`staff` は引き継ぐ。
+1. 確認を出さずに、`/schedule` に戻る。search params の `view`、`date`、`staff` は引き継ぐ。履歴に積む。
 
 ## ダイアログの題
 
@@ -163,7 +163,7 @@
 
 **表示条件**: 常に表示
 
-**カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)
+**カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)、[ScheduleDetailModalContainer の Loading](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--loading)、[ScheduleDetailModalContainer の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--failed)
 
 ## 種類
 
@@ -181,7 +181,7 @@
 
 **概要**: 通常の予定の題を示す。
 
-**値のソース**: 予定のタイトル。訪問の予定のタイトル（「訪問」）は出さない。
+**値のソース**: 予定のタイトル。訪問の予定では、タイトルの行を出さない。
 
 **活性条件**: 常に活性
 
@@ -326,6 +326,7 @@
 - 予定の取得が終わる前は [閉じる](#閉じる) だけを押せる。成功した後は、閉じるのと編集ができる。失敗した後は、閉じるだけができる。
 - 開いたときに、フォーカスをダイアログの題へ移す。予定の取得が終わってダイアログを描き直したときも、題へ移す。Tab キーはダイアログの中だけを回る。閉じると、開く前にフォーカスがあった要素へ戻す。
 - 背後のカレンダーは、`/schedule` の画面として描いたまま残り、操作できない。
+- キャンセルした予定を URL で開くと、キャンセルしていない予定と同じ見た目で出す。キャンセルしたことは示さない。カレンダーはキャンセルした予定を出さないので、押して開くことは無い。
 
 ### URL の search params
 
@@ -338,13 +339,14 @@ PRD と実装の食い違い
 
 - PRD は、カレンダーから予定をキャンセルし、理由を残せるとしている。実装の詳細は、キャンセルのボタンを持たない。API はキャンセルの操作を持つ。
 - PRD の同行者、時間外の勤務の印、キャンセルの理由を、詳細に出していない。API の予定は、どれも持つ。
-- web の予定の取得は、事業所の ID と予定の ID を受ける。API の予定の取得は、事業所を受けない（[API との対応](api.md)）。
+- PRD は、訪問の予定の職員を「主訪問者」、夜勤、緊急、入院を「訪問の区分」と呼ぶ。画面は「担当者」「訪問の種類」と出す。
 
 決まっていないこと
 
-- 編集の権限が無い予定で、編集のボタンを隠すか、押せなくするか、出して API の 403 で止めるか。画面が権限をどこから読むかも決まっていない。自分の予定なら自分の予定の編集、ほかの職員の予定なら、全ての予定の編集、指定した職員の予定の編集、指定したチームの職員の予定の編集のどれかで対象のときに出すかを決める。
+- 編集の権限が無い予定で、編集のボタンを隠すか、押せなくするか、出して API の 403 で止めるか。画面が権限をどこから読むかも決まっていない。自分の予定なら自分の予定の編集、ほかの職員の予定なら、事業所の全ての予定の編集、指定した職員の予定の編集、指定したチームの職員の予定の編集のどれかで対象のときに出すかを決める。
 - 403 を、取得の失敗と同じ文で出すか、権限が無いことを示す文に分けるか。
 - 404 と 403 を取り直さずにすぐ表示するか。
+- キャンセルした予定を URL で開いたときに、キャンセルしたことを示すか、見つからないときと同じに扱うか。
 - 繰り返しの予定の 1 回を押したときに、どの URL で詳細を開くか。API は、繰り返しの予定の取得を、予定の取得と別に持つ。
 - 職員と利用者の一覧の取得が終わる前に、「職員不明」「利用者不明」を一時的に出してよいか。API につないだ後は、予定の応答の職員と利用者の名前を使えば一覧を待たずに済む。
 - 読み込み中と失敗のダイアログに、E2E が指す目印を付けるか。今の実装は、予定の取得が成功したダイアログにだけ付けている。

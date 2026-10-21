@@ -21,5 +21,6 @@
   - 担当（`visit_info.assigned_staff_id`）は、今の担当が予定の職員と同じなら新しい予定の職員にし、違えば今の担当のまま送る。
 - 保存の前に、今の予定を `getSchedule` で読み直す。
 - 予定の種類、サービスコード、訪問の種類は、マスタ（`listScheduleTypes`、`listServiceCodes`、`listVisitCategories`）を引いて ID にする。
+- 読み直しかマスタの取得が失敗したときと、マスタに当たる値が無いときは、`updateSchedule` を呼ばずに失敗する。
 - サービスコードの一覧と提供時間の範囲は、画面が持つ定数（`apps/web/src/features/schedule/constants/scheduleLabels.ts`）で、`listServiceCodes` の範囲を使っていない。
 - 予定の一覧の取得の結果は、保存に成功したときに捨てて取り直す（`listSchedules`）。

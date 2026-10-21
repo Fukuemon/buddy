@@ -6,7 +6,7 @@
 | --- | --- |
 | URL | `/schedule/$scheduleId/edit`。`/schedule` の子で、カレンダーの search params を引き継ぐ |
 | 使う人 | 予定を編集する権限を持つ職員 |
-| 実装 | `apps/web/src/routes/schedule.$scheduleId.edit.tsx`、`ScheduleEditModalContainer`、`ScheduleFormModal`、`ScheduleForm` |
+| 実装 | `apps/web/src/routes/schedule.$scheduleId.edit.tsx`、`apps/web/src/features/schedule/components/ScheduleEditModalContainer.tsx`、`apps/web/src/features/schedule/components/ScheduleFormModal.tsx`、`apps/web/src/features/schedule/components/ScheduleForm.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
 
@@ -30,7 +30,7 @@
 
 === "取得の失敗"
 
-    予定、職員、利用者の 3 つの取得のどれかが失敗したとき。予定が無い（404）、権限が無い（403）、ログインしていない（401）ときも、この状態になる。
+    予定、職員、利用者の 3 つの取得のどれかが失敗したとき。予定が無い（404）、権限が無い（403）ときと、ほかの事業所の予定を指して web のサーバーが 403 にしたときも、この状態になる。BFF を通すときに API が 401 を返したら、ログインの画面へ移るまで「読み込み中」の状態が続く。
 
     <iframe class="mock" title="予定の編集の、取得の失敗" src="mocks/02-fetch-error.html"></iframe>
     <a class="mock-open" href="mocks/02-fetch-error.html" target="_blank">別タブで開く</a>
@@ -204,7 +204,14 @@
 
 === "送信の失敗"
 
-    予定を直す API が失敗を返したか、API に届かなかったとき。権限が無い（403）、ログインしていない（401）、入力の誤り（400）の応答も、この状態になる。
+    予定を直せなかったとき。次のどれでも、今は分けずにこの状態になる。400 の誤りを項目には出さない。
+
+    - 予定を直す API が失敗を返したか、API に届かない。権限が無い（403）と入力の誤り（400）の応答を含む。
+    - 保存の前に今の予定を読み直すときに、web のサーバーが予定を取れない。
+    - 予定の種類、サービスコード、訪問の区分の一覧（マスタ）を、web のサーバーが取れない。
+    - 選んだ種類、サービスコード、訪問の区分に当たる値が、マスタに無い。
+
+    BFF を通すときに API が 401 を返したら、この状態にならず、ログインの画面へ移るまで「送信中」の状態が続く。
 
     <iframe class="mock" title="予定の編集の、送信の失敗" src="mocks/12-submit-error.html"></iframe>
     <a class="mock-open" href="mocks/12-submit-error.html" target="_blank">別タブで開く</a>
@@ -225,7 +232,7 @@
 
 ## モーダルの背景
 
-**概要**: モーダルの後ろの予定のカレンダーを覆い、操作できなくする。
+**概要**: モーダルの後ろの予定のカレンダーを暗くぼかして覆い、操作できなくする。押すとモーダルを閉じる。
 
 **値のソース**: 暗くぼかした背景。後ろには予定のカレンダーを、`/schedule` の画面として描いたまま残す。
 
@@ -233,7 +240,7 @@
 
 **表示条件**: 常に表示
 
-**カタログ**: [ScheduleFormModal の WithoutKindTab](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleformmodal--without-kind-tab)
+**カタログ**: [ScheduleEditModalContainer の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--visit)、[ScheduleEditModalContainer の Loading](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--loading)、[ScheduleEditModalContainer の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--failed)
 
 ### インタラクション
 
@@ -255,7 +262,7 @@
 
 **表示条件**: 常に表示
 
-**カタログ**: [ScheduleFormModal の WithoutKindTab](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleformmodal--without-kind-tab)
+**カタログ**: [ScheduleEditModalContainer の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--visit)、[ScheduleEditModalContainer の Loading](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--loading)、[ScheduleEditModalContainer の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--failed)
 
 ### インタラクション
 
@@ -274,7 +281,7 @@
 
 ## ダイアログの題
 
-**概要**: 画面が予定の編集であることを示す。
+**概要**: 何のモーダルかを示す。開いたとき、ここにフォーカスを移す。
 
 **値のソース**: 「予定の編集」
 
@@ -282,7 +289,7 @@
 
 **表示条件**: 常に表示
 
-**カタログ**: [ScheduleEditModalContainer の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--visit)
+**カタログ**: [ScheduleEditModalContainer の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--visit)、[ScheduleEditModalContainer の Loading](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--loading)、[ScheduleEditModalContainer の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--failed)
 
 ## 読み込み中の表示
 
@@ -323,7 +330,7 @@
 - 「訪問の種類」は、選んだ種類を「、」でつなぐ。何も選んでいなければ「通常」。
 - 「メモ」は、空なら「なし」。
 - 入力の誤りがある項目は、枠を赤く太くし、要約の下に誤りの文を出す。日付と時間の誤りは「訪問日時」か「予定日時」の 1 つの枠にまとめ、日付、開始時間、終了時間、提供時間の順で最初の 1 つの文を出す。
-- 日時とタイトルの入力では、右の入力の下にも同じ文を出す。利用者と担当者は、項目の一覧の枠と文だけで示す。
+- 日時とタイトルの入力では、右の入力の欄ごとに、その欄の誤りの文を欄の下に出す。利用者と担当者は、項目の一覧の枠と文だけで示す。
 - 誤りの文は次のとおり。
 
 | 項目 | 条件 | 文 |
@@ -335,14 +342,16 @@
 | 終了時間（通常） | 開始時間より後でない | 終了時間は開始時間より後にしてください |
 | 利用者（訪問） | 選んでいない | 利用者を選んでください |
 | 担当者、予定者 | 選んでいない | 担当者を選んでください |
-| 提供時間（訪問） | 数でない | 提供時間を入力してください |
+| 提供時間（訪問） | 数でないか、整数でない | 提供時間を入力してください |
 | 提供時間（訪問） | サービスコードの範囲の外 | {サービスコード} の提供時間は {下限} 分から {上限} 分です |
+
+- タイトルとメモの長さは、画面で確かめない。API の上限（タイトル 255 文字、メモ 2000 文字）を超えると、送信の失敗になる。
 
 **活性条件**: 常に活性
 
 **表示条件**: 3 つの取得が成功したとき。開いた直後は「訪問日時」か「予定日時」を選んだ状態にする
 
-**カタログ**: [ScheduleFormModal の WithoutKindTab](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleformmodal--without-kind-tab)
+**カタログ**: [ScheduleEditModalContainer の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--visit)
 
 ### インタラクション
 
@@ -360,7 +369,7 @@
 
 **表示条件**: 項目の一覧で「訪問日時」か「予定日時」を選んでいるとき
 
-**カタログ**: [ScheduleFormModal の WithoutKindTab](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleformmodal--without-kind-tab)
+**カタログ**: [ScheduleEditModalContainer の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--visit)
 
 ## 開始時間
 
@@ -372,7 +381,7 @@
 
 **表示条件**: 項目の一覧で「訪問日時」か「予定日時」を選んでいるとき
 
-**カタログ**: [ScheduleFormModal の WithoutKindTab](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleformmodal--without-kind-tab)
+**カタログ**: [ScheduleEditModalContainer の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--visit)
 
 ### インタラクション
 
@@ -390,7 +399,7 @@
 
 **表示条件**: 訪問の予定で、項目の一覧の「訪問日時」を選んでいるとき
 
-**カタログ**: [ScheduleFormModal の WithoutKindTab](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleformmodal--without-kind-tab)
+**カタログ**: [ScheduleEditModalContainer の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--visit)
 
 ### インタラクション
 
@@ -408,7 +417,7 @@
 
 **表示条件**: 項目の一覧で「訪問日時」か「予定日時」を選んでいるとき
 
-**カタログ**: [ScheduleFormModal の WithoutKindTab](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleformmodal--without-kind-tab)
+**カタログ**: [ScheduleEditModalContainer の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--visit)
 
 ## サービスコード
 
@@ -442,16 +451,19 @@
 
 ### インタラクション
 
-#### 1. 入力する
+#### 1. 語を入れる
 
-1. 名前に入力の語を含む利用者だけを、利用者の一覧に出す。API は呼ばない。
+1. 名前に語を含む利用者だけを、利用者の一覧に出す。語の前後の空白は無視する。語が空なら全てを出す。API は呼ばない。
 2. Escape キーを押すと、語を消す。
+3. 項目の一覧でほかの項目を選んでから戻ると、語は消えている。
 
 ## 利用者の一覧
 
 **概要**: 訪問先の利用者を 1 人選ぶ。
 
 **値のソース**: 「名前」の列と、利用者の名前ごとの行。初期値は予定の利用者。絞った結果が 0 件なら、表の下に「該当する名前がありません。」を出す。
+
+- 予定の利用者が利用者の一覧に無いときは、どの行も選ばれず、項目の一覧の要約は「未選択」になる。ただし値は残るので、検証には通り、その ID のまま送る。
 
 **活性条件**: 常に活性
 
@@ -479,16 +491,19 @@
 
 ### インタラクション
 
-#### 1. 入力する
+#### 1. 語を入れる
 
-1. 名前に入力の語を含む職員だけを、職員の一覧に出す。API は呼ばない。
+1. 名前に語を含む職員だけを、職員の一覧に出す。語の前後の空白は無視する。語が空なら全てを出す。API は呼ばない。
 2. Escape キーを押すと、語を消す。
+3. 項目の一覧でほかの項目を選んでから戻ると、語は消えている。
 
 ## 職員の一覧
 
 **概要**: 予定の担当者を 1 人選ぶ。
 
 **値のソース**: 「名前」の列と、職員の名前ごとの行。初期値は予定の職員。絞った結果が 0 件なら、表の下に「該当する名前がありません。」を出す。
+
+- 予定の職員が職員の一覧に無いときは、どの行も選ばれず、項目の一覧の要約は「未選択」になる。ただし値は残るので、検証には通り、その ID のまま送る。
 
 **活性条件**: 常に活性
 
@@ -604,15 +619,17 @@ PRD と実装の食い違い
 
 - PRD は、訪問の予定に同行者を持たせ、毎週と毎月の繰り返しの予定を作れるとしている。この画面は、予定の作成と同じく、同行者と繰り返しを編集できない。
 - サービスコードの表記と提供時間の範囲を、画面が定数で持つ。PRD と Design Doc は「訪看I２」のように全角の数字で書き、実装は半角の数字で書く。範囲を API のサービスコードの一覧から取るかが決まっていない。
+- PRD は、訪問の予定の職員を「主訪問者」、夜勤、緊急、入院を「訪問の区分」と呼ぶ。画面は「担当者」「訪問の種類」と出す。
 
 決まっていないこと
 
 - 予定の種類（通常と訪問）を編集で変えられるようにするか。今の画面は変えられない。予定を直す API は種類の変更を受ける。
 - 編集の権限の外の予定を URL で直接開いたときに、読み込みの時点で止めるか、保存の 403 で止めるか。権限による活性条件と表示条件は決まっていない。
-- 401、403、400 の応答を、取得の失敗と送信の失敗から分けて見せるか。400 の誤りを項目に結び付けるか。
+- 403 と 400 の応答を、取得の失敗と送信の失敗から分けて見せるか。400 の誤りを項目に結び付けるか。
 - 予定が無い（404）ときに、「予定が見つかりません。」に分けるか。予定の詳細は分けている。
 - 読み込み中に閉じるボタンを押しても閉じない。閉じられるようにするか。
 - 取得の失敗から閉じたときの戻り先を、予定の詳細とカレンダーのどちらにするか。今はカレンダーに戻る。
 - 繰り返しの予定の 1 回を直すときに、その回だけを直すか、繰り返しの全体を直すかを選ばせるか。
 - 保存に成功したときに、成功の文を出すか。
 - 職員と利用者の一覧に、編集の権限の外の人を出すか。
+- 予定の職員か利用者が一覧に無いときに、検証で止めるか。今は「未選択」と出したまま検証に通し、API が受け付けなければ送信の失敗になる。
