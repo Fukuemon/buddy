@@ -19,7 +19,8 @@ screens/_template/
 """
 # 画面仕様書に埋め込んだモックの iframe の高さを、中身に合わせる
 extra_javascript = ["javascripts/embed-mock.js"]
-extra_css = ["stylesheets/extra.css"]
+# サイトの色を画面と同じデザインシステムのトークンにする。tokens.css は scripts/build-mock-tokens.mjs の生成物
+extra_css = ["screens/_common/tokens.css", "stylesheets/extra.css"]
 nav = [
   { "トップ" = "index.md" },
   { "PRD" = "PRD.md" },
@@ -59,3 +60,7 @@ custom_fences = [
 permalink = true
 slugify.object = "pymdownx.slugs.slugify"
 slugify.kwds.case = "lower"
+
+# 画面仕様書の状態をタブで切り替える
+[project.markdown_extensions.pymdownx.tabbed]
+alternate_style = true

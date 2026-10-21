@@ -15,6 +15,7 @@ type ScheduleRepository struct{ conn }
 // NewScheduleRepository は ScheduleRepository を作る。
 func NewScheduleRepository(db *sql.DB) *ScheduleRepository { return &ScheduleRepository{conn{db}} }
 
+// GetType は、ID が id の予定の種類を返す。無いときは domain.ErrNotFound を返す。
 func (r *ScheduleRepository) GetType(ctx context.Context, id string) (schedule.Type, error) {
 	t, err := r.q(ctx).GetScheduleType(ctx, id)
 	if err != nil {
@@ -23,6 +24,7 @@ func (r *ScheduleRepository) GetType(ctx context.Context, id string) (schedule.T
 	return schedule.Type{ID: t.ID, Name: schedule.TypeName(t.Name)}, nil
 }
 
+// ListTypes は、すべての予定の種類を名前、ID の順に返す。
 func (r *ScheduleRepository) ListTypes(ctx context.Context) ([]schedule.Type, error) {
 	rows, err := r.q(ctx).ListScheduleTypes(ctx)
 	if err != nil {
@@ -35,6 +37,7 @@ func (r *ScheduleRepository) ListTypes(ctx context.Context) ([]schedule.Type, er
 	return out, nil
 }
 
+// Create は、予定を書く。参照先（事業所、職員、予定の種類、繰り返しの予定、訪問の情報）が無いか、値が列の制約に合わないときは domain.ErrInvalidInput のエラーを返す。
 func (r *ScheduleRepository) Create(ctx context.Context, s schedule.Schedule) error {
 	err := r.q(ctx).CreateSchedule(ctx, sqlcgen.CreateScheduleParams{
 		ID:                  s.ID,
@@ -53,11 +56,15 @@ func (r *ScheduleRepository) Create(ctx context.Context, s schedule.Schedule) er
 	return translate("create schedule", err)
 }
 
+// Lock は、トランザクションの終わりまで予定の行に排他のロックを取る。予定が無いときは domain.ErrNotFound を返す。
+// トランザクションの中で呼ぶ。
 func (r *ScheduleRepository) Lock(ctx context.Context, id string) error {
 	_, err := r.q(ctx).LockSchedule(ctx, id)
 	return translate("lock schedule", err)
 }
 
+// Update は、ID が s.ID の予定の枠を s の値で上書きする。事業所と RecurringScheduleID は変えない。予定が無くてもエラーにしない。
+// 参照先（職員、予定の種類、訪問の情報）が無いか、値が列の制約に合わないときは domain.ErrInvalidInput のエラーを返す。
 func (r *ScheduleRepository) Update(ctx context.Context, s schedule.Schedule) error {
 	err := r.q(ctx).UpdateSchedule(ctx, sqlcgen.UpdateScheduleParams{
 		ID:             s.ID,
@@ -74,6 +81,7 @@ func (r *ScheduleRepository) Update(ctx context.Context, s schedule.Schedule) er
 	return translate("update schedule", err)
 }
 
+// Get は、ID が id の予定を、種類と職員の名前、訪問の情報と区分、キャンセルを付けて返す。無いときは domain.ErrNotFound を返す。
 func (r *ScheduleRepository) Get(ctx context.Context, id string) (schedule.Detail, error) {
 	row, err := r.q(ctx).GetScheduleDetail(ctx, id)
 	if err != nil {
@@ -86,6 +94,8 @@ func (r *ScheduleRepository) Get(ctx context.Context, id string) (schedule.Detai
 	return out[0], nil
 }
 
+// ListByFacility は、事業所 facilityID の予定のうち、q の種類と日付の範囲（両端を含む）に合うものを q.Sort の順に返す。
+// 日付の順では、同じ日付を開始時刻、ID の順に並べる。ほかの順では、同じ値を ID の順に並べる。
 func (r *ScheduleRepository) ListByFacility(ctx context.Context, facilityID string, q schedule.ListQuery) ([]schedule.Detail, error) {
 	params := sqlcgen.ListScheduleDetailsByFacilityParams{
 		FacilityID: facilityID,
@@ -192,6 +202,7 @@ func (r *ScheduleRepository) CreateRecurring(ctx context.Context, rs schedule.Re
 	return translate("create recurring schedule", err)
 }
 
+// GetRecurring は、ID が id の繰り返しの予定を、種類と職員の名前、規則、除外する日付（日付の順）、訪問の情報と区分を付けて返す。無いときは domain.ErrNotFound を返す。
 func (r *ScheduleRepository) GetRecurring(ctx context.Context, id string) (schedule.RecurringDetail, error) {
 	row, err := r.q(ctx).GetRecurringScheduleDetail(ctx, id)
 	if err != nil {
@@ -204,6 +215,9 @@ func (r *ScheduleRepository) GetRecurring(ctx context.Context, id string) (sched
 	return out[0], nil
 }
 
+// ListRecurringByFacility は、事業所 facilityID の繰り返しの予定のうち q の種類に合うものを q.Sort の順に返す。
+// 日付の順では、同じ日付を開始時刻、ID の順に並べる。ほかの順では、同じ値を ID の順に並べる。
+// q の日付の範囲は使わない。
 func (r *ScheduleRepository) ListRecurringByFacility(ctx context.Context, facilityID string, q schedule.ListQuery) ([]schedule.RecurringDetail, error) {
 	params := sqlcgen.ListRecurringScheduleDetailsByFacilityParams{FacilityID: facilityID, Sort: q.Sort.Key()}
 	if q.TypeName != nil {
@@ -289,6 +303,8 @@ func (r *ScheduleRepository) recurringDetails(ctx context.Context, rows []sqlcge
 	return out, nil
 }
 
+// AddExclusion は、繰り返しの予定 recurringScheduleID から日付 d を除く。同じ日付をすでに除いているときは domain.ErrConflict を、
+// 繰り返しの予定が無いときは domain.ErrInvalidInput のエラーを返す。
 func (r *ScheduleRepository) AddExclusion(ctx context.Context, recurringScheduleID string, d civil.Date) error {
 	err := r.q(ctx).AddRecurringScheduleExclusion(ctx, sqlcgen.AddRecurringScheduleExclusionParams{
 		RecurringScheduleID: recurringScheduleID, Date: d.Time(),
@@ -296,6 +312,7 @@ func (r *ScheduleRepository) AddExclusion(ctx context.Context, recurringSchedule
 	return translate("add recurring schedule exclusion", err)
 }
 
+// CreateCancel は、予定のキャンセルを書く。キャンセル済みのときは domain.ErrConflict を、予定が無いときは domain.ErrInvalidInput のエラーを返す。
 func (r *ScheduleRepository) CreateCancel(ctx context.Context, c schedule.Cancel) error {
 	err := r.q(ctx).CreateScheduleCancel(ctx, sqlcgen.CreateScheduleCancelParams{
 		ID: c.ID, ScheduleID: c.ScheduleID, Reason: c.Reason,
