@@ -38,10 +38,12 @@ type Patient struct {
 }
 
 type Policy struct {
-	ID        string
-	Name      string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID          string
+	Name        string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	NeedsTarget bool
+	Code        string
 }
 
 type Position struct {
@@ -221,8 +223,10 @@ type UserPolicy struct {
 }
 
 type UserPolicyTarget struct {
+	ID           string
 	UserPolicyID string
-	TargetUserID string
+	TargetUserID sql.NullString
+	TargetTeamID sql.NullString
 }
 
 type VisitCategory struct {

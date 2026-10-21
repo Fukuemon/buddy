@@ -5,6 +5,9 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 -- name: AddUserPolicy :exec
 INSERT INTO user_policies (id, user_id, policy_id) VALUES (?, ?, ?);
 
+-- name: AddUserPolicyTarget :exec
+INSERT INTO user_policy_targets (id, user_policy_id, target_user_id, target_team_id) VALUES (?, ?, ?, ?);
+
 -- name: GetUser :one
 SELECT u.id, u.sub, u.username, u.email, u.phone_number, u.facility_id,
        u.department_id, d.name AS department_name,
@@ -42,18 +45,18 @@ ORDER BY
   u.id;
 
 -- name: ListUserPolicies :many
-SELECT up.id AS user_policy_id, up.user_id, p.id AS policy_id, p.name AS policy_name
+SELECT up.id AS user_policy_id, up.user_id, p.id AS policy_id, p.code AS policy_code, p.name AS policy_name
 FROM user_policies up
 JOIN policies p ON p.id = up.policy_id
 WHERE up.user_id IN (sqlc.slice('user_ids'))
 ORDER BY p.name, p.id;
 
 -- name: ListUserPolicyTargets :many
-SELECT upt.user_policy_id, upt.target_user_id
+SELECT upt.user_policy_id, upt.target_user_id, upt.target_team_id
 FROM user_policy_targets upt
 JOIN user_policies up ON up.id = upt.user_policy_id
 WHERE up.user_id = ?
-ORDER BY upt.target_user_id;
+ORDER BY upt.target_user_id, upt.target_team_id;
 
 -- name: GetUserIDBySub :one
 SELECT id FROM users WHERE sub = ?;

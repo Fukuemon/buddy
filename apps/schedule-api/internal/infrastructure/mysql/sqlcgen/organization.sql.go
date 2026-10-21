@@ -26,20 +26,6 @@ func (q *Queries) AddPositionPolicy(ctx context.Context, arg AddPositionPolicyPa
 	return err
 }
 
-const createPolicy = `-- name: CreatePolicy :exec
-INSERT INTO policies (id, name) VALUES (?, ?)
-`
-
-type CreatePolicyParams struct {
-	ID   string
-	Name string
-}
-
-func (q *Queries) CreatePolicy(ctx context.Context, arg CreatePolicyParams) error {
-	_, err := q.db.ExecContext(ctx, createPolicy, arg.ID, arg.Name)
-	return err
-}
-
 const createPosition = `-- name: CreatePosition :exec
 INSERT INTO positions (id, facility_id, name) VALUES (?, ?, ?)
 `
@@ -122,7 +108,7 @@ func (q *Queries) GetFacilityByOrgID(ctx context.Context, orgID sql.NullString) 
 }
 
 const getPolicy = `-- name: GetPolicy :one
-SELECT id, name, created_at, updated_at FROM policies WHERE id = ?
+SELECT id, name, created_at, updated_at, needs_target, code FROM policies WHERE id = ?
 `
 
 func (q *Queries) GetPolicy(ctx context.Context, id string) (Policy, error) {
@@ -133,6 +119,8 @@ func (q *Queries) GetPolicy(ctx context.Context, id string) (Policy, error) {
 		&i.Name,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.NeedsTarget,
+		&i.Code,
 	)
 	return i, err
 }
@@ -205,7 +193,7 @@ func (q *Queries) ListDepartmentsByFacility(ctx context.Context, facilityID stri
 }
 
 const listPolicies = `-- name: ListPolicies :many
-SELECT id, name, created_at, updated_at FROM policies ORDER BY name, id
+SELECT id, name, created_at, updated_at, needs_target, code FROM policies ORDER BY name, id
 `
 
 func (q *Queries) ListPolicies(ctx context.Context) ([]Policy, error) {
@@ -222,6 +210,8 @@ func (q *Queries) ListPolicies(ctx context.Context) ([]Policy, error) {
 			&i.Name,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.NeedsTarget,
+			&i.Code,
 		); err != nil {
 			return nil, err
 		}
@@ -237,7 +227,7 @@ func (q *Queries) ListPolicies(ctx context.Context) ([]Policy, error) {
 }
 
 const listPoliciesByIDs = `-- name: ListPoliciesByIDs :many
-SELECT id, name, created_at, updated_at FROM policies WHERE id IN (/*SLICE:ids*/?) ORDER BY name, id
+SELECT id, name, created_at, updated_at, needs_target, code FROM policies WHERE id IN (/*SLICE:ids*/?) ORDER BY name, id
 `
 
 func (q *Queries) ListPoliciesByIDs(ctx context.Context, ids []string) ([]Policy, error) {
@@ -264,6 +254,8 @@ func (q *Queries) ListPoliciesByIDs(ctx context.Context, ids []string) ([]Policy
 			&i.Name,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.NeedsTarget,
+			&i.Code,
 		); err != nil {
 			return nil, err
 		}
@@ -279,7 +271,7 @@ func (q *Queries) ListPoliciesByIDs(ctx context.Context, ids []string) ([]Policy
 }
 
 const listPoliciesByPositions = `-- name: ListPoliciesByPositions :many
-SELECT pp.position_id, p.id, p.name, p.created_at, p.updated_at
+SELECT pp.position_id, p.id, p.code, p.name, p.needs_target, p.created_at, p.updated_at
 FROM position_policies pp
 JOIN policies p ON p.id = pp.policy_id
 WHERE pp.position_id IN (/*SLICE:position_ids*/?)
@@ -287,11 +279,13 @@ ORDER BY p.name, p.id
 `
 
 type ListPoliciesByPositionsRow struct {
-	PositionID string
-	ID         string
-	Name       string
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	PositionID  string
+	ID          string
+	Code        string
+	Name        string
+	NeedsTarget bool
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 func (q *Queries) ListPoliciesByPositions(ctx context.Context, positionIds []string) ([]ListPoliciesByPositionsRow, error) {
@@ -316,7 +310,9 @@ func (q *Queries) ListPoliciesByPositions(ctx context.Context, positionIds []str
 		if err := rows.Scan(
 			&i.PositionID,
 			&i.ID,
+			&i.Code,
 			&i.Name,
+			&i.NeedsTarget,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

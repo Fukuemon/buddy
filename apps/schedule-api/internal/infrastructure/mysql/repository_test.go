@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"maps"
 	"slices"
 	"testing"
 	"time"
@@ -23,8 +24,13 @@ const (
 	seedDepartment    = "01M3TC5HZ8A18D2TP3PTKDXJMN"
 	seedTeam          = "01M3TC5KXRSEVXQZ2MTJK9FS45"
 	seedLeader        = "01M3TC5PVG7W2H1H20W0T1ZVEJ"
-	seedViewPolicy    = "01M3TC5RT0NESA2F5D3RWF1X0K"
-	seedEditPolicy    = "01M3TC5SS84XD3DCR2D63H1V24"
+	seedTeamB         = "01M3TC5MX04QJ19X6XR1ZCBZRJ"
+	seedViewPolicy    = "01M5E1S42TTS7QZK05YGS0GYRD"
+	seedEditPolicy    = "01M5E1S42TTS7QZK05YGS0GYRE"
+	seedSelfEdit      = "01M5E1S42TTS7QZK05YGS0GYR8"
+	seedTeamRead      = "01M5E1S42TTS7QZK05YGS0GYRB"
+	seedTeamEdit      = "01M5E1S42TTS7QZK05YGS0GYRC"
+	seedUserRead      = "01M5E1S42TTS7QZK05YGS0GYR9"
 	seedAoki          = "01M3TC5TRG5200KYWTZW6ER3WN"
 	seedMori          = "01M3TC5VQR3MKFF9AA4BVKF44Z"
 	seedHayashi       = "01M3TC5WQ08KWBZX85WAZ1C4N7"
@@ -114,9 +120,26 @@ func TestStaffGetWithPolicies(t *testing.T) {
 	if got.PositionName != "リーダー" || got.TeamName != "B" || got.Sub != nil {
 		t.Errorf("got %+v", got.Summary)
 	}
-	if len(got.Policies) != 1 || got.Policies[0].PolicyID != seedViewPolicy ||
-		!slices.Equal(got.Policies[0].TargetUserIDs, []string{seedHayashi}) {
+	byID := make(map[string]staff.PolicyGrant, len(got.Policies))
+	for _, p := range got.Policies {
+		byID[p.PolicyID] = p
+	}
+	if len(got.Policies) != 3 || byID[seedSelfEdit].PolicyCode != organization.ScheduleSelfEdit {
 		t.Errorf("Policies = %+v", got.Policies)
+	}
+	for _, id := range []string{seedTeamRead, seedTeamEdit} {
+		if p := byID[id]; !slices.Equal(p.TargetTeamIDs, []string{seedTeamB}) || len(p.TargetUserIDs) != 0 {
+			t.Errorf("チームの権限 %s = %+v, want チーム B", id, p)
+		}
+	}
+	hayashi, err := r.Get(ctx, seedHayashi)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range hayashi.Policies {
+		if p.PolicyID == seedUserRead && !slices.Equal(p.TargetUserIDs, []string{seedMori}) {
+			t.Errorf("職員の権限 = %+v, want 森", p)
+		}
 	}
 	if _, err := r.Get(ctx, unknownID); !errors.Is(err, domain.ErrNotFound) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
@@ -187,15 +210,34 @@ func TestStaffCreate(t *testing.T) {
 		PhoneNumber: ptr("+09000000000"), FacilityID: seedFacility,
 		DepartmentID: seedDepartment, TeamID: seedTeam, PositionID: seedLeader,
 	}
-	if err := r.Create(ctx, s, []staff.Grant{{ID: "01M3TD00000000000000000011", PolicyID: seedViewPolicy}}); err != nil {
+	grants := []staff.Grant{
+		{ID: "01M3TD00000000000000000011", PolicyID: seedViewPolicy},
+		{ID: "01M3TD00000000000000000013", PolicyID: seedTeamRead,
+			Targets: []staff.Target{{ID: "01M3TD00000000000000000014", TeamID: seedTeam}}},
+		{ID: "01M3TD00000000000000000015", PolicyID: seedUserRead,
+			Targets: []staff.Target{{ID: "01M3TD00000000000000000016", UserID: seedMori}}},
+	}
+	if err := r.Create(ctx, s, grants); err != nil {
 		t.Fatal(err)
 	}
 	got, err := r.Get(ctx, s.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.PhoneNumber == nil || *got.PhoneNumber != "+09000000000" || len(got.Policies) != 1 {
+	if got.PhoneNumber == nil || *got.PhoneNumber != "+09000000000" || len(got.Policies) != 3 {
 		t.Errorf("got %+v", got)
+	}
+	for _, p := range got.Policies {
+		switch p.PolicyID {
+		case seedTeamRead:
+			if !slices.Equal(p.TargetTeamIDs, []string{seedTeam}) {
+				t.Errorf("チームの対象 = %+v", p)
+			}
+		case seedUserRead:
+			if !slices.Equal(p.TargetUserIDs, []string{seedMori}) {
+				t.Errorf("職員の対象 = %+v", p)
+			}
+		}
 	}
 	dup := s
 	dup.ID = "01M3TD00000000000000000012"
@@ -649,5 +691,49 @@ func TestTransactorRollsBack(t *testing.T) {
 	}
 	if _, err := teams.Get(ctx, team.ID); !errors.Is(err, domain.ErrNotFound) {
 		t.Fatalf("ロールバックした行が残る: err = %v", err)
+	}
+}
+
+func TestPolicyList(t *testing.T) {
+	ctx := txContext(t)
+	got, err := NewPolicyRepository(testDB).List(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	needsTarget := map[organization.PolicyCode]bool{}
+	for _, p := range got {
+		needsTarget[p.Code] = p.NeedsTarget
+	}
+	want := map[organization.PolicyCode]bool{
+		organization.ScheduleSelfEdit: false,
+		organization.ScheduleUserRead: true,
+		organization.ScheduleUserEdit: true,
+		organization.ScheduleTeamRead: true,
+		organization.ScheduleTeamEdit: true,
+		organization.ScheduleAllRead:  false,
+		organization.ScheduleAllEdit:  false,
+	}
+	if len(got) != len(want) || !maps.Equal(needsTarget, want) {
+		t.Errorf("権限 = %+v", got)
+	}
+}
+
+// TestStaffCreateRejectsTarget は、対象の職員とチームの両方か、どちらも持たない対象を DB が拒むことを確かめる。
+func TestStaffCreateRejectsTarget(t *testing.T) {
+	for name, target := range map[string]staff.Target{
+		"両方":     {ID: "01M3TD00000000000000000021", UserID: seedMori, TeamID: seedTeam},
+		"どちらもない": {ID: "01M3TD00000000000000000021"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			ctx := txContext(t)
+			s := staff.Staff{
+				ID: "01M3TD00000000000000000020", Username: "新人 二葉", Email: "futaba@example.com",
+				FacilityID: seedFacility, DepartmentID: seedDepartment, TeamID: seedTeam, PositionID: seedLeader,
+			}
+			grants := []staff.Grant{{ID: "01M3TD00000000000000000022", PolicyID: seedUserRead, Targets: []staff.Target{target}}}
+			if err := NewStaffRepository(testDB).Create(ctx, s, grants); err == nil {
+				t.Fatal("err = nil, want 制約の違反")
+			}
+		})
 	}
 }

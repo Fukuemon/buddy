@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/staff"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/infrastructure/mysql/sqlcgen"
 )
@@ -35,6 +36,14 @@ func (r *StaffRepository) Create(ctx context.Context, s staff.Staff, grants []st
 		if err := q.AddUserPolicy(ctx, sqlcgen.AddUserPolicyParams{ID: g.ID, UserID: s.ID, PolicyID: g.PolicyID}); err != nil {
 			return translate("add user policy", err)
 		}
+		for _, t := range g.Targets {
+			err := q.AddUserPolicyTarget(ctx, sqlcgen.AddUserPolicyTargetParams{
+				ID: t.ID, UserPolicyID: g.ID, TargetUserID: optional(t.UserID), TargetTeamID: optional(t.TeamID),
+			})
+			if err != nil {
+				return translate("add user policy target", err)
+			}
+		}
 	}
 	return nil
 }
@@ -54,18 +63,25 @@ func (r *StaffRepository) Get(ctx context.Context, id string) (staff.Detail, err
 	if err != nil {
 		return staff.Detail{}, translate("list user policy targets", err)
 	}
-	targetsByPolicy := make(map[string][]string)
+	users := make(map[string][]string)
+	teams := make(map[string][]string)
 	for _, t := range targets {
-		targetsByPolicy[t.UserPolicyID] = append(targetsByPolicy[t.UserPolicyID], t.TargetUserID)
+		if t.TargetUserID.Valid {
+			users[t.UserPolicyID] = append(users[t.UserPolicyID], t.TargetUserID.String)
+		}
+		if t.TargetTeamID.Valid {
+			teams[t.UserPolicyID] = append(teams[t.UserPolicyID], t.TargetTeamID.String)
+		}
 	}
 	grants := make([]staff.PolicyGrant, len(policies))
 	for i, p := range policies {
-		ids := targetsByPolicy[p.UserPolicyID]
-		if ids == nil {
-			ids = []string{}
-		}
 		grants[i] = staff.PolicyGrant{
-			UserPolicyID: p.UserPolicyID, PolicyID: p.PolicyID, PolicyName: p.PolicyName, TargetUserIDs: ids,
+			UserPolicyID:  p.UserPolicyID,
+			PolicyID:      p.PolicyID,
+			PolicyCode:    organization.PolicyCode(p.PolicyCode),
+			PolicyName:    p.PolicyName,
+			TargetUserIDs: nonNil(users[p.UserPolicyID]),
+			TargetTeamIDs: nonNil(teams[p.UserPolicyID]),
 		}
 	}
 	return staff.Detail{Summary: staffSummary(sqlcgen.ListUsersByFacilityRow(u)), Policies: grants}, nil

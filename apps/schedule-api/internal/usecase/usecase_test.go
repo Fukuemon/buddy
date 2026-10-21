@@ -355,7 +355,10 @@ func TestStaffCreate(t *testing.T) {
 		s.departments[otherDepID] = organization.Department{ID: otherDepID, FacilityID: otherFacilityID}
 		s.teams[teamID] = organization.Team{ID: teamID, FacilityID: facilityID}
 		s.positions[posID] = organization.Position{ID: posID, FacilityID: facilityID,
-			Policies: []organization.Policy{{ID: "P1"}, {ID: "P2"}}}
+			Policies: []organization.Policy{
+				{ID: "P1", Code: organization.ScheduleSelfEdit},
+				{ID: "P2", Code: organization.ScheduleTeamRead, NeedsTarget: true},
+			}}
 		return s
 	}
 	newUC := func(s *store) *usecase.Staff {
@@ -374,8 +377,15 @@ func TestStaffCreate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if g := s.grants[got.ID]; len(g) != 2 || g[0].PolicyID != "P1" || g[1].PolicyID != "P2" {
-		t.Errorf("grants = %+v", g)
+	g := s.grants[got.ID]
+	if len(g) != 2 || g[0].PolicyID != "P1" || g[1].PolicyID != "P2" {
+		t.Fatalf("grants = %+v", g)
+	}
+	if len(g[0].Targets) != 0 {
+		t.Errorf("自分の予定の編集の対象 = %+v, want なし", g[0].Targets)
+	}
+	if ts := g[1].Targets; len(ts) != 1 || ts[0].TeamID != teamID || ts[0].UserID != "" || ts[0].ID == "" {
+		t.Errorf("チームの閲覧の対象 = %+v, want 所属のチーム %s", ts, teamID)
 	}
 
 	other := in

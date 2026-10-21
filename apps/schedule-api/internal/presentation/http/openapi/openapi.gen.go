@@ -337,14 +337,21 @@ type Patient struct {
 	UpdatedAt     time.Time `json:"updated_at"`
 }
 
-// Policy defines model for Policy.
+// Policy 職員に与える権限。7 つの行をマイグレーションが入れ、API では作らない
 type Policy struct {
+	// Code 認可が読む権限の識別子
+	//
+	// Example: schedule.team.read
+	Code      string    `json:"code"`
 	CreatedAt time.Time `json:"created_at"`
 
 	// Id Example: 01M3TC5H00QV17BC0J9V3393ZP
-	Id        ID        `json:"id"`
-	Name      string    `json:"name"`
-	UpdatedAt time.Time `json:"updated_at"`
+	Id   ID     `json:"id"`
+	Name string `json:"name"`
+
+	// NeedsTarget true なら、対象の職員かチームを指定して与える
+	NeedsTarget bool      `json:"needs_target"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 // Position defines model for Position.
@@ -564,12 +571,17 @@ type StaffDetail struct {
 
 // StaffDetail_Policies defines model for StaffDetail.Policies.
 type StaffDetail_Policies struct {
+	// Code 権限の code
+	Code string `json:"code"`
 	Name string `json:"name"`
 
 	// PolicyId Example: 01M3TC5H00QV17BC0J9V3393ZP
 	PolicyId ID `json:"policy_id"`
 
-	// TargetUserIds 権限が及ぶ職員。空なら対象を限らない
+	// TargetTeamIds 権限が及ぶチーム。needs_target が false の権限では空
+	TargetTeamIds []ID `json:"target_team_ids"`
+
+	// TargetUserIds 権限が及ぶ職員。needs_target が false の権限では空
 	TargetUserIds []ID `json:"target_user_ids"`
 
 	// UserPolicyId Example: 01M3TC5H00QV17BC0J9V3393ZP
@@ -702,7 +714,7 @@ type CreatePatientJSONBody struct {
 type CreatePositionJSONBody struct {
 	Name string `json:"name"`
 
-	// PolicyIds 役職の職員に既定で与える権限
+	// PolicyIds 役職の職員に既定で与える権限。対象の職員を指定する権限（schedule.user.*）は既定にできない
 	PolicyIds *[]ID `json:"policy_ids,omitempty"`
 }
 
@@ -850,9 +862,6 @@ type CreateTeamJSONRequestBody = CreateNameRequest
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
 type CreateUserJSONRequestBody CreateUserJSONBody
 
-// CreatePolicyJSONRequestBody defines body for CreatePolicy for application/json ContentType.
-type CreatePolicyJSONRequestBody = CreateNameRequest
-
 // ChangeOccurrenceJSONRequestBody defines body for ChangeOccurrence for application/json ContentType.
 type ChangeOccurrenceJSONRequestBody ChangeOccurrenceJSONBody
 
@@ -918,9 +927,6 @@ type ServerInterface interface {
 	// ListPolicies 権限を一覧する
 	// (GET /v1/policies)
 	ListPolicies(c *gin.Context)
-	// CreatePolicy 権限を作る
-	// (POST /v1/policies)
-	CreatePolicy(c *gin.Context)
 	// GetPolicy 権限を取得する
 	// (GET /v1/policies/{policy_id})
 	GetPolicy(c *gin.Context, policyId ID)
@@ -1515,19 +1521,6 @@ func (siw *ServerInterfaceWrapper) ListPolicies(c *gin.Context) {
 	siw.Handler.ListPolicies(c)
 }
 
-// CreatePolicy operation middleware
-func (siw *ServerInterfaceWrapper) CreatePolicy(c *gin.Context) {
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.CreatePolicy(c)
-}
-
 // GetPolicy operation middleware
 func (siw *ServerInterfaceWrapper) GetPolicy(c *gin.Context) {
 
@@ -1831,7 +1824,6 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/v1/facilities/:facility_id/positions", wrapper.CreatePosition)
 	router.GET(options.BaseURL+"/v1/positions/:position_id", wrapper.GetPosition)
 	router.GET(options.BaseURL+"/v1/policies", wrapper.ListPolicies)
-	router.POST(options.BaseURL+"/v1/policies", wrapper.CreatePolicy)
 	router.GET(options.BaseURL+"/v1/policies/:policy_id", wrapper.GetPolicy)
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id/users", wrapper.ListUsers)
 	router.POST(options.BaseURL+"/v1/facilities/:facility_id/users", wrapper.CreateUser)
@@ -3440,101 +3432,6 @@ func (response ListPolicies500JSONResponse) VisitListPoliciesResponse(w http.Res
 	return err
 }
 
-type CreatePolicyRequestObject struct {
-	Body *CreatePolicyJSONRequestBody
-}
-
-type CreatePolicyResponseObject interface {
-	VisitCreatePolicyResponse(w http.ResponseWriter) error
-}
-
-type CreatePolicy201JSONResponse Policy
-
-func (response CreatePolicy201JSONResponse) VisitCreatePolicyResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(201)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type CreatePolicy400JSONResponse struct{ BadRequestJSONResponse }
-
-func (response CreatePolicy400JSONResponse) VisitCreatePolicyResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type CreatePolicy401JSONResponse struct{ UnauthorizedJSONResponse }
-
-func (response CreatePolicy401JSONResponse) VisitCreatePolicyResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	if response.Headers.WWWAuthenticate != nil {
-		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
-	}
-	w.WriteHeader(401)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type CreatePolicy403JSONResponse struct{ ForbiddenJSONResponse }
-
-func (response CreatePolicy403JSONResponse) VisitCreatePolicyResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(403)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type CreatePolicy409JSONResponse struct{ ConflictJSONResponse }
-
-func (response CreatePolicy409JSONResponse) VisitCreatePolicyResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(409)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type CreatePolicy500JSONResponse struct{ InternalErrorJSONResponse }
-
-func (response CreatePolicy500JSONResponse) VisitCreatePolicyResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
 type GetPolicyRequestObject struct {
 	PolicyId ID `json:"policy_id"`
 }
@@ -4689,9 +4586,6 @@ type StrictServerInterface interface {
 	// ListPolicies 権限を一覧する
 	// (GET /v1/policies)
 	ListPolicies(ctx context.Context, request ListPoliciesRequestObject) (ListPoliciesResponseObject, error)
-	// CreatePolicy 権限を作る
-	// (POST /v1/policies)
-	CreatePolicy(ctx context.Context, request CreatePolicyRequestObject) (CreatePolicyResponseObject, error)
 	// GetPolicy 権限を取得する
 	// (GET /v1/policies/{policy_id})
 	GetPolicy(ctx context.Context, request GetPolicyRequestObject) (GetPolicyResponseObject, error)
@@ -5285,37 +5179,6 @@ func (sh *strictHandler) ListPolicies(ctx *gin.Context) {
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(ListPoliciesResponseObject); ok {
 		if err := validResponse.VisitListPoliciesResponse(ctx.Writer); err != nil {
-			sh.options.ResponseErrorHandlerFunc(ctx, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// CreatePolicy operation middleware
-func (sh *strictHandler) CreatePolicy(ctx *gin.Context) {
-	var request CreatePolicyRequestObject
-
-	var body CreatePolicyJSONRequestBody
-	if err := ctx.ShouldBindJSON(&body); err != nil {
-		sh.options.RequestErrorHandlerFunc(ctx, err)
-		return
-	}
-	request.Body = &body
-
-	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.CreatePolicy(ctx, request.(CreatePolicyRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "CreatePolicy")
-	}
-
-	response, err := handler(ctx, request)
-
-	if err != nil {
-		sh.options.HandlerErrorFunc(ctx, err)
-	} else if validResponse, ok := response.(CreatePolicyResponseObject); ok {
-		if err := validResponse.VisitCreatePolicyResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {

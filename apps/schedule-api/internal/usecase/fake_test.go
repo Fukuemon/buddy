@@ -149,11 +149,6 @@ func (s policies) ListByIDs(_ context.Context, ids []string) ([]organization.Pol
 	return out, nil
 }
 
-func (s policies) Create(_ context.Context, p organization.Policy) error {
-	s.policies[p.ID] = p
-	return nil
-}
-
 type staffRepo struct{ *store }
 
 func (s staffRepo) Create(_ context.Context, st staff.Staff, grants []staff.Grant) error {

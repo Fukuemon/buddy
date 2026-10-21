@@ -44,20 +44,33 @@ func NewTeam(id, facilityID, name string) (Team, error) {
 	return Team{ID: id, FacilityID: facilityID, Name: name}, nil
 }
 
-// Policy は、職員に与える権限である。
-type Policy struct {
-	ID        string
-	Name      string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+// PolicyCode は、認可が読む権限の識別子である。権限の行はマイグレーションが入れ、全ての環境で同じである。
+type PolicyCode string
+
+// 予定の権限である。編集の権限は、同じ範囲の閲覧を含む。
+const (
+	ScheduleSelfEdit PolicyCode = "schedule.self.edit"
+	ScheduleUserRead PolicyCode = "schedule.user.read"
+	ScheduleUserEdit PolicyCode = "schedule.user.edit"
+	ScheduleTeamRead PolicyCode = "schedule.team.read"
+	ScheduleTeamEdit PolicyCode = "schedule.team.edit"
+	ScheduleAllRead  PolicyCode = "schedule.all.read"
+	ScheduleAllEdit  PolicyCode = "schedule.all.edit"
+)
+
+// TargetsTeam は、権限の対象がチームであるかを返す。
+func (c PolicyCode) TargetsTeam() bool {
+	return c == ScheduleTeamRead || c == ScheduleTeamEdit
 }
 
-// NewPolicy は、名前を検証して Policy を作る。
-func NewPolicy(id, name string) (Policy, error) {
-	if err := domain.RequireText("権限の名前", name, maxNameLen); err != nil {
-		return Policy{}, err
-	}
-	return Policy{ID: id, Name: name}, nil
+// Policy は、職員に与える権限である。NeedsTarget が true の権限は、対象の職員かチームを指定して与える。
+type Policy struct {
+	ID          string
+	Code        PolicyCode
+	Name        string
+	NeedsTarget bool
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 // Position は、事業所の役職である。Policies は、その役職の職員に既定で与える権限である。
@@ -71,6 +84,7 @@ type Position struct {
 }
 
 // NewPosition は、名前と権限の重なりを検証して Position を作る。
+// 対象の職員を指定する権限は、職員に写すときに対象を決められないので、既定にできない。
 func NewPosition(id, facilityID, name string, policies []Policy) (Position, error) {
 	if err := domain.RequireText("役職の名前", name, maxNameLen); err != nil {
 		return Position{}, err
@@ -79,6 +93,9 @@ func NewPosition(id, facilityID, name string, policies []Policy) (Position, erro
 	for _, p := range policies {
 		if seen[p.ID] {
 			return Position{}, domain.Invalid("権限 %s が重なっています", p.ID)
+		}
+		if p.NeedsTarget && !p.Code.TargetsTeam() {
+			return Position{}, domain.Invalid("権限 %s は対象の職員を指定するので、役職の既定にできません", p.ID)
 		}
 		seen[p.ID] = true
 	}
@@ -114,11 +131,9 @@ type PositionRepository interface {
 	Create(ctx context.Context, p Position) error
 }
 
-// PolicyRepository は、権限を読み書きする。見つからないときは domain.ErrNotFound を、
-// 同じ名前があるときは domain.ErrConflict を返す。ListByIDs は、見つかったものだけを返す。
+// PolicyRepository は、権限を読む。見つからないときは domain.ErrNotFound を返す。ListByIDs は、見つかったものだけを返す。
 type PolicyRepository interface {
 	Get(ctx context.Context, id string) (Policy, error)
 	List(ctx context.Context) ([]Policy, error)
 	ListByIDs(ctx context.Context, ids []string) ([]Policy, error)
-	Create(ctx context.Context, p Policy) error
 }

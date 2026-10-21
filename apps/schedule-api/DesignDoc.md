@@ -68,6 +68,7 @@ erDiagram
   users ||--o{ user_policies : "持つ"
   user_policies ||--o{ user_policy_targets : "対象を持つ"
   users ||--o{ user_policy_targets : "対象になる"
+  teams ||--o{ user_policy_targets : "対象になる"
   users ||--o{ schedules : "持つ"
   users ||--o{ recurring_schedules : "持つ"
   schedule_types ||--o{ schedules : "分類する"
@@ -109,7 +110,9 @@ erDiagram
   }
   policies {
     char id PK
+    string code UK "認可が読む識別子"
     string name UK "権限の名前"
+    bool needs_target "対象を指定するか"
   }
   position_policies {
     char position_id PK, FK
@@ -121,8 +124,10 @@ erDiagram
     char policy_id FK "職員と権限の組で一意"
   }
   user_policy_targets {
-    char user_policy_id PK, FK
-    char target_user_id PK, FK "対象の職員"
+    char id PK
+    char user_policy_id FK
+    char target_user_id FK "対象の職員。チームと排他"
+    char target_team_id FK "対象のチーム。職員と排他"
   }
   users {
     char id PK
@@ -221,7 +226,26 @@ erDiagram
 - 訪問の区分は、`visit_info_visit_categories` で 1 件の訪問に複数を付けられる。
 - 一覧の読み出しには、予定と訪問の情報と名前を結合したビュー（`schedule_details`、`recurring_schedule_details`、`visit_info_details`）を使う。
 - `schedule_types`、`service_codes`、`visit_categories` の行は、マイグレーションで入れる。事業所ごとには持たない。サービスコードの提供時間の範囲は、照合の許容範囲と同じ値にする。
-- `policies` の行は、API（`createPolicy`）で作る。
+- `policies` の 7 行は、マイグレーションで入れる。事業所ごとには持たず、API では作らない。認可は `code` で権限を読むので、行が環境ごとに違うと判定がずれるためである。
+- `user_policy_targets` は、`target_user_id` と `target_team_id` のどちらか 1 つだけを持つ。DB の CHECK 制約で確かめる。
+
+### 権限の行
+
+`policies` は、PRD の 7 つの権限を次の `code` で持つ。`needs_target` が true の権限は、対象の職員かチームを `user_policy_targets` に持つ。
+
+| `code` | 権限 | `needs_target` |
+| --- | --- | --- |
+| `schedule.self.edit` | 自分の予定の編集 | false |
+| `schedule.user.read` | 指定した職員の予定の閲覧 | true |
+| `schedule.user.edit` | 指定した職員の予定の編集 | true |
+| `schedule.team.read` | 指定したチームの職員の予定の閲覧 | true |
+| `schedule.team.edit` | 指定したチームの職員の予定の編集 | true |
+| `schedule.all.read` | 事業所の全ての予定の閲覧 | false |
+| `schedule.all.edit` | 事業所の全ての予定の編集 | false |
+
+職員を登録すると、役職の既定の権限を職員に写す。チームの権限（`schedule.team.*`）は、職員の所属のチームを対象にして写す。職員の権限（`schedule.user.*`）は、写すときに対象を決められないので、役職の既定にできない。規則は ADR-0002 にある。
+
+- ADR-0002: [権限を役職の既定と職員ごとの上書きで持つ（PBAC）](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0002-pbac.md)
 
 ### 認証から事業所の確認までの流れ
 

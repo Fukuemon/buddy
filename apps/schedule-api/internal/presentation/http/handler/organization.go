@@ -21,7 +21,6 @@ type OrganizationUsecase interface {
 	CreatePosition(ctx context.Context, facilityID, name string, policyIDs []string) (organization.Position, error)
 	GetPolicy(ctx context.Context, id string) (organization.Policy, error)
 	ListPolicies(ctx context.Context) ([]organization.Policy, error)
-	CreatePolicy(ctx context.Context, name string) (organization.Policy, error)
 }
 
 func toDepartment(d organization.Department) openapi.Unit {
@@ -33,7 +32,9 @@ func toTeam(t organization.Team) openapi.Unit {
 }
 
 func toPolicy(p organization.Policy) openapi.Policy {
-	return openapi.Policy{Id: p.ID, Name: p.Name, CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt}
+	return openapi.Policy{
+		Id: p.ID, Code: string(p.Code), Name: p.Name, NeedsTarget: p.NeedsTarget, CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt,
+	}
 }
 
 func toPosition(p organization.Position) openapi.Position {
@@ -149,12 +150,4 @@ func (s server) ListPolicies(ctx context.Context, _ openapi.ListPoliciesRequestO
 		return nil, err
 	}
 	return openapi.ListPolicies200JSONResponse(mapSlice(ps, toPolicy)), nil
-}
-
-func (s server) CreatePolicy(ctx context.Context, req openapi.CreatePolicyRequestObject) (openapi.CreatePolicyResponseObject, error) {
-	p, err := s.u.Organization.CreatePolicy(ctx, req.Body.Name)
-	if err != nil {
-		return nil, err
-	}
-	return openapi.CreatePolicy201JSONResponse(toPolicy(p)), nil
 }

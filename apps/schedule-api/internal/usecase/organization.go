@@ -130,15 +130,3 @@ func (o *Organization) GetPolicy(ctx context.Context, id string) (organization.P
 func (o *Organization) ListPolicies(ctx context.Context) ([]organization.Policy, error) {
 	return o.repos.Policies.List(ctx)
 }
-
-// CreatePolicy は、権限を作り、保存した権限を返す。
-func (o *Organization) CreatePolicy(ctx context.Context, name string) (organization.Policy, error) {
-	p, err := organization.NewPolicy(o.ids.NewID(), name)
-	if err != nil {
-		return organization.Policy{}, err
-	}
-	if err := o.repos.Policies.Create(ctx, p); err != nil {
-		return organization.Policy{}, err
-	}
-	return o.repos.Policies.Get(ctx, p.ID)
-}

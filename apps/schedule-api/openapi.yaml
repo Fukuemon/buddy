@@ -216,7 +216,7 @@ paths:
                 name: { type: string, maxLength: 255 }
                 policy_ids:
                   type: array
-                  description: 役職の職員に既定で与える権限
+                  description: 役職の職員に既定で与える権限。対象の職員を指定する権限（schedule.user.*）は既定にできない
                   items: { $ref: "#/components/schemas/ID" }
       responses:
         "201":
@@ -265,26 +265,6 @@ paths:
                 items: { $ref: "#/components/schemas/Policy" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
-        "500": { $ref: "#/components/responses/InternalError" }
-    post:
-      tags: [organization]
-      operationId: createPolicy
-      summary: 権限を作る
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/CreateNameRequest" }
-      responses:
-        "201":
-          description: 作った権限
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/Policy" }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
-        "409": { $ref: "#/components/responses/Conflict" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/policies/{policy_id}:
@@ -863,10 +843,18 @@ components:
         updated_at: { type: string, format: date-time }
     Policy:
       type: object
-      required: [id, name, created_at, updated_at]
+      description: 職員に与える権限。7 つの行をマイグレーションが入れ、API では作らない
+      required: [id, code, name, needs_target, created_at, updated_at]
       properties:
         id: { $ref: "#/components/schemas/ID" }
+        code:
+          type: string
+          description: 認可が読む権限の識別子
+          example: schedule.team.read
         name: { type: string }
+        needs_target:
+          type: boolean
+          description: true なら、対象の職員かチームを指定して与える
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
     Position:
@@ -915,14 +903,19 @@ components:
               type: array
               items:
                 type: object
-                required: [user_policy_id, policy_id, name, target_user_ids]
+                required: [user_policy_id, policy_id, code, name, target_user_ids, target_team_ids]
                 properties:
                   user_policy_id: { $ref: "#/components/schemas/ID" }
                   policy_id: { $ref: "#/components/schemas/ID" }
+                  code: { type: string, description: 権限の code }
                   name: { type: string }
                   target_user_ids:
                     type: array
-                    description: 権限が及ぶ職員。空なら対象を限らない
+                    description: 権限が及ぶ職員。needs_target が false の権限では空
+                    items: { $ref: "#/components/schemas/ID" }
+                  target_team_ids:
+                    type: array
+                    description: 権限が及ぶチーム。needs_target が false の権限では空
                     items: { $ref: "#/components/schemas/ID" }
     PreferredTime:
       type: string

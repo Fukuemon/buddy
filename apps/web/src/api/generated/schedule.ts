@@ -175,8 +175,7 @@ export interface paths {
         /** 権限を一覧する */
         get: operations["listPolicies"];
         put?: never;
-        /** 権限を作る */
-        post: operations["createPolicy"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -483,9 +482,17 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
+        /** @description 職員に与える権限。7 つの行をマイグレーションが入れ、API では作らない */
         Policy: {
             id: components["schemas"]["ID"];
+            /**
+             * @description 認可が読む権限の識別子
+             * @example schedule.team.read
+             */
+            code: string;
             name: string;
+            /** @description true なら、対象の職員かチームを指定して与える */
+            needs_target: boolean;
             /** Format: date-time */
             created_at: string;
             /** Format: date-time */
@@ -527,9 +534,13 @@ export interface components {
             policies: {
                 user_policy_id: components["schemas"]["ID"];
                 policy_id: components["schemas"]["ID"];
+                /** @description 権限の code */
+                code: string;
                 name: string;
-                /** @description 権限が及ぶ職員。空なら対象を限らない */
+                /** @description 権限が及ぶ職員。needs_target が false の権限では空 */
                 target_user_ids: components["schemas"]["ID"][];
+                /** @description 権限が及ぶチーム。needs_target が false の権限では空 */
+                target_team_ids: components["schemas"]["ID"][];
             }[];
         };
         /** @enum {string} */
@@ -996,7 +1007,7 @@ export interface operations {
             content: {
                 "application/json": {
                     name: string;
-                    /** @description 役職の職員に既定で与える権限 */
+                    /** @description 役職の職員に既定で与える権限。対象の職員を指定する権限（schedule.user.*）は既定にできない */
                     policy_ids?: components["schemas"]["ID"][];
                 };
             };
@@ -1066,35 +1077,6 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
-            500: components["responses"]["InternalError"];
-        };
-    };
-    createPolicy: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateNameRequest"];
-            };
-        };
-        responses: {
-            /** @description 作った権限 */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Policy"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            409: components["responses"]["Conflict"];
             500: components["responses"]["InternalError"];
         };
     };
