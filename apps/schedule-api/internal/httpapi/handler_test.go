@@ -468,3 +468,22 @@ func TestUsecaseReceivesRequestCancellation(t *testing.T) {
 		t.Fatalf("usecase の context が要求の取り消しを受けない: %v", s.lastCtx.Err())
 	}
 }
+
+// TestCORSPreflight は、許した origin からの事前の要求に、API が使う全てのメソッドを許すことを確かめる。
+func TestCORSPreflight(t *testing.T) {
+	const origin = "http://localhost:3000"
+	h := httpapi.NewRouter(httpapi.Usecases{Auth: fakeAuth{}}, httpapi.RouterConfig{
+		Logger:       slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Verifier:     testVerifier,
+		AllowOrigins: []string{origin},
+	})
+	for _, method := range []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete} {
+		req := httptest.NewRequest(http.MethodOptions, "/v1/users/"+staffID+"/policies/"+scheduleID, nil)
+		req.Header.Set("Origin", origin)
+		req.Header.Set("Access-Control-Request-Method", method)
+		rec := serve(h, req)
+		if rec.Code >= 300 || !strings.Contains(rec.Header().Get("Access-Control-Allow-Methods"), method) {
+			t.Errorf("%s: status = %d, Allow-Methods = %q", method, rec.Code, rec.Header().Get("Access-Control-Allow-Methods"))
+		}
+	}
+}
