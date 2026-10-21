@@ -63,7 +63,11 @@ status: stable
 | 画面の流れ、testid | その画面の E2E を流す |
 | `openapi.yaml`、SQL | `pnpm check:generated` |
 
-取り込む前に、変えたアプリの `test` と `check`（Go は `go test ./...`、`go vet ./...`、`golangci-lint run`）を流す。`packages/go` を変えたときは、2 つの API でも流す。CI は無く、リリースの前に通すテストの一覧は、検証環境ができてから決める（[証跡](testing/evidence.md) と同じ時期）。
+取り込む前に、変えたアプリの `test` と `check`（Go は `go test ./...`、`go vet ./...`、`golangci-lint run`）を流す。`packages/go` を変えたときは、2 つの API でも流す。
+
+pull request と develop への push では、CI（[ci.yml](../.github/workflows/ci.yml)）が、変えた場所によらず全ての仕事を流す。1 つでも失敗した pull request は取り込まない。
+
+リリースの前に通すテストの一覧は、検証環境ができてから決める（[証跡](testing/evidence.md) と同じ時期）。
 
 ## E2E
 
