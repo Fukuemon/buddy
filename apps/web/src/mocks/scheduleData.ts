@@ -1,4 +1,5 @@
 import type { components } from '#/api/generated/schedule'
+import type { ServiceCode } from '#/api/types'
 
 type Schemas = components['schemas']
 
@@ -133,10 +134,11 @@ export const createMockSchedules = (base: Date): Schemas['Schedule'][] => {
   const visit = (
     patientIndex: number,
     staffIndex: number,
-    code: string,
+    code: ServiceCode,
     categoryIds: string[] = [],
   ): Partial<Schemas['Schedule']> => {
-    const serviceCode = mockServiceCodes.find((c) => c.code === code) ?? mockServiceCodes[0]
+    const serviceCode = mockServiceCodes.find((c) => c.code === code)
+    if (serviceCode === undefined) throw new Error(`架空のサービスコードに ${code} がない`)
     return {
       schedule_type_id: 'type-visit',
       schedule_type: '訪問',
