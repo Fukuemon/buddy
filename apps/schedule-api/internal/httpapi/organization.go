@@ -1,11 +1,11 @@
-package handler
+package httpapi
 
 import (
 	"context"
 	"log/slog"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/organization"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/presentation/http/openapi"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi/openapi"
 )
 
 // OrganizationUsecase は、事業所、部署、チーム、役職、権限のハンドラが使う操作である。

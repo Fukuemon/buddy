@@ -10,8 +10,8 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/infrastructure/oidc"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/infrastructure/oidc/oidctest"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/oidc"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/oidc/oidctest"
 )
 
 const audience = "schedule-api"

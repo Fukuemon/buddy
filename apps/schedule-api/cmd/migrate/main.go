@@ -19,7 +19,7 @@ import (
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/db"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/config"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/infrastructure/mysql"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql"
 )
 
 func main() {

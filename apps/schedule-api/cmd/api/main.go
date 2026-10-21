@@ -15,10 +15,10 @@ import (
 	"time"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/config"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/infrastructure/mysql"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/infrastructure/oidc"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/infrastructure/ulid"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/presentation/http/handler"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/oidc"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/ulid"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/usecase"
 )
 
@@ -74,7 +74,7 @@ func run() error {
 	visits := mysql.NewVisitRepository(db)
 	schedules := mysql.NewScheduleRepository(db)
 
-	router := handler.NewRouter(handler.Usecases{
+	router := httpapi.NewRouter(httpapi.Usecases{
 		Organization: usecase.NewOrganization(usecase.OrganizationRepositories{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions, Policies: policies,
 		}, tx, ids),
@@ -92,7 +92,7 @@ func run() error {
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions,
 			Staff: staff, Schedules: schedules,
 		}),
-	}, handler.RouterConfig{Logger: log, AllowOrigins: cfg.AllowOrigins, Verifier: verifier, Ready: func(ctx context.Context) error {
+	}, httpapi.RouterConfig{Logger: log, AllowOrigins: cfg.AllowOrigins, Verifier: verifier, Ready: func(ctx context.Context) error {
 		ctx, cancel := context.WithTimeout(ctx, readyTimeout)
 		defer cancel()
 		return db.PingContext(ctx)

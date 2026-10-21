@@ -5,7 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/patient"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/infrastructure/mysql/sqlcgen"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql/sqlcgen"
 )
 
 // PatientRepository は、patient.Repository を実装する。

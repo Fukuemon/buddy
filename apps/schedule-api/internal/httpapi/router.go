@@ -1,4 +1,4 @@
-package handler
+package httpapi
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/presentation/http/openapi"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi/openapi"
 )
 
 // Usecases は、ルーターがハンドラに渡す操作である。

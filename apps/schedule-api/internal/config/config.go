@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/infrastructure/mysql"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/infrastructure/oidc"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/oidc"
 )
 
 // Config は、API とマイグレーションの設定である。

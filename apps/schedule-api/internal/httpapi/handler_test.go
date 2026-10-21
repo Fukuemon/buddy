@@ -1,4 +1,4 @@
-package handler_test
+package httpapi_test
 
 import (
 	"context"
@@ -17,7 +17,7 @@ import (
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/patient"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/schedule"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain/staff"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/presentation/http/handler"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/usecase"
 )
 
@@ -115,7 +115,7 @@ func (f *fakePatients) List(context.Context, string, patient.ListQuery) ([]patie
 }
 
 func newRouter(s *fakeSchedules, st *fakeStaff, p *fakePatients) http.Handler {
-	return handler.NewRouter(handler.Usecases{Schedules: s, Staff: st, Patients: p, Auth: fakeAuth{}}, handler.RouterConfig{
+	return httpapi.NewRouter(httpapi.Usecases{Schedules: s, Staff: st, Patients: p, Auth: fakeAuth{}}, httpapi.RouterConfig{
 		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
 		Verifier: testVerifier,
 	})
@@ -345,7 +345,7 @@ func TestCreateSchedule(t *testing.T) {
 
 func TestHealth(t *testing.T) {
 	routerWithReady := func(err error) http.Handler {
-		return handler.NewRouter(handler.Usecases{Auth: fakeAuth{}}, handler.RouterConfig{
+		return httpapi.NewRouter(httpapi.Usecases{Auth: fakeAuth{}}, httpapi.RouterConfig{
 			Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
 			Verifier: testVerifier,
 			Ready:    func(context.Context) error { return err },

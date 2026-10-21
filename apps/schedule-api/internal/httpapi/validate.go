@@ -1,4 +1,4 @@
-package handler
+package httpapi
 
 import (
 	"errors"
@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/presentation/http/openapi"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi/openapi"
 )
 
 // slotRules は、単発と繰り返しの予定の作成に共通の本文の規則である。

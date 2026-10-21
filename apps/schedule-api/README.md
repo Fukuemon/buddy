@@ -104,7 +104,7 @@ golangci-lint run
 
 ### API の定義を変えたとき
 
-oapi-codegen が、openapi.yaml から gin の strict server のインターフェイスと型を `internal/presentation/http/openapi/openapi.gen.go` に生成する。  
+oapi-codegen が、openapi.yaml から gin の strict server のインターフェイスと型を `internal/httpapi/openapi/openapi.gen.go` に生成する。  
 oapi-codegen は `go.mod` の `tool` でバージョンを固定し、`go tool` で動かす。設定は [oapi-codegen.yaml](oapi-codegen.yaml) にある。  
 openapi.yaml を変えたら、生成し直し、生成物も同じコミットに入れる。
 
@@ -114,7 +114,7 @@ go generate ./...
 
 画面の型も同じ openapi.yaml から生成する。生成物がそろっているかは、リポジトリのルートの `pnpm check:generated` で確かめる（[CONTRIBUTING.md](../../CONTRIBUTING.md)）。
 
-ハンドラは `internal/presentation/http/handler` の `server` に、生成した `openapi.StrictServerInterface` のメソッドとして書く。
+ハンドラは `internal/httpapi` の `server` に、生成した `openapi.StrictServerInterface` のメソッドとして書く。
 
 - 操作を足したら、生成し直すと `server` がインターフェイスを満たさなくなり、コンパイルが失敗する。メソッドを足して直す。
 - 成功の応答は、生成した `<操作>200JSONResponse` か `<操作>201JSONResponse` で返す。
@@ -125,7 +125,7 @@ go generate ./...
 
 ### SQL を変えたとき
 
-クエリは `db/queries` に書き、sqlc が `internal/infrastructure/mysql/sqlcgen` に Go のコードを生成する。  
+クエリは `db/queries` に書き、sqlc が `internal/mysql/sqlcgen` に Go のコードを生成する。  
 生成したコードもコミットする。
 
 ```sh

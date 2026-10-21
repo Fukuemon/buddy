@@ -12,8 +12,8 @@ node scripts/build-mock-tokens.mjs
 
 set -- \
   apps/receipt-api/internal/httpapi/openapi \
-  apps/schedule-api/internal/presentation/http/openapi \
-  apps/schedule-api/internal/infrastructure/mysql/sqlcgen \
+  apps/schedule-api/internal/httpapi/openapi \
+  apps/schedule-api/internal/mysql/sqlcgen \
   apps/web/src/api/generated \
   docs/screens/_common/tokens.css
 
