@@ -100,7 +100,7 @@ uv run zensical build   # 出力の最後が "No issues found" になること�
 ```
 
 - `zensical build` は、リンクの先のページと見出しのアンカーがないと "Warning" を出す。警告が残ったまま取り込まない。
-- 画面仕様書かモックを直したら、`pnpm check:screens` を流す。[画面仕様書の規約](docs/screens/rules.md) の名前、構造、構成番号、`data-testid` の形と、E2E が使う testid がモックにあるかを確かめる。1 つの画面だけを見るときは `node scripts/check-screens.mjs docs/screens/<ディレクトリ>` を流す（E2E の testid の照合は流れない）。
+- 画面仕様書かモックを直したら、`pnpm check:screens` を流す。[画面仕様書の規約](docs/screens/rules.md) の名前、構造、構成番号、`data-testid` の形、E2E が使う testid がモックにあるか、カタログの欄の story があるかを確かめる。CI も同じ点検を流す。1 つの画面だけを見るときは `node scripts/check-screens.mjs docs/screens/<ディレクトリ>` を流す（E2E の testid の照合は流れない）。
 - ページを足したら、`zensical.toml` の `nav` に足す。`nav` にないページはナビゲーションから開けない。
 - 機能ごとの Design Doc は、コードの隣（`apps/<アプリ>/DesignDoc.md`）に置く。サイトには、`docs/design/apps/<アプリ>.md` のファイル単位のシンボリックリンクを置き、`nav` に足して載せる。
   - 機能ごとの Design Doc から `docs/` と `apps/` の文書へのリンクは、GitHub の `develop` の URL で書く。相対リンクは、GitHub とサイトで指す先が変わり、どちらかで切れるためである。
