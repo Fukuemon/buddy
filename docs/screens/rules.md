@@ -111,7 +111,7 @@ docs/screens/
 
 - 構成要素の表の要素に `data-m="<番号>"` を付ける。座標は書かない。`mock.js` が要素の左上に番号の印を重ねる。
 - 構成番号は、その状態で見える要素にだけ付ける。
-- E2E が指す要素に `data-testid` を付ける。モックの `data-testid` を画面の testid の正本にする。E2E が使う testid は、どれかのモックにある値か、モックの `x-{…}` の形と同じ始まりにする（`pnpm check:screens` が確かめる）。形は [コードと文書の規約の E2E](https://github.com/Fukuemon/buddy/blob/develop/context/conventions.md#e2e) にある。
+- E2E が指す要素に `data-testid` を付ける。モックの `data-testid` を画面の testid の正本にする。E2E が使う testid は、どれかのモックにある値か、モックの `x-{…}` の形と同じ始まりにする（`pnpm check:screens` が確かめる）。`x-{…}` の `{…}` には、職員の ID やサービスコードのように、どの値が入ってもよい。形は [コードと文書の規約の E2E](https://github.com/Fukuemon/buddy/blob/develop/context/conventions.md#e2e) にある。
 - ツールバーの「data-testid」を入れると、番号の印の横に testid を出す。
 
 ### 幅と配置

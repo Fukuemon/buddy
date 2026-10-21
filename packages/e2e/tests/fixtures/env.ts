@@ -17,6 +17,9 @@ export const LOGIN_NAME = process.env.E2E_LOGIN_NAME ?? 'dev-aoki'
 /** compose の IdP の既定のクレームが指す、シードの職員。 */
 export const LOGIN_STAFF = { id: '01M3TC5TRG5200KYWTZW6ER3WN', name: '青木 陽菜' }
 
+/** シードの利用者。訪問の予定を作るときに選ぶ。 */
+export const SEED_PATIENT = { id: '01M3TC66FGZVK39Y7GRVZSGWS1', name: '見本 一郎' }
+
 /** ログインの状態を保存するディレクトリ。Git で追跡しない。 */
 export const AUTH_DIR = path.join(root, 'packages/e2e/.auth')
 

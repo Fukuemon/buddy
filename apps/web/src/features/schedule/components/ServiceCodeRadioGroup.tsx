@@ -15,16 +15,17 @@ export const ServiceCodeRadioGroup = ({ value, onChange }: ServiceCodeRadioGroup
       {SERVICE_CODES.map((code) => (
         <label
           className={clsx(
-            'cursor-pointer rounded-8 px-3 py-2 text-body-dense ring-1 ring-inset has-[:focus-visible]:focus-ring',
+            'relative cursor-pointer rounded-8 px-3 py-2 text-body-dense ring-1 ring-inset has-[:focus-visible]:focus-ring',
             code === value
               ? 'bg-primary-surface font-bold text-primary ring-2 ring-primary'
               : 'ring-border-field',
           )}
           key={code}
         >
+          {/* sr-only だと label がクリックを受け、Playwright が radio を押せない。選択肢の全面に透明で重ねる */}
           <input
             checked={code === value}
-            className="sr-only"
+            className="absolute inset-0 m-0 size-full cursor-pointer opacity-0"
             data-testid={`service-code-${code}`}
             name="serviceCode"
             onChange={() => onChange(code)}

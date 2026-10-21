@@ -317,8 +317,19 @@ const readTestIdArg = (arg) => {
   return null
 }
 
+/** モックの x-{…} の {…} にはどの値でも入るので、{…} を 1 文字以上の値に置き換えた形で E2E の testid に当てる。 */
+const matchesPlaceholder = (testId) =>
+  [...mockTestIds].some((id) => {
+    if (!id.includes('{')) return false
+    const pattern = id
+      .split(/\{[^}]*\}/)
+      .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      .join('.+')
+    return new RegExp(`^${pattern}$`).test(testId)
+  })
+
 // 全ての画面を見るときだけ、E2E が指す testid がどれかのモックにあるかを確かめる。
-// 文字列の testid は同じ値を、`x-${…}` と /^x-/ は x- で始まる値（モックの x-{…} を含む）を探す
+// 文字列の testid は同じ値か、モックの x-{…} の形を、`x-${…}` と /^x-/ は x- で始まる値（モックの x-{…} を含む）を探す
 if (process.argv.length <= 2) {
   const E2E_DIR = relative(process.cwd(), join(ROOT, 'packages/e2e/tests')) || '.'
   for (const file of e2eFiles(E2E_DIR)) {
@@ -334,7 +345,7 @@ if (process.argv.length <= 2) {
       }
       const found =
         target.exact !== undefined
-          ? mockTestIds.has(target.exact)
+          ? mockTestIds.has(target.exact) || matchesPlaceholder(target.exact)
           : [...mockTestIds].some((id) => id.startsWith(target.prefix))
       if (!found) {
         report(
