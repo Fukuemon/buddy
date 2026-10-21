@@ -4,8 +4,7 @@
   --scalar-font: var(--font-family-sans);
   --scalar-font-code: var(--font-family-mono);
 }
-.light-mode,
-.dark-mode {
+.light-mode {
   --scalar-color-accent: var(--buddy-color-primary);
 }
 
@@ -14,7 +13,10 @@ body {
   background: #fff;
 }
 
-/* 文書のサイトへ戻る帯。Scalar はこの高さの分だけ下げて描く */
+/*
+ * 文書のサイトへ戻る帯。Scalar は --scalar-custom-header-height の分だけ、サイドバーとモバイルの見出しを下げて描く。
+ * 出典: https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.73.0/dist/browser/standalone.js
+ */
 .api-header {
   position: sticky;
   top: 0;
