@@ -21,7 +21,7 @@ pnpm site:build
 
 1. `uv run zensical build --clean` で、文書のサイトを `site/` に作る。
 2. `pnpm --filter @buddy/web build-storybook` で、Storybook を `apps/web/storybook-static/` に作る。
-3. `pnpm build:erd` で、tbls の `docs/db/schedule-api/schema.json` から、Liam ERD の ER 図のサイトを `erd/` に作る。
+3. `pnpm build:erd`（`scripts/build-erd.mjs`）で、tbls の `docs/db/schedule-api/schema.json` から、Liam ERD の ER 図のサイトを `erd/` に作る。
 4. `scripts/build-docs-site.mjs` で、3 つを `apps/docs-site/public/` に並べる。`/` に文書、`/storybook/` にカタログ、`/erd/` に ER 図を置く。
 5. `cf build --mode production` で、公開する形の成果物を `apps/docs-site/.cloudflare/output/` に作る。
 
