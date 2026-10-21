@@ -7,7 +7,7 @@
     "check:screens": "node scripts/check-screens.mjs",
     "lint:openapi": "redocly lint",
     "generate:db-docs": "sh scripts/build-db-docs.sh",
-    "build:erd": "liam erd build --input docs/db/schedule-api/schema.json --format tbls --output-dir erd",
+    "build:erd": "rm -rf erd && liam erd build --input docs/db/schedule-api/schema.json --format tbls --output-dir erd",
     "e2e": "pnpm --filter @buddy/e2e test",
     "site:build": "uv run zensical build --clean && pnpm --filter @buddy/web build-storybook && pnpm build:erd && node scripts/build-docs-site.mjs && pnpm --filter @buddy/docs-site build"
   },

@@ -4,10 +4,10 @@
 3 つは、1 つの Cloudflare Worker（`buddy-docs`）の静的なファイルである。  
 サイトは Cloudflare Access で許可した人だけが開ける。カタログの組み方と、公開先を選んだ理由は [ADR-0004](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0004-design-system.md) にある。
 
-| 環境 | 文書のサイト | カタログ | 出す契機 |
-| --- | --- | --- | --- |
-| 本番 | `https://buddy-docs.emon-apps.workers.dev` | 同じ URL の `/storybook/` | develop に push したとき |
-| プレビュー | pull request ごとの URL。ワークフローが pull request にコメントする | 同じ URL の `/storybook/` | pull request を作るか、push したとき |
+| 環境 | 文書のサイト | カタログ | ER 図 | 出す契機 |
+| --- | --- | --- | --- | --- |
+| 本番 | `https://buddy-docs.emon-apps.workers.dev` | 同じ URL の `/storybook/` | 同じ URL の `/erd/` | develop に push したとき |
+| プレビュー | pull request ごとの URL。ワークフローが pull request にコメントする | 同じ URL の `/storybook/` | 同じ URL の `/erd/` | pull request を作るか、push したとき |
 
 ## 成果物を作る
 
@@ -29,7 +29,7 @@ pnpm site:build
 
 文書のサイトのリンクは相対の URL なので、カタログを下のパスに置いても行き来できる。文書のトップのカタログへのリンク（`storybook/`）と ER 図へのリンク（`erd/`）は、手元の `zensical serve` では開けない。
 
-ER 図のサイトは、Liam ERD の CLI が出す静的なファイルで、資源を相対のパスで読むので `/erd/` の下で動く。開くと Google Fonts から字形を読む。届かなくても、ER 図は代わりの字形で描かれる。
+ER 図のサイトは、Liam ERD の CLI が出す静的なファイルで、資源を相対のパスで読むので `/erd/` の下で動く。Liam ERD のライセンスは Apache-2.0 である（[liam-hq/liam](https://github.com/liam-hq/liam)）。開くと Google Fonts から字形を読む。届かなくても、ER 図は代わりの字形で描かれる。
 
 ## 公開の仕組み
 

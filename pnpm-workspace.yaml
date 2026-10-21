@@ -5,6 +5,10 @@ onlyBuiltDependencies:
   - esbuild
   - lefthook
   - lightningcss
+# @liam-hq/cli の依存。ER 図の生成には要らないので、build script を流さない
+ignoredBuiltDependencies:
+  - '@prisma/engines'
+  - '@swc/core'
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@1.3.0
   vite-plus: 1.3.0

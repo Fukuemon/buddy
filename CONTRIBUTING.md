@@ -84,7 +84,7 @@ pnpm e2e
 
 ## 公開した文書のサイトとカタログを確かめる
 
-pull request を作ると、ワークフロー「文書のサイト」が、文書のサイトと Storybook のカタログ（`/storybook/`）のプレビューを出し、URL を pull request にコメントする。プレビューと本番は、Cloudflare Access で許可した人だけが開ける。
+pull request を作ると、ワークフロー「文書のサイト」がプレビューを出し、URL を pull request にコメントする。プレビューには、文書のサイトと、Storybook のカタログ（`/storybook/`）と、表の ER 図（`/erd/`）がある。プレビューと本番は、Cloudflare Access で許可した人だけが開ける。
 
 - 手元で成果物を作るときは、ルートで `pnpm site:build` を実行する。
 - 公開の仕組みと Cloudflare の準備は、[apps/docs-site/README.md](apps/docs-site/README.md) にある。

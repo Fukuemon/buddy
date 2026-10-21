@@ -2,7 +2,6 @@
 /**
  * 文書のサイト（Zensical の site/）と、apps/web の Storybook（storybook-static/）と、表の ER 図のサイト（erd/）を、
  * apps/docs-site/public/ に 1 つのサイトとして並べる。/ に文書、/storybook/ にカタログ、/erd/ に ER 図を置く。
- * ER 図のサイトの serve.json と .keep は、Liam ERD の CLI が手元の配信のために置くもので、Worker では使わないので写さない。
  *
  * 使い方: node scripts/build-docs-site.mjs（先に zensical build と build-storybook と pnpm build:erd を流す）
  * 終了コード: 並べられれば 0、どれかの成果物が無ければ 1。
@@ -24,6 +23,7 @@ const parts = [
     source: join(root, 'erd'),
     target: join(out, 'erd'),
     build: 'pnpm build:erd',
+    // serve.json と .keep は、Liam ERD の CLI が手元の配信のために置くもので、Worker では使わない
     skip: ['serve.json', '.keep'],
   },
 ]
