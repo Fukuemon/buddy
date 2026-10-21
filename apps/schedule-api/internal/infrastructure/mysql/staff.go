@@ -120,7 +120,7 @@ func (r *StaffRepository) FindIDBySub(ctx context.Context, sub string) (string, 
 }
 
 // LinkSub は、事業所 facilityID の、メールが email で Sub がまだない職員にだけ sub を書く。当たる職員がいなければ何もせず、エラーも返さない。
-// 同時に呼ばれても、書くのは Sub が空のときの 1 回だけである。sub が別の職員と重なるときは domain.ErrConflict を返す。
+// 同時に呼ばれても書くのは 1 回だけである。sub が別の職員と重なるときは domain.ErrConflict を返す。
 func (r *StaffRepository) LinkSub(ctx context.Context, facilityID, email, sub string) error {
 	err := r.q(ctx).LinkUserSub(ctx, sqlcgen.LinkUserSubParams{
 		Sub: sql.NullString{String: sub, Valid: true}, FacilityID: facilityID, Email: email,

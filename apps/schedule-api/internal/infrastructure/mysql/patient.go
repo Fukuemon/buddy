@@ -14,7 +14,7 @@ type PatientRepository struct{ conn }
 // NewPatientRepository は PatientRepository を作る。
 func NewPatientRepository(db *sql.DB) *PatientRepository { return &PatientRepository{conn{db}} }
 
-// Create は、利用者を書く。事業所、サービスコード、担当の職員のいずれかが無いときは domain.ErrInvalidInput のエラーを返す。
+// Create は、利用者を書く。事業所、サービスコード、担当の職員のいずれかが無いか、値が列の制約（希望の時間帯と性別の値など）に合わないときは domain.ErrInvalidInput のエラーを返す。
 func (r *PatientRepository) Create(ctx context.Context, p patient.Patient) error {
 	err := r.q(ctx).CreatePatient(ctx, sqlcgen.CreatePatientParams{
 		ID:              p.ID,
