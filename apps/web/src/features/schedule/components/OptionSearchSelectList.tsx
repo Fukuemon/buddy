@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 import { SearchBox, Table } from '@buddy/ui'
 
-/** 一覧の選択肢。 */
+/** 一覧の選択肢。検索欄は name を部分一致で絞り、選んだ id を onChange に渡す。 */
 export type SelectOption = {
   id: string
   name: string

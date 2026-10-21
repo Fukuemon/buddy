@@ -8,7 +8,7 @@ const VISIT_TITLE = '訪問'
 const DEFAULT_START_TIME = '09:00'
 const DEFAULT_SERVICE_CODE = '訪看I2'
 
-/** 作成のフォームの初期値の元。カレンダーで押した日と時刻と職員が入る。 */
+/** createScheduleFormValues の引数。time を省くと 9 時、staffId を省くと未選択にする。 */
 export type ScheduleFormDefaults = {
   kind: ScheduleKind
   /** `YYYY-MM-DD` */

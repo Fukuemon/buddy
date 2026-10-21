@@ -51,7 +51,7 @@ export const staffListQueryOptions = (
     queryFn: () => api.staff.list(facilityId, params),
   })
 
-/** 事業所のチームの一覧の query。 */
+/** 事業所のチームの一覧の query。チームは名前で絞らず、全件を取る。 */
 export const teamListQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
     queryKey: queryKeys.teams(facilityId),

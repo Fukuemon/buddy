@@ -92,9 +92,9 @@ export type NameSearchParams = {
 
 /** 照合の結果。照合の API の Report をそのまま使う。 */
 export type ReceiptReport = ReceiptComponents['schemas']['Report']
-/** 照合の結果の 1 行。 */
+/** 照合の結果の 1 行。照合の API の Result をそのまま使う。 */
 export type ReceiptRow = ReceiptComponents['schemas']['Result']
-/** 照合の結果の区分。 */
+/** 照合の結果の区分。mismatch は不整合、schedule_only は予定のみ、visit_only は実績のみ、match は整合。 */
 export type ReceiptCategory = ReceiptComponents['schemas']['Category']
-/** CSV の行を読めなかった理由。 */
+/** CSV の行を読めなかった理由。照合の API の RowError をそのまま使う。 */
 export type ReceiptRowError = ReceiptComponents['schemas']['RowError']

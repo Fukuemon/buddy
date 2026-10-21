@@ -3,7 +3,7 @@ import type { ComponentPropsWithoutRef, MouseEvent } from 'react'
 
 /** ボタンの見た目の種類。destructive は削除の操作に使う。 */
 export type ButtonVariant = 'primary' | 'secondary' | 'destructive'
-/** ボタンの大きさ。 */
+/** ボタンの高さ。S は 40px（押せる領域は 44px）、M は 48px、L は 56px。 */
 export type ButtonSize = 'S' | 'M' | 'L'
 
 /** ボタンの見た目の指定。isWide は親の幅いっぱいに広げる。 */

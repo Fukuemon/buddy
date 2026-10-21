@@ -34,11 +34,12 @@ export default defineConfig({
             FunctionDeclaration: true,
             ArrowFunctionExpression: true,
             ClassDeclaration: true,
+            FunctionExpression: true,
           },
-          // Props の型はコンポーネントの文書コメントが説明するので、名前の言い換えになる文書を求めない
           contexts: [
             'TSInterfaceDeclaration:not([id.name=/Props$/])',
             'TSTypeAliasDeclaration:not([id.name=/Props$/])',
+            'TSEnumDeclaration',
           ],
         },
       ],

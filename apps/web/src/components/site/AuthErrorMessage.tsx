@@ -1,10 +1,9 @@
 import { buttonClassName } from '@buddy/ui'
 
-/** ログインできなかった理由。 */
+/** ログインできなかった理由。failed はログインの途中の失敗、forbidden は事業所に登録されていない職員である。 */
 export type AuthErrorReason = 'failed' | 'forbidden'
 
 export type AuthErrorMessageProps = {
-  /** failed はログインの途中の失敗、forbidden は事業所に登録されていない職員である。 */
   reason: AuthErrorReason
   loginHref: string
 }

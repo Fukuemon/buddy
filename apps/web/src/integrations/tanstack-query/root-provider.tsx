@@ -11,7 +11,10 @@ export type AppRouterContext = {
   mode: ApiMode
 }
 
-/** route の context を作る。API は環境変数の VITE_API_MODE で選ぶ。 */
+/**
+ * route の context を作る。呼ぶたびに新しい QueryClient を作る。
+ * API は環境変数の VITE_API_MODE で選び、fake と bff 以外の値なら Error を投げる。
+ */
 export function getContext(): AppRouterContext {
   return { queryClient: new QueryClient(), ...createBuddyApi(import.meta.env) }
 }
