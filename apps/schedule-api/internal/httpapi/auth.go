@@ -9,8 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/access"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/authn"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/ulid"
 )
@@ -23,22 +23,22 @@ type TokenVerifier interface {
 // AuthUsecase は、認証のミドルウェアが使う操作である。
 type AuthUsecase interface {
 	Authenticate(ctx context.Context, id principal.Identity) (principal.Principal, error)
-	FacilityOf(ctx context.Context, r authn.Resource, id string) (string, error)
+	FacilityOf(ctx context.Context, r access.Resource, id string) (string, error)
 }
 
 // pathResources は、/v1 のパスの引数の名前と、その ID が指すリソースである。
 // global は、ミドルウェアが事業所を確かめない引数である。事業所に属さないリソースか、同じパスのほかの引数で事業所を確かめるリソースに付ける。
 var pathResources = map[string]struct {
-	resource authn.Resource
+	resource access.Resource
 	global   bool
 }{
-	"facility_id":           {resource: authn.ResourceFacility},
-	"department_id":         {resource: authn.ResourceDepartment},
-	"team_id":               {resource: authn.ResourceTeam},
-	"position_id":           {resource: authn.ResourcePosition},
-	"user_id":               {resource: authn.ResourceStaff},
-	"schedule_id":           {resource: authn.ResourceSchedule},
-	"recurring_schedule_id": {resource: authn.ResourceRecurringSchedule},
+	"facility_id":           {resource: access.ResourceFacility},
+	"department_id":         {resource: access.ResourceDepartment},
+	"team_id":               {resource: access.ResourceTeam},
+	"position_id":           {resource: access.ResourcePosition},
+	"user_id":               {resource: access.ResourceStaff},
+	"schedule_id":           {resource: access.ResourceSchedule},
+	"recurring_schedule_id": {resource: access.ResourceRecurringSchedule},
 	"policy_id":             {global: true},
 	// 職員の権限の ID は、同じパスの user_id で事業所を確かめ、staff.Usecase が職員の権限かを確かめる。
 	"user_policy_id": {global: true},

@@ -1,12 +1,12 @@
-package authn_test
+package access_test
 
 import (
 	"context"
 	"errors"
 	"testing"
 
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/access"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/authn"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/inmem"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
@@ -37,8 +37,8 @@ func authStore() *inmem.Store {
 	return s
 }
 
-func newAuth(s *inmem.Store) *authn.Usecase {
-	return authn.NewUsecase(authn.Deps{
+func newAuth(s *inmem.Store) *access.Service {
+	return access.NewService(access.Deps{
 		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s}, Positions: inmem.Positions{Store: s},
 		Staff: inmem.Staff{Store: s}, StaffRefs: inmem.StaffRefs{Store: s}, Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s},
 	})
@@ -123,17 +123,17 @@ func TestFacilityOf(t *testing.T) {
 	s.Schedules["SCH"] = schedule.Detail{Schedule: schedule.Schedule{ID: "SCH", Slot: schedule.Slot{FacilityID: otherFacilityID}}}
 	a := newAuth(s)
 	tests := []struct {
-		r    authn.Resource
+		r    access.Resource
 		id   string
 		want string
 	}{
-		{r: authn.ResourceFacility, id: otherFacilityID, want: otherFacilityID},
-		{r: authn.ResourceDepartment, id: "DEP", want: otherFacilityID},
-		{r: authn.ResourceTeam, id: "TEAM", want: facilityID},
-		{r: authn.ResourcePosition, id: "POS", want: otherFacilityID},
-		{r: authn.ResourceStaff, id: otherStaffID, want: otherFacilityID},
-		{r: authn.ResourceSchedule, id: "SCH", want: otherFacilityID},
-		{r: authn.ResourceRecurringSchedule, id: recurringID, want: facilityID},
+		{r: access.ResourceFacility, id: otherFacilityID, want: otherFacilityID},
+		{r: access.ResourceDepartment, id: "DEP", want: otherFacilityID},
+		{r: access.ResourceTeam, id: "TEAM", want: facilityID},
+		{r: access.ResourcePosition, id: "POS", want: otherFacilityID},
+		{r: access.ResourceStaff, id: otherStaffID, want: otherFacilityID},
+		{r: access.ResourceSchedule, id: "SCH", want: otherFacilityID},
+		{r: access.ResourceRecurringSchedule, id: recurringID, want: facilityID},
 	}
 	for _, tt := range tests {
 		got, err := a.FacilityOf(context.Background(), tt.r, tt.id)
@@ -141,7 +141,7 @@ func TestFacilityOf(t *testing.T) {
 			t.Errorf("FacilityOf(%d, %s) = %q, %v, want %q", tt.r, tt.id, got, err, tt.want)
 		}
 	}
-	if _, err := a.FacilityOf(context.Background(), authn.ResourceSchedule, "NONE"); !errors.Is(err, apperr.ErrNotFound) {
+	if _, err := a.FacilityOf(context.Background(), access.ResourceSchedule, "NONE"); !errors.Is(err, apperr.ErrNotFound) {
 		t.Errorf("err = %v, want ErrNotFound", err)
 	}
 }

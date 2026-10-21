@@ -18,7 +18,7 @@ import (
 
 	"github.com/Fukuemon/buddy/packages/go/oidc"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/authn"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/access"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/config"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql"
@@ -109,7 +109,7 @@ func run() error {
 			Facilities: facilities, Staff: staffRefs, Visits: visitInfos,
 			Schedules: schedules, Recurring: recurring, Types: mysql.NewScheduleTypeRepository(db),
 		}, tx, ids),
-		Auth: authn.NewUsecase(authn.Deps{
+		Auth: access.NewService(access.Deps{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions,
 			Staff: staffRepo, StaffRefs: staffRefs, Schedules: schedules, Recurring: recurring,
 		}),

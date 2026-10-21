@@ -14,8 +14,8 @@ import (
 	"github.com/Fukuemon/buddy/packages/go/oidc"
 	"github.com/Fukuemon/buddy/packages/go/oidc/oidctest"
 
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/access"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/authn"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 )
@@ -80,9 +80,9 @@ func (fakeAuth) Authenticate(_ context.Context, id principal.Identity) (principa
 	return principal.Principal{Staff: staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: staffID, FacilityID: facilityID}}}}, nil
 }
 
-func (fakeAuth) FacilityOf(_ context.Context, r authn.Resource, id string) (string, error) {
+func (fakeAuth) FacilityOf(_ context.Context, r access.Resource, id string) (string, error) {
 	switch {
-	case r == authn.ResourceFacility:
+	case r == access.ResourceFacility:
 		return id, nil
 	case id == otherScheduleID:
 		return otherFacilityID, nil

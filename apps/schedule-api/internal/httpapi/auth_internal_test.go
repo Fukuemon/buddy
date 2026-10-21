@@ -12,7 +12,7 @@ import (
 	"github.com/getkin/kin-openapi/routers/gorillamux"
 	"github.com/gin-gonic/gin"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/authn"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/access"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi/openapi"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
@@ -73,7 +73,7 @@ func (s stubAuth) Authenticate(context.Context, principal.Identity) (principal.P
 	return s.principal, nil
 }
 
-func (stubAuth) FacilityOf(context.Context, authn.Resource, string) (string, error) { return "", nil }
+func (stubAuth) FacilityOf(context.Context, access.Resource, string) (string, error) { return "", nil }
 
 func TestAuthenticatePutsPrincipalInContext(t *testing.T) {
 	want := principal.Principal{Staff: staff.Detail{
