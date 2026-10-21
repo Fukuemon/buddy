@@ -134,7 +134,11 @@ func parseRRule(value string) (rule schedule.Rule, until string, count int, err 
 		if !ok {
 			return schedule.Rule{}, "", 0, expansion("RRULE の形が違う: %q", value)
 		}
-		parts[strings.ToUpper(k)] = strings.ToUpper(v)
+		k = strings.ToUpper(k)
+		if _, dup := parts[k]; dup {
+			return schedule.Rule{}, "", 0, expansion("RRULE の %s が 2 回ある", k)
+		}
+		parts[k] = strings.ToUpper(v)
 	}
 	for k, v := range parts {
 		switch k {
@@ -230,11 +234,13 @@ func lastOccurrence(rs schedule.RecurringSchedule, count int) (civil.Date, bool)
 }
 
 // parseDates は、EXDATE の値（カンマで区切った日付か日時）を、Asia/Tokyo の日付にする。
-// params の TZID はタイムゾーンの無い日時のタイムゾーンで、無ければ Asia/Tokyo とする。
+// params の TZID（名前の大文字と小文字を区別せず、値の引用符を外す）はタイムゾーンの無い日時のタイムゾーンで、
+// 無ければ Asia/Tokyo とする。
 func parseDates(params, value string) ([]civil.Date, error) {
 	loc := tokyo
 	for _, p := range strings.Split(params, ";") {
-		if tz, ok := strings.CutPrefix(p, "TZID="); ok {
+		if k, tz, ok := strings.Cut(p, "="); ok && strings.EqualFold(k, "TZID") {
+			tz = strings.Trim(tz, `"`)
 			l, err := time.LoadLocation(tz)
 			if err != nil {
 				return nil, expansion("EXDATE の TZID=%s を読めない", tz)

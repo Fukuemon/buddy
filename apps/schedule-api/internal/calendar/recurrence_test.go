@@ -127,6 +127,13 @@ func TestRuleFromRecurrence(t *testing.T) {
 			name: "終日の予定", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU"}, first: "2026-10-20",
 			when: &calendar.When{Date: "2026-10-20"}, expand: true,
 		},
+		{
+			name: "TZID の名前の小文字と値の引用符", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU", `EXDATE;tzid="America/New_York":20261123T200000`},
+			first: "2026-10-20", start: clock(10, 0),
+			want:    schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(tue)},
+			exdates: []string{"2026-11-24"},
+		},
+		{name: "RRULE の同じキーが 2 回", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU;BYDAY=TH"}, first: "2026-10-20", expand: true},
 		{name: "隔週", lines: []string{"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU"}, first: "2026-10-20", expand: true},
 		{name: "複数の曜日", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU,TH"}, first: "2026-10-20", expand: true},
 		{name: "最終週", lines: []string{"RRULE:FREQ=MONTHLY;BYDAY=-1TU"}, first: "2026-10-27", expand: true},
