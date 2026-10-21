@@ -128,6 +128,7 @@ openapi.yaml を変えたら、同じコミットで生成物も生成し直す�
 | `apps/schedule-api/openapi.yaml` | `apps/schedule-api` で `go generate ./...` | `apps/schedule-api/internal/httpapi/openapi/` |
 | `apps/schedule-api/db/` の SQL | `apps/schedule-api` で `sqlc generate` | `apps/schedule-api/internal/mysql/sqlcgen/` |
 | どちらかの openapi.yaml | `pnpm --filter @buddy/web generate:api` | `apps/web/src/api/generated/` |
+| `apps/schedule-api/db/migrations/`、`apps/schedule-api/.tbls.yml` | `pnpm generate:db-docs`（Docker が要る） | `docs/db/schedule-api/`（表の文書と ER 図） |
 | `packages/ui/src/tokens/semantic.css`、`@digital-go-jp/design-tokens` | `node scripts/build-mock-tokens.mjs` | `docs/screens/_common/tokens.css`（画面のモックが読む） |
 
 取り込む前に、生成物がそろっているかをリポジトリのルートで確かめる。全ての生成を流し直し、差分か追跡していない生成物があれば 1 で終わる。

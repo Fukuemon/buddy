@@ -1,0 +1,3087 @@
+{
+  "name": "schedule-api",
+  "tables": [
+    {
+      "name": "departments",
+      "type": "BASE TABLE",
+      "comment": "事業所の部署",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "facility_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(255)",
+          "nullable": false,
+          "comment": "事業所の中で一意"
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (id) USING BTREE",
+          "table": "departments",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_departments_facility_name",
+          "def": "UNIQUE KEY uq_departments_facility_name (facility_id, name) USING BTREE",
+          "table": "departments",
+          "columns": [
+            "facility_id",
+            "name"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_departments_facility",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id) REFERENCES facilities (id)",
+          "table": "departments",
+          "referenced_table": "facilities",
+          "columns": [
+            "facility_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "departments",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_departments_facility_name",
+          "type": "UNIQUE",
+          "def": "UNIQUE KEY uq_departments_facility_name (facility_id, name)",
+          "table": "departments",
+          "columns": [
+            "facility_id",
+            "name"
+          ]
+        }
+      ],
+      "def": "CREATE TABLE `departments` (\n  `id` char(26) NOT NULL,\n  `facility_id` char(26) NOT NULL,\n  `name` varchar(255) NOT NULL,\n  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `uq_departments_facility_name` (`facility_id`,`name`),\n  CONSTRAINT `fk_departments_facility` FOREIGN KEY (`facility_id`) REFERENCES `facilities` (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
+    },
+    {
+      "name": "facilities",
+      "type": "BASE TABLE",
+      "comment": "訪問看護の事業所",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(255)",
+          "nullable": false,
+          "comment": "事業所名"
+        },
+        {
+          "name": "org_id",
+          "type": "varchar(255)",
+          "nullable": true,
+          "comment": "ブローカーの組織の ID。結び付けるまで NULL"
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (id) USING BTREE",
+          "table": "facilities",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_facilities_org_id",
+          "def": "UNIQUE KEY uq_facilities_org_id (org_id) USING BTREE",
+          "table": "facilities",
+          "columns": [
+            "org_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "facilities",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_facilities_org_id",
+          "type": "UNIQUE",
+          "def": "UNIQUE KEY uq_facilities_org_id (org_id)",
+          "table": "facilities",
+          "columns": [
+            "org_id"
+          ]
+        }
+      ],
+      "def": "CREATE TABLE `facilities` (\n  `id` char(26) NOT NULL,\n  `name` varchar(255) NOT NULL,\n  `org_id` varchar(255) DEFAULT NULL,\n  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `uq_facilities_org_id` (`org_id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
+    },
+    {
+      "name": "patients",
+      "type": "BASE TABLE",
+      "comment": "利用者",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "facility_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "preferred_time",
+          "type": "varchar(8)",
+          "nullable": false,
+          "comment": "希望の時間帯（午前、午後）"
+        },
+        {
+          "name": "preferred_gender",
+          "type": "varchar(8)",
+          "nullable": false,
+          "comment": "希望の訪問者の性別（男性、女性）"
+        },
+        {
+          "name": "service_code_id",
+          "type": "char(26)",
+          "nullable": false,
+          "comment": "受けているサービス"
+        },
+        {
+          "name": "assigned_staff_id",
+          "type": "char(26)",
+          "nullable": false,
+          "comment": "主に担当する職員"
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "fk_patients_assigned_staff",
+          "def": "KEY fk_patients_assigned_staff (assigned_staff_id) USING BTREE",
+          "table": "patients",
+          "columns": [
+            "assigned_staff_id"
+          ]
+        },
+        {
+          "name": "fk_patients_service_code",
+          "def": "KEY fk_patients_service_code (service_code_id) USING BTREE",
+          "table": "patients",
+          "columns": [
+            "service_code_id"
+          ]
+        },
+        {
+          "name": "idx_patients_facility",
+          "def": "KEY idx_patients_facility (facility_id) USING BTREE",
+          "table": "patients",
+          "columns": [
+            "facility_id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (id) USING BTREE",
+          "table": "patients",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_patients_assigned_staff",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (assigned_staff_id) REFERENCES users (id)",
+          "table": "patients",
+          "referenced_table": "users",
+          "columns": [
+            "assigned_staff_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_patients_facility",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id) REFERENCES facilities (id)",
+          "table": "patients",
+          "referenced_table": "facilities",
+          "columns": [
+            "facility_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_patients_service_code",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (service_code_id) REFERENCES service_codes (id)",
+          "table": "patients",
+          "referenced_table": "service_codes",
+          "columns": [
+            "service_code_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "patients",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "chk_patients_preferred_gender",
+          "type": "CHECK",
+          "def": "CHECK ((`preferred_gender` in (_utf8mb4\\'ç·æ§\\',_utf8mb4\\'å¥³æ§\\')))",
+          "table": "patients"
+        },
+        {
+          "name": "chk_patients_preferred_time",
+          "type": "CHECK",
+          "def": "CHECK ((`preferred_time` in (_utf8mb4\\'åå\\',_utf8mb4\\'åå¾\\')))",
+          "table": "patients"
+        }
+      ],
+      "def": "CREATE TABLE `patients` (\n  `id` char(26) NOT NULL,\n  `facility_id` char(26) NOT NULL,\n  `name` varchar(255) NOT NULL,\n  `preferred_time` varchar(8) NOT NULL,\n  `preferred_gender` varchar(8) NOT NULL,\n  `service_code_id` char(26) NOT NULL,\n  `assigned_staff_id` char(26) NOT NULL,\n  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  KEY `idx_patients_facility` (`facility_id`),\n  KEY `fk_patients_service_code` (`service_code_id`),\n  KEY `fk_patients_assigned_staff` (`assigned_staff_id`),\n  CONSTRAINT `fk_patients_assigned_staff` FOREIGN KEY (`assigned_staff_id`) REFERENCES `users` (`id`),\n  CONSTRAINT `fk_patients_facility` FOREIGN KEY (`facility_id`) REFERENCES `facilities` (`id`),\n  CONSTRAINT `fk_patients_service_code` FOREIGN KEY (`service_code_id`) REFERENCES `service_codes` (`id`),\n  CONSTRAINT `chk_patients_preferred_gender` CHECK ((`preferred_gender` in (_utf8mb4'男性',_utf8mb4'女性'))),\n  CONSTRAINT `chk_patients_preferred_time` CHECK ((`preferred_time` in (_utf8mb4'午前',_utf8mb4'午後')))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
+    },
+    {
+      "name": "policies",
+      "type": "BASE TABLE",
+      "comment": "権限。マイグレーションで入れ、API では作らない",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "code",
+          "type": "varchar(64)",
+          "nullable": false,
+          "comment": "認可が読む識別子"
+        },
+        {
+          "name": "name",
+          "type": "varchar(255)",
+          "nullable": false,
+          "comment": "権限の名前"
+        },
+        {
+          "name": "needs_target",
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": "0",
+          "comment": "対象の職員かチームを指定するか"
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (id) USING BTREE",
+          "table": "policies",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_policies_code",
+          "def": "UNIQUE KEY uq_policies_code (code) USING BTREE",
+          "table": "policies",
+          "columns": [
+            "code"
+          ]
+        },
+        {
+          "name": "uq_policies_name",
+          "def": "UNIQUE KEY uq_policies_name (name) USING BTREE",
+          "table": "policies",
+          "columns": [
+            "name"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "policies",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_policies_code",
+          "type": "UNIQUE",
+          "def": "UNIQUE KEY uq_policies_code (code)",
+          "table": "policies",
+          "columns": [
+            "code"
+          ]
+        },
+        {
+          "name": "uq_policies_name",
+          "type": "UNIQUE",
+          "def": "UNIQUE KEY uq_policies_name (name)",
+          "table": "policies",
+          "columns": [
+            "name"
+          ]
+        }
+      ],
+      "def": "CREATE TABLE `policies` (\n  `id` char(26) NOT NULL,\n  `code` varchar(64) NOT NULL,\n  `name` varchar(255) NOT NULL,\n  `needs_target` tinyint(1) NOT NULL DEFAULT '0',\n  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `uq_policies_name` (`name`),\n  UNIQUE KEY `uq_policies_code` (`code`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
+    },
+    {
+      "name": "position_policies",
+      "type": "BASE TABLE",
+      "comment": "役職の既定の権限",
+      "columns": [
+        {
+          "name": "position_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "policy_id",
+          "type": "char(26)",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "fk_position_policies_policy",
+          "def": "KEY fk_position_policies_policy (policy_id) USING BTREE",
+          "table": "position_policies",
+          "columns": [
+            "policy_id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (position_id, policy_id) USING BTREE",
+          "table": "position_policies",
+          "columns": [
+            "position_id",
+            "policy_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_position_policies_policy",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (policy_id) REFERENCES policies (id)",
+          "table": "position_policies",
+          "referenced_table": "policies",
+          "columns": [
+            "policy_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_position_policies_position",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (position_id) REFERENCES positions (id)",
+          "table": "position_policies",
+          "referenced_table": "positions",
+          "columns": [
+            "position_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (position_id, policy_id)",
+          "table": "position_policies",
+          "columns": [
+            "position_id",
+            "policy_id"
+          ]
+        }
+      ],
+      "def": "CREATE TABLE `position_policies` (\n  `position_id` char(26) NOT NULL,\n  `policy_id` char(26) NOT NULL,\n  PRIMARY KEY (`position_id`,`policy_id`),\n  KEY `fk_position_policies_policy` (`policy_id`),\n  CONSTRAINT `fk_position_policies_policy` FOREIGN KEY (`policy_id`) REFERENCES `policies` (`id`),\n  CONSTRAINT `fk_position_policies_position` FOREIGN KEY (`position_id`) REFERENCES `positions` (`id`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
+    },
+    {
+      "name": "positions",
+      "type": "BASE TABLE",
+      "comment": "事業所の役職。職員を登録するときに写す既定の権限を持つ",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "facility_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(255)",
+          "nullable": false,
+          "comment": "事業所の中で一意"
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (id) USING BTREE",
+          "table": "positions",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_positions_facility_name",
+          "def": "UNIQUE KEY uq_positions_facility_name (facility_id, name) USING BTREE",
+          "table": "positions",
+          "columns": [
+            "facility_id",
+            "name"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_positions_facility",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id) REFERENCES facilities (id)",
+          "table": "positions",
+          "referenced_table": "facilities",
+          "columns": [
+            "facility_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "positions",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_positions_facility_name",
+          "type": "UNIQUE",
+          "def": "UNIQUE KEY uq_positions_facility_name (facility_id, name)",
+          "table": "positions",
+          "columns": [
+            "facility_id",
+            "name"
+          ]
+        }
+      ],
+      "def": "CREATE TABLE `positions` (\n  `id` char(26) NOT NULL,\n  `facility_id` char(26) NOT NULL,\n  `name` varchar(255) NOT NULL,\n  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `uq_positions_facility_name` (`facility_id`,`name`),\n  CONSTRAINT `fk_positions_facility` FOREIGN KEY (`facility_id`) REFERENCES `facilities` (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
+    },
+    {
+      "name": "recurring_rules",
+      "type": "BASE TABLE",
+      "comment": "繰り返しの規則",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "frequency",
+          "type": "varchar(16)",
+          "nullable": false,
+          "comment": "weekly、monthly"
+        },
+        {
+          "name": "day_of_week",
+          "type": "tinyint",
+          "nullable": true,
+          "comment": "1（月曜）から 7"
+        },
+        {
+          "name": "day_of_month",
+          "type": "tinyint",
+          "nullable": true,
+          "comment": "1 から 31"
+        },
+        {
+          "name": "week_of_month",
+          "type": "tinyint",
+          "nullable": true,
+          "comment": "1 から 5"
+        },
+        {
+          "name": "end_date",
+          "type": "date",
+          "nullable": true,
+          "comment": "NULL なら終わりなし"
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (id) USING BTREE",
+          "table": "recurring_rules",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "recurring_rules",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "chk_recurring_rules_frequency",
+          "type": "CHECK",
+          "def": "CHECK ((`frequency` in (_utf8mb4\\'weekly\\',_utf8mb4\\'monthly\\')))",
+          "table": "recurring_rules"
+        }
+      ],
+      "def": "CREATE TABLE `recurring_rules` (\n  `id` char(26) NOT NULL,\n  `frequency` varchar(16) NOT NULL,\n  `day_of_week` tinyint DEFAULT NULL,\n  `day_of_month` tinyint DEFAULT NULL,\n  `week_of_month` tinyint DEFAULT NULL,\n  `end_date` date DEFAULT NULL,\n  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  CONSTRAINT `chk_recurring_rules_frequency` CHECK ((`frequency` in (_utf8mb4'weekly',_utf8mb4'monthly')))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
+    },
+    {
+      "name": "recurring_schedule_details",
+      "type": "VIEW",
+      "comment": "一覧の読み出しに使う、繰り返しの予定と訪問の情報と名前を結合したビュー",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "facility_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "schedule_type_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "schedule_type_name",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "nullable": false
+        },
+        {
+          "name": "start_time",
+          "type": "time",
+          "nullable": false
+        },
+        {
+          "name": "end_time",
+          "type": "time",
+          "nullable": false
+        },
+        {
+          "name": "is_over_time_work",
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": "0"
+        },
+        {
+          "name": "staff_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "staff_name",
+          "type": "varchar(128)",
+          "nullable": false
+        },
+        {
+          "name": "title",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "recurring_rule_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "frequency",
+          "type": "varchar(16)",
+          "nullable": false
+        },
+        {
+          "name": "day_of_week",
+          "type": "tinyint",
+          "nullable": true
+        },
+        {
+          "name": "day_of_month",
+          "type": "tinyint",
+          "nullable": true
+        },
+        {
+          "name": "week_of_month",
+          "type": "tinyint",
+          "nullable": true
+        },
+        {
+          "name": "end_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "visit_info_id",
+          "type": "char(26)",
+          "nullable": true
+        },
+        {
+          "name": "patient_id",
+          "type": "char(26)",
+          "nullable": true
+        },
+        {
+          "name": "patient_name",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "assigned_staff_id",
+          "type": "char(26)",
+          "nullable": true
+        },
+        {
+          "name": "assigned_staff_name",
+          "type": "varchar(128)",
+          "nullable": true
+        },
+        {
+          "name": "companion_id",
+          "type": "char(26)",
+          "nullable": true
+        },
+        {
+          "name": "companion_name",
+          "type": "varchar(128)",
+          "nullable": true
+        },
+        {
+          "name": "service_code_id",
+          "type": "char(26)",
+          "nullable": true
+        },
+        {
+          "name": "service_code",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "def": "CREATE VIEW recurring_schedule_details AS (select `rs`.`id` AS `id`,`rs`.`facility_id` AS `facility_id`,`rs`.`schedule_type_id` AS `schedule_type_id`,`st`.`name` AS `schedule_type_name`,`rs`.`date` AS `date`,`rs`.`start_time` AS `start_time`,`rs`.`end_time` AS `end_time`,`rs`.`is_over_time_work` AS `is_over_time_work`,`rs`.`staff_id` AS `staff_id`,`u`.`username` AS `staff_name`,`rs`.`title` AS `title`,`rs`.`description` AS `description`,`rs`.`recurring_rule_id` AS `recurring_rule_id`,`rr`.`frequency` AS `frequency`,`rr`.`day_of_week` AS `day_of_week`,`rr`.`day_of_month` AS `day_of_month`,`rr`.`week_of_month` AS `week_of_month`,`rr`.`end_date` AS `end_date`,`rs`.`visit_info_id` AS `visit_info_id`,`buddy`.`vid`.`patient_id` AS `patient_id`,`buddy`.`vid`.`patient_name` AS `patient_name`,`buddy`.`vid`.`assigned_staff_id` AS `assigned_staff_id`,`buddy`.`vid`.`assigned_staff_name` AS `assigned_staff_name`,`buddy`.`vid`.`companion_id` AS `companion_id`,`buddy`.`vid`.`companion_name` AS `companion_name`,`buddy`.`vid`.`service_code_id` AS `service_code_id`,`buddy`.`vid`.`service_code` AS `service_code`,`rs`.`created_at` AS `created_at`,`rs`.`updated_at` AS `updated_at` from ((((`buddy`.`recurring_schedules` `rs` join `buddy`.`schedule_types` `st` on((`st`.`id` = `rs`.`schedule_type_id`))) join `buddy`.`users` `u` on((`u`.`id` = `rs`.`staff_id`))) join `buddy`.`recurring_rules` `rr` on((`rr`.`id` = `rs`.`recurring_rule_id`))) left join `buddy`.`visit_info_details` `vid` on((`buddy`.`vid`.`id` = `rs`.`visit_info_id`))))",
+      "referenced_tables": [
+        "recurring_schedules",
+        "schedule_types",
+        "users",
+        "recurring_rules",
+        "visit_info_details"
+      ]
+    },
+    {
+      "name": "recurring_schedule_exclusions",
+      "type": "BASE TABLE",
+      "comment": "繰り返しの予定のうち、回にしない日",
+      "columns": [
+        {
+          "name": "recurring_schedule_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (recurring_schedule_id, date) USING BTREE",
+          "table": "recurring_schedule_exclusions",
+          "columns": [
+            "recurring_schedule_id",
+            "date"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_rse_recurring_schedule",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (recurring_schedule_id) REFERENCES recurring_schedules (id)",
+          "table": "recurring_schedule_exclusions",
+          "referenced_table": "recurring_schedules",
+          "columns": [
+            "recurring_schedule_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (recurring_schedule_id, date)",
+          "table": "recurring_schedule_exclusions",
+          "columns": [
+            "recurring_schedule_id",
+            "date"
+          ]
+        }
+      ],
+      "def": "CREATE TABLE `recurring_schedule_exclusions` (\n  `recurring_schedule_id` char(26) NOT NULL,\n  `date` date NOT NULL,\n  PRIMARY KEY (`recurring_schedule_id`,`date`),\n  CONSTRAINT `fk_rse_recurring_schedule` FOREIGN KEY (`recurring_schedule_id`) REFERENCES `recurring_schedules` (`id`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
+    },
+    {
+      "name": "recurring_schedules",
+      "type": "BASE TABLE",
+      "comment": "繰り返しの予定",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "facility_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "staff_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "schedule_type_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "recurring_rule_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "nullable": false,
+          "comment": "最初の回の日付"
+        },
+        {
+          "name": "start_time",
+          "type": "time",
+          "nullable": false
+        },
+        {
+          "name": "end_time",
+          "type": "time",
+          "nullable": false
+        },
+        {
+          "name": "visit_info_id",
+          "type": "char(26)",
+          "nullable": true,
+          "comment": "訪問のときだけ"
+        },
+        {
+          "name": "title",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "is_over_time_work",
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": "0"
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "fk_recurring_schedules_rule",
+          "def": "KEY fk_recurring_schedules_rule (recurring_rule_id) USING BTREE",
+          "table": "recurring_schedules",
+          "columns": [
+            "recurring_rule_id"
+          ]
+        },
+        {
+          "name": "fk_recurring_schedules_staff",
+          "def": "KEY fk_recurring_schedules_staff (staff_id) USING BTREE",
+          "table": "recurring_schedules",
+          "columns": [
+            "staff_id"
+          ]
+        },
+        {
+          "name": "fk_recurring_schedules_type",
+          "def": "KEY fk_recurring_schedules_type (schedule_type_id) USING BTREE",
+          "table": "recurring_schedules",
+          "columns": [
+            "schedule_type_id"
+          ]
+        },
+        {
+          "name": "fk_recurring_schedules_visit_info",
+          "def": "KEY fk_recurring_schedules_visit_info (visit_info_id) USING BTREE",
+          "table": "recurring_schedules",
+          "columns": [
+            "visit_info_id"
+          ]
+        },
+        {
+          "name": "idx_recurring_schedules_facility",
+          "def": "KEY idx_recurring_schedules_facility (facility_id) USING BTREE",
+          "table": "recurring_schedules",
+          "columns": [
+            "facility_id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (id) USING BTREE",
+          "table": "recurring_schedules",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_recurring_schedules_facility",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id) REFERENCES facilities (id)",
+          "table": "recurring_schedules",
+          "referenced_table": "facilities",
+          "columns": [
+            "facility_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_recurring_schedules_rule",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (recurring_rule_id) REFERENCES recurring_rules (id)",
+          "table": "recurring_schedules",
+          "referenced_table": "recurring_rules",
+          "columns": [
+            "recurring_rule_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_recurring_schedules_staff",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (staff_id) REFERENCES users (id)",
+          "table": "recurring_schedules",
+          "referenced_table": "users",
+          "columns": [
+            "staff_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_recurring_schedules_type",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (schedule_type_id) REFERENCES schedule_types (id)",
+          "table": "recurring_schedules",
+          "referenced_table": "schedule_types",
+          "columns": [
+            "schedule_type_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_recurring_schedules_visit_info",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (visit_info_id) REFERENCES visit_infos (id)",
+          "table": "recurring_schedules",
+          "referenced_table": "visit_infos",
+          "columns": [
+            "visit_info_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "recurring_schedules",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "def": "CREATE TABLE `recurring_schedules` (\n  `id` char(26) NOT NULL,\n  `facility_id` char(26) NOT NULL,\n  `staff_id` char(26) NOT NULL,\n  `schedule_type_id` char(26) NOT NULL,\n  `recurring_rule_id` char(26) NOT NULL,\n  `date` date NOT NULL,\n  `start_time` time NOT NULL,\n  `end_time` time NOT NULL,\n  `visit_info_id` char(26) DEFAULT NULL,\n  `title` varchar(255) DEFAULT NULL,\n  `description` text,\n  `is_over_time_work` tinyint(1) NOT NULL DEFAULT '0',\n  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  KEY `idx_recurring_schedules_facility` (`facility_id`),\n  KEY `fk_recurring_schedules_staff` (`staff_id`),\n  KEY `fk_recurring_schedules_type` (`schedule_type_id`),\n  KEY `fk_recurring_schedules_rule` (`recurring_rule_id`),\n  KEY `fk_recurring_schedules_visit_info` (`visit_info_id`),\n  CONSTRAINT `fk_recurring_schedules_facility` FOREIGN KEY (`facility_id`) REFERENCES `facilities` (`id`),\n  CONSTRAINT `fk_recurring_schedules_rule` FOREIGN KEY (`recurring_rule_id`) REFERENCES `recurring_rules` (`id`),\n  CONSTRAINT `fk_recurring_schedules_staff` FOREIGN KEY (`staff_id`) REFERENCES `users` (`id`),\n  CONSTRAINT `fk_recurring_schedules_type` FOREIGN KEY (`schedule_type_id`) REFERENCES `schedule_types` (`id`),\n  CONSTRAINT `fk_recurring_schedules_visit_info` FOREIGN KEY (`visit_info_id`) REFERENCES `visit_infos` (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
+    },
+    {
+      "name": "schedule_cancels",
+      "type": "BASE TABLE",
+      "comment": "予定の取り消し",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "schedule_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "reason",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (id) USING BTREE",
+          "table": "schedule_cancels",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_schedule_cancels_schedule",
+          "def": "UNIQUE KEY uq_schedule_cancels_schedule (schedule_id) USING BTREE",
+          "table": "schedule_cancels",
+          "columns": [
+            "schedule_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_schedule_cancels_schedule",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (schedule_id) REFERENCES schedules (id)",
+          "table": "schedule_cancels",
+          "referenced_table": "schedules",
+          "columns": [
+            "schedule_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "schedule_cancels",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_schedule_cancels_schedule",
+          "type": "UNIQUE",
+          "def": "UNIQUE KEY uq_schedule_cancels_schedule (schedule_id)",
+          "table": "schedule_cancels",
+          "columns": [
+            "schedule_id"
+          ]
+        }
+      ],
+      "def": "CREATE TABLE `schedule_cancels` (\n  `id` char(26) NOT NULL,\n  `schedule_id` char(26) NOT NULL,\n  `reason` varchar(255) NOT NULL,\n  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `uq_schedule_cancels_schedule` (`schedule_id`),\n  CONSTRAINT `fk_schedule_cancels_schedule` FOREIGN KEY (`schedule_id`) REFERENCES `schedules` (`id`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
+    },
+    {
+      "name": "schedule_details",
+      "type": "VIEW",
+      "comment": "一覧の読み出しに使う、予定と訪問の情報と名前を結合したビュー",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "facility_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "schedule_type_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "schedule_type_name",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "nullable": false
+        },
+        {
+          "name": "start_time",
+          "type": "time",
+          "nullable": false
+        },
+        {
+          "name": "end_time",
+          "type": "time",
+          "nullable": false
+        },
+        {
+          "name": "is_over_time_work",
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": "0"
+        },
+        {
+          "name": "staff_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "staff_name",
+          "type": "varchar(128)",
+          "nullable": false
+        },
+        {
+          "name": "title",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "recurring_schedule_id",
+          "type": "char(26)",
+          "nullable": true
+        },
+        {
+          "name": "visit_info_id",
+          "type": "char(26)",
+          "nullable": true
+        },
+        {
+          "name": "patient_id",
+          "type": "char(26)",
+          "nullable": true
+        },
+        {
+          "name": "patient_name",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "assigned_staff_id",
+          "type": "char(26)",
+          "nullable": true
+        },
+        {
+          "name": "assigned_staff_name",
+          "type": "varchar(128)",
+          "nullable": true
+        },
+        {
+          "name": "companion_id",
+          "type": "char(26)",
+          "nullable": true
+        },
+        {
+          "name": "companion_name",
+          "type": "varchar(128)",
+          "nullable": true
+        },
+        {
+          "name": "service_code_id",
+          "type": "char(26)",
+          "nullable": true
+        },
+        {
+          "name": "service_code",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "cancel_id",
+          "type": "char(26)",
+          "nullable": true
+        },
+        {
+          "name": "cancel_reason",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "def": "CREATE VIEW schedule_details AS (select `s`.`id` AS `id`,`s`.`facility_id` AS `facility_id`,`s`.`schedule_type_id` AS `schedule_type_id`,`st`.`name` AS `schedule_type_name`,`s`.`date` AS `date`,`s`.`start_time` AS `start_time`,`s`.`end_time` AS `end_time`,`s`.`is_over_time_work` AS `is_over_time_work`,`s`.`staff_id` AS `staff_id`,`u`.`username` AS `staff_name`,`s`.`title` AS `title`,`s`.`description` AS `description`,`s`.`recurring_schedule_id` AS `recurring_schedule_id`,`s`.`visit_info_id` AS `visit_info_id`,`buddy`.`vid`.`patient_id` AS `patient_id`,`buddy`.`vid`.`patient_name` AS `patient_name`,`buddy`.`vid`.`assigned_staff_id` AS `assigned_staff_id`,`buddy`.`vid`.`assigned_staff_name` AS `assigned_staff_name`,`buddy`.`vid`.`companion_id` AS `companion_id`,`buddy`.`vid`.`companion_name` AS `companion_name`,`buddy`.`vid`.`service_code_id` AS `service_code_id`,`buddy`.`vid`.`service_code` AS `service_code`,`c`.`id` AS `cancel_id`,`c`.`reason` AS `cancel_reason`,`s`.`created_at` AS `created_at`,`s`.`updated_at` AS `updated_at` from ((((`buddy`.`schedules` `s` join `buddy`.`schedule_types` `st` on((`st`.`id` = `s`.`schedule_type_id`))) join `buddy`.`users` `u` on((`u`.`id` = `s`.`staff_id`))) left join `buddy`.`visit_info_details` `vid` on((`buddy`.`vid`.`id` = `s`.`visit_info_id`))) left join `buddy`.`schedule_cancels` `c` on((`c`.`schedule_id` = `s`.`id`))))",
+      "referenced_tables": [
+        "schedules",
+        "schedule_types",
+        "users",
+        "visit_info_details",
+        "schedule_cancels"
+      ]
+    },
+    {
+      "name": "schedule_types",
+      "type": "BASE TABLE",
+      "comment": "予定の種類（通常、訪問）。マイグレーションで入れる",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (id) USING BTREE",
+          "table": "schedule_types",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_schedule_types_name",
+          "def": "UNIQUE KEY uq_schedule_types_name (name) USING BTREE",
+          "table": "schedule_types",
+          "columns": [
+            "name"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "schedule_types",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_schedule_types_name",
+          "type": "UNIQUE",
+          "def": "UNIQUE KEY uq_schedule_types_name (name)",
+          "table": "schedule_types",
+          "columns": [
+            "name"
+          ]
+        }
+      ],
+      "def": "CREATE TABLE `schedule_types` (\n  `id` char(26) NOT NULL,\n  `name` varchar(255) NOT NULL,\n  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `uq_schedule_types_name` (`name`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
+    },
+    {
+      "name": "schedules",
+      "type": "BASE TABLE",
+      "comment": "予定",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "facility_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "staff_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "schedule_type_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "nullable": false
+        },
+        {
+          "name": "start_time",
+          "type": "time",
+          "nullable": false
+        },
+        {
+          "name": "end_time",
+          "type": "time",
+          "nullable": false
+        },
+        {
+          "name": "recurring_schedule_id",
+          "type": "char(26)",
+          "nullable": true,
+          "comment": "繰り返しの 1 回を置き換えたときだけ"
+        },
+        {
+          "name": "visit_info_id",
+          "type": "char(26)",
+          "nullable": true,
+          "comment": "訪問のときだけ"
+        },
+        {
+          "name": "title",
+          "type": "varchar(255)",
+          "nullable": true
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "is_over_time_work",
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": "0",
+          "comment": "開始が 17 時以降"
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "fk_schedules_recurring_schedule",
+          "def": "KEY fk_schedules_recurring_schedule (recurring_schedule_id) USING BTREE",
+          "table": "schedules",
+          "columns": [
+            "recurring_schedule_id"
+          ]
+        },
+        {
+          "name": "fk_schedules_staff",
+          "def": "KEY fk_schedules_staff (staff_id) USING BTREE",
+          "table": "schedules",
+          "columns": [
+            "staff_id"
+          ]
+        },
+        {
+          "name": "fk_schedules_type",
+          "def": "KEY fk_schedules_type (schedule_type_id) USING BTREE",
+          "table": "schedules",
+          "columns": [
+            "schedule_type_id"
+          ]
+        },
+        {
+          "name": "fk_schedules_visit_info",
+          "def": "KEY fk_schedules_visit_info (visit_info_id) USING BTREE",
+          "table": "schedules",
+          "columns": [
+            "visit_info_id"
+          ]
+        },
+        {
+          "name": "idx_schedules_facility_date",
+          "def": "KEY idx_schedules_facility_date (facility_id, date) USING BTREE",
+          "table": "schedules",
+          "columns": [
+            "facility_id",
+            "date"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (id) USING BTREE",
+          "table": "schedules",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_schedules_facility",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id) REFERENCES facilities (id)",
+          "table": "schedules",
+          "referenced_table": "facilities",
+          "columns": [
+            "facility_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_schedules_recurring_schedule",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (recurring_schedule_id) REFERENCES recurring_schedules (id)",
+          "table": "schedules",
+          "referenced_table": "recurring_schedules",
+          "columns": [
+            "recurring_schedule_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_schedules_staff",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (staff_id) REFERENCES users (id)",
+          "table": "schedules",
+          "referenced_table": "users",
+          "columns": [
+            "staff_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_schedules_type",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (schedule_type_id) REFERENCES schedule_types (id)",
+          "table": "schedules",
+          "referenced_table": "schedule_types",
+          "columns": [
+            "schedule_type_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_schedules_visit_info",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (visit_info_id) REFERENCES visit_infos (id)",
+          "table": "schedules",
+          "referenced_table": "visit_infos",
+          "columns": [
+            "visit_info_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "schedules",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "def": "CREATE TABLE `schedules` (\n  `id` char(26) NOT NULL,\n  `facility_id` char(26) NOT NULL,\n  `staff_id` char(26) NOT NULL,\n  `schedule_type_id` char(26) NOT NULL,\n  `date` date NOT NULL,\n  `start_time` time NOT NULL,\n  `end_time` time NOT NULL,\n  `recurring_schedule_id` char(26) DEFAULT NULL,\n  `visit_info_id` char(26) DEFAULT NULL,\n  `title` varchar(255) DEFAULT NULL,\n  `description` text,\n  `is_over_time_work` tinyint(1) NOT NULL DEFAULT '0',\n  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  KEY `idx_schedules_facility_date` (`facility_id`,`date`),\n  KEY `fk_schedules_staff` (`staff_id`),\n  KEY `fk_schedules_type` (`schedule_type_id`),\n  KEY `fk_schedules_recurring_schedule` (`recurring_schedule_id`),\n  KEY `fk_schedules_visit_info` (`visit_info_id`),\n  CONSTRAINT `fk_schedules_facility` FOREIGN KEY (`facility_id`) REFERENCES `facilities` (`id`),\n  CONSTRAINT `fk_schedules_recurring_schedule` FOREIGN KEY (`recurring_schedule_id`) REFERENCES `recurring_schedules` (`id`),\n  CONSTRAINT `fk_schedules_staff` FOREIGN KEY (`staff_id`) REFERENCES `users` (`id`),\n  CONSTRAINT `fk_schedules_type` FOREIGN KEY (`schedule_type_id`) REFERENCES `schedule_types` (`id`),\n  CONSTRAINT `fk_schedules_visit_info` FOREIGN KEY (`visit_info_id`) REFERENCES `visit_infos` (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
+    },
+    {
+      "name": "service_codes",
+      "type": "BASE TABLE",
+      "comment": "サービスコード。マイグレーションで入れる",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "code",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "service_time_range_start",
+          "type": "int",
+          "nullable": false,
+          "comment": "提供時間の範囲の下限（分）。照合の許容範囲と同じ値"
+        },
+        {
+          "name": "service_time_range_end",
+          "type": "int",
+          "nullable": false,
+          "comment": "提供時間の範囲の上限（分）。照合の許容範囲と同じ値"
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (id) USING BTREE",
+          "table": "service_codes",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_service_codes_code",
+          "def": "UNIQUE KEY uq_service_codes_code (code) USING BTREE",
+          "table": "service_codes",
+          "columns": [
+            "code"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "service_codes",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_service_codes_code",
+          "type": "UNIQUE",
+          "def": "UNIQUE KEY uq_service_codes_code (code)",
+          "table": "service_codes",
+          "columns": [
+            "code"
+          ]
+        }
+      ],
+      "def": "CREATE TABLE `service_codes` (\n  `id` char(26) NOT NULL,\n  `code` varchar(255) NOT NULL,\n  `service_time_range_start` int NOT NULL,\n  `service_time_range_end` int NOT NULL,\n  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `uq_service_codes_code` (`code`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
+    },
+    {
+      "name": "teams",
+      "type": "BASE TABLE",
+      "comment": "事業所のチーム",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "facility_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(255)",
+          "nullable": false,
+          "comment": "事業所の中で一意"
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (id) USING BTREE",
+          "table": "teams",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_teams_facility_name",
+          "def": "UNIQUE KEY uq_teams_facility_name (facility_id, name) USING BTREE",
+          "table": "teams",
+          "columns": [
+            "facility_id",
+            "name"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_teams_facility",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id) REFERENCES facilities (id)",
+          "table": "teams",
+          "referenced_table": "facilities",
+          "columns": [
+            "facility_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "teams",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_teams_facility_name",
+          "type": "UNIQUE",
+          "def": "UNIQUE KEY uq_teams_facility_name (facility_id, name)",
+          "table": "teams",
+          "columns": [
+            "facility_id",
+            "name"
+          ]
+        }
+      ],
+      "def": "CREATE TABLE `teams` (\n  `id` char(26) NOT NULL,\n  `facility_id` char(26) NOT NULL,\n  `name` varchar(255) NOT NULL,\n  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `uq_teams_facility_name` (`facility_id`,`name`),\n  CONSTRAINT `fk_teams_facility` FOREIGN KEY (`facility_id`) REFERENCES `facilities` (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
+    },
+    {
+      "name": "user_policies",
+      "type": "BASE TABLE",
+      "comment": "職員が持つ権限。職員と権限の組で一意",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "policy_id",
+          "type": "char(26)",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "fk_user_policies_policy",
+          "def": "KEY fk_user_policies_policy (policy_id) USING BTREE",
+          "table": "user_policies",
+          "columns": [
+            "policy_id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (id) USING BTREE",
+          "table": "user_policies",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_user_policies_user_policy",
+          "def": "UNIQUE KEY uq_user_policies_user_policy (user_id, policy_id) USING BTREE",
+          "table": "user_policies",
+          "columns": [
+            "user_id",
+            "policy_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_user_policies_policy",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (policy_id) REFERENCES policies (id)",
+          "table": "user_policies",
+          "referenced_table": "policies",
+          "columns": [
+            "policy_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_user_policies_user",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (user_id) REFERENCES users (id)",
+          "table": "user_policies",
+          "referenced_table": "users",
+          "columns": [
+            "user_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "user_policies",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_user_policies_user_policy",
+          "type": "UNIQUE",
+          "def": "UNIQUE KEY uq_user_policies_user_policy (user_id, policy_id)",
+          "table": "user_policies",
+          "columns": [
+            "user_id",
+            "policy_id"
+          ]
+        }
+      ],
+      "def": "CREATE TABLE `user_policies` (\n  `id` char(26) NOT NULL,\n  `user_id` char(26) NOT NULL,\n  `policy_id` char(26) NOT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `uq_user_policies_user_policy` (`user_id`,`policy_id`),\n  KEY `fk_user_policies_policy` (`policy_id`),\n  CONSTRAINT `fk_user_policies_policy` FOREIGN KEY (`policy_id`) REFERENCES `policies` (`id`),\n  CONSTRAINT `fk_user_policies_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
+    },
+    {
+      "name": "user_policy_targets",
+      "type": "BASE TABLE",
+      "comment": "職員の権限の対象",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "user_policy_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "target_user_id",
+          "type": "char(26)",
+          "nullable": true,
+          "comment": "対象の職員。チームと排他"
+        },
+        {
+          "name": "target_team_id",
+          "type": "char(26)",
+          "nullable": true,
+          "comment": "対象のチーム。職員と排他"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "fk_user_policy_targets_team",
+          "def": "KEY fk_user_policy_targets_team (target_team_id) USING BTREE",
+          "table": "user_policy_targets",
+          "columns": [
+            "target_team_id"
+          ]
+        },
+        {
+          "name": "fk_user_policy_targets_user",
+          "def": "KEY fk_user_policy_targets_user (target_user_id) USING BTREE",
+          "table": "user_policy_targets",
+          "columns": [
+            "target_user_id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (id) USING BTREE",
+          "table": "user_policy_targets",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_user_policy_targets_team",
+          "def": "UNIQUE KEY uq_user_policy_targets_team (user_policy_id, target_team_id) USING BTREE",
+          "table": "user_policy_targets",
+          "columns": [
+            "user_policy_id",
+            "target_team_id"
+          ]
+        },
+        {
+          "name": "uq_user_policy_targets_user",
+          "def": "UNIQUE KEY uq_user_policy_targets_user (user_policy_id, target_user_id) USING BTREE",
+          "table": "user_policy_targets",
+          "columns": [
+            "user_policy_id",
+            "target_user_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_user_policy_targets_team",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (target_team_id) REFERENCES teams (id)",
+          "table": "user_policy_targets",
+          "referenced_table": "teams",
+          "columns": [
+            "target_team_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_user_policy_targets_user",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (target_user_id) REFERENCES users (id)",
+          "table": "user_policy_targets",
+          "referenced_table": "users",
+          "columns": [
+            "target_user_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_user_policy_targets_user_policy",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (user_policy_id) REFERENCES user_policies (id)",
+          "table": "user_policy_targets",
+          "referenced_table": "user_policies",
+          "columns": [
+            "user_policy_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "user_policy_targets",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_user_policy_targets_team",
+          "type": "UNIQUE",
+          "def": "UNIQUE KEY uq_user_policy_targets_team (user_policy_id, target_team_id)",
+          "table": "user_policy_targets",
+          "columns": [
+            "user_policy_id",
+            "target_team_id"
+          ]
+        },
+        {
+          "name": "uq_user_policy_targets_user",
+          "type": "UNIQUE",
+          "def": "UNIQUE KEY uq_user_policy_targets_user (user_policy_id, target_user_id)",
+          "table": "user_policy_targets",
+          "columns": [
+            "user_policy_id",
+            "target_user_id"
+          ]
+        },
+        {
+          "name": "chk_user_policy_targets_one",
+          "type": "CHECK",
+          "def": "CHECK (((`target_user_id` is null) \u003c\u003e (`target_team_id` is null)))",
+          "table": "user_policy_targets"
+        }
+      ],
+      "def": "CREATE TABLE `user_policy_targets` (\n  `id` char(26) NOT NULL,\n  `user_policy_id` char(26) NOT NULL,\n  `target_user_id` char(26) DEFAULT NULL,\n  `target_team_id` char(26) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `uq_user_policy_targets_user` (`user_policy_id`,`target_user_id`),\n  UNIQUE KEY `uq_user_policy_targets_team` (`user_policy_id`,`target_team_id`),\n  KEY `fk_user_policy_targets_user` (`target_user_id`),\n  KEY `fk_user_policy_targets_team` (`target_team_id`),\n  CONSTRAINT `fk_user_policy_targets_team` FOREIGN KEY (`target_team_id`) REFERENCES `teams` (`id`),\n  CONSTRAINT `fk_user_policy_targets_user` FOREIGN KEY (`target_user_id`) REFERENCES `users` (`id`),\n  CONSTRAINT `fk_user_policy_targets_user_policy` FOREIGN KEY (`user_policy_id`) REFERENCES `user_policies` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `chk_user_policy_targets_one` CHECK (((`target_user_id` is null) \u003c\u003e (`target_team_id` is null)))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
+    },
+    {
+      "name": "users",
+      "type": "BASE TABLE",
+      "comment": "職員",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "sub",
+          "type": "varchar(255)",
+          "nullable": true,
+          "comment": "ブローカーの subject。初回のログインまで NULL"
+        },
+        {
+          "name": "username",
+          "type": "varchar(128)",
+          "nullable": false,
+          "comment": "電子カルテの職員名と同じ表記。照合が名前で比べる"
+        },
+        {
+          "name": "email",
+          "type": "varchar(320)",
+          "nullable": false,
+          "comment": "事業所の中で一意"
+        },
+        {
+          "name": "phone_number",
+          "type": "varchar(16)",
+          "nullable": true
+        },
+        {
+          "name": "facility_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "department_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "team_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "position_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "fk_users_department",
+          "def": "KEY fk_users_department (department_id) USING BTREE",
+          "table": "users",
+          "columns": [
+            "department_id"
+          ]
+        },
+        {
+          "name": "fk_users_position",
+          "def": "KEY fk_users_position (position_id) USING BTREE",
+          "table": "users",
+          "columns": [
+            "position_id"
+          ]
+        },
+        {
+          "name": "fk_users_team",
+          "def": "KEY fk_users_team (team_id) USING BTREE",
+          "table": "users",
+          "columns": [
+            "team_id"
+          ]
+        },
+        {
+          "name": "idx_users_facility",
+          "def": "KEY idx_users_facility (facility_id) USING BTREE",
+          "table": "users",
+          "columns": [
+            "facility_id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (id) USING BTREE",
+          "table": "users",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_users_facility_email",
+          "def": "UNIQUE KEY uq_users_facility_email (facility_id, email) USING BTREE",
+          "table": "users",
+          "columns": [
+            "facility_id",
+            "email"
+          ]
+        },
+        {
+          "name": "uq_users_sub",
+          "def": "UNIQUE KEY uq_users_sub (sub) USING BTREE",
+          "table": "users",
+          "columns": [
+            "sub"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_users_department",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (department_id) REFERENCES departments (id)",
+          "table": "users",
+          "referenced_table": "departments",
+          "columns": [
+            "department_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_users_facility",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id) REFERENCES facilities (id)",
+          "table": "users",
+          "referenced_table": "facilities",
+          "columns": [
+            "facility_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_users_position",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (position_id) REFERENCES positions (id)",
+          "table": "users",
+          "referenced_table": "positions",
+          "columns": [
+            "position_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_users_team",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (team_id) REFERENCES teams (id)",
+          "table": "users",
+          "referenced_table": "teams",
+          "columns": [
+            "team_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "users",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_users_facility_email",
+          "type": "UNIQUE",
+          "def": "UNIQUE KEY uq_users_facility_email (facility_id, email)",
+          "table": "users",
+          "columns": [
+            "facility_id",
+            "email"
+          ]
+        },
+        {
+          "name": "uq_users_sub",
+          "type": "UNIQUE",
+          "def": "UNIQUE KEY uq_users_sub (sub)",
+          "table": "users",
+          "columns": [
+            "sub"
+          ]
+        }
+      ],
+      "def": "CREATE TABLE `users` (\n  `id` char(26) NOT NULL,\n  `sub` varchar(255) DEFAULT NULL,\n  `username` varchar(128) NOT NULL,\n  `email` varchar(320) NOT NULL,\n  `phone_number` varchar(16) DEFAULT NULL,\n  `facility_id` char(26) NOT NULL,\n  `department_id` char(26) NOT NULL,\n  `team_id` char(26) NOT NULL,\n  `position_id` char(26) NOT NULL,\n  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `uq_users_facility_email` (`facility_id`,`email`),\n  UNIQUE KEY `uq_users_sub` (`sub`),\n  KEY `idx_users_facility` (`facility_id`),\n  KEY `fk_users_department` (`department_id`),\n  KEY `fk_users_team` (`team_id`),\n  KEY `fk_users_position` (`position_id`),\n  CONSTRAINT `fk_users_department` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`),\n  CONSTRAINT `fk_users_facility` FOREIGN KEY (`facility_id`) REFERENCES `facilities` (`id`),\n  CONSTRAINT `fk_users_position` FOREIGN KEY (`position_id`) REFERENCES `positions` (`id`),\n  CONSTRAINT `fk_users_team` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
+    },
+    {
+      "name": "visit_categories",
+      "type": "BASE TABLE",
+      "comment": "訪問の区分（夜勤、緊急、入院）。マイグレーションで入れる",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (id) USING BTREE",
+          "table": "visit_categories",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_visit_categories_name",
+          "def": "UNIQUE KEY uq_visit_categories_name (name) USING BTREE",
+          "table": "visit_categories",
+          "columns": [
+            "name"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "visit_categories",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_visit_categories_name",
+          "type": "UNIQUE",
+          "def": "UNIQUE KEY uq_visit_categories_name (name)",
+          "table": "visit_categories",
+          "columns": [
+            "name"
+          ]
+        }
+      ],
+      "def": "CREATE TABLE `visit_categories` (\n  `id` char(26) NOT NULL,\n  `name` varchar(255) NOT NULL,\n  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `uq_visit_categories_name` (`name`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
+    },
+    {
+      "name": "visit_info_details",
+      "type": "VIEW",
+      "comment": "訪問の情報と名前を結合したビュー",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "patient_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "patient_name",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "assigned_staff_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "assigned_staff_name",
+          "type": "varchar(128)",
+          "nullable": false
+        },
+        {
+          "name": "companion_id",
+          "type": "char(26)",
+          "nullable": true
+        },
+        {
+          "name": "companion_name",
+          "type": "varchar(128)",
+          "nullable": true
+        },
+        {
+          "name": "service_code_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "service_code",
+          "type": "varchar(255)",
+          "nullable": false
+        }
+      ],
+      "def": "CREATE VIEW visit_info_details AS (select `vi`.`id` AS `id`,`vi`.`patient_id` AS `patient_id`,`pa`.`name` AS `patient_name`,`vi`.`assigned_staff_id` AS `assigned_staff_id`,`au`.`username` AS `assigned_staff_name`,`vi`.`companion_id` AS `companion_id`,`cu`.`username` AS `companion_name`,`vi`.`service_code_id` AS `service_code_id`,`sc`.`code` AS `service_code` from ((((`buddy`.`visit_infos` `vi` join `buddy`.`patients` `pa` on((`pa`.`id` = `vi`.`patient_id`))) join `buddy`.`users` `au` on((`au`.`id` = `vi`.`assigned_staff_id`))) left join `buddy`.`users` `cu` on((`cu`.`id` = `vi`.`companion_id`))) join `buddy`.`service_codes` `sc` on((`sc`.`id` = `vi`.`service_code_id`))))",
+      "referenced_tables": [
+        "visit_infos",
+        "patients",
+        "users",
+        "service_codes"
+      ]
+    },
+    {
+      "name": "visit_info_visit_categories",
+      "type": "BASE TABLE",
+      "comment": "訪問に付けた区分。1 件の訪問に複数を付けられる",
+      "columns": [
+        {
+          "name": "visit_info_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "visit_category_id",
+          "type": "char(26)",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "fk_vivc_visit_category",
+          "def": "KEY fk_vivc_visit_category (visit_category_id) USING BTREE",
+          "table": "visit_info_visit_categories",
+          "columns": [
+            "visit_category_id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (visit_info_id, visit_category_id) USING BTREE",
+          "table": "visit_info_visit_categories",
+          "columns": [
+            "visit_info_id",
+            "visit_category_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_vivc_visit_category",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (visit_category_id) REFERENCES visit_categories (id)",
+          "table": "visit_info_visit_categories",
+          "referenced_table": "visit_categories",
+          "columns": [
+            "visit_category_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_vivc_visit_info",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (visit_info_id) REFERENCES visit_infos (id)",
+          "table": "visit_info_visit_categories",
+          "referenced_table": "visit_infos",
+          "columns": [
+            "visit_info_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (visit_info_id, visit_category_id)",
+          "table": "visit_info_visit_categories",
+          "columns": [
+            "visit_info_id",
+            "visit_category_id"
+          ]
+        }
+      ],
+      "def": "CREATE TABLE `visit_info_visit_categories` (\n  `visit_info_id` char(26) NOT NULL,\n  `visit_category_id` char(26) NOT NULL,\n  PRIMARY KEY (`visit_info_id`,`visit_category_id`),\n  KEY `fk_vivc_visit_category` (`visit_category_id`),\n  CONSTRAINT `fk_vivc_visit_category` FOREIGN KEY (`visit_category_id`) REFERENCES `visit_categories` (`id`),\n  CONSTRAINT `fk_vivc_visit_info` FOREIGN KEY (`visit_info_id`) REFERENCES `visit_infos` (`id`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
+    },
+    {
+      "name": "visit_infos",
+      "type": "BASE TABLE",
+      "comment": "訪問の情報",
+      "columns": [
+        {
+          "name": "id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "patient_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "assigned_staff_id",
+          "type": "char(26)",
+          "nullable": false,
+          "comment": "主訪問者"
+        },
+        {
+          "name": "companion_id",
+          "type": "char(26)",
+          "nullable": true,
+          "comment": "同行者"
+        },
+        {
+          "name": "service_code_id",
+          "type": "char(26)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP",
+          "extra_def": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "fk_visit_infos_assigned_staff",
+          "def": "KEY fk_visit_infos_assigned_staff (assigned_staff_id) USING BTREE",
+          "table": "visit_infos",
+          "columns": [
+            "assigned_staff_id"
+          ]
+        },
+        {
+          "name": "fk_visit_infos_companion",
+          "def": "KEY fk_visit_infos_companion (companion_id) USING BTREE",
+          "table": "visit_infos",
+          "columns": [
+            "companion_id"
+          ]
+        },
+        {
+          "name": "fk_visit_infos_patient",
+          "def": "KEY fk_visit_infos_patient (patient_id) USING BTREE",
+          "table": "visit_infos",
+          "columns": [
+            "patient_id"
+          ]
+        },
+        {
+          "name": "fk_visit_infos_service_code",
+          "def": "KEY fk_visit_infos_service_code (service_code_id) USING BTREE",
+          "table": "visit_infos",
+          "columns": [
+            "service_code_id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "def": "PRIMARY KEY (id) USING BTREE",
+          "table": "visit_infos",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fk_visit_infos_assigned_staff",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (assigned_staff_id) REFERENCES users (id)",
+          "table": "visit_infos",
+          "referenced_table": "users",
+          "columns": [
+            "assigned_staff_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_visit_infos_companion",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (companion_id) REFERENCES users (id)",
+          "table": "visit_infos",
+          "referenced_table": "users",
+          "columns": [
+            "companion_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_visit_infos_patient",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (patient_id) REFERENCES patients (id)",
+          "table": "visit_infos",
+          "referenced_table": "patients",
+          "columns": [
+            "patient_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "fk_visit_infos_service_code",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (service_code_id) REFERENCES service_codes (id)",
+          "table": "visit_infos",
+          "referenced_table": "service_codes",
+          "columns": [
+            "service_code_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "PRIMARY",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "visit_infos",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "def": "CREATE TABLE `visit_infos` (\n  `id` char(26) NOT NULL,\n  `patient_id` char(26) NOT NULL,\n  `assigned_staff_id` char(26) NOT NULL,\n  `companion_id` char(26) DEFAULT NULL,\n  `service_code_id` char(26) NOT NULL,\n  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`),\n  KEY `fk_visit_infos_patient` (`patient_id`),\n  KEY `fk_visit_infos_assigned_staff` (`assigned_staff_id`),\n  KEY `fk_visit_infos_companion` (`companion_id`),\n  KEY `fk_visit_infos_service_code` (`service_code_id`),\n  CONSTRAINT `fk_visit_infos_assigned_staff` FOREIGN KEY (`assigned_staff_id`) REFERENCES `users` (`id`),\n  CONSTRAINT `fk_visit_infos_companion` FOREIGN KEY (`companion_id`) REFERENCES `users` (`id`),\n  CONSTRAINT `fk_visit_infos_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`),\n  CONSTRAINT `fk_visit_infos_service_code` FOREIGN KEY (`service_code_id`) REFERENCES `service_codes` (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
+    }
+  ],
+  "relations": [
+    {
+      "table": "departments",
+      "columns": [
+        "facility_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "facilities",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id) REFERENCES facilities (id)"
+    },
+    {
+      "table": "patients",
+      "columns": [
+        "assigned_staff_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "users",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (assigned_staff_id) REFERENCES users (id)"
+    },
+    {
+      "table": "patients",
+      "columns": [
+        "facility_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "facilities",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id) REFERENCES facilities (id)"
+    },
+    {
+      "table": "patients",
+      "columns": [
+        "service_code_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "service_codes",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (service_code_id) REFERENCES service_codes (id)"
+    },
+    {
+      "table": "position_policies",
+      "columns": [
+        "policy_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "policies",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (policy_id) REFERENCES policies (id)"
+    },
+    {
+      "table": "position_policies",
+      "columns": [
+        "position_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "positions",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (position_id) REFERENCES positions (id)"
+    },
+    {
+      "table": "positions",
+      "columns": [
+        "facility_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "facilities",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id) REFERENCES facilities (id)"
+    },
+    {
+      "table": "recurring_schedule_exclusions",
+      "columns": [
+        "recurring_schedule_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "recurring_schedules",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (recurring_schedule_id) REFERENCES recurring_schedules (id)"
+    },
+    {
+      "table": "recurring_schedules",
+      "columns": [
+        "facility_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "facilities",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id) REFERENCES facilities (id)"
+    },
+    {
+      "table": "recurring_schedules",
+      "columns": [
+        "recurring_rule_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "recurring_rules",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (recurring_rule_id) REFERENCES recurring_rules (id)"
+    },
+    {
+      "table": "recurring_schedules",
+      "columns": [
+        "staff_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "users",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (staff_id) REFERENCES users (id)"
+    },
+    {
+      "table": "recurring_schedules",
+      "columns": [
+        "schedule_type_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "schedule_types",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (schedule_type_id) REFERENCES schedule_types (id)"
+    },
+    {
+      "table": "recurring_schedules",
+      "columns": [
+        "visit_info_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "visit_infos",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "zero_or_one",
+      "def": "FOREIGN KEY (visit_info_id) REFERENCES visit_infos (id)"
+    },
+    {
+      "table": "schedule_cancels",
+      "columns": [
+        "schedule_id"
+      ],
+      "cardinality": "zero_or_one",
+      "parent_table": "schedules",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (schedule_id) REFERENCES schedules (id)"
+    },
+    {
+      "table": "schedules",
+      "columns": [
+        "facility_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "facilities",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id) REFERENCES facilities (id)"
+    },
+    {
+      "table": "schedules",
+      "columns": [
+        "recurring_schedule_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "recurring_schedules",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "zero_or_one",
+      "def": "FOREIGN KEY (recurring_schedule_id) REFERENCES recurring_schedules (id)"
+    },
+    {
+      "table": "schedules",
+      "columns": [
+        "staff_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "users",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (staff_id) REFERENCES users (id)"
+    },
+    {
+      "table": "schedules",
+      "columns": [
+        "schedule_type_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "schedule_types",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (schedule_type_id) REFERENCES schedule_types (id)"
+    },
+    {
+      "table": "schedules",
+      "columns": [
+        "visit_info_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "visit_infos",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "zero_or_one",
+      "def": "FOREIGN KEY (visit_info_id) REFERENCES visit_infos (id)"
+    },
+    {
+      "table": "teams",
+      "columns": [
+        "facility_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "facilities",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id) REFERENCES facilities (id)"
+    },
+    {
+      "table": "user_policies",
+      "columns": [
+        "policy_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "policies",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (policy_id) REFERENCES policies (id)"
+    },
+    {
+      "table": "user_policies",
+      "columns": [
+        "user_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "users",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (user_id) REFERENCES users (id)"
+    },
+    {
+      "table": "user_policy_targets",
+      "columns": [
+        "target_team_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "teams",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "zero_or_one",
+      "def": "FOREIGN KEY (target_team_id) REFERENCES teams (id)"
+    },
+    {
+      "table": "user_policy_targets",
+      "columns": [
+        "target_user_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "users",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "zero_or_one",
+      "def": "FOREIGN KEY (target_user_id) REFERENCES users (id)"
+    },
+    {
+      "table": "user_policy_targets",
+      "columns": [
+        "user_policy_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "user_policies",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (user_policy_id) REFERENCES user_policies (id)"
+    },
+    {
+      "table": "users",
+      "columns": [
+        "department_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "departments",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (department_id) REFERENCES departments (id)"
+    },
+    {
+      "table": "users",
+      "columns": [
+        "facility_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "facilities",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id) REFERENCES facilities (id)"
+    },
+    {
+      "table": "users",
+      "columns": [
+        "position_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "positions",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (position_id) REFERENCES positions (id)"
+    },
+    {
+      "table": "users",
+      "columns": [
+        "team_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "teams",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (team_id) REFERENCES teams (id)"
+    },
+    {
+      "table": "visit_info_visit_categories",
+      "columns": [
+        "visit_category_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "visit_categories",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (visit_category_id) REFERENCES visit_categories (id)"
+    },
+    {
+      "table": "visit_info_visit_categories",
+      "columns": [
+        "visit_info_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "visit_infos",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (visit_info_id) REFERENCES visit_infos (id)"
+    },
+    {
+      "table": "visit_infos",
+      "columns": [
+        "assigned_staff_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "users",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (assigned_staff_id) REFERENCES users (id)"
+    },
+    {
+      "table": "visit_infos",
+      "columns": [
+        "companion_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "users",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "zero_or_one",
+      "def": "FOREIGN KEY (companion_id) REFERENCES users (id)"
+    },
+    {
+      "table": "visit_infos",
+      "columns": [
+        "patient_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "patients",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (patient_id) REFERENCES patients (id)"
+    },
+    {
+      "table": "visit_infos",
+      "columns": [
+        "service_code_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "service_codes",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (service_code_id) REFERENCES service_codes (id)"
+    }
+  ],
+  "driver": {
+    "name": "mysql",
+    "database_version": "8.4.11",
+    "meta": {
+      "dict": {
+        "Functions": "Stored procedures and functions"
+      }
+    }
+  }
+}

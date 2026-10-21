@@ -19,6 +19,8 @@ packages/e2e/playwright-report/**
 .claude/skills/write-skill/**
 .agents/**
 .codex/**
+# tbls の生成物。説明は apps/schedule-api/.tbls.yml で直す
+docs/db/**
 # apps/ と packages/ の Design Doc へのシンボリックリンク。元のファイルを見る
 docs/design/apps/**
 docs/design/packages/**

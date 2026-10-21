@@ -1,0 +1,103 @@
+# tbls の設定。文書は scripts/build-db-docs.sh で生成する
+docPath: docs/db/schedule-api
+format:
+  adjust: true
+er:
+  format: mermaid
+  # 表ごとの文書には、その表と直接つながる表だけを描く
+  distance: 1
+exclude:
+  - schema_migrations
+name: schedule-api
+# 表とカラムの説明。マイグレーションの SQL には COMMENT を書かず、ここに置く
+comments:
+  - table: facilities
+    tableComment: 訪問看護の事業所
+    columnComments:
+      name: 事業所名
+      org_id: ブローカーの組織の ID。結び付けるまで NULL
+  - table: departments
+    tableComment: 事業所の部署
+    columnComments:
+      name: 事業所の中で一意
+  - table: teams
+    tableComment: 事業所のチーム
+    columnComments:
+      name: 事業所の中で一意
+  - table: positions
+    tableComment: 事業所の役職。職員を登録するときに写す既定の権限を持つ
+    columnComments:
+      name: 事業所の中で一意
+  - table: policies
+    tableComment: 権限。マイグレーションで入れ、API では作らない
+    columnComments:
+      code: 認可が読む識別子
+      name: 権限の名前
+      needs_target: 対象の職員かチームを指定するか
+  - table: position_policies
+    tableComment: 役職の既定の権限
+  - table: user_policies
+    tableComment: 職員が持つ権限。職員と権限の組で一意
+  - table: user_policy_targets
+    tableComment: 職員の権限の対象
+    columnComments:
+      target_user_id: 対象の職員。チームと排他
+      target_team_id: 対象のチーム。職員と排他
+  - table: users
+    tableComment: 職員
+    columnComments:
+      sub: ブローカーの subject。初回のログインまで NULL
+      username: 電子カルテの職員名と同じ表記。照合が名前で比べる
+      email: 事業所の中で一意
+  - table: patients
+    tableComment: 利用者
+    columnComments:
+      preferred_time: 希望の時間帯（午前、午後）
+      preferred_gender: 希望の訪問者の性別（男性、女性）
+      service_code_id: 受けているサービス
+      assigned_staff_id: 主に担当する職員
+  - table: schedule_types
+    tableComment: 予定の種類（通常、訪問）。マイグレーションで入れる
+  - table: schedules
+    tableComment: 予定
+    columnComments:
+      recurring_schedule_id: 繰り返しの 1 回を置き換えたときだけ
+      visit_info_id: 訪問のときだけ
+      is_over_time_work: 開始が 17 時以降
+  - table: schedule_cancels
+    tableComment: 予定の取り消し
+  - table: recurring_rules
+    tableComment: 繰り返しの規則
+    columnComments:
+      frequency: weekly、monthly
+      day_of_week: 1（月曜）から 7
+      day_of_month: 1 から 31
+      week_of_month: 1 から 5
+      end_date: NULL なら終わりなし
+  - table: recurring_schedules
+    tableComment: 繰り返しの予定
+    columnComments:
+      date: 最初の回の日付
+      visit_info_id: 訪問のときだけ
+  - table: recurring_schedule_exclusions
+    tableComment: 繰り返しの予定のうち、回にしない日
+  - table: visit_infos
+    tableComment: 訪問の情報
+    columnComments:
+      assigned_staff_id: 主訪問者
+      companion_id: 同行者
+  - table: visit_info_visit_categories
+    tableComment: 訪問に付けた区分。1 件の訪問に複数を付けられる
+  - table: service_codes
+    tableComment: サービスコード。マイグレーションで入れる
+    columnComments:
+      service_time_range_start: 提供時間の範囲の下限（分）。照合の許容範囲と同じ値
+      service_time_range_end: 提供時間の範囲の上限（分）。照合の許容範囲と同じ値
+  - table: visit_categories
+    tableComment: 訪問の区分（夜勤、緊急、入院）。マイグレーションで入れる
+  - table: schedule_details
+    tableComment: 一覧の読み出しに使う、予定と訪問の情報と名前を結合したビュー
+  - table: recurring_schedule_details
+    tableComment: 一覧の読み出しに使う、繰り返しの予定と訪問の情報と名前を結合したビュー
+  - table: visit_info_details
+    tableComment: 訪問の情報と名前を結合したビュー
