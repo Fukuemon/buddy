@@ -87,7 +87,11 @@ const CalendarImportContent = ({ staffId, onStaffChange }: CalendarImportContain
     )
 
   const isLocked = preview.isPending || runImport.isPending
-  const previewed = preview.data
+  // 下見の結果は、下見したカレンダーにだけ当てる。一覧の読み直しで選んだ職員が替わったら、結果を出さず、確定もさせない
+  const previewed =
+    preview.data !== undefined && preview.variables?.calendarId === current?.calendar.id
+      ? preview.data
+      : undefined
   const decisions = previewed === undefined ? [] : toDecisions(previewed.needs_review, choices)
 
   return (
