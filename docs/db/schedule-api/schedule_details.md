@@ -54,6 +54,12 @@ CREATE VIEW schedule_details AS (select `s`.`id` AS `id`,`s`.`facility_id` AS `f
 | [visit_info_details](visit_info_details.md) | 9       | 訪問の情報と名前を結合したビュー                   | VIEW       |
 | [schedule_cancels](schedule_cancels.md)     | 5       | 予定の取り消し                                     | BASE TABLE |
 
+## Viewpoints
+
+| Name                                 | Definition                                           |
+| ------------------------------------ | ---------------------------------------------------- |
+| [予定と訪問](viewpoint-schedules.md) | 予定と、訪問のときの訪問の情報と区分、予定の取り消し |
+
 ## Relations
 
 ```mermaid
