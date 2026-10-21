@@ -1,4 +1,4 @@
-package mysql
+package postgres
 
 import (
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/kernel"

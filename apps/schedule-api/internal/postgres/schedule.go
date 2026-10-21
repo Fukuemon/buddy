@@ -1,11 +1,12 @@
-package mysql
+package postgres
 
 import (
 	"context"
-	"database/sql"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql/sqlcgen"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/postgres/sqlcgen"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
 )
 
@@ -13,8 +14,8 @@ import (
 type ScheduleTypeRepository struct{ conn }
 
 // NewScheduleTypeRepository は ScheduleTypeRepository を作る。
-func NewScheduleTypeRepository(db *sql.DB) *ScheduleTypeRepository {
-	return &ScheduleTypeRepository{conn{db}}
+func NewScheduleTypeRepository(pool *pgxpool.Pool) *ScheduleTypeRepository {
+	return &ScheduleTypeRepository{conn{pool}}
 }
 
 // Get は、ID が id の予定の種類を返す。無いときは apperr.ErrNotFound を返す。
@@ -23,7 +24,7 @@ func (r *ScheduleTypeRepository) Get(ctx context.Context, id string) (schedule.T
 	if err != nil {
 		return schedule.Type{}, translate("get schedule type", err)
 	}
-	return schedule.Type{ID: t.ID, Name: schedule.TypeName(t.Name)}, nil
+	return schedule.Type{ID: t.ID, Code: schedule.TypeCode(t.Code), Name: schedule.TypeName(t.Name)}, nil
 }
 
 // List は、すべての予定の種類を名前、ID の順に返す。
@@ -34,7 +35,7 @@ func (r *ScheduleTypeRepository) List(ctx context.Context) ([]schedule.Type, err
 	}
 	out := make([]schedule.Type, len(rows))
 	for i, t := range rows {
-		out[i] = schedule.Type{ID: t.ID, Name: schedule.TypeName(t.Name)}
+		out[i] = schedule.Type{ID: t.ID, Code: schedule.TypeCode(t.Code), Name: schedule.TypeName(t.Name)}
 	}
 	return out, nil
 }
@@ -43,9 +44,11 @@ func (r *ScheduleTypeRepository) List(ctx context.Context) ([]schedule.Type, err
 type ScheduleRepository struct{ conn }
 
 // NewScheduleRepository は ScheduleRepository を作る。
-func NewScheduleRepository(db *sql.DB) *ScheduleRepository { return &ScheduleRepository{conn{db}} }
+func NewScheduleRepository(pool *pgxpool.Pool) *ScheduleRepository {
+	return &ScheduleRepository{conn{pool}}
+}
 
-// Create は、予定を書く。参照先（事業所、職員、予定の種類、繰り返しの予定、訪問の情報）が無いか、値が列の制約に合わないときは apperr.ErrInvalidInput のエラーを返す。
+// Create は、予定を書く。IsOverTimeWork は書かず、DB が開始の時刻から生成する。参照先（事業所、職員、予定の種類、繰り返しの予定、訪問の情報）が無いか、値が列の制約に合わないときは apperr.ErrInvalidInput のエラーを返す。
 func (r *ScheduleRepository) Create(ctx context.Context, s schedule.Schedule) error {
 	err := r.q(ctx).CreateSchedule(ctx, sqlcgen.CreateScheduleParams{
 		ID:                  s.ID,
@@ -55,11 +58,11 @@ func (r *ScheduleRepository) Create(ctx context.Context, s schedule.Schedule) er
 		Date:                s.Date.Time(),
 		StartTime:           timeOfDay(s.StartTime),
 		EndTime:             timeOfDay(s.EndTime),
-		RecurringScheduleID: nullString(s.RecurringScheduleID),
-		VisitInfoID:         nullString(s.VisitInfoID),
-		Title:               nullString(s.Title),
-		Description:         nullString(s.Description),
-		IsOverTimeWork:      s.IsOverTimeWork,
+		RecurringScheduleID: s.RecurringScheduleID,
+		OriginalDate:        nullDate(s.OriginalDate),
+		VisitInfoID:         s.VisitInfoID,
+		Title:               s.Title,
+		Description:         s.Description,
 	})
 	return translate("create schedule", err)
 }
@@ -73,7 +76,7 @@ func (r *ScheduleRepository) GetForUpdate(ctx context.Context, id string) (sched
 	return r.Get(ctx, id)
 }
 
-// Update は、ID が s.ID の予定の枠を s の値で上書きする。事業所と RecurringScheduleID は変えない。予定が無くてもエラーにしない。
+// Update は、ID が s.ID の予定の枠を s の値で上書きする。事業所と、RecurringScheduleID と OriginalDate は変えない。予定が無くてもエラーにしない。
 // 参照先（職員、予定の種類、訪問の情報）が無いか、値が列の制約に合わないときは apperr.ErrInvalidInput のエラーを返す。
 func (r *ScheduleRepository) Update(ctx context.Context, s schedule.Schedule) error {
 	err := r.q(ctx).UpdateSchedule(ctx, sqlcgen.UpdateScheduleParams{
@@ -83,10 +86,9 @@ func (r *ScheduleRepository) Update(ctx context.Context, s schedule.Schedule) er
 		Date:           s.Date.Time(),
 		StartTime:      timeOfDay(s.StartTime),
 		EndTime:        timeOfDay(s.EndTime),
-		VisitInfoID:    nullString(s.VisitInfoID),
-		Title:          nullString(s.Title),
-		Description:    nullString(s.Description),
-		IsOverTimeWork: s.IsOverTimeWork,
+		VisitInfoID:    s.VisitInfoID,
+		Title:          s.Title,
+		Description:    s.Description,
 	})
 	return translate("update schedule", err)
 }
@@ -114,7 +116,7 @@ func (r *ScheduleRepository) ListByFacility(ctx context.Context, facilityID stri
 		Sort:       q.Sort.Key(),
 	}
 	if q.TypeName != nil {
-		params.ScheduleType = sql.NullString{String: string(*q.TypeName), Valid: true}
+		params.ScheduleType = ptr(string(*q.TypeName))
 	}
 	rows, err := r.q(ctx).ListScheduleDetailsByFacility(ctx, params)
 	if err != nil {
@@ -124,7 +126,7 @@ func (r *ScheduleRepository) ListByFacility(ctx context.Context, facilityID stri
 }
 
 func (r *ScheduleRepository) scheduleDetails(ctx context.Context, rows []sqlcgen.ScheduleDetail) ([]schedule.Detail, error) {
-	cats, err := r.visitCategories(ctx, visitInfoIDs(rows, func(s sqlcgen.ScheduleDetail) sql.NullString { return s.VisitInfoID }))
+	cats, err := r.visitCategories(ctx, visitInfoIDs(rows, func(s sqlcgen.ScheduleDetail) *string { return s.VisitInfoID }))
 	if err != nil {
 		return nil, err
 	}
@@ -148,12 +150,13 @@ func (r *ScheduleRepository) scheduleDetails(ctx context.Context, rows []sqlcgen
 					Date:           civil.DateOf(s.Date),
 					StartTime:      start,
 					EndTime:        end,
-					VisitInfoID:    stringPtr(s.VisitInfoID),
-					Title:          stringPtr(s.Title),
-					Description:    stringPtr(s.Description),
+					VisitInfoID:    s.VisitInfoID,
+					Title:          s.Title,
+					Description:    s.Description,
 					IsOverTimeWork: s.IsOverTimeWork,
 				},
-				RecurringScheduleID: stringPtr(s.RecurringScheduleID),
+				RecurringScheduleID: s.RecurringScheduleID,
+				OriginalDate:        datePtr(s.OriginalDate),
 			},
 			TypeName:  schedule.TypeName(s.ScheduleTypeName),
 			StaffName: s.StaffName,
@@ -166,8 +169,8 @@ func (r *ScheduleRepository) scheduleDetails(ctx context.Context, rows []sqlcgen
 			CreatedAt: s.CreatedAt,
 			UpdatedAt: s.UpdatedAt,
 		}
-		if s.CancelID.Valid {
-			d.Cancel = &schedule.Cancel{ID: s.CancelID.String, ScheduleID: s.ID, Reason: s.CancelReason.String}
+		if s.CancelID != nil {
+			d.Cancel = &schedule.Cancel{ID: *s.CancelID, ScheduleID: s.ID, Reason: deref(s.CancelReason)}
 		}
 		out[i] = d
 	}
@@ -186,16 +189,26 @@ func (r *ScheduleRepository) CreateCancel(ctx context.Context, c schedule.Cancel
 type RecurringScheduleRepository struct{ conn }
 
 // NewRecurringScheduleRepository は RecurringScheduleRepository を作る。
-func NewRecurringScheduleRepository(db *sql.DB) *RecurringScheduleRepository {
-	return &RecurringScheduleRepository{conn{db}}
+func NewRecurringScheduleRepository(pool *pgxpool.Pool) *RecurringScheduleRepository {
+	return &RecurringScheduleRepository{conn{pool}}
 }
 
-// Create は、繰り返しの規則と予定を続けて書く。途中で失敗したときに残さないよう、呼び出し側がトランザクションの中で呼ぶ。
+// Create は、繰り返しの予定と規則を 1 つの行に書く。IsOverTimeWork は書かず、DB が開始の時刻から生成する。
+// 参照先が無いか、値が列の制約に合わないときは apperr.ErrInvalidInput のエラーを返す。
 func (r *RecurringScheduleRepository) Create(ctx context.Context, rs schedule.RecurringSchedule) error {
-	params := sqlcgen.CreateRecurringRuleParams{
-		ID:        rs.Rule.ID,
-		Frequency: string(rs.Rule.Frequency),
-		EndDate:   nullDate(rs.Rule.EndDate),
+	params := sqlcgen.CreateRecurringScheduleParams{
+		ID:             rs.ID,
+		FacilityID:     rs.FacilityID,
+		StaffID:        rs.StaffID,
+		ScheduleTypeID: rs.TypeID,
+		Date:           rs.Date.Time(),
+		StartTime:      timeOfDay(rs.StartTime),
+		EndTime:        timeOfDay(rs.EndTime),
+		VisitInfoID:    rs.VisitInfoID,
+		Title:          rs.Title,
+		Description:    rs.Description,
+		Frequency:      string(rs.Rule.Frequency),
+		EndDate:        nullDate(rs.Rule.EndDate),
 	}
 	var err error
 	if params.DayOfWeek, err = nullInt16(rs.Rule.DayOfWeek); err != nil {
@@ -207,25 +220,7 @@ func (r *RecurringScheduleRepository) Create(ctx context.Context, rs schedule.Re
 	if params.WeekOfMonth, err = nullInt16(rs.Rule.WeekOfMonth); err != nil {
 		return err
 	}
-	q := r.q(ctx)
-	if err := q.CreateRecurringRule(ctx, params); err != nil {
-		return translate("create recurring rule", err)
-	}
-	err = q.CreateRecurringSchedule(ctx, sqlcgen.CreateRecurringScheduleParams{
-		ID:              rs.ID,
-		FacilityID:      rs.FacilityID,
-		StaffID:         rs.StaffID,
-		ScheduleTypeID:  rs.TypeID,
-		RecurringRuleID: rs.Rule.ID,
-		Date:            rs.Date.Time(),
-		StartTime:       timeOfDay(rs.StartTime),
-		EndTime:         timeOfDay(rs.EndTime),
-		VisitInfoID:     nullString(rs.VisitInfoID),
-		Title:           nullString(rs.Title),
-		Description:     nullString(rs.Description),
-		IsOverTimeWork:  rs.IsOverTimeWork,
-	})
-	return translate("create recurring schedule", err)
+	return translate("create recurring schedule", r.q(ctx).CreateRecurringSchedule(ctx, params))
 }
 
 // Get は、ID が id の繰り返しの予定を、種類と職員の名前、規則、除外する日付（日付の順）、訪問の情報と区分を付けて返す。無いときは apperr.ErrNotFound を返す。
@@ -247,7 +242,7 @@ func (r *RecurringScheduleRepository) Get(ctx context.Context, id string) (sched
 func (r *RecurringScheduleRepository) ListByFacility(ctx context.Context, facilityID string, q schedule.ListQuery) ([]schedule.RecurringDetail, error) {
 	params := sqlcgen.ListRecurringScheduleDetailsByFacilityParams{FacilityID: facilityID, Sort: q.Sort.Key()}
 	if q.TypeName != nil {
-		params.ScheduleType = sql.NullString{String: string(*q.TypeName), Valid: true}
+		params.ScheduleType = ptr(string(*q.TypeName))
 	}
 	rows, err := r.q(ctx).ListRecurringScheduleDetailsByFacility(ctx, params)
 	if err != nil {
@@ -257,7 +252,7 @@ func (r *RecurringScheduleRepository) ListByFacility(ctx context.Context, facili
 }
 
 func (r *RecurringScheduleRepository) recurringDetails(ctx context.Context, rows []sqlcgen.RecurringScheduleDetail) ([]schedule.RecurringDetail, error) {
-	cats, err := r.visitCategories(ctx, visitInfoIDs(rows, func(s sqlcgen.RecurringScheduleDetail) sql.NullString { return s.VisitInfoID }))
+	cats, err := r.visitCategories(ctx, visitInfoIDs(rows, func(s sqlcgen.RecurringScheduleDetail) *string { return s.VisitInfoID }))
 	if err != nil {
 		return nil, err
 	}
@@ -299,13 +294,12 @@ func (r *RecurringScheduleRepository) recurringDetails(ctx context.Context, rows
 					Date:           civil.DateOf(s.Date),
 					StartTime:      start,
 					EndTime:        end,
-					VisitInfoID:    stringPtr(s.VisitInfoID),
-					Title:          stringPtr(s.Title),
-					Description:    stringPtr(s.Description),
+					VisitInfoID:    s.VisitInfoID,
+					Title:          s.Title,
+					Description:    s.Description,
 					IsOverTimeWork: s.IsOverTimeWork,
 				},
 				Rule: schedule.Rule{
-					ID:          s.RecurringRuleID,
 					Frequency:   schedule.Frequency(s.Frequency),
 					DayOfWeek:   intPtr(s.DayOfWeek),
 					DayOfMonth:  intPtr(s.DayOfMonth),
@@ -338,11 +332,11 @@ func (r *RecurringScheduleRepository) AddExclusion(ctx context.Context, recurrin
 	return translate("add recurring schedule exclusion", err)
 }
 
-func visitInfoIDs[T any](rows []T, id func(T) sql.NullString) []string {
+func visitInfoIDs[T any](rows []T, id func(T) *string) []string {
 	var ids []string
 	for _, r := range rows {
-		if v := id(r); v.Valid {
-			ids = append(ids, v.String)
+		if v := id(r); v != nil {
+			ids = append(ids, *v)
 		}
 	}
 	return ids

@@ -1,12 +1,13 @@
-package mysql
+package postgres
 
 import (
 	"context"
-	"database/sql"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql/sqlcgen"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/postgres/sqlcgen"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 )
 
@@ -14,17 +15,17 @@ import (
 type StaffRepository struct{ conn }
 
 // NewStaffRepository は StaffRepository を作る。
-func NewStaffRepository(db *sql.DB) *StaffRepository { return &StaffRepository{conn{db}} }
+func NewStaffRepository(pool *pgxpool.Pool) *StaffRepository { return &StaffRepository{conn{pool}} }
 
 // Create は、職員と権限を続けて書く。途中で失敗したときに残さないよう、呼び出し側がトランザクションの中で呼ぶ。
 func (r *StaffRepository) Create(ctx context.Context, s staff.Staff, grants []staff.Grant) error {
 	q := r.q(ctx)
 	err := q.CreateUser(ctx, sqlcgen.CreateUserParams{
 		ID:           s.ID,
-		Sub:          nullString(s.Sub),
+		Sub:          s.Sub,
 		Username:     s.Username,
 		Email:        s.Email,
-		PhoneNumber:  nullString(s.PhoneNumber),
+		PhoneNumber:  s.PhoneNumber,
 		FacilityID:   s.FacilityID,
 		DepartmentID: s.DepartmentID,
 		TeamID:       s.TeamID,
@@ -67,8 +68,12 @@ func (r *StaffRepository) RemoveGrant(ctx context.Context, id, userPolicyID stri
 
 func addGrants(ctx context.Context, q *sqlcgen.Queries, userID string, grants []staff.Grant) error {
 	for _, g := range grants {
-		if err := q.AddUserPolicy(ctx, sqlcgen.AddUserPolicyParams{ID: g.ID, UserID: userID, PolicyID: g.PolicyID}); err != nil {
+		n, err := q.AddUserPolicy(ctx, sqlcgen.AddUserPolicyParams{ID: g.ID, UserID: userID, PolicyID: g.PolicyID})
+		if err != nil {
 			return translate("add user policy", err)
+		}
+		if n == 0 {
+			return apperr.Invalid("職員 %s が見つかりません", userID)
 		}
 		for _, t := range g.Targets {
 			err := q.AddUserPolicyTarget(ctx, sqlcgen.AddUserPolicyTargetParams{
@@ -100,11 +105,11 @@ func (r *StaffRepository) Get(ctx context.Context, id string) (staff.Detail, err
 	users := make(map[string][]string)
 	teams := make(map[string][]string)
 	for _, t := range targets {
-		if t.TargetUserID.Valid {
-			users[t.UserPolicyID] = append(users[t.UserPolicyID], t.TargetUserID.String)
+		if t.TargetUserID != nil {
+			users[t.UserPolicyID] = append(users[t.UserPolicyID], *t.TargetUserID)
 		}
-		if t.TargetTeamID.Valid {
-			teams[t.UserPolicyID] = append(teams[t.UserPolicyID], t.TargetTeamID.String)
+		if t.TargetTeamID != nil {
+			teams[t.UserPolicyID] = append(teams[t.UserPolicyID], *t.TargetTeamID)
 		}
 	}
 	grants := make([]staff.PolicyGrant, len(policies))
@@ -126,10 +131,10 @@ func (r *StaffRepository) Get(ctx context.Context, id string) (staff.Detail, err
 func (r *StaffRepository) ListByFacility(ctx context.Context, facilityID string, q staff.ListQuery) ([]staff.Summary, error) {
 	rows, err := r.q(ctx).ListUsersByFacility(ctx, sqlcgen.ListUsersByFacilityParams{
 		FacilityID: facilityID,
-		Username:   nullString(q.Username),
-		Position:   nullString(q.Position),
-		Department: nullString(q.Department),
-		Team:       nullString(q.Team),
+		Username:   q.Username,
+		Position:   q.Position,
+		Department: q.Department,
+		Team:       q.Team,
 		Sort:       q.Sort.Key(),
 	})
 	if err != nil {
@@ -146,10 +151,10 @@ func staffSummary(u sqlcgen.ListUsersByFacilityRow) staff.Summary {
 	return staff.Summary{
 		Staff: staff.Staff{
 			ID:           u.ID,
-			Sub:          stringPtr(u.Sub),
+			Sub:          u.Sub,
 			Username:     u.Username,
 			Email:        u.Email,
-			PhoneNumber:  stringPtr(u.PhoneNumber),
+			PhoneNumber:  u.PhoneNumber,
 			FacilityID:   u.FacilityID,
 			DepartmentID: u.DepartmentID,
 			TeamID:       u.TeamID,
@@ -165,7 +170,7 @@ func staffSummary(u sqlcgen.ListUsersByFacilityRow) staff.Summary {
 
 // FindIDBySub は、認証のブローカーの Sub が sub の職員の ID を返す。無いときは apperr.ErrNotFound を返す。
 func (r *StaffRepository) FindIDBySub(ctx context.Context, sub string) (string, error) {
-	id, err := r.q(ctx).GetUserIDBySub(ctx, sql.NullString{String: sub, Valid: true})
+	id, err := r.q(ctx).GetUserIDBySub(ctx, ptr(sub))
 	return id, translate("get user by sub", err)
 }
 
@@ -173,7 +178,7 @@ func (r *StaffRepository) FindIDBySub(ctx context.Context, sub string) (string, 
 // 同時に呼ばれても書くのは 1 回だけである。sub が別の職員と重なるときは apperr.ErrConflict を返す。
 func (r *StaffRepository) LinkSub(ctx context.Context, facilityID, email, sub string) error {
 	err := r.q(ctx).LinkUserSub(ctx, sqlcgen.LinkUserSubParams{
-		Sub: sql.NullString{String: sub, Valid: true}, FacilityID: facilityID, Email: email,
+		Sub: ptr(sub), FacilityID: facilityID, Email: email,
 	})
 	return translate("link user sub", err)
 }
@@ -182,7 +187,9 @@ func (r *StaffRepository) LinkSub(ctx context.Context, facilityID, email, sub st
 type StaffRefRepository struct{ conn }
 
 // NewStaffRefRepository は StaffRefRepository を作る。
-func NewStaffRefRepository(db *sql.DB) *StaffRefRepository { return &StaffRefRepository{conn{db}} }
+func NewStaffRefRepository(pool *pgxpool.Pool) *StaffRefRepository {
+	return &StaffRefRepository{conn{pool}}
+}
 
 // Get は、ID が id の職員の事業所とチームを返す。無いときは apperr.ErrNotFound を返す。
 func (r *StaffRefRepository) Get(ctx context.Context, id string) (staff.Ref, error) {

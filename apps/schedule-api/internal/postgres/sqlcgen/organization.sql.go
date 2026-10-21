@@ -7,13 +7,11 @@ package sqlcgen
 
 import (
 	"context"
-	"database/sql"
-	"strings"
 	"time"
 )
 
 const addPositionPolicy = `-- name: AddPositionPolicy :exec
-INSERT INTO position_policies (position_id, policy_id) VALUES (?, ?)
+INSERT INTO position_policies (position_id, policy_id) VALUES ($1, $2)
 `
 
 type AddPositionPolicyParams struct {
@@ -22,12 +20,12 @@ type AddPositionPolicyParams struct {
 }
 
 func (q *Queries) AddPositionPolicy(ctx context.Context, arg AddPositionPolicyParams) error {
-	_, err := q.db.ExecContext(ctx, addPositionPolicy, arg.PositionID, arg.PolicyID)
+	_, err := q.db.Exec(ctx, addPositionPolicy, arg.PositionID, arg.PolicyID)
 	return err
 }
 
 const createPosition = `-- name: CreatePosition :exec
-INSERT INTO positions (id, facility_id, name) VALUES (?, ?, ?)
+INSERT INTO positions (id, facility_id, name) VALUES ($1, $2, $3)
 `
 
 type CreatePositionParams struct {
@@ -37,12 +35,12 @@ type CreatePositionParams struct {
 }
 
 func (q *Queries) CreatePosition(ctx context.Context, arg CreatePositionParams) error {
-	_, err := q.db.ExecContext(ctx, createPosition, arg.ID, arg.FacilityID, arg.Name)
+	_, err := q.db.Exec(ctx, createPosition, arg.ID, arg.FacilityID, arg.Name)
 	return err
 }
 
 const createTeam = `-- name: CreateTeam :exec
-INSERT INTO teams (id, facility_id, name) VALUES (?, ?, ?)
+INSERT INTO teams (id, facility_id, name) VALUES ($1, $2, $3)
 `
 
 type CreateTeamParams struct {
@@ -52,16 +50,16 @@ type CreateTeamParams struct {
 }
 
 func (q *Queries) CreateTeam(ctx context.Context, arg CreateTeamParams) error {
-	_, err := q.db.ExecContext(ctx, createTeam, arg.ID, arg.FacilityID, arg.Name)
+	_, err := q.db.Exec(ctx, createTeam, arg.ID, arg.FacilityID, arg.Name)
 	return err
 }
 
 const getDepartment = `-- name: GetDepartment :one
-SELECT id, facility_id, name, created_at, updated_at FROM departments WHERE id = ?
+SELECT id, facility_id, name, created_at, updated_at FROM departments WHERE id = $1
 `
 
 func (q *Queries) GetDepartment(ctx context.Context, id string) (Department, error) {
-	row := q.db.QueryRowContext(ctx, getDepartment, id)
+	row := q.db.QueryRow(ctx, getDepartment, id)
 	var i Department
 	err := row.Scan(
 		&i.ID,
@@ -74,63 +72,65 @@ func (q *Queries) GetDepartment(ctx context.Context, id string) (Department, err
 }
 
 const getFacility = `-- name: GetFacility :one
-SELECT id, name, created_at, updated_at, org_id FROM facilities WHERE id = ?
+SELECT id, name, org_id, time_zone, created_at, updated_at FROM facilities WHERE id = $1
 `
 
 func (q *Queries) GetFacility(ctx context.Context, id string) (Facility, error) {
-	row := q.db.QueryRowContext(ctx, getFacility, id)
+	row := q.db.QueryRow(ctx, getFacility, id)
 	var i Facility
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
+		&i.OrgID,
+		&i.TimeZone,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.OrgID,
 	)
 	return i, err
 }
 
 const getFacilityByOrgID = `-- name: GetFacilityByOrgID :one
-SELECT id, name, created_at, updated_at, org_id FROM facilities WHERE org_id = ?
+SELECT id, name, org_id, time_zone, created_at, updated_at FROM facilities WHERE org_id = $1
 `
 
-func (q *Queries) GetFacilityByOrgID(ctx context.Context, orgID sql.NullString) (Facility, error) {
-	row := q.db.QueryRowContext(ctx, getFacilityByOrgID, orgID)
+func (q *Queries) GetFacilityByOrgID(ctx context.Context, orgID *string) (Facility, error) {
+	row := q.db.QueryRow(ctx, getFacilityByOrgID, orgID)
 	var i Facility
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
+		&i.OrgID,
+		&i.TimeZone,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.OrgID,
 	)
 	return i, err
 }
 
 const getPolicy = `-- name: GetPolicy :one
-SELECT id, name, created_at, updated_at, needs_target, code FROM policies WHERE id = ?
+SELECT id, code, name, needs_target, created_at, updated_at FROM policies WHERE id = $1
 `
 
 func (q *Queries) GetPolicy(ctx context.Context, id string) (Policy, error) {
-	row := q.db.QueryRowContext(ctx, getPolicy, id)
+	row := q.db.QueryRow(ctx, getPolicy, id)
 	var i Policy
 	err := row.Scan(
 		&i.ID,
+		&i.Code,
 		&i.Name,
+		&i.NeedsTarget,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.NeedsTarget,
-		&i.Code,
 	)
 	return i, err
 }
 
 const getPosition = `-- name: GetPosition :one
-SELECT id, facility_id, name, created_at, updated_at FROM positions WHERE id = ?
+SELECT id, facility_id, name, created_at, updated_at FROM positions WHERE id = $1
 `
 
 func (q *Queries) GetPosition(ctx context.Context, id string) (Position, error) {
-	row := q.db.QueryRowContext(ctx, getPosition, id)
+	row := q.db.QueryRow(ctx, getPosition, id)
 	var i Position
 	err := row.Scan(
 		&i.ID,
@@ -143,11 +143,11 @@ func (q *Queries) GetPosition(ctx context.Context, id string) (Position, error) 
 }
 
 const getTeam = `-- name: GetTeam :one
-SELECT id, facility_id, name, created_at, updated_at FROM teams WHERE id = ?
+SELECT id, facility_id, name, created_at, updated_at FROM teams WHERE id = $1
 `
 
 func (q *Queries) GetTeam(ctx context.Context, id string) (Team, error) {
-	row := q.db.QueryRowContext(ctx, getTeam, id)
+	row := q.db.QueryRow(ctx, getTeam, id)
 	var i Team
 	err := row.Scan(
 		&i.ID,
@@ -160,11 +160,11 @@ func (q *Queries) GetTeam(ctx context.Context, id string) (Team, error) {
 }
 
 const listDepartmentsByFacility = `-- name: ListDepartmentsByFacility :many
-SELECT id, facility_id, name, created_at, updated_at FROM departments WHERE facility_id = ? ORDER BY name, id
+SELECT id, facility_id, name, created_at, updated_at FROM departments WHERE facility_id = $1 ORDER BY name, id
 `
 
 func (q *Queries) ListDepartmentsByFacility(ctx context.Context, facilityID string) ([]Department, error) {
-	rows, err := q.db.QueryContext(ctx, listDepartmentsByFacility, facilityID)
+	rows, err := q.db.Query(ctx, listDepartmentsByFacility, facilityID)
 	if err != nil {
 		return nil, err
 	}
@@ -183,9 +183,6 @@ func (q *Queries) ListDepartmentsByFacility(ctx context.Context, facilityID stri
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -193,11 +190,11 @@ func (q *Queries) ListDepartmentsByFacility(ctx context.Context, facilityID stri
 }
 
 const listPolicies = `-- name: ListPolicies :many
-SELECT id, name, created_at, updated_at, needs_target, code FROM policies ORDER BY name, id
+SELECT id, code, name, needs_target, created_at, updated_at FROM policies ORDER BY name, id
 `
 
 func (q *Queries) ListPolicies(ctx context.Context) ([]Policy, error) {
-	rows, err := q.db.QueryContext(ctx, listPolicies)
+	rows, err := q.db.Query(ctx, listPolicies)
 	if err != nil {
 		return nil, err
 	}
@@ -207,18 +204,15 @@ func (q *Queries) ListPolicies(ctx context.Context) ([]Policy, error) {
 		var i Policy
 		if err := rows.Scan(
 			&i.ID,
+			&i.Code,
 			&i.Name,
+			&i.NeedsTarget,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.NeedsTarget,
-			&i.Code,
 		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -227,21 +221,11 @@ func (q *Queries) ListPolicies(ctx context.Context) ([]Policy, error) {
 }
 
 const listPoliciesByIDs = `-- name: ListPoliciesByIDs :many
-SELECT id, name, created_at, updated_at, needs_target, code FROM policies WHERE id IN (/*SLICE:ids*/?) ORDER BY name, id
+SELECT id, code, name, needs_target, created_at, updated_at FROM policies WHERE id = ANY ($1::text[]) ORDER BY name, id
 `
 
 func (q *Queries) ListPoliciesByIDs(ctx context.Context, ids []string) ([]Policy, error) {
-	query := listPoliciesByIDs
-	var queryParams []interface{}
-	if len(ids) > 0 {
-		for _, v := range ids {
-			queryParams = append(queryParams, v)
-		}
-		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
-	} else {
-		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
-	}
-	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	rows, err := q.db.Query(ctx, listPoliciesByIDs, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -251,18 +235,15 @@ func (q *Queries) ListPoliciesByIDs(ctx context.Context, ids []string) ([]Policy
 		var i Policy
 		if err := rows.Scan(
 			&i.ID,
+			&i.Code,
 			&i.Name,
+			&i.NeedsTarget,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.NeedsTarget,
-			&i.Code,
 		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -274,7 +255,7 @@ const listPoliciesByPositions = `-- name: ListPoliciesByPositions :many
 SELECT pp.position_id, p.id, p.code, p.name, p.needs_target, p.created_at, p.updated_at
 FROM position_policies pp
 JOIN policies p ON p.id = pp.policy_id
-WHERE pp.position_id IN (/*SLICE:position_ids*/?)
+WHERE pp.position_id = ANY ($1::text[])
 ORDER BY p.name, p.id
 `
 
@@ -289,17 +270,7 @@ type ListPoliciesByPositionsRow struct {
 }
 
 func (q *Queries) ListPoliciesByPositions(ctx context.Context, positionIds []string) ([]ListPoliciesByPositionsRow, error) {
-	query := listPoliciesByPositions
-	var queryParams []interface{}
-	if len(positionIds) > 0 {
-		for _, v := range positionIds {
-			queryParams = append(queryParams, v)
-		}
-		query = strings.Replace(query, "/*SLICE:position_ids*/?", strings.Repeat(",?", len(positionIds))[1:], 1)
-	} else {
-		query = strings.Replace(query, "/*SLICE:position_ids*/?", "NULL", 1)
-	}
-	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	rows, err := q.db.Query(ctx, listPoliciesByPositions, positionIds)
 	if err != nil {
 		return nil, err
 	}
@@ -320,9 +291,6 @@ func (q *Queries) ListPoliciesByPositions(ctx context.Context, positionIds []str
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -330,11 +298,11 @@ func (q *Queries) ListPoliciesByPositions(ctx context.Context, positionIds []str
 }
 
 const listPositionsByFacility = `-- name: ListPositionsByFacility :many
-SELECT id, facility_id, name, created_at, updated_at FROM positions WHERE facility_id = ? ORDER BY name, id
+SELECT id, facility_id, name, created_at, updated_at FROM positions WHERE facility_id = $1 ORDER BY name, id
 `
 
 func (q *Queries) ListPositionsByFacility(ctx context.Context, facilityID string) ([]Position, error) {
-	rows, err := q.db.QueryContext(ctx, listPositionsByFacility, facilityID)
+	rows, err := q.db.Query(ctx, listPositionsByFacility, facilityID)
 	if err != nil {
 		return nil, err
 	}
@@ -353,9 +321,6 @@ func (q *Queries) ListPositionsByFacility(ctx context.Context, facilityID string
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -363,11 +328,11 @@ func (q *Queries) ListPositionsByFacility(ctx context.Context, facilityID string
 }
 
 const listTeamsByFacility = `-- name: ListTeamsByFacility :many
-SELECT id, facility_id, name, created_at, updated_at FROM teams WHERE facility_id = ? ORDER BY name, id
+SELECT id, facility_id, name, created_at, updated_at FROM teams WHERE facility_id = $1 ORDER BY name, id
 `
 
 func (q *Queries) ListTeamsByFacility(ctx context.Context, facilityID string) ([]Team, error) {
-	rows, err := q.db.QueryContext(ctx, listTeamsByFacility, facilityID)
+	rows, err := q.db.Query(ctx, listTeamsByFacility, facilityID)
 	if err != nil {
 		return nil, err
 	}
@@ -385,9 +350,6 @@ func (q *Queries) ListTeamsByFacility(ctx context.Context, facilityID string) ([
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

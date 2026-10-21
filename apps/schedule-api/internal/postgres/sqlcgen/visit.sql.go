@@ -7,12 +7,10 @@ package sqlcgen
 
 import (
 	"context"
-	"database/sql"
-	"strings"
 )
 
 const addVisitInfoCategory = `-- name: AddVisitInfoCategory :exec
-INSERT INTO visit_info_visit_categories (visit_info_id, visit_category_id) VALUES (?, ?)
+INSERT INTO visit_info_visit_categories (visit_info_id, visit_category_id) VALUES ($1, $2)
 `
 
 type AddVisitInfoCategoryParams struct {
@@ -21,26 +19,28 @@ type AddVisitInfoCategoryParams struct {
 }
 
 func (q *Queries) AddVisitInfoCategory(ctx context.Context, arg AddVisitInfoCategoryParams) error {
-	_, err := q.db.ExecContext(ctx, addVisitInfoCategory, arg.VisitInfoID, arg.VisitCategoryID)
+	_, err := q.db.Exec(ctx, addVisitInfoCategory, arg.VisitInfoID, arg.VisitCategoryID)
 	return err
 }
 
 const createVisitInfo = `-- name: CreateVisitInfo :exec
-INSERT INTO visit_infos (id, patient_id, assigned_staff_id, companion_id, service_code_id)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO visit_infos (id, facility_id, patient_id, assigned_staff_id, companion_id, service_code_id)
+VALUES ($1, $2, $3, $4, $5, $6)
 `
 
 type CreateVisitInfoParams struct {
 	ID              string
+	FacilityID      string
 	PatientID       string
 	AssignedStaffID string
-	CompanionID     sql.NullString
+	CompanionID     *string
 	ServiceCodeID   string
 }
 
 func (q *Queries) CreateVisitInfo(ctx context.Context, arg CreateVisitInfoParams) error {
-	_, err := q.db.ExecContext(ctx, createVisitInfo,
+	_, err := q.db.Exec(ctx, createVisitInfo,
 		arg.ID,
+		arg.FacilityID,
 		arg.PatientID,
 		arg.AssignedStaffID,
 		arg.CompanionID,
@@ -50,23 +50,24 @@ func (q *Queries) CreateVisitInfo(ctx context.Context, arg CreateVisitInfoParams
 }
 
 const deleteUnusedVisitInfo = `-- name: DeleteUnusedVisitInfo :exec
-DELETE vi FROM visit_infos vi
-LEFT JOIN schedules s ON s.visit_info_id = vi.id
-LEFT JOIN recurring_schedules rs ON rs.visit_info_id = vi.id
-WHERE vi.id = ? AND s.id IS NULL AND rs.id IS NULL
+DELETE FROM visit_infos vi
+WHERE vi.id = $1
+  AND NOT EXISTS (SELECT 1 FROM schedules s WHERE s.visit_info_id = vi.id)
+  AND NOT EXISTS (SELECT 1 FROM recurring_schedules rs WHERE rs.visit_info_id = vi.id)
 `
 
+// visit_info_visit_categories は外部キーの ON DELETE CASCADE で消える。
 func (q *Queries) DeleteUnusedVisitInfo(ctx context.Context, id string) error {
-	_, err := q.db.ExecContext(ctx, deleteUnusedVisitInfo, id)
+	_, err := q.db.Exec(ctx, deleteUnusedVisitInfo, id)
 	return err
 }
 
 const getServiceCode = `-- name: GetServiceCode :one
-SELECT id, code, service_time_range_start, service_time_range_end, created_at, updated_at FROM service_codes WHERE id = ?
+SELECT id, code, service_time_range_start, service_time_range_end, created_at, updated_at FROM service_codes WHERE id = $1
 `
 
 func (q *Queries) GetServiceCode(ctx context.Context, id string) (ServiceCode, error) {
-	row := q.db.QueryRowContext(ctx, getServiceCode, id)
+	row := q.db.QueryRow(ctx, getServiceCode, id)
 	var i ServiceCode
 	err := row.Scan(
 		&i.ID,
@@ -84,7 +85,7 @@ SELECT id, code, service_time_range_start, service_time_range_end, created_at, u
 `
 
 func (q *Queries) ListServiceCodes(ctx context.Context) ([]ServiceCode, error) {
-	rows, err := q.db.QueryContext(ctx, listServiceCodes)
+	rows, err := q.db.Query(ctx, listServiceCodes)
 	if err != nil {
 		return nil, err
 	}
@@ -104,9 +105,6 @@ func (q *Queries) ListServiceCodes(ctx context.Context) ([]ServiceCode, error) {
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -118,7 +116,7 @@ SELECT id, name, created_at, updated_at FROM visit_categories ORDER BY name, id
 `
 
 func (q *Queries) ListVisitCategories(ctx context.Context) ([]VisitCategory, error) {
-	rows, err := q.db.QueryContext(ctx, listVisitCategories)
+	rows, err := q.db.Query(ctx, listVisitCategories)
 	if err != nil {
 		return nil, err
 	}
@@ -135,9 +133,6 @@ func (q *Queries) ListVisitCategories(ctx context.Context) ([]VisitCategory, err
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -146,21 +141,11 @@ func (q *Queries) ListVisitCategories(ctx context.Context) ([]VisitCategory, err
 }
 
 const listVisitCategoriesByIDs = `-- name: ListVisitCategoriesByIDs :many
-SELECT id, name, created_at, updated_at FROM visit_categories WHERE id IN (/*SLICE:ids*/?) ORDER BY name, id
+SELECT id, name, created_at, updated_at FROM visit_categories WHERE id = ANY ($1::text[]) ORDER BY name, id
 `
 
 func (q *Queries) ListVisitCategoriesByIDs(ctx context.Context, ids []string) ([]VisitCategory, error) {
-	query := listVisitCategoriesByIDs
-	var queryParams []interface{}
-	if len(ids) > 0 {
-		for _, v := range ids {
-			queryParams = append(queryParams, v)
-		}
-		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
-	} else {
-		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
-	}
-	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	rows, err := q.db.Query(ctx, listVisitCategoriesByIDs, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -177,9 +162,6 @@ func (q *Queries) ListVisitCategoriesByIDs(ctx context.Context, ids []string) ([
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -191,7 +173,7 @@ const listVisitInfoCategories = `-- name: ListVisitInfoCategories :many
 SELECT vivc.visit_info_id, vc.id, vc.name
 FROM visit_info_visit_categories vivc
 JOIN visit_categories vc ON vc.id = vivc.visit_category_id
-WHERE vivc.visit_info_id IN (/*SLICE:visit_info_ids*/?)
+WHERE vivc.visit_info_id = ANY ($1::text[])
 ORDER BY vc.name, vc.id
 `
 
@@ -202,17 +184,7 @@ type ListVisitInfoCategoriesRow struct {
 }
 
 func (q *Queries) ListVisitInfoCategories(ctx context.Context, visitInfoIds []string) ([]ListVisitInfoCategoriesRow, error) {
-	query := listVisitInfoCategories
-	var queryParams []interface{}
-	if len(visitInfoIds) > 0 {
-		for _, v := range visitInfoIds {
-			queryParams = append(queryParams, v)
-		}
-		query = strings.Replace(query, "/*SLICE:visit_info_ids*/?", strings.Repeat(",?", len(visitInfoIds))[1:], 1)
-	} else {
-		query = strings.Replace(query, "/*SLICE:visit_info_ids*/?", "NULL", 1)
-	}
-	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	rows, err := q.db.Query(ctx, listVisitInfoCategories, visitInfoIds)
 	if err != nil {
 		return nil, err
 	}
@@ -224,9 +196,6 @@ func (q *Queries) ListVisitInfoCategories(ctx context.Context, visitInfoIds []st
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

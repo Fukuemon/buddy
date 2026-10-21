@@ -1,18 +1,21 @@
-package mysql
+package postgres
 
 import (
 	"context"
-	"database/sql"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql/sqlcgen"
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/postgres/sqlcgen"
 )
 
 // FacilityRepository は、organization.FacilityRepository を実装する。
 type FacilityRepository struct{ conn }
 
 // NewFacilityRepository は FacilityRepository を作る。
-func NewFacilityRepository(db *sql.DB) *FacilityRepository { return &FacilityRepository{conn{db}} }
+func NewFacilityRepository(pool *pgxpool.Pool) *FacilityRepository {
+	return &FacilityRepository{conn{pool}}
+}
 
 // Get は、ID が id の事業所を返す。無いときは apperr.ErrNotFound を返す。
 func (r *FacilityRepository) Get(ctx context.Context, id string) (organization.Facility, error) {
@@ -25,7 +28,7 @@ func (r *FacilityRepository) Get(ctx context.Context, id string) (organization.F
 
 // GetByOrgID は、認証のブローカーの組織の ID が orgID の事業所を返す。結び付いた事業所が無いときは apperr.ErrNotFound を返す。
 func (r *FacilityRepository) GetByOrgID(ctx context.Context, orgID string) (organization.Facility, error) {
-	f, err := r.q(ctx).GetFacilityByOrgID(ctx, sql.NullString{String: orgID, Valid: true})
+	f, err := r.q(ctx).GetFacilityByOrgID(ctx, ptr(orgID))
 	if err != nil {
 		return organization.Facility{}, translate("get facility by org", err)
 	}
@@ -40,8 +43,8 @@ func toFacility(f sqlcgen.Facility) organization.Facility {
 type DepartmentRepository struct{ conn }
 
 // NewDepartmentRepository は DepartmentRepository を作る。
-func NewDepartmentRepository(db *sql.DB) *DepartmentRepository {
-	return &DepartmentRepository{conn{db}}
+func NewDepartmentRepository(pool *pgxpool.Pool) *DepartmentRepository {
+	return &DepartmentRepository{conn{pool}}
 }
 
 // Get は、ID が id の部署を返す。無いときは apperr.ErrNotFound を返す。
@@ -70,7 +73,7 @@ func (r *DepartmentRepository) ListByFacility(ctx context.Context, facilityID st
 type TeamRepository struct{ conn }
 
 // NewTeamRepository は TeamRepository を作る。
-func NewTeamRepository(db *sql.DB) *TeamRepository { return &TeamRepository{conn{db}} }
+func NewTeamRepository(pool *pgxpool.Pool) *TeamRepository { return &TeamRepository{conn{pool}} }
 
 // Get は、ID が id のチームを返す。無いときは apperr.ErrNotFound を返す。
 func (r *TeamRepository) Get(ctx context.Context, id string) (organization.Team, error) {
@@ -104,7 +107,9 @@ func (r *TeamRepository) Create(ctx context.Context, t organization.Team) error 
 type PositionRepository struct{ conn }
 
 // NewPositionRepository は PositionRepository を作る。
-func NewPositionRepository(db *sql.DB) *PositionRepository { return &PositionRepository{conn{db}} }
+func NewPositionRepository(pool *pgxpool.Pool) *PositionRepository {
+	return &PositionRepository{conn{pool}}
+}
 
 // Get は、ID が id の役職を、既定の権限（名前の順）を付けて返す。無いときは apperr.ErrNotFound を返す。
 func (r *PositionRepository) Get(ctx context.Context, id string) (organization.Position, error) {
@@ -178,7 +183,7 @@ func (r *PositionRepository) Create(ctx context.Context, p organization.Position
 type PolicyRepository struct{ conn }
 
 // NewPolicyRepository は PolicyRepository を作る。
-func NewPolicyRepository(db *sql.DB) *PolicyRepository { return &PolicyRepository{conn{db}} }
+func NewPolicyRepository(pool *pgxpool.Pool) *PolicyRepository { return &PolicyRepository{conn{pool}} }
 
 // Get は、ID が id の権限を返す。無いときは apperr.ErrNotFound を返す。
 func (r *PolicyRepository) Get(ctx context.Context, id string) (organization.Policy, error) {

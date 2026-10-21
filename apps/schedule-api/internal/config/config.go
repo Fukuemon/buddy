@@ -36,7 +36,7 @@ type Config struct {
 // 読む環境変数と既定値:
 //   - PORT: HTTP の待ち受けのポート。既定は 8080
 //   - DB_HOST: 既定は localhost
-//   - DB_PORT: 既定は 3306
+//   - DB_PORT: 既定は 5432
 //   - DB_USER、DB_PASSWORD、DB_NAME
 //   - OIDC_ISSUER: ブローカーの発行者の URL。トークンの iss と一致させ、discovery の文書をここから読む
 //   - OIDC_AUDIENCE: トークンの aud に求める値
@@ -64,7 +64,7 @@ func load(getenv func(string) string, api bool) (Config, error) {
 		Port: get("PORT", "8080"),
 		DB: DB{
 			Host:     get("DB_HOST", "localhost"),
-			Port:     get("DB_PORT", "3306"),
+			Port:     get("DB_PORT", "5432"),
 			User:     getenv("DB_USER"),
 			Password: getenv("DB_PASSWORD"),
 			Name:     getenv("DB_NAME"),

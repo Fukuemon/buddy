@@ -33,7 +33,7 @@ export interface paths {
         };
         /**
          * 要求を受けられるかを返す
-         * @description MySQL に届けば 200、届かなければ 503 を返す。
+         * @description DB に届けば 200、届かなければ 503 を返す。
          */
         get: operations["getReadyz"];
         put?: never;
@@ -868,7 +868,7 @@ export interface operations {
                     "application/json": components["schemas"]["Health"];
                 };
             };
-            /** @description MySQL に届かない */
+            /** @description DB に届かない */
             503: {
                 headers: {
                     [name: string]: unknown;

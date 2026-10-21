@@ -7,58 +7,67 @@ package sqlcgen
 
 import (
 	"context"
-	"database/sql"
-	"strings"
 	"time"
 )
 
-const addUserPolicy = `-- name: AddUserPolicy :exec
-INSERT INTO user_policies (id, user_id, policy_id) VALUES (?, ?, ?)
+const addUserPolicy = `-- name: AddUserPolicy :execrows
+INSERT INTO user_policies (id, facility_id, user_id, policy_id)
+SELECT $1, u.facility_id, u.id, $2
+FROM users u
+WHERE u.id = $3
 `
 
 type AddUserPolicyParams struct {
 	ID       string
-	UserID   string
 	PolicyID string
+	UserID   string
 }
 
-func (q *Queries) AddUserPolicy(ctx context.Context, arg AddUserPolicyParams) error {
-	_, err := q.db.ExecContext(ctx, addUserPolicy, arg.ID, arg.UserID, arg.PolicyID)
-	return err
+// 事業所は職員の行から写す。職員が無ければ書かない。
+func (q *Queries) AddUserPolicy(ctx context.Context, arg AddUserPolicyParams) (int64, error) {
+	result, err := q.db.Exec(ctx, addUserPolicy, arg.ID, arg.PolicyID, arg.UserID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const addUserPolicyTarget = `-- name: AddUserPolicyTarget :exec
-INSERT INTO user_policy_targets (id, user_policy_id, target_user_id, target_team_id) VALUES (?, ?, ?, ?)
+INSERT INTO user_policy_targets (id, facility_id, user_policy_id, target_user_id, target_team_id)
+SELECT $1, up.facility_id, up.id, $2, $3
+FROM user_policies up
+WHERE up.id = $4
 `
 
 type AddUserPolicyTargetParams struct {
 	ID           string
+	TargetUserID *string
+	TargetTeamID *string
 	UserPolicyID string
-	TargetUserID sql.NullString
-	TargetTeamID sql.NullString
 }
 
+// 事業所は職員の権限の行から写す。
 func (q *Queries) AddUserPolicyTarget(ctx context.Context, arg AddUserPolicyTargetParams) error {
-	_, err := q.db.ExecContext(ctx, addUserPolicyTarget,
+	_, err := q.db.Exec(ctx, addUserPolicyTarget,
 		arg.ID,
-		arg.UserPolicyID,
 		arg.TargetUserID,
 		arg.TargetTeamID,
+		arg.UserPolicyID,
 	)
 	return err
 }
 
 const createUser = `-- name: CreateUser :exec
 INSERT INTO users (id, sub, username, email, phone_number, facility_id, department_id, team_id, position_id)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 `
 
 type CreateUserParams struct {
 	ID           string
-	Sub          sql.NullString
+	Sub          *string
 	Username     string
 	Email        string
-	PhoneNumber  sql.NullString
+	PhoneNumber  *string
 	FacilityID   string
 	DepartmentID string
 	TeamID       string
@@ -66,7 +75,7 @@ type CreateUserParams struct {
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
-	_, err := q.db.ExecContext(ctx, createUser,
+	_, err := q.db.Exec(ctx, createUser,
 		arg.ID,
 		arg.Sub,
 		arg.Username,
@@ -81,17 +90,17 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
 }
 
 const deleteUserPolicies = `-- name: DeleteUserPolicies :exec
-DELETE FROM user_policies WHERE user_id = ?
+DELETE FROM user_policies WHERE user_id = $1
 `
 
 // user_policy_targets は外部キーの ON DELETE CASCADE で消える。
 func (q *Queries) DeleteUserPolicies(ctx context.Context, userID string) error {
-	_, err := q.db.ExecContext(ctx, deleteUserPolicies, userID)
+	_, err := q.db.Exec(ctx, deleteUserPolicies, userID)
 	return err
 }
 
 const deleteUserPolicy = `-- name: DeleteUserPolicy :execrows
-DELETE FROM user_policies WHERE id = ? AND user_id = ?
+DELETE FROM user_policies WHERE id = $1 AND user_id = $2
 `
 
 type DeleteUserPolicyParams struct {
@@ -101,11 +110,11 @@ type DeleteUserPolicyParams struct {
 
 // user_policy_targets は外部キーの ON DELETE CASCADE で消える。
 func (q *Queries) DeleteUserPolicy(ctx context.Context, arg DeleteUserPolicyParams) (int64, error) {
-	result, err := q.db.ExecContext(ctx, deleteUserPolicy, arg.ID, arg.UserID)
+	result, err := q.db.Exec(ctx, deleteUserPolicy, arg.ID, arg.UserID)
 	if err != nil {
 		return 0, err
 	}
-	return result.RowsAffected()
+	return result.RowsAffected(), nil
 }
 
 const getUser = `-- name: GetUser :one
@@ -118,15 +127,15 @@ FROM users u
 JOIN departments d ON d.id = u.department_id
 JOIN teams t ON t.id = u.team_id
 JOIN positions p ON p.id = u.position_id
-WHERE u.id = ?
+WHERE u.id = $1
 `
 
 type GetUserRow struct {
 	ID             string
-	Sub            sql.NullString
+	Sub            *string
 	Username       string
 	Email          string
-	PhoneNumber    sql.NullString
+	PhoneNumber    *string
 	FacilityID     string
 	DepartmentID   string
 	DepartmentName string
@@ -139,7 +148,7 @@ type GetUserRow struct {
 }
 
 func (q *Queries) GetUser(ctx context.Context, id string) (GetUserRow, error) {
-	row := q.db.QueryRowContext(ctx, getUser, id)
+	row := q.db.QueryRow(ctx, getUser, id)
 	var i GetUserRow
 	err := row.Scan(
 		&i.ID,
@@ -161,18 +170,18 @@ func (q *Queries) GetUser(ctx context.Context, id string) (GetUserRow, error) {
 }
 
 const getUserIDBySub = `-- name: GetUserIDBySub :one
-SELECT id FROM users WHERE sub = ?
+SELECT id FROM users WHERE sub = $1
 `
 
-func (q *Queries) GetUserIDBySub(ctx context.Context, sub sql.NullString) (string, error) {
-	row := q.db.QueryRowContext(ctx, getUserIDBySub, sub)
+func (q *Queries) GetUserIDBySub(ctx context.Context, sub *string) (string, error) {
+	row := q.db.QueryRow(ctx, getUserIDBySub, sub)
 	var id string
 	err := row.Scan(&id)
 	return id, err
 }
 
 const getUserRef = `-- name: GetUserRef :one
-SELECT id, facility_id, team_id FROM users WHERE id = ?
+SELECT id, facility_id, team_id FROM users WHERE id = $1
 `
 
 type GetUserRefRow struct {
@@ -183,26 +192,26 @@ type GetUserRefRow struct {
 
 // ほかの機能が職員を参照するときに要る列だけを読む。
 func (q *Queries) GetUserRef(ctx context.Context, id string) (GetUserRefRow, error) {
-	row := q.db.QueryRowContext(ctx, getUserRef, id)
+	row := q.db.QueryRow(ctx, getUserRef, id)
 	var i GetUserRefRow
 	err := row.Scan(&i.ID, &i.FacilityID, &i.TeamID)
 	return i, err
 }
 
 const linkUserSub = `-- name: LinkUserSub :exec
-UPDATE users SET sub = ?
-WHERE facility_id = ? AND email = ? AND sub IS NULL
+UPDATE users SET sub = $1
+WHERE facility_id = $2 AND email = $3 AND sub IS NULL
 `
 
 type LinkUserSubParams struct {
-	Sub        sql.NullString
+	Sub        *string
 	FacilityID string
 	Email      string
 }
 
-// 条件の sub IS NULL で、同時に来た初回のログインのうち 1 つだけが書く。
+// 条件の sub IS NULL で、同時に来た初回のログインのうち 1 つだけが書く。email は小文字にそろえて渡す。
 func (q *Queries) LinkUserSub(ctx context.Context, arg LinkUserSubParams) error {
-	_, err := q.db.ExecContext(ctx, linkUserSub, arg.Sub, arg.FacilityID, arg.Email)
+	_, err := q.db.Exec(ctx, linkUserSub, arg.Sub, arg.FacilityID, arg.Email)
 	return err
 }
 
@@ -210,7 +219,7 @@ const listUserPolicies = `-- name: ListUserPolicies :many
 SELECT up.id AS user_policy_id, up.user_id, p.id AS policy_id, p.code AS policy_code, p.name AS policy_name
 FROM user_policies up
 JOIN policies p ON p.id = up.policy_id
-WHERE up.user_id IN (/*SLICE:user_ids*/?)
+WHERE up.user_id = ANY ($1::text[])
 ORDER BY p.name, p.id
 `
 
@@ -223,17 +232,7 @@ type ListUserPoliciesRow struct {
 }
 
 func (q *Queries) ListUserPolicies(ctx context.Context, userIds []string) ([]ListUserPoliciesRow, error) {
-	query := listUserPolicies
-	var queryParams []interface{}
-	if len(userIds) > 0 {
-		for _, v := range userIds {
-			queryParams = append(queryParams, v)
-		}
-		query = strings.Replace(query, "/*SLICE:user_ids*/?", strings.Repeat(",?", len(userIds))[1:], 1)
-	} else {
-		query = strings.Replace(query, "/*SLICE:user_ids*/?", "NULL", 1)
-	}
-	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	rows, err := q.db.Query(ctx, listUserPolicies, userIds)
 	if err != nil {
 		return nil, err
 	}
@@ -252,9 +251,6 @@ func (q *Queries) ListUserPolicies(ctx context.Context, userIds []string) ([]Lis
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -265,18 +261,18 @@ const listUserPolicyTargets = `-- name: ListUserPolicyTargets :many
 SELECT upt.user_policy_id, upt.target_user_id, upt.target_team_id
 FROM user_policy_targets upt
 JOIN user_policies up ON up.id = upt.user_policy_id
-WHERE up.user_id = ?
+WHERE up.user_id = $1
 ORDER BY upt.target_user_id, upt.target_team_id
 `
 
 type ListUserPolicyTargetsRow struct {
 	UserPolicyID string
-	TargetUserID sql.NullString
-	TargetTeamID sql.NullString
+	TargetUserID *string
+	TargetTeamID *string
 }
 
 func (q *Queries) ListUserPolicyTargets(ctx context.Context, userID string) ([]ListUserPolicyTargetsRow, error) {
-	rows, err := q.db.QueryContext(ctx, listUserPolicyTargets, userID)
+	rows, err := q.db.Query(ctx, listUserPolicyTargets, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -289,9 +285,6 @@ func (q *Queries) ListUserPolicyTargets(ctx context.Context, userID string) ([]L
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -299,7 +292,7 @@ func (q *Queries) ListUserPolicyTargets(ctx context.Context, userID string) ([]L
 }
 
 const listUserRefsByFacility = `-- name: ListUserRefsByFacility :many
-SELECT id, facility_id, team_id FROM users WHERE facility_id = ? ORDER BY id
+SELECT id, facility_id, team_id FROM users WHERE facility_id = $1 ORDER BY id
 `
 
 type ListUserRefsByFacilityRow struct {
@@ -309,7 +302,7 @@ type ListUserRefsByFacilityRow struct {
 }
 
 func (q *Queries) ListUserRefsByFacility(ctx context.Context, facilityID string) ([]ListUserRefsByFacilityRow, error) {
-	rows, err := q.db.QueryContext(ctx, listUserRefsByFacility, facilityID)
+	rows, err := q.db.Query(ctx, listUserRefsByFacility, facilityID)
 	if err != nil {
 		return nil, err
 	}
@@ -321,9 +314,6 @@ func (q *Queries) ListUserRefsByFacility(ctx context.Context, facilityID string)
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -341,36 +331,36 @@ FROM users u
 JOIN departments d ON d.id = u.department_id
 JOIN teams t ON t.id = u.team_id
 JOIN positions p ON p.id = u.position_id
-WHERE u.facility_id = ?
-  AND (? IS NULL OR u.username = ?)
-  AND (? IS NULL OR p.name = ?)
-  AND (? IS NULL OR d.name = ?)
-  AND (? IS NULL OR t.name = ?)
+WHERE u.facility_id = $1
+  AND ($2::text IS NULL OR u.username = $2)
+  AND ($3::text IS NULL OR p.name = $3)
+  AND ($4::text IS NULL OR d.name = $4)
+  AND ($5::text IS NULL OR t.name = $5)
 ORDER BY
-  CASE WHEN ? = 'username_asc' THEN u.username END ASC,
-  CASE WHEN ? = 'username_desc' THEN u.username END DESC,
-  CASE WHEN ? = 'created_at_asc' THEN u.created_at END ASC,
-  CASE WHEN ? = 'created_at_desc' THEN u.created_at END DESC,
-  CASE WHEN ? = 'updated_at_asc' THEN u.updated_at END ASC,
-  CASE WHEN ? = 'updated_at_desc' THEN u.updated_at END DESC,
+  CASE WHEN $6::text = 'username_asc' THEN u.username END ASC,
+  CASE WHEN $6::text = 'username_desc' THEN u.username END DESC,
+  CASE WHEN $6::text = 'created_at_asc' THEN u.created_at END ASC,
+  CASE WHEN $6::text = 'created_at_desc' THEN u.created_at END DESC,
+  CASE WHEN $6::text = 'updated_at_asc' THEN u.updated_at END ASC,
+  CASE WHEN $6::text = 'updated_at_desc' THEN u.updated_at END DESC,
   u.id
 `
 
 type ListUsersByFacilityParams struct {
 	FacilityID string
-	Username   sql.NullString
-	Position   sql.NullString
-	Department sql.NullString
-	Team       sql.NullString
-	Sort       interface{}
+	Username   *string
+	Position   *string
+	Department *string
+	Team       *string
+	Sort       string
 }
 
 type ListUsersByFacilityRow struct {
 	ID             string
-	Sub            sql.NullString
+	Sub            *string
 	Username       string
 	Email          string
-	PhoneNumber    sql.NullString
+	PhoneNumber    *string
 	FacilityID     string
 	DepartmentID   string
 	DepartmentName string
@@ -383,21 +373,12 @@ type ListUsersByFacilityRow struct {
 }
 
 func (q *Queries) ListUsersByFacility(ctx context.Context, arg ListUsersByFacilityParams) ([]ListUsersByFacilityRow, error) {
-	rows, err := q.db.QueryContext(ctx, listUsersByFacility,
+	rows, err := q.db.Query(ctx, listUsersByFacility,
 		arg.FacilityID,
 		arg.Username,
-		arg.Username,
-		arg.Position,
 		arg.Position,
 		arg.Department,
-		arg.Department,
 		arg.Team,
-		arg.Team,
-		arg.Sort,
-		arg.Sort,
-		arg.Sort,
-		arg.Sort,
-		arg.Sort,
 		arg.Sort,
 	)
 	if err != nil {
@@ -427,9 +408,6 @@ func (q *Queries) ListUsersByFacility(ctx context.Context, arg ListUsersByFacili
 		}
 		items = append(items, i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -437,7 +415,7 @@ func (q *Queries) ListUsersByFacility(ctx context.Context, arg ListUsersByFacili
 }
 
 const updateUserPosition = `-- name: UpdateUserPosition :exec
-UPDATE users SET position_id = ? WHERE id = ?
+UPDATE users SET position_id = $1 WHERE id = $2
 `
 
 type UpdateUserPositionParams struct {
@@ -446,6 +424,6 @@ type UpdateUserPositionParams struct {
 }
 
 func (q *Queries) UpdateUserPosition(ctx context.Context, arg UpdateUserPositionParams) error {
-	_, err := q.db.ExecContext(ctx, updateUserPosition, arg.PositionID, arg.ID)
+	_, err := q.db.Exec(ctx, updateUserPosition, arg.PositionID, arg.ID)
 	return err
 }

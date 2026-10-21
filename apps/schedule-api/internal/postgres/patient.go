@@ -1,18 +1,21 @@
-package mysql
+package postgres
 
 import (
 	"context"
-	"database/sql"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql/sqlcgen"
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/postgres/sqlcgen"
 )
 
 // PatientRepository は、patient.Repository を実装する。
 type PatientRepository struct{ conn }
 
 // NewPatientRepository は PatientRepository を作る。
-func NewPatientRepository(db *sql.DB) *PatientRepository { return &PatientRepository{conn{db}} }
+func NewPatientRepository(pool *pgxpool.Pool) *PatientRepository {
+	return &PatientRepository{conn{pool}}
+}
 
 // Create は、利用者を書く。事業所、サービスコード、担当の職員のいずれかが無いか、値が列の制約（希望の時間帯と性別の値など）に合わないときは apperr.ErrInvalidInput のエラーを返す。
 func (r *PatientRepository) Create(ctx context.Context, p patient.Patient) error {
@@ -42,15 +45,15 @@ func (r *PatientRepository) Get(ctx context.Context, id string) (patient.Detail,
 func (r *PatientRepository) ListByFacility(ctx context.Context, facilityID string, q patient.ListQuery) ([]patient.Detail, error) {
 	params := sqlcgen.ListPatientsByFacilityParams{
 		FacilityID:    facilityID,
-		Name:          nullString(q.Name),
-		AssignedStaff: nullString(q.AssignedStaff),
+		Name:          q.Name,
+		AssignedStaff: q.AssignedStaff,
 		Sort:          q.Sort.Key(),
 	}
 	if q.PreferredTime != nil {
-		params.PreferredTime = sql.NullString{String: string(*q.PreferredTime), Valid: true}
+		params.PreferredTime = ptr(string(*q.PreferredTime))
 	}
 	if q.PreferredGender != nil {
-		params.PreferredGender = sql.NullString{String: string(*q.PreferredGender), Valid: true}
+		params.PreferredGender = ptr(string(*q.PreferredGender))
 	}
 	rows, err := r.q(ctx).ListPatientsByFacility(ctx, params)
 	if err != nil {

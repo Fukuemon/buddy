@@ -1,14 +1,15 @@
-package mysql
+package postgres
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"maps"
 	"slices"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
@@ -50,8 +51,6 @@ const (
 	seedRecurring     = "01M3TC6E9G4N8Q2R5T7V9W1X3Y"
 	unknownID         = "01M3TCZZZZZZZZZZZZZZZZZZZZ"
 )
-
-func ptr[T any](v T) *T { return &v }
 
 func TestFacilityGet(t *testing.T) {
 	ctx := txContext(t)
@@ -203,11 +202,11 @@ func TestStaffLinkSub(t *testing.T) {
 // TestStaffLinkSubConcurrent は、トランザクションの外で同時に結び付け、書かれた sub が 1 つだけであることを確かめる。
 func TestStaffLinkSubConcurrent(t *testing.T) {
 	if testDB == nil {
-		t.Skip("MySQL を使うテストは -short では動かさない")
+		t.Skip("PostgreSQL を使うテストは -short では動かさない")
 	}
 	ctx := context.Background()
 	t.Cleanup(func() {
-		if _, err := testDB.ExecContext(ctx, "UPDATE users SET sub = NULL WHERE id = ?", seedHayashi); err != nil {
+		if _, err := testDB.Exec(ctx, "UPDATE users SET sub = NULL WHERE id = $1", seedHayashi); err != nil {
 			t.Error(err)
 		}
 	})
@@ -287,7 +286,7 @@ func TestStaffCreate(t *testing.T) {
 // 別の事業所に同じメールの職員がいても、結び付けが指定の事業所の職員にだけ書くことを確かめる。
 func TestStaffUniqueness(t *testing.T) {
 	ctx := txContext(t)
-	tx := ctx.Value(txKey{}).(*sql.Tx)
+	tx := ctx.Value(txKey{}).(pgx.Tx)
 	const (
 		otherFacility   = "01M3TD00000000000000000020"
 		otherDepartment = "01M3TD00000000000000000021"
@@ -300,7 +299,7 @@ func TestStaffUniqueness(t *testing.T) {
 		"INSERT INTO teams (id, facility_id, name) VALUES ('" + otherTeam + "', '" + otherFacility + "', 'A')",
 		"INSERT INTO positions (id, facility_id, name) VALUES ('" + otherPosition + "', '" + otherFacility + "', 'メンバー')",
 	} {
-		if _, err := tx.ExecContext(ctx, q); err != nil {
+		if _, err := tx.Exec(ctx, q); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -401,7 +400,7 @@ func TestVisitInfoCreate(t *testing.T) {
 	ctx := txContext(t)
 	r := NewVisitInfoRepository(testDB)
 	info := visit.Info{
-		ID: "01M3TD00000000000000000030", PatientID: seedPatient, AssignedStaffID: seedMori,
+		ID: "01M3TD00000000000000000030", FacilityID: seedFacility, PatientID: seedPatient, AssignedStaffID: seedMori,
 		ServiceCodeID: seedServiceCode, CategoryIDs: []string{seedEmergency, seedNight},
 	}
 	if err := r.Create(ctx, info); err != nil {
@@ -511,7 +510,7 @@ func TestRecurringScheduleAndExclusion(t *testing.T) {
 			Date: civil.Date{Year: 2026, Month: 11, Day: 2}, StartTime: civil.Time{Hour: 13}, EndTime: civil.Time{Hour: 14},
 			Title: ptr("月例の会議"),
 		},
-		Rule: schedule.Rule{ID: "01M3TD00000000000000000051", Frequency: schedule.Monthly,
+		Rule: schedule.Rule{Frequency: schedule.Monthly,
 			WeekOfMonth: ptr(1), DayOfWeek: ptr(1), EndDate: &civil.Date{Year: 2027, Month: 3, Day: 31}},
 	}
 	if err := r.Create(ctx, rs); err != nil {
@@ -580,8 +579,8 @@ func TestScheduleUpdateAndDeleteUnusedVisitInfo(t *testing.T) {
 	countInfo := func() int {
 		t.Helper()
 		var n int
-		tx := ctx.Value(txKey{}).(*sql.Tx)
-		if err := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM visit_infos WHERE id = ?", oldInfo).Scan(&n); err != nil {
+		tx := ctx.Value(txKey{}).(pgx.Tx)
+		if err := tx.QueryRow(ctx, "SELECT COUNT(*) FROM visit_infos WHERE id = $1", oldInfo).Scan(&n); err != nil {
 			t.Fatal(err)
 		}
 		return n
@@ -619,7 +618,7 @@ func TestScheduleUpdateAndDeleteUnusedVisitInfo(t *testing.T) {
 
 func TestScheduleUpdateKeepsRecurringAndSharedVisitInfo(t *testing.T) {
 	ctx := txContext(t)
-	tx := ctx.Value(txKey{}).(*sql.Tx)
+	tx := ctx.Value(txKey{}).(pgx.Tx)
 	r := NewScheduleRepository(testDB)
 	visits := NewVisitInfoRepository(testDB)
 	cur, err := r.Get(ctx, seedVisitSchedule)
@@ -628,9 +627,9 @@ func TestScheduleUpdateKeepsRecurringAndSharedVisitInfo(t *testing.T) {
 	}
 	for _, q := range []string{
 		"UPDATE recurring_schedules SET visit_info_id = '" + *cur.VisitInfoID + "' WHERE id = '" + seedRecurring + "'",
-		"UPDATE schedules SET recurring_schedule_id = '" + seedRecurring + "' WHERE id = '" + seedVisitSchedule + "'",
+		"UPDATE schedules SET recurring_schedule_id = '" + seedRecurring + "', original_date = '2026-10-19' WHERE id = '" + seedVisitSchedule + "'",
 	} {
-		if _, err := tx.ExecContext(ctx, q); err != nil {
+		if _, err := tx.Exec(ctx, q); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -645,14 +644,15 @@ func TestScheduleUpdateKeepsRecurringAndSharedVisitInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.RecurringScheduleID == nil || *got.RecurringScheduleID != seedRecurring {
-		t.Errorf("RecurringScheduleID = %v", got.RecurringScheduleID)
+	if got.RecurringScheduleID == nil || *got.RecurringScheduleID != seedRecurring ||
+		got.OriginalDate == nil || got.OriginalDate.String() != "2026-10-19" {
+		t.Errorf("RecurringScheduleID = %v, OriginalDate = %v", got.RecurringScheduleID, got.OriginalDate)
 	}
 	if err := visits.DeleteIfUnused(ctx, *cur.VisitInfoID); err != nil {
 		t.Fatal(err)
 	}
 	var n int
-	if err := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM visit_infos WHERE id = ?", *cur.VisitInfoID).Scan(&n); err != nil {
+	if err := tx.QueryRow(ctx, "SELECT COUNT(*) FROM visit_infos WHERE id = $1", *cur.VisitInfoID).Scan(&n); err != nil {
 		t.Fatal(err)
 	}
 	if n != 1 {
@@ -662,18 +662,18 @@ func TestScheduleUpdateKeepsRecurringAndSharedVisitInfo(t *testing.T) {
 
 func TestScheduleGetForUpdateBlocksCancel(t *testing.T) {
 	if testDB == nil {
-		t.Skip("MySQL を使うテストは -short では動かさない")
+		t.Skip("PostgreSQL を使うテストは -short では動かさない")
 	}
 	bg := context.Background()
 	r := NewScheduleRepository(testDB)
 	if _, err := r.GetForUpdate(bg, unknownID); !errors.Is(err, apperr.ErrNotFound) {
 		t.Fatalf("無い予定のロック: err = %v, want ErrNotFound", err)
 	}
-	locker, err := testDB.BeginTx(bg, nil)
+	locker, err := testDB.Begin(bg)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer func() { _ = locker.Rollback() }()
+	defer func() { _ = locker.Rollback(bg) }()
 	locked, err := r.GetForUpdate(context.WithValue(bg, txKey{}, locker), seedConference)
 	if err != nil {
 		t.Fatal(err)
@@ -681,11 +681,11 @@ func TestScheduleGetForUpdateBlocksCancel(t *testing.T) {
 	if locked.ID != seedConference || locked.StaffID == "" {
 		t.Fatalf("GetForUpdate = %+v, want 会議の予定", locked.Schedule)
 	}
-	canceler, err := testDB.BeginTx(bg, nil)
+	canceler, err := testDB.Begin(bg)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer func() { _ = canceler.Rollback() }()
+	defer func() { _ = canceler.Rollback(bg) }()
 	done := make(chan error, 1)
 	go func() {
 		done <- r.CreateCancel(context.WithValue(bg, txKey{}, canceler),
@@ -696,7 +696,7 @@ func TestScheduleGetForUpdateBlocksCancel(t *testing.T) {
 		t.Fatalf("ロックの間にキャンセルが終わった: err = %v", err)
 	case <-time.After(300 * time.Millisecond):
 	}
-	if err := locker.Rollback(); err != nil {
+	if err := locker.Rollback(bg); err != nil {
 		t.Fatal(err)
 	}
 	if err := <-done; err != nil {
@@ -706,7 +706,7 @@ func TestScheduleGetForUpdateBlocksCancel(t *testing.T) {
 
 func TestTransactorRollsBack(t *testing.T) {
 	if testDB == nil {
-		t.Skip("MySQL を使うテストは -short では動かさない")
+		t.Skip("PostgreSQL を使うテストは -short では動かさない")
 	}
 	ctx := context.Background()
 	teams := NewTeamRepository(testDB)
@@ -793,8 +793,8 @@ func TestStaffChangePosition(t *testing.T) {
 		t.Errorf("Policies = %+v, want 自分の予定の編集だけ", got.Policies)
 	}
 	var targets int
-	tx := ctx.Value(txKey{}).(*sql.Tx)
-	if err := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM user_policy_targets upt JOIN user_policies up ON up.id = upt.user_policy_id WHERE up.user_id = ?", seedMori).Scan(&targets); err != nil {
+	tx := ctx.Value(txKey{}).(pgx.Tx)
+	if err := tx.QueryRow(ctx, "SELECT COUNT(*) FROM user_policy_targets upt JOIN user_policies up ON up.id = upt.user_policy_id WHERE up.user_id = $1", seedMori).Scan(&targets); err != nil {
 		t.Fatal(err)
 	}
 	if targets != 0 {
@@ -831,8 +831,8 @@ func TestStaffAddAndRemoveGrant(t *testing.T) {
 		t.Fatal(err)
 	}
 	var targets int
-	tx := ctx.Value(txKey{}).(*sql.Tx)
-	if err := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM user_policy_targets WHERE user_policy_id = ?", g.ID).Scan(&targets); err != nil {
+	tx := ctx.Value(txKey{}).(pgx.Tx)
+	if err := tx.QueryRow(ctx, "SELECT COUNT(*) FROM user_policy_targets WHERE user_policy_id = $1", g.ID).Scan(&targets); err != nil {
 		t.Fatal(err)
 	}
 	if targets != 0 {
@@ -878,5 +878,118 @@ func TestGrantAllowsReadingTarget(t *testing.T) {
 	p := principal.Principal{Staff: after}
 	if !schedule.CanRead(p, hayashi.ID, hayashi.TeamID) || schedule.CanEdit(p, hayashi.ID, hayashi.TeamID) {
 		t.Errorf("森の権限 = %+v, want 林の予定の閲覧だけ", after.Policies)
+	}
+}
+
+// TestNamesAreComparedExactly は、名前の一意の制約と絞り込みが、清音と濁音、全角と半角、大文字と小文字を別の名前とみなすことを確かめる。
+func TestNamesAreComparedExactly(t *testing.T) {
+	ctx := txContext(t)
+	r := NewTeamRepository(testDB)
+	for i, name := range []string{"ハ", "バ", "ﾊ", "a", "Ａ"} {
+		team := organization.Team{ID: "01M3TD000000000000000000A" + string(rune('0'+i)), FacilityID: seedFacility, Name: name}
+		if err := r.Create(ctx, team); err != nil {
+			t.Fatalf("チーム %q: err = %v", name, err)
+		}
+	}
+	dup := organization.Team{ID: "01M3TD000000000000000000B0", FacilityID: seedFacility, Name: "バ"}
+	if err := r.Create(ctx, dup); !errors.Is(err, apperr.ErrConflict) {
+		t.Fatalf("同じ名前のチーム: err = %v, want ErrConflict", err)
+	}
+	rows, err := NewStaffRepository(testDB).ListByFacility(ctx, seedFacility,
+		staff.ListQuery{Team: ptr("a"), Sort: kernel.Sort{Field: "username"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 0 {
+		t.Errorf("チーム a で絞って、チーム A の職員 %d 人を返した", len(rows))
+	}
+}
+
+func TestStaffCreateRejectsUppercaseEmail(t *testing.T) {
+	ctx := txContext(t)
+	s := staff.Staff{ID: "01M3TD000000000000000000C0", Username: "新人 三春", Email: "Miharu@example.com",
+		FacilityID: seedFacility, DepartmentID: seedDepartment, TeamID: seedTeam, PositionID: seedMember}
+	if err := NewStaffRepository(testDB).Create(ctx, s, nil); !errors.Is(err, apperr.ErrInvalidInput) {
+		t.Fatalf("小文字にそろえていないメール: err = %v, want ErrInvalidInput", err)
+	}
+}
+
+// TestScheduleRejectsOtherFacilityStaff は、複合の外部キーが、別の事業所の職員を指す予定を拒むことを確かめる。
+func TestScheduleRejectsOtherFacilityStaff(t *testing.T) {
+	ctx := txContext(t)
+	tx := ctx.Value(txKey{}).(pgx.Tx)
+	const (
+		otherFacility   = "01M3TD000000000000000000D0"
+		otherDepartment = "01M3TD000000000000000000D1"
+		otherTeam       = "01M3TD000000000000000000D2"
+		otherPosition   = "01M3TD000000000000000000D3"
+		otherStaff      = "01M3TD000000000000000000D4"
+	)
+	for _, q := range []string{
+		"INSERT INTO facilities (id, name) VALUES ('" + otherFacility + "', '別の事業所')",
+		"INSERT INTO departments (id, facility_id, name) VALUES ('" + otherDepartment + "', '" + otherFacility + "', '看護')",
+		"INSERT INTO teams (id, facility_id, name) VALUES ('" + otherTeam + "', '" + otherFacility + "', 'A')",
+		"INSERT INTO positions (id, facility_id, name) VALUES ('" + otherPosition + "', '" + otherFacility + "', 'メンバー')",
+		"INSERT INTO users (id, username, email, facility_id, department_id, team_id, position_id) VALUES ('" + otherStaff +
+			"', '別の職員', 'other@example.com', '" + otherFacility + "', '" + otherDepartment + "', '" + otherTeam + "', '" + otherPosition + "')",
+	} {
+		if _, err := tx.Exec(ctx, q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	s := schedule.Schedule{ID: "01M3TD000000000000000000D5", Slot: schedule.Slot{
+		FacilityID: seedFacility, StaffID: otherStaff, TypeID: seedNormalType,
+		Date: civil.Date{Year: 2026, Month: 10, Day: 23}, StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10},
+		Title: ptr("会議"),
+	}}
+	if err := NewScheduleRepository(testDB).Create(ctx, s); !errors.Is(err, apperr.ErrInvalidInput) {
+		t.Fatalf("別の事業所の職員の予定: err = %v, want ErrInvalidInput", err)
+	}
+}
+
+// TestScheduleColumnsFromDB は、時間外の勤務を開始の時刻から DB が決めることと、置き換えた回の組と訪問の情報が予定ごとに一意であることを確かめる。
+func TestScheduleColumnsFromDB(t *testing.T) {
+	ctx := txContext(t)
+	r := NewScheduleRepository(testDB)
+	slot := schedule.Slot{
+		FacilityID: seedFacility, StaffID: seedAoki, TypeID: seedNormalType,
+		Date: civil.Date{Year: 2026, Month: 10, Day: 12}, StartTime: civil.Time{Hour: 17}, EndTime: civil.Time{Hour: 18},
+		Title: ptr("申し送り"),
+	}
+	original := civil.Date{Year: 2026, Month: 10, Day: 12}
+	replaced := schedule.Schedule{ID: "01M3TD000000000000000000E0", Slot: slot,
+		RecurringScheduleID: ptr(seedRecurring), OriginalDate: &original}
+	if err := r.Create(ctx, replaced); err != nil {
+		t.Fatal(err)
+	}
+	got, err := r.Get(ctx, replaced.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.IsOverTimeWork || got.OriginalDate == nil || *got.OriginalDate != original {
+		t.Errorf("IsOverTimeWork = %v, OriginalDate = %v", got.IsOverTimeWork, got.OriginalDate)
+	}
+	tests := []struct {
+		name string
+		s    schedule.Schedule
+		want error
+	}{
+		{name: "同じ回を 2 度置き換える", want: apperr.ErrConflict,
+			s: schedule.Schedule{ID: "01M3TD000000000000000000E1", Slot: slot, RecurringScheduleID: ptr(seedRecurring), OriginalDate: &original}},
+		{name: "元の回の日付がない", want: apperr.ErrInvalidInput,
+			s: schedule.Schedule{ID: "01M3TD000000000000000000E2", Slot: slot, RecurringScheduleID: ptr(seedRecurring)}},
+		{name: "ほかの予定の訪問の情報", want: apperr.ErrConflict,
+			s: schedule.Schedule{ID: "01M3TD000000000000000000E3", Slot: schedule.Slot{
+				FacilityID: seedFacility, StaffID: seedMori, TypeID: seedVisitType,
+				Date: original, StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10},
+				VisitInfoID: ptr("01M3TC6ACG2Z0J6Y2DFBS8QRR9"),
+			}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := r.Create(ctx, tt.s); !errors.Is(err, tt.want) {
+				t.Fatalf("err = %v, want %v", err, tt.want)
+			}
+		})
 	}
 }

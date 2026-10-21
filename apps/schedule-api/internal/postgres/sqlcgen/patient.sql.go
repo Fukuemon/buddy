@@ -7,13 +7,12 @@ package sqlcgen
 
 import (
 	"context"
-	"database/sql"
 	"time"
 )
 
 const createPatient = `-- name: CreatePatient :exec
 INSERT INTO patients (id, facility_id, name, preferred_time, preferred_gender, service_code_id, assigned_staff_id)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 `
 
 type CreatePatientParams struct {
@@ -27,7 +26,7 @@ type CreatePatientParams struct {
 }
 
 func (q *Queries) CreatePatient(ctx context.Context, arg CreatePatientParams) error {
-	_, err := q.db.ExecContext(ctx, createPatient,
+	_, err := q.db.Exec(ctx, createPatient,
 		arg.ID,
 		arg.FacilityID,
 		arg.Name,
@@ -47,7 +46,7 @@ SELECT pa.id, pa.facility_id, pa.name, pa.preferred_time, pa.preferred_gender,
 FROM patients pa
 JOIN service_codes sc ON sc.id = pa.service_code_id
 JOIN users u ON u.id = pa.assigned_staff_id
-WHERE pa.id = ?
+WHERE pa.id = $1
 `
 
 type GetPatientRow struct {
@@ -65,7 +64,7 @@ type GetPatientRow struct {
 }
 
 func (q *Queries) GetPatient(ctx context.Context, id string) (GetPatientRow, error) {
-	row := q.db.QueryRowContext(ctx, getPatient, id)
+	row := q.db.QueryRow(ctx, getPatient, id)
 	var i GetPatientRow
 	err := row.Scan(
 		&i.ID,
@@ -91,26 +90,26 @@ SELECT pa.id, pa.facility_id, pa.name, pa.preferred_time, pa.preferred_gender,
 FROM patients pa
 JOIN service_codes sc ON sc.id = pa.service_code_id
 JOIN users u ON u.id = pa.assigned_staff_id
-WHERE pa.facility_id = ?
-  AND (? IS NULL OR pa.name = ?)
-  AND (? IS NULL OR pa.preferred_time = ?)
-  AND (? IS NULL OR pa.preferred_gender = ?)
-  AND (? IS NULL OR u.username = ?)
+WHERE pa.facility_id = $1
+  AND ($2::text IS NULL OR pa.name = $2)
+  AND ($3::text IS NULL OR pa.preferred_time = $3)
+  AND ($4::text IS NULL OR pa.preferred_gender = $4)
+  AND ($5::text IS NULL OR u.username = $5)
 ORDER BY
-  CASE WHEN ? = 'name_asc' THEN pa.name END ASC,
-  CASE WHEN ? = 'name_desc' THEN pa.name END DESC,
-  CASE WHEN ? = 'created_at_asc' THEN pa.created_at END ASC,
-  CASE WHEN ? = 'created_at_desc' THEN pa.created_at END DESC,
+  CASE WHEN $6::text = 'name_asc' THEN pa.name END ASC,
+  CASE WHEN $6::text = 'name_desc' THEN pa.name END DESC,
+  CASE WHEN $6::text = 'created_at_asc' THEN pa.created_at END ASC,
+  CASE WHEN $6::text = 'created_at_desc' THEN pa.created_at END DESC,
   pa.id
 `
 
 type ListPatientsByFacilityParams struct {
 	FacilityID      string
-	Name            sql.NullString
-	PreferredTime   sql.NullString
-	PreferredGender sql.NullString
-	AssignedStaff   sql.NullString
-	Sort            interface{}
+	Name            *string
+	PreferredTime   *string
+	PreferredGender *string
+	AssignedStaff   *string
+	Sort            string
 }
 
 type ListPatientsByFacilityRow struct {
@@ -128,19 +127,12 @@ type ListPatientsByFacilityRow struct {
 }
 
 func (q *Queries) ListPatientsByFacility(ctx context.Context, arg ListPatientsByFacilityParams) ([]ListPatientsByFacilityRow, error) {
-	rows, err := q.db.QueryContext(ctx, listPatientsByFacility,
+	rows, err := q.db.Query(ctx, listPatientsByFacility,
 		arg.FacilityID,
 		arg.Name,
-		arg.Name,
-		arg.PreferredTime,
 		arg.PreferredTime,
 		arg.PreferredGender,
-		arg.PreferredGender,
 		arg.AssignedStaff,
-		arg.AssignedStaff,
-		arg.Sort,
-		arg.Sort,
-		arg.Sort,
 		arg.Sort,
 	)
 	if err != nil {
@@ -166,9 +158,6 @@ func (q *Queries) ListPatientsByFacility(ctx context.Context, arg ListPatientsBy
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
