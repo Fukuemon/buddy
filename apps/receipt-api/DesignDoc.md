@@ -246,6 +246,7 @@ API の定義の正本は [openapi.yaml](https://github.com/Fukuemon/buddy/blob/
 
 - `POST /v1/checks`
   - `Authorization: Bearer` の access token を求める。署名、`iss`、`aud`、`exp`、`nbf` を JWKS で確かめる。
+  - 署名のアルゴリズムは RS256 と ES256 だけを受け付ける。
   - `multipart/form-data` で、ファイル `visits`（実績の CSV）と予定を受ける。
   - 予定は、ファイル `schedules`（予定の CSV）があればそれを使う。なくてフォームの値 `month`（`2026-10` の形）があれば、その月の予定を Google カレンダーから取る。
   - 結果は、`Accept` によらず結果の JSON で返す。
@@ -280,9 +281,3 @@ API の定義の正本は [openapi.yaml](https://github.com/Fukuemon/buddy/blob/
 - 取り消された予定は除く。GAS は取り消しの状態を見ていなかった。
 - 解釈できない予定は `warnings` に入れる。GAS は `】` が先の題名で例外を出し、そのカレンダーの処理を止めていた（推測）。
 - 照合の対象のカレンダーは、サーバーの設定に置く。GAS はカレンダー ID をクエリで受け、匿名で誰でも呼べる Web アプリとして公開されていた。
-
-## Open Questions
-
-- 期間と職員で予定と実績を絞る（`from`、`to`、`user_ids`）かは決めていない。今の実装は絞らないので、予定にない職員の実績は全て実績のみに入る。
-- 予定を schedule-api から取る形は、職員が画面で予定を入れるようになってから選ぶ。
-- iBow が出す訪問日の形は、手元の資料で確かめていない（未確認）。
