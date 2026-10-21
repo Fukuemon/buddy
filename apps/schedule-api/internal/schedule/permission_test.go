@@ -81,3 +81,27 @@ func TestStaffManageDoesNotGrantSchedules(t *testing.T) {
 		t.Error("職員の管理の権限で、ほかの職員の予定を扱えた")
 	}
 }
+
+// TestReadable は、自分は権限によらず入り、見てよい職員だけが入ることを確かめる。
+func TestReadable(t *testing.T) {
+	members := []staff.Ref{{ID: self, TeamID: selfTeam}, {ID: other, TeamID: otherTeam}, {ID: "THIRD", TeamID: "TEAM-C"}}
+	tests := []struct {
+		name  string
+		grant staff.PolicyGrant
+		want  map[string]bool
+	}{
+		{"権限なし", staff.PolicyGrant{}, map[string]bool{self: true, other: false, "THIRD": false}},
+		{"チーム B の閲覧", staff.PolicyGrant{PolicyCode: organization.ScheduleTeamRead, TargetTeamIDs: []string{otherTeam}}, map[string]bool{self: true, other: true, "THIRD": false}},
+		{"一覧に無い職員", staff.PolicyGrant{PolicyCode: organization.ScheduleUserRead, TargetUserIDs: []string{"OUTSIDE"}}, map[string]bool{self: true, "OUTSIDE": false}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ok := readable(subject(tt.grant), members)
+			for id, want := range tt.want {
+				if got := ok(id); got != want {
+					t.Errorf("readable(%s) = %v, want %v", id, got, want)
+				}
+			}
+		})
+	}
+}

@@ -104,7 +104,7 @@ func (s *Usecase) List(ctx context.Context, facilityID string, q ListQuery) (Lis
 	if _, err := s.deps.Facilities.Get(ctx, facilityID); err != nil {
 		return List{}, err
 	}
-	readable, err := s.readable(ctx, p, facilityID)
+	readable, err := s.readableStaff(ctx, p, facilityID)
 	if err != nil {
 		return List{}, err
 	}
@@ -122,8 +122,8 @@ func (s *Usecase) List(ctx context.Context, facilityID string, q ListQuery) (Lis
 	}, nil
 }
 
-// readable は、事業所の職員のうち、p が予定を見てよい職員かを返す関数を返す。
-func (s *Usecase) readable(ctx context.Context, p principal.Principal, facilityID string) (func(staffID string) bool, error) {
+// readableStaff は、事業所の職員のうち、p が予定を見てよい職員かを返す関数を返す。
+func (s *Usecase) readableStaff(ctx context.Context, p principal.Principal, facilityID string) (func(staffID string) bool, error) {
 	if CanReadAll(p) {
 		return func(string) bool { return true }, nil
 	}

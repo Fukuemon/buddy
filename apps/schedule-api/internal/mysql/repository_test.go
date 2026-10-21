@@ -168,6 +168,9 @@ func TestStaffRef(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if slices.ContainsFunc(refs, func(ref staff.Ref) bool { return ref.FacilityID != seedFacility }) {
+		t.Errorf("refs = %+v, want 事業所の職員だけ", refs)
+	}
 	if !slices.ContainsFunc(refs, func(ref staff.Ref) bool { return ref == got }) ||
 		!slices.IsSortedFunc(refs, func(a, b staff.Ref) int { return strings.Compare(a.ID, b.ID) }) {
 		t.Errorf("refs = %+v, want 森を含む ID の順", refs)
@@ -394,7 +397,7 @@ func TestPatientList(t *testing.T) {
 	}
 }
 
-func TestVisitCreateInfo(t *testing.T) {
+func TestVisitInfoCreate(t *testing.T) {
 	ctx := txContext(t)
 	r := NewVisitInfoRepository(testDB)
 	info := visit.Info{
@@ -671,8 +674,12 @@ func TestScheduleGetForUpdateBlocksCancel(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() { _ = locker.Rollback() }()
-	if _, err := r.GetForUpdate(context.WithValue(bg, txKey{}, locker), seedConference); err != nil {
+	locked, err := r.GetForUpdate(context.WithValue(bg, txKey{}, locker), seedConference)
+	if err != nil {
 		t.Fatal(err)
+	}
+	if locked.ID != seedConference || locked.StaffID == "" {
+		t.Fatalf("GetForUpdate = %+v, want 会議の予定", locked.Schedule)
 	}
 	canceler, err := testDB.BeginTx(bg, nil)
 	if err != nil {

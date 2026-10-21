@@ -22,7 +22,7 @@ func allow(context.Context) error { return nil }
 
 func deny(context.Context) error { return apperr.ErrForbidden }
 
-func newService(s *inmem.Store, guard organization.Guard) *staff.Usecase {
+func newUsecase(s *inmem.Store, guard organization.Guard) *staff.Usecase {
 	return staff.NewUsecase(staff.Deps{
 		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
 		Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
@@ -167,7 +167,7 @@ func TestStaffAddGrant(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := grantStore()
-			_, err := newService(s, allow).AddGrant(ctx, staffID, tt.in)
+			_, err := newUsecase(s, allow).AddGrant(ctx, staffID, tt.in)
 			if tt.wantErr != nil {
 				if !errors.Is(err, tt.wantErr) {
 					t.Fatalf("err = %v, want %v", err, tt.wantErr)
@@ -185,7 +185,7 @@ func TestStaffAddGrant(t *testing.T) {
 	}
 
 	s := grantStore()
-	uc := newService(s, allow)
+	uc := newUsecase(s, allow)
 	if _, err := uc.AddGrant(ctx, staffID, staff.GrantInput{PolicyID: "SELF"}); err != nil {
 		t.Fatal(err)
 	}
@@ -204,7 +204,7 @@ func TestStaffRemoveGrant(t *testing.T) {
 	d := s.Staff[staffID]
 	d.Policies = []staff.PolicyGrant{{UserPolicyID: "UP1", PolicyID: "SELF"}}
 	s.Staff[staffID] = d
-	uc := newService(s, allow)
+	uc := newUsecase(s, allow)
 	if _, err := uc.RemoveGrant(ctx, staffID, "UP1"); err != nil {
 		t.Fatal(err)
 	}
@@ -219,7 +219,7 @@ func TestStaffRemoveGrant(t *testing.T) {
 // TestStaffManageForbidden は、職員の管理を許されない職員には、職員の登録と、権限と役職を変える操作が apperr.ErrForbidden を返すことを確かめる。
 func TestStaffManageForbidden(t *testing.T) {
 	ctx := context.Background()
-	uc := newService(grantStore(), deny)
+	uc := newUsecase(grantStore(), deny)
 	if _, err := uc.AddGrant(ctx, staffID, staff.GrantInput{PolicyID: "SELF"}); !errors.Is(err, apperr.ErrForbidden) {
 		t.Errorf("AddGrant: err = %v", err)
 	}
