@@ -12,11 +12,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/kernel"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 )
@@ -205,7 +206,7 @@ func TestListSchedules(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
 	}
-	if s.lastQuery.Sort != (domain.Sort{Field: "start_time", Desc: true}) ||
+	if s.lastQuery.Sort != (kernel.Sort{Field: "start_time", Desc: true}) ||
 		s.lastQuery.TypeName == nil || *s.lastQuery.TypeName != schedule.Visit ||
 		s.lastQuery.DateFrom == nil || s.lastQuery.DateTo != nil {
 		t.Errorf("query = %+v", s.lastQuery)
@@ -241,7 +242,7 @@ func TestListUsersAndPatientsRejectUnsafeSort(t *testing.T) {
 		t.Error("usecase が呼ばれた")
 	}
 	rec, _ := do(t, h, http.MethodGet, "/v1/facilities/"+facilityID+"/users?sort_field=username&sort_order=asc", "")
-	if rec.Code != http.StatusOK || st.lastQuery.Sort != (domain.Sort{Field: "username"}) {
+	if rec.Code != http.StatusOK || st.lastQuery.Sort != (kernel.Sort{Field: "username"}) {
 		t.Errorf("status = %d, query = %+v", rec.Code, st.lastQuery)
 	}
 }
@@ -259,27 +260,27 @@ func TestErrorStatus(t *testing.T) {
 	}{
 		{name: "パスの ID が ULID でない", method: http.MethodGet, target: "/v1/schedules/not-a-ulid",
 			wantCode: http.StatusBadRequest, wantBody: "invalid_input"},
-		{name: "予定がない", err: domain.ErrNotFound, method: http.MethodGet, target: "/v1/schedules/" + scheduleID,
+		{name: "予定がない", err: apperr.ErrNotFound, method: http.MethodGet, target: "/v1/schedules/" + scheduleID,
 			wantCode: http.StatusNotFound, wantBody: "not_found"},
-		{name: "繰り返しの予定がない", err: domain.ErrNotFound, method: http.MethodGet, target: "/v1/schedules/recurring/" + scheduleID,
+		{name: "繰り返しの予定がない", err: apperr.ErrNotFound, method: http.MethodGet, target: "/v1/schedules/recurring/" + scheduleID,
 			wantCode: http.StatusNotFound, wantBody: "not_found"},
-		{name: "キャンセル済み", err: domain.Conflict("この予定はすでにキャンセルされています"), method: http.MethodPost,
+		{name: "キャンセル済み", err: apperr.Conflict("この予定はすでにキャンセルされています"), method: http.MethodPost,
 			target: "/v1/schedules/" + scheduleID + "/cancel", body: `{"reason":"体調不良"}`,
 			wantCode: http.StatusConflict, wantBody: "conflict", wantMsg: "この予定はすでにキャンセルされています"},
-		{name: "キャンセル済みの予定を変える", err: fmt.Errorf("update: %w", domain.Conflict("キャンセル済みの予定は変えられません")),
+		{name: "キャンセル済みの予定を変える", err: fmt.Errorf("update: %w", apperr.Conflict("キャンセル済みの予定は変えられません")),
 			method: http.MethodPut, target: "/v1/schedules/" + scheduleID, body: validSlotBody,
 			wantCode: http.StatusConflict, wantBody: "conflict", wantMsg: "キャンセル済みの予定は変えられません"},
-		{name: "原因の文のない衝突", err: domain.ErrConflict, method: http.MethodPut, target: "/v1/schedules/" + scheduleID,
+		{name: "原因の文のない衝突", err: apperr.ErrConflict, method: http.MethodPut, target: "/v1/schedules/" + scheduleID,
 			body: validSlotBody, wantCode: http.StatusConflict, wantBody: "conflict", wantMsg: "同じ内容のデータがすでにあります"},
-		{name: "予定を見る権限がない", err: domain.ErrForbidden, method: http.MethodGet, target: "/v1/schedules/" + scheduleID,
+		{name: "予定を見る権限がない", err: apperr.ErrForbidden, method: http.MethodGet, target: "/v1/schedules/" + scheduleID,
 			wantCode: http.StatusForbidden, wantBody: "forbidden"},
-		{name: "予定を作る権限がない", err: domain.ErrForbidden, method: http.MethodPost, target: "/v1/facilities/" + facilityID + "/schedules",
+		{name: "予定を作る権限がない", err: apperr.ErrForbidden, method: http.MethodPost, target: "/v1/facilities/" + facilityID + "/schedules",
 			body: validSlotBody, wantCode: http.StatusForbidden, wantBody: "forbidden"},
-		{name: "予定を変える権限がない", err: domain.ErrForbidden, method: http.MethodPut, target: "/v1/schedules/" + scheduleID,
+		{name: "予定を変える権限がない", err: apperr.ErrForbidden, method: http.MethodPut, target: "/v1/schedules/" + scheduleID,
 			body: validSlotBody, wantCode: http.StatusForbidden, wantBody: "forbidden"},
-		{name: "予定をキャンセルする権限がない", err: domain.ErrForbidden, method: http.MethodPost, target: "/v1/schedules/" + scheduleID + "/cancel",
+		{name: "予定をキャンセルする権限がない", err: apperr.ErrForbidden, method: http.MethodPost, target: "/v1/schedules/" + scheduleID + "/cancel",
 			body: `{"reason":"体調不良"}`, wantCode: http.StatusForbidden, wantBody: "forbidden"},
-		{name: "domain の検証", err: domain.Invalid("通常の予定にはタイトルが必須です"), method: http.MethodGet, target: "/v1/schedules/" + scheduleID,
+		{name: "検証の誤り", err: apperr.Invalid("通常の予定にはタイトルが必須です"), method: http.MethodGet, target: "/v1/schedules/" + scheduleID,
 			wantCode: http.StatusBadRequest, wantBody: "invalid_input"},
 		{name: "想定外のエラー", err: errors.New("dial tcp: connection refused"), method: http.MethodGet, target: "/v1/schedules/" + scheduleID,
 			wantCode: http.StatusInternalServerError, wantBody: "internal"},
@@ -442,7 +443,7 @@ func TestAddUserPolicy(t *testing.T) {
 			t.Errorf("%s: status = %d", name, rec.Code)
 		}
 	}
-	forbidden := newRouter(&fakeSchedules{}, &fakeStaff{err: domain.ErrForbidden}, &fakePatients{})
+	forbidden := newRouter(&fakeSchedules{}, &fakeStaff{err: apperr.ErrForbidden}, &fakePatients{})
 	if rec, body := do(t, forbidden, http.MethodPost, "/v1/users/"+staffID+"/policies", `{"policy_id":"`+policyID+`"}`); rec.Code != http.StatusForbidden || body["code"] != "forbidden" {
 		t.Errorf("職員の管理の権限が無い: status = %d, body = %v", rec.Code, body)
 	}
@@ -455,7 +456,7 @@ func TestRemoveUserPolicy(t *testing.T) {
 	if rec.Code != http.StatusOK || st.lastUserPolicyID != userPolicyID {
 		t.Fatalf("status = %d, 外した権限 = %s", rec.Code, st.lastUserPolicyID)
 	}
-	notFound := newRouter(&fakeSchedules{}, &fakeStaff{err: domain.ErrNotFound}, &fakePatients{})
+	notFound := newRouter(&fakeSchedules{}, &fakeStaff{err: apperr.ErrNotFound}, &fakePatients{})
 	if rec, _ := do(t, notFound, http.MethodDelete, "/v1/users/"+staffID+"/policies/"+userPolicyID, ""); rec.Code != http.StatusNotFound {
 		t.Errorf("職員の権限が無い: status = %d", rec.Code)
 	}
@@ -468,7 +469,7 @@ func TestUsecaseReceivesPrincipal(t *testing.T) {
 	if s.lastCtx == nil {
 		t.Fatal("usecase が呼ばれなかった")
 	}
-	if p, ok := auth.PrincipalFrom(s.lastCtx); !ok || p.Staff.ID != staffID {
+	if p, ok := principal.From(s.lastCtx); !ok || p.Staff.ID != staffID {
 		t.Fatalf("usecase の ctx の職員 = %+v, %v", p, ok)
 	}
 }
@@ -510,7 +511,7 @@ func TestCORSPreflight(t *testing.T) {
 
 // TestCreateForbidden は、職員の管理の権限が無いときに、職員と利用者の登録が 403 になることを確かめる。
 func TestCreateForbidden(t *testing.T) {
-	h := newRouter(&fakeSchedules{}, &fakeStaff{err: domain.ErrForbidden}, &fakePatients{err: domain.ErrForbidden})
+	h := newRouter(&fakeSchedules{}, &fakeStaff{err: apperr.ErrForbidden}, &fakePatients{err: apperr.ErrForbidden})
 	for target, body := range map[string]string{
 		"/v1/facilities/" + facilityID + "/users": `{"username":"新人","email":"new@example.com","department_id":"` + staffID +
 			`","team_id":"` + staffID + `","position_id":"` + staffID + `"}`,

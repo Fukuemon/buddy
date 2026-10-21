@@ -5,7 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/kernel"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 )
 
@@ -37,7 +38,7 @@ func TestNew(t *testing.T) {
 			tt.edit(&p)
 			got, err := staff.New(p)
 			if tt.wantErr {
-				if !errors.Is(err, domain.ErrInvalidInput) {
+				if !errors.Is(err, apperr.ErrInvalidInput) {
 					t.Fatalf("err = %v, want ErrInvalidInput", err)
 				}
 				return
@@ -55,10 +56,10 @@ func TestNew(t *testing.T) {
 
 func TestParseSort(t *testing.T) {
 	got, err := staff.ParseSort("", "")
-	if err != nil || got != (domain.Sort{Field: "updated_at", Desc: true}) {
+	if err != nil || got != (kernel.Sort{Field: "updated_at", Desc: true}) {
 		t.Fatalf("got %+v, %v", got, err)
 	}
-	if _, err := staff.ParseSort("username;DROP TABLE users", "asc"); !errors.Is(err, domain.ErrInvalidInput) {
+	if _, err := staff.ParseSort("username;DROP TABLE users", "asc"); !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Fatalf("err = %v, want ErrInvalidInput", err)
 	}
 }

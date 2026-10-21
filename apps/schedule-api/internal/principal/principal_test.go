@@ -1,13 +1,13 @@
-package auth_test
+package principal_test
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 )
 
@@ -18,8 +18,8 @@ const (
 	otherTeam = "TEAM-B"
 )
 
-func principal(grants ...staff.PolicyGrant) auth.Principal {
-	return auth.Principal{Staff: staff.Detail{
+func subject(grants ...staff.PolicyGrant) principal.Principal {
+	return principal.Principal{Staff: staff.Detail{
 		Summary:  staff.Summary{Staff: staff.Staff{ID: self, TeamID: selfTeam}},
 		Policies: grants,
 	}}
@@ -47,7 +47,7 @@ func TestPrincipalCan(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := principal(tt.grant)
+			p := subject(tt.grant)
 			if got := p.CanRead(other, otherTeam); got != tt.readOther {
 				t.Errorf("CanRead(ほかの職員) = %v", got)
 			}
@@ -71,7 +71,7 @@ func TestPrincipalCanReadAll(t *testing.T) {
 		organization.ScheduleTeamEdit: false,
 		organization.ScheduleSelfEdit: false,
 	} {
-		if got := principal(staff.PolicyGrant{PolicyCode: code}).CanReadAll(); got != want {
+		if got := subject(staff.PolicyGrant{PolicyCode: code}).CanReadAll(); got != want {
 			t.Errorf("%s: CanReadAll() = %v", code, got)
 		}
 	}
@@ -79,20 +79,20 @@ func TestPrincipalCanReadAll(t *testing.T) {
 
 func TestRequireStaffManage(t *testing.T) {
 	ctx := context.Background()
-	if err := auth.RequireStaffManage(ctx); !errors.Is(err, domain.ErrForbidden) {
+	if err := principal.RequireStaffManage(ctx); !errors.Is(err, apperr.ErrForbidden) {
 		t.Errorf("職員がいない: err = %v", err)
 	}
-	if err := auth.RequireStaffManage(auth.WithPrincipal(ctx, principal(staff.PolicyGrant{PolicyCode: organization.ScheduleAllEdit}))); !errors.Is(err, domain.ErrForbidden) {
+	if err := principal.RequireStaffManage(principal.With(ctx, subject(staff.PolicyGrant{PolicyCode: organization.ScheduleAllEdit}))); !errors.Is(err, apperr.ErrForbidden) {
 		t.Errorf("予定の全ての編集だけ: err = %v", err)
 	}
-	if err := auth.RequireStaffManage(auth.WithPrincipal(ctx, principal(staff.PolicyGrant{PolicyCode: organization.StaffManage}))); err != nil {
+	if err := principal.RequireStaffManage(principal.With(ctx, subject(staff.PolicyGrant{PolicyCode: organization.StaffManage}))); err != nil {
 		t.Errorf("職員の管理: err = %v", err)
 	}
 }
 
 // TestStaffManageDoesNotGrantSchedules は、職員の管理の権限が、ほかの職員の予定に及ばないことを確かめる。
 func TestStaffManageDoesNotGrantSchedules(t *testing.T) {
-	p := principal(staff.PolicyGrant{PolicyCode: organization.StaffManage})
+	p := subject(staff.PolicyGrant{PolicyCode: organization.StaffManage})
 	if p.CanRead(other, otherTeam) || p.CanEdit(other, otherTeam) || p.CanReadAll() {
 		t.Error("職員の管理の権限で、ほかの職員の予定を扱えた")
 	}

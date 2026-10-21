@@ -9,37 +9,38 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/access"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/authn"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/ulid"
 )
 
 // TokenVerifier は、Authorization ヘッダーの Bearer のトークンを検証する。検証に失敗したときはエラーを返す。
 type TokenVerifier interface {
-	Verify(ctx context.Context, raw string) (auth.Identity, error)
+	Verify(ctx context.Context, raw string) (principal.Identity, error)
 }
 
 // AuthUsecase は、認証のミドルウェアが使う操作である。
 type AuthUsecase interface {
-	Authenticate(ctx context.Context, id auth.Identity) (auth.Principal, error)
-	FacilityOf(ctx context.Context, r access.Resource, id string) (string, error)
+	Authenticate(ctx context.Context, id principal.Identity) (principal.Principal, error)
+	FacilityOf(ctx context.Context, r authn.Resource, id string) (string, error)
 }
 
 // pathResources は、/v1 のパスの引数の名前と、その ID が指すリソースである。
 // global は、ミドルウェアが事業所を確かめない引数である。事業所に属さないリソースか、同じパスのほかの引数で事業所を確かめるリソースに付ける。
 var pathResources = map[string]struct {
-	resource access.Resource
+	resource authn.Resource
 	global   bool
 }{
-	"facility_id":           {resource: access.ResourceFacility},
-	"department_id":         {resource: access.ResourceDepartment},
-	"team_id":               {resource: access.ResourceTeam},
-	"position_id":           {resource: access.ResourcePosition},
-	"user_id":               {resource: access.ResourceStaff},
-	"schedule_id":           {resource: access.ResourceSchedule},
-	"recurring_schedule_id": {resource: access.ResourceRecurringSchedule},
+	"facility_id":           {resource: authn.ResourceFacility},
+	"department_id":         {resource: authn.ResourceDepartment},
+	"team_id":               {resource: authn.ResourceTeam},
+	"position_id":           {resource: authn.ResourcePosition},
+	"user_id":               {resource: authn.ResourceStaff},
+	"schedule_id":           {resource: authn.ResourceSchedule},
+	"recurring_schedule_id": {resource: authn.ResourceRecurringSchedule},
 	"policy_id":             {global: true},
-	// 職員の権限の ID は、同じパスの user_id で事業所を確かめ、staff.Service が職員の権限かを確かめる。
+	// 職員の権限の ID は、同じパスの user_id で事業所を確かめ、staff.Usecase が職員の権限かを確かめる。
 	"user_policy_id": {global: true},
 }
 
@@ -68,7 +69,7 @@ func (m authMiddleware) authenticate(c *gin.Context) {
 		m.deny(c, err)
 		return
 	}
-	c.Request = c.Request.WithContext(auth.WithPrincipal(c.Request.Context(), p))
+	c.Request = c.Request.WithContext(principal.With(c.Request.Context(), p))
 	c.Next()
 }
 
@@ -76,7 +77,7 @@ func (m authMiddleware) authenticate(c *gin.Context) {
 // ID の形が誤っているときとリソースが見つからないときは、requireULIDParams とハンドラが 400 と 404 を返すよう、そのまま通す。
 // pathResources にない引数を持つ経路は、確かめられないので 500 を返す。
 func (m authMiddleware) checkFacility(c *gin.Context) {
-	p, ok := auth.PrincipalFrom(c.Request.Context())
+	p, ok := principal.From(c.Request.Context())
 	if !ok {
 		writeError(c, m.log, errors.New("認証のミドルウェアより前に事業所を確かめました"))
 		return
@@ -87,11 +88,11 @@ func (m authMiddleware) checkFacility(c *gin.Context) {
 			writeError(c, m.log, errors.New("事業所を確かめられないパスの引数 "+param.Key+" です"))
 			return
 		}
-		if r.global || !domain.ValidID(param.Value) {
+		if r.global || !ulid.Valid(param.Value) {
 			continue
 		}
 		facilityID, err := m.uc.FacilityOf(c.Request.Context(), r.resource, param.Value)
-		if errors.Is(err, domain.ErrNotFound) {
+		if errors.Is(err, apperr.ErrNotFound) {
 			continue
 		}
 		if err != nil {
@@ -99,7 +100,7 @@ func (m authMiddleware) checkFacility(c *gin.Context) {
 			return
 		}
 		if facilityID != p.Staff.FacilityID {
-			m.deny(c, domain.ErrForbidden)
+			m.deny(c, apperr.ErrForbidden)
 			return
 		}
 	}
@@ -107,12 +108,12 @@ func (m authMiddleware) checkFacility(c *gin.Context) {
 }
 
 func (m authMiddleware) deny(c *gin.Context, err error) {
-	if !errors.Is(err, domain.ErrForbidden) {
+	if !errors.Is(err, apperr.ErrForbidden) {
 		writeError(c, m.log, err)
 		return
 	}
 	m.log.InfoContext(c.Request.Context(), "forbidden", slog.String("path", c.FullPath()), slog.Any("reason", err))
-	c.AbortWithStatusJSON(http.StatusForbidden, errorResponse{Code: "forbidden", Message: domain.ErrForbidden.Error()})
+	c.AbortWithStatusJSON(http.StatusForbidden, errorResponse{Code: "forbidden", Message: apperr.ErrForbidden.Error()})
 }
 
 // unauthorized は、RFC 6750 の 3 節に従い、WWW-Authenticate を付けて 401 を返す。

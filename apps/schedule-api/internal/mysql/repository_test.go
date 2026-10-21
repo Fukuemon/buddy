@@ -9,11 +9,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/kernel"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
@@ -61,7 +62,7 @@ func TestFacilityGet(t *testing.T) {
 	if f.Name != "サンプル訪問看護ステーション" || f.CreatedAt.IsZero() {
 		t.Errorf("got %+v", f)
 	}
-	if _, err := r.Get(ctx, unknownID); !errors.Is(err, domain.ErrNotFound) {
+	if _, err := r.Get(ctx, unknownID); !errors.Is(err, apperr.ErrNotFound) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
 	}
 }
@@ -76,7 +77,7 @@ func TestFacilityGetByOrgID(t *testing.T) {
 	if f.ID != seedFacility {
 		t.Errorf("got %+v", f)
 	}
-	if _, err := r.GetByOrgID(ctx, "org-unknown"); !errors.Is(err, domain.ErrNotFound) {
+	if _, err := r.GetByOrgID(ctx, "org-unknown"); !errors.Is(err, apperr.ErrNotFound) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
 	}
 }
@@ -101,7 +102,7 @@ func TestPositionCreateAndGet(t *testing.T) {
 	dup := p
 	dup.ID = "01M3TD00000000000000000002"
 	dup.Policies = nil
-	if err := r.Create(ctx, dup); !errors.Is(err, domain.ErrConflict) {
+	if err := r.Create(ctx, dup); !errors.Is(err, apperr.ErrConflict) {
 		t.Fatalf("同じ名前の役職: err = %v, want ErrConflict", err)
 	}
 	list, err := r.ListByFacility(ctx, seedFacility)
@@ -144,7 +145,7 @@ func TestStaffGetWithPolicies(t *testing.T) {
 			t.Errorf("職員の権限 = %+v, want 森", p)
 		}
 	}
-	if _, err := r.Get(ctx, unknownID); !errors.Is(err, domain.ErrNotFound) {
+	if _, err := r.Get(ctx, unknownID); !errors.Is(err, apperr.ErrNotFound) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
 	}
 }
@@ -155,7 +156,7 @@ func TestStaffLinkSub(t *testing.T) {
 	if err := r.LinkSub(ctx, unknownID, "hina.aoki@example.com", "sub-other-facility"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.FindIDBySub(ctx, "sub-other-facility"); !errors.Is(err, domain.ErrNotFound) {
+	if _, err := r.FindIDBySub(ctx, "sub-other-facility"); !errors.Is(err, apperr.ErrNotFound) {
 		t.Fatalf("ほかの事業所の指定で結び付けた: err = %v", err)
 	}
 	if err := r.LinkSub(ctx, seedFacility, "hina.aoki@example.com", "sub-1"); err != nil {
@@ -167,7 +168,7 @@ func TestStaffLinkSub(t *testing.T) {
 	if err := r.LinkSub(ctx, seedFacility, "hina.aoki@example.com", "sub-2"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := r.FindIDBySub(ctx, "sub-2"); !errors.Is(err, domain.ErrNotFound) {
+	if _, err := r.FindIDBySub(ctx, "sub-2"); !errors.Is(err, apperr.ErrNotFound) {
 		t.Fatalf("結び付け済みの sub を書き換えた: err = %v", err)
 	}
 }
@@ -245,12 +246,12 @@ func TestStaffCreate(t *testing.T) {
 	dup := s
 	dup.ID = "01M3TD00000000000000000012"
 	dup.Username = "別の名前"
-	if err := r.Create(ctx, dup, nil); !errors.Is(err, domain.ErrConflict) {
+	if err := r.Create(ctx, dup, nil); !errors.Is(err, apperr.ErrConflict) {
 		t.Fatalf("同じメール: err = %v, want ErrConflict", err)
 	}
 	bad := s
 	bad.ID, bad.Username, bad.Email, bad.TeamID = "01M3TD00000000000000000013", "参照なし", "none@example.com", unknownID
-	if err := r.Create(ctx, bad, nil); !errors.Is(err, domain.ErrInvalidInput) {
+	if err := r.Create(ctx, bad, nil); !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Fatalf("存在しないチーム: err = %v, want ErrInvalidInput", err)
 	}
 }
@@ -290,7 +291,7 @@ func TestStaffUniqueness(t *testing.T) {
 	}{
 		{name: "同じ事業所に同じ名前", s: sameFacility("01M3TD00000000000000000024", "青木 陽菜", "hina.aoki2@example.com")},
 		{name: "同じ事業所に同じメール", s: sameFacility("01M3TD00000000000000000025", "別の名前", "hina.aoki@example.com"),
-			wantErr: domain.ErrConflict},
+			wantErr: apperr.ErrConflict},
 		{name: "別の事業所に同じメール", s: otherAoki},
 	}
 	for _, tt := range tests {
@@ -319,17 +320,17 @@ func TestStaffList(t *testing.T) {
 		q    staff.ListQuery
 		want []string
 	}{
-		{name: "名前の昇順", q: staff.ListQuery{Sort: domain.Sort{Field: "username"}},
+		{name: "名前の昇順", q: staff.ListQuery{Sort: kernel.Sort{Field: "username"}},
 			want: []string{"佐藤 美咲", "林 さくら", "森 健太", "青木 陽菜"}},
-		{name: "名前の降順", q: staff.ListQuery{Sort: domain.Sort{Field: "username", Desc: true}},
+		{name: "名前の降順", q: staff.ListQuery{Sort: kernel.Sort{Field: "username", Desc: true}},
 			want: []string{"青木 陽菜", "森 健太", "林 さくら", "佐藤 美咲"}},
-		{name: "チームで絞る", q: staff.ListQuery{Team: ptr("A"), Sort: domain.Sort{Field: "username"}},
+		{name: "チームで絞る", q: staff.ListQuery{Team: ptr("A"), Sort: kernel.Sort{Field: "username"}},
 			want: []string{"林 さくら", "青木 陽菜"}},
-		{name: "役職で絞る", q: staff.ListQuery{Position: ptr("リーダー"), Sort: domain.Sort{Field: "username"}},
+		{name: "役職で絞る", q: staff.ListQuery{Position: ptr("リーダー"), Sort: kernel.Sort{Field: "username"}},
 			want: []string{"森 健太"}},
-		{name: "部署で絞る", q: staff.ListQuery{Department: ptr("リハビリ"), Sort: domain.Sort{Field: "username"}},
+		{name: "部署で絞る", q: staff.ListQuery{Department: ptr("リハビリ"), Sort: kernel.Sort{Field: "username"}},
 			want: []string{"林 さくら"}},
-		{name: "該当なし", q: staff.ListQuery{Username: ptr("いない人"), Sort: domain.Sort{Field: "username"}},
+		{name: "該当なし", q: staff.ListQuery{Username: ptr("いない人"), Sort: kernel.Sort{Field: "username"}},
 			want: []string{}},
 	}
 	for _, tt := range tests {
@@ -353,7 +354,7 @@ func TestPatientList(t *testing.T) {
 	ctx := txContext(t)
 	r := NewPatientRepository(testDB)
 	morning := patient.Morning
-	rows, err := r.ListByFacility(ctx, seedFacility, patient.ListQuery{PreferredTime: &morning, Sort: domain.Sort{Field: "name"}})
+	rows, err := r.ListByFacility(ctx, seedFacility, patient.ListQuery{PreferredTime: &morning, Sort: kernel.Sort{Field: "name"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -364,7 +365,7 @@ func TestPatientList(t *testing.T) {
 		ID: "01M3TD00000000000000000020", FacilityID: seedFacility, Name: "見本 三郎",
 		PreferredTime: "夜", PreferredGender: patient.Male, ServiceCodeID: seedServiceCode, AssignedStaffID: seedMori,
 	})
-	if !errors.Is(err, domain.ErrInvalidInput) {
+	if !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Fatalf("CHECK 制約の違反: err = %v, want ErrInvalidInput", err)
 	}
 }
@@ -422,7 +423,7 @@ func TestScheduleGet(t *testing.T) {
 	if normal.Visit != nil || normal.Title == nil || *normal.Title != "カンファレンス" {
 		t.Errorf("normal = %+v", normal)
 	}
-	if _, err := r.Get(ctx, unknownID); !errors.Is(err, domain.ErrNotFound) {
+	if _, err := r.Get(ctx, unknownID); !errors.Is(err, apperr.ErrNotFound) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
 	}
 }
@@ -445,15 +446,15 @@ func TestScheduleList(t *testing.T) {
 		q    schedule.ListQuery
 		want []string
 	}{
-		{name: "日付と開始の時刻の昇順", q: schedule.ListQuery{Sort: domain.Sort{Field: "date"}},
+		{name: "日付と開始の時刻の昇順", q: schedule.ListQuery{Sort: kernel.Sort{Field: "date"}},
 			want: []string{late.ID, seedConference, seedVisitSchedule}},
-		{name: "日付と開始の時刻の降順", q: schedule.ListQuery{Sort: domain.Sort{Field: "date", Desc: true}},
+		{name: "日付と開始の時刻の降順", q: schedule.ListQuery{Sort: kernel.Sort{Field: "date", Desc: true}},
 			want: []string{seedVisitSchedule, seedConference, late.ID}},
-		{name: "開始の時刻の昇順", q: schedule.ListQuery{Sort: domain.Sort{Field: "start_time"}},
+		{name: "開始の時刻の昇順", q: schedule.ListQuery{Sort: kernel.Sort{Field: "start_time"}},
 			want: []string{late.ID, seedVisitSchedule, seedConference}},
-		{name: "種類で絞る", q: schedule.ListQuery{TypeName: &visitName, Sort: domain.Sort{Field: "date"}},
+		{name: "種類で絞る", q: schedule.ListQuery{TypeName: &visitName, Sort: kernel.Sort{Field: "date"}},
 			want: []string{seedVisitSchedule}},
-		{name: "日付で絞る", q: schedule.ListQuery{DateFrom: &day, DateTo: &day, Sort: domain.Sort{Field: "date"}},
+		{name: "日付で絞る", q: schedule.ListQuery{DateFrom: &day, DateTo: &day, Sort: kernel.Sort{Field: "date"}},
 			want: []string{late.ID, seedConference}},
 	}
 	for _, tt := range tests {
@@ -493,7 +494,7 @@ func TestRecurringScheduleAndExclusion(t *testing.T) {
 	if err := r.AddExclusion(ctx, rs.ID, day); err != nil {
 		t.Fatal(err)
 	}
-	if err := r.AddExclusion(ctx, rs.ID, day); !errors.Is(err, domain.ErrConflict) {
+	if err := r.AddExclusion(ctx, rs.ID, day); !errors.Is(err, apperr.ErrConflict) {
 		t.Fatalf("同じ日の除外: err = %v, want ErrConflict", err)
 	}
 	got, err := r.GetRecurring(ctx, rs.ID)
@@ -508,7 +509,7 @@ func TestRecurringScheduleAndExclusion(t *testing.T) {
 		t.Errorf("ExclusionDates = %v", got.ExclusionDates)
 	}
 
-	list, err := r.ListRecurringByFacility(ctx, seedFacility, schedule.ListQuery{Sort: domain.Sort{Field: "date"}})
+	list, err := r.ListRecurringByFacility(ctx, seedFacility, schedule.ListQuery{Sort: kernel.Sort{Field: "date"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -528,7 +529,7 @@ func TestScheduleCancel(t *testing.T) {
 		t.Fatal(err)
 	}
 	c.ID = "01M3TD00000000000000000061"
-	if err := r.CreateCancel(ctx, c); !errors.Is(err, domain.ErrConflict) {
+	if err := r.CreateCancel(ctx, c); !errors.Is(err, apperr.ErrConflict) {
 		t.Fatalf("2 度目のキャンセル: err = %v, want ErrConflict", err)
 	}
 	got, err := r.Get(ctx, seedConference)
@@ -638,7 +639,7 @@ func TestScheduleLockBlocksCancel(t *testing.T) {
 	}
 	bg := context.Background()
 	r := NewScheduleRepository(testDB)
-	if err := r.Lock(bg, unknownID); !errors.Is(err, domain.ErrNotFound) {
+	if err := r.Lock(bg, unknownID); !errors.Is(err, apperr.ErrNotFound) {
 		t.Fatalf("無い予定のロック: err = %v, want ErrNotFound", err)
 	}
 	locker, err := testDB.BeginTx(bg, nil)
@@ -692,7 +693,7 @@ func TestTransactorRollsBack(t *testing.T) {
 	if !errors.Is(err, wantErr) {
 		t.Fatalf("err = %v", err)
 	}
-	if _, err := teams.Get(ctx, team.ID); !errors.Is(err, domain.ErrNotFound) {
+	if _, err := teams.Get(ctx, team.ID); !errors.Is(err, apperr.ErrNotFound) {
 		t.Fatalf("ロールバックした行が残る: err = %v", err)
 	}
 }
@@ -789,10 +790,10 @@ func TestStaffAddAndRemoveGrant(t *testing.T) {
 		t.Errorf("Policies = %+v", got.Policies)
 	}
 	dup := staff.Grant{ID: "01M3TD00000000000000000042", PolicyID: seedUserRead}
-	if err := r.AddGrant(ctx, seedMori, dup); !errors.Is(err, domain.ErrConflict) {
+	if err := r.AddGrant(ctx, seedMori, dup); !errors.Is(err, apperr.ErrConflict) {
 		t.Errorf("同じ権限: err = %v, want ErrConflict", err)
 	}
-	if err := r.RemoveGrant(ctx, seedHayashi, g.ID); !errors.Is(err, domain.ErrNotFound) {
+	if err := r.RemoveGrant(ctx, seedHayashi, g.ID); !errors.Is(err, apperr.ErrNotFound) {
 		t.Errorf("別の職員の権限を外す: err = %v, want ErrNotFound", err)
 	}
 	if err := r.RemoveGrant(ctx, seedMori, g.ID); err != nil {
@@ -831,7 +832,7 @@ func TestGrantAllowsReadingTarget(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if (auth.Principal{Staff: before}).CanRead(hayashi.ID, hayashi.TeamID) {
+	if (principal.Principal{Staff: before}).CanRead(hayashi.ID, hayashi.TeamID) {
 		t.Fatal("森は、権限を足す前から林の予定を見られた")
 	}
 	g := staff.Grant{ID: "01M3TD00000000000000000050", PolicyID: seedUserRead,
@@ -843,7 +844,7 @@ func TestGrantAllowsReadingTarget(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := auth.Principal{Staff: after}
+	p := principal.Principal{Staff: after}
 	if !p.CanRead(hayashi.ID, hayashi.TeamID) || p.CanEdit(hayashi.ID, hayashi.TeamID) {
 		t.Errorf("森の権限 = %+v, want 林の予定の閲覧だけ", after.Policies)
 	}

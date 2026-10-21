@@ -6,7 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/kernel"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
 )
 
@@ -44,7 +45,7 @@ type NewParams struct {
 
 // New は、名前、メール、電話番号を検証して Staff を作る。電話番号は数字だけを受け付け、先頭に "+" を付ける。
 func New(p NewParams) (Staff, error) {
-	if err := domain.RequireText("職員の名前", p.Username, maxUsernameLen); err != nil {
+	if err := kernel.RequireText("職員の名前", p.Username, maxUsernameLen); err != nil {
 		return Staff{}, err
 	}
 	if err := validateEmail(p.Email); err != nil {
@@ -70,12 +71,12 @@ func New(p NewParams) (Staff, error) {
 }
 
 func validateEmail(email string) error {
-	if err := domain.RequireText("メール", email, maxEmailLen); err != nil {
+	if err := kernel.RequireText("メール", email, maxEmailLen); err != nil {
 		return err
 	}
 	local, host, ok := strings.Cut(email, "@")
 	if !ok || local == "" || !strings.Contains(host, ".") || strings.ContainsAny(email, " \t") {
-		return domain.Invalid("メールの形式が正しくありません")
+		return apperr.Invalid("メールの形式が正しくありません")
 	}
 	return nil
 }
@@ -83,11 +84,11 @@ func validateEmail(email string) error {
 func normalizePhone(phone string) (string, error) {
 	digits := strings.TrimPrefix(phone, "+")
 	if digits == "" || len(digits) > maxPhoneDigits {
-		return "", domain.Invalid("電話番号は%d桁以内の数字です", maxPhoneDigits)
+		return "", apperr.Invalid("電話番号は%d桁以内の数字です", maxPhoneDigits)
 	}
 	for _, c := range digits {
 		if c < '0' || c > '9' {
-			return "", domain.Invalid("電話番号は数字だけで書きます")
+			return "", apperr.Invalid("電話番号は数字だけで書きます")
 		}
 	}
 	return "+" + digits, nil
@@ -135,10 +136,10 @@ type Detail struct {
 
 // ParseSort は、職員の一覧の並べ替えを読む。列は username、created_at、updated_at だけを受け付ける。
 // 列を指定しないときは更新の新しい順にする。
-func ParseSort(field, order string) (domain.Sort, error) {
-	return domain.ParseSort(field, order,
+func ParseSort(field, order string) (kernel.Sort, error) {
+	return kernel.ParseSort(field, order,
 		[]string{"username", "created_at", "updated_at"},
-		domain.Sort{Field: "updated_at", Desc: true})
+		kernel.Sort{Field: "updated_at", Desc: true})
 }
 
 // ListQuery は、職員の一覧の絞り込みと並べ替えである。nil の絞り込みは使わない。
@@ -148,19 +149,19 @@ type ListQuery struct {
 	Position   *string
 	Department *string
 	Team       *string
-	Sort       domain.Sort
+	Sort       kernel.Sort
 }
 
-// Repository は、職員を読み書きする。見つからないときは domain.ErrNotFound を、
-// 同じ事業所にメールが重なる職員がいるか、Sub が重なるときは domain.ErrConflict を返す。名前は重なってよい。
+// Repository は、職員を読み書きする。見つからないときは apperr.ErrNotFound を、
+// 同じ事業所にメールが重なる職員がいるか、Sub が重なるときは apperr.ErrConflict を返す。名前は重なってよい。
 //
 // LinkSub は、事業所 facilityID の、メールが email で Sub がまだない職員にだけ sub を書く。
 // 当たる職員がいなければ何もせず、エラーも返さない。
 //
 // ChangePosition は、職員の役職を positionID にし、職員の権限と対象を全て消してから grants を書く。
 //
-// AddGrant は、職員に 1 つの権限と対象を書く。同じ権限が既にあるときは domain.ErrConflict を返す。
-// RemoveGrant は、職員の権限 userPolicyID と対象を消す。職員のその権限が無いときは domain.ErrNotFound を返す。
+// AddGrant は、職員に 1 つの権限と対象を書く。同じ権限が既にあるときは apperr.ErrConflict を返す。
+// RemoveGrant は、職員の権限 userPolicyID と対象を消す。職員のその権限が無いときは apperr.ErrNotFound を返す。
 type Repository interface {
 	Create(ctx context.Context, s Staff, grants []Grant) error
 	ChangePosition(ctx context.Context, id, positionID string, grants []Grant) error

@@ -1,19 +1,19 @@
-// Package access は、検証したトークンから職員を特定する手順と、パスの ID が指すリソースが属する事業所を引く手順を持つ。
-package access
+// Package authn は、検証したトークンから職員を特定する手順と、パスの ID が指すリソースが属する事業所を引く手順を持つ。
+package authn
 
 import (
 	"context"
 	"errors"
 	"fmt"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 )
 
-// Repositories は、Service が使うリポジトリである。
+// Repositories は、Usecase が使うリポジトリである。
 type Repositories struct {
 	Facilities  organization.FacilityRepository
 	Departments organization.DepartmentRepository
@@ -37,67 +37,67 @@ const (
 	ResourceRecurringSchedule
 )
 
-// Service は、検証したトークンから職員を特定する操作である。
-type Service struct {
+// Usecase は、検証したトークンから職員を特定する操作である。
+type Usecase struct {
 	repos Repositories
 }
 
-// NewService は Service を作る。
-func NewService(repos Repositories) *Service {
-	return &Service{repos: repos}
+// NewUsecase は Usecase を作る。
+func NewUsecase(repos Repositories) *Usecase {
+	return &Usecase{repos: repos}
 }
 
 // Authenticate は、id の組織に結び付けた事業所の職員を返す。
 // sub で職員を探し、いなければ、メールが確認済みのときに限り、その事業所の同じメールで sub がまだない職員に sub を結び付ける。
 // 組織がないか事業所に結び付いていないとき、職員が見つからないとき、職員の事業所が組織の事業所と違うときは
-// domain.ErrForbidden を返す。
-func (a *Service) Authenticate(ctx context.Context, id auth.Identity) (auth.Principal, error) {
+// apperr.ErrForbidden を返す。
+func (a *Usecase) Authenticate(ctx context.Context, id principal.Identity) (principal.Principal, error) {
 	if id.OrgID == "" {
-		return auth.Principal{}, fmt.Errorf("%w: トークンに組織がありません", domain.ErrForbidden)
+		return principal.Principal{}, fmt.Errorf("%w: トークンに組織がありません", apperr.ErrForbidden)
 	}
 	f, err := a.repos.Facilities.GetByOrgID(ctx, id.OrgID)
-	if errors.Is(err, domain.ErrNotFound) {
-		return auth.Principal{}, fmt.Errorf("%w: 組織に結び付いた事業所がありません", domain.ErrForbidden)
+	if errors.Is(err, apperr.ErrNotFound) {
+		return principal.Principal{}, fmt.Errorf("%w: 組織に結び付いた事業所がありません", apperr.ErrForbidden)
 	}
 	if err != nil {
-		return auth.Principal{}, err
+		return principal.Principal{}, err
 	}
 	staffID, err := a.repos.Staff.FindIDBySub(ctx, id.Subject)
-	if errors.Is(err, domain.ErrNotFound) {
+	if errors.Is(err, apperr.ErrNotFound) {
 		staffID, err = a.link(ctx, f.ID, id)
 	}
 	if err != nil {
-		return auth.Principal{}, err
+		return principal.Principal{}, err
 	}
 	d, err := a.repos.Staff.Get(ctx, staffID)
 	if err != nil {
-		return auth.Principal{}, err
+		return principal.Principal{}, err
 	}
 	if d.FacilityID != f.ID {
-		return auth.Principal{}, fmt.Errorf("%w: 職員の事業所が組織の事業所と違います", domain.ErrForbidden)
+		return principal.Principal{}, fmt.Errorf("%w: 職員の事業所が組織の事業所と違います", apperr.ErrForbidden)
 	}
-	return auth.Principal{Staff: d}, nil
+	return principal.Principal{Staff: d}, nil
 }
 
 // link は、初回のログインの職員に sub を書き、職員の ID を返す。同じ sub の要求が同時に来ても、
 // LinkSub は 1 回だけ書くので、書いた後に sub で探し直す。
-func (a *Service) link(ctx context.Context, facilityID string, id auth.Identity) (string, error) {
+func (a *Usecase) link(ctx context.Context, facilityID string, id principal.Identity) (string, error) {
 	if !id.EmailVerified || id.Email == "" {
-		return "", fmt.Errorf("%w: 確認済みのメールがありません", domain.ErrForbidden)
+		return "", fmt.Errorf("%w: 確認済みのメールがありません", apperr.ErrForbidden)
 	}
-	if err := a.repos.Staff.LinkSub(ctx, facilityID, id.Email, id.Subject); err != nil && !errors.Is(err, domain.ErrConflict) {
+	if err := a.repos.Staff.LinkSub(ctx, facilityID, id.Email, id.Subject); err != nil && !errors.Is(err, apperr.ErrConflict) {
 		return "", err
 	}
 	staffID, err := a.repos.Staff.FindIDBySub(ctx, id.Subject)
-	if errors.Is(err, domain.ErrNotFound) {
-		return "", fmt.Errorf("%w: 登録された職員がいません", domain.ErrForbidden)
+	if errors.Is(err, apperr.ErrNotFound) {
+		return "", fmt.Errorf("%w: 登録された職員がいません", apperr.ErrForbidden)
 	}
 	return staffID, err
 }
 
 // FacilityOf は、種類 r の ID が id のリソースが属する事業所の ID を返す。ResourceFacility なら id をそのまま返す。
-// リソースが見つからないときは domain.ErrNotFound を返す。
-func (a *Service) FacilityOf(ctx context.Context, r Resource, id string) (string, error) {
+// リソースが見つからないときは apperr.ErrNotFound を返す。
+func (a *Usecase) FacilityOf(ctx context.Context, r Resource, id string) (string, error) {
 	switch r {
 	case ResourceFacility:
 		return id, nil

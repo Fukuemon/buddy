@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/inmem"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
@@ -20,10 +20,10 @@ const (
 
 func allow(context.Context) error { return nil }
 
-func deny(context.Context) error { return domain.ErrForbidden }
+func deny(context.Context) error { return apperr.ErrForbidden }
 
-func newService(s *inmem.Store, guard organization.Guard) *staff.Service {
-	return staff.NewService(staff.Repositories{
+func newService(s *inmem.Store, guard organization.Guard) *staff.Usecase {
+	return staff.NewUsecase(staff.Repositories{
 		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
 		Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
 	}, &inmem.Tx{}, &inmem.SeqIDs{}, guard)
@@ -43,8 +43,8 @@ func TestStaffCreate(t *testing.T) {
 			}}
 		return s
 	}
-	newUC := func(s *inmem.Store) *staff.Service {
-		return staff.NewService(staff.Repositories{
+	newUC := func(s *inmem.Store) *staff.Usecase {
+		return staff.NewUsecase(staff.Repositories{
 			Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
 			Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
 		}, &inmem.Tx{}, &inmem.SeqIDs{}, allow)
@@ -70,14 +70,14 @@ func TestStaffCreate(t *testing.T) {
 		t.Errorf("チームの閲覧の対象 = %+v, want 所属のチーム %s", ts, teamID)
 	}
 
-	if _, err := newUC(s).Create(context.Background(), in); !errors.Is(err, domain.ErrConflict) ||
+	if _, err := newUC(s).Create(context.Background(), in); !errors.Is(err, apperr.ErrConflict) ||
 		err.Error() != "メール kenta.mori@example.com の職員はこの事業所にすでにいます" {
 		t.Errorf("同じメール: err = %v, want メールの重なりの ErrConflict", err)
 	}
 
 	other := in
 	other.DepartmentID = otherDepID
-	if _, err := newUC(setup()).Create(context.Background(), other); !errors.Is(err, domain.ErrInvalidInput) {
+	if _, err := newUC(setup()).Create(context.Background(), other); !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Fatalf("err = %v, want ErrInvalidInput", err)
 	}
 }
@@ -98,8 +98,8 @@ func TestStaffChangePosition(t *testing.T) {
 		s.Positions[otherPosID] = organization.Position{ID: otherPosID, FacilityID: otherFacilityID}
 		return s
 	}
-	newUC := func(s *inmem.Store) *staff.Service {
-		return staff.NewService(staff.Repositories{
+	newUC := func(s *inmem.Store) *staff.Usecase {
+		return staff.NewUsecase(staff.Repositories{
 			Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
 			Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
 		}, &inmem.Tx{}, &inmem.SeqIDs{}, allow)
@@ -122,13 +122,13 @@ func TestStaffChangePosition(t *testing.T) {
 		t.Errorf("チームの編集の対象 = %+v, want 所属のチーム", ts)
 	}
 
-	if _, err := newUC(setup()).ChangePosition(ctx, staffID, otherPosID); !errors.Is(err, domain.ErrInvalidInput) {
+	if _, err := newUC(setup()).ChangePosition(ctx, staffID, otherPosID); !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Errorf("別の事業所の役職: err = %v, want ErrInvalidInput", err)
 	}
-	if _, err := newUC(setup()).ChangePosition(ctx, staffID, "MISSING"); !errors.Is(err, domain.ErrInvalidInput) {
+	if _, err := newUC(setup()).ChangePosition(ctx, staffID, "MISSING"); !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Errorf("無い役職: err = %v, want ErrInvalidInput", err)
 	}
-	if _, err := newUC(setup()).ChangePosition(ctx, "MISSING", leaderID); !errors.Is(err, domain.ErrNotFound) {
+	if _, err := newUC(setup()).ChangePosition(ctx, "MISSING", leaderID); !errors.Is(err, apperr.ErrNotFound) {
 		t.Errorf("無い職員: err = %v, want ErrNotFound", err)
 	}
 }
@@ -155,14 +155,14 @@ func TestStaffAddGrant(t *testing.T) {
 		{"対象なしの権限", staff.GrantInput{PolicyID: "SELF"}, nil},
 		{"職員を対象にする権限", staff.GrantInput{PolicyID: "USER", TargetUserIDs: []string{companionID}}, nil},
 		{"チームを対象にする権限", staff.GrantInput{PolicyID: "TEAM", TargetTeamIDs: []string{"TEAM"}}, nil},
-		{"対象なしの権限に対象", staff.GrantInput{PolicyID: "SELF", TargetUserIDs: []string{companionID}}, domain.ErrInvalidInput},
-		{"職員の権限に対象なし", staff.GrantInput{PolicyID: "USER"}, domain.ErrInvalidInput},
-		{"職員の権限にチーム", staff.GrantInput{PolicyID: "USER", TargetTeamIDs: []string{"TEAM"}}, domain.ErrInvalidInput},
-		{"チームの権限に職員", staff.GrantInput{PolicyID: "TEAM", TargetUserIDs: []string{companionID}}, domain.ErrInvalidInput},
-		{"別の事業所の職員", staff.GrantInput{PolicyID: "USER", TargetUserIDs: []string{inmem.OtherStaffID}}, domain.ErrInvalidInput},
-		{"別の事業所のチーム", staff.GrantInput{PolicyID: "TEAM", TargetTeamIDs: []string{"OTHERTEAM"}}, domain.ErrInvalidInput},
-		{"重なる対象", staff.GrantInput{PolicyID: "USER", TargetUserIDs: []string{companionID, companionID}}, domain.ErrInvalidInput},
-		{"無い権限", staff.GrantInput{PolicyID: "MISSING"}, domain.ErrInvalidInput},
+		{"対象なしの権限に対象", staff.GrantInput{PolicyID: "SELF", TargetUserIDs: []string{companionID}}, apperr.ErrInvalidInput},
+		{"職員の権限に対象なし", staff.GrantInput{PolicyID: "USER"}, apperr.ErrInvalidInput},
+		{"職員の権限にチーム", staff.GrantInput{PolicyID: "USER", TargetTeamIDs: []string{"TEAM"}}, apperr.ErrInvalidInput},
+		{"チームの権限に職員", staff.GrantInput{PolicyID: "TEAM", TargetUserIDs: []string{companionID}}, apperr.ErrInvalidInput},
+		{"別の事業所の職員", staff.GrantInput{PolicyID: "USER", TargetUserIDs: []string{inmem.OtherStaffID}}, apperr.ErrInvalidInput},
+		{"別の事業所のチーム", staff.GrantInput{PolicyID: "TEAM", TargetTeamIDs: []string{"OTHERTEAM"}}, apperr.ErrInvalidInput},
+		{"重なる対象", staff.GrantInput{PolicyID: "USER", TargetUserIDs: []string{companionID, companionID}}, apperr.ErrInvalidInput},
+		{"無い権限", staff.GrantInput{PolicyID: "MISSING"}, apperr.ErrInvalidInput},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -189,11 +189,11 @@ func TestStaffAddGrant(t *testing.T) {
 	if _, err := uc.AddGrant(ctx, staffID, staff.GrantInput{PolicyID: "SELF"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := uc.AddGrant(ctx, staffID, staff.GrantInput{PolicyID: "SELF"}); !errors.Is(err, domain.ErrConflict) ||
+	if _, err := uc.AddGrant(ctx, staffID, staff.GrantInput{PolicyID: "SELF"}); !errors.Is(err, apperr.ErrConflict) ||
 		err.Error() != "職員はすでに権限 自分の予定の編集 を持っています" {
 		t.Errorf("同じ権限を 2 回: err = %v, want 権限の重なりの ErrConflict", err)
 	}
-	if _, err := uc.AddGrant(ctx, "MISSING", staff.GrantInput{PolicyID: "SELF"}); !errors.Is(err, domain.ErrNotFound) {
+	if _, err := uc.AddGrant(ctx, "MISSING", staff.GrantInput{PolicyID: "SELF"}); !errors.Is(err, apperr.ErrNotFound) {
 		t.Errorf("無い職員: err = %v, want ErrNotFound", err)
 	}
 }
@@ -211,25 +211,25 @@ func TestStaffRemoveGrant(t *testing.T) {
 	if len(s.Staff[staffID].Policies) != 0 {
 		t.Errorf("Policies = %+v, want なし", s.Staff[staffID].Policies)
 	}
-	if _, err := uc.RemoveGrant(ctx, staffID, "UP1"); !errors.Is(err, domain.ErrNotFound) {
+	if _, err := uc.RemoveGrant(ctx, staffID, "UP1"); !errors.Is(err, apperr.ErrNotFound) {
 		t.Errorf("外した権限をもう一度: err = %v, want ErrNotFound", err)
 	}
 }
 
-// TestStaffManageForbidden は、職員の管理を許されない職員には、職員の登録と、権限と役職を変える操作が domain.ErrForbidden を返すことを確かめる。
+// TestStaffManageForbidden は、職員の管理を許されない職員には、職員の登録と、権限と役職を変える操作が apperr.ErrForbidden を返すことを確かめる。
 func TestStaffManageForbidden(t *testing.T) {
 	ctx := context.Background()
 	uc := newService(grantStore(), deny)
-	if _, err := uc.AddGrant(ctx, staffID, staff.GrantInput{PolicyID: "SELF"}); !errors.Is(err, domain.ErrForbidden) {
+	if _, err := uc.AddGrant(ctx, staffID, staff.GrantInput{PolicyID: "SELF"}); !errors.Is(err, apperr.ErrForbidden) {
 		t.Errorf("AddGrant: err = %v", err)
 	}
-	if _, err := uc.RemoveGrant(ctx, staffID, "UP1"); !errors.Is(err, domain.ErrForbidden) {
+	if _, err := uc.RemoveGrant(ctx, staffID, "UP1"); !errors.Is(err, apperr.ErrForbidden) {
 		t.Errorf("RemoveGrant: err = %v", err)
 	}
-	if _, err := uc.ChangePosition(ctx, staffID, "POS"); !errors.Is(err, domain.ErrForbidden) {
+	if _, err := uc.ChangePosition(ctx, staffID, "POS"); !errors.Is(err, apperr.ErrForbidden) {
 		t.Errorf("ChangePosition: err = %v", err)
 	}
-	if _, err := uc.Create(ctx, staff.CreateInput{FacilityID: facilityID, Username: "新人", Email: "new@example.com"}); !errors.Is(err, domain.ErrForbidden) {
+	if _, err := uc.Create(ctx, staff.CreateInput{FacilityID: facilityID, Username: "新人", Email: "new@example.com"}); !errors.Is(err, apperr.ErrForbidden) {
 		t.Errorf("Create: err = %v", err)
 	}
 }

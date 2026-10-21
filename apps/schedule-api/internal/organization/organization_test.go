@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
 )
 
@@ -32,7 +32,7 @@ func TestNewPosition(t *testing.T) {
 			if tt.wantErr != (err != nil) {
 				t.Fatalf("err = %v, wantErr %v", err, tt.wantErr)
 			}
-			if err != nil && !errors.Is(err, domain.ErrInvalidInput) {
+			if err != nil && !errors.Is(err, apperr.ErrInvalidInput) {
 				t.Errorf("err = %v, want ErrInvalidInput", err)
 			}
 		})
@@ -40,7 +40,7 @@ func TestNewPosition(t *testing.T) {
 }
 
 func TestNewTeam(t *testing.T) {
-	if _, err := organization.NewTeam("ID", "F", ""); !errors.Is(err, domain.ErrInvalidInput) {
+	if _, err := organization.NewTeam("ID", "F", ""); !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Errorf("NewTeam err = %v", err)
 	}
 }

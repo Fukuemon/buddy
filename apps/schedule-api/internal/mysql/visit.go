@@ -42,7 +42,7 @@ func (r *VisitRepository) DeleteInfoIfUnused(ctx context.Context, id string) err
 	return translate("delete visit info", r.q(ctx).DeleteUnusedVisitInfo(ctx, id))
 }
 
-// GetServiceCode は、ID が id のサービスコードを返す。無いときは domain.ErrNotFound を返す。
+// GetServiceCode は、ID が id のサービスコードを返す。無いときは apperr.ErrNotFound を返す。
 func (r *VisitRepository) GetServiceCode(ctx context.Context, id string) (visit.ServiceCode, error) {
 	c, err := r.q(ctx).GetServiceCode(ctx, id)
 	if err != nil {

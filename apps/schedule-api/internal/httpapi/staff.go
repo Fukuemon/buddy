@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi/openapi"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 )
 
@@ -59,7 +59,7 @@ func toStaffDetail(d staff.Detail) openapi.StaffDetail {
 
 // GetMe は、認証のミドルウェアが特定した職員を返す。
 func (s server) GetMe(ctx context.Context, _ openapi.GetMeRequestObject) (openapi.GetMeResponseObject, error) {
-	p, ok := auth.PrincipalFrom(ctx)
+	p, ok := principal.From(ctx)
 	if !ok {
 		return nil, errors.New("認証のミドルウェアを通らずに GET /v1/me を呼びました")
 	}

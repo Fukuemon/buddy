@@ -4,7 +4,7 @@ package visit
 import (
 	"context"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
 )
 
 // ServiceCode は、レセプトのサービスコードである。StartMinutes と EndMinutes は、対象の提供時間の範囲である。
@@ -34,12 +34,12 @@ type Info struct {
 // NewInfo は、同行者と区分の重なりを検証して Info を作る。
 func NewInfo(i Info) (Info, error) {
 	if i.CompanionID != nil && *i.CompanionID == i.AssignedStaffID {
-		return Info{}, domain.Invalid("同行者に担当の職員と同じ職員は指定できません")
+		return Info{}, apperr.Invalid("同行者に担当の職員と同じ職員は指定できません")
 	}
 	seen := make(map[string]bool, len(i.CategoryIDs))
 	for _, id := range i.CategoryIDs {
 		if seen[id] {
-			return Info{}, domain.Invalid("訪問の区分 %s が重なっています", id)
+			return Info{}, apperr.Invalid("訪問の区分 %s が重なっています", id)
 		}
 		seen[id] = true
 	}
@@ -60,7 +60,7 @@ type Detail struct {
 	Categories        []Category
 }
 
-// Repository は、訪問の情報とマスタを読み書きする。GetServiceCode は、見つからないときに domain.ErrNotFound を返す。
+// Repository は、訪問の情報とマスタを読み書きする。GetServiceCode は、見つからないときに apperr.ErrNotFound を返す。
 // ListCategoriesByIDs は、見つかったものだけを返す。
 type Repository interface {
 	CreateInfo(ctx context.Context, i Info) error

@@ -3,8 +3,8 @@ package schedule
 import (
 	"time"
 
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
 )
 
@@ -43,24 +43,24 @@ func NewRule(r Rule) (Rule, error) {
 	switch r.Frequency {
 	case Weekly:
 		if r.DayOfMonth != nil || r.WeekOfMonth != nil {
-			return Rule{}, domain.Invalid("毎週の繰り返しには曜日だけを指定できます")
+			return Rule{}, apperr.Invalid("毎週の繰り返しには曜日だけを指定できます")
 		}
 	case Monthly:
 		if r.DayOfMonth != nil && (r.DayOfWeek != nil || r.WeekOfMonth != nil) {
-			return Rule{}, domain.Invalid("毎月の繰り返しには、日か、週と曜日の組のどちらかを指定します")
+			return Rule{}, apperr.Invalid("毎月の繰り返しには、日か、週と曜日の組のどちらかを指定します")
 		}
 		if (r.WeekOfMonth == nil) != (r.DayOfWeek == nil) {
-			return Rule{}, domain.Invalid("毎月の繰り返しの週と曜日は組で指定します")
+			return Rule{}, apperr.Invalid("毎月の繰り返しの週と曜日は組で指定します")
 		}
 	default:
-		return Rule{}, domain.Invalid("繰り返しの頻度は %s か %s です", Weekly, Monthly)
+		return Rule{}, apperr.Invalid("繰り返しの頻度は %s か %s です", Weekly, Monthly)
 	}
 	return r, nil
 }
 
 func checkRange(label string, v *int, lo, hi int) error {
 	if v != nil && (*v < lo || *v > hi) {
-		return domain.Invalid("%sは%dから%dの値です", label, lo, hi)
+		return apperr.Invalid("%sは%dから%dの値です", label, lo, hi)
 	}
 	return nil
 }
@@ -88,11 +88,11 @@ func NewRecurring(id string, s Slot, typ Type, rule Rule) (RecurringSchedule, er
 		return RecurringSchedule{}, err
 	}
 	if rule.EndDate != nil && rule.EndDate.Before(slot.Date) {
-		return RecurringSchedule{}, domain.Invalid("繰り返しの終了日は最初の日付以降にします")
+		return RecurringSchedule{}, apperr.Invalid("繰り返しの終了日は最初の日付以降にします")
 	}
 	rs := RecurringSchedule{ID: id, Slot: slot, Rule: rule}
 	if !rs.Occurs(slot.Date) {
-		return RecurringSchedule{}, domain.Invalid("最初の日付 %s が繰り返しの規則の回に当たりません", slot.Date)
+		return RecurringSchedule{}, apperr.Invalid("最初の日付 %s が繰り返しの規則の回に当たりません", slot.Date)
 	}
 	return rs, nil
 }

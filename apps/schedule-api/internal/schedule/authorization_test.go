@@ -6,11 +6,11 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/inmem"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 )
@@ -44,14 +44,14 @@ func authzStore() *inmem.Store {
 }
 
 func viewerCtx(grants ...staff.PolicyGrant) context.Context {
-	return auth.WithPrincipal(context.Background(), auth.Principal{Staff: staff.Detail{
+	return principal.With(context.Background(), principal.Principal{Staff: staff.Detail{
 		Summary:  staff.Summary{Staff: staff.Staff{ID: viewerID, FacilityID: facilityID, TeamID: viewerTeam}},
 		Policies: grants,
 	}})
 }
 
 // TestSchedulesAuthorization は、7 つの権限ごとに、ほかの職員の予定の閲覧と編集、自分の予定の編集の許可と拒否を確かめる。
-// 見てよくない予定は一覧から除き、1 件を指す操作は domain.ErrForbidden を返す。
+// 見てよくない予定は一覧から除き、1 件を指す操作は apperr.ErrForbidden を返す。
 func TestSchedulesAuthorization(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -78,7 +78,7 @@ func TestSchedulesAuthorization(t *testing.T) {
 				if want && err != nil {
 					t.Errorf("%s: err = %v, want 許可", op, err)
 				}
-				if !want && !errors.Is(err, domain.ErrForbidden) {
+				if !want && !errors.Is(err, apperr.ErrForbidden) {
 					t.Errorf("%s: err = %v, want ErrForbidden", op, err)
 				}
 			}
@@ -132,17 +132,17 @@ func TestSchedulesAuthorization(t *testing.T) {
 // TestSchedulesUpdateToOtherStaff は、自分の予定の職員をほかの職員に替えるには、替える先の職員の編集の権限が要ることを確かめる。
 func TestSchedulesUpdateToOtherStaff(t *testing.T) {
 	uc, _ := newSchedules(authzStore())
-	if _, err := uc.Update(viewerCtx(staff.PolicyGrant{PolicyCode: organization.ScheduleSelfEdit}), ownScheduleID, normalSlot()); !errors.Is(err, domain.ErrForbidden) {
+	if _, err := uc.Update(viewerCtx(staff.PolicyGrant{PolicyCode: organization.ScheduleSelfEdit}), ownScheduleID, normalSlot()); !errors.Is(err, apperr.ErrForbidden) {
 		t.Fatalf("err = %v, want ErrForbidden", err)
 	}
 }
 
 func TestSchedulesWithoutPrincipal(t *testing.T) {
 	uc, _ := newSchedules(authzStore())
-	if _, err := uc.Get(context.Background(), ownScheduleID); !errors.Is(err, domain.ErrForbidden) {
+	if _, err := uc.Get(context.Background(), ownScheduleID); !errors.Is(err, apperr.ErrForbidden) {
 		t.Errorf("Get: err = %v, want ErrForbidden", err)
 	}
-	if _, err := uc.List(context.Background(), facilityID, schedule.ListQuery{}); !errors.Is(err, domain.ErrForbidden) {
+	if _, err := uc.List(context.Background(), facilityID, schedule.ListQuery{}); !errors.Is(err, apperr.ErrForbidden) {
 		t.Errorf("List: err = %v, want ErrForbidden", err)
 	}
 }

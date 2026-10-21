@@ -14,7 +14,7 @@ type PatientRepository struct{ conn }
 // NewPatientRepository は PatientRepository を作る。
 func NewPatientRepository(db *sql.DB) *PatientRepository { return &PatientRepository{conn{db}} }
 
-// Create は、利用者を書く。事業所、サービスコード、担当の職員のいずれかが無いか、値が列の制約（希望の時間帯と性別の値など）に合わないときは domain.ErrInvalidInput のエラーを返す。
+// Create は、利用者を書く。事業所、サービスコード、担当の職員のいずれかが無いか、値が列の制約（希望の時間帯と性別の値など）に合わないときは apperr.ErrInvalidInput のエラーを返す。
 func (r *PatientRepository) Create(ctx context.Context, p patient.Patient) error {
 	err := r.q(ctx).CreatePatient(ctx, sqlcgen.CreatePatientParams{
 		ID:              p.ID,
@@ -28,7 +28,7 @@ func (r *PatientRepository) Create(ctx context.Context, p patient.Patient) error
 	return translate("create patient", err)
 }
 
-// Get は、ID が id の利用者を、サービスコードと担当の職員の名前を付けて返す。無いときは domain.ErrNotFound を返す。
+// Get は、ID が id の利用者を、サービスコードと担当の職員の名前を付けて返す。無いときは apperr.ErrNotFound を返す。
 func (r *PatientRepository) Get(ctx context.Context, id string) (patient.Detail, error) {
 	row, err := r.q(ctx).GetPatient(ctx, id)
 	if err != nil {

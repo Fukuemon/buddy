@@ -5,14 +5,14 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/inmem"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
 )
 
-func newService(s *inmem.Store, guard organization.Guard) *patient.Service {
-	return patient.NewService(patient.Repositories{
+func newService(s *inmem.Store, guard organization.Guard) *patient.Usecase {
+	return patient.NewUsecase(patient.Repositories{
 		Facilities: inmem.Facilities{Store: s}, Staff: inmem.Staff{Store: s}, Visits: inmem.Visits{Store: s}, Patients: inmem.Patients{Store: s},
 	}, &inmem.SeqIDs{}, guard)
 }
@@ -34,8 +34,8 @@ func TestPatientCreateGuard(t *testing.T) {
 	}
 
 	s = inmem.Seeded()
-	deny := func(context.Context) error { return domain.ErrForbidden }
-	if _, err := newService(s, deny).Create(ctx, in); !errors.Is(err, domain.ErrForbidden) {
+	deny := func(context.Context) error { return apperr.ErrForbidden }
+	if _, err := newService(s, deny).Create(ctx, in); !errors.Is(err, apperr.ErrForbidden) {
 		t.Fatalf("err = %v, want ErrForbidden", err)
 	}
 	if len(s.Patients) != 2 {

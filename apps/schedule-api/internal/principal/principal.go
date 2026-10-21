@@ -1,12 +1,12 @@
-// Package auth は、検証したトークンが示す利用者と、リクエストを送った職員を表す。
-package auth
+// Package principal は、検証したトークンが示す利用者と、リクエストを送った職員を表す。
+package principal
 
 import (
 	"context"
 	"fmt"
 	"slices"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 )
@@ -52,11 +52,11 @@ func (p Principal) CanManageStaff() bool {
 	})
 }
 
-// RequireStaffManage は、ctx の職員が職員の管理の権限を持たないときに domain.ErrForbidden を返す。organization.Guard として機能のパッケージに渡す。
+// RequireStaffManage は、ctx の職員が職員の管理の権限を持たないときに apperr.ErrForbidden を返す。organization.Guard として機能のパッケージに渡す。
 func RequireStaffManage(ctx context.Context) error {
-	p, ok := PrincipalFrom(ctx)
+	p, ok := From(ctx)
 	if !ok || !p.CanManageStaff() {
-		return fmt.Errorf("%w: 職員を管理する権限がありません", domain.ErrForbidden)
+		return fmt.Errorf("%w: 職員を管理する権限がありません", apperr.ErrForbidden)
 	}
 	return nil
 }
@@ -90,13 +90,13 @@ func (p Principal) allows(staffID, teamID string, edit bool) bool {
 
 type principalKey struct{}
 
-// WithPrincipal は、p を持つ ctx を返す。
-func WithPrincipal(ctx context.Context, p Principal) context.Context {
+// With は、p を持つ ctx を返す。
+func With(ctx context.Context, p Principal) context.Context {
 	return context.WithValue(ctx, principalKey{}, p)
 }
 
-// PrincipalFrom は、WithPrincipal で ctx に入れた職員を返す。入っていなければ false を返す。
-func PrincipalFrom(ctx context.Context) (Principal, bool) {
+// From は、With で ctx に入れた職員を返す。入っていなければ false を返す。
+func From(ctx context.Context) (Principal, bool) {
 	p, ok := ctx.Value(principalKey{}).(Principal)
 	return p, ok
 }

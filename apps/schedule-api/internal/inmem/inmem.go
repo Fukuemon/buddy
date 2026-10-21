@@ -5,8 +5,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
@@ -14,7 +14,7 @@ import (
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
 )
 
-// Tx は、fn をそのまま呼ぶ domain.Transactor である。Calls は WithinTx を呼んだ回数である。
+// Tx は、fn をそのまま呼ぶ tx.Transactor である。Calls は WithinTx を呼んだ回数である。
 type Tx struct{ Calls int }
 
 // WithinTx は、呼んだ回数を数えて fn を呼ぶ。
@@ -23,7 +23,7 @@ func (t *Tx) WithinTx(ctx context.Context, fn func(ctx context.Context) error) e
 	return fn(ctx)
 }
 
-// SeqIDs は、連番の ID を発行する domain.IDGenerator である。
+// SeqIDs は、連番の ID を発行する kernel.IDGenerator である。
 type SeqIDs struct{ n int }
 
 // NewID は、次の連番の ID を返す。
@@ -78,7 +78,7 @@ func get[T any](m map[string]T, id string) (T, error) {
 	v, ok := m[id]
 	if !ok {
 		var zero T
-		return zero, domain.ErrNotFound
+		return zero, apperr.ErrNotFound
 	}
 	return v, nil
 }
@@ -126,12 +126,12 @@ func (s Teams) ListByFacility(context.Context, string) ([]organization.Team, err
 	return nil, nil
 }
 
-// Create は、チームを保存する。同じ事業所に名前が完全に一致するチームがあれば domain.ErrConflict を返す。
+// Create は、チームを保存する。同じ事業所に名前が完全に一致するチームがあれば apperr.ErrConflict を返す。
 // MySQL の照合順序（大小文字などを区別しない）は真似ず、完全一致の重なりだけを見る。
 func (s Teams) Create(_ context.Context, t organization.Team) error {
 	for _, cur := range s.Teams {
 		if cur.FacilityID == t.FacilityID && cur.Name == t.Name {
-			return domain.ErrConflict
+			return apperr.ErrConflict
 		}
 	}
 	s.Teams[t.ID] = t
@@ -151,12 +151,12 @@ func (s Positions) ListByFacility(context.Context, string) ([]organization.Posit
 	return nil, nil
 }
 
-// Create は、役職を保存する。同じ事業所に名前が完全に一致する役職があれば domain.ErrConflict を返す。
+// Create は、役職を保存する。同じ事業所に名前が完全に一致する役職があれば apperr.ErrConflict を返す。
 // MySQL の照合順序（大小文字などを区別しない）は真似ず、完全一致の重なりだけを見る。
 func (s Positions) Create(_ context.Context, p organization.Position) error {
 	for _, cur := range s.Positions {
 		if cur.FacilityID == p.FacilityID && cur.Name == p.Name {
-			return domain.ErrConflict
+			return apperr.ErrConflict
 		}
 	}
 	s.Positions[p.ID] = p
@@ -188,12 +188,12 @@ func (s Policies) ListByIDs(_ context.Context, ids []string) ([]organization.Pol
 // Staff は、staff.Repository のメモリ上の実装である。
 type Staff struct{ *Store }
 
-// Create は、職員と権限を保存する。同じ事業所にメールが完全に一致する職員がいれば domain.ErrConflict を返す。
+// Create は、職員と権限を保存する。同じ事業所にメールが完全に一致する職員がいれば apperr.ErrConflict を返す。
 // MySQL の照合順序（大小文字などを区別しない）は真似ず、完全一致の重なりだけを見る。
 func (s Staff) Create(_ context.Context, st staff.Staff, grants []staff.Grant) error {
 	for _, cur := range s.Staff {
 		if cur.FacilityID == st.FacilityID && cur.Email == st.Email {
-			return domain.ErrConflict
+			return apperr.ErrConflict
 		}
 	}
 	s.Staff[st.ID] = staff.Detail{Summary: staff.Summary{Staff: st}}
@@ -205,7 +205,7 @@ func (s Staff) Create(_ context.Context, st staff.Staff, grants []staff.Grant) e
 func (s Staff) ChangePosition(_ context.Context, id, positionID string, grants []staff.Grant) error {
 	d, ok := s.Staff[id]
 	if !ok {
-		return domain.ErrNotFound
+		return apperr.ErrNotFound
 	}
 	d.PositionID = positionID
 	d.Policies = nil
@@ -214,31 +214,31 @@ func (s Staff) ChangePosition(_ context.Context, id, positionID string, grants [
 	return nil
 }
 
-// AddGrant は、職員の権限に g を足す。同じ権限が Grants か職員の Policies にあれば domain.ErrConflict を返す。
+// AddGrant は、職員の権限に g を足す。同じ権限が Grants か職員の Policies にあれば apperr.ErrConflict を返す。
 func (s Staff) AddGrant(_ context.Context, id string, g staff.Grant) error {
 	d, ok := s.Staff[id]
 	if !ok {
-		return domain.ErrNotFound
+		return apperr.ErrNotFound
 	}
 	for _, cur := range s.Grants[id] {
 		if cur.PolicyID == g.PolicyID {
-			return domain.ErrConflict
+			return apperr.ErrConflict
 		}
 	}
 	for _, p := range d.Policies {
 		if p.PolicyID == g.PolicyID {
-			return domain.ErrConflict
+			return apperr.ErrConflict
 		}
 	}
 	s.Grants[id] = append(s.Grants[id], g)
 	return nil
 }
 
-// RemoveGrant は、職員の権限 userPolicyID を、Grants か職員の Policies から外す。無ければ domain.ErrNotFound を返す。
+// RemoveGrant は、職員の権限 userPolicyID を、Grants か職員の Policies から外す。無ければ apperr.ErrNotFound を返す。
 func (s Staff) RemoveGrant(_ context.Context, id, userPolicyID string) error {
 	d, ok := s.Staff[id]
 	if !ok {
-		return domain.ErrNotFound
+		return apperr.ErrNotFound
 	}
 	for i, g := range s.Grants[id] {
 		if g.ID == userPolicyID {
@@ -253,7 +253,7 @@ func (s Staff) RemoveGrant(_ context.Context, id, userPolicyID string) error {
 			return nil
 		}
 	}
-	return domain.ErrNotFound
+	return apperr.ErrNotFound
 }
 
 // Get は、職員を返す。
@@ -277,7 +277,7 @@ func (s Staff) FindIDBySub(_ context.Context, sub string) (string, error) {
 			return id, nil
 		}
 	}
-	return "", domain.ErrNotFound
+	return "", apperr.ErrNotFound
 }
 
 // LinkSub は、事業所の同じメールで sub がまだない職員に sub を結び付ける。
@@ -369,7 +369,7 @@ func (s Schedules) Create(_ context.Context, sc schedule.Schedule) error {
 	return nil
 }
 
-// Lock は、予定がなければ domain.ErrNotFound を返す。
+// Lock は、予定がなければ apperr.ErrNotFound を返す。
 func (s Schedules) Lock(_ context.Context, id string) error {
 	_, err := get(s.Schedules, id)
 	return err
@@ -379,7 +379,7 @@ func (s Schedules) Lock(_ context.Context, id string) error {
 func (s Schedules) Update(_ context.Context, sc schedule.Schedule) error {
 	cur, ok := s.Schedules[sc.ID]
 	if !ok {
-		return domain.ErrNotFound
+		return apperr.ErrNotFound
 	}
 	sc.RecurringScheduleID = cur.RecurringScheduleID
 	s.Schedules[sc.ID] = schedule.Detail{Schedule: sc, TypeName: s.Types[sc.TypeID].Name}
@@ -428,12 +428,12 @@ func (s Schedules) ListRecurringByFacility(_ context.Context, facilityID string,
 	return out, nil
 }
 
-// AddExclusion は、繰り返しの予定から d の回を除外する。除外済みなら domain.ErrConflict を返す。
+// AddExclusion は、繰り返しの予定から d の回を除外する。除外済みなら apperr.ErrConflict を返す。
 func (s Schedules) AddExclusion(_ context.Context, id string, d civil.Date) error {
 	rs := s.Recurring[id]
 	for _, e := range rs.ExclusionDates {
 		if e == d {
-			return domain.ErrConflict
+			return apperr.ErrConflict
 		}
 	}
 	rs.ExclusionDates = append(rs.ExclusionDates, d)
@@ -441,10 +441,10 @@ func (s Schedules) AddExclusion(_ context.Context, id string, d civil.Date) erro
 	return nil
 }
 
-// CreateCancel は、キャンセルを保存する。キャンセル済みなら domain.ErrConflict を返す。
+// CreateCancel は、キャンセルを保存する。キャンセル済みなら apperr.ErrConflict を返す。
 func (s Schedules) CreateCancel(_ context.Context, c schedule.Cancel) error {
 	if _, ok := s.Cancels[c.ScheduleID]; ok {
-		return domain.ErrConflict
+		return apperr.ErrConflict
 	}
 	s.Cancels[c.ScheduleID] = c
 	return nil

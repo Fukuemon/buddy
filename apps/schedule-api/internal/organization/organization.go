@@ -5,7 +5,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/kernel"
 )
 
 const maxNameLen = 255
@@ -38,7 +39,7 @@ type Team struct {
 
 // NewTeam は、名前を検証して Team を作る。
 func NewTeam(id, facilityID, name string) (Team, error) {
-	if err := domain.RequireText("チームの名前", name, maxNameLen); err != nil {
+	if err := kernel.RequireText("チームの名前", name, maxNameLen); err != nil {
 		return Team{}, err
 	}
 	return Team{ID: id, FacilityID: facilityID, Name: name}, nil
@@ -89,52 +90,52 @@ type Position struct {
 // NewPosition は、名前と権限の重なりを検証して Position を作る。
 // 対象の職員を指定する権限は、職員に写すときに対象を決められないので、既定にできない。
 func NewPosition(id, facilityID, name string, policies []Policy) (Position, error) {
-	if err := domain.RequireText("役職の名前", name, maxNameLen); err != nil {
+	if err := kernel.RequireText("役職の名前", name, maxNameLen); err != nil {
 		return Position{}, err
 	}
 	seen := make(map[string]bool, len(policies))
 	for _, p := range policies {
 		if seen[p.ID] {
-			return Position{}, domain.Invalid("権限 %s が重なっています", p.ID)
+			return Position{}, apperr.Invalid("権限 %s が重なっています", p.ID)
 		}
 		if p.NeedsTarget && !p.Code.TargetsTeam() {
-			return Position{}, domain.Invalid("権限 %s は対象の職員を指定するので、役職の既定にできません", p.ID)
+			return Position{}, apperr.Invalid("権限 %s は対象の職員を指定するので、役職の既定にできません", p.ID)
 		}
 		seen[p.ID] = true
 	}
 	return Position{ID: id, FacilityID: facilityID, Name: name, Policies: policies}, nil
 }
 
-// FacilityRepository は、事業所を読む。見つからないときは domain.ErrNotFound を返す。
+// FacilityRepository は、事業所を読む。見つからないときは apperr.ErrNotFound を返す。
 // GetByOrgID は、認証のブローカーの組織の ID に結び付けた事業所を返す。
 type FacilityRepository interface {
 	Get(ctx context.Context, id string) (Facility, error)
 	GetByOrgID(ctx context.Context, orgID string) (Facility, error)
 }
 
-// DepartmentRepository は、部署を読む。見つからないときは domain.ErrNotFound を返す。
+// DepartmentRepository は、部署を読む。見つからないときは apperr.ErrNotFound を返す。
 type DepartmentRepository interface {
 	Get(ctx context.Context, id string) (Department, error)
 	ListByFacility(ctx context.Context, facilityID string) ([]Department, error)
 }
 
-// TeamRepository は、チームを読み書きする。見つからないときは domain.ErrNotFound を、
-// 同じ事業所に同じ名前があるときは domain.ErrConflict を返す。
+// TeamRepository は、チームを読み書きする。見つからないときは apperr.ErrNotFound を、
+// 同じ事業所に同じ名前があるときは apperr.ErrConflict を返す。
 type TeamRepository interface {
 	Get(ctx context.Context, id string) (Team, error)
 	ListByFacility(ctx context.Context, facilityID string) ([]Team, error)
 	Create(ctx context.Context, t Team) error
 }
 
-// PositionRepository は、役職と既定の権限を読み書きする。見つからないときは domain.ErrNotFound を、
-// 同じ事業所に同じ名前があるときは domain.ErrConflict を返す。
+// PositionRepository は、役職と既定の権限を読み書きする。見つからないときは apperr.ErrNotFound を、
+// 同じ事業所に同じ名前があるときは apperr.ErrConflict を返す。
 type PositionRepository interface {
 	Get(ctx context.Context, id string) (Position, error)
 	ListByFacility(ctx context.Context, facilityID string) ([]Position, error)
 	Create(ctx context.Context, p Position) error
 }
 
-// PolicyRepository は、権限を読む。見つからないときは domain.ErrNotFound を返す。ListByIDs は、見つかったものだけを返す。
+// PolicyRepository は、権限を読む。見つからないときは apperr.ErrNotFound を返す。ListByIDs は、見つかったものだけを返す。
 type PolicyRepository interface {
 	Get(ctx context.Context, id string) (Policy, error)
 	List(ctx context.Context) ([]Policy, error)

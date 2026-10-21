@@ -18,13 +18,13 @@ import (
 
 	"github.com/Fukuemon/buddy/packages/go/oidc"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/access"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/authn"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/config"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/mysql"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/ulid"
@@ -56,7 +56,7 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	db, err := mysql.Open(ctx, cfg.DB)
+	db, err := mysql.Open(ctx, mysql.Config(cfg.DB))
 	if err != nil {
 		return err
 	}
@@ -84,20 +84,20 @@ func run() error {
 	schedules := mysql.NewScheduleRepository(db)
 
 	router := httpapi.NewRouter(httpapi.Usecases{
-		Organization: organization.NewService(organization.Repositories{
+		Organization: organization.NewUsecase(organization.Repositories{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions, Policies: policies,
-		}, tx, ids, auth.RequireStaffManage),
-		Staff: staff.NewService(staff.Repositories{
+		}, tx, ids, principal.RequireStaffManage),
+		Staff: staff.NewUsecase(staff.Repositories{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions, Policies: policies, Staff: staffRepo,
-		}, tx, ids, auth.RequireStaffManage),
-		Patients: patient.NewService(patient.Repositories{
+		}, tx, ids, principal.RequireStaffManage),
+		Patients: patient.NewUsecase(patient.Repositories{
 			Facilities: facilities, Staff: staffRepo, Visits: visits, Patients: patients,
-		}, ids, auth.RequireStaffManage),
-		VisitMasters: visit.NewService(visits),
-		Schedules: schedule.NewService(schedule.Repositories{
+		}, ids, principal.RequireStaffManage),
+		VisitMasters: visit.NewUsecase(visits),
+		Schedules: schedule.NewUsecase(schedule.Repositories{
 			Facilities: facilities, Staff: staffRepo, Patients: patients, Visits: visits, Schedules: schedules,
 		}, tx, ids),
-		Auth: access.NewService(access.Repositories{
+		Auth: authn.NewUsecase(authn.Repositories{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions,
 			Staff: staffRepo, Schedules: schedules,
 		}),
@@ -141,8 +141,8 @@ func run() error {
 // tokenVerifier は、共有の oidc.Verifier を httpapi.TokenVerifier にする。httpapi は oidc を import しないので、主張の型をここで写す。
 type tokenVerifier struct{ v *oidc.Verifier }
 
-// Verify は、トークンを検証し、主張を auth.Identity にして返す。
-func (t tokenVerifier) Verify(ctx context.Context, raw string) (auth.Identity, error) {
+// Verify は、トークンを検証し、主張を principal.Identity にして返す。
+func (t tokenVerifier) Verify(ctx context.Context, raw string) (principal.Identity, error) {
 	id, err := t.v.Verify(ctx, raw)
-	return auth.Identity(id), err
+	return principal.Identity(id), err
 }

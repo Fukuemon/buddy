@@ -4,16 +4,18 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/auth"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/kernel"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/tx"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
 )
 
-// Repositories は、Service が使うリポジトリである。
+// Repositories は、Usecase が使うリポジトリである。
 type Repositories struct {
 	Facilities organization.FacilityRepository
 	Staff      staff.Repository
@@ -22,22 +24,22 @@ type Repositories struct {
 	Schedules  Repository
 }
 
-// Service は、予定の操作である。操作は、ctx の職員（auth.Principal）の権限で判定する。
-// 見てよくない予定は一覧から除き、1 件を指す操作には domain.ErrForbidden を返す。ctx に職員がいなければ domain.ErrForbidden を返す。
-type Service struct {
+// Usecase は、予定の操作である。操作は、ctx の職員（principal.Principal）の権限で判定する。
+// 見てよくない予定は一覧から除き、1 件を指す操作には apperr.ErrForbidden を返す。ctx に職員がいなければ apperr.ErrForbidden を返す。
+type Usecase struct {
 	repos  Repositories
-	tx     domain.Transactor
-	ids    domain.IDGenerator
+	tx     tx.Transactor
+	ids    kernel.IDGenerator
 	visits visit.Writer
 }
 
-// NewService は Service を作る。
-func NewService(repos Repositories, tx domain.Transactor, ids domain.IDGenerator) *Service {
+// NewUsecase は Usecase を作る。
+func NewUsecase(repos Repositories, tx tx.Transactor, ids kernel.IDGenerator) *Usecase {
 	findPatient := func(ctx context.Context, id string) (string, string, error) {
 		pa, err := repos.Patients.Get(ctx, id)
 		return pa.ID, pa.FacilityID, err
 	}
-	return &Service{
+	return &Usecase{
 		repos:  repos,
 		tx:     tx,
 		ids:    ids,
@@ -73,12 +75,12 @@ type List struct {
 }
 
 // ListTypes は、予定の種類を返す。
-func (s *Service) ListTypes(ctx context.Context) ([]Type, error) {
+func (s *Usecase) ListTypes(ctx context.Context) ([]Type, error) {
 	return s.repos.Schedules.ListTypes(ctx)
 }
 
 // Get は、単発の予定を返す。
-func (s *Service) Get(ctx context.Context, id string) (Detail, error) {
+func (s *Usecase) Get(ctx context.Context, id string) (Detail, error) {
 	d, err := s.repos.Schedules.Get(ctx, id)
 	if err != nil {
 		return Detail{}, err
@@ -90,7 +92,7 @@ func (s *Service) Get(ctx context.Context, id string) (Detail, error) {
 }
 
 // GetRecurring は、繰り返しの予定を返す。
-func (s *Service) GetRecurring(ctx context.Context, id string) (RecurringDetail, error) {
+func (s *Usecase) GetRecurring(ctx context.Context, id string) (RecurringDetail, error) {
 	d, err := s.repos.Schedules.GetRecurring(ctx, id)
 	if err != nil {
 		return RecurringDetail{}, err
@@ -101,12 +103,12 @@ func (s *Service) GetRecurring(ctx context.Context, id string) (RecurringDetail,
 	return d, nil
 }
 
-// List は、事業所の予定のうち、見てよい職員の予定を返す。事業所が見つからないときは domain.ErrNotFound を返す。
-func (s *Service) List(ctx context.Context, facilityID string, q ListQuery) (List, error) {
+// List は、事業所の予定のうち、見てよい職員の予定を返す。事業所が見つからないときは apperr.ErrNotFound を返す。
+func (s *Usecase) List(ctx context.Context, facilityID string, q ListQuery) (List, error) {
 	if err := q.Validate(); err != nil {
 		return List{}, err
 	}
-	p, err := principal(ctx)
+	p, err := current(ctx)
 	if err != nil {
 		return List{}, err
 	}
@@ -132,7 +134,7 @@ func (s *Service) List(ctx context.Context, facilityID string, q ListQuery) (Lis
 }
 
 // readable は、事業所の職員のうち、p が予定を見てよい職員かを返す関数を返す。
-func (s *Service) readable(ctx context.Context, p auth.Principal, facilityID string) (func(staffID string) bool, error) {
+func (s *Usecase) readable(ctx context.Context, p principal.Principal, facilityID string) (func(staffID string) bool, error) {
 	if p.CanReadAll() {
 		return func(string) bool { return true }, nil
 	}
@@ -163,18 +165,18 @@ func filter[T any](items []T, keep func(T) bool) []T {
 	return out
 }
 
-// principal は、認証のミドルウェアが ctx に入れた職員を返す。入っていなければ domain.ErrForbidden を返す。
-func principal(ctx context.Context) (auth.Principal, error) {
-	p, ok := auth.PrincipalFrom(ctx)
+// current は、認証のミドルウェアが ctx に入れた職員を返す。入っていなければ apperr.ErrForbidden を返す。
+func current(ctx context.Context) (principal.Principal, error) {
+	p, ok := principal.From(ctx)
 	if !ok {
-		return auth.Principal{}, fmt.Errorf("%w: 職員を特定できません", domain.ErrForbidden)
+		return principal.Principal{}, fmt.Errorf("%w: 職員を特定できません", apperr.ErrForbidden)
 	}
 	return p, nil
 }
 
 // authorize は、ctx の職員が、職員 staffID の予定を見てよいか（edit なら編集してよいか）を確かめる。
-func (s *Service) authorize(ctx context.Context, staffID string, edit bool) error {
-	p, err := principal(ctx)
+func (s *Usecase) authorize(ctx context.Context, staffID string, edit bool) error {
+	p, err := current(ctx)
 	if err != nil {
 		return err
 	}
@@ -185,19 +187,19 @@ func (s *Service) authorize(ctx context.Context, staffID string, edit bool) erro
 	return allow(p, st.ID, st.TeamID, edit)
 }
 
-func allow(p auth.Principal, staffID, teamID string, edit bool) error {
+func allow(p principal.Principal, staffID, teamID string, edit bool) error {
 	if edit && !p.CanEdit(staffID, teamID) {
-		return fmt.Errorf("%w: この職員の予定を編集する権限がありません", domain.ErrForbidden)
+		return fmt.Errorf("%w: この職員の予定を編集する権限がありません", apperr.ErrForbidden)
 	}
 	if !edit && !p.CanRead(staffID, teamID) {
-		return fmt.Errorf("%w: この職員の予定を見る権限がありません", domain.ErrForbidden)
+		return fmt.Errorf("%w: この職員の予定を見る権限がありません", apperr.ErrForbidden)
 	}
 	return nil
 }
 
 // Create は、事業所に単発の予定を作る。訪問の情報があれば同じトランザクションで保存する。
-// 事業所が見つからないときは domain.ErrNotFound を、参照が見つからないか別の事業所のものであるときは入力の誤りを返す。
-func (s *Service) Create(ctx context.Context, facilityID string, in SlotInput) (Detail, error) {
+// 事業所が見つからないときは apperr.ErrNotFound を、参照が見つからないか別の事業所のものであるときは入力の誤りを返す。
+func (s *Usecase) Create(ctx context.Context, facilityID string, in SlotInput) (Detail, error) {
 	if _, err := s.repos.Facilities.Get(ctx, facilityID); err != nil {
 		return Detail{}, err
 	}
@@ -211,7 +213,7 @@ func (s *Service) Create(ctx context.Context, facilityID string, in SlotInput) (
 }
 
 // CreateRecurring は、事業所に繰り返しの予定を作る。エラーは Create と同じである。
-func (s *Service) CreateRecurring(ctx context.Context, facilityID string, in SlotInput, rule RuleInput) (RecurringDetail, error) {
+func (s *Usecase) CreateRecurring(ctx context.Context, facilityID string, in SlotInput, rule RuleInput) (RecurringDetail, error) {
 	if _, err := s.repos.Facilities.Get(ctx, facilityID); err != nil {
 		return RecurringDetail{}, err
 	}
@@ -247,9 +249,9 @@ func (s *Service) CreateRecurring(ctx context.Context, facilityID string, in Slo
 
 // ChangeOccurrence は、繰り返しの予定の originalDate の回を、in の内容の単発の予定に置き換える。
 // 元の回は繰り返しの予定から除外し、作った単発の予定を返す。
-// 繰り返しの予定が見つからないときは domain.ErrNotFound を、originalDate が回に当たらないときは入力の誤りを、
-// その回をすでに置き換えたときは domain.ErrConflict を返す。
-func (s *Service) ChangeOccurrence(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in SlotInput) (Detail, error) {
+// 繰り返しの予定が見つからないときは apperr.ErrNotFound を、originalDate が回に当たらないときは入力の誤りを、
+// その回をすでに置き換えたときは apperr.ErrConflict を返す。
+func (s *Usecase) ChangeOccurrence(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in SlotInput) (Detail, error) {
 	rs, err := s.repos.Schedules.GetRecurring(ctx, recurringScheduleID)
 	if err != nil {
 		return Detail{}, err
@@ -258,12 +260,12 @@ func (s *Service) ChangeOccurrence(ctx context.Context, recurringScheduleID stri
 		return Detail{}, err
 	}
 	if !rs.Occurs(originalDate) {
-		return Detail{}, domain.Invalid("%s は繰り返しの予定の回に当たりません", originalDate)
+		return Detail{}, apperr.Invalid("%s は繰り返しの予定の回に当たりません", originalDate)
 	}
 	var created Detail
 	err = s.tx.WithinTx(ctx, func(ctx context.Context) error {
 		if err := s.repos.Schedules.AddExclusion(ctx, rs.ID, originalDate); err != nil {
-			return domain.AsConflict(err, "%s の回はすでに置き換えられています", originalDate)
+			return apperr.AsConflict(err, "%s の回はすでに置き換えられています", originalDate)
 		}
 		var err error
 		created, err = s.createSchedule(ctx, rs.FacilityID, in, &rs.ID)
@@ -272,9 +274,9 @@ func (s *Service) ChangeOccurrence(ctx context.Context, recurringScheduleID stri
 	return created, err
 }
 
-// Cancel は、単発の予定をキャンセルする。予定が見つからないときは domain.ErrNotFound を、
-// キャンセル済みのときは domain.ErrConflict を返す。
-func (s *Service) Cancel(ctx context.Context, scheduleID, reason string) (Cancel, error) {
+// Cancel は、単発の予定をキャンセルする。予定が見つからないときは apperr.ErrNotFound を、
+// キャンセル済みのときは apperr.ErrConflict を返す。
+func (s *Usecase) Cancel(ctx context.Context, scheduleID, reason string) (Cancel, error) {
 	c, err := NewCancel(s.ids.NewID(), scheduleID, reason)
 	if err != nil {
 		return Cancel{}, err
@@ -291,7 +293,7 @@ func (s *Service) Cancel(ctx context.Context, scheduleID, reason string) (Cancel
 		if err := s.authorize(ctx, cur.StaffID, true); err != nil {
 			return err
 		}
-		return domain.AsConflict(s.repos.Schedules.CreateCancel(ctx, c), "この予定はすでにキャンセルされています")
+		return apperr.AsConflict(s.repos.Schedules.CreateCancel(ctx, c), "この予定はすでにキャンセルされています")
 	})
 	if err != nil {
 		return Cancel{}, err
@@ -300,9 +302,9 @@ func (s *Service) Cancel(ctx context.Context, scheduleID, reason string) (Cancel
 }
 
 // Update は、単発の予定の枠を in の内容に置き換える。訪問の情報は in の内容で作り直し、前の訪問の情報は消す。
-// 予定が見つからないときは domain.ErrNotFound を、キャンセル済みのときは domain.ErrConflict を、
+// 予定が見つからないときは apperr.ErrNotFound を、キャンセル済みのときは apperr.ErrConflict を、
 // 参照が見つからないか別の事業所のものであるときは入力の誤りを返す。
-func (s *Service) Update(ctx context.Context, scheduleID string, in SlotInput) (Detail, error) {
+func (s *Usecase) Update(ctx context.Context, scheduleID string, in SlotInput) (Detail, error) {
 	var updated Detail
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
 		if err := s.repos.Schedules.Lock(ctx, scheduleID); err != nil {
@@ -316,7 +318,7 @@ func (s *Service) Update(ctx context.Context, scheduleID string, in SlotInput) (
 			return err
 		}
 		if cur.Cancel != nil {
-			return domain.Conflict("キャンセル済みの予定は変えられません")
+			return apperr.Conflict("キャンセル済みの予定は変えられません")
 		}
 		slot, typ, err := s.prepareSlot(ctx, cur.FacilityID, in)
 		if err != nil {
@@ -340,7 +342,7 @@ func (s *Service) Update(ctx context.Context, scheduleID string, in SlotInput) (
 	return updated, err
 }
 
-func (s *Service) createSchedule(ctx context.Context, facilityID string, in SlotInput, recurringScheduleID *string) (Detail, error) {
+func (s *Usecase) createSchedule(ctx context.Context, facilityID string, in SlotInput, recurringScheduleID *string) (Detail, error) {
 	slot, typ, err := s.prepareSlot(ctx, facilityID, in)
 	if err != nil {
 		return Detail{}, err
@@ -358,19 +360,19 @@ func (s *Service) createSchedule(ctx context.Context, facilityID string, in Slot
 
 // prepareSlot は、予定の種類と職員と、職員の予定を編集する権限を確かめ、訪問の情報があれば保存して、予定の属性を組み立てる。
 // 訪問の情報を保存するので、トランザクションの中で呼ぶ。
-func (s *Service) prepareSlot(ctx context.Context, facilityID string, in SlotInput) (Slot, Type, error) {
+func (s *Usecase) prepareSlot(ctx context.Context, facilityID string, in SlotInput) (Slot, Type, error) {
 	typ, err := s.repos.Schedules.GetType(ctx, in.TypeID)
 	if err != nil {
-		return Slot{}, Type{}, domain.Reference("予定の種類", in.TypeID, err)
+		return Slot{}, Type{}, apperr.Reference("予定の種類", in.TypeID, err)
 	}
 	st, err := s.repos.Staff.Get(ctx, in.StaffID)
 	if err != nil {
-		return Slot{}, Type{}, domain.Reference("職員", in.StaffID, err)
+		return Slot{}, Type{}, apperr.Reference("職員", in.StaffID, err)
 	}
-	if err := domain.SameFacility("職員", st.ID, st.FacilityID, facilityID); err != nil {
+	if err := apperr.SameFacility("職員", st.ID, st.FacilityID, facilityID); err != nil {
 		return Slot{}, Type{}, err
 	}
-	p, err := principal(ctx)
+	p, err := current(ctx)
 	if err != nil {
 		return Slot{}, Type{}, err
 	}
@@ -388,7 +390,7 @@ func (s *Service) prepareSlot(ctx context.Context, facilityID string, in SlotInp
 	}
 	if in.Visit != nil {
 		if typ.Name != Visit {
-			return Slot{}, Type{}, domain.Invalid("訪問の情報は訪問の予定にだけ付けられます")
+			return Slot{}, Type{}, apperr.Invalid("訪問の情報は訪問の予定にだけ付けられます")
 		}
 		id, err := s.visits.Create(ctx, facilityID, *in.Visit)
 		if err != nil {

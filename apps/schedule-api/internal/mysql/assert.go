@@ -1,16 +1,16 @@
 package mysql
 
 import (
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/domain"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
+	"github.com/Fukuemon/buddy/apps/schedule-api/internal/tx"
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
 )
 
 var (
-	_ domain.Transactor                 = (*Transactor)(nil)
+	_ tx.Transactor                     = (*Transactor)(nil)
 	_ organization.FacilityRepository   = (*FacilityRepository)(nil)
 	_ organization.DepartmentRepository = (*DepartmentRepository)(nil)
 	_ organization.TeamRepository       = (*TeamRepository)(nil)
