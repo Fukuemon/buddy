@@ -80,13 +80,11 @@ test.describe('予定の取り込み', () => {
       await test.step('カレンダーに毎週水曜の回が出て、取り消した回と変えた回は元の時刻に出ない', async () => {
         await page.getByTestId('calendar-import-open-calendar').click()
         await expect(page).toHaveURL(/\/schedule\?/)
-        const occurrence = (date: string) =>
-          page.getByTestId(new RegExp(`^schedule-event-recurring-.+-${date}$`))
-        await expect(occurrence('2026-11-25')).toBeVisible()
-        await expect(occurrence('2026-11-04')).toBeVisible()
-        // 11-11 は取り消した回、11-18 は 14:00 の単発の予定に置き換えた回である
-        await expect(occurrence('2026-11-11')).toHaveCount(0)
-        await expect(occurrence('2026-11-18')).toHaveCount(0)
+        await expect(page.getByTestId(/^schedule-event-.+-2026-11-25$/)).toBeVisible()
+        await expect(page.getByTestId(/^schedule-event-.+-2026-11-04$/)).toBeVisible()
+        // 繰り返しの回の ID は日付で終わる。11-11 は取り消した回、11-18 は 14:00 の単発の予定に置き換えた回である
+        await expect(page.getByTestId(/^schedule-event-.+-2026-11-11$/)).toHaveCount(0)
+        await expect(page.getByTestId(/^schedule-event-.+-2026-11-18$/)).toHaveCount(0)
       })
 
       await test.step('同じ期間をもう一度下見すると、全て取り込み済みになる', async () => {
