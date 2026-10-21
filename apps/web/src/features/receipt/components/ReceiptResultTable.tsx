@@ -29,11 +29,17 @@ export const ReceiptResultTable = ({ rows }: ReceiptResultTableProps) => (
             <tr className="border-b border-border" data-testid={`receipt-category-${category}`}>
               {/* Table の stickyColumn が先頭のセルに当てる bg-surface より強くするため、! を付ける */}
               <th
-                className="sticky left-0 !bg-surface-subtle px-5 py-2 text-left text-label"
+                className="!bg-surface-subtle px-5 py-2 text-left text-label"
                 colSpan={RECEIPT_COLUMNS.length}
                 scope="rowgroup"
               >
-                {label}（{inCategory.length} 件）
+                {/* セルは全ての列にまたがり左端に留まらないので、文字だけを送る箱の左端に留める */}
+                <span
+                  className="sticky left-5 inline-block"
+                  data-testid={`receipt-category-label-${category}`}
+                >
+                  {label}（{inCategory.length} 件）
+                </span>
               </th>
             </tr>
             {inCategory.map(({ row, index }) => (

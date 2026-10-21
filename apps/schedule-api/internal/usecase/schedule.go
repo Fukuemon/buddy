@@ -277,18 +277,25 @@ func (s *Schedules) ChangeOccurrence(ctx context.Context, recurringScheduleID st
 // Cancel は、単発の予定をキャンセルする。予定が見つからないときは domain.ErrNotFound を、
 // キャンセル済みのときは domain.ErrConflict を返す。
 func (s *Schedules) Cancel(ctx context.Context, scheduleID, reason string) (schedule.Cancel, error) {
-	cur, err := s.repos.Schedules.Get(ctx, scheduleID)
-	if err != nil {
-		return schedule.Cancel{}, err
-	}
-	if err := s.authorize(ctx, cur.StaffID, true); err != nil {
-		return schedule.Cancel{}, err
-	}
 	c, err := schedule.NewCancel(s.ids.NewID(), scheduleID, reason)
 	if err != nil {
 		return schedule.Cancel{}, err
 	}
-	if err := s.repos.Schedules.CreateCancel(ctx, c); err != nil {
+	// Update と同じ行のロックの中で権限を確かめ、確かめた後に予定の職員が替わらないようにする。
+	err = s.tx.WithinTx(ctx, func(ctx context.Context) error {
+		if err := s.repos.Schedules.Lock(ctx, scheduleID); err != nil {
+			return err
+		}
+		cur, err := s.repos.Schedules.Get(ctx, scheduleID)
+		if err != nil {
+			return err
+		}
+		if err := s.authorize(ctx, cur.StaffID, true); err != nil {
+			return err
+		}
+		return s.repos.Schedules.CreateCancel(ctx, c)
+	})
+	if err != nil {
 		return schedule.Cancel{}, err
 	}
 	return c, nil
