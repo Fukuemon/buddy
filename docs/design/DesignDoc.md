@@ -26,7 +26,7 @@ buddy は、訪問看護の事業所の職員が使う、予定の管理とレ�
 ### Non-Goals
 
 - どのコンテナをどの種類の基盤で動かすかと、クラスタの構成。
-  - インフラのリポジトリ [Fukuemon/buddy-infra](https://github.com/Fukuemon/buddy-infra) が持ち、buddy は [インフラとの約束](#インフラとの約束) だけを守る。
+  - インフラのリポジトリ（非公開）が持ち、buddy は [インフラとの約束](#インフラとの約束) だけを守る。
 
 ## Assumptions and Constraints
 
