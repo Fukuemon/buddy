@@ -993,3 +993,26 @@ func TestScheduleColumnsFromDB(t *testing.T) {
 		})
 	}
 }
+
+// TestExternalCalendarsOneActivePerStaff は、職員ごとに 1 つの外部のカレンダーの制約が、外していない行だけに当たることを確かめる。
+func TestExternalCalendarsOneActivePerStaff(t *testing.T) {
+	ctx := txContext(t)
+	tx := ctx.Value(txKey{}).(pgx.Tx)
+	insert := func(id, calendarID string) error {
+		_, err := tx.Exec(ctx, `INSERT INTO external_calendars (id, facility_id, staff_id, provider, external_calendar_id)
+			VALUES ($1, $2, $3, 'google', $4)`, id, seedFacility, seedMori, calendarID)
+		return translate("insert external calendar", err)
+	}
+	if err := insert("01M3TD000000000000000000F0", "first@example.com"); err != nil {
+		t.Fatal(err)
+	}
+	if err := insert("01M3TD000000000000000000F1", "second@example.com"); !errors.Is(err, apperr.ErrConflict) {
+		t.Fatalf("外していないカレンダーがある職員の 2 つ目: err = %v, want ErrConflict", err)
+	}
+	if _, err := tx.Exec(ctx, "UPDATE external_calendars SET disabled_at = now() WHERE id = '01M3TD000000000000000000F0'"); err != nil {
+		t.Fatal(err)
+	}
+	if err := insert("01M3TD000000000000000000F1", "second@example.com"); err != nil {
+		t.Fatalf("外した後の 2 つ目: err = %v", err)
+	}
+}

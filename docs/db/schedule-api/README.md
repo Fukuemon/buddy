@@ -13,34 +13,34 @@
 
 ## Tables
 
-| Name                                                                            | Columns | Comment                                                                | Type       |
-| ------------------------------------------------------------------------------- | ------- | ---------------------------------------------------------------------- | ---------- |
-| [public.facilities](public.facilities.md)                                       | 6       | 訪問看護の事業所                                                       | BASE TABLE |
-| [public.departments](public.departments.md)                                     | 5       | 事業所の部署                                                           | BASE TABLE |
-| [public.teams](public.teams.md)                                                 | 5       | 事業所のチーム                                                         | BASE TABLE |
-| [public.positions](public.positions.md)                                         | 5       | 事業所の役職。職員を登録するときに写す既定の権限を持つ                 | BASE TABLE |
-| [public.policies](public.policies.md)                                           | 6       | 権限。マイグレーションで入れ、API では作らない                         | BASE TABLE |
-| [public.position_policies](public.position_policies.md)                         | 2       | 役職の既定の権限                                                       | BASE TABLE |
-| [public.users](public.users.md)                                                 | 11      | 職員                                                                   | BASE TABLE |
-| [public.user_policies](public.user_policies.md)                                 | 4       | 職員が持つ権限。職員と権限の組で一意                                   | BASE TABLE |
-| [public.user_policy_targets](public.user_policy_targets.md)                     | 5       | 職員の権限の対象                                                       | BASE TABLE |
-| [public.service_codes](public.service_codes.md)                                 | 6       | サービスコード。マイグレーションで入れる                               | BASE TABLE |
-| [public.visit_categories](public.visit_categories.md)                           | 4       | 訪問の区分（夜勤、緊急、入院）。マイグレーションで入れる               | BASE TABLE |
-| [public.patients](public.patients.md)                                           | 9       | 利用者                                                                 | BASE TABLE |
-| [public.visit_infos](public.visit_infos.md)                                     | 8       | 訪問の情報                                                             | BASE TABLE |
-| [public.visit_info_visit_categories](public.visit_info_visit_categories.md)     | 2       | 訪問に付けた区分。1 件の訪問に複数を付けられる                         | BASE TABLE |
-| [public.schedule_types](public.schedule_types.md)                               | 5       | 予定の種類（通常、訪問）。マイグレーションで入れる                     | BASE TABLE |
-| [public.recurring_schedules](public.recurring_schedules.md)                     | 18      | 繰り返しの予定と、その規則                                             | BASE TABLE |
-| [public.recurring_schedule_exclusions](public.recurring_schedule_exclusions.md) | 2       | 繰り返しの予定のうち、回にしない日                                     | BASE TABLE |
-| [public.schedules](public.schedules.md)                                         | 15      | 予定                                                                   | BASE TABLE |
-| [public.schedule_cancels](public.schedule_cancels.md)                           | 5       | 予定の取り消し                                                         | BASE TABLE |
-| [public.external_calendars](public.external_calendars.md)                       | 7       | 取り込む外部のカレンダーと、その持ち主の職員。職員ごとに 1 つ          | BASE TABLE |
-| [public.calendar_sync_states](public.calendar_sync_states.md)                   | 8       | 外部のカレンダーごとの同期の状態                                       | BASE TABLE |
-| [public.external_event_links](public.external_event_links.md)                   | 10      | 外部の予定と、buddy の単発か繰り返しの予定の対応                       | BASE TABLE |
-| [public.import_runs](public.import_runs.md)                                     | 14      | 外部のカレンダーからの取り込みの 1 回ごとの記録                        | BASE TABLE |
-| [public.visit_info_details](public.visit_info_details.md)                       | 10      | 訪問の情報と名前を結合したビュー                                       | VIEW       |
-| [public.schedule_details](public.schedule_details.md)                           | 28      | 一覧の読み出しに使う、予定と訪問の情報と名前を結合したビュー           | VIEW       |
-| [public.recurring_schedule_details](public.recurring_schedule_details.md)       | 29      | 一覧の読み出しに使う、繰り返しの予定と訪問の情報と名前を結合したビュー | VIEW       |
+| Name                                                                            | Columns | Comment                                                                         | Type       |
+| ------------------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------- | ---------- |
+| [public.facilities](public.facilities.md)                                       | 6       | 訪問看護の事業所                                                                | BASE TABLE |
+| [public.departments](public.departments.md)                                     | 5       | 事業所の部署                                                                    | BASE TABLE |
+| [public.teams](public.teams.md)                                                 | 5       | 事業所のチーム                                                                  | BASE TABLE |
+| [public.positions](public.positions.md)                                         | 5       | 事業所の役職。職員を登録するときに写す既定の権限を持つ                          | BASE TABLE |
+| [public.policies](public.policies.md)                                           | 6       | 権限。マイグレーションで入れ、API では作らない                                  | BASE TABLE |
+| [public.position_policies](public.position_policies.md)                         | 2       | 役職の既定の権限                                                                | BASE TABLE |
+| [public.users](public.users.md)                                                 | 11      | 職員                                                                            | BASE TABLE |
+| [public.user_policies](public.user_policies.md)                                 | 4       | 職員が持つ権限。職員と権限の組で一意                                            | BASE TABLE |
+| [public.user_policy_targets](public.user_policy_targets.md)                     | 5       | 職員の権限の対象                                                                | BASE TABLE |
+| [public.service_codes](public.service_codes.md)                                 | 6       | サービスコード。マイグレーションで入れる                                        | BASE TABLE |
+| [public.visit_categories](public.visit_categories.md)                           | 4       | 訪問の区分（夜勤、緊急、入院）。マイグレーションで入れる                        | BASE TABLE |
+| [public.patients](public.patients.md)                                           | 9       | 利用者                                                                          | BASE TABLE |
+| [public.visit_infos](public.visit_infos.md)                                     | 8       | 訪問の情報                                                                      | BASE TABLE |
+| [public.visit_info_visit_categories](public.visit_info_visit_categories.md)     | 2       | 訪問に付けた区分。1 件の訪問に複数を付けられる                                  | BASE TABLE |
+| [public.schedule_types](public.schedule_types.md)                               | 5       | 予定の種類（通常、訪問）。マイグレーションで入れる                              | BASE TABLE |
+| [public.recurring_schedules](public.recurring_schedules.md)                     | 18      | 繰り返しの予定と、その規則                                                      | BASE TABLE |
+| [public.recurring_schedule_exclusions](public.recurring_schedule_exclusions.md) | 2       | 繰り返しの予定のうち、回にしない日                                              | BASE TABLE |
+| [public.schedules](public.schedules.md)                                         | 15      | 予定                                                                            | BASE TABLE |
+| [public.schedule_cancels](public.schedule_cancels.md)                           | 5       | 予定の取り消し                                                                  | BASE TABLE |
+| [public.external_calendars](public.external_calendars.md)                       | 8       | 取り込む外部のカレンダーと、その持ち主の職員。外していないものは職員ごとに 1 つ | BASE TABLE |
+| [public.calendar_sync_states](public.calendar_sync_states.md)                   | 8       | 外部のカレンダーごとの同期の状態                                                | BASE TABLE |
+| [public.external_event_links](public.external_event_links.md)                   | 10      | 外部の予定と、buddy の単発か繰り返しの予定の対応                                | BASE TABLE |
+| [public.import_runs](public.import_runs.md)                                     | 14      | 外部のカレンダーからの取り込みの 1 回ごとの記録                                 | BASE TABLE |
+| [public.visit_info_details](public.visit_info_details.md)                       | 10      | 訪問の情報と名前を結合したビュー                                                | VIEW       |
+| [public.schedule_details](public.schedule_details.md)                           | 28      | 一覧の読み出しに使う、予定と訪問の情報と名前を結合したビュー                    | VIEW       |
+| [public.recurring_schedule_details](public.recurring_schedule_details.md)       | 29      | 一覧の読み出しに使う、繰り返しの予定と訪問の情報と名前を結合したビュー          | VIEW       |
 
 ## Stored procedures and functions
 
@@ -262,6 +262,7 @@ erDiagram
   text staff_id FK
   text provider
   varchar_1024_ external_calendar_id
+  timestamp_with_time_zone disabled_at
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
 }

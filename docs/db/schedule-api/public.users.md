@@ -182,6 +182,7 @@ erDiagram
   text staff_id FK
   text provider
   varchar_1024_ external_calendar_id
+  timestamp_with_time_zone disabled_at
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
 }

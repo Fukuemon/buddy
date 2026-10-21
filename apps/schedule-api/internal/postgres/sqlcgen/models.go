@@ -35,7 +35,7 @@ type Department struct {
 	UpdatedAt time.Time
 }
 
-// 取り込む外部のカレンダーと、その持ち主の職員。職員ごとに 1 つ
+// 取り込む外部のカレンダーと、その持ち主の職員。外していないものは職員ごとに 1 つ
 type ExternalCalendar struct {
 	ID         string
 	FacilityID string
@@ -44,8 +44,10 @@ type ExternalCalendar struct {
 	Provider string
 	// 外部のカレンダーの ID。サービスアカウントに共有されたもの
 	ExternalCalendarID string
-	CreatedAt          time.Time
-	UpdatedAt          time.Time
+	// 外した時刻。外しても行と外部の予定との対応は残す。NULL なら使っている
+	DisabledAt *time.Time
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 // 外部の予定と、buddy の単発か繰り返しの予定の対応

@@ -2,19 +2,20 @@
 
 ## Description
 
-取り込む外部のカレンダーと、その持ち主の職員。職員ごとに 1 つ
+取り込む外部のカレンダーと、その持ち主の職員。外していないものは職員ごとに 1 つ
 
 ## Columns
 
-| Name                 | Type                     | Default | Nullable | Children                                                                                                                                                                | Parents                         | Comment                                                   |
-| -------------------- | ------------------------ | ------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | --------------------------------------------------------- |
-| id                   | text                     |         | false    | [public.calendar_sync_states](public.calendar_sync_states.md) [public.external_event_links](public.external_event_links.md) [public.import_runs](public.import_runs.md) |                                 |                                                           |
-| facility_id          | text                     |         | false    | [public.calendar_sync_states](public.calendar_sync_states.md) [public.external_event_links](public.external_event_links.md) [public.import_runs](public.import_runs.md) | [public.users](public.users.md) |                                                           |
-| staff_id             | text                     |         | false    |                                                                                                                                                                         | [public.users](public.users.md) |                                                           |
-| provider             | text                     |         | false    |                                                                                                                                                                         |                                 | google                                                    |
-| external_calendar_id | varchar(1024)            |         | false    |                                                                                                                                                                         |                                 | 外部のカレンダーの ID。サービスアカウントに共有されたもの |
-| created_at           | timestamp with time zone | now()   | false    |                                                                                                                                                                         |                                 |                                                           |
-| updated_at           | timestamp with time zone | now()   | false    |                                                                                                                                                                         |                                 |                                                           |
+| Name                 | Type                     | Default | Nullable | Children                                                                                                                                                                | Parents                         | Comment                                                               |
+| -------------------- | ------------------------ | ------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | --------------------------------------------------------------------- |
+| id                   | text                     |         | false    | [public.calendar_sync_states](public.calendar_sync_states.md) [public.external_event_links](public.external_event_links.md) [public.import_runs](public.import_runs.md) |                                 |                                                                       |
+| facility_id          | text                     |         | false    | [public.calendar_sync_states](public.calendar_sync_states.md) [public.external_event_links](public.external_event_links.md) [public.import_runs](public.import_runs.md) | [public.users](public.users.md) |                                                                       |
+| staff_id             | text                     |         | false    |                                                                                                                                                                         | [public.users](public.users.md) |                                                                       |
+| provider             | text                     |         | false    |                                                                                                                                                                         |                                 | google                                                                |
+| external_calendar_id | varchar(1024)            |         | false    |                                                                                                                                                                         |                                 | 外部のカレンダーの ID。サービスアカウントに共有されたもの             |
+| disabled_at          | timestamp with time zone |         | true     |                                                                                                                                                                         |                                 | 外した時刻。外しても行と外部の予定との対応は残す。NULL なら使っている |
+| created_at           | timestamp with time zone | now()   | false    |                                                                                                                                                                         |                                 |                                                                       |
+| updated_at           | timestamp with time zone | now()   | false    |                                                                                                                                                                         |                                 |                                                                       |
 
 ## Viewpoints
 
@@ -38,18 +39,17 @@
 | external_calendars_staff_fkey                    | FOREIGN KEY | FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id) ON DELETE CASCADE |
 | external_calendars_pkey                          | PRIMARY KEY | PRIMARY KEY (id)                                                                        |
 | external_calendars_external_key                  | UNIQUE      | UNIQUE (provider, external_calendar_id)                                                 |
-| external_calendars_staff_key                     | UNIQUE      | UNIQUE (staff_id, provider)                                                             |
 | external_calendars_facility_id_key               | UNIQUE      | UNIQUE (facility_id, id)                                                                |
 
 ## Indexes
 
-| Name                                  | Definition                                                                                                                    |
-| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| external_calendars_pkey               | CREATE UNIQUE INDEX external_calendars_pkey ON public.external_calendars USING btree (id)                                     |
-| external_calendars_external_key       | CREATE UNIQUE INDEX external_calendars_external_key ON public.external_calendars USING btree (provider, external_calendar_id) |
-| external_calendars_staff_key          | CREATE UNIQUE INDEX external_calendars_staff_key ON public.external_calendars USING btree (staff_id, provider)                |
-| external_calendars_facility_id_key    | CREATE UNIQUE INDEX external_calendars_facility_id_key ON public.external_calendars USING btree (facility_id, id)             |
-| external_calendars_facility_staff_idx | CREATE INDEX external_calendars_facility_staff_idx ON public.external_calendars USING btree (facility_id, staff_id)           |
+| Name                                  | Definition                                                                                                                                 |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| external_calendars_pkey               | CREATE UNIQUE INDEX external_calendars_pkey ON public.external_calendars USING btree (id)                                                  |
+| external_calendars_external_key       | CREATE UNIQUE INDEX external_calendars_external_key ON public.external_calendars USING btree (provider, external_calendar_id)              |
+| external_calendars_facility_id_key    | CREATE UNIQUE INDEX external_calendars_facility_id_key ON public.external_calendars USING btree (facility_id, id)                          |
+| external_calendars_staff_key          | CREATE UNIQUE INDEX external_calendars_staff_key ON public.external_calendars USING btree (staff_id, provider) WHERE (disabled_at IS NULL) |
+| external_calendars_facility_staff_idx | CREATE INDEX external_calendars_facility_staff_idx ON public.external_calendars USING btree (facility_id, staff_id)                        |
 
 ## Triggers
 
@@ -73,6 +73,7 @@ erDiagram
   text staff_id FK
   text provider
   varchar_1024_ external_calendar_id
+  timestamp_with_time_zone disabled_at
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
 }

@@ -320,15 +320,17 @@ CREATE TABLE external_calendars (
     staff_id             text COLLATE "C" NOT NULL,
     provider             text             NOT NULL,
     external_calendar_id varchar(1024)    NOT NULL,
+    disabled_at          timestamptz      NULL,
     created_at           timestamptz      NOT NULL DEFAULT now(),
     updated_at           timestamptz      NOT NULL DEFAULT now(),
     CONSTRAINT external_calendars_pkey PRIMARY KEY (id),
     CONSTRAINT external_calendars_external_key UNIQUE (provider, external_calendar_id),
-    CONSTRAINT external_calendars_staff_key UNIQUE (staff_id, provider),
     CONSTRAINT external_calendars_facility_id_key UNIQUE (facility_id, id),
     CONSTRAINT external_calendars_provider_check CHECK (provider IN ('google')),
     CONSTRAINT external_calendars_staff_fkey FOREIGN KEY (facility_id, staff_id) REFERENCES users (facility_id, id) ON DELETE CASCADE
 );
+-- 外したカレンダーの行は消さず、外部の予定との対応を残す。職員ごとに 1 つの制約は、外していない行だけに当てる。
+CREATE UNIQUE INDEX external_calendars_staff_key ON external_calendars (staff_id, provider) WHERE disabled_at IS NULL;
 CREATE INDEX external_calendars_facility_staff_idx ON external_calendars (facility_id, staff_id);
 
 CREATE TABLE calendar_sync_states (
@@ -557,9 +559,10 @@ COMMENT ON COLUMN service_codes.code IS '例は 訪看I2、訪看I3';
 COMMENT ON COLUMN service_codes.service_time_range_start IS '提供時間の範囲の下限（分）。照合の許容範囲と同じ値';
 COMMENT ON COLUMN service_codes.service_time_range_end IS '提供時間の範囲の上限（分）。照合の許容範囲と同じ値';
 COMMENT ON TABLE visit_categories IS '訪問の区分（夜勤、緊急、入院）。マイグレーションで入れる';
-COMMENT ON TABLE external_calendars IS '取り込む外部のカレンダーと、その持ち主の職員。職員ごとに 1 つ';
+COMMENT ON TABLE external_calendars IS '取り込む外部のカレンダーと、その持ち主の職員。外していないものは職員ごとに 1 つ';
 COMMENT ON COLUMN external_calendars.provider IS 'google';
 COMMENT ON COLUMN external_calendars.external_calendar_id IS '外部のカレンダーの ID。サービスアカウントに共有されたもの';
+COMMENT ON COLUMN external_calendars.disabled_at IS '外した時刻。外しても行と外部の予定との対応は残す。NULL なら使っている';
 COMMENT ON TABLE calendar_sync_states IS '外部のカレンダーごとの同期の状態';
 COMMENT ON COLUMN calendar_sync_states.sync_token IS '次の増分の取得に使うトークン。全件を取り直すときは NULL';
 COMMENT ON COLUMN calendar_sync_states.last_status IS 'never、succeeded、failed';
