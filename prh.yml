@@ -144,3 +144,45 @@ rules:
   - expected: 職員か利用者
     pattern: /(?<!「[^」]*)ユーザー/
     prh: ユーザーは職員と利用者のどちらにも読める。指す相手の名前で書く。画面の文言を「」で引くときは除く
+  # 技術用語は、一般的なカタカナ語か英語で書く。業務の機能の名前（予定の取り込み、予定の書き出し、結び付け）は和語のまま書く
+  - expected: フェイク
+    pattern: 偽物
+    prh: テストのための偽の実装はフェイクと呼ぶ。コードの名前 fake、fake-google に合わせる
+  - expected: プレビュー
+    pattern: /(?<!「[^」]*)下見(?!する|の結果)/
+    prh: 取り込む前の確かめはプレビューと呼ぶ。コードの名前 import_preview に合わせる。画面の文言（「」で引いたもの、ボタンの「下見する」、見出しの「下見の結果」）は除く
+  - expected: デフォルト
+    pattern: 既定
+    prh: 既定の値はデフォルト、デフォルト値と書く
+  - expected: スクリーンショット
+    pattern: 静止画
+  - expected: テンプレート
+    pattern: 雛形
+    prh: GitHub の UI の表記に合わせる
+  - expected: シークレット
+    pattern: /秘密の値|秘密の?情報/
+  - expected: DB のテーブル
+    pattern: /DB の表/
+  - expected: ローカル
+    pattern: /手元(?!で扱|に置)/
+    prh: 開発者の環境はローカル、ローカル環境と書く。照合の担当が CSV を手元で扱う、手元に置く話は除く
+  - expected: マージ
+    pattern: /(?<=(?:pull request|ブランチ|`develop`|`main`)\s?(?:を|へ|に|から)[^。]{0,20})取り込/
+    prh: pull request のマージは、業務の機能の「予定の取り込み」と分けてマージと書く
+  - expected: リクエストとレスポンス
+    pattern: 要求と応答
+  - expected: リソース
+    pattern: 資源
+  - expected: エビデンス
+    pattern: /(?<!「[^」]*)証跡/
+    prh: 確かめたことの記録はエビデンスと呼ぶ。スキル attach-evidence の名前に合わせる。コードが出す文字列を「」で引くときは除く
+  - expected: 手動検証
+    pattern: 人手検証
+  - expected: タイトル
+    pattern: /(?<!「[^」]*)題名(?!から読んだ)/
+    prh: 画面の文言を「」で引くときと、文言と同じ名前の要素（題名から読んだ利用者）は除く
+  - expected: 配置先
+    pattern: 置き場
+  - expected: キー
+    pattern: /(?<=アカウントの?\s?)鍵/
+    prh: Google Cloud の文書の表記（サービス アカウント キー）に合わせる
