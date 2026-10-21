@@ -248,12 +248,13 @@ func TestSchedulesChangeOccurrence(t *testing.T) {
 
 func TestSchedulesCancel(t *testing.T) {
 	s := seeded()
-	uc, _ := newSchedules(s)
+	uc, tx := newSchedules(s)
 	ctx := editorCtx()
 	created, err := uc.Create(ctx, facilityID, normalSlot())
 	if err != nil {
 		t.Fatal(err)
 	}
+	before := tx.calls
 	if _, err := uc.Cancel(ctx, "MISSING", "体調不良"); !errors.Is(err, domain.ErrNotFound) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
 	}
@@ -262,6 +263,9 @@ func TestSchedulesCancel(t *testing.T) {
 	}
 	if _, err := uc.Cancel(ctx, created.ID, "体調不良"); err != nil {
 		t.Fatal(err)
+	}
+	if tx.calls == before {
+		t.Error("キャンセルがトランザクションの中で予定をロックしていない")
 	}
 	if _, err := uc.Cancel(ctx, created.ID, "体調不良"); !errors.Is(err, domain.ErrConflict) {
 		t.Fatalf("err = %v, want ErrConflict", err)
