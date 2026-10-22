@@ -23,7 +23,7 @@ export const linkErrorMessage = (error: unknown) => {
   if (statusOf(error) === 403) return FORBIDDEN_MESSAGE
   switch (codeOf(error)) {
     case 'calendar_unreadable':
-      return 'このカレンダーを読めません。カレンダーを buddy のサービスアカウントに共有したかと、カレンダーの ID が合っているかを確かめてください。'
+      return 'このカレンダーを読めません。カレンダーをこの事業所の buddy のサービスアカウントに共有したかと、カレンダーの ID が合っているかを確かめてください。'
     case 'calendar_taken':
       return 'このカレンダーは、ほかの職員に結び付いています。'
     case 'staff_has_calendar':
@@ -52,7 +52,7 @@ export const previewErrorMessage = (error: unknown, staffName: string) => {
     case 'calendar_unreadable':
       return `${staffName} の Google カレンダーを読めません。カレンダーの共有が外れていないかを、職員に確かめてください。`
     case 'calendar_not_configured':
-      return 'サービスアカウントが設定されていないので、予定を読めません。buddy を動かしている管理者に、Google カレンダーの設定を頼んでください。'
+      return 'この事業所のサービスアカウントが設定されていないので、予定を読めません。buddy を動かしている管理者に、Google カレンダーの設定を頼んでください。'
     case 'not_found':
       return 'この職員のカレンダーの結び付けが外れています。画面を読み直してください。'
     default:
@@ -90,7 +90,7 @@ export const acceptErrorMessage = (error: unknown) => {
     case 'calendar_unreadable':
       return 'Google カレンダーを読めません。カレンダーの共有が外れていないかを、職員に確かめてください。'
     case 'calendar_not_configured':
-      return 'サービスアカウントが設定されていないので、Google カレンダーを読めません。buddy を動かしている管理者に、Google カレンダーの設定を頼んでください。'
+      return 'この事業所のサービスアカウントが設定されていないので、Google カレンダーを読めません。buddy を動かしている管理者に、Google カレンダーの設定を頼んでください。'
     default:
       return 'Google カレンダーの内容に合わせられませんでした。時間をおいて、もう一度試してください。'
   }

@@ -36,7 +36,7 @@ func (r *FacilityRepository) GetByOrgID(ctx context.Context, orgID string) (orga
 }
 
 func toFacility(f sqlcgen.Facility) organization.Facility {
-	return organization.Facility{ID: f.ID, Name: f.Name, CreatedAt: f.CreatedAt, UpdatedAt: f.UpdatedAt}
+	return organization.Facility{ID: f.ID, Name: f.Name, OrgID: deref(f.OrgID), CreatedAt: f.CreatedAt, UpdatedAt: f.UpdatedAt}
 }
 
 // DepartmentRepository は、organization.DepartmentRepository を実装する。

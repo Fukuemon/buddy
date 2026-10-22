@@ -84,16 +84,14 @@ type VisitInfos interface {
 // Deps は、Usecase が使うリポジトリと、ほかの機能のデータを読み書きする小さなインターフェイスである。
 type Deps struct {
 	Calendars Repository
-	// Source は、外部のカレンダーを読む。設定が無ければ nil で、読む操作は ErrNotConfigured を返す。
-	Source EventSource
-	// ServiceAccount は、職員がカレンダーを共有する相手のメールアドレスで、設定が無ければ空である。
-	ServiceAccount string
-	Staff          kernel.Finder[staff.Ref]
-	Patients       Patients
-	ServiceCodes   ServiceCodes
-	Types          Types
-	Schedules      Schedules
-	Recurring      Recurring
+	// Accounts は、事業所のサービスアカウントで外部のカレンダーを読む。設定が無ければ nil で、読む操作は ErrNotConfigured を返す。
+	Accounts     Accounts
+	Staff        kernel.Finder[staff.Ref]
+	Patients     Patients
+	ServiceCodes ServiceCodes
+	Types        Types
+	Schedules    Schedules
+	Recurring    Recurring
 	// RecurringSchedules は、前の取り込みで繰り返しのまま取り込んだ予定と、その除外の日を読む。
 	RecurringSchedules kernel.Finder[schedule.RecurringDetail]
 	Visits             VisitInfos
@@ -118,15 +116,23 @@ func NewUsecase(deps Deps, tx tx.Transactor, ids kernel.IDGenerator, guard organ
 	}}
 }
 
-// ServiceAccount は、職員がカレンダーを共有する相手のメールアドレスを返す。設定が無ければ ErrNotConfigured を返す。
-func (u *Usecase) ServiceAccount(ctx context.Context) (string, error) {
+// ServiceAccount は、事業所 facilityID の職員がカレンダーを共有する相手のメールアドレスを返す。設定が無ければ ErrNotConfigured を返す。
+func (u *Usecase) ServiceAccount(ctx context.Context, facilityID string) (string, error) {
 	if err := u.guard(ctx); err != nil {
 		return "", err
 	}
-	if u.deps.Source == nil || u.deps.ServiceAccount == "" {
+	if u.deps.Accounts == nil {
 		return "", ErrNotConfigured
 	}
-	return u.deps.ServiceAccount, nil
+	return u.deps.Accounts.ServiceAccount(ctx, facilityID)
+}
+
+// source は、事業所 facilityID のサービスアカウントで外部のカレンダーを読む EventSource を返す。設定が無ければ ErrNotConfigured を返す。
+func (u *Usecase) source(ctx context.Context, facilityID string) (EventSource, error) {
+	if u.deps.Accounts == nil {
+		return nil, ErrNotConfigured
+	}
+	return u.deps.Accounts.Source(ctx, facilityID)
 }
 
 // List は、事業所の外していないカレンダーを、最後の取り込みを付けて返す。
@@ -137,30 +143,32 @@ func (u *Usecase) List(ctx context.Context, facilityID string) ([]ExternalCalend
 	return u.deps.Calendars.ListByFacility(ctx, facilityID)
 }
 
-// Check は、calendarID のカレンダーを読めるかを確かめる。読めないときは ErrUnreadable か ErrUnavailable を包んだエラーを返す。
-func (u *Usecase) Check(ctx context.Context, calendarID string) error {
+// Check は、事業所 facilityID のサービスアカウントで calendarID のカレンダーを読めるかを確かめる。
+// 読めないときは ErrUnreadable か ErrUnavailable を包んだエラーを返す。
+func (u *Usecase) Check(ctx context.Context, facilityID, calendarID string) error {
 	if err := u.guard(ctx); err != nil {
 		return err
 	}
-	calendarID, err := u.checkSource(calendarID)
+	src, calendarID, err := u.checkSource(ctx, facilityID, calendarID)
 	if err != nil {
 		return err
 	}
-	return u.deps.Source.Check(ctx, calendarID)
+	return src.Check(ctx, calendarID)
 }
 
-func (u *Usecase) checkSource(calendarID string) (string, error) {
-	if u.deps.Source == nil {
-		return "", ErrNotConfigured
+func (u *Usecase) checkSource(ctx context.Context, facilityID, calendarID string) (EventSource, string, error) {
+	src, err := u.source(ctx, facilityID)
+	if err != nil {
+		return nil, "", err
 	}
 	calendarID = strings.TrimSpace(calendarID)
 	if err := kernel.RequireText("カレンダーの ID", calendarID, maxCalendarIDLen); err != nil {
-		return "", err
+		return nil, "", err
 	}
-	return calendarID, nil
+	return src, calendarID, nil
 }
 
-// Link は、事業所の職員 staffID に、calendarID のカレンダーを結び付ける。読めるかを確かめてから書く。
+// Link は、事業所の職員 staffID に、calendarID のカレンダーを結び付ける。事業所のサービスアカウントで読めるかを確かめてから書く。
 // 外した同じカレンダーが同じ職員にあれば、結び付け直す。
 // 職員が見つからないか別の事業所の職員のときは入力のエラーを、職員にほかのカレンダーがあるか、
 // カレンダーがほかの職員に結び付いているか、すでに結び付いているときは apperr.ErrConflict を返す。
@@ -168,7 +176,7 @@ func (u *Usecase) Link(ctx context.Context, facilityID, staffID, calendarID stri
 	if err := u.guard(ctx); err != nil {
 		return ExternalCalendar{}, err
 	}
-	calendarID, err := u.checkSource(calendarID)
+	src, calendarID, err := u.checkSource(ctx, facilityID, calendarID)
 	if err != nil {
 		return ExternalCalendar{}, err
 	}
@@ -179,7 +187,7 @@ func (u *Usecase) Link(ctx context.Context, facilityID, staffID, calendarID stri
 	if err := apperr.SameFacility("職員", st.ID, st.FacilityID, facilityID); err != nil {
 		return ExternalCalendar{}, err
 	}
-	if err := u.deps.Source.Check(ctx, calendarID); err != nil {
+	if err := src.Check(ctx, calendarID); err != nil {
 		return ExternalCalendar{}, err
 	}
 	var linked ExternalCalendar
@@ -250,7 +258,11 @@ func (u *Usecase) Preview(ctx context.Context, id string, rng Range) (Preview, e
 	if err != nil {
 		return Preview{}, err
 	}
-	p, _, err := u.plan(ctx, c, rng)
+	src, err := u.source(ctx, c.FacilityID)
+	if err != nil {
+		return Preview{}, err
+	}
+	p, _, err := u.plan(ctx, src, c, rng)
 	if err != nil {
 		return Preview{}, err
 	}
@@ -279,8 +291,9 @@ func (u *Usecase) Import(ctx context.Context, id string, rng Range, decisions []
 	if err != nil {
 		return ImportResult{}, err
 	}
-	if u.deps.Source == nil {
-		return ImportResult{}, ErrNotConfigured
+	src, err := u.source(ctx, c.FacilityID)
+	if err != nil {
+		return ImportResult{}, err
 	}
 	run := ImportRun{
 		ID: u.ids.NewID(), FacilityID: c.FacilityID, ExternalCalendarID: c.ID, RequestedBy: p.Staff.ID,
@@ -302,7 +315,7 @@ func (u *Usecase) Import(ctx context.Context, id string, rng Range, decisions []
 	if err != nil {
 		return ImportResult{}, err
 	}
-	res, err := u.importPlan(ctx, c, rng, decisions, run)
+	res, err := u.importPlan(ctx, src, c, rng, decisions, run)
 	if err != nil {
 		run.Status = RunFailed
 		// 取り込みのエラーを返すので、記録の更新のエラーは返さない。止まった記録は staleRunAfter の後に次の取り込みを止めなくなる。
@@ -312,8 +325,8 @@ func (u *Usecase) Import(ctx context.Context, id string, rng Range, decisions []
 	return res, nil
 }
 
-func (u *Usecase) importPlan(ctx context.Context, c ExternalCalendar, rng Range, decisions []Decision, run ImportRun) (ImportResult, error) {
-	p, patients, err := u.plan(ctx, c, rng)
+func (u *Usecase) importPlan(ctx context.Context, src EventSource, c ExternalCalendar, rng Range, decisions []Decision, run ImportRun) (ImportResult, error) {
+	p, patients, err := u.plan(ctx, src, c, rng)
 	if err != nil {
 		return ImportResult{}, err
 	}
@@ -336,18 +349,15 @@ func (u *Usecase) importPlan(ctx context.Context, c ExternalCalendar, rng Range,
 	return res, err
 }
 
-// plan は、カレンダー c の期間 rng の予定を読み、読み替えた plan と、事業所の利用者を返す。
-func (u *Usecase) plan(ctx context.Context, c ExternalCalendar, rng Range) (plan, []PatientRef, error) {
-	if u.deps.Source == nil {
-		return plan{}, nil, ErrNotConfigured
-	}
-	events, err := u.deps.Source.Events(ctx, c.CalendarID, rng.TimeMin(), rng.TimeMax())
+// plan は、カレンダー c の期間 rng の予定を src で読み、読み替えた plan と、事業所の利用者を返す。
+func (u *Usecase) plan(ctx context.Context, src EventSource, c ExternalCalendar, rng Range) (plan, []PatientRef, error) {
+	events, err := src.Events(ctx, c.CalendarID, rng.TimeMin(), rng.TimeMax())
 	if err != nil {
 		return plan{}, nil, err
 	}
 	// 期間の中の回を期間の外へ動かした例外の回は、期間で読むと返らないので、前後を広げて読み、元の日付が期間の中のものを足す
 	wide := rng.widened()
-	around, err := u.deps.Source.Events(ctx, c.CalendarID, wide.TimeMin(), wide.TimeMax())
+	around, err := src.Events(ctx, c.CalendarID, wide.TimeMin(), wide.TimeMax())
 	if err != nil {
 		return plan{}, nil, err
 	}
@@ -361,7 +371,7 @@ func (u *Usecase) plan(ctx context.Context, c ExternalCalendar, rng Range) (plan
 		in.links[l.ExternalEventID] = l
 	}
 	for _, id := range parentsToExpand(events, in.links) {
-		instances, err := u.deps.Source.Instances(ctx, c.CalendarID, id, rng.TimeMin(), rng.TimeMax())
+		instances, err := src.Instances(ctx, c.CalendarID, id, rng.TimeMin(), rng.TimeMax())
 		if err != nil {
 			return plan{}, nil, err
 		}
@@ -588,9 +598,6 @@ func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 	} else if d.Cancel != nil {
 		return Export{}, errNotAcceptable
 	}
-	if u.deps.Source == nil {
-		return Export{}, ErrNotConfigured
-	}
 	l, err := u.deps.Calendars.LinkBySchedule(ctx, e.ScheduleID)
 	if errors.Is(err, apperr.ErrNotFound) {
 		return Export{}, errNotAcceptable
@@ -599,6 +606,11 @@ func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 		return Export{}, err
 	}
 	c, err := u.deps.Calendars.Get(ctx, l.ExternalCalendarID)
+	if err != nil {
+		return Export{}, err
+	}
+	// 外部の予定は、予定の対応のカレンダーの事業所のサービスアカウントで読む
+	src, err := u.source(ctx, c.FacilityID)
 	if err != nil {
 		return Export{}, err
 	}
@@ -621,7 +633,7 @@ func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 		}
 		callCtx, cancel := context.WithTimeout(ctx, acceptCallTimeout)
 		defer cancel()
-		ev, err := u.externalEvent(callCtx, c, l)
+		ev, err := externalEvent(callCtx, src, c, l)
 		if err != nil {
 			return err
 		}
@@ -654,12 +666,12 @@ func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 
 // externalEvent は、予定の対応 l の外部の予定を読む。予定が見つからず、カレンダーは読めるときは、予定が消されたとみなし、
 // 取り消した予定を返す。Google は、消した予定に 404 を返すことがあるためである。
-func (u *Usecase) externalEvent(ctx context.Context, c ExternalCalendar, l Link) (Event, error) {
-	ev, err := u.deps.Source.Event(ctx, c.CalendarID, l.ExternalEventID)
+func externalEvent(ctx context.Context, src EventSource, c ExternalCalendar, l Link) (Event, error) {
+	ev, err := src.Event(ctx, c.CalendarID, l.ExternalEventID)
 	if !errors.Is(err, ErrEventNotFound) {
 		return ev, err
 	}
-	if cerr := u.deps.Source.Check(ctx, c.CalendarID); cerr != nil {
+	if cerr := src.Check(ctx, c.CalendarID); cerr != nil {
 		return Event{}, err
 	}
 	return Event{ID: l.ExternalEventID, Status: StatusCancelled, ETag: l.ETag}, nil

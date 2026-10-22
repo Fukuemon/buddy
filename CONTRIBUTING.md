@@ -72,7 +72,8 @@ docker compose up --build --wait
 | idp | `http://localhost:9000/buddy` | `IDP_PORT` |
 | postgres | `localhost:15432` | `POSTGRES_PORT` |
 | valkey | `localhost:6379` | `VALKEY_PORT` |
-| fake-google（フェイクの Google Calendar API。`/view` で書き出した予定を見る） | `http://localhost:8085/view` | `FAKE_GOOGLE_PORT` |
+| calendarpit（Google Calendar API と OAuth をローカル環境で再現する。管理の画面で職員のカレンダーと予定を見て、直す） | `http://localhost:4173` | `CALENDARPIT_PORT` |
+| gcalhold（予定の API と calendarpit の間の中継。E2E が Google の変更を予定の API に渡さないようにする） | `http://localhost:8085` | `GCALHOLD_PORT` |
 
 - IdP は navikt/mock-oauth2-server である。ログインの画面で入れた名前が `sub` になり、ほかのクレームは `compose/idp.json` の値になる。
   - デフォルトのクレームは、シードの職員の青木 陽菜（組織 `org-sample`）を指す。ログインの画面のクレームの欄に書いた値は、`compose/idp.json` のクレームを上書きしない。
@@ -81,7 +82,7 @@ docker compose up --build --wait
   - シードは、事業所のレコードが無い空の DB にだけ適用される。シードを変えた後は、`docker compose down -v` で DB を作り直す。
 - API が受けるトークンの `iss` は `http://idp:9000/buddy` である。IdP は `iss` をトークンのリクエストの Host から決めるため、トークンはコンテナの間の名前 `idp` で取る。
 - `http://localhost:3000` を開くと IdP のログインの画面へ移る。名前に `dev-aoki` を入れると、青木 陽菜としてログインする。
-- データを消して最初からにするときは、`docker compose down -v` で PostgreSQL のボリュームを消す。
+- データを消して最初からにするときは、`docker compose down -v` で PostgreSQL と calendarpit のボリュームを消す。
 
 予定の API を手で呼ぶときは、認可コードのフローでトークンを取る。
 

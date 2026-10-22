@@ -1,4 +1,4 @@
-// Package gcaltest は、テストとローカル環境の compose に使う、Calendar API のフェイクを提供する。
+// Package gcaltest は、テストに使う、Calendar API のフェイクを提供する。
 // 予定の読み出し（events.list、events.instances、events.get）と書き込み（events.insert、events.patch、events.delete）に答える。
 // events.list は、syncToken による増分の取得にも答える。
 package gcaltest
@@ -21,22 +21,19 @@ import (
 // Server は、Calendar API のフェイクである。期間（timeMin、timeMax）では絞らない。
 // 書き込みは、リクエストの If-Match が今の etag と違えば 412 を返し、書くたびに etag を新しくする。
 // 全ての予定を読むと、最後のページに nextSyncToken を返す。syncToken を付けて読むと、そのトークンの後に変わった予定を、
-// 消した予定も含めて 1 ページで返す。JSON から読んだ予定は、最初からあった予定として扱う。
+// 消した予定も含めて 1 ページで返す。最初から持たせた予定は、最初からあった予定として扱う。
 type Server struct {
 	// Calendars は、カレンダー ID ごとの、ページごとの予定である。2 ページ目以降は nextPageToken で返す。
 	// 無いカレンダーには 404 を返す。作った予定は最後のページに足す。
-	Calendars map[string][][]*calendar.Event `json:"calendars"`
+	Calendars map[string][][]*calendar.Event
 	// Instances は、繰り返しの親の予定の ID ごとの回である。1 ページで返す。無い予定には 404 を返す。
-	Instances map[string][]*calendar.Event `json:"instances"`
+	Instances map[string][]*calendar.Event
 	// AccessRoles は、カレンダー ID ごとのレスポンスの accessRole である。無ければ reader を返す。
-	AccessRoles map[string]string `json:"accessRoles"`
+	AccessRoles map[string]string
 	// Status が 0 でなければ、全てのリクエストにその状態のエラーのレスポンスを返す。
-	Status int `json:"status"`
+	Status int
 	// Failures は、次からの書き込みのリクエストに順に返すエラーの状態である。返した値は消す。
-	Failures []int `json:"failures"`
-	// HoldChanges が true なら、増分の取得に、変わった予定を返さず、受け取ったトークンをそのまま返す。
-	// 予定の API が Google の変更を読む前に、buddy の変更を書き出させる試験に使う。
-	HoldChanges bool `json:"holdChanges"`
+	Failures []int
 
 	mu      sync.Mutex
 	queries []url.Values
@@ -121,20 +118,6 @@ func (s *Server) Delete(calendarID, eventID string) bool {
 	return true
 }
 
-// SetHoldChanges は、HoldChanges を変える。
-func (s *Server) SetHoldChanges(hold bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.HoldChanges = hold
-}
-
-// Holding は、HoldChanges を返す。
-func (s *Server) Holding() bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.HoldChanges
-}
-
 // ExpireSyncTokens は、これまでに返した同期のトークンを切らし、次に使われたときに 410 を返す。
 func (s *Server) ExpireSyncTokens() {
 	s.mu.Lock()
@@ -209,7 +192,7 @@ func (s *Server) find(calendarID, eventID string) *calendar.Event {
 	return nil
 }
 
-// nextETag は、新しい etag を返す。JSON から読んだ予定の etag と重ならないよう、w を前に付ける。
+// nextETag は、新しい etag を返す。最初から持たせた予定の etag と重ならないよう、w を前に付ける。
 func (s *Server) nextETag() string {
 	s.etags++
 	return strconv.Quote("w" + strconv.Itoa(s.etags))
@@ -224,17 +207,6 @@ func (s *Server) Events(calendarID string) []calendar.Event {
 		for _, ev := range page {
 			out = append(out, *ev)
 		}
-	}
-	return out
-}
-
-// CalendarIDs は、カレンダーの ID を返す。
-func (s *Server) CalendarIDs() []string {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	out := make([]string, 0, len(s.Calendars))
-	for id := range s.Calendars {
-		out = append(out, id)
 	}
 	return out
 }
@@ -297,10 +269,6 @@ func (s *Server) serveChanges(w http.ResponseWriter, cal, token string, q url.Va
 	body := calendar.Events{AccessRole: "reader", NextSyncToken: token}
 	if role, ok := s.AccessRoles[cal]; ok {
 		body.AccessRole = role
-	}
-	if s.HoldChanges {
-		writeJSON(w, http.StatusOK, body)
-		return
 	}
 	body.Items = []*calendar.Event{}
 	for _, page := range s.Calendars[cal] {

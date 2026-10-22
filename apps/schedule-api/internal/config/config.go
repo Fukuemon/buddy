@@ -22,11 +22,12 @@ type DB struct {
 	Name     string
 }
 
-// Calendar は、Google カレンダーを読む設定である。ServiceAccount が空なら、Google カレンダーを読まない。
+// Calendar は、Google カレンダーを読む設定である。ServiceAccountsFile が空なら、Google カレンダーを読まない。
 type Calendar struct {
-	// ServiceAccount は、職員がカレンダーを共有する相手のサービスアカウントのメールアドレスである。
-	ServiceAccount string
-	// Endpoint は、Calendar API の代わりに呼ぶ URL で、フェイクの API に向けるときだけ持つ。
+	// ServiceAccountsFile は、組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応（JSON）のパスである。
+	// 形は gcalauth.LoadAccounts にある。
+	ServiceAccountsFile string
+	// Endpoint は、Calendar API の代わりに呼ぶ URL で、ローカル環境の calendarpit に向けるときだけ持つ。
 	Endpoint string
 	// ExportEnabled は、予定を Google カレンダーに書き出すかである。false なら、書き出しの待ちを積まず、書き出しの処理も動かさない。
 	ExportEnabled bool
@@ -61,12 +62,12 @@ type Config struct {
 //   - OIDC_ORG_CLAIM: 組織の ID を持つクレームの名前。デフォルトは org_id
 //   - CORS_ALLOW_ORIGINS: カンマで区切ったオリジン。空なら CORS のヘッダーを返さない
 //   - LOG_LEVEL: debug、info、warn、error。デフォルトは info
-//   - GOOGLE_CALENDAR_SERVICE_ACCOUNT: 職員がカレンダーを共有する相手のサービスアカウントのメールアドレス。
-//     空なら Google カレンダーを読まない。認証の情報は Application Default Credentials で読む
-//   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。フェイクの API で試すためのもので、認証をしない。
-//     GOOGLE_CALENDAR_SERVICE_ACCOUNT と一緒に渡す
+//   - GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE: 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応（JSON）のパス。
+//     空なら Google カレンダーを読まない。Application Default Credentials で認証し、事業所のサービスアカウントになりすます（ADR-0012）
+//   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit で試すためのもので、GOOGLE_APPLICATION_CREDENTIALS を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使い、渡さなければ認証をしない。
+//     GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE と一緒に渡す
 //   - GOOGLE_CALENDAR_EXPORT_ENABLED: true なら、予定を Google カレンダーに書き出す。デフォルトは false。
-//     GOOGLE_CALENDAR_SERVICE_ACCOUNT と一緒に渡し、認証の情報のスコープは calendar.events になる
+//     GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE と一緒に渡し、認証の情報のスコープは calendar.events になる
 //   - GOOGLE_CALENDAR_EXPORT_INTERVAL: 予定の書き出しの待ちを確かめる間隔（Go の時間の書式。例は 30s）。デフォルトは 30s。1s 以上にする
 //   - GOOGLE_CALENDAR_SYNC_ENABLED: true なら、Google カレンダーの変更を buddy の予定に当てる。デフォルトは false。
 //     GOOGLE_CALENDAR_EXPORT_ENABLED を true にして渡す
@@ -133,8 +134,8 @@ func load(getenv func(string) string, api bool) (Config, error) {
 		return Config{}, errors.New("LOG_LEVEL は debug、info、warn、error のいずれかです")
 	}
 	c.Calendar = Calendar{
-		ServiceAccount: strings.TrimSpace(getenv("GOOGLE_CALENDAR_SERVICE_ACCOUNT")),
-		Endpoint:       strings.TrimSpace(getenv("GOOGLE_CALENDAR_ENDPOINT")),
+		ServiceAccountsFile: strings.TrimSpace(getenv("GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE")),
+		Endpoint:            strings.TrimSpace(getenv("GOOGLE_CALENDAR_ENDPOINT")),
 	}
 	interval, err := time.ParseDuration(get("GOOGLE_CALENDAR_EXPORT_INTERVAL", "30s"))
 	if err != nil || interval < time.Second {
@@ -144,8 +145,8 @@ func load(getenv func(string) string, api bool) (Config, error) {
 	if c.Calendar.ExportEnabled, err = boolOf(getenv, "GOOGLE_CALENDAR_EXPORT_ENABLED"); err != nil {
 		return Config{}, err
 	}
-	if c.Calendar.ExportEnabled && c.Calendar.ServiceAccount == "" {
-		return Config{}, errors.New("GOOGLE_CALENDAR_EXPORT_ENABLED は GOOGLE_CALENDAR_SERVICE_ACCOUNT と一緒に渡します")
+	if c.Calendar.ExportEnabled && c.Calendar.ServiceAccountsFile == "" {
+		return Config{}, errors.New("GOOGLE_CALENDAR_EXPORT_ENABLED は GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE と一緒に渡します")
 	}
 	syncInterval, err := time.ParseDuration(get("GOOGLE_CALENDAR_SYNC_INTERVAL", "2m"))
 	if err != nil || syncInterval < time.Second {
@@ -159,8 +160,8 @@ func load(getenv func(string) string, api bool) (Config, error) {
 	if c.Calendar.SyncEnabled && !c.Calendar.ExportEnabled {
 		return Config{}, errors.New("GOOGLE_CALENDAR_SYNC_ENABLED は GOOGLE_CALENDAR_EXPORT_ENABLED を true にして渡します")
 	}
-	if c.Calendar.Endpoint != "" && c.Calendar.ServiceAccount == "" {
-		return Config{}, errors.New("GOOGLE_CALENDAR_ENDPOINT は GOOGLE_CALENDAR_SERVICE_ACCOUNT と一緒に渡します")
+	if c.Calendar.Endpoint != "" && c.Calendar.ServiceAccountsFile == "" {
+		return Config{}, errors.New("GOOGLE_CALENDAR_ENDPOINT は GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE と一緒に渡します")
 	}
 	return c, nil
 }

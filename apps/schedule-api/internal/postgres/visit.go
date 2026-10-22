@@ -125,7 +125,7 @@ type visitDetailColumns struct {
 	ServiceCode       *string
 }
 
-// deref は、ビューの外部結合で NULL になりうるカラムの値を返す。訪問の情報があれば、これらのカラムは NULL でない。
+// deref は、NULL になりうる列の値を返し、NULL なら空を返す。
 func deref(s *string) string {
 	if s == nil {
 		return ""

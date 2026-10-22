@@ -9,9 +9,9 @@ import (
 
 // CalendarUsecase は、外部のカレンダーのハンドラが使う操作である。
 type CalendarUsecase interface {
-	ServiceAccount(ctx context.Context) (string, error)
+	ServiceAccount(ctx context.Context, facilityID string) (string, error)
 	List(ctx context.Context, facilityID string) ([]calendar.ExternalCalendar, error)
-	Check(ctx context.Context, calendarID string) error
+	Check(ctx context.Context, facilityID, calendarID string) error
 	Link(ctx context.Context, facilityID, staffID, calendarID string) (calendar.ExternalCalendar, error)
 	Unlink(ctx context.Context, id string) error
 	Preview(ctx context.Context, id string, rng calendar.Range) (calendar.Preview, error)
@@ -125,8 +125,8 @@ func importRange(start, end string) (calendar.Range, error) {
 	return calendar.NewRange(s, e)
 }
 
-func (s server) GetCalendarServiceAccount(ctx context.Context, _ openapi.GetCalendarServiceAccountRequestObject) (openapi.GetCalendarServiceAccountResponseObject, error) {
-	email, err := s.u.Calendars.ServiceAccount(ctx)
+func (s server) GetCalendarServiceAccount(ctx context.Context, req openapi.GetCalendarServiceAccountRequestObject) (openapi.GetCalendarServiceAccountResponseObject, error) {
+	email, err := s.u.Calendars.ServiceAccount(ctx, req.FacilityId)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +150,7 @@ func (s server) CreateExternalCalendar(ctx context.Context, req openapi.CreateEx
 }
 
 func (s server) CreateExternalCalendarCheck(ctx context.Context, req openapi.CreateExternalCalendarCheckRequestObject) (openapi.CreateExternalCalendarCheckResponseObject, error) {
-	if err := s.u.Calendars.Check(ctx, req.Body.CalendarId); err != nil {
+	if err := s.u.Calendars.Check(ctx, req.FacilityId, req.Body.CalendarId); err != nil {
 		return nil, err
 	}
 	return openapi.CreateExternalCalendarCheck200JSONResponse{Readable: true}, nil

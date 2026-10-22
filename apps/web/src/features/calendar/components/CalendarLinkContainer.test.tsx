@@ -44,7 +44,7 @@ describe('CalendarLinkContainer', () => {
     await userEvent.click(within(dialog).getByTestId('calendar-link-check'))
 
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(
-      'このカレンダーを読めません。カレンダーを buddy のサービスアカウントに共有したかと、カレンダーの ID が合っているかを確かめてください。',
+      'このカレンダーを読めません。カレンダーをこの事業所の buddy のサービスアカウントに共有したかと、カレンダーの ID が合っているかを確かめてください。',
     )
     expect(within(dialog).getByTestId('calendar-link-submit')).toHaveAttribute(
       'aria-disabled',

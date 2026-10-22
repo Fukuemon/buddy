@@ -4,7 +4,9 @@ package gcal
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -46,6 +48,7 @@ type Calendar struct {
 // LoadCalendars は、照合の対象のカレンダーの一覧を JSON のファイルから読む。
 // 形は [{"calendar_id": "...", "org_id": "...", "staff_name": "..."}] である。
 // 一覧が空、calendar_id が空か重なる、org_id が空、知らないキーがある、のいずれかではエラーを返す。
+// エラーの文は、カレンダー ID（職員のメールアドレスのことがある）を含まない。
 func LoadCalendars(path string) ([]Calendar, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -67,10 +70,10 @@ func LoadCalendars(path string) ([]Calendar, error) {
 			return nil, fmt.Errorf("カレンダーの設定 %s の %d 件目の calendar_id が空である", path, i+1)
 		}
 		if strings.TrimSpace(c.OrgID) == "" {
-			return nil, fmt.Errorf("カレンダーの設定 %s の calendar_id %s の org_id が空である", path, c.ID)
+			return nil, fmt.Errorf("カレンダーの設定 %s の %d 件目の org_id が空である", path, i+1)
 		}
 		if seen[c.ID] {
-			return nil, fmt.Errorf("カレンダーの設定 %s の calendar_id %s が重なっている", path, c.ID)
+			return nil, fmt.Errorf("カレンダーの設定 %s の %d 件目の calendar_id が前の件と重なっている", path, i+1)
 		}
 		seen[c.ID] = true
 	}
@@ -97,20 +100,25 @@ func (m Month) String() string {
 	return fmt.Sprintf("%04d-%02d", m.Year, int(m.Month))
 }
 
-// Reader は、Calendar API で、設定したカレンダーの予定を読む。
+// Services は、組織 orgID のサービスアカウントで Calendar API を呼ぶ calendar.Service を返す。実装は gcalauth.Clients である。
+type Services interface {
+	Service(orgID string) (*calendar.Service, error)
+}
+
+// Reader は、Calendar API で、設定したカレンダーの予定を、カレンダーの組織のサービスアカウントで読む（ADR-0012）。
 type Reader struct {
-	svc       *calendar.Service
+	services  Services
 	calendars []Calendar
 }
 
-// NewReader は、svc で calendars の予定を読む Reader を返す。
-// svc の認証は呼び出す側が決める。予定を読むには calendar.readonly のスコープが要る。
-func NewReader(svc *calendar.Service, calendars []Calendar) *Reader {
-	return &Reader{svc: svc, calendars: calendars}
+// NewReader は、services が返す組織の calendar.Service で calendars の予定を読む Reader を返す。
+// 認証は services が決める。予定を読むには calendar.readonly のスコープが要る。
+func NewReader(services Services, calendars []Calendar) *Reader {
+	return &Reader{services: services, calendars: calendars}
 }
 
-// Month は、組織 orgID のカレンダーから、month の 1 日 00:00 から月末 24:00（Asia/Tokyo）に始まる予定を返す
-// check.ScheduleSource である。orgID のカレンダーが無ければ false を返す。
+// Month は、組織 orgID のカレンダーから、month の 1 日 00:00 から月末 24:00（Asia/Tokyo）に始まる予定を、
+// 組織 orgID のサービスアカウントで返す check.ScheduleSource である。orgID のカレンダーが無ければ false を返す。
 func (r *Reader) Month(orgID string, month Month) (check.ScheduleSource, bool) {
 	var cals []Calendar
 	for _, c := range r.calendars {
@@ -122,11 +130,13 @@ func (r *Reader) Month(orgID string, month Month) (check.ScheduleSource, bool) {
 		return nil, false
 	}
 	start := time.Date(month.Year, month.Month, 1, 0, 0, 0, 0, tokyo)
-	return monthSource{svc: r.svc, calendars: cals, start: start, end: start.AddDate(0, 1, 0)}, true
+	svc, err := r.services.Service(orgID)
+	return monthSource{svc: svc, svcErr: err, calendars: cals, start: start, end: start.AddDate(0, 1, 0)}, true
 }
 
 type monthSource struct {
 	svc        *calendar.Service
+	svcErr     error
 	calendars  []Calendar
 	start, end time.Time
 }
@@ -134,13 +144,17 @@ type monthSource struct {
 // Schedules は、カレンダーごとに予定を読み、訪問の予定を Record にする。
 // 終日の予定、取り消された予定、タイトルに `【` と `】` の両方を含まない予定は除く。
 // タイトルや時刻を解釈できない予定は、照合に混ぜずに record.Warning で返す。
-// Calendar API の呼び出しに失敗すると、*check.SourceError を返す。
+// 組織のサービスアカウントの設定が無いときと、Calendar API の呼び出しに失敗したときは、*check.SourceError を返す。
+// エラーの文は、カレンダー ID（職員のメールアドレスのことがある）を含まない。
 func (s monthSource) Schedules(ctx context.Context) ([]record.Record, []record.Warning, error) {
+	if s.svcErr != nil {
+		return nil, nil, &check.SourceError{Message: "組織のサービスアカウントで Calendar API を呼べない", Err: s.svcErr}
+	}
 	var (
 		recs  []record.Record
 		warns []record.Warning
 	)
-	for _, cal := range s.calendars {
+	for i, cal := range s.calendars {
 		staff := cal.StaffName
 		err := s.svc.Events.List(cal.ID).
 			TimeMin(s.start.Format(time.RFC3339)).
@@ -168,8 +182,12 @@ func (s monthSource) Schedules(ctx context.Context) ([]record.Record, []record.W
 				return nil
 			})
 		if err != nil {
+			// 通信のエラー（*url.Error）の文は、カレンダー ID を含むリクエストの URL を持つ。
+			if uerr, ok := errors.AsType[*url.Error](err); ok {
+				err = uerr.Err
+			}
 			return nil, nil, &check.SourceError{
-				Message: fmt.Sprintf("カレンダー %s の予定を取れない", cal.ID),
+				Message: fmt.Sprintf("組織の %d 件目のカレンダーの予定を取れない", i+1),
 				Err:     err,
 			}
 		}

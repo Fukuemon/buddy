@@ -115,12 +115,17 @@ func newEnv(t *testing.T, srv *gcaltest.Server) env {
 	return e
 }
 
-// withSource は、e の Store の上で、source で予定を読む Usecase を作る。
+// withSource は、e の Store の上で、自分の事業所のサービスアカウントの source で予定を読む Usecase を作る。
 func withSource(e env, source calendar.EventSource) *calendar.Usecase {
+	return withAccounts(e, oneAccount(source, nil))
+}
+
+// withAccounts は、e の Store の上で、事業所ごとのサービスアカウント acc で予定を読む Usecase を作る。
+func withAccounts(e env, acc calendar.Accounts) *calendar.Usecase {
 	s := e.store
 	ids := &inmem.SeqIDs{}
 	return calendar.NewUsecase(calendar.Deps{
-		Calendars: inmem.Calendars{Store: s}, Source: source, ServiceAccount: "buddy@example.iam.gserviceaccount.com",
+		Calendars: inmem.Calendars{Store: s}, Accounts: acc,
 		Staff: inmem.StaffRefs{Store: s}, Patients: inmem.Patients{Store: s}, ServiceCodes: inmem.VisitMasters{Store: s},
 		Types: inmem.ScheduleTypes{Store: s}, Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, RecurringSchedules: inmem.RecurringSchedules{Store: s},
 		Visits: visit.NewWriter(visit.WriterDeps{
@@ -375,7 +380,7 @@ func TestPreviewErrors(t *testing.T) {
 	if _, err := e.uc.Preview(e.ctx, calID, e.rng); !errors.Is(err, calendar.ErrNotConfigured) {
 		t.Errorf("設定なし: err = %v, want ErrNotConfigured", err)
 	}
-	if _, err := e.uc.ServiceAccount(e.ctx); !errors.Is(err, calendar.ErrNotConfigured) {
+	if _, err := e.uc.ServiceAccount(e.ctx, inmem.FacilityID); !errors.Is(err, calendar.ErrNotConfigured) {
 		t.Errorf("設定なし: ServiceAccount の err = %v", err)
 	}
 	e = newEnv(t, fixture())

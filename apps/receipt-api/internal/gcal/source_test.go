@@ -4,9 +4,11 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"google.golang.org/api/calendar/v3"
+	"google.golang.org/api/option"
 
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/check"
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/gcal"
@@ -43,7 +45,7 @@ func mustMonth(t *testing.T, r *gcal.Reader, m gcal.Month) check.ScheduleSource 
 }
 
 func TestMonthOtherOrg(t *testing.T) {
-	r := gcal.NewReader(nil, []gcal.Calendar{{ID: "staff-a@example.com", OrgID: org}})
+	r := gcal.NewReader(gcaltest.Same{}, []gcal.Calendar{{ID: "staff-a@example.com", OrgID: org}})
 	if _, ok := r.Month("org-other", april(t)); ok {
 		t.Error("別の組織のカレンダーを読む")
 	}
@@ -51,7 +53,7 @@ func TestMonthOtherOrg(t *testing.T) {
 
 func TestSchedulesQuery(t *testing.T) {
 	srv := gcaltest.NewServer(map[string]gcaltest.Calendar{"staff-a@example.com": {Summary: "職員B"}})
-	r := gcal.NewReader(gcaltest.Start(t, srv), []gcal.Calendar{{ID: "staff-a@example.com", OrgID: org}})
+	r := gcal.NewReader(gcaltest.Same{Svc: gcaltest.Start(t, srv)}, []gcal.Calendar{{ID: "staff-a@example.com", OrgID: org}})
 	if _, _, err := mustMonth(t, r, april(t)).Schedules(t.Context()); err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +82,7 @@ func TestSchedulesMonthEnd(t *testing.T) {
 		{"2024-12", "2024-12-01T00:00:00+09:00", "2025-01-01T00:00:00+09:00"},
 	} {
 		srv := gcaltest.NewServer(map[string]gcaltest.Calendar{"staff-a@example.com": {}})
-		r := gcal.NewReader(gcaltest.Start(t, srv), []gcal.Calendar{{ID: "staff-a@example.com", OrgID: org, StaffName: "職員B"}})
+		r := gcal.NewReader(gcaltest.Same{Svc: gcaltest.Start(t, srv)}, []gcal.Calendar{{ID: "staff-a@example.com", OrgID: org, StaffName: "職員B"}})
 		m, err := gcal.ParseMonth(tt.month)
 		if err != nil {
 			t.Fatal(err)
@@ -130,7 +132,7 @@ func TestSchedulesEvents(t *testing.T) {
 			}},
 		},
 	})
-	r := gcal.NewReader(gcaltest.Start(t, srv), []gcal.Calendar{
+	r := gcal.NewReader(gcaltest.Same{Svc: gcaltest.Start(t, srv)}, []gcal.Calendar{
 		{ID: "staff-a@example.com", OrgID: org},
 		{ID: "staff-b@example.com", OrgID: org, StaffName: "職員E"},
 		{ID: "staff-c@example.com", OrgID: "org-other"},
@@ -184,7 +186,7 @@ func TestSchedulesEvents(t *testing.T) {
 
 func TestSchedulesSourceError(t *testing.T) {
 	srv := gcaltest.NewServer(nil)
-	r := gcal.NewReader(gcaltest.Start(t, srv), []gcal.Calendar{{ID: "unknown@example.com", OrgID: org}})
+	r := gcal.NewReader(gcaltest.Same{Svc: gcaltest.Start(t, srv)}, []gcal.Calendar{{ID: "unknown@example.com", OrgID: org}})
 	_, _, err := mustMonth(t, r, april(t)).Schedules(t.Context())
 	var se *check.SourceError
 	if !errors.As(err, &se) {
@@ -232,5 +234,60 @@ func TestLoadCalendars(t *testing.T) {
 		if _, err := gcal.LoadCalendars(write(t, bad)); err == nil {
 			t.Errorf("%s でエラーにならない", bad)
 		}
+	}
+}
+
+// orgServices は、組織ごとの calendar.Service を返す gcal.Services である。無い組織には誤りを返す。
+type orgServices map[string]*calendar.Service
+
+func (s orgServices) Service(orgID string) (*calendar.Service, error) {
+	svc, ok := s[orgID]
+	if !ok {
+		return nil, errors.New("組織のサービスアカウントの設定が無い")
+	}
+	return svc, nil
+}
+
+// 組織のカレンダーは、その組織のサービスアカウントで読み、別の組織のアカウントでは読まない。
+func TestMonthUsesOrgService(t *testing.T) {
+	srvA := gcaltest.NewServer(map[string]gcaltest.Calendar{"staff-a@example.com": {Summary: "職員A"}})
+	srvB := gcaltest.NewServer(map[string]gcaltest.Calendar{"staff-b@example.com": {Summary: "職員B"}})
+	r := gcal.NewReader(orgServices{"org-a": gcaltest.Start(t, srvA), "org-b": gcaltest.Start(t, srvB)}, []gcal.Calendar{
+		{ID: "staff-a@example.com", OrgID: "org-a"},
+		{ID: "staff-b@example.com", OrgID: "org-b"},
+	})
+	src, ok := r.Month("org-a", april(t))
+	if !ok {
+		t.Fatal("org-a のカレンダーが無い")
+	}
+	if _, _, err := src.Schedules(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	if len(srvA.Queries()) != 1 || len(srvB.Queries()) != 0 {
+		t.Errorf("要求の数: org-a のアカウント = %d, org-b のアカウント = %d", len(srvA.Queries()), len(srvB.Queries()))
+	}
+}
+
+func TestMonthWithoutOrgService(t *testing.T) {
+	r := gcal.NewReader(orgServices{}, []gcal.Calendar{{ID: "staff-a@example.com", OrgID: org}})
+	_, _, err := mustMonth(t, r, april(t)).Schedules(t.Context())
+	if _, ok := errors.AsType[*check.SourceError](err); !ok {
+		t.Fatalf("err = %v, want *check.SourceError", err)
+	}
+}
+
+// 通信の誤りの文に、カレンダー ID を含む URL を出さない。
+func TestSchedulesSourceErrorHidesCalendarID(t *testing.T) {
+	svc, err := calendar.NewService(t.Context(), option.WithEndpoint("http://127.0.0.1:1/"), option.WithoutAuthentication())
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := gcal.NewReader(gcaltest.Same{Svc: svc}, []gcal.Calendar{{ID: "secret-staff@example.com", OrgID: org}})
+	_, _, err = mustMonth(t, r, april(t)).Schedules(t.Context())
+	if _, ok := errors.AsType[*check.SourceError](err); !ok {
+		t.Fatalf("err = %v, want *check.SourceError", err)
+	}
+	if strings.Contains(err.Error(), "secret-staff") {
+		t.Errorf("誤りの文にカレンダー ID が出ている: %v", err)
 	}
 }

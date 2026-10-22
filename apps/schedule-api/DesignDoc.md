@@ -55,7 +55,7 @@ schedule-api は、事業所ごとの予定、職員、利用者、権限を持�
 | 共有 | `packages/go/oidc`、`packages/go/healthcheck`、`packages/go/gcaltitle`（別の module） | access token の JWKS での検証、テストと `cmd/devissuer` が使うフェイクの Issuer（`oidctest`）、`api healthcheck`、Google カレンダーの予定のタイトルの解釈。receipt-api と共有する（ADR-0007） |
 | アダプタ | `internal/httpapi/openapi` | `openapi.yaml` から生成した型と strict server のインターフェイス |
 | アダプタ | `internal/httpapi` | 生成したインターフェイスを実装するハンドラと、gin のミドルウェア。リクエストは、埋め込んだ `openapi.yaml` の定義で確かめる |
-| cmd | `cmd/api`、`cmd/migrate`、`cmd/devissuer`、`cmd/fakegcal` | 起動、マイグレーションとシード、ローカルで試すためのフェイクの Issuer と Calendar API（本番のイメージに入れない） |
+| cmd | `cmd/api`、`cmd/migrate`、`cmd/devissuer`、`cmd/gcalhold` | 起動、マイグレーションとシード、ローカルで試すためのフェイクの Issuer、compose の calendarpit の前に置く中継（本番のイメージに入れない） |
 
 - `kernel` は、ADR-0010 の「`apperr` と同じ段の小さなパッケージ」に当たる。`kernel.Finder[T]` は ID で 1 件を読む 1 つのメソッドのインターフェイスで、機能のパッケージは、ほかの機能のエンティティをこの形で受ける。同じ形のインターフェイスを機能ごとに書かずに済ませるためである。
 - `access` は機能のパッケージではないので、型の名前を `Service` のままにし、`Usecase` への改名と「1〜2 のメソッド」の規則の対象から外す。
@@ -270,6 +270,20 @@ sequenceDiagram
 - 予定をキャンセルすると、`schedule_cancels` に理由とともに 1 レコードを足す。予定のレコードは消さない。
 - キャンセルした予定は、API のレスポンスの `cancel` に理由を持つ。画面は、キャンセルした予定を予定の表示から除く。
 
+### Google カレンダーは事業所のサービスアカウントで読み書きする
+
+schedule-api は、Google Calendar API を、事業所ごとのサービスアカウントになりすました token で呼ぶ。  
+職員は自分の事業所のアカウントにカレンダーを共有するので、ほかの事業所の職員が共有したカレンダーは、ID を入れても読めず、結び付けられない。
+
+- ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](https://github.com/Fukuemon/buddy/blob/876381365355f7e4dab03f6dfdb3d6fb8a9f6947/docs/adr/0012-google-calendar-facility-service-accounts.md)
+
+- 組織の ID とサービスアカウントの対応は、運営側が設定のファイル（`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`）で渡す。schedule-api は、事業所の `facilities.org_id` で対応を引く。形は照合の API と同じで、同じファイルを渡せる。
+- 事業所は、要求を受ける操作では、パスの事業所（認証のミドルウェアがトークンの職員の事業所と一致することを確かめる）か、結び付けたカレンダーのレコードの事業所で決める。要求を受けない書き出しと増分の取得は、カレンダーのレコードの事業所（`external_calendars.facility_id`）で決める。要求の本文からは受けない。
+- 対応の無い事業所と、組織に結び付けていない事業所のカレンダーの操作は、503 の `calendar_not_configured` を返す。書き出しは、書き直しの回数の上限まで待ちを残す。
+- サービスアカウントごとの Calendar API のクライアントを起動のときに作り、token は有効期限まで使い回す。共有のコードは `packages/go/gcalauth` にある。
+- Application Default Credentials が事業所のサービスアカウントそのものとして動くときは、重ねてなりすまさず、その token を使う。ローカルで検証の事業所のアカウントになりすました Application Default Credentials を使うと、サービスアカウント自身へのトークン作成者のロールが要るためである。見分けは、認証情報のファイルの `client_email`（キー）か、なりすます先の URL（なりすましと Workload Identity Federation）のメールアドレスで行う。メタデータサーバーの認証情報は、別のアカウントとみなす。
+- token を作れないときのエラーの文は、状態コードだけを持つ。IAM の応答はなりすます先のリソースの名前を含むことがあり、サービスアカウントのメールアドレスをログに出さないためである。
+
 ### Google カレンダーの取り込み
 
 職員の管理の権限を持つ職員が、職員に Google カレンダーを結び付け、期間を選んでプレビューし、確定して予定に取り込む（ADR-0009 の段階 1）。読み替えの規則と画面の動きは、画面仕様書の [予定の取り込み](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-import_予定の取り込み/index.md) と [カレンダーの連携](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-link_カレンダーの連携/index.md) にある。
@@ -407,6 +421,40 @@ sequenceDiagram
   - buddy で職員を替えた予定は、合わせた後に書き出しの待ちを積み直し、今の職員のカレンダーへ移させる。
 - カレンダーの同期の状態（`calendar_sync_states`）は、最後の結果（`never`、`succeeded`、`failed`）と、失敗の理由を決まった値（`unreadable`、`unavailable`、`apply`）で持つ。ログと理由に、予定のタイトル、利用者名、カレンダーの ID を出さない。
 
+### ローカル環境と E2E の Google カレンダー
+
+compose と E2E では、Google Calendar API の代わりに [calendarpit](https://calendarpit.dev/ja/)（MIT）を動かす。イメージは版と digest で固定する。職員のカレンダーと予定は `compose/calendarpit/fixture.json` にある。
+
+```mermaid
+flowchart LR
+  api[予定の API] -->|Calendar API| hold[gcalhold]
+  hold --> pit[calendarpit]
+  api -->|token の更新| pit
+  auth[calendarpit-authorize] -->|同意と refresh token| pit
+  auth -->|ADC のファイル| api
+  e2e[E2E] -->|管理の API で予定を読み、直す| pit
+  e2e -->|変更を渡さない| hold
+```
+
+- calendarpit は、全ての Calendar API の要求に bearer token を求め、token の利用者が持つカレンダーだけを読ませる。サービスアカウントの token は出さない。
+  - compose の `calendarpit-authorize` が、fixture の利用者 `schedule-api` として同意を通す。取った refresh token を、`authorized_user` の Application Default Credentials のファイルに書く。
+  - 予定の API は、`GOOGLE_CALENDAR_ENDPOINT` を渡したとき、`GOOGLE_APPLICATION_CREDENTIALS` のファイルだけで認証する。
+- E2E は、calendarpit の管理の API（`/__calendarpit/calendars/{id}/events`）で、予定の API が書いた予定を読む。職員が Google で予定を直したときの代わりに、同じ API で予定を直す。手で確かめるときは、calendarpit の管理の画面を使う。
+
+buddy が呼ぶ events の list、get、insert、patch、delete、instances は、calendarpit 0.9.5 で本物の仕様と同じに動くことを確かめた。繰り返しの展開、`syncToken` と 410、`If-Match` と 412、消した予定の 409 も同じである。
+
+calendarpit で足りない振る舞いと、その扱い
+
+| 足りない振る舞い | 扱い |
+| --- | --- |
+| Google の変更を、増分の取得に渡さずに止める操作 | 中継の `cmd/gcalhold` で補う。E2E が `POST /hold` で止めている間は、`syncToken` を付けた `events.list` に、変わった予定が無いと答える。calendarpit のトークンは使っても消えないので、止めるのをやめた後に止めていた間の変更が返る。ただし、止めている間にトークンが 100 個を超えて出ると、古いトークンが消え、全ての予定を読み直す。buddy と Google の両方で変わった予定を、決まった順で作るために要る |
+| サービスアカウント、カレンダーの共有と、共有の権限（閲覧だけ、空き時間だけ） | 残す。fixture の利用者 1 人が職員のカレンダーを全て持つ。書けないカレンダーと `freeBusyReader` は、`gcaltest` のユニットテストで確かめる |
+| 事業所ごとのサービスアカウントのなりすまし（ADR-0012） | 残す。なりすましを作るときは、`GOOGLE_CALENDAR_ENDPOINT` のときになりすまさず、ADC のファイルの token を全ての事業所に使う |
+| 403 の rate limit と 5xx | 残す。`gcaltest` の `Failures` と `Status` で確かめる |
+
+- Go のユニットテストは、`gcaltest` のフェイクのまま置き換えない。テストの中で誤りの応答とトークンの切れを作れ、Docker が要らないためである。
+- calendarpit の `syncToken` は、workspace 全体で 100 個までで、古いものから消える。消えたトークンには 410 を返すので、予定の API は全ての予定を読み直す。
+
 ## Interface
 
 - 事業所に属する一覧と作成のパスは `/v1/facilities/{facility_id}/<リソース>` の形にする。1 件を指すパスは `/v1/<リソース>/{<リソース>_id}` の形にする。主なものは `schedules`、`schedules/recurring`、`users`、`patients`、`departments`、`teams`、`positions`、`external_calendars`、`calendar_exports` である。リソースごとにどのパスを持つかは `openapi.yaml` にある。
@@ -422,10 +470,10 @@ sequenceDiagram
   - 409 の `calendar_taken`、`calendar_already_linked`、`staff_has_calendar`: カレンダーを結び付けられない原因
   - 409 の `import_running`、`import_preview_changed`: 取り込みを確定できない原因
   - 409 の `export_not_in_review`、`export_not_acceptable`、`external_change_unappliable`: 確かめが要る書き出しを解けない原因
-  - 422 の `calendar_unreadable`: Google カレンダーが無いか、サービスアカウントに共有されていない
+  - 422 の `calendar_unreadable`: Google カレンダーが無いか、事業所のサービスアカウントに共有されていない
   - 500 の `internal`: サーバーのエラー
   - 502 の `calendar_unavailable`: Google に届かないか、Google がエラーを返した
-  - 503 の `calendar_not_configured`: サービスアカウントが設定されていない
+  - 503 の `calendar_not_configured`: 事業所のサービスアカウントが設定されていない
 - CORS は、`CORS_ALLOW_ORIGINS` に並べた Origin だけに許す。空なら CORS のヘッダーを返さない。
   - 許す Origin の事前のリクエストには、トークンを求めずに 204 を返す。許すメソッドは GET、POST、PUT、DELETE、OPTIONS、ヘッダーは `Content-Type` と `Authorization` にする。
   - 許さない Origin のリクエストは、本文を持たない 403 で止める。Origin がリクエストの Host と同じリクエストは、CORS のリクエストとして扱わずに通す。

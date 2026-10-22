@@ -44,7 +44,7 @@ func calendarHandler(t *testing.T) http.Handler {
 			event("j", "【予防訪看Ⅰ2】利用者J", "1T15:00", "1T15:30"),
 		}}},
 	})
-	reader := gcal.NewReader(gcaltest.Start(t, srv), []gcal.Calendar{
+	reader := gcal.NewReader(gcaltest.Same{Svc: gcaltest.Start(t, srv)}, []gcal.Calendar{
 		{ID: "staff-b@example.com", OrgID: orgSample},
 		{ID: "staff-e@example.com", OrgID: orgSample, StaffName: "職員E"},
 		{ID: "staff-x@example.com", OrgID: "org-other"},
@@ -137,7 +137,7 @@ func TestChecksCalendarErrors(t *testing.T) {
 	failing := NewHandler(slog.New(slog.NewTextHandler(io.Discard, nil)), Config{
 		MaxUploadBytes: 1 << 20,
 		Sources: source.Selector{Calendar: gcal.NewReader(
-			gcaltest.Start(t, gcaltest.NewServer(nil)), []gcal.Calendar{{ID: "unknown@example.com", OrgID: orgSample}},
+			gcaltest.Same{Svc: gcaltest.Start(t, gcaltest.NewServer(nil))}, []gcal.Calendar{{ID: "unknown@example.com", OrgID: orgSample}},
 		)},
 		Verifier: fakeVerifier{},
 	})

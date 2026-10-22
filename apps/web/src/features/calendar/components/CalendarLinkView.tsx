@@ -58,7 +58,7 @@ export const CalendarLinkView = ({
             className="max-w-3xl border-l-4 border-warning bg-warning-surface px-3 py-2 text-body"
             data-testid="calendar-link-not-configured"
           >
-            サービスアカウントが設定されていないので、カレンダーを結び付けられません。buddy
+            この事業所のサービスアカウントが設定されていないので、カレンダーを結び付けられません。buddy
             を動かしている管理者に、Google カレンダーの設定を頼んでください。
           </p>
         ) : (

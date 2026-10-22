@@ -1,7 +1,7 @@
 ---
 type: context
 title: 基盤と運用
-description: 環境の種類、デプロイと切り戻しの条件、監視、シークレットの配置先の方針
+description: 環境の種類、デプロイと切り戻しの条件、監視、シークレットの配置先の方針、事業所を足すときの Google のサービスアカウントの手順
 status: stable
 ---
 
@@ -41,6 +41,23 @@ status: stable
 
 ## Secrets
 
-- シークレットは、`OIDC_CLIENT_SECRET`、`SESSION_SECRET`、`DB_PASSWORD`、Google のサービスアカウントの認証情報である。
+- シークレットは、`OIDC_CLIENT_SECRET`、`SESSION_SECRET`、`DB_PASSWORD`、Google の Workload Identity Federation の外部アカウントの設定である。
+  - Google のサービスアカウントのキーは作らず、どこにも置かない。API は、Application Default Credentials で認証し、事業所のサービスアカウントになりすます。
+  - ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](../docs/adr/0012-google-calendar-facility-service-accounts.md)
+- 組織とサービスアカウントの対応のファイル（`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`）は、buddy のリポジトリに置かない。
+  - シークレットではないが、サービスアカウントのメールアドレスを持つためである。照合の対象のカレンダーのファイル（`GOOGLE_CALENDARS_FILE`）も、職員のカレンダー ID を持つので同じ扱いにする。
 - 配置先は インフラのリポジトリが決め、実行のときに環境変数（Google の認証情報は Application Default Credentials）で渡す。buddy のアプリは環境変数から読むだけにする。
 - buddy のリポジトリ、issue、pull request、ログに、本物のシークレットを書かない。buddy に置いてよいのは、ローカルの compose の開発用の値（`compose.yml`、`compose/idp.json`）だけである。
+
+## Adding a Facility
+
+運営側は、事業所を足すたびに、Google カレンダーのサービスアカウントを次の順で用意する。
+
+1. 運営側の GCP のプロジェクトに、事業所のサービスアカウントを作る。
+2. Application Default Credentials で認証する主体に、事業所のサービスアカウントのトークン作成者のロールを付ける。プロジェクトの全体には付けない。
+   - 主体は、Workload Identity Federation のプールの主体か、中間のサービスアカウントである。
+3. 事業所の組織の ID とサービスアカウントのメールアドレスの対応を、`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` のファイルに足し、予定の API と照合の API に渡す。
+4. 事業所の職員に、事業所のサービスアカウントのメールアドレスを伝え、自分のカレンダーを共有してもらう。メールアドレスは、カレンダーの連携の画面にも出る。
+
+事業所のアカウントに切り替える前の 1 つのアカウントに共有したカレンダーは、切り替えると読めなくなる。  
+職員が事業所のアカウントに共有し直した後に、運営側は前のアカウントへの共有を外してもらい、前のアカウントを止める。
