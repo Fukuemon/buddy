@@ -18,12 +18,12 @@ func TestParseSort(t *testing.T) {
 		want    kernel.Sort
 		wantErr bool
 	}{
-		{name: "既定", want: def},
-		{name: "既定の列で降順", order: "desc", want: kernel.Sort{Field: "date", Desc: true}},
-		{name: "許可した列で昇順", field: "start_time", order: "asc", want: kernel.Sort{Field: "start_time"}},
-		{name: "許可した列で向きを省略", field: "start_time", want: kernel.Sort{Field: "start_time"}},
-		{name: "SQL を混ぜた列", field: "start_time;DROP", wantErr: true},
-		{name: "許可していない列", field: "staff_id", wantErr: true},
+		{name: "デフォルト", want: def},
+		{name: "デフォルトのカラムで降順", order: "desc", want: kernel.Sort{Field: "date", Desc: true}},
+		{name: "許可したカラムで昇順", field: "start_time", order: "asc", want: kernel.Sort{Field: "start_time"}},
+		{name: "許可したカラムで向きを省略", field: "start_time", want: kernel.Sort{Field: "start_time"}},
+		{name: "SQL を混ぜたカラム", field: "start_time;DROP", wantErr: true},
+		{name: "許可していないカラム", field: "staff_id", wantErr: true},
 		{name: "大文字の向き", field: "date", order: "DESC", wantErr: true},
 		{name: "SQL を混ぜた向き", field: "date", order: "asc, id", wantErr: true},
 	}

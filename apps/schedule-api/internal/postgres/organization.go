@@ -111,7 +111,7 @@ func NewPositionRepository(pool *pgxpool.Pool) *PositionRepository {
 	return &PositionRepository{conn{pool}}
 }
 
-// Get は、ID が id の役職を、既定の権限（名前の順）を付けて返す。無いときは apperr.ErrNotFound を返す。
+// Get は、ID が id の役職を、デフォルトの権限（名前の順）を付けて返す。無いときは apperr.ErrNotFound を返す。
 func (r *PositionRepository) Get(ctx context.Context, id string) (organization.Position, error) {
 	p, err := r.q(ctx).GetPosition(ctx, id)
 	if err != nil {
@@ -124,7 +124,7 @@ func (r *PositionRepository) Get(ctx context.Context, id string) (organization.P
 	return out[0], nil
 }
 
-// ListByFacility は、事業所 facilityID の役職を名前、ID の順に、それぞれの既定の権限を付けて返す。
+// ListByFacility は、事業所 facilityID の役職を名前、ID の順に、それぞれのデフォルトの権限を付けて返す。
 func (r *PositionRepository) ListByFacility(ctx context.Context, facilityID string) ([]organization.Position, error) {
 	rows, err := r.q(ctx).ListPositionsByFacility(ctx, facilityID)
 	if err != nil {
@@ -165,7 +165,7 @@ func (r *PositionRepository) withPolicies(ctx context.Context, rows []sqlcgen.Po
 	return out, nil
 }
 
-// Create は、役職と既定の権限を続けて書く。途中で失敗したときに残さないよう、呼び出し側がトランザクションの中で呼ぶ。
+// Create は、役職とデフォルトの権限を続けて書く。途中で失敗したときに残さないよう、呼び出し側がトランザクションの中で呼ぶ。
 func (r *PositionRepository) Create(ctx context.Context, p organization.Position) error {
 	q := r.q(ctx)
 	if err := q.CreatePosition(ctx, sqlcgen.CreatePositionParams{ID: p.ID, FacilityID: p.FacilityID, Name: p.Name}); err != nil {

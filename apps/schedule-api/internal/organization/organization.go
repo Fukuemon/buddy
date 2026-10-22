@@ -45,7 +45,7 @@ func NewTeam(id, facilityID, name string) (Team, error) {
 	return Team{ID: id, FacilityID: facilityID, Name: name}, nil
 }
 
-// PolicyCode は、認可が読む権限の識別子である。権限の行はマイグレーションが入れ、全ての環境で同じである。
+// PolicyCode は、認可が読む権限の識別子である。権限のレコードはマイグレーションが入れ、全ての環境で同じである。
 type PolicyCode string
 
 // 予定の権限である。編集の権限は、同じ範囲の閲覧を含む。
@@ -77,7 +77,7 @@ type Policy struct {
 	UpdatedAt   time.Time
 }
 
-// Position は、事業所の役職である。Policies は、その役職の職員に既定で与える権限である。
+// Position は、事業所の役職である。Policies は、その役職の職員にデフォルトで与える権限である。
 type Position struct {
 	ID         string
 	FacilityID string
@@ -88,7 +88,7 @@ type Position struct {
 }
 
 // NewPosition は、名前と権限の重なりを検証して Position を作る。
-// 対象の職員を指定する権限は、職員に写すときに対象を決められないので、既定にできない。
+// 対象の職員を指定する権限は、職員にコピーするときに対象を決められないので、デフォルトの権限にできない。
 func NewPosition(id, facilityID, name string, policies []Policy) (Position, error) {
 	if err := kernel.RequireText("役職の名前", name, maxNameLen); err != nil {
 		return Position{}, err
@@ -99,7 +99,7 @@ func NewPosition(id, facilityID, name string, policies []Policy) (Position, erro
 			return Position{}, apperr.Invalid("権限 %s が重なっています", p.ID)
 		}
 		if p.NeedsTarget && !p.Code.TargetsTeam() {
-			return Position{}, apperr.Invalid("権限 %s は対象の職員を指定するので、役職の既定にできません", p.ID)
+			return Position{}, apperr.Invalid("権限 %s は対象の職員を指定するので、役職のデフォルトの権限にできません", p.ID)
 		}
 		seen[p.ID] = true
 	}
@@ -127,7 +127,7 @@ type TeamRepository interface {
 	Create(ctx context.Context, t Team) error
 }
 
-// PositionRepository は、役職と既定の権限を読み書きする。見つからないときは apperr.ErrNotFound を、
+// PositionRepository は、役職とデフォルトの権限を読み書きする。見つからないときは apperr.ErrNotFound を、
 // 同じ事業所に同じ名前があるときは apperr.ErrConflict を返す。
 type PositionRepository interface {
 	Get(ctx context.Context, id string) (Position, error)

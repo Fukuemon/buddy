@@ -138,13 +138,13 @@ func newRouter(s *fakeSchedules, st *fakeStaff, p *fakePatients) http.Handler {
 	})
 }
 
-// do は、事業所 facilityID の職員のトークンを付けて h に要求を送る。
+// do は、事業所 facilityID の職員のトークンを付けて h にリクエストを送る。
 func do(t *testing.T, h http.Handler, method, target, body string) (*httptest.ResponseRecorder, map[string]any) {
 	t.Helper()
 	return doWithToken(t, h, method, target, body, token(t, testOrgID))
 }
 
-// doWithToken は、raw が空でなければ Bearer のトークンとして付けて h に要求を送る。
+// doWithToken は、raw が空でなければ Bearer のトークンとして付けて h にリクエストを送る。
 func doWithToken(t *testing.T, h http.Handler, method, target, body, raw string) (*httptest.ResponseRecorder, map[string]any) {
 	t.Helper()
 	req := httptest.NewRequest(method, target, strings.NewReader(body))
@@ -173,9 +173,9 @@ func TestListSchedulesRejectsUnsafeSort(t *testing.T) {
 		name  string
 		query string
 	}{
-		{name: "列に SQL を混ぜる", query: "sort_field=start_time;DROP"},
-		{name: "列に句を足す", query: "sort_field=start_time%20DESC,%20(SELECT%201)"},
-		{name: "許可していない列", query: "sort_field=staff_id"},
+		{name: "カラムに SQL を混ぜる", query: "sort_field=start_time;DROP"},
+		{name: "カラムに句を足す", query: "sort_field=start_time%20DESC,%20(SELECT%201)"},
+		{name: "許可していないカラム", query: "sort_field=staff_id"},
 		{name: "向きに SQL を混ぜる", query: "sort_field=date&sort_order=desc;DROP"},
 		{name: "未定義の種類", query: "schedule_type=x"},
 		{name: "日付の形", query: "date_from=2026/10/01"},
@@ -280,7 +280,7 @@ func TestErrorStatus(t *testing.T) {
 			body: validSlotBody, wantCode: http.StatusForbidden, wantBody: "forbidden"},
 		{name: "予定をキャンセルする権限がない", err: apperr.ErrForbidden, method: http.MethodPost, target: "/v1/schedules/" + scheduleID + "/cancel",
 			body: `{"reason":"体調不良"}`, wantCode: http.StatusForbidden, wantBody: "forbidden"},
-		{name: "検証の誤り", err: apperr.Invalid("通常の予定にはタイトルが必須です"), method: http.MethodGet, target: "/v1/schedules/" + scheduleID,
+		{name: "検証のエラー", err: apperr.Invalid("通常の予定にはタイトルが必須です"), method: http.MethodGet, target: "/v1/schedules/" + scheduleID,
 			wantCode: http.StatusBadRequest, wantBody: "invalid_input"},
 		{name: "想定外のエラー", err: errors.New("dial tcp: connection refused"), method: http.MethodGet, target: "/v1/schedules/" + scheduleID,
 			wantCode: http.StatusInternalServerError, wantBody: "internal"},
@@ -355,7 +355,7 @@ func TestCreateSchedule(t *testing.T) {
 		{name: "同行者が null", body: strings.Replace(valid, `"title":"会議"`,
 			`"visit_info":{"patient_id":"`+staffID+`","assigned_staff_id":"`+staffID+`","companion_id":null,"service_code_id":"`+staffID+`"}`, 1),
 			wantCode: http.StatusCreated},
-		{name: "題名が長すぎる", body: strings.Replace(valid, `"title":"会議"`, `"title":"`+strings.Repeat("あ", 256)+`"`, 1),
+		{name: "タイトルが長すぎる", body: strings.Replace(valid, `"title":"会議"`, `"title":"`+strings.Repeat("あ", 256)+`"`, 1),
 			wantCode: http.StatusBadRequest, wantMessage: "title"},
 	}
 	for _, tt := range tests {
@@ -486,11 +486,11 @@ func TestUsecaseReceivesRequestCancellation(t *testing.T) {
 		t.Fatal("usecase が呼ばれなかった")
 	}
 	if !errors.Is(s.lastCtx.Err(), context.Canceled) {
-		t.Fatalf("usecase の context が要求の取り消しを受けない: %v", s.lastCtx.Err())
+		t.Fatalf("usecase の context がリクエストの取り消しを受けない: %v", s.lastCtx.Err())
 	}
 }
 
-// TestCORSPreflight は、許した origin からの事前の要求に、API が使う全てのメソッドを許すことを確かめる。
+// TestCORSPreflight は、許した origin からのプリフライトのリクエストに、API が使う全てのメソッドを許すことを確かめる。
 func TestCORSPreflight(t *testing.T) {
 	const origin = "http://localhost:3000"
 	h := httpapi.NewRouter(httpapi.Usecases{Auth: fakeAuth{}}, httpapi.RouterConfig{
@@ -550,7 +550,7 @@ func TestRequestConstraints(t *testing.T) {
 	}
 }
 
-// TestRequestValidationMessages は、定義の検証の誤りの文と、空のクエリと大きな本文の扱いを確かめる。
+// TestRequestValidationMessages は、定義の検証のエラーの文と、空のクエリと大きな本文の扱いを確かめる。
 func TestRequestValidationMessages(t *testing.T) {
 	h := newRouter(&fakeSchedules{}, &fakeStaff{}, &fakePatients{})
 	list := "/v1/facilities/" + facilityID + "/schedules"
@@ -562,7 +562,7 @@ func TestRequestValidationMessages(t *testing.T) {
 		want                       []string
 	}{
 		{"クエリの値が列挙に無い", http.MethodGet, list + "?sort_field=foo", "", []string{"query の sort_field が定義に合いません"}},
-		{"本文の誤りが複数", http.MethodPost, list, `{"date":"x","start_time":"x"}`, []string{"date", "start_time", "schedule_type_id"}},
+		{"本文のエラーが複数", http.MethodPost, list, `{"date":"x","start_time":"x"}`, []string{"date", "start_time", "schedule_type_id"}},
 		{"本文が JSON でない", http.MethodPost, list, `{bad`, []string{bodyErrorPrefixForTest}},
 		{"本文が大きすぎる", http.MethodPost, "/v1/schedules/" + scheduleID + "/cancel",
 			`{"reason":"` + strings.Repeat("a", 1<<20) + `"}`, []string{"バイトまでです"}},

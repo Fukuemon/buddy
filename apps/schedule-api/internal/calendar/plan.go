@@ -15,7 +15,7 @@ import (
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
 )
 
-// SkipServiceNotFound は、題名から読んだサービス内容が、サービスコードのマスタに無い予定である。
+// SkipServiceNotFound は、タイトルから読んだサービス内容が、サービスコードのマスタに無い予定である。
 const SkipServiceNotFound SkipReason = "service_not_found"
 
 // Range は、取り込む予定の期間で、両端の日を含む。予定はこの期間に始まるものを取り込む。
@@ -57,7 +57,7 @@ func midnight(d civil.Date) time.Time {
 	return time.Date(d.Year, d.Month, d.Day, 0, 0, 0, 0, tokyo)
 }
 
-// PatientRef は、題名の利用者名で引く利用者である。
+// PatientRef は、タイトルの利用者名で引く利用者である。
 type PatientRef struct {
 	ID                string
 	Name              string
@@ -69,9 +69,9 @@ type ReviewReason string
 
 // ReviewReason の値。
 const (
-	// ReviewPatientNotFound は、題名の利用者名の利用者がいない予定である。
+	// ReviewPatientNotFound は、タイトルの利用者名の利用者がいない予定である。
 	ReviewPatientNotFound ReviewReason = "patient_not_found"
-	// ReviewPatientAmbiguous は、題名の利用者名の利用者が 2 人以上いる予定である。
+	// ReviewPatientAmbiguous は、タイトルの利用者名の利用者が 2 人以上いる予定である。
 	ReviewPatientAmbiguous ReviewReason = "patient_ambiguous"
 )
 
@@ -87,13 +87,13 @@ type ReviewItem struct {
 	Reason          ReviewReason
 	// Recurrence は、繰り返しのまま取り込む予定の規則で、ほかの予定では nil である。
 	Recurrence *schedule.Rule
-	// Candidates は、題名の利用者名の利用者で、ReviewPatientAmbiguous のときだけ持つ。
+	// Candidates は、タイトルの利用者名の利用者で、ReviewPatientAmbiguous のときだけ持つ。
 	Candidates []PatientRef
-	// Revision は、まとめた外部の予定の ID と etag から作る版である。下見の後に予定が変わると変わる。
+	// Revision は、まとめた外部の予定の ID と etag から作る版である。プレビューの後に予定が変わると変わる。
 	Revision string
 }
 
-// Skipped は、取り込まない予定の、読めた日時と理由である。題名は利用者名を含むので持たない。
+// Skipped は、取り込まない予定の、読めた日時と理由である。タイトルは利用者名を含むので持たない。
 type Skipped struct {
 	Date      *civil.Date
 	StartTime *civil.Time
@@ -102,7 +102,7 @@ type Skipped struct {
 	Reason    SkipReason
 }
 
-// Counts は、下見の件数である。予定は外部の予定の数で数え、繰り返しのまま取り込む予定は 1 件、回ごとにした予定は 1 回を 1 件に数える。
+// Counts は、プレビューの件数である。予定は外部の予定の数で数え、繰り返しのまま取り込む予定は 1 件、回ごとにした予定は 1 回を 1 件に数える。
 type Counts struct {
 	// Import は、確かめが要る予定を除いて、取り込む予定の数である。ImportVisit と ImportNormal に分かれる。
 	Import       int
@@ -119,7 +119,7 @@ type Counts struct {
 	AlreadyImported   int
 }
 
-// Preview は、取り込みの下見である。
+// Preview は、取り込みのプレビューである。
 type Preview struct {
 	Range       Range
 	Counts      Counts
@@ -134,14 +134,14 @@ type Action string
 const (
 	// ActionPatient は、選んだ利用者の訪問の予定にする。
 	ActionPatient Action = "patient"
-	// ActionNormal は、題名をタイトルにした通常の予定にする。
+	// ActionNormal は、外部の予定のタイトルをそのまま使う通常の予定にする。
 	ActionNormal Action = "normal"
 	// ActionSkip は、取り込まない。
 	ActionSkip Action = "skip"
 )
 
 // Decision は、確かめが要る予定 1 件の取り込み方である。PatientID は ActionPatient のときだけ持つ。
-// Revision は、取り込み方を選んだ下見の ReviewItem.Revision である。
+// Revision は、取り込み方を選んだプレビューの ReviewItem.Revision である。
 type Decision struct {
 	ExternalEventID string
 	Action          Action
@@ -174,7 +174,7 @@ type replacement struct {
 	date                civil.Date
 }
 
-// plan は、外部の予定を読み替えた、取り込みで書く予定と、除外する日と、下見の内容である。
+// plan は、外部の予定を読み替えた、取り込みで書く予定と、除外する日と、プレビューの内容である。
 type plan struct {
 	entries    []entry
 	exclusions []replacement
@@ -252,7 +252,7 @@ func parentsToExpand(events []Event, links map[string]Link) []string {
 	return ids
 }
 
-// buildPlan は、外部の予定を buddy の予定に読み替え、取り込みで書く予定と下見の内容を作る。
+// buildPlan は、外部の予定を buddy の予定に読み替え、取り込みで書く予定とプレビューの内容を作る。
 // 読み替えの規則は、画面仕様書の予定の取り込みの「予定の読み替え」にある。
 func buildPlan(in planInput) plan {
 	b := planner{
@@ -289,7 +289,7 @@ func buildPlan(in planInput) plan {
 }
 
 // setRevisions は、確かめが要る予定ごとに、まとめた外部の予定の ID と etag から版を作る。
-// 確定は版を比べ、下見の後に題名や時刻が変わった予定に、前の取り込み方を当てない。
+// 確定は版を比べ、プレビューの後にタイトルや時刻が変わった予定に、前の取り込み方を当てない。
 func (b *planner) setRevisions() {
 	parts := map[string][]string{}
 	for _, e := range b.p.entries {
@@ -526,7 +526,7 @@ func (b *planner) add(e entry) bool {
 	return true
 }
 
-// review は、確かめが要る予定 e の ReviewItem を足し、そのキーを返す。親の予定と題名が同じ回は、親の ReviewItem にまとめる。
+// review は、確かめが要る予定 e の ReviewItem を足し、そのキーを返す。親の予定とタイトルが同じ回は、親の ReviewItem にまとめる。
 func (b *planner) review(e entry, matches []PatientRef) string {
 	key := e.event.ID
 	if e.parentID != "" && e.event.Summary == b.parents[e.parentID].Summary {
@@ -624,7 +624,7 @@ func serviceKey(s string) string {
 
 // applyDecisions は、確かめが要る予定に decisions の取り込み方を当てる。
 // decisions の予定の集合が確かめが要る予定の集合と違うときは apperr.ErrConflict を、
-// 取り込み方の値が誤っているか、選んだ利用者が patients にいないときは入力の誤りを返す。
+// 取り込み方の値が誤っているか、選んだ利用者が patients にいないときは入力のエラーを返す。
 // 取り込まないを選んだ予定の数を返す。
 func (p *plan) applyDecisions(decisions []Decision, patients []PatientRef) (int, error) {
 	byKey := make(map[string]Decision, len(decisions))
@@ -678,7 +678,7 @@ func (p *plan) applyDecisions(decisions []Decision, patients []PatientRef) (int,
 	return skipped, nil
 }
 
-var errReviewChanged = apperr.ConflictCode(CodeReviewChanged, "下見の後に、外部のカレンダーの確かめが要る予定が変わりました。もう一度下見してください")
+var errReviewChanged = apperr.ConflictCode(CodeReviewChanged, "プレビューの後に、外部のカレンダーの確かめが要る予定が変わりました。もう一度プレビューしてください")
 
 // withMovedExceptions は、events に、around のうち元の日付が期間の中にある例外の回で、events に無いものを足す。
 func withMovedExceptions(events, around []Event, rng Range) []Event {

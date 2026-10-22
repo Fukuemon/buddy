@@ -23,7 +23,7 @@ type AddUserPolicyParams struct {
 	UserID   string
 }
 
-// 事業所は職員の行から写す。職員が無ければ書かない。
+// 事業所は職員のレコードからコピーする。職員が無ければ書かない。
 func (q *Queries) AddUserPolicy(ctx context.Context, arg AddUserPolicyParams) (int64, error) {
 	result, err := q.db.Exec(ctx, addUserPolicy, arg.ID, arg.PolicyID, arg.UserID)
 	if err != nil {
@@ -46,7 +46,7 @@ type AddUserPolicyTargetParams struct {
 	UserPolicyID string
 }
 
-// 事業所は職員の権限の行から写す。職員の権限が無ければ書かない。
+// 事業所は職員の権限のレコードからコピーする。職員の権限が無ければ書かない。
 func (q *Queries) AddUserPolicyTarget(ctx context.Context, arg AddUserPolicyTargetParams) (int64, error) {
 	result, err := q.db.Exec(ctx, addUserPolicyTarget,
 		arg.ID,
@@ -193,7 +193,7 @@ type GetUserRefRow struct {
 	TeamID     string
 }
 
-// ほかの機能が職員を参照するときに要る列だけを読む。
+// ほかの機能が職員を参照するときに要るカラムだけを読む。
 func (q *Queries) GetUserRef(ctx context.Context, id string) (GetUserRefRow, error) {
 	row := q.db.QueryRow(ctx, getUserRef, id)
 	var i GetUserRefRow

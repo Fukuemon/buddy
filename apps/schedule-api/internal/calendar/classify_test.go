@@ -46,7 +46,7 @@ func TestClassify(t *testing.T) {
 			},
 		},
 		{
-			name: "題名が空白だけの予定は取り込まない",
+			name: "タイトルが空白だけの予定は取り込まない",
 			event: func() calendar.Event {
 				s, e := timed("2026-10-20T10:00:00+09:00", "2026-10-20T11:00:00+09:00")
 				return calendar.Event{Start: s, End: e, Summary: " 　"}
@@ -92,7 +92,7 @@ func TestClassify(t *testing.T) {
 			},
 		},
 		{
-			name: "【】が無い題名は通常の予定",
+			name: "【】が無いタイトルは通常の予定",
 			event: func() calendar.Event {
 				s, e := timed("2026-10-20T13:00:00+09:00", "2026-10-20T14:30:00+09:00")
 				return calendar.Event{Start: s, End: e, Summary: "会議"}
@@ -105,7 +105,7 @@ func TestClassify(t *testing.T) {
 			},
 		},
 		{
-			name: "【だけの題名は通常の予定",
+			name: "【だけのタイトルは通常の予定",
 			event: func() calendar.Event {
 				s, e := timed("2026-10-20T13:00:00+09:00", "2026-10-20T14:00:00+09:00")
 				return calendar.Event{Start: s, End: e, Summary: "【訪看I2 利用者A"}
@@ -118,7 +118,7 @@ func TestClassify(t *testing.T) {
 			},
 		},
 		{
-			name: "サービス内容が空の訪問の題名は取り込まない",
+			name: "サービス内容が空の訪問のタイトルは取り込まない",
 			event: func() calendar.Event {
 				s, e := timed("2026-10-20T10:00:00+09:00", "2026-10-20T11:00:00+09:00")
 				return calendar.Event{Start: s, End: e, Summary: "【】利用者A"}

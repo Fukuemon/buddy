@@ -201,10 +201,10 @@ func (s Policies) ListByIDs(_ context.Context, ids []string) ([]organization.Pol
 type Staff struct{ *Store }
 
 // Create は、職員と権限を保存する。同じ事業所にメールが完全に一致する職員がいれば apperr.ErrConflict を返す。
-// DB の検査の制約と同じく、小文字にそろえていないメールは入力の誤りにする。
+// DB の検査の制約と同じく、小文字にそろえていないメールは入力のエラーにする。
 func (s Staff) Create(_ context.Context, st staff.Staff, grants []staff.Grant) error {
 	if st.Email != strings.ToLower(st.Email) {
-		return apperr.Invalid("値が列の制約に合いません")
+		return apperr.Invalid("値がカラムの制約に合いません")
 	}
 	for _, cur := range s.Staff {
 		if cur.FacilityID == st.FacilityID && cur.Email == st.Email {

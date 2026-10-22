@@ -19,10 +19,10 @@ import (
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
 )
 
-// maxCalendarIDLen は、外部のカレンダーの ID の長さの上限である。表の列の長さと同じにする。
+// maxCalendarIDLen は、外部のカレンダーの ID の長さの上限である。テーブルのカラムの長さと同じにする。
 const maxCalendarIDLen = 1024
 
-// 衝突の原因の code。httpapi が 409 の応答の code にする。
+// 衝突の原因の code。httpapi が 409 のレスポンスの code にする。
 const (
 	// CodeCalendarTaken は、カレンダーがほかの職員に結び付いていることを表す。外したカレンダーを含む。
 	CodeCalendarTaken = "calendar_taken"
@@ -32,7 +32,7 @@ const (
 	CodeStaffHasCalendar = "staff_has_calendar"
 	// CodeImportRunning は、同じカレンダーの取り込みが進んでいることを表す。
 	CodeImportRunning = "import_running"
-	// CodeReviewChanged は、下見の後に確かめが要る予定が変わったことを表す。
+	// CodeReviewChanged は、プレビューの後に確かめが要る予定が変わったことを表す。
 	CodeReviewChanged = "import_preview_changed"
 	// CodeExportNotInReview は、書き直そうとした書き出しが、確かめが要る状態でないことを表す。
 	CodeExportNotInReview = "export_not_in_review"
@@ -41,12 +41,12 @@ const (
 // staleRunAfter を過ぎても running の取り込みは、止まった取り込みとみなし、次の取り込みを止めない。
 const staleRunAfter = 10 * time.Minute
 
-// Patients は、題名の利用者名で引く事業所の利用者を読む。
+// Patients は、タイトルの利用者名で引く事業所の利用者を読む。
 type Patients interface {
 	ListByFacility(ctx context.Context, facilityID string, q patient.ListQuery) ([]patient.Detail, error)
 }
 
-// ServiceCodes は、題名のサービス内容で引くサービスコードを読む。
+// ServiceCodes は、タイトルのサービス内容で引くサービスコードを読む。
 type ServiceCodes interface {
 	ListServiceCodes(ctx context.Context) ([]visit.ServiceCode, error)
 }
@@ -150,7 +150,7 @@ func (u *Usecase) checkSource(calendarID string) (string, error) {
 
 // Link は、事業所の職員 staffID に、calendarID のカレンダーを結び付ける。読めるかを確かめてから書く。
 // 外した同じカレンダーが同じ職員にあれば、結び付け直す。
-// 職員が見つからないか別の事業所の職員のときは入力の誤りを、職員にほかのカレンダーがあるか、
+// 職員が見つからないか別の事業所の職員のときは入力のエラーを、職員にほかのカレンダーがあるか、
 // カレンダーがほかの職員に結び付いているか、すでに結び付いているときは apperr.ErrConflict を返す。
 func (u *Usecase) Link(ctx context.Context, facilityID, staffID, calendarID string) (ExternalCalendar, error) {
 	if err := u.guard(ctx); err != nil {
@@ -197,7 +197,7 @@ func (u *Usecase) Link(ctx context.Context, facilityID, staffID, calendarID stri
 	return linked, err
 }
 
-// staffTaken は、カレンダーを書く誤りが衝突なら、職員にほかのカレンダーがあることを表す誤りにする。
+// staffTaken は、カレンダーを書くエラーが衝突なら、職員にほかのカレンダーがあることを表すエラーにする。
 func staffTaken(err error) error {
 	if errors.Is(err, apperr.ErrConflict) {
 		return apperr.ConflictCode(CodeStaffHasCalendar, "この職員には、ほかのカレンダーが結び付いています")
@@ -251,7 +251,7 @@ type ImportResult struct {
 	AlreadyImported int
 }
 
-// Import は、カレンダー id の期間 rng の予定を読み直し、下見と同じ規則で読み替えて、1 つのトランザクションで書く。
+// Import は、カレンダー id の期間 rng の予定を読み直し、プレビューと同じ規則で読み替えて、1 つのトランザクションで書く。
 // 確かめが要る予定には decisions の取り込み方を当てる。
 // 確かめが要る予定の集合が decisions と違うときと、同じカレンダーの取り込みが進んでいるときは apperr.ErrConflict を返し、何も書かない。
 // ほかのエラーは Preview と同じである。
@@ -283,7 +283,7 @@ func (u *Usecase) Import(ctx context.Context, id string, rng Range, decisions []
 			return err
 		}
 		if running {
-			return apperr.ConflictCode(CodeImportRunning, "このカレンダーの取り込みが進んでいます。終わってから、もう一度下見してください")
+			return apperr.ConflictCode(CodeImportRunning, "このカレンダーの取り込みが進んでいます。終わってから、もう一度プレビューしてください")
 		}
 		return u.deps.Calendars.CreateRun(ctx, run)
 	})
@@ -293,7 +293,7 @@ func (u *Usecase) Import(ctx context.Context, id string, rng Range, decisions []
 	res, err := u.importPlan(ctx, c, rng, decisions, run)
 	if err != nil {
 		run.Status = RunFailed
-		// 取り込みの誤りを返すので、記録の更新の誤りは返さない。止まった記録は staleRunAfter の後に次の取り込みを止めなくなる。
+		// 取り込みのエラーを返すので、記録の更新のエラーは返さない。止まった記録は staleRunAfter の後に次の取り込みを止めなくなる。
 		_, _ = u.deps.Calendars.FinishRun(context.WithoutCancel(ctx), run)
 		return ImportResult{}, err
 	}

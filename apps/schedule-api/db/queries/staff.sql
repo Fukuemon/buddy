@@ -3,7 +3,7 @@ INSERT INTO users (id, sub, username, email, phone_number, facility_id, departme
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
 
 -- name: AddUserPolicy :execrows
--- 事業所は職員の行から写す。職員が無ければ書かない。
+-- 事業所は職員のレコードからコピーする。職員が無ければ書かない。
 INSERT INTO user_policies (id, facility_id, user_id, policy_id)
 SELECT sqlc.arg(id), u.facility_id, u.id, sqlc.arg(policy_id)
 FROM users u
@@ -21,7 +21,7 @@ DELETE FROM user_policies WHERE user_id = $1;
 DELETE FROM user_policies WHERE id = sqlc.arg(id) AND user_id = sqlc.arg(user_id);
 
 -- name: AddUserPolicyTarget :execrows
--- 事業所は職員の権限の行から写す。職員の権限が無ければ書かない。
+-- 事業所は職員の権限のレコードからコピーする。職員の権限が無ければ書かない。
 INSERT INTO user_policy_targets (id, facility_id, user_policy_id, target_user_id, target_team_id)
 SELECT sqlc.arg(id), up.facility_id, up.id, sqlc.narg(target_user_id), sqlc.narg(target_team_id)
 FROM user_policies up
@@ -86,7 +86,7 @@ UPDATE users SET sub = sqlc.arg(sub)
 WHERE facility_id = sqlc.arg(facility_id) AND email = sqlc.arg(email) AND sub IS NULL;
 
 -- name: GetUserRef :one
--- ほかの機能が職員を参照するときに要る列だけを読む。
+-- ほかの機能が職員を参照するときに要るカラムだけを読む。
 SELECT id, facility_id, team_id FROM users WHERE id = $1;
 
 -- name: ListUserRefsByFacility :many

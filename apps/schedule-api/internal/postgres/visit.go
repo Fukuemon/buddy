@@ -112,7 +112,7 @@ func categories(rows []sqlcgen.VisitCategory) []visit.Category {
 	return out
 }
 
-// visitDetailColumns は、予定の詳細のビューが持つ訪問の情報の列である。
+// visitDetailColumns は、予定の詳細のビューが持つ訪問の情報のカラムである。
 type visitDetailColumns struct {
 	VisitInfoID       *string
 	PatientID         *string
@@ -125,7 +125,7 @@ type visitDetailColumns struct {
 	ServiceCode       *string
 }
 
-// deref は、ビューの外部結合で NULL になりうる列の値を返す。訪問の情報があれば、これらの列は NULL でない。
+// deref は、ビューの外部結合で NULL になりうるカラムの値を返す。訪問の情報があれば、これらのカラムは NULL でない。
 func deref(s *string) string {
 	if s == nil {
 		return ""

@@ -22,8 +22,8 @@ func TestAsConflict(t *testing.T) {
 		wantMsg string
 	}{
 		{name: "衝突", err: apperr.ErrConflict, wantIs: apperr.ErrConflict, wantMsg: "チーム 訪問 はこの事業所にすでにあります"},
-		{name: "ほかの誤り", err: apperr.ErrNotFound, wantIs: apperr.ErrNotFound, wantMsg: apperr.ErrNotFound.Error()},
-		{name: "誤りなし"},
+		{name: "ほかのエラー", err: apperr.ErrNotFound, wantIs: apperr.ErrNotFound, wantMsg: apperr.ErrNotFound.Error()},
+		{name: "エラーなし"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

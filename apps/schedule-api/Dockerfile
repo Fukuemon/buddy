@@ -14,7 +14,7 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/api ./cmd/api && \
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/migrate ./cmd/migrate
 
-# 手元の compose が Google Calendar API の代わりに動かす偽物。docker build --target fakegcal で作り、本番のイメージには入れない。
+# ローカル環境の compose が Google Calendar API の代わりに動かすフェイク。docker build --target fakegcal で作り、本番のイメージには入れない。
 FROM build AS fakegcal-build
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/fakegcal ./cmd/fakegcal

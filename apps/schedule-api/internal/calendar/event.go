@@ -53,17 +53,17 @@ type Event struct {
 	ETag          string
 }
 
-// EventSource が返す誤り。httpapi が状態コードに対応させる。
+// EventSource が返すエラー。httpapi が状態コードに対応させる。
 var (
 	// ErrUnreadable は、カレンダーが無いか、サービスアカウントに共有されていないことを表す。
 	ErrUnreadable = errors.New("カレンダーを読めません。カレンダーの共有を確かめてください")
-	// ErrUnavailable は、外部のカレンダーに届かないか、外部のカレンダーが誤りを返したことを表す。
+	// ErrUnavailable は、外部のカレンダーに届かないか、外部のカレンダーがエラーを返したことを表す。
 	ErrUnavailable = errors.New("外部のカレンダーから予定を読めませんでした")
 	// ErrNotConfigured は、外部のカレンダーを読む認証の情報が設定されていないことを表す。
 	ErrNotConfigured = errors.New("外部のカレンダーを読む設定がありません")
 )
 
-// EventSource は、外部のカレンダーから期間の予定を読む。誤りは ErrUnreadable か ErrUnavailable を包む。
+// EventSource は、外部のカレンダーから期間の予定を読む。エラーは ErrUnreadable か ErrUnavailable を包む。
 type EventSource interface {
 	// Events は、calendarID のカレンダーの、timeMin から timeMax までに重なる予定を、
 	// 繰り返しの親の予定と例外の回を展開せずに返す。

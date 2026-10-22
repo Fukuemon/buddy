@@ -39,7 +39,7 @@ func TestScheduleBodyVisitTitle(t *testing.T) {
 	}
 	b := calendar.ScheduleBody(d)
 	if b.Summary != "【訪看I2】利用者A" {
-		t.Errorf("題名 = %q", b.Summary)
+		t.Errorf("タイトル = %q", b.Summary)
 	}
 	if b.Start.DateTime != "2026-11-04T09:30:00" || b.End.DateTime != "2026-11-04T10:00:00" || b.Start.TimeZone != "Asia/Tokyo" {
 		t.Errorf("日時 = %+v, %+v", b.Start, b.End)

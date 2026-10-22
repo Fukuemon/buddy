@@ -116,7 +116,7 @@ func TestStaffChangePosition(t *testing.T) {
 	}
 	g := s.Grants[staffID]
 	if len(g) != 2 || g[0].PolicyID != "SELF" || g[1].PolicyID != "TEAMEDIT" {
-		t.Fatalf("grants = %+v, want 新しい役職の既定だけ", g)
+		t.Fatalf("grants = %+v, want 新しい役職のデフォルトの権限だけ", g)
 	}
 	if ts := g[1].Targets; len(ts) != 1 || ts[0].TeamID != teamID {
 		t.Errorf("チームの編集の対象 = %+v, want 所属のチーム", ts)

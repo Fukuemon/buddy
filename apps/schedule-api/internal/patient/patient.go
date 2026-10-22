@@ -35,7 +35,7 @@ const (
 // Valid は、g が定義された値かを返す。
 func (g PreferredGender) Valid() bool { return g == Male || g == Female }
 
-// Patient は、利用者である。AssignedStaffID は担当の職員、ServiceCodeID は既定のサービスコードである。
+// Patient は、利用者である。AssignedStaffID は担当の職員、ServiceCodeID はデフォルトのサービスコードである。
 type Patient struct {
 	ID              string
 	FacilityID      string
@@ -69,8 +69,8 @@ type Detail struct {
 	UpdatedAt         time.Time
 }
 
-// ParseSort は、利用者の一覧の並べ替えを読む。列は name、created_at だけを受け付ける。
-// 列を指定しないときは名前の順にする。
+// ParseSort は、利用者の一覧の並べ替えを読む。カラムは name、created_at だけを受け付ける。
+// カラムを指定しないときは名前の順にする。
 func ParseSort(field, order string) (kernel.Sort, error) {
 	return kernel.ParseSort(field, order,
 		[]string{"name", "created_at"},

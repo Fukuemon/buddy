@@ -20,7 +20,7 @@ import (
 // testImage は、compose と CI と同じ PostgreSQL のイメージである。
 const testImage = "postgres:18.6"
 
-// testDB は、TestMain が起動した PostgreSQL に、マイグレーションとシードを当てた接続のプールである。
+// testDB は、TestMain が起動した PostgreSQL に、マイグレーションとシードを適用した接続のプールである。
 var testDB *pgxpool.Pool
 
 // testConfig は、testDB の接続の設定である。利用者は、データベースを作れる管理者である。
@@ -87,7 +87,7 @@ func configFromContainer(ctx context.Context, c *tcpostgres.PostgresContainer) (
 }
 
 // txContext は、テストの終わりにロールバックするトランザクションを持つ ctx を返す。
-// テストどうしが書いた行を見ないよう、書き込むテストはこの ctx を使う。
+// テストどうしが書いたレコードを見ないよう、書き込むテストはこの ctx を使う。
 // PostgreSQL は失敗した文の後でトランザクション全体を止めるので、文ごとにセーブポイントを置き、失敗した文だけを巻き戻す。
 // 制約の違反を確かめた後も、同じトランザクションで続けられる。
 func txContext(t *testing.T) context.Context {
@@ -211,11 +211,11 @@ func TestSeedRollsBackOnFailure(t *testing.T) {
 		t.Fatalf("applied = %v, err = %v", applied, err)
 	}
 	if n := countFacilities(t, pool); n != 0 {
-		t.Errorf("失敗したシードの行が %d 行残った", n)
+		t.Errorf("失敗したシードのレコードが %d 件残った", n)
 	}
 }
 
-// TestMigrateDownAndUp は、初期のマイグレーションを戻すと表とビューと関数が残らず、もう一度当てられることを確かめる。
+// TestMigrateDownAndUp は、初期のマイグレーションを戻すとテーブルとビューと関数が残らず、もう一度適用できることを確かめる。
 func TestMigrateDownAndUp(t *testing.T) {
 	cfg := newDatabase(t, "migrate_round_trip")
 	ctx := context.Background()
@@ -239,7 +239,7 @@ func TestMigrateDownAndUp(t *testing.T) {
 		t.Fatal(err)
 	}
 	if n != 0 {
-		t.Errorf("戻した後に表、ビュー、関数が %d 個残った", n)
+		t.Errorf("戻した後にテーブル、ビュー、関数が %d 個残った", n)
 	}
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)

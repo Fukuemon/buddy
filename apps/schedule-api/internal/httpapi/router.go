@@ -27,7 +27,7 @@ type Usecases struct {
 }
 
 // RouterConfig は、ルーターの設定である。AllowOrigins が空なら CORS のヘッダーを返さない。
-// Ready は GET /readyz が依存先を確かめる関数で、nil なら常に要求を受けられるとみなす。
+// Ready は GET /readyz が依存先を確かめる関数で、nil なら常にリクエストを受けられるとみなす。
 type RouterConfig struct {
 	Logger       *slog.Logger
 	AllowOrigins []string
@@ -50,7 +50,7 @@ var _ openapi.StrictServerInterface = server{}
 func NewRouter(u Usecases, cfg RouterConfig) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
-	// 生成した strict handler は *gin.Context を context として操作に渡すので、要求の取り消しと値を要求の context から引かせる
+	// 生成した strict handler は *gin.Context を context として操作に渡すので、リクエストの取り消しと値をリクエストの context から引かせる
 	r.ContextWithFallback = true
 	r.Use(requestLog(cfg.Logger), gin.CustomRecovery(func(c *gin.Context, recovered any) {
 		cfg.Logger.ErrorContext(c.Request.Context(), "panic", slog.Any("recovered", recovered), slog.String("path", c.FullPath()))
@@ -70,7 +70,7 @@ func NewRouter(u Usecases, cfg RouterConfig) *gin.Engine {
 	am := authMiddleware{verifier: cfg.Verifier, uc: u.Auth, log: cfg.Logger}
 	validateRequest, err := newRequestValidator()
 	if err != nil {
-		// 定義はビルドのときに埋め込むので、読めないのはビルドの誤りである
+		// 定義はビルドのときに埋め込むので、読めないのはビルドのエラーである
 		panic(err)
 	}
 	r.Use(v1Only(am.authenticate), v1Only(am.checkFacility), v1Only(requireULIDParams), v1Only(validateRequest))
@@ -93,7 +93,7 @@ func NewRouter(u Usecases, cfg RouterConfig) *gin.Engine {
 	return r
 }
 
-// v1Only は、/v1 の経路にだけ h を当てる。経路に当たらない要求（404）にも当てない。
+// v1Only は、/v1 の経路にだけ h を当てる。経路に当たらないリクエスト（404）にも当てない。
 func v1Only(h gin.HandlerFunc) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !strings.HasPrefix(c.FullPath(), "/v1/") {

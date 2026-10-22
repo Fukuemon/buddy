@@ -90,7 +90,7 @@ func TestReaderEvents(t *testing.T) {
 
 	queries := f.Queries()
 	if len(queries) != 3 {
-		t.Fatalf("要求の数 = %d, want 3", len(queries))
+		t.Fatalf("リクエストの数 = %d, want 3", len(queries))
 	}
 	q := queries[0]
 	for k, v := range map[string]string{
@@ -243,7 +243,7 @@ func TestWriterErrorKinds(t *testing.T) {
 				t.Errorf("err = %v, want %v", err, tt.want)
 			}
 			if strings.Contains(err.Error(), "staff@example.com") {
-				t.Errorf("誤りの文がカレンダーの ID を含む: %v", err)
+				t.Errorf("エラーの文がカレンダーの ID を含む: %v", err)
 			}
 		})
 	}

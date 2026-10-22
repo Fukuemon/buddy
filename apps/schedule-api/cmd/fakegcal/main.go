@@ -1,4 +1,4 @@
-// Command fakegcal は、手元の compose と E2E で Google Calendar API の代わりに動く偽物である。本番のイメージには入れない。
+// Command fakegcal は、ローカル環境の compose と E2E で Google Calendar API の代わりに動くフェイクである。本番のイメージには入れない。
 //
 // 予定の読み出しと書き込みに答え、予定は -file の JSON（gcaltest.Server の形）から読む。期間では絞らない。
 // 書いた予定はメモリの中にだけ持ち、止めると消える。GET /view は予定を並べる画面で、予定を Google の側で直す操作も持つ。

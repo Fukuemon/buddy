@@ -29,7 +29,7 @@ func NewReader(svc *calendarv3.Service) *Reader {
 // Events は、calendarID のカレンダーの、timeMin から timeMax までに重なる予定を、全てのページを読んで返す。
 // 繰り返しの予定は展開せず（singleEvents=false）、親の予定と、変えた回と取り消した回を返す。日時は Asia/Tokyo で返る。
 // Calendar API が 403 か 404 を返すと calendar.ErrUnreadable を、ほかの失敗では calendar.ErrUnavailable を包んだエラーを返す。
-// HTTP の誤りの応答では、*googleapi.Error も包む。エラーの文はカレンダー ID（職員のメールアドレスのことがある）を含まない。
+// HTTP のエラーのレスポンスでは、*googleapi.Error も包む。エラーの文はカレンダー ID（職員のメールアドレスのことがある）を含まない。
 func (r *Reader) Events(ctx context.Context, calendarID string, timeMin, timeMax time.Time) ([]calendar.Event, error) {
 	var events []calendar.Event
 	// singleEvents と showDeleted が false のとき、繰り返しの予定の取り消した回は cancelled で返る。
@@ -92,7 +92,7 @@ func (r *Reader) Check(ctx context.Context, calendarID string) error {
 var errFreeBusy = fmt.Errorf("%w: 空き時間だけの共有である", calendar.ErrUnreadable)
 
 // checkAccess は、カレンダーが空き時間だけの共有（freeBusyReader）なら calendar.ErrUnreadable を包んだエラーを返す。
-// 空き時間だけの共有では、events.list が繰り返しの親と予定の題名を返さないためである。
+// 空き時間だけの共有では、events.list が繰り返しの親と予定のタイトルを返さないためである。
 // 出典: https://developers.google.com/workspace/calendar/api/guides/recurringevents
 func checkAccess(page *calendarv3.Events) error {
 	if page.AccessRole == "freeBusyReader" {
@@ -101,9 +101,9 @@ func checkAccess(page *calendarv3.Events) error {
 	return nil
 }
 
-// wrap は、Calendar API の呼び出しの誤りを、calendar.ErrUnreadable か calendar.ErrUnavailable で包む。
+// wrap は、Calendar API の呼び出しのエラーを、calendar.ErrUnreadable か calendar.ErrUnavailable で包む。
 func wrap(msg string, err error) error {
-	// 通信の誤り（*url.Error）の文は、カレンダー ID を含む要求の URL を持つ。
+	// 通信のエラー（*url.Error）の文は、カレンダー ID を含むリクエストの URL を持つ。
 	var uerr *url.Error
 	if errors.As(err, &uerr) {
 		err = uerr.Err

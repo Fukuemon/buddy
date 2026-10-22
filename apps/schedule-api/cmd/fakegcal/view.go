@@ -13,14 +13,14 @@ import (
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/gcal/gcaltest"
 )
 
-// viewPage は、偽物のカレンダーの予定を並べる画面である。手元の確かめと証跡の動画で、buddy から書いた予定を見るために使う。
+// viewPage は、フェイクのカレンダーの予定を並べる画面である。ローカル環境の確かめとエビデンスの動画で、buddy から書いた予定を見るために使う。
 var viewPage = template.Must(template.New("view").Parse(`<!doctype html>
 <html lang="ja">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 {{if .Refresh}}<meta http-equiv="refresh" content="{{.Refresh}}">{{end}}
-<title>偽物の Google カレンダー</title>
+<title>フェイクの Google カレンダー</title>
 <style>
 body { font-family: system-ui, sans-serif; margin: 16px; color: #1a1a1a; background: #fff; }
 h1 { font-size: 20px; }
@@ -33,11 +33,11 @@ th, td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; font-siz
 </style>
 </head>
 <body>
-<h1>偽物の Google カレンダー</h1>
-<p class="note">手元の compose で Google Calendar API の代わりに動く偽物の画面である。「Google で 1 時間遅らせる」は、職員が Google カレンダーで予定を直したときと同じく etag を変える。</p>
+<h1>フェイクの Google カレンダー</h1>
+<p class="note">ローカル環境の compose で Google Calendar API の代わりに動くフェイクの画面である。「Google で 1 時間遅らせる」は、職員が Google カレンダーで予定を直したときと同じく etag を変える。</p>
 <nav>{{range .Calendars}}<a href="?calendar={{.}}"{{if eq . $.Calendar}} aria-current="page"{{end}} data-testid="fake-gcal-calendar-{{.}}">{{.}}</a>{{end}}</nav>
 <table data-testid="fake-gcal-events">
-<thead><tr><th>開始</th><th>終了</th><th>題名</th><th>繰り返し</th><th></th></tr></thead>
+<thead><tr><th>開始</th><th>終了</th><th>タイトル</th><th>繰り返し</th><th></th></tr></thead>
 <tbody>
 {{range .Events}}<tr data-testid="fake-gcal-event-{{.ID}}"{{if .Cancelled}} class="cancelled"{{end}}>
 <td>{{.Start}}</td><td>{{.End}}</td><td data-testid="fake-gcal-summary-{{.ID}}">{{.Summary}}</td><td>{{.Recurrence}}</td>

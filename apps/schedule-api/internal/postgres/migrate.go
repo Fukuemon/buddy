@@ -13,7 +13,7 @@ import (
 	"github.com/Fukuemon/buddy/apps/schedule-api/db"
 )
 
-// newMigrate は、埋め込んだマイグレーションを c のデータベースに当てる migrate.Migrate を作る。
+// newMigrate は、埋め込んだマイグレーションを c のデータベースに適用する migrate.Migrate を作る。
 // 返した値の Close で、接続を閉じる。マイグレーションの 1 つのファイルは、1 回の実行で流す。
 func newMigrate(c Config) (*migrate.Migrate, error) {
 	src, err := iofs.New(db.Migrations, "migrations")
@@ -27,7 +27,7 @@ func newMigrate(c Config) (*migrate.Migrate, error) {
 	return m, nil
 }
 
-// MigrateUp は、未適用のマイグレーションをすべて当てる。適用済みなら何もしない。
+// MigrateUp は、未適用のマイグレーションをすべて適用する。適用済みなら何もしない。
 func MigrateUp(c Config) error {
 	m, err := newMigrate(c)
 	if err != nil {
@@ -53,8 +53,8 @@ func MigrateDown(c Config, steps int) error {
 	return nil
 }
 
-// Seed は、架空のデータを 1 つのトランザクションで入れ、入れたら true を返す。事業所の行が 1 つでもあれば、
-// 何もせず false を返す。compose が起動のたびに当てても、入れたデータと手で足したデータを壊さないためである。
+// Seed は、ダミーデータを 1 つのトランザクションで入れ、入れたら true を返す。事業所のレコードが 1 つでもあれば、
+// 何もせず false を返す。compose が起動のたびに適用しても、入れたデータと手で足したデータを壊さないためである。
 // seed は引数のない複数の文で、pgx は 1 回の簡易問い合わせで流す。途中で失敗すると、全ての文を巻き戻す。
 func Seed(ctx context.Context, c Config, seed []byte) (bool, error) {
 	conn, err := pgx.Connect(ctx, c.URL("postgres"))

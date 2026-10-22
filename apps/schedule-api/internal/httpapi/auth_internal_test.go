@@ -19,7 +19,7 @@ import (
 )
 
 // TestEveryV1RouteIsInSpec は、gin に登録した /v1 の経路が全て openapi.yaml の定義にあることを確かめる。
-// 定義に無い経路は、要求の検証を通らずに handler に届くためである。
+// 定義に無い経路は、リクエストの検証を通らずに handler に届くためである。
 func TestEveryV1RouteIsInSpec(t *testing.T) {
 	spec, err := openapi.GetSpec()
 	if err != nil {

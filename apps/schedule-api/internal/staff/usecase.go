@@ -43,8 +43,8 @@ type CreateInput struct {
 	PositionID   string
 }
 
-// Create は、職員を作り、役職の既定の権限を与える。チームを対象にする権限は、職員の所属のチームを対象にする。事業所が見つからないときは apperr.ErrNotFound を、
-// 部署、チーム、役職が見つからないか別の事業所のものであるときは入力の誤りを、職員の管理の権限が無いときは apperr.ErrForbidden を、
+// Create は、職員を作り、役職のデフォルトの権限を与える。チームを対象にする権限は、職員の所属のチームを対象にする。事業所が見つからないときは apperr.ErrNotFound を、
+// 部署、チーム、役職が見つからないか別の事業所のものであるときは入力のエラーを、職員の管理の権限が無いときは apperr.ErrForbidden を、
 // 同じ事業所に同じメールの職員がいるときは apperr.ErrConflict を返す。
 func (s *Usecase) Create(ctx context.Context, in CreateInput) (Detail, error) {
 	if err := s.guard(ctx); err != nil {
@@ -99,9 +99,9 @@ func (s *Usecase) Create(ctx context.Context, in CreateInput) (Detail, error) {
 	return created, err
 }
 
-// ChangePosition は、職員の役職を positionID にし、職員の権限を新しい役職の既定で写し直す。
+// ChangePosition は、職員の役職を positionID にし、職員の権限を新しい役職のデフォルトの権限からコピーし直す。
 // ADR-0002 のとおり、職員ごとに足した権限と対象は消える。職員が見つからないときは apperr.ErrNotFound を、
-// 役職が見つからないか別の事業所のものであるときは入力の誤りを返す。
+// 役職が見つからないか別の事業所のものであるときは入力のエラーを返す。
 func (s *Usecase) ChangePosition(ctx context.Context, id, positionID string) (Detail, error) {
 	if err := s.guard(ctx); err != nil {
 		return Detail{}, err
@@ -137,7 +137,7 @@ type GrantInput struct {
 
 // AddGrant は、職員に権限を 1 つ足す。対象を指定する権限には、職員を対象にする権限なら職員を、
 // チームを対象にする権限ならチームを 1 つ以上指定する。対象を指定しない権限には、対象を指定できない。
-// 職員が見つからないときは apperr.ErrNotFound を、権限、対象が合わないか別の事業所のものであるときは入力の誤りを、
+// 職員が見つからないときは apperr.ErrNotFound を、権限、対象が合わないか別の事業所のものであるときは入力のエラーを、
 // 同じ権限が既にあるときは apperr.ErrConflict を返す。
 func (s *Usecase) AddGrant(ctx context.Context, id string, in GrantInput) (Detail, error) {
 	if err := s.guard(ctx); err != nil {

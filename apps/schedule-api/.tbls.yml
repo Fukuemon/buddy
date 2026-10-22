@@ -23,7 +23,7 @@ viewpoints:
       - users
   - id: policies
     name: 職員と権限
-    desc: 職員が持つ権限と、その対象。職員を登録するとき、役職の既定の権限を写す
+    desc: 職員が持つ権限と、その対象。職員を登録するとき、役職のデフォルトの権限をコピーする
     tables:
       - users
       - positions

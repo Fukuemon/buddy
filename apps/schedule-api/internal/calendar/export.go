@@ -25,7 +25,7 @@ const (
 	ExportFailed ExportStatus = "failed"
 )
 
-// ExportErrorCode は、書けなかった理由である。外部の予定の題名とカレンダーの ID を含めないよう、決まった値だけを持つ。
+// ExportErrorCode は、書けなかった理由である。外部の予定のタイトルとカレンダーの ID を含めないよう、決まった値だけを持つ。
 type ExportErrorCode string
 
 // ExportErrorCode の値。
@@ -38,7 +38,7 @@ const (
 	ErrorRejected ExportErrorCode = "rejected"
 	// ErrorForbidden は、サービスアカウントがカレンダーに予定を書けないことを表す。
 	ErrorForbidden ExportErrorCode = "forbidden"
-	// ErrorUnavailable は、外部のカレンダーに届かないか、外部のカレンダーが一時的な誤りを返したことを表す。
+	// ErrorUnavailable は、外部のカレンダーに届かないか、外部のカレンダーが一時的なエラーを返したことを表す。
 	ErrorUnavailable ExportErrorCode = "unavailable"
 )
 
@@ -75,7 +75,7 @@ type ExportResult struct {
 }
 
 // ExportIssue は、確かめが要る書き出しの待ちと、その予定の日時と職員である。繰り返しの予定では、日付は最初の回の日付である。
-// 予定の題名と利用者名は持たない。
+// 予定のタイトルと利用者名は持たない。
 type ExportIssue struct {
 	Export
 	StaffID   string

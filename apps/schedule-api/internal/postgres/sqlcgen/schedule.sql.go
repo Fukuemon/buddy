@@ -70,7 +70,7 @@ type CreateRecurringScheduleParams struct {
 	EndDate        *time.Time
 }
 
-// is_over_time_work は開始の時刻から生成する列なので書かない。
+// is_over_time_work は開始の時刻から生成するカラムなので書かない。
 func (q *Queries) CreateRecurringSchedule(ctx context.Context, arg CreateRecurringScheduleParams) error {
 	_, err := q.db.Exec(ctx, createRecurringSchedule,
 		arg.ID,
@@ -114,7 +114,7 @@ type CreateScheduleParams struct {
 	Description         *string
 }
 
-// is_over_time_work は開始の時刻から生成する列なので書かない。
+// is_over_time_work は開始の時刻から生成するカラムなので書かない。
 func (q *Queries) CreateSchedule(ctx context.Context, arg CreateScheduleParams) error {
 	_, err := q.db.Exec(ctx, createSchedule,
 		arg.ID,

@@ -8,7 +8,7 @@ import "embed"
 //go:embed migrations/*.sql
 var Migrations embed.FS
 
-// Seed は、開発とテストに使う架空のデータ（seed/seed.sql）である。
+// Seed は、開発とテストに使うダミーデータ（seed/seed.sql）である。
 //
 //go:embed seed/seed.sql
 var Seed []byte

@@ -17,14 +17,14 @@ import (
 )
 
 func init() {
-	// kin-openapi は email の形を既定では確かめないので、登録する。職員のメールは staff.New でも確かめる
+	// kin-openapi は email の形をデフォルトでは確かめないので、登録する。職員のメールは staff.New でも確かめる
 	openapi3.DefineStringFormatValidator("email", openapi3.NewRegexpFormatValidator(openapi3.FormatOfStringForEmail))
 }
 
-// maxBodyBytes は、要求の本文の上限である。検証は本文を全てメモリに読むので、上限を超えた本文は読まずに拒む。
+// maxBodyBytes は、リクエストの本文の上限である。検証は本文を全てメモリに読むので、上限を超えた本文は読まずに拒む。
 const maxBodyBytes = 1 << 20
 
-// newRequestValidator は、要求のパスの引数、クエリ、本文を openapi.yaml の定義で確かめる gin のミドルウェアを作る。
+// newRequestValidator は、リクエストのパスの引数、クエリ、本文を openapi.yaml の定義で確かめる gin のミドルウェアを作る。
 // 定義に合わなければ、handler を呼ばずに 400（code は invalid_input）を返す。
 // トークンの確認は authenticate が受け持つので、定義の security はここでは確かめない。
 // 空の値のクエリ（?date_from= など）は、ハンドラが指定なしとして扱うので、定義では確かめない。
@@ -33,7 +33,7 @@ func newRequestValidator() (gin.HandlerFunc, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load openapi spec: %w", err)
 	}
-	// servers の URL と要求の Host を比べないよう、外す。Host は環境ごとに違う
+	// servers の URL とリクエストの Host を比べないよう、外す。Host は環境ごとに違う
 	spec.Servers = nil
 	router, err := gorillamux.NewRouter(spec)
 	if err != nil {
@@ -61,13 +61,13 @@ func newRequestValidator() (gin.HandlerFunc, error) {
 			badRequest(c, requestErrorMessage(err))
 			return
 		}
-		// 検証に渡した要求の本文は、kin-openapi が読み直せる形に戻している
+		// 検証に渡したリクエストの本文は、kin-openapi が読み直せる形に戻している
 		c.Request.Body = in.Request.Body
 		c.Next()
 	}, nil
 }
 
-// withoutEmptyQuery は、空の値のクエリを外した要求の写しを返す。本文は r と同じものを指す。
+// withoutEmptyQuery は、空の値のクエリを外したリクエストのコピーを返す。本文は r と同じものを指す。
 func withoutEmptyQuery(r *http.Request) *http.Request {
 	q := r.URL.Query()
 	changed := false
@@ -88,7 +88,7 @@ func withoutEmptyQuery(r *http.Request) *http.Request {
 	return c
 }
 
-// schemaErrorAt は、allOf などで包まれた誤りをたどり、一番内側の誤りの場所と理由を返す。
+// schemaErrorAt は、allOf などで包まれたエラーをたどり、一番内側のエラーの場所と理由を返す。
 // 場所は、本文の先頭からの項目を「.」で、配列の位置を「[n]」でつなぐ（例は visit_info.visit_category_ids[0]）。
 func schemaErrorAt(se *openapi3.SchemaError) (string, string) {
 	for {
@@ -112,7 +112,7 @@ func schemaErrorAt(se *openapi3.SchemaError) (string, string) {
 	return b.String(), se.Reason
 }
 
-// requestErrorMessage は、定義に合わない理由を、誤りごとに項目の場所と理由の 1 つの文にして「、」でつなぐ。
+// requestErrorMessage は、定義に合わない理由を、エラーごとに項目の場所と理由の 1 つの文にして「、」でつなぐ。
 func requestErrorMessage(err error) string {
 	msgs := []string{}
 	for _, e := range flatten(err) {
@@ -138,7 +138,7 @@ func requestErrorMessage(err error) string {
 	return strings.Join(msgs, "、")
 }
 
-// flatten は、MultiError と、本文の誤りの束を包んだ RequestError を、1 つずつの誤りに開く。
+// flatten は、MultiError と、本文のエラーの束を包んだ RequestError を、1 つずつのエラーに開く。
 func flatten(err error) []error {
 	var me openapi3.MultiError
 	if errors.As(err, &me) {
@@ -155,7 +155,7 @@ func flatten(err error) []error {
 	return []error{err}
 }
 
-// parameterReason は、パスとクエリの引数の誤りの理由を返す。値が定義に合わないときは、その理由を使う。
+// parameterReason は、パスとクエリの引数のエラーの理由を返す。値が定義に合わないときは、その理由を使う。
 func parameterReason(re *openapi3filter.RequestError) string {
 	var se *openapi3.SchemaError
 	if errors.As(re.Err, &se) {

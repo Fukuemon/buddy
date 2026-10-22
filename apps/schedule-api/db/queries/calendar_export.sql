@@ -66,7 +66,7 @@ SET status = 'pending', overwrite = true, attempts = 0, error_code = NULL, locke
 WHERE id = $1 AND status IN ('conflict', 'failed');
 
 -- name: ListCalendarExportIssues :many
--- 予定の題名と利用者名は読まない。
+-- 予定のタイトルと利用者名は読まない。
 SELECT e.*,
        u.id AS staff_id, u.username AS staff_name,
        COALESCE(s.date, rs.date)::date AS date,

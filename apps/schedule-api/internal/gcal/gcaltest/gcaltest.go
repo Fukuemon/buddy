@@ -1,4 +1,4 @@
-// Package gcaltest は、テストと手元の compose に使う、Calendar API の偽物を提供する。
+// Package gcaltest は、テストとローカル環境の compose に使う、Calendar API のフェイクを提供する。
 // 予定の読み出し（events.list、events.instances、events.get）と書き込み（events.insert、events.patch、events.delete）に答える。
 package gcaltest
 
@@ -16,19 +16,19 @@ import (
 	"google.golang.org/api/option"
 )
 
-// Server は、Calendar API の偽物である。期間（timeMin、timeMax）では絞らない。
-// 書き込みは、要求の If-Match が今の etag と違えば 412 を返し、書くたびに etag を新しくする。
+// Server は、Calendar API のフェイクである。期間（timeMin、timeMax）では絞らない。
+// 書き込みは、リクエストの If-Match が今の etag と違えば 412 を返し、書くたびに etag を新しくする。
 type Server struct {
 	// Calendars は、カレンダー ID ごとの、ページごとの予定である。2 ページ目以降は nextPageToken で返す。
 	// 無いカレンダーには 404 を返す。作った予定は最後のページに足す。
 	Calendars map[string][][]*calendar.Event `json:"calendars"`
 	// Instances は、繰り返しの親の予定の ID ごとの回である。1 ページで返す。無い予定には 404 を返す。
 	Instances map[string][]*calendar.Event `json:"instances"`
-	// AccessRoles は、カレンダー ID ごとの応答の accessRole である。無ければ reader を返す。
+	// AccessRoles は、カレンダー ID ごとのレスポンスの accessRole である。無ければ reader を返す。
 	AccessRoles map[string]string `json:"accessRoles"`
-	// Status が 0 でなければ、全ての要求にその状態の誤りの応答を返す。
+	// Status が 0 でなければ、全てのリクエストにその状態のエラーのレスポンスを返す。
 	Status int `json:"status"`
-	// Failures は、次からの書き込みの要求に順に返す誤りの状態である。返した値は消す。
+	// Failures は、次からの書き込みのリクエストに順に返すエラーの状態である。返した値は消す。
 	Failures []int `json:"failures"`
 
 	mu      sync.Mutex
@@ -39,14 +39,14 @@ type Server struct {
 	writes  int
 }
 
-// Queries は、予定を返した要求のクエリを、受けた順に返す。
+// Queries は、予定を返したリクエストのクエリを、受けた順に返す。
 func (s *Server) Queries() []url.Values {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return append([]url.Values(nil), s.queries...)
 }
 
-// Writes は、受けた書き込みの要求の数を返す。誤りを返した要求も数える。
+// Writes は、受けた書き込みのリクエストの数を返す。エラーを返したリクエストも数える。
 func (s *Server) Writes() int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -102,7 +102,7 @@ func (s *Server) nextETag() string {
 	return strconv.Quote("w" + strconv.Itoa(s.etags))
 }
 
-// Events は、カレンダー calendarID の消していない予定の写しを返す。繰り返しの回（Instances）は含めない。
+// Events は、カレンダー calendarID の消していない予定のコピーを返す。繰り返しの回（Instances）は含めない。
 func (s *Server) Events(calendarID string) []calendar.Event {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -200,7 +200,7 @@ func (s *Server) serveGet(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, ev)
 }
 
-// beginWrite は、書き込みの要求を数え、返す誤りがあれば応答を書いて false を返す。s.mu を持って呼ぶ。
+// beginWrite は、書き込みのリクエストを数え、返すエラーがあればレスポンスを書いて false を返す。s.mu を持って呼ぶ。
 func (s *Server) beginWrite(w http.ResponseWriter, r *http.Request) bool {
 	s.writes++
 	if s.Status != 0 {

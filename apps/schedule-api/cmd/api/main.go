@@ -197,7 +197,7 @@ func run() error {
 }
 
 // newCalendarService は、Google カレンダーの予定を読み書きする calendarv3.Service を返す。サービスアカウントの設定が無ければ nil を返す。
-// 認証の情報は、照合の API と同じく Application Default Credentials で読む。偽物の API に向けるときは認証をしない。
+// 認証の情報は、照合の API と同じく Application Default Credentials で読む。フェイクの API に向けるときは認証をしない。
 // 予定を書き出すときは、スコープを calendar.events にする。書き出さないときは、読むだけの calendar.readonly にする。
 func newCalendarService(ctx context.Context, cfg config.Calendar) (*calendarv3.Service, error) {
 	if cfg.ServiceAccount == "" {

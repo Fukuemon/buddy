@@ -169,7 +169,7 @@ func (s *Usecase) authorize(ctx context.Context, staffID string, edit bool) erro
 }
 
 // Create は、事業所に単発の予定を作る。訪問の情報があれば同じトランザクションで保存する。
-// 事業所が見つからないときは apperr.ErrNotFound を、参照が見つからないか別の事業所のものであるときは入力の誤りを返す。
+// 事業所が見つからないときは apperr.ErrNotFound を、参照が見つからないか別の事業所のものであるときは入力のエラーを返す。
 func (s *Usecase) Create(ctx context.Context, facilityID string, in SlotInput) (Detail, error) {
 	if _, err := s.deps.Facilities.Get(ctx, facilityID); err != nil {
 		return Detail{}, err
@@ -216,7 +216,7 @@ func (s *Usecase) CreateRecurring(ctx context.Context, facilityID string, in Slo
 
 // ChangeOccurrence は、繰り返しの予定の originalDate の回を、in の内容の単発の予定に置き換える。
 // 元の回は繰り返しの予定から除外し、作った単発の予定を返す。
-// 繰り返しの予定が見つからないときは apperr.ErrNotFound を、originalDate が回に当たらないときは入力の誤りを、
+// 繰り返しの予定が見つからないときは apperr.ErrNotFound を、originalDate が回に当たらないときは入力のエラーを、
 // その回をすでに置き換えたときは apperr.ErrConflict を返す。
 func (s *Usecase) ChangeOccurrence(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in SlotInput) (Detail, error) {
 	rs, err := s.deps.Recurring.Get(ctx, recurringScheduleID)
@@ -273,7 +273,7 @@ func (s *Usecase) Cancel(ctx context.Context, scheduleID, reason string) (Cancel
 
 // Update は、単発の予定の枠を in の内容に置き換える。訪問の情報は in の内容で作り直し、前の訪問の情報は消す。
 // 予定が見つからないときは apperr.ErrNotFound を、キャンセル済みのときは apperr.ErrConflict を、
-// 参照が見つからないか別の事業所のものであるときは入力の誤りを返す。
+// 参照が見つからないか別の事業所のものであるときは入力のエラーを返す。
 func (s *Usecase) Update(ctx context.Context, scheduleID string, in SlotInput) (Detail, error) {
 	var updated Detail
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
