@@ -1,13 +1,25 @@
 import { readFile } from 'node:fs/promises'
 
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 import { LEADER, RECEIPT_TESTDATA } from '../../fixtures/env'
-import { receiptResultRow } from '../../selectors/receipt'
+import { receiptCategoryRowCells, receiptResultRow } from '../../selectors/receipt'
 
 // 照合の API は、compose/receipt-calendars.json の森のカレンダーを calendarpit から読む。
-// calendarpit の森のカレンダー（compose/calendarpit/fixture.json）は 2026 年 11 月の予定を持ち、実績の CSV は 2024 年 4 月なので、予定は全て予定のみの行になる。
+// calendarpit の森のカレンダー（compose/calendarpit/fixture.json）は 2026 年 11 月の予定を持つ。
+// 森のカレンダーには、先に流れる取り込みの spec が予定を書き出すことがあるので、件数を数えず、特定の行で確かめる。
 const CALENDAR_MONTH = '2026-11'
+
+/** 照合の画面で、予定の取り方に Google カレンダーを選び、対象の月と実績の CSV で照合する。 */
+const checkWithCalendar = async (page: Page, visits: string) => {
+  await page.goto('/receipt')
+  await page.getByTestId('receipt-source-calendar').check()
+  await expect(page.getByTestId('receipt-source-csv')).not.toBeChecked()
+  await page.getByTestId('receipt-month').fill(CALENDAR_MONTH)
+  await page.getByTestId('receipt-visits-file').setInputFiles(visits)
+  await page.getByTestId('receipt-check-submit').click()
+  await expect(page).toHaveURL(/\/receipt\/result$/)
+}
 
 test.describe('照合の結果', () => {
   test.describe('予定の CSV での照合', () => {
@@ -65,19 +77,11 @@ test.describe('照合の結果', () => {
   })
 
   test.describe('Google カレンダーの予定での照合', () => {
-    test.beforeEach(async ({ page }) => {
-      await page.goto('/receipt')
-      await page.getByTestId('receipt-source-calendar').check()
-      await expect(page.getByTestId('receipt-source-csv')).not.toBeChecked()
-      await page.getByTestId('receipt-month').fill(CALENDAR_MONTH)
-      await page.getByTestId('receipt-visits-file').setInputFiles(RECEIPT_TESTDATA.visits)
-      await page.getByTestId('receipt-check-submit').click()
-      await expect(page).toHaveURL(/\/receipt\/result$/)
-    })
-
     test('対象の月を選んで照合した場合、その月の Google カレンダーの予定が予定のみの行に出ること', async ({
       page,
     }) => {
+      // 実績の CSV は 2024 年 4 月なので、予定は全て予定のみの行になる
+      await checkWithCalendar(page, RECEIPT_TESTDATA.visits)
       await expect(page.getByTestId('receipt-result')).toContainText(
         '2026 年 11 月の Google カレンダー',
       )
@@ -93,6 +97,64 @@ test.describe('照合の結果', () => {
       // 主訪問者の名前は compose/receipt-calendars.json の staff_name で、シードの職員の名前と同じ
       await expect(futaba.first()).toContainText(LEADER.staff.name)
       await expect(receiptResultRow(page, '見本一郎')).toContainText(['2026-11-02', '2026-11-16'])
+    })
+
+    test('対象の月の実績と照合した場合、予定と合う実績が整合の行に、開始時間かサービス内容が違う実績が不整合の行に出ること', async ({
+      page,
+    }) => {
+      await checkWithCalendar(page, RECEIPT_TESTDATA.calendarVisits)
+
+      // 予定の終了時間と提供時間は、訪看I２ と訪看I３ では 1 分減らして比べる。
+      // 主訪問者は compose/receipt-calendars.json の staff_name で、シードの職員の名前と同じ
+      const mori = LEADER.staff.name
+
+      // 11/02 の見本 一郎は、予定の 10:00〜10:30 の訪看I2 と、開始時間、終了時間、提供時間、サービス内容が合う
+      await expect(receiptCategoryRowCells(page, 'match', '2026-11-02', '見本一郎')).toHaveText([
+        '2026-11-02',
+        '見本一郎',
+        mori,
+        '訪看I２',
+        '10:00',
+        '10:29',
+        '29',
+        '訪看I２',
+        '10:00',
+        '10:29',
+        '29',
+        '通常',
+      ])
+
+      // 11/04 の見本 二葉は、予定が 09:00、実績が 09:15 に始まる
+      await expect(receiptCategoryRowCells(page, 'mismatch', '2026-11-04', '見本二葉')).toHaveText([
+        '2026-11-04',
+        '見本二葉',
+        mori,
+        '訪看I３',
+        '09:00 ❌',
+        '09:44',
+        '44',
+        '訪看I３',
+        '09:15 ❌',
+        '09:59',
+        '44',
+        '通常',
+      ])
+
+      // 11/18 の見本 二葉は、予定が置き換えた回の 14:00 の訪看I3、実績が同じ時刻の予防訪看I３ である
+      await expect(receiptCategoryRowCells(page, 'mismatch', '2026-11-18', '見本二葉')).toHaveText([
+        '2026-11-18',
+        '見本二葉',
+        mori,
+        '訪看I３ ❌',
+        '14:00',
+        '14:44',
+        '44',
+        '予防訪看I３ ❌',
+        '14:00',
+        '14:44',
+        '44',
+        '通常',
+      ])
     })
   })
 })
