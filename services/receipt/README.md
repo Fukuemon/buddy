@@ -129,16 +129,18 @@ curl -s -H "Authorization: Bearer $TOKEN" -F visits=@testdata/visits_utf8.csv -F
 
 ## Google カレンダーから予定を取る
 
-職員は、自分の事業所のサービスアカウントにカレンダーを閲覧の権限で共有する。  
+職員は、自分の事業所のサービスアカウントにカレンダーを共有する。共有の権限は、[基盤と運用の事業所を足す手順](../../context/operations.md#adding-a-facility) にある。  
 API は、Application Default Credentials で認証し、カレンダーの組織のサービスアカウントになりすまして予定を読む。  
 ドメイン全体の委任とサービスアカウントのキーは使わない。
 
 - ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](../../docs/adr/0012-google-calendar-facility-service-accounts.md)
 
-ローカルで検証の事業所のカレンダーを読む手順は、次のとおり。
+ローカルで検証の事業所のカレンダーを読む手順は、次のとおり。  
+この手順はメンテナー向けで、運営側の GCP のプロジェクトと検証の事業所のサービスアカウントを前提にする。ほかの人は、`GOOGLE_CALENDAR_ENDPOINT` で Google カレンダーの代わりの calendarpit に向けて試すか、予定の CSV で照合する。
 
 1. 運営側に、検証の事業所のサービスアカウントのトークン作成者のロール（`roles/iam.serviceAccountTokenCreator`）を、自分のアカウントに付けてもらう。本番の事業所のアカウントのロールは付けない。
-2. 検証のカレンダーを、検証の事業所のサービスアカウントに「予定の表示（すべての予定の詳細）」で共有する。
+   - 検証の事業所のアカウントに、`serviceusage.services.use` を持つロールも要るかは、未確認である（ADR-0012 の承認の条件）。
+2. 検証のカレンダーを、検証の事業所のサービスアカウントに、事業所を足す手順と同じ権限で共有する。
 3. 検証の事業所のサービスアカウントになりすました Application Default Credentials を作る。
    ```sh
    gcloud auth application-default login --impersonate-service-account=<検証の事業所のサービスアカウント>
