@@ -130,7 +130,7 @@ apps/web の画面だけが使う印は、`apps/web/src/assets/icons/` の SVG �
 
 - 出典: [DADS のコンポーネント](https://design.digital.go.jp/dads/components/)
 
-### DADS の指針から外れるところ
+### DADS の指針との違い
 
 | コンポーネント | DADS の指針 | buddy の使い方 | 理由 |
 | --- | --- | --- | --- |
