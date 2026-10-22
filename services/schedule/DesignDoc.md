@@ -4,7 +4,7 @@ title: 予定の管理
 description: schedule-api のコードの構成、テーブルの構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更とキャンセル、Google カレンダーの取り込み、書き出し、同期
 status: stable
 governs: services/schedule
-verified_commit: 6692e2f
+verified_commit: b1594ef
 ---
 
 # 予定の管理
@@ -294,7 +294,7 @@ schedule-api は、Google Calendar API を、事業所ごとのサービスア�
 
 職員の管理の権限を持つ職員が、職員に Google カレンダーを結び付け、期間を選んでプレビューし、確定して予定に取り込む（ADR-0009 の段階 1）。読み替えの規則と画面の動きは、画面仕様書の [予定の取り込み](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-import_予定の取り込み/index.md) と [カレンダーの連携](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-link_カレンダーの連携/index.md) にある。
 
-- ADR-0009: [Google カレンダーとの連携を、buddy をマスターにする段階の同期にする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0009-google-calendar-sync.md)
+- ADR-0009: [Google カレンダーとの連携を、buddy をマスターにする段階の同期にし、サービスアカウントとカレンダーの共有で認証する](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0009-google-calendar-sync.md)
 
 ```mermaid
 sequenceDiagram
@@ -319,11 +319,12 @@ sequenceDiagram
 - 取り込んだ Google の予定は、`external_event_links` の対応を持つ。対応のある予定は取り込み済みに数え、もう一度は書かない。
 - 繰り返しは、親の予定の RRULE を buddy の規則に変換できれば、規則ごと取り込む。期間の外の回も繰り返しの予定に含まれる。Google が返した取り消した回は除外の日に、期間の中の変えた回は除外の日と、元の回の日付を持つ単発の予定にする。前の取り込みで取り込んだ繰り返しにも、後の期間の取り消しと変更を反映する。
 - 前の取り込みで回か例外の回だけを取り込んだ繰り返しは、規則に変換できる形でも回ごとにする。規則ごと作ると、前に取り込んだ回と重なるためである。
-- Google は変えた回を今の日時で期間に絞るので、期間の前後 31 日を広げて例外の回を読み直し、元の日付が期間の中の回も読み替える。期間の中の回を期間の外へ動かしても、元の日に回が残らない。31 日より遠くへ動かした回は読めず、元の日に回が残る。Calendar API は元の日時で予定を絞れず、上限なしに探すと回ごとに API を呼ぶことになるためである。
+- Google が変えた回を、元の日時と今の日時のどちらで期間に絞るかは、未確認である。今の日時で絞るとみなし、期間の前後 31 日を広げて例外の回を読み直し、元の日付が期間の中の回も読み替える。期間の中の回を期間の外へ動かしても、元の日に回が残らない。31 日より遠くへ動かした回は読めず、元の日に回が残る。Calendar API は元の日時で予定を絞れず、上限なしに探すと回ごとに API を呼ぶことになるためである。
 - 変換できない繰り返しは、events.instances で期間の中の回を読み、回ごとに単発の予定にする。回の対応は、回の ID で持つ。
 - タイトルのサービス内容と利用者名は、照合の API と同じ規則で表記をそろえ、サービスコードと事業所の利用者を引く。利用者を 1 人に決められない予定は、プレビューで取り込み方を選ばせる。取り込んだ訪問の予定の主訪問者は、カレンダーを結び付けた職員である。
 - 予定のタイトル、利用者名、カレンダーの ID は、取り込まない予定の一覧、エラーのメッセージ、ログに出さない。確かめが要る予定だけは、タイトルから読んだ利用者名とサービス内容を返す。
-- 空き時間だけの共有（`freeBusyReader`）のカレンダーは、読めないとみなす（422 `calendar_unreadable`）。Google は空き時間だけの共有に、繰り返しの親と予定のタイトルを返さないためである。
+- 空き時間だけの共有（`freeBusyReader`）のカレンダーは、読めないとみなす（422 `calendar_unreadable`）。公式の文書は、空き時間だけの共有の `events.list` が `singleEvents=true` のように動き、繰り返しの親を返さないと書く。予定のタイトルを返さないことと、実際の API での振る舞いは未確認である。
+  - 出典: [Recurring events](https://developers.google.com/workspace/calendar/api/guides/recurringevents)
 - カレンダーを外しても、レコードと予定の対応は消さない。同じ職員に結び付け直すと、外したレコードを使い直す。
 
 ### Google カレンダーへの書き出し
@@ -477,7 +478,7 @@ calendarpit で足りない振る舞いと、その扱い
 
 ## Interface
 
-- 事業所に属する一覧と作成のパスは `/v1/facilities/{facility_id}/<リソース>` の形にする。1 件を指すパスは `/v1/<リソース>/{<リソース>_id}` の形にする。主なものは `schedules`、`schedules/recurring`、`users`、`patients`、`departments`、`teams`、`positions`、`external_calendars`、`calendar_exports` である。リソースごとにどのパスを持つかは `openapi.yaml` にある。
+- 事業所に属する一覧と作成のパスは `/v1/facilities/{facility_id}/<リソース>` の形にする。1 件を指すパスは `/v1/<リソース>/{<リソース>_id}` の形にする。主なものは `schedules`、`schedules/recurring`、`users`、`patients`、`departments`、`teams`、`positions` である。Google カレンダーの連携のものは `external_calendars`、`calendar_exports`、`calendar_export_issues`、`calendar_service_account` である。リソースごとにどのパスを持つかは `openapi.yaml` にある。
 - 事業所に属さないマスタは `/v1/policies`、`/v1/schedule_types`、`/v1/visit_infos/service_codes`、`/v1/visit_infos/visit_categories` で読む。
 - 一覧の並べ替えは、許可したカラムの名前だけを受け、それ以外は 400 を返す。
 - `GET /v1/me` は、トークンの職員と権限を返す。画面は、ログインの後にこれを呼んで事業所を決める。
