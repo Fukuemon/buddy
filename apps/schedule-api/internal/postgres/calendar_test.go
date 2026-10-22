@@ -174,7 +174,7 @@ func TestCalendarImportInOneTransaction(t *testing.T) {
 	recurring := NewRecurringScheduleRepository(testDB)
 	ids := ulid.Generator{}
 	uc := calendar.NewUsecase(calendar.Deps{
-		Calendars: calendars, Source: gcal.NewReader(gcaltest.Start(t, srv)), ServiceAccount: "buddy@example.com",
+		Calendars: calendars, Accounts: sameAccount{gcal.NewReader(gcaltest.Start(t, srv))},
 		Staff: staffRefs, Patients: patients, ServiceCodes: masters, Types: NewScheduleTypeRepository(testDB),
 		Schedules: schedules, Recurring: recurring, RecurringSchedules: recurring,
 		Visits: visit.NewWriter(visit.WriterDeps{
@@ -229,4 +229,19 @@ func TestCalendarImportInOneTransaction(t *testing.T) {
 	if again.Run.ImportedCount != 0 || again.AlreadyImported != 5 {
 		t.Errorf("2 回目 = %+v, AlreadyImported = %d", again.Run, again.AlreadyImported)
 	}
+}
+
+// sameAccount は、全ての事業所で同じ source で読む calendar.Accounts である。書く手段は持たない。
+type sameAccount struct{ source calendar.EventSource }
+
+func (sameAccount) ServiceAccount(context.Context, string) (string, error) {
+	return "buddy@example.iam.gserviceaccount.com", nil
+}
+
+func (a sameAccount) Source(context.Context, string) (calendar.EventSource, error) {
+	return a.source, nil
+}
+
+func (sameAccount) Writer(context.Context, string) (calendar.EventWriter, error) {
+	return nil, calendar.ErrNotConfigured
 }

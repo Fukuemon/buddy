@@ -26,11 +26,11 @@ const (
 	exportBackoff = 30 * time.Second
 )
 
-// ExporterDeps は、Exporter が使うリポジトリと、外部のカレンダーに書く EventWriter である。
+// ExporterDeps は、Exporter が使うリポジトリと、外部のカレンダーに書く EventWriter を事業所ごとに返す Writers である。
 type ExporterDeps struct {
 	Exports   ExportRepository
 	Calendars Repository
-	Writer    EventWriter
+	Writers   WriterFor
 	Schedules kernel.Finder[schedule.Detail]
 	Recurring kernel.Finder[schedule.RecurringDetail]
 }
@@ -209,6 +209,7 @@ type item struct {
 }
 
 // sync は、予定 it を、職員が結び付けた外していないカレンダーの内容にそろえる。
+// 外部のカレンダーには、そのカレンダーの行の事業所のサービスアカウントで書く（ADR-0012）。
 //   - 予定の対応のカレンダーを外していれば、そのカレンダーには書かない。職員に別のカレンダーがあれば、対応を消して、そのカレンダーに作る。
 //   - 予定の対応があり、職員のカレンダーが同じなら、外部の予定を更新する。
 //   - 予定を消すか、職員のカレンダーが替わったなら、対応の外部の予定を消して対応も消す。
@@ -233,7 +234,11 @@ func (x *Exporter) sync(ctx context.Context, e Export, it item) error {
 		case lc.DisabledAt != nil:
 			// 外したカレンダーの予定は消さずに残し、職員の今のカレンダーに作る
 		case it.body != nil && hasCal && cal.ID == lc.ID:
-			etag, err := x.deps.Writer.Update(ctx, lc.CalendarID, it.link.ExternalEventID, ifMatch(e, *it.link), *it.body)
+			w, err := x.deps.Writers(ctx, lc.FacilityID)
+			if err != nil {
+				return err
+			}
+			etag, err := w.Update(ctx, lc.CalendarID, it.link.ExternalEventID, ifMatch(e, *it.link), *it.body)
 			if err == nil {
 				return x.deps.Calendars.UpdateLink(ctx, it.link.ID, etag, it.version)
 			}
@@ -242,7 +247,11 @@ func (x *Exporter) sync(ctx context.Context, e Export, it item) error {
 				return err
 			}
 		default:
-			if err := x.deps.Writer.Delete(ctx, lc.CalendarID, it.link.ExternalEventID, ifMatch(e, *it.link)); err != nil && !errors.Is(err, ErrEventGone) {
+			w, err := x.deps.Writers(ctx, lc.FacilityID)
+			if err != nil {
+				return err
+			}
+			if err := w.Delete(ctx, lc.CalendarID, it.link.ExternalEventID, ifMatch(e, *it.link)); err != nil && !errors.Is(err, ErrEventGone) {
 				return err
 			}
 		}
@@ -257,10 +266,14 @@ func (x *Exporter) sync(ctx context.Context, e Export, it item) error {
 	if err != nil {
 		return err
 	}
-	etag, err := x.deps.Writer.Insert(ctx, cal.CalendarID, eventID, *it.body)
+	w, err := x.deps.Writers(ctx, cal.FacilityID)
+	if err != nil {
+		return err
+	}
+	etag, err := w.Insert(ctx, cal.CalendarID, eventID, *it.body)
 	if errors.Is(err, ErrEventExists) {
 		// 前に作った後で対応を書けなかったか、消した予定である。ID が buddy の予定から決まるので、buddy の内容で書き直す。
-		etag, err = x.deps.Writer.Update(ctx, cal.CalendarID, eventID, "", *it.body)
+		etag, err = w.Update(ctx, cal.CalendarID, eventID, "", *it.body)
 	}
 	if err != nil {
 		return err

@@ -45,6 +45,9 @@ export const HAYASHI = {
  */
 export const FAKE_GOOGLE_URL = process.env.E2E_FAKE_GOOGLE_URL ?? 'http://localhost:8085'
 
+/** compose の compose/google-calendar-service-accounts.json が、シードの事業所の組織に割り当てた架空のサービスアカウント。 */
+export const FACILITY_SERVICE_ACCOUNT = 'buddy-org-sample@example.iam.gserviceaccount.com'
+
 /** シードの利用者。訪問の予定を作るときに選ぶ。 */
 export const SEED_PATIENT = { id: '01M3TC66FGZVK39Y7GRVZSGWS1', name: '見本 一郎' }
 

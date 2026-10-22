@@ -6,7 +6,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
@@ -15,10 +14,9 @@ import (
 	"syscall"
 	"time"
 
-	"golang.org/x/oauth2/google"
 	calendarv3 "google.golang.org/api/calendar/v3"
-	"google.golang.org/api/option"
 
+	"github.com/Fukuemon/buddy/packages/go/gcalauth"
 	"github.com/Fukuemon/buddy/packages/go/healthcheck"
 
 	"github.com/Fukuemon/buddy/packages/go/oidc"
@@ -74,18 +72,16 @@ func run() error {
 		return err
 	}
 
-	svc, err := newCalendarService(ctx, cfg.Calendar)
-	if err != nil {
-		return err
-	}
-	var source calendar.EventSource
-	if svc != nil {
-		source = gcal.NewReader(svc)
-	}
-
 	tx := postgres.NewTransactor(db)
 	ids := ulid.Generator{}
 	facilities := postgres.NewFacilityRepository(db)
+	accounts, err := newCalendarAccounts(ctx, cfg.Calendar, func(ctx context.Context, facilityID string) (string, error) {
+		f, err := facilities.Get(ctx, facilityID)
+		return f.OrgID, err
+	})
+	if err != nil {
+		return err
+	}
 	departments := postgres.NewDepartmentRepository(db)
 	teams := postgres.NewTeamRepository(db)
 	positions := postgres.NewPositionRepository(db)
@@ -131,7 +127,7 @@ func run() error {
 			Exports: outbox,
 		}, tx, ids),
 		Calendars: calendar.NewUsecase(calendar.Deps{
-			Calendars: calendars, Source: source, ServiceAccount: cfg.Calendar.ServiceAccount,
+			Calendars: calendars, Accounts: calendarAccounts(accounts),
 			Staff: staffRefs, Patients: patients, ServiceCodes: visitMasters, Types: scheduleTypes,
 			Schedules: schedules, Recurring: recurring, RecurringSchedules: recurring, Visits: visitInfos,
 			Exports: exports,
@@ -163,9 +159,9 @@ func run() error {
 
 	// 書き出しと同期の処理は、止まる合図の後、取った待ちとカレンダーの結果を書いてから止まる。DB を閉じる前に止めて待つ。
 	exporterDone, syncerDone := make(chan struct{}), make(chan struct{})
-	if svc != nil && cfg.Calendar.ExportEnabled {
+	if accounts != nil && cfg.Calendar.ExportEnabled {
 		exporter := calendar.NewExporter(calendar.ExporterDeps{
-			Exports: exports, Calendars: calendars, Writer: gcal.NewWriter(svc), Schedules: schedules, Recurring: recurring,
+			Exports: exports, Calendars: calendars, Writers: accounts.Writer, Schedules: schedules, Recurring: recurring,
 		}, ids, log)
 		go func() {
 			defer close(exporterDone)
@@ -174,11 +170,10 @@ func run() error {
 	} else {
 		close(exporterDone)
 	}
-	if svc != nil && cfg.Calendar.SyncEnabled {
+	if accounts != nil && cfg.Calendar.SyncEnabled {
 		syncer := calendar.NewSyncer(calendar.SyncerDeps{
 			Syncs: postgres.NewCalendarSyncRepository(db), Calendars: calendars, Exports: exports,
-			// 今はサービスアカウントが 1 つなので、全ての事業所で同じ source を使う
-			Sources:   func(context.Context, string) (calendar.EventSource, error) { return source, nil },
+			Sources:   accounts.Source,
 			Schedules: schedules, Recurring: recurring, Types: scheduleTypes, Patients: patients, ServiceCodes: visitMasters, Visits: visitInfos,
 		}, tx, ids, cfg.Calendar.SyncInterval, log)
 		go func() {
@@ -211,28 +206,35 @@ func run() error {
 	return nil
 }
 
-// newCalendarService は、Google カレンダーの予定を読み書きする calendarv3.Service を返す。サービスアカウントの設定が無ければ nil を返す。
-// 認証の情報は、照合の API と同じく Application Default Credentials で読む。偽物の API に向けるときは認証をしない。
+// newCalendarAccounts は、事業所の組織のサービスアカウントで Google カレンダーを読み書きする gcal.Accounts を返す。
+// サービスアカウントの設定が無ければ nil を返す。認証は Application Default Credentials で読み、事業所のアカウントになりすます。
+// フェイクの API に向けるときは、GOOGLE_APPLICATION_CREDENTIALS の認証情報をなりすまさずに使い、無ければ認証をしない。
 // 予定を書き出すときは、スコープを calendar.events にする。書き出さないときは、読むだけの calendar.readonly にする。
-func newCalendarService(ctx context.Context, cfg config.Calendar) (*calendarv3.Service, error) {
-	if cfg.ServiceAccount == "" {
+func newCalendarAccounts(ctx context.Context, cfg config.Calendar, orgOf gcal.OrgOf) (*gcal.Accounts, error) {
+	if cfg.ServiceAccountsFile == "" {
 		return nil, nil
 	}
-	var opts []option.ClientOption
-	if cfg.Endpoint != "" {
-		opts = append(opts, option.WithEndpoint(cfg.Endpoint), option.WithoutAuthentication())
-	} else {
-		scope := calendarv3.CalendarReadonlyScope
-		if cfg.ExportEnabled {
-			scope = calendarv3.CalendarEventsScope
-		}
-		creds, err := google.FindDefaultCredentials(ctx, scope)
-		if err != nil {
-			return nil, fmt.Errorf("application default credentials を読めません: %w", err)
-		}
-		opts = append(opts, option.WithCredentials(creds))
+	accounts, err := gcalauth.LoadAccounts(cfg.ServiceAccountsFile)
+	if err != nil {
+		return nil, err
 	}
-	return calendarv3.NewService(ctx, opts...)
+	scope := calendarv3.CalendarReadonlyScope
+	if cfg.ExportEnabled {
+		scope = calendarv3.CalendarEventsScope
+	}
+	clients, err := gcalauth.New(ctx, gcalauth.Config{Accounts: accounts, Scope: scope, Endpoint: cfg.Endpoint})
+	if err != nil {
+		return nil, err
+	}
+	return gcal.NewAccounts(clients, orgOf), nil
+}
+
+// calendarAccounts は、設定が無いときに、nil の *gcal.Accounts を入れた calendar.Accounts でなく nil を返す。
+func calendarAccounts(a *gcal.Accounts) calendar.Accounts {
+	if a == nil {
+		return nil
+	}
+	return a
 }
 
 // tokenVerifier は、共有の oidc.Verifier を httpapi.TokenVerifier にする。httpapi は oidc を import しないので、主張の型をここで写す。

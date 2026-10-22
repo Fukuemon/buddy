@@ -89,3 +89,9 @@ func Start(t testing.TB, s *Server) *calendar.Service {
 	}
 	return svc
 }
+
+// Same は、どの組織にも svc を返す gcal.Services である。
+type Same struct{ Svc *calendar.Service }
+
+// Service は、組織によらず Svc を返す。
+func (s Same) Service(string) (*calendar.Service, error) { return s.Svc, nil }

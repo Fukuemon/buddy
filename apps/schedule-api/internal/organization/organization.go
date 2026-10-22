@@ -13,8 +13,10 @@ const maxNameLen = 255
 
 // Facility は、訪問看護の事業所である。
 type Facility struct {
-	ID        string
-	Name      string
+	ID   string
+	Name string
+	// OrgID は、認証のブローカーの組織の ID で、結び付けるまで空である。
+	OrgID     string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
