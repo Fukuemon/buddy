@@ -32,6 +32,16 @@ type exportEnv struct {
 	srv       *gcaltest.Server
 	schedules *schedule.Usecase
 	exporter  *calendar.Exporter
+	// writers は、書き出しの処理が書く手段を引いた事業所の、引いた順の一覧である。
+	writers *[]string
+}
+
+// writerOf は、事業所によらず w で書く calendar.WriterFor を返し、引かれた事業所を used に足す。
+func writerOf(w calendar.EventWriter, used *[]string) calendar.WriterFor {
+	return func(_ context.Context, facilityID string) (calendar.EventWriter, error) {
+		*used = append(*used, facilityID)
+		return w, nil
+	}
 }
 
 func newExportEnv(t *testing.T) exportEnv {
@@ -54,11 +64,12 @@ func newExportEnv(t *testing.T) exportEnv {
 		Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, Types: inmem.ScheduleTypes{Store: s},
 		Exports: calendar.NewOutbox(exports, inmem.Calendars{Store: s}, ids),
 	}, &inmem.Tx{}, ids)
+	writers := &[]string{}
 	exporter := calendar.NewExporter(calendar.ExporterDeps{
-		Exports: exports, Calendars: inmem.Calendars{Store: s}, Writer: gcal.NewWriter(gcaltest.Start(t, srv)),
+		Exports: exports, Calendars: inmem.Calendars{Store: s}, Writers: writerOf(gcal.NewWriter(gcaltest.Start(t, srv)), writers),
 		Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s},
 	}, ids, slog.New(slog.NewTextHandler(io.Discard, nil)))
-	return exportEnv{env: e, srv: srv, schedules: sched, exporter: exporter}
+	return exportEnv{env: e, srv: srv, schedules: sched, exporter: exporter, writers: writers}
 }
 
 func (e exportEnv) create(t *testing.T, title string) schedule.Detail {
@@ -588,5 +599,25 @@ func TestExportRecurringKeepsImportedExceptions(t *testing.T) {
 	// 取り込んだ例外の回が置き換えた 11/9 は EXDATE にせず、buddy で除いた 11/16 だけを EXDATE にする
 	if len(ev.Recurrence) != 2 || ev.Recurrence[1] != "EXDATE;TZID=Asia/Tokyo:20261116T090000" {
 		t.Errorf("繰り返し = %v", ev.Recurrence)
+	}
+}
+
+// 書き出しは、要求を受けずに動くので、予定の職員が結び付けたカレンダーの行の事業所のサービスアカウントで書く。
+func TestExportUsesCalendarFacilityAccount(t *testing.T) {
+	e := newExportEnv(t)
+	d := e.create(t, "カンファレンス")
+	e.run(t)
+	if got := *e.writers; len(got) != 1 || got[0] != inmem.FacilityID {
+		t.Fatalf("作るときに引いた事業所 = %v", got)
+	}
+	// カレンダーの行の事業所で引くことを、予定の事業所と違う値にして確かめる。
+	c := e.store.Calendars[calID]
+	c.FacilityID = inmem.OtherFacilityID
+	e.store.Calendars[calID] = c
+	*e.writers = nil
+	e.update(t, d.ID, "カンファレンス（変更）", inmem.StaffID)
+	e.run(t)
+	if got := *e.writers; len(got) != 1 || got[0] != inmem.OtherFacilityID {
+		t.Errorf("更新するときに引いた事業所 = %v, want カレンダーの行の事業所", got)
 	}
 }

@@ -182,7 +182,7 @@ func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
 	source := gcal.NewReader(gcaltest.Start(t, srv))
 	tx := NewTransactor(testDB)
 	uc := calendar.NewUsecase(calendar.Deps{
-		Calendars: calendars, Source: source, ServiceAccount: "buddy@example.com",
+		Calendars: calendars, Accounts: sameAccount{source},
 		Staff: staffRefs, Patients: patients, ServiceCodes: masters, Types: types,
 		Schedules: schedules, Recurring: recurring, RecurringSchedules: recurring, Visits: visits,
 	}, tx, ids, principal.RequireStaffManage)

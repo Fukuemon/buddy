@@ -24,9 +24,11 @@ type fakeCalendars struct {
 	lastRange     calendar.Range
 	lastDecisions []calendar.Decision
 	preview       calendar.Preview
+	lastFacility  string
 }
 
-func (f *fakeCalendars) ServiceAccount(context.Context) (string, error) {
+func (f *fakeCalendars) ServiceAccount(_ context.Context, facilityID string) (string, error) {
+	f.lastFacility = facilityID
 	return "buddy@example.iam.gserviceaccount.com", f.err
 }
 
@@ -34,7 +36,10 @@ func (f *fakeCalendars) List(context.Context, string) ([]calendar.ExternalCalend
 	return []calendar.ExternalCalendar{{ID: calendarID, Provider: calendar.ProviderGoogle}}, f.err
 }
 
-func (f *fakeCalendars) Check(context.Context, string) error { return f.err }
+func (f *fakeCalendars) Check(_ context.Context, facilityID, _ string) error {
+	f.lastFacility = facilityID
+	return f.err
+}
 
 func (f *fakeCalendars) Link(_ context.Context, facilityID, staffID, calendarID string) (calendar.ExternalCalendar, error) {
 	return calendar.ExternalCalendar{ID: calendarID, FacilityID: facilityID, StaffID: staffID, Provider: calendar.ProviderGoogle}, f.err
@@ -133,6 +138,20 @@ func TestCalendarErrorStatus(t *testing.T) {
 				t.Error("内部のエラーの文を返した")
 			}
 		})
+	}
+}
+
+// サービスアカウントとカレンダーの確かめは、パスの事業所のアカウントで行う。
+func TestCalendarAccountOfFacility(t *testing.T) {
+	f := &fakeCalendars{}
+	rec, body := do(t, newCalendarRouter(f), http.MethodGet, "/v1/facilities/"+facilityID+"/calendar_service_account", "")
+	if rec.Code != http.StatusOK || body["email"] != "buddy@example.iam.gserviceaccount.com" || f.lastFacility != facilityID {
+		t.Errorf("service account: status = %d, body = %v, facility = %q", rec.Code, body, f.lastFacility)
+	}
+	f = &fakeCalendars{}
+	rec, _ = do(t, newCalendarRouter(f), http.MethodPost, "/v1/facilities/"+facilityID+"/external_calendars/check", `{"calendar_id":"cal"}`)
+	if rec.Code != http.StatusOK || f.lastFacility != facilityID {
+		t.Errorf("check: status = %d, body = %s, facility = %q", rec.Code, rec.Body, f.lastFacility)
 	}
 }
 

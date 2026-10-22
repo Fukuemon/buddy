@@ -100,8 +100,8 @@ services:
       OIDC_AUDIENCE: schedule-api
       # web と、API の仕様のページで要求を試す手元の文書のサイト（zensical serve）に許す
       CORS_ALLOW_ORIGINS: http://localhost:${WEB_PORT:-3000},http://localhost:8000
-      # 架空のサービスアカウント。偽物の Calendar API は認証を求めない
-      GOOGLE_CALENDAR_SERVICE_ACCOUNT: buddy-calendar@example.iam.gserviceaccount.com
+      # 事業所の組織と、架空のサービスアカウントの対応。フェイクの Calendar API は認証を求めない
+      GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE: /config/google-calendar-service-accounts.json
       GOOGLE_CALENDAR_ENDPOINT: http://fake-google:8080/
       GOOGLE_CALENDAR_EXPORT_ENABLED: 'true'
       # E2E が書き出しを待つ時間を短くする
@@ -109,6 +109,7 @@ services:
       GOOGLE_CALENDAR_SYNC_ENABLED: 'true'
       # E2E が Google の変更の反映を待つ時間を短くする
       GOOGLE_CALENDAR_SYNC_INTERVAL: 2s
+    volumes: [./compose/google-calendar-service-accounts.json:/config/google-calendar-service-accounts.json:ro]
     ports: ['127.0.0.1:${SCHEDULE_API_PORT:-8080}:8080']
     healthcheck:
       test: ['CMD', '/usr/local/bin/api', 'healthcheck']
