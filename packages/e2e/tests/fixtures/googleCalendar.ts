@@ -65,6 +65,22 @@ export const shiftGoogleEvent = async (
   await ensureOk(patched, '予定を直せない')
 }
 
+/**
+ * 予定を消す。職員が Google カレンダーで予定を消したときの代わりで、予定は status が cancelled になり、etag が変わる。
+ * calendarpit の管理の画面で予定を消したときと同じ管理の API を使う。
+ */
+export const deleteGoogleEvent = async (
+  request: APIRequestContext,
+  calendarId: string,
+  eventId: string,
+) => {
+  // 管理の API は、本文の無い削除にも application/json を求める
+  const res = await request.delete(`${eventsUrl(calendarId)}/${encodeURIComponent(eventId)}`, {
+    headers: { 'Content-Type': 'application/json' },
+  })
+  await ensureOk(res, '予定を消せない')
+}
+
 /** 中継の gcalhold が、Google の変更を予定の API に渡すかを変える。 */
 export const holdGoogleChanges = async (request: APIRequestContext, hold: boolean) => {
   const res = await request.post(`${GCALHOLD_URL}/hold`, { data: { hold } })

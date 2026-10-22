@@ -450,6 +450,7 @@ func (s *Server) servePatch(w http.ResponseWriter, r *http.Request) {
 }
 
 // serveDelete は、events.delete に答える。消した予定は一覧から除き、もう一度消すと 410 を返す。
+// 消した予定でも、If-Match が今の etag と違えば、410 より先に 412 を返す。本物の Calendar API と calendarpit と同じである。
 func (s *Server) serveDelete(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -457,17 +458,20 @@ func (s *Server) serveDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cal, id := r.PathValue("id"), r.PathValue("event")
-	if s.deleted[cal][id] != nil {
-		writeError(w, http.StatusGone, "Resource has been deleted")
-		return
+	ev, wasDeleted := s.find(cal, id), false
+	if ev == nil {
+		ev, wasDeleted = s.deleted[cal][id], true
 	}
-	ev := s.find(cal, id)
 	if ev == nil {
 		writeError(w, http.StatusNotFound, "Not Found")
 		return
 	}
 	if m := r.Header.Get("If-Match"); m != "" && m != ev.Etag {
 		writeError(w, http.StatusPreconditionFailed, "Precondition Failed")
+		return
+	}
+	if wasDeleted {
+		writeError(w, http.StatusGone, "Resource has been deleted")
 		return
 	}
 	s.remove(cal, ev)

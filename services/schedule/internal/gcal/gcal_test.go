@@ -272,6 +272,68 @@ func TestWriterSendsIfMatch(t *testing.T) {
 	}
 }
 
+// Google は、消された予定に消す前の etag を付けた書き込みを 412 で返す。Writer は予定を読み、消された予定として返す。
+func TestWriterDeletedEventIsGone(t *testing.T) {
+	f := &gcaltest.Server{Calendars: map[string][][]*calendar.Event{"staff@example.com": {{
+		{Id: "ev1", Etag: `"1"`, Status: "confirmed", Summary: "前"},
+	}}}}
+	w := gcal.NewWriter(gcaltest.Start(t, f))
+	f.Delete("staff@example.com", "ev1")
+	if _, err := w.Update(t.Context(), "staff@example.com", "ev1", `"1"`, schedcal.EventBody{Summary: "後"}); !errors.Is(err, schedcal.ErrEventGone) || errors.Is(err, schedcal.ErrEventChanged) {
+		t.Errorf("消された予定の更新: err = %v", err)
+	}
+	if err := w.Delete(t.Context(), "staff@example.com", "ev1", `"1"`); !errors.Is(err, schedcal.ErrEventGone) || errors.Is(err, schedcal.ErrEventChanged) {
+		t.Errorf("消された予定の削除: err = %v", err)
+	}
+	if err := w.Delete(t.Context(), "staff@example.com", "ev1", ""); !errors.Is(err, schedcal.ErrEventGone) {
+		t.Errorf("If-Match の無い削除: err = %v", err)
+	}
+	if ev := f.Event("staff@example.com", "ev1"); ev.Status != "cancelled" || ev.Summary != "前" {
+		t.Errorf("消された予定を書いた: %+v", ev)
+	}
+}
+
+// 412 の後に予定を読めないときは、一時的なエラーなら書き直させ、そうでなければ 412 のまま返す。
+func TestWriterPreconditionFailedWhenGetFails(t *testing.T) {
+	tests := []struct {
+		name      string
+		getStatus int
+		want      error
+	}{
+		{"5xx", http.StatusInternalServerError, schedcal.ErrUnavailable},
+		{"404", http.StatusNotFound, schedcal.ErrEventChanged},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				status := http.StatusPreconditionFailed
+				if r.Method == http.MethodGet {
+					status = tt.getStatus
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(status)
+				_, _ = w.Write([]byte(`{"error":{"code":` + strconv.Itoa(status) + `,"message":"x"}}`))
+			}))
+			defer ts.Close()
+			svc, err := calendar.NewService(t.Context(), option.WithEndpoint(ts.URL+"/"), option.WithHTTPClient(ts.Client()))
+			if err != nil {
+				t.Fatal(err)
+			}
+			w := gcal.NewWriter(svc)
+			_, uerr := w.Update(t.Context(), "staff@example.com", "ev1", `"1"`, schedcal.EventBody{})
+			derr := w.Delete(t.Context(), "staff@example.com", "ev1", `"1"`)
+			for _, err := range []error{uerr, derr} {
+				if !errors.Is(err, tt.want) || errors.Is(err, schedcal.ErrEventGone) {
+					t.Errorf("err = %v, want %v", err, tt.want)
+				}
+				if strings.Contains(err.Error(), "staff@example.com") {
+					t.Errorf("エラーの文がカレンダーの ID を含む: %v", err)
+				}
+			}
+		})
+	}
+}
+
 func TestReaderChanges(t *testing.T) {
 	ev := func(id string) *calendar.Event {
 		return &calendar.Event{
