@@ -9,7 +9,7 @@
 | 予定の一覧 | 行と並び | `calendars.exportIssues` の戻り値 | `listCalendarExportIssues` の `items`。新しく変わった順 |
 | 予定の日時 | 日付、時刻、繰り返しか | `CalendarExportIssue.date`、`start_time`、`end_time`、`recurring_schedule_id` | `CalendarExportIssue` の `date`、`start_time`、`end_time`、`recurring_schedule_id`。繰り返しの予定の `date` は最初の回の日付 |
 | 職員 | 職員の名前 | `CalendarExportIssue.staff_name` | `CalendarExportIssue` の `staff_name` |
-| 理由 | 理由ごとの文 | `CalendarExportIssue.error_code`、`status` | `CalendarExport` の `error_code`（`precondition_failed`、`not_found`、`forbidden`、`rejected`、`unavailable`、`unappliable`）と `status`（`conflict`、`failed`）。`precondition_failed` は `acceptable` でも文を分ける |
+| 理由 | 理由ごとの文 | `CalendarExportIssue.error_code`、`status`、`acceptable`、`recurring_schedule_id` | `CalendarExport` の `error_code`（`precondition_failed`、`not_found`、`forbidden`、`rejected`、`unavailable`、`unappliable`）と `status`（`conflict`、`failed`）。`precondition_failed` は、`CalendarExportIssue` の `acceptable` と `recurring_schedule_id` でも文を分ける。単発の予定で `acceptable` が false なのは、buddy でキャンセルした予定である |
 | 最後に変わった日時 | 日時 | `CalendarExportIssue.updated_at` | `CalendarExport` の `updated_at` |
 | Google の内容に合わせる | 出すか | `CalendarExportIssue.acceptable` | `CalendarExportIssue` の `acceptable` |
 | 予定を開く | 出すかと、移る先の予定 | `CalendarExportIssue.schedule_id` | `CalendarExport` の `schedule_id`。繰り返しの予定では `null` |
