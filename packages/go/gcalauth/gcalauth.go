@@ -82,7 +82,8 @@ type Config struct {
 	Accounts Accounts
 	// Scope は、Calendar API を呼ぶ token のスコープである。
 	Scope string
-	// Endpoint は、Calendar API の代わりに呼ぶ URL で、フェイクに向けるときだけ持つ。認証をしない。
+	// Endpoint は、Calendar API の代わりに呼ぶ URL で、フェイクに向けるときだけ持つ。
+	// フェイクはなりすましの token を出せないので、ADC があれば全ての組織に ADC の token をそのまま使い、無ければ認証をしない。
 	Endpoint string
 }
 
@@ -100,7 +101,11 @@ type Clients struct {
 func New(ctx context.Context, cfg Config) (*Clients, error) {
 	c := &Clients{accounts: cfg.Accounts, services: make(map[string]*calendar.Service, len(cfg.Accounts))}
 	if cfg.Endpoint != "" {
-		svc, err := calendar.NewService(ctx, option.WithEndpoint(cfg.Endpoint), option.WithoutAuthentication())
+		auth := option.WithoutAuthentication()
+		if creds, err := google.FindDefaultCredentials(ctx, cfg.Scope); err == nil {
+			auth = option.WithCredentials(creds)
+		}
+		svc, err := calendar.NewService(ctx, option.WithEndpoint(cfg.Endpoint), auth)
 		if err != nil {
 			return nil, err
 		}

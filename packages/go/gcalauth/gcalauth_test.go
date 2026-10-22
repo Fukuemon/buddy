@@ -93,6 +93,19 @@ func TestADCAccount(t *testing.T) {
 }
 
 func TestClientsWithEndpoint(t *testing.T) {
+	// ADC が無い環境と、フェイクの利用者の ADC がある環境の両方で作れる
+	t.Run("ADC が無い", func(t *testing.T) {
+		t.Setenv("GOOGLE_APPLICATION_CREDENTIALS", filepath.Join(t.TempDir(), "missing.json"))
+		testClientsWithEndpoint(t)
+	})
+	t.Run("フェイクの利用者の ADC", func(t *testing.T) {
+		t.Setenv("GOOGLE_APPLICATION_CREDENTIALS", writeFile(t, `{"type": "authorized_user", "client_id": "c", "client_secret": "s", "refresh_token": "r", "token_uri": "http://127.0.0.1:1/token"}`))
+		testClientsWithEndpoint(t)
+	})
+}
+
+func testClientsWithEndpoint(t *testing.T) {
+	t.Helper()
 	accounts := Accounts{"org-a": "a@example.iam.gserviceaccount.com", "org-b": "b@example.iam.gserviceaccount.com"}
 	c, err := New(context.Background(), Config{Accounts: accounts, Scope: "scope", Endpoint: "http://127.0.0.1:1/"})
 	if err != nil {

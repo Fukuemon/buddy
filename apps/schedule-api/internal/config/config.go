@@ -64,7 +64,7 @@ type Config struct {
 //   - LOG_LEVEL: debug、info、warn、error。既定は info
 //   - GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE: 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応（JSON）のパス。
 //     空なら Google カレンダーを読まない。Application Default Credentials で認証し、事業所のサービスアカウントになりすます（ADR-0012）
-//   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。偽物の API で試すためのもので、認証をしない。
+//   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。フェイクの API で試すためのもので、Application Default Credentials があればなりすまさずに全ての事業所で使い、無ければ認証をしない。
 //     GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE と一緒に渡す
 //   - GOOGLE_CALENDAR_EXPORT_ENABLED: true なら、予定を Google カレンダーに書き出す。既定は false。
 //     GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE と一緒に渡し、認証の情報のスコープは calendar.events になる
