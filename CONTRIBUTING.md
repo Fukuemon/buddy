@@ -4,7 +4,7 @@
 
 必要なものは mise、Docker、jq である。  
 ランタイムとツール（Node、pnpm、Go、sqlc、golang-migrate、golangci-lint、uv、tbls、apm、gh）のバージョンは `mise.toml` にある。  
-gh は、エビデンスの動画を pull request と issue に添付する `--attach` のために、2.99 以降をそろえる。  
+gh は、エビデンスの動画を pull request の本文と issue に入れる `--attach` のために、2.99 以降をそろえる。  
 pnpm は `package.json` の `packageManager` と同じバージョンにする。  
 jq は `mise.toml` に無く、API を手で呼ぶ手順でトークンを取り出すのに使う。  
 文書のサイトをビルドする Zensical は、mise が入れる `uv` で実行する。  
@@ -271,7 +271,7 @@ gitGraph
 - 作業は issue から始める。issue は、issue テンプレート（`.github/ISSUE_TEMPLATE/`）の要求、不具合、タスクから選ぶ。種類は `type:` のラベル、対象のアプリとパッケージは `pkg:` のラベルで示す。
 - pull request は 1 つの issue に対応させる。大きい issue は、関心事ごとに複数の pull request に分け、本文で issue を `Refs #<番号>` で指す。
 - タイトルと本文の書き方は、スキル write-issue-pr に従う。本文は `.github/pull_request_template.md` の節で書く。
-- 機能の追加と改修の pull request には、確かめたことのエビデンスの動画を添付する。対象と格納先は [エビデンス](context/testing/evidence.md)、撮り方と添付のしかたはスキル attach-evidence にある。
+- 機能の追加と改修の pull request では、本文の「検証とエビデンス」に、観点ごとのエビデンスの動画を入れる。対象と格納先は [エビデンス](context/testing/evidence.md)、観点の設計、撮り方、本文への入れ方はスキル attach-evidence にある。
 - レビューの指摘に対応してからマージする。直したコミットと、対応しない指摘の理由を pull request のコメントに残す。差分が変わったら、本文も差分に合わせて直す。
 - `develop` へのマージは merge commit にする（`gh pr merge --merge`）。
 - デフォルトのブランチは `develop` である。1 つの pull request で issue の作業が終わるときは、本文に `Closes #<番号>` を書き、マージで issue を閉じる。複数の pull request に分けたときは、最後の pull request に `Closes` を書く。

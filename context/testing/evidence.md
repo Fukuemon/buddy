@@ -1,14 +1,14 @@
 ---
 type: context
 title: エビデンス
-description: エビデンスを付ける変更、格納先（pull request と issue への添付）、エビデンスの spec の配置先と撮るコマンド、ログインとテストデータ、Storybook とモックの撮り方。検証環境の値は検証環境ができてから決める
+description: エビデンスを付ける変更、格納先（pull request の本文と issue への添付）、エビデンスの spec の配置先と撮るコマンド、ログインとテストデータ、Storybook とモックの撮り方。検証環境の値は検証環境ができてから決める
 status: draft
 ---
 
 # エビデンス
 
 機能の追加と改修で何を確かめたかを示す動画と画像の取り決め。  
-撮る観点の決め方と添付の手順は、スキル attach-evidence にある。  
+観点の決め方、撮り方、pull request の本文への入れ方は、スキル attach-evidence にある。  
 エビデンスの動画は、`packages/e2e/kit/` の `recording` と `evidence` を呼ぶ Playwright の spec で撮る。
 
 ## エビデンスを付ける変更
@@ -20,13 +20,14 @@ status: draft
 
 ## 格納先
 
-- エビデンスはリポジトリにコミットせず、pull request と issue に gh の `--attach` で直接添付する。添付した動画は、本文の中で再生できる。
+- エビデンスはリポジトリにコミットせず、gh の `--attach` で pull request の本文の「検証とエビデンス」の表に直接入れる。入れた動画は、本文の中で再生できる。
+  - コメントには付けない。観点の文とエビデンスを、本文の 1 つの表で読み合わせるためである。
 - Google Drive には置かない。
-- 添付する前の元のファイルは、`.ai-out/evidence/<pull request か issue の番号>/` に一時的に置く。`.ai-out/` は Git で追跡しない。添付を終えたら消す。
-- 添付したファイルは、リポジトリを見られる人が開ける。リポジトリを public にすると、見られる人が誰にでも広がる。
+- 入れる前の元のファイルは、`.ai-out/evidence/<番号>/` に一時的に置く。`.ai-out/` は Git で追跡しない。本文に入れ終えたら消す。
+- 本文に入れたファイルは、リポジトリを見られる人が開ける。リポジトリを public にすると、見られる人が誰にでも広がる。
   - 写すのは、ローカルのシード、テストデータ、仮の名前だけにする。実在の利用者、職員、事業所のデータは、検証環境で撮るときも写さない。
   - ログインの値とトークンを、画面と字幕に写さない。
-- 添付は、pull request と issue ごとにエビデンスを見る形である。要求をまたぐエビデンスの一覧と、改修前と改修後を並べた比較の画面は持たない。それらを見る自前の閲覧の環境は、#69 で扱う。
+- 本文への添付は、pull request と issue ごとにエビデンスを見る形である。要求をまたぐエビデンスの一覧と、改修前と改修後を並べた比較の画面は持たない。それらを見る自前の閲覧の環境は、#69 で扱う。
 
 ## エビデンスの spec
 
@@ -35,13 +36,14 @@ spec は、`packages/e2e/tests/fixtures/evidence.ts` の `recordPrEvidence` か�
 spec の書き方はスキル write-verification-spec に、流し方と確かめ方は run-verification-scenarios にある。
 
 - 配置先は `packages/e2e/tests/evidence/<機能>/<振る舞い>.e2e.ts` にする。`<機能>` と `<振る舞い>` は、E2E の spec と同じ名前の付け方（スキル write-e2e-test の「名前」）にする。
-  - 1 つの test が 1 つの観点を撮る。`recordPrEvidence` の `name` が、添付する動画のファイル名になる。
+  - 1 つの test が 1 つの観点を撮る。`recordPrEvidence` の `name` が、本文に入れる動画のファイル名になる。
   - 過去の pull request の機能も、同じ配置先に機能ごとに足す。同じ spec で、改修のたびに撮り直す。
 - CI の E2E は、エビデンスの spec を流さない。
   - `packages/e2e/playwright.config.ts` の `e2e` の project は `tests/specs/` だけを、`evidence` の project は `tests/evidence/` だけを流す。
   - `pnpm e2e` と CI は `--project=e2e` で流す。
-- 出力は `.ai-out/evidence/<番号>/` に置く。`<番号>` は、添付する pull request か issue の番号である。
-  - 添付するのは `<name>.mp4` である。kit の README、判定のスクリーンショット（`frames/`）、撮った記録（`.records/`）は `<name>/` に入る。
+- 出力は `.ai-out/evidence/<番号>/` に置く。`<番号>` は、本文に入れる pull request の番号にする。pull request を作る前に撮るときは、対応する issue の番号にする。
+  - kit の README、判定のスクリーンショット（`frames/`）、撮った記録（`.records/`）は `<name>/` に入る。
+  - 本文に入れるのは、`<name>.mp4` と、`<name>/frames/` の判定のスクリーンショットである。
   - `.ai-out/` は、ルートの `.gitignore` が Git の追跡から外している。
 
 ### 撮るコマンド
@@ -63,7 +65,7 @@ docker compose -p buddy-evidence down -v
 
 | 環境変数 | 値 | デフォルト |
 | --- | --- | --- |
-| `EVIDENCE_NO` | 添付する pull request か issue の番号。出力の配置先と字幕に出る | なし。無ければ spec が失敗する |
+| `EVIDENCE_NO` | 本文に入れる pull request の番号か、作る前なら issue の番号。出力の配置先と字幕に出る | なし。無ければ spec が失敗する |
 | `E2E_BASE_URL` | 撮る web の URL | `http://localhost:3000` |
 | `EVIDENCE_BEFORE_URL` | 改修前の web の URL。渡すと、改修前と改修後を 1 回で撮る | なし |
 | `EVIDENCE_ONLY` | `before` か `after`。`E2E_BASE_URL` をその版として 1 つだけ撮る | なし |
@@ -97,7 +99,7 @@ docker compose -p buddy-evidence down -v
 - Storybook の story は、`pnpm --filter @buddy/web storybook` で起動し、`storyUrl(<story の ID>)` を開いて撮る。Storybook の枠を外した `iframe.html` の URL である。
 - 画面仕様書のモックは、`mockUrl(<docs/screens/ からの相対パス>)` で、リポジトリのファイルを `file://` のまま開いて撮る。文書のサイトを起動しなくてよい。
 - ログインしない story とモックでも、`prepare` で同じ URL を開く。kit は `prepare` が開いた画面から sessionStorage を読むので、何も開かないと失敗する。
-- スマートフォンの幅は、`recordPrEvidence` の `viewport` に `PHONE_VIEWPORT`（390x844）を渡して撮る。幅だけをそろえ、タッチの操作は再現しない。幅はコメントに書く。
+- スマートフォンの幅は、`recordPrEvidence` の `viewport` に `PHONE_VIEWPORT`（390x844）を渡して撮る。幅だけをそろえ、タッチの操作は再現しない。幅は本文の撮った条件に書く。
 - API だけの変更のうち、画面から確かめられない操作は、API の参照のページ（Scalar）の「Test Request」から送って撮る。
   - `prepare` に `packages/e2e/tests/fixtures/apiReference.ts` の `prepareApiReference` を渡し、録画の中で `routeApiReference` を張ってからページを開く。ページは文書のサイトを起動せずに `docs/api/` のファイルから開き、リクエストを撮る compose の API へ送り直す。
   - トークンは認証の欄に伏せ字のまま入れる。字幕には職員の名前だけを出し、トークンの値を出さない。

@@ -35,6 +35,51 @@ test.describe('予定のカレンダー', () => {
           },
         )
       })
+
+      test(`${variant.label ? `${variant.label}: ` : ''}何も入れずに予定の作成のダイアログを閉じた場合、破棄の確認を出さずに日の表示に戻ること`, async ({
+        browser,
+      }) => {
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'schedule-create-dialog-close',
+            title:
+              '何も入れずに予定の作成のダイアログを閉じると、破棄の確認を出さずに日の表示に戻る',
+            actor: `${LOGIN_STAFF.name}（マネージャー）`,
+            variant,
+          },
+          async (page) => {
+            await page.goto('/schedule')
+            await signInAtIdp(page, LOGIN_NAME)
+          },
+          async ({ page, step, check }) => {
+            // 破棄の確認は window.confirm で、録画に映らない。出た回数を数えて字幕に出す
+            const confirms: string[] = []
+            page.on('dialog', (dialog) => {
+              confirms.push(dialog.message())
+              void dialog.dismiss()
+            })
+            await page.goto('/schedule?view=day')
+            await expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible()
+            await page.getByTestId('schedule-create-open').click()
+            await expect(page.getByTestId('schedule-form-modal')).toBeVisible()
+            await step('予定の作成のダイアログを、何も入れずに開いている')
+
+            await step('「閉じる」を押す')
+            await page.getByTestId('modal-close').click()
+            await expect(page.getByTestId('schedule-form-modal')).toBeHidden()
+            await expect(page).toHaveURL(/\/schedule\?(.+&)?view=day/)
+            await expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible()
+            expect(confirms).toEqual([])
+            await check(
+              [
+                'ダイアログが閉じ、日の表示に戻る',
+                `（撮影のため、録画に映らない破棄の確認の回数を出す）破棄の確認: ${confirms.length} 回`,
+              ].join('\n'),
+            )
+          },
+        )
+      })
     }
   })
 })
