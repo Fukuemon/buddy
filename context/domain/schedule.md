@@ -14,7 +14,7 @@ status: stable
 | 状態 | 意味 | 移る操作 |
 | --- | --- | --- |
 | 有効 | キャンセルされていない | 作る（`createSchedule`）、回の置き換え（`changeOccurrence`） |
-| キャンセル済み | 理由を付けて取り消した。レコードは消さずに残す | 有効からキャンセル（`cancelSchedule`）で移る |
+| キャンセル済み | 理由を付けて取り消した。レコードは消さずに残す | 有効からキャンセル（`cancelSchedule`）で移る。Google カレンダーで消された予定は、同期と「Google の内容に合わせる」（`createCalendarExportAcceptance`）でも、理由を「Google カレンダーで消されました」にして移る |
 
 - キャンセル済みから有効に戻す操作は無い。
 - 有効な予定は、変更（`updateSchedule`）で枠を丸ごと置き換える。一部の項目だけを変える操作は無い。
