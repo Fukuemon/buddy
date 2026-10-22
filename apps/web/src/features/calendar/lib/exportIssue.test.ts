@@ -3,15 +3,38 @@ import { describe, expect, it } from 'vite-plus/test'
 import { exportIssueReason } from './exportIssue'
 
 describe('exportIssueReason', () => {
-  it('理由ごとに、次にすることの分かる文を返す', () => {
-    const conflict = { status: 'conflict', acceptable: false } as const
-    const failed = { status: 'failed', acceptable: false } as const
-    expect(
-      exportIssueReason({ ...conflict, error_code: 'precondition_failed', acceptable: true }),
-    ).toContain('どちらの内容に合わせるかを選んでください')
-    expect(exportIssueReason({ ...conflict, error_code: 'precondition_failed' })).toContain(
-      '繰り返しの予定が変わりました',
-    )
+  const conflict = { status: 'conflict', acceptable: false, recurring_schedule_id: null } as const
+  const failed = { status: 'failed', acceptable: false, recurring_schedule_id: null } as const
+
+  describe('両方で変わった予定', () => {
+    it('Google の内容に合わせられる単発の予定は、どちらに合わせるかを選ばせる', () => {
+      expect(
+        exportIssueReason({ ...conflict, error_code: 'precondition_failed', acceptable: true }),
+      ).toBe(
+        'buddy と Google カレンダーの両方で予定が変わりました。どちらの内容に合わせるかを選んでください。',
+      )
+    })
+
+    it('Google の内容に合わせられない単発の予定は、buddy でキャンセルした予定として、書き直すと消えることを示す', () => {
+      expect(exportIssueReason({ ...conflict, error_code: 'precondition_failed' })).toBe(
+        'buddy でキャンセルした予定が、Google カレンダーで変わっていました。buddy の内容で書き直すと Google カレンダーの予定を消すので、消してよいかを職員に確かめてください。',
+      )
+    })
+
+    it('繰り返しの予定は、書き直すか元に戻すよう頼ませる', () => {
+      expect(
+        exportIssueReason({
+          ...conflict,
+          error_code: 'precondition_failed',
+          recurring_schedule_id: 'recurring-1',
+        }),
+      ).toBe(
+        'buddy と Google カレンダーの両方で繰り返しの予定が変わりました。buddy の内容で書き直すか、Google カレンダーで元に戻すよう職員に頼んでください。',
+      )
+    })
+  })
+
+  it('ほかの理由ごとに、次にすることの分かる文を返す', () => {
     expect(exportIssueReason({ ...conflict, error_code: 'not_found' })).toContain(
       'カレンダーの共有が外れていないか',
     )
