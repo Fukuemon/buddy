@@ -64,8 +64,9 @@ const CASES: { no: number; value: string; expected: string; act: (page: Page) =>
   ]
 
 const body = async ({ page, step, check }: Recording, c: (typeof CASES)[number]): Promise<void> => {
-  await step('前提 <前提の文>')
+  // 字幕は開いた画面の sessionStorage に置くので、前提の画面を開いてから最初の字幕を出す
   // <前提の画面を開く>
+  await step('前提 <前提の文>')
 
   // 操作の間に見る判定の文は、操作の前に 2 行目以降で出す。字幕は次に変えるまで残る
   await step(`もし <操作の文>\nならば ${c.expected}`)

@@ -1,6 +1,6 @@
 ---
 name: attach-evidence
-description: 機能の追加と改修の pull request と issue に、確かめたことのエビデンスの動画を撮り、gh の --attach で直接添付するときに使う。「エビデンスの動画を付けて」「動画を pull request に添付して」「確認したことを動画で示して」で読み込む。手動検証のシナリオを packages/e2e/kit で撮る spec を書くときは write-verification-spec を、流して確かめるときは run-verification-scenarios を使う。
+description: 機能の追加と改修の pull request と issue に、確かめたことのエビデンスの動画を撮り、gh の --attach で直接添付するときに使う。「エビデンスの動画を付けて」「動画を pull request に添付して」「確認したことを動画で示して」で読み込む。エビデンスを撮る Playwright の spec を書くときは write-verification-spec を、流して確かめるときは run-verification-scenarios を使う。
 ---
 
 # attach-evidence
@@ -24,47 +24,31 @@ description: 機能の追加と改修の pull request と issue に、確かめ�
 
 ## 撮る
 
-元のファイルは `.ai-out/evidence/<pull request か issue の番号>/` に置く。  
-写してよいデータは、`context/testing/evidence.md` の「格納先」に従う。
+エビデンスは、`packages/e2e/kit` の録画を呼ぶ Playwright の spec で撮る。  
+spec の配置先、出力の配置先、撮るコマンド、ログインとテストデータの作り方は、`context/testing/evidence.md` の「エビデンスの spec」にある。  
+spec の書き方は write-verification-spec に、流し方と撮った後の確かめ方は run-verification-scenarios に従う。
 
-| 変更 | 撮るもの | 撮り方 |
+| 変更 | 開くもの | spec で開く URL |
 | --- | --- | --- |
-| 手動検証のシナリオがある | 検証環境かローカルの compose の画面 | E2E の kit の `recording`。spec は write-verification-spec、流し方と確かめ方は run-verification-scenarios |
-| 画面の UI と見た目 | Storybook の story | agent-browser の `record` |
-| 画面仕様書とモック | 画面仕様書のモック | agent-browser の `record` |
-| 画面の操作から API までを通す | ローカルの compose の画面 | agent-browser の `record` |
-| API だけ | ローカルの compose の画面か、文書のサイトの API の仕様のページ（Scalar） | agent-browser の `record` |
+| 手動検証のシナリオがある | 検証環境かローカルの compose の画面 | 撮る web の URL からの相対パス |
+| 画面の操作から API までを通す、API だけ | ローカルの compose の画面 | 同上。API だけの変更は、その API を呼ぶ画面の操作で撮る |
+| 画面の UI と見た目 | Storybook の story | `storyUrl(<story の ID>)` |
+| 画面仕様書とモック | 画面仕様書のモック | `mockUrl(<docs/screens/ からの相対パス>)` |
 
-- Storybook は `pnpm --filter @buddy/web storybook` で開く。録画は、Storybook の枠を外した `iframe.html?id=<story の ID>&viewMode=story` の URL で撮る。
-- 画面仕様書のモックは、`uv run zensical serve` で開いた文書のサイトの「別タブで開く」の URL で撮る。
-- API の仕様のページからローカルの API を呼ぶ手順は、CONTRIBUTING.md の「ローカル環境で全体を起動する」にある。トークンの値が映る欄は、撮る範囲に入れない。
-- スマートフォンの幅で確かめる変更は、`agent-browser set viewport` で幅をそろえてから撮る。幅は本文に書く。
-
-agent-browser では、画面を開いて操作の位置を確かめてから、録画を始める。
-
-```sh
-agent-browser open <URL>
-agent-browser record start .ai-out/evidence/<番号>/<名前>.webm
-# 観点の操作
-agent-browser record stop
-```
-
-- 名前は、観点が分かる英数字とハイフンにする。添付したファイル名は、動画の上に表示される。
-- 操作の間に `agent-browser wait` を入れ、結果の画面を 1 秒以上映す。速すぎる動画では、レビューする人が結果を読み取れない。
-- 撮り終えたら、run-verification-scenarios の「確かめる」にある 1 秒ごとの一覧で、失敗の通知、空白の画面、実在のデータが映っていないかを見る。
+- 既にある spec で撮れる観点は、spec を流し直すだけにする。無ければ、機能の spec に test を足す。
+- スマートフォンの幅で確かめる変更は、`PHONE_VIEWPORT` を渡して撮る。幅はコメントに書く。
+- agent-browser では、エビデンスを撮らない。録画のフレームが落ちることがあり、撮り直すときに同じ操作を再現できない。spec を書く前に、画面の操作の位置を確かめるのには使ってよい。
 
 ## mp4 に変換する
 
-agent-browser は WebM で書き出す。  
-GitHub の動画のプレイヤーで再生できる形にそろえるため、H.264 の mp4 にする。
+kit は H.264 の mp4 を書き出すので、変換しない。  
+ほかの手段で撮った WebM を添付するときだけ、GitHub の動画のプレイヤーで再生できる H.264 の mp4 にする。
 
 ```sh
 ffmpeg -i <名前>.webm -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -c:v libx264 -pix_fmt yuv420p -movflags +faststart <名前>.mp4
 ```
 
 `yuv420p` の H.264 は、幅か高さが奇数だと変換に失敗する。`-vf` の `scale` で偶数にそろえる。
-
-E2E の kit は mp4 を書き出すので、変換しない。
 
 ## 添付する
 
@@ -75,7 +59,7 @@ E2E の kit は mp4 を書き出すので、変換しない。
 - 観点ごとに、pull request のコメントに 1 本ずつ添付する。本文は、観点と撮った場所を 1 文から 2 文で書く。
 
   ```sh
-  gh pr comment <番号> -b "エビデンス: <観点の文>。<撮った場所。story の名前、画面、幅>で撮った。" --attach .ai-out/evidence/<番号>/<名前>.mp4
+  gh pr comment <番号> -b "エビデンス: <観点の文>。<撮った場所。story の名前、画面、幅>で撮った。spec は <spec のパス>。" --attach .ai-out/evidence/<番号>/<名前>.mp4
   ```
 
 - 画像は `--attach '<パス>#<代替テキスト>'` で代替テキストを付ける。動画には代替テキストを付けられないので、コメントの文で中身を説明する。
@@ -94,5 +78,5 @@ E2E の kit は mp4 を書き出すので、変換しない。
 ## 終えたら
 
 - 添付した動画をコメントで開き、再生できることを確かめる。
-- `.ai-out/evidence/<番号>/` の元のファイルのうち、自分が作ったものを消す。
+- `.ai-out/evidence/<番号>/` の元のファイル（`<名前>.mp4` と `<名前>/`）のうち、自分が作ったものを消す。
 - 利用者に、撮った観点と本数、エビデンスのコメントの URL、撮らなかった観点を伝える。
