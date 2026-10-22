@@ -265,7 +265,8 @@ export const mockExternalCalendars: Schemas['ExternalCalendar'][] = [
 
 /**
  * 確かめが要る書き出し。schedule-1 は buddy と Google カレンダーの両方で変わり、schedule-5 は書く権限が無く、
- * 繰り返しの予定 recurring-1 は Google カレンダーで消され、schedule-2 は Google カレンダーで終日の予定にされた。
+ * 繰り返しの予定 recurring-1 は Google カレンダーで消され、schedule-2 は Google カレンダーで終日の予定にされ、
+ * schedule-4 は buddy でキャンセルした後に Google カレンダーで変えられていた。
  * Google カレンダーの内容に合わせられるのは schedule-1 だけである。
  */
 export const mockExportIssues: Schemas['CalendarExportIssue'][] = [
@@ -327,6 +328,21 @@ export const mockExportIssues: Schemas['CalendarExportIssue'][] = [
     date: '2026-11-05',
     start_time: '13:00',
     end_time: '14:00',
+    acceptable: false,
+  },
+  {
+    id: 'export-5',
+    schedule_id: 'schedule-4',
+    recurring_schedule_id: null,
+    status: 'conflict',
+    error_code: 'precondition_failed',
+    attempts: 1,
+    updated_at: '2026-10-21T20:00:00Z',
+    staff_id: 'staff-4',
+    staff_name: '江藤 四郎',
+    date: '2026-11-06',
+    start_time: '15:00',
+    end_time: '16:29',
     acceptable: false,
   },
 ]

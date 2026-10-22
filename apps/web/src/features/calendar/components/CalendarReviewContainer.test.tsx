@@ -28,12 +28,15 @@ describe('CalendarReviewContainer', () => {
   it('Google の内容に合わせるは、合わせられる予定にだけ出す', async () => {
     render(<Default />)
     expect(await screen.findByTestId('calendar-review-accept-export-1')).toBeInTheDocument()
-    for (const id of ['export-2', 'export-3', 'export-4']) {
+    for (const id of ['export-2', 'export-3', 'export-4', 'export-5']) {
       expect(screen.queryByTestId(`calendar-review-accept-${id}`)).toBeNull()
       expect(screen.getByTestId(`calendar-review-rewrite-${id}`)).toBeInTheDocument()
     }
     expect(screen.getByTestId('calendar-review-reason-export-4')).toHaveTextContent(
       'buddy の予定に読み替えられません',
+    )
+    expect(screen.getByTestId('calendar-review-reason-export-5')).toHaveTextContent(
+      'buddy でキャンセルした予定が、Google カレンダーで変わっていました。',
     )
   })
 
@@ -64,6 +67,16 @@ describe('CalendarReviewContainer', () => {
     expect(await screen.findByTestId('calendar-review-row-export-2')).toBeInTheDocument()
     expect(screen.queryByTestId('calendar-review-row-export-1')).toBeNull()
     expect(screen.queryByTestId('calendar-rewrite-dialog')).toBeNull()
+  })
+
+  it('キャンセルした単発の予定を書き直すときは、Google カレンダーの予定を消すことを示す', async () => {
+    render(<Default />)
+    await userEvent.click(await screen.findByTestId('calendar-review-rewrite-export-5'))
+    const dialog = screen.getByTestId('calendar-rewrite-dialog')
+    expect(within(dialog).getByTestId('calendar-rewrite-notice')).toHaveTextContent(
+      'buddy でキャンセルした予定なので、Google カレンダーの予定を消します。',
+    )
+    expect(dialog).not.toHaveTextContent('消された予定は作り直します。')
   })
 
   it('キャンセルすると、書き直さずにダイアログを閉じる', async () => {
