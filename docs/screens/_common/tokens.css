@@ -232,13 +232,28 @@
 
 /*
  * buddy の意味のトークン。値は持たず、DADS の基本のトークンを参照するだけにする。
- * 例外は surface-canvas だけで、DADS に無い値を直に持つ（packages/ui/DESIGN.md の DADS の指針との違い）。
+ * 例外は surface-canvas だけで、DADS に無い値を直に持つ（docs/adr/0015-key-color-and-canvas.md）。
  * DADS の基本のトークンは @digital-go-jp/design-tokens の dist/tokens.css が :root に定義する。
  * コンポーネントと画面は、この層を Tailwind のユーティリティ（theme.css）を通して使い、DADS の名前を直に書かない。
  */
 
 
 :root {
+  /* DADS のキーの色を、もともとのデザイン案のくすんだ青に色相が近い light-blue に当て直す（ADR-0015） */
+  --color-key-50: var(--color-primitive-light-blue-50);
+  --color-key-100: var(--color-primitive-light-blue-100);
+  --color-key-200: var(--color-primitive-light-blue-200);
+  --color-key-300: var(--color-primitive-light-blue-300);
+  --color-key-400: var(--color-primitive-light-blue-400);
+  --color-key-500: var(--color-primitive-light-blue-500);
+  --color-key-600: var(--color-primitive-light-blue-600);
+  --color-key-700: var(--color-primitive-light-blue-700);
+  --color-key-800: var(--color-primitive-light-blue-800);
+  --color-key-900: var(--color-primitive-light-blue-900);
+  --color-key-1000: var(--color-primitive-light-blue-1000);
+  --color-key-1100: var(--color-primitive-light-blue-1100);
+  --color-key-1200: var(--color-primitive-light-blue-1200);
+
   --buddy-color-surface: var(--color-neutral-white);
   /* 画面の地。もともとのデザイン案のわずかに温かい白で、白の surface（カード、ダイアログ、入力欄）と並べて使う */
   --buddy-color-surface-canvas: #fdfcfb;
@@ -257,9 +272,8 @@
   --buddy-color-border-field: var(--color-neutral-solid-gray-600);
 
   /* 状態の色: 文字の色と、同じ系統の薄い面の組。面の上の文字でも 4.5:1 以上 */
-  /* 主の色: もともとのデザイン案のくすんだ青に色相が近く、白の文字で 4.5:1 以上になる light-blue を使う */
-  --buddy-color-primary: var(--color-primitive-light-blue-800);
-  --buddy-color-primary-surface: var(--color-primitive-light-blue-50);
+  --buddy-color-primary: var(--color-key-800);
+  --buddy-color-primary-surface: var(--color-key-50);
   --buddy-color-danger: var(--color-primitive-red-900);
   --buddy-color-danger-surface: var(--color-primitive-red-50);
   --buddy-color-warning: var(--color-primitive-orange-900);

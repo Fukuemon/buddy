@@ -58,8 +58,9 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 | `success`、`success-surface` | 完了と整合 |
 | `categorical-1` から `categorical-10` | 職員のように、意味を持たない並びの区別。番号の順に割り当て、11 個目からは 1 に戻る |
 
-`primary` と `primary-surface` には、DADS のキーの色（blue）ではなく light-blue の 800 と 50 を当てる。  
-もともとのデザイン案のくすんだ青（`#4d89c0`）に色相が近く、白の文字で 4.5:1 以上になるためである。もともとのデザイン案の値は 3.71:1 で、ボタンの文字に使えない。
+DADS のキーの色は、light-blue に当て直している。`primary` と `primary-surface` は、キーの色の 800 と 50 を参照する。  
+`surface-canvas` だけは、DADS に無い値を直に持つ。背景を指定しない要素は canvas の色になるので、カード、表、入力欄には `bg-surface` を付ける。  
+どちらも、もともとのデザイン案の色に寄せるためで、理由と値は [ADR-0015](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0015-key-color-and-canvas.md) と `semantic.css` にある。
 
 `*-surface` の面の上の文字は、同じ系統の文字の色（`danger-surface` の上なら `danger`）か `text` にする。どちらも 4.5:1 以上になる。
 
@@ -140,7 +141,6 @@ apps/web の画面だけが使う印は、`apps/web/src/assets/icons/` の SVG �
 | --- | --- | --- | --- |
 | `Modal` | モーダルのダイアログをフォームに使わない | 予定の作成と編集をダイアログで行う | カレンダーの上で予定を作り、閉じてカレンダーに戻る流れを画面仕様が決めている |
 | `DatePicker`、`TimePicker` | 年、月、日を 3 つの入力欄に分ける。`input type="date"` を避ける | ブラウザの `type="date"` と `type="time"` を使う | 予定の日付は近い日を選ぶことが多く、ブラウザのカレンダーから選ぶ方が手数が少ない |
-| 色 | 意味のトークンは DADS の基本のトークンを参照する | `surface-canvas` だけ、DADS に無い `#fdfcfb` を持つ | もともとのデザイン案の、わずかに温かい白の地に合わせる。白との差が小さく、文字と線のコントラストは白の上とほぼ変わらない（`contrast.test.ts` が確かめる） |
 | `Loading` | 回転する表示は画面全体の待ちだけに使う | ダイアログの中身の待ちにも使う | ダイアログを開いている間はほかを操作できず、画面全体の待ちと同じになる |
 
 ## Storybook のカタログ

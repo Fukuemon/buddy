@@ -22,9 +22,9 @@ apps/web の `src/styles.css` の `@theme` と、コンポーネントのクラ�
 | `text-critical` `#c11111` | 削除のボタンの文字 | `danger` | red-900 `#ce0000` | 小。少し明るい赤になる |
 | `incorrect-main` `#c11111` | エラーの文、入力欄のエラーの枠、カレンダーの現在時刻の線 | `danger` | red-900 `#ce0000` | 小 |
 | `incorrect-bg` `#fff2f2` | 使っていない | `danger-surface` | red-50 `#fdeeee` | 変化なし |
-| `action-main` `#4d89c0` | 主のボタンの面、副のボタンの文字、選ばれている選択肢の枠、ロゴ、読み込みの輪と文、文字のボタン | `primary` | light-blue-800 `#0066be` | 小。同じ色相のまま少し濃くなる |
+| `action-main` `#4d89c0` | 主のボタンの面、副のボタンの文字、選ばれている選択肢の枠、ロゴ、読み込みの輪と文、文字のボタン | `primary` | key-800（light-blue-800）`#0066be` | 小。同じ色相のまま少し濃くなる |
 | `action-main` `#4d89c0` | ボタンと検索欄のフォーカスの枠、入力中の欄の枠 | `focus-ring` のユーティリティ | 黒と yellow-300 `#ffd43d` | 大。青の 1 重の枠から、黄と黒の 2 重の枠になる |
-| `action-bg` `#edf3ff` | 選ばれている選択肢の面、入力中の欄の面、カレンダーの今日の面 | `primary-surface` | light-blue-50 `#f0f9ff` | ほぼ同じ |
+| `action-bg` `#edf3ff` | 選ばれている選択肢の面、入力中の欄の面、カレンダーの今日の面 | `primary-surface` | key-50（light-blue-50）`#f0f9ff` | ほぼ同じ |
 | `correct-main` `#00ad64`、`correct-bg` `#e6fdf0` | 使っていない | `success`、`success-surface` | green-800 `#197a4b`、green-50 `#e6f5ec` | 変化なし |
 | `non-active-main` `#ffb800`、`non-active-bg` `#fff8e6` | 使っていない | `warning`、`warning-surface` | orange-900 `#ac3e00`、orange-50 `#ffeee2` | 変化なし |
 | `gray-0` `#fff`、`background-default` `#fff` | 面、カードと入力欄の地 | `surface`。画面の地は `surface-canvas` | white `#ffffff`。`surface-canvas` は DADS に無い `#fdfcfb` | ほぼ同じ |
