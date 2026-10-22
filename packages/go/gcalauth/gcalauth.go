@@ -38,7 +38,8 @@ type account struct {
 
 // LoadAccounts は、組織とサービスアカウントの対応を JSON のファイルから読む。
 // 形は [{"org_id": "...", "service_account": "..."}] である。
-// 一覧が空、org_id が空か重なる、service_account がメールアドレスの形でない、知らないキーがある、のいずれかではエラーを返す。
+// 一覧が空、org_id が空か重なる、service_account がメールアドレスの形でないか重なる、知らないキーがある、のいずれかではエラーを返す。
+// 2 つの組織に同じサービスアカウントを割り当てると、組織の間でカレンダーを読めるので拒む（ADR-0012）。
 // エラーの文には、サービスアカウントのメールアドレスを出さない。
 func LoadAccounts(path string) (Accounts, error) {
 	f, err := os.Open(path) //nolint:gosec // G304: 運営側が環境変数で渡す設定のファイルを読む
@@ -56,6 +57,7 @@ func LoadAccounts(path string) (Accounts, error) {
 		return nil, fmt.Errorf("サービスアカウントの設定 %s が空である", path)
 	}
 	out := make(Accounts, len(list))
+	used := make(map[string]bool, len(list))
 	for i, a := range list {
 		org, email := strings.TrimSpace(a.OrgID), strings.TrimSpace(a.ServiceAccount)
 		switch {
@@ -65,7 +67,10 @@ func LoadAccounts(path string) (Accounts, error) {
 			return nil, fmt.Errorf("サービスアカウントの設定 %s の org_id %s が重なっている", path, org)
 		case strings.Count(email, "@") != 1 || strings.HasPrefix(email, "@") || strings.HasSuffix(email, "@"):
 			return nil, fmt.Errorf("サービスアカウントの設定 %s の org_id %s の service_account がメールアドレスの形でない", path, org)
+		case used[strings.ToLower(email)]:
+			return nil, fmt.Errorf("サービスアカウントの設定 %s の org_id %s の service_account が、ほかの組織と重なっている", path, org)
 		}
+		used[strings.ToLower(email)] = true
 		out[org] = email
 	}
 	return out, nil
@@ -83,7 +88,8 @@ type Config struct {
 	// Scope は、Calendar API を呼ぶ token のスコープである。
 	Scope string
 	// Endpoint は、Calendar API の代わりに呼ぶ URL で、フェイクに向けるときだけ持つ。
-	// フェイクはなりすましの token を出せないので、ADC があれば全ての組織に ADC の token をそのまま使い、無ければ認証をしない。
+	// フェイクはなりすましの token を出せないので、GOOGLE_APPLICATION_CREDENTIALS で認証情報を渡したときは、
+	// 全ての組織にその token をなりすまさずに使う。渡さなければ認証をしない。開発者の gcloud の ADC をフェイクに送らないためである。
 	Endpoint string
 }
 
@@ -99,11 +105,17 @@ type Clients struct {
 // ADC がすでに事業所のサービスアカウントとして動くとき（そのアカウントになりすました ADC か、そのアカウントのキーの ADC）は、
 // 重ねてなりすまさず、ADC の token をそのまま使う。
 func New(ctx context.Context, cfg Config) (*Clients, error) {
+	// 認証情報は、渡した ctx を token の作り直しにも使う。止まる合図の後の書き出しの後片付けでも token を作れるよう、取り消しを外す。
+	ctx = context.WithoutCancel(ctx)
 	c := &Clients{accounts: cfg.Accounts, services: make(map[string]*calendar.Service, len(cfg.Accounts))}
 	if cfg.Endpoint != "" {
 		auth := option.WithoutAuthentication()
-		if creds, err := google.FindDefaultCredentials(ctx, cfg.Scope); err == nil {
-			auth = option.WithCredentials(creds)
+		if os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") != "" {
+			creds, err := google.FindDefaultCredentials(ctx, cfg.Scope)
+			if err != nil {
+				return nil, fmt.Errorf("application default credentials を読めない: %w", err)
+			}
+			auth = option.WithTokenSource(quietTokenSource{creds.TokenSource})
 		}
 		svc, err := calendar.NewService(ctx, option.WithEndpoint(cfg.Endpoint), auth)
 		if err != nil {

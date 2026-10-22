@@ -27,7 +27,7 @@ API とマイグレーションは、次の環境変数を読む。
 | `CORS_ALLOW_ORIGINS` | いいえ | 空 | カンマで区切ったオリジン。空なら CORS のヘッダーを返さない |
 | `LOG_LEVEL` | いいえ | `info` | `debug`、`info`、`warn`、`error` のいずれか |
 | `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` | いいえ | 空 | 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応（JSON）のパス。形は `[{"org_id": "...", "service_account": "..."}]` で、照合の API と同じ。空なら Google カレンダーを読み書きせず、カレンダーを読む操作は 503 を返し、予定の書き出しの処理を動かさない。対応の無い事業所のカレンダーの操作も 503 を返す。Application Default Credentials で認証し、事業所のサービスアカウントになりすます。書き出すときのスコープは `calendar.events` |
-| `GOOGLE_CALENDAR_ENDPOINT` | いいえ | 空 | Calendar API の代わりに呼ぶ URL。フェイクの API で試すためのもので、Application Default Credentials があればなりすまさずに全ての事業所で使い、無ければ認証をしない。`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` と一緒に渡す |
+| `GOOGLE_CALENDAR_ENDPOINT` | いいえ | 空 | Calendar API の代わりに呼ぶ URL。フェイクの API で試すためのもので、`GOOGLE_APPLICATION_CREDENTIALS` を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使い、渡さなければ認証をしない。`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` と一緒に渡す |
 | `GOOGLE_CALENDAR_EXPORT_ENABLED` | いいえ | `false` | `true` なら、予定を Google カレンダーに書き出す。`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` と一緒に渡す。`false` のときは書き出しの待ちを積まず、スコープは `calendar.readonly` で読む |
 | `GOOGLE_CALENDAR_EXPORT_INTERVAL` | いいえ | `30s` | 予定の書き出しの待ちを確かめる間隔。Go の時間の書式で、`1s` 以上 |
 | `GOOGLE_CALENDAR_SYNC_ENABLED` | いいえ | `false` | `true` なら、Google カレンダーの変わった予定を読み、buddy の予定に当てる。`GOOGLE_CALENDAR_EXPORT_ENABLED` を `true` にして渡す |

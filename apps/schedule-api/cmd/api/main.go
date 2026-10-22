@@ -208,7 +208,7 @@ func run() error {
 
 // newCalendarAccounts は、事業所の組織のサービスアカウントで Google カレンダーを読み書きする gcal.Accounts を返す。
 // サービスアカウントの設定が無ければ nil を返す。認証は Application Default Credentials で読み、事業所のアカウントになりすます。
-// フェイクの API に向けるときは認証をしない。
+// フェイクの API に向けるときは、GOOGLE_APPLICATION_CREDENTIALS の認証情報をなりすまさずに使い、無ければ認証をしない。
 // 予定を書き出すときは、スコープを calendar.events にする。書き出さないときは、読むだけの calendar.readonly にする。
 func newCalendarAccounts(ctx context.Context, cfg config.Calendar, orgOf gcal.OrgOf) (*gcal.Accounts, error) {
 	if cfg.ServiceAccountsFile == "" {

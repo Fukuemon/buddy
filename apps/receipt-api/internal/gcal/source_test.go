@@ -4,9 +4,11 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"google.golang.org/api/calendar/v3"
+	"google.golang.org/api/option"
 
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/check"
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/gcal"
@@ -271,5 +273,21 @@ func TestMonthWithoutOrgService(t *testing.T) {
 	_, _, err := mustMonth(t, r, april(t)).Schedules(t.Context())
 	if _, ok := errors.AsType[*check.SourceError](err); !ok {
 		t.Fatalf("err = %v, want *check.SourceError", err)
+	}
+}
+
+// 通信の誤りの文に、カレンダー ID を含む URL を出さない。
+func TestSchedulesSourceErrorHidesCalendarID(t *testing.T) {
+	svc, err := calendar.NewService(t.Context(), option.WithEndpoint("http://127.0.0.1:1/"), option.WithoutAuthentication())
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := gcal.NewReader(gcaltest.Same{Svc: svc}, []gcal.Calendar{{ID: "secret-staff@example.com", OrgID: org}})
+	_, _, err = mustMonth(t, r, april(t)).Schedules(t.Context())
+	if _, ok := errors.AsType[*check.SourceError](err); !ok {
+		t.Fatalf("err = %v, want *check.SourceError", err)
+	}
+	if strings.Contains(err.Error(), "secret-staff") {
+		t.Errorf("誤りの文にカレンダー ID が出ている: %v", err)
 	}
 }

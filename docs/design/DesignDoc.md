@@ -174,7 +174,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 | `MAX_UPLOAD_BYTES` | 使わない | 使わない | 任意 | 照合のリクエストの本文の上限。デフォルトは 10 MiB |
 | `GOOGLE_CALENDARS_FILE` | 使わない | 使わない | 任意 | 職員とカレンダーと組織の対応の JSON。空なら Google カレンダーから予定を取らない |
 | `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` | 使わない | 任意 | 任意 | 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応の JSON。2 つの API で同じ形。schedule-api では、空なら、カレンダーを読む操作は 503 を返し、予定を Google カレンダーに書き出さない。receipt-api では `GOOGLE_CALENDARS_FILE` と一緒に渡す |
-| `GOOGLE_CALENDAR_ENDPOINT` | 使わない | 任意 | 任意 | Calendar API の代わりに呼ぶ URL。テストのフェイクに向けるときだけ渡す。Application Default Credentials があればなりすまさずに全ての事業所で使い、無ければ認証をしない。schedule-api では `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` と一緒に渡す |
+| `GOOGLE_CALENDAR_ENDPOINT` | 使わない | 任意 | 任意 | Calendar API の代わりに呼ぶ URL。テストのフェイクに向けるときだけ渡す。`GOOGLE_APPLICATION_CREDENTIALS` を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使い、渡さなければ認証をしない。schedule-api では `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` と一緒に渡す |
 | `GOOGLE_CALENDAR_EXPORT_ENABLED` | 使わない | 任意 | 使わない | `true` なら予定を Google カレンダーに書き出す。デフォルトは `false`。サービスアカウントが「予定の変更」の共有だけで書けるかを確かめるまで、本番では `false` にする（ADR-0012 の承認の条件） |
 | `GOOGLE_CALENDAR_EXPORT_INTERVAL` | 使わない | 任意 | 使わない | 予定の書き出しの待ちを確かめる間隔。デフォルトは 30 秒 |
 | `GOOGLE_CALENDAR_SYNC_ENABLED` | 使わない | 任意 | 使わない | `true` なら Google カレンダーの変更を buddy の予定に当てる。デフォルトは `false`。`GOOGLE_CALENDAR_EXPORT_ENABLED` を `true` にして渡す |
@@ -183,7 +183,8 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 - web の `VITE_API_MODE` は、イメージのビルドのときに埋め込む値で、実行のときには読まない。イメージは `bff` でビルドする。
 - receipt-api と schedule-api は、Google の認証情報を Application Default Credentials（`GOOGLE_APPLICATION_CREDENTIALS` など）で読む。  
   読んだ認証情報で、事業所のサービスアカウントになりすます。  
-  `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` があるときだけ読み、読めなければ起動しない。
+  `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` があるときだけ読み、読めなければ起動しない。  
+  `GOOGLE_CALENDAR_ENDPOINT` でフェイクに向けるときは、`GOOGLE_APPLICATION_CREDENTIALS` を渡したときだけ、その認証情報をなりすまさずに使う。
 - Application Default Credentials で認証する主体に、事業所のサービスアカウントごとのトークン作成者のロール（`roles/iam.serviceAccountTokenCreator`）を付ける。プロジェクトでは IAM Service Account Credentials API を有効にする。schedule-api のスコープは、書き出すとき（`GOOGLE_CALENDAR_EXPORT_ENABLED`）は `calendar.events`、ほかは `calendar.readonly` である。
 - schedule-api は、同じプロセスの中で予定の書き出しの処理を実行する。複数のレプリカで実行しても、同じ書き出しの待ちは 1 つのレプリカだけが書く（レコードのロックと期限）。
 

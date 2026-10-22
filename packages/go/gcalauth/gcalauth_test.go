@@ -53,6 +53,7 @@ func TestLoadAccountsRejects(t *testing.T) {
 		{"org_id が重なる", `[{"org_id": "org-a", "service_account": "a@example.iam.gserviceaccount.com"}, {"org_id": "org-a", "service_account": "b@example.iam.gserviceaccount.com"}]`},
 		{"メールアドレスの形でない", `[{"org_id": "org-a", "service_account": "secret-account"}]`},
 		{"@ で終わる", `[{"org_id": "org-a", "service_account": "secret-account@"}]`},
+		{"service_account が重なる", `[{"org_id": "org-a", "service_account": "secret-account@example.iam.gserviceaccount.com"}, {"org_id": "org-b", "service_account": "Secret-Account@example.iam.gserviceaccount.com"}]`},
 		{"知らないキー", `[{"org_id": "org-a", "service_account": "a@example.iam.gserviceaccount.com", "key": "x"}]`},
 		{"JSON でない", `{`},
 	}
@@ -93,9 +94,9 @@ func TestADCAccount(t *testing.T) {
 }
 
 func TestClientsWithEndpoint(t *testing.T) {
-	// ADC が無い環境と、フェイクの利用者の ADC がある環境の両方で作れる
-	t.Run("ADC が無い", func(t *testing.T) {
-		t.Setenv("GOOGLE_APPLICATION_CREDENTIALS", filepath.Join(t.TempDir(), "missing.json"))
+	// 認証情報を渡さない環境と、フェイクの利用者の認証情報を渡した環境の両方で作れる
+	t.Run("認証情報を渡さない", func(t *testing.T) {
+		t.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "")
 		testClientsWithEndpoint(t)
 	})
 	t.Run("フェイクの利用者の ADC", func(t *testing.T) {

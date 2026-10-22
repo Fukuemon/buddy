@@ -4,7 +4,9 @@ package gcal
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -180,6 +182,10 @@ func (s monthSource) Schedules(ctx context.Context) ([]record.Record, []record.W
 				return nil
 			})
 		if err != nil {
+			// 通信の誤り（*url.Error）の文は、カレンダー ID を含む要求の URL を持つ。
+			if uerr, ok := errors.AsType[*url.Error](err); ok {
+				err = uerr.Err
+			}
 			return nil, nil, &check.SourceError{
 				Message: fmt.Sprintf("組織の %d 件目のカレンダーの予定を取れない", i+1),
 				Err:     err,
