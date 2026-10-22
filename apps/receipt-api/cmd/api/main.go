@@ -10,7 +10,10 @@
 //   - OIDC_ORG_CLAIM: 組織の ID を持つクレームの名前。既定は org_id。
 //   - CORS_ALLOW_ORIGINS: CORS で応答を読ませるオリジンを、カンマで区切って並べる。空なら CORS のヘッダーを返さない。
 //   - GOOGLE_CALENDARS_FILE: 照合の対象のカレンダーの設定（JSON）のパス。空なら Google カレンダーを使わない。
-//     形は gcal.LoadCalendars にある。トークンの組織に結び付けたカレンダーだけを読む。認証は Application Default Credentials で読む。
+//     形は gcal.LoadCalendars にある。トークンの組織に結び付けたカレンダーだけを読む。
+//   - GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE: 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応（JSON）のパス。
+//     GOOGLE_CALENDARS_FILE と一緒に渡す。形は gcalauth.LoadAccounts にあり、予定の API と同じである。
+//     カレンダーは、Application Default Credentials で認証し、カレンダーの組織のサービスアカウントになりすまして読む（ADR-0012）。
 //   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。偽物の API で試すためのもので、認証をしない。
 //
 // `api healthcheck` は、サーバーを起動せず、動いているサーバーの GET /readyz を確かめて終わる。
@@ -33,10 +36,9 @@ import (
 
 	"github.com/Fukuemon/buddy/packages/go/healthcheck"
 
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/calendar/v3"
-	"google.golang.org/api/option"
 
+	"github.com/Fukuemon/buddy/packages/go/gcalauth"
 	"github.com/Fukuemon/buddy/packages/go/oidc"
 
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/gcal"
@@ -49,6 +51,7 @@ type config struct {
 	maxUploadBytes   int64
 	logLevel         slog.Level
 	calendarsFile    string
+	accountsFile     string
 	calendarEndpoint string
 	oidc             oidc.Config
 	allowOrigins     []string
@@ -91,14 +94,19 @@ func loadConfig(getenv func(string) string) (config, error) {
 		}
 	}
 	cfg.calendarsFile = getenv("GOOGLE_CALENDARS_FILE")
+	cfg.accountsFile = getenv("GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE")
 	cfg.calendarEndpoint = getenv("GOOGLE_CALENDAR_ENDPOINT")
 	if cfg.calendarEndpoint != "" && cfg.calendarsFile == "" {
 		return config{}, errors.New("GOOGLE_CALENDAR_ENDPOINT は GOOGLE_CALENDARS_FILE と一緒に渡す")
 	}
+	if (cfg.calendarsFile == "") != (cfg.accountsFile == "") {
+		return config{}, errors.New("GOOGLE_CALENDARS_FILE と GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE は一緒に渡す")
+	}
 	return cfg, nil
 }
 
-// newCalendarReader は、cfg.calendarsFile のカレンダーを読む gcal.Reader を返す。設定が無ければ nil を返す。
+// newCalendarReader は、cfg.calendarsFile のカレンダーを、カレンダーの組織のサービスアカウントで読む gcal.Reader を返す。
+// 設定が無ければ nil を返す。サービスアカウントの対応が無い組織のカレンダーがあれば、起動しない。
 func newCalendarReader(ctx context.Context, cfg config) (*gcal.Reader, error) {
 	if cfg.calendarsFile == "" {
 		return nil, nil
@@ -107,21 +115,28 @@ func newCalendarReader(ctx context.Context, cfg config) (*gcal.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	var opts []option.ClientOption
-	if cfg.calendarEndpoint != "" {
-		opts = append(opts, option.WithEndpoint(cfg.calendarEndpoint), option.WithoutAuthentication())
-	} else {
-		creds, err := google.FindDefaultCredentials(ctx, calendar.CalendarReadonlyScope)
-		if err != nil {
-			return nil, fmt.Errorf("application default credentials を読めない: %w", err)
-		}
-		opts = append(opts, option.WithCredentials(creds))
-	}
-	svc, err := calendar.NewService(ctx, opts...)
+	accounts, err := gcalauth.LoadAccounts(cfg.accountsFile)
 	if err != nil {
 		return nil, err
 	}
-	return gcal.NewReader(svc, cals), nil
+	if err := requireAccounts(cals, accounts); err != nil {
+		return nil, err
+	}
+	clients, err := gcalauth.New(ctx, gcalauth.Config{Accounts: accounts, Scope: calendar.CalendarReadonlyScope, Endpoint: cfg.calendarEndpoint})
+	if err != nil {
+		return nil, err
+	}
+	return gcal.NewReader(clients, cals), nil
+}
+
+// requireAccounts は、cals の全ての組織に、accounts のサービスアカウントの対応があるかを確かめる。
+func requireAccounts(cals []gcal.Calendar, accounts gcalauth.Accounts) error {
+	for _, c := range cals {
+		if _, ok := accounts.Of(c.OrgID); !ok {
+			return fmt.Errorf("組織 %s のサービスアカウントが GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE に無い", c.OrgID)
+		}
+	}
+	return nil
 }
 
 func main() {
