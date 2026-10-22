@@ -68,12 +68,13 @@ const openReviewUntilRow = async (page: Page) => {
   }).toPass()
 }
 
-/** 確かめが要る予定の一覧で、林の行を buddy の内容で書き直す。 */
-const rewriteHayashiRow = async (page: Page) => {
+/** 確かめが要る予定の一覧で、林の行を buddy の内容で書き直す。確かめのダイアログの文が notice を含むことを確かめてから押す。 */
+const rewriteHayashiRow = async (page: Page, notice: string) => {
   await reviewRow(page)
     .getByTestId(/^calendar-review-rewrite-/)
     .click()
   const dialog = page.getByTestId('calendar-rewrite-dialog')
+  await expect(dialog).toContainText(notice)
   await page.getByTestId('calendar-rewrite-submit').click()
   await expect(dialog).toBeHidden()
   await expect(reviewRow(page)).toHaveCount(0)
@@ -89,6 +90,9 @@ test.describe('確かめが要る予定', () => {
       await expect(page.getByTestId(`calendar-link-row-${HAYASHI.id}`)).toBeVisible()
       if (await remove.isVisible()) {
         await remove.click()
+        await expect(page.getByTestId('calendar-unlink-dialog')).toContainText(
+          '取り込んだ予定は buddy に残ります。',
+        )
         await page.getByTestId('calendar-unlink-submit').click()
         await expect(remove).toBeHidden()
       }
@@ -129,15 +133,7 @@ test.describe('確かめが要る予定', () => {
       })
 
       await test.step('buddy の内容で書き直すと、一覧から消え、Google カレンダーが buddy のタイトルになる', async () => {
-        await reviewRow(page)
-          .getByTestId(/^calendar-review-rewrite-/)
-          .click()
-        await expect(page.getByTestId('calendar-rewrite-dialog')).toContainText(
-          'Google カレンダーで直したタイトルと日時は消えます。',
-        )
-        await page.getByTestId('calendar-rewrite-submit').click()
-        await expect(page.getByTestId('calendar-rewrite-dialog')).toBeHidden()
-        await expect(reviewRow(page)).toHaveCount(0)
+        await rewriteHayashiRow(page, 'Google カレンダーで直したタイトルと日時は消えます。')
 
         await expect.poll(async () => (await findEvent(request, changed))?.id).toBe(eventId)
       })
@@ -171,10 +167,14 @@ test.describe('確かめが要る予定', () => {
       })
 
       await test.step('buddy の内容で書き直すと、一覧から消え、Google カレンダーに buddy のタイトルで予定が戻る', async () => {
-        await rewriteHayashiRow(page)
+        await rewriteHayashiRow(page, '消された予定は作り直します。')
 
-        await expect.poll(async () => (await findEvent(request, changed))?.id).toBe(eventId)
-        expect((await findEvent(request, changed))?.status).toBe('confirmed')
+        await expect
+          .poll(async () => {
+            const event = await findEvent(request, changed)
+            return [event?.id, event?.status]
+          })
+          .toEqual([eventId, 'confirmed'])
       })
     })
   })
