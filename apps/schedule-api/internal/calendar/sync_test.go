@@ -627,3 +627,33 @@ func TestSyncCancelledOccurrenceEchoOfExportedReplacement(t *testing.T) {
 		t.Errorf("書き出した置き換えの回の取り消しを、確かめが要る予定にした: %+v", issues)
 	}
 }
+
+func TestSyncCancelledOccurrenceWhileParentUnexported(t *testing.T) {
+	e := newSyncEnv(t)
+	rs := e.recurring(t)
+	parent := eventID(t, rs.ID)
+	moved := "定例（buddy）"
+	occ, err := e.schedules.ChangeOccurrence(e.ctx, rs.ID, civil.Date{Year: 2026, Month: 11, Day: 16}, schedule.SlotInput{
+		TypeID: inmem.NormalTypeID, Date: civil.Date{Year: 2026, Month: 11, Day: 16},
+		StartTime: civil.Time{Hour: 11}, EndTime: civil.Time{Hour: 12}, StaffID: inmem.StaffID, Title: &moved,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 置き換えた単発の予定だけを書き出し、親の EXDATE はまだ書き出していないときに、Google で同じ回を取り消した
+	for id, x := range e.store.Exports {
+		if x.RecurringScheduleID == rs.ID {
+			x.NextAttemptAt = time.Now().Add(time.Hour)
+			e.store.Exports[id] = x
+		}
+	}
+	e.run(t)
+	if e.srv.Event(googleCalID, eventID(t, occ.ID)) == nil {
+		t.Fatal("置き換えた単発の予定を書き出していない")
+	}
+	e.srv.Put(googleCalID, gcancelled(parent+"_20261116T000000Z", parent, "2026-11-16T09:00:00+09:00"))
+	e.sync(t)
+	if x := e.export(t, rs.ID); x.Status != calendar.ExportConflict || *x.ErrorCode != calendar.ErrorPreconditionFailed {
+		t.Errorf("親の EXDATE を書き出す前に取り消した回の待ち = %+v", x)
+	}
+}

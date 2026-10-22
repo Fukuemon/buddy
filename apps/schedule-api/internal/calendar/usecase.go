@@ -43,6 +43,9 @@ const (
 	CodeExternalChangeUnappliable = "external_change_unappliable"
 )
 
+// acceptCallTimeout は、Google の内容に合わせる操作が、予定の行をロックしたまま外部のカレンダーを読む時間の上限である。
+const acceptCallTimeout = 20 * time.Second
+
 // staleRunAfter を過ぎても running の取り込みは、止まった取り込みとみなし、次の取り込みを止めない。
 const staleRunAfter = 10 * time.Minute
 
@@ -602,21 +605,30 @@ func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 	err = u.tx.WithinTx(ctx, func(ctx context.Context) error {
 		// 予定の行をロックしてから Google の予定を読む。同期の処理も同じ行をロックして Google の変更を当てるので、
 		// 読んだ後に Google で変わった予定は、同期が後で比べて当てるか確かめが要る待ちにする。
-		if _, err := u.deps.Schedules.GetForUpdate(ctx, e.ScheduleID); err != nil {
+		locked, err := u.deps.Schedules.GetForUpdate(ctx, e.ScheduleID)
+		if err != nil {
 			return err
 		}
 		cur, err := u.deps.Exports.Get(ctx, id)
 		if err != nil {
 			return err
 		}
-		if !cur.InReview() {
+		switch {
+		case !cur.InReview():
 			return errNotInReview
+		case !cur.Acceptable() || locked.Cancel != nil:
+			return errNotAcceptable
 		}
-		ev, err := u.externalEvent(ctx, c, l)
+		callCtx, cancel := context.WithTimeout(ctx, acceptCallTimeout)
+		defer cancel()
+		ev, err := u.externalEvent(callCtx, c, l)
 		if err != nil {
 			return err
 		}
-		if err := u.deps.Exports.Resolve(ctx, id, cur.Revision); err != nil {
+		// ロックを取らない RetryExport が、確かめた後に書き直す待ちにしたときに当たる。
+		if err := u.deps.Exports.Resolve(ctx, id, cur.Revision); errors.Is(err, apperr.ErrConflict) {
+			return errNotInReview
+		} else if err != nil {
 			return err
 		}
 		err = u.apply.acceptSchedule(ctx, c, l, ev)
@@ -627,8 +639,9 @@ func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 		if err != nil {
 			return err
 		}
+		// 職員を替えた予定は、今の職員のカレンダーへ移すために書き出し直す。キャンセルした予定は移さない。
 		d, err := u.deps.Schedules.Get(ctx, e.ScheduleID)
-		if err != nil || d.StaffID == c.StaffID {
+		if err != nil || d.StaffID == c.StaffID || d.Cancel != nil {
 			return err
 		}
 		return u.deps.Exports.Enqueue(ctx, u.ids.NewID(), e.Target)
@@ -643,7 +656,7 @@ func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 // 取り消した予定を返す。Google は、消した予定に 404 を返すことがあるためである。
 func (u *Usecase) externalEvent(ctx context.Context, c ExternalCalendar, l Link) (Event, error) {
 	ev, err := u.deps.Source.Event(ctx, c.CalendarID, l.ExternalEventID)
-	if !errors.Is(err, ErrUnreadable) {
+	if !errors.Is(err, ErrEventNotFound) {
 		return ev, err
 	}
 	if cerr := u.deps.Source.Check(ctx, c.CalendarID); cerr != nil {

@@ -126,9 +126,14 @@ func (r *Reader) Changes(ctx context.Context, calendarID, syncToken string) (cal
 }
 
 // Event は、calendarID のカレンダーの予定 eventID を返す。消した予定は、Status が cancelled で返る。エラーは Events と同じである。
+// Google が 404 か 410 を返したときは、calendar.ErrEventNotFound も包む。
 // 出典: https://developers.google.com/workspace/calendar/api/v3/reference/events/get
 func (r *Reader) Event(ctx context.Context, calendarID, eventID string) (calendar.Event, error) {
 	ev, err := r.svc.Events.Get(calendarID, eventID).TimeZone(calendar.TimeZone).Context(ctx).Do()
+	var gerr *googleapi.Error
+	if errors.As(err, &gerr) && (gerr.Code == http.StatusNotFound || gerr.Code == http.StatusGone) {
+		return calendar.Event{}, fmt.Errorf("予定を取れない: %w: %w: %w", calendar.ErrEventNotFound, calendar.ErrUnreadable, err)
+	}
 	if err != nil {
 		return calendar.Event{}, wrap("予定を取れない", err)
 	}

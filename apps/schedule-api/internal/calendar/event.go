@@ -104,5 +104,6 @@ type EventSource interface {
 	// トークンが切れていれば ErrSyncTokenExpired を包んだエラーを返す。
 	Changes(ctx context.Context, calendarID, syncToken string) (Changes, error)
 	// Event は、calendarID のカレンダーの予定 eventID を返す。消した予定は、Status が cancelled で返る。
+	// 予定かカレンダーが見つからないときは、ErrUnreadable と ErrEventNotFound を包んだエラーを返す。
 	Event(ctx context.Context, calendarID, eventID string) (Event, error)
 }

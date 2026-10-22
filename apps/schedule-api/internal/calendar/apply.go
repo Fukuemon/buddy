@@ -181,8 +181,9 @@ func (a applier) syncRecurring(ctx context.Context, l Link, ev Event) error {
 
 // syncOccurrence は、繰り返しの予定 parent の回で、まだ buddy の予定と対応の無い外部の例外の回 ev を当てる。
 // 取り消した回は、繰り返しの予定から除外する。変えた回は、元の回を除外し、回を置き換える単発の予定を作って対応を書く。
-// buddy でもその回を除外していれば、変えた回は両方が変わったので、確かめが要る待ちにする。取り消した回は、buddy が置き換えた回を
-// まだ書き出していないときだけ、確かめが要る待ちにする。書き出した後なら、親の EXDATE が戻ってきたものとみなす。
+// buddy でもその回を除外していれば、変えた回は両方が変わったので、確かめが要る待ちにする。取り消した回は、buddy がその回を
+// 置き換え、親の予定の EXDATE をまだ書き出していないときだけ、確かめが要る待ちにする。書き出した後なら、親の EXDATE が
+// 戻ってきたものとみなす。
 func (a applier) syncOccurrence(ctx context.Context, c ExternalCalendar, parent Link, ev Event) error {
 	rs, err := a.recurring.GetForUpdate(ctx, *parent.RecurringScheduleID)
 	if err != nil {
@@ -200,8 +201,11 @@ func (a applier) syncOccurrence(ctx context.Context, c ExternalCalendar, parent 
 			return nil
 		}
 		if excluded {
-			pending, err := a.replacedUnexported(ctx, rs.ID, date)
-			if err != nil || !pending {
+			if synced(parent, rs.Version) {
+				return nil
+			}
+			replaced, err := a.replaced(ctx, rs.ID, date)
+			if err != nil || !replaced {
 				return err
 			}
 			return a.exports.Hold(ctx, a.ids.NewID(), t, ErrorPreconditionFailed)
@@ -275,24 +279,13 @@ func (a applier) syncedParent(ctx context.Context, parent Link, before int) erro
 	return a.calendars.UpdateLink(ctx, parent.ID, parent.ETag, rs.Version)
 }
 
-// replacedUnexported は、繰り返しの予定 recurringScheduleID の d の回を buddy で置き換えた単発の予定があり、
-// キャンセルしておらず、外部のカレンダーにまだ同じ内容で書き出していないかを返す。
-func (a applier) replacedUnexported(ctx context.Context, recurringScheduleID string, d civil.Date) (bool, error) {
+// replaced は、繰り返しの予定 recurringScheduleID の d の回を buddy で置き換えた、キャンセルしていない単発の予定があるかを返す。
+func (a applier) replaced(ctx context.Context, recurringScheduleID string, d civil.Date) (bool, error) {
 	r, err := a.schedules.ReplacementOf(ctx, recurringScheduleID, d)
 	if errors.Is(err, apperr.ErrNotFound) {
 		return false, nil
 	}
-	if err != nil || r.Cancel != nil {
-		return false, err
-	}
-	l, err := a.calendars.LinkBySchedule(ctx, r.ID)
-	if errors.Is(err, apperr.ErrNotFound) {
-		return true, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	return !synced(l, r.Version), nil
+	return err == nil && r.Cancel == nil, err
 }
 
 // open は、t の終わっていない書き出しの待ちを返し、無ければ nil を返す。待ちを書いている処理があれば errExportWriting を返す。

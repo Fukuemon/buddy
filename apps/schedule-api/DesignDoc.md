@@ -396,13 +396,13 @@ sequenceDiagram
   - Google で消された予定は、理由を「Google カレンダーで消されました」にしてキャンセルする。buddy でキャンセルした予定を Google で戻しても、buddy には戻さない（読み替えられない）。
 - 繰り返しの予定
   - 予定の対応が無く、親の予定の対応が繰り返しの予定を指す例外の回は、buddy の回の変更として当てる。元の日付が規則の回に当たらない取り消しは何もせず、変更は `conflict`（`unappliable`）にする。取り消した回は除外の日にする。変えた回は、元の回を除外し、元の回の日付を持つ単発の予定を作って、例外の回との対応を書く。当てる前に親の予定の対応が buddy と同じ（`synced_version` が更新の番号と同じ）なら、対応の `synced_version` も進め、当てた変更を buddy の変更と見誤らないようにする。
-  - buddy でもその回を除外していれば、変えた回は両方が変わったので、繰り返しの予定の待ちを `conflict`（`precondition_failed`）にする。取り消した回は、buddy が置き換えた単発の予定をまだ書き出していないときだけ `conflict` にし、書き出した後なら何もしない。書き出した親の `EXDATE` が、取り消した回として戻ってくることがあるためである。
+  - buddy でもその回を除外していれば、変えた回は両方が変わったので、繰り返しの予定の待ちを `conflict`（`precondition_failed`）にする。取り消した回は、buddy がその回を置き換え、親の予定の `EXDATE` をまだ書き出していない（親の対応の `synced_version` が更新の番号と違う）ときだけ `conflict` にし、書き出した後なら何もしない。書き出した親の `EXDATE` が、取り消した回として戻ってくることがあるためである。
   - 親の予定そのもの（規則、時刻、題名）の変更と削除は、buddy に当てない。書き出した内容と同じでなければ、`conflict`（`unappliable`、消されたときは `not_found`。buddy でも変えていれば `precondition_failed`）にする。規則は、両方を `RecurrenceOf` で同じ形にしてから比べる。`EXDATE` は比べない。Google で取り消した回は親の `EXDATE` ではなく例外の回で来るので、buddy の除外の日と親の `EXDATE` は一致しないためである。
 - 予定の対応の無い予定は当てない。Google で新しく作った予定は、取り込みで buddy に移す。
 - 確かめが要る待ちの解き方
   - 「buddy の内容で書き直す」（`createCalendarExportRetry`）は、書き出しと同じく `If-Match` を付けずに書き直す。
   - 「Google の内容に合わせる」（`createCalendarExportAcceptance`）は、単発の予定で、理由が `precondition_failed` か `not_found` の待ちだけに使える。buddy でキャンセルした予定には使えない（`acceptable` が false）。Google の今の予定を `events.get` で読み、buddy の予定に当てて、待ちを終える（`succeeded`）。読み替えられなければ 409（`external_change_unappliable`）を返す。
-  - Google が予定に 404 を返し、カレンダーは読めるときは、予定が消されたとみなしてキャンセルする。
+  - Google が予定に 404 か 410 を返し、カレンダーは読めるときは、予定が消されたとみなしてキャンセルする。403 は消されたとみなさない。キャンセルした予定は、職員を替えていても書き出し直さない。Google を読む時間の上限は 20 秒である。
   - 予定の行をロックしてから Google の予定を読む。同期の処理も同じ行をロックするので、読んだ後に Google で変わった予定は、同期が後で比べて当てるか、確かめが要る待ちにする。
   - buddy で職員を替えた予定は、合わせた後に書き出しの待ちを積み直し、今の職員のカレンダーへ移させる。
 - カレンダーの同期の状態（`calendar_sync_states`）は、最後の結果（`never`、`succeeded`、`failed`）と、失敗の理由を決まった値（`unreadable`、`unavailable`、`apply`）で持つ。ログと理由に、予定の題名、利用者名、カレンダーの ID を出さない。

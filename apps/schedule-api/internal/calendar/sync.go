@@ -166,10 +166,15 @@ func (s *Syncer) sync(ctx context.Context, st SyncState) SyncResult {
 	attrs := []any{slog.String("external_calendar_id", st.Calendar.ID)}
 	token := st.SyncToken
 	src, err := s.deps.Sources(ctx, st.Calendar.FacilityID)
-	var ch Changes
-	if err == nil {
-		ch, err = src.Changes(ctx, st.Calendar.CalendarID, token)
+	if err == nil && src == nil {
+		err = ErrNotConfigured
 	}
+	if err != nil {
+		s.log.ErrorContext(ctx, "calendar sync source", append(attrs, slog.Any("error", err))...)
+		code := SyncUnavailable
+		return SyncResult{SyncToken: token, Status: SyncFailed, ErrorCode: &code, After: s.interval}
+	}
+	ch, err := src.Changes(ctx, st.Calendar.CalendarID, token)
 	if errors.Is(err, ErrSyncTokenExpired) {
 		s.log.InfoContext(ctx, "calendar sync token expired", attrs...)
 		token = ""

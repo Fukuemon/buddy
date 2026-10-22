@@ -341,3 +341,15 @@ func TestReaderEvent(t *testing.T) {
 		t.Errorf("無い予定の err = %v", err)
 	}
 }
+
+func TestReaderEventNotFound(t *testing.T) {
+	f := &gcaltest.Server{Calendars: map[string][][]*calendar.Event{"staff@example.com": {{}}}}
+	_, err := start(t, f).Event(t.Context(), "staff@example.com", "missing")
+	if !errors.Is(err, schedcal.ErrEventNotFound) || !errors.Is(err, schedcal.ErrUnreadable) || strings.Contains(err.Error(), "staff") {
+		t.Errorf("無い予定の err = %v", err)
+	}
+	f.Status = http.StatusForbidden
+	if _, err := start(t, f).Event(t.Context(), "staff@example.com", "missing"); errors.Is(err, schedcal.ErrEventNotFound) {
+		t.Errorf("403 を予定が無いとみなした: %v", err)
+	}
+}

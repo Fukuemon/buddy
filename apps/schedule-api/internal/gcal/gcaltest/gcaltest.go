@@ -356,6 +356,10 @@ func (s *Server) serveInstances(w http.ResponseWriter, r *http.Request) {
 
 // serveGet は、events.get に答える。消した予定は status が cancelled で返る。
 func (s *Server) serveGet(w http.ResponseWriter, r *http.Request) {
+	if s.Status != 0 {
+		writeError(w, s.Status, "denied")
+		return
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	cal, id := r.PathValue("id"), r.PathValue("event")
