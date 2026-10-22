@@ -30,11 +30,36 @@ export const showCaptionInRecording = async (
           font: '16px/1.5 sans-serif',
           pointerEvents: 'none',
           whiteSpace: 'pre-wrap',
+          // popover の UA の既定の見た目を消す
+          bottom: 'auto',
+          margin: '0',
+          border: 'none',
+          width: 'auto',
+          height: 'auto',
+          overflow: 'visible',
         })
         const render = () => (bar.textContent = `${header}\n${sessionStorage.getItem(key) ?? ''}`)
         render()
         window.addEventListener('__e2e-caption', render)
         document.body.appendChild(bar)
+        raiseOverDialogs(bar)
+      }
+      // showModal で開いたダイアログは最上位の層に出て、z-index の要素を覆う。字幕を popover にして同じ層に出し、ダイアログが開くたびに出し直して上に重ねる
+      const raiseOverDialogs = (el: HTMLElement) => {
+        el.popover = 'manual'
+        const raise = () => {
+          if (!el.isConnected) return
+          if (el.matches(':popover-open')) el.hidePopover()
+          el.showPopover()
+        }
+        raise()
+        new MutationObserver((records) => {
+          if (records.some((r) => r.target instanceof HTMLDialogElement && r.target.open)) raise()
+        }).observe(document.documentElement, {
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['open'],
+        })
       }
       if (document.body) install()
       else document.addEventListener('DOMContentLoaded', install)
