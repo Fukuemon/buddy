@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, type ComponentProps } from 'react'
 
 import { useBuddyApi } from '#/api/useBuddyApi'
 import { Loading } from '@buddy/ui'
 
 import { getCalendarRange, shiftCalendarDate } from '../lib/calendarRange'
 import { toDateKey } from '../lib/dateTime'
+import { nowForDay, useNow } from '../lib/useNow'
 import { toCalendarEvents } from '../lib/toCalendarEvents'
 import {
   patientListQueryOptions,
@@ -17,6 +18,15 @@ import { pickCalendarSearch, type ScheduleSearch } from '../schema/scheduleSearc
 import { ScheduleCalendar } from './ScheduleCalendar'
 import { ScheduleCalendarToolbar, type StaffFilterToggle } from './ScheduleCalendarToolbar'
 import { StaffScheduleDayGrid } from './StaffScheduleDayGrid'
+
+/** 日の表示だけが 1 分ごとに描き直されるよう、今の時刻をここで読んで日の表に渡す。 */
+const DayGridWithNow = ({
+  date,
+  ...props
+}: Omit<ComponentProps<typeof StaffScheduleDayGrid>, 'now'> & { date: string }) => {
+  const now = useNow()
+  return <StaffScheduleDayGrid {...props} now={nowForDay(date, now)} />
+}
 
 export type ScheduleCalendarContainerProps = {
   /** 渡したときだけ、ツールバーに職員の絞り込みを開くボタンを出す。 */
@@ -87,7 +97,8 @@ export const ScheduleCalendarContainer = ({
             予定を取得できませんでした。
           </p>
         ) : search.view === 'day' ? (
-          <StaffScheduleDayGrid
+          <DayGridWithNow
+            date={date}
             events={events}
             onEventClick={openDetail}
             onSlotClick={(staffId, time) => openCreate(date, time, staffId)}

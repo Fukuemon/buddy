@@ -89,6 +89,13 @@
   height: 44px;
 }
 
+.sc-title {
+  margin-left: 8px;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
 .sc-date {
   min-height: 44px;
   width: 160px;
@@ -299,5 +306,5 @@
   position: absolute;
   right: 0;
   left: 0;
-  border-top: 2px solid var(--wf-danger);
+  border-top: 2px solid var(--wf-primary);
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test'
 
-import { getCalendarRange, shiftCalendarDate } from './calendarRange'
+import { formatCalendarTitle, getCalendarRange, shiftCalendarDate } from './calendarRange'
 
 describe('shiftCalendarDate', () => {
   it.each([
@@ -25,5 +25,20 @@ describe('getCalendarRange', () => {
       from: '2026-09-27T00:00:00+09:00',
       to: '2026-11-08T00:00:00+09:00',
     })
+  })
+})
+
+describe('formatCalendarTitle', () => {
+  it.each([
+    ['month', '2026-10-20', '2026年10月'],
+    ['day', '2026-10-20', '2026年10月20日（火）'],
+    ['week', '2026-10-20', '2026年10月18日〜24日'],
+    ['week', '2026-10-18', '2026年10月18日〜24日'],
+    ['week', '2026-10-24', '2026年10月18日〜24日'],
+    ['week', '2026-11-02', '2026年11月1日〜7日'],
+    ['week', '2026-09-30', '2026年9月27日〜10月3日'],
+    ['week', '2026-12-31', '2026年12月27日〜2027年1月2日'],
+  ] as const)('%s の表示で %s を含む期間を %s にする', (view, dateKey, expected) => {
+    expect(formatCalendarTitle(view, dateKey)).toBe(expected)
   })
 })

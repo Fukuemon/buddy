@@ -88,7 +88,7 @@ DADS のキーの色は、light-blue に当て直している。`primary` と `p
 | `text-body` | Std-16N-170 | 本文。`body` のデフォルト |
 | `text-label` | Oln-16B-100 | ボタン、切り替えの選択肢 |
 | `text-heading-sm` | Std-18B-160 | 節の見出し、ダイアログのタイトル、ロゴ |
-| `text-heading-md` | Std-20B-150 | 画面全体の待ちの文 |
+| `text-heading-md` | Std-20B-150 | 画面の見出し、画面全体の待ちの文 |
 
 - 出典: [DADS のタイポグラフィ](https://design.digital.go.jp/dads/foundations/typography/)
 
