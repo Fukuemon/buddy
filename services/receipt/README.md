@@ -139,7 +139,8 @@ API は、Application Default Credentials で認証し、カレンダーの組�
 この手順はメンテナー向けで、運営側の GCP のプロジェクトと検証の事業所のサービスアカウントを前提にする。ほかの人は、`GOOGLE_CALENDAR_ENDPOINT` で Google カレンダーの代わりの calendarpit に向けて試すか、予定の CSV で照合する。
 
 1. 運営側に、検証の事業所のサービスアカウントのトークン作成者のロール（`roles/iam.serviceAccountTokenCreator`）を、自分のアカウントに付けてもらう。本番の事業所のアカウントのロールは付けない。
-   - 検証の事業所のアカウントに、`serviceusage.services.use` を持つロールも要るかは、未確認である（ADR-0012 の承認の条件）。
+   - 検証の事業所のアカウントに、`serviceusage.services.use` を持つロールも要るかは、未確認である。
+     - ADR-0012: [承認の条件](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0012-google-calendar-facility-service-accounts.md#承認の条件)
 2. 検証のカレンダーを、検証の事業所のサービスアカウントに、事業所を足す手順と同じ権限で共有する。
 3. 検証の事業所のサービスアカウントになりすました Application Default Credentials を作る。
    ```sh

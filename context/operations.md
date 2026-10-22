@@ -51,10 +51,10 @@ status: stable
 
 ## Adding a Facility
 
+運営側の GCP のプロジェクトでは、最初の事業所を足す前に 1 回だけ、IAM Service Account Credentials API を有効にする。権限借用の短い期間の token を作るのに要る。  
 運営側は、事業所を足すたびに、Google カレンダーのサービスアカウントを次の順で用意する。
 
 1. 運営側の GCP のプロジェクトに、事業所のサービスアカウントを作る。
-   - プロジェクトでは、IAM Service Account Credentials API を有効にしておく。権限借用の短い期間の token を作るのに要る。
 2. Application Default Credentials で認証する主体に、事業所のサービスアカウントのトークン作成者のロールを付ける。プロジェクトの全体には付けない。
    - 主体は、Workload Identity Federation のプールの主体か、中間のサービスアカウントである。
 3. 事業所の組織の ID とサービスアカウントのメールアドレスの対応を、`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` のファイルに足し、予定の API と照合の API に渡す。
