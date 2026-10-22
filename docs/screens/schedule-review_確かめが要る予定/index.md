@@ -1,23 +1,23 @@
 # schedule-review 確かめが要る予定
 
-職員の管理の権限を持つ職員が、buddy の予定のうち Google カレンダーに書き出せなかった予定を確かめ、buddy の内容で書き直す画面。予定は、[カレンダーの連携](../schedule-link_カレンダーの連携/index.md) で職員に結び付けた Google カレンダーに書き出す。
+職員の管理の権限を持つ職員が、buddy の予定のうち Google カレンダーと食い違った予定を確かめ、buddy の内容で書き直すか、Google カレンダーの内容に合わせる画面。予定は、[カレンダーの連携](../schedule-link_カレンダーの連携/index.md) で職員に結び付けた Google カレンダーと同期する。
 
 | 項目 | 値 |
 | --- | --- |
 | URL | `/schedule/review` |
 | 使う人 | 職員の管理の権限を持つ職員（デフォルトはマネージャー） |
-| 実装 | `apps/web/src/routes/schedule_.review.tsx`、`apps/web/src/features/calendar/components/CalendarReviewContainer.tsx`、`apps/web/src/features/calendar/components/CalendarReviewView.tsx`、`apps/web/src/features/calendar/components/CalendarReviewTable.tsx`、`apps/web/src/features/calendar/components/CalendarRewriteDialog.tsx`、`apps/web/src/features/calendar/components/CalendarDialog.tsx`、`apps/web/src/components/site/PageForbiddenMessage.tsx` |
+| 実装 | `apps/web/src/routes/schedule_.review.tsx`、`apps/web/src/features/calendar/components/CalendarReviewContainer.tsx`、`apps/web/src/features/calendar/components/CalendarReviewView.tsx`、`apps/web/src/features/calendar/components/CalendarReviewTable.tsx`、`apps/web/src/features/calendar/components/CalendarRewriteDialog.tsx`、`apps/web/src/features/calendar/components/CalendarAcceptDialog.tsx`、`apps/web/src/features/calendar/components/CalendarDialog.tsx`、`apps/web/src/components/site/PageForbiddenMessage.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
 
 ## 構成
 
-上端のヘッダーの下に、ページのタイトル、説明の文、予定の一覧を縦に並べる。書き直すは、URL を持たない確かめのダイアログを一覧の上に重ねて出す。
+上端のヘッダーの下に、ページのタイトル、説明の文、予定の一覧を縦に並べる。書き直すと合わせるは、URL を持たない確かめのダイアログを一覧の上に重ねて出す。
 幅 768px 未満では、予定の一覧の行を、見出しと値の組を縦に積んだ箱にする。
 
 === "一覧"
 
-    開いた直後に、確かめが要る予定を読み終え、1 件以上あったとき。モックは、Google カレンダーで直された単発の予定、書けなかった単発の予定、Google カレンダーで消された繰り返しの予定を描く。
+    開いた直後に、確かめが要る予定を読み終え、1 件以上あったとき。モックは、buddy と Google カレンダーの両方で変わった単発の予定、書けなかった単発の予定、Google カレンダーで消された繰り返しの予定、Google カレンダーで終日にされた単発の予定を描く。
 
     <iframe class="mock" title="確かめが要る予定の、一覧" src="mocks/01-list.html"></iframe>
     <a class="mock-open" href="mocks/01-list.html" target="_blank">別タブで開く</a>
@@ -35,7 +35,8 @@
     | 9 | ラベル | 理由 | [理由](#理由) |
     | 10 | ラベル | 最後に変わった日時 | [最後に変わった日時](#最後に変わった日時) |
     | 11 | ボタン | 予定を開く | [予定を開く](#予定を開く) |
-    | 12 | ボタン | buddy の内容で書き直す | [buddy の内容で書き直す](#buddy-の内容で書き直す) |
+    | 12 | ボタン | Google の内容に合わせる | [Google の内容に合わせる](#google-の内容に合わせる) |
+    | 13 | ボタン | buddy の内容で書き直す | [buddy の内容で書き直す](#buddy-の内容で書き直す) |
 
 === "空"
 
@@ -135,6 +136,55 @@
     | 6 | ボタン | キャンセル | [キャンセル](#キャンセル) |
     | 7 | ボタン | ダイアログの書き直す | [ダイアログの書き直す](#ダイアログの書き直す) |
 
+=== "合わせるダイアログ"
+
+    一覧の行で、Google の内容に合わせるを押したとき。モックは、1 行目の予定を合わせるときを描く。
+
+    <iframe class="mock" title="確かめが要る予定の、合わせるダイアログ" src="mocks/09-accept.html"></iframe>
+    <a class="mock-open" href="mocks/09-accept.html" target="_blank">別タブで開く</a>
+
+    | 番号 | 種別 | 要素名 | 仕様 |
+    | --- | --- | --- | --- |
+    | 1 | 覆い | 覆い | [覆い](#覆い) |
+    | 2 | ダイアログ | 合わせるダイアログ | [合わせるダイアログ](#合わせるダイアログ) |
+    | 3 | ラベル | 合わせる予定 | [合わせる予定](#合わせる予定) |
+    | 4 | ラベル | 合わせるときの注意 | [合わせるときの注意](#合わせるときの注意) |
+    | 5 | ボタン | キャンセル | [キャンセル](#キャンセル) |
+    | 6 | ボタン | ダイアログの合わせる | [ダイアログの合わせる](#ダイアログの合わせる) |
+
+=== "合わせるの送信中"
+
+    ダイアログの合わせるを押し、予定の API の応答を待っているとき。ダイアログを閉じられない。
+
+    <iframe class="mock" title="確かめが要る予定の、合わせるの送信中" src="mocks/10-accepting.html"></iframe>
+    <a class="mock-open" href="mocks/10-accepting.html" target="_blank">別タブで開く</a>
+
+    | 番号 | 種別 | 要素名 | 仕様 |
+    | --- | --- | --- | --- |
+    | 1 | 覆い | 覆い | [覆い](#覆い) |
+    | 2 | ダイアログ | 合わせるダイアログ | [合わせるダイアログ](#合わせるダイアログ) |
+    | 3 | ラベル | 合わせる予定 | [合わせる予定](#合わせる予定) |
+    | 4 | ラベル | 合わせるときの注意 | [合わせるときの注意](#合わせるときの注意) |
+    | 5 | ボタン | キャンセル | [キャンセル](#キャンセル) |
+    | 6 | ボタン | ダイアログの合わせる | [ダイアログの合わせる](#ダイアログの合わせる) |
+
+=== "合わせるの失敗"
+
+    ダイアログの合わせるを押し、Google カレンダーの内容に合わせられなかったとき。モックは、Google カレンダーで予定が終日にされていたときを描く。ほかの理由は、合わせるの失敗の文だけが違う。
+
+    <iframe class="mock" title="確かめが要る予定の、合わせるの失敗" src="mocks/11-accept-error.html"></iframe>
+    <a class="mock-open" href="mocks/11-accept-error.html" target="_blank">別タブで開く</a>
+
+    | 番号 | 種別 | 要素名 | 仕様 |
+    | --- | --- | --- | --- |
+    | 1 | 覆い | 覆い | [覆い](#覆い) |
+    | 2 | ダイアログ | 合わせるダイアログ | [合わせるダイアログ](#合わせるダイアログ) |
+    | 3 | ラベル | 合わせる予定 | [合わせる予定](#合わせる予定) |
+    | 4 | ラベル | 合わせるときの注意 | [合わせるときの注意](#合わせるときの注意) |
+    | 5 | メッセージ | 合わせるの失敗の文 | [合わせるの失敗の文](#合わせるの失敗の文) |
+    | 6 | ボタン | キャンセル | [キャンセル](#キャンセル) |
+    | 7 | ボタン | ダイアログの合わせる | [ダイアログの合わせる](#ダイアログの合わせる) |
+
 === "権限が無い"
 
     ログインした職員が職員の管理の権限を持たないとき。ナビゲーションに「取り込み」と「要確認」を出さない。
@@ -225,13 +275,13 @@
 
 ## 説明の文
 
-**概要**: 一覧に何が出るかと、書き直すと何が起きるかを示す。
+**概要**: 一覧に何が出るかと、書き直すと合わせるで何が起きるかを示す。
 
 **値のソース**: 次の文言。
 
 | 文言 |
 | --- |
-| 「buddy の予定のうち、Google カレンダーに書き出せなかった予定です。Google カレンダーで直された予定は、buddy に取り込みません。予定を開いて buddy の内容を確かめ、buddy の内容で書き直すと、Google カレンダーの予定のタイトルと日時を buddy の内容にします。」 |
+| 「buddy の予定のうち、Google カレンダーに書き出せなかった予定と、buddy と Google カレンダーの両方で変わった予定です。片方だけで変わった予定は、変わった側に合わせるので、ここには出ません。buddy の内容で書き直すと Google カレンダーの予定を buddy の内容にし、Google の内容に合わせると buddy の予定を Google カレンダーの内容にします。」 |
 
 **活性条件**: 常に活性
 
@@ -241,7 +291,7 @@
 
 ## 予定の一覧
 
-**概要**: Google カレンダーに書き出せなかった予定ごとに、日時、職員、理由、最後に変わった日時を示し、予定を開くか、buddy の内容で書き直す。
+**概要**: Google カレンダーと食い違った予定ごとに、日時、職員、理由、最後に変わった日時を示し、予定を開くか、buddy の内容で書き直すか、Google の内容に合わせる。
 
 **値のソース**: 「予定の日時」「職員」「理由」「最後に変わった日時」のカラムと、操作の列。行は、書き出しの状態が新しく変わった順に並べる。予定のタイトル、利用者名、カレンダーの ID は、個人の情報を出さないために出さない。幅 768px 未満では、行ごとの箱の中に、カラムの名前と値を縦に積む。
 
@@ -265,7 +315,7 @@
 
 ## 職員
 
-**概要**: 予定の職員を示す。予定は、この職員に結び付けた Google カレンダーに書き出す。
+**概要**: 予定の職員を示す。予定は、この職員に結び付けた Google カレンダーと同期する。
 
 **値のソース**: 職員の名前。
 
@@ -277,15 +327,18 @@
 
 ## 理由
 
-**概要**: 書き出せなかった理由を、マネージャーが次にすることの分かる文で示す。
+**概要**: 確かめが要る理由を、マネージャーが次にすることの分かる文で示す。
 
 **値のソース**: 次の文。
 
 | 理由 | 文 |
 | --- | --- |
-| Google カレンダーで予定が直されていた | 「Google カレンダーで予定が直されたので、buddy の変更を書き出していません。」 |
+| buddy と Google カレンダーの両方で単発の予定が変わった | 「buddy と Google カレンダーの両方で予定が変わりました。どちらの内容に合わせるかを選んでください。」 |
+| buddy と Google カレンダーの両方で繰り返しの予定が変わった | 「buddy と Google カレンダーの両方で繰り返しの予定が変わりました。buddy の内容で書き直すか、Google カレンダーで元に戻すよう職員に頼んでください。」 |
+| Google カレンダーでの変更を buddy の予定に読み替えられない | 「Google カレンダーでの変更を、buddy の予定に読み替えられません。終日の予定、タイトルの利用者が見つからない予定、繰り返しの予定そのものの変更が当たります。buddy の内容で書き直すか、Google カレンダーで直すよう職員に頼んでください。」 |
 | Google カレンダーで予定が消されていた | 「Google カレンダーで予定が見つかりません。予定が消されたか、カレンダーの共有が外れていないかを、職員に確かめてください。」 |
 | カレンダーに書く権限が無い | 「Google カレンダーに書けません。カレンダーが「予定の変更」の権限で共有されているかを、職員に確かめてください。」 |
+| Google カレンダーが予定の内容を受け付けなかった | 「Google カレンダーが予定の内容を受け付けませんでした。予定を開いて内容を確かめてください。」 |
 | Google に届かず、書き直しの上限に達した | 「Google カレンダーに届かず、書き出せませんでした。」 |
 | そのほか | 「Google カレンダーに書き出せませんでした。」 |
 
@@ -297,7 +350,7 @@
 
 ## 最後に変わった日時
 
-**概要**: buddy が書き出せないことに最後に最後に変わった日時を示す。
+**概要**: 確かめが要る状態に最後に変わった日時を示す。
 
 **値のソース**: 書き出しの状態が最後に変わった日時を、デバイスの時間帯で「2026/10/22 10:00」の形で出す。
 
@@ -324,6 +377,24 @@
 #### 1. 押す
 
 1. その予定の詳細（`/schedule/{予定の ID}`）へ移る。
+
+## Google の内容に合わせる
+
+**概要**: buddy の予定を Google カレンダーの内容に合わせる、確かめのダイアログを開く。
+
+**値のソース**: 「Google の内容に合わせる」
+
+**活性条件**: 常に活性
+
+**表示条件**: 単発の予定で、buddy と Google カレンダーの両方で変わったか、Google カレンダーで予定が見つからない行。繰り返しの予定の行、buddy でキャンセルした予定の行、書けなかった行、読み替えられない行には出さない
+
+**カタログ**: [CalendarReviewView の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarreviewview--default)
+
+### インタラクション
+
+#### 1. 押す
+
+1. 「合わせるダイアログ」の状態にする。
 
 ## buddy の内容で書き直す
 
@@ -407,11 +478,11 @@
 
 **値のソース**: なし
 
-**活性条件**: 書き直しを送っている間は押しても閉じない
+**活性条件**: 書き直しか合わせるを送っている間は押しても閉じない
 
-**表示条件**: 書き直すダイアログを開いているとき
+**表示条件**: 書き直すダイアログか合わせるダイアログを開いているとき
 
-**カタログ**: [CalendarRewriteDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarrewritedialog--default)
+**カタログ**: [CalendarRewriteDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarrewritedialog--default)、[CalendarAcceptDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendaracceptdialog--default)
 
 ### インタラクション
 
@@ -483,21 +554,21 @@
 
 ## キャンセル
 
-**概要**: 書き直さずにダイアログを閉じる。
+**概要**: 書き直さず、合わせずにダイアログを閉じる。
 
 **値のソース**: 「キャンセル」
 
-**活性条件**: 書き直しを送っている間は押せない
+**活性条件**: 書き直しか合わせるを送っている間は押せない
 
-**表示条件**: 書き直すダイアログを開いているとき
+**表示条件**: 書き直すダイアログか合わせるダイアログを開いているとき
 
-**カタログ**: [CalendarRewriteDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarrewritedialog--default)、[CalendarRewriteDialog の Submitting](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarrewritedialog--submitting)
+**カタログ**: [CalendarRewriteDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarrewritedialog--default)、[CalendarRewriteDialog の Submitting](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarrewritedialog--submitting)、[CalendarAcceptDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendaracceptdialog--default)
 
 ### インタラクション
 
 #### 1. 押すか、Escape キーを押す
 
-1. ダイアログを閉じ、「一覧」の状態に戻る。書き直しを送っている間は、Escape キーでも閉じない。
+1. ダイアログを閉じ、「一覧」の状態に戻る。送っている間は、Escape キーでも閉じない。
 
 ## ダイアログの書き直す
 
@@ -518,6 +589,92 @@
 1. 「書き直しの送信中」の状態にし、予定の API に書き直しを送る。
 2. 成功したら、ダイアログを閉じ、一覧を読み直す。その予定は一覧から消える。書き出しの処理が、数十秒のうちに Google カレンダーに書く。Google カレンダーで消された予定は作り直す。
 3. 失敗したら、「書き直しの失敗」の状態にし、[書き直しの失敗の文](#書き直しの失敗の文) に理由を出す。一覧も読み直す。
+
+## 合わせるダイアログ
+
+**概要**: buddy の予定を Google カレンダーの内容に合わせる前に、buddy での変更が消えることを示して確かめる。
+
+**値のソース**: 題は次の文言。
+
+| 文言 |
+| --- |
+| 「Google カレンダーの内容に合わせますか」 |
+
+**活性条件**: 常に活性
+
+**表示条件**: 一覧で Google の内容に合わせるを押した後
+
+**カタログ**: [CalendarAcceptDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendaracceptdialog--default)
+
+## 合わせる予定
+
+**概要**: どの予定を合わせるかを示す。
+
+**値のソース**: [書き直す予定](#書き直す予定) と同じ形で出す。
+
+**活性条件**: 常に活性
+
+**表示条件**: 合わせるダイアログを開いているとき
+
+**カタログ**: [CalendarAcceptDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendaracceptdialog--default)
+
+## 合わせるときの注意
+
+**概要**: 合わせると buddy の何が消えるかを示す。
+
+**値のソース**: 次の文言。
+
+| 文言 |
+| --- |
+| 「buddy の予定のタイトルと日時を、Google カレンダーの今の内容にします。buddy で変えたタイトルと日時は消えます。Google カレンダーで消された予定は、buddy でもキャンセルします。」 |
+
+**活性条件**: 常に活性
+
+**表示条件**: 合わせるダイアログを開いているとき
+
+**カタログ**: [CalendarAcceptDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendaracceptdialog--default)
+
+## 合わせるの失敗の文
+
+**概要**: Google カレンダーの内容に合わせられなかったことと、次にすることを示す。読み上げでは警告として扱う。
+
+**値のソース**: 次の文。
+
+| 理由 | 文 |
+| --- | --- |
+| ほかの画面ですでに書き直す待ちにしたか、解いた | 「この予定は、すでに書き直す待ちにしたか、解いています。一覧を読み直してください。」 |
+| Google カレンダーの内容に合わせられない予定 | 「この予定は、Google カレンダーの内容に合わせられません。buddy の内容で書き直してください。」 |
+| Google カレンダーの予定を読み替えられない | 「Google カレンダーの予定を、buddy の予定に読み替えられません。終日の予定か、タイトルの利用者が見つからない予定です。buddy の内容で書き直すか、Google カレンダーで直すよう職員に頼んでください。」 |
+| Google カレンダーを読めない | 「Google カレンダーを読めません。カレンダーの共有が外れていないかを、職員に確かめてください。」 |
+| サービスアカウントが設定されていない | 「サービスアカウントが設定されていないので、Google カレンダーを読めません。buddy を動かしている管理者に、Google カレンダーの設定を頼んでください。」 |
+| 予定の API が権限で拒んだ | 「この操作をする権限がありません。」 |
+| そのほかの失敗 | 「Google カレンダーの内容に合わせられませんでした。時間をおいて、もう一度試してください。」 |
+
+**活性条件**: 常に活性
+
+**表示条件**: ダイアログの合わせるが失敗した後。ダイアログを閉じると消す
+
+**カタログ**: [CalendarAcceptDialog の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendaracceptdialog--failed)
+
+## ダイアログの合わせる
+
+**概要**: 予定の API が Google カレンダーの今の予定を読み、buddy の予定をその内容にする。
+
+**値のソース**: 「合わせる」。送っている間は、文字の前に回転の印を出す。
+
+**活性条件**: 送っている間でないとき
+
+**表示条件**: 合わせるダイアログを開いているとき
+
+**カタログ**: [CalendarAcceptDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendaracceptdialog--default)、[CalendarAcceptDialog の Submitting](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendaracceptdialog--submitting)
+
+### インタラクション
+
+#### 1. 押す
+
+1. 「合わせるの送信中」の状態にし、予定の API に合わせるを送る。
+2. 成功したら、ダイアログを閉じ、一覧と予定を読み直す。その予定は一覧から消え、予定のカレンダーに Google カレンダーの日時とタイトルで出る。Google カレンダーで消された予定は、キャンセルした予定になる。
+3. 失敗したら、「合わせるの失敗」の状態にし、[合わせるの失敗の文](#合わせるの失敗の文) に理由を出す。一覧も読み直す。
 
 ## 権限が無いことのタイトル
 
@@ -577,16 +734,17 @@
 
 ### 一覧に出る予定
 
-- buddy で予定を作り、変え、キャンセルすると、予定の API は、予定の職員が結び付けた Google カレンダーに書き出す。書き出せなかった予定が、この一覧に出る。
-  - Google カレンダーで予定が直されていたか、消されていたときは、Google カレンダーの変更を消さないように書かずに止め、一覧に出す。この予定は、buddy で予定を変えても書き出さない。
+- buddy で予定を作り、変え、キャンセルすると、予定の API は、予定の職員が結び付けた Google カレンダーに書き出す。Google カレンダーで職員が変えた予定は、予定の API が数分ごとに読み、buddy の予定に当てる。片方だけで変わった予定は、変わった側に合わせ、この一覧に出さない。
+  - buddy と Google カレンダーの両方で予定が変わったときと、Google カレンダーで予定が消されていたときは、どちらの変更も消さないように止め、一覧に出す。この予定は、解くまで buddy で予定を変えても書き出さず、Google カレンダーの変更も当てない。
+  - Google カレンダーでの変更を buddy の予定に読み替えられないとき（終日の予定、タイトルの利用者が見つからない予定、繰り返しの予定そのものの変更）も、一覧に出す。職員が Google カレンダーで読み替えられる形に直すと、予定の API が当てて、一覧から消す。
   - カレンダーに書く権限が無いときと、Google に届かず書き直しの上限に達したときも、一覧に出す。この予定は、buddy で予定を変えると書き出し直す。
-- 書き出しの設計は、[予定の API の Design Doc の Google カレンダーへの書き出し](https://github.com/Fukuemon/buddy/blob/develop/apps/schedule-api/DesignDoc.md#google-カレンダーへの書き出し) にある。
+- 書き出しと同期の設計は、[予定の API の Design Doc の Google カレンダーとの同期](https://github.com/Fukuemon/buddy/blob/develop/apps/schedule-api/DesignDoc.md#google-カレンダーとの同期) にある。
 
 ### 権限の確かめ
 
-画面の判定は表示のためだけにする。予定の API も、職員の管理の権限が無い職員のリクエストを 403 で拒む。画面を開いた後に権限を外された職員が操作したときは、読み込みの失敗の文か書き直しの失敗の文の位置に、「この操作をする権限がありません。」を出す。
+画面の判定は表示のためだけにする。予定の API も、職員の管理の権限が無い職員の要求を 403 で拒む。画面を開いた後に権限を外された職員が操作したときは、読み込みの失敗の文、書き直しの失敗の文、合わせるの失敗の文の位置に、「この操作をする権限がありません。」を出す。
 
 ## 未決
 
-- Google カレンダーでの変更を buddy に適用する操作は、この画面に無い。#143（ADR-0009 の段階 3）で足す。それまでは、一覧の予定は buddy の内容で書き直すことだけができる。
+- 繰り返しの予定そのもの（規則、時刻、タイトル）の Google カレンダーでの変更は、buddy に当てられない。一覧の繰り返しの予定は、buddy の内容で書き直すか、職員に Google カレンダーで元に戻してもらうことだけができる。
 - 繰り返しの予定の行には予定を開くを出さない。繰り返しの予定の内容を確かめる画面への移り方は決めていない。

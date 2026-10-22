@@ -76,6 +76,17 @@ func (r *ScheduleRepository) GetForUpdate(ctx context.Context, id string) (sched
 	return r.Get(ctx, id)
 }
 
+// ReplacementOf は、繰り返しの予定 recurringScheduleID の d の回を置き換えた単発の予定を返す。無いときは apperr.ErrNotFound を返す。
+func (r *ScheduleRepository) ReplacementOf(ctx context.Context, recurringScheduleID string, d civil.Date) (schedule.Detail, error) {
+	id, err := r.q(ctx).GetReplacingScheduleID(ctx, sqlcgen.GetReplacingScheduleIDParams{
+		RecurringScheduleID: &recurringScheduleID, OriginalDate: ptr(d.Time()),
+	})
+	if err != nil {
+		return schedule.Detail{}, translate("get replacing schedule", err)
+	}
+	return r.Get(ctx, id)
+}
+
 // Update は、ID が s.ID の予定の枠を s の値で上書きする。事業所と、RecurringScheduleID と OriginalDate は変えない。予定が無くてもエラーにしない。
 // 参照先（職員、予定の種類、訪問の情報）が無いか、値がカラムの制約に合わないときは apperr.ErrInvalidInput のエラーを返す。
 func (r *ScheduleRepository) Update(ctx context.Context, s schedule.Schedule) error {
@@ -226,6 +237,15 @@ func (r *RecurringScheduleRepository) Create(ctx context.Context, rs schedule.Re
 		return err
 	}
 	return translate("create recurring schedule", r.q(ctx).CreateRecurringSchedule(ctx, params))
+}
+
+// GetForUpdate は、トランザクションの終わりまで繰り返しの予定の行に排他のロックを取ってから、Get と同じ値を返す。
+// 繰り返しの予定が無いときは apperr.ErrNotFound を返す。トランザクションの中で呼ぶ。
+func (r *RecurringScheduleRepository) GetForUpdate(ctx context.Context, id string) (schedule.RecurringDetail, error) {
+	if _, err := r.q(ctx).LockRecurringSchedule(ctx, id); err != nil {
+		return schedule.RecurringDetail{}, translate("lock recurring schedule", err)
+	}
+	return r.Get(ctx, id)
 }
 
 // Get は、ID が id の繰り返しの予定を、種類と職員の名前、規則、除外する日付（日付の順）、訪問の情報と区分を付けて返す。無いときは apperr.ErrNotFound を返す。

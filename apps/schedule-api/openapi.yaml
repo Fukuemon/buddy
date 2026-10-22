@@ -10,7 +10,8 @@ info:
     - 日付は YYYY-MM-DD、時刻は HH:MM である。
     - エラーは Error の形で返す。`code` は invalid_input、unauthenticated、forbidden、not_found、conflict、internal と、
       外部のカレンダーの操作の calendar_unreadable、calendar_unavailable、calendar_not_configured と、
-      409 の原因を分ける calendar_taken、calendar_already_linked、staff_has_calendar、import_running、import_preview_changed、export_not_in_review のいずれかである。
+      409 の原因を分ける calendar_taken、calendar_already_linked、staff_has_calendar、import_running、import_preview_changed、export_not_in_review、
+      export_not_acceptable、external_change_unappliable のいずれかである。
     - `/v1` は全て、OIDC のブローカーが発行した access token（JWT）を `Authorization: Bearer` で求める。
       トークンがないか検証に失敗したときは 401 を、トークンの組織と職員の事業所が、パスの指す事業所と違うときは 403 を返す。
     - 読めないクエリ（例は `;` を含むもの）は 400 を返す。
@@ -1082,8 +1083,9 @@ paths:
       operationId: listCalendarExportIssues
       summary: 確かめが要る書き出しを一覧する
       description: |
-        Google カレンダーへの書き出しのうち、Google カレンダーで予定が変わっていたか消えていた（conflict）か、書けなかった（failed）ものを、
-        新しく変わった順に返す。予定のタイトル、利用者名、カレンダーの ID は返さない。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+        Google カレンダーと食い違った予定のうち、buddy と Google カレンダーの両方で変わったか、Google カレンダーの変更を buddy に読み替えられなかった
+        （conflict）か、書けなかった（failed）ものを、新しく変わった順に返す。
+        予定のタイトル、利用者名、カレンダーの ID は返さない。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
       parameters: [$ref: "#/components/parameters/FacilityID"]
       responses:
         "200":
@@ -1131,6 +1133,48 @@ paths:
                   summary: 確かめが要る書き出しでない
                   value: { code: export_not_in_review, message: "この予定は、確かめが要る書き出しではありません" }
         "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/calendar_exports/{calendar_export_id}/acceptances:
+    post:
+      tags: [calendar]
+      operationId: createCalendarExportAcceptance
+      summary: 確かめが要る書き出しを Google カレンダーの内容で解く
+      description: |
+        確かめが要る書き出しの予定を、Google カレンダーの今の内容にそろえ、書き出しを終える。buddy で変えた日時とタイトルは消える。
+        Google カレンダーで消された予定（予定が 404 で、カレンダーは読めるときを含む）は、buddy でキャンセルする。
+        acceptable が true の書き出しだけを解ける。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+      parameters: [$ref: "#/components/parameters/CalendarExportID"]
+      responses:
+        "200":
+          description: Google カレンダーの内容にそろえ、書き出しを終えた
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CalendarExport" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: |
+            確かめが要る書き出しでない（export_not_in_review）か、Google カレンダーの内容で解けない書き出しである（export_not_acceptable）か、
+            Google カレンダーの予定を buddy の予定に読み替えられない（external_change_unappliable。終日にした予定、タイトルの利用者を引けない予定など）
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                notInReview:
+                  summary: 確かめが要る書き出しでない
+                  value: { code: export_not_in_review, message: "この予定は、確かめが要る書き出しではありません" }
+                notAcceptable:
+                  summary: Google カレンダーの内容で解けない
+                  value: { code: export_not_acceptable, message: "この予定は、Google カレンダーの内容を buddy に当てられません。buddy の内容で書き直してください" }
+                unappliable:
+                  summary: Google カレンダーの予定を読み替えられない
+                  value: { code: external_change_unappliable, message: "Google カレンダーの予定を、buddy の予定に読み替えられません。buddy の内容で書き直してください" }
+        "422": { $ref: "#/components/responses/CalendarUnreadable" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "502": { $ref: "#/components/responses/CalendarUnavailable" }
+        "503": { $ref: "#/components/responses/CalendarNotConfigured" }
 
 components:
   securitySchemes:
@@ -1288,6 +1332,8 @@ components:
             - import_running
             - import_preview_changed
             - export_not_in_review
+            - export_not_acceptable
+            - external_change_unappliable
         message:
           type: string
           description: 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う
@@ -1697,18 +1743,19 @@ components:
           type: string
           enum: [pending, succeeded, conflict, failed]
           description: |
-            pending は書く待ち、succeeded は書き終えた、conflict は Google カレンダーで予定が変わっていたか消えていたので書かずに止めた、
-            failed は書く権限が無いか、再送の上限まで書けなかった
+            pending は書く待ち、succeeded は書き終えた、conflict は Google カレンダーで予定が変わっていたか消えていたので書かずに止めたか、
+            Google カレンダーの変更を buddy に当てずに止めた、failed は書く権限が無いか、再送の上限まで書けなかった
         error_code:
           type: string
-          enum: [precondition_failed, not_found, forbidden, rejected, unavailable]
+          enum: [precondition_failed, not_found, forbidden, rejected, unavailable, unappliable]
           nullable: true
           x-omitempty: false
           description: |
-            最後に書けなかった理由。precondition_failed は Google カレンダーで予定が変わっていた（412）、
+            最後に書けなかった理由。precondition_failed は buddy と Google カレンダーの両方で予定が変わった（書き出しの 412 を含む）、
             not_found は Google カレンダーで予定が消されたか、予定かカレンダーが見つからない（410、404）、
             forbidden はサービスアカウントがカレンダーに書けない、rejected は Google が予定の内容を受け付けなかった（400）、
-            unavailable は Google に届かないか一時的なエラーが続いた
+            unavailable は Google に届かないか一時的なエラーが続いた、unappliable は Google カレンダーの変更を buddy の予定に読み替えられない
+            （終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更）
         attempts:
           type: integer
           minimum: 0
@@ -1719,13 +1766,18 @@ components:
       allOf:
         - $ref: "#/components/schemas/CalendarExport"
         - type: object
-          required: [staff_id, staff_name, date, start_time, end_time]
+          required: [staff_id, staff_name, date, start_time, end_time, acceptable]
           properties:
             staff_id: { $ref: "#/components/schemas/ID" }
             staff_name: { type: string }
             date: { $ref: "#/components/schemas/Date" }
             start_time: { $ref: "#/components/schemas/Time" }
             end_time: { $ref: "#/components/schemas/Time" }
+            acceptable:
+              type: boolean
+              description: |
+                Google カレンダーの内容で解けるか（POST /v1/calendar_exports/{calendar_export_id}/acceptances）。
+                単発の予定で、buddy でキャンセルしておらず、error_code が precondition_failed か not_found のときに true
     ExternalCalendar:
       type: object
       required: [id, facility_id, staff_id, provider, calendar_id, created_at, updated_at, last_import]

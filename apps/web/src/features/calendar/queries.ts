@@ -61,6 +61,21 @@ export const useRetryExport = () => {
   })
 }
 
+/** 確かめが要る書き出しの予定を、Google カレンダーの内容に合わせる mutation。成否によらず、一覧と予定を読み直す。 */
+export const useAcceptExport = () => {
+  const { api, facilityId } = useBuddyApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (exportId: CalendarExport['id']) =>
+      api.calendars.acceptExport(facilityId, exportId),
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: calendarQueryKeys.exportIssues(facilityId) }),
+        queryClient.invalidateQueries({ queryKey: ['facilities', facilityId, 'schedules'] }),
+      ]),
+  })
+}
+
 /** 事業所の全ての職員の query。 */
 export const staffListQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({

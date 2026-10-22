@@ -4,6 +4,7 @@ import { ApiError } from '#/api/client'
 
 import {
   FORBIDDEN_MESSAGE,
+  acceptErrorMessage,
   importErrorMessage,
   linkErrorMessage,
   previewErrorMessage,
@@ -62,5 +63,22 @@ describe('importErrorMessage', () => {
     [apiError(502, 'calendar_unavailable'), '取り込めませんでした。'],
   ])('%s を文にする', (error, expected) => {
     expect(importErrorMessage(error)).toContain(expected)
+  })
+})
+
+describe('acceptErrorMessage', () => {
+  it.each([
+    [
+      apiError(409, 'export_not_in_review'),
+      'この予定は、すでに書き直す待ちにしたか、解いています。',
+    ],
+    [apiError(409, 'export_not_acceptable'), 'buddy の内容で書き直してください。'],
+    [apiError(409, 'external_change_unappliable'), 'buddy の予定に読み替えられません。'],
+    [apiError(422, 'calendar_unreadable'), 'カレンダーの共有が外れていないか'],
+    [apiError(503, 'calendar_not_configured'), 'サービスアカウントが設定されていないので'],
+    [apiError(403, 'forbidden'), FORBIDDEN_MESSAGE],
+    [apiError(502, 'calendar_unavailable'), 'Google カレンダーの内容に合わせられませんでした。'],
+  ])('%s を文にする', (error, expected) => {
+    expect(acceptErrorMessage(error)).toContain(expected)
   })
 })

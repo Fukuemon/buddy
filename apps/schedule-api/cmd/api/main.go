@@ -161,8 +161,8 @@ func run() error {
 		serveErr <- srv.ListenAndServe()
 	}()
 
-	// 書き出しの処理は、止まる合図の後、取った待ちの結果を書いてから止まる。DB を閉じる前に止めて待つ。
-	exporterDone := make(chan struct{})
+	// 書き出しと同期の処理は、止まる合図の後、取った待ちとカレンダーの結果を書いてから止まる。DB を閉じる前に止めて待つ。
+	exporterDone, syncerDone := make(chan struct{}), make(chan struct{})
 	if svc != nil && cfg.Calendar.ExportEnabled {
 		exporter := calendar.NewExporter(calendar.ExporterDeps{
 			Exports: exports, Calendars: calendars, Writer: gcal.NewWriter(svc), Schedules: schedules, Recurring: recurring,
@@ -174,9 +174,24 @@ func run() error {
 	} else {
 		close(exporterDone)
 	}
+	if svc != nil && cfg.Calendar.SyncEnabled {
+		syncer := calendar.NewSyncer(calendar.SyncerDeps{
+			Syncs: postgres.NewCalendarSyncRepository(db), Calendars: calendars, Exports: exports,
+			// 今はサービスアカウントが 1 つなので、全ての事業所で同じ source を使う
+			Sources:   func(context.Context, string) (calendar.EventSource, error) { return source, nil },
+			Schedules: schedules, Recurring: recurring, Types: scheduleTypes, Patients: patients, ServiceCodes: visitMasters, Visits: visitInfos,
+		}, tx, ids, cfg.Calendar.SyncInterval, log)
+		go func() {
+			defer close(syncerDone)
+			syncer.Run(ctx)
+		}()
+	} else {
+		close(syncerDone)
+	}
 	defer func() {
 		stop()
 		<-exporterDone
+		<-syncerDone
 	}()
 
 	select {

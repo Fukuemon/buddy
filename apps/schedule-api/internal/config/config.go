@@ -32,6 +32,10 @@ type Calendar struct {
 	ExportEnabled bool
 	// ExportInterval は、予定の書き出しの待ちを確かめる間隔である。
 	ExportInterval time.Duration
+	// SyncEnabled は、Google カレンダーの変更を buddy の予定に当てるかである。false なら、同期の処理を動かさない。
+	SyncEnabled bool
+	// SyncInterval は、Google カレンダーの変わった予定を読む間隔である。
+	SyncInterval time.Duration
 }
 
 // Config は、API とマイグレーションの設定である。
@@ -64,6 +68,9 @@ type Config struct {
 //   - GOOGLE_CALENDAR_EXPORT_ENABLED: true なら、予定を Google カレンダーに書き出す。デフォルトは false。
 //     GOOGLE_CALENDAR_SERVICE_ACCOUNT と一緒に渡し、認証の情報のスコープは calendar.events になる
 //   - GOOGLE_CALENDAR_EXPORT_INTERVAL: 予定の書き出しの待ちを確かめる間隔（Go の時間の書式。例は 30s）。デフォルトは 30s。1s 以上にする
+//   - GOOGLE_CALENDAR_SYNC_ENABLED: true なら、Google カレンダーの変更を buddy の予定に当てる。デフォルトは false。
+//     GOOGLE_CALENDAR_EXPORT_ENABLED を true にして渡す
+//   - GOOGLE_CALENDAR_SYNC_INTERVAL: Google カレンダーの変わった予定を読む間隔（Go の時間の書式）。デフォルトは 2m。1s 以上にする
 func Load(getenv func(string) string) (Config, error) {
 	return load(getenv, true)
 }
@@ -134,18 +141,38 @@ func load(getenv func(string) string, api bool) (Config, error) {
 		return Config{}, errors.New("GOOGLE_CALENDAR_EXPORT_INTERVAL は 1s 以上の時間（例は 30s）です")
 	}
 	c.Calendar.ExportInterval = interval
-	switch v := strings.TrimSpace(getenv("GOOGLE_CALENDAR_EXPORT_ENABLED")); v {
-	case "", "false":
-	case "true":
-		c.Calendar.ExportEnabled = true
-	default:
-		return Config{}, fmt.Errorf("GOOGLE_CALENDAR_EXPORT_ENABLED %q は true か false です", v)
+	if c.Calendar.ExportEnabled, err = boolOf(getenv, "GOOGLE_CALENDAR_EXPORT_ENABLED"); err != nil {
+		return Config{}, err
 	}
 	if c.Calendar.ExportEnabled && c.Calendar.ServiceAccount == "" {
 		return Config{}, errors.New("GOOGLE_CALENDAR_EXPORT_ENABLED は GOOGLE_CALENDAR_SERVICE_ACCOUNT と一緒に渡します")
+	}
+	syncInterval, err := time.ParseDuration(get("GOOGLE_CALENDAR_SYNC_INTERVAL", "2m"))
+	if err != nil || syncInterval < time.Second {
+		return Config{}, errors.New("GOOGLE_CALENDAR_SYNC_INTERVAL は 1s 以上の時間（例は 2m）です")
+	}
+	c.Calendar.SyncInterval = syncInterval
+	if c.Calendar.SyncEnabled, err = boolOf(getenv, "GOOGLE_CALENDAR_SYNC_ENABLED"); err != nil {
+		return Config{}, err
+	}
+	// buddy の変更を書き出さずに Google の変更だけを当てると、buddy で変えた予定は全て両方の変更になり、確かめが要る予定に出続ける。
+	if c.Calendar.SyncEnabled && !c.Calendar.ExportEnabled {
+		return Config{}, errors.New("GOOGLE_CALENDAR_SYNC_ENABLED は GOOGLE_CALENDAR_EXPORT_ENABLED を true にして渡します")
 	}
 	if c.Calendar.Endpoint != "" && c.Calendar.ServiceAccount == "" {
 		return Config{}, errors.New("GOOGLE_CALENDAR_ENDPOINT は GOOGLE_CALENDAR_SERVICE_ACCOUNT と一緒に渡します")
 	}
 	return c, nil
+}
+
+// boolOf は、環境変数 name を true か false で読む。空なら false である。
+func boolOf(getenv func(string) string, name string) (bool, error) {
+	switch v := strings.TrimSpace(getenv(name)); v {
+	case "", "false":
+		return false, nil
+	case "true":
+		return true, nil
+	default:
+		return false, fmt.Errorf("%s %q は true か false です", name, v)
+	}
 }

@@ -68,13 +68,42 @@ WHERE id = $1 AND status IN ('conflict', 'failed');
 -- name: ListCalendarExportIssues :many
 -- 予定のタイトルと利用者名は読まない。
 SELECT e.*,
+       (sc.id IS NOT NULL)::boolean AS cancelled,
        u.id AS staff_id, u.username AS staff_name,
        COALESCE(s.date, rs.date)::date AS date,
        COALESCE(s.start_time, rs.start_time)::time AS start_time,
        COALESCE(s.end_time, rs.end_time)::time AS end_time
 FROM calendar_exports e
 LEFT JOIN schedules s ON s.id = e.schedule_id
+LEFT JOIN schedule_cancels sc ON sc.schedule_id = e.schedule_id
 LEFT JOIN recurring_schedules rs ON rs.id = e.recurring_schedule_id
 JOIN users u ON u.id = COALESCE(s.staff_id, rs.staff_id)
 WHERE e.facility_id = $1 AND e.status IN ('conflict', 'failed')
 ORDER BY e.updated_at DESC, e.id;
+
+-- name: HoldScheduleExport :exec
+-- 外部の変更と buddy の変更が重なった予定を、確かめが要る待ちにする。書いている処理の結果は revision の違いで捨てる。
+INSERT INTO calendar_exports (id, facility_id, schedule_id, status, error_code) VALUES ($1, $2, $3, 'conflict', $4)
+ON CONFLICT (schedule_id) WHERE status <> 'succeeded' AND schedule_id IS NOT NULL
+DO UPDATE SET
+    revision = calendar_exports.revision + 1, status = 'conflict', error_code = EXCLUDED.error_code,
+    overwrite = false, locked_until = NULL;
+
+-- name: HoldRecurringScheduleExport :exec
+INSERT INTO calendar_exports (id, facility_id, recurring_schedule_id, status, error_code) VALUES ($1, $2, $3, 'conflict', $4)
+ON CONFLICT (recurring_schedule_id) WHERE status <> 'succeeded' AND recurring_schedule_id IS NOT NULL
+DO UPDATE SET
+    revision = calendar_exports.revision + 1, status = 'conflict', error_code = EXCLUDED.error_code,
+    overwrite = false, locked_until = NULL;
+
+-- name: GetOpenScheduleExport :one
+SELECT * FROM calendar_exports WHERE schedule_id = $1 AND status <> 'succeeded';
+
+-- name: GetOpenRecurringScheduleExport :one
+SELECT * FROM calendar_exports WHERE recurring_schedule_id = $1 AND status <> 'succeeded';
+
+-- name: ResolveCalendarExport :execrows
+-- 外部の内容を buddy に当てた、確かめが要る待ちを終える。読んだ後に積み直されたか保留し直された待ちは終えない。
+UPDATE calendar_exports
+SET status = 'succeeded', error_code = NULL, overwrite = false, locked_until = NULL, finished_at = now()
+WHERE id = sqlc.arg(id) AND revision = sqlc.arg(revision) AND status IN ('conflict', 'failed');

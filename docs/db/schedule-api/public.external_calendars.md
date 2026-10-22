@@ -86,6 +86,8 @@ erDiagram
   timestamp_with_time_zone last_synced_at
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  timestamp_with_time_zone next_sync_at
+  timestamp_with_time_zone locked_until
 }
 "public.external_event_links" {
   text id

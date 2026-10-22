@@ -30,7 +30,7 @@
           </header>
           <main class="wf-page">
             <h1 class="wf-heading">確かめが要る予定</h1>
-            <p class="wf-lead">buddy の予定のうち、Google カレンダーに書き出せなかった予定です。Google カレンダーで直された予定は、buddy に取り込みません。予定を開いて buddy の内容を確かめ、buddy の内容で書き直すと、Google カレンダーの予定のタイトルと日時を buddy の内容にします。</p>
+            <p class="wf-lead">buddy の予定のうち、Google カレンダーに書き出せなかった予定と、buddy と Google カレンダーの両方で変わった予定です。片方だけで変わった予定は、変わった側に合わせるので、ここには出ません。buddy の内容で書き直すと Google カレンダーの予定を buddy の内容にし、Google の内容に合わせると buddy の予定を Google カレンダーの内容にします。</p>
             <table class="wf-table sr-table" data-testid="calendar-review-table">
               <thead>
                 <tr>
@@ -45,11 +45,12 @@
                 <tr data-testid="calendar-review-row-export-1">
                   <td data-label="予定の日時"><span data-testid="calendar-review-datetime-export-1">2026/11/04（水）09:00〜09:29</span></td>
                   <td data-label="職員"><span>青木 一郎</span></td>
-                  <td data-label="理由"><span data-testid="calendar-review-reason-export-1">Google カレンダーで予定が直されたので、buddy の変更を書き出していません。</span></td>
+                  <td data-label="理由"><span data-testid="calendar-review-reason-export-1">buddy と Google カレンダーの両方で予定が変わりました。どちらの内容に合わせるかを選んでください。</span></td>
                   <td data-label="最後に変わった日時"><span>2026/10/22 10:00</span></td>
                   <td class="sr-actions">
                     <div class="sr-actions__inner">
                       <span class="wf-btn" data-testid="calendar-review-open-export-1" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html">予定を開く</span>
+                      <span class="wf-btn" data-testid="calendar-review-accept-export-1" data-go="09-accept.html">Google の内容に合わせる</span>
                       <span class="wf-btn wf-btn--primary" data-testid="calendar-review-rewrite-export-1" data-go="05-rewrite.html">buddy の内容で書き直す</span>
                     </div>
                   </td>
@@ -74,6 +75,18 @@
                   <td class="sr-actions">
                     <div class="sr-actions__inner">
                       <span class="wf-btn wf-btn--primary" data-testid="calendar-review-rewrite-export-3" data-go="05-rewrite.html">buddy の内容で書き直す</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr data-testid="calendar-review-row-export-4">
+                  <td data-label="予定の日時"><span data-testid="calendar-review-datetime-export-4">2026/11/05（木）13:00〜14:00</span></td>
+                  <td data-label="職員"><span>青木 一郎</span></td>
+                  <td data-label="理由"><span data-testid="calendar-review-reason-export-4">Google カレンダーでの変更を、buddy の予定に読み替えられません。終日の予定、タイトルの利用者が見つからない予定、繰り返しの予定そのものの変更が当たります。buddy の内容で書き直すか、Google カレンダーで直すよう職員に頼んでください。</span></td>
+                  <td data-label="最後に変わった日時"><span>2026/10/22 06:00</span></td>
+                  <td class="sr-actions">
+                    <div class="sr-actions__inner">
+                      <span class="wf-btn" data-testid="calendar-review-open-export-4" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html">予定を開く</span>
+                      <span class="wf-btn wf-btn--primary" data-testid="calendar-review-rewrite-export-4" data-go="05-rewrite.html">buddy の内容で書き直す</span>
                     </div>
                   </td>
                 </tr>

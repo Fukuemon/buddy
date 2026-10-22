@@ -106,6 +106,9 @@ services:
       GOOGLE_CALENDAR_EXPORT_ENABLED: 'true'
       # E2E が書き出しを待つ時間を短くする
       GOOGLE_CALENDAR_EXPORT_INTERVAL: 2s
+      GOOGLE_CALENDAR_SYNC_ENABLED: 'true'
+      # E2E が Google の変更の反映を待つ時間を短くする
+      GOOGLE_CALENDAR_SYNC_INTERVAL: 2s
     ports: ['127.0.0.1:${SCHEDULE_API_PORT:-8080}:8080']
     healthcheck:
       test: ['CMD', '/usr/local/bin/api', 'healthcheck']

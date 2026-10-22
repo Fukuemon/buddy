@@ -33,7 +33,7 @@ func TestLoad(t *testing.T) {
 	if !slices.Equal(c.AllowOrigins, []string{"http://localhost:3000", "http://localhost:5173"}) {
 		t.Errorf("AllowOrigins = %v", c.AllowOrigins)
 	}
-	if c.Calendar != (config.Calendar{ExportInterval: 30 * time.Second}) {
+	if c.Calendar != (config.Calendar{ExportInterval: 30 * time.Second, SyncInterval: 2 * time.Minute}) {
 		t.Errorf("Calendar = %+v, want 設定なし", c.Calendar)
 	}
 }
@@ -47,7 +47,7 @@ func TestLoadCalendar(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Calendar != (config.Calendar{ServiceAccount: "buddy@example.iam.gserviceaccount.com", Endpoint: "http://fake-google:8080/", ExportInterval: 30 * time.Second}) {
+	if c.Calendar != (config.Calendar{ServiceAccount: "buddy@example.iam.gserviceaccount.com", Endpoint: "http://fake-google:8080/", ExportInterval: 30 * time.Second, SyncInterval: 2 * time.Minute}) {
 		t.Errorf("Calendar = %+v", c.Calendar)
 	}
 }
@@ -136,9 +136,21 @@ func TestLoadExportInterval(t *testing.T) {
 	if err != nil || !c.Calendar.ExportEnabled {
 		t.Errorf("書き出しを有効にする = %v, %v", c.Calendar.ExportEnabled, err)
 	}
+	if c.Calendar.SyncEnabled || c.Calendar.SyncInterval != 2*time.Minute {
+		t.Errorf("既定の同期 = %v, %v", c.Calendar.SyncEnabled, c.Calendar.SyncInterval)
+	}
+	c, err = config.Load(getenv(map[string]string{
+		"GOOGLE_CALENDAR_EXPORT_ENABLED": "true", "GOOGLE_CALENDAR_SYNC_ENABLED": "true", "GOOGLE_CALENDAR_SYNC_INTERVAL": "3m",
+		"GOOGLE_CALENDAR_SERVICE_ACCOUNT": "sa@example.com",
+	}))
+	if err != nil || !c.Calendar.SyncEnabled || c.Calendar.SyncInterval != 3*time.Minute {
+		t.Errorf("同期を有効にする = %v, %v, %v", c.Calendar.SyncEnabled, c.Calendar.SyncInterval, err)
+	}
 	for _, extra := range []map[string]string{
 		{"GOOGLE_CALENDAR_EXPORT_ENABLED": "true"},
 		{"GOOGLE_CALENDAR_EXPORT_ENABLED": "yes", "GOOGLE_CALENDAR_SERVICE_ACCOUNT": "sa@example.com"},
+		{"GOOGLE_CALENDAR_SYNC_ENABLED": "true", "GOOGLE_CALENDAR_SERVICE_ACCOUNT": "sa@example.com"},
+		{"GOOGLE_CALENDAR_SYNC_INTERVAL": "500ms"},
 	} {
 		if _, err := config.Load(getenv(extra)); err == nil {
 			t.Errorf("%v を受けた", extra)

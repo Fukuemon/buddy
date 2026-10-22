@@ -11,6 +11,8 @@ export type CalendarReviewTableProps = {
   /** 単発の予定の詳細を開く。繰り返しの予定には出さない。 */
   onOpenSchedule: (scheduleId: string) => void
   onRewrite: (exportId: CalendarExportIssue['id']) => void
+  /** Google カレンダーの内容に合わせる。acceptable の予定にだけ出す。 */
+  onAccept: (exportId: CalendarExportIssue['id']) => void
 }
 
 const Cell = ({ label, children }: { label: string; children: ReactNode }) => (
@@ -23,13 +25,15 @@ const Cell = ({ label, children }: { label: string; children: ReactNode }) => (
 const HEADERS = ['予定の日時', '職員', '理由', '最後に変わった日時'] as const
 
 /**
- * Google カレンダーに書き出せなかった予定を、日時、職員、理由、最後に変わった日時で並べ、予定を開くか buddy の内容で書き直す表。
+ * Google カレンダーと食い違った予定を、日時、職員、理由、最後に変わった日時で並べ、予定を開くか、buddy の内容で書き直すか、
+ * Google カレンダーの内容に合わせる表。
  * 予定のタイトルと利用者名は、Google カレンダーの側の値を出さないため、表に出さない。幅 768px 未満では、行ごとの箱に縦に積む。
  */
 export const CalendarReviewTable = ({
   issues,
   onOpenSchedule,
   onRewrite,
+  onAccept,
 }: CalendarReviewTableProps) => (
   <table className="block w-full border-collapse desktop:table" data-testid="calendar-review-table">
     <thead className="hidden desktop:table-header-group">
@@ -77,6 +81,16 @@ export const CalendarReviewTable = ({
                   variant="secondary"
                 >
                   予定を開く
+                </Button>
+              )}
+              {issue.acceptable && (
+                <Button
+                  data-testid={`calendar-review-accept-${issue.id}`}
+                  onClick={() => onAccept(issue.id)}
+                  size="S"
+                  variant="secondary"
+                >
+                  Google の内容に合わせる
                 </Button>
               )}
               <Button

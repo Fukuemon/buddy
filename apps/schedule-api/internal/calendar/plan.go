@@ -475,7 +475,7 @@ func (b *planner) excludedBefore(ev Event) bool {
 // originalDate は、例外の回が元の規則で始まるはずだった Asia/Tokyo の日付を返す。
 func originalDate(ev Event) (civil.Date, bool) {
 	if ev.OriginalStart.DateTime != "" {
-		t, err := time.Parse(time.RFC3339, ev.OriginalStart.DateTime)
+		t, err := ev.OriginalStart.Instant()
 		if err != nil {
 			return civil.Date{}, false
 		}

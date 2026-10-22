@@ -20,7 +20,7 @@
 ## Design Doc
 
 - [レセプトの照合](../apps/receipt-api/DesignDoc.md) — receipt-api のパッケージの構成、予定のデータソース、入力の CSV のカラム、正規化、予定と実績の対の作り方、判定の規則、サービスごとの許容範囲、結果の JSON と画面の表示、元の実装との違い（draft）
-- [予定の管理](../apps/schedule-api/DesignDoc.md) — schedule-api のコードの層、テーブルの構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更とキャンセル
+- [予定の管理](../apps/schedule-api/DesignDoc.md) — schedule-api のコードの層、テーブルの構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更とキャンセル、Google カレンダーの取り込み、書き出し、同期
 - [buddy Design Doc](../docs/design/DesignDoc.md) — web と schedule-api と receipt-api の責務と依存、業務の区切りとコンテナの対応、コンテナの間の契約、インフラとの約束（draft）
 - [E2E のテストのコードの設計](../packages/e2e/DesignDoc.md) — buddy の E2E のテストのコード（packages/e2e）を、層、配置先、名前、待ち方、確かめ方、禁止する書き方、タイムアウトで組み立てる考え方。図で示す（draft）
 - [エビデンスの録画](../packages/e2e/kit/recording/DesignDoc.md) — 手動検証のエビデンスを撮る録画の処理(recordEvidence、字幕、カーソル、書き出し)とエビデンスの配置先の構成、1 本を撮る流れ、配置先と名前、プロダクトから呼ぶ形（draft）

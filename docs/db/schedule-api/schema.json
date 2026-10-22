@@ -4182,7 +4182,7 @@
           "name": "last_error",
           "type": "text",
           "nullable": true,
-          "comment": "最後の失敗の理由。外部の予定の題名を含めない"
+          "comment": "最後の失敗の理由。unreadable（共有が無い）、unavailable（届かない）、apply（予定を当てられない）。外部の予定の題名とカレンダーの ID を含めない"
         },
         {
           "name": "last_synced_at",
@@ -4200,6 +4200,19 @@
           "type": "timestamp with time zone",
           "nullable": false,
           "default": "now()"
+        },
+        {
+          "name": "next_sync_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()",
+          "comment": "この時刻より後に、外部のカレンダーの変わった予定を読む"
+        },
+        {
+          "name": "locked_until",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "comment": "読んでいる処理が持つ期限。過ぎたら、ほかの処理が読んでよい"
         }
       ],
       "indexes": [
@@ -4217,6 +4230,15 @@
           "table": "public.calendar_sync_states",
           "columns": [
             "facility_id",
+            "external_calendar_id"
+          ]
+        },
+        {
+          "name": "calendar_sync_states_due_idx",
+          "def": "CREATE INDEX calendar_sync_states_due_idx ON public.calendar_sync_states USING btree (next_sync_at, external_calendar_id)",
+          "table": "public.calendar_sync_states",
+          "columns": [
+            "next_sync_at",
             "external_calendar_id"
           ]
         }
@@ -4253,6 +4275,16 @@
           ]
         },
         {
+          "name": "calendar_sync_states_last_error_check",
+          "type": "CHECK",
+          "def": "CHECK ((last_error = ANY (ARRAY['unreadable'::text, 'unavailable'::text, 'apply'::text])))",
+          "table": "public.calendar_sync_states",
+          "referenced_table": "",
+          "columns": [
+            "last_error"
+          ]
+        },
+        {
           "name": "calendar_sync_states_last_status_check",
           "type": "CHECK",
           "def": "CHECK ((last_status = ANY (ARRAY['never'::text, 'succeeded'::text, 'failed'::text])))",
@@ -4270,6 +4302,16 @@
           "referenced_table": "",
           "columns": [
             "last_status"
+          ]
+        },
+        {
+          "name": "calendar_sync_states_next_sync_at_not_null",
+          "type": "n",
+          "def": "NOT NULL next_sync_at",
+          "table": "public.calendar_sync_states",
+          "referenced_table": "",
+          "columns": [
+            "next_sync_at"
           ]
         },
         {
@@ -5434,7 +5476,7 @@
           "name": "error_code",
           "type": "text",
           "nullable": true,
-          "comment": "最後に書けなかった理由。外部の予定の題名とカレンダーの ID を含めない"
+          "comment": "最後に書けなかった理由。外部の予定の題名とカレンダーの ID を含めない。unappliable は、外部の変更を buddy の予定に読み替えられなかったこと"
         },
         {
           "name": "finished_at",
@@ -5560,7 +5602,7 @@
         {
           "name": "calendar_exports_error_code_check",
           "type": "CHECK",
-          "def": "CHECK ((error_code = ANY (ARRAY['precondition_failed'::text, 'not_found'::text, 'forbidden'::text, 'rejected'::text, 'unavailable'::text])))",
+          "def": "CHECK ((error_code = ANY (ARRAY['precondition_failed'::text, 'not_found'::text, 'forbidden'::text, 'rejected'::text, 'unavailable'::text, 'unappliable'::text])))",
           "table": "public.calendar_exports",
           "referenced_table": "",
           "columns": [

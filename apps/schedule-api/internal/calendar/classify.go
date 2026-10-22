@@ -84,11 +84,11 @@ func Classify(ev Event) Candidate {
 		}
 		return c
 	}
-	start, err := time.Parse(time.RFC3339, ev.Start.DateTime)
+	start, err := ev.Start.Instant()
 	if err != nil {
 		return skipped(SkipUnreadableTime)
 	}
-	end, err := time.Parse(time.RFC3339, ev.End.DateTime)
+	end, err := ev.End.Instant()
 	if err != nil {
 		return skipped(SkipUnreadableTime)
 	}

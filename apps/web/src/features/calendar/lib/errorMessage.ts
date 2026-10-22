@@ -76,6 +76,26 @@ export const rewriteErrorMessage = (error: unknown) => {
   }
 }
 
+/** Google カレンダーの内容に合わせられなかったときの文。ほかの画面で解いたときは、一覧を読み直させる。 */
+export const acceptErrorMessage = (error: unknown) => {
+  if (statusOf(error) === 403) return FORBIDDEN_MESSAGE
+  switch (codeOf(error)) {
+    case 'export_not_in_review':
+    case 'not_found':
+      return 'この予定は、すでに書き直す待ちにしたか、解いています。一覧を読み直してください。'
+    case 'export_not_acceptable':
+      return 'この予定は、Google カレンダーの内容に合わせられません。buddy の内容で書き直してください。'
+    case 'external_change_unappliable':
+      return 'Google カレンダーの予定を、buddy の予定に読み替えられません。終日の予定か、題名の利用者が見つからない予定です。buddy の内容で書き直すか、Google カレンダーで直すよう職員に頼んでください。'
+    case 'calendar_unreadable':
+      return 'Google カレンダーを読めません。カレンダーの共有が外れていないかを、職員に確かめてください。'
+    case 'calendar_not_configured':
+      return 'サービスアカウントが設定されていないので、Google カレンダーを読めません。buddy を動かしている管理者に、Google カレンダーの設定を頼んでください。'
+    default:
+      return 'Google カレンダーの内容に合わせられませんでした。時間をおいて、もう一度試してください。'
+  }
+}
+
 /** 確かめが要る予定の利用者を選ぶための、利用者の一覧を読めなかったときの文。 */
 export const PATIENTS_ERROR_MESSAGE =
   '利用者の一覧を読み込めませんでした。時間をおいて、もう一度プレビューしてください。'
