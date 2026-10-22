@@ -5,6 +5,7 @@ import { fn } from 'storybook/test'
 import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './StaffFilterSidebar.stories'
+import { storyEvents } from './storyData'
 
 const { AllStaff, OnlyViewer, PartiallySelected } = composeStories(stories)
 
@@ -34,12 +35,10 @@ describe('StaffFilterSidebar', () => {
 
   it('職員のチェックボックスを、カレンダーの予定と同じ並びの区別の色で出す', () => {
     render(<AllStaff />)
-    expect(screen.getByTestId('staff-filter-staff-staff-1').style.accentColor).toBe(
-      'var(--buddy-color-categorical-1)',
-    )
-    expect(screen.getByTestId('staff-filter-staff-staff-3').style.accentColor).toBe(
-      'var(--buddy-color-categorical-3)',
-    )
+    for (const id of ['staff-1', 'staff-3']) {
+      const event = storyEvents.find((e) => e.staffId === id)
+      expect(screen.getByTestId(`staff-filter-staff-${id}`).style.accentColor).toBe(event?.color)
+    }
   })
 
   it('名前の検索は一覧の表示だけを絞り、消すとチェックの状態のまま戻る', async () => {
@@ -64,9 +63,7 @@ describe('StaffFilterSidebar', () => {
       screen.getByRole('searchbox', { name: '職員の名前で絞り込む' }),
       '該当なし',
     )
-    expect(screen.getByTestId('staff-filter-no-match')).toHaveTextContent(
-      '名前に「該当なし」を含む職員はいません。',
-    )
+    expect(screen.getByRole('status')).toHaveTextContent('名前に「該当なし」を含む職員はいません。')
   })
 
   it('自分だけを押すと、ログインした職員だけを選ぶ', async () => {
@@ -83,6 +80,30 @@ describe('StaffFilterSidebar', () => {
 
   it('ログインした職員が一覧にいないと、自分だけを出さない', () => {
     render(<AllStaff viewerStaffId="staff-unknown" />)
+    expect(screen.queryByTestId('staff-filter-only-me')).not.toBeInTheDocument()
+  })
+
+  it('名前の検索は、空白と全角と半角の違いを無視して照合する', async () => {
+    render(<AllStaff />)
+    await userEvent.type(
+      screen.getByRole('searchbox', { name: '職員の名前で絞り込む' }),
+      '上田三奈',
+    )
+    expect(screen.getByTestId('staff-filter-staff-staff-3')).toBeInTheDocument()
+  })
+
+  it('検索の間も、チームのチェックボックスは検索で隠れた職員を含めてまとめて付ける', async () => {
+    const onChange = fn()
+    render(<PartiallySelected onChange={onChange} />)
+    await userEvent.type(screen.getByRole('searchbox', { name: '職員の名前で絞り込む' }), '上田')
+    expect(screen.getByTestId('staff-filter-team-team-b')).toBePartiallyChecked()
+
+    await userEvent.click(screen.getByTestId('staff-filter-team-team-b'))
+    expect(onChange).toHaveBeenCalledWith(['staff-1', 'staff-3', 'staff-4'])
+  })
+
+  it('ログインした職員を渡さないと、自分だけを出さない', () => {
+    render(<AllStaff viewerStaffId={undefined} />)
     expect(screen.queryByTestId('staff-filter-only-me')).not.toBeInTheDocument()
   })
 })

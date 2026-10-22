@@ -20,13 +20,17 @@ const CATEGORICAL_COLOR_COUNT = 10
 export const staffColor = (index: number) =>
   `var(--buddy-color-categorical-${(index % CATEGORICAL_COLOR_COUNT) + 1})`
 
+/** 職員の id から区別の色への表。カレンダーの予定と職員の絞り込みの凡例が、同じ表を使う。 */
+export const staffColorMap = (staffList: Staff[]) =>
+  new Map(staffList.map((staff, index) => [staff.id, staffColor(index)]))
+
 /** 予定を、カレンダーに置く形にする。訪問の予定は利用者の名前をタイトルにする。 */
 export const toCalendarEvents = (
   schedules: Schedule[],
   staffList: Staff[],
   patients: Patient[],
 ): ScheduleCalendarEvent[] => {
-  const colorByStaff = new Map(staffList.map((staff, index) => [staff.id, staffColor(index)]))
+  const colorByStaff = staffColorMap(staffList)
   const patientName = new Map(patients.map((patient) => [patient.id, patient.name]))
 
   return schedules.map((schedule) => ({
