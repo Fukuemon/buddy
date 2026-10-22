@@ -46,7 +46,7 @@ export const diffMinutes = (startTimeKey: string, endTimeKey: string) => {
 }
 
 /** 曜日の 1 文字。`Date.getDay()` の値で引く。 */
-export const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'] as const
+const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'] as const
 
 /** 開始と終了の日時を、デバイスの時間帯で `2026年10月20日（火） 09:00〜09:29` の形にする。 */
 export const formatDateTimeRange = (start: Date, end: Date) =>

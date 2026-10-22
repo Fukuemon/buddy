@@ -13,9 +13,9 @@ describe('ScheduleDetailModal', () => {
     render(<Visit />)
     expect(screen.getByText('加藤 春子')).toBeInTheDocument()
     expect(screen.getByText('訪看I2')).toBeInTheDocument()
-    expect(screen.getByTestId('schedule-detail-datetime')).toHaveTextContent(
-      '2026年10月20日（火） 09:00〜09:29',
-    )
+    expect(
+      screen.getByRole('heading', { level: 3, name: '2026年10月20日（火） 09:00〜09:29' }),
+    ).toBeInTheDocument()
     expect(screen.getByRole('region', { name: '訪問の情報' })).toHaveTextContent('加藤 春子')
   })
 

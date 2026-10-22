@@ -1,5 +1,6 @@
 import type { Patient, Schedule, Staff } from '#/api/types'
 import { Button, Modal } from '@buddy/ui'
+import { useId } from 'react'
 
 import { SCHEDULE_CATEGORY_LABEL, SCHEDULE_KIND_LABEL } from '../constants/scheduleLabels'
 import { formatDateTimeRange } from '../lib/dateTime'
@@ -35,51 +36,58 @@ export const ScheduleDetailModal = ({
   patient,
   onEdit,
   onClose,
-}: ScheduleDetailModalProps) => (
-  <Modal
-    data-testid="schedule-detail-modal"
-    isOpen
-    onCloseRequest={onClose}
-    stickyFooter={
-      <Button data-testid="schedule-detail-edit" onClick={onEdit} variant="secondary">
-        編集
-      </Button>
-    }
-    title="予定の詳細"
-  >
-    <div className="flex flex-col gap-6 px-5 py-4">
-      <section className="flex flex-col gap-2">
-        <h3 className="text-heading-sm" data-testid="schedule-detail-datetime">
-          {formatDateTimeRange(new Date(schedule.startsAt), new Date(schedule.endsAt))}
-        </h3>
-        <dl>
-          <Row label="種類">{SCHEDULE_KIND_LABEL[schedule.kind]}</Row>
-          {schedule.kind === 'normal' && <Row label="タイトル">{schedule.title}</Row>}
-          <Row label={schedule.kind === 'visit' ? '担当者' : '予定者'}>
-            {staff?.name ?? '職員不明'}
-          </Row>
-        </dl>
-      </section>
-      {schedule.visit !== undefined && (
-        <section aria-labelledby="schedule-detail-visit" data-testid="schedule-detail-visit">
-          <SectionHeading id="schedule-detail-visit">訪問の情報</SectionHeading>
-          <dl className="grid desktop:grid-cols-2 desktop:gap-x-6">
-            <Row label="利用者">{patient?.name ?? '利用者不明'}</Row>
-            <Row label="サービスコード">{schedule.visit.serviceCode}</Row>
-            <Row label="訪問の種類">
-              {schedule.visit.categories.length > 0
-                ? schedule.visit.categories
-                    .map((category) => SCHEDULE_CATEGORY_LABEL[category])
-                    .join('、')
-                : '通常'}
+}: ScheduleDetailModalProps) => {
+  const visitHeadingId = useId()
+  const memoHeadingId = useId()
+  return (
+    <Modal
+      data-testid="schedule-detail-modal"
+      isOpen
+      onCloseRequest={onClose}
+      stickyFooter={
+        <Button data-testid="schedule-detail-edit" onClick={onEdit} variant="secondary">
+          編集
+        </Button>
+      }
+      title="予定の詳細"
+    >
+      <div className="flex flex-col gap-6 px-5 py-4">
+        <section className="flex flex-col gap-2">
+          <h3 className="text-heading-sm" data-testid="schedule-detail-datetime">
+            {formatDateTimeRange(new Date(schedule.startsAt), new Date(schedule.endsAt))}
+          </h3>
+          <dl>
+            <Row label="種類">{SCHEDULE_KIND_LABEL[schedule.kind]}</Row>
+            {schedule.kind === 'normal' && <Row label="タイトル">{schedule.title}</Row>}
+            <Row label={schedule.kind === 'visit' ? '担当者' : '予定者'}>
+              {staff?.name ?? '職員不明'}
             </Row>
           </dl>
         </section>
-      )}
-      <section aria-labelledby="schedule-detail-memo">
-        <SectionHeading id="schedule-detail-memo">メモ</SectionHeading>
-        <p className="whitespace-pre-wrap py-2">{schedule.description || 'なし'}</p>
-      </section>
-    </div>
-  </Modal>
-)
+        {schedule.visit !== undefined && (
+          <section aria-labelledby={visitHeadingId} data-testid="schedule-detail-visit">
+            <SectionHeading id={visitHeadingId}>訪問の情報</SectionHeading>
+            <dl
+              className="grid desktop:grid-cols-2 desktop:gap-x-6"
+              data-testid="schedule-detail-visit-fields"
+            >
+              <Row label="利用者">{patient?.name ?? '利用者不明'}</Row>
+              <Row label="サービスコード">{schedule.visit.serviceCode}</Row>
+              <Row label="訪問の種類">
+                {schedule.visit.categories.length > 0
+                  ? schedule.visit.categories
+                      .map((category) => SCHEDULE_CATEGORY_LABEL[category])
+                      .join('、')
+                  : '通常'}
+              </Row>
+            </dl>
+          </section>
+        )}
+        <section aria-labelledby={memoHeadingId} data-testid="schedule-detail-memo">
+          <SectionHeading id={memoHeadingId}>メモ</SectionHeading>
+          <p className="whitespace-pre-wrap py-2">{schedule.description || 'なし'}</p>
+        </section>
+      </div>
+    </Modal>
+  )
+}
