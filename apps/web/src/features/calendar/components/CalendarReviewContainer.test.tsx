@@ -28,7 +28,7 @@ describe('CalendarReviewContainer', () => {
   it('Google の内容に合わせるは、合わせられる予定にだけ出す', async () => {
     render(<Default />)
     expect(await screen.findByTestId('calendar-review-accept-export-1')).toBeInTheDocument()
-    for (const id of ['export-2', 'export-3', 'export-4']) {
+    for (const id of ['export-2', 'export-3', 'export-4', 'export-5']) {
       expect(screen.queryByTestId(`calendar-review-accept-${id}`)).toBeNull()
       expect(screen.getByTestId(`calendar-review-rewrite-${id}`)).toBeInTheDocument()
     }
