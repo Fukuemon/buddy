@@ -25,7 +25,7 @@ status: stable
     - 繰り返しの予定の 1 回の置き換えは、1 件の下の `/occurrences` に置く。
   - ログインした職員自身は、ID を持たない `/v1/me` で表す。
   - 動作はサブパス（`/cancel`）で表す。
-- DB のテーブルは複数形の snake_case、ID は ULID の `CHAR(26)`、真偽のカラムは `is_` で始める。職員のテーブルの名前は `users` で、Go の側は `staff` と呼ぶ。
+- DB のテーブルは複数形の snake_case にする。ID は ULID の文字列を `text COLLATE "C"` で持ち、ULID の形の CHECK は主キーだけに付ける。真偽のカラムは、true の意味が名前から読める形（`is_`、`needs_` など）にする。職員のテーブルの名前は `users` で、Go の側は `staff` と呼ぶ。
 - 業務の用語の表記は [業務の知識](domain.md) の用語にそろえる。文書の表記の揺れは `prh.yml` の規則が止める。
 
 ## Comments
