@@ -104,7 +104,8 @@ services:
 
   schedule-api-migrate:
     build: { context: ., dockerfile: services/schedule/Dockerfile }
-    image: buddy-compose-schedule-api
+    # イメージの名前にプロジェクトの名前を含め、-p で分けた別の worktree のビルドに上書きされないようにする
+    image: ${COMPOSE_PROJECT_NAME}-schedule-api
     entrypoint: ['/usr/local/bin/migrate']
     command: ['up']
     environment: *db-env
@@ -112,7 +113,7 @@ services:
       postgres: { condition: service_healthy }
 
   schedule-api-seed:
-    image: buddy-compose-schedule-api
+    image: ${COMPOSE_PROJECT_NAME}-schedule-api
     # イメージは schedule-api-migrate がビルドする
     pull_policy: never
     entrypoint: ['/usr/local/bin/migrate']
@@ -122,7 +123,7 @@ services:
       schedule-api-migrate: { condition: service_completed_successfully }
 
   schedule-api:
-    image: buddy-compose-schedule-api
+    image: ${COMPOSE_PROJECT_NAME}-schedule-api
     # イメージは schedule-api-migrate がビルドする
     pull_policy: never
     environment:
