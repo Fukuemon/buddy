@@ -221,7 +221,7 @@ test.describe('確かめが要る予定', () => {
         browser,
       }) => {
         const url = storyUrl('画面-calendar-calendarreviewview--default')
-        const row = (page: Page) => page.getByTestId('calendar-review-row-export-5')
+        const row = (page: Page) => page.getByTestId('calendar-review-row-schedule-schedule-4')
         await recordPrEvidence(
           browser,
           {
@@ -258,7 +258,7 @@ test.describe('確かめが要る予定', () => {
         browser,
       }) => {
         const url = storyUrl('画面-calendar-calendarreviewcontainer--default')
-        const row = (page: Page) => page.getByTestId('calendar-review-row-export-5')
+        const row = (page: Page) => page.getByTestId('calendar-review-row-schedule-schedule-4')
         const dialog = (page: Page) => page.getByTestId('calendar-rewrite-dialog')
         await recordPrEvidence(
           browser,

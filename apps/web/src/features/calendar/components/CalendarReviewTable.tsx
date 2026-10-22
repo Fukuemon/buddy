@@ -25,6 +25,16 @@ const Cell = ({ label, children }: { label: string; children: ReactNode }) => (
 const HEADERS = ['予定の日時', '職員', '理由', '最後に変わった日時'] as const
 
 /**
+ * 行の testid。予定ごとに 1 行なので、単発の予定は予定の ID で、繰り返しの予定は繰り返しの予定の ID で作る。
+ * 書き出しの ID は画面にも予定の応答にも出ないので、E2E は予定の ID で行を指す。
+ * 両方の ID が無い書き出しは API の制約で起きないが、起きても行が区別できるよう書き出しの ID で作る。
+ */
+const rowTestId = (issue: CalendarExportIssue) =>
+  issue.schedule_id !== null
+    ? `calendar-review-row-schedule-${issue.schedule_id}`
+    : `calendar-review-row-recurring-${issue.recurring_schedule_id ?? issue.id}`
+
+/**
  * Google カレンダーと食い違った予定を、日時、職員、理由、最後に変わった日時で並べ、予定を開くか、buddy の内容で書き直すか、
  * Google カレンダーの内容に合わせる表。
  * 予定のタイトルと利用者名は、Google カレンダーの側の値を出さないため、表に出さない。幅 768px 未満では、行ごとの箱に縦に積む。
@@ -56,7 +66,7 @@ export const CalendarReviewTable = ({
       {issues.map((issue) => (
         <tr
           className="block rounded-8 border border-border py-2 desktop:table-row desktop:rounded-none desktop:border-0 desktop:border-b desktop:py-0"
-          data-testid={`calendar-review-row-${issue.id}`}
+          data-testid={rowTestId(issue)}
           key={issue.id}
         >
           <Cell label="予定の日時">

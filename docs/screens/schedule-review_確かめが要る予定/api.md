@@ -6,7 +6,7 @@
 | --- | --- | --- | --- |
 | ナビゲーション | 「取り込み」と「要確認」を出すか | `Viewer.canManageStaff` | `getMe` の `policies[].code` に `staff.manage` があるか |
 | ログインした職員 | 職員の名前 | `Viewer.staffName` | `getMe` の `username` |
-| 予定の一覧 | 行と並び | `calendars.exportIssues` の戻り値 | `listCalendarExportIssues` の `items`。新しく変わった順 |
+| 予定の一覧 | 行と並びと、行がどの予定か | `calendars.exportIssues` の戻り値。行がどの予定かは `CalendarExportIssue.schedule_id`、`recurring_schedule_id` | `listCalendarExportIssues` の `items`。新しく変わった順。確かめが要る書き出しは予定ごとに 1 件なので、行は単発の予定の `schedule_id` か、繰り返しの予定の `recurring_schedule_id` で 1 行に決まる |
 | 予定の日時 | 日付、時刻、繰り返しか | `CalendarExportIssue.date`、`start_time`、`end_time`、`recurring_schedule_id` | `CalendarExportIssue` の `date`、`start_time`、`end_time`、`recurring_schedule_id`。繰り返しの予定の `date` は最初の回の日付 |
 | 職員 | 職員の名前 | `CalendarExportIssue.staff_name` | `CalendarExportIssue` の `staff_name` |
 | 理由 | 理由ごとの文 | `CalendarExportIssue.error_code`、`status`、`acceptable`、`recurring_schedule_id` | `CalendarExport` の `error_code`（`precondition_failed`、`not_found`、`forbidden`、`rejected`、`unavailable`、`unappliable`）と `status`（`conflict`、`failed`）。`precondition_failed` は、`CalendarExportIssue` の `acceptable` と `recurring_schedule_id` でも文を分ける。単発の予定で `acceptable` が false なのは、buddy でキャンセルした予定である |
