@@ -28,4 +28,4 @@ pnpm --filter @buddy/ui storybook
 ## 文書
 
 - [DESIGN.md](DESIGN.md): トークンとコンポーネントの使い方、カタログの組み方
-- [ADR-0004](../../docs/adr/0004-design-system.md): トークンの段の分け方とコンポーネントの置き場の判断
+- [ADR-0004](../../docs/adr/0004-design-system.md): トークンの段の分け方とコンポーネントの配置先の判断

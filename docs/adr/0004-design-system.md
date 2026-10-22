@@ -1,4 +1,4 @@
-# ADR-0004: デザインシステムのトークンとコンポーネントの置き場
+# ADR-0004: デザインシステムのトークンとコンポーネントの配置先
 
 ## Status
 
@@ -6,7 +6,7 @@
 
 ## Context
 
-画面のコンポーネントとテーマは apps/web の中にあり、receipt-front から写した色と大きさを使っている。  
+画面のコンポーネントとテーマは apps/web の中にあり、receipt-front からコピーした色と大きさを使っている。  
 照合の画面を足す前に、見た目を揃える基準と、アクセシビリティの基準を決める必要がある。
 
 - 今のテーマには、白の上で 4.5:1 に届かない文字の色がある。主の色 `#4d89c0` は 3.71:1、選ばれていないタブの文字 `#bcbdc1` は 1.88:1 である。入力欄の枠 `#e9e9eb` は 1.21:1 で、文字でないものの基準の 3:1 にも届かない。
@@ -25,17 +25,17 @@
 コンポーネントと画面は意味のトークンだけを使い、DADS の段の名前を直に書かない。  
 DADS の値を替えても、意味のトークンの参照先を 1 か所直せば画面が追従する。
 
-| 段 | 置き場 | 名前の例 | 書くもの |
+| 段 | 配置先 | 名前の例 | 書くもの |
 | --- | --- | --- | --- |
 | DADS の基本 | `@digital-go-jp/design-tokens` の `dist/tokens.css` | `--color-primitive-blue-800`、`--font-size-16`、`--border-radius-8`、`--elevation-3` | 色の階調、文字の大きさと行高、角丸、影の値 |
 | buddy の意味 | `packages/ui/src/tokens/semantic.css` | `--buddy-color-primary`、`--buddy-color-border-field` | 用途ごとの名前と、DADS の基本への参照。値は書かない |
-| Tailwind のテーマ | `packages/ui/src/tokens/theme.css` | `bg-primary`、`text-caption`、`rounded-8`、`desktop:` | `@theme inline` で意味のトークンをユーティリティにする。Tailwind の既定の色、文字の大きさ、角丸、影、ブレークポイントは消す |
+| Tailwind のテーマ | `packages/ui/src/tokens/theme.css` | `bg-primary`、`text-caption`、`rounded-8`、`desktop:` | `@theme inline` で意味のトークンをユーティリティにする。Tailwind のデフォルトの色、文字の大きさ、角丸、影、ブレークポイントは消す |
 
 - 値は CSS の変数で持ち、JSON から生成しない。DADS が生成済みの CSS を配っており、buddy が足すのは参照だけなので、生成の手順を持つ理由がない。
-- DADS の `@digital-go-jp/design-tokens` は依存にし、バージョンを `2.1.0` に固定する。値を写すと、DADS の修正を手で追い、MIT の表示を自分で持つ必要がある。バージョンを上げるときは、`tokens.css` の差分と、意味のトークンのコントラストを確かめる。
+- DADS の `@digital-go-jp/design-tokens` は依存にし、バージョンを `2.1.0` に固定する。値をコピーすると、DADS の修正を手で追い、MIT の表示を自分で持つ必要がある。バージョンを上げるときは、`tokens.css` の差分と、意味のトークンのコントラストを確かめる。
 - `@digital-go-jp/tailwind-theme-plugin` は使わない。原色の段がそのまま Tailwind のユーティリティになり、画面が意味のトークンを経ずに `bg-blue-800` と書ける。
 - DADS が持たないトークンは、次のように扱う。
-  - 余白は、Tailwind の既定の 4px の段を使い、トークンを足さない。DADS は余白を 8px を基準に組む例を示し、トークンにするかは任意としている。
+  - 余白は、Tailwind のデフォルトの 4px の段を使い、トークンを足さない。DADS は余白を 8px を基準に組む例を示し、トークンにするかは任意としている。
   - フォーカスは、DADS の実装例の値で `focus-ring` のユーティリティを `theme.css` に置く。
   - 文字は、DADS のテキストスタイルのうち 6 つを、`text-caption` のような用途の名前で `theme.css` に置く。
   - 出典: [DADS の余白](https://design.digital.go.jp/dads/foundations/spacing/)
@@ -64,7 +64,7 @@ packages/ui には Base と Case だけを置き、Domain のコンポーネン�
 
 - 出典: [BCD Design によるコンポーネントの分類](https://qiita.com/misuken/items/19f9f603ab165e228fe1)
 
-| 今のコンポーネント | 分類 | packages/ui での名前 | 置き場 |
+| 今のコンポーネント | 分類 | packages/ui での名前 | 配置先 |
 | --- | --- | --- | --- |
 | Button | Base | `Button` | `src/base/Button/` |
 | Modal | Base | `Modal` | `src/base/Modal/` |
@@ -89,7 +89,7 @@ DADS が参照する WCAG 2.2 の AA を基準にし、DADS の指針の値を�
 
 | 項目 | 基準 | 確かめ方 |
 | --- | --- | --- |
-| 文字のコントラスト | 4.5:1 以上。面の上の状態の色の文字も含む | Storybook の a11y のアドオン（axe）を全ての story で動かし、違反をテストの失敗にする |
+| 文字のコントラスト | 4.5:1 以上。面の上の状態の色の文字も含む | Storybook の a11y のアドオン（axe）を全ての story で実行し、違反をテストの失敗にする |
 | 文字でないもののコントラスト | 入力欄と押せる枠の境界、フォーカスの表示が 3:1 以上 | 意味のトークンの組のコントラストを計算する Vitest のテストを置く。axe は枠の色を確かめないため |
 | フォーカスの見え方 | 全ての操作できる要素で `focus-ring` を `:focus-visible` に出す | story の play 関数で Tab キーを押し、フォーカスの位置を確かめる |
 | ターゲットの大きさ | ボタンは 44×44 CSS px 以上。S のボタンとアイコンのボタンは、見た目の外に押せる領域を広げる | コンポーネントの Vitest のテストで、押せる領域の大きさを確かめる |
@@ -98,7 +98,7 @@ DADS が参照する WCAG 2.2 の AA を基準にし、DADS の指針の値を�
 - 出典: [DADS の色](https://design.digital.go.jp/dads/foundations/color/)
 - 出典: [DADS のボタンのアクセシビリティ](https://design.digital.go.jp/dads/components/button/accessibility/)
 
-story をテストとして動かすのは、Storybook の Vitest のアドオンにする。`pnpm --filter @buddy/ui test` が、コンポーネントの単体のテストと story のテストの両方を動かす。
+story をテストとして実行するのは、Storybook の Vitest のアドオンにする。`pnpm --filter @buddy/ui test` が、コンポーネントの単体のテストと story のテストの両方を実行する。
 
 ### DADS の指針から外れる 3 点は、理由を DESIGN.md に書いて残す
 
@@ -128,19 +128,19 @@ apps/web は packages/ui に依存するので、依存の向きを変えずに 
 - a11y のアドオンの設定と decorator は packages/ui の `.storybook/preview` に置き、apps/web の preview はそれを読み込む。2 つの Storybook で確かめる基準が分かれないようにするためである。
 - カタログのページは、はじめに、トークン、コンポーネント、パターン、画面の 5 つに分ける。DADS のサイトと SmartHR Design System のように、原則とトークンとコンポーネントの使い方を読めるサイトにする。
   - 出典: [SmartHR Design System](https://smarthr.design/)
-- title は、ファイルの置き場から機械的に決める。規則は DESIGN.md にある。
-- カタログは、文書のサイトと 1 つの Cloudflare Worker の静的なファイルとして公開し（`/storybook/`）、Cloudflare Access で許可した人だけが開けるようにする。pull request ごとにプレビューを出し、develop に入ったら本番に出す。公開の仕組みは `apps/docs-site/README.md` にある。
-- Access で絞っても、カタログに載せるのはコンポーネントと架空のデータだけにする。許可した人の範囲は変わりうるためである。
+- title は、ファイルの配置先から機械的に決める。規則は DESIGN.md にある。
+- カタログは、文書のサイトと 1 つの Cloudflare Worker の静的なファイルとして公開し（`/storybook/`）、Cloudflare Access で許可した人だけが開けるようにする。pull request ごとにプレビューを出し、develop に入ったら本番に出す。デプロイの構成は `apps/docs-site/README.md` にある。
+- Access で絞っても、カタログに載せるのはコンポーネントとダミーデータだけにする。許可した人の範囲は変わりうるためである。
 
 ## Considered Options
 
-### トークンの値の置き場
+### トークンの値の配置先
 
 | 選択肢 | 強み | 弱み |
 | --- | --- | --- |
 | **採用:** `@digital-go-jp/design-tokens` を依存にし、意味のトークンを CSS の変数で参照する | DADS の修正をバージョンの更新で取り込める。MIT の表示はパッケージが持つ | DADS が名前を変えると、意味のトークンの参照を直す必要がある |
 | `@digital-go-jp/tailwind-theme-plugin` の v4 の `@theme` を読み込む | Tailwind のテーマを書かずに済む | 原色の全ての段がユーティリティになり、意味のトークンを経ない書き方を止められない。1.0.1 が対応する Figma のバージョンは 2.14.0 までで、tokens の 2.1.0 の 2.18.1 より古い |
-| DADS の値を `semantic.css` に写す | 依存が増えない | DADS の修正を手で追う。MIT の表示を自分で持つ |
+| DADS の値を `semantic.css` にコピーする | 依存が増えない | DADS の修正を手で追う。MIT の表示を自分で持つ |
 | トークンを JSON に書き、Style Dictionary で CSS を生成する | CSS 以外の形式にも出せる | CSS 以外で使う場所がない。生成の手順と、生成物のずれの確認が増える |
 
 ### カタログの組み方
@@ -150,7 +150,7 @@ apps/web は packages/ui に依存するので、依存の向きを変えずに 
 | **採用:** apps/web の Storybook に packages/ui の MDX と story も読ませる | 1 回のビルドで 1 つのサイトになる。原則から画面までを 1 つのサイドバーと検索でたどれる | packages/ui の story を 2 つの Storybook でビルドする |
 | Storybook の refs で、apps/web から packages/ui の Storybook を合成する | 2 つの Storybook を独立にビルドできる | 2 つのビルドと公開先を揃える必要がある。refs の URL は開発の時と公開先とで違う。相対の URL で動くかは未確認 |
 | 2 つの Storybook を別々に公開し、一覧のページから 2 つへリンクする | 公開の仕組みが単純になる | 原則とトークンとコンポーネントのサイトと、画面のサイトが分かれ、行き来できない |
-| packages/ui の Storybook に apps/web の story も読ませる | packages/ui の中でカタログが完結する | packages/ui が apps/web の import の別名と plugin に依存し、依存の向きが逆になる |
+| packages/ui の Storybook に apps/web の story も読ませる | packages/ui の中でカタログが完結する | packages/ui が apps/web の import のエイリアスと plugin に依存し、依存の向きが逆になる |
 
 ### カタログの公開先
 
@@ -188,8 +188,8 @@ apps/web は packages/ui に依存するので、依存の向きを変えずに 
 ### Negative
 
 - 主の色、枠、角丸、フォーカス、書体が変わり、今の画面と見た目が大きく違う。
-- コンポーネントを移すときに、Tailwind の既定のユーティリティ（`text-sm`、`rounded-xl` など）を使う箇所を全て書き換える必要がある。
+- コンポーネントを移すときに、Tailwind のデフォルトのユーティリティ（`text-sm`、`rounded-xl` など）を使う箇所を全て書き換える必要がある。
 - DADS のバージョンを上げるたびに、`tokens.css` の名前と値の差分を確かめる必要がある。
 - カタログを Access で許可した人に見せるため、Cloudflare のアカウント、API トークン、Access の許可の設定を保つ必要がある。カタログの Worker の名前を変えると、新しい Worker は Access なしで出る。
 - pull request のプレビューのため、書き込みの権限を持つ人は Cloudflare のトークンを読める。トークンの範囲をこの Worker に絞り、漏れたときに書き換えられるものを、このサイトの中身と設定に限る。
-- story のデータを作る人が、架空のデータに限る規則を守る必要がある。
+- story のデータを作る人が、ダミーデータに限る規則を守る必要がある。

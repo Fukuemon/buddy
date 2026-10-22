@@ -1,6 +1,6 @@
 # @buddy/docs-site
 
-文書のサイト（Zensical）、apps/web の Storybook（デザインシステムのカタログ）、予定の管理の表の ER 図（Liam ERD）を公開する。  
+文書のサイト（Zensical）、apps/web の Storybook（デザインシステムのカタログ）、予定の管理の ER 図（Liam ERD）を公開する。  
 3 つは、1 つの Cloudflare Worker（`buddy-docs`）の静的なファイルである。  
 サイトは Cloudflare Access で許可した人だけが開ける。カタログの組み方と、公開先を選んだ理由は [ADR-0004](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0004-design-system.md) にある。
 
@@ -27,21 +27,21 @@ pnpm site:build
 
 `pnpm --filter @buddy/docs-site deploy:dry-run` で、Cloudflare に送らずに成果物を確かめられる。認証は要らない。
 
-文書のサイトのリンクは相対の URL なので、カタログを下のパスに置いても行き来できる。文書のトップのカタログへのリンク（`storybook/`）と ER 図へのリンク（`erd/`）は、手元の `zensical serve` では開けない。
+文書のサイトのリンクは相対の URL なので、カタログを下のパスに置いても行き来できる。文書のトップのカタログへのリンク（`storybook/`）と ER 図へのリンク（`erd/`）は、ローカルの `zensical serve` では開けない。
 
-ER 図のサイトは、Liam ERD の CLI が出す静的なファイルで、資源を相対のパスで読むので `/erd/` の下で動く。Liam ERD のライセンスは Apache-2.0 である（[liam-hq/liam](https://github.com/liam-hq/liam)）。開くと Google Fonts から字形を読む。届かなくても、ER 図は代わりの字形で描かれる。
+ER 図のサイトは、Liam ERD の CLI が出す静的なファイルで、リソースを相対のパスで読むので `/erd/` の下で動く。Liam ERD のライセンスは Apache-2.0 である（[liam-hq/liam](https://github.com/liam-hq/liam)）。開くと Google Fonts から字形を読む。届かなくても、ER 図は代わりの字形で描かれる。
 
-## 公開の仕組み
+## デプロイの構成
 
-`.github/workflows/docs-site.yml` が、Cloudflare の CLI `cf` で出す。
+`.github/workflows/docs-site.yml` が、Cloudflare の CLI `cf` でデプロイする。
 
 - pull request では `cf previews deploy pr-<番号>` でプレビューを出し、URL を pull request にコメントする。
-- develop への push では `cf deploy --prebuilt --mode production` で本番に出す。
-- プレビューの手順は pull request のコードを動かし、そこへ Cloudflare のトークンを渡す。同じリポジトリの pull request には GitHub が secret を渡すため、書き込みの権限を持つ人はワークフローを書き換えてトークンを読める。
+- develop への push では `cf deploy --prebuilt --mode production` で本番にデプロイする。
+- プレビューの手順は pull request のコードを実行し、そこへ Cloudflare のトークンを渡す。同じリポジトリの pull request には GitHub が secret を渡すため、書き込みの権限を持つ人はワークフローを書き換えてトークンを読める。
   - トークンの範囲を Worker `buddy-docs` の Editor に絞り、漏れたときに書き換えられるものを、このサイトの中身と設定に限る。Access の設定はトークンで変えられない。
-  - fork と Dependabot の pull request には GitHub が secret を渡さないため、ワークフローはサイトを組むだけで、プレビューとコメントの手順を飛ばす。
-- 文書の元は docs/ のほか、各アプリの Design Doc にも散るので、変えた場所で絞らずに全ての pull request で動かす。
-- `cloudflare.config.ts` が Worker の名前（`buddy-docs`）と、workers.dev とプレビューの URL を有効にする設定を持つ。静的なファイルの置き場は `wrangler.config.ts` にある。`cf` の 1.0.0-beta は、静的なファイルのビルドを wrangler に任せるためである。
+  - fork と Dependabot の pull request には GitHub が secret を渡さないため、ワークフローはサイトをビルドするだけで、プレビューとコメントの手順を飛ばす。
+- 文書の元は docs/ のほか、各アプリの Design Doc にも散るので、変えた場所で絞らずに全ての pull request で実行する。
+- `cloudflare.config.ts` が Worker の名前（`buddy-docs`）と、workers.dev とプレビューの URL を有効にする設定を持つ。静的なファイルの配置先は `wrangler.config.ts` にある。`cf` の 1.0.0-beta は、静的なファイルのビルドを wrangler に任せるためである。
 - `cf` は beta なので、バージョンを固定している。上げるときは、pull request のプレビューと `deploy:dry-run` が通ることを確かめる。
 
 ## Cloudflare の準備

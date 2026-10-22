@@ -1,12 +1,12 @@
-# 変更を取り込むまで
+# 変更をマージするまで
 
-## 開発の準備
+## 開発環境のセットアップ
 
 必要なものは mise と Docker である。  
 ランタイムとツール（Node、pnpm、Go、sqlc、golang-migrate、golangci-lint、uv、tbls、apm、gh）のバージョンは `mise.toml` にある。  
-gh は、証跡の動画を pull request と issue に添付する `--attach` のために、2.99 以降をそろえる。  
+gh は、エビデンスの動画を pull request と issue に添付する `--attach` のために、2.99 以降をそろえる。  
 pnpm は `package.json` の `packageManager` と同じバージョンにする。  
-文書のサイトを組む Zensical は、mise が入れる `uv` で動かす。  
+文書のサイトをビルドする Zensical は、mise が入れる `uv` で実行する。  
 ほかのツールとバージョンの所在は、[技術スタック](context/tech-stack.md) にある。
 
 ```sh
@@ -52,7 +52,7 @@ apm install --frozen
 apm lifecycle trust
 ```
 
-## 手元で全部を動かす
+## ローカル環境で全体を起動する
 
 画面、2 つの API、PostgreSQL、Valkey、開発用の OIDC の IdP は、リポジトリのルートの `compose.yml` で一緒に起動する。Docker が要る。
 
@@ -60,11 +60,11 @@ apm lifecycle trust
 docker compose up --build --wait
 ```
 
-`--wait` は、全てのサービスのヘルスチェックが通るまで待つ。schedule-api は、起動の前にマイグレーションとシードを当てる。シードは、事業所の行が既にあれば当てない。
+`--wait` は、全てのサービスのヘルスチェックが通るまで待つ。schedule-api は、起動の前にマイグレーションとシードを適用する。シードは、事業所のレコードが既にあれば適用しない。
 
 ポートは `127.0.0.1` にだけ公開する。
 
-| サービス | 手元の URL | ポートを変える環境変数 |
+| サービス | ローカルの URL | ポートを変える環境変数 |
 | --- | --- | --- |
 | web | `http://localhost:3000` | `WEB_PORT` |
 | schedule-api | `http://localhost:8080` | `SCHEDULE_API_PORT` |
@@ -72,14 +72,14 @@ docker compose up --build --wait
 | idp | `http://localhost:9000/buddy` | `IDP_PORT` |
 | postgres | `localhost:15432` | `POSTGRES_PORT` |
 | valkey | `localhost:6379` | `VALKEY_PORT` |
-| fake-google（偽物の Google Calendar API。`/view` で書き出した予定を見る） | `http://localhost:8085/view` | `FAKE_GOOGLE_PORT` |
+| fake-google（フェイクの Google Calendar API。`/view` で書き出した予定を見る） | `http://localhost:8085/view` | `FAKE_GOOGLE_PORT` |
 
 - IdP は navikt/mock-oauth2-server である。ログインの画面で入れた名前が `sub` になり、ほかのクレームは `compose/idp.json` の値になる。
-  - 既定のクレームは、シードの職員の青木 陽菜（組織 `org-sample`）を指す。ログインの画面のクレームの欄に書いた値は、`compose/idp.json` のクレームを上書きしない。
+  - デフォルトのクレームは、シードの職員の青木 陽菜（組織 `org-sample`）を指す。ログインの画面のクレームの欄に書いた値は、`compose/idp.json` のクレームを上書きしない。
   - シードは森 健太の `sub` を `dev-mori` に結び付けてあるので、名前に `dev-mori` を入れると森 健太（チームリーダー）として入る。ほかの職員で入るときは、DB でその職員の `users.sub` に入れた名前で入る。
   - schedule-api は、初回のログインで `sub` を職員に結び付ける。一度結び付いた名前は、その職員として扱う。
-  - シードは、事業所の行が無い空の DB にだけ当たる。シードを変えた後は、`docker compose down -v` で DB を作り直す。
-- API が受けるトークンの `iss` は `http://idp:9000/buddy` である。IdP は `iss` をトークンの要求の Host から決めるため、トークンはコンテナの間の名前 `idp` で取る。
+  - シードは、事業所のレコードが無い空の DB にだけ適用される。シードを変えた後は、`docker compose down -v` で DB を作り直す。
+- API が受けるトークンの `iss` は `http://idp:9000/buddy` である。IdP は `iss` をトークンのリクエストの Host から決めるため、トークンはコンテナの間の名前 `idp` で取る。
 - `http://localhost:3000` を開くと IdP のログインの画面へ移る。名前に `dev-aoki` を入れると、青木 陽菜としてログインする。
 - データを消して最初からにするときは、`docker compose down -v` で PostgreSQL のボリュームを消す。
 
@@ -94,14 +94,14 @@ TOKEN=$(docker compose exec -T idp wget -qO- --post-data "grant_type=authorizati
 curl -H "Authorization: Bearer $TOKEN" localhost:8080/v1/facilities/01M3TC5H00QV17BC0J9V3393ZP
 ```
 
-文書のサイトの API の仕様のページからも、手元の API を呼べる。
+文書のサイトの API の仕様のページからも、ローカルの API を呼べる。
 
 1. `docker compose up --build --wait schedule-api receipt-api` で API を立てる。
 2. `uv run zensical serve` で、文書のサイトを `http://localhost:8000` で開く。compose の 2 つの API は、このオリジンだけに CORS を許すので、`127.0.0.1` ではなく `localhost` で開く。
 3. 「API の仕様」のページで操作を選び、「Test Request」を押す。
 4. 上の手順で取った `$TOKEN` の値を「Bearer Token」の欄に貼り、「Send」を押す。
 
-公開した文書のサイトからは呼べない。API がそのオリジンに CORS を許していないうえ、https のページから手元の API への要求をブラウザが止めることがあるためである。
+公開した文書のサイトからは呼べない。API がそのオリジンに CORS を許していないうえ、https のページからローカルの API へのリクエストをブラウザが止めることがあるためである。
 
 ## E2E のテストを流す
 
@@ -119,18 +119,18 @@ pnpm e2e
 
 ## 公開した文書のサイトとカタログを確かめる
 
-pull request を作ると、ワークフロー「文書のサイト」がプレビューを出し、URL を pull request にコメントする。プレビューには、文書のサイトと、Storybook のカタログ（`/storybook/`）と、表の ER 図（`/erd/`）がある。プレビューと本番は、Cloudflare Access で許可した人だけが開ける。
+pull request を作ると、ワークフロー「文書のサイト」がプレビューを出し、URL を pull request にコメントする。プレビューには、文書のサイトと、Storybook のカタログ（`/storybook/`）と、ER 図（`/erd/`）がある。プレビューと本番は、Cloudflare Access で許可した人だけが開ける。
 
-- 手元で成果物を作るときは、ルートで `pnpm site:build` を実行する。
-- ER 図だけを手元で見るときは、ルートで `pnpm build:erd` を実行して `erd/` を作り、静的なファイルとして配信して開く。
-  - ER 図は `docs/db/schedule-api/schema.json` から作るので、表を変えたときは先に `pnpm generate:db-docs` を流す。
+- ローカルで成果物を作るときは、ルートで `pnpm site:build` を実行する。
+- ER 図だけをローカルで見るときは、ルートで `pnpm build:erd` を実行して `erd/` を作り、静的なファイルとして配信して開く。
+  - ER 図は `docs/db/schedule-api/schema.json` から作るので、テーブルを変えたときは先に `pnpm generate:db-docs` を流す。
 
   ```sh
   pnpm build:erd
   uv run python -m http.server 8001 --bind 127.0.0.1 -d erd   # http://127.0.0.1:8001 で開く
   ```
 
-- 公開の仕組みと Cloudflare の準備は、[apps/docs-site/README.md](apps/docs-site/README.md) にある。
+- デプロイの構成と Cloudflare の準備は、[apps/docs-site/README.md](apps/docs-site/README.md) にある。
 
 ## 文書を直すとき
 
@@ -142,14 +142,14 @@ uv run zensical serve   # http://localhost:8000 で読みながら直す
 uv run zensical build   # 出力の最後が "No issues found" になることを確かめる
 ```
 
-- `zensical build` は、リンクの先のページと見出しのアンカーがないと "Warning" を出す。警告が残ったまま取り込まない。
+- `zensical build` は、リンクの先のページと見出しのアンカーがないと "Warning" を出す。警告が残ったままマージしない。
 - 画面仕様書とモックの書き方は、スキル write-screen-spec に従う。
 - 画面仕様書かモックを直したら、`pnpm check:screens` を流す。story の `title` か export の名前を変えたときも流す。
   - [画面仕様書の規約](docs/screens/rules.md) の名前、構造、構成番号、`data-testid` の形、E2E が使う testid がモックにあるか、カタログの欄の story があるかを確かめる。
   - CI も同じ点検を流す。
   - 1 つの画面だけを見るときは `node scripts/check-screens.mjs docs/screens/<ディレクトリ>` を流す。この形では、E2E の testid の照合は流れない。
 - ページを足したら、`zensical.toml` の `nav` に足す。`nav` にないページはナビゲーションから開けない。
-- 機能ごとの Design Doc の置き場、サイトへの載せ方、リンクの書き方は、[コードと文書の規約](context/conventions.md#documents) にある。
+- 機能ごとの Design Doc の配置先、サイトへの載せ方、リンクの書き方は、[コードと文書の規約](context/conventions.md#documents) にある。
 
 文章の規則は textlint で、経緯の混入とリンクは docs のスクリプトで確かめる。指摘された語は言い換え、`--fix` は使わない。プロジェクトの用語と見出しの語が指摘されたときは、言い換えずに、`.textlintrc.json` の `allows` に足すかをメンテナーと決める。
 
@@ -184,29 +184,29 @@ pnpm lint:openapi
 | `apps/schedule-api/openapi.yaml` | `apps/schedule-api` で `go generate ./...` | `apps/schedule-api/internal/httpapi/openapi/` |
 | `apps/schedule-api/db/` の SQL | `apps/schedule-api` で `sqlc generate` | `apps/schedule-api/internal/postgres/sqlcgen/` |
 | どちらかの openapi.yaml | `pnpm --filter @buddy/web generate:api` | `apps/web/src/api/generated/` |
-| `apps/schedule-api/db/migrations/`、`apps/schedule-api/.tbls.yml` | `pnpm generate:db-docs`（Docker が要る） | `docs/db/schedule-api/`（表の文書と ER 図） |
+| `apps/schedule-api/db/migrations/`、`apps/schedule-api/.tbls.yml` | `pnpm generate:db-docs`（Docker が要る） | `docs/db/schedule-api/`（テーブル定義書と ER 図） |
 | `packages/ui/src/tokens/semantic.css`、`@digital-go-jp/design-tokens` | `node scripts/build-mock-tokens.mjs` | `docs/screens/_common/tokens.css`（画面のモックが読む） |
 
-表を足したときは、`.tbls.yml` の `viewpoints` のどれかに入れる。  
-どの viewpoint にも入らない表があると、`pnpm generate:db-docs` が tbls lint で 1 で終わる。  
+テーブルを足したときは、`.tbls.yml` の `viewpoints` のどれかに入れる。  
+どの viewpoint にも入らないテーブルがあると、`pnpm generate:db-docs` が tbls lint で 1 で終わる。  
 viewpoint を足したときは、生成した文書を `zensical.toml` の nav の「DB の設計」にも足す。  
 nav に無い viewpoint の文書があっても、`pnpm generate:db-docs` が 1 で終わる。
 
-取り込む前に、生成物がそろっているかをリポジトリのルートで確かめる。表の文書を除く全ての生成を流し直し、差分か追跡していない生成物があれば 1 で終わる。表の文書は Docker が要るので外しており、CI の `db-docs` の仕事が同じように確かめる。
+マージする前に、生成物がそろっているかをリポジトリのルートで確かめる。テーブル定義書を除く全ての生成を流し直し、差分か追跡していない生成物があれば 1 で終わる。テーブル定義書は Docker が要るので外しており、CI の `db-docs` のジョブが同じように確かめる。
 
 ```sh
 pnpm check:generated
 ```
 
-## 取り込む前に CI で確かめること
+## マージする前に CI で確かめること
 
 pull request では、CI（[ci.yml](.github/workflows/ci.yml)）が次を流す。  
-全部が通るまで取り込まない。  
-変更ごとに手元で流すテストは `context/testing.md` の Required Tests にある。
+全部が通るまでマージしない。  
+変更ごとにローカルで流すテストは `context/testing.md` の Required Tests にある。
 
 - OpenAPI の lint（`pnpm lint:openapi`）と、画面仕様書の点検（`pnpm check:screens`）
 - TypeScript と Go の lint、型のチェック、テスト
-- 生成物のそろい（`pnpm check:generated`）と、表の文書のそろい（`db-docs`）
+- 生成物のそろい（`pnpm check:generated`）と、テーブル定義書のそろい（`db-docs`）
 - E2E
 
 E2E が CI だけで失敗したときは、ワークフローの実行の画面から artifact の `e2e-test-results` を落とし、中の trace を「E2E のテストを流す」の手順で開く。
@@ -222,12 +222,12 @@ E2E が CI だけで失敗したときは、ワークフローの実行の画面
 
 - `main` はリリース済みの状態を指す。`develop` は次のリリースに向けて変更を集める。
 - `develop` の状態を検証環境に、`main` の状態を本番環境に反映する。
-  - 検証環境で確かめる前の変更は、手元の compose で確かめる。
+  - 検証環境で確かめる前の変更は、ローカルの compose で確かめる。
 - 作業用のブランチは `develop` から切る。名前は `feature/<issue 番号>` にし、不具合は `fix/<issue 番号>` にする。1 つの issue を複数の pull request に分けるときは、`feature/<issue 番号>-<短い名前>` にする。
-- リリースは、検証した `develop` を `main` へ pull request で取り込み、`main` のコミットにアプリごとのタグを付ける。タグは `apps/<アプリ>/vX.Y.Z` の形で、バージョンはセマンティック バージョニングに従う。タグは手で付ける。
+- リリースは、検証した `develop` を `main` へ pull request でマージし、`main` のコミットにアプリごとのタグを付ける。タグは `apps/<アプリ>/vX.Y.Z` の形で、バージョンはセマンティック バージョニングに従う。タグは手で付ける。
 - API の互換の規則（項目の追加は同じパス、削除と意味の変更は新しいパス、API を先にデプロイする）は ADR-0003 にある。
-- リリース後の緊急の修正は、`main` から `hotfix/<issue 番号>` を切り、`main` と `develop` の両方へ取り込む。
-- 保護するブランチは `main`、`develop` である。直接はコミットせず、pull request を通して取り込む。
+- リリース後の緊急の修正は、`main` から `hotfix/<issue 番号>` を切り、`main` と `develop` の両方へマージする。
+- 保護するブランチは `main`、`develop` である。直接はコミットせず、pull request を通してマージする。
 
 ```mermaid
 gitGraph
@@ -254,10 +254,10 @@ gitGraph
 
 ## issue と pull request
 
-- 作業は issue から始める。issue は、雛形（`.github/ISSUE_TEMPLATE/`）の要求、不具合、タスクから選ぶ。種類は `type:` のラベル、対象のアプリとパッケージは `pkg:` のラベルで示す。
+- 作業は issue から始める。issue は、issue テンプレート（`.github/ISSUE_TEMPLATE/`）の要求、不具合、タスクから選ぶ。種類は `type:` のラベル、対象のアプリとパッケージは `pkg:` のラベルで示す。
 - pull request は 1 つの issue に対応させる。大きい issue は、関心事ごとに複数の pull request に分け、本文で issue を `Refs #<番号>` で指す。
-- 題と本文の書き方は、スキル write-issue-pr に従う。本文は `.github/pull_request_template.md` の節で書く。
-- 機能の追加と改修の pull request には、確かめたことの証跡の動画を添付する。対象と格納先は [証跡](context/testing/evidence.md)、撮り方と添付のしかたはスキル attach-evidence にある。
-- レビューの指摘に対応してから取り込む。直したコミットと、対応しない指摘の理由を pull request のコメントに残す。差分が変わったら、本文も差分に合わせて直す。
-- `develop` への取り込みは merge commit にする（`gh pr merge --merge`）。
-- 既定のブランチは `develop` である。1 つの pull request で issue の作業が終わるときは、本文に `Closes #<番号>` を書き、取り込みで issue を閉じる。複数の pull request に分けたときは、最後の pull request に `Closes` を書く。
+- タイトルと本文の書き方は、スキル write-issue-pr に従う。本文は `.github/pull_request_template.md` の節で書く。
+- 機能の追加と改修の pull request には、確かめたことのエビデンスの動画を添付する。対象と格納先は [エビデンス](context/testing/evidence.md)、撮り方と添付のしかたはスキル attach-evidence にある。
+- レビューの指摘に対応してからマージする。直したコミットと、対応しない指摘の理由を pull request のコメントに残す。差分が変わったら、本文も差分に合わせて直す。
+- `develop` へのマージは merge commit にする（`gh pr merge --merge`）。
+- デフォルトのブランチは `develop` である。1 つの pull request で issue の作業が終わるときは、本文に `Closes #<番号>` を書き、マージで issue を閉じる。複数の pull request に分けたときは、最後の pull request に `Closes` を書く。

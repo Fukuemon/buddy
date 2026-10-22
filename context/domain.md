@@ -13,30 +13,30 @@ status: stable
 
 | 用語 | 意味 | コードの識別子 |
 | --- | --- | --- |
-| 事業所 | 訪問看護の事業所。データを分ける単位 | Go `organization.Facility`、表 `facilities`、API `Facility` |
+| 事業所 | 訪問看護の事業所。データを分ける単位 | Go `organization.Facility`、テーブル `facilities`、API `Facility` |
 | 組織 | 認証のブローカーが持つ組織。事業所と 1 対 1 に対応し、access token に組織の ID が入る | `facilities.org_id`、`principal.Identity.OrgID`、クレームの名前は `OIDC_ORG_CLAIM` |
-| 部署、チーム | 事業所の中の職員の所属 | `organization.Department`、`organization.Team`、表 `departments`、`teams` |
-| 役職 | 職員の役割。職員に付ける権限の既定を持つ | `organization.Position`、表 `positions`、`position_policies` |
-| マネージャー、チームリーダー、メンバー | PRD が使う役職の 3 つの呼び方。権限の既定が違う | 表 `positions` の行。名前は事業所ごとに決める |
-| 権限 | 職員ができる操作と、その対象 | `organization.Policy`、`staff.Grant`、表 `policies`、`user_policies`、`user_policy_targets` |
-| 職員 | 事業所で働き、buddy にログインする人 | Go `staff.Staff`、表 `users`、API `Staff`、パス `/users`、web `Staff`、`Viewer` |
-| 利用者 | 事業所が訪問する相手 | Go `patient.Patient`、表 `patients`、API `Patient` |
+| 部署、チーム | 事業所の中の職員の所属 | `organization.Department`、`organization.Team`、テーブル `departments`、`teams` |
+| 役職 | 職員の役割。職員に付けるデフォルトの権限を持つ | `organization.Position`、テーブル `positions`、`position_policies` |
+| マネージャー、チームリーダー、メンバー | PRD が使う役職の 3 つの呼び方。デフォルトの権限が違う | テーブル `positions` のレコード。名前は事業所ごとに決める |
+| 権限 | 職員ができる操作と、その対象 | `organization.Policy`、`staff.Grant`、テーブル `policies`、`user_policies`、`user_policy_targets` |
+| 職員 | 事業所で働き、buddy にログインする人 | Go `staff.Staff`、テーブル `users`、API `Staff`、パス `/users`、web `Staff`、`Viewer` |
+| 利用者 | 事業所が訪問する相手 | Go `patient.Patient`、テーブル `patients`、API `Patient` |
 | 担当の職員 | 利用者を主に担当する職員 | `Patient.AssignedStaffID`、`patients.assigned_staff_id` |
 
 ### 予定
 
 | 用語 | 意味 | コードの識別子 |
 | --- | --- | --- |
-| 予定 | 職員の 1 回の予定。種類は通常と訪問 | Go `schedule.Schedule`、表 `schedules`、API `Schedule`、web `ScheduleKind`（`normal`、`visit`） |
-| 繰り返しの予定 | 規則に従って繰り返す予定 | Go `schedule.RecurringSchedule`、表 `recurring_schedules` |
+| 予定 | 職員の 1 回の予定。種類は通常と訪問 | Go `schedule.Schedule`、テーブル `schedules`、API `Schedule`、web `ScheduleKind`（`normal`、`visit`） |
+| 繰り返しの予定 | 規則に従って繰り返す予定 | Go `schedule.RecurringSchedule`、テーブル `recurring_schedules` |
 | 回の置き換え | 繰り返しの 1 回を、単発の予定に置き換えること | `ChangeOccurrence`、パス `.../occurrences` |
-| キャンセル | 予定の取り消し。理由を持つ | `schedule.Cancel`、表 `schedule_cancels` |
-| 時間外の勤務 | 17 時以降に始まる予定 | `Slot.IsOverTimeWork`、列 `is_over_time_work`（開始の時刻から DB が生成する） |
-| 訪問の情報 | 訪問の予定に付く、利用者、主訪問者、同行者、サービスコード、訪問の区分 | Go `visit.Info`、表 `visit_infos`、API `VisitInfo`、web `VisitDetail` |
-| 主訪問者 | 訪問する職員。業務の役割で、役職を問わない。予定の管理では訪問の情報の担当の職員、照合では実績の CSV の「主訪問者」の列 | `Info.AssignedStaffID`、照合の `Key.Staff` |
+| キャンセル | 予定の取り消し。理由を持つ | `schedule.Cancel`、テーブル `schedule_cancels` |
+| 時間外の勤務 | 17 時以降に始まる予定 | `Slot.IsOverTimeWork`、カラム `is_over_time_work`（開始の時刻から DB が生成する） |
+| 訪問の情報 | 訪問の予定に付く、利用者、主訪問者、同行者、サービスコード、訪問の区分 | Go `visit.Info`、テーブル `visit_infos`、API `VisitInfo`、web `VisitDetail` |
+| 主訪問者 | 訪問する職員。業務の役割で、役職を問わない。予定の管理では訪問の情報の担当の職員、照合では実績の CSV の「主訪問者」のカラム | `Info.AssignedStaffID`、照合の `Key.Staff` |
 | 同行者 | 訪問に同行する職員 | `Info.CompanionID` |
-| サービスコード | レセプトのサービスの種類と、提供時間の範囲（分） | Go `visit.ServiceCode`、表 `service_codes`、web `SERVICE_CODES` |
-| 訪問の区分 | 夜勤、緊急、入院 | Go `visit.Category`、表 `visit_categories`、web `ScheduleCategory` |
+| サービスコード | レセプトのサービスの種類と、提供時間の範囲（分） | Go `visit.ServiceCode`、テーブル `service_codes`、web `SERVICE_CODES` |
+| 訪問の区分 | 夜勤、緊急、入院 | Go `visit.Category`、テーブル `visit_categories`、web `ScheduleCategory` |
 | 提供時間 | 訪問でサービスを提供した時間（分） | 照合の `Record.Duration` |
 
 ### 照合
@@ -55,10 +55,20 @@ status: stable
 | 注意の印 | 「 ※」。整合の行で値は違うが両方が許容範囲に入る値と、不整合の行で規則に合わない加算に付ける | `Checks.DurationEqual`、`EndEqual`、`Additions` |
 | 対象の月 | Google カレンダーから予定を取る月 | `source.Request.Month`、API `month` |
 
+### Google カレンダーとの連携
+
+和語のまま書く業務の機能の名前。pull request のマージ、HTTP のリクエストのような技術用語とは書き分ける。
+
+| 用語 | 意味 | コードの識別子 |
+| --- | --- | --- |
+| 結び付け | 職員に Google カレンダーを対応させること。画面の名前は「カレンダーの連携」 | テーブル `external_calendars`、API `createExternalCalendar`、`removeExternalCalendar` |
+| 予定の取り込み | 結び付けたカレンダーの予定を、期間を選んで buddy の予定にすること。確定の前にプレビューする。画面のボタンの文言は「下見する」 | テーブル `import_runs`、`external_event_links`、API `createCalendarImportPreview`、`createCalendarImport` |
+| 予定の書き出し | buddy で作り、変え、キャンセルした予定を、結び付けたカレンダーに書くこと | テーブル `calendar_exports`、API `listCalendarExportIssues`、`createCalendarExportRetry` |
+
 ### 呼び方の対応
 
-- 予定の管理の利用者は、照合では `client`（列は「利用者名」）と呼ぶ。
-- 職員の表は `users`、Go は `staff` と呼ぶ。API のパスは `/users` である。
+- 予定の管理の利用者は、照合では `client`（カラムは「利用者名」）と呼ぶ。
+- 職員のテーブルは `users`、Go は `staff` と呼ぶ。API のパスは `/users` である。
 - サービスコードは、予定の管理では半角の数字（`訪看I2`）、照合では正規化の後の全角の数字（`訪看I２`）で持つ。
 - 文書の表記は、ここの「用語」の列にそろえる。揺れやすい表記は `prh.yml` の規則が止める。
 
@@ -69,5 +79,5 @@ status: stable
 - [訪問の情報](domain/visit.md) — 訪問の予定に付く利用者と職員とサービス
 - [職員とログイン](domain/staff-login.md) — 初回のログインで `sub` を職員に結び付ける
 - [事業所の分離](domain/facility.md) — 事業所をまたぐ参照の拒否
-- [権限](domain/permission.md) — 役職の既定と職員ごとの権限
+- [権限](domain/permission.md) — 役職のデフォルトの権限と職員ごとの権限
 - [照合](domain/receipt-check.md) — 予定と実績の対の作り方と区分の決め方

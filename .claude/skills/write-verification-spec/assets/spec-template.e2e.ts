@@ -1,4 +1,4 @@
-// 証跡を撮る spec のひな形。context/testing/evidence.md にある spec の置き場に写し、<…> を埋める。
+// エビデンスを撮る spec のテンプレート。context/testing/evidence.md にある spec の配置先にコピーし、<…> を埋める。
 // シナリオアウトラインでないシナリオは、CASES を消し、body の c を外してシナリオの文と操作を直に書き、recordEvidence に example を渡さない。
 // context に kit を呼ぶ薄い層があれば、TARGET と VARIANTS をその層から import して置き換える。
 import { test, type Page } from '@playwright/test'
@@ -14,21 +14,21 @@ import {
   type Scenario,
 } from '<packages/e2e/kit/evidence への相対パス>/index.js'
 
-// <何を撮るか>。判定は、人が動画を見て行う。字幕の文はシナリオの文を写す
+// <何を撮るか>。判定は、人が動画を見て行う。字幕の文はシナリオの文をコピーする
 const SCENARIO: Scenario = {
   issue: '<要求の issue 番号>',
   id: '<@scenario-id>',
   actor: '<アクター>',
-  // 置き場のフォルダの名前（<issue>/<アクター>/S<n>_<シナリオ名>/）になる。検証シナリオの pull request の証跡の名前と同じにする
+  // 配置先のフォルダの名前（<issue>/<アクター>/S<n>_<シナリオ名>/）になる。検証シナリオの pull request のエビデンスの名前と同じにする
   no: 0,
   title: '<シナリオ名>',
-  // どの静止画にも映りうる、改修前と違ってよい差。<root>/<issue>/differences.ts から import する。比べないときは消す
+  // どのスクリーンショットにも映りうる、改修前と違ってよい差。<root>/<issue>/differences.ts から import する。比べないときは消す
   // differences: [],
 }
 
 // 撮る URL、改修前の URL、撮る版、実施日、環境の名前は、context/testing/evidence.md にある環境変数から読む
 const VARIANTS = variants({
-  baseUrl: process.env['<撮る URL の環境変数>'] ?? '<既定の URL>',
+  baseUrl: process.env['<撮る URL の環境変数>'] ?? '<デフォルトの URL>',
   beforeBaseUrl: process.env['<改修前の URL の環境変数>'],
   only: process.env['<撮る版の環境変数>'],
 })
@@ -36,7 +36,7 @@ const VARIANTS = variants({
 const TARGET: RecordingTarget = {
   dir: evidenceDir({
     root: '<context にある、要求ごとのフォルダを並べる場所>',
-    envName: process.env['<環境の名前の環境変数>'] ?? '<既定の環境の名前>',
+    envName: process.env['<環境の名前の環境変数>'] ?? '<デフォルトの環境の名前>',
     date: evidenceDate(process.env['<実施日の環境変数>']),
     scenario: SCENARIO,
   }),
@@ -49,7 +49,7 @@ const TARGET: RecordingTarget = {
   },
 }
 
-/** シナリオの例の表の行。value は pull request のチェックの「<列>=<値>」の値を写す */
+/** シナリオの例の表の行。value は pull request のチェックの「<列>=<値>」の値をコピーする */
 const CASES: { no: number; value: string; expected: string; act: (page: Page) => Promise<void> }[] =
   [
     {
@@ -70,7 +70,7 @@ const body = async ({ page, step, check }: Recording, c: (typeof CASES)[number])
   // 操作の間に見る判定の文は、操作の前に 2 行目以降で出す。字幕は次に変えるまで残る
   await step(`もし <操作の文>\nならば ${c.expected}`)
   await c.act(page)
-  // その時点の画面で判定できる文は check で出し、静止画を撮る
+  // その時点の画面で判定できる文は check で出し、スクリーンショットを撮る
   await check(`ならば ${c.expected}`)
 
   // シナリオに無い操作は、前に「(撮影のため、…)」を出してから行う

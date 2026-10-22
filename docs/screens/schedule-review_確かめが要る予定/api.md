@@ -26,13 +26,13 @@
 
 全ての操作は、事業所の確認の後に、ログインした職員が職員の管理の権限（`staff.manage`）を持つかを確かめ、持たなければ 403（`forbidden`）を返す。
 
-| operationId | メソッドとパス | 要求 | 成功の応答 | 誤り |
+| operationId | メソッドとパス | リクエスト | 成功のレスポンス | エラー |
 | --- | --- | --- | --- | --- |
 | `listCalendarExportIssues` | `GET /v1/facilities/{facility_id}/calendar_export_issues` | なし | 200。`items` に `CalendarExportIssue` の配列 | なし |
 | `createCalendarExportRetry` | `POST /v1/calendar_exports/{calendar_export_id}/retries` | なし | 202。`CalendarExport` | 404 `not_found`: 書き出しが無い。409 `export_not_in_review`: 確かめが要る書き出しでない。すでに書き直す待ちにしたか、書き終えた |
 | `createCalendarExportAcceptance` | `POST /v1/calendar_exports/{calendar_export_id}/acceptances` | なし | 200。`status` が `succeeded` の `CalendarExport` | 404 `not_found`。409 `export_not_in_review`、`export_not_acceptable`（`acceptable` が false）、`external_change_unappliable`（Google の予定を読み替えられない）。422 `calendar_unreadable`、502 `calendar_unavailable`、503 `calendar_not_configured` |
 
-- `listCalendarExportIssues` は、書き出しのうち `status` が `conflict` か `failed` のものを返す。予定の題名、利用者名、カレンダーの ID は返さない。
+- `listCalendarExportIssues` は、書き出しのうち `status` が `conflict` か `failed` のものを返す。予定のタイトル、利用者名、カレンダーの ID は返さない。
 - `CalendarExport` は、`id`、`schedule_id`、`recurring_schedule_id`、`status`、`error_code`、`attempts`、`updated_at` を持つ。`schedule_id` と `recurring_schedule_id` は、どちらか一方だけに値がある。
   - `status` は次のどれか。
     - `pending`: 書く待ち

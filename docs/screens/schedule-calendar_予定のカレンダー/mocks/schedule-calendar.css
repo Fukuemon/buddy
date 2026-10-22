@@ -112,7 +112,7 @@
     display: none;
   }
 
-  /* ドロワーと覆いは、画面の上端から下端まで届かせる。--mock-height は mock.js が .screen に置く端末の高さ。2px は枠線 */
+  /* ドロワーと覆いは、画面の上端から下端まで届かせる。--mock-height は mock.js が .screen に置くデバイスの高さ。2px は枠線 */
   .sc-drawer.is-open {
     position: absolute;
     top: 0;
