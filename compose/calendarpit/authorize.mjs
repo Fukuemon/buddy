@@ -1,5 +1,5 @@
-// calendarpit の同意の画面を通して予定の API の refresh token を取り、Application Default Credentials の形（authorized_user）で書く。
-// calendarpit はサービスアカウントの token を出さないので、予定の API は fixture の利用者 schedule-api として Calendar API を呼ぶ。
+// calendarpit の同意の画面を通して予定の API と照合の API が使う refresh token を取り、Application Default Credentials の形（authorized_user）で書く。
+// calendarpit はサービスアカウントの token を出さないので、予定の API と照合の API は fixture の利用者 schedule-api として Calendar API を呼ぶ。
 //
 //	node authorize.mjs <calendarpit の URL> <書き出すファイル>（compose では bun で流す）
 //
