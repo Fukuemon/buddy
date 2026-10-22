@@ -35,6 +35,9 @@ describe('CalendarReviewContainer', () => {
     expect(screen.getByTestId('calendar-review-reason-export-4')).toHaveTextContent(
       'buddy の予定に読み替えられません',
     )
+    expect(screen.getByTestId('calendar-review-reason-export-5')).toHaveTextContent(
+      'buddy でキャンセルした予定が、Google カレンダーで変わっていました。',
+    )
   })
 
   it('確かめてから Google の内容に合わせると、一覧から消える', async () => {
