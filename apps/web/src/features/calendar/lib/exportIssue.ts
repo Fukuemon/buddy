@@ -21,7 +21,7 @@ export const exportIssueReason = (
     case 'not_found':
       return 'Google カレンダーで予定が見つかりません。予定が消されたか、カレンダーの共有が外れていないかを、職員に確かめてください。'
     case 'unappliable':
-      return 'Google カレンダーでの変更を、buddy の予定に読み替えられません。終日の予定、題名の利用者が見つからない予定、繰り返しの予定そのものの変更が当たります。buddy の内容で書き直すか、Google カレンダーで直すよう職員に頼んでください。'
+      return 'Google カレンダーでの変更を、buddy の予定に読み替えられません。終日の予定、タイトルの利用者が見つからない予定、繰り返しの予定そのものの変更が当たります。buddy の内容で書き直すか、Google カレンダーで直すよう職員に頼んでください。'
     case 'rejected':
       return 'Google カレンダーが予定の内容を受け付けませんでした。予定を開いて内容を確かめてください。'
     case 'forbidden':

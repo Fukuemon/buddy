@@ -10,7 +10,7 @@ type FakeEvent = {
   end?: { dateTime?: string }
 }
 
-/** 偽物の Google の、佐藤のカレンダーの予定のうち、題名が summary のものを返す。 */
+/** フェイクの Google の、佐藤のカレンダーの予定のうち、タイトルが summary のものを返す。 */
 const findEvent = async (request: APIRequestContext, summary: string) => {
   const res = await request.get(
     `${FAKE_GOOGLE_URL}/calendars/${encodeURIComponent(SATO.calendarId)}/events`,
@@ -19,7 +19,7 @@ const findEvent = async (request: APIRequestContext, summary: string) => {
   return items.find((event) => event.summary === summary)
 }
 
-/** 偽物の Google の画面の操作と同じく、予定を 1 時間遅らせて etag を変える。 */
+/** フェイクの Google の画面の操作と同じく、予定を 1 時間遅らせて etag を変える。 */
 const shiftInGoogle = async (request: APIRequestContext, eventId: string) => {
   const res = await request.post(`${FAKE_GOOGLE_URL}/view/shift`, {
     form: { calendar: SATO.calendarId, event: eventId },
@@ -28,7 +28,7 @@ const shiftInGoogle = async (request: APIRequestContext, eventId: string) => {
   expect(res.status()).toBe(303)
 }
 
-/** 偽物の Google が、変わった予定を予定の API に渡すかを変える。 */
+/** フェイクの Google が、変わった予定を予定の API に渡すかを変える。 */
 const holdChanges = async (request: APIRequestContext, hold: boolean) => {
   const res = await request.post(`${FAKE_GOOGLE_URL}/view/hold`, {
     form: { calendar: SATO.calendarId, hold: String(hold) },
@@ -37,14 +37,14 @@ const holdChanges = async (request: APIRequestContext, hold: boolean) => {
   expect(res.status()).toBe(303)
 }
 
-/** 偽物の Google の予定の日時を、予定の詳細の日時の形（2026-10-22 10:00 - 11:00）にする。 */
+/** フェイクの Google の予定の日時を、予定の詳細の日時の形（2026-10-22 10:00 - 11:00）にする。 */
 const detailDateTime = (event: FakeEvent | undefined) => {
   const start = event?.start?.dateTime ?? ''
   const end = event?.end?.dateTime ?? ''
   return `${start.slice(0, 10)} ${start.slice(11, 16)} - ${end.slice(11, 16)}`
 }
 
-/** 日の表示で、佐藤の予定のうち題名が title のものを開く。 */
+/** 日の表示で、佐藤の予定のうちタイトルが title のものを開く。 */
 const openSchedule = async (page: Page, title: string) => {
   await page.goto('/schedule?view=day')
   await page
@@ -138,14 +138,14 @@ test.describe('確かめが要る予定', () => {
         await holdChanges(request, false)
       })
 
-      await test.step('Google の内容に合わせると、一覧から消え、buddy の予定が Google カレンダーの題名と日時になる', async () => {
+      await test.step('Google の内容に合わせると、一覧から消え、buddy の予定が Google カレンダーのタイトルと日時になる', async () => {
         await page
           .getByTestId(/^calendar-review-row-/)
           .filter({ hasText: SATO.name })
           .getByTestId(/^calendar-review-accept-/)
           .click()
         const dialog = page.getByTestId('calendar-accept-dialog')
-        await expect(dialog).toContainText('buddy で変えた題名と日時は消えます。')
+        await expect(dialog).toContainText('buddy で変えたタイトルと日時は消えます。')
         await page.getByTestId('calendar-accept-submit').click()
         await expect(dialog).toBeHidden()
         await expect(

@@ -86,7 +86,7 @@ export const acceptErrorMessage = (error: unknown) => {
     case 'export_not_acceptable':
       return 'この予定は、Google カレンダーの内容に合わせられません。buddy の内容で書き直してください。'
     case 'external_change_unappliable':
-      return 'Google カレンダーの予定を、buddy の予定に読み替えられません。終日の予定か、題名の利用者が見つからない予定です。buddy の内容で書き直すか、Google カレンダーで直すよう職員に頼んでください。'
+      return 'Google カレンダーの予定を、buddy の予定に読み替えられません。終日の予定か、タイトルの利用者が見つからない予定です。buddy の内容で書き直すか、Google カレンダーで直すよう職員に頼んでください。'
     case 'calendar_unreadable':
       return 'Google カレンダーを読めません。カレンダーの共有が外れていないかを、職員に確かめてください。'
     case 'calendar_not_configured':

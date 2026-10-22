@@ -21,7 +21,7 @@ export default defineConfig({
   use: {
     ...devices['Desktop Chrome'],
     baseURL: BASE_URL,
-    // 予定の API と偽物の Google は Asia/Tokyo の時刻で予定を持つ。CI の UTC で画面の時刻がずれないよう、事業所の時間帯にそろえる
+    // 予定の API とフェイクの Google は Asia/Tokyo の時刻で予定を持つ。CI の UTC で画面の時刻がずれないよう、事業所の時間帯にそろえる
     timezoneId: 'Asia/Tokyo',
     actionTimeout: TIMEOUTS.action,
     navigationTimeout: TIMEOUTS.navigation,
