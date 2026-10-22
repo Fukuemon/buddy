@@ -9,7 +9,7 @@ import (
 	"unicode"
 )
 
-// GAS の splitTitle の正規表現 /【(.*?)】\s*(.*)/ をコピーした。
+// GAS の splitTitle の正規表現 /【(.*?)】\s*(.*)/ を移植した。
 // JavaScript の \s は全角スペースを含むので、Unicode の空白に広げた。
 var titlePattern = regexp.MustCompile(`【(.*?)】[\s\p{Zs}]*(.*)`)
 

@@ -34,7 +34,7 @@ type Record struct {
 	Service string
 	// Duration は提供時間（分）である。入力が空なら nil にする。
 	Duration *int
-	// Additions は、実績の加算①〜加算⑤のうち空でない値を、カラムの順に並べたものである。予定では nil である。
+	// Additions は、実績の加算①〜加算⑤のうち空でない値を、列の順に並べたものである。予定では nil である。
 	Additions []string
 }
 

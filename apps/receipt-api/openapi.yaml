@@ -133,7 +133,7 @@ paths:
               schema: { $ref: "#/components/schemas/Error" }
               example: { code: payload_too_large, message: "本文が上限を超えている" }
         "422":
-          description: 入力の CSV に誤りがある（`invalid_csv`）。行のエラーは `errors` に行番号つきで入る。CSV が空のとき、カラムが足りないとき、文字コードを読めないときは、`errors` を持たない
+          description: 入力の CSV に誤りがある（`invalid_csv`）。行のエラーは `errors` に行番号つきで入る。CSV が空のとき、列が足りないとき、文字コードを読めないときは、`errors` を持たない
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
@@ -146,7 +146,7 @@ paths:
                     errors:
                       - { source: visits, line: 3, column: 利用者名, message: 空である }
                 missingColumn:
-                  summary: カラムが足りない
+                  summary: 列が足りない
                   value: { code: invalid_csv, message: "visits の CSV に列がない: 提供時間" }
         "500":
           description: サーバーのエラー（`internal`）
@@ -220,7 +220,7 @@ components:
           description: 入力の CSV の行番号。ヘッダーが 1 行目
         column:
           type: string
-          description: エラーのあるカラムの名前。行全体のエラーでは省く
+          description: エラーのある列の名前。行全体のエラーでは省く
         message: { type: string }
 
     InputSource:

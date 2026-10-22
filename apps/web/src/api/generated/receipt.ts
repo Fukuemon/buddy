@@ -84,7 +84,7 @@ export interface components {
             source: components["schemas"]["InputSource"];
             /** @description 入力の CSV の行番号。ヘッダーが 1 行目 */
             line: number;
-            /** @description エラーのあるカラムの名前。行全体のエラーでは省く */
+            /** @description エラーのある列の名前。行全体のエラーでは省く */
             column?: string;
             message: string;
         };
@@ -315,7 +315,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description 入力の CSV に誤りがある（`invalid_csv`）。行のエラーは `errors` に行番号つきで入る。CSV が空のとき、カラムが足りないとき、文字コードを読めないときは、`errors` を持たない */
+            /** @description 入力の CSV に誤りがある（`invalid_csv`）。行のエラーは `errors` に行番号つきで入る。CSV が空のとき、列が足りないとき、文字コードを読めないときは、`errors` を持たない */
             422: {
                 headers: {
                     [name: string]: unknown;

@@ -113,7 +113,7 @@ func TestChecksErrors(t *testing.T) {
 	}{
 		{"schedules がない", map[string][]byte{FieldVisits: testdata(t, "visits_utf8.csv")}, http.StatusBadRequest, openapi.MissingFile, 0},
 		{"visits がない", map[string][]byte{FieldSchedules: testdata(t, "schedules_utf8.csv")}, http.StatusBadRequest, openapi.MissingFile, 0},
-		{"カラムが足りない", map[string][]byte{FieldVisits: []byte("訪問日\n2024/04/01\n"), FieldSchedules: testdata(t, "schedules_utf8.csv")}, http.StatusUnprocessableEntity, openapi.InvalidCsv, 0},
+		{"列が足りない", map[string][]byte{FieldVisits: []byte("訪問日\n2024/04/01\n"), FieldSchedules: testdata(t, "schedules_utf8.csv")}, http.StatusUnprocessableEntity, openapi.InvalidCsv, 0},
 		{"行のエラー", map[string][]byte{FieldVisits: badVisits, FieldSchedules: testdata(t, "schedules_utf8.csv")}, http.StatusUnprocessableEntity, openapi.InvalidCsv, 1},
 	}
 	for _, tt := range tests {

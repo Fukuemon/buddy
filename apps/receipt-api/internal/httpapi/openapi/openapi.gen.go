@@ -233,7 +233,7 @@ type Result struct {
 
 // RowError defines model for RowError.
 type RowError struct {
-	// Column エラーのあるカラムの名前。行全体のエラーでは省く
+	// Column エラーのある列の名前。行全体のエラーでは省く
 	Column *string `json:"column,omitempty"`
 
 	// Line 入力の CSV の行番号。ヘッダーが 1 行目
