@@ -27,6 +27,7 @@ describe('StaffScheduleDayGrid', () => {
       start: '2026-10-20T09:00:00+09:00',
       end: '2026-10-20T09:30:00+09:00',
       color: 'red',
+      cancelled: false,
     }
     render(<Default events={[event]} />)
     expect(screen.getByTestId('day-grid-slot-staff-1-09:00').style.height).toBe('44px')
@@ -55,5 +56,21 @@ describe('StaffScheduleDayGrid', () => {
   ])('%s とき、横線を引かない', (_, now) => {
     render(<Default now={now} />)
     expect(screen.queryByTestId('day-grid-now-staff-1')).not.toBeInTheDocument()
+  })
+
+  it('キャンセルした予定は「キャンセル」の印と取り消し線で出す', () => {
+    const event = {
+      id: 'e1',
+      title: '訪問',
+      staffId: 'staff-1',
+      start: '2026-10-20T09:00:00+09:00',
+      end: '2026-10-20T09:30:00+09:00',
+      color: 'red',
+      cancelled: true,
+    }
+    render(<Default events={[event]} />)
+    const button = screen.getByTestId('schedule-event-e1')
+    expect(button).toHaveTextContent('キャンセル')
+    expect(button.querySelector('.line-through')).toHaveTextContent('09:00-09:30 訪問')
   })
 })

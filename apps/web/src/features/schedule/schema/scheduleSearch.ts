@@ -6,11 +6,16 @@ import { CALENDAR_VIEWS } from '../constants/calendarView'
 export const scheduleSearchDefaults = {
   view: 'month',
   staff: [],
-} as const satisfies { view: (typeof CALENDAR_VIEWS)[number]; staff: string[] }
+  cancelled: false,
+} as const satisfies {
+  view: (typeof CALENDAR_VIEWS)[number]
+  staff: string[]
+  cancelled: boolean
+}
 
 /**
  * `/schedule` の search params。date を省くと今日を表示する。
- * staff が空のときは、全ての職員の予定を表示する。
+ * staff が空のときは、全ての職員の予定を表示する。cancelled が true のときだけ、キャンセルした予定も表示する。
  */
 export const scheduleSearchSchema = z.object({
   view: z
@@ -19,14 +24,16 @@ export const scheduleSearchSchema = z.object({
     .catch(scheduleSearchDefaults.view),
   date: z.iso.date().optional().catch(undefined),
   staff: z.array(z.string()).default([]).catch([]),
+  cancelled: z.boolean().default(false).catch(false),
 })
 
 /** 検証した後の `/schedule` の search params。 */
 export type ScheduleSearch = z.infer<typeof scheduleSearchSchema>
 
 /** search params から、カレンダーの表示に使う項目だけを取り出す。モーダルを閉じるときに使う。 */
-export const pickCalendarSearch = ({ view, date, staff }: ScheduleSearch): ScheduleSearch => ({
+export const pickCalendarSearch = ({
   view,
   date,
   staff,
-})
+  cancelled,
+}: ScheduleSearch): ScheduleSearch => ({ view, date, staff, cancelled })

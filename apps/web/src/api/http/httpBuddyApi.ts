@@ -81,7 +81,7 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
 
   return {
     schedules: {
-      list: async (facilityId, { from, to, staffIds }) => {
+      list: async (facilityId, { from, to, staffIds, includeCancelled }) => {
         const fromTime = Date.parse(from)
         const toTime = Date.parse(to)
         const dateFrom = splitDateTime(from).date
@@ -95,7 +95,7 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
           }),
         )
         return [...schedules, ...recurring.flatMap((rs) => expandRecurring(rs, dateFrom, dateTo))]
-          .filter((schedule) => schedule.cancel === null)
+          .filter((schedule) => includeCancelled === true || schedule.cancel === null)
           .map(fromApiSchedule)
           .filter(
             (schedule) =>

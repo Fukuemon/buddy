@@ -178,6 +178,10 @@ export const createMockSchedules = (base: Date): Schemas['Schedule'][] => {
     }),
     schedule('schedule-4', 1, 3, ['15:00', '16:29'], visit(2, 3, '訪看I4')),
     schedule('schedule-5', -2, 0, ['14:00', '16:00'], { title: '研修' }),
+    schedule('schedule-6', 0, 3, ['11:00', '11:59'], {
+      ...visit(2, 3, '訪看I3'),
+      cancel: { id: 'cancel-6', schedule_id: 'schedule-6', reason: '利用者の体調不良' },
+    }),
   ]
 }
 

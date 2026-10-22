@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './ScheduleDetailModal.stories'
 
-const { Visit, Normal } = composeStories(stories)
+const { Visit, Normal, Cancelled } = composeStories(stories)
 
 describe('ScheduleDetailModal', () => {
   it('訪問の予定は利用者とサービスコードを出す', () => {
@@ -29,5 +29,13 @@ describe('ScheduleDetailModal', () => {
 
     await userEvent.click(screen.getByTestId('schedule-detail-edit'))
     expect(onEdit).toHaveBeenCalledOnce()
+  })
+
+  it('キャンセルした予定は理由を出し、編集のボタンを出さない', () => {
+    render(<Cancelled />)
+    expect(screen.getByTestId('schedule-detail-cancel')).toHaveTextContent(
+      'キャンセルした予定です。理由: 利用者の体調不良',
+    )
+    expect(screen.queryByTestId('schedule-detail-edit')).not.toBeInTheDocument()
   })
 })

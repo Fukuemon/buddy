@@ -37,6 +37,11 @@ export const Week: Story = { parameters: route({ url: '/schedule?view=week' }) }
 
 export const Day: Story = { parameters: route({ url: '/schedule?view=day' }) }
 
+/** キャンセルした予定を出す切り替えを入れた日の表示。 */
+export const DayWithCancelled: Story = {
+  parameters: route({ url: '/schedule?view=day&cancelled=true' }),
+}
+
 export const Empty: Story = { parameters: route({ api: emptyBuddyApi() }) }
 
 export const Loading: Story = { parameters: route({ api: pendingBuddyApi() }) }

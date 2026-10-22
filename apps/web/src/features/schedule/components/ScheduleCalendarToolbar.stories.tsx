@@ -15,6 +15,8 @@ const meta = {
     onToday: fn(),
     onViewChange: fn(),
     onDateChange: fn(),
+    showCancelled: false,
+    onShowCancelledChange: fn(),
     onCreate: fn(),
   },
 } satisfies Meta<typeof ScheduleCalendarToolbar>

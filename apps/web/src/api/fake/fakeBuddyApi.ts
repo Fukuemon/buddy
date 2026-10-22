@@ -94,12 +94,13 @@ export const createFakeBuddyApi = ({
 
   return {
     schedules: {
-      list: async (facilityId, { from, to, staffIds }) => {
+      list: async (facilityId, { from, to, staffIds, includeCancelled }) => {
         assertFacility(facilityId)
         const fromTime = Date.parse(from)
         const toTime = Date.parse(to)
         return [...schedules.values()].filter(
           (schedule) =>
+            (includeCancelled === true || schedule.cancel === undefined) &&
             Date.parse(schedule.endsAt) > fromTime &&
             Date.parse(schedule.startsAt) < toTime &&
             (staffIds === undefined ||

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>schedule-detail 訪問の予定</title>
+    <link rel="stylesheet" href="../../_common/mock.css" />
+    <link rel="stylesheet" href="../../_common/tokens.css" />
+    <link rel="stylesheet" href="../../_common/wireframe.css" />
+    <link rel="stylesheet" href="schedule-detail.css" />
+  </head>
+  <body data-view="desktop">
+    <div class="stage">
+      <div class="screen">
+        <div class="screen-body">
+          <div class="wf-modal-stage">
+            <div aria-hidden="true" class="wf-bg-calendar"></div>
+            <div class="wf-overlay" data-m="1" tabindex="-1" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html"></div>
+            <div aria-label="予定の詳細" class="wf-modal" data-m="2" data-testid="schedule-detail-modal" role="dialog">
+              <div class="wf-modal__header">
+                <span aria-label="閉じる" class="wf-btn wf-btn--icon" data-m="3" data-testid="modal-close" data-escape data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html">×</span>
+                <h2 class="wf-modal__title" data-m="4">予定の詳細</h2>
+              </div>
+              <div class="wf-modal__body">
+                <p class="sd-cancel" data-m="5" data-testid="schedule-detail-cancel"><strong>キャンセルした予定です。</strong>理由: 利用者の体調不良</p>
+                <h3 class="sd-datetime" data-m="6" data-testid="schedule-detail-datetime">2026年10月20日（火） 09:00〜09:29</h3>
+                <dl class="wf-rows sd-rows">
+                  <div class="wf-row" data-m="7">
+                    <dt>種類</dt>
+                    <dd>訪問</dd>
+                  </div>
+                  <div class="wf-row" data-m="8">
+                    <dt>担当者</dt>
+                    <dd><span class="wf-text"></span></dd>
+                  </div>
+                </dl>
+                <section class="sd-section" data-testid="schedule-detail-visit">
+                  <h3 class="sd-section__title" data-m="9">訪問の情報</h3>
+                  <dl class="wf-rows sd-rows sd-rows--2col">
+                    <div class="wf-row" data-m="10">
+                      <dt>利用者</dt>
+                      <dd><span class="wf-text"></span></dd>
+                    </div>
+                    <div class="wf-row" data-m="11">
+                      <dt>サービスコード</dt>
+                      <dd>訪看I2</dd>
+                    </div>
+                    <div class="wf-row" data-m="12">
+                      <dt>訪問の種類</dt>
+                      <dd>緊急</dd>
+                    </div>
+                  </dl>
+                </section>
+                <section class="sd-section">
+                  <h3 class="sd-section__title">メモ</h3>
+                  <p class="sd-memo" data-m="13"><span class="wf-text wf-text--l"></span></p>
+                </section>
+              </div>
+              <div class="wf-modal__footer">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="markers"></div>
+    </div>
+    <script src="../../_common/mock.js"></script>
+    <script src="../../_common/interact.js"></script>
+  </body>
+</html>

@@ -1,7 +1,10 @@
+import { clsx } from 'clsx'
+
 import type { Staff } from '#/api/types'
 
 import { addMinutesToTimeKey, toTimeKey } from '../lib/dateTime'
 import type { ScheduleCalendarEvent } from '../lib/toCalendarEvents'
+import { CancelledMark } from './CancelledMark'
 
 const START_HOUR = 6
 const END_HOUR = 22
@@ -94,16 +97,29 @@ export const StaffScheduleDayGrid = ({
                 )
                 return (
                   <button
-                    className="absolute inset-x-1 overflow-hidden rounded-4 px-1.5 py-0.5 text-left text-caption text-text-inverse focus-visible:focus-ring"
+                    className={clsx(
+                      'absolute inset-x-1 overflow-hidden rounded-4 px-1.5 py-0.5 text-left text-caption focus-visible:focus-ring',
+                      // キャンセルした予定は面を薄くし、職員の色は左の線にだけ残す
+                      event.cancelled
+                        ? 'border-l-4 bg-surface-subtle text-text-secondary'
+                        : 'text-text-inverse',
+                    )}
                     data-testid={`schedule-event-${event.id}`}
                     key={event.id}
                     onClick={() => onEventClick(event.id)}
-                    style={{ top, height, backgroundColor: event.color }}
+                    style={
+                      event.cancelled
+                        ? { top, height, borderColor: event.color }
+                        : { top, height, backgroundColor: event.color }
+                    }
                     type="button"
                   >
                     <span className="block truncate">
-                      {toTimeKey(new Date(event.start))}-{toTimeKey(new Date(event.end))}{' '}
-                      <span className="font-bold">{event.title}</span>
+                      {event.cancelled && <CancelledMark />}
+                      <span className={event.cancelled ? 'line-through' : undefined}>
+                        {toTimeKey(new Date(event.start))}-{toTimeKey(new Date(event.end))}{' '}
+                        <span className="font-bold">{event.title}</span>
+                      </span>
                     </span>
                   </button>
                 )
