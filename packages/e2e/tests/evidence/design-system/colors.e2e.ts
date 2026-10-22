@@ -1,10 +1,6 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 import { EVIDENCE_VARIANTS, recordPrEvidence, storyUrl } from '../../fixtures/evidence'
-
-/** testid の要素の、スタイルを当てた後の色を rgb() の文字列で返す。字幕に色の値を出すために使う。 */
-const colorOf = (page: Page, testId: string, property: 'backgroundColor' | 'color') =>
-  page.getByTestId(testId).evaluate((element, name) => getComputedStyle(element)[name], property)
 
 test.describe('デザインシステム', () => {
   test.describe('主の色と画面の地', () => {
@@ -35,7 +31,7 @@ test.describe('デザインシステム', () => {
 
             const body = await page.evaluate(() => getComputedStyle(document.body).backgroundColor)
             await check(
-              `「予定を作成」の面の色は ${await colorOf(page, 'schedule-create-open', 'backgroundColor')}、画面の地は ${body}`,
+              `「予定を作成」の面の色は ${await create.evaluate((element) => getComputedStyle(element).backgroundColor)}、画面の地は ${body}`,
             )
 
             await step('Tab キーで「予定を作成」にフォーカスを移す')
