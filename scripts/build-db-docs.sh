@@ -1,5 +1,5 @@
 #!/bin/sh
-# schedule-api のマイグレーションを使い捨ての PostgreSQL に適用し、tbls でテーブル定義書と ER 図を docs/db/schedule-api/ に生成し直す。
+# 予定の API のマイグレーションを使い捨ての PostgreSQL に適用し、tbls でテーブル定義書と ER 図を docs/db/schedule/ に生成し直す。
 # テーブルとカラムの説明はマイグレーションの COMMENT ON に、ER 図を分ける業務のまとまり（viewpoints）は services/schedule/.tbls.yml に書く。
 # 生成の後に tbls lint で、どの viewpoint にも入らない表がないかを確かめる。
 # 最後に、生成した viewpoint の文書が全て zensical.toml の nav にあるかを確かめる。
@@ -31,7 +31,7 @@ done
 dsn="postgres://buddy:$password@127.0.0.1:$port/buddy?sslmode=disable"
 tbls doc --rm-dist --config services/schedule/.tbls.yml "$dsn"
 # 版の文字列は、ローカル環境と CI で違う CPU の名前とコンパイラを含むので、版の番号だけを残す
-schema=docs/db/schedule-api/schema.json
+schema=docs/db/schedule/schema.json
 sed 's/"database_version": "\(PostgreSQL [0-9.]*\)[^"]*"/"database_version": "\1"/' "$schema" >"$schema.tmp"
 mv "$schema.tmp" "$schema"
 tbls lint --config services/schedule/.tbls.yml "$dsn"
@@ -39,7 +39,7 @@ tbls lint --config services/schedule/.tbls.yml "$dsn"
 # nav をコメントにした行に当たらないよう、コメントの行を外してから照合する
 nav=$(grep -v '^[[:space:]]*#' zensical.toml)
 missing=0
-for doc in docs/db/schedule-api/viewpoint-*.md; do
+for doc in docs/db/schedule/viewpoint-*.md; do
   if [ ! -e "$doc" ]; then
     echo "viewpoint の文書が生成されていない" >&2
     exit 1

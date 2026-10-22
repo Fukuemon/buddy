@@ -52,21 +52,21 @@ nav = [
   ] },
   { "API の仕様" = [
     # 各アプリの openapi.yaml を Scalar で描く単独のページ（docs/api/）。サイトのテーマの外で開く
-    { "予定の API" = "/api/schedule-api.html" },
-    { "照合の API" = "/api/receipt-api.html" },
+    { "予定の API" = "/api/schedule.html" },
+    { "照合の API" = "/api/receipt.html" },
   ] },
   # 予定の管理のテーブル。tbls の生成物（scripts/build-db-docs.sh）で、viewpoint の文書は全て載せる（build-db-docs.sh が確かめる）
   # テーブルごとの文書は載せず、テーブルの一覧と viewpoint の文書から開く
   { "DB の設計" = [
-    { "テーブルの一覧" = "db/schedule-api/README.md" },
+    { "テーブルの一覧" = "db/schedule/README.md" },
     # Liam ERD で描く、操作できる ER 図（pnpm build:erd）。同じサイトの /erd/ に置き、ローカルの zensical serve には無い
     { "ER 図（Liam ERD）" = "/erd/" },
-    { "事業所と組織" = "db/schedule-api/viewpoint-organization.md" },
-    { "職員と権限" = "db/schedule-api/viewpoint-policies.md" },
-    { "利用者" = "db/schedule-api/viewpoint-patients.md" },
-    { "予定と訪問" = "db/schedule-api/viewpoint-schedules.md" },
-    { "繰り返しの予定" = "db/schedule-api/viewpoint-recurring.md" },
-    { "外部のカレンダーの取り込みと書き出し" = "db/schedule-api/viewpoint-calendar-sync.md" },
+    { "事業所と組織" = "db/schedule/viewpoint-organization.md" },
+    { "職員と権限" = "db/schedule/viewpoint-policies.md" },
+    { "利用者" = "db/schedule/viewpoint-patients.md" },
+    { "予定と訪問" = "db/schedule/viewpoint-schedules.md" },
+    { "繰り返しの予定" = "db/schedule/viewpoint-recurring.md" },
+    { "外部のカレンダーの取り込みと書き出し" = "db/schedule/viewpoint-calendar-sync.md" },
   ] },
   { "ADR" = [
     "adr/0001-auth.md",

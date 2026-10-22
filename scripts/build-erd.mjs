@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * tbls が出す docs/db/schedule-api/schema.json から、Liam ERD の CLI で ER 図のサイトを erd/ に作り直す。
+ * tbls が出す docs/db/schedule/schema.json から、Liam ERD の CLI で ER 図のサイトを erd/ に作り直す。
  * Liam ERD 0.7.24 の tbls の形式の読み込みは、viewpoint の id（tbls 1.96 で足された項目）を知らずに拒むので、
  * id を外したコピーを一時のディレクトリに置いて渡す。
  *
@@ -14,7 +14,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
-const schema = JSON.parse(readFileSync(join(root, 'docs/db/schedule-api/schema.json'), 'utf8'))
+const schema = JSON.parse(readFileSync(join(root, 'docs/db/schedule/schema.json'), 'utf8'))
 for (const viewpoint of schema.viewpoints ?? []) delete viewpoint.id
 
 const dir = mkdtempSync(join(tmpdir(), 'buddy-erd-'))

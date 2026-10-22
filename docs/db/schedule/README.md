@@ -1,4 +1,4 @@
-# schedule-api
+# schedule
 
 ## Viewpoints
 
