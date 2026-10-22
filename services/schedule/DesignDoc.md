@@ -1,7 +1,7 @@
 ---
 type: feature-design
 title: 予定の管理
-description: schedule-api のコードの層、テーブルの構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更とキャンセル、Google カレンダーの取り込み、書き出し、同期
+description: schedule-api のコードの構成、テーブルの構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更とキャンセル、Google カレンダーの取り込み、書き出し、同期
 status: stable
 governs: services/schedule
 verified_commit: 6692e2f
@@ -50,9 +50,9 @@ schedule-api は、事業所ごとの予定、職員、利用者、権限を持�
 | テスト | `internal/inmem` | 機能のパッケージのテストが共有する、メモリ上のリポジトリ |
 | アダプタ | `internal/postgres` | 機能のパッケージのリポジトリを、pgx/v5 の接続のプールと sqlc の生成コード（`sqlcgen`）で実装する |
 | アダプタ | `internal/ulid` | `IDGenerator` を ULID で実装し、ID の形を確かめる |
-| アダプタ | `internal/gcal` | `calendar.EventSource`（`Reader`）と `calendar.EventWriter`（`Writer`）を Google Calendar API で実装する。繰り返しの予定を展開せずに、親の予定と例外の回を読み、回ごとにする繰り返しだけを events.instances で回に展開する。認証した `calendar.Service` は `cmd` が渡す。テストと compose のフェイクの API は `internal/gcal/gcaltest` に置く |
+| アダプタ | `internal/gcal` | `calendar.EventSource`（`Reader`）と `calendar.EventWriter`（`Writer`）を Google Calendar API で実装する。繰り返しの予定を展開せずに、親の予定と例外の回を読み、回ごとにする繰り返しだけを events.instances で回に展開する。`calendar.Accounts` の実装（`Accounts`）は、事業所の組織のサービスアカウントで `Reader` と `Writer` を作る。テストのフェイクの API は `internal/gcal/gcaltest` に置く |
 | 設定 | `internal/config` | 環境変数から API とマイグレーションの設定を読む。DB の接続の値は自分の型で持ち、`cmd` がアダプタの設定にコピーする |
-| 共有 | `packages/go/oidc`、`packages/go/healthcheck`、`packages/go/gcaltitle`（別の module） | access token の JWKS での検証、テストと `cmd/devissuer` が使うフェイクの Issuer（`oidctest`）、`api healthcheck`、Google カレンダーの予定のタイトルの解釈。receipt-api と共有する（ADR-0007） |
+| 共有 | `packages/go/oidc`、`packages/go/healthcheck`、`packages/go/gcaltitle`、`packages/go/gcalauth`（別の module） | access token の JWKS での検証、テストと `cmd/devissuer` が使うフェイクの Issuer（`oidctest`）、`api healthcheck`、Google カレンダーの予定のタイトルの解釈、組織ごとのサービスアカウントで Google Calendar API を呼ぶクライアント（ADR-0012）。receipt-api と共有する（ADR-0007） |
 | アダプタ | `internal/httpapi/openapi` | `openapi.yaml` から生成した型と strict server のインターフェイス |
 | アダプタ | `internal/httpapi` | 生成したインターフェイスを実装するハンドラと、gin のミドルウェア。リクエストは、埋め込んだ `openapi.yaml` の定義で確かめる |
 | cmd | `cmd/api`、`cmd/migrate`、`cmd/devissuer`、`cmd/gcalhold` | 起動、マイグレーションとシード、ローカルで試すためのフェイクの Issuer、compose の calendarpit の前に置く中継（本番のイメージに入れない） |
@@ -63,12 +63,12 @@ schedule-api は、事業所ごとの予定、職員、利用者、権限を持�
 
 ### テーブルの構成
 
-次の図は、schedule-api の全てのテーブルと、その間の関係を示す。カラム、制約、索引は、マイグレーションから生成した[テーブル定義書](https://github.com/Fukuemon/buddy/blob/develop/docs/db/schedule-api/README.md)（文書のサイトでは「DB の設計」の「テーブルの一覧」）にある。テーブル定義書の Viewpoints は、事業所と組織、職員と権限、利用者、予定と訪問、繰り返しの予定、外部のカレンダーの取り込みの観点ごとに、テーブルを絞った ER 図を持つ。  
-DB は PostgreSQL 18 で、テーブルは 1 本の初期のマイグレーションで作る（ADR-0011）。テーブルとカラムの説明は、マイグレーションの `COMMENT ON` に書く。
+次の図は、schedule-api の全てのテーブルと、その間の関係を示す。カラム、制約、インデックスは、マイグレーションから生成した[テーブル定義書](https://github.com/Fukuemon/buddy/blob/develop/docs/db/schedule-api/README.md)（文書のサイトでは「DB の設計」の「テーブルの一覧」）にある。テーブル定義書の Viewpoints は、事業所と組織、職員と権限、利用者、予定と訪問、繰り返しの予定、外部のカレンダーの取り込みと書き出しの観点ごとに、テーブルを絞った ER 図を持つ。  
+DB は PostgreSQL 18 で、見直したテーブルは初期のマイグレーションで作り、書き出しと同期のカラムとテーブルは段階ごとのマイグレーションで足す（ADR-0011）。テーブルとカラムの説明は、マイグレーションの `COMMENT ON` に書く。
 
 - ADR-0011: [予定の API の DB を PostgreSQL にし、見直したテーブルでマイグレーションを作り直す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0011-schedule-api-postgresql.md)
 
-- 主キーは、多くのテーブルが ULID の `id`（`text COLLATE "C"`）である。主キーだけに ULID の形の CHECK を付ける。
+- 主キーは、多くのテーブルが ULID の `id`（`text COLLATE "C"`）である。ULID の形の CHECK は、テーブルが振る `id` の主キーにだけ付ける。
 - `position_policies` と `visit_info_visit_categories` は、2 つの外部キーの組を主キーにする。
 - `recurring_schedule_exclusions` は、`recurring_schedule_id` と `date` の組を主キーにする。
 - `user_policy_targets` は、`id` を主キーにする。対象のカラム（`target_user_id` と `target_team_id`）のどちらかが NULL になり、主キーに入れられないためである。
@@ -116,6 +116,9 @@ erDiagram
   recurring_schedules |o--o| external_event_links : "対応する"
   external_calendars ||--o{ import_runs : "取り込みの記録"
   users ||--o{ import_runs : "確定する"
+  facilities ||--o{ calendar_exports : "持つ"
+  schedules |o--o{ calendar_exports : "書き出しの待ち"
+  recurring_schedules |o--o{ calendar_exports : "書き出しの待ち"
 ```
 
 - 事業所の中のレコードを指す外部キーは、`(facility_id, id)` の組で指す。別の事業所の職員や利用者を指すレコードは、アプリの確認に加えて DB も拒む。
@@ -129,10 +132,10 @@ erDiagram
 - 訪問の区分は、`visit_info_visit_categories` で 1 件の訪問に複数を付けられる。
 - 予定の種類の規則（通常はタイトルが必須、訪問は訪問の情報が必須）は、`schedule_types.code`（`normal`、`visit`）で読む。`name` は表示と一覧の絞り込みに使う。
 - 1 つの訪問の情報は、1 つの予定か 1 つの繰り返しの予定だけが指す（`visit_info_id` の一意の制約）。
-- `is_over_time_work` は、開始の時刻から DB が生成する列である。書き込みには含めない。
-- 外部キーの列には、引く向きに使うものに index を置く。行を消さない固定のマスタ（権限、サービスコード、訪問の区分、予定の種類）を指す列には置かない。
-- 監査の日時は UTC で読み、応答はマイクロ秒までの RFC 3339 の形で返す。
-- `external_calendars`、`external_event_links`、`import_runs` は、Google カレンダーの取り込み（ADR-0009 の段階 1）で使う。`calendar_sync_states` は、同期（段階 3）がカレンダーごとの増分の取得のトークンと読む時刻を持つ。外部の予定のタイトルと本文は、利用者の名前を含むので保存しない。カレンダーを外すときは行を消さずに `external_calendars.disabled_at` を入れ、外部の予定との対応を残す。結び付け直して同じ期間を取り込んでも、予定が重ならないためである。外していないカレンダーは、職員ごとに 1 つにする（部分の一意の index）。
+- `is_over_time_work` は、開始の時刻から DB が生成するカラムである。書き込みには含めない。
+- 外部キーのカラムには、引く向きに使うものにインデックスを置く。行を消さない固定のマスタ（権限、サービスコード、訪問の区分、予定の種類）を指すカラムには置かない。
+- 監査の日時は UTC で読み、レスポンスはマイクロ秒までの RFC 3339 の形で返す。
+- `external_calendars`、`external_event_links`、`import_runs` は、Google カレンダーの取り込み（ADR-0009 の段階 1）で使う。`calendar_sync_states` は、同期（段階 3）がカレンダーごとの増分の取得のトークンと読む時刻を持つ。`calendar_exports` は、書き出し（段階 2）の待ちを持ち、予定ごとに終わっていない行を 1 つだけ持つ。外部の予定のタイトルと本文は、利用者の名前を含むので保存しない。カレンダーを外すときは行を消さずに `external_calendars.disabled_at` を入れ、外部の予定との対応を残す。結び付け直して同じ期間を取り込んでも、予定が重ならないためである。外していないカレンダーは、職員ごとに 1 つにする（部分の一意のインデックス）。
 - 一覧の読み出しには、予定と訪問の情報と名前を結合したビュー（`schedule_details`、`recurring_schedule_details`、`visit_info_details`）を使う。
 - `schedule_types`、`service_codes`、`visit_categories` のレコードは、マイグレーションで入れる。事業所ごとには持たない。サービスコードの提供時間の範囲は、照合の許容範囲と同じ値にする。
 - `policies` の 8 件のレコードは、マイグレーションで入れる。事業所ごとには持たず、API では作らない。認可は `code` で権限を読むので、レコードが環境ごとに違うと判定がずれるためである。
@@ -278,14 +281,14 @@ schedule-api は、Google Calendar API を、事業所ごとのサービスア�
 - ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](https://github.com/Fukuemon/buddy/blob/876381365355f7e4dab03f6dfdb3d6fb8a9f6947/docs/adr/0012-google-calendar-facility-service-accounts.md)
 
 - 組織の ID とサービスアカウントの対応は、運営側が設定のファイル（`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`）で渡す。schedule-api は、事業所の `facilities.org_id` で対応を引く。形は照合の API と同じで、同じファイルを渡せる。
-- 事業所は、要求を受ける操作では、パスの事業所（認証のミドルウェアがトークンの職員の事業所と一致することを確かめる）か、結び付けたカレンダーのレコードの事業所で決める。要求を受けない書き出しと増分の取得は、カレンダーのレコードの事業所（`external_calendars.facility_id`）で決める。要求の本文からは受けない。
+- 事業所は、リクエストを受ける操作では、パスの事業所（認証のミドルウェアがトークンの職員の事業所と一致することを確かめる）か、結び付けたカレンダーのレコードの事業所で決める。リクエストを受けない書き出しと増分の取得は、カレンダーのレコードの事業所（`external_calendars.facility_id`）で決める。リクエストの本文からは受けない。
 - 対応の無い事業所と、組織に結び付けていない事業所のカレンダーの操作は、503 の `calendar_not_configured` を返す。書き出しは、書き直しの回数の上限まで待ちを残す。
 - サービスアカウントごとの Calendar API のクライアントを起動のときに作り、token は有効期限まで使い回す。共有のコードは `packages/go/gcalauth` にある。
 - Application Default Credentials が事業所のサービスアカウントそのものとして動くときは、重ねてなりすまさず、その token を使う。ローカルで検証の事業所のアカウントになりすました Application Default Credentials を使うと、サービスアカウント自身へのトークン作成者のロールが要るためである。見分けは、認証情報のファイルの `client_email`（キー）か、なりすます先の URL（なりすましと Workload Identity Federation）のメールアドレスで行う。メタデータサーバーの認証情報は、別のアカウントとみなす。
 - 実際の Google Calendar API では、サービスアカウントが持つカレンダーに対して、取り込み、書き出し、増分の取得、確かめが要る予定の解き方が動く。職員が共有したカレンダーに「予定の変更」の権限で書けるかは、未確認である。確かめるまで、本番で書き出しを有効にしない。
   - 出典: [#180 の実際の API での確認](https://github.com/Fukuemon/buddy/issues/180#issuecomment-6333280999)
   - ADR-0012: [承認の条件](https://github.com/Fukuemon/buddy/blob/876381365355f7e4dab03f6dfdb3d6fb8a9f6947/docs/adr/0012-google-calendar-facility-service-accounts.md#承認の条件)
-- token を作れないときのエラーの文は、状態コードだけを持つ。IAM の応答はなりすます先のリソースの名前を含むことがあり、サービスアカウントのメールアドレスをログに出さないためである。
+- token を作れないときのエラーの文は、状態コードだけを持つ。IAM のレスポンスはなりすます先のリソースの名前を含むことがあり、サービスアカウントのメールアドレスをログに出さないためである。
 
 ### Google カレンダーの取り込み
 

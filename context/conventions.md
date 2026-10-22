@@ -25,14 +25,14 @@ status: stable
     - 繰り返しの予定の 1 回の置き換えは、1 件の下の `/occurrences` に置く。
   - ログインした職員自身は、ID を持たない `/v1/me` で表す。
   - 動作はサブパス（`/cancel`）で表す。
-- DB のテーブルは複数形の snake_case、ID は ULID の `CHAR(26)`、真偽のカラムは `is_` で始める。職員のテーブルの名前は `users` で、Go の側は `staff` と呼ぶ。
+- DB のテーブルは複数形の snake_case にする。buddy が振る ID は ULID の文字列を `text COLLATE "C"` で持つ。ULID の形の CHECK は、テーブルが振る `id` の主キーにだけ付け、外部キーのカラムには主キーを兼ねていても付けない。外部の ID（Google カレンダーの ID、組織の `org_id`、IdP の `sub`）は対象の外である。真偽のカラムは、`is_`、`has_`、`needs_` で始めるか、true のときの動作を動詞で書く（`is_over_time_work`、`needs_target`、`overwrite`）。職員のテーブルの名前は `users` で、Go の側は `staff` と呼ぶ。
 - 業務の用語の表記は [業務の知識](domain.md) の用語にそろえる。文書の表記の揺れは `prh.yml` の規則が止める。
 
 ## Comments
 
 コメントの書き方は、スキル write-comments に従う。言語は日本語の常体にする。
 
-- Go は、文書コメントの有無を receipt-api、schedule-api、`packages/go` の revive（`exported`、`package-comments`）で確かめる。生成物（`// Code generated ... DO NOT EDIT.` のファイル）とテストは、revive が対象にしない。
+- Go は、文書コメントの有無を `services/receipt`、`services/schedule`、`packages/go` の revive（`exported`、`package-comments`）で確かめる。生成物（`// Code generated ... DO NOT EDIT.` のファイル）とテストは、revive が対象にしない。
 - TypeScript は、文書コメントの有無を、ルートの `vite.config.ts` の `lint` で確かめる。Oxlint の jsdoc のプラグインに require-jsdoc が無いので、eslint-plugin-jsdoc を `jsPlugins` で読ませる。対象は export する関数、クラス、型で、名前が `Props` で終わる型は除く。Props の型は、コンポーネントの文書コメントが説明するからである。生成物は lint の対象から外してある。呼び出しで包んで作る関数（`createServerFn(...)`、`memo(...)`）と、クラスのメソッドは確かめない。確かめるのは web、ui、e2e の check である。
 - Go の文書コメントは、`// Package <名前> は、…。`、`// <名前> は、…。` の形で書く。
 - 外部の制約を書く実装のコメントには、出典の URL を添える。
@@ -71,7 +71,7 @@ status: stable
 | `**/*.md` | 整形（`vp fmt`） | 文書は textlint で確かめる |
 | `dist`、`storybook-static` | lint | ビルドの出力である |
 | Go の生成物 | golangci-lint（`exclusions.generated: lax`） | 生成物である |
-| schedule-api の `_test.go` の gosec G101 | golangci-lint | テストの接続の設定は、使い捨てのコンテナの値である |
+| `services/schedule` の `_test.go` の gosec G101 | golangci-lint | テストの接続の設定は、使い捨てのコンテナの値である |
 | `packages/go/healthcheck/healthcheck.go` の gosec | golangci-lint（`//nolint:gosec`） | 宛先を `127.0.0.1` に固定し、環境変数はポートだけを決める。誤検知である |
 | `docs/design/` の下のシンボリックリンク、Git で追跡しないもの | textlint（`.textlintignore`） | 同じ文書を 2 回見ないため。元の文書は元の場所で見る |
 

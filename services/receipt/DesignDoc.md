@@ -45,10 +45,11 @@ receipt-api は、訪問の予定と電子カルテ（iBow）の実績を比べ�
 - `internal/judge`: 対ごとに項目を判定し、不整合、予定のみ、実績のみ、整合に分ける
 - `internal/check`: 上の 4 つをつなぐ。予定のデータソースは `ScheduleSource` で受ける
 - `internal/gcal`: Google カレンダーの予定を、予定の CSV と同じ `csvio.Row` にしてから `normalize.Schedules` に通す
-- `internal/gcal/gcaltest`: テストとローカルの確認に使う、Calendar API の events.list のフェイク
+- `internal/gcal/gcaltest`: テストに使う、Calendar API の events.list のフェイク
 - `internal/source`: リクエストの `schedules` と `month` とトークンの組織から、予定のデータソース（`CSVSchedules` か `internal/gcal`）を選ぶ
 - access token の検証は、共有の module の `packages/go/oidc` を使う（[ADR-0007](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0007-go-shared-module.md)）
 - タイトルの解釈（`IsVisitTitle`、`ParseTitle`）は、予定の API と共有する `packages/go/gcaltitle` を使う
+- 組織ごとのサービスアカウントで Calendar API を呼ぶクライアントは、予定の API と共有する `packages/go/gcalauth` を使う
 - `internal/httpapi`: `GET /healthz`、`GET /readyz`、`POST /v1/checks`。`/healthz` と `/readyz` 以外のリクエストのトークンを `packages/go/oidc` で確かめる
 - `cmd/api`: 環境変数を読んで API のサーバーを起動する
 - `cmd/devissuer`: ローカルで API を試すためのフェイクの OIDC の Issuer。イメージに入れない
