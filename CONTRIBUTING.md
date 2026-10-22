@@ -269,16 +269,16 @@ gitGraph
 ## issue と pull request
 
 - 作業は issue から始める。issue は、issue テンプレート（`.github/ISSUE_TEMPLATE/`）の要求、不具合、タスクから選ぶ。種類は `type:` のラベル、対象のアプリとパッケージは `pkg:` のラベルで示す。
-- タスクは、親の要求の sub-issue にする。
+- タスクと不具合は、親の要求の sub-issue にする。
   - 保守のタスク（依存の更新、Dependabot と CI の設定、開発の環境、規約とテンプレートの直し）は、保守の要求 #220 の sub-issue にする。
   - 不具合は、不具合が起きた機能の要求の sub-issue にする。当てはまる要求が無ければ #220 にする。不具合の form には親の欄が無いので、起票した後に sub-issue にする。
 - タイトルと本文の書き方は、スキル write-issue-pr に従う。pull request の本文は `.github/pull_request_template.md` の節で書く。
-- 起票の前の下書きは `.ai-out/` に置く。`.textlintignore` が `.ai-out/` を外すので、下書きの文書のチェックは `pnpm exec textlint --ignore-path /dev/null <下書きのパス>` で流す。
-- 本文とコメントに、コーディングエージェントの生成の行（Generated with Claude Code）とセッションの URL を付けない。コミットでは commitlint が同じ行を拒む。
+- 起票の前の下書きは `.ai-out/issues/` か `.ai-out/prs/` に置く。`.textlintignore` が `.ai-out/` を外すので、下書きは `pnpm exec textlint --ignore-path /dev/null <下書きのパス>` で確かめる。docs のスクリプト（check-history、check-links）は文書のファイルのためのもので、下書きには流さない。
+- 本文とコメントに、コーディングエージェントが生成したことを示す行（Generated with Claude Code）と、セッションの URL を付けない。コミットでは commitlint が同じ行を拒む。
 - pull request は 1 つの issue に対応させる。大きい issue は、関心事ごとに複数の pull request に分ける。最後にマージする pull request の本文に `Closes #<番号>` を書き、ほかは `Refs #<番号>` を書く。
 - 機能の追加と改修の pull request では、本文の「検証とエビデンス」に、観点ごとのエビデンスの動画を入れる。文書、スキル、設定だけの変更のように、動作を確かめない変更では、この節を消す。対象と格納先は [エビデンス](context/testing/evidence.md)、観点の設計、撮り方、本文への入れ方はスキル attach-evidence にある。
-- レビューの指摘に対応してからマージする。差分が変わったら、本文も差分に合わせて直す。
+- レビューの指摘に対応してからマージする。直したコミットと、対応しない指摘の理由を pull request のコメントに残す。差分が変わったら、本文も差分に合わせて直す。
   - Codex のボットは、pull request を開いたときにレビューする。もう一度頼むときは、直したコミットを示す返信の末尾に `@codex review` と書く。`@codex review` だけのコメントを作らない。
   - Codex が使用量の上限に達したときは、頼み直さずに、読み取りだけのサブエージェントでレビューする。
-  - サブエージェントのレビューの結果は、1 つのコメントにまとめる。指摘ごとに、スキル review-changes の重要度（must、imo、nits、ask）と、直したコミットか対応しない理由を書く。
-- `develop` へのマージは merge commit にする（`gh pr merge --merge`）。デフォルトのブランチは `develop` なので、`Closes` を書いた pull request のマージで issue が閉じる。
+  - サブエージェントのレビューの結果は、1 つのコメントにまとめ、指摘ごとに重要度を付ける。重要度は、must（マージの前に直す誤り）、imo（直すとよい提案）、nits（表記の小さな直し）、ask（書き手への問い）の 4 つにする。
+- `develop` へのマージは merge commit にする（`gh pr merge --merge`）。デフォルトのブランチは `develop` なので、`develop` へマージした pull request に `Closes` があれば、issue が閉じる。
