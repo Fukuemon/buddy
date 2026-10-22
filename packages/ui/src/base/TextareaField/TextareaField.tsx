@@ -35,7 +35,7 @@ export const TextareaField = <T extends FieldValues>({
         {...field}
         {...fieldErrorProps(error, errorId)}
         className={clsx(
-          'min-h-40 rounded-8 p-3 text-body ring-1 ring-border-field ring-inset outline-none focus-visible:focus-ring',
+          'min-h-40 rounded-8 bg-surface p-3 text-body ring-1 ring-border-field ring-inset outline-none focus-visible:focus-ring',
           error !== undefined && 'ring-2 ring-danger',
         )}
         data-testid={testId}
