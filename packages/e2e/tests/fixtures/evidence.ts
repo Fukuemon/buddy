@@ -7,7 +7,7 @@ import type { Browser, Page } from '@playwright/test'
 
 import { evidenceName, variants, type Variant } from '../../kit/evidence/index.js'
 import { recordEvidence, type Recording } from '../../kit/recording/index.js'
-import { BASE_URL } from './env'
+import { BASE_URL, TIMEZONE_ID } from './env'
 
 const root = fileURLToPath(new URL('../../../..', import.meta.url))
 
@@ -98,6 +98,7 @@ export const recordPrEvidence = async <T>(
       appName: 'buddy',
       envLabel: 'ローカル環境',
       readVersion: async () => versionOf(o.variant),
+      timezoneId: TIMEZONE_ID,
       viewport: o.viewport ?? DESKTOP_VIEWPORT,
     },
     {
