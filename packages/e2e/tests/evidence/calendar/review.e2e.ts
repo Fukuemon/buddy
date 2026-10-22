@@ -286,7 +286,7 @@ test.describe('確かめが要る予定', () => {
               '2026/11/06（金）15:00〜16:29、江藤 四郎',
             )
             await expect(dialog(page).getByTestId('calendar-rewrite-notice')).toHaveText(
-              'buddy でキャンセルした予定なので、Google カレンダーの予定を消します。Google カレンダーで直したタイトルと日時も消えます。書き直しは、数十秒のうちに Google カレンダーに出ます。',
+              'buddy でキャンセルした予定なので、Google カレンダーの予定を消します。Google カレンダーで直したタイトルと日時も消えます。Google カレンダーの予定は、数十秒のうちに消えます。',
             )
             await check(
               '書き直すダイアログに「buddy でキャンセルした予定なので、Google カレンダーの予定を消します。…」の注意が出て、「消された予定は作り直します。」が出ない',
