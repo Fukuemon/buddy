@@ -17,7 +17,7 @@ func TestLoadConfig(t *testing.T) {
 	}
 	cfg, err := loadConfig(env(nil))
 	if err != nil || cfg.port != "8080" || cfg.maxUploadBytes != 10<<20 || cfg.logLevel != slog.LevelInfo || cfg.oidc.OrgClaim != "org_id" || cfg.allowOrigins != nil {
-		t.Errorf("既定値 = %+v, %v", cfg, err)
+		t.Errorf("デフォルト値 = %+v, %v", cfg, err)
 	}
 	cfg, err = loadConfig(env(map[string]string{"PORT": "9000", "MAX_UPLOAD_BYTES": "2048", "LOG_LEVEL": "debug", "OIDC_ORG_CLAIM": "organization"}))
 	if err != nil || cfg.port != "9000" || cfg.maxUploadBytes != 2048 || cfg.logLevel != slog.LevelDebug || cfg.oidc.OrgClaim != "organization" {

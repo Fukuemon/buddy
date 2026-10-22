@@ -57,7 +57,7 @@ func TestSchedulesQuery(t *testing.T) {
 	}
 	qs := srv.Queries()
 	if len(qs) != 1 {
-		t.Fatalf("要求の数 = %d", len(qs))
+		t.Fatalf("リクエストの数 = %d", len(qs))
 	}
 	want := map[string]string{
 		"timeMin":      "2024-04-01T00:00:00+09:00",
@@ -175,10 +175,10 @@ func TestSchedulesEvents(t *testing.T) {
 		}
 	}
 	if len(srv.Queries()) != 3 {
-		t.Errorf("要求の数 = %d。ページ送りで 2、もう 1 つのカレンダーで 1 になる", len(srv.Queries()))
+		t.Errorf("リクエストの数 = %d。ページ送りで 2、もう 1 つのカレンダーで 1 になる", len(srv.Queries()))
 	}
 	if q := srv.Queries()[1]; q.Get("pageToken") != "1" {
-		t.Errorf("2 つ目の要求の pageToken = %q", q.Get("pageToken"))
+		t.Errorf("2 つ目のリクエストの pageToken = %q", q.Get("pageToken"))
 	}
 }
 
@@ -192,7 +192,7 @@ func TestSchedulesSourceError(t *testing.T) {
 	}
 	var ie *record.InputError
 	if errors.As(err, &ie) {
-		t.Errorf("入力の誤りにしない: %v", err)
+		t.Errorf("入力のエラーにしない: %v", err)
 	}
 }
 

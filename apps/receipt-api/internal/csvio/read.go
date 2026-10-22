@@ -17,7 +17,7 @@ import (
 
 const utf8BOM = "\xEF\xBB\xBF"
 
-// 入力の列の名前。
+// 入力のカラムの名前。
 const (
 	ColDate     = "訪問日"
 	ColClient   = "利用者名"
@@ -28,33 +28,33 @@ const (
 	ColStaff    = "主訪問者"
 )
 
-// AdditionColumns は、実績の CSV の加算の列を、つなぐ順に返す。
+// AdditionColumns は、実績の CSV の加算のカラムを、つなぐ順に返す。
 func AdditionColumns() []string {
 	return []string{"加算①", "加算②", "加算③", "加算④", "加算⑤"}
 }
 
-// ScheduleColumns は、予定の CSV に要る列を返す。
+// ScheduleColumns は、予定の CSV に要るカラムを返す。
 func ScheduleColumns() []string {
 	return []string{ColDate, ColClient, ColStart, ColEnd, ColDuration, ColService, ColStaff}
 }
 
-// VisitColumns は、実績（iBow の出力）の CSV に要る列を返す。
+// VisitColumns は、実績（iBow の出力）の CSV に要るカラムを返す。
 func VisitColumns() []string {
 	return append(ScheduleColumns(), AdditionColumns()...)
 }
 
-// Row は、CSV の 1 行のうち、要る列だけを名前で引けるようにしたものである。
+// Row は、CSV の 1 行のうち、要るカラムだけを名前で引けるようにしたものである。
 type Row struct {
 	Line   int
 	values map[string]string
 }
 
-// Get は、列の値を返す。読んでいない列なら空文字列を返す。
+// Get は、カラムの値を返す。読んでいないカラムなら空文字列を返す。
 func (r Row) Get(column string) string {
 	return r.values[column]
 }
 
-// NewRow は、line 行目の列の値から Row を作る。
+// NewRow は、line 行目のカラムの値から Row を作る。
 func NewRow(line int, values map[string]string) Row {
 	return Row{Line: line, values: values}
 }
@@ -78,8 +78,8 @@ func Decode(data []byte) (string, error) {
 	return string(s), nil
 }
 
-// ReadTable は、CSV を読み、columns の列を持つ行を返す。
-// 先頭の行をヘッダーとして扱い、columns のうちヘッダーにない列があれば *record.InputError を返す。
+// ReadTable は、CSV を読み、columns のカラムを持つ行を返す。
+// 先頭の行をヘッダーとして扱い、columns のうちヘッダーにないカラムがあれば *record.InputError を返す。
 // columns の値がすべて空の行は読み飛ばす。
 func ReadTable(data []byte, source record.Source, columns []string) ([]Row, error) {
 	text, err := Decode(data)

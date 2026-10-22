@@ -1,4 +1,4 @@
-// Package healthcheck は、イメージの中で API が要求を受けられるかを確かめる、`api healthcheck` のサブコマンドを持つ。
+// Package healthcheck は、イメージの中で API がリクエストを受けられるかを確かめる、`api healthcheck` のサブコマンドを持つ。
 // schedule-api と receipt-api が共有する module packages/go にある（ADR-0007）。
 package healthcheck
 

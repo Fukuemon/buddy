@@ -34,7 +34,7 @@ type Record struct {
 	Service string
 	// Duration は提供時間（分）である。入力が空なら nil にする。
 	Duration *int
-	// Additions は、実績の加算①〜加算⑤のうち空でない値を、列の順に並べたものである。予定では nil である。
+	// Additions は、実績の加算①〜加算⑤のうち空でない値を、カラムの順に並べたものである。予定では nil である。
 	Additions []string
 }
 
@@ -48,7 +48,7 @@ func (r Record) AdditionText() string {
 	return strings.Join(r.Additions, ", ")
 }
 
-// RowError は、入力の 1 行の誤りである。
+// RowError は、入力の 1 行のエラーである。
 type RowError struct {
 	Source  Source `json:"source"`
 	Line    int    `json:"line"`
@@ -57,7 +57,7 @@ type RowError struct {
 }
 
 // InputError は、入力のファイルを照合に使えないことを表す。
-// Rows が空でなければ、行ごとの誤りを持つ。
+// Rows が空でなければ、行ごとのエラーを持つ。
 type InputError struct {
 	Message string
 	Rows    []RowError
@@ -67,11 +67,11 @@ func (e *InputError) Error() string {
 	if len(e.Rows) == 0 {
 		return e.Message
 	}
-	return fmt.Sprintf("%s（%d 件の行の誤り）", e.Message, len(e.Rows))
+	return fmt.Sprintf("%s（%d 件の行のエラー）", e.Message, len(e.Rows))
 }
 
-// Warning は、予定の取得元が解釈できず、照合に使わなかった予定の 1 件である。
-// 利用者名を含むので、予定の題名は持たない。
+// Warning は、予定のデータソースが解釈できず、照合に使わなかった予定の 1 件である。
+// 利用者名を含むので、予定のタイトルは持たない。
 type Warning struct {
 	CalendarID string `json:"calendar_id"`
 	EventID    string `json:"event_id"`

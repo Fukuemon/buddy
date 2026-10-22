@@ -14,7 +14,7 @@ func newCORSHandler(origins ...string) http.Handler {
 	return NewHandler(slog.New(slog.NewTextHandler(io.Discard, nil)), Config{MaxUploadBytes: 1 << 20, Verifier: fakeVerifier{}, AllowOrigins: origins})
 }
 
-// TestCORSPreflight は、許した Origin の事前の要求に、トークンなしで 204 と CORS のヘッダーを返すことを確かめる。
+// TestCORSPreflight は、許した Origin の事前のリクエスト（preflight）に、トークンなしで 204 と CORS のヘッダーを返すことを確かめる。
 func TestCORSPreflight(t *testing.T) {
 	req := httptest.NewRequest(http.MethodOptions, "/v1/checks", nil)
 	req.Header.Set("Origin", originDocs)
@@ -36,7 +36,7 @@ func TestCORSPreflight(t *testing.T) {
 	}
 }
 
-// TestCORSActualRequest は、事前の要求でない要求に付ける CORS のヘッダーを確かめる。
+// TestCORSActualRequest は、事前のリクエストでないリクエストに付ける CORS のヘッダーを確かめる。
 // 許した Origin なら、401 でも Access-Control-Allow-Origin を付ける。付けないと、ブラウザが 401 の本文を読ませない。
 func TestCORSActualRequest(t *testing.T) {
 	tests := []struct {
@@ -71,7 +71,7 @@ func TestCORSActualRequest(t *testing.T) {
 	}
 }
 
-// TestCORSNotAllowed は、許さない Origin と、AllowOrigins が空のときに、CORS のヘッダーを付けず、事前の要求にもトークンを求めることを確かめる。
+// TestCORSNotAllowed は、許さない Origin と、AllowOrigins が空のときに、CORS のヘッダーを付けず、事前のリクエストにもトークンを求めることを確かめる。
 func TestCORSNotAllowed(t *testing.T) {
 	for _, tt := range []struct {
 		name    string

@@ -1,4 +1,4 @@
-// Package check は、実績の CSV と予定の取得元から照合の結果を作る。
+// Package check は、実績の CSV と予定のデータソースから照合の結果を作る。
 package check
 
 import (
@@ -15,12 +15,12 @@ import (
 
 // ScheduleSource は、照合に使う予定を返す。返す Record は normalize.Schedules を通した後の値である。
 // 照合に使わなかった予定は record.Warning で返す。
-// 入力の誤りは *record.InputError で、取得元から予定を取れないときは *SourceError で返す。
+// 入力のエラーは *record.InputError で、データソースから予定を取れないときは *SourceError で返す。
 type ScheduleSource interface {
 	Schedules(ctx context.Context) ([]record.Record, []record.Warning, error)
 }
 
-// SourceError は、予定の取得元から予定を取れないことを表す。入力の誤りではない。
+// SourceError は、予定のデータソースから予定を取れないことを表す。入力のエラーではない。
 type SourceError struct {
 	Message string
 	Err     error
@@ -64,13 +64,13 @@ type Summary struct {
 type Report struct {
 	Summary Summary        `json:"summary"`
 	Rows    []judge.Result `json:"rows"`
-	// Warnings は、予定の取得元が照合に使わなかった予定である。無ければ空の配列である。
+	// Warnings は、予定のデータソースが照合に使わなかった予定である。無ければ空の配列である。
 	Warnings []record.Warning `json:"warnings"`
 }
 
 // Run は、実績の CSV の visits と、schedules の予定を照合する。
-// 実績と予定のどちらかに入力の誤りがあれば、両方の誤りをまとめた *record.InputError を返す。
-// 予定の取得元のそのほかのエラー（*SourceError など）は、そのまま返す。
+// 実績と予定のどちらかに入力のエラーがあれば、両方のエラーをまとめた *record.InputError を返す。
+// 予定のデータソースのそのほかのエラー（*SourceError など）は、そのまま返す。
 func Run(ctx context.Context, visits []byte, schedules ScheduleSource) (Report, error) {
 	var inputErrs []*record.InputError
 

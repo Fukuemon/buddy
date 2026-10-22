@@ -1,5 +1,5 @@
 // Package httpapi は、照合の HTTP の API を提供する。
-// エンドポイントと応答の形は openapi.yaml が正本で、server は生成した openapi.StrictServerInterface を実装する。
+// エンドポイントとレスポンスの形は openapi.yaml が正本で、server は生成した openapi.StrictServerInterface を実装する。
 package httpapi
 
 import (
@@ -28,13 +28,13 @@ const (
 
 // Config は、Handler の設定である。
 type Config struct {
-	// MaxUploadBytes は、要求の本文の上限のバイト数である。
+	// MaxUploadBytes は、リクエストの本文の上限のバイト数である。
 	MaxUploadBytes int64
-	// Sources は、要求から予定の取得元を選ぶ。ゼロ値は予定の CSV だけを受ける。
+	// Sources は、リクエストから予定のデータソースを選ぶ。ゼロ値は予定の CSV だけを受ける。
 	Sources source.Selector
-	// Verifier は、/healthz と /readyz 以外の要求の access token を検証する。必須である。
+	// Verifier は、/healthz と /readyz 以外のリクエストの access token を検証する。必須である。
 	Verifier TokenVerifier
-	// AllowOrigins は、CORS で応答を読ませる Origin である。空なら CORS のヘッダーを返さない。
+	// AllowOrigins は、CORS でレスポンスを読ませる Origin である。空なら CORS のヘッダーを返さない。
 	AllowOrigins []string
 }
 
@@ -46,7 +46,7 @@ type server struct {
 var _ openapi.StrictServerInterface = (*server)(nil)
 
 // NewHandler は、openapi.yaml の GET /healthz、GET /readyz と POST /v1/checks を持つ http.Handler を返す。
-// 定義にないパスとメソッドには、404 の openapi.Error を返す。/healthz と /readyz 以外の要求は、cfg.Verifier でトークンを確かめる。
+// 定義にないパスとメソッドには、404 の openapi.Error を返す。/healthz と /readyz 以外のリクエストは、cfg.Verifier でトークンを確かめる。
 func NewHandler(logger *slog.Logger, cfg Config) http.Handler {
 	s := &server{logger: logger, cfg: cfg}
 	mux := http.NewServeMux()
@@ -58,7 +58,7 @@ func NewHandler(logger *slog.Logger, cfg Config) http.Handler {
 			s.writeJSON(w, http.StatusBadRequest, errorBody(openapi.BadRequest, "multipart/form-data の本文を読めない"))
 		},
 		ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
-			s.logger.ErrorContext(r.Context(), "応答を書けない", "error", err)
+			s.logger.ErrorContext(r.Context(), "レスポンスを書けない", "error", err)
 			s.writeJSON(w, http.StatusInternalServerError, errorBody(openapi.Internal, "照合に失敗した"))
 		},
 	})
@@ -75,13 +75,13 @@ func (s *server) GetHealthz(_ context.Context, _ openapi.GetHealthzRequestObject
 	return openapi.GetHealthz200JSONResponse{Status: openapi.Ok}, nil
 }
 
-// GetReadyz は、{"status":"ok"} を返す。依存先は起動のときに確かめたので、応答できれば要求を受けられる。
+// GetReadyz は、{"status":"ok"} を返す。依存先は起動のときに確かめたので、レスポンスを返せればリクエストを受けられる。
 func (s *server) GetReadyz(_ context.Context, _ openapi.GetReadyzRequestObject) (openapi.GetReadyzResponseObject, error) {
 	return openapi.GetReadyz200JSONResponse{Status: openapi.Ok}, nil
 }
 
 // CreateCheck は、multipart の visits（実績の CSV）と予定を照合する。
-// 予定の取得元は、schedules（予定の CSV）か month（対象の月）から Config.Sources が選ぶ。
+// 予定のデータソースは、schedules（予定の CSV）か month（対象の月）から Config.Sources が選ぶ。
 func (s *server) CreateCheck(ctx context.Context, req openapi.CreateCheckRequestObject) (openapi.CreateCheckResponseObject, error) {
 	f, err := readForm(req.Body)
 	if err != nil {
@@ -137,7 +137,7 @@ func (s *server) selectError(ctx context.Context, err error) openapi.CreateCheck
 	case invalidMonth:
 		return openapi.CreateCheck400JSONResponse(errorBody(openapi.BadRequest, err.Error()))
 	default:
-		s.logger.ErrorContext(ctx, "予定の取得元を選べない", "error", err)
+		s.logger.ErrorContext(ctx, "予定のデータソースを選べない", "error", err)
 		return openapi.CreateCheck500JSONResponse(errorBody(openapi.Internal, "照合に失敗した"))
 	}
 }
@@ -189,7 +189,7 @@ func (s *server) writeJSON(w http.ResponseWriter, status int, body any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(body); err != nil {
-		s.logger.Error("応答を書けない", "error", err)
+		s.logger.Error("レスポンスを書けない", "error", err)
 	}
 }
 

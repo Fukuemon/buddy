@@ -102,7 +102,7 @@ func TestChecksBearerSchemeCaseInsensitive(t *testing.T) {
 	}
 }
 
-// TestChecksWithIssuer は、偽物の発行者が署名したトークンを、本物の oidc.Verifier で確かめる。
+// TestChecksWithIssuer は、フェイクの Issuer が署名したトークンを、本物の oidc.Verifier で確かめる。
 func TestChecksWithIssuer(t *testing.T) {
 	iss, err := oidctest.Start()
 	if err != nil {

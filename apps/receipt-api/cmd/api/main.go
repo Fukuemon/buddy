@@ -2,20 +2,20 @@
 //
 // 環境変数:
 //
-//   - PORT: 待ち受けるポート。既定は 8080。
-//   - MAX_UPLOAD_BYTES: POST /v1/checks の本文の上限のバイト数。既定は 10485760（10 MiB）。
-//   - LOG_LEVEL: debug、info、warn、error のいずれか。既定は info。
-//   - OIDC_ISSUER: 必須。ブローカーの発行者の URL。トークンの iss と一致させ、discovery の文書をここから読む。
+//   - PORT: 待ち受けるポート。デフォルトは 8080。
+//   - MAX_UPLOAD_BYTES: POST /v1/checks の本文の上限のバイト数。デフォルトは 10485760（10 MiB）。
+//   - LOG_LEVEL: debug、info、warn、error のいずれか。デフォルトは info。
+//   - OIDC_ISSUER: 必須。ブローカーの Issuer の URL。トークンの iss と一致させ、discovery の文書をここから読む。
 //   - OIDC_AUDIENCE: 必須。トークンの aud に求める値。
-//   - OIDC_ORG_CLAIM: 組織の ID を持つクレームの名前。既定は org_id。
-//   - CORS_ALLOW_ORIGINS: CORS で応答を読ませるオリジンを、カンマで区切って並べる。空なら CORS のヘッダーを返さない。
+//   - OIDC_ORG_CLAIM: 組織の ID を持つクレームの名前。デフォルトは org_id。
+//   - CORS_ALLOW_ORIGINS: CORS でレスポンスを読ませるオリジンを、カンマで区切って並べる。空なら CORS のヘッダーを返さない。
 //   - GOOGLE_CALENDARS_FILE: 照合の対象のカレンダーの設定（JSON）のパス。空なら Google カレンダーを使わない。
 //     形は gcal.LoadCalendars にある。トークンの組織に結び付けたカレンダーだけを読む。認証は Application Default Credentials で読む。
-//   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。偽物の API で試すためのもので、認証をしない。
+//   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。フェイクの API で試すためのもので、認証をしない。
 //
 // `api healthcheck` は、サーバーを起動せず、動いているサーバーの GET /readyz を確かめて終わる。
 //
-// SIGINT か SIGTERM を受けると、処理中の要求を待ってから終了する。設定の誤りと起動の失敗では終了コード 1 で終わる。
+// SIGINT か SIGTERM を受けると、処理中のリクエストを待ってから終了する。設定のエラーと起動の失敗では終了コード 1 で終わる。
 package main
 
 import (
@@ -148,7 +148,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	logger.Info("Google カレンダーの取得元の設定を読んだ", "enabled", reader != nil)
+	logger.Info("Google カレンダーのデータソースの設定を読んだ", "enabled", reader != nil)
 
 	verifier, err := oidc.NewVerifier(ctx, cfg.oidc, nil, logger)
 	if err != nil {

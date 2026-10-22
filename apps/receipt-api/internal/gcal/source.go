@@ -37,7 +37,7 @@ func mustLoadLocation(name string) *time.Location {
 // Calendar は、照合の対象のカレンダーである。
 type Calendar struct {
 	ID string `json:"calendar_id"`
-	// OrgID は、カレンダーを使う事業所の、認証のブローカーの組織の ID である。この組織のトークンの要求だけが読む。
+	// OrgID は、カレンダーを使う事業所の、認証のブローカーの組織の ID である。この組織のトークンのリクエストだけが読む。
 	OrgID string `json:"org_id"`
 	// StaffName は主訪問者の名前である。空なら、カレンダーの表示名を主訪問者にする。
 	StaffName string `json:"staff_name,omitempty"`
@@ -132,8 +132,8 @@ type monthSource struct {
 }
 
 // Schedules は、カレンダーごとに予定を読み、訪問の予定を Record にする。
-// 終日の予定、取り消された予定、題名に `【` と `】` の両方を含まない予定は除く。
-// 題名や時刻を解釈できない予定は、照合に混ぜずに record.Warning で返す。
+// 終日の予定、取り消された予定、タイトルに `【` と `】` の両方を含まない予定は除く。
+// タイトルや時刻を解釈できない予定は、照合に混ぜずに record.Warning で返す。
 // Calendar API の呼び出しに失敗すると、*check.SourceError を返す。
 func (s monthSource) Schedules(ctx context.Context) ([]record.Record, []record.Warning, error) {
 	var (

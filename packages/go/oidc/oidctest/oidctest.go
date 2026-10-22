@@ -1,5 +1,5 @@
-// Package oidctest は、テストと手元の確認に使う偽物の OIDC の発行者を持つ。
-// 発行者は discovery の文書と JWKS を返し、自分の鍵でトークンに署名する。本番では使わない。
+// Package oidctest は、テストとローカル環境の確認に使うフェイクの OIDC の Issuer を持つ。
+// Issuer は discovery の文書と JWKS を返し、自分の鍵でトークンに署名する。本番では使わない。
 package oidctest
 
 import (
@@ -19,7 +19,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// Issuer は、偽物の発行者である。http.Handler として discovery の文書と JWKS を返す。
+// Issuer は、フェイクの Issuer である。http.Handler として discovery の文書と JWKS を返す。
 // 複数の goroutine から同時に使える。
 type Issuer struct {
 	url    string
@@ -37,7 +37,7 @@ type signingKey struct {
 	priv   crypto.Signer
 }
 
-// New は、url を発行者の URL とし、ES256 の鍵を 1 つ公開した Issuer を作る。待ち受けは呼び出し側が行う。
+// New は、url を Issuer の URL とし、ES256 の鍵を 1 つ公開した Issuer を作る。待ち受けは呼び出し側が行う。
 func New(url string) (*Issuer, error) {
 	i := &Issuer{url: url}
 	if _, err := i.AddKey("ES256"); err != nil {
@@ -65,7 +65,7 @@ func (i *Issuer) Close() {
 	}
 }
 
-// URL は、発行者の URL を返す。
+// URL は、Issuer の URL を返す。
 func (i *Issuer) URL() string { return i.url }
 
 // Client は、Start で始めたサーバーに届く HTTP の client を返す。

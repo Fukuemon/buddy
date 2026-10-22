@@ -13,7 +13,7 @@ info:
 security:
   - bearerAuth: []
 servers:
-  # 手元の compose の receipt-api（compose.yml の RECEIPT_API_PORT の既定）
+  # ローカル環境の compose の receipt-api（compose.yml の RECEIPT_API_PORT のデフォルト）
   - url: http://localhost:8090
 tags:
   - name: health
@@ -26,11 +26,11 @@ paths:
     get:
       tags: [health]
       operationId: getHealthz
-      summary: プロセスが応答できるかを返す
+      summary: プロセスがレスポンスを返せるかを返す
       security: []
       responses:
         "200":
-          description: 応答できる
+          description: レスポンスを返せる
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Health" }
@@ -39,12 +39,12 @@ paths:
     get:
       tags: [health]
       operationId: getReadyz
-      summary: 要求を受けられるかを返す
-      description: 照合の API は、起動のときにブローカーの discovery を読み、読めなければ起動しない。起動した後は依存先を確かめないので、応答できれば 200 を返す。
+      summary: リクエストを受けられるかを返す
+      description: 照合の API は、起動のときにブローカーの discovery を読み、読めなければ起動しない。起動した後は依存先を確かめないので、レスポンスを返せれば 200 を返す。
       security: []
       responses:
         "200":
-          description: 要求を受けられる
+          description: リクエストを受けられる
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Health" }
@@ -133,7 +133,7 @@ paths:
               schema: { $ref: "#/components/schemas/Error" }
               example: { code: payload_too_large, message: "本文が上限を超えている" }
         "422":
-          description: 入力の CSV に誤りがある（`invalid_csv`）。行の誤りは `errors` に行番号つきで入る。CSV が空のとき、列が足りないとき、文字コードを読めないときは、`errors` を持たない
+          description: 入力の CSV に誤りがある（`invalid_csv`）。行のエラーは `errors` に行番号つきで入る。CSV が空のとき、カラムが足りないとき、文字コードを読めないときは、`errors` を持たない
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
@@ -146,10 +146,10 @@ paths:
                     errors:
                       - { source: visits, line: 3, column: 利用者名, message: 空である }
                 missingColumn:
-                  summary: 列が足りない
+                  summary: カラムが足りない
                   value: { code: invalid_csv, message: "visits の CSV に列がない: 提供時間" }
         "500":
-          description: サーバーの誤り（`internal`）
+          description: サーバーのエラー（`internal`）
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
@@ -175,7 +175,7 @@ components:
       bearerFormat: JWT
       description: |
         OIDC のブローカーが発行した access token。署名（RS256 か ES256）、iss、aud、exp、nbf を確かめる。
-        組織のクレーム（既定は `org_id`）が、Google カレンダーから読むカレンダーを決める。
+        組織のクレーム（デフォルトは `org_id`）が、Google カレンダーから読むカレンダーを決める。
   schemas:
     Health:
       type: object
@@ -207,7 +207,7 @@ components:
           description: 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う
         errors:
           type: array
-          description: 入力の CSV の行ごとの誤り。`invalid_csv` のときだけ持つ
+          description: 入力の CSV の行ごとのエラー。`invalid_csv` のときだけ持つ
           items: { $ref: "#/components/schemas/RowError" }
 
     RowError:
@@ -220,7 +220,7 @@ components:
           description: 入力の CSV の行番号。ヘッダーが 1 行目
         column:
           type: string
-          description: 誤りのある列の名前。行全体の誤りでは省く
+          description: エラーのあるカラムの名前。行全体のエラーでは省く
         message: { type: string }
 
     InputSource:
@@ -248,7 +248,7 @@ components:
           items: { $ref: "#/components/schemas/Result" }
         warnings:
           type: array
-          description: 予定の取得元が解釈できず、照合に使わなかった予定。無ければ空の配列
+          description: 予定のデータソースが解釈できず、照合に使わなかった予定。無ければ空の配列
           items: { $ref: "#/components/schemas/Warning" }
 
     Summary:
@@ -382,7 +382,7 @@ components:
 
     Warning:
       type: object
-      description: 照合に使わなかった Google カレンダーの予定。利用者名を含むので、予定の題名は持たない
+      description: 照合に使わなかった Google カレンダーの予定。利用者名を含むので、予定のタイトルは持たない
       required: [calendar_id, event_id, start, message]
       properties:
         calendar_id: { type: string }

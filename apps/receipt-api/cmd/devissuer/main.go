@@ -1,4 +1,4 @@
-// Command devissuer は、手元で API を試すための偽物の OIDC の発行者である。本番とイメージには入れない。
+// Command devissuer は、ローカル環境で API を試すためのフェイクの OIDC の Issuer である。本番とイメージには入れない。
 //
 // discovery の文書と JWKS を返し、GET /token で署名したトークンを JSON の access_token で返す。
 // 鍵は起動のたびに作り直す。
@@ -9,7 +9,7 @@
 // /token のクエリ:
 //   - sub: 必須
 //   - org_id: 組織のクレーム。クレームの名前は -org-claim で変える
-//   - aud: 既定は -audience の値
+//   - aud: デフォルトは -audience の値
 package main
 
 import (
@@ -23,8 +23,8 @@ import (
 )
 
 func main() {
-	addr := flag.String("addr", "127.0.0.1:9000", "待ち受けるアドレス。発行者の URL は http://<addr> になる")
-	audience := flag.String("audience", "receipt-api", "トークンの aud の既定値")
+	addr := flag.String("addr", "127.0.0.1:9000", "待ち受けるアドレス。Issuer の URL は http://<addr> になる")
+	audience := flag.String("audience", "receipt-api", "トークンの aud のデフォルト値")
 	orgClaim := flag.String("org-claim", "org_id", "組織のクレームの名前")
 	flag.Parse()
 

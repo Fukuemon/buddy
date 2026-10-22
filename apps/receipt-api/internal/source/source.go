@@ -1,4 +1,4 @@
-// Package source は、照合の要求から予定の取得元を選ぶ。
+// Package source は、照合のリクエストから予定のデータソースを選ぶ。
 package source
 
 import (
@@ -32,7 +32,7 @@ func (e *InvalidMonthError) Unwrap() error {
 	return e.Err
 }
 
-// Request は、照合の要求のうち、予定の取得元を決める値である。
+// Request は、照合のリクエストのうち、予定のデータソースを決める値である。
 type Request struct {
 	// Schedules は予定の CSV である。HasSchedules が false なら使わない。
 	Schedules    []byte
@@ -43,13 +43,13 @@ type Request struct {
 	OrgID string
 }
 
-// Selector は、予定の取得元を選ぶ。ゼロ値は予定の CSV だけを受ける。
+// Selector は、予定のデータソースを選ぶ。ゼロ値は予定の CSV だけを受ける。
 type Selector struct {
 	// Calendar は、Google カレンダーの予定を読む。nil なら Google カレンダーを使わない。
 	Calendar *gcal.Reader
 }
 
-// Select は、予定の CSV があれば CSV を、無くて対象の月があれば req.OrgID の Google カレンダーを取得元にする。
+// Select は、予定の CSV があれば CSV を、無くて対象の月があれば req.OrgID の Google カレンダーをデータソースにする。
 // どちらも無ければ ErrNoSchedules を、月の形が違えば *InvalidMonthError を、月で呼ばれて OrgID が空なら ErrNoOrg を、
 // Calendar が nil か組織のカレンダーが無いなら ErrCalendarNotConfigured を返す。
 func (s Selector) Select(req Request) (check.ScheduleSource, error) {
