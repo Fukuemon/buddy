@@ -2,7 +2,7 @@
 /**
  * tbls が出す docs/db/schedule-api/schema.json から、Liam ERD の CLI で ER 図のサイトを erd/ に作り直す。
  * Liam ERD 0.7.24 の tbls の形式の読み込みは、viewpoint の id（tbls 1.96 で足された項目）を知らずに拒むので、
- * id を外した写しを一時のディレクトリに置いて渡す。
+ * id を外したコピーを一時のディレクトリに置いて渡す。
  *
  * 使い方: node scripts/build-erd.mjs（pnpm build:erd が流す）
  * 終了コード: 作れれば 0、Liam ERD の CLI が失敗すればその終了コード。

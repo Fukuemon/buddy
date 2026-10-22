@@ -12,5 +12,5 @@ golangci-lint = "2.15.0"
 uv = "0.13"
 # tbls は schedule-api の表の文書を生成する（scripts/build-db-docs.sh）
 "aqua:k1LoW/tbls" = "1.96.1"
-# gh は証跡の動画を pull request と issue に添付する（--attach は 2.99 以降）
+# gh はエビデンスの動画を pull request と issue に添付する（--attach は 2.99 以降）
 "aqua:cli/cli" = "2.102.1"

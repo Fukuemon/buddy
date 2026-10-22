@@ -1,6 +1,6 @@
 # redocly.yaml の規則から、個別に外す箇所。外す理由を箇所ごとに書く
 apps/schedule-api/openapi.yaml:
-  # schedule_id は ULID なので recurring にならず、2 つのパスは同じ要求に当たらない
+  # schedule_id は ULID なので recurring にならず、2 つのパスは同じリクエストに当たらない
   no-ambiguous-paths:
     - '#/paths/~1v1~1schedules~1recurring~1{recurring_schedule_id}'
   # 死活と準備の確認は認証も入力も持たず、4XX を返さない

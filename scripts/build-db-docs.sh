@@ -16,7 +16,7 @@ trap 'docker rm -f "$container" >/dev/null' EXIT
 trap 'exit 130' INT TERM
 port=$(docker port "$container" 5432/tcp | head -n 1 | sed 's/.*://')
 
-# 初期化の間の一時のサーバーは TCP で待ち受けないので、127.0.0.1 で応答すれば初期化が終わっている
+# 初期化の間の一時のサーバーは TCP で待ち受けないので、127.0.0.1 でレスポンスを返せば初期化が終わっている
 i=0
 until docker exec "$container" pg_isready -h 127.0.0.1 -U buddy -d buddy >/dev/null 2>&1; do
   i=$((i + 1))
@@ -30,7 +30,7 @@ done
 (cd apps/schedule-api && GOWORK=off DB_HOST=127.0.0.1 DB_PORT=$port DB_USER=buddy DB_PASSWORD=$password DB_NAME=buddy go run ./cmd/migrate up)
 dsn="postgres://buddy:$password@127.0.0.1:$port/buddy?sslmode=disable"
 tbls doc --rm-dist --config apps/schedule-api/.tbls.yml "$dsn"
-# 版の文字列は、手元と CI で違う CPU の名前とコンパイラを含むので、版の番号だけを残す
+# 版の文字列は、ローカル環境と CI で違う CPU の名前とコンパイラを含むので、版の番号だけを残す
 schema=docs/db/schedule-api/schema.json
 sed 's/"database_version": "\(PostgreSQL [0-9.]*\)[^"]*"/"database_version": "\1"/' "$schema" >"$schema.tmp"
 mv "$schema.tmp" "$schema"
