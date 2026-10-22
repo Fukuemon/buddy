@@ -16,6 +16,21 @@ describe('createFakeBuddyApi', () => {
     expect(filtered.map((s) => s.id)).toEqual(['schedule-1'])
   })
 
+  it('キャンセルした予定は includeCancelled のときだけ返し、更新を 409 で拒む', async () => {
+    const api = createFakeBuddyApi({ baseDate })
+    const withCancelled = await api.schedules.list(FAKE_FACILITY_ID, {
+      ...range,
+      includeCancelled: true,
+    })
+    expect(withCancelled.find((s) => s.id === 'schedule-6')?.cancel).toEqual({
+      reason: '利用者の体調不良',
+    })
+    const cancelled = await api.schedules.get(FAKE_FACILITY_ID, 'schedule-6')
+    await expect(
+      api.schedules.update(FAKE_FACILITY_ID, 'schedule-6', cancelled),
+    ).rejects.toMatchObject({ status: 409 })
+  })
+
   it('作った予定を取得できる', async () => {
     const api = createFakeBuddyApi({ baseDate })
     const created = await api.schedules.create(FAKE_FACILITY_ID, {

@@ -109,6 +109,7 @@ export const fromApiSchedule = (schedule: ApiSchedule): Schedule => {
       categories: visit.visit_categories.map((c) => toCategory(c.name)),
     }
   }
+  if (schedule.cancel !== null) result.cancel = { reason: schedule.cancel.reason }
   return result
 }
 

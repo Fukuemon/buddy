@@ -46,7 +46,11 @@ export const ScheduleCalendarContainer = ({
   const range = getCalendarRange(search.view, date)
 
   const schedulesQuery = useQuery(
-    scheduleListQueryOptions(api, facilityId, { ...range, staffIds: search.staff }),
+    scheduleListQueryOptions(api, facilityId, {
+      ...range,
+      staffIds: search.staff,
+      includeCancelled: search.cancelled,
+    }),
   )
   const staffQuery = useQuery(staffListQueryOptions(api, facilityId))
   const patientsQuery = useQuery(patientListQueryOptions(api, facilityId))
@@ -80,6 +84,8 @@ export const ScheduleCalendarContainer = ({
         <ScheduleCalendarToolbar
           date={date}
           onDateChange={(dateKey) => updateSearch({ date: dateKey })}
+          onShowCancelledChange={(cancelled) => updateSearch({ cancelled })}
+          showCancelled={search.cancelled}
           onNext={() => updateSearch({ date: shiftCalendarDate(search.view, date, 1) })}
           onPrev={() => updateSearch({ date: shiftCalendarDate(search.view, date, -1) })}
           onCreate={() => openCreate(date)}

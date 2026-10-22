@@ -42,9 +42,10 @@ describe('scheduleFormMapper', () => {
   })
 
   it('予定をフォームの値にし、送る値に戻すと元の予定と同じになる', () => {
+    // キャンセルした予定は編集できないので、フォームに載せない
     for (const { id: _id, facilityId: _facilityId, ...schedule } of createFakeSchedules(
       new Date(2026, 9, 20),
-    )) {
+    ).filter((schedule) => schedule.cancel === undefined)) {
       const values = toScheduleFormValues({ ...schedule, id: 'x', facilityId: 'f' })
       // 訪問の予定のタイトルは、API では空で、フォームが「訪問」に固定する
       expect(toScheduleInput(values)).toEqual(

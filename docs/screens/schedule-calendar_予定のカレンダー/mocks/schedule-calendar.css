@@ -312,3 +312,20 @@
   left: 0;
   border-top: 2px solid var(--wf-primary);
 }
+
+/* キャンセルした予定（apps/web の薄い灰色の面、左の線、印、取り消し線）。日の表示では列の左の半分に置く */
+.sc-col > .sc-event--cancelled {
+  right: 50%;
+  border-left: 4px solid var(--wf-line);
+  background: var(--wf-fill);
+  color: var(--wf-muted);
+}
+
+.sc-cancel-mark {
+  margin-right: 4px;
+  padding: 0 2px;
+  border-radius: 3px;
+  background: var(--wf-surface);
+  color: var(--wf-ink);
+  font-weight: 700;
+}

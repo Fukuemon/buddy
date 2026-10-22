@@ -9,6 +9,8 @@ export type ScheduleCalendarEvent = {
   end: string
   /** 予定の面の色。CSS の色の値で、上に白の文字（text-inverse）を置ける。 */
   color: string
+  /** キャンセルした予定。面を薄くし、取り消し線と「キャンセル」の印で出す。 */
+  cancelled: boolean
 }
 
 const CATEGORICAL_COLOR_COUNT = 10
@@ -43,5 +45,6 @@ export const toCalendarEvents = (
     start: schedule.startsAt,
     end: schedule.endsAt,
     color: colorByStaff.get(schedule.staffId) ?? 'var(--buddy-color-text-secondary)',
+    cancelled: schedule.cancel !== undefined,
   }))
 }

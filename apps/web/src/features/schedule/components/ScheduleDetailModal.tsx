@@ -29,6 +29,7 @@ const SectionHeading = ({ id, children }: { id: string; children: React.ReactNod
 /**
  * 予定の詳細をモーダルで出す。
  * 日時を見出しにし、その下に種類と担当者を、訪問の予定では訪問の情報を、最後にメモを節に分けて並べる。
+ * キャンセルした予定は、先頭にキャンセルの理由を出し、編集のボタンを出さない。
  */
 export const ScheduleDetailModal = ({
   schedule,
@@ -45,13 +46,24 @@ export const ScheduleDetailModal = ({
       isOpen
       onCloseRequest={onClose}
       stickyFooter={
-        <Button data-testid="schedule-detail-edit" onClick={onEdit} variant="secondary">
-          編集
-        </Button>
+        schedule.cancel === undefined ? (
+          <Button data-testid="schedule-detail-edit" onClick={onEdit} variant="secondary">
+            編集
+          </Button>
+        ) : undefined
       }
       title="予定の詳細"
     >
       <div className="flex flex-col gap-6 px-5 py-4">
+        {schedule.cancel !== undefined && (
+          <p
+            className="rounded-8 bg-warning-surface px-4 py-3 text-warning"
+            data-testid="schedule-detail-cancel"
+          >
+            <span className="font-bold">キャンセルした予定です。</span>
+            理由: {schedule.cancel.reason || 'なし'}
+          </p>
+        )}
         <section className="flex flex-col gap-2">
           <h3 className="text-heading-sm" data-testid="schedule-detail-datetime">
             {formatDateTimeRange(new Date(schedule.startsAt), new Date(schedule.endsAt))}

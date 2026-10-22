@@ -43,3 +43,12 @@
     column-gap: 24px;
   }
 }
+
+/* キャンセルの理由（apps/web の ScheduleDetailModal の warning-surface の帯） */
+.sd-cancel {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border-radius: var(--wf-radius);
+  background: var(--buddy-color-warning-surface);
+  color: var(--buddy-color-warning);
+}

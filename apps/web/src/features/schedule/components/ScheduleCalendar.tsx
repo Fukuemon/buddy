@@ -7,6 +7,7 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import type { CalendarView } from '../constants/calendarView'
 import { toDateKey, toTimeKey } from '../lib/dateTime'
 import type { ScheduleCalendarEvent } from '../lib/toCalendarEvents'
+import { CancelledMark } from './CancelledMark'
 
 const FULL_CALENDAR_VIEW = {
   month: 'dayGridMonth',
@@ -42,7 +43,17 @@ export const ScheduleCalendar = ({
       eventClick={(arg) => onEventClick(arg.event.id)}
       eventContent={(arg) => (
         <span className="truncate px-1 text-caption" data-testid={`schedule-event-${arg.event.id}`}>
-          {arg.timeText} {arg.event.title}
+          {arg.event.extendedProps.cancelled === true && <CancelledMark />}
+          <span
+            className={arg.event.extendedProps.cancelled === true ? 'line-through' : undefined}
+            data-testid={
+              arg.event.extendedProps.cancelled === true
+                ? `schedule-event-${arg.event.id}-cancelled`
+                : undefined
+            }
+          >
+            {arg.timeText} {arg.event.title}
+          </span>
         </span>
       )}
       events={events.map((event) => ({
@@ -50,9 +61,13 @@ export const ScheduleCalendar = ({
         title: event.title,
         start: event.start,
         end: event.end,
-        backgroundColor: event.color,
+        // キャンセルした予定は面を薄くし、職員の色は枠にだけ残す
+        backgroundColor: event.cancelled ? 'var(--buddy-color-surface-subtle)' : event.color,
         borderColor: event.color,
-        textColor: 'var(--buddy-color-text-inverse)',
+        textColor: event.cancelled
+          ? 'var(--buddy-color-text-secondary)'
+          : 'var(--buddy-color-text-inverse)',
+        extendedProps: { cancelled: event.cancelled },
       }))}
       headerToolbar={false}
       height="100%"

@@ -31,6 +31,9 @@ export const Normal: Story = {
   parameters: route({ url: '/schedule/schedule-3' }),
 }
 
+/** キャンセルした予定。理由を出し、編集のボタンを出さない。 */
+export const Cancelled: Story = { parameters: route({ url: '/schedule/schedule-6' }) }
+
 export const NotFound: Story = {
   parameters: route({ url: '/schedule/missing' }),
 }

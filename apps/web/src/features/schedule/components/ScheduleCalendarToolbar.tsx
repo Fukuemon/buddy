@@ -24,13 +24,19 @@ export type ScheduleCalendarToolbarProps = {
   onToday: () => void
   onViewChange: (view: CalendarView) => void
   onDateChange: (dateKey: string) => void
+  /** キャンセルした予定を出しているか。 */
+  showCancelled: boolean
+  onShowCancelledChange: (showCancelled: boolean) => void
   /** 渡したときだけ、予定の作成のボタンを出す。 */
   onCreate?: () => void
   /** 渡したときだけ、職員の絞り込みを開くボタンを出す。幅 768px 未満で渡す。 */
   staffFilterToggle?: StaffFilterToggle
 }
 
-/** カレンダーの上の操作。前後への移動、今日、表示の期間の見出し、日付の指定、表示の種類、職員の絞り込みを開く、予定の作成を並べる。 */
+/**
+ * カレンダーの上の操作。前後への移動、今日、表示の期間の見出し、日付の指定、キャンセルした予定を出す切り替え、
+ * 表示の種類、職員の絞り込みを開く、予定の作成を並べる。
+ */
 export const ScheduleCalendarToolbar = ({
   view,
   date,
@@ -39,6 +45,8 @@ export const ScheduleCalendarToolbar = ({
   onToday,
   onViewChange,
   onDateChange,
+  showCancelled,
+  onShowCancelledChange,
   onCreate,
   staffFilterToggle,
 }: ScheduleCalendarToolbarProps) => (
@@ -81,6 +89,16 @@ export const ScheduleCalendarToolbar = ({
       />
     </div>
     <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-2 desktop:w-auto">
+      <label className="flex min-h-11 items-center gap-2 text-body-dense">
+        <input
+          checked={showCancelled}
+          className="size-5"
+          data-testid="calendar-show-cancelled"
+          onChange={(event) => onShowCancelledChange(event.target.checked)}
+          type="checkbox"
+        />
+        キャンセルした予定を出す
+      </label>
       <div className="w-full desktop:w-48">
         <SegmentedControl
           data-testid="calendar-view"

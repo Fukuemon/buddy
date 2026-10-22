@@ -75,6 +75,8 @@ export type Schedule = {
   description: string
   /** kind が visit のときだけある。 */
   visit?: VisitDetail
+  /** キャンセルした予定のときだけある。 */
+  cancel?: { reason: string }
 }
 
 /** 予定の作成と更新で送る値。 */
@@ -88,6 +90,8 @@ export type ScheduleListParams = {
   to: string
   /** 空か未指定のときは、事業所の全ての職員の予定を返す。 */
   staffIds?: Staff['id'][]
+  /** true のときだけ、キャンセルした予定も返す。 */
+  includeCancelled?: boolean
 }
 
 /** 職員と利用者の一覧の条件。 */

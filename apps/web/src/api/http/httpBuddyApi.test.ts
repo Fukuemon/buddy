@@ -87,6 +87,31 @@ describe('createHttpBuddyApi', () => {
     expect(list.map((s) => s.id)).toEqual(['keep'])
   })
 
+  it('includeCancelled のときは、キャンセルした予定も理由を付けて返す', async () => {
+    server.use(
+      scheduleHttp.get('/v1/facilities/{facility_id}/schedules', ({ response }) =>
+        response(200).json({
+          schedules: [
+            schedule('keep'),
+            schedule('cancelled', {
+              cancel: { id: 'c', schedule_id: 'cancelled', reason: '体調不良' },
+            }),
+          ],
+          recurring_schedules: [],
+        }),
+      ),
+    )
+    const list = await api().schedules.list('facility-1', {
+      from: '2026-10-20T00:00:00+09:00',
+      to: '2026-10-20T12:00:00+09:00',
+      includeCancelled: true,
+    })
+    expect(list.map((s) => [s.id, s.cancel])).toEqual([
+      ['keep', undefined],
+      ['cancelled', { reason: '体調不良' }],
+    ])
+  })
+
   it('繰り返しの予定を期間の回に分けて返し、回を読んで置き換える', async () => {
     const rs: components['schemas']['RecurringSchedule'] = {
       ...schedule('01M3TC6E9G4N8Q2R5T7V9W1X3Y', { date: '2026-10-06' }),
