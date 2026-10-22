@@ -26,9 +26,9 @@ API とマイグレーションは、次の環境変数を読む。
 | `PORT` | いいえ | `8080` | API が待ち受けるポート |
 | `CORS_ALLOW_ORIGINS` | いいえ | 空 | カンマで区切ったオリジン。空なら CORS のヘッダーを返さない |
 | `LOG_LEVEL` | いいえ | `info` | `debug`、`info`、`warn`、`error` のいずれか |
-| `GOOGLE_CALENDAR_SERVICE_ACCOUNT` | いいえ | 空 | 職員がカレンダーを共有する相手のサービスアカウントのメールアドレス。空なら Google カレンダーを読み書きせず、カレンダーを読む操作は 503 を返し、予定の書き出しの処理を動かさない。認証の情報は Application Default Credentials で、書き出すときはスコープ `calendar.events` で読む |
-| `GOOGLE_CALENDAR_ENDPOINT` | いいえ | 空 | Calendar API の代わりに呼ぶ URL。フェイクの API で試すためのもので、認証をしない。`GOOGLE_CALENDAR_SERVICE_ACCOUNT` と一緒に渡す |
-| `GOOGLE_CALENDAR_EXPORT_ENABLED` | いいえ | `false` | `true` なら、予定を Google カレンダーに書き出す。`GOOGLE_CALENDAR_SERVICE_ACCOUNT` と一緒に渡す。`false` のときは書き出しの待ちを積まず、スコープは `calendar.readonly` で読む |
+| `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` | いいえ | 空 | 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応（JSON）のパス。形は `[{"org_id": "...", "service_account": "..."}]` で、照合の API と同じ。空なら Google カレンダーを読み書きせず、カレンダーを読む操作は 503 を返し、予定の書き出しの処理を動かさない。対応の無い事業所のカレンダーの操作も 503 を返す。Application Default Credentials で認証し、事業所のサービスアカウントになりすます。書き出すときのスコープは `calendar.events` |
+| `GOOGLE_CALENDAR_ENDPOINT` | いいえ | 空 | Calendar API の代わりに呼ぶ URL。フェイクの API で試すためのもので、認証をしない。`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` と一緒に渡す |
+| `GOOGLE_CALENDAR_EXPORT_ENABLED` | いいえ | `false` | `true` なら、予定を Google カレンダーに書き出す。`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` と一緒に渡す。`false` のときは書き出しの待ちを積まず、スコープは `calendar.readonly` で読む |
 | `GOOGLE_CALENDAR_EXPORT_INTERVAL` | いいえ | `30s` | 予定の書き出しの待ちを確かめる間隔。Go の時間の書式で、`1s` 以上 |
 | `GOOGLE_CALENDAR_SYNC_ENABLED` | いいえ | `false` | `true` なら、Google カレンダーの変わった予定を読み、buddy の予定に当てる。`GOOGLE_CALENDAR_EXPORT_ENABLED` を `true` にして渡す |
 | `GOOGLE_CALENDAR_SYNC_INTERVAL` | いいえ | `2m` | Google カレンダーの変わった予定を読む間隔。Go の時間の書式で、`1s` 以上 |
@@ -80,10 +80,16 @@ Google カレンダーの取り込みをローカルで試すときは、Calenda
 ```sh
 go run ./cmd/fakegcal -addr 127.0.0.1:8085 -file ../../compose/fake-google-calendar.json
 
-export GOOGLE_CALENDAR_SERVICE_ACCOUNT=buddy-calendar@example.iam.gserviceaccount.com
+export GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE=../../compose/google-calendar-service-accounts.json
 export GOOGLE_CALENDAR_ENDPOINT=http://127.0.0.1:8085/
 go run ./cmd/api
 ```
+
+実際の Google カレンダーで試すときは、検証の事業所のサービスアカウントになりすました Application Default Credentials を使う。  
+手順と要るロールは、[照合の API の README](../receipt-api/README.md#google-カレンダーから予定を取る) と同じである。  
+`GOOGLE_APPLICATION_CREDENTIALS` と `GOOGLE_CALENDAR_ENDPOINT` を設定せず、シードの組織 `org-sample` と検証の事業所のサービスアカウントの対応のファイルを渡す。  
+対応のファイルはサービスアカウントのメールアドレスを持つので、Git で追跡しない場所に置く。  
+書き出し（`GOOGLE_CALENDAR_EXPORT_ENABLED`）は、サービスアカウントが「予定の変更」の共有で書けると確かめるまで有効にしない。
 
 ## マイグレーション
 

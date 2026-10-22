@@ -93,8 +93,15 @@ Google カレンダーの予定も、予定の CSV と同じ正規化と照合�
 Google カレンダーは、今も職員が予定を入れる場所なので、照合の予定のデータソースとして残す。  
 receipt-api は、Google Calendar API を直接呼ぶ。
 
-- 認証は Application Default Credentials で、スコープは `calendar.readonly` だけにする。ローカルではサービスアカウントのキーのファイル、クラスタでは Workload Identity Federation を使う。
-- ドメイン全体の委任は使わない。職員のカレンダーを、サービスアカウントに閲覧の権限で共有する。サービスアカウントが読めるカレンダーを、照合に使うものだけに絞るためである。
+- 認証は Application Default Credentials で、カレンダーの組織のサービスアカウントになりすました token で読む。スコープは `calendar.readonly` だけにする。
+  - ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](https://github.com/Fukuemon/buddy/blob/876381365355f7e4dab03f6dfdb3d6fb8a9f6947/docs/adr/0012-google-calendar-facility-service-accounts.md)
+  - ローカルでは、検証の事業所のサービスアカウントになりすました Application Default Credentials を使う。クラスタでは Workload Identity Federation を使う。どちらもサービスアカウントのキーを使わない。
+  - Application Default Credentials が事業所のサービスアカウントそのものとして動くとき（そのアカウントになりすました認証情報か、そのアカウントのキー）は、重ねてなりすまさない。サービスアカウント自身へのトークン作成者のロールを求めないためである。見分けは、認証情報のファイルの `client_email` か、なりすます先の URL のメールアドレスで行う。
+- ドメイン全体の委任は使わない。職員のカレンダーを、自分の事業所のサービスアカウントに閲覧の権限で共有する。サービスアカウントが読めるカレンダーを、照合に使うものだけに絞るためである。
+- 組織とサービスアカウントの対応は、カレンダーの設定と別のファイル（`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`）に置く。形は予定の API と同じにする。
+  - 対応は事業所ごとに 1 行で、運営側がアカウントを作るときに足す。カレンダーの設定は職員ごとの行で、職員が入れ替わるたびに変わる。更新する人と頻度が違うので、分ける。
+  - 予定の API はカレンダーの設定のファイルを持たず、対応のファイルだけを読む。同じファイルを 2 つの API に渡せる。
+  - カレンダーの設定の組織に対応が無いときは、起動しない。
 - 照合の対象のカレンダーは、サーバーの設定のファイル（`GOOGLE_CALENDARS_FILE`）に置き、リクエストで受けない。任意のカレンダーを読ませないためである。
 - 設定のカレンダーごとに、使う事業所の組織の ID（`org_id`）を持たせる。リクエストの access token の組織と同じ `org_id` のカレンダーだけを読む。1 つの receipt-api を複数の事業所で使っても、別の事業所の職員の予定を読ませないためである。
 
