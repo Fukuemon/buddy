@@ -23,6 +23,8 @@ status: stable
 | E2E とブラウザのテスト | Playwright | `packages/e2e/package.json`、`packages/ui/package.json`（同じバージョンにする） |
 | E2E の書き方の規則 | ESLint | `packages/e2e/package.json` |
 | 予定の API の HTTP | gin | `services/schedule/go.mod` |
+| 予定の API の DB のドライバー | pgx/v5 | `services/schedule/go.mod` |
+| 予定の API の結合テストの PostgreSQL のコンテナ | testcontainers-go | `services/schedule/go.mod` |
 | API のサーバーの生成 | oapi-codegen（`go tool`） | 各 `go.mod` の `tool` |
 | 画面の API の型の生成 | openapi-typescript | `apps/web/package.json` |
 | web のサーバーから見た API のフェイク（テストと `dev:msw`） | MSW、openapi-msw | `apps/web/package.json` |
@@ -39,7 +41,7 @@ status: stable
 | Git のフック、コミットの形式 | lefthook、commitlint | `package.json` |
 | スキルとフックの配置 | apm | `mise.toml`、パッケージは `apm.yml` と `apm.lock.yaml` |
 | エビデンスの動画の添付 | gh | `mise.toml`。CI のワークフローは mise で入れず、ランナーの gh を使う |
-| ローカル環境の全体の起動 | Docker Compose（PostgreSQL、Valkey、mock-oauth2-server） | `compose.yml` のイメージのタグ |
+| ローカル環境の全体の起動 | Docker Compose（PostgreSQL、Valkey、mock-oauth2-server、calendarpit） | `compose.yml` のイメージのタグ |
 | 実行のイメージ | distroless（API）、`node:24-slim`（web） | `services/*/Dockerfile` |
 
 - パッケージマネージャーが管理しないツールは、次の場所で固定する。
@@ -47,6 +49,7 @@ status: stable
   - Go の `tool`（`go.mod`）
   - Docker のイメージのタグ（`compose.yml`、`Dockerfile`）
   - PostgreSQL のイメージのタグ（`scripts/build-db-docs.sh`、`services/schedule/internal/postgres/main_test.go`）
+  - `services/schedule/README.md` の手順の、PostgreSQL と calendarpit のイメージのタグ
   - CDN の URL（`docs/api/reference.js` の Scalar）
   - CI の uv（`.github/workflows/docs-site.yml` の setup-uv の `version`）
 - 録画に要る `ffmpeg` と `ffprobe` は、どこでも固定していない。各自が入れる。
@@ -59,8 +62,15 @@ status: stable
 - Vite+ は、`pnpm-workspace.yaml` の catalog の `vite-plus` と `vite`（`@voidzero-dev/vite-plus-core` へのエイリアス）を一緒に上げる。
 - TanStack の Router、Query、Start は、`apps/web/package.json` に厳密なバージョンで書いてある。上げたら、`pnpm --filter @buddy/web check`、`test`、`build` と、compose での画面の確かめ（`pnpm e2e`）を流す。
 - `@digital-go-jp/design-tokens` は、ADR-0004 の決めたとおり、上げる前にトークンの名前と値の差分を読み、`pnpm --filter @buddy/ui test` でコントラストのテストを流す。
-- PostgreSQL、Valkey、IdP のイメージを上げたら、`docker compose up --build --wait` と `pnpm e2e` を流す。
-  - PostgreSQL のタグは、`compose.yml`、`services/schedule/internal/postgres/main_test.go`、`scripts/build-db-docs.sh` の 3 か所にある。3 か所を同じタグにそろえる。
+- PostgreSQL、Valkey、IdP、calendarpit のイメージを上げたら、`docker compose up --build --wait` と `pnpm e2e` を流す。
+  - PostgreSQL のタグは同じタグにそろえる。タグがあるのは次の 4 か所。
+    - `compose.yml`
+    - `services/schedule/internal/postgres/main_test.go`
+    - `scripts/build-db-docs.sh`
+    - `services/schedule/README.md` の手順
+  - calendarpit のタグは同じバージョンにそろえる。タグがあるのは次の場所。
+    - `compose.yml` の `calendarpit` と `calendarpit-authorize`（バージョンと digest）
+    - `services/schedule/README.md` の手順（バージョンだけ）
   - `scripts/build-db-docs.sh` は、テーブル定義書に PostgreSQL のバージョンが入るので、パッチバージョンまで固定している。上げたら `pnpm generate:db-docs` でテーブル定義書を生成し直し、コミットする。
 - uv を上げたら、`mise.toml` と `.github/workflows/docs-site.yml` の setup-uv の `version` をそろえる。
 - tbls か Liam ERD CLI を上げたら、`pnpm generate:db-docs` と `pnpm build:erd` を流す。

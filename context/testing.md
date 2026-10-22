@@ -86,6 +86,7 @@ pull request と develop への push では、CI（[ci.yml](../.github/workflows
   - project は 3 つある。`setup` は compose の IdP にログインした状態を `packages/e2e/.auth/` に保存し、`e2e` はその状態で `tests/specs/` の spec を流す。`evidence` は `tests/evidence/` のエビデンスの spec を流し、`pnpm e2e` と CI は流さない（[エビデンス](testing/evidence.md)）。
   - `setup` は、青木 陽菜（マネージャー）と森 健太（チームリーダー、名前は `dev-mori`）の 2 人のログインの状態を保存する。リーダーで確かめる spec は、`test.use({ storageState: LEADER_STATE })` で切り替える。
   - 環境変数 `E2E_BASE_URL`（デフォルトは `http://localhost:3000`）と `E2E_LOGIN_NAME`（デフォルトは `dev-aoki`）で、向ける画面とログインの名前を変える。
+  - Google カレンダーの spec が向ける calendarpit と gcalhold は、環境変数 `E2E_CALENDARPIT_URL` と `E2E_GCALHOLD_URL` で変える。デフォルトは、それぞれ `http://localhost:4173` と `http://localhost:8085` である。
   - schedule-api は初回のログインで `sub` を職員に結び付ける。ローカルで青木 陽菜に別の名前で入ったことがあれば、`E2E_LOGIN_NAME` をその名前にするか、`docker compose down -v` でデータを消す。
   - Google カレンダーの取り込みの spec は、森にカレンダーを結び付けて取り込んだまま残す。同じ DB で 2 回目を流すと落ちるので、流し直すときは `docker compose down -v` で作り直す。
   - シードは空の DB にだけ適用される。`dev-mori` で入れないときや、職員の一覧に佐藤 美咲がいないときは、シードを変える前の DB なので、`docker compose down -v` で作り直す。

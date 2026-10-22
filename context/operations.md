@@ -47,7 +47,7 @@ status: stable
 - 組織とサービスアカウントの対応のファイル（`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`）は、buddy のリポジトリに置かない。
   - シークレットではないが、サービスアカウントのメールアドレスを持つためである。照合の対象のカレンダーのファイル（`GOOGLE_CALENDARS_FILE`）も、職員のカレンダー ID を持つので同じ扱いにする。
 - 配置先は インフラのリポジトリが決め、実行のときに環境変数（Google の認証情報は Application Default Credentials）で渡す。buddy のアプリは環境変数から読むだけにする。
-- buddy のリポジトリ、issue、pull request、ログに、本物のシークレットを書かない。buddy に置いてよいのは、ローカルの compose の開発用の値（`compose.yml`、`compose/idp.json`）だけである。
+- buddy のリポジトリ、issue、pull request、ログに、本物のシークレットを書かない。buddy に置いてよいのは、ローカルの compose の開発用の値（`compose.yml` と `compose/` の下のファイル）だけである。
 
 ## Adding a Facility
 
