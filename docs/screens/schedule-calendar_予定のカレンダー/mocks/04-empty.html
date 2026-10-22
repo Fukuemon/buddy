@@ -35,7 +35,10 @@
               <nav class="sc-side" aria-label="職員の絞り込み" data-m="4" data-testid="staff-filter-sidebar">
                 <div class="sc-side__head">
                   <strong class="wf-label">職員</strong>
-                  <span class="wf-btn wf-btn--text" aria-disabled="true" data-m="5" data-testid="staff-filter-reset">全員を表示</span>
+                  <span class="sc-side__actions"><span class="wf-btn wf-btn--text" data-m="20" data-testid="staff-filter-only-me">自分だけ</span><span class="wf-btn wf-btn--text" aria-disabled="true" data-m="5" data-testid="staff-filter-reset">全員を表示</span></span>
+                </div>
+                <div class="wf-search" data-m="21" data-testid="staff-filter-search">
+                  <span class="wf-label">名前で絞り込む</span>
                 </div>
                 <div class="sc-team">
                   <span class="wf-check is-on" data-m="6" data-testid="staff-filter-team-{チームの id}" data-toggle>チーム 1</span>

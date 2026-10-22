@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useNavigate, useRouteContext, useSearch } from '@tanstack/react-router'
 
 import { useBuddyApi } from '#/api/useBuddyApi'
 
@@ -11,6 +11,7 @@ export const StaffFilterSidebarContainer = () => {
   const { staff } = useSearch({ from: '/schedule' })
   const navigate = useNavigate({ from: '/schedule' })
   const { api, facilityId } = useBuddyApi()
+  const { viewer } = useRouteContext({ from: '__root__' })
 
   const teamsQuery = useQuery(teamListQueryOptions(api, facilityId))
   const staffQuery = useQuery(staffListQueryOptions(api, facilityId))
@@ -21,6 +22,7 @@ export const StaffFilterSidebarContainer = () => {
       selectedStaffIds={staff}
       staffList={staffQuery.data ?? []}
       teams={teamsQuery.data ?? []}
+      viewerStaffId={viewer?.staffId}
     />
   )
 }

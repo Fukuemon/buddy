@@ -12,6 +12,7 @@ const meta = {
     staffList: storyStaff,
     selectedStaffIds: [],
     onChange: fn(),
+    viewerStaffId: 'staff-1',
   },
 } satisfies Meta<typeof StaffFilterSidebar>
 
@@ -21,3 +22,6 @@ type Story = StoryObj<typeof meta>
 export const AllStaff: Story = {}
 
 export const PartiallySelected: Story = { args: { selectedStaffIds: ['staff-1', 'staff-3'] } }
+
+/** 自分だけを出している状態。「自分だけ」は押せない。 */
+export const OnlyViewer: Story = { args: { selectedStaffIds: ['staff-1'] } }
