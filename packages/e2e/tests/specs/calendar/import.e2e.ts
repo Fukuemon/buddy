@@ -2,13 +2,13 @@ import { expect, test } from '@playwright/test'
 
 import { FAKE_GOOGLE_URL, LEADER, SEED_PATIENT } from '../../fixtures/env'
 
-// compose の偽物の Google（compose/fake-google-calendar.json）は、森のカレンダーに 2026 年 11 月の予定を持つ。
+// compose のフェイクの Google（compose/fake-google-calendar.json）は、森のカレンダーに 2026 年 11 月の予定を持つ。
 const MORI = LEADER.staff
 const MORI_CALENDAR = 'kenta.mori@example.com'
 
 test.describe('予定の取り込み', () => {
   test.describe('Google カレンダーの取り込み', () => {
-    test('職員にカレンダーを結び付けて期間を取り込んだ場合、繰り返しの回がカレンダーに出て、2 回目の下見は全て取り込み済みになること', async ({
+    test('職員にカレンダーを結び付けて期間を取り込んだ場合、繰り返しの回がカレンダーに出て、2 回目のプレビューは全て取り込み済みになること', async ({
       page,
       request,
     }) => {
@@ -36,7 +36,7 @@ test.describe('予定の取り込み', () => {
         )
       })
 
-      await test.step('11 月を下見すると、件数と取り込まない理由が出る', async () => {
+      await test.step('11 月をプレビューすると、件数と取り込まない理由が出る', async () => {
         await page.getByTestId(`calendar-link-import-${MORI.id}`).click()
         await expect(page).toHaveURL(/\/schedule\/import/)
         await expect(page.getByTestId('calendar-import-staff')).toHaveValue(MORI.id)
@@ -57,7 +57,7 @@ test.describe('予定の取り込み', () => {
         await expect(
           page.getByTestId('calendar-import-skipped-reason-service_not_found'),
         ).toHaveText('サービス内容を引けない予定: 1 件')
-        // 取り込まない予定の一覧は、利用者名を含む題名を出さない
+        // 取り込まない予定の一覧は、利用者名を含むタイトルを出さない
         await expect(page.getByTestId('calendar-import-skipped')).not.toContainText('見本')
       })
 
@@ -104,7 +104,7 @@ test.describe('予定の取り込み', () => {
         await expect(page.getByTestId('schedule-detail-datetime')).toContainText('2026-11-25')
       })
 
-      await test.step('同じ期間をもう一度下見すると、全て取り込み済みになる', async () => {
+      await test.step('同じ期間をもう一度プレビューすると、全て取り込み済みになる', async () => {
         // 回を置き換えた予定は、予定の API が森の Google カレンダーに書き出し、書き出した予定も取り込み済みに数える。
         // 書き出しは別の処理が行うので、書き出した予定が出るまで待つ
         await expect
