@@ -17,7 +17,7 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const SCREENS_DIR = relative(process.cwd(), join(ROOT, 'docs/screens')) || '.'
 const SCREEN_DIR_NAME = /^([a-z]+-[a-z]+)_(.+)$/
 const MOCK_NAME = /^\d{2}-[a-z0-9]+(-[a-z0-9]+)*\.html$/
-// 端末の名前は mock.js の VIEWS だけに書くので、そこから読む
+// デバイスの名前は mock.js の VIEWS だけに書くので、そこから読む
 const VIEWS = new Set(
   [
     ...readFileSync(join(SCREENS_DIR, '_common/mock.js'), 'utf8').matchAll(
@@ -280,7 +280,7 @@ const checkMock = (mockPath, screenId) => {
   for (const [pattern, label] of FORBIDDEN) {
     if (pattern.test(code)) report(mockPath, `${label}を使わない`)
   }
-  if (PLACEHOLDER.test(html)) report(mockPath, `雛形の ${html.match(PLACEHOLDER)[0]} が残っている`)
+  if (PLACEHOLDER.test(html)) report(mockPath, `テンプレートの ${html.match(PLACEHOLDER)[0]} が残っている`)
   const numbers = new Set()
   for (const match of code.matchAll(/\sdata-m=["']([^"']*)["']/g)) {
     if (!/^[1-9]\d*$/.test(match[1])) {
@@ -300,7 +300,7 @@ const checkMock = (mockPath, screenId) => {
 
 const checkCss = (cssPath) => {
   const raw = readFileSync(cssPath, 'utf8')
-  if (PLACEHOLDER.test(raw)) report(cssPath, `雛形の ${raw.match(PLACEHOLDER)[0]} が残っている`)
+  if (PLACEHOLDER.test(raw)) report(cssPath, `テンプレートの ${raw.match(PLACEHOLDER)[0]} が残っている`)
   const css = stripComments(raw)
   for (const [pattern, label] of FORBIDDEN) {
     if (pattern.test(css)) report(cssPath, `${label}を使わない`)
@@ -321,7 +321,7 @@ const checkScreen = (dir) => {
   const apiPath = join(dir, 'api.md')
   if (!existsSync(apiPath)) report(dir, 'api.md が無い')
   else if (PLACEHOLDER.test(readFileSync(apiPath, 'utf8')))
-    report(apiPath, '雛形の <…> が残っている')
+    report(apiPath, 'テンプレートの <…> が残っている')
   if (!existsSync(mocksDir)) {
     report(dir, 'mocks/ が無い')
     return
@@ -346,7 +346,7 @@ const checkScreen = (dir) => {
   if (first !== `# ${screenId} ${screenName}`)
     report(specPath, `1 行目を「# ${screenId} ${screenName}」にする`)
   if (PLACEHOLDER.test(markdown))
-    report(specPath, `雛形の ${markdown.match(PLACEHOLDER)[0]} が残っている`)
+    report(specPath, `テンプレートの ${markdown.match(PLACEHOLDER)[0]} が残っている`)
   const prose = markdown
     .replace(/^( {0,4})(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1\2[^\n]*$/gm, '')
     .replace(/(`+)[^`\n][\s\S]*?\1/g, '')

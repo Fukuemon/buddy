@@ -62,7 +62,7 @@ status: stable
 | 用語 | 意味 | コードの識別子 |
 | --- | --- | --- |
 | 結び付け | 職員に Google カレンダーを対応させること。画面の名前は「カレンダーの連携」 | テーブル `external_calendars`、API `createExternalCalendar`、`removeExternalCalendar` |
-| 予定の取り込み | 結び付けたカレンダーの予定を、期間を選んで buddy の予定にすること。確定の前にプレビューする。画面のボタンの文言は「下見する」 | テーブル `import_runs`、`external_event_links`、API `createCalendarImportPreview`、`createCalendarImport` |
+| 予定の取り込み | 結び付けたカレンダーの予定を、期間を選んで buddy の予定にすること。確定の前にプレビューする | テーブル `import_runs`、`external_event_links`、API `createCalendarImportPreview`、`createCalendarImport` |
 | 予定の書き出し | buddy で作り、変え、キャンセルした予定を、結び付けたカレンダーに書くこと | テーブル `calendar_exports`、API `listCalendarExportIssues`、`createCalendarExportRetry` |
 
 ### 呼び方の対応
