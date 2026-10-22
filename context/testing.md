@@ -83,7 +83,7 @@ pull request と develop への push では、CI（[ci.yml](../.github/workflows
 
 - E2E のテストは `packages/e2e/tests/` に置き、ルートの compose で立てた全体に向けて流す。手順は CONTRIBUTING.md の「E2E のテストを流す」にある。
   - API と IdP は置き換えず、compose の本物を使う。テストのデータは予定の API に作り、消さない。spec は、タイトルに時刻を入れて自分の作ったデータを見分ける。
-  - project は 2 つある。`setup` は compose の IdP にログインした状態を `packages/e2e/.auth/` に保存し、`e2e` はその状態で spec を流す。
+  - project は 3 つある。`setup` は compose の IdP にログインした状態を `packages/e2e/.auth/` に保存し、`e2e` はその状態で `tests/specs/` の spec を流す。`evidence` は `tests/evidence/` のエビデンスの spec を流し、`pnpm e2e` と CI は流さない（[エビデンス](testing/evidence.md)）。
   - `setup` は、青木 陽菜（マネージャー）と森 健太（チームリーダー、名前は `dev-mori`）の 2 人のログインの状態を保存する。リーダーで確かめる spec は、`test.use({ storageState: LEADER_STATE })` で切り替える。
   - 環境変数 `E2E_BASE_URL`（デフォルトは `http://localhost:3000`）と `E2E_LOGIN_NAME`（デフォルトは `dev-aoki`）で、向ける画面とログインの名前を変える。
   - schedule-api は初回のログインで `sub` を職員に結び付ける。ローカルで青木 陽菜に別の名前で入ったことがあれば、`E2E_LOGIN_NAME` をその名前にするか、`docker compose down -v` でデータを消す。
