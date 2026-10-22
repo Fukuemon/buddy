@@ -23,7 +23,7 @@ export const linkErrorMessage = (error: unknown) => {
   if (statusOf(error) === 403) return FORBIDDEN_MESSAGE
   switch (codeOf(error)) {
     case 'calendar_unreadable':
-      return 'このカレンダーを読めません。カレンダーを buddy のサービスアカウントに共有したかと、カレンダーの ID が合っているかを確かめてください。'
+      return 'このカレンダーを読めません。カレンダーをこの事業所の buddy のサービスアカウントに共有したかと、カレンダーの ID が合っているかを確かめてください。'
     case 'calendar_taken':
       return 'このカレンダーは、ほかの職員に結び付いています。'
     case 'staff_has_calendar':
