@@ -21,6 +21,8 @@ buddy は、web、schedule-api、receipt-api の 3 つのアプリと、packages
 - 検証環境ができたら、`develop` の状態を検証環境に、`main` の状態を本番環境に反映する。
 - 最初のリリースは、検証した `develop` の状態をまとめて `main` にマージする。リリースの仕組みはまだ作らない。
 - バージョンはアプリごとに持ち、タグは `apps/<アプリ>/vX.Y.Z` の形にする。Go のモジュールのタグの形（`<ディレクトリ>/vX.Y.Z`）に合わせ、ディレクトリとタグを 1 対 1 に対応させる。
+  - タグの形を `apps/<アプリ>/vX.Y.Z` にする判断は、ADR-0013 で置き換えた。
+  - ADR-0013: [2 つの API を services/ に置き、画面と API をトップのディレクトリで分ける](0013-services-directory.md)
 - CHANGELOG のファイルは作らない。変更の記録は pull request とコミットが持つ。
 - pull request ごとのリリースへの移行と、次のバージョンを決めるツールは、E2E と検証環境がそろった時点で決める。ツールを入れるときの第一の候補は、release-please の manifest のモードである。コミットメッセージ（Conventional Commits で書き、commitlint が確かめている）から、アプリごとに次のバージョンを決められる。changesets は、変更ごとに記述のファイルを足す運用が要るので、第二の候補にする。`apps/<アプリ>/vX.Y.Z` のタグの形にできるかは、入れるときに設定で確かめる。
 
