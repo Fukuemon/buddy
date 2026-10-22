@@ -309,4 +309,51 @@ test.describe('確かめが要る予定', () => {
       })
     }
   })
+
+  test.describe('繰り返しの予定', () => {
+    for (const variant of EVIDENCE_VARIANTS) {
+      const prefix = variant.label ? `${variant.label}: ` : ''
+
+      test(`${prefix}繰り返しの予定の行の場合、繰り返しの予定の ID の testid で指せること`, async ({
+        browser,
+      }) => {
+        const url = storyUrl('画面-calendar-calendarreviewview--default')
+        const row = (page: Page) => page.getByTestId('calendar-review-row-recurring-recurring-1')
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'calendar-review-recurring-row',
+            title:
+              '確かめが要る予定のうち、予定の ID を持たない繰り返しの予定の行を、繰り返しの予定の ID の testid（calendar-review-row-recurring-<ID>）で指せる',
+            actor: 'ログインなし（Storybook の story）',
+            variant,
+          },
+          async (page) => {
+            await page.goto(url)
+          },
+          async ({ page, step, check }) => {
+            await page.goto(url)
+            await expect(row(page)).toBeVisible()
+            await step(
+              '確かめが要る予定の画面（Storybook の CalendarReviewView の Default）を開いている\n石川 二葉の 2026/11/03（火）から毎回 10:00〜11:00 は、Google カレンダーで消された繰り返しの予定である（架空のデータの recurring-1）',
+            )
+
+            await step(
+              'testid が calendar-review-row-recurring-recurring-1 の行を指す（繰り返しの予定の行は、予定の ID を持たない）',
+            )
+            await row(page).scrollIntoViewIfNeeded()
+            await row(page).hover()
+            await expect(row(page).getByTestId(/^calendar-review-datetime-/)).toHaveText(
+              '2026/11/03（火）から毎回 10:00〜11:00',
+            )
+            await expect(row(page)).toContainText('石川 二葉')
+            await expect(row(page).getByTestId(/^calendar-review-open-/)).toHaveCount(0)
+            await check(
+              '指した行が、石川 二葉の「2026/11/03（火）から毎回 10:00〜11:00」の行で、「予定を開く」が出ない',
+            )
+          },
+        )
+      })
+    }
+  })
 })
