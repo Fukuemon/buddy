@@ -26,7 +26,7 @@ func identityFrom(ctx context.Context) oidc.Identity {
 	return id
 }
 
-// authenticate は、publicPaths 以外の要求の Bearer のトークンを検証し、主張を request の context に入れる。
+// authenticate は、publicPaths 以外のリクエストの Bearer のトークンを検証し、主張を request の context に入れる。
 // トークンがないか検証に失敗したときは 401 を返す。
 func (s *server) authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

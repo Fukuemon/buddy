@@ -42,7 +42,7 @@ export type AuthDeps = {
   /** access token の職員を予定の API の GET /v1/me で引く。 */
   fetchMe: (accessToken: string) => Promise<MeResult>
   now?: () => number
-  /** ほかの要求が取り直すのを待つときに使う。テストで替える。 */
+  /** ほかのリクエストが取り直すのを待つときに使う。テストで替える。 */
   wait?: (ms: number) => Promise<void>
 }
 
@@ -52,9 +52,9 @@ const SESSION_TTL_SECONDS = 12 * 60 * 60
 const LOGIN_TTL_SECONDS = 10 * 60
 /** 期限まで、この長さを切った access token は、使う前に取り直す。 */
 const REFRESH_MARGIN_MS = 60 * 1000
-/** 取り直しの鍵を持つ長さ。ブローカーの応答を待つ上限の 2 倍にする。 */
+/** 取り直しの鍵を持つ長さ。ブローカーのレスポンスを待つ上限の 2 倍にする。 */
 const REFRESH_LOCK_MS = OIDC_TIMEOUT_SECONDS * 2 * 1000
-/** ほかの要求の取り直しを待つ間隔。待つのは、鍵が放されるか期限が切れるまでである。 */
+/** ほかのリクエストの取り直しを待つ間隔。待つのは、鍵が放されるか期限が切れるまでである。 */
 const REFRESH_POLL_MS = 200
 
 const sessionKey = (id: string) => `session:${id}`
@@ -196,7 +196,7 @@ const sessionIdOf = (request: Request, secret: string) =>
   verifySignedValue(readCookie(request.headers.get('Cookie'), SESSION_COOKIE), secret)
 
 /**
- * 要求の cookie のセッションを返す。access token の期限が近ければ refresh token で取り直して置き直す。
+ * リクエストの cookie のセッションを返す。access token の期限が近ければ refresh token で取り直して置き直す。
  *
  * セッションが無いとき、期限が切れて取り直せないときは undefined を返す。ブローカーが refresh token を拒んだときだけ、
  * セッションを消す。通信の失敗では消さず、access token がまだ使えればそれを返し、使えなければ投げる。
@@ -228,7 +228,7 @@ const refreshOnce = (id: string, session: Session, now: number, deps: AuthDeps) 
 
 /**
  * Valkey の鍵で、ほかのプロセスとも取り直しを 1 本にする。refresh token を回すブローカーは、使い回しを拒むためである。
- * 鍵を取れなかった要求は、取り直した値が置かれるか鍵が放されるまで待つ。
+ * 鍵を取れなかったリクエストは、取り直した値が置かれるか鍵が放されるまで待つ。
  */
 const refresh = async (
   id: string,
@@ -250,7 +250,7 @@ const refresh = async (
     return stillValid(session) ? session : undefined
   }
   try {
-    // 鍵を取る前に、ほかの要求が取り直し終えていることがある。古い refresh token を送らないよう読み直す
+    // 鍵を取る前に、ほかのリクエストが取り直し終えていることがある。古い refresh token を送らないよう読み直す
     const latest = await deps.store.get<Session>(sessionKey(id))
     if (latest === undefined) return undefined
     if (latest.accessToken !== session.accessToken || latest.refreshToken === undefined)

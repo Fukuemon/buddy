@@ -3,7 +3,7 @@ import { STAFF_MANAGE, type ServiceCode } from '#/api/types'
 
 type Schemas = components['schemas']
 
-/** 予定の API の偽物が返す、架空の事業所。 */
+/** 予定の API のフェイクが返す、ダミーの事業所。 */
 export const MOCK_FACILITY_ID = 'facility-demo'
 
 const STAMP = '2026-10-01T00:00:00Z'
@@ -117,7 +117,7 @@ const dayAfter = (base: Date, days: number) => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
-/** 基準日の前後に散らした、架空の予定を作る。 */
+/** 基準日の前後に散らした、ダミーの予定を作る。 */
 export const createMockSchedules = (base: Date): Schemas['Schedule'][] => {
   const schedule = (
     id: string,
@@ -151,7 +151,7 @@ export const createMockSchedules = (base: Date): Schemas['Schedule'][] => {
     categoryIds: string[] = [],
   ): Partial<Schemas['Schedule']> => {
     const serviceCode = mockServiceCodes.find((c) => c.code === code)
-    if (serviceCode === undefined) throw new Error(`架空のサービスコードに ${code} がない`)
+    if (serviceCode === undefined) throw new Error(`ダミーのサービスコードに ${code} がない`)
     return {
       schedule_type_id: 'type-visit',
       schedule_type: '訪問',
@@ -186,7 +186,7 @@ const nameOf = <T extends { id: string }>(rows: T[], id: string, name: (row: T) 
   return row ? name(row) : ''
 }
 
-/** 予定の作成と置き換えの要求から、API が返す予定を組み立てる。名前はマスタと職員と利用者から引く。 */
+/** 予定の作成と置き換えのリクエストから、API が返す予定を組み立てる。名前はマスタと職員と利用者から引く。 */
 export const scheduleFromRequest = (
   id: string,
   body: Schemas['SlotRequest'],
@@ -229,7 +229,7 @@ export const scheduleFromRequest = (
   }
 }
 
-/** 職員がカレンダーを共有する相手として返す、架空のサービスアカウント。 */
+/** 職員がカレンダーを共有する相手として返す、ダミーのサービスアカウント。 */
 export const mockServiceAccount = 'buddy-calendar@example.iam.gserviceaccount.com'
 
 /** 結び付けたカレンダー。青木 一郎は取り込んだことがあり、石川 二葉はまだ取り込んでいない。 */
@@ -344,7 +344,7 @@ export const exportOfIssue = (
   updated_at: issue.updated_at,
 })
 
-/** 下見の結果。利用者を 1 人に決められない予定が 2 件（繰り返し 1 件）と、取り込まない予定が 3 件ある。 */
+/** プレビューの結果。利用者を 1 人に決められない予定が 2 件（繰り返し 1 件）と、取り込まない予定が 3 件ある。 */
 export const createMockImportPreview = (
   range: Schemas['ImportRange'],
 ): Schemas['ImportPreview'] => ({
@@ -415,7 +415,7 @@ export const createMockImportPreview = (
   ],
 })
 
-/** 全て取り込み済みの期間の下見の結果。 */
+/** 全て取り込み済みの期間のプレビューの結果。 */
 export const createMockImportedPreview = (
   range: Schemas['ImportRange'],
 ): Schemas['ImportPreview'] => {
@@ -438,7 +438,7 @@ export const createMockImportedPreview = (
   }
 }
 
-/** 下見の結果を、取り込み方を当てて確定した結果。取り込まないを選んだ予定は、取り込まなかった件数に足す。 */
+/** プレビューの結果を、取り込み方を当てて確定した結果。取り込まないを選んだ予定は、取り込まなかった件数に足す。 */
 export const createMockImportResult = (
   externalCalendarId: string,
   preview: Schemas['ImportPreview'],

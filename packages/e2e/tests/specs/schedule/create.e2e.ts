@@ -5,7 +5,7 @@ import { LEADER, LEADER_STATE, LOGIN_STAFF, SEED_PATIENT, TEAM_MEMBER } from '..
 test.describe('予定のカレンダー', () => {
   test.describe('予定の作成', () => {
     test('通常の予定を作った場合、日の表示の予定者の列にその予定が出ること', async ({ page }) => {
-      // 走らせるたびに予定が増えるので、題名で今回の予定を見分ける
+      // 走らせるたびに予定が増えるので、タイトルで今回の予定を見分ける
       const title = `E2E の会議 ${Date.now()}`
       await page.goto('/schedule?view=day')
       await page.getByTestId('schedule-create-open').click()
@@ -37,9 +37,9 @@ test.describe('予定のカレンダー', () => {
       await expect(page.getByTestId('service-code-訪看I2')).not.toBeChecked()
       await page.getByTestId('schedule-field-patient').click()
       const patientOption = page.getByTestId(`patient-select-option-${SEED_PATIENT.id}`)
-      // 利用者の一覧が届くまでは、カレンダーの訪問の題が「利用者不明 訪問」になるので、届いてから数える
+      // 利用者の一覧が届くまでは、カレンダーの訪問のタイトルが「利用者不明 訪問」になるので、届いてから数える
       await expect(patientOption).toBeVisible()
-      // 訪問の予定は題名を持たず、利用者の名前で出るので、作る前の件数と比べる
+      // 訪問の予定はタイトルを持たず、利用者の名前で出るので、作る前の件数と比べる
       const visits = page
         .getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)
         .getByTestId(/^schedule-event-/)
@@ -72,7 +72,7 @@ test.describe('予定のカレンダー', () => {
         await page.getByTestId('service-code-訪看I3').check()
         await page.getByTestId('schedule-field-patient').click()
         const patientOption = page.getByTestId(`patient-select-option-${SEED_PATIENT.id}`)
-        // 利用者の一覧が届くまでは、カレンダーの訪問の題が「利用者不明 訪問」になるので、届いてから数える
+        // 利用者の一覧が届くまでは、カレンダーの訪問のタイトルが「利用者不明 訪問」になるので、届いてから数える
         await expect(patientOption).toBeVisible()
         const visits = column
           .getByTestId(/^schedule-event-/)

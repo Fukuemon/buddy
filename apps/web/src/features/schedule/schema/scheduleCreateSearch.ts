@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import { SCHEDULE_KINDS } from '#/api/types'
 
-/** 既定の値。URL に書かずに済むよう、route の stripSearchParams にも渡す。 */
+/** デフォルト値。URL に書かずに済むよう、route の stripSearchParams にも渡す。 */
 export const scheduleCreateSearchDefaults = { kind: 'visit' } as const
 
 /**

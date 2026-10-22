@@ -9,7 +9,7 @@ import svgr from 'vite-plugin-svgr'
 
 const isTest = process.env.VITEST === 'true'
 if (isTest) {
-  // 日時の変換のテストの期待値を、端末の時間帯に依らず +09:00 で書けるようにする。
+  // 日時の変換のテストの期待値を、実行する環境の時間帯に依らず +09:00 で書けるようにする。
   process.env.TZ = 'Asia/Tokyo'
 }
 

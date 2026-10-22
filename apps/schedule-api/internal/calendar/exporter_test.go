@@ -26,7 +26,7 @@ import (
 
 const otherGoogleCalID = "companion@example.com"
 
-// exportEnv は、予定の操作と、書き出しの処理と、偽物の Calendar API を同じ Store の上で動かす。
+// exportEnv は、予定の操作と、書き出しの処理と、フェイクの Calendar API を同じ Store の上で動かす。
 type exportEnv struct {
 	env
 	srv       *gcaltest.Server
@@ -176,7 +176,7 @@ func TestExportCreateUpdateCancel(t *testing.T) {
 		t.Errorf("キャンセルした予定の状態 = %s", ev.Status)
 	}
 	if _, err := (inmem.Calendars{Store: e.store}).LinkBySchedule(t.Context(), d.ID); !errors.Is(err, apperr.ErrNotFound) {
-		t.Errorf("キャンセルした後の対応の誤り = %v", err)
+		t.Errorf("キャンセルした後の対応のエラー = %v", err)
 	}
 }
 
@@ -250,7 +250,7 @@ func TestExportConflictWhenChangedInGoogle(t *testing.T) {
 	}
 	var ce *apperr.ConflictError
 	if _, err := e.uc.RetryExport(e.ctx, x.ID); !errors.As(err, &ce) || ce.Code != calendar.CodeExportNotInReview {
-		t.Errorf("解いた待ちを書き直す誤り = %v", err)
+		t.Errorf("解いた待ちを書き直すエラー = %v", err)
 	}
 }
 
@@ -602,7 +602,7 @@ func TestExportRecurringKeepsImportedExceptions(t *testing.T) {
 	}
 }
 
-// 書き出しは、要求を受けずに動くので、予定の職員が結び付けたカレンダーの行の事業所のサービスアカウントで書く。
+// 書き出しは、リクエストを受けずに動くので、予定の職員が結び付けたカレンダーの行の事業所のサービスアカウントで書く。
 // カレンダーの行の事業所を予定の事業所と違う値にして、作る、変える、消すの全てがその事業所で引くことを確かめる。
 func TestExportUsesCalendarFacilityAccount(t *testing.T) {
 	e := newExportEnv(t)

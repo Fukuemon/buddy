@@ -18,7 +18,7 @@ import {
 export type HttpApiOptions = {
   /** API の URL。例は `http://localhost:8080`。 */
   baseUrl: string
-  /** 要求を送る fetch。BFF はトークンを付ける fetch に替える。既定は globalThis.fetch。 */
+  /** リクエストを送る fetch。BFF はトークンを付ける fetch に替える。デフォルトは globalThis.fetch。 */
   fetch?: typeof globalThis.fetch
 }
 
@@ -39,7 +39,7 @@ export const unwrap = async <T>(promise: Promise<Result<T>>): Promise<T> => {
   return data
 }
 
-/** 本文の無い成功の応答を待つ。失敗の状態なら ApiError を投げる。 */
+/** 本文の無い成功のレスポンスを待つ。失敗の状態なら ApiError を投げる。 */
 const expectOk = async (promise: Promise<Result<unknown>>): Promise<void> => {
   const { error, response } = await promise
   if (!response.ok) throw apiError(error, response)

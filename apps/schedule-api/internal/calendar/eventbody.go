@@ -37,7 +37,7 @@ type EventBody struct {
 	Private map[string]string
 }
 
-// EventWriter が返す誤り。書き出しの処理が、待ちの状態に対応させる。
+// EventWriter が返すエラー。書き出しの処理が、待ちの状態に対応させる。
 var (
 	// ErrEventChanged は、If-Match の etag が外部の予定と違ったこと（412）を表す。
 	ErrEventChanged = errors.New("外部のカレンダーで予定が変わっていました")
@@ -54,7 +54,7 @@ var (
 	ErrUnwritable = errors.New("カレンダーに予定を書けません。予定の変更の権限で共有されているかを確かめてください")
 )
 
-// EventWriter は、外部のカレンダーに予定を書く。誤りは、ErrEventChanged、ErrEventGone、ErrEventNotFound、ErrEventExists、
+// EventWriter は、外部のカレンダーに予定を書く。エラーは、ErrEventChanged、ErrEventGone、ErrEventNotFound、ErrEventExists、
 // ErrEventRejected、ErrUnwritable、ErrUnavailable のいずれかを包む。
 type EventWriter interface {
 	// Insert は、ID が eventID の予定を作り、etag を返す。

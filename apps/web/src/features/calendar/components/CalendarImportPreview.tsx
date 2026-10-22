@@ -19,7 +19,7 @@ import { CalendarImportReviewItem } from './CalendarImportReviewItem'
 
 export type CalendarImportPreviewProps = {
   preview: ImportPreview
-  /** 下見した職員の名前。 */
+  /** プレビューした職員の名前。 */
   staffName: string
   choices: ReviewChoices
   onChoiceChange: (eventId: ImportReviewItem['external_event_id'], choice: ReviewChoice) => void
@@ -32,7 +32,7 @@ export type CalendarImportPreviewProps = {
 }
 
 /**
- * 下見の結果。件数、確かめが要る予定と取り込み方、取り込まない予定、確定して取り込むを縦に並べる。
+ * プレビューの結果。件数、確かめが要る予定と取り込み方、取り込まない予定、確定して取り込むを縦に並べる。
  * 確かめが要る予定の全てに取り込み方を選ぶまで、確定して取り込むは押せない。
  */
 export const CalendarImportPreview = ({
@@ -54,7 +54,7 @@ export const CalendarImportPreview = ({
       data-testid="calendar-import-result-preview"
     >
       <div className="flex flex-wrap items-baseline gap-3">
-        <h2 className="text-heading-sm">下見の結果</h2>
+        <h2 className="text-heading-sm">プレビューの結果</h2>
         <span className="text-caption text-text-secondary">
           {staffName}、{formatDateRange(preview.range_start, preview.range_end)}
         </span>
@@ -68,7 +68,7 @@ export const CalendarImportPreview = ({
         <section className="flex flex-col gap-2">
           <h3 className="text-label">確かめが要る予定</h3>
           <p className="text-caption text-text-secondary">
-            題名から利用者を 1
+            タイトルから利用者を 1
             人に決められなかった予定です。予定ごとに、取り込み方を選んでください。
           </p>
           <ul className="m-0 flex list-none flex-col gap-3 p-0">
@@ -115,7 +115,7 @@ export const CalendarImportPreview = ({
               </thead>
               <tbody>
                 {preview.skipped.map((item, index) => (
-                  // 取り込まない予定は ID を持たず、並びは下見の応答の順で変わらない
+                  // 取り込まない予定は ID を持たず、並びはプレビューのレスポンスの順で変わらない
                   // oxlint-disable-next-line react/no-array-index-key
                   <tr className="border-b border-border" key={index}>
                     <td className="px-3 py-2 text-body-dense whitespace-nowrap">

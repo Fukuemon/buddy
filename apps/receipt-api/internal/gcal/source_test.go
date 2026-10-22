@@ -59,7 +59,7 @@ func TestSchedulesQuery(t *testing.T) {
 	}
 	qs := srv.Queries()
 	if len(qs) != 1 {
-		t.Fatalf("要求の数 = %d", len(qs))
+		t.Fatalf("リクエストの数 = %d", len(qs))
 	}
 	want := map[string]string{
 		"timeMin":      "2024-04-01T00:00:00+09:00",
@@ -177,10 +177,10 @@ func TestSchedulesEvents(t *testing.T) {
 		}
 	}
 	if len(srv.Queries()) != 3 {
-		t.Errorf("要求の数 = %d。ページ送りで 2、もう 1 つのカレンダーで 1 になる", len(srv.Queries()))
+		t.Errorf("リクエストの数 = %d。ページ送りで 2、もう 1 つのカレンダーで 1 になる", len(srv.Queries()))
 	}
 	if q := srv.Queries()[1]; q.Get("pageToken") != "1" {
-		t.Errorf("2 つ目の要求の pageToken = %q", q.Get("pageToken"))
+		t.Errorf("2 つ目のリクエストの pageToken = %q", q.Get("pageToken"))
 	}
 }
 
@@ -194,7 +194,7 @@ func TestSchedulesSourceError(t *testing.T) {
 	}
 	var ie *record.InputError
 	if errors.As(err, &ie) {
-		t.Errorf("入力の誤りにしない: %v", err)
+		t.Errorf("入力のエラーにしない: %v", err)
 	}
 }
 
@@ -237,7 +237,7 @@ func TestLoadCalendars(t *testing.T) {
 	}
 }
 
-// orgServices は、組織ごとの calendar.Service を返す gcal.Services である。無い組織には誤りを返す。
+// orgServices は、組織ごとの calendar.Service を返す gcal.Services である。無い組織にはエラーを返す。
 type orgServices map[string]*calendar.Service
 
 func (s orgServices) Service(orgID string) (*calendar.Service, error) {
@@ -264,7 +264,7 @@ func TestMonthUsesOrgService(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(srvA.Queries()) != 1 || len(srvB.Queries()) != 0 {
-		t.Errorf("要求の数: org-a のアカウント = %d, org-b のアカウント = %d", len(srvA.Queries()), len(srvB.Queries()))
+		t.Errorf("リクエストの数: org-a のアカウント = %d, org-b のアカウント = %d", len(srvA.Queries()), len(srvB.Queries()))
 	}
 }
 
@@ -276,7 +276,7 @@ func TestMonthWithoutOrgService(t *testing.T) {
 	}
 }
 
-// 通信の誤りの文に、カレンダー ID を含む URL を出さない。
+// 通信のエラーの文に、カレンダー ID を含む URL を出さない。
 func TestSchedulesSourceErrorHidesCalendarID(t *testing.T) {
 	svc, err := calendar.NewService(t.Context(), option.WithEndpoint("http://127.0.0.1:1/"), option.WithoutAuthentication())
 	if err != nil {
@@ -288,6 +288,6 @@ func TestSchedulesSourceErrorHidesCalendarID(t *testing.T) {
 		t.Fatalf("err = %v, want *check.SourceError", err)
 	}
 	if strings.Contains(err.Error(), "secret-staff") {
-		t.Errorf("誤りの文にカレンダー ID が出ている: %v", err)
+		t.Errorf("エラーの文にカレンダー ID が出ている: %v", err)
 	}
 }

@@ -102,7 +102,7 @@ func TestCalendarExportRepository(t *testing.T) {
 		t.Errorf("確かめが要る待ちでない Retry: %v", err)
 	}
 
-	// 一時的な誤りは、書く時刻を遅らせて pending に戻す。失敗した待ちは、積み直すと数え直す
+	// 一時的なエラーは、書く時刻を遅らせて pending に戻す。失敗した待ちは、積み直すと数え直す
 	claimed, _ = r.Claim(ctx, 10, time.Minute)
 	unavailable := calendar.ErrorUnavailable
 	if err := r.Finish(ctx, claimed[0], calendar.ExportResult{Status: calendar.ExportPending, ErrorCode: &unavailable, RetryAfter: time.Minute}); err != nil {

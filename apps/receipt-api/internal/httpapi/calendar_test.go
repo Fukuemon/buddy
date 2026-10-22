@@ -27,7 +27,7 @@ func event(id, summary, start, end string) *calendar.Event {
 	}
 }
 
-// calendarHandler は、testdata/schedules_utf8.csv と同じ予定と、解釈できない予定 1 件を返す偽物の Calendar API に向けた Handler を返す。
+// calendarHandler は、testdata/schedules_utf8.csv と同じ予定と、解釈できない予定 1 件を返すフェイクの Calendar API に向けた Handler を返す。
 func calendarHandler(t *testing.T) http.Handler {
 	t.Helper()
 	srv := gcaltest.NewServer(map[string]gcaltest.Calendar{
@@ -120,7 +120,7 @@ func TestChecksCalendar(t *testing.T) {
 		t.Errorf("Warnings = %+v", rep.Warnings)
 	}
 	if bytes.Contains(rec.Body.Bytes(), []byte("【")) {
-		t.Errorf("応答に題名が入っている: %s", rec.Body)
+		t.Errorf("レスポンスにタイトルが入っている: %s", rec.Body)
 	}
 }
 
@@ -170,7 +170,7 @@ func TestChecksCalendarErrors(t *testing.T) {
 				t.Errorf("body = %+v", body)
 			}
 			if bytes.Contains(rec.Body.Bytes(), []byte("example.com")) {
-				t.Errorf("応答にカレンダー ID が入っている: %s", rec.Body)
+				t.Errorf("レスポンスにカレンダー ID が入っている: %s", rec.Body)
 			}
 		})
 	}

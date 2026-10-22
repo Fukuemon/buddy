@@ -23,7 +23,7 @@ type errorResponse struct {
 	Message string `json:"message"`
 }
 
-// requestError は、本文やクエリの形の誤りである。writeError が Message を 400 で返す。
+// requestError は、本文やクエリの形のエラーである。writeError が Message を 400 で返す。
 type requestError struct{ message string }
 
 func (e *requestError) Error() string { return e.message }
@@ -66,14 +66,14 @@ func writeError(c *gin.Context, log *slog.Logger, err error) {
 	}
 }
 
-// calendarError は、外部のカレンダーを読めない誤りを返す。応答の文は kind の文にし、外部の応答の本文を返さない。
-// err の文は、カレンダー ID と予定の題名を含まない（gcal と calendar の約束）ので、ログに残す。
+// calendarError は、外部のカレンダーを読めないエラーを返す。レスポンスの文は kind の文にし、外部のレスポンスの本文を返さない。
+// err の文は、カレンダー ID と予定のタイトルを含まない（gcal と calendar の約束）ので、ログに残す。
 func calendarError(c *gin.Context, log *slog.Logger, err error, status int, code string, kind error) {
 	log.WarnContext(c.Request.Context(), "calendar request failed", slog.String("path", c.FullPath()), slog.Any("error", err))
 	c.AbortWithStatusJSON(status, errorResponse{Code: code, Message: kind.Error()})
 }
 
-// badRequest は、本文やクエリの形の誤りを 400 で返す。
+// badRequest は、本文やクエリの形のエラーを 400 で返す。
 func badRequest(c *gin.Context, message string) {
 	c.AbortWithStatusJSON(http.StatusBadRequest, errorResponse{Code: "invalid_input", Message: message})
 }

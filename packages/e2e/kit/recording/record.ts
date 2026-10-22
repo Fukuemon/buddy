@@ -14,15 +14,15 @@ export type Recording = {
   /** 前提と操作の文を字幕に出す */
   step: (text: string) => Promise<void>
   /**
-   * 判定の文を字幕に出し、出し終えた時点の画面を静止画にする。その時点の画面で判定できる文に使う。
-   * allowed には、検証シナリオの備考で、この静止画で改修前と違ってよいとされた差を書く。README の比較の表に出す
+   * 判定の文を字幕に出し、出し終えた時点の画面をスクリーンショットにする。その時点の画面で判定できる文に使う。
+   * allowed には、検証シナリオの備考で、このスクリーンショットで改修前と違ってよいとされた差を書く。README の比較の表に出す
    */
   check: (text: string, allowed?: string) => Promise<void>
 }
 
-/** 証跡の置き場と、字幕と README に出すアプリの値。プロダクトのリポジトリが決めて渡す */
+/** エビデンスの配置先と、字幕と README に出すアプリの値。プロダクトのリポジトリが決めて渡す */
 export type RecordingTarget = {
-  /** 1 つのシナリオの証跡の置き場。evidenceDir で作る */
+  /** 1 つのシナリオのエビデンスの配置先。evidenceDir で作る */
   dir: string
   /** README に出すアプリの名前 */
   appName: string
@@ -35,7 +35,7 @@ export type RecordingTarget = {
 }
 
 /**
- * 1 つの版と例の行を録画し、証跡の置き場へ mp4、静止画、README を書き出す。
+ * 1 つの版と例の行を録画し、エビデンスの配置先へ mp4、スクリーンショット、README を書き出す。
  * 操作が途中で失敗しても、そこまでの録画を書き出してから、例外を投げ直す。何が起きたかを見るため。
  *
  * @param prepare 録画の外で、ログインとデータの確かめを行う。戻り値は body に渡る。録画は、prepare が終えたときの Cookie、localStorage、IndexedDB と、最後に開いた origin の sessionStorage を持ち越して始まる

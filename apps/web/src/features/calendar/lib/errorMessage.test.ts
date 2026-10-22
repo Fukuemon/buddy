@@ -47,7 +47,7 @@ describe('previewErrorMessage', () => {
     ],
     [apiError(404, 'not_found'), 'この職員のカレンダーの結び付けが外れています。'],
     [apiError(403, 'forbidden'), FORBIDDEN_MESSAGE],
-    [apiError(500), '下見できませんでした。'],
+    [apiError(500), 'プレビューできませんでした。'],
   ])('%s を文にする', (error, expected) => {
     expect(previewErrorMessage(error, '青木 一郎')).toContain(expected)
   })
@@ -57,7 +57,7 @@ describe('importErrorMessage', () => {
   it.each([
     [
       apiError(409, 'import_preview_changed'),
-      '下見の後に、Google カレンダーの予定が変わりました。',
+      'プレビューの後に、Google カレンダーの予定が変わりました。',
     ],
     [apiError(409, 'import_running'), 'この職員の取り込みが、ほかの画面で進んでいます。'],
     [apiError(400, 'invalid_input'), '選んだ利用者が見つかりません。'],

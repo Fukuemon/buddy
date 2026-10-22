@@ -8,7 +8,7 @@ type CheckReceipt = (form: FormData) => Promise<ReceiptCheckResult>
 /**
  * BFF の server function で照合する ReceiptApi を作る。
  *
- * 失敗は status と行の誤りつきの ApiError で投げる。ブラウザで 401 を受けたら、今の画面に戻るログインへ移る。
+ * 失敗は status と行のエラーつきの ApiError で投げる。ブラウザで 401 を受けたら、今の画面に戻るログインへ移る。
  */
 export const createBffReceiptApi = (
   checkReceipt: CheckReceipt = (data) => checkReceiptFn({ data }),

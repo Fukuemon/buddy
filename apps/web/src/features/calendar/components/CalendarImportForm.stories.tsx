@@ -34,7 +34,7 @@ export const Previewing: Story = { args: { isLocked: true, isPreviewing: true } 
 export const PreviewError: Story = {
   args: {
     errorMessage:
-      'Google カレンダーから予定を読めませんでした。時間をおいて、もう一度下見してください。',
+      'Google カレンダーから予定を読めませんでした。時間をおいて、もう一度プレビューしてください。',
   },
 }
 

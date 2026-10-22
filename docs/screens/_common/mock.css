@@ -1,6 +1,6 @@
 /*
  * 画面のモックの外枠。モックの HTML の head で、wireframe.css と画面の CSS より先に読む。
- * .stage の中に、端末の幅の .screen と、構成番号を重ねる .markers を置く。端末の幅は mock.js が決める。
+ * .stage の中に、デバイスの幅の .screen と、構成番号を重ねる .markers を置く。デバイスの幅は mock.js が決める。
  */
 
 html {
@@ -18,7 +18,7 @@ body {
   margin: 0 auto;
 }
 
-/* 端末の画面。幅による切り替えは @container screen で書く */
+/* デバイスの画面。幅による切り替えは @container screen で書く */
 .screen {
   position: relative;
   container: screen / inline-size;
@@ -88,7 +88,7 @@ body:not([data-testids='on']) .marker__testid {
   cursor: default;
 }
 
-/* 端末と番号の切り替え。mock.js が body の末尾に作る */
+/* デバイスと番号の切り替え。mock.js が body の末尾に作る */
 .mock-toolbar {
   position: sticky;
   bottom: 0;

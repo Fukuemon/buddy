@@ -1,6 +1,6 @@
 #!/bin/sh
-# schedule-api のマイグレーションを使い捨ての PostgreSQL に当て、tbls で表の文書と ER 図を docs/db/schedule-api/ に生成し直す。
-# 表とカラムの説明はマイグレーションの COMMENT ON に、ER 図を分ける業務のまとまり（viewpoints）は apps/schedule-api/.tbls.yml に書く。
+# schedule-api のマイグレーションを使い捨ての PostgreSQL に適用し、tbls でテーブル定義書と ER 図を docs/db/schedule-api/ に生成し直す。
+# テーブルとカラムの説明はマイグレーションの COMMENT ON に、ER 図を分ける業務のまとまり（viewpoints）は apps/schedule-api/.tbls.yml に書く。
 # 生成の後に tbls lint で、どの viewpoint にも入らない表がないかを確かめる。
 # 最後に、生成した viewpoint の文書が全て zensical.toml の nav にあるかを確かめる。
 #
@@ -30,7 +30,7 @@ done
 (cd apps/schedule-api && GOWORK=off DB_HOST=127.0.0.1 DB_PORT=$port DB_USER=buddy DB_PASSWORD=$password DB_NAME=buddy go run ./cmd/migrate up)
 dsn="postgres://buddy:$password@127.0.0.1:$port/buddy?sslmode=disable"
 tbls doc --rm-dist --config apps/schedule-api/.tbls.yml "$dsn"
-# 版の文字列は、手元と CI で違う CPU の名前とコンパイラを含むので、版の番号だけを残す
+# 版の文字列は、ローカル環境と CI で違う CPU の名前とコンパイラを含むので、版の番号だけを残す
 schema=docs/db/schedule-api/schema.json
 sed 's/"database_version": "\(PostgreSQL [0-9.]*\)[^"]*"/"database_version": "\1"/' "$schema" >"$schema.tmp"
 mv "$schema.tmp" "$schema"

@@ -100,7 +100,7 @@ func (a *Service) Authenticate(ctx context.Context, id principal.Identity) (prin
 	return principal.Principal{Staff: d}, nil
 }
 
-// link は、初回のログインの職員に sub を書き、職員の ID を返す。同じ sub の要求が同時に来ても、
+// link は、初回のログインの職員に sub を書き、職員の ID を返す。同じ sub のリクエストが同時に来ても、
 // LinkSub は 1 回だけ書くので、書いた後に sub で探し直す。
 func (a *Service) link(ctx context.Context, facilityID string, id principal.Identity) (string, error) {
 	if !id.EmailVerified || id.Email == "" {

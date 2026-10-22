@@ -14,7 +14,7 @@ export const TEST_RECEIPT_API_URL = 'http://receipt-api.test'
 export const scheduleHttp = createOpenApiHttp<SchedulePaths>({ baseUrl: TEST_SCHEDULE_API_URL })
 export const receiptHttp = createOpenApiHttp<ReceiptPaths>({ baseUrl: TEST_RECEIPT_API_URL })
 
-/** 全てのテストが共有する偽物の API。準備は src/test/setup.ts が行う。 */
+/** 全てのテストが共有するフェイクの API。準備は src/test/setup.ts が行う。 */
 export const server = setupServer(
   ...createScheduleHandlers(TEST_SCHEDULE_API_URL),
   ...createReceiptHandlers(TEST_RECEIPT_API_URL),

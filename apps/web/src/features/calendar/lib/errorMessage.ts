@@ -43,12 +43,12 @@ export const unlinkErrorMessage = (error: unknown) =>
     ? FORBIDDEN_MESSAGE
     : '外せませんでした。時間をおいて、もう一度外してください。'
 
-/** 下見の失敗を、失敗の文にする。カレンダーを読めないときは、職員の名前を入れる。 */
+/** プレビューの失敗を、失敗の文にする。カレンダーを読めないときは、職員の名前を入れる。 */
 export const previewErrorMessage = (error: unknown, staffName: string) => {
   if (statusOf(error) === 403) return FORBIDDEN_MESSAGE
   switch (codeOf(error)) {
     case 'calendar_unavailable':
-      return 'Google カレンダーから予定を読めませんでした。時間をおいて、もう一度下見してください。'
+      return 'Google カレンダーから予定を読めませんでした。時間をおいて、もう一度プレビューしてください。'
     case 'calendar_unreadable':
       return `${staffName} の Google カレンダーを読めません。カレンダーの共有が外れていないかを、職員に確かめてください。`
     case 'calendar_not_configured':
@@ -56,7 +56,7 @@ export const previewErrorMessage = (error: unknown, staffName: string) => {
     case 'not_found':
       return 'この職員のカレンダーの結び付けが外れています。画面を読み直してください。'
     default:
-      return '下見できませんでした。時間をおいて、もう一度下見してください。'
+      return 'プレビューできませんでした。時間をおいて、もう一度プレビューしてください。'
   }
 }
 
@@ -86,7 +86,7 @@ export const acceptErrorMessage = (error: unknown) => {
     case 'export_not_acceptable':
       return 'この予定は、Google カレンダーの内容に合わせられません。buddy の内容で書き直してください。'
     case 'external_change_unappliable':
-      return 'Google カレンダーの予定を、buddy の予定に読み替えられません。終日の予定か、題名の利用者が見つからない予定です。buddy の内容で書き直すか、Google カレンダーで直すよう職員に頼んでください。'
+      return 'Google カレンダーの予定を、buddy の予定に読み替えられません。終日の予定か、タイトルの利用者が見つからない予定です。buddy の内容で書き直すか、Google カレンダーで直すよう職員に頼んでください。'
     case 'calendar_unreadable':
       return 'Google カレンダーを読めません。カレンダーの共有が外れていないかを、職員に確かめてください。'
     case 'calendar_not_configured':
@@ -98,17 +98,17 @@ export const acceptErrorMessage = (error: unknown) => {
 
 /** 確かめが要る予定の利用者を選ぶための、利用者の一覧を読めなかったときの文。 */
 export const PATIENTS_ERROR_MESSAGE =
-  '利用者の一覧を読み込めませんでした。時間をおいて、もう一度下見してください。'
+  '利用者の一覧を読み込めませんでした。時間をおいて、もう一度プレビューしてください。'
 
 /** 取り込みの失敗を、失敗の文にする。どの失敗でも、予定は 1 件も書いていない。 */
 export const importErrorMessage = (error: unknown) => {
   if (statusOf(error) === 403) return FORBIDDEN_MESSAGE
   switch (codeOf(error)) {
     case 'import_preview_changed':
-      return '下見の後に、Google カレンダーの予定が変わりました。もう一度下見してから取り込んでください。予定は 1 件も取り込んでいません。'
+      return 'プレビューの後に、Google カレンダーの予定が変わりました。もう一度プレビューしてから取り込んでください。予定は 1 件も取り込んでいません。'
     case 'import_running':
-      return 'この職員の取り込みが、ほかの画面で進んでいます。終わってから、もう一度下見してください。予定は 1 件も取り込んでいません。'
-    // 画面は期間と取り込み方の値を確かめてから送るので、残る入力の誤りは、選んだ利用者がいないことである
+      return 'この職員の取り込みが、ほかの画面で進んでいます。終わってから、もう一度プレビューしてください。予定は 1 件も取り込んでいません。'
+    // 画面は期間と取り込み方の値を確かめてから送るので、残る入力のエラーは、選んだ利用者がいないことである
     case 'invalid_input':
       return '選んだ利用者が見つかりません。利用者を選び直してください。予定は 1 件も取り込んでいません。'
     case 'not_found':

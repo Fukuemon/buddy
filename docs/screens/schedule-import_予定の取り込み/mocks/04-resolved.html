@@ -33,7 +33,7 @@
               <h1 class="wf-heading" data-m="4">予定の取り込み</h1>
               <span class="wf-btn wf-btn--text" data-m="6" data-testid="calendar-import-link-settings" data-go="../../schedule-link_カレンダーの連携/mocks/01-list.html">カレンダーの連携</span>
             </div>
-            <p class="wf-lead" data-m="5">職員の Google カレンダーの予定を、期間を選んで buddy に取り込みます。取り込む前に、取り込む予定と取り込まない予定を下見できます。</p>
+            <p class="wf-lead" data-m="5">職員の Google カレンダーの予定を、期間を選んで buddy に取り込みます。取り込む前に、取り込む予定と取り込まない予定をプレビューできます。</p>
             <form class="si-form" data-testid="calendar-import-form">
               <div class="si-form__fields">
                 <div class="wf-field">
@@ -50,11 +50,11 @@
                 </div>
               </div>
               <span class="wf-hint">開始日から終了日までに始まる予定を、職員の Google カレンダーから読みます。</span>
-              <div><span class="wf-btn" data-m="10" data-testid="calendar-import-preview">下見する</span></div>
+              <div><span class="wf-btn" data-m="10" data-testid="calendar-import-preview">プレビューする</span></div>
             </form>
             <section class="si-result" data-testid="calendar-import-result-preview">
               <div class="si-result__head">
-                <h2 class="si-h2" data-m="11">下見の結果</h2>
+                <h2 class="si-h2" data-m="11">プレビューの結果</h2>
                 <span class="wf-hint">職員 A、2026/11/01〜2026/11/30</span>
               </div>
               <dl class="si-counts" data-m="12" data-testid="calendar-import-summary">
@@ -66,12 +66,12 @@
               </dl>
               <section class="si-section">
                 <h3 class="si-h3">確かめが要る予定</h3>
-                <p class="wf-hint">題名から利用者を 1 人に決められなかった予定です。予定ごとに、取り込み方を選んでください。</p>
+                <p class="wf-hint">タイトルから利用者を 1 人に決められなかった予定です。予定ごとに、取り込み方を選んでください。</p>
                 <ul class="si-reviews" data-m="13">
                 <li class="si-review" data-testid="calendar-import-review-{外部の予定の id}">
                   <div class="si-review__head">
                     <strong>2026/11/04（水）10:00〜11:00</strong>
-                    <span>題名から読んだ利用者: 利用者 C（訪看I2）</span>
+                    <span>タイトルから読んだ利用者: 利用者 C（訪看I2）</span>
                     <span class="si-reason">同じ名前の利用者が 2 人いる</span>
                     <span class="wf-hint">毎週水曜日の繰り返し。選んだ取り込み方は全ての回に当てる</span>
                   </div>
@@ -85,7 +85,7 @@
                 <li class="si-review" data-testid="calendar-import-review-{外部の予定の id}">
                   <div class="si-review__head">
                     <strong>2026/11/09（月）14:00〜15:00</strong>
-                    <span>題名から読んだ利用者: 利用者 Z（訪看I3）</span>
+                    <span>タイトルから読んだ利用者: 利用者 Z（訪看I3）</span>
                     <span class="si-reason">利用者が見つからない</span>
                   </div>
                   <div class="si-review__choices" role="radiogroup" aria-label="2026/11/09（月）14:00〜15:00の予定の取り込み方">

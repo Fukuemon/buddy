@@ -12,7 +12,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * プロセスが応答できるかを返す
+         * プロセスがレスポンスを返せるかを返す
          * @description 依存先を確かめない。
          */
         get: operations["getHealthz"];
@@ -32,7 +32,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 要求を受けられるかを返す
+         * リクエストを受けられるかを返す
          * @description DB に届けば 200、届かなければ 503 を返す。
          */
         get: operations["getReadyz"];
@@ -142,7 +142,7 @@ export interface paths {
         put?: never;
         /**
          * 役職を作る
-         * @description 職員の管理の権限（staff.manage）を持つ職員だけが呼べる。役職の既定で権限を配れるためである。
+         * @description 職員の管理の権限（staff.manage）を持つ職員だけが呼べる。役職のデフォルトの権限を職員に配れるためである。
          */
         post: operations["createPosition"];
         delete?: never;
@@ -214,7 +214,7 @@ export interface paths {
         put?: never;
         /**
          * 職員を作る
-         * @description 職員を作り、役職の既定の権限を与える。部署、チーム、役職は同じ事業所のものに限る。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         * @description 職員を作り、役職のデフォルトの権限を与える。部署、チーム、役職は同じ事業所のものに限る。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         post: operations["createUser"];
         delete?: never;
@@ -250,7 +250,7 @@ export interface paths {
         get?: never;
         /**
          * 職員の役職を変える
-         * @description 職員の役職を変え、職員の権限を新しい役職の既定で写し直す。職員ごとに足した権限と対象は消える。
+         * @description 職員の役職を変え、職員の権限を新しい役職のデフォルトの権限からコピーし直す。職員ごとに足した権限と対象は消える。
          *     チームを対象にする権限は、職員の所属のチームを対象にする。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         put: operations["changeUserPosition"];
@@ -588,7 +588,7 @@ export interface paths {
         post?: never;
         /**
          * カレンダーを外す
-         * @description 行を消さずに外す。取り込んだ予定と、外部の予定との対応は残るので、同じカレンダーを結び付け直して同じ期間を取り込んでも、予定は重ならない。
+         * @description レコードを消さずに外す。取り込んだ予定と、外部の予定との対応は残るので、同じカレンダーを結び付け直して同じ期間を取り込んでも、予定は重ならない。
          *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         delete: operations["removeExternalCalendar"];
@@ -607,8 +607,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 取り込みを下見する
-         * @description カレンダーの期間の予定を読み、取り込むとどうなるかを返す。予定を書かず、下見の結果も保存しない。
+         * 取り込みをプレビューする
+         * @description カレンダーの期間の予定を読み、取り込むとどうなるかを返す。予定を書かず、プレビューの結果も保存しない。
          *     読み替えの規則は、画面仕様書の予定の取り込みにある。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         post: operations["createCalendarImportPreview"];
@@ -629,7 +629,7 @@ export interface paths {
         put?: never;
         /**
          * 取り込みを確定する
-         * @description カレンダーの期間の予定を読み直し、下見と同じ規則で読み替えて、予定と外部の予定との対応を 1 つのトランザクションで書く。
+         * @description カレンダーの期間の予定を読み直し、プレビューと同じ規則で読み替えて、予定と外部の予定との対応を 1 つのトランザクションで書く。
          *     前の取り込みで取り込んだ外部の予定は書かない。確かめが要る予定には decisions の取り込み方を当てる。
          *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
@@ -651,7 +651,7 @@ export interface paths {
          * 確かめが要る書き出しを一覧する
          * @description Google カレンダーと食い違った予定のうち、buddy と Google カレンダーの両方で変わったか、Google カレンダーの変更を buddy に読み替えられなかった
          *     （conflict）か、書けなかった（failed）ものを、新しく変わった順に返す。
-         *     予定の題名、利用者名、カレンダーの ID は返さない。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         *     予定のタイトル、利用者名、カレンダーの ID は返さない。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         get: operations["listCalendarExportIssues"];
         put?: never;
@@ -694,7 +694,7 @@ export interface paths {
         put?: never;
         /**
          * 確かめが要る書き出しを Google カレンダーの内容で解く
-         * @description 確かめが要る書き出しの予定を、Google カレンダーの今の内容にそろえ、書き出しを終える。buddy で変えた日時と題名は消える。
+         * @description 確かめが要る書き出しの予定を、Google カレンダーの今の内容にそろえ、書き出しを終える。buddy で変えた日時とタイトルは消える。
          *     Google カレンダーで消された予定（予定が 404 で、カレンダーは読めるときを含む）は、buddy でキャンセルする。
          *     acceptable が true の書き出しだけを解ける。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
@@ -746,7 +746,7 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
-        /** @description 職員に与える権限。8 つの行をマイグレーションが入れ、API では作らない */
+        /** @description 職員に与える権限。8 つのレコードをマイグレーションが入れ、API では作らない */
         Policy: {
             id: components["schemas"]["ID"];
             /**
@@ -908,7 +908,7 @@ export interface components {
         /**
          * @description weekly は day_of_week だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
          *     指定しない項目は、最初の日付の曜日や日から決める。
-         *     最初の日付が規則の回に当たらない組み合わせ（火曜の最初の日付に毎週の月曜など）は、入力の誤りにする。
+         *     最初の日付が規則の回に当たらない組み合わせ（火曜の最初の日付に毎週の月曜など）は、入力のエラーにする。
          */
         RecurringRule: {
             /** @enum {string} */
@@ -980,8 +980,8 @@ export interface components {
              * @description 最後に書けなかった理由。precondition_failed は buddy と Google カレンダーの両方で予定が変わった（書き出しの 412 を含む）、
              *     not_found は Google カレンダーで予定が消されたか、予定かカレンダーが見つからない（410、404）、
              *     forbidden はサービスアカウントがカレンダーに書けない、rejected は Google が予定の内容を受け付けなかった（400）、
-             *     unavailable は Google に届かないか一時的な誤りが続いた、unappliable は Google カレンダーの変更を buddy の予定に読み替えられない
-             *     （終日にした予定、題名の利用者を引けない予定、繰り返しの予定そのものの変更）
+             *     unavailable は Google に届かないか一時的なエラーが続いた、unappliable は Google カレンダーの変更を buddy の予定に読み替えられない
+             *     （終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更）
              * @enum {string|null}
              */
             error_code: "precondition_failed" | "not_found" | "forbidden" | "rejected" | "unavailable" | "unappliable" | null;
@@ -1054,15 +1054,15 @@ export interface components {
         ImportReviewItem: {
             /** @description 取り込み方を送るときの Google の予定の ID。繰り返しの予定とその回では、親の予定の ID */
             external_event_id: string;
-            /** @description まとめた Google の予定の ID と etag から作る版。取り込み方と一緒に送り返す。下見の後に予定が変わると変わる */
+            /** @description まとめた Google の予定の ID と etag から作るバージョン。取り込み方と一緒に送り返す。プレビューの後に予定が変わると変わる */
             revision: string;
             /** @description 予定の日付。繰り返しの予定は最初の回の日付 */
             date: components["schemas"]["Date"];
             start_time: components["schemas"]["Time"];
             end_time: components["schemas"]["Time"];
-            /** @description 題名から読んだサービス内容 */
+            /** @description タイトルから読んだサービス内容 */
             service: string;
-            /** @description 題名から読んだ利用者名 */
+            /** @description タイトルから読んだ利用者名 */
             client_name: string;
             /**
              * @description patient_not_found は利用者がいない、patient_ambiguous は同じ名前の利用者が 2 人以上いる
@@ -1074,7 +1074,7 @@ export interface components {
             /** @description 同じ名前の利用者。patient_not_found では空 */
             candidates: components["schemas"]["PatientCandidate"][];
         };
-        /** @description 取り込まない予定の、読めた日時と理由。題名は利用者名を含むので返さない */
+        /** @description 取り込まない予定の、読めた日時と理由。タイトルは利用者名を含むので返さない */
         ImportSkippedItem: {
             date: (string & components["schemas"]["Date"]) | null;
             start_time: (string & components["schemas"]["Time"]) | null;
@@ -1083,8 +1083,8 @@ export interface components {
             all_day: boolean;
             /**
              * @description all_day は終日、multi_day は日をまたぐ（24:00 に終わる予定を含む）、unreadable_time は日時を読めない、
-             *     zero_length は長さが無い、unreadable_title は題名が空白だけか訪問の題名を読めない、
-             *     service_not_found は題名のサービス内容がサービスコードに無い
+             *     zero_length は長さが無い、unreadable_title はタイトルが空白だけか訪問のタイトルを読めない、
+             *     service_not_found はタイトルのサービス内容がサービスコードに無い
              * @enum {string}
              */
             reason: "all_day" | "multi_day" | "unreadable_time" | "zero_length" | "unreadable_title" | "service_not_found";
@@ -1100,10 +1100,10 @@ export interface components {
         };
         ImportDecision: {
             external_event_id: string;
-            /** @description 取り込み方を選んだ下見の needs_review の revision。確定のときの版と違えば 409（import_preview_changed）になる */
+            /** @description 取り込み方を選んだプレビューの needs_review の revision。確定のときのバージョンと違えば 409（import_preview_changed）になる */
             revision: string;
             /**
-             * @description patient は選んだ利用者の訪問の予定に、normal は題名をタイトルにした通常の予定にし、skip は取り込まない
+             * @description patient は選んだ利用者の訪問の予定に、normal は外部の予定のタイトルを buddy の予定のタイトルにした通常の予定にし、skip は取り込まない
              * @enum {string}
              */
             action: "patient" | "normal" | "skip";
@@ -1117,7 +1117,7 @@ export interface components {
         };
     };
     responses: {
-        /** @description 入力の誤り。`code` は invalid_input。`message` は誤りの箇所と理由で、入力によって変わる */
+        /** @description 入力のエラー。`code` は invalid_input。`message` はエラーの箇所と理由で、入力によって変わる */
         BadRequest: {
             headers: {
                 [name: string]: unknown;
@@ -1167,7 +1167,7 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
-        /** @description サーバーの誤り。`code` は internal */
+        /** @description サーバーのエラー。`code` は internal */
         InternalError: {
             headers: {
                 [name: string]: unknown;
@@ -1197,7 +1197,7 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
-        /** @description Google に届かないか、Google が誤りを返した。`code` は calendar_unavailable */
+        /** @description Google に届かないか、Google がエラーを返した。`code` は calendar_unavailable */
         CalendarUnavailable: {
             headers: {
                 [name: string]: unknown;
@@ -1235,7 +1235,7 @@ export interface components {
         /** @description buddy の外部のカレンダーの ID。Google のカレンダーの ID ではない */
         ExternalCalendarID: components["schemas"]["ID"];
         CalendarExportID: components["schemas"]["ID"];
-        /** @description 省くと昇順。sort_field を省いたときは既定の列に向きだけを当てる */
+        /** @description 省くと昇順。sort_field を省いたときはデフォルトのカラムに向きだけを当てる */
         SortOrder: "asc" | "desc";
     };
     requestBodies: never;
@@ -1253,7 +1253,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 応答できる */
+            /** @description レスポンスを返せる */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1273,7 +1273,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 要求を受けられる */
+            /** @description リクエストを受けられる */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1514,7 +1514,7 @@ export interface operations {
             content: {
                 "application/json": {
                     name: string;
-                    /** @description 役職の職員に既定で与える権限。対象の職員を指定する権限（schedule.user.*）は既定にできない */
+                    /** @description 役職の職員にデフォルトで与える権限。対象の職員を指定する権限（schedule.user.*）はデフォルトにできない */
                     policy_ids?: components["schemas"]["ID"][];
                 };
             };
@@ -1641,7 +1641,7 @@ export interface operations {
                 team?: string;
                 /** @description 省くと updated_at の降順 */
                 sort_field?: "username" | "created_at" | "updated_at";
-                /** @description 省くと昇順。sort_field を省いたときは既定の列に向きだけを当てる */
+                /** @description 省くと昇順。sort_field を省いたときはデフォルトのカラムに向きだけを当てる */
                 sort_order?: components["parameters"]["SortOrder"];
             };
             header?: never;
@@ -1683,7 +1683,7 @@ export interface operations {
                     username: string;
                     /**
                      * Format: email
-                     * @description 小文字にそろえて保存し、応答でも小文字で返す。大文字と小文字だけが違うメールは、同じメールとみなす
+                     * @description 小文字にそろえて保存し、レスポンスでも小文字で返す。大文字と小文字だけが違うメールは、同じメールとみなす
                      */
                     email: string;
                     /** @description 11 桁以内の数字。先頭の + は省いてよい */
@@ -1897,7 +1897,7 @@ export interface operations {
                 assigned_staff?: string;
                 /** @description 省くと name の昇順 */
                 sort_field?: "name" | "created_at";
-                /** @description 省くと昇順。sort_field を省いたときは既定の列に向きだけを当てる */
+                /** @description 省くと昇順。sort_field を省いたときはデフォルトのカラムに向きだけを当てる */
                 sort_order?: components["parameters"]["SortOrder"];
             };
             header?: never;
@@ -2040,7 +2040,7 @@ export interface operations {
                 date_to?: string;
                 /** @description 省くと date の昇順。date は日付の後に開始の時刻で並べる */
                 sort_field?: "date" | "start_time" | "created_at";
-                /** @description 省くと昇順。sort_field を省いたときは既定の列に向きだけを当てる */
+                /** @description 省くと昇順。sort_field を省いたときはデフォルトのカラムに向きだけを当てる */
                 sort_order?: components["parameters"]["SortOrder"];
             };
             header?: never;
@@ -2520,7 +2520,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description 下見の結果 */
+            /** @description プレビューの結果 */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2552,7 +2552,7 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ImportRange"] & {
-                    /** @description 下見の needs_review の全ての予定の取り込み方 */
+                    /** @description プレビューの needs_review の全ての予定の取り込み方 */
                     decisions: components["schemas"]["ImportDecision"][];
                 };
             };
@@ -2571,7 +2571,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description 下見の後に確かめが要る予定が変わった（import_preview_changed）か、同じカレンダーの取り込みが進んでいる（import_running）。何も書いていない */
+            /** @description プレビューの後に確かめが要る予定が変わった（import_preview_changed）か、同じカレンダーの取り込みが進んでいる（import_running）。何も書いていない */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2676,7 +2676,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
             /**
              * @description 確かめが要る書き出しでない（export_not_in_review）か、Google カレンダーの内容で解けない書き出しである（export_not_acceptable）か、
-             *     Google カレンダーの予定を buddy の予定に読み替えられない（external_change_unappliable。終日にした予定、題名の利用者を引けない予定など）
+             *     Google カレンダーの予定を buddy の予定に読み替えられない（external_change_unappliable。終日にした予定、タイトルの利用者を引けない予定など）
              */
             409: {
                 headers: {

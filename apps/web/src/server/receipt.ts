@@ -7,7 +7,7 @@ import { readSession, type AuthDeps } from './auth'
 /**
  * 画面から受けた照合の入力を、照合の API に送る。form は parseReceiptForm で確かめた値である。
  *
- * セッションが無ければ status が 401 の失敗を、照合の API が失敗の状態を返せばその status と行の誤りを返す。
+ * セッションが無ければ status が 401 の失敗を、照合の API が失敗の状態を返せばその status と行のエラーを返す。
  * それ以外の失敗は投げる。
  */
 export const checkReceipt = async (

@@ -22,7 +22,7 @@ export const isChoiceComplete = (choice: ReviewChoice | undefined): choice is Re
 export const countRemaining = (items: readonly ImportReviewItem[], choices: ReviewChoices) =>
   items.filter((item) => !isChoiceComplete(choices[item.external_event_id])).length
 
-/** 選んだ取り込み方を、予定の API に送る形にする。下見の版を付ける。選び終えていない予定は含めない。 */
+/** 選んだ取り込み方を、予定の API に送る形にする。プレビューのバージョンを付ける。選び終えていない予定は含めない。 */
 export const toDecisions = (
   items: readonly ImportReviewItem[],
   choices: ReviewChoices,
@@ -51,7 +51,7 @@ export const canSubmitImport = (preview: ImportPreview, choices: ReviewChoices) 
   (preview.counts.import > 0 || preview.needs_review.length > 0) &&
   countRemaining(preview.needs_review, choices) === 0
 
-/** 下見の結果が、全て前の取り込みで取り込み済みかを返す。 */
+/** プレビューの結果が、全て前の取り込みで取り込み済みかを返す。 */
 export const isAllImported = (preview: ImportPreview) =>
   preview.counts.import === 0 &&
   preview.needs_review.length === 0 &&
@@ -63,7 +63,7 @@ export const SKIP_REASON_LABEL: Record<ImportSkippedItem['reason'], string> = {
   multi_day: '日をまたぐ予定',
   unreadable_time: '時刻を読めない予定',
   zero_length: '長さの無い予定',
-  unreadable_title: '題名を読めない予定',
+  unreadable_title: 'タイトルを読めない予定',
   service_not_found: 'サービス内容を引けない予定',
 }
 
@@ -72,7 +72,7 @@ const SKIP_REASON_SHORT: Record<ImportSkippedItem['reason'], string> = {
   multi_day: '日をまたぐ',
   unreadable_time: '時刻を読めない',
   zero_length: '長さの無い',
-  unreadable_title: '題名を読めない',
+  unreadable_title: 'タイトルを読めない',
   service_not_found: 'サービス内容を引けない',
 }
 
@@ -85,10 +85,10 @@ export const countSkippedByReason = (skipped: readonly ImportSkippedItem[]) =>
     count: skipped.filter((item) => item.reason === reason).length,
   })).filter(({ count }) => count > 0)
 
-/** 下見の件数の箱 1 つ。key は testid の末尾に使う。 */
+/** プレビューの件数の箱 1 つ。key は testid の末尾に使う。 */
 export type CountBox = { key: string; label: string; count: number; note: string }
 
-/** 下見の結果の 5 つの件数の箱を返す。件数が 0 の箱も返す。 */
+/** プレビューの結果の 5 つの件数の箱を返す。件数が 0 の箱も返す。 */
 export const previewCountBoxes = ({ counts }: ImportPreview): CountBox[] => {
   const expanded =
     counts.expanded_occurrences > 0 ? `。回ごとにした ${counts.expanded_occurrences} 件を含む` : ''

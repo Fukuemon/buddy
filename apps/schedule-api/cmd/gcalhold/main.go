@@ -1,4 +1,4 @@
-// Command gcalhold は、ローカル環境の compose と E2E で、予定の API の Calendar API の要求を calendarpit に渡す中継である。本番のイメージには入れない。
+// Command gcalhold は、ローカル環境の compose と E2E で、予定の API の Calendar API のリクエストを calendarpit に渡す中継である。本番のイメージには入れない。
 //
 // calendarpit に無い操作を 1 つだけ補う。POST /hold で止めている間は、増分の取得（syncToken を付けた events.list）に、
 // calendarpit に渡さず、変わった予定が無いと答え、受け取ったトークンをそのまま返す。E2E が、予定の API が Google の変更を読む前に
@@ -57,7 +57,7 @@ func main() {
 	log.Fatal(srv.ListenAndServe())
 }
 
-// heldChanges は、止めている間の増分の取得に、変わった予定が無いと答える。ほかの要求は next に渡す。
+// heldChanges は、止めている間の増分の取得に、変わった予定が無いと答える。ほかのリクエストは next に渡す。
 func heldChanges(holding *atomic.Bool, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := r.URL.Query().Get("syncToken")

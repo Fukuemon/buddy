@@ -48,7 +48,7 @@ func NewScheduleRepository(pool *pgxpool.Pool) *ScheduleRepository {
 	return &ScheduleRepository{conn{pool}}
 }
 
-// Create は、予定を書く。IsOverTimeWork は書かず、DB が開始の時刻から生成する。参照先（事業所、職員、予定の種類、繰り返しの予定、訪問の情報）が無いか、値が列の制約に合わないときは apperr.ErrInvalidInput のエラーを返す。
+// Create は、予定を書く。IsOverTimeWork は書かず、DB が開始の時刻から生成する。参照先（事業所、職員、予定の種類、繰り返しの予定、訪問の情報）が無いか、値がカラムの制約に合わないときは apperr.ErrInvalidInput のエラーを返す。
 func (r *ScheduleRepository) Create(ctx context.Context, s schedule.Schedule) error {
 	err := r.q(ctx).CreateSchedule(ctx, sqlcgen.CreateScheduleParams{
 		ID:                  s.ID,
@@ -88,7 +88,7 @@ func (r *ScheduleRepository) ReplacementOf(ctx context.Context, recurringSchedul
 }
 
 // Update は、ID が s.ID の予定の枠を s の値で上書きする。事業所と、RecurringScheduleID と OriginalDate は変えない。予定が無くてもエラーにしない。
-// 参照先（職員、予定の種類、訪問の情報）が無いか、値が列の制約に合わないときは apperr.ErrInvalidInput のエラーを返す。
+// 参照先（職員、予定の種類、訪問の情報）が無いか、値がカラムの制約に合わないときは apperr.ErrInvalidInput のエラーを返す。
 func (r *ScheduleRepository) Update(ctx context.Context, s schedule.Schedule) error {
 	err := r.q(ctx).UpdateSchedule(ctx, sqlcgen.UpdateScheduleParams{
 		ID:             s.ID,
@@ -209,8 +209,8 @@ func NewRecurringScheduleRepository(pool *pgxpool.Pool) *RecurringScheduleReposi
 	return &RecurringScheduleRepository{conn{pool}}
 }
 
-// Create は、繰り返しの予定と規則を 1 つの行に書く。IsOverTimeWork は書かず、DB が開始の時刻から生成する。
-// 参照先が無いか、値が列の制約に合わないときは apperr.ErrInvalidInput のエラーを返す。
+// Create は、繰り返しの予定と規則を 1 つのレコードに書く。IsOverTimeWork は書かず、DB が開始の時刻から生成する。
+// 参照先が無いか、値がカラムの制約に合わないときは apperr.ErrInvalidInput のエラーを返す。
 func (r *RecurringScheduleRepository) Create(ctx context.Context, rs schedule.RecurringSchedule) error {
 	params := sqlcgen.CreateRecurringScheduleParams{
 		ID:             rs.ID,

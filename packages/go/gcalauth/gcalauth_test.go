@@ -136,9 +136,9 @@ func TestQuietTokenSource(t *testing.T) {
 		err  error
 		want string
 	}{
-		{"impersonate の誤り", errors.New("impersonate: status code 403: Permission denied on resource projects/-/serviceAccounts/secret@example.iam.gserviceaccount.com"), "状態コード 403"},
-		{"token の応答の誤り", &oauth2.RetrieveError{Response: &http.Response{StatusCode: http.StatusUnauthorized}, Body: []byte("secret@example.iam.gserviceaccount.com")}, "状態コード 401"},
-		{"状態コードの無い誤り", errors.New("dial secret@example.iam.gserviceaccount.com"), ErrToken.Error()},
+		{"impersonate のエラー", errors.New("impersonate: status code 403: Permission denied on resource projects/-/serviceAccounts/secret@example.iam.gserviceaccount.com"), "状態コード 403"},
+		{"token のレスポンスのエラー", &oauth2.RetrieveError{Response: &http.Response{StatusCode: http.StatusUnauthorized}, Body: []byte("secret@example.iam.gserviceaccount.com")}, "状態コード 401"},
+		{"状態コードの無いエラー", errors.New("dial secret@example.iam.gserviceaccount.com"), ErrToken.Error()},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -147,7 +147,7 @@ func TestQuietTokenSource(t *testing.T) {
 				t.Fatalf("err = %v", err)
 			}
 			if strings.Contains(err.Error(), "secret") {
-				t.Errorf("誤りの文にサービスアカウントが出ている: %v", err)
+				t.Errorf("エラーの文にサービスアカウントが出ている: %v", err)
 			}
 			if !strings.Contains(err.Error(), tt.want) {
 				t.Errorf("err = %v, want %q を含む", err, tt.want)

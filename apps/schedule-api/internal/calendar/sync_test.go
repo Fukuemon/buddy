@@ -190,7 +190,7 @@ func TestSyncHoldsChangeMadeOnBothSides(t *testing.T) {
 	}
 	var ce *apperr.ConflictError
 	if _, err := e.uc.AcceptExport(e.ctx, x.ID); !errors.As(err, &ce) || ce.Code != calendar.CodeExportNotInReview {
-		t.Errorf("解いた待ちをもう一度解く誤り = %v", err)
+		t.Errorf("解いた待ちをもう一度解くエラー = %v", err)
 	}
 }
 
@@ -277,7 +277,7 @@ func TestSyncReadsAllEventsWhenTokenExpired(t *testing.T) {
 	}
 	queries := e.srv.Queries()
 	if last := queries[len(queries)-1]; last.Get("syncToken") != "" || last.Get("showDeleted") != "true" {
-		t.Errorf("読み直しの要求 = %v", last)
+		t.Errorf("読み直しのリクエスト = %v", last)
 	}
 	// 読み直しても、同じ変更を 2 回は当てない
 	e.srv.ExpireSyncTokens()
@@ -303,7 +303,7 @@ func TestSyncHoldsUnappliableChangeAndResolvesWhenFixed(t *testing.T) {
 	}
 	var ce *apperr.ConflictError
 	if _, err := e.uc.AcceptExport(e.ctx, x.ID); !errors.As(err, &ce) || ce.Code != calendar.CodeExportNotAcceptable {
-		t.Errorf("読み替えられない変更を Google の内容で解く誤り = %v", err)
+		t.Errorf("読み替えられない変更を Google の内容で解くエラー = %v", err)
 	}
 
 	// 職員が Google カレンダーで時刻のある予定に戻すと、当てて解く
@@ -503,7 +503,7 @@ func TestSyncAcceptRejectsScheduleCancelledInBuddy(t *testing.T) {
 	}
 	var ce *apperr.ConflictError
 	if _, err := e.uc.AcceptExport(e.ctx, issues[0].ID); !errors.As(err, &ce) || ce.Code != calendar.CodeExportNotAcceptable {
-		t.Errorf("キャンセルした予定を Google の内容に合わせる誤り = %v", err)
+		t.Errorf("キャンセルした予定を Google の内容に合わせるエラー = %v", err)
 	}
 }
 
@@ -567,7 +567,7 @@ func TestSyncKeepsUnexportedDescription(t *testing.T) {
 		t.Fatal(err)
 	}
 	e.run(t)
-	// Google で、題名と日時を変えずに予定を直した（etag だけが変わる）
+	// Google で、タイトルと日時を変えずに予定を直した（etag だけが変わる）
 	e.srv.Edit(googleCalID, eventID(t, d.ID), func(*calendarv3.Event) {})
 	e.sync(t)
 	if x := e.export(t, d.ID); x.Status != calendar.ExportPending {
@@ -665,7 +665,7 @@ func TestSyncCancelledOccurrenceWhileParentUnexported(t *testing.T) {
 	}
 }
 
-// 増分の取得は、要求を受けずに動くので、カレンダーの行の事業所のサービスアカウントで読む。
+// 増分の取得は、リクエストを受けずに動くので、カレンダーの行の事業所のサービスアカウントで読む。
 func TestSyncUsesCalendarFacilityAccount(t *testing.T) {
 	e := newSyncEnv(t)
 	c := e.store.Calendars[calID]

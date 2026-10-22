@@ -64,8 +64,8 @@ func TestLoadErrors(t *testing.T) {
 	}{
 		{name: "パスワードがない", edit: func(m map[string]string) { delete(m, "DB_PASSWORD") }, want: "DB_PASSWORD"},
 		{name: "全部ない", edit: func(m map[string]string) { clear(m) }, want: "DB_USER, DB_PASSWORD, DB_NAME, OIDC_ISSUER, OIDC_AUDIENCE"},
-		{name: "発行者がない", edit: func(m map[string]string) { delete(m, "OIDC_ISSUER") }, want: "OIDC_ISSUER"},
-		{name: "発行者が URL でない", edit: func(m map[string]string) { m["OIDC_ISSUER"] = "auth.example.com" }, want: "OIDC_ISSUER"},
+		{name: "Issuer がない", edit: func(m map[string]string) { delete(m, "OIDC_ISSUER") }, want: "OIDC_ISSUER"},
+		{name: "Issuer が URL でない", edit: func(m map[string]string) { m["OIDC_ISSUER"] = "auth.example.com" }, want: "OIDC_ISSUER"},
 		{name: "ポートが数でない", edit: func(m map[string]string) { m["PORT"] = "http" }, want: "ポート"},
 		{name: "ログの水準", edit: func(m map[string]string) { m["LOG_LEVEL"] = "verbose" }, want: "LOG_LEVEL"},
 		{name: "calendarpit の Calendar API だけ", edit: func(m map[string]string) { m["GOOGLE_CALENDAR_ENDPOINT"] = "http://gcalhold:8080/calendar/v3/" },
@@ -126,7 +126,7 @@ func TestLoadExportInterval(t *testing.T) {
 	}
 	c, err := config.Load(getenv(nil))
 	if err != nil || c.Calendar.ExportInterval != 30*time.Second {
-		t.Fatalf("既定の間隔 = %v, %v", c.Calendar.ExportInterval, err)
+		t.Fatalf("デフォルトの間隔 = %v, %v", c.Calendar.ExportInterval, err)
 	}
 	c, err = config.Load(getenv(map[string]string{"GOOGLE_CALENDAR_EXPORT_INTERVAL": "2s"}))
 	if err != nil || c.Calendar.ExportInterval != 2*time.Second {
@@ -137,7 +137,7 @@ func TestLoadExportInterval(t *testing.T) {
 		t.Errorf("書き出しを有効にする = %v, %v", c.Calendar.ExportEnabled, err)
 	}
 	if c.Calendar.SyncEnabled || c.Calendar.SyncInterval != 2*time.Minute {
-		t.Errorf("既定の同期 = %v, %v", c.Calendar.SyncEnabled, c.Calendar.SyncInterval)
+		t.Errorf("デフォルトの同期 = %v, %v", c.Calendar.SyncEnabled, c.Calendar.SyncInterval)
 	}
 	c, err = config.Load(getenv(map[string]string{
 		"GOOGLE_CALENDAR_EXPORT_ENABLED": "true", "GOOGLE_CALENDAR_SYNC_ENABLED": "true", "GOOGLE_CALENDAR_SYNC_INTERVAL": "3m",

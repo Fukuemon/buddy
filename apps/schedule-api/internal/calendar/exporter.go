@@ -20,7 +20,7 @@ const (
 	exportCallTimeout = 20 * time.Second
 	// exportLease は、取った待ちをほかの処理に渡さない時間である。
 	exportLease = 2 * time.Minute
-	// MaxExportAttempts は、一時的な誤りで書き直す回数の上限である。超えた待ちは failed にし、確かめが要る予定に出す。
+	// MaxExportAttempts は、一時的なエラーで書き直す回数の上限である。超えた待ちは failed にし、確かめが要る予定に出す。
 	MaxExportAttempts = 5
 	// exportBackoff は、最初に書き直すまでの時間である。書き直すたびに倍にする（30 秒、1 分、2 分、4 分）。
 	exportBackoff = 30 * time.Second
@@ -94,7 +94,7 @@ func (x *Exporter) ExportDue(ctx context.Context) (int, error) {
 	return len(jobs), finishErr
 }
 
-// resultOf は、待ち e を書いた誤り err を、待ちの次の状態にする。
+// resultOf は、待ち e を書いたエラー err を、待ちの次の状態にする。
 func resultOf(e Export, err error) ExportResult {
 	code := func(c ExportErrorCode) *ExportErrorCode { return &c }
 	switch {

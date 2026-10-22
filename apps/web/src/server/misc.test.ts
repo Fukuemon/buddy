@@ -57,7 +57,7 @@ describe('isSameHostOrigin', () => {
 })
 
 describe('parseBffCall', () => {
-  it('知らない操作と形の誤りを拒む', () => {
+  it('知らない操作と形の違う入力を拒む', () => {
     expect(parseBffCall({ op: 'teams.list', args: ['f'] })).toEqual({
       op: 'teams.list',
       args: ['f'],
@@ -89,7 +89,7 @@ describe('parseBffArgs', () => {
 })
 
 describe('secureCookie', () => {
-  it('既定で Secure を付け、SESSION_COOKIE_SECURE=false のときだけ外す', () => {
+  it('デフォルトで Secure を付け、SESSION_COOKIE_SECURE=false のときだけ外す', () => {
     expect(loadServerConfig(env).secureCookie).toBe(true)
     expect(loadServerConfig({ ...env, SESSION_COOKIE_SECURE: 'false' }).secureCookie).toBe(false)
   })

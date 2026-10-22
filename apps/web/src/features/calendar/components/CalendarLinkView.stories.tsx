@@ -34,11 +34,11 @@ export const NotConfigured: Story = {
   args: { state: { status: 'ready', rows: storyLinkRows, serviceAccount: null } },
 }
 
-/** クリップボードに写せない。コピーを押すと、メールアドレスの文字を選ぶ。 */
+/** クリップボードにコピーできない。コピーを押すと、メールアドレスの文字を選ぶ。 */
 export const CopyRejected: Story = {
   args: {
     copy: fn(async () => {
-      throw new Error('写すことを拒まれた')
+      throw new Error('コピーを拒まれた')
     }),
   },
 }

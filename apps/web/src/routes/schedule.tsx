@@ -12,7 +12,7 @@ import {
 export const Route = createFileRoute('/schedule')({
   validateSearch: scheduleSearchSchema,
   search: { middlewares: [stripSearchParams(scheduleSearchDefaults)] },
-  // 偽物の API は予定をブラウザのメモリに持つため、サーバーで描画しない。bff ではサーバーで描画できるので見直す。
+  // フェイクの API は予定をブラウザのメモリに持つため、サーバーで描画しない。bff ではサーバーで描画できるので見直す。
   ssr: false,
   head: () => ({ meta: [{ title: '予定 | buddy' }] }),
   component: SchedulePage,

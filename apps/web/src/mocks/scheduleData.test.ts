@@ -5,7 +5,7 @@ import { SERVICE_CODES } from '#/api/types'
 import { mockServiceCodes } from './scheduleData'
 
 describe('scheduleData', () => {
-  it('架空のサービスコードは、画面のサービスコードの一覧と同じ表記と並びである', () => {
+  it('ダミーのサービスコードは、画面のサービスコードの一覧と同じ表記と並びである', () => {
     expect(mockServiceCodes.map((c) => c.code)).toEqual([...SERVICE_CODES])
   })
 })

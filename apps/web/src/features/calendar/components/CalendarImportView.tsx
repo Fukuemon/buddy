@@ -14,7 +14,7 @@ export type CalendarImportViewProps = {
   children?: ReactNode
 }
 
-/** 予定の取り込みの画面の本文。題、カレンダーの連携へのリンク、説明の文の下に、状態ごとの中身を並べる。 */
+/** 予定の取り込みの画面の本文。タイトル、カレンダーの連携へのリンク、説明の文の下に、状態ごとの中身を並べる。 */
 export const CalendarImportView = ({ state, onRetry, children }: CalendarImportViewProps) => (
   <div className="flex flex-col gap-6">
     <div className="flex flex-wrap items-baseline justify-between gap-3">
@@ -29,7 +29,7 @@ export const CalendarImportView = ({ state, onRetry, children }: CalendarImportV
     </div>
     <p className="max-w-3xl text-body">
       職員の Google カレンダーの予定を、期間を選んで buddy
-      に取り込みます。取り込む前に、取り込む予定と取り込まない予定を下見できます。
+      に取り込みます。取り込む前に、取り込む予定と取り込まない予定をプレビューできます。
     </p>
     {state.status === 'loading' && (
       <div data-testid="calendar-import-loading">

@@ -112,7 +112,7 @@ func categories(rows []sqlcgen.VisitCategory) []visit.Category {
 	return out
 }
 
-// visitDetailColumns は、予定の詳細のビューが持つ訪問の情報の列である。
+// visitDetailColumns は、予定の詳細のビューが持つ訪問の情報のカラムである。
 type visitDetailColumns struct {
 	VisitInfoID       *string
 	PatientID         *string

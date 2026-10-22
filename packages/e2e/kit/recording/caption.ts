@@ -5,7 +5,7 @@ const CAPTION_READ_MS = 1_500
 const STEP_KEY = '__e2e-caption-step'
 
 /**
- * 録画の上端に、どの証跡か(header)と、いま行っている手順の文を字幕で出す。
+ * 録画の上端に、どのエビデンスか(header)と、いま行っている手順の文を字幕で出す。
  * 手順の文は sessionStorage に置き、画面を読み直しても同じ文を出し続ける。
  * 字幕は pointer-events を持たないので、画面の操作には影響しない。
  */

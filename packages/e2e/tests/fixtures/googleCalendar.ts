@@ -28,7 +28,7 @@ export const listGoogleEvents = async (request: APIRequestContext, calendarId: s
   return items
 }
 
-/** カレンダーの予定のうち、題名が summary のものを返す。 */
+/** カレンダーの予定のうち、タイトルが summary のものを返す。 */
 export const findGoogleEvent = async (
   request: APIRequestContext,
   calendarId: string,

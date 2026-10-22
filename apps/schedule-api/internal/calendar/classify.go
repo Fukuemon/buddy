@@ -18,7 +18,7 @@ const (
 	KindSkipped Kind = iota
 	// KindVisit の予定は、訪問の予定として取り込む。
 	KindVisit
-	// KindNormal の予定は、題名をタイトルにした通常の予定として取り込む。
+	// KindNormal の予定は、外部の予定のタイトルを、buddy の予定のタイトルにした通常の予定として取り込む。
 	KindNormal
 )
 
@@ -35,7 +35,7 @@ const (
 	SkipMultiDay SkipReason = "multi_day"
 	// SkipUnreadableTime は、開始か終了の日時が無いか、RFC 3339 で読めない予定である。
 	SkipUnreadableTime SkipReason = "unreadable_time"
-	// SkipUnreadableTitle は、題名が空白だけの予定と、題名に `【` と `】` を含むがサービス内容か利用者名を読めない予定である。
+	// SkipUnreadableTitle は、タイトルが空白だけの予定と、タイトルに `【` と `】` を含むがサービス内容か利用者名を読めない予定である。
 	SkipUnreadableTitle SkipReason = "unreadable_title"
 	// SkipZeroLength は、分に丸めると終了が開始より後でない予定である。
 	SkipZeroLength SkipReason = "zero_length"
@@ -51,7 +51,7 @@ type Candidate struct {
 	EndTime   civil.Time
 	// Title は、KindNormal の予定のタイトルである。
 	Title string
-	// Service と Client は、KindVisit の予定の題名から読んだサービス内容と利用者名で、表記をそろえていない。
+	// Service と Client は、KindVisit の予定のタイトルから読んだサービス内容と利用者名で、表記をそろえていない。
 	Service string
 	Client  string
 	// SkipReason は、KindSkipped の予定の理由である。
@@ -61,7 +61,7 @@ type Candidate struct {
 // maxTitleRunes は、通常の予定のタイトルの長さの上限である。予定の API のタイトルの上限と同じにする。
 const maxTitleRunes = 255
 
-// normalTitle は、題名を通常の予定のタイトルにする。上限を超える分は切る。
+// normalTitle は、外部の予定のタイトルを通常の予定のタイトルにする。上限を超える分は切る。
 func normalTitle(summary string) string {
 	if r := []rune(summary); len(r) > maxTitleRunes {
 		return string(r[:maxTitleRunes])
@@ -70,9 +70,9 @@ func normalTitle(summary string) string {
 }
 
 // Classify は、ev を、訪問の予定、通常の予定、取り込まない予定のどれかに分ける。
-// 題名に `【` と `】` の両方を含む予定を訪問の予定とし、照合の API と同じ規則（gcaltitle）で読む。
+// タイトルに `【` と `】` の両方を含む予定を訪問の予定とし、照合の API と同じ規則（gcaltitle）で読む。
 // 取り消した予定、終日の予定、日をまたぐ予定、開始か終了の日時を読めない予定、分に丸めて長さが 0 以下の予定、
-// 題名が空白だけの予定、訪問の題名を読めない予定は取り込まない。通常の予定のタイトルは 255 文字までに切る。
+// タイトルが空白だけの予定、訪問のタイトルを読めない予定は取り込まない。通常の予定のタイトルは 255 文字までに切る。
 func Classify(ev Event) Candidate {
 	if ev.Status == StatusCancelled {
 		return skipped(SkipCancelled)

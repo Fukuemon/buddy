@@ -46,9 +46,9 @@ export type AppRouterParameters = {
   route: StoryRouteId
   /** 最初に開く URL。search params もここに書く。 */
   url: string
-  /** ログインした職員。既定は偽物の API の職員（職員の管理の権限を持つ）。 */
+  /** ログインした職員。デフォルトはフェイクの API の職員（職員の管理の権限を持つ）。 */
   viewer?: Viewer
-  /** 偽物の API。既定は createFakeBuddyApi の初期の状態。 */
+  /** フェイクの API。デフォルトは createFakeBuddyApi の初期の状態。 */
   api?: BuddyApi
   receiptApi?: ReceiptApi
   /** 描く前に query の cache に置く値。 */
@@ -157,7 +157,7 @@ const AppRouterStory = ({ Story, params }: { Story: StoryFn; params: AppRouterPa
 }
 
 /**
- * Container の story を、アプリと同じ ID の route と、偽物の API を持つ router の中で描く decorator。
+ * Container の story を、アプリと同じ ID の route と、フェイクの API を持つ router の中で描く decorator。
  * story の parameters.appRouter で、置く route と最初の URL と API を指す。
  * Controls で args を変えると、router を作り直して描き直す。
  */
@@ -169,7 +169,7 @@ export const withAppRouter: Decorator = (Story, context: StoryContext) => (
   />
 )
 
-/** 一覧と 1 件の取得を、空の結果にした偽物の API を作る。 */
+/** 一覧と 1 件の取得を、空の結果にしたフェイクの API を作る。 */
 export const emptyBuddyApi = (base: BuddyApi = createFakeBuddyApi()): BuddyApi => ({
   ...base,
   schedules: { ...base.schedules, list: async () => [] },
@@ -179,7 +179,7 @@ export const emptyBuddyApi = (base: BuddyApi = createFakeBuddyApi()): BuddyApi =
   calendars: { ...base.calendars, list: async () => [], exportIssues: async () => [] },
 })
 
-/** 全ての操作が status の ApiError で失敗する偽物の API を作る。 */
+/** 全ての操作が status の ApiError で失敗するフェイクの API を作る。 */
 export const failingBuddyApi = (status = 500): BuddyApi => {
   const fail = async () => {
     throw new ApiError(status, 'API が失敗した')
@@ -204,7 +204,7 @@ export const failingBuddyApi = (status = 500): BuddyApi => {
   }
 }
 
-/** 全ての操作が終わらない偽物の API を作る。読み込み中の表示を見るために使う。 */
+/** 全ての操作が終わらないフェイクの API を作る。読み込み中の表示を見るために使う。 */
 export const pendingBuddyApi = (): BuddyApi => {
   const wait = () => new Promise<never>(() => {})
   return {

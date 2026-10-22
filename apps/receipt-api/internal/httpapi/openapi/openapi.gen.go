@@ -159,7 +159,7 @@ type Date = string
 type Error struct {
 	Code ErrorCode `json:"code"`
 
-	// Errors 入力の CSV の行ごとの誤り。`invalid_csv` のときだけ持つ
+	// Errors 入力の CSV の行ごとのエラー。`invalid_csv` のときだけ持つ
 	Errors *[]RowError `json:"errors,omitempty"`
 
 	// Message 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う
@@ -204,7 +204,7 @@ type Report struct {
 	// Summary 区分ごとの行の数
 	Summary Summary `json:"summary"`
 
-	// Warnings 予定の取得元が解釈できず、照合に使わなかった予定。無ければ空の配列
+	// Warnings 予定のデータソースが解釈できず、照合に使わなかった予定。無ければ空の配列
 	Warnings []Warning `json:"warnings"`
 }
 
@@ -233,7 +233,7 @@ type Result struct {
 
 // RowError defines model for RowError.
 type RowError struct {
-	// Column 誤りのある列の名前。行全体の誤りでは省く
+	// Column エラーのある列の名前。行全体のエラーでは省く
 	Column *string `json:"column,omitempty"`
 
 	// Line 入力の CSV の行番号。ヘッダーが 1 行目
@@ -271,7 +271,7 @@ type Summary struct {
 	VisitOnly    int `json:"visit_only"`
 }
 
-// Warning 照合に使わなかった Google カレンダーの予定。利用者名を含むので、予定の題名は持たない
+// Warning 照合に使わなかった Google カレンダーの予定。利用者名を含むので、予定のタイトルは持たない
 type Warning struct {
 	CalendarId string `json:"calendar_id"`
 	EventId    string `json:"event_id"`
@@ -300,10 +300,10 @@ type CreateCheckMultipartRequestBody CreateCheckMultipartBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// GetHealthz プロセスが応答できるかを返す
+	// GetHealthz プロセスがレスポンスを返せるかを返す
 	// (GET /healthz)
 	GetHealthz(w http.ResponseWriter, r *http.Request)
-	// GetReadyz 要求を受けられるかを返す
+	// GetReadyz リクエストを受けられるかを返す
 	// (GET /readyz)
 	GetReadyz(w http.ResponseWriter, r *http.Request)
 	// CreateCheck 実訪問の CSV と予定を照合する
@@ -677,10 +677,10 @@ func (response CreateCheck503JSONResponse) VisitCreateCheckResponse(w http.Respo
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
-	// GetHealthz プロセスが応答できるかを返す
+	// GetHealthz プロセスがレスポンスを返せるかを返す
 	// (GET /healthz)
 	GetHealthz(ctx context.Context, request GetHealthzRequestObject) (GetHealthzResponseObject, error)
-	// GetReadyz 要求を受けられるかを返す
+	// GetReadyz リクエストを受けられるかを返す
 	// (GET /readyz)
 	GetReadyz(ctx context.Context, request GetReadyzRequestObject) (GetReadyzResponseObject, error)
 	// CreateCheck 実訪問の CSV と予定を照合する

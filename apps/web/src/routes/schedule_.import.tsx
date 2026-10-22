@@ -8,7 +8,7 @@ import { calendarImportSearchSchema } from '#/features/calendar/schema/calendarI
 // `/schedule` の子にすると予定のカレンダーの上に重なるので、名前の `_` で入れ子から外す
 export const Route = createFileRoute('/schedule_/import')({
   validateSearch: calendarImportSearchSchema,
-  // 期間の既定の値を、職員の端末の日付で決めるため、サーバーで描画しない
+  // 期間のデフォルト値を、職員のデバイスの日付で決めるため、サーバーで描画しない
   ssr: false,
   head: () => ({ meta: [{ title: '予定の取り込み | buddy' }] }),
   component: CalendarImportPage,

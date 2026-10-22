@@ -38,8 +38,8 @@ export const CalendarAcceptDialog = ({
         {target}
       </p>
       <p className="text-body">
-        buddy の予定の題名と日時を、Google カレンダーの今の内容にします。buddy
-        で変えた題名と日時は消えます。Google カレンダーで消された予定は、buddy
+        buddy の予定のタイトルと日時を、Google カレンダーの今の内容にします。buddy
+        で変えたタイトルと日時は消えます。Google カレンダーで消された予定は、buddy
         でもキャンセルします。
       </p>
       {errorMessage !== undefined && (

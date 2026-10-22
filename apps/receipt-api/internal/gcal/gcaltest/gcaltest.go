@@ -1,4 +1,4 @@
-// Package gcaltest は、テストと手元の確認に使う、Calendar API の events.list の偽物を提供する。
+// Package gcaltest は、テストとローカル環境の確認に使う、Calendar API の events.list のフェイクを提供する。
 package gcaltest
 
 import (
@@ -15,7 +15,7 @@ import (
 	"google.golang.org/api/option"
 )
 
-// Calendar は、偽物の API が返す 1 つのカレンダーである。
+// Calendar は、フェイクの API が返す 1 つのカレンダーである。
 type Calendar struct {
 	// Summary は、カレンダーの表示名である。
 	Summary string
@@ -23,7 +23,7 @@ type Calendar struct {
 	Pages [][]*calendar.Event
 }
 
-// Server は、GET /calendars/{calendarId}/events だけに答える偽物の API である。
+// Server は、GET /calendars/{calendarId}/events だけに答えるフェイクの API である。
 type Server struct {
 	calendars map[string]Calendar
 
@@ -36,7 +36,7 @@ func NewServer(calendars map[string]Calendar) *Server {
 	return &Server{calendars: calendars}
 }
 
-// Queries は、受けた要求のクエリを受けた順に返す。
+// Queries は、受けたリクエストのクエリを受けた順に返す。
 func (s *Server) Queries() []url.Values {
 	s.mu.Lock()
 	defer s.mu.Unlock()

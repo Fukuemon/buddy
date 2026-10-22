@@ -1,4 +1,4 @@
-// Package apperr は、機能のパッケージとアダプタが共有する誤りを持つ。httpapi が HTTP のステータスに対応させる。
+// Package apperr は、機能のパッケージとアダプタが共有するエラーを持つ。httpapi が HTTP のステータスに対応させる。
 // 標準ライブラリにだけ依存する。
 package apperr
 
@@ -61,7 +61,7 @@ func AsConflict(err error, format string, args ...any) error {
 	return err
 }
 
-// Reference は、リクエストの本文が指す ID が見つからない err を、入力の誤りに置き換える。
+// Reference は、リクエストの本文が指す ID が見つからない err を、入力のエラーに置き換える。
 // パスで指したリソースと違い、本文の ID が見つからないことは 404 ではなく 400 で返す。
 func Reference(label, id string, err error) error {
 	if errors.Is(err, ErrNotFound) {
@@ -70,7 +70,7 @@ func Reference(label, id string, err error) error {
 	return err
 }
 
-// SameFacility は、参照した ownerFacilityID が facilityID と違うときに入力の誤りを返す。
+// SameFacility は、参照した ownerFacilityID が facilityID と違うときに入力のエラーを返す。
 func SameFacility(label, id, ownerFacilityID, facilityID string) error {
 	if ownerFacilityID != facilityID {
 		return Invalid("%s %s はこの事業所に属していません", label, id)

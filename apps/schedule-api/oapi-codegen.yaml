@@ -5,12 +5,12 @@ generate:
   gin-server: true
   strict-server: true
   models: true
-  # 要求の検証（httpapi の validateRequest）が、openapi.yaml を実行時に読むため
+  # リクエストの検証（httpapi の validateRequest）が、openapi.yaml を実行時に読むため
   embedded-spec: true
 output-options:
   # StaffDetail の policies の要素のような、名前のない schema にも型を作る。無名の struct は httpapi から組み立てられない
   generate-types-for-anonymous-schemas: true
-  # 既定の openapi_types.Date と openapi_types.Email は JSON を読む時点で独自の文言のエラーを返し、
+  # デフォルトの openapi_types.Date と openapi_types.Email は JSON を読む時点で独自の文言のエラーを返し、
   # Email は "名前 <addr>" を addr に書き換えて通す。string で受け、httpapi の検証で文言と規則を保つ
   type-mapping:
     string:

@@ -87,7 +87,7 @@ const CalendarImportContent = ({ staffId, onStaffChange }: CalendarImportContain
     )
 
   const isLocked = preview.isPending || runImport.isPending
-  // 下見の結果は、下見したカレンダーにだけ当てる。一覧の読み直しで選んだ職員が替わったら、結果を出さず、確定もさせない
+  // プレビューの結果は、プレビューしたカレンダーにだけ当てる。一覧の読み直しで選んだ職員が替わったら、結果を出さず、確定もさせない
   const previewed =
     preview.data !== undefined && preview.variables?.calendarId === current?.calendar.id
       ? preview.data
@@ -170,7 +170,7 @@ const CalendarImportContent = ({ staffId, onStaffChange }: CalendarImportContain
 
 /**
  * 予定の取り込みの画面。職員の管理の権限が無ければ、API を呼ばずに権限が無いことを示す。
- * 結び付けたカレンダーと職員を読み、選んだ職員と期間で下見し、確かめが要る予定の取り込み方を選んで確定する。
+ * 結び付けたカレンダーと職員を読み、選んだ職員と期間でプレビューし、確かめが要る予定の取り込み方を選んで確定する。
  */
 export const CalendarImportContainer = (props: CalendarImportContainerProps) => {
   const { viewer } = useRouteContext({ from: '__root__' })

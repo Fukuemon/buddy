@@ -2,7 +2,7 @@
 //
 //	go run ./tools/parity/goreport VISITS SCHEDULES > OUT
 //
-// 入力の誤りや読めないファイルでは、標準エラーに書いて終了コード 1 で終わる。
+// 入力のエラーや読めないファイルでは、標準エラーに書いて終了コード 1 で終わる。
 package main
 
 import (

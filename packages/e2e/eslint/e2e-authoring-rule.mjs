@@ -177,7 +177,7 @@ export const rule = createRule({
         if (node.value === 'networkidle') {
           report(
             node,
-            'networkidle に頼らない。読み込みを続ける画面では届かない。API の応答か、要素が出るのを待つ',
+            'networkidle に頼らない。読み込みを続ける画面では届かない。API のレスポンスか、要素が出るのを待つ',
           )
         }
         if (SCREEN_ID && isUnder(filePath, 'widgets') && SCREEN_ID.test(node.value)) {

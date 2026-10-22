@@ -20,7 +20,7 @@ type UseModalDialogOptions = {
   onCloseRequest: () => void
   /** 開いたときにフォーカスを移す要素を返す。 */
   getInitialFocus: () => HTMLElement | null
-  /** Tab で移れない（tabIndex が -1 の）題。ここからの Shift+Tab を最後の要素へ回す。 */
+  /** Tab で移れない（tabIndex が -1 の）タイトル。ここからの Shift+Tab を最後の要素へ回す。 */
   titleRef: RefObject<HTMLElement | null>
 }
 
@@ -44,7 +44,7 @@ export const useModalDialog = ({
     if (!isOpen || dialog === null) return
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
 
-    // Escape の既定の動きはダイアログを閉じるので止め、閉じるかを呼び出す側に任せる。
+    // Escape のデフォルトの動きはダイアログを閉じるので止め、閉じるかを呼び出す側に任せる。
     // 止められない cancel（Escape を続けて押したとき）は、続く close に任せ、要求を 2 回出さない。
     const handleCancel = (event: Event) => {
       if (!event.cancelable) return

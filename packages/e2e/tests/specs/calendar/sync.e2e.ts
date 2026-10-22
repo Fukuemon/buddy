@@ -18,7 +18,7 @@ const detailDateTime = (event: GoogleEvent | undefined) => {
   return `${start.slice(0, 10)} ${start.slice(11, 16)} - ${end.slice(11, 16)}`
 }
 
-/** 日の表示で、佐藤の予定のうち題名が title のものを開く。 */
+/** 日の表示で、佐藤の予定のうちタイトルが title のものを開く。 */
 const openSchedule = async (page: Page, title: string) => {
   await page.goto('/schedule?view=day')
   await page
@@ -112,14 +112,14 @@ test.describe('確かめが要る予定', () => {
         await holdGoogleChanges(request, false)
       })
 
-      await test.step('Google の内容に合わせると、一覧から消え、buddy の予定が Google カレンダーの題名と日時になる', async () => {
+      await test.step('Google の内容に合わせると、一覧から消え、buddy の予定が Google カレンダーのタイトルと日時になる', async () => {
         await page
           .getByTestId(/^calendar-review-row-/)
           .filter({ hasText: SATO.name })
           .getByTestId(/^calendar-review-accept-/)
           .click()
         const dialog = page.getByTestId('calendar-accept-dialog')
-        await expect(dialog).toContainText('buddy で変えた題名と日時は消えます。')
+        await expect(dialog).toContainText('buddy で変えたタイトルと日時は消えます。')
         await page.getByTestId('calendar-accept-submit').click()
         await expect(dialog).toBeHidden()
         await expect(

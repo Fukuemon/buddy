@@ -81,13 +81,13 @@ func toEventBody(b calendar.EventBody) *calendarv3.Event {
 	return ev
 }
 
-// rateLimitReasons は、403 でも一時的な誤りとして書き直す理由である。
+// rateLimitReasons は、403 でも一時的なエラーとして書き直す理由である。
 // 出典: https://developers.google.com/workspace/calendar/api/guides/errors
 var rateLimitReasons = map[string]bool{"rateLimitExceeded": true, "userRateLimitExceeded": true, "quotaExceeded": true}
 
-// writeError は、Calendar API の書き込みの誤りを calendar の誤りで包む。エラーの文は、カレンダー ID と予定の題名を含まない。
+// writeError は、Calendar API の書き込みのエラーを calendar のエラーで包む。エラーの文は、カレンダー ID と予定のタイトルを含まない。
 func writeError(msg string, err error) error {
-	// 通信の誤り（*url.Error）の文は、カレンダー ID を含む要求の URL を持つ。
+	// 通信のエラー（*url.Error）の文は、カレンダー ID を含むリクエストの URL を持つ。
 	var uerr *url.Error
 	if errors.As(err, &uerr) {
 		err = uerr.Err

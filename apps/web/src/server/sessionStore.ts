@@ -17,7 +17,7 @@ export interface SessionStore {
   /** 値を返して消す。無ければ undefined を返す。 */
   take<T>(key: string): Promise<T | undefined>
   delete(key: string): Promise<void>
-  /** 置き場に届くかを確かめる。届かなければ Error を投げる。 */
+  /** 保存先に届くかを確かめる。届かなければ Error を投げる。 */
   ping(): Promise<void>
 }
 
@@ -30,7 +30,7 @@ const UNLOCK_SCRIPT =
 
 /** url（`redis://host:port`）の Valkey に置く SessionStore を作る。 */
 export const createValkeySessionStore = (url: string): SessionStore => {
-  // 落ちている間の命令は、再接続を 1 回試したら失敗させる。既定の 20 回では要求を長く待たせる
+  // 落ちている間の命令は、再接続を 1 回試したら失敗させる。デフォルトの 20 回ではリクエストを長く待たせる
   const client = new Valkey(url, {
     maxRetriesPerRequest: 1,
     connectTimeout: 2000,

@@ -147,8 +147,8 @@ type Detail struct {
 	Policies []PolicyGrant
 }
 
-// ParseSort は、職員の一覧の並べ替えを読む。列は username、created_at、updated_at だけを受け付ける。
-// 列を指定しないときは更新の新しい順にする。
+// ParseSort は、職員の一覧の並べ替えを読む。カラムは username、created_at、updated_at だけを受け付ける。
+// カラムを指定しないときは更新の新しい順にする。
 func ParseSort(field, order string) (kernel.Sort, error) {
 	return kernel.ParseSort(field, order,
 		[]string{"username", "created_at", "updated_at"},

@@ -9,7 +9,7 @@ import * as stories from './Modal.stories'
 const { Default, Closed, WithOpener } = composeStories(stories)
 
 describe('Modal', () => {
-  it('モーダルのダイアログとして開き、題にフォーカスを移す', () => {
+  it('モーダルのダイアログとして開き、タイトルにフォーカスを移す', () => {
     render(<Default />)
     const dialog = screen.getByRole('dialog', { name: '予定の詳細' })
     expect(dialog).toHaveProperty('open', true)
@@ -67,7 +67,7 @@ describe('Modal', () => {
     const close = screen.getByRole('button', { name: '閉じる' })
     const edit = screen.getByRole('button', { name: '編集' })
 
-    // 開いた直後は題にフォーカスがあり、題の後ろから順に移る
+    // 開いた直後はタイトルにフォーカスがあり、タイトルの後ろから順に移る
     await userEvent.tab()
     expect(edit).toHaveFocus()
     await userEvent.tab()

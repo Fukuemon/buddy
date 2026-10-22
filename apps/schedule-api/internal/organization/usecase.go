@@ -23,7 +23,7 @@ type Guard func(ctx context.Context) error
 
 // Usecase は、事業所、部署、チーム、役職、権限の操作である。
 // 事業所ごとの一覧は、事業所が見つからないときに apperr.ErrNotFound を返す。
-// 役職の作成は、役職の既定で権限を配るので、guard が許すときだけ行う。
+// 役職の作成は、役職のデフォルトの権限を職員に配るので、guard が許すときだけ行う。
 type Usecase struct {
 	deps  Deps
 	tx    tx.Transactor
@@ -82,7 +82,7 @@ func (o *Usecase) CreateTeam(ctx context.Context, facilityID, name string) (Team
 	return o.deps.Teams.Get(ctx, t.ID)
 }
 
-// GetPosition は、役職と既定の権限を返す。
+// GetPosition は、役職とデフォルトの権限を返す。
 func (o *Usecase) GetPosition(ctx context.Context, id string) (Position, error) {
 	return o.deps.Positions.Get(ctx, id)
 }
@@ -95,7 +95,7 @@ func (o *Usecase) ListPositions(ctx context.Context, facilityID string) ([]Posit
 	return o.deps.Positions.ListByFacility(ctx, facilityID)
 }
 
-// CreatePosition は、事業所に役職を作り、保存した役職を返す。policyIDs に見つからない権限があると入力の誤りを、職員の管理の権限が無いときは apperr.ErrForbidden を、
+// CreatePosition は、事業所に役職を作り、保存した役職を返す。policyIDs に見つからない権限があると入力のエラーを、職員の管理の権限が無いときは apperr.ErrForbidden を、
 // 同じ事業所に同じ名前の役職があるときは apperr.ErrConflict を返す。
 func (o *Usecase) CreatePosition(ctx context.Context, facilityID, name string, policyIDs []string) (Position, error) {
 	if err := o.guard(ctx); err != nil {

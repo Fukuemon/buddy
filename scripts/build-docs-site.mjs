@@ -23,7 +23,7 @@ const parts = [
     source: join(root, 'erd'),
     target: join(out, 'erd'),
     build: 'pnpm build:erd',
-    // serve.json と .keep は、Liam ERD の CLI が手元の配信のために置くもので、Worker では使わない
+    // serve.json と .keep は、Liam ERD の CLI がローカルの配信のために置くもので、Worker では使わない
     skip: ['serve.json', '.keep'],
   },
 ]

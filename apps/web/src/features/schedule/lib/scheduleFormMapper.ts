@@ -20,7 +20,7 @@ export type ScheduleFormDefaults = {
 
 /**
  * 作成のフォームの初期値を返す。
- * 通常の予定は開始から 1 時間、訪問の予定は既定のサービスコードの上限の提供時間にする。
+ * 通常の予定は開始から 1 時間、訪問の予定はデフォルトのサービスコードの上限の提供時間にする。
  */
 export const createScheduleFormValues = ({
   kind,

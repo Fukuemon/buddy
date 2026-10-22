@@ -47,7 +47,7 @@ func (s Sort) Key() string {
 	return s.Field + "_asc"
 }
 
-// ParseSort は、allowed にある列と、向き "asc" か "desc" だけを受け付け、ほかは apperr.ValidationError を返す。
+// ParseSort は、allowed にあるカラムと、向き "asc" か "desc" だけを受け付け、ほかは apperr.ValidationError を返す。
 // field が空なら def を返し、order が空なら昇順とする。
 func ParseSort(field, order string, allowed []string, def Sort) (Sort, error) {
 	desc := false

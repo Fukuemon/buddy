@@ -122,7 +122,7 @@ export const useUnlinkCalendar = () => {
   })
 }
 
-/** 取り込みを下見する mutation。予定は書かないので、cache は変えない。 */
+/** 取り込みをプレビューする mutation。予定は書かないので、cache は変えない。 */
 export const usePreviewImport = () => {
   const { api, facilityId } = useBuddyApi()
   return useMutation({

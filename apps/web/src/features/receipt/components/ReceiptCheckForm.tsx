@@ -27,7 +27,7 @@ export type ReceiptCheckFormProps = {
   onSubmit: () => void
   /** 照合の失敗の文。 */
   errorMessage?: string
-  /** 入力の CSV の行ごとの誤り。 */
+  /** 入力の CSV の行ごとのエラー。 */
   rowErrors?: readonly ReceiptRowError[]
 }
 

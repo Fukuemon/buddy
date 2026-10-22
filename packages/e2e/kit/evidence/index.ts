@@ -7,7 +7,7 @@ export type Variant =
   | { name: 'before'; label: '改修前'; baseUrl: string }
 
 /**
- * 撮る版の一覧。既定は、baseUrl を名前の無い 1 つの版として撮る。
+ * 撮る版の一覧。デフォルトは、baseUrl を名前の無い 1 つの版として撮る。
  *
  * @param o.beforeBaseUrl 渡すと、baseUrl を改修後、beforeBaseUrl を改修前として撮る。振る舞いを変えない改修を、改修前と比べて確かめるときに使う
  * @param o.only 'before' か 'after'。渡すと、baseUrl をその版として 1 つだけ撮る。改修前と改修後を別の環境で 1 回ずつ撮るときに使う。ほかの値では例外を投げる
@@ -28,10 +28,10 @@ export const variants = (o: {
 }
 
 /**
- * 検証シナリオ。値は検証シナリオのファイルと pull request から、文言を変えずに写す。
- * id は検証シナリオの @scenario-id で、証跡とシナリオを対応付ける。
- * issue は要求の issue 番号で、証跡の格納先の要求のフォルダと同じ番号にする。検証シナリオのファイルの番号とは違うことがある。
- * no は pull request の証跡の S 番号。アクターをまたいだ通し番号で、pull request の証跡のフォルダの名前から写す。
+ * 検証シナリオ。値は検証シナリオのファイルと pull request から、文言を変えずにコピーする。
+ * id は検証シナリオの @scenario-id で、エビデンスとシナリオを対応付ける。
+ * issue は要求の issue 番号で、エビデンスの格納先の要求のフォルダと同じ番号にする。検証シナリオのファイルの番号とは違うことがある。
+ * no は pull request のエビデンスの S 番号。アクターをまたいだ通し番号で、pull request のエビデンスのフォルダの名前からコピーする。
  */
 export type Scenario = {
   issue: string
@@ -39,7 +39,7 @@ export type Scenario = {
   actor: string
   no: number
   title: string
-  /** 検証シナリオの備考で、改修前と違ってよいとされた差のうち、どの静止画にも映りうるもの。README に一覧で出す */
+  /** 検証シナリオの備考で、改修前と違ってよいとされた差のうち、どのスクリーンショットにも映りうるもの。README に一覧で出す */
   differences?: string[]
 }
 
@@ -50,9 +50,9 @@ const ymd = (d: Date): string =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
 /**
- * 証跡の置き場の実施日を YYYY-MM-DD で返す。
+ * エビデンスの配置先の実施日を YYYY-MM-DD で返す。
  *
- * @param given YYYY-MM-DD。無ければ流した日にする。改修前と改修後を日をまたいで 1 回ずつ撮るとき、2 回目に 1 回目の日付を渡して同じ置き場にそろえる。形が違えば例外を投げる
+ * @param given YYYY-MM-DD。無ければ流した日にする。改修前と改修後を日をまたいで 1 回ずつ撮るとき、2 回目に 1 回目の日付を渡して同じ配置先にそろえる。形が違えば例外を投げる
  */
 export const evidenceDate = (given?: string): string => {
   if (given && !/^\d{4}-\d{2}-\d{2}$/.test(given))
@@ -61,8 +61,8 @@ export const evidenceDate = (given?: string): string => {
 }
 
 /**
- * 1 つのシナリオの証跡の置き場。<root>/<issue>/evidence/<envName>/<date>/<アクター>/S<n>_<シナリオ名>/ になる。
- * <アクター>/ から下は 証跡の格納先のフォルダと同じ形にし、シナリオのフォルダをそのまま上げられるようにする。
+ * 1 つのシナリオのエビデンスの配置先。<root>/<issue>/evidence/<envName>/<date>/<アクター>/S<n>_<シナリオ名>/ になる。
+ * <アクター>/ から下はエビデンスの格納先のフォルダと同じ形にし、シナリオのフォルダをそのまま上げられるようにする。
  *
  * @param o.root 要求ごとのフォルダを並べる場所(例: tests/specs)
  * @param o.date evidenceDate の戻り値
@@ -83,7 +83,7 @@ export const evidenceDir = (o: {
     `S${o.scenario.no}_${o.scenario.title}`,
   )
 
-/** 証跡のファイル名(拡張子なし)。例の行ごとに、改修前と改修後が名前の順で隣り合う */
+/** エビデンスのファイル名(拡張子なし)。例の行ごとに、改修前と改修後が名前の順で隣り合う */
 export const evidenceName = (variant: Variant, example?: Example): string =>
   [...(example ? [String(example.no).padStart(2, '0'), example.value] : []), variant.label]
     .filter(Boolean)

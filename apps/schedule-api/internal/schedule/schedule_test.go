@@ -143,14 +143,14 @@ func TestRecurringOccurs(t *testing.T) {
 		day   string
 		want  bool
 	}{
-		{name: "毎週の既定は最初の日の曜日", rule: schedule.Rule{Frequency: schedule.Weekly}, day: "2026-10-12", want: true},
-		{name: "毎週の既定で別の曜日", rule: schedule.Rule{Frequency: schedule.Weekly}, day: "2026-10-13", want: false},
+		{name: "毎週のデフォルトは最初の日の曜日", rule: schedule.Rule{Frequency: schedule.Weekly}, day: "2026-10-12", want: true},
+		{name: "毎週のデフォルトで別の曜日", rule: schedule.Rule{Frequency: schedule.Weekly}, day: "2026-10-13", want: false},
 		{name: "毎週の水曜", start: "2026-10-07", rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(3)}, day: "2026-10-14", want: true},
 		{name: "毎週の日曜は 7", start: "2026-10-11", rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(7)}, day: "2026-10-18", want: true},
 		{name: "最初の日より前", rule: schedule.Rule{Frequency: schedule.Weekly}, day: "2026-09-28", want: false},
 		{name: "終了日の当日", rule: schedule.Rule{Frequency: schedule.Weekly, EndDate: ptr(civil.Date{Year: 2026, Month: 10, Day: 19})}, day: "2026-10-19", want: true},
 		{name: "終了日より後", rule: schedule.Rule{Frequency: schedule.Weekly, EndDate: ptr(civil.Date{Year: 2026, Month: 10, Day: 19})}, day: "2026-10-26", want: false},
-		{name: "毎月の既定は最初の日の日", rule: schedule.Rule{Frequency: schedule.Monthly}, day: "2026-11-05", want: true},
+		{name: "毎月のデフォルトは最初の日の日", rule: schedule.Rule{Frequency: schedule.Monthly}, day: "2026-11-05", want: true},
 		{name: "毎月の 31 日", start: "2026-10-31", rule: schedule.Rule{Frequency: schedule.Monthly, DayOfMonth: ptr(31)}, day: "2026-12-31", want: true},
 		{name: "毎月の 31 日で 30 日までの月", start: "2026-10-31", rule: schedule.Rule{Frequency: schedule.Monthly, DayOfMonth: ptr(31)}, day: "2026-11-30", want: false},
 		{name: "毎月の第 2 火曜", start: "2026-10-13", rule: schedule.Rule{Frequency: schedule.Monthly, WeekOfMonth: ptr(2), DayOfWeek: ptr(2)}, day: "2026-11-10", want: true},
@@ -199,10 +199,10 @@ func TestNewRecurringFirstDate(t *testing.T) {
 		rule    schedule.Rule
 		wantErr bool
 	}{
-		{name: "毎週の既定", rule: schedule.Rule{Frequency: schedule.Weekly}},
+		{name: "毎週のデフォルト", rule: schedule.Rule{Frequency: schedule.Weekly}},
 		{name: "毎週の火曜", rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(2)}},
 		{name: "毎週の月曜", rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(1)}, wantErr: true},
-		{name: "毎月の既定", rule: schedule.Rule{Frequency: schedule.Monthly}},
+		{name: "毎月のデフォルト", rule: schedule.Rule{Frequency: schedule.Monthly}},
 		{name: "毎月の 6 日", rule: schedule.Rule{Frequency: schedule.Monthly, DayOfMonth: ptr(6)}},
 		{name: "毎月の 7 日", rule: schedule.Rule{Frequency: schedule.Monthly, DayOfMonth: ptr(7)}, wantErr: true},
 		{name: "毎月の第 1 火曜", rule: schedule.Rule{Frequency: schedule.Monthly, WeekOfMonth: ptr(1), DayOfWeek: ptr(2)}},

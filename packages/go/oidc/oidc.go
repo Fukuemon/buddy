@@ -21,7 +21,7 @@ import (
 const (
 	discoveryTimeout   = 10 * time.Second
 	unknownKIDInterval = time.Minute
-	// jwkset は、取り直しの HTTP の要求にも、この待ちの上限の ctx を使う。
+	// jwkset は、取り直しの HTTP のリクエストにも、この待ちの上限の ctx を使う。
 	unknownKIDWait  = 5 * time.Second
 	refreshInterval = time.Hour
 	clockLeeway     = 30 * time.Second
@@ -42,7 +42,7 @@ type Identity struct {
 
 // Config は、検証の設定である。
 type Config struct {
-	// Issuer は、ブローカーの発行者の URL で、トークンの iss と一致させる。
+	// Issuer は、ブローカーの Issuer の URL で、トークンの iss と一致させる。
 	Issuer string
 	// Audience は、トークンの aud に含まれることを求める値である。
 	Audience string
@@ -60,7 +60,7 @@ type Verifier struct {
 // NewVerifier は、Issuer の discovery の文書から jwks_uri を読み、JWKS を取る Verifier を作る。
 // discovery を読めないか、文書の issuer が Issuer と違うときはエラーを返す。JWKS を取れなくてもエラーにせず、
 // 後のトークンの検証のときに取り直す。ctx が終わると、JWKS の定期の取り直しを止める。
-// client が nil なら、要求ごとに 10 秒で打ち切る client を使う。
+// client が nil なら、リクエストごとに 10 秒で打ち切る client を使う。
 func NewVerifier(ctx context.Context, cfg Config, client *http.Client, log *slog.Logger) (*Verifier, error) {
 	if client == nil {
 		client = &http.Client{Timeout: discoveryTimeout}

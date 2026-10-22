@@ -5,7 +5,7 @@ SELECT * FROM schedule_types WHERE id = $1;
 SELECT * FROM schedule_types ORDER BY name, id;
 
 -- name: CreateSchedule :exec
--- is_over_time_work は開始の時刻から生成する列なので書かない。
+-- is_over_time_work は開始の時刻から生成するカラムなので書かない。
 INSERT INTO schedules (
     id, facility_id, staff_id, schedule_type_id, date, start_time, end_time,
     recurring_schedule_id, original_date, visit_info_id, title, description
@@ -32,7 +32,7 @@ ORDER BY
   id;
 
 -- name: CreateRecurringSchedule :exec
--- is_over_time_work は開始の時刻から生成する列なので書かない。
+-- is_over_time_work は開始の時刻から生成するカラムなので書かない。
 INSERT INTO recurring_schedules (
     id, facility_id, staff_id, schedule_type_id, date, start_time, end_time,
     visit_info_id, title, description,

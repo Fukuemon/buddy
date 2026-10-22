@@ -64,8 +64,8 @@ func Open(ctx context.Context, c Config) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
-// scanTimestamptzInUTC は、timestamptz を UTC の time.Time で読むようにする。pgx の既定は time.Local で、
-// 応答の日時のオフセットがプロセスのタイムゾーンで変わるためである。
+// scanTimestamptzInUTC は、timestamptz を UTC の time.Time で読むようにする。pgx のデフォルトは time.Local で、
+// レスポンスの日時のオフセットがプロセスのタイムゾーンで変わるためである。
 func scanTimestamptzInUTC(conn *pgx.Conn) {
 	conn.TypeMap().RegisterType(&pgtype.Type{
 		Name:  "timestamptz",
@@ -150,7 +150,7 @@ func translate(op string, err error) error {
 		case foreignKeyViolation:
 			return apperr.Invalid("参照先が見つかりません")
 		case checkViolation, notNullViolation, stringDataRightTrunc, numericValueOutOfRange:
-			return apperr.Invalid("値が列の制約に合いません")
+			return apperr.Invalid("値がカラムの制約に合いません")
 		case characterNotInRepertoire:
 			// text は NUL（U+0000）を受け付けない
 			return apperr.Invalid("値に使えない文字が含まれています")
@@ -172,7 +172,7 @@ func optional(s string) *string {
 	return &s
 }
 
-// nonNil は、nil を空のスライスにする。応答の JSON で null ではなく [] にするためである。
+// nonNil は、nil を空のスライスにする。レスポンスの JSON で null ではなく [] にするためである。
 func nonNil(s []string) []string {
 	if s == nil {
 		return []string{}

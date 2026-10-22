@@ -149,7 +149,7 @@ func manager() context.Context {
 	}})
 }
 
-// importDecided は、下見の版を取り込み方に付けてから確定する。版を持つ取り込み方は、その版のまま送る。
+// importDecided は、プレビューのバージョンを取り込み方に付けてから確定する。バージョンを持つ取り込み方は、そのバージョンのまま送る。
 func (e env) importDecided(t *testing.T, rng calendar.Range, ds []calendar.Decision) (calendar.ImportResult, error) {
 	t.Helper()
 	if p, err := e.uc.Preview(e.ctx, calID, rng); err == nil {
@@ -206,7 +206,7 @@ func TestPreview(t *testing.T) {
 		t.Errorf("Skipped = %v", reasons)
 	}
 	if len(e.store.Schedules)+len(e.store.Links) != 0 {
-		t.Errorf("下見で予定か対応を書いた")
+		t.Errorf("プレビューで予定か対応を書いた")
 	}
 }
 
@@ -335,7 +335,7 @@ func TestImportRejects(t *testing.T) {
 			decisions: []calendar.Decision{{ExternalEventID: "ambiguous", Action: calendar.ActionPatient, PatientID: inmem.OtherPatientID}, decisions()[1]},
 			want:      apperr.ErrInvalidInput},
 		{name: "取り込みが進んでいる", decisions: decisions(), running: true, want: apperr.ErrConflict},
-		{name: "下見の後に確かめが要る予定が変わった（版が違う）",
+		{name: "プレビューの後に確かめが要る予定が変わった（バージョンが違う）",
 			decisions: []calendar.Decision{{ExternalEventID: "ambiguous", Action: calendar.ActionPatient, PatientID: "PB2", Revision: "stale"}, decisions()[1]},
 			want:      apperr.ErrConflict},
 	}
@@ -441,7 +441,7 @@ func TestLink(t *testing.T) {
 		t.Fatal(err)
 	}
 	if again.ID != c.ID || again.DisabledAt != nil {
-		t.Errorf("結び付け直したカレンダー = %+v, want 外した行 %s", again, c.ID)
+		t.Errorf("結び付け直したカレンダー = %+v, want 外したレコード %s", again, c.ID)
 	}
 }
 
@@ -469,7 +469,7 @@ func ExampleRange() {
 	// Output: 2026-11-01T00:00:00+09:00 2026-12-01T00:00:00+09:00
 }
 
-// reviewSeries は、利用者を 1 人に決められない毎週の繰り返しと、題名が親と同じ変えた回と、題名を変えた回である。
+// reviewSeries は、利用者を 1 人に決められない毎週の繰り返しと、タイトルが親と同じ変えた回と、タイトルを変えた回である。
 func reviewSeries() *gcaltest.Server {
 	return &gcaltest.Server{
 		Calendars: map[string][][]*calendarv3.Event{googleCalID: {{
@@ -489,7 +489,7 @@ func reviewSeries() *gcaltest.Server {
 }
 
 func TestImportReviewedRecurring(t *testing.T) {
-	t.Run("題名が親と同じ回は、親の確かめにまとめ、選んだ利用者を規則と回に当てる", func(t *testing.T) {
+	t.Run("タイトルが親と同じ回は、親の確かめにまとめ、選んだ利用者を規則と回に当てる", func(t *testing.T) {
 		e := newEnv(t, reviewSeries())
 		p, err := e.uc.Preview(e.ctx, calID, e.rng)
 		if err != nil {
@@ -521,7 +521,7 @@ func TestImportReviewedRecurring(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		// 題名を変えた 11-16 の回だけが、置き換える繰り返しの無い単発の予定になる
+		// タイトルを変えた 11-16 の回だけが、置き換える繰り返しの無い単発の予定になる
 		if res.Run.ImportedCount != 1 || res.Run.SkippedCount != 2 {
 			t.Fatalf("1 回目 = %+v", res.Run)
 		}
@@ -534,7 +534,7 @@ func TestImportReviewedRecurring(t *testing.T) {
 			t.Fatal(err)
 		}
 		if p.Counts.RecurringAsRule != 0 || p.Counts.NeedsReview != 1 || p.NeedsReview[0].Recurrence != nil || p.Counts.AlreadyImported != 1 {
-			t.Errorf("2 回目の下見の件数 = %+v", p.Counts)
+			t.Errorf("2 回目のプレビューの件数 = %+v", p.Counts)
 		}
 		res, err = e.importDecided(t, e.rng, []calendar.Decision{{ExternalEventID: "series", Action: calendar.ActionPatient, PatientID: "PB1"}})
 		if err != nil {
@@ -622,7 +622,7 @@ func TestImportExpandedMovedOutOfRange(t *testing.T) {
 		t.Fatal(err)
 	}
 	if p.Counts.Recurring != 1 || p.Counts.RecurringExpanded != 1 || p.Counts.ExpandedOccurrences != 2 {
-		t.Errorf("下見の件数 = %+v", p.Counts)
+		t.Errorf("プレビューの件数 = %+v", p.Counts)
 	}
 	res, err := e.importDecided(t, e.rng, nil)
 	if err != nil {
@@ -652,7 +652,7 @@ func TestPreviewCountsSeriesOnlyMovedOut(t *testing.T) {
 		t.Fatal(err)
 	}
 	if p.Counts.Import != 1 || p.Counts.Recurring != 1 || p.Counts.RecurringExpanded != 1 {
-		t.Errorf("下見の件数 = %+v, want 期間の外へ動かした回だけの繰り返しも 1 件に数える", p.Counts)
+		t.Errorf("プレビューの件数 = %+v, want 期間の外へ動かした回だけの繰り返しも 1 件に数える", p.Counts)
 	}
 }
 

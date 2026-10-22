@@ -303,7 +303,7 @@ describe('createHttpBuddyApi', () => {
     await expect(api().schedules.get('facility-1', 'other')).rejects.toHaveProperty('status', 403)
   })
 
-  it('カレンダーの下見と取り込みを送り、409 の原因を code で投げる', async () => {
+  it('カレンダーのプレビューと取り込みを送り、409 の原因を code で投げる', async () => {
     server.use(
       scheduleHttp.post('/v1/external_calendars/{external_calendar_id}/imports', ({ response }) =>
         response(409).json({ code: 'import_running', message: '進んでいます' }),

@@ -1,4 +1,4 @@
--- 開発とテストに使う架空のデータ。実在の事業所、人、連絡先を入れない。
+-- 開発とテストに使うダミーデータ。実在の事業所、人、連絡先を入れない。
 -- 予定の種類、サービスコード、訪問の区分、権限は、全ての環境で同じ値なので初期のマイグレーションが入れる。
 
 INSERT INTO facilities (id, name, org_id) VALUES
@@ -17,7 +17,7 @@ INSERT INTO positions (id, facility_id, name) VALUES
     ('01M3TC5PVG7W2H1H20W0T1ZVEJ', '01M3TC5H00QV17BC0J9V3393ZP', 'リーダー'),
     ('01M3TC5QTRHSXHE7C68HPN6MBH', '01M3TC5H00QV17BC0J9V3393ZP', 'メンバー');
 
--- 役職の既定は PRD の役職ごとの権限の表に合わせる。
+-- 役職のデフォルトの権限は PRD の役職ごとの権限の表に合わせる。
 INSERT INTO position_policies (position_id, policy_id) VALUES
     ('01M3TC5NW8G8HN54GZ984344PZ', '01M5E1S42TTS7QZK05YGS0GYR8'),
     ('01M3TC5NW8G8HN54GZ984344PZ', '01M5E1S42TTS7QZK05YGS0GYRD'),
@@ -29,7 +29,7 @@ INSERT INTO position_policies (position_id, policy_id) VALUES
     ('01M3TC5QTRHSXHE7C68HPN6MBH', '01M5E1S42TTS7QZK05YGS0GYR8');
 
 -- 森の sub は、compose の IdP に dev-mori で入ったときに森になるよう、先に結び付けておく。
--- IdP の既定のメールは青木を指すので、メールでは森に結び付けられない（packages/e2e のチームリーダーの E2E が使う）。
+-- IdP のデフォルトのメールは青木を指すので、メールでは森に結び付けられない（packages/e2e のチームリーダーの E2E が使う）。
 INSERT INTO users (id, sub, username, email, phone_number, facility_id, department_id, team_id, position_id) VALUES
     ('01M3TC5TRG5200KYWTZW6ER3WN', NULL, '青木 陽菜', 'hina.aoki@example.com', NULL,
      '01M3TC5H00QV17BC0J9V3393ZP', '01M3TC5HZ8A18D2TP3PTKDXJMN', '01M3TC5KXRSEVXQZ2MTJK9FS45', '01M3TC5NW8G8HN54GZ984344PZ'),
@@ -40,8 +40,8 @@ INSERT INTO users (id, sub, username, email, phone_number, facility_id, departme
     ('01M5EF5AAYN3P4PYNAT0RJQYCR', NULL, '佐藤 美咲', 'misaki.sato@example.com', NULL,
      '01M3TC5H00QV17BC0J9V3393ZP', '01M3TC5HZ8A18D2TP3PTKDXJMN', '01M3TC5MX04QJ19X6XR1ZCBZRJ', '01M3TC5QTRHSXHE7C68HPN6MBH');
 
--- 職員の権限は役職の既定を写したもので、チームの権限の対象は所属のチームである。
--- 林には、既定に加えて森の予定の閲覧を足している（指定した職員の権限の例）。
+-- 職員の権限は役職のデフォルトの権限をコピーしたもので、チームの権限の対象は所属のチームである。
+-- 林には、デフォルトの権限に加えて森の予定の閲覧を足している（指定した職員の権限の例）。
 -- 佐藤は、リーダーの森と同じチーム B のメンバーで、森が予定を割り振る相手である。
 INSERT INTO user_policies (id, facility_id, user_id, policy_id) VALUES
     ('01M3TC5XP88SNPGCB8NNVJVXYT', '01M3TC5H00QV17BC0J9V3393ZP', '01M3TC5TRG5200KYWTZW6ER3WN', '01M5E1S42TTS7QZK05YGS0GYR8'),

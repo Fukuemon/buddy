@@ -21,7 +21,7 @@ if (typeof HTMLDialogElement !== 'undefined' && !('showModal' in HTMLDialogEleme
   })
 }
 
-// handler の無い要求はテストの誤りなので、素通しせずに失敗させる
+// handler の無いリクエストはテストの不備なので、素通しせずに失敗させる
 beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
 
 afterEach(() => {

@@ -8,7 +8,7 @@ import (
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
 )
 
-// TestDefaultGrants は、役職の既定の権限ごとに 1 つの権限を作り、チームを対象にする権限だけに所属のチームを付けることを確かめる。
+// TestDefaultGrants は、役職のデフォルトの権限ごとに 1 つの権限を作り、チームを対象にする権限だけに所属のチームを付けることを確かめる。
 func TestDefaultGrants(t *testing.T) {
 	pos := organization.Position{Policies: []organization.Policy{
 		{ID: "SELF", Code: organization.ScheduleSelfEdit},

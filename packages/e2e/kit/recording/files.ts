@@ -4,12 +4,12 @@ import path from 'node:path'
 import type { Example, Scenario, Variant } from '../evidence/index.js'
 import { CURSOR_LEGEND } from './cursor.js'
 
-/** 撮った記録(json)と、変換する前の webm の置き場。証跡の格納先へは上げないので、隠しフォルダにする */
+/** 撮った記録(json)と、変換する前の webm の配置先。エビデンスの格納先へは上げないので、隠しフォルダにする */
 export const RECORDS_DIR = '.records'
 
 /**
- * 字幕を出した時刻(録画のコンテキストでページを開いてからの秒)と、そのときに撮った静止画。
- * allowed は、その静止画で改修前と違ってよい差(検証シナリオの備考から写す)
+ * 字幕を出した時刻(録画のコンテキストでページを開いてからの秒)と、そのときに撮ったスクリーンショット。
+ * allowed は、そのスクリーンショットで改修前と違ってよい差(検証シナリオの備考からコピーする)
  */
 export type CaptionAt = { at: number; text: string; frame?: string; allowed?: string }
 
@@ -86,7 +86,7 @@ export const finishEvidence = (dir: string, take: Omit<Take, 'codec' | 'seconds'
   writeReadme(dir)
 }
 
-/** 撮り直す前に、同じ名前の前の撮影の記録、動画、静止画を消す。ほかの名前の撮影の記録は残す */
+/** 撮り直す前に、同じ名前の前の撮影の記録、動画、スクリーンショットを消す。ほかの名前の撮影の記録は残す */
 export const clearTake = (dir: string, name: string): void => {
   rmSync(path.join(dir, RECORDS_DIR, `${name}.json`), { force: true })
   rmSync(path.join(dir, `${name}.mp4`), { force: true })
@@ -96,7 +96,7 @@ export const clearTake = (dir: string, name: string): void => {
       rmSync(path.join(frames, f))
 }
 
-/** シナリオの置き場の README を、.records/ にある撮った記録の全部から書き直す */
+/** シナリオの配置先の README を、.records/ にある撮った記録の全部から書き直す */
 const writeReadme = (dir: string): void => {
   const files = readdirSync(path.join(dir, RECORDS_DIR))
     .filter((f) => f.endsWith('.json'))
@@ -110,7 +110,7 @@ const writeReadme = (dir: string): void => {
     takes[files.indexOf(files.reduce((a, b) => (modified(b) > modified(a) ? b : a)))]
   // 改修前を撮っていなければ、比べる列と説明を出さない
   const comparing = takes.some((t) => t.variant.name === 'before')
-  const columns = comparing ? ['改修前', '改修後'] : ['証跡']
+  const columns = comparing ? ['改修前', '改修後'] : ['エビデンス']
   const fileOf = (no: number | undefined, column: string) =>
     takes.find((t) => t.example?.no === no && (!comparing || t.variant.label === column))?.name ??
     ''
@@ -143,7 +143,7 @@ const writeReadme = (dir: string): void => {
       `${t.codec}、${t.seconds?.toFixed(1)} 秒。字幕の 1 行目は「${t.header}」。`,
       ...(t.failure ? ['', `**撮影が途中で失敗した**: ${t.failure}`] : []),
       '',
-      '| 時刻 | 字幕 | 静止画 |',
+      '| 時刻 | 字幕 | スクリーンショット |',
       '| --- | --- | --- |',
       ...lines,
     ].join('\n')
@@ -161,8 +161,8 @@ const writeReadme = (dir: string): void => {
     ...(comparing
       ? ['改修前と改修後で判定の場面がずれていないかは、「改修前と改修後の比較」の画像で見る。']
       : []),
-    '時刻は字幕を出した動画の時刻で、1 秒ほどずれることがある。静止画は、判定の字幕を出し終えた時点の画面である。',
-    `動画の上端の字幕は、1 段目がどの証跡か、撮った環境とバージョン、${CURSOR_LEGEND.replace('カーソル: ', 'カーソルの凡例(')})で、2 段目から下が検証シナリオの手順と判定の文である。`,
+    '時刻は字幕を出した動画の時刻で、1 秒ほどずれることがある。スクリーンショットは、判定の字幕を出し終えた時点の画面である。',
+    `動画の上端の字幕は、1 段目がどのエビデンスか、撮った環境とバージョン、${CURSOR_LEGEND.replace('カーソル: ', 'カーソルの凡例(')})で、2 段目から下が検証シナリオの手順と判定の文である。`,
     '',
     `| 例 | ${columns.join(' | ')} |`,
     `| --- |${' --- |'.repeat(columns.length)}`,
@@ -180,7 +180,7 @@ const writeReadme = (dir: string): void => {
 const COMPARE_HALF_WIDTH = 1280
 
 /**
- * 同じ例の行の改修前と改修後の静止画を、判定の字幕の順に左右に並べて compare/ に書き出し、README の節を返す。
+ * 同じ例の行の改修前と改修後のスクリーンショットを、判定の字幕の順に左右に並べて compare/ に書き出し、README の節を返す。
  * 左が改修前、右が改修後。片方しか撮っていない例の行は飛ばす。
  */
 const writeComparisons = (dir: string, takes: Take[]): string[] => {
@@ -220,8 +220,8 @@ const writeComparisons = (dir: string, takes: Take[]): string[] => {
   return [
     '## 改修前と改修後の比較',
     '',
-    '左が改修前、右が改修後。判定の字幕を出し終えた時点の静止画を、字幕の順に並べた。',
-    '「違ってよい差」の列は、検証シナリオの備考で、その静止画で改修前と違ってよいとされた差である。空の行で差があれば、備考に無い差なので担当者に伝える。',
+    '左が改修前、右が改修後。判定の字幕を出し終えた時点のスクリーンショットを、字幕の順に並べた。',
+    '「違ってよい差」の列は、検証シナリオの備考で、そのスクリーンショットで改修前と違ってよいとされた差である。空の行で差があれば、備考に無い差なので担当者に伝える。',
     '',
     '| 例 | 判定の字幕 | 画像 | 違ってよい差 |',
     '| --- | --- | --- | --- |',
@@ -230,13 +230,13 @@ const writeComparisons = (dir: string, takes: Take[]): string[] => {
   ]
 }
 
-/** 検証シナリオの備考で、改修前と違ってよいとされた差のうち、どの静止画にも映りうるものの節 */
+/** 検証シナリオの備考で、改修前と違ってよいとされた差のうち、どのスクリーンショットにも映りうるものの節 */
 const differencesSection = (scenario: Scenario): string[] =>
   scenario.differences?.length
     ? [
         '## 改修前と違ってよい差',
         '',
-        '検証シナリオの備考で、改修前と違ってよいとされた差のうち、どの静止画にも映りうるもの。',
+        '検証シナリオの備考で、改修前と違ってよいとされた差のうち、どのスクリーンショットにも映りうるもの。',
         '',
         ...scenario.differences.map((d) => `- ${d}`),
         '',

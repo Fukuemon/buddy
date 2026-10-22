@@ -6,7 +6,7 @@ import { CalendarReviewContainer } from '#/features/calendar/components/Calendar
 
 // `/schedule` の子にすると予定のカレンダーの上に重なるので、名前の `_` で入れ子から外す
 export const Route = createFileRoute('/schedule_/review')({
-  // 偽物の API はデータをブラウザのメモリに持つため、サーバーで描画しない
+  // フェイクの API はデータをブラウザのメモリに持つため、サーバーで描画しない
   ssr: false,
   head: () => ({ meta: [{ title: '確かめが要る予定 | buddy' }] }),
   component: CalendarReviewPage,

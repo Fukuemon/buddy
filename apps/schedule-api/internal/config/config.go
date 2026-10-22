@@ -50,28 +50,28 @@ type Config struct {
 }
 
 // Load は、getenv（本番では os.Getenv）から設定を読む。DB_USER、DB_PASSWORD、DB_NAME、OIDC_ISSUER、
-// OIDC_AUDIENCE は必須で、欠けているときは欠けた名前を並べたエラーを返す。パスワードに既定値はない。
+// OIDC_AUDIENCE は必須で、欠けているときは欠けた名前を並べたエラーを返す。パスワードにデフォルト値はない。
 //
-// 読む環境変数と既定値:
-//   - PORT: HTTP の待ち受けのポート。既定は 8080
-//   - DB_HOST: 既定は localhost
-//   - DB_PORT: 既定は 5432
+// 読む環境変数とデフォルト値:
+//   - PORT: HTTP の待ち受けのポート。デフォルトは 8080
+//   - DB_HOST: デフォルトは localhost
+//   - DB_PORT: デフォルトは 5432
 //   - DB_USER、DB_PASSWORD、DB_NAME
-//   - OIDC_ISSUER: ブローカーの発行者の URL。トークンの iss と一致させ、discovery の文書をここから読む
+//   - OIDC_ISSUER: ブローカーの Issuer の URL。トークンの iss と一致させ、discovery の文書をここから読む
 //   - OIDC_AUDIENCE: トークンの aud に求める値
-//   - OIDC_ORG_CLAIM: 組織の ID を持つクレームの名前。既定は org_id
+//   - OIDC_ORG_CLAIM: 組織の ID を持つクレームの名前。デフォルトは org_id
 //   - CORS_ALLOW_ORIGINS: カンマで区切ったオリジン。空なら CORS のヘッダーを返さない
-//   - LOG_LEVEL: debug、info、warn、error。既定は info
+//   - LOG_LEVEL: debug、info、warn、error。デフォルトは info
 //   - GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE: 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応（JSON）のパス。
 //     空なら Google カレンダーを読まない。Application Default Credentials で認証し、事業所のサービスアカウントになりすます（ADR-0012）
 //   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit で試すためのもので、GOOGLE_APPLICATION_CREDENTIALS を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使い、渡さなければ認証をしない。
 //     GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE と一緒に渡す
-//   - GOOGLE_CALENDAR_EXPORT_ENABLED: true なら、予定を Google カレンダーに書き出す。既定は false。
+//   - GOOGLE_CALENDAR_EXPORT_ENABLED: true なら、予定を Google カレンダーに書き出す。デフォルトは false。
 //     GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE と一緒に渡し、認証の情報のスコープは calendar.events になる
-//   - GOOGLE_CALENDAR_EXPORT_INTERVAL: 予定の書き出しの待ちを確かめる間隔（Go の時間の書式。例は 30s）。既定は 30s。1s 以上にする
-//   - GOOGLE_CALENDAR_SYNC_ENABLED: true なら、Google カレンダーの変更を buddy の予定に当てる。既定は false。
+//   - GOOGLE_CALENDAR_EXPORT_INTERVAL: 予定の書き出しの待ちを確かめる間隔（Go の時間の書式。例は 30s）。デフォルトは 30s。1s 以上にする
+//   - GOOGLE_CALENDAR_SYNC_ENABLED: true なら、Google カレンダーの変更を buddy の予定に当てる。デフォルトは false。
 //     GOOGLE_CALENDAR_EXPORT_ENABLED を true にして渡す
-//   - GOOGLE_CALENDAR_SYNC_INTERVAL: Google カレンダーの変わった予定を読む間隔（Go の時間の書式）。既定は 2m。1s 以上にする
+//   - GOOGLE_CALENDAR_SYNC_INTERVAL: Google カレンダーの変わった予定を読む間隔（Go の時間の書式）。デフォルトは 2m。1s 以上にする
 func Load(getenv func(string) string) (Config, error) {
 	return load(getenv, true)
 }

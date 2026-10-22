@@ -48,7 +48,7 @@ describe('取り込み方の選択', () => {
 })
 
 describe('件数の文', () => {
-  it('下見の件数の箱の補足を、内訳から作る', () => {
+  it('プレビューの件数の箱の補足を、内訳から作る', () => {
     const [importBox, recurring] = previewCountBoxes(preview)
     expect(importBox.note).toBe('訪問 15 件、通常 3 件。回ごとにした 4 件を含む')
     expect(recurring.note).toBe('繰り返しのまま 2 件、回ごとにする 1 件')

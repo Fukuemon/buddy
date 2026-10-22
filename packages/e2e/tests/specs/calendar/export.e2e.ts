@@ -35,7 +35,7 @@ test.describe('確かめが要る予定', () => {
         )
       })
 
-      await test.step('buddy で林の予定を作ると、林の Google カレンダーに同じ題名で出る', async () => {
+      await test.step('buddy で林の予定を作ると、林の Google カレンダーに同じタイトルで出る', async () => {
         await page.goto('/schedule?view=day')
         await expect(page.getByTestId(`day-grid-staff-${HAYASHI.id}`)).toBeVisible()
         await page.getByTestId('schedule-create-open').click()
@@ -78,20 +78,20 @@ test.describe('確かめが要る予定', () => {
           'buddy と Google カレンダーの両方で予定が変わりました。どちらの内容に合わせるかを選んでください。',
         )
         await holdGoogleChanges(request, false)
-        // 一覧は Google カレンダーの題名を出さない
+        // 一覧は Google カレンダーのタイトルを出さない
         await expect(page.getByTestId('calendar-review-table')).not.toContainText(created)
         await expect(page.getByTestId('calendar-review-table')).not.toContainText(changed)
         expect((await findEvent(request, created))?.status).toBe('confirmed')
       })
 
-      await test.step('buddy の内容で書き直すと、一覧から消え、Google カレンダーが buddy の題名になる', async () => {
+      await test.step('buddy の内容で書き直すと、一覧から消え、Google カレンダーが buddy のタイトルになる', async () => {
         await page
           .getByTestId(/^calendar-review-row-/)
           .filter({ hasText: HAYASHI.name })
           .getByTestId(/^calendar-review-rewrite-/)
           .click()
         const dialog = page.getByTestId('calendar-rewrite-dialog')
-        await expect(dialog).toContainText('Google カレンダーで直した題名と日時は消えます。')
+        await expect(dialog).toContainText('Google カレンダーで直したタイトルと日時は消えます。')
         await page.getByTestId('calendar-rewrite-submit').click()
         await expect(dialog).toBeHidden()
         await expect(

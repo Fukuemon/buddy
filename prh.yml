@@ -210,8 +210,8 @@ rules:
     pattern: 偽物
     prh: テストのための偽の実装はフェイクと呼ぶ。コードの名前 fake に合わせる
   - expected: プレビュー
-    pattern: /(?<!「[^」]*)下見(?!する|の結果)/
-    prh: 取り込む前の確かめはプレビューと呼ぶ。コードの名前 import_preview に合わせる。画面の文言（「」で引いたもの、ボタンの「下見する」、見出しの「下見の結果」）は除く
+    pattern: 下見
+    prh: 取り込む前の確かめはプレビューと呼ぶ。コードの名前 import_preview と画面の文言に合わせる
   - expected: スクリーンショット
     pattern: 静止画
   - expected: ローカル
@@ -254,13 +254,13 @@ rules:
   - expected: リソース
     pattern: 資源
   - expected: エビデンス
-    pattern: /(?<!「[^」]*)証跡/
-    prh: 確かめたことの記録はエビデンスと呼ぶ。スキル attach-evidence の名前に合わせる。コードが出す文字列を「」で引くときは除く
+    pattern: 証跡
+    prh: 確かめたことの記録はエビデンスと呼ぶ。スキル attach-evidence の名前に合わせる
   - expected: 手動検証
     pattern: 人手検証
   - expected: タイトル
-    pattern: /(?<!「[^」]*)題名(?!から読んだ)/
-    prh: 画面の文言を「」で引くときと、文言と同じ名前の要素（題名から読んだ利用者）は除く
+    pattern: 題名
+    prh: 予定と画面の要素の title はタイトルと書く。画面の文言と Google カレンダーの表記に合わせる
   - expected: 配置先
     pattern: 置き場
   - expected: キー

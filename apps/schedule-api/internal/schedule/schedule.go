@@ -17,7 +17,7 @@ const (
 	overtimeStartHour = 17
 )
 
-// TypeName は、予定の種類の表示の名前である。一覧の絞り込みと応答に使う。
+// TypeName は、予定の種類の表示の名前である。一覧の絞り込みとレスポンスに使う。
 type TypeName string
 
 // 予定の種類の名前。
@@ -134,8 +134,8 @@ type Detail struct {
 	UpdatedAt time.Time
 }
 
-// ParseSort は、予定の一覧の並べ替えを読む。列は date、start_time、created_at だけを受け付ける。
-// date は日付の後に開始の時刻で並べる。列を指定しないときは日付の順にする。
+// ParseSort は、予定の一覧の並べ替えを読む。カラムは date、start_time、created_at だけを受け付ける。
+// date は日付の後に開始の時刻で並べる。カラムを指定しないときは日付の順にする。
 func ParseSort(field, order string) (kernel.Sort, error) {
 	return kernel.ParseSort(field, order,
 		[]string{"date", "start_time", "created_at"},

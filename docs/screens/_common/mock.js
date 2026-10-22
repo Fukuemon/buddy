@@ -1,16 +1,16 @@
 /**
  * 画面のモックの共通の処理。モックの HTML の body の末尾で読む。
  *
- * - body の data-view の端末の幅で .screen を描く。URL の ?view= が data-view より優先する。
+ * - body の data-view のデバイスの幅で .screen を描く。URL の ?view= が data-view より優先する。
  *   ?view= が無く、表示の幅が NARROW_WIDTH 未満（スマートフォンで仕様書を読むとき）は、モバイルで描く。
  * - data-m を持つ要素の左上に、構成番号の印を .markers に重ねる。data-testid があれば、印の横に出せる。
- * - 端末、番号、testid、幅に合わせるかを切り替えるツールバーを body の末尾に作る。
+ * - デバイス、番号、testid、幅に合わせるかを切り替えるツールバーを body の末尾に作る。
  * - 埋め込んだ親のページに、中身の高さを postMessage で知らせる（docs/javascripts/embed-mock.js が受ける）。
  *
  * 画面の中の操作で表示を変えたら、mockRefresh() を呼んで印を置き直す。
  */
 ;(() => {
-  /** 端末の名前と、画面の幅と最低の高さ（px）。値はここだけに書く */
+  /** デバイスの名前と、画面の幅と最低の高さ（px）。値はここだけに書く */
   const VIEWS = {
     mobile: { label: 'モバイル', width: 390, height: 844 },
     tablet: { label: 'タブレット縦', width: 768, height: 1024 },
@@ -129,7 +129,7 @@
     const views = document.createElement('div')
     views.className = 'mock-toolbar__views'
     views.setAttribute('role', 'group')
-    views.setAttribute('aria-label', '端末')
+    views.setAttribute('aria-label', 'デバイス')
     for (const [name, view] of Object.entries(VIEWS)) {
       const button = document.createElement('button')
       button.type = 'button'

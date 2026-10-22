@@ -24,7 +24,7 @@ const cloudPlatformScope = "https://www.googleapis.com/auth/cloud-platform"
 var (
 	// ErrNoAccount は、組織にサービスアカウントの対応が無いことを表す。
 	ErrNoAccount = errors.New("組織のサービスアカウントの設定が無い")
-	// ErrToken は、サービスアカウントの token を作れないことを表す。元の誤りはサービスアカウントのメールアドレスを含むことがあるので包まない。
+	// ErrToken は、サービスアカウントの token を作れないことを表す。元のエラーはサービスアカウントのメールアドレスを含むことがあるので包まない。
 	ErrToken = errors.New("サービスアカウントの token を作れない")
 )
 
@@ -204,8 +204,8 @@ func adcAccount(raw []byte) string {
 // impersonationTarget は、なりすましの URL（.../projects/-/serviceAccounts/<メールアドレス>:generateAccessToken）からなりすます先を取る。
 var impersonationTarget = regexp.MustCompile(`/serviceAccounts/([^/:]+):generateAccessToken$`)
 
-// quietTokenSource は、token を作れないときの誤りを、サービスアカウントのメールアドレスを含まない ErrToken にする。
-// IAM の応答の本文は、なりすます先のリソースの名前を含むことがあり、ログに出せないためである。状態コードだけを残す。
+// quietTokenSource は、token を作れないときのエラーを、サービスアカウントのメールアドレスを含まない ErrToken にする。
+// IAM のレスポンスの本文は、権限借用の対象のリソースの名前を含むことがあり、ログに出せないためである。状態コードだけを残す。
 type quietTokenSource struct{ ts oauth2.TokenSource }
 
 // Token は、包んだ TokenSource の token を返す。
@@ -224,5 +224,5 @@ func (q quietTokenSource) Token() (*oauth2.Token, error) {
 	return nil, ErrToken
 }
 
-// statusCode は、impersonate の誤りの文（impersonate: status code 403: ...）から状態コードを取る。
+// statusCode は、impersonate のエラーの文（impersonate: status code 403: ...）から状態コードを取る。
 var statusCode = regexp.MustCompile(`status code (\d{3})`)

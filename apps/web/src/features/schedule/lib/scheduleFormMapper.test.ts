@@ -9,7 +9,7 @@ import {
 } from './scheduleFormMapper'
 
 describe('scheduleFormMapper', () => {
-  it('訪問の初期値は既定のサービスコードの上限を提供時間にする', () => {
+  it('訪問の初期値はデフォルトのサービスコードの上限を提供時間にする', () => {
     expect(createScheduleFormValues({ kind: 'visit', date: '2026-10-20' })).toMatchObject({
       kind: 'visit',
       startTime: '09:00',
@@ -46,7 +46,7 @@ describe('scheduleFormMapper', () => {
       new Date(2026, 9, 20),
     )) {
       const values = toScheduleFormValues({ ...schedule, id: 'x', facilityId: 'f' })
-      // 訪問の予定の題は、API では空で、フォームが「訪問」に固定する
+      // 訪問の予定のタイトルは、API では空で、フォームが「訪問」に固定する
       expect(toScheduleInput(values)).toEqual(
         schedule.kind === 'normal'
           ? { ...schedule, visit: undefined }

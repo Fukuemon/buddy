@@ -1,19 +1,19 @@
 /** BFF がサーバーで読む設定。全ての値は環境変数から読む。 */
 export type ServerConfig = {
   oidc: {
-    /** ブローカーの発行者の URL。discovery の文書をここから読む。 */
+    /** ブローカーの Issuer の URL。discovery の文書をここから読む。 */
     issuer: string
     clientId: string
     clientSecret: string
     /**
      * ブラウザを転送する認可の URL。discovery の authorization_endpoint の代わりに使う。
-     * 手元の compose のように、web とブラウザから届く IdP の URL が違うときだけ渡す。
+     * ローカル環境の compose のように、web とブラウザから届く IdP の URL が違うときだけ渡す。
      */
     authorizationEndpoint?: string
   }
   sessionStoreUrl: string
   sessionSecret: string
-  /** セッションの cookie に Secure を付けるか。https でない手元の環境だけ false にする。 */
+  /** セッションの cookie に Secure を付けるか。https でないローカル環境だけ false にする。 */
   secureCookie: boolean
   scheduleApiUrl: string
   receiptApiUrl: string

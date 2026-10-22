@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vite-plus/test'
 import { createBuddyApi } from './createBuddyApi'
 
 describe('createBuddyApi', () => {
-  it('未指定なら偽物の API を使う', () => {
+  it('未指定ならフェイクの API を使う', () => {
     expect(createBuddyApi({}).mode).toBe('fake')
   })
 

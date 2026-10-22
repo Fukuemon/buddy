@@ -725,7 +725,7 @@ func TestTransactorRollsBack(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 	if _, err := teams.Get(ctx, team.ID); !errors.Is(err, apperr.ErrNotFound) {
-		t.Fatalf("ロールバックした行が残る: err = %v", err)
+		t.Fatalf("ロールバックしたレコードが残る: err = %v", err)
 	}
 }
 
@@ -798,7 +798,7 @@ func TestStaffChangePosition(t *testing.T) {
 		t.Fatal(err)
 	}
 	if targets != 0 {
-		t.Errorf("森の対象の行 = %d, want 0", targets)
+		t.Errorf("森の対象のレコード = %d, want 0", targets)
 	}
 }
 
@@ -836,7 +836,7 @@ func TestStaffAddAndRemoveGrant(t *testing.T) {
 		t.Fatal(err)
 	}
 	if targets != 0 {
-		t.Errorf("外した権限の対象の行 = %d, want 0", targets)
+		t.Errorf("外した権限の対象のレコード = %d, want 0", targets)
 	}
 }
 
@@ -994,7 +994,7 @@ func TestScheduleColumnsFromDB(t *testing.T) {
 	}
 }
 
-// TestExternalCalendarsOneActivePerStaff は、職員ごとに 1 つの外部のカレンダーの制約が、外していない行だけに当たることを確かめる。
+// TestExternalCalendarsOneActivePerStaff は、職員ごとに 1 つの外部のカレンダーの制約が、外していないレコードだけに当たることを確かめる。
 func TestExternalCalendarsOneActivePerStaff(t *testing.T) {
 	ctx := txContext(t)
 	tx := ctx.Value(txKey{}).(pgx.Tx)

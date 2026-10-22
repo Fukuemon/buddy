@@ -37,7 +37,7 @@ export const SubmitError: Story = {
   args: {
     choices: resolved,
     errorMessage:
-      '下見の後に、Google カレンダーの予定が変わりました。もう一度下見してから取り込んでください。予定は 1 件も取り込んでいません。',
+      'プレビューの後に、Google カレンダーの予定が変わりました。もう一度プレビューしてから取り込んでください。予定は 1 件も取り込んでいません。',
   },
 }
 

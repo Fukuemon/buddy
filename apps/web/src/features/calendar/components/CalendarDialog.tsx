@@ -3,7 +3,7 @@ import { useEffect, useRef, type ReactNode, type SyntheticEvent } from 'react'
 export type CalendarDialogProps = {
   /** alertdialog は、取り消せない操作を確かめるダイアログに使う。 */
   role?: 'dialog' | 'alertdialog'
-  /** ダイアログの名前になる題の要素の id。 */
+  /** ダイアログの名前になるタイトルの要素の id。 */
   labelledBy: string
   /** 覆いを押すか Escape キーを押したときに呼ぶ。canClose が false の間は呼ばない。 */
   onClose: () => void
@@ -37,7 +37,7 @@ export const CalendarDialog = ({
     }
   }, [])
 
-  // Escape の既定の動きはダイアログを閉じるので止め、閉じるかを呼び出す側に任せる
+  // Escape のデフォルトの動きはダイアログを閉じるので止め、閉じるかを呼び出す側に任せる
   const handleCancel = (event: SyntheticEvent<HTMLDialogElement>) => {
     event.preventDefault()
     if (canClose) onClose()

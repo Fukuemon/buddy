@@ -10,7 +10,7 @@ import (
 	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
 )
 
-// ServiceCodes は、利用者の既定のサービスコードを確かめる。見つからないときは apperr.ErrNotFound を返す。
+// ServiceCodes は、利用者のデフォルトのサービスコードを確かめる。見つからないときは apperr.ErrNotFound を返す。
 type ServiceCodes interface {
 	GetServiceCode(ctx context.Context, id string) (visit.ServiceCode, error)
 }
@@ -46,7 +46,7 @@ type CreateInput struct {
 }
 
 // Create は、利用者を作る。事業所が見つからないときは apperr.ErrNotFound を、
-// サービスコードか担当の職員が見つからないか、職員が別の事業所に属するときは入力の誤りを返す。
+// サービスコードか担当の職員が見つからないか、職員が別の事業所に属するときは入力のエラーを返す。
 // 職員の管理の権限が無いときは apperr.ErrForbidden を返す。
 func (p *Usecase) Create(ctx context.Context, in CreateInput) (Detail, error) {
 	if err := p.guard(ctx); err != nil {

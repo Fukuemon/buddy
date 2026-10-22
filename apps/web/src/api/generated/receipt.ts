@@ -11,7 +11,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** プロセスが応答できるかを返す */
+        /** プロセスがレスポンスを返せるかを返す */
         get: operations["getHealthz"];
         put?: never;
         post?: never;
@@ -29,8 +29,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 要求を受けられるかを返す
-         * @description 照合の API は、起動のときにブローカーの discovery を読み、読めなければ起動しない。起動した後は依存先を確かめないので、応答できれば 200 を返す。
+         * リクエストを受けられるかを返す
+         * @description 照合の API は、起動のときにブローカーの discovery を読み、読めなければ起動しない。起動した後は依存先を確かめないので、レスポンスを返せれば 200 を返す。
          */
         get: operations["getReadyz"];
         put?: never;
@@ -77,14 +77,14 @@ export interface components {
             code: "bad_request" | "missing_file" | "payload_too_large" | "unauthenticated" | "forbidden" | "invalid_csv" | "not_found" | "internal" | "calendar_not_configured" | "schedule_source_failed";
             /** @description 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う */
             message: string;
-            /** @description 入力の CSV の行ごとの誤り。`invalid_csv` のときだけ持つ */
+            /** @description 入力の CSV の行ごとのエラー。`invalid_csv` のときだけ持つ */
             errors?: components["schemas"]["RowError"][];
         };
         RowError: {
             source: components["schemas"]["InputSource"];
             /** @description 入力の CSV の行番号。ヘッダーが 1 行目 */
             line: number;
-            /** @description 誤りのある列の名前。行全体の誤りでは省く */
+            /** @description エラーのある列の名前。行全体のエラーでは省く */
             column?: string;
             message: string;
         };
@@ -98,7 +98,7 @@ export interface components {
             summary: components["schemas"]["Summary"];
             /** @description 区分（mismatch、schedule_only、visit_only、match）の順、訪問日、開始時間、利用者名、主訪問者の順に並ぶ */
             rows: components["schemas"]["Result"][];
-            /** @description 予定の取得元が解釈できず、照合に使わなかった予定。無ければ空の配列 */
+            /** @description 予定のデータソースが解釈できず、照合に使わなかった予定。無ければ空の配列 */
             warnings: components["schemas"]["Warning"][];
         };
         /** @description 区分ごとの行の数 */
@@ -170,7 +170,7 @@ export interface components {
             min: number;
             max: number;
         };
-        /** @description 照合に使わなかった Google カレンダーの予定。利用者名を含むので、予定の題名は持たない */
+        /** @description 照合に使わなかった Google カレンダーの予定。利用者名を含むので、予定のタイトルは持たない */
         Warning: {
             calendar_id: string;
             event_id: string;
@@ -196,7 +196,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 応答できる */
+            /** @description レスポンスを返せる */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -216,7 +216,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 要求を受けられる */
+            /** @description リクエストを受けられる */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -315,7 +315,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description 入力の CSV に誤りがある（`invalid_csv`）。行の誤りは `errors` に行番号つきで入る。CSV が空のとき、列が足りないとき、文字コードを読めないときは、`errors` を持たない */
+            /** @description 入力の CSV に誤りがある（`invalid_csv`）。行のエラーは `errors` に行番号つきで入る。CSV が空のとき、列が足りないとき、文字コードを読めないときは、`errors` を持たない */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -324,7 +324,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description サーバーの誤り（`internal`） */
+            /** @description サーバーのエラー（`internal`） */
             500: {
                 headers: {
                     [name: string]: unknown;

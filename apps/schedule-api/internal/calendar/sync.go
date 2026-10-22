@@ -34,14 +34,14 @@ const (
 	SyncFailed    SyncStatus = "failed"
 )
 
-// SyncErrorCode は、同期できなかった理由である。カレンダーの ID と予定の題名を含めないよう、決まった値だけを持つ。
+// SyncErrorCode は、同期できなかった理由である。カレンダーの ID と予定のタイトルを含めないよう、決まった値だけを持つ。
 type SyncErrorCode string
 
 // SyncErrorCode の値。
 const (
 	// SyncUnreadable は、カレンダーが無いか、サービスアカウントに共有されていないことを表す。
 	SyncUnreadable SyncErrorCode = "unreadable"
-	// SyncUnavailable は、外部のカレンダーに届かないか、外部のカレンダーが誤りを返したことを表す。
+	// SyncUnavailable は、外部のカレンダーに届かないか、外部のカレンダーがエラーを返したことを表す。
 	SyncUnavailable SyncErrorCode = "unavailable"
 	// SyncApplyFailed は、読んだ予定を buddy に当てられず、トークンを進めなかったことを表す。
 	SyncApplyFailed SyncErrorCode = "apply"

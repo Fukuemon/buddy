@@ -1,6 +1,6 @@
 # pull request と develop への push で、取り込む前に通す検査を流す。
-# 検査の一覧と手元での流し方は context/testing.md と CONTRIBUTING.md にある。
-# Go、golangci-lint、sqlc のバージョンは mise.toml から入れ、手元とそろえる。Node と pnpm は docs-site.yml と同じ入れ方にする。
+# 検査の一覧とローカル環境での流し方は context/testing.md と CONTRIBUTING.md にある。
+# Go、golangci-lint、sqlc のバージョンは mise.toml から入れ、ローカル環境とそろえる。Node と pnpm は docs-site.yml と同じ入れ方にする。
 
 name: CI
 

@@ -310,7 +310,7 @@ type ListCalendarExportIssuesRow struct {
 	EndTime             pgtype.Time
 }
 
-// 予定の題名と利用者名は読まない。
+// 予定のタイトルと利用者名は読まない。
 func (q *Queries) ListCalendarExportIssues(ctx context.Context, facilityID string) ([]ListCalendarExportIssuesRow, error) {
 	rows, err := q.db.Query(ctx, listCalendarExportIssues, facilityID)
 	if err != nil {

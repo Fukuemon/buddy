@@ -114,7 +114,7 @@ func TestChecksErrors(t *testing.T) {
 		{"schedules がない", map[string][]byte{FieldVisits: testdata(t, "visits_utf8.csv")}, http.StatusBadRequest, openapi.MissingFile, 0},
 		{"visits がない", map[string][]byte{FieldSchedules: testdata(t, "schedules_utf8.csv")}, http.StatusBadRequest, openapi.MissingFile, 0},
 		{"列が足りない", map[string][]byte{FieldVisits: []byte("訪問日\n2024/04/01\n"), FieldSchedules: testdata(t, "schedules_utf8.csv")}, http.StatusUnprocessableEntity, openapi.InvalidCsv, 0},
-		{"行の誤り", map[string][]byte{FieldVisits: badVisits, FieldSchedules: testdata(t, "schedules_utf8.csv")}, http.StatusUnprocessableEntity, openapi.InvalidCsv, 1},
+		{"行のエラー", map[string][]byte{FieldVisits: badVisits, FieldSchedules: testdata(t, "schedules_utf8.csv")}, http.StatusUnprocessableEntity, openapi.InvalidCsv, 1},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -134,7 +134,7 @@ func TestChecksErrors(t *testing.T) {
 				t.Errorf("body = %+v", body)
 			}
 			if tt.wantRows > 0 && (rows[0].Line != 2 || rows[0].Column == nil || *rows[0].Column != "終了時間") {
-				t.Errorf("行の誤り = %+v", rows[0])
+				t.Errorf("行のエラー = %+v", rows[0])
 			}
 		})
 	}

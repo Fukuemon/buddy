@@ -16,7 +16,7 @@ describe('nextMonthRange', () => {
 })
 
 describe('validateImportRange', () => {
-  it('開始日が終了日より後なら、開始日に誤りを返す', () => {
+  it('開始日が終了日より後なら、開始日にエラーを返す', () => {
     expect(validateImportRange('2026-12-01', '2026-11-30')).toEqual({
       start: '開始日は、終了日より前の日にしてください。',
     })
@@ -29,7 +29,7 @@ describe('validateImportRange', () => {
     })
   })
 
-  it('日付がそろわなければ下見できない', () => {
+  it('日付がそろわなければプレビューできない', () => {
     expect(isImportRangeReady('', '2026-11-30')).toBe(false)
     expect(isImportRangeReady('2026-11-01', '2026-11-01')).toBe(true)
   })

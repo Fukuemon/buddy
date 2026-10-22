@@ -8,7 +8,7 @@ import * as stories from './CalendarReviewContainer.stories'
 const { AcceptFailed, Default, Empty, Forbidden, LoadError } = composeStories(stories)
 
 describe('CalendarReviewContainer', () => {
-  it('食い違った予定を、日時、職員、理由で並べ、題名と利用者名を出さない', async () => {
+  it('食い違った予定を、日時、職員、理由で並べ、タイトルと利用者名を出さない', async () => {
     render(<Default />)
     const row = await screen.findByTestId('calendar-review-row-export-1')
     expect(within(row).getByTestId('calendar-review-datetime-export-1')).toHaveTextContent(
@@ -44,7 +44,7 @@ describe('CalendarReviewContainer', () => {
     expect(within(dialog).getByTestId('calendar-accept-target')).toHaveTextContent(
       '2026/11/04（水）09:00〜09:29、青木 一郎',
     )
-    expect(dialog).toHaveTextContent('buddy で変えた題名と日時は消えます。')
+    expect(dialog).toHaveTextContent('buddy で変えたタイトルと日時は消えます。')
     await userEvent.click(within(dialog).getByTestId('calendar-accept-submit'))
 
     expect(await screen.findByTestId('calendar-review-row-export-2')).toBeInTheDocument()

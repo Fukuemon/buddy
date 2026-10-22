@@ -2,7 +2,7 @@ import { Button } from '@buddy/ui'
 
 export type ViewerMenuProps = {
   staffName: string
-  /** false なら、ログアウトのボタンを出さない。偽物の API で動くときはセッションが無い。 */
+  /** false なら、ログアウトのボタンを出さない。フェイクの API で動くときはセッションが無い。 */
   canLogout: boolean
 }
 
