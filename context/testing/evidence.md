@@ -55,6 +55,8 @@ export WEB_PORT=3850 SCHEDULE_API_PORT=8850 RECEIPT_API_PORT=8851 GCALHOLD_PORT=
 docker compose -p buddy-evidence up --build --wait
 EVIDENCE_NO=<番号> E2E_BASE_URL=http://localhost:3850 \
   E2E_CALENDARPIT_URL=http://localhost:4850 E2E_GCALHOLD_URL=http://localhost:8852 \
+  E2E_SCHEDULE_API_URL=http://localhost:8850 E2E_RECEIPT_API_URL=http://localhost:8851 \
+  E2E_IDP_URL=http://localhost:9850 \
   pnpm --filter @buddy/e2e evidence -g '<test の名前の一部>'
 docker compose -p buddy-evidence down -v
 ```
@@ -66,6 +68,9 @@ docker compose -p buddy-evidence down -v
 | `EVIDENCE_BEFORE_URL` | 改修前の web の URL。渡すと、改修前と改修後を 1 回で撮る | なし |
 | `EVIDENCE_ONLY` | `before` か `after`。`E2E_BASE_URL` をその版として 1 つだけ撮る | なし |
 | `E2E_STORYBOOK_URL` | Storybook の URL | `http://localhost:6006` |
+| `E2E_SCHEDULE_API_URL` | 撮る予定の API の URL。API の参照のページから送ったリクエストを、ここへ送り直す | `http://localhost:8080` |
+| `E2E_RECEIPT_API_URL` | 撮る照合の API の URL。API の参照のページから送ったリクエストを、ここへ送り直す | `http://localhost:8090` |
+| `E2E_IDP_URL` | 撮る compose の IdP の URL。API の参照のページに入れるトークンを、ここから取る | `http://localhost:9000` |
 
 - 改修前と比べるときは、改修前のブランチの worktree で、2 つ目の compose を別の `-p` とポートで起動する。
   - spec は、両方とも改修後の worktree から流す。改修前は `E2E_BASE_URL` を改修前の compose の web に向けて `EVIDENCE_ONLY=before` で、改修後は改修後の compose に向けて `EVIDENCE_ONLY=after` で撮る。同じ `<name>/` の `compare/` に比較の画像ができる。
@@ -93,6 +98,9 @@ docker compose -p buddy-evidence down -v
 - 画面仕様書のモックは、`mockUrl(<docs/screens/ からの相対パス>)` で、リポジトリのファイルを `file://` のまま開いて撮る。文書のサイトを起動しなくてよい。
 - ログインしない story とモックでも、`prepare` で同じ URL を開く。kit は `prepare` が開いた画面から sessionStorage を読むので、何も開かないと失敗する。
 - スマートフォンの幅は、`recordPrEvidence` の `viewport` に `PHONE_VIEWPORT`（390x844）を渡して撮る。幅だけをそろえ、タッチの操作は再現しない。幅はコメントに書く。
+- API だけの変更のうち、画面から確かめられない操作は、API の参照のページ（Scalar）の「Test Request」から送って撮る。
+  - `prepare` に `packages/e2e/tests/fixtures/apiReference.ts` の `prepareApiReference` を渡し、録画の中で `routeApiReference` を張ってからページを開く。ページは文書のサイトを起動せずに `docs/api/` のファイルから開き、リクエストを撮る compose の API へ送り直す。
+  - トークンは認証の欄に伏せ字のまま入れる。字幕には職員の名前だけを出し、トークンの値を出さない。
 
 ## 未定
 

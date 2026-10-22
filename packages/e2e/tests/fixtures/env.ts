@@ -45,6 +45,15 @@ export const HAYASHI = {
  */
 export const CALENDARPIT_URL = process.env.E2E_CALENDARPIT_URL ?? 'http://localhost:4173'
 
+/** compose の予定の API の URL。API の参照のページから送ったリクエストを、ここへ送り直す。 */
+export const SCHEDULE_API_URL = process.env.E2E_SCHEDULE_API_URL ?? 'http://localhost:8080'
+
+/** compose の照合の API の URL。API の参照のページから送ったリクエストを、ここへ送り直す。 */
+export const RECEIPT_API_URL = process.env.E2E_RECEIPT_API_URL ?? 'http://localhost:8090'
+
+/** compose の IdP の URL。API の参照のページで撮る spec が、ここからトークンを取る。 */
+export const IDP_URL = process.env.E2E_IDP_URL ?? 'http://localhost:9000'
+
 /** compose の、予定の API と calendarpit の間の中継の URL。デフォルトはルートの compose の gcalhold である。 */
 export const GCALHOLD_URL = process.env.E2E_GCALHOLD_URL ?? 'http://localhost:8085'
 
