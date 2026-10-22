@@ -66,7 +66,7 @@ export const ScheduleCalendarToolbar = ({
       </button>
       <input
         aria-label="表示する日付"
-        className="ml-2 h-11 rounded-8 px-3 text-body-dense ring-1 ring-border-field ring-inset outline-none focus-visible:focus-ring"
+        className="ml-2 h-11 rounded-8 bg-surface px-3 text-body-dense ring-1 ring-border-field ring-inset outline-none focus-visible:focus-ring"
         data-testid="calendar-date"
         onChange={(event) => {
           if (event.target.value !== '') onDateChange(event.target.value)

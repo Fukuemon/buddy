@@ -15,8 +15,13 @@ import { ColorItem, ColorPalette, Meta } from '@storybook/addon-docs/blocks'
 <ColorPalette>
   <ColorItem
     title="surface"
-    subtitle="画面、カード、入力欄、ダイアログの地"
+    subtitle="カード、入力欄、ダイアログ、ヘッダーの地"
     colors={{ surface: 'var(--buddy-color-surface)' }}
+  />
+  <ColorItem
+    title="surface-canvas"
+    subtitle="画面の地。カード、ダイアログ、入力欄は surface にする"
+    colors={{ 'surface-canvas': 'var(--buddy-color-surface-canvas)' }}
   />
   <ColorItem
     title="surface-subtle"

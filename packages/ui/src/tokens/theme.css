@@ -12,6 +12,7 @@
 @theme inline {
   --color-*: initial;
   --color-surface: var(--buddy-color-surface);
+  --color-surface-canvas: var(--buddy-color-surface-canvas);
   --color-surface-subtle: var(--buddy-color-surface-subtle);
   --color-surface-disabled: var(--buddy-color-surface-disabled);
   --color-overlay: var(--buddy-color-overlay);
@@ -94,7 +95,7 @@
 
 @layer base {
   body {
-    @apply bg-surface font-sans text-body text-text;
+    @apply bg-surface-canvas font-sans text-body text-text;
   }
 
   input[type='checkbox'],

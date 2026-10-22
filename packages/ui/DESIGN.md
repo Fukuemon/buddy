@@ -40,7 +40,8 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 
 | 名前 | 使う場面 |
 | --- | --- |
-| `surface` | 画面、カード、入力欄、ダイアログの地 |
+| `surface` | カード、入力欄、ダイアログ、ヘッダーの地 |
+| `surface-canvas` | 画面の地（`body`）。カードと入力欄を置く下地 |
 | `surface-subtle` | 切り替えの溝、押せる行の hover |
 | `surface-disabled` | 無効のボタンの地 |
 | `overlay` | ダイアログの後ろの幕 |
@@ -56,6 +57,10 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 | `warning`、`warning-surface` | 確かめてほしい値。エラーではないもの |
 | `success`、`success-surface` | 完了と整合 |
 | `categorical-1` から `categorical-10` | 職員のように、意味を持たない並びの区別。番号の順に割り当て、11 個目からは 1 に戻る |
+
+DADS のキーの色は、light-blue に当て直している。`primary` と `primary-surface` は、キーの色の 800 と 50 を参照する。  
+`surface-canvas` だけは、DADS に無い値を直に持つ。背景を指定しない要素は canvas の色になるので、カード、表、入力欄には `bg-surface` を付ける。  
+どちらも、もともとのデザイン案の色に寄せるためで、理由と値は [ADR-0015](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0015-key-color-and-canvas.md) と `semantic.css` にある。
 
 `*-surface` の面の上の文字は、同じ系統の文字の色（`danger-surface` の上なら `danger`）か `text` にする。どちらも 4.5:1 以上になる。
 
@@ -132,7 +137,7 @@ apps/web の画面だけが使う印は、`apps/web/src/assets/icons/` の SVG �
 
 ### DADS の指針との違い
 
-| コンポーネント | DADS の指針 | buddy の使い方 | 理由 |
+| 対象 | DADS の指針 | buddy の使い方 | 理由 |
 | --- | --- | --- | --- |
 | `Modal` | モーダルのダイアログをフォームに使わない | 予定の作成と編集をダイアログで行う | カレンダーの上で予定を作り、閉じてカレンダーに戻る流れを画面仕様が決めている |
 | `DatePicker`、`TimePicker` | 年、月、日を 3 つの入力欄に分ける。`input type="date"` を避ける | ブラウザの `type="date"` と `type="time"` を使う | 予定の日付は近い日を選ぶことが多く、ブラウザのカレンダーから選ぶ方が手数が少ない |

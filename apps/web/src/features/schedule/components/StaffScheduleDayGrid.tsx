@@ -33,7 +33,7 @@ export const StaffScheduleDayGrid = ({
   onSlotClick,
   onEventClick,
 }: StaffScheduleDayGridProps) => (
-  <div className="h-full overflow-auto" data-testid="staff-schedule-day-grid">
+  <div className="h-full overflow-auto bg-surface" data-testid="staff-schedule-day-grid">
     <div
       className="grid min-w-max"
       style={{ gridTemplateColumns: `4rem repeat(${staffList.length}, minmax(10rem, 1fr))` }}

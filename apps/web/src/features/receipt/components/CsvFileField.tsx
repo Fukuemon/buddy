@@ -22,7 +22,7 @@ export const CsvFileField = ({ label, description, onChange, ...rest }: CsvFileF
         type="file"
         accept=".csv,text/csv"
         aria-describedby={description === undefined ? undefined : descriptionId}
-        className="min-h-11 rounded-8 p-2 text-body ring-1 ring-border-field ring-inset file:mr-4 file:min-h-10 file:cursor-pointer file:rounded-8 file:border-0 file:bg-surface-subtle file:px-4 file:text-label focus-visible:focus-ring"
+        className="min-h-11 rounded-8 bg-surface p-2 text-body ring-1 ring-border-field ring-inset file:mr-4 file:min-h-10 file:cursor-pointer file:rounded-8 file:border-0 file:bg-surface-subtle file:px-4 file:text-label focus-visible:focus-ring"
         data-testid={rest['data-testid']}
         onChange={(event) => onChange(event.target.files?.[0] ?? null)}
       />

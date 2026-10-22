@@ -64,7 +64,7 @@ export const CalendarLinkTable = ({
     <tbody className="flex flex-col gap-3 desktop:table-row-group">
       {rows.map(({ staff, calendar }) => (
         <tr
-          className="block rounded-8 border border-border py-2 desktop:table-row desktop:rounded-none desktop:border-0 desktop:border-b desktop:py-0"
+          className="block rounded-8 border border-border bg-surface py-2 desktop:table-row desktop:rounded-none desktop:border-0 desktop:border-b desktop:py-0"
           data-testid={`calendar-link-row-${staff.id}`}
           key={staff.id}
         >
