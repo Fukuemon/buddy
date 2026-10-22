@@ -216,7 +216,7 @@ type item struct {
 //   - 職員にカレンダーがあり、対応が無ければ、予定の ID から決めた ID で外部の予定を作り、対応を書く。
 //
 // 外部が 404 を返したときは、予定が消されたのか、カレンダーの共有が外れたのかを見分けられないので、対応を消さない。
-// 対応を消すのは、予定が消されたこと（410）か、消せたことが分かったときだけである。
+// 対応を消すのは、予定が消されたこと（410 か、消された予定への 412）か、消せたことが分かったときだけである。
 func (x *Exporter) sync(ctx context.Context, e Export, it item) error {
 	cal, err := x.deps.Calendars.ActiveByStaff(ctx, it.staffID)
 	hasCal := err == nil

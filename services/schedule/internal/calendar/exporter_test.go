@@ -360,6 +360,26 @@ func TestExportMovesEventWhenStaffChanges(t *testing.T) {
 	}
 }
 
+func TestExportMovesEventDeletedInGoogleWhenStaffChanges(t *testing.T) {
+	e := newExportEnv(t)
+	e.store.Calendars["CAL2"] = calendar.ExternalCalendar{ID: "CAL2", FacilityID: inmem.FacilityID, StaffID: inmem.CompanionID, Provider: calendar.ProviderGoogle, CalendarID: otherGoogleCalID}
+	d := e.create(t, "カンファレンス")
+	e.run(t)
+	// 職員が Google カレンダーで予定を消した後に、buddy で職員を替えた
+	e.srv.Delete(googleCalID, eventID(t, d.ID))
+	e.update(t, d.ID, "担当を替えた", inmem.CompanionID)
+	e.run(t)
+	if x := e.export(t, d.ID); x.Status != calendar.ExportSucceeded {
+		t.Errorf("待ち = %+v", x)
+	}
+	if ev := e.srv.Event(otherGoogleCalID, eventID(t, d.ID)); ev == nil || ev.Summary != "担当を替えた" {
+		t.Errorf("新しい職員のカレンダーの予定 = %+v", ev)
+	}
+	if l, _ := (inmem.Calendars{Store: e.store}).LinkBySchedule(t.Context(), d.ID); l.ExternalCalendarID != "CAL2" {
+		t.Errorf("対応のカレンダー = %s", l.ExternalCalendarID)
+	}
+}
+
 func TestExportUpdatesImportedEvent(t *testing.T) {
 	e := newExportEnv(t)
 	e.srv.Calendars[googleCalID] = [][]*calendarv3.Event{{gevent("imported", "会議", "2026-11-04T10:00:00+09:00", "2026-11-04T11:00:00+09:00")}}
