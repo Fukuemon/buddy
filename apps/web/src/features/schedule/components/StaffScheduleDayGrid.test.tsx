@@ -5,6 +5,7 @@ import { fn } from 'storybook/test'
 import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './StaffScheduleDayGrid.stories'
+import { storyStaff } from './storyData'
 
 const { Default, WithNow } = composeStories(stories)
 
@@ -44,6 +45,7 @@ describe('StaffScheduleDayGrid', () => {
     render(<WithNow />)
     // 10:15 は 6 時から 4.25 時間で、1 時間 88px の 374px。線の太さ 2px の中心を合わせる
     expect(screen.getByTestId('day-grid-now-staff-1').style.top).toBe('373px')
+    expect(screen.getAllByTestId(/^day-grid-now-/)).toHaveLength(storyStaff.length)
   })
 
   it.each([

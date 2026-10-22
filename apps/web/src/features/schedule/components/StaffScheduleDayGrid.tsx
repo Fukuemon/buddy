@@ -111,7 +111,7 @@ export const StaffScheduleDayGrid = ({
             {showNow && (
               <div
                 aria-hidden
-                className="pointer-events-none absolute inset-x-0 z-[1] h-0.5 bg-primary"
+                className="pointer-events-none absolute inset-x-0 h-0.5 bg-primary"
                 data-testid={`day-grid-now-${staff.id}`}
                 style={{ top: (nowMinutes / 60) * HOUR_HEIGHT_PX - 1 }}
               />
