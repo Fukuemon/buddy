@@ -97,7 +97,16 @@ go run ./cmd/api
 手順と要るロールは、[照合の API の README](../receipt/README.md#google-カレンダーから予定を取る) と同じである。  
 `GOOGLE_APPLICATION_CREDENTIALS` と `GOOGLE_CALENDAR_ENDPOINT` を設定せず、シードの組織 `org-sample` と検証の事業所のサービスアカウントの対応のファイルを渡す。  
 対応のファイルはサービスアカウントのメールアドレスを持つので、Git で追跡しない場所に置く。  
-書き出し（`GOOGLE_CALENDAR_EXPORT_ENABLED`）は、サービスアカウントが「予定の変更」の共有で書けると確かめるまで有効にしない。
+書き出し（`GOOGLE_CALENDAR_EXPORT_ENABLED`）は、サービスアカウントが持つ検証のカレンダーでだけ有効にする。職員が共有したカレンダーに「予定の変更」の共有で書けるかは、まだ確かめていない。
+
+compose の予定の API を実際の Google カレンダーに向けるときは、Git で追跡しない上書きの compose のファイルを `-f` で重ね、次のように変える。
+
+- `GOOGLE_CALENDAR_ENDPOINT` と `GOOGLE_APPLICATION_CREDENTIALS` を空にする。
+- `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` を、検証の対応のファイルに替え、そのファイルをマウントする。
+- ローカルの Application Default Credentials のファイルを、読み取りだけでマウントする。ファイルは `gcloud` の設定のディレクトリの `application_default_credentials.json` である。
+  - マウント先は `/home/nonroot/.config/gcloud/application_default_credentials.json` にする。イメージは distroless の nonroot で動くためである。
+
+検証の事業所のアカウントそのものになりすました Application Default Credentials では、予定の API は重ねてなりすまさない。この形で、`serviceusage.services.use` を持つロールが要るかは、ロールを外して確かめていない（未確認）。
 
 ## マイグレーション
 
