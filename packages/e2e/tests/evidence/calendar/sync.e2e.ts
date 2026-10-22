@@ -2,13 +2,14 @@ import { expect, test, type Page } from '@playwright/test'
 
 import { CALENDARPIT_URL, LOGIN_NAME, LOGIN_STAFF, SATO } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
+import { findGoogleEvent, holdGoogleChanges, shiftGoogleEvent } from '../../fixtures/googleCalendar'
 import {
-  findGoogleEvent,
-  holdGoogleChanges,
-  shiftGoogleEvent,
-  type GoogleEvent,
-} from '../../fixtures/googleCalendar'
-import { SCHEDULE_DETAIL_URL, scheduleIdFromUrl } from '../../fixtures/schedule'
+  detailDateTime,
+  detailDateTimeText,
+  googleTimeRange,
+  SCHEDULE_DETAIL_URL,
+  scheduleIdFromUrl,
+} from '../../fixtures/schedule'
 import { linkStaffCalendar, unlinkStaffCalendar } from '../../screens/calendar'
 import { signInAtIdp } from '../../screens/login'
 import { calendarpitEvent } from '../../selectors/calendarpit'
@@ -38,13 +39,6 @@ const prepareExported = (title: string) => async (page: Page) => {
     .toBe('confirmed')
   const event = await findGoogleEvent(page.request, SATO.calendarId, title)
   return { eventId: event?.id ?? '', date: event?.start?.dateTime?.slice(0, 10) ?? '' }
-}
-
-/** Google カレンダーの予定の日時を、予定の詳細の日時の形（2026-10-22 10:00 - 11:00）にする。 */
-const detailDateTime = (event: GoogleEvent | undefined) => {
-  const start = event?.start?.dateTime ?? ''
-  const end = event?.end?.dateTime ?? ''
-  return `${start.slice(0, 10)} ${start.slice(11, 16)} - ${end.slice(11, 16)}`
 }
 
 /** 日の表示で、佐藤の予定のうちタイトルが title のものを開き、予定の ID を返す。 */
@@ -88,7 +82,7 @@ test.describe('確かめが要る予定', () => {
             try {
               await openSatoSchedule(page, title)
               await expect(page.getByTestId('schedule-detail-datetime')).toHaveText(
-                `${date} 09:00 - 10:00`,
+                detailDateTimeText(date, '09:00', '10:00'),
               )
               await step(
                 `${SATO.name} の「${title}」を開いている。予定は ${SATO.name} の Google カレンダー（calendarpit）に書き出してある`,
@@ -98,12 +92,15 @@ test.describe('確かめが要る予定', () => {
                 '（撮影のため、職員が Google カレンダーで予定を直す代わりに、calendarpit の管理の API で 1 時間遅らせる）',
               )
               await shiftGoogleEvent(request, SATO.calendarId, eventId)
-              const shifted = detailDateTime(await findGoogleEvent(request, SATO.calendarId, title))
+              const shiftedEvent = await findGoogleEvent(request, SATO.calendarId, title)
+              const shifted = detailDateTime(shiftedEvent)
               await page.goto(
                 `${CALENDARPIT_URL}/?calendar=${encodeURIComponent(SATO.calendarId)}&date=${date}`,
               )
               await expect(calendarpitEvent(page, title)).toBeVisible()
-              await check(`calendarpit の ${SATO.calendarId} の予定が ${shifted.slice(11)} になる`)
+              await check(
+                `calendarpit の ${SATO.calendarId} の予定が ${googleTimeRange(shiftedEvent)} になる`,
+              )
 
               await step('buddy で同じ予定を開き直す（buddy は数秒ごとに Google の変更を読む）')
               await expect(async () => {

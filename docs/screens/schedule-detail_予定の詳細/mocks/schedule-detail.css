@@ -4,3 +4,42 @@
 .sd-rows dd {
   white-space: pre-wrap;
 }
+
+/* 行の区切り線は出さず、節の見出しの線だけで分ける（apps/web の ScheduleDetailModal の Row） */
+.sd-rows .wf-row {
+  padding: 8px 0;
+  border-bottom: 0;
+}
+
+/* 日時の見出し（apps/web の ScheduleDetailModal の text-heading-sm） */
+.sd-datetime {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.sd-section {
+  margin-top: 24px;
+}
+
+.sd-section__title {
+  margin: 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--wf-line-soft);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.sd-memo {
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+}
+
+/* 幅 768px 以上では、訪問の情報を 2 列に並べる */
+@container screen (min-width: 768px) {
+  .sd-rows--2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 24px;
+  }
+}

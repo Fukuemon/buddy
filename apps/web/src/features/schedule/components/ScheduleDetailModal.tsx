@@ -1,8 +1,9 @@
 import type { Patient, Schedule, Staff } from '#/api/types'
 import { Button, Modal } from '@buddy/ui'
+import { useId } from 'react'
 
 import { SCHEDULE_CATEGORY_LABEL, SCHEDULE_KIND_LABEL } from '../constants/scheduleLabels'
-import { toDateKey, toTimeKey } from '../lib/dateTime'
+import { formatDateTimeRange } from '../lib/dateTime'
 
 export type ScheduleDetailModalProps = {
   schedule: Schedule
@@ -13,13 +14,22 @@ export type ScheduleDetailModalProps = {
 }
 
 const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4 border-b border-border py-3">
+  <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4 py-2">
     <dt className="text-caption text-text-secondary">{label}</dt>
     <dd className="whitespace-pre-wrap">{children}</dd>
   </div>
 )
 
-/** 予定の詳細をモーダルで出す。 */
+const SectionHeading = ({ id, children }: { id: string; children: React.ReactNode }) => (
+  <h3 className="border-b border-border pb-2 text-label" id={id}>
+    {children}
+  </h3>
+)
+
+/**
+ * 予定の詳細をモーダルで出す。
+ * 日時を見出しにし、その下に種類と担当者を、訪問の予定では訪問の情報を、最後にメモを節に分けて並べる。
+ */
 export const ScheduleDetailModal = ({
   schedule,
   staff,
@@ -27,9 +37,8 @@ export const ScheduleDetailModal = ({
   onEdit,
   onClose,
 }: ScheduleDetailModalProps) => {
-  const start = new Date(schedule.startsAt)
-  const end = new Date(schedule.endsAt)
-
+  const visitHeadingId = useId()
+  const memoHeadingId = useId()
   return (
     <Modal
       data-testid="schedule-detail-modal"
@@ -42,32 +51,43 @@ export const ScheduleDetailModal = ({
       }
       title="予定の詳細"
     >
-      <dl className="px-5 py-2">
-        <Row label="種類">{SCHEDULE_KIND_LABEL[schedule.kind]}</Row>
-        {schedule.kind === 'normal' && <Row label="タイトル">{schedule.title}</Row>}
-        <Row label="日時">
-          <span data-testid="schedule-detail-datetime">
-            {toDateKey(start)} {toTimeKey(start)} - {toTimeKey(end)}
-          </span>
-        </Row>
-        {schedule.visit !== undefined && (
-          <>
-            <Row label="利用者">{patient?.name ?? '利用者不明'}</Row>
-            <Row label="サービスコード">{schedule.visit.serviceCode}</Row>
-            <Row label="訪問の種類">
-              {schedule.visit.categories.length > 0
-                ? schedule.visit.categories
-                    .map((category) => SCHEDULE_CATEGORY_LABEL[category])
-                    .join('、')
-                : '通常'}
+      <div className="flex flex-col gap-6 px-5 py-4">
+        <section className="flex flex-col gap-2">
+          <h3 className="text-heading-sm" data-testid="schedule-detail-datetime">
+            {formatDateTimeRange(new Date(schedule.startsAt), new Date(schedule.endsAt))}
+          </h3>
+          <dl>
+            <Row label="種類">{SCHEDULE_KIND_LABEL[schedule.kind]}</Row>
+            {schedule.kind === 'normal' && <Row label="タイトル">{schedule.title}</Row>}
+            <Row label={schedule.kind === 'visit' ? '担当者' : '予定者'}>
+              {staff?.name ?? '職員不明'}
             </Row>
-          </>
+          </dl>
+        </section>
+        {schedule.visit !== undefined && (
+          <section aria-labelledby={visitHeadingId} data-testid="schedule-detail-visit">
+            <SectionHeading id={visitHeadingId}>訪問の情報</SectionHeading>
+            <dl
+              className="grid desktop:grid-cols-2 desktop:gap-x-6"
+              data-testid="schedule-detail-visit-fields"
+            >
+              <Row label="利用者">{patient?.name ?? '利用者不明'}</Row>
+              <Row label="サービスコード">{schedule.visit.serviceCode}</Row>
+              <Row label="訪問の種類">
+                {schedule.visit.categories.length > 0
+                  ? schedule.visit.categories
+                      .map((category) => SCHEDULE_CATEGORY_LABEL[category])
+                      .join('、')
+                  : '通常'}
+              </Row>
+            </dl>
+          </section>
         )}
-        <Row label={schedule.kind === 'visit' ? '担当者' : '予定者'}>
-          {staff?.name ?? '職員不明'}
-        </Row>
-        <Row label="メモ">{schedule.description || 'なし'}</Row>
-      </dl>
+        <section aria-labelledby={memoHeadingId} data-testid="schedule-detail-memo">
+          <SectionHeading id={memoHeadingId}>メモ</SectionHeading>
+          <p className="whitespace-pre-wrap py-2">{schedule.description || 'なし'}</p>
+        </section>
+      </div>
     </Modal>
   )
 }
