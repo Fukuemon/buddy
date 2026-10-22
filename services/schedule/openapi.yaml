@@ -1141,7 +1141,7 @@ paths:
       summary: 確かめが要る書き出しを Google カレンダーの内容で解く
       description: |
         確かめが要る書き出しの予定を、Google カレンダーの今の内容にそろえ、書き出しを終える。buddy で変えた日時とタイトルは消える。
-        Google カレンダーで消された予定（予定が 404 で、カレンダーは読めるときを含む）は、buddy でキャンセルする。
+        Google カレンダーで消された予定（予定が cancelled で返るときと、予定が 404 か 410 で、カレンダーは読めるとき）は、buddy でキャンセルする。
         acceptable が true の書き出しだけを解ける。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
       parameters: [$ref: "#/components/parameters/CalendarExportID"]
       responses:
@@ -1751,8 +1751,8 @@ components:
           nullable: true
           x-omitempty: false
           description: |
-            最後に書けなかった理由。precondition_failed は buddy と Google カレンダーの両方で予定が変わった（書き出しの 412 を含む）、
-            not_found は Google カレンダーで予定が消されたか、予定かカレンダーが見つからない（410、404）、
+            最後に書けなかった理由。precondition_failed は buddy と Google カレンダーの両方で予定が変わった（消された予定を除く書き出しの 412 を含む）、
+            not_found は Google カレンダーで予定が消されたか、予定かカレンダーが見つからない（410、404、消された予定への 412）、
             forbidden はサービスアカウントがカレンダーに書けない、rejected は Google が予定の内容を受け付けなかった（400）、
             unavailable は Google に届かないか一時的なエラーが続いた、unappliable は Google カレンダーの変更を buddy の予定に読み替えられない
             （終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更）

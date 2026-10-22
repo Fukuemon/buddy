@@ -40,8 +40,8 @@
     - `conflict`: buddy と Google カレンダーの両方で予定が変わったか、Google カレンダーで予定が消えていたか、Google カレンダーの変更を buddy に読み替えられないので、止めた
     - `failed`: 書く権限が無いか、再送の上限まで書けなかった
   - `error_code` は、最後に書けなかった理由で、次のどれか。
-    - `precondition_failed`: buddy と Google カレンダーの両方で予定が変わった（書き出しの 412 を含む）
-    - `not_found`: Google カレンダーで予定が消された
+    - `precondition_failed`: buddy と Google カレンダーの両方で予定が変わった（消された予定を除く書き出しの 412 を含む）
+    - `not_found`: Google カレンダーで予定が消された（消された予定への書き出しの 412 を含む）
     - `forbidden`: サービスアカウントがカレンダーに書けない
     - `rejected`: Google が予定の内容を受け付けなかった
     - `unavailable`: Google に届かないか、一時的なエラーが続いた
