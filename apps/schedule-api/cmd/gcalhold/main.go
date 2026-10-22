@@ -2,12 +2,12 @@
 //
 // calendarpit に無い操作を 1 つだけ補う。POST /hold で止めている間は、増分の取得（syncToken を付けた events.list）に、
 // calendarpit に渡さず、変わった予定が無いと答え、受け取ったトークンをそのまま返す。E2E が、予定の API が Google の変更を読む前に
-// buddy の変更を書き出させるために使う。calendarpit のトークンは使っても切れないので、止めるのをやめた後の増分の取得が、止めていた間の変更を返す。
+// buddy の変更を書き出させるために使う。calendarpit のトークンは使っても消えないので、止めるのをやめた後の増分の取得が、止めていた間の変更を返す。
 //
 //	go run ./cmd/gcalhold -addr 127.0.0.1:8085 -upstream http://127.0.0.1:4173
 //
 // 予定の API は、GOOGLE_CALENDAR_ENDPOINT にこのサーバーの /calendar/v3/ を渡して呼ぶ。
-// `gcalhold healthcheck` は、サーバーを起動せず、動いているサーバーの GET /healthz を確かめて終わる。
+// `gcalhold healthcheck` は、サーバーを起動せず、compose のコンテナの中で 8080 に動いているサーバーの GET /healthz を確かめて終わる。
 package main
 
 import (

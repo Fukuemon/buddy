@@ -93,7 +93,6 @@ services:
   # 予定の API と calendarpit の間の中継。E2E が、Google の変更を予定の API に渡さないようにするのに使う
   gcalhold:
     build: { context: ., dockerfile: apps/schedule-api/Dockerfile, target: gcalhold }
-    command: ['-upstream', 'http://calendarpit:4173']
     ports: ['127.0.0.1:${GCALHOLD_PORT:-8085}:8080']
     healthcheck:
       test: ['CMD', '/usr/local/bin/gcalhold', 'healthcheck']
@@ -155,6 +154,8 @@ services:
       schedule-api-seed: { condition: service_completed_successfully }
       idp: { condition: service_healthy }
       calendarpit-authorize: { condition: service_completed_successfully }
+      # calendarpit を起動し直すと token が消えるので、予定の API も起動し直し、書き直した認証の情報を読ませる
+      calendarpit: { condition: service_healthy, restart: true }
       gcalhold: { condition: service_healthy }
 
   receipt-api:

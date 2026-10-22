@@ -23,7 +23,7 @@ authorize.search = new URLSearchParams({
   client_id: client.id,
   redirect_uri: client.redirectUri,
   response_type: 'code',
-  scope: 'https://www.googleapis.com/auth/calendar',
+  scope: 'https://www.googleapis.com/auth/calendar.events',
   access_type: 'offline',
 }).toString()
 const page = await fetch(authorize)

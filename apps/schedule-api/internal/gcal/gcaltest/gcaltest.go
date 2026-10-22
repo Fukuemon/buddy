@@ -21,19 +21,19 @@ import (
 // Server は、Calendar API の偽物である。期間（timeMin、timeMax）では絞らない。
 // 書き込みは、要求の If-Match が今の etag と違えば 412 を返し、書くたびに etag を新しくする。
 // 全ての予定を読むと、最後のページに nextSyncToken を返す。syncToken を付けて読むと、そのトークンの後に変わった予定を、
-// 消した予定も含めて 1 ページで返す。JSON から読んだ予定は、最初からあった予定として扱う。
+// 消した予定も含めて 1 ページで返す。最初から持たせた予定は、最初からあった予定として扱う。
 type Server struct {
 	// Calendars は、カレンダー ID ごとの、ページごとの予定である。2 ページ目以降は nextPageToken で返す。
 	// 無いカレンダーには 404 を返す。作った予定は最後のページに足す。
-	Calendars map[string][][]*calendar.Event `json:"calendars"`
+	Calendars map[string][][]*calendar.Event
 	// Instances は、繰り返しの親の予定の ID ごとの回である。1 ページで返す。無い予定には 404 を返す。
-	Instances map[string][]*calendar.Event `json:"instances"`
+	Instances map[string][]*calendar.Event
 	// AccessRoles は、カレンダー ID ごとの応答の accessRole である。無ければ reader を返す。
-	AccessRoles map[string]string `json:"accessRoles"`
+	AccessRoles map[string]string
 	// Status が 0 でなければ、全ての要求にその状態の誤りの応答を返す。
-	Status int `json:"status"`
+	Status int
 	// Failures は、次からの書き込みの要求に順に返す誤りの状態である。返した値は消す。
-	Failures []int `json:"failures"`
+	Failures []int
 
 	mu      sync.Mutex
 	queries []url.Values
@@ -192,7 +192,7 @@ func (s *Server) find(calendarID, eventID string) *calendar.Event {
 	return nil
 }
 
-// nextETag は、新しい etag を返す。JSON から読んだ予定の etag と重ならないよう、w を前に付ける。
+// nextETag は、新しい etag を返す。最初から持たせた予定の etag と重ならないよう、w を前に付ける。
 func (s *Server) nextETag() string {
 	s.etags++
 	return strconv.Quote("w" + strconv.Itoa(s.etags))

@@ -21,7 +21,8 @@ const ensureOk = async (res: Awaited<ReturnType<APIRequestContext['get']>>, what
 
 /** calendarpit の管理の API で、カレンダーの消していない予定を返す。予定の API が書いた予定を確かめるのに使う。 */
 export const listGoogleEvents = async (request: APIRequestContext, calendarId: string) => {
-  const res = await request.get(eventsUrl(calendarId))
+  // 1 ページで読み切れるよう、件数の上限を最大にする
+  const res = await request.get(eventsUrl(calendarId), { params: { maxResults: 2500 } })
   await ensureOk(res, '予定を読めない')
   const { items = [] } = (await res.json()) as { items?: GoogleEvent[] }
   return items

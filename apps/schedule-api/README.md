@@ -91,7 +91,7 @@ export GOOGLE_CALENDAR_ENDPOINT=http://127.0.0.1:4173/calendar/v3/
 go run ./cmd/api
 ```
 
-calendarpit を起動し直すと token が消えるので、`authorize.mjs` を流し直す。
+calendarpit を起動し直すと token が消えるので、`authorize.mjs` を流し直し、API も起動し直す。compose では、calendarpit を起動し直すと `calendarpit-authorize` と予定の API も起動し直す。
 
 ## マイグレーション
 
