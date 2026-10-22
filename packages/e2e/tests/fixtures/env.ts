@@ -70,6 +70,11 @@ export const AUTH_DIR = path.join(root, 'packages/e2e/.auth')
 export const RECEIPT_TESTDATA = {
   schedules: path.join(root, 'services/receipt/testdata/schedules_utf8.csv'),
   visits: path.join(root, 'services/receipt/testdata/visits_cp932.csv'),
+  /**
+   * calendarpit の森のカレンダーの 2026 年 11 月の予定と照合する実績。
+   * 11/02 の見本 一郎は整合し、11/04 の見本 二葉は開始時間が、11/18 の見本 二葉はサービス内容が予定と違う。
+   */
+  calendarVisits: path.join(root, 'services/receipt/testdata/visits_2026-11_utf8.csv'),
 }
 
 /** ログインした状態のファイル。setup が書き、spec の project の storageState に渡す。 */
