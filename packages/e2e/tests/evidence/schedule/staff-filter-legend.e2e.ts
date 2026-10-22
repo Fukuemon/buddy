@@ -4,13 +4,7 @@ import { EVIDENCE_VARIANTS, recordPrEvidence, storyUrl } from '../../fixtures/ev
 
 const ACTOR = 'ログインなし（Storybook の story。ログインした職員は架空の青木 一郎）'
 
-// 改修前には絞り込みとカレンダーを並べた story が無いので、絞り込みだけの story を開く
-const urlOf = (isBefore: boolean) =>
-  storyUrl(
-    isBefore
-      ? '画面-schedule-stafffiltersidebarcontainer--all-staff'
-      : '画面-schedule-stafffiltersidebarcontainer--with-calendar',
-  )
+const URL = storyUrl('画面-schedule-stafffiltersidebarcontainer--with-calendar')
 
 const openFilter = (url: string) => async (page: Page) => {
   await page.goto(url)
@@ -21,8 +15,6 @@ test.describe('予定のカレンダー', () => {
   test.describe('職員の絞り込みの色、名前の検索、自分だけ', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       const prefix = variant.label ? `${variant.label}: ` : ''
-      const isBefore = variant.name === 'before'
-      const url = urlOf(isBefore)
 
       test(`${prefix}予定のカレンダーを開いた場合、職員のチェックボックスがその職員の予定と同じ色で出ること`, async ({
         browser,
@@ -35,25 +27,19 @@ test.describe('予定のカレンダー', () => {
             actor: ACTOR,
             variant,
           },
-          openFilter(url),
+          openFilter(URL),
           async ({ page, step, check }) => {
-            await openFilter(url)(page)
+            await openFilter(URL)(page)
             await step('職員の絞り込みを開いている（架空の職員 4 人）')
             const aoki = page.getByTestId('staff-filter-staff-staff-1')
             const ueda = page.getByTestId('staff-filter-staff-staff-3')
-            if (isBefore) {
-              await check('職員のチェックボックスは、全て同じ主の色で出る')
-              return
-            }
             // categorical-1 は blue-800、categorical-3 は cyan-900
             await expect(aoki).toHaveCSS('accent-color', 'rgb(0, 49, 216)')
             await expect(ueda).toHaveCSS('accent-color', 'rgb(0, 111, 131)')
-            await expect(
-              page
-                .getByTestId('day-grid-staff-staff-1')
-                .getByTestId(/^schedule-event-/)
-                .first(),
-            ).toHaveCSS('background-color', 'rgb(0, 49, 216)')
+            await expect(page.getByTestId('schedule-event-schedule-1')).toHaveCSS(
+              'background-color',
+              'rgb(0, 49, 216)',
+            )
             await check(
               '青木 一郎のチェックボックスと日の表の予定が同じ青で、上田 三奈のチェックボックスは別の色で出る',
             )
@@ -72,16 +58,11 @@ test.describe('予定のカレンダー', () => {
             actor: ACTOR,
             variant,
           },
-          openFilter(url),
+          openFilter(URL),
           async ({ page, step, check }) => {
-            await openFilter(url)(page)
+            await openFilter(URL)(page)
             await step('職員の絞り込みを開いている（架空の職員 4 人。全員にチェックが入っている）')
             const search = page.getByTestId('staff-filter-search')
-            if (isBefore) {
-              await expect(search).toHaveCount(0)
-              await check('名前の検索の欄が無く、一覧から目で探す')
-              return
-            }
             await step('名前の検索に「上田」と入れる')
             await search.fill('上田')
             await expect(page.getByTestId('staff-filter-staff-staff-3')).toBeVisible()
@@ -108,18 +89,11 @@ test.describe('予定のカレンダー', () => {
             actor: ACTOR,
             variant,
           },
-          openFilter(url),
+          openFilter(URL),
           async ({ page, step, check }) => {
-            await openFilter(url)(page)
+            await openFilter(URL)(page)
             await step('職員の絞り込みを開いている（ログインした職員は架空の青木 一郎）')
             const onlyMe = page.getByTestId('staff-filter-only-me')
-            if (isBefore) {
-              await expect(onlyMe).toHaveCount(0)
-              await check(
-                '「自分だけ」が無く、自分の予定だけを見るにはほかの職員のチェックを 1 人ずつ外す',
-              )
-              return
-            }
             await step('「自分だけ」を押す')
             await onlyMe.click()
             await expect(page.getByTestId('staff-filter-staff-staff-1')).toBeChecked()
