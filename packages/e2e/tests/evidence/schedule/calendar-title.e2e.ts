@@ -4,14 +4,16 @@ import { EVIDENCE_VARIANTS, recordPrEvidence, storyUrl } from '../../fixtures/ev
 
 const ACTOR = 'ログインなし（Storybook の story）'
 
-// 表示の期間と今の時刻の線の位置を毎回同じにするため、ブラウザの時計を 2026/10/21（水）10:15 から進める
-const NOW = new Date(2026, 9, 21, 10, 15)
+// 表示の期間と今の時刻の線の位置を毎回同じにするため、ブラウザの時計を 2026/10/21（水）10:15 から進める。
+// ブラウザは Asia/Tokyo で動くので、spec を流す環境の時間帯によらないよう時差を付けて書く
+const NOW = new Date('2026-10-21T10:15:00+09:00')
+// Storybook の架空の職員の数
+const STAFF_COUNT = 4
 
 test.describe('予定のカレンダー', () => {
   test.describe('表示の期間の見出しと今の時刻の線', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       const prefix = variant.label ? `${variant.label}: ` : ''
-      const isBefore = variant.name === 'before'
 
       test(`${prefix}次へと表示の単位を操作した場合、見出しが表示の期間に合わせて変わること`, async ({
         browser,
@@ -36,11 +38,6 @@ test.describe('予定のカレンダー', () => {
             await step(
               '予定のカレンダーの月の表示（Storybook の ScheduleCalendarContainer の Month）を、2026/10/21 として開いている',
             )
-            if (isBefore) {
-              await expect(title).toHaveCount(0)
-              await check('ツールバーに表示の期間の見出しが無く、日付は入力欄でだけ分かる')
-              return
-            }
             await expect(title).toHaveText('2026年10月')
             await check('見出しが「2026年10月」になる')
 
@@ -86,12 +83,9 @@ test.describe('予定のカレンダー', () => {
               '予定のカレンダーの日の表示（Storybook の ScheduleCalendarContainer の Day）を、今日の 2026/10/21 10:15 として開いている',
             )
             const lines = page.getByTestId(/^day-grid-now-/)
-            if (isBefore) {
-              await expect(lines).toHaveCount(0)
-              await check('今の時刻の線が無く、時刻は左の目盛りから読み取る')
-              return
-            }
-            await expect(lines.first()).toBeVisible()
+            // 線の位置は StaffScheduleDayGrid.test.tsx で確かめ、ここでは全ての列に出ることを見る
+            await expect(lines).toHaveCount(STAFF_COUNT)
+            await step('（撮影のため、今の時刻の線が見える位置まで送る）')
             await lines.first().scrollIntoViewIfNeeded()
             await check('全ての職員の列の 10:15 の位置に、主の色の横線が出る')
           },
