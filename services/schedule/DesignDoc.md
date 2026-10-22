@@ -4,7 +4,7 @@ title: 予定の管理
 description: schedule-api のコードの層、テーブルの構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更とキャンセル、Google カレンダーの取り込み、書き出し、同期
 status: stable
 governs: services/schedule
-verified_commit: ff293e9
+verified_commit: 6692e2f
 ---
 
 # 予定の管理
@@ -282,6 +282,9 @@ schedule-api は、Google Calendar API を、事業所ごとのサービスア�
 - 対応の無い事業所と、組織に結び付けていない事業所のカレンダーの操作は、503 の `calendar_not_configured` を返す。書き出しは、書き直しの回数の上限まで待ちを残す。
 - サービスアカウントごとの Calendar API のクライアントを起動のときに作り、token は有効期限まで使い回す。共有のコードは `packages/go/gcalauth` にある。
 - Application Default Credentials が事業所のサービスアカウントそのものとして動くときは、重ねてなりすまさず、その token を使う。ローカルで検証の事業所のアカウントになりすました Application Default Credentials を使うと、サービスアカウント自身へのトークン作成者のロールが要るためである。見分けは、認証情報のファイルの `client_email`（キー）か、なりすます先の URL（なりすましと Workload Identity Federation）のメールアドレスで行う。メタデータサーバーの認証情報は、別のアカウントとみなす。
+- 実際の Google Calendar API では、サービスアカウントが持つカレンダーに対して、取り込み、書き出し、増分の取得、確かめが要る予定の解き方が動く。職員が共有したカレンダーに「予定の変更」の権限で書けるかは、未確認である。確かめるまで、本番で書き出しを有効にしない。
+  - 出典: [#180 の実際の API での確認](https://github.com/Fukuemon/buddy/issues/180#issuecomment-6333280999)
+  - ADR-0012: [承認の条件](https://github.com/Fukuemon/buddy/blob/876381365355f7e4dab03f6dfdb3d6fb8a9f6947/docs/adr/0012-google-calendar-facility-service-accounts.md#承認の条件)
 - token を作れないときのエラーの文は、状態コードだけを持つ。IAM の応答はなりすます先のリソースの名前を含むことがあり、サービスアカウントのメールアドレスをログに出さないためである。
 
 ### Google カレンダーの取り込み
@@ -362,10 +365,11 @@ sequenceDiagram
   - 回の置き換えは、Google の例外の回にせず、親の予定の `EXDATE` と、別の単発の予定にする。buddy が持つ形（除外の日と、元の回を指す単発の予定）と同じである。
   - 取り込んだ Google の例外の回が置き換えた日は、`EXDATE` にしない。`EXDATE` にすると、Google の例外の回が消えるためである。
 - 衝突とエラー
-  - 更新と削除には、予定の対応の etag を `If-Match` に付ける。412 は Google カレンダーで予定が変わったとみなし、書かずに待ちを `conflict`（`precondition_failed`）にする。Google で消された予定（410）と、Google が予定かカレンダーを見つけられないとき（404）も `conflict`（`not_found`）にする。
-  - Google は、消された予定に、消す前の etag を `If-Match` に付けた更新と削除を、410 でなく 412 で返す。412 を受けたら `events.get` で予定を読み、`status` が `cancelled` なら消された予定として扱う。キャンセルと職員を替えたときの削除なら、予定の対応を消し、職員を替えたときは新しいカレンダーに作る。更新なら `conflict`（`not_found`）にする。読むのが一時的なエラー（429、5xx、通信のエラー）で失敗したら書き直す。それ以外で読めないときは、412 のまま `precondition_failed` にする。
-  - `conflict` の待ちは、buddy で予定を変えても書かない。職員の管理の権限を持つ職員が、確かめが要る予定の一覧から「buddy の内容で書き直す」を選ぶと、`If-Match` を付けずに書き直す。消された予定（410）は作り直す。単発の予定では「Google の内容に合わせる」も選べる（[Google カレンダーとの同期](#google-カレンダーとの同期)）。
-  - 404 では予定の対応を消さない。Google は、予定が消されたときと、カレンダーの共有が外れたときの両方で 404 を返すので、対応を消すと、共有を戻した後に予定が 2 つになるためである。キャンセルの削除が 404 でも、対応を消さずに `conflict` にする。
+  - 更新と削除には、予定の対応の etag を `If-Match` に付ける。412 は Google カレンダーで予定が変わったとみなし、書かずに待ちを `conflict`（`precondition_failed`）にする。更新で、Google で消された予定（410 か、次の項目の 412）を受けたときと、更新と削除で、Google が予定かカレンダーを見つけられないとき（404）は `conflict`（`not_found`）にする。削除で 410 を受けたときは、消し終えたものとして、予定の対応を消す。
+  - Google は、消された予定に、消す前の etag を `If-Match` に付けた更新と削除を、410 でなく 412 で返す。412 を受けたら `events.get` で予定を読み、`status` が `cancelled` なら 410 と同じく消された予定として扱う。キャンセルと職員を替えたときの削除なら、予定の対応を消し、職員を替えたときは新しいカレンダーに作る。更新なら `conflict`（`not_found`）にする。読むのが一時的なエラー（429、5xx、通信のエラー）で失敗したら書き直す。それ以外で読めないときは、412 のまま `precondition_failed` にする。
+  - `conflict` の待ちは、buddy で予定を変えても書かない。職員の管理の権限を持つ職員が、確かめが要る予定の一覧から「buddy の内容で書き直す」を選ぶと、`If-Match` を付けずに書き直す。消された予定は、`status` を `confirmed` にした部分更新で戻す。実際の API は、`If-Match` の無い patch を、消された予定にも 200 で返す。410 を受けたときは、予定の対応を消して作り直す。単発の予定では「Google の内容に合わせる」も選べる（[Google カレンダーとの同期](#google-カレンダーとの同期)）。
+  - 404 では予定の対応を消さない。カレンダーの共有が外れたときの 404 と、予定が無いときの 404 を見分けられないとみなし、対応を消すと、共有を戻した後に予定が 2 つになるためである。キャンセルの削除が 404 でも、対応を消さずに `conflict` にする。共有が外れたカレンダーの予定の更新と削除が 404 を返すかは、未確認である。
+    - 出典（消された予定への patch、update、delete、get の応答）: [#180 の実際の API での確認](https://github.com/Fukuemon/buddy/issues/180#issuecomment-6332187503)
   - 429、5xx、通信のエラー、403 の上限のエラーは、30 秒から倍にしながら書き直し、5 回で `failed`（`unavailable`）にする。403 は書き直さずに `failed`（`forbidden`）に、400 は `failed`（`rejected`）にする。`failed` の待ちは、buddy で予定を変えると数え直して書く。
   - 待ちのエラーは決まった値（`error_code`）だけを持ち、確かめが要る予定の一覧とログに、予定のタイトル、利用者名、カレンダーの ID を出さない。
 - カレンダーを結び付ける前に作った予定は書き出さない。結び付けた後にその予定を変えると書く。
@@ -417,7 +421,7 @@ sequenceDiagram
 - 確かめが要る待ちの解き方
   - 「buddy の内容で書き直す」（`createCalendarExportRetry`）は、書き出しと同じく `If-Match` を付けずに書き直す。
   - 「Google の内容に合わせる」（`createCalendarExportAcceptance`）は、単発の予定で、理由が `precondition_failed` か `not_found` の待ちだけに使える。buddy でキャンセルした予定には使えない（`acceptable` が false）。Google の今の予定を `events.get` で読み、buddy の予定に当てて、待ちを終える（`succeeded`）。読み替えられなければ 409（`external_change_unappliable`）を返す。
-  - Google が予定に 404 か 410 を返し、カレンダーは読めるときは、予定が消されたとみなしてキャンセルする。403 は消されたとみなさない。キャンセルした予定は、職員を替えていても書き出し直さない。Google を読む時間の上限は 20 秒である。
+  - Google が予定を `status` が `cancelled` で返したときと、予定に 404 か 410 を返し、カレンダーは読めるときは、予定が消されたとみなしてキャンセルする。実際の API は、消された予定の `events.get` に 200 と `cancelled` を返す。403 は消されたとみなさない。キャンセルした予定は、職員を替えていても書き出し直さない。Google を読む時間の上限は 20 秒である。
   - 予定の行をロックしてから Google の予定を読む。同期の処理も同じ行をロックするので、読んだ後に Google で変わった予定は、同期が後で比べて当てるか、確かめが要る待ちにする。
   - buddy で職員を替えた予定は、合わせた後に書き出しの待ちを積み直し、今の職員のカレンダーへ移させる。
 - カレンダーの同期の状態（`calendar_sync_states`）は、最後の結果（`never`、`succeeded`、`failed`）と、失敗の理由を決まった値（`unreadable`、`unavailable`、`apply`）で持つ。ログと理由に、予定のタイトル、利用者名、カレンダーの ID を出さない。
@@ -442,7 +446,19 @@ flowchart LR
   - 予定の API は、`GOOGLE_CALENDAR_ENDPOINT` を渡したとき、`GOOGLE_APPLICATION_CREDENTIALS` のファイルだけで認証する。
 - E2E は、calendarpit の管理の API（`/__calendarpit/calendars/{id}/events`）で、予定の API が書いた予定を読む。職員が Google で予定を直したときの代わりに、同じ API で予定を直す。手で確かめるときは、calendarpit の管理の画面を使う。
 
-buddy が呼ぶ events の list、get、insert、patch、delete、instances は、calendarpit 0.9.5 で本物の仕様と同じに動くことを確かめた。繰り返しの展開、`syncToken` と 410、`If-Match` と 412、消した予定の 409 も同じである。消した予定に、消す前の etag を `If-Match` に付けた patch、update、delete が 412 を返し、`If-Match` の無い delete が 410 を返すことも同じである。
+calendarpit 0.9.5 と本物の振る舞いの比べ方は、次のとおり。
+
+| 振る舞い | 本物の側 | calendarpit の側 |
+| --- | --- | --- |
+| events の list、get、insert、patch、delete、instances の、予定の API が使う項目 | 公式の文書。予定の API の実装が出典に従う | 予定の API のクライアントを向けて、期待どおりに動いた。公式の文書と直接は並べていない |
+| 期間に回の無い繰り返しの親を `singleEvents=false` の list が返さない | 実際の API | 同じ |
+| `syncToken` の増分で、回の変更、親の除外の日、親の削除のときに返る予定 | 実際の API | 未確認。増分が、作った予定、変えた予定、消した回を返すことだけを見た |
+| `syncToken` が切れたときの 410 | 公式の文書 | 同じ |
+| 消した予定に、消す前の etag を `If-Match` に付けた patch、update、delete の 412。`If-Match` の無い delete の 410。消した予定の get の `cancelled` | 実際の API | 同じ |
+| 消した予定と同じ ID の insert の 409 | 公式の文書。実際の API では未確認 | 同じ |
+| `fields` の指定と、知らない query の項目 | 公式の文書 | 400 で拒む。予定の API は `fields` を付けない |
+
+- 出典（実際の API）: [#180 の実際の API での確認](https://github.com/Fukuemon/buddy/issues/180#issuecomment-6332187503)
 
 calendarpit で足りない振る舞いと、その扱い
 
