@@ -1,6 +1,6 @@
 #!/bin/sh
-# schedule-api のマイグレーションを使い捨ての PostgreSQL に当て、tbls で表の文書と ER 図を docs/db/schedule-api/ に生成し直す。
-# 表とカラムの説明はマイグレーションの COMMENT ON に、ER 図を分ける業務のまとまり（viewpoints）は apps/schedule-api/.tbls.yml に書く。
+# schedule-api のマイグレーションを使い捨ての PostgreSQL に適用し、tbls でテーブル定義書と ER 図を docs/db/schedule-api/ に生成し直す。
+# テーブルとカラムの説明はマイグレーションの COMMENT ON に、ER 図を分ける業務のまとまり（viewpoints）は apps/schedule-api/.tbls.yml に書く。
 # 生成の後に tbls lint で、どの viewpoint にも入らない表がないかを確かめる。
 # 最後に、生成した viewpoint の文書が全て zensical.toml の nav にあるかを確かめる。
 #
@@ -16,7 +16,7 @@ trap 'docker rm -f "$container" >/dev/null' EXIT
 trap 'exit 130' INT TERM
 port=$(docker port "$container" 5432/tcp | head -n 1 | sed 's/.*://')
 
-# 初期化の間の一時のサーバーは TCP で待ち受けないので、127.0.0.1 でレスポンスを返せば初期化が終わっている
+# 初期化の間の一時のサーバーは TCP で待ち受けないので、127.0.0.1 で応答すれば初期化が終わっている
 i=0
 until docker exec "$container" pg_isready -h 127.0.0.1 -U buddy -d buddy >/dev/null 2>&1; do
   i=$((i + 1))
