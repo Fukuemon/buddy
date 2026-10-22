@@ -117,7 +117,7 @@ route は `src/routes/` のファイルから TanStack Router が生成する。
 - ファイルの合計の上限は、照合の API の `MAX_UPLOAD_BYTES` のデフォルト値（10 MiB）から multipart の分の 64 KiB を引いた値にする。server function の本文は、読む前に `src/start.ts` が 10 MiB を超えるものと長さの分からないものを 413 で拒む。
 - フェイクの API（`fake`）の照合は、入力によらず `src/api/fake/fakeReceiptApi.ts` の結果を返す。
 
-## カレンダーの連携、予定の取り込み、確かめが要る予定の画面
+## Google カレンダーの画面
 
 カレンダーの連携（`/schedule/link`）、予定の取り込み（`/schedule/import`）、確かめが要る予定（`/schedule/review`）の画面は `src/features/calendar/` にある。画面の仕様は、画面仕様書の [カレンダーの連携](../../docs/screens/schedule-link_カレンダーの連携/index.md)、[予定の取り込み](../../docs/screens/schedule-import_予定の取り込み/index.md)、[確かめが要る予定](../../docs/screens/schedule-review_確かめが要る予定/index.md) にある。
 

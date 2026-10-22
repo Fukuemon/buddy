@@ -31,29 +31,6 @@ nav = [
     { "E2E のテストのコード" = "design/packages/e2e.md" },
     { "エビデンスの録画" = "design/packages/e2e-recording.md" },
   ] },
-  # 予定の管理のテーブル。tbls の生成物（scripts/build-db-docs.sh）で、viewpoint の文書は全て載せる（build-db-docs.sh が確かめる）
-  # テーブルごとの文書は載せず、テーブルの一覧と viewpoint の文書から開く
-  { "DB の設計" = [
-    { "テーブルの一覧" = "db/schedule-api/README.md" },
-    # Liam ERD で描く、操作できる ER 図（pnpm build:erd）。同じサイトの /erd/ に置き、ローカルの zensical serve には無い
-    { "ER 図（Liam ERD）" = "/erd/" },
-    { "事業所と組織" = "db/schedule-api/viewpoint-organization.md" },
-    { "職員と権限" = "db/schedule-api/viewpoint-policies.md" },
-    { "利用者" = "db/schedule-api/viewpoint-patients.md" },
-    { "予定と訪問" = "db/schedule-api/viewpoint-schedules.md" },
-    { "繰り返しの予定" = "db/schedule-api/viewpoint-recurring.md" },
-    { "外部のカレンダーの取り込みと書き出し" = "db/schedule-api/viewpoint-calendar-sync.md" },
-  ] },
-  { "デザインシステム" = [
-    { "使い方" = "design/packages/ui.md" },
-    # カタログは同じサイトの /storybook/ に置く（apps/docs-site）。ローカルの zensical serve には無い
-    { "カタログ（Storybook）" = "/storybook/" },
-  ] },
-  { "API の仕様" = [
-    # 各アプリの openapi.yaml を Scalar で描く単独のページ（docs/api/）。サイトのテーマの外で開く
-    { "予定の API" = "/api/schedule-api.html" },
-    { "照合の API" = "/api/receipt-api.html" },
-  ] },
   { "画面仕様書" = [
     { "画面の一覧" = "screens/index.md" },
     { "画面仕様書の規約" = "screens/rules.md" },
@@ -67,6 +44,29 @@ nav = [
     { "照合" = "screens/receipt-upload_照合/index.md" },
     { "照合の結果" = "screens/receipt-result_照合の結果/index.md" },
     { "ログインの失敗" = "screens/account-error_ログインの失敗/index.md" },
+  ] },
+  { "デザインシステム" = [
+    { "使い方" = "design/packages/ui.md" },
+    # カタログは同じサイトの /storybook/ に置く（apps/docs-site）。ローカルの zensical serve には無い
+    { "カタログ（Storybook）" = "/storybook/" },
+  ] },
+  { "API の仕様" = [
+    # 各アプリの openapi.yaml を Scalar で描く単独のページ（docs/api/）。サイトのテーマの外で開く
+    { "予定の API" = "/api/schedule-api.html" },
+    { "照合の API" = "/api/receipt-api.html" },
+  ] },
+  # 予定の管理のテーブル。tbls の生成物（scripts/build-db-docs.sh）で、viewpoint の文書は全て載せる（build-db-docs.sh が確かめる）
+  # テーブルごとの文書は載せず、テーブルの一覧と viewpoint の文書から開く
+  { "DB の設計" = [
+    { "テーブルの一覧" = "db/schedule-api/README.md" },
+    # Liam ERD で描く、操作できる ER 図（pnpm build:erd）。同じサイトの /erd/ に置き、ローカルの zensical serve には無い
+    { "ER 図（Liam ERD）" = "/erd/" },
+    { "事業所と組織" = "db/schedule-api/viewpoint-organization.md" },
+    { "職員と権限" = "db/schedule-api/viewpoint-policies.md" },
+    { "利用者" = "db/schedule-api/viewpoint-patients.md" },
+    { "予定と訪問" = "db/schedule-api/viewpoint-schedules.md" },
+    { "繰り返しの予定" = "db/schedule-api/viewpoint-recurring.md" },
+    { "外部のカレンダーの取り込みと書き出し" = "db/schedule-api/viewpoint-calendar-sync.md" },
   ] },
   { "ADR" = [
     "adr/0001-auth.md",

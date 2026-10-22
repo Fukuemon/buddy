@@ -129,7 +129,7 @@ pnpm e2e
 - エビデンスの動画を撮る spec は、`pnpm e2e` では流れない。撮るコマンドは [エビデンス](context/testing/evidence.md) の「撮るコマンド」にある。
 - 失敗したテストの trace は `packages/e2e/test-results/` に残る。`pnpm --filter @buddy/e2e exec playwright show-trace <trace.zip>` で開く。trace.zip は、`packages/e2e` からの相対パス（Playwright が出す `test-results/...`）で渡す。
 
-## 公開した文書のサイトとカタログを確かめる
+## 文書のサイトのプレビュー
 
 pull request を作ると、ワークフロー「文書のサイト」がプレビューを出し、URL を pull request にコメントする。プレビューには、文書のサイトと、Storybook のカタログ（`/storybook/`）と、ER 図（`/erd/`）がある。プレビューと本番は、Cloudflare Access で許可した人だけが開ける。
 
@@ -210,7 +210,7 @@ nav に無い viewpoint の文書があっても、`pnpm generate:db-docs` が 1
 pnpm check:generated
 ```
 
-## マージする前に CI で確かめること
+## CI のチェック
 
 pull request では、CI（[ci.yml](.github/workflows/ci.yml)）が次を流す。  
 全部が通るまでマージしない。  
