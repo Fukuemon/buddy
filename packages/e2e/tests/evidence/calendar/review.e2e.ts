@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 import { CALENDARPIT_URL, HAYASHI, LOGIN_NAME, LOGIN_STAFF } from '../../fixtures/env'
-import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
+import { EVIDENCE_VARIANTS, recordPrEvidence, storyUrl } from '../../fixtures/evidence'
 import {
   deleteGoogleEvent,
   findGoogleEvent,
@@ -207,6 +207,48 @@ test.describe('確かめが要る予定', () => {
               await step('（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）')
               await unlinkStaffCalendar(page, HAYASHI.id)
             }
+          },
+        )
+      })
+    }
+  })
+  test.describe('buddy でキャンセルした単発の予定', () => {
+    for (const variant of EVIDENCE_VARIANTS) {
+      const prefix = variant.label ? `${variant.label}: ` : ''
+
+      test(`${prefix}キャンセルした単発の予定が Google カレンダーで変わっていた場合、キャンセルした予定の理由が出て、Google の内容に合わせるボタンが出ないこと`, async ({
+        browser,
+      }) => {
+        const url = storyUrl('画面-calendar-calendarreviewview--default')
+        const row = (page: Page) => page.getByTestId('calendar-review-row-export-5')
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'calendar-review-cancelled',
+            title:
+              'buddy でキャンセルした単発の予定が Google カレンダーで変わっていたとき、確かめが要る予定にキャンセルした予定の理由が出て、「Google の内容に合わせる」が出ない',
+            actor: 'ログインなし（Storybook の story）',
+            variant,
+          },
+          async (page) => {
+            await page.goto(url)
+          },
+          async ({ page, step, check }) => {
+            await page.goto(url)
+            await expect(row(page)).toBeVisible()
+            await step(
+              '確かめが要る予定の画面（Storybook の CalendarReviewView の Default）を開いている\n江藤 四郎の 2026/11/06（金）15:00〜16:29 は、buddy でキャンセルした後に Google カレンダーで変えられた単発の予定である（架空のデータの export-5）',
+            )
+
+            await row(page).scrollIntoViewIfNeeded()
+            await expect(row(page).getByTestId('calendar-review-reason-export-5')).toHaveText(
+              'buddy でキャンセルした予定が、Google カレンダーで変わっていました。buddy の内容で書き直すと Google カレンダーの予定を消すので、消してよいかを職員に確かめてください。',
+            )
+            await expect(row(page).getByTestId('calendar-review-accept-export-5')).toHaveCount(0)
+            await expect(row(page).getByTestId('calendar-review-rewrite-export-5')).toBeVisible()
+            await check(
+              '江藤 四郎の行に「buddy でキャンセルした予定が、Google カレンダーで変わっていました。…」の理由が出て、「Google の内容に合わせる」が出ず、「buddy の内容で書き直す」だけが出る',
+            )
           },
         )
       })
