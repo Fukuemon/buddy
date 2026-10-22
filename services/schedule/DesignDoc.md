@@ -63,7 +63,7 @@ schedule-api は、事業所ごとの予定、職員、利用者、権限を持�
 
 ### テーブルの構成
 
-次の図は、schedule-api の全てのテーブルと、その間の関係を示す。カラム、制約、索引は、マイグレーションから生成した[テーブル定義書](https://github.com/Fukuemon/buddy/blob/develop/docs/db/schedule-api/README.md)（文書のサイトでは「DB の設計」の「テーブルの一覧」）にある。テーブル定義書の Viewpoints は、事業所と組織、職員と権限、利用者、予定と訪問、繰り返しの予定、外部のカレンダーの取り込みと書き出しの観点ごとに、テーブルを絞った ER 図を持つ。  
+次の図は、schedule-api の全てのテーブルと、その間の関係を示す。カラム、制約、インデックスは、マイグレーションから生成した[テーブル定義書](https://github.com/Fukuemon/buddy/blob/develop/docs/db/schedule-api/README.md)（文書のサイトでは「DB の設計」の「テーブルの一覧」）にある。テーブル定義書の Viewpoints は、事業所と組織、職員と権限、利用者、予定と訪問、繰り返しの予定、外部のカレンダーの取り込みと書き出しの観点ごとに、テーブルを絞った ER 図を持つ。  
 DB は PostgreSQL 18 で、見直したテーブルは初期のマイグレーションで作り、書き出しと同期のカラムとテーブルは段階ごとのマイグレーションで足す（ADR-0011）。テーブルとカラムの説明は、マイグレーションの `COMMENT ON` に書く。
 
 - ADR-0011: [予定の API の DB を PostgreSQL にし、見直したテーブルでマイグレーションを作り直す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0011-schedule-api-postgresql.md)
@@ -132,9 +132,9 @@ erDiagram
 - 訪問の区分は、`visit_info_visit_categories` で 1 件の訪問に複数を付けられる。
 - 予定の種類の規則（通常はタイトルが必須、訪問は訪問の情報が必須）は、`schedule_types.code`（`normal`、`visit`）で読む。`name` は表示と一覧の絞り込みに使う。
 - 1 つの訪問の情報は、1 つの予定か 1 つの繰り返しの予定だけが指す（`visit_info_id` の一意の制約）。
-- `is_over_time_work` は、開始の時刻から DB が生成する列である。書き込みには含めない。
-- 外部キーの列には、引く向きに使うものに index を置く。行を消さない固定のマスタ（権限、サービスコード、訪問の区分、予定の種類）を指す列には置かない。
-- 監査の日時は UTC で読み、応答はマイクロ秒までの RFC 3339 の形で返す。
+- `is_over_time_work` は、開始の時刻から DB が生成するカラムである。書き込みには含めない。
+- 外部キーのカラムには、引く向きに使うものに index を置く。行を消さない固定のマスタ（権限、サービスコード、訪問の区分、予定の種類）を指すカラムには置かない。
+- 監査の日時は UTC で読み、レスポンスはマイクロ秒までの RFC 3339 の形で返す。
 - `external_calendars`、`external_event_links`、`import_runs` は、Google カレンダーの取り込み（ADR-0009 の段階 1）で使う。`calendar_sync_states` は、同期（段階 3）がカレンダーごとの増分の取得のトークンと読む時刻を持つ。`calendar_exports` は、書き出し（段階 2）の待ちを持ち、予定ごとに終わっていない行を 1 つだけ持つ。外部の予定のタイトルと本文は、利用者の名前を含むので保存しない。カレンダーを外すときは行を消さずに `external_calendars.disabled_at` を入れ、外部の予定との対応を残す。結び付け直して同じ期間を取り込んでも、予定が重ならないためである。外していないカレンダーは、職員ごとに 1 つにする（部分の一意の index）。
 - 一覧の読み出しには、予定と訪問の情報と名前を結合したビュー（`schedule_details`、`recurring_schedule_details`、`visit_info_details`）を使う。
 - `schedule_types`、`service_codes`、`visit_categories` のレコードは、マイグレーションで入れる。事業所ごとには持たない。サービスコードの提供時間の範囲は、照合の許容範囲と同じ値にする。
@@ -281,14 +281,14 @@ schedule-api は、Google Calendar API を、事業所ごとのサービスア�
 - ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](https://github.com/Fukuemon/buddy/blob/876381365355f7e4dab03f6dfdb3d6fb8a9f6947/docs/adr/0012-google-calendar-facility-service-accounts.md)
 
 - 組織の ID とサービスアカウントの対応は、運営側が設定のファイル（`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`）で渡す。schedule-api は、事業所の `facilities.org_id` で対応を引く。形は照合の API と同じで、同じファイルを渡せる。
-- 事業所は、要求を受ける操作では、パスの事業所（認証のミドルウェアがトークンの職員の事業所と一致することを確かめる）か、結び付けたカレンダーのレコードの事業所で決める。要求を受けない書き出しと増分の取得は、カレンダーのレコードの事業所（`external_calendars.facility_id`）で決める。要求の本文からは受けない。
+- 事業所は、リクエストを受ける操作では、パスの事業所（認証のミドルウェアがトークンの職員の事業所と一致することを確かめる）か、結び付けたカレンダーのレコードの事業所で決める。リクエストを受けない書き出しと増分の取得は、カレンダーのレコードの事業所（`external_calendars.facility_id`）で決める。リクエストの本文からは受けない。
 - 対応の無い事業所と、組織に結び付けていない事業所のカレンダーの操作は、503 の `calendar_not_configured` を返す。書き出しは、書き直しの回数の上限まで待ちを残す。
 - サービスアカウントごとの Calendar API のクライアントを起動のときに作り、token は有効期限まで使い回す。共有のコードは `packages/go/gcalauth` にある。
 - Application Default Credentials が事業所のサービスアカウントそのものとして動くときは、重ねてなりすまさず、その token を使う。ローカルで検証の事業所のアカウントになりすました Application Default Credentials を使うと、サービスアカウント自身へのトークン作成者のロールが要るためである。見分けは、認証情報のファイルの `client_email`（キー）か、なりすます先の URL（なりすましと Workload Identity Federation）のメールアドレスで行う。メタデータサーバーの認証情報は、別のアカウントとみなす。
 - 実際の Google Calendar API では、サービスアカウントが持つカレンダーに対して、取り込み、書き出し、増分の取得、確かめが要る予定の解き方が動く。職員が共有したカレンダーに「予定の変更」の権限で書けるかは、未確認である。確かめるまで、本番で書き出しを有効にしない。
   - 出典: [#180 の実際の API での確認](https://github.com/Fukuemon/buddy/issues/180#issuecomment-6333280999)
   - ADR-0012: [承認の条件](https://github.com/Fukuemon/buddy/blob/876381365355f7e4dab03f6dfdb3d6fb8a9f6947/docs/adr/0012-google-calendar-facility-service-accounts.md#承認の条件)
-- token を作れないときのエラーの文は、状態コードだけを持つ。IAM の応答はなりすます先のリソースの名前を含むことがあり、サービスアカウントのメールアドレスをログに出さないためである。
+- token を作れないときのエラーの文は、状態コードだけを持つ。IAM のレスポンスはなりすます先のリソースの名前を含むことがあり、サービスアカウントのメールアドレスをログに出さないためである。
 
 ### Google カレンダーの取り込み
 
