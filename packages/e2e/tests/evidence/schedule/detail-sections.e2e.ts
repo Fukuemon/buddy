@@ -20,7 +20,6 @@ test.describe('予定のカレンダー', () => {
   test.describe('予定の詳細の節', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       const prefix = variant.label ? `${variant.label}: ` : ''
-      const isBefore = variant.name === 'before'
 
       test(`${prefix}訪問の予定の詳細を開いた場合、日時の見出しと、訪問の情報の節とメモの節が出ること`, async ({
         browser,
@@ -37,14 +36,16 @@ test.describe('予定のカレンダー', () => {
           async ({ page, step, check }) => {
             await openDetail(VISIT_URL)(page)
             await step('訪問の予定の詳細（Storybook の ScheduleDetailModal の Visit）を開いている')
-            const datetime = page.getByTestId('schedule-detail-datetime')
-            if (isBefore) {
-              await expect(datetime).toHaveText('2026-10-20 09:00 - 09:29')
-              await check('日時は項目の 1 つとして並び、利用者、サービスコード、メモが 1 列に続く')
-              return
-            }
-            await expect(datetime).toHaveText('2026年10月20日（火） 09:00〜09:29')
+            await expect(page.getByTestId('schedule-detail-datetime')).toHaveText(
+              '2026年10月20日（火） 09:00〜09:29',
+            )
             await expect(page.getByTestId('schedule-detail-visit')).toContainText('加藤 春子')
+            // 2 列の格子は、列の幅を 2 つ持つ
+            await expect(page.getByTestId('schedule-detail-visit-fields')).toHaveCSS(
+              'grid-template-columns',
+              /^\S+ \S+$/,
+            )
+            await expect(page.getByTestId('schedule-detail-memo')).toBeVisible()
             await check(
               '日時と曜日が見出しになり、利用者、サービスコード、訪問の種類が「訪問の情報」の節に 2 列でまとまり、メモが最後の節に出る',
             )
@@ -68,10 +69,9 @@ test.describe('予定のカレンダー', () => {
             await openDetail(NORMAL_URL)(page)
             await step('通常の予定の詳細（Storybook の ScheduleDetailModal の Normal）を開いている')
             await expect(page.getByTestId('schedule-detail-visit')).toHaveCount(0)
+            await expect(page.getByTestId('schedule-detail-memo')).toBeVisible()
             await check(
-              isBefore
-                ? '種類、タイトル、日時、予定者、メモが 1 列に並ぶ'
-                : '日時の見出しの下に種類、タイトル、予定者が並び、訪問の情報の節は出ず、メモの節が出る',
+              '日時の見出しの下に種類、タイトル、予定者が並び、訪問の情報の節は出ず、メモの節が出る',
             )
           },
         )
@@ -93,11 +93,11 @@ test.describe('予定のカレンダー', () => {
           async ({ page, step, check }) => {
             await openDetail(VISIT_URL)(page)
             await step('幅 390px で、訪問の予定の詳細を開いている')
-            if (isBefore) {
-              await check('項目が 1 列に並ぶ')
-              return
-            }
-            await expect(page.getByTestId('schedule-detail-visit')).toBeVisible()
+            // 1 列の格子は、列の幅を 1 つだけ持つ
+            await expect(page.getByTestId('schedule-detail-visit-fields')).toHaveCSS(
+              'grid-template-columns',
+              /^\S+$/,
+            )
             await check('訪問の情報の 3 つの項目が、1 列で縦に並ぶ')
           },
         )
