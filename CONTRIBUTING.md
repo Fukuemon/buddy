@@ -221,6 +221,8 @@ pull request では、CI（[ci.yml](.github/workflows/ci.yml)）が次を流す�
 - 生成物のそろい（`pnpm check:generated`）と、テーブル定義書のそろい（`db-docs`）
 - E2E
 
+pull request と issue のタイトルと本文の形は、[issue-pr-body.yml](.github/workflows/issue-pr-body.yml) が確かめる。タイトルの接頭辞、issue とのタイトルの一致、先頭の `Closes` か `Refs`、節の名前と順、帰属表示、`.ai-out/` のパスの残り、本文の textlint を見る。pull request は違反でチェックが失敗し、issue は違反をコメントで知らせる。下書きの段階では、同じスクリプトの関数を `node --test scripts/check-issue-pr-body.test.mjs` のテストで確かめられる。
+
 E2E が CI だけで失敗したときは、ワークフローの実行の画面から artifact の `e2e-test-results` を落とし、中の trace を「E2E のテストを流す」の手順で開く。
 
 ## コミットするとき
