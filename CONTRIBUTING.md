@@ -279,8 +279,28 @@ gitGraph
 - 本文とコメントに、コーディングエージェントが生成したことを示す行（Generated with Claude Code）と、セッションの URL を付けない。コミットでは commitlint が同じ行を拒む。
 - pull request は 1 つの issue に対応させる。大きい issue は、関心事ごとに複数の pull request に分ける。最後にマージする pull request の本文に `Closes #<番号>` を書き、ほかは `Refs #<番号>` を書く。
 - 機能の追加と改修の pull request では、本文の「検証とエビデンス」に、観点ごとのエビデンスの動画を入れる。文書、スキル、設定だけの変更のように、動作を確かめない変更では、この節を消す。対象と格納先は [エビデンス](context/testing/evidence.md)、観点の設計、撮り方、本文への入れ方はスキル attach-evidence にある。
-- レビューの指摘に対応してからマージする。直したコミットと、対応しない指摘の理由を pull request のコメントに残す。差分が変わったら、本文も差分に合わせて直す。
+- レビューの指摘に対応してからマージする。返信と本文の直しは「[マージと片付け](#マージと片付け)」の手順で行う。
   - Codex のボットは、pull request を開いたときにレビューする。もう一度頼むときは、直したコミットを示す返信の末尾に `@codex review` と書く。`@codex review` だけのコメントを作らない。
   - Codex が使用量の上限に達したときは、頼み直さずに、読み取りだけのサブエージェントでレビューする。
   - サブエージェントのレビューの結果は、1 つのコメントにまとめ、指摘ごとに重要度を付ける。重要度は、must（マージの前に直す誤り）、imo（直すとよい提案）、nits（表記の小さな直し）、ask（書き手への問い）の 4 つにする。
-- `develop` へのマージは merge commit にする（`gh pr merge --merge`）。デフォルトのブランチは `develop` なので、`develop` へマージした pull request に `Closes` があれば、issue が閉じる。
+- デフォルトのブランチは `develop` なので、`develop` へマージした pull request に `Closes` があれば、issue が閉じる。マージの手順は「[マージと片付け](#マージと片付け)」にある。
+
+## マージと片付け
+
+作業用のブランチから `develop` への pull request は、次の順にマージする。  
+各段の確かめが済むまで、次の段に進まない。
+
+1. レビューの指摘に、直したコミットか対応しない理由を返信する。
+2. 本文を差分に合わせて直す。
+   - 最後に足したコミットまでが、対応内容、確認したこと、検証とエビデンス（節があるとき）に入っていることを確かめる。
+3. `gh pr checks <pull request 番号> --watch` で、全てのチェックが pass で終わるまで待つ。
+4. `gh pr merge <pull request 番号> --merge` で、merge commit でマージする。
+   - push の直後は、マージできるかの計算が終わらずに失敗することがある。数秒待って流し直す。
+5. `gh pr view <pull request 番号> --json state` で、`MERGED` になったことを確かめる。
+   - マージと、リモートのブランチの削除（`git push origin --delete` など）を、`;` でつないで 1 行で流さない。マージが失敗したままリモートのブランチを消すと、pull request が閉じる。
+6. `gh issue view <issue 番号> --json state` で、`Closes` の issue が閉じたことを確かめる。
+   - `Refs` だけの issue は、最後の pull request をマージするまで開いたままにする。
+7. 作業用の worktree を `wt remove <ブランチ>` で消す。
+   - ブランチが残ったときは、手順 5 で `MERGED` を確かめていれば、`wt remove -D <ブランチ>` で消してよい。
+
+`hotfix/<issue 番号>` の pull request は `main` へマージするので、`Closes` を書いても issue が閉じない。`Closes` は、`develop` へマージする側の pull request に書く。
