@@ -1,1 +1,5 @@
 blank_issues_enabled: false
+contact_links:
+  - name: セキュリティの問題
+    url: https://github.com/Fukuemon/buddy/security/advisories/new
+    about: 脆弱性は issue に書かず、private vulnerability reporting で届ける（SECURITY.md）
