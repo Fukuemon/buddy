@@ -4,19 +4,27 @@ import { exportIssueReason } from './exportIssue'
 
 describe('exportIssueReason', () => {
   it('理由ごとに、次にすることの分かる文を返す', () => {
-    expect(exportIssueReason({ status: 'conflict', error_code: 'precondition_failed' })).toContain(
-      'Google カレンダーで予定が直された',
+    const conflict = { status: 'conflict', acceptable: false } as const
+    const failed = { status: 'failed', acceptable: false } as const
+    expect(
+      exportIssueReason({ ...conflict, error_code: 'precondition_failed', acceptable: true }),
+    ).toContain('どちらの内容に合わせるかを選んでください')
+    expect(exportIssueReason({ ...conflict, error_code: 'precondition_failed' })).toContain(
+      '繰り返しの予定が変わりました',
     )
-    expect(exportIssueReason({ status: 'conflict', error_code: 'not_found' })).toContain(
+    expect(exportIssueReason({ ...conflict, error_code: 'not_found' })).toContain(
       'カレンダーの共有が外れていないか',
     )
-    expect(exportIssueReason({ status: 'failed', error_code: 'forbidden' })).toContain(
+    expect(exportIssueReason({ ...conflict, error_code: 'unappliable' })).toContain(
+      'buddy の予定に読み替えられません',
+    )
+    expect(exportIssueReason({ ...failed, error_code: 'forbidden' })).toContain(
       '「予定の変更」の権限で共有されているか',
     )
-    expect(exportIssueReason({ status: 'failed', error_code: 'rejected' })).toContain(
+    expect(exportIssueReason({ ...failed, error_code: 'rejected' })).toContain(
       '予定の内容を受け付けませんでした',
     )
-    expect(exportIssueReason({ status: 'failed', error_code: 'unavailable' })).toBe(
+    expect(exportIssueReason({ ...failed, error_code: 'unavailable' })).toBe(
       'Google カレンダーに届かず、書き出せませんでした。',
     )
   })

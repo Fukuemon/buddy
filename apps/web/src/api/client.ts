@@ -112,5 +112,10 @@ export interface BuddyApi {
      * 確かめが要る書き出しでなければ、code が export_not_in_review の ApiError を投げる。
      */
     retryExport(facilityId: FacilityId, exportId: CalendarExport['id']): Promise<CalendarExport>
+    /**
+     * 確かめが要る書き出しの予定を、Google カレンダーの今の内容に合わせ、書き出しを終える。
+     * acceptable が false の書き出しでは、code が export_not_acceptable の ApiError を投げる。
+     */
+    acceptExport(facilityId: FacilityId, exportId: CalendarExport['id']): Promise<CalendarExport>
   }
 }

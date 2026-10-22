@@ -13,6 +13,7 @@ const meta = {
     onRetry: fn(),
     onOpenSchedule: fn(),
     onRewrite: fn(),
+    onAccept: fn(),
   },
 } satisfies Meta<typeof CalendarReviewView>
 

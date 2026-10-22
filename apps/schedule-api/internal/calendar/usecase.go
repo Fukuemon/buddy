@@ -36,7 +36,15 @@ const (
 	CodeReviewChanged = "import_preview_changed"
 	// CodeExportNotInReview は、書き直そうとした書き出しが、確かめが要る状態でないことを表す。
 	CodeExportNotInReview = "export_not_in_review"
+	// CodeExportNotAcceptable は、外部のカレンダーの内容を buddy に当てられない書き出しであることを表す。
+	// 繰り返しの予定と、書けなかった（failed）書き出しが当たる。
+	CodeExportNotAcceptable = "export_not_acceptable"
+	// CodeExternalChangeUnappliable は、外部のカレンダーの予定を buddy の予定に読み替えられないことを表す。
+	CodeExternalChangeUnappliable = "external_change_unappliable"
 )
+
+// acceptCallTimeout は、Google の内容に合わせる操作が、予定の行をロックしたまま外部のカレンダーを読む時間の上限である。
+const acceptCallTimeout = 20 * time.Second
 
 // staleRunAfter を過ぎても running の取り込みは、止まった取り込みとみなし、次の取り込みを止めない。
 const staleRunAfter = 10 * time.Minute
@@ -56,9 +64,9 @@ type Types interface {
 	List(ctx context.Context) ([]schedule.Type, error)
 }
 
-// Schedules は、取り込んだ単発の予定を書く。
+// Schedules は、取り込んだ単発の予定を書き、外部のカレンダーの内容を当てる予定を読み書きする。
 type Schedules interface {
-	Create(ctx context.Context, s schedule.Schedule) error
+	ScheduleStore
 }
 
 // Recurring は、取り込んだ繰り返しの予定と除外する日を書く。
@@ -70,7 +78,7 @@ type Recurring interface {
 
 // VisitInfos は、取り込んだ訪問の予定の訪問の情報を書く。実装は visit.Writer である。
 type VisitInfos interface {
-	Create(ctx context.Context, facilityID string, in visit.Input) (string, error)
+	VisitStore
 }
 
 // Deps は、Usecase が使うリポジトリと、ほかの機能のデータを読み書きする小さなインターフェイスである。
@@ -99,11 +107,15 @@ type Usecase struct {
 	tx    tx.Transactor
 	ids   kernel.IDGenerator
 	guard organization.Guard
+	apply applier
 }
 
 // NewUsecase は Usecase を作る。
 func NewUsecase(deps Deps, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) *Usecase {
-	return &Usecase{deps: deps, tx: tx, ids: ids, guard: guard}
+	return &Usecase{deps: deps, tx: tx, ids: ids, guard: guard, apply: applier{
+		calendars: deps.Calendars, exports: deps.Exports, schedules: deps.Schedules, types: deps.Types,
+		patients: deps.Patients, serviceCodes: deps.ServiceCodes, visits: deps.Visits, ids: ids, now: time.Now,
+	}}
 }
 
 // ServiceAccount は、職員がカレンダーを共有する相手のメールアドレスを返す。設定が無ければ ErrNotConfigured を返す。
@@ -544,9 +556,117 @@ func (u *Usecase) RetryExport(ctx context.Context, id string) (Export, error) {
 	}
 	if err := u.deps.Exports.Retry(ctx, id); err != nil {
 		if errors.Is(err, apperr.ErrConflict) {
-			return Export{}, apperr.ConflictCode(CodeExportNotInReview, "この予定は、確かめが要る書き出しではありません")
+			return Export{}, errNotInReview
 		}
 		return Export{}, err
 	}
 	return u.deps.Exports.Get(ctx, id)
 }
+
+// AcceptExport は、確かめが要る書き出し id の予定を、buddy での変更によらず外部のカレンダーの今の内容にし、待ちを終えて返す。
+// 外部のカレンダーで消された予定は、キャンセルする。予定の職員が、外部の予定のカレンダーの職員と違えば、書き出しの待ちを積み直し、
+// 今の職員のカレンダーへ移させる。
+// 待ちが見つからないときは apperr.ErrNotFound を、確かめが要る待ちでないとき、外部の内容を当てられない待ちのとき、
+// 外部の予定を buddy の予定に読み替えられないときは apperr.ErrConflict を返す。外部のカレンダーを読めないときは Preview と同じである。
+func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
+	if err := u.guard(ctx); err != nil {
+		return Export{}, err
+	}
+	e, err := u.deps.Exports.Get(ctx, id)
+	if err != nil {
+		return Export{}, err
+	}
+	if !e.InReview() {
+		return Export{}, errNotInReview
+	}
+	if !e.Acceptable() {
+		return Export{}, errNotAcceptable
+	}
+	// buddy でキャンセルした予定は、外部の内容に戻せない。
+	if d, err := u.deps.Schedules.Get(ctx, e.ScheduleID); err != nil {
+		return Export{}, err
+	} else if d.Cancel != nil {
+		return Export{}, errNotAcceptable
+	}
+	if u.deps.Source == nil {
+		return Export{}, ErrNotConfigured
+	}
+	l, err := u.deps.Calendars.LinkBySchedule(ctx, e.ScheduleID)
+	if errors.Is(err, apperr.ErrNotFound) {
+		return Export{}, errNotAcceptable
+	}
+	if err != nil {
+		return Export{}, err
+	}
+	c, err := u.deps.Calendars.Get(ctx, l.ExternalCalendarID)
+	if err != nil {
+		return Export{}, err
+	}
+	err = u.tx.WithinTx(ctx, func(ctx context.Context) error {
+		// 予定の行をロックしてから Google の予定を読む。同期の処理も同じ行をロックして Google の変更を当てるので、
+		// 読んだ後に Google で変わった予定は、同期が後で比べて当てるか確かめが要る待ちにする。
+		locked, err := u.deps.Schedules.GetForUpdate(ctx, e.ScheduleID)
+		if err != nil {
+			return err
+		}
+		cur, err := u.deps.Exports.Get(ctx, id)
+		if err != nil {
+			return err
+		}
+		switch {
+		case !cur.InReview():
+			return errNotInReview
+		case !cur.Acceptable() || locked.Cancel != nil:
+			return errNotAcceptable
+		}
+		callCtx, cancel := context.WithTimeout(ctx, acceptCallTimeout)
+		defer cancel()
+		ev, err := u.externalEvent(callCtx, c, l)
+		if err != nil {
+			return err
+		}
+		// ロックを取らない RetryExport が、確かめた後に書き直す待ちにしたときに当たる。
+		if err := u.deps.Exports.Resolve(ctx, id, cur.Revision); errors.Is(err, apperr.ErrConflict) {
+			return errNotInReview
+		} else if err != nil {
+			return err
+		}
+		err = u.apply.acceptSchedule(ctx, c, l, ev)
+		if errors.Is(err, errUnappliable) {
+			return apperr.ConflictCode(CodeExternalChangeUnappliable,
+				"Google カレンダーの予定を、buddy の予定に読み替えられません。buddy の内容で書き直してください")
+		}
+		if err != nil {
+			return err
+		}
+		// 職員を替えた予定は、今の職員のカレンダーへ移すために書き出し直す。キャンセルした予定は移さない。
+		d, err := u.deps.Schedules.Get(ctx, e.ScheduleID)
+		if err != nil || d.StaffID == c.StaffID || d.Cancel != nil {
+			return err
+		}
+		return u.deps.Exports.Enqueue(ctx, u.ids.NewID(), e.Target)
+	})
+	if err != nil {
+		return Export{}, err
+	}
+	return u.deps.Exports.Get(ctx, id)
+}
+
+// externalEvent は、予定の対応 l の外部の予定を読む。予定が見つからず、カレンダーは読めるときは、予定が消されたとみなし、
+// 取り消した予定を返す。Google は、消した予定に 404 を返すことがあるためである。
+func (u *Usecase) externalEvent(ctx context.Context, c ExternalCalendar, l Link) (Event, error) {
+	ev, err := u.deps.Source.Event(ctx, c.CalendarID, l.ExternalEventID)
+	if !errors.Is(err, ErrEventNotFound) {
+		return ev, err
+	}
+	if cerr := u.deps.Source.Check(ctx, c.CalendarID); cerr != nil {
+		return Event{}, err
+	}
+	return Event{ID: l.ExternalEventID, Status: StatusCancelled, ETag: l.ETag}, nil
+}
+
+var (
+	errNotInReview   = apperr.ConflictCode(CodeExportNotInReview, "この予定は、確かめが要る書き出しではありません")
+	errNotAcceptable = apperr.ConflictCode(CodeExportNotAcceptable,
+		"この予定は、Google カレンダーの内容を buddy に当てられません。buddy の内容で書き直してください")
+)

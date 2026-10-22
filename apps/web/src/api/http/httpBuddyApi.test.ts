@@ -327,4 +327,20 @@ describe('createHttpBuddyApi', () => {
       /@example\.iam/,
     )
   })
+
+  it('確かめが要る書き出しを Google の内容で解き、合わせられない書き出しは code で投げる', async () => {
+    const authorized = authorizedApi()
+    await expect(
+      authorized.calendars.acceptExport('facility-1', 'export-1'),
+    ).resolves.toMatchObject({
+      id: 'export-1',
+      status: 'succeeded',
+    })
+    await expect(authorized.calendars.acceptExport('facility-1', 'export-2')).rejects.toMatchObject(
+      {
+        status: 409,
+        code: 'export_not_acceptable',
+      },
+    )
+  })
 })

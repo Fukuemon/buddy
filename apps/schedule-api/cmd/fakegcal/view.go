@@ -34,14 +34,16 @@ th, td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; font-siz
 </head>
 <body>
 <h1>偽物の Google カレンダー</h1>
-<p class="note">手元の compose で Google Calendar API の代わりに動く偽物の画面である。「Google で 1 時間遅らせる」は、職員が Google カレンダーで予定を直したときと同じく etag を変える。</p>
+<p class="note">手元の compose で Google Calendar API の代わりに動く偽物の画面である。「Google で 1 時間遅らせる」と「Google で消す」は、職員が Google カレンダーで予定を直すか消したときと同じく etag を変える。</p>
+<form method="post" action="/view/hold"><input type="hidden" name="calendar" value="{{.Calendar}}"><input type="hidden" name="hold" value="{{if .Hold}}false{{else}}true{{end}}"><button data-testid="fake-gcal-hold">{{if .Hold}}変更を buddy に渡す{{else}}変更を buddy に渡さない{{end}}</button></form>
 <nav>{{range .Calendars}}<a href="?calendar={{.}}"{{if eq . $.Calendar}} aria-current="page"{{end}} data-testid="fake-gcal-calendar-{{.}}">{{.}}</a>{{end}}</nav>
 <table data-testid="fake-gcal-events">
 <thead><tr><th>開始</th><th>終了</th><th>題名</th><th>繰り返し</th><th></th></tr></thead>
 <tbody>
 {{range .Events}}<tr data-testid="fake-gcal-event-{{.ID}}"{{if .Cancelled}} class="cancelled"{{end}}>
 <td>{{.Start}}</td><td>{{.End}}</td><td data-testid="fake-gcal-summary-{{.ID}}">{{.Summary}}</td><td>{{.Recurrence}}</td>
-<td>{{if not .Cancelled}}<form method="post" action="/view/shift"><input type="hidden" name="calendar" value="{{$.Calendar}}"><input type="hidden" name="event" value="{{.ID}}"><button data-testid="fake-gcal-shift-{{.ID}}">Google で 1 時間遅らせる</button></form>{{end}}</td>
+<td>{{if not .Cancelled}}<form method="post" action="/view/shift"><input type="hidden" name="calendar" value="{{$.Calendar}}"><input type="hidden" name="event" value="{{.ID}}"><button data-testid="fake-gcal-shift-{{.ID}}">Google で 1 時間遅らせる</button></form>
+<form method="post" action="/view/delete"><input type="hidden" name="calendar" value="{{$.Calendar}}"><input type="hidden" name="event" value="{{.ID}}"><button data-testid="fake-gcal-delete-{{.ID}}">Google で消す</button></form>{{end}}</td>
 </tr>
 {{else}}<tr><td colspan="5">予定はありません</td></tr>
 {{end}}</tbody>
@@ -104,7 +106,7 @@ func viewHandler(s *gcaltest.Server) http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_ = viewPage.Execute(w, map[string]any{
-			"Calendars": ids, "Calendar": cal, "Events": rows, "Refresh": r.URL.Query().Get("refresh"),
+			"Calendars": ids, "Calendar": cal, "Events": rows, "Refresh": r.URL.Query().Get("refresh"), "Hold": s.Holding(),
 		})
 	}
 }
@@ -138,5 +140,25 @@ func shiftHandler(s *gcaltest.Server) http.HandlerFunc {
 			return
 		}
 		http.Redirect(w, r, "/view?"+url.Values{"calendar": {cal}}.Encode(), http.StatusSeeOther)
+	}
+}
+
+// deleteHandler は、予定を消す。職員が Google カレンダーで予定を消したときの代わりである。
+func deleteHandler(s *gcaltest.Server) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		cal := r.FormValue("calendar")
+		if !s.Delete(cal, r.FormValue("event")) {
+			http.NotFound(w, r)
+			return
+		}
+		http.Redirect(w, r, "/view?"+url.Values{"calendar": {cal}}.Encode(), http.StatusSeeOther)
+	}
+}
+
+// holdHandler は、Google の変更を増分の取得で返すかを変える。予定の API が Google の変更を読む前に、buddy の変更を書き出させる試験に使う。
+func holdHandler(s *gcaltest.Server) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		s.SetHoldChanges(r.FormValue("hold") == "true")
+		http.Redirect(w, r, "/view?"+url.Values{"calendar": {r.FormValue("calendar")}}.Encode(), http.StatusSeeOther)
 	}
 }

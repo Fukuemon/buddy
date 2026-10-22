@@ -18,6 +18,7 @@ type CalendarUsecase interface {
 	Import(ctx context.Context, id string, rng calendar.Range, decisions []calendar.Decision) (calendar.ImportResult, error)
 	ListExportIssues(ctx context.Context, facilityID string) ([]calendar.ExportIssue, error)
 	RetryExport(ctx context.Context, id string) (calendar.Export, error)
+	AcceptExport(ctx context.Context, id string) (calendar.Export, error)
 }
 
 func toImportRun(r calendar.ImportRun) openapi.ImportRun {
@@ -243,6 +244,7 @@ func toCalendarExportIssue(i calendar.ExportIssue) openapi.CalendarExportIssue {
 		Date:                i.Date.String(),
 		StartTime:           i.StartTime.String(),
 		EndTime:             i.EndTime.String(),
+		Acceptable:          i.Acceptable(),
 	}
 	if e.ErrorCode != nil {
 		c := openapi.CalendarExportIssueErrorCode(*e.ErrorCode)
@@ -265,4 +267,12 @@ func (s server) CreateCalendarExportRetry(ctx context.Context, req openapi.Creat
 		return nil, err
 	}
 	return openapi.CreateCalendarExportRetry202JSONResponse(toCalendarExport(e)), nil
+}
+
+func (s server) CreateCalendarExportAcceptance(ctx context.Context, req openapi.CreateCalendarExportAcceptanceRequestObject) (openapi.CreateCalendarExportAcceptanceResponseObject, error) {
+	e, err := s.u.Calendars.AcceptExport(ctx, req.CalendarExportId)
+	if err != nil {
+		return nil, err
+	}
+	return openapi.CreateCalendarExportAcceptance200JSONResponse(toCalendarExport(e)), nil
 }

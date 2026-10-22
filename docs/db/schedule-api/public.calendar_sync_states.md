@@ -6,16 +6,18 @@
 
 ## Columns
 
-| Name                 | Type                     | Default | Nullable | Children | Parents                                                   | Comment                                                 |
-| -------------------- | ------------------------ | ------- | -------- | -------- | --------------------------------------------------------- | ------------------------------------------------------- |
-| external_calendar_id | text                     |         | false    |          | [public.external_calendars](public.external_calendars.md) |                                                         |
-| facility_id          | text                     |         | false    |          | [public.external_calendars](public.external_calendars.md) |                                                         |
-| sync_token           | text                     |         | true     |          |                                                           | 次の増分の取得に使うトークン。全件を取り直すときは NULL |
-| last_status          | text                     |         | false    |          |                                                           | never、succeeded、failed                                |
-| last_error           | text                     |         | true     |          |                                                           | 最後の失敗の理由。外部の予定の題名を含めない            |
-| last_synced_at       | timestamp with time zone |         | true     |          |                                                           |                                                         |
-| created_at           | timestamp with time zone | now()   | false    |          |                                                           |                                                         |
-| updated_at           | timestamp with time zone | now()   | false    |          |                                                           |                                                         |
+| Name                 | Type                     | Default | Nullable | Children | Parents                                                   | Comment                                                                                                                                        |
+| -------------------- | ------------------------ | ------- | -------- | -------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| external_calendar_id | text                     |         | false    |          | [public.external_calendars](public.external_calendars.md) |                                                                                                                                                |
+| facility_id          | text                     |         | false    |          | [public.external_calendars](public.external_calendars.md) |                                                                                                                                                |
+| sync_token           | text                     |         | true     |          |                                                           | 次の増分の取得に使うトークン。全件を取り直すときは NULL                                                                                        |
+| last_status          | text                     |         | false    |          |                                                           | never、succeeded、failed                                                                                                                       |
+| last_error           | text                     |         | true     |          |                                                           | 最後の失敗の理由。unreadable（共有が無い）、unavailable（届かない）、apply（予定を当てられない）。外部の予定の題名とカレンダーの ID を含めない |
+| last_synced_at       | timestamp with time zone |         | true     |          |                                                           |                                                                                                                                                |
+| created_at           | timestamp with time zone | now()   | false    |          |                                                           |                                                                                                                                                |
+| updated_at           | timestamp with time zone | now()   | false    |          |                                                           |                                                                                                                                                |
+| next_sync_at         | timestamp with time zone | now()   | false    |          |                                                           | この時刻より後に、外部のカレンダーの変わった予定を読む                                                                                         |
+| locked_until         | timestamp with time zone |         | true     |          |                                                           | 読んでいる処理が持つ期限。過ぎたら、ほかの処理が読んでよい                                                                                     |
 
 ## Viewpoints
 
@@ -30,8 +32,10 @@
 | calendar_sync_states_created_at_not_null           | n           | NOT NULL created_at                                                                                              |
 | calendar_sync_states_external_calendar_id_not_null | n           | NOT NULL external_calendar_id                                                                                    |
 | calendar_sync_states_facility_id_not_null          | n           | NOT NULL facility_id                                                                                             |
+| calendar_sync_states_last_error_check              | CHECK       | CHECK ((last_error = ANY (ARRAY['unreadable'::text, 'unavailable'::text, 'apply'::text])))                       |
 | calendar_sync_states_last_status_check             | CHECK       | CHECK ((last_status = ANY (ARRAY['never'::text, 'succeeded'::text, 'failed'::text])))                            |
 | calendar_sync_states_last_status_not_null          | n           | NOT NULL last_status                                                                                             |
+| calendar_sync_states_next_sync_at_not_null         | n           | NOT NULL next_sync_at                                                                                            |
 | calendar_sync_states_updated_at_not_null           | n           | NOT NULL updated_at                                                                                              |
 | calendar_sync_states_calendar_fkey                 | FOREIGN KEY | FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE |
 | calendar_sync_states_pkey                          | PRIMARY KEY | PRIMARY KEY (external_calendar_id)                                                                               |
@@ -42,6 +46,7 @@
 | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
 | calendar_sync_states_pkey                  | CREATE UNIQUE INDEX calendar_sync_states_pkey ON public.calendar_sync_states USING btree (external_calendar_id)                        |
 | calendar_sync_states_facility_calendar_idx | CREATE INDEX calendar_sync_states_facility_calendar_idx ON public.calendar_sync_states USING btree (facility_id, external_calendar_id) |
+| calendar_sync_states_due_idx               | CREATE INDEX calendar_sync_states_due_idx ON public.calendar_sync_states USING btree (next_sync_at, external_calendar_id)              |
 
 ## Triggers
 
@@ -65,6 +70,8 @@ erDiagram
   timestamp_with_time_zone last_synced_at
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  timestamp_with_time_zone next_sync_at
+  timestamp_with_time_zone locked_until
 }
 "public.external_calendars" {
   text id

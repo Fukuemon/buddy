@@ -199,6 +199,7 @@ export const failingBuddyApi = (status = 500): BuddyApi => {
       import: fail,
       exportIssues: fail,
       retryExport: fail,
+      acceptExport: fail,
     },
   }
 }
@@ -221,6 +222,7 @@ export const pendingBuddyApi = (): BuddyApi => {
       import: wait,
       exportIssues: wait,
       retryExport: wait,
+      acceptExport: wait,
     },
   }
 }
