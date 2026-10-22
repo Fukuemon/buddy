@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 const COPIED_MS = 2000
 
 export type CalendarShareGuideProps = {
-  /** buddy のサービスアカウントのメールアドレス。 */
+  /** この事業所の buddy のサービスアカウントのメールアドレス。 */
   serviceAccount: string
   /** クリップボードに写す。既定はブラウザの Clipboard API で、拒まれると reject する。 */
   copy?: (text: string) => Promise<void>
@@ -63,7 +63,9 @@ export const CalendarShareGuide = ({
         </li>
       </ol>
       <div className="flex flex-col gap-1.5">
-        <span className="text-caption text-text-secondary">buddy のサービスアカウント</span>
+        <span className="text-caption text-text-secondary">
+          この事業所の buddy のサービスアカウント
+        </span>
         <div className="flex flex-wrap items-center gap-3">
           <code
             className="rounded-8 border border-border bg-surface px-2.5 py-1.5 text-body-dense break-all"
