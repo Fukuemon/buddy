@@ -52,7 +52,7 @@ describe('toReceiptCsv', () => {
   })
 })
 
-describe('reportRowCells の偽物の結果に無い入力', () => {
+describe('reportRowCells のフェイクの結果に無い入力', () => {
   const mismatch = fakeReceiptReport.rows[0]
   const checks = mismatch.checks!
 

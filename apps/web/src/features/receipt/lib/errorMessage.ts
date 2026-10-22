@@ -16,7 +16,7 @@ export const checkErrorMessage = (error: unknown) => {
     case 413:
       return TOO_LARGE_MESSAGE
     case 422:
-      // 行ごとの誤りは一覧で出す。列が無いような、ファイル全体の誤りは API の文で伝える
+      // 行ごとのエラーは一覧で出す。列が無いような、ファイル全体のエラーは API の文で伝える
       return error.rowErrors.length > 0
         ? '入力の CSV に誤りがあります。次の行を直して、もう一度照合してください。'
         : `入力の CSV に誤りがあります。${error.message}`

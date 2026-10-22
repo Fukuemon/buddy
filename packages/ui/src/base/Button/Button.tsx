@@ -52,7 +52,7 @@ export type ButtonProps = ComponentPropsWithoutRef<'button'> &
   }
 
 /**
- * 操作のボタン。type の既定は button である。
+ * 操作のボタン。type のデフォルトは button である。
  * disabled は `aria-disabled` で表し、フォーカスを受けたまま、クリックと送信を止める。
  */
 export const Button = ({

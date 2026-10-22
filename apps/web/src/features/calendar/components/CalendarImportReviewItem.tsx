@@ -29,7 +29,7 @@ const fieldClassName =
   'min-h-11 w-full rounded-8 bg-surface px-3 text-body ring-1 ring-border-field ring-inset focus-visible:focus-ring disabled:bg-surface-disabled disabled:text-text-disabled'
 
 /**
- * 題名から利用者を 1 人に決められなかった予定 1 件と、その取り込み方の選択。
+ * タイトルから利用者を 1 人に決められなかった予定 1 件と、その取り込み方の選択。
  * 「利用者を選ぶ」を選ぶと、利用者の欄を出す。同じ名前の利用者は、担当の職員の名前を添えて先に並べる。
  */
 export const CalendarImportReviewItem = ({
@@ -62,7 +62,7 @@ export const CalendarImportReviewItem = ({
       <div className="flex flex-col gap-0.5">
         <strong className="text-label">{dateTime}</strong>
         <span className="text-body">
-          題名から読んだ利用者: {item.client_name}（{item.service}）
+          タイトルから読んだ利用者: {item.client_name}（{item.service}）
         </span>
         <span className="text-label">{reasonLabel(item)}</span>
         {item.recurrence !== null && (

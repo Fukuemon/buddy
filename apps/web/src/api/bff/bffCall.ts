@@ -96,12 +96,12 @@ export const parseBffArgs = (
     : { ok: false, message: z.prettifyError(result.error) }
 }
 
-/** BFF の応答。ApiError は class のままでは server function を越えられないので、値にして返す。code は API の Error の code である。 */
+/** BFF のレスポンス。ApiError は class のままでは server function を越えられないので、値にして返す。code は API の Error の code である。 */
 export type BffResult =
   | { ok: true; data: BffData }
   | { ok: false; status: number; message: string; code?: string }
 
-/** server function の入力を BffCall として読む。知らない操作か形の誤りなら Error を投げる。 */
+/** server function の入力を BffCall として読む。知らない操作か、形の違う入力なら Error を投げる。 */
 export const parseBffCall = (input: unknown): BffCall => {
   if (typeof input !== 'object' || input === null) throw new Error('BFF の呼び出しの形が正しくない')
   const { op, args } = input as Record<string, unknown>

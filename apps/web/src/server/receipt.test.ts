@@ -27,7 +27,7 @@ describe('parseReceiptForm', () => {
     expect(parseReceiptForm(form({ visits: csv, schedules: csv }))).toBeInstanceOf(FormData)
   })
 
-  it('形の誤りを拒む', () => {
+  it('形の違う入力を拒む', () => {
     expect(() => parseReceiptForm({ visits: 'x' })).toThrow('FormData')
     expect(() => parseReceiptForm(form({ month: '2024-04' }))).toThrow('visits')
     expect(() => parseReceiptForm(form({ visits: csv }))).toThrow('一方')
@@ -78,7 +78,7 @@ describe('checkReceipt', () => {
     expect(result).toEqual({ ok: true, report: fakeReceiptReport })
   })
 
-  it('行の誤りを rowErrors で返す', async () => {
+  it('行のエラーを rowErrors で返す', async () => {
     const errors = [{ source: 'visits' as const, line: 2, message: 'x' }]
     server.use(
       receiptHttp.post('/v1/checks', ({ response }) =>

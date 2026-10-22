@@ -3,7 +3,7 @@ import type { ReceiptReport } from '../types'
 
 const range = (min: number, max: number) => ({ min, max })
 
-/** 偽物の照合の API が返す結果。4 つの区分と、記号の付く判定を 1 行ずつ持つ。 */
+/** フェイクの照合の API が返す結果。4 つの区分と、記号の付く判定を 1 行ずつ持つ。 */
 export const fakeReceiptReport: ReceiptReport = {
   summary: { mismatch: 1, schedule_only: 1, visit_only: 1, match: 1 },
   rows: [
@@ -90,12 +90,12 @@ export const fakeReceiptReport: ReceiptReport = {
       calendar_id: 'calendar-demo',
       event_id: 'event-1',
       start: '2024-04-05T10:00:00+09:00',
-      message: '予定の題名から利用者名とサービス内容を読めない',
+      message: '予定のタイトルから利用者名とサービス内容を読めない',
     },
   ],
 }
 
-/** 偽物の照合の API を作る。入力によらず fakeReceiptReport を返す。 */
+/** フェイクの照合の API を作る。入力によらず fakeReceiptReport を返す。 */
 export const createFakeReceiptApi = (): ReceiptApi => ({
   check: async () => structuredClone(fakeReceiptReport),
 })

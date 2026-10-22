@@ -5,7 +5,7 @@ import { fakeReceiptReport } from '../fake/fakeReceiptApi'
 import { createBffReceiptApi } from './bffReceiptApi'
 
 describe('createBffReceiptApi', () => {
-  it('入力を FormData にして渡し、失敗を status と行の誤りつきの ApiError にする', async () => {
+  it('入力を FormData にして渡し、失敗を status と行のエラーつきの ApiError にする', async () => {
     const forms: FormData[] = []
     const rowErrors = [{ source: 'visits' as const, line: 2, message: 'x' }]
     let ok = true

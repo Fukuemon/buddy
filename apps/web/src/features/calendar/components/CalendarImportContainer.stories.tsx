@@ -18,7 +18,7 @@ const route = (appRouter: Partial<AppRouterParameters>) => ({
   appRouter: { route: '/schedule_/import', url: '/schedule/import', ...appRouter },
 })
 
-/** カレンダーの操作の一部だけを差し替えた偽物の API を作る。 */
+/** カレンダーの操作の一部だけを差し替えたフェイクの API を作る。 */
 const calendarsApi = (calendars: Partial<BuddyApi['calendars']>): BuddyApi => {
   const base = createFakeBuddyApi()
   return { ...base, calendars: { ...base.calendars, ...calendars } }
@@ -108,7 +108,7 @@ export const SubmitError: Story = {
   parameters: route({
     api: calendarsApi({
       import: async () => {
-        throw new ApiError(409, '下見の後に予定が変わりました', [], 'import_preview_changed')
+        throw new ApiError(409, 'プレビューの後に予定が変わりました', [], 'import_preview_changed')
       },
     }),
   }),
@@ -118,7 +118,7 @@ export const SubmitError: Story = {
   },
 }
 
-/** 取り込んだ期間を、もう一度下見した。 */
+/** 取り込んだ期間を、もう一度プレビューした。 */
 export const AllImported: Story = {
   play: async ({ canvasElement }) => {
     const canvas = await resolveAndSubmit(canvasElement)

@@ -26,7 +26,7 @@ import {
 
 /** createFakeBuddyApi の設定。 */
 export type FakeBuddyApiOptions = {
-  /** 予定の架空のデータを散らす基準の日。既定は呼んだ時の日付。 */
+  /** 予定のダミーデータを散らす基準の日。デフォルトは呼んだ時の日付。 */
   baseDate?: Date
 }
 
@@ -36,14 +36,14 @@ const assertFacility = (facilityId: FacilityId) => {
   }
 }
 
-/** 偽物の API が読めるとみなすカレンダーの ID の末尾。ほかのカレンダーは読めない（calendar_unreadable）。 */
+/** フェイクの API が読めるとみなすカレンダーの ID の末尾。ほかのカレンダーは読めない（calendar_unreadable）。 */
 export const FAKE_READABLE_CALENDAR_SUFFIX = '@example.com'
 
 /**
  * メモリの上で動く BuddyApi を作る。データは呼び出しごとに独立し、ページを読み直すと初期の状態に戻る。
  *
  * FAKE_FACILITY_ID 以外の事業所を指すと、status が 403 の ApiError を投げる。
- * カレンダーの取り込みは、同じカレンダーの同じ期間を 2 回目に下見すると、全て取り込み済みの結果を返す。
+ * カレンダーの取り込みは、同じカレンダーの同じ期間を 2 回目にプレビューすると、全て取り込み済みの結果を返す。
  */
 export const createFakeBuddyApi = ({
   baseDate = new Date(),
@@ -208,7 +208,7 @@ export const createFakeBuddyApi = ({
         ) {
           throw conflict(
             'import_preview_changed',
-            '下見の後に、外部のカレンダーの確かめが要る予定が変わりました。もう一度下見してください',
+            'プレビューの後に、外部のカレンダーの確かめが要る予定が変わりました。もう一度プレビューしてください',
           )
         }
         const result = createMockImportResult(externalCalendarId, preview, decisions)

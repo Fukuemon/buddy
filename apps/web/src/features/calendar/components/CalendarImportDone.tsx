@@ -7,7 +7,7 @@ import { CalendarImportCounts } from './CalendarImportCounts'
 
 export type CalendarImportDoneProps = {
   result: ImportResult
-  /** 確定した下見の結果。補足の文の内訳に使う。 */
+  /** 確定したプレビューの結果。補足の文の内訳に使う。 */
   preview: ImportPreview
   decisions: readonly ImportDecision[]
   onOpenCalendar: () => void

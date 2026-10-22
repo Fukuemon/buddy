@@ -20,7 +20,7 @@ import type {
 
 /**
  * API が失敗の状態を返したときに投げる。code は API の Error の code で、分からなければ undefined である。
- * rowErrors は、照合の入力の CSV の行ごとの誤り（status が 422）である。
+ * rowErrors は、照合の入力の CSV の行ごとのエラー（status が 422）である。
  */
 export class ApiError extends Error {
   readonly status: number
@@ -43,7 +43,7 @@ export type ReceiptCheckInput =
 
 /** 照合の API の操作。 */
 export interface ReceiptApi {
-  /** 実訪問の CSV と予定を照合する。失敗は ApiError で投げ、入力の CSV の行の誤りは status が 422 になる。 */
+  /** 実訪問の CSV と予定を照合する。失敗は ApiError で投げ、入力の CSV の行のエラーは status が 422 になる。 */
   check(input: ReceiptCheckInput): Promise<ReceiptReport>
 }
 

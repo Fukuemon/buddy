@@ -1,6 +1,6 @@
 /*
  * 意味のトークンを Tailwind v4 のユーティリティにする。
- * Tailwind の既定の色、文字の大きさ、角丸、影、ブレークポイントを消し、ここに書いた名前だけを使えるようにする。
+ * Tailwind のデフォルトの色、文字の大きさ、角丸、影、ブレークポイントを消し、ここに書いた名前だけを使えるようにする。
  * 使う側の CSS は `@import 'tailwindcss';` の後にこのファイルを読み込む。
  */
 
@@ -59,7 +59,7 @@
   --text-label--line-height: var(--line-height-100);
   --text-label--letter-spacing: 0.02em;
   --text-label--font-weight: var(--font-weight-700);
-  /* heading-sm (Std-18B-160): 節の見出し、ダイアログの題 */
+  /* heading-sm (Std-18B-160): 節の見出し、ダイアログのタイトル */
   --text-heading-sm: var(--font-size-18);
   --text-heading-sm--line-height: var(--line-height-160);
   --text-heading-sm--letter-spacing: 0.02em;

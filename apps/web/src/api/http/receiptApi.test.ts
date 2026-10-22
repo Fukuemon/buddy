@@ -43,7 +43,7 @@ describe('createReceiptApi', () => {
     })
   })
 
-  it('入力の CSV の行の誤りを rowErrors で渡す', async () => {
+  it('入力の CSV の行のエラーを rowErrors で渡す', async () => {
     const errors = [
       { source: 'visits' as const, line: 3, column: '訪問日', message: '日付を読めない' },
     ]

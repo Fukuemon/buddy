@@ -4,7 +4,7 @@ import { SiteHeaderContainer } from '#/components/site/SiteHeaderContainer'
 import { ReceiptCheckFormContainer } from '#/features/receipt/components/ReceiptCheckFormContainer'
 
 export const Route = createFileRoute('/receipt/')({
-  // 既定の対象の月を、職員の端末の日付で決めるため、サーバーで描画しない
+  // デフォルトの対象の月を、職員のデバイスの日付で決めるため、サーバーで描画しない
   ssr: false,
   head: () => ({ meta: [{ title: '照合 | buddy' }] }),
   component: ReceiptPage,

@@ -41,7 +41,7 @@ describe('ReceiptCheckForm', () => {
     expect(onVisitsChange).toHaveBeenCalledWith(file)
   })
 
-  it('入力の CSV の誤りを、ファイルと行と列で並べる', () => {
+  it('入力の CSV のエラーを、ファイルと行と列で並べる', () => {
     render(<RowErrors />)
     const alert = screen.getByRole('alert')
     expect(alert.textContent).toContain(

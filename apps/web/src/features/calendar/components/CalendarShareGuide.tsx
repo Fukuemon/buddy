@@ -6,7 +6,7 @@ const COPIED_MS = 2000
 export type CalendarShareGuideProps = {
   /** buddy のサービスアカウントのメールアドレス。 */
   serviceAccount: string
-  /** クリップボードに写す。既定はブラウザの Clipboard API で、拒まれると reject する。 */
+  /** クリップボードにコピーする。デフォルトはブラウザの Clipboard API で、拒まれると reject する。 */
   copy?: (text: string) => Promise<void>
 }
 
@@ -14,7 +14,7 @@ const writeClipboard = (text: string) => navigator.clipboard.writeText(text)
 
 /**
  * 職員がカレンダーをサービスアカウントに共有する手順と、サービスアカウントのメールアドレス。
- * コピーを押すとメールアドレスを写し、2 秒だけボタンの文字を変える。写せなければ、メールアドレスの文字を選ぶ。
+ * コピーを押すとメールアドレスをコピーし、2 秒だけボタンの文字を変える。コピーできなければ、メールアドレスの文字を選ぶ。
  */
 export const CalendarShareGuide = ({
   serviceAccount,

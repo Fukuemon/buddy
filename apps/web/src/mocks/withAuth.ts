@@ -6,7 +6,7 @@ const unauthenticated = () =>
     { status: 401 },
   )
 
-/** Authorization の Bearer が無い要求に、2 つの API と同じく 401 を返す resolver で包む。 */
+/** Authorization の Bearer が無いリクエストに、2 つの API と同じく 401 を返す resolver で包む。 */
 export const withAuth =
   <
     Args extends {

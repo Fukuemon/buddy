@@ -8,7 +8,7 @@ import { loadServerConfig, type ServerConfig } from './config'
 import { createOidcClient, type OidcClient } from './oidc'
 import { createValkeySessionStore, type SessionStore } from './sessionStore'
 
-// 開発サーバーを msw の mode で起動したときだけ、.env.msw を読み、2 つの API を偽物に替える。
+// 開発サーバーを msw の mode で起動したときだけ、.env.msw を読み、2 つの API をフェイクに替える。
 // vp build は NODE_ENV を production にするので import.meta.env.DEV が false になり、この分岐は msw ごとビルドから消える。
 // 開発サーバーはこのファイルを編集のたびに評価し直すので、横取りを重ねないよう、プロセスで 1 度だけ始める
 const mockStarted = Symbol.for('buddy.apiMocksStarted')
@@ -25,7 +25,7 @@ type Runtime = { config: ServerConfig; store: SessionStore }
 let runtime: Runtime | undefined
 let oidc: Promise<OidcClient> | undefined
 
-/** プロセスで 1 つの設定とセッションの置き場を返す。設定が欠けていれば Error を投げる。 */
+/** プロセスで 1 つの設定とセッションの保存先を返す。設定が欠けていれば Error を投げる。 */
 export const getRuntime = (): Runtime => {
   if (runtime === undefined) {
     const config = loadServerConfig(process.env)
@@ -37,7 +37,7 @@ export const getRuntime = (): Runtime => {
 const getOidc = (config: ServerConfig) => {
   if (oidc === undefined) {
     oidc = createOidcClient(config.oidc).catch((error: unknown) => {
-      // 起動の直後にブローカーへ届かなくても、次の要求で discovery を試し直す
+      // 起動の直後にブローカーへ届かなくても、次のリクエストで discovery を試し直す
       oidc = undefined
       throw error
     })

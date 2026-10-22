@@ -1,17 +1,17 @@
 import type { ReceiptReport, ReceiptRowError } from '../types'
 
 /**
- * 照合の入力のファイルの合計の上限のバイト数。照合の API の MAX_UPLOAD_BYTES の既定（10 MiB）は multipart の本文の全体に
+ * 照合の入力のファイルの合計の上限のバイト数。照合の API の MAX_UPLOAD_BYTES のデフォルト（10 MiB）は multipart の本文の全体に
  * 掛かるので、境界と見出しの分の 64 KiB を引く。
  */
 export const MAX_RECEIPT_UPLOAD_BYTES = 10 * 1024 * 1024 - 64 * 1024
 
-/** server function の本文の上限のバイト数。本文を読む前に、src/start.ts がこれより大きい要求を拒む。 */
+/** server function の本文の上限のバイト数。本文を読む前に、src/start.ts がこれより大きいリクエストを拒む。 */
 export const MAX_SERVER_FN_BODY_BYTES = 10 * 1024 * 1024
 
 const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/
 
-/** BFF の照合の応答。ApiError は class のままでは server function を越えられないので、値にして返す。 */
+/** BFF の照合のレスポンス。ApiError は class のままでは server function を越えられないので、値にして返す。 */
 export type ReceiptCheckResult =
   | { ok: true; report: ReceiptReport }
   | { ok: false; status: number; message: string; rowErrors: ReceiptRowError[] }

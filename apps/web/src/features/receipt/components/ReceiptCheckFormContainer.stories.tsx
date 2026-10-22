@@ -22,7 +22,7 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 
-/** 照合の API が入力の CSV の誤りを返す。実績の CSV を選んで照合し、行ごとの誤りを出す。 */
+/** 照合の API が入力の CSV のエラーを返す。実績の CSV を選んで照合し、行ごとのエラーを出す。 */
 export const RowErrors: Story = {
   parameters: route({
     receiptApi: {

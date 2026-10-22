@@ -17,11 +17,11 @@ export type CalendarLinkViewProps = {
   onLink: (staffId: Staff['id']) => void
   onUnlink: (staffId: Staff['id']) => void
   onImport: (staffId: Staff['id']) => void
-  /** クリップボードに写す。story とテストで差し替える。 */
+  /** クリップボードにコピーする。story とテストで差し替える。 */
   copy?: (text: string) => Promise<void>
 }
 
-/** カレンダーの連携の画面の本文。題と説明の文の下に、共有の手順と職員の一覧を並べる。 */
+/** カレンダーの連携の画面の本文。タイトルと説明の文の下に、共有の手順と職員の一覧を並べる。 */
 export const CalendarLinkView = ({
   state,
   onRetry,

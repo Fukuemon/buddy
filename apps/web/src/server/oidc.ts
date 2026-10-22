@@ -10,7 +10,7 @@ export class GrantRejectedError extends Error {
   }
 }
 
-/** トークンのエンドポイントの応答のうち、BFF が使う値。 */
+/** トークンのエンドポイントのレスポンスのうち、BFF が使う値。 */
 export type Tokens = {
   accessToken: string
   refreshToken?: string
@@ -18,7 +18,7 @@ export type Tokens = {
   expiresIn?: number
 }
 
-/** BFF がブローカーと交わす操作。テストでは偽物に替える。 */
+/** BFF がブローカーと交わす操作。テストではフェイクに替える。 */
 export interface OidcClient {
   authorizationUrl(params: {
     redirectUri: string
@@ -26,7 +26,7 @@ export interface OidcClient {
     nonce: string
     codeChallenge: string
   }): URL
-  /** currentUrl はコールバックの要求の URL で、code と state を持つ。検証に失敗すると Error を投げる。 */
+  /** currentUrl はコールバックのリクエストの URL で、code と state を持つ。検証に失敗すると Error を投げる。 */
   exchangeCode(
     currentUrl: URL,
     checks: { codeVerifier: string; state: string; nonce: string },
@@ -35,7 +35,7 @@ export interface OidcClient {
   refresh(refreshToken: string): Promise<Tokens>
 }
 
-/** ブローカーへの要求を待つ上限。auth.ts の取り直しの鍵の期限より短くする。 */
+/** ブローカーへのリクエストを待つ上限。auth.ts の取り直しの鍵の期限より短くする。 */
 export const OIDC_TIMEOUT_SECONDS = 5
 
 const toTokens = (res: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers) => ({
@@ -45,9 +45,9 @@ const toTokens = (res: client.TokenEndpointResponse & client.TokenEndpointRespon
 })
 
 /**
- * openid-client で OidcClient を作る。発行者の discovery の文書を読めなければ Error を投げる。
+ * openid-client で OidcClient を作る。Issuer の discovery の文書を読めなければ Error を投げる。
  *
- * 発行者の URL が http のときは、手元の IdP とみなして http の要求を許す。
+ * Issuer の URL が http のときは、ローカル環境の IdP とみなして http のリクエストを許す。
  */
 export const createOidcClient = async (cfg: ServerConfig['oidc']): Promise<OidcClient> => {
   const issuer = new URL(cfg.issuer)

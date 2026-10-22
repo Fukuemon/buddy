@@ -20,7 +20,7 @@ export const formatDateRange = (start: string, end: string) =>
 
 const formatTime = (time: string) => time.slice(0, 5)
 
-/** オフセットつきの日時を、端末の時間帯で「2026/10/20 15:42」の形にする。 */
+/** オフセットつきの日時を、デバイスの時間帯で「2026/10/20 15:42」の形にする。 */
 export const formatDateTime = (iso: string) => {
   const date = new Date(iso)
   return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`

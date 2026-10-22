@@ -1,19 +1,19 @@
 const pad = (value: number) => String(value).padStart(2, '0')
 
-/** 日付を、端末の時間帯で `YYYY-MM-DD` にする。 */
+/** 日付を、デバイスの時間帯で `YYYY-MM-DD` にする。 */
 export const toDateKey = (date: Date) =>
   `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 
-/** `YYYY-MM-DD` を、端末の時間帯の 0 時の Date にする。 */
+/** `YYYY-MM-DD` を、デバイスの時間帯の 0 時の Date にする。 */
 export const fromDateKey = (dateKey: string) => {
   const [year, month, day] = dateKey.split('-').map(Number) as [number, number, number]
   return new Date(year, month - 1, day)
 }
 
-/** 日時を、端末の時間帯で `HH:mm` にする。 */
+/** 日時を、デバイスの時間帯で `HH:mm` にする。 */
 export const toTimeKey = (date: Date) => `${pad(date.getHours())}:${pad(date.getMinutes())}`
 
-/** Date を、端末の時間帯のオフセットつきの ISO 8601 にする。例 `2026-10-20T09:00:00+09:00` */
+/** Date を、デバイスの時間帯のオフセットつきの ISO 8601 にする。例 `2026-10-20T09:00:00+09:00` */
 export const toOffsetDateTime = (date: Date) => {
   const offset = -date.getTimezoneOffset()
   const sign = offset >= 0 ? '+' : '-'
@@ -21,7 +21,7 @@ export const toOffsetDateTime = (date: Date) => {
   return `${toDateKey(date)}T${toTimeKey(date)}:${pad(date.getSeconds())}${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`
 }
 
-/** `YYYY-MM-DD` と `HH:mm` を、端末の時間帯のオフセットつきの ISO 8601 にする。 */
+/** `YYYY-MM-DD` と `HH:mm` を、デバイスの時間帯のオフセットつきの ISO 8601 にする。 */
 export const combineDateTime = (dateKey: string, timeKey: string) => {
   const [hours, minutes] = timeKey.split(':').map(Number) as [number, number]
   const date = fromDateKey(dateKey)

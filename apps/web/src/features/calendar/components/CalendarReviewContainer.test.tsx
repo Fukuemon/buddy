@@ -8,7 +8,7 @@ import * as stories from './CalendarReviewContainer.stories'
 const { Default, Empty, Forbidden, LoadError } = composeStories(stories)
 
 describe('CalendarReviewContainer', () => {
-  it('書き出せなかった予定を、日時、職員、理由で並べ、題名と利用者名を出さない', async () => {
+  it('書き出せなかった予定を、日時、職員、理由で並べ、タイトルと利用者名を出さない', async () => {
     render(<Default />)
     const row = await screen.findByTestId('calendar-review-row-export-1')
     expect(within(row).getByTestId('calendar-review-datetime-export-1')).toHaveTextContent(

@@ -12,7 +12,7 @@ import { STORY_DATE, storyPatients, storyStaff } from './storyData'
 
 type SampleProps = {
   kind: ScheduleKind
-  /** 作成と編集のどちらの題とボタンで描くか。既定は作成 */
+  /** 作成と編集のどちらのタイトルとボタンで描くか。デフォルトは作成 */
   mode?: 'create' | 'edit'
   submitError?: string
   onSubmit: (values: ScheduleFormValues) => void

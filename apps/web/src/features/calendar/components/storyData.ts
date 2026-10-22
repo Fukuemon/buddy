@@ -10,7 +10,7 @@ import {
 
 import type { CalendarLinkRow } from './CalendarLinkTable'
 
-// story の架空のデータ。正本は偽物の API と共有する src/mocks/scheduleData.ts である
+// story のダミーデータ。正本はフェイクの API と共有する src/mocks/scheduleData.ts である
 
 /** 職員の一覧の行。青木 一郎と石川 二葉にカレンダーを結び付けてある。 */
 export const storyLinkRows: CalendarLinkRow[] = fakeStaff.map((staff) => ({
@@ -26,10 +26,10 @@ export const storyPatients = fakePatients
 
 const range = { range_start: '2026-11-01', range_end: '2026-11-30' }
 
-/** 確かめが要る予定が 2 件ある下見の結果。 */
+/** 確かめが要る予定が 2 件あるプレビューの結果。 */
 export const storyPreview: ImportPreview = createMockImportPreview(range)
 
-/** 全て取り込み済みの下見の結果。 */
+/** 全て取り込み済みのプレビューの結果。 */
 export const storyAllImportedPreview: ImportPreview = createMockImportedPreview(range)
 
 /** 1 件目に利用者を選び、2 件目を通常の予定にした取り込み方。 */

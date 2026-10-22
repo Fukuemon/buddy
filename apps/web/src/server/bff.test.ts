@@ -38,7 +38,7 @@ const withCookie = (cookie?: string) =>
 
 const signedIn = () => withCookie(`buddy_session=${signValue('id-1', SECRET)}`)
 
-/** 予定の API への全ての要求に 500 を返す。呼ばれるとテストの期待と食い違う。 */
+/** 予定の API への全てのリクエストに 500 を返す。呼ばれるとテストの期待と食い違う。 */
 const mustNotCall = () =>
   http.all(`${TEST_SCHEDULE_API_URL}/*`, () =>
     HttpResponse.json({ code: 'internal', message: '呼ばれてはいけない' }, { status: 500 }),

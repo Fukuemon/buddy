@@ -17,7 +17,7 @@ export type CalendarReviewViewProps = {
   onRewrite: (exportId: CalendarExportIssue['id']) => void
 }
 
-/** 確かめが要る予定の画面の本文。題と説明の文の下に、Google カレンダーに書き出せなかった予定を並べる。 */
+/** 確かめが要る予定の画面の本文。タイトルと説明の文の下に、Google カレンダーに書き出せなかった予定を並べる。 */
 export const CalendarReviewView = ({
   state,
   onRetry,
@@ -29,7 +29,7 @@ export const CalendarReviewView = ({
     <p className="max-w-3xl text-body">
       buddy の予定のうち、Google カレンダーに書き出せなかった予定です。Google
       カレンダーで直された予定は、buddy に取り込みません。予定を開いて buddy の内容を確かめ、buddy
-      の内容で書き直すと、Google カレンダーの予定の題名と日時を buddy の内容にします。
+      の内容で書き直すと、Google カレンダーの予定のタイトルと日時を buddy の内容にします。
     </p>
     {state.status === 'loading' && (
       <div data-testid="calendar-review-loading">

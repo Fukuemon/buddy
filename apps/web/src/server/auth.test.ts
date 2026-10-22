@@ -236,7 +236,7 @@ describe('readSession', () => {
     expect(refresh).not.toHaveBeenCalled()
   })
 
-  it('鍵を取る前にほかの要求が取り直し終えていたら、古い refresh token を送らない', async () => {
+  it('鍵を取る前にほかのリクエストが取り直し終えていたら、古い refresh token を送らない', async () => {
     const refresh = vi.fn<OidcClient['refresh']>()
     const { deps } = setup({ oidc: fakeOidc({ refresh }) })
     const req = await withSession(
@@ -247,7 +247,7 @@ describe('readSession', () => {
     let reads = 0
     deps.store.get = async <T>(key: string) => {
       reads++
-      // readSession の 1 回目の読み取りの後に、ほかの要求が取り直し終えたとする
+      // readSession の 1 回目の読み取りの後に、ほかのリクエストが取り直し終えたとする
       if (reads === 2) {
         await deps.store.set(
           'session:id-1',

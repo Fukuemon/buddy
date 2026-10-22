@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import { CALENDAR_VIEWS } from '../constants/calendarView'
 
-/** 既定の値。URL に書かずに済むよう、route の stripSearchParams にも渡す。 */
+/** デフォルト値。URL に書かずに済むよう、route の stripSearchParams にも渡す。 */
 export const scheduleSearchDefaults = {
   view: 'month',
   staff: [],

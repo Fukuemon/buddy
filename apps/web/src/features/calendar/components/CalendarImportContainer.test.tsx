@@ -36,7 +36,7 @@ describe('CalendarImportContainer', () => {
     expect(staff).toHaveValue('staff-2')
   })
 
-  it('下見の結果は、取り込み方を全て選ぶまで確定して取り込むを押せない', async () => {
+  it('プレビューの結果は、取り込み方を全て選ぶまで確定して取り込むを押せない', async () => {
     render(<Initial />)
     const result = await preview()
     expect(within(result).getByTestId('calendar-import-count-import')).toHaveTextContent('18 件')
@@ -74,7 +74,7 @@ describe('CalendarImportContainer', () => {
     expect(screen.queryByTestId('calendar-import-result-preview')).toBeNull()
   })
 
-  it('同じ期間をもう一度下見すると、全て取り込み済みにし、確定を押せない', async () => {
+  it('同じ期間をもう一度プレビューすると、全て取り込み済みにし、確定を押せない', async () => {
     render(<Initial />)
     await preview()
     await resolveAll()
@@ -86,7 +86,7 @@ describe('CalendarImportContainer', () => {
     expect(submit()).toHaveAttribute('aria-disabled', 'true')
   })
 
-  it('期間を変えると下見の結果を消し、開始日が終了日より後なら下見を押せない', async () => {
+  it('期間を変えるとプレビューの結果を消し、開始日が終了日より後ならプレビューを押せない', async () => {
     render(<Initial />)
     await preview()
     fireEvent.change(screen.getByTestId('calendar-import-start'), {
@@ -100,22 +100,22 @@ describe('CalendarImportContainer', () => {
     expect(screen.getByTestId('calendar-import-preview')).toHaveAttribute('aria-disabled', 'true')
   })
 
-  it('下見が失敗したら、理由ごとの文を出す', async () => {
+  it('プレビューが失敗したら、理由ごとの文を出す', async () => {
     render(<PreviewError />)
     await userEvent.click(await screen.findByTestId('calendar-import-preview'))
     expect(await screen.findByTestId('calendar-import-error')).toHaveTextContent(
-      'Google カレンダーから予定を読めませんでした。時間をおいて、もう一度下見してください。',
+      'Google カレンダーから予定を読めませんでした。時間をおいて、もう一度プレビューしてください。',
     )
   })
 
-  it('取り込みが失敗したら、下見の結果と選んだ取り込み方を残して理由を出す', async () => {
+  it('取り込みが失敗したら、プレビューの結果と選んだ取り込み方を残して理由を出す', async () => {
     render(<SubmitError />)
     await preview()
     await resolveAll()
     await userEvent.click(submit())
 
     expect(await screen.findByTestId('calendar-import-error')).toHaveTextContent(
-      '下見の後に、Google カレンダーの予定が変わりました。',
+      'プレビューの後に、Google カレンダーの予定が変わりました。',
     )
     expect(screen.getByTestId('calendar-import-review-normal-event-missing')).toBeChecked()
   })

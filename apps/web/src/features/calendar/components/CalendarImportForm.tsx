@@ -17,13 +17,13 @@ export type CalendarImportFormProps = {
   end: string
   onEndChange: (value: string) => void
   rangeErrors: ImportRangeErrors
-  /** false なら、下見するを押せない。 */
+  /** false なら、プレビューするを押せない。 */
   canPreview: boolean
-  /** true の間は、職員と期間を変えられない。下見中と取り込み中である。 */
+  /** true の間は、職員と期間を変えられない。プレビュー中と取り込み中である。 */
   isLocked: boolean
   isPreviewing: boolean
   onPreview: () => void
-  /** 下見の失敗の文。 */
+  /** プレビューの失敗の文。 */
   errorMessage?: string
 }
 
@@ -140,7 +140,7 @@ export const CalendarImportForm = ({
             type="submit"
             variant="secondary"
           >
-            下見する
+            プレビューする
           </Button>
         </div>
       </form>

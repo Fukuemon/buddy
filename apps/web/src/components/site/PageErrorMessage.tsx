@@ -5,7 +5,7 @@ export type PageErrorMessageProps = {
   reloadHref: string
 }
 
-/** 画面を描けなかったときの案内。セッションの置き場や API に届かないときに出す。 */
+/** 画面を描けなかったときの案内。セッションの保存先や API に届かないときに出す。 */
 export const PageErrorMessage = ({ reloadHref }: PageErrorMessageProps) => (
   <section className="flex max-w-xl flex-col items-start gap-4 p-6" data-testid="page-error">
     <h1 className="text-heading-md">画面を表示できませんでした</h1>

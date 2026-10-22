@@ -20,7 +20,7 @@ const CATEGORICAL_COLOR_COUNT = 10
 export const staffColor = (index: number) =>
   `var(--buddy-color-categorical-${(index % CATEGORICAL_COLOR_COUNT) + 1})`
 
-/** 予定を、カレンダーに置く形にする。訪問の予定は利用者の名前を題にする。 */
+/** 予定を、カレンダーに置く形にする。訪問の予定は利用者の名前をタイトルにする。 */
 export const toCalendarEvents = (
   schedules: Schedule[],
   staffList: Staff[],

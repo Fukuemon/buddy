@@ -5,7 +5,7 @@ import type { paths } from '#/api/generated/receipt'
 
 import { withAuth } from './withAuth'
 
-/** 照合の API（baseUrl）の偽物の handler を作る。照合は入力によらず決まった結果を返す。 */
+/** 照合の API（baseUrl）のフェイクの handler を作る。照合は入力によらず決まった結果を返す。 */
 export const createReceiptHandlers = (baseUrl: string) => {
   const http = createOpenApiHttp<paths>({ baseUrl })
   return [

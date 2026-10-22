@@ -9,7 +9,7 @@ import * as stories from './Drawer.stories'
 const { Default, Closed, WithOpener } = composeStories(stories)
 
 describe('Drawer', () => {
-  it('左端にモーダルのダイアログとして開き、題にフォーカスを移す', () => {
+  it('左端にモーダルのダイアログとして開き、タイトルにフォーカスを移す', () => {
     render(<Default />)
     const dialog = screen.getByRole('dialog', { name: '絞り込み' })
     expect(dialog).toHaveProperty('open', true)
@@ -59,7 +59,7 @@ describe('Drawer', () => {
     const close = screen.getByRole('button', { name: '閉じる' })
     const last = screen.getByRole('checkbox', { name: '石井 花子' })
 
-    // 開いた直後は題にフォーカスがあり、題の後ろから順に移る
+    // 開いた直後はタイトルにフォーカスがあり、タイトルの後ろから順に移る
     await userEvent.tab()
     expect(close).toHaveFocus()
     await userEvent.tab({ shift: true })

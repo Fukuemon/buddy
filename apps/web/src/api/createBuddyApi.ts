@@ -9,11 +9,11 @@ export type ApiEnv = {
   VITE_API_MODE?: string
 }
 
-/** fake は手元の偽物の API、bff はサーバーのセッションで予定の API を呼ぶ。 */
+/** fake はローカルのフェイクの API、bff はサーバーのセッションで予定の API を呼ぶ。 */
 export type ApiMode = 'fake' | 'bff'
 
 /**
- * VITE_API_MODE が bff なら BFF を通す BuddyApi と ReceiptApi を、fake か未指定なら偽物を作る。
+ * VITE_API_MODE が bff なら BFF を通す BuddyApi と ReceiptApi を、fake か未指定ならフェイクを作る。
  *
  * VITE_API_MODE がほかの値のときは Error を投げる。
  */

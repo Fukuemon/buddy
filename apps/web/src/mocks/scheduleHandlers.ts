@@ -21,7 +21,7 @@ import {
 } from './scheduleData'
 
 /**
- * 予定の API（baseUrl）の偽物の handler を作る。成功の応答だけを返し、作成と置き換えの結果は残さない。
+ * 予定の API（baseUrl）のフェイクの handler を作る。成功のレスポンスだけを返し、作成と置き換えの結果は残さない。
  * 異常系は、テストごとに server.use() で上書きする。
  */
 export const createScheduleHandlers = (baseUrl: string) => {
