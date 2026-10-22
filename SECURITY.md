@@ -1,7 +1,7 @@
 # セキュリティの問題の届け方
 
 脆弱性を見つけたら、公開の issue、pull request、コメントには書かない。  
-GitHub の private vulnerability reporting で、持ち主だけが読める形で届ける。
+GitHub の private vulnerability reporting で、メンテナーだけが読める形で届ける。
 
 1. リポジトリの Security のタブを開く。
 2. 「Report a vulnerability」を押す。
@@ -12,4 +12,4 @@ GitHub の private vulnerability reporting で、持ち主だけが読める形�
 ## 対象
 
 対象は `develop` ブランチの最新のコミットである。  
-`compose.yml` と `apps/web/.env.msw` の秘密の値とパスワードは、手元で動かすための架空の値で、脆弱性には当たらない。
+`compose.yml` と `apps/web/.env.msw` のシークレットとパスワードは、ローカル環境で起動するためのダミーの値で、脆弱性には当たらない。

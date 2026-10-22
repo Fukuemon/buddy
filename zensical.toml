@@ -1,4 +1,4 @@
-# 文書のサイトの設定。文書の置き場は context/project.yml の docs と揃える
+# 文書のサイトの設定。文書の配置先は context/project.yml の docs と揃える
 [project]
 site_name = "buddy"
 site_description = "予定の管理とレセプトの照合の設計書"
@@ -12,7 +12,7 @@ watch = [
   "packages/e2e/DesignDoc.md",
   "packages/e2e/kit/recording/DesignDoc.md",
 ]
-# ADR、画面仕様書、ワイヤーフレームの雛形は文書ではないので、サイトに載せない
+# ADR、画面仕様書、ワイヤーフレームのテンプレートは文書ではないので、サイトに載せない
 exclude_docs = """
 adr/template.md
 screens/_template/
@@ -29,13 +29,13 @@ nav = [
     { "予定の管理" = "design/apps/schedule-api.md" },
     { "レセプトの照合" = "design/apps/receipt-api.md" },
     { "E2E のテストのコード" = "design/packages/e2e.md" },
-    { "証跡の録画" = "design/packages/e2e-recording.md" },
+    { "エビデンスの録画" = "design/packages/e2e-recording.md" },
   ] },
-  # 予定の管理の表。tbls の生成物（scripts/build-db-docs.sh）で、viewpoint の文書は全て載せる（build-db-docs.sh が確かめる）
-  # 表ごとの文書は載せず、表の一覧と viewpoint の文書から開く
+  # 予定の管理のテーブル。tbls の生成物（scripts/build-db-docs.sh）で、viewpoint の文書は全て載せる（build-db-docs.sh が確かめる）
+  # テーブルごとの文書は載せず、テーブルの一覧と viewpoint の文書から開く
   { "DB の設計" = [
-    { "表の一覧" = "db/schedule-api/README.md" },
-    # Liam ERD で描く、操作できる ER 図（pnpm build:erd）。同じサイトの /erd/ に置き、手元の zensical serve には無い
+    { "テーブルの一覧" = "db/schedule-api/README.md" },
+    # Liam ERD で描く、操作できる ER 図（pnpm build:erd）。同じサイトの /erd/ に置き、ローカルの zensical serve には無い
     { "ER 図（Liam ERD）" = "/erd/" },
     { "事業所と組織" = "db/schedule-api/viewpoint-organization.md" },
     { "職員と権限" = "db/schedule-api/viewpoint-policies.md" },
@@ -46,7 +46,7 @@ nav = [
   ] },
   { "デザインシステム" = [
     { "使い方" = "design/packages/ui.md" },
-    # カタログは同じサイトの /storybook/ に置く（apps/docs-site）。手元の zensical serve には無い
+    # カタログは同じサイトの /storybook/ に置く（apps/docs-site）。ローカルの zensical serve には無い
     { "カタログ（Storybook）" = "/storybook/" },
   ] },
   { "API の仕様" = [

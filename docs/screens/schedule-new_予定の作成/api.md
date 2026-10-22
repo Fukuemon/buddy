@@ -1,6 +1,6 @@
 # schedule-new API との対応
 
-[予定の作成](index.md) の項目と、web の型と OpenAPI の項目の対応。OpenAPI の項目は、送るものを `createSchedule`（`POST /v1/facilities/{facility_id}/schedules`）の要求の `SlotRequest` で、選択肢を一覧の操作の応答で書く。
+[予定の作成](index.md) の項目と、web の型と OpenAPI の項目の対応。OpenAPI の項目は、送るものを `createSchedule`（`POST /v1/facilities/{facility_id}/schedules`）のリクエストの `SlotRequest` で、選択肢を一覧の操作のレスポンスで書く。
 
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
@@ -10,7 +10,7 @@
 | 終了時間 | 終わりの時刻 | `ScheduleInput.endsAt` の時刻 | `end_time` |
 | 提供時間 | 分 | なし。開始時間に足して `endsAt` にする | なし |
 | サービスコード | コード | `ScheduleInput.visit.serviceCode` | `visit_info.service_code_id` |
-| タイトル | 題名 | `ScheduleInput.title` | `title` |
+| タイトル | タイトル | `ScheduleInput.title` | `title` |
 | 利用者の一覧 | 利用者の名前 | `Patient.name`、選んだものは `ScheduleInput.visit.patientId` | `listPatients` の `name`、送るのは `visit_info.patient_id` |
 | 職員の一覧 | 職員の名前 | `Staff.name`、選んだものは `ScheduleInput.staffId` | `listUsers` の `username`、送るのは `staff_id`、`visit_info.assigned_staff_id` |
 | 訪問の種類 | 夜勤、緊急、入院 | `ScheduleInput.visit.categories` | `visit_info.visit_category_ids` |

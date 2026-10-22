@@ -25,21 +25,21 @@ status: stable
 | 予定の API の HTTP | gin | `apps/schedule-api/go.mod` |
 | API のサーバーの生成 | oapi-codegen（`go tool`） | 各 `go.mod` の `tool` |
 | 画面の API の型の生成 | openapi-typescript | `apps/web/package.json` |
-| web のサーバーから見た API の偽物（テストと `dev:msw`） | MSW、openapi-msw | `apps/web/package.json` |
+| web のサーバーから見た API のフェイク（テストと `dev:msw`） | MSW、openapi-msw | `apps/web/package.json` |
 | OpenAPI の定義の lint | Redocly CLI | `package.json`、規則は `redocly.yaml` |
 | API の仕様のページ | Scalar（jsDelivr から読む） | `docs/api/reference.js` の import の URL |
 | SQL からの Go の生成 | sqlc | `mise.toml` |
 | マイグレーション | golang-migrate | `mise.toml`（CLI）、`apps/schedule-api/go.mod`（ライブラリ） |
 | Go の lint と整形 | golangci-lint | `mise.toml`、設定は `apps/*/.golangci.yml` と `packages/go/.golangci.yml` |
-| 表の文書と ER 図の元（`schema.json`）の生成 | tbls | `mise.toml` |
+| テーブル定義書と ER 図の元（`schema.json`）の生成 | tbls | `mise.toml` |
 | 操作できる ER 図のサイト | Liam ERD CLI | `package.json` |
-| 文書のサイト | Zensical（uv で動かす） | `pyproject.toml`、`uv.lock`、uv は `mise.toml` と `.github/workflows/docs-site.yml` の setup-uv（同じバージョンにする） |
+| 文書のサイト | Zensical（uv で実行する） | `pyproject.toml`、`uv.lock`、uv は `mise.toml` と `.github/workflows/docs-site.yml` の setup-uv（同じバージョンにする） |
 | 文書のサイトの公開 | cf、wrangler | `apps/docs-site/package.json` |
 | 文章のチェック | textlint | `package.json` |
 | Git のフック、コミットの形式 | lefthook、commitlint | `package.json` |
 | スキルとフックの配置 | apm | `mise.toml`、パッケージは `apm.yml` と `apm.lock.yaml` |
-| 証跡の動画の添付 | gh | `mise.toml`。CI のワークフローは mise で入れず、ランナーの gh を使う |
-| 手元の全体の起動 | Docker Compose（PostgreSQL、Valkey、mock-oauth2-server） | `compose.yml` のイメージのタグ |
+| エビデンスの動画の添付 | gh | `mise.toml`。CI のワークフローは mise で入れず、ランナーの gh を使う |
+| ローカル環境の全体の起動 | Docker Compose（PostgreSQL、Valkey、mock-oauth2-server） | `compose.yml` のイメージのタグ |
 | 実行のイメージ | distroless（API）、`node:24-slim`（web） | `apps/*/Dockerfile` |
 
 - パッケージマネージャーが管理しないツールは、次の場所で固定する。
@@ -56,26 +56,26 @@ status: stable
 - 生成のツール（oapi-codegen、sqlc、openapi-typescript）を上げたら、`pnpm check:generated` で生成し直し、差分を読んでからコミットする。oapi-codegen は、`apps/schedule-api/oapi-codegen.yaml` の型の置き換え（日付とメールを文字列にする）が生成物に反映されているかを見る。
 - Go を上げるときは、`mise.toml`、3 つの `go.mod`、2 つの `Dockerfile` の 6 か所をそろえる。API ごとに上げてもよいが、`packages/go` の `go.mod` の Go のバージョンは、2 つの API のうち低い方以下にする。
 - Playwright は、`packages/e2e` と `packages/ui` を同じバージョンにし、`pnpm-lock.yaml` に 1 つのバージョンだけがあることを確かめる。Vite+ も Playwright を peer で取り込むので、Vite+ を上げたときも確かめる。
-- Vite+ は、`pnpm-workspace.yaml` の catalog の `vite-plus` と `vite`（`@voidzero-dev/vite-plus-core` への別名）を一緒に上げる。
+- Vite+ は、`pnpm-workspace.yaml` の catalog の `vite-plus` と `vite`（`@voidzero-dev/vite-plus-core` へのエイリアス）を一緒に上げる。
 - TanStack の Router、Query、Start は、`apps/web/package.json` に厳密なバージョンで書いてある。上げたら、`pnpm --filter @buddy/web check`、`test`、`build` と、compose での画面の確かめ（`pnpm e2e`）を流す。
 - `@digital-go-jp/design-tokens` は、ADR-0004 の決めたとおり、上げる前にトークンの名前と値の差分を読み、`pnpm --filter @buddy/ui test` でコントラストのテストを流す。
 - PostgreSQL、Valkey、IdP のイメージを上げたら、`docker compose up --build --wait` と `pnpm e2e` を流す。
   - PostgreSQL のタグは、`compose.yml`、`apps/schedule-api/internal/postgres/main_test.go`、`scripts/build-db-docs.sh` の 3 か所にある。3 か所を同じタグにそろえる。
-  - `scripts/build-db-docs.sh` は、表の文書に PostgreSQL のバージョンが入るので、パッチバージョンまで固定している。上げたら `pnpm generate:db-docs` で表の文書を生成し直し、コミットする。
+  - `scripts/build-db-docs.sh` は、テーブル定義書に PostgreSQL のバージョンが入るので、パッチバージョンまで固定している。上げたら `pnpm generate:db-docs` でテーブル定義書を生成し直し、コミットする。
 - uv を上げたら、`mise.toml` と `.github/workflows/docs-site.yml` の setup-uv の `version` をそろえる。
 - tbls か Liam ERD CLI を上げたら、`pnpm generate:db-docs` と `pnpm build:erd` を流す。
   - `scripts/build-erd.mjs` は、Liam ERD が tbls の viewpoint の `id` を拒むので、`id` を外してから渡している。上げた後もこの処理が要るかを確かめる。
 
 ## Scaffolding
 
-公式の雛形のコマンドは使わず、既存のモジュールを写して始める。
+公式のテンプレートのコマンドは使わず、既存のモジュールをコピーして始める。
 
-- DB を持たない Go の API は `apps/receipt-api`、DB と層を持つ Go の API は `apps/schedule-api` を写す。写した後に次をそろえる。
+- DB を持たない Go の API は `apps/receipt-api`、DB と層を持つ Go の API は `apps/schedule-api` をコピーする。コピーした後に次をそろえる。
   - `go.mod` のモジュールのパス（`github.com/Fukuemon/buddy/apps/<名前>`）と、`packages/go` の `require` と `replace`
   - `.golangci.yml` の goimports の `local-prefixes`
   - `Dockerfile` と `Dockerfile.dockerignore` のアプリのパス（ビルドの文脈はリポジトリの直下）
   - `openapi.yaml`、`oapi-codegen.yaml`、`generate.go` の `go:generate`
   - `/healthz`、`/readyz`、`api healthcheck` のサブコマンド（compose のヘルスチェックが使う）
   - ルートの `compose.yml` のサービス、`scripts/check-generated.sh` の生成と対象
-- pnpm のパッケージは、UI のライブラリなら `packages/ui`、テストのコードと kit なら `packages/e2e` を写す。名前は `@buddy/<名前>`、`"private": true`、`"type": "module"` にし、依存は `workspace:*` で指す。整形と lint の設定は、ルートの `vite.config.ts` を使う。
+- pnpm のパッケージは、UI のライブラリなら `packages/ui`、テストのコードと kit なら `packages/e2e` をコピーする。名前は `@buddy/<名前>`、`"private": true`、`"type": "module"` にし、依存は `workspace:*` で指す。整形と lint の設定は、ルートの `vite.config.ts` を使う。
 - 新しいアプリを足したら、README を [コードと文書の規約](conventions.md#documents) の見出しの順で書き、機能の Design Doc を隣に置く。

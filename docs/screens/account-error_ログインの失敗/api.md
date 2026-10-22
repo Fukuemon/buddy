@@ -4,7 +4,7 @@
 
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
-| ページの題 | 理由ごとの題 | search params の `reason`（`AuthErrorReason`） | なし |
+| ページのタイトル | 理由ごとのタイトル | search params の `reason`（`AuthErrorReason`） | なし |
 | 説明の文 | 理由ごとの文 | search params の `reason`（`AuthErrorReason`） | なし |
 
 - `reason` は、web のサーバー（`apps/web/src/server/auth.ts` の `finishLogin`）が転送の先の URL に付ける。

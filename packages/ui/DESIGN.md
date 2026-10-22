@@ -2,11 +2,11 @@
 
 buddy の画面を作る人とコーディングエージェントが、画面を作る前に読む文書。  
 デジタル庁デザインシステム（DADS）のトークンとコンポーネントの指針に基づき、packages/ui のトークンとコンポーネントの使い方を決める。  
-トークンの段の分け方、コンポーネントの置き場、カタログの組み方を決めた理由は [ADR-0004](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0004-design-system.md) にある。
+トークンの段の分け方、コンポーネントの配置先、カタログの組み方を決めた理由は [ADR-0004](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0004-design-system.md) にある。
 
 - 出典: [デジタル庁デザインシステム](https://design.digital.go.jp/dads/)
 
-トークンとコンポーネントの見た目と使い方は、[カタログ（Storybook）](https://buddy-docs.emon-apps.workers.dev/storybook/)で見る。カタログは Cloudflare Access で許可した人だけが開ける。手元では `pnpm --filter @buddy/web storybook` で開く。
+トークンとコンポーネントの見た目と使い方は、[カタログ（Storybook）](https://buddy-docs.emon-apps.workers.dev/storybook/)で見る。カタログは Cloudflare Access で許可した人だけが開ける。ローカルでは `pnpm --filter @buddy/web storybook` で開く。
 
 ## 知りたいことごとの参照先
 
@@ -53,7 +53,7 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 | `primary` | 主のボタンの面、副のボタンの文字、選ばれている選択肢の枠、リンク |
 | `primary-surface` | 選ばれている選択肢の面、入力中の欄の面、カレンダーの今日 |
 | `danger`、`danger-surface` | エラーの文と枠、取り消せない操作のボタン |
-| `warning`、`warning-surface` | 確かめてほしい値。誤りではないもの |
+| `warning`、`warning-surface` | 確かめてほしい値。エラーではないもの |
 | `success`、`success-surface` | 完了と整合 |
 | `categorical-1` から `categorical-10` | 職員のように、意味を持たない並びの区別。番号の順に割り当て、11 個目からは 1 に戻る |
 
@@ -80,9 +80,9 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 | --- | --- | --- |
 | `text-caption` | Dns-14N-130 | 補足の文、エラーの文、時刻の目盛り、カレンダーの予定 |
 | `text-body-dense` | Dns-16N-130 | 表のセル、入力欄の値、選択肢の文字 |
-| `text-body` | Std-16N-170 | 本文。`body` の既定 |
+| `text-body` | Std-16N-170 | 本文。`body` のデフォルト |
 | `text-label` | Oln-16B-100 | ボタン、切り替えの選択肢 |
-| `text-heading-sm` | Std-18B-160 | 節の見出し、ダイアログの題、ロゴ |
+| `text-heading-sm` | Std-18B-160 | 節の見出し、ダイアログのタイトル、ロゴ |
 | `text-heading-md` | Std-20B-150 | 画面全体の待ちの文 |
 
 - 出典: [DADS のタイポグラフィ](https://design.digital.go.jp/dads/foundations/typography/)
@@ -116,14 +116,14 @@ apps/web の画面だけが使う印は、`apps/web/src/assets/icons/` の SVG �
 | コンポーネント | 使う場面 | 使わない場面 | キーボード |
 | --- | --- | --- | --- |
 | `Button` | 操作を 1 つ実行する | 画面を移る（`Link` に `buttonClassName` を渡す） | Tab で移り、Enter と Space で押す。押せない間は `aria-disabled` にし、フォーカスは受ける |
-| `Modal` | 今の画面の上で、予定の詳細や入力を行い、閉じて元の画面に戻る | 完了の通知、ナビゲーション | 開くと題にフォーカスが移る。Tab はダイアログの中だけを回る。Esc で閉じる要求を出す。閉じると、開いたボタンにフォーカスが戻る |
-| `Drawer` | 幅 768px 未満で、PC の幅では常に出す絞り込みを、ボタンで左端から開閉する | 予定の詳細や入力（`Modal` を使う）、PC の幅で常に出せるもの | 開くと題にフォーカスが移る。Tab はドロワーの中だけを回る。Esc で閉じる要求を出す。閉じると、開いたボタンにフォーカスが戻る。開くボタンには `aria-expanded` と `aria-controls` を付ける |
+| `Modal` | 今の画面の上で、予定の詳細や入力を行い、閉じて元の画面に戻る | 完了の通知、ナビゲーション | 開くとタイトルにフォーカスが移る。Tab はダイアログの中だけを回る。Esc で閉じる要求を出す。閉じると、開いたボタンにフォーカスが戻る |
+| `Drawer` | 幅 768px 未満で、PC の幅では常に出す絞り込みを、ボタンで左端から開閉する | 予定の詳細や入力（`Modal` を使う）、PC の幅で常に出せるもの | 開くとタイトルにフォーカスが移る。Tab はドロワーの中だけを回る。Esc で閉じる要求を出す。閉じると、開いたボタンにフォーカスが戻る。開くボタンには `aria-expanded` と `aria-controls` を付ける |
 | `SegmentedControl` | 2 から 4 個の選択肢から 1 つを選び、すぐに表示を切り替える（表示の単位、予定の種類） | 選択肢が 5 個以上、送信するまで反映しない入力 | Tab で選ばれている選択肢に移り、← と → で選び直す |
 | `Table` | 同じ項目を持つ行を並べる | 項目名と値の組（`dl` を使う） | コンポーネントの操作はない。見出しのセルは `th` にする |
 | `Loading` | 画面全体かダイアログの中身を待つ | ボタンを押した後の待ち（`Button` の `isLoading` を使う）、画面の一部の待ち | 操作はない。`aria-live` で待ちを伝える |
 | `DatePicker`、`TimePicker` | 日付と時刻を 1 つ入力する | 生年月日のように遠い日付 | ブラウザの入力欄の操作に従う |
 | `NumberPicker` | 分のような、単位の決まった数を入力する | 電話番号や番号のように、計算しない数字 | ブラウザの入力欄の操作に従う |
-| `TextareaField` | 複数行の文を入力する | 1 行で足りる名前や題 | Tab で移る。改行は Enter |
+| `TextareaField` | 複数行の文を入力する | 1 行で足りる名前やタイトル | Tab で移る。改行は Enter |
 | `SearchBox` | 一覧を語で絞り込む | 決まった選択肢から選ぶ（`SegmentedControl` か選択肢のカード） | Tab で移る。Esc で語を消す。見えるラベルがないので `aria-label` を渡す |
 
 入力のコンポーネントは、ラベルを入力欄に結び付け、エラーがあれば `aria-invalid` と、エラーの文への `aria-describedby` を付ける。
@@ -141,25 +141,25 @@ apps/web の画面だけが使う印は、`apps/web/src/assets/icons/` の SVG �
 ## Storybook のカタログ
 
 [カタログ](https://buddy-docs.emon-apps.workers.dev/storybook/)は apps/web の Storybook で組み、packages/ui の MDX と story も読み込む。  
-packages/ui の Storybook は、コンポーネントを単独で開発し、story のテストを動かすために使う。
+packages/ui の Storybook は、コンポーネントを単独で開発し、story のテストを実行するために使う。
 
 ### カタログのページ
 
-| ページ | 書くこと | 置き場 |
+| ページ | 書くこと | 配置先 |
 | --- | --- | --- |
 | はじめに | 原則、アクセシビリティの基準 | `packages/ui/src/docs/*.mdx` |
 | トークン | 色の階調と意味のトークン（`ColorPalette`）、文字（`Typeset`）、余白、角丸、影 | `packages/ui/src/tokens/*.mdx` |
 | コンポーネント | コンポーネントごとの MDX。使う場面、使わない場面、Do と Don't、状態、キーボードの操作 | `packages/ui/src/base/<コンポーネント>/`、`packages/ui/src/case/<コンポーネント>/` |
-| パターン | コンポーネントを組み合わせた形（入力のダイアログ、絞り込みの一覧） | `packages/ui/src/patterns/`。パターンを作るときの置き場で、ディレクトリはパターンを作るときに作る |
+| パターン | コンポーネントを組み合わせた形（入力のダイアログ、絞り込みの一覧） | `packages/ui/src/patterns/`。パターンを作るときの配置先で、ディレクトリはパターンを作るときに作る |
 | 画面 | apps/web のコンポーネントと画面の story | `apps/web/src/features/<機能>/components/`、`apps/web/src/components/` |
 
-コンポーネントの MDX の「状態」には、既定、hover、フォーカス、無効、エラー、読み込みのうち、そのコンポーネントが持つものを全て story で並べる。
+コンポーネントの MDX の「状態」には、デフォルト、hover、フォーカス、無効、エラー、読み込みのうち、そのコンポーネントが持つものを全て story で並べる。
 
 ### title の規則
 
-title は、ファイルの置き場から機械的に決め、story を作るときに分類を判断しない。
+title は、ファイルの配置先から機械的に決め、story を作るときに分類を判断しない。
 
-| 置き場 | title |
+| 配置先 | title |
 | --- | --- |
 | `packages/ui/src/docs/<名前>.mdx` | `はじめに/<名前>` |
 | `packages/ui/src/tokens/<名前>.mdx` | `トークン/<名前>` |
@@ -173,8 +173,8 @@ title は、ファイルの置き場から機械的に決め、story を作る�
 
 ### カタログに載せてよいもの
 
-カタログは文書のサイトの `/storybook/` として Cloudflare に公開し、Cloudflare Access で許可した人だけが開ける（`apps/docs-site/README.md`）。許可した人の範囲は変わりうるので、story と MDX には、コンポーネントと架空のデータだけを載せる。
+カタログは文書のサイトの `/storybook/` として Cloudflare に公開し、Cloudflare Access で許可した人だけが開ける（`apps/docs-site/README.md`）。許可した人の範囲は変わりうるので、story と MDX には、コンポーネントとダミーデータだけを載せる。
 
-- 利用者と職員の名前、事業所、予定は、`青木 一郎` のような架空の値にする。実際の画面やデータベースから写さない。
-- API を呼ぶ story を作らない。データは story の中か、架空のデータのファイルから渡す。
-- story と MDX に、URL、ホスト名、秘密の値を書かない。この規則は story と MDX だけに当てはまり、この文書と画面仕様書からカタログへのリンクは、カタログの URL で書く。
+- 利用者と職員の名前、事業所、予定は、`青木 一郎` のようなダミーの値にする。実際の画面やデータベースからコピーしない。
+- API を呼ぶ story を作らない。データは story の中か、ダミーデータのファイルから渡す。
+- story と MDX に、URL、ホスト名、シークレットを書かない。この規則は story と MDX だけに当てはまり、この文書と画面仕様書からカタログへのリンクは、カタログの URL で書く。

@@ -2,19 +2,19 @@
 
 画面仕様書のページ、API との対応、画面のモックの書き方。画面の ID の決め方は [画面仕様書の目次](index.md#画面の-id-の規則) にある。
 
-## 置き場と名前
+## 配置先と名前
 
-画面ごとに 1 つのディレクトリを作り、雛形の `docs/screens/_template/` を写す。
+画面ごとに 1 つのディレクトリを作り、テンプレートの `docs/screens/_template/` をコピーする。
 
 ```text
 docs/screens/
-├── _common/                    # 全ての画面のモックが読む CSS と JS。画面のディレクトリに写さない
+├── _common/                    # 全ての画面のモックが読む CSS と JS。画面のディレクトリにコピーしない
 │   ├── mock.css                # 外枠、構成番号の印、ツールバー
 │   ├── tokens.css              # DADS と buddy の意味のトークン。生成物
 │   ├── wireframe.css           # 箱と線の見た目（wf-*）。色はトークンに当てる
-│   ├── mock.js                 # 端末の切り替え、構成番号の印、親のページへの高さの通知
+│   ├── mock.js                 # デバイスの切り替え、構成番号の印、親のページへの高さの通知
 │   └── interact.js             # 画面の中の操作（モックの間の移動、チェック、開閉）
-├── _template/                  # 雛形。サイトに載せない
+├── _template/                  # テンプレート。サイトに載せない
 └── <画面 ID>_<画面の名前>/
     ├── index.md                # 仕様書のページ
     ├── api.md                  # 画面の項目と、web の型、OpenAPI の項目の対応
@@ -24,7 +24,7 @@ docs/screens/
         └── 02-<状態>.html
 ```
 
-- 写した後に、`mocks/screen-id.css` の名前を `mocks/<画面 ID>.css` に変え、モックの `<link>` も直す。
+- コピーした後に、`mocks/screen-id.css` の名前を `mocks/<画面 ID>.css` に変え、モックの `<link>` も直す。
 - ディレクトリの名前は、画面 ID と日本語の画面の名前を `_` でつなぐ（例 `schedule-calendar_予定のカレンダー`）。URL と E2E は画面 ID だけを使うので、名前を変えるときはディレクトリの名前だけを変えてよい。
 - モックの名前は、2 桁の連番と状態の英語の名前を `-` でつなぐ。連番は、ページに並べる順にする。
 - ページを足したら、`zensical.toml` の `nav` と、目次の画面の一覧に足す。
@@ -45,7 +45,7 @@ docs/screens/
 - タブは `pymdownx.tabbed` で書き、中身を 4 つの空白で字下げする。タブの名前は状態の名前にする。
 - タブの中の最初に、その状態になる条件を 1 文で書く。
 - 状態はアンカーを持たないので、本文から状態を指すときはリンクにせず、「「<状態の名前>」の状態」と書く。
-- iframe は `<iframe class="mock" title="…" src="mocks/…">` と書く。直後には、`<a class="mock-open" href="mocks/…" target="_blank">別タブで開く</a>` を置く。高さは書かない（`embed-mock.js` が中身に合わせる）。`<details>` の中には入れない。タブの中は、タブを開いたときに `mock.js` が端末と番号を測り直す。
+- iframe は `<iframe class="mock" title="…" src="mocks/…">` と書く。直後には、`<a class="mock-open" href="mocks/…" target="_blank">別タブで開く</a>` を置く。高さは書かない（`embed-mock.js` が中身に合わせる）。`<details>` の中には入れない。タブの中は、タブを開いたときに `mock.js` がデバイスと番号を測り直す。
 - ページの中の生の HTML は、この iframe と a だけにする。
 
 ### 構成要素の表
@@ -54,7 +54,7 @@ docs/screens/
 
 - 番号は、状態ごとに 1 から欠番なく振る。表の番号の集合と、モックの `data-m` の値の集合を同じにする。同じ番号を複数の要素に付けてよい（一覧の行など）。
 - 種別は、画面の上で何を指すかが分かる語にする（ボタン、リンク、テキストボックス、チェックボックス、ラジオボタン、セレクト、ファイルの選択、表、カラム、領域、ラベル、ダイアログ、覆い、メッセージ）。表の列見出しは「カラム」、行の値は「ラベル」、見出しの下の列全体は「領域」と書き分ける。
-- 要素名は、利用者が画面の上で呼ぶ名前にする。ダイアログの題やページの題のように文言そのものが仕様のものも、要素にする。
+- 要素名は、利用者が画面の上で呼ぶ名前にする。ダイアログのタイトルやページのタイトルのように文言そのものが仕様のものも、要素にする。
 - 仕様の列は、要素ごとの節へのリンクにする。
 - 要素は、それが見える状態の表にだけ載せる。ほかの状態でしか見えない要素を載せない。
 
@@ -80,9 +80,9 @@ docs/screens/
 1. 結果
 ```
 
-- 4 つの欄は、既定の値（常に活性、常に表示）でも省かない。
+- 4 つの欄は、デフォルト値（常に活性、常に表示）でも省かない。
 - カタログの欄のリンクの先は、画面の文言とデータで要素を見せる、apps/web のコンポーネントの story にする。要素を描く apps/web のコンポーネントのうち、story があり、その story に要素が出るいちばん小さいものを選ぶ。story は、仕様書の状態に近いものを選ぶ。apps/web のどの story にも要素が出ないときだけ、packages/ui のコンポーネントの story を選ぶ。route に直に書いた要素のように、どの story にも出なければ欄ごと省く。
-  - リンクは本番のカタログ（`https://buddy-docs.emon-apps.workers.dev/storybook/`）の URL で書く。手元の `zensical serve` にはカタログが無く、`/storybook/` で始まるリンクはリンクのチェックが手元のファイルとして探して失敗するためである。pull request のプレビューから開くと、develop のカタログが開く。
+  - リンクは本番のカタログ（`https://buddy-docs.emon-apps.workers.dev/storybook/`）の URL で書く。ローカルの `zensical serve` にはカタログが無く、`/storybook/` で始まるリンクはリンクのチェックがローカルのファイルとして探して失敗するためである。pull request のプレビューから開くと、develop のカタログが開く。
   - story の ID は、Storybook の画面の URL の `path=/story/` の後ろの値である。story の `title` と export の名前から決まる。日本語は、ブラウザの URL のように `%` でエンコードせずに書く。
   - packages/ui のコンポーネントの使い方のページ（`.mdx`）へは、`path=/docs/<title の ID>--docs` でリンクしてよい。
   - 1 つの要素を 2 つ以上のコンポーネントが描くとき、仕様書の 2 つ以上の状態を別の story が描くときは、リンクを「、」でつなぐ。
@@ -116,7 +116,7 @@ docs/screens/
 
 - body の末尾で `../../_common/mock.js`、`../../_common/interact.js` をこの順に読む。ほかの script は書かない。
 - head で `../../_common/mock.css`、`../../_common/tokens.css`、`../../_common/wireframe.css`、`<画面 ID>.css` をこの順に読む。
-- `body` の `data-view` は最初に見せる端末にする。表示の幅が 600px 未満のとき（スマートフォンで仕様書を読むとき）は、`data-view` によらずモバイルで描く。`mobile`（390px）、`tablet`（768px）、`tablet-wide`（1024px）、`desktop`（1440px）から選ぶ。値は `mock.js` の `VIEWS` にだけ書く。
+- `body` の `data-view` は最初に見せるデバイスにする。表示の幅が 600px 未満のとき（スマートフォンで仕様書を読むとき）は、`data-view` によらずモバイルで描く。`mobile`（390px）、`tablet`（768px）、`tablet-wide`（1024px）、`desktop`（1440px）から選ぶ。値は `mock.js` の `VIEWS` にだけ書く。
 - サイトのヘッダーとナビゲーション（`SiteHeader`、`SiteNav`）は、その画面の構成要素にするときだけ描く。
 
 ### 構成番号と data-testid
@@ -130,7 +130,7 @@ docs/screens/
 
 ### 幅と配置
 
-- 幅による切り替えは `@container screen (width < 768px)` のように `.screen` の幅で書く。viewport の寸法の `@media`、`vh` と `vw` は使わない。モックの中では、viewport の幅は端末の幅と一致しない。
+- 幅による切り替えは `@container screen (width < 768px)` のように `.screen` の幅で書く。viewport の寸法の `@media`、`vh` と `vw` は使わない。モックの中では、viewport の幅はデバイスの幅と一致しない。
 - スクロールする場所は作らず、画面の高さは中身に合わせる。ただし、実装が横に送る表は、モックでも横に送ってよい。
 - ダイアログ、覆い、トーストは、`.screen` の中に `position: absolute` で置く。`position: fixed` は使わない。
 - 色と角丸は `wireframe.css` の変数（`--wf-*`）で書く。`--wf-*` は、`tokens.css` の buddy の意味のトークン（`packages/ui/src/tokens/semantic.css` と同じ値）に当ててある。足りない色は、意味のトークンを `--wf-*` に当てて足す。DADS の基本のトークンと 16 進の色は、画面の CSS に直に書かない（`wireframe.css` の `:root` で角丸と書体に当てるときだけ使う）。
@@ -140,7 +140,7 @@ docs/screens/
 ### 禁止
 
 - 外部の読み込み。HTML、CSS、JS に `http` で始まる URL を書かない。フォントはシステムのもの、アイコンはインラインの SVG にする。
-- 実在の事業所、人、連絡先。架空の値で描く。
+- 実在の事業所、人、連絡先。ダミーデータで描く。
 - ダークモードの切り替え。
 
 ### 画面の中の操作
@@ -158,7 +158,7 @@ docs/screens/
 
 - `data-go` の先は、同じ画面のモックならファイルの名前（`03-day.html`）、別の画面のモックなら `../../<画面のディレクトリ>/mocks/<モック>.html` と書く。
   - 先は、インタラクションの節の結果に最も近い状態のモックにする。予定の詳細の閉じるボタンなら、予定のカレンダーの月の表示へ移る。
-  - 端末、構成番号、data-testid、幅に合わせるかの選択は、URL の search params で移った先に引き継ぐ。仕様書のページの iframe の中では、iframe の中で移る。
+  - デバイス、構成番号、data-testid、幅に合わせるかの選択は、URL の search params で移った先に引き継ぐ。仕様書のページの iframe の中では、iframe の中で移る。
   - 移った先は、その状態のモックの値で描く。前のモックで変えたチェックと選択は引き継がない。
   - ファイルの選択は、ファイルの選択のダイアログを開かず、ファイルを選んだ後の状態のモックへ移す。
 - 次の操作には属性を付けない。
@@ -167,7 +167,7 @@ docs/screens/
 - 押せる要素には `interact.js` が `tabindex="0"` を付け、Enter と Space でも動かす。背景のように、キーボードで押さなくてよい要素には `tabindex="-1"` を書く。`aria-disabled="true"` の要素は押しても動かない。
 - `interact.js` は、role の無い押せる要素に role を付ける。`data-toggle` には `checkbox`、`data-choice` には `radio`、ほかには `button` を付け、`checkbox` と `radio` の `aria-checked` を `is-on` に合わせる。role を書いた要素、`tabindex="-1"` の要素、`button` と `a` と `input` には付けない。
 - `interact.js` は、表示を変えた後に `mockRefresh()` を呼び、番号の印を置き直す。
-- `data-panel` に `data-panel-modal` も付けると、開いている間は panel の外の要素の印を出さない。端末を切り替えると、開いている panel を閉じる。
+- `data-panel` に `data-panel-modal` も付けると、開いている間は panel の外の要素の印を出さない。デバイスを切り替えると、開いている panel を閉じる。
 - panel を開くと、panel の中の最初のフォーカスできる要素へフォーカスを移す。閉じると、見えている開くボタンへフォーカスを戻す。
 - 属性で書けない操作が要るときは、モックに script を書かず、`interact.js` に属性を足す。
 
@@ -183,6 +183,6 @@ docs/screens/
 - E2E: 全ての画面を見るとき、`packages/e2e/tests` の `getByTestId` の testid が、どれかのモックの `data-testid` にあるか
 - 操作: `data-go` の先のモックがあるか、`data-open` と `data-close` の名前の `data-panel` があるか、属性の値が空でないか、`data-escape` を操作の属性を持つ要素に付けたか
 - モック: 構造と読み込みの順、`data-view`、`data-testid` の形、禁止の記述と幅と配置の規則（外部の URL、`position: fixed`、viewport の単位と寸法の `@media`、ダークモード）
-- 雛形の `<…>` の消し忘れ（`index.md`、`api.md`、モック、画面の CSS）
+- テンプレートの `<…>` の消し忘れ（`index.md`、`api.md`、モック、画面の CSS）
 
-見た目（番号の位置、端末ごとの崩れ）と操作は、モックを別タブで開き、ツールバーで端末を切り替え、押せる要素を押して確かめる。
+見た目（番号の位置、デバイスごとの崩れ）と操作は、モックを別タブで開き、ツールバーでデバイスを切り替え、押せる要素を押して確かめる。

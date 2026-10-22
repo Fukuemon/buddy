@@ -1,6 +1,6 @@
 /* ログインの失敗のモックだけの見た目 */
 
-/* 題、説明の文、リンクを縦に積む（apps/web の AuthErrorMessage と同じ） */
+/* タイトル、説明の文、リンクを縦に積む（apps/web の AuthErrorMessage と同じ） */
 .ae-main {
   display: grid;
   justify-items: start;
