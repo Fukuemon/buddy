@@ -18,7 +18,7 @@ export type CalendarReviewViewProps = {
   onAccept: (exportId: CalendarExportIssue['id']) => void
 }
 
-/** 確かめが要る予定の画面の本文。題と説明の文の下に、Google カレンダーと食い違った予定を並べる。 */
+/** 確かめが要る予定の画面の本文。タイトルと説明の文の下に、Google カレンダーと食い違った予定を並べる。 */
 export const CalendarReviewView = ({
   state,
   onRetry,
