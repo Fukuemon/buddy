@@ -92,8 +92,9 @@ export const recordEvidence = async <T>(
     for (const [k, v] of Object.entries(items)) sessionStorage.setItem(k, v)
     sessionStorage.setItem('__e2e-session-restored', '1')
   }, session)
-  await showCursorInRecording(context)
+  // 字幕とカーソルは top layer に出し、後から出したものが上に重なる。上端のボタンを押す場面で丸が字幕に隠れないよう、カーソルを後に入れる
   await showCaptionInRecording(context, `${header}　(${CURSOR_LEGEND})`)
+  await showCursorInRecording(context)
   const page = await context.newPage()
   const startedAt = Date.now()
   const captions: CaptionAt[] = []
