@@ -1,4 +1,4 @@
-// Package gcaltest は、テストとローカル環境の確認に使う、Calendar API の events.list のフェイクを提供する。
+// Package gcaltest は、テストに使う、Calendar API の events.list のフェイクを提供する。
 package gcaltest
 
 import (
