@@ -603,21 +603,28 @@ func TestExportRecurringKeepsImportedExceptions(t *testing.T) {
 }
 
 // 書き出しは、要求を受けずに動くので、予定の職員が結び付けたカレンダーの行の事業所のサービスアカウントで書く。
+// カレンダーの行の事業所を予定の事業所と違う値にして、作る、変える、消すの全てがその事業所で引くことを確かめる。
 func TestExportUsesCalendarFacilityAccount(t *testing.T) {
 	e := newExportEnv(t)
-	d := e.create(t, "カンファレンス")
-	e.run(t)
-	if got := *e.writers; len(got) != 1 || got[0] != inmem.FacilityID {
-		t.Fatalf("作るときに引いた事業所 = %v", got)
-	}
-	// カレンダーの行の事業所で引くことを、予定の事業所と違う値にして確かめる。
 	c := e.store.Calendars[calID]
 	c.FacilityID = inmem.OtherFacilityID
 	e.store.Calendars[calID] = c
-	*e.writers = nil
+	want := func(op string) {
+		t.Helper()
+		if got := *e.writers; len(got) != 1 || got[0] != inmem.OtherFacilityID {
+			t.Errorf("%sときに引いた事業所 = %v, want カレンダーの行の事業所", op, got)
+		}
+		*e.writers = nil
+	}
+	d := e.create(t, "カンファレンス")
+	e.run(t)
+	want("作る")
 	e.update(t, d.ID, "カンファレンス（変更）", inmem.StaffID)
 	e.run(t)
-	if got := *e.writers; len(got) != 1 || got[0] != inmem.OtherFacilityID {
-		t.Errorf("更新するときに引いた事業所 = %v, want カレンダーの行の事業所", got)
+	want("変える")
+	if _, err := e.schedules.Cancel(e.ctx, d.ID, "中止"); err != nil {
+		t.Fatal(err)
 	}
+	e.run(t)
+	want("消す")
 }
