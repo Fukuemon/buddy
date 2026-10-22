@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test'
 
-import { BASE_URL, LOGIN_STATE } from './tests/fixtures/env'
+import { BASE_URL, LOGIN_STATE, TIMEZONE_ID } from './tests/fixtures/env'
 import { TIMEOUTS } from './tests/fixtures/timeouts'
 
 /**
@@ -23,7 +23,7 @@ export default defineConfig({
     ...devices['Desktop Chrome'],
     baseURL: BASE_URL,
     // 予定の API と calendarpit は Asia/Tokyo の時刻で予定を持つ。CI の UTC で画面の時刻がずれないよう、事業所の時間帯にそろえる
-    timezoneId: 'Asia/Tokyo',
+    timezoneId: TIMEZONE_ID,
     actionTimeout: TIMEOUTS.action,
     navigationTimeout: TIMEOUTS.navigation,
     trace: 'retain-on-failure',

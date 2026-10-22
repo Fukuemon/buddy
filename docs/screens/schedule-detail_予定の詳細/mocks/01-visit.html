@@ -22,39 +22,41 @@
                 <h2 class="wf-modal__title" data-m="4">予定の詳細</h2>
               </div>
               <div class="wf-modal__body">
+                <h3 class="sd-datetime" data-m="5" data-testid="schedule-detail-datetime">2026年10月20日（火） 09:00〜09:29</h3>
                 <dl class="wf-rows sd-rows">
-                  <div class="wf-row" data-m="5">
+                  <div class="wf-row" data-m="6">
                     <dt>種類</dt>
                     <dd>訪問</dd>
                   </div>
-                  <div class="wf-row" data-m="6">
-                    <dt>日時</dt>
-                    <dd><span data-testid="schedule-detail-datetime">2026-10-20 09:00 - 09:29</span></dd>
-                  </div>
                   <div class="wf-row" data-m="7">
-                    <dt>利用者</dt>
-                    <dd><span class="wf-text"></span></dd>
-                  </div>
-                  <div class="wf-row" data-m="8">
-                    <dt>サービスコード</dt>
-                    <dd>訪看I2</dd>
-                  </div>
-                  <div class="wf-row" data-m="9">
-                    <dt>訪問の種類</dt>
-                    <dd>緊急</dd>
-                  </div>
-                  <div class="wf-row" data-m="10">
                     <dt>担当者</dt>
                     <dd><span class="wf-text"></span></dd>
                   </div>
-                  <div class="wf-row" data-m="11">
-                    <dt>メモ</dt>
-                    <dd><span class="wf-text wf-text--l"></span></dd>
-                  </div>
                 </dl>
+                <section class="sd-section" data-testid="schedule-detail-visit">
+                  <h3 class="sd-section__title" data-m="8">訪問の情報</h3>
+                  <dl class="wf-rows sd-rows sd-rows--2col" data-testid="schedule-detail-visit-fields">
+                    <div class="wf-row" data-m="9">
+                      <dt>利用者</dt>
+                      <dd><span class="wf-text"></span></dd>
+                    </div>
+                    <div class="wf-row" data-m="10">
+                      <dt>サービスコード</dt>
+                      <dd>訪看I2</dd>
+                    </div>
+                    <div class="wf-row" data-m="11">
+                      <dt>訪問の種類</dt>
+                      <dd>緊急</dd>
+                    </div>
+                  </dl>
+                </section>
+                <section class="sd-section" data-testid="schedule-detail-memo">
+                  <h3 class="sd-section__title">メモ</h3>
+                  <p class="sd-memo" data-m="12"><span class="wf-text wf-text--l"></span></p>
+                </section>
               </div>
               <div class="wf-modal__footer">
-                <span class="wf-btn" data-m="12" data-testid="schedule-detail-edit" data-go="../../schedule-edit_予定の編集/mocks/03-initial.html">編集</span>
+                <span class="wf-btn" data-m="13" data-testid="schedule-detail-edit" data-go="../../schedule-edit_予定の編集/mocks/03-initial.html">編集</span>
               </div>
             </div>
           </div>

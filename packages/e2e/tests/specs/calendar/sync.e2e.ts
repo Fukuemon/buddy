@@ -1,23 +1,11 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
 import { SATO } from '../../fixtures/env'
-import {
-  findGoogleEvent,
-  holdGoogleChanges,
-  shiftGoogleEvent,
-  type GoogleEvent,
-} from '../../fixtures/googleCalendar'
-import { SCHEDULE_DETAIL_URL, scheduleIdFromUrl } from '../../fixtures/schedule'
+import { findGoogleEvent, holdGoogleChanges, shiftGoogleEvent } from '../../fixtures/googleCalendar'
+import { detailDateTime, SCHEDULE_DETAIL_URL, scheduleIdFromUrl } from '../../fixtures/schedule'
 
 const findEvent = (request: APIRequestContext, summary: string) =>
   findGoogleEvent(request, SATO.calendarId, summary)
-
-/** Google カレンダーの予定の日時を、予定の詳細の日時の形（2026-10-22 10:00 - 11:00）にする。 */
-const detailDateTime = (event: GoogleEvent | undefined) => {
-  const start = event?.start?.dateTime ?? ''
-  const end = event?.end?.dateTime ?? ''
-  return `${start.slice(0, 10)} ${start.slice(11, 16)} - ${end.slice(11, 16)}`
-}
 
 /** 日の表示で、佐藤の予定のうちタイトルが title のものを開き、予定の ID を返す。 */
 const openSchedule = async (page: Page, title: string) => {

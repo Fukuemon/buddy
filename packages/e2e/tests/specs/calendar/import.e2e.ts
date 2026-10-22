@@ -100,12 +100,12 @@ test.describe('予定の取り込み', () => {
 
       await test.step('繰り返しの回を開いて保存すると、その回を置き換えた予定の詳細に戻る', async () => {
         await page.getByTestId(/^schedule-event-.+-2026-11-25$/).click()
-        await expect(page.getByTestId('schedule-detail-datetime')).toContainText('2026-11-25')
+        await expect(page.getByTestId('schedule-detail-datetime')).toContainText('2026年11月25日')
         await page.getByTestId('schedule-detail-edit').click()
         await page.getByTestId('schedule-edit-submit').click()
         await expect(page.getByTestId('schedule-detail-modal')).toBeVisible()
         await expect(page).toHaveURL(/\/schedule\/[0-9A-HJKMNP-TV-Z]{26}\?/)
-        await expect(page.getByTestId('schedule-detail-datetime')).toContainText('2026-11-25')
+        await expect(page.getByTestId('schedule-detail-datetime')).toContainText('2026年11月25日')
       })
 
       await test.step('同じ期間をもう一度プレビューすると、全て取り込み済みになる', async () => {
