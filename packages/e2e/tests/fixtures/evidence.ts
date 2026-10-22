@@ -22,7 +22,7 @@ export const EVIDENCE_VARIANTS = variants({
   only: process.env.EVIDENCE_ONLY,
 })
 
-/** パソコンの幅の画面と録画の大きさ。pull request のコメントで読める大きさにする */
+/** パソコンの幅の画面と録画の大きさ。pull request の本文で読める大きさにする */
 export const DESKTOP_VIEWPORT = { width: 1280, height: 800 }
 
 /** スマートフォンの幅の画面と録画の大きさ */

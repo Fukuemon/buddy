@@ -1,6 +1,6 @@
 ---
 name: run-verification-scenarios
-description: packages/e2e/kit で書いたエビデンスの spec を、ローカル環境か検証環境で流して pull request のエビデンスと手動検証のエビデンスを撮り、スクリーンショットと比較の画像で確かめ、pull request に添付する形にそろえるときに使う。「エビデンスの spec を流して撮って」「手動検証のエビデンスを検証環境で撮って」「改修前と改修後のエビデンスを撮り直して」「手動検証のシナリオを実施して」で読み込む。spec を新しく書くときは write-verification-spec を使う。
+description: packages/e2e/kit で書いたエビデンスの spec を、ローカル環境か検証環境で流して pull request のエビデンスと手動検証のエビデンスを撮り、スクリーンショットと比較の画像で確かめ、pull request の本文に入れる形にそろえるときに使う。「エビデンスの spec を流して撮って」「手動検証のエビデンスを検証環境で撮って」「改修前と改修後のエビデンスを撮り直して」「手動検証のシナリオを実施して」で読み込む。spec を新しく書くときは write-verification-spec を使う。
 ---
 
 # run-verification-scenarios
@@ -70,11 +70,11 @@ spec で無理に合わせない。利用者に、食い違った場面、スク
 
 シナリオの直しは、検証シナリオの pull request のブランチで行い、pull request の本文の転記も同じ文に直す。
 
-## pull request に添付する
+## pull request の本文に入れる
 
-- pull request のエビデンスは、`.ai-out/evidence/<番号>/<name>.mp4` を、スキル attach-evidence に従って添付する。`<name>/` の README とスクリーンショットは、確かめるのに使い、添付しない。
+- pull request のエビデンスは、スキル attach-evidence に従って本文の「検証とエビデンス」に入れる。入れるのは、`.ai-out/evidence/<番号>/<name>.mp4` と `<name>/frames/` の判定のスクリーンショットである。`<name>/` の README と `.records/` は、確かめるのに使い、入れない。
 - 検証シナリオの添付する正式なエビデンスは、検証環境で撮ったものにする。ローカル環境で撮ったものは、検証環境で実施する前の確認に使い、添付するかは担当者が決める。
-- シナリオごとに、配置先の `<アクター>/S<n>_<シナリオ名>/` の mp4 を、検証シナリオの pull request に添付する。添付のしかたとコメントの文は、スキル attach-evidence に従う。隠しフォルダの `.records/` は添付しない。
+- シナリオごとに、配置先の `<アクター>/S<n>_<シナリオ名>/` の mp4 を、検証シナリオの pull request に添付する。本文への入れ方は、スキル attach-evidence に従う。隠しフォルダの `.records/` は添付しない。
 - 添付した後に、検証シナリオの pull request に担当者、実施日、OK か NG かを書くのは人が行う。
 
 ## 終えたら
@@ -83,4 +83,4 @@ spec で無理に合わせない。利用者に、食い違った場面、スク
 
 - 撮った環境、バージョン、シナリオと本数、通った本数と流し直した本数
 - 確かめた結果(揃っていない比較の画像、失敗の通知、シナリオと食い違った点)
-- エビデンスの配置先と、添付したコメントの URL
+- エビデンスの配置先と、本文に入れた pull request の URL
