@@ -1,7 +1,7 @@
 ---
 type: design-doc
 title: buddy Design Doc
-description: web と schedule-api と receipt-api の責務と依存、業務の区切りとコンテナの対応、コンテナの間の契約、インフラとの約束
+description: web と予定の API と照合の API の責務と依存、業務の区切りとコンテナの対応、コンテナの間の契約、インフラとの約束
 status: draft
 ---
 
@@ -10,7 +10,7 @@ status: draft
 ## Overview
 
 buddy は、訪問看護の事業所の職員が使う、予定の管理とレセプトの照合のアプリである。  
-職員はブラウザで web を開き、web が schedule-api と receipt-api を呼ぶ。  
+職員はブラウザで web を開き、web が予定の API と照合の API を呼ぶ。  
 誰のどの課題を解くかと、提供する機能と画面は [PRD](../PRD.md) にある。  
 文書のサイトとカタログのデプロイの構成（`apps/docs-site`）は、[apps/docs-site/README.md](https://github.com/Fukuemon/buddy/blob/develop/apps/docs-site/README.md) にある。
 
@@ -18,10 +18,10 @@ buddy は、訪問看護の事業所の職員が使う、予定の管理とレ�
 
 ### Goals
 
-- 照合を、予定の管理と別の API（receipt-api）に分ける。事業所と職員と予定は、同じ DB を使う schedule-api が持つ。
+- 照合を、予定の管理と別の照合の API に分ける。事業所と職員と予定は、同じ DB を使う予定の API が持つ。
 - web と API の間の契約は、API ごとの `openapi.yaml` に置く。
 - 認証は OIDC のブローカーに任せ、トークンは web のサーバーの側だけが持つ。
-- 事業所のデータは schedule-api だけが持ち、ほかの事業所のデータを返さない。
+- 事業所のデータは予定の API だけが持ち、ほかの事業所のデータを返さない。
 
 ### Non-Goals
 
@@ -51,9 +51,9 @@ flowchart TB
   subgraph buddy["buddy"]
     web["web<br/>[コンテナ: TanStack Start]<br/>画面と BFF"]
     valkey[("Valkey<br/>[データの保存先]<br/>web のセッション")]
-    schedule["schedule-api<br/>[コンテナ: Go]<br/>事業所、職員、予定、権限"]
-    receipt["receipt-api<br/>[コンテナ: Go]<br/>照合"]
-    postgres[("PostgreSQL 18<br/>[データの保存先]<br/>schedule-api のデータ")]
+    schedule["schedule<br/>[コンテナ: Go]<br/>事業所、職員、予定、権限"]
+    receipt["receipt<br/>[コンテナ: Go]<br/>照合"]
+    postgres[("PostgreSQL 18<br/>[データの保存先]<br/>予定の API のデータ")]
   end
   gcal["Google Calendar API<br/>[外部のシステム]<br/>職員のカレンダーの予定"]
   staff -- "画面を使う" --> web
@@ -75,7 +75,7 @@ flowchart TB
 ```
 
 矢印ごとの約束は、[コンテナの間の契約](#コンテナの間の契約) にある。  
-図に描いていない流れが 1 つある。schedule-api と receipt-api は、access token を検証するために、ブローカーの JWKS を読む。
+図に描いていない流れが 1 つある。予定の API と照合の API は、access token を検証するために、ブローカーの JWKS を読む。
 
 ### 業務の区切りとコンテナ
 
@@ -83,11 +83,11 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 
 | 業務の区切り | 持つもの | コンテナ |
 | --- | --- | --- |
-| 事業所と職員 | 事業所、部署、チーム、役職、権限、職員、利用者 | schedule-api |
-| 予定 | 単発の予定、繰り返しの予定、キャンセル、訪問の情報 | schedule-api |
-| 照合 | 予定と実績の対の作り方、判定の規則 | receipt-api |
+| 事業所と職員 | 事業所、部署、チーム、役職、権限、職員、利用者 | 予定の API |
+| 予定 | 単発の予定、繰り返しの予定、キャンセル、訪問の情報 | 予定の API |
+| 照合 | 予定と実績の対の作り方、判定の規則 | 照合の API |
 
-- 事業所と職員と予定は、同じ PostgreSQL のデータベースを使い、schedule-api の中でパッケージを分ける。
+- 事業所と職員と予定は、同じ PostgreSQL のデータベースを使い、予定の API の中でパッケージを分ける。
   - パッケージの構成は [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md) にある。
 - 用語と、区切りごとの呼び方の違いは [業務の知識](https://github.com/Fukuemon/buddy/blob/develop/context/domain.md) にある。
 
@@ -100,7 +100,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 - 持たないもの: 業務の規則と認可の判定。
   - web は職員の権限を画面の出し分けに使うが、リクエストを拒否するのは API である。
 
-### schedule-api
+### 予定の API
 
 - 事業所、部署、チーム、役職、権限、職員、利用者、予定を持つ。
 - access token の検証、職員の特定、事業所の確認、職員の権限による予定の閲覧と編集の判定を行う。
@@ -109,7 +109,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 - 持たないもの: 照合の規則。
 - 内部の構成と ER は [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md) にある。
 
-### receipt-api
+### 照合の API
 
 - 予定と実績の CSV を正規化し、対にし、判定して、4 つの区分の結果を返す。
 - 予定は、予定の CSV か Google カレンダーから取る。
@@ -130,15 +130,15 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
   - 例外は、開発者がローカルで文書のサイトの API の仕様のページから、ローカルの API を試すときだけである。API は `CORS_ALLOW_ORIGINS` に挙げたオリジンにだけ CORS のヘッダーを返し、ローカルの compose は、web とローカルの文書のサイトのオリジンを挙げる。
 - ブラウザとブローカー: ログインのときだけ、web がブラウザをブローカーの認可の画面へ転送する。
 - web とブローカー: 認可コードフローでトークンを取得し、更新する。トークンは Valkey のセッションに置く。
-- web と schedule-api、receipt-api: `Authorization` に access token を Bearer で付ける。
-  - 契約の正本は [schedule-api の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/openapi.yaml) と [receipt-api の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/openapi.yaml) である。サーバーの Go のコードと web の型は、そこから生成する。
+- web と予定の API、照合の API: `Authorization` に access token を Bearer で付ける。
+  - 契約の正本は [予定の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/openapi.yaml) と [照合の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/openapi.yaml) である。サーバーの Go のコードと web の型は、そこから生成する。
   - 契約を変えるときの互換の規則は ADR-0003 にある。
   - ADR-0003: [git flow でマージし、アプリごとのバージョンでリリースする](../adr/0003-branch-and-release.md)
-- schedule-api、receipt-api とブローカー: Issuer の discovery と JWKS を読み、access token を検証する。検証に失敗したら 401 を返す。
-- receipt-api、schedule-api と Google Calendar API: 事業所ごとのサービスアカウントになりすました token で、そのアカウントに共有されたカレンダーの予定を読み書きする。サービスアカウントのキーは使わない。
+- 予定の API、照合の API とブローカー: Issuer の discovery と JWKS を読み、access token を検証する。検証に失敗したら 401 を返す。
+- 照合の API、予定の API と Google Calendar API: 事業所ごとのサービスアカウントになりすました token で、そのアカウントに共有されたカレンダーの予定を読み書きする。サービスアカウントのキーは使わない。
   - ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](../adr/0012-google-calendar-facility-service-accounts.md)
   - 事業所は、リクエストの職員かトークンの組織から決める。リクエストを受けない書き出しと増分の取得は、結び付けたカレンダーのレコードの事業所で決める。
-- schedule-api と PostgreSQL: schedule-api だけが読み書きする。
+- 予定の API と PostgreSQL: 予定の API だけが読み書きする。
 
 ### インフラとの約束
 
@@ -147,14 +147,14 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 
 #### コンテナのイメージ
 
-- アプリごとに 1 つのイメージを作る。web、schedule-api、receipt-api。
+- アプリごとに 1 つのイメージを作る。web、予定の API、照合の API。
 - API のイメージは、ヘルスチェックのための `api healthcheck` のサブコマンドを持つ。
 - イメージは設定を持たず、全ての設定を環境変数で受ける。
 - プロセスは 1 つの HTTP のポートで待ち受け、ポートは環境変数 `PORT` で受ける。
 
 #### 環境変数
 
-| 変数 | web | schedule-api | receipt-api | 中身 |
+| 変数 | web | 予定の API | 照合の API | 中身 |
 | --- | --- | --- | --- | --- |
 | `PORT` | 使う | 任意 | 任意 | 待ち受けるポート。API のデフォルトは `8080`。web のイメージは `3000` を入れる |
 | `LOG_LEVEL` | 使わない | 任意 | 任意 | ログの段階。デフォルトは `info` |
@@ -167,27 +167,27 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 | `SESSION_STORE_URL` | 使う | 使わない | 使わない | Valkey の接続先 |
 | `SESSION_SECRET` | 使う | 使わない | 使わない | cookie の署名の鍵。32 バイト以上 |
 | `SESSION_COOKIE_SECURE` | 任意 | 使わない | 使わない | `false` のときだけ、セッションの cookie に Secure を付けない。https でないローカル環境で使う |
-| `SCHEDULE_API_URL` | 使う | 使わない | 使わない | schedule-api の URL |
-| `RECEIPT_API_URL` | 使う | 使わない | 使わない | receipt-api の URL |
+| `SCHEDULE_URL` | 使う | 使わない | 使わない | 予定の API の URL |
+| `RECEIPT_URL` | 使う | 使わない | 使わない | 照合の API の URL |
 | `DB_HOST`、`DB_PORT` | 使わない | 任意 | 使わない | PostgreSQL のホストとポート。デフォルトは `localhost` と `5432` |
 | `DB_USER`、`DB_PASSWORD`、`DB_NAME` | 使わない | 使う | 使わない | PostgreSQL の利用者、パスワード、データベースの名前 |
 | `CORS_ALLOW_ORIGINS` | 使わない | 任意 | 任意 | CORS を許すオリジン。カンマで区切る。空なら CORS のヘッダーを返さない |
 | `MAX_UPLOAD_BYTES` | 使わない | 使わない | 任意 | 照合のリクエストの本文の上限。デフォルトは 10 MiB |
 | `GOOGLE_CALENDARS_FILE` | 使わない | 使わない | 任意 | 職員とカレンダーと組織の対応の JSON。空なら Google カレンダーから予定を取らない |
-| `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` | 使わない | 任意 | 任意 | 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応の JSON。2 つの API で同じ形。schedule-api では、空なら、カレンダーを読む操作は 503 を返し、予定を Google カレンダーに書き出さない。receipt-api では `GOOGLE_CALENDARS_FILE` と一緒に渡す |
-| `GOOGLE_CALENDAR_ENDPOINT` | 使わない | 任意 | 任意 | Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit に向けるときだけ渡す。`GOOGLE_APPLICATION_CREDENTIALS` を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使い、渡さなければ認証をしない。schedule-api では `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` と一緒に渡す |
+| `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` | 使わない | 任意 | 任意 | 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応の JSON。2 つの API で同じ形。予定の API では、空なら、カレンダーを読む操作は 503 を返し、予定を Google カレンダーに書き出さない。照合の API では `GOOGLE_CALENDARS_FILE` と一緒に渡す |
+| `GOOGLE_CALENDAR_ENDPOINT` | 使わない | 任意 | 任意 | Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit に向けるときだけ渡す。`GOOGLE_APPLICATION_CREDENTIALS` を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使い、渡さなければ認証をしない。予定の API では `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` と一緒に渡す |
 | `GOOGLE_CALENDAR_EXPORT_ENABLED` | 使わない | 任意 | 使わない | `true` なら予定を Google カレンダーに書き出す。デフォルトは `false`。サービスアカウントが「予定の変更」の共有だけで書けるかを確かめるまで、本番では `false` にする（ADR-0012 の承認の条件） |
 | `GOOGLE_CALENDAR_EXPORT_INTERVAL` | 使わない | 任意 | 使わない | 予定の書き出しの待ちを確かめる間隔。デフォルトは 30 秒 |
 | `GOOGLE_CALENDAR_SYNC_ENABLED` | 使わない | 任意 | 使わない | `true` なら Google カレンダーの変更を buddy の予定に当てる。デフォルトは `false`。`GOOGLE_CALENDAR_EXPORT_ENABLED` を `true` にして渡す |
 | `GOOGLE_CALENDAR_SYNC_INTERVAL` | 使わない | 任意 | 使わない | Google カレンダーの変わった予定を読む間隔。デフォルトは 2 分 |
 
 - web の `VITE_API_MODE` は、イメージのビルドのときに埋め込む値で、実行のときには読まない。イメージは `bff` でビルドする。
-- receipt-api と schedule-api は、Google の認証情報を Application Default Credentials（`GOOGLE_APPLICATION_CREDENTIALS` など）で読む。  
+- 照合の API と予定の API は、Google の認証情報を Application Default Credentials（`GOOGLE_APPLICATION_CREDENTIALS` など）で読む。  
   読んだ認証情報で、事業所のサービスアカウントになりすます。  
   `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` があるときだけ読み、読めなければ起動しない。  
   `GOOGLE_CALENDAR_ENDPOINT` でフェイクに向けるときは、`GOOGLE_APPLICATION_CREDENTIALS` を渡したときだけ、その認証情報をなりすまさずに使う。
-- Application Default Credentials で認証する主体に、事業所のサービスアカウントごとのトークン作成者のロール（`roles/iam.serviceAccountTokenCreator`）を付ける。プロジェクトでは IAM Service Account Credentials API を有効にする。schedule-api のスコープは、書き出すとき（`GOOGLE_CALENDAR_EXPORT_ENABLED`）は `calendar.events`、ほかは `calendar.readonly` である。
-- schedule-api は、同じプロセスの中で予定の書き出しの処理を実行する。複数のレプリカで実行しても、同じ書き出しの待ちは 1 つのレプリカだけが書く（レコードのロックと期限）。
+- Application Default Credentials で認証する主体に、事業所のサービスアカウントごとのトークン作成者のロール（`roles/iam.serviceAccountTokenCreator`）を付ける。プロジェクトでは IAM Service Account Credentials API を有効にする。予定の API のスコープは、書き出すとき（`GOOGLE_CALENDAR_EXPORT_ENABLED`）は `calendar.events`、ほかは `calendar.readonly` である。
+- 予定の API は、同じプロセスの中で予定の書き出しの処理を実行する。複数のレプリカで実行しても、同じ書き出しの待ちは 1 つのレプリカだけが書く（レコードのロックと期限）。
 
 シークレットは、`OIDC_CLIENT_SECRET`、`SESSION_SECRET`、`DB_PASSWORD`、Workload Identity Federation の外部アカウントの設定である。  
 インフラのリポジトリが、シークレットの保存先から渡す。buddy のリポジトリには置かない。
@@ -195,13 +195,13 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 #### ヘルスチェック
 
 - `GET /healthz`: プロセスが動いていれば 200 を返す。依存先を確かめない。
-- `GET /readyz`: 依存先に届けば 200、届かなければ 503 を返す。schedule-api は PostgreSQL、web は Valkey を確かめる。
-  - receipt-api は起動のときにブローカーの discovery を読み、読めなければ起動しない。起動した後は依存先を確かめず、プロセスが動いていれば 200 を返す。
+- `GET /readyz`: 依存先に届けば 200、届かなければ 503 を返す。予定の API は PostgreSQL、web は Valkey を確かめる。
+  - 照合の API は起動のときにブローカーの discovery を読み、読めなければ起動しない。起動した後は依存先を確かめず、プロセスが動いていれば 200 を返す。
 - 2 つとも認証を求めない。
 
 #### マイグレーション
 
-- schedule-api のイメージは、`api` と `migrate` の 2 つのバイナリを持ち、エントリポイントは `api` である。
+- 予定の API のイメージは、`api` と `migrate` の 2 つのバイナリを持ち、エントリポイントは `api` である。
   - マイグレーションは、エントリポイントを `/usr/local/bin/migrate` にして `up` を渡すと適用して終わる。
 - マイグレーションは golang-migrate の形式で `services/schedule/db/migrations/` に置き、バイナリに埋め込む。
 - インフラは、新しいイメージを起動する前に、同じイメージで `migrate up` を 1 回実行する。マイグレーションは、前のバージョンのアプリが動いたまま適用できる変更だけにする。
@@ -218,13 +218,13 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 ### 事業所の分離
 
 - 事業所は、ブローカーの組織に対応する。
-- schedule-api は、リクエストが指す事業所がトークンの組織の事業所と違えば、403 を返す。
+- 予定の API は、リクエストが指す事業所がトークンの組織の事業所と違えば、403 を返す。
   - 拒否する規則は [事業所の分離](https://github.com/Fukuemon/buddy/blob/develop/context/domain/facility.md) に、パスの形は [予定の管理の Design Doc の Interface](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#interface) にある。
-- receipt-api は、カレンダーに組織を結び付け、トークンの組織のカレンダーだけを読む。予定の CSV での照合は、組織を問わない。
+- 照合の API は、カレンダーに組織を結び付け、トークンの組織のカレンダーだけを読む。予定の CSV での照合は、組織を問わない。
 
 ### 認可
 
-- 予定の閲覧と編集は、職員の権限で schedule-api が判定する。見てよくない予定は一覧から除き、1 件を指す操作には 403 を返す。
+- 予定の閲覧と編集は、職員の権限で予定の API が判定する。見てよくない予定は一覧から除き、1 件を指す操作には 403 を返す。
   - 規則は [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#予定の認可) にある。
   - ADR-0002: [権限を役職のデフォルトと職員ごとの上書きで持つ（PBAC）](../adr/0002-pbac.md)
 
@@ -263,7 +263,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 │   ├── adr/
 │   ├── screens/         # 画面仕様書とモック
 │   ├── api/             # 各 API の openapi.yaml へのシンボリックリンクと、それを描くページ
-│   └── db/              # schedule-api のマイグレーションから tbls で生成するテーブルの一覧と ER 図
+│   └── db/              # 予定の API のマイグレーションから tbls で生成するテーブルの一覧と ER 図
 ├── context/             # 作業の中で参照する規約と事実
 ├── scripts/             # 生成物と画面仕様書のチェック、サイトのビルド
 ├── compose.yml          # ローカル環境で全体を起動する

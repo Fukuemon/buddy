@@ -6,7 +6,7 @@
 
 ## Context
 
-buddy は、web、schedule-api、receipt-api の 3 つのアプリと、packages/ui、packages/e2e を 1 つのリポジトリに持つ。ブランチの運用とリリースの方針を決める必要がある。
+buddy は、web、予定の API、照合の API の 3 つのアプリと、packages/ui、packages/e2e を 1 つのリポジトリに持つ。ブランチの運用とリリースの方針を決める必要がある。
 
 - web は、各 API の `openapi.yaml` から生成した型で API を呼ぶ。API の定義、サーバーの生成物、画面の型は、同じ変更でそろえる必要がある。
 - 3 つのアプリは別のイメージでデプロイし、デプロイの順序と時期がアプリごとに違うことがある。

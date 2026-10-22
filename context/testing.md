@@ -27,8 +27,8 @@ status: stable
 
 ## Runtime Requirements
 
-- schedule-api の結合テストは Docker が要る。testcontainers-go が PostgreSQL のコンテナを起動し、接続の値はテストの中に固定してある。環境変数は要らない。
-- receipt-api のテストと web の Vitest は、外部のネットワークと環境変数を要らない。receipt-api のテストは、フェイクの Issuer と Calendar API を loopback で立てる。web は `VITE_API_MODE` を指定しなければフェイクの API で動く。
+- 予定の API の結合テストは Docker が要る。testcontainers-go が PostgreSQL のコンテナを起動し、接続の値はテストの中に固定してある。環境変数は要らない。
+- 照合の API のテストと web の Vitest は、外部のネットワークと環境変数を要らない。照合の API のテストは、フェイクの Issuer と Calendar API を loopback で立てる。web は `VITE_API_MODE` を指定しなければフェイクの API で動く。
 - `packages/ui` のテストは、Playwright の chromium が要る（`pnpm --filter @buddy/ui exec playwright install chromium`）。
 - E2E は、ルートの compose の全体（ポートは [CONTRIBUTING.md](../CONTRIBUTING.md) の「ローカル環境で全体を起動する」）と、Playwright の chromium が要る。
 - 照合の互換のテストの期待値を作り直すときだけ、元の Python の実装のチェックアウトと uv が要る（`services/receipt/tools/parity/README.md`）。
@@ -39,12 +39,12 @@ status: stable
 | --- | --- | --- |
 | PostgreSQL | 機能のパッケージのテストはメモリ上のフェイク（`inmem`）、リポジトリのテストは testcontainers の本物 | compose の本物 |
 | OIDC の Issuer | `oidctest` のフェイク（テストの中で鍵を作る） | compose の mock-oauth2-server |
-| Google Calendar API | `gcaltest` のフェイク。書き込みは `If-Match` を比べて 412 を返し、`Failures` でエラーを返せる | 予定の API は compose の calendarpit（予定は `compose/calendarpit/fixture.json`。書いた予定と token は volume に残り、`docker compose down -v` で消える。予定は管理の画面で見る）。E2E は calendarpit の管理の API で予定を読んで直し、中継の `gcalhold` で Google の変更を予定の API に渡さないようにする。receipt-api は、同じ calendarpit の森のカレンダー（`compose/receipt-calendars.json`）を、`gcalhold` を通さずに読む |
+| Google Calendar API | `gcaltest` のフェイク。書き込みは `If-Match` を比べて 412 を返し、`Failures` でエラーを返せる | 予定の API は compose の calendarpit（予定は `compose/calendarpit/fixture.json`。書いた予定と token は volume に残り、`docker compose down -v` で消える。予定は管理の画面で見る）。E2E は calendarpit の管理の API で予定を読んで直し、中継の `gcalhold` で Google の変更を予定の API に渡さないようにする。照合の API は、同じ calendarpit の森のカレンダー（`compose/receipt-calendars.json`）を、`gcalhold` を通さずに読む |
 | web の画面から見た API（`BuddyApi`） | `src/api/fake/` のフェイク | compose の本物 |
 | web のサーバーから見た 2 つの API | MSW の handler（`apps/web/src/mocks/`、`src/test/server.ts`） | compose の本物 |
 
 - テストのデータは、ダミーデータだけを使う。実在の事業所、人、連絡先を入れず、メールは `example.com` にする。
-- schedule-api のシードは `services/schedule/db/seed/seed.sql` にあり、結合テストと compose が同じシードを適用する。全ての環境で同じマスタは、シードではなくマイグレーションが入れる。
+- 予定の API のシードは `services/schedule/db/seed/seed.sql` にあり、結合テストと compose が同じシードを適用する。全ての環境で同じマスタは、シードではなくマイグレーションが入れる。
 - 照合の入力の CSV は `services/receipt/testdata/` に、互換のテストのケースは `testdata/parity/<ケース>/` に置く。
 - web のテストで HTTP を受けるのは MSW だけにし、fetch を引数で差し替えない。共通の handler は成功のレスポンスだけを返し、異常系はテストごとに `server.use()` で上書きする。handler の無いリクエストはテストを失敗させる。
   - 送ったリクエストの中身はテストの側で確かめない。上書きした handler が中身を確かめ、合わなければ 400 を返して、テストの結果を変える。
@@ -87,7 +87,7 @@ pull request と develop への push では、CI（[ci.yml](../.github/workflows
   - `setup` は、青木 陽菜（マネージャー）と森 健太（チームリーダー、名前は `dev-mori`）の 2 人のログインの状態を保存する。リーダーで確かめる spec は、`test.use({ storageState: LEADER_STATE })` で切り替える。
   - 環境変数 `E2E_BASE_URL`（デフォルトは `http://localhost:3000`）と `E2E_LOGIN_NAME`（デフォルトは `dev-aoki`）で、向ける画面とログインの名前を変える。
   - Google カレンダーの spec が向ける calendarpit と gcalhold は、環境変数 `E2E_CALENDARPIT_URL` と `E2E_GCALHOLD_URL` で変える。デフォルトは、それぞれ `http://localhost:4173` と `http://localhost:8085` である。
-  - schedule-api は初回のログインで `sub` を職員に結び付ける。ローカルで青木 陽菜に別の名前で入ったことがあれば、`E2E_LOGIN_NAME` をその名前にするか、`docker compose down -v` でデータを消す。
+  - 予定の API は初回のログインで `sub` を職員に結び付ける。ローカルで青木 陽菜に別の名前で入ったことがあれば、`E2E_LOGIN_NAME` をその名前にするか、`docker compose down -v` でデータを消す。
   - Google カレンダーの取り込みの spec は、森にカレンダーを結び付けて取り込んだまま残す。同じ DB で 2 回目を流すと落ちるので、流し直すときは `docker compose down -v` で作り直す。
   - シードは空の DB にだけ適用される。`dev-mori` で入れないときや、職員の一覧に佐藤 美咲がいないときは、シードを変える前の DB なので、`docker compose down -v` で作り直す。
 - 画面を変える pull request では、その画面の流れの E2E を流す。testid を変えたら、E2E と画面仕様書の両方を直す。

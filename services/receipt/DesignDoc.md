@@ -1,7 +1,7 @@
 ---
 type: feature-design
 title: レセプトの照合
-description: receipt-api のパッケージの構成、予定のデータソース、入力の CSV のカラム、正規化、予定と実績の対の作り方、判定の規則、サービスごとの許容範囲、結果の JSON と画面の表示、元の実装との違い
+description: 照合の API のパッケージの構成、予定のデータソース、入力の CSV のカラム、正規化、予定と実績の対の作り方、判定の規則、サービスごとの許容範囲、結果の JSON と画面の表示、元の実装との違い
 status: draft
 governs: services/receipt
 verified_commit: 581e5d4
@@ -11,7 +11,7 @@ verified_commit: 581e5d4
 
 ## Overview
 
-receipt-api は、訪問の予定と電子カルテ（iBow）の実績を比べ、食い違いを 4 つの区分に分けて JSON で返す。  
+照合の API は、訪問の予定と電子カルテ（iBow）の実績を比べ、食い違いを 4 つの区分に分けて JSON で返す。  
 照合の規則は、以前に使っていた照合のツール（Python、pandas）と、予定の CSV を作る GAS から移植した。  
 全体の中での責務と依存は [buddy Design Doc](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md) にある。  
 起動と API の使い方は [README.md](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/README.md) にある。
@@ -63,7 +63,7 @@ receipt-api は、訪問の予定と電子カルテ（iBow）の実績を比べ�
 sequenceDiagram
   actor S as 職員
   participant W as web
-  participant R as receipt-api
+  participant R as receipt
   participant G as Google Calendar API
 
   S->>W: 実績の CSV と、予定の CSV か対象の月を選ぶ
@@ -94,7 +94,7 @@ Google カレンダーの予定も、予定の CSV と同じ正規化と照合�
 ### 予定のデータソース: Google カレンダー
 
 Google カレンダーは、今も職員が予定を入れる場所なので、照合の予定のデータソースとして残す。  
-receipt-api は、Google Calendar API を直接呼ぶ。
+照合の API は、Google Calendar API を直接呼ぶ。
 
 - 認証は Application Default Credentials で、カレンダーの組織のサービスアカウントになりすました token で読む。スコープは `calendar.readonly` だけにする。
   - ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](https://github.com/Fukuemon/buddy/blob/876381365355f7e4dab03f6dfdb3d6fb8a9f6947/docs/adr/0012-google-calendar-facility-service-accounts.md)
@@ -108,7 +108,7 @@ receipt-api は、Google Calendar API を直接呼ぶ。
   - 予定の API はカレンダーの設定のファイルを持たず、対応のファイルだけを読む。同じファイルを 2 つの API に渡せる。
   - カレンダーの設定の組織に対応が無いときは、起動しない。
 - 照合の対象のカレンダーは、サーバーの設定のファイル（`GOOGLE_CALENDARS_FILE`）に置き、リクエストで受けない。任意のカレンダーを読ませないためである。
-- 設定のカレンダーごとに、使う事業所の組織の ID（`org_id`）を持たせる。リクエストの access token の組織と同じ `org_id` のカレンダーだけを読む。1 つの receipt-api を複数の事業所で使っても、別の事業所の職員の予定を読ませないためである。
+- 設定のカレンダーごとに、使う事業所の組織の ID（`org_id`）を持たせる。リクエストの access token の組織と同じ `org_id` のカレンダーだけを読む。1 つの照合の API を複数の事業所で使っても、別の事業所の職員の予定を読ませないためである。
 
 カレンダーの予定は、次の規則で照合の予定にする。
 

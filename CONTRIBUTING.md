@@ -61,15 +61,15 @@ apm lifecycle trust
 docker compose up --build --wait
 ```
 
-`--wait` は、全てのサービスのヘルスチェックが通るまで待つ。schedule-api は、起動の前にマイグレーションとシードを適用する。シードは、事業所のレコードが既にあれば適用しない。
+`--wait` は、全てのサービスのヘルスチェックが通るまで待つ。予定の API は、起動の前にマイグレーションとシードを適用する。シードは、事業所のレコードが既にあれば適用しない。
 
 ポートは `127.0.0.1` にだけ公開する。
 
 | サービス | ローカルの URL | ポートを変える環境変数 |
 | --- | --- | --- |
 | web | `http://localhost:3000` | `WEB_PORT` |
-| schedule-api | `http://localhost:8080` | `SCHEDULE_API_PORT` |
-| receipt-api | `http://localhost:8090` | `RECEIPT_API_PORT` |
+| schedule | `http://localhost:8080` | `SCHEDULE_PORT` |
+| receipt | `http://localhost:8090` | `RECEIPT_PORT` |
 | idp | `http://localhost:9000/buddy` | `IDP_PORT` |
 | postgres | `localhost:15432` | `POSTGRES_PORT` |
 | valkey | `localhost:6379` | `VALKEY_PORT` |
@@ -79,11 +79,11 @@ docker compose up --build --wait
 - IdP は navikt/mock-oauth2-server である。ログインの画面で入れた名前が `sub` になり、ほかのクレームは `compose/idp.json` の値になる。
   - デフォルトのクレームは、シードの職員の青木 陽菜（組織 `org-sample`）を指す。ログインの画面のクレームの欄に書いた値は、`compose/idp.json` のクレームを上書きしない。
   - シードは森 健太の `sub` を `dev-mori` に結び付けてあるので、名前に `dev-mori` を入れると森 健太（チームリーダー）として入る。ほかの職員で入るときは、DB でその職員の `users.sub` に入れた名前で入る。
-  - schedule-api は、初回のログインで `sub` を職員に結び付ける。一度結び付いた名前は、その職員として扱う。
+  - 予定の API は、初回のログインで `sub` を職員に結び付ける。一度結び付いた名前は、その職員として扱う。
   - シードは、事業所のレコードが無い空の DB にだけ適用される。シードを変えた後は、`docker compose down -v` で DB を作り直す。
 - API が受けるトークンの `iss` は `http://idp:9000/buddy` である。IdP は `iss` をトークンのリクエストの Host から決めるため、トークンはコンテナの間の名前 `idp` で取る。
 - `http://localhost:3000` を開くと IdP のログインの画面へ移る。名前に `dev-aoki` を入れると、青木 陽菜としてログインする。
-- receipt-api は、calendarpit の森 健太のカレンダーを読む。読むカレンダーは `compose/receipt-calendars.json` にある。
+- 照合の API は、calendarpit の森 健太のカレンダーを読む。読むカレンダーは `compose/receipt-calendars.json` にある。
   - 照合の画面で、予定の取り方に「Google カレンダー」を、対象の月に `2026-11` を選ぶと、`compose/calendarpit/fixture.json` の森のその月の予定で照合できる。
 - データを消して最初からにするときは、`docker compose down -v` で PostgreSQL と calendarpit のボリュームを消す。
 - 別の worktree で同時に起動するときは、`docker compose -p <名前> up --build --wait` でプロジェクトの名前を変え、上の表の環境変数でポートをずらす。コンテナ、ボリューム、予定の API のイメージがプロジェクトごとに分かれる。E2E は `E2E_BASE_URL`、`E2E_CALENDARPIT_URL`、`E2E_GCALHOLD_URL` を合わせて流す。
@@ -107,7 +107,7 @@ curl -H "Authorization: Bearer $TOKEN" -F visits=@services/receipt/testdata/visi
 
 文書のサイトの API の仕様のページからも、ローカルの API を呼べる。
 
-1. `docker compose up --build --wait schedule-api receipt-api` で API を立てる。
+1. `docker compose up --build --wait schedule receipt` で API を立てる。
 2. `uv run zensical serve` で、文書のサイトを `http://localhost:8000` で開く。compose の 2 つの API は、このオリジンだけに CORS を許すので、`127.0.0.1` ではなく `localhost` で開く。
 3. 「API の仕様」のページで操作を選び、「Test Request」を押す。
 4. 上の手順で取った `$TOKEN` の値を「Bearer Token」の欄に貼り、「Send」を押す。
@@ -135,7 +135,7 @@ pull request を作ると、ワークフロー「文書のサイト」がプレ�
 
 - ローカルで成果物を作るときは、ルートで `pnpm site:build` を実行する。
 - ER 図だけをローカルで見るときは、ルートで `pnpm build:erd` を実行して `erd/` を作り、静的なファイルとして配信して開く。
-  - ER 図は `docs/db/schedule-api/schema.json` から作るので、テーブルを変えたときは先に `pnpm generate:db-docs` を流す。
+  - ER 図は `docs/db/schedule/schema.json` から作るので、テーブルを変えたときは先に `pnpm generate:db-docs` を流す。
 
   ```sh
   pnpm build:erd
@@ -196,7 +196,7 @@ pnpm lint:openapi
 | `services/schedule/openapi.yaml` | `services/schedule` で `go generate ./...` | `services/schedule/internal/httpapi/openapi/` |
 | `services/schedule/db/` の SQL | `services/schedule` で `sqlc generate` | `services/schedule/internal/postgres/sqlcgen/` |
 | どちらかの openapi.yaml | `pnpm --filter @buddy/web generate:api` | `apps/web/src/api/generated/` |
-| `services/schedule/db/migrations/`、`services/schedule/.tbls.yml` | `pnpm generate:db-docs`（Docker が要る） | `docs/db/schedule-api/`（テーブル定義書と ER 図） |
+| `services/schedule/db/migrations/`、`services/schedule/.tbls.yml` | `pnpm generate:db-docs`（Docker が要る） | `docs/db/schedule/`（テーブル定義書と ER 図） |
 | `packages/ui/src/tokens/semantic.css`、`@digital-go-jp/design-tokens` | `node scripts/build-mock-tokens.mjs` | `docs/screens/_common/tokens.css`（画面のモックが読む） |
 
 テーブルを足したときは、`.tbls.yml` の `viewpoints` のどれかに入れる。  

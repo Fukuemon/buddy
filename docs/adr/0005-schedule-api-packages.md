@@ -1,4 +1,4 @@
-# ADR-0005: schedule-api の規則と手順を機能ごとのパッケージにまとめる
+# ADR-0005: 予定の API の規則と手順を機能ごとのパッケージにまとめる
 
 ## Status
 
@@ -6,7 +6,7 @@
 
 ## Context
 
-schedule-api は、domain、usecase、infrastructure、presentation の層でパッケージを分けていた。1 つの機能の規則（domain）と手順（usecase）が別のパッケージにあり、usecase は全ての機能を 1 つのパッケージに持っていた。
+予定の API は、domain、usecase、infrastructure、presentation の層でパッケージを分けていた。1 つの機能の規則（domain）と手順（usecase）が別のパッケージにあり、usecase は全ての機能を 1 つのパッケージに持っていた。
 
 - 職員の役職を変える操作（PR #67）は、手で書いた Go の 9 ファイルに触れた。domain、usecase、mysql、handler の 4 つのパッケージと、それぞれのテストにまたがる。
 - usecase のテストのフェイクは、全てのリポジトリを 1 つのメモリ上の store に持っていた。

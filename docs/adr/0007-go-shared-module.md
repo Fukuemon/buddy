@@ -6,7 +6,7 @@
 
 ## Context
 
-schedule-api と receipt-api は、別の Go の module（`apps/schedule-api/go.mod`、`apps/receipt-api/go.mod`）である。module が別なので、Go の `internal/` で共有できず、次のコードをそれぞれにコピーしていた。
+予定の API と照合の API は、別の Go の module（`apps/schedule-api/go.mod`、`apps/receipt-api/go.mod`）である。module が別なので、Go の `internal/` で共有できず、次のコードをそれぞれにコピーしていた。
 
 - access token の検証（`internal/oidc/oidc.go`）。2 つのコピーは、返す主張の型だけが違う
 - テストのフェイクの Issuer（`internal/oidc/oidctest`）。2 つのコピーは同じ

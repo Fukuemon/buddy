@@ -1,4 +1,4 @@
-# receipt-api
+# 照合の API
 
 iBow から出した実訪問の CSV と予定（予定の CSV か Google カレンダー）を照合し、不整合、予定のみ、実績のみ、整合の 4 つに分けて返す API。  
 照合の規則と、元の Python との違いは [DesignDoc.md](DesignDoc.md) にある。
@@ -13,14 +13,14 @@ mise install go golangci-lint
 
 ## 起動する
 
-API の 8080 とフェイクの Issuer の 9000 は、ルートの compose の schedule-api と IdP と重なる。  
-compose を起動しているときは、重なる 2 つを `docker compose stop schedule-api idp` で止めてから実行する。
+API の 8080 とフェイクの Issuer の 9000 は、ルートの compose の予定の API と IdP と重なる。  
+compose を起動しているときは、重なる 2 つを `docker compose stop schedule idp` で止めてから実行する。
 
 ```sh
 # ブローカーの代わりに、フェイクの Issuer を別のターミナルで起動する
 go run ./cmd/devissuer -addr 127.0.0.1:9000
 
-export OIDC_ISSUER=http://127.0.0.1:9000 OIDC_AUDIENCE=receipt-api
+export OIDC_ISSUER=http://127.0.0.1:9000 OIDC_AUDIENCE=receipt
 go run ./cmd/api
 ```
 
@@ -48,11 +48,11 @@ TOKEN=$(curl -s '127.0.0.1:9000/token?sub=dev-aoki&org_id=org-sample' | jq -r .a
 コンテナで起動するときは、このディレクトリで次を実行する。ビルドの文脈はリポジトリの直下である（`packages/go` を読むため）。
 
 ```sh
-docker build -f Dockerfile -t receipt-api ../..
-docker run --rm -p 8080:8080 -e OIDC_ISSUER=<Issuer の URL> -e OIDC_AUDIENCE=receipt-api receipt-api
+docker build -f Dockerfile -t receipt ../..
+docker run --rm -p 8080:8080 -e OIDC_ISSUER=<Issuer の URL> -e OIDC_AUDIENCE=receipt receipt
 ```
 
-ルートの compose の receipt-api は、Google カレンダーの代わりに calendarpit を読む。  
+ルートの compose の照合の API は、Google カレンダーの代わりに calendarpit を読む。  
 読むカレンダーは `compose/receipt-calendars.json` の森 健太のカレンダーで、サービスアカウントの対応と認証の情報は予定の API と同じものを使う。  
 `compose/calendarpit/fixture.json` の森の予定は `2026-11` の月にあるので、`month=2026-11` で照合すると、その予定が結果に出る。  
 起動とトークンの取り方は、[CONTRIBUTING.md](../../CONTRIBUTING.md) の「ローカル環境で全体を起動する」にある。

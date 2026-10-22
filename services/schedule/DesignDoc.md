@@ -1,7 +1,7 @@
 ---
 type: feature-design
 title: 予定の管理
-description: schedule-api のコードの構成、テーブルの構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更とキャンセル、Google カレンダーの取り込み、書き出し、同期
+description: 予定の API のコードの構成、テーブルの構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更とキャンセル、Google カレンダーの取り込み、書き出し、同期
 status: stable
 governs: services/schedule
 verified_commit: b80bb16
@@ -11,7 +11,7 @@ verified_commit: b80bb16
 
 ## Overview
 
-schedule-api は、事業所ごとの予定、職員、利用者、権限を持ち、web に API で渡す。  
+予定の API は、事業所ごとの予定、職員、利用者、権限を持ち、web に API で渡す。  
 全体の中での責務と依存は [buddy Design Doc](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md) にある。
 
 ## Scope
@@ -29,7 +29,7 @@ schedule-api は、事業所ごとの予定、職員、利用者、権限を持�
 
 - 住所とエリア、訪問の順路、経営数値、月の稼働時間の集計の表
 - ログインとパスワード。ブローカーが持つ
-- 照合の規則。receipt-api が持つ
+- 照合の規則。照合の API が持つ
 
 ## Design
 
@@ -37,7 +37,7 @@ schedule-api は、事業所ごとの予定、職員、利用者、権限を持�
 
 規則と手順は機能ごとのパッケージに置き、DB と HTTP のアダプタは 1 つずつ置く。機能のパッケージの中は、手順（`Usecase`）、規則（状態を持たない関数かエンティティのメソッド）、集約の単位のリポジトリに分ける。決めた理由は ADR-0005 と ADR-0010 にあり、依存してよい向きは [コードベースの構造](https://github.com/Fukuemon/buddy/blob/develop/context/codebase.md) にある。
 
-- ADR-0005: [schedule-api の規則と手順を機能ごとのパッケージにまとめる](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0005-schedule-api-packages.md)
+- ADR-0005: [予定の API の規則と手順を機能ごとのパッケージにまとめる](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0005-schedule-api-packages.md)
 - ADR-0010: [予定の API の機能のパッケージで、手順を usecase、規則を関数、リポジトリを集約の単位に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0010-schedule-api-usecase-boundaries.md)
 
 | 種類 | パッケージ | 持つもの |
@@ -52,7 +52,7 @@ schedule-api は、事業所ごとの予定、職員、利用者、権限を持�
 | アダプタ | `internal/ulid` | `IDGenerator` を ULID で実装し、ID の形を確かめる |
 | アダプタ | `internal/gcal` | `calendar.EventSource`（`Reader`）と `calendar.EventWriter`（`Writer`）を Google Calendar API で実装する。繰り返しの予定を展開せずに、親の予定と例外の回を読み、回ごとにする繰り返しだけを events.instances で回に展開する。`calendar.Accounts` の実装（`Accounts`）は、事業所の組織のサービスアカウントで `Reader` と `Writer` を作る。テストのフェイクの API は `internal/gcal/gcaltest` に置く |
 | 設定 | `internal/config` | 環境変数から API とマイグレーションの設定を読む。DB の接続の値は自分の型で持ち、`cmd` がアダプタの設定にコピーする |
-| 共有 | `packages/go/oidc`、`packages/go/healthcheck`、`packages/go/gcaltitle`、`packages/go/gcalauth`（別の module） | access token の JWKS での検証、テストと `cmd/devissuer` が使うフェイクの Issuer（`oidctest`）、`api healthcheck`、Google カレンダーの予定のタイトルの解釈、組織ごとのサービスアカウントで Google Calendar API を呼ぶクライアント（ADR-0012）。receipt-api と共有する（ADR-0007） |
+| 共有 | `packages/go/oidc`、`packages/go/healthcheck`、`packages/go/gcaltitle`、`packages/go/gcalauth`（別の module） | access token の JWKS での検証、テストと `cmd/devissuer` が使うフェイクの Issuer（`oidctest`）、`api healthcheck`、Google カレンダーの予定のタイトルの解釈、組織ごとのサービスアカウントで Google Calendar API を呼ぶクライアント（ADR-0012）。照合の API と共有する（ADR-0007） |
 | アダプタ | `internal/httpapi/openapi` | `openapi.yaml` から生成した型と strict server のインターフェイス |
 | アダプタ | `internal/httpapi` | 生成したインターフェイスを実装するハンドラと、gin のミドルウェア。リクエストは、埋め込んだ `openapi.yaml` の定義で確かめる |
 | cmd | `cmd/api`、`cmd/migrate`、`cmd/devissuer`、`cmd/gcalhold` | 起動、マイグレーションとシード、ローカルで試すためのフェイクの Issuer、compose の calendarpit の前に置く中継（本番のイメージに入れない） |
@@ -63,7 +63,7 @@ schedule-api は、事業所ごとの予定、職員、利用者、権限を持�
 
 ### テーブルの構成
 
-次の図は、schedule-api の全てのテーブルと、その間の関係を示す。カラム、制約、インデックスは、マイグレーションから生成した[テーブル定義書](https://github.com/Fukuemon/buddy/blob/develop/docs/db/schedule-api/README.md)（文書のサイトでは「DB の設計」の「テーブルの一覧」）にある。テーブル定義書の Viewpoints は、事業所と組織、職員と権限、利用者、予定と訪問、繰り返しの予定、外部のカレンダーの取り込みと書き出しの観点ごとに、テーブルを絞った ER 図を持つ。  
+次の図は、予定の API の全てのテーブルと、その間の関係を示す。カラム、制約、インデックスは、マイグレーションから生成した[テーブル定義書](https://github.com/Fukuemon/buddy/blob/develop/docs/db/schedule/README.md)（文書のサイトでは「DB の設計」の「テーブルの一覧」）にある。テーブル定義書の Viewpoints は、事業所と組織、職員と権限、利用者、予定と訪問、繰り返しの予定、外部のカレンダーの取り込みと書き出しの観点ごとに、テーブルを絞った ER 図を持つ。  
 DB は PostgreSQL 18 で、見直したテーブルは初期のマイグレーションで作り、書き出しと同期のカラムとテーブルは段階ごとのマイグレーションで足す（ADR-0011）。テーブルとカラムの説明は、マイグレーションの `COMMENT ON` に書く。
 
 - ADR-0011: [予定の API の DB を PostgreSQL にし、見直したテーブルでマイグレーションを作り直す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0011-schedule-api-postgresql.md)
@@ -170,7 +170,7 @@ erDiagram
 
 ### 認証から事業所の確認までの流れ
 
-次の図は、web が予定の一覧を求めたときに、schedule-api が職員を特定し、事業所を確かめ、権限で予定を絞るまでの流れを示す。
+次の図は、web が予定の一覧を求めたときに、予定の API が職員を特定し、事業所を確かめ、権限で予定を絞るまでの流れを示す。
 
 ```mermaid
 sequenceDiagram
@@ -275,12 +275,12 @@ sequenceDiagram
 
 ### Google カレンダーは事業所のサービスアカウントで読み書きする
 
-schedule-api は、Google Calendar API を、事業所ごとのサービスアカウントになりすました token で呼ぶ。  
+予定の API は、Google Calendar API を、事業所ごとのサービスアカウントになりすました token で呼ぶ。  
 職員は自分の事業所のアカウントにカレンダーを共有するので、ほかの事業所の職員が共有したカレンダーは、ID を入れても読めず、結び付けられない。
 
 - ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](https://github.com/Fukuemon/buddy/blob/876381365355f7e4dab03f6dfdb3d6fb8a9f6947/docs/adr/0012-google-calendar-facility-service-accounts.md)
 
-- 組織の ID とサービスアカウントの対応は、運営側が設定のファイル（`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`）で渡す。schedule-api は、事業所の `facilities.org_id` で対応を引く。形は照合の API と同じで、同じファイルを渡せる。
+- 組織の ID とサービスアカウントの対応は、運営側が設定のファイル（`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`）で渡す。予定の API は、事業所の `facilities.org_id` で対応を引く。形は照合の API と同じで、同じファイルを渡せる。
 - 事業所は、リクエストを受ける操作では、パスの事業所（認証のミドルウェアがトークンの職員の事業所と一致することを確かめる）か、結び付けたカレンダーのレコードの事業所で決める。リクエストを受けない書き出しと増分の取得は、カレンダーのレコードの事業所（`external_calendars.facility_id`）で決める。リクエストの本文からは受けない。
 - 対応の無い事業所と、組織に結び付けていない事業所のカレンダーの操作は、503 の `calendar_not_configured` を返す。書き出しは、書き直しの回数の上限まで待ちを残す。
 - サービスアカウントごとの Calendar API のクライアントを起動のときに作り、token は有効期限まで使い回す。共有のコードは `packages/go/gcalauth` にある。
@@ -299,7 +299,7 @@ schedule-api は、Google Calendar API を、事業所ごとのサービスア�
 ```mermaid
 sequenceDiagram
   participant web
-  participant api as schedule-api
+  participant api as schedule
   participant g as Google Calendar API
   participant db as PostgreSQL
   web->>api: プレビュー（期間）
@@ -334,7 +334,7 @@ buddy で作り、変え、キャンセルした予定を、予定の職員が�
 ```mermaid
 sequenceDiagram
   participant web
-  participant api as schedule-api
+  participant api as schedule
   participant db as PostgreSQL
   participant x as 書き出しの処理
   participant g as Google Calendar API
@@ -446,7 +446,7 @@ flowchart LR
 ```
 
 - calendarpit は、全ての Calendar API の要求に bearer token を求め、token の利用者が持つカレンダーだけを読ませる。サービスアカウントの token は出さない。
-  - compose の `calendarpit-authorize` が、fixture の利用者 `schedule-api` として同意を通す。取った refresh token を、`authorized_user` の Application Default Credentials のファイルに書く。
+  - compose の `calendarpit-authorize` が、fixture の利用者 `schedule` として同意を通す。取った refresh token を、`authorized_user` の Application Default Credentials のファイルに書く。
   - 予定の API は、`GOOGLE_CALENDAR_ENDPOINT` を渡したとき、`GOOGLE_APPLICATION_CREDENTIALS` のファイルだけで認証する。
 - E2E は、calendarpit の管理の API（`/__calendarpit/calendars/{id}/events`）で、予定の API が書いた予定を読む。職員が Google で予定を直したときの代わりに、同じ API で予定を直す。手で確かめるときは、calendarpit の管理の画面を使う。
 
