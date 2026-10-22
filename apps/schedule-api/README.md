@@ -27,7 +27,7 @@ API とマイグレーションは、次の環境変数を読む。
 | `CORS_ALLOW_ORIGINS` | いいえ | 空 | カンマで区切ったオリジン。空なら CORS のヘッダーを返さない |
 | `LOG_LEVEL` | いいえ | `info` | `debug`、`info`、`warn`、`error` のいずれか |
 | `GOOGLE_CALENDAR_SERVICE_ACCOUNT` | いいえ | 空 | 職員がカレンダーを共有する相手のサービスアカウントのメールアドレス。空なら Google カレンダーを読み書きせず、カレンダーを読む操作は 503 を返し、予定の書き出しの処理を動かさない。認証の情報は Application Default Credentials で、書き出すときはスコープ `calendar.events` で読む |
-| `GOOGLE_CALENDAR_ENDPOINT` | いいえ | 空 | Calendar API の代わりに呼ぶ URL。フェイクの API で試すためのもので、認証をしない。`GOOGLE_CALENDAR_SERVICE_ACCOUNT` と一緒に渡す |
+| `GOOGLE_CALENDAR_ENDPOINT` | いいえ | 空 | Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit で試すためのもので、認証は `GOOGLE_APPLICATION_CREDENTIALS` のファイルで行い、無ければ認証しない。`GOOGLE_CALENDAR_SERVICE_ACCOUNT` と一緒に渡す |
 | `GOOGLE_CALENDAR_EXPORT_ENABLED` | いいえ | `false` | `true` なら、予定を Google カレンダーに書き出す。`GOOGLE_CALENDAR_SERVICE_ACCOUNT` と一緒に渡す。`false` のときは書き出しの待ちを積まず、スコープは `calendar.readonly` で読む |
 | `GOOGLE_CALENDAR_EXPORT_INTERVAL` | いいえ | `30s` | 予定の書き出しの待ちを確かめる間隔。Go の時間の書式で、`1s` 以上 |
 | `GOOGLE_CALENDAR_SYNC_ENABLED` | いいえ | `false` | `true` なら、Google カレンダーの変わった予定を読み、buddy の予定に当てる。`GOOGLE_CALENDAR_EXPORT_ENABLED` を `true` にして渡す |
@@ -74,16 +74,24 @@ curl -H "Authorization: Bearer $TOKEN" localhost:8080/v1/facilities/01M3TC5H00QV
 
 フェイクの Issuer は、起動のたびに署名の鍵を作り直す。Issuer を起動し直したら、API も起動し直す。
 
-Google カレンダーの取り込みをローカルで試すときは、Calendar API のフェイク `cmd/fakegcal` を別のターミナルで起動し、API に向ける。  
-フェイクは、ルートの `compose/fake-google-calendar.json` の予定を返す。compose は同じフェイクを `fake-google` として起動する。
+Google カレンダーの取り込みをローカルで試すときは、Google Calendar API をローカル環境で再現する [calendarpit](https://calendarpit.dev/ja/) を起動し、API に向ける。  
+calendarpit は、ルートの `compose/calendarpit/fixture.json` の職員のカレンダーと予定を持つ。compose は同じ calendarpit を `calendarpit` として起動する。  
+calendarpit はサービスアカウントの token を出さない。`compose/calendarpit/authorize.mjs` で fixture の利用者の refresh token を取り、Application Default Credentials のファイルに書いて渡す。
 
 ```sh
-go run ./cmd/fakegcal -addr 127.0.0.1:8085 -file ../../compose/fake-google-calendar.json
+docker run -d --rm --name calendarpit -p 127.0.0.1:4173:4173 \
+  -v "$PWD/../../compose/calendarpit/fixture.json:/config/fixture.json:ro" \
+  -e CALENDARPIT_CONFIG=/config/fixture.json -e CALENDARPIT_DATABASE=:memory: \
+  ghcr.io/iktakahiro/calendarpit:0.9.5
+node ../../compose/calendarpit/authorize.mjs http://127.0.0.1:4173 "$TMPDIR/buddy-calendarpit.json"
 
+export GOOGLE_APPLICATION_CREDENTIALS="$TMPDIR/buddy-calendarpit.json"
 export GOOGLE_CALENDAR_SERVICE_ACCOUNT=buddy-calendar@example.iam.gserviceaccount.com
-export GOOGLE_CALENDAR_ENDPOINT=http://127.0.0.1:8085/
+export GOOGLE_CALENDAR_ENDPOINT=http://127.0.0.1:4173/calendar/v3/
 go run ./cmd/api
 ```
+
+calendarpit を起動し直すと token が消えるので、`authorize.mjs` を流し直す。
 
 ## マイグレーション
 

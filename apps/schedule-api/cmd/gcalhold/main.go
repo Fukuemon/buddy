@@ -1,4 +1,4 @@
-// Command gcalhold は、手元の compose と E2E で、予定の API の Calendar API の要求を calendarpit に渡す中継である。本番のイメージには入れない。
+// Command gcalhold は、ローカル環境の compose と E2E で、予定の API の Calendar API の要求を calendarpit に渡す中継である。本番のイメージには入れない。
 //
 // calendarpit に無い操作を 1 つだけ補う。POST /hold で止めている間は、増分の取得（syncToken を付けた events.list）に、
 // calendarpit に渡さず、変わった予定が無いと答え、受け取ったトークンをそのまま返す。E2E が、予定の API が Google の変更を読む前に

@@ -14,7 +14,7 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/api ./cmd/api && \
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/migrate ./cmd/migrate
 
-# 手元の compose が予定の API と calendarpit の間に置く中継。docker build --target gcalhold で作り、本番のイメージには入れない。
+# ローカル環境の compose が予定の API と calendarpit の間に置く中継。docker build --target gcalhold で作り、本番のイメージには入れない。
 FROM build AS gcalhold-build
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/gcalhold ./cmd/gcalhold
