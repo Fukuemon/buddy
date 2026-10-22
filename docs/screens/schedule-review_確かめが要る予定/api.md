@@ -15,6 +15,7 @@
 | 予定を開く | 出すかと、移る先の予定 | `CalendarExportIssue.schedule_id` | `CalendarExport` の `schedule_id`。繰り返しの予定では `null` |
 | buddy の内容で書き直す | なし | `CalendarExportIssue.id` | `CalendarExport` の `id` |
 | 書き直す予定 | 日時と職員の名前 | `CalendarExportIssue` の日時の項目と `staff_name` | 予定の日時と職員と同じ |
+| 書き直すときの注意 | buddy でキャンセルした単発の予定か | `CalendarExportIssue.status`、`error_code`、`acceptable`、`recurring_schedule_id` | `CalendarExportIssue` の `status`、`error_code`、`acceptable`、`recurring_schedule_id`。`status` が `conflict`、`error_code` が `precondition_failed` か `not_found`、`acceptable` が false、`recurring_schedule_id` が `null` なら、buddy でキャンセルした単発の予定である |
 | ダイアログの書き直す | 書き直す待ちにした書き出し | `calendars.retryExport` の戻り値 | `createCalendarExportRetry` のレスポンスの `CalendarExport` |
 | 読み込みの失敗の文 | 権限で拒まれたか | `ApiError.status` | レスポンスの status |
 | 書き直しの失敗の文 | 理由ごとの文 | `ApiError.status`、`ApiError.code` | レスポンスの status と `Error.code` |
@@ -48,5 +49,5 @@
     - `unappliable`: Google カレンダーの変更を buddy の予定に読み替えられない
 - `CalendarExportIssue` は、`CalendarExport` に、予定の職員（`staff_id`、`staff_name`）と日時（`date`、`start_time`、`end_time`）と `acceptable` を足したものである。
   - `acceptable` は、Google カレンダーの内容に合わせられるかである。単発の予定で、buddy でキャンセルしておらず、`status` が `conflict`、`error_code` が `precondition_failed` か `not_found` のときに true である。
-- `createCalendarExportRetry` は、書き出しを、Google カレンダーの予定の変更を比べずに buddy の今の内容で書き直す待ちにする。書き出しの処理が、次の周期で書く。Google カレンダーで消された予定は作り直す。
+- `createCalendarExportRetry` は、書き出しを、Google カレンダーの予定の変更を比べずに buddy の今の内容で書き直す待ちにする。書き出しの処理が、次の周期で書く。Google カレンダーで消された予定は作り直す。buddy でキャンセルした単発の予定は、Google カレンダーの予定を If-Match を付けずに消す。
 - `createCalendarExportAcceptance` は、予定の API が Google カレンダーの今の予定を読み、buddy の予定をその内容にして、書き出しを終える。Google カレンダーで消された予定は、buddy でキャンセルする。
