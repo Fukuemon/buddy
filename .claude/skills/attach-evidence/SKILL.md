@@ -28,21 +28,20 @@ description: 機能の追加と改修の pull request と issue に、確かめ�
 spec の配置先、出力の配置先、撮るコマンド、ログインとテストデータの作り方は、`context/testing/evidence.md` の「エビデンスの spec」にある。  
 spec の書き方は write-verification-spec に、流し方と撮った後の確かめ方は run-verification-scenarios に従う。
 
-| 変更 | 開くもの | spec で開く URL |
-| --- | --- | --- |
-| 手動検証のシナリオがある | 検証環境かローカルの compose の画面 | 撮る web の URL からの相対パス |
-| 画面の操作から API までを通す、API だけ | ローカルの compose の画面 | 同上。API だけの変更は、その API を呼ぶ画面の操作で撮る |
-| 画面の UI と見た目 | Storybook の story | `storyUrl(<story の ID>)` |
-| 画面仕様書とモック | 画面仕様書のモック | `mockUrl(<docs/screens/ からの相対パス>)` |
+| 変更 | 開くもの |
+| --- | --- |
+| 手動検証のシナリオがある | 検証環境かローカルの compose の画面 |
+| 画面の操作から API までを通す、API だけ | ローカルの compose の画面。API だけの変更は、その API を呼ぶ画面の操作で撮る |
+| 画面の UI と見た目 | Storybook の story |
+| 画面仕様書とモック | 画面仕様書のモック |
 
+- 開く URL の作り方とスマートフォンの幅の渡し方は、`context/testing/evidence.md` の「Storybook、モック、スマートフォンの幅」にある。幅はコメントに書く。
 - 既にある spec で撮れる観点は、spec を流し直すだけにする。無ければ、機能の spec に test を足す。
-- スマートフォンの幅で確かめる変更は、`PHONE_VIEWPORT` を渡して撮る。幅はコメントに書く。
 - agent-browser では、エビデンスを撮らない。録画のフレームが落ちることがあり、撮り直すときに同じ操作を再現できない。spec を書く前に、画面の操作の位置を確かめるのには使ってよい。
 
 ## mp4 に変換する
 
-kit は H.264 の mp4 を書き出すので、変換しない。  
-ほかの手段で撮った WebM を添付するときだけ、GitHub の動画のプレイヤーで再生できる H.264 の mp4 にする。
+kit は H.264 の mp4 を書き出すので、変換しない。kit 以外で撮った WebM（ブラウザや画面の録画のアプリ）を添付するときだけ、次で変換する。
 
 ```sh
 ffmpeg -i <名前>.webm -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -c:v libx264 -pix_fmt yuv420p -movflags +faststart <名前>.mp4
