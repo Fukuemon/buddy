@@ -680,9 +680,9 @@
 
 **活性条件**: 押せない。線の下の時間の枠と予定を押せる
 
-**表示条件**: 表示している期間に今日が含まれ、今の時刻が 6 時から 22 時の間のとき
+**表示条件**: 表示している期間に今日が含まれ、今の時刻が 6 時から 22 時の間のとき。日の表示では、職員の列があるとき
 
-**カタログ**: [StaffScheduleDayGrid の WithNow](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-staffscheduledaygrid--with-now)
+**カタログ**: [ScheduleCalendar の Week](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecalendar--week)、[StaffScheduleDayGrid の WithNow](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-staffscheduledaygrid--with-now)
 
 ## 読み込み中の表示
 
