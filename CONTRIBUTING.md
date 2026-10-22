@@ -30,9 +30,9 @@ ADR-0007: [2 つの Go の API が共有するコードを、別の module に�
 - エディタで 3 つを読むときは、ルートで `go work init ./services/receipt ./services/schedule ./packages/go` を流す。
 - `go.work` は追跡しない。
   - `go.work` の下では、3 つのモジュールが共有する依存のバージョンが高い方にそろい、コンテナのイメージ（各 `go.mod` だけでビルドする）とずれるためである。
-- テストと lint は、各アプリと `packages/go` のディレクトリで `GOWORK=off` を付けて流す。
+- テストと lint は、各 API と `packages/go` のディレクトリで `GOWORK=off` を付けて流す。
 - `packages/go` を変えたときは、2 つの API のテストも流す。
-- `go.work` の下でビルドすると各アプリの `go.sum` に行が増える。増えた行はコミットに含めない。
+- `go.work` の下でビルドすると各 API の `go.sum` に行が増える。増えた行はコミットに含めない。
 
 agent-harness のスキルとフックは apm で配置し、Git で追跡しない。  
 buddy だけのスキルは `.claude/skills/` に置き、Git で追跡する。  
@@ -83,6 +83,7 @@ docker compose up --build --wait
 - API が受けるトークンの `iss` は `http://idp:9000/buddy` である。IdP は `iss` をトークンのリクエストの Host から決めるため、トークンはコンテナの間の名前 `idp` で取る。
 - `http://localhost:3000` を開くと IdP のログインの画面へ移る。名前に `dev-aoki` を入れると、青木 陽菜としてログインする。
 - データを消して最初からにするときは、`docker compose down -v` で PostgreSQL と calendarpit のボリュームを消す。
+- 別の worktree で同時に起動するときは、`docker compose -p <名前> up --build --wait` でプロジェクトの名前を変え、上の表の環境変数でポートをずらす。コンテナ、ボリューム、予定の API のイメージがプロジェクトごとに分かれる。E2E は `E2E_BASE_URL`、`E2E_CALENDARPIT_URL`、`E2E_GCALHOLD_URL` を合わせて流す。
 
 予定の API を手で呼ぶときは、認可コードのフローでトークンを取る。
 

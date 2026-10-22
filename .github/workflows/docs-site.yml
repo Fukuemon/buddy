@@ -2,7 +2,7 @@
 # 手順と Access の設定は apps/docs-site/README.md にある。
 # pull request ではプレビューを出して URL をコメントし、develop に入ったら本番に出す。
 # フォークと Dependabot の pull request には GitHub が secret を渡さないので、ビルドだけを流し、プレビューとコメントを飛ばす。
-# 文書の元は docs/ のほか、各アプリの Design Doc にも散るので、変えた場所で絞らない。
+# 文書の元は docs/ のほか、services/ と packages/ の Design Doc にも散るので、変えた場所で絞らない。
 
 name: 文書のサイト
 

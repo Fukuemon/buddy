@@ -177,7 +177,7 @@ sqlc diff
 このディレクトリで次を実行する。ビルドの文脈はリポジトリの直下である（`packages/go` を読むため）。
 
 ```sh
-docker build -f Dockerfile -t buddy-schedule-api ../..
+docker build -f Dockerfile -t schedule-api:local ../..
 ```
 
 イメージは distroless の上に `api` と `migrate` の 2 つのバイナリを持つ。エントリポイントは `api` である。  
