@@ -121,8 +121,8 @@ route は `src/routes/` のファイルから TanStack Router が生成する。
 
 カレンダーの連携（`/schedule/link`）、予定の取り込み（`/schedule/import`）、確かめが要る予定（`/schedule/review`）の画面は `src/features/calendar/` にある。画面の仕様は、画面仕様書の [カレンダーの連携](../../docs/screens/schedule-link_カレンダーの連携/index.md)、[予定の取り込み](../../docs/screens/schedule-import_予定の取り込み/index.md)、[確かめが要る予定](../../docs/screens/schedule-review_確かめが要る予定/index.md) にある。
 
-- 3 つの route は、予定のカレンダーの上に重ならないよう、ファイル名の `_` で `/schedule` の入れ子から外す（`src/routes/schedule_.link.tsx` など）。
-- 職員の管理の権限を持つ職員だけが使う。ほかの職員には、ヘッダーに「取り込み」と「要確認」を出さず、URL を開くと「この画面を開く権限がありません」（`PageForbiddenMessage`）を出す。
+- 3 つの route は、予定のカレンダーの上に重ならないよう、ファイル名に `_` を付けて `/schedule` の入れ子から外す（`src/routes/schedule_.link.tsx` など）。
+- 3 つの画面は、職員の管理の権限を持つ職員だけが使う。ほかの職員には、ヘッダーに「取り込み」と「要確認」を出さず、URL を開くと「この画面を開く権限がありません」（`PageForbiddenMessage`）を出す。
 - 画面は、予定の API の Google カレンダーの操作を `BuddyApi`（`src/api/client.ts`）の `calendars` で呼ぶ。結び付けたカレンダー、取り込みのプレビューと結果、書き出しの型は、予定の API の型をそのまま使う（`src/api/types.ts`）。
 - フェイクの API（`fake`）は、ID の末尾が `@example.com` のカレンダーだけを読めるものとして扱う（`src/api/fake/fakeBuddyApi.ts`）。
 

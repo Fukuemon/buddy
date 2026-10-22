@@ -14,7 +14,7 @@
 | `schedule-edit` | 予定の編集 | `/schedule/$scheduleId/edit` | 予定を編集する権限を持つ職員 | [予定の編集](schedule-edit_予定の編集/index.md) |
 | `schedule-link` | カレンダーの連携（職員と Google カレンダーの結び付け） | `/schedule/link` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [カレンダーの連携](schedule-link_カレンダーの連携/index.md) |
 | `schedule-import` | 予定の取り込み（期間の選択、プレビュー、確定） | `/schedule/import` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [予定の取り込み](schedule-import_予定の取り込み/index.md) |
-| `schedule-review` | 確かめが要る予定（buddy と Google カレンダーの両方で直されたか、書き出せなかった予定） | `/schedule/review` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [確かめが要る予定](schedule-review_確かめが要る予定/index.md) |
+| `schedule-review` | 確かめが要る予定（Google カレンダーと食い違った予定） | `/schedule/review` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [確かめが要る予定](schedule-review_確かめが要る予定/index.md) |
 | `patient-list` | 利用者の一覧 | 未決 | 全ての職員 | なし |
 | `patient-new` | 利用者の登録 | 未決 | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | なし |
 | `patient-edit` | 利用者の編集 | 未決 | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | なし |
