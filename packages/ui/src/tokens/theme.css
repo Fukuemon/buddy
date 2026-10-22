@@ -65,7 +65,7 @@
   --text-heading-sm--line-height: var(--line-height-160);
   --text-heading-sm--letter-spacing: 0.02em;
   --text-heading-sm--font-weight: var(--font-weight-700);
-  /* heading-md (Std-20B-150): 画面全体の待ちの文 */
+  /* heading-md (Std-20B-150): 画面の見出し、画面全体の待ちの文 */
   --text-heading-md: var(--font-size-20);
   --text-heading-md--line-height: var(--line-height-150);
   --text-heading-md--letter-spacing: 0.02em;

@@ -3,7 +3,7 @@
 .schedule-calendar .fc {
   --fc-border-color: var(--buddy-color-border);
   --fc-today-bg-color: var(--buddy-color-primary-surface);
-  --fc-now-indicator-color: var(--buddy-color-danger);
+  --fc-now-indicator-color: var(--buddy-color-primary);
 
   height: 100%;
 }

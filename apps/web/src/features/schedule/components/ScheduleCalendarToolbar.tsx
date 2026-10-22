@@ -3,6 +3,7 @@ import PrevIcon from '#/assets/icons/arrow-left.svg?react'
 import NextIcon from '#/assets/icons/arrow-right.svg?react'
 
 import { CALENDAR_VIEWS, CALENDAR_VIEW_LABEL, type CalendarView } from '../constants/calendarView'
+import { formatCalendarTitle } from '../lib/calendarRange'
 
 const VIEW_OPTIONS = CALENDAR_VIEWS.map((view) => ({ id: view, label: CALENDAR_VIEW_LABEL[view] }))
 
@@ -29,7 +30,7 @@ export type ScheduleCalendarToolbarProps = {
   staffFilterToggle?: StaffFilterToggle
 }
 
-/** カレンダーの上の操作。前後への移動、今日、表示の種類、日付の指定、職員の絞り込みを開く、予定の作成を並べる。 */
+/** カレンダーの上の操作。前後への移動、今日、表示の期間の見出し、日付の指定、表示の種類、職員の絞り込みを開く、予定の作成を並べる。 */
 export const ScheduleCalendarToolbar = ({
   view,
   date,
@@ -64,6 +65,10 @@ export const ScheduleCalendarToolbar = ({
       >
         <NextIcon height={24} width={24} />
       </button>
+      {/* 前後のボタンで期間が変わったことを、スクリーンリーダーに読み上げさせる */}
+      <h1 aria-live="polite" className="ml-2 text-heading-md" data-testid="calendar-title">
+        {formatCalendarTitle(view, date)}
+      </h1>
       <input
         aria-label="表示する日付"
         className="ml-2 h-11 rounded-8 bg-surface px-3 text-body-dense ring-1 ring-border-field ring-inset outline-none focus-visible:focus-ring"

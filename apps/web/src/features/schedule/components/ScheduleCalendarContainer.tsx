@@ -7,6 +7,7 @@ import { Loading } from '@buddy/ui'
 
 import { getCalendarRange, shiftCalendarDate } from '../lib/calendarRange'
 import { toDateKey } from '../lib/dateTime'
+import { useNow } from '../lib/useNow'
 import { toCalendarEvents } from '../lib/toCalendarEvents'
 import {
   patientListQueryOptions,
@@ -32,6 +33,7 @@ export const ScheduleCalendarContainer = ({
   const { api, facilityId } = useBuddyApi()
 
   const [today] = useState(() => toDateKey(new Date()))
+  const now = useNow()
   const date = search.date ?? today
   const range = getCalendarRange(search.view, date)
 
@@ -89,6 +91,7 @@ export const ScheduleCalendarContainer = ({
         ) : search.view === 'day' ? (
           <StaffScheduleDayGrid
             events={events}
+            now={date === toDateKey(now) ? now : undefined}
             onEventClick={openDetail}
             onSlotClick={(staffId, time) => openCreate(date, time, staffId)}
             staffList={visibleStaff}

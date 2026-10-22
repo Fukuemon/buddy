@@ -40,3 +40,29 @@ export const getCalendarRange = (view: CalendarView, dateKey: string) => {
   })()
   return { from: toOffsetDateTime(from), to: toOffsetDateTime(to) }
 }
+
+const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'] as const
+
+/**
+ * ツールバーの見出しに出す、表示の期間の文を返す。
+ * 月は `2026年10月`、週は日曜から土曜を `2026年10月18日〜24日`、日は `2026年10月20日（火）` の形にする。
+ * 週が月や年をまたぐときは、終わりの日にも月か年を付ける。
+ */
+export const formatCalendarTitle = (view: CalendarView, dateKey: string) => {
+  const date = fromDateKey(dateKey)
+  const ymd = (d: Date) => `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`
+  switch (view) {
+    case 'month':
+      return `${date.getFullYear()}年${date.getMonth() + 1}月`
+    case 'day':
+      return `${ymd(date)}（${WEEKDAYS[date.getDay()]}）`
+    case 'week': {
+      const start = addDays(date, -date.getDay())
+      const end = addDays(start, 6)
+      if (start.getFullYear() !== end.getFullYear()) return `${ymd(start)}〜${ymd(end)}`
+      if (start.getMonth() !== end.getMonth())
+        return `${ymd(start)}〜${end.getMonth() + 1}月${end.getDate()}日`
+      return `${ymd(start)}〜${end.getDate()}日`
+    }
+  }
+}

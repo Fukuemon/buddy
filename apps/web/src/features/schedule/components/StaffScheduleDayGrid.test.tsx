@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './StaffScheduleDayGrid.stories'
 
-const { Default } = composeStories(stories)
+const { Default, WithNow } = composeStories(stories)
 
 describe('StaffScheduleDayGrid', () => {
   it('職員ごとの列に予定を置き、押すと予定の ID を渡す', async () => {
@@ -38,5 +38,20 @@ describe('StaffScheduleDayGrid', () => {
     render(<Default onSlotClick={onSlotClick} />)
     await userEvent.click(screen.getByTestId('day-grid-slot-staff-3-15:30'))
     expect(onSlotClick).toHaveBeenCalledWith('staff-3', '15:30')
+  })
+
+  it('今の時刻を渡すと、職員の列ごとにその時刻の位置に横線を引く', () => {
+    render(<WithNow />)
+    // 10:15 は 6 時から 4.25 時間で、1 時間 88px の 374px。線の太さ 2px の中心を合わせる
+    expect(screen.getByTestId('day-grid-now-staff-1').style.top).toBe('373px')
+  })
+
+  it.each([
+    ['今の時刻を渡さない', undefined],
+    ['表示する時刻より前', new Date(2026, 9, 20, 5, 59)],
+    ['表示する時刻の後', new Date(2026, 9, 20, 22, 0)],
+  ])('%s とき、横線を引かない', (_, now) => {
+    render(<Default now={now} />)
+    expect(screen.queryByTestId('day-grid-now-staff-1')).not.toBeInTheDocument()
   })
 })
