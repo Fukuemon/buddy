@@ -58,17 +58,50 @@ services:
       timeout: 5s
       retries: 30
 
-  # 予定の API が Google Calendar API の代わりに呼ぶ偽物。予定は compose/fake-google-calendar.json にある
-  # 書き出した予定は、ブラウザで http://localhost:8085/view に出る
-  fake-google:
-    build: { context: ., dockerfile: apps/schedule-api/Dockerfile, target: fakegcal }
-    volumes: [./compose/fake-google-calendar.json:/config/fake-google-calendar.json:ro]
-    ports: ['127.0.0.1:${FAKE_GOOGLE_PORT:-8085}:8080']
+  # Google Calendar API と OAuth を手元で再現する calendarpit。職員のカレンダーと予定は compose/calendarpit/fixture.json にあり、
+  # 止めると書いた予定は消える。カレンダーと予定は、ブラウザで http://localhost:4173 の管理の画面に出る
+  calendarpit:
+    image: ghcr.io/iktakahiro/calendarpit:0.9.5@sha256:c492440490c5b39d43565593e40ce5f07ed72d901652f9778bad2e7fcc9ffeab
+    environment:
+      CALENDARPIT_CONFIG: /config/fixture.json
+      CALENDARPIT_DATABASE: ':memory:'
+    volumes: [./compose/calendarpit/fixture.json:/config/fixture.json:ro]
+    ports: ['127.0.0.1:${CALENDARPIT_PORT:-4173}:4173']
     healthcheck:
-      test: ['CMD', '/usr/local/bin/fakegcal', 'healthcheck']
+      test:
+        [
+          'CMD',
+          'bun',
+          '-e',
+          "fetch('http://127.0.0.1:4173/__calendarpit/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))",
+        ]
       interval: 2s
       timeout: 5s
       retries: 30
+
+  # calendarpit の同意を通して予定の API の refresh token を取り、Application Default Credentials の形で書く
+  calendarpit-authorize:
+    image: ghcr.io/iktakahiro/calendarpit:0.9.5@sha256:c492440490c5b39d43565593e40ce5f07ed72d901652f9778bad2e7fcc9ffeab
+    entrypoint: ['bun']
+    command: ['/config/authorize.mjs', 'http://calendarpit:4173', '/data/google-calendar.json']
+    # /data は、イメージの中で bun の利用者が書ける
+    volumes:
+      [./compose/calendarpit/authorize.mjs:/config/authorize.mjs:ro, calendarpit-credentials:/data]
+    depends_on:
+      calendarpit: { condition: service_healthy }
+
+  # 予定の API と calendarpit の間の中継。E2E が、Google の変更を予定の API に渡さないようにするのに使う
+  gcalhold:
+    build: { context: ., dockerfile: apps/schedule-api/Dockerfile, target: gcalhold }
+    command: ['-upstream', 'http://calendarpit:4173']
+    ports: ['127.0.0.1:${GCALHOLD_PORT:-8085}:8080']
+    healthcheck:
+      test: ['CMD', '/usr/local/bin/gcalhold', 'healthcheck']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    depends_on:
+      calendarpit: { condition: service_healthy }
 
   schedule-api-migrate:
     build: { context: ., dockerfile: apps/schedule-api/Dockerfile }
@@ -100,15 +133,18 @@ services:
       OIDC_AUDIENCE: schedule-api
       # web と、API の仕様のページで要求を試す手元の文書のサイト（zensical serve）に許す
       CORS_ALLOW_ORIGINS: http://localhost:${WEB_PORT:-3000},http://localhost:8000
-      # 架空のサービスアカウント。偽物の Calendar API は認証を求めない
+      # 架空のサービスアカウント
       GOOGLE_CALENDAR_SERVICE_ACCOUNT: buddy-calendar@example.iam.gserviceaccount.com
-      GOOGLE_CALENDAR_ENDPOINT: http://fake-google:8080/
+      # calendarpit はサービスアカウントの token を出さないので、calendarpit-authorize が書いた fixture の利用者の認証の情報で呼ぶ
+      GOOGLE_CALENDAR_ENDPOINT: http://gcalhold:8080/calendar/v3/
+      GOOGLE_APPLICATION_CREDENTIALS: /credentials/google-calendar.json
       GOOGLE_CALENDAR_EXPORT_ENABLED: 'true'
       # E2E が書き出しを待つ時間を短くする
       GOOGLE_CALENDAR_EXPORT_INTERVAL: 2s
       GOOGLE_CALENDAR_SYNC_ENABLED: 'true'
       # E2E が Google の変更の反映を待つ時間を短くする
       GOOGLE_CALENDAR_SYNC_INTERVAL: 2s
+    volumes: [calendarpit-credentials:/credentials:ro]
     ports: ['127.0.0.1:${SCHEDULE_API_PORT:-8080}:8080']
     healthcheck:
       test: ['CMD', '/usr/local/bin/api', 'healthcheck']
@@ -118,7 +154,8 @@ services:
     depends_on:
       schedule-api-seed: { condition: service_completed_successfully }
       idp: { condition: service_healthy }
-      fake-google: { condition: service_healthy }
+      calendarpit-authorize: { condition: service_completed_successfully }
+      gcalhold: { condition: service_healthy }
 
   receipt-api:
     build: { context: ., dockerfile: apps/receipt-api/Dockerfile }
@@ -172,3 +209,4 @@ services:
 
 volumes:
   postgres:
+  calendarpit-credentials:

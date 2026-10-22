@@ -1,4 +1,4 @@
-// Package gcaltest は、テストと手元の compose に使う、Calendar API の偽物を提供する。
+// Package gcaltest は、テストに使う、Calendar API の偽物を提供する。
 // 予定の読み出し（events.list、events.instances、events.get）と書き込み（events.insert、events.patch、events.delete）に答える。
 // events.list は、syncToken による増分の取得にも答える。
 package gcaltest
@@ -34,9 +34,6 @@ type Server struct {
 	Status int `json:"status"`
 	// Failures は、次からの書き込みの要求に順に返す誤りの状態である。返した値は消す。
 	Failures []int `json:"failures"`
-	// HoldChanges が true なら、増分の取得に、変わった予定を返さず、受け取ったトークンをそのまま返す。
-	// 予定の API が Google の変更を読む前に、buddy の変更を書き出させる試験に使う。
-	HoldChanges bool `json:"holdChanges"`
 
 	mu      sync.Mutex
 	queries []url.Values
@@ -119,20 +116,6 @@ func (s *Server) Delete(calendarID, eventID string) bool {
 	}
 	s.remove(calendarID, ev)
 	return true
-}
-
-// SetHoldChanges は、HoldChanges を変える。
-func (s *Server) SetHoldChanges(hold bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.HoldChanges = hold
-}
-
-// Holding は、HoldChanges を返す。
-func (s *Server) Holding() bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.HoldChanges
 }
 
 // ExpireSyncTokens は、これまでに返した同期のトークンを切らし、次に使われたときに 410 を返す。
@@ -228,17 +211,6 @@ func (s *Server) Events(calendarID string) []calendar.Event {
 	return out
 }
 
-// CalendarIDs は、カレンダーの ID を返す。
-func (s *Server) CalendarIDs() []string {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	out := make([]string, 0, len(s.Calendars))
-	for id := range s.Calendars {
-		out = append(out, id)
-	}
-	return out
-}
-
 // ServeHTTP は、events.list に答える。
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if s.Status != 0 {
@@ -297,10 +269,6 @@ func (s *Server) serveChanges(w http.ResponseWriter, cal, token string, q url.Va
 	body := calendar.Events{AccessRole: "reader", NextSyncToken: token}
 	if role, ok := s.AccessRoles[cal]; ok {
 		body.AccessRole = role
-	}
-	if s.HoldChanges {
-		writeJSON(w, http.StatusOK, body)
-		return
 	}
 	body.Items = []*calendar.Event{}
 	for _, page := range s.Calendars[cal] {

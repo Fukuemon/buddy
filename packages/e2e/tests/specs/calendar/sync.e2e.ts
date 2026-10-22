@@ -1,44 +1,18 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
-import { FAKE_GOOGLE_URL, SATO } from '../../fixtures/env'
+import { SATO } from '../../fixtures/env'
+import {
+  findGoogleEvent,
+  holdGoogleChanges,
+  shiftGoogleEvent,
+  type GoogleEvent,
+} from '../../fixtures/googleCalendar'
 
-type FakeEvent = {
-  id: string
-  summary?: string
-  status?: string
-  start?: { dateTime?: string }
-  end?: { dateTime?: string }
-}
+const findEvent = (request: APIRequestContext, summary: string) =>
+  findGoogleEvent(request, SATO.calendarId, summary)
 
-/** 偽物の Google の、佐藤のカレンダーの予定のうち、題名が summary のものを返す。 */
-const findEvent = async (request: APIRequestContext, summary: string) => {
-  const res = await request.get(
-    `${FAKE_GOOGLE_URL}/calendars/${encodeURIComponent(SATO.calendarId)}/events`,
-  )
-  const { items = [] } = (await res.json()) as { items?: FakeEvent[] }
-  return items.find((event) => event.summary === summary)
-}
-
-/** 偽物の Google の画面の操作と同じく、予定を 1 時間遅らせて etag を変える。 */
-const shiftInGoogle = async (request: APIRequestContext, eventId: string) => {
-  const res = await request.post(`${FAKE_GOOGLE_URL}/view/shift`, {
-    form: { calendar: SATO.calendarId, event: eventId },
-    maxRedirects: 0,
-  })
-  expect(res.status()).toBe(303)
-}
-
-/** 偽物の Google が、変わった予定を予定の API に渡すかを変える。 */
-const holdChanges = async (request: APIRequestContext, hold: boolean) => {
-  const res = await request.post(`${FAKE_GOOGLE_URL}/view/hold`, {
-    form: { calendar: SATO.calendarId, hold: String(hold) },
-    maxRedirects: 0,
-  })
-  expect(res.status()).toBe(303)
-}
-
-/** 偽物の Google の予定の日時を、予定の詳細の日時の形（2026-10-22 10:00 - 11:00）にする。 */
-const detailDateTime = (event: FakeEvent | undefined) => {
+/** Google カレンダーの予定の日時を、予定の詳細の日時の形（2026-10-22 10:00 - 11:00）にする。 */
+const detailDateTime = (event: GoogleEvent | undefined) => {
   const start = event?.start?.dateTime ?? ''
   const end = event?.end?.dateTime ?? ''
   return `${start.slice(0, 10)} ${start.slice(11, 16)} - ${end.slice(11, 16)}`
@@ -59,7 +33,7 @@ test.describe('確かめが要る予定', () => {
   test.describe('Google カレンダーとの同期', () => {
     // 途中で落ちても、後の spec が Google の変更を受け取れ、やり直しで佐藤にもう一度結び付けられるようにする
     test.afterEach(async ({ page, request }) => {
-      await holdChanges(request, false)
+      await holdGoogleChanges(request, false)
       await page.goto('/schedule/link')
       const remove = page.getByTestId(`calendar-link-remove-${SATO.id}`)
       await expect(page.getByTestId(`calendar-link-row-${SATO.id}`)).toBeVisible()
@@ -106,7 +80,7 @@ test.describe('確かめが要る予定', () => {
       })
 
       await test.step('職員が Google カレンダーで予定を遅らせると、buddy の予定も遅れる', async () => {
-        await shiftInGoogle(request, eventId)
+        await shiftGoogleEvent(request, SATO.calendarId, eventId)
         const shifted = detailDateTime(await findEvent(request, created))
 
         // 予定の API が数秒ごとに Google の変更を読むので、出るまで開き直す
@@ -117,8 +91,8 @@ test.describe('確かめが要る予定', () => {
       })
 
       await test.step('buddy と Google カレンダーの両方で変えると、確かめが要る予定に出る', async () => {
-        await holdChanges(request, true)
-        await shiftInGoogle(request, eventId)
+        await holdGoogleChanges(request, true)
+        await shiftGoogleEvent(request, SATO.calendarId, eventId)
         await openSchedule(page, created)
         await page.getByTestId('schedule-detail-edit').click()
         await page.getByTestId('schedule-field-title').click()
@@ -135,7 +109,7 @@ test.describe('確かめが要る予定', () => {
         await expect(row.getByTestId(/^calendar-review-reason-/)).toHaveText(
           'buddy と Google カレンダーの両方で予定が変わりました。どちらの内容に合わせるかを選んでください。',
         )
-        await holdChanges(request, false)
+        await holdGoogleChanges(request, false)
       })
 
       await test.step('Google の内容に合わせると、一覧から消え、buddy の予定が Google カレンダーの題名と日時になる', async () => {

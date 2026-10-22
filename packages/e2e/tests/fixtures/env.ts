@@ -40,10 +40,13 @@ export const HAYASHI = {
 }
 
 /**
- * compose の偽物の Google Calendar API の URL。spec は、予定の API が書いた予定を、ここから読んで確かめる。
- * 既定はルートの compose の fake-google である。
+ * compose の calendarpit の URL。spec は、予定の API が書いた予定を、管理の API で読んで確かめ、Google の側で直す。
+ * 既定はルートの compose の calendarpit である。
  */
-export const FAKE_GOOGLE_URL = process.env.E2E_FAKE_GOOGLE_URL ?? 'http://localhost:8085'
+export const CALENDARPIT_URL = process.env.E2E_CALENDARPIT_URL ?? 'http://localhost:4173'
+
+/** compose の、予定の API と calendarpit の間の中継の URL。既定はルートの compose の gcalhold である。 */
+export const GCALHOLD_URL = process.env.E2E_GCALHOLD_URL ?? 'http://localhost:8085'
 
 /** シードの利用者。訪問の予定を作るときに選ぶ。 */
 export const SEED_PATIENT = { id: '01M3TC66FGZVK39Y7GRVZSGWS1', name: '見本 一郎' }
