@@ -2,10 +2,11 @@
 
 ## 開発環境のセットアップ
 
-必要なものは mise と Docker である。  
+必要なものは mise、Docker、jq である。  
 ランタイムとツール（Node、pnpm、Go、sqlc、golang-migrate、golangci-lint、uv、tbls、apm、gh）のバージョンは `mise.toml` にある。  
 gh は、エビデンスの動画を pull request と issue に添付する `--attach` のために、2.99 以降をそろえる。  
 pnpm は `package.json` の `packageManager` と同じバージョンにする。  
+jq は `mise.toml` に無く、予定の API を手で呼ぶ手順でトークンを取り出すのに使う。  
 文書のサイトをビルドする Zensical は、mise が入れる `uv` で実行する。  
 ほかのツールとバージョンの所在は、[技術スタック](context/tech-stack.md) にある。
 
@@ -39,8 +40,8 @@ buddy だけのスキルは `.claude/skills/` に置き、Git で追跡する。
 buddy だけのスキルは次の 5 つ。  
 write-e2e-test、write-screen-spec、write-verification-spec、run-verification-scenarios、attach-evidence。  
 codex が読むよう、`.agents/skills/` に同じ名前のシンボリックリンクを置く。  
-apm のスキルとフックは、clone した後の最初のセッションで、セッションの開始のフックが配置する。  
-手で配置するときは次を実行する。
+Claude Code か Codex を使うときは、clone した後の最初のセッションで、セッションの開始のフックが apm のスキルとフックを配置する。  
+コーディングエージェントを使わないときも、文書のチェックのスクリプト（`.claude/hooks/docs/`）は apm が配置するので、手で次を実行する。
 
 ```sh
 apm install --frozen
@@ -54,7 +55,7 @@ apm lifecycle trust
 
 ## ローカル環境で全体を起動する
 
-画面、2 つの API、PostgreSQL、Valkey、開発用の OIDC の IdP は、リポジトリのルートの `compose.yml` で一緒に起動する。Docker が要る。
+画面、2 つの API、PostgreSQL、Valkey、開発用の OIDC の IdP、calendarpit、gcalhold は、リポジトリのルートの `compose.yml` で一緒に起動する。Docker が要る。
 
 ```sh
 docker compose up --build --wait
@@ -225,7 +226,8 @@ E2E が CI だけで失敗したときは、ワークフローの実行の画面
 
 - `main` はリリース済みの状態を指す。`develop` は次のリリースに向けて変更を集める。
 - `develop` の状態を検証環境に、`main` の状態を本番環境に反映する。
-  - 検証環境で確かめる前の変更は、ローカルの compose で確かめる。
+  - 検証環境と本番環境は、メンテナーが非公開のインフラで運用する。外部の人は開けない。
+  - 検証環境で確かめる前の変更と、外部の人が試す変更は、ローカルの compose で確かめる。
 - 作業用のブランチは `develop` から切る。名前は `feature/<issue 番号>` にし、不具合は `fix/<issue 番号>` にする。1 つの issue を複数の pull request に分けるときは、`feature/<issue 番号>-<短い名前>` にする。
 - リリースは、検証した `develop` を `main` へ pull request でマージし、`main` のコミットにアプリごとのタグを付ける。タグは `<ディレクトリ>/vX.Y.Z`（`apps/web/v1.0.0`、`services/schedule/v1.0.0` など）の形で、バージョンはセマンティック バージョニングに従う。タグは手で付ける。
 - API の互換の規則（項目の追加は同じパス、削除と意味の変更は新しいパス、API を先にデプロイする）は ADR-0003 にある。
