@@ -132,7 +132,7 @@ spec の配置先とテストの名前は、テストが守る振る舞いで付
 ### 1 本のエビデンスの spec が層を通る流れ
 
 次の図は、エビデンスの spec が、層と kit をどの順で呼ぶかを示す。spec が持つのは、操作の順、押す要素、字幕の文だけである。  
-kit を呼ぶ薄い層が無い間は、配置先とアプリの値(`recordEvidence` に渡す `RecordingTarget`)も spec が持つ。  
+配置先とアプリの値(`recordEvidence` に渡す `RecordingTarget`)は、kit を呼ぶ薄い層(`tests/fixtures/evidence.ts`)が持つ。薄い層を通さない spec は、この値も持つ。  
 録画は、ログインを録画の外で済ませてから始まる。灰色の帯は録画に映らず、黄色の帯が録画に映る。  
 `prepare` に渡るページは、`recordEvidence` が新しく作るコンテキストのページで、`setup` が保存したログインの状態を持たない。そのため、`prepare` の中でログインする。
 
