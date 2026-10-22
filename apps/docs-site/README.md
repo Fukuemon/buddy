@@ -44,7 +44,7 @@ ER 図のサイトは、Liam ERD の CLI が出す静的なファイルで、リ
 - `cloudflare.config.ts` が Worker の名前（`buddy-docs`）と、workers.dev とプレビューの URL を有効にする設定を持つ。静的なファイルの配置先は `wrangler.config.ts` にある。`cf` の 1.0.0-beta は、静的なファイルのビルドを wrangler に任せるためである。
 - `cf` は beta なので、バージョンを固定している。上げるときは、pull request のプレビューと `deploy:dry-run` が通ることを確かめる。
 
-## Cloudflare の準備
+## Cloudflare のセットアップ
 
 公開には、利用者が Cloudflare で次を用意する。手順は 2026-10 の Cloudflare のダッシュボードで確かめた。
 

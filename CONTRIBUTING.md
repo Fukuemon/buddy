@@ -133,7 +133,7 @@ pull request を作ると、ワークフロー「文書のサイト」がプレ�
   uv run python -m http.server 8001 --bind 127.0.0.1 -d erd   # http://127.0.0.1:8001 で開く
   ```
 
-- デプロイの構成と Cloudflare の準備は、[apps/docs-site/README.md](apps/docs-site/README.md) にある。
+- デプロイの構成と Cloudflare のセットアップは、[apps/docs-site/README.md](apps/docs-site/README.md) にある。
 
 ## 文書を直すとき
 
