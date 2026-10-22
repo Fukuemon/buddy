@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vite-plus/test'
 
-import { addMinutesToTimeKey, combineDateTime, diffMinutes, toDateKey } from './dateTime'
+import {
+  addMinutesToTimeKey,
+  combineDateTime,
+  diffMinutes,
+  formatDateTimeRange,
+  toDateKey,
+} from './dateTime'
 
 describe('dateTime', () => {
   it('日付と時刻を +09:00 の ISO 8601 にまとめる', () => {
@@ -18,5 +24,11 @@ describe('dateTime', () => {
 
   it('Date を YYYY-MM-DD にする', () => {
     expect(toDateKey(new Date(2026, 0, 5))).toBe('2026-01-05')
+  })
+
+  it('開始と終了の日時を、年月日、曜日、時刻の範囲の文にする', () => {
+    expect(formatDateTimeRange(new Date(2026, 9, 20, 9, 0), new Date(2026, 9, 20, 9, 29))).toBe(
+      '2026年10月20日（火） 09:00〜09:29',
+    )
   })
 })
