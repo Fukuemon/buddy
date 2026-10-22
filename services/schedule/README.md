@@ -43,13 +43,15 @@ API とマイグレーションは、次の環境変数を読む。
 コマンドは、このディレクトリで実行する。  
 パスワードはローカルでだけ使う値を決めて、環境変数に入れる。  
 API の 8080 とフェイクの Issuer の 9000 は、ルートの compose の schedule-api と IdP と重なる。  
-compose を起動しているときは、重なる 2 つを `docker compose stop schedule-api idp` で止めてから実行する。
+compose を起動しているときは、重なる 2 つを `docker compose stop schedule-api idp` で止めてから実行する。  
+PostgreSQL は、`DB_PORT` のポート（デフォルトは 5432）で `127.0.0.1` にだけ公開する。  
+ほかのコンテナが 5432 を使っているときは、手順の前に `export DB_PORT=15433` のように空いているポートを入れる。
 
 ```sh
-export DB_HOST=127.0.0.1 DB_PORT=5432 DB_USER=buddy DB_NAME=buddy
+export DB_HOST=127.0.0.1 DB_PORT="${DB_PORT:-5432}" DB_USER=buddy DB_NAME=buddy
 export DB_PASSWORD=<ローカルで決めた値>
 
-docker run -d --rm --name buddy-db -p 5432:5432 \
+docker run -d --rm --name buddy-db -p "127.0.0.1:$DB_PORT:5432" \
   -e POSTGRES_DB="$DB_NAME" -e POSTGRES_USER="$DB_USER" -e POSTGRES_PASSWORD="$DB_PASSWORD" postgres:18.6
 
 go run ./cmd/migrate up
