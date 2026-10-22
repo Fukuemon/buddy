@@ -7,7 +7,7 @@ const DAY_URL = storyUrl('画面-schedule-schedulecalendarcontainer--day')
 const DAY_WITH_CANCELLED_URL = storyUrl(
   '画面-schedule-schedulecalendarcontainer--day-with-cancelled',
 )
-const DETAIL_URL = storyUrl('画面-schedule-scheduledetailmodal--cancelled')
+const DETAIL_URL = storyUrl('画面-schedule-scheduledetailmodalcontainer--cancelled')
 
 const openDay = (url: string) => async (page: Page) => {
   await page.goto(url)
@@ -37,6 +37,8 @@ test.describe('予定のカレンダー', () => {
               '予定のカレンダーの日の表示（Storybook の ScheduleCalendarContainer の Day）を開いている。江藤 四郎の 11:00 の訪問はキャンセルした予定である（架空のデータ）',
             )
             const cancelled = page.getByTestId('schedule-event-schedule-6')
+            // 予定が描かれてから、キャンセルした予定が無いことを確かめる
+            await expect(page.getByTestId('schedule-event-schedule-1')).toBeVisible()
             await expect(page.getByTestId('calendar-show-cancelled')).not.toBeChecked()
             await expect(cancelled).toHaveCount(0)
             await check('切り替えが外れている間は、キャンセルした予定が出ない')
@@ -45,6 +47,10 @@ test.describe('予定のカレンダー', () => {
             await page.getByTestId('calendar-show-cancelled').check()
             await expect(cancelled).toBeVisible()
             await expect(cancelled).toContainText('キャンセル')
+            await expect(page.getByTestId('schedule-event-schedule-6-cancelled')).toHaveCSS(
+              'text-decoration-line',
+              'line-through',
+            )
             await check(
               '江藤 四郎の列に、薄い灰色の面に「キャンセル」の印と取り消し線を付けた予定が出る',
             )
@@ -75,6 +81,14 @@ test.describe('予定のカレンダー', () => {
           },
         )
       })
+    }
+  })
+})
+
+test.describe('予定の詳細', () => {
+  test.describe('キャンセルした予定の詳細', () => {
+    for (const variant of EVIDENCE_VARIANTS) {
+      const prefix = variant.label ? `${variant.label}: ` : ''
 
       test(`${prefix}キャンセルした予定の詳細を開いた場合、キャンセルの理由が出て、編集のボタンが出ないこと`, async ({
         browser,
@@ -94,7 +108,7 @@ test.describe('予定のカレンダー', () => {
             await page.goto(DETAIL_URL)
             await expect(page.getByTestId('schedule-detail-modal')).toBeVisible()
             await step(
-              'キャンセルした訪問の予定の詳細（Storybook の ScheduleDetailModal の Cancelled）を開いている',
+              'キャンセルした訪問の予定の詳細（Storybook の ScheduleDetailModalContainer の Cancelled。予定を取ってから出す）を開いている',
             )
             await expect(page.getByTestId('schedule-detail-cancel')).toHaveText(
               'キャンセルした予定です。理由: 利用者の体調不良',

@@ -121,7 +121,10 @@ export const createFakeBuddyApi = ({
       },
       update: async (facilityId, scheduleId, input) => {
         assertFacility(facilityId)
-        findSchedule(scheduleId)
+        // 本物の API と同じく、キャンセルした予定の更新は 409 で拒む
+        if (findSchedule(scheduleId).cancel !== undefined) {
+          throw new ApiError(409, 'キャンセル済みの予定は変えられません', [], 'conflict')
+        }
         const schedule: Schedule = { ...input, id: scheduleId, facilityId }
         schedules.set(scheduleId, schedule)
         return schedule

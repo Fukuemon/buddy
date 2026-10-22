@@ -33,7 +33,10 @@ export type ScheduleCalendarToolbarProps = {
   staffFilterToggle?: StaffFilterToggle
 }
 
-/** カレンダーの上の操作。前後への移動、今日、表示の期間の見出し、日付の指定、表示の種類、職員の絞り込みを開く、予定の作成を並べる。 */
+/**
+ * カレンダーの上の操作。前後への移動、今日、表示の期間の見出し、日付の指定、キャンセルした予定を出す切り替え、
+ * 表示の種類、職員の絞り込みを開く、予定の作成を並べる。
+ */
 export const ScheduleCalendarToolbar = ({
   view,
   date,

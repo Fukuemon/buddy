@@ -71,6 +71,7 @@ describe('StaffScheduleDayGrid', () => {
     render(<Default events={[event]} />)
     const button = screen.getByTestId('schedule-event-e1')
     expect(button).toHaveTextContent('キャンセル')
-    expect(button.querySelector('.line-through')).toHaveTextContent('09:00-09:30 訪問')
+    expect(screen.getByTestId('schedule-event-e1-cancelled')).toHaveClass('line-through')
+    expect(screen.getByTestId('schedule-event-e1-cancelled')).toHaveTextContent('09:00-09:30 訪問')
   })
 })

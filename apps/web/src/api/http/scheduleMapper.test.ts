@@ -58,6 +58,14 @@ describe('fromApiSchedule', () => {
     })
   })
 
+  it('キャンセルした予定は、キャンセルの理由を持つ', () => {
+    expect(
+      fromApiSchedule(
+        apiSchedule({ cancel: { id: 'c', schedule_id: 'schedule-1', reason: '体調不良' } }),
+      ).cancel,
+    ).toEqual({ reason: '体調不良' })
+  })
+
   it('訪問の予定は訪問の情報を持つ', () => {
     const schedule = fromApiSchedule(
       apiSchedule({

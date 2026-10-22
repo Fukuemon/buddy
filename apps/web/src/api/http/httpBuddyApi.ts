@@ -49,7 +49,8 @@ const expectOk = async (promise: Promise<Result<unknown>>): Promise<void> => {
  * 予定の API を openapi-fetch で呼ぶ BuddyApi を作る。トークンは付けない。
  *
  * schedules.list は、繰り返しの予定を期間の回に分け、occurrenceId の ID を持つ単発の予定として返す。
- * キャンセルした予定は返さない。画面の予定はキャンセルの状態を持たないため。
+ * キャンセルした予定は、includeCancelled が true のときだけ cancel 付きで返す。
+ * キャンセルした予定は画面で変換できなければ飛ばし、一覧の全体を失敗にしない。
  * schedules.get と schedules.update は、回の ID を受けると、繰り返しの予定のその回を読み、その回を置き換える。
  * schedules.update は、今の予定を読んでから置き換え、画面が持たない同行者などを keepCurrentVisit で引き継ぐ。
  * schedules.get は、ほかの事業所の予定を指すと status が 403 の ApiError を投げる。
@@ -96,7 +97,15 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
         )
         return [...schedules, ...recurring.flatMap((rs) => expandRecurring(rs, dateFrom, dateTo))]
           .filter((schedule) => includeCancelled === true || schedule.cancel === null)
-          .map(fromApiSchedule)
+          .flatMap((schedule) => {
+            if (schedule.cancel === null) return [fromApiSchedule(schedule)]
+            // 昔のキャンセルした予定に、画面が知らないサービスコードが残っていることがある
+            try {
+              return [fromApiSchedule(schedule)]
+            } catch {
+              return []
+            }
+          })
           .filter(
             (schedule) =>
               Date.parse(schedule.endsAt) > fromTime &&

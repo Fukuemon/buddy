@@ -267,7 +267,7 @@
 
 #### 1. 入力を変えずに押すか、Escape キーを押す
 
-1. `/schedule` に戻る。カレンダーの `view`、`date`、`staff` を引き継ぐ。
+1. `/schedule` に戻る。カレンダーの `view`、`date`、`staff`、`cancelled` を引き継ぐ。
 
 #### 2. 入力を変えてから押すか、Escape キーを押す
 
@@ -598,7 +598,7 @@
 | `start` | 日付の初期値。`YYYY-MM-DD` | カレンダーの `date`。それも無ければ今日 |
 | `time` | 開始時間の初期値。`HH:mm` | 09:00 |
 | `staffId` | 担当者の初期値。職員の一覧に無い ID も、そのまま値にする | 未選択 |
-| `view`、`date`、`staff` | カレンダーの search params。閉じたときに戻す | カレンダーのデフォルト値 |
+| `view`、`date`、`staff`、`cancelled` | カレンダーの search params。閉じたときに戻す | カレンダーのデフォルト値 |
 
 - 予定のカレンダーの「予定を作成」、週の表示の空いた時間、日の表示の時間の枠から開く。
   - 週の表示の空いた時間から開くと、`start` と `time` に枠の日と時刻が入る。`staffId` は入らない。

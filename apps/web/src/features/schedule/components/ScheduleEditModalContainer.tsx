@@ -94,6 +94,19 @@ export const ScheduleEditModalContainer = ({ scheduleId }: { scheduleId: Schedul
     )
   }
 
+  if (scheduleQuery.data.cancel !== undefined) {
+    return (
+      <Modal
+        data-testid="schedule-edit-cancelled"
+        isOpen
+        onCloseRequest={() => navigate({ to: '/schedule', search: calendarSearch })}
+        title="予定の編集"
+      >
+        <p className="p-5">キャンセルした予定は編集できません。</p>
+      </Modal>
+    )
+  }
+
   return (
     <ScheduleEditForm
       calendarSearch={calendarSearch}

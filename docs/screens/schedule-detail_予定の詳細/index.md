@@ -175,7 +175,7 @@
 
 #### 1. 押す
 
-1. 確認を出さずに、`/schedule` に戻る。search params の `view`、`date`、`staff` は引き継ぐ。履歴に積む。
+1. 確認を出さずに、`/schedule` に戻る。search params の `view`、`date`、`staff`、`cancelled` は引き継ぐ。履歴に積む。
 
 ## ダイアログのタイトル
 
@@ -378,7 +378,7 @@
 
 ### URL の search params
 
-- search params の `view`、`date`、`staff` は、閉じたときと編集へ進むときに引き継ぐ。
+- search params の `view`、`date`、`staff`、`cancelled` は、閉じたときと編集へ進むときに引き継ぐ。
 - 読めない値は、予定のカレンダーと同じ規則でデフォルト値に置き換える。
 
 ## 未決

@@ -35,6 +35,9 @@ export const Normal: Story = {
   parameters: route({ url: '/schedule/schedule-3/edit' }),
 }
 
+/** キャンセルした予定の編集の URL を直に開いたとき。フォームを出さない。 */
+export const Cancelled: Story = { parameters: route({ url: '/schedule/schedule-6/edit' }) }
+
 export const Loading: Story = { parameters: route({ api: pendingBuddyApi() }) }
 
 export const Failed: Story = { parameters: route({ api: failingBuddyApi() }) }

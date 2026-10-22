@@ -44,7 +44,14 @@ export const ScheduleCalendar = ({
       eventContent={(arg) => (
         <span className="truncate px-1 text-caption" data-testid={`schedule-event-${arg.event.id}`}>
           {arg.event.extendedProps.cancelled === true && <CancelledMark />}
-          <span className={arg.event.extendedProps.cancelled === true ? 'line-through' : undefined}>
+          <span
+            className={arg.event.extendedProps.cancelled === true ? 'line-through' : undefined}
+            data-testid={
+              arg.event.extendedProps.cancelled === true
+                ? `schedule-event-${arg.event.id}-cancelled`
+                : undefined
+            }
+          >
             {arg.timeText} {arg.event.title}
           </span>
         </span>
