@@ -212,6 +212,7 @@ test.describe('確かめが要る予定', () => {
       })
     }
   })
+
   test.describe('buddy でキャンセルした単発の予定', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       const prefix = variant.label ? `${variant.label}: ` : ''
@@ -244,14 +245,15 @@ test.describe('確かめが要る予定', () => {
             await expect(row(page).getByTestId('calendar-review-reason-export-5')).toHaveText(
               'buddy でキャンセルした予定が、Google カレンダーで変わっていました。buddy の内容で書き直すと Google カレンダーの予定を消すので、消してよいかを職員に確かめてください。',
             )
-            await expect(row(page).getByTestId('calendar-review-accept-export-5')).toHaveCount(0)
+            await expect(row(page).getByTestId(/^calendar-review-accept-/)).toHaveCount(0)
             await expect(row(page).getByTestId('calendar-review-rewrite-export-5')).toBeVisible()
             await check(
-              '江藤 四郎の行に「buddy でキャンセルした予定が、Google カレンダーで変わっていました。…」の理由が出て、「Google の内容に合わせる」が出ず、「buddy の内容で書き直す」だけが出る',
+              '江藤 四郎の行に「buddy でキャンセルした予定が、Google カレンダーで変わっていました。…」の理由が出て、「Google の内容に合わせる」が出ず、「予定を開く」と「buddy の内容で書き直す」が出る',
             )
           },
         )
       })
+
     }
   })
 })
