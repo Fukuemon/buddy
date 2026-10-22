@@ -6,10 +6,11 @@ import (
 
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/check"
 	"github.com/Fukuemon/buddy/apps/receipt-api/internal/gcal"
+	"github.com/Fukuemon/buddy/apps/receipt-api/internal/gcal/gcaltest"
 )
 
 func TestSelect(t *testing.T) {
-	withCalendar := Selector{Calendar: gcal.NewReader(nil, []gcal.Calendar{{ID: "a@example.com", OrgID: "org-a"}})}
+	withCalendar := Selector{Calendar: gcal.NewReader(gcaltest.Same{}, []gcal.Calendar{{ID: "a@example.com", OrgID: "org-a"}})}
 
 	src, err := withCalendar.Select(Request{Schedules: []byte("x"), HasSchedules: true, Month: "2024-04"})
 	if _, ok := src.(check.CSVSchedules); err != nil || !ok {

@@ -42,12 +42,12 @@ func TestLoadCalendar(t *testing.T) {
 	c, err := config.Load(env(map[string]string{
 		"DB_USER": "app", "DB_PASSWORD": "secret", "DB_NAME": "buddy",
 		"OIDC_ISSUER": "http://localhost:9000", "OIDC_AUDIENCE": "schedule-api",
-		"GOOGLE_CALENDAR_SERVICE_ACCOUNT": " buddy@example.iam.gserviceaccount.com ", "GOOGLE_CALENDAR_ENDPOINT": "http://gcalhold:8080/calendar/v3/",
+		"GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE": " /config/accounts.json ", "GOOGLE_CALENDAR_ENDPOINT": "http://gcalhold:8080/calendar/v3/",
 	}))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Calendar != (config.Calendar{ServiceAccount: "buddy@example.iam.gserviceaccount.com", Endpoint: "http://gcalhold:8080/calendar/v3/", ExportInterval: 30 * time.Second, SyncInterval: 2 * time.Minute}) {
+	if c.Calendar != (config.Calendar{ServiceAccountsFile: "/config/accounts.json", Endpoint: "http://gcalhold:8080/calendar/v3/", ExportInterval: 30 * time.Second, SyncInterval: 2 * time.Minute}) {
 		t.Errorf("Calendar = %+v", c.Calendar)
 	}
 }
@@ -69,7 +69,7 @@ func TestLoadErrors(t *testing.T) {
 		{name: "ポートが数でない", edit: func(m map[string]string) { m["PORT"] = "http" }, want: "ポート"},
 		{name: "ログの水準", edit: func(m map[string]string) { m["LOG_LEVEL"] = "verbose" }, want: "LOG_LEVEL"},
 		{name: "calendarpit の Calendar API だけ", edit: func(m map[string]string) { m["GOOGLE_CALENDAR_ENDPOINT"] = "http://gcalhold:8080/calendar/v3/" },
-			want: "GOOGLE_CALENDAR_SERVICE_ACCOUNT"},
+			want: "GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -132,7 +132,7 @@ func TestLoadExportInterval(t *testing.T) {
 	if err != nil || c.Calendar.ExportInterval != 2*time.Second {
 		t.Errorf("2s = %v, %v", c.Calendar.ExportInterval, err)
 	}
-	c, err = config.Load(getenv(map[string]string{"GOOGLE_CALENDAR_EXPORT_ENABLED": "true", "GOOGLE_CALENDAR_SERVICE_ACCOUNT": "sa@example.com"}))
+	c, err = config.Load(getenv(map[string]string{"GOOGLE_CALENDAR_EXPORT_ENABLED": "true", "GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE": "/config/accounts.json"}))
 	if err != nil || !c.Calendar.ExportEnabled {
 		t.Errorf("書き出しを有効にする = %v, %v", c.Calendar.ExportEnabled, err)
 	}
@@ -141,15 +141,15 @@ func TestLoadExportInterval(t *testing.T) {
 	}
 	c, err = config.Load(getenv(map[string]string{
 		"GOOGLE_CALENDAR_EXPORT_ENABLED": "true", "GOOGLE_CALENDAR_SYNC_ENABLED": "true", "GOOGLE_CALENDAR_SYNC_INTERVAL": "3m",
-		"GOOGLE_CALENDAR_SERVICE_ACCOUNT": "sa@example.com",
+		"GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE": "/config/accounts.json",
 	}))
 	if err != nil || !c.Calendar.SyncEnabled || c.Calendar.SyncInterval != 3*time.Minute {
 		t.Errorf("同期を有効にする = %v, %v, %v", c.Calendar.SyncEnabled, c.Calendar.SyncInterval, err)
 	}
 	for _, extra := range []map[string]string{
 		{"GOOGLE_CALENDAR_EXPORT_ENABLED": "true"},
-		{"GOOGLE_CALENDAR_EXPORT_ENABLED": "yes", "GOOGLE_CALENDAR_SERVICE_ACCOUNT": "sa@example.com"},
-		{"GOOGLE_CALENDAR_SYNC_ENABLED": "true", "GOOGLE_CALENDAR_SERVICE_ACCOUNT": "sa@example.com"},
+		{"GOOGLE_CALENDAR_EXPORT_ENABLED": "yes", "GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE": "/config/accounts.json"},
+		{"GOOGLE_CALENDAR_SYNC_ENABLED": "true", "GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE": "/config/accounts.json"},
 		{"GOOGLE_CALENDAR_SYNC_INTERVAL": "500ms"},
 	} {
 		if _, err := config.Load(getenv(extra)); err == nil {

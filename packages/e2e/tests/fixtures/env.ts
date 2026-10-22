@@ -48,6 +48,9 @@ export const CALENDARPIT_URL = process.env.E2E_CALENDARPIT_URL ?? 'http://localh
 /** compose の、予定の API と calendarpit の間の中継の URL。既定はルートの compose の gcalhold である。 */
 export const GCALHOLD_URL = process.env.E2E_GCALHOLD_URL ?? 'http://localhost:8085'
 
+/** compose の compose/google-calendar-service-accounts.json が、シードの事業所の組織に割り当てた架空のサービスアカウント。 */
+export const FACILITY_SERVICE_ACCOUNT = 'buddy-org-sample@example.iam.gserviceaccount.com'
+
 /** シードの利用者。訪問の予定を作るときに選ぶ。 */
 export const SEED_PATIENT = { id: '01M3TC66FGZVK39Y7GRVZSGWS1', name: '見本 一郎' }
 

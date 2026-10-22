@@ -41,8 +41,9 @@ TOKEN=$(curl -s '127.0.0.1:9000/token?sub=dev-aoki&org_id=org-sample' | jq -r .a
 - `OIDC_ORG_CLAIM`: 組織の ID を持つクレームの名前。デフォルトは `org_id`
 - `CORS_ALLOW_ORIGINS`: CORS でレスポンスを読ませるオリジンを、カンマで区切って並べる。空なら CORS のヘッダーを返さない
 - `GOOGLE_CALENDARS_FILE`: 照合の対象のカレンダーの設定（JSON）のパス。空なら Google カレンダーを使わない
-- `GOOGLE_APPLICATION_CREDENTIALS`: Application Default Credentials が読む認証情報のファイルのパス
-- `GOOGLE_CALENDAR_ENDPOINT`: Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit で試すためのもので、認証は `GOOGLE_APPLICATION_CREDENTIALS` のファイルで行い、無ければ認証しない。`GOOGLE_CALENDARS_FILE` を渡さずにこれだけを渡すと、起動しない
+- `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`: 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応（JSON）のパス。`GOOGLE_CALENDARS_FILE` と一緒に渡す
+- `GOOGLE_APPLICATION_CREDENTIALS`: Application Default Credentials が読む認証情報のファイルのパス。ローカルでは設定せず、gcloud で作った Application Default Credentials を使う
+- `GOOGLE_CALENDAR_ENDPOINT`: Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit で試すためのもので、`GOOGLE_APPLICATION_CREDENTIALS` を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使い、渡さなければ認証をしない。`GOOGLE_CALENDARS_FILE` を渡さずにこれだけを渡すと、起動しない
 
 コンテナで起動するときは、このディレクトリで次を実行する。ビルドの文脈はリポジトリの直下である（`packages/go` を読むため）。
 
@@ -128,27 +129,42 @@ curl -s -H "Authorization: Bearer $TOKEN" -F visits=@testdata/visits_utf8.csv -F
 
 ## Google カレンダーから予定を取る
 
-サービスアカウントに職員のカレンダーを閲覧の権限で共有し、API はそのサービスアカウントで予定を読む。  
-ドメイン全体の委任は使わない。読めるカレンダーを、照合に使うものだけに絞るためである。
+職員は、自分の事業所のサービスアカウントにカレンダーを閲覧の権限で共有する。  
+API は、Application Default Credentials で認証し、カレンダーの組織のサービスアカウントになりすまして予定を読む。  
+ドメイン全体の委任とサービスアカウントのキーは使わない。
 
-1. Google Cloud のプロジェクトで Google Calendar API を有効にし、サービスアカウントを作る。
-2. 職員ごとに、Google カレンダーの「特定のユーザーとの共有」にサービスアカウントのメールアドレスを足し、権限を「予定の表示（すべての予定の詳細）」にする。
-3. 照合の対象のカレンダーを JSON に書き、`apps/receipt-api/.secrets/calendars.json` に置く。形は [calendars.example.json](calendars.example.json) にある。
+- ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](../../docs/adr/0012-google-calendar-facility-service-accounts.md)
+
+ローカルで検証の事業所のカレンダーを読む手順は、次のとおり。
+
+1. 運営側に、検証の事業所のサービスアカウントのトークン作成者のロール（`roles/iam.serviceAccountTokenCreator`）を、自分のアカウントに付けてもらう。本番の事業所のアカウントのロールは付けない。
+2. 検証のカレンダーを、検証の事業所のサービスアカウントに「予定の表示（すべての予定の詳細）」で共有する。
+3. 検証の事業所のサービスアカウントになりすました Application Default Credentials を作る。
+   ```sh
+   gcloud auth application-default login --impersonate-service-account=<検証の事業所のサービスアカウント>
+   ```
+4. 照合の対象のカレンダーを JSON に書き、`apps/receipt-api/.secrets/calendars.json` に置く。形は [calendars.example.json](calendars.example.json) にある。
    - `calendar_id` はカレンダーの設定の「カレンダーの統合」にあるカレンダー ID
    - `org_id` はカレンダーを使う事業所の、ブローカーの組織の ID。access token の組織のクレームと同じ値にする。この組織のトークンを持つリクエストだけが、このカレンダーを読む
    - `staff_name` は主訪問者の名前で、iBow の主訪問者と同じ表記にする。省くとカレンダーの表示名を使う
-4. サービスアカウントのキーのファイル（JSON）を作り、`apps/receipt-api/.secrets/` に置く。`.secrets/` は、キーと職員のカレンダー ID を持つので Git で追跡しない。
-5. 環境変数で設定とキーのファイルを渡して起動する。
+5. 組織とサービスアカウントの対応を JSON に書き、`apps/receipt-api/.secrets/service-accounts.json` に置く。形は [service-accounts.example.json](service-accounts.example.json) にあり、予定の API と同じ形にする。
+   - `calendars.json` の全ての `org_id` を書く。足りない組織があると、API は起動しない
+   - `.secrets/` は、職員のカレンダー ID とサービスアカウントのメールアドレスを持つので Git で追跡しない
+6. `GOOGLE_APPLICATION_CREDENTIALS` を設定せずに起動する。
 
 ```sh
 GOOGLE_CALENDARS_FILE=.secrets/calendars.json \
-GOOGLE_APPLICATION_CREDENTIALS=.secrets/service-account.json \
+GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE=.secrets/service-accounts.json \
 go run ./cmd/api
 ```
 
+Application Default Credentials が検証の事業所のサービスアカウントそのものとして動くとき、API は重ねてなりすまさず、その token をそのまま使う。  
+このため、ローカルでは、サービスアカウント自身へのトークン作成者のロールが要らない。
+
 予定のタイトルは `【サービス内容】利用者名` の形にする。照合の対象にする予定の規則は [DesignDoc.md](DesignDoc.md) にある。
 
-デプロイした環境ではキーのファイルを使わず、Workload Identity Federation の外部アカウントの設定のファイルを `GOOGLE_APPLICATION_CREDENTIALS` に渡す。Application Default Credentials が同じ環境変数から読む。  
+デプロイした環境では、Workload Identity Federation の外部アカウントの設定のファイルを `GOOGLE_APPLICATION_CREDENTIALS` に渡す。  
+認証する主体に、事業所のサービスアカウントごとのトークン作成者のロールを付ける。  
 Workload Identity Federation のプールとプロバイダーの作り方は、インフラのリポジトリが持つ。
 
 ## 文書

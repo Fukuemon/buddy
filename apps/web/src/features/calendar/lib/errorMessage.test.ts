@@ -41,7 +41,10 @@ describe('previewErrorMessage', () => {
   it.each([
     [apiError(502, 'calendar_unavailable'), 'Google カレンダーから予定を読めませんでした。'],
     [apiError(422, 'calendar_unreadable'), '青木 一郎 の Google カレンダーを読めません。'],
-    [apiError(503, 'calendar_not_configured'), 'サービスアカウントが設定されていないので'],
+    [
+      apiError(503, 'calendar_not_configured'),
+      'この事業所のサービスアカウントが設定されていないので',
+    ],
     [apiError(404, 'not_found'), 'この職員のカレンダーの結び付けが外れています。'],
     [apiError(403, 'forbidden'), FORBIDDEN_MESSAGE],
     [apiError(500), '下見できませんでした。'],
@@ -75,7 +78,10 @@ describe('acceptErrorMessage', () => {
     [apiError(409, 'export_not_acceptable'), 'buddy の内容で書き直してください。'],
     [apiError(409, 'external_change_unappliable'), 'buddy の予定に読み替えられません。'],
     [apiError(422, 'calendar_unreadable'), 'カレンダーの共有が外れていないか'],
-    [apiError(503, 'calendar_not_configured'), 'サービスアカウントが設定されていないので'],
+    [
+      apiError(503, 'calendar_not_configured'),
+      'この事業所のサービスアカウントが設定されていないので',
+    ],
     [apiError(403, 'forbidden'), FORBIDDEN_MESSAGE],
     [apiError(502, 'calendar_unavailable'), 'Google カレンダーの内容に合わせられませんでした。'],
   ])('%s を文にする', (error, expected) => {

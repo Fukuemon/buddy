@@ -26,6 +26,8 @@ import (
 type syncEnv struct {
 	exportEnv
 	syncer *calendar.Syncer
+	// sources は、同期の処理が読む手段を引いた事業所の、引いた順の一覧である。
+	sources *[]string
 }
 
 func newSyncEnv(t *testing.T) syncEnv {
@@ -35,18 +37,23 @@ func newSyncEnv(t *testing.T) syncEnv {
 	ids := ulid.Generator{}
 	source := gcal.NewReader(gcaltest.Start(t, e.srv))
 	e.uc = calendar.NewUsecase(calendar.Deps{
-		Calendars: inmem.Calendars{Store: s}, Source: source, Exports: inmem.Exports{Store: s},
+		Calendars: inmem.Calendars{Store: s}, Accounts: oneAccount(source, nil), Exports: inmem.Exports{Store: s},
 		Schedules: inmem.Schedules{Store: s}, Types: inmem.ScheduleTypes{Store: s},
 	}, &inmem.Tx{}, ids, principal.RequireStaffManage)
+	sources := &[]string{}
 	syncer := calendar.NewSyncer(calendar.SyncerDeps{
-		Syncs: inmem.Syncs{Store: s}, Calendars: inmem.Calendars{Store: s}, Exports: inmem.Exports{Store: s}, Sources: sourceOf(source),
+		Syncs: inmem.Syncs{Store: s}, Calendars: inmem.Calendars{Store: s}, Exports: inmem.Exports{Store: s}, Sources: sourceOf(source, sources),
 		Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, Types: inmem.ScheduleTypes{Store: s},
 	}, &inmem.Tx{}, ids, time.Minute, slog.New(slog.NewTextHandler(io.Discard, nil)))
-	return syncEnv{exportEnv: e, syncer: syncer}
+	return syncEnv{exportEnv: e, syncer: syncer, sources: sources}
 }
 
-func sourceOf(src calendar.EventSource) calendar.SourceFor {
-	return func(context.Context, string) (calendar.EventSource, error) { return src, nil }
+// sourceOf は、事業所によらず src で読む calendar.SourceFor を返し、引かれた事業所を used に足す。
+func sourceOf(src calendar.EventSource, used *[]string) calendar.SourceFor {
+	return func(_ context.Context, facilityID string) (calendar.EventSource, error) {
+		*used = append(*used, facilityID)
+		return src, nil
+	}
 }
 
 func (e syncEnv) sync(t *testing.T) {
@@ -655,5 +662,17 @@ func TestSyncCancelledOccurrenceWhileParentUnexported(t *testing.T) {
 	e.sync(t)
 	if x := e.export(t, rs.ID); x.Status != calendar.ExportConflict || *x.ErrorCode != calendar.ErrorPreconditionFailed {
 		t.Errorf("親の EXDATE を書き出す前に取り消した回の待ち = %+v", x)
+	}
+}
+
+// 増分の取得は、要求を受けずに動くので、カレンダーの行の事業所のサービスアカウントで読む。
+func TestSyncUsesCalendarFacilityAccount(t *testing.T) {
+	e := newSyncEnv(t)
+	c := e.store.Calendars[calID]
+	c.FacilityID = inmem.OtherFacilityID
+	e.store.Calendars[calID] = c
+	e.sync(t)
+	if got := *e.sources; len(got) == 0 || got[0] != inmem.OtherFacilityID {
+		t.Errorf("引いた事業所 = %v, want カレンダーの行の事業所", got)
 	}
 }

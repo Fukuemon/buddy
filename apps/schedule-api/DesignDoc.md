@@ -270,6 +270,20 @@ sequenceDiagram
 - 予定をキャンセルすると、`schedule_cancels` に理由とともに 1 レコードを足す。予定のレコードは消さない。
 - キャンセルした予定は、API のレスポンスの `cancel` に理由を持つ。画面は、キャンセルした予定を予定の表示から除く。
 
+### Google カレンダーは事業所のサービスアカウントで読み書きする
+
+schedule-api は、Google Calendar API を、事業所ごとのサービスアカウントになりすました token で呼ぶ。  
+職員は自分の事業所のアカウントにカレンダーを共有するので、ほかの事業所の職員が共有したカレンダーは、ID を入れても読めず、結び付けられない。
+
+- ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](https://github.com/Fukuemon/buddy/blob/876381365355f7e4dab03f6dfdb3d6fb8a9f6947/docs/adr/0012-google-calendar-facility-service-accounts.md)
+
+- 組織の ID とサービスアカウントの対応は、運営側が設定のファイル（`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`）で渡す。schedule-api は、事業所の `facilities.org_id` で対応を引く。形は照合の API と同じで、同じファイルを渡せる。
+- 事業所は、要求を受ける操作では、パスの事業所（認証のミドルウェアがトークンの職員の事業所と一致することを確かめる）か、結び付けたカレンダーのレコードの事業所で決める。要求を受けない書き出しと増分の取得は、カレンダーのレコードの事業所（`external_calendars.facility_id`）で決める。要求の本文からは受けない。
+- 対応の無い事業所と、組織に結び付けていない事業所のカレンダーの操作は、503 の `calendar_not_configured` を返す。書き出しは、書き直しの回数の上限まで待ちを残す。
+- サービスアカウントごとの Calendar API のクライアントを起動のときに作り、token は有効期限まで使い回す。共有のコードは `packages/go/gcalauth` にある。
+- Application Default Credentials が事業所のサービスアカウントそのものとして動くときは、重ねてなりすまさず、その token を使う。ローカルで検証の事業所のアカウントになりすました Application Default Credentials を使うと、サービスアカウント自身へのトークン作成者のロールが要るためである。見分けは、認証情報のファイルの `client_email`（キー）か、なりすます先の URL（なりすましと Workload Identity Federation）のメールアドレスで行う。メタデータサーバーの認証情報は、別のアカウントとみなす。
+- token を作れないときのエラーの文は、状態コードだけを持つ。IAM の応答はなりすます先のリソースの名前を含むことがあり、サービスアカウントのメールアドレスをログに出さないためである。
+
 ### Google カレンダーの取り込み
 
 職員の管理の権限を持つ職員が、職員に Google カレンダーを結び付け、期間を選んでプレビューし、確定して予定に取り込む（ADR-0009 の段階 1）。読み替えの規則と画面の動きは、画面仕様書の [予定の取り込み](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-import_予定の取り込み/index.md) と [カレンダーの連携](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-link_カレンダーの連携/index.md) にある。
@@ -456,10 +470,10 @@ calendarpit で足りない振る舞いと、その扱い
   - 409 の `calendar_taken`、`calendar_already_linked`、`staff_has_calendar`: カレンダーを結び付けられない原因
   - 409 の `import_running`、`import_preview_changed`: 取り込みを確定できない原因
   - 409 の `export_not_in_review`、`export_not_acceptable`、`external_change_unappliable`: 確かめが要る書き出しを解けない原因
-  - 422 の `calendar_unreadable`: Google カレンダーが無いか、サービスアカウントに共有されていない
+  - 422 の `calendar_unreadable`: Google カレンダーが無いか、事業所のサービスアカウントに共有されていない
   - 500 の `internal`: サーバーのエラー
   - 502 の `calendar_unavailable`: Google に届かないか、Google がエラーを返した
-  - 503 の `calendar_not_configured`: サービスアカウントが設定されていない
+  - 503 の `calendar_not_configured`: 事業所のサービスアカウントが設定されていない
 - CORS は、`CORS_ALLOW_ORIGINS` に並べた Origin だけに許す。空なら CORS のヘッダーを返さない。
   - 許す Origin の事前のリクエストには、トークンを求めずに 204 を返す。許すメソッドは GET、POST、PUT、DELETE、OPTIONS、ヘッダーは `Content-Type` と `Authorization` にする。
   - 許さない Origin のリクエストは、本文を持たない 403 で止める。Origin がリクエストの Host と同じリクエストは、CORS のリクエストとして扱わずに通す。

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-import { LEADER, SEED_PATIENT } from '../../fixtures/env'
+import { FACILITY_SERVICE_ACCOUNT, LEADER, SEED_PATIENT } from '../../fixtures/env'
 import { listGoogleEvents } from '../../fixtures/googleCalendar'
 
 // compose の calendarpit（compose/calendarpit/fixture.json）は、森のカレンダーに 2026 年 11 月の予定を持つ。
@@ -15,6 +15,9 @@ test.describe('予定の取り込み', () => {
     }) => {
       await test.step('読めないカレンダーは結び付けられず、森のカレンダーは結び付けられる', async () => {
         await page.goto('/schedule/link')
+        await expect(page.getByTestId('calendar-link-service-account')).toHaveText(
+          FACILITY_SERVICE_ACCOUNT,
+        )
         await page.getByTestId(`calendar-link-open-${MORI.id}`).click()
         const dialog = page.getByTestId('calendar-link-dialog')
         await expect(dialog).toBeVisible()
@@ -23,7 +26,7 @@ test.describe('予定の取り込み', () => {
         await page.getByTestId('calendar-link-input').fill('nobody@example.com')
         await page.getByTestId('calendar-link-check').click()
         await expect(page.getByTestId('calendar-link-check-result')).toContainText(
-          'このカレンダーを読めません。',
+          'このカレンダーを読めません。カレンダーをこの事業所の buddy のサービスアカウントに共有したか',
         )
         await expect(page.getByTestId('calendar-link-submit')).toBeDisabled()
 

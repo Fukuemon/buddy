@@ -520,7 +520,7 @@ export interface paths {
         };
         /**
          * カレンダーを共有する相手のサービスアカウントを取得する
-         * @description 職員が Google カレンダーを閲覧の権限で共有する相手のメールアドレスを返す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         * @description 職員が Google カレンダーを共有する相手の、この事業所のサービスアカウントのメールアドレスを返す。サービスアカウントは事業所ごとにある（ADR-0012）。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         get: operations["getCalendarServiceAccount"];
         put?: never;
@@ -1182,7 +1182,7 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
-        /** @description カレンダーが無いか、サービスアカウントに共有されていない（Google が 403 か 404 を返した）。`code` は calendar_unreadable */
+        /** @description カレンダーが無いか、この事業所のサービスアカウントに共有されていない（Google が 403 か 404 を返した）。`code` は calendar_unreadable */
         CalendarUnreadable: {
             headers: {
                 [name: string]: unknown;
@@ -1212,7 +1212,7 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
-        /** @description Google のサービスアカウントが設定されていない。`code` は calendar_not_configured */
+        /** @description この事業所の Google のサービスアカウントが設定されていない。`code` は calendar_not_configured */
         CalendarNotConfigured: {
             headers: {
                 [name: string]: unknown;
