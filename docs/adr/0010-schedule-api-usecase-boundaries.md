@@ -20,7 +20,7 @@
 予定の API は、DB を PostgreSQL に替え、Google カレンダーとの同期のアダプタを足す。
 
 - ADR-0011: [予定の API の DB を PostgreSQL にし、見直したテーブルでマイグレーションを作り直す](0011-schedule-api-postgresql.md)
-- ADR-0009: [Google カレンダーとの連携を、buddy をマスターにする段階の同期にする](0009-google-calendar-sync.md)
+- ADR-0009: [Google カレンダーとの連携を、buddy をマスターにする段階の同期にし、サービスアカウントとカレンダーの共有で認証する](0009-google-calendar-sync.md)
 
 この ADR は、ADR-0005 の次の 3 つの判断を置き換える。機能のパッケージにまとめる判断と、DB と HTTP のアダプタを 1 つずつ置く判断は保つ。
 

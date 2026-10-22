@@ -12,9 +12,9 @@
 | `schedule-new` | 予定の作成 | `/schedule/new` | 全ての職員。予定を作れる職員の範囲は権限で決まる | [予定の作成](schedule-new_予定の作成/index.md) |
 | `schedule-detail` | 予定の詳細 | `/schedule/$scheduleId` | 予定を見る権限を持つ職員 | [予定の詳細](schedule-detail_予定の詳細/index.md) |
 | `schedule-edit` | 予定の編集 | `/schedule/$scheduleId/edit` | 予定を編集する権限を持つ職員 | [予定の編集](schedule-edit_予定の編集/index.md) |
-| `schedule-link` | カレンダーの連携（職員と Google カレンダーの結び付け） | `/schedule/link`（案） | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [カレンダーの連携](schedule-link_カレンダーの連携/index.md) |
-| `schedule-import` | 予定の取り込み（期間の選択、プレビュー、確定） | `/schedule/import`（案） | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [予定の取り込み](schedule-import_予定の取り込み/index.md) |
-| `schedule-review` | 確かめが要る予定（Google カレンダーに書き出せなかった予定） | `/schedule/review` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [確かめが要る予定](schedule-review_確かめが要る予定/index.md) |
+| `schedule-link` | カレンダーの連携（職員と Google カレンダーの結び付け） | `/schedule/link` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [カレンダーの連携](schedule-link_カレンダーの連携/index.md) |
+| `schedule-import` | 予定の取り込み（期間の選択、プレビュー、確定） | `/schedule/import` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [予定の取り込み](schedule-import_予定の取り込み/index.md) |
+| `schedule-review` | 確かめが要る予定（Google カレンダーと食い違った予定） | `/schedule/review` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [確かめが要る予定](schedule-review_確かめが要る予定/index.md) |
 | `patient-list` | 利用者の一覧 | 未決 | 全ての職員 | なし |
 | `patient-new` | 利用者の登録 | 未決 | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | なし |
 | `patient-edit` | 利用者の編集 | 未決 | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | なし |
@@ -57,7 +57,7 @@
 
 ## 画面の間の遷移
 
-実装済みの画面の間の遷移は次のとおり。
+予定と照合の画面の間の遷移は次のとおり。
 予定と照合の画面は、ヘッダーのナビゲーションで互いに移れる。
 
 ```mermaid
@@ -82,6 +82,28 @@ flowchart TB
   upload -- "照合に成功" --> result
   result -- "別のファイルで照合する、照合の画面へ、ナビゲーションの「照合」" --> upload
   result -- "ナビゲーションの「予定」" --> calendar
+```
+
+職員の管理の権限を持つ職員が使う、Google カレンダーとの連携の画面の間の遷移は次のとおり。
+ヘッダーのナビゲーションに「取り込み」と「要確認」が出るのは、職員の管理の権限を持つ職員だけである。
+カレンダーの連携、予定の取り込み、確かめが要る予定の画面からも、ナビゲーションで予定と照合の画面へ移れる。
+図には、ナビゲーションのうち予定のカレンダーとの間の遷移だけを描く。
+
+```mermaid
+flowchart TB
+  calendar["予定のカレンダー<br/>/schedule"]
+  detail["予定の詳細<br/>/schedule/$scheduleId"]
+  link["カレンダーの連携<br/>/schedule/link"]
+  import["予定の取り込み<br/>/schedule/import"]
+  review["確かめが要る予定<br/>/schedule/review"]
+  calendar -- "ナビゲーションの「取り込み」" --> import
+  import -- "「カレンダーの連携」" --> link
+  link -- "「取り込む」" --> import
+  import -- "「予定のカレンダーで見る」、ナビゲーションの「予定」" --> calendar
+  link -- "ナビゲーションの「予定」" --> calendar
+  calendar -- "ナビゲーションの「要確認」" --> review
+  review -- "「予定を開く」" --> detail
+  review -- "ナビゲーションの「予定」" --> calendar
 ```
 
 ログインしていないときと、ログインに失敗したときの遷移は次のとおり。

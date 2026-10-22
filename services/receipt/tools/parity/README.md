@@ -1,9 +1,9 @@
 # parity
 
-receipt-checker の Python（pandas）の照合と、この Go の照合に同じ入力を渡し、結果の CSV をセルごとに比べる。  
+元の照合の実装（非公開）の Python（pandas）の照合と、この Go の照合に同じ入力を渡し、結果の CSV をセルごとに比べる。  
 比べるケースは `testdata/parity/<ケース>/` にあり、各ケースは `visits.csv`、`schedules.csv`、`expected.csv` を持つ。
 
-- `run_python.py`: receipt-checker の `server/libs` の `receipt_check` を呼ぶ。予定は GAS から取らず、`schedules.csv` を読んで渡す。`requests` の送信は例外にしてあり、ネットワークに出ない
+- `run_python.py`: 元の照合の実装の `server/libs` の `receipt_check` を呼ぶ。予定は GAS から取らず、`schedules.csv` を読んで渡す。`requests` の送信は例外にしてあり、ネットワークに出ない
 - `report/`: 照合の結果を、Python の結果と同じ記号つきの CSV に書く。API は記号を付けず、JSON だけを返すので、このパッケージは比べるためだけにある
 - `goreport/`: `check.Run` の結果を `report` で CSV に書く
 - `compare.py`: Python の結果を Go の形にそろえてから比べる。`--golden` で、そろえた結果を `expected.csv` として書く
@@ -11,11 +11,13 @@ receipt-checker の Python（pandas）の照合と、この Go の照合に同�
 
 ## 実行
 
-receipt-checker のチェックアウトが要る。Python の照合のコードは、このリポジトリにコピーしない。  
-`services/receipt` で実行する。依存は `uv` が各スクリプトの inline script metadata から入れる。
+Python と Go を比べるには、元の照合の実装のチェックアウトが要る。元の照合の実装は、非公開のリポジトリにある。Python の照合のコードは、このリポジトリにコピーしない。  
+外部の人は元の照合の実装を持たないので、この節の末尾のコマンドで、`expected.csv` との比較だけを流せる。
+
+`run.sh` は `services/receipt` で実行する。依存は `uv` が各スクリプトの inline script metadata から入れる。
 
 ```sh
-RECEIPT_CHECKER_LIBS=<receipt-checker>/server/libs tools/parity/run.sh
+RECEIPT_CHECKER_LIBS=<元の照合の実装>/server/libs tools/parity/run.sh
 ```
 
 各ケースで `<ケース>: 行 N、差分 0` を出す。差分があると、区分、行、カラム、両方の値を出し、終了コード 1 で終わる。  
@@ -23,10 +25,14 @@ RECEIPT_CHECKER_LIBS=<receipt-checker>/server/libs tools/parity/run.sh
 ケースを足したとき、または Python の側が変わったときは、`--update` を付けて `expected.csv` を書き直す。
 
 ```sh
-RECEIPT_CHECKER_LIBS=<receipt-checker>/server/libs tools/parity/run.sh --update
+RECEIPT_CHECKER_LIBS=<元の照合の実装>/server/libs tools/parity/run.sh --update
 ```
 
-`expected.csv` は `internal/check` の `TestRunParity` が Go の結果と比べる。Python がない環境でも回帰を確かめられる。
+`expected.csv` は `internal/check` の `TestRunParity` が Go の結果と比べる。Python と元の照合の実装がない環境でも、`services/receipt` で次を流して回帰を確かめられる。
+
+```sh
+GOWORK=off go test ./internal/check -run TestRunParity
+```
 
 ## 吸収する違い
 

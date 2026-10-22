@@ -12,4 +12,4 @@ GitHub の private vulnerability reporting で、メンテナーだけが読め�
 ## 対象
 
 対象は `develop` ブランチの最新のコミットである。  
-`compose.yml` と `apps/web/.env.msw` のシークレットとパスワードは、ローカル環境で起動するためのダミーの値で、脆弱性には当たらない。
+`compose.yml`、`compose/` の下のファイル、`apps/web/.env.msw` のシークレット、パスワード、クレームは、ローカル環境で起動するためのダミーの値で、脆弱性には当たらない。

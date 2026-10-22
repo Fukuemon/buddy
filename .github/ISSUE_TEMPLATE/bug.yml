@@ -33,4 +33,4 @@ body:
     id: environment
     attributes:
       label: 環境
-      description: agent-harness のバージョン、コーディングエージェントとそのバージョン、OS
+      description: 確かめたコミット、OS、ブラウザとそのバージョン、起動のしかた（ルートの compose か、web の `pnpm --filter @buddy/web dev` か `dev:msw` か）

@@ -33,11 +33,15 @@ docker compose up --build --wait
 ## 文書
 
 - 何のためのアプリか: [PRD](docs/PRD.md)
-- 構成要素の責務と依存: [Design Doc](docs/design/DesignDoc.md)。アプリごとの設計は、各アプリの `DesignDoc.md` にある
+- 構成要素の責務と依存: [Design Doc](docs/design/DesignDoc.md)。機能ごとの設計は、各 API とパッケージの `DesignDoc.md` にある
 - 画面ごとの表示と操作: [画面仕様書](docs/screens/index.md)
-- API のリクエストとレスポンス: 各 API の `openapi.yaml`（[予定の API](services/schedule/openapi.yaml)、[照合の API](services/receipt/openapi.yaml)）。文書のサイトの [「API の仕様」](https://buddy-docs.emon-apps.workers.dev/api/schedule-api.html) のページで読める
-- 予定の管理のテーブルの構成: [テーブルの一覧](docs/db/schedule-api/README.md)。操作できる ER 図は、文書のサイトの [`/erd/`](https://buddy-docs.emon-apps.workers.dev/erd/) にある
-- 公開した文書のサイト: [buddy-docs](https://buddy-docs.emon-apps.workers.dev)。デザインシステムのカタログは同じサイトの [`/storybook/`](https://buddy-docs.emon-apps.workers.dev/storybook/) にある。Cloudflare Access で許可した人だけが開け、外部の人は開けない。同じサイトは、ルートで `pnpm site:build` を実行するとローカルでビルドできる。デプロイの構成は [apps/docs-site](apps/docs-site/README.md) にある
+- API のリクエストとレスポンス: 各 API の `openapi.yaml`（[予定の API](services/schedule/openapi.yaml)、[照合の API](services/receipt/openapi.yaml)）。`uv run zensical serve` で開くローカルの文書のサイトの「API の仕様」のページでも読める
+- 予定の管理のテーブルの構成: [テーブルの一覧](docs/db/schedule-api/README.md)。操作できる ER 図は、ルートで `pnpm build:erd` を実行するとローカルで作れる。開き方は [CONTRIBUTING.md の「公開した文書のサイトとカタログを確かめる」](CONTRIBUTING.md#公開した文書のサイトとカタログを確かめる) にある
+- 文書のサイト: ルートで `uv run zensical serve` を実行すると、`http://localhost:8000` で読める
+  - デザインシステムのカタログ（Storybook）は、`pnpm --filter @buddy/web storybook` でローカルに開く。
+  - ルートで `pnpm site:build` を実行すると、文書のサイト、カタログ、ER 図をまとめた成果物をローカルでビルドできる。
+  - 公開した [buddy-docs](https://buddy-docs.emon-apps.workers.dev) は Cloudflare Access で許可した人だけが開け、外部の人は開けない。
+    - デプロイの構成は [apps/docs-site](apps/docs-site/README.md) にある。
 - 決めた判断と理由: [ADR](docs/adr)
 - 変更をマージするまでの手順: [CONTRIBUTING.md](CONTRIBUTING.md)
 - 規約と事実の目次: [context/index.md](context/index.md)

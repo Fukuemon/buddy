@@ -10,8 +10,8 @@
 
 - ディレクトリの名前は `-api` の接尾辞で API であることを表している。接尾辞だけを外して `apps/schedule` にすると、web にも予定と照合の機能があるので、API か画面かが名前から分からない。
 - リリースのタグは、ディレクトリと 1 対 1 に対応させる `apps/<アプリ>/vX.Y.Z` の形と決めている。ディレクトリを変えると、タグの形も決め直す必要がある。
-  - ADR-0003: [モノレポのまま git flow でマージし、API の互換の規則を置く](0003-branch-and-release.md)
-- compose のサービス名、トークンの `aud`、表の文書の出力先、文書のサイトの API の仕様のページは、`schedule-api` と `receipt-api` の名前で指している。
+  - ADR-0003: [git flow でマージし、アプリごとのバージョンでリリースする](0003-branch-and-release.md)
+- compose のサービス名、トークンの `aud`、テーブル定義書の出力先、文書のサイトの API の仕様のページは、`schedule-api` と `receipt-api` の名前で指している。
 - 予定の API と照合の API はまだリリースしておらず、リリースのタグも無い。
 
 ## Decision
@@ -20,7 +20,7 @@
 
 - 理由: トップのディレクトリで画面と API が分かれるので、同じ機能の名前を使っても区別できる。Go の module のパスも `github.com/Fukuemon/buddy/services/schedule` と短くなる。
 - タグは `<ディレクトリ>/vX.Y.Z` の形にする（`apps/web/v1.0.0`、`services/schedule/v1.0.0`）。ディレクトリとタグを 1 対 1 に対応させる ADR-0003 の方針を保つ。リリースのタグがまだ無いので、付け直すタグは無い。
-- ディレクトリの名前だけを変え、コンテナとサービスの名前、`aud`、表の文書の出力先（`docs/db/schedule-api/`）、API の仕様のページの名前は `schedule-api` と `receipt-api` のまま残す。これらはディレクトリと違い、web には同じ名前のものが無く、インフラと IdP の設定が名前で指すので、変えると利点よりも直す範囲が大きい。
+- ディレクトリの名前だけを変え、コンテナとサービスの名前、`aud`、テーブル定義書の出力先（`docs/db/schedule-api/`）、API の仕様のページの名前は `schedule-api` と `receipt-api` のまま残す。これらはディレクトリと違い、web には同じ名前のものが無く、インフラと IdP の設定が名前で指すので、変えると利点よりも直す範囲が大きい。
 
 ## Considered Options
 

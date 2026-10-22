@@ -97,9 +97,12 @@ route は `src/routes/` のファイルから TanStack Router が生成する。
 
 ## 予定の API との変換
 
-`src/api/http/` の実装は、画面の型（`src/api/types.ts`）と API の型（`src/api/generated/`）の違いを `src/api/http/scheduleMapper.ts` で変換する。BFF がサーバーで使う。変換の制限は次のとおり。
+`src/api/http/` の実装は、画面の型（`src/api/types.ts`）と API の型（`src/api/generated/`）の違いを `src/api/http/scheduleMapper.ts` で変換する。BFF がサーバーで使う。変換のしかたと制限は次のとおり。
 
-- 繰り返しの予定は、回に展開していないので一覧に出ない。キャンセルした予定も出さない。
+- 繰り返しの予定は、`src/api/http/recurrence.ts` で一覧の期間の回に展開し、単発の予定の形で一覧に出す。
+  - 回の ID は `recurring-<繰り返しの予定の ID>-<日付>` にする。除外した日の回（1 回だけ置き換えた日を含む）は出さない。
+  - 回の ID で予定を保存すると、繰り返しの予定のその回を置き換える（`POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences`）。
+- キャンセルした予定は出さない。画面の予定はキャンセルの状態を持たない。
 - 予定の作成と更新では、予定の種類、サービスコード、訪問の区分を、予定の API のマスタの名前から ID に引く。
 
 照合の API のクライアント（`src/api/http/receiptApi.ts`）もここにある。BFF の照合の server function（`checkReceiptFn`）がサーバーで使う。
@@ -113,6 +116,15 @@ route は `src/routes/` のファイルから TanStack Router が生成する。
 - 照合の結果は保存せず、query の cache にだけ置く。結果の画面を読み直すと消える。
 - ファイルの合計の上限は、照合の API の `MAX_UPLOAD_BYTES` のデフォルト値（10 MiB）から multipart の分の 64 KiB を引いた値にする。server function の本文は、読む前に `src/start.ts` が 10 MiB を超えるものと長さの分からないものを 413 で拒む。
 - フェイクの API（`fake`）の照合は、入力によらず `src/api/fake/fakeReceiptApi.ts` の結果を返す。
+
+## カレンダーの連携、予定の取り込み、確かめが要る予定の画面
+
+カレンダーの連携（`/schedule/link`）、予定の取り込み（`/schedule/import`）、確かめが要る予定（`/schedule/review`）の画面は `src/features/calendar/` にある。画面の仕様は、画面仕様書の [カレンダーの連携](../../docs/screens/schedule-link_カレンダーの連携/index.md)、[予定の取り込み](../../docs/screens/schedule-import_予定の取り込み/index.md)、[確かめが要る予定](../../docs/screens/schedule-review_確かめが要る予定/index.md) にある。
+
+- 3 つの route は、予定のカレンダーの上に重ならないよう、ファイル名に `_` を付けて `/schedule` の入れ子から外す（`src/routes/schedule_.link.tsx` など）。
+- 3 つの画面は、職員の管理の権限を持つ職員だけが使う。ほかの職員には、ヘッダーに「取り込み」と「要確認」を出さず、URL を開くと「この画面を開く権限がありません」（`PageForbiddenMessage`）を出す。
+- 画面は、予定の API の Google カレンダーの操作を `BuddyApi`（`src/api/client.ts`）の `calendars` で呼ぶ。結び付けたカレンダー、取り込みのプレビューと結果、書き出しの型は、予定の API の型をそのまま使う（`src/api/types.ts`）。
+- フェイクの API（`fake`）は、ID の末尾が `@example.com` のカレンダーだけを読めるものとして扱う（`src/api/fake/fakeBuddyApi.ts`）。
 
 ## 文書
 

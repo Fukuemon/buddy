@@ -7,12 +7,12 @@
 #   "python-dotenv",
 # ]
 # ///
-"""receipt-checker の libs で照合し、結果を BOM 付きの UTF-8 の CSV に書く。
+"""元の照合の実装（非公開）の libs で照合し、結果を BOM 付きの UTF-8 の CSV に書く。
 
 予定は GAS から取らず、ローカルの予定の CSV を読んで渡す。
 
 使い方:
-    uv run run_python.py --libs <receipt-checker/server/libs> VISITS SCHEDULES OUT
+    uv run run_python.py --libs <元の照合の実装>/server/libs VISITS SCHEDULES OUT
     --libs を省くと、環境変数 RECEIPT_CHECKER_LIBS を使う。
 
 終了コード: 0 は成功、2 は引数の誤り。照合の例外はそのまま投げる。
