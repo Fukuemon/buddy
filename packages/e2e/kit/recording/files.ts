@@ -57,6 +57,9 @@ export const finishEvidence = (dir: string, take: Omit<Take, 'codec' | 'seconds'
     'error',
     '-i',
     webm,
+    // yuv420p の H.264 は、幅か高さが奇数だと変換に失敗するので、偶数にそろえる
+    '-vf',
+    'scale=trunc(iw/2)*2:trunc(ih/2)*2',
     '-c:v',
     'libx264',
     '-pix_fmt',
