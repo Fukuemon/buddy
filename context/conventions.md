@@ -32,7 +32,7 @@ status: stable
 
 コメントの書き方は、スキル write-comments に従う。言語は日本語の常体にする。
 
-- Go は、文書コメントの有無を receipt-api、schedule-api、`packages/go` の revive（`exported`、`package-comments`）で確かめる。生成物（`// Code generated ... DO NOT EDIT.` のファイル）とテストは、revive が対象にしない。
+- Go は、文書コメントの有無を `services/receipt`、`services/schedule`、`packages/go` の revive（`exported`、`package-comments`）で確かめる。生成物（`// Code generated ... DO NOT EDIT.` のファイル）とテストは、revive が対象にしない。
 - TypeScript は、文書コメントの有無を、ルートの `vite.config.ts` の `lint` で確かめる。Oxlint の jsdoc のプラグインに require-jsdoc が無いので、eslint-plugin-jsdoc を `jsPlugins` で読ませる。対象は export する関数、クラス、型で、名前が `Props` で終わる型は除く。Props の型は、コンポーネントの文書コメントが説明するからである。生成物は lint の対象から外してある。呼び出しで包んで作る関数（`createServerFn(...)`、`memo(...)`）と、クラスのメソッドは確かめない。確かめるのは web、ui、e2e の check である。
 - Go の文書コメントは、`// Package <名前> は、…。`、`// <名前> は、…。` の形で書く。
 - 外部の制約を書く実装のコメントには、出典の URL を添える。
@@ -71,7 +71,7 @@ status: stable
 | `**/*.md` | 整形（`vp fmt`） | 文書は textlint で確かめる |
 | `dist`、`storybook-static` | lint | ビルドの出力である |
 | Go の生成物 | golangci-lint（`exclusions.generated: lax`） | 生成物である |
-| schedule-api の `_test.go` の gosec G101 | golangci-lint | テストの接続の設定は、使い捨てのコンテナの値である |
+| `services/schedule` の `_test.go` の gosec G101 | golangci-lint | テストの接続の設定は、使い捨てのコンテナの値である |
 | `packages/go/healthcheck/healthcheck.go` の gosec | golangci-lint（`//nolint:gosec`） | 宛先を `127.0.0.1` に固定し、環境変数はポートだけを決める。誤検知である |
 | `docs/design/` の下のシンボリックリンク、Git で追跡しないもの | textlint（`.textlintignore`） | 同じ文書を 2 回見ないため。元の文書は元の場所で見る |
 
