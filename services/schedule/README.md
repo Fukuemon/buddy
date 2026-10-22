@@ -1,4 +1,4 @@
-# schedule-api
+# 予定の API
 
 訪問看護の事業所の予定を管理する HTTP の API。  
 API の定義の正本は [openapi.yaml](openapi.yaml) である。サーバーのハンドラのインターフェイスと型、web のクライアントの型は、このファイルから生成する。
@@ -42,8 +42,8 @@ API とマイグレーションは、次の環境変数を読む。
 
 コマンドは、このディレクトリで実行する。  
 パスワードはローカルでだけ使う値を決めて、環境変数に入れる。  
-API の 8080 とフェイクの Issuer の 9000 は、ルートの compose の schedule-api と IdP と重なる。  
-compose を起動しているときは、重なる 2 つを `docker compose stop schedule-api idp` で止めてから実行する。  
+API の 8080 とフェイクの Issuer の 9000 は、ルートの compose の予定の API と IdP と重なる。  
+compose を起動しているときは、重なる 2 つを `docker compose stop schedule idp` で止めてから実行する。  
 PostgreSQL は、`DB_PORT` のポート（デフォルトは 5432）で `127.0.0.1` にだけ公開する。  
 ほかのコンテナが 5432 を使っているときは、手順の前に `export DB_PORT=15433` のように空いているポートを入れる。
 
@@ -60,7 +60,7 @@ go run ./cmd/migrate seed
 # ブローカーの代わりに、フェイクの Issuer を別のターミナルで起動する
 go run ./cmd/devissuer -addr 127.0.0.1:9000
 
-export OIDC_ISSUER=http://127.0.0.1:9000 OIDC_AUDIENCE=schedule-api
+export OIDC_ISSUER=http://127.0.0.1:9000 OIDC_AUDIENCE=schedule
 go run ./cmd/api
 ```
 
@@ -193,7 +193,7 @@ sqlc diff
 このディレクトリで次を実行する。ビルドの文脈はリポジトリの直下である（`packages/go` を読むため）。
 
 ```sh
-docker build -f Dockerfile -t schedule-api:local ../..
+docker build -f Dockerfile -t schedule:local ../..
 ```
 
 イメージは distroless の上に `api` と `migrate` の 2 つのバイナリを持つ。エントリポイントは `api` である。  

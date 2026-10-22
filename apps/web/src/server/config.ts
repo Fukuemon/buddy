@@ -25,8 +25,8 @@ const REQUIRED = [
   'OIDC_CLIENT_SECRET',
   'SESSION_STORE_URL',
   'SESSION_SECRET',
-  'SCHEDULE_API_URL',
-  'RECEIPT_API_URL',
+  'SCHEDULE_URL',
+  'RECEIPT_URL',
 ] as const
 
 /** cookie の署名の鍵の最小のバイト数。HMAC-SHA256 の出力と同じ長さにする。 */
@@ -54,7 +54,7 @@ export const loadServerConfig = (env: Record<string, string | undefined>): Serve
     sessionStoreUrl: get('SESSION_STORE_URL'),
     sessionSecret: get('SESSION_SECRET'),
     secureCookie: env.SESSION_COOKIE_SECURE !== 'false',
-    scheduleApiUrl: get('SCHEDULE_API_URL'),
-    receiptApiUrl: get('RECEIPT_API_URL'),
+    scheduleApiUrl: get('SCHEDULE_URL'),
+    receiptApiUrl: get('RECEIPT_URL'),
   }
 }

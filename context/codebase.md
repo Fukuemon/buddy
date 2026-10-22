@@ -11,7 +11,7 @@ status: stable
 
 実行の単位の責務と、その間の約束は [buddy Design Doc](../docs/design/DesignDoc.md) にある。ここには、境界をまたぐときの取り決めだけを書く。
 
-- 画面と BFF（web）と文書のサイトは `apps/`、Go の API は `services/`、共有のコードは `packages/` に置く。API のディレクトリは機能の名前（`schedule`、`receipt`）にし、コンテナ、サービス、`aud`、テーブル定義書の出力先の名前は `schedule-api` と `receipt-api` のまま残す（[ADR-0013](../docs/adr/0013-services-directory.md)）。
+- 画面と BFF（web）と文書のサイトは `apps/`、Go の API は `services/`、共有のコードは `packages/` に置く。API のディレクトリは機能の名前（`schedule`、`receipt`）にし、コンテナ、サービス、`aud`、テーブル定義書の出力先の名前もディレクトリと同じにする（[ADR-0013](../docs/adr/0013-services-directory.md)、[ADR-0014](../docs/adr/0014-service-names.md)）。
 - web と 2 つの API は、HTTP だけでつながる。web と API の間の型は、各 API の `openapi.yaml` から生成し、手で書かない。
 - 業務の規則と認可は API が持つ。web は、画面の表示の規則（照合の印と CSV の書き出しを含む）だけを持ち、拒否の判断を API に任せる。
 - `packages/ui` は、BCD Design の Base と Case のコンポーネントとトークンだけを持つ。業務の名前（予定、照合など）を持つ Domain のコンポーネントは、`apps/web` の `features/<機能>/components/` に置く（[ADR-0004](../docs/adr/0004-design-system.md)）。
@@ -42,9 +42,9 @@ status: stable
 
 | 状態 | 保存先 | オーナー |
 | --- | --- | --- |
-| 事業所、職員、利用者、予定、権限 | PostgreSQL | schedule-api だけ。一覧と作成は事業所の ID で絞り、1 件を指すリクエストはリソースの事業所を確かめる |
+| 事業所、職員、利用者、予定、権限 | PostgreSQL | 予定の API だけ。一覧と作成は事業所の ID で絞り、1 件を指すリクエストはリソースの事業所を確かめる |
 | ログインのセッションとトークン | Valkey | web の BFF。ブラウザには署名した cookie でセッションの ID だけを渡す |
-| 照合の入力の CSV と結果 | 保存しない | receipt-api は 1 回のリクエストで返し、web は query の cache にだけ置く。画面を読み直すと消える |
+| 照合の入力の CSV と結果 | 保存しない | 照合の API は 1 回のリクエストで返し、web は query の cache にだけ置く。画面を読み直すと消える |
 | 画面の表示の条件（表示の単位、日付、絞り込みの職員） | URL の search params | web の route。zod で検証し、デフォルト値は URL に書かない |
 | API から取ったデータ | TanStack Query の cache | web。query の key は機能ごとの `queries.ts` に置き、変更したら invalidate する |
 | フェイクの API のデータ | ブラウザのメモリ | `VITE_API_MODE=fake` の web。読み直すと消える |

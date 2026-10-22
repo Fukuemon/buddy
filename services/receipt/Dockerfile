@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # ビルドの文脈はリポジトリの直下である。go.mod の replace が ../../packages/go を指すため（ADR-0007）。
-# 例: docker build -f services/receipt/Dockerfile -t receipt-api:local .
+# 例: docker build -f services/receipt/Dockerfile -t receipt:local .
 
 FROM golang:1.27 AS build
 WORKDIR /src

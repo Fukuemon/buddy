@@ -30,10 +30,10 @@ test.describe('予定の API', () => {
             actor: `${LOGIN_STAFF.name}（マネージャー）`,
             variant,
           },
-          prepareApiReference('schedule-api', LOGIN_NAME),
+          prepareApiReference('schedule', LOGIN_NAME),
           async ({ page, step, check }, token) => {
             await routeApiReference(page)
-            await openApiClient(page, 'schedule-api', {
+            await openApiClient(page, 'schedule', {
               tag: 'schedule',
               method: 'post',
               path: '/v1/facilities/{facility_id}/schedules',

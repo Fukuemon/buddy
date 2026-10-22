@@ -61,7 +61,7 @@ export const mockScheduleTypes: Schemas['ScheduleType'][] = [
   { id: 'type-visit', name: '訪問' },
 ]
 
-/** サービスコード。表記と提供時間の範囲は、schedule-api のマイグレーション（000007）と同じにする。 */
+/** サービスコード。表記と提供時間の範囲は、予定の API のマイグレーション（000007）と同じにする。 */
 export const mockServiceCodes: Schemas['ServiceCode'][] = (
   [
     ['code-i2', '訪看I2', 20, 29],

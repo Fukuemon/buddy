@@ -1,34 +1,34 @@
 {
   "users": [
     {
-      "id": "schedule-api",
+      "id": "schedule",
       "name": "予定の API",
-      "email": "schedule-api@example.iam.gserviceaccount.com"
+      "email": "schedule@example.iam.gserviceaccount.com"
     }
   ],
   "calendars": [
     {
-      "id": "schedule-api",
-      "userId": "schedule-api",
+      "id": "schedule",
+      "userId": "schedule",
       "summary": "予定の API",
       "timeZone": "Asia/Tokyo",
       "primary": true
     },
     {
       "id": "kenta.mori@example.com",
-      "userId": "schedule-api",
+      "userId": "schedule",
       "summary": "kenta.mori@example.com",
       "timeZone": "Asia/Tokyo"
     },
     {
       "id": "sakura.hayashi@example.com",
-      "userId": "schedule-api",
+      "userId": "schedule",
       "summary": "sakura.hayashi@example.com",
       "timeZone": "Asia/Tokyo"
     },
     {
       "id": "misaki.sato@example.com",
-      "userId": "schedule-api",
+      "userId": "schedule",
       "summary": "misaki.sato@example.com",
       "timeZone": "Asia/Tokyo"
     }
@@ -190,8 +190,8 @@
   ],
   "clients": [
     {
-      "id": "schedule-api",
-      "secret": "schedule-api-local",
+      "id": "schedule",
+      "secret": "schedule-local",
       "redirectUris": [
         "http://127.0.0.1/callback"
       ]

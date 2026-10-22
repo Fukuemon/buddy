@@ -1,5 +1,5 @@
 # tbls の設定。文書は scripts/build-db-docs.sh で生成する
-docPath: docs/db/schedule-api
+docPath: docs/db/schedule
 format:
   adjust: true
 er:
@@ -8,7 +8,7 @@ er:
   distance: 1
 exclude:
   - schema_migrations
-name: schedule-api
+name: schedule
 # 表とカラムの説明は、マイグレーションの SQL の COMMENT ON に書く。tbls と sqlc の生成コードが同じ説明を読む
 # 業務のまとまりごとに ER 図を描く。境界の表（事業所、職員など）は、関係を読むのに要るまとまりにも入れる
 viewpoints:

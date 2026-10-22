@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 import { prepareApiReference, routeApiReference } from '../../fixtures/apiReference'
-import { LOGIN_NAME, LOGIN_STAFF, SCHEDULE_API_URL } from '../../fixtures/env'
+import { LOGIN_NAME, LOGIN_STAFF, SCHEDULE_URL } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import {
   fillApiBody,
@@ -20,8 +20,8 @@ const MEMBER_POSITION = '01M3TC5QTRHSXHE7C68HPN6MBH'
 
 /** API の参照のページを開き、トークンを取って、役職を変える相手のメンバーの職員を作る。シードの職員の権限を変えないため。 */
 const prepareMember = async (page: Page) => {
-  const token = await prepareApiReference('schedule-api', LOGIN_NAME)(page)
-  const res = await page.request.post(`${SCHEDULE_API_URL}/v1/facilities/${FACILITY_ID}/users`, {
+  const token = await prepareApiReference('schedule', LOGIN_NAME)(page)
+  const res = await page.request.post(`${SCHEDULE_URL}/v1/facilities/${FACILITY_ID}/users`, {
     headers: { Authorization: `Bearer ${token}` },
     data: {
       username: '見本 職員',
@@ -53,7 +53,7 @@ test.describe('職員の管理', () => {
           prepareMember,
           async ({ page, step, check }, { token, userId }) => {
             await routeApiReference(page)
-            await openApiClient(page, 'schedule-api', {
+            await openApiClient(page, 'schedule', {
               tag: 'staff',
               method: 'put',
               path: '/v1/users/{user_id}/position',

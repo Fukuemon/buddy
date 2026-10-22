@@ -1,5 +1,5 @@
 // Package oidc は、OIDC のブローカーが発行した access token の JWT を、ブローカーの JWKS で検証する。
-// schedule-api と receipt-api が共有する module packages/go にある（ADR-0007）。
+// 予定の API と照合の API が共有する module packages/go にある（ADR-0007）。
 package oidc
 
 import (

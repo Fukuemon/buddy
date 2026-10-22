@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 import type { APIRequestContext, Page } from '@playwright/test'
 
-import { BASE_URL, IDP_URL, RECEIPT_API_URL, SCHEDULE_API_URL } from './env'
+import { BASE_URL, IDP_URL, RECEIPT_URL, SCHEDULE_URL } from './env'
 
 const root = fileURLToPath(new URL('../../../..', import.meta.url))
 
@@ -16,8 +16,8 @@ export const API_REFERENCE_ORIGIN = 'http://localhost:8000'
 
 /** openapi.yaml の servers が指す、compose のデフォルトのポートの API と、送り直す先。 */
 const API_FORWARDS = [
-  { from: 'http://localhost:8080', to: SCHEDULE_API_URL },
-  { from: 'http://localhost:8090', to: RECEIPT_API_URL },
+  { from: 'http://localhost:8080', to: SCHEDULE_URL },
+  { from: 'http://localhost:8090', to: RECEIPT_URL },
 ]
 
 const CONTENT_TYPES: Record<string, string> = {
@@ -89,7 +89,7 @@ export const issueAccessToken = async (request: APIRequestContext, name: string)
  * @param name compose の IdP にログインする名前。トークンを使わない spec は null にする
  */
 export const prepareApiReference =
-  (api: 'schedule-api' | 'receipt-api', name: string | null) => async (page: Page) => {
+  (api: 'schedule' | 'receipt', name: string | null) => async (page: Page) => {
     await routeApiReference(page)
     await page.goto(`${API_REFERENCE_ORIGIN}/api/${api}.html`)
     return name === null ? '' : issueAccessToken(page.request, name)

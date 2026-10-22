@@ -24,7 +24,7 @@ import (
 
 func main() {
 	addr := flag.String("addr", "127.0.0.1:9000", "待ち受けるアドレス。Issuer の URL は http://<addr> になる")
-	audience := flag.String("audience", "receipt-api", "トークンの aud のデフォルト値")
+	audience := flag.String("audience", "receipt", "トークンの aud のデフォルト値")
 	orgClaim := flag.String("org-claim", "org_id", "組織のクレームの名前")
 	flag.Parse()
 

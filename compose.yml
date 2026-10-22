@@ -102,35 +102,35 @@ services:
     depends_on:
       calendarpit: { condition: service_healthy }
 
-  schedule-api-migrate:
+  schedule-migrate:
     build: { context: ., dockerfile: services/schedule/Dockerfile }
     # イメージの名前にプロジェクトの名前を含め、-p で分けた別の worktree のビルドに上書きされないようにする
-    image: ${COMPOSE_PROJECT_NAME}-schedule-api
+    image: ${COMPOSE_PROJECT_NAME}-schedule
     entrypoint: ['/usr/local/bin/migrate']
     command: ['up']
     environment: *db-env
     depends_on:
       postgres: { condition: service_healthy }
 
-  schedule-api-seed:
-    image: ${COMPOSE_PROJECT_NAME}-schedule-api
-    # イメージは schedule-api-migrate がビルドする
+  schedule-seed:
+    image: ${COMPOSE_PROJECT_NAME}-schedule
+    # イメージは schedule-migrate がビルドする
     pull_policy: never
     entrypoint: ['/usr/local/bin/migrate']
     command: ['seed']
     environment: *db-env
     depends_on:
-      schedule-api-migrate: { condition: service_completed_successfully }
+      schedule-migrate: { condition: service_completed_successfully }
 
-  schedule-api:
-    image: ${COMPOSE_PROJECT_NAME}-schedule-api
-    # イメージは schedule-api-migrate がビルドする
+  schedule:
+    image: ${COMPOSE_PROJECT_NAME}-schedule
+    # イメージは schedule-migrate がビルドする
     pull_policy: never
     environment:
       <<: *db-env
       # トークンの iss は、IdP がトークンのリクエストの Host から決める。API とトークンを取る web は、コンテナの間の名前 idp で呼ぶ
       OIDC_ISSUER: http://idp:9000/buddy
-      OIDC_AUDIENCE: schedule-api
+      OIDC_AUDIENCE: schedule
       # web と、API の仕様のページでリクエストを試すローカル環境の文書のサイト（zensical serve）に許す
       CORS_ALLOW_ORIGINS: http://localhost:${WEB_PORT:-3000},http://localhost:8000
       # 事業所の組織と、ダミーのサービスアカウントの対応
@@ -147,23 +147,23 @@ services:
     volumes:
       - ./compose/google-calendar-service-accounts.json:/config/google-calendar-service-accounts.json:ro
       - calendarpit-credentials:/credentials:ro
-    ports: ['127.0.0.1:${SCHEDULE_API_PORT:-8080}:8080']
+    ports: ['127.0.0.1:${SCHEDULE_PORT:-8080}:8080']
     healthcheck:
       test: ['CMD', '/usr/local/bin/api', 'healthcheck']
       interval: 2s
       timeout: 5s
       retries: 30
     depends_on:
-      schedule-api-seed: { condition: service_completed_successfully }
+      schedule-seed: { condition: service_completed_successfully }
       idp: { condition: service_healthy }
       calendarpit-authorize: { condition: service_completed_successfully }
       gcalhold: { condition: service_healthy }
 
-  receipt-api:
+  receipt:
     build: { context: ., dockerfile: services/receipt/Dockerfile }
     environment:
       OIDC_ISSUER: http://idp:9000/buddy
-      OIDC_AUDIENCE: receipt-api
+      OIDC_AUDIENCE: receipt
       # API の仕様のページでリクエストを試すローカル環境の文書のサイト（zensical serve）に許す
       CORS_ALLOW_ORIGINS: http://localhost:8000
       # 照合の対象の森のカレンダーと、予定の API と同じダミーのサービスアカウントの対応
@@ -176,7 +176,7 @@ services:
       - ./compose/receipt-calendars.json:/config/receipt-calendars.json:ro
       - ./compose/google-calendar-service-accounts.json:/config/google-calendar-service-accounts.json:ro
       - calendarpit-credentials:/credentials:ro
-    ports: ['127.0.0.1:${RECEIPT_API_PORT:-8090}:8080']
+    ports: ['127.0.0.1:${RECEIPT_PORT:-8090}:8080']
     healthcheck:
       test: ['CMD', '/api', 'healthcheck']
       interval: 2s
@@ -200,8 +200,8 @@ services:
       SESSION_SECRET: buddy-dev-session-secret-for-compose-only
       # ローカル環境は https でないので、cookie に Secure を付けない
       SESSION_COOKIE_SECURE: 'false'
-      SCHEDULE_API_URL: http://schedule-api:8080
-      RECEIPT_API_URL: http://receipt-api:8080
+      SCHEDULE_URL: http://schedule:8080
+      RECEIPT_URL: http://receipt:8080
     ports: ['127.0.0.1:${WEB_PORT:-3000}:3000']
     healthcheck:
       test:
@@ -217,8 +217,8 @@ services:
     depends_on:
       valkey: { condition: service_healthy }
       idp: { condition: service_healthy }
-      schedule-api: { condition: service_healthy }
-      receipt-api: { condition: service_healthy }
+      schedule: { condition: service_healthy }
+      receipt: { condition: service_healthy }
 
 volumes:
   postgres:

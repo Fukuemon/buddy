@@ -15,8 +15,8 @@ const env = {
   OIDC_CLIENT_SECRET: 's',
   SESSION_STORE_URL: 'redis://valkey:6379',
   SESSION_SECRET: 'x'.repeat(32),
-  SCHEDULE_API_URL: 'http://schedule-api:8080',
-  RECEIPT_API_URL: 'http://receipt-api:8080',
+  SCHEDULE_URL: 'http://schedule:8080',
+  RECEIPT_URL: 'http://receipt:8080',
 }
 
 describe('loadServerConfig', () => {

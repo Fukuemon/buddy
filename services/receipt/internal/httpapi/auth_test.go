@@ -110,7 +110,7 @@ func TestChecksWithIssuer(t *testing.T) {
 	}
 	t.Cleanup(iss.Close)
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	v, err := oidc.NewVerifier(t.Context(), oidc.Config{Issuer: iss.URL(), Audience: "receipt-api", OrgClaim: "org_id"}, iss.Client(), logger)
+	v, err := oidc.NewVerifier(t.Context(), oidc.Config{Issuer: iss.URL(), Audience: "receipt", OrgClaim: "org_id"}, iss.Client(), logger)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,8 +120,8 @@ func TestChecksWithIssuer(t *testing.T) {
 		audience string
 		want     int
 	}{
-		{"aud が receipt-api", "receipt-api", http.StatusOK},
-		{"aud が schedule-api", "schedule-api", http.StatusUnauthorized},
+		{"aud が receipt", "receipt", http.StatusOK},
+		{"aud が schedule", "schedule", http.StatusUnauthorized},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			raw, err := iss.Sign(iss.Claims(tt.audience, "sub-1"))

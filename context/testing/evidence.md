@@ -52,12 +52,12 @@ compose を、E2E と別のプロジェクトの名前とポートで起動し�
 撮影で作ったデータが、E2E を流す DB に残らないようにするためである。
 
 ```sh
-export WEB_PORT=3850 SCHEDULE_API_PORT=8850 RECEIPT_API_PORT=8851 GCALHOLD_PORT=8852 \
+export WEB_PORT=3850 SCHEDULE_PORT=8850 RECEIPT_PORT=8851 GCALHOLD_PORT=8852 \
   VALKEY_PORT=6850 IDP_PORT=9850 CALENDARPIT_PORT=4850 POSTGRES_PORT=15850
 docker compose -p buddy-evidence up --build --wait
 EVIDENCE_NO=<番号> E2E_BASE_URL=http://localhost:3850 \
   E2E_CALENDARPIT_URL=http://localhost:4850 E2E_GCALHOLD_URL=http://localhost:8852 \
-  E2E_SCHEDULE_API_URL=http://localhost:8850 E2E_RECEIPT_API_URL=http://localhost:8851 \
+  E2E_SCHEDULE_URL=http://localhost:8850 E2E_RECEIPT_URL=http://localhost:8851 \
   E2E_IDP_URL=http://localhost:9850 \
   pnpm --filter @buddy/e2e evidence -g '<test の名前の一部>'
 docker compose -p buddy-evidence down -v
@@ -70,8 +70,8 @@ docker compose -p buddy-evidence down -v
 | `EVIDENCE_BEFORE_URL` | 改修前の web の URL。渡すと、改修前と改修後を 1 回で撮る | なし |
 | `EVIDENCE_ONLY` | `before` か `after`。`E2E_BASE_URL` をその版として 1 つだけ撮る | なし |
 | `E2E_STORYBOOK_URL` | Storybook の URL | `http://localhost:6006` |
-| `E2E_SCHEDULE_API_URL` | 撮る予定の API の URL。API の参照のページから送ったリクエストを、ここへ送り直す | `http://localhost:8080` |
-| `E2E_RECEIPT_API_URL` | 撮る照合の API の URL。API の参照のページから送ったリクエストを、ここへ送り直す | `http://localhost:8090` |
+| `E2E_SCHEDULE_URL` | 撮る予定の API の URL。API の参照のページから送ったリクエストを、ここへ送り直す | `http://localhost:8080` |
+| `E2E_RECEIPT_URL` | 撮る照合の API の URL。API の参照のページから送ったリクエストを、ここへ送り直す | `http://localhost:8090` |
 | `E2E_IDP_URL` | 撮る compose の IdP の URL。API の参照のページに入れるトークンを、ここから取る | `http://localhost:9000` |
 
 - 改修前と比べるときは、改修前のブランチの worktree で、2 つ目の compose を別の `-p` とポートで起動する。
@@ -79,7 +79,7 @@ docker compose -p buddy-evidence down -v
   - 2 つ目の compose のポートの組の例は次のとおり。改修前の spec は `E2E_BASE_URL=http://localhost:3860` で流す。
 
     ```sh
-    export WEB_PORT=3860 SCHEDULE_API_PORT=8860 RECEIPT_API_PORT=8861 GCALHOLD_PORT=8862 \
+    export WEB_PORT=3860 SCHEDULE_PORT=8860 RECEIPT_PORT=8861 GCALHOLD_PORT=8862 \
       VALKEY_PORT=6860 IDP_PORT=9860 CALENDARPIT_PORT=4860 POSTGRES_PORT=15860
     docker compose -p buddy-evidence-before up --build --wait
     ```

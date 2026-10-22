@@ -1,4 +1,4 @@
-// schedule-api と receipt-api が共有するコードの module である。各 API は replace で読む（ADR-0007）。
+// 予定の API と照合の API が共有するコードの module である。各 API は replace で読む（ADR-0007）。
 module github.com/Fukuemon/buddy/packages/go
 
 go 1.27

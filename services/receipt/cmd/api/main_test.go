@@ -16,7 +16,7 @@ func TestLoadConfig(t *testing.T) {
 			if v, ok := m[k]; ok {
 				return v
 			}
-			return map[string]string{"OIDC_ISSUER": "http://idp/buddy", "OIDC_AUDIENCE": "receipt-api"}[k]
+			return map[string]string{"OIDC_ISSUER": "http://idp/buddy", "OIDC_AUDIENCE": "receipt"}[k]
 		}
 	}
 	cfg, err := loadConfig(env(nil))
@@ -27,7 +27,7 @@ func TestLoadConfig(t *testing.T) {
 	if err != nil || cfg.port != "9000" || cfg.maxUploadBytes != 2048 || cfg.logLevel != slog.LevelDebug || cfg.oidc.OrgClaim != "organization" {
 		t.Errorf("設定 = %+v, %v", cfg, err)
 	}
-	if cfg.oidc.Issuer != "http://idp/buddy" || cfg.oidc.Audience != "receipt-api" {
+	if cfg.oidc.Issuer != "http://idp/buddy" || cfg.oidc.Audience != "receipt" {
 		t.Errorf("OIDC の設定 = %+v", cfg.oidc)
 	}
 	cfg, err = loadConfig(env(map[string]string{"CORS_ALLOW_ORIGINS": " http://a , ,http://b"}))

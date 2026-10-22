@@ -37,10 +37,10 @@ test.describe('職員の管理', () => {
             actor: `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`,
             variant,
           },
-          prepareApiReference('schedule-api', LOGIN_NAME),
+          prepareApiReference('schedule', LOGIN_NAME),
           async ({ page, step, check }, token) => {
             await routeApiReference(page)
-            await openApiClient(page, 'schedule-api', ADD_POLICY)
+            await openApiClient(page, 'schedule', ADD_POLICY)
             await step('API の参照のページで「職員に権限を足す」のリクエストを開いている')
 
             await step(`認証の欄に ${LOGIN_STAFF.name} のトークンを入れる（伏せ字で出る）`)
@@ -71,7 +71,7 @@ test.describe('職員の管理', () => {
 
             await step('「職員の権限を外す」のリクエストを開き、足した権限を外すリクエストを送る')
             await apiClient(page).dialog.press('Escape')
-            await openApiClient(page, 'schedule-api', REMOVE_POLICY)
+            await openApiClient(page, 'schedule', REMOVE_POLICY)
             await fillApiToken(page, token)
             await fillApiVariable(page, 'user_id', TEAM_MEMBER.id)
             await fillApiVariable(page, 'user_policy_id', userPolicyId)
@@ -95,10 +95,10 @@ test.describe('職員の管理', () => {
             actor: `${LEADER.staff.name}（チームリーダー、職員の管理の権限なし）`,
             variant,
           },
-          prepareApiReference('schedule-api', LEADER.loginName),
+          prepareApiReference('schedule', LEADER.loginName),
           async ({ page, step, check }, token) => {
             await routeApiReference(page)
-            await openApiClient(page, 'schedule-api', ADD_POLICY)
+            await openApiClient(page, 'schedule', ADD_POLICY)
             await step('API の参照のページで「職員に権限を足す」のリクエストを開いている')
 
             await step(`認証の欄に ${LEADER.staff.name} のトークンを入れる（伏せ字で出る）`)

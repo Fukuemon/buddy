@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import { MAX_RECEIPT_UPLOAD_BYTES, parseReceiptForm } from '#/api/bff/receiptCall'
 import { fakeReceiptReport } from '#/api/fake/fakeReceiptApi'
-import { receiptHttp, server, TEST_RECEIPT_API_URL } from '#/test/server'
+import { receiptHttp, server, TEST_RECEIPT_URL } from '#/test/server'
 
 import type { AuthDeps } from './auth'
 import { checkReceipt } from './receipt'
@@ -73,7 +73,7 @@ describe('checkReceipt', () => {
     const result = await checkReceipt(
       request(`buddy_session=${signValue('id-1', SECRET)}`),
       form({ visits: new Blob(['v']), month: '2024-04' }),
-      { auth: await setup(), receiptApiUrl: TEST_RECEIPT_API_URL },
+      { auth: await setup(), receiptApiUrl: TEST_RECEIPT_URL },
     )
     expect(result).toEqual({ ok: true, report: fakeReceiptReport })
   })
@@ -88,21 +88,21 @@ describe('checkReceipt', () => {
     const failed = await checkReceipt(
       request(`buddy_session=${signValue('id-1', SECRET)}`),
       form({ visits: new Blob(['v']), schedules: new Blob(['s']) }),
-      { auth: await setup(), receiptApiUrl: TEST_RECEIPT_API_URL },
+      { auth: await setup(), receiptApiUrl: TEST_RECEIPT_URL },
     )
     expect(failed).toEqual({ ok: false, status: 422, message: 'm', rowErrors: errors })
   })
 
   it('セッションが無ければ 401 を返し、API を呼ばない', async () => {
     server.use(
-      http.all(`${TEST_RECEIPT_API_URL}/*`, () =>
+      http.all(`${TEST_RECEIPT_URL}/*`, () =>
         HttpResponse.json({ code: 'internal', message: '呼ばれてはいけない' }, { status: 500 }),
       ),
     )
     const anonymous = await checkReceipt(
       request(),
       form({ visits: new Blob(['v']), month: '2024-04' }),
-      { auth: await setup(), receiptApiUrl: TEST_RECEIPT_API_URL },
+      { auth: await setup(), receiptApiUrl: TEST_RECEIPT_URL },
     )
     expect(anonymous).toMatchObject({ ok: false, status: 401 })
   })

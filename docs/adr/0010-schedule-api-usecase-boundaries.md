@@ -8,7 +8,7 @@
 
 予定の API は、規則と手順を機能のパッケージ（`organization`、`staff`、`patient`、`visit`、`schedule`）にまとめている。後から読む人には、次の点が分かりにくい。
 
-- ADR-0005: [schedule-api の規則と手順を機能ごとのパッケージにまとめる](0005-schedule-api-packages.md)
+- ADR-0005: [予定の API の規則と手順を機能ごとのパッケージにまとめる](0005-schedule-api-packages.md)
 
 - 機能のパッケージの `Service` は、リポジトリから取り出し、確かめ、保存する手順である。HTTP のアダプタは、同じものを `ScheduleUsecase` のように `Usecase` と呼ぶ。
 - 複数のものを見て決める規則が、3 か所に分かれている。予定の閲覧と編集の判定は `auth.Principal` のメソッド、見てよい職員の絞り込みは `schedule.Service` の非公開のメソッドにある。役職のデフォルトの権限をコピーする規則は `staff.Service` の非公開のメソッドにある。
