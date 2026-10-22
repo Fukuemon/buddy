@@ -91,7 +91,7 @@ export GOOGLE_CALENDAR_ENDPOINT=http://127.0.0.1:4173/calendar/v3/
 go run ./cmd/api
 ```
 
-calendarpit を起動し直すと token が消えるので、`authorize.mjs` を流し直し、API も起動し直す。compose では、calendarpit を起動し直すと `calendarpit-authorize` と予定の API も起動し直す。
+上の手順の calendarpit は `:memory:` で動くので、起動し直すと token が消える。`authorize.mjs` を流し直し、API も起動し直す。compose の calendarpit は、予定と token を volume に残す。
 
 実際の Google カレンダーで試すときは、検証の事業所のサービスアカウントになりすました Application Default Credentials を使う。  
 手順と要るロールは、[照合の API の README](../receipt-api/README.md#google-カレンダーから予定を取る) と同じである。  

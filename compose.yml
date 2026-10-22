@@ -58,14 +58,14 @@ services:
       timeout: 5s
       retries: 30
 
-  # Google Calendar API と OAuth をローカル環境で再現する calendarpit。職員のカレンダーと予定は compose/calendarpit/fixture.json にあり、
-  # 止めると書いた予定は消える。カレンダーと予定は、ブラウザで http://localhost:4173 の管理の画面に出る
+  # Google Calendar API と OAuth をローカル環境で再現する calendarpit。職員のカレンダーと予定は compose/calendarpit/fixture.json にある。
+  # 書いた予定と token は volume に残り、docker compose down -v で消える。カレンダーと予定は、ブラウザで http://localhost:4173 の管理の画面に出る
   calendarpit:
     image: ghcr.io/iktakahiro/calendarpit:0.9.5@sha256:c492440490c5b39d43565593e40ce5f07ed72d901652f9778bad2e7fcc9ffeab
     environment:
       CALENDARPIT_CONFIG: /config/fixture.json
-      CALENDARPIT_DATABASE: ':memory:'
-    volumes: [./compose/calendarpit/fixture.json:/config/fixture.json:ro]
+    # fixture は、volume が空のときだけ読む
+    volumes: [./compose/calendarpit/fixture.json:/config/fixture.json:ro, calendarpit:/data]
     ports: ['127.0.0.1:${CALENDARPIT_PORT:-4173}:4173']
     healthcheck:
       test:
@@ -156,8 +156,6 @@ services:
       schedule-api-seed: { condition: service_completed_successfully }
       idp: { condition: service_healthy }
       calendarpit-authorize: { condition: service_completed_successfully }
-      # calendarpit を起動し直すと token が消えるので、予定の API も起動し直し、書き直した認証の情報を読ませる
-      calendarpit: { condition: service_healthy, restart: true }
       gcalhold: { condition: service_healthy }
 
   receipt-api:
@@ -212,4 +210,5 @@ services:
 
 volumes:
   postgres:
+  calendarpit:
   calendarpit-credentials:

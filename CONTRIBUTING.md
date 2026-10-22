@@ -82,7 +82,7 @@ docker compose up --build --wait
   - シードは、事業所のレコードが無い空の DB にだけ適用される。シードを変えた後は、`docker compose down -v` で DB を作り直す。
 - API が受けるトークンの `iss` は `http://idp:9000/buddy` である。IdP は `iss` をトークンのリクエストの Host から決めるため、トークンはコンテナの間の名前 `idp` で取る。
 - `http://localhost:3000` を開くと IdP のログインの画面へ移る。名前に `dev-aoki` を入れると、青木 陽菜としてログインする。
-- データを消して最初からにするときは、`docker compose down -v` で PostgreSQL のボリュームを消す。
+- データを消して最初からにするときは、`docker compose down -v` で PostgreSQL と calendarpit のボリュームを消す。
 
 予定の API を手で呼ぶときは、認可コードのフローでトークンを取る。
 
