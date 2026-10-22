@@ -4,7 +4,7 @@ title: 予定の管理
 description: schedule-api のコードの構成、テーブルの構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更とキャンセル、Google カレンダーの取り込み、書き出し、同期
 status: stable
 governs: services/schedule
-verified_commit: b1594ef
+verified_commit: b80bb16
 ---
 
 # 予定の管理
