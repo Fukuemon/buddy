@@ -18,7 +18,7 @@ const (
 	KindSkipped Kind = iota
 	// KindVisit の予定は、訪問の予定として取り込む。
 	KindVisit
-	// KindNormal の予定は、外部の予定のタイトルをそのまま使う通常の予定として取り込む。
+	// KindNormal の予定は、外部の予定のタイトルを、buddy の予定のタイトルにした通常の予定として取り込む。
 	KindNormal
 )
 

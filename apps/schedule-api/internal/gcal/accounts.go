@@ -22,7 +22,7 @@ type Clients interface {
 }
 
 // Accounts は、事業所の組織のサービスアカウントで Google Calendar API を呼ぶ calendar.Accounts である（ADR-0012）。
-// 事業所は、呼ぶ側が要求の職員か結び付けたカレンダーの行から決める。
+// 事業所は、呼ぶ側がリクエストの職員か結び付けたカレンダーの行から決める。
 type Accounts struct {
 	clients Clients
 	orgOf   OrgOf
@@ -44,7 +44,7 @@ func (a *Accounts) ServiceAccount(ctx context.Context, facilityID string) (strin
 	return email, notConfigured(err)
 }
 
-// Source は、事業所 facilityID のサービスアカウントで予定を読む Reader を返す。誤りは ServiceAccount と同じである。
+// Source は、事業所 facilityID のサービスアカウントで予定を読む Reader を返す。エラーは ServiceAccount と同じである。
 func (a *Accounts) Source(ctx context.Context, facilityID string) (calendar.EventSource, error) {
 	svc, err := a.service(ctx, facilityID)
 	if err != nil {
@@ -53,7 +53,7 @@ func (a *Accounts) Source(ctx context.Context, facilityID string) (calendar.Even
 	return NewReader(svc), nil
 }
 
-// Writer は、事業所 facilityID のサービスアカウントで予定を書く Writer を返す。誤りは ServiceAccount と同じである。
+// Writer は、事業所 facilityID のサービスアカウントで予定を書く Writer を返す。エラーは ServiceAccount と同じである。
 func (a *Accounts) Writer(ctx context.Context, facilityID string) (calendar.EventWriter, error) {
 	svc, err := a.service(ctx, facilityID)
 	if err != nil {

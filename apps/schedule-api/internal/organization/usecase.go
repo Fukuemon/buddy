@@ -23,7 +23,7 @@ type Guard func(ctx context.Context) error
 
 // Usecase は、事業所、部署、チーム、役職、権限の操作である。
 // 事業所ごとの一覧は、事業所が見つからないときに apperr.ErrNotFound を返す。
-// 役職の作成は、役職のデフォルトの権限で権限を配るので、guard が許すときだけ行う。
+// 役職の作成は、役職のデフォルトの権限を職員に配るので、guard が許すときだけ行う。
 type Usecase struct {
 	deps  Deps
 	tx    tx.Transactor

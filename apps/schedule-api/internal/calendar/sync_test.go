@@ -665,7 +665,7 @@ func TestSyncCancelledOccurrenceWhileParentUnexported(t *testing.T) {
 	}
 }
 
-// 増分の取得は、要求を受けずに動くので、カレンダーの行の事業所のサービスアカウントで読む。
+// 増分の取得は、リクエストを受けずに動くので、カレンダーの行の事業所のサービスアカウントで読む。
 func TestSyncUsesCalendarFacilityAccount(t *testing.T) {
 	e := newSyncEnv(t)
 	c := e.store.Calendars[calID]

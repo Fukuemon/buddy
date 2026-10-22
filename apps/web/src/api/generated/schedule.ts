@@ -142,7 +142,7 @@ export interface paths {
         put?: never;
         /**
          * 役職を作る
-         * @description 職員の管理の権限（staff.manage）を持つ職員だけが呼べる。役職のデフォルトの権限で権限を配れるためである。
+         * @description 職員の管理の権限（staff.manage）を持つ職員だけが呼べる。役職のデフォルトの権限を職員に配れるためである。
          */
         post: operations["createPosition"];
         delete?: never;
@@ -1054,7 +1054,7 @@ export interface components {
         ImportReviewItem: {
             /** @description 取り込み方を送るときの Google の予定の ID。繰り返しの予定とその回では、親の予定の ID */
             external_event_id: string;
-            /** @description まとめた Google の予定の ID と etag から作る版。取り込み方と一緒に送り返す。プレビューの後に予定が変わると変わる */
+            /** @description まとめた Google の予定の ID と etag から作るバージョン。取り込み方と一緒に送り返す。プレビューの後に予定が変わると変わる */
             revision: string;
             /** @description 予定の日付。繰り返しの予定は最初の回の日付 */
             date: components["schemas"]["Date"];
@@ -1100,10 +1100,10 @@ export interface components {
         };
         ImportDecision: {
             external_event_id: string;
-            /** @description 取り込み方を選んだプレビューの needs_review の revision。確定のときの版と違えば 409（import_preview_changed）になる */
+            /** @description 取り込み方を選んだプレビューの needs_review の revision。確定のときのバージョンと違えば 409（import_preview_changed）になる */
             revision: string;
             /**
-             * @description patient は選んだ利用者の訪問の予定に、normal は外部の予定のタイトルをそのまま使う通常の予定にし、skip は取り込まない
+             * @description patient は選んだ利用者の訪問の予定に、normal は外部の予定のタイトルを buddy の予定のタイトルにした通常の予定にし、skip は取り込まない
              * @enum {string}
              */
             action: "patient" | "normal" | "skip";

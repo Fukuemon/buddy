@@ -89,7 +89,7 @@ type ReviewItem struct {
 	Recurrence *schedule.Rule
 	// Candidates は、タイトルの利用者名の利用者で、ReviewPatientAmbiguous のときだけ持つ。
 	Candidates []PatientRef
-	// Revision は、まとめた外部の予定の ID と etag から作る版である。プレビューの後に予定が変わると変わる。
+	// Revision は、まとめた外部の予定の ID と etag から作るバージョンである。プレビューの後に予定が変わると変わる。
 	Revision string
 }
 
@@ -134,7 +134,7 @@ type Action string
 const (
 	// ActionPatient は、選んだ利用者の訪問の予定にする。
 	ActionPatient Action = "patient"
-	// ActionNormal は、外部の予定のタイトルをそのまま使う通常の予定にする。
+	// ActionNormal は、外部の予定のタイトルを、buddy の予定のタイトルにした通常の予定にする。
 	ActionNormal Action = "normal"
 	// ActionSkip は、取り込まない。
 	ActionSkip Action = "skip"
@@ -288,8 +288,8 @@ func buildPlan(in planInput) plan {
 	return b.p
 }
 
-// setRevisions は、確かめが要る予定ごとに、まとめた外部の予定の ID と etag から版を作る。
-// 確定は版を比べ、プレビューの後にタイトルや時刻が変わった予定に、前の取り込み方を当てない。
+// setRevisions は、確かめが要る予定ごとに、まとめた外部の予定の ID と etag からバージョンを作る。
+// 確定はバージョンを比べ、プレビューの後にタイトルや時刻が変わった予定に、前の取り込み方を当てない。
 func (b *planner) setRevisions() {
 	parts := map[string][]string{}
 	for _, e := range b.p.entries {

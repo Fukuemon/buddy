@@ -602,7 +602,7 @@ func TestExportRecurringKeepsImportedExceptions(t *testing.T) {
 	}
 }
 
-// 書き出しは、要求を受けずに動くので、予定の職員が結び付けたカレンダーの行の事業所のサービスアカウントで書く。
+// 書き出しは、リクエストを受けずに動くので、予定の職員が結び付けたカレンダーの行の事業所のサービスアカウントで書く。
 // カレンダーの行の事業所を予定の事業所と違う値にして、作る、変える、消すの全てがその事業所で引くことを確かめる。
 func TestExportUsesCalendarFacilityAccount(t *testing.T) {
 	e := newExportEnv(t)

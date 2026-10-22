@@ -149,7 +149,7 @@ func manager() context.Context {
 	}})
 }
 
-// importDecided は、プレビューの版を取り込み方に付けてから確定する。版を持つ取り込み方は、その版のまま送る。
+// importDecided は、プレビューのバージョンを取り込み方に付けてから確定する。バージョンを持つ取り込み方は、そのバージョンのまま送る。
 func (e env) importDecided(t *testing.T, rng calendar.Range, ds []calendar.Decision) (calendar.ImportResult, error) {
 	t.Helper()
 	if p, err := e.uc.Preview(e.ctx, calID, rng); err == nil {
@@ -335,7 +335,7 @@ func TestImportRejects(t *testing.T) {
 			decisions: []calendar.Decision{{ExternalEventID: "ambiguous", Action: calendar.ActionPatient, PatientID: inmem.OtherPatientID}, decisions()[1]},
 			want:      apperr.ErrInvalidInput},
 		{name: "取り込みが進んでいる", decisions: decisions(), running: true, want: apperr.ErrConflict},
-		{name: "プレビューの後に確かめが要る予定が変わった（版が違う）",
+		{name: "プレビューの後に確かめが要る予定が変わった（バージョンが違う）",
 			decisions: []calendar.Decision{{ExternalEventID: "ambiguous", Action: calendar.ActionPatient, PatientID: "PB2", Revision: "stale"}, decisions()[1]},
 			want:      apperr.ErrConflict},
 	}
