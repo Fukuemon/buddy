@@ -2,7 +2,12 @@ import { readFile } from 'node:fs/promises'
 
 import { expect, test } from '@playwright/test'
 
-import { RECEIPT_TESTDATA } from '../../fixtures/env'
+import { LEADER, RECEIPT_TESTDATA } from '../../fixtures/env'
+import { receiptResultRow } from '../../selectors/receipt'
+
+// 照合の API は、compose/receipt-calendars.json の森のカレンダーを calendarpit から読む。
+// calendarpit の森のカレンダー（compose/calendarpit/fixture.json）は 2026 年 11 月の予定を持ち、実績の CSV は 2024 年 4 月なので、予定は全て予定のみの行になる。
+const CALENDAR_MONTH = '2026-11'
 
 test.describe('照合の結果', () => {
   test.describe('予定の CSV での照合', () => {
@@ -56,6 +61,38 @@ test.describe('照合の結果', () => {
       expect(csv).toMatch(/^訪問日,利用者名,主訪問者,/)
       expect(csv).toContain('\r\n不整合データ,---,')
       expect(csv).toContain('\r\n整合データ,---,')
+    })
+  })
+
+  test.describe('Google カレンダーの予定での照合', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/receipt')
+      await page.getByTestId('receipt-source-calendar').check()
+      await expect(page.getByTestId('receipt-source-csv')).not.toBeChecked()
+      await page.getByTestId('receipt-month').fill(CALENDAR_MONTH)
+      await page.getByTestId('receipt-visits-file').setInputFiles(RECEIPT_TESTDATA.visits)
+      await page.getByTestId('receipt-check-submit').click()
+      await expect(page).toHaveURL(/\/receipt\/result$/)
+    })
+
+    test('対象の月を選んで照合した場合、その月の Google カレンダーの予定が予定のみの行に出ること', async ({
+      page,
+    }) => {
+      await expect(page.getByTestId('receipt-result')).toContainText(
+        '2026 年 11 月の Google カレンダー',
+      )
+      await expect(page.getByTestId('receipt-summary-visit_only')).toHaveText('7 件')
+      await expect(page.getByTestId('receipt-category-schedule_only')).toBeVisible()
+
+      // 毎週の予定は、取り消した 11 日の回を除き、18 日は置き換えた回の時刻で出る
+      // 件数は、先に流れる取り込みの spec の書き出しで変わるので数えない
+      const futaba = receiptResultRow(page, '見本二葉')
+      await expect(futaba).toContainText(['2026-11-04', '2026-11-18', '2026-11-25'])
+      await expect(futaba).toContainText(['09:00', '14:00', '09:00'])
+      await expect(futaba.filter({ hasText: '2026-11-11' })).toHaveCount(0)
+      // 主訪問者の名前は compose/receipt-calendars.json の staff_name で、シードの職員の名前と同じ
+      await expect(futaba.first()).toContainText(LEADER.staff.name)
+      await expect(receiptResultRow(page, '見本一郎')).toContainText(['2026-11-02', '2026-11-16'])
     })
   })
 })

@@ -39,7 +39,7 @@ status: stable
 | --- | --- | --- |
 | PostgreSQL | 機能のパッケージのテストはメモリ上のフェイク（`inmem`）、リポジトリのテストは testcontainers の本物 | compose の本物 |
 | OIDC の Issuer | `oidctest` のフェイク（テストの中で鍵を作る） | compose の mock-oauth2-server |
-| Google Calendar API | `gcaltest` のフェイク。書き込みは `If-Match` を比べて 412 を返し、`Failures` でエラーを返せる | 予定の API は compose の calendarpit（予定は `compose/calendarpit/fixture.json`。書いた予定と token は volume に残り、`docker compose down -v` で消える。予定は管理の画面で見る）。E2E は calendarpit の管理の API で予定を読んで直し、中継の `gcalhold` で Google の変更を予定の API に渡さないようにする。receipt-api はカレンダーを設定していない |
+| Google Calendar API | `gcaltest` のフェイク。書き込みは `If-Match` を比べて 412 を返し、`Failures` でエラーを返せる | 予定の API は compose の calendarpit（予定は `compose/calendarpit/fixture.json`。書いた予定と token は volume に残り、`docker compose down -v` で消える。予定は管理の画面で見る）。E2E は calendarpit の管理の API で予定を読んで直し、中継の `gcalhold` で Google の変更を予定の API に渡さないようにする。receipt-api は、同じ calendarpit の森のカレンダー（`compose/receipt-calendars.json`）を、`gcalhold` を通さずに読む |
 | web の画面から見た API（`BuddyApi`） | `src/api/fake/` のフェイク | compose の本物 |
 | web のサーバーから見た 2 つの API | MSW の handler（`apps/web/src/mocks/`、`src/test/server.ts`） | compose の本物 |
 

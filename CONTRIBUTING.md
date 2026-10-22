@@ -83,6 +83,8 @@ docker compose up --build --wait
   - シードは、事業所のレコードが無い空の DB にだけ適用される。シードを変えた後は、`docker compose down -v` で DB を作り直す。
 - API が受けるトークンの `iss` は `http://idp:9000/buddy` である。IdP は `iss` をトークンのリクエストの Host から決めるため、トークンはコンテナの間の名前 `idp` で取る。
 - `http://localhost:3000` を開くと IdP のログインの画面へ移る。名前に `dev-aoki` を入れると、青木 陽菜としてログインする。
+- receipt-api は、calendarpit の森 健太のカレンダーを読む。読むカレンダーは `compose/receipt-calendars.json` にある。
+  - 照合の画面で、予定の取り方に「Google カレンダー」を、対象の月に `2026-11` を選ぶと、`compose/calendarpit/fixture.json` の森のその月の予定で照合できる。
 - データを消して最初からにするときは、`docker compose down -v` で PostgreSQL と calendarpit のボリュームを消す。
 - 別の worktree で同時に起動するときは、`docker compose -p <名前> up --build --wait` でプロジェクトの名前を変え、上の表の環境変数でポートをずらす。コンテナ、ボリューム、予定の API のイメージがプロジェクトごとに分かれる。E2E は `E2E_BASE_URL`、`E2E_CALENDARPIT_URL`、`E2E_GCALHOLD_URL` を合わせて流す。
 
@@ -95,6 +97,12 @@ CODE=$(curl -s -o /dev/null -w '%{redirect_url}' -X POST \
 TOKEN=$(docker compose exec -T idp wget -qO- --post-data "grant_type=authorization_code&code=$CODE&redirect_uri=http://localhost:3000/cb&client_id=web&client_secret=web-dev" \
   http://idp:9000/buddy/token | jq -r .access_token)
 curl -H "Authorization: Bearer $TOKEN" localhost:8080/v1/facilities/01M3TC5H00QV17BC0J9V3393ZP
+```
+
+照合の API も、同じトークンで呼べる。`month` を送ると、calendarpit の森のカレンダーのその月の予定と照合する。
+
+```sh
+curl -H "Authorization: Bearer $TOKEN" -F visits=@services/receipt/testdata/visits_utf8.csv -F month=2026-11 localhost:8090/v1/checks
 ```
 
 文書のサイトの API の仕様のページからも、ローカルの API を呼べる。

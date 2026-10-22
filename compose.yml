@@ -79,7 +79,7 @@ services:
       timeout: 5s
       retries: 30
 
-  # calendarpit の同意を通して予定の API の refresh token を取り、Application Default Credentials の形で書く
+  # calendarpit の同意を通して、予定の API と照合の API が使う refresh token を取り、Application Default Credentials の形で書く
   calendarpit-authorize:
     image: ghcr.io/iktakahiro/calendarpit:0.9.5@sha256:c492440490c5b39d43565593e40ce5f07ed72d901652f9778bad2e7fcc9ffeab
     entrypoint: ['bun']
@@ -166,6 +166,16 @@ services:
       OIDC_AUDIENCE: receipt-api
       # API の仕様のページでリクエストを試すローカル環境の文書のサイト（zensical serve）に許す
       CORS_ALLOW_ORIGINS: http://localhost:8000
+      # 照合の対象の森のカレンダーと、予定の API と同じダミーのサービスアカウントの対応
+      GOOGLE_CALENDARS_FILE: /config/receipt-calendars.json
+      GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE: /config/google-calendar-service-accounts.json
+      # 予定の API と同じく、calendarpit-authorize が書いた fixture の利用者の認証の情報で calendarpit を読む。gcalhold は予定の API の同期のためのものなので通さない
+      GOOGLE_CALENDAR_ENDPOINT: http://calendarpit:4173/calendar/v3/
+      GOOGLE_APPLICATION_CREDENTIALS: /credentials/google-calendar.json
+    volumes:
+      - ./compose/receipt-calendars.json:/config/receipt-calendars.json:ro
+      - ./compose/google-calendar-service-accounts.json:/config/google-calendar-service-accounts.json:ro
+      - calendarpit-credentials:/credentials:ro
     ports: ['127.0.0.1:${RECEIPT_API_PORT:-8090}:8080']
     healthcheck:
       test: ['CMD', '/api', 'healthcheck']
@@ -174,6 +184,7 @@ services:
       retries: 30
     depends_on:
       idp: { condition: service_healthy }
+      calendarpit-authorize: { condition: service_completed_successfully }
 
   web:
     build:

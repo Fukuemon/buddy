@@ -42,7 +42,7 @@ TOKEN=$(curl -s '127.0.0.1:9000/token?sub=dev-aoki&org_id=org-sample' | jq -r .a
 - `CORS_ALLOW_ORIGINS`: CORS でレスポンスを読ませるオリジンを、カンマで区切って並べる。空なら CORS のヘッダーを返さない
 - `GOOGLE_CALENDARS_FILE`: 照合の対象のカレンダーの設定（JSON）のパス。空なら Google カレンダーを使わない
 - `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`: 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応（JSON）のパス。`GOOGLE_CALENDARS_FILE` と一緒に渡す
-- `GOOGLE_APPLICATION_CREDENTIALS`: Application Default Credentials が読む認証情報のファイルのパス。ローカルでは設定せず、gcloud で作った Application Default Credentials を使う
+- `GOOGLE_APPLICATION_CREDENTIALS`: Application Default Credentials が読む認証情報のファイルのパス。`go run` で実際の Google カレンダーを読むときは設定せず、gcloud で作った Application Default Credentials を使う
 - `GOOGLE_CALENDAR_ENDPOINT`: Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit で試すためのもので、`GOOGLE_APPLICATION_CREDENTIALS` を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使い、渡さなければ認証をしない。`GOOGLE_CALENDARS_FILE` を渡さずにこれだけを渡すと、起動しない
 
 コンテナで起動するときは、このディレクトリで次を実行する。ビルドの文脈はリポジトリの直下である（`packages/go` を読むため）。
@@ -51,6 +51,11 @@ TOKEN=$(curl -s '127.0.0.1:9000/token?sub=dev-aoki&org_id=org-sample' | jq -r .a
 docker build -f Dockerfile -t receipt-api ../..
 docker run --rm -p 8080:8080 -e OIDC_ISSUER=<Issuer の URL> -e OIDC_AUDIENCE=receipt-api receipt-api
 ```
+
+ルートの compose の receipt-api は、Google カレンダーの代わりに calendarpit を読む。  
+読むカレンダーは `compose/receipt-calendars.json` の森 健太のカレンダーで、サービスアカウントの対応と認証の情報は予定の API と同じものを使う。  
+`compose/calendarpit/fixture.json` の森の予定は `2026-11` の月にあるので、`month=2026-11` で照合すると、その予定が結果に出る。  
+起動とトークンの取り方は、[CONTRIBUTING.md](../../CONTRIBUTING.md) の「ローカル環境で全体を起動する」にある。
 
 ## テストとチェック
 
