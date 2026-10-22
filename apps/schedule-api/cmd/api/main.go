@@ -212,25 +212,23 @@ func run() error {
 }
 
 // newCalendarService は、Google カレンダーの予定を読み書きする calendarv3.Service を返す。サービスアカウントの設定が無ければ nil を返す。
-// 認証の情報は、照合の API と同じく Application Default Credentials で読む。偽物の API に向けるときは認証をしない。
+// 認証の情報は、照合の API と同じく Application Default Credentials で読む。Endpoint に向けるときも同じである。
 // 予定を書き出すときは、スコープを calendar.events にする。書き出さないときは、読むだけの calendar.readonly にする。
 func newCalendarService(ctx context.Context, cfg config.Calendar) (*calendarv3.Service, error) {
 	if cfg.ServiceAccount == "" {
 		return nil, nil
 	}
-	var opts []option.ClientOption
+	scope := calendarv3.CalendarReadonlyScope
+	if cfg.ExportEnabled {
+		scope = calendarv3.CalendarEventsScope
+	}
+	creds, err := google.FindDefaultCredentials(ctx, scope)
+	if err != nil {
+		return nil, fmt.Errorf("application default credentials を読めません: %w", err)
+	}
+	opts := []option.ClientOption{option.WithCredentials(creds)}
 	if cfg.Endpoint != "" {
-		opts = append(opts, option.WithEndpoint(cfg.Endpoint), option.WithoutAuthentication())
-	} else {
-		scope := calendarv3.CalendarReadonlyScope
-		if cfg.ExportEnabled {
-			scope = calendarv3.CalendarEventsScope
-		}
-		creds, err := google.FindDefaultCredentials(ctx, scope)
-		if err != nil {
-			return nil, fmt.Errorf("application default credentials を読めません: %w", err)
-		}
-		opts = append(opts, option.WithCredentials(creds))
+		opts = append(opts, option.WithEndpoint(cfg.Endpoint))
 	}
 	return calendarv3.NewService(ctx, opts...)
 }
