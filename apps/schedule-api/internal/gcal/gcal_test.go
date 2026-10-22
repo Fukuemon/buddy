@@ -292,7 +292,7 @@ func TestReaderChanges(t *testing.T) {
 	}
 	q := f.Queries()[0]
 	if q.Get("singleEvents") != "false" || q.Get("showDeleted") != "true" || q.Get("timeZone") != "Asia/Tokyo" || q.Has("timeMin") {
-		t.Errorf("全ての予定を読む要求 = %v", q)
+		t.Errorf("全ての予定を読むリクエスト = %v", q)
 	}
 
 	f.Edit("staff@example.com", "b", func(e *calendar.Event) { e.Summary = "会議（変更）" })
@@ -309,7 +309,7 @@ func TestReaderChanges(t *testing.T) {
 		t.Errorf("変わった予定 = %+v", got)
 	}
 	if q := f.Queries()[len(f.Queries())-1]; q.Get("syncToken") != full.NextSyncToken {
-		t.Errorf("増分の要求 = %v", q)
+		t.Errorf("増分のリクエスト = %v", q)
 	}
 
 	f.ExpireSyncTokens()

@@ -47,7 +47,7 @@ type RecurringStore interface {
 	AddExclusion(ctx context.Context, recurringScheduleID string, d civil.Date) error
 }
 
-// VisitStore は、外部の予定の題名から決めた訪問の情報を書く。実装は visit.Writer である。
+// VisitStore は、外部の予定のタイトルから決めた訪問の情報を書く。実装は visit.Writer である。
 type VisitStore interface {
 	Create(ctx context.Context, facilityID string, in visit.Input) (string, error)
 	DeleteIfUnused(ctx context.Context, id string) error
@@ -155,7 +155,7 @@ func (a applier) acceptSchedule(ctx context.Context, c ExternalCalendar, l Link,
 }
 
 // syncRecurring は、繰り返しの予定に対応する外部の繰り返しの予定 ev の変更を確かめる。
-// 繰り返しの予定そのもの（規則、時刻、題名）の外部での変更と削除は buddy に当てず、確かめが要る待ちにする。
+// 繰り返しの予定そのもの（規則、時刻、タイトル）の外部での変更と削除は buddy に当てず、確かめが要る待ちにする。
 func (a applier) syncRecurring(ctx context.Context, l Link, ev Event) error {
 	rs, err := a.recurring.GetForUpdate(ctx, *l.RecurringScheduleID)
 	if err != nil {
@@ -377,8 +377,8 @@ func (a applier) newSchedule(ctx context.Context, base schedule.Slot, v *visit.D
 	return sc, nil
 }
 
-// slotOf は、予定の枠 base を外部の予定 ev の日時と題名にした枠と、予定の種類を返す。職員と説明は base のままにする。
-// 訪問の予定では、訪問の情報を空にして返す。題名のサービス内容と利用者名が v と同じときは、呼ぶ側が前の訪問の情報を使う。
+// slotOf は、予定の枠 base を外部の予定 ev の日時とタイトルにした枠と、予定の種類を返す。職員と説明は base のままにする。
+// 訪問の予定では、訪問の情報を空にして返す。タイトルのサービス内容と利用者名が v と同じときは、呼ぶ側が前の訪問の情報を使う。
 // ev を読み替えられないか、訪問の予定と通常の予定が入れ替わるときは errUnappliable を返す。
 func (a applier) slotOf(ctx context.Context, base schedule.Slot, v *visit.Detail, ev Event) (schedule.Slot, schedule.Type, error) {
 	c := Classify(ev)
@@ -400,8 +400,8 @@ func (a applier) slotOf(ctx context.Context, base schedule.Slot, v *visit.Detail
 	return slot, typ, nil
 }
 
-// createVisit は、訪問の情報 v を、外部の予定 ev の題名のサービス内容と利用者名にして書き、ID を返す。担当、同行、訪問の区分は v のままにする。
-// 題名がサービス内容か利用者名を変えていて、サービスコードか利用者を 1 つに引けないときは errUnappliable を返す。
+// createVisit は、訪問の情報 v を、外部の予定 ev のタイトルのサービス内容と利用者名にして書き、ID を返す。担当、同行、訪問の区分は v のままにする。
+// タイトルがサービス内容か利用者名を変えていて、サービスコードか利用者を 1 つに引けないときは errUnappliable を返す。
 func (a applier) createVisit(ctx context.Context, facilityID string, v *visit.Detail, ev Event) (*string, error) {
 	in := visit.Input{
 		PatientID: v.PatientID, AssignedStaffID: v.AssignedStaffID, CompanionID: v.CompanionID, ServiceCodeID: v.ServiceCodeID,
@@ -432,7 +432,7 @@ func (a applier) createVisit(ctx context.Context, facilityID string, v *visit.De
 	return &id, nil
 }
 
-// sameVisit は、外部の予定 ev の題名が、訪問の情報 v のサービス内容と利用者名と同じかを返す。
+// sameVisit は、外部の予定 ev のタイトルが、訪問の情報 v のサービス内容と利用者名と同じかを返す。
 func sameVisit(v *visit.Detail, ev Event) bool {
 	c := Classify(ev)
 	return serviceKey(c.Service) == serviceKey(v.ServiceCode) && gcaltitle.NormalizeClient(c.Client) == gcaltitle.NormalizeClient(v.PatientName)
@@ -451,7 +451,7 @@ func (a applier) serviceCodeID(ctx context.Context, service string) (string, err
 	return "", errUnappliable
 }
 
-// patientID は、題名の利用者名 client の事業所の利用者を 1 人に引けたときに、その ID を返す。
+// patientID は、タイトルの利用者名 client の事業所の利用者を 1 人に引けたときに、その ID を返す。
 func (a applier) patientID(ctx context.Context, facilityID, client string) (string, error) {
 	pats, err := a.patients.ListByFacility(ctx, facilityID, patient.ListQuery{Sort: kernel.Sort{Field: "name"}})
 	if err != nil {
@@ -532,7 +532,7 @@ func synced(l Link, version int) bool {
 	return l.SyncedVersion != nil && *l.SyncedVersion == version
 }
 
-// unappliable は、入力の誤りを errUnappliable にする。ほかの誤りはそのまま返す。
+// unappliable は、入力のエラーを errUnappliable にする。ほかのエラーはそのまま返す。
 func unappliable(err error) error {
 	if errors.Is(err, apperr.ErrInvalidInput) {
 		return errUnappliable

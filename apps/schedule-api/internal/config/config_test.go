@@ -137,7 +137,7 @@ func TestLoadExportInterval(t *testing.T) {
 		t.Errorf("書き出しを有効にする = %v, %v", c.Calendar.ExportEnabled, err)
 	}
 	if c.Calendar.SyncEnabled || c.Calendar.SyncInterval != 2*time.Minute {
-		t.Errorf("既定の同期 = %v, %v", c.Calendar.SyncEnabled, c.Calendar.SyncInterval)
+		t.Errorf("デフォルトの同期 = %v, %v", c.Calendar.SyncEnabled, c.Calendar.SyncInterval)
 	}
 	c, err = config.Load(getenv(map[string]string{
 		"GOOGLE_CALENDAR_EXPORT_ENABLED": "true", "GOOGLE_CALENDAR_SYNC_ENABLED": "true", "GOOGLE_CALENDAR_SYNC_INTERVAL": "3m",

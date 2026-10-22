@@ -41,7 +41,7 @@ const (
 	// ErrorUnavailable は、外部のカレンダーに届かないか、外部のカレンダーが一時的なエラーを返したことを表す。
 	ErrorUnavailable ExportErrorCode = "unavailable"
 	// ErrorUnappliable は、外部のカレンダーでの予定の変更を、buddy の予定に読み替えられなかったことを表す。
-	// 終日にした予定、題名の利用者を引けない予定、繰り返しの予定そのものの変更が当たる。
+	// 終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更が当たる。
 	ErrorUnappliable ExportErrorCode = "unappliable"
 )
 
