@@ -4,7 +4,7 @@ title: レセプトの照合
 description: receipt-api のパッケージの構成、予定のデータソース、入力の CSV のカラム、正規化、予定と実績の対の作り方、判定の規則、サービスごとの許容範囲、結果の JSON と画面の表示、元の実装との違い
 status: draft
 governs: services/receipt
-verified_commit: ff293e9
+verified_commit: 581e5d4
 ---
 
 # レセプトの照合
@@ -48,7 +48,8 @@ receipt-api は、訪問の予定と電子カルテ（iBow）の実績を比べ�
 - `internal/gcal/gcaltest`: テストに使う、Calendar API の events.list のフェイク
 - `internal/source`: リクエストの `schedules` と `month` とトークンの組織から、予定のデータソース（`CSVSchedules` か `internal/gcal`）を選ぶ
 - access token の検証は、共有の module の `packages/go/oidc` を使う（[ADR-0007](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0007-go-shared-module.md)）
-- タイトルの解釈（`IsVisitTitle`、`ParseTitle`）は、予定の API と共有する `packages/go/gcaltitle` を使う
+- タイトルの解釈（`IsVisitTitle`、`ParseTitle`）と、表記をそろえる処理（`NormalizeClient`、`NormalizeService`）は、予定の API と共有する `packages/go/gcaltitle` を使う
+  - `internal/normalize` は、`NormalizeClient` で利用者名を、`NormalizeService` でサービス内容をそろえる
 - 組織ごとのサービスアカウントで Calendar API を呼ぶクライアントは、予定の API と共有する `packages/go/gcalauth` を使う
 - `internal/httpapi`: `GET /healthz`、`GET /readyz`、`POST /v1/checks`。`/healthz` と `/readyz` 以外のリクエストのトークンを `packages/go/oidc` で確かめる
 - `cmd/api`: 環境変数を読んで API のサーバーを起動する
@@ -76,9 +77,10 @@ sequenceDiagram
     R->>R: 予定の CSV を読み、正規化する
   else 対象の月がある
     R->>G: トークンの組織のカレンダーの、対象の月の予定を取る（サービスアカウント）
-    G-->>R: 予定
+    G-->>R: 予定。取れなければ 502
     R->>R: タイトルを解釈して予定にし、正規化する
   end
+  R->>R: 実績か予定の CSV に誤りがあれば、両方の誤りをまとめて 422
   R->>R: 予定と実績を対にする
   R->>R: 対ごとに判定し、4 つの区分に分ける
   R-->>W: 判定の結果の JSON
@@ -98,6 +100,7 @@ receipt-api は、Google Calendar API を直接呼ぶ。
   - ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](https://github.com/Fukuemon/buddy/blob/876381365355f7e4dab03f6dfdb3d6fb8a9f6947/docs/adr/0012-google-calendar-facility-service-accounts.md)
   - ローカルでは、検証の事業所のサービスアカウントになりすました Application Default Credentials を使う。クラスタでは Workload Identity Federation を使う。どちらもサービスアカウントのキーを使わない。
   - Application Default Credentials が事業所のサービスアカウントそのものとして動くとき（そのアカウントになりすました認証情報か、そのアカウントのキー）は、重ねてなりすまさない。サービスアカウント自身へのトークン作成者のロールを求めないためである。見分けは、認証情報のファイルの `client_email` か、なりすます先の URL のメールアドレスで行う。
+  - `GOOGLE_CALENDAR_ENDPOINT` で Calendar API の代わりにフェイク（ローカル環境の calendarpit）を呼ぶときは、なりすまさない。フェイクはなりすましの token を出せないためである。`GOOGLE_APPLICATION_CREDENTIALS` を渡したときだけ、その認証情報を全ての事業所で使い、渡さなければ認証をしない。開発者の Application Default Credentials をフェイクに送らないためである。
 - ドメイン全体の委任は使わない。職員が、自分の事業所のサービスアカウントにカレンダーを共有する。サービスアカウントが読めるカレンダーを、共有されたものだけに絞るためである。
   - 共有の権限は、予定の API の書き出しと同じアカウントなので、[基盤と運用の事業所を足す手順](https://github.com/Fukuemon/buddy/blob/develop/context/operations.md#adding-a-facility) にある。
 - 組織とサービスアカウントの対応は、カレンダーの設定と別のファイル（`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`）に置く。形は予定の API と同じにする。
@@ -123,7 +126,7 @@ receipt-api は、Google Calendar API を直接呼ぶ。
 次の予定は、解釈できない予定として照合に混ぜず、結果の `warnings` に入れる。
 
 - タイトルに `【…】` の組が無い予定（`】` が `【` より前にあるだけのタイトルなど）。`】メモ【訪看I３】架空太郎` のように、後ろに組があれば普通の予定として使う
-- サービス内容か利用者名が空の予定
+- サービス内容か利用者名が空か、空白だけの予定
 - 日付をまたぐ予定
 - 開始と終了の日時を読めない予定と、正規化でエラーになる予定
 
@@ -273,7 +276,7 @@ API は、判定の結果だけを JSON で返す。記号と CSV は返さな�
 API の定義の正本は [openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/openapi.yaml) である。
 
 - `POST /v1/checks`
-  - `Authorization: Bearer` の access token を求める。署名、`iss`、`aud`、`exp`、`nbf` を JWKS で確かめる。`/healthz` と `/readyz` のほかは、定義に無いパスにもトークンを求める。
+  - `Authorization: Bearer` の access token を求める。署名、`iss`、`aud`、`exp`、`nbf` を JWKS で確かめ、`sub` の無いトークンも拒む。`/healthz` と `/readyz` のほかは、定義に無いパスにもトークンを求める。
   - 署名のアルゴリズムは RS256 と ES256 だけを受け付ける。
   - `multipart/form-data` で、ファイル `visits`（実績の CSV）と予定を受ける。
   - 予定は、ファイル `schedules`（予定の CSV）があればそれを使う。なくてフォームの値 `month`（`2026-10` の形）があれば、その月の予定を Google カレンダーから取る。
@@ -285,7 +288,7 @@ API の定義の正本は [openapi.yaml](https://github.com/Fukuemon/buddy/blob/
   - 本文が multipart として読めない、`month` の形が違う: 400 の `bad_request`
   - `visits` がない、`schedules` も `month` もない: 400 の `missing_file`
   - 本文が上限（`MAX_UPLOAD_BYTES`）を超える: 413 の `payload_too_large`
-  - 入力の CSV のエラー: 422 の `invalid_csv`。行のエラーがあれば、行ごとのエラー（`errors` の `source`、`line`、`column`、`message`）を持つ。CSV が空のとき、カラムが足りないとき、文字コードを読めないときは `errors` を持たない
+  - 入力の CSV のエラー: 422 の `invalid_csv`。行のエラーがあれば、行ごとのエラー（`errors` の `source`、`line`、`column`、`message`）を持つ。CSV の形の誤り（引用符の閉じ忘れなど）のように列を決められないエラーは、`column` を持たない。CSV が空のとき、カラムが足りないとき、文字コードを読めないときは `errors` を持たない
   - Calendar API の呼び出しに失敗した: 502 の `schedule_source_failed`
   - Google カレンダーの設定がないか、トークンの組織のカレンダーがないのに `month` で呼ばれた: 503 の `calendar_not_configured`。リクエストの形は正しく、照合できない原因がサーバーの設定にあるので、400 にしない
   - 照合の途中のそのほかのエラー: 500 の `internal`
