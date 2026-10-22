@@ -11,7 +11,8 @@ status: stable
 
 実行の単位の責務と、その間の約束は [buddy Design Doc](../docs/design/DesignDoc.md) にある。ここには、境界をまたぐときの取り決めだけを書く。
 
-- `apps/` の 3 つのアプリは、HTTP だけでつながる。web と API の間の型は、各 API の `openapi.yaml` から生成し、手で書かない。
+- 画面と BFF（web）と文書のサイトは `apps/`、Go の API は `services/`、共有のコードは `packages/` に置く。API のディレクトリには `-api` を付けず、機能の名前（`schedule`、`receipt`）にする。web にも同じ名前の機能があるので、トップのディレクトリで画面と API を分ける。
+- web と 2 つの API は、HTTP だけでつながる。web と API の間の型は、各 API の `openapi.yaml` から生成し、手で書かない。
 - 業務の規則と認可は API が持つ。web は、画面の表示の規則（照合の印と CSV の書き出しを含む）だけを持ち、拒否の判断を API に任せる。
 - `packages/ui` は、BCD Design の Base と Case のコンポーネントとトークンだけを持つ。業務の名前（予定、照合など）を持つ Domain のコンポーネントは、`apps/web` の `features/<機能>/components/` に置く（[ADR-0004](../docs/adr/0004-design-system.md)）。
 - `packages/e2e` の `kit/` は、別のリポジトリ（非公開）からコピーしたもので、buddy の画面の名前を持たない。buddy の画面に依存するコードは `tests/` に置く。
@@ -19,8 +20,8 @@ status: stable
 
 ## Dependency Rules
 
-- apps 同士はコードで依存しない。Go の API 同士の import と、web から Go のコードの参照は無い。
-  - 2 つの Go の API が共有するコードは、別の module の `packages/go` にだけ置き、`go.mod` の `replace` で読む（[ADR-0007](../docs/adr/0007-go-shared-module.md)）。`packages/go` は、トークンの検証（`oidc`、`oidc/oidctest`）、ヘルスチェック（`healthcheck`）、Google カレンダーのタイトルの解釈（`gcaltitle`）を持ち、`apps/` を import しない。`gcaltitle` は、サービス内容と利用者名の表記のそろえ方も持つ。
+- web と 2 つの API は、コードで依存しない。Go の API 同士の import と、web から Go のコードの参照は無い。
+  - 2 つの Go の API が共有するコードは、別の module の `packages/go` にだけ置き、`go.mod` の `replace` で読む（[ADR-0007](../docs/adr/0007-go-shared-module.md)）。`packages/go` は、トークンの検証（`oidc`、`oidc/oidctest`）、ヘルスチェック（`healthcheck`）、Google カレンダーのタイトルの解釈（`gcaltitle`）を持つ。`services/` を import しない。`gcaltitle` は、サービス内容と利用者名の表記のそろえ方も持つ。
 - web は `@buddy/ui` に依存してよい。`packages/ui` から `apps/` へは依存しない。
 - web の `features/<機能>/` の間は import しない。2 つの機能が使うものは、`components/site/`（サイト共通のコンポーネント）か `@buddy/ui` に置く。
 - schedule-api の依存は、アダプタ（`httpapi`、`postgres`）、`access`、機能のパッケージ、共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）の 1 方向に限る。
