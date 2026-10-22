@@ -6,7 +6,7 @@
 | --- | --- | --- | --- |
 | 種類 | 「通常」か「訪問」 | `Schedule.kind` | `schedule_type` |
 | タイトル | タイトル | `Schedule.title` | `title` |
-| 日時 | 日付、開始と終了の時刻 | `Schedule.startsAt`、`Schedule.endsAt` | `date`、`start_time`、`end_time` |
+| 日時 | 年月日、曜日、開始と終了の時刻 | `Schedule.startsAt`、`Schedule.endsAt` | `date`、`start_time`、`end_time` |
 | 利用者 | 利用者の名前 | `Schedule.visit.patientId` を、利用者の一覧（`Patient.name`）で引く | `visit_info.patient_id` を、`listPatients` の `Patient.name` で引く |
 | サービスコード | サービスコード | `Schedule.visit.serviceCode` | `visit_info.service_code` |
 | 訪問の種類 | 夜勤、緊急、入院 | `Schedule.visit.categories` | `visit_info.visit_categories[].name` |

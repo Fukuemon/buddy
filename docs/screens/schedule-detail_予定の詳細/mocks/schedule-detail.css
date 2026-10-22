@@ -5,6 +5,12 @@
   white-space: pre-wrap;
 }
 
+/* 行の区切り線は出さず、節の見出しの線だけで分ける（apps/web の ScheduleDetailModal の Row） */
+.sd-rows .wf-row {
+  padding: 8px 0;
+  border-bottom: 0;
+}
+
 /* 日時の見出し（apps/web の ScheduleDetailModal の text-heading-sm） */
 .sd-datetime {
   margin: 0 0 8px;
