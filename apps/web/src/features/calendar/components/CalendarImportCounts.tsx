@@ -19,7 +19,7 @@ export const CalendarImportCounts = ({
   >
     {boxes.map((box) => (
       <div
-        className="rounded-8 border border-border p-3"
+        className="rounded-8 border border-border bg-surface p-3"
         data-testid={boxTestIdPrefix === undefined ? undefined : `${boxTestIdPrefix}${box.key}`}
         key={box.key}
       >

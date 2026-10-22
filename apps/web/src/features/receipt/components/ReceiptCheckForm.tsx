@@ -82,7 +82,7 @@ export const ReceiptCheckForm = ({
             type="month"
             value={month}
             onChange={(event) => onMonthChange(event.target.value)}
-            className="min-h-11 w-56 rounded-8 px-3 text-body ring-1 ring-border-field ring-inset focus-visible:focus-ring"
+            className="min-h-11 w-56 rounded-8 bg-surface px-3 text-body ring-1 ring-border-field ring-inset focus-visible:focus-ring"
             data-testid="receipt-month"
           />
           <span className="text-caption text-text-secondary">

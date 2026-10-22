@@ -31,7 +31,7 @@ export const ScheduleCalendar = ({
   onDateClick,
   onEventClick,
 }: ScheduleCalendarProps) => (
-  <div className="schedule-calendar h-full" data-testid="schedule-calendar">
+  <div className="schedule-calendar h-full bg-surface" data-testid="schedule-calendar">
     <FullCalendar
       allDaySlot={false}
       dateClick={(arg) =>

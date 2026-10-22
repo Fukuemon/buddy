@@ -40,7 +40,7 @@ export const ReceiptResultView = ({
       {RECEIPT_CATEGORIES.map(({ category, label }) => (
         <div
           key={category}
-          className="flex min-w-36 flex-col gap-1 rounded-8 p-4 ring-1 ring-border"
+          className="flex min-w-36 flex-col gap-1 rounded-8 bg-surface p-4 ring-1 ring-border"
         >
           <dt className="text-body-dense text-text-secondary">{label}</dt>
           <dd className="text-heading-md" data-testid={`receipt-summary-${category}`}>
