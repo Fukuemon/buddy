@@ -8,6 +8,7 @@ import {
   shiftGoogleEvent,
   type GoogleEvent,
 } from '../../fixtures/googleCalendar'
+import { SCHEDULE_DETAIL_URL, scheduleIdFromUrl } from '../../fixtures/schedule'
 import { linkStaffCalendar, unlinkStaffCalendar } from '../../screens/calendar'
 import { signInAtIdp } from '../../screens/login'
 import { calendarpitEvent } from '../../selectors/calendarpit'
@@ -46,7 +47,7 @@ const detailDateTime = (event: GoogleEvent | undefined) => {
   return `${start.slice(0, 10)} ${start.slice(11, 16)} - ${end.slice(11, 16)}`
 }
 
-/** 日の表示で、佐藤の予定のうちタイトルが title のものを開く。 */
+/** 日の表示で、佐藤の予定のうちタイトルが title のものを開き、予定の ID を返す。 */
 const openSatoSchedule = async (page: Page, title: string) => {
   await page.goto('/schedule?view=day')
   await page
@@ -55,10 +56,13 @@ const openSatoSchedule = async (page: Page, title: string) => {
     .filter({ hasText: title })
     .click()
   await expect(page.getByTestId('schedule-detail-modal')).toBeVisible()
+  await expect(page).toHaveURL(SCHEDULE_DETAIL_URL)
+  return scheduleIdFromUrl(page.url())
 }
 
-const reviewRow = (page: Page) =>
-  page.getByTestId(/^calendar-review-row-/).filter({ hasText: SATO.name })
+/** 確かめが要る予定の一覧の、予定の行。前の撮影が同じ職員の行を残していても、今回の予定の行だけを指す。 */
+const reviewRow = (page: Page, scheduleId: string) =>
+  page.getByTestId(`calendar-review-row-schedule-${scheduleId}`)
 
 test.describe('確かめが要る予定', () => {
   test.describe('Google カレンダーとの同期', () => {
@@ -134,7 +138,7 @@ test.describe('確かめが要る予定', () => {
           async ({ page, step, check }, { eventId }) => {
             const request = page.request
             try {
-              await openSatoSchedule(page, created)
+              const scheduleId = await openSatoSchedule(page, created)
               await step(
                 `${SATO.name} の「${created}」を開いている。予定は ${SATO.name} の Google カレンダー（calendarpit）に書き出してある`,
               )
@@ -156,26 +160,28 @@ test.describe('確かめが要る予定', () => {
               await page.goto('/schedule/review')
               await expect(async () => {
                 await page.reload()
-                await expect(reviewRow(page)).toBeVisible()
+                await expect(reviewRow(page, scheduleId)).toBeVisible()
               }).toPass()
-              await expect(reviewRow(page).getByTestId(/^calendar-review-reason-/)).toHaveText(
+              await expect(
+                reviewRow(page, scheduleId).getByTestId(/^calendar-review-reason-/),
+              ).toHaveText(
                 'buddy と Google カレンダーの両方で予定が変わりました。どちらの内容に合わせるかを選んでください。',
               )
               await check(
-                `${SATO.name} の行が、「buddy と Google カレンダーの両方で予定が変わりました。…」の理由で出る`,
+                `${SATO.name} の今回の予定の行（最後に変わった日時がいちばん新しい行）が、「buddy と Google カレンダーの両方で予定が変わりました。…」の理由で出る`,
               )
               await holdGoogleChanges(request, false)
 
               await step('「Google の内容に合わせる」を押し、確かめのダイアログで合わせる')
-              await reviewRow(page)
+              await reviewRow(page, scheduleId)
                 .getByTestId(/^calendar-review-accept-/)
                 .click()
               const dialog = page.getByTestId('calendar-accept-dialog')
               await expect(dialog).toContainText('buddy で変えたタイトルと日時は消えます。')
               await page.getByTestId('calendar-accept-submit').click()
               await expect(dialog).toBeHidden()
-              await expect(reviewRow(page)).toHaveCount(0)
-              await check('一覧から佐藤の行が消える')
+              await expect(reviewRow(page, scheduleId)).toHaveCount(0)
+              await check('一覧から今回の予定の行が消え、前の撮影が残した行があれば、その行は残る')
 
               const google = detailDateTime(
                 await findGoogleEvent(request, SATO.calendarId, created),

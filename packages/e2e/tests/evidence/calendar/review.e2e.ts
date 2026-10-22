@@ -8,6 +8,7 @@ import {
   holdGoogleChanges,
   shiftGoogleEvent,
 } from '../../fixtures/googleCalendar'
+import { SCHEDULE_DETAIL_URL, scheduleIdFromUrl } from '../../fixtures/schedule'
 import { linkStaffCalendar, unlinkStaffCalendar } from '../../screens/calendar'
 import { signInAtIdp } from '../../screens/login'
 import { calendarpitEvent } from '../../selectors/calendarpit'
@@ -39,7 +40,7 @@ const prepareExported = (title: string) => async (page: Page) => {
   return { eventId: event?.id ?? '', date: event?.start?.dateTime?.slice(0, 10) ?? '' }
 }
 
-/** 日の表示で、林の予定のうちタイトルが from のものを開き、タイトルを to に変えて保存する。 */
+/** 日の表示で、林の予定のうちタイトルが from のものを開き、タイトルを to に変えて保存する。開いた予定の ID を返す。 */
 const renameHayashiSchedule = async (page: Page, from: string, to: string) => {
   await page.goto('/schedule?view=day')
   await page
@@ -47,22 +48,26 @@ const renameHayashiSchedule = async (page: Page, from: string, to: string) => {
     .getByTestId(/^schedule-event-/)
     .filter({ hasText: from })
     .click()
+  await expect(page).toHaveURL(SCHEDULE_DETAIL_URL)
+  const scheduleId = scheduleIdFromUrl(page.url())
   await page.getByTestId('schedule-detail-edit').click()
   await page.getByTestId('schedule-field-title').click()
   await page.getByTestId('schedule-form-title').fill(to)
   await page.getByTestId('schedule-edit-submit').click()
   await expect(page.getByTestId('schedule-detail-modal')).toContainText(to)
+  return scheduleId
 }
 
-const reviewRow = (page: Page) =>
-  page.getByTestId(/^calendar-review-row-/).filter({ hasText: HAYASHI.name })
+/** 確かめが要る予定の一覧の、予定の行。前の撮影が同じ職員の行を残していても、今回の予定の行だけを指す。 */
+const reviewRow = (page: Page, scheduleId: string) =>
+  page.getByTestId(`calendar-review-row-schedule-${scheduleId}`)
 
-/** 確かめが要る予定の一覧を開き、林の行が出るまで読み直す。書き出しの処理が Google の応答を受けるまでは出ない。 */
-const openReviewUntilRow = async (page: Page) => {
+/** 確かめが要る予定の一覧を開き、予定の行が出るまで読み直す。書き出しの処理が Google の応答を受けるまでは出ない。 */
+const openReviewUntilRow = async (page: Page, scheduleId: string) => {
   await page.goto('/schedule/review')
   await expect(async () => {
     await page.reload()
-    await expect(reviewRow(page)).toBeVisible()
+    await expect(reviewRow(page, scheduleId)).toBeVisible()
   }).toPass()
 }
 
@@ -110,20 +115,22 @@ test.describe('確かめが要る予定', () => {
               await check('calendarpit の予定が 9:00 から 10:00 に移る')
 
               await step(`buddy で「${created}」のタイトルを「${changed}」に変えて保存する`)
-              await renameHayashiSchedule(page, created, changed)
+              const scheduleId = await renameHayashiSchedule(page, created, changed)
 
               await step('確かめが要る予定の画面を開く')
-              await openReviewUntilRow(page)
-              await expect(reviewRow(page).getByTestId(/^calendar-review-reason-/)).toHaveText(
+              await openReviewUntilRow(page, scheduleId)
+              await expect(
+                reviewRow(page, scheduleId).getByTestId(/^calendar-review-reason-/),
+              ).toHaveText(
                 'buddy と Google カレンダーの両方で予定が変わりました。どちらの内容に合わせるかを選んでください。',
               )
               await check(
-                `${HAYASHI.name} の行が、「buddy と Google カレンダーの両方で予定が変わりました。…」の理由で出る`,
+                `${HAYASHI.name} の今回の予定の行（最後に変わった日時がいちばん新しい行）が、「buddy と Google カレンダーの両方で予定が変わりました。…」の理由で出る`,
               )
               await holdGoogleChanges(request, false)
 
               await step('「buddy の内容で書き直す」を押し、確かめのダイアログで書き直す')
-              await reviewRow(page)
+              await reviewRow(page, scheduleId)
                 .getByTestId(/^calendar-review-rewrite-/)
                 .click()
               const dialog = page.getByTestId('calendar-rewrite-dialog')
@@ -132,8 +139,8 @@ test.describe('確かめが要る予定', () => {
               )
               await page.getByTestId('calendar-rewrite-submit').click()
               await expect(dialog).toBeHidden()
-              await expect(reviewRow(page)).toHaveCount(0)
-              await check('一覧から林の行が消える')
+              await expect(reviewRow(page, scheduleId)).toHaveCount(0)
+              await check('一覧から今回の予定の行が消え、前の撮影が残した行があれば、その行は残る')
 
               await expect
                 .poll(async () => (await findGoogleEvent(request, HAYASHI.calendarId, changed))?.id)
@@ -192,15 +199,17 @@ test.describe('確かめが要る予定', () => {
               await check('calendarpit の林のカレンダーから予定が消える')
 
               await step(`buddy で「${created}」のタイトルを「${changed}」に変えて保存する`)
-              await renameHayashiSchedule(page, created, changed)
+              const scheduleId = await renameHayashiSchedule(page, created, changed)
 
               await step('確かめが要る予定の画面を開く')
-              await openReviewUntilRow(page)
-              await expect(reviewRow(page).getByTestId(/^calendar-review-reason-/)).toHaveText(
+              await openReviewUntilRow(page, scheduleId)
+              await expect(
+                reviewRow(page, scheduleId).getByTestId(/^calendar-review-reason-/),
+              ).toHaveText(
                 'Google カレンダーで予定が見つかりません。予定が消されたか、カレンダーの共有が外れていないかを、職員に確かめてください。',
               )
               await check(
-                `${HAYASHI.name} の行が、「Google カレンダーで予定が見つかりません。…」の理由で出る`,
+                `${HAYASHI.name} の今回の予定の行（最後に変わった日時がいちばん新しい行）が、「Google カレンダーで予定が見つかりません。…」の理由で出る`,
               )
             } finally {
               await holdGoogleChanges(request, false)
@@ -221,7 +230,7 @@ test.describe('確かめが要る予定', () => {
         browser,
       }) => {
         const url = storyUrl('画面-calendar-calendarreviewview--default')
-        const row = (page: Page) => page.getByTestId('calendar-review-row-export-5')
+        const row = (page: Page) => page.getByTestId('calendar-review-row-schedule-schedule-4')
         await recordPrEvidence(
           browser,
           {
@@ -258,7 +267,7 @@ test.describe('確かめが要る予定', () => {
         browser,
       }) => {
         const url = storyUrl('画面-calendar-calendarreviewcontainer--default')
-        const row = (page: Page) => page.getByTestId('calendar-review-row-export-5')
+        const row = (page: Page) => page.getByTestId('calendar-review-row-schedule-schedule-4')
         const dialog = (page: Page) => page.getByTestId('calendar-rewrite-dialog')
         await recordPrEvidence(
           browser,
@@ -295,6 +304,53 @@ test.describe('確かめが要る予定', () => {
             await step('（撮影のため、書き直さずに「キャンセル」で閉じる）')
             await dialog(page).getByTestId('calendar-rewrite-cancel').click()
             await expect(dialog(page)).toBeHidden()
+          },
+        )
+      })
+    }
+  })
+
+  test.describe('繰り返しの予定', () => {
+    for (const variant of EVIDENCE_VARIANTS) {
+      const prefix = variant.label ? `${variant.label}: ` : ''
+
+      test(`${prefix}繰り返しの予定の行の場合、繰り返しの予定の ID の testid で指せること`, async ({
+        browser,
+      }) => {
+        const url = storyUrl('画面-calendar-calendarreviewview--default')
+        const row = (page: Page) => page.getByTestId('calendar-review-row-recurring-recurring-1')
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'calendar-review-recurring-row',
+            title:
+              '確かめが要る予定のうち、予定の ID を持たない繰り返しの予定の行を、繰り返しの予定の ID の testid（calendar-review-row-recurring-<ID>）で指せる',
+            actor: 'ログインなし（Storybook の story）',
+            variant,
+          },
+          async (page) => {
+            await page.goto(url)
+          },
+          async ({ page, step, check }) => {
+            await page.goto(url)
+            await expect(row(page)).toBeVisible()
+            await step(
+              '確かめが要る予定の画面（Storybook の CalendarReviewView の Default）を開いている\n石川 二葉の 2026/11/03（火）から毎回 10:00〜11:00 は、Google カレンダーで消された繰り返しの予定である（架空のデータの recurring-1）',
+            )
+
+            await step(
+              'testid が calendar-review-row-recurring-recurring-1 の行を指す（繰り返しの予定の行は、予定の ID を持たない）',
+            )
+            await row(page).scrollIntoViewIfNeeded()
+            await row(page).hover()
+            await expect(row(page).getByTestId(/^calendar-review-datetime-/)).toHaveText(
+              '2026/11/03（火）から毎回 10:00〜11:00',
+            )
+            await expect(row(page)).toContainText('石川 二葉')
+            await expect(row(page).getByTestId(/^calendar-review-open-/)).toHaveCount(0)
+            await check(
+              '指した行が、石川 二葉の「2026/11/03（火）から毎回 10:00〜11:00」の行で、「予定を開く」が出ない',
+            )
           },
         )
       })
