@@ -31,6 +31,8 @@ DADS の値を替えても、意味のトークンの参照先を 1 か所直せ
 | buddy の意味 | `packages/ui/src/tokens/semantic.css` | `--buddy-color-primary`、`--buddy-color-border-field` | 用途ごとの名前と、DADS の基本への参照。値は書かない |
 | Tailwind のテーマ | `packages/ui/src/tokens/theme.css` | `bg-primary`、`text-caption`、`rounded-8`、`desktop:` | `@theme inline` で意味のトークンをユーティリティにする。Tailwind のデフォルトの色、文字の大きさ、角丸、影、ブレークポイントは消す |
 
+この表の「値は書かない」の判断は [ADR-0015](0015-key-color-and-canvas.md) で置き換えた。
+
 - 値は CSS の変数で持ち、JSON から生成しない。DADS が生成済みの CSS を配っており、buddy が足すのは参照だけなので、生成の手順を持つ理由がない。
 - DADS の `@digital-go-jp/design-tokens` は依存にし、バージョンを `2.1.0` に固定する。値をコピーすると、DADS の修正を手で追い、MIT の表示を自分で持つ必要がある。バージョンを上げるときは、`tokens.css` の差分と、意味のトークンのコントラストを確かめる。
 - `@digital-go-jp/tailwind-theme-plugin` は使わない。原色の段がそのまま Tailwind のユーティリティになり、画面が意味のトークンを経ずに `bg-blue-800` と書ける。
@@ -47,6 +49,7 @@ DADS の値を替えても、意味のトークンの参照先を 1 か所直せ
 置き換えると、次の箇所の見た目が大きく変わる。
 
 - 主の色が、くすんだ青 `#4d89c0` から DADS のキーカラーの blue-800 `#0031d8` になる。主のボタン、ロゴ、選ばれている選択肢が対象である。
+  - この判断は [ADR-0015](0015-key-color-and-canvas.md) で置き換えた。
 - 入力欄、副のボタン、選択肢の枠が、薄い灰色から solid-gray-600 `#666666` になる。
 - フォーカスの表示が、青の 1 重の枠から、DADS の黄と黒の 2 重の枠になる。
 - 角丸が、ボタンと入力欄で 15px から 8px、幅の広い画面のダイアログで 24px から 8px になる。
