@@ -64,7 +64,12 @@ const decision = z.object({
 const ARGS: Record<BffOperation, z.ZodType> = {
   'schedules.list': z.tuple([
     id,
-    z.object({ from: dateTime, to: dateTime, staffIds: z.array(id).max(500).optional() }),
+    z.object({
+      from: dateTime,
+      to: dateTime,
+      staffIds: z.array(id).max(500).optional(),
+      includeCancelled: z.boolean().optional(),
+    }),
   ]),
   'schedules.get': z.tuple([id, id]),
   'schedules.create': z.tuple([id, scheduleInput]),
