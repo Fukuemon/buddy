@@ -8,7 +8,7 @@ import (
 // cors は、Config.AllowOrigins にある Origin のリクエストに CORS のヘッダーを付ける。AllowOrigins が空なら何もしない。
 // 事前のリクエスト（OPTIONS と Access-Control-Request-Method）には、トークンを求めずに 204 を返す。ブラウザは事前のリクエストに Authorization を付けないためである。
 // 出典: https://fetch.spec.whatwg.org/#cors-preflight-fetch
-// 許さない Origin のリクエストにはヘッダーを付けずに通すので、ブラウザがレスポンスを読ませない。schedule-api（gin-contrib/cors）は 403 で止めるが、どちらもブラウザがレスポンスを読ませない点は同じである。
+// 許さない Origin のリクエストにはヘッダーを付けずに通すので、ブラウザがレスポンスを読ませない。予定の API（gin-contrib/cors）は 403 で止めるが、どちらもブラウザがレスポンスを読ませない点は同じである。
 func (s *server) cors(next http.Handler) http.Handler {
 	if len(s.cfg.AllowOrigins) == 0 {
 		return next

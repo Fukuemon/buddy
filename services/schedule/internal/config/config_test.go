@@ -18,7 +18,7 @@ func env(m map[string]string) func(string) string {
 func TestLoad(t *testing.T) {
 	c, err := config.Load(env(map[string]string{
 		"DB_USER": "app", "DB_PASSWORD": "secret", "DB_NAME": "buddy",
-		"OIDC_ISSUER": "https://auth.example.com/realms/buddy", "OIDC_AUDIENCE": "schedule-api",
+		"OIDC_ISSUER": "https://auth.example.com/realms/buddy", "OIDC_AUDIENCE": "schedule",
 		"CORS_ALLOW_ORIGINS": "http://localhost:3000, http://localhost:5173", "LOG_LEVEL": "debug",
 	}))
 	if err != nil {
@@ -27,7 +27,7 @@ func TestLoad(t *testing.T) {
 	if c.Port != "8080" || c.DB.Host != "localhost" || c.DB.Port != "5432" || c.LogLevel != slog.LevelDebug {
 		t.Errorf("got %+v", c)
 	}
-	if c.OIDC.Issuer != "https://auth.example.com/realms/buddy" || c.OIDC.Audience != "schedule-api" || c.OIDC.OrgClaim != "org_id" {
+	if c.OIDC.Issuer != "https://auth.example.com/realms/buddy" || c.OIDC.Audience != "schedule" || c.OIDC.OrgClaim != "org_id" {
 		t.Errorf("OIDC = %+v", c.OIDC)
 	}
 	if !slices.Equal(c.AllowOrigins, []string{"http://localhost:3000", "http://localhost:5173"}) {
@@ -41,7 +41,7 @@ func TestLoad(t *testing.T) {
 func TestLoadCalendar(t *testing.T) {
 	c, err := config.Load(env(map[string]string{
 		"DB_USER": "app", "DB_PASSWORD": "secret", "DB_NAME": "buddy",
-		"OIDC_ISSUER": "http://localhost:9000", "OIDC_AUDIENCE": "schedule-api",
+		"OIDC_ISSUER": "http://localhost:9000", "OIDC_AUDIENCE": "schedule",
 		"GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE": " /config/accounts.json ", "GOOGLE_CALENDAR_ENDPOINT": "http://gcalhold:8080/calendar/v3/",
 	}))
 	if err != nil {
@@ -55,7 +55,7 @@ func TestLoadCalendar(t *testing.T) {
 func TestLoadErrors(t *testing.T) {
 	base := map[string]string{
 		"DB_USER": "app", "DB_PASSWORD": "secret", "DB_NAME": "buddy",
-		"OIDC_ISSUER": "http://localhost:9000", "OIDC_AUDIENCE": "schedule-api",
+		"OIDC_ISSUER": "http://localhost:9000", "OIDC_AUDIENCE": "schedule",
 	}
 	tests := []struct {
 		name string
@@ -89,7 +89,7 @@ func TestLoadErrors(t *testing.T) {
 func TestLoadOrgClaim(t *testing.T) {
 	c, err := config.Load(env(map[string]string{
 		"DB_USER": "app", "DB_PASSWORD": "secret", "DB_NAME": "buddy",
-		"OIDC_ISSUER": "http://localhost:9000", "OIDC_AUDIENCE": "schedule-api", "OIDC_ORG_CLAIM": "organization",
+		"OIDC_ISSUER": "http://localhost:9000", "OIDC_AUDIENCE": "schedule", "OIDC_ORG_CLAIM": "organization",
 	}))
 	if err != nil {
 		t.Fatal(err)

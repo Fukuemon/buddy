@@ -64,7 +64,7 @@ jobs:
           restore-keys: go-${{ matrix.module }}-
       - run: go vet ./...
       - run: golangci-lint run
-      # schedule-api のリポジトリのテストは、testcontainers で PostgreSQL のコンテナを起動する
+      # 予定の API のリポジトリのテストは、testcontainers で PostgreSQL のコンテナを起動する
       - run: go test ./...
 
   generated:

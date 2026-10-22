@@ -10,7 +10,7 @@ export const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:3000'
 
 /**
  * compose の IdP にログインするときの名前。sub になる。
- * schedule-api は初回のログインで sub を職員に結び付けるので、ローカル環境で同じ職員に別の名前で入っていると 403 になる。
+ * 予定の API は初回のログインで sub を職員に結び付けるので、ローカル環境で同じ職員に別の名前で入っていると 403 になる。
  */
 export const LOGIN_NAME = process.env.E2E_LOGIN_NAME ?? 'dev-aoki'
 
@@ -46,10 +46,10 @@ export const HAYASHI = {
 export const CALENDARPIT_URL = process.env.E2E_CALENDARPIT_URL ?? 'http://localhost:4173'
 
 /** compose の予定の API の URL。API の参照のページから送ったリクエストを、ここへ送り直す。 */
-export const SCHEDULE_API_URL = process.env.E2E_SCHEDULE_API_URL ?? 'http://localhost:8080'
+export const SCHEDULE_URL = process.env.E2E_SCHEDULE_URL ?? 'http://localhost:8080'
 
 /** compose の照合の API の URL。API の参照のページから送ったリクエストを、ここへ送り直す。 */
-export const RECEIPT_API_URL = process.env.E2E_RECEIPT_API_URL ?? 'http://localhost:8090'
+export const RECEIPT_URL = process.env.E2E_RECEIPT_URL ?? 'http://localhost:8090'
 
 /** compose の IdP の URL。API の参照のページで撮る spec が、ここからトークンを取る。 */
 export const IDP_URL = process.env.E2E_IDP_URL ?? 'http://localhost:9000'

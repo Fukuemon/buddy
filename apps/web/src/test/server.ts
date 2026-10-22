@@ -7,15 +7,15 @@ import { createReceiptHandlers } from '#/mocks/receiptHandlers'
 import { createScheduleHandlers } from '#/mocks/scheduleHandlers'
 
 /** テストで予定の API と照合の API が待ち受けるとみなす URL。 */
-export const TEST_SCHEDULE_API_URL = 'http://schedule-api.test'
-export const TEST_RECEIPT_API_URL = 'http://receipt-api.test'
+export const TEST_SCHEDULE_URL = 'http://schedule.test'
+export const TEST_RECEIPT_URL = 'http://receipt.test'
 
 /** テストごとに handler を上書きするときの、型の付いた http。 */
-export const scheduleHttp = createOpenApiHttp<SchedulePaths>({ baseUrl: TEST_SCHEDULE_API_URL })
-export const receiptHttp = createOpenApiHttp<ReceiptPaths>({ baseUrl: TEST_RECEIPT_API_URL })
+export const scheduleHttp = createOpenApiHttp<SchedulePaths>({ baseUrl: TEST_SCHEDULE_URL })
+export const receiptHttp = createOpenApiHttp<ReceiptPaths>({ baseUrl: TEST_RECEIPT_URL })
 
 /** 全てのテストが共有するフェイクの API。準備は src/test/setup.ts が行う。 */
 export const server = setupServer(
-  ...createScheduleHandlers(TEST_SCHEDULE_API_URL),
-  ...createReceiptHandlers(TEST_RECEIPT_API_URL),
+  ...createScheduleHandlers(TEST_SCHEDULE_URL),
+  ...createReceiptHandlers(TEST_RECEIPT_URL),
 )

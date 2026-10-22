@@ -13,7 +13,7 @@ info:
 security:
   - bearerAuth: []
 servers:
-  # ローカル環境の compose の receipt-api（compose.yml の RECEIPT_API_PORT のデフォルト）
+  # ローカル環境の compose の receipt（compose.yml の RECEIPT_PORT のデフォルト）
   - url: http://localhost:8090
 tags:
   - name: health

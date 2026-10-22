@@ -1,11 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vite-plus/test'
 
-import { receiptHttp, server, TEST_RECEIPT_API_URL } from '#/test/server'
+import { receiptHttp, server, TEST_RECEIPT_URL } from '#/test/server'
 
 import { createReceiptApi } from './receiptApi'
 
-const api = () => createReceiptApi({ baseUrl: TEST_RECEIPT_API_URL })
+const api = () => createReceiptApi({ baseUrl: TEST_RECEIPT_URL })
 
 describe('createReceiptApi', () => {
   it('CSV を multipart で送り、照合の結果を返す', async () => {

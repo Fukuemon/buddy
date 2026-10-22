@@ -21,10 +21,10 @@ test.describe('照合の API', () => {
             actor: `${LOGIN_STAFF.name}（マネージャー）`,
             variant,
           },
-          prepareApiReference('receipt-api', LOGIN_NAME),
+          prepareApiReference('receipt', LOGIN_NAME),
           async ({ page, step, check }, token) => {
             await routeApiReference(page)
-            await openApiClient(page, 'receipt-api', {
+            await openApiClient(page, 'receipt', {
               tag: 'check',
               method: 'post',
               path: '/v1/checks',

@@ -1,18 +1,18 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vite-plus/test'
 
-import { scheduleHttp, server, TEST_SCHEDULE_API_URL } from '#/test/server'
+import { scheduleHttp, server, TEST_SCHEDULE_URL } from '#/test/server'
 
 import { ApiError } from '../client'
 import type { components } from '../generated/schedule'
 import { createHttpBuddyApi } from './httpBuddyApi'
 
-const api = () => createHttpBuddyApi({ baseUrl: TEST_SCHEDULE_API_URL })
+const api = () => createHttpBuddyApi({ baseUrl: TEST_SCHEDULE_URL })
 
 /** BFF と同じく Bearer のトークンを付けて呼ぶ API。共通の handler はトークンを求める。 */
 const authorizedApi = () =>
   createHttpBuddyApi({
-    baseUrl: TEST_SCHEDULE_API_URL,
+    baseUrl: TEST_SCHEDULE_URL,
     fetch: (input, init) => {
       const request = new Request(input, init)
       request.headers.set('Authorization', 'Bearer test')

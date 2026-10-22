@@ -14,7 +14,7 @@ import { apiClient, testRequestButton } from '../selectors/apiReference'
  */
 export const openApiClient = async (
   page: Page,
-  api: 'schedule-api' | 'receipt-api',
+  api: 'schedule' | 'receipt',
   o: { tag: string; method: string; path: string },
 ) => {
   await page.goto(

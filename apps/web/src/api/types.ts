@@ -47,7 +47,7 @@ export const SERVICE_CODES = [
   '予防看I5・2超',
   '医',
 ] as const
-/** 訪問のサービスコード。表記は schedule-api のマイグレーションが入れる値と同じにする。 */
+/** 訪問のサービスコード。表記は予定の API のマイグレーションが入れる値と同じにする。 */
 export type ServiceCode = (typeof SERVICE_CODES)[number]
 
 export const SCHEDULE_CATEGORIES = ['night', 'emergency', 'hospitalization'] as const

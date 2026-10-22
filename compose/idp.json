@@ -9,7 +9,7 @@
           "requestParam": "grant_type",
           "match": "*",
           "claims": {
-            "aud": ["web", "schedule-api", "receipt-api"],
+            "aud": ["web", "schedule", "receipt"],
             "azp": "web",
             "email": "hina.aoki@example.com",
             "email_verified": true,

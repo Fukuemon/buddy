@@ -106,10 +106,10 @@ test.describe('予定のカレンダー', () => {
             actor: `${LEADER.staff.name}（チーム B のリーダー）`,
             variant,
           },
-          prepareApiReference('schedule-api', LEADER.loginName),
+          prepareApiReference('schedule', LEADER.loginName),
           async ({ page, step, check }, token) => {
             await routeApiReference(page)
-            await openApiClient(page, 'schedule-api', {
+            await openApiClient(page, 'schedule', {
               tag: 'schedule',
               method: 'get',
               path: '/v1/schedules/{schedule_id}',

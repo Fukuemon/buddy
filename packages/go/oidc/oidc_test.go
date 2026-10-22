@@ -14,7 +14,7 @@ import (
 	"github.com/Fukuemon/buddy/packages/go/oidc/oidctest"
 )
 
-const audience = "schedule-api"
+const audience = "schedule"
 
 func setup(t *testing.T) (*oidctest.Issuer, *oidc.Verifier) {
 	t.Helper()
@@ -98,7 +98,7 @@ func TestVerifyRejects(t *testing.T) {
 			return sign(t, iss, c)
 		}},
 		{name: "aud が違う", token: func(t *testing.T) string {
-			return sign(t, iss, iss.Claims("receipt-api", "sub-1"))
+			return sign(t, iss, iss.Claims("receipt", "sub-1"))
 		}},
 		{name: "iss が違う", token: func(t *testing.T) string {
 			c := iss.Claims(audience, "sub-1")

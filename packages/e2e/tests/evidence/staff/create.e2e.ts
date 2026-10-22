@@ -51,10 +51,10 @@ test.describe('職員の管理', () => {
               actor: `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`,
               variant,
             },
-            prepareApiReference('schedule-api', LOGIN_NAME),
+            prepareApiReference('schedule', LOGIN_NAME),
             async ({ page, step, check }, token) => {
               await routeApiReference(page)
-              await openApiClient(page, 'schedule-api', CREATE_USER)
+              await openApiClient(page, 'schedule', CREATE_USER)
               await step('API の参照のページで「職員を作る」のリクエストを開いている')
 
               await step(`認証の欄に ${LOGIN_STAFF.name} のトークンを入れる（伏せ字で出る）`)

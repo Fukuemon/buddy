@@ -2,7 +2,7 @@
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vite-plus/test'
 
-import { scheduleHttp, server, TEST_SCHEDULE_API_URL } from '#/test/server'
+import { scheduleHttp, server, TEST_SCHEDULE_URL } from '#/test/server'
 
 import type { AuthDeps } from './auth'
 import { callBff } from './bff'
@@ -30,7 +30,7 @@ const setup = async () => {
     oidc: {} as AuthDeps['oidc'],
     fetchMe: async () => ({ ok: false, reason: 'failed' }),
   }
-  return { auth, scheduleApiUrl: TEST_SCHEDULE_API_URL }
+  return { auth, scheduleApiUrl: TEST_SCHEDULE_URL }
 }
 
 const withCookie = (cookie?: string) =>
@@ -40,7 +40,7 @@ const signedIn = () => withCookie(`buddy_session=${signValue('id-1', SECRET)}`)
 
 /** 予定の API への全てのリクエストに 500 を返す。呼ばれるとテストの期待と食い違う。 */
 const mustNotCall = () =>
-  http.all(`${TEST_SCHEDULE_API_URL}/*`, () =>
+  http.all(`${TEST_SCHEDULE_URL}/*`, () =>
     HttpResponse.json({ code: 'internal', message: '呼ばれてはいけない' }, { status: 500 }),
   )
 

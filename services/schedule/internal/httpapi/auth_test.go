@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	testAudience    = "schedule-api"
+	testAudience    = "schedule"
 	testOrgID       = "org-a"
 	otherFacilityID = "01M3TCZZZZZZZZZZZZZZZZZZZY"
 	otherScheduleID = "01M3TCZZZZZZZZZZZZZZZZZZZX"
