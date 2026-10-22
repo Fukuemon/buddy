@@ -26,7 +26,7 @@ Closes #
 
 | # | 観点（EARS の要件） | 確かめ方 | 結果 | エビデンス |
 | --- | --- | --- | --- | --- |
-| 1 | WHEN <条件> のとき、THEN 画面 SHALL <観測できる結果> となる。 | `<spec のパス>` の `<name>` | 通った | `![<name>](./.ai-out/evidence/<番号>/<name>.mp4)` `![<判定の文>](./.ai-out/evidence/<番号>/<name>/frames/<判定の画像>.png)` |
+| 1 | WHEN <条件> のとき、THEN 画面 SHALL <観測できる結果> となる。 | `<spec のファイル名>` の `<name>` | 通った | `![<name>](./.ai-out/evidence/<番号>/<name>.mp4)` `![<判定の文>](./.ai-out/evidence/<番号>/<name>/frames/<判定の画像>.png)` |
 
 <details><summary>観点の設計</summary>
 
@@ -36,7 +36,7 @@ Closes #
 
 <details><summary>エビデンスの spec</summary>
 
-spec のコード
+spec のパスとコード
 
 </details>
 -->
