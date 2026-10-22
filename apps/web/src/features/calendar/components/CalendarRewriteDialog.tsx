@@ -7,6 +7,8 @@ import { CalendarDialog } from './CalendarDialog'
 export type CalendarRewriteDialogProps = {
   /** 書き直す予定の日時と職員。 */
   target: string
+  /** buddy でキャンセルした単発の予定か。書き直すと Google カレンダーの予定を消すので、注意の文を替える。 */
+  cancelled?: boolean
   isSubmitting: boolean
   /** 書き直す待ちにできなかったときの文。 */
   errorMessage?: string
@@ -17,6 +19,7 @@ export type CalendarRewriteDialogProps = {
 /** Google カレンダーの予定を buddy の内容で書き直す前に、Google カレンダーでの変更が消えることを示して確かめるダイアログ。 */
 export const CalendarRewriteDialog = ({
   target,
+  cancelled = false,
   isSubmitting,
   errorMessage,
   onSubmit,
@@ -37,10 +40,10 @@ export const CalendarRewriteDialog = ({
       <p className="text-body" data-testid="calendar-rewrite-target">
         {target}
       </p>
-      <p className="text-body">
-        Google カレンダーの予定のタイトルと日時を buddy の内容にします。Google
-        カレンダーで直したタイトルと日時は消えます。消された予定は作り直します。書き直しは、数十秒のうちに
-        Google カレンダーに出ます。
+      <p className="text-body" data-testid="calendar-rewrite-notice">
+        {cancelled
+          ? 'buddy でキャンセルした予定なので、Google カレンダーの予定を消します。Google カレンダーで直したタイトルと日時も消えます。書き直しは、数十秒のうちに Google カレンダーに出ます。'
+          : 'Google カレンダーの予定のタイトルと日時を buddy の内容にします。Google カレンダーで直したタイトルと日時は消えます。消された予定は作り直します。書き直しは、数十秒のうちに Google カレンダーに出ます。'}
       </p>
       {errorMessage !== undefined && (
         <p

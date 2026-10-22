@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test'
 
-import { exportIssueReason } from './exportIssue'
+import { exportIssueReason, isCancelledSingleIssue } from './exportIssue'
 
 describe('exportIssueReason', () => {
   const conflict = { status: 'conflict', acceptable: false, recurring_schedule_id: null } as const
@@ -49,6 +49,29 @@ describe('exportIssueReason', () => {
     )
     expect(exportIssueReason({ ...failed, error_code: 'unavailable' })).toBe(
       'Google カレンダーに届かず、書き出せませんでした。',
+    )
+  })
+})
+
+describe('isCancelledSingleIssue', () => {
+  const issue = {
+    status: 'conflict',
+    error_code: 'precondition_failed',
+    acceptable: false,
+    recurring_schedule_id: null,
+  } as const
+
+  it('Google カレンダーで変わったか消えた単発の予定で、合わせられなければ、キャンセルした予定とみなす', () => {
+    expect(isCancelledSingleIssue(issue)).toBe(true)
+    expect(isCancelledSingleIssue({ ...issue, error_code: 'not_found' })).toBe(true)
+  })
+
+  it('合わせられる予定、繰り返しの予定、ほかの理由の予定は、キャンセルした予定とみなさない', () => {
+    expect(isCancelledSingleIssue({ ...issue, acceptable: true })).toBe(false)
+    expect(isCancelledSingleIssue({ ...issue, recurring_schedule_id: 'recurring-1' })).toBe(false)
+    expect(isCancelledSingleIssue({ ...issue, error_code: 'unappliable' })).toBe(false)
+    expect(isCancelledSingleIssue({ ...issue, status: 'failed', error_code: 'forbidden' })).toBe(
+      false,
     )
   })
 })

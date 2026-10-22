@@ -69,6 +69,16 @@ describe('CalendarReviewContainer', () => {
     expect(screen.queryByTestId('calendar-rewrite-dialog')).toBeNull()
   })
 
+  it('キャンセルした単発の予定を書き直すときは、Google カレンダーの予定を消すことを示す', async () => {
+    render(<Default />)
+    await userEvent.click(await screen.findByTestId('calendar-review-rewrite-export-5'))
+    const dialog = screen.getByTestId('calendar-rewrite-dialog')
+    expect(within(dialog).getByTestId('calendar-rewrite-notice')).toHaveTextContent(
+      'buddy でキャンセルした予定なので、Google カレンダーの予定を消します。',
+    )
+    expect(dialog).not.toHaveTextContent('消された予定は作り直します。')
+  })
+
   it('キャンセルすると、書き直さずにダイアログを閉じる', async () => {
     render(<Default />)
     await userEvent.click(await screen.findByTestId('calendar-review-rewrite-export-2'))

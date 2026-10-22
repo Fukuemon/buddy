@@ -12,7 +12,7 @@ import {
   loadErrorMessage,
   rewriteErrorMessage,
 } from '../lib/errorMessage'
-import { formatExportIssueDateTime } from '../lib/exportIssue'
+import { formatExportIssueDateTime, isCancelledSingleIssue } from '../lib/exportIssue'
 import {
   calendarQueryKeys,
   exportIssueListQueryOptions,
@@ -70,6 +70,7 @@ const CalendarReviewContent = () => {
       />
       {target?.action === 'rewrite' && (
         <CalendarRewriteDialog
+          cancelled={isCancelledSingleIssue(target.issue)}
           errorMessage={rewrite.isError ? rewriteErrorMessage(rewrite.error) : undefined}
           isSubmitting={rewrite.isPending}
           onCancel={close}

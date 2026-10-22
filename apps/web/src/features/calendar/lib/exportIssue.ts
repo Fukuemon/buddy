@@ -9,6 +9,21 @@ export const formatExportIssueDateTime = (issue: CalendarExportIssue) => {
   return issue.recurring_schedule_id === null ? `${date}${time}` : `${date}から毎回 ${time}`
 }
 
+/**
+ * 確かめが要る書き出しが、buddy でキャンセルした単発の予定かを返す。buddy の内容で書き直すと、Google カレンダーの予定を消す。
+ * API の `acceptable` は、Google カレンダーで変わったか消えた単発の予定（`conflict` の `precondition_failed` か `not_found`）では、buddy でキャンセルしたときだけ false になる。
+ */
+export const isCancelledSingleIssue = (
+  issue: Pick<
+    CalendarExportIssue,
+    'status' | 'error_code' | 'acceptable' | 'recurring_schedule_id'
+  >,
+) =>
+  issue.status === 'conflict' &&
+  (issue.error_code === 'precondition_failed' || issue.error_code === 'not_found') &&
+  !issue.acceptable &&
+  issue.recurring_schedule_id === null
+
 /** 確かめが要る書き出しの理由を、マネージャーが次にすることの分かる文にする。 */
 export const exportIssueReason = (
   issue: Pick<
@@ -21,7 +36,7 @@ export const exportIssueReason = (
       if (issue.acceptable) {
         return 'buddy と Google カレンダーの両方で予定が変わりました。どちらの内容に合わせるかを選んでください。'
       }
-      return issue.recurring_schedule_id === null
+      return isCancelledSingleIssue(issue)
         ? 'buddy でキャンセルした予定が、Google カレンダーで変わっていました。buddy の内容で書き直すと Google カレンダーの予定を消すので、消してよいかを職員に確かめてください。'
         : 'buddy と Google カレンダーの両方で繰り返しの予定が変わりました。buddy の内容で書き直すか、Google カレンダーで元に戻すよう職員に頼んでください。'
     case 'not_found':
