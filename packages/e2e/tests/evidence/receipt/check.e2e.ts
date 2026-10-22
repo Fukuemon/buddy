@@ -20,7 +20,6 @@ const CALENDAR_VISIT_CASES = [
     title:
       '2026-11 の Google カレンダーの予定と実績で照合すると、11/02 の見本 一郎の予定（10:00〜10:30 の訪看I2）と合う実績が整合の行に出る',
     category: 'match',
-    label: '整合データ',
     date: '2026-11-02',
     patient: '見本一郎',
     cells: ['訪看I２', '10:00', '10:29', '29', '訪看I２', '10:00', '10:29', '29', '通常'],
@@ -34,7 +33,6 @@ const CALENDAR_VISIT_CASES = [
     title:
       '2026-11 の Google カレンダーの予定と実績で照合すると、11/04 の見本 二葉の予定（09:00 開始）と開始時間が違う実績（09:15 開始）が不整合の行に出る',
     category: 'mismatch',
-    label: '不整合データ',
     date: '2026-11-04',
     patient: '見本二葉',
     cells: ['訪看I３', '09:00 ❌', '09:44', '44', '訪看I３', '09:15 ❌', '09:59', '44', '通常'],
@@ -48,7 +46,6 @@ const CALENDAR_VISIT_CASES = [
     title:
       '2026-11 の Google カレンダーの予定と実績で照合すると、11/18 の見本 二葉の予定（訪看I3）とサービス内容が違う実績（予防訪看I３）が不整合の行に出る',
     category: 'mismatch',
-    label: '不整合データ',
     date: '2026-11-18',
     patient: '見本二葉',
     cells: ['訪看I３ ❌', '14:00', '14:44', '44', '予防訪看I３ ❌', '14:00', '14:44', '44', '通常'],
@@ -146,7 +143,6 @@ test.describe('照合の結果', () => {
               )
 
               const row = receiptCategoryRowCells(page, item.category, item.date, item.patient)
-              await row.first().scrollIntoViewIfNeeded()
               await expect(row).toHaveText([
                 item.date,
                 item.patient,
