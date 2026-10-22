@@ -7,6 +7,7 @@ import {
   holdGoogleChanges,
   shiftGoogleEvent,
 } from '../../fixtures/googleCalendar'
+import { SCHEDULE_DETAIL_URL, scheduleIdFromUrl } from '../../fixtures/schedule'
 
 const findEvent = (request: APIRequestContext, summary: string) =>
   findGoogleEvent(request, HAYASHI.calendarId, summary)
@@ -41,7 +42,7 @@ const createHayashiSchedule = async (page: Page, request: APIRequestContext, tit
   return (await findEvent(request, title))?.id ?? ''
 }
 
-/** 日の表示で、林の予定のうちタイトルが from のものを開き、タイトルを to に変える。 */
+/** 日の表示で、林の予定のうちタイトルが from のものを開き、タイトルを to に変える。開いた予定の ID を返す。 */
 const renameHayashiSchedule = async (page: Page, from: string, to: string) => {
   await page.goto('/schedule?view=day')
   await page
@@ -49,35 +50,39 @@ const renameHayashiSchedule = async (page: Page, from: string, to: string) => {
     .getByTestId(/^schedule-event-/)
     .filter({ hasText: from })
     .click()
+  await expect(page).toHaveURL(SCHEDULE_DETAIL_URL)
+  const scheduleId = scheduleIdFromUrl(page.url())
   await page.getByTestId('schedule-detail-edit').click()
   await page.getByTestId('schedule-field-title').click()
   await page.getByTestId('schedule-form-title').fill(to)
   await page.getByTestId('schedule-edit-submit').click()
   await expect(page.getByTestId('schedule-detail-modal')).toBeVisible()
+  return scheduleId
 }
 
-const reviewRow = (page: Page) =>
-  page.getByTestId(/^calendar-review-row-/).filter({ hasText: HAYASHI.name })
+/** 確かめが要る予定の一覧の、予定の行。前のテストが同じ職員の行を残していても、今回の予定の行だけを指す。 */
+const reviewRow = (page: Page, scheduleId: string) =>
+  page.getByTestId(`calendar-review-row-schedule-${scheduleId}`)
 
-/** 確かめが要る予定の一覧を開き、林の行が出るまで読み直す。書き出しの処理が Google の応答を受けるまでは出ない。 */
-const openReviewUntilRow = async (page: Page) => {
+/** 確かめが要る予定の一覧を開き、予定の行が出るまで読み直す。書き出しの処理が Google の応答を受けるまでは出ない。 */
+const openReviewUntilRow = async (page: Page, scheduleId: string) => {
   await page.goto('/schedule/review')
   await expect(async () => {
     await page.reload()
-    await expect(reviewRow(page)).toBeVisible()
+    await expect(reviewRow(page, scheduleId)).toBeVisible()
   }).toPass()
 }
 
-/** 確かめが要る予定の一覧で、林の行を buddy の内容で書き直す。確かめのダイアログの文が notice を含むことを確かめてから押す。 */
-const rewriteHayashiRow = async (page: Page, notice: string) => {
-  await reviewRow(page)
+/** 確かめが要る予定の一覧で、予定の行を buddy の内容で書き直す。確かめのダイアログの文が notice を含むことを確かめてから押す。 */
+const rewriteRow = async (page: Page, scheduleId: string, notice: string) => {
+  await reviewRow(page, scheduleId)
     .getByTestId(/^calendar-review-rewrite-/)
     .click()
   const dialog = page.getByTestId('calendar-rewrite-dialog')
   await expect(dialog).toContainText(notice)
   await page.getByTestId('calendar-rewrite-submit').click()
   await expect(dialog).toBeHidden()
-  await expect(reviewRow(page)).toHaveCount(0)
+  await expect(reviewRow(page, scheduleId)).toHaveCount(0)
 }
 
 test.describe('確かめが要る予定', () => {
@@ -106,6 +111,7 @@ test.describe('確かめが要る予定', () => {
       const created = `E2E の書き出し ${stamp}`
       const changed = `E2E の書き出し（buddy で変更）${stamp}`
       let eventId = ''
+      let scheduleId = ''
 
       await test.step('林に Google カレンダーを結び付ける', async () => {
         await linkHayashi(page)
@@ -119,10 +125,12 @@ test.describe('確かめが要る予定', () => {
         // 予定の API が Google の変更を先に読んで buddy に当てないよう、中継に変更を渡させない
         await holdGoogleChanges(request, true)
         await shiftGoogleEvent(request, HAYASHI.calendarId, eventId)
-        await renameHayashiSchedule(page, created, changed)
+        scheduleId = await renameHayashiSchedule(page, created, changed)
 
-        await openReviewUntilRow(page)
-        await expect(reviewRow(page).getByTestId(/^calendar-review-reason-/)).toHaveText(
+        await openReviewUntilRow(page, scheduleId)
+        await expect(
+          reviewRow(page, scheduleId).getByTestId(/^calendar-review-reason-/),
+        ).toHaveText(
           'buddy と Google カレンダーの両方で予定が変わりました。どちらの内容に合わせるかを選んでください。',
         )
         await holdGoogleChanges(request, false)
@@ -133,7 +141,7 @@ test.describe('確かめが要る予定', () => {
       })
 
       await test.step('buddy の内容で書き直すと、一覧から消え、Google カレンダーが buddy のタイトルになる', async () => {
-        await rewriteHayashiRow(page, 'Google カレンダーで直したタイトルと日時は消えます。')
+        await rewriteRow(page, scheduleId, 'Google カレンダーで直したタイトルと日時は消えます。')
 
         await expect.poll(async () => (await findEvent(request, changed))?.id).toBe(eventId)
       })
@@ -147,6 +155,7 @@ test.describe('確かめが要る予定', () => {
       const created = `E2E の書き出し（Google で削除）${stamp}`
       const changed = `E2E の書き出し（Google で削除、buddy で変更）${stamp}`
       let eventId = ''
+      let scheduleId = ''
 
       await test.step('林に Google カレンダーを結び付け、buddy で作った予定を Google カレンダーに出す', async () => {
         await linkHayashi(page)
@@ -157,17 +166,19 @@ test.describe('確かめが要る予定', () => {
         // 予定の API が Google の削除を先に読んで buddy の予定をキャンセルしないよう、中継に変更を渡させない
         await holdGoogleChanges(request, true)
         await deleteGoogleEvent(request, HAYASHI.calendarId, eventId)
-        await renameHayashiSchedule(page, created, changed)
+        scheduleId = await renameHayashiSchedule(page, created, changed)
 
-        await openReviewUntilRow(page)
-        await expect(reviewRow(page).getByTestId(/^calendar-review-reason-/)).toHaveText(
+        await openReviewUntilRow(page, scheduleId)
+        await expect(
+          reviewRow(page, scheduleId).getByTestId(/^calendar-review-reason-/),
+        ).toHaveText(
           'Google カレンダーで予定が見つかりません。予定が消されたか、カレンダーの共有が外れていないかを、職員に確かめてください。',
         )
         await holdGoogleChanges(request, false)
       })
 
       await test.step('buddy の内容で書き直すと、一覧から消え、Google カレンダーに buddy のタイトルで予定が戻る', async () => {
-        await rewriteHayashiRow(page, '消された予定は作り直します。')
+        await rewriteRow(page, scheduleId, '消された予定は作り直します。')
 
         await expect
           .poll(async () => {

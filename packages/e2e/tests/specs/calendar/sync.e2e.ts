@@ -7,6 +7,7 @@ import {
   shiftGoogleEvent,
   type GoogleEvent,
 } from '../../fixtures/googleCalendar'
+import { SCHEDULE_DETAIL_URL, scheduleIdFromUrl } from '../../fixtures/schedule'
 
 const findEvent = (request: APIRequestContext, summary: string) =>
   findGoogleEvent(request, SATO.calendarId, summary)
@@ -18,7 +19,7 @@ const detailDateTime = (event: GoogleEvent | undefined) => {
   return `${start.slice(0, 10)} ${start.slice(11, 16)} - ${end.slice(11, 16)}`
 }
 
-/** 日の表示で、佐藤の予定のうちタイトルが title のものを開く。 */
+/** 日の表示で、佐藤の予定のうちタイトルが title のものを開き、予定の ID を返す。 */
 const openSchedule = async (page: Page, title: string) => {
   await page.goto('/schedule?view=day')
   await page
@@ -27,7 +28,13 @@ const openSchedule = async (page: Page, title: string) => {
     .filter({ hasText: title })
     .click()
   await expect(page.getByTestId('schedule-detail-modal')).toBeVisible()
+  await expect(page).toHaveURL(SCHEDULE_DETAIL_URL)
+  return scheduleIdFromUrl(page.url())
 }
+
+/** 確かめが要る予定の一覧の、予定の行。前のテストが同じ職員の行を残していても、今回の予定の行だけを指す。 */
+const reviewRow = (page: Page, scheduleId: string) =>
+  page.getByTestId(`calendar-review-row-schedule-${scheduleId}`)
 
 test.describe('確かめが要る予定', () => {
   test.describe('Google カレンダーとの同期', () => {
@@ -52,6 +59,7 @@ test.describe('確かめが要る予定', () => {
       const created = `E2E の同期 ${stamp}`
       const changed = `E2E の同期（buddy で変更）${stamp}`
       let eventId = ''
+      let scheduleId = ''
 
       await test.step('佐藤に Google カレンダーを結び付け、buddy で作った予定を Google カレンダーに出す', async () => {
         await page.goto('/schedule/link')
@@ -93,7 +101,7 @@ test.describe('確かめが要る予定', () => {
       await test.step('buddy と Google カレンダーの両方で変えると、確かめが要る予定に出る', async () => {
         await holdGoogleChanges(request, true)
         await shiftGoogleEvent(request, SATO.calendarId, eventId)
-        await openSchedule(page, created)
+        scheduleId = await openSchedule(page, created)
         await page.getByTestId('schedule-detail-edit').click()
         await page.getByTestId('schedule-field-title').click()
         await page.getByTestId('schedule-form-title').fill(changed)
@@ -101,7 +109,7 @@ test.describe('確かめが要る予定', () => {
         await expect(page.getByTestId('schedule-detail-modal')).toBeVisible()
 
         await page.goto('/schedule/review')
-        const row = page.getByTestId(/^calendar-review-row-/).filter({ hasText: SATO.name })
+        const row = reviewRow(page, scheduleId)
         await expect(async () => {
           await page.reload()
           await expect(row).toBeVisible()
@@ -113,18 +121,14 @@ test.describe('確かめが要る予定', () => {
       })
 
       await test.step('Google の内容に合わせると、一覧から消え、buddy の予定が Google カレンダーのタイトルと日時になる', async () => {
-        await page
-          .getByTestId(/^calendar-review-row-/)
-          .filter({ hasText: SATO.name })
+        await reviewRow(page, scheduleId)
           .getByTestId(/^calendar-review-accept-/)
           .click()
         const dialog = page.getByTestId('calendar-accept-dialog')
         await expect(dialog).toContainText('buddy で変えたタイトルと日時は消えます。')
         await page.getByTestId('calendar-accept-submit').click()
         await expect(dialog).toBeHidden()
-        await expect(
-          page.getByTestId(/^calendar-review-row-/).filter({ hasText: SATO.name }),
-        ).toHaveCount(0)
+        await expect(reviewRow(page, scheduleId)).toHaveCount(0)
 
         const google = await findEvent(request, created)
         expect(google?.id).toBe(eventId)
