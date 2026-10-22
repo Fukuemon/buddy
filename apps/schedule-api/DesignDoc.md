@@ -1,7 +1,7 @@
 ---
 type: feature-design
 title: 予定の管理
-description: schedule-api のコードの層、表の構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更とキャンセル、Google カレンダーの取り込み、書き出し、同期
+description: schedule-api のコードの層、テーブルの構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更とキャンセル、Google カレンダーの取り込み、書き出し、同期
 status: stable
 governs: apps/schedule-api
 verified_commit: ff293e9

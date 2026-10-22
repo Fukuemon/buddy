@@ -49,6 +49,66 @@ rules:
         to: 日本語版の違い
       - from: ツールの版
         to: ツールのバージョン
+  # 技術者がカタカナ語で呼ぶ技術用語。文脈で意味が変わる語（表、列、題、写す、取り込む）は、スキル write-prose の規則で判断し、ここに置かない
+  - expected: デフォルト値
+    pattern: /既定の?値/
+    prh: default value はデフォルト値と書く
+    specs:
+      - from: 既定の値を使う
+        to: デフォルト値を使う
+      - from: 既定値を変える
+        to: デフォルト値を変える
+  - expected: デフォルト$1
+    pattern: /既定(?!の?値)(では|で|は|の|に|を|と|から)/
+    prh: default はデフォルトと書く
+    specs:
+      - from: 既定では無効
+        to: デフォルトでは無効
+      - from: 既定のブランチ
+        to: デフォルトのブランチ
+  - expected: テンプレート
+    pattern: 雛形
+    prh: template はテンプレートと書く
+    specs:
+      - from: issue の雛形
+        to: issue のテンプレート
+  - expected: リクエスト$1レスポンス
+    pattern: /要求(と|や|、)応答/
+    prh: HTTP の request と response は、リクエストとレスポンスと書く
+    specs:
+      - from: 要求と応答を記録する
+        to: リクエストとレスポンスを記録する
+  - expected: $1$2の$3テーブル
+    pattern: /(DB|データベース)(\s?)の(\s?)表(?![現示記])/
+    prh: DB の table はテーブルと書く。Markdown の表は検出しない
+    specs:
+      - from: DB の表の名前
+        to: DB のテーブルの名前
+      - from: DB の表現力
+        to: DB の表現力
+  - expected: ローカル環境
+    pattern: 手元の環境
+    prh: 開発者のマシンの環境は、ローカル環境と書く
+    specs:
+      - from: 手元の環境で試す
+        to: ローカル環境で試す
+  - expected: ローカル環境で
+    pattern: /手元で(?=動か|起動|実行)/
+    prh: 開発者のマシンで動かすことは、ローカル環境で起動する、のように書く
+    specs:
+      - from: 手元で動かす
+        to: ローカル環境で動かす
+      - from: 手元で扱う
+        to: 手元で扱う
+  - expected: シークレット
+    patterns:
+      - 秘密の値
+      - 秘密情報
+      - 秘密の情報
+    prh: secret はシークレットと書く
+    specs:
+      - from: 秘密情報の置き場
+        to: シークレットの置き場
   - expected: 何をどう決めたかを書く
     pattern: /側に倒[さしすせそ]/
     prh: 判断を方向の比喩で書かない。「失敗したら処理を止める」のように、決めた動作を書く
@@ -108,6 +168,7 @@ rules:
       - /(?:まず|ここで)?重要なのは、?/
       - /結論から言うと、?/
       - /正直に言うと、?/
+      - /注目すべき(?:点|こと)がある。?/
     prh: 前置きを書かず、言いたいことから書き始める
     specs:
       - from: 重要なのは、テストである
@@ -151,30 +212,11 @@ rules:
   - expected: プレビュー
     pattern: /(?<!「[^」]*)下見(?!する|の結果)/
     prh: 取り込む前の確かめはプレビューと呼ぶ。コードの名前 import_preview に合わせる。画面の文言（「」で引いたもの、ボタンの「下見する」、見出しの「下見の結果」）は除く
-  - expected: デフォルト値
-    pattern: 既定の値
-    prh: 既定の値はデフォルト値と書く
-    specs:
-      - from: 既定の値を使う
-        to: デフォルト値を使う
-  - expected: デフォルト
-    pattern: 既定
-    prh: 既定はデフォルトと書く
-    specs:
-      - from: 既定のブランチ
-        to: デフォルトのブランチ
   - expected: スクリーンショット
     pattern: 静止画
-  - expected: テンプレート
-    pattern: 雛形
-    prh: GitHub の UI の表記に合わせる
-  - expected: シークレット
-    pattern: /秘密の値|秘密の?情報/
-  - expected: DB のテーブル
-    pattern: /DB の表(?![示現記])/
   - expected: ローカル
-    pattern: /手元(?!で扱|に置)/
-    prh: 開発者の環境はローカル、ローカル環境と書く。照合の担当が CSV を手元で扱う、手元に置く話は除く
+    pattern: /手元(?!で扱|に置|の環境|で(?:動か|起動|実行))/
+    prh: 開発者の環境はローカル、ローカル環境と書く。照合の担当が CSV を手元で扱う、手元に置く話は除く。手元の環境と、手元で動かす、起動する、実行するは、上半分の規則が指摘する
   - expected: マージする
     pattern: /(?<=(?:pull request|ブランチ|`develop`|`main`)\s?(?:を|へ|に|から)[^。予]{0,20})(?<!予定[のを]?)取り込む/
     prh: pull request のマージは、業務の機能の「予定の取り込み」と分けてマージと書く。前に「予定の」「予定を」があるときは除く
@@ -209,8 +251,6 @@ rules:
         to: "`develop` へのマージは"
       - from: ブランチの予定の取り込みのプレビュー
         to: ブランチの予定の取り込みのプレビュー
-  - expected: リクエストとレスポンス
-    pattern: 要求と応答
   - expected: リソース
     pattern: 資源
   - expected: エビデンス
