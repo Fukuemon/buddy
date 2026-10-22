@@ -5,6 +5,7 @@ buddy の E2E のテストと、手動検証のエビデンスを撮る仕組み
 - `kit/`: 録画（`recording`）、エビデンスの配置先と名前（`evidence`）、ログインの状態の保存（`auth`）
 - `eslint/`: E2E のテストのコードの書き方の規則（`e2e-authoring-rule.mjs`）と、そのテスト
 - `tests/`: E2E のテスト。層（specs、setup、screens、widgets、selectors、fixtures）は [DesignDoc.md](DesignDoc.md) にある
+  - `tests/evidence/`: エビデンスの動画を撮る spec。kit を呼ぶ薄い層は `tests/fixtures/evidence.ts` にある
 
 書き方は、スキル write-e2e-test、write-verification-spec、run-verification-scenarios（`.claude/skills/`）が持つ。buddy で決めた値は `context/conventions.md` と `context/testing.md` の E2E の節にある。
 
@@ -12,7 +13,8 @@ buddy の E2E のテストと、手動検証のエビデンスを撮る仕組み
 
 | コマンド | 確かめること |
 | --- | --- |
-| `pnpm e2e`（ルート） | compose に向けて、ログイン、予定の作成、照合の流れを流す。先に `docker compose up --build --wait` で起動する |
+| `pnpm e2e`（ルート） | compose に向けて、ログイン、予定の作成、照合の流れを流す。先に `docker compose up --build --wait` で起動する。エビデンスの spec は流さない |
+| `pnpm --filter @buddy/e2e evidence` | エビデンスの spec を流し、`.ai-out/evidence/<番号>/` に mp4 を書き出す。環境変数は `context/testing/evidence.md` にある |
 | `pnpm --filter @buddy/e2e check` | 整形と lint（Vite+）、E2E の書き方の規則（ESLint）、型のチェック |
 | `pnpm --filter @buddy/e2e test:rules` | ESLint の規則のテスト |
 

@@ -30,8 +30,28 @@ export const showCursorInRecording = async (context: BrowserContext): Promise<vo
           pointerEvents: 'none',
           left: '-100px',
           top: '-100px',
+          // popover の UA の既定の見た目を消す
+          right: 'auto',
+          bottom: 'auto',
+          padding: '0',
+          overflow: 'visible',
         })
         document.body.appendChild(dot)
+        // showModal で開いたダイアログは最上位の層に出て、z-index の要素を覆う。丸を popover にして同じ層に出し、ダイアログが開くたびに出し直して上に重ねる
+        dot.popover = 'manual'
+        const raise = () => {
+          if (!dot.isConnected) return
+          if (dot.matches(':popover-open')) dot.hidePopover()
+          dot.showPopover()
+        }
+        raise()
+        new MutationObserver((records) => {
+          if (records.some((r) => r.target instanceof HTMLDialogElement && r.target.open)) raise()
+        }).observe(document.documentElement, {
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['open'],
+        })
         const opts = { capture: true, passive: true }
         window.addEventListener(
           'mousemove',
