@@ -78,7 +78,9 @@ curl -H "Authorization: Bearer $TOKEN" localhost:8080/v1/facilities/01M3TC5H00QV
 Google カレンダーの取り込みをローカルで試すときは、Google Calendar API をローカル環境で再現する [calendarpit](https://calendarpit.dev/ja/) を起動し、API に向ける。  
 calendarpit は、ルートの `compose/calendarpit/fixture.json` の職員のカレンダーと予定を持つ。compose は同じ calendarpit を `calendarpit` として起動する。  
 calendarpit はサービスアカウントの token を出さない。`compose/calendarpit/authorize.mjs` で fixture の利用者の refresh token を取り、Application Default Credentials のファイルに書いて渡す。  
-次の手順の calendarpit の 4173 は、ルートの compose の calendarpit と重なる。compose を起動しているときは、`docker compose stop calendarpit` で止めてから実行する。
+次の手順の calendarpit の 4173 は、ルートの compose の calendarpit と重なる。  
+compose を起動しているときは、`docker compose stop calendarpit` で止めてから実行する。  
+試し終えたら、`docker compose start calendarpit` で compose の calendarpit を戻す。
 
 ```sh
 docker run -d --rm --name calendarpit -p 127.0.0.1:4173:4173 \

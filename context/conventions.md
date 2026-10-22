@@ -25,7 +25,7 @@ status: stable
     - 繰り返しの予定の 1 回の置き換えは、1 件の下の `/occurrences` に置く。
   - ログインした職員自身は、ID を持たない `/v1/me` で表す。
   - 動作はサブパス（`/cancel`）で表す。
-- DB のテーブルは複数形の snake_case にする。ID は ULID の文字列を `text COLLATE "C"` で持ち、ULID の形の CHECK は主キーだけに付ける。真偽のカラムは、true の意味が名前から読める形（`is_`、`needs_` など）にする。職員のテーブルの名前は `users` で、Go の側は `staff` と呼ぶ。
+- DB のテーブルは複数形の snake_case にする。buddy が振る ID は ULID の文字列を `text COLLATE "C"` で持つ。ULID の形の CHECK は、テーブルが振る `id` の主キーにだけ付け、外部キーのカラムには主キーを兼ねていても付けない。外部の ID（Google カレンダーの ID、組織の `org_id`、IdP の `sub`）は対象の外である。真偽のカラムは、`is_`、`has_`、`needs_` で始めるか、true のときの動作を動詞で書く（`is_over_time_work`、`needs_target`、`overwrite`）。職員のテーブルの名前は `users` で、Go の側は `staff` と呼ぶ。
 - 業務の用語の表記は [業務の知識](domain.md) の用語にそろえる。文書の表記の揺れは `prh.yml` の規則が止める。
 
 ## Comments

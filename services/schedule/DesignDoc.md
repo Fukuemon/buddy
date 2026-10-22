@@ -68,7 +68,7 @@ DB は PostgreSQL 18 で、見直したテーブルは初期のマイグレー�
 
 - ADR-0011: [予定の API の DB を PostgreSQL にし、見直したテーブルでマイグレーションを作り直す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0011-schedule-api-postgresql.md)
 
-- 主キーは、多くのテーブルが ULID の `id`（`text COLLATE "C"`）である。主キーだけに ULID の形の CHECK を付ける。
+- 主キーは、多くのテーブルが ULID の `id`（`text COLLATE "C"`）である。ULID の形の CHECK は、テーブルが振る `id` の主キーにだけ付ける。
 - `position_policies` と `visit_info_visit_categories` は、2 つの外部キーの組を主キーにする。
 - `recurring_schedule_exclusions` は、`recurring_schedule_id` と `date` の組を主キーにする。
 - `user_policy_targets` は、`id` を主キーにする。対象のカラム（`target_user_id` と `target_team_id`）のどちらかが NULL になり、主キーに入れられないためである。
@@ -133,9 +133,9 @@ erDiagram
 - 予定の種類の規則（通常はタイトルが必須、訪問は訪問の情報が必須）は、`schedule_types.code`（`normal`、`visit`）で読む。`name` は表示と一覧の絞り込みに使う。
 - 1 つの訪問の情報は、1 つの予定か 1 つの繰り返しの予定だけが指す（`visit_info_id` の一意の制約）。
 - `is_over_time_work` は、開始の時刻から DB が生成するカラムである。書き込みには含めない。
-- 外部キーのカラムには、引く向きに使うものに index を置く。行を消さない固定のマスタ（権限、サービスコード、訪問の区分、予定の種類）を指すカラムには置かない。
+- 外部キーのカラムには、引く向きに使うものにインデックスを置く。行を消さない固定のマスタ（権限、サービスコード、訪問の区分、予定の種類）を指すカラムには置かない。
 - 監査の日時は UTC で読み、レスポンスはマイクロ秒までの RFC 3339 の形で返す。
-- `external_calendars`、`external_event_links`、`import_runs` は、Google カレンダーの取り込み（ADR-0009 の段階 1）で使う。`calendar_sync_states` は、同期（段階 3）がカレンダーごとの増分の取得のトークンと読む時刻を持つ。`calendar_exports` は、書き出し（段階 2）の待ちを持ち、予定ごとに終わっていない行を 1 つだけ持つ。外部の予定のタイトルと本文は、利用者の名前を含むので保存しない。カレンダーを外すときは行を消さずに `external_calendars.disabled_at` を入れ、外部の予定との対応を残す。結び付け直して同じ期間を取り込んでも、予定が重ならないためである。外していないカレンダーは、職員ごとに 1 つにする（部分の一意の index）。
+- `external_calendars`、`external_event_links`、`import_runs` は、Google カレンダーの取り込み（ADR-0009 の段階 1）で使う。`calendar_sync_states` は、同期（段階 3）がカレンダーごとの増分の取得のトークンと読む時刻を持つ。`calendar_exports` は、書き出し（段階 2）の待ちを持ち、予定ごとに終わっていない行を 1 つだけ持つ。外部の予定のタイトルと本文は、利用者の名前を含むので保存しない。カレンダーを外すときは行を消さずに `external_calendars.disabled_at` を入れ、外部の予定との対応を残す。結び付け直して同じ期間を取り込んでも、予定が重ならないためである。外していないカレンダーは、職員ごとに 1 つにする（部分の一意のインデックス）。
 - 一覧の読み出しには、予定と訪問の情報と名前を結合したビュー（`schedule_details`、`recurring_schedule_details`、`visit_info_details`）を使う。
 - `schedule_types`、`service_codes`、`visit_categories` のレコードは、マイグレーションで入れる。事業所ごとには持たない。サービスコードの提供時間の範囲は、照合の許容範囲と同じ値にする。
 - `policies` の 8 件のレコードは、マイグレーションで入れる。事業所ごとには持たず、API では作らない。認可は `code` で権限を読むので、レコードが環境ごとに違うと判定がずれるためである。

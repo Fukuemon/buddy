@@ -21,7 +21,11 @@ status: stable
 ## Dependency Rules
 
 - web と 2 つの API は、コードで依存しない。Go の API 同士の import と、web から Go のコードの参照は無い。
-  - 2 つの Go の API が共有するコードは、別の module の `packages/go` にだけ置き、`go.mod` の `replace` で読む（[ADR-0007](../docs/adr/0007-go-shared-module.md)）。`packages/go` は、トークンの検証（`oidc`、`oidc/oidctest`）、ヘルスチェック（`healthcheck`）、Google カレンダーのタイトルの解釈（`gcaltitle`）を持つ。組織ごとのサービスアカウントで Google Calendar API を呼ぶクライアント（`gcalauth`）も持つ。`services/` を import しない。`gcaltitle` は、サービス内容と利用者名の表記のそろえ方も持つ。
+  - 2 つの Go の API が共有するコードは、別の module の `packages/go` にだけ置き、`go.mod` の `replace` で読む（[ADR-0007](../docs/adr/0007-go-shared-module.md)）。`packages/go` は `services/` を import せず、次のパッケージを持つ。
+    - トークンの検証（`oidc`、`oidc/oidctest`）
+    - ヘルスチェック（`healthcheck`）
+    - Google カレンダーのタイトルの解釈（`gcaltitle`）。サービス内容と利用者名の表記のそろえ方も持つ
+    - 組織ごとのサービスアカウントで Google Calendar API を呼ぶクライアント（`gcalauth`）
 - web は `@buddy/ui` に依存してよい。`packages/ui` から `apps/` へは依存しない。
 - web の `features/<機能>/` の間は import しない。2 つの機能が使うものは、`components/site/`（サイト共通のコンポーネント）か `@buddy/ui` に置く。
 - `services/schedule` の依存は、アダプタ（`httpapi`、`postgres`）、`access`、機能のパッケージ、共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）の 1 方向に限る。
