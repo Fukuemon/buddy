@@ -11,7 +11,7 @@
 //   - CORS_ALLOW_ORIGINS: CORS で応答を読ませるオリジンを、カンマで区切って並べる。空なら CORS のヘッダーを返さない。
 //   - GOOGLE_CALENDARS_FILE: 照合の対象のカレンダーの設定（JSON）のパス。空なら Google カレンダーを使わない。
 //     形は gcal.LoadCalendars にある。トークンの組織に結び付けたカレンダーだけを読む。認証は Application Default Credentials で読む。
-//   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。手元の calendarpit で試すためのもので、認証は Application Default Credentials で読む。
+//   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit で試すためのもので、認証は GOOGLE_APPLICATION_CREDENTIALS のファイルで行い、無ければ認証しない。
 //
 // `api healthcheck` は、サーバーを起動せず、動いているサーバーの GET /readyz を確かめて終わる。
 //
@@ -107,13 +107,19 @@ func newCalendarReader(ctx context.Context, cfg config) (*gcal.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	creds, err := google.FindDefaultCredentials(ctx, calendar.CalendarReadonlyScope)
-	if err != nil {
-		return nil, fmt.Errorf("application default credentials を読めない: %w", err)
-	}
-	opts := []option.ClientOption{option.WithCredentials(creds)}
+	var opts []option.ClientOption
+	// Calendar API の代わりの URL には、GOOGLE_APPLICATION_CREDENTIALS のファイルだけを使い、開発者の gcloud の認証の情報を送らない
 	if cfg.calendarEndpoint != "" {
 		opts = append(opts, option.WithEndpoint(cfg.calendarEndpoint))
+	}
+	if cfg.calendarEndpoint != "" && os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") == "" {
+		opts = append(opts, option.WithoutAuthentication())
+	} else {
+		creds, err := google.FindDefaultCredentials(ctx, calendar.CalendarReadonlyScope)
+		if err != nil {
+			return nil, fmt.Errorf("application default credentials を読めない: %w", err)
+		}
+		opts = append(opts, option.WithCredentials(creds))
 	}
 	svc, err := calendar.NewService(ctx, opts...)
 	if err != nil {
