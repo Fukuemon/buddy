@@ -32,6 +32,8 @@ export type RecordingTarget = {
   readVersion: (page: Page) => Promise<string>
   /** 画面と録画の大きさ。無ければ 1920x1200 にする */
   viewport?: { width: number; height: number }
+  /** ブラウザの時間帯（例: Asia/Tokyo）。録画のコンテキストは playwright.config の use を受け継がないので、ここで渡す */
+  timezoneId?: string
 }
 
 /**
@@ -48,7 +50,7 @@ export const recordEvidence = async <T>(
   prepare: (page: Page) => Promise<T>,
   body: (r: Recording, prepared: T) => Promise<void>,
 ): Promise<void> => {
-  const { dir, appName, envLabel, viewport = DEFAULT_VIEWPORT } = target
+  const { dir, appName, envLabel, viewport = DEFAULT_VIEWPORT, timezoneId } = target
   const name = evidenceName(s.variant, s.example)
   const where = [
     s.scenario.id,
@@ -58,7 +60,7 @@ export const recordEvidence = async <T>(
     .filter(Boolean)
     .join(' / ')
 
-  const signIn = await browser.newContext({ baseURL: s.variant.baseUrl, viewport })
+  const signIn = await browser.newContext({ baseURL: s.variant.baseUrl, viewport, timezoneId })
   const signInPage = await signIn.newPage()
   let prepared: T,
     version: string,
@@ -83,6 +85,7 @@ export const recordEvidence = async <T>(
   const context = await browser.newContext({
     baseURL: s.variant.baseUrl,
     viewport,
+    timezoneId,
     storageState,
     recordVideo: { dir: path.join(dir, RECORDS_DIR, 'raw'), size: viewport },
   })

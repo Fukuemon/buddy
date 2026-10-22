@@ -77,6 +77,9 @@ export const RECEIPT_TESTDATA = {
   calendarVisits: path.join(root, 'services/receipt/testdata/visits_2026-11_utf8.csv'),
 }
 
+/** ブラウザの時間帯。画面は日時をデバイスの時間帯で出すので、spec と録画をこの時間帯で動かす。 */
+export const TIMEZONE_ID = 'Asia/Tokyo'
+
 /** ログインした状態のファイル。setup が書き、spec の project の storageState に渡す。 */
 export const LOGIN_STATE = savedLoginPath(AUTH_DIR, BASE_URL, LOGIN_NAME)
 
