@@ -41,7 +41,7 @@ type EventBody struct {
 var (
 	// ErrEventChanged は、If-Match の etag が外部の予定と違ったこと（412）を表す。
 	ErrEventChanged = errors.New("外部のカレンダーで予定が変わっていました")
-	// ErrEventGone は、外部の予定が消されていること（410）を表す。
+	// ErrEventGone は、外部の予定が消されていること（410 か、消された予定への 412）を表す。
 	ErrEventGone = errors.New("外部のカレンダーで予定が消されています")
 	// ErrEventNotFound は、外部が予定かカレンダーを見つけられないこと（404）を表す。予定が消されたのか、
 	// カレンダーの共有が外れたのかを見分けられない。
@@ -60,7 +60,7 @@ type EventWriter interface {
 	// Insert は、ID が eventID の予定を作り、etag を返す。
 	Insert(ctx context.Context, calendarID, eventID string, b EventBody) (string, error)
 	// Update は、予定 eventID を b の内容にし、消されていれば戻して、新しい etag を返す。
-	// etag が空でなければ If-Match に付け、外部で予定が変わっていれば ErrEventChanged を返す。
+	// etag が空でなければ If-Match に付け、外部で予定が変わっていれば ErrEventChanged を、消されていれば ErrEventGone を返す。
 	Update(ctx context.Context, calendarID, eventID, etag string, b EventBody) (string, error)
 	// Delete は、予定 eventID を消す。etag は Update と同じである。
 	Delete(ctx context.Context, calendarID, eventID, etag string) error

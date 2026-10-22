@@ -47,7 +47,7 @@ func (w *Writer) Update(ctx context.Context, calendarID, eventID, etag string, b
 	}
 	got, err := call.Do()
 	if err != nil {
-		return "", writeError("予定を変えられない", err)
+		return "", w.conditionalWriteError(ctx, calendarID, eventID, "予定を変えられない", err)
 	}
 	return got.Etag, nil
 }
@@ -59,9 +59,23 @@ func (w *Writer) Delete(ctx context.Context, calendarID, eventID, etag string) e
 		call.Header().Set("If-Match", etag)
 	}
 	if err := call.Do(); err != nil {
-		return writeError("予定を消せない", err)
+		return w.conditionalWriteError(ctx, calendarID, eventID, "予定を消せない", err)
 	}
 	return nil
+}
+
+// conditionalWriteError は、If-Match を付けた書き込みのエラーを writeError と同じく包む。412 のときは予定を読み、
+// 消されていれば ErrEventGone で包む。Google は、消された予定に消す前の etag を付けた書き込みを、410 でなく 412 で返すためである。
+// 予定を読めなければ、412 のまま ErrEventChanged で包む。
+func (w *Writer) conditionalWriteError(ctx context.Context, calendarID, eventID, msg string, err error) error {
+	var gerr *googleapi.Error
+	if errors.As(err, &gerr) && gerr.Code == http.StatusPreconditionFailed {
+		ev, getErr := w.svc.Events.Get(calendarID, eventID).Context(ctx).Do()
+		if getErr == nil && ev.Status == "cancelled" {
+			return fmt.Errorf("%s: %w: %w", msg, calendar.ErrEventGone, err)
+		}
+	}
+	return writeError(msg, err)
 }
 
 func toEventBody(b calendar.EventBody) *calendarv3.Event {

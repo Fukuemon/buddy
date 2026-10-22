@@ -363,6 +363,7 @@ sequenceDiagram
   - 取り込んだ Google の例外の回が置き換えた日は、`EXDATE` にしない。`EXDATE` にすると、Google の例外の回が消えるためである。
 - 衝突とエラー
   - 更新と削除には、予定の対応の etag を `If-Match` に付ける。412 は Google カレンダーで予定が変わったとみなし、書かずに待ちを `conflict`（`precondition_failed`）にする。Google で消された予定（410）と、Google が予定かカレンダーを見つけられないとき（404）も `conflict`（`not_found`）にする。
+  - Google は、消された予定に、消す前の etag を `If-Match` に付けた更新と削除を、410 でなく 412 で返す。412 を受けたら `events.get` で予定を読み、`status` が `cancelled` なら消された予定として扱う。キャンセルの削除なら書き出しを終え、予定の対応を消す。更新なら `conflict`（`not_found`）にする。予定を読めなければ、412 のまま `precondition_failed` にする。
   - `conflict` の待ちは、buddy で予定を変えても書かない。職員の管理の権限を持つ職員が、確かめが要る予定の一覧から「buddy の内容で書き直す」を選ぶと、`If-Match` を付けずに書き直す。消された予定（410）は作り直す。単発の予定では「Google の内容に合わせる」も選べる（[Google カレンダーとの同期](#google-カレンダーとの同期)）。
   - 404 では予定の対応を消さない。Google は、予定が消されたときと、カレンダーの共有が外れたときの両方で 404 を返すので、対応を消すと、共有を戻した後に予定が 2 つになるためである。キャンセルの削除が 404 でも、対応を消さずに `conflict` にする。
   - 429、5xx、通信のエラー、403 の上限のエラーは、30 秒から倍にしながら書き直し、5 回で `failed`（`unavailable`）にする。403 は書き直さずに `failed`（`forbidden`）に、400 は `failed`（`rejected`）にする。`failed` の待ちは、buddy で予定を変えると数え直して書く。
@@ -441,7 +442,7 @@ flowchart LR
   - 予定の API は、`GOOGLE_CALENDAR_ENDPOINT` を渡したとき、`GOOGLE_APPLICATION_CREDENTIALS` のファイルだけで認証する。
 - E2E は、calendarpit の管理の API（`/__calendarpit/calendars/{id}/events`）で、予定の API が書いた予定を読む。職員が Google で予定を直したときの代わりに、同じ API で予定を直す。手で確かめるときは、calendarpit の管理の画面を使う。
 
-buddy が呼ぶ events の list、get、insert、patch、delete、instances は、calendarpit 0.9.5 で本物の仕様と同じに動くことを確かめた。繰り返しの展開、`syncToken` と 410、`If-Match` と 412、消した予定の 409 も同じである。
+buddy が呼ぶ events の list、get、insert、patch、delete、instances は、calendarpit 0.9.5 で本物の仕様と同じに動くことを確かめた。繰り返しの展開、`syncToken` と 410、`If-Match` と 412、消した予定の 409 も同じである。消した予定に、消す前の etag を `If-Match` に付けた patch、update、delete が 412 を返し、`If-Match` の無い delete が 410 を返すことも同じである。
 
 calendarpit で足りない振る舞いと、その扱い
 

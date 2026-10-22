@@ -272,6 +272,27 @@ func TestWriterSendsIfMatch(t *testing.T) {
 	}
 }
 
+// Google は、消された予定に消す前の etag を付けた書き込みを 412 で返す。Writer は予定を読み、消された予定として返す。
+func TestWriterDeletedEventIsGone(t *testing.T) {
+	f := &gcaltest.Server{Calendars: map[string][][]*calendar.Event{"staff@example.com": {{
+		{Id: "ev1", Etag: `"1"`, Status: "confirmed", Summary: "前"},
+	}}}}
+	w := gcal.NewWriter(gcaltest.Start(t, f))
+	f.Delete("staff@example.com", "ev1")
+	if _, err := w.Update(t.Context(), "staff@example.com", "ev1", `"1"`, schedcal.EventBody{Summary: "後"}); !errors.Is(err, schedcal.ErrEventGone) || errors.Is(err, schedcal.ErrEventChanged) {
+		t.Errorf("消された予定の更新: err = %v", err)
+	}
+	if err := w.Delete(t.Context(), "staff@example.com", "ev1", `"1"`); !errors.Is(err, schedcal.ErrEventGone) || errors.Is(err, schedcal.ErrEventChanged) {
+		t.Errorf("消された予定の削除: err = %v", err)
+	}
+	if err := w.Delete(t.Context(), "staff@example.com", "ev1", ""); !errors.Is(err, schedcal.ErrEventGone) {
+		t.Errorf("If-Match の無い削除: err = %v", err)
+	}
+	if ev := f.Event("staff@example.com", "ev1"); ev.Status != "cancelled" || ev.Summary != "前" {
+		t.Errorf("消された予定を書いた: %+v", ev)
+	}
+}
+
 func TestReaderChanges(t *testing.T) {
 	ev := func(id string) *calendar.Event {
 		return &calendar.Event{

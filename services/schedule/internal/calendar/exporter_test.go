@@ -265,8 +265,9 @@ func TestExportRecreatesEventDeletedInGoogle(t *testing.T) {
 	}
 	e.update(t, d.ID, "buddy で変更", inmem.StaffID)
 	e.run(t)
+	// Google は消された予定への If-Match の更新に 412 を返すが、変わったではなく消されたとして出す
 	x := e.export(t, d.ID)
-	if x.Status != calendar.ExportConflict {
+	if x.Status != calendar.ExportConflict || *x.ErrorCode != calendar.ErrorNotFound {
 		t.Fatalf("待ち = %+v", x)
 	}
 	if _, err := e.uc.RetryExport(e.ctx, x.ID); err != nil {
@@ -548,6 +549,27 @@ func TestExportAdoptsEventWrittenBeforeLink(t *testing.T) {
 	}
 	if ev := e.srv.Event(googleCalID, eventID(t, d.ID)); ev.Summary != "対応の無いまま変更" {
 		t.Errorf("予定 = %+v", ev)
+	}
+}
+
+func TestExportCancelEventDeletedInGoogle(t *testing.T) {
+	e := newExportEnv(t)
+	d := e.create(t, "カンファレンス")
+	e.run(t)
+	// 職員が Google カレンダーで予定を消した後に、buddy でキャンセルした
+	e.srv.Delete(googleCalID, eventID(t, d.ID))
+	if _, err := e.schedules.Cancel(e.ctx, d.ID, "中止"); err != nil {
+		t.Fatal(err)
+	}
+	e.run(t)
+	if x := e.export(t, d.ID); x.Status != calendar.ExportSucceeded {
+		t.Errorf("待ち = %+v", x)
+	}
+	if _, err := (inmem.Calendars{Store: e.store}).LinkBySchedule(t.Context(), d.ID); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("予定の対応が残った: %v", err)
+	}
+	if issues, _ := e.uc.ListExportIssues(e.ctx, inmem.FacilityID); len(issues) != 0 {
+		t.Errorf("確かめが要る書き出し = %+v", issues)
 	}
 }
 
