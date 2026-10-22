@@ -43,7 +43,7 @@ TOKEN=$(curl -s '127.0.0.1:9000/token?sub=dev-aoki&org_id=org-sample' | jq -r .a
 - `GOOGLE_CALENDARS_FILE`: 照合の対象のカレンダーの設定（JSON）のパス。空なら Google カレンダーを使わない
 - `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`: 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応（JSON）のパス。`GOOGLE_CALENDARS_FILE` と一緒に渡す
 - `GOOGLE_APPLICATION_CREDENTIALS`: Application Default Credentials が読む認証情報のファイルのパス。ローカルでは設定せず、gcloud で作った Application Default Credentials を使う
-- `GOOGLE_CALENDAR_ENDPOINT`: Calendar API の代わりに呼ぶ URL。フェイクの API で試すためのもので、`GOOGLE_APPLICATION_CREDENTIALS` を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使い、渡さなければ認証をしない。`GOOGLE_CALENDARS_FILE` を渡さずにこれだけを渡すと、起動しない
+- `GOOGLE_CALENDAR_ENDPOINT`: Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit で試すためのもので、`GOOGLE_APPLICATION_CREDENTIALS` を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使い、渡さなければ認証をしない。`GOOGLE_CALENDARS_FILE` を渡さずにこれだけを渡すと、起動しない
 
 コンテナで起動するときは、このディレクトリで次を実行する。ビルドの文脈はリポジトリの直下である（`packages/go` を読むため）。
 

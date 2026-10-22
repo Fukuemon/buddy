@@ -14,7 +14,7 @@
 //   - GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE: 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応（JSON）のパス。
 //     GOOGLE_CALENDARS_FILE と一緒に渡す。形は gcalauth.LoadAccounts にあり、予定の API と同じである。
 //     カレンダーは、Application Default Credentials で認証し、カレンダーの組織のサービスアカウントになりすまして読む（ADR-0012）。
-//   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。フェイクの API で試すためのもので、GOOGLE_APPLICATION_CREDENTIALS を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使い、渡さなければ認証をしない。
+//   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit で試すためのもので、GOOGLE_APPLICATION_CREDENTIALS を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使い、渡さなければ認証をしない。
 //
 // `api healthcheck` は、サーバーを起動せず、動いているサーバーの GET /readyz を確かめて終わる。
 //

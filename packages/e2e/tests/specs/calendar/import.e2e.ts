@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test'
 
-import { FACILITY_SERVICE_ACCOUNT, FAKE_GOOGLE_URL, LEADER, SEED_PATIENT } from '../../fixtures/env'
+import { FACILITY_SERVICE_ACCOUNT, LEADER, SEED_PATIENT } from '../../fixtures/env'
+import { listGoogleEvents } from '../../fixtures/googleCalendar'
 
-// compose の偽物の Google（compose/fake-google-calendar.json）は、森のカレンダーに 2026 年 11 月の予定を持つ。
+// compose の calendarpit（compose/calendarpit/fixture.json）は、森のカレンダーに 2026 年 11 月の予定を持つ。
 const MORI = LEADER.staff
 const MORI_CALENDAR = 'kenta.mori@example.com'
 
@@ -111,16 +112,12 @@ test.describe('予定の取り込み', () => {
         // 回を置き換えた予定は、予定の API が森の Google カレンダーに書き出し、書き出した予定も取り込み済みに数える。
         // 書き出しは別の処理が行うので、書き出した予定が出るまで待つ
         await expect
-          .poll(async () => {
-            const res = await request.get(
-              `${FAKE_GOOGLE_URL}/calendars/${encodeURIComponent(MORI_CALENDAR)}/events`,
-            )
-            const { items = [] } = (await res.json()) as {
-              items?: { extendedProperties?: { private?: Record<string, string> } }[]
-            }
-            return items.filter((event) => event.extendedProperties?.private?.buddyScheduleId)
-              .length
-          })
+          .poll(
+            async () =>
+              (await listGoogleEvents(request, MORI_CALENDAR)).filter(
+                (event) => event.extendedProperties?.private?.buddyScheduleId,
+              ).length,
+          )
           .toBe(1)
         await page.goto(`/schedule/import?staff=${MORI.id}`)
         await page.getByTestId('calendar-import-start').fill('2026-11-01')

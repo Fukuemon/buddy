@@ -42,12 +42,12 @@ func TestLoadCalendar(t *testing.T) {
 	c, err := config.Load(env(map[string]string{
 		"DB_USER": "app", "DB_PASSWORD": "secret", "DB_NAME": "buddy",
 		"OIDC_ISSUER": "http://localhost:9000", "OIDC_AUDIENCE": "schedule-api",
-		"GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE": " /config/accounts.json ", "GOOGLE_CALENDAR_ENDPOINT": "http://fake-google:8080/",
+		"GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE": " /config/accounts.json ", "GOOGLE_CALENDAR_ENDPOINT": "http://gcalhold:8080/calendar/v3/",
 	}))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Calendar != (config.Calendar{ServiceAccountsFile: "/config/accounts.json", Endpoint: "http://fake-google:8080/", ExportInterval: 30 * time.Second, SyncInterval: 2 * time.Minute}) {
+	if c.Calendar != (config.Calendar{ServiceAccountsFile: "/config/accounts.json", Endpoint: "http://gcalhold:8080/calendar/v3/", ExportInterval: 30 * time.Second, SyncInterval: 2 * time.Minute}) {
 		t.Errorf("Calendar = %+v", c.Calendar)
 	}
 }
@@ -68,7 +68,7 @@ func TestLoadErrors(t *testing.T) {
 		{name: "発行者が URL でない", edit: func(m map[string]string) { m["OIDC_ISSUER"] = "auth.example.com" }, want: "OIDC_ISSUER"},
 		{name: "ポートが数でない", edit: func(m map[string]string) { m["PORT"] = "http" }, want: "ポート"},
 		{name: "ログの水準", edit: func(m map[string]string) { m["LOG_LEVEL"] = "verbose" }, want: "LOG_LEVEL"},
-		{name: "偽物の Calendar API だけ", edit: func(m map[string]string) { m["GOOGLE_CALENDAR_ENDPOINT"] = "http://fake-google:8080/" },
+		{name: "calendarpit の Calendar API だけ", edit: func(m map[string]string) { m["GOOGLE_CALENDAR_ENDPOINT"] = "http://gcalhold:8080/calendar/v3/" },
 			want: "GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE"},
 	}
 	for _, tt := range tests {
