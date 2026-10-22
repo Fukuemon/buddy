@@ -13,11 +13,11 @@ mise install go golangci-lint
 
 ## 起動する
 
-API の 8080 とフェイクの IdP の 9000 は、ルートの compose の schedule-api と IdP と重なる。  
+API の 8080 とフェイクの Issuer の 9000 は、ルートの compose の schedule-api と IdP と重なる。  
 compose を起動しているときは、重なる 2 つを `docker compose stop schedule-api idp` で止めてから実行する。
 
 ```sh
-# ブローカーの代わりに、フェイクの IdP を別のターミナルで起動する
+# ブローカーの代わりに、フェイクの Issuer を別のターミナルで起動する
 go run ./cmd/devissuer -addr 127.0.0.1:9000
 
 export OIDC_ISSUER=http://127.0.0.1:9000 OIDC_AUDIENCE=receipt-api
@@ -25,7 +25,7 @@ go run ./cmd/api
 ```
 
 `curl localhost:8080/readyz` が `{"status":"ok"}` を返せば、起動できている。  
-`cmd/devissuer` は、`GET /token` で署名したトークンを返す。フェイクの IdP は起動のたびに署名の鍵を作り直すので、IdP を起動し直したら API も起動し直す。
+`cmd/devissuer` は、`GET /token` で署名したトークンを返す。フェイクの Issuer は起動のたびに署名の鍵を作り直すので、Issuer を起動し直したら API も起動し直す。
 
 ```sh
 TOKEN=$(curl -s '127.0.0.1:9000/token?sub=dev-aoki&org_id=org-sample' | jq -r .access_token)
@@ -82,7 +82,7 @@ go generate ./...
 
 リクエストとレスポンスの項目の定義は [openapi.yaml](openapi.yaml) にある。
 
-- `GET /healthz`、`GET /readyz`: `{"status":"ok"}` を返す。照合の API は起動のときにブローカーの discovery を読み、読めなければ起動しない。起動した後は依存先を確かめないので、レスポンスを返せれば 200 を返す
+- `GET /healthz`、`GET /readyz`: `{"status":"ok"}` を返す。照合の API は起動のときにブローカーの discovery を読み、読めなければ起動しない。起動した後は依存先を確かめないので、プロセスが動いていれば 200 を返す
 - `POST /v1/checks`: multipart/form-data の `visits`（実訪問の CSV）と予定を照合する
   - `Authorization: Bearer` の access token を求める
   - 予定は、ファイル `schedules`（予定の CSV）があればそれを使う。無くてフォームの値 `month`（`2024-04` の形）があれば、その月の予定を Google カレンダーから取る
@@ -137,7 +137,7 @@ curl -s -H "Authorization: Bearer $TOKEN" -F visits=@testdata/visits_utf8.csv -F
    - `calendar_id` はカレンダーの設定の「カレンダーの統合」にあるカレンダー ID
    - `org_id` はカレンダーを使う事業所の、ブローカーの組織の ID。access token の組織のクレームと同じ値にする。この組織のトークンを持つリクエストだけが、このカレンダーを読む
    - `staff_name` は主訪問者の名前で、iBow の主訪問者と同じ表記にする。省くとカレンダーの表示名を使う
-4. サービスアカウント キーのファイル（JSON）を作り、`apps/receipt-api/.secrets/` に置く。`.secrets/` は、キーと職員のカレンダー ID を持つので Git で追跡しない。
+4. サービスアカウントのキーのファイル（JSON）を作り、`apps/receipt-api/.secrets/` に置く。`.secrets/` は、キーと職員のカレンダー ID を持つので Git で追跡しない。
 5. 環境変数で設定とキーのファイルを渡して起動する。
 
 ```sh

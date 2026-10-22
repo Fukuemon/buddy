@@ -38,7 +38,7 @@ status: stable
 | 対象 | 単体とコンポーネントのテスト | E2E |
 | --- | --- | --- |
 | PostgreSQL | 機能のパッケージのテストはメモリ上のフェイク（`inmem`）、リポジトリのテストは testcontainers の本物 | compose の本物 |
-| OIDC の IdP | `oidctest` のフェイク（テストの中で鍵を作る） | compose の mock-oauth2-server |
+| OIDC の Issuer | `oidctest` のフェイク（テストの中で鍵を作る） | compose の mock-oauth2-server |
 | Google Calendar API | `gcaltest` のフェイク。書き込みは `If-Match` を比べて 412 を返し、`Failures` でエラーを返せる | 予定の API は compose の `fake-google`（`cmd/fakegcal`。予定は `compose/fake-google-calendar.json`。書いた予定はメモリにだけ持ち、`/view` で見る）。receipt-api はカレンダーを設定していない |
 | web の画面から見た API（`BuddyApi`） | `src/api/fake/` のフェイク | compose の本物 |
 | web のサーバーから見た 2 つの API | MSW の handler（`apps/web/src/mocks/`、`src/test/server.ts`） | compose の本物 |

@@ -52,10 +52,10 @@ schedule-api は、事業所ごとの予定、職員、利用者、権限を持�
 | アダプタ | `internal/ulid` | `IDGenerator` を ULID で実装し、ID の形を確かめる |
 | アダプタ | `internal/gcal` | `calendar.EventSource`（`Reader`）と `calendar.EventWriter`（`Writer`）を Google Calendar API で実装する。繰り返しの予定を展開せずに、親の予定と例外の回を読み、回ごとにする繰り返しだけを events.instances で回に展開する。認証した `calendar.Service` は `cmd` が渡す。テストと compose のフェイクの API は `internal/gcal/gcaltest` に置く |
 | 設定 | `internal/config` | 環境変数から API とマイグレーションの設定を読む。DB の接続の値は自分の型で持ち、`cmd` がアダプタの設定にコピーする |
-| 共有 | `packages/go/oidc`、`packages/go/healthcheck`、`packages/go/gcaltitle`（別の module） | access token の JWKS での検証、テストと `cmd/devissuer` が使うフェイクの IdP（`oidctest`）、`api healthcheck`、Google カレンダーの予定のタイトルの解釈。receipt-api と共有する（ADR-0007） |
+| 共有 | `packages/go/oidc`、`packages/go/healthcheck`、`packages/go/gcaltitle`（別の module） | access token の JWKS での検証、テストと `cmd/devissuer` が使うフェイクの Issuer（`oidctest`）、`api healthcheck`、Google カレンダーの予定のタイトルの解釈。receipt-api と共有する（ADR-0007） |
 | アダプタ | `internal/httpapi/openapi` | `openapi.yaml` から生成した型と strict server のインターフェイス |
 | アダプタ | `internal/httpapi` | 生成したインターフェイスを実装するハンドラと、gin のミドルウェア。リクエストは、埋め込んだ `openapi.yaml` の定義で確かめる |
-| cmd | `cmd/api`、`cmd/migrate`、`cmd/devissuer`、`cmd/fakegcal` | 起動、マイグレーションとシード、ローカルで試すためのフェイクの IdP と Calendar API（本番のイメージに入れない） |
+| cmd | `cmd/api`、`cmd/migrate`、`cmd/devissuer`、`cmd/fakegcal` | 起動、マイグレーションとシード、ローカルで試すためのフェイクの Issuer と Calendar API（本番のイメージに入れない） |
 
 - `kernel` は、ADR-0010 の「`apperr` と同じ段の小さなパッケージ」に当たる。`kernel.Finder[T]` は ID で 1 件を読む 1 つのメソッドのインターフェイスで、機能のパッケージは、ほかの機能のエンティティをこの形で受ける。同じ形のインターフェイスを機能ごとに書かずに済ませるためである。
 - `access` は機能のパッケージではないので、型の名前を `Service` のままにし、`Usecase` への改名と「1〜2 のメソッド」の規則の対象から外す。

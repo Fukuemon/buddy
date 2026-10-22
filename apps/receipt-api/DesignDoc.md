@@ -51,7 +51,7 @@ receipt-api は、訪問の予定と電子カルテ（iBow）の実績を比べ�
 - タイトルの解釈（`IsVisitTitle`、`ParseTitle`）は、予定の API と共有する `packages/go/gcaltitle` を使う
 - `internal/httpapi`: `GET /healthz`、`GET /readyz`、`POST /v1/checks`。`/healthz` と `/readyz` 以外のリクエストのトークンを `packages/go/oidc` で確かめる
 - `cmd/api`: 環境変数を読んで API のサーバーを起動する
-- `cmd/devissuer`: ローカルで API を試すためのフェイクの OIDC の IdP。イメージに入れない
+- `cmd/devissuer`: ローカルで API を試すためのフェイクの OIDC の Issuer。イメージに入れない
 
 ### 処理の流れ
 
@@ -93,7 +93,7 @@ Google カレンダーの予定も、予定の CSV と同じ正規化と照合�
 Google カレンダーは、今も職員が予定を入れる場所なので、照合の予定のデータソースとして残す。  
 receipt-api は、Google Calendar API を直接呼ぶ。
 
-- 認証は Application Default Credentials で、スコープは `calendar.readonly` だけにする。ローカルではサービスアカウント キーのファイル、クラスタでは Workload Identity Federation を使う。
+- 認証は Application Default Credentials で、スコープは `calendar.readonly` だけにする。ローカルではサービスアカウントのキーのファイル、クラスタでは Workload Identity Federation を使う。
 - ドメイン全体の委任は使わない。職員のカレンダーを、サービスアカウントに閲覧の権限で共有する。サービスアカウントが読めるカレンダーを、照合に使うものだけに絞るためである。
 - 照合の対象のカレンダーは、サーバーの設定のファイル（`GOOGLE_CALENDARS_FILE`）に置き、リクエストで受けない。任意のカレンダーを読ませないためである。
 - 設定のカレンダーごとに、使う事業所の組織の ID（`org_id`）を持たせる。リクエストの access token の組織と同じ `org_id` のカレンダーだけを読む。1 つの receipt-api を複数の事業所で使っても、別の事業所の職員の予定を読ませないためである。

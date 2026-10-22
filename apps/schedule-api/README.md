@@ -39,7 +39,7 @@ API とマイグレーションは、次の環境変数を読む。
 
 コマンドは、このディレクトリで実行する。  
 パスワードはローカルでだけ使う値を決めて、環境変数に入れる。  
-API の 8080 とフェイクの IdP の 9000 は、ルートの compose の schedule-api と IdP と重なる。  
+API の 8080 とフェイクの Issuer の 9000 は、ルートの compose の schedule-api と IdP と重なる。  
 compose を起動しているときは、重なる 2 つを `docker compose stop schedule-api idp` で止めてから実行する。
 
 ```sh
@@ -52,7 +52,7 @@ docker run -d --rm --name buddy-db -p 5432:5432 \
 go run ./cmd/migrate up
 go run ./cmd/migrate seed
 
-# ブローカーの代わりに、フェイクの IdP を別のターミナルで起動する
+# ブローカーの代わりに、フェイクの Issuer を別のターミナルで起動する
 go run ./cmd/devissuer -addr 127.0.0.1:9000
 
 export OIDC_ISSUER=http://127.0.0.1:9000 OIDC_AUDIENCE=schedule-api
@@ -70,7 +70,7 @@ TOKEN=$(curl -s '127.0.0.1:9000/token?sub=dev-aoki&email=hina.aoki@example.com&o
 curl -H "Authorization: Bearer $TOKEN" localhost:8080/v1/facilities/01M3TC5H00QV17BC0J9V3393ZP/schedules
 ```
 
-フェイクの IdP は、起動のたびに署名の鍵を作り直す。IdP を起動し直したら、API も起動し直す。
+フェイクの Issuer は、起動のたびに署名の鍵を作り直す。Issuer を起動し直したら、API も起動し直す。
 
 Google カレンダーの取り込みをローカルで試すときは、Calendar API のフェイク `cmd/fakegcal` を別のターミナルで起動し、API に向ける。  
 フェイクは、ルートの `compose/fake-google-calendar.json` の予定を返す。compose は同じフェイクを `fake-google` として起動する。

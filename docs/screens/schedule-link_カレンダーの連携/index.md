@@ -227,7 +227,7 @@
 
 **活性条件**: 常に活性
 
-**表示条件**: BFF を通して API を呼ぶ動かし方で、ログインしているとき
+**表示条件**: BFF を通して API を呼ぶ構成で、ログインしているとき
 
 **カタログ**: [ViewerMenu の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-viewermenu--default)
 

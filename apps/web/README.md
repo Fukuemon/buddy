@@ -93,7 +93,7 @@ route は `src/routes/` のファイルから TanStack Router が生成する。
 
 サーバーが読む環境変数は、[全体の Design Doc の環境変数の表](../../docs/design/DesignDoc.md#環境変数) にある。ローカルの compose のように、ブラウザと web から届く IdP の URL が違うときは、`OIDC_AUTHORIZATION_ENDPOINT` でブラウザを転送する認可の URL を渡す。
 
-`/healthz` はレスポンスを返せれば 200 を、`/readyz` は Valkey に届けば 200、届かなければ 503 を返す。
+`/healthz` はプロセスが動いていれば 200 を、`/readyz` は Valkey に届けば 200、届かなければ 503 を返す。
 
 ## 予定の API との変換
 
