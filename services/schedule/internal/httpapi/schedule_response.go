@@ -1,0 +1,101 @@
+package httpapi
+
+import (
+	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi/openapi"
+	"github.com/Fukuemon/buddy/services/schedule/internal/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/visit"
+)
+
+func toScheduleType(t schedule.Type) openapi.ScheduleType {
+	return openapi.ScheduleType{Id: t.ID, Name: openapi.ScheduleTypeName(t.Name)}
+}
+
+func toVisitInfo(v *visit.Detail) *openapi.VisitInfo {
+	if v == nil {
+		return nil
+	}
+	return &openapi.VisitInfo{
+		Id:                v.ID,
+		PatientId:         v.PatientID,
+		PatientName:       v.PatientName,
+		AssignedStaffId:   v.AssignedStaffID,
+		AssignedStaffName: v.AssignedStaffName,
+		CompanionId:       v.CompanionID,
+		CompanionName:     v.CompanionName,
+		ServiceCodeId:     v.ServiceCodeID,
+		ServiceCode:       v.ServiceCode,
+		VisitCategories:   mapSlice(v.Categories, toVisitCategory),
+	}
+}
+
+func toCancel(c schedule.Cancel) openapi.Cancel {
+	return openapi.Cancel{Id: c.ID, ScheduleId: c.ScheduleID, Reason: c.Reason}
+}
+
+func toSchedule(d schedule.Detail) openapi.Schedule {
+	r := openapi.Schedule{
+		Id:                  d.ID,
+		FacilityId:          d.FacilityID,
+		ScheduleTypeId:      d.TypeID,
+		ScheduleType:        openapi.ScheduleTypeName(d.TypeName),
+		Date:                d.Date.String(),
+		StartTime:           d.StartTime.String(),
+		EndTime:             d.EndTime.String(),
+		IsOverTimeWork:      d.IsOverTimeWork,
+		StaffId:             d.StaffID,
+		StaffName:           d.StaffName,
+		Title:               d.Title,
+		Description:         d.Description,
+		RecurringScheduleId: d.RecurringScheduleID,
+		VisitInfo:           toVisitInfo(d.Visit),
+		CreatedAt:           d.CreatedAt,
+		UpdatedAt:           d.UpdatedAt,
+	}
+	if d.Cancel != nil {
+		c := toCancel(*d.Cancel)
+		r.Cancel = &c
+	}
+	return r
+}
+
+func toRecurringRule(r schedule.Rule) openapi.RecurringRule {
+	var endDate *string
+	if r.EndDate != nil {
+		s := r.EndDate.String()
+		endDate = &s
+	}
+	return openapi.RecurringRule{
+		Frequency:   openapi.RecurringRuleFrequency(r.Frequency),
+		DayOfWeek:   r.DayOfWeek,
+		DayOfMonth:  r.DayOfMonth,
+		WeekOfMonth: r.WeekOfMonth,
+		EndDate:     endDate,
+	}
+}
+
+func toRecurringSchedule(d schedule.RecurringDetail) openapi.RecurringSchedule {
+	var exclusions []string
+	if d.ExclusionDates != nil {
+		exclusions = mapSlice(d.ExclusionDates, civil.Date.String)
+	}
+	return openapi.RecurringSchedule{
+		Id:             d.ID,
+		FacilityId:     d.FacilityID,
+		ScheduleTypeId: d.TypeID,
+		ScheduleType:   openapi.ScheduleTypeName(d.TypeName),
+		Date:           d.Date.String(),
+		StartTime:      d.StartTime.String(),
+		EndTime:        d.EndTime.String(),
+		IsOverTimeWork: d.IsOverTimeWork,
+		StaffId:        d.StaffID,
+		StaffName:      d.StaffName,
+		Title:          d.Title,
+		Description:    d.Description,
+		VisitInfo:      toVisitInfo(d.Visit),
+		RecurringRule:  toRecurringRule(d.Rule),
+		ExclusionDates: exclusions,
+		CreatedAt:      d.CreatedAt,
+		UpdatedAt:      d.UpdatedAt,
+	}
+}

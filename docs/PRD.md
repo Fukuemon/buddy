@@ -301,7 +301,7 @@ flowchart TB
 - 照合の区分: ダミーの予定と実績の CSV を上げると、結果が不整合、予定のみ、実績のみ、整合の 4 つに分かれる。
   - 確かめ方: ブラウザの操作の自動テストで確かめる。
 - 照合の規則の一致: 同じ予定と実績の CSV で、buddy とこれまでの照合のアプリの区分が、意図して変えた点を除いて一致する。
-  - 確かめ方: 2 つの結果を行ごとに比べる。意図して変えた点は、[レセプトの照合の Design Doc の Verification](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/DesignDoc.md#verification) にある。
+  - 確かめ方: 2 つの結果を行ごとに比べる。意図して変えた点は、[レセプトの照合の Design Doc の Verification](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/DesignDoc.md#verification) にある。
 - 対象の月での照合: 対象の月と実績の CSV だけで、その月の予定と実績が対になり、4 つの区分に分かれる。
   - 確かめ方: Google カレンダーの代わりのフェイクを使う API のテストで確かめる。
 - 予定の取り込み: 期間を選んで取り込むと、`【サービス内容】利用者名` の予定が訪問の予定になり、同じ期間を取り込み直しても予定が重ならない。

@@ -23,16 +23,16 @@ MISE_AQUA_GITHUB_ATTESTATIONS=false mise install aqua:cli/cli
 
 `pnpm install` の `prepare` が、lefthook の Git のフック（commit-msg の commitlint、pre-commit の textlint と `pnpm lint:openapi`）を入れる。
 
-Go のモジュールは `apps/schedule-api`、`apps/receipt-api` と、2 つの API が共有するコードの `packages/go` の 3 つである。  
+Go のモジュールは `services/schedule`、`services/receipt` と、2 つの API が共有するコードの `packages/go` の 3 つである。  
 2 つの API は `packages/go` を `go.mod` の `replace` で読む。  
 ADR-0007: [2 つの Go の API が共有するコードを、別の module にまとめる](docs/adr/0007-go-shared-module.md)
 
-- エディタで 3 つを読むときは、ルートで `go work init ./apps/receipt-api ./apps/schedule-api ./packages/go` を流す。
+- エディタで 3 つを読むときは、ルートで `go work init ./services/receipt ./services/schedule ./packages/go` を流す。
 - `go.work` は追跡しない。
   - `go.work` の下では、3 つのモジュールが共有する依存のバージョンが高い方にそろい、コンテナのイメージ（各 `go.mod` だけでビルドする）とずれるためである。
-- テストと lint は、各アプリと `packages/go` のディレクトリで `GOWORK=off` を付けて流す。
+- テストと lint は、各 API と `packages/go` のディレクトリで `GOWORK=off` を付けて流す。
 - `packages/go` を変えたときは、2 つの API のテストも流す。
-- `go.work` の下でビルドすると各アプリの `go.sum` に行が増える。増えた行はコミットに含めない。
+- `go.work` の下でビルドすると各 API の `go.sum` に行が増える。増えた行はコミットに含めない。
 
 agent-harness のスキルとフックは apm で配置し、Git で追跡しない。  
 buddy だけのスキルは `.claude/skills/` に置き、Git で追跡する。  
@@ -83,6 +83,7 @@ docker compose up --build --wait
 - API が受けるトークンの `iss` は `http://idp:9000/buddy` である。IdP は `iss` をトークンのリクエストの Host から決めるため、トークンはコンテナの間の名前 `idp` で取る。
 - `http://localhost:3000` を開くと IdP のログインの画面へ移る。名前に `dev-aoki` を入れると、青木 陽菜としてログインする。
 - データを消して最初からにするときは、`docker compose down -v` で PostgreSQL と calendarpit のボリュームを消す。
+- 別の worktree で同時に起動するときは、`docker compose -p <名前> up --build --wait` でプロジェクトの名前を変え、上の表の環境変数でポートをずらす。コンテナ、ボリューム、予定の API のイメージがプロジェクトごとに分かれる。E2E は `E2E_BASE_URL`、`E2E_CALENDARPIT_URL`、`E2E_GCALHOLD_URL` を合わせて流す。
 
 予定の API を手で呼ぶときは、認可コードのフローでトークンを取る。
 
@@ -168,7 +169,7 @@ node .claude/hooks/docs/hooks/check-links.mjs
 
 ## API の定義を変えるとき
 
-各 API の定義の正本は、`apps/schedule-api/openapi.yaml` と `apps/receipt-api/openapi.yaml` である。サーバーの Go のコードと画面の型は、そこから生成してコミットする。  
+各 API の定義の正本は、`services/schedule/openapi.yaml` と `services/receipt/openapi.yaml` である。サーバーの Go のコードと画面の型は、そこから生成してコミットする。  
 openapi.yaml を変えたら、同じコミットで生成物も生成し直す。
 
 定義の書き方は Redocly CLI の `recommended-strict` の規則で確かめる。pre-commit のフックが、`openapi.yaml` か lint の設定をステージしたときに `pnpm lint:openapi` を流す。
@@ -181,11 +182,11 @@ pnpm lint:openapi
 
 | 変えたもの | 生成のコマンド | 生成物 |
 | --- | --- | --- |
-| `apps/receipt-api/openapi.yaml` | `apps/receipt-api` で `go generate ./...` | `apps/receipt-api/internal/httpapi/openapi/` |
-| `apps/schedule-api/openapi.yaml` | `apps/schedule-api` で `go generate ./...` | `apps/schedule-api/internal/httpapi/openapi/` |
-| `apps/schedule-api/db/` の SQL | `apps/schedule-api` で `sqlc generate` | `apps/schedule-api/internal/postgres/sqlcgen/` |
+| `services/receipt/openapi.yaml` | `services/receipt` で `go generate ./...` | `services/receipt/internal/httpapi/openapi/` |
+| `services/schedule/openapi.yaml` | `services/schedule` で `go generate ./...` | `services/schedule/internal/httpapi/openapi/` |
+| `services/schedule/db/` の SQL | `services/schedule` で `sqlc generate` | `services/schedule/internal/postgres/sqlcgen/` |
 | どちらかの openapi.yaml | `pnpm --filter @buddy/web generate:api` | `apps/web/src/api/generated/` |
-| `apps/schedule-api/db/migrations/`、`apps/schedule-api/.tbls.yml` | `pnpm generate:db-docs`（Docker が要る） | `docs/db/schedule-api/`（テーブル定義書と ER 図） |
+| `services/schedule/db/migrations/`、`services/schedule/.tbls.yml` | `pnpm generate:db-docs`（Docker が要る） | `docs/db/schedule-api/`（テーブル定義書と ER 図） |
 | `packages/ui/src/tokens/semantic.css`、`@digital-go-jp/design-tokens` | `node scripts/build-mock-tokens.mjs` | `docs/screens/_common/tokens.css`（画面のモックが読む） |
 
 テーブルを足したときは、`.tbls.yml` の `viewpoints` のどれかに入れる。  
@@ -225,7 +226,7 @@ E2E が CI だけで失敗したときは、ワークフローの実行の画面
 - `develop` の状態を検証環境に、`main` の状態を本番環境に反映する。
   - 検証環境で確かめる前の変更は、ローカルの compose で確かめる。
 - 作業用のブランチは `develop` から切る。名前は `feature/<issue 番号>` にし、不具合は `fix/<issue 番号>` にする。1 つの issue を複数の pull request に分けるときは、`feature/<issue 番号>-<短い名前>` にする。
-- リリースは、検証した `develop` を `main` へ pull request でマージし、`main` のコミットにアプリごとのタグを付ける。タグは `apps/<アプリ>/vX.Y.Z` の形で、バージョンはセマンティック バージョニングに従う。タグは手で付ける。
+- リリースは、検証した `develop` を `main` へ pull request でマージし、`main` のコミットにアプリごとのタグを付ける。タグは `<ディレクトリ>/vX.Y.Z`（`apps/web/v1.0.0`、`services/schedule/v1.0.0` など）の形で、バージョンはセマンティック バージョニングに従う。タグは手で付ける。
 - API の互換の規則（項目の追加は同じパス、削除と意味の変更は新しいパス、API を先にデプロイする）は ADR-0003 にある。
 - リリース後の緊急の修正は、`main` から `hotfix/<issue 番号>` を切り、`main` と `develop` の両方へマージする。
 - 保護するブランチは `main`、`develop` である。直接はコミットせず、pull request を通してマージする。

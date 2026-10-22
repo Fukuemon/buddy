@@ -1,6 +1,6 @@
 # schedule-calendar API との対応
 
-[予定のカレンダー](index.md) の項目と、web の型と OpenAPI の項目の対応。OpenAPI の項目は、`apps/schedule-api/openapi.yaml` の名前で書く。web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせた形で、OpenAPI と名前が違う。
+[予定のカレンダー](index.md) の項目と、web の型と OpenAPI の項目の対応。OpenAPI の項目は、`services/schedule/openapi.yaml` の名前で書く。web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせた形で、OpenAPI と名前が違う。
 
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |

@@ -29,8 +29,8 @@ updates:
 
   - package-ecosystem: gomod
     directories:
-      - /apps/schedule-api
-      - /apps/receipt-api
+      - /services/schedule
+      - /services/receipt
       - /packages/go
     schedule:
       interval: weekly
@@ -45,8 +45,8 @@ updates:
   - package-ecosystem: docker
     directories:
       - /apps/web
-      - /apps/schedule-api
-      - /apps/receipt-api
+      - /services/schedule
+      - /services/receipt
     schedule:
       interval: weekly
     commit-message:

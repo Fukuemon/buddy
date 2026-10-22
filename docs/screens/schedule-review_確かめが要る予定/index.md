@@ -738,7 +738,7 @@
   - buddy と Google カレンダーの両方で予定が変わったときと、Google カレンダーで予定が消されていたときは、どちらの変更も消さないように止め、一覧に出す。この予定は、解くまで buddy で予定を変えても書き出さず、Google カレンダーの変更も当てない。
   - Google カレンダーでの変更を buddy の予定に読み替えられないとき（終日の予定、タイトルの利用者が見つからない予定、繰り返しの予定そのものの変更）も、一覧に出す。職員が Google カレンダーで読み替えられる形に直すと、予定の API が当てて、一覧から消す。
   - カレンダーに書く権限が無いときと、Google に届かず書き直しの上限に達したときも、一覧に出す。この予定は、buddy で予定を変えると書き出し直す。
-- 書き出しと同期の設計は、[予定の API の Design Doc の Google カレンダーとの同期](https://github.com/Fukuemon/buddy/blob/develop/apps/schedule-api/DesignDoc.md#google-カレンダーとの同期) にある。
+- 書き出しと同期の設計は、[予定の API の Design Doc の Google カレンダーとの同期](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#google-カレンダーとの同期) にある。
 
 ### 権限の確かめ
 

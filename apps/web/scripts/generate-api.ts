@@ -12,8 +12,8 @@ import ts from 'typescript'
 const BLOB = ts.factory.createTypeReferenceNode('Blob')
 
 const targets = [
-  { from: '../schedule-api/openapi.yaml', to: 'src/api/generated/schedule.ts' },
-  { from: '../receipt-api/openapi.yaml', to: 'src/api/generated/receipt.ts' },
+  { from: '../../services/schedule/openapi.yaml', to: 'src/api/generated/schedule.ts' },
+  { from: '../../services/receipt/openapi.yaml', to: 'src/api/generated/receipt.ts' },
 ]
 
 for (const { from, to } of targets) {

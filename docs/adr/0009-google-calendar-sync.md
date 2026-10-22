@@ -14,7 +14,7 @@
 
 - 訪問の予定は、利用者、主訪問者、同行者、サービスコード、訪問の区分を持ち、予定の API が権限で読み書きを判定する。Google カレンダーの予定は、これらを構造として持てない。
 - 照合の API は、タイトルを `【サービス内容】利用者名` の形で読む。
-  - 出典: [照合の API の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/DesignDoc.md)
+  - 出典: [照合の API の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/DesignDoc.md)
 - buddy はデプロイ先を知らない。Google からの通知を受ける公開のエンドポイントを、buddy の側だけでは用意できない。
 - Google Calendar API は、変わった予定だけを `syncToken` で取れる。`syncToken` が切れると 410 を返し、全件を取り直す必要がある。
   - 出典: [Synchronize resources efficiently](https://developers.google.com/workspace/calendar/api/guides/sync)

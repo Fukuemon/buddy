@@ -8,8 +8,8 @@
 | ディレクトリ | 中身 |
 | --- | --- |
 | [apps/web](apps/web) | 画面と BFF（TanStack Start）。ブラウザと話すのは web だけである |
-| [apps/schedule-api](apps/schedule-api) | 事業所、職員、利用者、予定、権限を持つ API（Go、PostgreSQL） |
-| [apps/receipt-api](apps/receipt-api) | 予定と実績を照合する API（Go）。データを保存しない |
+| [services/schedule](services/schedule) | 事業所、職員、利用者、予定、権限を持つ API（Go、PostgreSQL） |
+| [services/receipt](services/receipt) | 予定と実績を照合する API（Go）。データを保存しない |
 | [apps/docs-site](apps/docs-site) | 文書のサイト、apps/web の Storybook（デザインシステムのカタログ）、予定の管理の ER 図を Cloudflare に公開する |
 | [packages/ui](packages/ui) | デザインシステムのトークンと、Base と Case のコンポーネント |
 | [packages/e2e](packages/e2e) | E2E のテストと、手動検証のエビデンスを撮る仕組み |
@@ -35,7 +35,7 @@ docker compose up --build --wait
 - 何のためのアプリか: [PRD](docs/PRD.md)
 - 構成要素の責務と依存: [Design Doc](docs/design/DesignDoc.md)。アプリごとの設計は、各アプリの `DesignDoc.md` にある
 - 画面ごとの表示と操作: [画面仕様書](docs/screens/index.md)
-- API のリクエストとレスポンス: 各 API の `openapi.yaml`（[予定の API](apps/schedule-api/openapi.yaml)、[照合の API](apps/receipt-api/openapi.yaml)）。文書のサイトの [「API の仕様」](https://buddy-docs.emon-apps.workers.dev/api/schedule-api.html) のページで読める
+- API のリクエストとレスポンス: 各 API の `openapi.yaml`（[予定の API](services/schedule/openapi.yaml)、[照合の API](services/receipt/openapi.yaml)）。文書のサイトの [「API の仕様」](https://buddy-docs.emon-apps.workers.dev/api/schedule-api.html) のページで読める
 - 予定の管理のテーブルの構成: [テーブルの一覧](docs/db/schedule-api/README.md)。操作できる ER 図は、文書のサイトの [`/erd/`](https://buddy-docs.emon-apps.workers.dev/erd/) にある
 - 公開した文書のサイト: [buddy-docs](https://buddy-docs.emon-apps.workers.dev)。デザインシステムのカタログは同じサイトの [`/storybook/`](https://buddy-docs.emon-apps.workers.dev/storybook/) にある。Cloudflare Access で許可した人だけが開け、外部の人は開けない。同じサイトは、ルートで `pnpm site:build` を実行するとローカルでビルドできる。デプロイの構成は [apps/docs-site](apps/docs-site/README.md) にある
 - 決めた判断と理由: [ADR](docs/adr)

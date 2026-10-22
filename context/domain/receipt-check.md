@@ -7,7 +7,7 @@ status: stable
 
 # 照合
 
-照合は、ある月の予定と実績を対にし、4 つの区分に分ける。対の作り方、判定の規則、画面の表示、元の実装との違いは [レセプトの照合の Design Doc](../../apps/receipt-api/DesignDoc.md) にある。
+照合は、ある月の予定と実績を対にし、4 つの区分に分ける。対の作り方、判定の規則、画面の表示、元の実装との違いは [レセプトの照合の Design Doc](../../services/receipt/DesignDoc.md) にある。
 
 ## States and Transitions
 

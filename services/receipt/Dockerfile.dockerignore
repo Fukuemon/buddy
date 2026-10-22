@@ -1,0 +1,8 @@
+*
+!packages/go/
+!services/receipt/go.mod
+!services/receipt/go.sum
+!services/receipt/cmd/
+!services/receipt/internal/
+**/*_test.go
+**/.golangci.yml

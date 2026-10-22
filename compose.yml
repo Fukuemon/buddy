@@ -92,7 +92,7 @@ services:
 
   # 予定の API と calendarpit の間の中継。E2E が、Google の変更を予定の API に渡さないようにするのに使う
   gcalhold:
-    build: { context: ., dockerfile: apps/schedule-api/Dockerfile, target: gcalhold }
+    build: { context: ., dockerfile: services/schedule/Dockerfile, target: gcalhold }
     ports: ['127.0.0.1:${GCALHOLD_PORT:-8085}:8080']
     healthcheck:
       test: ['CMD', '/usr/local/bin/gcalhold', 'healthcheck']
@@ -103,8 +103,9 @@ services:
       calendarpit: { condition: service_healthy }
 
   schedule-api-migrate:
-    build: { context: ., dockerfile: apps/schedule-api/Dockerfile }
-    image: buddy-compose-schedule-api
+    build: { context: ., dockerfile: services/schedule/Dockerfile }
+    # イメージの名前にプロジェクトの名前を含め、-p で分けた別の worktree のビルドに上書きされないようにする
+    image: ${COMPOSE_PROJECT_NAME}-schedule-api
     entrypoint: ['/usr/local/bin/migrate']
     command: ['up']
     environment: *db-env
@@ -112,7 +113,7 @@ services:
       postgres: { condition: service_healthy }
 
   schedule-api-seed:
-    image: buddy-compose-schedule-api
+    image: ${COMPOSE_PROJECT_NAME}-schedule-api
     # イメージは schedule-api-migrate がビルドする
     pull_policy: never
     entrypoint: ['/usr/local/bin/migrate']
@@ -122,7 +123,7 @@ services:
       schedule-api-migrate: { condition: service_completed_successfully }
 
   schedule-api:
-    image: buddy-compose-schedule-api
+    image: ${COMPOSE_PROJECT_NAME}-schedule-api
     # イメージは schedule-api-migrate がビルドする
     pull_policy: never
     environment:
@@ -159,7 +160,7 @@ services:
       gcalhold: { condition: service_healthy }
 
   receipt-api:
-    build: { context: ., dockerfile: apps/receipt-api/Dockerfile }
+    build: { context: ., dockerfile: services/receipt/Dockerfile }
     environment:
       OIDC_ISSUER: http://idp:9000/buddy
       OIDC_AUDIENCE: receipt-api

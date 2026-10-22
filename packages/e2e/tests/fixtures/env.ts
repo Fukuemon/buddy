@@ -59,8 +59,8 @@ export const AUTH_DIR = path.join(root, 'packages/e2e/.auth')
 
 /** 照合に使う、ダミーの予定と実績の CSV。 */
 export const RECEIPT_TESTDATA = {
-  schedules: path.join(root, 'apps/receipt-api/testdata/schedules_utf8.csv'),
-  visits: path.join(root, 'apps/receipt-api/testdata/visits_cp932.csv'),
+  schedules: path.join(root, 'services/receipt/testdata/schedules_utf8.csv'),
+  visits: path.join(root, 'services/receipt/testdata/visits_cp932.csv'),
 }
 
 /** ログインした状態のファイル。setup が書き、spec の project の storageState に渡す。 */

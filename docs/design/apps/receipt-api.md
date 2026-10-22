@@ -1,1 +1,0 @@
-../../../apps/receipt-api/DesignDoc.md

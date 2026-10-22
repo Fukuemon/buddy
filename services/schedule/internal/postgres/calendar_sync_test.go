@@ -1,0 +1,244 @@
+package postgres
+
+import (
+	"context"
+	"errors"
+	"io"
+	"log/slog"
+	"testing"
+	"time"
+
+	calendarv3 "google.golang.org/api/calendar/v3"
+
+	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
+	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
+	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
+	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
+	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
+	"github.com/Fukuemon/buddy/services/schedule/internal/visit"
+)
+
+func TestCalendarSyncRepository(t *testing.T) {
+	ctx := txContext(t)
+	calendars := NewCalendarRepository(testDB)
+	r := NewCalendarSyncRepository(testDB)
+	const (
+		calID      = "01M3TD000000000000000000C3"
+		disabledID = "01M3TD000000000000000000C4"
+	)
+	for _, c := range []calendar.ExternalCalendar{
+		{ID: calID, FacilityID: seedFacility, StaffID: seedMori, Provider: calendar.ProviderGoogle, CalendarID: "mori@example.com"},
+		{ID: disabledID, FacilityID: seedFacility, StaffID: seedHayashi, Provider: calendar.ProviderGoogle, CalendarID: "hayashi@example.com"},
+	} {
+		if err := calendars.Create(ctx, c); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := calendars.Disable(ctx, disabledID); err != nil {
+		t.Fatal(err)
+	}
+
+	claimed, err := r.Claim(ctx, 10, time.Minute)
+	if err != nil || len(claimed) != 1 {
+		t.Fatalf("Claim = %+v, %v", claimed, err)
+	}
+	st := claimed[0]
+	if st.Calendar.ID != calID || st.Calendar.CalendarID != "mori@example.com" || st.Calendar.StaffID != seedMori ||
+		st.SyncToken != "" || st.LastStatus != calendar.SyncNever || st.LockedUntil.IsZero() {
+		t.Fatalf("取ったカレンダー = %+v", st)
+	}
+	if again, err := r.Claim(ctx, 10, time.Minute); err != nil || len(again) != 0 {
+		t.Errorf("lease の間に取った: %+v, %v", again, err)
+	}
+
+	// ほかの処理が取り直したカレンダーには書かない
+	stale := st
+	stale.LockedUntil = st.LockedUntil.Add(-time.Second)
+	if err := r.Finish(ctx, stale, calendar.SyncResult{SyncToken: "stale", Status: calendar.SyncSucceeded}); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.Finish(ctx, st, calendar.SyncResult{SyncToken: "t1", Status: calendar.SyncSucceeded}); err != nil {
+		t.Fatal(err)
+	}
+	claimed, err = r.Claim(ctx, 10, time.Minute)
+	if err != nil || len(claimed) != 1 || claimed[0].SyncToken != "t1" || claimed[0].LastStatus != calendar.SyncSucceeded {
+		t.Fatalf("同期した後の Claim = %+v, %v", claimed, err)
+	}
+
+	code := calendar.SyncUnreadable
+	if err := r.Finish(ctx, claimed[0], calendar.SyncResult{SyncToken: "t1", Status: calendar.SyncFailed, ErrorCode: &code, After: time.Hour}); err != nil {
+		t.Fatal(err)
+	}
+	if again, err := r.Claim(ctx, 10, time.Minute); err != nil || len(again) != 0 {
+		t.Errorf("読む時刻の前に取った: %+v, %v", again, err)
+	}
+}
+
+func TestCalendarExportHoldAndResolve(t *testing.T) {
+	ctx := txContext(t)
+	r := NewCalendarExportRepository(testDB)
+	const (
+		exportID = "01M3TD000000000000000000X5"
+		holdID   = "01M3TD000000000000000000X6"
+		newID    = "01M3TD000000000000000000X7"
+	)
+	single := calendar.Target{FacilityID: seedFacility, ScheduleID: seedConference}
+	if _, err := r.Open(ctx, single); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("待ちが無いときの Open = %v", err)
+	}
+	if err := r.Enqueue(ctx, exportID, single); err != nil {
+		t.Fatal(err)
+	}
+	claimed, err := r.Claim(ctx, 10, time.Minute)
+	if err != nil || len(claimed) != 1 {
+		t.Fatalf("Claim = %+v, %v", claimed, err)
+	}
+	if e, err := r.Open(ctx, single); err != nil || e.ID != exportID || e.LockedUntil == nil {
+		t.Fatalf("取った待ちの Open = %+v, %v", e, err)
+	}
+
+	// 終わっていない待ちを確かめが要る待ちにすると、書いていた処理の結果は捨てる
+	if err := r.Hold(ctx, holdID, single, calendar.ErrorPreconditionFailed); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.Finish(ctx, claimed[0], calendar.ExportResult{Status: calendar.ExportSucceeded}); err != nil {
+		t.Fatal(err)
+	}
+	e, err := r.Get(ctx, exportID)
+	if err != nil || e.Status != calendar.ExportConflict || *e.ErrorCode != calendar.ErrorPreconditionFailed || e.LockedUntil != nil || !e.Acceptable() {
+		t.Fatalf("確かめが要る待ち = %+v, %v", e, err)
+	}
+	if _, err := r.Get(ctx, holdID); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("終わっていない待ちがあるのに足した: %v", err)
+	}
+
+	// 読んだ後に保留し直された待ちは終えない
+	if err := r.Resolve(ctx, exportID, 1); !errors.Is(err, apperr.ErrConflict) {
+		t.Errorf("古い revision で解く: err = %v", err)
+	}
+	if err := r.Resolve(ctx, exportID, 2); err != nil {
+		t.Fatal(err)
+	}
+	if e, _ := r.Get(ctx, exportID); e.Status != calendar.ExportSucceeded {
+		t.Errorf("解いた待ち = %+v", e)
+	}
+	if err := r.Resolve(ctx, exportID, 2); !errors.Is(err, apperr.ErrConflict) {
+		t.Errorf("解いた待ちをもう一度解く: err = %v", err)
+	}
+
+	// 待ちが無ければ、確かめが要る待ちを足す。繰り返しの予定の待ちは、Google の内容で解けない
+	recurring := calendar.Target{FacilityID: seedFacility, RecurringScheduleID: seedRecurring}
+	if err := r.Hold(ctx, newID, recurring, calendar.ErrorUnappliable); err != nil {
+		t.Fatal(err)
+	}
+	e, err = r.Open(ctx, recurring)
+	if err != nil || e.ID != newID || e.Status != calendar.ExportConflict || *e.ErrorCode != calendar.ErrorUnappliable || e.Acceptable() {
+		t.Errorf("足した確かめが要る待ち = %+v, %v", e, err)
+	}
+}
+
+// TestCalendarSyncAppliesVisitChanges は、取り込んだ訪問の予定の、Google での利用者の変更と回の取り消しを、
+// 同期の処理が表の制約に合う形で当てられることを確かめる。
+func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
+	ctx := txContext(t)
+	ctx = principal.With(ctx, principal.Principal{Staff: staff.Detail{
+		Summary:  staff.Summary{Staff: staff.Staff{ID: seedAoki, FacilityID: seedFacility}},
+		Policies: []staff.PolicyGrant{{PolicyCode: organization.StaffManage}},
+	}})
+	ev := func(id, summary, start, end string) *calendarv3.Event {
+		return &calendarv3.Event{Id: id, Status: "confirmed", Summary: summary, Etag: `"` + id + `"`,
+			Start: &calendarv3.EventDateTime{DateTime: start}, End: &calendarv3.EventDateTime{DateTime: end}}
+	}
+	weekly := ev("weekly", "【訪看I2】見本 一郎", "2026-11-02T09:00:00+09:00", "2026-11-02T09:30:00+09:00")
+	weekly.Recurrence = []string{"RRULE:FREQ=WEEKLY;BYDAY=MO"}
+	srv := &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{"mori@example.com": {{
+		ev("single", "【訪看I2】見本 一郎", "2026-11-04T10:00:00+09:00", "2026-11-04T10:30:00+09:00"),
+		weekly,
+	}}}}
+	calendars := NewCalendarRepository(testDB)
+	const calID = "01M3TD000000000000000000C5"
+	if err := calendars.Create(ctx, calendar.ExternalCalendar{ID: calID, FacilityID: seedFacility, StaffID: seedMori, Provider: calendar.ProviderGoogle, CalendarID: "mori@example.com"}); err != nil {
+		t.Fatal(err)
+	}
+	patients := NewPatientRepository(testDB)
+	masters := NewVisitMasterRepository(testDB)
+	staffRefs := NewStaffRefRepository(testDB)
+	schedules := NewScheduleRepository(testDB)
+	recurring := NewRecurringScheduleRepository(testDB)
+	types := NewScheduleTypeRepository(testDB)
+	ids := ulid.Generator{}
+	visits := visit.NewWriter(visit.WriterDeps{
+		Staff: staffRefs,
+		Patients: func(ctx context.Context, id string) (string, string, error) {
+			p, err := patients.Get(ctx, id)
+			return p.ID, p.FacilityID, err
+		},
+		Infos: NewVisitInfoRepository(testDB), Masters: masters,
+	}, ids)
+	source := gcal.NewReader(gcaltest.Start(t, srv))
+	tx := NewTransactor(testDB)
+	uc := calendar.NewUsecase(calendar.Deps{
+		Calendars: calendars, Accounts: sameAccount{source},
+		Staff: staffRefs, Patients: patients, ServiceCodes: masters, Types: types,
+		Schedules: schedules, Recurring: recurring, RecurringSchedules: recurring, Visits: visits,
+	}, tx, ids, principal.RequireStaffManage)
+	rng, err := calendar.NewRange(civil.Date{Year: 2026, Month: 11, Day: 1}, civil.Date{Year: 2026, Month: 11, Day: 30})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := uc.Import(ctx, calID, rng, nil); err != nil {
+		t.Fatal(err)
+	}
+	syncer := calendar.NewSyncer(calendar.SyncerDeps{
+		Syncs: NewCalendarSyncRepository(testDB), Calendars: calendars, Exports: NewCalendarExportRepository(testDB), Sources: func(context.Context, string) (calendar.EventSource, error) { return source, nil },
+		Schedules: schedules, Recurring: recurring, Types: types, Patients: patients, ServiceCodes: masters, Visits: visits,
+	}, tx, ids, 0, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	sync := func() {
+		t.Helper()
+		if _, err := syncer.SyncDue(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	sync()
+
+	// 職員が Google カレンダーで、予定の利用者と時刻を変え、繰り返しの 11-09 の回を取り消した
+	srv.Edit("mori@example.com", "single", func(e *calendarv3.Event) {
+		e.Summary = "【訪看I2】見本 二葉"
+		e.Start.DateTime, e.End.DateTime = "2026-11-04T11:00:00+09:00", "2026-11-04T11:30:00+09:00"
+	})
+	srv.Put("mori@example.com", &calendarv3.Event{
+		Id: "weekly_1109", Status: "cancelled", RecurringEventId: "weekly",
+		OriginalStartTime: &calendarv3.EventDateTime{DateTime: "2026-11-09T09:00:00+09:00"},
+	})
+	sync()
+
+	single, err := calendars.LinkByEvent(ctx, calID, "single")
+	if err != nil {
+		t.Fatal(err)
+	}
+	d, err := schedules.Get(ctx, *single.ScheduleID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d.Visit == nil || d.Visit.PatientName != "見本 二葉" || d.Visit.AssignedStaffID != seedMori || d.StartTime != (civil.Time{Hour: 11}) {
+		t.Errorf("Google の変更を当てた訪問の予定 = %+v, 訪問 %+v", d.Slot, d.Visit)
+	}
+	if *single.SyncedVersion != d.Version || single.ETag == `"single"` {
+		t.Errorf("予定の対応 = %+v, 予定の更新の番号 %d", single, d.Version)
+	}
+	parent, err := calendars.LinkByEvent(ctx, calID, "weekly")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rs, err := recurring.Get(ctx, *parent.RecurringScheduleID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rs.ExclusionDates) != 1 || rs.ExclusionDates[0] != (civil.Date{Year: 2026, Month: 11, Day: 9}) || *parent.SyncedVersion != rs.Version {
+		t.Errorf("取り消した回を除外した繰り返しの予定 = %v, 版 %d, 対応 %+v", rs.ExclusionDates, rs.Version, parent)
+	}
+}

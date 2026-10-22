@@ -69,7 +69,7 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 | 整合の区分の区切り | `success` | 区分の名前 |
 | 片側がない欄の「データなし」 | `text-secondary` | 文字 |
 
-- 出典: [レセプトの照合の Design Doc の、画面が JSON から作る表示](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/DesignDoc.md#画面が-json-から作る表示)
+- 出典: [レセプトの照合の Design Doc の、画面が JSON から作る表示](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/DesignDoc.md#画面が-json-から作る表示)
 
 ### 文字
 

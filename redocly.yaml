@@ -1,9 +1,9 @@
 # 2 つの API の定義の lint の設定。pnpm lint:openapi が読む
 apis:
   schedule-api:
-    root: apps/schedule-api/openapi.yaml
+    root: services/schedule/openapi.yaml
   receipt-api:
-    root: apps/receipt-api/openapi.yaml
+    root: services/receipt/openapi.yaml
 # recommended-strict は推奨の規則の警告もエラーとして扱い、終了コードを 1 にする
 extends:
   - recommended-strict

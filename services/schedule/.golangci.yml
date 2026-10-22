@@ -1,0 +1,35 @@
+version: "2"
+
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - errorlint
+    - gosec
+    - misspell
+    - rowserrcheck
+    - sqlclosecheck
+    - unconvert
+    - unparam
+    - revive
+  settings:
+    revive:
+      rules:
+        - name: exported
+        - name: package-comments
+  exclusions:
+    generated: lax
+    rules:
+      # テストの接続の設定は、使い捨てのコンテナの値である。
+      - path: _test\.go
+        linters: [gosec]
+        text: G101
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/Fukuemon/buddy/services/schedule

@@ -43,8 +43,8 @@ status: stable
 
 - PRD は `docs/PRD.md`、全体の Design Doc は `docs/design/`、ADR は `docs/adr/`、画面仕様書は `docs/screens/` に置き、Zensical のサイトで読む。Design Doc と ADR の配置先は `context/project.yml` の `docs` と同じにする。
 - アプリとパッケージの README は、「セットアップ、起動する、テストとチェック、コードの生成、文書」の順に見出しを置き、当てはまらない節は省く。
-- 機能ごとの Design Doc は、コードの隣（`apps/<アプリ>/DesignDoc.md`、`packages/<パッケージ>/DesignDoc.md`）に置く。サイトには、`docs/design/apps/` か `docs/design/packages/` のファイル単位のシンボリックリンクで載せる。リンク先は `zensical.toml` の `watch` にも並べる。
-- 機能ごとの Design Doc と ADR から `docs/` と `apps/` の文書へのリンクは、GitHub の `develop` の URL で書く。相対リンクは、GitHub とサイトで指す先が変わり、どちらかで切れる。
+- 機能ごとの Design Doc は、コードの隣（`services/<API>/DesignDoc.md`、`packages/<パッケージ>/DesignDoc.md`）に置く。サイトには、`docs/design/services/` か `docs/design/packages/` のファイル単位のシンボリックリンクで載せる。リンク先は `zensical.toml` の `watch` にも並べる。
+- 機能ごとの Design Doc と ADR から `docs/`、`apps/`、`services/` の文書へのリンクは、GitHub の `develop` の URL で書く。相対リンクは、GitHub とサイトで指す先が変わり、どちらかで切れる。
 - 技術用語は、一般的なカタカナ語か英語で書き、和語に言い換えない（テーブル、カラム、マージ、リクエスト、レスポンス、デフォルト、ローカル環境）。業務の機能の名前（予定の取り込み、予定の書き出し、結び付け）は和語のまま書く。言い換えの一覧は `prh.yml` にある。
 - 見出しのアンカーは、日本語のまま残す（`zensical.toml` の toc の slugify）。見出しを変えるときは、ほかの文書からのリンクを探して直す。
 - 画面仕様書の画面 ID の規則は [画面仕様書の目次](../docs/screens/index.md) の「画面の ID の規則」に、ページの節の規則は [画面仕様書の規約](../docs/screens/rules.md) の「仕様書のページ」にある。
@@ -58,7 +58,7 @@ status: stable
 | TypeScript の型 | 各パッケージの `tsconfig.json` | 共有の元は無い。`apps/web` と `packages/ui` は同じオプションをコピーして持つ |
 | Vitest | 各パッケージの `vite.config.ts` の `test` | web の Storybook は `.storybook/vite.config.ts` に分ける（TanStack Start の plugin が Storybook の中で動かない） |
 | E2E の書き方の規則 | `packages/e2e/eslint.config.mjs` | `packages/e2e` で流したときだけ規則が当たる |
-| Go の lint と整形 | `apps/*/.golangci.yml`、`packages/go/.golangci.yml` | module ごとに置き、ルートには無い |
+| Go の lint と整形 | `services/*/.golangci.yml`、`packages/go/.golangci.yml` | module ごとに置き、ルートには無い |
 | 文章 | `.textlintrc.json`、`prh.yml`、`.textlintignore` | ルートで `pnpm exec textlint` |
 | コミットの形式 | `commitlint.config.mjs` | lefthook の commit-msg |
 | Vite+ と vite のバージョン | `pnpm-workspace.yaml` の catalog | 各パッケージは `catalog:` で指す |

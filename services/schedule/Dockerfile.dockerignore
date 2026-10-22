@@ -1,0 +1,9 @@
+*
+!packages/go/
+!services/schedule/go.mod
+!services/schedule/go.sum
+!services/schedule/cmd/
+!services/schedule/internal/
+!services/schedule/db/
+**/*_test.go
+**/.golangci.yml

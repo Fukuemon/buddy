@@ -5,15 +5,15 @@
 # 終了コード: 0 は差分なし。1 は差分か、まだ追跡していない生成物がある。生成に失敗したときは、生成のコマンドの終了コードで終わる。
 set -eu
 
-(cd apps/receipt-api && go generate ./...)
-(cd apps/schedule-api && go generate ./... && sqlc generate)
+(cd services/receipt && go generate ./...)
+(cd services/schedule && go generate ./... && sqlc generate)
 pnpm --filter @buddy/web generate:api
 node scripts/build-mock-tokens.mjs
 
 set -- \
-  apps/receipt-api/internal/httpapi/openapi \
-  apps/schedule-api/internal/httpapi/openapi \
-  apps/schedule-api/internal/postgres/sqlcgen \
+  services/receipt/internal/httpapi/openapi \
+  services/schedule/internal/httpapi/openapi \
+  services/schedule/internal/postgres/sqlcgen \
   apps/web/src/api/generated \
   docs/screens/_common/tokens.css
 
