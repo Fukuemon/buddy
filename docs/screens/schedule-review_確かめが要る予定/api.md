@@ -15,12 +15,12 @@
 | 予定を開く | 出すかと、移る先の予定 | `CalendarExportIssue.schedule_id` | `CalendarExport` の `schedule_id`。繰り返しの予定では `null` |
 | buddy の内容で書き直す | なし | `CalendarExportIssue.id` | `CalendarExport` の `id` |
 | 書き直す予定 | 日時と職員の名前 | `CalendarExportIssue` の日時の項目と `staff_name` | 予定の日時と職員と同じ |
-| ダイアログの書き直す | 書き直す待ちにした書き出し | `calendars.retryExport` の戻り値 | `createCalendarExportRetry` の応答の `CalendarExport` |
-| 読み込みの失敗の文 | 権限で拒まれたか | `ApiError.status` | 応答の status |
-| 書き直しの失敗の文 | 理由ごとの文 | `ApiError.status`、`ApiError.code` | 応答の status と `Error.code` |
+| ダイアログの書き直す | 書き直す待ちにした書き出し | `calendars.retryExport` の戻り値 | `createCalendarExportRetry` のレスポンスの `CalendarExport` |
+| 読み込みの失敗の文 | 権限で拒まれたか | `ApiError.status` | レスポンスの status |
+| 書き直しの失敗の文 | 理由ごとの文 | `ApiError.status`、`ApiError.code` | レスポンスの status と `Error.code` |
 | 合わせる予定 | 日時と職員の名前 | `CalendarExportIssue` の日時の項目と `staff_name` | 予定の日時と職員と同じ |
-| ダイアログの合わせる | 合わせて終えた書き出し | `calendars.acceptExport` の戻り値 | `createCalendarExportAcceptance` の応答の `CalendarExport` |
-| 合わせるの失敗の文 | 理由ごとの文 | `ApiError.status`、`ApiError.code` | 応答の status と `Error.code` |
+| ダイアログの合わせる | 合わせて終えた書き出し | `calendars.acceptExport` の戻り値 | `createCalendarExportAcceptance` のレスポンスの `CalendarExport` |
+| 合わせるの失敗の文 | 理由ごとの文 | `ApiError.status`、`ApiError.code` | レスポンスの status と `Error.code` |
 
 ## 操作
 
@@ -44,7 +44,7 @@
     - `not_found`: Google カレンダーで予定が消された
     - `forbidden`: サービスアカウントがカレンダーに書けない
     - `rejected`: Google が予定の内容を受け付けなかった
-    - `unavailable`: Google に届かないか、一時的な誤りが続いた
+    - `unavailable`: Google に届かないか、一時的なエラーが続いた
     - `unappliable`: Google カレンダーの変更を buddy の予定に読み替えられない
 - `CalendarExportIssue` は、`CalendarExport` に、予定の職員（`staff_id`、`staff_name`）と日時（`date`、`start_time`、`end_time`）と `acceptable` を足したものである。
   - `acceptable` は、Google カレンダーの内容に合わせられるかである。単発の予定で、buddy でキャンセルしておらず、`status` が `conflict`、`error_code` が `precondition_failed` か `not_found` のときに true である。
