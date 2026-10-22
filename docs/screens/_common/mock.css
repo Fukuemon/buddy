@@ -26,7 +26,7 @@ body {
   min-height: var(--mock-height, 900px);
   overflow: hidden;
   border: 1px solid #b0b0b0;
-  background: var(--wf-surface, #fff);
+  background: var(--wf-canvas, #fff);
 }
 
 .screen-body {

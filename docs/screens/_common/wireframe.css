@@ -12,6 +12,7 @@
   --wf-fill: var(--buddy-color-surface-subtle);
   --wf-fill-strong: var(--buddy-color-surface-disabled);
   --wf-surface: var(--buddy-color-surface);
+  --wf-canvas: var(--buddy-color-surface-canvas);
   --wf-muted: var(--buddy-color-text-secondary);
   --wf-primary: var(--buddy-color-primary);
   --wf-primary-surface: var(--buddy-color-primary-surface);

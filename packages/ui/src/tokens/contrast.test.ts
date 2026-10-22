@@ -52,11 +52,12 @@ const contrastRatio = (foreground: string, background: string) => {
 const CATEGORICAL = Array.from({ length: 10 }, (_, index) => `categorical-${index + 1}`)
 
 const TEXT_PAIRS: [foreground: string, background: string][] = [
-  ...['surface', 'surface-subtle', 'primary-surface'].flatMap((background) => [
+  ...['surface', 'surface-canvas', 'surface-subtle', 'primary-surface'].flatMap((background) => [
     ['text', background] as [string, string],
     ['text-secondary', background] as [string, string],
   ]),
   ['primary', 'surface'],
+  ['primary', 'surface-canvas'],
   ['primary', 'primary-surface'],
   ...['danger', 'warning', 'success'].flatMap((state) => [
     [state, 'surface'] as [string, string],
@@ -69,6 +70,7 @@ const TEXT_PAIRS: [foreground: string, background: string][] = [
 
 const NON_TEXT_PAIRS: [foreground: string, background: string][] = [
   ['border-field', 'surface'],
+  ['border-field', 'surface-canvas'],
   ['border-field', 'surface-subtle'],
   ['border-field', 'primary-surface'],
   ['primary', 'surface'],
