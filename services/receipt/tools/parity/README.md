@@ -12,7 +12,7 @@ receipt-checker の Python（pandas）の照合と、この Go の照合に同�
 ## 実行
 
 receipt-checker のチェックアウトが要る。Python の照合のコードは、このリポジトリにコピーしない。  
-`apps/receipt-api` で実行する。依存は `uv` が各スクリプトの inline script metadata から入れる。
+`services/receipt` で実行する。依存は `uv` が各スクリプトの inline script metadata から入れる。
 
 ```sh
 RECEIPT_CHECKER_LIBS=<receipt-checker>/server/libs tools/parity/run.sh

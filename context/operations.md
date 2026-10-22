@@ -22,7 +22,7 @@ status: stable
 
 ## Deployment Conditions
 
-- デプロイする単位は、アプリごとのイメージである。リリースは、`main` のコミットに付けたアプリごとのタグ（`apps/<アプリ>/vX.Y.Z`）で指す。
+- デプロイする単位は、アプリごとのイメージである。リリースは、`main` のコミットに付けたアプリごとのタグ（`<ディレクトリ>/vX.Y.Z`。`apps/web/v1.0.0`、`services/schedule/v1.0.0` など）で指す。
 - マージする前に、変えたアプリのテストとチェック、`pnpm check:generated` が通っている（[テスト](testing.md)）。
 - API と画面を一緒に変えたときは、API を先にデプロイする。画面は、デプロイ済みの API が持つ項目だけを使う。
 - マイグレーションの適用のしかたと、ヘルスチェックの約束は、[buddy Design Doc のインフラとの約束](../docs/design/DesignDoc.md#インフラとの約束) にある。

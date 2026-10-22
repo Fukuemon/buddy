@@ -54,7 +54,7 @@ docker run --rm -p 8080:8080 -e OIDC_ISSUER=<Issuer の URL> -e OIDC_AUDIENCE=re
 
 ## テストとチェック
 
-`apps/receipt-api` で実行する。
+`services/receipt` で実行する。
 
 ```sh
 go test ./...
@@ -71,7 +71,7 @@ API の定義の正本は [openapi.yaml](openapi.yaml) である。
 oapi-codegen が、そこから net/http の strict server のインターフェイスと型を `internal/httpapi/openapi/openapi.gen.go` に生成する。`internal/httpapi` がそのインターフェイスを実装する。  
 oapi-codegen は `go.mod` の `tool` でバージョンを固定し、`go tool` で実行する。設定は [oapi-codegen.yaml](oapi-codegen.yaml) にある。
 
-openapi.yaml を変えたら、`apps/receipt-api` で生成し直し、生成物も一緒にコミットする。
+openapi.yaml を変えたら、`services/receipt` で生成し直し、生成物も一緒にコミットする。
 
 ```sh
 go generate ./...
@@ -143,11 +143,11 @@ API は、Application Default Credentials で認証し、カレンダーの組�
    ```sh
    gcloud auth application-default login --impersonate-service-account=<検証の事業所のサービスアカウント>
    ```
-4. 照合の対象のカレンダーを JSON に書き、`apps/receipt-api/.secrets/calendars.json` に置く。形は [calendars.example.json](calendars.example.json) にある。
+4. 照合の対象のカレンダーを JSON に書き、`services/receipt/.secrets/calendars.json` に置く。形は [calendars.example.json](calendars.example.json) にある。
    - `calendar_id` はカレンダーの設定の「カレンダーの統合」にあるカレンダー ID
    - `org_id` はカレンダーを使う事業所の、ブローカーの組織の ID。access token の組織のクレームと同じ値にする。この組織のトークンを持つリクエストだけが、このカレンダーを読む
    - `staff_name` は主訪問者の名前で、iBow の主訪問者と同じ表記にする。省くとカレンダーの表示名を使う
-5. 組織とサービスアカウントの対応を JSON に書き、`apps/receipt-api/.secrets/service-accounts.json` に置く。形は [service-accounts.example.json](service-accounts.example.json) にあり、予定の API と同じ形にする。
+5. 組織とサービスアカウントの対応を JSON に書き、`services/receipt/.secrets/service-accounts.json` に置く。形は [service-accounts.example.json](service-accounts.example.json) にあり、予定の API と同じ形にする。
    - `calendars.json` の全ての `org_id` を書く。足りない組織があると、API は起動しない
    - `.secrets/` は、職員のカレンダー ID とサービスアカウントのメールアドレスを持つので Git で追跡しない
 6. `GOOGLE_APPLICATION_CREDENTIALS` を設定せずに起動する。

@@ -26,7 +26,7 @@ description: 画面仕様書（docs/screens/<画面 ID>_<画面の名前>/ の i
 6. `index.md` を、規約の「仕様書のページ」の節の順で書く。
    - 要素ごとの節の「値のソース」は、画面に出る文言を「」で引く。実装と PRD が食い違うときは、推測で埋めず、未決に書く。
    - カタログの欄の story は、規約の「要素ごとの節」の選び方で選ぶ。候補は `rg -n "^  title:|^export const" -g '*.stories.tsx' apps/web/src packages/ui/src` で探す。story の ID は、`pnpm --filter @buddy/web storybook` で開いた URL の `path=/story/` の後ろで確かめる。
-7. `api.md` に、要素ごとの web の型の項目（`apps/web/src/api/types.ts`）と OpenAPI の項目（`apps/*/openapi.yaml` の operationId と項目）を書く。
+7. `api.md` に、要素ごとの web の型の項目（`apps/web/src/api/types.ts`）と OpenAPI の項目（`services/*/openapi.yaml` の operationId と項目）を書く。
 8. `zensical.toml` の `nav` に `index.md` を足す。
 9. 下の「確かめる」を行う。
 

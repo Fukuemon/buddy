@@ -88,7 +88,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 | 照合 | 予定と実績の対の作り方、判定の規則 | receipt-api |
 
 - 事業所と職員と予定は、同じ PostgreSQL のデータベースを使い、schedule-api の中でパッケージを分ける。
-  - パッケージの構成は [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/apps/schedule-api/DesignDoc.md) にある。
+  - パッケージの構成は [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md) にある。
 - 用語と、区切りごとの呼び方の違いは [業務の知識](https://github.com/Fukuemon/buddy/blob/develop/context/domain.md) にある。
 
 ## Components
@@ -106,7 +106,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 - access token の検証、職員の特定、事業所の確認、職員の権限による予定の閲覧と編集の判定を行う。
 - 職員に結び付けた Google カレンダーの予定を、期間を選んで予定に取り込む（ADR-0009 の段階 1）。
 - 持たないもの: 照合の規則。
-- 内部の構成と ER は [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/apps/schedule-api/DesignDoc.md) にある。
+- 内部の構成と ER は [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md) にある。
 
 ### receipt-api
 
@@ -115,7 +115,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 - access token を検証するが、職員の特定と事業所の確認はしない。
   - Google カレンダーから予定を取るときだけ、トークンの組織に結び付けたカレンダーを読む。規則は [事業所の分離](#事業所の分離) にある。
 - 持たないもの: 予定と職員のデータ、DB。上げた CSV と照合の結果を保存しない。
-- 規則は [レセプトの照合の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/DesignDoc.md) にある。
+- 規則は [レセプトの照合の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/DesignDoc.md) にある。
 
 ## Interfaces
 
@@ -130,7 +130,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 - ブラウザとブローカー: ログインのときだけ、web がブラウザをブローカーの認可の画面へ転送する。
 - web とブローカー: 認可コードフローでトークンを取得し、更新する。トークンは Valkey のセッションに置く。
 - web と schedule-api、receipt-api: `Authorization` に access token を Bearer で付ける。
-  - 契約の正本は [schedule-api の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/apps/schedule-api/openapi.yaml) と [receipt-api の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/openapi.yaml) である。サーバーの Go のコードと web の型は、そこから生成する。
+  - 契約の正本は [schedule-api の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/openapi.yaml) と [receipt-api の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/openapi.yaml) である。サーバーの Go のコードと web の型は、そこから生成する。
   - 契約を変えるときの互換の規則は ADR-0003 にある。
   - ADR-0003: [git flow でマージし、アプリごとのバージョンでリリースする](../adr/0003-branch-and-release.md)
 - schedule-api、receipt-api とブローカー: Issuer の discovery と JWKS を読み、access token を検証する。検証に失敗したら 401 を返す。
@@ -202,7 +202,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 
 - schedule-api のイメージは、`api` と `migrate` の 2 つのバイナリを持ち、エントリポイントは `api` である。
   - マイグレーションは、エントリポイントを `/usr/local/bin/migrate` にして `up` を渡すと適用して終わる。
-- マイグレーションは golang-migrate の形式で `apps/schedule-api/db/migrations/` に置き、バイナリに埋め込む。
+- マイグレーションは golang-migrate の形式で `services/schedule/db/migrations/` に置き、バイナリに埋め込む。
 - インフラは、新しいイメージを起動する前に、同じイメージで `migrate up` を 1 回実行する。マイグレーションは、前のバージョンのアプリが動いたまま適用できる変更だけにする。
 
 ## Cross-Cutting Concerns
@@ -218,13 +218,13 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 
 - 事業所は、ブローカーの組織に対応する。
 - schedule-api は、リクエストが指す事業所がトークンの組織の事業所と違えば、403 を返す。
-  - 拒否する規則は [事業所の分離](https://github.com/Fukuemon/buddy/blob/develop/context/domain/facility.md) に、パスの形は [予定の管理の Design Doc の Interface](https://github.com/Fukuemon/buddy/blob/develop/apps/schedule-api/DesignDoc.md#interface) にある。
+  - 拒否する規則は [事業所の分離](https://github.com/Fukuemon/buddy/blob/develop/context/domain/facility.md) に、パスの形は [予定の管理の Design Doc の Interface](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#interface) にある。
 - receipt-api は、カレンダーに組織を結び付け、トークンの組織のカレンダーだけを読む。予定の CSV での照合は、組織を問わない。
 
 ### 認可
 
 - 予定の閲覧と編集は、職員の権限で schedule-api が判定する。見てよくない予定は一覧から除き、1 件を指す操作には 403 を返す。
-  - 規則は [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/apps/schedule-api/DesignDoc.md#予定の認可) にある。
+  - 規則は [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#予定の認可) にある。
   - ADR-0002: [権限を役職のデフォルトと職員ごとの上書きで持つ（PBAC）](../adr/0002-pbac.md)
 
 ### ログと個人情報
@@ -238,13 +238,14 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 .
 ├── apps/
 │   ├── web/             # TanStack Start、React、Vite+
-│   ├── schedule-api/    # Go、gin、sqlc、golang-migrate
+│   └── docs-site/       # 文書のサイトとカタログを公開する Cloudflare Worker
+├── services/
+│   ├── schedule/        # 予定の API。Go、gin、sqlc、golang-migrate
 │   │   ├── DesignDoc.md # 予定の管理の Design Doc
 │   │   └── db/          # マイグレーション、クエリ、シード
-│   ├── receipt-api/     # Go
-│   │   ├── DesignDoc.md # レセプトの照合の Design Doc
-│   │   └── tools/       # 元の照合のアプリと結果を比べるスクリプト
-│   └── docs-site/       # 文書のサイトとカタログを公開する Cloudflare Worker
+│   └── receipt/         # 照合の API。Go
+│       ├── DesignDoc.md # レセプトの照合の Design Doc
+│       └── tools/       # 元の照合のアプリと結果を比べるスクリプト
 ├── packages/
 │   ├── ui/              # デザインシステム。トークン、Base と Case のコンポーネント、Storybook
 │   │   └── DESIGN.md    # デザインシステムの設計
@@ -256,7 +257,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 │   ├── PRD.md
 │   ├── design/
 │   │   ├── DesignDoc.md
-│   │   ├── apps/        # apps/ の Design Doc へのシンボリックリンク
+│   │   ├── services/    # services/ の Design Doc へのシンボリックリンク
 │   │   └── packages/    # packages/ の Design Doc へのシンボリックリンク
 │   ├── adr/
 │   ├── screens/         # 画面仕様書とモック

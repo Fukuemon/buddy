@@ -38,7 +38,7 @@
 - 件数は Google の予定の数で数え、繰り返しのまま取り込む予定は 1 件に数える。回ごとにした予定は 1 回を 1 件に数え、`expanded_occurrences` に回の数を入れる。
 - `needs_review[]` は、繰り返しの予定とその回のうちタイトルが親と同じものを、親の予定の ID の 1 件にまとめる。回ごとにした繰り返しの予定は `recurrence` が `null` で、`date` は期間の中の最初の回である。
 - `skipped[]` とレスポンスのほかの項目に、予定のタイトルと本文を入れない。タイトルは利用者名を含むためである。`needs_review[]` の `client_name` と `service` は、確かめのためにタイトルから読んだ値だけを返す。
-- `skipped[]` の `reason` は、`apps/schedule-api/internal/calendar` の `SkipReason` の値である。取り消した予定（`cancelled`）は返さない。取り消した回は、繰り返しの除外する日にするか、回ごとにするときに除くためである。タイトルが空白だけの予定は `unreadable_title` にする。
+- `skipped[]` の `reason` は、`services/schedule/internal/calendar` の `SkipReason` の値である。取り消した予定（`cancelled`）は返さない。取り消した回は、繰り返しの除外する日にするか、回ごとにするときに除くためである。タイトルが空白だけの予定は `unreadable_title` にする。
 
 ### createCalendarImport のリクエストとレスポンス
 

@@ -3,7 +3,7 @@ type: feature-design
 title: レセプトの照合
 description: receipt-api のパッケージの構成、予定のデータソース、入力の CSV のカラム、正規化、予定と実績の対の作り方、判定の規則、サービスごとの許容範囲、結果の JSON と画面の表示、元の実装との違い
 status: draft
-governs: apps/receipt-api
+governs: services/receipt
 verified_commit: ff293e9
 ---
 
@@ -14,7 +14,7 @@ verified_commit: ff293e9
 receipt-api は、訪問の予定と電子カルテ（iBow）の実績を比べ、食い違いを 4 つの区分に分けて JSON で返す。  
 照合の規則は、以前に使っていた照合のツール（Python、pandas）と、予定の CSV を作る GAS から移植した。  
 全体の中での責務と依存は [buddy Design Doc](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md) にある。  
-起動と API の使い方は [README.md](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/README.md) にある。
+起動と API の使い方は [README.md](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/README.md) にある。
 
 ## Scope
 
@@ -268,7 +268,7 @@ API は、判定の結果だけを JSON で返す。記号と CSV は返さな�
 
 ## Interface
 
-API の定義の正本は [openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/openapi.yaml) である。
+API の定義の正本は [openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/openapi.yaml) である。
 
 - `POST /v1/checks`
   - `Authorization: Bearer` の access token を求める。署名、`iss`、`aud`、`exp`、`nbf` を JWKS で確かめる。`/healthz` と `/readyz` のほかは、定義に無いパスにもトークンを求める。
@@ -290,7 +290,7 @@ API の定義の正本は [openapi.yaml](https://github.com/Fukuemon/buddy/blob/
 - CORS は、`CORS_ALLOW_ORIGINS` に並べた Origin だけに許す。空なら CORS のヘッダーを返さない。
   - 許す Origin の事前のリクエスト（OPTIONS で `Access-Control-Request-Method` を持つ）には、トークンを求めずに 204 を返す。許すメソッドは GET、POST、OPTIONS、ヘッダーは `Authorization` と `Content-Type` にする。
   - 許さない Origin のリクエストは、CORS のヘッダーを付けずに通す。ブラウザは、ヘッダーの無いレスポンスを画面に読ませない。
-- 照合に固有の環境変数は [README.md](https://github.com/Fukuemon/buddy/blob/develop/apps/receipt-api/README.md) にあり、全体で共通の環境変数は [buddy Design Doc のインフラとの約束](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md#インフラとの約束) にある。
+- 照合に固有の環境変数は [README.md](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/README.md) にあり、全体で共通の環境変数は [buddy Design Doc のインフラとの約束](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md#インフラとの約束) にある。
 
 ## Verification
 

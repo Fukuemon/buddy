@@ -12,11 +12,11 @@ status: stable
 | 種類 | 保証すること | 配置先 | 流し方 |
 | --- | --- | --- | --- |
 | Go の単体テスト（規則） | 値の検証、繰り返しの規則、予定の権限の判定、照合の判定の規則 | 対象のパッケージの隣の `*_test.go`（テーブル駆動） | 各 API で `go test ./...` |
-| Go の単体テスト（機能のパッケージ） | 手順、権限の判定、事業所をまたぐ参照の拒否 | `apps/schedule-api/internal/<機能>`、`internal/access`（`internal/inmem` のメモリ上のリポジトリ） | 同上 |
-| Go の結合テスト（リポジトリ） | SQL が、マイグレーションとシードを適用した PostgreSQL で期待どおりに動く | `apps/schedule-api/internal/postgres` | 同上（`-short` で飛ばす） |
+| Go の単体テスト（機能のパッケージ） | 手順、権限の判定、事業所をまたぐ参照の拒否 | `services/schedule/internal/<機能>`、`internal/access`（`internal/inmem` のメモリ上のリポジトリ） | 同上 |
+| Go の結合テスト（リポジトリ） | SQL が、マイグレーションとシードを適用した PostgreSQL で期待どおりに動く | `services/schedule/internal/postgres` | 同上（`-short` で飛ばす） |
 | Go のトークンの検証のテスト | access token の署名、`iss`、`aud`、期限の検証 | `packages/go/oidc`（テストの中で鍵を作るフェイクの Issuer） | 同上 |
-| Go のハンドラのテスト | 状態コード、レスポンスの本文、認証と事業所の確認 | `apps/schedule-api/internal/httpapi`、`apps/receipt-api/internal/httpapi` | 同上 |
-| 照合の互換のテスト | Go の照合が、元の Python の実装と同じ結果を返す | `apps/receipt-api/internal/check/parity_test.go` と `testdata/parity/` | `go test ./...`。期待値の作り直しは `tools/parity/run.sh` |
+| Go のハンドラのテスト | 状態コード、レスポンスの本文、認証と事業所の確認 | `services/schedule/internal/httpapi`、`services/receipt/internal/httpapi` | 同上 |
+| 照合の互換のテスト | Go の照合が、元の Python の実装と同じ結果を返す | `services/receipt/internal/check/parity_test.go` と `testdata/parity/` | `go test ./...`。期待値の作り直しは `tools/parity/run.sh` |
 | web の単体とコンポーネントのテスト | 変換、表示の規則（照合の印と CSV）、コンポーネントの操作 | 対象の隣の `*.test.ts(x)`。コンポーネントは story を `composeStories` で使う | `pnpm --filter @buddy/web test`（jsdom） |
 | デザインシステムのテスト | トークンのコントラスト、押せる領域とフォーカスの移り方、story の描画とアクセシビリティ | `packages/ui/src` の `*.test.ts(x)` と story | `pnpm --filter @buddy/ui test`（トークンは node、コンポーネントと story はブラウザ） |
 | E2E | ログインから画面の操作までの流れが、compose の全体で動く | `packages/e2e/tests/` | `pnpm e2e`（下の E2E の節） |
@@ -31,7 +31,7 @@ status: stable
 - receipt-api のテストと web の Vitest は、外部のネットワークと環境変数を要らない。receipt-api のテストは、フェイクの Issuer と Calendar API を loopback で立てる。web は `VITE_API_MODE` を指定しなければフェイクの API で動く。
 - `packages/ui` のテストは、Playwright の chromium が要る（`pnpm --filter @buddy/ui exec playwright install chromium`）。
 - E2E は、ルートの compose の全体（ポートは [CONTRIBUTING.md](../CONTRIBUTING.md) の「ローカル環境で全体を起動する」）と、Playwright の chromium が要る。
-- 照合の互換のテストの期待値を作り直すときだけ、元の Python の実装のチェックアウトと uv が要る（`apps/receipt-api/tools/parity/README.md`）。
+- 照合の互換のテストの期待値を作り直すときだけ、元の Python の実装のチェックアウトと uv が要る（`services/receipt/tools/parity/README.md`）。
 
 ## Mocking and Test Data
 
@@ -44,8 +44,8 @@ status: stable
 | web のサーバーから見た 2 つの API | MSW の handler（`apps/web/src/mocks/`、`src/test/server.ts`） | compose の本物 |
 
 - テストのデータは、ダミーデータだけを使う。実在の事業所、人、連絡先を入れず、メールは `example.com` にする。
-- schedule-api のシードは `apps/schedule-api/db/seed/seed.sql` にあり、結合テストと compose が同じシードを適用する。全ての環境で同じマスタは、シードではなくマイグレーションが入れる。
-- 照合の入力の CSV は `apps/receipt-api/testdata/` に、互換のテストのケースは `testdata/parity/<ケース>/` に置く。
+- schedule-api のシードは `services/schedule/db/seed/seed.sql` にあり、結合テストと compose が同じシードを適用する。全ての環境で同じマスタは、シードではなくマイグレーションが入れる。
+- 照合の入力の CSV は `services/receipt/testdata/` に、互換のテストのケースは `testdata/parity/<ケース>/` に置く。
 - web のテストで HTTP を受けるのは MSW だけにし、fetch を引数で差し替えない。共通の handler は成功のレスポンスだけを返し、異常系はテストごとに `server.use()` で上書きする。handler の無いリクエストはテストを失敗させる。
   - 送ったリクエストの中身はテストの側で確かめない。上書きした handler が中身を確かめ、合わなければ 400 を返して、テストの結果を変える。
   - API を呼ばないことを確かめるときは、その API の全てのリクエストに 500 を返す handler（`http.all`）で上書きし、結果が変わらないことを見る。
@@ -67,7 +67,7 @@ status: stable
 | 画面の流れ、testid | その画面の E2E を流す |
 | `openapi.yaml`、SQL | `pnpm check:generated` |
 | `openapi.yaml`、`redocly.yaml`、`.redocly.lint-ignore.yaml` | `pnpm lint:openapi` |
-| マイグレーション、`apps/schedule-api/.tbls.yml` | `pnpm generate:db-docs` でテーブル定義書を生成し直してコミットする |
+| マイグレーション、`services/schedule/.tbls.yml` | `pnpm generate:db-docs` でテーブル定義書を生成し直してコミットする |
 | 画面仕様書、モック、story の `title` と export の名前、E2E の testid | `pnpm check:screens` |
 
 マージする前に、変えたアプリの `test` と `check`（Go は `go test ./...`、`go vet ./...`、`golangci-lint run`）を流す。  

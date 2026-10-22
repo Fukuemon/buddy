@@ -4,7 +4,7 @@
 
 - [PRD](PRD.md) — 誰のどの課題を、どの機能で解決するか
 - [Design Doc](design/DesignDoc.md) — 構成要素の責務と、要素の間の依存
-  - 機能ごとの Design Doc — [予定の管理](design/apps/schedule-api.md)、[レセプトの照合](design/apps/receipt-api.md)、[E2E のテストのコード](design/packages/e2e.md)、[エビデンスの録画](design/packages/e2e-recording.md)、[デザインシステムの使い方](design/packages/ui.md)
+  - 機能ごとの Design Doc — [予定の管理](design/services/schedule.md)、[レセプトの照合](design/services/receipt.md)、[E2E のテストのコード](design/packages/e2e.md)、[エビデンスの録画](design/packages/e2e-recording.md)、[デザインシステムの使い方](design/packages/ui.md)
 - [画面仕様書](screens/index.md) — 画面ごとに、何を表示し、何ができるか
 - API の仕様 — <a href="api/schedule-api.html">予定の API</a>、<a href="api/receipt-api.html">照合の API</a>。各アプリの `openapi.yaml` を描く
 - DB の設計 — [テーブルの一覧](db/schedule-api/README.md)と業務のまとまりごとの ER 図、<a href="erd/">テーブルを選んで関係をたどれる ER 図</a>（Liam ERD。公開したサイトだけで開ける）

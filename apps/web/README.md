@@ -63,8 +63,8 @@ API の型は、各 API の openapi.yaml から openapi-typescript で生成し�
 
 | 生成物 | 元の定義 |
 | --- | --- |
-| `src/api/generated/schedule.ts` | `apps/schedule-api/openapi.yaml`（予定の API） |
-| `src/api/generated/receipt.ts` | `apps/receipt-api/openapi.yaml`（照合の API） |
+| `src/api/generated/schedule.ts` | `services/schedule/openapi.yaml`（予定の API） |
+| `src/api/generated/receipt.ts` | `services/receipt/openapi.yaml`（照合の API） |
 
 openapi.yaml が変わったら、生成し直す。
 

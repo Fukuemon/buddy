@@ -94,7 +94,7 @@ go run ./cmd/api
 上の手順の calendarpit は `:memory:` で動くので、起動し直すと token が消える。`authorize.mjs` を流し直し、API も起動し直す。compose の calendarpit は、予定と token を volume に残す。
 
 実際の Google カレンダーで試すときは、検証の事業所のサービスアカウントになりすました Application Default Credentials を使う。  
-手順と要るロールは、[照合の API の README](../receipt-api/README.md#google-カレンダーから予定を取る) と同じである。  
+手順と要るロールは、[照合の API の README](../receipt/README.md#google-カレンダーから予定を取る) と同じである。  
 `GOOGLE_APPLICATION_CREDENTIALS` と `GOOGLE_CALENDAR_ENDPOINT` を設定せず、シードの組織 `org-sample` と検証の事業所のサービスアカウントの対応のファイルを渡す。  
 対応のファイルはサービスアカウントのメールアドレスを持つので、Git で追跡しない場所に置く。  
 書き出し（`GOOGLE_CALENDAR_EXPORT_ENABLED`）は、サービスアカウントが「予定の変更」の共有で書けると確かめるまで有効にしない。
