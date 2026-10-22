@@ -7,6 +7,7 @@ import {
   createMockImportPreview,
   createMockImportResult,
   createMockSchedules,
+  exportOfIssue,
   mockExportIssues,
   mockExternalCalendars,
   mockMe,
@@ -140,20 +141,30 @@ export const createScheduleHandlers = (baseUrl: string) => {
         const found = mockExportIssues.find((i) => i.id === params.calendar_export_id)
         if (found === undefined)
           return response(404).json({ code: 'not_found', message: 'リソースが見つかりません' })
-        const {
-          staff_id: _,
-          staff_name: __,
-          date: ___,
-          start_time: ____,
-          end_time: _____,
-          ...issue
-        } = found
         return response(202).json({
-          ...issue,
-          id: params.calendar_export_id,
+          ...exportOfIssue(found),
           status: 'pending',
           error_code: null,
           attempts: 0,
+        })
+      }),
+    ),
+    http.post(
+      '/v1/calendar_exports/{calendar_export_id}/acceptances',
+      withAuth(({ params, response }) => {
+        const found = mockExportIssues.find((i) => i.id === params.calendar_export_id)
+        if (found === undefined)
+          return response(404).json({ code: 'not_found', message: 'リソースが見つかりません' })
+        if (!found.acceptable)
+          return response(409).json({
+            code: 'export_not_acceptable',
+            message:
+              'この予定は、Google カレンダーの内容を buddy に当てられません。buddy の内容で書き直してください',
+          })
+        return response(200).json({
+          ...exportOfIssue(found),
+          status: 'succeeded',
+          error_code: null,
         })
       }),
     ),

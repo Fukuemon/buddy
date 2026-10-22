@@ -1,5 +1,6 @@
 // Package gcaltest は、テストと手元の compose に使う、Calendar API の偽物を提供する。
 // 予定の読み出し（events.list、events.instances、events.get）と書き込み（events.insert、events.patch、events.delete）に答える。
+// events.list は、syncToken による増分の取得にも答える。
 package gcaltest
 
 import (
@@ -8,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"slices"
 	"strconv"
 	"sync"
 	"testing"
@@ -18,6 +20,8 @@ import (
 
 // Server は、Calendar API の偽物である。期間（timeMin、timeMax）では絞らない。
 // 書き込みは、要求の If-Match が今の etag と違えば 412 を返し、書くたびに etag を新しくする。
+// 全ての予定を読むと、最後のページに nextSyncToken を返す。syncToken を付けて読むと、そのトークンの後に変わった予定を、
+// 消した予定も含めて 1 ページで返す。JSON から読んだ予定は、最初からあった予定として扱う。
 type Server struct {
 	// Calendars は、カレンダー ID ごとの、ページごとの予定である。2 ページ目以降は nextPageToken で返す。
 	// 無いカレンダーには 404 を返す。作った予定は最後のページに足す。
@@ -30,6 +34,9 @@ type Server struct {
 	Status int `json:"status"`
 	// Failures は、次からの書き込みの要求に順に返す誤りの状態である。返した値は消す。
 	Failures []int `json:"failures"`
+	// HoldChanges が true なら、増分の取得に、変わった予定を返さず、受け取ったトークンをそのまま返す。
+	// 予定の API が Google の変更を読む前に、buddy の変更を書き出させる試験に使う。
+	HoldChanges bool `json:"holdChanges"`
 
 	mu      sync.Mutex
 	queries []url.Values
@@ -37,6 +44,11 @@ type Server struct {
 	deleted map[string]map[string]*calendar.Event
 	etags   int
 	writes  int
+	// seq は、予定を変えるたびに 1 つ増える番号で、changed は、カレンダー ID と予定の ID ごとの、最後に変えたときの番号である。
+	seq     int
+	changed map[string]map[string]int
+	// generation は、同期のトークンの世代で、ExpireSyncTokens で増える。違う世代のトークンには 410 を返す。
+	generation int
 }
 
 // Queries は、予定を返した要求のクエリを、受けた順に返す。
@@ -74,7 +86,108 @@ func (s *Server) Edit(calendarID, eventID string, fn func(*calendar.Event)) bool
 	}
 	fn(ev)
 	ev.Etag = s.nextETag()
+	s.touch(calendarID, eventID)
 	return true
+}
+
+// Put は、Google カレンダーの画面で人が予定を作るか、繰り返しの予定の 1 回を変えたときのように、予定 ev を足し、
+// 同じ ID の予定があれば置き換える。etag は新しくする。
+func (s *Server) Put(calendarID string, ev *calendar.Event) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	ev.Etag = s.nextETag()
+	for i, page := range s.Calendars[calendarID] {
+		for j, cur := range page {
+			if cur.Id == ev.Id {
+				s.Calendars[calendarID][i][j] = ev
+				s.touch(calendarID, ev.Id)
+				return
+			}
+		}
+	}
+	s.appendEvent(calendarID, ev)
+	s.touch(calendarID, ev.Id)
+}
+
+// Delete は、Google カレンダーの画面で人が予定を消したときのように、予定 eventID を消す。予定が無ければ false を返す。
+func (s *Server) Delete(calendarID, eventID string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	ev := s.find(calendarID, eventID)
+	if ev == nil {
+		return false
+	}
+	s.remove(calendarID, ev)
+	return true
+}
+
+// SetHoldChanges は、HoldChanges を変える。
+func (s *Server) SetHoldChanges(hold bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.HoldChanges = hold
+}
+
+// Holding は、HoldChanges を返す。
+func (s *Server) Holding() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.HoldChanges
+}
+
+// ExpireSyncTokens は、これまでに返した同期のトークンを切らし、次に使われたときに 410 を返す。
+func (s *Server) ExpireSyncTokens() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.generation++
+}
+
+// touch は、予定 eventID を変えたことを、増分の取得のために覚える。s.mu を持って呼ぶ。
+func (s *Server) touch(calendarID, eventID string) {
+	s.seq++
+	if s.changed == nil {
+		s.changed = map[string]map[string]int{}
+	}
+	if s.changed[calendarID] == nil {
+		s.changed[calendarID] = map[string]int{}
+	}
+	s.changed[calendarID][eventID] = s.seq
+}
+
+// syncToken は、今の時点の同期のトークンを返す。s.mu を持って呼ぶ。
+func (s *Server) syncToken() string {
+	return fmt.Sprintf("g%d-%d", s.generation, s.seq)
+}
+
+// appendEvent は、予定 ev をカレンダーの最後のページに足す。s.mu を持って呼ぶ。
+func (s *Server) appendEvent(calendarID string, ev *calendar.Event) {
+	pages := s.Calendars[calendarID]
+	if len(pages) == 0 {
+		pages = [][]*calendar.Event{nil}
+	}
+	pages[len(pages)-1] = append(pages[len(pages)-1], ev)
+	s.Calendars[calendarID] = pages
+}
+
+// remove は、予定 ev を一覧から除いて、消した予定にする。s.mu を持って呼ぶ。
+func (s *Server) remove(calendarID string, ev *calendar.Event) {
+	for i, page := range s.Calendars[calendarID] {
+		for j, cur := range page {
+			if cur == ev {
+				s.Calendars[calendarID][i] = append(page[:j:j], page[j+1:]...)
+			}
+		}
+	}
+	ev.Status = "cancelled"
+	ev.Etag = s.nextETag()
+	if s.deleted == nil {
+		s.deleted = map[string]map[string]*calendar.Event{}
+	}
+	if s.deleted[calendarID] == nil {
+		s.deleted[calendarID] = map[string]*calendar.Event{}
+	}
+	s.deleted[calendarID][ev.Id] = ev
+	s.touch(calendarID, ev.Id)
 }
 
 // find は、予定 eventID を、カレンダーのページと繰り返しの回から探す。s.mu を持って呼ぶ。
@@ -134,12 +247,17 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	pages, ok := s.Calendars[r.PathValue("id")]
+	cal := r.PathValue("id")
+	pages, ok := s.Calendars[cal]
 	if !ok {
 		writeError(w, http.StatusNotFound, "Not Found")
 		return
 	}
 	q := r.URL.Query()
+	if t := q.Get("syncToken"); t != "" {
+		s.serveChanges(w, cal, t, q)
+		return
+	}
 	page := 0
 	if t := q.Get("pageToken"); t != "" {
 		n, err := strconv.Atoi(t)
@@ -159,8 +277,60 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	if page+1 < len(pages) {
 		body.NextPageToken = strconv.Itoa(page + 1)
+	} else {
+		if q.Get("showDeleted") == "true" {
+			body.Items = append(slices.Clone(body.Items), s.deletedEvents(cal)...)
+		}
+		body.NextSyncToken = s.syncToken()
 	}
 	writeJSON(w, http.StatusOK, body)
+}
+
+// serveChanges は、syncToken を付けた events.list に答える。s.mu を持って呼ぶ。
+func (s *Server) serveChanges(w http.ResponseWriter, cal, token string, q url.Values) {
+	var gen, since int
+	if _, err := fmt.Sscanf(token, "g%d-%d", &gen, &since); err != nil || gen != s.generation {
+		writeError(w, http.StatusGone, "Sync token is no longer valid, a full sync is required.")
+		return
+	}
+	s.queries = append(s.queries, q)
+	body := calendar.Events{AccessRole: "reader", NextSyncToken: token}
+	if role, ok := s.AccessRoles[cal]; ok {
+		body.AccessRole = role
+	}
+	if s.HoldChanges {
+		writeJSON(w, http.StatusOK, body)
+		return
+	}
+	body.Items = []*calendar.Event{}
+	for _, page := range s.Calendars[cal] {
+		for _, ev := range page {
+			if s.changed[cal][ev.Id] > since {
+				body.Items = append(body.Items, ev)
+			}
+		}
+	}
+	for _, ev := range s.deletedEvents(cal) {
+		if s.changed[cal][ev.Id] > since {
+			body.Items = append(body.Items, ev)
+		}
+	}
+	body.NextSyncToken = s.syncToken()
+	writeJSON(w, http.StatusOK, body)
+}
+
+// deletedEvents は、カレンダーの消した予定を ID の順に返す。s.mu を持って呼ぶ。
+func (s *Server) deletedEvents(cal string) []*calendar.Event {
+	ids := make([]string, 0, len(s.deleted[cal]))
+	for id := range s.deleted[cal] {
+		ids = append(ids, id)
+	}
+	slices.Sort(ids)
+	out := make([]*calendar.Event, len(ids))
+	for i, id := range ids {
+		out[i] = s.deleted[cal][id]
+	}
+	return out
 }
 
 // serveInstances は、events.instances に答える。
@@ -186,6 +356,10 @@ func (s *Server) serveInstances(w http.ResponseWriter, r *http.Request) {
 
 // serveGet は、events.get に答える。消した予定は status が cancelled で返る。
 func (s *Server) serveGet(w http.ResponseWriter, r *http.Request) {
+	if s.Status != 0 {
+		writeError(w, s.Status, "denied")
+		return
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	cal, id := r.PathValue("id"), r.PathValue("event")
@@ -244,12 +418,8 @@ func (s *Server) serveInsert(w http.ResponseWriter, r *http.Request) {
 	if ev.Status == "" {
 		ev.Status = "confirmed"
 	}
-	pages := s.Calendars[cal]
-	if len(pages) == 0 {
-		pages = [][]*calendar.Event{nil}
-	}
-	pages[len(pages)-1] = append(pages[len(pages)-1], &ev)
-	s.Calendars[cal] = pages
+	s.appendEvent(cal, &ev)
+	s.touch(cal, ev.Id)
 	writeJSON(w, http.StatusOK, &ev)
 }
 
@@ -305,13 +475,9 @@ func (s *Server) servePatch(w http.ResponseWriter, r *http.Request) {
 	ev.Etag = s.nextETag()
 	if wasDeleted && ev.Status != "cancelled" {
 		delete(s.deleted[cal], id)
-		pages := s.Calendars[cal]
-		if len(pages) == 0 {
-			pages = [][]*calendar.Event{nil}
-		}
-		pages[len(pages)-1] = append(pages[len(pages)-1], ev)
-		s.Calendars[cal] = pages
+		s.appendEvent(cal, ev)
 	}
+	s.touch(cal, id)
 	writeJSON(w, http.StatusOK, ev)
 }
 
@@ -336,22 +502,7 @@ func (s *Server) serveDelete(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusPreconditionFailed, "Precondition Failed")
 		return
 	}
-	for i, page := range s.Calendars[cal] {
-		for j, cur := range page {
-			if cur == ev {
-				s.Calendars[cal][i] = append(page[:j:j], page[j+1:]...)
-			}
-		}
-	}
-	ev.Status = "cancelled"
-	ev.Etag = s.nextETag()
-	if s.deleted == nil {
-		s.deleted = map[string]map[string]*calendar.Event{}
-	}
-	if s.deleted[cal] == nil {
-		s.deleted[cal] = map[string]*calendar.Event{}
-	}
-	s.deleted[cal][id] = ev
+	s.remove(cal, ev)
 	w.WriteHeader(http.StatusNoContent)
 }
 

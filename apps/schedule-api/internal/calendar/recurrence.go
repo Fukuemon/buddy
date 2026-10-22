@@ -108,7 +108,7 @@ func RuleFromRecurrence(parent Event) (Recurrence, error) {
 
 // tokyoStart は、w が Asia/Tokyo の日時なら、その日付と時刻を返す。
 func tokyoStart(w When) (civil.Date, civil.Time, error) {
-	t, err := time.Parse(time.RFC3339, w.DateTime)
+	t, err := w.Instant()
 	if err != nil {
 		return civil.Date{}, civil.Time{}, expansion("開始の日時 %q を読めない", w.DateTime)
 	}

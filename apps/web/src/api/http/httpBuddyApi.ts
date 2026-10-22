@@ -264,6 +264,12 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
             params: { path: { calendar_export_id: exportId } },
           }),
         ),
+      acceptExport: (_facilityId, exportId) =>
+        unwrap(
+          client.POST('/v1/calendar_exports/{calendar_export_id}/acceptances', {
+            params: { path: { calendar_export_id: exportId } },
+          }),
+        ),
     },
   }
 }

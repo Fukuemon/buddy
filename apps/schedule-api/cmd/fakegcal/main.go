@@ -1,7 +1,8 @@
 // Command fakegcal は、手元の compose と E2E で Google Calendar API の代わりに動く偽物である。本番のイメージには入れない。
 //
 // 予定の読み出しと書き込みに答え、予定は -file の JSON（gcaltest.Server の形）から読む。期間では絞らない。
-// 書いた予定はメモリの中にだけ持ち、止めると消える。GET /view は予定を並べる画面で、予定を Google の側で直す操作も持つ。
+// 書いた予定はメモリの中にだけ持ち、止めると消える。GET /view は予定を並べる画面で、予定を Google の側で直す操作と消す操作、
+// 変更を予定の API に渡さないようにする操作も持つ。
 //
 //	go run ./cmd/fakegcal -addr 127.0.0.1:8085 -file ../../compose/fake-google-calendar.json
 //
@@ -40,6 +41,8 @@ func main() {
 	mux.Handle("/", s.Handler())
 	mux.HandleFunc("GET /view", viewHandler(&s))
 	mux.HandleFunc("POST /view/shift", shiftHandler(&s))
+	mux.HandleFunc("POST /view/delete", deleteHandler(&s))
+	mux.HandleFunc("POST /view/hold", holdHandler(&s))
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
 	srv := &http.Server{Addr: *addr, Handler: mux, ReadHeaderTimeout: 5 * time.Second}
 	log.Printf("listening on %s", *addr)

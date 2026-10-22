@@ -271,3 +271,85 @@ func TestWriterSendsIfMatch(t *testing.T) {
 		t.Errorf("消した予定と同じ ID: err = %v", err)
 	}
 }
+
+func TestReaderChanges(t *testing.T) {
+	ev := func(id string) *calendar.Event {
+		return &calendar.Event{
+			Id: id, Status: "confirmed", Etag: `"` + id + `"`, Summary: "会議",
+			Start: &calendar.EventDateTime{DateTime: "2026-10-06T10:00:00+09:00"},
+			End:   &calendar.EventDateTime{DateTime: "2026-10-06T11:00:00+09:00"},
+		}
+	}
+	f := &gcaltest.Server{Calendars: map[string][][]*calendar.Event{"staff@example.com": {{ev("a")}, {ev("b")}}}}
+	r := start(t, f)
+
+	full, err := r.Changes(t.Context(), "staff@example.com", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(full.Events) != 2 || full.NextSyncToken == "" {
+		t.Fatalf("全ての予定 = %+v", full)
+	}
+	q := f.Queries()[0]
+	if q.Get("singleEvents") != "false" || q.Get("showDeleted") != "true" || q.Get("timeZone") != "Asia/Tokyo" || q.Has("timeMin") {
+		t.Errorf("全ての予定を読む要求 = %v", q)
+	}
+
+	f.Edit("staff@example.com", "b", func(e *calendar.Event) { e.Summary = "会議（変更）" })
+	f.Delete("staff@example.com", "a")
+	got, err := r.Changes(t.Context(), "staff@example.com", full.NextSyncToken)
+	if err != nil {
+		t.Fatal(err)
+	}
+	statuses := map[string]string{}
+	for _, e := range got.Events {
+		statuses[e.ID] = e.Status
+	}
+	if !reflect.DeepEqual(statuses, map[string]string{"a": "cancelled", "b": "confirmed"}) || got.NextSyncToken == full.NextSyncToken {
+		t.Errorf("変わった予定 = %+v", got)
+	}
+	if q := f.Queries()[len(f.Queries())-1]; q.Get("syncToken") != full.NextSyncToken {
+		t.Errorf("増分の要求 = %v", q)
+	}
+
+	f.ExpireSyncTokens()
+	if _, err := r.Changes(t.Context(), "staff@example.com", got.NextSyncToken); !errors.Is(err, schedcal.ErrSyncTokenExpired) {
+		t.Errorf("切れたトークンの err = %v, want ErrSyncTokenExpired", err)
+	}
+	f.Status = http.StatusForbidden
+	if _, err := r.Changes(t.Context(), "staff@example.com", ""); !errors.Is(err, schedcal.ErrUnreadable) {
+		t.Errorf("共有されていないカレンダーの err = %v, want ErrUnreadable", err)
+	}
+}
+
+func TestReaderEvent(t *testing.T) {
+	f := &gcaltest.Server{Calendars: map[string][][]*calendar.Event{"staff@example.com": {{{
+		Id: "a", Status: "confirmed", Etag: `"a"`, Summary: "会議",
+		Start: &calendar.EventDateTime{DateTime: "2026-10-06T10:00:00+09:00"},
+		End:   &calendar.EventDateTime{DateTime: "2026-10-06T11:00:00+09:00"},
+	}}}}}
+	r := start(t, f)
+	got, err := r.Event(t.Context(), "staff@example.com", "a")
+	if err != nil || got.ID != "a" || got.Summary != "会議" || got.ETag != `"a"` {
+		t.Fatalf("Event = %+v, %v", got, err)
+	}
+	f.Delete("staff@example.com", "a")
+	if got, err := r.Event(t.Context(), "staff@example.com", "a"); err != nil || got.Status != schedcal.StatusCancelled {
+		t.Errorf("消した予定 = %+v, %v", got, err)
+	}
+	if _, err := r.Event(t.Context(), "staff@example.com", "missing"); !errors.Is(err, schedcal.ErrUnreadable) {
+		t.Errorf("無い予定の err = %v", err)
+	}
+}
+
+func TestReaderEventNotFound(t *testing.T) {
+	f := &gcaltest.Server{Calendars: map[string][][]*calendar.Event{"staff@example.com": {{}}}}
+	_, err := start(t, f).Event(t.Context(), "staff@example.com", "missing")
+	if !errors.Is(err, schedcal.ErrEventNotFound) || !errors.Is(err, schedcal.ErrUnreadable) || strings.Contains(err.Error(), "staff") {
+		t.Errorf("無い予定の err = %v", err)
+	}
+	f.Status = http.StatusForbidden
+	if _, err := start(t, f).Event(t.Context(), "staff@example.com", "missing"); errors.Is(err, schedcal.ErrEventNotFound) {
+		t.Errorf("403 を予定が無いとみなした: %v", err)
+	}
+}
