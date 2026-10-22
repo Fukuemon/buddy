@@ -32,11 +32,11 @@ export default defineConfig({
     { name: 'setup', testMatch: /setup\/.*\.setup\.ts/ },
     {
       name: 'e2e',
-      testMatch: /specs\/.*\.e2e\.ts/,
+      testMatch: /tests\/specs\/.*\.e2e\.ts/,
       dependencies: ['setup'],
       use: { storageState: LOGIN_STATE },
     },
     // 録画は recordEvidence が新しいコンテキストで撮り、prepare の中でログインするので、setup に依らない
-    { name: 'evidence', testMatch: /evidence\/.*\.e2e\.ts/, timeout: TIMEOUTS.evidence },
+    { name: 'evidence', testMatch: /tests\/evidence\/.*\.e2e\.ts/, timeout: TIMEOUTS.evidence },
   ],
 })

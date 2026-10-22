@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { copyFileSync } from 'node:fs'
+import { copyFileSync, rmSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -87,6 +87,10 @@ export const recordPrEvidence = async <T>(
     throw new Error(`name は英小文字、数字、ハイフンにする: ${o.name}`)
   const out = path.join(root, '.ai-out/evidence', no)
   const dir = path.join(out, o.name)
+  const suffix = o.variant.name === 'single' ? '' : `-${o.variant.name}`
+  const attached = path.join(out, `${o.name}${suffix}.mp4`)
+  // 撮影が途中で失敗したときに、前の撮影の動画を添付しないよう、先に消す
+  rmSync(attached, { force: true })
   await recordEvidence(
     browser,
     {
@@ -103,9 +107,5 @@ export const recordPrEvidence = async <T>(
     prepare,
     body,
   )
-  const suffix = o.variant.name === 'single' ? '' : `-${o.variant.name}`
-  copyFileSync(
-    path.join(dir, `${evidenceName(o.variant)}.mp4`),
-    path.join(out, `${o.name}${suffix}.mp4`),
-  )
+  copyFileSync(path.join(dir, `${evidenceName(o.variant)}.mp4`), attached)
 }
