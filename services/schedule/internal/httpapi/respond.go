@@ -9,9 +9,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/calendar"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 )
 
 // bodyErrorPrefix は、本文を読めないときの 400 の文の先頭である。

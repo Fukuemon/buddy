@@ -1,4 +1,4 @@
-module github.com/Fukuemon/buddy/apps/receipt-api
+module github.com/Fukuemon/buddy/services/receipt
 
 go 1.27
 

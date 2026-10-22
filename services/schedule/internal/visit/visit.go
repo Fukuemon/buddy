@@ -4,7 +4,7 @@ package visit
 import (
 	"context"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 )
 
 // ServiceCode は、レセプトのサービスコードである。StartMinutes と EndMinutes は、対象の提供時間の範囲である。

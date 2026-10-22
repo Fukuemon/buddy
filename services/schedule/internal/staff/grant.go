@@ -1,8 +1,8 @@
 package staff
 
 import (
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/kernel"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
+	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
 )
 
 // DefaultGrants は、役職 pos のデフォルトの権限から、チーム teamID に所属する職員に与える権限を作る。権限と対象の ID は ids で発行する。

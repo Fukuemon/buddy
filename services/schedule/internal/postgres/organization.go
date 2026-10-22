@@ -5,8 +5,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/postgres/sqlcgen"
+	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/postgres/sqlcgen"
 )
 
 // FacilityRepository は、organization.FacilityRepository を実装する。

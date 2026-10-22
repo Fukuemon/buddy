@@ -8,8 +8,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/judge"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/record"
+	"github.com/Fukuemon/buddy/services/receipt/internal/judge"
+	"github.com/Fukuemon/buddy/services/receipt/internal/record"
 )
 
 func readTestdata(t *testing.T, name string) []byte {

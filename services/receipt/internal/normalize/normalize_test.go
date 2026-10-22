@@ -3,7 +3,7 @@ package normalize
 import (
 	"testing"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/csvio"
+	"github.com/Fukuemon/buddy/services/receipt/internal/csvio"
 )
 
 func TestStaff(t *testing.T) {

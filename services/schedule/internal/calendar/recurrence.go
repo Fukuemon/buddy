@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/schedule"
 )
 
 // ErrNeedsExpansion は、繰り返しの予定を buddy の繰り返しの規則に写せず、回に展開して取り込む必要があることを表す。

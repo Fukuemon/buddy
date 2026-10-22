@@ -5,8 +5,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/postgres/sqlcgen"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
+	"github.com/Fukuemon/buddy/services/schedule/internal/postgres/sqlcgen"
+	"github.com/Fukuemon/buddy/services/schedule/internal/visit"
 )
 
 // VisitInfoRepository は、visit.InfoRepository を実装する。

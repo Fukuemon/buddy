@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/judge"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/match"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/record"
-	"github.com/Fukuemon/buddy/apps/receipt-api/tools/parity/report"
+	"github.com/Fukuemon/buddy/services/receipt/internal/civil"
+	"github.com/Fukuemon/buddy/services/receipt/internal/judge"
+	"github.com/Fukuemon/buddy/services/receipt/internal/match"
+	"github.com/Fukuemon/buddy/services/receipt/internal/record"
+	"github.com/Fukuemon/buddy/services/receipt/tools/parity/report"
 )
 
 func rec(t *testing.T, client, start, end string, duration *int, service string, additions []string) *record.Record {

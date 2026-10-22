@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/config"
+	"github.com/Fukuemon/buddy/services/schedule/internal/config"
 )
 
 func env(m map[string]string) func(string) string {

@@ -92,7 +92,7 @@ services:
 
   # 予定の API と calendarpit の間の中継。E2E が、Google の変更を予定の API に渡さないようにするのに使う
   gcalhold:
-    build: { context: ., dockerfile: apps/schedule-api/Dockerfile, target: gcalhold }
+    build: { context: ., dockerfile: services/schedule/Dockerfile, target: gcalhold }
     ports: ['127.0.0.1:${GCALHOLD_PORT:-8085}:8080']
     healthcheck:
       test: ['CMD', '/usr/local/bin/gcalhold', 'healthcheck']
@@ -103,7 +103,7 @@ services:
       calendarpit: { condition: service_healthy }
 
   schedule-api-migrate:
-    build: { context: ., dockerfile: apps/schedule-api/Dockerfile }
+    build: { context: ., dockerfile: services/schedule/Dockerfile }
     image: buddy-compose-schedule-api
     entrypoint: ['/usr/local/bin/migrate']
     command: ['up']
@@ -159,7 +159,7 @@ services:
       gcalhold: { condition: service_healthy }
 
   receipt-api:
-    build: { context: ., dockerfile: apps/receipt-api/Dockerfile }
+    build: { context: ., dockerfile: services/receipt/Dockerfile }
     environment:
       OIDC_ISSUER: http://idp:9000/buddy
       OIDC_AUDIENCE: receipt-api

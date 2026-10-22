@@ -12,10 +12,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/check"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/httpapi/openapi"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/record"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/source"
+	"github.com/Fukuemon/buddy/services/receipt/internal/check"
+	"github.com/Fukuemon/buddy/services/receipt/internal/httpapi/openapi"
+	"github.com/Fukuemon/buddy/services/receipt/internal/record"
+	"github.com/Fukuemon/buddy/services/receipt/internal/source"
 )
 
 // 照合の入力を受ける multipart のフィールド名。

@@ -6,11 +6,11 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/csvio"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/judge"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/match"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/normalize"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/record"
+	"github.com/Fukuemon/buddy/services/receipt/internal/csvio"
+	"github.com/Fukuemon/buddy/services/receipt/internal/judge"
+	"github.com/Fukuemon/buddy/services/receipt/internal/match"
+	"github.com/Fukuemon/buddy/services/receipt/internal/normalize"
+	"github.com/Fukuemon/buddy/services/receipt/internal/record"
 )
 
 // ScheduleSource は、照合に使う予定を返す。返す Record は normalize.Schedules を通した後の値である。

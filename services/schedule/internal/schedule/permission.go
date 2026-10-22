@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
+	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
+	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
 )
 
 // CanRead は、p が、チーム teamID に属する職員 staffID の予定を見てよいかを返す。

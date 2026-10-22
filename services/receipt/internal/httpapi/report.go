@@ -1,11 +1,11 @@
 package httpapi
 
 import (
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/check"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/httpapi/openapi"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/judge"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/record"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/servicerule"
+	"github.com/Fukuemon/buddy/services/receipt/internal/check"
+	"github.com/Fukuemon/buddy/services/receipt/internal/httpapi/openapi"
+	"github.com/Fukuemon/buddy/services/receipt/internal/judge"
+	"github.com/Fukuemon/buddy/services/receipt/internal/record"
+	"github.com/Fukuemon/buddy/services/receipt/internal/servicerule"
 )
 
 func report(rep check.Report) openapi.Report {

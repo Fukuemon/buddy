@@ -9,10 +9,10 @@ import (
 
 	"github.com/Fukuemon/buddy/packages/go/gcaltitle"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
+	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/visit"
 )
 
 // SkipServiceNotFound は、タイトルから読んだサービス内容が、サービスコードのマスタに無い予定である。

@@ -13,8 +13,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/check"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/httpapi/openapi"
+	"github.com/Fukuemon/buddy/services/receipt/internal/check"
+	"github.com/Fukuemon/buddy/services/receipt/internal/httpapi/openapi"
 )
 
 func newHandler() http.Handler {

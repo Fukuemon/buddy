@@ -4,9 +4,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/check"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/gcal"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/gcal/gcaltest"
+	"github.com/Fukuemon/buddy/services/receipt/internal/check"
+	"github.com/Fukuemon/buddy/services/receipt/internal/gcal"
+	"github.com/Fukuemon/buddy/services/receipt/internal/gcal/gcaltest"
 )
 
 func TestSelect(t *testing.T) {

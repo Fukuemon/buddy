@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 )
 
 func TestConflict(t *testing.T) {

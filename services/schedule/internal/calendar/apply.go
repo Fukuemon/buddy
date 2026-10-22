@@ -8,12 +8,12 @@ import (
 
 	"github.com/Fukuemon/buddy/packages/go/gcaltitle"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/kernel"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
+	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
+	"github.com/Fukuemon/buddy/services/schedule/internal/patient"
+	"github.com/Fukuemon/buddy/services/schedule/internal/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/visit"
 )
 
 // cancelledInGoogle は、外部のカレンダーで消された予定を buddy でキャンセルするときの理由である。

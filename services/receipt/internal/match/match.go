@@ -5,7 +5,7 @@ import (
 	"cmp"
 	"slices"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/record"
+	"github.com/Fukuemon/buddy/services/receipt/internal/record"
 )
 
 // Pair は、突き合わせた予定と実績である。片方にしかない行では、もう片方が nil である。

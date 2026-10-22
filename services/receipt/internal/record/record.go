@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/civil"
+	"github.com/Fukuemon/buddy/services/receipt/internal/civil"
 )
 
 // Source は、行がどちらの入力から来たかを表す。

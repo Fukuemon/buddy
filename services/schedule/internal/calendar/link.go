@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 )
 
 // ProviderGoogle は、Google カレンダーの ExternalCalendar.Provider である。

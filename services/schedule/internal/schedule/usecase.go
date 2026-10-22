@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/kernel"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/tx"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
+	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
+	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
+	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
+	"github.com/Fukuemon/buddy/services/schedule/internal/visit"
 )
 
 // Deps は、Usecase が使うリポジトリと、ほかの機能のデータを読む小さなインターフェイスである。

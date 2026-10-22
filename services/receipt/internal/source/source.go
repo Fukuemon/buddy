@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/check"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/gcal"
+	"github.com/Fukuemon/buddy/services/receipt/internal/check"
+	"github.com/Fukuemon/buddy/services/receipt/internal/gcal"
 )
 
 // Select が返すエラー。

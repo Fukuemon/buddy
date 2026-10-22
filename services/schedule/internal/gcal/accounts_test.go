@@ -9,10 +9,10 @@ import (
 
 	"github.com/Fukuemon/buddy/packages/go/gcalauth"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/calendar"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/gcal"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/gcal/gcaltest"
+	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
+	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
 )
 
 // orgClients は、組織ごとのサービスアカウントと calendarv3.Service を返す gcal.Clients である。

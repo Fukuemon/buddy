@@ -6,8 +6,8 @@ docs_dir = "docs"
 site_dir = "site"
 # docs/design/ のシンボリックリンクの先を、プレビューでたどって再読み込みする
 watch = [
-  "apps/schedule-api/DesignDoc.md",
-  "apps/receipt-api/DesignDoc.md",
+  "services/schedule/DesignDoc.md",
+  "services/receipt/DesignDoc.md",
   "packages/ui/DESIGN.md",
   "packages/e2e/DesignDoc.md",
   "packages/e2e/kit/recording/DesignDoc.md",
@@ -26,8 +26,8 @@ nav = [
   { "PRD" = "PRD.md" },
   { "Design Doc" = [
     { "全体" = "design/DesignDoc.md" },
-    { "予定の管理" = "design/apps/schedule-api.md" },
-    { "レセプトの照合" = "design/apps/receipt-api.md" },
+    { "予定の管理" = "design/services/schedule.md" },
+    { "レセプトの照合" = "design/services/receipt.md" },
     { "E2E のテストのコード" = "design/packages/e2e.md" },
     { "エビデンスの録画" = "design/packages/e2e-recording.md" },
   ] },

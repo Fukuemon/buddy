@@ -41,9 +41,9 @@ import (
 	"github.com/Fukuemon/buddy/packages/go/gcalauth"
 	"github.com/Fukuemon/buddy/packages/go/oidc"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/gcal"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/httpapi"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/source"
+	"github.com/Fukuemon/buddy/services/receipt/internal/gcal"
+	"github.com/Fukuemon/buddy/services/receipt/internal/httpapi"
+	"github.com/Fukuemon/buddy/services/receipt/internal/source"
 )
 
 type config struct {

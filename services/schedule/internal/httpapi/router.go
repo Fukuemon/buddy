@@ -11,8 +11,8 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi/openapi"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/ulid"
+	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi/openapi"
+	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
 
 // Usecases は、ルーターがハンドラに渡す操作である。

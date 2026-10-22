@@ -6,7 +6,7 @@ import (
 
 	"github.com/Fukuemon/buddy/packages/go/gcaltitle"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 )
 
 // Kind は、予定を何として取り込むかである。

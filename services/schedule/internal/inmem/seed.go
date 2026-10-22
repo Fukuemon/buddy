@@ -1,12 +1,12 @@
 package inmem
 
 import (
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
+	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/patient"
+	"github.com/Fukuemon/buddy/services/schedule/internal/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
+	"github.com/Fukuemon/buddy/services/schedule/internal/visit"
 )
 
 // Seeded が入れる値の ID。

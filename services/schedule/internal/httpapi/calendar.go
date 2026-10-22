@@ -3,8 +3,8 @@ package httpapi
 import (
 	"context"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/calendar"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi/openapi"
+	"github.com/Fukuemon/buddy/services/schedule/internal/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi/openapi"
 )
 
 // CalendarUsecase は、外部のカレンダーのハンドラが使う操作である。

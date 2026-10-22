@@ -12,11 +12,11 @@ import (
 
 	"google.golang.org/api/calendar/v3"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/check"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/gcal"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/gcal/gcaltest"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/httpapi/openapi"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/source"
+	"github.com/Fukuemon/buddy/services/receipt/internal/check"
+	"github.com/Fukuemon/buddy/services/receipt/internal/gcal"
+	"github.com/Fukuemon/buddy/services/receipt/internal/gcal/gcaltest"
+	"github.com/Fukuemon/buddy/services/receipt/internal/httpapi/openapi"
+	"github.com/Fukuemon/buddy/services/receipt/internal/source"
 )
 
 func event(id, summary, start, end string) *calendar.Event {

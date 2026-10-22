@@ -3,9 +3,9 @@ package judge
 import (
 	"testing"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/match"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/record"
+	"github.com/Fukuemon/buddy/services/receipt/internal/civil"
+	"github.com/Fukuemon/buddy/services/receipt/internal/match"
+	"github.com/Fukuemon/buddy/services/receipt/internal/record"
 )
 
 type spec struct {

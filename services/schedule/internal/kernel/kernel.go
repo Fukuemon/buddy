@@ -7,7 +7,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 )
 
 // IDGenerator は、エンティティの新しい ID を発行する。

@@ -8,7 +8,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/tools/parity/report"
+	"github.com/Fukuemon/buddy/services/receipt/tools/parity/report"
 )
 
 // TestRunParity は、testdata/parity の各ケースの結果の CSV を、Python の結果から作った expected.csv と比べる。

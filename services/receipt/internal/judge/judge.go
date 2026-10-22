@@ -5,10 +5,10 @@ import (
 	"cmp"
 	"slices"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/match"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/record"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/servicerule"
+	"github.com/Fukuemon/buddy/services/receipt/internal/civil"
+	"github.com/Fukuemon/buddy/services/receipt/internal/match"
+	"github.com/Fukuemon/buddy/services/receipt/internal/record"
+	"github.com/Fukuemon/buddy/services/receipt/internal/servicerule"
 )
 
 // Category は、照合の結果の区分である。

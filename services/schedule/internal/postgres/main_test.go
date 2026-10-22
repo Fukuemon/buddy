@@ -14,7 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/db"
+	"github.com/Fukuemon/buddy/services/schedule/db"
 )
 
 // testImage は、compose と CI と同じ PostgreSQL のイメージである。

@@ -3,9 +3,9 @@ package organization
 import (
 	"context"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/apperr"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/kernel"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/tx"
+	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
+	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
 // Deps は、Usecase が使うリポジトリである。

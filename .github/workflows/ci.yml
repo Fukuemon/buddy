@@ -43,7 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        module: [packages/go, apps/receipt-api, apps/schedule-api]
+        module: [packages/go, services/receipt, services/schedule]
     defaults:
       run:
         working-directory: ${{ matrix.module }}
@@ -85,7 +85,7 @@ jobs:
           path: |
             ~/go/pkg/mod
             ~/.cache/go-build
-          key: go-generated-${{ hashFiles('mise.toml', 'apps/*/go.sum') }}
+          key: go-generated-${{ hashFiles('mise.toml', 'services/*/go.sum') }}
           restore-keys: go-generated-
       - run: pnpm install --frozen-lockfile
       - run: pnpm check:generated
@@ -105,7 +105,7 @@ jobs:
           path: |
             ~/go/pkg/mod
             ~/.cache/go-build
-          key: go-db-docs-${{ hashFiles('mise.toml', 'apps/schedule-api/go.sum') }}
+          key: go-db-docs-${{ hashFiles('mise.toml', 'services/schedule/go.sum') }}
           restore-keys: go-db-docs-
       # マイグレーションを当てた PostgreSQL から表の文書を作り直し、コミットした文書と差分がないことを確かめる
       - run: sh scripts/build-db-docs.sh

@@ -13,9 +13,9 @@ import (
 
 	"github.com/Fukuemon/buddy/packages/go/gcaltitle"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
+	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/visit"
 )
 
 // 外部の予定の extendedProperties.private に置く、buddy の予定の ID のキー。値は ID だけにし、個人の情報を置かない。

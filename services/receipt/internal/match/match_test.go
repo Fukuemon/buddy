@@ -3,8 +3,8 @@ package match
 import (
 	"testing"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/record"
+	"github.com/Fukuemon/buddy/services/receipt/internal/civil"
+	"github.com/Fukuemon/buddy/services/receipt/internal/record"
 )
 
 func rec(t *testing.T, line int, client, start string) record.Record {

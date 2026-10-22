@@ -7,7 +7,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/judge"
+	"github.com/Fukuemon/buddy/services/receipt/internal/judge"
 )
 
 const (

@@ -3,9 +3,9 @@ package schedule
 import (
 	"context"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
+	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
+	"github.com/Fukuemon/buddy/services/schedule/internal/visit"
 )
 
 // Repository は、単発の予定とキャンセルを読み書きする。見つからないときは apperr.ErrNotFound を返す。

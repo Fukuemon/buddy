@@ -3,7 +3,7 @@
 #
 #   RECEIPT_CHECKER_LIBS=<receipt-checker/server/libs> tools/parity/run.sh [--update] [OUT_DIR]
 #
-# apps/receipt-api で実行する。--update は Python の結果から各ケースの expected.csv を書き直す。
+# services/receipt で実行する。--update は Python の結果から各ケースの expected.csv を書き直す。
 # OUT_DIR を省くと一時ディレクトリに結果を書く。終了コードは、差分のあるケースがあれば 1 である。
 set -euo pipefail
 

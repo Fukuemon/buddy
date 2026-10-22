@@ -21,19 +21,19 @@ import (
 
 	"github.com/Fukuemon/buddy/packages/go/oidc"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/access"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/calendar"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/config"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/gcal"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/postgres"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/principal"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/schedule"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/ulid"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/visit"
+	"github.com/Fukuemon/buddy/services/schedule/internal/access"
+	"github.com/Fukuemon/buddy/services/schedule/internal/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/config"
+	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
+	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi"
+	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/patient"
+	"github.com/Fukuemon/buddy/services/schedule/internal/postgres"
+	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
+	"github.com/Fukuemon/buddy/services/schedule/internal/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
+	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
+	"github.com/Fukuemon/buddy/services/schedule/internal/visit"
 )
 
 const (

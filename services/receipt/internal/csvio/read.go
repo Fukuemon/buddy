@@ -12,7 +12,7 @@ import (
 
 	"golang.org/x/text/encoding/japanese"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/record"
+	"github.com/Fukuemon/buddy/services/receipt/internal/record"
 )
 
 const utf8BOM = "\xEF\xBB\xBF"

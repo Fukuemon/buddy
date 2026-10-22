@@ -3,9 +3,9 @@ package staff_test
 import (
 	"testing"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/inmem"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/organization"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/staff"
+	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
+	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
 )
 
 // TestDefaultGrants は、役職のデフォルトの権限ごとに 1 つの権限を作り、チームを対象にする権限だけに所属のチームを付けることを確かめる。

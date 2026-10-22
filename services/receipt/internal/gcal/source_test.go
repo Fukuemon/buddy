@@ -10,10 +10,10 @@ import (
 	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/option"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/check"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/gcal"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/gcal/gcaltest"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/record"
+	"github.com/Fukuemon/buddy/services/receipt/internal/check"
+	"github.com/Fukuemon/buddy/services/receipt/internal/gcal"
+	"github.com/Fukuemon/buddy/services/receipt/internal/gcal/gcaltest"
+	"github.com/Fukuemon/buddy/services/receipt/internal/record"
 )
 
 func timed(id, summary, start, end string) *calendar.Event {

@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/check"
-	"github.com/Fukuemon/buddy/apps/receipt-api/tools/parity/report"
+	"github.com/Fukuemon/buddy/services/receipt/internal/check"
+	"github.com/Fukuemon/buddy/services/receipt/tools/parity/report"
 )
 
 func main() {

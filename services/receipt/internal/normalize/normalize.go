@@ -7,10 +7,10 @@ import (
 
 	"github.com/Fukuemon/buddy/packages/go/gcaltitle"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/civil"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/csvio"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/record"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/servicerule"
+	"github.com/Fukuemon/buddy/services/receipt/internal/civil"
+	"github.com/Fukuemon/buddy/services/receipt/internal/csvio"
+	"github.com/Fukuemon/buddy/services/receipt/internal/record"
+	"github.com/Fukuemon/buddy/services/receipt/internal/servicerule"
 )
 
 // Staff は、主訪問者の全角スペースを半角にする。

@@ -17,10 +17,10 @@ import (
 
 	"github.com/Fukuemon/buddy/packages/go/gcaltitle"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/check"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/csvio"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/normalize"
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/record"
+	"github.com/Fukuemon/buddy/services/receipt/internal/check"
+	"github.com/Fukuemon/buddy/services/receipt/internal/csvio"
+	"github.com/Fukuemon/buddy/services/receipt/internal/normalize"
+	"github.com/Fukuemon/buddy/services/receipt/internal/record"
 )
 
 // TimeZone は、訪問日と時刻を決めるタイムゾーンである。

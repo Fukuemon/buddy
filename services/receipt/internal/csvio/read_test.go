@@ -6,7 +6,7 @@ import (
 
 	"golang.org/x/text/encoding/japanese"
 
-	"github.com/Fukuemon/buddy/apps/receipt-api/internal/record"
+	"github.com/Fukuemon/buddy/services/receipt/internal/record"
 )
 
 const sample = "訪問日,利用者名\n2024/04/01,利用者A\n"

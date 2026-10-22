@@ -3,8 +3,8 @@ package httpapi
 import (
 	"context"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/httpapi/openapi"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/patient"
+	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi/openapi"
+	"github.com/Fukuemon/buddy/services/schedule/internal/patient"
 )
 
 // PatientUsecase は、利用者のハンドラが使う操作である。

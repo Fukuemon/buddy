@@ -10,7 +10,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/db"
+	"github.com/Fukuemon/buddy/services/schedule/db"
 )
 
 // newMigrate は、埋め込んだマイグレーションを c のデータベースに適用する migrate.Migrate を作る。

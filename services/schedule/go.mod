@@ -1,4 +1,4 @@
-module github.com/Fukuemon/buddy/apps/schedule-api
+module github.com/Fukuemon/buddy/services/schedule
 
 go 1.27
 

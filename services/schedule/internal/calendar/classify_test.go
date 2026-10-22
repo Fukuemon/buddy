@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/calendar"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 )
 
 func date(t *testing.T, s string) civil.Date {

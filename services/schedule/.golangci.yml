@@ -32,4 +32,4 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - github.com/Fukuemon/buddy/apps/schedule-api
+        - github.com/Fukuemon/buddy/services/schedule

@@ -3,7 +3,7 @@ package ulid_test
 import (
 	"testing"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/ulid"
+	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
 
 func TestValid(t *testing.T) {

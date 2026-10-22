@@ -17,9 +17,9 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/Fukuemon/buddy/apps/schedule-api/db"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/config"
-	"github.com/Fukuemon/buddy/apps/schedule-api/internal/postgres"
+	"github.com/Fukuemon/buddy/services/schedule/db"
+	"github.com/Fukuemon/buddy/services/schedule/internal/config"
+	"github.com/Fukuemon/buddy/services/schedule/internal/postgres"
 )
 
 func main() {
