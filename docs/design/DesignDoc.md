@@ -55,7 +55,7 @@ flowchart TB
     receipt["receipt-api<br/>[コンテナ: Go]<br/>照合"]
     postgres[("PostgreSQL 18<br/>[データの保存先]<br/>schedule-api のデータ")]
   end
-  gcal["Google Calendar API<br/>[外部のシステム]<br/>職員が入れた予定"]
+  gcal["Google Calendar API<br/>[外部のシステム]<br/>職員のカレンダーの予定"]
   staff -- "画面を使う" --> web
   staff -- "ログインする" --> broker
   web -- "認可コードフロー" --> broker
@@ -64,7 +64,7 @@ flowchart TB
   web -- "access token を付けて呼ぶ" --> receipt
   schedule -- "SQL" --> postgres
   receipt -- "予定を読む" --> gcal
-  schedule -- "取り込む予定を読む" --> gcal
+  schedule -- "予定を読み書きする" --> gcal
   classDef person fill:#08427b,stroke:#052e56,color:#fff
   classDef container fill:#438dd5,stroke:#2e6295,color:#fff
   classDef external fill:#8a8a8a,stroke:#6b6b6b,color:#fff
@@ -105,6 +105,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 - 事業所、部署、チーム、役職、権限、職員、利用者、予定を持つ。
 - access token の検証、職員の特定、事業所の確認、職員の権限による予定の閲覧と編集の判定を行う。
 - 職員に結び付けた Google カレンダーの予定を、期間を選んで予定に取り込む（ADR-0009 の段階 1）。
+- buddy の予定を、職員に結び付けた Google カレンダーに書き出す（段階 2）。Google カレンダーで変わった予定を読み、buddy の予定に当てる（段階 3）。
 - 持たないもの: 照合の規則。
 - 内部の構成と ER は [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md) にある。
 
@@ -252,7 +253,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 │   ├── e2e/             # E2E のテストと、手動検証のエビデンスを撮る kit
 │   │   ├── DesignDoc.md # E2E のテストのコードの設計
 │   │   └── kit/recording/DesignDoc.md # エビデンスの録画の設計
-│   └── go/              # 2 つの API が共有する Go の module。OIDC の検証、ヘルスチェック
+│   └── go/              # 2 つの API が共有する Go の module。OIDC の検証、ヘルスチェック、Google カレンダーのタイトルの解釈とサービスアカウントのクライアント
 ├── docs/                # Zensical のサイトの元。PRD、Design Doc、ADR、画面仕様書、API の仕様、DB の設計
 │   ├── PRD.md
 │   ├── design/
@@ -266,7 +267,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 ├── context/             # 作業の中で参照する規約と事実
 ├── scripts/             # 生成物と画面仕様書のチェック、サイトのビルド
 ├── compose.yml          # ローカル環境で全体を起動する
-├── compose/             # ローカルの IdP の設定
+├── compose/             # ローカルの IdP の設定、calendarpit の fixture と同意のスクリプト、サービスアカウントの対応のダミー
 ├── zensical.toml
 └── pyproject.toml       # Zensical を uv で入れる
 ```
