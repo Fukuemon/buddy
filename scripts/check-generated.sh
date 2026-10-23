@@ -9,13 +9,15 @@ set -eu
 (cd services/schedule && go generate ./... && sqlc generate)
 pnpm --filter @buddy/web generate:api
 node scripts/build-mock-tokens.mjs
+node scripts/build-broker-tokens.mjs
 
 set -- \
   services/receipt/internal/httpapi/openapi \
   services/schedule/internal/httpapi/openapi \
   services/schedule/internal/postgres/sqlcgen \
   apps/web/src/api/generated \
-  docs/screens/_common/tokens.css
+  docs/screens/_common/tokens.css \
+  services/broker/internal/login/tokens.css
 
 git diff --exit-code -- "$@"
 untracked=$(git ls-files --others --exclude-standard -- "$@")
