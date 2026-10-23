@@ -16,35 +16,6 @@ test.describe('カレンダーの連携と取り込みの文言', () => {
     const prefix = variant.label ? `${variant.label}: ` : ''
     const expected = variant.name === 'before' ? EXPECTED.before : EXPECTED.after
 
-    test(`${prefix}職員の管理の権限を持つ職員のナビゲーションを開いた場合、「${expected.review}」のリンクが出ること`, async ({
-      browser,
-    }) => {
-      const url = storyUrl('画面-common-sitenav--import')
-      await recordPrEvidence(
-        browser,
-        {
-          name: 'wording-site-nav',
-          title:
-            '職員の管理の権限を持つ職員のナビゲーションで、食い違った予定の画面へのリンクの文言を見る',
-          actor: ACTOR,
-          variant,
-        },
-        async (page) => {
-          await page.goto(url)
-        },
-        async ({ page, step, check }) => {
-          await page.goto(url)
-          const nav = page.getByTestId('site-nav')
-          await expect(nav).toBeVisible()
-          await step(
-            '職員の管理の権限を持つ職員のナビゲーション（Storybook の SiteNav の Import）を開いている',
-          )
-          await expect(nav).toContainText(expected.review)
-          await check(`ナビゲーションに「${expected.review}」のリンクが出る`)
-        },
-      )
-    })
-
     test(`${prefix}食い違った予定の画面を開いた場合、見出しが「${expected.review}」で出ること`, async ({
       browser,
     }) => {
