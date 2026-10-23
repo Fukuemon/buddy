@@ -42,11 +42,13 @@ export const ScheduleCreateModalContainer = () => {
   })
 
   // 職員の一覧を開いた後に取り終え、URL の staffId が休職か退職の職員を指していたときは、未選択に戻す。
-  // 初期値も戻して、閉じるときに破棄の確認を出さない。staffId の欄は開くまで登録されないので、resetField は使えない
+  // 初期値も戻して、閉じるときに破棄の確認を出さない。それより前に入れた値と、変えたかの状態は残す。
+  // staffId の欄は開くまで登録されないので、resetField は使えない
   useEffect(() => {
     if (opened.staffId === undefined || staffId !== undefined) return
     form.reset(createScheduleFormValues({ kind: form.getValues('kind'), ...opened, staffId }), {
       keepDirtyValues: true,
+      keepDirty: true,
     })
   }, [form, opened, staffId])
 
