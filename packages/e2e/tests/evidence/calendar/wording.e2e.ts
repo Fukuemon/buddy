@@ -5,10 +5,20 @@ import { pageBody } from '../../selectors/page'
 
 const ACTOR = 'ログインなし（Storybook の story）'
 
-// 改修前は「確かめが要る予定」と「読めるか確かめる」、改修後は「確認が必要な予定」と「読めるか確認する」
+// #252 で「確かめる」を「確認する」に置き換えた文言。改修前と比べて撮るので、両方の文言を持つ
 const EXPECTED = {
-  before: { review: '確かめが要る予定', check: '読めるか確かめる' },
-  after: { review: '確認が必要な予定', check: '読めるか確認する' },
+  before: {
+    review: '確かめが要る予定',
+    count: '確かめが要る',
+    ask: '確かめ',
+    check: '読めるか確かめる',
+  },
+  after: {
+    review: '確認が必要な予定',
+    count: '確認が必要',
+    ask: '確認し',
+    check: '読めるか確認する',
+  },
 }
 
 test.describe('カレンダーの連携と取り込みの文言', () => {
@@ -37,7 +47,13 @@ test.describe('カレンダーの連携と取り込みの文言', () => {
           await step(
             '食い違った予定の画面（Storybook の CalendarReviewView の Default）を開いている',
           )
-          await check(`見出しが「${expected.review}」で出る`)
+          // export-2 は、Google カレンダーに書く権限が無い書き出しである
+          await expect(page.getByTestId('calendar-review-reason-export-2')).toContainText(
+            `職員に${expected.ask}てください`,
+          )
+          await check(
+            `見出しが「${expected.review}」で、書けない予定の理由の文が「職員に${expected.ask}てください」で出る`,
+          )
         },
       )
     })
@@ -64,11 +80,16 @@ test.describe('カレンダーの連携と取り込みの文言', () => {
           await step(
             '予定の取り込みのプレビューの結果（Storybook の CalendarImportPreview の Preview）を開いている',
           )
+          await expect(page.getByTestId('calendar-import-count-needs_review')).toContainText(
+            expected.count,
+          )
           await expect(preview).toContainText(expected.review)
           await expect(page.getByTestId('calendar-import-remaining')).toContainText(
             `${expected.review}のうち`,
           )
-          await check(`見出しと残りの件数の文が「${expected.review}」で出る`)
+          await check(
+            `件数の見出しが「${expected.count}」、一覧の見出しと残りの件数の文が「${expected.review}」で出る`,
+          )
         },
       )
     })
