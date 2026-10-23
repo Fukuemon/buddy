@@ -162,7 +162,8 @@ services:
     volumes:
       - ./compose/broker/upstream-idps.json:/config/upstream-idps.json:ro
       - ./compose/broker/upstream-idp-client-secrets.json:/config/upstream-idp-client-secrets.json:ro
-    ports: ['127.0.0.1:${BROKER_PORT:-8100}:8080']
+    # 8080 はログインの画面、8081 は内部の API と token_hook である。内部の API は、E2E がトークンなしの呼び出しを試すのに公開する
+    ports: ['127.0.0.1:${BROKER_PORT:-8100}:8080', '127.0.0.1:${BROKER_INTERNAL_PORT:-8101}:8081']
     healthcheck:
       test: ['CMD', '/usr/local/bin/broker', 'healthcheck']
       interval: 2s
@@ -248,7 +249,7 @@ services:
       OIDC_AUDIENCE: schedule
       # 職員の登録と停止で、ブローカーの内部の API を呼ぶ。compose/hydra/clients.sh が登録した schedule のクライアントで、
       # client credentials の access token を取る
-      BROKER_URL: http://broker:8080
+      BROKER_URL: http://broker:8081
       BROKER_TOKEN_URL: http://hydra:4444/oauth2/token
       BROKER_CLIENT_SECRET: schedule-dev
       # web と、API の仕様のページでリクエストを試すローカル環境の文書のサイト（zensical serve）に許す
