@@ -5,9 +5,9 @@ dependencies:
   materialization_repo_url: Fukuemon/agent-harness
   name: core
   host: github.com
-  resolved_commit: 4f91093d81d0297a8b4474a9804f71c39c8e290c
-  resolved_ref: v0.2.7
-  version: 0.2.7
+  resolved_commit: 0fca15fce87b8fa346146acf003866416c1ab108
+  resolved_ref: v0.2.8
+  version: 0.2.8
   virtual_path: packages/core
   is_virtual: true
   package_type: marketplace_plugin
@@ -157,15 +157,15 @@ dependencies:
     .codex/hooks/core/hooks/check-comments.test.mjs: sha256:9d40113fca8ea810e5cca6f27c47a0ea745d719c1c8ddecdb205a56bb7d268d9
     .codex/hooks/core/hooks/hooks.test.mjs: sha256:13f98a6c05b0f6b1d3ab60ff2beef81fcbe3b37eeb7100cc221b35f4045f035d
     .codex/hooks/core/hooks/package.json: sha256:8005a3491db7d92f36ac66369861589f9c47123d3a7c71e643fc2c06168cd45a
-  content_hash: sha256:2026064b0ba9311a0c38ee14d9abc85d1e00bc6fd05c66b70ebc43ce58dee2a5
+  content_hash: sha256:3c1b2045dafe97c3a60d7db8bd48085f82ea052db84868a784703f3730986b6b
   declared_license: MIT
 - repo_url: fukuemon/agent-harness
   materialization_repo_url: Fukuemon/agent-harness
   name: docs
   host: github.com
-  resolved_commit: 4f91093d81d0297a8b4474a9804f71c39c8e290c
-  resolved_ref: v0.2.7
-  version: 0.2.7
+  resolved_commit: 0fca15fce87b8fa346146acf003866416c1ab108
+  resolved_ref: v0.2.8
+  version: 0.2.8
   virtual_path: packages/docs
   is_virtual: true
   package_type: marketplace_plugin
@@ -225,7 +225,7 @@ dependencies:
     .agents/skills/write-design-docs/assets/PRD.md: sha256:f1a2dfd6a24cb98ca59b5189ced60b1947366ebb7946944f2851fe3b11ffd80a
     .agents/skills/write-design-docs/assets/adr/template.md: sha256:aa451d658e0fa6f7b02248ce182d830487e0cd74a70218e9ad94bcedb2474c2a
     .agents/skills/write-design-docs/assets/design/DesignDoc.md: sha256:35beba67b63dff1cb9b15bb6d9373087293c77af24b8d5d25d594753d0602460
-    .agents/skills/write-design-docs/assets/prh.yml: sha256:30ab0711df7d4624a72acf0427d3fd359a5da89f0cb83d4a3bb16fa9d9109c4c
+    .agents/skills/write-design-docs/assets/prh.yml: sha256:a923ae23ac808652fb205f549be72738dc5a81403e7cddb3c2d390ad73934ed5
     .agents/skills/write-design-docs/references/adr.md: sha256:afa7bbffde11b9e571d3e4813643114cde23f7f9156216adff59ec1bb2fc28ac
     .agents/skills/write-design-docs/references/design-doc.md: sha256:2929ece2fa593cb07dafa8bb3eaaf8ac470d0300c5854c9be824799ea7737ce9
     .agents/skills/write-design-docs/references/feature-design-doc.md: sha256:b7effabafde30da0a5099f94de7c5c20f4f2df4b8b418f4d08b3fba7e5687865
@@ -246,7 +246,7 @@ dependencies:
     .claude/skills/write-design-docs/assets/PRD.md: sha256:f1a2dfd6a24cb98ca59b5189ced60b1947366ebb7946944f2851fe3b11ffd80a
     .claude/skills/write-design-docs/assets/adr/template.md: sha256:aa451d658e0fa6f7b02248ce182d830487e0cd74a70218e9ad94bcedb2474c2a
     .claude/skills/write-design-docs/assets/design/DesignDoc.md: sha256:35beba67b63dff1cb9b15bb6d9373087293c77af24b8d5d25d594753d0602460
-    .claude/skills/write-design-docs/assets/prh.yml: sha256:30ab0711df7d4624a72acf0427d3fd359a5da89f0cb83d4a3bb16fa9d9109c4c
+    .claude/skills/write-design-docs/assets/prh.yml: sha256:a923ae23ac808652fb205f549be72738dc5a81403e7cddb3c2d390ad73934ed5
     .claude/skills/write-design-docs/references/adr.md: sha256:afa7bbffde11b9e571d3e4813643114cde23f7f9156216adff59ec1bb2fc28ac
     .claude/skills/write-design-docs/references/design-doc.md: sha256:2929ece2fa593cb07dafa8bb3eaaf8ac470d0300c5854c9be824799ea7737ce9
     .claude/skills/write-design-docs/references/feature-design-doc.md: sha256:b7effabafde30da0a5099f94de7c5c20f4f2df4b8b418f4d08b3fba7e5687865
@@ -261,7 +261,7 @@ dependencies:
     .codex/hooks/docs/hooks/doc-checks.mjs: sha256:ccb6135e56c65466b104df2a87213b4cc2cc89ddc1c2016506183f9205daaafd
     .codex/hooks/docs/hooks/list-drift.mjs: sha256:a2422953eb0336fa947354e1ca55e1d24282b3270205d192d9c5fbd416f01475
     .codex/hooks/docs/hooks/package.json: sha256:8005a3491db7d92f36ac66369861589f9c47123d3a7c71e643fc2c06168cd45a
-  content_hash: sha256:ba49ae55004388f1a6191eb9036b669ad20c531223f91fb7596b9634fe0b5069
+  content_hash: sha256:82f0b3482b9f7f9964ccb2aef3a8c2511cbf0e1abb6df0908dc53f11b1dfa369
   declared_license: MIT
 deployments:
 - kind: project-relative
@@ -632,7 +632,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/docs
   active_owner: fukuemon/agent-harness/packages/docs
-  content_hash: sha256:30ab0711df7d4624a72acf0427d3fd359a5da89f0cb83d4a3bb16fa9d9109c4c
+  content_hash: sha256:a923ae23ac808652fb205f549be72738dc5a81403e7cddb3c2d390ad73934ed5
 - kind: project-relative
   target: claude
   value: .claude/skills/write-design-docs/references/adr.md
@@ -1091,7 +1091,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/docs
   active_owner: fukuemon/agent-harness/packages/docs
-  content_hash: sha256:30ab0711df7d4624a72acf0427d3fd359a5da89f0cb83d4a3bb16fa9d9109c4c
+  content_hash: sha256:a923ae23ac808652fb205f549be72738dc5a81403e7cddb3c2d390ad73934ed5
 - kind: project-relative
   target: codex
   value: .agents/skills/write-design-docs/references/adr.md
