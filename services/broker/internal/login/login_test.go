@@ -231,6 +231,9 @@ func TestShowLogin(t *testing.T) {
 	if rec.Code != http.StatusOK || !strings.Contains(body, `name="email"`) || !strings.Contains(body, `value="ch&#34;"`) {
 		t.Errorf("code = %d, body = %s", rec.Code, body)
 	}
+	if !strings.Contains(body, "--buddy-color-primary: #") {
+		t.Errorf("トークンの値が無い: %s", body)
+	}
 	if got := rec.Header().Get("Content-Security-Policy"); got != "frame-ancestors 'none'" {
 		t.Errorf("Content-Security-Policy = %q, want frame-ancestors 'none'", got)
 	}
