@@ -91,7 +91,7 @@ erDiagram
 
 ### ログイン
 
-職員が初めてログインするときの流れを示す。2 回目からは、上流のアカウントの `iss` と `sub` で職員を探し、結び付けの手順を通らない。
+職員が初めてログインするときの流れを示す。2 回目からは、結び付けた `iss` と `sub` が上流の ID token と同じかを比べ、結び付けの手順を通らない。
 
 ```mermaid
 sequenceDiagram
@@ -115,9 +115,15 @@ sequenceDiagram
   K->>U: 認可コードを ID token と交換する
   K->>K: メールが確認済みで登録と同じなら、上流の iss と sub を職員に結び付ける
   K->>H: ログインの accept（subject は職員の ID）
+  H-->>K: リダイレクト先
+  K-->>B: Hydra へリダイレクト
+  B->>H: GET /oauth2/auth
   H-->>B: ブローカーの同意へリダイレクト（consent_challenge）
   B->>K: 同意
   K->>H: 同意の accept（aud、org_id）
+  H-->>K: リダイレクト先
+  K-->>B: Hydra へリダイレクト
+  B->>H: GET /oauth2/auth
   H-->>B: web のコールバックへリダイレクト
   B->>W: GET /auth/callback
   W->>H: 認可コードをトークンと交換する
@@ -148,7 +154,7 @@ sequenceDiagram
   - `CLIENT_IP_HEADER` は、ブローカーにプロキシを通らずに届かない構成でだけ渡す。直接届くと、ブラウザがヘッダーを書いて上限を外せる。
 - `POST /login` は、ほかのサイトから送られたものを 403 で拒み、ログインの失敗の画面を出す。判定は Go の `http.CrossOriginProtection` に任せ、`PUBLIC_URL` の origin を信頼する origin に足す。
   - `Origin` が `PUBLIC_URL` の origin なら受ける。リバースプロキシの後ろで `Host` がブラウザの開いた origin と違っても受けるためである。
-  - `Sec-Fetch-Site` が `same-origin` か `none`（アドレスバーやブックマークから開いた送信）なら受け、ほかの値なら拒む。
+  - `Sec-Fetch-Site` が `same-origin` か `none`（利用者が直接始めた遷移）なら受け、ほかの値なら拒む。
   - `Sec-Fetch-Site` が無ければ、`Origin` の host を `Host` と比べ、違えば拒む。scheme は比べない。
   - どちらのヘッダーも無いリクエスト（ブラウザでないクライアント）は受ける。
 - ブローカーの画面は `Content-Security-Policy: frame-ancestors 'none'` を返し、ほかのサイトの frame に入らない。
@@ -159,10 +165,10 @@ sequenceDiagram
 - 上流の IdP へリダイレクトしている間の値（ログインの要求、職員の ID、state、nonce、PKCE の code verifier）は、ブラウザの cookie に置き、コールバックの `state` と照らす。
   - cookie は署名しない。書き換えられるのはブラウザの利用者だけで、事業所と上流の IdP は職員の ID から DB で引き直すので、別のメールを入れたのと同じ結果にしかならない。
 - ブローカーの画面の文言は、web のログインの失敗の画面と同じにする。ブローカーは、Hydra へ結果を返さずに終えるときに、自分のログインの失敗の画面を出す。この画面には、もう一度ログインするリンクが無い。
-  - `login_challenge` が無いか、Hydra の admin API で読めないとき
+  - `login_challenge` か `consent_challenge` が無いか、Hydra の admin API で読めないとき
   - コールバックの値が、このブラウザで始めたログインのものと確認できないとき
   - 上流の IdP の discovery の文書を読めず、リダイレクト先を作れないとき（502）
-  - 職員を DB から引けないとき（500）
+  - `POST /login` で、メールから職員を DB で引けないとき（500）。コールバック、保ったセッション、同意で職員を引けないときは reject で返す
   - ほかのサイトから `POST /login` が送られたとき（403）
   - Hydra へ accept か reject を返せないとき（502）
 - ブローカーの画面の色と書体は、web と同じ packages/ui のトークンの値にする。画面の背景の中央に白いカードを置き、上端にロゴを出す。
@@ -243,7 +249,7 @@ sequenceDiagram
 
 ### ログアウト
 
-web は web のセッションを消した後に、ブラウザを Hydra の RP-Initiated Logout へ、ID token を添えてリダイレクトする。Hydra はブローカーのログアウトの画面を呼び、ブローカーが accept すると、Hydra のログインのセッションが消える。上流の IdP のセッションは消さない。
+web は自分のセッションを消した後に、ブラウザを Hydra の RP-Initiated Logout へ、ID token を添えてリダイレクトする。Hydra はブローカーのログアウトの画面を呼び、ブローカーが accept すると、Hydra のログインのセッションが消える。上流の IdP のセッションは消さない。
 
 ```mermaid
 sequenceDiagram

@@ -297,9 +297,9 @@ rules:
   - expected: 事業所の IdP か ID ブローカー
     pattern: 認証の基盤
     prh: 外にある職員のアカウントは事業所の IdP、組織とメールの入力の画面は ID ブローカーと、指すものの名前で書く
-  - expected: 1 つの access token で（SSO は IdP のセッションを共有するときだけ）
+  - expected: 1 つの access token で
     pattern: /1\s?回のログインで/
-    prh: web に 1 度ログインし、1 つの access token で 2 つの API を呼ぶことは SSO ではない。起きることを書く。SSO は、上流の IdP と Hydra のログインのセッションで 2 度目のログインを求めないときに使う
+    prh: web に 1 度ログインし、1 つの access token で 2 つの API を呼ぶことは SSO ではない。起きることを書く。SSO は、上流の IdP と Hydra のログインのセッションで 2 度目のログインを求めないときに使い、「1 回のログイン」と書かない
   # 技術用語は、一般的なカタカナ語か英語で書く。業務の機能の名前（予定の取り込み、予定の書き出し、結び付け）は和語のまま書く
   - expected: フェイク
     pattern: 偽物
