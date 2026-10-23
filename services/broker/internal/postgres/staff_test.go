@@ -125,12 +125,18 @@ func TestStaffStoreResumeRetire(t *testing.T) {
 	ctx := context.Background()
 	t.Cleanup(func() { _, _ = pool.Exec(ctx, `DELETE FROM staff`) })
 	s := NewStaffStore(pool)
-	if _, err := pool.Exec(ctx, `INSERT INTO staff (id, org_id, email, status) VALUES ($1, 'org-a', 'aoki@example.com', 'suspended')`, staffA); err != nil {
+	if _, err := pool.Exec(ctx, `INSERT INTO staff (id, org_id, email) VALUES ($1, 'org-a', 'aoki@example.com')`, staffA); err != nil {
 		t.Fatal(err)
 	}
 	a := login.UpstreamAccount{Issuer: "https://idp.example.com", Subject: "sub-a"}
 	if err := s.Link(ctx, staffA, a); err != nil {
 		t.Fatal(err)
+	}
+	if err := s.Suspend(ctx, staffA); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Link(ctx, staffA, login.UpstreamAccount{Issuer: "https://idp.example.com", Subject: "sub-x"}); !errors.Is(err, login.ErrConflict) {
+		t.Errorf("休職の職員の Link の err = %v, want ErrConflict", err)
 	}
 
 	for range 2 {
@@ -166,6 +172,13 @@ func TestStaffStoreResumeRetire(t *testing.T) {
 	if got, _ := s.Get(ctx, staffA); got.Status != login.StatusRetired {
 		t.Errorf("退職した職員の status = %s, want retired のまま", got.Status)
 	}
+	// ログインの途中に退職した職員に、コールバックが上流のアカウントを結び付け直さない
+	if err := s.Link(ctx, staffA, a); !errors.Is(err, login.ErrConflict) {
+		t.Errorf("退職した職員の Link の err = %v, want ErrConflict", err)
+	}
+	if got, _ := s.Get(ctx, staffA); got.Upstream != (login.UpstreamAccount{}) {
+		t.Errorf("退職した職員の上流のアカウント = %+v, want 空のまま", got.Upstream)
+	}
 	if err := s.Retire(ctx, "01JCCCCCCCCCCCCCCCCCCCCCCC"); !errors.Is(err, login.ErrNotFound) {
 		t.Errorf("いない職員の Retire の err = %v, want ErrNotFound", err)
 	}
@@ -173,6 +186,12 @@ func TestStaffStoreResumeRetire(t *testing.T) {
 	m := login.StaffMember{ID: staffB, OrgID: "org-a", Email: "aoki@example.com", Status: login.StatusPending}
 	if got, created, err := s.Register(ctx, m); err != nil || !created || got.ID != staffB {
 		t.Fatalf("退職した職員と同じメールの Register = %+v, %v, %v, want 新しい職員", got, created, err)
+	}
+	if err := s.Link(ctx, staffB, a); !errors.Is(err, login.ErrConflict) {
+		t.Errorf("登録の途中の職員の Link の err = %v, want ErrConflict", err)
+	}
+	if err := s.Activate(ctx, staffB); err != nil {
+		t.Fatal(err)
 	}
 	if err := s.Link(ctx, staffB, a); err != nil {
 		t.Errorf("退職した職員の上流のアカウントを新しい職員に結び付けられない: %v", err)

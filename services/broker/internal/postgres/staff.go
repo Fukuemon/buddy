@@ -61,15 +61,21 @@ func (s *StaffStore) Get(ctx context.Context, id string) (login.StaffMember, err
 	return m, nil
 }
 
-// Link は、職員 staffID に上流のアカウント a を結び付ける。職員が既に上流のアカウントを持つか、
-// a が別の職員に結び付いているときは login.ErrConflict を返す。
+// Link は、有効な職員 staffID に上流のアカウント a を結び付ける。職員が既に上流のアカウントを持つか、
+// a が別の職員に結び付いているか、職員が有効でないときは login.ErrConflict を返す。
+// 職員の行を FOR SHARE で読むので、同時の退職と休職を待ち、その後の状態で判断する。ログインの途中に退職した職員に、
+// 上流のアカウントを結び付け直さないためである。
 func (s *StaffStore) Link(ctx context.Context, staffID string, a login.UpstreamAccount) error {
-	_, err := s.pool.Exec(ctx, `INSERT INTO upstream_accounts (staff_id, iss, sub) VALUES ($1, $2, $3)`, staffID, a.Issuer, a.Subject)
+	tag, err := s.pool.Exec(ctx, `INSERT INTO upstream_accounts (staff_id, iss, sub)
+SELECT s.id, $2, $3 FROM staff s WHERE s.id = $1 AND s.status = $4 FOR SHARE`, staffID, a.Issuer, a.Subject, login.StatusActive)
 	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok && pgErr.Code == uniqueViolation {
 		return login.ErrConflict
 	}
 	if err != nil {
 		return fmt.Errorf("link upstream account: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return login.ErrConflict
 	}
 	return nil
 }

@@ -63,7 +63,7 @@ type Staff interface {
 	FindByEmail(ctx context.Context, email string) ([]StaffMember, error)
 	// Get は、ID が id の職員を返す。いなければ ErrNotFound を返す。
 	Get(ctx context.Context, id string) (StaffMember, error)
-	// Link は、職員 staffID に上流のアカウントを結び付ける。結び付けられないときは ErrConflict を返す。
+	// Link は、有効な職員 staffID に上流のアカウントを結び付ける。結び付けられないときと、職員が有効でないときは ErrConflict を返す。
 	Link(ctx context.Context, staffID string, a UpstreamAccount) error
 }
 
