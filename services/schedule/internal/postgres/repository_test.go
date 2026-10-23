@@ -19,6 +19,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
+	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 	"github.com/Fukuemon/buddy/services/schedule/internal/visit"
 )
 
@@ -868,6 +869,102 @@ func TestStaffLockStatusesAndLockFacilityWaitForEachOther(t *testing.T) {
 	if err := refs.LockStatuses(begin(t), unknownID); !errors.Is(err, apperr.ErrNotFound) {
 		t.Errorf("いない事業所の LockStatuses の err = %v, want ErrNotFound", err)
 	}
+}
+
+// 職員の管理の権限を持つ有効な職員が 2 人の事業所で、2 人から同時にその権限を外そうとしたとき、少なくとも 1 人に権限が残る
+// （#279 の検証の観点 4）。権限を外す操作と役職を変える操作が同時のときも同じである。
+func TestStaffConcurrentRemovalKeepsManager(t *testing.T) {
+	if testDB == nil {
+		t.Skip("PostgreSQL を使うテストは -short では動かさない")
+	}
+	bg := context.Background()
+	const (
+		facility  = "01M3TD0000000000000000RF01"
+		dept      = "01M3TD0000000000000000RD01"
+		team      = "01M3TD0000000000000000RT01"
+		managerP  = "01M3TD0000000000000000RP01"
+		memberP   = "01M3TD0000000000000000RP02"
+		a, b      = "01M3TD0000000000000000RS01", "01M3TD0000000000000000RS02"
+		upA, upB  = "01M3TD0000000000000000RG01", "01M3TD0000000000000000RG02"
+		rounds    = 10
+		facilityN = "同時の操作の事業所"
+	)
+	exec := func(t *testing.T, sql string, args ...any) {
+		t.Helper()
+		if _, err := testDB.Exec(bg, sql, args...); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cleanup := func(t *testing.T) {
+		exec(t, `DELETE FROM users WHERE facility_id = $1`, facility)
+		exec(t, `DELETE FROM positions WHERE facility_id = $1`, facility)
+		exec(t, `DELETE FROM teams WHERE facility_id = $1`, facility)
+		exec(t, `DELETE FROM departments WHERE facility_id = $1`, facility)
+		exec(t, `DELETE FROM facilities WHERE id = $1`, facility)
+	}
+	// setup は、職員 a と b が職員の管理の権限を持つ有効な職員の事業所をコミットして作る。
+	setup := func(t *testing.T) {
+		t.Helper()
+		cleanup(t)
+		exec(t, `INSERT INTO facilities (id, name) VALUES ($1, $2)`, facility, facilityN)
+		exec(t, `INSERT INTO departments (id, facility_id, name) VALUES ($1, $2, '部署')`, dept, facility)
+		exec(t, `INSERT INTO teams (id, facility_id, name) VALUES ($1, $2, 'チーム')`, team, facility)
+		exec(t, `INSERT INTO positions (id, facility_id, name) VALUES ($1, $3, '管理者'), ($2, $3, 'メンバー')`, managerP, memberP, facility)
+		exec(t, `INSERT INTO position_policies (position_id, policy_id) VALUES ($1, $3), ($2, $4)`, managerP, memberP, seedStaffManage, seedSelfEdit)
+		exec(t, `INSERT INTO users (id, facility_id, username, email, department_id, team_id, position_id) VALUES
+			($1, $3, '管理者 一', 'concurrent-a@example.com', $4, $5, $6), ($2, $3, '管理者 二', 'concurrent-b@example.com', $4, $5, $6)`,
+			a, b, facility, dept, team, managerP)
+		exec(t, `INSERT INTO user_policies (id, facility_id, user_id, policy_id) VALUES ($1, $3, $4, $6), ($2, $3, $5, $6)`,
+			upA, upB, facility, a, b, seedStaffManage)
+	}
+	t.Cleanup(func() { cleanup(t) })
+
+	uc := staff.NewUsecase(staff.Deps{
+		Facilities: NewFacilityRepository(testDB), Departments: NewDepartmentRepository(testDB), Teams: NewTeamRepository(testDB),
+		Positions: NewPositionRepository(testDB), Policies: NewPolicyRepository(testDB), Staff: NewStaffRepository(testDB),
+	}, NewTransactor(testDB), ulid.Generator{}, func(context.Context) error { return nil })
+	// race は、first と second を同時に始め、片方だけが成功して片方が ErrConflict になり、権限を持つ有効な職員が 1 人残ることを確認する。
+	race := func(t *testing.T, first, second func(ctx context.Context) error) {
+		t.Helper()
+		for range rounds {
+			setup(t)
+			start := make(chan struct{})
+			errs := make(chan error, 2)
+			for _, op := range []func(ctx context.Context) error{first, second} {
+				go func() {
+					<-start
+					errs <- op(bg)
+				}()
+			}
+			close(start)
+			var conflicts, succeeded int
+			for range 2 {
+				switch err := <-errs; {
+				case err == nil:
+					succeeded++
+				case errors.Is(err, apperr.ErrConflict):
+					conflicts++
+				default:
+					t.Fatal(err)
+				}
+			}
+			managers, err := NewStaffRepository(testDB).ActiveManagers(bg, facility)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if succeeded != 1 || conflicts != 1 || len(managers) != 1 {
+				t.Fatalf("成功 = %d, ErrConflict = %d, 有効な管理者 = %v, want 1 つずつで 1 人が残る", succeeded, conflicts, managers)
+			}
+		}
+	}
+	removeA := func(ctx context.Context) error { _, err := uc.RemoveGrant(ctx, a, upA); return err }
+
+	t.Run("2 人の職員の管理の権限を同時に外しても 1 人に権限が残る", func(t *testing.T) {
+		race(t, removeA, func(ctx context.Context) error { _, err := uc.RemoveGrant(ctx, b, upB); return err })
+	})
+	t.Run("権限を外す操作と役職を変える操作が同時でも 1 人に権限が残る", func(t *testing.T) {
+		race(t, removeA, func(ctx context.Context) error { _, err := uc.ChangePosition(ctx, b, memberP); return err })
+	})
 }
 
 func TestTransactorRollsBack(t *testing.T) {

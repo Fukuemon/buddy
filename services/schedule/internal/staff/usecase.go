@@ -292,7 +292,7 @@ func (s *Usecase) stop(ctx context.Context, id string, write func(ctx context.Co
 		if err != nil {
 			return err
 		}
-		if err := s.lastManager(ctx, cur); err != nil {
+		if err := s.lastManager(ctx, cur, "職員の管理の権限を持つ最後の有効な職員は、休職と退職にできません"); err != nil {
 			return err
 		}
 		return write(ctx, cur)
@@ -300,7 +300,7 @@ func (s *Usecase) stop(ctx context.Context, id string, write func(ctx context.Co
 }
 
 // locked は、トランザクションの中で職員 id の事業所をロックし、ロックの後に読み直した職員を返す。
-// 休職、復職、退職は、このロックで同じ事業所の中で 1 つずつ行う。
+// 休職、復職、退職、役職を変える操作、権限を外す操作は、このロックで同じ事業所の中で 1 つずつ行う。
 func (s *Usecase) locked(ctx context.Context, id string) (Detail, error) {
 	ref, err := s.deps.Staff.Get(ctx, id)
 	if err != nil {
@@ -312,9 +312,9 @@ func (s *Usecase) locked(ctx context.Context, id string) (Detail, error) {
 	return s.deps.Staff.Get(ctx, id)
 }
 
-// lastManager は、cur が事業所で職員の管理の権限を持つ最後の有効な職員なら apperr.ErrConflict を返す。
-// 戻す操作をする職員がいなくなると、DB を直すほかに戻せないためである（ADR-0018）。
-func (s *Usecase) lastManager(ctx context.Context, cur Detail) error {
+// lastManager は、cur が事業所で職員の管理の権限を持つ最後の有効な職員なら、msg の apperr.ErrConflict を返す。
+// 戻す操作をする職員がいなくなると、DB を直すほかに戻せないためである（ADR-0018）。呼び出し側は、事業所をロックしてから呼ぶ。
+func (s *Usecase) lastManager(ctx context.Context, cur Detail, msg string) error {
 	if cur.Status() != StatusActive || !slices.ContainsFunc(cur.Policies, func(g PolicyGrant) bool {
 		return g.PolicyCode == organization.StaffManage
 	}) {
@@ -325,7 +325,7 @@ func (s *Usecase) lastManager(ctx context.Context, cur Detail) error {
 		return err
 	}
 	if !slices.ContainsFunc(managers, func(m string) bool { return m != cur.ID }) {
-		return apperr.Conflict("職員の管理の権限を持つ最後の有効な職員は、休職と退職にできません")
+		return apperr.Conflict("%s", msg)
 	}
 	return nil
 }
@@ -398,14 +398,16 @@ func (s *Usecase) Reinstate(ctx context.Context, id string) (Detail, error) {
 
 // ChangePosition は、職員の役職を positionID にし、職員の権限を新しい役職のデフォルトの権限からコピーし直す。
 // ADR-0002 のとおり、職員ごとに足した権限と対象は消える。職員が見つからないときは apperr.ErrNotFound を、
-// 役職が見つからないか別の事業所のものであるときは入力のエラーを返す。
+// 役職が見つからないか別の事業所のものであるときは入力のエラーを返す。事業所で職員の管理の権限を持つ最後の有効な職員の役職を、
+// その権限を持たない役職に変えようとしたときは apperr.ErrConflict を返し、何も書かない。
+// 休職と退職と同じく事業所をロックするので、同時に役職を変えても、権限を持つ有効な職員は残る。
 func (s *Usecase) ChangePosition(ctx context.Context, id, positionID string) (Detail, error) {
 	if err := s.guard(ctx); err != nil {
 		return Detail{}, err
 	}
 	var changed Detail
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
-		cur, err := s.deps.Staff.Get(ctx, id)
+		cur, err := s.locked(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -415,6 +417,11 @@ func (s *Usecase) ChangePosition(ctx context.Context, id, positionID string) (De
 		}
 		if err := apperr.SameFacility("役職", pos.ID, pos.FacilityID, cur.FacilityID); err != nil {
 			return err
+		}
+		if !slices.ContainsFunc(pos.Policies, func(p organization.Policy) bool { return p.Code == organization.StaffManage }) {
+			if err := s.lastManager(ctx, cur, "職員の管理の権限を持つ最後の有効な職員の役職は、その権限を持たない役職に変えられません"); err != nil {
+				return err
+			}
 		}
 		if err := s.deps.Staff.ChangePosition(ctx, cur.ID, pos.ID, DefaultGrants(pos, cur.TeamID, s.ids)); err != nil {
 			return err
@@ -516,18 +523,30 @@ func (s *Usecase) targets(ctx context.Context, p organization.Policy, facilityID
 }
 
 // RemoveGrant は、職員の権限 userPolicyID と、その対象を外す。
-// 職員か、職員のその権限が見つからないときは apperr.ErrNotFound を返す。
+// 職員か、職員のその権限が見つからないときは apperr.ErrNotFound を返す。事業所で職員の管理の権限を持つ最後の有効な職員から、
+// その権限を外そうとしたときは apperr.ErrConflict を返し、何も書かない。
+// 休職と退職と同じく事業所をロックするので、2 人の権限を同時に外しても、権限を持つ有効な職員は残る。
 func (s *Usecase) RemoveGrant(ctx context.Context, id, userPolicyID string) (Detail, error) {
 	if err := s.guard(ctx); err != nil {
 		return Detail{}, err
 	}
 	var changed Detail
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
-		if err := s.deps.Staff.RemoveGrant(ctx, id, userPolicyID); err != nil {
+		cur, err := s.locked(ctx, id)
+		if err != nil {
 			return err
 		}
-		var err error
-		changed, err = s.deps.Staff.Get(ctx, id)
+		if slices.ContainsFunc(cur.Policies, func(g PolicyGrant) bool {
+			return g.UserPolicyID == userPolicyID && g.PolicyCode == organization.StaffManage
+		}) {
+			if err := s.lastManager(ctx, cur, "職員の管理の権限を持つ最後の有効な職員から、その権限は外せません"); err != nil {
+				return err
+			}
+		}
+		if err := s.deps.Staff.RemoveGrant(ctx, cur.ID, userPolicyID); err != nil {
+			return err
+		}
+		changed, err = s.deps.Staff.Get(ctx, cur.ID)
 		return err
 	})
 	return changed, err
