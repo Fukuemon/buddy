@@ -25,4 +25,4 @@
 - 読み直しかマスタの取得が失敗したときと、マスタに当たる値が無いときは、`updateSchedule` を呼ばずに失敗する。
 - サービスコードの一覧と提供時間の範囲は、画面が持つ定数（`apps/web/src/features/schedule/constants/scheduleLabels.ts`）で、`listServiceCodes` の範囲を使っていない。
 - 予定の一覧の取得の結果は、保存に成功したときに捨てて取り直す（`listSchedules`）。
-- `listUsers` は、止めた職員も返す。この画面は、`suspendedAt` を持つ職員を担当者の候補から除き、予定の職員の名前を出すのには使う。
+- `listUsers` は、止めた職員も返す。この画面は、`suspendedAt` を持つ職員を担当者の候補から除く。予定の職員の名前は、止めた職員も含めた一覧で探す。
