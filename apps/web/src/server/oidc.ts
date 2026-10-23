@@ -20,6 +20,8 @@ export type Tokens = {
   refreshToken?: string
   /** access token の残りの秒数。ブローカーが返さなければ undefined。 */
   expiresIn?: number
+  /** ログアウトで Hydra に添える ID token。refresh でブローカーが返さなければ undefined。 */
+  idToken?: string
 }
 
 /** BFF がブローカーと交わす操作。テストではフェイクに替える。 */
@@ -37,6 +39,8 @@ export interface OidcClient {
   ): Promise<Tokens>
   /** refresh token で access token を取り直す。拒まれたら GrantRejectedError を、通信の失敗などはそのほかの Error を投げる。 */
   refresh(refreshToken: string): Promise<Tokens>
+  /** ブラウザを転送する、Hydra の RP-Initiated Logout の URL。 */
+  endSessionUrl(params: { idTokenHint: string; postLogoutRedirectUri: string }): URL
 }
 
 /** refresh のエラーのうち、取り直しても通らないので、セッションを捨ててよいものの OAuth のエラーの値。 */
@@ -53,6 +57,7 @@ const toTokens = (res: client.TokenEndpointResponse & client.TokenEndpointRespon
   accessToken: res.access_token,
   refreshToken: res.refresh_token,
   expiresIn: res.expiresIn(),
+  idToken: res.id_token,
 })
 
 /**
@@ -94,6 +99,16 @@ export const createOidcClient = async (cfg: ServerConfig['oidc']): Promise<OidcC
           idTokenExpected: true,
         }),
       ),
+    endSessionUrl: ({ idTokenHint, postLogoutRedirectUri }) => {
+      const url = client.buildEndSessionUrl(config, {
+        id_token_hint: idTokenHint,
+        post_logout_redirect_uri: postLogoutRedirectUri,
+      })
+      if (cfg.endSessionEndpoint === undefined) return url
+      const browserUrl = new URL(cfg.endSessionEndpoint)
+      browserUrl.search = url.search
+      return browserUrl
+    },
     refresh: async (refreshToken) => {
       try {
         return toTokens(await client.refreshTokenGrant(config, refreshToken))

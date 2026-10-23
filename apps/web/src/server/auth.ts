@@ -25,6 +25,8 @@ export type Session = Omit<Viewer, 'canManageStaff'> & {
   refreshToken?: string
   /** access token の期限の UNIX 時刻（ミリ秒）。分からなければ undefined。 */
   expiresAt?: number
+  /** ログアウトで Hydra に添える ID token。この項目を足す前に作ったセッションには無い。 */
+  idToken?: string
 }
 
 type LoginTransaction = { codeVerifier: string; nonce: string; returnTo: string }
@@ -177,6 +179,7 @@ export const finishLogin = async (request: Request, deps: AuthDeps): Promise<Res
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,
     expiresAt: expiresAtOf(tokens, (deps.now ?? Date.now)()),
+    idToken: tokens.idToken,
   }
   await deps.store.set(sessionKey(id), session, SESSION_TTL_SECONDS)
   return redirect(tx.returnTo, [
@@ -185,11 +188,23 @@ export const finishLogin = async (request: Request, deps: AuthDeps): Promise<Res
   ])
 }
 
-/** POST /auth/logout。セッションを消して / へ転送する。ブローカーのセッションは消さない。 */
+/**
+ * POST /auth/logout。セッションを消し、ブラウザを Hydra の RP-Initiated Logout へ転送する。
+ * Hydra はブローカーのログアウトの画面を呼んでログインのセッションを消し、web の / へ戻す。
+ *
+ * セッションか ID token が無いときは / へ転送する。ID token を置く前のセッションは、Hydra がログインを覚えていない。
+ */
 export const logout = async (request: Request, deps: AuthDeps): Promise<Response> => {
   const id = sessionIdOf(request, deps.secret)
+  const session = id === undefined ? undefined : await deps.store.get<Session>(sessionKey(id))
   if (id !== undefined) await deps.store.delete(sessionKey(id))
-  return redirect('/', [cookie(deps, SESSION_COOKIE, '', 0)])
+  const clearSession = cookie(deps, SESSION_COOKIE, '', 0)
+  if (session?.idToken === undefined) return redirect('/', [clearSession])
+  const endSessionUrl = deps.oidc.endSessionUrl({
+    idTokenHint: session.idToken,
+    postLogoutRedirectUri: new URL('/', request.url).toString(),
+  })
+  return redirect(endSessionUrl.toString(), [clearSession])
 }
 
 const sessionIdOf = (request: Request, secret: string) =>
@@ -262,6 +277,7 @@ const refresh = async (
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken ?? latest.refreshToken,
         expiresAt: expiresAtOf(tokens, now),
+        idToken: tokens.idToken ?? latest.idToken,
       }
       return (await deps.store.replace(sessionKey(id), refreshed)) ? refreshed : undefined
     } catch (error) {

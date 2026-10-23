@@ -10,6 +10,11 @@ export type ServerConfig = {
      * ローカル環境の compose のように、web とブラウザから届く IdP の URL が違うときだけ渡す。
      */
     authorizationEndpoint?: string
+    /**
+     * ブラウザを転送する RP-Initiated Logout の URL。discovery の end_session_endpoint の代わりに使う。
+     * Hydra は end_session_endpoint を Issuer の URL から作るので、web とブラウザから届く IdP の URL が違うときに渡す。
+     */
+    endSessionEndpoint?: string
   }
   sessionStoreUrl: string
   sessionSecret: string
@@ -50,6 +55,7 @@ export const loadServerConfig = (env: Record<string, string | undefined>): Serve
       clientId: get('OIDC_CLIENT_ID'),
       clientSecret: get('OIDC_CLIENT_SECRET'),
       authorizationEndpoint: env.OIDC_AUTHORIZATION_ENDPOINT || undefined,
+      endSessionEndpoint: env.OIDC_END_SESSION_ENDPOINT || undefined,
     },
     sessionStoreUrl: get('SESSION_STORE_URL'),
     sessionSecret: get('SESSION_SECRET'),
