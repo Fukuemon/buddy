@@ -4,7 +4,7 @@ import { issueAccessToken } from '../../fixtures/apiReference'
 import { LOGIN_EMAIL, LOGIN_STAFF, OFFICE_B, SUSPENDED_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { createNormalSchedule, getSchedule } from '../../fixtures/schedule'
-import { listStaff, STAFF_FORM } from '../../fixtures/staff'
+import { leaveStaff, listStaff, reinstateStaff, STAFF_FORM } from '../../fixtures/staff'
 import { signInAtBroker } from '../../screens/login'
 
 type ListedStaff = { id: string; username: string; status: string; leave_started_at: string | null }
@@ -326,12 +326,15 @@ test.describe('予定の編集', () => {
         const title = `引き継ぎの面談 ${stamp}`
         const changed = `引き継ぎの面談（場所を変更）${stamp}`
         const token = await issueAccessToken(request, OFFICE_B.email)
+        // 休職の職員には予定を作れないので、復職にして予定を作ってから休職に戻す
+        expect((await reinstateStaff(request, token, SUSPENDED_STAFF.id)).status()).toBe(200)
         const created = await createNormalSchedule(request, token, OFFICE_B.facilityId, {
           staffId: SUSPENDED_STAFF.id,
           title,
           date: OFFICE_B.schedule.date,
         })
         expect(created.status()).toBe(201)
+        expect((await leaveStaff(request, token, SUSPENDED_STAFF.id)).status()).toBe(200)
         const scheduleId = ((await created.json()) as { id: string }).id
         await recordPrEvidence(
           browser,

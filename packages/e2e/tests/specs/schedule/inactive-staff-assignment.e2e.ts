@@ -19,6 +19,9 @@ import {
 /** 予定の API で作る予定の日。 */
 const SCHEDULE_DATE = '2026-10-20'
 
+/** 今日より後の予定の日。 */
+const FUTURE_DATE = '2030-01-07'
+
 /** 休職か退職にする操作。 */
 const STOPS = [
   {
@@ -145,6 +148,41 @@ test.describe('予定の編集', () => {
         expect(await saved.json()).toMatchObject({ staff_id: LOGIN_STAFF.id })
       })
     }
+
+    test('退職した職員の過去の予定を、職員を変えずに今日以降の日付へ動かそうとした場合、400 が返ること', async ({
+      request,
+    }) => {
+      const manager = await issueManagerToken(request)
+      const assigned = await register(request, manager, 'retired-past')
+      const title = `E2E の会議 ${Date.now()}`
+      const created = await createNormalSchedule(request, manager, STAFF_FORM.facilityId, {
+        staffId: assigned.id,
+        title,
+        date: SCHEDULE_DATE,
+      })
+      expect(created.status()).toBe(201)
+      const scheduleId = ((await created.json()) as { id: string }).id
+      // 退職は、その日より前の予定だけが残る職員なら拒まない
+      expect((await retireStaff(request, manager, assigned.id)).status()).toBe(200)
+
+      const kept = await updateNormalSchedule(request, manager, scheduleId, {
+        staffId: assigned.id,
+        title: `${title}（変更）`,
+        date: SCHEDULE_DATE,
+      })
+      const moved = await updateNormalSchedule(request, manager, scheduleId, {
+        staffId: assigned.id,
+        title,
+        date: FUTURE_DATE,
+      })
+
+      expect(kept.status()).toBe(200)
+      expect(moved.status()).toBe(400)
+      expect(await moved.json()).toMatchObject({
+        code: 'invalid_input',
+        message: STOPS[1].message,
+      })
+    })
   })
 })
 
