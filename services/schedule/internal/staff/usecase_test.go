@@ -4,11 +4,15 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
+	"github.com/Fukuemon/buddy/services/schedule/internal/visit"
 )
 
 const (
@@ -131,13 +135,13 @@ func TestStaffCreateWithBroker(t *testing.T) {
 			t.Errorf("err = %v, ブローカーの職員 = %+v, want ErrInvalidInput で作らない", err, ids.Members)
 		}
 	})
-	t.Run("ブローカーで止めた職員と同じメールは 409", func(t *testing.T) {
+	t.Run("ブローカーで休職の職員と同じメールは 409", func(t *testing.T) {
 		ids := inmem.NewIdentities()
 		ids.Members["broker-x"] = inmem.Identity{OrgID: inmem.OrgID, Email: "sakura.hayashi@example.com", Suspended: true}
 		s := setup()
 		_, err := newUC(s, ids, allow).Create(ctx, in)
-		if !errors.Is(err, apperr.ErrConflict) || err.Error() != "メール sakura.hayashi@example.com の職員は止められています" {
-			t.Errorf("err = %v, want 止めた職員の ErrConflict", err)
+		if !errors.Is(err, apperr.ErrConflict) || err.Error() != "メール sakura.hayashi@example.com の職員は休職しています" {
+			t.Errorf("err = %v, want 休職の職員の ErrConflict", err)
 		}
 	})
 	t.Run("ほかの事業所に同じメールの職員がいれば、事業所を示さない 409", func(t *testing.T) {
@@ -236,66 +240,322 @@ func TestStaffCreateWithBroker(t *testing.T) {
 	})
 }
 
-func TestStaffSuspend(t *testing.T) {
-	ctx := context.Background()
-	setup := func() (*inmem.Store, *inmem.Identities) {
-		s, ids := inmem.Seeded(), inmem.NewIdentities()
-		ids.Members["broker-1"] = inmem.Identity{OrgID: inmem.OrgID, Email: "hina.aoki@example.com"}
-		d := s.Staff[staffID]
-		sub := "broker-1"
-		d.Sub = &sub
-		s.Staff[staffID] = d
-		return s, ids
-	}
-	newUC := func(s *inmem.Store, ids *inmem.Identities, guard organization.Guard) *staff.Usecase {
-		return staff.NewUsecase(staff.Deps{
-			Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
-			Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
-			Identities: ids,
-			Self:       func(context.Context) (string, bool) { return companionID, true },
-		}, &inmem.Tx{}, &inmem.SeqIDs{}, guard)
-	}
+// stopFixture は、休職、復職、退職のテストの事業所である。staffID はブローカーの職員 broker-1 を持ち、
+// companionID はリクエストを送る職員で、職員の管理の権限を持つ有効な職員である。
+func stopFixture() (*inmem.Store, *inmem.Identities) {
+	s, ids := inmem.Seeded(), inmem.NewIdentities()
+	ids.Members["broker-1"] = inmem.Identity{OrgID: inmem.OrgID, Email: "hina.aoki@example.com"}
+	d := s.Staff[staffID]
+	sub := "broker-1"
+	d.Sub = &sub
+	d.Email = "hina.aoki@example.com"
+	d.PhoneNumber = ptr("+09000000000")
+	s.Staff[staffID] = d
+	c := s.Staff[companionID]
+	c.Policies = []staff.PolicyGrant{{UserPolicyID: "UP-C", PolicyCode: organization.StaffManage}}
+	s.Staff[companionID] = c
+	return s, ids
+}
 
-	s, ids := setup()
-	got, err := newUC(s, ids, allow).Suspend(ctx, staffID)
+func stopUsecase(s *inmem.Store, ids *inmem.Identities, guard organization.Guard) *staff.Usecase {
+	return staff.NewUsecase(staff.Deps{
+		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
+		Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
+		Identities: ids, Assignments: inmem.StaffAssignments{Store: s},
+		Self: func(context.Context) (string, bool) { return companionID, true },
+		Now:  func() time.Time { return time.Date(2026, 10, 23, 1, 0, 0, 0, time.UTC) },
+	}, &inmem.Tx{}, &inmem.SeqIDs{}, guard)
+}
+
+// clearAssignments は、seed の繰り返しの予定を外し、staffID に残る予定と担当の利用者を無くす。
+func clearAssignments(s *inmem.Store) { delete(s.Recurring, inmem.RecurringID) }
+
+// 職員の管理の権限を持つ職員が職員を休職にしたとき、休職の職員はログインできず、その日以降の予定と担当の利用者の一覧が
+// 警告として返る（#268 の検証の観点 1）。
+func TestStaffLeave(t *testing.T) {
+	ctx := context.Background()
+	returnDate := civil.Date{Year: 2027, Month: 4, Day: 1}
+
+	s, ids := stopFixture()
+	s.Schedules["PAST"] = schedule.Detail{Schedule: schedule.Schedule{ID: "PAST", Slot: schedule.Slot{
+		FacilityID: facilityID, StaffID: staffID, Date: civil.Date{Year: 2026, Month: 10, Day: 22}}}}
+	s.Schedules["TODAY"] = schedule.Detail{Schedule: schedule.Schedule{ID: "TODAY", Slot: schedule.Slot{
+		FacilityID: facilityID, StaffID: staffID, Date: civil.Date{Year: 2026, Month: 10, Day: 23}}}}
+	p := s.Patients[inmem.PatientID]
+	p.AssignedStaffID, p.Name = staffID, "山田 花子"
+	s.Patients[inmem.PatientID] = p
+
+	got, err := stopUsecase(s, ids, allow).Leave(ctx, staffID, staff.LeaveInput{ReturnDate: &returnDate})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.SuspendedAt == nil || !ids.Members["broker-1"].Suspended {
-		t.Fatalf("SuspendedAt = %v, ブローカー = %+v, want 両方で止める", got.SuspendedAt, ids.Members)
+	if got.Staff.Status() != staff.StatusOnLeave || *got.Staff.LeaveReturnDate != returnDate || !ids.Members["broker-1"].Suspended {
+		t.Fatalf("職員 = %+v, ブローカー = %+v, want 両方で休職にし、戻る予定の日を持つ", got.Staff.Staff, ids.Members)
 	}
-	first := *got.SuspendedAt
-	again, err := newUC(s, ids, allow).Suspend(ctx, staffID)
-	if err != nil || !again.SuspendedAt.Equal(first) {
-		t.Errorf("止め直し = %v, %v, want 最初の時刻 %v のまま成功", again.SuspendedAt, err, first)
+	a := got.Assignments
+	if len(a.Schedules) != 1 || a.Schedules[0].ID != "TODAY" || len(a.Recurring) != 1 || a.Recurring[0].ID != inmem.RecurringID ||
+		len(a.Patients) != 1 || a.Patients[0].Name != "山田 花子" {
+		t.Errorf("残る一覧 = %+v, want 当日の予定（事業所の現地の日付）と繰り返しの予定と担当の利用者", a)
 	}
 
-	s, ids = setup()
-	if _, err := newUC(s, ids, deny).Suspend(ctx, staffID); !errors.Is(err, apperr.ErrForbidden) || ids.Members["broker-1"].Suspended || s.Staff[staffID].SuspendedAt != nil {
-		t.Errorf("権限なし: err = %v, want ErrForbidden で止めない", err)
+	first := *got.Staff.LeaveStartedAt
+	again, err := stopUsecase(s, ids, allow).Leave(ctx, staffID, staff.LeaveInput{})
+	if err != nil || !again.Staff.LeaveStartedAt.Equal(first) || again.Staff.LeaveReturnDate != nil {
+		t.Errorf("休職にし直し = %+v, %v, want 最初の時刻 %v のまま、戻る予定の日だけを消す", again.Staff.Staff, err, first)
 	}
-	s, ids = setup()
-	ids.Err = errors.New("broker down")
-	if _, err := newUC(s, ids, allow).Suspend(ctx, staffID); err == nil || s.Staff[staffID].SuspendedAt != nil {
-		t.Errorf("ブローカーで止められない: err = %v, SuspendedAt = %v, want エラーで予定の API にも書かない", err, s.Staff[staffID].SuspendedAt)
+}
+
+func TestStaffLeaveRejects(t *testing.T) {
+	ctx := context.Background()
+	t.Run("職員の管理の権限が無ければ ErrForbidden で書かない", func(t *testing.T) {
+		s, ids := stopFixture()
+		if _, err := stopUsecase(s, ids, deny).Leave(ctx, staffID, staff.LeaveInput{}); !errors.Is(err, apperr.ErrForbidden) ||
+			ids.Members["broker-1"].Suspended || s.Staff[staffID].LeaveStartedAt != nil {
+			t.Errorf("err = %v, want ErrForbidden で休職にしない", err)
+		}
+	})
+	t.Run("ブローカーで止められなければ、予定の API にも書かない", func(t *testing.T) {
+		s, ids := stopFixture()
+		ids.Err = errors.New("broker down")
+		if _, err := stopUsecase(s, ids, allow).Leave(ctx, staffID, staff.LeaveInput{}); err == nil || s.Staff[staffID].LeaveStartedAt != nil {
+			t.Errorf("err = %v, LeaveStartedAt = %v, want エラーで予定の API にも書かない", err, s.Staff[staffID].LeaveStartedAt)
+		}
+	})
+	t.Run("取り消しに失敗すれば、両方で休職にしてからエラー", func(t *testing.T) {
+		s, ids := stopFixture()
+		ids.RevokeErr = errors.New("hydra down")
+		if _, err := stopUsecase(s, ids, allow).Leave(ctx, staffID, staff.LeaveInput{}); err == nil ||
+			s.Staff[staffID].LeaveStartedAt == nil || !ids.Members["broker-1"].Suspended {
+			t.Errorf("err = %v, LeaveStartedAt = %v, want 両方で休職にしてからエラー", err, s.Staff[staffID].LeaveStartedAt)
+		}
+	})
+	t.Run("ブローカーにいない職員は、予定の API でだけ休職にする", func(t *testing.T) {
+		s, ids := stopFixture()
+		delete(ids.Members, "broker-1")
+		if got, err := stopUsecase(s, ids, allow).Leave(ctx, staffID, staff.LeaveInput{}); err != nil || got.Staff.Status() != staff.StatusOnLeave {
+			t.Errorf("職員 = %+v, err = %v, want 予定の API でだけ休職にする", got.Staff.Staff, err)
+		}
+	})
+	t.Run("退職した職員は ErrConflict", func(t *testing.T) {
+		s, ids := stopFixture()
+		d := s.Staff[staffID]
+		d.RetiredAt = ptr(time.Now())
+		s.Staff[staffID] = d
+		if _, err := stopUsecase(s, ids, allow).Leave(ctx, staffID, staff.LeaveInput{}); !errors.Is(err, apperr.ErrConflict) || ids.Members["broker-1"].Suspended {
+			t.Errorf("err = %v, want ErrConflict でブローカーを止めない", err)
+		}
+	})
+	t.Run("いない職員は ErrNotFound", func(t *testing.T) {
+		s, ids := stopFixture()
+		if _, err := stopUsecase(s, ids, allow).Leave(ctx, "NONE", staff.LeaveInput{}); !errors.Is(err, apperr.ErrNotFound) {
+			t.Errorf("err = %v, want ErrNotFound", err)
+		}
+	})
+}
+
+// 自分自身か、職員の管理の権限を持つ最後の有効な職員を休職か退職にしようとしたとき、409 が返る（#268 の検証の観点 6）。
+func TestStaffStopRejectsSelfAndLastManager(t *testing.T) {
+	ctx := context.Background()
+	stops := map[string]func(*staff.Usecase, string) error{
+		"休職": func(u *staff.Usecase, id string) error { _, err := u.Leave(ctx, id, staff.LeaveInput{}); return err },
+		"退職": func(u *staff.Usecase, id string) error { _, err := u.Retire(ctx, id); return err },
 	}
-	s, ids = setup()
-	ids.RevokeErr = errors.New("hydra down")
-	if _, err := newUC(s, ids, allow).Suspend(ctx, staffID); err == nil || s.Staff[staffID].SuspendedAt == nil || !ids.Members["broker-1"].Suspended {
-		t.Errorf("取り消しに失敗: err = %v, SuspendedAt = %v, want 両方で止めてからエラー", err, s.Staff[staffID].SuspendedAt)
+	for name, stop := range stops {
+		t.Run(name+"で自分は ErrConflict", func(t *testing.T) {
+			s, ids := stopFixture()
+			if err := stop(stopUsecase(s, ids, allow), companionID); !errors.Is(err, apperr.ErrConflict) || s.Staff[companionID].Status() != staff.StatusActive {
+				t.Errorf("err = %v, want ErrConflict で書かない", err)
+			}
+		})
+		t.Run(name+"で最後の有効な管理者は ErrConflict", func(t *testing.T) {
+			s, ids := stopFixture()
+			clearAssignments(s)
+			d := s.Staff[staffID]
+			d.Policies = []staff.PolicyGrant{{UserPolicyID: "UP-A", PolicyCode: organization.StaffManage}}
+			s.Staff[staffID] = d
+			// リクエストを送った管理者が休職になった後に届いた操作を表す。staffID が最後の有効な管理者になる
+			c := s.Staff[companionID]
+			c.LeaveStartedAt = ptr(time.Now())
+			s.Staff[companionID] = c
+			if err := stop(stopUsecase(s, ids, allow), staffID); !errors.Is(err, apperr.ErrConflict) ||
+				s.Staff[staffID].Status() != staff.StatusActive || ids.Members["broker-1"].Suspended || ids.Members["broker-1"].Retired {
+				t.Errorf("err = %v, want ErrConflict で両方に書かない", err)
+			}
+		})
+		t.Run(name+"でほかに有効な管理者がいれば成功", func(t *testing.T) {
+			s, ids := stopFixture()
+			clearAssignments(s)
+			d := s.Staff[staffID]
+			d.Policies = []staff.PolicyGrant{{UserPolicyID: "UP-A", PolicyCode: organization.StaffManage}}
+			s.Staff[staffID] = d
+			if err := stop(stopUsecase(s, ids, allow), staffID); err != nil {
+				t.Errorf("err = %v, want 成功", err)
+			}
+		})
 	}
-	s, ids = setup()
-	delete(ids.Members, "broker-1")
-	if got, err := newUC(s, ids, allow).Suspend(ctx, staffID); err != nil || got.SuspendedAt == nil {
-		t.Errorf("ブローカーにいない職員: SuspendedAt = %v, err = %v, want 予定の API でだけ止める", got.SuspendedAt, err)
+}
+
+func TestStaffReinstate(t *testing.T) {
+	ctx := context.Background()
+	onLeave := func() (*inmem.Store, *inmem.Identities) {
+		s, ids := stopFixture()
+		if _, err := stopUsecase(s, ids, allow).Leave(ctx, staffID, staff.LeaveInput{ReturnDate: &civil.Date{Year: 2027, Month: 4, Day: 1}}); err != nil {
+			t.Fatal(err)
+		}
+		return s, ids
 	}
-	s, ids = setup()
-	if _, err := newUC(s, ids, allow).Suspend(ctx, companionID); !errors.Is(err, apperr.ErrConflict) || s.Staff[companionID].SuspendedAt != nil {
-		t.Errorf("自分を止める: err = %v, want ErrConflict で止めない", err)
+
+	// 休職の職員を復職にしたとき、同じ上流のアカウントでログインできる（#268 の検証の観点 2）。ブローカーの職員の ID は変わらない
+	s, ids := onLeave()
+	got, err := stopUsecase(s, ids, allow).Reinstate(ctx, staffID)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if _, err := newUC(inmem.Seeded(), inmem.NewIdentities(), allow).Suspend(ctx, "NONE"); !errors.Is(err, apperr.ErrNotFound) {
-		t.Errorf("いない職員: err = %v, want ErrNotFound", err)
+	if got.Status() != staff.StatusActive || got.LeaveReturnDate != nil || ids.Members["broker-1"].Suspended || *got.Sub != "broker-1" {
+		t.Fatalf("職員 = %+v, ブローカー = %+v, want 両方で有効に戻し、同じブローカーの職員", got.Staff, ids.Members)
 	}
+	if _, err := stopUsecase(s, ids, allow).Reinstate(ctx, staffID); err != nil {
+		t.Errorf("有効な職員の復職の err = %v, want 成功", err)
+	}
+
+	t.Run("職員の管理の権限が無ければ ErrForbidden", func(t *testing.T) {
+		s, ids := onLeave()
+		if _, err := stopUsecase(s, ids, deny).Reinstate(ctx, staffID); !errors.Is(err, apperr.ErrForbidden) || s.Staff[staffID].Status() != staff.StatusOnLeave {
+			t.Errorf("err = %v, want ErrForbidden で戻さない", err)
+		}
+	})
+	t.Run("ブローカーに届かなければ、休職を外してからエラーで、送り直すと戻す", func(t *testing.T) {
+		s, ids := onLeave()
+		ids.ResumeErr = errors.New("broker down")
+		if _, err := stopUsecase(s, ids, allow).Reinstate(ctx, staffID); err == nil || s.Staff[staffID].Status() != staff.StatusActive || !ids.Members["broker-1"].Suspended {
+			t.Fatalf("err = %v, want 予定の API で休職を外し、ブローカーは止めたままエラー", err)
+		}
+		ids.ResumeErr = nil
+		if _, err := stopUsecase(s, ids, allow).Reinstate(ctx, staffID); err != nil || ids.Members["broker-1"].Suspended {
+			t.Errorf("送り直し: err = %v, want ブローカーの職員も戻す", err)
+		}
+	})
+	t.Run("ブローカーで退職していれば ErrConflict", func(t *testing.T) {
+		s, ids := onLeave()
+		m := ids.Members["broker-1"]
+		m.Retired = true
+		ids.Members["broker-1"] = m
+		if _, err := stopUsecase(s, ids, allow).Reinstate(ctx, staffID); !errors.Is(err, apperr.ErrConflict) {
+			t.Errorf("err = %v, want ErrConflict", err)
+		}
+	})
+	t.Run("退職した職員は ErrConflict", func(t *testing.T) {
+		s, ids := stopFixture()
+		clearAssignments(s)
+		if _, err := stopUsecase(s, ids, allow).Retire(ctx, staffID); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := stopUsecase(s, ids, allow).Reinstate(ctx, staffID); !errors.Is(err, apperr.ErrConflict) || s.Staff[staffID].Status() != staff.StatusRetired {
+			t.Errorf("err = %v, want ErrConflict で退職のまま", err)
+		}
+	})
+}
+
+// 予定と担当が残らない職員を退職にしたとき、ログインできず、電話番号が消え、名前は残る（#268 の検証の観点 4）。
+func TestStaffRetire(t *testing.T) {
+	ctx := context.Background()
+	s, ids := stopFixture()
+	clearAssignments(s)
+	d := s.Staff[staffID]
+	d.Username = "青木 陽菜"
+	d.LeaveStartedAt = ptr(time.Now())
+	s.Staff[staffID] = d
+	s.Schedules["PAST"] = schedule.Detail{Schedule: schedule.Schedule{ID: "PAST", Slot: schedule.Slot{
+		FacilityID: facilityID, StaffID: staffID, Date: civil.Date{Year: 2026, Month: 10, Day: 22}}}}
+
+	got, err := stopUsecase(s, ids, allow).Retire(ctx, staffID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	st := got.Staff
+	if st.Status() != staff.StatusRetired || st.Username != "青木 陽菜" || st.Email != "" || st.PhoneNumber != nil || st.LeaveStartedAt != nil {
+		t.Fatalf("職員 = %+v, want 退職で名前を残し、メールと電話番号と休職を消す", st.Staff)
+	}
+	if m := ids.Members["broker-1"]; !m.Retired || m.Email != "" {
+		t.Errorf("ブローカー = %+v, want 退職でメールを消す", m)
+	}
+	if !got.Assignments.Empty() {
+		t.Errorf("残る一覧 = %+v, want 空（過去の予定は数えない）", got.Assignments)
+	}
+	first := *st.RetiredAt
+	again, err := stopUsecase(s, ids, allow).Retire(ctx, staffID)
+	if err != nil || !again.Staff.RetiredAt.Equal(first) {
+		t.Errorf("退職にし直し = %v, %v, want 最初の時刻 %v のまま成功", again.Staff.RetiredAt, err, first)
+	}
+
+	t.Run("取り消しに失敗すれば、両方で退職にしてからエラー", func(t *testing.T) {
+		s, ids := stopFixture()
+		clearAssignments(s)
+		ids.RevokeErr = errors.New("hydra down")
+		if _, err := stopUsecase(s, ids, allow).Retire(ctx, staffID); err == nil || s.Staff[staffID].Status() != staff.StatusRetired || !ids.Members["broker-1"].Retired {
+			t.Errorf("err = %v, want 両方で退職にしてからエラー", err)
+		}
+	})
+	t.Run("ブローカーにいない職員は、予定の API でだけ退職にする", func(t *testing.T) {
+		s, ids := stopFixture()
+		clearAssignments(s)
+		delete(ids.Members, "broker-1")
+		if got, err := stopUsecase(s, ids, allow).Retire(ctx, staffID); err != nil || got.Staff.Status() != staff.StatusRetired {
+			t.Errorf("err = %v, want 予定の API でだけ退職にする", err)
+		}
+	})
+}
+
+// その日以降の予定か担当の利用者が残る職員を退職にしようとしたとき、409 で残る一覧が返る（#268 の検証の観点 3）。
+func TestStaffRetireRejectsAssignments(t *testing.T) {
+	ctx := context.Background()
+	tests := []struct {
+		name string
+		edit func(*inmem.Store)
+	}{
+		{"繰り返しの予定", func(*inmem.Store) {}},
+		{"その日の予定", func(s *inmem.Store) {
+			clearAssignments(s)
+			s.Schedules["TODAY"] = schedule.Detail{Schedule: schedule.Schedule{ID: "TODAY", Slot: schedule.Slot{
+				FacilityID: facilityID, StaffID: staffID, Date: civil.Date{Year: 2026, Month: 10, Day: 23}}}}
+		}},
+		{"同行者の予定", func(s *inmem.Store) {
+			clearAssignments(s)
+			s.Infos["INFO"] = visit.Info{ID: "INFO", AssignedStaffID: companionID, CompanionID: ptr(staffID)}
+			s.Schedules["VISIT"] = schedule.Detail{Schedule: schedule.Schedule{ID: "VISIT", Slot: schedule.Slot{
+				FacilityID: facilityID, StaffID: companionID, Date: civil.Date{Year: 2026, Month: 11, Day: 1}, VisitInfoID: ptr("INFO")}}}
+		}},
+		{"担当の利用者", func(s *inmem.Store) {
+			clearAssignments(s)
+			p := s.Patients[inmem.PatientID]
+			p.AssignedStaffID = staffID
+			s.Patients[inmem.PatientID] = p
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s, ids := stopFixture()
+			tt.edit(s)
+			_, err := stopUsecase(s, ids, allow).Retire(ctx, staffID)
+			ae, ok := errors.AsType[*staff.AssignedError](err)
+			if !ok || ae.Assignments.Empty() || !errors.Is(err, apperr.ErrConflict) {
+				t.Fatalf("err = %v, want 残る一覧を持つ AssignedError", err)
+			}
+			if s.Staff[staffID].Status() != staff.StatusActive || ids.Members["broker-1"].Retired || s.Staff[staffID].Email == "" {
+				t.Errorf("職員 = %+v, want 両方に書かない", s.Staff[staffID].Staff)
+			}
+		})
+	}
+	t.Run("キャンセルした予定は数えない", func(t *testing.T) {
+		s, ids := stopFixture()
+		clearAssignments(s)
+		s.Schedules["CANCELLED"] = schedule.Detail{Schedule: schedule.Schedule{ID: "CANCELLED", Slot: schedule.Slot{
+			FacilityID: facilityID, StaffID: staffID, Date: civil.Date{Year: 2026, Month: 11, Day: 1}}}}
+		s.Cancels["CANCELLED"] = schedule.Cancel{ScheduleID: "CANCELLED"}
+		if _, err := stopUsecase(s, ids, allow).Retire(ctx, staffID); err != nil {
+			t.Errorf("err = %v, want 成功", err)
+		}
+	})
 }
 
 func TestStaffChangePosition(t *testing.T) {

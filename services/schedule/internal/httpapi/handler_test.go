@@ -88,14 +88,29 @@ type fakeStaff struct {
 	lastPositionID   string
 	lastGrant        staff.GrantInput
 	lastUserPolicyID string
-	lastSuspended    string
+	lastStopped      string
+	lastLeave        staff.LeaveInput
+	assignments      staff.Assignments
 	err              error
 }
 
-func (f *fakeStaff) Suspend(_ context.Context, id string) (staff.Detail, error) {
-	f.lastSuspended = id
+func (f *fakeStaff) Leave(_ context.Context, id string, in staff.LeaveInput) (staff.StatusChange, error) {
+	f.lastStopped, f.lastLeave = id, in
 	at := time.Date(2026, 10, 23, 9, 0, 0, 0, time.UTC)
-	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: id, SuspendedAt: &at}}, Policies: []staff.PolicyGrant{}}, f.err
+	d := staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: id, Email: "hina.aoki@example.com", LeaveStartedAt: &at, LeaveReturnDate: in.ReturnDate}}, Policies: []staff.PolicyGrant{}}
+	return staff.StatusChange{Staff: d, Assignments: f.assignments}, f.err
+}
+
+func (f *fakeStaff) Reinstate(_ context.Context, id string) (staff.Detail, error) {
+	f.lastStopped = id
+	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: id, Email: "hina.aoki@example.com"}}, Policies: []staff.PolicyGrant{}}, f.err
+}
+
+func (f *fakeStaff) Retire(_ context.Context, id string) (staff.StatusChange, error) {
+	f.lastStopped = id
+	at := time.Date(2026, 10, 23, 9, 0, 0, 0, time.UTC)
+	d := staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: id, RetiredAt: &at}}, Policies: []staff.PolicyGrant{}}
+	return staff.StatusChange{Staff: d}, f.err
 }
 
 func (f *fakeStaff) AddGrant(_ context.Context, _ string, in staff.GrantInput) (staff.Detail, error) {
@@ -414,15 +429,83 @@ func TestHealth(t *testing.T) {
 	}
 }
 
-func TestSuspendUser(t *testing.T) {
-	st := &fakeStaff{}
-	rec, body := do(t, newRouter(&fakeSchedules{}, st, &fakePatients{}), http.MethodPost, "/v1/users/"+staffID+"/suspend", "")
-	if rec.Code != http.StatusOK || st.lastSuspended != staffID || body["suspended_at"] != "2026-10-23T09:00:00Z" {
-		t.Fatalf("status = %d, 止めた職員 = %s, body = %v", rec.Code, st.lastSuspended, body)
+// 休職は、職員の状態と戻る予定の日と、残る予定と担当の利用者の一覧を返す（#268 の検証の観点 1）。
+func TestStartUserLeave(t *testing.T) {
+	st := &fakeStaff{assignments: staff.Assignments{
+		Schedules: []staff.AssignedSchedule{{ID: "01M3TC5H00QV17BC0J9V3393ZP", Date: civil.Date{Year: 2026, Month: 11, Day: 2},
+			StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10}}},
+		Patients: []staff.AssignedPatient{{ID: "01M3TC5H00QV17BC0J9V3393ZQ", Name: "山田 花子"}},
+	}}
+	rec, body := do(t, newRouter(&fakeSchedules{}, st, &fakePatients{}), http.MethodPost, "/v1/users/"+staffID+"/leave", `{"return_date":"2027-04-01"}`)
+	if rec.Code != http.StatusOK || st.lastStopped != staffID || st.lastLeave.ReturnDate == nil || st.lastLeave.ReturnDate.String() != "2027-04-01" {
+		t.Fatalf("status = %d, 休職にした職員 = %s, 入力 = %+v, body = %v", rec.Code, st.lastStopped, st.lastLeave, body)
 	}
-	rec, _ = do(t, newRouter(&fakeSchedules{}, &fakeStaff{err: apperr.ErrForbidden}, &fakePatients{}), http.MethodPost, "/v1/users/"+staffID+"/suspend", "")
+	got := body["staff"].(map[string]any)
+	if got["status"] != "on_leave" || got["leave_started_at"] != "2026-10-23T09:00:00Z" || got["leave_return_date"] != "2027-04-01" || got["retired_at"] != nil {
+		t.Errorf("staff = %v, want 休職と戻る予定の日", got)
+	}
+	a := body["assignments"].(map[string]any)
+	scheds, recs, pats := a["schedules"].([]any), a["recurring_schedules"].([]any), a["patients"].([]any)
+	if len(scheds) != 1 || scheds[0].(map[string]any)["start_time"] != "09:00" || len(recs) != 0 || len(pats) != 1 || pats[0].(map[string]any)["name"] != "山田 花子" {
+		t.Errorf("assignments = %v, want 予定 1 件と利用者 1 人と空の繰り返し", a)
+	}
+
+	rec, _ = do(t, newRouter(&fakeSchedules{}, &fakeStaff{}, &fakePatients{}), http.MethodPost, "/v1/users/"+staffID+"/leave", `{}`)
+	if rec.Code != http.StatusOK {
+		t.Errorf("戻る予定の日なし: status = %d, want 200", rec.Code)
+	}
+	rec, _ = do(t, newRouter(&fakeSchedules{}, &fakeStaff{}, &fakePatients{}), http.MethodPost, "/v1/users/"+staffID+"/leave", `{"return_date":"2027-13-01"}`)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("日付でない戻る予定の日: status = %d, want 400", rec.Code)
+	}
+	rec, _ = do(t, newRouter(&fakeSchedules{}, &fakeStaff{err: apperr.ErrForbidden}, &fakePatients{}), http.MethodPost, "/v1/users/"+staffID+"/leave", `{}`)
 	if rec.Code != http.StatusForbidden {
 		t.Errorf("権限なし: status = %d, want 403", rec.Code)
+	}
+	rec, body = do(t, newRouter(&fakeSchedules{}, &fakeStaff{err: apperr.Conflict("自分を休職か退職にすることはできません")}, &fakePatients{}), http.MethodPost, "/v1/users/"+staffID+"/leave", `{}`)
+	if rec.Code != http.StatusConflict || body["code"] != "conflict" {
+		t.Errorf("自分: status = %d, body = %v, want 409 conflict", rec.Code, body)
+	}
+}
+
+func TestReinstateUser(t *testing.T) {
+	st := &fakeStaff{}
+	rec, body := do(t, newRouter(&fakeSchedules{}, st, &fakePatients{}), http.MethodPost, "/v1/users/"+staffID+"/reinstate", "")
+	if rec.Code != http.StatusOK || st.lastStopped != staffID || body["status"] != "active" || body["leave_started_at"] != nil {
+		t.Fatalf("status = %d, 復職にした職員 = %s, body = %v", rec.Code, st.lastStopped, body)
+	}
+	rec, _ = do(t, newRouter(&fakeSchedules{}, &fakeStaff{err: apperr.Conflict("退職した職員は復職できません")}, &fakePatients{}), http.MethodPost, "/v1/users/"+staffID+"/reinstate", "")
+	if rec.Code != http.StatusConflict {
+		t.Errorf("退職した職員: status = %d, want 409", rec.Code)
+	}
+}
+
+// 退職は、退職した職員のメールと電話番号を null で返す。予定か担当の利用者が残れば、409 で残る一覧を返す（#268 の検証の観点 3、4）。
+func TestRetireUser(t *testing.T) {
+	st := &fakeStaff{}
+	rec, body := do(t, newRouter(&fakeSchedules{}, st, &fakePatients{}), http.MethodPost, "/v1/users/"+staffID+"/retire", "")
+	got, _ := body["staff"].(map[string]any)
+	if rec.Code != http.StatusOK || st.lastStopped != staffID || got["status"] != "retired" || got["email"] != nil || got["phone_number"] != nil {
+		t.Fatalf("status = %d, 退職にした職員 = %s, body = %v", rec.Code, st.lastStopped, body)
+	}
+
+	assigned := &staff.AssignedError{Assignments: staff.Assignments{
+		Recurring: []staff.AssignedRecurring{{ID: "01M3TC5H00QV17BC0J9V3393ZP", Date: civil.Date{Year: 2026, Month: 10, Day: 5},
+			StartTime: civil.Time{Hour: 13}, EndTime: civil.Time{Hour: 14}}},
+	}}
+	rec, body = do(t, newRouter(&fakeSchedules{}, &fakeStaff{err: assigned}, &fakePatients{}), http.MethodPost, "/v1/users/"+staffID+"/retire", "")
+	if rec.Code != http.StatusConflict || body["code"] != "staff_has_assignments" {
+		t.Fatalf("残る予定: status = %d, body = %v, want 409 staff_has_assignments", rec.Code, body)
+	}
+	a := body["assignments"].(map[string]any)
+	recs := a["recurring_schedules"].([]any)
+	if len(recs) != 1 || recs[0].(map[string]any)["end_date"] != nil || len(a["schedules"].([]any)) != 0 || len(a["patients"].([]any)) != 0 {
+		t.Errorf("assignments = %v, want 終了日の無い繰り返し 1 件", a)
+	}
+
+	rec, body = do(t, newRouter(&fakeSchedules{}, &fakeStaff{err: apperr.Conflict("職員の管理の権限を持つ最後の有効な職員は、休職と退職にできません")}, &fakePatients{}), http.MethodPost, "/v1/users/"+staffID+"/retire", "")
+	if rec.Code != http.StatusConflict || body["code"] != "conflict" || body["assignments"] != nil {
+		t.Errorf("最後の管理者: status = %d, body = %v, want 一覧の無い 409 conflict", rec.Code, body)
 	}
 }
 

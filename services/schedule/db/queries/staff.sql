@@ -32,7 +32,7 @@ SELECT u.id, u.sub, u.username, u.email, u.phone_number, u.facility_id,
        u.department_id, d.name AS department_name,
        u.team_id, t.name AS team_name,
        u.position_id, p.name AS position_name,
-       u.suspended_at, u.created_at, u.updated_at
+       u.leave_started_at, u.leave_return_date, u.retired_at, u.created_at, u.updated_at
 FROM users u
 JOIN departments d ON d.id = u.department_id
 JOIN teams t ON t.id = u.team_id
@@ -44,7 +44,7 @@ SELECT u.id, u.sub, u.username, u.email, u.phone_number, u.facility_id,
        u.department_id, d.name AS department_name,
        u.team_id, t.name AS team_name,
        u.position_id, p.name AS position_name,
-       u.suspended_at, u.created_at, u.updated_at
+       u.leave_started_at, u.leave_return_date, u.retired_at, u.created_at, u.updated_at
 FROM users u
 JOIN departments d ON d.id = u.department_id
 JOIN teams t ON t.id = u.team_id
@@ -80,9 +80,59 @@ ORDER BY upt.target_user_id, upt.target_team_id;
 -- name: GetUserIDBySub :one
 SELECT id FROM users WHERE sub = $1;
 
--- name: SuspendUser :execrows
--- 止めた職員を止め直しても、最初に止めた時刻を残す。
-UPDATE users SET suspended_at = coalesce(suspended_at, now()) WHERE id = $1;
+-- name: StartUserLeave :execrows
+-- 休職の職員を休職にし直しても、最初に休職にした時刻を残し、戻る予定の日だけを書き換える。退職した職員は書かない。
+UPDATE users
+SET leave_started_at = coalesce(leave_started_at, now()), leave_return_date = sqlc.narg(return_date)
+WHERE id = sqlc.arg(id) AND retired_at IS NULL;
+
+-- name: EndUserLeave :execrows
+-- 退職した職員は書かない。
+UPDATE users SET leave_started_at = NULL, leave_return_date = NULL WHERE id = $1 AND retired_at IS NULL;
+
+-- name: RetireUser :execrows
+-- 退職した職員を退職にし直しても、最初に退職にした時刻を残す。名前、所属、役職は残し、メールと電話番号を消す。
+UPDATE users
+SET retired_at = coalesce(retired_at, now()), leave_started_at = NULL, leave_return_date = NULL,
+    email = NULL, phone_number = NULL
+WHERE id = $1;
+
+-- name: LockFacility :one
+-- 事業所の職員の休職と退職を 1 つずつにする。職員の管理の権限を持つ有効な職員を数えてから書くまでの間に、ほかの操作が割り込まない。
+SELECT id FROM facilities WHERE id = $1 FOR UPDATE;
+
+-- name: ListActiveStaffManagers :many
+-- 事業所で職員の管理の権限を持つ、休職でも退職でもない職員の ID を返す。
+SELECT DISTINCT u.id
+FROM users u
+JOIN user_policies up ON up.user_id = u.id
+JOIN policies p ON p.id = up.policy_id
+WHERE u.facility_id = $1 AND p.code = 'staff.manage' AND u.leave_started_at IS NULL AND u.retired_at IS NULL
+ORDER BY u.id;
+
+-- name: ListStaffSchedulesFrom :many
+-- 職員が予定の職員、主訪問者、同行者のどれかの、from 以降のキャンセルしていない単発の予定を返す。
+SELECT s.id, s.date, s.start_time, s.end_time
+FROM schedules s
+LEFT JOIN visit_infos v ON v.id = s.visit_info_id
+WHERE s.facility_id = sqlc.arg(facility_id)
+  AND (s.staff_id = sqlc.arg(staff_id) OR v.assigned_staff_id = sqlc.arg(staff_id) OR v.companion_id = sqlc.arg(staff_id))
+  AND s.date >= sqlc.arg(from_date)
+  AND NOT EXISTS (SELECT 1 FROM schedule_cancels c WHERE c.schedule_id = s.id)
+ORDER BY s.date, s.start_time, s.id;
+
+-- name: ListStaffRecurringSchedulesFrom :many
+-- 職員が予定の職員、主訪問者、同行者のどれかの、from 以降に終わる繰り返しの予定を返す。終了日の無い繰り返しは含める。
+SELECT r.id, r.date, r.end_date, r.start_time, r.end_time
+FROM recurring_schedules r
+LEFT JOIN visit_infos v ON v.id = r.visit_info_id
+WHERE r.facility_id = sqlc.arg(facility_id)
+  AND (r.staff_id = sqlc.arg(staff_id) OR v.assigned_staff_id = sqlc.arg(staff_id) OR v.companion_id = sqlc.arg(staff_id))
+  AND (r.end_date IS NULL OR r.end_date >= sqlc.arg(from_date)::date)
+ORDER BY r.date, r.start_time, r.id;
+
+-- name: ListStaffAssignedPatients :many
+SELECT id, name FROM patients WHERE facility_id = $1 AND assigned_staff_id = $2 ORDER BY name, id;
 
 -- name: GetUserRef :one
 -- ほかの機能が職員を参照するときに要るカラムだけを読む。

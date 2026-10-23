@@ -117,7 +117,8 @@ func run() error {
 		}, tx, ids, principal.RequireStaffManage),
 		Staff: staff.NewUsecase(staff.Deps{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions, Policies: policies, Staff: staffRepo,
-			Identities: broker.New(broker.Config(cfg.Broker), nil),
+			Identities:  broker.New(broker.Config(cfg.Broker), nil),
+			Assignments: postgres.NewStaffAssignmentReader(db),
 			Self: func(ctx context.Context) (string, bool) {
 				p, ok := principal.From(ctx)
 				return p.Staff.ID, ok

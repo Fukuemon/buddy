@@ -972,8 +972,8 @@
         {
           "name": "email",
           "type": "varchar(320)",
-          "nullable": false,
-          "comment": "小文字にそろえた値。事業所の中で一意"
+          "nullable": true,
+          "comment": "小文字にそろえた値。事業所の中で一意。退職した職員では NULL"
         },
         {
           "name": "phone_number",
@@ -1008,10 +1008,22 @@
           "default": "now()"
         },
         {
-          "name": "suspended_at",
+          "name": "leave_started_at",
           "type": "timestamp with time zone",
           "nullable": true,
-          "comment": "職員を止めた時刻。止めていなければ NULL"
+          "comment": "職員を休職にした時刻。休職でなければ NULL"
+        },
+        {
+          "name": "leave_return_date",
+          "type": "date",
+          "nullable": true,
+          "comment": "休職から戻る予定の日のメモ。この日に自動では戻さない"
+        },
+        {
+          "name": "retired_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "comment": "職員を退職にした時刻。退職していなければ NULL"
         }
       ],
       "indexes": [
@@ -1109,16 +1121,6 @@
           ]
         },
         {
-          "name": "users_email_not_null",
-          "type": "n",
-          "def": "NOT NULL email",
-          "table": "public.users",
-          "referenced_table": "",
-          "columns": [
-            "email"
-          ]
-        },
-        {
           "name": "users_facility_id_not_null",
           "type": "n",
           "def": "NOT NULL facility_id",
@@ -1149,6 +1151,17 @@
           ]
         },
         {
+          "name": "users_leave_return_date_check",
+          "type": "CHECK",
+          "def": "CHECK (((leave_return_date IS NULL) OR (leave_started_at IS NOT NULL)))",
+          "table": "public.users",
+          "referenced_table": "",
+          "columns": [
+            "leave_return_date",
+            "leave_started_at"
+          ]
+        },
+        {
           "name": "users_position_id_not_null",
           "type": "n",
           "def": "NOT NULL position_id",
@@ -1156,6 +1169,29 @@
           "referenced_table": "",
           "columns": [
             "position_id"
+          ]
+        },
+        {
+          "name": "users_retired_check",
+          "type": "CHECK",
+          "def": "CHECK (((retired_at IS NULL) OR ((leave_started_at IS NULL) AND (phone_number IS NULL))))",
+          "table": "public.users",
+          "referenced_table": "",
+          "columns": [
+            "retired_at",
+            "leave_started_at",
+            "phone_number"
+          ]
+        },
+        {
+          "name": "users_retired_email_check",
+          "type": "CHECK",
+          "def": "CHECK (((retired_at IS NULL) = (email IS NOT NULL)))",
+          "table": "public.users",
+          "referenced_table": "",
+          "columns": [
+            "retired_at",
+            "email"
           ]
         },
         {
