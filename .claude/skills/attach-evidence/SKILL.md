@@ -1,13 +1,13 @@
 ---
 name: attach-evidence
-description: 機能の追加と改修の pull request の本文の「検証とエビデンス」に、観点を設計し、エビデンスの動画とスクリーンショットを撮り、gh の --attach で本文に直接入れるときに使う。「エビデンスの動画を付けて」「動画を pull request に添付して」「確認したことを動画で示して」「検証とエビデンスを書いて」「コメントの動画を本文に移して」で読み込む。エビデンスを撮る Playwright の spec を書くときは write-verification-spec を、流して確かめるときは run-verification-scenarios を使う。
+description: 機能の追加と改修の pull request の本文の「検証とエビデンス」に、観点を設計し、エビデンスの動画とスクリーンショットを撮り、gh の --attach で本文に直接入れるときに使う。「エビデンスの動画を付けて」「動画を pull request に添付して」「確認したことを動画で示して」「検証とエビデンスを書いて」「コメントの動画を本文に移して」で読み込む。エビデンスを撮る Playwright の spec を書くときは write-verification-spec を、流して確認するときは run-verification-scenarios を使う。
 ---
 
 # attach-evidence
 
 エビデンスを付ける変更、元のファイルの配置先、写してよいデータは、`context/testing/evidence.md` が持つ。  
 節の形は、`.github/pull_request_template.md` の「検証とエビデンス」にある。  
-このスキルは、観点を決める、撮る、本文に入れる、入ったことを確かめるときの判断だけを持つ。
+このスキルは、観点を決める、撮る、本文に入れる、入ったことを確認するときの判断だけを持つ。
 
 ## 始める前に読むもの
 
@@ -31,7 +31,7 @@ description: 機能の追加と改修の pull request の本文の「検証と�
 
 エビデンスは、`packages/e2e/kit` の録画を呼ぶ Playwright の spec で撮る。  
 spec の配置先、撮るコマンド、ログインとテストデータの作り方は、`context/testing/evidence.md` の「エビデンスの spec」にある。  
-spec の書き方は write-verification-spec に、流し方と撮った後の確かめ方は run-verification-scenarios に従う。
+spec の書き方は write-verification-spec に、流し方と撮った後の確認の方法は run-verification-scenarios に従う。
 
 | 変更 | 開くもの |
 | --- | --- |
@@ -42,7 +42,7 @@ spec の書き方は write-verification-spec に、流し方と撮った後の�
 
 - 既にある spec で撮れる観点は、spec を流し直すだけにする。無ければ、機能の spec に test を足す。
 - spec をコミットしてから撮る。字幕の 1 段目に、撮ったコミットが出る。
-- agent-browser では、エビデンスを撮らない。録画のフレームが落ちることがあり、撮り直すときに同じ操作を再現できない。spec を書く前に、画面の操作の位置を確かめるのには使ってよい。
+- agent-browser では、エビデンスを撮らない。録画のフレームが落ちることがあり、撮り直すときに同じ操作を再現できない。spec を書く前に、画面の操作の位置を確認するのには使ってよい。
 
 kit は H.264 の mp4 を書き出すので、変換しない。kit 以外で撮った WebM を入れるときだけ、次で変換する。`yuv420p` は幅か高さが奇数だと失敗するので、`scale` で偶数にそろえる。
 
@@ -50,10 +50,10 @@ kit は H.264 の mp4 を書き出すので、変換しない。kit 以外で撮
 ffmpeg -i <名前>.webm -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -c:v libx264 -pix_fmt yuv420p -movflags +faststart <名前>.mp4
 ```
 
-## 出す前に確かめる
+## 出す前に確認する
 
 次のチェックリストを応答に写し、全部を満たすまで撮り直す。  
-コンタクトシートを作るコマンドは、run-verification-scenarios の「確かめる」にある。
+コンタクトシートを作るコマンドは、run-verification-scenarios の「確認する」にある。
 
 ```
 - [ ] 判定のスクリーンショット（`<name>/frames/`）を開き、字幕と画面が合っている
@@ -72,7 +72,7 @@ ffmpeg -i <名前>.webm -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -c:v libx264 -pi
 - 観点は「条件」と「期待結果」の 2 列に分け、1 つのセルに要件の文を入れない。
   - 条件だけを縦に読めると、観点の抜けと重なりを見つけやすい。
   - 期待結果と「結果」を隣に並べると、比べやすい。
-- 「確かめ方」には、spec のファイル名と test の `name` を書く。パスは「エビデンスの spec」の details に書く。パスを表に書くと、列の幅が条件と期待結果の列を狭める。
+- 「確認の方法」には、spec のファイル名と test の `name` を書く。パスは「エビデンスの spec」の details に書く。パスを表に書くと、列の幅が条件と期待結果の列を狭める。
 - 「結果」は、通った、通らなかった、未実施のどれかにする。未実施は理由を書く。撮らなかった観点も、行を消さない。
 - 「エビデンス」には、`<name>.mp4` と判定のスクリーンショットを並べる。スクリーンショットの代替テキストは、判定の文にする。
 - 改修前と比べるときは、「エビデンス」の列を「改修前」と「改修後」の 2 列にし、同じ行に並べる。
@@ -83,7 +83,7 @@ ffmpeg -i <名前>.webm -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -c:v libx264 -pi
 表の例は次のとおり。
 
 ```md
-| # | 条件（WHEN / IF） | 期待結果（SHALL） | 確かめ方 | 結果 | エビデンス |
+| # | 条件（WHEN / IF） | 期待結果（SHALL） | 確認の方法 | 結果 | エビデンス |
 | --- | --- | --- | --- | --- | --- |
 | 1 | 予定のカレンダーの日の表示で「予定を作成」を押したとき | 予定の作成のダイアログが開く | `create-dialog.e2e.ts` の `schedule-create-dialog` | 通った | [schedule-create-dialog](<URL>) ![予定の作成のダイアログが開く](<URL>) |
 | 2 | 何も入れずに予定の作成のダイアログの「閉じる」を押したとき | 破棄の確認を出さずにダイアログが閉じ、日の表示に戻る | `create-dialog.e2e.ts` の `schedule-create-dialog-close` | 通った。破棄の確認: 0 回 | [schedule-create-dialog-close](<URL>) ![ダイアログが閉じ、日の表示に戻る](<URL>) |
@@ -91,7 +91,7 @@ ffmpeg -i <名前>.webm -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -c:v libx264 -pi
 
 ## 本文に入れる
 
-`--attach` は gh の 2.99 以降にある。先に `gh --version` を確かめ、古ければ `mise which gh` のパスの gh を使う。
+`--attach` は gh の 2.99 以降にある。先に `gh --version` を確認し、古ければ `mise which gh` のパスの gh を使う。
 
 - 本文は `.ai-out/prs/` のファイルに書き、エビデンスの参照を `![<名前>](./.ai-out/evidence/<番号>/<ファイル>)` にする。
 - リポジトリのルートで流し、`--attach` に本文と同じパスを渡す。gh が本文の参照を、アップロード先の URL に書き換える。
@@ -104,7 +104,7 @@ ffmpeg -i <名前>.webm -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -c:v libx264 -pi
 - 一部のファイルだけが失敗すると、gh は 0 以外で終わり、上がったファイルだけで本文を作る。失敗したファイルを、作った後に足す手順で足す。
 - issue に入れるのは、不具合の再現と改修前の動きのように、pull request より先に示すものだけにする。`gh issue create` か `gh issue edit` の `--attach` を、同じ形で使う。
 
-## 入ったことを確かめる
+## 入ったことを確認する
 
 ```sh
 gh api repos/Fukuemon/buddy/pulls/<番号> --jq .body | grep -o 'github.com/user-attachments/assets/' | wc -l
@@ -113,7 +113,7 @@ gh api repos/Fukuemon/buddy/pulls/<番号> --jq .body | grep -c '](\./\.ai-out/'
 
 - 1 つ目の数が、本文に入れたファイルの数の合計と合う。
 - 2 つ目が 0 で、書き換わらずに残った参照が無い。
-- 表のセルの中の動画の参照は `[<名前>](<URL>)` に書き換わる。pull request の画面にログインして開き、再生できることを確かめる。ログインしていない画面では、動画はリンクで出る。
+- 表のセルの中の動画の参照は `[<名前>](<URL>)` に書き換わる。pull request の画面にログインして開き、再生できることを確認する。ログインしていない画面では、動画はリンクで出る。
 
 ## コメントの動画を本文に移す
 
@@ -127,10 +127,10 @@ gh api repos/Fukuemon/buddy/pulls/<番号> --jq .body | grep -c '](\./\.ai-out/'
 
 2. コメントの本文から `https://github.com/user-attachments/assets/<ID>` の URL を取り、観点ごとに本文の表の「エビデンス」の列に `[<name>](<URL>)` で書く。条件と期待結果はコメントの観点の文を分けて写し、結果は本文の「確認したこと」から写す。
 3. `gh pr edit <番号> -F <本文>` で本文を置き換える。`--attach` は渡さない。
-4. 「入ったことを確かめる」の 1 つ目の数が、移した URL の数と合うことを確かめる。
+4. 「入ったことを確認する」の 1 つ目の数が、移した URL の数と合うことを確認する。
 5. コメントは消さない。コメントを消したときに、本文の URL が開けるかは未確認である。
 
 ## 終えたら
 
 - `.ai-out/evidence/<番号>/` の元のファイル（`<名前>.mp4` と `<名前>/`）のうち、自分が作ったものを消す。
-- 利用者に、撮った観点と本数、本文に入れたファイルの数と確かめた数、撮らなかった観点を伝える。
+- 利用者に、撮った観点と本数、本文に入れたファイルの数と確認した数、撮らなかった観点を伝える。

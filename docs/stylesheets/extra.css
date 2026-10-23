@@ -8,6 +8,8 @@
   --md-accent-fg-color--transparent: var(--buddy-color-primary-surface);
   --md-typeset-a-color: var(--buddy-color-primary);
   --md-default-fg-color: var(--buddy-color-text);
+  /* 画面と同じく、ページの背景をわずかに温かい白にする */
+  --md-default-bg-color: var(--buddy-color-surface-canvas);
 }
 
 /* 本文の幅をデフォルトの 61rem から広げ、画面仕様書の表とモックを広く見せる。全てのページに効く */

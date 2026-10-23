@@ -35,7 +35,7 @@ body:
     id: done
     attributes:
       label: 完了の条件
-      description: 確かめられる形の箇条書き。コマンドと期待する結果まで書く。チェックボックスにしない
+      description: 確認できる形の箇条書き。コマンドと期待する結果まで書く。チェックボックスにしない
       placeholder: |
         - ...
     validations:
@@ -44,7 +44,7 @@ body:
     id: verification
     attributes:
       label: 検証の観点
-      description: マージの前に確かめる動作を、条件と期待結果の表で書く。pull request の「検証とエビデンス」の表の同じ列に写す。動作を確かめないタスクでは空にする
+      description: マージの前に確認する動作を、条件と期待結果の表で書く。pull request の「検証とエビデンス」の表の同じ列に写す。動作を確認しないタスクでは空にする
       placeholder: |
         | # | 条件（WHEN / IF） | 期待結果（SHALL） |
         | --- | --- | --- |
