@@ -149,7 +149,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
   - ログアウトのときは、web が BFF のセッションを消してから、ブラウザを Hydra の RP-Initiated Logout へ ID token を添えて転送する。Hydra はブローカーのログアウトの画面を呼んでログインのセッションを消し、web の / へ戻す。上流の IdP のセッションは消さない。
 - web と Hydra: 認可コードフローでトークンを取得し、更新する。トークンは Valkey のセッションに置く。
 - ブローカーと Hydra: ブローカーが Hydra の admin API でログインと同意を accept か reject し、ログアウトを accept する。ログインの accept で、Hydra にログインのセッションを 12 時間覚えさせる。同意の accept で、access token の `aud`（`schedule`、`receipt`）と `org_id` を決める。
-- ブローカーと上流の IdP: 認可コードフローで ID token を取り、署名、`iss`、`aud`、`nonce` を確かめる。
+- ブローカーと上流の IdP: 認可コードフローで ID token を取り、署名、`iss`、`aud`、`nonce` を確認する。
 - 予定の API とブローカー: 職員の登録と停止で、予定の API が職員の管理の権限を確認してから、ブローカーの内部の API を呼ぶ。予定の API は、Hydra の client credentials で `aud` が `broker` の access token を取って付ける。
   - ブローカーは、内部の API と token_hook を、ログインの画面と別のポートで待ち受け、許したクライアントのトークンだけを受ける。
 - Hydra とブローカー: Hydra は、トークンを発行するたびに `oauth2.token_hook` でブローカーを呼び、有効でない職員と、上流でのログインから 12 時間を過ぎたログインのトークンを出さない。
@@ -201,8 +201,8 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 | `GOOGLE_CALENDARS_FILE` | 使わない | 使わない | 任意 | 職員とカレンダーと組織の対応の JSON。空なら Google カレンダーから予定を取らない |
 | `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` | 使わない | 任意 | 任意 | 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応の JSON。2 つの API で同じ形。予定の API では、空なら、カレンダーを読む操作は 503 を返し、予定を Google カレンダーに書き出さない。照合の API では `GOOGLE_CALENDARS_FILE` と一緒に渡す |
 | `GOOGLE_CALENDAR_ENDPOINT` | 使わない | 任意 | 任意 | Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit に向けるときだけ渡す。`GOOGLE_APPLICATION_CREDENTIALS` を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使い、渡さなければ認証をしない。予定の API では `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` と一緒に渡す |
-| `GOOGLE_CALENDAR_EXPORT_ENABLED` | 使わない | 任意 | 使わない | `true` なら予定を Google カレンダーに書き出す。デフォルトは `false`。サービスアカウントが「予定の変更」の共有だけで書けるかを確かめるまで、本番では `false` にする（ADR-0012 の承認の条件） |
-| `GOOGLE_CALENDAR_EXPORT_INTERVAL` | 使わない | 任意 | 使わない | 予定の書き出しの待ちを確かめる間隔。デフォルトは 30 秒 |
+| `GOOGLE_CALENDAR_EXPORT_ENABLED` | 使わない | 任意 | 使わない | `true` なら予定を Google カレンダーに書き出す。デフォルトは `false`。サービスアカウントが「予定の変更」の共有だけで書けるかを確認するまで、本番では `false` にする（ADR-0012 の承認の条件） |
+| `GOOGLE_CALENDAR_EXPORT_INTERVAL` | 使わない | 任意 | 使わない | 予定の書き出しの待ちを確認する間隔。デフォルトは 30 秒 |
 | `GOOGLE_CALENDAR_SYNC_ENABLED` | 使わない | 任意 | 使わない | `true` なら Google カレンダーの変更を buddy の予定に当てる。デフォルトは `false`。`GOOGLE_CALENDAR_EXPORT_ENABLED` を `true` にして渡す |
 | `GOOGLE_CALENDAR_SYNC_INTERVAL` | 使わない | 任意 | 使わない | Google カレンダーの変わった予定を読む間隔。デフォルトは 2 分 |
 
@@ -219,9 +219,9 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 
 #### ヘルスチェック
 
-- `GET /healthz`: プロセスが動いていれば 200 を返す。依存先を確かめない。
-- `GET /readyz`: 依存先に届けば 200、届かなければ 503 を返す。予定の API は PostgreSQL、web は Valkey を確かめる。
-  - 照合の API は起動のときに Hydra の discovery を読み、読めなければ起動しない。起動した後は依存先を確かめず、プロセスが動いていれば 200 を返す。
+- `GET /healthz`: プロセスが動いていれば 200 を返す。依存先を確認しない。
+- `GET /readyz`: 依存先に届けば 200、届かなければ 503 を返す。予定の API は PostgreSQL、web は Valkey を確認する。
+  - 照合の API は起動のときに Hydra の discovery を読み、読めなければ起動しない。起動した後は依存先を確認せず、プロセスが動いていれば 200 を返す。
 - 2 つとも認証を求めない。
 
 #### マイグレーション
@@ -237,9 +237,9 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 
 ### 認証
 
-- 職員のログインは、web の BFF と Hydra の認可コードフローで行い、トークンはブラウザに渡さない。職員が上流の IdP で誰かを確かめるのは、ブローカーである。
+- 職員のログインは、web の BFF と Hydra の認可コードフローで行い、トークンはブラウザに渡さない。職員が上流の IdP で誰かを確認するのは、ブローカーである。
   - ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにする](../adr/0001-auth.md)
-- 2 つの API は、access token の検証を同じ規則で行う。確かめる項目は、各 API の Design Doc にある。
+- 2 つの API は、access token の検証を同じ規則で行う。確認する項目は、各 API の Design Doc にある。
 - 職員とログインのアカウントの結び付け方は、[職員とログイン](https://github.com/Fukuemon/buddy/blob/develop/context/domain/staff-login.md) にある。
 
 ### 事業所の分離
