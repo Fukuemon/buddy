@@ -38,3 +38,9 @@ export const suspendStaff = (request: APIRequestContext, token: string, userId: 
   request.post(`${SCHEDULE_URL}/v1/users/${userId}/suspend`, {
     headers: { Authorization: `Bearer ${token}` },
   })
+
+/** 予定の API の職員の一覧（GET /v1/facilities/{facility_id}/users）を token の職員で呼び、レスポンスを返す。 */
+export const listStaff = (request: APIRequestContext, token: string, facilityId: string) =>
+  request.get(`${SCHEDULE_URL}/v1/facilities/${facilityId}/users`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })

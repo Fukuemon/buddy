@@ -26,13 +26,18 @@ export const LEADER = {
 /** 2 つ目の事業所の職員。その事業所の予定だけが出ることを確かめるのに使う。 */
 export const OFFICE_B = {
   email: 'nagisa.ueno@example.com',
-  staff: { name: '上野 渚' },
+  staff: { id: '01M5J5EE04P946KC3JAE2P1JQ4', name: '上野 渚' },
+  facilityId: '01M5J5EE00QGG4M6GGZQ9AT9GW',
   /** シードの、2 つ目の事業所の予定。1 つ目の事業所の予定と同じ日にある。 */
   schedule: { date: '2026-10-20', title: '第二ステーションの定例' },
 }
 
-/** シードの、止めた職員。ブローカーと予定の API の両方で止めてあり、ログインを拒まれる。 */
-export const SUSPENDED_STAFF = { email: 'takumi.ono@example.com' }
+/** シードの、2 つ目の事業所の止めた職員。ブローカーと予定の API の両方で止めてあり、ログインを拒まれる。 */
+export const SUSPENDED_STAFF = {
+  id: '01M5J5EE0AV3M9P2QF6ZK8RTNC',
+  name: '小野 拓海',
+  email: 'takumi.ono@example.com',
+}
 
 /** ブローカーにも予定の API にも登録していないメール。 */
 export const UNREGISTERED_EMAIL = 'nobody@example.com'
