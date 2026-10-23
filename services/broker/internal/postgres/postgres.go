@@ -39,7 +39,7 @@ func (c Config) URL(scheme string) string {
 	return u.String()
 }
 
-// Open は、接続のプールを作って疎通を確かめる。返したプールは呼び出し側が閉じる。
+// Open は、接続のプールを作って疎通を確認する。返したプールは呼び出し側が閉じる。
 func Open(ctx context.Context, c Config) (*pgxpool.Pool, error) {
 	cfg, err := pgxpool.ParseConfig(c.URL("postgres"))
 	if err != nil {

@@ -5,7 +5,7 @@
 // 設定は環境変数から読む。読む値とデフォルト値は config.Load にある。
 // 上流の IdP の設定のファイルか client secret のファイルに誤りがあれば、待ち受けを始めずに終了コード 1 で終わる。
 //
-// `broker healthcheck` は、サーバーを起動せず、動いているサーバーの GET /readyz を確かめて終わる。
+// `broker healthcheck` は、サーバーを起動せず、動いているサーバーの GET /readyz を確認して終わる。
 //
 // SIGINT か SIGTERM を受けると、処理中のリクエストを待ってから終了する。
 package main

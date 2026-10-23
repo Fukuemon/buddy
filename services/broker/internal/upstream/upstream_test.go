@@ -43,7 +43,7 @@ func TestLoad(t *testing.T) {
 	}
 }
 
-// 開発用の例のファイルが、そのまま読めることを確かめる。
+// 開発用の例のファイルが、そのまま読めることを確認する。
 func TestLoadExample(t *testing.T) {
 	if _, err := upstream.Load("../../upstream-idps.example.json", "../../upstream-idp-client-secrets.example.json"); err != nil {
 		t.Fatal(err)

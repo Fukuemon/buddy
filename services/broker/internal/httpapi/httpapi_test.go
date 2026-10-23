@@ -23,7 +23,7 @@ func TestHealth(t *testing.T) {
 		code   int
 		status string
 	}{
-		{"healthz は依存先を確かめない", down, "/healthz", http.StatusOK, "ok"},
+		{"healthz は依存先を確認しない", down, "/healthz", http.StatusOK, "ok"},
 		{"readyz は依存先に届けば 200", up, "/readyz", http.StatusOK, "ok"},
 		{"readyz は依存先に届かなければ 503", down, "/readyz", http.StatusServiceUnavailable, "unavailable"},
 		{"Ready が nil の readyz は 200", nil, "/readyz", http.StatusOK, "ok"},

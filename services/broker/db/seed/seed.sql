@@ -1,7 +1,7 @@
 -- 開発とテストに使うダミーの職員。実在の人と連絡先を入れない。
 -- ID は、予定の API のシード（services/schedule/db/seed/seed.sql）の同じメールの職員の users.sub に入れてある。
 -- org_id は、compose の上流の IdP の設定（compose/broker/upstream-idps.json）の組織の ID である。
--- 小野 拓海は止めた職員で、ログインを拒むことを確かめるのに使う。
+-- 小野 拓海は止めた職員で、ログインを拒むことを確認するのに使う。
 -- 上流のアカウントは結び付けない。初回のログインで、上流の IdP のメールが確認済みで同じなら結び付ける。
 
 INSERT INTO staff (id, org_id, email, status) VALUES

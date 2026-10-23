@@ -118,7 +118,7 @@ func TestStaffStoreRegisterDeleteSuspend(t *testing.T) {
 	}
 }
 
-// TestSeed は、シードが空の DB にだけ入り、2 度目は何もしないことと、2 つ目の事業所に有効な職員と止めた職員が入ることを確かめる。
+// TestSeed は、シードが空の DB にだけ入り、2 度目は何もしないことと、2 つ目の事業所に有効な職員と止めた職員が入ることを確認する。
 func TestSeed(t *testing.T) {
 	pool := migrated(t)
 	ctx := context.Background()
