@@ -133,6 +133,9 @@ sequenceDiagram
 - 上流の IdP へ転送している間の値（ログインの要求、職員の ID、state、nonce、PKCE の code verifier）は、ブラウザの cookie に置き、コールバックの `state` と照らす。
   - cookie は署名しない。書き換えられるのはブラウザの利用者だけで、事業所と上流の IdP は職員の ID から DB で引き直すので、別のメールを入れたのと同じ結果にしかならない。
 - ブローカーの画面の文言は、web のログインの失敗の画面と同じにする。コールバックの値がこのブラウザで始めたログインのものと確認できないときは、Hydra へ返さずにブローカーがログインの失敗の画面を出す。
+- ブローカーの画面の色と書体は、web と同じ packages/ui のトークンの値にする。画面の背景の中央に白いカードを置き、上端にロゴを出す。
+  - ブローカーは web のビルドを読まないので、画面が使うトークンだけを `scripts/build-broker-tokens.mjs` が値に解いて `internal/login/tokens.css` に書き、画面に埋め込む。`pnpm check:generated` が、トークンとの食い違いを見つける。
+  - 書体は Noto Sans JP を名指すだけで、ブローカーは書体のファイルを配らない。入っていない端末では、ブラウザの sans-serif で出る。
 - 同意の accept は、web のクライアントに許した audience を `aud` に、職員の事業所の組織の ID を `org_id` に入れる。Hydra は `skip_consent` のクライアントでも同意の画面を呼ぶので、ブローカーは画面を出さずに accept する。
   - 画面を出さずに accept するのは、`AUTO_CONSENT_CLIENTS` に挙げたクライアント（デフォルトは `web`）だけである。ほかのクライアントの同意は reject で返す。ブローカーは同意の画面を持たない。
 - ブローカーは、ログインの accept で、Hydra にログインのセッションを 12 時間覚えさせる（`remember`、`remember_for` は 43200 秒）。覚えている間、Hydra はブローカーのログインの画面を出させずに accept させる。ブローカーは、止めた職員と登録の途中の職員を、覚えたセッションでも reject で返す。
