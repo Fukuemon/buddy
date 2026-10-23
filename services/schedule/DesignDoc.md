@@ -49,7 +49,7 @@ verified_commit: 4e53ca5
 | 認証 | `internal/access` | トークンから職員を特定する手順と、パスが指すリソースの事業所を引く手順 |
 | テスト | `internal/inmem` | 機能のパッケージのテストが共有する、メモリ上のリポジトリ |
 | アダプタ | `internal/postgres` | 機能のパッケージのリポジトリを、pgx/v5 の接続のプールと sqlc の生成コード（`sqlcgen`）で実装する |
-| アダプタ | `internal/broker` | `staff.Identities` を、認証のブローカーの内部の API で実装する。Hydra の client credentials の access token（`aud` は `broker`）で呼ぶ |
+| アダプタ | `internal/broker` | `staff.Identities` を、ID ブローカーの内部の API で実装する。Hydra の client credentials の access token（`aud` は `broker`）で呼ぶ |
 | アダプタ | `internal/ulid` | `IDGenerator` を ULID で実装し、ID の形を確認する |
 | アダプタ | `internal/gcal` | `calendar.EventSource`（`Reader`）と `calendar.EventWriter`（`Writer`）を Google Calendar API で実装する。繰り返しの予定を展開せずに、親の予定と例外の回を読み、回ごとにする繰り返しだけを events.instances で回に展開する。`calendar.Accounts` の実装（`Accounts`）は、事業所の組織のサービスアカウントで `Reader` と `Writer` を作る。テストのフェイクの API は `internal/gcal/gcaltest` に置く |
 | 設定 | `internal/config` | 環境変数から API とマイグレーションの設定を読む。DB の接続の値は自分の型で持ち、`cmd` がアダプタの設定にコピーする |
@@ -127,7 +127,7 @@ erDiagram
 - 日時の監査のカラムは `timestamptz` にし、`updated_at` はトリガーで付ける。予定の日付と時刻は、事業所の現地の時刻として `date` と `time` で持つ。
 - 区分値（`frequency`、`preferred_time` など）は `text` と CHECK で持つ。名前の付いた CHECK と一意の制約は `<テーブル>_<意味>_{key,fkey,check}` の名前にする。
 - `departments`、`teams`、`positions` は事業所ごとに持つ。名前が同じ部署でも、事業所が違えば別のレコードにする。事業所の間で部署を共有すると、事業所が部署の名前を変えたときにほかの事業所に波及するためである。
-- `facilities.org_id` は、認証の基盤の組織の ID を持つ。NULL を許し、値があれば一意にする。認証のミドルウェアは、トークンの組織のクレームでこのカラムを探す。
+- `facilities.org_id` は、ID ブローカーの組織の ID を持つ。NULL を許し、値があれば一意にする。認証のミドルウェアは、トークンの組織のクレームでこのカラムを探す。
 - `users.sub` は、ブローカーの職員の ID を持つ。職員の登録のときにブローカーが発行した値を入れ、全ての事業所を通じて一意にする。ブローカーで職員を作る前に登録した職員では NULL のことがあり、その職員はログインできない。
 - `users.email` は、事業所の中で一意にする（`facility_id` と `email` の組）。ブローカーは職員のメールを全ての事業所で一意にするので、ほかの事業所と重なるメールの登録はブローカーが拒む。予定の API は、メールを小文字にそろえてから保存し、比べる。そろえ忘れた書き込みは CHECK が拒む。`users.username` は表示名で、一意にしない。
 - `users.leave_started_at` は職員を休職にした時刻、`users.leave_return_date` は戻る予定の日のメモ、`users.retired_at` は退職にした時刻を持つ。どれも、その状態でなければ NULL である。休職と退職にし直しても、最初の時刻を残す。退職した職員は、`email` と `phone_number` が NULL で、休職の 2 つのカラムも NULL である。CHECK がこの組み合わせを確認する。
@@ -219,7 +219,7 @@ sequenceDiagram
 - 休職と退職の職員のリクエストは、web が持つ access token の期限（5 分）を待たずに 403 で拒む。
 - ミドルウェアは、パスの引数ごとに、指すリソースの事業所を職員の事業所と比べる。
   - `facility_id` は、値をそのまま職員の事業所と比べる。
-  - `department_id`、`team_id`、`position_id`、`user_id`、`schedule_id`、`recurring_schedule_id` は、リソースを読んでその事業所と比べる。
+  - 次の引数は、リソースを読んでその事業所と比べる。`department_id`、`team_id`、`position_id`、`user_id`、`schedule_id`、`recurring_schedule_id`、`external_calendar_id`、`calendar_export_id`
   - `policy_id` は、事業所に属さないので確認しない。`user_policy_id` は、同じパスの `user_id` で事業所を確認し、`staff.Usecase` が職員の権限かを確認する。
   - この一覧に無い引数を持つパスは、事業所を確認できないので 500 を返す。
 - パスの ID が ULID でないときと、リソースが見つからないときは、ミドルウェアは通す。ULID でない ID は次のミドルウェアが 400 を返し、見つからないリソースはハンドラが 404 を返す。
@@ -252,7 +252,7 @@ sequenceDiagram
 - 退職は、名前、所属、役職、権限を残し、`email` と `phone_number` を消す。
 - 復職は、事業所をロックしたトランザクションで `users` の休職を外してコミットしてから、ブローカーの職員を戻す。退職した職員は 409 で拒む。
   - ブローカーは、事業所をロックし直した 2 つ目のトランザクションで、職員が有効なままのときだけ呼ぶ。
-- 2 か所の書き込みの順と、片方だけが残ったときの扱いは、[認証のブローカーの Design Doc の職員の登録、休職、復職、退職](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#職員の登録休職復職退職) にある。
+- 2 か所の書き込みの順と、片方だけが残ったときの扱いは、[ID ブローカーの Design Doc の職員の登録、休職、復職、退職](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#職員の登録休職復職退職) にある。
 - ADR-0017: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0017-identity-boundary.md)
 - ADR-0018: [職員の停止を、戻せる休職と、戻せない退職に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0018-staff-leave-and-retirement.md)
 

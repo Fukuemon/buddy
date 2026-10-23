@@ -1,17 +1,17 @@
 ---
 type: feature-design
-title: 認証のブローカー
+title: ID ブローカー
 description: Ory Hydra の login and consent app として動くブローカーの責務、Hydra との分担、ログイン、職員の登録、休職、復職、退職、ログアウトの流れ、ローカル環境の構成
 status: draft
 governs: services/broker
 verified_commit: 71728ae
 ---
 
-# 認証のブローカー
+# ID ブローカー
 
 ## Overview
 
-ブローカーは、事業所ごとに違う上流の IdP の前に立ち、職員の身元を持つ。トークンを発行するのは Ory Hydra で、ブローカーは Hydra の login and consent app として、ログインと同意とログアウトを判断する。web と 2 つの API から見える Issuer は Hydra だけである。
+ID ブローカー（`services/broker`、以下ブローカー）は、事業所ごとに違う上流の IdP の前に立ち、職員の身元を持つ。トークンを発行するのは Ory Hydra で、ブローカーは Hydra の login and consent app として、ログインと同意とログアウトを判断する。web と 2 つの API から見える Issuer は Hydra だけである。
 
 - 全体の責務と依存は [buddy Design Doc](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md) にある。
 - ADR-0016: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0016-id-broker-hydra.md)
@@ -41,16 +41,22 @@ flowchart TB
   hydra["Hydra<br/>public API と admin API"]
   broker["ブローカー<br/>login and consent app"]
   upstream["事業所の上流の IdP"]
-  api["予定の API、照合の API"]
+  schedule["予定の API"]
+  receipt["照合の API"]
   web -->|認可コードフロー、PKCE| hydra
   hydra -->|login_challenge、consent_challenge、logout_challenge| broker
   broker -->|OIDC の RP| upstream
   broker -->|accept、reject、セッションの取り消し| hydra
+  broker -->|内部の API のトークンを JWKS で検証| hydra
   hydra -->|token_hook| broker
-  web -->|access token| api
-  api -->|JWKS で検証| hydra
-  api -->|職員の登録、休職、復職、退職| broker
+  web -->|access token| schedule
+  web -->|access token| receipt
+  schedule -->|JWKS で検証、client credentials でトークンを取る| hydra
+  receipt -->|JWKS で検証| hydra
+  schedule -->|職員の登録、休職、復職、退職| broker
 ```
+
+- ブローカーの内部の API を呼ぶのは予定の API だけである。照合の API は、ブローカーを呼ばない。
 
 - ブローカーの DB は、ブローカーの職員と上流のアカウントを持つ。Hydra の DB とは分ける。
 - access token は JWT で、期限は 5 分である。`org_id` は `oauth2.allowed_top_level_claims` で JWT の top level に出す。
@@ -87,7 +93,7 @@ erDiagram
 
 ### ログイン
 
-職員が初めてログインするときの流れを示す。2 回目からは、上流のアカウントの `iss` と `sub` で職員を探し、結び付けの手順を通らない。
+職員が初めてログインするときの流れを示す。2 回目からは、結び付けた `iss` と `sub` が上流の ID token と同じかを比べ、結び付けの手順を通らない。
 
 ```mermaid
 sequenceDiagram
@@ -97,53 +103,86 @@ sequenceDiagram
   participant H as Hydra
   participant K as ブローカー
   participant U as 上流の IdP
+  participant A as 予定の API
   B->>W: GET /auth/login
-  W-->>B: Hydra の認可の画面へ転送
+  W-->>B: Hydra の認可の画面へリダイレクト
   B->>H: GET /oauth2/auth
-  H-->>B: ブローカーのログインの画面へ転送（login_challenge）
+  H-->>B: ブローカーのログインの画面へリダイレクト（login_challenge）
   B->>K: メールを入れる
   K->>K: 登録した職員のメールから事業所を引く
-  K-->>B: 事業所の上流の IdP へ転送
+  K-->>B: 事業所の上流の IdP へリダイレクト
   B->>U: ログイン
-  U-->>B: ブローカーへ転送（認可コード）
+  U-->>B: ブローカーへリダイレクト（認可コード）
   B->>K: GET コールバック
-  K->>U: 認可コードを ID token に替える
+  K->>U: 認可コードを ID token と交換する
   K->>K: メールが確認済みで登録と同じなら、上流の iss と sub を職員に結び付ける
   K->>H: ログインの accept（subject は職員の ID）
-  H-->>B: ブローカーの同意へ転送（consent_challenge）
+  H-->>K: リダイレクト先
+  K-->>B: Hydra へリダイレクト
+  B->>H: GET /oauth2/auth
+  H-->>B: ブローカーの同意へリダイレクト（consent_challenge）
   B->>K: 同意
   K->>H: 同意の accept（aud、org_id）
-  H-->>B: web のコールバックへ転送
+  H-->>K: リダイレクト先
+  K-->>B: Hydra へリダイレクト
+  B->>H: GET /oauth2/auth
+  H-->>B: web のコールバックへリダイレクト
   B->>W: GET /auth/callback
-  W->>H: 認可コードをトークンに替える
+  W->>H: 認可コードをトークンと交換する
+  H->>K: token_hook（職員が有効か）
+  K-->>H: 204
+  H-->>W: access token、refresh token、ID token
+  W->>A: GET /v1/me
+  alt 職員と事業所を引けた
+    W->>W: 前のセッションを消し、セッションを作る
+    W-->>B: 戻る先へリダイレクト
+  else 403（事業所に登録されていない）
+    W-->>B: /auth/error?reason=forbidden へリダイレクト
+  else ほかの失敗
+    W-->>B: /auth/error?reason=failed へリダイレクト
+  end
 ```
 
-- 登録されていないメールと、有効でない職員（休職と退職の職員、登録の途中の職員）は、上流の IdP へ転送せずにログインの reject で返す。web はログインの失敗の画面を出すので、事業所を示さず、ログインの失敗と同じ文言になる。
+- web は、`/auth/login` で state、nonce、PKCE の code verifier、戻る先を Valkey に 10 分置き、署名した state だけを cookie に入れる。`/auth/callback` は、state が合わないか、値が無いか、トークンと交換できなければ `reason=failed` へリダイレクトする。ブローカーが reject したログインは、トークンと交換できずに `reason=failed` になる。
+- 図の token_hook は、[トークンの発行の確認](#トークンの発行の確認) にある。
+
+- 登録されていないメールと、有効でない職員（休職と退職の職員、登録の途中の職員）は、上流の IdP へリダイレクトせずにログインの reject で返す。web はログインの失敗の画面を出すので、事業所を示さず、ログインの失敗と同じ文言になる。
 - メールを受けたら、職員を引く前に、Hydra の admin API で `login_challenge` のログインの要求を読む。読めなければ、職員を引かずにログインの失敗の画面を出す。
-- メールの有無を確認する試行は、送り手のアドレスごとと、入れたメールごとに数える。超えた試行は reject で返す。数えるのはプロセスの中だけである。
-  - 送り手のアドレスごとには、続けて 20 回、以後は 10 秒に 1 回までにする。
-  - メールごとには、続けて 10 回、以後は 30 秒に 1 回までにする。送り手のアドレスを替えて 1 つのメールを試す操作を止める。その代わり、他人がそのメールを入れ続けると、その職員も上限まで待たされる。
-  - 送り手のアドレスは、デフォルトでは接続の相手のアドレスである。前段のプロキシの後ろに置くと、全ての利用者がプロキシのアドレスで 1 つの上限を共有する。
-  - 前段のプロキシの後ろに置くときは、`CLIENT_IP_HEADER` に、プロキシが送り手のアドレスを書くヘッダーの名前を渡す。ブローカーは、そのヘッダーの最後の値を送り手とみなす。`X-Forwarded-For` のように値を足していくヘッダーでも、最後の値はプロキシが足した値で、ブラウザが書いた値ではない。
+- メールの有無を確認する試行は、送信元の IP アドレスごとと、入れたメールごとに数える。超えた試行は reject で返す。数えるのはプロセスの中だけである。
+  - 送信元の IP アドレスごとには、続けて 20 回、以後は 10 秒に 1 回までにする。
+  - メールごとには、続けて 10 回、以後は 30 秒に 1 回までにする。送信元の IP アドレスを替えて 1 つのメールを試す操作を止める。その代わり、他人がそのメールを入れ続けると、その職員も上限まで待たされる。
+  - 送信元の IP アドレスは、デフォルトでは接続の相手のアドレスである。リバースプロキシの後ろに置くと、全ての利用者がプロキシのアドレスで 1 つの上限を共有する。
+  - リバースプロキシの後ろに置くときは、`CLIENT_IP_HEADER` に、プロキシが送信元の IP アドレスを書くヘッダーの名前を渡す。ブローカーは、そのヘッダーの最後の値を送信元とみなす。`X-Forwarded-For` のように値を足していくヘッダーでも、最後の値はプロキシが足した値で、ブラウザが書いた値ではない。
   - `CLIENT_IP_HEADER` は、ブローカーにプロキシを通らずに届かない構成でだけ渡す。直接届くと、ブラウザがヘッダーを書いて上限を外せる。
-- `POST /login` は、ほかのサイトから送られたものを 403 で拒む。`Sec-Fetch-Site` が `same-origin` でないか、`Sec-Fetch-Site` が無く `Origin` がブローカーの origin（`Host` か `PUBLIC_URL`）と違えば拒む。どちらのヘッダーも無いリクエスト（ブラウザでないクライアント）は受ける。
+- `POST /login` は、ほかのサイトから送られたものを 403 で拒み、ログインの失敗の画面を出す。判定は Go の `http.CrossOriginProtection` に任せ、`PUBLIC_URL` の origin を信頼する origin に足す。
+  - `Origin` が `PUBLIC_URL` の origin なら受ける。リバースプロキシの後ろで `Host` がブラウザの開いた origin と違っても受けるためである。
+  - `Sec-Fetch-Site` が `same-origin` か `none`（利用者が直接始めた遷移）なら受け、ほかの値なら拒む。
+  - `Sec-Fetch-Site` が無ければ、`Origin` の host を `Host` と比べ、違えば拒む。scheme は比べない。
+  - どちらのヘッダーも無いリクエスト（ブラウザでないクライアント）は受ける。
 - ブローカーの画面は `Content-Security-Policy: frame-ancestors 'none'` を返し、ほかのサイトの frame に入らない。
 - 上流のメールが確認済みでない職員、登録のメールと上流のメールが違う職員、結び付けた上流のアカウントと違うアカウントで入った職員は、ログインの reject で返す。
 - 同じ上流のアカウントで同時に初めてログインすると、先に結び付けたログインのほかは、結び付けが一意の制約で失敗する。ブローカーは職員を読み直し、同じ上流のアカウントが結び付いていれば accept する。
 - 結び付けは、職員の行を `FOR SHARE` で読み、有効な職員にだけ書く。ログインの途中に休職か退職になった職員には結び付けず、ログインを reject で返す。退職で消した上流のアカウントが、退職した職員に戻らないためである。
-- 上流の IdP の認可レスポンスに `iss` のパラメーター（RFC 9207）があれば、認可コードを替える前に、事業所の上流の IdP の設定の issuer と比べる。違えば reject で返す。
+- 上流の IdP の認可レスポンスに `iss` のパラメーター（RFC 9207）があれば、認可コードを交換する前に、事業所の上流の IdP の設定の issuer と比べる。違えば reject で返す。
 - 上流の IdP の discovery の文書は、事業所ごとに初めて使うときに読み、覚える。1 つの事業所の IdP が応答しなくても、ほかの事業所のログインは待たない。読めなかった事業所は、その失敗を 30 秒覚えて返し、過ぎてから読み直す。
-- 上流の IdP へ転送している間の値（ログインの要求、職員の ID、state、nonce、PKCE の code verifier）は、ブラウザの cookie に置き、コールバックの `state` と照らす。
+- 上流の IdP へリダイレクトしている間の値（ログインの要求、職員の ID、state、nonce、PKCE の code verifier）は、ブラウザの cookie に置き、コールバックの `state` と照らす。
   - cookie は署名しない。書き換えられるのはブラウザの利用者だけで、事業所と上流の IdP は職員の ID から DB で引き直すので、別のメールを入れたのと同じ結果にしかならない。
-- ブローカーの画面の文言は、web のログインの失敗の画面と同じにする。コールバックの値がこのブラウザで始めたログインのものと確認できないときは、Hydra へ返さずにブローカーがログインの失敗の画面を出す。
+- ブローカーの画面の文言は、web のログインの失敗の画面と同じにする。ブローカーは、Hydra へ結果を返さずに終えるときに、自分のログインの失敗の画面を出す。この画面には、もう一度ログインするリンクが無い。
+  - `login_challenge` か `consent_challenge` が無いか、Hydra の admin API で読めないとき
+  - コールバックの値が、このブラウザで始めたログインのものと確認できないとき
+  - 上流の IdP の discovery の文書を読めず、リダイレクト先を作れないとき（502）
+  - `POST /login` で、メールから職員を DB で引けないとき（500）。コールバック、保ったセッション、同意で職員を引けないときは reject で返す
+  - ほかのサイトから `POST /login` が送られたとき（403）
+  - Hydra へ accept か reject を返せないとき（502）
 - ブローカーの画面の色と書体は、web と同じ packages/ui のトークンの値にする。画面の背景の中央に白いカードを置き、上端にロゴを出す。
   - ブローカーは web のビルドを読まないので、画面が使うトークンだけを `scripts/build-broker-tokens.mjs` が値に解いて `internal/login/tokens.css` に書き、画面に埋め込む。`pnpm check:generated` が、トークンとの食い違いを見つける。
   - 書体は Noto Sans JP を名指すだけで、ブローカーは書体のファイルを配らない。入っていない端末では、ブラウザの sans-serif で出る。
 - 同意の accept は、web のクライアントに許した audience を `aud` に、職員の事業所の組織の ID を `org_id` に入れる。Hydra は `skip_consent` のクライアントでも同意の画面を呼ぶので、ブローカーは画面を出さずに accept する。
   - 画面を出さずに accept するのは、`AUTO_CONSENT_CLIENTS` に挙げたクライアント（デフォルトは `web`）だけである。ほかのクライアントの同意は reject で返す。ブローカーは同意の画面を持たない。
-- ブローカーは、ログインの accept で、Hydra にログインのセッションを 12 時間覚えさせる（`remember`、`remember_for` は 43200 秒）。覚えている間、Hydra はブローカーのログインの画面を出させずに accept させる。ブローカーは、休職と退職の職員と登録の途中の職員を、覚えたセッションでも reject で返す。
+  - 同意の要求の `subject` の職員がいないか、有効でなければ、同意を reject で返す。ログインの accept の後に休職か退職にした職員に、トークンを出さないためである。
+- ブローカーは、ログインの accept で、Hydra にログインのセッションを 12 時間保たせる（`remember`、`remember_for` は 43200 秒）。保っている間、Hydra はブローカーのログインの画面を出させずに accept させる（SSO）。ブローカーは、休職と退職の職員と登録の途中の職員を、保ったセッションでも reject で返す。
   - web のログアウトは、Hydra のログインのセッションを消す。ログアウトの後のログインは、ブローカーのメールの入力の画面を通る。
-  - Hydra は、web がトークンを受け取れなかったログイン（事業所に登録されていない職員）も覚える。web のログインの失敗の画面は、`prompt=login` を付けて入り直させ、Hydra にブローカーのログインの画面を出させる。
+  - Hydra は、web がトークンを受け取れなかったログイン（事業所に登録されていない職員）のセッションも保つ。web のログインの失敗の画面は、`prompt=login` を付けて入り直させ、Hydra にブローカーのログインの画面を出させる。
 
 ### トークンの発行の確認
 
@@ -152,7 +191,7 @@ Hydra は、トークンを発行するたびに `oauth2.token_hook` でブロ�
 - 上流でのログインの時刻には、Hydra が本文の `session.id_token.id_token_claims.auth_time` に入れる値を使う。ブローカーは時刻を DB に持たない。
   - `auth_time` は、Hydra がログインの accept を受けた時刻である。ブローカーは上流の IdP の ID token を受けた直後に accept するので、上流でのログインの時刻と同じとみなせる。
   - refresh でも、Hydra は最初のログインのセッションを読み直すので、`auth_time` は変わらない。ログインのたびに別の `auth_time` を持つので、ログインのセッションごとに 12 時間を数えられる。
-  - ログインのセッションを覚えさせると、Hydra は覚えたセッションのログインの時刻を `auth_time` に入れる。覚えたセッションも 12 時間で切れるので、上流でのログインから 12 時間の判定は変わらない。
+  - ログインのセッションを保たせると、Hydra は保ったセッションのログインの時刻を `auth_time` に入れる。保ったセッションも 12 時間で切れるので、上流でのログインから 12 時間の判定は変わらない。
 - 職員の ID は `session.id_token.subject` で読む。`auth_time` か職員の ID が無いトークンは拒む。
 - client credentials のトークン（`request.grant_types` が `client_credentials` だけ）は、職員のものでないので、職員を見ない。`request.client_id` が内部の API を呼んでよいクライアント（`INTERNAL_API_CLIENTS`）にあれば 204 を、無ければ 403 を返す。
 - 200 を返すと、Hydra は access token の追加のクレームを本文の値で置き換え、同意で入れた `org_id` が消える。ブローカーは 200 を返さない。
@@ -164,7 +203,7 @@ Hydra は、トークンを発行するたびに `oauth2.token_hook` でブロ�
 予定の API が職員の管理の権限を確認してから、ブローカーの内部の API を呼ぶ（ADR-0017）。
 
 - 内部の API と token_hook は、ログインの画面（`PORT`）と別のポート（`INTERNAL_PORT`、デフォルトは 8081）で待ち受ける。ログインの画面のポートは `/internal/` の下に 404 を返す。
-  - 内部のポートは、ブラウザと前段のプロキシに開かず、予定の API と Hydra だけが届くようにする。
+  - 内部のポートは、ブラウザとリバースプロキシに開かず、予定の API と Hydra だけが届くようにする。
 - 内部の API は、Hydra の client credentials の access token（`aud` は `broker`）だけを受け、Hydra の JWKS で検証する。トークンが無いか検証できなければ 401 を返す。
 - 検証できても、トークンの `sub`（client credentials ではクライアントの ID）が `INTERNAL_API_CLIENTS`（デフォルトは `schedule`）に無いか、トークンが `org_id` を持てば 403 を返す。`org_id` は同意で職員のトークンにだけ入る。
 
@@ -246,7 +285,7 @@ sequenceDiagram
 
 ### ログアウト
 
-web は BFF のセッションを消した後に、ブラウザを Hydra の RP-Initiated Logout へ、ID token を添えて転送する。Hydra はブローカーのログアウトの画面を呼び、ブローカーが accept すると、Hydra のログインのセッションが消える。上流の IdP のセッションは消さない。
+web は自分のセッションを消した後に、ブラウザを Hydra の RP-Initiated Logout へ、ID token を添えてリダイレクトする。Hydra はブローカーのログアウトの画面を呼び、ブローカーが accept すると、Hydra のログインのセッションが消える。上流の IdP のセッションは消さない。
 
 ```mermaid
 sequenceDiagram
@@ -256,22 +295,22 @@ sequenceDiagram
   participant H as Hydra
   participant K as ブローカー
   B->>W: POST /auth/logout
-  W->>W: BFF のセッションを消す
-  W-->>B: Hydra の end_session_endpoint へ転送（id_token_hint、post_logout_redirect_uri）
+  W->>W: web のセッションを消す
+  W-->>B: Hydra の end_session_endpoint へリダイレクト（id_token_hint、post_logout_redirect_uri）
   B->>H: GET /oauth2/sessions/logout
-  H-->>B: ブローカーのログアウトの画面へ転送（logout_challenge）
+  H-->>B: ブローカーのログアウトの画面へリダイレクト（logout_challenge）
   B->>K: GET /logout
   K->>H: ログアウトの accept
-  H-->>K: 転送する先
-  K-->>B: Hydra へ転送
+  H-->>K: リダイレクト先
+  K-->>B: Hydra へリダイレクト
   B->>H: ログインのセッションを消す
-  H-->>B: web の / へ転送
+  H-->>B: web の / へリダイレクト
 ```
 
 - ブローカーは、ログアウトの確認の画面を出さずに accept する。職員は web のログアウトのボタンでログアウトを選んでいる。
 - Hydra へ accept を返せないときは、ブローカーはログアウトの失敗の画面を出す。
-- web は、ID token をセッションに置く。refresh でブローカーが ID token を返さなければ、前の ID token を使う。Hydra は、期限の切れた ID token もログアウトの `id_token_hint` として受ける。
-- ID token の無いセッション（ID token を置く前に作ったセッション）と、セッションの無いログアウトは、web の / へ転送する。ID token を置く前のログインは、Hydra にセッションを覚えさせていない。
+- web は、ID token をセッションに置く。refresh で Hydra が ID token を返さなければ、前の ID token を使う。Hydra は、期限の切れた ID token もログアウトの `id_token_hint` として受ける。
+- ID token の無いセッション（ID token を置く前に作ったセッション）と、セッションの無いログアウトは、web の / へリダイレクトする。ID token を置く前のログインは、Hydra にセッションを保たせていない。
 - Hydra の web のクライアントは、ログアウトの後に戻る先（`post_logout_redirect_uris`）に web の / を持つ。
 
 ### ローカル環境
@@ -289,7 +328,7 @@ compose は、開発用の IdP（mock-oauth2-server）を、上流の IdP のフ
 - フェイクは、ログインの画面で入れた名前を `sub` に、クレームの欄の JSON を ID token のクレームにする。
 - コンテナは、Hydra の discovery の文書と上流の IdP の discovery の文書を、コンテナの間の名前（`hydra`、`idp`）で読む。
   - ブラウザはこの名前を引けない。Hydra は、認可のエンドポイントを `urls.self.public` のローカルのポートで示す。
-  - ブローカーは、上流の IdP の認可の画面の origin を `UPSTREAM_IDP_BROWSER_ORIGIN` に替えて転送する。
+  - ブローカーは、上流の IdP の認可の画面の origin を `UPSTREAM_IDP_BROWSER_ORIGIN` に替えてリダイレクトする。
 - ブローカーと予定の API のシードは、同じ職員の ID を持つ。2 つの事業所（`org-sample`、`org-sample-b`）の職員がいる。
   - `org-sample-b` には、両方で休職にした職員もいる。E2E は、この職員のログインが拒まれることを確認する。
 
@@ -301,7 +340,7 @@ compose は、開発用の IdP（mock-oauth2-server）を、上流の IdP のフ
   - ブラウザが開くブローカーの URL（`PUBLIC_URL`）。上流の IdP のコールバックの URL を作る
   - 事業所の組織の ID と、上流の IdP の issuer と client ID の対応のファイル（`UPSTREAM_IDPS_FILE`）
   - 組織の ID と、上流の IdP の client secret の対応のファイル（`UPSTREAM_IDP_CLIENT_SECRETS_FILE`）。シークレットとして渡す
-  - 前段のプロキシが送り手のアドレスを書くヘッダーの名前（`CLIENT_IP_HEADER`）。前段のプロキシの後ろに置くときだけ渡す
+  - リバースプロキシが送信元の IP アドレスを書くヘッダーの名前（`CLIENT_IP_HEADER`）。リバースプロキシの後ろに置くときだけ渡す
   - 同意の画面を出さずに accept するクライアントの ID（`AUTO_CONSENT_CLIENTS`）
   - Hydra のトークンの `iss`（`HYDRA_ISSUER`）。内部の API は、この discovery の文書の JWKS で access token を検証する
   - 内部の API が access token の `aud` に求める値（`INTERNAL_API_AUDIENCE`、デフォルトは `broker`）

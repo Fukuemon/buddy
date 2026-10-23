@@ -1,10 +1,10 @@
 # account-login ログイン
 
-職員が、事業所に登録したメールアドレスを入れて、事業所のログインの画面へ進む画面。web の画面ではなく、認証のブローカー（`services/broker`）が出す。
+職員が、事業所に登録したメールアドレスを入れて、事業所の上流の IdP のログインの画面へ進む画面。web の画面ではなく、ID ブローカー（`services/broker`）が出す。
 
 | 項目 | 値 |
 | --- | --- |
-| URL | ブローカーの `/login`。web の `/auth/login` から Hydra を通って、`login_challenge` を付けて転送される |
+| URL | ブローカーの `/login`。web の `/auth/login` から Hydra を通って、`login_challenge` を付けてリダイレクトされる |
 | 使う人 | ログインを試す全ての職員。ログインしていなくても開ける |
 | 実装 | `services/broker/internal/login/pages.go`、`services/broker/internal/login/login.go` |
 
@@ -16,7 +16,7 @@
 
 === "メールの入力"
 
-    Hydra が `login_challenge` を付けて転送し、Hydra がログインのセッションを覚えていないとき。
+    Hydra が `login_challenge` を付けてリダイレクトし、Hydra がログインのセッションを保っていないとき。
 
     <iframe class="mock" title="ログインの、メールの入力" src="mocks/01-email.html"></iframe>
     <a class="mock-open" href="mocks/01-email.html" target="_blank">別タブで開く</a>
@@ -31,7 +31,7 @@
 
 === "ログインの失敗"
 
-    ブローカーが、ログインの結果を Hydra へ返せないとき。
+    ブローカーが、ログインの結果を Hydra へ返さずに終えるとき。
 
     <iframe class="mock" title="ログインの、ログインの失敗" src="mocks/02-failed.html"></iframe>
     <a class="mock-open" href="mocks/02-failed.html" target="_blank">別タブで開く</a>
@@ -107,7 +107,7 @@
 
 ## 次へ
 
-**概要**: 入れたメールアドレスで、事業所のログインの画面へ進む。
+**概要**: 入れたメールアドレスで、事業所の上流の IdP のログインの画面へ進む。
 
 **値のソース**: 「次へ」。カードの幅いっぱいの主のボタン。
 
@@ -142,13 +142,20 @@
 ### 初期処理
 
 - API を呼ばず、フォーカスはメールアドレスの入力欄にある。
-- Hydra がログインのセッションを覚えているときは、この画面を出さずに web へ戻す。
-- 色と書体は、web と同じ packages/ui のトークンの値で描く。値をそろえる方法は [認証のブローカーの Design Doc のログイン](../../design/services/broker.md#ログイン) にある。
+- Hydra がログインのセッションを保っているときは、この画面を出さずに web へ戻す。
+- 色と書体は、web と同じ packages/ui のトークンの値で描く。値をそろえる方法は [ID ブローカーの Design Doc のログイン](../../design/services/broker.md#ログイン) にある。
 
 ### web のログインの失敗の画面との分担
 
 ログインを拒んだとき（登録していないメールアドレス、休職と退職の職員、上流の IdP のメールアドレスの違い）は、ブローカーが Hydra へ拒んだ結果を返し、web が [ログインの失敗](../account-error_ログインの失敗/index.md) を出す。
-この画面の「ログインの失敗」の状態は、ブローカーが Hydra へ結果を返せないときだけに出る。例は、`login_challenge` が無いか読めないとき、上流の IdP からの戻りの値がこのブラウザで始めたログインのものと確認できないときである。
+この画面の「ログインの失敗」の状態は、ブローカーが Hydra へ結果を返さずに終えるときに出る。この状態には、もう一度ログインするリンクが無い。例は次のとき。
+
+- `login_challenge` か `consent_challenge` が無いか、読めない
+- 上流の IdP からの戻りの値が、このブラウザで始めたログインのものと確認できない
+- 上流の IdP の discovery の文書を読めない
+- メールを入れた後に、職員を DB から引けない
+- ほかのサイトから送られた
+- Hydra へ結果を返せない
 
 ### E2E が指す要素
 

@@ -7,4 +7,4 @@
 | メールアドレス | 入れたメールアドレス | なし | なし |
 
 - 次へを押すと、フォームの `email` と `login_challenge` を、ブローカーの `POST /login` へ送る。
-- ブローカーは、`email` から登録した職員を引き、職員の事業所の上流の IdP へ転送する。流れは [認証のブローカーの Design Doc のログイン](../../design/services/broker.md#ログイン) にある。
+- ブローカーは、`email` から登録した職員を引き、職員の事業所の上流の IdP へリダイレクトする。流れは [ID ブローカーの Design Doc のログイン](../../design/services/broker.md#ログイン) にある。

@@ -24,7 +24,7 @@ MISE_AQUA_GITHUB_ATTESTATIONS=false mise install aqua:cli/cli
 
 `pnpm install` の `prepare` が、lefthook の Git のフック（commit-msg の commitlint、pre-commit の textlint と `pnpm lint:openapi`）を入れる。
 
-Go のモジュールは `services/schedule`、`services/receipt`、認証のブローカーの `services/broker` と、それらが共有するコードの `packages/go` の 4 つである。  
+Go のモジュールは `services/schedule`、`services/receipt`、ID ブローカーの `services/broker` と、それらが共有するコードの `packages/go` の 4 つである。  
 2 つの API とブローカーは `packages/go` を `go.mod` の `replace` で読む。  
 ADR-0007: [2 つの Go の API が共有するコードを、別の module にまとめる](docs/adr/0007-go-shared-module.md)
 
@@ -55,7 +55,7 @@ apm lifecycle trust
 
 ## ローカル環境で全体を起動する
 
-画面、2 つの API、認証のブローカー、Hydra、PostgreSQL、Valkey、事業所の上流の IdP のフェイク、calendarpit、gcalhold は、リポジトリのルートの `compose.yml` で一緒に起動する。Docker が要る。
+画面、2 つの API、ID ブローカー、Hydra、PostgreSQL、Valkey、事業所の上流の IdP のフェイク、calendarpit、gcalhold は、リポジトリのルートの `compose.yml` で一緒に起動する。Docker が要る。
 
 ```sh
 docker compose up --build --wait

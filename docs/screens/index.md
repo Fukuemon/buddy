@@ -24,7 +24,7 @@
 | `staff-edit` | 職員の編集（権限の変更を含む） | 未決 | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | なし |
 | `receipt-upload` | 照合（対象の月の選択、CSV のアップロード） | `/receipt` | 全ての職員 | [照合](receipt-upload_照合/index.md) |
 | `receipt-result` | 照合の結果 | `/receipt/result` | 全ての職員 | [照合の結果](receipt-result_照合の結果/index.md) |
-| `account-login` | ログイン | `/auth/login` | 全ての職員 | [ログイン](account-login_ログイン/index.md)。Hydra を通して、認証のブローカー（`services/broker`）のメールの入力の画面へ転送する。ブローカーの画面は web の画面ではない |
+| `account-login` | ログイン | `/auth/login` | 全ての職員 | [ログイン](account-login_ログイン/index.md)。Hydra を通して、ID ブローカー（`services/broker`）のメールの入力の画面へリダイレクトする。ブローカーの画面は web の画面ではない |
 | `account-error` | ログインの失敗 | `/auth/error` | 全ての職員 | [ログインの失敗](account-error_ログインの失敗/index.md) |
 | `account-profile` | プロフィール | 未決 | 全ての職員 | なし |
 
@@ -69,7 +69,7 @@ flowchart TB
   edit["予定の編集<br/>/schedule/$scheduleId/edit"]
   upload["照合<br/>/receipt"]
   result["照合の結果<br/>/receipt/result"]
-  root -- "転送" --> calendar
+  root -- "リダイレクト" --> calendar
   calendar -- "予定を作成、空いた時間、時間の枠" --> create
   create -- "作成に成功、閉じる" --> calendar
   calendar -- "予定を押す" --> detail
@@ -113,11 +113,11 @@ flowchart TB
 flowchart TB
   screen["buddy の画面"]
   login["ログイン<br/>/auth/login"]
-  broker["認証の基盤のログインの画面"]
+  broker["ID ブローカーと事業所の IdP のログインの画面"]
   callback["ログインの後の戻り<br/>/auth/callback"]
   error["ログインの失敗<br/>/auth/error"]
   screen -- "ログインしていない" --> login
-  login -- "転送" --> broker
+  login -- "リダイレクト" --> broker
   broker -- "ログインした" --> callback
   callback -- "成功" --> screen
   callback -- "失敗、事業所に登録されていない" --> error

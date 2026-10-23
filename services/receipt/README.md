@@ -17,7 +17,7 @@ API の 8080 とフェイクの Issuer の 9000 は、ルートの compose の�
 compose を起動しているときは、重なる 2 つを `docker compose stop schedule idp` で止めてから実行する。
 
 ```sh
-# ブローカーの代わりに、フェイクの Issuer を別のターミナルで起動する
+# Hydra の代わりに、フェイクの Issuer を別のターミナルで起動する
 go run ./cmd/devissuer -addr 127.0.0.1:9000
 
 export OIDC_ISSUER=http://127.0.0.1:9000 OIDC_AUDIENCE=receipt
@@ -36,7 +36,7 @@ TOKEN=$(curl -s '127.0.0.1:9000/token?sub=dev-aoki&org_id=org-sample' | jq -r .a
 - `PORT`: 待ち受けるポート。デフォルトは `8080`
 - `MAX_UPLOAD_BYTES`: `POST /v1/checks` の本文の上限のバイト数。デフォルトは 10 MiB
 - `LOG_LEVEL`: `debug`、`info`、`warn`、`error` のいずれか。デフォルトは `info`
-- `OIDC_ISSUER`: 必須。ブローカーの Issuer の URL。トークンの `iss` と一致させ、discovery の文書をここから読む
+- `OIDC_ISSUER`: 必須。Hydra の Issuer の URL。トークンの `iss` と一致させ、discovery の文書をここから読む
 - `OIDC_AUDIENCE`: 必須。トークンの `aud` に求める値
 - `OIDC_ORG_CLAIM`: 組織の ID を持つクレームの名前。デフォルトは `org_id`
 - `CORS_ALLOW_ORIGINS`: CORS でレスポンスを読ませるオリジンを、カンマで区切って並べる。空なら CORS のヘッダーを返さない
@@ -88,7 +88,7 @@ go generate ./...
 
 リクエストとレスポンスの項目の定義は [openapi.yaml](openapi.yaml) にある。
 
-- `GET /healthz`、`GET /readyz`: `{"status":"ok"}` を返す。照合の API は起動のときにブローカーの discovery を読み、読めなければ起動しない。起動した後は依存先を確認しないので、プロセスが動いていれば 200 を返す
+- `GET /healthz`、`GET /readyz`: `{"status":"ok"}` を返す。照合の API は起動のときに Hydra の discovery の文書を読み、読めなければ起動しない。起動した後は依存先を確認しないので、プロセスが動いていれば 200 を返す
 - `POST /v1/checks`: multipart/form-data の `visits`（実訪問の CSV）と予定を照合する
   - `Authorization: Bearer` の access token を求める
   - 予定は、ファイル `schedules`（予定の CSV）があればそれを使う。無くてフォームの値 `month`（`2024-04` の形）があれば、その月の予定を Google カレンダーから取る
