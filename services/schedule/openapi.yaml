@@ -410,6 +410,7 @@ paths:
       description: |
         職員の役職を変え、職員の権限を新しい役職のデフォルトの権限からコピーし直す。職員ごとに足した権限と対象は消える。
         チームを対象にする権限は、職員の所属のチームを対象にする。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+        事業所で職員の管理の権限を持つ最後の有効な職員の役職は、その権限を持たない役職に変えられない。
       parameters:
         - { name: user_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
       requestBody:
@@ -431,6 +432,12 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: 事業所で職員の管理の権限を持つ最後の有効な職員の役職を、その権限を持たない役職に変えようとした。役職と権限は変わらない
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { code: conflict, message: "職員の管理の権限を持つ最後の有効な職員の役職は、その権限を持たない役職に変えられません" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/users/{user_id}/leave:
@@ -594,7 +601,9 @@ paths:
       tags: [staff]
       operationId: removeUserPolicy
       summary: 職員の権限を外す
-      description: 職員の権限と、その対象を外す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+      description: |
+        職員の権限と、その対象を外す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+        事業所で職員の管理の権限を持つ最後の有効な職員からは、その権限を外せない。
       parameters:
         - { name: user_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
         - { name: user_policy_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
@@ -608,6 +617,12 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: 事業所で職員の管理の権限を持つ最後の有効な職員から、その権限を外そうとした。権限は残る
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { code: conflict, message: "職員の管理の権限を持つ最後の有効な職員から、その権限は外せません" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/me:

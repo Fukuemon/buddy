@@ -255,6 +255,7 @@ export interface paths {
          * 職員の役職を変える
          * @description 職員の役職を変え、職員の権限を新しい役職のデフォルトの権限からコピーし直す。職員ごとに足した権限と対象は消える。
          *     チームを対象にする権限は、職員の所属のチームを対象にする。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         *     事業所で職員の管理の権限を持つ最後の有効な職員の役職は、その権限を持たない役職に変えられない。
          */
         put: operations["changeUserPosition"];
         post?: never;
@@ -370,6 +371,7 @@ export interface paths {
         /**
          * 職員の権限を外す
          * @description 職員の権限と、その対象を外す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         *     事業所で職員の管理の権限を持つ最後の有効な職員からは、その権限を外せない。
          */
         delete: operations["removeUserPolicy"];
         options?: never;
@@ -1935,6 +1937,21 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description 事業所で職員の管理の権限を持つ最後の有効な職員の役職を、その権限を持たない役職に変えようとした。役職と権限は変わらない */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "conflict",
+                     *       "message": "職員の管理の権限を持つ最後の有効な職員の役職は、その権限を持たない役職に変えられません"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
@@ -2164,6 +2181,21 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description 事業所で職員の管理の権限を持つ最後の有効な職員から、その権限を外そうとした。権限は残る */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "conflict",
+                     *       "message": "職員の管理の権限を持つ最後の有効な職員から、その権限は外せません"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };

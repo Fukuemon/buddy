@@ -739,6 +739,102 @@ func TestStaffRemoveGrant(t *testing.T) {
 	}
 }
 
+// 職員の管理の権限を持つ最後の有効な職員から、権限を外す操作と役職を変える操作でその権限を外そうとしたとき、409 が返り、
+// 何も変わらない（#279 の検証の観点 1、2）。ほかに有効な管理者がいれば外せる（観点 3）。
+func TestStaffKeepsLastManager(t *testing.T) {
+	ctx := context.Background()
+	const leaderID, managerPosID = "LEADER", "MANAGER"
+	// fixture は、companionID だけが職員の管理の権限を持つ有効な職員の事業所である。withOther なら staffID も権限を持つ。
+	fixture := func(withOther bool) *inmem.Store {
+		s, _ := stopFixture()
+		c := s.Staff[companionID]
+		c.PositionID = managerPosID
+		s.Staff[companionID] = c
+		if withOther {
+			d := s.Staff[staffID]
+			d.Policies = []staff.PolicyGrant{{UserPolicyID: "UP-A", PolicyCode: organization.StaffManage}}
+			s.Staff[staffID] = d
+		}
+		s.Positions[leaderID] = organization.Position{ID: leaderID, FacilityID: facilityID, Policies: []organization.Policy{
+			{ID: "SELF", Code: organization.ScheduleSelfEdit},
+		}}
+		s.Positions[managerPosID] = organization.Position{ID: managerPosID, FacilityID: facilityID, Policies: []organization.Policy{
+			{ID: "MANAGE", Code: organization.StaffManage},
+		}}
+		return s
+	}
+	uc := func(s *inmem.Store) *staff.Usecase { return stopUsecase(s, inmem.NewIdentities(), allow) }
+	managers := func(t *testing.T, s *inmem.Store) []string {
+		t.Helper()
+		m, err := inmem.Staff{Store: s}.ActiveManagers(ctx, facilityID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return m
+	}
+
+	t.Run("最後の有効な管理者から職員の管理の権限を外すと 409 で権限が残る", func(t *testing.T) {
+		s := fixture(false)
+		if _, err := uc(s).RemoveGrant(ctx, companionID, "UP-C"); !errors.Is(err, apperr.ErrConflict) {
+			t.Fatalf("err = %v, want ErrConflict", err)
+		}
+		if got := managers(t, s); len(got) != 1 || got[0] != companionID {
+			t.Errorf("有効な管理者 = %v, want 権限が残る", got)
+		}
+	})
+	t.Run("最後の有効な管理者の役職を職員の管理の権限の無い役職に変えると 409 で役職と権限が変わらない", func(t *testing.T) {
+		s := fixture(false)
+		if _, err := uc(s).ChangePosition(ctx, companionID, leaderID); !errors.Is(err, apperr.ErrConflict) {
+			t.Fatalf("err = %v, want ErrConflict", err)
+		}
+		if got := s.Staff[companionID]; got.PositionID != managerPosID || len(got.Policies) != 1 || got.Policies[0].UserPolicyID != "UP-C" {
+			t.Errorf("職員 = %+v, want 役職と権限が変わらない", got)
+		}
+	})
+	t.Run("休職の管理者しかほかにいなければ 409", func(t *testing.T) {
+		s := fixture(true)
+		d := s.Staff[staffID]
+		d.LeaveStartedAt = ptr(time.Now())
+		s.Staff[staffID] = d
+		if _, err := uc(s).RemoveGrant(ctx, companionID, "UP-C"); !errors.Is(err, apperr.ErrConflict) {
+			t.Errorf("err = %v, want ErrConflict", err)
+		}
+	})
+	t.Run("最後の有効な管理者の役職を職員の管理の権限を持つ役職に変えられる", func(t *testing.T) {
+		s := fixture(false)
+		s.Positions["MANAGER2"] = organization.Position{ID: "MANAGER2", FacilityID: facilityID, Policies: []organization.Policy{
+			{ID: "MANAGE", Code: organization.StaffManage}, {ID: "SELF", Code: organization.ScheduleSelfEdit},
+		}}
+		if _, err := uc(s).ChangePosition(ctx, companionID, "MANAGER2"); err != nil {
+			t.Errorf("err = %v, want 成功", err)
+		}
+	})
+	t.Run("最後の有効な管理者からほかの権限は外せる", func(t *testing.T) {
+		s := fixture(false)
+		c := s.Staff[companionID]
+		c.Policies = append(c.Policies, staff.PolicyGrant{UserPolicyID: "UP-SELF", PolicyCode: organization.ScheduleSelfEdit})
+		s.Staff[companionID] = c
+		if _, err := uc(s).RemoveGrant(ctx, companionID, "UP-SELF"); err != nil {
+			t.Errorf("err = %v, want 成功", err)
+		}
+	})
+	t.Run("ほかに有効な管理者がいれば職員の管理の権限を外せる", func(t *testing.T) {
+		s := fixture(true)
+		if _, err := uc(s).RemoveGrant(ctx, companionID, "UP-C"); err != nil {
+			t.Fatalf("err = %v, want 成功", err)
+		}
+		if got := managers(t, s); len(got) != 1 || got[0] != staffID {
+			t.Errorf("有効な管理者 = %v, want もう 1 人が残る", got)
+		}
+	})
+	t.Run("ほかに有効な管理者がいれば職員の管理の権限の無い役職に変えられる", func(t *testing.T) {
+		s := fixture(true)
+		if _, err := uc(s).ChangePosition(ctx, companionID, leaderID); err != nil {
+			t.Errorf("err = %v, want 成功", err)
+		}
+	})
+}
+
 // TestStaffManageForbidden は、職員の管理を許されない職員には、職員の登録と、権限と役職を変える操作が apperr.ErrForbidden を返すことを確認する。
 func TestStaffManageForbidden(t *testing.T) {
 	ctx := context.Background()

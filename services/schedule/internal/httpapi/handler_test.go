@@ -125,7 +125,7 @@ func (f *fakeStaff) RemoveGrant(_ context.Context, _, userPolicyID string) (staf
 
 func (f *fakeStaff) ChangePosition(_ context.Context, _, positionID string) (staff.Detail, error) {
 	f.lastPositionID = positionID
-	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: staffID, PositionID: positionID}}, Policies: []staff.PolicyGrant{}}, nil
+	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: staffID, PositionID: positionID}}, Policies: []staff.PolicyGrant{}}, f.err
 }
 
 func (f *fakeStaff) Create(context.Context, staff.CreateInput) (staff.Detail, error) {
@@ -524,6 +524,10 @@ func TestChangeUserPosition(t *testing.T) {
 	if rec.Code != http.StatusBadRequest {
 		t.Errorf("position_id が無い: status = %d", rec.Code)
 	}
+	last := newRouter(&fakeSchedules{}, &fakeStaff{err: apperr.Conflict("職員の管理の権限を持つ最後の有効な職員の役職は、その権限を持たない役職に変えられません")}, &fakePatients{})
+	if rec, body := do(t, last, http.MethodPut, "/v1/users/"+staffID+"/position", `{"position_id":"`+positionID+`"}`); rec.Code != http.StatusConflict || body["code"] != "conflict" {
+		t.Errorf("最後の管理者: status = %d, body = %v, want 409 conflict", rec.Code, body)
+	}
 }
 
 func TestAddUserPolicy(t *testing.T) {
@@ -562,6 +566,10 @@ func TestRemoveUserPolicy(t *testing.T) {
 	notFound := newRouter(&fakeSchedules{}, &fakeStaff{err: apperr.ErrNotFound}, &fakePatients{})
 	if rec, _ := do(t, notFound, http.MethodDelete, "/v1/users/"+staffID+"/policies/"+userPolicyID, ""); rec.Code != http.StatusNotFound {
 		t.Errorf("職員の権限が無い: status = %d", rec.Code)
+	}
+	last := newRouter(&fakeSchedules{}, &fakeStaff{err: apperr.Conflict("職員の管理の権限を持つ最後の有効な職員から、その権限は外せません")}, &fakePatients{})
+	if rec, body := do(t, last, http.MethodDelete, "/v1/users/"+staffID+"/policies/"+userPolicyID, ""); rec.Code != http.StatusConflict || body["code"] != "conflict" {
+		t.Errorf("最後の管理者: status = %d, body = %v, want 409 conflict", rec.Code, body)
 	}
 }
 
