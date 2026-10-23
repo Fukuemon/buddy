@@ -9,7 +9,7 @@
 | Name                                                                            | Columns | Comment                                                                | Type       |
 | ------------------------------------------------------------------------------- | ------- | ---------------------------------------------------------------------- | ---------- |
 | [public.facilities](public.facilities.md)                                       | 6       | 訪問看護の事業所                                                       | BASE TABLE |
-| [public.users](public.users.md)                                                 | 11      | 職員                                                                   | BASE TABLE |
+| [public.users](public.users.md)                                                 | 12      | 職員                                                                   | BASE TABLE |
 | [public.visit_infos](public.visit_infos.md)                                     | 8       | 訪問の情報                                                             | BASE TABLE |
 | [public.schedule_types](public.schedule_types.md)                               | 5       | 予定の種類（通常、訪問）。マイグレーションで入れる                     | BASE TABLE |
 | [public.recurring_schedules](public.recurring_schedules.md)                     | 19      | 繰り返しの予定と、その規則                                             | BASE TABLE |
@@ -56,6 +56,7 @@ erDiagram
   text position_id
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  timestamp_with_time_zone suspended_at
 }
 "public.visit_infos" {
   text id

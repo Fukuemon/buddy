@@ -3,6 +3,7 @@ package staff
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -17,8 +18,9 @@ const (
 	maxPhoneDigits = 11
 )
 
-// Staff は、事業所の職員である。Sub は、認証の基盤の利用者の識別子で、結び付ける前は nil である。
-// PhoneNumber は、先頭に "+" を付けた数字の列である。
+// Staff は、事業所の職員である。Sub は、登録のときにブローカーが発行した職員の ID で、access token の sub になる。
+// ブローカーで職員を作る前に登録した職員では nil のことがある。PhoneNumber は、先頭に "+" を付けた数字の列である。
+// SuspendedAt は職員を止めた時刻で、止めていなければ nil である。
 type Staff struct {
 	ID           string
 	Sub          *string
@@ -29,6 +31,7 @@ type Staff struct {
 	DepartmentID string
 	TeamID       string
 	PositionID   string
+	SuspendedAt  *time.Time
 }
 
 // NewParams は、New に渡す職員の属性である。
@@ -168,8 +171,9 @@ type ListQuery struct {
 // Repository は、職員を読み書きする。見つからないときは apperr.ErrNotFound を、
 // 同じ事業所にメールが重なる職員がいるか、Sub が重なるときは apperr.ErrConflict を返す。名前は重なってよい。
 //
-// LinkSub は、事業所 facilityID の、メールが email（NormalizeEmail でそろえた値）で Sub がまだない職員にだけ sub を書く。
-// 当たる職員がいなければ何もせず、エラーも返さない。
+// FindIDBySub は、Sub が sub の職員の ID を返す。
+//
+// Suspend は、職員を止めた時刻を書く。止めた職員を止め直しても、最初に止めた時刻を残す。
 //
 // ChangePosition は、職員の役職を positionID にし、職員の権限と対象を全て消してから grants を書く。
 //
@@ -183,5 +187,38 @@ type Repository interface {
 	Get(ctx context.Context, id string) (Detail, error)
 	ListByFacility(ctx context.Context, facilityID string, q ListQuery) ([]Summary, error)
 	FindIDBySub(ctx context.Context, sub string) (string, error)
-	LinkSub(ctx context.Context, facilityID, email, sub string) error
+	Suspend(ctx context.Context, id string) error
+}
+
+var (
+	// ErrEmailTaken は、登録しようとしたメールの職員が、ブローカーでほかの事業所にいることを示す。
+	ErrEmailTaken = errors.New("同じメールの職員がほかの事業所にいる")
+	// ErrIdentitySuspended は、登録か有効化しようとしたブローカーの職員が止められていることを示す。
+	ErrIdentitySuspended = errors.New("ブローカーの職員が止められている")
+	// ErrRevokeFailed は、ブローカーが職員を止めたが、ログインのセッションか同意を取り消せなかったことを示す。
+	ErrRevokeFailed = errors.New("ブローカーが職員を止めたが、ログインのセッションか同意を取り消せなかった")
+)
+
+// Registration は、ブローカーに職員を登録した結果である。Pending は、ブローカーの職員が登録の途中で、まだログインできないことを示す。
+type Registration struct {
+	ID      string
+	Created bool
+	Pending bool
+}
+
+// Identities は、ブローカーの職員の身元を書く（ADR-0017）。約束は broker.Client と同じである。
+type Identities interface {
+	// Register は、組織 orgID にメール email（NormalizeEmail でそろえた値）の職員を登録の途中の状態で登録する。
+	// 同じ組織に同じメールの職員がいれば、作らずにその職員を返す。その職員が止められていれば ErrIdentitySuspended を、
+	// ほかの組織に同じメールの職員がいれば ErrEmailTaken を返す。
+	Register(ctx context.Context, orgID, email string) (Registration, error)
+	// Activate は、登録の途中の職員を有効にし、ログインできるようにする。有効な職員を有効にしても成功する。
+	// 止めた職員なら ErrIdentitySuspended を返す。
+	Activate(ctx context.Context, id string) error
+	// Unregister は、登録の途中の職員を消す。予定の API の書き込みに失敗したときに、登録を戻すのに使う。
+	// いないか、登録の途中でなければ、消さずに成功する。
+	Unregister(ctx context.Context, id string) error
+	// Suspend は、職員を止め、ログインのセッション、同意、refresh token を取り消す。止めた職員を止めても成功する。
+	// いなければ apperr.ErrNotFound を、止めたが取り消せなければ ErrRevokeFailed を返す。
+	Suspend(ctx context.Context, id string) error
 }

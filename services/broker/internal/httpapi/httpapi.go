@@ -1,4 +1,5 @@
-// Package httpapi は、ブローカーの HTTP のハンドラを持つ。ヘルスチェックを持ち、ログインと同意の画面を login のハンドラに渡す。
+// Package httpapi は、ブローカーの HTTP のハンドラを持つ。ヘルスチェックを持ち、ログインと同意の画面を login のハンドラに、
+// /internal/ の下を内部の API のハンドラに渡す。cmd/broker は、画面と内部の API を別のポートの 2 つのハンドラで待ち受ける。
 package httpapi
 
 import (
@@ -15,13 +16,15 @@ type Config struct {
 	Ready func(context.Context) error
 	// Login は、/login と /consent の下の画面のハンドラである。nil なら、これらのパスは 404 を返す。
 	Login http.Handler
+	// Internal は、/internal/ の下の内部の API のハンドラである。nil なら、これらのパスは 404 を返す。
+	Internal http.Handler
 }
 
 type status struct {
 	Status string `json:"status"`
 }
 
-// NewHandler は、GET /healthz と GET /readyz と、cfg.Login の画面を持つ http.Handler を返す。
+// NewHandler は、GET /healthz と GET /readyz と、cfg.Login の画面と、cfg.Internal の内部の API を持つ http.Handler を返す。
 // /healthz は依存先を確かめずに 200 を返し、/readyz は cfg.Ready が失敗すれば 503 を返す。
 func NewHandler(cfg Config) http.Handler {
 	mux := http.NewServeMux()
@@ -42,6 +45,9 @@ func NewHandler(cfg Config) http.Handler {
 		for _, p := range []string{"/login", "/login/", "/consent"} {
 			mux.Handle(p, cfg.Login)
 		}
+	}
+	if cfg.Internal != nil {
+		mux.Handle("/internal/", cfg.Internal)
 	}
 	return mux
 }

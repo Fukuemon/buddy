@@ -22,6 +22,7 @@ import (
 	"github.com/Fukuemon/buddy/packages/go/oidc"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/access"
+	"github.com/Fukuemon/buddy/services/schedule/internal/broker"
 	"github.com/Fukuemon/buddy/services/schedule/internal/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/config"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
@@ -116,6 +117,11 @@ func run() error {
 		}, tx, ids, principal.RequireStaffManage),
 		Staff: staff.NewUsecase(staff.Deps{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions, Policies: policies, Staff: staffRepo,
+			Identities: broker.New(broker.Config(cfg.Broker), nil),
+			Self: func(ctx context.Context) (string, bool) {
+				p, ok := principal.From(ctx)
+				return p.Staff.ID, ok
+			},
 		}, tx, ids, principal.RequireStaffManage),
 		Patients: patient.NewUsecase(patient.Deps{
 			Facilities: facilities, Staff: staffRefs, ServiceCodes: visitMasters, Patients: patients,
@@ -243,5 +249,5 @@ type tokenVerifier struct{ v *oidc.Verifier }
 // Verify は、トークンを検証し、主張を principal.Identity にして返す。
 func (t tokenVerifier) Verify(ctx context.Context, raw string) (principal.Identity, error) {
 	id, err := t.v.Verify(ctx, raw)
-	return principal.Identity(id), err
+	return principal.Identity{Subject: id.Subject, OrgID: id.OrgID}, err
 }

@@ -9,7 +9,7 @@
 | Name                                            | Columns | Comment                                  | Type       |
 | ----------------------------------------------- | ------- | ---------------------------------------- | ---------- |
 | [public.facilities](public.facilities.md)       | 6       | 訪問看護の事業所                         | BASE TABLE |
-| [public.users](public.users.md)                 | 11      | 職員                                     | BASE TABLE |
+| [public.users](public.users.md)                 | 12      | 職員                                     | BASE TABLE |
 | [public.service_codes](public.service_codes.md) | 6       | サービスコード。マイグレーションで入れる | BASE TABLE |
 | [public.patients](public.patients.md)           | 9       | 利用者                                   | BASE TABLE |
 
@@ -43,6 +43,7 @@ erDiagram
   text position_id
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  timestamp_with_time_zone suspended_at
 }
 "public.service_codes" {
   text id

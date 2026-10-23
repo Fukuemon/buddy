@@ -336,7 +336,11 @@ paths:
       tags: [staff]
       operationId: createUser
       summary: 職員を作る
-      description: 職員を作り、役職のデフォルトの権限を与える。部署、チーム、役職は同じ事業所のものに限る。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+      description: |
+        職員を作り、役職のデフォルトの権限を与える。部署、チーム、役職は同じ事業所のものに限る。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+        認証のブローカーにも職員を登録し、ブローカーが発行した職員の ID を sub に入れる。登録した職員は、メールでログインできる。
+        ブローカーの職員は、職員を書き終えてからログインできるようにする。ブローカーに登録した後に失敗したときは、同じ本文で送り直してよい。
+        職員のメールは、全ての事業所で一意である。
       parameters: [$ref: "#/components/parameters/FacilityID"]
       requestBody:
         required: true
@@ -372,7 +376,7 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409":
-          description: 同じ事業所に同じメールの職員がいる
+          description: 同じ事業所に同じメールの職員がいるか、同じメールの職員が止められているか、そのメールの職員を登録できない
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
@@ -427,6 +431,36 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/users/{user_id}/suspend:
+    post:
+      tags: [staff]
+      operationId: suspendUser
+      summary: 職員を止める
+      description: |
+        職員を止める。止めた職員はログインできず、ログインしている職員も、web が access token を取り直すとき（5 分以内）に使えなくなる。
+        予定の API は、止めた職員のリクエストを 403 で拒む。止めた職員を止めても成功し、止めた時刻は変わらない。
+        職員の管理の権限（staff.manage）を持つ職員だけが呼べる。自分は止められない。
+        ログインのセッションの取り消しに失敗したときは、職員を止めてから 500 を返す。送り直すと取り消しをやり直す。
+      parameters:
+        - { name: user_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
+      responses:
+        "200":
+          description: 止めた職員と権限
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffDetail" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: 自分を止めようとした
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { code: conflict, message: "自分を止めることはできません" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/users/{user_id}/policies:
@@ -1396,7 +1430,7 @@ components:
         name: { type: string }
     Staff:
       type: object
-      required: [id, username, email, phone_number, facility_id, department, team, position, created_at, updated_at]
+      required: [id, username, email, phone_number, facility_id, department, team, position, suspended_at, created_at, updated_at]
       properties:
         id: { $ref: "#/components/schemas/ID" }
         username: { type: string }
@@ -1406,6 +1440,11 @@ components:
         department: { $ref: "#/components/schemas/Ref" }
         team: { $ref: "#/components/schemas/Ref" }
         position: { $ref: "#/components/schemas/Ref" }
+        suspended_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: 職員を止めた時刻。止めていなければ null
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
     StaffDetail:
@@ -1417,7 +1456,7 @@ components:
             sub:
               type: string
               nullable: true
-              description: 認証の基盤の利用者の識別子。結び付ける前は null
+              description: 認証のブローカーの職員の ID。登録のときにブローカーが発行する。ブローカーで職員を作る前に登録した職員では null
             policies:
               type: array
               items:

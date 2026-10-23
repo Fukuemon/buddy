@@ -25,6 +25,8 @@ func TestRunRejectsInvalidUpstreamConfig(t *testing.T) {
 		"UPSTREAM_IDPS_FILE":               idps,
 		"UPSTREAM_IDP_CLIENT_SECRETS_FILE": secrets,
 		"PUBLIC_URL":                       "http://127.0.0.1:1",
+		"HYDRA_ISSUER":                     "http://127.0.0.1:1",
+		"TOKEN_HOOK_KEY":                   "hook-key",
 	}
 	err := run(func(k string) string { return env[k] })
 	if err == nil || !strings.Contains(err.Error(), "org-a の issuer が空") {

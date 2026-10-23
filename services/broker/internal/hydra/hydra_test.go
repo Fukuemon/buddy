@@ -92,3 +92,27 @@ func TestErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestRevokeSessions(t *testing.T) {
+	var calls []call
+	c := fakeAdmin(t, http.StatusNoContent, "", &calls)
+	if err := c.RevokeLoginSessions(context.Background(), "s1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.RevokeConsentSessions(context.Background(), "s1"); err != nil {
+		t.Fatal(err)
+	}
+	want := []call{
+		{http.MethodDelete, "/admin/oauth2/auth/sessions/login", "subject=s1", ""},
+		{http.MethodDelete, "/admin/oauth2/auth/sessions/consent", "all=true&subject=s1", ""},
+	}
+	for i, w := range want {
+		if calls[i] != w {
+			t.Errorf("calls[%d] = %+v, want %+v", i, calls[i], w)
+		}
+	}
+	failing := fakeAdmin(t, http.StatusInternalServerError, `{"error":"x"}`, &calls)
+	if err := failing.RevokeConsentSessions(context.Background(), "s1"); err == nil {
+		t.Error("500 のときに err が nil")
+	}
+}

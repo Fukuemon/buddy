@@ -178,71 +178,45 @@ func TestStaffRef(t *testing.T) {
 	}
 }
 
-// unlinkSub は、シードで結び付け済みの職員 id の sub を、トランザクションの中で初回のログインの前の状態に戻す。
-func unlinkSub(t *testing.T, ctx context.Context, id string) {
-	t.Helper()
-	if _, err := ctx.Value(txKey{}).(pgx.Tx).Exec(ctx, "UPDATE users SET sub = NULL WHERE id = $1", id); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestStaffLinkSub(t *testing.T) {
+func TestStaffFindIDBySub(t *testing.T) {
 	ctx := txContext(t)
-	unlinkSub(t, ctx, seedAoki)
 	r := NewStaffRepository(testDB)
-	if err := r.LinkSub(ctx, unknownID, "hina.aoki@example.com", "sub-other-facility"); err != nil {
-		t.Fatal(err)
+	if id, err := r.FindIDBySub(ctx, seedHayashiSub); err != nil || id != seedHayashi {
+		t.Fatalf("id = %q, err = %v, want %s", id, err, seedHayashi)
 	}
-	if _, err := r.FindIDBySub(ctx, "sub-other-facility"); !errors.Is(err, apperr.ErrNotFound) {
-		t.Fatalf("ほかの事業所の指定で結び付けた: err = %v", err)
-	}
-	if err := r.LinkSub(ctx, seedFacility, "hina.aoki@example.com", "sub-1"); err != nil {
-		t.Fatal(err)
-	}
-	if id, err := r.FindIDBySub(ctx, "sub-1"); err != nil || id != seedAoki {
-		t.Fatalf("id = %q, err = %v", id, err)
-	}
-	if err := r.LinkSub(ctx, seedFacility, "hina.aoki@example.com", "sub-2"); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := r.FindIDBySub(ctx, "sub-2"); !errors.Is(err, apperr.ErrNotFound) {
-		t.Fatalf("結び付け済みの sub を書き換えた: err = %v", err)
+	if _, err := r.FindIDBySub(ctx, "sub-unknown"); !errors.Is(err, apperr.ErrNotFound) {
+		t.Fatalf("err = %v, want ErrNotFound", err)
 	}
 }
 
-// TestStaffLinkSubConcurrent は、トランザクションの外で同時に結び付け、書かれた sub が 1 つだけであることを確かめる。
-func TestStaffLinkSubConcurrent(t *testing.T) {
-	if testDB == nil {
-		t.Skip("PostgreSQL を使うテストは -short では動かさない")
-	}
-	ctx := context.Background()
-	if _, err := testDB.Exec(ctx, "UPDATE users SET sub = NULL WHERE id = $1", seedHayashi); err != nil {
+func TestStaffSuspend(t *testing.T) {
+	ctx := txContext(t)
+	r := NewStaffRepository(testDB)
+	if err := r.Suspend(ctx, seedAoki); err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() {
-		if _, err := testDB.Exec(ctx, "UPDATE users SET sub = $2 WHERE id = $1", seedHayashi, seedHayashiSub); err != nil {
-			t.Error(err)
-		}
-	})
-	r := NewStaffRepository(testDB)
-	subs := []string{"sub-a", "sub-b", "sub-c", "sub-d"}
-	errs := make(chan error, len(subs))
-	for _, sub := range subs {
-		go func() { errs <- r.LinkSub(ctx, seedFacility, "sakura.hayashi@example.com", sub) }()
+	got, err := r.Get(ctx, seedAoki)
+	if err != nil || got.SuspendedAt == nil {
+		t.Fatalf("SuspendedAt = %v, err = %v, want 止めた時刻", got.SuspendedAt, err)
 	}
-	for range subs {
-		if err := <-errs; err != nil {
-			t.Fatal(err)
-		}
+	first := *got.SuspendedAt
+	if err := r.Suspend(ctx, seedAoki); err != nil {
+		t.Fatal(err)
 	}
-	found := 0
-	for _, sub := range subs {
-		if id, err := r.FindIDBySub(ctx, sub); err == nil && id == seedHayashi {
-			found++
+	if again, _ := r.Get(ctx, seedAoki); !again.SuspendedAt.Equal(first) {
+		t.Errorf("止め直した時刻 = %v, want 最初の %v", again.SuspendedAt, first)
+	}
+	list, err := r.ListByFacility(ctx, seedFacility, staff.ListQuery{Sort: kernel.Sort{Field: "updated_at", Desc: true}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range list {
+		if (s.ID == seedAoki) != (s.SuspendedAt != nil) {
+			t.Errorf("一覧の %s の SuspendedAt = %v", s.ID, s.SuspendedAt)
 		}
 	}
-	if found != 1 {
-		t.Fatalf("結び付いた sub = %d 個, want 1", found)
+	if err := r.Suspend(ctx, unknownID); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("いない職員の err = %v, want ErrNotFound", err)
 	}
 }
 
@@ -296,11 +270,9 @@ func TestStaffCreate(t *testing.T) {
 	}
 }
 
-// TestStaffUniqueness は、名前の重なりを許し、メールの重なりを事業所の中でだけ拒むことと、
-// 別の事業所に同じメールの職員がいても、結び付けが指定の事業所の職員にだけ書くことを確かめる。
+// TestStaffUniqueness は、名前の重なりを許し、メールの重なりを事業所の中でだけ拒むことを確認する。
 func TestStaffUniqueness(t *testing.T) {
 	ctx := txContext(t)
-	unlinkSub(t, ctx, seedAoki)
 	tx := ctx.Value(txKey{}).(pgx.Tx)
 	const (
 		otherFacility   = "01M3TD00000000000000000020"
@@ -341,15 +313,6 @@ func TestStaffUniqueness(t *testing.T) {
 				t.Fatalf("err = %v, want %v", err, tt.wantErr)
 			}
 		})
-	}
-	if err := r.LinkSub(ctx, otherFacility, "hina.aoki@example.com", "sub-other-aoki"); err != nil {
-		t.Fatal(err)
-	}
-	if id, err := r.FindIDBySub(ctx, "sub-other-aoki"); err != nil || id != otherAoki.ID {
-		t.Fatalf("id = %q, err = %v, want %q", id, err, otherAoki.ID)
-	}
-	if got, err := r.Get(ctx, seedAoki); err != nil || got.Sub != nil {
-		t.Fatalf("別の事業所の職員に sub を書いた: got %+v, err = %v", got.Summary, err)
 	}
 }
 

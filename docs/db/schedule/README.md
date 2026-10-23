@@ -21,7 +21,7 @@
 | [public.positions](public.positions.md)                                         | 5       | 事業所の役職。職員を登録するときに写す既定の権限を持つ                          | BASE TABLE |
 | [public.policies](public.policies.md)                                           | 6       | 権限。マイグレーションで入れ、API では作らない                                  | BASE TABLE |
 | [public.position_policies](public.position_policies.md)                         | 2       | 役職の既定の権限                                                                | BASE TABLE |
-| [public.users](public.users.md)                                                 | 11      | 職員                                                                            | BASE TABLE |
+| [public.users](public.users.md)                                                 | 12      | 職員                                                                            | BASE TABLE |
 | [public.user_policies](public.user_policies.md)                                 | 4       | 職員が持つ権限。職員と権限の組で一意                                            | BASE TABLE |
 | [public.user_policy_targets](public.user_policy_targets.md)                     | 5       | 職員の権限の対象                                                                | BASE TABLE |
 | [public.service_codes](public.service_codes.md)                                 | 6       | サービスコード。マイグレーションで入れる                                        | BASE TABLE |
@@ -152,6 +152,7 @@ erDiagram
   text position_id FK
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  timestamp_with_time_zone suspended_at
 }
 "public.user_policies" {
   text id

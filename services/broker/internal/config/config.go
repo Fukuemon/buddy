@@ -21,9 +21,11 @@ type DB struct {
 
 // Config は、ブローカーとマイグレーションの設定である。
 type Config struct {
-	Port     string
-	LogLevel slog.Level
-	DB       DB
+	Port string
+	// InternalPort は、内部の API と token_hook を待ち受けるポートである。ログインの画面の Port と分け、ブラウザに開かない。
+	InternalPort string
+	LogLevel     slog.Level
+	DB           DB
 	// HydraAdminURL は、ログインと同意の accept と reject、セッションの取り消しに呼ぶ Hydra の admin API の URL である。
 	HydraAdminURL string
 	// UpstreamIdPsFile は、組織の ID と、上流の IdP の issuer と client ID の対応（JSON）のパスである。形は upstream.Load にある。
@@ -40,13 +42,23 @@ type Config struct {
 	ClientIPHeader string
 	// AutoConsentClients は、同意の画面を出さずに accept するクライアントの ID である。
 	AutoConsentClients []string
+	// HydraIssuer は、Hydra のトークンの iss である。内部の API は、discovery の文書の JWKS で client credentials の
+	// access token を検証する。
+	HydraIssuer string
+	// InternalAPIAudience は、内部の API が access token の aud に求める値である。
+	InternalAPIAudience string
+	// InternalAPIClients は、内部の API を呼んでよいクライアントの ID である。
+	InternalAPIClients []string
+	// TokenHookKey は、Hydra が oauth2.token_hook を呼ぶときにヘッダーに入れる値である。シークレットとして渡す。
+	TokenHookKey string
 }
 
-// Load は、getenv（本番では os.Getenv）から設定を読む。DB_USER、DB_PASSWORD、DB_NAME、HYDRA_ADMIN_URL、
-// UPSTREAM_IDPS_FILE、UPSTREAM_IDP_CLIENT_SECRETS_FILE、PUBLIC_URL は必須で、欠けているときは欠けた名前を並べたエラーを返す。
+// Load は、getenv（本番では os.Getenv）から設定を読む。DB_USER、DB_PASSWORD、DB_NAME、HYDRA_ADMIN_URL、HYDRA_ISSUER、
+// UPSTREAM_IDPS_FILE、UPSTREAM_IDP_CLIENT_SECRETS_FILE、PUBLIC_URL、TOKEN_HOOK_KEY は必須で、欠けているときは欠けた名前を並べたエラーを返す。
 //
 // 読む環境変数とデフォルト値:
-//   - PORT: HTTP の待ち受けのポート。デフォルトは 8080
+//   - PORT: ログインと同意の画面とヘルスチェックの待ち受けのポート。デフォルトは 8080
+//   - INTERNAL_PORT: 内部の API と token_hook とヘルスチェックの待ち受けのポート。PORT と違う値にする。デフォルトは 8081
 //   - LOG_LEVEL: debug、info、warn、error。デフォルトは info
 //   - DB_HOST: デフォルトは localhost
 //   - DB_PORT: デフォルトは 5432
@@ -58,6 +70,10 @@ type Config struct {
 //   - UPSTREAM_IDP_BROWSER_ORIGIN: 上流の IdP の認可の画面へ転送するときに替える origin。無ければ替えない
 //   - CLIENT_IP_HEADER: ログインの試行を数える送り手のアドレスを読む、前段のプロキシが付けるヘッダーの名前。無ければ接続の相手のアドレス
 //   - AUTO_CONSENT_CLIENTS: 同意の画面を出さずに accept するクライアントの ID をカンマで区切った値。デフォルトは web
+//   - HYDRA_ISSUER: Hydra のトークンの iss。内部の API が access token を検証する discovery の文書をここから読む
+//   - INTERNAL_API_AUDIENCE: 内部の API が access token の aud に求める値。デフォルトは broker
+//   - INTERNAL_API_CLIENTS: 内部の API を呼んでよいクライアントの ID をカンマで区切った値。デフォルトは schedule
+//   - TOKEN_HOOK_KEY: Hydra が oauth2.token_hook を呼ぶときにヘッダーに入れる値
 func Load(getenv func(string) string) (Config, error) {
 	return load(getenv, true)
 }
@@ -76,7 +92,8 @@ func load(getenv func(string) string, broker bool) (Config, error) {
 		return def
 	}
 	c := Config{
-		Port: get("PORT", "8080"),
+		Port:         get("PORT", "8080"),
+		InternalPort: get("INTERNAL_PORT", "8081"),
 		DB: DB{
 			Host:     get("DB_HOST", "localhost"),
 			Port:     get("DB_PORT", "5432"),
@@ -90,15 +107,15 @@ func load(getenv func(string) string, broker bool) (Config, error) {
 		PublicURL:                 strings.TrimSuffix(strings.TrimSpace(getenv("PUBLIC_URL")), "/"),
 		UpstreamBrowserOrigin:     strings.TrimSpace(getenv("UPSTREAM_IDP_BROWSER_ORIGIN")),
 		ClientIPHeader:            strings.TrimSpace(getenv("CLIENT_IP_HEADER")),
+		HydraIssuer:               strings.TrimSpace(getenv("HYDRA_ISSUER")),
+		InternalAPIAudience:       get("INTERNAL_API_AUDIENCE", "broker"),
+		TokenHookKey:              getenv("TOKEN_HOOK_KEY"),
 	}
-	for _, id := range strings.Split(get("AUTO_CONSENT_CLIENTS", "web"), ",") {
-		if id = strings.TrimSpace(id); id != "" {
-			c.AutoConsentClients = append(c.AutoConsentClients, id)
-		}
-	}
+	c.AutoConsentClients = list(get("AUTO_CONSENT_CLIENTS", "web"))
+	c.InternalAPIClients = list(get("INTERNAL_API_CLIENTS", "schedule"))
 	required := []string{"DB_USER", "DB_PASSWORD", "DB_NAME"}
 	if broker {
-		required = append(required, "HYDRA_ADMIN_URL", "UPSTREAM_IDPS_FILE", "UPSTREAM_IDP_CLIENT_SECRETS_FILE", "PUBLIC_URL")
+		required = append(required, "HYDRA_ADMIN_URL", "HYDRA_ISSUER", "UPSTREAM_IDPS_FILE", "UPSTREAM_IDP_CLIENT_SECRETS_FILE", "PUBLIC_URL", "TOKEN_HOOK_KEY")
 	}
 	var missing []string
 	for _, key := range required {
@@ -109,14 +126,18 @@ func load(getenv func(string) string, broker bool) (Config, error) {
 	if len(missing) > 0 {
 		return Config{}, fmt.Errorf("環境変数 %s が必要である", strings.Join(missing, "、"))
 	}
-	for _, p := range []string{c.Port, c.DB.Port} {
+	for _, p := range []string{c.Port, c.InternalPort, c.DB.Port} {
 		if n, err := strconv.Atoi(p); err != nil || n < 1 || n > 65535 {
 			return Config{}, fmt.Errorf("ポート %q は 1 から 65535 の数にする", p)
 		}
 	}
+	if broker && c.Port == c.InternalPort {
+		return Config{}, fmt.Errorf("INTERNAL_PORT %q は PORT と違う値にする", c.InternalPort)
+	}
 	if broker {
 		for _, v := range []struct{ key, value string }{
 			{"HYDRA_ADMIN_URL", c.HydraAdminURL},
+			{"HYDRA_ISSUER", c.HydraIssuer},
 			{"PUBLIC_URL", c.PublicURL},
 			{"UPSTREAM_IDP_BROWSER_ORIGIN", c.UpstreamBrowserOrigin},
 		} {
@@ -129,4 +150,15 @@ func load(getenv func(string) string, broker bool) (Config, error) {
 		return Config{}, errors.New("LOG_LEVEL は debug、info、warn、error のいずれかにする")
 	}
 	return c, nil
+}
+
+// list は、カンマで区切った値を、空の要素を除いて返す。
+func list(v string) []string {
+	var out []string
+	for _, id := range strings.Split(v, ",") {
+		if id = strings.TrimSpace(id); id != "" {
+			out = append(out, id)
+		}
+	}
+	return out
 }

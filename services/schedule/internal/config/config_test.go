@@ -18,7 +18,7 @@ func env(m map[string]string) func(string) string {
 func TestLoad(t *testing.T) {
 	c, err := config.Load(env(map[string]string{
 		"DB_USER": "app", "DB_PASSWORD": "secret", "DB_NAME": "buddy",
-		"OIDC_ISSUER": "https://auth.example.com/realms/buddy", "OIDC_AUDIENCE": "schedule",
+		"OIDC_ISSUER": "https://auth.example.com/realms/buddy", "OIDC_AUDIENCE": "schedule", "BROKER_URL": "http://broker:8080", "BROKER_TOKEN_URL": "http://hydra:4444/oauth2/token", "BROKER_CLIENT_SECRET": "broker-secret",
 		"CORS_ALLOW_ORIGINS": "http://localhost:3000, http://localhost:5173", "LOG_LEVEL": "debug",
 	}))
 	if err != nil {
@@ -29,6 +29,9 @@ func TestLoad(t *testing.T) {
 	}
 	if c.OIDC.Issuer != "https://auth.example.com/realms/buddy" || c.OIDC.Audience != "schedule" || c.OIDC.OrgClaim != "org_id" {
 		t.Errorf("OIDC = %+v", c.OIDC)
+	}
+	if c.Broker != (config.Broker{URL: "http://broker:8080", TokenURL: "http://hydra:4444/oauth2/token", ClientID: "schedule", ClientSecret: "broker-secret", Audience: "broker"}) {
+		t.Errorf("Broker = %+v", c.Broker)
 	}
 	if !slices.Equal(c.AllowOrigins, []string{"http://localhost:3000", "http://localhost:5173"}) {
 		t.Errorf("AllowOrigins = %v", c.AllowOrigins)
@@ -41,7 +44,7 @@ func TestLoad(t *testing.T) {
 func TestLoadCalendar(t *testing.T) {
 	c, err := config.Load(env(map[string]string{
 		"DB_USER": "app", "DB_PASSWORD": "secret", "DB_NAME": "buddy",
-		"OIDC_ISSUER": "http://localhost:9000", "OIDC_AUDIENCE": "schedule",
+		"OIDC_ISSUER": "http://localhost:9000", "OIDC_AUDIENCE": "schedule", "BROKER_URL": "http://broker:8080", "BROKER_TOKEN_URL": "http://hydra:4444/oauth2/token", "BROKER_CLIENT_SECRET": "broker-secret",
 		"GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE": " /config/accounts.json ", "GOOGLE_CALENDAR_ENDPOINT": "http://gcalhold:8080/calendar/v3/",
 	}))
 	if err != nil {
@@ -55,7 +58,7 @@ func TestLoadCalendar(t *testing.T) {
 func TestLoadErrors(t *testing.T) {
 	base := map[string]string{
 		"DB_USER": "app", "DB_PASSWORD": "secret", "DB_NAME": "buddy",
-		"OIDC_ISSUER": "http://localhost:9000", "OIDC_AUDIENCE": "schedule",
+		"OIDC_ISSUER": "http://localhost:9000", "OIDC_AUDIENCE": "schedule", "BROKER_URL": "http://broker:8080", "BROKER_TOKEN_URL": "http://hydra:4444/oauth2/token", "BROKER_CLIENT_SECRET": "broker-secret",
 	}
 	tests := []struct {
 		name string
@@ -63,9 +66,12 @@ func TestLoadErrors(t *testing.T) {
 		want string
 	}{
 		{name: "パスワードがない", edit: func(m map[string]string) { delete(m, "DB_PASSWORD") }, want: "DB_PASSWORD"},
-		{name: "全部ない", edit: func(m map[string]string) { clear(m) }, want: "DB_USER, DB_PASSWORD, DB_NAME, OIDC_ISSUER, OIDC_AUDIENCE"},
+		{name: "全部ない", edit: func(m map[string]string) { clear(m) }, want: "DB_USER, DB_PASSWORD, DB_NAME, OIDC_ISSUER, OIDC_AUDIENCE, BROKER_URL, BROKER_TOKEN_URL, BROKER_CLIENT_SECRET"},
 		{name: "Issuer がない", edit: func(m map[string]string) { delete(m, "OIDC_ISSUER") }, want: "OIDC_ISSUER"},
 		{name: "Issuer が URL でない", edit: func(m map[string]string) { m["OIDC_ISSUER"] = "auth.example.com" }, want: "OIDC_ISSUER"},
+		{name: "ブローカーの client secret がない", edit: func(m map[string]string) { delete(m, "BROKER_CLIENT_SECRET") }, want: "BROKER_CLIENT_SECRET"},
+		{name: "ブローカーの URL が URL でない", edit: func(m map[string]string) { m["BROKER_URL"] = "broker:8080" }, want: "BROKER_URL"},
+		{name: "トークンのエンドポイントが URL でない", edit: func(m map[string]string) { m["BROKER_TOKEN_URL"] = "/oauth2/token" }, want: "BROKER_TOKEN_URL"},
 		{name: "ポートが数でない", edit: func(m map[string]string) { m["PORT"] = "http" }, want: "ポート"},
 		{name: "ログの水準", edit: func(m map[string]string) { m["LOG_LEVEL"] = "verbose" }, want: "LOG_LEVEL"},
 		{name: "calendarpit の Calendar API だけ", edit: func(m map[string]string) { m["GOOGLE_CALENDAR_ENDPOINT"] = "http://gcalhold:8080/calendar/v3/" },
@@ -80,7 +86,7 @@ func TestLoadErrors(t *testing.T) {
 				t.Fatalf("err = %v, want %q を含む", err, tt.want)
 			}
 			if strings.Contains(err.Error(), "secret") {
-				t.Error("エラーの文にパスワードが含まれる")
+				t.Error("エラーの文にパスワードか client secret が含まれる")
 			}
 		})
 	}
@@ -89,7 +95,7 @@ func TestLoadErrors(t *testing.T) {
 func TestLoadOrgClaim(t *testing.T) {
 	c, err := config.Load(env(map[string]string{
 		"DB_USER": "app", "DB_PASSWORD": "secret", "DB_NAME": "buddy",
-		"OIDC_ISSUER": "http://localhost:9000", "OIDC_AUDIENCE": "schedule", "OIDC_ORG_CLAIM": "organization",
+		"OIDC_ISSUER": "http://localhost:9000", "OIDC_AUDIENCE": "schedule", "BROKER_URL": "http://broker:8080", "BROKER_TOKEN_URL": "http://hydra:4444/oauth2/token", "BROKER_CLIENT_SECRET": "broker-secret", "OIDC_ORG_CLAIM": "organization",
 	}))
 	if err != nil {
 		t.Fatal(err)
@@ -114,7 +120,7 @@ func TestLoadDBDoesNotRequireOIDC(t *testing.T) {
 
 func TestLoadExportInterval(t *testing.T) {
 	base := map[string]string{
-		"DB_USER": "u", "DB_PASSWORD": "p", "DB_NAME": "n", "OIDC_ISSUER": "http://idp", "OIDC_AUDIENCE": "a",
+		"DB_USER": "u", "DB_PASSWORD": "p", "DB_NAME": "n", "OIDC_ISSUER": "http://idp", "OIDC_AUDIENCE": "a", "BROKER_URL": "http://broker:8080", "BROKER_TOKEN_URL": "http://hydra:4444/oauth2/token", "BROKER_CLIENT_SECRET": "broker-secret",
 	}
 	getenv := func(extra map[string]string) func(string) string {
 		return func(k string) string {

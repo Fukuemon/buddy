@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/access"
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
@@ -23,16 +24,19 @@ const (
 	orgID      = "org-a"
 	otherOrgID = "org-b"
 	email      = "hina.aoki@example.com"
+	sub        = "01JBRKRSTAFF00000000000000"
 )
 
 func ptr[T any](v T) *T { return &v }
 
+// authStore は、職員 staffID に sub を入れた Store を返す。sub は、登録のときにブローカーが発行した職員の ID である。
 func authStore() *inmem.Store {
 	s := inmem.Seeded()
 	s.FacilityByOrg[orgID] = facilityID
 	s.FacilityByOrg[otherOrgID] = otherFacilityID
 	d := s.Staff[staffID]
 	d.Email = email
+	d.Sub = ptr(sub)
 	s.Staff[staffID] = d
 	return s
 }
@@ -44,71 +48,30 @@ func newAuth(s *inmem.Store) *access.Service {
 	})
 }
 
-func TestAuthenticateLinksSubByVerifiedEmail(t *testing.T) {
-	s := authStore()
-	a := newAuth(s)
-	id := principal.Identity{Subject: "sub-1", Email: email, EmailVerified: true, OrgID: orgID}
-	p, err := a.Authenticate(context.Background(), id)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if p.Staff.ID != staffID || s.Staff[staffID].Sub == nil || *s.Staff[staffID].Sub != "sub-1" {
-		t.Fatalf("principal = %+v, sub = %v", p, s.Staff[staffID].Sub)
-	}
-
-	p, err = a.Authenticate(context.Background(), principal.Identity{Subject: "sub-1", OrgID: orgID})
+func TestAuthenticateFindsStaffBySub(t *testing.T) {
+	p, err := newAuth(authStore()).Authenticate(context.Background(), principal.Identity{Subject: sub, OrgID: orgID})
 	if err != nil || p.Staff.ID != staffID {
-		t.Fatalf("結び付けた後に、メールのないトークンの sub で引けない: principal = %+v, err = %v", p, err)
-	}
-}
-
-func TestAuthenticateLinksSubIgnoringEmailCase(t *testing.T) {
-	s := authStore()
-	id := principal.Identity{Subject: "sub-1", Email: "Hina.Aoki@Example.com", EmailVerified: true, OrgID: orgID}
-	p, err := newAuth(s).Authenticate(context.Background(), id)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if p.Staff.ID != staffID {
-		t.Fatalf("principal = %+v", p)
+		t.Fatalf("principal = %+v, err = %v, want %s", p, err, staffID)
 	}
 }
 
 func TestAuthenticateForbidden(t *testing.T) {
-	linked := func(s *inmem.Store) {
+	suspended := func(s *inmem.Store) {
 		d := s.Staff[staffID]
-		d.Sub = ptr("sub-linked")
+		d.SuspendedAt = ptr(time.Date(2026, 10, 23, 9, 0, 0, 0, time.UTC))
 		s.Staff[staffID] = d
 	}
 	tests := []struct {
-		name  string
-		edit  func(*inmem.Store)
-		id    principal.Identity
-		check func(t *testing.T, s *inmem.Store)
+		name string
+		edit func(*inmem.Store)
+		id   principal.Identity
 	}{
-		{name: "組織のクレームがない", id: principal.Identity{Subject: "sub-1", Email: email, EmailVerified: true}},
-		{name: "組織が事業所に結び付いていない", id: principal.Identity{Subject: "sub-1", Email: email, EmailVerified: true, OrgID: "org-x"}},
-		{name: "メールが未確認", id: principal.Identity{Subject: "sub-1", Email: email, OrgID: orgID},
-			check: func(t *testing.T, s *inmem.Store) {
-				if s.Staff[staffID].Sub != nil {
-					t.Error("未確認のメールで sub を結び付けた")
-				}
-			}},
-		{name: "メールの職員がいない", id: principal.Identity{Subject: "sub-1", Email: "nobody@example.com", EmailVerified: true, OrgID: orgID}},
-		{name: "ほかの組織の事業所の職員のメール", id: principal.Identity{Subject: "sub-1", Email: email, EmailVerified: true, OrgID: otherOrgID},
-			check: func(t *testing.T, s *inmem.Store) {
-				if s.Staff[staffID].Sub != nil {
-					t.Error("ほかの事業所の職員に sub を結び付けた")
-				}
-			}},
-		{name: "結び付け済みの職員に別の sub", edit: linked,
-			id: principal.Identity{Subject: "sub-2", Email: email, EmailVerified: true, OrgID: orgID},
-			check: func(t *testing.T, s *inmem.Store) {
-				if *s.Staff[staffID].Sub != "sub-linked" {
-					t.Error("結び付け済みの sub を書き換えた")
-				}
-			}},
-		{name: "sub の職員がほかの組織の事業所", edit: linked, id: principal.Identity{Subject: "sub-linked", OrgID: otherOrgID}},
+		{name: "組織のクレームがない", id: principal.Identity{Subject: sub}},
+		{name: "組織が事業所に結び付いていない", id: principal.Identity{Subject: sub, OrgID: "org-x"}},
+		// 初回のログインの結び付けはしない。sub の職員がいなければ、メールで探さずに拒む
+		{name: "sub の職員がいない", id: principal.Identity{Subject: "sub-unknown", OrgID: orgID}},
+		{name: "sub の職員がほかの組織の事業所", id: principal.Identity{Subject: sub, OrgID: otherOrgID}},
+		{name: "職員が止められている", edit: suspended, id: principal.Identity{Subject: sub, OrgID: orgID}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -119,9 +82,6 @@ func TestAuthenticateForbidden(t *testing.T) {
 			_, err := newAuth(s).Authenticate(context.Background(), tt.id)
 			if !errors.Is(err, apperr.ErrForbidden) {
 				t.Fatalf("err = %v, want ErrForbidden", err)
-			}
-			if tt.check != nil {
-				tt.check(t, s)
 			}
 		})
 	}
