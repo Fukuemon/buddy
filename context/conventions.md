@@ -42,7 +42,7 @@ status: stable
 文書の書き方は、スキル write-prose と write-design-docs に従う。buddy だけの規則は次のとおり。
 
 - PRD は `docs/PRD.md`、全体の Design Doc は `docs/design/`、ADR は `docs/adr/`、画面仕様書は `docs/screens/` に置き、Zensical のサイトで読む。Design Doc と ADR の配置先は `context/project.yml` の `docs` と同じにする。
-- アプリとパッケージの README は、「セットアップ、起動する、テストとチェック、コードの生成、文書」の順に見出しを置き、当てはまらないセクションは省く。
+- アプリとパッケージの README は、「セットアップ、起動する、テストとチェック、コードの生成、ドキュメント」の順に見出しを置き、当てはまらないセクションは省く。
 - 機能ごとの Design Doc は、コードの隣（`services/<API>/DesignDoc.md`、`packages/<パッケージ>/DesignDoc.md`）に置く。サイトには、`docs/design/services/` か `docs/design/packages/` のファイル単位のシンボリックリンクで載せる。リンク先は `zensical.toml` の `watch` にも並べる。
 - 機能ごとの Design Doc と ADR から `docs/`、`apps/`、`services/` の文書へのリンクは、GitHub の `develop` の URL で書く。相対リンクは、GitHub とサイトで指す先が変わり、どちらかで切れる。
 - 技術用語は、一般的なカタカナ語か英語で書き、和語に言い換えない（テーブル、カラム、マージ、リクエスト、レスポンス、デフォルト、ローカル環境）。業務の機能の名前（予定の取り込み、予定の書き出し、結び付け）は和語のまま書く。言い換えの一覧は `prh.yml` にある。

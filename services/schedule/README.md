@@ -216,7 +216,7 @@ docker build -f Dockerfile -t schedule:local ../..
 
 パッケージごとに持つものは [DesignDoc.md](DesignDoc.md) の「コードの構成」に、依存してよい向きは [コードベースの構造](../../context/codebase.md) にある。
 
-## 文書
+## ドキュメント
 
 - [DesignDoc.md](DesignDoc.md): コードの構成、テーブルの構成、認証から事業所の確認までの流れ、繰り返しの予定
 - [全体の Design Doc](../../docs/design/DesignDoc.md): 画面と 2 つの API の責務、インフラとの約束

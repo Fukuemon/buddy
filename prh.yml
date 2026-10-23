@@ -313,7 +313,12 @@ rules:
   - expected: 照合する
     pattern: 照らす
   - expected: 照合し
-    pattern: 照らし
+    pattern: /照らし(?!合わせ)/
+    specs:
+      - from: メールと照らして決める
+        to: メールと照合して決める
+      - from: 照らし合わせる
+        to: 照らし合わせる
   - expected: ローテーション
     pattern: /(?<=(?:token\s?|トークン|鍵|キー)の)回転/
     prh: トークンと鍵の rotation はローテーションと書く。画面の回転の印は対象の外
@@ -323,13 +328,19 @@ rules:
       - from: 回転の印を出す
         to: 回転の印を出す
   - expected: セクション
-    pattern: /(?<=(?:\d\s?|の|この|その|各|節ごと))節(?![目約])/
+    pattern: /(?<=(?:\d\s?|の|各|^|\|\s?))節(?![目約])/
     prh: Markdown の見出しで区切った部分はセクションと書く
     specs:
       - from: E2E の節にある
         to: E2E のセクションにある
       - from: 調節する
         to: 調節する
+      - from: 節は次の順に置く
+        to: セクションは次の順に置く
+      - from: "| 節 | 書くこと |"
+        to: "| セクション | 書くこと |"
+      - from: 節目と未決事項
+        to: 節目と未決事項
   - expected: フェイク
     pattern: 偽物
     prh: テストのための偽の実装はフェイクと呼ぶ。コードの名前 fake に合わせる

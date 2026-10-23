@@ -175,7 +175,7 @@ Application Default Credentials が検証の事業所のサービスアカウン
 認証する主体に、事業所のサービスアカウントごとのトークン作成者のロールを付ける。  
 Workload Identity Federation のプールとプロバイダーの作り方は、インフラのリポジトリが持つ。
 
-## 文書
+## ドキュメント
 
 - [DesignDoc.md](DesignDoc.md): パッケージの構成、入力の CSV、判定の規則、元の実装との違い
 - [tools/parity/README.md](tools/parity/README.md): 元の Python の実装と結果を比べる手順

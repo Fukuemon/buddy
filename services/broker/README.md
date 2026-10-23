@@ -93,7 +93,7 @@ golangci-lint run
 
 `internal/postgres` のテストは、testcontainers で PostgreSQL のコンテナを起動し、マイグレーションを当ててテーブルの制約を確認する。Docker が無い環境では `go test -short ./...` で飛ばす。
 
-## 文書
+## ドキュメント
 
 - [DesignDoc.md](DesignDoc.md): ブローカーの責務、Hydra との分担、ログイン、職員の登録、休職、復職、退職、ログアウトの流れ
 - ADR-0016: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](../../docs/adr/0016-id-broker-hydra.md)

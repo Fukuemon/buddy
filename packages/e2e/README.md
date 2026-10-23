@@ -25,7 +25,7 @@ buddy の E2E のテストと、手動検証のエビデンスを撮る仕組み
 kit、規則、スキル、Design Doc は、元のリポジトリ（非公開）からコピーした。依存として入れず、buddy で使いながら直し、後で汎用の形に戻す。  
 地図の操作（`map/google`）は、buddy に地図が無いのでコピーしていない。
 
-## 文書
+## ドキュメント
 
 - [DesignDoc.md](DesignDoc.md): テストのコードの層、配置先、名前、待ち方、確認の方法
 - [kit/recording/DesignDoc.md](kit/recording/DesignDoc.md): 手動検証のエビデンスを撮る録画
