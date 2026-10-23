@@ -43,6 +43,10 @@ var (
 	ErrEmailTaken = errors.New("同じメールの職員がほかの事業所にいる")
 	// ErrNotPending は、登録の途中でない職員を消そうとしたことを示す。
 	ErrNotPending = errors.New("職員が登録の途中でない")
+	// ErrRetired は、退職した職員を有効にするか、止めるか、戻そうとしたことを示す。
+	ErrRetired = errors.New("職員が退職している")
+	// ErrNotSuspended は、止めていない職員（登録の途中の職員）を戻そうとしたことを示す。
+	ErrNotSuspended = errors.New("職員が止められていない")
 )
 
 // Store は、ブローカーの職員を読み書きする。
@@ -53,12 +57,19 @@ type Store interface {
 	// 同じ事業所に同じメールの職員がいれば、書かずにその職員と false を、ほかの事業所にいれば ErrEmailTaken を返す。
 	Register(ctx context.Context, m login.StaffMember) (login.StaffMember, bool, error)
 	// Activate は、登録の途中の職員 id を有効にする。有効な職員を有効にしても成功する。いなければ login.ErrNotFound を、
-	// 止めた職員なら ErrSuspended を返す。
+	// 止めた職員なら ErrSuspended を、退職した職員なら ErrRetired を返す。
 	Activate(ctx context.Context, id string) error
 	// Delete は、登録の途中の職員 id を消す。いなければ login.ErrNotFound を、登録の途中でなければ ErrNotPending を返す。
 	Delete(ctx context.Context, id string) error
-	// Suspend は、職員 id を止める。止めた職員を止めても成功する。いなければ login.ErrNotFound を返す。
+	// Suspend は、職員 id を止める。止めた職員を止めても成功する。いなければ login.ErrNotFound を、
+	// 退職した職員なら ErrRetired を返す。
 	Suspend(ctx context.Context, id string) error
+	// Resume は、止めた職員 id を有効に戻す。上流のアカウントの結び付けは残す。有効な職員を戻しても成功する。
+	// いなければ login.ErrNotFound を、退職した職員なら ErrRetired を、登録の途中の職員なら ErrNotSuspended を返す。
+	Resume(ctx context.Context, id string) error
+	// Retire は、職員 id を退職にし、メールと上流のアカウントを消す。退職した職員を退職にしても成功する。
+	// いなければ login.ErrNotFound を返す。
+	Retire(ctx context.Context, id string) error
 }
 
 // Hydra は、職員のログインのセッションと同意を取り消す Hydra の admin API の呼び出しである。約束は hydra.Client と同じである。
@@ -99,7 +110,9 @@ type handler struct {
 //   - POST /internal/staff: 職員を登録の途中の状態で登録する。同じ事業所に同じメールの職員がいれば、その職員を返す
 //   - POST /internal/staff/{id}/activate: 登録の途中の職員を有効にする。予定の API が職員を書き終えてから呼ぶ
 //   - DELETE /internal/staff/{id}: 登録の途中の職員を消す。予定の API が登録を戻すときに使う
-//   - POST /internal/staff/{id}/suspend: 職員を止め、Hydra のログインのセッションと同意を取り消す
+//   - POST /internal/staff/{id}/suspend: 職員を止め（休職）、Hydra のログインのセッションと同意を取り消す
+//   - POST /internal/staff/{id}/resume: 止めた職員を有効に戻す（復職）
+//   - POST /internal/staff/{id}/retire: 職員を退職にしてメールと上流のアカウントを消し、Hydra のログインのセッションと同意を取り消す
 //   - POST /internal/token-hook: Hydra の oauth2.token_hook。有効でない職員と、上流のログインから MaxAuthAge を過ぎたトークンを拒む
 //
 // /internal/staff の下は、cfg.Verifier が検証した access token が無ければ 401 を、cfg.Clients に無いクライアントか
@@ -115,6 +128,8 @@ func NewHandler(cfg Config) http.Handler {
 	mux.Handle("POST /internal/staff/{id}/activate", h.requireClient(h.activate))
 	mux.Handle("DELETE /internal/staff/{id}", h.requireClient(h.delete))
 	mux.Handle("POST /internal/staff/{id}/suspend", h.requireClient(h.suspend))
+	mux.Handle("POST /internal/staff/{id}/resume", h.requireClient(h.resume))
+	mux.Handle("POST /internal/staff/{id}/retire", h.requireClient(h.retire))
 	mux.HandleFunc("POST /internal/token-hook", h.tokenHook)
 	return mux
 }
@@ -201,6 +216,8 @@ func (h handler) activate(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, r, http.StatusNotFound, "not_found", "職員がいません", nil)
 	case errors.Is(err, ErrSuspended):
 		h.writeError(w, r, http.StatusConflict, "suspended", "職員が止められています", err)
+	case errors.Is(err, ErrRetired):
+		h.writeError(w, r, http.StatusConflict, "retired", "職員は退職しています", err)
 	case err != nil:
 		h.writeError(w, r, http.StatusInternalServerError, "internal", "職員を有効にできません", err)
 	default:
@@ -234,11 +251,55 @@ func (h handler) suspend(w http.ResponseWriter, r *http.Request) {
 	case errors.Is(err, login.ErrNotFound):
 		h.writeError(w, r, http.StatusNotFound, "not_found", "職員がいません", nil)
 		return
+	case errors.Is(err, ErrRetired):
+		h.writeError(w, r, http.StatusConflict, "retired", "職員は退職しています", err)
+		return
 	case err != nil:
 		h.writeError(w, r, http.StatusInternalServerError, "internal", "職員を止められません", err)
 		return
 	}
 	h.Logger.InfoContext(ctx, "職員を止めた", "staff_id", id)
+	h.revoke(w, r, id)
+}
+
+// resume は、止めた職員を有効に戻す。上流のアカウントの結び付けは残すので、職員は同じ上流のアカウントでログインできる。
+func (h handler) resume(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	switch err := h.Staff.Resume(r.Context(), id); {
+	case errors.Is(err, login.ErrNotFound):
+		h.writeError(w, r, http.StatusNotFound, "not_found", "職員がいません", nil)
+	case errors.Is(err, ErrRetired):
+		h.writeError(w, r, http.StatusConflict, "retired", "職員は退職しています", err)
+	case errors.Is(err, ErrNotSuspended):
+		h.writeError(w, r, http.StatusConflict, "not_suspended", "止めていない職員は戻せません", err)
+	case err != nil:
+		h.writeError(w, r, http.StatusInternalServerError, "internal", "職員を戻せません", err)
+	default:
+		h.Logger.InfoContext(r.Context(), "職員を戻した", "staff_id", id)
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+// retire は、職員を退職にしてメールと上流のアカウントを消してから、Hydra のログインのセッションと同意を取り消す。
+// 取り消しに失敗したときは suspend と同じく revoke_failed の 502 を返し、送り直しで取り消しをやり直させる。
+func (h handler) retire(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	id := r.PathValue("id")
+	switch err := h.Staff.Retire(ctx, id); {
+	case errors.Is(err, login.ErrNotFound):
+		h.writeError(w, r, http.StatusNotFound, "not_found", "職員がいません", nil)
+		return
+	case err != nil:
+		h.writeError(w, r, http.StatusInternalServerError, "internal", "職員を退職にできません", err)
+		return
+	}
+	h.Logger.InfoContext(ctx, "職員を退職にした", "staff_id", id)
+	h.revoke(w, r, id)
+}
+
+// revoke は、職員 id の Hydra のログインのセッションと同意を取り消し、204 を返す。取り消せなければ revoke_failed の 502 を返す。
+func (h handler) revoke(w http.ResponseWriter, r *http.Request, id string) {
+	ctx := r.Context()
 	if err := h.Hydra.RevokeLoginSessions(ctx, id); err != nil {
 		h.writeError(w, r, http.StatusBadGateway, "revoke_failed", "ログインのセッションを取り消せません", err)
 		return

@@ -1,7 +1,7 @@
 # 認証のブローカー
 
 Ory Hydra の login and consent app として動き、事業所ごとの上流の IdP の前に立って職員の身元を持つサービス。  
-ログインと同意の画面、上流の IdP への RP の処理、職員の登録と停止の内部の API、Hydra の token_hook、ヘルスチェック、職員の身元の DB のマイグレーションとシードを持つ。ログアウトの画面は、後の変更で足す。  
+ログインと同意の画面、上流の IdP への RP の処理、職員の登録、休職、復職、退職の内部の API、Hydra の token_hook、ヘルスチェック、職員の身元の DB のマイグレーションとシードを持つ。ログアウトの画面は、後の変更で足す。  
 責務と流れは [DesignDoc.md](DesignDoc.md) にある。
 
 ## セットアップ
@@ -95,6 +95,6 @@ golangci-lint run
 
 ## 文書
 
-- [DesignDoc.md](DesignDoc.md): ブローカーの責務、Hydra との分担、ログイン、職員の登録と停止、ログアウトの流れ
+- [DesignDoc.md](DesignDoc.md): ブローカーの責務、Hydra との分担、ログイン、職員の登録、休職、復職、退職、ログアウトの流れ
 - ADR-0016: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](../../docs/adr/0016-id-broker-hydra.md)
 - ADR-0017: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](../../docs/adr/0017-identity-boundary.md)

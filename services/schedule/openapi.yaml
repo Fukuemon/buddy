@@ -433,21 +433,63 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
 
-  /v1/users/{user_id}/suspend:
+  /v1/users/{user_id}/leave:
     post:
       tags: [staff]
-      operationId: suspendUser
-      summary: 職員を止める
+      operationId: startUserLeave
+      summary: 職員を休職にする
       description: |
-        職員を止める。止めた職員はログインできず、ログインしている職員も、web が access token を取り直すとき（5 分以内）に使えなくなる。
-        予定の API は、止めた職員のリクエストを 403 で拒む。止めた職員を止めても成功し、止めた時刻は変わらない。
-        職員の管理の権限（staff.manage）を持つ職員だけが呼べる。自分は止められない。
-        ログインのセッションの取り消しに失敗したときは、職員を止めてから 500 を返す。送り直すと取り消しをやり直す。
+        職員を休職にする。休職の職員はログインできず、ログインしている職員も、web が access token を取り直すとき（5 分以内）に使えなくなる。
+        予定の API は、休職の職員のリクエストを 403 で拒む。休職の職員を休職にし直しても成功し、休職にした時刻は変えずに、戻る予定の日だけを書き換える。
+        戻る予定の日はメモで、その日に自動では戻さない。その日以降の予定、繰り返しの予定、担当の利用者が残っても拒まず、一覧を警告として返す。
+        職員の管理の権限（staff.manage）を持つ職員だけが呼べる。自分と、事業所で職員の管理の権限を持つ最後の有効な職員は、休職にできない。
+        ログインのセッションの取り消しに失敗したときは、職員を休職にしてから 500 を返す。送り直すと取り消しをやり直す。
+      parameters:
+        - { name: user_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                return_date:
+                  type: string
+                  format: date
+                  nullable: true
+                  description: 戻る予定の日のメモ。省略するか null なら持たない
+      responses:
+        "200":
+          description: 休職にした職員と、その日以降に残る予定と担当の利用者
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffStatusChange" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: 自分か、事業所で職員の管理の権限を持つ最後の有効な職員か、退職した職員を休職にしようとした
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { code: conflict, message: "自分を休職か退職にすることはできません" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/users/{user_id}/reinstate:
+    post:
+      tags: [staff]
+      operationId: reinstateUser
+      summary: 休職の職員を復職にする
+      description: |
+        休職の職員を有効に戻す。職員は、休職の前に結び付けた上流のアカウントで、そのままログインできる。有効な職員を復職にしても成功する。
+        職員の管理の権限（staff.manage）を持つ職員だけが呼べる。退職した職員は戻せない。
+        認証のブローカーに届かなかったときは、休職を外してから 500 を返す。その間、職員はログインできない。送り直すとブローカーの職員を戻す。
       parameters:
         - { name: user_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
       responses:
         "200":
-          description: 止めた職員と権限
+          description: 復職にした職員と権限
           content:
             application/json:
               schema: { $ref: "#/components/schemas/StaffDetail" }
@@ -456,11 +498,51 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409":
-          description: 自分を止めようとした
+          description: 退職した職員を復職にしようとした
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
-              example: { code: conflict, message: "自分を止めることはできません" }
+              example: { code: conflict, message: "退職した職員は復職できません" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/users/{user_id}/retire:
+    post:
+      tags: [staff]
+      operationId: retireUser
+      summary: 職員を退職にする
+      description: |
+        職員を退職にする。退職した職員はログインできず、戻せない。名前、所属、役職は残し、過去の予定と照合の結果で主訪問者として読める。
+        メールと電話番号は消し、認証のブローカーは職員のメールと上流のアカウントを消す。同じメールで、新しい職員として登録し直せる。
+        その日以降の予定、繰り返しの予定、担当の利用者が残るときは、書かずに 409（staff_has_assignments）で残る一覧を返す。
+        退職した職員を退職にしても成功する。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+        自分と、事業所で職員の管理の権限を持つ最後の有効な職員は、退職にできない。
+        ログインのセッションの取り消しに失敗したときは、職員を退職にしてから 500 を返す。送り直すと取り消しをやり直す。
+      parameters:
+        - { name: user_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
+      responses:
+        "200":
+          description: 退職にした職員。残る予定と担当の利用者は空
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffStatusChange" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: |
+            その日以降の予定か担当の利用者が残る（staff_has_assignments。assignments に残る一覧がある）か、
+            自分か、事業所で職員の管理の権限を持つ最後の有効な職員を退職にしようとした（conflict）
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RetireConflict" }
+              example:
+                code: staff_has_assignments
+                message: "予定か担当の利用者が残る職員は退職にできません。別の職員に割り振り直してください"
+                assignments:
+                  schedules: [{ id: 01M3TC5H00QV17BC0J9V3393ZP, date: "2026-11-02", start_time: "09:00", end_time: "10:00" }]
+                  recurring_schedules: []
+                  patients: []
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/users/{user_id}/policies:
@@ -1368,6 +1450,7 @@ components:
             - export_not_in_review
             - export_not_acceptable
             - external_change_unappliable
+            - staff_has_assignments
         message:
           type: string
           description: 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う
@@ -1430,23 +1513,119 @@ components:
         name: { type: string }
     Staff:
       type: object
-      required: [id, username, email, phone_number, facility_id, department, team, position, suspended_at, created_at, updated_at]
+      required:
+        - id
+        - username
+        - email
+        - phone_number
+        - facility_id
+        - department
+        - team
+        - position
+        - status
+        - leave_started_at
+        - leave_return_date
+        - retired_at
+        - created_at
+        - updated_at
       properties:
         id: { $ref: "#/components/schemas/ID" }
         username: { type: string }
-        email: { type: string, format: email }
-        phone_number: { type: string, nullable: true, example: "+09000000000" }
+        email:
+          type: string
+          format: email
+          nullable: true
+          description: 退職した職員では null
+        phone_number:
+          type: string
+          nullable: true
+          example: "+09000000000"
+          description: 退職した職員では null
         facility_id: { $ref: "#/components/schemas/ID" }
         department: { $ref: "#/components/schemas/Ref" }
         team: { $ref: "#/components/schemas/Ref" }
         position: { $ref: "#/components/schemas/Ref" }
-        suspended_at:
+        status: { $ref: "#/components/schemas/StaffStatus" }
+        leave_started_at:
           type: string
           format: date-time
           nullable: true
-          description: 職員を止めた時刻。止めていなければ null
+          description: 職員を休職にした時刻。休職でなければ null
+        leave_return_date:
+          type: string
+          format: date
+          nullable: true
+          description: 休職から戻る予定の日のメモ。この日に自動では戻さない。休職でないか、メモが無ければ null
+        retired_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: 職員を退職にした時刻。退職していなければ null
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
+    StaffStatus:
+      type: string
+      enum: [active, on_leave, retired]
+      description: |
+        職員の状態。active は有効、on_leave は休職、retired は退職である。休職と退職の職員はログインできず、
+        予定のカレンダーと予定の候補に出さない
+    StaffAssignments:
+      type: object
+      description: 職員を休職か退職にするときに残る、その日以降の予定、繰り返しの予定、担当の利用者。職員が予定の職員、主訪問者、同行者のどれかの予定を含める
+      required: [schedules, recurring_schedules, patients]
+      properties:
+        schedules:
+          type: array
+          description: その日以降のキャンセルしていない単発の予定。日時の順
+          items:
+            type: object
+            required: [id, date, start_time, end_time]
+            properties:
+              id: { $ref: "#/components/schemas/ID" }
+              date: { $ref: "#/components/schemas/Date" }
+              start_time: { $ref: "#/components/schemas/Time" }
+              end_time: { $ref: "#/components/schemas/Time" }
+        recurring_schedules:
+          type: array
+          description: その日以降に終わる繰り返しの予定。終了日の無い繰り返しを含める。最初の回の日時の順
+          items:
+            type: object
+            required: [id, date, end_date, start_time, end_time]
+            properties:
+              id: { $ref: "#/components/schemas/ID" }
+              date:
+                allOf: [{ $ref: "#/components/schemas/Date" }]
+                description: 最初の回の日付
+              end_date:
+                type: string
+                format: date
+                nullable: true
+                description: 終了日。終了日が無ければ null
+              start_time: { $ref: "#/components/schemas/Time" }
+              end_time: { $ref: "#/components/schemas/Time" }
+        patients:
+          type: array
+          description: 職員が主に担当する利用者。名前の順
+          items:
+            type: object
+            required: [id, name]
+            properties:
+              id: { $ref: "#/components/schemas/ID" }
+              name: { type: string }
+    StaffStatusChange:
+      type: object
+      required: [staff, assignments]
+      properties:
+        staff: { $ref: "#/components/schemas/StaffDetail" }
+        assignments: { $ref: "#/components/schemas/StaffAssignments" }
+    RetireConflict:
+      allOf:
+        - $ref: "#/components/schemas/Error"
+        - type: object
+          properties:
+            assignments:
+              allOf: [{ $ref: "#/components/schemas/StaffAssignments" }]
+              description: code が staff_has_assignments のとき、残る予定と担当の利用者
     StaffDetail:
       allOf:
         - $ref: "#/components/schemas/Staff"

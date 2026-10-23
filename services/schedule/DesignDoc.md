@@ -1,10 +1,10 @@
 ---
 type: feature-design
 title: 予定の管理
-description: 予定の API のコードの構成、テーブルの構成（ER）、認証から事業所の確認までの流れ、職員の登録と停止、繰り返しの予定、予定の変更とキャンセル、Google カレンダーの取り込み、書き出し、同期
+description: 予定の API のコードの構成、テーブルの構成（ER）、認証から事業所の確認までの流れ、職員の登録、休職、復職、退職、繰り返しの予定、予定の変更とキャンセル、Google カレンダーの取り込み、書き出し、同期
 status: stable
 governs: services/schedule
-verified_commit: b80bb16
+verified_commit: 961beb1
 ---
 
 # 予定の管理
@@ -130,7 +130,7 @@ erDiagram
 - `facilities.org_id` は、認証の基盤の組織の ID を持つ。NULL を許し、値があれば一意にする。認証のミドルウェアは、トークンの組織のクレームでこのカラムを探す。
 - `users.sub` は、ブローカーの職員の ID を持つ。職員の登録のときにブローカーが発行した値を入れ、全ての事業所を通じて一意にする。ブローカーで職員を作る前に登録した職員では NULL のことがあり、その職員はログインできない。
 - `users.email` は、事業所の中で一意にする（`facility_id` と `email` の組）。ブローカーは職員のメールを全ての事業所で一意にするので、ほかの事業所と重なるメールの登録はブローカーが拒む。予定の API は、メールを小文字にそろえてから保存し、比べる。そろえ忘れた書き込みは CHECK が拒む。`users.username` は表示名で、一意にしない。
-- `users.suspended_at` は、職員を止めた時刻を持つ。止めていなければ NULL である。止め直しても、最初に止めた時刻を残す。
+- `users.leave_started_at` は職員を休職にした時刻、`users.leave_return_date` は戻る予定の日のメモ、`users.retired_at` は退職にした時刻を持つ。どれも、その状態でなければ NULL である。休職と退職にし直しても、最初の時刻を残す。退職した職員は、`email` と `phone_number` が NULL で、休職の 2 つのカラムも NULL である。CHECK がこの組み合わせを確認する。
 - 訪問の区分は、`visit_info_visit_categories` で 1 件の訪問に複数を付けられる。
 - 予定の種類の規則（通常はタイトルが必須、訪問は訪問の情報が必須）は、`schedule_types.code`（`normal`、`visit`）で読む。`name` は表示と一覧の絞り込みに使う。
 - 1 つの訪問の情報は、1 つの予定か 1 つの繰り返しの予定だけが指す（`visit_info_id` の一意の制約）。
@@ -166,7 +166,7 @@ erDiagram
 職員の役職は `PUT /v1/users/{user_id}/position` で変える。  
 職員ごとに権限を足す（`POST /v1/users/{user_id}/policies`）ときは、`needs_target` が true の権限に、code に合わせて職員かチームの対象を 1 つ以上付ける。対象は同じ事業所のものに限る。外す（`DELETE /v1/users/{user_id}/policies/{user_policy_id}`）と、対象も消える。
 
-職員と利用者の登録、職員の停止、役職の作成、役職を変える操作、権限を足し外す操作は、`staff.manage` を持つ職員だけに許す。
+職員と利用者の登録、職員の休職、復職、退職、役職の作成、役職を変える操作、権限を足し外す操作は、`staff.manage` を持つ職員だけに許す。
 
 - ADR-0006: [職員と利用者の登録と、職員の権限と役職を変える操作を、職員の管理の権限で許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0006-staff-manage-policy.md)
 
@@ -195,7 +195,7 @@ sequenceDiagram
     M-->>W: 403
   end
   M->>M: 職員の事業所と組織の事業所を比べる
-  alt 職員の事業所が組織の事業所と違うか、職員が止められている
+  alt 職員の事業所が組織の事業所と違うか、職員が休職か退職している
     M-->>W: 403
   end
   M->>DB: パスの ID が指すリソースの事業所を読む
@@ -216,7 +216,7 @@ sequenceDiagram
 - トークンが無いときは `WWW-Authenticate: Bearer` を、検証に失敗したときは `WWW-Authenticate: Bearer error="invalid_token"` を付けて、401 を返す。
 - 組織の ID を持つクレームの名前は `OIDC_ORG_CLAIM` で決め、デフォルトは `org_id` にする。ブローカーごとにクレームの名前が違うためである。
 - 予定の API は、職員を sub だけで探し、トークンのメールを見ない。sub は登録のときに入れるので、初回のログインで職員を結び付ける処理を持たない（ADR-0017）。
-- 止めた職員のリクエストは、web が持つ access token の期限（5 分）を待たずに 403 で拒む。
+- 休職と退職の職員のリクエストは、web が持つ access token の期限（5 分）を待たずに 403 で拒む。
 - ミドルウェアは、パスの引数ごとに、指すリソースの事業所を職員の事業所と比べる。
   - `facility_id` は、値をそのまま職員の事業所と比べる。
   - `department_id`、`team_id`、`position_id`、`user_id`、`schedule_id`、`recurring_schedule_id` は、リソースを読んでその事業所と比べる。
@@ -231,22 +231,30 @@ sequenceDiagram
   5. パスの ID が ULID か（400）
   6. リクエストが `openapi.yaml` の定義に合うか（400）
 
-### 職員の登録と停止
+### 職員の登録、休職、復職、退職
 
 職員の身元はブローカーが持ち、名前、役職、権限は予定の API が持つ（ADR-0017）。  
-職員の登録（`POST /v1/facilities/{facility_id}/users`）と停止（`POST /v1/users/{user_id}/suspend`）は、`staff.Usecase` が職員の管理の権限を確認してから行う。  
-ブローカーは、`staff.Identities`（`internal/broker`）で内部の API を呼んで書く。
+職員の登録は `POST /v1/facilities/{facility_id}/users` で行う。休職、復職、退職は、`POST /v1/users/{user_id}/` の下の `leave`、`reinstate`、`retire` で行う。  
+どれも、`staff.Usecase` が職員の管理の権限を確認してから行う。  
+ブローカーは、`staff.Identities`（`internal/broker`）で内部の API を呼んで書く。休職と退職の規則は [職員とログイン](https://github.com/Fukuemon/buddy/blob/develop/context/domain/staff-login.md) にある。
 
 - 登録は、入力と部署、チーム、役職を確認してから、事業所の組織の ID とメールでブローカーに登録の途中の職員を登録させ、返った職員の ID を `users.sub` に入れて書く。書けたら、ブローカーの職員を有効にする。事業所に組織の ID が無ければ、ブローカーを呼ばずに 400 を返す。
-- 同じメールの職員がブローカーで止められていれば、409 を返す。ほかの事業所に同じメールの職員がいれば、事業所を示さない 409（「メール … の職員は登録できません」）を返す。
+- 同じメールの職員がブローカーで休職していれば、409 を返す。ほかの事業所に同じメールの職員がいれば、事業所を示さない 409（「メール … の職員は登録できません」）を返す。退職した職員はメールを持たないので、同じメールで新しい職員を登録できる。
 - ブローカーが入力を 400 で拒めば、ブローカーの文を付けて 400 を返す。
 - 予定の API に書けなかったときは、この呼び出しでブローカーの職員を作っていて、その ID の職員がまだいなければ、ブローカーの職員を消して戻す。
-- 停止は、ブローカーの職員を先に止めてから、`users.suspended_at` を書く。ブローカーで止められなければ、予定の API にも書かない。止めた職員を止めても成功する。
-  - ブローカーが止めた後に Hydra の取り消しに失敗したときは、`users.suspended_at` を書いてから 500 を返す。送り直すと取り消しをやり直す。
-  - ブローカーにいない職員は、予定の API でだけ止める。
-- 職員は自分を止められない。409 を返す。
-- 2 か所の書き込みの片方だけが残ったときの扱いは、[認証のブローカーの Design Doc の職員の登録と停止](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#職員の登録と停止) にある。
+- 休職と退職は、`staff.Usecase` が事業所の行をロックしたトランザクションの中で、職員を読み直してから行う。
+  - 自分と、事業所で職員の管理の権限を持つ最後の有効な職員は、409 で拒む。
+  - その日以降に残る予定と担当の利用者は、`staff.AssignmentReader`（`postgres.StaffAssignmentReader`）が、予定、繰り返しの予定、訪問の情報、利用者のテーブルから読む。その日は、事業所の現地（Asia/Tokyo）の日付である。
+  - 休職は一覧を `assignments` に入れて 200 を返す。退職は一覧が空でなければ、書かずに 409（`staff_has_assignments`）で一覧を返す。
+  - ブローカーの職員を先に休職か退職にしてから、`users` を書く。ブローカーで書けなければ、予定の API にも書かない。休職と退職にし直しても成功する。
+  - ブローカーが書いた後に Hydra の取り消しに失敗したときは、`users` を書いてから 500 を返す。送り直すと取り消しをやり直す。
+  - ブローカーにいない職員は、予定の API でだけ休職か退職にする。
+- 退職は、名前、所属、役職、権限を残し、`email` と `phone_number` を消す。
+- 復職は、事業所をロックしたトランザクションで `users` の休職を外してコミットしてから、ブローカーの職員を戻す。退職した職員は 409 で拒む。
+  - ブローカーは、事業所をロックし直した 2 つ目のトランザクションで、職員が有効なままのときだけ呼ぶ。
+- 2 か所の書き込みの順と、片方だけが残ったときの扱いは、[認証のブローカーの Design Doc の職員の登録、休職、復職、退職](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#職員の登録休職復職退職) にある。
 - ADR-0017: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0017-identity-boundary.md)
+- ADR-0018: [職員の停止を、戻せる休職と、戻せない退職に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0018-staff-leave-and-retirement.md)
 
 ### 予定の認可
 
@@ -498,9 +506,11 @@ calendarpit で足りない振る舞いと、その扱い
 - エラーは `{"code","message"}` の JSON で返す。`message` は人が読む説明で、文言は変わることがあるので、利用者は `code` で分岐する。
   - 400 の `invalid_input`: クエリを読めない、パスの ID が ULID でない、リクエストが `openapi.yaml` の定義に合わない、本文の値が規則に合わない、本文が指す参照が見つからないか別の事業所のもの
   - 401 の `unauthenticated`: トークンが無いか、検証に失敗した
-  - 403 の `forbidden`: 職員を特定できない、職員が止められている、事業所が違う、権限で許されない
+  - 403 の `forbidden`: 職員を特定できない、職員が休職か退職している、事業所が違う、権限で許されない
   - 404 の `not_found`: パスで指したリソースが無い
-  - 409 の `conflict`: 一意の値が重なる、同じメールの職員がブローカーで止められているかほかの事業所にいる、自分を止める、キャンセル済みの予定を変えるかキャンセルする、繰り返しの回をすでに置き換えた
+  - 409 の `conflict`: 一意の値が重なる、キャンセル済みの予定を変えるかキャンセルする、繰り返しの回をすでに置き換えた
+  - 409 の `conflict`（職員）: 同じメールの職員がブローカーで休職しているかほかの事業所にいる、自分か最後の有効な管理者を休職か退職にする、退職した職員を休職か復職にする
+  - 409 の `staff_has_assignments`: 退職にする職員に、その日以降の予定、繰り返しの予定、担当の利用者が残る。本文の `assignments` に残る一覧を持つ
   - 409 の `calendar_taken`、`calendar_already_linked`、`staff_has_calendar`: カレンダーを結び付けられない原因
   - 409 の `import_running`、`import_preview_changed`: 取り込みを確定できない原因
   - 409 の `export_not_in_review`、`export_not_acceptable`、`external_change_unappliable`: 確認が必要な書き出しを解けない原因

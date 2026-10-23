@@ -45,7 +45,7 @@ export const fromApiStaff = (user: Schemas['Staff']): Staff => {
     teamId: user.team.id,
     email: user.email,
   }
-  if (user.suspended_at !== null) staff.suspendedAt = user.suspended_at
+  if (user.status !== 'active') staff.status = user.status
   return staff
 }
 

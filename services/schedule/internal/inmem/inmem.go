@@ -299,18 +299,115 @@ func (s Staff) FindIDBySub(_ context.Context, sub string) (string, error) {
 	return "", apperr.ErrNotFound
 }
 
-// Suspend は、職員を止めた時刻を書く。止めた職員では、最初に止めた時刻を残す。
-func (s Staff) Suspend(_ context.Context, id string) error {
+// StartLeave は、職員を休職にした時刻と戻る予定の日を書く。休職の職員では、最初に休職にした時刻を残す。
+// 退職した職員なら apperr.ErrConflict を返す。
+func (s Staff) StartLeave(_ context.Context, id string, returnDate *civil.Date) error {
+	d, ok := s.Staff[id]
+	switch {
+	case !ok:
+		return apperr.ErrNotFound
+	case d.RetiredAt != nil:
+		return apperr.ErrConflict
+	}
+	if d.LeaveStartedAt == nil {
+		now := time.Now()
+		d.LeaveStartedAt = &now
+	}
+	d.LeaveReturnDate = returnDate
+	s.Staff[id] = d
+	return nil
+}
+
+// EndLeave は、職員の休職を外す。退職した職員なら apperr.ErrConflict を返す。
+func (s Staff) EndLeave(_ context.Context, id string) error {
+	d, ok := s.Staff[id]
+	switch {
+	case !ok:
+		return apperr.ErrNotFound
+	case d.RetiredAt != nil:
+		return apperr.ErrConflict
+	}
+	d.LeaveStartedAt, d.LeaveReturnDate = nil, nil
+	s.Staff[id] = d
+	return nil
+}
+
+// Retire は、職員を退職にし、休職を外してメールと電話番号を消す。退職した職員では、最初に退職にした時刻を残す。
+func (s Staff) Retire(_ context.Context, id string) error {
 	d, ok := s.Staff[id]
 	if !ok {
 		return apperr.ErrNotFound
 	}
-	if d.SuspendedAt == nil {
+	if d.RetiredAt == nil {
 		now := time.Now()
-		d.SuspendedAt = &now
-		s.Staff[id] = d
+		d.RetiredAt = &now
 	}
+	d.LeaveStartedAt, d.LeaveReturnDate, d.Email, d.PhoneNumber = nil, nil, "", nil
+	s.Staff[id] = d
 	return nil
+}
+
+// LockFacility は、事業所があるかだけを確認する。メモリ上の実装はロックを取らない。
+func (s Staff) LockFacility(_ context.Context, facilityID string) error {
+	_, err := get(s.Facilities, facilityID)
+	return err
+}
+
+// ActiveManagers は、事業所で職員の管理の権限を Policies か Grants に持つ有効な職員の ID を、ID の順に返す。
+func (s Staff) ActiveManagers(_ context.Context, facilityID string) ([]string, error) {
+	var out []string
+	for id, d := range s.Staff {
+		if d.FacilityID != facilityID || d.Status() != staff.StatusActive {
+			continue
+		}
+		manages := slices.ContainsFunc(d.Policies, func(g staff.PolicyGrant) bool { return g.PolicyCode == organization.StaffManage }) ||
+			slices.ContainsFunc(s.Grants[id], func(g staff.Grant) bool { return s.Policies[g.PolicyID].Code == organization.StaffManage })
+		if manages {
+			out = append(out, id)
+		}
+	}
+	slices.Sort(out)
+	return out, nil
+}
+
+// StaffAssignments は、staff.AssignmentReader のメモリ上の実装である。
+type StaffAssignments struct{ *Store }
+
+// From は、職員が予定の職員、主訪問者、同行者のどれかの、from 以降のキャンセルしていない予定と、from 以降に終わる
+// 繰り返しの予定と、担当の利用者を、ID の順に返す。
+func (s StaffAssignments) From(_ context.Context, facilityID, staffID string, from civil.Date) (staff.Assignments, error) {
+	assigned := func(slot schedule.Slot, infoID *string) bool {
+		if slot.StaffID == staffID {
+			return true
+		}
+		if infoID == nil {
+			return false
+		}
+		i := s.Infos[*infoID]
+		return i.AssignedStaffID == staffID || (i.CompanionID != nil && *i.CompanionID == staffID)
+	}
+	var out staff.Assignments
+	for id, d := range s.Schedules {
+		if _, cancelled := s.Cancels[id]; cancelled || d.FacilityID != facilityID || d.Date.Before(from) || !assigned(d.Slot, d.VisitInfoID) {
+			continue
+		}
+		out.Schedules = append(out.Schedules, staff.AssignedSchedule{ID: id, Date: d.Date, StartTime: d.StartTime, EndTime: d.EndTime})
+	}
+	for id, d := range s.Recurring {
+		if d.FacilityID != facilityID || (d.Rule.EndDate != nil && d.Rule.EndDate.Before(from)) || !assigned(d.Slot, d.VisitInfoID) {
+			continue
+		}
+		out.Recurring = append(out.Recurring, staff.AssignedRecurring{ID: id, Date: d.Date, EndDate: d.Rule.EndDate, StartTime: d.StartTime, EndTime: d.EndTime})
+	}
+	for id, p := range s.Patients {
+		if p.FacilityID == facilityID && p.AssignedStaffID == staffID {
+			out.Patients = append(out.Patients, staff.AssignedPatient{ID: id, Name: p.Name})
+		}
+	}
+	slices.SortFunc(out.Schedules, func(a, b staff.AssignedSchedule) int { return strings.Compare(a.ID, b.ID) })
+	slices.SortFunc(out.Recurring, func(a, b staff.AssignedRecurring) int { return strings.Compare(a.ID, b.ID) })
+	slices.SortFunc(out.Patients, func(a, b staff.AssignedPatient) int { return strings.Compare(a.ID, b.ID) })
+	return out, nil
 }
 
 // StaffRefs は、kernel.Finder[staff.Ref] と、予定が使う職員の一覧のメモリ上の実装である。
@@ -909,21 +1006,25 @@ func (s Syncs) Finish(_ context.Context, st calendar.SyncState, r calendar.SyncR
 }
 
 // Identity は、Identities が持つブローカーの職員である。Pending は登録の途中で、Activate で外れる。
+// Suspended は休職で、Resume で外れる。Retired は退職で、メールを消す。
 type Identity struct {
 	OrgID     string
 	Email     string
 	Pending   bool
 	Suspended bool
+	Retired   bool
 }
 
 // Identities は、staff.Identities のメモリ上の実装で、ブローカーの職員を ID ごとに持つ。ID は "broker-1" から順に振る。
 type Identities struct {
 	Members map[string]Identity
-	// Err は、Register と Suspend が返すエラーである。nil なら成功する。
+	// Err は、Register、Suspend、Retire が返すエラーである。nil なら成功する。
 	Err error
 	// ActivateErr は、Activate が返すエラーである。nil なら成功する。
 	ActivateErr error
-	// RevokeErr は、Suspend が職員を止めた後に返すエラーで、Hydra の取り消しの失敗を表す。nil なら成功する。
+	// ResumeErr は、Resume が返すエラーである。nil なら成功する。
+	ResumeErr error
+	// RevokeErr は、Suspend と Retire が職員を書いた後に返すエラーで、Hydra の取り消しの失敗を表す。nil なら成功する。
 	RevokeErr error
 	seq       int
 }
@@ -986,11 +1087,53 @@ func (s *Identities) Suspend(_ context.Context, id string) error {
 		return s.Err
 	}
 	m, ok := s.Members[id]
-	if !ok {
+	switch {
+	case !ok:
 		return apperr.ErrNotFound
+	case m.Retired:
+		return staff.ErrIdentityRetired
 	}
 	m.Suspended = true
 	s.Members[id] = m
+	return s.revoked()
+}
+
+// Resume は、職員の休職を外す。ResumeErr があれば、何もせずに返す。いなければ apperr.ErrNotFound を、
+// 退職した職員なら staff.ErrIdentityRetired を、登録の途中の職員なら apperr.ErrConflict を返す。
+func (s *Identities) Resume(_ context.Context, id string) error {
+	if s.ResumeErr != nil {
+		return s.ResumeErr
+	}
+	m, ok := s.Members[id]
+	switch {
+	case !ok:
+		return apperr.ErrNotFound
+	case m.Retired:
+		return staff.ErrIdentityRetired
+	case m.Pending:
+		return apperr.ErrConflict
+	}
+	m.Suspended = false
+	s.Members[id] = m
+	return nil
+}
+
+// Retire は、職員を退職にし、メールを消す。RevokeErr があれば、退職にしてから RevokeErr を staff.ErrRevokeFailed で包んで返す。
+// いなければ apperr.ErrNotFound を返す。
+func (s *Identities) Retire(_ context.Context, id string) error {
+	if s.Err != nil {
+		return s.Err
+	}
+	m, ok := s.Members[id]
+	if !ok {
+		return apperr.ErrNotFound
+	}
+	m.Retired, m.Suspended, m.Email = true, false, ""
+	s.Members[id] = m
+	return s.revoked()
+}
+
+func (s *Identities) revoked() error {
 	if s.RevokeErr != nil {
 		return fmt.Errorf("%w: %w", staff.ErrRevokeFailed, s.RevokeErr)
 	}

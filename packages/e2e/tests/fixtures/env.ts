@@ -32,7 +32,7 @@ export const OFFICE_B = {
   schedule: { date: '2026-10-20', title: '第二ステーションの定例' },
 }
 
-/** シードの、2 つ目の事業所の止めた職員。ブローカーと予定の API の両方で止めてあり、ログインを拒まれる。 */
+/** シードの、2 つ目の事業所の休職の職員。ブローカーと予定の API の両方で止めてあり、ログインを拒まれる。 */
 export const SUSPENDED_STAFF = {
   id: '01M5J5EE0AV3M9P2QF6ZK8RTNC',
   name: '小野 拓海',
