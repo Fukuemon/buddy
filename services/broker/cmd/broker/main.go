@@ -1,5 +1,5 @@
 // Command broker は、Ory Hydra の login and consent app として動く認証のブローカーを起動する（ADR-0016）。
-// ログインと同意の画面とヘルスチェックを持ち、ログアウトの画面と内部の API は後から足す。
+// ログインと同意の画面、職員の登録と停止の内部の API、Hydra の oauth2.token_hook、ヘルスチェックを持つ。ログアウトの画面は後から足す。
 //
 // 設定は環境変数から読む。読む値とデフォルト値は config.Load にある。
 // 上流の IdP の設定のファイルか client secret のファイルに誤りがあれば、待ち受けを始めずに終了コード 1 で終わる。
@@ -21,11 +21,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/oklog/ulid/v2"
+
 	"github.com/Fukuemon/buddy/packages/go/healthcheck"
+	"github.com/Fukuemon/buddy/packages/go/oidc"
 
 	"github.com/Fukuemon/buddy/services/broker/internal/config"
 	"github.com/Fukuemon/buddy/services/broker/internal/httpapi"
 	"github.com/Fukuemon/buddy/services/broker/internal/hydra"
+	"github.com/Fukuemon/buddy/services/broker/internal/internalapi"
 	"github.com/Fukuemon/buddy/services/broker/internal/login"
 	"github.com/Fukuemon/buddy/services/broker/internal/postgres"
 	"github.com/Fukuemon/buddy/services/broker/internal/upstream"
@@ -81,10 +85,17 @@ func run(getenv func(string) string) error {
 	}
 	defer db.Close()
 
+	// 内部の API の access token は、Hydra の JWKS で検証する。discovery の文書を読めなければ起動しない
+	verifier, err := oidc.NewVerifier(ctx, oidc.Config{Issuer: cfg.HydraIssuer, Audience: cfg.InternalAPIAudience}, nil, logger)
+	if err != nil {
+		return err
+	}
+	staff := postgres.NewStaffStore(db)
+	hydraAdmin := hydra.New(cfg.HydraAdminURL, nil)
 	loginHandler, err := login.NewHandler(login.Config{
 		Logger:             logger,
-		Staff:              postgres.NewStaffStore(db),
-		Hydra:              hydra.New(cfg.HydraAdminURL, nil),
+		Staff:              staff,
+		Hydra:              hydraAdmin,
 		Upstream:           rp,
 		Limiter:            login.NewLimiter(loginEvery, loginBurst),
 		EmailLimiter:       login.NewLimiter(emailEvery, emailBurst),
@@ -107,6 +118,15 @@ func run(getenv func(string) string) error {
 				return db.Ping(ctx)
 			},
 			Login: loginHandler,
+			Internal: internalapi.NewHandler(internalapi.Config{
+				Logger:       logger,
+				Staff:        staff,
+				Hydra:        hydraAdmin,
+				Verifier:     verifier,
+				KnownOrg:     func(orgID string) bool { _, ok := idps.Of(orgID); return ok },
+				NewID:        func() string { return ulid.Make().String() },
+				TokenHookKey: cfg.TokenHookKey,
+			}),
 		}),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,

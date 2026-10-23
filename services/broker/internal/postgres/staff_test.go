@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/Fukuemon/buddy/services/broker/db"
+	"github.com/Fukuemon/buddy/services/broker/internal/internalapi"
 	"github.com/Fukuemon/buddy/services/broker/internal/login"
 )
 
@@ -47,6 +48,57 @@ func TestStaffStore(t *testing.T) {
 	}
 	if err := s.Link(ctx, staffB, a); !errors.Is(err, login.ErrConflict) {
 		t.Errorf("別の職員に結び付いたアカウントの err = %v, want ErrConflict", err)
+	}
+}
+
+// TestStaffStoreRegisterDeleteSuspend は、登録が同じ事業所の同じメールで 1 人にまとまり、
+// 削除が上流のアカウントを結び付けた職員を残し、停止が何度でも成功することを確認する。
+func TestStaffStoreRegisterDeleteSuspend(t *testing.T) {
+	pool := migrated(t)
+	ctx := context.Background()
+	t.Cleanup(func() { _, _ = pool.Exec(ctx, `DELETE FROM staff`) })
+	s := NewStaffStore(pool)
+
+	m := login.StaffMember{ID: staffA, OrgID: "org-a", Email: "new@example.com", Status: login.StatusActive}
+	got, created, err := s.Register(ctx, m)
+	if err != nil || !created || got != m {
+		t.Fatalf("Register = %+v, %v, %v, want 作った職員", got, created, err)
+	}
+	again := m
+	again.ID = staffB
+	got, created, err = s.Register(ctx, again)
+	if err != nil || created || got.ID != staffA {
+		t.Fatalf("2 度目の Register = %+v, %v, %v, want 作らずに %s", got, created, err, staffA)
+	}
+	other := again
+	other.OrgID = "org-b"
+	if got, created, err := s.Register(ctx, other); err != nil || !created || got.ID != staffB {
+		t.Fatalf("別の事業所の Register = %+v, %v, %v, want 作る", got, created, err)
+	}
+
+	for range 2 {
+		if err := s.Suspend(ctx, staffA); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got, _ := s.Get(ctx, staffA); got.Status != login.StatusSuspended {
+		t.Errorf("Suspend の後の status = %s", got.Status)
+	}
+	if err := s.Suspend(ctx, "01JCCCCCCCCCCCCCCCCCCCCCCC"); !errors.Is(err, login.ErrNotFound) {
+		t.Errorf("いない職員の Suspend の err = %v, want ErrNotFound", err)
+	}
+
+	if err := s.Link(ctx, staffB, login.UpstreamAccount{Issuer: "https://idp.example.com", Subject: "sub-b"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Delete(ctx, staffB); !errors.Is(err, internalapi.ErrLinked) {
+		t.Errorf("結び付けた職員の Delete の err = %v, want ErrLinked", err)
+	}
+	if err := s.Delete(ctx, staffA); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Delete(ctx, staffA); !errors.Is(err, login.ErrNotFound) {
+		t.Errorf("消した職員の Delete の err = %v, want ErrNotFound", err)
 	}
 }
 

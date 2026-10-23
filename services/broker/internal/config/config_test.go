@@ -22,6 +22,8 @@ func baseEnv() map[string]string {
 		"UPSTREAM_IDPS_FILE":               "/config/upstream-idps.json",
 		"UPSTREAM_IDP_CLIENT_SECRETS_FILE": "/secrets/upstream-idp-client-secrets.json",
 		"PUBLIC_URL":                       "https://login.example.com",
+		"HYDRA_ISSUER":                     "http://hydra:4444",
+		"TOKEN_HOOK_KEY":                   "hook-key",
 	}
 }
 
@@ -48,6 +50,9 @@ func TestLoad(t *testing.T) {
 		UpstreamBrowserOrigin:     "http://localhost:9000",
 		ClientIPHeader:            "X-Forwarded-For",
 		AutoConsentClients:        []string{"web", "admin"},
+		HydraIssuer:               "http://hydra:4444",
+		InternalAPIAudience:       "broker",
+		TokenHookKey:              "hook-key",
 	}
 	if !reflect.DeepEqual(c, want) {
 		t.Errorf("got %+v, want %+v", c, want)
@@ -80,11 +85,12 @@ func TestLoadErrors(t *testing.T) {
 		set  map[string]string
 		want string
 	}{
-		{"必須の値が無い", map[string]string{"DB_PASSWORD": "", "HYDRA_ADMIN_URL": " ", "UPSTREAM_IDPS_FILE": "", "UPSTREAM_IDP_CLIENT_SECRETS_FILE": "", "PUBLIC_URL": ""},
-			"DB_PASSWORD、HYDRA_ADMIN_URL、UPSTREAM_IDPS_FILE、UPSTREAM_IDP_CLIENT_SECRETS_FILE、PUBLIC_URL"},
+		{"必須の値が無い", map[string]string{"DB_PASSWORD": "", "HYDRA_ADMIN_URL": " ", "HYDRA_ISSUER": "", "UPSTREAM_IDPS_FILE": "", "UPSTREAM_IDP_CLIENT_SECRETS_FILE": "", "PUBLIC_URL": "", "TOKEN_HOOK_KEY": ""},
+			"DB_PASSWORD、HYDRA_ADMIN_URL、HYDRA_ISSUER、UPSTREAM_IDPS_FILE、UPSTREAM_IDP_CLIENT_SECRETS_FILE、PUBLIC_URL、TOKEN_HOOK_KEY"},
 		{"ポートが数でない", map[string]string{"PORT": "http"}, "ポート"},
 		{"DB のポートが範囲の外", map[string]string{"DB_PORT": "70000"}, "ポート"},
 		{"HYDRA_ADMIN_URL が URL でない", map[string]string{"HYDRA_ADMIN_URL": "hydra:4445"}, "HYDRA_ADMIN_URL"},
+		{"HYDRA_ISSUER が URL でない", map[string]string{"HYDRA_ISSUER": "hydra"}, "HYDRA_ISSUER"},
 		{"PUBLIC_URL が URL でない", map[string]string{"PUBLIC_URL": "/login"}, "PUBLIC_URL"},
 		{"UPSTREAM_IDP_BROWSER_ORIGIN が URL でない", map[string]string{"UPSTREAM_IDP_BROWSER_ORIGIN": "localhost:9000"}, "UPSTREAM_IDP_BROWSER_ORIGIN"},
 		{"LOG_LEVEL が不正", map[string]string{"LOG_LEVEL": "verbose"}, "LOG_LEVEL"},

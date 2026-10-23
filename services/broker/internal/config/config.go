@@ -40,10 +40,17 @@ type Config struct {
 	ClientIPHeader string
 	// AutoConsentClients は、同意の画面を出さずに accept するクライアントの ID である。
 	AutoConsentClients []string
+	// HydraIssuer は、Hydra のトークンの iss である。内部の API は、discovery の文書の JWKS で client credentials の
+	// access token を検証する。
+	HydraIssuer string
+	// InternalAPIAudience は、内部の API が access token の aud に求める値である。
+	InternalAPIAudience string
+	// TokenHookKey は、Hydra が oauth2.token_hook を呼ぶときにヘッダーに入れる値である。シークレットとして渡す。
+	TokenHookKey string
 }
 
-// Load は、getenv（本番では os.Getenv）から設定を読む。DB_USER、DB_PASSWORD、DB_NAME、HYDRA_ADMIN_URL、
-// UPSTREAM_IDPS_FILE、UPSTREAM_IDP_CLIENT_SECRETS_FILE、PUBLIC_URL は必須で、欠けているときは欠けた名前を並べたエラーを返す。
+// Load は、getenv（本番では os.Getenv）から設定を読む。DB_USER、DB_PASSWORD、DB_NAME、HYDRA_ADMIN_URL、HYDRA_ISSUER、
+// UPSTREAM_IDPS_FILE、UPSTREAM_IDP_CLIENT_SECRETS_FILE、PUBLIC_URL、TOKEN_HOOK_KEY は必須で、欠けているときは欠けた名前を並べたエラーを返す。
 //
 // 読む環境変数とデフォルト値:
 //   - PORT: HTTP の待ち受けのポート。デフォルトは 8080
@@ -58,6 +65,9 @@ type Config struct {
 //   - UPSTREAM_IDP_BROWSER_ORIGIN: 上流の IdP の認可の画面へ転送するときに替える origin。無ければ替えない
 //   - CLIENT_IP_HEADER: ログインの試行を数える送り手のアドレスを読む、前段のプロキシが付けるヘッダーの名前。無ければ接続の相手のアドレス
 //   - AUTO_CONSENT_CLIENTS: 同意の画面を出さずに accept するクライアントの ID をカンマで区切った値。デフォルトは web
+//   - HYDRA_ISSUER: Hydra のトークンの iss。内部の API が access token を検証する discovery の文書をここから読む
+//   - INTERNAL_API_AUDIENCE: 内部の API が access token の aud に求める値。デフォルトは broker
+//   - TOKEN_HOOK_KEY: Hydra が oauth2.token_hook を呼ぶときにヘッダーに入れる値
 func Load(getenv func(string) string) (Config, error) {
 	return load(getenv, true)
 }
@@ -90,6 +100,9 @@ func load(getenv func(string) string, broker bool) (Config, error) {
 		PublicURL:                 strings.TrimSuffix(strings.TrimSpace(getenv("PUBLIC_URL")), "/"),
 		UpstreamBrowserOrigin:     strings.TrimSpace(getenv("UPSTREAM_IDP_BROWSER_ORIGIN")),
 		ClientIPHeader:            strings.TrimSpace(getenv("CLIENT_IP_HEADER")),
+		HydraIssuer:               strings.TrimSpace(getenv("HYDRA_ISSUER")),
+		InternalAPIAudience:       get("INTERNAL_API_AUDIENCE", "broker"),
+		TokenHookKey:              getenv("TOKEN_HOOK_KEY"),
 	}
 	for _, id := range strings.Split(get("AUTO_CONSENT_CLIENTS", "web"), ",") {
 		if id = strings.TrimSpace(id); id != "" {
@@ -98,7 +111,7 @@ func load(getenv func(string) string, broker bool) (Config, error) {
 	}
 	required := []string{"DB_USER", "DB_PASSWORD", "DB_NAME"}
 	if broker {
-		required = append(required, "HYDRA_ADMIN_URL", "UPSTREAM_IDPS_FILE", "UPSTREAM_IDP_CLIENT_SECRETS_FILE", "PUBLIC_URL")
+		required = append(required, "HYDRA_ADMIN_URL", "HYDRA_ISSUER", "UPSTREAM_IDPS_FILE", "UPSTREAM_IDP_CLIENT_SECRETS_FILE", "PUBLIC_URL", "TOKEN_HOOK_KEY")
 	}
 	var missing []string
 	for _, key := range required {
@@ -117,6 +130,7 @@ func load(getenv func(string) string, broker bool) (Config, error) {
 	if broker {
 		for _, v := range []struct{ key, value string }{
 			{"HYDRA_ADMIN_URL", c.HydraAdminURL},
+			{"HYDRA_ISSUER", c.HydraIssuer},
 			{"PUBLIC_URL", c.PublicURL},
 			{"UPSTREAM_IDP_BROWSER_ORIGIN", c.UpstreamBrowserOrigin},
 		} {

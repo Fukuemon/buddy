@@ -1,4 +1,5 @@
-// Package hydra は、Ory Hydra の admin API のうち、ログインと同意の要求を読み、accept と reject を返す呼び出しを持つ（ADR-0016）。
+// Package hydra は、Ory Hydra の admin API のうち、ログインと同意の要求を読み、accept と reject を返す呼び出しと、
+// 職員のログインのセッションと同意を取り消す呼び出しを持つ（ADR-0016、ADR-0017）。
 package hydra
 
 import (
@@ -91,7 +92,7 @@ var AccessDenied = Rejection{Error: "access_denied", ErrorDescription: "ログ�
 // LoginRequest は、login_challenge の要求を読む。
 func (c *Client) LoginRequest(ctx context.Context, challenge string) (LoginRequest, error) {
 	var out LoginRequest
-	err := c.do(ctx, http.MethodGet, "/admin/oauth2/auth/requests/login", "login_challenge", challenge, nil, &out)
+	err := c.do(ctx, http.MethodGet, "/admin/oauth2/auth/requests/login", url.Values{"login_challenge": {challenge}}, nil, &out)
 	return out, err
 }
 
@@ -108,7 +109,7 @@ func (c *Client) RejectLogin(ctx context.Context, challenge string, body Rejecti
 // ConsentRequest は、consent_challenge の要求を読む。
 func (c *Client) ConsentRequest(ctx context.Context, challenge string) (ConsentRequest, error) {
 	var out ConsentRequest
-	err := c.do(ctx, http.MethodGet, "/admin/oauth2/auth/requests/consent", "consent_challenge", challenge, nil, &out)
+	err := c.do(ctx, http.MethodGet, "/admin/oauth2/auth/requests/consent", url.Values{"consent_challenge": {challenge}}, nil, &out)
 	return out, err
 }
 
@@ -122,11 +123,22 @@ func (c *Client) RejectConsent(ctx context.Context, challenge string, body Rejec
 	return c.redirect(ctx, "/admin/oauth2/auth/requests/consent/reject", "consent_challenge", challenge, body)
 }
 
+// RevokeLoginSessions は、職員 subject のログインのセッションを全て消す。Hydra は、次の認可でログインの画面を呼ぶ。
+func (c *Client) RevokeLoginSessions(ctx context.Context, subject string) error {
+	return c.do(ctx, http.MethodDelete, "/admin/oauth2/auth/sessions/login", url.Values{"subject": {subject}}, nil, nil)
+}
+
+// RevokeConsentSessions は、職員 subject の全てのクライアントへの同意を消す。Hydra は、同意から発行した
+// access token と refresh token も取り消すので、refresh token でトークンを取り直せなくなる。
+func (c *Client) RevokeConsentSessions(ctx context.Context, subject string) error {
+	return c.do(ctx, http.MethodDelete, "/admin/oauth2/auth/sessions/consent", url.Values{"subject": {subject}, "all": {"true"}}, nil, nil)
+}
+
 func (c *Client) redirect(ctx context.Context, path, param, challenge string, body any) (string, error) {
 	var out struct {
 		RedirectTo string `json:"redirect_to"`
 	}
-	if err := c.do(ctx, http.MethodPut, path, param, challenge, body, &out); err != nil {
+	if err := c.do(ctx, http.MethodPut, path, url.Values{param: {challenge}}, body, &out); err != nil {
 		return "", err
 	}
 	if out.RedirectTo == "" {
@@ -135,8 +147,8 @@ func (c *Client) redirect(ctx context.Context, path, param, challenge string, bo
 	return out.RedirectTo, nil
 }
 
-// do は、admin API の path に challenge を付けて呼び、2xx のレスポンスの JSON を out に読む。
-func (c *Client) do(ctx context.Context, method, path, param, challenge string, body, out any) error {
+// do は、admin API の path にクエリ query を付けて呼び、2xx のレスポンスの JSON を out に読む。out が nil なら本文を読まない。
+func (c *Client) do(ctx context.Context, method, path string, query url.Values, body, out any) error {
 	var reqBody io.Reader
 	if body != nil {
 		b, err := json.Marshal(body)
@@ -145,7 +157,7 @@ func (c *Client) do(ctx context.Context, method, path, param, challenge string, 
 		}
 		reqBody = bytes.NewReader(b)
 	}
-	u := c.adminURL + path + "?" + url.Values{param: {challenge}}.Encode()
+	u := c.adminURL + path + "?" + query.Encode()
 	req, err := http.NewRequestWithContext(ctx, method, u, reqBody)
 	if err != nil {
 		return fmt.Errorf("hydra %s: %w", path, err)
@@ -162,6 +174,9 @@ func (c *Client) do(ctx context.Context, method, path, param, challenge string, 
 		// 本文は Hydra のエラーの JSON で、秘密の値を含まない
 		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
 		return fmt.Errorf("hydra %s: %d %s", path, resp.StatusCode, bytes.TrimSpace(msg))
+	}
+	if out == nil {
+		return nil
 	}
 	if err := json.NewDecoder(io.LimitReader(resp.Body, maxResponseLen)).Decode(out); err != nil {
 		return fmt.Errorf("hydra %s: %w", path, err)
