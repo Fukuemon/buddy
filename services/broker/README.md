@@ -57,7 +57,7 @@ compose の Hydra の token_hook は、コンテナの間の名前 `broker` を�
 - `AUTO_CONSENT_CLIENTS`: 同意の画面を出さずに accept するクライアントの ID をカンマで区切った値。デフォルトは `web`。ほかのクライアントの同意は reject する
 - `HYDRA_ISSUER`: 必須。Hydra のトークンの `iss`。内部の API は、`<HYDRA_ISSUER>/.well-known/openid-configuration` の JWKS で、予定の API の client credentials の access token を検証する
 - `INTERNAL_API_AUDIENCE`: 内部の API が access token の `aud` に求める値。デフォルトは `broker`
-- `INTERNAL_API_CLIENTS`: 内部の API を呼んでよいクライアントの ID をカンマで区切った値。デフォルトは `schedule`。access token の `sub` と、token_hook が通す client credentials の要求の `client_id` を照らす
+- `INTERNAL_API_CLIENTS`: 内部の API を呼んでよいクライアントの ID をカンマで区切った値。デフォルトは `schedule`。access token の `sub` と、token_hook が通す client credentials の要求の `client_id` を照合する
 - `TOKEN_HOOK_KEY`: 必須。Hydra が `oauth2.token_hook` を呼ぶときに、ヘッダー `Token-Hook-Key` に入れる値。シークレットとして渡し、Hydra の `oauth2.token_hook.auth` と同じ値にする
 
 上流の IdP の設定は、待ち受けを始める前に読む。次のいずれかでは、ブローカーは起動せず、終了コード 1 で終わる。

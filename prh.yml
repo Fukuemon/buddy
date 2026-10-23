@@ -4,7 +4,7 @@ version: 1
 rules:
   - expected: 名前で指す
     pattern: /\b(?!S3\b|M[1-6]\b|V8\b|D1\b|R2\b)(?:DQ|[GSMQRVD])\d{1,2}\b/
-    prh: 記号の採番は使わない。記号だけでは、その文が単独で意味を持たない。名前や節の見出しで指す
+    prh: 記号の採番は使わない。記号だけでは、その文が単独で意味を持たない。名前やセクションの見出しで指す
   - expected: この文書に必要な事実だけを書く
     pattern: /(?:詳細|実現方法|調査結果|選定|結果|書式)は、?\s?(?:DesignDoc|Design Doc|PRD|ADR)(?:\.md)?\s?(?:に|で)(?:書|定め|記載)/
     prh: 「詳細は Design Doc に書く」のような案内文は書かない。内容は各文書の中で完結させる
@@ -301,6 +301,35 @@ rules:
     pattern: /1\s?回のログインで/
     prh: web に 1 度ログインし、1 つの access token で 2 つの API を呼ぶことは SSO ではない。起きることを書く。SSO は、上流の IdP と Hydra のログインのセッションで 2 度目のログインを求めないときに使い、「1 回のログイン」と書かない
   # 技術用語は、一般的なカタカナ語か英語で書く。業務の機能の名前（予定の取り込み、予定の書き出し、結び付け）は和語のまま書く
+  # 文書とドキュメント、貢献とコントリビュートのように場面で使い分ける語は、ここで一律に止めない（スキル write-prose の「見出しと用語」）
+  - expected: ドキュメントサイト
+    pattern: 文書のサイト
+    prh: Zensical のサイトはドキュメントサイトと呼ぶ。README の見出しとワークフローの名前に合わせる
+  - expected: ドキュメントコメント
+    pattern: 文書コメント
+    prh: Go と TypeScript の doc comment は、ドキュメントコメントと呼ぶ
+  - expected: 単体テスト
+    pattern: 単体のテスト
+  - expected: 照合する
+    pattern: 照らす
+  - expected: 照合し
+    pattern: 照らし
+  - expected: ローテーション
+    pattern: /(?<=(?:token\s?|トークン|鍵|キー)の)回転/
+    prh: トークンと鍵の rotation はローテーションと書く。画面の回転の印は対象の外
+    specs:
+      - from: refresh token の回転
+        to: refresh token のローテーション
+      - from: 回転の印を出す
+        to: 回転の印を出す
+  - expected: セクション
+    pattern: /(?<=(?:\d\s?|の|この|その|各|節ごと))節(?![目約])/
+    prh: Markdown の見出しで区切った部分はセクションと書く
+    specs:
+      - from: E2E の節にある
+        to: E2E のセクションにある
+      - from: 調節する
+        to: 調節する
   - expected: フェイク
     pattern: 偽物
     prh: テストのための偽の実装はフェイクと呼ぶ。コードの名前 fake に合わせる

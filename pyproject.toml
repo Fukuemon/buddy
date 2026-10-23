@@ -1,4 +1,4 @@
-# 文書のサイトを組む Zensical を uv で入れる。Python のパッケージは作らない
+# ドキュメントサイトを組む Zensical を uv で入れる。Python のパッケージは作らない
 [project]
 name = "buddy-docs"
 version = "0.0.0"

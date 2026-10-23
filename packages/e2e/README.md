@@ -7,7 +7,7 @@ buddy の E2E のテストと、手動検証のエビデンスを撮る仕組み
 - `tests/`: E2E のテスト。層（specs、setup、screens、widgets、selectors、fixtures）は [DesignDoc.md](DesignDoc.md) にある
   - `tests/evidence/`: エビデンスの動画を撮る spec。kit を呼ぶ薄い層は `tests/fixtures/evidence.ts` にある
 
-書き方は、スキル write-e2e-test、write-verification-spec、run-verification-scenarios（`.claude/skills/`）が持つ。buddy で決めた値は `context/conventions.md` と `context/testing.md` の E2E の節にある。
+書き方は、スキル write-e2e-test、write-verification-spec、run-verification-scenarios（`.claude/skills/`）が持つ。buddy で決めた値は `context/conventions.md` と `context/testing.md` の E2E のセクションにある。
 
 ## テストとチェック
 

@@ -7,7 +7,7 @@
 gh は、エビデンスの動画を pull request の本文と issue に入れる `--attach` のために、2.99 以降をそろえる。  
 pnpm は `package.json` の `packageManager` と同じバージョンにする。  
 jq は `mise.toml` に無く、API を手で呼ぶ手順でトークンを取り出すのに使う。  
-文書のサイトをビルドする Zensical は、mise が入れる `uv` で実行する。  
+ドキュメントサイトをビルドする Zensical は、mise が入れる `uv` で実行する。  
 ほかのツールとバージョンの所在は、[技術スタック](context/tech-stack.md) にある。
 
 ```sh
@@ -110,14 +110,14 @@ curl -H "Authorization: Bearer $TOKEN" localhost:8080/v1/facilities/01M3TC5H00QV
 curl -H "Authorization: Bearer $TOKEN" -F visits=@services/receipt/testdata/visits_utf8.csv -F month=2026-11 localhost:8090/v1/checks
 ```
 
-文書のサイトの API の仕様のページからも、ローカルの API を呼べる。
+ドキュメントサイトの API の仕様のページからも、ローカルの API を呼べる。
 
 1. `docker compose up --build --wait schedule receipt` で API を立てる。
-2. `uv run zensical serve` で、文書のサイトを `http://localhost:8000` で開く。compose の 2 つの API は、このオリジンだけに CORS を許すので、`127.0.0.1` ではなく `localhost` で開く。
+2. `uv run zensical serve` で、ドキュメントサイトを `http://localhost:8000` で開く。compose の 2 つの API は、このオリジンだけに CORS を許すので、`127.0.0.1` ではなく `localhost` で開く。
 3. 「API の仕様」のページで操作を選び、「Test Request」を押す。
 4. 上の手順で取った `$TOKEN` の値を「Bearer Token」の欄に貼り、「Send」を押す。
 
-公開した文書のサイトからは呼べない。API がそのオリジンに CORS を許していないうえ、https のページからローカルの API へのリクエストをブラウザが止めることがあるためである。
+公開したドキュメントサイトからは呼べない。API がそのオリジンに CORS を許していないうえ、https のページからローカルの API へのリクエストをブラウザが止めることがあるためである。
 
 ## E2E のテストを流す
 
@@ -130,13 +130,13 @@ pnpm e2e
 ```
 
 - 書き方は、スキル write-e2e-test に従う。書いたら `pnpm --filter @buddy/e2e check` で、整形、lint、E2E の書き方の規則、型を確認する。
-- 環境変数と、テストのデータの扱いは `context/testing.md` の E2E の節にある。
+- 環境変数と、テストのデータの扱いは `context/testing.md` の E2E のセクションにある。
 - エビデンスの動画を撮る spec は、`pnpm e2e` では流れない。撮るコマンドは [エビデンス](context/testing/evidence.md) の「撮るコマンド」にある。
 - 失敗したテストの trace は `packages/e2e/test-results/` に残る。`pnpm --filter @buddy/e2e exec playwright show-trace <trace.zip>` で開く。trace.zip は、`packages/e2e` からの相対パス（Playwright が出す `test-results/...`）で渡す。
 
-## 文書のサイトのプレビュー
+## ドキュメントサイトのプレビュー
 
-pull request を作ると、ワークフロー「文書のサイト」がプレビューを出し、URL を pull request にコメントする。プレビューには、文書のサイトと、Storybook のカタログ（`/storybook/`）と、ER 図（`/erd/`）がある。プレビューと本番は、Cloudflare Access で許可した人だけが開ける。
+pull request を作ると、ワークフロー「ドキュメントサイト」がプレビューを出し、URL を pull request にコメントする。プレビューには、ドキュメントサイトと、Storybook のカタログ（`/storybook/`）と、ER 図（`/erd/`）がある。プレビューと本番は、Cloudflare Access で許可した人だけが開ける。
 
 - ローカルで成果物を作るときは、ルートで `pnpm site:build` を実行する。
 - ER 図だけをローカルで見るときは、ルートで `pnpm build:erd` を実行して `erd/` を作り、静的なファイルとして配信して開く。
@@ -226,7 +226,7 @@ pull request では、CI（[ci.yml](.github/workflows/ci.yml)）が次を流す�
 - 生成物のそろい（`pnpm check:generated`）と、テーブル定義書のそろい（`db-docs`）
 - E2E
 
-pull request と issue のタイトルと本文の形は、[issue-pr-body.yml](.github/workflows/issue-pr-body.yml) が確認する。タイトルの接頭辞、issue とのタイトルの一致、先頭の `Closes` か `Refs`、節の名前と順、帰属表示、`.ai-out/` のパスの残り、本文の textlint を見る。pull request は違反でチェックが失敗し、issue は違反をコメントで知らせる。
+pull request と issue のタイトルと本文の形は、[issue-pr-body.yml](.github/workflows/issue-pr-body.yml) が確認する。タイトルの接頭辞、issue とのタイトルの一致、先頭の `Closes` か `Refs`、セクションの名前と順、帰属表示、`.ai-out/` のパスの残り、本文の textlint を見る。pull request は違反でチェックが失敗し、issue は違反をコメントで知らせる。
 
 E2E が CI だけで失敗したときは、ワークフローの実行の画面から artifact の `e2e-test-results` を落とし、中の trace を「E2E のテストを流す」の手順で開く。
 
@@ -279,11 +279,11 @@ gitGraph
 - タスクと不具合は、親の要求の sub-issue にする。
   - 保守のタスク（依存の更新、Dependabot と CI の設定、開発の環境、規約とテンプレートの直し）は、保守の要求 #220 の sub-issue にする。
   - 不具合は、不具合が起きた機能の要求の sub-issue にする。当てはまる要求が無ければ #220 にする。不具合の form には親の欄が無いので、起票した後に sub-issue にする。
-- タイトルと本文の書き方は、スキル write-issue-pr に従う。pull request の本文は `.github/pull_request_template.md` の節で書く。
+- タイトルと本文の書き方は、スキル write-issue-pr に従う。pull request の本文は `.github/pull_request_template.md` のセクションで書く。
 - 起票の前の下書きは `.ai-out/issues/` か `.ai-out/prs/` に置く。`.textlintignore` が `.ai-out/` を外すので、下書きは `pnpm exec textlint --ignore-path /dev/null <下書きのパス>` で確認する。docs のスクリプト（check-history、check-links）は文書のファイルのためのもので、下書きには流さない。
 - 本文とコメントに、コーディングエージェントが生成したことを示す行（Generated with Claude Code）と、セッションの URL を付けない。コミットでは commitlint が同じ行を拒む。
 - pull request は 1 つの issue に対応させる。大きい issue は、関心事ごとに複数の pull request に分ける。最後にマージする pull request の本文に `Closes #<番号>` を書き、ほかは `Refs #<番号>` を書く。
-- 機能の追加と改修の pull request では、本文の「検証とエビデンス」に、観点ごとのエビデンスの動画を入れる。文書、スキル、設定だけの変更のように、動作を確認しない変更では、この節を消す。対象と格納先は [エビデンス](context/testing/evidence.md)、観点の設計、撮り方、本文への入れ方はスキル attach-evidence にある。
+- 機能の追加と改修の pull request では、本文の「検証とエビデンス」に、観点ごとのエビデンスの動画を入れる。文書、スキル、設定だけの変更のように、動作を確認しない変更では、このセクションを消す。対象と格納先は [エビデンス](context/testing/evidence.md)、観点の設計、撮り方、本文への入れ方はスキル attach-evidence にある。
 - レビューの指摘に対応してからマージする。返信と本文の直しは「[マージと片付け](#マージと片付け)」の手順で行う。
   - Codex のボットは、pull request を開いたときにレビューする。もう一度頼むときは、直したコミットを示す返信の末尾に `@codex review` と書く。`@codex review` だけのコメントを作らない。
   - Codex が使用量の上限に達したときは、頼み直さずに、読み取りだけのサブエージェントでレビューする。
@@ -297,7 +297,7 @@ gitGraph
 
 1. レビューの指摘に、直したコミットか対応しない理由を返信する。
 2. 本文を差分に合わせて直す。
-   - 最後に足したコミットまでが、対応内容、確認したこと、検証とエビデンス（節があるとき）に入っていることを確認する。
+   - 最後に足したコミットまでが、対応内容、確認したこと、検証とエビデンス（セクションがあるとき）に入っていることを確認する。
 3. `gh pr checks <pull request 番号> --watch` で、全てのチェックが pass で終わるまで待つ。
 4. `gh pr merge <pull request 番号> --merge` で、merge commit でマージする。
    - push の直後は、マージできるかの計算が終わらずに失敗することがある。数秒待って流し直す。

@@ -1,10 +1,10 @@
 # @buddy/docs-site
 
-文書のサイト（Zensical）、apps/web の Storybook（デザインシステムのカタログ）、予定の管理の ER 図（Liam ERD）を公開する。  
+ドキュメントサイト（Zensical）、apps/web の Storybook（デザインシステムのカタログ）、予定の管理の ER 図（Liam ERD）を公開する。  
 3 つは、1 つの Cloudflare Worker（`buddy-docs`）の静的なファイルである。  
 サイトは Cloudflare Access で許可した人だけが開ける。カタログの組み方と、公開先を選んだ理由は [ADR-0004](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0004-design-system.md) にある。
 
-| 環境 | 文書のサイト | カタログ | ER 図 | 出す契機 |
+| 環境 | ドキュメントサイト | カタログ | ER 図 | 出す契機 |
 | --- | --- | --- | --- | --- |
 | 本番 | `https://buddy-docs.emon-apps.workers.dev` | 同じ URL の `/storybook/` | 同じ URL の `/erd/` | develop に push したとき |
 | プレビュー | pull request ごとの URL。ワークフローが pull request にコメントする | 同じ URL の `/storybook/` | 同じ URL の `/erd/` | pull request を作るか、push したとき |
@@ -19,7 +19,7 @@ pnpm site:build
 
 次の順に動く。
 
-1. `uv run zensical build --clean` で、文書のサイトを `site/` に作る。
+1. `uv run zensical build --clean` で、ドキュメントサイトを `site/` に作る。
 2. `pnpm --filter @buddy/web build-storybook` で、Storybook を `apps/web/storybook-static/` に作る。
 3. `pnpm build:erd`（`scripts/build-erd.mjs`）で、tbls の `docs/db/schedule/schema.json` から、Liam ERD の ER 図のサイトを `erd/` に作る。
 4. `scripts/build-docs-site.mjs` で、3 つを `apps/docs-site/public/` に並べる。`/` に文書、`/storybook/` にカタログ、`/erd/` に ER 図を置く。
@@ -27,7 +27,7 @@ pnpm site:build
 
 `pnpm --filter @buddy/docs-site deploy:dry-run` で、Cloudflare に送らずに成果物を確認できる。認証は要らない。
 
-文書のサイトのリンクは相対の URL なので、カタログを下のパスに置いても行き来できる。文書のトップのカタログへのリンク（`storybook/`）と ER 図へのリンク（`erd/`）は、ローカルの `zensical serve` では開けない。
+ドキュメントサイトのリンクは相対の URL なので、カタログを下のパスに置いても行き来できる。文書のトップのカタログへのリンク（`storybook/`）と ER 図へのリンク（`erd/`）は、ローカルの `zensical serve` では開けない。
 
 ER 図のサイトは、Liam ERD の CLI が出す静的なファイルで、リソースを相対のパスで読むので `/erd/` の下で動く。Liam ERD のライセンスは Apache-2.0 である（[liam-hq/liam](https://github.com/liam-hq/liam)）。開くと Google Fonts から字形を読む。届かなくても、ER 図は代わりの字形で描かれる。
 

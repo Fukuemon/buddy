@@ -11,7 +11,7 @@ status: stable
 
 実行の単位の責務と、その間の約束は [buddy Design Doc](../docs/design/DesignDoc.md) にある。ここには、境界をまたぐときの取り決めだけを書く。
 
-- 画面と BFF（web）と文書のサイトは `apps/`、Go の API は `services/`、共有のコードは `packages/` に置く。API のディレクトリは機能の名前（`schedule`、`receipt`）にし、コンテナ、サービス、`aud`、テーブル定義書の出力先の名前もディレクトリと同じにする（[ADR-0013](../docs/adr/0013-services-directory.md)、[ADR-0014](../docs/adr/0014-service-names.md)）。
+- 画面と BFF（web）とドキュメントサイトは `apps/`、Go の API は `services/`、共有のコードは `packages/` に置く。API のディレクトリは機能の名前（`schedule`、`receipt`）にし、コンテナ、サービス、`aud`、テーブル定義書の出力先の名前もディレクトリと同じにする（[ADR-0013](../docs/adr/0013-services-directory.md)、[ADR-0014](../docs/adr/0014-service-names.md)）。
 - web と 2 つの API は、HTTP だけでつながる。web と API の間の型は、各 API の `openapi.yaml` から生成し、手で書かない。
 - 業務の規則と認可は API が持つ。web は、画面の表示の規則（照合の印と CSV の書き出しを含む）だけを持ち、拒否の判断を API に任せる。
 - `packages/ui` は、BCD Design の Base と Case のコンポーネントとトークンだけを持つ。業務の名前（予定、照合など）を持つ Domain のコンポーネントは、`apps/web` の `features/<機能>/components/` に置く（[ADR-0004](../docs/adr/0004-design-system.md)）。

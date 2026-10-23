@@ -8,7 +8,7 @@ go = "1.27"
 "aqua:sqlc-dev/sqlc" = "1.31.1"
 "aqua:golang-migrate/migrate" = "4.20.1"
 golangci-lint = "2.15.0"
-# uv は文書のサイトの Zensical を入れて動かす
+# uv はドキュメントサイトの Zensical を入れて動かす
 uv = "0.13"
 # tbls は予定の API のテーブル定義書を生成する（scripts/build-db-docs.sh）
 "aqua:k1LoW/tbls" = "1.96.1"

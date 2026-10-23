@@ -35,8 +35,8 @@ status: stable
 | Go の lint と整形 | golangci-lint | `mise.toml`、設定は `services/*/.golangci.yml` と `packages/go/.golangci.yml` |
 | テーブル定義書と ER 図の元（`schema.json`）の生成 | tbls | `mise.toml` |
 | 操作できる ER 図のサイト | Liam ERD CLI | `package.json` |
-| 文書のサイト | Zensical（uv で実行する） | `pyproject.toml`、`uv.lock`、uv は `mise.toml` と `.github/workflows/docs-site.yml` の setup-uv（同じバージョンにする） |
-| 文書のサイトの公開 | cf、wrangler | `apps/docs-site/package.json` |
+| ドキュメントサイト | Zensical（uv で実行する） | `pyproject.toml`、`uv.lock`、uv は `mise.toml` と `.github/workflows/docs-site.yml` の setup-uv（同じバージョンにする） |
+| ドキュメントサイトの公開 | cf、wrangler | `apps/docs-site/package.json` |
 | 文章のチェック | textlint | `package.json` |
 | Git のフック、コミットの形式 | lefthook、commitlint | `package.json` |
 | スキルとフックの配置 | apm | `mise.toml`、パッケージは `apm.yml` と `apm.lock.yaml` |

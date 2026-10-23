@@ -99,11 +99,11 @@ docker compose -p buddy-evidence down -v
 ### Storybook、モック、スマートフォンの幅
 
 - Storybook の story は、`pnpm --filter @buddy/web storybook` で起動し、`storyUrl(<story の ID>)` を開いて撮る。Storybook の枠を外した `iframe.html` の URL である。
-- 画面仕様書のモックは、`mockUrl(<docs/screens/ からの相対パス>)` で、リポジトリのファイルを `file://` のまま開いて撮る。文書のサイトを起動しなくてよい。
+- 画面仕様書のモックは、`mockUrl(<docs/screens/ からの相対パス>)` で、リポジトリのファイルを `file://` のまま開いて撮る。ドキュメントサイトを起動しなくてよい。
 - ログインしない story とモックでも、`prepare` で同じ URL を開く。kit は `prepare` が開いた画面から sessionStorage を読むので、何も開かないと失敗する。
 - スマートフォンの幅は、`recordPrEvidence` の `viewport` に `PHONE_VIEWPORT`（390x844）を渡して撮る。幅だけをそろえ、タッチの操作は再現しない。幅は本文の撮った条件に書く。
 - API だけの変更のうち、画面から確認できない操作は、API の参照のページ（Scalar）の「Test Request」から送って撮る。
-  - `prepare` に `packages/e2e/tests/fixtures/apiReference.ts` の `prepareApiReference` を渡し、録画の中で `routeApiReference` を張ってからページを開く。ページは文書のサイトを起動せずに `docs/api/` のファイルから開き、リクエストを撮る compose の API へ送り直す。
+  - `prepare` に `packages/e2e/tests/fixtures/apiReference.ts` の `prepareApiReference` を渡し、録画の中で `routeApiReference` を張ってからページを開く。ページはドキュメントサイトを起動せずに `docs/api/` のファイルから開き、リクエストを撮る compose の API へ送り直す。
   - トークンは認証の欄に伏せ字のまま入れる。字幕には職員の名前だけを出し、トークンの値を出さない。
 
 ## 未定
