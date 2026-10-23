@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 
-import { CALENDARPIT_URL, HAYASHI, LOGIN_NAME, LOGIN_STAFF } from '../../fixtures/env'
+import { CALENDARPIT_URL, HAYASHI, LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence, storyUrl } from '../../fixtures/evidence'
 import {
   deleteGoogleEvent,
@@ -10,7 +10,7 @@ import {
 } from '../../fixtures/googleCalendar'
 import { SCHEDULE_DETAIL_URL, scheduleIdFromUrl } from '../../fixtures/schedule'
 import { linkStaffCalendar, unlinkStaffCalendar } from '../../screens/calendar'
-import { signInAtIdp } from '../../screens/login'
+import { signInAtBroker } from '../../screens/login'
 import { calendarpitEvent } from '../../selectors/calendarpit'
 
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`
@@ -21,7 +21,7 @@ const ACTOR = `${LOGIN_STAFF.name}（マネージャー、職員の管理の権�
  */
 const prepareExported = (title: string) => async (page: Page) => {
   await page.goto('/schedule/link')
-  await signInAtIdp(page, LOGIN_NAME)
+  await signInAtBroker(page, LOGIN_EMAIL)
   await linkStaffCalendar(page, HAYASHI.id)
   await page.goto('/schedule?view=day')
   await expect(page.getByTestId(`day-grid-staff-${HAYASHI.id}`)).toBeVisible()

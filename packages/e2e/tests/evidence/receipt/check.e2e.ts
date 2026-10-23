@@ -1,8 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
 
-import { LEADER, LOGIN_NAME, LOGIN_STAFF, RECEIPT_TESTDATA } from '../../fixtures/env'
+import { LEADER, LOGIN_EMAIL, LOGIN_STAFF, RECEIPT_TESTDATA } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
-import { signInAtIdp } from '../../screens/login'
+import { signInAtBroker } from '../../screens/login'
 import { receiptCategoryRowCells, receiptResultRow } from '../../selectors/receipt'
 
 // 照合の API は、compose/receipt-calendars.json の森のカレンダーを calendarpit から読む。
@@ -57,7 +57,7 @@ const CALENDAR_VISIT_CASES = [
 
 const signIn = async (page: Page) => {
   await page.goto('/receipt')
-  await signInAtIdp(page, LOGIN_NAME)
+  await signInAtBroker(page, LOGIN_EMAIL)
 }
 
 test.describe('照合の結果', () => {

@@ -1,9 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
 
-import { LEADER, LOGIN_NAME, LOGIN_STAFF, SEED_PATIENT } from '../../fixtures/env'
+import { LEADER, LOGIN_EMAIL, LOGIN_STAFF, SEED_PATIENT } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { linkStaffCalendar, unlinkStaffCalendar } from '../../screens/calendar'
-import { signInAtIdp } from '../../screens/login'
+import { signInAtBroker } from '../../screens/login'
 
 // compose の calendarpit（compose/calendarpit/fixture.json）は、森のカレンダーに 2026 年 11 月の予定を持つ。
 const MORI = LEADER.staff
@@ -12,7 +12,7 @@ const ACTOR = `${LOGIN_STAFF.name}（マネージャー、職員の管理の権�
 /** ログインして、森にカレンダーを結び付ける。取り込みの画面は、結び付けた職員だけを選べる。 */
 const prepareMoriLinked = async (page: Page) => {
   await page.goto('/schedule/link')
-  await signInAtIdp(page, LOGIN_NAME)
+  await signInAtBroker(page, LOGIN_EMAIL)
   await linkStaffCalendar(page, MORI.id)
 }
 

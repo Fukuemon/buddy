@@ -1,16 +1,30 @@
 import type { Page } from '@playwright/test'
 
 import { BASE_URL } from '../fixtures/env'
-import { idpLogin } from '../selectors/idp'
+import { brokerLogin, idpLogin } from '../selectors/idp'
 
 /**
- * IdP のログインの画面で name を入れて入り、buddy の画面に戻るまで待つ。ログインに失敗した案内の画面でも戻る。
- * IdP のデフォルトのクレームは、compose/idp.json の職員を指す。
+ * ブローカーのログインの画面で email を入れ、事業所の上流の IdP のフェイクで入り、buddy の画面に戻るまで待つ。
+ * ログインに失敗した案内の画面でも戻る。
+ *
+ * 上流の IdP の sub は、upstreamEmail の @ の前の部分にする。ブローカーは初回のログインでこの sub を職員に結び付けるので、
+ * 同じ職員には毎回同じ sub で入る。
+ *
+ * @param o.upstreamEmail 上流の IdP の ID token のメール。デフォルトは email
  */
-export const signInAtIdp = async (page: Page, name: string) => {
-  const form = idpLogin(page)
-  await form.username.fill(name)
-  await form.signIn.click()
+export const signInAtBroker = async (
+  page: Page,
+  email: string,
+  o: { upstreamEmail?: string } = {},
+) => {
+  const upstreamEmail = o.upstreamEmail ?? email
+  const broker = brokerLogin(page)
+  await broker.email.fill(email)
+  await broker.next.click()
+  const idp = idpLogin(page)
+  await idp.username.fill(upstreamEmail.split('@')[0])
+  await idp.claims.fill(JSON.stringify({ email: upstreamEmail, email_verified: true }))
+  await idp.signIn.click()
   await page.waitForURL(
     (url) =>
       url.href.startsWith(BASE_URL) &&

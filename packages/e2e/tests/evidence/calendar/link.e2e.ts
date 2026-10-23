@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test'
 
-import { FACILITY_SERVICE_ACCOUNT, LEADER, LOGIN_NAME, LOGIN_STAFF } from '../../fixtures/env'
+import { FACILITY_SERVICE_ACCOUNT, LEADER, LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { unlinkStaffCalendar } from '../../screens/calendar'
-import { signInAtIdp } from '../../screens/login'
+import { signInAtBroker } from '../../screens/login'
 
 const MORI = LEADER.staff
 const MORI_CALENDAR = 'kenta.mori@example.com'
@@ -28,7 +28,7 @@ test.describe('カレンダーの連携', () => {
           },
           async (page) => {
             await page.goto('/schedule/link')
-            await signInAtIdp(page, LOGIN_NAME)
+            await signInAtBroker(page, LOGIN_EMAIL)
           },
           async ({ page, step, check }) => {
             await page.goto('/schedule/link')
@@ -73,7 +73,7 @@ test.describe('カレンダーの連携', () => {
           },
           async (page) => {
             await page.goto('/schedule/link')
-            await signInAtIdp(page, LOGIN_NAME)
+            await signInAtBroker(page, LOGIN_EMAIL)
           },
           async ({ page, step, check }) => {
             try {

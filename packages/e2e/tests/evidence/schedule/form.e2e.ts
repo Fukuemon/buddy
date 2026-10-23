@@ -1,14 +1,14 @@
 import { expect, test, type Page } from '@playwright/test'
 
-import { LOGIN_NAME, LOGIN_STAFF } from '../../fixtures/env'
+import { LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
-import { signInAtIdp } from '../../screens/login'
+import { signInAtBroker } from '../../screens/login'
 
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー）`
 
 const signIn = async (page: Page) => {
   await page.goto('/schedule')
-  await signInAtIdp(page, LOGIN_NAME)
+  await signInAtBroker(page, LOGIN_EMAIL)
 }
 
 /** 日の表示を開き、予定の一覧が届いて列が出るまで待つ。 */

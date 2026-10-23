@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 import { prepareApiReference, routeApiReference } from '../../fixtures/apiReference'
-import { HAYASHI, LEADER, LOGIN_NAME, LOGIN_STAFF, TEAM_MEMBER } from '../../fixtures/env'
+import { HAYASHI, LEADER, LOGIN_EMAIL, LOGIN_STAFF, TEAM_MEMBER } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import {
   fillApiBody,
@@ -37,7 +37,7 @@ test.describe('職員の管理', () => {
             actor: `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`,
             variant,
           },
-          prepareApiReference('schedule', LOGIN_NAME),
+          prepareApiReference('schedule', LOGIN_EMAIL),
           async ({ page, step, check }, token) => {
             await routeApiReference(page)
             await openApiClient(page, 'schedule', ADD_POLICY)
@@ -95,7 +95,7 @@ test.describe('職員の管理', () => {
             actor: `${LEADER.staff.name}（チームリーダー、職員の管理の権限なし）`,
             variant,
           },
-          prepareApiReference('schedule', LEADER.loginName),
+          prepareApiReference('schedule', LEADER.email),
           async ({ page, step, check }, token) => {
             await routeApiReference(page)
             await openApiClient(page, 'schedule', ADD_POLICY)

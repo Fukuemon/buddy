@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 import type { APIRequestContext, Page } from '@playwright/test'
 
-import { BASE_URL, IDP_URL, RECEIPT_URL, SCHEDULE_URL } from './env'
+import { BASE_URL, HYDRA_URL, RECEIPT_URL, SCHEDULE_URL } from './env'
 
 const root = fileURLToPath(new URL('../../../..', import.meta.url))
 
@@ -49,48 +49,58 @@ export const routeApiReference = async (page: Page) => {
 }
 
 /**
- * compose の IdP で、name でログインした職員の access token を取る。API の参照のページの認証の欄に入れる。
- * API はトークンの iss を http://idp:9000/buddy と確かめ、IdP は iss をリクエストの Host から決めるので、Host を書き換えて取る。
+ * compose のブローカーで、email の職員としてログインした access token を取る。API の参照のページの認証の欄に入れる。
+ * ブラウザの代わりに、Hydra、ブローカー、上流の IdP のフェイクの画面を順に通り、web のコールバックの手前で認可コードを受け取る。
+ * 手順は compose/dev-token.sh と同じである。
  */
-export const issueAccessToken = async (request: APIRequestContext, name: string) => {
-  const redirectUri = `${BASE_URL}/cb`
-  const authorized = await request.post(`${IDP_URL}/buddy/authorize`, {
-    params: {
-      client_id: 'web',
-      response_type: 'code',
-      redirect_uri: redirectUri,
-      scope: 'openid',
-      state: 'evidence',
-    },
-    form: { username: name },
-    maxRedirects: 0,
+export const issueAccessToken = async (request: APIRequestContext, email: string) => {
+  const redirectUri = `${BASE_URL}/auth/callback`
+  const next = async (url: string, form?: Record<string, string>) => {
+    const res = form
+      ? await request.post(url, { form, maxRedirects: 0 })
+      : await request.get(url, { maxRedirects: 0 })
+    const location = res.headers().location
+    if (!location) throw new Error(`転送されない: ${res.status()} ${url}`)
+    return new URL(location, url)
+  }
+  const auth = new URL(`${HYDRA_URL}/oauth2/auth`)
+  auth.search = new URLSearchParams({
+    client_id: 'web',
+    response_type: 'code',
+    scope: 'openid email offline_access',
+    state: 'evidence-state',
+    redirect_uri: redirectUri,
+  }).toString()
+  const login = await next(auth.href)
+  const upstream = await next(new URL('/login', login).href, {
+    login_challenge: login.searchParams.get('login_challenge') ?? '',
+    email,
   })
-  const code = new URL(authorized.headers().location ?? '', BASE_URL).searchParams.get('code')
-  if (!code) throw new Error(`IdP から認可コードを取れない: ${authorized.status()}`)
-  const token = await request.post(`${IDP_URL}/buddy/token`, {
-    headers: { Host: 'idp:9000' },
-    form: {
-      grant_type: 'authorization_code',
-      code,
-      redirect_uri: redirectUri,
-      client_id: 'web',
-      client_secret: 'web-dev',
-    },
+  let to = await next(upstream.href, {
+    username: email.split('@')[0],
+    claims: JSON.stringify({ email, email_verified: true }),
   })
-  if (!token.ok()) throw new Error(`IdP からトークンを取れない: ${token.status()}`)
+  while (!to.href.startsWith(redirectUri)) to = await next(to.href)
+  const code = to.searchParams.get('code')
+  if (!code) throw new Error(`認可コードを受け取れない: ${to.href}`)
+  const token = await request.post(`${HYDRA_URL}/oauth2/token`, {
+    headers: { Authorization: `Basic ${Buffer.from('web:web-dev').toString('base64')}` },
+    form: { grant_type: 'authorization_code', code, redirect_uri: redirectUri },
+  })
+  if (!token.ok()) throw new Error(`Hydra からトークンを取れない: ${token.status()}`)
   return ((await token.json()) as { access_token: string }).access_token
 }
 
 /**
- * recordPrEvidence の prepare に渡す。API の参照のページを開いてから、name で入った職員のトークンを取って返す。
+ * recordPrEvidence の prepare に渡す。API の参照のページを開いてから、email で入った職員のトークンを取って返す。
  * 録画は、このページの origin の sessionStorage を持ち越して始まる。
  *
  * @param api docs/api/ のページの名前
- * @param name compose の IdP にログインする名前。トークンを使わない spec は null にする
+ * @param email compose のブローカーにログインするメール。トークンを使わない spec は null にする
  */
 export const prepareApiReference =
-  (api: 'schedule' | 'receipt', name: string | null) => async (page: Page) => {
+  (api: 'schedule' | 'receipt', email: string | null) => async (page: Page) => {
     await routeApiReference(page)
     await page.goto(`${API_REFERENCE_ORIGIN}/api/${api}.html`)
-    return name === null ? '' : issueAccessToken(page.request, name)
+    return email === null ? '' : issueAccessToken(page.request, email)
   }

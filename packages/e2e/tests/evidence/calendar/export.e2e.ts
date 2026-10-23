@@ -1,16 +1,16 @@
 import { expect, test, type Page } from '@playwright/test'
 
-import { CALENDARPIT_URL, HAYASHI, LOGIN_NAME, LOGIN_STAFF } from '../../fixtures/env'
+import { CALENDARPIT_URL, HAYASHI, LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { findGoogleEvent } from '../../fixtures/googleCalendar'
 import { linkStaffCalendar, unlinkStaffCalendar } from '../../screens/calendar'
-import { signInAtIdp } from '../../screens/login'
+import { signInAtBroker } from '../../screens/login'
 import { calendarpitEvent } from '../../selectors/calendarpit'
 
 /** ログインして、林にカレンダーを結び付ける。予定の API は、結び付けた職員の予定だけを書き出す。 */
 const prepareHayashiLinked = async (page: Page) => {
   await page.goto('/schedule/link')
-  await signInAtIdp(page, LOGIN_NAME)
+  await signInAtBroker(page, LOGIN_EMAIL)
   await linkStaffCalendar(page, HAYASHI.id)
 }
 
