@@ -15,8 +15,8 @@ mise install
 pnpm install
 ```
 
-mise が gh の attestation を確かめるときに `error decoding response body` で失敗することがある。  
-そのときは、mise のエラーに出た zip を `gh attestation verify <zip> --repo cli/cli` で確かめてから、確かめを外して入れる。
+mise が gh の attestation を確認するときに `error decoding response body` で失敗することがある。  
+そのときは、mise のエラーに出た zip を `gh attestation verify <zip> --repo cli/cli` で確認してから、確認を外して入れる。
 
 ```sh
 MISE_AQUA_GITHUB_ATTESTATIONS=false mise install aqua:cli/cli
@@ -128,7 +128,7 @@ docker compose up --build --wait
 pnpm e2e
 ```
 
-- 書き方は、スキル write-e2e-test に従う。書いたら `pnpm --filter @buddy/e2e check` で、整形、lint、E2E の書き方の規則、型を確かめる。
+- 書き方は、スキル write-e2e-test に従う。書いたら `pnpm --filter @buddy/e2e check` で、整形、lint、E2E の書き方の規則、型を確認する。
 - 環境変数と、テストのデータの扱いは `context/testing.md` の E2E の節にある。
 - エビデンスの動画を撮る spec は、`pnpm e2e` では流れない。撮るコマンドは [エビデンス](context/testing/evidence.md) の「撮るコマンド」にある。
 - 失敗したテストの trace は `packages/e2e/test-results/` に残る。`pnpm --filter @buddy/e2e exec playwright show-trace <trace.zip>` で開く。trace.zip は、`packages/e2e` からの相対パス（Playwright が出す `test-results/...`）で渡す。
@@ -155,19 +155,19 @@ Zensical は `uv` で入れ、バージョンは `pyproject.toml` と `uv.lock` 
 
 ```sh
 uv run zensical serve   # http://localhost:8000 で読みながら直す
-uv run zensical build   # 出力の最後が "No issues found" になることを確かめる
+uv run zensical build   # 出力の最後が "No issues found" になることを確認する
 ```
 
 - `zensical build` は、リンクの先のページと見出しのアンカーがないと "Warning" を出す。警告が残ったままマージしない。
 - 画面仕様書とモックの書き方は、スキル write-screen-spec に従う。
 - 画面仕様書かモックを直したら、`pnpm check:screens` を流す。story の `title` か export の名前を変えたときも流す。
-  - [画面仕様書の規約](docs/screens/rules.md) の名前、構造、構成番号、`data-testid` の形、E2E が使う testid がモックにあるか、カタログの欄の story があるかを確かめる。
+  - [画面仕様書の規約](docs/screens/rules.md) の名前、構造、構成番号、`data-testid` の形、E2E が使う testid がモックにあるか、カタログの欄の story があるかを確認する。
   - CI も同じ点検を流す。
   - 1 つの画面だけを見るときは `node scripts/check-screens.mjs docs/screens/<ディレクトリ>` を流す。この形では、E2E の testid の照合は流れない。
 - ページを足したら、`zensical.toml` の `nav` に足す。`nav` にないページはナビゲーションから開けない。
 - 機能ごとの Design Doc の配置先、サイトへの載せ方、リンクの書き方は、[コードと文書の規約](context/conventions.md#documents) にある。
 
-文章の規則は textlint で、経緯の混入とリンクは docs のスクリプトで確かめる。指摘された語は言い換え、`--fix` は使わない。プロジェクトの用語と見出しの語が指摘されたときは、言い換えずに、`.textlintrc.json` の `allows` に足すかをメンテナーと決める。
+文章の規則は textlint で、経緯の混入とリンクは docs のスクリプトで確認する。指摘された語は言い換え、`--fix` は使わない。プロジェクトの用語と見出しの語が指摘されたときは、言い換えずに、`.textlintrc.json` の `allows` に足すかをメンテナーと決める。
 
 ```sh
 pnpm exec textlint "**/*.md"
@@ -176,7 +176,7 @@ node .claude/hooks/docs/hooks/check-links.mjs
 ```
 
 - pre-commit のフックが、ステージした Markdown に textlint を流す。
-- `.textlintignore` は、Git で追跡しないものと、`docs/design/` の下のシンボリックリンクを外す。シンボリックリンクの先の文書は、元の場所で確かめる。
+- `.textlintignore` は、Git で追跡しないものと、`docs/design/` の下のシンボリックリンクを外す。シンボリックリンクの先の文書は、元の場所で確認する。
 - `docs/` のスクリプトは apm が `.claude/hooks/docs/` に配置する。無ければ `apm install --frozen` を流す。
 
 `verified_commit` の後に実装が変わった文書は、`node .claude/hooks/docs/hooks/list-drift.mjs` で一覧する。実装と読み比べてから `verified_commit` を進める。
@@ -186,9 +186,9 @@ node .claude/hooks/docs/hooks/check-links.mjs
 各 API の定義の正本は、`services/schedule/openapi.yaml` と `services/receipt/openapi.yaml` である。サーバーの Go のコードと画面の型は、そこから生成してコミットする。  
 openapi.yaml を変えたら、同じコミットで生成物も生成し直す。
 
-定義の書き方は Redocly CLI の `recommended-strict` の規則で確かめる。pre-commit のフックが、`openapi.yaml` か lint の設定をステージしたときに `pnpm lint:openapi` を流す。
+定義の書き方は Redocly CLI の `recommended-strict` の規則で確認する。pre-commit のフックが、`openapi.yaml` か lint の設定をステージしたときに `pnpm lint:openapi` を流す。
 
-null を許す項目は、`type` と `nullable: true` を同じ階層に置き、参照する型は `allOf` で包む。OpenAPI 3.0 は `type` の無い `nullable` を無視する。サーバーが使う kin-openapi は、外側の `nullable` を見て、`allOf` の中を確かめる前に null を通す。規則を外す箇所は `.redocly.lint-ignore.yaml` に理由と一緒に書き、規則ごと外すものは `redocly.yaml` に書く。
+null を許す項目は、`type` と `nullable: true` を同じ階層に置き、参照する型は `allOf` で包む。OpenAPI 3.0 は `type` の無い `nullable` を無視する。サーバーが使う kin-openapi は、外側の `nullable` を見て、`allOf` の中を確認する前に null を通す。規則を外す箇所は `.redocly.lint-ignore.yaml` に理由と一緒に書き、規則ごと外すものは `redocly.yaml` に書く。
 
 ```sh
 pnpm lint:openapi
@@ -208,7 +208,7 @@ pnpm lint:openapi
 viewpoint を足したときは、生成した文書を `zensical.toml` の nav の「DB の設計」にも足す。  
 nav に無い viewpoint の文書があっても、`pnpm generate:db-docs` が 1 で終わる。
 
-マージする前に、生成物がそろっているかをリポジトリのルートで確かめる。テーブル定義書を除く全ての生成を流し直し、差分か追跡していない生成物があれば 1 で終わる。テーブル定義書は Docker が要るので外しており、CI の `db-docs` のジョブが同じように確かめる。
+マージする前に、生成物がそろっているかをリポジトリのルートで確認する。テーブル定義書を除く全ての生成を流し直し、差分か追跡していない生成物があれば 1 で終わる。テーブル定義書は Docker が要るので外しており、CI の `db-docs` のジョブが同じように確認する。
 
 ```sh
 pnpm check:generated
@@ -225,13 +225,13 @@ pull request では、CI（[ci.yml](.github/workflows/ci.yml)）が次を流す�
 - 生成物のそろい（`pnpm check:generated`）と、テーブル定義書のそろい（`db-docs`）
 - E2E
 
-pull request と issue のタイトルと本文の形は、[issue-pr-body.yml](.github/workflows/issue-pr-body.yml) が確かめる。タイトルの接頭辞、issue とのタイトルの一致、先頭の `Closes` か `Refs`、節の名前と順、帰属表示、`.ai-out/` のパスの残り、本文の textlint を見る。pull request は違反でチェックが失敗し、issue は違反をコメントで知らせる。
+pull request と issue のタイトルと本文の形は、[issue-pr-body.yml](.github/workflows/issue-pr-body.yml) が確認する。タイトルの接頭辞、issue とのタイトルの一致、先頭の `Closes` か `Refs`、節の名前と順、帰属表示、`.ai-out/` のパスの残り、本文の textlint を見る。pull request は違反でチェックが失敗し、issue は違反をコメントで知らせる。
 
 E2E が CI だけで失敗したときは、ワークフローの実行の画面から artifact の `e2e-test-results` を落とし、中の trace を「E2E のテストを流す」の手順で開く。
 
 ## コミットするとき
 
-- commit-msg のフックが、メッセージの形式を commitlint で確かめる。形式は `commitlint.config.mjs` にある。フックは `pnpm install` の `prepare` が入れる。
+- commit-msg のフックが、メッセージの形式を commitlint で確認する。形式は `commitlint.config.mjs` にある。フックは `pnpm install` の `prepare` が入れる。
 - 変更の分け方とメッセージの書き方は、スキル write-commit に従う。
 
 ## ブランチとリリース
@@ -242,7 +242,7 @@ E2E が CI だけで失敗したときは、ワークフローの実行の画面
 - `develop` の状態を検証環境に、`main` の状態を本番環境に反映する。
   - 検証環境と本番環境は、メンテナーが非公開のインフラで運用する。
     - 外部の人は開けない。
-  - 検証環境で確かめる前の変更と、外部の人が試す変更は、ローカルの compose で確かめる。
+  - 検証環境で確認する前の変更と、外部の人が試す変更は、ローカルの compose で確認する。
 - 作業用のブランチは `develop` から切る。名前は `feature/<issue 番号>` にし、不具合は `fix/<issue 番号>` にする。1 つの issue を複数の pull request に分けるときは、`feature/<issue 番号>-<短い名前>` にする。
 - リリースは、検証した `develop` を `main` へ pull request でマージし、`main` のコミットにアプリごとのタグを付ける。タグは `<ディレクトリ>/vX.Y.Z`（`apps/web/v1.0.0`、`services/schedule/v1.0.0` など）の形で、バージョンはセマンティック バージョニングに従う。タグは手で付ける。
 - API の互換の規則（項目の追加は同じパス、削除と意味の変更は新しいパス、API を先にデプロイする）は ADR-0003 にある。
@@ -279,10 +279,10 @@ gitGraph
   - 保守のタスク（依存の更新、Dependabot と CI の設定、開発の環境、規約とテンプレートの直し）は、保守の要求 #220 の sub-issue にする。
   - 不具合は、不具合が起きた機能の要求の sub-issue にする。当てはまる要求が無ければ #220 にする。不具合の form には親の欄が無いので、起票した後に sub-issue にする。
 - タイトルと本文の書き方は、スキル write-issue-pr に従う。pull request の本文は `.github/pull_request_template.md` の節で書く。
-- 起票の前の下書きは `.ai-out/issues/` か `.ai-out/prs/` に置く。`.textlintignore` が `.ai-out/` を外すので、下書きは `pnpm exec textlint --ignore-path /dev/null <下書きのパス>` で確かめる。docs のスクリプト（check-history、check-links）は文書のファイルのためのもので、下書きには流さない。
+- 起票の前の下書きは `.ai-out/issues/` か `.ai-out/prs/` に置く。`.textlintignore` が `.ai-out/` を外すので、下書きは `pnpm exec textlint --ignore-path /dev/null <下書きのパス>` で確認する。docs のスクリプト（check-history、check-links）は文書のファイルのためのもので、下書きには流さない。
 - 本文とコメントに、コーディングエージェントが生成したことを示す行（Generated with Claude Code）と、セッションの URL を付けない。コミットでは commitlint が同じ行を拒む。
 - pull request は 1 つの issue に対応させる。大きい issue は、関心事ごとに複数の pull request に分ける。最後にマージする pull request の本文に `Closes #<番号>` を書き、ほかは `Refs #<番号>` を書く。
-- 機能の追加と改修の pull request では、本文の「検証とエビデンス」に、観点ごとのエビデンスの動画を入れる。文書、スキル、設定だけの変更のように、動作を確かめない変更では、この節を消す。対象と格納先は [エビデンス](context/testing/evidence.md)、観点の設計、撮り方、本文への入れ方はスキル attach-evidence にある。
+- 機能の追加と改修の pull request では、本文の「検証とエビデンス」に、観点ごとのエビデンスの動画を入れる。文書、スキル、設定だけの変更のように、動作を確認しない変更では、この節を消す。対象と格納先は [エビデンス](context/testing/evidence.md)、観点の設計、撮り方、本文への入れ方はスキル attach-evidence にある。
 - レビューの指摘に対応してからマージする。返信と本文の直しは「[マージと片付け](#マージと片付け)」の手順で行う。
   - Codex のボットは、pull request を開いたときにレビューする。もう一度頼むときは、直したコミットを示す返信の末尾に `@codex review` と書く。`@codex review` だけのコメントを作らない。
   - Codex が使用量の上限に達したときは、頼み直さずに、読み取りだけのサブエージェントでレビューする。
@@ -292,19 +292,19 @@ gitGraph
 ## マージと片付け
 
 作業用のブランチから `develop` への pull request は、次の順にマージする。  
-各段の確かめが済むまで、次の段に進まない。
+各段の確認が済むまで、次の段に進まない。
 
 1. レビューの指摘に、直したコミットか対応しない理由を返信する。
 2. 本文を差分に合わせて直す。
-   - 最後に足したコミットまでが、対応内容、確認したこと、検証とエビデンス（節があるとき）に入っていることを確かめる。
+   - 最後に足したコミットまでが、対応内容、確認したこと、検証とエビデンス（節があるとき）に入っていることを確認する。
 3. `gh pr checks <pull request 番号> --watch` で、全てのチェックが pass で終わるまで待つ。
 4. `gh pr merge <pull request 番号> --merge` で、merge commit でマージする。
    - push の直後は、マージできるかの計算が終わらずに失敗することがある。数秒待って流し直す。
-5. `gh pr view <pull request 番号> --json state` で、`MERGED` になったことを確かめる。
+5. `gh pr view <pull request 番号> --json state` で、`MERGED` になったことを確認する。
    - マージと、リモートのブランチの削除（`git push origin --delete` など）を、`;` でつないで 1 行で流さない。マージが失敗したままリモートのブランチを消すと、pull request が閉じる。
-6. `gh issue view <issue 番号> --json state` で、`Closes` の issue が閉じたことを確かめる。
+6. `gh issue view <issue 番号> --json state` で、`Closes` の issue が閉じたことを確認する。
    - `Refs` だけの issue は、最後の pull request をマージするまで開いたままにする。
 7. 作業用の worktree を `wt remove <ブランチ>` で消す。
-   - ブランチが残ったときは、手順 5 で `MERGED` を確かめていれば、`wt remove -D <ブランチ>` で消してよい。
+   - ブランチが残ったときは、手順 5 で `MERGED` を確認していれば、`wt remove -D <ブランチ>` で消してよい。
 
 `hotfix/<issue 番号>` の pull request は `main` へマージするので、`Closes` を書いても issue が閉じない。`Closes` は、`develop` へマージする側の pull request に書く。
