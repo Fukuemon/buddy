@@ -1,0 +1,33 @@
+# ローカル環境の Ory Hydra の設定。値は全て開発用のダミーの値で、ほかの環境で使わない。
+# ブラウザが開く URL（urls.self.public、urls.login、urls.consent）は、ポートを変えられるよう compose の環境変数で渡す。
+
+serve:
+  cookies:
+    same_site_mode: Lax
+
+urls:
+  # トークンの iss。web と 2 つの API は、コンテナの間の名前 hydra で discovery の文書と JWKS を読む
+  self:
+    issuer: http://hydra:4444
+
+# web がコンテナの間で呼ぶトークンのエンドポイントを、discovery の文書でコンテナの間の名前にする。
+# 認可のエンドポイントは、ブラウザが開くので urls.self.public のままにする
+webfinger:
+  oidc_discovery:
+    token_url: http://hydra:4444/oauth2/token
+    userinfo_url: http://hydra:4444/userinfo
+
+strategies:
+  access_token: jwt
+
+ttl:
+  access_token: 5m
+  # ログインのセッションの長さ。ブローカーが login の accept で remember を付けたときだけ覚える
+  authentication_session: 12h
+
+oauth2:
+  # ブローカーが同意の accept で足す組織の ID を、access token の JWT の top level に出す（ADR-0016）
+  allowed_top_level_claims: [org_id]
+
+secrets:
+  system: [buddy-dev-hydra-system-secret-for-compose-only]

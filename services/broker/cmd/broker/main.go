@@ -1,5 +1,5 @@
 // Command broker は、Ory Hydra の login and consent app として動く認証のブローカーを起動する（ADR-0016）。
-// 今はヘルスチェックだけを持ち、ログイン、同意、ログアウトの画面と内部の API は後から足す。
+// ログインと同意の画面とヘルスチェックを持ち、ログアウトの画面と内部の API は後から足す。
 //
 // 設定は環境変数から読む。読む値とデフォルト値は config.Load にある。
 // 上流の IdP の設定のファイルか client secret のファイルに誤りがあれば、待ち受けを始めずに終了コード 1 で終わる。
@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -24,12 +25,23 @@ import (
 
 	"github.com/Fukuemon/buddy/services/broker/internal/config"
 	"github.com/Fukuemon/buddy/services/broker/internal/httpapi"
+	"github.com/Fukuemon/buddy/services/broker/internal/hydra"
+	"github.com/Fukuemon/buddy/services/broker/internal/login"
 	"github.com/Fukuemon/buddy/services/broker/internal/postgres"
 	"github.com/Fukuemon/buddy/services/broker/internal/upstream"
 )
 
 // readyTimeout は、GET /readyz が DB の疎通を待つ上限である。
 const readyTimeout = 2 * time.Second
+
+// ログインの画面でメールを送る試行は、送り手のアドレスごとに loginBurst 回まで続けられ、loginEvery ごとに 1 回ずつ戻る。
+// 入れたメールごとには emailBurst 回まで続けられ、emailEvery ごとに 1 回ずつ戻る。
+const (
+	loginBurst = 20
+	loginEvery = 10 * time.Second
+	emailBurst = 10
+	emailEvery = 30 * time.Second
+)
 
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
@@ -55,6 +67,10 @@ func run(getenv func(string) string) error {
 		return err
 	}
 	logger.Info("上流の IdP の設定を読んだ", "count", len(idps))
+	rp, err := upstream.NewRP(idps, cfg.PublicURL+"/login/callback", cfg.UpstreamBrowserOrigin, nil)
+	if err != nil {
+		return err
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -65,13 +81,33 @@ func run(getenv func(string) string) error {
 	}
 	defer db.Close()
 
+	loginHandler, err := login.NewHandler(login.Config{
+		Logger:             logger,
+		Staff:              postgres.NewStaffStore(db),
+		Hydra:              hydra.New(cfg.HydraAdminURL, nil),
+		Upstream:           rp,
+		Limiter:            login.NewLimiter(loginEvery, loginBurst),
+		EmailLimiter:       login.NewLimiter(emailEvery, emailBurst),
+		ClientIPHeader:     cfg.ClientIPHeader,
+		PublicURL:          cfg.PublicURL,
+		AutoConsentClients: cfg.AutoConsentClients,
+		SecureCookie:       strings.HasPrefix(cfg.PublicURL, "https:"),
+	})
+	if err != nil {
+		return err
+	}
+
 	srv := &http.Server{
 		Addr: net.JoinHostPort("", cfg.Port),
-		Handler: httpapi.NewHandler(httpapi.Config{Logger: logger, Ready: func(ctx context.Context) error {
-			ctx, cancel := context.WithTimeout(ctx, readyTimeout)
-			defer cancel()
-			return db.Ping(ctx)
-		}}),
+		Handler: httpapi.NewHandler(httpapi.Config{
+			Logger: logger,
+			Ready: func(ctx context.Context) error {
+				ctx, cancel := context.WithTimeout(ctx, readyTimeout)
+				defer cancel()
+				return db.Ping(ctx)
+			},
+			Login: loginHandler,
+		}),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      30 * time.Second,

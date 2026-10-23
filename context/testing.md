@@ -38,7 +38,7 @@ status: stable
 | 対象 | 単体とコンポーネントのテスト | E2E |
 | --- | --- | --- |
 | PostgreSQL | 機能のパッケージのテストはメモリ上のフェイク（`inmem`）、リポジトリのテストは testcontainers の本物 | compose の本物 |
-| OIDC の Issuer | `oidctest` のフェイク（テストの中で鍵を作る） | compose の mock-oauth2-server |
+| OIDC の Issuer | `oidctest` のフェイク（テストの中で鍵を作る） | compose の Hydra とブローカーと、上流の IdP のフェイク（mock-oauth2-server） |
 | Google Calendar API | `gcaltest` のフェイク。書き込みは `If-Match` を比べて 412 を返し、`Failures` でエラーを返せる | 予定の API は compose の calendarpit（予定は `compose/calendarpit/fixture.json`。書いた予定と token は volume に残り、`docker compose down -v` で消える。予定は管理の画面で見る）。E2E は calendarpit の管理の API で予定を読んで直し、中継の `gcalhold` で Google の変更を予定の API に渡さないようにする。照合の API は、同じ calendarpit の森のカレンダー（`compose/receipt-calendars.json`）を、`gcalhold` を通さずに読む |
 | web の画面から見た API（`BuddyApi`） | `src/api/fake/` のフェイク | compose の本物 |
 | web のサーバーから見た 2 つの API | MSW の handler（`apps/web/src/mocks/`、`src/test/server.ts`） | compose の本物 |
@@ -82,14 +82,14 @@ pull request と develop への push では、CI（[ci.yml](../.github/workflows
 ## E2E
 
 - E2E のテストは `packages/e2e/tests/` に置き、ルートの compose で立てた全体に向けて流す。手順は CONTRIBUTING.md の「E2E のテストを流す」にある。
-  - API と IdP は置き換えず、compose の本物を使う。テストのデータは予定の API に作り、消さない。spec は、タイトルに時刻を入れて自分の作ったデータを見分ける。
-  - project は 3 つある。`setup` は compose の IdP にログインした状態を `packages/e2e/.auth/` に保存し、`e2e` はその状態で `tests/specs/` の spec を流す。`evidence` は `tests/evidence/` のエビデンスの spec を流し、`pnpm e2e` と CI は流さない（[エビデンス](testing/evidence.md)）。
-  - `setup` は、青木 陽菜（マネージャー）と森 健太（チームリーダー、名前は `dev-mori`）の 2 人のログインの状態を保存する。リーダーで確かめる spec は、`test.use({ storageState: LEADER_STATE })` で切り替える。
-  - 環境変数 `E2E_BASE_URL`（デフォルトは `http://localhost:3000`）と `E2E_LOGIN_NAME`（デフォルトは `dev-aoki`）で、向ける画面とログインの名前を変える。
+  - API、Hydra、ブローカーは置き換えず、compose の本物を使う。事業所の上流の IdP は、compose のフェイクを使う。テストのデータは予定の API に作り、消さない。spec は、タイトルに時刻を入れて自分の作ったデータを見分ける。
+  - project は 3 つある。`setup` は compose のブローカーにログインした状態を `packages/e2e/.auth/` に保存し、`e2e` はその状態で `tests/specs/` の spec を流す。`evidence` は `tests/evidence/` のエビデンスの spec を流し、`pnpm e2e` と CI は流さない（[エビデンス](testing/evidence.md)）。
+  - `setup` は、青木 陽菜（マネージャー）と森 健太（チームリーダー）の 2 人のログインの状態を保存する。リーダーで確かめる spec は、`test.use({ storageState: LEADER_STATE })` で切り替える。
+  - 環境変数 `E2E_BASE_URL`（デフォルトは `http://localhost:3000`）で、向ける画面を変える。ログインのメールは、`packages/e2e/tests/fixtures/env.ts` の `LOGIN_EMAIL` と `LEADER.email` である。
   - Google カレンダーの spec が向ける calendarpit と gcalhold は、環境変数 `E2E_CALENDARPIT_URL` と `E2E_GCALHOLD_URL` で変える。デフォルトは、それぞれ `http://localhost:4173` と `http://localhost:8085` である。
-  - 予定の API は初回のログインで `sub` を職員に結び付ける。ローカルで青木 陽菜に別の名前で入ったことがあれば、`E2E_LOGIN_NAME` をその名前にするか、`docker compose down -v` でデータを消す。
+  - ブローカーは、初回のログインで上流の IdP の `sub` を職員に結び付ける。E2E は、メールの @ の前の部分を上流の `sub` にして入る。ローカルで同じ職員に別の名前で入ったことがあれば、`docker compose down -v` でデータを消す。
   - Google カレンダーの取り込みの spec は、森にカレンダーを結び付けて取り込んだまま残す。同じ DB で 2 回目を流すと落ちるので、流し直すときは `docker compose down -v` で作り直す。
-  - シードは空の DB にだけ適用される。`dev-mori` で入れないときや、職員の一覧に佐藤 美咲がいないときは、シードを変える前の DB なので、`docker compose down -v` で作り直す。
+  - シードは空の DB にだけ適用される。森 健太や上野 渚で入れないときや、職員の一覧に佐藤 美咲がいないときは、シードを変える前の DB なので、`docker compose down -v` で作り直す。
 - 画面を変える pull request では、その画面の流れの E2E を流す。testid を変えたら、E2E と画面仕様書の両方を直す。
 - lint と型のチェックは、`packages/e2e` で `pnpm check` を流す。ESLint の規則（`packages/e2e/eslint/e2e-authoring-rule.mjs`）と、その規則のテスト（`pnpm test:rules`）もここにある。
   - 規則は ESLint の cwd から見た `tests/` だけを見る。ルートやエディタから流すと、違反があっても何も言わずに通る。

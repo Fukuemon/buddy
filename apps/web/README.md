@@ -28,7 +28,7 @@ pnpm --filter @buddy/web dev
 コンテナのイメージは `bff` でビルドする。`bff` の動きは、リポジトリのルートの compose で確かめる（CONTRIBUTING.md の「ローカル環境で全体を起動する」）。  
 開発サーバーを `bff` で起動すると、トークンの `iss` が compose の API の求める値と合わないので、compose の API には向けない。
 
-BFF の処理をローカルの開発サーバーで確かめるときは、`dev:msw` で起動する。ログインは compose の IdP と Valkey を使い、2 つの API へのリクエストは MSW のフェイクの handler（`src/mocks/`）が受ける。Go の API と PostgreSQL は立てない。設定は `.env.msw` にある。
+BFF の処理をローカルの開発サーバーで確かめるときは、`dev:msw` で起動する。ログインは compose の上流の IdP のフェイク（`idp`）を Issuer として直に使い、Hydra とブローカーを通さない。セッションは compose の Valkey に置き、2 つの API へのリクエストは MSW のフェイクの handler（`src/mocks/`）が受ける。Go の API と PostgreSQL は立てない。設定は `.env.msw` にある。
 
 ```sh
 docker compose up -d --wait idp valkey
@@ -91,7 +91,7 @@ route は `src/routes/` のファイルから TanStack Router が生成する。
 - 画面の引数は、server function で操作ごとの形を確かめ、合わなければ 400 を返す。
 - 事業所に登録されていない職員は、`/auth/error?reason=forbidden` に案内を出す。
 
-サーバーが読む環境変数は、[全体の Design Doc の環境変数の表](../../docs/design/DesignDoc.md#環境変数) にある。ローカルの compose のように、ブラウザと web から届く IdP の URL が違うときは、`OIDC_AUTHORIZATION_ENDPOINT` でブラウザを転送する認可の URL を渡す。
+サーバーが読む環境変数は、[全体の Design Doc の環境変数の表](../../docs/design/DesignDoc.md#環境変数) にある。ブラウザと web から届く Issuer の URL が違い、discovery の文書の認可のエンドポイントにブラウザが届かないときは、`OIDC_AUTHORIZATION_ENDPOINT` でブラウザを転送する認可の URL を渡す。
 
 `/healthz` はプロセスが動いていれば 200 を、`/readyz` は Valkey に届けば 200、届かなければ 503 を返す。
 

@@ -13,7 +13,7 @@ pnpm install
 docker compose up --build --wait
 ```
 
-`http://localhost:3000` を開き、IdP のログインの画面で名前に `dev-aoki` を入れる。ポート、ログイン、データの消し方は、[CONTRIBUTING.md](CONTRIBUTING.md) の「ローカル環境で全体を起動する」にある。
+`http://localhost:3000` を開き、ブローカーのログインの画面でメールに `hina.aoki@example.com` を入れ、上流の IdP のフェイクの画面で同じメールを確認済みのクレームにして入る。ポート、ログイン、データの消し方は、[CONTRIBUTING.md](CONTRIBUTING.md) の「ローカル環境で全体を起動する」にある。
 
 ## 文書
 

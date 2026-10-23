@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test'
 
-import { LOGIN_NAME, LOGIN_STAFF } from '../../fixtures/env'
+import { LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
-import { signInAtIdp } from '../../screens/login'
+import { signInAtBroker } from '../../screens/login'
 
 test.describe('予定のカレンダー', () => {
   test.describe('予定の作成', () => {
@@ -20,7 +20,7 @@ test.describe('予定のカレンダー', () => {
           },
           async (page) => {
             await page.goto('/schedule')
-            await signInAtIdp(page, LOGIN_NAME)
+            await signInAtBroker(page, LOGIN_EMAIL)
           },
           async ({ page, step, check }) => {
             // 字幕は開いた画面の sessionStorage に置くので、画面を開いてから最初の字幕を出す
@@ -50,7 +50,7 @@ test.describe('予定のカレンダー', () => {
           },
           async (page) => {
             await page.goto('/schedule')
-            await signInAtIdp(page, LOGIN_NAME)
+            await signInAtBroker(page, LOGIN_EMAIL)
           },
           async ({ page, step, check }) => {
             // 破棄の確認は window.confirm で、録画に映らない。出た回数を数えて字幕に出す

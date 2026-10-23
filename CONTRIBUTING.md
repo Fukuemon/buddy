@@ -55,13 +55,13 @@ apm lifecycle trust
 
 ## ローカル環境で全体を起動する
 
-画面、2 つの API、PostgreSQL、Valkey、開発用の OIDC の IdP、calendarpit、gcalhold は、リポジトリのルートの `compose.yml` で一緒に起動する。Docker が要る。
+画面、2 つの API、認証のブローカー、Hydra、PostgreSQL、Valkey、事業所の上流の IdP のフェイク、calendarpit、gcalhold は、リポジトリのルートの `compose.yml` で一緒に起動する。Docker が要る。
 
 ```sh
 docker compose up --build --wait
 ```
 
-`--wait` は、全てのサービスのヘルスチェックが通るまで待つ。予定の API は、起動の前にマイグレーションとシードを適用する。シードは、事業所のレコードが既にあれば適用しない。
+`--wait` は、全てのサービスのヘルスチェックが通るまで待つ。予定の API とブローカーは、起動の前にマイグレーションとシードを適用する。シードは、予定の API では事業所が、ブローカーでは職員が既にあれば適用しない。Hydra は起動の前にマイグレーションを適用し、初期化のコンテナが web と予定の API のクライアントを登録する。
 
 ポートは `127.0.0.1` にだけ公開する。
 
@@ -70,32 +70,33 @@ docker compose up --build --wait
 | web | `http://localhost:3000` | `WEB_PORT` |
 | schedule | `http://localhost:8080` | `SCHEDULE_PORT` |
 | receipt | `http://localhost:8090` | `RECEIPT_PORT` |
-| idp | `http://localhost:9000/buddy` | `IDP_PORT` |
+| broker（ログインの画面） | `http://localhost:8100` | `BROKER_PORT` |
+| hydra（public API と admin API） | `http://localhost:4444`、`http://localhost:4445` | `HYDRA_PUBLIC_PORT`、`HYDRA_ADMIN_PORT` |
+| idp（上流の IdP のフェイク。事業所ごとに `/office-a`、`/office-b`） | `http://localhost:9000` | `IDP_PORT` |
 | postgres | `localhost:15432` | `POSTGRES_PORT` |
 | valkey | `localhost:6379` | `VALKEY_PORT` |
 | calendarpit（Google Calendar API と OAuth をローカル環境で再現する。管理の画面で職員のカレンダーと予定を見て、直す） | `http://localhost:4173` | `CALENDARPIT_PORT` |
 | gcalhold（予定の API と calendarpit の間の中継。E2E が Google の変更を予定の API に渡さないようにする） | `http://localhost:8085` | `GCALHOLD_PORT` |
 
-- IdP は navikt/mock-oauth2-server である。ログインの画面で入れた名前が `sub` になり、ほかのクレームは `compose/idp.json` の値になる。
-  - デフォルトのクレームは、シードの職員の青木 陽菜（組織 `org-sample`）を指す。ログインの画面のクレームの欄に書いた値は、`compose/idp.json` のクレームを上書きしない。
-  - シードは森 健太の `sub` を `dev-mori` に結び付けてあるので、名前に `dev-mori` を入れると森 健太（チームリーダー）として入る。ほかの職員で入るときは、DB でその職員の `users.sub` に入れた名前で入る。
-  - 予定の API は、初回のログインで `sub` を職員に結び付ける。一度結び付いた名前は、その職員として扱う。
-  - シードは、事業所のレコードが無い空の DB にだけ適用される。シードを変えた後は、`docker compose down -v` で DB を作り直す。
-- API が受けるトークンの `iss` は `http://idp:9000/buddy` である。IdP は `iss` をトークンのリクエストの Host から決めるため、トークンはコンテナの間の名前 `idp` で取る。
-- `http://localhost:3000` を開くと IdP のログインの画面へ移る。名前に `dev-aoki` を入れると、青木 陽菜としてログインする。
+- `http://localhost:3000` を開くと、Hydra を通ってブローカーのログインの画面へ移る。メールに `hina.aoki@example.com` を入れると、事業所の上流の IdP のフェイクのログインの画面へ移る。
+  - フェイクは navikt/mock-oauth2-server である。名前に入れた値が上流の `sub` になり、クレームの欄に書いた JSON が ID token のクレームになる。
+  - クレームの欄に `{"email": "hina.aoki@example.com", "email_verified": true}` を書いて入ると、青木 陽菜（マネージャー）としてログインする。メールを入れなかったり、ブローカーで入れたメールと違ったりすると、ログインの失敗の画面になる。
+  - ブローカーは、初回のログインで上流の `iss` と `sub` を職員に結び付ける。以後、同じ職員には同じ名前で入る。
+- シードの職員は、ブローカーと予定の API で同じ ID を持つ。メールは次のとおり。
+  - 1 つ目の事業所（組織 `org-sample`）: `hina.aoki@example.com`（青木 陽菜、マネージャー）、`kenta.mori@example.com`（森 健太、チームリーダー）
+    - ほかに `sakura.hayashi@example.com` と `misaki.sato@example.com` がいる
+  - 2 つ目の事業所（組織 `org-sample-b`）: `nagisa.ueno@example.com`（上野 渚、マネージャー）
+  - シードは、空の DB にだけ適用される。シードを変えた後と、ブローカーの無い前の compose で作った DB は、`docker compose down -v` で作り直す。
+- API が受けるトークンの `iss` は `http://hydra:4444` である。web と 2 つの API は、コンテナの間の名前 `hydra` で Hydra の discovery の文書と JWKS を読む。
 - 照合の API は、calendarpit の森 健太のカレンダーを読む。読むカレンダーは `compose/receipt-calendars.json` にある。
   - 照合の画面で、予定の取り方に「Google カレンダー」を、対象の月に `2026-11` を選ぶと、`compose/calendarpit/fixture.json` の森のその月の予定で照合できる。
 - データを消して最初からにするときは、`docker compose down -v` で PostgreSQL と calendarpit のボリュームを消す。
-- 別の worktree で同時に起動するときは、`docker compose -p <名前> up --build --wait` でプロジェクトの名前を変え、上の表の環境変数でポートをずらす。コンテナ、ボリューム、予定の API のイメージがプロジェクトごとに分かれる。E2E は `E2E_BASE_URL`、`E2E_CALENDARPIT_URL`、`E2E_GCALHOLD_URL` を合わせて流す。
+- 別の worktree で同時に起動するときは、`docker compose -p <名前> up --build --wait` でプロジェクトの名前を変え、上の表の環境変数でポートをずらす。コンテナ、ボリューム、予定の API のイメージがプロジェクトごとに分かれる。E2E は `E2E_BASE_URL`、`E2E_CALENDARPIT_URL`、`E2E_GCALHOLD_URL`、`E2E_HYDRA_URL` を合わせて流す。
 
-予定の API を手で呼ぶときは、認可コードのフローでトークンを取る。
+予定の API を手で呼ぶときは、`compose/dev-token.sh` でトークンを取る。ブラウザの代わりに、Hydra、ブローカー、上流の IdP のフェイクの画面を curl で順に通り、引数のメールの職員の access token を書く。ポートを変えて起動したときは、同じ環境変数を渡す。
 
 ```sh
-CODE=$(curl -s -o /dev/null -w '%{redirect_url}' -X POST \
-  'localhost:9000/buddy/authorize?client_id=web&response_type=code&redirect_uri=http://localhost:3000/cb&scope=openid&state=s' \
-  -d username=dev-aoki | sed -E 's/.*code=([^&]+).*/\1/')
-TOKEN=$(docker compose exec -T idp wget -qO- --post-data "grant_type=authorization_code&code=$CODE&redirect_uri=http://localhost:3000/cb&client_id=web&client_secret=web-dev" \
-  http://idp:9000/buddy/token | jq -r .access_token)
+TOKEN=$(compose/dev-token.sh hina.aoki@example.com)
 curl -H "Authorization: Bearer $TOKEN" localhost:8080/v1/facilities/01M3TC5H00QV17BC0J9V3393ZP
 ```
 

@@ -30,10 +30,20 @@ type Config struct {
 	UpstreamIdPsFile string
 	// UpstreamClientSecretsFile は、組織の ID と、上流の IdP の client secret の対応（JSON）のパスである。シークレットとして渡す。
 	UpstreamClientSecretsFile string
+	// PublicURL は、ブラウザが開くブローカーの URL である。上流の IdP のコールバックの URL をここから作る。
+	PublicURL string
+	// UpstreamBrowserOrigin は、上流の IdP の認可の画面へ転送するときに、scheme とホストを替える origin である。
+	// ローカル環境のように、ブローカーが discovery を読む issuer にブラウザが届かないときだけ渡す。
+	UpstreamBrowserOrigin string
+	// ClientIPHeader は、ログインの試行を数える送り手のアドレスを読む、前段のプロキシが付けるヘッダーの名前である。
+	// 空なら接続の相手のアドレスを使う。ブローカーに前段のプロキシを通らずに届かないときだけ渡す。
+	ClientIPHeader string
+	// AutoConsentClients は、同意の画面を出さずに accept するクライアントの ID である。
+	AutoConsentClients []string
 }
 
 // Load は、getenv（本番では os.Getenv）から設定を読む。DB_USER、DB_PASSWORD、DB_NAME、HYDRA_ADMIN_URL、
-// UPSTREAM_IDPS_FILE、UPSTREAM_IDP_CLIENT_SECRETS_FILE は必須で、欠けているときは欠けた名前を並べたエラーを返す。
+// UPSTREAM_IDPS_FILE、UPSTREAM_IDP_CLIENT_SECRETS_FILE、PUBLIC_URL は必須で、欠けているときは欠けた名前を並べたエラーを返す。
 //
 // 読む環境変数とデフォルト値:
 //   - PORT: HTTP の待ち受けのポート。デフォルトは 8080
@@ -44,6 +54,10 @@ type Config struct {
 //   - HYDRA_ADMIN_URL: Hydra の admin API の URL
 //   - UPSTREAM_IDPS_FILE: 組織の ID と、上流の IdP の issuer と client ID の対応（JSON）のパス
 //   - UPSTREAM_IDP_CLIENT_SECRETS_FILE: 組織の ID と、上流の IdP の client secret の対応（JSON）のパス
+//   - PUBLIC_URL: ブラウザが開くブローカーの URL
+//   - UPSTREAM_IDP_BROWSER_ORIGIN: 上流の IdP の認可の画面へ転送するときに替える origin。無ければ替えない
+//   - CLIENT_IP_HEADER: ログインの試行を数える送り手のアドレスを読む、前段のプロキシが付けるヘッダーの名前。無ければ接続の相手のアドレス
+//   - AUTO_CONSENT_CLIENTS: 同意の画面を出さずに accept するクライアントの ID をカンマで区切った値。デフォルトは web
 func Load(getenv func(string) string) (Config, error) {
 	return load(getenv, true)
 }
@@ -73,10 +87,18 @@ func load(getenv func(string) string, broker bool) (Config, error) {
 		HydraAdminURL:             strings.TrimSpace(getenv("HYDRA_ADMIN_URL")),
 		UpstreamIdPsFile:          strings.TrimSpace(getenv("UPSTREAM_IDPS_FILE")),
 		UpstreamClientSecretsFile: strings.TrimSpace(getenv("UPSTREAM_IDP_CLIENT_SECRETS_FILE")),
+		PublicURL:                 strings.TrimSuffix(strings.TrimSpace(getenv("PUBLIC_URL")), "/"),
+		UpstreamBrowserOrigin:     strings.TrimSpace(getenv("UPSTREAM_IDP_BROWSER_ORIGIN")),
+		ClientIPHeader:            strings.TrimSpace(getenv("CLIENT_IP_HEADER")),
+	}
+	for _, id := range strings.Split(get("AUTO_CONSENT_CLIENTS", "web"), ",") {
+		if id = strings.TrimSpace(id); id != "" {
+			c.AutoConsentClients = append(c.AutoConsentClients, id)
+		}
 	}
 	required := []string{"DB_USER", "DB_PASSWORD", "DB_NAME"}
 	if broker {
-		required = append(required, "HYDRA_ADMIN_URL", "UPSTREAM_IDPS_FILE", "UPSTREAM_IDP_CLIENT_SECRETS_FILE")
+		required = append(required, "HYDRA_ADMIN_URL", "UPSTREAM_IDPS_FILE", "UPSTREAM_IDP_CLIENT_SECRETS_FILE", "PUBLIC_URL")
 	}
 	var missing []string
 	for _, key := range required {
@@ -92,8 +114,16 @@ func load(getenv func(string) string, broker bool) (Config, error) {
 			return Config{}, fmt.Errorf("ポート %q は 1 から 65535 の数にする", p)
 		}
 	}
-	if u, err := url.Parse(c.HydraAdminURL); broker && (err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "") {
-		return Config{}, fmt.Errorf("HYDRA_ADMIN_URL %q は http か https の URL にする", c.HydraAdminURL)
+	if broker {
+		for _, v := range []struct{ key, value string }{
+			{"HYDRA_ADMIN_URL", c.HydraAdminURL},
+			{"PUBLIC_URL", c.PublicURL},
+			{"UPSTREAM_IDP_BROWSER_ORIGIN", c.UpstreamBrowserOrigin},
+		} {
+			if u, err := url.Parse(v.value); v.value != "" && (err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "") {
+				return Config{}, fmt.Errorf("%s %q は http か https の URL にする", v.key, v.value)
+			}
+		}
 	}
 	if err := c.LogLevel.UnmarshalText([]byte(get("LOG_LEVEL", "info"))); err != nil {
 		return Config{}, errors.New("LOG_LEVEL は debug、info、warn、error のいずれかにする")

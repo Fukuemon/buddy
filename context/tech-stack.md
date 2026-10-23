@@ -41,7 +41,7 @@ status: stable
 | Git のフック、コミットの形式 | lefthook、commitlint | `package.json` |
 | スキルとフックの配置 | apm | `mise.toml`、パッケージは `apm.yml` と `apm.lock.yaml` |
 | エビデンスの動画の添付 | gh | `mise.toml`。CI のワークフローは mise で入れず、ランナーの gh を使う |
-| ローカル環境の全体の起動 | Docker Compose（PostgreSQL、Valkey、mock-oauth2-server、calendarpit） | `compose.yml` のイメージのタグ |
+| ローカル環境の全体の起動 | Docker Compose（PostgreSQL、Valkey、Ory Hydra、mock-oauth2-server、calendarpit） | `compose.yml` のイメージのタグ |
 | 実行のイメージ | distroless（API、ブローカー）、`node:24-slim`（web） | `services/*/Dockerfile` |
 
 - パッケージマネージャーが管理しないツールは、次の場所で固定する。

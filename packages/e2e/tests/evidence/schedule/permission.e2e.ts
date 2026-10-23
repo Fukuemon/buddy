@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test'
 
 import { prepareApiReference, routeApiReference } from '../../fixtures/apiReference'
-import { LEADER, LOGIN_NAME, LOGIN_STAFF } from '../../fixtures/env'
+import { LEADER, LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
-import { signInAtIdp } from '../../screens/login'
+import { signInAtBroker } from '../../screens/login'
 import { fillApiToken, fillApiVariable, openApiClient } from '../../screens/apiReference'
 import { apiClient } from '../../selectors/apiReference'
 
@@ -35,7 +35,7 @@ test.describe('予定のカレンダー', () => {
           },
           async (page) => {
             await page.goto('/schedule')
-            await signInAtIdp(page, LOGIN_NAME)
+            await signInAtBroker(page, LOGIN_EMAIL)
           },
           async ({ page, step, check }) => {
             await page.goto(`/schedule?view=day&date=${AOKI_CONFERENCE.date}`)
@@ -65,7 +65,7 @@ test.describe('予定のカレンダー', () => {
           },
           async (page) => {
             await page.goto('/schedule')
-            await signInAtIdp(page, LEADER.loginName)
+            await signInAtBroker(page, LEADER.email)
           },
           async ({ page, step, check }) => {
             await page.goto(`/schedule?view=day&date=${AOKI_CONFERENCE.date}`)
@@ -106,7 +106,7 @@ test.describe('予定のカレンダー', () => {
             actor: `${LEADER.staff.name}（チーム B のリーダー）`,
             variant,
           },
-          prepareApiReference('schedule', LEADER.loginName),
+          prepareApiReference('schedule', LEADER.email),
           async ({ page, step, check }, token) => {
             await routeApiReference(page)
             await openApiClient(page, 'schedule', {

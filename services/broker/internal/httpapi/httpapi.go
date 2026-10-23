@@ -1,4 +1,4 @@
-// Package httpapi は、ブローカーの HTTP のハンドラを持つ。今はヘルスチェックだけを持ち、ログインと同意の画面は後から足す。
+// Package httpapi は、ブローカーの HTTP のハンドラを持つ。ヘルスチェックを持ち、ログインと同意の画面を login のハンドラに渡す。
 package httpapi
 
 import (
@@ -13,13 +13,15 @@ type Config struct {
 	Logger *slog.Logger
 	// Ready は GET /readyz が依存先を確かめる関数で、nil なら常にリクエストを受けられるとみなす。
 	Ready func(context.Context) error
+	// Login は、/login と /consent の下の画面のハンドラである。nil なら、これらのパスは 404 を返す。
+	Login http.Handler
 }
 
 type status struct {
 	Status string `json:"status"`
 }
 
-// NewHandler は、GET /healthz と GET /readyz を持つ http.Handler を返す。
+// NewHandler は、GET /healthz と GET /readyz と、cfg.Login の画面を持つ http.Handler を返す。
 // /healthz は依存先を確かめずに 200 を返し、/readyz は cfg.Ready が失敗すれば 503 を返す。
 func NewHandler(cfg Config) http.Handler {
 	mux := http.NewServeMux()
@@ -36,6 +38,11 @@ func NewHandler(cfg Config) http.Handler {
 		}
 		writeJSON(cfg.Logger, w, http.StatusOK, status{"ok"})
 	})
+	if cfg.Login != nil {
+		for _, p := range []string{"/login", "/login/", "/consent"} {
+			mux.Handle(p, cfg.Login)
+		}
+	}
 	return mux
 }
 

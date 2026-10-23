@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test'
 
-import { LOGIN_NAME, LOGIN_STAFF } from '../../fixtures/env'
+import { LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
-import { signInAtIdp } from '../../screens/login'
+import { signInAtBroker } from '../../screens/login'
 
 test.describe('予定のカレンダー', () => {
   test.describe('予定の作成と変更', () => {
@@ -25,7 +25,7 @@ test.describe('予定のカレンダー', () => {
           },
           async (page) => {
             await page.goto('/schedule')
-            await signInAtIdp(page, LOGIN_NAME)
+            await signInAtBroker(page, LOGIN_EMAIL)
           },
           async ({ page, step, check }) => {
             await page.goto('/schedule?view=day')

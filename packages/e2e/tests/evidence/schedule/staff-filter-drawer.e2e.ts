@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test'
 
-import { LEADER, LOGIN_NAME, LOGIN_STAFF } from '../../fixtures/env'
+import { LEADER, LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, PHONE_VIEWPORT, recordPrEvidence } from '../../fixtures/evidence'
-import { signInAtIdp } from '../../screens/login'
+import { signInAtBroker } from '../../screens/login'
 
 test.describe('予定のカレンダー', () => {
   test.describe('職員の絞り込みのドロワー', () => {
@@ -22,7 +22,7 @@ test.describe('予定のカレンダー', () => {
           },
           async (page) => {
             await page.goto('/schedule')
-            await signInAtIdp(page, LOGIN_NAME)
+            await signInAtBroker(page, LOGIN_EMAIL)
           },
           async ({ page, step, check }) => {
             await page.goto('/schedule?view=day')

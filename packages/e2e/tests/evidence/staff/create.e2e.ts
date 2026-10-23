@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 import { prepareApiReference, routeApiReference } from '../../fixtures/apiReference'
-import { LOGIN_NAME, LOGIN_STAFF } from '../../fixtures/env'
+import { LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import {
   fillApiBody,
@@ -51,7 +51,7 @@ test.describe('職員の管理', () => {
               actor: `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`,
               variant,
             },
-            prepareApiReference('schedule', LOGIN_NAME),
+            prepareApiReference('schedule', LOGIN_EMAIL),
             async ({ page, step, check }, token) => {
               await routeApiReference(page)
               await openApiClient(page, 'schedule', CREATE_USER)

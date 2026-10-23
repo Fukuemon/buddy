@@ -1,0 +1,4 @@
+[
+  { "org_id": "org-sample", "issuer": "http://idp:9000/office-a", "client_id": "buddy-broker" },
+  { "org_id": "org-sample-b", "issuer": "http://idp:9000/office-b", "client_id": "buddy-broker" }
+]

@@ -1,20 +1,23 @@
-// Command migrate は、埋め込んだマイグレーションをブローカーのデータベースに適用する。
+// Command migrate は、埋め込んだマイグレーションとシードをブローカーのデータベースに適用する。
 //
 // 使い方:
 //
 //	migrate up          未適用のマイグレーションをすべて適用する
 //	migrate down [N]    マイグレーションを N 版戻す。N のデフォルトは 1
+//	migrate seed        ダミーの職員を入れる。職員が既にいれば何もしない
 //
 // 接続の設定は、cmd/broker と同じ環境変数（DB_HOST、DB_PORT、DB_USER、DB_PASSWORD、DB_NAME）から読む。
 // 引数が誤っているときは終了コード 2、処理が失敗したときは 1 で終わる。
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
 	"strconv"
 
+	"github.com/Fukuemon/buddy/services/broker/db"
 	"github.com/Fukuemon/buddy/services/broker/internal/config"
 	"github.com/Fukuemon/buddy/services/broker/internal/postgres"
 )
@@ -39,6 +42,11 @@ func main() {
 			}
 		}
 		err = postgres.MigrateDown(cfg, steps)
+	case "seed":
+		var applied bool
+		if applied, err = postgres.Seed(context.Background(), cfg, db.Seed); err == nil && !applied {
+			slog.Info("skipped seed: staff already exist")
+		}
 	default:
 		usage()
 	}
@@ -49,7 +57,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: migrate up | down [N]")
+	fmt.Fprintln(os.Stderr, "usage: migrate up | down [N] | seed")
 	os.Exit(2)
 }
 

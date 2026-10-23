@@ -1,7 +1,7 @@
 ---
 type: design-doc
 title: buddy Design Doc
-description: web と予定の API と照合の API の責務と依存、業務の区切りとコンテナの対応、コンテナの間の契約、インフラとの約束
+description: web と予定の API と照合の API と認証のブローカーの責務と依存、業務の区切りとコンテナの対応、コンテナの間の契約、インフラとの約束
 status: draft
 ---
 
@@ -30,7 +30,7 @@ buddy は、訪問看護の事業所の職員が使う、予定の管理とレ�
 
 ## Assumptions and Constraints
 
-- 職員の IdP は事業所の外にあり、buddy は OIDC のブローカーが発行するトークンだけを受ける。
+- 職員の IdP は事業所ごとに違い、事業所の外にある。buddy は、自分の OIDC のブローカー（Hydra と認証のブローカー）が発行するトークンだけを受ける。
 - ブローカーは、事業所を組織として持ち、access token に組織の識別子を入れる。
 - 1 つの事業所の職員は 100 人前後で、同時に使う職員は事業所あたり数十人である。
 - 日付と時刻は日本の時間（Asia/Tokyo）だけを扱う。
@@ -47,18 +47,25 @@ buddy は、訪問看護の事業所の職員が使う、予定の管理とレ�
 ```mermaid
 flowchart TB
   staff(["事業所の職員<br/>[人]<br/>ブラウザで使う"])
-  broker["OIDC のブローカー<br/>[外部のシステム]<br/>外部の IdP の前に立つ"]
+  upstream["事業所の上流の IdP<br/>[外部のシステム]<br/>職員のアカウント"]
   subgraph buddy["buddy"]
+    hydra["Hydra<br/>[コンテナ: Ory Hydra]<br/>トークンの発行"]
+    broker["broker<br/>[コンテナ: Go]<br/>ログインと同意、職員の身元"]
     web["web<br/>[コンテナ: TanStack Start]<br/>画面と BFF"]
     valkey[("Valkey<br/>[データの保存先]<br/>web のセッション")]
     schedule["schedule<br/>[コンテナ: Go]<br/>事業所、職員、予定、権限"]
     receipt["receipt<br/>[コンテナ: Go]<br/>照合"]
-    postgres[("PostgreSQL 18<br/>[データの保存先]<br/>予定の API のデータ")]
+    postgres[("PostgreSQL 18<br/>[データの保存先]<br/>予定の API、ブローカー、Hydra のデータ")]
   end
   gcal["Google Calendar API<br/>[外部のシステム]<br/>職員のカレンダーの予定"]
   staff -- "画面を使う" --> web
-  staff -- "ログインする" --> broker
-  web -- "認可コードフロー" --> broker
+  staff -- "メールを入れる" --> broker
+  staff -- "ログインする" --> upstream
+  web -- "認可コードフロー" --> hydra
+  hydra -- "ログインと同意を求める" --> broker
+  broker -- "OIDC の RP" --> upstream
+  broker -- "SQL" --> postgres
+  hydra -- "SQL" --> postgres
   web -- "セッションを読み書きする" --> valkey
   web -- "access token を付けて呼ぶ" --> schedule
   web -- "access token を付けて呼ぶ" --> receipt
@@ -69,13 +76,13 @@ flowchart TB
   classDef container fill:#438dd5,stroke:#2e6295,color:#fff
   classDef external fill:#8a8a8a,stroke:#6b6b6b,color:#fff
   class staff person
-  class web,valkey,schedule,receipt,postgres container
-  class broker,gcal external
+  class hydra,broker,web,valkey,schedule,receipt,postgres container
+  class upstream,gcal external
   style buddy fill:none,stroke:#0b4884,stroke-dasharray:5 5
 ```
 
 矢印ごとの約束は、[コンテナの間の契約](#コンテナの間の契約) にある。  
-図に描いていない流れが 1 つある。予定の API と照合の API は、access token を検証するために、ブローカーの JWKS を読む。
+図に描いていない流れが 2 つある。予定の API と照合の API は、access token を検証するために、Hydra の JWKS を読む。ブローカーは、ログインと同意の結果を Hydra の admin API に返す。
 
 ### 業務の区切りとコンテナ
 
@@ -99,6 +106,16 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 - API を呼ぶときに、セッションの access token を付ける。
 - 持たないもの: 業務の規則と認可の判定。
   - web は職員の権限を画面の出し分けに使うが、リクエストを拒否するのは API である。
+
+### 認証のブローカーと Hydra
+
+- Hydra は、認可コード、トークンの発行、JWKS、refresh token の回転を持つ。web と 2 つの API から見える Issuer は Hydra だけである。
+- ブローカーは、Hydra の login and consent app として、ログインと同意の画面を持つ。入れたメールから職員と事業所を決め、事業所の上流の IdP へ RP として転送し、上流のアカウントを職員に結び付ける。
+- ブローカーは、職員の ID、メール、所属の事業所、有効か停止か、上流のアカウントを持つ。access token の `sub` は職員の ID で、予定の API の `users.sub` に入る。
+- 持たないもの: 職員の名前、役職、権限。予定の API が持つ。
+  - ADR-0016: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](../adr/0016-id-broker-hydra.md)
+  - ADR-0017: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](../adr/0017-identity-boundary.md)
+- 内部の構成と流れは [認証のブローカーの Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md) にある。
 
 ### 予定の API
 
@@ -128,13 +145,15 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
   - cookie にはセッションの ID を入れ、トークンは入れない。
   - 画面の操作は、web のサーバーの関数（BFF）を呼ぶ。API はブラウザから直接は呼ばれない。
   - 例外は、開発者がローカルで文書のサイトの API の仕様のページから、ローカルの API を試すときだけである。API は `CORS_ALLOW_ORIGINS` に挙げたオリジンにだけ CORS のヘッダーを返し、ローカルの compose は、web とローカルの文書のサイトのオリジンを挙げる。
-- ブラウザとブローカー: ログインのときだけ、web がブラウザをブローカーの認可の画面へ転送する。
-- web とブローカー: 認可コードフローでトークンを取得し、更新する。トークンは Valkey のセッションに置く。
+- ブラウザと Hydra とブローカー: ログインのときだけ、web がブラウザを Hydra の認可の画面へ転送し、Hydra がブローカーのログインの画面へ転送する。ブローカーは、職員の事業所の上流の IdP へ転送する。
+- web と Hydra: 認可コードフローでトークンを取得し、更新する。トークンは Valkey のセッションに置く。
+- ブローカーと Hydra: ブローカーが Hydra の admin API でログインと同意を accept か reject する。同意の accept で、access token の `aud`（`schedule`、`receipt`）と `org_id` を決める。
+- ブローカーと上流の IdP: 認可コードフローで ID token を取り、署名、`iss`、`aud`、`nonce` を確かめる。
 - web と予定の API、照合の API: `Authorization` に access token を Bearer で付ける。
   - 契約の正本は [予定の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/openapi.yaml) と [照合の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/openapi.yaml) である。サーバーの Go のコードと web の型は、そこから生成する。
   - 契約を変えるときの互換の規則は ADR-0003 にある。
   - ADR-0003: [git flow でマージし、アプリごとのバージョンでリリースする](../adr/0003-branch-and-release.md)
-- 予定の API、照合の API とブローカー: Issuer の discovery と JWKS を読み、access token を検証する。検証に失敗したら 401 を返す。
+- 予定の API、照合の API と Hydra: Issuer の discovery と JWKS を読み、access token を検証する。検証に失敗したら 401 を返す。
 - 照合の API、予定の API と Google Calendar API: 事業所ごとのサービスアカウントになりすました token で、そのアカウントに共有されたカレンダーの予定を読み書きする。サービスアカウントのキーは使わない。
   - ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](../adr/0012-google-calendar-facility-service-accounts.md)
   - 事業所は、リクエストの職員かトークンの組織から決める。リクエストを受けない書き出しと増分の取得は、結び付けたカレンダーのレコードの事業所で決める。
@@ -147,7 +166,8 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 
 #### コンテナのイメージ
 
-- アプリごとに 1 つのイメージを作る。web、予定の API、照合の API。
+- アプリごとに 1 つのイメージを作る。web、予定の API、照合の API、ブローカー。Hydra は Ory の公開のイメージを使う。
+- ブローカーのイメージは、ヘルスチェックのための `broker healthcheck` のサブコマンドを持つ。ブローカーの環境変数は [ブローカーの README](https://github.com/Fukuemon/buddy/blob/develop/services/broker/README.md#起動する) にある。
 - API のイメージは、ヘルスチェックのための `api healthcheck` のサブコマンドを持つ。
 - イメージは設定を持たず、全ての設定を環境変数で受ける。
 - プロセスは 1 つの HTTP のポートで待ち受け、ポートは環境変数 `PORT` で受ける。
@@ -158,7 +178,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 | --- | --- | --- | --- | --- |
 | `PORT` | 使う | 任意 | 任意 | 待ち受けるポート。API のデフォルトは `8080`。web のイメージは `3000` を入れる |
 | `LOG_LEVEL` | 使わない | 任意 | 任意 | ログの段階。デフォルトは `info` |
-| `OIDC_ISSUER` | 使う | 使う | 使う | ブローカーの Issuer の URL。JWKS の場所もここから求める |
+| `OIDC_ISSUER` | 使う | 使う | 使う | Hydra の Issuer の URL。JWKS の場所もここから求める |
 | `OIDC_AUDIENCE` | 使わない | 使う | 使う | access token の `aud` に求める値 |
 | `OIDC_ORG_CLAIM` | 使わない | 任意 | 任意 | access token で組織の ID を持つクレームの名前。デフォルトは `org_id` |
 | `OIDC_CLIENT_ID` | 使う | 使わない | 使わない | web のクライアントの ID |
@@ -189,14 +209,14 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 - Application Default Credentials で認証する主体に、事業所のサービスアカウントごとのトークン作成者のロール（`roles/iam.serviceAccountTokenCreator`）を付ける。プロジェクトでは IAM Service Account Credentials API を有効にする。予定の API のスコープは、書き出すとき（`GOOGLE_CALENDAR_EXPORT_ENABLED`）は `calendar.events`、ほかは `calendar.readonly` である。
 - 予定の API は、同じプロセスの中で予定の書き出しの処理を実行する。複数のレプリカで実行しても、同じ書き出しの待ちは 1 つのレプリカだけが書く（レコードのロックと期限）。
 
-シークレットは、`OIDC_CLIENT_SECRET`、`SESSION_SECRET`、`DB_PASSWORD`、Workload Identity Federation の外部アカウントの設定である。  
+シークレットは、`OIDC_CLIENT_SECRET`、`SESSION_SECRET`、`DB_PASSWORD`、Workload Identity Federation の外部アカウントの設定である。ブローカーでは、上流の IdP の client secret のファイルもシークレットである。  
 インフラのリポジトリが、シークレットの保存先から渡す。buddy のリポジトリには置かない。
 
 #### ヘルスチェック
 
 - `GET /healthz`: プロセスが動いていれば 200 を返す。依存先を確かめない。
 - `GET /readyz`: 依存先に届けば 200、届かなければ 503 を返す。予定の API は PostgreSQL、web は Valkey を確かめる。
-  - 照合の API は起動のときにブローカーの discovery を読み、読めなければ起動しない。起動した後は依存先を確かめず、プロセスが動いていれば 200 を返す。
+  - 照合の API は起動のときに Hydra の discovery を読み、読めなければ起動しない。起動した後は依存先を確かめず、プロセスが動いていれば 200 を返す。
 - 2 つとも認証を求めない。
 
 #### マイグレーション
@@ -205,19 +225,21 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
   - マイグレーションは、エントリポイントを `/usr/local/bin/migrate` にして `up` を渡すと適用して終わる。
 - マイグレーションは golang-migrate の形式で `services/schedule/db/migrations/` に置き、バイナリに埋め込む。
 - インフラは、新しいイメージを起動する前に、同じイメージで `migrate up` を 1 回実行する。マイグレーションは、前のバージョンのアプリが動いたまま適用できる変更だけにする。
+- ブローカーのイメージも、`broker` と `migrate` の 2 つのバイナリを持ち、同じ手順でマイグレーションを適用する。マイグレーションは `services/broker/db/migrations/` にある。
+- Hydra のマイグレーションは、Hydra のイメージの `migrate sql up` で適用する。
 
 ## Cross-Cutting Concerns
 
 ### 認証
 
-- 職員のログインは、web の BFF とブローカーの認可コードフローで行い、トークンはブラウザに渡さない。
+- 職員のログインは、web の BFF と Hydra の認可コードフローで行い、トークンはブラウザに渡さない。職員が上流の IdP で誰かを確かめるのは、ブローカーである。
   - ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにする](../adr/0001-auth.md)
 - 2 つの API は、access token の検証を同じ規則で行う。確かめる項目は、各 API の Design Doc にある。
 - 職員とログインのアカウントの結び付け方は、[職員とログイン](https://github.com/Fukuemon/buddy/blob/develop/context/domain/staff-login.md) にある。
 
 ### 事業所の分離
 
-- 事業所は、ブローカーの組織に対応する。
+- 事業所は、ブローカーの組織に対応する。ブローカーは、職員の事業所の組織の ID を access token の `org_id` に入れる。
 - 予定の API は、リクエストが指す事業所がトークンの組織の事業所と違えば、403 を返す。
   - 拒否する規則は [事業所の分離](https://github.com/Fukuemon/buddy/blob/develop/context/domain/facility.md) に、パスの形は [予定の管理の Design Doc の Interface](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#interface) にある。
 - 照合の API は、カレンダーに組織を結び付け、トークンの組織のカレンダーだけを読む。予定の CSV での照合は、組織を問わない。
@@ -244,9 +266,12 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 │   ├── schedule/        # 予定の API。Go、gin、sqlc、golang-migrate
 │   │   ├── DesignDoc.md # 予定の管理の Design Doc
 │   │   └── db/          # マイグレーション、クエリ、シード
-│   └── receipt/         # 照合の API。Go
-│       ├── DesignDoc.md # レセプトの照合の Design Doc
-│       └── tools/       # 元の照合のアプリと結果を比べるスクリプト
+│   ├── receipt/         # 照合の API。Go
+│   │   ├── DesignDoc.md # レセプトの照合の Design Doc
+│   │   └── tools/       # 元の照合のアプリと結果を比べるスクリプト
+│   └── broker/          # 認証のブローカー。Go、go-oidc
+│       ├── DesignDoc.md # 認証のブローカーの Design Doc
+│       └── db/          # マイグレーションとシード
 ├── packages/
 │   ├── ui/              # デザインシステム。トークン、Base と Case のコンポーネント、Storybook
 │   │   └── DESIGN.md    # デザインシステムの設計
@@ -267,7 +292,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 ├── context/             # 作業の中で参照する規約と事実
 ├── scripts/             # 生成物と画面仕様書のチェック、サイトのビルド
 ├── compose.yml          # ローカル環境で全体を起動する
-├── compose/             # ローカルの IdP の設定、calendarpit の fixture と同意のスクリプト、サービスアカウントの対応のダミー
+├── compose/             # Hydra とブローカーの設定、calendarpit の fixture と同意のスクリプト、サービスアカウントの対応のダミー
 ├── zensical.toml
 └── pyproject.toml       # Zensical を uv で入れる
 ```

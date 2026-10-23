@@ -12,6 +12,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5" // pgx5:// のドライバーを登録する
 	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Fukuemon/buddy/services/broker/db"
@@ -95,4 +96,33 @@ func MigrateDown(c Config, steps int) error {
 		return fmt.Errorf("migrate down: %w", err)
 	}
 	return nil
+}
+
+// Seed は、ダミーの職員を 1 つのトランザクションで入れ、入れたら true を返す。職員が 1 人でもいれば、
+// 何もせず false を返す。compose が起動のたびに適用しても、入れたデータと手で足したデータを壊さないためである。
+func Seed(ctx context.Context, c Config, seed []byte) (bool, error) {
+	conn, err := pgx.Connect(ctx, c.URL("postgres"))
+	if err != nil {
+		return false, fmt.Errorf("open postgres: %w", err)
+	}
+	defer func() { _ = conn.Close(context.WithoutCancel(ctx)) }()
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return false, fmt.Errorf("begin seed: %w", err)
+	}
+	defer func() { _ = tx.Rollback(context.WithoutCancel(ctx)) }()
+	var seeded bool
+	if err := tx.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM staff)").Scan(&seeded); err != nil {
+		return false, fmt.Errorf("check seed: %w", err)
+	}
+	if seeded {
+		return false, nil
+	}
+	if _, err := tx.Exec(ctx, string(seed)); err != nil {
+		return false, fmt.Errorf("seed: %w", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return false, fmt.Errorf("commit seed: %w", err)
+	}
+	return true, nil
 }
