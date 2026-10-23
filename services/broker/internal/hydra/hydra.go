@@ -1,5 +1,5 @@
 // Package hydra は、Ory Hydra の admin API のうち、ログインと同意の要求を読み、accept と reject を返す呼び出しと、
-// 職員のログインのセッションと同意を取り消す呼び出しを持つ（ADR-0016、ADR-0017）。
+// ログアウトの要求を accept する呼び出しと、職員のログインのセッションと同意を取り消す呼び出しを持つ（ADR-0016、ADR-0017）。
 package hydra
 
 import (
@@ -121,6 +121,11 @@ func (c *Client) AcceptConsent(ctx context.Context, challenge string, body Accep
 // RejectConsent は、同意を拒み、ブラウザを転送する先を返す。
 func (c *Client) RejectConsent(ctx context.Context, challenge string, body Rejection) (string, error) {
 	return c.redirect(ctx, "/admin/oauth2/auth/requests/consent/reject", "consent_challenge", challenge, body)
+}
+
+// AcceptLogout は、ログアウトを受け入れ、ブラウザを転送する先を返す。Hydra は、ブラウザのログインのセッションを消す。
+func (c *Client) AcceptLogout(ctx context.Context, challenge string) (string, error) {
+	return c.redirect(ctx, "/admin/oauth2/auth/requests/logout/accept", "logout_challenge", challenge, nil)
 }
 
 // RevokeLoginSessions は、職員 subject のログインのセッションを全て消す。Hydra は、次の認可でログインの画面を呼ぶ。

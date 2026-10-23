@@ -71,6 +71,18 @@ func TestAcceptConsent(t *testing.T) {
 	}
 }
 
+func TestAcceptLogout(t *testing.T) {
+	var calls []call
+	c := fakeAdmin(t, http.StatusOK, `{"redirect_to":"http://hydra/next"}`, &calls)
+	to, err := c.AcceptLogout(context.Background(), "ch")
+	if err != nil || to != "http://hydra/next" {
+		t.Fatalf("to = %q, err = %v", to, err)
+	}
+	if calls[0] != (call{http.MethodPut, "/admin/oauth2/auth/requests/logout/accept", "logout_challenge=ch", ""}) {
+		t.Errorf("call = %+v", calls[0])
+	}
+}
+
 func TestErrors(t *testing.T) {
 	tests := []struct {
 		name   string
