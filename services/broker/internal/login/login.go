@@ -27,10 +27,12 @@ import (
 const rememberFor = 12 * 60 * 60
 
 // 職員の状態。有効な職員にだけトークンを出す。登録の途中の職員は、予定の API が職員を書き終えると有効になる。
+// 止めた職員（StatusSuspended）は休職で、復職で有効に戻る。退職した職員（StatusRetired）はメールと上流のアカウントを持たず、戻らない。
 const (
 	StatusPending   = "pending"
 	StatusActive    = "active"
 	StatusSuspended = "suspended"
+	StatusRetired   = "retired"
 )
 
 // UpstreamAccount は、職員に結び付けた上流の IdP のアカウントである。結び付けていなければ値は空である。
@@ -39,7 +41,7 @@ type UpstreamAccount struct {
 	Subject string
 }
 
-// StaffMember は、ブローカーが身元を持つ職員である。
+// StaffMember は、ブローカーが身元を持つ職員である。退職した職員の Email は空である。
 type StaffMember struct {
 	ID       string
 	OrgID    string
@@ -61,7 +63,7 @@ type Staff interface {
 	FindByEmail(ctx context.Context, email string) ([]StaffMember, error)
 	// Get は、ID が id の職員を返す。いなければ ErrNotFound を返す。
 	Get(ctx context.Context, id string) (StaffMember, error)
-	// Link は、職員 staffID に上流のアカウントを結び付ける。結び付けられないときは ErrConflict を返す。
+	// Link は、有効な職員 staffID に上流のアカウントを結び付ける。結び付けられないときと、職員が有効でないときは ErrConflict を返す。
 	Link(ctx context.Context, staffID string, a UpstreamAccount) error
 }
 

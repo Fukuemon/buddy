@@ -8,7 +8,7 @@
 
 | Name                                                          | Columns | Comment                                                                         | Type       |
 | ------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------- | ---------- |
-| [public.users](public.users.md)                               | 12      | 職員                                                                            | BASE TABLE |
+| [public.users](public.users.md)                               | 14      | 職員                                                                            | BASE TABLE |
 | [public.recurring_schedules](public.recurring_schedules.md)   | 19      | 繰り返しの予定と、その規則                                                      | BASE TABLE |
 | [public.schedules](public.schedules.md)                       | 16      | 予定                                                                            | BASE TABLE |
 | [public.external_calendars](public.external_calendars.md)     | 8       | 取り込む外部のカレンダーと、その持ち主の職員。外していないものは職員ごとに 1 つ | BASE TABLE |
@@ -47,7 +47,9 @@ erDiagram
   text position_id
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
-  timestamp_with_time_zone suspended_at
+  timestamp_with_time_zone leave_started_at
+  date leave_return_date
+  timestamp_with_time_zone retired_at
 }
 "public.recurring_schedules" {
   text id

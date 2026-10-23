@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
 )
@@ -20,18 +21,43 @@ const (
 
 // Staff は、事業所の職員である。Sub は、登録のときにブローカーが発行した職員の ID で、access token の sub になる。
 // ブローカーで職員を作る前に登録した職員では nil のことがある。PhoneNumber は、先頭に "+" を付けた数字の列である。
-// SuspendedAt は職員を止めた時刻で、止めていなければ nil である。
+// LeaveStartedAt は休職にした時刻で、休職でなければ nil である。LeaveReturnDate は戻る予定の日のメモで、その日に自動では戻さない。
+// RetiredAt は退職にした時刻で、退職していなければ nil である。退職した職員は、Email が空で、PhoneNumber が nil である（ADR-0018）。
 type Staff struct {
-	ID           string
-	Sub          *string
-	Username     string
-	Email        string
-	PhoneNumber  *string
-	FacilityID   string
-	DepartmentID string
-	TeamID       string
-	PositionID   string
-	SuspendedAt  *time.Time
+	ID              string
+	Sub             *string
+	Username        string
+	Email           string
+	PhoneNumber     *string
+	FacilityID      string
+	DepartmentID    string
+	TeamID          string
+	PositionID      string
+	LeaveStartedAt  *time.Time
+	LeaveReturnDate *civil.Date
+	RetiredAt       *time.Time
+}
+
+// Status は、職員が有効か、休職か、退職かである。
+type Status string
+
+// 職員の状態。有効な職員だけがログインでき、予定のカレンダーと予定の候補に出る。
+const (
+	StatusActive  Status = "active"
+	StatusOnLeave Status = "on_leave"
+	StatusRetired Status = "retired"
+)
+
+// Status は、職員の状態を返す。
+func (s Staff) Status() Status {
+	switch {
+	case s.RetiredAt != nil:
+		return StatusRetired
+	case s.LeaveStartedAt != nil:
+		return StatusOnLeave
+	default:
+		return StatusActive
+	}
 }
 
 // NewParams は、New に渡す職員の属性である。
@@ -173,7 +199,12 @@ type ListQuery struct {
 //
 // FindIDBySub は、Sub が sub の職員の ID を返す。
 //
-// Suspend は、職員を止めた時刻を書く。止めた職員を止め直しても、最初に止めた時刻を残す。
+// StartLeave は、職員を休職にした時刻と戻る予定の日を書く。休職の職員を休職にし直しても、最初に休職にした時刻を残し、
+// 戻る予定の日だけを書き換える。EndLeave は、休職を外す。Retire は、職員を退職にし、メールと電話番号を消す。
+// 退職し直しても、最初に退職にした時刻を残す。StartLeave と EndLeave は、退職した職員では apperr.ErrConflict を返す。
+//
+// LockFacility は、トランザクションが終わるまで、事業所の職員の休職と退職をほかのトランザクションに待たせる。
+// ActiveManagers は、事業所で職員の管理の権限を持つ有効な職員の ID を返す。
 //
 // ChangePosition は、職員の役職を positionID にし、職員の権限と対象を全て消してから grants を書く。
 //
@@ -187,14 +218,74 @@ type Repository interface {
 	Get(ctx context.Context, id string) (Detail, error)
 	ListByFacility(ctx context.Context, facilityID string, q ListQuery) ([]Summary, error)
 	FindIDBySub(ctx context.Context, sub string) (string, error)
-	Suspend(ctx context.Context, id string) error
+	StartLeave(ctx context.Context, id string, returnDate *civil.Date) error
+	EndLeave(ctx context.Context, id string) error
+	Retire(ctx context.Context, id string) error
+	LockFacility(ctx context.Context, facilityID string) error
+	ActiveManagers(ctx context.Context, facilityID string) ([]string, error)
 }
+
+// AssignedSchedule は、職員に割り振った単発の予定である。
+type AssignedSchedule struct {
+	ID        string
+	Date      civil.Date
+	StartTime civil.Time
+	EndTime   civil.Time
+}
+
+// AssignedRecurring は、職員に割り振った繰り返しの予定である。Date は最初の回の日付で、EndDate は終了日である。
+type AssignedRecurring struct {
+	ID        string
+	Date      civil.Date
+	EndDate   *civil.Date
+	StartTime civil.Time
+	EndTime   civil.Time
+}
+
+// AssignedPatient は、職員が主に担当する利用者である。
+type AssignedPatient struct {
+	ID   string
+	Name string
+}
+
+// Assignments は、職員を休職か退職にするときに残る、その日以降の予定、繰り返しの予定、担当の利用者である。
+// 予定と繰り返しの予定は、職員が予定の職員、主訪問者、同行者のどれかのものである。キャンセルした予定は含めない。
+type Assignments struct {
+	Schedules []AssignedSchedule
+	Recurring []AssignedRecurring
+	Patients  []AssignedPatient
+}
+
+// Empty は、残る予定と担当の利用者が無いかを返す。
+func (a Assignments) Empty() bool {
+	return len(a.Schedules) == 0 && len(a.Recurring) == 0 && len(a.Patients) == 0
+}
+
+// AssignmentReader は、ほかの機能のデータから、職員に残る予定と担当の利用者を読む。
+type AssignmentReader interface {
+	// From は、事業所 facilityID の職員 staffID の、from 以降の予定と、from 以降に終わる繰り返しの予定と、担当の利用者を返す。
+	From(ctx context.Context, facilityID, staffID string, from civil.Date) (Assignments, error)
+}
+
+// AssignedError は、予定か担当の利用者が残る職員を退職にしようとしたことを示す。
+type AssignedError struct {
+	Assignments Assignments
+}
+
+func (e *AssignedError) Error() string {
+	return "予定か担当の利用者が残る職員は退職にできません。別の職員に割り振り直してください"
+}
+
+// Unwrap は、apperr.ErrConflict を返す。
+func (e *AssignedError) Unwrap() error { return apperr.ErrConflict }
 
 var (
 	// ErrEmailTaken は、登録しようとしたメールの職員が、ブローカーでほかの事業所にいることを示す。
 	ErrEmailTaken = errors.New("同じメールの職員がほかの事業所にいる")
-	// ErrIdentitySuspended は、登録か有効化しようとしたブローカーの職員が止められていることを示す。
+	// ErrIdentitySuspended は、登録か有効化しようとしたブローカーの職員が止められている（休職している）ことを示す。
 	ErrIdentitySuspended = errors.New("ブローカーの職員が止められている")
+	// ErrIdentityRetired は、止めるか戻そうとしたブローカーの職員が退職していることを示す。
+	ErrIdentityRetired = errors.New("ブローカーの職員が退職している")
 	// ErrRevokeFailed は、ブローカーが職員を止めたが、ログインのセッションか同意を取り消せなかったことを示す。
 	ErrRevokeFailed = errors.New("ブローカーが職員を止めたが、ログインのセッションか同意を取り消せなかった")
 )
@@ -218,7 +309,13 @@ type Identities interface {
 	// Unregister は、登録の途中の職員を消す。予定の API の書き込みに失敗したときに、登録を戻すのに使う。
 	// いないか、登録の途中でなければ、消さずに成功する。
 	Unregister(ctx context.Context, id string) error
-	// Suspend は、職員を止め、ログインのセッション、同意、refresh token を取り消す。止めた職員を止めても成功する。
-	// いなければ apperr.ErrNotFound を、止めたが取り消せなければ ErrRevokeFailed を返す。
+	// Suspend は、職員を止め（休職）、ログインのセッション、同意、refresh token を取り消す。止めた職員を止めても成功する。
+	// いなければ apperr.ErrNotFound を、退職した職員なら ErrIdentityRetired を、止めたが取り消せなければ ErrRevokeFailed を返す。
 	Suspend(ctx context.Context, id string) error
+	// Resume は、止めた職員を有効に戻す（復職）。上流のアカウントの結び付けは残す。有効な職員を戻しても成功する。
+	// いなければ apperr.ErrNotFound を、退職した職員なら ErrIdentityRetired を、止めていない職員なら apperr.ErrConflict を返す。
+	Resume(ctx context.Context, id string) error
+	// Retire は、職員を退職にしてメールと上流のアカウントを消し、ログインのセッション、同意、refresh token を取り消す。
+	// 退職した職員を退職にしても成功する。いなければ apperr.ErrNotFound を、退職にしたが取り消せなければ ErrRevokeFailed を返す。
+	Retire(ctx context.Context, id string) error
 }

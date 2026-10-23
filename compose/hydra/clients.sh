@@ -21,7 +21,7 @@ upsert web --name web --secret web-dev \
   --redirect-uri "$WEB_REDIRECT_URI" --post-logout-callback "$WEB_POST_LOGOUT_REDIRECT_URI" \
   --token-endpoint-auth-method client_secret_basic --skip-consent
 
-# 予定の API が、ブローカーの内部の API（職員の登録と停止）を呼ぶときに使う
+# 予定の API が、ブローカーの内部の API（職員の登録、休職、復職、退職）を呼ぶときに使う
 upsert schedule --name schedule --secret schedule-dev \
   --grant-type client_credentials --audience broker \
   --token-endpoint-auth-method client_secret_basic

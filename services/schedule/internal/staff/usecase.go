@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
+	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
@@ -20,12 +23,15 @@ type Deps struct {
 	Policies    kernel.Finder[organization.Policy]
 	Staff       Repository
 	Identities  Identities
-	// Self は、ctx のリクエストを送った職員の ID を返す。職員が自分を止める操作を拒むのに使う。nil なら拒まない。
+	Assignments AssignmentReader
+	// Self は、ctx のリクエストを送った職員の ID を返す。職員が自分を休職か退職にする操作を拒むのに使う。nil なら拒まない。
 	Self func(ctx context.Context) (string, bool)
+	// Now は、休職と退職で残る予定を数え始める日を決める時刻である。nil なら time.Now を使う。
+	Now func() time.Time
 }
 
-// Usecase は、職員の操作である。職員の登録と停止と、職員の権限と役職を変える操作は、guard が許すときだけ行う（ADR-0006）。
-// 職員の登録と停止は、ブローカーの職員も書く（ADR-0017）。
+// Usecase は、職員の操作である。職員の登録、休職、復職、退職と、職員の権限と役職を変える操作は、guard が許すときだけ行う（ADR-0006）。
+// 職員の登録、休職、復職、退職は、ブローカーの職員も書く（ADR-0017、ADR-0018）。
 type Usecase struct {
 	deps  Deps
 	tx    tx.Transactor
@@ -35,6 +41,9 @@ type Usecase struct {
 
 // NewUsecase は Usecase を作る。
 func NewUsecase(deps Deps, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) *Usecase {
+	if deps.Now == nil {
+		deps.Now = time.Now
+	}
 	return &Usecase{deps: deps, tx: tx, ids: ids, guard: guard}
 }
 
@@ -109,7 +118,7 @@ func (s *Usecase) Create(ctx context.Context, in CreateInput) (Detail, error) {
 	case errors.Is(err, ErrEmailTaken):
 		return Detail{}, apperr.Conflict("メール %s の職員は登録できません", st.Email)
 	case errors.Is(err, ErrIdentitySuspended):
-		return Detail{}, apperr.Conflict("メール %s の職員は止められています", st.Email)
+		return Detail{}, apperr.Conflict("メール %s の職員は休職しています", st.Email)
 	case err != nil:
 		return Detail{}, err
 	}
@@ -164,43 +173,227 @@ func (s *Usecase) unregister(ctx context.Context, sub string) error {
 	return nil
 }
 
-// Suspend は、職員を止め、止めた職員を返す。止めた職員を止めても成功する。職員が見つからないときは apperr.ErrNotFound を、
-// 職員の管理の権限が無いときは apperr.ErrForbidden を、自分を止めようとしたときは apperr.ErrConflict を返す。
+// LeaveInput は、職員を休職にする入力である。ReturnDate は戻る予定の日のメモで、nil なら持たない。
+type LeaveInput struct {
+	ReturnDate *civil.Date
+}
+
+// StatusChange は、休職か退職にした職員と、その日以降に残る予定と担当の利用者である。
+type StatusChange struct {
+	Staff       Detail
+	Assignments Assignments
+}
+
+// Leave は、職員を休職にし、休職にした職員と、その日以降に残る予定と担当の利用者を返す。残る予定があっても拒まない。
+// 休職の職員を休職にし直すと、戻る予定の日だけを書き換える。職員が見つからないときは apperr.ErrNotFound を、
+// 職員の管理の権限が無いときは apperr.ErrForbidden を、自分か、事業所で職員の管理の権限を持つ最後の有効な職員か、
+// 退職した職員を休職にしようとしたときは apperr.ErrConflict を返す。
 //
-// ブローカーの職員を先に止める。ブローカーで止めた後にここで書けなければ、送り直すとブローカーの停止をやり直してから書く。
-// ブローカーが止めた後に Hydra の取り消しに失敗したときも、ここで止めた時刻を書いてからエラーを返し、送り直しで取り消しをやり直させる。
-// ブローカーの職員の ID が無いか、ブローカーにいない職員はログインできないので、ここでだけ止める。
-func (s *Usecase) Suspend(ctx context.Context, id string) (Detail, error) {
+// 事業所をロックしたトランザクションの中で、ブローカーの職員を先に止めてから、ここで休職を書く。ここで書けなければ、
+// ブローカーで止めたままロールバックするので、送り直すとブローカーの停止をやり直してから書く。止めたままの間も、職員はログインできない。
+// ブローカーが止めた後に Hydra の取り消しに失敗したときも、ここで休職を書いてからエラーを返し、送り直しで取り消しをやり直させる。
+// ブローカーの職員の ID が無いか、ブローカーにいない職員はログインできないので、ここでだけ休職にする。
+func (s *Usecase) Leave(ctx context.Context, id string, in LeaveInput) (StatusChange, error) {
+	var out StatusChange
+	var revokeErr error
+	err := s.stop(ctx, id, func(ctx context.Context, cur Detail) error {
+		if cur.Status() == StatusRetired {
+			return apperr.Conflict("退職した職員は休職にできません")
+		}
+		a, err := s.deps.Assignments.From(ctx, cur.FacilityID, cur.ID, civil.Today(s.deps.Now()))
+		if err != nil {
+			return err
+		}
+		if cur.Sub != nil {
+			switch err := s.deps.Identities.Suspend(ctx, *cur.Sub); {
+			case errors.Is(err, apperr.ErrNotFound):
+				// ブローカーにいない職員はログインできないので、ここでだけ休職にする
+			case errors.Is(err, ErrIdentityRetired):
+				return apperr.Conflict("職員はブローカーで退職しています。退職をやり直してください")
+			case errors.Is(err, ErrRevokeFailed):
+				revokeErr = err
+			case err != nil:
+				return err
+			}
+		}
+		if err := s.deps.Staff.StartLeave(ctx, cur.ID, in.ReturnDate); err != nil {
+			return err
+		}
+		out.Assignments = a
+		out.Staff, err = s.deps.Staff.Get(ctx, cur.ID)
+		return err
+	})
+	if err != nil {
+		return StatusChange{}, err
+	}
+	if revokeErr != nil {
+		return StatusChange{}, fmt.Errorf("職員を休職にしましたが、ログインの取り消しに失敗しました。もう一度休職にしてください: %w", revokeErr)
+	}
+	return out, nil
+}
+
+// Retire は、職員を退職にし、名前、所属、役職を残してメールと電話番号を消す。その日以降の予定、繰り返しの予定、担当の利用者が
+// 残れば、書かずに残る一覧を持つ *AssignedError を返す。退職した職員を退職にしても成功する。職員が見つからないときは
+// apperr.ErrNotFound を、職員の管理の権限が無いときは apperr.ErrForbidden を、自分か、事業所で職員の管理の権限を持つ
+// 最後の有効な職員を退職にしようとしたときは apperr.ErrConflict を返す。
+//
+// 2 か所の書き込みは Leave と同じく、事業所をロックしたトランザクションの中で、ブローカーの職員を先に退職にしてからここで書く。
+// ブローカーは退職でメールと上流のアカウントを消すので、ここで書けずにロールバックしても、職員はログインできない。送り直すと書く。
+func (s *Usecase) Retire(ctx context.Context, id string) (StatusChange, error) {
+	var out StatusChange
+	var revokeErr error
+	err := s.stop(ctx, id, func(ctx context.Context, cur Detail) error {
+		a, err := s.deps.Assignments.From(ctx, cur.FacilityID, cur.ID, civil.Today(s.deps.Now()))
+		if err != nil {
+			return err
+		}
+		if !a.Empty() {
+			return &AssignedError{Assignments: a}
+		}
+		if cur.Sub != nil {
+			switch err := s.deps.Identities.Retire(ctx, *cur.Sub); {
+			case errors.Is(err, apperr.ErrNotFound):
+				// ブローカーにいない職員はログインできないので、ここでだけ退職にする
+			case errors.Is(err, ErrRevokeFailed):
+				revokeErr = err
+			case err != nil:
+				return err
+			}
+		}
+		if err := s.deps.Staff.Retire(ctx, cur.ID); err != nil {
+			return err
+		}
+		out.Staff, err = s.deps.Staff.Get(ctx, cur.ID)
+		return err
+	})
+	if err != nil {
+		return StatusChange{}, err
+	}
+	if revokeErr != nil {
+		return StatusChange{}, fmt.Errorf("職員を退職にしましたが、ログインの取り消しに失敗しました。もう一度退職にしてください: %w", revokeErr)
+	}
+	return out, nil
+}
+
+// stop は、休職と退職に共通の確認をしてから、事業所をロックしたトランザクションの中で、読み直した職員で write を呼ぶ。
+// 自分と、事業所で職員の管理の権限を持つ最後の有効な職員は、apperr.ErrConflict で拒む。
+// 事業所のロックで、同じ事業所の休職と退職を 1 つずつにし、管理者どうしが同時に休職にし合って有効な管理者がいなくなるのを防ぐ。
+func (s *Usecase) stop(ctx context.Context, id string, write func(ctx context.Context, cur Detail) error) error {
 	if err := s.guard(ctx); err != nil {
-		return Detail{}, err
+		return err
 	}
 	if s.deps.Self != nil {
 		if self, ok := s.deps.Self(ctx); ok && self == id {
-			return Detail{}, apperr.Conflict("自分を止めることはできません")
+			return apperr.Conflict("自分を休職か退職にすることはできません")
 		}
 	}
-	cur, err := s.deps.Staff.Get(ctx, id)
+	return s.tx.WithinTx(ctx, func(ctx context.Context) error {
+		cur, err := s.locked(ctx, id)
+		if err != nil {
+			return err
+		}
+		if err := s.lastManager(ctx, cur); err != nil {
+			return err
+		}
+		return write(ctx, cur)
+	})
+}
+
+// locked は、トランザクションの中で職員 id の事業所をロックし、ロックの後に読み直した職員を返す。
+// 休職、復職、退職は、このロックで同じ事業所の中で 1 つずつ行う。
+func (s *Usecase) locked(ctx context.Context, id string) (Detail, error) {
+	ref, err := s.deps.Staff.Get(ctx, id)
 	if err != nil {
 		return Detail{}, err
 	}
-	var revokeErr error
-	if cur.Sub != nil {
-		switch err := s.deps.Identities.Suspend(ctx, *cur.Sub); {
-		case errors.Is(err, apperr.ErrNotFound):
-			// ブローカーにいない職員はログインできないので、ここでだけ止める
-		case errors.Is(err, ErrRevokeFailed):
-			revokeErr = err
-		case err != nil:
-			return Detail{}, err
-		}
-	}
-	if err := s.deps.Staff.Suspend(ctx, cur.ID); err != nil {
+	if err := s.deps.Staff.LockFacility(ctx, ref.FacilityID); err != nil {
 		return Detail{}, err
 	}
-	if revokeErr != nil {
-		return Detail{}, fmt.Errorf("職員を止めましたが、ログインの取り消しに失敗しました。もう一度止めてください: %w", revokeErr)
+	return s.deps.Staff.Get(ctx, id)
+}
+
+// lastManager は、cur が事業所で職員の管理の権限を持つ最後の有効な職員なら apperr.ErrConflict を返す。
+// 戻す操作をする職員がいなくなると、DB を直すほかに戻せないためである（ADR-0018）。
+func (s *Usecase) lastManager(ctx context.Context, cur Detail) error {
+	if cur.Status() != StatusActive || !slices.ContainsFunc(cur.Policies, func(g PolicyGrant) bool {
+		return g.PolicyCode == organization.StaffManage
+	}) {
+		return nil
 	}
-	return s.deps.Staff.Get(ctx, cur.ID)
+	managers, err := s.deps.Staff.ActiveManagers(ctx, cur.FacilityID)
+	if err != nil {
+		return err
+	}
+	if !slices.ContainsFunc(managers, func(m string) bool { return m != cur.ID }) {
+		return apperr.Conflict("職員の管理の権限を持つ最後の有効な職員は、休職と退職にできません")
+	}
+	return nil
+}
+
+// Reinstate は、休職の職員を有効に戻し（復職）、戻した職員を返す。有効な職員を戻しても成功する。職員が見つからないときは
+// apperr.ErrNotFound を、職員の管理の権限が無いときは apperr.ErrForbidden を、退職した職員を戻そうとしたときは apperr.ErrConflict を返す。
+//
+// 休職と逆に、ここで休職を外してコミットしてから、ブローカーの職員を有効に戻す。ログインできるようにする書き込みを最後にし、
+// 片方だけが書けたときに、ログインできる職員が予定の API で休職のまま残らないようにする。
+// ブローカーを呼ぶ 2 つ目のトランザクションは、事業所をロックして職員を読み直し、有効なままのときだけ呼ぶ。
+// 1 つ目のコミットの後に休職にし直されていれば、ブローカーの職員を戻さない。ブローカーが戻したときは 2 つ目でここに書かないので、
+// ブローカーが戻した後にコミットに失敗しても、状態は食い違わない。
+// ブローカーが退職か、止めていない職員と答えたときは、外した休職を書き戻して apperr.ErrConflict を返す。
+// ブローカーに届かなかったときは、外した休職を残してエラーを返す。その間、職員はブローカーで止めたままなのでログインできない。
+// 送り直すと、ブローカーの職員を戻し直す。
+func (s *Usecase) Reinstate(ctx context.Context, id string) (Detail, error) {
+	if err := s.guard(ctx); err != nil {
+		return Detail{}, err
+	}
+	var before Detail
+	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
+		var err error
+		before, err = s.locked(ctx, id)
+		if err != nil {
+			return err
+		}
+		if before.Status() == StatusRetired {
+			return apperr.Conflict("退職した職員は復職できません")
+		}
+		return s.deps.Staff.EndLeave(ctx, before.ID)
+	})
+	if err != nil {
+		return Detail{}, err
+	}
+	var brokerErr error
+	err = s.tx.WithinTx(ctx, func(ctx context.Context) error {
+		cur, err := s.locked(ctx, id)
+		if err != nil {
+			return err
+		}
+		if cur.Status() != StatusActive {
+			return apperr.Conflict("復職の途中に、職員がほかの操作で休職か退職になりました")
+		}
+		if cur.Sub == nil {
+			return nil
+		}
+		switch err := s.deps.Identities.Resume(ctx, *cur.Sub); {
+		case err == nil, errors.Is(err, apperr.ErrNotFound):
+			// ブローカーにいない職員はログインできないので、ここでだけ戻す
+		case errors.Is(err, ErrIdentityRetired):
+			brokerErr = apperr.Conflict("職員はブローカーで退職しています。退職をやり直してください")
+		case errors.Is(err, apperr.ErrConflict):
+			brokerErr = apperr.Conflict("ブローカーの職員は休職していないので、復職できません")
+		default:
+			return fmt.Errorf("休職を外しましたが、ブローカーの職員を戻せませんでした。もう一度復職にしてください: %w", err)
+		}
+		if brokerErr != nil && before.Status() == StatusOnLeave {
+			return s.deps.Staff.StartLeave(ctx, cur.ID, before.LeaveReturnDate)
+		}
+		return nil
+	})
+	if err != nil {
+		return Detail{}, err
+	}
+	if brokerErr != nil {
+		return Detail{}, brokerErr
+	}
+	return s.deps.Staff.Get(ctx, id)
 }
 
 // ChangePosition は、職員の役職を positionID にし、職員の権限を新しい役職のデフォルトの権限からコピーし直す。

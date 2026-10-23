@@ -251,6 +251,7 @@ func TestShowLoginSkip(t *testing.T) {
 	}{
 		{"有効な職員", login.StatusActive, "http://hydra/login-accepted"},
 		{"止めた職員", login.StatusSuspended, "http://hydra/login-rejected"},
+		{"退職した職員", login.StatusRetired, "http://hydra/login-rejected"},
 		{"登録の途中の職員", login.StatusPending, "http://hydra/login-rejected"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

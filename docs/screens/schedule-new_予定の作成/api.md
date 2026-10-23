@@ -13,7 +13,7 @@
 | タイトル | タイトル | `ScheduleInput.title` | `title` |
 | 利用者の一覧 | 利用者の名前 | `Patient.name`、選んだものは `ScheduleInput.visit.patientId` | `listPatients` の `name`、送るのは `visit_info.patient_id` |
 | 職員の一覧 | 職員の名前 | `Staff.name`、選んだものは `ScheduleInput.staffId` | `listUsers` の `username`、送るのは `staff_id`、`visit_info.assigned_staff_id` |
-| 職員の一覧 | 止めた職員を除くか | `Staff.suspendedAt` | `listUsers` の `Staff.suspended_at` |
+| 職員の一覧 | 休職と退職の職員を除くか | `Staff.status` | `listUsers` の `Staff.status` |
 | 訪問の種類 | 夜勤、緊急、入院 | `ScheduleInput.visit.categories` | `visit_info.visit_category_ids` |
 | メモ | メモ | `ScheduleInput.description` | `description` |
 
@@ -27,4 +27,4 @@
 - 繰り返しの予定は `createRecurringSchedule` で作る。この画面は呼ばず、単発の予定だけを `createSchedule` で作る。
 - 職員の権限は、OpenAPI の `StaffDetail.policies` にある。職員の一覧を権限で絞るときに、これを使うか別の API を使うかは決まっていない。
 - 担当者は、今は `staff_id`（予定の職員）と `visit_info.assigned_staff_id`（訪問の担当）の両方に同じ職員を送る（`apps/web/src/api/http/scheduleMapper.ts`）。OpenAPI は両方を必須にしている。
-- `listUsers` は、止めた職員も返す。この画面は、`suspendedAt` を持つ職員を担当者の候補から除く。
+- `listUsers` は、休職と退職の職員も返す。この画面は、`status` を持つ職員を担当者の候補から除く。

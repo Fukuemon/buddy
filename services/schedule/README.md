@@ -23,7 +23,7 @@ API とマイグレーションは、次の環境変数を読む。
 | `OIDC_ISSUER` | はい | なし | Hydra の Issuer の URL。トークンの `iss` と一致させ、`<OIDC_ISSUER>/.well-known/openid-configuration` から JWKS の場所を読む |
 | `OIDC_AUDIENCE` | はい | なし | トークンの `aud` に求める値 |
 | `OIDC_ORG_CLAIM` | いいえ | `org_id` | 組織の ID を持つクレームの名前 |
-| `BROKER_URL` | はい | なし | ID ブローカーの内部の API の URL。ログインの画面と別のポートである。職員の登録と停止で呼ぶ |
+| `BROKER_URL` | はい | なし | ID ブローカーの内部の API の URL。ログインの画面と別のポートである。職員の登録、休職、復職、退職で呼ぶ |
 | `BROKER_TOKEN_URL` | はい | なし | 内部の API を呼ぶ access token を client credentials で取る、Hydra のトークンのエンドポイント |
 | `BROKER_CLIENT_ID` | いいえ | `schedule` | Hydra に登録した予定の API のクライアントの ID |
 | `BROKER_CLIENT_SECRET` | はい | なし | Hydra に登録した予定の API のクライアントの secret。シークレットとして渡す |
@@ -66,7 +66,7 @@ go run ./cmd/migrate seed
 go run ./cmd/devissuer -addr 127.0.0.1:9000
 
 export OIDC_ISSUER=http://127.0.0.1:9000 OIDC_AUDIENCE=schedule
-# 職員の登録と停止は、ルートの compose のブローカーと Hydra を呼ぶ。ほかの操作は呼ばない
+# 職員の登録、休職、復職、退職は、ルートの compose のブローカーと Hydra を呼ぶ。ほかの操作は呼ばない
 # クライアントの secret は、compose の予定の API と同じ値を compose の設定から読む
 export BROKER_URL=http://127.0.0.1:8101 BROKER_TOKEN_URL=http://127.0.0.1:4444/oauth2/token \
   BROKER_CLIENT_SECRET="$(cd ../.. && docker compose config --format json | jq -r .services.schedule.environment.BROKER_CLIENT_SECRET)"

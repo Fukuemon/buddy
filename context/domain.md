@@ -83,7 +83,7 @@ status: stable
 - [予定](domain/schedule.md) — 単発の予定の種類、キャンセル、変更
 - [繰り返しの予定](domain/recurring-schedule.md) — 規則、回、除外、回の置き換え
 - [訪問の情報](domain/visit.md) — 訪問の予定に付く利用者と職員とサービス
-- [職員とログイン](domain/staff-login.md) — 職員の登録と停止、ブローカーが上流の IdP のアカウントを職員に結び付け、予定の API が `sub` で職員を引く
+- [職員とログイン](domain/staff-login.md) — 職員の登録、休職、復職、退職、ブローカーが上流の IdP のアカウントを職員に結び付け、予定の API が `sub` で職員を引く
 - [事業所の分離](domain/facility.md) — 事業所をまたぐ参照の拒否
 - [権限](domain/permission.md) — 役職のデフォルトの権限と職員ごとの権限
 - [照合](domain/receipt-check.md) — 予定と実績の対の作り方と区分の決め方

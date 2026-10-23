@@ -1,4 +1,4 @@
-// Package broker は、認証のブローカーの内部の API（職員の登録、有効化、削除、停止）を呼ぶ（ADR-0017）。
+// Package broker は、認証のブローカーの内部の API（職員の登録、有効化、削除、休職、復職、退職）を呼ぶ（ADR-0017）。
 // 内部の API は、Hydra の client credentials の access token（aud は broker）で呼ぶ。
 package broker
 
@@ -110,16 +110,31 @@ func (c *Client) Unregister(ctx context.Context, id string) error {
 	return err
 }
 
-// Suspend は、職員 id を止め、ログインのセッション、同意、refresh token を取り消させる。いなければ apperr.ErrNotFound を、
-// 止めたが取り消せなければ staff.ErrRevokeFailed を返す。
+// Suspend は、職員 id を止め（休職）、ログインのセッション、同意、refresh token を取り消させる。いなければ apperr.ErrNotFound を、
+// 退職した職員なら staff.ErrIdentityRetired を、止めたが取り消せなければ staff.ErrRevokeFailed を返す。
 func (c *Client) Suspend(ctx context.Context, id string) error {
 	_, err := c.do(ctx, http.MethodPost, "/internal/staff/"+url.PathEscape(id)+"/suspend", nil, nil)
 	return err
 }
 
+// Resume は、止めた職員 id を有効に戻させる（復職）。いなければ apperr.ErrNotFound を、退職した職員なら
+// staff.ErrIdentityRetired を、止めていない職員なら apperr.ErrConflict を返す。
+func (c *Client) Resume(ctx context.Context, id string) error {
+	_, err := c.do(ctx, http.MethodPost, "/internal/staff/"+url.PathEscape(id)+"/resume", nil, nil)
+	return err
+}
+
+// Retire は、職員 id を退職にしてメールと上流のアカウントを消させ、ログインのセッション、同意、refresh token を取り消させる。
+// いなければ apperr.ErrNotFound を、退職にしたが取り消せなければ staff.ErrRevokeFailed を返す。
+func (c *Client) Retire(ctx context.Context, id string) error {
+	_, err := c.do(ctx, http.MethodPost, "/internal/staff/"+url.PathEscape(id)+"/retire", nil, nil)
+	return err
+}
+
 // do は、内部の API を呼び、2xx の状態コードを返す。out が nil でなければ本文の JSON を読む。
 // 400 は本文の文で apperr.Invalid を、404 は apperr.ErrNotFound を包んで返す。409 は、本文の code が email_taken なら
-// staff.ErrEmailTaken を、suspended なら staff.ErrIdentitySuspended を、ほかは apperr.ErrConflict を包んで返す。
+// staff.ErrEmailTaken を、suspended なら staff.ErrIdentitySuspended を、retired なら staff.ErrIdentityRetired を、
+// ほかは apperr.ErrConflict を包んで返す。
 // 502 は、本文の code が revoke_failed なら staff.ErrRevokeFailed を包んで返す。
 func (c *Client) do(ctx context.Context, method, path string, body []byte, out any) (int, error) {
 	var reqBody io.Reader
@@ -153,6 +168,8 @@ func (c *Client) do(ctx context.Context, method, path string, body []byte, out a
 			return 0, fmt.Errorf("%w: %w", staff.ErrEmailTaken, err)
 		case resp.StatusCode == http.StatusConflict && e.Code == "suspended":
 			return 0, fmt.Errorf("%w: %w", staff.ErrIdentitySuspended, err)
+		case resp.StatusCode == http.StatusConflict && e.Code == "retired":
+			return 0, fmt.Errorf("%w: %w", staff.ErrIdentityRetired, err)
 		case resp.StatusCode == http.StatusConflict:
 			return 0, fmt.Errorf("%w: %w", apperr.ErrConflict, err)
 		case resp.StatusCode == http.StatusBadGateway && e.Code == "revoke_failed":

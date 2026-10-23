@@ -109,13 +109,23 @@ func TestErrors(t *testing.T) {
 	if err := revoke.Suspend(ctx, "01JBRKR0000000000000000000"); !errors.Is(err, staff.ErrRevokeFailed) {
 		t.Errorf("revoke_failed の 502 の Suspend の err = %v, want ErrRevokeFailed", err)
 	}
+	retired := newClient(t, http.StatusConflict, `{"code":"retired"}`, &calls, &form)
+	if err := retired.Suspend(ctx, "01JBRKR0000000000000000000"); !errors.Is(err, staff.ErrIdentityRetired) {
+		t.Errorf("409 retired の Suspend の err = %v, want ErrIdentityRetired", err)
+	}
+	if err := retired.Resume(ctx, "01JBRKR0000000000000000000"); !errors.Is(err, staff.ErrIdentityRetired) {
+		t.Errorf("409 retired の Resume の err = %v, want ErrIdentityRetired", err)
+	}
+	if err := revoke.Retire(ctx, "01JBRKR0000000000000000000"); !errors.Is(err, staff.ErrRevokeFailed) {
+		t.Errorf("revoke_failed の 502 の Retire の err = %v, want ErrRevokeFailed", err)
+	}
 	down := newClient(t, http.StatusBadGateway, `bad gateway`, &calls, &form)
 	if err := down.Suspend(ctx, "01JBRKR0000000000000000000"); err == nil || errors.Is(err, apperr.ErrNotFound) || errors.Is(err, staff.ErrRevokeFailed) {
 		t.Errorf("502 の Suspend の err = %v, want そのほかのエラー", err)
 	}
 }
 
-func TestSuspendActivateUnregister(t *testing.T) {
+func TestStaffCalls(t *testing.T) {
 	ctx := context.Background()
 	var calls []call
 	var form string
@@ -129,10 +139,18 @@ func TestSuspendActivateUnregister(t *testing.T) {
 	if err := c.Unregister(ctx, "01JBRKR0000000000000000000"); err != nil {
 		t.Fatal(err)
 	}
+	if err := c.Resume(ctx, "01JBRKR0000000000000000000"); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.Retire(ctx, "01JBRKR0000000000000000000"); err != nil {
+		t.Fatal(err)
+	}
 	want := []call{
 		{http.MethodPost, "/internal/staff/01JBRKR0000000000000000000/suspend", "Bearer client-token", ""},
 		{http.MethodPost, "/internal/staff/01JBRKR0000000000000000000/activate", "Bearer client-token", ""},
 		{http.MethodDelete, "/internal/staff/01JBRKR0000000000000000000", "Bearer client-token", ""},
+		{http.MethodPost, "/internal/staff/01JBRKR0000000000000000000/resume", "Bearer client-token", ""},
+		{http.MethodPost, "/internal/staff/01JBRKR0000000000000000000/retire", "Bearer client-token", ""},
 	}
 	for i, w := range want {
 		if calls[i] != w {

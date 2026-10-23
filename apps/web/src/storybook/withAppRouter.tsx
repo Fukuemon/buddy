@@ -179,13 +179,13 @@ export const emptyBuddyApi = (base: BuddyApi = createFakeBuddyApi()): BuddyApi =
   calendars: { ...base.calendars, list: async () => [], exportIssues: async () => [] },
 })
 
-/** 石川 二葉（staff-2）を止めたフェイクの API を作る。 */
+/** 石川 二葉（staff-2）を休職にしたフェイクの API を作る。 */
 export const suspendedStaffBuddyApi = (base: BuddyApi = createFakeBuddyApi()): BuddyApi => ({
   ...base,
   staff: {
     list: async (...args) =>
       (await base.staff.list(...args)).map((staff) =>
-        staff.id === 'staff-2' ? { ...staff, suspendedAt: '2026-10-01T09:00:00Z' } : staff,
+        staff.id === 'staff-2' ? { ...staff, status: 'on_leave' } : staff,
       ),
   },
 })

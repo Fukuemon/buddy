@@ -189,34 +189,144 @@ func TestStaffFindIDBySub(t *testing.T) {
 	}
 }
 
-func TestStaffSuspend(t *testing.T) {
+func TestStaffLeave(t *testing.T) {
 	ctx := txContext(t)
 	r := NewStaffRepository(testDB)
-	if err := r.Suspend(ctx, seedAoki); err != nil {
+	returnDate := civil.Date{Year: 2027, Month: 4, Day: 1}
+	if err := r.StartLeave(ctx, seedAoki, &returnDate); err != nil {
 		t.Fatal(err)
 	}
 	got, err := r.Get(ctx, seedAoki)
-	if err != nil || got.SuspendedAt == nil {
-		t.Fatalf("SuspendedAt = %v, err = %v, want 止めた時刻", got.SuspendedAt, err)
+	if err != nil || got.Status() != staff.StatusOnLeave || got.LeaveReturnDate == nil || *got.LeaveReturnDate != returnDate {
+		t.Fatalf("職員 = %+v, err = %v, want 休職と戻る予定の日", got.Staff, err)
 	}
-	first := *got.SuspendedAt
-	if err := r.Suspend(ctx, seedAoki); err != nil {
+	first := *got.LeaveStartedAt
+	if err := r.StartLeave(ctx, seedAoki, nil); err != nil {
 		t.Fatal(err)
 	}
-	if again, _ := r.Get(ctx, seedAoki); !again.SuspendedAt.Equal(first) {
-		t.Errorf("止め直した時刻 = %v, want 最初の %v", again.SuspendedAt, first)
+	if again, _ := r.Get(ctx, seedAoki); !again.LeaveStartedAt.Equal(first) || again.LeaveReturnDate != nil {
+		t.Errorf("休職にし直した職員 = %+v, want 最初の時刻 %v のまま、戻る予定の日を消す", again.Staff, first)
 	}
 	list, err := r.ListByFacility(ctx, seedFacility, staff.ListQuery{Sort: kernel.Sort{Field: "updated_at", Desc: true}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, s := range list {
-		if (s.ID == seedAoki) != (s.SuspendedAt != nil) {
-			t.Errorf("一覧の %s の SuspendedAt = %v", s.ID, s.SuspendedAt)
+		if (s.ID == seedAoki) != (s.Status() == staff.StatusOnLeave) {
+			t.Errorf("一覧の %s の状態 = %s", s.ID, s.Status())
 		}
 	}
-	if err := r.Suspend(ctx, unknownID); !errors.Is(err, apperr.ErrNotFound) {
-		t.Errorf("いない職員の err = %v, want ErrNotFound", err)
+	if managers, err := r.ActiveManagers(ctx, seedFacility); err != nil || len(managers) != 0 {
+		t.Errorf("休職の青木の後の有効な管理者 = %v, %v, want なし", managers, err)
+	}
+	if err := r.EndLeave(ctx, seedAoki); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := r.Get(ctx, seedAoki); got.Status() != staff.StatusActive || got.LeaveReturnDate != nil {
+		t.Errorf("復職の後の職員 = %+v, want 有効", got.Staff)
+	}
+	if managers, err := r.ActiveManagers(ctx, seedFacility); err != nil || !slices.Equal(managers, []string{seedAoki}) {
+		t.Errorf("有効な管理者 = %v, %v, want 青木だけ", managers, err)
+	}
+	for name, err := range map[string]error{
+		"StartLeave": r.StartLeave(ctx, unknownID, nil),
+		"EndLeave":   r.EndLeave(ctx, unknownID),
+		"Retire":     r.Retire(ctx, unknownID),
+	} {
+		if !errors.Is(err, apperr.ErrNotFound) {
+			t.Errorf("いない職員の %s の err = %v, want ErrNotFound", name, err)
+		}
+	}
+	if err := r.LockFacility(ctx, seedFacility); err != nil {
+		t.Errorf("LockFacility の err = %v", err)
+	}
+	if err := r.LockFacility(ctx, unknownID); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("いない事業所の LockFacility の err = %v, want ErrNotFound", err)
+	}
+}
+
+// 退職した職員は、名前を残してメールと電話番号を消し、同じメールで新しい職員を登録できる（#268 の検証の観点 4、5）。
+func TestStaffRetire(t *testing.T) {
+	ctx := txContext(t)
+	r := NewStaffRepository(testDB)
+	s := staff.Staff{
+		ID: "01M3TD00000000000000000030", Username: "退職 予定", Email: "retiring@example.com",
+		PhoneNumber: ptr("+09000000000"), FacilityID: seedFacility,
+		DepartmentID: seedDepartment, TeamID: seedTeam, PositionID: seedMember,
+	}
+	if err := r.Create(ctx, s, nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.StartLeave(ctx, s.ID, &civil.Date{Year: 2027, Month: 4, Day: 1}); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.Retire(ctx, s.ID); err != nil {
+		t.Fatal(err)
+	}
+	got, err := r.Get(ctx, s.ID)
+	if err != nil || got.Status() != staff.StatusRetired || got.Username != "退職 予定" || got.Email != "" || got.PhoneNumber != nil ||
+		got.LeaveStartedAt != nil || got.LeaveReturnDate != nil {
+		t.Fatalf("職員 = %+v, err = %v, want 名前を残し、メール、電話番号、休職を消す", got.Staff, err)
+	}
+	first := *got.RetiredAt
+	if err := r.Retire(ctx, s.ID); err != nil {
+		t.Fatal(err)
+	}
+	if again, _ := r.Get(ctx, s.ID); !again.RetiredAt.Equal(first) {
+		t.Errorf("退職にし直した時刻 = %v, want 最初の %v", again.RetiredAt, first)
+	}
+	if err := r.StartLeave(ctx, s.ID, nil); !errors.Is(err, apperr.ErrConflict) {
+		t.Errorf("退職した職員の StartLeave の err = %v, want ErrConflict", err)
+	}
+	if err := r.EndLeave(ctx, s.ID); !errors.Is(err, apperr.ErrConflict) {
+		t.Errorf("退職した職員の EndLeave の err = %v, want ErrConflict", err)
+	}
+	rehired := s
+	rehired.ID = "01M3TD00000000000000000031"
+	if err := r.Create(ctx, rehired, nil); err != nil {
+		t.Errorf("退職した職員と同じメールの Create の err = %v, want 新しい職員として書く", err)
+	}
+}
+
+// 職員を休職か退職にするときに残る一覧は、予定の職員、主訪問者、同行者のどれかの、その日以降のキャンセルしていない予定と、
+// その日以降に終わる繰り返しの予定と、担当の利用者である（#268 の検証の観点 1、3）。
+func TestStaffAssignments(t *testing.T) {
+	ctx := txContext(t)
+	a := NewStaffAssignmentReader(testDB)
+	from := civil.Date{Year: 2026, Month: 10, Day: 21}
+
+	got, err := a.From(ctx, seedFacility, seedAoki, from)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Schedules) != 0 || len(got.Recurring) != 1 || got.Recurring[0].ID != seedRecurring || got.Recurring[0].EndDate != nil ||
+		got.Recurring[0].StartTime != (civil.Time{Hour: 17, Minute: 30}) || len(got.Patients) != 0 {
+		t.Errorf("青木 = %+v, want 前日の予定を除き、終了日の無い繰り返し", got)
+	}
+	got, err = a.From(ctx, seedFacility, seedMori, from)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Schedules) != 1 || got.Schedules[0].ID != seedVisitSchedule || got.Schedules[0].Date != from ||
+		len(got.Patients) != 1 || got.Patients[0].Name != "見本 一郎" {
+		t.Errorf("森 = %+v, want 当日の訪問の予定と担当の利用者", got)
+	}
+	got, err = a.From(ctx, seedFacility, seedHayashi, from)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Schedules) != 1 || got.Schedules[0].ID != seedVisitSchedule || len(got.Patients) != 1 || got.Patients[0].Name != "見本 二葉" {
+		t.Errorf("林 = %+v, want 同行者の訪問の予定と担当の利用者", got)
+	}
+
+	if err := NewScheduleRepository(testDB).CreateCancel(ctx, schedule.Cancel{ID: "01M3TD00000000000000000032", ScheduleID: seedVisitSchedule, Reason: "中止"}); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := a.From(ctx, seedFacility, seedMori, from); err != nil || len(got.Schedules) != 0 {
+		t.Errorf("キャンセルの後の森の予定 = %+v, %v, want なし", got.Schedules, err)
+	}
+	if got, err := a.From(ctx, seedFacility, seedMori, civil.Date{Year: 2026, Month: 10, Day: 22}); err != nil || len(got.Schedules) != 0 {
+		t.Errorf("翌日からの森の予定 = %+v, %v, want なし", got.Schedules, err)
 	}
 }
 

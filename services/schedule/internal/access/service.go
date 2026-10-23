@@ -68,7 +68,7 @@ func NewService(deps Deps) *Service {
 
 // Authenticate は、id の組織に結び付けた事業所の職員を返す。職員は sub（ブローカーの職員の ID）で探す（ADR-0017）。
 // 組織がないか事業所に結び付いていないとき、職員が見つからないとき、職員の事業所が組織の事業所と違うとき、
-// 職員が止められているときは apperr.ErrForbidden を返す。止めた職員は、手元の access token の期限が切れる前でも拒む。
+// 職員が休職か退職しているときは apperr.ErrForbidden を返す。休職と退職の職員は、手元の access token の期限が切れる前でも拒む。
 func (a *Service) Authenticate(ctx context.Context, id principal.Identity) (principal.Principal, error) {
 	if id.OrgID == "" {
 		return principal.Principal{}, fmt.Errorf("%w: トークンに組織がありません", apperr.ErrForbidden)
@@ -94,8 +94,8 @@ func (a *Service) Authenticate(ctx context.Context, id principal.Identity) (prin
 	if d.FacilityID != f.ID {
 		return principal.Principal{}, fmt.Errorf("%w: 職員の事業所が組織の事業所と違います", apperr.ErrForbidden)
 	}
-	if d.SuspendedAt != nil {
-		return principal.Principal{}, fmt.Errorf("%w: 職員は止められています", apperr.ErrForbidden)
+	if d.Status() != staff.StatusActive {
+		return principal.Principal{}, fmt.Errorf("%w: 職員は休職か退職しています", apperr.ErrForbidden)
 	}
 	return principal.Principal{Staff: d}, nil
 }

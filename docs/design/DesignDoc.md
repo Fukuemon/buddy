@@ -82,7 +82,7 @@ flowchart TB
 ```
 
 矢印ごとの約束は、[コンテナの間の契約](#コンテナの間の契約) にある。  
-図に描いていない流れが 4 つある。予定の API と照合の API は、access token を検証するために、Hydra の JWKS を読む。ブローカーは、ログインと同意の結果を Hydra の admin API に返す。予定の API は、職員の登録と停止で、ブローカーの内部の API を呼ぶ。Hydra は、トークンを発行するたびに、ブローカーの token_hook を呼ぶ。
+図に描いていない流れが 4 つある。予定の API と照合の API は、access token を検証するために、Hydra の JWKS を読む。ブローカーは、ログインと同意の結果を Hydra の admin API に返す。予定の API は、職員の登録、休職、復職、退職で、ブローカーの内部の API を呼ぶ。Hydra は、トークンを発行するたびに、ブローカーの token_hook を呼ぶ。
 
 ### 業務の区切りとコンテナ
 
@@ -111,7 +111,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 
 - Hydra は、認可コード、トークンの発行、JWKS、refresh token の回転を持つ。web と 2 つの API から見える Issuer は Hydra だけである。
 - ブローカーは、Hydra の login and consent app として、ログインと同意の画面を持つ。入れたメールから職員と事業所を決め、事業所の上流の IdP へ RP としてリダイレクトし、上流のアカウントを職員に結び付ける。
-- ブローカーは、職員の ID、メール、所属の事業所、有効か停止か、上流のアカウントを持つ。access token の `sub` は職員の ID で、予定の API の `users.sub` に入る。
+- ブローカーは、職員の ID、メール、所属の事業所、有効か休職か退職か、上流のアカウントを持つ。access token の `sub` は職員の ID で、予定の API の `users.sub` に入る。
 - 持たないもの: 職員の名前、役職、権限。予定の API が持つ。
   - ADR-0016: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](../adr/0016-id-broker-hydra.md)
   - ADR-0017: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](../adr/0017-identity-boundary.md)
@@ -152,7 +152,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
   - ログインに成功するたびに、同じブラウザの前のセッションを消す。
 - ブローカーと Hydra: ブローカーが Hydra の admin API でログインと同意を accept か reject し、ログアウトを accept する。ログインの accept で、Hydra にログインのセッションを 12 時間保たせる（`remember`）。同意の accept で、access token の `aud`（`schedule`、`receipt`）と `org_id` を決める。
 - ブローカーと上流の IdP: 認可コードフローで ID token を取り、署名、`iss`、`aud`、`nonce` を確認する。
-- 予定の API とブローカー: 職員の登録と停止で、予定の API が職員の管理の権限を確認してから、ブローカーの内部の API を呼ぶ。予定の API は、Hydra の client credentials で `aud` が `broker` の access token を取って付ける。
+- 予定の API とブローカー: 職員の登録、休職、復職、退職で、予定の API が職員の管理の権限を確認してから、ブローカーの内部の API を呼ぶ。予定の API は、Hydra の client credentials で `aud` が `broker` の access token を取って付ける。
   - ブローカーは、内部の API と token_hook を、ログインの画面と別のポートで待ち受け、許したクライアントのトークンだけを受ける。
 - Hydra とブローカー: Hydra は、トークンを発行するたびに `oauth2.token_hook` でブローカーを呼び、有効でない職員と、上流でのログインから 12 時間を過ぎたログインのトークンを出さない。
 - web と予定の API、照合の API: `Authorization` に access token を Bearer で付ける。

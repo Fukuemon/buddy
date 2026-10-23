@@ -8,6 +8,8 @@ package sqlcgen
 import (
 	"context"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const addUserPolicy = `-- name: AddUserPolicy :execrows
@@ -69,7 +71,7 @@ type CreateUserParams struct {
 	ID           string
 	Sub          *string
 	Username     string
-	Email        string
+	Email        *string
 	PhoneNumber  *string
 	FacilityID   string
 	DepartmentID string
@@ -120,12 +122,25 @@ func (q *Queries) DeleteUserPolicy(ctx context.Context, arg DeleteUserPolicyPara
 	return result.RowsAffected(), nil
 }
 
+const endUserLeave = `-- name: EndUserLeave :execrows
+UPDATE users SET leave_started_at = NULL, leave_return_date = NULL WHERE id = $1 AND retired_at IS NULL
+`
+
+// 退職した職員は書かない。
+func (q *Queries) EndUserLeave(ctx context.Context, id string) (int64, error) {
+	result, err := q.db.Exec(ctx, endUserLeave, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getUser = `-- name: GetUser :one
 SELECT u.id, u.sub, u.username, u.email, u.phone_number, u.facility_id,
        u.department_id, d.name AS department_name,
        u.team_id, t.name AS team_name,
        u.position_id, p.name AS position_name,
-       u.suspended_at, u.created_at, u.updated_at
+       u.leave_started_at, u.leave_return_date, u.retired_at, u.created_at, u.updated_at
 FROM users u
 JOIN departments d ON d.id = u.department_id
 JOIN teams t ON t.id = u.team_id
@@ -134,21 +149,23 @@ WHERE u.id = $1
 `
 
 type GetUserRow struct {
-	ID             string
-	Sub            *string
-	Username       string
-	Email          string
-	PhoneNumber    *string
-	FacilityID     string
-	DepartmentID   string
-	DepartmentName string
-	TeamID         string
-	TeamName       string
-	PositionID     string
-	PositionName   string
-	SuspendedAt    *time.Time
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	ID              string
+	Sub             *string
+	Username        string
+	Email           *string
+	PhoneNumber     *string
+	FacilityID      string
+	DepartmentID    string
+	DepartmentName  string
+	TeamID          string
+	TeamName        string
+	PositionID      string
+	PositionName    string
+	LeaveStartedAt  *time.Time
+	LeaveReturnDate *time.Time
+	RetiredAt       *time.Time
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 func (q *Queries) GetUser(ctx context.Context, id string) (GetUserRow, error) {
@@ -167,7 +184,9 @@ func (q *Queries) GetUser(ctx context.Context, id string) (GetUserRow, error) {
 		&i.TeamName,
 		&i.PositionID,
 		&i.PositionName,
-		&i.SuspendedAt,
+		&i.LeaveStartedAt,
+		&i.LeaveReturnDate,
+		&i.RetiredAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -201,6 +220,171 @@ func (q *Queries) GetUserRef(ctx context.Context, id string) (GetUserRefRow, err
 	var i GetUserRefRow
 	err := row.Scan(&i.ID, &i.FacilityID, &i.TeamID)
 	return i, err
+}
+
+const listActiveStaffManagers = `-- name: ListActiveStaffManagers :many
+SELECT DISTINCT u.id
+FROM users u
+JOIN user_policies up ON up.user_id = u.id
+JOIN policies p ON p.id = up.policy_id
+WHERE u.facility_id = $1 AND p.code = 'staff.manage' AND u.leave_started_at IS NULL AND u.retired_at IS NULL
+ORDER BY u.id
+`
+
+// 事業所で職員の管理の権限を持つ、休職でも退職でもない職員の ID を返す。
+func (q *Queries) ListActiveStaffManagers(ctx context.Context, facilityID string) ([]string, error) {
+	rows, err := q.db.Query(ctx, listActiveStaffManagers, facilityID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listStaffAssignedPatients = `-- name: ListStaffAssignedPatients :many
+SELECT id, name FROM patients WHERE facility_id = $1 AND assigned_staff_id = $2 ORDER BY name, id
+`
+
+type ListStaffAssignedPatientsParams struct {
+	FacilityID      string
+	AssignedStaffID string
+}
+
+type ListStaffAssignedPatientsRow struct {
+	ID   string
+	Name string
+}
+
+func (q *Queries) ListStaffAssignedPatients(ctx context.Context, arg ListStaffAssignedPatientsParams) ([]ListStaffAssignedPatientsRow, error) {
+	rows, err := q.db.Query(ctx, listStaffAssignedPatients, arg.FacilityID, arg.AssignedStaffID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListStaffAssignedPatientsRow{}
+	for rows.Next() {
+		var i ListStaffAssignedPatientsRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listStaffRecurringSchedulesFrom = `-- name: ListStaffRecurringSchedulesFrom :many
+SELECT r.id, r.date, r.end_date, r.start_time, r.end_time
+FROM recurring_schedules r
+LEFT JOIN visit_infos v ON v.id = r.visit_info_id
+WHERE r.facility_id = $1
+  AND (r.staff_id = $2 OR v.assigned_staff_id = $2 OR v.companion_id = $2)
+  AND (r.end_date IS NULL OR r.end_date >= $3::date)
+ORDER BY r.date, r.start_time, r.id
+`
+
+type ListStaffRecurringSchedulesFromParams struct {
+	FacilityID string
+	StaffID    string
+	FromDate   time.Time
+}
+
+type ListStaffRecurringSchedulesFromRow struct {
+	ID        string
+	Date      time.Time
+	EndDate   *time.Time
+	StartTime pgtype.Time
+	EndTime   pgtype.Time
+}
+
+// 職員が予定の職員、主訪問者、同行者のどれかの、from 以降に終わる繰り返しの予定を返す。終了日の無い繰り返しは含める。
+func (q *Queries) ListStaffRecurringSchedulesFrom(ctx context.Context, arg ListStaffRecurringSchedulesFromParams) ([]ListStaffRecurringSchedulesFromRow, error) {
+	rows, err := q.db.Query(ctx, listStaffRecurringSchedulesFrom, arg.FacilityID, arg.StaffID, arg.FromDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListStaffRecurringSchedulesFromRow{}
+	for rows.Next() {
+		var i ListStaffRecurringSchedulesFromRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.EndDate,
+			&i.StartTime,
+			&i.EndTime,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listStaffSchedulesFrom = `-- name: ListStaffSchedulesFrom :many
+SELECT s.id, s.date, s.start_time, s.end_time
+FROM schedules s
+LEFT JOIN visit_infos v ON v.id = s.visit_info_id
+WHERE s.facility_id = $1
+  AND (s.staff_id = $2 OR v.assigned_staff_id = $2 OR v.companion_id = $2)
+  AND s.date >= $3
+  AND NOT EXISTS (SELECT 1 FROM schedule_cancels c WHERE c.schedule_id = s.id)
+ORDER BY s.date, s.start_time, s.id
+`
+
+type ListStaffSchedulesFromParams struct {
+	FacilityID string
+	StaffID    string
+	FromDate   time.Time
+}
+
+type ListStaffSchedulesFromRow struct {
+	ID        string
+	Date      time.Time
+	StartTime pgtype.Time
+	EndTime   pgtype.Time
+}
+
+// 職員が予定の職員、主訪問者、同行者のどれかの、from 以降のキャンセルしていない単発の予定を返す。
+func (q *Queries) ListStaffSchedulesFrom(ctx context.Context, arg ListStaffSchedulesFromParams) ([]ListStaffSchedulesFromRow, error) {
+	rows, err := q.db.Query(ctx, listStaffSchedulesFrom, arg.FacilityID, arg.StaffID, arg.FromDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListStaffSchedulesFromRow{}
+	for rows.Next() {
+		var i ListStaffSchedulesFromRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.StartTime,
+			&i.EndTime,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listUserPolicies = `-- name: ListUserPolicies :many
@@ -314,7 +498,7 @@ SELECT u.id, u.sub, u.username, u.email, u.phone_number, u.facility_id,
        u.department_id, d.name AS department_name,
        u.team_id, t.name AS team_name,
        u.position_id, p.name AS position_name,
-       u.suspended_at, u.created_at, u.updated_at
+       u.leave_started_at, u.leave_return_date, u.retired_at, u.created_at, u.updated_at
 FROM users u
 JOIN departments d ON d.id = u.department_id
 JOIN teams t ON t.id = u.team_id
@@ -344,21 +528,23 @@ type ListUsersByFacilityParams struct {
 }
 
 type ListUsersByFacilityRow struct {
-	ID             string
-	Sub            *string
-	Username       string
-	Email          string
-	PhoneNumber    *string
-	FacilityID     string
-	DepartmentID   string
-	DepartmentName string
-	TeamID         string
-	TeamName       string
-	PositionID     string
-	PositionName   string
-	SuspendedAt    *time.Time
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	ID              string
+	Sub             *string
+	Username        string
+	Email           *string
+	PhoneNumber     *string
+	FacilityID      string
+	DepartmentID    string
+	DepartmentName  string
+	TeamID          string
+	TeamName        string
+	PositionID      string
+	PositionName    string
+	LeaveStartedAt  *time.Time
+	LeaveReturnDate *time.Time
+	RetiredAt       *time.Time
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 func (q *Queries) ListUsersByFacility(ctx context.Context, arg ListUsersByFacilityParams) ([]ListUsersByFacilityRow, error) {
@@ -390,7 +576,9 @@ func (q *Queries) ListUsersByFacility(ctx context.Context, arg ListUsersByFacili
 			&i.TeamName,
 			&i.PositionID,
 			&i.PositionName,
-			&i.SuspendedAt,
+			&i.LeaveStartedAt,
+			&i.LeaveReturnDate,
+			&i.RetiredAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -404,13 +592,48 @@ func (q *Queries) ListUsersByFacility(ctx context.Context, arg ListUsersByFacili
 	return items, nil
 }
 
-const suspendUser = `-- name: SuspendUser :execrows
-UPDATE users SET suspended_at = coalesce(suspended_at, now()) WHERE id = $1
+const lockFacility = `-- name: LockFacility :one
+SELECT id FROM facilities WHERE id = $1 FOR UPDATE
 `
 
-// 止めた職員を止め直しても、最初に止めた時刻を残す。
-func (q *Queries) SuspendUser(ctx context.Context, id string) (int64, error) {
-	result, err := q.db.Exec(ctx, suspendUser, id)
+// 事業所の職員の休職と退職を 1 つずつにする。職員の管理の権限を持つ有効な職員を数えてから書くまでの間に、ほかの操作が割り込まない。
+func (q *Queries) LockFacility(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRow(ctx, lockFacility, id)
+	var id_2 string
+	err := row.Scan(&id_2)
+	return id_2, err
+}
+
+const retireUser = `-- name: RetireUser :execrows
+UPDATE users
+SET retired_at = coalesce(retired_at, now()), leave_started_at = NULL, leave_return_date = NULL,
+    email = NULL, phone_number = NULL
+WHERE id = $1
+`
+
+// 退職した職員を退職にし直しても、最初に退職にした時刻を残す。名前、所属、役職は残し、メールと電話番号を消す。
+func (q *Queries) RetireUser(ctx context.Context, id string) (int64, error) {
+	result, err := q.db.Exec(ctx, retireUser, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const startUserLeave = `-- name: StartUserLeave :execrows
+UPDATE users
+SET leave_started_at = coalesce(leave_started_at, now()), leave_return_date = $1
+WHERE id = $2 AND retired_at IS NULL
+`
+
+type StartUserLeaveParams struct {
+	ReturnDate *time.Time
+	ID         string
+}
+
+// 休職の職員を休職にし直しても、最初に休職にした時刻を残し、戻る予定の日だけを書き換える。退職した職員は書かない。
+func (q *Queries) StartUserLeave(ctx context.Context, arg StartUserLeaveParams) (int64, error) {
+	result, err := q.db.Exec(ctx, startUserLeave, arg.ReturnDate, arg.ID)
 	if err != nil {
 		return 0, err
 	}

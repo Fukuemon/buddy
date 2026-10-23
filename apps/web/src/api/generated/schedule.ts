@@ -264,7 +264,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/users/{user_id}/suspend": {
+    "/v1/users/{user_id}/leave": {
         parameters: {
             query?: never;
             header?: never;
@@ -274,13 +274,61 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 職員を止める
-         * @description 職員を止める。止めた職員はログインできず、ログインしている職員も、web が access token を取り直すとき（5 分以内）に使えなくなる。
-         *     予定の API は、止めた職員のリクエストを 403 で拒む。止めた職員を止めても成功し、止めた時刻は変わらない。
-         *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。自分は止められない。
-         *     ログインのセッションの取り消しに失敗したときは、職員を止めてから 500 を返す。送り直すと取り消しをやり直す。
+         * 職員を休職にする
+         * @description 職員を休職にする。休職の職員はログインできず、ログインしている職員も、web が access token を取り直すとき（5 分以内）に使えなくなる。
+         *     予定の API は、休職の職員のリクエストを 403 で拒む。休職の職員を休職にし直しても成功し、休職にした時刻は変えずに、戻る予定の日だけを書き換える。
+         *     戻る予定の日はメモで、その日に自動では戻さない。その日以降の予定、繰り返しの予定、担当の利用者が残っても拒まず、一覧を警告として返す。
+         *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。自分と、事業所で職員の管理の権限を持つ最後の有効な職員は、休職にできない。
+         *     ログインのセッションの取り消しに失敗したときは、職員を休職にしてから 500 を返す。送り直すと取り消しをやり直す。
          */
-        post: operations["suspendUser"];
+        post: operations["startUserLeave"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/users/{user_id}/reinstate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 休職の職員を復職にする
+         * @description 休職の職員を有効に戻す。職員は、休職の前に結び付けた上流のアカウントで、そのままログインできる。有効な職員を復職にしても成功する。
+         *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。退職した職員は戻せない。
+         *     認証のブローカーに届かなかったときは、休職を外してから 500 を返す。その間、職員はログインできない。送り直すとブローカーの職員を戻す。
+         */
+        post: operations["reinstateUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/users/{user_id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 職員を退職にする
+         * @description 職員を退職にする。退職した職員はログインできず、戻せない。名前、所属、役職は残し、過去の予定と照合の結果で主訪問者として読める。
+         *     メールと電話番号は消し、認証のブローカーは職員のメールと上流のアカウントを消す。同じメールで、新しい職員として登録し直せる。
+         *     その日以降の予定、繰り返しの予定、担当の利用者が残るときは、書かずに 409（staff_has_assignments）で残る一覧を返す。
+         *     退職した職員を退職にしても成功する。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         *     自分と、事業所で職員の管理の権限を持つ最後の有効な職員は、退職にできない。
+         *     ログインのセッションの取り消しに失敗したときは、職員を退職にしてから 500 を返す。送り直すと取り消しをやり直す。
+         */
+        post: operations["retireUser"];
         delete?: never;
         options?: never;
         head?: never;
@@ -747,7 +795,7 @@ export interface components {
         Time: string;
         Error: {
             /** @enum {string} */
-            code: "invalid_input" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "internal" | "calendar_unreadable" | "calendar_unavailable" | "calendar_not_configured" | "calendar_taken" | "calendar_already_linked" | "staff_has_calendar" | "import_running" | "import_preview_changed" | "export_not_in_review" | "export_not_acceptable" | "external_change_unappliable";
+            code: "invalid_input" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "internal" | "calendar_unreadable" | "calendar_unavailable" | "calendar_not_configured" | "calendar_taken" | "calendar_already_linked" | "staff_has_calendar" | "import_running" | "import_preview_changed" | "export_not_in_review" | "export_not_acceptable" | "external_change_unappliable" | "staff_has_assignments";
             /** @description 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う */
             message: string;
         };
@@ -805,23 +853,82 @@ export interface components {
         Staff: {
             id: components["schemas"]["ID"];
             username: string;
-            /** Format: email */
-            email: string;
-            /** @example +09000000000 */
+            /**
+             * Format: email
+             * @description 退職した職員では null
+             */
+            email: string | null;
+            /**
+             * @description 退職した職員では null
+             * @example +09000000000
+             */
             phone_number: string | null;
             facility_id: components["schemas"]["ID"];
             department: components["schemas"]["Ref"];
             team: components["schemas"]["Ref"];
             position: components["schemas"]["Ref"];
+            status: components["schemas"]["StaffStatus"];
             /**
              * Format: date-time
-             * @description 職員を止めた時刻。止めていなければ null
+             * @description 職員を休職にした時刻。休職でなければ null
              */
-            suspended_at: string | null;
+            leave_started_at: string | null;
+            /**
+             * Format: date
+             * @description 休職から戻る予定の日のメモ。この日に自動では戻さない。休職でないか、メモが無ければ null
+             */
+            leave_return_date: string | null;
+            /**
+             * Format: date-time
+             * @description 職員を退職にした時刻。退職していなければ null
+             */
+            retired_at: string | null;
             /** Format: date-time */
             created_at: string;
             /** Format: date-time */
             updated_at: string;
+        };
+        /**
+         * @description 職員の状態。active は有効、on_leave は休職、retired は退職である。休職と退職の職員はログインできず、
+         *     予定のカレンダーと予定の候補に出さない
+         * @enum {string}
+         */
+        StaffStatus: "active" | "on_leave" | "retired";
+        /** @description 職員を休職か退職にするときに残る、その日以降の予定、繰り返しの予定、担当の利用者。職員が予定の職員、主訪問者、同行者のどれかの予定を含める */
+        StaffAssignments: {
+            /** @description その日以降のキャンセルしていない単発の予定。日時の順 */
+            schedules: {
+                id: components["schemas"]["ID"];
+                date: components["schemas"]["Date"];
+                start_time: components["schemas"]["Time"];
+                end_time: components["schemas"]["Time"];
+            }[];
+            /** @description その日以降に終わる繰り返しの予定。終了日の無い繰り返しを含める。最初の回の日時の順 */
+            recurring_schedules: {
+                id: components["schemas"]["ID"];
+                /** @description 最初の回の日付 */
+                date: components["schemas"]["Date"];
+                /**
+                 * Format: date
+                 * @description 終了日。終了日が無ければ null
+                 */
+                end_date: string | null;
+                start_time: components["schemas"]["Time"];
+                end_time: components["schemas"]["Time"];
+            }[];
+            /** @description 職員が主に担当する利用者。名前の順 */
+            patients: {
+                id: components["schemas"]["ID"];
+                name: string;
+            }[];
+        };
+        StaffStatusChange: {
+            staff: components["schemas"]["StaffDetail"];
+            assignments: components["schemas"]["StaffAssignments"];
+        };
+        RetireConflict: components["schemas"]["Error"] & {
+            /** @description code が staff_has_assignments のとき、残る予定と担当の利用者 */
+            assignments?: components["schemas"]["StaffAssignments"];
         };
         StaffDetail: components["schemas"]["Staff"] & {
             /** @description 認証のブローカーの職員の ID。登録のときにブローカーが発行する。ブローカーで職員を作る前に登録した職員では null */
@@ -1817,7 +1924,59 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
-    suspendUser: {
+    startUserLeave: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["ID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * Format: date
+                     * @description 戻る予定の日のメモ。省略するか null なら持たない
+                     */
+                    return_date?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description 休職にした職員と、その日以降に残る予定と担当の利用者 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffStatusChange"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description 自分か、事業所で職員の管理の権限を持つ最後の有効な職員か、退職した職員を休職にしようとした */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "conflict",
+                     *       "message": "自分を休職か退職にすることはできません"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    reinstateUser: {
         parameters: {
             query?: never;
             header?: never;
@@ -1828,7 +1987,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 止めた職員と権限 */
+            /** @description 復職にした職員と権限 */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1841,7 +2000,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description 自分を止めようとした */
+            /** @description 退職した職員を復職にしようとした */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1850,10 +2009,67 @@ export interface operations {
                     /**
                      * @example {
                      *       "code": "conflict",
-                     *       "message": "自分を止めることはできません"
+                     *       "message": "退職した職員は復職できません"
                      *     }
                      */
                     "application/json": components["schemas"]["Error"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    retireUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["ID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 退職にした職員。残る予定と担当の利用者は空 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffStatusChange"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description その日以降の予定か担当の利用者が残る（staff_has_assignments。assignments に残る一覧がある）か、
+             *     自分か、事業所で職員の管理の権限を持つ最後の有効な職員を退職にしようとした（conflict）
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "staff_has_assignments",
+                     *       "message": "予定か担当の利用者が残る職員は退職にできません。別の職員に割り振り直してください",
+                     *       "assignments": {
+                     *         "schedules": [
+                     *           {
+                     *             "id": "01M3TC5H00QV17BC0J9V3393ZP",
+                     *             "date": "2026-11-02",
+                     *             "start_time": "09:00",
+                     *             "end_time": "10:00"
+                     *           }
+                     *         ],
+                     *         "recurring_schedules": [],
+                     *         "patients": []
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["RetireConflict"];
                 };
             };
             500: components["responses"]["InternalError"];

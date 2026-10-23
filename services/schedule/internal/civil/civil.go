@@ -4,12 +4,21 @@ package civil
 import (
 	"fmt"
 	"time"
+	_ "time/tzdata" // 配布のイメージ（distroless）にタイムゾーンのデータが無くても Asia/Tokyo を読むため。
 )
 
 const (
 	dateLayout = "2006-01-02"
 	timeLayout = "15:04"
 )
+
+var tokyo = func() *time.Location {
+	loc, err := time.LoadLocation("Asia/Tokyo")
+	if err != nil {
+		panic(err)
+	}
+	return loc
+}()
 
 // Date は、年月日だけの日付である。
 type Date struct {
@@ -25,6 +34,11 @@ func ParseDate(s string) (Date, error) {
 		return Date{}, fmt.Errorf("日付は YYYY-MM-DD の形です: %q", s)
 	}
 	return DateOf(t), nil
+}
+
+// Today は、t の事業所の現地（Asia/Tokyo）での日付を返す。予定の日付は事業所の現地の日付で持つ。
+func Today(t time.Time) Date {
+	return DateOf(t.In(tokyo))
 }
 
 // DateOf は、t の場所での日付を返す。

@@ -357,16 +357,20 @@ type User struct {
 	Sub *string
 	// 電子カルテの職員名と同じ表記。照合が名前で比べる
 	Username string
-	// 小文字にそろえた値。事業所の中で一意
-	Email        string
+	// 小文字にそろえた値。事業所の中で一意。退職した職員では NULL
+	Email        *string
 	PhoneNumber  *string
 	DepartmentID string
 	TeamID       string
 	PositionID   string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
-	// 職員を止めた時刻。止めていなければ NULL
-	SuspendedAt *time.Time
+	// 職員を休職にした時刻。休職でなければ NULL
+	LeaveStartedAt *time.Time
+	// 休職から戻る予定の日のメモ。この日に自動では戻さない
+	LeaveReturnDate *time.Time
+	// 職員を退職にした時刻。退職していなければ NULL
+	RetiredAt *time.Time
 }
 
 // 職員が持つ権限。職員と権限の組で一意

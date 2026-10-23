@@ -56,9 +56,14 @@ func TestAuthenticateFindsStaffBySub(t *testing.T) {
 }
 
 func TestAuthenticateForbidden(t *testing.T) {
-	suspended := func(s *inmem.Store) {
+	onLeave := func(s *inmem.Store) {
 		d := s.Staff[staffID]
-		d.SuspendedAt = ptr(time.Date(2026, 10, 23, 9, 0, 0, 0, time.UTC))
+		d.LeaveStartedAt = ptr(time.Date(2026, 10, 23, 9, 0, 0, 0, time.UTC))
+		s.Staff[staffID] = d
+	}
+	retired := func(s *inmem.Store) {
+		d := s.Staff[staffID]
+		d.RetiredAt = ptr(time.Date(2026, 10, 23, 9, 0, 0, 0, time.UTC))
 		s.Staff[staffID] = d
 	}
 	tests := []struct {
@@ -71,7 +76,8 @@ func TestAuthenticateForbidden(t *testing.T) {
 		// 初回のログインの結び付けはしない。sub の職員がいなければ、メールで探さずに拒む
 		{name: "sub の職員がいない", id: principal.Identity{Subject: "sub-unknown", OrgID: orgID}},
 		{name: "sub の職員がほかの組織の事業所", id: principal.Identity{Subject: sub, OrgID: otherOrgID}},
-		{name: "職員が止められている", edit: suspended, id: principal.Identity{Subject: sub, OrgID: orgID}},
+		{name: "職員が休職している", edit: onLeave, id: principal.Identity{Subject: sub, OrgID: orgID}},
+		{name: "職員が退職している", edit: retired, id: principal.Identity{Subject: sub, OrgID: orgID}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
