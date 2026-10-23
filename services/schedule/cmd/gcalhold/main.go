@@ -7,7 +7,7 @@
 //	go run ./cmd/gcalhold -addr 127.0.0.1:8085 -upstream http://127.0.0.1:4173
 //
 // 予定の API は、GOOGLE_CALENDAR_ENDPOINT にこのサーバーの /calendar/v3/ を渡して呼ぶ。
-// `gcalhold healthcheck` は、サーバーを起動せず、compose のコンテナの中で 8080 に動いているサーバーの GET /healthz を確かめて終わる。
+// `gcalhold healthcheck` は、サーバーを起動せず、compose のコンテナの中で 8080 に動いているサーバーの GET /healthz を確認して終わる。
 package main
 
 import (

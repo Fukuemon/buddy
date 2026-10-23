@@ -732,7 +732,7 @@ func TestPolicyList(t *testing.T) {
 	}
 }
 
-// TestStaffCreateRejectsTarget は、対象の職員とチームの両方か、どちらも持たない対象を DB が拒むことを確かめる。
+// TestStaffCreateRejectsTarget は、対象の職員とチームの両方か、どちらも持たない対象を DB が拒むことを確認する。
 func TestStaffCreateRejectsTarget(t *testing.T) {
 	for name, target := range map[string]staff.Target{
 		"両方":     {ID: "01M3TD00000000000000000021", UserID: seedMori, TeamID: seedTeam},
@@ -752,7 +752,7 @@ func TestStaffCreateRejectsTarget(t *testing.T) {
 	}
 }
 
-// TestStaffChangePosition は、役職を変えると、前の権限と対象が消え、渡した権限だけになることを確かめる。
+// TestStaffChangePosition は、役職を変えると、前の権限と対象が消え、渡した権限だけになることを確認する。
 func TestStaffChangePosition(t *testing.T) {
 	ctx := txContext(t)
 	r := NewStaffRepository(testDB)
@@ -780,7 +780,7 @@ func TestStaffChangePosition(t *testing.T) {
 	}
 }
 
-// TestStaffAddAndRemoveGrant は、権限と対象を足し、同じ権限の 2 つ目を拒み、外すと対象も消えることを確かめる。
+// TestStaffAddAndRemoveGrant は、権限と対象を足し、同じ権限の 2 つ目を拒み、外すと対象も消えることを確認する。
 func TestStaffAddAndRemoveGrant(t *testing.T) {
 	ctx := txContext(t)
 	r := NewStaffRepository(testDB)
@@ -829,7 +829,7 @@ func TestSeedStaffManage(t *testing.T) {
 	}
 }
 
-// TestGrantAllowsReadingTarget は、職員の権限を足すと、DB から読み直した職員の判定で対象の職員の予定を見られることを確かめる。
+// TestGrantAllowsReadingTarget は、職員の権限を足すと、DB から読み直した職員の判定で対象の職員の予定を見られることを確認する。
 func TestGrantAllowsReadingTarget(t *testing.T) {
 	ctx := txContext(t)
 	r := NewStaffRepository(testDB)
@@ -859,7 +859,7 @@ func TestGrantAllowsReadingTarget(t *testing.T) {
 	}
 }
 
-// TestNamesAreComparedExactly は、名前の一意の制約と絞り込みが、清音と濁音、全角と半角、大文字と小文字を別の名前とみなすことを確かめる。
+// TestNamesAreComparedExactly は、名前の一意の制約と絞り込みが、清音と濁音、全角と半角、大文字と小文字を別の名前とみなすことを確認する。
 func TestNamesAreComparedExactly(t *testing.T) {
 	ctx := txContext(t)
 	r := NewTeamRepository(testDB)
@@ -892,7 +892,7 @@ func TestStaffCreateRejectsUppercaseEmail(t *testing.T) {
 	}
 }
 
-// TestScheduleRejectsOtherFacilityStaff は、複合の外部キーが、別の事業所の職員を指す予定を拒むことを確かめる。
+// TestScheduleRejectsOtherFacilityStaff は、複合の外部キーが、別の事業所の職員を指す予定を拒むことを確認する。
 func TestScheduleRejectsOtherFacilityStaff(t *testing.T) {
 	ctx := txContext(t)
 	tx := ctx.Value(txKey{}).(pgx.Tx)
@@ -925,7 +925,7 @@ func TestScheduleRejectsOtherFacilityStaff(t *testing.T) {
 	}
 }
 
-// TestScheduleColumnsFromDB は、時間外の勤務を開始の時刻から DB が決めることと、置き換えた回の組と訪問の情報が予定ごとに一意であることを確かめる。
+// TestScheduleColumnsFromDB は、時間外の勤務を開始の時刻から DB が決めることと、置き換えた回の組と訪問の情報が予定ごとに一意であることを確認する。
 func TestScheduleColumnsFromDB(t *testing.T) {
 	ctx := txContext(t)
 	r := NewScheduleRepository(testDB)
@@ -972,7 +972,7 @@ func TestScheduleColumnsFromDB(t *testing.T) {
 	}
 }
 
-// TestExternalCalendarsOneActivePerStaff は、職員ごとに 1 つの外部のカレンダーの制約が、外していないレコードだけに当たることを確かめる。
+// TestExternalCalendarsOneActivePerStaff は、職員ごとに 1 つの外部のカレンダーの制約が、外していないレコードだけに当たることを確認する。
 func TestExternalCalendarsOneActivePerStaff(t *testing.T) {
 	ctx := txContext(t)
 	tx := ctx.Value(txKey{}).(pgx.Tx)

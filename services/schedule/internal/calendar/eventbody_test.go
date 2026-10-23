@@ -51,7 +51,7 @@ func TestScheduleBodyVisitTitle(t *testing.T) {
 
 func intp(v int) *int { return &v }
 
-// TestRecurrenceOfRoundTrip は、buddy の規則を RRULE にして読み戻すと、同じ規則と除外の日になることを確かめる。
+// TestRecurrenceOfRoundTrip は、buddy の規則を RRULE にして読み戻すと、同じ規則と除外の日になることを確認する。
 func TestRecurrenceOfRoundTrip(t *testing.T) {
 	first := civil.Date{Year: 2026, Month: 11, Day: 10} // 火曜で、11 月の第 2 週
 	end := civil.Date{Year: 2027, Month: 3, Day: 31}

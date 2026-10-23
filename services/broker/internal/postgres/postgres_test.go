@@ -99,8 +99,8 @@ const (
 	staffB = "01JBBBBBBBBBBBBBBBBBBBBBBB"
 )
 
-// TestSchema は、職員と上流のアカウントのテーブルの制約を確かめる。
-// 各ケースは、前提の行を入れた後に 1 つの文を流し、違反する制約の名前（空なら成功）を確かめる。
+// TestSchema は、職員と上流のアカウントのテーブルの制約を確認する。
+// 各ケースは、前提の行を入れた後に 1 つの文を流し、違反する制約の名前（空なら成功）を確認する。
 func TestSchema(t *testing.T) {
 	pool := migrated(t)
 	ctx := context.Background()
@@ -147,7 +147,7 @@ func TestSchema(t *testing.T) {
 	}
 }
 
-// TestSchemaUpdatedAtAndCascade は、更新の日時を書き換えることと、職員を消すと上流のアカウントも消えることを確かめる。
+// TestSchemaUpdatedAtAndCascade は、更新の日時を書き換えることと、職員を消すと上流のアカウントも消えることを確認する。
 func TestSchemaUpdatedAtAndCascade(t *testing.T) {
 	pool := migrated(t)
 	ctx := context.Background()

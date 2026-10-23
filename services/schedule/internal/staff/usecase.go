@@ -271,7 +271,7 @@ func (s *Usecase) AddGrant(ctx context.Context, id string, in GrantInput) (Detai
 	return changed, err
 }
 
-// targets は、権限 p の対象を確かめ、同じ事業所 facilityID の職員かチームの対象を作る。
+// targets は、権限 p の対象を確認し、同じ事業所 facilityID の職員かチームの対象を作る。
 func (s *Usecase) targets(ctx context.Context, p organization.Policy, facilityID string, in GrantInput) ([]Target, error) {
 	users, teams := in.TargetUserIDs, in.TargetTeamIDs
 	switch {

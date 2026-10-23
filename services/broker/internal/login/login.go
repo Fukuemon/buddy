@@ -264,7 +264,7 @@ func (h handler) callback(w http.ResponseWriter, r *http.Request) {
 	h.accept(w, r, p.Challenge, m.ID)
 }
 
-// match は、上流の IdP の主張 id が職員 m のものかを確かめ、違えば理由を返す。
+// match は、上流の IdP の主張 id が職員 m のものかを確認し、違えば理由を返す。
 // 結び付け済みの職員は iss と sub で照らす。まだの職員は、確認済みのメールが登録と同じときだけ結び付ける。
 func (h handler) match(ctx context.Context, m StaffMember, id upstream.Identity) string {
 	if m.Status != StatusActive {

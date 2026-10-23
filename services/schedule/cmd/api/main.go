@@ -1,6 +1,6 @@
 // Command api は、予定の API の HTTP サーバーを起動する。SIGINT か SIGTERM を受けると、
 // 処理中のリクエストを最大 30 秒待ってから止まる。設定は internal/config の Load が読む環境変数である。
-// `api healthcheck` は、サーバーを起動せず、動いているサーバーの GET /readyz を確かめて終わる。
+// `api healthcheck` は、サーバーを起動せず、動いているサーバーの GET /readyz を確認して終わる。
 package main
 
 import (

@@ -117,7 +117,7 @@ func (r *CalendarExportRepository) Get(ctx context.Context, id string) (calendar
 	return toExport(e), nil
 }
 
-// ListIssues は、事業所の確かめが要る待ちを、新しく変わった順に返す。
+// ListIssues は、事業所の確認が必要な待ちを、新しく変わった順に返す。
 func (r *CalendarExportRepository) ListIssues(ctx context.Context, facilityID string) ([]calendar.ExportIssue, error) {
 	rows, err := r.q(ctx).ListCalendarExportIssues(ctx, facilityID)
 	if err != nil {
@@ -150,7 +150,7 @@ func (r *CalendarExportRepository) ListIssues(ctx context.Context, facilityID st
 	return out, nil
 }
 
-// Retry は、確かめが要る待ち id を、buddy の内容で書き直す pending の待ちにする。確かめが要る待ちでなければ apperr.ErrConflict を返す。
+// Retry は、確認が必要な待ち id を、buddy の内容で書き直す pending の待ちにする。確認が必要な待ちでなければ apperr.ErrConflict を返す。
 func (r *CalendarExportRepository) Retry(ctx context.Context, id string) error {
 	n, err := r.q(ctx).RetryCalendarExport(ctx, id)
 	if err != nil {
@@ -179,7 +179,7 @@ func (r *CalendarExportRepository) Open(ctx context.Context, t calendar.Target) 
 	return toExport(e), nil
 }
 
-// Hold は、t の終わっていない待ちを、理由が code の確かめが要る待ちにするか、ID が id の確かめが要る待ちを足す。
+// Hold は、t の終わっていない待ちを、理由が code の確認が必要な待ちにするか、ID が id の確認が必要な待ちを足す。
 func (r *CalendarExportRepository) Hold(ctx context.Context, id string, t calendar.Target, code calendar.ExportErrorCode) error {
 	c := string(code)
 	if t.ScheduleID != "" {
@@ -192,7 +192,7 @@ func (r *CalendarExportRepository) Hold(ctx context.Context, id string, t calend
 	}))
 }
 
-// Resolve は、確かめが要る待ち id を終えた待ちにする。確かめが要る待ちでないか、Revision が revision でなければ apperr.ErrConflict を返す。
+// Resolve は、確認が必要な待ち id を終えた待ちにする。確認が必要な待ちでないか、Revision が revision でなければ apperr.ErrConflict を返す。
 func (r *CalendarExportRepository) Resolve(ctx context.Context, id string, revision int) error {
 	rev, err := int32Of(revision)
 	if err != nil {

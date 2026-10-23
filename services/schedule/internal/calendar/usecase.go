@@ -32,9 +32,9 @@ const (
 	CodeStaffHasCalendar = "staff_has_calendar"
 	// CodeImportRunning は、同じカレンダーの取り込みが進んでいることを表す。
 	CodeImportRunning = "import_running"
-	// CodeReviewChanged は、プレビューの後に確かめが要る予定が変わったことを表す。
+	// CodeReviewChanged は、プレビューの後に確認が必要な予定が変わったことを表す。
 	CodeReviewChanged = "import_preview_changed"
-	// CodeExportNotInReview は、書き直そうとした書き出しが、確かめが要る状態でないことを表す。
+	// CodeExportNotInReview は、書き直そうとした書き出しが、確認が必要な状態でないことを表す。
 	CodeExportNotInReview = "export_not_in_review"
 	// CodeExportNotAcceptable は、外部のカレンダーの内容を buddy に当てられない書き出しであることを表す。
 	// 繰り返しの予定と、書けなかった（failed）書き出しが当たる。
@@ -99,7 +99,7 @@ type Deps struct {
 	Exports ExportRepository
 }
 
-// Usecase は、外部のカレンダーの結び付けと、予定の取り込みと、確かめが要る書き出しの操作である。全ての操作は、guard が許すときだけ行う（ADR-0006）。
+// Usecase は、外部のカレンダーの結び付けと、予定の取り込みと、確認が必要な書き出しの操作である。全ての操作は、guard が許すときだけ行う（ADR-0006）。
 type Usecase struct {
 	deps  Deps
 	tx    tx.Transactor
@@ -143,7 +143,7 @@ func (u *Usecase) List(ctx context.Context, facilityID string) ([]ExternalCalend
 	return u.deps.Calendars.ListByFacility(ctx, facilityID)
 }
 
-// Check は、事業所 facilityID のサービスアカウントで calendarID のカレンダーを読めるかを確かめる。
+// Check は、事業所 facilityID のサービスアカウントで calendarID のカレンダーを読めるかを確認する。
 // 読めないときは ErrUnreadable か ErrUnavailable を包んだエラーを返す。
 func (u *Usecase) Check(ctx context.Context, facilityID, calendarID string) error {
 	if err := u.guard(ctx); err != nil {
@@ -168,7 +168,7 @@ func (u *Usecase) checkSource(ctx context.Context, facilityID, calendarID string
 	return src, calendarID, nil
 }
 
-// Link は、事業所の職員 staffID に、calendarID のカレンダーを結び付ける。事業所のサービスアカウントで読めるかを確かめてから書く。
+// Link は、事業所の職員 staffID に、calendarID のカレンダーを結び付ける。事業所のサービスアカウントで読めるかを確認してから書く。
 // 外した同じカレンダーが同じ職員にあれば、結び付け直す。
 // 職員が見つからないか別の事業所の職員のときは入力のエラーを、職員にほかのカレンダーがあるか、
 // カレンダーがほかの職員に結び付いているか、すでに結び付いているときは apperr.ErrConflict を返す。
@@ -276,8 +276,8 @@ type ImportResult struct {
 }
 
 // Import は、カレンダー id の期間 rng の予定を読み直し、プレビューと同じ規則で読み替えて、1 つのトランザクションで書く。
-// 確かめが要る予定には decisions の取り込み方を当てる。
-// 確かめが要る予定の集合が decisions と違うときと、同じカレンダーの取り込みが進んでいるときは apperr.ErrConflict を返し、何も書かない。
+// 確認が必要な予定には decisions の取り込み方を当てる。
+// 確認が必要な予定の集合が decisions と違うときと、同じカレンダーの取り込みが進んでいるときは apperr.ErrConflict を返し、何も書かない。
 // ほかのエラーは Preview と同じである。
 func (u *Usecase) Import(ctx context.Context, id string, rng Range, decisions []Decision) (ImportResult, error) {
 	if err := u.guard(ctx); err != nil {
@@ -547,7 +547,7 @@ func (u *Usecase) link(ctx context.Context, c ExternalCalendar, e entry, schedul
 	return u.deps.Calendars.CreateLink(ctx, l)
 }
 
-// ListExportIssues は、事業所の確かめが要る書き出し（外部のカレンダーで変わっていたか、書けなかった予定）を返す。
+// ListExportIssues は、事業所の確認が必要な書き出し（外部のカレンダーで変わっていたか、書けなかった予定）を返す。
 func (u *Usecase) ListExportIssues(ctx context.Context, facilityID string) ([]ExportIssue, error) {
 	if err := u.guard(ctx); err != nil {
 		return nil, err
@@ -555,8 +555,8 @@ func (u *Usecase) ListExportIssues(ctx context.Context, facilityID string) ([]Ex
 	return u.deps.Exports.ListIssues(ctx, facilityID)
 }
 
-// RetryExport は、確かめが要る書き出し id を、外部の予定の変更を比べずに buddy の内容で書き直す待ちにして、待ちを返す。
-// 待ちが見つからないときは apperr.ErrNotFound を、確かめが要る待ちでないときは apperr.ErrConflict を返す。
+// RetryExport は、確認が必要な書き出し id を、外部の予定の変更を比べずに buddy の内容で書き直す待ちにして、待ちを返す。
+// 待ちが見つからないときは apperr.ErrNotFound を、確認が必要な待ちでないときは apperr.ErrConflict を返す。
 func (u *Usecase) RetryExport(ctx context.Context, id string) (Export, error) {
 	if err := u.guard(ctx); err != nil {
 		return Export{}, err
@@ -573,10 +573,10 @@ func (u *Usecase) RetryExport(ctx context.Context, id string) (Export, error) {
 	return u.deps.Exports.Get(ctx, id)
 }
 
-// AcceptExport は、確かめが要る書き出し id の予定を、buddy での変更によらず外部のカレンダーの今の内容にし、待ちを終えて返す。
+// AcceptExport は、確認が必要な書き出し id の予定を、buddy での変更によらず外部のカレンダーの今の内容にし、待ちを終えて返す。
 // 外部のカレンダーで消された予定は、キャンセルする。予定の職員が、外部の予定のカレンダーの職員と違えば、書き出しの待ちを積み直し、
 // 今の職員のカレンダーへ移させる。
-// 待ちが見つからないときは apperr.ErrNotFound を、確かめが要る待ちでないとき、外部の内容を当てられない待ちのとき、
+// 待ちが見つからないときは apperr.ErrNotFound を、確認が必要な待ちでないとき、外部の内容を当てられない待ちのとき、
 // 外部の予定を buddy の予定に読み替えられないときは apperr.ErrConflict を返す。外部のカレンダーを読めないときは Preview と同じである。
 func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 	if err := u.guard(ctx); err != nil {
@@ -616,7 +616,7 @@ func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 	}
 	err = u.tx.WithinTx(ctx, func(ctx context.Context) error {
 		// 予定の行をロックしてから Google の予定を読む。同期の処理も同じ行をロックして Google の変更を当てるので、
-		// 読んだ後に Google で変わった予定は、同期が後で比べて当てるか確かめが要る待ちにする。
+		// 読んだ後に Google で変わった予定は、同期が後で比べて当てるか確認が必要な待ちにする。
 		locked, err := u.deps.Schedules.GetForUpdate(ctx, e.ScheduleID)
 		if err != nil {
 			return err
@@ -637,7 +637,7 @@ func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 		if err != nil {
 			return err
 		}
-		// ロックを取らない RetryExport が、確かめた後に書き直す待ちにしたときに当たる。
+		// ロックを取らない RetryExport が、確認した後に書き直す待ちにしたときに当たる。
 		if err := u.deps.Exports.Resolve(ctx, id, cur.Revision); errors.Is(err, apperr.ErrConflict) {
 			return errNotInReview
 		} else if err != nil {
@@ -678,7 +678,7 @@ func externalEvent(ctx context.Context, src EventSource, c ExternalCalendar, l L
 }
 
 var (
-	errNotInReview   = apperr.ConflictCode(CodeExportNotInReview, "この予定は、確かめが要る書き出しではありません")
+	errNotInReview   = apperr.ConflictCode(CodeExportNotInReview, "この予定は、確認が必要な書き出しではありません")
 	errNotAcceptable = apperr.ConflictCode(CodeExportNotAcceptable,
 		"この予定は、Google カレンダーの内容を buddy に当てられません。buddy の内容で書き直してください")
 )

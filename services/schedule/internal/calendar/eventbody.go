@@ -51,7 +51,7 @@ var (
 	// ErrEventExists は、作ろうとした ID の予定が、消したものを含めて外部のカレンダーにあることを表す。
 	ErrEventExists = errors.New("外部のカレンダーに同じ ID の予定があります")
 	// ErrUnwritable は、サービスアカウントがカレンダーに予定を書けないことを表す。
-	ErrUnwritable = errors.New("カレンダーに予定を書けません。予定の変更の権限で共有されているかを確かめてください")
+	ErrUnwritable = errors.New("カレンダーに予定を書けません。予定の変更の権限で共有されているかを確認してください")
 )
 
 // EventWriter は、外部のカレンダーに予定を書く。エラーは、ErrEventChanged、ErrEventGone、ErrEventNotFound、ErrEventExists、

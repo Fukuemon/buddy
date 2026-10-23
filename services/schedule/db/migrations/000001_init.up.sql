@@ -117,7 +117,7 @@ CREATE TABLE user_policies (
 );
 CREATE INDEX user_policies_facility_user_idx ON user_policies (facility_id, user_id);
 
--- 対象は職員かチームのどちらか 1 つである。NULL の側の複合の外部キーは確かめない（MATCH SIMPLE）。
+-- 対象は職員かチームのどちらか 1 つである。NULL の側の複合の外部キーは確認しない（MATCH SIMPLE）。
 CREATE TABLE user_policy_targets (
     id             text COLLATE "C" NOT NULL CHECK (id ~ '^[0-7][0-9A-HJKMNP-TV-Z]{25}$'),
     facility_id    text COLLATE "C" NOT NULL,

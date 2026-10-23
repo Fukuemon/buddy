@@ -432,7 +432,7 @@ func TestStaffRemoveGrant(t *testing.T) {
 	}
 }
 
-// TestStaffManageForbidden は、職員の管理を許されない職員には、職員の登録と、権限と役職を変える操作が apperr.ErrForbidden を返すことを確かめる。
+// TestStaffManageForbidden は、職員の管理を許されない職員には、職員の登録と、権限と役職を変える操作が apperr.ErrForbidden を返すことを確認する。
 func TestStaffManageForbidden(t *testing.T) {
 	ctx := context.Background()
 	uc := newUsecase(grantStore(), deny)

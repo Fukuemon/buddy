@@ -225,14 +225,14 @@ func TestExportConflictWhenChangedInGoogle(t *testing.T) {
 	}
 	issues, err := e.uc.ListExportIssues(e.ctx, inmem.FacilityID)
 	if err != nil || len(issues) != 1 || issues[0].ScheduleID != d.ID || issues[0].StaffID != inmem.StaffID || issues[0].Date.Day != 5 {
-		t.Fatalf("確かめが要る書き出し = %+v, %v", issues, err)
+		t.Fatalf("確認が必要な書き出し = %+v, %v", issues, err)
 	}
 
 	// 解くまでは、buddy で変えても書かない
 	writes := e.srv.Writes()
 	e.update(t, d.ID, "もう一度変更", inmem.StaffID)
 	if n := e.run(t); n != 0 || e.srv.Writes() != writes {
-		t.Errorf("確かめが要る予定を書いた: 待ち %d、書き込み %d", n, e.srv.Writes()-writes)
+		t.Errorf("確認が必要な予定を書いた: 待ち %d、書き込み %d", n, e.srv.Writes()-writes)
 	}
 
 	if _, err := e.uc.RetryExport(e.ctx, x.ID); err != nil {
@@ -246,7 +246,7 @@ func TestExportConflictWhenChangedInGoogle(t *testing.T) {
 		t.Errorf("書き直した待ち = %+v", x)
 	}
 	if issues, _ := e.uc.ListExportIssues(e.ctx, inmem.FacilityID); len(issues) != 0 {
-		t.Errorf("解いた後の確かめが要る書き出し = %+v", issues)
+		t.Errorf("解いた後の確認が必要な書き出し = %+v", issues)
 	}
 	var ce *apperr.ConflictError
 	if _, err := e.uc.RetryExport(e.ctx, x.ID); !errors.As(err, &ce) || ce.Code != calendar.CodeExportNotInReview {
@@ -589,7 +589,7 @@ func TestExportCancelEventDeletedInGoogle(t *testing.T) {
 		t.Errorf("予定の対応が残った: %v", err)
 	}
 	if issues, _ := e.uc.ListExportIssues(e.ctx, inmem.FacilityID); len(issues) != 0 {
-		t.Errorf("確かめが要る書き出し = %+v", issues)
+		t.Errorf("確認が必要な書き出し = %+v", issues)
 	}
 }
 
@@ -645,7 +645,7 @@ func TestExportRecurringKeepsImportedExceptions(t *testing.T) {
 }
 
 // 書き出しは、リクエストを受けずに動くので、予定の職員が結び付けたカレンダーの行の事業所のサービスアカウントで書く。
-// カレンダーの行の事業所を予定の事業所と違う値にして、作る、変える、消すの全てがその事業所で引くことを確かめる。
+// カレンダーの行の事業所を予定の事業所と違う値にして、作る、変える、消すの全てがその事業所で引くことを確認する。
 func TestExportUsesCalendarFacilityAccount(t *testing.T) {
 	e := newExportEnv(t)
 	c := e.store.Calendars[calID]

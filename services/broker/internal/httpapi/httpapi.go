@@ -12,7 +12,7 @@ import (
 // Config は、NewHandler の設定である。
 type Config struct {
 	Logger *slog.Logger
-	// Ready は GET /readyz が依存先を確かめる関数で、nil なら常にリクエストを受けられるとみなす。
+	// Ready は GET /readyz が依存先を確認する関数で、nil なら常にリクエストを受けられるとみなす。
 	Ready func(context.Context) error
 	// Login は、/login と /consent と /logout の下の画面のハンドラである。nil なら、これらのパスは 404 を返す。
 	Login http.Handler
@@ -25,7 +25,7 @@ type status struct {
 }
 
 // NewHandler は、GET /healthz と GET /readyz と、cfg.Login の画面と、cfg.Internal の内部の API を持つ http.Handler を返す。
-// /healthz は依存先を確かめずに 200 を返し、/readyz は cfg.Ready が失敗すれば 503 を返す。
+// /healthz は依存先を確認せずに 200 を返し、/readyz は cfg.Ready が失敗すれば 503 を返す。
 func NewHandler(cfg Config) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {

@@ -197,7 +197,7 @@ func TestExchange(t *testing.T) {
 }
 
 // TestExchangeIssuerParam は、認可レスポンスの iss パラメーター（RFC 9207）を設定の issuer と比べ、
-// 違えば認可コードを替えずに拒むことを確かめる。
+// 違えば認可コードを替えずに拒むことを確認する。
 func TestExchangeIssuerParam(t *testing.T) {
 	a := upstream.NewAttempt()
 	f := startIdP(t)
@@ -219,7 +219,7 @@ func TestExchangeIssuerParam(t *testing.T) {
 }
 
 // TestProviderDoesNotWaitForOtherIdP は、1 つの事業所の IdP の discovery が応答しない間も、
-// ほかの事業所の IdP の discovery を待たずに読めることを確かめる。
+// ほかの事業所の IdP の discovery を待たずに読めることを確認する。
 func TestProviderDoesNotWaitForOtherIdP(t *testing.T) {
 	fast := startIdP(t)
 	entered, release := make(chan struct{}), make(chan struct{})
@@ -259,7 +259,7 @@ func TestProviderDoesNotWaitForOtherIdP(t *testing.T) {
 }
 
 // TestProviderRemembersFailure は、discovery の文書を読めなかった事業所で、その失敗を短い間だけ覚え、
-// 過ぎてから読み直すことを確かめる。
+// 過ぎてから読み直すことを確認する。
 func TestProviderRemembersFailure(t *testing.T) {
 	f := startIdP(t)
 	f.down.Store(true)

@@ -27,7 +27,7 @@ type Usecases struct {
 }
 
 // RouterConfig は、ルーターの設定である。AllowOrigins が空なら CORS のヘッダーを返さない。
-// Ready は GET /readyz が依存先を確かめる関数で、nil なら常にリクエストを受けられるとみなす。
+// Ready は GET /readyz が依存先を確認する関数で、nil なら常にリクエストを受けられるとみなす。
 type RouterConfig struct {
 	Logger       *slog.Logger
 	AllowOrigins []string

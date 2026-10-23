@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-// 上流の IdP の設定に必須の値が無いとき、DB に接続する前に、待ち受けを始めずにエラーで終わることを確かめる。
+// 上流の IdP の設定に必須の値が無いとき、DB に接続する前に、待ち受けを始めずにエラーで終わることを確認する。
 // DB の接続先は届かない宛先にし、DB に触れていればこのテストは別のエラーで失敗する。
 func TestRunRejectsInvalidUpstreamConfig(t *testing.T) {
 	dir := t.TempDir()

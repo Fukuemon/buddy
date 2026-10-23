@@ -96,7 +96,7 @@ func NewVerifier(ctx context.Context, cfg Config, client *http.Client, log *slog
 	}, nil
 }
 
-// Verify は、raw の署名、iss、aud、exp、nbf を確かめ、主張を返す。検証に失敗したときと sub がないときはエラーを返す。
+// Verify は、raw の署名、iss、aud、exp、nbf を確認し、主張を返す。検証に失敗したときと sub がないときはエラーを返す。
 // 組織のクレームがないか文字列でないときは、エラーにせず OrgID を空にする。
 func (v *Verifier) Verify(ctx context.Context, raw string) (Identity, error) {
 	claims := jwt.MapClaims{}

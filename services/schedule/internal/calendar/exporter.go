@@ -20,7 +20,7 @@ const (
 	exportCallTimeout = 20 * time.Second
 	// exportLease は、取った待ちをほかの処理に渡さない時間である。
 	exportLease = 2 * time.Minute
-	// MaxExportAttempts は、一時的なエラーで書き直す回数の上限である。超えた待ちは failed にし、確かめが要る予定に出す。
+	// MaxExportAttempts は、一時的なエラーで書き直す回数の上限である。超えた待ちは failed にし、確認が必要な予定に出す。
 	MaxExportAttempts = 5
 	// exportBackoff は、最初に書き直すまでの時間である。書き直すたびに倍にする（30 秒、1 分、2 分、4 分）。
 	exportBackoff = 30 * time.Second
@@ -37,7 +37,7 @@ type ExporterDeps struct {
 
 // Exporter は、書き出しの待ちを、予定の職員が結び付けた外部のカレンダーに書く処理である。ADR-0009 の段階 2 に当たる。
 // 待ちは予定の変更と同じトランザクションで積まれ（Outbox）、Exporter はトランザクションの外で外部のカレンダーを呼ぶ。
-// 外部のカレンダーで変わった予定は buddy に当てず、確かめが要る待ち（conflict）にする。
+// 外部のカレンダーで変わった予定は buddy に当てず、確認が必要な待ち（conflict）にする。
 type Exporter struct {
 	deps ExporterDeps
 	ids  kernel.IDGenerator

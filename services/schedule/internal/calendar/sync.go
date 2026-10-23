@@ -20,7 +20,7 @@ const (
 	syncLease = 6 * time.Minute
 	// syncRetryAfter は、予定を書いている書き出しの処理を待って、カレンダーを読み直すまでの時間である。
 	syncRetryAfter = 5 * time.Second
-	// syncPollTick は、読む時刻を過ぎたカレンダーがあるかを確かめる間隔の上限である。読む間隔は、カレンダーごとの読む時刻で決まる。
+	// syncPollTick は、読む時刻を過ぎたカレンダーがあるかを確認する間隔の上限である。読む間隔は、カレンダーごとの読む時刻で決まる。
 	syncPollTick = 5 * time.Second
 )
 
@@ -129,7 +129,7 @@ func NewSyncer(deps SyncerDeps, tx tx.Transactor, ids kernel.IDGenerator, interv
 }
 
 // Run は、ctx が終わるまで、読む時刻を過ぎたカレンダーを全て同期する。読む時刻は、カレンダーを読み終えた時刻に
-// interval を足した時刻で、確かめる間隔は interval と syncPollTick の短い方である。
+// interval を足した時刻で、確認する間隔は interval と syncPollTick の短い方である。
 func (s *Syncer) Run(ctx context.Context) {
 	t := time.NewTicker(min(s.interval, syncPollTick))
 	defer t.Stop()

@@ -160,7 +160,7 @@ var ErrInvalidToken = errors.New("上流の IdP の ID token を検証できな�
 
 // Exchange は、事業所 orgID の上流の IdP の認可コード code を ID token に替えて検証し、主張を返す。
 // iss は認可レスポンスの iss パラメーター（RFC 9207）で、空でなければ、認可コードを替える前に設定の issuer と比べる。
-// ID token の署名、iss、aud、exp、nonce を確かめる。iss が違うとき、トークンを取れないとき、検証に失敗したときは
+// ID token の署名、iss、aud、exp、nonce を確認する。iss が違うとき、トークンを取れないとき、検証に失敗したときは
 // ErrInvalidToken を包んで返す。
 func (rp *RP) Exchange(ctx context.Context, orgID, code, iss string, a Attempt) (Identity, error) {
 	idp, p, err := rp.provider(ctx, orgID)

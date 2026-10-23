@@ -242,7 +242,7 @@ func TestShowLogin(t *testing.T) {
 	}
 }
 
-// TestShowLoginSkip は、Hydra がログインのセッションを覚えているとき、画面を出さずに有効な職員だけを accept することを確かめる。
+// TestShowLoginSkip は、Hydra がログインのセッションを覚えているとき、画面を出さずに有効な職員だけを accept することを確認する。
 func TestShowLoginSkip(t *testing.T) {
 	for _, tt := range []struct {
 		name   string
@@ -282,7 +282,7 @@ func TestSubmitEmail(t *testing.T) {
 	}
 }
 
-// TestSubmitEmailRejects は、職員を 1 人に決められないメールでは、事業所を示さずにログインを拒むことを確かめる。
+// TestSubmitEmailRejects は、職員を 1 人に決められないメールでは、事業所を示さずにログインを拒むことを確認する。
 func TestSubmitEmailRejects(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -334,7 +334,7 @@ func TestSubmitEmailRateLimit(t *testing.T) {
 	}
 }
 
-// TestSubmitEmailInvalidChallenge は、Hydra が知らない login_challenge では、職員を引かずにログインの失敗の画面を出すことを確かめる。
+// TestSubmitEmailInvalidChallenge は、Hydra が知らない login_challenge では、職員を引かずにログインの失敗の画面を出すことを確認する。
 func TestSubmitEmailInvalidChallenge(t *testing.T) {
 	e := newEnv(10)
 	e.hydra.loginErr = errors.New("hydra: 404 not found")
@@ -347,7 +347,7 @@ func TestSubmitEmailInvalidChallenge(t *testing.T) {
 	}
 }
 
-// TestSubmitEmailCrossOrigin は、ほかのサイトから送られた POST /login を、Hydra に問い合わせずに 403 で拒むことを確かめる。
+// TestSubmitEmailCrossOrigin は、ほかのサイトから送られた POST /login を、Hydra に問い合わせずに 403 で拒むことを確認する。
 func TestSubmitEmailCrossOrigin(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -382,7 +382,7 @@ func TestSubmitEmailCrossOrigin(t *testing.T) {
 	}
 }
 
-// TestSubmitEmailRateLimitPerEmail は、送り手のアドレスを替えても、同じメールの試行を上限で止めることを確かめる。
+// TestSubmitEmailRateLimitPerEmail は、送り手のアドレスを替えても、同じメールの試行を上限で止めることを確認する。
 func TestSubmitEmailRateLimitPerEmail(t *testing.T) {
 	e := newEnvWith(100, func(c *login.Config) { c.EmailLimiter = login.NewLimiter(time.Hour, 2) })
 	for i, want := range []string{"org-a.example.com", "org-a.example.com", "hydra"} {
@@ -398,7 +398,7 @@ func TestSubmitEmailRateLimitPerEmail(t *testing.T) {
 	}
 }
 
-// TestSubmitEmailClientIPHeader は、送り手のアドレスを、設定したヘッダーの最後の値から読むことを確かめる。
+// TestSubmitEmailClientIPHeader は、送り手のアドレスを、設定したヘッダーの最後の値から読むことを確認する。
 // 最後の値は前段のプロキシが足したもので、ブラウザが先頭に書いた値では数え分けない。
 func TestSubmitEmailClientIPHeader(t *testing.T) {
 	e := newEnvWith(1, func(c *login.Config) { c.ClientIPHeader = "X-Forwarded-For" })
@@ -506,8 +506,8 @@ func TestCallback(t *testing.T) {
 	}
 }
 
-// TestCallbackBadRequest は、コールバックがこのブラウザで始めたログインのものと確かめられないとき、
-// Hydra に返さずにログインの失敗の画面を出すことを確かめる。
+// TestCallbackBadRequest は、コールバックがこのブラウザで始めたログインのものと確認できないとき、
+// Hydra に返さずにログインの失敗の画面を出すことを確認する。
 func TestCallbackBadRequest(t *testing.T) {
 	e := newEnv(10)
 	submitted := e.submit("aoki@example.com")
@@ -538,7 +538,7 @@ func TestCallbackBadRequest(t *testing.T) {
 }
 
 // TestCallbackConcurrentFirstLogin は、同じ上流のアカウントの同時の初回ログインで、先のログインが同じ職員に結び付けたなら、
-// ErrConflict でも accept することを確かめる。
+// ErrConflict でも accept することを確認する。
 func TestCallbackConcurrentFirstLogin(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
@@ -562,7 +562,7 @@ func TestCallbackConcurrentFirstLogin(t *testing.T) {
 	}
 }
 
-// TestCallbackPassesIssuer は、認可レスポンスの iss パラメーターを、上流の IdP の RP に渡すことを確かめる。
+// TestCallbackPassesIssuer は、認可レスポンスの iss パラメーターを、上流の IdP の RP に渡すことを確認する。
 func TestCallbackPassesIssuer(t *testing.T) {
 	e := newEnv(10)
 	submitted := e.submit("aoki@example.com")
@@ -614,7 +614,7 @@ func TestConsent(t *testing.T) {
 	}
 }
 
-// TestConsentOtherClient は、同意を自動で accept するクライアントの一覧に無いクライアントの同意を拒むことを確かめる。
+// TestConsentOtherClient は、同意を自動で accept するクライアントの一覧に無いクライアントの同意を拒むことを確認する。
 func TestConsentOtherClient(t *testing.T) {
 	e := newEnv(10)
 	e.hydra.consent = hydra.ConsentRequest{
@@ -628,7 +628,7 @@ func TestConsentOtherClient(t *testing.T) {
 	}
 }
 
-// TestLogout は、ログアウトの要求を画面を出さずに accept し、Hydra へ返せなければログアウトの失敗の画面を出すことを確かめる。
+// TestLogout は、ログアウトの要求を画面を出さずに accept し、Hydra へ返せなければログアウトの失敗の画面を出すことを確認する。
 func TestLogout(t *testing.T) {
 	e := newEnv(10)
 	if got := location(t, e.do(httptest.NewRequest(http.MethodGet, "/logout?logout_challenge=ch", nil))); got != "http://hydra/logout-accepted" || e.hydra.loggedOut != "ch" {

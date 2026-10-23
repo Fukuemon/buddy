@@ -105,7 +105,7 @@ type EnqueueScheduleExportParams struct {
 	ScheduleID *string
 }
 
-// 終わっていない待ちがあれば積み直す。失敗した待ちは数え直し、確かめが要る待ちは状態と書く時刻を変えない。
+// 終わっていない待ちがあれば積み直す。失敗した待ちは数え直し、確認が必要な待ちは状態と書く時刻を変えない。
 func (q *Queries) EnqueueScheduleExport(ctx context.Context, arg EnqueueScheduleExportParams) error {
 	_, err := q.db.Exec(ctx, enqueueScheduleExport, arg.ID, arg.FacilityID, arg.ScheduleID)
 	return err
@@ -260,7 +260,7 @@ type HoldScheduleExportParams struct {
 	ErrorCode  *string
 }
 
-// 外部の変更と buddy の変更が重なった予定を、確かめが要る待ちにする。書いている処理の結果は revision の違いで捨てる。
+// 外部の変更と buddy の変更が重なった予定を、確認が必要な待ちにする。書いている処理の結果は revision の違いで捨てる。
 func (q *Queries) HoldScheduleExport(ctx context.Context, arg HoldScheduleExportParams) error {
 	_, err := q.db.Exec(ctx, holdScheduleExport,
 		arg.ID,
@@ -379,7 +379,7 @@ type ResolveCalendarExportParams struct {
 	Revision int32
 }
 
-// 外部の内容を buddy に当てた、確かめが要る待ちを終える。読んだ後に積み直されたか保留し直された待ちは終えない。
+// 外部の内容を buddy に当てた、確認が必要な待ちを終える。読んだ後に積み直されたか保留し直された待ちは終えない。
 func (q *Queries) ResolveCalendarExport(ctx context.Context, arg ResolveCalendarExportParams) (int64, error) {
 	result, err := q.db.Exec(ctx, resolveCalendarExport, arg.ID, arg.Revision)
 	if err != nil {

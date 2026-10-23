@@ -61,7 +61,7 @@ func NewWriter(deps WriterDeps, ids kernel.IDGenerator) Writer {
 	return Writer{deps: deps, ids: ids}
 }
 
-// Create は、in の参照が facilityID の事業所に属することを確かめて訪問の情報を保存し、その ID を返す。
+// Create は、in の参照が facilityID の事業所に属することを確認して訪問の情報を保存し、その ID を返す。
 func (w Writer) Create(ctx context.Context, facilityID string, in Input) (string, error) {
 	patientID, patientFacilityID, err := w.deps.Patients(ctx, in.PatientID)
 	if err != nil {

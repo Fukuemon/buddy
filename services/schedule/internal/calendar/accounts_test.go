@@ -102,7 +102,7 @@ func TestServiceAccountOfFacility(t *testing.T) {
 	}
 }
 
-// 別の事業所のサービスアカウントに共有したカレンダーは、自分の事業所のアカウントで読めないので、確かめられず、結び付けられない。
+// 別の事業所のサービスアカウントに共有したカレンダーは、自分の事業所のアカウントで読めないので、確認できず、結び付けられない。
 func TestLinkRejectsCalendarSharedWithOtherFacility(t *testing.T) {
 	e := newEnv(t, nil)
 	delete(e.store.Calendars, calID)

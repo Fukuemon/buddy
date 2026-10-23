@@ -110,7 +110,7 @@ func TestCalendarErrorStatus(t *testing.T) {
 		{name: "取り込みが進んでいる", err: apperr.ConflictCode(calendar.CodeImportRunning, "進んでいます"), method: http.MethodPost,
 			target: "/v1/external_calendars/" + calendarID + "/imports", body: `{"range_start":"2026-11-01","range_end":"2026-11-30","decisions":[]}`,
 			wantCode: http.StatusConflict, wantBody: "import_running"},
-		{name: "確かめが要る書き出しでない", err: apperr.ConflictCode(calendar.CodeExportNotInReview, "確かめが要る書き出しではありません"), method: http.MethodPost,
+		{name: "確認が必要な書き出しでない", err: apperr.ConflictCode(calendar.CodeExportNotInReview, "確認が必要な書き出しではありません"), method: http.MethodPost,
 			target: "/v1/calendar_exports/" + calendarID + "/retries", wantCode: http.StatusConflict, wantBody: "export_not_in_review"},
 		{name: "Google カレンダーの内容で解けない", err: apperr.ConflictCode(calendar.CodeExportNotAcceptable, "解けません"), method: http.MethodPost,
 			target: "/v1/calendar_exports/" + calendarID + "/acceptances", wantCode: http.StatusConflict, wantBody: "export_not_acceptable"},
@@ -141,7 +141,7 @@ func TestCalendarErrorStatus(t *testing.T) {
 	}
 }
 
-// サービスアカウントとカレンダーの確かめは、パスの事業所のアカウントで行う。
+// サービスアカウントとカレンダーの確認は、パスの事業所のアカウントで行う。
 func TestCalendarAccountOfFacility(t *testing.T) {
 	f := &fakeCalendars{}
 	rec, body := do(t, newCalendarRouter(f), http.MethodGet, "/v1/facilities/"+facilityID+"/calendar_service_account", "")

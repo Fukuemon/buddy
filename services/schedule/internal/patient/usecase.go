@@ -10,7 +10,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/visit"
 )
 
-// ServiceCodes は、利用者のデフォルトのサービスコードを確かめる。見つからないときは apperr.ErrNotFound を返す。
+// ServiceCodes は、利用者のデフォルトのサービスコードを確認する。見つからないときは apperr.ErrNotFound を返す。
 type ServiceCodes interface {
 	GetServiceCode(ctx context.Context, id string) (visit.ServiceCode, error)
 }

@@ -89,7 +89,7 @@ func configFromContainer(ctx context.Context, c *tcpostgres.PostgresContainer) (
 // txContext は、テストの終わりにロールバックするトランザクションを持つ ctx を返す。
 // テストどうしが書いたレコードを見ないよう、書き込むテストはこの ctx を使う。
 // PostgreSQL は失敗した文の後でトランザクション全体を止めるので、文ごとにセーブポイントを置き、失敗した文だけを巻き戻す。
-// 制約の違反を確かめた後も、同じトランザクションで続けられる。
+// 制約の違反を確認した後も、同じトランザクションで続けられる。
 func txContext(t *testing.T) context.Context {
 	t.Helper()
 	if testDB == nil {
@@ -215,7 +215,7 @@ func TestSeedRollsBackOnFailure(t *testing.T) {
 	}
 }
 
-// TestMigrateDownAndUp は、初期のマイグレーションを戻すとテーブルとビューと関数が残らず、もう一度適用できることを確かめる。
+// TestMigrateDownAndUp は、初期のマイグレーションを戻すとテーブルとビューと関数が残らず、もう一度適用できることを確認する。
 func TestMigrateDownAndUp(t *testing.T) {
 	cfg := newDatabase(t, "migrate_round_trip")
 	ctx := context.Background()

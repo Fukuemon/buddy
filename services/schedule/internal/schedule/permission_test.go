@@ -22,7 +22,7 @@ func subject(grants ...staff.PolicyGrant) principal.Principal {
 	}}
 }
 
-// TestCan は、7 つの権限ごとに、ほかの職員と自分の予定を見てよいか、編集してよいかを確かめる。
+// TestCan は、7 つの権限ごとに、ほかの職員と自分の予定を見てよいか、編集してよいかを確認する。
 func TestCan(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -74,7 +74,7 @@ func TestCanReadAll(t *testing.T) {
 	}
 }
 
-// TestStaffManageDoesNotGrantSchedules は、職員の管理の権限が、ほかの職員の予定に及ばないことを確かめる。
+// TestStaffManageDoesNotGrantSchedules は、職員の管理の権限が、ほかの職員の予定に及ばないことを確認する。
 func TestStaffManageDoesNotGrantSchedules(t *testing.T) {
 	p := subject(staff.PolicyGrant{PolicyCode: organization.StaffManage})
 	if CanRead(p, other, otherTeam) || CanEdit(p, other, otherTeam) || CanReadAll(p) {
@@ -82,7 +82,7 @@ func TestStaffManageDoesNotGrantSchedules(t *testing.T) {
 	}
 }
 
-// TestReadable は、自分は権限によらず入り、見てよい職員だけが入ることを確かめる。
+// TestReadable は、自分は権限によらず入り、見てよい職員だけが入ることを確認する。
 func TestReadable(t *testing.T) {
 	members := []staff.Ref{{ID: self, TeamID: selfTeam}, {ID: other, TeamID: otherTeam}, {ID: "THIRD", TeamID: "TEAM-C"}}
 	tests := []struct {

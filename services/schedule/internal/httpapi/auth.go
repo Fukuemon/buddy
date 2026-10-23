@@ -27,7 +27,7 @@ type AuthUsecase interface {
 }
 
 // pathResources は、/v1 のパスの引数の名前と、その ID が指すリソースである。
-// global は、ミドルウェアが事業所を確かめない引数である。事業所に属さないリソースか、同じパスのほかの引数で事業所を確かめるリソースに付ける。
+// global は、ミドルウェアが事業所を確認しない引数である。事業所に属さないリソースか、同じパスのほかの引数で事業所を確認するリソースに付ける。
 var pathResources = map[string]struct {
 	resource access.Resource
 	global   bool
@@ -42,7 +42,7 @@ var pathResources = map[string]struct {
 	"external_calendar_id":  {resource: access.ResourceExternalCalendar},
 	"calendar_export_id":    {resource: access.ResourceCalendarExport},
 	"policy_id":             {global: true},
-	// 職員の権限の ID は、同じパスの user_id で事業所を確かめ、staff.Usecase が職員の権限かを確かめる。
+	// 職員の権限の ID は、同じパスの user_id で事業所を確認し、staff.Usecase が職員の権限かを確認する。
 	"user_policy_id": {global: true},
 }
 
@@ -77,17 +77,17 @@ func (m authMiddleware) authenticate(c *gin.Context) {
 
 // checkFacility は、パスの ID が指すリソースの事業所が、職員の事業所と違うときに 403 を返す。
 // ID の形が誤っているときとリソースが見つからないときは、requireULIDParams とハンドラが 400 と 404 を返すよう、そのまま通す。
-// pathResources にない引数を持つ経路は、確かめられないので 500 を返す。
+// pathResources にない引数を持つ経路は、確認できないので 500 を返す。
 func (m authMiddleware) checkFacility(c *gin.Context) {
 	p, ok := principal.From(c.Request.Context())
 	if !ok {
-		writeError(c, m.log, errors.New("認証のミドルウェアより前に事業所を確かめました"))
+		writeError(c, m.log, errors.New("認証のミドルウェアより前に事業所を確認しました"))
 		return
 	}
 	for _, param := range c.Params {
 		r, known := pathResources[param.Key]
 		if !known {
-			writeError(c, m.log, errors.New("事業所を確かめられないパスの引数 "+param.Key+" です"))
+			writeError(c, m.log, errors.New("事業所を確認できないパスの引数 "+param.Key+" です"))
 			return
 		}
 		if r.global || !ulid.Valid(param.Value) {

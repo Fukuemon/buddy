@@ -17,7 +17,7 @@ func newUsecase(s *inmem.Store, guard organization.Guard) *patient.Usecase {
 	}, &inmem.SeqIDs{}, guard)
 }
 
-// TestPatientCreateGuard は、職員の管理を許された職員だけが利用者を登録できることを確かめる（ADR-0006）。
+// TestPatientCreateGuard は、職員の管理を許された職員だけが利用者を登録できることを確認する（ADR-0006）。
 func TestPatientCreateGuard(t *testing.T) {
 	ctx := context.Background()
 	in := patient.CreateInput{

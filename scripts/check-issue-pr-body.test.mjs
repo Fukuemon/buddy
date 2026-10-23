@@ -45,7 +45,7 @@ test('接頭辞の無いタイトルを指摘する', () => {
 })
 
 test('issue のタイトルと違うタイトルを指摘し、分けたときの付け足しは通す', () => {
-  assert.match(pr({ title: '【実装】リンクを確かめる' }).errors[0], /issue のタイトル/)
+  assert.match(pr({ title: '【実装】リンクを確認する' }).errors[0], /issue のタイトル/)
   assert.match(pr({ title: `${ISSUE_TITLE}（なんでも）` }).errors[0], /issue のタイトル/)
   assert.deepEqual(pr({ title: `${ISSUE_TITLE}（1/2 スクリプト）` }).errors, [])
   assert.deepEqual(pr({ title: `${ISSUE_TITLE}（3 ワークフロー）` }).errors, [])
@@ -123,7 +123,7 @@ test('issue は接頭辞、帰属表示、.ai-out のパスだけを見る', () 
 
 test('textlint の unix 形式の出力から、本文の指摘だけを拾う', () => {
   const file = '/tmp/x/body.md'
-  const output = `${file}:1:1: 証跡 => エビデンス\n確かめたことの記録 [Error/prh]\n\n1 problem\n`
+  const output = `${file}:1:1: 証跡 => エビデンス\n確認したことの記録 [Error/prh]\n\n1 problem\n`
   assert.deepEqual(parseTextlint(output, file), ['textlint: 1:1: 証跡 => エビデンス'])
   assert.deepEqual(parseTextlint('No rules found\n', file), [])
 })
