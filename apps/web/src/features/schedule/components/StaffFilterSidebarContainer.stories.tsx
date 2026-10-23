@@ -83,3 +83,15 @@ export const WithSuspendedStaff: Story = {
     layout: 'fullscreen',
   },
 }
+
+/** URL の staff に、止めた職員（石川 二葉）の ID が残っている。止める前に作ったブックマークで開いた形。 */
+export const WithSuspendedStaffSelected: Story = {
+  ...WithCalendar,
+  parameters: {
+    ...route({
+      url: '/schedule?view=day&staff=%5B%22staff-1%22%2C%22staff-2%22%5D',
+      api: suspendedStaffApi(),
+    }),
+    layout: 'fullscreen',
+  },
+}

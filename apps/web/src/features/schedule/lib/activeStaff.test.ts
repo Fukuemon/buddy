@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import type { Schedule, Staff } from '#/api/types'
 
-import { activeStaff, excludeSuspendedStaffSchedules } from './activeStaff'
+import { activeStaff, activeStaffIds, excludeSuspendedStaffSchedules } from './activeStaff'
 
 const staff = (id: string, suspendedAt?: string): Staff => ({
   id,
@@ -40,5 +40,17 @@ describe('excludeSuspendedStaffSchedules', () => {
     const list = [staff('staff-1'), staff('staff-2', '2026-10-01T09:00:00Z')]
     const schedules = [schedule('a', 'staff-1'), schedule('b', 'staff-2'), schedule('c', 'staff-9')]
     expect(excludeSuspendedStaffSchedules(schedules, list).map(({ id }) => id)).toEqual(['a', 'c'])
+  })
+})
+
+describe('activeStaffIds', () => {
+  const list = [staff('staff-1'), staff('staff-2', '2026-10-01T09:00:00Z'), staff('staff-3')]
+
+  it('止めた職員の ID を除く', () => {
+    expect(activeStaffIds(['staff-1', 'staff-2'], list)).toEqual(['staff-1'])
+  })
+
+  it('職員の一覧を取り終える前は、そのまま返す', () => {
+    expect(activeStaffIds(['staff-1', 'staff-2'], undefined)).toEqual(['staff-1', 'staff-2'])
   })
 })

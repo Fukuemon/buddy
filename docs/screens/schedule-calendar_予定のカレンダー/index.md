@@ -868,7 +868,7 @@
 | --- | --- | --- |
 | `view` | `month`、`week`、`day` | `month` |
 | `date` | `YYYY-MM-DD` | 今日 |
-| `staff` | 職員の id の配列。JSON の配列を符号化した形で、`["staff-1","staff-2"]` は `staff=%5B%22staff-1%22%2C%22staff-2%22%5D` になる | 空の配列（全ての職員） |
+| `staff` | 職員の id の配列。JSON の配列を符号化した形で、`["staff-1","staff-2"]` は `staff=%5B%22staff-1%22%2C%22staff-2%22%5D` になる。止めた職員の id は、職員の一覧を取った後に除く | 空の配列（全ての職員）。止めた職員の id だけのときも同じ |
 | `cancelled` | `true`、`false` | `false`（キャンセルした予定を出さない） |
 
 ## 未決

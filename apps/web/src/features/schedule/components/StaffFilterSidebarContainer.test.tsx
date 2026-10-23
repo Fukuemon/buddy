@@ -1,10 +1,11 @@
 import { composeStories } from '@storybook/react-vite'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './StaffFilterSidebarContainer.stories'
 
-const { WithCalendar, WithSuspendedStaff } = composeStories(stories)
+const { WithCalendar, WithSuspendedStaff, WithSuspendedStaffSelected } = composeStories(stories)
 
 describe('StaffFilterSidebarContainer', () => {
   it('止めた職員を、絞り込みの候補と日の表の列に出さず、その予定も出さない', async () => {
@@ -26,5 +27,17 @@ describe('StaffFilterSidebarContainer', () => {
       'day-grid-staff-staff-3',
       'day-grid-staff-staff-4',
     ])
+  })
+
+  it('URL に止めた職員の ID が残っていても、残りの職員を選び足すと全員の表示に戻さない', async () => {
+    render(<WithSuspendedStaffSelected />)
+    expect(await screen.findByTestId('day-grid-staff-staff-1')).toBeInTheDocument()
+    expect(screen.queryByTestId('day-grid-staff-staff-3')).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByTestId('staff-filter-staff-staff-3'))
+
+    expect(await screen.findByTestId('day-grid-staff-staff-3')).toBeInTheDocument()
+    expect(screen.getByTestId('staff-filter-staff-staff-4')).not.toBeChecked()
+    expect(screen.queryByTestId('day-grid-staff-staff-4')).not.toBeInTheDocument()
   })
 })

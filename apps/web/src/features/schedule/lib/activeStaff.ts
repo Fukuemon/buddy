@@ -11,3 +11,13 @@ export const excludeSuspendedStaffSchedules = (schedules: Schedule[], staffList:
   )
   return schedules.filter((schedule) => !suspended.has(schedule.staffId))
 }
+
+/**
+ * URL の staff から、止めた職員の ID を除く。止める前に作ったブックマークに、止めた職員の ID が残るためである。
+ * 職員の一覧を取り終える前は、staffIds をそのまま返す。
+ */
+export const activeStaffIds = (staffIds: Staff['id'][], staffList: Staff[] | undefined) => {
+  if (staffList === undefined) return staffIds
+  const active = new Set(activeStaff(staffList).map((staff) => staff.id))
+  return staffIds.filter((id) => active.has(id))
+}

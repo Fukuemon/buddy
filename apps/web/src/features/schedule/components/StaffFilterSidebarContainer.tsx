@@ -3,7 +3,7 @@ import { useNavigate, useRouteContext, useSearch } from '@tanstack/react-router'
 
 import { useBuddyApi } from '#/api/useBuddyApi'
 
-import { activeStaff } from '../lib/activeStaff'
+import { activeStaff, activeStaffIds } from '../lib/activeStaff'
 import { staffListQueryOptions, teamListQueryOptions } from '../queries'
 import { StaffFilterSidebar } from './StaffFilterSidebar'
 
@@ -20,7 +20,7 @@ export const StaffFilterSidebarContainer = () => {
   return (
     <StaffFilterSidebar
       onChange={(staffIds) => navigate({ search: (prev) => ({ ...prev, staff: staffIds }) })}
-      selectedStaffIds={staff}
+      selectedStaffIds={activeStaffIds(staff, staffQuery.data)}
       staffList={activeStaff(staffQuery.data ?? [])}
       teams={teamsQuery.data ?? []}
       viewerStaffId={viewer?.staffId}

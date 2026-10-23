@@ -5,7 +5,7 @@ import { useState, type ComponentProps } from 'react'
 import { useBuddyApi } from '#/api/useBuddyApi'
 import { Loading } from '@buddy/ui'
 
-import { activeStaff, excludeSuspendedStaffSchedules } from '../lib/activeStaff'
+import { activeStaff, activeStaffIds, excludeSuspendedStaffSchedules } from '../lib/activeStaff'
 import { getCalendarRange, shiftCalendarDate } from '../lib/calendarRange'
 import { toDateKey } from '../lib/dateTime'
 import { nowForDay, useNow } from '../lib/useNow'
@@ -46,14 +46,15 @@ export const ScheduleCalendarContainer = ({
   const date = search.date ?? today
   const range = getCalendarRange(search.view, date)
 
+  const staffQuery = useQuery(staffListQueryOptions(api, facilityId))
+  const selectedStaffIds = activeStaffIds(search.staff, staffQuery.data)
   const schedulesQuery = useQuery(
     scheduleListQueryOptions(api, facilityId, {
       ...range,
-      staffIds: search.staff,
+      staffIds: selectedStaffIds,
       includeCancelled: search.cancelled,
     }),
   )
-  const staffQuery = useQuery(staffListQueryOptions(api, facilityId))
   const patientsQuery = useQuery(patientListQueryOptions(api, facilityId))
 
   const updateSearch = (patch: Partial<ScheduleSearch>) =>
@@ -75,9 +76,9 @@ export const ScheduleCalendarContainer = ({
   const allStaff = staffQuery.data ?? []
   const staffList = activeStaff(allStaff)
   const visibleStaff =
-    search.staff.length === 0
+    selectedStaffIds.length === 0
       ? staffList
-      : staffList.filter((staff) => search.staff.includes(staff.id))
+      : staffList.filter((staff) => selectedStaffIds.includes(staff.id))
   const events = toCalendarEvents(
     excludeSuspendedStaffSchedules(schedulesQuery.data ?? [], allStaff),
     staffList,
