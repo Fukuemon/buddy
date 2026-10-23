@@ -4,7 +4,7 @@ title: 認証のブローカー
 description: Ory Hydra の login and consent app として動くブローカーの責務、Hydra との分担、ログイン、職員の登録と停止、ログアウトの流れ、ローカル環境の構成
 status: draft
 governs: services/broker
-verified_commit: 5b67330
+verified_commit: 8ec033d
 ---
 
 # 認証のブローカー
