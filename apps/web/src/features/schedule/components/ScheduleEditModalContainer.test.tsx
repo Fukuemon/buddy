@@ -33,6 +33,7 @@ describe('ScheduleEditModalContainer', () => {
   it('止めた職員に割り振った予定を担当者を選ばずに保存すると、担当者を変えずに送る', async () => {
     const { api } = SuspendedStaff.parameters.appRouter as AppRouterParameters
     if (api === undefined) throw new Error('story にフェイクの API が無い')
+    // story の間で共有するフェイクの API の予定を書き換えるので、このテストをファイルの最後に置く
     const update = vi.spyOn(api.schedules, 'update')
     render(<SuspendedStaff />)
 
