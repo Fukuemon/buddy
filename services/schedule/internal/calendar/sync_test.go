@@ -44,8 +44,8 @@ func newSyncEnv(t *testing.T) syncEnv {
 	return syncEnv{exportEnv: e, syncer: newSyncer(e, source, sources, inmem.StaffRefs{Store: s}), sources: sources}
 }
 
-// newSyncer は、e の Store の上で、source で読み、職員の休職、復職、退職を st で待たせる同期の処理を作る。
-func newSyncer(e exportEnv, source calendar.EventSource, sources *[]string, st calendar.StaffLocker) *calendar.Syncer {
+// newSyncer は、e の Store の上で、source で読み、職員の休職、復職、退職を st で待たせて職員を st で読む同期の処理を作る。
+func newSyncer(e exportEnv, source calendar.EventSource, sources *[]string, st calendar.StaffRefs) *calendar.Syncer {
 	s := e.store
 	return calendar.NewSyncer(calendar.SyncerDeps{
 		Syncs: inmem.Syncs{Store: s}, Calendars: inmem.Calendars{Store: s}, Staff: st, Exports: inmem.Exports{Store: s}, Sources: sourceOf(source, sources),

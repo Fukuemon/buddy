@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
+	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
@@ -96,8 +97,9 @@ type Accounts interface {
 type SyncerDeps struct {
 	Syncs     SyncRepository
 	Calendars Repository
-	// Staff は、予定を当てる前に事業所の職員の休職、復職、退職を待たせる。退職がカレンダーを外した後に、当てないためである。
-	Staff        StaffLocker
+	// Staff は、予定を当てる前に事業所の職員の休職、復職、退職を待たせ、カレンダーの職員が退職したかを読む。
+	// 退職がカレンダーを外した後に、当てないためである。
+	Staff        StaffRefs
 	Exports      ExportRepository
 	Sources      SourceFor
 	Schedules    ScheduleStore
@@ -242,6 +244,12 @@ func (s *Syncer) stillLinked(ctx context.Context, c ExternalCalendar) error {
 		return err
 	}
 	if cur.DisabledAt != nil {
+		return errCalendarUnlinked
+	}
+	// カレンダーを外すようにする前の版の退職では、カレンダーが外れていないことがある
+	if st, err := s.deps.Staff.Get(ctx, c.StaffID); err != nil {
+		return err
+	} else if st.Status == staff.StatusRetired {
 		return errCalendarUnlinked
 	}
 	return nil

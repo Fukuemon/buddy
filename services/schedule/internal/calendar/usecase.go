@@ -453,7 +453,7 @@ func (u *Usecase) plan(ctx context.Context, src EventSource, c ExternalCalendar,
 	}
 	in := planInput{
 		rng: rng, events: events, links: make(map[string]Link, len(links)), instances: map[string][]Event{},
-		linkedRecurring: map[string]schedule.RecurringDetail{}, staffOnLeave: onLeave,
+		linkedRecurring: map[string]schedule.RecurringDetail{}, staffOnLeave: onLeave, staffID: c.StaffID,
 	}
 	for _, l := range links {
 		in.links[l.ExternalEventID] = l
@@ -721,6 +721,12 @@ func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 		if now, err := u.deps.Calendars.Get(ctx, c.ID); err != nil {
 			return err
 		} else if now.DisabledAt != nil {
+			return errNotAcceptable
+		}
+		// 予定をほかの職員に割り振り直した後に、その職員が退職していることもある。退職した職員の予定は Google の内容に合わせない
+		if st, err := u.deps.Staff.Get(ctx, locked.StaffID); err != nil {
+			return err
+		} else if st.Status == staff.StatusRetired {
 			return errNotAcceptable
 		}
 		cur, err := u.deps.Exports.Get(ctx, id)

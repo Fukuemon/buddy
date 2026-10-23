@@ -314,3 +314,85 @@ func TestAcceptExportRejectsDetachedCalendar(t *testing.T) {
 		check(t, e, scheduleID, err)
 	})
 }
+
+// 休職の職員のカレンダーの、繰り返しの予定の変えた回でも、繰り返しの予定をほかの職員に割り振り直していれば、
+// 休職の職員に新しい予定を作らない（#278）。
+func TestImportWithholdsReplacementOfReassignedRecurring(t *testing.T) {
+	srv := fixture()
+	e := newEnv(t, srv)
+	if _, err := e.importDecided(t, e.rng, decisions()); err != nil {
+		t.Fatal(err)
+	}
+	rs := recurringOf(t, e, "weekly")
+	rs.StaffID = inmem.CompanionID
+	e.store.Recurring[rs.ID] = rs
+	setLeave(e.store, true)
+	srv.Calendars[googleCalID] = [][]*calendarv3.Event{{
+		grecurring(gevent("weekly", "【訪看I2】利用者A", "2026-11-02T09:00:00+09:00", "2026-11-02T09:30:00+09:00"),
+			"RRULE:FREQ=WEEKLY;BYDAY=MO"),
+		gexception("weekly_20261214", "weekly", "【訪看I2】利用者A", "2026-12-14T11:00:00+09:00", "2026-12-14T11:30:00+09:00", "2026-12-14T09:00:00+09:00"),
+	}}
+	dec, err := calendar.NewRange(civil.Date{Year: 2026, Month: 12, Day: 1}, civil.Date{Year: 2026, Month: 12, Day: 31})
+	if err != nil {
+		t.Fatal(err)
+	}
+	before := len(e.store.Schedules)
+	p, err := e.uc.Preview(e.ctx, calID, dec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := skipReasons(p); got[calendar.SkipStaffOnLeave] != 1 || p.Counts.Import != 0 {
+		t.Errorf("取り込まない理由 = %v, Counts = %+v, want 割り振り直した回の置き換えは staff_on_leave", got, p.Counts)
+	}
+	if _, err := e.importDecided(t, dec, nil); err != nil {
+		t.Fatal(err)
+	}
+	if len(e.store.Schedules) != before {
+		t.Errorf("予定 %d 件 → %d 件, want 休職の職員に新しい予定を作らない", before, len(e.store.Schedules))
+	}
+}
+
+// 予定をほかの職員に割り振り直した後にその職員が退職したとき、予定の対応のカレンダーが外れていなくても、
+// Google の内容に合わせない（#278）。
+func TestAcceptExportRejectsScheduleOfRetiredStaff(t *testing.T) {
+	e := newSyncEnv(t)
+	d := e.created(t)
+	code := calendar.ErrorPreconditionFailed
+	x := e.export(t, d.ID)
+	x.ID, x.Status, x.ErrorCode, x.Revision = "HELD", calendar.ExportConflict, &code, 1
+	e.store.Exports[x.ID] = x
+	e.shift(t, eventID(t, d.ID))
+	sc := e.store.Schedules[d.ID]
+	sc.StaffID = inmem.CompanionID
+	e.store.Schedules[d.ID] = sc
+	c := e.store.Staff[inmem.CompanionID]
+	now := time.Now()
+	c.RetiredAt = &now
+	e.store.Staff[inmem.CompanionID] = c
+
+	_, err := e.uc.AcceptExport(e.ctx, x.ID)
+	var ce *apperr.ConflictError
+	if !errors.As(err, &ce) || ce.Code != calendar.CodeExportNotAcceptable {
+		t.Fatalf("err = %v, want %s", err, calendar.CodeExportNotAcceptable)
+	}
+	if got := e.schedule(t, d.ID); got.StartTime == (civil.Time{Hour: 11}) {
+		t.Errorf("退職した職員の予定に Google の内容を当てた: %+v", got.Slot)
+	}
+}
+
+// カレンダーを外すようにする前に退職にした職員のカレンダーが残っていても、同期は当てない（#278）。
+func TestSyncSkipsRetiredStaffWithLinkedCalendar(t *testing.T) {
+	e := newSyncEnv(t)
+	d := e.created(t)
+	before := e.schedule(t, d.ID)
+	e.shift(t, eventID(t, d.ID))
+	st := e.store.Staff[inmem.StaffID]
+	now := time.Now()
+	st.RetiredAt = &now
+	e.store.Staff[inmem.StaffID] = st
+
+	e.sync(t)
+	if got := e.schedule(t, d.ID); got.StartTime != before.StartTime || got.Version != before.Version {
+		t.Errorf("退職した職員の予定 = %+v, want 当てない", got.Slot)
+	}
+}
