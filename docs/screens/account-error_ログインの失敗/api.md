@@ -7,6 +7,6 @@
 | ページのタイトル | 理由ごとのタイトル | search params の `reason`（`AuthErrorReason`） | なし |
 | 説明の文 | 理由ごとの文 | search params の `reason`（`AuthErrorReason`） | なし |
 
-- `reason` は、web のサーバー（`apps/web/src/server/auth.ts` の `finishLogin`）が転送の先の URL に付ける。
+- `reason` は、web のサーバー（`apps/web/src/server/auth.ts` の `finishLogin`）がリダイレクト先の URL に付ける。
 - `forbidden` は、ログインの後に `getMe`（`GET /v1/me`）が 403 を返したときに付ける。`getMe` がほかの失敗を返したときは `failed` を付ける。
 - `AuthErrorReason` の型は `apps/web/src/components/site/AuthErrorMessage.tsx` にある。
