@@ -1,6 +1,8 @@
 # pull request と develop への push で、取り込む前に通す検査を流す。
 # 検査の一覧とローカル環境での流し方は context/testing.md と CONTRIBUTING.md にある。
 # Go、golangci-lint、sqlc のバージョンは mise.toml から入れ、ローカル環境とそろえる。Node と pnpm は docs-site.yml と同じ入れ方にする。
+# ランナーは、リポジトリの変数 RUNS_ON で self-hosted runner に替えられる（CONTRIBUTING.md の「CI のチェック」）。
+# self-hosted runner は Go、pnpm、mise のキャッシュを機械に残すので、actions/cache と setup-node と mise のキャッシュは GitHub のランナーでだけ使う。
 
 name: CI
 
@@ -18,7 +20,7 @@ permissions:
 
 jobs:
   typescript:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -26,7 +28,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
-          cache: pnpm
+          cache: ${{ runner.environment == 'github-hosted' && 'pnpm' || '' }}
       - run: pnpm install --frozen-lockfile
       # packages/ui のコンポーネントのテストは、Vitest のブラウザのモードで chromium を使う
       - run: pnpm --filter @buddy/ui exec playwright install --with-deps chromium
@@ -38,7 +40,7 @@ jobs:
       - run: pnpm --filter @buddy/e2e test:rules
 
   go:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -54,7 +56,9 @@ jobs:
       - uses: jdx/mise-action@8418fedb1110381a0d3ba51a7a415d7c1b884550 # v5.2.2
         with:
           install_args: go golangci-lint
+          cache: ${{ runner.environment == 'github-hosted' }}
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: runner.environment == 'github-hosted'
         with:
           path: |
             ~/go/pkg/mod
@@ -68,7 +72,7 @@ jobs:
       - run: go test ./...
 
   generated:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -76,11 +80,13 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
-          cache: pnpm
+          cache: ${{ runner.environment == 'github-hosted' && 'pnpm' || '' }}
       - uses: jdx/mise-action@8418fedb1110381a0d3ba51a7a415d7c1b884550 # v5.2.2
         with:
           install_args: go aqua:sqlc-dev/sqlc
+          cache: ${{ runner.environment == 'github-hosted' }}
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: runner.environment == 'github-hosted'
         with:
           path: |
             ~/go/pkg/mod
@@ -93,14 +99,16 @@ jobs:
           GOWORK: 'off'
 
   db-docs:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: jdx/mise-action@8418fedb1110381a0d3ba51a7a415d7c1b884550 # v5.2.2
         with:
           install_args: go aqua:k1LoW/tbls
+          cache: ${{ runner.environment == 'github-hosted' }}
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: runner.environment == 'github-hosted'
         with:
           path: |
             ~/go/pkg/mod
@@ -119,17 +127,43 @@ jobs:
           fi
 
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 30
+    # self-hosted runner の機械では、ローカル環境の compose が動いていることがある。
+    # プロジェクトの名前を分け、ポートをローカル環境のデフォルトから全てずらす（CONTRIBUTING.md の「ローカル環境で全体を起動する」）
+    env:
+      COMPOSE_PROJECT_NAME: buddy-ci
+      WEB_PORT: '13000'
+      SCHEDULE_PORT: '18080'
+      RECEIPT_PORT: '18090'
+      BROKER_PORT: '18100'
+      BROKER_INTERNAL_PORT: '18101'
+      HYDRA_PUBLIC_PORT: '14444'
+      HYDRA_ADMIN_PORT: '14445'
+      IDP_PORT: '19000'
+      POSTGRES_PORT: '25432'
+      VALKEY_PORT: '16379'
+      CALENDARPIT_PORT: '14173'
+      GCALHOLD_PORT: '18085'
+      E2E_BASE_URL: http://localhost:13000
+      E2E_SCHEDULE_URL: http://localhost:18080
+      E2E_RECEIPT_URL: http://localhost:18090
+      E2E_BROKER_URL: http://localhost:18100
+      E2E_BROKER_INTERNAL_URL: http://localhost:18101
+      E2E_HYDRA_URL: http://localhost:14444
+      E2E_CALENDARPIT_URL: http://localhost:14173
+      E2E_GCALHOLD_URL: http://localhost:18085
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
-          cache: pnpm
+          cache: ${{ runner.environment == 'github-hosted' && 'pnpm' || '' }}
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @buddy/e2e exec playwright install --with-deps chromium
+      # runner が落ちて前の実行が片付けられなかったときに、残ったボリュームの上でシードを流さないよう、先に消す
+      - run: docker compose down -v --remove-orphans
       - run: docker compose up --build --wait
       - run: pnpm e2e
       - name: compose のログを出す
@@ -141,3 +175,14 @@ jobs:
           name: e2e-test-results
           path: packages/e2e/test-results/
           retention-days: 7
+      # 予定の API とブローカーのイメージは、次の実行で同じ名前に作り直すので残す
+      - name: compose を片付ける
+        if: always()
+        run: docker compose down -v --rmi local
+      # self-hosted runner ではディスクが残るので、タグの無いイメージと 7 日より古いビルドのキャッシュを消す。
+      # Docker は runner の機械のローカル環境と共有なので、ローカル環境のものも消える
+      - name: Docker のイメージとキャッシュを片付ける
+        if: always() && runner.environment == 'self-hosted'
+        run: |
+          docker image prune -f
+          docker builder prune -f --filter until=168h

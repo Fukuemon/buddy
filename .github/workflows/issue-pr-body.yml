@@ -20,7 +20,7 @@ permissions:
 jobs:
   pull-request:
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 5
     permissions:
       contents: read
@@ -34,7 +34,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
-          cache: pnpm
+          cache: ${{ runner.environment == 'github-hosted' && 'pnpm' || '' }}
       # textlint と規則だけが要るので、ワークスペースの全てのパッケージは入れない
       - run: pnpm install --frozen-lockfile --filter . --ignore-scripts
       - run: node --test scripts/check-issue-pr-body.test.mjs
@@ -45,7 +45,7 @@ jobs:
   # issue へのコメントに書き込みの権限が要るので、pull request の実行と分ける
   issue:
     if: github.event_name == 'issues'
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 5
     permissions:
       contents: read
