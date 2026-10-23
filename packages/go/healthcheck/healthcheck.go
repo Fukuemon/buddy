@@ -1,4 +1,4 @@
-// Package healthcheck は、イメージの中で API がリクエストを受けられるかを確かめる、`api healthcheck` のサブコマンドを持つ。
+// Package healthcheck は、イメージの中で API がリクエストを受けられるかを確認する、`api healthcheck` のサブコマンドを持つ。
 // 予定の API と照合の API が共有する module packages/go にある（ADR-0007）。
 package healthcheck
 
