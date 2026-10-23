@@ -1,8 +1,8 @@
 #!/bin/sh
 # 予定の API のマイグレーションを使い捨ての PostgreSQL に適用し、tbls でテーブル定義書と ER 図を docs/db/schedule/ に生成し直す。
 # テーブルとカラムの説明はマイグレーションの COMMENT ON に、ER 図を分ける業務のまとまり（viewpoints）は services/schedule/.tbls.yml に書く。
-# 生成の後に tbls lint で、どの viewpoint にも入らない表がないかを確かめる。
-# 最後に、生成した viewpoint の文書が全て zensical.toml の nav にあるかを確かめる。
+# 生成の後に tbls lint で、どの viewpoint にも入らない表がないかを確認する。
+# 最後に、生成した viewpoint の文書が全て zensical.toml の nav にあるかを確認する。
 #
 # 使い方: sh scripts/build-db-docs.sh（リポジトリのルートで実行する。Docker と、mise の Go と tbls が要る）
 # 終了コード: 0 は生成でき、lint と nav の点検も通った。nav に無い viewpoint の文書があれば 1。それ以外は、失敗したコマンドの終了コードで終わる。

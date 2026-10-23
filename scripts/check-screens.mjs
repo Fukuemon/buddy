@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 画面仕様書（docs/screens/<画面 ID>_<画面の名前>/）を、docs/screens/rules.md の規約で確かめる。
+ * 画面仕様書（docs/screens/<画面 ID>_<画面の名前>/）を、docs/screens/rules.md の規約で確認する。
  * 見る項目は、規約の「点検」の節にある。
  *
  * 引数でディレクトリを渡すと、そのディレクトリだけを見る。省くと docs/screens/ の下の全ての画面を見る。
@@ -86,7 +86,7 @@ const readCatalogIds = () => {
 }
 let catalogIds = null
 
-/** 仕様書のカタログの欄のリンクが本番のカタログの URL で、その ID が story のファイルにあるかを確かめる。 */
+/** 仕様書のカタログの欄のリンクが本番のカタログの URL で、その ID が story のファイルにあるかを確認する。 */
 const checkCatalogLinks = (markdown, specPath) => {
   catalogIds ??= readCatalogIds()
   markdown.split(/\r?\n/).forEach((line, index) => {
@@ -121,7 +121,7 @@ const problems = []
 const mockTestIds = new Set()
 const report = (path, message) => problems.push(`${path}: ${message}`)
 
-/** 1 から欠番なく続く整数の集合かを確かめる。 */
+/** 1 から欠番なく続く整数の集合かを確認する。 */
 const isContiguous = (numbers) => {
   const sorted = [...numbers].map(Number).sort((a, b) => a - b)
   return sorted.every((n, i) => n === i + 1)
@@ -224,7 +224,7 @@ const readStates = (markdown, specPath) => {
   return states
 }
 
-/** 画面の中の操作の属性を確かめる。値が空でないか、data-escape を操作の属性を持つ要素に付けたか、data-go の先がモックとしてあるか、data-open と data-close の先の data-panel があるか */
+/** 画面の中の操作の属性を確認する。値が空でないか、data-escape を操作の属性を持つ要素に付けたか、data-go の先がモックとしてあるか、data-open と data-close の先の data-panel があるか */
 const checkInteractions = (code, mockPath) => {
   for (const match of code.matchAll(/\sdata-go="([^"]*)"/g)) {
     const target = match[1]
@@ -434,7 +434,7 @@ const matchesPlaceholder = (testId) =>
     return new RegExp(`^${pattern}$`).test(testId)
   })
 
-// 全ての画面を見るときだけ、E2E が指す testid がどれかのモックにあるかを確かめる。
+// 全ての画面を見るときだけ、E2E が指す testid がどれかのモックにあるかを確認する。
 // 文字列の testid は同じ値か、モックの x-{…} の形を、`x-${…}` と /^x-/ は x- で始まる値（モックの x-{…} を含む）を探す
 if (process.argv.length <= 2) {
   const E2E_DIR = relative(process.cwd(), join(ROOT, 'packages/e2e/tests')) || '.'

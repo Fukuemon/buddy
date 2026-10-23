@@ -1,6 +1,6 @@
 /*
  * 生成物。手で直さない。scripts/build-mock-tokens.mjs が、DADS の基本のトークンと
- * packages/ui/src/tokens/semantic.css から作る。pnpm check:generated が、元と食い違っていないかを確かめる。
+ * packages/ui/src/tokens/semantic.css から作る。pnpm check:generated が、元と食い違っていないかを確認する。
  */
 
 /**
