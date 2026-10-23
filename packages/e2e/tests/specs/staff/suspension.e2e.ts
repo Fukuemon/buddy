@@ -4,7 +4,7 @@ import { issueAccessToken } from '../../fixtures/apiReference'
 import { LOGIN_EMAIL } from '../../fixtures/env'
 import { newStaff, registerStaff, suspendStaff } from '../../fixtures/staff'
 import { SUSPENSION_TEST, SUSPENSION_WAIT } from '../../fixtures/timeouts'
-import { signInAtBroker } from '../../screens/login'
+import { enterEmailAtBroker, signInAtBroker } from '../../screens/login'
 import { brokerLogin } from '../../selectors/idp'
 
 test.use({ storageState: { cookies: [], origins: [] } })
@@ -47,8 +47,7 @@ test.describe('予定のカレンダー', () => {
       expect((await suspendStaff(request, manager, id)).status()).toBe(200)
 
       await page.goto('/schedule')
-      await brokerLogin(page).email.fill(staff.email)
-      await brokerLogin(page).next.click()
+      await enterEmailAtBroker(page, staff.email)
 
       await expect(page).toHaveURL(/\/auth\/error\?reason=failed$/)
       await expect(page.getByTestId('auth-error')).toContainText('ログインできませんでした')

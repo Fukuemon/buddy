@@ -3,8 +3,7 @@ import { expect, test } from '@playwright/test'
 import { issueAccessToken } from '../../fixtures/apiReference'
 import { BROKER_INTERNAL_URL, BROKER_URL, LEADER, LOGIN_EMAIL, OFFICE_B } from '../../fixtures/env'
 import { newStaff, registerStaff } from '../../fixtures/staff'
-import { signInAtBroker } from '../../screens/login'
-import { brokerLogin } from '../../selectors/idp'
+import { enterEmailAtBroker, signInAtBroker } from '../../screens/login'
 
 test.use({ storageState: { cookies: [], origins: [] } })
 
@@ -37,8 +36,7 @@ test.describe('予定のカレンダー', () => {
 
       // ブローカーに職員ができていれば、上流の IdP へ転送される。できていなければ、登録していないメールと同じく失敗する
       await page.goto('/schedule')
-      await brokerLogin(page).email.fill(staff.email)
-      await brokerLogin(page).next.click()
+      await enterEmailAtBroker(page, staff.email)
 
       await expect(page).toHaveURL(/\/auth\/error\?reason=failed$/)
       await expect(page.getByTestId('auth-error')).toContainText('ログインできませんでした')

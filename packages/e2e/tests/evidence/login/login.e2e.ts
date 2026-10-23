@@ -6,22 +6,17 @@ import {
   LOGIN_STAFF,
   OFFICE_A_SCHEDULE,
   OFFICE_B,
+  SUSPENDED_STAFF,
   TEAM_MEMBER,
+  UNREGISTERED_EMAIL,
 } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
-import { signInAtBroker } from '../../screens/login'
+import { enterEmailAtBroker, signInAtBroker } from '../../screens/login'
 import { brokerLogin, idpLogin } from '../../selectors/idp'
 
 /** 録画の外では、ログインせずに web の origin を開いておく。録画の中で、ログインの画面から操作する。 */
 const openWeb = async (page: Page) => {
   await page.goto(`${BASE_URL}/auth/error`)
-}
-
-/** ブローカーのログインの画面で email を入れて次へ進む。 */
-const enterEmail = async (page: Page, email: string) => {
-  const broker = brokerLogin(page)
-  await broker.email.fill(email)
-  await broker.next.click()
 }
 
 /** 上流の IdP のフェイクで、email を確認済みのクレームにして入る。 */
@@ -65,7 +60,7 @@ test.describe('予定のカレンダー', () => {
             await check('予定のカレンダーを開くと、ブローカーのメールの入力の画面に移る')
 
             await step(`メールに ${LOGIN_EMAIL} を入れて「次へ」を押す`)
-            await enterEmail(page, LOGIN_EMAIL)
+            await enterEmailAtBroker(page, LOGIN_EMAIL)
             await expect(idpLogin(page).username).toBeVisible()
             await check('1 つ目の事業所の上流の IdP（フェイク）のログインの画面に移る')
 
@@ -97,7 +92,7 @@ test.describe('予定のカレンダー', () => {
           async ({ page, step, check }) => {
             await page.goto(DAY)
             await step(`メールに ${OFFICE_B.email} を入れて「次へ」を押す`)
-            await enterEmail(page, OFFICE_B.email)
+            await enterEmailAtBroker(page, OFFICE_B.email)
             await expect(idpLogin(page).username).toBeVisible()
             await check('2 つ目の事業所の上流の IdP（フェイク）のログインの画面に移る')
 
@@ -105,7 +100,10 @@ test.describe('予定のカレンダー', () => {
             await signInUpstream(page, OFFICE_B.email)
             await expect(page.getByTestId('viewer-menu')).toContainText(OFFICE_B.staff.name)
             const events = page.getByTestId(/^schedule-event-/)
-            await expect(events.filter({ hasText: OFFICE_B.schedule.title })).toBeVisible()
+            const officeBEvent = events.filter({ hasText: OFFICE_B.schedule.title })
+            await expect(officeBEvent).toBeVisible()
+            // 予定は 13 時にあり、録画の高さの外に出るので、判定のスクリーンショットに入るよう寄せる
+            await officeBEvent.scrollIntoViewIfNeeded()
             await expect(events.filter({ hasText: OFFICE_A_SCHEDULE.title })).toHaveCount(0)
             await check(
               `2 つ目の事業所の予定「${OFFICE_B.schedule.title}」だけが出て、同じ日の 1 つ目の事業所の予定「${OFFICE_A_SCHEDULE.title}」は出ない`,
@@ -114,27 +112,63 @@ test.describe('予定のカレンダー', () => {
         )
       })
 
-      test(`${prefix}登録していないメールを入れた場合、事業所を示さずにログインの失敗の画面が出ること`, async ({
+      test(`${prefix}登録していないメールを入れた場合、事業所を示さずにログインの失敗の画面が出て予定の画面を開けないこと`, async ({
         browser,
       }) => {
         await recordPrEvidence(
           browser,
           {
             name: 'login-unregistered-email',
-            title: '登録していないメールを入れると、事業所を示さず、ログインの失敗と同じ文言が出る',
+            title:
+              '登録していないメールを入れると、事業所を示さずにログインの失敗の画面が出て、予定の画面を開けない',
             actor: 'ログインなし',
             variant,
           },
           openWeb,
           async ({ page, step, check }) => {
             await page.goto(DAY)
-            await step('登録していないメール nobody@example.com を入れて「次へ」を押す')
-            await enterEmail(page, 'nobody@example.com')
+            await step(`登録していないメール ${UNREGISTERED_EMAIL} を入れて「次へ」を押す`)
+            await enterEmailAtBroker(page, UNREGISTERED_EMAIL)
             await expect(page).toHaveURL(/\/auth\/error\?reason=failed$/)
             await expect(page.getByTestId('auth-error')).toContainText('ログインできませんでした')
             await check(
               '上流の IdP へ移らず、web のログインの失敗の画面に「ログインできませんでした」が出る',
             )
+
+            await step('予定のカレンダーを開き直す')
+            await page.goto(DAY)
+            await expect(brokerLogin(page).email).toBeVisible()
+            await check('予定のカレンダーは開かず、ブローカーのメールの入力の画面に移る')
+          },
+        )
+      })
+
+      test(`${prefix}止めた職員のメールを入れた場合、ログインの失敗の画面が出て予定の画面を開けないこと`, async ({
+        browser,
+      }) => {
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'login-suspended-staff',
+            title: '止めた職員のメールを入れると、ログインの失敗の画面が出て、予定の画面を開けない',
+            actor: 'ログインなし（2 つ目の事業所の止めた職員）',
+            variant,
+          },
+          openWeb,
+          async ({ page, step, check }) => {
+            await page.goto(DAY)
+            await step(`止めた職員のメール ${SUSPENDED_STAFF.email} を入れて「次へ」を押す`)
+            await enterEmailAtBroker(page, SUSPENDED_STAFF.email)
+            await expect(page).toHaveURL(/\/auth\/error\?reason=failed$/)
+            await expect(page.getByTestId('auth-error')).toContainText('ログインできませんでした')
+            await check(
+              '上流の IdP へ移らず、web のログインの失敗の画面に「ログインできませんでした」が出る',
+            )
+
+            await step('予定のカレンダーを開き直す')
+            await page.goto(DAY)
+            await expect(brokerLogin(page).email).toBeVisible()
+            await check('予定のカレンダーは開かず、ブローカーのメールの入力の画面に移る')
           },
         )
       })
@@ -155,7 +189,7 @@ test.describe('予定のカレンダー', () => {
           async ({ page, step, check }) => {
             await page.goto(DAY)
             await step(`メールに ${TEAM_MEMBER.email} を入れて「次へ」を押す`)
-            await enterEmail(page, TEAM_MEMBER.email)
+            await enterEmailAtBroker(page, TEAM_MEMBER.email)
             await expect(idpLogin(page).username).toBeVisible()
 
             await step('上流の IdP で、別のメール someone.else@example.com を確認済みにして入る')

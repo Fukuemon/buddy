@@ -31,6 +31,12 @@ export const OFFICE_B = {
   schedule: { date: '2026-10-20', title: '第二ステーションの定例' },
 }
 
+/** シードの、止めた職員。ブローカーと予定の API の両方で止めてあり、ログインを拒まれる。 */
+export const SUSPENDED_STAFF = { email: 'takumi.ono@example.com' }
+
+/** ブローカーにも予定の API にも登録していないメール。 */
+export const UNREGISTERED_EMAIL = 'nobody@example.com'
+
 /** シードの、1 つ目の事業所の予定。OFFICE_B.schedule と同じ日にある。 */
 export const OFFICE_A_SCHEDULE = { date: '2026-10-20', title: 'カンファレンス' }
 

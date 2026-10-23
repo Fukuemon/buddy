@@ -255,6 +255,7 @@ compose は、開発用の IdP（mock-oauth2-server）を、上流の IdP のフ
   - ブラウザはこの名前を引けない。Hydra は、認可のエンドポイントを `urls.self.public` のローカルのポートで示す。
   - ブローカーは、上流の IdP の認可の画面の origin を `UPSTREAM_IDP_BROWSER_ORIGIN` に替えて転送する。
 - ブローカーと予定の API のシードは、同じ職員の ID を持つ。2 つの事業所（`org-sample`、`org-sample-b`）の職員がいる。
+  - `org-sample-b` には、両方で止めた職員もいる。E2E は、この職員のログインが拒まれることを確認する。
 
 ## Interface
 
