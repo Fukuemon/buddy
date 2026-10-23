@@ -63,6 +63,9 @@ export const SCHEDULE_URL = process.env.E2E_SCHEDULE_URL ?? 'http://localhost:80
 /** compose の照合の API の URL。API の参照のページから送ったリクエストを、ここへ送り直す。 */
 export const RECEIPT_URL = process.env.E2E_RECEIPT_URL ?? 'http://localhost:8090'
 
+/** compose のブローカーの URL。内部の API がトークンなしの呼び出しを拒むことを確認するのに使う。 */
+export const BROKER_URL = process.env.E2E_BROKER_URL ?? 'http://localhost:8100'
+
 /** compose の Hydra の URL。API の参照のページで撮る spec が、ここからトークンを取る。 */
 export const HYDRA_URL = process.env.E2E_HYDRA_URL ?? 'http://localhost:4444'
 
