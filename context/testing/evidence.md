@@ -7,13 +7,13 @@ status: draft
 
 # エビデンス
 
-機能の追加と改修で何を確かめたかを示す動画と画像の取り決め。  
+機能の追加と改修で何を確認したかを示す動画と画像の取り決め。  
 観点の決め方、撮り方、pull request の本文への入れ方は、スキル attach-evidence にある。  
 エビデンスの動画は、`packages/e2e/kit/` の `recording` と `evidence` を呼ぶ Playwright の spec で撮る。
 
 ## エビデンスを付ける変更
 
-- 機能の追加と改修の pull request には、確かめたことのエビデンスの動画を付ける。画面の変更に限らず、API だけの変更にも付ける。
+- 機能の追加と改修の pull request には、確認したことのエビデンスの動画を付ける。画面の変更に限らず、API だけの変更にも付ける。
 - 文書、スキル、設定だけの変更には付けない。
   - 振る舞いが変わりうる設定の変更には付ける。例は、依存のライブラリの更新である。
 - 不具合の再現と改修前の動きは、issue に付けてよい。
@@ -33,7 +33,7 @@ status: draft
 
 pull request と issue のエビデンスは、Playwright の spec で撮る。  
 spec は、`packages/e2e/tests/fixtures/evidence.ts` の `recordPrEvidence` から、`packages/e2e/kit/` の `recordEvidence` を呼ぶ。  
-spec の書き方はスキル write-verification-spec に、流し方と確かめ方は run-verification-scenarios にある。
+spec の書き方はスキル write-verification-spec に、流し方と確認の方法は run-verification-scenarios にある。
 
 - 配置先は `packages/e2e/tests/evidence/<機能>/<振る舞い>.e2e.ts` にする。`<機能>` と `<振る舞い>` は、E2E の spec と同じ名前の付け方（スキル write-e2e-test の「名前」）にする。
   - 1 つの test が 1 つの観点を撮る。`recordPrEvidence` の `name` が、本文に入れる動画のファイル名になる。
@@ -102,7 +102,7 @@ docker compose -p buddy-evidence down -v
 - 画面仕様書のモックは、`mockUrl(<docs/screens/ からの相対パス>)` で、リポジトリのファイルを `file://` のまま開いて撮る。文書のサイトを起動しなくてよい。
 - ログインしない story とモックでも、`prepare` で同じ URL を開く。kit は `prepare` が開いた画面から sessionStorage を読むので、何も開かないと失敗する。
 - スマートフォンの幅は、`recordPrEvidence` の `viewport` に `PHONE_VIEWPORT`（390x844）を渡して撮る。幅だけをそろえ、タッチの操作は再現しない。幅は本文の撮った条件に書く。
-- API だけの変更のうち、画面から確かめられない操作は、API の参照のページ（Scalar）の「Test Request」から送って撮る。
+- API だけの変更のうち、画面から確認できない操作は、API の参照のページ（Scalar）の「Test Request」から送って撮る。
   - `prepare` に `packages/e2e/tests/fixtures/apiReference.ts` の `prepareApiReference` を渡し、録画の中で `routeApiReference` を張ってからページを開く。ページは文書のサイトを起動せずに `docs/api/` のファイルから開き、リクエストを撮る compose の API へ送り直す。
   - トークンは認証の欄に伏せ字のまま入れる。字幕には職員の名前だけを出し、トークンの値を出さない。
 

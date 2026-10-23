@@ -59,10 +59,10 @@ test.describe('予定の取り込み', () => {
               )
               await expect(page.getByTestId('calendar-import-count-skipped')).toContainText('3 件')
               await check(
-                '「プレビューの結果」に、取り込む 6 件、繰り返し 2 件、確かめが要る 1 件、取り込まない 3 件が出る',
+                '「プレビューの結果」に、取り込む 6 件、繰り返し 2 件、確認が必要 1 件、取り込まない 3 件が出る',
               )
 
-              await step('取り込まない予定の理由と、確かめが要る予定を見る')
+              await step('取り込まない予定の理由と、確認が必要な予定を見る')
               await page.getByTestId('calendar-import-skipped').scrollIntoViewIfNeeded()
               await expect(page.getByTestId('calendar-import-skipped-reason-all_day')).toHaveText(
                 '終日の予定: 1 件',
@@ -77,7 +77,7 @@ test.describe('予定の取り込み', () => {
                 'タイトルから読んだ利用者',
               )
               await check(
-                '取り込まない理由（終日、日をまたぐ、サービス内容を引けない）が 1 件ずつ出て、確かめが要る予定に「タイトルから読んだ利用者」が出る',
+                '取り込まない理由（終日、日をまたぐ、サービス内容を引けない）が 1 件ずつ出て、確認が必要な予定に「タイトルから読んだ利用者」が出る',
               )
             } finally {
               await step('（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）')
@@ -87,7 +87,7 @@ test.describe('予定の取り込み', () => {
         )
       })
 
-      test(`${prefix}確かめが要る予定に利用者を選んで確定した場合、取り込んだ件数が出て、カレンダーに取り込んだ予定が出ること`, async ({
+      test(`${prefix}確認が必要な予定に利用者を選んで確定した場合、取り込んだ件数が出て、カレンダーに取り込んだ予定が出ること`, async ({
         browser,
       }) => {
         await recordPrEvidence(
@@ -95,7 +95,7 @@ test.describe('予定の取り込み', () => {
           {
             name: 'calendar-import-confirm',
             title:
-              '確かめが要る予定に利用者を選んで「確定して取り込む」と、取り込んだ件数が出て、カレンダーに取り込んだ予定が出る',
+              '確認が必要な予定に利用者を選んで「確定して取り込む」と、取り込んだ件数が出て、カレンダーに取り込んだ予定が出る',
             actor: ACTOR,
             variant,
           },
@@ -108,11 +108,11 @@ test.describe('予定の取り込み', () => {
               await page.getByTestId('calendar-import-preview').click()
               await expect(page.getByTestId('calendar-import-submit')).toBeDisabled()
               await step(
-                `${MORI.name} の 2026 年 11 月をプレビューした。確かめが要る予定が 1 件あり、「確定して取り込む」は押せない`,
+                `${MORI.name} の 2026 年 11 月をプレビューした。確認が必要な予定が 1 件あり、「確定して取り込む」は押せない`,
               )
 
               await step(
-                `確かめが要る予定で「利用者を選ぶ」を選び、利用者に ${SEED_PATIENT.name} を選ぶ`,
+                `確認が必要な予定で「利用者を選ぶ」を選び、利用者に ${SEED_PATIENT.name} を選ぶ`,
               )
               await page.getByTestId('calendar-import-review-patient-unknown1110').check()
               await page

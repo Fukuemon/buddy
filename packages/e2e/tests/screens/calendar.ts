@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 
 /**
- * カレンダーの連携の画面で、職員の行の入力の初期値のカレンダーを、読めると確かめてから結び付ける。
+ * カレンダーの連携の画面で、職員の行の入力の初期値のカレンダーを、読めると確認してから結び付ける。
  * 結び付けた行にカレンダーの ID が出るまで待つ。
  */
 export const linkStaffCalendar = async (page: Page, staffId: string) => {

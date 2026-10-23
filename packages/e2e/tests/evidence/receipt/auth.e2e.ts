@@ -7,7 +7,7 @@ import { fillApiToken, openApiClient } from '../../screens/apiReference'
 import { apiClient } from '../../selectors/apiReference'
 
 test.describe('照合の API', () => {
-  test.describe('access token の確かめ', () => {
+  test.describe('access token の確認', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       test(`${variant.label ? `${variant.label}: ` : ''}トークンを付けずに照合を送った場合は 401 が返り、トークンを付けると認証を通ること`, async ({
         browser,

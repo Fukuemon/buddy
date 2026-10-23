@@ -14,7 +14,7 @@ verified_commit: unverified
 ## Overview
 
 手動検証のシナリオの「例」の行ごとに 1 本ずつ録画し、mp4、判定のスクリーンショット、README を配置先へ書き出す。  
-ふつうは、デプロイされた 1 つのバージョンだけを撮る。振る舞いを変えない改修を確かめる要求では、改修前のバージョンも同じ操作で撮り、判定のスクリーンショットを並べて比べる。  
+ふつうは、デプロイされた 1 つのバージョンだけを撮る。振る舞いを変えない改修を確認する要求では、改修前のバージョンも同じ操作で撮り、判定のスクリーンショットを並べて比べる。  
 プロダクトの spec は、シナリオの手順の操作と、字幕に出す文だけを持つ。  
 配置先とアプリの値(`RecordingTarget`)は、プロダクトの kit を呼ぶ薄い層が持つ。薄い層が無いプロダクトでは spec が持つ。buddy の薄い層は `packages/e2e/tests/fixtures/evidence.ts` にある。  
 録画の開始と終了、ログインの状態の持ち込み、字幕とカーソルの描画、形式の変換、README の書き出しは、`packages/e2e/kit/recording/` が持つ。配置先とファイル名は `packages/e2e/kit/evidence/` が決める。
@@ -79,7 +79,7 @@ sequenceDiagram
   spec->>rec: recordEvidence を呼ぶ(RecordingTarget、シナリオ、版、例の行、prepare、本体)
   rec->>login: 録画しないコンテキストで開く
   rec->>spec: prepare を呼び返す(ログインのページ)
-  spec->>login: ログインし、データを確かめる
+  spec->>login: ログインし、データを確認する
   spec-->>rec: prepare の戻り値
   rec->>login: readVersion でデプロイされたバージョンを読む
   rec->>login: Cookie、localStorage、IndexedDB、sessionStorage を読んで閉じる
@@ -173,7 +173,7 @@ sequenceDiagram
 | --- | --- |
 | 受け付ける入力 | `RecordingTarget` の `viewport` は、画面と録画の大きさである。渡さなければ 1920x1200 にする |
 | | `RecordingTarget` の `timezoneId` は、ブラウザの時間帯である。録画のコンテキストは `playwright.config.ts` の `use` を受け継がないので、日時を出す画面を撮るときは渡す |
-| | `prepare(page)` は、録画しないページでログインとデータの確かめを済ませ、本体に渡す値を返す。ログインした後のアプリを開いたまま返す |
+| | `prepare(page)` は、録画しないページでログインとデータの確認を済ませ、本体に渡す値を返す。ログインした後のアプリを開いたまま返す |
 | | 本体は、最初の `step` より前に画面を開く。字幕の文を、開いた画面の `sessionStorage` に置くためである。`prepare` も、録画する画面の origin を開いたまま返す |
 | | 本体は、録画するページで操作し、前提と操作の文を `step` で、その時点の画面で判定できる文を `check` で出す。字幕は次に変えるまで残るので、操作の間に見る判定の文は、操作の前に `step` で出す |
 | | 同じシナリオの改修前と改修後では、`check` を同じ順に同じ数だけ呼ぶ。比較の画像は、`check` の順に組にする |

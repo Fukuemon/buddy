@@ -15,7 +15,7 @@ export const savedLoginPath = (dir: string, baseUrl: string, key: string): strin
  * 保存するのは Cookie、localStorage、IndexedDB で、sessionStorage は保存しない。
  * 同じファイルを並列の worker で共有しない。refresh のトークンを使うたびに替えるアプリでは、全部のセッションが失効する。
  *
- * @param o.isLoggedIn ページで、アプリに入れているかを返す。保存した状態を試すときと、ログインした後に確かめるときに呼ぶ
+ * @param o.isLoggedIn ページで、アプリに入れているかを返す。保存した状態を試すときと、ログインした後に確認するときに呼ぶ
  * @param o.login ページで、ログインを始めてからアプリに入るまでを行う。ID 基盤のログインの画面の操作も、ここで行う
  */
 export const ensureSavedLogin = async (

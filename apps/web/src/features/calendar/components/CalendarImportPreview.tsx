@@ -32,8 +32,8 @@ export type CalendarImportPreviewProps = {
 }
 
 /**
- * プレビューの結果。件数、確かめが要る予定と取り込み方、取り込まない予定、確定して取り込むを縦に並べる。
- * 確かめが要る予定の全てに取り込み方を選ぶまで、確定して取り込むは押せない。
+ * プレビューの結果。件数、確認が必要な予定と取り込み方、取り込まない予定、確定して取り込むを縦に並べる。
+ * 確認が必要な予定の全てに取り込み方を選ぶまで、確定して取り込むは押せない。
  */
 export const CalendarImportPreview = ({
   preview,
@@ -66,7 +66,7 @@ export const CalendarImportPreview = ({
       />
       {preview.needs_review.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h3 className="text-label">確かめが要る予定</h3>
+          <h3 className="text-label">確認が必要な予定</h3>
           <p className="text-caption text-text-secondary">
             タイトルから利用者を 1
             人に決められなかった予定です。予定ごとに、取り込み方を選んでください。
@@ -146,7 +146,7 @@ export const CalendarImportPreview = ({
             className="block border-l-4 border-border bg-surface-subtle px-3 py-2 text-body"
             data-testid="calendar-import-remaining"
           >
-            確かめが要る予定のうち、あと {remaining} 件の取り込み方を選んでください。
+            確認が必要な予定のうち、あと {remaining} 件の取り込み方を選んでください。
           </output>
         )}
         {errorMessage !== undefined && (

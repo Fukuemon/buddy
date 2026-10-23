@@ -255,7 +255,7 @@
   --color-key-1200: var(--color-primitive-light-blue-1200);
 
   --buddy-color-surface: var(--color-neutral-white);
-  /* 画面の地。もともとのデザイン案のわずかに温かい白で、白の surface（カード、ダイアログ、入力欄）と並べて使う */
+  /* 画面の背景。もともとのデザイン案のわずかに温かい白で、白の surface（カード、ダイアログ、入力欄）と並べて使う */
   --buddy-color-surface-canvas: #fdfcfb;
   --buddy-color-surface-subtle: var(--color-neutral-solid-gray-50);
   --buddy-color-surface-disabled: var(--color-neutral-solid-gray-100);

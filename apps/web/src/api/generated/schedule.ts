@@ -13,7 +13,7 @@ export interface paths {
         };
         /**
          * プロセスがレスポンスを返せるかを返す
-         * @description 依存先を確かめない。
+         * @description 依存先を確認しない。
          */
         get: operations["getHealthz"];
         put?: never;
@@ -572,7 +572,7 @@ export interface paths {
         put?: never;
         /**
          * 職員にカレンダーを結び付ける
-         * @description Google Calendar API で予定を 1 件だけ読み、読めることを確かめてから結び付ける。
+         * @description Google Calendar API で予定を 1 件だけ読み、読めることを確認してから結び付ける。
          *     外した同じカレンダーが同じ職員にあれば、結び付け直す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         post: operations["createExternalCalendar"];
@@ -592,7 +592,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * カレンダーを読めるかを確かめる
+         * カレンダーを読めるかを確認する
          * @description Google Calendar API で予定を 1 件だけ読む。結び付けない。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         post: operations["createExternalCalendarCheck"];
@@ -656,7 +656,7 @@ export interface paths {
         /**
          * 取り込みを確定する
          * @description カレンダーの期間の予定を読み直し、プレビューと同じ規則で読み替えて、予定と外部の予定との対応を 1 つのトランザクションで書く。
-         *     前の取り込みで取り込んだ外部の予定は書かない。確かめが要る予定には decisions の取り込み方を当てる。
+         *     前の取り込みで取り込んだ外部の予定は書かない。確認が必要な予定には decisions の取り込み方を当てる。
          *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         post: operations["createCalendarImport"];
@@ -674,7 +674,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 確かめが要る書き出しを一覧する
+         * 確認が必要な書き出しを一覧する
          * @description Google カレンダーと食い違った予定のうち、buddy と Google カレンダーの両方で変わったか、Google カレンダーの変更を buddy に読み替えられなかった
          *     （conflict）か、書けなかった（failed）ものを、新しく変わった順に返す。
          *     予定のタイトル、利用者名、カレンダーの ID は返さない。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
@@ -698,8 +698,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 確かめが要る書き出しを buddy の内容で書き直す
-         * @description 確かめが要る書き出しを、Google カレンダーの予定の変更を比べずに、buddy の今の内容で書き直す待ちにする。書き出しの処理が、次の周期で書く。
+         * 確認が必要な書き出しを buddy の内容で書き直す
+         * @description 確認が必要な書き出しを、Google カレンダーの予定の変更を比べずに、buddy の今の内容で書き直す待ちにする。書き出しの処理が、次の周期で書く。
          *     Google カレンダーで消された予定は作り直す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         post: operations["createCalendarExportRetry"];
@@ -719,8 +719,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 確かめが要る書き出しを Google カレンダーの内容で解く
-         * @description 確かめが要る書き出しの予定を、Google カレンダーの今の内容にそろえ、書き出しを終える。buddy で変えた日時とタイトルは消える。
+         * 確認が必要な書き出しを Google カレンダーの内容で解く
+         * @description 確認が必要な書き出しの予定を、Google カレンダーの今の内容にそろえ、書き出しを終える。buddy で変えた日時とタイトルは消える。
          *     Google カレンダーで消された予定（予定が cancelled で返るときと、予定が 404 か 410 で、カレンダーは読めるとき）は、buddy でキャンセルする。
          *     acceptable が true の書き出しだけを解ける。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
@@ -1021,7 +1021,7 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
-        /** @description 確かめが要る書き出しと、その予定の日時と職員。繰り返しの予定の date は最初の回の日付 */
+        /** @description 確認が必要な書き出しと、その予定の日時と職員。繰り返しの予定の date は最初の回の日付 */
         CalendarExportIssue: components["schemas"]["CalendarExport"] & {
             staff_id: components["schemas"]["ID"];
             staff_name: string;
@@ -1056,7 +1056,7 @@ export interface components {
         };
         /** @description 件数は Google の予定の数で数え、繰り返しのまま取り込む予定は 1 件、回ごとにした予定は 1 回を 1 件に数える。 */
         ImportCounts: {
-            /** @description 確かめが要る予定を除いて、取り込む予定の数 */
+            /** @description 確認が必要な予定を除いて、取り込む予定の数 */
             import: number;
             /** @description import のうち、訪問の予定の数 */
             import_visit: number;
@@ -1222,7 +1222,7 @@ export interface components {
                 /**
                  * @example {
                  *       "code": "calendar_unreadable",
-                 *       "message": "カレンダーを読めません。カレンダーの共有を確かめてください"
+                 *       "message": "カレンダーを読めません。カレンダーの共有を確認してください"
                  *     }
                  */
                 "application/json": components["schemas"]["Error"];
@@ -2644,7 +2644,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description プレビューの後に確かめが要る予定が変わった（import_preview_changed）か、同じカレンダーの取り込みが進んでいる（import_running）。何も書いていない */
+            /** @description プレビューの後に確認が必要な予定が変わった（import_preview_changed）か、同じカレンダーの取り込みが進んでいる（import_running）。何も書いていない */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2670,7 +2670,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 確かめが要る書き出し */
+            /** @description 確認が必要な書き出し */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2711,7 +2711,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description 確かめが要る書き出しでない（export_not_in_review）。すでに書き直す待ちにしたか、書き終えた */
+            /** @description 確認が必要な書き出しでない（export_not_in_review）。すでに書き直す待ちにしたか、書き終えた */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2748,7 +2748,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             /**
-             * @description 確かめが要る書き出しでない（export_not_in_review）か、Google カレンダーの内容で解けない書き出しである（export_not_acceptable）か、
+             * @description 確認が必要な書き出しでない（export_not_in_review）か、Google カレンダーの内容で解けない書き出しである（export_not_acceptable）か、
              *     Google カレンダーの予定を buddy の予定に読み替えられない（external_change_unappliable。終日にした予定、タイトルの利用者を引けない予定など）
              */
             409: {

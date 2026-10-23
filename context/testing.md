@@ -21,7 +21,7 @@ status: stable
 | デザインシステムのテスト | トークンのコントラスト、押せる領域とフォーカスの移り方、story の描画とアクセシビリティ | `packages/ui/src` の `*.test.ts(x)` と story | `pnpm --filter @buddy/ui test`（トークンは node、コンポーネントと story はブラウザ） |
 | E2E | ログインから画面の操作までの流れが、compose の全体で動く | `packages/e2e/tests/` | `pnpm e2e`（下の E2E の節） |
 | 生成物のそろい | `openapi.yaml` と SQL から生成したコードが最新である | `scripts/check-generated.sh` | `pnpm check:generated` |
-| テーブル定義書のそろい | マイグレーションを適用した PostgreSQL から作ったテーブル定義書と ER 図の元が、コミットした `docs/db/` と同じである。全てのテーブルがどれかの viewpoint に入る | `scripts/build-db-docs.sh` | `pnpm generate:db-docs`（Docker が要る）。CI の `db-docs` は、生成した後に `docs/db/` の差分を確かめる |
+| テーブル定義書のそろい | マイグレーションを適用した PostgreSQL から作ったテーブル定義書と ER 図の元が、コミットした `docs/db/` と同じである。全てのテーブルがどれかの viewpoint に入る | `scripts/build-db-docs.sh` | `pnpm generate:db-docs`（Docker が要る）。CI の `db-docs` は、生成した後に `docs/db/` の差分を確認する |
 | OpenAPI の定義の lint | 各 API の `openapi.yaml` が Redocly CLI の `recommended-strict` の規則に合う | `redocly.yaml`、`.redocly.lint-ignore.yaml` | `pnpm lint:openapi` |
 | 画面仕様書の点検 | 画面仕様書の名前と構造、モックの `data-testid`、E2E が使う testid、カタログの欄の story がそろう | `scripts/check-screens.mjs` | `pnpm check:screens` |
 
@@ -47,8 +47,8 @@ status: stable
 - 予定の API のシードは `services/schedule/db/seed/seed.sql` にあり、結合テストと compose が同じシードを適用する。全ての環境で同じマスタは、シードではなくマイグレーションが入れる。
 - 照合の入力の CSV は `services/receipt/testdata/` に、互換のテストのケースは `testdata/parity/<ケース>/` に置く。
 - web のテストで HTTP を受けるのは MSW だけにし、fetch を引数で差し替えない。共通の handler は成功のレスポンスだけを返し、異常系はテストごとに `server.use()` で上書きする。handler の無いリクエストはテストを失敗させる。
-  - 送ったリクエストの中身はテストの側で確かめない。上書きした handler が中身を確かめ、合わなければ 400 を返して、テストの結果を変える。
-  - API を呼ばないことを確かめるときは、その API の全てのリクエストに 500 を返す handler（`http.all`）で上書きし、結果が変わらないことを見る。
+  - 送ったリクエストの中身はテストの側で確認しない。上書きした handler が中身を確認し、合わなければ 400 を返して、テストの結果を変える。
+  - API を呼ばないことを確認するときは、その API の全てのリクエストに 500 を返す handler（`http.all`）で上書きし、結果が変わらないことを見る。
   - handler は `openapi-msw` で各 API の `openapi.yaml` から生成した型を使い、レスポンスが API の定義からずれると型のチェックで失敗する。
 - web の story は、ダミーデータだけを使い、本物の API を呼ばない。データは、schedule が `features/schedule/components/storyData.ts`、receipt がフェイクの API の `fakeReceiptReport` である。
   - Container の story は、`apps/web/src/storybook/withAppRouter.tsx` の decorator の中で描く。decorator は、アプリと同じ ID の route と、フェイクの `BuddyApi`（`src/api/fake/`）を用意する。空、失敗、読み込み中は、同じファイルのフェイクの API の変種で作る。1 つの story だけで使うレスポンス（照合の行のエラーなど）は、その story の中でフェイクの API を作ってよい。
@@ -62,7 +62,7 @@ status: stable
 | ハンドラ、認証、事業所の確認 | ハンドラのテスト |
 | 照合の正規化と判定 | 互換のテストを流し、結果が変わるなら期待値を作り直した理由を pull request に書く |
 | web の変換と表示の規則 | 対象の隣の単体テスト |
-| 画面のコンポーネント | story と、操作を確かめるコンポーネントのテスト |
+| 画面のコンポーネント | story と、操作を確認するコンポーネントのテスト |
 | `packages/ui` のコンポーネント | story（play 関数）とコンポーネントのテスト |
 | 画面の流れ、testid | その画面の E2E を流す |
 | `openapi.yaml`、SQL | `pnpm check:generated` |
@@ -84,7 +84,7 @@ pull request と develop への push では、CI（[ci.yml](../.github/workflows
 - E2E のテストは `packages/e2e/tests/` に置き、ルートの compose で立てた全体に向けて流す。手順は CONTRIBUTING.md の「E2E のテストを流す」にある。
   - API、Hydra、ブローカーは置き換えず、compose の本物を使う。事業所の上流の IdP は、compose のフェイクを使う。テストのデータは予定の API に作り、消さない。spec は、タイトルに時刻を入れて自分の作ったデータを見分ける。
   - project は 3 つある。`setup` は compose のブローカーにログインした状態を `packages/e2e/.auth/` に保存し、`e2e` はその状態で `tests/specs/` の spec を流す。`evidence` は `tests/evidence/` のエビデンスの spec を流し、`pnpm e2e` と CI は流さない（[エビデンス](testing/evidence.md)）。
-  - `setup` は、青木 陽菜（マネージャー）と森 健太（チームリーダー）の 2 人のログインの状態を保存する。リーダーで確かめる spec は、`test.use({ storageState: LEADER_STATE })` で切り替える。
+  - `setup` は、青木 陽菜（マネージャー）と森 健太（チームリーダー）の 2 人のログインの状態を保存する。リーダーで確認する spec は、`test.use({ storageState: LEADER_STATE })` で切り替える。
   - 環境変数 `E2E_BASE_URL`（デフォルトは `http://localhost:3000`）で、向ける画面を変える。ログインのメールは、`packages/e2e/tests/fixtures/env.ts` の `LOGIN_EMAIL` と `LEADER.email` である。
   - Google カレンダーの spec が向ける calendarpit と gcalhold は、環境変数 `E2E_CALENDARPIT_URL` と `E2E_GCALHOLD_URL` で変える。デフォルトは、それぞれ `http://localhost:4173` と `http://localhost:8085` である。
   - 職員の登録と停止の spec は、予定の API とブローカーを直に呼ぶ。向ける先は `E2E_SCHEDULE_URL`、`E2E_HYDRA_URL`、`E2E_BROKER_URL`、`E2E_BROKER_INTERNAL_URL` で変える。

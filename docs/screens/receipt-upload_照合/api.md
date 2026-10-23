@@ -18,6 +18,6 @@
   - 403 は `forbidden`、502 は `schedule_source_failed`、503 は `calendar_not_configured`。500（`internal`）とそのほかは照合の失敗の文にする
   - 422 で `errors` が空なら、ファイル全体のエラーとして、`Error.message` を文に続ける
 - 行ごとのエラーのファイルの名前は、`source` が `schedules` なら「予定の CSV」、`visits` なら「実績の CSV」にする。
-- ファイルの合計の上限は `MAX_RECEIPT_UPLOAD_BYTES`（`apps/web/src/api/bff/receiptCall.ts`）である。照合の API の `MAX_UPLOAD_BYTES` のデフォルト（10 MiB）から 64 KiB を引く。BFF の server function も、`parseReceiptForm` で同じ上限を確かめる。
+- ファイルの合計の上限は `MAX_RECEIPT_UPLOAD_BYTES`（`apps/web/src/api/bff/receiptCall.ts`）である。照合の API の `MAX_UPLOAD_BYTES` のデフォルト（10 MiB）から 64 KiB を引く。BFF の server function も、`parseReceiptForm` で同じ上限を確認する。
 - 401 は、セッションが無いときに BFF の `checkReceipt`（`apps/web/src/server/receipt.ts`）が返す。照合の API も、access token が無いか正しくないときに 401（`unauthenticated`）を返し、`checkReceipt` はその status をそのまま返す。どちらも `createBffReceiptApi` がログインの画面へ移す。
-- 対象の月のデフォルトは `previousMonth`、月の形の確かめは `isMonth`（`apps/web/src/features/receipt/lib/month.ts`）である。
+- 対象の月のデフォルトは `previousMonth`、月の形の確認は `isMonth`（`apps/web/src/features/receipt/lib/month.ts`）である。

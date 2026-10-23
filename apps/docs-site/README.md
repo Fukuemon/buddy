@@ -25,7 +25,7 @@ pnpm site:build
 4. `scripts/build-docs-site.mjs` で、3 つを `apps/docs-site/public/` に並べる。`/` に文書、`/storybook/` にカタログ、`/erd/` に ER 図を置く。
 5. `cf build --mode production` で、公開する形の成果物を `apps/docs-site/.cloudflare/output/` に作る。
 
-`pnpm --filter @buddy/docs-site deploy:dry-run` で、Cloudflare に送らずに成果物を確かめられる。認証は要らない。
+`pnpm --filter @buddy/docs-site deploy:dry-run` で、Cloudflare に送らずに成果物を確認できる。認証は要らない。
 
 文書のサイトのリンクは相対の URL なので、カタログを下のパスに置いても行き来できる。文書のトップのカタログへのリンク（`storybook/`）と ER 図へのリンク（`erd/`）は、ローカルの `zensical serve` では開けない。
 
@@ -42,11 +42,11 @@ ER 図のサイトは、Liam ERD の CLI が出す静的なファイルで、リ
   - fork と Dependabot の pull request には GitHub が secret を渡さないため、ワークフローはサイトをビルドするだけで、プレビューとコメントの手順を飛ばす。
 - 文書の元は docs/ のほか、services/ と packages/ の Design Doc にもあるので、変えた場所で絞らずに全ての pull request で実行する。
 - `cloudflare.config.ts` が Worker の名前（`buddy-docs`）と、workers.dev とプレビューの URL を有効にする設定を持つ。静的なファイルの配置先は `wrangler.config.ts` にある。`cf` の 1.0.0-beta は、静的なファイルのビルドを wrangler に任せるためである。
-- `cf` は beta なので、バージョンを固定している。上げるときは、pull request のプレビューと `deploy:dry-run` が通ることを確かめる。
+- `cf` は beta なので、バージョンを固定している。上げるときは、pull request のプレビューと `deploy:dry-run` が通ることを確認する。
 
 ## Cloudflare のセットアップ
 
-公開には、利用者が Cloudflare で次を用意する。手順は 2026-10 の Cloudflare のダッシュボードで確かめた。
+公開には、利用者が Cloudflare で次を用意する。手順は 2026-10 の Cloudflare のダッシュボードで確認した。
 
 1. Cloudflare のアカウントを作り、Zero Trust を有効にする（Free のプランでよい）。
 2. Workers & Pages で Worker `buddy-docs` を作る（中身は Hello World のままでよい）。手順 3 のトークンは Worker を作れないため、先に作る。
@@ -62,4 +62,4 @@ ER 図のサイトは、Liam ERD の CLI が出す静的なファイルで、リ
 
 - アカウント全体の Access（Workers & Pages の概要の「Cloudflare Access」のスイッチ）は使わない。同じアカウントの、公開しているほかの Worker も守られて開けなくなるためである。
 - Worker の名前を変えると、新しい Worker が Access なしで出る。名前を変えるときは、先に手順 2、3、5、6 を新しい名前で行う。
-- Access で守られているかは、`curl -I https://buddy-docs.emon-apps.workers.dev` が `*.cloudflareaccess.com` への 302 を返すことで確かめる。
+- Access で守られているかは、`curl -I https://buddy-docs.emon-apps.workers.dev` が `*.cloudflareaccess.com` への 302 を返すことで確認する。

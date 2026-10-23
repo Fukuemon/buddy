@@ -6,7 +6,7 @@ const sign = (value: string, secret: string) =>
 /** value に HMAC-SHA256 の署名を付けた `value.署名` を返す。value は `.` を含まない。 */
 export const signValue = (value: string, secret: string) => `${value}.${sign(value, secret)}`
 
-/** signValue の結果の署名を確かめ、value を返す。形か署名が誤っていれば undefined を返す。 */
+/** signValue の結果の署名を確認し、value を返す。形か署名が誤っていれば undefined を返す。 */
 export const verifySignedValue = (signed: string | undefined, secret: string) => {
   if (signed === undefined) return undefined
   const dot = signed.lastIndexOf('.')

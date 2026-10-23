@@ -92,8 +92,8 @@ const CalendarReviewContent = () => {
 }
 
 /**
- * 確かめが要る予定の画面。職員の管理の権限が無ければ、API を呼ばずに権限が無いことを示す。
- * Google カレンダーと食い違った予定を読み、buddy の内容で書き直すか、Google の内容に合わせるかを、ダイアログで確かめてから行う。
+ * 確認が必要な予定の画面。職員の管理の権限が無ければ、API を呼ばずに権限が無いことを示す。
+ * Google カレンダーと食い違った予定を読み、buddy の内容で書き直すか、Google の内容に合わせるかを、ダイアログで確認してから行う。
  */
 export const CalendarReviewContainer = () => {
   const { viewer } = useRouteContext({ from: '__root__' })

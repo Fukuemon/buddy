@@ -41,7 +41,7 @@ describe('CalendarReviewContainer', () => {
     )
   })
 
-  it('確かめてから Google の内容に合わせると、一覧から消える', async () => {
+  it('確認してから Google の内容に合わせると、一覧から消える', async () => {
     render(<Default />)
     await userEvent.click(await screen.findByTestId('calendar-review-accept-export-1'))
     const dialog = screen.getByTestId('calendar-accept-dialog')
@@ -56,7 +56,7 @@ describe('CalendarReviewContainer', () => {
     expect(screen.queryByTestId('calendar-accept-dialog')).toBeNull()
   })
 
-  it('確かめてから buddy の内容で書き直すと、一覧から消える', async () => {
+  it('確認してから buddy の内容で書き直すと、一覧から消える', async () => {
     render(<Default />)
     await userEvent.click(await screen.findByTestId('calendar-review-rewrite-export-1'))
     const dialog = screen.getByTestId('calendar-rewrite-dialog')
@@ -99,17 +99,17 @@ describe('CalendarReviewContainer', () => {
     expect(screen.getByTestId('calendar-accept-submit')).toBeEnabled()
   })
 
-  it('確かめが要る予定が無ければ、そう示す', async () => {
+  it('確認が必要な予定が無ければ、そう示す', async () => {
     render(<Empty />)
     expect(await screen.findByTestId('calendar-review-empty')).toHaveTextContent(
-      '確かめが要る予定はありません。',
+      '確認が必要な予定はありません。',
     )
   })
 
   it('読めなければ、文と読み直すボタンを出す', async () => {
     render(<LoadError />)
     expect(await screen.findByTestId('calendar-review-error')).toHaveTextContent(
-      '確かめが要る予定を読み込めませんでした。',
+      '確認が必要な予定を読み込めませんでした。',
     )
     expect(screen.getByTestId('calendar-review-retry')).toBeInTheDocument()
   })

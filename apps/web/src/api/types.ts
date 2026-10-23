@@ -117,15 +117,15 @@ export type ExternalCalendar = ScheduleSchemas['ExternalCalendar']
 export type ImportRange = ScheduleSchemas['ImportRange']
 /** 取り込みのプレビュー。予定の API の ImportPreview をそのまま使う。 */
 export type ImportPreview = ScheduleSchemas['ImportPreview']
-/** プレビューの確かめが要る予定。 */
+/** プレビューの確認が必要な予定。 */
 export type ImportReviewItem = ScheduleSchemas['ImportReviewItem']
 /** プレビューの取り込まない予定。 */
 export type ImportSkippedItem = ScheduleSchemas['ImportSkippedItem']
-/** 確かめが要る予定 1 件の取り込み方。 */
+/** 確認が必要な予定 1 件の取り込み方。 */
 export type ImportDecision = ScheduleSchemas['ImportDecision']
 /** 取り込みの結果。 */
 export type ImportResult = ScheduleSchemas['ImportResult']
 /** 予定を Google カレンダーに書き出す待ち。予定の API の CalendarExport をそのまま使う。 */
 export type CalendarExport = ScheduleSchemas['CalendarExport']
-/** 確かめが要る書き出しと、その予定の日時と職員。予定のタイトルと利用者名は持たない。 */
+/** 確認が必要な書き出しと、その予定の日時と職員。予定のタイトルと利用者名は持たない。 */
 export type CalendarExportIssue = ScheduleSchemas['CalendarExportIssue']

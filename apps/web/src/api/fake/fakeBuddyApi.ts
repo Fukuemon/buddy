@@ -71,7 +71,7 @@ export const createFakeBuddyApi = ({
     if (!calendarId.endsWith(FAKE_READABLE_CALENDAR_SUFFIX)) {
       throw new ApiError(
         422,
-        'カレンダーを読めません。カレンダーの共有を確かめてください',
+        'カレンダーを読めません。カレンダーの共有を確認してください',
         [],
         'calendar_unreadable',
       )
@@ -213,7 +213,7 @@ export const createFakeBuddyApi = ({
         ) {
           throw conflict(
             'import_preview_changed',
-            'プレビューの後に、外部のカレンダーの確かめが要る予定が変わりました。もう一度プレビューしてください',
+            'プレビューの後に、外部のカレンダーの確認が必要な予定が変わりました。もう一度プレビューしてください',
           )
         }
         const result = createMockImportResult(externalCalendarId, preview, decisions)

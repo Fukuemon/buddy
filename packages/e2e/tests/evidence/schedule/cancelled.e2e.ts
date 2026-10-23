@@ -37,7 +37,7 @@ test.describe('予定のカレンダー', () => {
               '予定のカレンダーの日の表示（Storybook の ScheduleCalendarContainer の Day）を開いている。江藤 四郎の 11:00 の訪問はキャンセルした予定である（架空のデータ）',
             )
             const cancelled = page.getByTestId('schedule-event-schedule-6')
-            // 予定が描かれてから、キャンセルした予定が無いことを確かめる
+            // 予定が描かれてから、キャンセルした予定が無いことを確認する
             await expect(page.getByTestId('schedule-event-schedule-1')).toBeVisible()
             await expect(page.getByTestId('calendar-show-cancelled')).not.toBeChecked()
             await expect(cancelled).toHaveCount(0)

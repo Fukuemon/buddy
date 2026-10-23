@@ -83,7 +83,7 @@ test.describe('予定のカレンダー', () => {
               '予定のカレンダーの日の表示（Storybook の ScheduleCalendarContainer の Day）を、今日の 2026/10/21 10:15 として開いている',
             )
             const lines = page.getByTestId(/^day-grid-now-/)
-            // 線の位置は StaffScheduleDayGrid.test.tsx で確かめ、ここでは全ての列に出ることを見る
+            // 線の位置は StaffScheduleDayGrid.test.tsx で確認し、ここでは全ての列に出ることを見る
             await expect(lines).toHaveCount(STAFF_COUNT)
             await step('（撮影のため、今の時刻の線が見える位置まで送る）')
             await lines.first().scrollIntoViewIfNeeded()

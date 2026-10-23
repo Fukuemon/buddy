@@ -1,7 +1,7 @@
 import { useEffect, useRef, type ReactNode, type SyntheticEvent } from 'react'
 
 export type CalendarDialogProps = {
-  /** alertdialog は、取り消せない操作を確かめるダイアログに使う。 */
+  /** alertdialog は、取り消せない操作を確認するダイアログに使う。 */
   role?: 'dialog' | 'alertdialog'
   /** ダイアログの名前になるタイトルの要素の id。 */
   labelledBy: string

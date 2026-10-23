@@ -65,7 +65,7 @@ const versionOf = (variant: Variant): string =>
  * @param o.title 観点の文。README の見出しになる
  * @param o.actor ログインする職員の名前と役職。画面にログインしないものは「ログインなし」にする
  * @param o.viewport 画面と録画の大きさ。デフォルトは DESKTOP_VIEWPORT
- * @param prepare 録画の外で、ログインとテストデータの確かめを行い、録画する画面の origin を開いたまま返す
+ * @param prepare 録画の外で、ログインとテストデータの確認を行い、録画する画面の origin を開いたまま返す
  * @param body 録画する操作。step と check で字幕を出してから操作する
  */
 export const recordPrEvidence = async <T>(

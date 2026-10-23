@@ -13,7 +13,7 @@ const openLinkDialog = async (staffId: string) => {
 }
 
 describe('CalendarLinkContainer', () => {
-  it('職員のメールアドレスを入れて開き、読めると確かめてから結び付ける', async () => {
+  it('職員のメールアドレスを入れて開き、読めると確認してから結び付ける', async () => {
     render(<Default />)
     const dialog = await openLinkDialog('staff-3')
     expect(within(dialog).getByTestId('calendar-link-staff')).toHaveTextContent('上田 三奈')
@@ -44,7 +44,7 @@ describe('CalendarLinkContainer', () => {
     await userEvent.click(within(dialog).getByTestId('calendar-link-check'))
 
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(
-      'このカレンダーを読めません。カレンダーをこの事業所の buddy のサービスアカウントに共有したかと、カレンダーの ID が合っているかを確かめてください。',
+      'このカレンダーを読めません。カレンダーをこの事業所の buddy のサービスアカウントに共有したかと、カレンダーの ID が合っているかを確認してください。',
     )
     expect(within(dialog).getByTestId('calendar-link-submit')).toHaveAttribute(
       'aria-disabled',
@@ -52,7 +52,7 @@ describe('CalendarLinkContainer', () => {
     )
   })
 
-  it('確かめた後に入力を変えると、結果を消して結び付けを押せなくする', async () => {
+  it('確認した後に入力を変えると、結果を消して結び付けを押せなくする', async () => {
     render(<Default />)
     const dialog = await openLinkDialog('staff-3')
     await userEvent.click(within(dialog).getByTestId('calendar-link-check'))

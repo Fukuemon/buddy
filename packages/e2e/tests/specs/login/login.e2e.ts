@@ -37,7 +37,7 @@ test.describe('予定のカレンダー', () => {
       await expect(page.getByTestId('viewer-menu')).toContainText(OFFICE_B.staff.name)
       const events = page.getByTestId(/^schedule-event-/)
       await expect(events.filter({ hasText: OFFICE_B.schedule.title })).toBeVisible()
-      // 2 つ目の事業所の予定が出た後に、同じ日の 1 つ目の事業所の予定が無いことを確かめる
+      // 2 つ目の事業所の予定が出た後に、同じ日の 1 つ目の事業所の予定が無いことを確認する
       await expect(events.filter({ hasText: OFFICE_A_SCHEDULE.title })).toHaveCount(0)
     })
 

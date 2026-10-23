@@ -4,10 +4,10 @@ import { useId } from 'react'
 import { BusyLabel } from './BusyLabel'
 import { CalendarDialog } from './CalendarDialog'
 
-/** 読めるかの確かめの状態。failed は、確かめか結び付けが失敗したときである。 */
+/** 読めるかの確認の状態。failed は、確認か結び付けが失敗したときである。 */
 export type CalendarCheckStatus = 'idle' | 'checking' | 'readable' | 'failed'
 
-/** 読めたときの確かめの結果の文。 */
+/** 読めたときの確認の結果の文。 */
 const READABLE_MESSAGE = '読めました。結び付けると、予定の取り込みでこのカレンダーを選べます。'
 
 export type CalendarLinkDialogProps = {
@@ -26,7 +26,7 @@ export type CalendarLinkDialogProps = {
 const inputClassName =
   'min-h-11 w-full rounded-8 px-3 text-body ring-1 ring-border-field ring-inset focus-visible:focus-ring disabled:bg-surface-disabled disabled:text-text-disabled'
 
-/** 1 人の職員に Google カレンダーを結び付けるダイアログ。読めると確かめたカレンダーだけを結び付けられる。 */
+/** 1 人の職員に Google カレンダーを結び付けるダイアログ。読めると確認したカレンダーだけを結び付けられる。 */
 export const CalendarLinkDialog = ({
   staffName,
   calendarId,
@@ -102,7 +102,7 @@ export const CalendarLinkDialog = ({
           size="S"
           variant="secondary"
         >
-          <BusyLabel busy={checking}>読めるか確かめる</BusyLabel>
+          <BusyLabel busy={checking}>読めるか確認する</BusyLabel>
         </Button>
       </div>
       {checkStatus === 'readable' && (

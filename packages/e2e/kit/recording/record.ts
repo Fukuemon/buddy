@@ -40,7 +40,7 @@ export type RecordingTarget = {
  * 1 つの版と例の行を録画し、エビデンスの配置先へ mp4、スクリーンショット、README を書き出す。
  * 操作が途中で失敗しても、そこまでの録画を書き出してから、例外を投げ直す。何が起きたかを見るため。
  *
- * @param prepare 録画の外で、ログインとデータの確かめを行う。戻り値は body に渡る。録画は、prepare が終えたときの Cookie、localStorage、IndexedDB と、最後に開いた origin の sessionStorage を持ち越して始まる
+ * @param prepare 録画の外で、ログインとデータの確認を行う。戻り値は body に渡る。録画は、prepare が終えたときの Cookie、localStorage、IndexedDB と、最後に開いた origin の sessionStorage を持ち越して始まる
  * @param body 録画する操作。シナリオの前提と操作の文は step で、判定の文は check で字幕に出してから操作する
  */
 export const recordEvidence = async <T>(

@@ -5,7 +5,7 @@ GitHub の private vulnerability reporting で、メンテナーだけが読め�
 
 1. リポジトリの Security のタブを開く。
 2. 「Report a vulnerability」を押す。
-3. 再現の手順、影響を受ける箇所（ファイル、API の操作、画面）、確かめたコミットを書いて送る。
+3. 再現の手順、影響を受ける箇所（ファイル、API の操作、画面）、確認したコミットを書いて送る。
 
 届け先のページ: [Report a vulnerability](https://github.com/Fukuemon/buddy/security/advisories/new)
 

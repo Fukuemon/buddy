@@ -20,11 +20,11 @@ const openSchedule = async (page: Page, title: string) => {
   return scheduleIdFromUrl(page.url())
 }
 
-/** 確かめが要る予定の一覧の、予定の行。前のテストが同じ職員の行を残していても、今回の予定の行だけを指す。 */
+/** 確認が必要な予定の一覧の、予定の行。前のテストが同じ職員の行を残していても、今回の予定の行だけを指す。 */
 const reviewRow = (page: Page, scheduleId: string) =>
   page.getByTestId(`calendar-review-row-schedule-${scheduleId}`)
 
-test.describe('確かめが要る予定', () => {
+test.describe('確認が必要な予定', () => {
   test.describe('Google カレンダーとの同期', () => {
     // 途中で落ちても、後の spec が Google の変更を受け取れ、やり直しで佐藤にもう一度結び付けられるようにする
     test.afterEach(async ({ page, request }) => {
@@ -86,7 +86,7 @@ test.describe('確かめが要る予定', () => {
         }).toPass()
       })
 
-      await test.step('buddy と Google カレンダーの両方で変えると、確かめが要る予定に出る', async () => {
+      await test.step('buddy と Google カレンダーの両方で変えると、確認が必要な予定に出る', async () => {
         await holdGoogleChanges(request, true)
         await shiftGoogleEvent(request, SATO.calendarId, eventId)
         scheduleId = await openSchedule(page, created)

@@ -111,7 +111,7 @@ test.describe('照合の結果', () => {
             await check(page, schedules, visits)
             const rowA = receiptResultRow(page, '利用者A')
             const rowC = receiptResultRow(page, '利用者C')
-            // 行の文字はセルを続けて読むので、開始時間、終了時間、提供時間の並びで確かめる
+            // 行の文字はセルを続けて読むので、開始時間、終了時間、提供時間の並びで確認する
             await expect(rowA).toContainText(/09:00\s*09:29\s*0 ❌/)
             await expect(rowC).toContainText(/10:00 ❌\s*10:00 ❌/)
             await shot(

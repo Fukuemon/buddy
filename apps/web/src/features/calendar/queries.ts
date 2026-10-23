@@ -43,14 +43,14 @@ export const serviceAccountQueryOptions = (api: BuddyApi, facilityId: FacilityId
     },
   })
 
-/** 事業所の確かめが要る書き出しの query。 */
+/** 事業所の確認が必要な書き出しの query。 */
 export const exportIssueListQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
     queryKey: calendarQueryKeys.exportIssues(facilityId),
     queryFn: () => api.calendars.exportIssues(facilityId),
   })
 
-/** 確かめが要る書き出しを、buddy の内容で書き直す待ちにする mutation。成否によらず、一覧を読み直す。 */
+/** 確認が必要な書き出しを、buddy の内容で書き直す待ちにする mutation。成否によらず、一覧を読み直す。 */
 export const useRetryExport = () => {
   const { api, facilityId } = useBuddyApi()
   const queryClient = useQueryClient()
@@ -61,7 +61,7 @@ export const useRetryExport = () => {
   })
 }
 
-/** 確かめが要る書き出しの予定を、Google カレンダーの内容に合わせる mutation。成否によらず、一覧と予定を読み直す。 */
+/** 確認が必要な書き出しの予定を、Google カレンダーの内容に合わせる mutation。成否によらず、一覧と予定を読み直す。 */
 export const useAcceptExport = () => {
   const { api, facilityId } = useBuddyApi()
   const queryClient = useQueryClient()
@@ -83,14 +83,14 @@ export const staffListQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
     queryFn: () => api.staff.list(facilityId),
   })
 
-/** 事業所の全ての利用者の query。確かめが要る予定の利用者の選択肢に使う。 */
+/** 事業所の全ての利用者の query。確認が必要な予定の利用者の選択肢に使う。 */
 export const patientListQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
     queryKey: calendarQueryKeys.patients(facilityId),
     queryFn: () => api.patients.list(facilityId),
   })
 
-/** カレンダーを読めるかを確かめる mutation。 */
+/** カレンダーを読めるかを確認する mutation。 */
 export const useCheckCalendar = () => {
   const { api, facilityId } = useBuddyApi()
   return useMutation({

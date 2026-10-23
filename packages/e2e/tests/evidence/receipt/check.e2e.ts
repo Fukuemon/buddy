@@ -10,7 +10,7 @@ import { receiptCategoryRowCells, receiptResultRow } from '../../selectors/recei
 const CALENDAR_MONTH = '2026-11'
 
 /**
- * 2026 年 11 月の実績の CSV（visits_2026-11_utf8.csv）で照合したときに確かめる行。
+ * 2026 年 11 月の実績の CSV（visits_2026-11_utf8.csv）で照合したときに確認する行。
  * 予定の終了時間と提供時間は、訪看I２ と訪看I３ では 1 分減らして比べる。
  */
 const CALENDAR_VISIT_CASES = [

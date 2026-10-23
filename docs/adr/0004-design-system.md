@@ -34,7 +34,7 @@ DADS の値を替えても、意味のトークンの参照先を 1 か所直せ
 この表の「値は書かない」の判断は [ADR-0015](0015-key-color-and-canvas.md) で置き換えた。
 
 - 値は CSS の変数で持ち、JSON から生成しない。DADS が生成済みの CSS を配っており、buddy が足すのは参照だけなので、生成の手順を持つ理由がない。
-- DADS の `@digital-go-jp/design-tokens` は依存にし、バージョンを `2.1.0` に固定する。値をコピーすると、DADS の修正を手で追い、MIT の表示を自分で持つ必要がある。バージョンを上げるときは、`tokens.css` の差分と、意味のトークンのコントラストを確かめる。
+- DADS の `@digital-go-jp/design-tokens` は依存にし、バージョンを `2.1.0` に固定する。値をコピーすると、DADS の修正を手で追い、MIT の表示を自分で持つ必要がある。バージョンを上げるときは、`tokens.css` の差分と、意味のトークンのコントラストを確認する。
 - `@digital-go-jp/tailwind-theme-plugin` は使わない。原色の段がそのまま Tailwind のユーティリティになり、画面が意味のトークンを経ずに `bg-blue-800` と書ける。
 - DADS が持たないトークンは、次のように扱う。
   - 余白は、Tailwind のデフォルトの 4px の段を使い、トークンを足さない。DADS は余白を 8px を基準に組む例を示し、トークンにするかは任意としている。
@@ -84,19 +84,19 @@ packages/ui には Base と Case だけを置き、Domain のコンポーネン�
   - 出典: [DADS のタブ](https://design.digital.go.jp/dads/components/tab/)
 - 入力のコンポーネントは、今と同じく React Hook Form の `control` と `name` を受ける。packages/ui は `react-hook-form` を peer dependency にする。
 
-### アクセシビリティは WCAG 2.2 の AA を基準にし、コンポーネントごとに自動で確かめる
+### アクセシビリティは WCAG 2.2 の AA を基準にし、コンポーネントごとに自動で確認する
 
 DADS が参照する WCAG 2.2 の AA を基準にし、DADS の指針の値を使う。
 
 - 出典: [DADS のアクセシビリティ](https://design.digital.go.jp/dads/guidance/accessibility/)
 
-| 項目 | 基準 | 確かめ方 |
+| 項目 | 基準 | 確認の方法 |
 | --- | --- | --- |
 | 文字のコントラスト | 4.5:1 以上。面の上の状態の色の文字も含む | Storybook の a11y のアドオン（axe）を全ての story で実行し、違反をテストの失敗にする |
-| 文字でないもののコントラスト | 入力欄と押せる枠の境界、フォーカスの表示が 3:1 以上 | 意味のトークンの組のコントラストを計算する Vitest のテストを置く。axe は枠の色を確かめないため |
-| フォーカスの見え方 | 全ての操作できる要素で `focus-ring` を `:focus-visible` に出す | story の play 関数で Tab キーを押し、フォーカスの位置を確かめる |
-| ターゲットの大きさ | ボタンは 44×44 CSS px 以上。S のボタンとアイコンのボタンは、見た目の外に押せる領域を広げる | コンポーネントの Vitest のテストで、押せる領域の大きさを確かめる |
-| キーボードの操作 | コンポーネントごとの操作を DESIGN.md のコンポーネントの節に書き、その通りに動く | story の play 関数と Vitest で、キーを押した結果を確かめる |
+| 文字でないもののコントラスト | 入力欄と押せる枠の境界、フォーカスの表示が 3:1 以上 | 意味のトークンの組のコントラストを計算する Vitest のテストを置く。axe は枠の色を確認しないため |
+| フォーカスの見え方 | 全ての操作できる要素で `focus-ring` を `:focus-visible` に出す | story の play 関数で Tab キーを押し、フォーカスの位置を確認する |
+| ターゲットの大きさ | ボタンは 44×44 CSS px 以上。S のボタンとアイコンのボタンは、見た目の外に押せる領域を広げる | コンポーネントの Vitest のテストで、押せる領域の大きさを確認する |
+| キーボードの操作 | コンポーネントごとの操作を DESIGN.md のコンポーネントの節に書き、その通りに動く | story の play 関数と Vitest で、キーを押した結果を確認する |
 
 - 出典: [DADS の色](https://design.digital.go.jp/dads/foundations/color/)
 - 出典: [DADS のボタンのアクセシビリティ](https://design.digital.go.jp/dads/components/button/accessibility/)
@@ -128,7 +128,7 @@ mitame-ai/design-system の DESIGN.md から、知りたいことごとに参照
 apps/web は packages/ui に依存するので、依存の向きを変えずに 1 つのサイドバーと検索で全てを読める。
 
 - packages/ui は自分の Storybook も持つ。コンポーネントを単独で開発し、`pnpm --filter @buddy/ui build-storybook` と story のテストを packages/ui の中で完結させるためである。
-- a11y のアドオンの設定と decorator は packages/ui の `.storybook/preview` に置き、apps/web の preview はそれを読み込む。2 つの Storybook で確かめる基準が分かれないようにするためである。
+- a11y のアドオンの設定と decorator は packages/ui の `.storybook/preview` に置き、apps/web の preview はそれを読み込む。2 つの Storybook で確認する基準が分かれないようにするためである。
 - カタログのページは、はじめに、トークン、コンポーネント、パターン、画面の 5 つに分ける。DADS のサイトと SmartHR Design System のように、原則とトークンとコンポーネントの使い方を読めるサイトにする。
   - 出典: [SmartHR Design System](https://smarthr.design/)
 - title は、ファイルの配置先から機械的に決める。規則は DESIGN.md にある。
@@ -161,7 +161,7 @@ apps/web は packages/ui に依存するので、依存の向きを変えずに 
 | --- | --- | --- |
 | **採用:** 文書のサイトと 1 つの Cloudflare Worker にまとめ、Worker の Cloudflare Access で守る | 無料のプランで private のリポジトリから出せる。Access で開ける人を絞れ、プレビューの URL も同じ Access で守れる | Cloudflare のアカウントと Access の設定を保つ必要がある。どちらかを変えると、両方をビルドし直す |
 | 文書のサイトとカタログを、別々の Worker に出す | 変えた方だけを出せる | Worker の作成と Access の設定、URL、プレビューのコメントが 2 つずつになる。文書からカタログへ相対のリンクで行き来できない |
-| Cloudflare Pages と Access | 静的なサイトの公開の仕組みとして長く使われている | Worker の Access のように、本番とプレビューの URL を 1 つの設定でまとめて守る仕組みが、Pages には文書で確かめられなかった。CLI の `cf` は Pages を `cf pages deploy` として、Worker の設定（`cloudflare.config.ts`）と別に扱う |
+| Cloudflare Pages と Access | 静的なサイトの公開の仕組みとして長く使われている | Worker の Access のように、本番とプレビューの URL を 1 つの設定でまとめて守る仕組みが、Pages には文書で確認できなかった。CLI の `cf` は Pages を `cf pages deploy` として、Worker の設定（`cloudflare.config.ts`）と別に扱う |
 | GitHub Pages | GitHub だけで完結する | 無料のプランでは private のリポジトリから出せない。Pro にしても、URL を知る人は誰でも開ける |
 | Chromatic | Storybook のための公開とレビューの仕組みが揃う | 開ける人を絞るには有料のプランが要る。照合と予定のアプリのほかに、サービスの契約が増える |
 | ビルドの成果物だけを public のリポジトリに出す | 無料で GitHub Pages を使える | 成果物の中身が誰にでも見える。2 つのリポジトリの同期が要る |
@@ -192,7 +192,7 @@ apps/web は packages/ui に依存するので、依存の向きを変えずに 
 
 - 主の色、枠、角丸、フォーカス、書体が変わり、今の画面と見た目が大きく違う。
 - コンポーネントを移すときに、Tailwind のデフォルトのユーティリティ（`text-sm`、`rounded-xl` など）を使う箇所を全て書き換える必要がある。
-- DADS のバージョンを上げるたびに、`tokens.css` の名前と値の差分を確かめる必要がある。
+- DADS のバージョンを上げるたびに、`tokens.css` の名前と値の差分を確認する必要がある。
 - カタログを Access で許可した人に見せるため、Cloudflare のアカウント、API トークン、Access の許可の設定を保つ必要がある。カタログの Worker の名前を変えると、新しい Worker は Access なしで出る。
 - pull request のプレビューのため、書き込みの権限を持つ人は Cloudflare のトークンを読める。トークンの範囲をこの Worker に絞り、漏れたときに書き換えられるものを、このサイトの中身と設定に限る。
 - story のデータを作る人が、ダミーデータに限る規則を守る必要がある。
