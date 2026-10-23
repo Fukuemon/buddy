@@ -1,0 +1,79 @@
+package config_test
+
+import (
+	"log/slog"
+	"maps"
+	"strings"
+	"testing"
+
+	"github.com/Fukuemon/buddy/services/broker/internal/config"
+)
+
+func env(m map[string]string) func(string) string {
+	return func(k string) string { return m[k] }
+}
+
+func baseEnv() map[string]string {
+	return map[string]string{
+		"DB_USER": "broker", "DB_PASSWORD": "secret", "DB_NAME": "broker",
+		"HYDRA_ADMIN_URL":                  "http://hydra:4445",
+		"UPSTREAM_IDPS_FILE":               "/config/upstream-idps.json",
+		"UPSTREAM_IDP_CLIENT_SECRETS_FILE": "/secrets/upstream-idp-client-secrets.json",
+	}
+}
+
+func TestLoad(t *testing.T) {
+	m := baseEnv()
+	m["LOG_LEVEL"] = "debug"
+	m["UPSTREAM_IDPS_FILE"] = " /config/upstream-idps.json "
+	c, err := config.Load(env(m))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := config.Config{
+		Port:                      "8080",
+		LogLevel:                  slog.LevelDebug,
+		DB:                        config.DB{Host: "localhost", Port: "5432", User: "broker", Password: "secret", Name: "broker"},
+		HydraAdminURL:             "http://hydra:4445",
+		UpstreamIdPsFile:          "/config/upstream-idps.json",
+		UpstreamClientSecretsFile: "/secrets/upstream-idp-client-secrets.json",
+	}
+	if c != want {
+		t.Errorf("got %+v, want %+v", c, want)
+	}
+}
+
+func TestLoadDB(t *testing.T) {
+	db, err := config.LoadDB(env(map[string]string{"DB_HOST": "db", "DB_USER": "broker", "DB_PASSWORD": "secret", "DB_NAME": "broker"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if db != (config.DB{Host: "db", Port: "5432", User: "broker", Password: "secret", Name: "broker"}) {
+		t.Errorf("got %+v", db)
+	}
+}
+
+func TestLoadErrors(t *testing.T) {
+	tests := []struct {
+		name string
+		set  map[string]string
+		want string
+	}{
+		{"必須の値が無い", map[string]string{"DB_PASSWORD": "", "HYDRA_ADMIN_URL": " ", "UPSTREAM_IDPS_FILE": "", "UPSTREAM_IDP_CLIENT_SECRETS_FILE": ""},
+			"DB_PASSWORD、HYDRA_ADMIN_URL、UPSTREAM_IDPS_FILE、UPSTREAM_IDP_CLIENT_SECRETS_FILE"},
+		{"ポートが数でない", map[string]string{"PORT": "http"}, "ポート"},
+		{"DB のポートが範囲の外", map[string]string{"DB_PORT": "70000"}, "ポート"},
+		{"HYDRA_ADMIN_URL が URL でない", map[string]string{"HYDRA_ADMIN_URL": "hydra:4445"}, "HYDRA_ADMIN_URL"},
+		{"LOG_LEVEL が不正", map[string]string{"LOG_LEVEL": "verbose"}, "LOG_LEVEL"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := baseEnv()
+			maps.Copy(m, tt.set)
+			_, err := config.Load(env(m))
+			if err == nil || !strings.Contains(err.Error(), tt.want) {
+				t.Errorf("err = %v, want %q を含むエラー", err, tt.want)
+			}
+		})
+	}
+}
