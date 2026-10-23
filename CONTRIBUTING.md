@@ -24,15 +24,15 @@ MISE_AQUA_GITHUB_ATTESTATIONS=false mise install aqua:cli/cli
 
 `pnpm install` の `prepare` が、lefthook の Git のフック（commit-msg の commitlint、pre-commit の textlint と `pnpm lint:openapi`）を入れる。
 
-Go のモジュールは `services/schedule`、`services/receipt` と、2 つの API が共有するコードの `packages/go` の 3 つである。  
-2 つの API は `packages/go` を `go.mod` の `replace` で読む。  
+Go のモジュールは `services/schedule`、`services/receipt`、認証のブローカーの `services/broker` と、それらが共有するコードの `packages/go` の 4 つである。  
+2 つの API とブローカーは `packages/go` を `go.mod` の `replace` で読む。  
 ADR-0007: [2 つの Go の API が共有するコードを、別の module にまとめる](docs/adr/0007-go-shared-module.md)
 
-- エディタで 3 つを読むときは、ルートで `go work init ./services/receipt ./services/schedule ./packages/go` を流す。
+- エディタで 4 つを読むときは、ルートで `go work init ./services/receipt ./services/schedule ./services/broker ./packages/go` を流す。
 - `go.work` は追跡しない。
-  - `go.work` の下では、3 つのモジュールが共有する依存のバージョンが高い方にそろい、コンテナのイメージ（各 `go.mod` だけでビルドする）とずれるためである。
-- テストと lint は、各 API と `packages/go` のディレクトリで `GOWORK=off` を付けて流す。
-- `packages/go` を変えたときは、2 つの API のテストも流す。
+  - `go.work` の下では、4 つのモジュールが共有する依存のバージョンが高い方にそろい、コンテナのイメージ（各 `go.mod` だけでビルドする）とずれるためである。
+- テストと lint は、各 API、ブローカー、`packages/go` のディレクトリで `GOWORK=off` を付けて流す。
+- `packages/go` を変えたときは、2 つの API とブローカーのテストも流す。
 - `go.work` の下でビルドすると各 API の `go.sum` に行が増える。増えた行はコミットに含めない。
 
 agent-harness のスキルとフックは apm で配置し、Git で追跡しない。  
