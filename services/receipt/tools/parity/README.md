@@ -28,7 +28,7 @@ RECEIPT_CHECKER_LIBS=<元の照合の実装>/server/libs tools/parity/run.sh
 RECEIPT_CHECKER_LIBS=<元の照合の実装>/server/libs tools/parity/run.sh --update
 ```
 
-`expected.csv` は `internal/check` の `TestRunParity` が Go の結果と比べる。Python と元の照合の実装がない環境でも、`services/receipt` で次を流して回帰を確かめられる。
+`expected.csv` は `internal/check` の `TestRunParity` が Go の結果と比べる。Python と元の照合の実装がない環境でも、`services/receipt` で次を流して回帰を確認できる。
 
 ```sh
 GOWORK=off go test ./internal/check -run TestRunParity

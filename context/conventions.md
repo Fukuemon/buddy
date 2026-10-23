@@ -32,8 +32,8 @@ status: stable
 
 コメントの書き方は、スキル write-comments に従う。言語は日本語の常体にする。
 
-- Go は、文書コメントの有無を `services/receipt`、`services/schedule`、`services/broker`、`packages/go` の revive（`exported`、`package-comments`）で確かめる。生成物（`// Code generated ... DO NOT EDIT.` のファイル）とテストは、revive が対象にしない。
-- TypeScript は、文書コメントの有無を、ルートの `vite.config.ts` の `lint` で確かめる。Oxlint の jsdoc のプラグインに require-jsdoc が無いので、eslint-plugin-jsdoc を `jsPlugins` で読ませる。対象は export する関数、クラス、型で、名前が `Props` で終わる型は除く。Props の型は、コンポーネントの文書コメントが説明するからである。生成物は lint の対象から外してある。呼び出しで包んで作る関数（`createServerFn(...)`、`memo(...)`）と、クラスのメソッドは確かめない。確かめるのは web、ui、e2e の check である。
+- Go は、文書コメントの有無を `services/receipt`、`services/schedule`、`services/broker`、`packages/go` の revive（`exported`、`package-comments`）で確認する。生成物（`// Code generated ... DO NOT EDIT.` のファイル）とテストは、revive が対象にしない。
+- TypeScript は、文書コメントの有無を、ルートの `vite.config.ts` の `lint` で確認する。Oxlint の jsdoc のプラグインに require-jsdoc が無いので、eslint-plugin-jsdoc を `jsPlugins` で読ませる。対象は export する関数、クラス、型で、名前が `Props` で終わる型は除く。Props の型は、コンポーネントの文書コメントが説明するからである。生成物は lint の対象から外してある。呼び出しで包んで作る関数（`createServerFn(...)`、`memo(...)`）と、クラスのメソッドは確認しない。確認するのは web、ui、e2e の check である。
 - Go の文書コメントは、`// Package <名前> は、…。`、`// <名前> は、…。` の形で書く。
 - 外部の制約を書く実装のコメントには、出典の URL を添える。
 
@@ -67,8 +67,8 @@ status: stable
 
 | 除外しているもの | チェック | 理由 |
 | --- | --- | --- |
-| `routeTree.gen.ts`、`src/api/generated/**` | 整形、lint | 生成物である。生成のし直しで差分を確かめる（`pnpm check:generated`） |
-| `**/*.md` | 整形（`vp fmt`） | 文書は textlint で確かめる |
+| `routeTree.gen.ts`、`src/api/generated/**` | 整形、lint | 生成物である。生成のし直しで差分を確認する（`pnpm check:generated`） |
+| `**/*.md` | 整形（`vp fmt`） | 文書は textlint で確認する |
 | `dist`、`storybook-static` | lint | ビルドの出力である |
 | Go の生成物 | golangci-lint（`exclusions.generated: lax`） | 生成物である |
 | `services/schedule` の `_test.go` の gosec G101 | golangci-lint | テストの接続の設定は、使い捨てのコンテナの値である |
@@ -79,7 +79,7 @@ status: stable
 
 E2E のテストのコード（`packages/e2e/tests/`）の書き方は、スキル write-e2e-test と [E2E のテストのコードの設計](../packages/e2e/DesignDoc.md) に従う。ここには、buddy で決めた値だけを書く。
 
-- testid は、画面仕様書のモック（`docs/screens/<画面 ID>_<画面の名前>/mocks/`）の `data-testid` を正本にする。testid を足すときは、同じ pull request でモックにも足す。E2E が使う testid がモックにあるかは、`pnpm check:screens` が確かめる。
+- testid は、画面仕様書のモック（`docs/screens/<画面 ID>_<画面の名前>/mocks/`）の `data-testid` を正本にする。testid を足すときは、同じ pull request でモックにも足す。E2E が使う testid がモックにあるかは、`pnpm check:screens` が確認する。
   - 形は、小文字の英語と `-` で、`<画面か部品>-<要素>` にする（例: `receipt-check-submit`）。一覧の行のように同じ要素が並ぶものは、末尾に ID を付ける（例: `staff-filter-staff-{職員の id}`）。区分のように API の値を末尾に付けるときは、値の `_` をそのまま残す（例: `receipt-summary-schedule_only`）。
 - 画面 ID の形は、`docs/screens/index.md` の「画面の ID の規則」にある。`packages/e2e/eslint.config.mjs` の `screenIdPattern` は、その表のドメインと種類の組を止める。ドメインか種類を足したら、`screenIdPattern` にも足す。
   - `schedule-calendar` や `receipt-result-table` のように、画面 ID で始まる testid は `widgets/` に直に書けない。`widgets/` を作るときは、testid の接頭辞を引数で受ける。

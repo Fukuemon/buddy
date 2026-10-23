@@ -20,7 +20,7 @@ ADR-0013: [2 つの API を services/ に置き、画面と API をトップの�
   - GitHub のラベル `pkg:schedule-api` と `pkg:receipt-api`
 - 非公開のインフラの設定は、2 つの名前をまだ指していない。
 - 2 つの API はまだリリースしておらず、名前を変えて互換を保つ必要のある利用者がいない。
-- web は、トークンを取るときに audience を指定しない。`aud` を決めるのは IdP の設定で、確かめるのは各 API の `OIDC_AUDIENCE` である。
+- web は、トークンを取るときに audience を指定しない。`aud` を決めるのは IdP の設定で、確認するのは各 API の `OIDC_AUDIENCE` である。
 
 ## Decision
 

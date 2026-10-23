@@ -51,7 +51,7 @@ verified_commit: 581e5d4
 - タイトルの解釈（`IsVisitTitle`、`ParseTitle`）と、表記をそろえる処理（`NormalizeClient`、`NormalizeService`）は、予定の API と共有する `packages/go/gcaltitle` を使う
   - `internal/normalize` は、`NormalizeClient` で利用者名を、`NormalizeService` でサービス内容をそろえる
 - 組織ごとのサービスアカウントで Calendar API を呼ぶクライアントは、予定の API と共有する `packages/go/gcalauth` を使う
-- `internal/httpapi`: `GET /healthz`、`GET /readyz`、`POST /v1/checks`。`/healthz` と `/readyz` 以外のリクエストのトークンを `packages/go/oidc` で確かめる
+- `internal/httpapi`: `GET /healthz`、`GET /readyz`、`POST /v1/checks`。`/healthz` と `/readyz` 以外のリクエストのトークンを `packages/go/oidc` で確認する
 - `cmd/api`: 環境変数を読んで API のサーバーを起動する
 - `cmd/devissuer`: ローカルで API を試すためのフェイクの OIDC の Issuer。イメージに入れない
 
@@ -68,7 +68,7 @@ sequenceDiagram
 
   S->>W: 実績の CSV と、予定の CSV か対象の月を選ぶ
   W->>R: POST /v1/checks（multipart、Bearer の access token）
-  R->>R: access token を確かめる。正しくなければ 401
+  R->>R: access token を確認する。正しくなければ 401
   R->>R: 本文を読む。読めなければ 400、上限を超えれば 413
   R->>R: visits が無ければ 400
   R->>R: 予定のデータソースを選ぶ。選べなければ 400、403、500、503
@@ -200,7 +200,7 @@ Google カレンダーは、今も職員が予定を入れる場所なので、�
 
 ### 判定
 
-対になった予定と実績ごとに、次の項目を確かめる。
+対になった予定と実績ごとに、次の項目を確認する。
 
 | 項目 | 規則に合う条件 |
 | --- | --- |
@@ -276,7 +276,7 @@ API は、判定の結果だけを JSON で返す。記号と CSV は返さな�
 API の定義の正本は [openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/openapi.yaml) である。
 
 - `POST /v1/checks`
-  - `Authorization: Bearer` の access token を求める。署名、`iss`、`aud`、`exp`、`nbf` を JWKS で確かめ、`sub` の無いトークンも拒む。`/healthz` と `/readyz` のほかは、定義に無いパスにもトークンを求める。
+  - `Authorization: Bearer` の access token を求める。署名、`iss`、`aud`、`exp`、`nbf` を JWKS で確認し、`sub` の無いトークンも拒む。`/healthz` と `/readyz` のほかは、定義に無いパスにもトークンを求める。
   - 署名のアルゴリズムは RS256 と ES256 だけを受け付ける。
   - `multipart/form-data` で、ファイル `visits`（実績の CSV）と予定を受ける。
   - 予定は、ファイル `schedules`（予定の CSV）があればそれを使う。なくてフォームの値 `month`（`2026-10` の形）があれば、その月の予定を Google カレンダーから取る。

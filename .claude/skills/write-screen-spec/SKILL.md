@@ -5,7 +5,7 @@ description: 画面仕様書（docs/screens/<画面 ID>_<画面の名前>/ の i
 
 # write-screen-spec
 
-書き方の規則は [画面仕様書の規約](../../../docs/screens/rules.md) が正本である。このスキルは、規約に沿って作業を進める順と、確かめ方だけを持つ。規則をここにコピーしない。
+書き方の規則は [画面仕様書の規約](../../../docs/screens/rules.md) が正本である。このスキルは、規約に沿って作業を進める順と、確認の方法だけを持つ。規則をここにコピーしない。
 
 作業の最初に、規約の全文と、[画面仕様書の目次](../../../docs/screens/index.md) の「画面の ID の規則」を読む。規約と食い違うことをこのスキルで見つけたら、規約を直す変更として分けて提案する。
 
@@ -25,17 +25,17 @@ description: 画面仕様書（docs/screens/<画面 ID>_<画面の名前>/ の i
    - 規約が属性を付けないとする操作と、当たる状態のモックが無い操作には付けない。
 6. `index.md` を、規約の「仕様書のページ」の節の順で書く。
    - 要素ごとの節の「値のソース」は、画面に出る文言を「」で引く。実装と PRD が食い違うときは、推測で埋めず、未決に書く。
-   - カタログの欄の story は、規約の「要素ごとの節」の選び方で選ぶ。候補は `rg -n "^  title:|^export const" -g '*.stories.tsx' apps/web/src packages/ui/src` で探す。story の ID は、`pnpm --filter @buddy/web storybook` で開いた URL の `path=/story/` の後ろで確かめる。
+   - カタログの欄の story は、規約の「要素ごとの節」の選び方で選ぶ。候補は `rg -n "^  title:|^export const" -g '*.stories.tsx' apps/web/src packages/ui/src` で探す。story の ID は、`pnpm --filter @buddy/web storybook` で開いた URL の `path=/story/` の後ろで確認する。
 7. `api.md` に、要素ごとの web の型の項目（`apps/web/src/api/types.ts`）と OpenAPI の項目（`services/*/openapi.yaml` の operationId と項目）を書く。
 8. `zensical.toml` の `nav` に `index.md` を足す。
-9. 下の「確かめる」を行う。
+9. 下の「確認する」を行う。
 
-## 確かめる
+## 確認する
 
 1. `pnpm check:screens` を流す。1 画面だけなら `node scripts/check-screens.mjs docs/screens/<ディレクトリ>`。違反を全て直す。
 2. `pnpm exec textlint "**/*.md"` と `node .claude/hooks/docs/hooks/check-links.mjs` を流す。
-3. `uv run zensical build --clean` が警告なしで終わることを確かめる。
+3. `uv run zensical build --clean` が警告なしで終わることを確認する。
 4. ブラウザで、仕様書のページと、モックを別タブで開いたものを見る。仕様書のページでは、全ての状態のタブを開き、モックが描かれることを見る。`uv run zensical serve` で開き、モックのツールバーの「デバイス」で 4 つのデバイスを切り替え、番号の印が要素の左上にあること、`@container` の切り替えで崩れないことを見る。
    - 主な操作を押し、移った先のモックか表示が変わること、デバイスの選択が保たれること、操作の後も番号の印が要素の上にあることを見る。仕様書のページの iframe の中でも押す。
-   - スクリーンショットを撮ったら、画像を開いて中身を見る。描画の前の白い画面を、確かめた結果にしない。
+   - スクリーンショットを撮ったら、画像を開いて中身を見る。描画の前の白い画面を、確認した結果にしない。
    - ブラウザを使えないときは、4 を「未確認」と報告する。

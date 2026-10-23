@@ -34,7 +34,7 @@ API とマイグレーションは、次の環境変数を読む。
 | `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` | いいえ | 空 | 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応（JSON）のパス。形は `[{"org_id": "...", "service_account": "..."}]` で、照合の API と同じ。空なら Google カレンダーを読み書きせず、カレンダーを読む操作は 503 を返し、予定の書き出しの処理を動かさない。対応の無い事業所のカレンダーの操作も 503 を返す。Application Default Credentials で認証し、事業所のサービスアカウントになりすます。書き出すときのスコープは `calendar.events` |
 | `GOOGLE_CALENDAR_ENDPOINT` | いいえ | 空 | Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit で試すためのもので、`GOOGLE_APPLICATION_CREDENTIALS` を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使い、渡さなければ認証をしない。`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` と一緒に渡す |
 | `GOOGLE_CALENDAR_EXPORT_ENABLED` | いいえ | `false` | `true` なら、予定を Google カレンダーに書き出す。`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` と一緒に渡す。`false` のときは書き出しの待ちを積まず、スコープは `calendar.readonly` で読む |
-| `GOOGLE_CALENDAR_EXPORT_INTERVAL` | いいえ | `30s` | 予定の書き出しの待ちを確かめる間隔。Go の時間の書式で、`1s` 以上 |
+| `GOOGLE_CALENDAR_EXPORT_INTERVAL` | いいえ | `30s` | 予定の書き出しの待ちを確認する間隔。Go の時間の書式で、`1s` 以上 |
 | `GOOGLE_CALENDAR_SYNC_ENABLED` | いいえ | `false` | `true` なら、Google カレンダーの変わった予定を読み、buddy の予定に当てる。`GOOGLE_CALENDAR_EXPORT_ENABLED` を `true` にして渡す |
 | `GOOGLE_CALENDAR_SYNC_INTERVAL` | いいえ | `2m` | Google カレンダーの変わった予定を読む間隔。Go の時間の書式で、`1s` 以上 |
 
@@ -113,7 +113,7 @@ go run ./cmd/api
 手順と要るロールは、[照合の API の README](../receipt/README.md#google-カレンダーから予定を取る) と同じである。  
 `GOOGLE_APPLICATION_CREDENTIALS` と `GOOGLE_CALENDAR_ENDPOINT` を設定せず、シードの組織 `org-sample` と検証の事業所のサービスアカウントの対応のファイルを渡す。  
 対応のファイルはサービスアカウントのメールアドレスを持つので、Git で追跡しない場所に置く。  
-書き出し（`GOOGLE_CALENDAR_EXPORT_ENABLED`）は、サービスアカウントが持つ検証のカレンダーでだけ有効にする。職員が共有したカレンダーに「予定の変更」の共有で書けるかは、まだ確かめていない。
+書き出し（`GOOGLE_CALENDAR_EXPORT_ENABLED`）は、サービスアカウントが持つ検証のカレンダーでだけ有効にする。職員が共有したカレンダーに「予定の変更」の共有で書けるかは、まだ確認していない。
 
 compose の予定の API を実際の Google カレンダーに向けるときは、Git で追跡しない上書きの compose のファイルを `-f` で重ね、次のように変える。
 
@@ -122,7 +122,7 @@ compose の予定の API を実際の Google カレンダーに向けるとき�
 - ローカルの Application Default Credentials のファイルを、読み取りだけでマウントする。ファイルは `gcloud` の設定のディレクトリの `application_default_credentials.json` である。
   - マウント先は `/home/nonroot/.config/gcloud/application_default_credentials.json` にする。イメージは distroless の nonroot で動くためである。
 
-検証の事業所のアカウントそのものになりすました Application Default Credentials では、予定の API は重ねてなりすまさない。この形で、`serviceusage.services.use` を持つロールが要るかは、ロールを外して確かめていない（未確認）。
+検証の事業所のアカウントそのものになりすました Application Default Credentials では、予定の API は重ねてなりすまさない。この形で、`serviceusage.services.use` を持つロールが要るかは、ロールを外して確認していない（未確認）。
 
 ## マイグレーション
 
@@ -171,17 +171,17 @@ openapi.yaml を変えたら、生成し直し、生成物も同じコミット�
 go generate ./...
 ```
 
-画面の型も同じ openapi.yaml から生成する。生成物がそろっているかは、リポジトリのルートの `pnpm check:generated` で確かめる（[CONTRIBUTING.md](../../CONTRIBUTING.md)）。
+画面の型も同じ openapi.yaml から生成する。生成物がそろっているかは、リポジトリのルートの `pnpm check:generated` で確認する（[CONTRIBUTING.md](../../CONTRIBUTING.md)）。
 
 ハンドラは `internal/httpapi` の `server` に、生成した `openapi.StrictServerInterface` のメソッドとして書く。
 
 - 操作を足したら、生成し直すと `server` がインターフェイスを満たさなくなり、コンパイルが失敗する。メソッドを足して直す。
 - 成功のレスポンスは、生成した `<操作>200JSONResponse` か `<操作>201JSONResponse` で返す。
 - 機能のパッケージの `Usecase` のエラーは、そのまま `error` として返す。`writeError` が、`apperr` のエラーから状態コードと `{code,message}` を決める。
-- リクエストの検証の規則（必須、長さ、ID の形、列挙）は、`openapi.yaml` の schema に書く。`openapi_validate.go` のミドルウェアが、埋め込んだ定義でパスの引数、クエリ、本文を確かめ、合わなければ 400（`invalid_input`）を返す。
+- リクエストの検証の規則（必須、長さ、ID の形、列挙）は、`openapi.yaml` の schema に書く。`openapi_validate.go` のミドルウェアが、埋め込んだ定義でパスの引数、クエリ、本文を確認し、合わなければ 400（`invalid_input`）を返す。
   - 必須の文字列で空を拒むときは、`required` に加えて `minLength: 1` を書く。`required` は項目があることしか求めない。
-  - 本文は `Content-Type: application/json` で、1 MiB までを受ける。空の値のクエリ（`?date_from=` など）は、定義では確かめず、ハンドラが指定なしとして扱う。
-  - 日付と時刻は文字列で受け、ハンドラが `civil` で読むときに暦の上で正しいかを確かめる。日付の範囲と事業所の確認のように、定義で表せない検証は、ハンドラと機能のパッケージに置く。
+  - 本文は `Content-Type: application/json` で、1 MiB までを受ける。空の値のクエリ（`?date_from=` など）は、定義では確認せず、ハンドラが指定なしとして扱う。
+  - 日付と時刻は文字列で受け、ハンドラが `civil` で読むときに暦の上で正しいかを確認する。日付の範囲と事業所の確認のように、定義で表せない検証は、ハンドラと機能のパッケージに置く。
 - 認証、事業所の確認、パスの ID の形の確認は、`/v1` の全てのパスに適用する gin のミドルウェアが受け持つ。ハンドラでは繰り返さない。
 
 ### SQL を変えたとき

@@ -58,9 +58,9 @@ status: stable
 
 - 生成のツール（oapi-codegen、sqlc、openapi-typescript）を上げたら、`pnpm check:generated` で生成し直し、差分を読んでからコミットする。oapi-codegen は、`services/schedule/oapi-codegen.yaml` の型の置き換え（日付とメールを文字列にする）が生成物に反映されているかを見る。
 - Go を上げるときは、`mise.toml`、4 つの `go.mod`、3 つの `Dockerfile` の 8 か所をそろえる。API とブローカーごとに上げてもよいが、`packages/go` の `go.mod` の Go のバージョンは、2 つの API とブローカーのうち最も低いもの以下にする。
-- Playwright は、`packages/e2e` と `packages/ui` を同じバージョンにし、`pnpm-lock.yaml` に 1 つのバージョンだけがあることを確かめる。Vite+ も Playwright を peer で取り込むので、Vite+ を上げたときも確かめる。
+- Playwright は、`packages/e2e` と `packages/ui` を同じバージョンにし、`pnpm-lock.yaml` に 1 つのバージョンだけがあることを確認する。Vite+ も Playwright を peer で取り込むので、Vite+ を上げたときも確認する。
 - Vite+ は、`pnpm-workspace.yaml` の catalog の `vite-plus` と `vite`（`@voidzero-dev/vite-plus-core` へのエイリアス）を一緒に上げる。
-- TanStack の Router、Query、Start は、`apps/web/package.json` に厳密なバージョンで書いてある。上げたら、`pnpm --filter @buddy/web check`、`test`、`build` と、compose での画面の確かめ（`pnpm e2e`）を流す。
+- TanStack の Router、Query、Start は、`apps/web/package.json` に厳密なバージョンで書いてある。上げたら、`pnpm --filter @buddy/web check`、`test`、`build` と、compose での画面の確認（`pnpm e2e`）を流す。
 - `@digital-go-jp/design-tokens` は、ADR-0004 の決めたとおり、上げる前にトークンの名前と値の差分を読み、`pnpm --filter @buddy/ui test` でコントラストのテストを流す。
 - PostgreSQL、Valkey、IdP、calendarpit のイメージを上げたら、`docker compose up --build --wait` と `pnpm e2e` を流す。
   - PostgreSQL のタグは同じタグにそろえる。タグがあるのは次の 5 か所。
@@ -75,7 +75,7 @@ status: stable
   - `scripts/build-db-docs.sh` は、テーブル定義書に PostgreSQL のバージョンが入るので、パッチバージョンまで固定している。上げたら `pnpm generate:db-docs` でテーブル定義書を生成し直し、コミットする。
 - uv を上げたら、`mise.toml` と `.github/workflows/docs-site.yml` の setup-uv の `version` をそろえる。
 - tbls か Liam ERD CLI を上げたら、`pnpm generate:db-docs` と `pnpm build:erd` を流す。
-  - `scripts/build-erd.mjs` は、Liam ERD が tbls の viewpoint の `id` を拒むので、`id` を外してから渡している。上げた後もこの処理が要るかを確かめる。
+  - `scripts/build-erd.mjs` は、Liam ERD が tbls の viewpoint の `id` を拒むので、`id` を外してから渡している。上げた後もこの処理が要るかを確認する。
 
 ## Scaffolding
 

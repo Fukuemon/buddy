@@ -47,7 +47,7 @@ ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッ�
 | ブローカーを全て自作する | 依存が少ない | トークンの発行、鍵の回転、失効、refresh token の再利用の検出を持ち続ける |
 | Keycloak か Zitadel を使う | 上流の IdP の連携と組織を製品が持つ | 事業所と職員のデータモデルを製品に合わせる。Keycloak は JVM の運用が増える |
 | Hydra と Kratos を使う | 上流の IdP の連携を Kratos が持つ | 組織（B2B Organizations）は Kratos の商用版の機能である |
-| access token を opaque にし、API が introspection で確かめる | すぐに失効できる | Hydra の可用性が buddy の全体の可用性になる。admin API を 2 つの API に開く |
+| access token を opaque にし、API が introspection で確認する | すぐに失効できる | Hydra の可用性が buddy の全体の可用性になる。admin API を 2 つの API に開く |
 
 ## Consequences
 
