@@ -112,7 +112,12 @@ export const safeReturnTo = (value: string | null) => {
 const expiresAtOf = (tokens: Tokens, now: number) =>
   tokens.expiresIn === undefined ? undefined : now + tokens.expiresIn * 1000
 
-/** GET /auth/login。ブラウザをブローカーの認可の画面へ転送する。クエリの returnTo はログインの後に戻る先である。 */
+/**
+ * GET /auth/login。ブラウザをブローカーの認可の画面へ転送する。クエリの returnTo はログインの後に戻る先である。
+ *
+ * クエリの prompt が login なら、Hydra が覚えたログインのセッションを使わずに、ブローカーのメールの入力の画面を出させる。
+ * ログインの失敗の画面から入り直すときに使う。Hydra は失敗した職員のログインも覚えているので、使うと同じ職員に戻ってしまう。
+ */
 export const startLogin = async (request: Request, deps: AuthDeps): Promise<Response> => {
   const url = new URL(request.url)
   const state = randomState()
@@ -129,6 +134,7 @@ export const startLogin = async (request: Request, deps: AuthDeps): Promise<Resp
     state,
     nonce,
     codeChallenge: await codeChallengeOf(codeVerifier),
+    prompt: url.searchParams.get('prompt') === 'login' ? 'login' : undefined,
   })
   return redirect(authorizationUrl.toString(), [
     cookie(deps, LOGIN_COOKIE, signValue(state, deps.secret), LOGIN_TTL_SECONDS),

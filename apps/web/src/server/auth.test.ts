@@ -19,9 +19,9 @@ const SECRET = 'x'.repeat(32)
 const VIEWER = { staffId: 'staff-1', staffName: '青木 陽菜', facilityId: 'facility-1' }
 
 const fakeOidc = (overrides: Partial<OidcClient> = {}): OidcClient => ({
-  authorizationUrl: ({ redirectUri, state }) =>
+  authorizationUrl: ({ redirectUri, state, prompt }) =>
     new URL(
-      `http://idp.test/authorize?redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`,
+      `http://idp.test/authorize?redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}${prompt === undefined ? '' : `&prompt=${prompt}`}`,
     ),
   exchangeCode: async () => ({
     accessToken: 'access-1',
@@ -96,6 +96,19 @@ describe('ログイン', () => {
     )
     expect(session).toMatchObject({ ...VIEWER, accessToken: 'access-1', idToken: 'id-1' })
     expect([...store.values.keys()].filter((k) => k.startsWith('login:'))).toEqual([])
+  })
+
+  it('prompt=login のときだけ、Hydra に prompt=login を渡す', async () => {
+    const { deps } = setup()
+    const promptOf = async (query: string) =>
+      new URL(
+        (await startLogin(new Request(`http://web.test/auth/login${query}`), deps)).headers.get(
+          'Location',
+        ) ?? '',
+      ).searchParams.get('prompt')
+    expect(await promptOf('?prompt=login')).toBe('login')
+    expect(await promptOf('?prompt=none')).toBeNull()
+    expect(await promptOf('')).toBeNull()
   })
 
   it('secureCookie なら cookie に Secure を付ける', async () => {
@@ -212,6 +225,25 @@ describe('readSession', () => {
       idToken: 'id-1',
     })
     expect(await deps.store.get('session:id-1')).toMatchObject({ accessToken: 'access-2' })
+  })
+
+  it('取り直しでブローカーが ID token を返したら、新しい ID token に置き換える', async () => {
+    const { deps } = setup({
+      oidc: fakeOidc({
+        refresh: async () => ({ accessToken: 'access-2', expiresIn: 3600, idToken: 'id-2' }),
+      }),
+    })
+    const req = await withSession(
+      {
+        ...VIEWER,
+        accessToken: 'old',
+        refreshToken: 'r',
+        expiresAt: 1_000_000 + 30_000,
+        idToken: 'id-1',
+      },
+      deps,
+    )
+    expect((await readSession(req, deps))?.idToken).toBe('id-2')
   })
 
   it('同じセッションの取り直しを 1 本にまとめる', async () => {

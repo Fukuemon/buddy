@@ -31,6 +31,8 @@ export interface OidcClient {
     state: string
     nonce: string
     codeChallenge: string
+    /** login なら、Hydra が覚えたログインのセッションを使わず、ブローカーのログインの画面を出させる。 */
+    prompt?: 'login'
   }): URL
   /** currentUrl はコールバックのリクエストの URL で、code と state を持つ。検証に失敗すると Error を投げる。 */
   exchangeCode(
@@ -76,7 +78,7 @@ export const createOidcClient = async (cfg: ServerConfig['oidc']): Promise<OidcC
     { timeout: OIDC_TIMEOUT_SECONDS, execute: insecure ? [client.allowInsecureRequests] : [] },
   )
   return {
-    authorizationUrl: ({ redirectUri, state, nonce, codeChallenge }) => {
+    authorizationUrl: ({ redirectUri, state, nonce, codeChallenge, prompt }) => {
       const url = client.buildAuthorizationUrl(config, {
         redirect_uri: redirectUri,
         scope: 'openid email offline_access',
@@ -84,6 +86,7 @@ export const createOidcClient = async (cfg: ServerConfig['oidc']): Promise<OidcC
         nonce,
         code_challenge: codeChallenge,
         code_challenge_method: 'S256',
+        ...(prompt === undefined ? {} : { prompt }),
       })
       if (cfg.authorizationEndpoint === undefined) return url
       const browserUrl = new URL(cfg.authorizationEndpoint)
