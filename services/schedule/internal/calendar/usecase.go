@@ -665,6 +665,7 @@ func (u *Usecase) RetryExport(ctx context.Context, id string) (Export, error) {
 // 外部のカレンダーで消された予定は、キャンセルする。予定の職員が、外部の予定のカレンダーの職員と違えば、書き出しの待ちを積み直し、
 // 今の職員のカレンダーへ移させる。
 // 待ちが見つからないときは apperr.ErrNotFound を、確認が必要な待ちでないとき、外部の内容を当てられない待ちのとき、
+// 予定の対応のカレンダーを外したとき（退職を含む）、
 // 外部の予定を buddy の予定に読み替えられないときは apperr.ErrConflict を返す。外部のカレンダーを読めないときは Preview と同じである。
 func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 	if err := u.guard(ctx); err != nil {
@@ -697,6 +698,9 @@ func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 	if err != nil {
 		return Export{}, err
 	}
+	if c.DisabledAt != nil {
+		return Export{}, errNotAcceptable
+	}
 	// 外部の予定は、予定の対応のカレンダーの事業所のサービスアカウントで読む
 	src, err := u.source(ctx, c.FacilityID)
 	if err != nil {
@@ -708,6 +712,16 @@ func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 		locked, err := u.deps.Schedules.GetForUpdate(ctx, e.ScheduleID)
 		if err != nil {
 			return err
+		}
+		// 退職はカレンダーを外すので、職員の休職、復職、退職を待たせてからカレンダーを読み直す。外したカレンダーの内容を当てると、
+		// 退職した職員の予定を今日以降へ動かせるためである。予定の変更と同じく、予定の行のロックの後に取る。
+		if err := u.deps.Staff.LockStatuses(ctx, c.FacilityID); err != nil {
+			return err
+		}
+		if now, err := u.deps.Calendars.Get(ctx, c.ID); err != nil {
+			return err
+		} else if now.DisabledAt != nil {
+			return errNotAcceptable
 		}
 		cur, err := u.deps.Exports.Get(ctx, id)
 		if err != nil {

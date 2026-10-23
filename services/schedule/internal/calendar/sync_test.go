@@ -37,7 +37,7 @@ func newSyncEnv(t *testing.T) syncEnv {
 	ids := ulid.Generator{}
 	source := gcal.NewReader(gcaltest.Start(t, e.srv))
 	e.uc = calendar.NewUsecase(calendar.Deps{
-		Calendars: inmem.Calendars{Store: s}, Accounts: oneAccount(source, nil), Exports: inmem.Exports{Store: s},
+		Calendars: inmem.Calendars{Store: s}, Accounts: oneAccount(source, nil), Exports: inmem.Exports{Store: s}, Staff: inmem.StaffRefs{Store: s},
 		Schedules: inmem.Schedules{Store: s}, Types: inmem.ScheduleTypes{Store: s},
 	}, &inmem.Tx{}, ids, principal.RequireStaffManage)
 	sources := &[]string{}

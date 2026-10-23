@@ -15,6 +15,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
+	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
 )
 
@@ -268,4 +269,48 @@ func TestSyncStopsWhenCalendarDetachedDuringSync(t *testing.T) {
 	if err != nil || n != 0 {
 		t.Errorf("外した後の同期 = %d 件, %v, want 取らない", n, err)
 	}
+}
+
+// 退職でカレンダーが外れた後は、確認が必要な予定を Google の内容に合わせられない。合わせる操作が予定の行をロックした後に
+// 退職したときも同じく拒み、退職した職員の予定を今日以降へ動かさない（#278）。
+func TestAcceptExportRejectsDetachedCalendar(t *testing.T) {
+	setup := func(t *testing.T) (syncEnv, string, string) {
+		t.Helper()
+		e := newSyncEnv(t)
+		d := e.created(t)
+		code := calendar.ErrorPreconditionFailed
+		x := e.export(t, d.ID)
+		x.ID, x.Status, x.ErrorCode, x.Revision = "HELD", calendar.ExportConflict, &code, 1
+		e.store.Exports[x.ID] = x
+		e.shift(t, eventID(t, d.ID))
+		return e, d.ID, x.ID
+	}
+	check := func(t *testing.T, e syncEnv, scheduleID string, err error) {
+		t.Helper()
+		var ce *apperr.ConflictError
+		if !errors.As(err, &ce) || ce.Code != calendar.CodeExportNotAcceptable {
+			t.Fatalf("err = %v, want %s", err, calendar.CodeExportNotAcceptable)
+		}
+		if got := e.schedule(t, scheduleID); got.StartTime == (civil.Time{Hour: 11}) {
+			t.Errorf("退職した職員の予定に Google の内容を当てた: %+v", got.Slot)
+		}
+	}
+
+	t.Run("退職の後", func(t *testing.T) {
+		e, scheduleID, exportID := setup(t)
+		retire(t, e.store)
+		_, err := e.uc.AcceptExport(e.ctx, exportID)
+		check(t, e, scheduleID, err)
+	})
+	t.Run("予定の行をロックした後に退職", func(t *testing.T) {
+		e, scheduleID, exportID := setup(t)
+		s := e.store
+		uc := calendar.NewUsecase(calendar.Deps{
+			Calendars: inmem.Calendars{Store: s}, Accounts: oneAccount(gcal.NewReader(gcaltest.Start(t, e.srv)), nil),
+			Exports: inmem.Exports{Store: s}, Schedules: inmem.Schedules{Store: s}, Types: inmem.ScheduleTypes{Store: s},
+			Staff: lockHook{StaffRefs: inmem.StaffRefs{Store: s}, run: func() { retire(t, s) }},
+		}, &inmem.Tx{}, &inmem.SeqIDs{}, principal.RequireStaffManage)
+		_, err := uc.AcceptExport(e.ctx, exportID)
+		check(t, e, scheduleID, err)
+	})
 }
