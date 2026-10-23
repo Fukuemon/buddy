@@ -118,7 +118,7 @@ func TestStaffStoreRegisterDeleteSuspend(t *testing.T) {
 	}
 }
 
-// TestSeed は、シードが空の DB にだけ入り、2 度目は何もしないことを確かめる。
+// TestSeed は、シードが空の DB にだけ入り、2 度目は何もしないことと、2 つ目の事業所に有効な職員と止めた職員が入ることを確かめる。
 func TestSeed(t *testing.T) {
 	pool := migrated(t)
 	ctx := context.Background()
@@ -129,8 +129,8 @@ func TestSeed(t *testing.T) {
 			t.Fatalf("%d 回目の Seed = %v, %v, want %v", i+1, applied, err, want)
 		}
 	}
-	var n int
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM staff WHERE org_id = 'org-sample-b'`).Scan(&n); err != nil || n != 1 {
-		t.Errorf("2 つ目の事業所の職員 = %d 人, %v, want 1", n, err)
+	var active, suspended int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FILTER (WHERE status = 'active'), count(*) FILTER (WHERE status = 'suspended') FROM staff WHERE org_id = 'org-sample-b'`).Scan(&active, &suspended); err != nil || active != 1 || suspended != 1 {
+		t.Errorf("2 つ目の事業所の有効な職員 = %d 人、止めた職員 = %d 人, %v, want 1 人と 1 人", active, suspended, err)
 	}
 }

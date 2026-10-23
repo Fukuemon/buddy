@@ -87,6 +87,7 @@ docker compose up --build --wait
   - 1 つ目の事業所（組織 `org-sample`）: `hina.aoki@example.com`（青木 陽菜、マネージャー）、`kenta.mori@example.com`（森 健太、チームリーダー）
     - ほかに `sakura.hayashi@example.com` と `misaki.sato@example.com` がいる
   - 2 つ目の事業所（組織 `org-sample-b`）: `nagisa.ueno@example.com`（上野 渚、マネージャー）
+    - ほかに、止めた職員の `takumi.ono@example.com`（小野 拓海）がいる。ログインの失敗の画面になる
   - シードは、空の DB にだけ適用される。シードを変えた後と、ブローカーの無い前の compose で作った DB は、`docker compose down -v` で作り直す。
 - API が受けるトークンの `iss` は `http://hydra:4444` である。web と 2 つの API は、コンテナの間の名前 `hydra` で Hydra の discovery の文書と JWKS を読む。
 - 照合の API は、calendarpit の森 健太のカレンダーを読む。読むカレンダーは `compose/receipt-calendars.json` にある。
