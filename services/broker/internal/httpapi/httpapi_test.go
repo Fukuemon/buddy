@@ -52,3 +52,15 @@ func TestUnknownPath(t *testing.T) {
 		t.Errorf("code = %d, want 404", rec.Code)
 	}
 }
+
+func TestLoginRoutes(t *testing.T) {
+	login := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusTeapot) })
+	h := httpapi.NewHandler(httpapi.Config{Logger: slog.New(slog.DiscardHandler), Login: login})
+	for _, path := range []string{"/login", "/login/callback", "/consent"} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+		if rec.Code != http.StatusTeapot {
+			t.Errorf("%s の code = %d, want ログインのハンドラ", path, rec.Code)
+		}
+	}
+}

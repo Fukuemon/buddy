@@ -24,6 +24,7 @@ func TestRunRejectsInvalidUpstreamConfig(t *testing.T) {
 		"HYDRA_ADMIN_URL":                  "http://127.0.0.1:1",
 		"UPSTREAM_IDPS_FILE":               idps,
 		"UPSTREAM_IDP_CLIENT_SECRETS_FILE": secrets,
+		"PUBLIC_URL":                       "http://127.0.0.1:1",
 	}
 	err := run(func(k string) string { return env[k] })
 	if err == nil || !strings.Contains(err.Error(), "org-a の issuer が空") {

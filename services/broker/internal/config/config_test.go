@@ -19,6 +19,7 @@ func baseEnv() map[string]string {
 		"HYDRA_ADMIN_URL":                  "http://hydra:4445",
 		"UPSTREAM_IDPS_FILE":               "/config/upstream-idps.json",
 		"UPSTREAM_IDP_CLIENT_SECRETS_FILE": "/secrets/upstream-idp-client-secrets.json",
+		"PUBLIC_URL":                       "https://login.example.com",
 	}
 }
 
@@ -26,6 +27,8 @@ func TestLoad(t *testing.T) {
 	m := baseEnv()
 	m["LOG_LEVEL"] = "debug"
 	m["UPSTREAM_IDPS_FILE"] = " /config/upstream-idps.json "
+	m["PUBLIC_URL"] = "https://login.example.com/"
+	m["UPSTREAM_IDP_BROWSER_ORIGIN"] = "http://localhost:9000"
 	c, err := config.Load(env(m))
 	if err != nil {
 		t.Fatal(err)
@@ -37,6 +40,8 @@ func TestLoad(t *testing.T) {
 		HydraAdminURL:             "http://hydra:4445",
 		UpstreamIdPsFile:          "/config/upstream-idps.json",
 		UpstreamClientSecretsFile: "/secrets/upstream-idp-client-secrets.json",
+		PublicURL:                 "https://login.example.com",
+		UpstreamBrowserOrigin:     "http://localhost:9000",
 	}
 	if c != want {
 		t.Errorf("got %+v, want %+v", c, want)
@@ -59,11 +64,13 @@ func TestLoadErrors(t *testing.T) {
 		set  map[string]string
 		want string
 	}{
-		{"必須の値が無い", map[string]string{"DB_PASSWORD": "", "HYDRA_ADMIN_URL": " ", "UPSTREAM_IDPS_FILE": "", "UPSTREAM_IDP_CLIENT_SECRETS_FILE": ""},
-			"DB_PASSWORD、HYDRA_ADMIN_URL、UPSTREAM_IDPS_FILE、UPSTREAM_IDP_CLIENT_SECRETS_FILE"},
+		{"必須の値が無い", map[string]string{"DB_PASSWORD": "", "HYDRA_ADMIN_URL": " ", "UPSTREAM_IDPS_FILE": "", "UPSTREAM_IDP_CLIENT_SECRETS_FILE": "", "PUBLIC_URL": ""},
+			"DB_PASSWORD、HYDRA_ADMIN_URL、UPSTREAM_IDPS_FILE、UPSTREAM_IDP_CLIENT_SECRETS_FILE、PUBLIC_URL"},
 		{"ポートが数でない", map[string]string{"PORT": "http"}, "ポート"},
 		{"DB のポートが範囲の外", map[string]string{"DB_PORT": "70000"}, "ポート"},
 		{"HYDRA_ADMIN_URL が URL でない", map[string]string{"HYDRA_ADMIN_URL": "hydra:4445"}, "HYDRA_ADMIN_URL"},
+		{"PUBLIC_URL が URL でない", map[string]string{"PUBLIC_URL": "/login"}, "PUBLIC_URL"},
+		{"UPSTREAM_IDP_BROWSER_ORIGIN が URL でない", map[string]string{"UPSTREAM_IDP_BROWSER_ORIGIN": "localhost:9000"}, "UPSTREAM_IDP_BROWSER_ORIGIN"},
 		{"LOG_LEVEL が不正", map[string]string{"LOG_LEVEL": "verbose"}, "LOG_LEVEL"},
 	}
 	for _, tt := range tests {

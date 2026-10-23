@@ -1,4 +1,4 @@
-// Package db は、ブローカーのスキーマのマイグレーションの SQL を、バイナリに埋め込んで渡す。
+// Package db は、ブローカーのスキーマのマイグレーションとシードの SQL を、バイナリに埋め込んで渡す。
 package db
 
 import "embed"
@@ -7,3 +7,8 @@ import "embed"
 //
 //go:embed migrations/*.sql
 var Migrations embed.FS
+
+// Seed は、開発とテストに使うダミーの職員（seed/seed.sql）である。
+//
+//go:embed seed/seed.sql
+var Seed []byte
