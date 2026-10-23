@@ -20,10 +20,9 @@ type Facilities interface {
 	GetByOrgID(ctx context.Context, orgID string) (organization.Facility, error)
 }
 
-// Staff は、トークンの sub から職員を探し、初回のログインで sub を結び付ける。各メソッドの約束は staff.Repository と同じである。
+// Staff は、トークンの sub から職員を探す。各メソッドの約束は staff.Repository と同じである。
 type Staff interface {
 	FindIDBySub(ctx context.Context, sub string) (string, error)
-	LinkSub(ctx context.Context, facilityID, email, sub string) error
 	Get(ctx context.Context, id string) (staff.Detail, error)
 }
 
@@ -67,11 +66,9 @@ func NewService(deps Deps) *Service {
 	return &Service{deps: deps}
 }
 
-// Authenticate は、id の組織に結び付けた事業所の職員を返す。
-// sub で職員を探し、いなければ、メールが確認済みのときに限り、その事業所の同じメール（大文字と小文字を区別しない）で
-// sub がまだない職員に sub を結び付ける。
-// 組織がないか事業所に結び付いていないとき、職員が見つからないとき、職員の事業所が組織の事業所と違うときは
-// apperr.ErrForbidden を返す。
+// Authenticate は、id の組織に結び付けた事業所の職員を返す。職員は sub（ブローカーの職員の ID）で探す（ADR-0017）。
+// 組織がないか事業所に結び付いていないとき、職員が見つからないとき、職員の事業所が組織の事業所と違うとき、
+// 職員が止められているときは apperr.ErrForbidden を返す。止めた職員は、手元の access token の期限が切れる前でも拒む。
 func (a *Service) Authenticate(ctx context.Context, id principal.Identity) (principal.Principal, error) {
 	if id.OrgID == "" {
 		return principal.Principal{}, fmt.Errorf("%w: トークンに組織がありません", apperr.ErrForbidden)
@@ -85,7 +82,7 @@ func (a *Service) Authenticate(ctx context.Context, id principal.Identity) (prin
 	}
 	staffID, err := a.deps.Staff.FindIDBySub(ctx, id.Subject)
 	if errors.Is(err, apperr.ErrNotFound) {
-		staffID, err = a.link(ctx, f.ID, id)
+		return principal.Principal{}, fmt.Errorf("%w: 登録された職員がいません", apperr.ErrForbidden)
 	}
 	if err != nil {
 		return principal.Principal{}, err
@@ -97,23 +94,10 @@ func (a *Service) Authenticate(ctx context.Context, id principal.Identity) (prin
 	if d.FacilityID != f.ID {
 		return principal.Principal{}, fmt.Errorf("%w: 職員の事業所が組織の事業所と違います", apperr.ErrForbidden)
 	}
+	if d.SuspendedAt != nil {
+		return principal.Principal{}, fmt.Errorf("%w: 職員は止められています", apperr.ErrForbidden)
+	}
 	return principal.Principal{Staff: d}, nil
-}
-
-// link は、初回のログインの職員に sub を書き、職員の ID を返す。同じ sub のリクエストが同時に来ても、
-// LinkSub は 1 回だけ書くので、書いた後に sub で探し直す。
-func (a *Service) link(ctx context.Context, facilityID string, id principal.Identity) (string, error) {
-	if !id.EmailVerified || id.Email == "" {
-		return "", fmt.Errorf("%w: 確認済みのメールがありません", apperr.ErrForbidden)
-	}
-	if err := a.deps.Staff.LinkSub(ctx, facilityID, staff.NormalizeEmail(id.Email), id.Subject); err != nil && !errors.Is(err, apperr.ErrConflict) {
-		return "", err
-	}
-	staffID, err := a.deps.Staff.FindIDBySub(ctx, id.Subject)
-	if errors.Is(err, apperr.ErrNotFound) {
-		return "", fmt.Errorf("%w: 登録された職員がいません", apperr.ErrForbidden)
-	}
-	return staffID, err
 }
 
 // FacilityOf は、種類 r の ID が id のリソースが属する事業所の ID を返す。ResourceFacility なら id をそのまま返す。

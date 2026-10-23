@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
@@ -87,7 +88,14 @@ type fakeStaff struct {
 	lastPositionID   string
 	lastGrant        staff.GrantInput
 	lastUserPolicyID string
+	lastSuspended    string
 	err              error
+}
+
+func (f *fakeStaff) Suspend(_ context.Context, id string) (staff.Detail, error) {
+	f.lastSuspended = id
+	at := time.Date(2026, 10, 23, 9, 0, 0, 0, time.UTC)
+	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: id, SuspendedAt: &at}}, Policies: []staff.PolicyGrant{}}, f.err
 }
 
 func (f *fakeStaff) AddGrant(_ context.Context, _ string, in staff.GrantInput) (staff.Detail, error) {
@@ -403,6 +411,18 @@ func TestHealth(t *testing.T) {
 				t.Fatalf("status = %d, body = %v", rec.Code, body)
 			}
 		})
+	}
+}
+
+func TestSuspendUser(t *testing.T) {
+	st := &fakeStaff{}
+	rec, body := do(t, newRouter(&fakeSchedules{}, st, &fakePatients{}), http.MethodPost, "/v1/users/"+staffID+"/suspend", "")
+	if rec.Code != http.StatusOK || st.lastSuspended != staffID || body["suspended_at"] != "2026-10-23T09:00:00Z" {
+		t.Fatalf("status = %d, 止めた職員 = %s, body = %v", rec.Code, st.lastSuspended, body)
+	}
+	rec, _ = do(t, newRouter(&fakeSchedules{}, &fakeStaff{err: apperr.ErrForbidden}, &fakePatients{}), http.MethodPost, "/v1/users/"+staffID+"/suspend", "")
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("権限なし: status = %d, want 403", rec.Code)
 	}
 }
 

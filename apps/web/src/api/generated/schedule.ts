@@ -215,6 +215,8 @@ export interface paths {
         /**
          * 職員を作る
          * @description 職員を作り、役職のデフォルトの権限を与える。部署、チーム、役職は同じ事業所のものに限る。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         *     認証のブローカーにも職員を登録し、ブローカーが発行した職員の ID を sub に入れる。登録した職員は、メールでログインできる。
+         *     ブローカーに登録した後に失敗したときは、同じ本文で送り直してよい。
          */
         post: operations["createUser"];
         delete?: never;
@@ -255,6 +257,28 @@ export interface paths {
          */
         put: operations["changeUserPosition"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/users/{user_id}/suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 職員を止める
+         * @description 職員を止める。止めた職員はログインできず、ログインしている職員も、web が access token を取り直すとき（5 分以内）に使えなくなる。
+         *     予定の API は、止めた職員のリクエストを 403 で拒む。止めた職員を止めても成功し、止めた時刻は変わらない。
+         *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        post: operations["suspendUser"];
         delete?: never;
         options?: never;
         head?: never;
@@ -787,13 +811,18 @@ export interface components {
             department: components["schemas"]["Ref"];
             team: components["schemas"]["Ref"];
             position: components["schemas"]["Ref"];
+            /**
+             * Format: date-time
+             * @description 職員を止めた時刻。止めていなければ null
+             */
+            suspended_at: string | null;
             /** Format: date-time */
             created_at: string;
             /** Format: date-time */
             updated_at: string;
         };
         StaffDetail: components["schemas"]["Staff"] & {
-            /** @description 認証の基盤の利用者の識別子。結び付ける前は null */
+            /** @description 認証のブローカーの職員の ID。登録のときにブローカーが発行する。ブローカーで職員を作る前に登録した職員では null */
             sub: string | null;
             policies: {
                 user_policy_id: components["schemas"]["ID"];
@@ -1708,7 +1737,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description 同じ事業所に同じメールの職員がいる */
+            /** @description 同じ事業所に同じメールの職員がいるか、同じメールの職員が止められている */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1771,6 +1800,33 @@ export interface operations {
         };
         responses: {
             /** @description 役職を変えた職員と権限 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffDetail"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    suspendUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["ID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 止めた職員と権限 */
             200: {
                 headers: {
                     [name: string]: unknown;

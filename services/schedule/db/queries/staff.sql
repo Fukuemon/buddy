@@ -32,7 +32,7 @@ SELECT u.id, u.sub, u.username, u.email, u.phone_number, u.facility_id,
        u.department_id, d.name AS department_name,
        u.team_id, t.name AS team_name,
        u.position_id, p.name AS position_name,
-       u.created_at, u.updated_at
+       u.suspended_at, u.created_at, u.updated_at
 FROM users u
 JOIN departments d ON d.id = u.department_id
 JOIN teams t ON t.id = u.team_id
@@ -44,7 +44,7 @@ SELECT u.id, u.sub, u.username, u.email, u.phone_number, u.facility_id,
        u.department_id, d.name AS department_name,
        u.team_id, t.name AS team_name,
        u.position_id, p.name AS position_name,
-       u.created_at, u.updated_at
+       u.suspended_at, u.created_at, u.updated_at
 FROM users u
 JOIN departments d ON d.id = u.department_id
 JOIN teams t ON t.id = u.team_id
@@ -80,10 +80,9 @@ ORDER BY upt.target_user_id, upt.target_team_id;
 -- name: GetUserIDBySub :one
 SELECT id FROM users WHERE sub = $1;
 
--- name: LinkUserSub :exec
--- 条件の sub IS NULL で、同時に来た初回のログインのうち 1 つだけが書く。email は小文字にそろえて渡す。
-UPDATE users SET sub = sqlc.arg(sub)
-WHERE facility_id = sqlc.arg(facility_id) AND email = sqlc.arg(email) AND sub IS NULL;
+-- name: SuspendUser :execrows
+-- 止めた職員を止め直しても、最初に止めた時刻を残す。
+UPDATE users SET suspended_at = coalesce(suspended_at, now()) WHERE id = $1;
 
 -- name: GetUserRef :one
 -- ほかの機能が職員を参照するときに要るカラムだけを読む。

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -298,13 +299,16 @@ func (s Staff) FindIDBySub(_ context.Context, sub string) (string, error) {
 	return "", apperr.ErrNotFound
 }
 
-// LinkSub は、事業所の同じメールで sub がまだない職員に sub を結び付ける。DB と同じく、メールは完全に一致する値だけを比べる。
-func (s Staff) LinkSub(_ context.Context, facilityID, email, sub string) error {
-	for id, d := range s.Staff {
-		if d.FacilityID == facilityID && d.Email == email && d.Sub == nil {
-			d.Sub = &sub
-			s.Staff[id] = d
-		}
+// Suspend は、職員を止めた時刻を書く。止めた職員では、最初に止めた時刻を残す。
+func (s Staff) Suspend(_ context.Context, id string) error {
+	d, ok := s.Staff[id]
+	if !ok {
+		return apperr.ErrNotFound
+	}
+	if d.SuspendedAt == nil {
+		now := time.Now()
+		d.SuspendedAt = &now
+		s.Staff[id] = d
 	}
 	return nil
 }
@@ -901,5 +905,62 @@ func (s Syncs) Claim(_ context.Context, max int, _ time.Duration) ([]calendar.Sy
 // Finish は、同期した結果を書く。
 func (s Syncs) Finish(_ context.Context, st calendar.SyncState, r calendar.SyncResult) error {
 	s.SyncResults[st.Calendar.ID] = r
+	return nil
+}
+
+// Identity は、Identities が持つブローカーの職員である。
+type Identity struct {
+	OrgID     string
+	Email     string
+	Suspended bool
+}
+
+// Identities は、staff.Identities のメモリ上の実装で、ブローカーの職員を ID ごとに持つ。ID は "broker-1" から順に振る。
+type Identities struct {
+	Members map[string]Identity
+	// Err は、Register と Suspend が返すエラーである。nil なら成功する。
+	Err error
+	seq int
+}
+
+// NewIdentities は、ブローカーの職員がいない Identities を作る。
+func NewIdentities() *Identities { return &Identities{Members: map[string]Identity{}} }
+
+// Register は、組織とメールの職員がいればその ID を、いなければ新しい ID を返す。止めた職員なら apperr.ErrConflict を返す。
+func (s *Identities) Register(_ context.Context, orgID, email string) (string, bool, error) {
+	if s.Err != nil {
+		return "", false, s.Err
+	}
+	for id, m := range s.Members {
+		if m.OrgID == orgID && m.Email == email {
+			if m.Suspended {
+				return "", false, apperr.ErrConflict
+			}
+			return id, false, nil
+		}
+	}
+	s.seq++
+	id := "broker-" + strconv.Itoa(s.seq)
+	s.Members[id] = Identity{OrgID: orgID, Email: email}
+	return id, true, nil
+}
+
+// Unregister は、職員を消す。いなければ何もしない。
+func (s *Identities) Unregister(_ context.Context, id string) error {
+	delete(s.Members, id)
+	return nil
+}
+
+// Suspend は、職員を止める。いなければ apperr.ErrNotFound を返す。
+func (s *Identities) Suspend(_ context.Context, id string) error {
+	if s.Err != nil {
+		return s.Err
+	}
+	m, ok := s.Members[id]
+	if !ok {
+		return apperr.ErrNotFound
+	}
+	m.Suspended = true
+	s.Members[id] = m
 	return nil
 }

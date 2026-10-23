@@ -187,6 +187,7 @@ describe('createHttpBuddyApi', () => {
       username,
       email: `${id}@example.com`,
       phone_number: null,
+      suspended_at: null,
       facility_id: 'facility-1',
       department: { id: 'department-1', name: '訪問看護部' },
       team: { id: 'team-a', name: 'A' },

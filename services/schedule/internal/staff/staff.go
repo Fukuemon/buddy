@@ -17,8 +17,9 @@ const (
 	maxPhoneDigits = 11
 )
 
-// Staff は、事業所の職員である。Sub は、認証の基盤の利用者の識別子で、結び付ける前は nil である。
-// PhoneNumber は、先頭に "+" を付けた数字の列である。
+// Staff は、事業所の職員である。Sub は、登録のときにブローカーが発行した職員の ID で、access token の sub になる。
+// ブローカーで職員を作る前に登録した職員では nil のことがある。PhoneNumber は、先頭に "+" を付けた数字の列である。
+// SuspendedAt は職員を止めた時刻で、止めていなければ nil である。
 type Staff struct {
 	ID           string
 	Sub          *string
@@ -29,6 +30,7 @@ type Staff struct {
 	DepartmentID string
 	TeamID       string
 	PositionID   string
+	SuspendedAt  *time.Time
 }
 
 // NewParams は、New に渡す職員の属性である。
@@ -168,8 +170,9 @@ type ListQuery struct {
 // Repository は、職員を読み書きする。見つからないときは apperr.ErrNotFound を、
 // 同じ事業所にメールが重なる職員がいるか、Sub が重なるときは apperr.ErrConflict を返す。名前は重なってよい。
 //
-// LinkSub は、事業所 facilityID の、メールが email（NormalizeEmail でそろえた値）で Sub がまだない職員にだけ sub を書く。
-// 当たる職員がいなければ何もせず、エラーも返さない。
+// FindIDBySub は、Sub が sub の職員の ID を返す。
+//
+// Suspend は、職員を止めた時刻を書く。止めた職員を止め直しても、最初に止めた時刻を残す。
 //
 // ChangePosition は、職員の役職を positionID にし、職員の権限と対象を全て消してから grants を書く。
 //
@@ -183,5 +186,16 @@ type Repository interface {
 	Get(ctx context.Context, id string) (Detail, error)
 	ListByFacility(ctx context.Context, facilityID string, q ListQuery) ([]Summary, error)
 	FindIDBySub(ctx context.Context, sub string) (string, error)
-	LinkSub(ctx context.Context, facilityID, email, sub string) error
+	Suspend(ctx context.Context, id string) error
+}
+
+// Identities は、ブローカーの職員の身元を書く（ADR-0017）。約束は broker.Client と同じである。
+type Identities interface {
+	// Register は、組織 orgID にメール email（NormalizeEmail でそろえた値）の職員を登録し、その ID と、新しく作ったかを返す。
+	// 同じ組織に同じメールの職員がいれば、作らずにその ID と false を返す。その職員が止められていれば apperr.ErrConflict を返す。
+	Register(ctx context.Context, orgID, email string) (id string, created bool, err error)
+	// Unregister は、Register で作った職員を消す。予定の API の書き込みに失敗したときに、登録を戻すのに使う。
+	Unregister(ctx context.Context, id string) error
+	// Suspend は、職員を止め、ログインのセッション、同意、refresh token を取り消す。止めた職員を止めても成功する。
+	Suspend(ctx context.Context, id string) error
 }

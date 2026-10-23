@@ -2,6 +2,8 @@ package staff
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
@@ -17,9 +19,11 @@ type Deps struct {
 	Positions   kernel.Finder[organization.Position]
 	Policies    kernel.Finder[organization.Policy]
 	Staff       Repository
+	Identities  Identities
 }
 
-// Usecase は、職員の操作である。職員の登録と、職員の権限と役職を変える操作は、guard が許すときだけ行う（ADR-0006）。
+// Usecase は、職員の操作である。職員の登録と停止と、職員の権限と役職を変える操作は、guard が許すときだけ行う（ADR-0006）。
+// 職員の登録と停止は、ブローカーの職員も書く（ADR-0017）。
 type Usecase struct {
 	deps  Deps
 	tx    tx.Transactor
@@ -45,12 +49,17 @@ type CreateInput struct {
 
 // Create は、職員を作り、役職のデフォルトの権限を与える。チームを対象にする権限は、職員の所属のチームを対象にする。事業所が見つからないときは apperr.ErrNotFound を、
 // 部署、チーム、役職が見つからないか別の事業所のものであるときは入力のエラーを、職員の管理の権限が無いときは apperr.ErrForbidden を、
-// 同じ事業所に同じメールの職員がいるときは apperr.ErrConflict を返す。
+// 同じ事業所に同じメールの職員がいるか、同じメールの職員がブローカーで止められているときは apperr.ErrConflict を返す。
+//
+// 入力を確認してから、ブローカーに職員を登録させ、返った職員の ID を Sub にして書く。ブローカーの登録は同じメールで送り直しても
+// 1 人にまとまるので、ここで書けなかった登録は送り直してよい。ここで書けず、ブローカーの職員をこの呼び出しで作っていて、
+// その ID の職員がまだいなければ、ブローカーの職員を消して戻す。
 func (s *Usecase) Create(ctx context.Context, in CreateInput) (Detail, error) {
 	if err := s.guard(ctx); err != nil {
 		return Detail{}, err
 	}
-	if _, err := s.deps.Facilities.Get(ctx, in.FacilityID); err != nil {
+	f, err := s.deps.Facilities.Get(ctx, in.FacilityID)
+	if err != nil {
 		return Detail{}, err
 	}
 	dep, err := s.deps.Departments.Get(ctx, in.DepartmentID)
@@ -87,6 +96,14 @@ func (s *Usecase) Create(ctx context.Context, in CreateInput) (Detail, error) {
 	if err != nil {
 		return Detail{}, err
 	}
+	if f.OrgID == "" {
+		return Detail{}, apperr.Invalid("事業所 %s は認証の組織に結び付いていないので、職員を登録できません", f.ID)
+	}
+	sub, registered, err := s.deps.Identities.Register(ctx, f.OrgID, st.Email)
+	if err != nil {
+		return Detail{}, apperr.AsConflict(err, "メール %s の職員は止められています", st.Email)
+	}
+	st.Sub = &sub
 	grants := DefaultGrants(pos, team.ID, s.ids)
 	var created Detail
 	err = s.tx.WithinTx(ctx, func(ctx context.Context) error {
@@ -96,7 +113,46 @@ func (s *Usecase) Create(ctx context.Context, in CreateInput) (Detail, error) {
 		created, err = s.deps.Staff.Get(ctx, st.ID)
 		return err
 	})
+	if err != nil && registered {
+		return Detail{}, errors.Join(err, s.unregister(context.WithoutCancel(ctx), sub))
+	}
 	return created, err
+}
+
+// unregister は、予定の API に書けなかった登録のブローカーの職員 sub を消す。同じメールの登録を同時に受け、
+// ほかの登録が同じ sub で職員を書いていれば、消さない。
+func (s *Usecase) unregister(ctx context.Context, sub string) error {
+	if _, err := s.deps.Staff.FindIDBySub(ctx, sub); !errors.Is(err, apperr.ErrNotFound) {
+		return err
+	}
+	if err := s.deps.Identities.Unregister(ctx, sub); err != nil {
+		return fmt.Errorf("ブローカーの職員 %s を消せません: %w", sub, err)
+	}
+	return nil
+}
+
+// Suspend は、職員を止め、止めた職員を返す。止めた職員を止めても成功する。職員が見つからないときは apperr.ErrNotFound を、
+// 職員の管理の権限が無いときは apperr.ErrForbidden を返す。
+//
+// ブローカーの職員を先に止める。ブローカーで止めた後にここで書けなければ、送り直すとブローカーの停止をやり直してから書く。
+// ブローカーの職員の ID が無い職員はログインできないので、ここでだけ止める。
+func (s *Usecase) Suspend(ctx context.Context, id string) (Detail, error) {
+	if err := s.guard(ctx); err != nil {
+		return Detail{}, err
+	}
+	cur, err := s.deps.Staff.Get(ctx, id)
+	if err != nil {
+		return Detail{}, err
+	}
+	if cur.Sub != nil {
+		if err := s.deps.Identities.Suspend(ctx, *cur.Sub); err != nil {
+			return Detail{}, err
+		}
+	}
+	if err := s.deps.Staff.Suspend(ctx, cur.ID); err != nil {
+		return Detail{}, err
+	}
+	return s.deps.Staff.Get(ctx, cur.ID)
 }
 
 // ChangePosition は、職員の役職を positionID にし、職員の権限を新しい役職のデフォルトの権限からコピーし直す。

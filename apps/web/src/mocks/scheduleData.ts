@@ -23,6 +23,7 @@ const staff = (id: string, username: string, teamRef: Schemas['Ref']): Schemas['
   username,
   email: `${id}@example.com`,
   phone_number: null,
+  suspended_at: null,
   facility_id: MOCK_FACILITY_ID,
   department: { id: 'department-1', name: '訪問看護部' },
   team: teamRef,
