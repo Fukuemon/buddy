@@ -4,7 +4,7 @@
 // 鍵は起動のたびに作り直す。
 //
 //	go run ./cmd/devissuer -addr 127.0.0.1:9000
-//	curl '127.0.0.1:9000/token?sub=dev-aoki&email=hina.aoki@example.com&org_id=org-sample' | jq -r .access_token
+//	curl '127.0.0.1:9000/token?sub=01M5J20JC0TFEK223R3MF68HVK&org_id=org-sample' | jq -r .access_token
 //
 // /token のクエリ:
 //   - sub: 必須

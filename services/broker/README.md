@@ -1,7 +1,7 @@
 # 認証のブローカー
 
 Ory Hydra の login and consent app として動き、事業所ごとの上流の IdP の前に立って職員の身元を持つサービス。  
-ログインと同意の画面、上流の IdP への RP の処理、ヘルスチェック、職員の身元の DB のマイグレーションとシードを持つ。ログアウトの画面と内部の API は、後の変更で足す。  
+ログインと同意の画面、上流の IdP への RP の処理、職員の登録と停止の内部の API、Hydra の token_hook、ヘルスチェック、職員の身元の DB のマイグレーションとシードを持つ。ログアウトの画面は、後の変更で足す。  
 責務と流れは [DesignDoc.md](DesignDoc.md) にある。
 
 ## セットアップ
@@ -27,9 +27,14 @@ go run ./cmd/migrate seed
 
 export PORT=8100 HYDRA_ADMIN_URL=http://127.0.0.1:4445 PUBLIC_URL=http://localhost:8100 \
   UPSTREAM_IDPS_FILE=upstream-idps.example.json \
-  UPSTREAM_IDP_CLIENT_SECRETS_FILE=upstream-idp-client-secrets.example.json
+  UPSTREAM_IDP_CLIENT_SECRETS_FILE=upstream-idp-client-secrets.example.json \
+  HYDRA_ISSUER=http://hydra:4444 TOKEN_HOOK_KEY=buddy-dev-token-hook-key-for-compose-only
 go run ./cmd/broker
 ```
+
+ローカルの端末からは Hydra の issuer の名前 `hydra` を引けないので、この手順のブローカーの内部の API は 401 を返す。  
+ブローカーは、内部の API が初めて呼ばれたときに Hydra の discovery の文書を読み、ログインの画面は Hydra の issuer に届かなくても動く。  
+compose の Hydra の token_hook は、コンテナの間の名前 `broker` を呼ぶので、この手順のブローカーには届かない。
 
 `curl localhost:8100/readyz` が `{"status":"ok"}` を返せば、起動できている。`/readyz` は DB に届かなければ 503 を返し、`/healthz` は DB を確かめない。  
 ポートは、compose の Hydra が転送するブローカーの画面（`http://localhost:8100/login`）と同じ 8100 にしている。
@@ -47,6 +52,9 @@ go run ./cmd/broker
 - `UPSTREAM_IDP_CLIENT_SECRETS_FILE`: 必須。組織の ID と、上流の IdP の client secret の対応（JSON）のパス。シークレットとして渡す。形は [upstream-idp-client-secrets.example.json](upstream-idp-client-secrets.example.json) にある
 - `CLIENT_IP_HEADER`: ログインの試行を数える送り手のアドレスを読む、前段のプロキシが付けるヘッダーの名前。ブローカーは最後の値を使う。無ければ接続の相手のアドレスを使う。ブローカーにプロキシを通らずに届かない構成でだけ渡す
 - `AUTO_CONSENT_CLIENTS`: 同意の画面を出さずに accept するクライアントの ID をカンマで区切った値。デフォルトは `web`。ほかのクライアントの同意は reject する
+- `HYDRA_ISSUER`: 必須。Hydra のトークンの `iss`。内部の API は、`<HYDRA_ISSUER>/.well-known/openid-configuration` の JWKS で、予定の API の client credentials の access token を検証する
+- `INTERNAL_API_AUDIENCE`: 内部の API が access token の `aud` に求める値。デフォルトは `broker`
+- `TOKEN_HOOK_KEY`: 必須。Hydra が `oauth2.token_hook` を呼ぶときに、ヘッダー `Token-Hook-Key` に入れる値。シークレットとして渡し、Hydra の `oauth2.token_hook.auth` と同じ値にする
 
 上流の IdP の設定は、待ち受けを始める前に読む。次のいずれかでは、ブローカーは起動せず、終了コード 1 で終わる。
 

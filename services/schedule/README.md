@@ -23,6 +23,11 @@ API とマイグレーションは、次の環境変数を読む。
 | `OIDC_ISSUER` | はい | なし | ブローカーの Issuer の URL。トークンの `iss` と一致させ、`<OIDC_ISSUER>/.well-known/openid-configuration` から JWKS の場所を読む |
 | `OIDC_AUDIENCE` | はい | なし | トークンの `aud` に求める値 |
 | `OIDC_ORG_CLAIM` | いいえ | `org_id` | 組織の ID を持つクレームの名前 |
+| `BROKER_URL` | はい | なし | 認証のブローカーの URL。職員の登録と停止で、ブローカーの内部の API を呼ぶ |
+| `BROKER_TOKEN_URL` | はい | なし | 内部の API を呼ぶ access token を client credentials で取る、Hydra のトークンのエンドポイント |
+| `BROKER_CLIENT_ID` | いいえ | `schedule` | Hydra に登録した予定の API のクライアントの ID |
+| `BROKER_CLIENT_SECRET` | はい | なし | Hydra に登録した予定の API のクライアントの secret。シークレットとして渡す |
+| `BROKER_AUDIENCE` | いいえ | `broker` | 内部の API を呼ぶ access token の `aud` |
 | `PORT` | いいえ | `8080` | API が待ち受けるポート |
 | `CORS_ALLOW_ORIGINS` | いいえ | 空 | カンマで区切ったオリジン。空なら CORS のヘッダーを返さない |
 | `LOG_LEVEL` | いいえ | `info` | `debug`、`info`、`warn`、`error` のいずれか |
@@ -35,7 +40,7 @@ API とマイグレーションは、次の環境変数を読む。
 
 パスワードはコードにデフォルト値を持たない。  
 ログは標準出力に JSON で書き、接続の設定とトークンは書かない。  
-`cmd/migrate` は OIDC の変数を求めず、必須として確かめるのは `DB_USER`、`DB_PASSWORD`、`DB_NAME` だけである。  
+`cmd/migrate` は OIDC とブローカーの変数を求めず、必須として確認するのは `DB_USER`、`DB_PASSWORD`、`DB_NAME` だけである。  
 ほかの変数も API と同じ規則で読むので、`PORT`、`LOG_LEVEL`、`GOOGLE_CALENDAR_` で始まる変数の値が正しくないときは、マイグレーションも失敗する。
 
 ## 起動する
@@ -61,6 +66,8 @@ go run ./cmd/migrate seed
 go run ./cmd/devissuer -addr 127.0.0.1:9000
 
 export OIDC_ISSUER=http://127.0.0.1:9000 OIDC_AUDIENCE=schedule
+# 職員の登録と停止は、ルートの compose のブローカーと Hydra を呼ぶ。ほかの操作は呼ばない
+export BROKER_URL=http://127.0.0.1:8100 BROKER_TOKEN_URL=http://127.0.0.1:4444/oauth2/token BROKER_CLIENT_SECRET=schedule-dev
 go run ./cmd/api
 ```
 
@@ -68,10 +75,10 @@ go run ./cmd/api
 API は SIGINT か SIGTERM を受けると、処理中のリクエストを最大 30 秒待ってから止まる。
 
 `cmd/devissuer` は、`GET /token` で署名したトークンを返す。  
-シードの事業所は組織 `org-sample` に結び付いているので、シードの職員のメールでトークンを作れば API を呼べる。
+シードの事業所は組織 `org-sample` に結び付いているので、シードの職員の `sub`（ブローカーの職員の ID）でトークンを作れば API を呼べる。`sub` はシード（`db/seed/seed.sql`）の `users.sub` にある。
 
 ```sh
-TOKEN=$(curl -s '127.0.0.1:9000/token?sub=dev-aoki&email=hina.aoki@example.com&org_id=org-sample' | jq -r .access_token)
+TOKEN=$(curl -s '127.0.0.1:9000/token?sub=01M5J20JC0TFEK223R3MF68HVK&org_id=org-sample' | jq -r .access_token)
 curl -H "Authorization: Bearer $TOKEN" localhost:8080/v1/facilities/01M3TC5H00QV17BC0J9V3393ZP/schedules
 ```
 

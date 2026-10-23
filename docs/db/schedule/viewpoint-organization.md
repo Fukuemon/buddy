@@ -12,7 +12,7 @@
 | [public.departments](public.departments.md) | 5       | 事業所の部署                                           | BASE TABLE |
 | [public.teams](public.teams.md)             | 5       | 事業所のチーム                                         | BASE TABLE |
 | [public.positions](public.positions.md)     | 5       | 事業所の役職。職員を登録するときに写す既定の権限を持つ | BASE TABLE |
-| [public.users](public.users.md)             | 11      | 職員                                                   | BASE TABLE |
+| [public.users](public.users.md)             | 12      | 職員                                                   | BASE TABLE |
 
 ## Relations
 
@@ -68,6 +68,7 @@ erDiagram
   text position_id
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  timestamp_with_time_zone suspended_at
 }
 ```
 

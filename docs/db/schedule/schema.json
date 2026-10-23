@@ -961,7 +961,7 @@
           "name": "sub",
           "type": "varchar(255)",
           "nullable": true,
-          "comment": "ブローカーの subject。初回のログインまで NULL"
+          "comment": "ブローカーの職員の ID。登録のときにブローカーが発行する"
         },
         {
           "name": "username",
@@ -1006,6 +1006,12 @@
           "type": "timestamp with time zone",
           "nullable": false,
           "default": "now()"
+        },
+        {
+          "name": "suspended_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "comment": "職員を止めた時刻。止めていなければ NULL"
         }
       ],
       "indexes": [

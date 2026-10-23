@@ -89,7 +89,7 @@ CREATE VIEW recurring_schedule_details AS (
 | ----------------------------------------------------------- | ------- | -------------------------------------------------- | ---------- |
 | [public.recurring_schedules](public.recurring_schedules.md) | 19      | 繰り返しの予定と、その規則                         | BASE TABLE |
 | [public.schedule_types](public.schedule_types.md)           | 5       | 予定の種類（通常、訪問）。マイグレーションで入れる | BASE TABLE |
-| [public.users](public.users.md)                             | 11      | 職員                                               | BASE TABLE |
+| [public.users](public.users.md)                             | 12      | 職員                                               | BASE TABLE |
 | [public.visit_info_details](public.visit_info_details.md)   | 10      | 訪問の情報と名前を結合したビュー                   | VIEW       |
 
 ## Viewpoints

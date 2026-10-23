@@ -82,6 +82,7 @@ erDiagram
   text position_id FK
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  timestamp_with_time_zone suspended_at
 }
 "public.user_policies" {
   text id
