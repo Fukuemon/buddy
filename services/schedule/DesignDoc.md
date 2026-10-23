@@ -250,7 +250,8 @@ sequenceDiagram
   - ブローカーが書いた後に Hydra の取り消しに失敗したときは、`users` を書いてから 500 を返す。送り直すと取り消しをやり直す。
   - ブローカーにいない職員は、予定の API でだけ休職か退職にする。
 - 退職は、名前、所属、役職、権限を残し、`email` と `phone_number` を消す。
-- 復職は、`users` の休職を外してから、ブローカーの職員を戻す。退職した職員は 409 で拒む。
+- 復職は、事業所をロックしたトランザクションで `users` の休職を外してコミットしてから、ブローカーの職員を戻す。退職した職員は 409 で拒む。
+  - ブローカーは、事業所をロックし直した 2 つ目のトランザクションで、職員が有効なままのときだけ呼ぶ。
 - 2 か所の書き込みの順と、片方だけが残ったときの扱いは、[認証のブローカーの Design Doc の職員の登録、休職、復職、退職](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#職員の登録休職復職退職) にある。
 - ADR-0017: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0017-identity-boundary.md)
 - ADR-0018: [職員の停止を、戻せる休職と、戻せない退職に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0018-staff-leave-and-retirement.md)
