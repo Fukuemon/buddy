@@ -99,6 +99,7 @@ WHERE id = $1;
 
 -- name: LockFacility :one
 -- 事業所の職員の休職と退職を 1 つずつにする。職員の管理の権限を持つ有効な職員を数えてから書くまでの間に、ほかの操作が割り込まない。
+-- 予定と担当の新しい割り振り（ShareFacility）とも 1 つずつにし、退職の残る予定の確認と予定の作成が行き違わない。
 SELECT id FROM facilities WHERE id = $1 FOR UPDATE;
 
 -- name: ListActiveStaffManagers :many
@@ -136,7 +137,12 @@ SELECT id, name FROM patients WHERE facility_id = $1 AND assigned_staff_id = $2 
 
 -- name: GetUserRef :one
 -- ほかの機能が職員を参照するときに要るカラムだけを読む。
-SELECT id, facility_id, team_id FROM users WHERE id = $1;
+SELECT id, facility_id, team_id, leave_started_at, retired_at FROM users WHERE id = $1;
 
 -- name: ListUserRefsByFacility :many
-SELECT id, facility_id, team_id FROM users WHERE facility_id = $1 ORDER BY id;
+SELECT id, facility_id, team_id, leave_started_at, retired_at FROM users WHERE facility_id = $1 ORDER BY id;
+
+-- name: ShareFacility :one
+-- 予定と担当の新しい割り振りが、職員の状態を確認してから書き終えるまでの間、LockFacility を待たせる。
+-- 割り振りどうしは待たせない。
+SELECT id FROM facilities WHERE id = $1 FOR SHARE;

@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -308,16 +309,16 @@ func NewStaffRefRepository(pool *pgxpool.Pool) *StaffRefRepository {
 	return &StaffRefRepository{conn{pool}}
 }
 
-// Get は、ID が id の職員の事業所とチームを返す。無いときは apperr.ErrNotFound を返す。
+// Get は、ID が id の職員の事業所、チーム、状態を返す。無いときは apperr.ErrNotFound を返す。
 func (r *StaffRefRepository) Get(ctx context.Context, id string) (staff.Ref, error) {
 	row, err := r.q(ctx).GetUserRef(ctx, id)
 	if err != nil {
 		return staff.Ref{}, translate("get user ref", err)
 	}
-	return staff.Ref{ID: row.ID, FacilityID: row.FacilityID, TeamID: row.TeamID}, nil
+	return staffRef(row.ID, row.FacilityID, row.TeamID, row.LeaveStartedAt, row.RetiredAt), nil
 }
 
-// ListByFacility は、事業所 facilityID の職員の事業所とチームを ID の順に返す。
+// ListByFacility は、事業所 facilityID の職員の事業所、チーム、状態を ID の順に返す。
 func (r *StaffRefRepository) ListByFacility(ctx context.Context, facilityID string) ([]staff.Ref, error) {
 	rows, err := r.q(ctx).ListUserRefsByFacility(ctx, facilityID)
 	if err != nil {
@@ -325,7 +326,20 @@ func (r *StaffRefRepository) ListByFacility(ctx context.Context, facilityID stri
 	}
 	out := make([]staff.Ref, len(rows))
 	for i, row := range rows {
-		out[i] = staff.Ref{ID: row.ID, FacilityID: row.FacilityID, TeamID: row.TeamID}
+		out[i] = staffRef(row.ID, row.FacilityID, row.TeamID, row.LeaveStartedAt, row.RetiredAt)
 	}
 	return out, nil
+}
+
+// LockStatuses は、事業所 facilityID の行に共有のロックを取る。呼び出し側がトランザクションの中で呼ぶ。
+// 職員の休職、復職、退職は事業所の行に排他のロックを取るので、トランザクションが終わるまで待つ。
+// 事業所が無いときは apperr.ErrNotFound を返す。
+func (r *StaffRefRepository) LockStatuses(ctx context.Context, facilityID string) error {
+	_, err := r.q(ctx).ShareFacility(ctx, facilityID)
+	return translate("share facility", err)
+}
+
+func staffRef(id, facilityID, teamID string, leaveStartedAt, retiredAt *time.Time) staff.Ref {
+	st := staff.Staff{LeaveStartedAt: leaveStartedAt, RetiredAt: retiredAt}
+	return staff.Ref{ID: id, FacilityID: facilityID, TeamID: teamID, Status: st.Status()}
 }

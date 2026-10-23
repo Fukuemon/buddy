@@ -1,12 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 
 import type { ScheduleKind } from '#/api/types'
 import { useBuddyApi } from '#/api/useBuddyApi'
 
+import { activeStaffId } from '../lib/activeStaff'
 import { toDateKey } from '../lib/dateTime'
 import { createScheduleFormValues, toScheduleInput } from '../lib/scheduleFormMapper'
 import { patientListQueryOptions, staffListQueryOptions, useCreateSchedule } from '../queries'
@@ -28,15 +29,28 @@ export const ScheduleCreateModalContainer = () => {
   const patientsQuery = useQuery(patientListQueryOptions(api, facilityId))
   const createSchedule = useCreateSchedule()
 
-  const [initial] = useState(() => ({
+  const [opened] = useState(() => ({
     date: search.start ?? search.date ?? today,
     time: search.time,
     staffId: search.staffId,
   }))
+  const staffId = activeStaffId(opened.staffId, staffQuery.data)
+  const initial = { ...opened, staffId }
   const form = useForm<ScheduleFormValues>({
     defaultValues: createScheduleFormValues({ kind: search.kind, ...initial }),
     resolver: zodResolver(scheduleFormSchema),
   })
+
+  // 職員の一覧を開いた後に取り終え、URL の staffId が休職か退職の職員を指していたときは、未選択に戻す。
+  // 初期値も戻して、閉じるときに破棄の確認を出さない。それより前に入れた値と、変えたかの状態は残す。
+  // staffId の欄は開くまで登録されないので、resetField は使えない
+  useEffect(() => {
+    if (opened.staffId === undefined || staffId !== undefined) return
+    form.reset(createScheduleFormValues({ kind: form.getValues('kind'), ...opened, staffId }), {
+      keepDirtyValues: true,
+      keepDirty: true,
+    })
+  }, [form, opened, staffId])
 
   const changeKind = (kind: ScheduleKind) => {
     const current = form.getValues()

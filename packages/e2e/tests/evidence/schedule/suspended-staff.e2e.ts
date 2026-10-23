@@ -4,7 +4,7 @@ import { issueAccessToken } from '../../fixtures/apiReference'
 import { LOGIN_EMAIL, LOGIN_STAFF, OFFICE_B, SUSPENDED_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { createNormalSchedule, getSchedule } from '../../fixtures/schedule'
-import { listStaff, STAFF_FORM } from '../../fixtures/staff'
+import { leaveStaff, listStaff, reinstateStaff, STAFF_FORM } from '../../fixtures/staff'
 import { signInAtBroker } from '../../screens/login'
 
 type ListedStaff = { id: string; username: string; status: string; leave_started_at: string | null }
@@ -207,6 +207,57 @@ test.describe('予定の作成', () => {
           },
         )
       })
+
+      test(`${prefix}URL の staffId が休職の職員を指す予定の作成の画面を開いた場合、担当者が未選択で開くこと`, async ({
+        browser,
+        request,
+      }) => {
+        const staff = await fetchStaff(request, OFFICE_B.email, OFFICE_B.facilityId)
+        expect(staff.find(({ id }) => id === SUSPENDED_STAFF.id)?.status).toBe('on_leave')
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'schedule-create-on-leave-staff-url',
+            title:
+              'URL の staffId が休職の職員を指す予定の作成の画面を開くと、担当者が未選択で開く',
+            actor: OFFICE_B_ACTOR,
+            variant,
+          },
+          async (page) => {
+            await page.goto('/schedule')
+            await signInAtBroker(page, OFFICE_B.email)
+          },
+          async ({ page, step, check }) => {
+            await page.goto('/schedule?view=day')
+            await expect(page.getByTestId(`day-grid-staff-${OFFICE_B.staff.id}`)).toBeVisible()
+            await step(
+              [
+                '休職の職員がいる 2 つ目の事業所で、予定のカレンダーを日の表示で開いている',
+                `（撮影のため、録画に映らない予定の API の職員の一覧を出す）${describeStaff(staff)}`,
+              ].join('\n'),
+            )
+
+            await step(
+              `休職にする前に${SUSPENDED_STAFF.name}の列から開いた、staffId が${SUSPENDED_STAFF.name}の予定の作成の URL を開く`,
+            )
+            await page.goto(
+              `/schedule/new?start=${OFFICE_B.schedule.date}&time=13:00&staffId=${SUSPENDED_STAFF.id}`,
+            )
+            await expect(page.getByTestId('schedule-form-modal')).toBeVisible()
+
+            await step('項目の一覧の「担当者」を押す')
+            await page.getByTestId('schedule-field-staff').click()
+            await expect(page.getByTestId(`staff-select-option-${OFFICE_B.staff.id}`)).toBeVisible()
+            await expect(page.getByTestId('schedule-field-staff')).toContainText('未選択')
+            await expect(page.getByTestId('schedule-field-staff')).not.toContainText(
+              SUSPENDED_STAFF.name,
+            )
+            await check(
+              `担当者が未選択で開き、休職の${SUSPENDED_STAFF.name}の名前は出ず、候補にも出ない`,
+            )
+          },
+        )
+      })
     }
   })
 })
@@ -275,12 +326,15 @@ test.describe('予定の編集', () => {
         const title = `引き継ぎの面談 ${stamp}`
         const changed = `引き継ぎの面談（場所を変更）${stamp}`
         const token = await issueAccessToken(request, OFFICE_B.email)
+        // 休職の職員には予定を作れないので、復職にして予定を作ってから休職に戻す
+        expect((await reinstateStaff(request, token, SUSPENDED_STAFF.id)).status()).toBe(200)
         const created = await createNormalSchedule(request, token, OFFICE_B.facilityId, {
           staffId: SUSPENDED_STAFF.id,
           title,
           date: OFFICE_B.schedule.date,
         })
         expect(created.status()).toBe(201)
+        expect((await leaveStaff(request, token, SUSPENDED_STAFF.id)).status()).toBe(200)
         const scheduleId = ((await created.json()) as { id: string }).id
         await recordPrEvidence(
           browser,

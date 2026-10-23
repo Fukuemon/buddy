@@ -28,3 +28,4 @@
 - 職員の権限は、OpenAPI の `StaffDetail.policies` にある。職員の一覧を権限で絞るときに、これを使うか別の API を使うかは決まっていない。
 - 担当者は、今は `staff_id`（予定の職員）と `visit_info.assigned_staff_id`（訪問の担当）の両方に同じ職員を送る（`apps/web/src/api/http/scheduleMapper.ts`）。OpenAPI は両方を必須にしている。
 - `listUsers` は、休職と退職の職員も返す。この画面は、`status` を持つ職員を担当者の候補から除く。
+- `createSchedule` は、`staff_id` か `visit_info.assigned_staff_id` が休職か退職の職員を指すと 400 を返す。

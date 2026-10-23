@@ -21,3 +21,12 @@ export const activeStaffIds = (staffIds: Staff['id'][], staffList: Staff[] | und
   const active = new Set(activeStaff(staffList).map((staff) => staff.id))
   return staffIds.filter((id) => active.has(id))
 }
+
+/**
+ * 予定の作成の URL の staffId が、休職か退職の職員を指すときは undefined を返す。
+ * 休職か退職にする前に、予定のカレンダーの職員の列から開いた URL が残るためである。職員の一覧を取り終える前は、staffId をそのまま返す。
+ */
+export const activeStaffId = (staffId: Staff['id'] | undefined, staffList: Staff[] | undefined) => {
+  const inactive = staffList?.some((staff) => staff.id === staffId && staff.status !== undefined)
+  return inactive === true ? undefined : staffId
+}

@@ -126,7 +126,7 @@ func run() error {
 		}, tx, ids, principal.RequireStaffManage),
 		Patients: patient.NewUsecase(patient.Deps{
 			Facilities: facilities, Staff: staffRefs, ServiceCodes: visitMasters, Patients: patients,
-		}, ids, principal.RequireStaffManage),
+		}, tx, ids, principal.RequireStaffManage),
 		VisitMasters: visit.NewUsecase(visitMasters),
 		Schedules: schedule.NewUsecase(schedule.Deps{
 			Facilities: facilities, Staff: staffRefs, Visits: visitInfos,
