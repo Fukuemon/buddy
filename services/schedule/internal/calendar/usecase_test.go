@@ -117,16 +117,25 @@ func newEnv(t *testing.T, srv *gcaltest.Server) env {
 
 // withSource は、e の Store の上で、自分の事業所のサービスアカウントの source で予定を読む Usecase を作る。
 func withSource(e env, source calendar.EventSource) *calendar.Usecase {
-	return withAccounts(e, oneAccount(source, nil))
+	return withStaff(e, source, inmem.StaffRefs{Store: e.store})
+}
+
+// withStaff は、withSource と同じ Usecase を、職員を st で読むようにして作る。
+func withStaff(e env, source calendar.EventSource, st calendar.StaffRefs) *calendar.Usecase {
+	return newUsecase(e, oneAccount(source, nil), st)
 }
 
 // withAccounts は、e の Store の上で、事業所ごとのサービスアカウント acc で予定を読む Usecase を作る。
 func withAccounts(e env, acc calendar.Accounts) *calendar.Usecase {
+	return newUsecase(e, acc, inmem.StaffRefs{Store: e.store})
+}
+
+func newUsecase(e env, acc calendar.Accounts, st calendar.StaffRefs) *calendar.Usecase {
 	s := e.store
 	ids := &inmem.SeqIDs{}
 	return calendar.NewUsecase(calendar.Deps{
 		Calendars: inmem.Calendars{Store: s}, Accounts: acc,
-		Staff: inmem.StaffRefs{Store: s}, Patients: inmem.Patients{Store: s}, ServiceCodes: inmem.VisitMasters{Store: s},
+		Staff: st, Patients: inmem.Patients{Store: s}, ServiceCodes: inmem.VisitMasters{Store: s},
 		Types: inmem.ScheduleTypes{Store: s}, Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, RecurringSchedules: inmem.RecurringSchedules{Store: s},
 		Visits: visit.NewWriter(visit.WriterDeps{
 			Staff: inmem.StaffRefs{Store: s},

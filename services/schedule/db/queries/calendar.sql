@@ -64,3 +64,6 @@ UPDATE external_event_links SET etag = $2, synced_version = $3 WHERE id = $1;
 
 -- name: DeleteExternalEventLink :exec
 DELETE FROM external_event_links WHERE id = $1;
+
+-- name: DisableExternalCalendarsByStaff :exec
+UPDATE external_calendars SET disabled_at = now() WHERE staff_id = $1 AND disabled_at IS NULL;

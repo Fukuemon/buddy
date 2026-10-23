@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
@@ -261,7 +262,7 @@ func stopUsecase(s *inmem.Store, ids *inmem.Identities, guard organization.Guard
 	return staff.NewUsecase(staff.Deps{
 		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
 		Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
-		Identities: ids, Assignments: inmem.StaffAssignments{Store: s},
+		Identities: ids, Assignments: inmem.StaffAssignments{Store: s}, Calendars: inmem.Calendars{Store: s},
 		Self: func(context.Context) (string, bool) { return companionID, true },
 		Now:  func() time.Time { return time.Date(2026, 10, 23, 1, 0, 0, 0, time.UTC) },
 	}, &inmem.Tx{}, &inmem.SeqIDs{}, guard)
@@ -500,10 +501,19 @@ func TestStaffRetire(t *testing.T) {
 	s.Staff[staffID] = d
 	s.Schedules["PAST"] = schedule.Detail{Schedule: schedule.Schedule{ID: "PAST", Slot: schedule.Slot{
 		FacilityID: facilityID, StaffID: staffID, Date: civil.Date{Year: 2026, Month: 10, Day: 22}}}}
+	s.Calendars["CAL"] = calendar.ExternalCalendar{ID: "CAL", FacilityID: facilityID, StaffID: staffID, Provider: calendar.ProviderGoogle, CalendarID: "staff@example.com"}
+	s.Links["LINK"] = calendar.Link{ID: "LINK", FacilityID: facilityID, ExternalCalendarID: "CAL", ExternalEventID: "EV", ScheduleID: ptr("PAST")}
 
 	got, err := stopUsecase(s, ids, allow).Retire(ctx, staffID)
 	if err != nil {
 		t.Fatal(err)
+	}
+	// 退職は職員のカレンダーを外し、カレンダーのレコードと予定の対応は残す（#278 の検証の観点 1）
+	if c, ok := s.Calendars["CAL"]; !ok || c.DisabledAt == nil {
+		t.Errorf("カレンダー = %+v, want 退職で外す", c)
+	}
+	if _, ok := s.Links["LINK"]; !ok {
+		t.Error("予定の対応が消えた, want 退職で外しても残す")
 	}
 	st := got.Staff
 	if st.Status() != staff.StatusRetired || st.Username != "青木 陽菜" || st.Email != "" || st.PhoneNumber != nil || st.LeaveStartedAt != nil {
@@ -569,7 +579,11 @@ func TestStaffRetireRejectsAssignments(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s, ids := stopFixture()
 			tt.edit(s)
+			s.Calendars["CAL"] = calendar.ExternalCalendar{ID: "CAL", FacilityID: facilityID, StaffID: staffID}
 			_, err := stopUsecase(s, ids, allow).Retire(ctx, staffID)
+			if s.Calendars["CAL"].DisabledAt != nil {
+				t.Error("退職を拒んだのにカレンダーを外した")
+			}
 			ae, ok := errors.AsType[*staff.AssignedError](err)
 			if !ok || ae.Assignments.Empty() || !errors.Is(err, apperr.ErrConflict) {
 				t.Fatalf("err = %v, want 残る一覧を持つ AssignedError", err)

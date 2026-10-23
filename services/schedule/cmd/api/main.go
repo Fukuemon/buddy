@@ -118,7 +118,7 @@ func run() error {
 		Staff: staff.NewUsecase(staff.Deps{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions, Policies: policies, Staff: staffRepo,
 			Identities:  broker.New(broker.Config(cfg.Broker), nil),
-			Assignments: postgres.NewStaffAssignmentReader(db),
+			Assignments: postgres.NewStaffAssignmentReader(db), Calendars: calendars,
 			Self: func(ctx context.Context) (string, bool) {
 				p, ok := principal.From(ctx)
 				return p.Staff.ID, ok
@@ -179,7 +179,7 @@ func run() error {
 	}
 	if accounts != nil && cfg.Calendar.SyncEnabled {
 		syncer := calendar.NewSyncer(calendar.SyncerDeps{
-			Syncs: postgres.NewCalendarSyncRepository(db), Calendars: calendars, Exports: exports,
+			Syncs: postgres.NewCalendarSyncRepository(db), Calendars: calendars, Staff: staffRefs, Exports: exports,
 			Sources:   accounts.Source,
 			Schedules: schedules, Recurring: recurring, Types: scheduleTypes, Patients: patients, ServiceCodes: visitMasters, Visits: visitInfos,
 		}, tx, ids, cfg.Calendar.SyncInterval, log)

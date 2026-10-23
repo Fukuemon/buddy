@@ -81,12 +81,25 @@ type VisitInfos interface {
 	VisitStore
 }
 
+// StaffLocker は、トランザクションが終わるまで、事業所 facilityID の職員を休職、復職、退職にさせない。
+// 実装は schedule.StaffRefs と同じ postgres.StaffRefRepository である。退職はカレンダーを外すので、職員の状態と
+// カレンダーを外したかを読む前にロックを取ると、読んだ後に職員が休職か退職になってカレンダーが外れることが無い。
+type StaffLocker interface {
+	LockStatuses(ctx context.Context, facilityID string) error
+}
+
+// StaffRefs は、カレンダーを結び付ける職員と、その状態を読む。
+type StaffRefs interface {
+	kernel.Finder[staff.Ref]
+	StaffLocker
+}
+
 // Deps は、Usecase が使うリポジトリと、ほかの機能のデータを読み書きする小さなインターフェイスである。
 type Deps struct {
 	Calendars Repository
 	// Accounts は、事業所のサービスアカウントで外部のカレンダーを読む。設定が無ければ nil で、読む操作は ErrNotConfigured を返す。
 	Accounts     Accounts
-	Staff        kernel.Finder[staff.Ref]
+	Staff        StaffRefs
 	Patients     Patients
 	ServiceCodes ServiceCodes
 	Types        Types
@@ -170,7 +183,7 @@ func (u *Usecase) checkSource(ctx context.Context, facilityID, calendarID string
 
 // Link は、事業所の職員 staffID に、calendarID のカレンダーを結び付ける。事業所のサービスアカウントで読めるかを確認してから書く。
 // 外した同じカレンダーが同じ職員にあれば、結び付け直す。
-// 職員が見つからないか別の事業所の職員のときは入力のエラーを、職員にほかのカレンダーがあるか、
+// 職員が見つからないか、別の事業所の職員か、退職した職員のときは入力のエラーを、職員にほかのカレンダーがあるか、
 // カレンダーがほかの職員に結び付いているか、すでに結び付いているときは apperr.ErrConflict を返す。
 func (u *Usecase) Link(ctx context.Context, facilityID, staffID, calendarID string) (ExternalCalendar, error) {
 	if err := u.guard(ctx); err != nil {
@@ -187,11 +200,23 @@ func (u *Usecase) Link(ctx context.Context, facilityID, staffID, calendarID stri
 	if err := apperr.SameFacility("職員", st.ID, st.FacilityID, facilityID); err != nil {
 		return ExternalCalendar{}, err
 	}
+	if err := linkable(st); err != nil {
+		return ExternalCalendar{}, err
+	}
 	if err := src.Check(ctx, calendarID); err != nil {
 		return ExternalCalendar{}, err
 	}
 	var linked ExternalCalendar
 	err = u.tx.WithinTx(ctx, func(ctx context.Context) error {
+		// 退職はカレンダーを外すので、確認した後に退職した職員へ結び付けないよう、ロックしてから読み直す
+		if err := u.deps.Staff.LockStatuses(ctx, facilityID); err != nil {
+			return err
+		}
+		if st, err := u.deps.Staff.Get(ctx, st.ID); err != nil {
+			return err
+		} else if err := linkable(st); err != nil {
+			return err
+		}
 		cur, err := u.deps.Calendars.FindByCalendarID(ctx, ProviderGoogle, calendarID)
 		switch {
 		case errors.Is(err, apperr.ErrNotFound):
@@ -215,6 +240,14 @@ func (u *Usecase) Link(ctx context.Context, facilityID, staffID, calendarID stri
 		return err
 	})
 	return linked, err
+}
+
+// linkable は、職員 st にカレンダーを結び付けられるかを確認する。退職した職員には結び付けられない（ADR-0018）。
+func linkable(st staff.Ref) error {
+	if st.Status == staff.StatusRetired {
+		return apperr.Invalid("退職した職員には、カレンダーを結び付けられません")
+	}
+	return nil
 }
 
 // staffTaken は、カレンダーを書くエラーが衝突なら、職員にほかのカレンダーがあることを表すエラーにする。
@@ -249,7 +282,8 @@ func (u *Usecase) active(ctx context.Context, id string) (ExternalCalendar, erro
 }
 
 // Preview は、カレンダー id の期間 rng の予定を読み、取り込むとどうなるかを返す。予定は書かない。
-// カレンダーが無いか外したときは apperr.ErrNotFound を、読めないときは ErrUnreadable か ErrUnavailable か ErrNotConfigured を返す。
+// 職員が休職していれば、新しい予定を SkipStaffOnLeave の取り込まない予定にする。
+// カレンダーが無いか外したとき、職員が退職したときは apperr.ErrNotFound を、読めないときは ErrUnreadable か ErrUnavailable か ErrNotConfigured を返す。
 func (u *Usecase) Preview(ctx context.Context, id string, rng Range) (Preview, error) {
 	if err := u.guard(ctx); err != nil {
 		return Preview{}, err
@@ -262,7 +296,11 @@ func (u *Usecase) Preview(ctx context.Context, id string, rng Range) (Preview, e
 	if err != nil {
 		return Preview{}, err
 	}
-	p, _, err := u.plan(ctx, src, c, rng)
+	onLeave, err := u.staffOnLeave(ctx, c)
+	if err != nil {
+		return Preview{}, err
+	}
+	p, _, err := u.plan(ctx, src, c, rng, onLeave)
 	if err != nil {
 		return Preview{}, err
 	}
@@ -276,8 +314,10 @@ type ImportResult struct {
 }
 
 // Import は、カレンダー id の期間 rng の予定を読み直し、プレビューと同じ規則で読み替えて、1 つのトランザクションで書く。
-// 確認が必要な予定には decisions の取り込み方を当てる。
-// 確認が必要な予定の集合が decisions と違うときと、同じカレンダーの取り込みが進んでいるときは apperr.ErrConflict を返し、何も書かない。
+// 確認が必要な予定には decisions の取り込み方を当てる。職員が休職していれば、新しい予定は書かない。
+// 確認が必要な予定の集合が decisions と違うとき、読み替えた後に職員が休職か復職になったとき、
+// 同じカレンダーの取り込みが進んでいるときは apperr.ErrConflict を返し、何も書かない。
+// 読み替えた後に職員が退職し、カレンダーが外れたときは apperr.ErrNotFound を返し、何も書かない。
 // ほかのエラーは Preview と同じである。
 func (u *Usecase) Import(ctx context.Context, id string, rng Range, decisions []Decision) (ImportResult, error) {
 	if err := u.guard(ctx); err != nil {
@@ -326,7 +366,11 @@ func (u *Usecase) Import(ctx context.Context, id string, rng Range, decisions []
 }
 
 func (u *Usecase) importPlan(ctx context.Context, src EventSource, c ExternalCalendar, rng Range, decisions []Decision, run ImportRun) (ImportResult, error) {
-	p, patients, err := u.plan(ctx, src, c, rng)
+	onLeave, err := u.staffOnLeave(ctx, c)
+	if err != nil {
+		return ImportResult{}, err
+	}
+	p, patients, err := u.plan(ctx, src, c, rng, onLeave)
 	if err != nil {
 		return ImportResult{}, err
 	}
@@ -336,6 +380,9 @@ func (u *Usecase) importPlan(ctx context.Context, src EventSource, c ExternalCal
 	}
 	var res ImportResult
 	err = u.tx.WithinTx(ctx, func(ctx context.Context) error {
+		if err := u.recheck(ctx, c, onLeave); err != nil {
+			return err
+		}
 		if err := u.write(ctx, c, p); err != nil {
 			return err
 		}
@@ -349,8 +396,46 @@ func (u *Usecase) importPlan(ctx context.Context, src EventSource, c ExternalCal
 	return res, err
 }
 
+// staffOnLeave は、カレンダー c を結び付けた職員が休職しているかを返す。退職した職員は、カレンダーを外したものとみなし、
+// apperr.ErrNotFound を返す。退職はカレンダーを外すが、外す前に退職にした職員のカレンダーが残っていても取り込まないためである。
+func (u *Usecase) staffOnLeave(ctx context.Context, c ExternalCalendar) (bool, error) {
+	st, err := u.deps.Staff.Get(ctx, c.StaffID)
+	if err != nil {
+		return false, err
+	}
+	if st.Status == staff.StatusRetired {
+		return false, apperr.ErrNotFound
+	}
+	return st.Status == staff.StatusOnLeave, nil
+}
+
+// recheck は、取り込みを書くトランザクションの始めに、事業所の職員の休職、復職、退職を終わりまで待たせてから、
+// カレンダーを外していないことと、職員の休職が読み替えたときの onLeave と同じことを確認する。
+// 退職は事業所の同じ行に排他のロックを取り、残る予定を数えてカレンダーを外すので、退職とこの取り込みのどちらかが、
+// もう片方のコミットを待ってから読む。取り込んだ予定が残れば退職を拒み、退職が先ならここでカレンダーが外れている。
+// カレンダーが外れていれば apperr.ErrNotFound を、休職が変わっていれば apperr.ErrConflict を返す。
+func (u *Usecase) recheck(ctx context.Context, c ExternalCalendar, onLeave bool) error {
+	if err := u.deps.Staff.LockStatuses(ctx, c.FacilityID); err != nil {
+		return err
+	}
+	if _, err := u.active(ctx, c.ID); err != nil {
+		return err
+	}
+	now, err := u.staffOnLeave(ctx, c)
+	if err != nil {
+		return err
+	}
+	if now != onLeave {
+		return errStaffStatusChanged
+	}
+	return nil
+}
+
+var errStaffStatusChanged = apperr.ConflictCode(CodeReviewChanged, "プレビューの後に、職員が休職か復職になりました。もう一度プレビューしてください")
+
 // plan は、カレンダー c の期間 rng の予定を src で読み、読み替えた plan と、事業所の利用者を返す。
-func (u *Usecase) plan(ctx context.Context, src EventSource, c ExternalCalendar, rng Range) (plan, []PatientRef, error) {
+// onLeave は、カレンダーを結び付けた職員が休職しているかで、休職なら新しい予定を取り込まない予定にする。
+func (u *Usecase) plan(ctx context.Context, src EventSource, c ExternalCalendar, rng Range, onLeave bool) (plan, []PatientRef, error) {
 	events, err := src.Events(ctx, c.CalendarID, rng.TimeMin(), rng.TimeMax())
 	if err != nil {
 		return plan{}, nil, err
@@ -366,7 +451,10 @@ func (u *Usecase) plan(ctx context.Context, src EventSource, c ExternalCalendar,
 	if err != nil {
 		return plan{}, nil, err
 	}
-	in := planInput{rng: rng, events: events, links: make(map[string]Link, len(links)), instances: map[string][]Event{}, linkedRecurring: map[string]schedule.RecurringDetail{}}
+	in := planInput{
+		rng: rng, events: events, links: make(map[string]Link, len(links)), instances: map[string][]Event{},
+		linkedRecurring: map[string]schedule.RecurringDetail{}, staffOnLeave: onLeave, staffID: c.StaffID,
+	}
 	for _, l := range links {
 		in.links[l.ExternalEventID] = l
 	}
@@ -577,6 +665,7 @@ func (u *Usecase) RetryExport(ctx context.Context, id string) (Export, error) {
 // 外部のカレンダーで消された予定は、キャンセルする。予定の職員が、外部の予定のカレンダーの職員と違えば、書き出しの待ちを積み直し、
 // 今の職員のカレンダーへ移させる。
 // 待ちが見つからないときは apperr.ErrNotFound を、確認が必要な待ちでないとき、外部の内容を当てられない待ちのとき、
+// 予定の対応のカレンダーを外したとき（退職を含む）、
 // 外部の予定を buddy の予定に読み替えられないときは apperr.ErrConflict を返す。外部のカレンダーを読めないときは Preview と同じである。
 func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 	if err := u.guard(ctx); err != nil {
@@ -609,6 +698,9 @@ func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 	if err != nil {
 		return Export{}, err
 	}
+	if c.DisabledAt != nil {
+		return Export{}, errNotAcceptable
+	}
 	// 外部の予定は、予定の対応のカレンダーの事業所のサービスアカウントで読む
 	src, err := u.source(ctx, c.FacilityID)
 	if err != nil {
@@ -620,6 +712,22 @@ func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 		locked, err := u.deps.Schedules.GetForUpdate(ctx, e.ScheduleID)
 		if err != nil {
 			return err
+		}
+		// 退職はカレンダーを外すので、職員の休職、復職、退職を待たせてからカレンダーを読み直す。外したカレンダーの内容を当てると、
+		// 退職した職員の予定を今日以降へ動かせるためである。予定の変更と同じく、予定の行のロックの後に取る。
+		if err := u.deps.Staff.LockStatuses(ctx, c.FacilityID); err != nil {
+			return err
+		}
+		if now, err := u.deps.Calendars.Get(ctx, c.ID); err != nil {
+			return err
+		} else if now.DisabledAt != nil {
+			return errNotAcceptable
+		}
+		// 予定をほかの職員に割り振り直した後に、その職員が退職していることもある。退職した職員の予定は Google の内容に合わせない
+		if st, err := u.deps.Staff.Get(ctx, locked.StaffID); err != nil {
+			return err
+		} else if st.Status == staff.StatusRetired {
+			return errNotAcceptable
 		}
 		cur, err := u.deps.Exports.Get(ctx, id)
 		if err != nil {

@@ -33,7 +33,7 @@
 | `range_start`、`range_end` | プレビューした期間。両端の日を含む |
 | `counts` | `import`、`import_visit`、`import_normal`、`expanded_occurrences`、`recurring`、`recurring_as_rule`、`recurring_expanded`、`needs_review`、`skipped`、`already_imported` |
 | `needs_review[]` | `external_event_id`、`revision`（まとめた予定の ID と etag から作る版）、`date`、`start_time`、`end_time`、`service`、`client_name`、`reason`（`patient_not_found`、`patient_ambiguous`）、`recurrence`（繰り返しのまま取り込む予定の規則。ほかの予定では `null`）、`candidates[]`（`patient_id`、`name`、`assigned_staff_name`） |
-| `skipped[]` | `date`、`start_time`、`end_time`（読めた分だけ。読めなければ `null`）、`all_day`、`reason`（`all_day`、`multi_day`、`unreadable_time`、`zero_length`、`unreadable_title`、`service_not_found`） |
+| `skipped[]` | `date`、`start_time`、`end_time`（読めた分だけ。読めなければ `null`）、`all_day`、`reason`（`all_day`、`multi_day`、`unreadable_time`、`zero_length`、`unreadable_title`、`service_not_found`、`staff_on_leave`） |
 
 - 件数は Google の予定の数で数え、繰り返しのまま取り込む予定は 1 件に数える。回ごとにした予定は 1 回を 1 件に数え、`expanded_occurrences` に回の数を入れる。
 - `needs_review[]` は、繰り返しの予定とその回のうちタイトルが親と同じものを、親の予定の ID の 1 件にまとめる。回ごとにした繰り返しの予定は `recurrence` が `null` で、`date` は期間の中の最初の回である。

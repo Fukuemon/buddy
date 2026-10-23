@@ -18,6 +18,10 @@ import (
 // SkipServiceNotFound は、タイトルから読んだサービス内容が、サービスコードのマスタに無い予定である。
 const SkipServiceNotFound SkipReason = "service_not_found"
 
+// SkipStaffOnLeave は、カレンダーを結び付けた職員が休職しているので作らない、新しい予定である（ADR-0018）。
+// 前の取り込みで繰り返しのまま取り込み、今もカレンダーの職員に割り振った予定の回の置き換えは、既に割り振った予定の変更なので、これに当てない。
+const SkipStaffOnLeave SkipReason = "staff_on_leave"
+
 // Range は、取り込む予定の期間で、両端の日を含む。予定はこの期間に始まるものを取り込む。
 type Range struct {
 	Start civil.Date
@@ -195,6 +199,10 @@ type planInput struct {
 	linkedRecurring map[string]schedule.RecurringDetail
 	patients        []PatientRef
 	serviceCodes    []visit.ServiceCode
+	// staffOnLeave は、カレンダーを結び付けた職員が休職しているかである。休職なら新しい予定を作らない。
+	staffOnLeave bool
+	// staffID は、カレンダーを結び付けた職員である。休職でも、この職員に割り振った繰り返しの予定の回の置き換えは当てる。
+	staffID string
 }
 
 // parentMode は、繰り返しの親の予定の取り込み方である。
@@ -491,6 +499,10 @@ func (b *planner) add(e entry) bool {
 		b.skip(e.cand)
 		return false
 	}
+	if b.in.staffOnLeave && !b.keepsAssignment(e) {
+		b.skip(Candidate{Date: e.cand.Date, StartTime: e.cand.StartTime, EndTime: e.cand.EndTime, SkipReason: SkipStaffOnLeave})
+		return false
+	}
 	if e.cand.Kind == KindVisit {
 		id, ok := b.serviceIDs[serviceKey(e.cand.Service)]
 		if !ok {
@@ -524,6 +536,20 @@ func (b *planner) add(e entry) bool {
 		c.RecurringAsRule++
 	}
 	return true
+}
+
+// keepsAssignment は、e が、前の取り込みで繰り返しのまま取り込み、今もカレンダーの職員に割り振った予定の回の置き換えかを返す。
+// 既に割り振った予定の変更なので、職員が休職でも当てる。繰り返しの予定をほかの職員に割り振り直していれば、新しい予定とみなす。
+func (b *planner) keepsAssignment(e entry) bool {
+	if e.replaces == nil || e.replaces.recurringScheduleID == "" {
+		return false
+	}
+	for _, rs := range b.in.linkedRecurring {
+		if rs.ID == e.replaces.recurringScheduleID {
+			return rs.StaffID == b.in.staffID
+		}
+	}
+	return false
 }
 
 // review は、確認が必要な予定 e の ReviewItem を足し、そのキーを返す。親の予定とタイトルが同じ回は、親の ReviewItem にまとめる。

@@ -129,6 +129,23 @@ func TestCalendarRepository(t *testing.T) {
 	if links, err := r.ListLinks(ctx, calID); err != nil || len(links) != 1 {
 		t.Errorf("結び付け直した後の ListLinks = %+v, %v（外しても対応は残す）", links, err)
 	}
+
+	// 退職は、職員の外していないカレンダーを外し、外したカレンダーと予定の対応は残す（#278）
+	if err := r.DetachByStaff(ctx, seedMori); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := r.Get(ctx, calID); err != nil || got.DisabledAt == nil {
+		t.Errorf("退職で外した後の Get = %+v, %v", got, err)
+	}
+	if got, err := r.Get(ctx, otherID); err != nil || got.DisabledAt == nil {
+		t.Errorf("前に外したカレンダー = %+v, %v, want 外したまま", got, err)
+	}
+	if links, err := r.ListLinks(ctx, calID); err != nil || len(links) != 1 {
+		t.Errorf("退職で外した後の ListLinks = %+v, %v（外しても対応は残す）", links, err)
+	}
+	if err := r.DetachByStaff(ctx, seedHayashi); err != nil {
+		t.Errorf("カレンダーの無い職員: err = %v, want 何もしない", err)
+	}
 }
 
 // TestCalendarImportInOneTransaction は、取り込みの手順が、繰り返しの予定、除外の日、回の置き換え、回ごとにした予定、

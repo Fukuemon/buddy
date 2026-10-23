@@ -86,3 +86,31 @@ export const holdGoogleChanges = async (request: APIRequestContext, hold: boolea
   const res = await request.post(`${GCALHOLD_URL}/hold`, { data: { hold } })
   await ensureOk(res, '変更を止められない')
 }
+
+/**
+ * calendarpit の管理の API で、予定の API の利用者が持つカレンダーを作る。職員が自分のカレンダーを事業所のサービスアカウントに
+ * 共有したときの代わりで、走らせるたびに違う職員のカレンダーにする。
+ */
+export const createGoogleCalendar = async (request: APIRequestContext, calendarId: string) => {
+  const res = await request.post(`${CALENDARPIT_URL}/__calendarpit/calendars`, {
+    data: { id: calendarId, userId: 'schedule', summary: calendarId, timeZone: 'Asia/Tokyo' },
+  })
+  await ensureOk(res, 'カレンダーを作れない')
+}
+
+/** 日時を持つ予定を作る。職員が Google カレンダーで予定を足したときの代わりで、作った予定を返す。 */
+export const createGoogleEvent = async (
+  request: APIRequestContext,
+  calendarId: string,
+  event: { summary: string; date: string; start: string; end: string },
+) => {
+  const res = await request.post(eventsUrl(calendarId), {
+    data: {
+      summary: event.summary,
+      start: { dateTime: `${event.date}T${event.start}:00+09:00` },
+      end: { dateTime: `${event.date}T${event.end}:00+09:00` },
+    },
+  })
+  await ensureOk(res, '予定を作れない')
+  return (await res.json()) as GoogleEvent
+}
