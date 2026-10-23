@@ -125,7 +125,7 @@ func (f *fakeStaff) RemoveGrant(_ context.Context, _, userPolicyID string) (staf
 
 func (f *fakeStaff) ChangePosition(_ context.Context, _, positionID string) (staff.Detail, error) {
 	f.lastPositionID = positionID
-	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: staffID, PositionID: positionID}}, Policies: []staff.PolicyGrant{}}, nil
+	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: staffID, PositionID: positionID}}, Policies: []staff.PolicyGrant{}}, f.err
 }
 
 func (f *fakeStaff) Create(context.Context, staff.CreateInput) (staff.Detail, error) {
