@@ -5,12 +5,23 @@ import { LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { createNormalSchedule, getSchedule } from '../../fixtures/schedule'
 import { newStaff, registerStaff, STAFF_FORM, suspendStaff } from '../../fixtures/staff'
 
+/** 予定の API で作る予定の日。 */
+const SCHEDULE_DATE = '2026-10-20'
+
+/** 取り直すまでの時間。Hydra の access token の有効期間（5 分）より短くする。 */
+const TOKEN_REUSE_MS = 4 * 60 * 1000
+
 /**
- * マネージャーの access token。ブローカーはメールごとにログインの試行の回数を数えるので、このファイルのテストで 1 つを使い回す。
+ * マネージャーの access token。ブローカーはメールごとにログインの試行の回数を数えるので、
+ * worker の中で 1 つを使い回し、TOKEN_REUSE_MS を過ぎたら取り直す。
  */
-let managerToken: string | undefined
-const issueManagerToken = async (request: APIRequestContext) =>
-  (managerToken ??= await issueAccessToken(request, LOGIN_EMAIL))
+let managerToken: { value: string; issuedAt: number } | undefined
+const issueManagerToken = async (request: APIRequestContext) => {
+  if (managerToken === undefined || Date.now() - managerToken.issuedAt > TOKEN_REUSE_MS) {
+    managerToken = { value: await issueAccessToken(request, LOGIN_EMAIL), issuedAt: Date.now() }
+  }
+  return managerToken.value
+}
 
 /** 職員を 1 人登録し、ID と名前を返す。 */
 const register = async (request: APIRequestContext, token: string, label: string) => {
@@ -28,6 +39,7 @@ const registerActiveAndSuspended = async (request: APIRequestContext) => {
   expect((await suspendStaff(request, manager, suspended.id)).status()).toBe(200)
   return { active: active.id, suspended: suspended.id }
 }
+
 test.describe('予定のカレンダー', () => {
   test.describe('止めた職員', () => {
     test('止めた職員がいる事業所で日の表示を開いた場合、止めた職員の列が出ないこと', async ({
@@ -90,7 +102,7 @@ test.describe('予定の編集', () => {
       const created = await createNormalSchedule(request, manager, STAFF_FORM.facilityId, {
         staffId: assigned.id,
         title: `E2E の会議 ${Date.now()}`,
-        date: '2026-10-20',
+        date: SCHEDULE_DATE,
       })
       expect(created.status()).toBe(201)
       const scheduleId = ((await created.json()) as { id: string }).id
@@ -115,7 +127,7 @@ test.describe('予定の編集', () => {
       const created = await createNormalSchedule(request, manager, STAFF_FORM.facilityId, {
         staffId: assigned.id,
         title: `E2E の会議 ${stamp}`,
-        date: '2026-10-20',
+        date: SCHEDULE_DATE,
       })
       expect(created.status()).toBe(201)
       const scheduleId = ((await created.json()) as { id: string }).id

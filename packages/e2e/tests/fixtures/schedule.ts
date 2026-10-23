@@ -45,9 +45,9 @@ export const createNormalSchedule = async (
   schedule: { staffId: string; title: string; date: string },
 ) => {
   const headers = { Authorization: `Bearer ${token}` }
-  const types = (await (
-    await request.get(`${SCHEDULE_URL}/v1/schedule_types`, { headers })
-  ).json()) as { id: string; name: string }[]
+  const res = await request.get(`${SCHEDULE_URL}/v1/schedule_types`, { headers })
+  if (!res.ok()) throw new Error(`予定の種類の一覧を取れない: ${res.status()}`)
+  const types = (await res.json()) as { id: string; name: string }[]
   const normal = types.find(({ name }) => name === '通常')
   if (normal === undefined) throw new Error('予定の種類に「通常」が無い')
   return request.post(`${SCHEDULE_URL}/v1/facilities/${facilityId}/schedules`, {
