@@ -100,7 +100,10 @@ test.describe('予定のカレンダー', () => {
             await signInUpstream(page, OFFICE_B.email)
             await expect(page.getByTestId('viewer-menu')).toContainText(OFFICE_B.staff.name)
             const events = page.getByTestId(/^schedule-event-/)
-            await expect(events.filter({ hasText: OFFICE_B.schedule.title })).toBeVisible()
+            const officeBEvent = events.filter({ hasText: OFFICE_B.schedule.title })
+            await expect(officeBEvent).toBeVisible()
+            // 予定は 13 時にあり、録画の高さの外に出るので、判定のスクリーンショットに入るよう寄せる
+            await officeBEvent.scrollIntoViewIfNeeded()
             await expect(events.filter({ hasText: OFFICE_A_SCHEDULE.title })).toHaveCount(0)
             await check(
               `2 つ目の事業所の予定「${OFFICE_B.schedule.title}」だけが出て、同じ日の 1 つ目の事業所の予定「${OFFICE_A_SCHEDULE.title}」は出ない`,
