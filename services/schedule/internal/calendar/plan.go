@@ -623,7 +623,7 @@ func serviceKey(s string) string {
 }
 
 // applyDecisions は、確認が必要な予定に decisions の取り込み方を当てる。
-// decisions の予定の集合が確認が必要な予定の集合と違うときは apperr.ErrConflict を、
+// decisions の予定の集合と、確認が必要な予定の集合が違うときは apperr.ErrConflict を、
 // 取り込み方の値が誤っているか、選んだ利用者が patients にいないときは入力のエラーを返す。
 // 取り込まないを選んだ予定の数を返す。
 func (p *plan) applyDecisions(decisions []Decision, patients []PatientRef) (int, error) {

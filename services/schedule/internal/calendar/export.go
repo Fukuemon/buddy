@@ -70,7 +70,7 @@ type Export struct {
 	UpdatedAt   time.Time
 }
 
-// InReview は、待ちが確認が必要な状態（conflict か failed）かを返す。
+// InReview は、待ちの状態が、確認が必要な状態（conflict か failed）かを返す。
 func (e Export) InReview() bool {
 	return e.Status == ExportConflict || e.Status == ExportFailed
 }
