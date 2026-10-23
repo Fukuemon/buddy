@@ -161,6 +161,10 @@ test.describe('予定の取り込み', () => {
             await expect(page.getByTestId(`calendar-link-row-${staff.id}`)).toBeVisible()
             await page.getByTestId(`calendar-link-row-${staff.id}`).scrollIntoViewIfNeeded()
             await step(`カレンダーの連携の画面で、${staff.name} にカレンダーを結び付けてある`)
+            // 読み直した後に、退職した職員の行があった位置を映すため、名前の順で 1 つ前の行を覚えておく
+            const previousRow = await page
+              .getByTestId(`calendar-link-row-${staff.id}`)
+              .evaluate((row) => row.previousElementSibling?.getAttribute('data-testid') ?? '')
 
             await step(
               `${staff.name} を退職にする\n（撮影のため、退職の画面がまだ無いので、職員の退職の API を呼ぶ）`,
@@ -171,6 +175,8 @@ test.describe('予定の取り込み', () => {
             await page.reload()
             await expect(page.getByTestId('calendar-link-service-account')).toBeVisible()
             await expect(page.getByTestId(`calendar-link-row-${staff.id}`)).toHaveCount(0)
+            await step('（撮影のため、退職した職員の行があった位置まで一覧を送る）')
+            await page.getByTestId(previousRow).scrollIntoViewIfNeeded()
             await check(`職員の一覧に ${staff.name} の行が出ない`)
           },
         )
