@@ -166,7 +166,9 @@ erDiagram
 職員の役職は `PUT /v1/users/{user_id}/position` で変える。  
 職員ごとに権限を足す（`POST /v1/users/{user_id}/policies`）ときは、`needs_target` が true の権限に、code に合わせて職員かチームの対象を 1 つ以上付ける。対象は同じ事業所のものに限る。外す（`DELETE /v1/users/{user_id}/policies/{user_policy_id}`）と、対象も消える。
 
-職員と利用者の登録、職員の休職、復職、退職、役職の作成、役職を変える操作、権限を足し外す操作は、`staff.manage` を持つ職員だけに許す。
+職員と利用者の登録、職員の休職、復職、退職、役職の作成、役職を変える操作、権限を足し外す操作は、`staff.manage` を持つ職員だけに許す。  
+事業所で `staff.manage` を持つ最後の有効な職員から、権限を外す操作か、`staff.manage` を持たない役職に変える操作でその権限を外そうとしたときは、何も書かずに 409 を返す。  
+役職を変える操作と権限を外す操作は、休職と退職と同じく、`staff.Usecase` が事業所の行をロックしたトランザクションの中で、職員を読み直してから行う。同時に 2 人から外しても、後の操作は最後の有効な管理者を見つけて 409 になる。
 
 - ADR-0006: [職員と利用者の登録と、職員の権限と役職を変える操作を、職員の管理の権限で許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0006-staff-manage-policy.md)
 
@@ -527,6 +529,7 @@ calendarpit で足りない振る舞いと、その扱い
   - 404 の `not_found`: パスで指したリソースが無い
   - 409 の `conflict`: 一意の値が重なる、キャンセル済みの予定を変えるかキャンセルする、繰り返しの回をすでに置き換えた
   - 409 の `conflict`（職員）: 同じメールの職員がブローカーで休職しているかほかの事業所にいる、自分か最後の有効な管理者を休職か退職にする、退職した職員を休職か復職にする
+    - 最後の有効な管理者から `staff.manage` を外すか、`staff.manage` を持たない役職に変えたときも返す
   - 409 の `staff_has_assignments`: 退職にする職員に、その日以降の予定、繰り返しの予定、担当の利用者が残る。本文の `assignments` に残る一覧を持つ
   - 409 の `calendar_taken`、`calendar_already_linked`、`staff_has_calendar`: カレンダーを結び付けられない原因
   - 409 の `import_running`、`import_preview_changed`: 取り込みを確定できない原因
