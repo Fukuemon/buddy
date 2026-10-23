@@ -2,7 +2,11 @@ import * as client from 'openid-client'
 
 import type { ServerConfig } from './config'
 
-/** ブローカーが refresh token を拒んだ（invalid_grant）ときに投げる。セッションを捨ててよい。 */
+/**
+ * ブローカーが refresh token を拒んだときに投げる。セッションを捨ててよい。
+ * 取り消した refresh token は invalid_grant に、ブローカーの token_hook が拒んだ refresh（止めた職員、上流でのログインから
+ * 12 時間を過ぎたログイン）は access_denied になる。
+ */
 export class GrantRejectedError extends Error {
   constructor() {
     super('ブローカーが refresh token を拒んだ')
@@ -34,6 +38,13 @@ export interface OidcClient {
   /** refresh token で access token を取り直す。拒まれたら GrantRejectedError を、通信の失敗などはそのほかの Error を投げる。 */
   refresh(refreshToken: string): Promise<Tokens>
 }
+
+/** refresh のエラーのうち、取り直しても通らないので、セッションを捨ててよいものの OAuth のエラーの値。 */
+const REJECTED_GRANT_ERRORS = new Set(['invalid_grant', 'access_denied'])
+
+/** error が、ブローカーが refresh token を拒んだことを示すかを返す。 */
+export const isGrantRejected = (error: unknown) =>
+  error instanceof client.ResponseBodyError && REJECTED_GRANT_ERRORS.has(error.error)
 
 /** ブローカーへのリクエストを待つ上限。auth.ts の取り直しの鍵の期限より短くする。 */
 export const OIDC_TIMEOUT_SECONDS = 5
@@ -87,7 +98,7 @@ export const createOidcClient = async (cfg: ServerConfig['oidc']): Promise<OidcC
       try {
         return toTokens(await client.refreshTokenGrant(config, refreshToken))
       } catch (error) {
-        if (error instanceof client.ResponseBodyError && error.error === 'invalid_grant') {
+        if (isGrantRejected(error)) {
           throw new GrantRejectedError()
         }
         throw error
