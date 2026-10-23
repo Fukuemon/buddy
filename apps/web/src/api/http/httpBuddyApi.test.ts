@@ -187,7 +187,10 @@ describe('createHttpBuddyApi', () => {
       username,
       email: `${id}@example.com`,
       phone_number: null,
-      suspended_at: null,
+      status: 'active' as const,
+      leave_started_at: null,
+      leave_return_date: null,
+      retired_at: null,
       facility_id: 'facility-1',
       department: { id: 'department-1', name: '訪問看護部' },
       team: { id: 'team-a', name: 'A' },
@@ -208,22 +211,38 @@ describe('createHttpBuddyApi', () => {
     await expect(api().staff.list('facility-1', { name: '' })).resolves.toHaveLength(2)
   })
 
-  it('止めた職員は、止めた時刻を付けて返す', async () => {
+  it('休職と退職の職員は、状態を付けて返す。退職した職員のメールは null のまま返す', async () => {
+    const base = {
+      phone_number: null,
+      facility_id: 'facility-1',
+      department: { id: 'department-1', name: '訪問看護部' },
+      team: { id: 'team-a', name: 'A' },
+      position: { id: 'position-1', name: '看護師' },
+      created_at: '2026-10-01T00:00:00Z',
+      updated_at: '2026-10-01T00:00:00Z',
+    }
     server.use(
       scheduleHttp.get('/v1/facilities/{facility_id}/users', ({ response }) =>
         response(200).json([
           {
+            ...base,
             id: 'staff-1',
             username: '青木 一郎',
             email: 'staff-1@example.com',
-            phone_number: null,
-            suspended_at: '2026-10-01T09:00:00Z',
-            facility_id: 'facility-1',
-            department: { id: 'department-1', name: '訪問看護部' },
-            team: { id: 'team-a', name: 'A' },
-            position: { id: 'position-1', name: '看護師' },
-            created_at: '2026-10-01T00:00:00Z',
-            updated_at: '2026-10-01T00:00:00Z',
+            status: 'on_leave',
+            leave_started_at: '2026-10-01T09:00:00Z',
+            leave_return_date: '2027-04-01',
+            retired_at: null,
+          },
+          {
+            ...base,
+            id: 'staff-2',
+            username: '石田 二郎',
+            email: null,
+            status: 'retired',
+            leave_started_at: null,
+            leave_return_date: null,
+            retired_at: '2026-10-01T09:00:00Z',
           },
         ]),
       ),
@@ -234,8 +253,9 @@ describe('createHttpBuddyApi', () => {
         name: '青木 一郎',
         teamId: 'team-a',
         email: 'staff-1@example.com',
-        suspendedAt: '2026-10-01T09:00:00Z',
+        status: 'on_leave',
       },
+      { id: 'staff-2', name: '石田 二郎', teamId: 'team-a', email: null, status: 'retired' },
     ])
   })
 

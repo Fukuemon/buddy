@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import type { Schedule, Staff } from '#/api/types'
 
-import { activeStaff, activeStaffIds, excludeSuspendedStaffSchedules } from './activeStaff'
+import { activeStaff, activeStaffIds, excludeInactiveStaffSchedules } from './activeStaff'
 
-const staff = (id: string, suspendedAt?: string): Staff => ({
+const staff = (id: string, status?: Staff['status']): Staff => ({
   id,
   name: id,
   teamId: 'team-a',
   email: `${id}@example.com`,
-  ...(suspendedAt === undefined ? {} : { suspendedAt }),
+  ...(status === undefined ? {} : { status }),
 })
 
 const schedule = (id: string, staffId: string): Schedule => ({
@@ -24,30 +24,40 @@ const schedule = (id: string, staffId: string): Schedule => ({
 })
 
 describe('activeStaff', () => {
-  it('止めた職員を除き、残りの職員の並びを変えない', () => {
-    const list = [staff('staff-1'), staff('staff-2', '2026-10-01T09:00:00Z'), staff('staff-3')]
-    expect(activeStaff(list).map(({ id }) => id)).toEqual(['staff-1', 'staff-3'])
+  it('休職と退職の職員を除き、残りの職員の並びを変えない', () => {
+    const list = [
+      staff('staff-4'),
+      staff('staff-2', 'on_leave'),
+      staff('staff-1'),
+      staff('staff-3', 'retired'),
+    ]
+    expect(activeStaff(list).map(({ id }) => id)).toEqual(['staff-4', 'staff-1'])
   })
 
-  it('止めた職員がいなければ、全ての職員を同じ並びで返す', () => {
+  it('休職と退職の職員がいなければ、全ての職員を同じ並びで返す', () => {
     const list = [staff('staff-3'), staff('staff-1'), staff('staff-2')]
     expect(activeStaff(list)).toEqual(list)
   })
 })
 
-describe('excludeSuspendedStaffSchedules', () => {
-  it('止めた職員の予定だけを除く', () => {
-    const list = [staff('staff-1'), staff('staff-2', '2026-10-01T09:00:00Z')]
-    const schedules = [schedule('a', 'staff-1'), schedule('b', 'staff-2'), schedule('c', 'staff-9')]
-    expect(excludeSuspendedStaffSchedules(schedules, list).map(({ id }) => id)).toEqual(['a', 'c'])
+describe('excludeInactiveStaffSchedules', () => {
+  it('休職と退職の職員の予定だけを除く', () => {
+    const list = [staff('staff-1'), staff('staff-2', 'on_leave'), staff('staff-3', 'retired')]
+    const schedules = [
+      schedule('a', 'staff-1'),
+      schedule('b', 'staff-2'),
+      schedule('c', 'staff-9'),
+      schedule('d', 'staff-3'),
+    ]
+    expect(excludeInactiveStaffSchedules(schedules, list).map(({ id }) => id)).toEqual(['a', 'c'])
   })
 })
 
 describe('activeStaffIds', () => {
-  const list = [staff('staff-1'), staff('staff-2', '2026-10-01T09:00:00Z'), staff('staff-3')]
+  const list = [staff('staff-1'), staff('staff-2', 'on_leave'), staff('staff-3', 'retired')]
 
-  it('止めた職員の ID を除く', () => {
-    expect(activeStaffIds(['staff-1', 'staff-2'], list)).toEqual(['staff-1'])
+  it('休職と退職の職員の ID を除く', () => {
+    expect(activeStaffIds(['staff-1', 'staff-2', 'staff-3'], list)).toEqual(['staff-1'])
   })
 
   it('職員の一覧を取り終える前は、そのまま返す', () => {

@@ -5,7 +5,7 @@ import { useState, type ComponentProps } from 'react'
 import { useBuddyApi } from '#/api/useBuddyApi'
 import { Loading } from '@buddy/ui'
 
-import { activeStaff, activeStaffIds, excludeSuspendedStaffSchedules } from '../lib/activeStaff'
+import { activeStaff, activeStaffIds, excludeInactiveStaffSchedules } from '../lib/activeStaff'
 import { getCalendarRange, shiftCalendarDate } from '../lib/calendarRange'
 import { toDateKey } from '../lib/dateTime'
 import { nowForDay, useNow } from '../lib/useNow'
@@ -80,7 +80,7 @@ export const ScheduleCalendarContainer = ({
       ? staffList
       : staffList.filter((staff) => selectedStaffIds.includes(staff.id))
   const events = toCalendarEvents(
-    excludeSuspendedStaffSchedules(schedulesQuery.data ?? [], allStaff),
+    excludeInactiveStaffSchedules(schedulesQuery.data ?? [], allStaff),
     staffList,
     patientsQuery.data ?? [],
   )

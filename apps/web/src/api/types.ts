@@ -24,9 +24,10 @@ export type Staff = {
   id: string
   name: string
   teamId: Team['id']
-  email: string
-  /** 職員を止めた時刻（ISO 8601）。止めていない職員は持たない。 */
-  suspendedAt?: string
+  /** 退職した職員では null である。 */
+  email: string | null
+  /** 休職（on_leave）か退職（retired）の職員の状態。有効な職員は持たない。 */
+  status?: Exclude<ScheduleComponents['schemas']['StaffStatus'], 'active'>
 }
 
 /** 利用者。API の型の ID と名前だけを使う。 */
