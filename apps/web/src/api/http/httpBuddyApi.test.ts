@@ -208,6 +208,37 @@ describe('createHttpBuddyApi', () => {
     await expect(api().staff.list('facility-1', { name: '' })).resolves.toHaveLength(2)
   })
 
+  it('止めた職員は、止めた時刻を付けて返す', async () => {
+    server.use(
+      scheduleHttp.get('/v1/facilities/{facility_id}/users', ({ response }) =>
+        response(200).json([
+          {
+            id: 'staff-1',
+            username: '青木 一郎',
+            email: 'staff-1@example.com',
+            phone_number: null,
+            suspended_at: '2026-10-01T09:00:00Z',
+            facility_id: 'facility-1',
+            department: { id: 'department-1', name: '訪問看護部' },
+            team: { id: 'team-a', name: 'A' },
+            position: { id: 'position-1', name: '看護師' },
+            created_at: '2026-10-01T00:00:00Z',
+            updated_at: '2026-10-01T00:00:00Z',
+          },
+        ]),
+      ),
+    )
+    await expect(api().staff.list('facility-1')).resolves.toEqual([
+      {
+        id: 'staff-1',
+        name: '青木 一郎',
+        teamId: 'team-a',
+        email: 'staff-1@example.com',
+        suspendedAt: '2026-10-01T09:00:00Z',
+      },
+    ])
+  })
+
   it('利用者は名前の一部で絞る', async () => {
     const patient = (id: string, name: string) => ({
       id,

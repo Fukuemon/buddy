@@ -38,12 +38,16 @@ const CATEGORY_TO_API: Record<ScheduleCategory, string> = {
 }
 
 /** API の職員を、画面の職員にする。画面は名前を username で表す。 */
-export const fromApiStaff = (user: Schemas['Staff']): Staff => ({
-  id: user.id,
-  name: user.username,
-  teamId: user.team.id,
-  email: user.email,
-})
+export const fromApiStaff = (user: Schemas['Staff']): Staff => {
+  const staff: Staff = {
+    id: user.id,
+    name: user.username,
+    teamId: user.team.id,
+    email: user.email,
+  }
+  if (user.suspended_at !== null) staff.suspendedAt = user.suspended_at
+  return staff
+}
 
 /** API のチームを、画面のチームにする。 */
 export const fromApiTeam = ({ id, name }: Schemas['Unit']): Team => ({ id, name })

@@ -5,6 +5,7 @@ import { useState, type ComponentProps } from 'react'
 import { useBuddyApi } from '#/api/useBuddyApi'
 import { Loading } from '@buddy/ui'
 
+import { activeStaff, excludeSuspendedStaffSchedules } from '../lib/activeStaff'
 import { getCalendarRange, shiftCalendarDate } from '../lib/calendarRange'
 import { toDateKey } from '../lib/dateTime'
 import { nowForDay, useNow } from '../lib/useNow'
@@ -71,12 +72,17 @@ export const ScheduleCalendarContainer = ({
       search: pickCalendarSearch(search),
     })
 
-  const staffList = staffQuery.data ?? []
+  const allStaff = staffQuery.data ?? []
+  const staffList = activeStaff(allStaff)
   const visibleStaff =
     search.staff.length === 0
       ? staffList
       : staffList.filter((staff) => search.staff.includes(staff.id))
-  const events = toCalendarEvents(schedulesQuery.data ?? [], staffList, patientsQuery.data ?? [])
+  const events = toCalendarEvents(
+    excludeSuspendedStaffSchedules(schedulesQuery.data ?? [], allStaff),
+    staffList,
+    patientsQuery.data ?? [],
+  )
 
   return (
     <div className="flex h-full flex-col">

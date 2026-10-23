@@ -25,6 +25,8 @@ export type Staff = {
   name: string
   teamId: Team['id']
   email: string
+  /** 職員を止めた時刻（ISO 8601）。止めていない職員は持たない。 */
+  suspendedAt?: string
 }
 
 /** 利用者。API の型の ID と名前だけを使う。 */
