@@ -21,14 +21,16 @@ mise install go golangci-lint
 docker compose up -d --wait hydra idp broker-seed
 docker compose stop broker
 
-export DB_PORT=15432 DB_USER=buddy DB_PASSWORD=buddy-dev DB_NAME=broker
+# パスワードと token_hook の鍵は、compose のブローカーと同じ値を compose の設定から読む
+compose_env() { docker compose config --format json | jq -r ".services.broker.environment.$1"; }
+export DB_PORT=15432 DB_USER=buddy DB_PASSWORD="$(compose_env DB_PASSWORD)" DB_NAME=broker
 go run ./cmd/migrate up
 go run ./cmd/migrate seed
 
-export PORT=8100 HYDRA_ADMIN_URL=http://127.0.0.1:4445 PUBLIC_URL=http://localhost:8100 \
+export PORT=8100 INTERNAL_PORT=8101 HYDRA_ADMIN_URL=http://127.0.0.1:4445 PUBLIC_URL=http://localhost:8100 \
   UPSTREAM_IDPS_FILE=upstream-idps.example.json \
   UPSTREAM_IDP_CLIENT_SECRETS_FILE=upstream-idp-client-secrets.example.json \
-  HYDRA_ISSUER=http://hydra:4444 TOKEN_HOOK_KEY=buddy-dev-token-hook-key-for-compose-only
+  HYDRA_ISSUER=http://hydra:4444 TOKEN_HOOK_KEY="$(compose_env TOKEN_HOOK_KEY)"
 go run ./cmd/broker
 ```
 
@@ -36,12 +38,13 @@ go run ./cmd/broker
 ブローカーは、内部の API が初めて呼ばれたときに Hydra の discovery の文書を読み、ログインの画面は Hydra の issuer に届かなくても動く。  
 compose の Hydra の token_hook は、コンテナの間の名前 `broker` を呼ぶので、この手順のブローカーには届かない。
 
-`curl localhost:8100/readyz` が `{"status":"ok"}` を返せば、起動できている。`/readyz` は DB に届かなければ 503 を返し、`/healthz` は DB を確かめない。  
-ポートは、compose の Hydra が転送するブローカーの画面（`http://localhost:8100/login`）と同じ 8100 にしている。
+`curl localhost:8100/readyz` が `{"status":"ok"}` を返せば、起動できている。`/readyz` は DB に届かなければ 503 を返し、`/healthz` は DB を確認しない。  
+ポートは、compose の Hydra が転送するブローカーの画面（`http://localhost:8100/login`）と同じ 8100 にしている。内部の API は 8101 で待ち受ける。
 
 設定は環境変数で渡す。
 
-- `PORT`: 待ち受けるポート。デフォルトは `8080`
+- `PORT`: ログインと同意の画面とヘルスチェックを待ち受けるポート。デフォルトは `8080`
+- `INTERNAL_PORT`: 内部の API と `oauth2.token_hook` とヘルスチェックを待ち受けるポート。`PORT` と違う値にし、ブラウザに開かない。デフォルトは `8081`
 - `LOG_LEVEL`: `debug`、`info`、`warn`、`error` のいずれか。デフォルトは `info`
 - `DB_HOST`、`DB_PORT`: ブローカーの DB の接続先。デフォルトは `localhost` と `5432`
 - `DB_USER`、`DB_PASSWORD`、`DB_NAME`: 必須。ブローカーの DB の利用者、パスワード、データベース
@@ -54,6 +57,7 @@ compose の Hydra の token_hook は、コンテナの間の名前 `broker` を�
 - `AUTO_CONSENT_CLIENTS`: 同意の画面を出さずに accept するクライアントの ID をカンマで区切った値。デフォルトは `web`。ほかのクライアントの同意は reject する
 - `HYDRA_ISSUER`: 必須。Hydra のトークンの `iss`。内部の API は、`<HYDRA_ISSUER>/.well-known/openid-configuration` の JWKS で、予定の API の client credentials の access token を検証する
 - `INTERNAL_API_AUDIENCE`: 内部の API が access token の `aud` に求める値。デフォルトは `broker`
+- `INTERNAL_API_CLIENTS`: 内部の API を呼んでよいクライアントの ID をカンマで区切った値。デフォルトは `schedule`。access token の `sub` と、token_hook が通す client credentials の要求の `client_id` を照らす
 - `TOKEN_HOOK_KEY`: 必須。Hydra が `oauth2.token_hook` を呼ぶときに、ヘッダー `Token-Hook-Key` に入れる値。シークレットとして渡し、Hydra の `oauth2.token_hook.auth` と同じ値にする
 
 上流の IdP の設定は、待ち受けを始める前に読む。次のいずれかでは、ブローカーは起動せず、終了コード 1 で終わる。
