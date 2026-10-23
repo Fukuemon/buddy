@@ -40,10 +40,10 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 
 | 名前 | 使う場面 |
 | --- | --- |
-| `surface` | カード、入力欄、ダイアログ、ヘッダーの地 |
-| `surface-canvas` | 画面の地（`body`）。カードと入力欄を置く下地 |
+| `surface` | カード、入力欄、ダイアログ、ヘッダーの背景 |
+| `surface-canvas` | 画面の背景（`body`）。カードと入力欄を置く下地 |
 | `surface-subtle` | 切り替えの溝、押せる行の hover |
-| `surface-disabled` | 無効のボタンの地 |
+| `surface-disabled` | 無効のボタンの背景 |
 | `overlay` | ダイアログの後ろの幕 |
 | `text` | 本文、見出し、入力した値 |
 | `text-secondary` | 補足、項目のラベル、表の見出し、プレースホルダー |
@@ -54,7 +54,7 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 | `primary` | 主のボタンの面、副のボタンの文字、選ばれている選択肢の枠、リンク |
 | `primary-surface` | 選ばれている選択肢の面、入力中の欄の面、カレンダーの今日 |
 | `danger`、`danger-surface` | エラーの文と枠、取り消せない操作のボタン |
-| `warning`、`warning-surface` | 確かめてほしい値。エラーではないもの |
+| `warning`、`warning-surface` | 確認してほしい値。エラーではないもの |
 | `success`、`success-surface` | 完了と整合 |
 | `categorical-1` から `categorical-10` | 職員のように、意味を持たない並びの区別。番号の順に割り当て、11 個目からは 1 に戻る |
 

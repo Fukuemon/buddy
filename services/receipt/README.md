@@ -82,13 +82,13 @@ openapi.yaml を変えたら、`services/receipt` で生成し直し、生成物
 go generate ./...
 ```
 
-画面の型も同じ openapi.yaml から生成する。両方の API と画面の生成物がそろっているかは、リポジトリのルートの `pnpm check:generated` で確かめる（[CONTRIBUTING.md](../../CONTRIBUTING.md)）。
+画面の型も同じ openapi.yaml から生成する。両方の API と画面の生成物がそろっているかは、リポジトリのルートの `pnpm check:generated` で確認する（[CONTRIBUTING.md](../../CONTRIBUTING.md)）。
 
 ## API
 
 リクエストとレスポンスの項目の定義は [openapi.yaml](openapi.yaml) にある。
 
-- `GET /healthz`、`GET /readyz`: `{"status":"ok"}` を返す。照合の API は起動のときにブローカーの discovery を読み、読めなければ起動しない。起動した後は依存先を確かめないので、プロセスが動いていれば 200 を返す
+- `GET /healthz`、`GET /readyz`: `{"status":"ok"}` を返す。照合の API は起動のときにブローカーの discovery を読み、読めなければ起動しない。起動した後は依存先を確認しないので、プロセスが動いていれば 200 を返す
 - `POST /v1/checks`: multipart/form-data の `visits`（実訪問の CSV）と予定を照合する
   - `Authorization: Bearer` の access token を求める
   - 予定は、ファイル `schedules`（予定の CSV）があればそれを使う。無くてフォームの値 `month`（`2024-04` の形）があれば、その月の予定を Google カレンダーから取る

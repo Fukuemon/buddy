@@ -26,4 +26,4 @@ testid の名前は、`context/conventions.md` の E2E の節に従う。付け�
 | フレームワークが描かない DOM | その DOM を作る処理の中で、属性を付ける |
 | 選ばれているかが変わるボタン | `aria-pressed` を出す。選ばれていないときも `"false"` を出す |
 
-`packages/ui` のコンポーネントに渡した `data-testid` が中のどの要素に付くかは、コンポーネントごとに違う。`SegmentedControl` は組に付け、選択肢の radio には `<data-testid>-<id>` を付ける。付く先は、コンポーネントの文書コメントを読んで確かめる。
+`packages/ui` のコンポーネントに渡した `data-testid` が中のどの要素に付くかは、コンポーネントごとに違う。`SegmentedControl` は組に付け、選択肢の radio には `<data-testid>-<id>` を付ける。付く先は、コンポーネントの文書コメントを読んで確認する。

@@ -10,7 +10,7 @@
 | 期間の開始日、期間の終了日 | 日付 | `ImportRange.range_start`、`range_end` | リクエストの `range_start`、`range_end` |
 | プレビューの結果のタイトル | 職員と期間 | `ImportPreview.range_start`、`range_end` | `createCalendarImportPreview` のレスポンスの `range_start`、`range_end` |
 | 件数 | 5 つの件数と内訳 | `ImportPreview.counts` | `ImportPreview.counts` |
-| 確かめが要る予定 | 日時、利用者名、サービス内容、理由、繰り返し | `ImportPreview.needs_review` | `ImportPreview.needs_review[]` |
+| 確認が必要な予定 | 日時、利用者名、サービス内容、理由、繰り返し | `ImportPreview.needs_review` | `ImportPreview.needs_review[]` |
 | 利用者 | 候補の利用者と、ほかの利用者 | `ImportReviewItem.candidates`、`Patient` | `needs_review[].candidates[]` と、`listPatients` の `Patient.name` |
 | 取り込み方 | 選んだ取り込み方 | `ImportDecision` | `createCalendarImport` のリクエストの `decisions[]` |
 | 理由ごとの件数、取り込まない予定 | 日時と理由 | `ImportPreview.skipped` | `ImportPreview.skipped[]` |
@@ -19,12 +19,12 @@
 
 ## 操作
 
-2 つの操作は、事業所の確認の後に、ログインした職員が職員の管理の権限（`staff.manage`）を持つかを確かめ、持たなければ 403（`forbidden`）を返す。パスの `external_calendar_id` は、buddy の `external_calendars.id` である。
+2 つの操作は、事業所の確認の後に、ログインした職員が職員の管理の権限（`staff.manage`）を持つかを確認し、持たなければ 403（`forbidden`）を返す。パスの `external_calendar_id` は、buddy の `external_calendars.id` である。
 
 | operationId | メソッドとパス | リクエスト | 成功のレスポンス | エラー |
 | --- | --- | --- | --- | --- |
 | `createCalendarImportPreview` | `POST /v1/external_calendars/{external_calendar_id}/import_previews` | `range_start`、`range_end` | 200。`ImportPreview`。予定を書かず、プレビューの結果も保存しない | 400 `invalid_input`: 期間の形が違う、開始が終了より後、1 年を超える。404 `not_found`: カレンダーが無いか、外した。422 `calendar_unreadable`。502 `calendar_unavailable`。503 `calendar_not_configured` |
-| `createCalendarImport` | `POST /v1/external_calendars/{external_calendar_id}/imports` | `range_start`、`range_end`、`decisions[]` | 201。`ImportResult` | `createCalendarImportPreview` のエラーに加え、400 `invalid_input`: 選んだ利用者が事業所にいないか、取り込み方の値が違う。409 `import_preview_changed`: プレビューの後に確かめが要る予定が変わった。409 `import_running`: 同じカレンダーの取り込みが進んでいる |
+| `createCalendarImport` | `POST /v1/external_calendars/{external_calendar_id}/imports` | `range_start`、`range_end`、`decisions[]` | 201。`ImportResult` | `createCalendarImportPreview` のエラーに加え、400 `invalid_input`: 選んだ利用者が事業所にいないか、取り込み方の値が違う。409 `import_preview_changed`: プレビューの後に確認が必要な予定が変わった。409 `import_running`: 同じカレンダーの取り込みが進んでいる |
 
 ### ImportPreview
 
@@ -37,18 +37,18 @@
 
 - 件数は Google の予定の数で数え、繰り返しのまま取り込む予定は 1 件に数える。回ごとにした予定は 1 回を 1 件に数え、`expanded_occurrences` に回の数を入れる。
 - `needs_review[]` は、繰り返しの予定とその回のうちタイトルが親と同じものを、親の予定の ID の 1 件にまとめる。回ごとにした繰り返しの予定は `recurrence` が `null` で、`date` は期間の中の最初の回である。
-- `skipped[]` とレスポンスのほかの項目に、予定のタイトルと本文を入れない。タイトルは利用者名を含むためである。`needs_review[]` の `client_name` と `service` は、確かめのためにタイトルから読んだ値だけを返す。
+- `skipped[]` とレスポンスのほかの項目に、予定のタイトルと本文を入れない。タイトルは利用者名を含むためである。`needs_review[]` の `client_name` と `service` は、確認のためにタイトルから読んだ値だけを返す。
 - `skipped[]` の `reason` は、`services/schedule/internal/calendar` の `SkipReason` の値である。取り消した予定（`cancelled`）は返さない。取り消した回は、繰り返しの除外する日にするか、回ごとにするときに除くためである。タイトルが空白だけの予定は `unreadable_title` にする。
 
 ### createCalendarImport のリクエストとレスポンス
 
 | 項目 | 中身 |
 | --- | --- |
-| `decisions[]` | 確かめが要る予定ごとに、`external_event_id`、`revision`（プレビューの `needs_review[].revision`）、`action`（`patient`、`normal`、`skip`）、`patient_id`（`action` が `patient` のときだけ） |
+| `decisions[]` | 確認が必要な予定ごとに、`external_event_id`、`revision`（プレビューの `needs_review[].revision`）、`action`（`patient`、`normal`、`skip`）、`patient_id`（`action` が `patient` のときだけ） |
 | レスポンスの `ImportResult` | `id`、`external_calendar_id`、`range_start`、`range_end`、`status`、`imported_count`、`skipped_count`、`already_imported_count`、`started_at`、`finished_at` |
 
 - 予定の API は、Google カレンダーの予定を読み直し、プレビューと同じ規則で読み替えて、予定と `external_event_links` のレコードを 1 つのトランザクションで書く。`import_runs` のレコードは、始めに `running` で足し、終わりに `succeeded` か `failed` にする。
 - 取り込み済みの判定は、`external_event_links` の一意の制約（`external_calendar_id`、`external_event_id`）で行う。同じ期間を 2 回確定しても、2 回目は対応のある予定を書かず、`already_imported_count` に数える。
 - 同じカレンダーに、10 分以内に始めた `running` の `import_runs` があるときは、409 の `import_running` を返す。10 分より前の `running` は、止まった取り込みとみなして数えない。
 - `already_imported_count` はテーブルに無いので、レスポンスだけに入れる。`imported_count` には、書いた予定の数（繰り返しのまま取り込んだ予定は 1 件、回ごとにした予定は 1 回を 1 件）を入れる。`skipped_count` には、取り込まない予定と、`skip` を選んだ予定を足した数を入れる。
-- `decisions[]` の予定の集合が、読み直した確かめが要る予定の集合と違うか、`revision` が読み直した版と違えば、何も書かずに 409 の `import_preview_changed` を返す。プレビューの後に Google でタイトルや時刻を変えた予定に、前の取り込み方を当てないためである。
+- `decisions[]` の予定の集合が、読み直した確認が必要な予定の集合と違うか、`revision` が読み直した版と違えば、何も書かずに 409 の `import_preview_changed` を返す。プレビューの後に Google でタイトルや時刻を変えた予定に、前の取り込み方を当てないためである。

@@ -8,17 +8,17 @@ import type {
 /** 取り込み方の選択肢。patient は利用者を選ぶ、normal は通常の予定にする、skip は取り込まない。 */
 export type ImportAction = ImportDecision['action']
 
-/** 確かめが要る予定 1 件の、選んでいる途中の取り込み方。利用者は、patient を選んだときだけ持つ。 */
+/** 確認が必要な予定 1 件の、選んでいる途中の取り込み方。利用者は、patient を選んだときだけ持つ。 */
 export type ReviewChoice = { action: ImportAction; patientId?: string }
 
-/** 確かめが要る予定の Google の予定の ID ごとの、選んだ取り込み方。 */
+/** 確認が必要な予定の Google の予定の ID ごとの、選んだ取り込み方。 */
 export type ReviewChoices = Record<ImportReviewItem['external_event_id'], ReviewChoice>
 
 /** 取り込み方を選び終えたかを返す。patient は利用者も選んだときに選び終えたとする。 */
 export const isChoiceComplete = (choice: ReviewChoice | undefined): choice is ReviewChoice =>
   choice !== undefined && (choice.action !== 'patient' || choice.patientId !== undefined)
 
-/** 確かめが要る予定のうち、取り込み方を選び終えていない予定の数を返す。 */
+/** 確認が必要な予定のうち、取り込み方を選び終えていない予定の数を返す。 */
 export const countRemaining = (items: readonly ImportReviewItem[], choices: ReviewChoices) =>
   items.filter((item) => !isChoiceComplete(choices[item.external_event_id])).length
 
@@ -46,7 +46,7 @@ export const toDecisions = (
     ]
   })
 
-/** 確定して取り込むを押せるかを返す。取り込む予定か確かめが要る予定があり、全てを選び終えたときに押せる。 */
+/** 確定して取り込むを押せるかを返す。取り込む予定か確認が必要な予定があり、全てを選び終えたときに押せる。 */
 export const canSubmitImport = (preview: ImportPreview, choices: ReviewChoices) =>
   (preview.counts.import > 0 || preview.needs_review.length > 0) &&
   countRemaining(preview.needs_review, choices) === 0
@@ -113,7 +113,7 @@ export const previewCountBoxes = ({ counts }: ImportPreview): CountBox[] => {
     },
     {
       key: 'needs_review',
-      label: '確かめが要る',
+      label: '確認が必要',
       count: counts.needs_review,
       note: '利用者を選んでから取り込む',
     },
@@ -138,7 +138,7 @@ const DECISION_PHRASE: Record<ImportAction, [string, string]> = {
   skip: ['は取り込まず', 'は取り込まなかった'],
 }
 
-/** 取り込んだ件数の補足の文。繰り返しの予定の数と、確かめた予定の取り込み方の内訳を入れる。 */
+/** 取り込んだ件数の補足の文。繰り返しの予定の数と、確認した予定の取り込み方の内訳を入れる。 */
 export const importedNote = (preview: ImportPreview, decisions: readonly ImportDecision[]) => {
   const parts: string[] = []
   if (preview.counts.recurring > 0)
@@ -151,7 +151,7 @@ export const importedNote = (preview: ImportPreview, decisions: readonly ImportD
       ({ action, count }, index) =>
         `${count} 件${DECISION_PHRASE[action][index === used.length - 1 ? 1 : 0]}`,
     )
-    parts.push(`確かめた ${decisions.length} 件のうち ${phrases.join('、')}`)
+    parts.push(`確認した ${decisions.length} 件のうち ${phrases.join('、')}`)
   }
   return parts.join('。')
 }

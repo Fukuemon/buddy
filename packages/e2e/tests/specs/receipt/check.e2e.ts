@@ -7,7 +7,7 @@ import { receiptCategoryRowCells, receiptResultRow } from '../../selectors/recei
 
 // 照合の API は、compose/receipt-calendars.json の森のカレンダーを calendarpit から読む。
 // calendarpit の森のカレンダー（compose/calendarpit/fixture.json）は 2026 年 11 月の予定を持つ。
-// 森のカレンダーには、先に流れる取り込みの spec が予定を書き出すことがあるので、件数を数えず、特定の行で確かめる。
+// 森のカレンダーには、先に流れる取り込みの spec が予定を書き出すことがあるので、件数を数えず、特定の行で確認する。
 const CALENDAR_MONTH = '2026-11'
 
 /** 照合の画面で、予定の取り方に Google カレンダーを選び、対象の月と実績の CSV で照合する。 */

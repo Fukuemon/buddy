@@ -170,7 +170,7 @@ const CalendarImportContent = ({ staffId, onStaffChange }: CalendarImportContain
 
 /**
  * 予定の取り込みの画面。職員の管理の権限が無ければ、API を呼ばずに権限が無いことを示す。
- * 結び付けたカレンダーと職員を読み、選んだ職員と期間でプレビューし、確かめが要る予定の取り込み方を選んで確定する。
+ * 結び付けたカレンダーと職員を読み、選んだ職員と期間でプレビューし、確認が必要な予定の取り込み方を選んで確定する。
  */
 export const CalendarImportContainer = (props: CalendarImportContainerProps) => {
   const { viewer } = useRouteContext({ from: '__root__' })

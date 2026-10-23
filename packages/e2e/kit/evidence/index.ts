@@ -9,7 +9,7 @@ export type Variant =
 /**
  * 撮る版の一覧。デフォルトは、baseUrl を名前の無い 1 つの版として撮る。
  *
- * @param o.beforeBaseUrl 渡すと、baseUrl を改修後、beforeBaseUrl を改修前として撮る。振る舞いを変えない改修を、改修前と比べて確かめるときに使う
+ * @param o.beforeBaseUrl 渡すと、baseUrl を改修後、beforeBaseUrl を改修前として撮る。振る舞いを変えない改修を、改修前と比べて確認するときに使う
  * @param o.only 'before' か 'after'。渡すと、baseUrl をその版として 1 つだけ撮る。改修前と改修後を別の環境で 1 回ずつ撮るときに使う。ほかの値では例外を投げる
  */
 export const variants = (o: {

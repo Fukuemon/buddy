@@ -67,7 +67,7 @@ describe('件数の文', () => {
       { external_event_id: 'event-missing', revision: 'r2', action: 'skip' },
     ] as const
     expect(importedNote(preview, decisions)).toBe(
-      '繰り返しの予定 3 件を含む。確かめた 2 件のうち 1 件は利用者を選び、1 件は取り込まなかった',
+      '繰り返しの予定 3 件を含む。確認した 2 件のうち 1 件は利用者を選び、1 件は取り込まなかった',
     )
     expect(notImportedNote(preview, decisions)).toBe(
       '終日、日をまたぐ、サービス内容を引けない、取り込まないを選んだ予定',

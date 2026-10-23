@@ -27,11 +27,11 @@ apps/web の `src/styles.css` の `@theme` と、コンポーネントのクラ�
 | `action-bg` `#edf3ff` | 選ばれている選択肢の面、入力中の欄の面、カレンダーの今日の面 | `primary-surface` | key-50（light-blue-50）`#f0f9ff` | ほぼ同じ |
 | `correct-main` `#00ad64`、`correct-bg` `#e6fdf0` | 使っていない | `success`、`success-surface` | green-800 `#197a4b`、green-50 `#e6f5ec` | 変化なし |
 | `non-active-main` `#ffb800`、`non-active-bg` `#fff8e6` | 使っていない | `warning`、`warning-surface` | orange-900 `#ac3e00`、orange-50 `#ffeee2` | 変化なし |
-| `gray-0` `#fff`、`background-default` `#fff` | 面、カードと入力欄の地 | `surface`。画面の地は `surface-canvas` | white `#ffffff`。`surface-canvas` は DADS に無い `#fdfcfb` | ほぼ同じ |
+| `gray-0` `#fff`、`background-default` `#fff` | 面、カードと入力欄の背景 | `surface`。画面の背景は `surface-canvas` | white `#ffffff`。`surface-canvas` は DADS に無い `#fdfcfb` | ほぼ同じ |
 | `gray-0` `#fff`、`text-white`、FullCalendar の `textColor: '#fff'` | 色の面の上の文字 | `text-inverse` | white `#ffffff` | 変化なし |
 | `gray-10` `#f5f6f7` | タブの溝、押せる行と格子の hover | `surface-subtle` | solid-gray-50 `#f2f2f2` | ほぼ同じ |
 | `gray-100` `#f0f1f2` | 行と帯の区切りの線、タブの溝の枠 | `border` | solid-gray-100 `#e6e6e6` | 小。少し濃くなる |
-| `gray-100` `#f0f1f2` | 無効のボタンの面、読み込みの輪の地 | `surface-disabled` | solid-gray-100 `#e6e6e6` | 小 |
+| `gray-100` `#f0f1f2` | 無効のボタンの面、読み込みの輪の背景 | `surface-disabled` | solid-gray-100 `#e6e6e6` | 小 |
 | `gray-200` `#e9e9eb` | 入力欄、副のボタン、選択肢、日付の欄の枠 | `border-field` | solid-gray-600 `#666666` | 大。白の上で 1.21:1 の薄い枠が、5.74:1 の濃い枠になる |
 | `gray-200` `#e9e9eb` | カレンダーと日の格子の線 | `border` | solid-gray-100 `#e6e6e6` | ほぼ同じ |
 | `bg-black/56` | ダイアログの後ろの幕 | `overlay` | opacity-gray-500 `rgba(0,0,0,0.5)` | ほぼ同じ |

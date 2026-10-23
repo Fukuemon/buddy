@@ -32,7 +32,7 @@ export const Unreadable: Story = {
     calendarId: 'staff-3@other.example',
     checkStatus: 'failed',
     errorMessage:
-      'このカレンダーを読めません。カレンダーをこの事業所の buddy のサービスアカウントに共有したかと、カレンダーの ID が合っているかを確かめてください。',
+      'このカレンダーを読めません。カレンダーをこの事業所の buddy のサービスアカウントに共有したかと、カレンダーの ID が合っているかを確認してください。',
   },
 }
 

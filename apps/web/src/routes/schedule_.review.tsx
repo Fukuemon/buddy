@@ -8,7 +8,7 @@ import { CalendarReviewContainer } from '#/features/calendar/components/Calendar
 export const Route = createFileRoute('/schedule_/review')({
   // フェイクの API はデータをブラウザのメモリに持つため、サーバーで描画しない
   ssr: false,
-  head: () => ({ meta: [{ title: '確かめが要る予定 | buddy' }] }),
+  head: () => ({ meta: [{ title: '確認が必要な予定 | buddy' }] }),
   component: CalendarReviewPage,
 })
 

@@ -42,7 +42,7 @@ nav = [
     { "予定の編集" = "screens/schedule-edit_予定の編集/index.md" },
     { "カレンダーの連携" = "screens/schedule-link_カレンダーの連携/index.md" },
     { "予定の取り込み" = "screens/schedule-import_予定の取り込み/index.md" },
-    { "確かめが要る予定" = "screens/schedule-review_確かめが要る予定/index.md" },
+    { "確認が必要な予定" = "screens/schedule-review_確認が必要な予定/index.md" },
     { "照合" = "screens/receipt-upload_照合/index.md" },
     { "照合の結果" = "screens/receipt-result_照合の結果/index.md" },
     { "ログイン" = "screens/account-login_ログイン/index.md" },
@@ -58,7 +58,7 @@ nav = [
     { "予定の API" = "/api/schedule.html" },
     { "照合の API" = "/api/receipt.html" },
   ] },
-  # 予定の管理のテーブル。tbls の生成物（scripts/build-db-docs.sh）で、viewpoint の文書は全て載せる（build-db-docs.sh が確かめる）
+  # 予定の管理のテーブル。tbls の生成物（scripts/build-db-docs.sh）で、viewpoint の文書は全て載せる（build-db-docs.sh が確認する）
   # テーブルごとの文書は載せず、テーブルの一覧と viewpoint の文書から開く
   { "DB の設計" = [
     { "テーブルの一覧" = "db/schedule/README.md" },

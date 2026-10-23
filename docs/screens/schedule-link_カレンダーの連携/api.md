@@ -11,14 +11,14 @@
 | カレンダーの ID | カレンダーの ID | `ExternalCalendar.calendar_id` | `listExternalCalendars` の `items[].calendar_id` |
 | 最後の取り込み | 終わった日時、期間、失敗か | `ExternalCalendar.last_import` | `ExternalCalendar.last_import` の `finished_at`、`range_start`、`range_end`、`status` |
 | カレンダーの ID の入力 | デフォルト値 | `Staff.email` | `listUsers` の `Staff.email` |
-| 読めるか確かめる | 読めたか | `calendars.check` が成功したか | `createExternalCalendarCheck` のレスポンス |
+| 読めるか確認する | 読めたか | `calendars.check` が成功したか | `createExternalCalendarCheck` のレスポンス |
 | ダイアログの結び付ける | 結び付けたカレンダー | `calendars.link` の戻り値 | `createExternalCalendar` のレスポンスの `ExternalCalendar` |
 | ダイアログの外す | なし | `calendars.unlink` | `removeExternalCalendar` |
-| 確かめの結果 | 状態ごとの文 | `ApiError.status`、`ApiError.code` | レスポンスの status と `Error.code` |
+| 確認の結果 | 状態ごとの文 | `ApiError.status`、`ApiError.code` | レスポンスの status と `Error.code` |
 
 ## 操作
 
-全ての操作は、事業所の確認の後に、ログインした職員が職員の管理の権限（`staff.manage`）を持つかを確かめ、持たなければ 403（`forbidden`）を返す。
+全ての操作は、事業所の確認の後に、ログインした職員が職員の管理の権限（`staff.manage`）を持つかを確認し、持たなければ 403（`forbidden`）を返す。
 
 | operationId | メソッドとパス | リクエスト | 成功のレスポンス | エラー |
 | --- | --- | --- | --- | --- |
@@ -36,5 +36,5 @@
   - `staff_has_calendar`: 職員に外していないカレンダーがある（部分の一意の index `external_calendars_staff_key`）
   - `calendar_taken`: カレンダーがほかの職員に結び付いている。外したカレンダーも含む（`external_calendars_external_key`）
   - `calendar_already_linked`: カレンダーがその職員にすでに結び付いている
-- `createExternalCalendarCheck` と `createExternalCalendar` は、Google Calendar API で予定の一覧を 1 件だけ読み、読めるかを確かめる。レスポンスとエラーの文に、Google のレスポンスの本文とカレンダーの ID を入れない。
+- `createExternalCalendarCheck` と `createExternalCalendar` は、Google Calendar API で予定の一覧を 1 件だけ読み、読めるかを確認する。レスポンスとエラーの文に、Google のレスポンスの本文とカレンダーの ID を入れない。
 - `removeExternalCalendar` は、`external_calendars` のレコードを消さずに `disabled_at` を入れる。取り込んだ予定と Google カレンダーの予定の対応（`external_event_links`）と取り込みの記録は残るので、同じカレンダーを結び付け直して同じ期間を取り込んでも、予定は重ならない。同じ職員に結び付け直すと、外したレコードの `disabled_at` を空に戻す。

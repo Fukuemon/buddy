@@ -107,7 +107,7 @@ jobs:
             ~/.cache/go-build
           key: go-db-docs-${{ hashFiles('mise.toml', 'services/schedule/go.sum') }}
           restore-keys: go-db-docs-
-      # マイグレーションを当てた PostgreSQL から表の文書を作り直し、コミットした文書と差分がないことを確かめる
+      # マイグレーションを当てた PostgreSQL から表の文書を作り直し、コミットした文書と差分がないことを確認する
       - run: sh scripts/build-db-docs.sh
       - run: |
           git diff --exit-code -- docs/db

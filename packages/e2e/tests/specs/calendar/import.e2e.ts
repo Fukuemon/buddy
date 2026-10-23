@@ -65,7 +65,7 @@ test.describe('予定の取り込み', () => {
         await expect(page.getByTestId('calendar-import-skipped')).not.toContainText('見本')
       })
 
-      await test.step('確かめが要る予定に利用者を選んで確定すると、取り込んだ件数が出る', async () => {
+      await test.step('確認が必要な予定に利用者を選んで確定すると、取り込んだ件数が出る', async () => {
         await expect(page.getByTestId('calendar-import-submit')).toBeDisabled()
         await page.getByTestId('calendar-import-review-normal-unknown1110').check()
         await page.getByTestId('calendar-import-review-patient-unknown1110').check()

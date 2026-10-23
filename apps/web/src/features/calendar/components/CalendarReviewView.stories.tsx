@@ -30,7 +30,7 @@ export const LoadError: Story = {
   args: {
     state: {
       status: 'error',
-      message: '確かめが要る予定を読み込めませんでした。時間をおいて、読み直してください。',
+      message: '確認が必要な予定を読み込めませんでした。時間をおいて、読み直してください。',
     },
   },
 }

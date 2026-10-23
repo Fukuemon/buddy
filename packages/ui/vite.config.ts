@@ -13,7 +13,7 @@ export default defineConfig({
         test: { name: 'unit', environment: 'node', include: ['src/**/*.test.ts'] },
       },
       {
-        // 押せる領域の大きさとフォーカスの移り方は、描画とブラウザのキーの操作がないと確かめられない。
+        // 押せる領域の大きさとフォーカスの移り方は、描画とブラウザのキーの操作がないと確認できない。
         extends: true,
         test: {
           name: 'component',

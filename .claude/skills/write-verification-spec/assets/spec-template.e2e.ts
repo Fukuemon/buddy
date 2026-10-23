@@ -86,9 +86,9 @@ for (const variant of VARIANTS) {
         browser,
         TARGET,
         { scenario: SCENARIO, variant, example: { no: c.no, column: '<例の列>', value: c.value } },
-        // 録画の外で、ログインとデータの確かめを行う。このページは保存したログインの状態を持たないので、ここでログインする。戻り値は本体に渡る
+        // 録画の外で、ログインとデータの確認を行う。このページは保存したログインの状態を持たないので、ここでログインする。戻り値は本体に渡る
         async (page) => {
-          // <ログインし、前提のデータがあるかを確かめる>
+          // <ログインし、前提のデータがあるかを確認する>
           void page
         },
         (r) => body(r, c),

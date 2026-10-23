@@ -11,7 +11,7 @@ apps/web は `@buddy/ui` を `workspace:*` で読み、ビルドせずに TypeSc
 pnpm --filter @buddy/ui exec playwright install chromium
 ```
 
-| コマンド | 確かめること |
+| コマンド | 確認すること |
 | --- | --- |
 | `pnpm --filter @buddy/ui test` | Vitest の 3 つの project（トークンの単体、ブラウザでのコンポーネント、story の描画とアクセシビリティ）が通る |
 | `pnpm --filter @buddy/ui check` | 整形と lint（Vite+） |

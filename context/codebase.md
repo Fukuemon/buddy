@@ -36,13 +36,13 @@ status: stable
   - `postgres`、`oidc`、`ulid`、`gcal` は機能のパッケージのインターフェイスを実装する。`httpapi` から `postgres` と `oidc` を import するのは、テストのファイルだけにする。`httpapi` は、パスの ID の形の確認に `ulid` を使う。
   - `inmem` を import するのは、テストのファイルだけにする。
 - `services/receipt` の依存は、`record` と `civil` を末端にして、読み込み、正規化、対の作成、判定、つなぐ段（`check`）、データソース、HTTP の順の 1 方向に限る。判定はサービスの規則（`servicerule`）を、データソースは Google カレンダー（`gcal`）を使う。
-- 依存の向きを確かめる lint は入れていない。レビューで確かめる。E2E の層の向きだけは、`packages/e2e/eslint/e2e-authoring-rule.mjs` が止める。
+- 依存の向きを確認する lint は入れていない。レビューで確認する。E2E の層の向きだけは、`packages/e2e/eslint/e2e-authoring-rule.mjs` が止める。
 
 ## State Ownership
 
 | 状態 | 保存先 | オーナー |
 | --- | --- | --- |
-| 事業所、職員、利用者、予定、権限 | PostgreSQL | 予定の API だけ。一覧と作成は事業所の ID で絞り、1 件を指すリクエストはリソースの事業所を確かめる |
+| 事業所、職員、利用者、予定、権限 | PostgreSQL | 予定の API だけ。一覧と作成は事業所の ID で絞り、1 件を指すリクエストはリソースの事業所を確認する |
 | ログインのセッションとトークン | Valkey | web の BFF。ブラウザには署名した cookie でセッションの ID だけを渡す |
 | 照合の入力の CSV と結果 | 保存しない | 照合の API は 1 回のリクエストで返し、web は query の cache にだけ置く。画面を読み直すと消える |
 | 画面の表示の条件（表示の単位、日付、絞り込みの職員） | URL の search params | web の route。zod で検証し、デフォルト値は URL に書かない |

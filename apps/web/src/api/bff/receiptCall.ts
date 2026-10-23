@@ -17,7 +17,7 @@ export type ReceiptCheckResult =
   | { ok: false; status: number; message: string; rowErrors: ReceiptRowError[] }
 
 /**
- * server function の入力の FormData を、照合の入力として確かめる。
+ * server function の入力の FormData を、照合の入力として確認する。
  *
  * visits のファイルが無い、予定の CSV（schedules）と対象の月（month）の両方か一方も無い、month の形が違う、
  * ファイルの合計が上限を超える、のいずれかで Error を投げる。

@@ -84,7 +84,7 @@ export interface BuddyApi {
     serviceAccount(facilityId: FacilityId): Promise<string>
     /** 外していないカレンダーを、最後の取り込みを付けて返す。 */
     list(facilityId: FacilityId): Promise<ExternalCalendar[]>
-    /** カレンダーを読めるかを確かめる。読めれば何も返さない。 */
+    /** カレンダーを読めるかを確認する。読めれば何も返さない。 */
     check(facilityId: FacilityId, calendarId: string): Promise<void>
     /** 職員にカレンダーを結び付ける。結び付けられない原因は、status が 409 の ApiError の code にある。 */
     link(
@@ -108,12 +108,12 @@ export interface BuddyApi {
     /** Google カレンダーで予定が変わっていたか消えていたか、書けなかった書き出しを、新しく変わった順に返す。 */
     exportIssues(facilityId: FacilityId): Promise<CalendarExportIssue[]>
     /**
-     * 確かめが要る書き出しを、Google カレンダーの変更を比べずに buddy の内容で書き直す待ちにする。
-     * 確かめが要る書き出しでなければ、code が export_not_in_review の ApiError を投げる。
+     * 確認が必要な書き出しを、Google カレンダーの変更を比べずに buddy の内容で書き直す待ちにする。
+     * 確認が必要な書き出しでなければ、code が export_not_in_review の ApiError を投げる。
      */
     retryExport(facilityId: FacilityId, exportId: CalendarExport['id']): Promise<CalendarExport>
     /**
-     * 確かめが要る書き出しの予定を、Google カレンダーの今の内容に合わせ、書き出しを終える。
+     * 確認が必要な書き出しの予定を、Google カレンダーの今の内容に合わせ、書き出しを終える。
      * acceptable が false の書き出しでは、code が export_not_acceptable の ApiError を投げる。
      */
     acceptExport(facilityId: FacilityId, exportId: CalendarExport['id']): Promise<CalendarExport>

@@ -16,7 +16,7 @@ export type CalendarRewriteDialogProps = {
   onCancel: () => void
 }
 
-/** Google カレンダーの予定を buddy の内容で書き直す前に、Google カレンダーでの変更が消えることを示して確かめるダイアログ。 */
+/** Google カレンダーの予定を buddy の内容で書き直す前に、Google カレンダーでの変更が消えることを示して確認するダイアログ。 */
 export const CalendarRewriteDialog = ({
   target,
   cancelled = false,

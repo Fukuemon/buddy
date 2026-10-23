@@ -12,7 +12,7 @@ export type ModalProps = {
   headerContent?: ReactNode
   /** 下端に固定して出す領域。送信のボタンを置く。 */
   stickyFooter?: ReactNode
-  /** true のとき、閉じる前に変更を破棄してよいかを確かめる。 */
+  /** true のとき、閉じる前に変更を破棄してよいかを確認する。 */
   isDirty?: boolean
   children: ReactNode
   'data-testid'?: string

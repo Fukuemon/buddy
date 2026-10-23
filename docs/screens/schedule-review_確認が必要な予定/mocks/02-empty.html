@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>schedule-review 読み込みの失敗</title>
+    <title>schedule-review 空</title>
     <link rel="stylesheet" href="../../_common/mock.css" />
     <link rel="stylesheet" href="../../_common/tokens.css" />
     <link rel="stylesheet" href="../../_common/wireframe.css" />
@@ -29,12 +29,9 @@
             </div>
           </header>
           <main class="wf-page">
-            <h1 class="wf-heading" data-m="4">確かめが要る予定</h1>
+            <h1 class="wf-heading" data-m="4">確認が必要な予定</h1>
             <p class="wf-lead" data-m="5">buddy の予定のうち、Google カレンダーに書き出せなかった予定と、buddy と Google カレンダーの両方で変わった予定です。片方だけで変わった予定は、変わった側に合わせるので、ここには出ません。buddy の内容で書き直すと Google カレンダーの予定を buddy の内容にし、Google の内容に合わせると buddy の予定を Google カレンダーの内容にします。</p>
-            <div class="wf-fields">
-              <p class="sr-danger" role="alert" data-m="6" data-testid="calendar-review-error">確かめが要る予定を読み込めませんでした。時間をおいて、読み直してください。</p>
-              <div><span class="wf-btn" data-m="7" data-testid="calendar-review-retry" data-go="01-list.html">読み直す</span></div>
-            </div>
+            <p class="sr-muted" data-m="6" data-testid="calendar-review-empty">確認が必要な予定はありません。</p>
           </main>
         </div>
       </div>

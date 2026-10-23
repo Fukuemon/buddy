@@ -20,7 +20,7 @@
 ## Design Doc
 
 - [buddy Design Doc](../docs/design/DesignDoc.md) — web と予定の API と照合の API の責務と依存、業務の区切りとコンテナの対応、コンテナの間の契約、インフラとの約束（draft）
-- [E2E のテストのコードの設計](../packages/e2e/DesignDoc.md) — buddy の E2E のテストのコード（packages/e2e）を、層、配置先、名前、待ち方、確かめ方、禁止する書き方、タイムアウトで組み立てる考え方。図で示す（draft）
+- [E2E のテストのコードの設計](../packages/e2e/DesignDoc.md) — buddy の E2E のテストのコード（packages/e2e）を、層、配置先、名前、待ち方、確認の方法、禁止する書き方、タイムアウトで組み立てる考え方。図で示す（draft）
 - [エビデンスの録画](../packages/e2e/kit/recording/DesignDoc.md) — 手動検証のエビデンスを撮る録画の処理(recordEvidence、字幕、カーソル、書き出し)とエビデンスの配置先の構成、1 本を撮る流れ、配置先と名前、プロダクトから呼ぶ形（draft）
 - [buddy のデザインシステム](../packages/ui/DESIGN.md) — packages/ui のトークンとコンポーネントの使い方。画面を作るときの原則、色と文字のトークン、コンポーネントの選び方、DADS の指針から外れるところ、Storybook のカタログの組み方
 - [レセプトの照合](../services/receipt/DesignDoc.md) — 照合の API のパッケージの構成、予定のデータソース、入力の CSV のカラム、正規化、予定と実績の対の作り方、判定の規則、サービスごとの許容範囲、結果の JSON と画面の表示、元の実装との違い（draft）

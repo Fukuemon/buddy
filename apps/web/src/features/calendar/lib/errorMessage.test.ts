@@ -21,8 +21,8 @@ describe('linkErrorMessage', () => {
     [apiError(409, 'calendar_already_linked'), 'この職員にすでに結び付いています。'],
     [apiError(502, 'calendar_unavailable'), 'Google カレンダーに届きませんでした。'],
     [apiError(403, 'forbidden'), FORBIDDEN_MESSAGE],
-    [apiError(500), '確かめられませんでした。'],
-    [new Error('network'), '確かめられませんでした。'],
+    [apiError(500), '確認できませんでした。'],
+    [new Error('network'), '確認できませんでした。'],
   ])('%s を文にする', (error, expected) => {
     expect(linkErrorMessage(error)).toContain(expected)
   })

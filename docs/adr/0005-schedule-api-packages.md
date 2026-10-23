@@ -48,4 +48,4 @@ Go の module の配置の指針は、サーバーのコードを `internal/` �
 ### Negative
 
 - `patient` が `visit` を使うので、`visit` は利用者を `patient.Repository` ではなく関数（`visit.PatientFinder`）で受ける。
-- 依存の向きは lint で確かめず、レビューで確かめる。
+- 依存の向きは lint で確認せず、レビューで確認する。

@@ -14,7 +14,7 @@ export type CalendarUnlinkDialogProps = {
   onCancel: () => void
 }
 
-/** 職員に結び付けたカレンダーを外す前に、外すと何が残るかを示して確かめるダイアログ。 */
+/** 職員に結び付けたカレンダーを外す前に、外すと何が残るかを示して確認するダイアログ。 */
 export const CalendarUnlinkDialog = ({
   staffName,
   calendarId,

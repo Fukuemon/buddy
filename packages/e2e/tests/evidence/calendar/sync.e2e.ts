@@ -54,11 +54,11 @@ const openSatoSchedule = async (page: Page, title: string) => {
   return scheduleIdFromUrl(page.url())
 }
 
-/** 確かめが要る予定の一覧の、予定の行。前の撮影が同じ職員の行を残していても、今回の予定の行だけを指す。 */
+/** 確認が必要な予定の一覧の、予定の行。前の撮影が同じ職員の行を残していても、今回の予定の行だけを指す。 */
 const reviewRow = (page: Page, scheduleId: string) =>
   page.getByTestId(`calendar-review-row-schedule-${scheduleId}`)
 
-test.describe('確かめが要る予定', () => {
+test.describe('確認が必要な予定', () => {
   test.describe('Google カレンダーとの同期', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       const prefix = variant.label ? `${variant.label}: ` : ''
@@ -127,7 +127,7 @@ test.describe('確かめが要る予定', () => {
           {
             name: 'calendar-sync-accept-google',
             title:
-              'buddy と Google カレンダーの両方で変わった予定が確かめが要る予定に出て、「Google の内容に合わせる」と buddy の予定が Google のタイトルと日時になる',
+              'buddy と Google カレンダーの両方で変わった予定が確認が必要な予定に出て、「Google の内容に合わせる」と buddy の予定が Google のタイトルと日時になる',
             actor: ACTOR,
             variant,
           },
@@ -153,7 +153,7 @@ test.describe('確かめが要る予定', () => {
               await page.getByTestId('schedule-edit-submit').click()
               await expect(page.getByTestId('schedule-detail-modal')).toContainText(changed)
 
-              await step('確かめが要る予定の画面を開く')
+              await step('確認が必要な予定の画面を開く')
               await page.goto('/schedule/review')
               await expect(async () => {
                 await page.reload()
@@ -169,7 +169,7 @@ test.describe('確かめが要る予定', () => {
               )
               await holdGoogleChanges(request, false)
 
-              await step('「Google の内容に合わせる」を押し、確かめのダイアログで合わせる')
+              await step('「Google の内容に合わせる」を押し、確認のダイアログで合わせる')
               await reviewRow(page, scheduleId)
                 .getByTestId(/^calendar-review-accept-/)
                 .click()
