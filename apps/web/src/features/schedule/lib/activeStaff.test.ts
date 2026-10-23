@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import type { Schedule, Staff } from '#/api/types'
 
-import { activeStaff, activeStaffIds, excludeInactiveStaffSchedules } from './activeStaff'
+import {
+  activeStaff,
+  activeStaffId,
+  activeStaffIds,
+  excludeInactiveStaffSchedules,
+} from './activeStaff'
 
 const staff = (id: string, status?: Staff['status']): Staff => ({
   id,
@@ -62,5 +67,23 @@ describe('activeStaffIds', () => {
 
   it('職員の一覧を取り終える前は、そのまま返す', () => {
     expect(activeStaffIds(['staff-1', 'staff-2'], undefined)).toEqual(['staff-1', 'staff-2'])
+  })
+})
+
+describe('activeStaffId', () => {
+  const list = [staff('staff-1'), staff('staff-2', 'on_leave'), staff('staff-3', 'retired')]
+
+  it('休職と退職の職員の ID は undefined にする', () => {
+    expect(activeStaffId('staff-2', list)).toBeUndefined()
+    expect(activeStaffId('staff-3', list)).toBeUndefined()
+  })
+
+  it('有効な職員の ID と、一覧に無い ID はそのまま返す', () => {
+    expect(activeStaffId('staff-1', list)).toBe('staff-1')
+    expect(activeStaffId('staff-9', list)).toBe('staff-9')
+  })
+
+  it('職員の一覧を取り終える前は、そのまま返す', () => {
+    expect(activeStaffId('staff-2', undefined)).toBe('staff-2')
   })
 })

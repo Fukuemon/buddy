@@ -1,11 +1,11 @@
 import { composeStories } from '@storybook/react-vite'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import * as stories from './ScheduleCreateModalContainer.stories'
 
-const { Visit, WithSuspendedStaff } = composeStories(stories)
+const { FromOnLeaveStaffSlot, FromSlot, Visit, WithSuspendedStaff } = composeStories(stories)
 
 describe('ScheduleCreateModalContainer', () => {
   afterEach(() => {
@@ -67,5 +67,27 @@ describe('ScheduleCreateModalContainer', () => {
     await userEvent.click(await screen.findByTestId('schedule-field-staff'))
     expect(screen.getByTestId('staff-select-option-staff-1')).toBeInTheDocument()
     expect(screen.queryByTestId('staff-select-option-staff-2')).not.toBeInTheDocument()
+  })
+
+  it('URL の staffId が休職の職員を指すときは、担当者を未選択で開く', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(<FromOnLeaveStaffSlot />)
+
+    // 職員の一覧を取り終えるまで、担当者は値に関わらず未選択に見えるので、候補が出てから確認する
+    await userEvent.click(await screen.findByTestId('schedule-field-staff'))
+    await screen.findByTestId('staff-select-option-staff-1')
+    await waitFor(() =>
+      expect(screen.getByTestId('schedule-field-staff')).toHaveTextContent('未選択'),
+    )
+    await userEvent.click(screen.getByTestId('modal-close'))
+    expect(confirm).not.toHaveBeenCalled()
+  })
+
+  it('URL の staffId が有効な職員を指すときは、その職員を選んで開く', async () => {
+    render(<FromSlot />)
+
+    await waitFor(() =>
+      expect(screen.getByTestId('schedule-field-staff')).toHaveTextContent('石川 二葉'),
+    )
   })
 })
