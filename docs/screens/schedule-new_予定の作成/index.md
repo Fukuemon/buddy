@@ -507,15 +507,16 @@
 
 **概要**: 予定の担当者を 1 人選ぶ。
 
-**値のソース**: 「名前」のカラムの下に、事業所の職員の名前を並べる。初期値は URL の `staffId` の職員。無ければ未選択。絞った結果が 0 件なら、表の下に「該当する名前がありません。」を出す。
+**値のソース**: 「名前」のカラムの下に、事業所の職員のうち止めた職員を除いた名前を、職員の一覧の順に並べる。初期値は URL の `staffId` の職員。無ければ未選択。絞った結果が 0 件なら、表の下に「該当する名前がありません。」を出す。
 
 - `staffId` が職員の一覧に無い ID のときは、どの行も選ばれず、項目の一覧の要約は「未選択」になる。ただし値は残るので、検証には通り、その ID のまま送る。
+- `staffId` が止めた職員の ID のときは、どの行も選ばれず、項目の一覧の要約にはその職員の名前を出す。値は残り、その ID のまま送る。
 
 **活性条件**: 常に活性
 
-**表示条件**: 項目の一覧で担当者を選んでいるとき。名前に検索の語を含む職員だけを出す
+**表示条件**: 項目の一覧で担当者を選んでいるとき。名前に検索の語を含む職員だけを出す。止めた職員は出さない
 
-**カタログ**: [StaffSelectList の Unselected](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-staffselectlist--unselected)
+**カタログ**: [StaffSelectList の Unselected](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-staffselectlist--unselected)、[ScheduleCreateModalContainer の WithSuspendedStaff](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecreatemodalcontainer--with-suspended-staff)
 
 ### インタラクション
 
@@ -608,6 +609,7 @@
 
 - 作成を押したときに入力を検証する。押した後は、入力を変えるたびに検証し直す。
 - 職員と利用者の一覧は API から取る。名前の絞り込みは、取った一覧の中で行い、API を呼び直さない。
+- 職員の一覧は、止めた職員も含めて取る。止めた職員は担当者の候補から除く。
 - 送る前に、web のサーバーが予定の種類、サービスコード、訪問の区分のマスタを取り、選んだ値を API の ID にする。
 
 ## 未決
