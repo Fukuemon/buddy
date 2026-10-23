@@ -118,6 +118,77 @@ func TestStaffStoreRegisterDeleteSuspend(t *testing.T) {
 	}
 }
 
+// TestStaffStoreResumeRetire は、復職が上流のアカウントを残して有効に戻し、退職がメールと上流のアカウントを消して、
+// 同じメールと上流のアカウントで新しい職員を登録し直せることを確認する。退職した職員は止めることも戻すこともできない。
+func TestStaffStoreResumeRetire(t *testing.T) {
+	pool := migrated(t)
+	ctx := context.Background()
+	t.Cleanup(func() { _, _ = pool.Exec(ctx, `DELETE FROM staff`) })
+	s := NewStaffStore(pool)
+	if _, err := pool.Exec(ctx, `INSERT INTO staff (id, org_id, email, status) VALUES ($1, 'org-a', 'aoki@example.com', 'suspended')`, staffA); err != nil {
+		t.Fatal(err)
+	}
+	a := login.UpstreamAccount{Issuer: "https://idp.example.com", Subject: "sub-a"}
+	if err := s.Link(ctx, staffA, a); err != nil {
+		t.Fatal(err)
+	}
+
+	for range 2 {
+		if err := s.Resume(ctx, staffA); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got, _ := s.Get(ctx, staffA); got.Status != login.StatusActive || got.Upstream != a {
+		t.Errorf("Resume の後の職員 = %+v, want active で同じ上流のアカウント", got)
+	}
+	if err := s.Resume(ctx, "01JCCCCCCCCCCCCCCCCCCCCCCC"); !errors.Is(err, login.ErrNotFound) {
+		t.Errorf("いない職員の Resume の err = %v, want ErrNotFound", err)
+	}
+
+	for range 2 {
+		if err := s.Retire(ctx, staffA); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, err := s.Get(ctx, staffA)
+	if err != nil || got.Status != login.StatusRetired || got.Email != "" || got.Upstream != (login.UpstreamAccount{}) {
+		t.Errorf("Retire の後の職員 = %+v, %v, want retired でメールと上流のアカウントが空", got, err)
+	}
+	for name, err := range map[string]error{
+		"Suspend":  s.Suspend(ctx, staffA),
+		"Resume":   s.Resume(ctx, staffA),
+		"Activate": s.Activate(ctx, staffA),
+	} {
+		if !errors.Is(err, internalapi.ErrRetired) {
+			t.Errorf("退職した職員の %s の err = %v, want ErrRetired", name, err)
+		}
+	}
+	if got, _ := s.Get(ctx, staffA); got.Status != login.StatusRetired {
+		t.Errorf("退職した職員の status = %s, want retired のまま", got.Status)
+	}
+	if err := s.Retire(ctx, "01JCCCCCCCCCCCCCCCCCCCCCCC"); !errors.Is(err, login.ErrNotFound) {
+		t.Errorf("いない職員の Retire の err = %v, want ErrNotFound", err)
+	}
+
+	m := login.StaffMember{ID: staffB, OrgID: "org-a", Email: "aoki@example.com", Status: login.StatusPending}
+	if got, created, err := s.Register(ctx, m); err != nil || !created || got.ID != staffB {
+		t.Fatalf("退職した職員と同じメールの Register = %+v, %v, %v, want 新しい職員", got, created, err)
+	}
+	if err := s.Link(ctx, staffB, a); err != nil {
+		t.Errorf("退職した職員の上流のアカウントを新しい職員に結び付けられない: %v", err)
+	}
+
+	if _, err := pool.Exec(ctx, `INSERT INTO staff (id, org_id, email, status) VALUES ('01JCCCCCCCCCCCCCCCCCCCCCCC', 'org-a', 'pending@example.com', 'pending')`); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Resume(ctx, "01JCCCCCCCCCCCCCCCCCCCCCCC"); !errors.Is(err, internalapi.ErrNotSuspended) {
+		t.Errorf("登録の途中の職員の Resume の err = %v, want ErrNotSuspended", err)
+	}
+	if _, err := pool.Exec(ctx, `UPDATE staff SET status = 'active', email = NULL WHERE id = '01JCCCCCCCCCCCCCCCCCCCCCCC'`); err == nil {
+		t.Error("退職していない職員のメールを消せた。staff_retired_email_check が拒むはず")
+	}
+}
+
 // TestSeed は、シードが空の DB にだけ入り、2 度目は何もしないことと、2 つ目の事業所に有効な職員と止めた職員が入ることを確認する。
 func TestSeed(t *testing.T) {
 	pool := migrated(t)

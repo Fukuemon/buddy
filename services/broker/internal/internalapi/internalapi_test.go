@@ -69,6 +69,8 @@ func (s *fakeStore) Activate(_ context.Context, id string) error {
 		return login.ErrNotFound
 	case m.Status == login.StatusSuspended:
 		return internalapi.ErrSuspended
+	case m.Status == login.StatusRetired:
+		return internalapi.ErrRetired
 	}
 	m.Status = login.StatusActive
 	s.staff[id] = m
@@ -89,10 +91,38 @@ func (s *fakeStore) Delete(_ context.Context, id string) error {
 
 func (s *fakeStore) Suspend(_ context.Context, id string) error {
 	m, ok := s.staff[id]
+	switch {
+	case !ok:
+		return login.ErrNotFound
+	case m.Status == login.StatusRetired:
+		return internalapi.ErrRetired
+	}
+	m.Status = login.StatusSuspended
+	s.staff[id] = m
+	return nil
+}
+
+func (s *fakeStore) Resume(_ context.Context, id string) error {
+	m, ok := s.staff[id]
+	switch {
+	case !ok:
+		return login.ErrNotFound
+	case m.Status == login.StatusRetired:
+		return internalapi.ErrRetired
+	case m.Status == login.StatusPending:
+		return internalapi.ErrNotSuspended
+	}
+	m.Status = login.StatusActive
+	s.staff[id] = m
+	return nil
+}
+
+func (s *fakeStore) Retire(_ context.Context, id string) error {
+	m, ok := s.staff[id]
 	if !ok {
 		return login.ErrNotFound
 	}
-	m.Status = login.StatusSuspended
+	m.Status, m.Email, m.Upstream = login.StatusRetired, "", login.UpstreamAccount{}
 	s.staff[id] = m
 	return nil
 }
@@ -168,6 +198,8 @@ var staffRoutes = []struct{ method, path string }{
 	{http.MethodPost, "/internal/staff/" + staffA + "/activate"},
 	{http.MethodDelete, "/internal/staff/" + staffA},
 	{http.MethodPost, "/internal/staff/" + staffA + "/suspend"},
+	{http.MethodPost, "/internal/staff/" + staffA + "/resume"},
+	{http.MethodPost, "/internal/staff/" + staffA + "/retire"},
 }
 
 // 検証の観点 5: client credentials のトークンなしで内部の API を呼ぶと 401 になる。
@@ -324,6 +356,123 @@ func TestSuspend(t *testing.T) {
 			t.Errorf("code = %d, 取り消し = %v, want 404 で取り消さない", rec.Code, hy.login)
 		}
 	})
+	t.Run("退職した職員は 409 で、止めた状態に戻さない", func(t *testing.T) {
+		retired := m
+		retired.Status, retired.Email = login.StatusRetired, ""
+		store, hy := newStore(retired), &fakeHydra{}
+		rec := serve(newHandler(store, hy), http.MethodPost, "/internal/staff/"+staffA+"/suspend", validToken, "")
+		if rec.Code != http.StatusConflict || store.staff[staffA].Status != login.StatusRetired || len(hy.login) != 0 {
+			t.Errorf("code = %d, status = %s, want 409 で retired のまま", rec.Code, store.staff[staffA].Status)
+		}
+		if code := errorCode(t, rec); code != "retired" {
+			t.Errorf("本文の code = %q, want retired", code)
+		}
+	})
+}
+
+// 休職の職員を復職にしたとき、同じ上流のアカウントでログインできる（#268 の検証の観点 2）。
+func TestResume(t *testing.T) {
+	linked := login.UpstreamAccount{Issuer: "https://idp.example.com", Subject: "upstream-a"}
+	suspended := login.StaffMember{ID: staffA, OrgID: "org-a", Email: "a@example.com", Status: login.StatusSuspended, Upstream: linked}
+	t.Run("止めた職員を有効に戻し、上流のアカウントを残す", func(t *testing.T) {
+		store := newStore(suspended)
+		rec := serve(newHandler(store, &fakeHydra{}), http.MethodPost, "/internal/staff/"+staffA+"/resume", validToken, "")
+		if got := store.staff[staffA]; rec.Code != http.StatusNoContent || got.Status != login.StatusActive || got.Upstream != linked {
+			t.Errorf("code = %d, 職員 = %+v, want 204 で active と同じ上流のアカウント", rec.Code, got)
+		}
+	})
+	t.Run("有効な職員を戻しても 204", func(t *testing.T) {
+		active := suspended
+		active.Status = login.StatusActive
+		if rec := serve(newHandler(newStore(active), &fakeHydra{}), http.MethodPost, "/internal/staff/"+staffA+"/resume", validToken, ""); rec.Code != http.StatusNoContent {
+			t.Errorf("code = %d, want 204", rec.Code)
+		}
+	})
+	for _, tc := range []struct {
+		name   string
+		status string
+		code   int
+		kind   string
+	}{
+		{"退職した職員は 409", login.StatusRetired, http.StatusConflict, "retired"},
+		{"登録の途中の職員は 409", login.StatusPending, http.StatusConflict, "not_suspended"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := suspended
+			m.Status = tc.status
+			store := newStore(m)
+			rec := serve(newHandler(store, &fakeHydra{}), http.MethodPost, "/internal/staff/"+staffA+"/resume", validToken, "")
+			if rec.Code != tc.code || store.staff[staffA].Status != tc.status {
+				t.Errorf("code = %d, status = %s, want %d で変えない", rec.Code, store.staff[staffA].Status, tc.code)
+			}
+			if code := errorCode(t, rec); code != tc.kind {
+				t.Errorf("本文の code = %q, want %s", code, tc.kind)
+			}
+		})
+	}
+	t.Run("いない職員は 404", func(t *testing.T) {
+		if rec := serve(newHandler(newStore(), &fakeHydra{}), http.MethodPost, "/internal/staff/"+staffA+"/resume", validToken, ""); rec.Code != http.StatusNotFound {
+			t.Errorf("code = %d, want 404", rec.Code)
+		}
+	})
+}
+
+// 退職では、メールと上流のアカウントを消し、Hydra のセッションと同意を取り消す（#268 の検証の観点 4）。
+// 同じメールで新しい職員を登録できる（#268 の検証の観点 5）。
+func TestRetire(t *testing.T) {
+	m := login.StaffMember{ID: staffA, OrgID: "org-a", Email: "aoki@example.com", Status: login.StatusSuspended,
+		Upstream: login.UpstreamAccount{Issuer: "https://idp.example.com", Subject: "upstream-a"}}
+	t.Run("退職にしてメールと上流のアカウントを消し、取り消す", func(t *testing.T) {
+		store, hy := newStore(m), &fakeHydra{}
+		rec := serve(newHandler(store, hy), http.MethodPost, "/internal/staff/"+staffA+"/retire", validToken, "")
+		got := store.staff[staffA]
+		if rec.Code != http.StatusNoContent || got.Status != login.StatusRetired || got.Email != "" || got.Upstream != (login.UpstreamAccount{}) {
+			t.Fatalf("code = %d, 職員 = %+v, want 204 で retired、メールと上流のアカウントが空", rec.Code, got)
+		}
+		if len(hy.login) != 1 || hy.login[0] != staffA || len(hy.consent) != 1 || hy.consent[0] != staffA {
+			t.Errorf("取り消し = login %v, consent %v, want 職員の ID で 1 回ずつ", hy.login, hy.consent)
+		}
+		reg := serve(newHandler(store, hy), http.MethodPost, "/internal/staff", validToken, `{"org_id":"org-a","email":"aoki@example.com"}`)
+		if reg.Code != http.StatusCreated {
+			t.Errorf("同じメールの登録の code = %d, want 201", reg.Code)
+		}
+	})
+	t.Run("退職した職員を退職にしても 204 で、取り消しをやり直す", func(t *testing.T) {
+		retired := m
+		retired.Status, retired.Email, retired.Upstream = login.StatusRetired, "", login.UpstreamAccount{}
+		hy := &fakeHydra{}
+		rec := serve(newHandler(newStore(retired), hy), http.MethodPost, "/internal/staff/"+staffA+"/retire", validToken, "")
+		if rec.Code != http.StatusNoContent || len(hy.login) != 1 {
+			t.Errorf("code = %d, 取り消し = %v, want 204 で取り消す", rec.Code, hy.login)
+		}
+	})
+	t.Run("取り消しに失敗すれば 502 で、職員は退職のまま", func(t *testing.T) {
+		store := newStore(m)
+		rec := serve(newHandler(store, &fakeHydra{err: errors.New("down")}), http.MethodPost, "/internal/staff/"+staffA+"/retire", validToken, "")
+		if rec.Code != http.StatusBadGateway || store.staff[staffA].Status != login.StatusRetired {
+			t.Errorf("code = %d, status = %s, want 502 と retired", rec.Code, store.staff[staffA].Status)
+		}
+		if code := errorCode(t, rec); code != "revoke_failed" {
+			t.Errorf("本文の code = %q, want revoke_failed", code)
+		}
+	})
+	t.Run("いない職員は 404", func(t *testing.T) {
+		hy := &fakeHydra{}
+		rec := serve(newHandler(newStore(), hy), http.MethodPost, "/internal/staff/"+staffA+"/retire", validToken, "")
+		if rec.Code != http.StatusNotFound || len(hy.login) != 0 {
+			t.Errorf("code = %d, 取り消し = %v, want 404 で取り消さない", rec.Code, hy.login)
+		}
+	})
+}
+
+// errorCode は、エラーの本文の code を返す。
+func errorCode(t *testing.T, rec *httptest.ResponseRecorder) string {
+	t.Helper()
+	var got struct{ Code string }
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("本文を読めない: %v", err)
+	}
+	return got.Code
 }
 
 // hookBody は、Hydra v26 が token_hook に送る本文の形で、ブローカーが読む値を入れる。
@@ -347,6 +496,8 @@ func TestTokenHook(t *testing.T) {
 	suspended.Status = login.StatusSuspended
 	pending := active
 	pending.Status = login.StatusPending
+	retired := active
+	retired.Status, retired.Email = login.StatusRetired, ""
 	tests := []struct {
 		name  string
 		store *fakeStore
@@ -357,6 +508,7 @@ func TestTokenHook(t *testing.T) {
 		{"有効な職員の refresh は 204", newStore(active), hookKey, hookBody("web", "refresh_token", staffA, now.Add(-11*time.Hour)), http.StatusNoContent},
 		{"有効な職員の認可コードは 204", newStore(active), hookKey, hookBody("web", "authorization_code", staffA, now.Add(-time.Minute)), http.StatusNoContent},
 		{"止めた職員は 403", newStore(suspended), hookKey, hookBody("web", "refresh_token", staffA, now.Add(-time.Minute)), http.StatusForbidden},
+		{"退職した職員は 403", newStore(retired), hookKey, hookBody("web", "refresh_token", staffA, now.Add(-time.Minute)), http.StatusForbidden},
 		{"登録の途中の職員は 403", newStore(pending), hookKey, hookBody("web", "authorization_code", staffA, now.Add(-time.Minute)), http.StatusForbidden},
 		{"いない職員は 403", newStore(), hookKey, hookBody("web", "refresh_token", staffA, now.Add(-time.Minute)), http.StatusForbidden},
 		{"上流のログインから 12 時間を過ぎた refresh は 403", newStore(active), hookKey, hookBody("web", "refresh_token", staffA, now.Add(-12*time.Hour-time.Second)), http.StatusForbidden},
