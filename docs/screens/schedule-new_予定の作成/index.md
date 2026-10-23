@@ -206,6 +206,7 @@
     予定を作れなかったとき。次のどれでも、今は分けずにこの状態になる。400 のエラーを項目には出さない。
 
     - API が失敗を返したか、API に届かない。権限が無い（403）と入力エラー（400）のレスポンスを含む。
+    - 担当者が、開いた後に休職か退職になった。API は、休職と退職の職員を予定の職員と訪問の担当に指すと 400 を返す。
     - 予定の種類、サービスコード、訪問の種類の一覧（マスタ）を、web のサーバーが取れない。
     - 選んだ予定の種類、サービスコード、訪問の種類に当たる値が、マスタに無い。
 
@@ -510,13 +511,13 @@
 **値のソース**: 「名前」のカラムの下に、事業所の職員のうち休職と退職の職員を除いた名前を、職員の一覧の順に並べる。初期値は URL の `staffId` の職員。無ければ未選択。絞った結果が 0 件なら、表の下に「該当する名前がありません。」を出す。
 
 - `staffId` が職員の一覧に無い ID のときは、どの行も選ばれず、項目の一覧の要約は「未選択」になる。ただし値は残るので、検証には通り、その ID のまま送る。
-- `staffId` が休職か退職の職員の ID のときは、どの行も選ばれず、項目の一覧の要約にはその職員の名前を出す。値は残り、その ID のまま送る。
+- `staffId` が休職か退職の職員の ID のときは、未選択で開く。職員の一覧を取り終える前に開いたときは、取り終えたところで未選択に戻す。戻しても、閉じるときに確認を出さない。
 
 **活性条件**: 常に活性
 
 **表示条件**: 項目の一覧で担当者を選んでいるとき。名前に検索の語を含む職員だけを出す。休職と退職の職員は出さない
 
-**カタログ**: [StaffSelectList の Unselected](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-staffselectlist--unselected)、[ScheduleCreateModalContainer の WithSuspendedStaff](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecreatemodalcontainer--with-suspended-staff)
+**カタログ**: [StaffSelectList の Unselected](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-staffselectlist--unselected)、[ScheduleCreateModalContainer の FromOnLeaveStaffSlot](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecreatemodalcontainer--from-on-leave-staff-slot)
 
 ### インタラクション
 
@@ -598,7 +599,7 @@
 | `kind` | 種類のタブ。`normal`、`visit` | `visit`。デフォルト値は URL から消す |
 | `start` | 日付の初期値。`YYYY-MM-DD` | カレンダーの `date`。それも無ければ今日 |
 | `time` | 開始時間の初期値。`HH:mm` | 09:00 |
-| `staffId` | 担当者の初期値。職員の一覧に無い ID も、そのまま値にする | 未選択 |
+| `staffId` | 担当者の初期値。職員の一覧に無い ID も、そのまま値にする。休職か退職の職員の ID は値にしない | 未選択 |
 | `view`、`date`、`staff`、`cancelled` | カレンダーの search params。閉じたときに戻す | カレンダーのデフォルト値 |
 
 - 予定のカレンダーの「予定を作成」、週の表示の空いた時間、日の表示の時間の枠から開く。
