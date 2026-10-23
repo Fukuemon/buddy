@@ -45,6 +45,8 @@ go run ./cmd/broker
 - `PUBLIC_URL`: 必須。ブラウザが開くブローカーの URL。上流の IdP のコールバックの URL（`<PUBLIC_URL>/login/callback`）を作り、https ならログインの途中の cookie に Secure を付ける
 - `UPSTREAM_IDP_BROWSER_ORIGIN`: 上流の IdP の認可の画面へ転送するときに、URL の scheme とホストを替える origin。ブローカーが discovery の文書を読む issuer にブラウザが届かないローカル環境だけで渡す
 - `UPSTREAM_IDP_CLIENT_SECRETS_FILE`: 必須。組織の ID と、上流の IdP の client secret の対応（JSON）のパス。シークレットとして渡す。形は [upstream-idp-client-secrets.example.json](upstream-idp-client-secrets.example.json) にある
+- `CLIENT_IP_HEADER`: ログインの試行を数える送り手のアドレスを読む、前段のプロキシが付けるヘッダーの名前。ブローカーは最後の値を使う。無ければ接続の相手のアドレスを使う。ブローカーにプロキシを通らずに届かない構成でだけ渡す
+- `AUTO_CONSENT_CLIENTS`: 同意の画面を出さずに accept するクライアントの ID をカンマで区切った値。デフォルトは `web`。ほかのクライアントの同意は reject する
 
 上流の IdP の設定は、待ち受けを始める前に読む。次のいずれかでは、ブローカーは起動せず、終了コード 1 で終わる。
 
