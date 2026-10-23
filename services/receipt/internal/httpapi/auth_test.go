@@ -73,7 +73,7 @@ func TestChecksUnauthenticated(t *testing.T) {
 	}
 }
 
-// TestUnknownPathUnauthenticated は、定義にないパスとメソッドも、トークンが無ければ 404 より先に 401 を返すことを確かめる。
+// TestUnknownPathUnauthenticated は、定義にないパスとメソッドも、トークンが無ければ 404 より先に 401 を返すことを確認する。
 func TestUnknownPathUnauthenticated(t *testing.T) {
 	for _, tt := range []struct{ method, path string }{
 		{http.MethodGet, "/v1/checks"},
@@ -102,7 +102,7 @@ func TestChecksBearerSchemeCaseInsensitive(t *testing.T) {
 	}
 }
 
-// TestChecksWithIssuer は、フェイクの Issuer が署名したトークンを、本物の oidc.Verifier で確かめる。
+// TestChecksWithIssuer は、フェイクの Issuer が署名したトークンを、本物の oidc.Verifier で確認する。
 func TestChecksWithIssuer(t *testing.T) {
 	iss, err := oidctest.Start()
 	if err != nil {

@@ -16,7 +16,7 @@
 //     カレンダーは、Application Default Credentials で認証し、カレンダーの組織のサービスアカウントになりすまして読む（ADR-0012）。
 //   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit で試すためのもので、GOOGLE_APPLICATION_CREDENTIALS を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使い、渡さなければ認証をしない。
 //
-// `api healthcheck` は、サーバーを起動せず、動いているサーバーの GET /readyz を確かめて終わる。
+// `api healthcheck` は、サーバーを起動せず、動いているサーバーの GET /readyz を確認して終わる。
 //
 // SIGINT か SIGTERM を受けると、処理中のリクエストを待ってから終了する。設定のエラーと起動の失敗では終了コード 1 で終わる。
 package main
@@ -129,7 +129,7 @@ func newCalendarReader(ctx context.Context, cfg config) (*gcal.Reader, error) {
 	return gcal.NewReader(clients, cals), nil
 }
 
-// requireAccounts は、cals の全ての組織に、accounts のサービスアカウントの対応があるかを確かめる。
+// requireAccounts は、cals の全ての組織に、accounts のサービスアカウントの対応があるかを確認する。
 func requireAccounts(cals []gcal.Calendar, accounts gcalauth.Accounts) error {
 	for _, c := range cals {
 		if _, ok := accounts.Of(c.OrgID); !ok {

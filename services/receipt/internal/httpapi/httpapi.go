@@ -46,7 +46,7 @@ type server struct {
 var _ openapi.StrictServerInterface = (*server)(nil)
 
 // NewHandler は、openapi.yaml の GET /healthz、GET /readyz と POST /v1/checks を持つ http.Handler を返す。
-// 定義にないパスとメソッドには、404 の openapi.Error を返す。/healthz と /readyz 以外のリクエストは、cfg.Verifier でトークンを確かめる。
+// 定義にないパスとメソッドには、404 の openapi.Error を返す。/healthz と /readyz 以外のリクエストは、cfg.Verifier でトークンを確認する。
 func NewHandler(logger *slog.Logger, cfg Config) http.Handler {
 	s := &server{logger: logger, cfg: cfg}
 	mux := http.NewServeMux()
@@ -75,7 +75,7 @@ func (s *server) GetHealthz(_ context.Context, _ openapi.GetHealthzRequestObject
 	return openapi.GetHealthz200JSONResponse{Status: openapi.Ok}, nil
 }
 
-// GetReadyz は、{"status":"ok"} を返す。依存先は起動のときに確かめたので、レスポンスを返せればリクエストを受けられる。
+// GetReadyz は、{"status":"ok"} を返す。依存先は起動のときに確認したので、レスポンスを返せればリクエストを受けられる。
 func (s *server) GetReadyz(_ context.Context, _ openapi.GetReadyzRequestObject) (openapi.GetReadyzResponseObject, error) {
 	return openapi.GetReadyz200JSONResponse{Status: openapi.Ok}, nil
 }
