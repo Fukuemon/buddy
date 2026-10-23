@@ -105,7 +105,7 @@ export const importErrorMessage = (error: unknown) => {
   if (statusOf(error) === 403) return FORBIDDEN_MESSAGE
   switch (codeOf(error)) {
     case 'import_preview_changed':
-      return 'プレビューの後に、Google カレンダーの予定が変わりました。もう一度プレビューしてから取り込んでください。予定は 1 件も取り込んでいません。'
+      return 'プレビューの後に、Google カレンダーの予定か職員の休職が変わりました。もう一度プレビューしてから取り込んでください。予定は 1 件も取り込んでいません。'
     case 'import_running':
       return 'この職員の取り込みが、ほかの画面で進んでいます。終わってから、もう一度プレビューしてください。予定は 1 件も取り込んでいません。'
     // 画面は期間と取り込み方の値を確認してから送るので、残る入力のエラーは、選んだ利用者がいないことである

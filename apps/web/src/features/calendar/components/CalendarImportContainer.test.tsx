@@ -115,7 +115,7 @@ describe('CalendarImportContainer', () => {
     await userEvent.click(submit())
 
     expect(await screen.findByTestId('calendar-import-error')).toHaveTextContent(
-      'プレビューの後に、Google カレンダーの予定が変わりました。',
+      'プレビューの後に、Google カレンダーの予定か職員の休職が変わりました。',
     )
     expect(screen.getByTestId('calendar-import-review-normal-event-missing')).toBeChecked()
   })

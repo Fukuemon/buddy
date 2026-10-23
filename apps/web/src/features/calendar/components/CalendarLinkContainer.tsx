@@ -43,7 +43,9 @@ const CalendarLinkContent = () => {
 
   const queries = [staffQuery, calendarsQuery, accountQuery]
   const failed = queries.find((query) => query.isError)
-  const rows: CalendarLinkRow[] = [...(staffQuery.data ?? [])]
+  // 退職した職員は、退職でカレンダーが外れ、結び付けられないので出さない
+  const rows: CalendarLinkRow[] = (staffQuery.data ?? [])
+    .filter((staff) => staff.status !== 'retired')
     .sort((a, b) => a.name.localeCompare(b.name, 'ja'))
     .map((staff) => ({
       staff,

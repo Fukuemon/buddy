@@ -57,7 +57,7 @@ describe('importErrorMessage', () => {
   it.each([
     [
       apiError(409, 'import_preview_changed'),
-      'プレビューの後に、Google カレンダーの予定が変わりました。',
+      'プレビューの後に、Google カレンダーの予定か職員の休職が変わりました。',
     ],
     [apiError(409, 'import_running'), 'この職員の取り込みが、ほかの画面で進んでいます。'],
     [apiError(400, 'invalid_input'), '選んだ利用者が見つかりません。'],
