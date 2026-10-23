@@ -1,6 +1,6 @@
 import type { Schedule, Staff } from '#/api/types'
 
-/** 予定のカレンダーの職員の列と絞り込みに出す職員。止めた職員を除き、並びは変えない。 */
+/** 予定のカレンダーの職員の列と絞り込み、予定のフォームの職員の候補に出す職員。止めた職員を除き、並びは変えない。 */
 export const activeStaff = (staffList: Staff[]) =>
   staffList.filter((staff) => staff.suspendedAt === undefined)
 

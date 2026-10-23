@@ -1,3 +1,6 @@
+import type { APIRequestContext } from '@playwright/test'
+
+import { SCHEDULE_URL } from './env'
 import type { GoogleEvent } from './googleCalendar'
 
 /** 予定の詳細の URL。予定の ID は ULID で、後ろに編集のパスか search params が続くことがある。 */
@@ -30,3 +33,38 @@ export const detailDateTime = (event: GoogleEvent | undefined) => {
   const end = event?.end?.dateTime ?? ''
   return detailDateTimeText(start.slice(0, 10), start.slice(11, 16), end.slice(11, 16))
 }
+
+/**
+ * 予定の API で、facilityId の事業所に staffId の職員の通常の予定を 1 件作り（createSchedule）、レスポンスを返す。
+ * 予定の種類の ID は、予定の種類の一覧（listScheduleTypes）から「通常」を引く。
+ */
+export const createNormalSchedule = async (
+  request: APIRequestContext,
+  token: string,
+  facilityId: string,
+  schedule: { staffId: string; title: string; date: string },
+) => {
+  const headers = { Authorization: `Bearer ${token}` }
+  const res = await request.get(`${SCHEDULE_URL}/v1/schedule_types`, { headers })
+  if (!res.ok()) throw new Error(`予定の種類の一覧を取れない: ${res.status()}`)
+  const types = (await res.json()) as { id: string; name: string }[]
+  const normal = types.find(({ name }) => name === '通常')
+  if (normal === undefined) throw new Error('予定の種類に「通常」が無い')
+  return request.post(`${SCHEDULE_URL}/v1/facilities/${facilityId}/schedules`, {
+    headers,
+    data: {
+      schedule_type_id: normal.id,
+      date: schedule.date,
+      start_time: '10:00',
+      end_time: '11:00',
+      staff_id: schedule.staffId,
+      title: schedule.title,
+    },
+  })
+}
+
+/** 予定の API の予定の取得（GET /v1/schedules/{schedule_id}）を token の職員で呼び、レスポンスを返す。 */
+export const getSchedule = (request: APIRequestContext, token: string, scheduleId: string) =>
+  request.get(`${SCHEDULE_URL}/v1/schedules/${scheduleId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })

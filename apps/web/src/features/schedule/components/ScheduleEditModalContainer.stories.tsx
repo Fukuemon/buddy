@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import {
   failingBuddyApi,
   pendingBuddyApi,
+  suspendedStaffBuddyApi,
   withAppRouter,
   type AppRouterParameters,
 } from '#/storybook/withAppRouter'
@@ -41,3 +42,11 @@ export const Cancelled: Story = { parameters: route({ url: '/schedule/schedule-6
 export const Loading: Story = { parameters: route({ api: pendingBuddyApi() }) }
 
 export const Failed: Story = { parameters: route({ api: failingBuddyApi() }) }
+
+/**
+ * 止めた職員（石川 二葉）に割り振った訪問の予定。
+ * 担当者の要約に名前を出したまま、候補には止めた職員を出さない。
+ */
+export const SuspendedStaff: Story = {
+  parameters: route({ url: '/schedule/schedule-2/edit', api: suspendedStaffBuddyApi() }),
+}

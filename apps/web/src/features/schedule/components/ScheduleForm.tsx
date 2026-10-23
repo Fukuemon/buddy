@@ -5,6 +5,7 @@ import type { Patient, Staff } from '#/api/types'
 import { TextareaField } from '@buddy/ui'
 
 import { SCHEDULE_CATEGORY_LABEL } from '../constants/scheduleLabels'
+import { activeStaff } from '../lib/activeStaff'
 import { visitEndTimeOfInput } from '../lib/scheduleFormMapper'
 import type { ScheduleFormValues } from '../schema/scheduleForm'
 import { PatientSelectList } from './PatientSelectList'
@@ -29,6 +30,7 @@ export type ScheduleFormProps = {
 /**
  * 予定の作成と編集のフォーム。左に項目の要約を並べ、右に選んだ項目の編集の欄を出す。
  * 通常と訪問の切り替えは持たず、form の kind の値に従う。
+ * 職員の候補には止めた職員を出さない。今の値が止めた職員なら、要約に名前を出したまま値を変えない。
  */
 export const ScheduleForm = ({ id, form, staffList, patients, onSubmit }: ScheduleFormProps) => {
   const [activeField, setActiveField] = useState<FieldId>('date-time')
@@ -145,7 +147,7 @@ export const ScheduleForm = ({ id, form, staffList, patients, onSubmit }: Schedu
             render={({ field }) => (
               <StaffSelectList
                 onChange={field.onChange}
-                staffList={staffList}
+                staffList={activeStaff(staffList)}
                 value={field.value}
               />
             )}

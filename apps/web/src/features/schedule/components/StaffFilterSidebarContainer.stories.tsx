@@ -1,10 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
-import type { BuddyApi } from '#/api/client'
-import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import {
   emptyBuddyApi,
   failingBuddyApi,
+  suspendedStaffBuddyApi,
   withAppRouter,
   type AppRouterParameters,
 } from '#/storybook/withAppRouter'
@@ -61,25 +60,11 @@ export const WithCalendar: Story = {
   ),
 }
 
-/** 石川 二葉（staff-2）を止めたフェイクの API。 */
-const suspendedStaffApi = (): BuddyApi => {
-  const base = createFakeBuddyApi()
-  return {
-    ...base,
-    staff: {
-      list: async (...args) =>
-        (await base.staff.list(...args)).map((staff) =>
-          staff.id === 'staff-2' ? { ...staff, suspendedAt: '2026-10-01T09:00:00Z' } : staff,
-        ),
-    },
-  }
-}
-
 /** 止めた職員（石川 二葉）がいる事業所。絞り込みとカレンダーに、止めた職員と、その予定を出さない。 */
 export const WithSuspendedStaff: Story = {
   ...WithCalendar,
   parameters: {
-    ...route({ url: '/schedule?view=day', api: suspendedStaffApi() }),
+    ...route({ url: '/schedule?view=day', api: suspendedStaffBuddyApi() }),
     layout: 'fullscreen',
   },
 }
@@ -90,7 +75,7 @@ export const WithSuspendedStaffSelected: Story = {
   parameters: {
     ...route({
       url: '/schedule?view=day&staff=%5B%22staff-1%22%2C%22staff-2%22%5D',
-      api: suspendedStaffApi(),
+      api: suspendedStaffBuddyApi(),
     }),
     layout: 'fullscreen',
   },
@@ -100,7 +85,7 @@ export const WithSuspendedStaffSelected: Story = {
 export const WithSuspendedStaffWeek: Story = {
   ...WithCalendar,
   parameters: {
-    ...route({ url: '/schedule?view=week', api: suspendedStaffApi() }),
+    ...route({ url: '/schedule?view=week', api: suspendedStaffBuddyApi() }),
     layout: 'fullscreen',
   },
 }

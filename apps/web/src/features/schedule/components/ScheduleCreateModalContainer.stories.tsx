@@ -1,6 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
-import { failingBuddyApi, withAppRouter, type AppRouterParameters } from '#/storybook/withAppRouter'
+import {
+  failingBuddyApi,
+  suspendedStaffBuddyApi,
+  withAppRouter,
+  type AppRouterParameters,
+} from '#/storybook/withAppRouter'
 
 import { ScheduleCreateModalContainer } from './ScheduleCreateModalContainer'
 
@@ -27,3 +32,6 @@ export const FromSlot: Story = {
 }
 
 export const ListFailed: Story = { parameters: route({ api: failingBuddyApi() }) }
+
+/** 止めた職員（石川 二葉）がいる事業所。担当者の候補に、止めた職員を出さない。 */
+export const WithSuspendedStaff: Story = { parameters: route({ api: suspendedStaffBuddyApi() }) }

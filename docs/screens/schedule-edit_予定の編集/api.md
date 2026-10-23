@@ -12,6 +12,7 @@
 | サービスコード | 選んだコード | `VisitDetail.serviceCode` | `getSchedule` の `visit_info.service_code`。保存では `visit_info.service_code_id` |
 | 利用者の一覧 | 利用者の名前と選んだ利用者 | `Patient.name`、`VisitDetail.patientId` | `listPatients` の `name`、`visit_info.patient_id` |
 | 職員の一覧 | 職員の名前と選んだ職員 | `Staff.name`、`Schedule.staffId` | `listUsers` の `username`、`staff_id`、`visit_info.assigned_staff_id` |
+| 職員の一覧 | 止めた職員を除くか | `Staff.suspendedAt` | `listUsers` の `Staff.suspended_at` |
 | 訪問の種類 | 夜勤、緊急、入院 | `VisitDetail.categories` | `getSchedule` の `visit_info.visit_categories[].name`。保存では `visit_info.visit_category_ids` |
 | メモ | メモ | `Schedule.description` | `description` |
 | タイトル | 通常の予定のタイトル | `Schedule.title` | `title` |
@@ -24,3 +25,4 @@
 - 読み直しかマスタの取得が失敗したときと、マスタに当たる値が無いときは、`updateSchedule` を呼ばずに失敗する。
 - サービスコードの一覧と提供時間の範囲は、画面が持つ定数（`apps/web/src/features/schedule/constants/scheduleLabels.ts`）で、`listServiceCodes` の範囲を使っていない。
 - 予定の一覧の取得の結果は、保存に成功したときに捨てて取り直す（`listSchedules`）。
+- `listUsers` は、止めた職員も返す。この画面は、`suspendedAt` を持つ職員を担当者の候補から除く。予定の職員の名前は、止めた職員も含めた一覧で探す。

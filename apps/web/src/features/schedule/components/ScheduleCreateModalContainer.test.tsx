@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import * as stories from './ScheduleCreateModalContainer.stories'
 
-const { Visit } = composeStories(stories)
+const { Visit, WithSuspendedStaff } = composeStories(stories)
 
 describe('ScheduleCreateModalContainer', () => {
   afterEach(() => {
@@ -59,5 +59,13 @@ describe('ScheduleCreateModalContainer', () => {
     await userEvent.click(screen.getByTestId('modal-close'))
 
     expect(confirm).not.toHaveBeenCalled()
+  })
+
+  it('止めた職員がいる事業所では、担当者の候補に止めた職員を出さない', async () => {
+    render(<WithSuspendedStaff />)
+
+    await userEvent.click(await screen.findByTestId('schedule-field-staff'))
+    expect(screen.getByTestId('staff-select-option-staff-1')).toBeInTheDocument()
+    expect(screen.queryByTestId('staff-select-option-staff-2')).not.toBeInTheDocument()
   })
 })
