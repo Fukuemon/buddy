@@ -91,6 +91,11 @@ nav = [
   ] },
 ]
 
+# 書体を画面と同じデザインシステムの書体（tokens.css の --font-family-sans と --font-family-mono）にする。Zensical が Google Fonts から読み込む
+[project.theme.font]
+text = "Noto Sans JP"
+code = "Noto Sans Mono"
+
 [project.markdown_extensions.pymdownx.superfences]
 custom_fences = [
   { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },

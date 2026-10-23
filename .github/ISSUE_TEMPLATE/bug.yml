@@ -33,7 +33,7 @@ body:
     id: verification
     attributes:
       label: 検証の観点
-      description: 直した後に確かめる動作を、条件と期待結果の表で書く。pull request の「検証とエビデンス」の表の同じ列に写す
+      description: 直した後に確認する動作を、条件と期待結果の表で書く。pull request の「検証とエビデンス」の表の同じ列に写す
       placeholder: |
         | # | 条件（WHEN / IF） | 期待結果（SHALL） |
         | --- | --- | --- |
@@ -42,4 +42,4 @@ body:
     id: environment
     attributes:
       label: 環境
-      description: 確かめたコミット、OS、ブラウザとそのバージョン、起動のしかた（ルートの compose か、web の `pnpm --filter @buddy/web dev` か `dev:msw` か）
+      description: 確認したコミット、OS、ブラウザとそのバージョン、起動のしかた（ルートの compose か、web の `pnpm --filter @buddy/web dev` か `dev:msw` か）
