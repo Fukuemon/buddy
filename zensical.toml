@@ -8,6 +8,7 @@ site_dir = "site"
 watch = [
   "services/schedule/DesignDoc.md",
   "services/receipt/DesignDoc.md",
+  "services/broker/DesignDoc.md",
   "packages/ui/DESIGN.md",
   "packages/e2e/DesignDoc.md",
   "packages/e2e/kit/recording/DesignDoc.md",
@@ -28,6 +29,7 @@ nav = [
     { "全体" = "design/DesignDoc.md" },
     { "予定の管理" = "design/services/schedule.md" },
     { "レセプトの照合" = "design/services/receipt.md" },
+    { "認証のブローカー" = "design/services/broker.md" },
     { "E2E のテストのコード" = "design/packages/e2e.md" },
     { "エビデンスの録画" = "design/packages/e2e-recording.md" },
   ] },
@@ -84,6 +86,8 @@ nav = [
     "adr/0013-services-directory.md",
     "adr/0014-service-names.md",
     "adr/0015-key-color-and-canvas.md",
+    "adr/0016-id-broker-hydra.md",
+    "adr/0017-identity-boundary.md",
   ] },
 ]
 
