@@ -343,7 +343,7 @@ describe('createHttpBuddyApi', () => {
     ).rejects.toMatchObject({ status: 409, code: 'import_running' })
   })
 
-  it('カレンダーの確かめと外すは、本文の無い成功で終わる', async () => {
+  it('カレンダーの確認と外すは、本文の無い成功で終わる', async () => {
     const authorized = authorizedApi()
     await expect(
       authorized.calendars.check('facility-1', 'staff-1@example.com'),
@@ -354,7 +354,7 @@ describe('createHttpBuddyApi', () => {
     )
   })
 
-  it('確かめが要る書き出しを Google の内容で解き、合わせられない書き出しは code で投げる', async () => {
+  it('確認が必要な書き出しを Google の内容で解き、合わせられない書き出しは code で投げる', async () => {
     const authorized = authorizedApi()
     await expect(
       authorized.calendars.acceptExport('facility-1', 'export-1'),

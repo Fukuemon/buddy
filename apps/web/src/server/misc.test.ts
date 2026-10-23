@@ -73,7 +73,7 @@ describe('parseBffCall', () => {
 })
 
 describe('parseBffArgs', () => {
-  it('操作ごとの引数の形を確かめる', () => {
+  it('操作ごとの引数の形を確認する', () => {
     expect(parseBffArgs({ op: 'staff.list', args: ['f'] })).toEqual({ ok: true, args: ['f'] })
     expect(parseBffArgs({ op: 'staff.list', args: ['f', { name: '青木', extra: 1 }] })).toEqual({
       ok: true,

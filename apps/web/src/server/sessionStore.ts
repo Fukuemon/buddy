@@ -17,7 +17,7 @@ export interface SessionStore {
   /** 値を返して消す。無ければ undefined を返す。 */
   take<T>(key: string): Promise<T | undefined>
   delete(key: string): Promise<void>
-  /** 保存先に届くかを確かめる。届かなければ Error を投げる。 */
+  /** 保存先に届くかを確認する。届かなければ Error を投げる。 */
   ping(): Promise<void>
 }
 

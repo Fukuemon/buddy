@@ -17,7 +17,7 @@ export type ImportRangeErrors = { start?: string; end?: string }
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/
 
 /**
- * 期間を確かめる。開始日が終了日より後なら開始日に、1 年を超えるなら終了日にエラーを返す。
+ * 期間を確認する。開始日が終了日より後なら開始日に、1 年を超えるなら終了日にエラーを返す。
  * 1 年までは、予定の API と同じく、終了日が開始日の 1 年後の日より前であることとする。
  */
 export const validateImportRange = (start: string, end: string): ImportRangeErrors => {

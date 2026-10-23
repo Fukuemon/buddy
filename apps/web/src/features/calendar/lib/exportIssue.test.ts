@@ -17,7 +17,7 @@ describe('exportIssueReason', () => {
 
     it('Google の内容に合わせられない単発の予定は、buddy でキャンセルした予定として、書き直すと消えることを示す', () => {
       expect(exportIssueReason({ ...conflict, error_code: 'precondition_failed' })).toBe(
-        'buddy でキャンセルした予定が、Google カレンダーで変わっていました。buddy の内容で書き直すと Google カレンダーの予定を消すので、消してよいかを職員に確かめてください。',
+        'buddy でキャンセルした予定が、Google カレンダーで変わっていました。buddy の内容で書き直すと Google カレンダーの予定を消すので、消してよいかを職員に確認してください。',
       )
     })
 

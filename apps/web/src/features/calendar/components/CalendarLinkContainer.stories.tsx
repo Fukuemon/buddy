@@ -69,7 +69,7 @@ export const LinkDialog: Story = {
   },
 }
 
-/** 職員のメールアドレスのカレンダーを、読めると確かめた。 */
+/** 職員のメールアドレスのカレンダーを、読めると確認した。 */
 export const LinkReadable: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement.ownerDocument.body)
@@ -79,7 +79,7 @@ export const LinkReadable: Story = {
   },
 }
 
-/** 共有されていないカレンダーを確かめた。 */
+/** 共有されていないカレンダーを確認した。 */
 export const LinkUnreadable: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement.ownerDocument.body)

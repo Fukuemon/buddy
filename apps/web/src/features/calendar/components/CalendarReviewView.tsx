@@ -4,7 +4,7 @@ import type { CalendarExportIssue } from '#/api/types'
 
 import { CalendarReviewTable } from './CalendarReviewTable'
 
-/** 確かめが要る予定の画面の状態。 */
+/** 確認が必要な予定の画面の状態。 */
 export type CalendarReviewViewState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
@@ -18,7 +18,7 @@ export type CalendarReviewViewProps = {
   onAccept: (exportId: CalendarExportIssue['id']) => void
 }
 
-/** 確かめが要る予定の画面の本文。タイトルと説明の文の下に、Google カレンダーと食い違った予定を並べる。 */
+/** 確認が必要な予定の画面の本文。タイトルと説明の文の下に、Google カレンダーと食い違った予定を並べる。 */
 export const CalendarReviewView = ({
   state,
   onRetry,
@@ -27,7 +27,7 @@ export const CalendarReviewView = ({
   onAccept,
 }: CalendarReviewViewProps) => (
   <div className="flex flex-col gap-6">
-    <h1 className="text-heading-md">確かめが要る予定</h1>
+    <h1 className="text-heading-md">確認が必要な予定</h1>
     <p className="max-w-3xl text-body">
       buddy の予定のうち、Google カレンダーに書き出せなかった予定と、buddy と Google
       カレンダーの両方で変わった予定です。片方だけで変わった予定は、変わった側に合わせるので、ここには出ません。buddy
@@ -52,7 +52,7 @@ export const CalendarReviewView = ({
     {state.status === 'ready' &&
       (state.issues.length === 0 ? (
         <p className="text-body text-text-secondary" data-testid="calendar-review-empty">
-          確かめが要る予定はありません。
+          確認が必要な予定はありません。
         </p>
       ) : (
         <CalendarReviewTable

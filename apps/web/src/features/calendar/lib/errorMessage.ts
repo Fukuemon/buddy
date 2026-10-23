@@ -18,12 +18,12 @@ const statusOf = (error: unknown) => (error instanceof ApiError ? error.status :
 export const loadErrorMessage = (error: unknown, fallback: string) =>
   statusOf(error) === 403 ? FORBIDDEN_MESSAGE : fallback
 
-/** カレンダーを読めるかの確かめか、結び付けの失敗を、確かめの結果の文にする。 */
+/** カレンダーを読めるかの確認か、結び付けの失敗を、確認の結果の文にする。 */
 export const linkErrorMessage = (error: unknown) => {
   if (statusOf(error) === 403) return FORBIDDEN_MESSAGE
   switch (codeOf(error)) {
     case 'calendar_unreadable':
-      return 'このカレンダーを読めません。カレンダーをこの事業所の buddy のサービスアカウントに共有したかと、カレンダーの ID が合っているかを確かめてください。'
+      return 'このカレンダーを読めません。カレンダーをこの事業所の buddy のサービスアカウントに共有したかと、カレンダーの ID が合っているかを確認してください。'
     case 'calendar_taken':
       return 'このカレンダーは、ほかの職員に結び付いています。'
     case 'staff_has_calendar':
@@ -31,9 +31,9 @@ export const linkErrorMessage = (error: unknown) => {
     case 'calendar_already_linked':
       return 'このカレンダーは、この職員にすでに結び付いています。一覧を読み直してください。'
     case 'calendar_unavailable':
-      return 'Google カレンダーに届きませんでした。時間をおいて、もう一度確かめてください。'
+      return 'Google カレンダーに届きませんでした。時間をおいて、もう一度確認してください。'
     default:
-      return '確かめられませんでした。時間をおいて、もう一度確かめてください。'
+      return '確認できませんでした。時間をおいて、もう一度確認してください。'
   }
 }
 
@@ -50,7 +50,7 @@ export const previewErrorMessage = (error: unknown, staffName: string) => {
     case 'calendar_unavailable':
       return 'Google カレンダーから予定を読めませんでした。時間をおいて、もう一度プレビューしてください。'
     case 'calendar_unreadable':
-      return `${staffName} の Google カレンダーを読めません。カレンダーの共有が外れていないかを、職員に確かめてください。`
+      return `${staffName} の Google カレンダーを読めません。カレンダーの共有が外れていないかを、職員に確認してください。`
     case 'calendar_not_configured':
       return 'この事業所のサービスアカウントが設定されていないので、予定を読めません。buddy を動かしている管理者に、Google カレンダーの設定を頼んでください。'
     case 'not_found':
@@ -60,9 +60,9 @@ export const previewErrorMessage = (error: unknown, staffName: string) => {
   }
 }
 
-/** 確かめが要る予定の、書き出しの一覧を読めなかったときの文。 */
+/** 確認が必要な予定の、書き出しの一覧を読めなかったときの文。 */
 export const REVIEW_LOAD_ERROR_MESSAGE =
-  '確かめが要る予定を読み込めませんでした。時間をおいて、読み直してください。'
+  '確認が必要な予定を読み込めませんでした。時間をおいて、読み直してください。'
 
 /** buddy の内容で書き直せなかったときの文。ほかの画面で書き直したときは、一覧を読み直させる。 */
 export const rewriteErrorMessage = (error: unknown) => {
@@ -88,7 +88,7 @@ export const acceptErrorMessage = (error: unknown) => {
     case 'external_change_unappliable':
       return 'Google カレンダーの予定を、buddy の予定に読み替えられません。終日の予定か、タイトルの利用者が見つからない予定です。buddy の内容で書き直すか、Google カレンダーで直すよう職員に頼んでください。'
     case 'calendar_unreadable':
-      return 'Google カレンダーを読めません。カレンダーの共有が外れていないかを、職員に確かめてください。'
+      return 'Google カレンダーを読めません。カレンダーの共有が外れていないかを、職員に確認してください。'
     case 'calendar_not_configured':
       return 'この事業所のサービスアカウントが設定されていないので、Google カレンダーを読めません。buddy を動かしている管理者に、Google カレンダーの設定を頼んでください。'
     default:
@@ -96,7 +96,7 @@ export const acceptErrorMessage = (error: unknown) => {
   }
 }
 
-/** 確かめが要る予定の利用者を選ぶための、利用者の一覧を読めなかったときの文。 */
+/** 確認が必要な予定の利用者を選ぶための、利用者の一覧を読めなかったときの文。 */
 export const PATIENTS_ERROR_MESSAGE =
   '利用者の一覧を読み込めませんでした。時間をおいて、もう一度プレビューしてください。'
 
@@ -108,7 +108,7 @@ export const importErrorMessage = (error: unknown) => {
       return 'プレビューの後に、Google カレンダーの予定が変わりました。もう一度プレビューしてから取り込んでください。予定は 1 件も取り込んでいません。'
     case 'import_running':
       return 'この職員の取り込みが、ほかの画面で進んでいます。終わってから、もう一度プレビューしてください。予定は 1 件も取り込んでいません。'
-    // 画面は期間と取り込み方の値を確かめてから送るので、残る入力のエラーは、選んだ利用者がいないことである
+    // 画面は期間と取り込み方の値を確認してから送るので、残る入力のエラーは、選んだ利用者がいないことである
     case 'invalid_input':
       return '選んだ利用者が見つかりません。利用者を選び直してください。予定は 1 件も取り込んでいません。'
     case 'not_found':

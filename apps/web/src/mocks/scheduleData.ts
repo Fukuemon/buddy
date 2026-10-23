@@ -269,7 +269,7 @@ export const mockExternalCalendars: Schemas['ExternalCalendar'][] = [
 ]
 
 /**
- * 確かめが要る書き出し。schedule-1 は buddy と Google カレンダーの両方で変わり、schedule-5 は書く権限が無く、
+ * 確認が必要な書き出し。schedule-1 は buddy と Google カレンダーの両方で変わり、schedule-5 は書く権限が無く、
  * 繰り返しの予定 recurring-1 は Google カレンダーで消され、schedule-2 は Google カレンダーで終日の予定にされ、
  * schedule-4 は buddy でキャンセルした後に Google カレンダーで変えられていた。
  * Google カレンダーの内容に合わせられるのは schedule-1 だけである。
@@ -352,7 +352,7 @@ export const mockExportIssues: Schemas['CalendarExportIssue'][] = [
   },
 ]
 
-/** 確かめが要る書き出しから、予定の日時と職員を除いた書き出しを返す。 */
+/** 確認が必要な書き出しから、予定の日時と職員を除いた書き出しを返す。 */
 export const exportOfIssue = (
   issue: Schemas['CalendarExportIssue'],
 ): Schemas['CalendarExport'] => ({

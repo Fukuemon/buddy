@@ -33,7 +33,7 @@ export const formatLastImport = (run: ExternalCalendar['last_import']) => {
   return `${formatDateTime(run.finished_at ?? run.started_at)}${failed}（${formatDateRange(run.range_start, run.range_end)}）`
 }
 
-/** 確かめが要る予定の日時を「2026/11/04（水）10:00〜11:00」の形にする。 */
+/** 確認が必要な予定の日時を「2026/11/04（水）10:00〜11:00」の形にする。 */
 export const formatReviewDateTime = (item: ImportReviewItem) =>
   `${formatDateWithWeekday(item.date)}${formatTime(item.start_time)}〜${formatTime(item.end_time)}`
 

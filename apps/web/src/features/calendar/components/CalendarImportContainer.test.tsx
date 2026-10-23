@@ -41,7 +41,7 @@ describe('CalendarImportContainer', () => {
     const result = await preview()
     expect(within(result).getByTestId('calendar-import-count-import')).toHaveTextContent('18 件')
     expect(screen.getByTestId('calendar-import-remaining')).toHaveTextContent(
-      '確かめが要る予定のうち、あと 2 件の取り込み方を選んでください。',
+      '確認が必要な予定のうち、あと 2 件の取り込み方を選んでください。',
     )
     expect(submit()).toHaveAttribute('aria-disabled', 'true')
 
@@ -69,7 +69,7 @@ describe('CalendarImportContainer', () => {
     const result = await screen.findByTestId('calendar-import-result')
     expect(result).toHaveTextContent('取り込みました')
     expect(within(result).getByTestId('calendar-import-result-counts')).toHaveTextContent(
-      '確かめた 2 件のうち 1 件は利用者を選び、1 件は通常の予定にした',
+      '確認した 2 件のうち 1 件は利用者を選び、1 件は通常の予定にした',
     )
     expect(screen.queryByTestId('calendar-import-result-preview')).toBeNull()
   })

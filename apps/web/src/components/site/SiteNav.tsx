@@ -42,7 +42,7 @@ export const SITE_NAV_ITEMS: readonly SiteNavItem[] = [
 /** 職員の管理の権限を持つ職員にだけ出す、予定の取り込みのリンク。カレンダーの連携の画面も、このリンクを今の画面とする。 */
 export const IMPORT_NAV_ITEM: SiteNavItem = { href: '/schedule/import', label: '取り込み' }
 
-/** 職員の管理の権限を持つ職員にだけ出す、確かめが要る予定（Google カレンダーと食い違った予定）のリンク。 */
+/** 職員の管理の権限を持つ職員にだけ出す、確認が必要な予定（Google カレンダーと食い違った予定）のリンク。 */
 export const REVIEW_NAV_ITEM: SiteNavItem = { href: '/schedule/review', label: '要確認' }
 
 /** ログインした職員に出すリンクの並びを返す。職員の管理の権限を持つ職員には、取り込みと要確認を足す。 */

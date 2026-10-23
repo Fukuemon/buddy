@@ -26,7 +26,7 @@ export const storyPatients = fakePatients
 
 const range = { range_start: '2026-11-01', range_end: '2026-11-30' }
 
-/** 確かめが要る予定が 2 件あるプレビューの結果。 */
+/** 確認が必要な予定が 2 件あるプレビューの結果。 */
 export const storyPreview: ImportPreview = createMockImportPreview(range)
 
 /** 全て取り込み済みのプレビューの結果。 */

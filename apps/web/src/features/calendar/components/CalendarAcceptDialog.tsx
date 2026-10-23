@@ -14,7 +14,7 @@ export type CalendarAcceptDialogProps = {
   onCancel: () => void
 }
 
-/** buddy の予定を Google カレンダーの内容に合わせる前に、buddy での変更が消えることを示して確かめるダイアログ。 */
+/** buddy の予定を Google カレンダーの内容に合わせる前に、buddy での変更が消えることを示して確認するダイアログ。 */
 export const CalendarAcceptDialog = ({
   target,
   isSubmitting,
