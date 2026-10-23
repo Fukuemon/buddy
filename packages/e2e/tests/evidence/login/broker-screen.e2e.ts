@@ -61,10 +61,11 @@ test.describe('ログイン', () => {
           },
           openWeb,
           async ({ page, step, check }) => {
-            await step('ログインせずに予定のカレンダーを開く')
+            // 字幕は開いた画面の sessionStorage に置くので、画面を開いてから最初の字幕を出す
             await page.goto('/schedule')
             const broker = brokerLogin(page)
             await expect(broker.email).toBeVisible()
+            await step('ログインせずに予定のカレンダーを開いた')
             await check('ブローカーのメールアドレスの入力の画面が出る')
 
             const button = contrastRatio(await colorsOf(broker.next))
@@ -94,9 +95,9 @@ test.describe('ログイン', () => {
           },
           openWeb,
           async ({ page, step, check }) => {
-            await step('ログインせずに、幅 390px で予定のカレンダーを開く')
             await page.goto('/schedule')
             await expect(brokerLogin(page).email).toBeVisible()
+            await step('ログインせずに、幅 390px で予定のカレンダーを開いた')
             const width = await page.evaluate(() => ({
               scroll: document.documentElement.scrollWidth,
               client: document.documentElement.clientWidth,
@@ -123,9 +124,9 @@ test.describe('ログイン', () => {
           },
           openWeb,
           async ({ page, step, check }) => {
-            await step('login_challenge を付けずに、ブローカーのログインの画面を開く')
             await page.goto(`${BROKER_URL}/login`)
             await expect(brokerPage(page).heading).toHaveText('ログインできませんでした')
+            await step('login_challenge を付けずに、ブローカーのログインの画面を開いた')
             await check('「ログインできませんでした」の画面が出る')
           },
         )
