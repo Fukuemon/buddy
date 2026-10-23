@@ -31,6 +31,7 @@ updates:
     directories:
       - /services/schedule
       - /services/receipt
+      - /services/broker
       - /packages/go
     schedule:
       interval: weekly
@@ -47,6 +48,7 @@ updates:
       - /apps/web
       - /services/schedule
       - /services/receipt
+      - /services/broker
     schedule:
       interval: weekly
     commit-message:

@@ -3,6 +3,8 @@ type: feature-design
 title: 認証のブローカー
 description: Ory Hydra の login and consent app として動くブローカーの責務、Hydra との分担、ログイン、職員の登録と停止、ログアウトの流れ、ローカル環境の構成
 status: draft
+governs: services/broker
+verified_commit: 787190c
 ---
 
 # 認証のブローカー
@@ -53,6 +55,31 @@ flowchart TB
 - ブローカーの DB は、ブローカーの職員と上流のアカウントを持つ。Hydra の DB とは分ける。
 - access token は JWT で、期限は 5 分である。`org_id` は `oauth2.allowed_top_level_claims` で JWT の top level に出す。
 - Hydra の web のクライアントは `skip_consent` を持ち、許す audience は `schedule` と `receipt` である。
+
+### 職員の身元のテーブル
+
+ブローカーの DB のテーブルを示す。名前、役職、権限などの業務のデータは予定の API が持ち、ここには置かない（ADR-0017）。
+
+```mermaid
+erDiagram
+  staff ||--o| upstream_accounts : "結び付ける"
+  staff {
+    text id PK "ULID。予定の API の users.sub に入る"
+    varchar org_id "所属の事業所の組織の ID"
+    varchar email "小文字にそろえる。事業所の中で一意"
+    text status "active か suspended"
+  }
+  upstream_accounts {
+    text staff_id PK "staff.id"
+    text iss "上流の IdP の issuer"
+    text sub "iss と組で一意"
+  }
+```
+
+- 職員の ID は、ブローカーが登録のときに発行する。
+- 事業所のテーブルは持たない。`org_id` は、上流の IdP の設定のファイルの `org_id` と同じ値で、access token の `org_id` にもなる。
+- メールは小文字にそろえて入れ、事業所の中で一意にする。予定の API の職員のメールと同じ規則である。
+- 1 人の職員は、上流のアカウントを 1 つだけ持つ。同じ `iss` と `sub` を 2 人の職員に結び付けられない。
 
 ### ログイン
 
@@ -118,9 +145,11 @@ compose は、開発用の IdP（mock-oauth2-server）を、上流の IdP のフ
 
 - 置く場所: `services/broker`
 - 読む設定
-  - Hydra の admin API の URL
-  - 事業所の組織の ID と、上流の IdP の issuer と client ID の対応のファイル
-  - 上流の IdP ごとの client secret（シークレット）
-  - ブローカーの DB の接続先
+  - Hydra の admin API の URL（`HYDRA_ADMIN_URL`）
+  - 事業所の組織の ID と、上流の IdP の issuer と client ID の対応のファイル（`UPSTREAM_IDPS_FILE`）
+  - 組織の ID と、上流の IdP の client secret の対応のファイル（`UPSTREAM_IDP_CLIENT_SECRETS_FILE`）。シークレットとして渡す
+  - ブローカーの DB の接続先（`DB_HOST`、`DB_PORT`、`DB_USER`、`DB_PASSWORD`、`DB_NAME`）
+  - 2 つのファイルに必須の値が無いか、client secret の無い上流の IdP があれば、ブローカーは起動しない。値の一覧と形は [README](https://github.com/Fukuemon/buddy/blob/develop/services/broker/README.md#起動する) にある。
+- ヘルスチェック: `GET /healthz`（依存先を確かめない）、`GET /readyz`（DB に届かなければ 503）、`broker healthcheck` のサブコマンド
 - 公開する画面: ログイン（メールの入力）、上流の IdP のコールバック、同意、ログアウト
 - 内部の API: 職員の登録、職員の停止、Hydra の `oauth2.token_hook`

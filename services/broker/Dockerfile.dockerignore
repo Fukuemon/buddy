@@ -1,0 +1,9 @@
+*
+!packages/go/
+!services/broker/go.mod
+!services/broker/go.sum
+!services/broker/cmd/
+!services/broker/internal/
+!services/broker/db/
+**/*_test.go
+**/.golangci.yml
