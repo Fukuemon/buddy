@@ -1,7 +1,8 @@
 // Package internalapi は、ブローカーの内部の API を持つ（ADR-0017）。
 //
-// 職員の登録、削除、停止は、予定の API が職員の管理の権限を確認してから呼ぶ。Hydra の client credentials の
-// access token（aud は broker）だけを受ける。Hydra の oauth2.token_hook は、Hydra が token_hook の設定のヘッダーで呼ぶ。
+// 職員の登録、有効化、削除、停止は、予定の API が職員の管理の権限を確認してから呼ぶ。Hydra の client credentials の
+// access token（aud は broker）のうち、許したクライアントのものだけを受ける。Hydra の oauth2.token_hook は、
+// Hydra が token_hook の設定のヘッダーで呼ぶ。ログインの画面と別のポートで待ち受け、ブラウザに開かない。
 package internalapi
 
 import (
@@ -36,21 +37,25 @@ const (
 )
 
 var (
-	// ErrSuspended は、登録しようとしたメールの職員が、同じ事業所で止められていることを示す。
+	// ErrSuspended は、登録か有効化しようとした職員が止められていることを示す。
 	ErrSuspended = errors.New("職員が止められている")
-	// ErrLinked は、上流のアカウントを結び付けた職員を消そうとしたことを示す。
-	ErrLinked = errors.New("職員に上流のアカウントが結び付いている")
+	// ErrEmailTaken は、登録しようとしたメールの職員が、ほかの事業所にいることを示す。
+	ErrEmailTaken = errors.New("同じメールの職員がほかの事業所にいる")
+	// ErrNotPending は、登録の途中でない職員を消そうとしたことを示す。
+	ErrNotPending = errors.New("職員が登録の途中でない")
 )
 
 // Store は、ブローカーの職員を読み書きする。
 type Store interface {
 	// Get は、ID が id の職員を返す。いなければ login.ErrNotFound を返す。
 	Get(ctx context.Context, id string) (login.StaffMember, error)
-	// Register は、m の事業所に m のメールの職員がいなければ m を書き、書いた職員と true を返す。
-	// 同じ事業所に同じメールの職員がいれば、書かずにその職員と false を返す。
+	// Register は、m のメールの職員がいなければ m を書き、書いた職員と true を返す。メールは全ての事業所で一意である。
+	// 同じ事業所に同じメールの職員がいれば、書かずにその職員と false を、ほかの事業所にいれば ErrEmailTaken を返す。
 	Register(ctx context.Context, m login.StaffMember) (login.StaffMember, bool, error)
-	// Delete は、上流のアカウントを結び付けていない職員 id を消す。いなければ login.ErrNotFound を、
-	// 結び付けていれば ErrLinked を返す。
+	// Activate は、登録の途中の職員 id を有効にする。有効な職員を有効にしても成功する。いなければ login.ErrNotFound を、
+	// 止めた職員なら ErrSuspended を返す。
+	Activate(ctx context.Context, id string) error
+	// Delete は、登録の途中の職員 id を消す。いなければ login.ErrNotFound を、登録の途中でなければ ErrNotPending を返す。
 	Delete(ctx context.Context, id string) error
 	// Suspend は、職員 id を止める。止めた職員を止めても成功する。いなければ login.ErrNotFound を返す。
 	Suspend(ctx context.Context, id string) error
@@ -73,6 +78,9 @@ type Config struct {
 	Staff    Store
 	Hydra    Hydra
 	Verifier TokenVerifier
+	// Clients は、内部の API を呼んでよいクライアントの ID である。client credentials のトークンの sub と、
+	// token_hook が素通しする client credentials の要求の client_id を、ここに挙げた ID と照らす。
+	Clients []string
 	// KnownOrg は、組織の ID が上流の IdP の設定にあるかを返す。設定に無い事業所には職員を登録しない。
 	KnownOrg func(orgID string) bool
 	// NewID は、職員の ID（ULID）を発行する。
@@ -88,12 +96,14 @@ type handler struct {
 }
 
 // NewHandler は、次の経路を持つ http.Handler を返す。
-//   - POST /internal/staff: 職員を登録する。同じ事業所に同じメールの職員がいれば、その職員を返す
-//   - DELETE /internal/staff/{id}: 上流のアカウントを結び付けていない職員を消す。予定の API が登録を戻すときに使う
+//   - POST /internal/staff: 職員を登録の途中の状態で登録する。同じ事業所に同じメールの職員がいれば、その職員を返す
+//   - POST /internal/staff/{id}/activate: 登録の途中の職員を有効にする。予定の API が職員を書き終えてから呼ぶ
+//   - DELETE /internal/staff/{id}: 登録の途中の職員を消す。予定の API が登録を戻すときに使う
 //   - POST /internal/staff/{id}/suspend: 職員を止め、Hydra のログインのセッションと同意を取り消す
-//   - POST /internal/token-hook: Hydra の oauth2.token_hook。止めた職員と、上流のログインから MaxAuthAge を過ぎたトークンを拒む
+//   - POST /internal/token-hook: Hydra の oauth2.token_hook。有効でない職員と、上流のログインから MaxAuthAge を過ぎたトークンを拒む
 //
-// /internal/staff の下は、cfg.Verifier が検証した access token が無ければ 401 を返す。
+// /internal/staff の下は、cfg.Verifier が検証した access token が無ければ 401 を、cfg.Clients に無いクライアントか
+// 組織の ID を持つトークン（職員のトークン）なら 403 を返す。
 // /internal/token-hook は、TokenHookKeyHeader が cfg.TokenHookKey と違えば 401 を返す。
 func NewHandler(cfg Config) http.Handler {
 	if cfg.Now == nil {
@@ -102,6 +112,7 @@ func NewHandler(cfg Config) http.Handler {
 	h := handler{cfg}
 	mux := http.NewServeMux()
 	mux.Handle("POST /internal/staff", h.requireClient(h.register))
+	mux.Handle("POST /internal/staff/{id}/activate", h.requireClient(h.activate))
 	mux.Handle("DELETE /internal/staff/{id}", h.requireClient(h.delete))
 	mux.Handle("POST /internal/staff/{id}/suspend", h.requireClient(h.suspend))
 	mux.HandleFunc("POST /internal/token-hook", h.tokenHook)
@@ -109,6 +120,8 @@ func NewHandler(cfg Config) http.Handler {
 }
 
 // requireClient は、Bearer の access token を検証してから next を呼ぶ。トークンが無いか検証できなければ 401 を返す。
+// トークンの sub が cfg.Clients に無いか、トークンが組織の ID を持てば 403 を返す。client credentials のトークンの sub は
+// クライアントの ID で、組織の ID は同意で職員のトークンにだけ入る。
 func (h handler) requireClient(next http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		raw, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
@@ -121,6 +134,10 @@ func (h handler) requireClient(next http.HandlerFunc) http.Handler {
 		if err != nil {
 			w.Header().Set("WWW-Authenticate", `Bearer error="invalid_token"`)
 			h.writeError(w, r, http.StatusUnauthorized, "unauthenticated", "access token が正しくありません", err)
+			return
+		}
+		if !slices.Contains(h.Clients, id.Subject) || id.OrgID != "" {
+			h.writeError(w, r, http.StatusForbidden, "forbidden", "このクライアントは内部の API を呼べません", nil)
 			return
 		}
 		h.Logger.InfoContext(r.Context(), "内部の API を受けた", "client", id.Subject, "method", r.Method, "path", r.URL.Path)
@@ -155,13 +172,17 @@ func (h handler) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	m, created, err := h.Staff.Register(r.Context(), login.StaffMember{
-		ID: h.NewID(), OrgID: in.OrgID, Email: email, Status: login.StatusActive,
+		ID: h.NewID(), OrgID: in.OrgID, Email: email, Status: login.StatusPending,
 	})
+	if errors.Is(err, ErrEmailTaken) {
+		h.writeError(w, r, http.StatusConflict, "email_taken", "同じメールの職員がほかの事業所にいます", err)
+		return
+	}
 	if err != nil {
 		h.writeError(w, r, http.StatusInternalServerError, "internal", "職員を登録できません", err)
 		return
 	}
-	if m.Status != login.StatusActive {
+	if m.Status == login.StatusSuspended {
 		h.writeError(w, r, http.StatusConflict, "suspended", "同じメールの職員が止められています", ErrSuspended)
 		return
 	}
@@ -173,13 +194,28 @@ func (h handler) register(w http.ResponseWriter, r *http.Request) {
 	writeJSON(h.Logger, w, code, staffBody{ID: m.ID, OrgID: m.OrgID, Email: m.Email, Status: m.Status})
 }
 
+func (h handler) activate(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	switch err := h.Staff.Activate(r.Context(), id); {
+	case errors.Is(err, login.ErrNotFound):
+		h.writeError(w, r, http.StatusNotFound, "not_found", "職員がいません", nil)
+	case errors.Is(err, ErrSuspended):
+		h.writeError(w, r, http.StatusConflict, "suspended", "職員が止められています", err)
+	case err != nil:
+		h.writeError(w, r, http.StatusInternalServerError, "internal", "職員を有効にできません", err)
+	default:
+		h.Logger.InfoContext(r.Context(), "職員を有効にした", "staff_id", id)
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
 func (h handler) delete(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	switch err := h.Staff.Delete(r.Context(), id); {
 	case errors.Is(err, login.ErrNotFound):
 		h.writeError(w, r, http.StatusNotFound, "not_found", "職員がいません", nil)
-	case errors.Is(err, ErrLinked):
-		h.writeError(w, r, http.StatusConflict, "linked", "上流のアカウントを結び付けた職員は消せません", err)
+	case errors.Is(err, ErrNotPending):
+		h.writeError(w, r, http.StatusConflict, "not_pending", "登録の途中でない職員は消せません", err)
 	case err != nil:
 		h.writeError(w, r, http.StatusInternalServerError, "internal", "職員を消せません", err)
 	default:
@@ -188,8 +224,9 @@ func (h handler) delete(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// suspend は、職員を止めてから、Hydra のログインのセッションと同意を取り消す。取り消しに失敗したら 502 を返す。
-// 職員は止めたままなので、token_hook がトークンを拒む。呼び出し側は同じ要求を送り直して、取り消しをやり直せる。
+// suspend は、職員を止めてから、Hydra のログインのセッションと同意を取り消す。取り消しに失敗したら、code が
+// revoke_failed の 502 を返し、停止は書いたことを示す。職員は止めたままなので、token_hook がトークンを拒む。
+// 呼び出し側は同じ要求を送り直して、取り消しをやり直せる。
 func (h handler) suspend(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := r.PathValue("id")
@@ -246,15 +283,19 @@ func (h handler) tokenHook(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, r, http.StatusBadRequest, "invalid", "本文を読めません", err)
 		return
 	}
-	// client credentials のトークンは職員のものでなく、予定の API が内部の API を呼ぶのに使う
-	if slices.Equal(in.Request.GrantTypes, []string{"client_credentials"}) {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
 	deny := func(reason string, err error) {
 		h.Logger.WarnContext(ctx, "トークンの発行を拒む", "reason", reason, "client_id", in.Request.ClientID,
 			"grant_types", in.Request.GrantTypes, "error", err)
 		w.WriteHeader(http.StatusForbidden)
+	}
+	// client credentials のトークンは職員のものでなく、予定の API が内部の API を呼ぶのに使う。許したクライアントにだけ出す
+	if slices.Equal(in.Request.GrantTypes, []string{"client_credentials"}) {
+		if !slices.Contains(h.Clients, in.Request.ClientID) {
+			deny("内部の API を呼べないクライアント", nil)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return
 	}
 	sub := in.Session.IDToken.Subject
 	if sub == "" {
@@ -274,7 +315,7 @@ func (h handler) tokenHook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if m.Status != login.StatusActive {
-		deny("職員が止められている", nil)
+		deny("職員が有効でない", errors.New(m.Status))
 		return
 	}
 	auth := in.Session.IDToken.Claims.AuthTime

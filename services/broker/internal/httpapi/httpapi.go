@@ -1,5 +1,5 @@
 // Package httpapi は、ブローカーの HTTP のハンドラを持つ。ヘルスチェックを持ち、ログインと同意の画面を login のハンドラに、
-// /internal/ の下を内部の API のハンドラに渡す。
+// /internal/ の下を内部の API のハンドラに渡す。cmd/broker は、画面と内部の API を別のポートの 2 つのハンドラで待ち受ける。
 package httpapi
 
 import (

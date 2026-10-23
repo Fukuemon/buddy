@@ -74,26 +74,47 @@ func (s *StaffStore) Link(ctx context.Context, staffID string, a login.UpstreamA
 	return nil
 }
 
-// Register は、m の事業所に m のメールの職員がいなければ m を書き、書いた職員と true を返す。
-// 同じ事業所に同じメールの職員がいれば、書かずにその職員と false を返す。予定の API が登録を送り直しても、職員は 1 人だけになる。
+// Register は、m のメールの職員がいなければ m を書き、書いた職員と true を返す。メールは全ての事業所で一意である。
+// m の事業所に同じメールの職員がいれば、書かずにその職員と false を返す。予定の API が登録を送り直しても、職員は 1 人だけになる。
+// ほかの事業所に同じメールの職員がいれば internalapi.ErrEmailTaken を返す。
 func (s *StaffStore) Register(ctx context.Context, m login.StaffMember) (login.StaffMember, bool, error) {
 	tag, err := s.pool.Exec(ctx, `INSERT INTO staff (id, org_id, email, status) VALUES ($1, $2, $3, $4)
-ON CONFLICT ON CONSTRAINT staff_org_email_key DO NOTHING`, m.ID, m.OrgID, m.Email, m.Status)
+ON CONFLICT ON CONSTRAINT staff_email_key DO NOTHING`, m.ID, m.OrgID, m.Email, m.Status)
 	if err != nil {
 		return login.StaffMember{}, false, fmt.Errorf("register staff: %w", err)
 	}
-	got, err := scanStaff(s.pool.QueryRow(ctx, `SELECT `+staffColumns+staffFrom+` WHERE s.org_id = $1 AND s.email = $2`, m.OrgID, m.Email))
+	got, err := scanStaff(s.pool.QueryRow(ctx, `SELECT `+staffColumns+staffFrom+` WHERE s.email = $1`, m.Email))
 	if err != nil {
 		return login.StaffMember{}, false, fmt.Errorf("register staff: %w", err)
+	}
+	if got.OrgID != m.OrgID {
+		return login.StaffMember{}, false, internalapi.ErrEmailTaken
 	}
 	return got, tag.RowsAffected() == 1, nil
 }
 
-// Delete は、上流のアカウントを結び付けていない職員 id を消す。いなければ login.ErrNotFound を、
-// 結び付けていれば internalapi.ErrLinked を返す。
+// Activate は、登録の途中の職員 id を有効にする。有効な職員を有効にしても成功する。いなければ login.ErrNotFound を、
+// 止めた職員なら internalapi.ErrSuspended を返す。
+func (s *StaffStore) Activate(ctx context.Context, id string) error {
+	tag, err := s.pool.Exec(ctx, `UPDATE staff SET status = $2 WHERE id = $1 AND status IN ($3, $2)`,
+		id, login.StatusActive, login.StatusPending)
+	if err != nil {
+		return fmt.Errorf("activate staff: %w", err)
+	}
+	if tag.RowsAffected() == 1 {
+		return nil
+	}
+	if _, err := s.Get(ctx, id); err != nil {
+		return err
+	}
+	return internalapi.ErrSuspended
+}
+
+// Delete は、登録の途中で上流のアカウントを結び付けていない職員 id を消す。いなければ login.ErrNotFound を、
+// 有効か止めた職員なら internalapi.ErrNotPending を返す。
 func (s *StaffStore) Delete(ctx context.Context, id string) error {
-	tag, err := s.pool.Exec(ctx, `DELETE FROM staff s WHERE s.id = $1
-AND NOT EXISTS (SELECT 1 FROM upstream_accounts u WHERE u.staff_id = s.id)`, id)
+	tag, err := s.pool.Exec(ctx, `DELETE FROM staff s WHERE s.id = $1 AND s.status = $2
+AND NOT EXISTS (SELECT 1 FROM upstream_accounts u WHERE u.staff_id = s.id)`, id, login.StatusPending)
 	if err != nil {
 		return fmt.Errorf("delete staff: %w", err)
 	}
@@ -103,7 +124,7 @@ AND NOT EXISTS (SELECT 1 FROM upstream_accounts u WHERE u.staff_id = s.id)`, id)
 	if _, err := s.Get(ctx, id); err != nil {
 		return err
 	}
-	return internalapi.ErrLinked
+	return internalapi.ErrNotPending
 }
 
 // Suspend は、職員 id を止める。止めた職員を止めても成功する。いなければ login.ErrNotFound を返す。

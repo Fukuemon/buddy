@@ -22,8 +22,9 @@ import (
 	"github.com/Fukuemon/buddy/services/broker/internal/upstream"
 )
 
-// 職員の状態。停止した職員にはトークンを出さない。
+// 職員の状態。有効な職員にだけトークンを出す。登録の途中の職員は、予定の API が職員を書き終えると有効になる。
 const (
+	StatusPending   = "pending"
 	StatusActive    = "active"
 	StatusSuspended = "suspended"
 )

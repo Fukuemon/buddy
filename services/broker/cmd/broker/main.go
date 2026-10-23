@@ -1,5 +1,6 @@
 // Command broker は、Ory Hydra の login and consent app として動く認証のブローカーを起動する（ADR-0016）。
 // ログインと同意の画面、職員の登録と停止の内部の API、Hydra の oauth2.token_hook、ヘルスチェックを持つ。ログアウトの画面は後から足す。
+// ログインと同意の画面は PORT で、内部の API と token_hook は INTERNAL_PORT で待ち受ける。内部のポートはブラウザに開かない。
 //
 // 設定は環境変数から読む。読む値とデフォルト値は config.Load にある。
 // 上流の IdP の設定のファイルか client secret のファイルに誤りがあれば、待ち受けを始めずに終了コード 1 で終わる。
@@ -86,7 +87,7 @@ func run(getenv func(string) string) error {
 	}
 	defer db.Close()
 
-	verifier := &lazyVerifier{ctx: ctx, cfg: oidc.Config{Issuer: cfg.HydraIssuer, Audience: cfg.InternalAPIAudience}, log: logger}
+	verifier := &lazyVerifier{ctx: ctx, cfg: oidc.Config{Issuer: cfg.HydraIssuer, Audience: cfg.InternalAPIAudience, OrgClaim: "org_id"}, log: logger}
 	staff := postgres.NewStaffStore(db)
 	hydraAdmin := hydra.New(cfg.HydraAdminURL, nil)
 	loginHandler, err := login.NewHandler(login.Config{
@@ -105,55 +106,74 @@ func run(getenv func(string) string) error {
 		return err
 	}
 
-	srv := &http.Server{
-		Addr: net.JoinHostPort("", cfg.Port),
-		Handler: httpapi.NewHandler(httpapi.Config{
+	ready := func(ctx context.Context) error {
+		ctx, cancel := context.WithTimeout(ctx, readyTimeout)
+		defer cancel()
+		return db.Ping(ctx)
+	}
+	servers := []*http.Server{
+		newServer(logger, cfg.Port, httpapi.NewHandler(httpapi.Config{Logger: logger, Ready: ready, Login: loginHandler})),
+		newServer(logger, cfg.InternalPort, httpapi.NewHandler(httpapi.Config{
 			Logger: logger,
-			Ready: func(ctx context.Context) error {
-				ctx, cancel := context.WithTimeout(ctx, readyTimeout)
-				defer cancel()
-				return db.Ping(ctx)
-			},
-			Login: loginHandler,
+			Ready:  ready,
 			Internal: internalapi.NewHandler(internalapi.Config{
 				Logger:       logger,
 				Staff:        staff,
 				Hydra:        hydraAdmin,
 				Verifier:     verifier,
+				Clients:      cfg.InternalAPIClients,
 				KnownOrg:     func(orgID string) bool { _, ok := idps.Of(orgID); return ok },
 				NewID:        func() string { return ulid.Make().String() },
 				TokenHookKey: cfg.TokenHookKey,
 			}),
-		}),
-		ReadHeaderTimeout: 10 * time.Second,
-		ReadTimeout:       30 * time.Second,
-		WriteTimeout:      30 * time.Second,
-		IdleTimeout:       60 * time.Second,
-		ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelError),
+		})),
 	}
 
-	errCh := make(chan error, 1)
-	go func() {
-		logger.Info("待ち受けを始める", "addr", srv.Addr)
-		errCh <- srv.ListenAndServe()
-	}()
+	errCh := make(chan error, len(servers))
+	for _, srv := range servers {
+		go func() {
+			logger.Info("待ち受けを始める", "addr", srv.Addr)
+			errCh <- srv.ListenAndServe()
+		}()
+	}
 
+	var serveErr error
 	select {
-	case err := <-errCh:
-		return err
+	case serveErr = <-errCh:
 	case <-ctx.Done():
 	}
 
 	logger.Info("終了の処理を始める")
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if err := srv.Shutdown(shutdownCtx); err != nil {
-		return err
+	errs := []error{serveErr}
+	for _, srv := range servers {
+		errs = append(errs, srv.Shutdown(shutdownCtx))
 	}
-	if err := <-errCh; !errors.Is(err, http.ErrServerClosed) {
-		return err
+	// 片方が待ち受けに失敗したときは、その戻り値を serveErr で受け取っているので、残りの戻り値だけを待つ
+	n := len(servers)
+	if serveErr != nil {
+		n--
 	}
-	return nil
+	for range n {
+		if err := <-errCh; !errors.Is(err, http.ErrServerClosed) {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// newServer は、port で handler を待ち受ける http.Server を作る。
+func newServer(logger *slog.Logger, port string, handler http.Handler) *http.Server {
+	return &http.Server{
+		Addr:              net.JoinHostPort("", port),
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelError),
+	}
 }
 
 // lazyVerifier は、内部の API が初めて access token を受けたときに、Hydra の discovery の文書を読んで oidc.Verifier を作る。
