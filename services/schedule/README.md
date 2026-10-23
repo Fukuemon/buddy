@@ -20,10 +20,10 @@ API とマイグレーションは、次の環境変数を読む。
 | `DB_USER` | はい | なし | PostgreSQL の利用者 |
 | `DB_PASSWORD` | はい | なし | PostgreSQL のパスワード |
 | `DB_NAME` | はい | なし | データベースの名前 |
-| `OIDC_ISSUER` | はい | なし | ブローカーの Issuer の URL。トークンの `iss` と一致させ、`<OIDC_ISSUER>/.well-known/openid-configuration` から JWKS の場所を読む |
+| `OIDC_ISSUER` | はい | なし | Hydra の Issuer の URL。トークンの `iss` と一致させ、`<OIDC_ISSUER>/.well-known/openid-configuration` から JWKS の場所を読む |
 | `OIDC_AUDIENCE` | はい | なし | トークンの `aud` に求める値 |
 | `OIDC_ORG_CLAIM` | いいえ | `org_id` | 組織の ID を持つクレームの名前 |
-| `BROKER_URL` | はい | なし | 認証のブローカーの内部の API の URL。ログインの画面と別のポートである。職員の登録と停止で呼ぶ |
+| `BROKER_URL` | はい | なし | ID ブローカーの内部の API の URL。ログインの画面と別のポートである。職員の登録と停止で呼ぶ |
 | `BROKER_TOKEN_URL` | はい | なし | 内部の API を呼ぶ access token を client credentials で取る、Hydra のトークンのエンドポイント |
 | `BROKER_CLIENT_ID` | いいえ | `schedule` | Hydra に登録した予定の API のクライアントの ID |
 | `BROKER_CLIENT_SECRET` | はい | なし | Hydra に登録した予定の API のクライアントの secret。シークレットとして渡す |
@@ -62,7 +62,7 @@ docker run -d --rm --name buddy-db -p "127.0.0.1:$DB_PORT:5432" \
 go run ./cmd/migrate up
 go run ./cmd/migrate seed
 
-# ブローカーの代わりに、フェイクの Issuer を別のターミナルで起動する
+# Hydra の代わりに、フェイクの Issuer を別のターミナルで起動する
 go run ./cmd/devissuer -addr 127.0.0.1:9000
 
 export OIDC_ISSUER=http://127.0.0.1:9000 OIDC_AUDIENCE=schedule

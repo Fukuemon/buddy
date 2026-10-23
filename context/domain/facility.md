@@ -11,7 +11,7 @@ status: stable
 
 ## States and Transitions
 
-- 事業所は、認証の基盤の組織と `facilities.org_id` で結び付く。結び付くまで、その事業所の職員はログインできない。
+- 事業所は、ID ブローカーの組織と `facilities.org_id` で結び付く。結び付くまで、その事業所の職員はログインできない。
 
 ## Invariants
 

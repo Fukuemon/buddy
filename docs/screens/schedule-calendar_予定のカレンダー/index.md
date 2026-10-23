@@ -4,7 +4,7 @@
 
 | 項目 | 値 |
 | --- | --- |
-| URL | `/schedule`。`/` を開くと `/schedule` へ転送する |
+| URL | `/schedule`。`/` を開くと `/schedule` へリダイレクトする |
 | 使う人 | 全ての職員。表示する予定は、閲覧の権限の範囲で決まる |
 | 実装 | `apps/web/src/routes/schedule.tsx`、`apps/web/src/features/schedule/components/ScheduleCalendarContainer.tsx`、`apps/web/src/features/schedule/components/StaffFilterLayout.tsx`、`apps/web/src/features/schedule/components/StaffFilterSidebarContainer.tsx`、`apps/web/src/components/site/SiteHeaderContainer.tsx` |
 

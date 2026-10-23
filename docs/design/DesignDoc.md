@@ -1,7 +1,7 @@
 ---
 type: design-doc
 title: buddy Design Doc
-description: web と予定の API と照合の API と認証のブローカーの責務と依存、業務の区切りとコンテナの対応、コンテナの間の契約、インフラとの約束
+description: web と予定の API と照合の API と ID ブローカーの責務と依存、業務の区切りとコンテナの対応、コンテナの間の契約、インフラとの約束
 status: draft
 ---
 
@@ -30,7 +30,7 @@ buddy は、訪問看護の事業所の職員が使う、予定の管理とレ�
 
 ## Assumptions and Constraints
 
-- 職員の IdP は事業所ごとに違い、事業所の外にある。buddy は、自分の OIDC のブローカー（Hydra と認証のブローカー）が発行するトークンだけを受ける。
+- 職員の IdP は事業所ごとに違い、事業所の外にある。buddy は、Hydra が発行するトークンだけを受ける。ログインの判断と職員の身元は、ID ブローカー（`services/broker`）が持つ。
 - ブローカーは、事業所を組織として持ち、access token に組織の識別子を入れる。
 - 1 つの事業所の職員は 100 人前後で、同時に使う職員は事業所あたり数十人である。
 - 日付と時刻は日本の時間（Asia/Tokyo）だけを扱う。
@@ -102,20 +102,20 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 
 ### web
 
-- 画面を描き、BFF としてブローカーとのログインとセッションを持つ。
+- 画面を描き、BFF として Hydra とのログインとセッションを持つ。
 - API を呼ぶときに、セッションの access token を付ける。
 - 持たないもの: 業務の規則と認可の判定。
   - web は職員の権限を画面の出し分けに使うが、リクエストを拒否するのは API である。
 
-### 認証のブローカーと Hydra
+### ID ブローカーと Hydra
 
 - Hydra は、認可コード、トークンの発行、JWKS、refresh token の回転を持つ。web と 2 つの API から見える Issuer は Hydra だけである。
-- ブローカーは、Hydra の login and consent app として、ログインと同意の画面を持つ。入れたメールから職員と事業所を決め、事業所の上流の IdP へ RP として転送し、上流のアカウントを職員に結び付ける。
+- ブローカーは、Hydra の login and consent app として、ログインと同意の画面を持つ。入れたメールから職員と事業所を決め、事業所の上流の IdP へ RP としてリダイレクトし、上流のアカウントを職員に結び付ける。
 - ブローカーは、職員の ID、メール、所属の事業所、有効か停止か、上流のアカウントを持つ。access token の `sub` は職員の ID で、予定の API の `users.sub` に入る。
 - 持たないもの: 職員の名前、役職、権限。予定の API が持つ。
   - ADR-0016: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](../adr/0016-id-broker-hydra.md)
   - ADR-0017: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](../adr/0017-identity-boundary.md)
-- 内部の構成と流れは [認証のブローカーの Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md) にある。
+- 内部の構成と流れは [ID ブローカーの Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md) にある。
 
 ### 予定の API
 
@@ -145,10 +145,12 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
   - cookie にはセッションの ID を入れ、トークンは入れない。
   - 画面の操作は、web のサーバーの関数（BFF）を呼ぶ。API はブラウザから直接は呼ばれない。
   - 例外は、開発者がローカルで文書のサイトの API の仕様のページから、ローカルの API を試すときだけである。API は `CORS_ALLOW_ORIGINS` に挙げたオリジンにだけ CORS のヘッダーを返し、ローカルの compose は、web とローカルの文書のサイトのオリジンを挙げる。
-- ブラウザと Hydra とブローカー: ログインのときに、web がブラウザを Hydra の認可の画面へ転送し、Hydra がブローカーのログインの画面へ転送する。ブローカーは、職員の事業所の上流の IdP へ転送する。
-  - ログアウトのときは、web が BFF のセッションを消してから、ブラウザを Hydra の RP-Initiated Logout へ ID token を添えて転送する。Hydra はブローカーのログアウトの画面を呼んでログインのセッションを消し、web の / へ戻す。上流の IdP のセッションは消さない。
+- ブラウザと Hydra とブローカー: ログインのときに、web がブラウザを Hydra の認可の画面へリダイレクトし、Hydra がブローカーのログインの画面へリダイレクトする。ブローカーは、職員の事業所の上流の IdP へリダイレクトする。
+  - ログアウトのときは、web が web のセッションを消してから、ブラウザを Hydra の RP-Initiated Logout へ ID token を添えてリダイレクトする。Hydra はブローカーのログアウトの画面を呼んでログインのセッションを消し、web の / へ戻す。上流の IdP のセッションは消さない。
 - web と Hydra: 認可コードフローでトークンを取得し、更新する。トークンは Valkey のセッションに置く。
-- ブローカーと Hydra: ブローカーが Hydra の admin API でログインと同意を accept か reject し、ログアウトを accept する。ログインの accept で、Hydra にログインのセッションを 12 時間覚えさせる。同意の accept で、access token の `aud`（`schedule`、`receipt`）と `org_id` を決める。
+  - セッションは、トークンと ID token のほかに、ログインのときに予定の API の `GET /v1/me` で引いた職員の ID、名前、事業所、職員の管理の権限の有無を 12 時間持つ。refresh では読み直さない。名前や権限を変えても、画面の出し分けはログインし直すまで前の値のままである。リクエストを拒否するのは API なので、拒否の判定は変わった値で行われる。
+  - ログインのたびに、同じブラウザの前のセッションを消す。
+- ブローカーと Hydra: ブローカーが Hydra の admin API でログインと同意を accept か reject し、ログアウトを accept する。ログインの accept で、Hydra にログインのセッションを 12 時間保たせる（`remember`）。同意の accept で、access token の `aud`（`schedule`、`receipt`）と `org_id` を決める。
 - ブローカーと上流の IdP: 認可コードフローで ID token を取り、署名、`iss`、`aud`、`nonce` を確認する。
 - 予定の API とブローカー: 職員の登録と停止で、予定の API が職員の管理の権限を確認してから、ブローカーの内部の API を呼ぶ。予定の API は、Hydra の client credentials で `aud` が `broker` の access token を取って付ける。
   - ブローカーは、内部の API と token_hook を、ログインの画面と別のポートで待ち受け、許したクライアントのトークンだけを受ける。
@@ -187,8 +189,8 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 | `OIDC_ORG_CLAIM` | 使わない | 任意 | 任意 | access token で組織の ID を持つクレームの名前。デフォルトは `org_id` |
 | `OIDC_CLIENT_ID` | 使う | 使わない | 使わない | web のクライアントの ID |
 | `OIDC_CLIENT_SECRET` | 使う | 使わない | 使わない | web のクライアントのシークレット |
-| `OIDC_AUTHORIZATION_ENDPOINT` | 任意 | 使わない | 使わない | ブラウザを転送する認可の URL。web とブラウザから届く IdP の URL が違うローカル環境だけで渡す |
-| `OIDC_END_SESSION_ENDPOINT` | 任意 | 使わない | 使わない | ログアウトでブラウザを転送する RP-Initiated Logout の URL。Hydra は discovery の `end_session_endpoint` を Issuer の URL から作るので、ブラウザが Issuer の URL に届かないときに渡す |
+| `OIDC_AUTHORIZATION_ENDPOINT` | 任意 | 使わない | 使わない | ブラウザをリダイレクトする認可の URL。web とブラウザから届く IdP の URL が違うローカル環境だけで渡す |
+| `OIDC_END_SESSION_ENDPOINT` | 任意 | 使わない | 使わない | ログアウトでブラウザをリダイレクトする RP-Initiated Logout の URL。Hydra は discovery の `end_session_endpoint` を Issuer の URL から作るので、ブラウザが Issuer の URL に届かないときに渡す |
 | `SESSION_STORE_URL` | 使う | 使わない | 使わない | Valkey の接続先 |
 | `SESSION_SECRET` | 使う | 使わない | 使わない | cookie の署名の鍵。32 バイト以上 |
 | `SESSION_COOKIE_SECURE` | 任意 | 使わない | 使わない | `false` のときだけ、セッションの cookie に Secure を付けない。https でないローカル環境で使う |
@@ -274,8 +276,8 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 │   ├── receipt/         # 照合の API。Go
 │   │   ├── DesignDoc.md # レセプトの照合の Design Doc
 │   │   └── tools/       # 元の照合のアプリと結果を比べるスクリプト
-│   └── broker/          # 認証のブローカー。Go、go-oidc
-│       ├── DesignDoc.md # 認証のブローカーの Design Doc
+│   └── broker/          # ID ブローカー。Go、go-oidc
+│       ├── DesignDoc.md # ID ブローカーの Design Doc
 │       └── db/          # マイグレーションとシード
 ├── packages/
 │   ├── ui/              # デザインシステム。トークン、Base と Case のコンポーネント、Storybook

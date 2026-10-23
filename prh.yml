@@ -291,6 +291,15 @@ rules:
   - expected: 職員か利用者
     pattern: /(?<!「[^」]*)ユーザー/
     prh: ユーザーは職員と利用者のどちらにも読める。指す相手の名前で書く。画面の文言を「」で引くときは除く
+  - expected: ID ブローカー
+    pattern: 認証のブローカー
+    prh: services/broker は ID ブローカーと呼ぶ。Issuer、JWKS、トークンの発行と refresh は Hydra の役目なので、Hydra と書く
+  - expected: 事業所の IdP か ID ブローカー
+    pattern: 認証の基盤
+    prh: 外にある職員のアカウントは事業所の IdP、組織とメールの入力の画面は ID ブローカーと、指すものの名前で書く
+  - expected: 1 つの access token で（SSO は IdP のセッションを共有するときだけ）
+    pattern: /1\s?回のログインで/
+    prh: web に 1 度ログインし、1 つの access token で 2 つの API を呼ぶことは SSO ではない。起きることを書く。SSO は、上流の IdP と Hydra のログインのセッションで 2 度目のログインを求めないときに使う
   # 技術用語は、一般的なカタカナ語か英語で書く。業務の機能の名前（予定の取り込み、予定の書き出し、結び付け）は和語のまま書く
   - expected: フェイク
     pattern: 偽物

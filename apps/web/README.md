@@ -12,7 +12,7 @@ pnpm install
 pnpm --filter @buddy/web dev
 ```
 
-開発サーバーは `http://localhost:3000` で待ち受ける。`/` は `/schedule` へ転送する。  
+開発サーバーは `http://localhost:3000` で待ち受ける。`/` は `/schedule` へリダイレクトする。  
 ルートの compose の web も 3000 を使うので、compose の全体を起動しているときは `docker compose stop web` で止めてから起動する。  
 フェイクの API はブラウザのメモリにデータを持つため、ページを読み直すと作った予定は消える。
 
@@ -81,17 +81,17 @@ route は `src/routes/` のファイルから TanStack Router が生成する。
 
 ## ログインとセッション（BFF）
 
-`bff` では、web が BFF としてブローカーと認可コードフロー（PKCE つき）でやり取りする。
+`bff` では、web が BFF として Hydra と認可コードフロー（PKCE つき）でやり取りする。職員の確認は、Hydra が呼ぶ ID ブローカー（`services/broker`）が行う。
 
-- `/auth/login` は、ブローカーの認可の画面へ転送する。`/auth/callback` は、トークンを取り、予定の API の `GET /v1/me` で職員と事業所を引いてセッションを作る。
+- `/auth/login` は、Hydra の認可のエンドポイントへリダイレクトする。`/auth/callback` は、トークンを取り、予定の API の `GET /v1/me` で職員と事業所を引いてセッションを作る。
 - セッションは Valkey に置き、ブラウザには署名つきの cookie でセッションの ID だけを渡す。cookie は HttpOnly、SameSite=Lax、Secure で、Secure は `SESSION_COOKIE_SECURE=false` のときだけ外す。
 - 画面の API の呼び出しは、server function（`src/api/bff/serverFns.ts`）を通る。サーバーは、画面が渡した事業所の代わりにセッションの事業所を使う。
-- access token の期限が 1 分を切ったら、refresh token で取り直す。同じセッションの取り直しは、Valkey のキーで 1 本にまとめる。ブローカーが refresh token を拒めばセッションを消し、画面はログインへ移る。
+- access token の期限が 1 分を切ったら、refresh token で更新する。同じセッションの更新は、Valkey のキーで 1 本にまとめる。Hydra が refresh token を拒めばセッションを消し、画面はログインへ移る。
 - ほかのサイトのページからの POST は、TanStack Start の CSRF の middleware で 403 を返す（`src/start.ts`）。
 - 画面の引数は、server function で操作ごとの形を確認し、合わなければ 400 を返す。
 - 事業所に登録されていない職員は、`/auth/error?reason=forbidden` に案内を出す。
 
-サーバーが読む環境変数は、[全体の Design Doc の環境変数の表](../../docs/design/DesignDoc.md#環境変数) にある。ブラウザと web から届く Issuer の URL が違い、discovery の文書の認可のエンドポイントにブラウザが届かないときは、`OIDC_AUTHORIZATION_ENDPOINT` でブラウザを転送する認可の URL を渡す。ブラウザが Issuer の URL に届かないときは、`OIDC_END_SESSION_ENDPOINT` でログアウトの転送の先の URL も渡す。
+サーバーが読む環境変数は、[全体の Design Doc の環境変数の表](../../docs/design/DesignDoc.md#環境変数) にある。ブラウザと web から届く Issuer の URL が違い、discovery の文書の認可のエンドポイントにブラウザが届かないことがある。そのときは、`OIDC_AUTHORIZATION_ENDPOINT` でブラウザをリダイレクトする認可の URL を渡す。ブラウザが Issuer の URL に届かないときは、`OIDC_END_SESSION_ENDPOINT` でログアウトのリダイレクト先の URL も渡す。
 
 `/healthz` はプロセスが動いていれば 200 を、`/readyz` は Valkey に届けば 200、届かなければ 503 を返す。
 

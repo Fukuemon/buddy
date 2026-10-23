@@ -1,7 +1,7 @@
-# 認証のブローカー
+# ID ブローカー
 
 Ory Hydra の login and consent app として動き、事業所ごとの上流の IdP の前に立って職員の身元を持つサービス。  
-ログインと同意の画面、上流の IdP への RP の処理、職員の登録と停止の内部の API、Hydra の token_hook、ヘルスチェック、職員の身元の DB のマイグレーションとシードを持つ。ログアウトの画面は、後の変更で足す。  
+ログイン、同意、ログアウトの画面、上流の IdP への RP の処理、職員の登録と停止の内部の API、Hydra の token_hook、ヘルスチェック、職員の身元の DB のマイグレーションとシードを持つ。  
 責務と流れは [DesignDoc.md](DesignDoc.md) にある。
 
 ## セットアップ
@@ -39,11 +39,11 @@ go run ./cmd/broker
 compose の Hydra の token_hook は、コンテナの間の名前 `broker` を呼ぶので、この手順のブローカーには届かない。
 
 `curl localhost:8100/readyz` が `{"status":"ok"}` を返せば、起動できている。`/readyz` は DB に届かなければ 503 を返し、`/healthz` は DB を確認しない。  
-ポートは、compose の Hydra が転送するブローカーの画面（`http://localhost:8100/login`）と同じ 8100 にしている。内部の API は 8101 で待ち受ける。
+ポートは、compose の Hydra がリダイレクトするブローカーの画面（`http://localhost:8100/login`）と同じ 8100 にしている。内部の API は 8101 で待ち受ける。
 
 設定は環境変数で渡す。
 
-- `PORT`: ログインと同意の画面とヘルスチェックを待ち受けるポート。デフォルトは `8080`
+- `PORT`: ログイン、同意、ログアウトの画面とヘルスチェックを待ち受けるポート。デフォルトは `8080`
 - `INTERNAL_PORT`: 内部の API と `oauth2.token_hook` とヘルスチェックを待ち受けるポート。`PORT` と違う値にし、ブラウザに開かない。デフォルトは `8081`
 - `LOG_LEVEL`: `debug`、`info`、`warn`、`error` のいずれか。デフォルトは `info`
 - `DB_HOST`、`DB_PORT`: ブローカーの DB の接続先。デフォルトは `localhost` と `5432`
@@ -51,9 +51,9 @@ compose の Hydra の token_hook は、コンテナの間の名前 `broker` を�
 - `HYDRA_ADMIN_URL`: 必須。Hydra の admin API の URL
 - `UPSTREAM_IDPS_FILE`: 必須。組織の ID と、上流の IdP の issuer と client ID の対応（JSON）のパス。形は [upstream-idps.example.json](upstream-idps.example.json) にある
 - `PUBLIC_URL`: 必須。ブラウザが開くブローカーの URL。上流の IdP のコールバックの URL（`<PUBLIC_URL>/login/callback`）を作り、https ならログインの途中の cookie に Secure を付ける
-- `UPSTREAM_IDP_BROWSER_ORIGIN`: 上流の IdP の認可の画面へ転送するときに、URL の scheme とホストを替える origin。ブローカーが discovery の文書を読む issuer にブラウザが届かないローカル環境だけで渡す
+- `UPSTREAM_IDP_BROWSER_ORIGIN`: 上流の IdP の認可の画面へリダイレクトするときに、URL の scheme とホストを替える origin。ブローカーが discovery の文書を読む issuer にブラウザが届かないローカル環境だけで渡す
 - `UPSTREAM_IDP_CLIENT_SECRETS_FILE`: 必須。組織の ID と、上流の IdP の client secret の対応（JSON）のパス。シークレットとして渡す。形は [upstream-idp-client-secrets.example.json](upstream-idp-client-secrets.example.json) にある
-- `CLIENT_IP_HEADER`: ログインの試行を数える送り手のアドレスを読む、前段のプロキシが付けるヘッダーの名前。ブローカーは最後の値を使う。無ければ接続の相手のアドレスを使う。ブローカーにプロキシを通らずに届かない構成でだけ渡す
+- `CLIENT_IP_HEADER`: ログインの試行を数える送信元の IP アドレスを読む、リバースプロキシが付けるヘッダーの名前。ブローカーは最後の値を使う。無ければ接続の相手のアドレスを使う。ブローカーにプロキシを通らずに届かない構成でだけ渡す
 - `AUTO_CONSENT_CLIENTS`: 同意の画面を出さずに accept するクライアントの ID をカンマで区切った値。デフォルトは `web`。ほかのクライアントの同意は reject する
 - `HYDRA_ISSUER`: 必須。Hydra のトークンの `iss`。内部の API は、`<HYDRA_ISSUER>/.well-known/openid-configuration` の JWKS で、予定の API の client credentials の access token を検証する
 - `INTERNAL_API_AUDIENCE`: 内部の API が access token の `aud` に求める値。デフォルトは `broker`
