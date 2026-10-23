@@ -14,7 +14,7 @@ const prepareHayashiLinked = async (page: Page) => {
   await linkStaffCalendar(page, HAYASHI.id)
 }
 
-test.describe('確かめが要る予定', () => {
+test.describe('確認が必要な予定', () => {
   test.describe('Google カレンダーへの書き出し', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       test(`${variant.label ? `${variant.label}: ` : ''}カレンダーを結び付けた職員の予定を buddy で作った場合、職員の Google カレンダーに同じタイトルで出ること`, async ({

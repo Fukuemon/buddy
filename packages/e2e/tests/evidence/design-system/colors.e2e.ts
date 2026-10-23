@@ -18,19 +18,19 @@ const openCalendar = async (page: Page) => {
 }
 
 test.describe('予定のカレンダー', () => {
-  test.describe('主の色と画面の地', () => {
+  test.describe('主の色と画面の背景', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       const prefix = variant.label ? `${variant.label}: ` : ''
       const expected = variant.name === 'before' ? EXPECTED.before : EXPECTED.after
 
-      test(`${prefix}予定のカレンダーを開いた場合、主のボタンが主の色で、画面の地が canvas の色で出ること`, async ({
+      test(`${prefix}予定のカレンダーを開いた場合、主のボタンが主の色で、画面の背景が canvas の色で出ること`, async ({
         browser,
       }) => {
         await recordPrEvidence(
           browser,
           {
             name: 'design-system-colors',
-            title: '予定のカレンダーで、主のボタンの面と画面の地の色を見る',
+            title: '予定のカレンダーで、主のボタンの面と画面の背景の色を見る',
             actor: ACTOR,
             variant,
           },
@@ -44,7 +44,7 @@ test.describe('予定のカレンダー', () => {
             await expect(create).toHaveCSS('background-color', expected.primary)
             await expect(pageBody(page)).toHaveCSS('background-color', expected.canvas)
             await check(
-              `（撮影のため、録画で見分けにくい色の値を出す）「予定を作成」の面は ${expected.primary}、画面の地は ${expected.canvas}`,
+              `（撮影のため、録画で見分けにくい色の値を出す）「予定を作成」の面は ${expected.primary}、画面の背景は ${expected.canvas}`,
             )
           },
         )

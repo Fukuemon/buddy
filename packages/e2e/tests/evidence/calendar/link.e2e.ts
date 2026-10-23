@@ -14,7 +14,7 @@ test.describe('カレンダーの連携', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       const prefix = variant.label ? `${variant.label}: ` : ''
 
-      test(`${prefix}事業所のサービスアカウントに共有されていないカレンダーを確かめた場合、読めない文が出て結び付けられないこと`, async ({
+      test(`${prefix}事業所のサービスアカウントに共有されていないカレンダーを確認した場合、読めない文が出て結び付けられないこと`, async ({
         browser,
       }) => {
         await recordPrEvidence(
@@ -46,7 +46,7 @@ test.describe('カレンダーの連携', () => {
             await expect(page.getByTestId('calendar-link-dialog')).toBeVisible()
             await page.getByTestId('calendar-link-input').fill('nobody@example.com')
 
-            await step('「読めるか確かめる」を押す')
+            await step('「読めるか確認する」を押す')
             await page.getByTestId('calendar-link-check').click()
             await expect(page.getByTestId('calendar-link-check-result')).toContainText(
               'このカレンダーを読めません。カレンダーをこの事業所の buddy のサービスアカウントに共有したか',
@@ -67,7 +67,7 @@ test.describe('カレンダーの連携', () => {
           {
             name: 'calendar-link-staff',
             title:
-              '読めると確かめたカレンダーを職員に結び付けると、一覧の職員の行にカレンダーの ID が出る',
+              '読めると確認したカレンダーを職員に結び付けると、一覧の職員の行にカレンダーの ID が出る',
             actor: ACTOR,
             variant,
           },
@@ -85,7 +85,7 @@ test.describe('カレンダーの連携', () => {
               await page.getByTestId(`calendar-link-open-${MORI.id}`).click()
               await expect(page.getByTestId('calendar-link-input')).toHaveValue(MORI_CALENDAR)
 
-              await step(`カレンダーの ID が ${MORI_CALENDAR} のまま、「読めるか確かめる」を押す`)
+              await step(`カレンダーの ID が ${MORI_CALENDAR} のまま、「読めるか確認する」を押す`)
               await page.getByTestId('calendar-link-check').click()
               await expect(page.getByTestId('calendar-link-check-result')).toContainText(
                 '読めました。',

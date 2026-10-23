@@ -23,7 +23,7 @@ export const LEADER = {
   staff: { id: '01M3TC5VQR3MKFF9AA4BVKF44Z', name: '森 健太' },
 }
 
-/** 2 つ目の事業所の職員。その事業所の予定だけが出ることを確かめるのに使う。 */
+/** 2 つ目の事業所の職員。その事業所の予定だけが出ることを確認するのに使う。 */
 export const OFFICE_B = {
   email: 'nagisa.ueno@example.com',
   staff: { name: '上野 渚' },
@@ -58,7 +58,7 @@ export const HAYASHI = {
 }
 
 /**
- * compose の calendarpit の URL。spec は、予定の API が書いた予定を、管理の API で読んで確かめ、Google の側で直す。
+ * compose の calendarpit の URL。spec は、予定の API が書いた予定を、管理の API で読んで確認し、Google の側で直す。
  * デフォルトはルートの compose の calendarpit である。
  */
 export const CALENDARPIT_URL = process.env.E2E_CALENDARPIT_URL ?? 'http://localhost:4173'

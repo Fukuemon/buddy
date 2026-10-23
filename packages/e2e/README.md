@@ -11,7 +11,7 @@ buddy の E2E のテストと、手動検証のエビデンスを撮る仕組み
 
 ## テストとチェック
 
-| コマンド | 確かめること |
+| コマンド | 確認すること |
 | --- | --- |
 | `pnpm e2e`（ルート） | compose に向けて、ログイン、予定の作成、照合の流れを流す。先に `docker compose up --build --wait` で起動する。エビデンスの spec は流さない |
 | `pnpm --filter @buddy/e2e evidence` | エビデンスの spec を流し、`.ai-out/evidence/<番号>/` に mp4 を書き出す。環境変数は `context/testing/evidence.md` にある |
@@ -27,6 +27,6 @@ kit、規則、スキル、Design Doc は、元のリポジトリ（非公開）
 
 ## 文書
 
-- [DesignDoc.md](DesignDoc.md): テストのコードの層、配置先、名前、待ち方、確かめ方
+- [DesignDoc.md](DesignDoc.md): テストのコードの層、配置先、名前、待ち方、確認の方法
 - [kit/recording/DesignDoc.md](kit/recording/DesignDoc.md): 手動検証のエビデンスを撮る録画
 - 流し方は [CONTRIBUTING.md](../../CONTRIBUTING.md) の「E2E のテストを流す」にある

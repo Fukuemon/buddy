@@ -51,7 +51,7 @@ const calleeName = (node) => {
 }
 
 /**
- * E2E のテストのコードの書き方の規則。tests/ の下を、層(screens、widgets、selectors、specs)ごとに確かめる。
+ * E2E のテストのコードの書き方の規則。tests/ の下を、層(screens、widgets、selectors、specs)ごとに確認する。
  * プロダクトに固有の値は options で受け取る。
  */
 export const rule = createRule({
@@ -71,12 +71,12 @@ export const rule = createRule({
           timeoutDefinitionFile: {
             type: 'string',
             description:
-              '待つ時間の名前を定めるファイル。ほかのファイルで待つ時間の数値を書くと指摘する。無ければ確かめない',
+              '待つ時間の名前を定めるファイル。ほかのファイルで待つ時間の数値を書くと指摘する。無ければ確認しない',
           },
           screenIdPattern: {
             type: 'string',
             description:
-              'widgets/ に書いてはいけない画面 ID の形。正規表現の文字列で、大文字と小文字を区別しない。無ければ確かめない',
+              'widgets/ に書いてはいけない画面 ID の形。正規表現の文字列で、大文字と小文字を区別しない。無ければ確認しない',
           },
           widgetGotoAllowedUrl: {
             type: 'string',
