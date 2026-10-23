@@ -242,7 +242,11 @@ GitHub のランナーに戻すときは、`gh variable delete RUNS_ON -R Fukuem
 
 - self-hosted runner の機械では、ローカル環境の compose が動いていることがある。
   - CI の E2E は、compose のプロジェクトの名前を `buddy-ci` にし、ポートを全てずらして起動する。ずらしたポートは [ci.yml](.github/workflows/ci.yml) の `e2e` のジョブにある。
-- self-hosted runner は、ジョブの後に、使われていない Docker のイメージと 7 日より古いビルドのキャッシュを消す。
+- self-hosted runner は、E2E のジョブの後に、タグの無い Docker のイメージと 7 日より古いビルドのキャッシュを消す。
+  - Docker は runner の機械のローカル環境と共有なので、ローカル環境のものも消える。
+- self-hosted runner は、runner の `.env` で Go、pnpm、mise、Playwright のキャッシュの配置先を `~/actions-runner/_cache` に分ける。
+  - `.path` では、PATH を Homebrew とシステムのディレクトリに絞る。
+  - ローカル環境のツールとキャッシュを CI と共有しないためである。runner を作り直すときも、同じ設定にする。
 - self-hosted runner は、private のリポジトリだけに使う。public のリポジトリでは、外部の人の pull request のコードが runner の機械で流れる。
 
 ## コミットするとき

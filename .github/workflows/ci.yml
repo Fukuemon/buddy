@@ -162,6 +162,8 @@ jobs:
           cache: ${{ runner.environment == 'github-hosted' && 'pnpm' || '' }}
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @buddy/e2e exec playwright install --with-deps chromium
+      # runner が落ちて前の実行が片付けられなかったときに、残ったボリュームの上でシードを流さないよう、先に消す
+      - run: docker compose down -v --remove-orphans
       - run: docker compose up --build --wait
       - run: pnpm e2e
       - name: compose のログを出す
@@ -177,7 +179,8 @@ jobs:
       - name: compose を片付ける
         if: always()
         run: docker compose down -v --rmi local
-      # self-hosted runner ではディスクが残るので、使われていないイメージと 7 日より古いビルドのキャッシュを消す
+      # self-hosted runner ではディスクが残るので、タグの無いイメージと 7 日より古いビルドのキャッシュを消す。
+      # Docker は runner の機械のローカル環境と共有なので、ローカル環境のものも消える
       - name: Docker のイメージとキャッシュを片付ける
         if: always() && runner.environment == 'self-hosted'
         run: |
