@@ -41,11 +41,16 @@ func newSyncEnv(t *testing.T) syncEnv {
 		Schedules: inmem.Schedules{Store: s}, Types: inmem.ScheduleTypes{Store: s},
 	}, &inmem.Tx{}, ids, principal.RequireStaffManage)
 	sources := &[]string{}
-	syncer := calendar.NewSyncer(calendar.SyncerDeps{
-		Syncs: inmem.Syncs{Store: s}, Calendars: inmem.Calendars{Store: s}, Exports: inmem.Exports{Store: s}, Sources: sourceOf(source, sources),
+	return syncEnv{exportEnv: e, syncer: newSyncer(e, source, sources, inmem.StaffRefs{Store: s}), sources: sources}
+}
+
+// newSyncer は、e の Store の上で、source で読み、職員の休職、復職、退職を st で待たせる同期の処理を作る。
+func newSyncer(e exportEnv, source calendar.EventSource, sources *[]string, st calendar.StaffLocker) *calendar.Syncer {
+	s := e.store
+	return calendar.NewSyncer(calendar.SyncerDeps{
+		Syncs: inmem.Syncs{Store: s}, Calendars: inmem.Calendars{Store: s}, Staff: st, Exports: inmem.Exports{Store: s}, Sources: sourceOf(source, sources),
 		Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, Types: inmem.ScheduleTypes{Store: s},
-	}, &inmem.Tx{}, ids, time.Minute, slog.New(slog.NewTextHandler(io.Discard, nil)))
-	return syncEnv{exportEnv: e, syncer: syncer, sources: sources}
+	}, &inmem.Tx{}, ulid.Generator{}, time.Minute, slog.New(slog.NewTextHandler(io.Discard, nil)))
 }
 
 // sourceOf は、事業所によらず src で読む calendar.SourceFor を返し、引かれた事業所を used に足す。

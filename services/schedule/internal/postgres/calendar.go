@@ -122,6 +122,11 @@ func (r *CalendarRepository) Disable(ctx context.Context, id string) error {
 	return translate("disable external calendar", r.q(ctx).DisableExternalCalendar(ctx, id))
 }
 
+// DetachByStaff は、職員 staffID の外していないカレンダーを外す。カレンダーのレコードと予定の対応は残す。
+func (r *CalendarRepository) DetachByStaff(ctx context.Context, staffID string) error {
+	return translate("disable external calendars by staff", r.q(ctx).DisableExternalCalendarsByStaff(ctx, staffID))
+}
+
 // RunningSince は、カレンダーの取り込みのうち、since より後に始めた running のものがあるかを返す。
 func (r *CalendarRepository) RunningSince(ctx context.Context, externalCalendarID string, since time.Time) (bool, error) {
 	ok, err := r.q(ctx).ExistsRunningImport(ctx, sqlcgen.ExistsRunningImportParams{ExternalCalendarID: externalCalendarID, Since: since})

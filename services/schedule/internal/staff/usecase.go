@@ -24,6 +24,7 @@ type Deps struct {
 	Staff       Repository
 	Identities  Identities
 	Assignments AssignmentReader
+	Calendars   CalendarDetacher
 	// Self は、ctx のリクエストを送った職員の ID を返す。職員が自分を休職か退職にする操作を拒むのに使う。nil なら拒まない。
 	Self func(ctx context.Context) (string, bool)
 	// Now は、休職と退職で残る予定を数え始める日を決める時刻である。nil なら time.Now を使う。
@@ -232,7 +233,8 @@ func (s *Usecase) Leave(ctx context.Context, id string, in LeaveInput) (StatusCh
 	return out, nil
 }
 
-// Retire は、職員を退職にし、名前、所属、役職を残してメールと電話番号を消す。その日以降の予定、繰り返しの予定、担当の利用者が
+// Retire は、職員を退職にし、名前、所属、役職を残してメールと電話番号を消し、職員の外部のカレンダーを外す。
+// カレンダーのレコードと予定の対応は残す。その日以降の予定、繰り返しの予定、担当の利用者が
 // 残れば、書かずに残る一覧を持つ *AssignedError を返す。退職した職員を退職にしても成功する。職員が見つからないときは
 // apperr.ErrNotFound を、職員の管理の権限が無いときは apperr.ErrForbidden を、自分か、事業所で職員の管理の権限を持つ
 // 最後の有効な職員を退職にしようとしたときは apperr.ErrConflict を返す。
@@ -261,6 +263,9 @@ func (s *Usecase) Retire(ctx context.Context, id string) (StatusChange, error) {
 			}
 		}
 		if err := s.deps.Staff.Retire(ctx, cur.ID); err != nil {
+			return err
+		}
+		if err := s.deps.Calendars.DetachByStaff(ctx, cur.ID); err != nil {
 			return err
 		}
 		out.Staff, err = s.deps.Staff.Get(ctx, cur.ID)

@@ -1222,10 +1222,11 @@ export interface components {
             /**
              * @description all_day は終日、multi_day は日をまたぐ（24:00 に終わる予定を含む）、unreadable_time は日時を読めない、
              *     zero_length は長さが無い、unreadable_title はタイトルが空白だけか訪問のタイトルを読めない、
-             *     service_not_found はタイトルのサービス内容がサービスコードに無い
+             *     service_not_found はタイトルのサービス内容がサービスコードに無い、
+             *     staff_on_leave はカレンダーを結び付けた職員が休職しているので作らない新しい予定
              * @enum {string}
              */
-            reason: "all_day" | "multi_day" | "unreadable_time" | "zero_length" | "unreadable_title" | "service_not_found";
+            reason: "all_day" | "multi_day" | "unreadable_time" | "zero_length" | "unreadable_title" | "service_not_found" | "staff_on_leave";
         };
         ImportPreview: {
             range_start: components["schemas"]["Date"];
@@ -2873,7 +2874,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description プレビューの後に確認が必要な予定が変わった（import_preview_changed）か、同じカレンダーの取り込みが進んでいる（import_running）。何も書いていない */
+            /** @description プレビューの後に確認が必要な予定か職員の休職が変わった（import_preview_changed）か、同じカレンダーの取り込みが進んでいる（import_running）。何も書いていない */
             409: {
                 headers: {
                     [name: string]: unknown;

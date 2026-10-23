@@ -753,6 +753,18 @@ func (s Calendars) Disable(_ context.Context, id string) error {
 	return nil
 }
 
+// DetachByStaff は、職員の外していないカレンダーを外す。
+func (s Calendars) DetachByStaff(ctx context.Context, staffID string) error {
+	for id, c := range s.Calendars {
+		if c.StaffID == staffID {
+			if err := s.Disable(ctx, id); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 // RunningSince は、since より後に始めた running の取り込みがあるかを返す。
 func (s Calendars) RunningSince(_ context.Context, externalCalendarID string, since time.Time) (bool, error) {
 	for _, r := range s.Runs {

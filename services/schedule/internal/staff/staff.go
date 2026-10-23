@@ -280,6 +280,13 @@ type AssignmentReader interface {
 	From(ctx context.Context, facilityID, staffID string, from civil.Date) (Assignments, error)
 }
 
+// CalendarDetacher は、退職した職員の外部のカレンダーを外す。実装は postgres.CalendarRepository である。
+type CalendarDetacher interface {
+	// DetachByStaff は、職員 staffID の外していないカレンダーを外す。カレンダーのレコードと予定の対応は残す。
+	// カレンダーが無ければ何もしない。
+	DetachByStaff(ctx context.Context, staffID string) error
+}
+
 // AssignedError は、予定か担当の利用者が残る職員を退職にしようとしたことを示す。
 type AssignedError struct {
 	Assignments Assignments

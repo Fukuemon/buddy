@@ -94,8 +94,10 @@ type Accounts interface {
 
 // SyncerDeps は、Syncer が使うリポジトリと、外部のカレンダーを読む EventSource を事業所ごとに返す Sources である。
 type SyncerDeps struct {
-	Syncs        SyncRepository
-	Calendars    Repository
+	Syncs     SyncRepository
+	Calendars Repository
+	// Staff は、予定を当てる前に事業所の職員の休職、復職、退職を待たせる。退職がカレンダーを外した後に、当てないためである。
+	Staff        StaffLocker
 	Exports      ExportRepository
 	Sources      SourceFor
 	Schedules    ScheduleStore
@@ -204,8 +206,15 @@ func (s *Syncer) sync(ctx context.Context, st SyncState) SyncResult {
 	}
 	for _, ev := range ch.Events {
 		err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
+			if err := s.stillLinked(ctx, st.Calendar); err != nil {
+				return err
+			}
 			return s.apply.applyEvent(ctx, st.Calendar, ev)
 		})
+		if errors.Is(err, errCalendarUnlinked) {
+			// 外したカレンダーは次から取らないので、トークンと状態は前のまま返す
+			return SyncResult{SyncToken: st.SyncToken, Status: st.LastStatus, ErrorCode: st.LastError, After: s.interval}
+		}
 		if errors.Is(err, errExportWriting) {
 			return SyncResult{SyncToken: token, Status: st.LastStatus, ErrorCode: st.LastError, After: syncRetryAfter}
 		}
@@ -216,4 +225,24 @@ func (s *Syncer) sync(ctx context.Context, st SyncState) SyncResult {
 		}
 	}
 	return SyncResult{SyncToken: ch.NextSyncToken, Status: SyncSucceeded, After: s.interval}
+}
+
+// errCalendarUnlinked は、同期の途中でカレンダーが外れたので、残りの予定を当てないことを表す。
+var errCalendarUnlinked = errors.New("同期の途中でカレンダーが外れた")
+
+// stillLinked は、事業所の職員の休職、復職、退職をトランザクションの終わりまで待たせてから、カレンダー c を外していないかを
+// 読み直す。外していれば errCalendarUnlinked を返す。退職は同じ事業所の行に排他のロックを取ってカレンダーを外すので、
+// カレンダーを取った後に職員が退職しても、退職した職員の予定に外部の変更を当てない。トランザクションの中で呼ぶ。
+func (s *Syncer) stillLinked(ctx context.Context, c ExternalCalendar) error {
+	if err := s.deps.Staff.LockStatuses(ctx, c.FacilityID); err != nil {
+		return err
+	}
+	cur, err := s.deps.Calendars.Get(ctx, c.ID)
+	if err != nil {
+		return err
+	}
+	if cur.DisabledAt != nil {
+		return errCalendarUnlinked
+	}
+	return nil
 }

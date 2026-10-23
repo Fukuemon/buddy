@@ -18,6 +18,10 @@ import (
 // SkipServiceNotFound は、タイトルから読んだサービス内容が、サービスコードのマスタに無い予定である。
 const SkipServiceNotFound SkipReason = "service_not_found"
 
+// SkipStaffOnLeave は、カレンダーを結び付けた職員が休職しているので作らない、新しい予定である（ADR-0018）。
+// 前の取り込みで繰り返しのまま取り込んだ予定の回の置き換えは、既に割り振った予定の変更なので、これに当てない。
+const SkipStaffOnLeave SkipReason = "staff_on_leave"
+
 // Range は、取り込む予定の期間で、両端の日を含む。予定はこの期間に始まるものを取り込む。
 type Range struct {
 	Start civil.Date
@@ -195,6 +199,8 @@ type planInput struct {
 	linkedRecurring map[string]schedule.RecurringDetail
 	patients        []PatientRef
 	serviceCodes    []visit.ServiceCode
+	// staffOnLeave は、カレンダーを結び付けた職員が休職しているかである。休職なら新しい予定を作らない。
+	staffOnLeave bool
 }
 
 // parentMode は、繰り返しの親の予定の取り込み方である。
@@ -489,6 +495,10 @@ func originalDate(ev Event) (civil.Date, bool) {
 func (b *planner) add(e entry) bool {
 	if e.cand.Kind == KindSkipped {
 		b.skip(e.cand)
+		return false
+	}
+	if b.in.staffOnLeave && (e.replaces == nil || e.replaces.recurringScheduleID == "") {
+		b.skip(Candidate{Date: e.cand.Date, StartTime: e.cand.StartTime, EndTime: e.cand.EndTime, SkipReason: SkipStaffOnLeave})
 		return false
 	}
 	if e.cand.Kind == KindVisit {

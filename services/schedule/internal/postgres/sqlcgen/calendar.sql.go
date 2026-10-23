@@ -113,6 +113,15 @@ func (q *Queries) DisableExternalCalendar(ctx context.Context, id string) error 
 	return err
 }
 
+const disableExternalCalendarsByStaff = `-- name: DisableExternalCalendarsByStaff :exec
+UPDATE external_calendars SET disabled_at = now() WHERE staff_id = $1 AND disabled_at IS NULL
+`
+
+func (q *Queries) DisableExternalCalendarsByStaff(ctx context.Context, staffID string) error {
+	_, err := q.db.Exec(ctx, disableExternalCalendarsByStaff, staffID)
+	return err
+}
+
 const enableExternalCalendar = `-- name: EnableExternalCalendar :exec
 UPDATE external_calendars SET disabled_at = NULL WHERE id = $1
 `

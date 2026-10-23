@@ -194,7 +194,7 @@ func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
 		t.Fatal(err)
 	}
 	syncer := calendar.NewSyncer(calendar.SyncerDeps{
-		Syncs: NewCalendarSyncRepository(testDB), Calendars: calendars, Exports: NewCalendarExportRepository(testDB), Sources: func(context.Context, string) (calendar.EventSource, error) { return source, nil },
+		Syncs: NewCalendarSyncRepository(testDB), Calendars: calendars, Staff: NewStaffRefRepository(testDB), Exports: NewCalendarExportRepository(testDB), Sources: func(context.Context, string) (calendar.EventSource, error) { return source, nil },
 		Schedules: schedules, Recurring: recurring, Types: types, Patients: patients, ServiceCodes: masters, Visits: visits,
 	}, tx, ids, 0, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	sync := func() {

@@ -65,6 +65,7 @@ export const SKIP_REASON_LABEL: Record<ImportSkippedItem['reason'], string> = {
   zero_length: '長さの無い予定',
   unreadable_title: 'タイトルを読めない予定',
   service_not_found: 'サービス内容を引けない予定',
+  staff_on_leave: '休職の職員の新しい予定',
 }
 
 const SKIP_REASON_SHORT: Record<ImportSkippedItem['reason'], string> = {
@@ -74,6 +75,7 @@ const SKIP_REASON_SHORT: Record<ImportSkippedItem['reason'], string> = {
   zero_length: '長さの無い',
   unreadable_title: 'タイトルを読めない',
   service_not_found: 'サービス内容を引けない',
+  staff_on_leave: '休職の職員の新しい',
 }
 
 const SKIP_REASONS = Object.keys(SKIP_REASON_LABEL) as ImportSkippedItem['reason'][]
