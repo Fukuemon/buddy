@@ -95,22 +95,20 @@ test.describe('予定の取り込み', () => {
         )
         await expect(page.getByTestId('calendar-import-count-import')).toContainText('0 件')
         await expect(page.getByTestId('calendar-import-submit')).toBeDisabled()
+        // 休職の職員の新しい予定が残るので、全て取り込み済みの文は出さない
+        await expect(page.getByTestId('calendar-import-all-imported')).toBeHidden()
       })
 
       await test.step('休職の前に取り込んだ予定を Google カレンダーで遅らせると、同期で buddy の予定も遅れる', async () => {
         await shiftGoogleEvent(request, staff.calendarId, beforeEventId)
         // 予定の API が数秒ごとに Google の変更を読むので、当たるまで読み直す
-        await expect
-          .poll(
-            async () =>
-              (
-                await findSchedule(request, manager, STAFF_FORM.facilityId, {
-                  date: '2027-03-03',
-                  title: before,
-                })
-              )?.start_time,
-          )
-          .toBe('11:00')
+        await expect(async () => {
+          const moved = await findSchedule(request, manager, STAFF_FORM.facilityId, {
+            date: '2027-03-03',
+            title: before,
+          })
+          expect(moved?.start_time).toBe('11:00')
+        }).toPass()
         expect(
           await findSchedule(request, manager, STAFF_FORM.facilityId, {
             date: '2027-03-04',
@@ -151,6 +149,7 @@ test.describe('予定の取り込み', () => {
       expect(calendar).toBeDefined()
 
       expect((await retireStaff(request, manager, staff.id)).status()).toBe(200)
+      // 退職の後に Google カレンダーに足した予定は、外れたカレンダーなので、後のプレビューの 404 で取り込めないことを確認する
       await createGoogleEvent(request, staff.calendarId, {
         summary: `E2E 退職の後 ${Date.now()}`,
         date: '2027-03-05',
