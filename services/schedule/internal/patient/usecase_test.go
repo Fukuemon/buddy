@@ -60,11 +60,12 @@ func TestPatientCreateRejectsInactiveStaff(t *testing.T) {
 			if err := stop(inmem.Staff{Store: s}); err != nil {
 				t.Fatal(err)
 			}
+			before := len(s.Patients)
 			if _, err := newUsecase(s, allow).Create(ctx, in); !errors.Is(err, apperr.ErrInvalidInput) {
 				t.Fatalf("err = %v, want ErrInvalidInput", err)
 			}
-			if len(s.Patients) != 2 {
-				t.Errorf("拒んだのに利用者が増えた: %d 人", len(s.Patients))
+			if len(s.Patients) != before {
+				t.Errorf("拒んだのに利用者が増えた: %d 人", len(s.Patients)-before)
 			}
 		})
 	}

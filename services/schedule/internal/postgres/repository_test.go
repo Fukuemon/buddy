@@ -813,7 +813,7 @@ func TestStaffLockStatusesAndLockFacilityWaitForEachOther(t *testing.T) {
 	bg := context.Background()
 	refs := NewStaffRefRepository(testDB)
 	staffRepo := NewStaffRepository(testDB)
-	begin := func() context.Context {
+	begin := func(t *testing.T) context.Context {
 		t.Helper()
 		tx, err := testDB.Begin(bg)
 		if err != nil {
@@ -822,7 +822,7 @@ func TestStaffLockStatusesAndLockFacilityWaitForEachOther(t *testing.T) {
 		t.Cleanup(func() { _ = tx.Rollback(bg) })
 		return context.WithValue(bg, txKey{}, tx)
 	}
-	rollback := func(ctx context.Context) {
+	rollback := func(t *testing.T, ctx context.Context) {
 		t.Helper()
 		if err := ctx.Value(txKey{}).(pgx.Tx).Rollback(bg); err != nil {
 			t.Fatal(err)
@@ -831,7 +831,7 @@ func TestStaffLockStatusesAndLockFacilityWaitForEachOther(t *testing.T) {
 	// waits は、first のロックを持つ間、second が終わらず、first をロールバックすると終わることを確認する。
 	waits := func(t *testing.T, first, second func(ctx context.Context) error) {
 		t.Helper()
-		holder, waiter := begin(), begin()
+		holder, waiter := begin(t), begin(t)
 		if err := first(holder); err != nil {
 			t.Fatal(err)
 		}
@@ -842,11 +842,11 @@ func TestStaffLockStatusesAndLockFacilityWaitForEachOther(t *testing.T) {
 			t.Fatalf("ロックの間に終わった: err = %v", err)
 		case <-time.After(300 * time.Millisecond):
 		}
-		rollback(holder)
+		rollback(t, holder)
 		if err := <-done; err != nil {
 			t.Fatal(err)
 		}
-		rollback(waiter)
+		rollback(t, waiter)
 	}
 	lockStatuses := func(ctx context.Context) error { return refs.LockStatuses(ctx, seedFacility) }
 	lockFacility := func(ctx context.Context) error { return staffRepo.LockFacility(ctx, seedFacility) }
@@ -854,15 +854,18 @@ func TestStaffLockStatusesAndLockFacilityWaitForEachOther(t *testing.T) {
 	t.Run("割り振りの間は、休職と退職が待つ", func(t *testing.T) { waits(t, lockStatuses, lockFacility) })
 	t.Run("休職と退職の間は、割り振りが待つ", func(t *testing.T) { waits(t, lockFacility, lockStatuses) })
 	t.Run("割り振りどうしは待たない", func(t *testing.T) {
-		a, b := begin(), begin()
+		a, b := begin(t), begin(t)
 		if err := lockStatuses(a); err != nil {
 			t.Fatal(err)
 		}
+		// 待つと、上限の時間で失敗する
+		b, cancel := context.WithTimeout(b, 5*time.Second)
+		defer cancel()
 		if err := lockStatuses(b); err != nil {
 			t.Fatal(err)
 		}
 	})
-	if err := refs.LockStatuses(begin(), unknownID); !errors.Is(err, apperr.ErrNotFound) {
+	if err := refs.LockStatuses(begin(t), unknownID); !errors.Is(err, apperr.ErrNotFound) {
 		t.Errorf("いない事業所の LockStatuses の err = %v, want ErrNotFound", err)
 	}
 }

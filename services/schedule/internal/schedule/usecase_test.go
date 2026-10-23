@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"maps"
+	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
@@ -40,7 +42,14 @@ func editorCtx() context.Context {
 	}})
 }
 
+// today は、newSchedules の Usecase の今日（2026-10-21）である。
+var today = civil.Date{Year: 2026, Month: 10, Day: 21}
+
 func newSchedules(s *inmem.Store) (*schedule.Usecase, *inmem.Tx) {
+	return newSchedulesWithRefs(s, inmem.StaffRefs{Store: s})
+}
+
+func newSchedulesWithRefs(s *inmem.Store, refs schedule.StaffRefs) (*schedule.Usecase, *inmem.Tx) {
 	tx := &inmem.Tx{}
 	ids := &inmem.SeqIDs{}
 	visits := visit.NewWriter(visit.WriterDeps{
@@ -54,11 +63,12 @@ func newSchedules(s *inmem.Store) (*schedule.Usecase, *inmem.Tx) {
 	}, ids)
 	return schedule.NewUsecase(schedule.Deps{
 		Facilities: inmem.Facilities{Store: s},
-		Staff:      inmem.StaffRefs{Store: s},
+		Staff:      refs,
 		Visits:     visits,
 		Schedules:  inmem.Schedules{Store: s},
 		Recurring:  inmem.RecurringSchedules{Store: s},
 		Types:      inmem.ScheduleTypes{Store: s},
+		Now:        func() time.Time { return today.Time().Add(9 * time.Hour) },
 	}, tx, ids), tx
 }
 
@@ -478,5 +488,86 @@ func TestSchedulesKeepInactiveStaff(t *testing.T) {
 				t.Fatalf("同行者を外して保存: err = %v", err)
 			}
 		})
+	}
+}
+
+// 既に割り振った職員は、同じ役割のときだけ割り振ったまま保存できる。退職した職員は、今日より前の予定でだけ保存できる。
+func TestSchedulesKeepRulesForInactiveStaff(t *testing.T) {
+	tests := []struct {
+		name    string
+		status  staff.Status
+		change  func(uc *schedule.Usecase, ctx context.Context, createdID string) error
+		wantErr bool
+	}{
+		{name: "休職の職員の予定を今日に動かす", status: staff.StatusOnLeave, change: func(uc *schedule.Usecase, ctx context.Context, id string) error {
+			in := visitSlot(validVisit())
+			in.Date = today
+			_, err := uc.Update(ctx, id, in)
+			return err
+		}},
+		{name: "退職した職員の予定を今日に動かす", status: staff.StatusRetired, wantErr: true, change: func(uc *schedule.Usecase, ctx context.Context, id string) error {
+			in := visitSlot(validVisit())
+			in.Date = today
+			_, err := uc.Update(ctx, id, in)
+			return err
+		}},
+		{name: "退職した職員の繰り返しの回を今日の予定に置き換える", status: staff.StatusRetired, wantErr: true, change: func(uc *schedule.Usecase, ctx context.Context, _ string) error {
+			in := normalSlot()
+			in.Date = today
+			_, err := uc.ChangeOccurrence(ctx, recurringID, civil.Date{Year: 2026, Month: 10, Day: 12}, in)
+			return err
+		}},
+		{name: "休職の同行者を主訪問者に移す", status: staff.StatusOnLeave, wantErr: true, change: func(uc *schedule.Usecase, ctx context.Context, id string) error {
+			v := validVisit()
+			v.AssignedStaffID, v.CompanionID = companionID, ptr(staffID)
+			_, err := uc.Update(ctx, id, visitSlot(v))
+			return err
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := inmem.Seeded()
+			uc, _ := newSchedules(s)
+			ctx := editorCtx()
+			created, err := uc.Create(ctx, facilityID, visitSlot(validVisit()))
+			if err != nil {
+				t.Fatal(err)
+			}
+			stop(t, s, staffID, tt.status)
+			stop(t, s, companionID, tt.status)
+			err = tt.change(uc, ctx, created.ID)
+			if tt.wantErr != errors.Is(err, apperr.ErrInvalidInput) || (!tt.wantErr && err != nil) {
+				t.Fatalf("err = %v, want 入力のエラー: %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+// lockOrder は、職員の参照の呼び出しの順を記録する。
+type lockOrder struct {
+	inmem.StaffRefs
+	calls *[]string
+}
+
+func (r lockOrder) Get(ctx context.Context, id string) (staff.Ref, error) {
+	*r.calls = append(*r.calls, "Get")
+	return r.StaffRefs.Get(ctx, id)
+}
+
+func (r lockOrder) LockStatuses(ctx context.Context, facilityID string) error {
+	*r.calls = append(*r.calls, "LockStatuses")
+	return r.StaffRefs.LockStatuses(ctx, facilityID)
+}
+
+// 職員の状態を読む前に、事業所の職員の休職と退職を待たせるロックを取る。
+func TestSchedulesLockStatusesBeforeReadingStaff(t *testing.T) {
+	s := inmem.Seeded()
+	var calls []string
+	uc, _ := newSchedulesWithRefs(s, lockOrder{StaffRefs: inmem.StaffRefs{Store: s}, calls: &calls})
+	if _, err := uc.Create(editorCtx(), facilityID, visitSlot(validVisit())); err != nil {
+		t.Fatal(err)
+	}
+	if len(calls) == 0 || calls[0] != "LockStatuses" || slices.Index(calls[1:], "LockStatuses") >= 0 {
+		t.Errorf("呼び出しの順 = %v, want LockStatuses を最初に 1 回", calls)
 	}
 }
