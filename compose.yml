@@ -98,6 +98,7 @@ services:
       URLS_SELF_PUBLIC: http://localhost:${HYDRA_PUBLIC_PORT:-4444}
       URLS_LOGIN: http://localhost:${BROKER_PORT:-8100}/login
       URLS_CONSENT: http://localhost:${BROKER_PORT:-8100}/consent
+      URLS_LOGOUT: http://localhost:${BROKER_PORT:-8100}/logout
     volumes: [./compose/hydra/hydra.yml:/config/hydra.yml:ro]
     ports:
       - '127.0.0.1:${HYDRA_PUBLIC_PORT:-4444}:4444'
@@ -117,6 +118,8 @@ services:
     environment:
       HYDRA_ADMIN_URL: http://hydra:4445
       WEB_REDIRECT_URI: http://localhost:${WEB_PORT:-3000}/auth/callback
+      # web のログアウトは、Hydra のログインのセッションを消した後に web の / へ戻る
+      WEB_POST_LOGOUT_REDIRECT_URI: http://localhost:${WEB_PORT:-3000}/
     volumes: [./compose/hydra/clients.sh:/config/clients.sh:ro]
     depends_on:
       hydra: { condition: service_healthy }
@@ -318,6 +321,8 @@ services:
       OIDC_ISSUER: http://hydra:4444
       OIDC_CLIENT_ID: web
       OIDC_CLIENT_SECRET: web-dev
+      # Hydra は discovery の end_session_endpoint を Issuer の URL（コンテナの間の名前）から作るので、ブラウザが開くローカルのポートを渡す
+      OIDC_END_SESSION_ENDPOINT: http://localhost:${HYDRA_PUBLIC_PORT:-4444}/oauth2/sessions/logout
       SESSION_STORE_URL: redis://valkey:6379
       SESSION_SECRET: buddy-dev-session-secret-for-compose-only
       # ローカル環境は https でないので、cookie に Secure を付けない

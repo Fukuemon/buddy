@@ -18,7 +18,7 @@ upsert() {
 upsert web --name web --secret web-dev \
   --grant-type authorization_code,refresh_token --response-type code \
   --scope openid,email,offline_access --audience schedule,receipt \
-  --redirect-uri "$WEB_REDIRECT_URI" \
+  --redirect-uri "$WEB_REDIRECT_URI" --post-logout-callback "$WEB_POST_LOGOUT_REDIRECT_URI" \
   --token-endpoint-auth-method client_secret_basic --skip-consent
 
 # 予定の API が、ブローカーの内部の API（職員の登録と停止）を呼ぶときに使う

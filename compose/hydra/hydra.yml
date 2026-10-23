@@ -1,5 +1,5 @@
 # ローカル環境の Ory Hydra の設定。値は全て開発用のダミーの値で、ほかの環境で使わない。
-# ブラウザが開く URL（urls.self.public、urls.login、urls.consent）は、ポートを変えられるよう compose の環境変数で渡す。
+# ブラウザが開く URL（urls.self.public、urls.login、urls.consent、urls.logout）は、ポートを変えられるよう compose の環境変数で渡す。
 
 serve:
   cookies:
@@ -22,7 +22,7 @@ strategies:
 
 ttl:
   access_token: 5m
-  # ログインのセッションの長さ。ブローカーが login の accept で remember を付けたときだけ覚える
+  # ログインのセッションの長さ。ブローカーは login の accept で remember を付け、web のログアウトで消す
   authentication_session: 12h
 
 oauth2:
