@@ -1,0 +1,68 @@
+/* ブローカーのログインの画面のモックだけの見た目（services/broker/internal/login/pages.go と同じ配置） */
+
+/* 画面の背景の中央に、白いカードを置く */
+.al-page {
+  display: grid;
+  place-items: center;
+  min-height: 720px;
+  padding: 16px;
+  background: var(--wf-canvas);
+}
+
+.al-card {
+  width: 100%;
+  max-width: 512px;
+  padding: 56px 72px;
+  border: 1px solid var(--wf-line-soft);
+  border-radius: var(--wf-radius);
+  background: var(--wf-surface);
+}
+
+.al-logo {
+  margin: 0;
+  color: var(--wf-primary);
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.al-title {
+  margin: 8px 0 32px;
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.al-card--message .al-title {
+  margin-bottom: 16px;
+}
+
+.al-message {
+  margin: 0;
+  text-align: center;
+}
+
+.al-field-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.al-hint {
+  margin: 8px 0 0;
+  color: var(--wf-muted);
+  font-size: 14px;
+}
+
+.al-submit {
+  width: 100%;
+  height: 48px;
+  margin-top: 32px;
+  font-weight: 700;
+}
+
+@container screen (width < 768px) {
+  .al-card {
+    padding: 40px 24px;
+  }
+}
