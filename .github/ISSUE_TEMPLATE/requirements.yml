@@ -34,7 +34,7 @@ body:
     id: acceptance
     attributes:
       label: 受け入れ条件
-      description: 満たされたと言える条件を、確かめられる形の箇条書きで書く
+      description: 満たされたと言える条件を、確認できる形の箇条書きで書く
       placeholder: |
         - [ ] ...
     validations:
