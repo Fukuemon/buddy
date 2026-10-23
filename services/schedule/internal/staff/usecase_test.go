@@ -140,6 +140,54 @@ func TestStaffCreateWithBroker(t *testing.T) {
 			t.Errorf("err = %v, want 止めた職員の ErrConflict", err)
 		}
 	})
+	t.Run("ほかの事業所に同じメールの職員がいれば、事業所を示さない 409", func(t *testing.T) {
+		ids := inmem.NewIdentities()
+		ids.Members["broker-x"] = inmem.Identity{OrgID: "org-other", Email: "sakura.hayashi@example.com"}
+		s := setup()
+		before := len(s.Staff)
+		_, err := newUC(s, ids, allow).Create(ctx, in)
+		if !errors.Is(err, apperr.ErrConflict) || err.Error() != "メール sakura.hayashi@example.com の職員は登録できません" {
+			t.Errorf("err = %v, want 事業所を示さない ErrConflict", err)
+		}
+		if len(s.Staff) != before || len(ids.Members) != 1 {
+			t.Errorf("職員 = %d 人, ブローカーの職員 = %+v, want 書かない", len(s.Staff), ids.Members)
+		}
+	})
+	t.Run("予定の API に書いてから、ブローカーの職員を有効にする", func(t *testing.T) {
+		ids := inmem.NewIdentities()
+		got, err := newUC(setup(), ids, allow).Create(ctx, in)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if m := ids.Members[*got.Sub]; m.Pending {
+			t.Errorf("ブローカーの職員 = %+v, want 有効", m)
+		}
+	})
+	t.Run("有効にできなければエラーを返し、送り直すと書いた職員を有効にして返す", func(t *testing.T) {
+		ids := inmem.NewIdentities()
+		ids.ActivateErr = errors.New("broker down")
+		s := setup()
+		before := len(s.Staff)
+		if _, err := newUC(s, ids, allow).Create(ctx, in); err == nil {
+			t.Fatal("err = nil, want 有効にできないエラー")
+		}
+		if len(s.Staff) != before+1 || len(ids.Members) != 1 || !ids.Members["broker-1"].Pending {
+			t.Fatalf("職員 = %d 人, ブローカーの職員 = %+v, want 書いたが登録の途中のまま", len(s.Staff), ids.Members)
+		}
+		ids.ActivateErr = nil
+		got, err := newUC(s, ids, allow).Create(ctx, in)
+		if err != nil || got.Sub == nil || *got.Sub != "broker-1" || ids.Members["broker-1"].Pending || len(s.Staff) != before+1 {
+			t.Errorf("送り直し = %+v, %v, ブローカーの職員 = %+v, want 書いた職員を有効にする", got.Sub, err, ids.Members)
+		}
+	})
+	t.Run("ブローカーにだけ残った登録の途中の職員は、送り直すとその ID で書いて有効にする", func(t *testing.T) {
+		ids := inmem.NewIdentities()
+		ids.Members["broker-x"] = inmem.Identity{OrgID: inmem.OrgID, Email: "sakura.hayashi@example.com", Pending: true}
+		got, err := newUC(setup(), ids, allow).Create(ctx, in)
+		if err != nil || got.Sub == nil || *got.Sub != "broker-x" || ids.Members["broker-x"].Pending {
+			t.Errorf("Create = %+v, %v, ブローカーの職員 = %+v, want 残った職員の ID で有効にする", got.Sub, err, ids.Members)
+		}
+	})
 	t.Run("ブローカーに書けなければ、予定の API に書かない", func(t *testing.T) {
 		ids := inmem.NewIdentities()
 		ids.Err = errors.New("broker down")
@@ -204,6 +252,7 @@ func TestStaffSuspend(t *testing.T) {
 			Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
 			Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
 			Identities: ids,
+			Self:       func(context.Context) (string, bool) { return companionID, true },
 		}, &inmem.Tx{}, &inmem.SeqIDs{}, guard)
 	}
 
@@ -229,6 +278,20 @@ func TestStaffSuspend(t *testing.T) {
 	ids.Err = errors.New("broker down")
 	if _, err := newUC(s, ids, allow).Suspend(ctx, staffID); err == nil || s.Staff[staffID].SuspendedAt != nil {
 		t.Errorf("ブローカーで止められない: err = %v, SuspendedAt = %v, want エラーで予定の API にも書かない", err, s.Staff[staffID].SuspendedAt)
+	}
+	s, ids = setup()
+	ids.RevokeErr = errors.New("hydra down")
+	if _, err := newUC(s, ids, allow).Suspend(ctx, staffID); err == nil || s.Staff[staffID].SuspendedAt == nil || !ids.Members["broker-1"].Suspended {
+		t.Errorf("取り消しに失敗: err = %v, SuspendedAt = %v, want 両方で止めてからエラー", err, s.Staff[staffID].SuspendedAt)
+	}
+	s, ids = setup()
+	delete(ids.Members, "broker-1")
+	if got, err := newUC(s, ids, allow).Suspend(ctx, staffID); err != nil || got.SuspendedAt == nil {
+		t.Errorf("ブローカーにいない職員: SuspendedAt = %v, err = %v, want 予定の API でだけ止める", got.SuspendedAt, err)
+	}
+	s, ids = setup()
+	if _, err := newUC(s, ids, allow).Suspend(ctx, companionID); !errors.Is(err, apperr.ErrConflict) || s.Staff[companionID].SuspendedAt != nil {
+		t.Errorf("自分を止める: err = %v, want ErrConflict で止めない", err)
 	}
 	if _, err := newUC(inmem.Seeded(), inmem.NewIdentities(), allow).Suspend(ctx, "NONE"); !errors.Is(err, apperr.ErrNotFound) {
 		t.Errorf("いない職員: err = %v, want ErrNotFound", err)

@@ -20,6 +20,8 @@ type Deps struct {
 	Policies    kernel.Finder[organization.Policy]
 	Staff       Repository
 	Identities  Identities
+	// Self は、ctx のリクエストを送った職員の ID を返す。職員が自分を止める操作を拒むのに使う。nil なら拒まない。
+	Self func(ctx context.Context) (string, bool)
 }
 
 // Usecase は、職員の操作である。職員の登録と停止と、職員の権限と役職を変える操作は、guard が許すときだけ行う（ADR-0006）。
@@ -49,11 +51,14 @@ type CreateInput struct {
 
 // Create は、職員を作り、役職のデフォルトの権限を与える。チームを対象にする権限は、職員の所属のチームを対象にする。事業所が見つからないときは apperr.ErrNotFound を、
 // 部署、チーム、役職が見つからないか別の事業所のものであるときは入力のエラーを、職員の管理の権限が無いときは apperr.ErrForbidden を、
-// 同じ事業所に同じメールの職員がいるか、同じメールの職員がブローカーで止められているときは apperr.ErrConflict を返す。
+// 同じ事業所に同じメールの職員がいるか、同じメールの職員がブローカーで止められているか、ほかの事業所にいるときは
+// apperr.ErrConflict を返す。ほかの事業所にいることは、文で示さない。
 //
-// 入力を確認してから、ブローカーに職員を登録させ、返った職員の ID を Sub にして書く。ブローカーの登録は同じメールで送り直しても
-// 1 人にまとまるので、ここで書けなかった登録は送り直してよい。ここで書けず、ブローカーの職員をこの呼び出しで作っていて、
-// その ID の職員がまだいなければ、ブローカーの職員を消して戻す。
+// 入力を確認してから、ブローカーに職員を登録の途中の状態で登録させ、返った職員の ID を Sub にして書き、書けたらブローカーの
+// 職員を有効にする。登録の途中の職員はログインできないので、ここで書けなかった職員はブローカーに残ってもログインできない。
+// ブローカーの登録は同じメールで送り直しても 1 人にまとまるので、失敗した登録は送り直してよい。ここで書けず、ブローカーの職員を
+// この呼び出しで作っていて、その ID の職員がまだいなければ、ブローカーの職員を消して戻す。
+// 前の登録が書いた後に有効にできなかったときは、送り直すと、書いた職員を有効にしてから返す。
 func (s *Usecase) Create(ctx context.Context, in CreateInput) (Detail, error) {
 	if err := s.guard(ctx); err != nil {
 		return Detail{}, err
@@ -99,11 +104,16 @@ func (s *Usecase) Create(ctx context.Context, in CreateInput) (Detail, error) {
 	if f.OrgID == "" {
 		return Detail{}, apperr.Invalid("事業所 %s は認証の組織に結び付いていないので、職員を登録できません", f.ID)
 	}
-	sub, registered, err := s.deps.Identities.Register(ctx, f.OrgID, st.Email)
-	if err != nil {
-		return Detail{}, apperr.AsConflict(err, "メール %s の職員は止められています", st.Email)
+	reg, err := s.deps.Identities.Register(ctx, f.OrgID, st.Email)
+	switch {
+	case errors.Is(err, ErrEmailTaken):
+		return Detail{}, apperr.Conflict("メール %s の職員は登録できません", st.Email)
+	case errors.Is(err, ErrIdentitySuspended):
+		return Detail{}, apperr.Conflict("メール %s の職員は止められています", st.Email)
+	case err != nil:
+		return Detail{}, err
 	}
-	st.Sub = &sub
+	st.Sub = &reg.ID
 	grants := DefaultGrants(pos, team.ID, s.ids)
 	var created Detail
 	err = s.tx.WithinTx(ctx, func(ctx context.Context) error {
@@ -113,14 +123,37 @@ func (s *Usecase) Create(ctx context.Context, in CreateInput) (Detail, error) {
 		created, err = s.deps.Staff.Get(ctx, st.ID)
 		return err
 	})
-	if err != nil && registered {
-		return Detail{}, errors.Join(err, s.unregister(context.WithoutCancel(ctx), sub))
+	if err != nil && reg.Created {
+		return Detail{}, errors.Join(err, s.unregister(context.WithoutCancel(ctx), reg.ID))
 	}
-	return created, err
+	if errors.Is(err, apperr.ErrConflict) && reg.Pending {
+		created, err = s.written(ctx, reg.ID, err)
+	}
+	if err != nil {
+		return Detail{}, err
+	}
+	if err := s.deps.Identities.Activate(context.WithoutCancel(ctx), reg.ID); err != nil {
+		return Detail{}, fmt.Errorf("職員を書きましたが、ブローカーの職員 %s を有効にできません。同じ本文で送り直してください: %w", reg.ID, err)
+	}
+	return created, nil
+}
+
+// written は、前の登録がブローカーの職員 sub で職員を書き、有効にできずに終わっていれば、書いた職員を返す。
+// 書いた職員がいなければ、書けなかったエラー err を返す。
+func (s *Usecase) written(ctx context.Context, sub string, err error) (Detail, error) {
+	id, ferr := s.deps.Staff.FindIDBySub(ctx, sub)
+	if errors.Is(ferr, apperr.ErrNotFound) {
+		return Detail{}, err
+	}
+	if ferr != nil {
+		return Detail{}, ferr
+	}
+	return s.deps.Staff.Get(ctx, id)
 }
 
 // unregister は、予定の API に書けなかった登録のブローカーの職員 sub を消す。同じメールの登録を同時に受け、
-// ほかの登録が同じ sub で職員を書いていれば、消さない。
+// ほかの登録が同じ sub で職員を書いていれば、消さない。ブローカーは登録の途中の職員だけを消すので、ほかの登録が
+// 有効にした職員は残る。
 func (s *Usecase) unregister(ctx context.Context, sub string) error {
 	if _, err := s.deps.Staff.FindIDBySub(ctx, sub); !errors.Is(err, apperr.ErrNotFound) {
 		return err
@@ -132,25 +165,40 @@ func (s *Usecase) unregister(ctx context.Context, sub string) error {
 }
 
 // Suspend は、職員を止め、止めた職員を返す。止めた職員を止めても成功する。職員が見つからないときは apperr.ErrNotFound を、
-// 職員の管理の権限が無いときは apperr.ErrForbidden を返す。
+// 職員の管理の権限が無いときは apperr.ErrForbidden を、自分を止めようとしたときは apperr.ErrConflict を返す。
 //
 // ブローカーの職員を先に止める。ブローカーで止めた後にここで書けなければ、送り直すとブローカーの停止をやり直してから書く。
-// ブローカーの職員の ID が無い職員はログインできないので、ここでだけ止める。
+// ブローカーが止めた後に Hydra の取り消しに失敗したときも、ここで止めた時刻を書いてからエラーを返し、送り直しで取り消しをやり直させる。
+// ブローカーの職員の ID が無いか、ブローカーにいない職員はログインできないので、ここでだけ止める。
 func (s *Usecase) Suspend(ctx context.Context, id string) (Detail, error) {
 	if err := s.guard(ctx); err != nil {
 		return Detail{}, err
+	}
+	if s.deps.Self != nil {
+		if self, ok := s.deps.Self(ctx); ok && self == id {
+			return Detail{}, apperr.Conflict("自分を止めることはできません")
+		}
 	}
 	cur, err := s.deps.Staff.Get(ctx, id)
 	if err != nil {
 		return Detail{}, err
 	}
+	var revokeErr error
 	if cur.Sub != nil {
-		if err := s.deps.Identities.Suspend(ctx, *cur.Sub); err != nil {
+		switch err := s.deps.Identities.Suspend(ctx, *cur.Sub); {
+		case errors.Is(err, apperr.ErrNotFound):
+			// ブローカーにいない職員はログインできないので、ここでだけ止める
+		case errors.Is(err, ErrRevokeFailed):
+			revokeErr = err
+		case err != nil:
 			return Detail{}, err
 		}
 	}
 	if err := s.deps.Staff.Suspend(ctx, cur.ID); err != nil {
 		return Detail{}, err
+	}
+	if revokeErr != nil {
+		return Detail{}, fmt.Errorf("職員を止めましたが、ログインの取り消しに失敗しました。もう一度止めてください: %w", revokeErr)
 	}
 	return s.deps.Staff.Get(ctx, cur.ID)
 }

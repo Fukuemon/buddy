@@ -216,7 +216,8 @@ export interface paths {
          * 職員を作る
          * @description 職員を作り、役職のデフォルトの権限を与える。部署、チーム、役職は同じ事業所のものに限る。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          *     認証のブローカーにも職員を登録し、ブローカーが発行した職員の ID を sub に入れる。登録した職員は、メールでログインできる。
-         *     ブローカーに登録した後に失敗したときは、同じ本文で送り直してよい。
+         *     ブローカーの職員は、職員を書き終えてからログインできるようにする。ブローカーに登録した後に失敗したときは、同じ本文で送り直してよい。
+         *     職員のメールは、全ての事業所で一意である。
          */
         post: operations["createUser"];
         delete?: never;
@@ -276,7 +277,8 @@ export interface paths {
          * 職員を止める
          * @description 職員を止める。止めた職員はログインできず、ログインしている職員も、web が access token を取り直すとき（5 分以内）に使えなくなる。
          *     予定の API は、止めた職員のリクエストを 403 で拒む。止めた職員を止めても成功し、止めた時刻は変わらない。
-         *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。自分は止められない。
+         *     ログインのセッションの取り消しに失敗したときは、職員を止めてから 500 を返す。送り直すと取り消しをやり直す。
          */
         post: operations["suspendUser"];
         delete?: never;
@@ -1737,7 +1739,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description 同じ事業所に同じメールの職員がいるか、同じメールの職員が止められている */
+            /** @description 同じ事業所に同じメールの職員がいるか、同じメールの職員が止められているか、そのメールの職員を登録できない */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1839,6 +1841,21 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description 自分を止めようとした */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "conflict",
+                     *       "message": "自分を止めることはできません"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };

@@ -10,6 +10,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/broker"
+	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
 )
 
 type call struct {
@@ -46,18 +47,20 @@ func newClient(t *testing.T, status int, body string, calls *[]call, tokenForm *
 func TestRegister(t *testing.T) {
 	ctx := context.Background()
 	for _, tt := range []struct {
-		status      int
-		wantCreated bool
+		status  int
+		state   string
+		wantReg staff.Registration
 	}{
-		{http.StatusCreated, true},
-		{http.StatusOK, false},
+		{http.StatusCreated, "pending", staff.Registration{ID: "01JBRKR0000000000000000000", Created: true, Pending: true}},
+		{http.StatusOK, "pending", staff.Registration{ID: "01JBRKR0000000000000000000", Pending: true}},
+		{http.StatusOK, "active", staff.Registration{ID: "01JBRKR0000000000000000000"}},
 	} {
 		var calls []call
 		var form string
-		c := newClient(t, tt.status, `{"id":"01JBRKR0000000000000000000","org_id":"org-a","email":"a@example.com","status":"active"}`, &calls, &form)
-		id, created, err := c.Register(ctx, "org-a", "a@example.com")
-		if err != nil || id != "01JBRKR0000000000000000000" || created != tt.wantCreated {
-			t.Fatalf("%d: Register = %q, %v, %v", tt.status, id, created, err)
+		c := newClient(t, tt.status, `{"id":"01JBRKR0000000000000000000","org_id":"org-a","email":"a@example.com","status":"`+tt.state+`"}`, &calls, &form)
+		reg, err := c.Register(ctx, "org-a", "a@example.com")
+		if err != nil || reg != tt.wantReg {
+			t.Fatalf("%d %s: Register = %+v, %v, want %+v", tt.status, tt.state, reg, err, tt.wantReg)
 		}
 		want := call{http.MethodPost, "/internal/staff", "Bearer client-token", `{"email":"a@example.com","org_id":"org-a"}`}
 		if calls[0] != want {
@@ -73,9 +76,27 @@ func TestErrors(t *testing.T) {
 	ctx := context.Background()
 	var calls []call
 	var form string
-	conflict := newClient(t, http.StatusConflict, `{"code":"suspended"}`, &calls, &form)
-	if _, _, err := conflict.Register(ctx, "org-a", "a@example.com"); !errors.Is(err, apperr.ErrConflict) {
-		t.Errorf("409 の Register の err = %v, want ErrConflict", err)
+	for _, tt := range []struct {
+		code string
+		want error
+	}{
+		{"suspended", staff.ErrIdentitySuspended},
+		{"email_taken", staff.ErrEmailTaken},
+		{"other", apperr.ErrConflict},
+	} {
+		conflict := newClient(t, http.StatusConflict, `{"code":"`+tt.code+`"}`, &calls, &form)
+		if _, err := conflict.Register(ctx, "org-a", "a@example.com"); !errors.Is(err, tt.want) {
+			t.Errorf("409 %s の Register の err = %v, want %v", tt.code, err, tt.want)
+		}
+	}
+	invalid := newClient(t, http.StatusBadRequest, `{"code":"invalid","message":"組織の上流の IdP の設定がありません"}`, &calls, &form)
+	if _, err := invalid.Register(ctx, "org-x", "a@example.com"); !errors.Is(err, apperr.ErrInvalidInput) ||
+		err.Error() != "認証のブローカーが受け付けません: 組織の上流の IdP の設定がありません" {
+		t.Errorf("400 の Register の err = %v, want 本文の文の ErrInvalidInput", err)
+	}
+	notPending := newClient(t, http.StatusConflict, `{"code":"not_pending"}`, &calls, &form)
+	if err := notPending.Unregister(ctx, "01JBRKR0000000000000000000"); err != nil {
+		t.Errorf("409 の Unregister の err = %v, want 有効な職員は消さずに成功", err)
 	}
 	notFound := newClient(t, http.StatusNotFound, `{"code":"not_found"}`, &calls, &form)
 	if err := notFound.Suspend(ctx, "01JBRKR0000000000000000000"); !errors.Is(err, apperr.ErrNotFound) {
@@ -84,13 +105,17 @@ func TestErrors(t *testing.T) {
 	if err := notFound.Unregister(ctx, "01JBRKR0000000000000000000"); err != nil {
 		t.Errorf("404 の Unregister の err = %v, want 消えているので成功", err)
 	}
-	down := newClient(t, http.StatusBadGateway, `{"code":"revoke_failed"}`, &calls, &form)
-	if err := down.Suspend(ctx, "01JBRKR0000000000000000000"); err == nil || errors.Is(err, apperr.ErrNotFound) {
+	revoke := newClient(t, http.StatusBadGateway, `{"code":"revoke_failed"}`, &calls, &form)
+	if err := revoke.Suspend(ctx, "01JBRKR0000000000000000000"); !errors.Is(err, staff.ErrRevokeFailed) {
+		t.Errorf("revoke_failed の 502 の Suspend の err = %v, want ErrRevokeFailed", err)
+	}
+	down := newClient(t, http.StatusBadGateway, `bad gateway`, &calls, &form)
+	if err := down.Suspend(ctx, "01JBRKR0000000000000000000"); err == nil || errors.Is(err, apperr.ErrNotFound) || errors.Is(err, staff.ErrRevokeFailed) {
 		t.Errorf("502 の Suspend の err = %v, want そのほかのエラー", err)
 	}
 }
 
-func TestSuspendAndUnregister(t *testing.T) {
+func TestSuspendActivateUnregister(t *testing.T) {
 	ctx := context.Background()
 	var calls []call
 	var form string
@@ -98,11 +123,15 @@ func TestSuspendAndUnregister(t *testing.T) {
 	if err := c.Suspend(ctx, "01JBRKR0000000000000000000"); err != nil {
 		t.Fatal(err)
 	}
+	if err := c.Activate(ctx, "01JBRKR0000000000000000000"); err != nil {
+		t.Fatal(err)
+	}
 	if err := c.Unregister(ctx, "01JBRKR0000000000000000000"); err != nil {
 		t.Fatal(err)
 	}
 	want := []call{
 		{http.MethodPost, "/internal/staff/01JBRKR0000000000000000000/suspend", "Bearer client-token", ""},
+		{http.MethodPost, "/internal/staff/01JBRKR0000000000000000000/activate", "Bearer client-token", ""},
 		{http.MethodDelete, "/internal/staff/01JBRKR0000000000000000000", "Bearer client-token", ""},
 	}
 	for i, w := range want {

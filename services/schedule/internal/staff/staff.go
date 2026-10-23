@@ -3,6 +3,7 @@ package staff
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -189,13 +190,35 @@ type Repository interface {
 	Suspend(ctx context.Context, id string) error
 }
 
+var (
+	// ErrEmailTaken は、登録しようとしたメールの職員が、ブローカーでほかの事業所にいることを示す。
+	ErrEmailTaken = errors.New("同じメールの職員がほかの事業所にいる")
+	// ErrIdentitySuspended は、登録か有効化しようとしたブローカーの職員が止められていることを示す。
+	ErrIdentitySuspended = errors.New("ブローカーの職員が止められている")
+	// ErrRevokeFailed は、ブローカーが職員を止めたが、ログインのセッションか同意を取り消せなかったことを示す。
+	ErrRevokeFailed = errors.New("ブローカーが職員を止めたが、ログインのセッションか同意を取り消せなかった")
+)
+
+// Registration は、ブローカーに職員を登録した結果である。Pending は、ブローカーの職員が登録の途中で、まだログインできないことを示す。
+type Registration struct {
+	ID      string
+	Created bool
+	Pending bool
+}
+
 // Identities は、ブローカーの職員の身元を書く（ADR-0017）。約束は broker.Client と同じである。
 type Identities interface {
-	// Register は、組織 orgID にメール email（NormalizeEmail でそろえた値）の職員を登録し、その ID と、新しく作ったかを返す。
-	// 同じ組織に同じメールの職員がいれば、作らずにその ID と false を返す。その職員が止められていれば apperr.ErrConflict を返す。
-	Register(ctx context.Context, orgID, email string) (id string, created bool, err error)
-	// Unregister は、Register で作った職員を消す。予定の API の書き込みに失敗したときに、登録を戻すのに使う。
+	// Register は、組織 orgID にメール email（NormalizeEmail でそろえた値）の職員を登録の途中の状態で登録する。
+	// 同じ組織に同じメールの職員がいれば、作らずにその職員を返す。その職員が止められていれば ErrIdentitySuspended を、
+	// ほかの組織に同じメールの職員がいれば ErrEmailTaken を返す。
+	Register(ctx context.Context, orgID, email string) (Registration, error)
+	// Activate は、登録の途中の職員を有効にし、ログインできるようにする。有効な職員を有効にしても成功する。
+	// 止めた職員なら ErrIdentitySuspended を返す。
+	Activate(ctx context.Context, id string) error
+	// Unregister は、登録の途中の職員を消す。予定の API の書き込みに失敗したときに、登録を戻すのに使う。
+	// いないか、登録の途中でなければ、消さずに成功する。
 	Unregister(ctx context.Context, id string) error
 	// Suspend は、職員を止め、ログインのセッション、同意、refresh token を取り消す。止めた職員を止めても成功する。
+	// いなければ apperr.ErrNotFound を、止めたが取り消せなければ ErrRevokeFailed を返す。
 	Suspend(ctx context.Context, id string) error
 }

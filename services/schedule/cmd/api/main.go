@@ -118,6 +118,10 @@ func run() error {
 		Staff: staff.NewUsecase(staff.Deps{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions, Policies: policies, Staff: staffRepo,
 			Identities: broker.New(broker.Config(cfg.Broker), nil),
+			Self: func(ctx context.Context) (string, bool) {
+				p, ok := principal.From(ctx)
+				return p.Staff.ID, ok
+			},
 		}, tx, ids, principal.RequireStaffManage),
 		Patients: patient.NewUsecase(patient.Deps{
 			Facilities: facilities, Staff: staffRefs, ServiceCodes: visitMasters, Patients: patients,

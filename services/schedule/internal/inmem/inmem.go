@@ -908,10 +908,11 @@ func (s Syncs) Finish(_ context.Context, st calendar.SyncState, r calendar.SyncR
 	return nil
 }
 
-// Identity は、Identities が持つブローカーの職員である。
+// Identity は、Identities が持つブローカーの職員である。Pending は登録の途中で、Activate で外れる。
 type Identity struct {
 	OrgID     string
 	Email     string
+	Pending   bool
 	Suspended bool
 }
 
@@ -920,38 +921,66 @@ type Identities struct {
 	Members map[string]Identity
 	// Err は、Register と Suspend が返すエラーである。nil なら成功する。
 	Err error
-	seq int
+	// ActivateErr は、Activate が返すエラーである。nil なら成功する。
+	ActivateErr error
+	// RevokeErr は、Suspend が職員を止めた後に返すエラーで、Hydra の取り消しの失敗を表す。nil なら成功する。
+	RevokeErr error
+	seq       int
 }
 
 // NewIdentities は、ブローカーの職員がいない Identities を作る。
 func NewIdentities() *Identities { return &Identities{Members: map[string]Identity{}} }
 
-// Register は、組織とメールの職員がいればその ID を、いなければ新しい ID を返す。止めた職員なら apperr.ErrConflict を返す。
-func (s *Identities) Register(_ context.Context, orgID, email string) (string, bool, error) {
+// Register は、同じメールの職員がいなければ、新しい ID の登録の途中の職員を作る。同じ組織にいればその職員を返す。
+// 止めた職員なら staff.ErrIdentitySuspended を、ほかの組織にいれば staff.ErrEmailTaken を返す。
+func (s *Identities) Register(_ context.Context, orgID, email string) (staff.Registration, error) {
 	if s.Err != nil {
-		return "", false, s.Err
+		return staff.Registration{}, s.Err
 	}
 	for id, m := range s.Members {
-		if m.OrgID == orgID && m.Email == email {
-			if m.Suspended {
-				return "", false, apperr.ErrConflict
-			}
-			return id, false, nil
+		switch {
+		case m.Email != email:
+			continue
+		case m.OrgID != orgID:
+			return staff.Registration{}, staff.ErrEmailTaken
+		case m.Suspended:
+			return staff.Registration{}, staff.ErrIdentitySuspended
 		}
+		return staff.Registration{ID: id, Pending: m.Pending}, nil
 	}
 	s.seq++
 	id := "broker-" + strconv.Itoa(s.seq)
-	s.Members[id] = Identity{OrgID: orgID, Email: email}
-	return id, true, nil
+	s.Members[id] = Identity{OrgID: orgID, Email: email, Pending: true}
+	return staff.Registration{ID: id, Created: true, Pending: true}, nil
 }
 
-// Unregister は、職員を消す。いなければ何もしない。
-func (s *Identities) Unregister(_ context.Context, id string) error {
-	delete(s.Members, id)
+// Activate は、職員の登録の途中を外す。いなければ apperr.ErrNotFound を、止めた職員なら staff.ErrIdentitySuspended を返す。
+func (s *Identities) Activate(_ context.Context, id string) error {
+	if s.ActivateErr != nil {
+		return s.ActivateErr
+	}
+	m, ok := s.Members[id]
+	switch {
+	case !ok:
+		return apperr.ErrNotFound
+	case m.Suspended:
+		return staff.ErrIdentitySuspended
+	}
+	m.Pending = false
+	s.Members[id] = m
 	return nil
 }
 
-// Suspend は、職員を止める。いなければ apperr.ErrNotFound を返す。
+// Unregister は、登録の途中の職員を消す。いないか、登録の途中でなければ何もしない。
+func (s *Identities) Unregister(_ context.Context, id string) error {
+	if m, ok := s.Members[id]; ok && m.Pending {
+		delete(s.Members, id)
+	}
+	return nil
+}
+
+// Suspend は、職員を止める。RevokeErr があれば、止めてから RevokeErr を staff.ErrRevokeFailed で包んで返す。
+// いなければ apperr.ErrNotFound を返す。
 func (s *Identities) Suspend(_ context.Context, id string) error {
 	if s.Err != nil {
 		return s.Err
@@ -962,5 +991,8 @@ func (s *Identities) Suspend(_ context.Context, id string) error {
 	}
 	m.Suspended = true
 	s.Members[id] = m
+	if s.RevokeErr != nil {
+		return fmt.Errorf("%w: %w", staff.ErrRevokeFailed, s.RevokeErr)
+	}
 	return nil
 }
