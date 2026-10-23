@@ -91,7 +91,7 @@ route は `src/routes/` のファイルから TanStack Router が生成する。
 - 画面の引数は、server function で操作ごとの形を確かめ、合わなければ 400 を返す。
 - 事業所に登録されていない職員は、`/auth/error?reason=forbidden` に案内を出す。
 
-サーバーが読む環境変数は、[全体の Design Doc の環境変数の表](../../docs/design/DesignDoc.md#環境変数) にある。ブラウザと web から届く Issuer の URL が違い、discovery の文書の認可のエンドポイントにブラウザが届かないときは、`OIDC_AUTHORIZATION_ENDPOINT` でブラウザを転送する認可の URL を渡す。
+サーバーが読む環境変数は、[全体の Design Doc の環境変数の表](../../docs/design/DesignDoc.md#環境変数) にある。ブラウザと web から届く Issuer の URL が違い、discovery の文書の認可のエンドポイントにブラウザが届かないときは、`OIDC_AUTHORIZATION_ENDPOINT` でブラウザを転送する認可の URL を渡す。ブラウザが Issuer の URL に届かないときは、`OIDC_END_SESSION_ENDPOINT` でログアウトの転送の先の URL も渡す。
 
 `/healthz` はプロセスが動いていれば 200 を、`/readyz` は Valkey に届けば 200、届かなければ 503 を返す。
 

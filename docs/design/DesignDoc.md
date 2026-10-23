@@ -145,9 +145,10 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
   - cookie にはセッションの ID を入れ、トークンは入れない。
   - 画面の操作は、web のサーバーの関数（BFF）を呼ぶ。API はブラウザから直接は呼ばれない。
   - 例外は、開発者がローカルで文書のサイトの API の仕様のページから、ローカルの API を試すときだけである。API は `CORS_ALLOW_ORIGINS` に挙げたオリジンにだけ CORS のヘッダーを返し、ローカルの compose は、web とローカルの文書のサイトのオリジンを挙げる。
-- ブラウザと Hydra とブローカー: ログインのときだけ、web がブラウザを Hydra の認可の画面へ転送し、Hydra がブローカーのログインの画面へ転送する。ブローカーは、職員の事業所の上流の IdP へ転送する。
+- ブラウザと Hydra とブローカー: ログインのときに、web がブラウザを Hydra の認可の画面へ転送し、Hydra がブローカーのログインの画面へ転送する。ブローカーは、職員の事業所の上流の IdP へ転送する。
+  - ログアウトのときは、web が BFF のセッションを消してから、ブラウザを Hydra の RP-Initiated Logout へ ID token を添えて転送する。Hydra はブローカーのログアウトの画面を呼んでログインのセッションを消し、web の / へ戻す。上流の IdP のセッションは消さない。
 - web と Hydra: 認可コードフローでトークンを取得し、更新する。トークンは Valkey のセッションに置く。
-- ブローカーと Hydra: ブローカーが Hydra の admin API でログインと同意を accept か reject する。同意の accept で、access token の `aud`（`schedule`、`receipt`）と `org_id` を決める。
+- ブローカーと Hydra: ブローカーが Hydra の admin API でログインと同意を accept か reject し、ログアウトを accept する。ログインの accept で、Hydra にログインのセッションを 12 時間覚えさせる。同意の accept で、access token の `aud`（`schedule`、`receipt`）と `org_id` を決める。
 - ブローカーと上流の IdP: 認可コードフローで ID token を取り、署名、`iss`、`aud`、`nonce` を確かめる。
 - 予定の API とブローカー: 職員の登録と停止で、予定の API が職員の管理の権限を確認してから、ブローカーの内部の API を呼ぶ。予定の API は、Hydra の client credentials で `aud` が `broker` の access token を取って付ける。
   - ブローカーは、内部の API と token_hook を、ログインの画面と別のポートで待ち受け、許したクライアントのトークンだけを受ける。
@@ -187,6 +188,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 | `OIDC_CLIENT_ID` | 使う | 使わない | 使わない | web のクライアントの ID |
 | `OIDC_CLIENT_SECRET` | 使う | 使わない | 使わない | web のクライアントのシークレット |
 | `OIDC_AUTHORIZATION_ENDPOINT` | 任意 | 使わない | 使わない | ブラウザを転送する認可の URL。web とブラウザから届く IdP の URL が違うローカル環境だけで渡す |
+| `OIDC_END_SESSION_ENDPOINT` | 任意 | 使わない | 使わない | ログアウトでブラウザを転送する RP-Initiated Logout の URL。Hydra は discovery の `end_session_endpoint` を Issuer の URL から作るので、ブラウザが Issuer の URL に届かないときに渡す |
 | `SESSION_STORE_URL` | 使う | 使わない | 使わない | Valkey の接続先 |
 | `SESSION_SECRET` | 使う | 使わない | 使わない | cookie の署名の鍵。32 バイト以上 |
 | `SESSION_COOKIE_SECURE` | 任意 | 使わない | 使わない | `false` のときだけ、セッションの cookie に Secure を付けない。https でないローカル環境で使う |
