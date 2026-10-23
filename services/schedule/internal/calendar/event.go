@@ -74,7 +74,7 @@ type Event struct {
 // EventSource が返すエラー。httpapi が状態コードに対応させる。
 var (
 	// ErrUnreadable は、カレンダーが無いか、サービスアカウントに共有されていないことを表す。
-	ErrUnreadable = errors.New("カレンダーを読めません。カレンダーの共有を確かめてください")
+	ErrUnreadable = errors.New("カレンダーを読めません。カレンダーの共有を確認してください")
 	// ErrUnavailable は、外部のカレンダーに届かないか、外部のカレンダーがエラーを返したことを表す。
 	ErrUnavailable = errors.New("外部のカレンダーから予定を読めませんでした")
 	// ErrNotConfigured は、外部のカレンダーを読む認証の情報が設定されていないことを表す。
@@ -97,7 +97,7 @@ type EventSource interface {
 	// Instances は、繰り返しの親の予定 eventID の、timeMin から timeMax までに重なる回を返す。
 	// 変えた回は例外の回の値で返り、取り消した回は返らない。
 	Instances(ctx context.Context, calendarID, eventID string, timeMin, timeMax time.Time) ([]Event, error)
-	// Check は、calendarID のカレンダーの予定を読めるかを確かめる。
+	// Check は、calendarID のカレンダーの予定を読めるかを確認する。
 	Check(ctx context.Context, calendarID string) error
 	// Changes は、calendarID のカレンダーの、syncToken を受け取った後に変わった予定を、消した予定と繰り返しの例外の回を含めて、
 	// 繰り返しを展開せずに返す。syncToken が空なら、消した予定を含む全ての予定を返す。

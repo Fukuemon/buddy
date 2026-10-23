@@ -70,7 +70,7 @@ type Export struct {
 	UpdatedAt   time.Time
 }
 
-// InReview は、待ちが確かめの要る状態（conflict か failed）かを返す。
+// InReview は、待ちが確認が必要な状態（conflict か failed）かを返す。
 func (e Export) InReview() bool {
 	return e.Status == ExportConflict || e.Status == ExportFailed
 }
@@ -98,7 +98,7 @@ type ExportResult struct {
 	Released   bool
 }
 
-// ExportIssue は、確かめが要る書き出しの待ちと、その予定の日時と職員である。繰り返しの予定では、日付は最初の回の日付である。
+// ExportIssue は、確認が必要な書き出しの待ちと、その予定の日時と職員である。繰り返しの予定では、日付は最初の回の日付である。
 // 予定のタイトルと利用者名は持たない。
 type ExportIssue struct {
 	Export
@@ -120,7 +120,7 @@ func (i ExportIssue) Acceptable() bool {
 // ExportRepository は、書き出しの待ちを読み書きする。見つからないときは apperr.ErrNotFound を返す。
 type ExportRepository interface {
 	// Enqueue は、t の終わっていない待ちがあれば Revision を 1 つ増やし、無ければ ID が id の待ちを足す。
-	// 失敗した待ちは、pending に戻して回数を数え直す。確かめが要る待ち（conflict）は、状態を変えない。
+	// 失敗した待ちは、pending に戻して回数を数え直す。確認が必要な待ち（conflict）は、状態を変えない。
 	Enqueue(ctx context.Context, id string, t Target) error
 	// Claim は、書く時刻を過ぎた pending の待ちを max 件まで取り、lease の間はほかの処理に渡さないようにし、
 	// 書こうとした回数を 1 つ増やして返す。
@@ -129,17 +129,17 @@ type ExportRepository interface {
 	// e を取った後にほかの処理が同じ待ちを取り直していれば（lease が切れたとき）、何も書かない。
 	Finish(ctx context.Context, e Export, r ExportResult) error
 	Get(ctx context.Context, id string) (Export, error)
-	// ListIssues は、事業所の確かめが要る待ち（conflict と failed）を、新しく変わった順に返す。
+	// ListIssues は、事業所の確認が必要な待ち（conflict と failed）を、新しく変わった順に返す。
 	ListIssues(ctx context.Context, facilityID string) ([]ExportIssue, error)
-	// Retry は、確かめが要る待ち id を、buddy の内容で書き直す pending の待ちにする。確かめが要る待ちでなければ apperr.ErrConflict を返す。
+	// Retry は、確認が必要な待ち id を、buddy の内容で書き直す pending の待ちにする。確認が必要な待ちでなければ apperr.ErrConflict を返す。
 	Retry(ctx context.Context, id string) error
 	// Open は、t の終わっていない待ちを返す。無いときは apperr.ErrNotFound を返す。
 	Open(ctx context.Context, t Target) (Export, error)
-	// Hold は、t の終わっていない待ちを、理由が code の確かめが要る待ち（conflict）にする。無ければ ID が id の待ちを足す。
+	// Hold は、t の終わっていない待ちを、理由が code の確認が必要な待ち（conflict）にする。無ければ ID が id の待ちを足す。
 	// Revision を 1 つ増やし、書いている処理の結果を捨てさせる。
 	Hold(ctx context.Context, id string, t Target, code ExportErrorCode) error
-	// Resolve は、確かめが要る待ち id を、外部のカレンダーの内容を buddy に当てて終えた待ちにする。
-	// 確かめが要る待ちでないか、Revision が revision でない（読んだ後に積み直されたか保留し直された）ときは apperr.ErrConflict を返す。
+	// Resolve は、確認が必要な待ち id を、外部のカレンダーの内容を buddy に当てて終えた待ちにする。
+	// 確認が必要な待ちでないか、Revision が revision でない（読んだ後に積み直されたか保留し直された）ときは apperr.ErrConflict を返す。
 	Resolve(ctx context.Context, id string, revision int) error
 }
 

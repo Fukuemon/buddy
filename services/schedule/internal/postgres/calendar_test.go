@@ -132,7 +132,7 @@ func TestCalendarRepository(t *testing.T) {
 }
 
 // TestCalendarImportInOneTransaction は、取り込みの手順が、繰り返しの予定、除外の日、回の置き換え、回ごとにした予定、
-// 訪問の情報、予定の対応を、テーブルの制約に合う形で書けることを確かめる。
+// 訪問の情報、予定の対応を、テーブルの制約に合う形で書けることを確認する。
 func TestCalendarImportInOneTransaction(t *testing.T) {
 	ctx := txContext(t)
 	ctx = principal.With(ctx, principal.Principal{Staff: staff.Detail{

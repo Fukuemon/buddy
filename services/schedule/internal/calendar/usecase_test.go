@@ -328,14 +328,14 @@ func TestImportRejects(t *testing.T) {
 		running   bool
 		want      error
 	}{
-		{name: "確かめが要る予定の取り込み方が足りない", decisions: decisions()[:1], want: apperr.ErrConflict},
-		{name: "確かめが要る予定でない予定の取り込み方を送った",
+		{name: "確認が必要な予定の取り込み方が足りない", decisions: decisions()[:1], want: apperr.ErrConflict},
+		{name: "確認が必要な予定でない予定の取り込み方を送った",
 			decisions: append(decisions(), calendar.Decision{ExternalEventID: "visit", Action: calendar.ActionSkip}), want: apperr.ErrConflict},
 		{name: "選んだ利用者がいない",
 			decisions: []calendar.Decision{{ExternalEventID: "ambiguous", Action: calendar.ActionPatient, PatientID: inmem.OtherPatientID}, decisions()[1]},
 			want:      apperr.ErrInvalidInput},
 		{name: "取り込みが進んでいる", decisions: decisions(), running: true, want: apperr.ErrConflict},
-		{name: "プレビューの後に確かめが要る予定が変わった（バージョンが違う）",
+		{name: "プレビューの後に確認が必要な予定が変わった（バージョンが違う）",
 			decisions: []calendar.Decision{{ExternalEventID: "ambiguous", Action: calendar.ActionPatient, PatientID: "PB2", Revision: "stale"}, decisions()[1]},
 			want:      apperr.ErrConflict},
 	}
@@ -489,7 +489,7 @@ func reviewSeries() *gcaltest.Server {
 }
 
 func TestImportReviewedRecurring(t *testing.T) {
-	t.Run("タイトルが親と同じ回は、親の確かめにまとめ、選んだ利用者を規則と回に当てる", func(t *testing.T) {
+	t.Run("タイトルが親と同じ回は、親の確認にまとめ、選んだ利用者を規則と回に当てる", func(t *testing.T) {
 		e := newEnv(t, reviewSeries())
 		p, err := e.uc.Preview(e.ctx, calID, e.rng)
 		if err != nil {

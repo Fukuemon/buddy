@@ -31,7 +31,7 @@ type Calendar struct {
 	Endpoint string
 	// ExportEnabled は、予定を Google カレンダーに書き出すかである。false なら、書き出しの待ちを積まず、書き出しの処理も動かさない。
 	ExportEnabled bool
-	// ExportInterval は、予定の書き出しの待ちを確かめる間隔である。
+	// ExportInterval は、予定の書き出しの待ちを確認する間隔である。
 	ExportInterval time.Duration
 	// SyncEnabled は、Google カレンダーの変更を buddy の予定に当てるかである。false なら、同期の処理を動かさない。
 	SyncEnabled bool
@@ -88,7 +88,7 @@ type Config struct {
 //     GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE と一緒に渡す
 //   - GOOGLE_CALENDAR_EXPORT_ENABLED: true なら、予定を Google カレンダーに書き出す。デフォルトは false。
 //     GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE と一緒に渡し、認証の情報のスコープは calendar.events になる
-//   - GOOGLE_CALENDAR_EXPORT_INTERVAL: 予定の書き出しの待ちを確かめる間隔（Go の時間の書式。例は 30s）。デフォルトは 30s。1s 以上にする
+//   - GOOGLE_CALENDAR_EXPORT_INTERVAL: 予定の書き出しの待ちを確認する間隔（Go の時間の書式。例は 30s）。デフォルトは 30s。1s 以上にする
 //   - GOOGLE_CALENDAR_SYNC_ENABLED: true なら、Google カレンダーの変更を buddy の予定に当てる。デフォルトは false。
 //     GOOGLE_CALENDAR_EXPORT_ENABLED を true にして渡す
 //   - GOOGLE_CALENDAR_SYNC_INTERVAL: Google カレンダーの変わった予定を読む間隔（Go の時間の書式）。デフォルトは 2m。1s 以上にする
@@ -191,7 +191,7 @@ func load(getenv func(string) string, api bool) (Config, error) {
 	if c.Calendar.SyncEnabled, err = boolOf(getenv, "GOOGLE_CALENDAR_SYNC_ENABLED"); err != nil {
 		return Config{}, err
 	}
-	// buddy の変更を書き出さずに Google の変更だけを当てると、buddy で変えた予定は全て両方の変更になり、確かめが要る予定に出続ける。
+	// buddy の変更を書き出さずに Google の変更だけを当てると、buddy で変えた予定は全て両方の変更になり、確認が必要な予定に出続ける。
 	if c.Calendar.SyncEnabled && !c.Calendar.ExportEnabled {
 		return Config{}, errors.New("GOOGLE_CALENDAR_SYNC_ENABLED は GOOGLE_CALENDAR_EXPORT_ENABLED を true にして渡します")
 	}

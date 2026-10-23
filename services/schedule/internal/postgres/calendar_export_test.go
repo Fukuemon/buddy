@@ -79,17 +79,17 @@ func TestCalendarExportRepository(t *testing.T) {
 		t.Fatalf("ListIssues = %+v, %v", issues, err)
 	}
 	if i := issues[0]; i.ID != nextID || i.StaffName == "" || i.Date.IsZero() || !i.StartTime.Before(i.EndTime) || *i.ErrorCode != code {
-		t.Errorf("確かめが要る待ち = %+v", i)
+		t.Errorf("確認が必要な待ち = %+v", i)
 	}
-	// 確かめが要る待ちは、積み直しても状態と書く時刻を変えない
+	// 確認が必要な待ちは、積み直しても状態と書く時刻を変えない
 	if err := r.Enqueue(ctx, otherID, target); err != nil {
 		t.Fatal(err)
 	}
 	if e, _ := r.Get(ctx, nextID); e.Status != calendar.ExportConflict || e.Revision != 2 {
-		t.Errorf("確かめが要る待ちを積み直した = %+v", e)
+		t.Errorf("確認が必要な待ちを積み直した = %+v", e)
 	}
 	if again, _ := r.Claim(ctx, 10, time.Minute); len(again) != 0 {
-		t.Errorf("確かめが要る待ちを取った: %+v", again)
+		t.Errorf("確認が必要な待ちを取った: %+v", again)
 	}
 
 	if err := r.Retry(ctx, nextID); err != nil {
@@ -99,7 +99,7 @@ func TestCalendarExportRepository(t *testing.T) {
 		t.Errorf("書き直す待ち = %+v", e)
 	}
 	if err := r.Retry(ctx, nextID); !errors.Is(err, apperr.ErrConflict) {
-		t.Errorf("確かめが要る待ちでない Retry: %v", err)
+		t.Errorf("確認が必要な待ちでない Retry: %v", err)
 	}
 
 	// 一時的なエラーは、書く時刻を遅らせて pending に戻す。失敗した待ちは、積み直すと数え直す

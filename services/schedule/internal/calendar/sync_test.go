@@ -22,7 +22,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
 
-// syncEnv は、書き出しの環境に、Google カレンダーの変更を当てる同期の処理と、確かめが要る予定を解く Usecase を足す。
+// syncEnv は、書き出しの環境に、Google カレンダーの変更を当てる同期の処理と、確認が必要な予定を解く Usecase を足す。
 type syncEnv struct {
 	exportEnv
 	syncer *calendar.Syncer
@@ -121,7 +121,7 @@ func TestSyncAppliesChangeMadeOnlyInGoogle(t *testing.T) {
 		t.Errorf("Google の変更を書き戻した: 待ち %d、書き込み %d", n, e.srv.Writes()-writes)
 	}
 	if issues, _ := e.uc.ListExportIssues(e.ctx, inmem.FacilityID); len(issues) != 0 {
-		t.Errorf("確かめが要る予定 = %+v", issues)
+		t.Errorf("確認が必要な予定 = %+v", issues)
 	}
 
 	// 変わっていなければ、もう一度読んでも当てない
@@ -144,7 +144,7 @@ func TestSyncIgnoresEchoOfExport(t *testing.T) {
 		t.Errorf("buddy が書いた変更を当て直した: %+v", got)
 	}
 	if issues, _ := e.uc.ListExportIssues(e.ctx, inmem.FacilityID); len(issues) != 0 {
-		t.Errorf("確かめが要る予定 = %+v", issues)
+		t.Errorf("確認が必要な予定 = %+v", issues)
 	}
 }
 
@@ -168,7 +168,7 @@ func TestSyncHoldsChangeMadeOnBothSides(t *testing.T) {
 	// 解くまでは、buddy の変更を Google に書かない
 	e.due()
 	if n := e.run(t); n != 0 {
-		t.Errorf("確かめが要る予定を書いた: %d", n)
+		t.Errorf("確認が必要な予定を書いた: %d", n)
 	}
 	if ev := e.srv.Event(googleCalID, eventID(t, d.ID)); ev.Summary != "カンファレンス" {
 		t.Errorf("Google の予定 = %+v", ev)
@@ -338,7 +338,7 @@ func TestSyncWaitsWhileExportIsWriting(t *testing.T) {
 		t.Errorf("書いている間の同期の結果 = %+v, 前は %+v", r, before)
 	}
 	if x := e.export(t, d.ID); x.Status != calendar.ExportPending {
-		t.Errorf("書いている待ちを確かめが要る待ちにした: %+v", x)
+		t.Errorf("書いている待ちを確認が必要な待ちにした: %+v", x)
 	}
 }
 
@@ -398,7 +398,7 @@ func TestSyncAppliesOccurrenceChanges(t *testing.T) {
 		t.Errorf("繰り返しの予定の対応の更新の番号 = %d、予定は %d", *pl.SyncedVersion, got.Version)
 	}
 	if issues, _ := e.uc.ListExportIssues(e.ctx, inmem.FacilityID); len(issues) != 0 {
-		t.Errorf("確かめが要る予定 = %+v", issues)
+		t.Errorf("確認が必要な予定 = %+v", issues)
 	}
 
 	// 動かした回をもう一度動かすと、置き換えた予定を変える
@@ -499,7 +499,7 @@ func TestSyncAcceptRejectsScheduleCancelledInBuddy(t *testing.T) {
 
 	issues, err := e.uc.ListExportIssues(e.ctx, inmem.FacilityID)
 	if err != nil || len(issues) != 1 || issues[0].Acceptable() {
-		t.Fatalf("キャンセルした予定の確かめが要る書き出し = %+v, %v", issues, err)
+		t.Fatalf("キャンセルした予定の確認が必要な書き出し = %+v, %v", issues, err)
 	}
 	var ce *apperr.ConflictError
 	if _, err := e.uc.AcceptExport(e.ctx, issues[0].ID); !errors.As(err, &ce) || ce.Code != calendar.CodeExportNotAcceptable {
@@ -590,7 +590,7 @@ func TestSyncReadsRecurringWithCancelledOccurrenceAgain(t *testing.T) {
 	e.srv.ExpireSyncTokens()
 	e.sync(t)
 	if issues, _ := e.uc.ListExportIssues(e.ctx, inmem.FacilityID); len(issues) != 0 {
-		t.Errorf("取り消した回の後に読み直した親の予定を、確かめが要る予定にした: %+v", issues)
+		t.Errorf("取り消した回の後に読み直した親の予定を、確認が必要な予定にした: %+v", issues)
 	}
 }
 
@@ -631,7 +631,7 @@ func TestSyncCancelledOccurrenceEchoOfExportedReplacement(t *testing.T) {
 	e.srv.Put(googleCalID, gcancelled(parent+"_20261116T000000Z", parent, "2026-11-16T09:00:00+09:00"))
 	e.sync(t)
 	if issues, _ := e.uc.ListExportIssues(e.ctx, inmem.FacilityID); len(issues) != 0 {
-		t.Errorf("書き出した置き換えの回の取り消しを、確かめが要る予定にした: %+v", issues)
+		t.Errorf("書き出した置き換えの回の取り消しを、確認が必要な予定にした: %+v", issues)
 	}
 }
 

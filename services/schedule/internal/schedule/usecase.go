@@ -155,7 +155,7 @@ func current(ctx context.Context) (principal.Principal, error) {
 	return p, nil
 }
 
-// authorize は、ctx の職員が、職員 staffID の予定を見てよいか（edit なら編集してよいか）を確かめる。
+// authorize は、ctx の職員が、職員 staffID の予定を見てよいか（edit なら編集してよいか）を確認する。
 func (s *Usecase) authorize(ctx context.Context, staffID string, edit bool) error {
 	p, err := current(ctx)
 	if err != nil {
@@ -251,7 +251,7 @@ func (s *Usecase) Cancel(ctx context.Context, scheduleID, reason string) (Cancel
 	if err != nil {
 		return Cancel{}, err
 	}
-	// Update と同じ行のロックの中で権限を確かめ、確かめた後に予定の職員が替わらないようにする。
+	// Update と同じ行のロックの中で権限を確認し、確認した後に予定の職員が替わらないようにする。
 	err = s.tx.WithinTx(ctx, func(ctx context.Context) error {
 		cur, err := s.deps.Schedules.GetForUpdate(ctx, scheduleID)
 		if err != nil {
@@ -358,7 +358,7 @@ func (s *Usecase) recurringChanged(ctx context.Context, slot Slot, id string) er
 	return s.deps.Exports.RecurringChanged(ctx, slot.FacilityID, slot.StaffID, id)
 }
 
-// prepareSlot は、予定の種類と職員と、職員の予定を編集する権限を確かめ、訪問の情報があれば保存して、予定の属性を組み立てる。
+// prepareSlot は、予定の種類と職員と、職員の予定を編集する権限を確認し、訪問の情報があれば保存して、予定の属性を組み立てる。
 // 訪問の情報を保存するので、トランザクションの中で呼ぶ。
 func (s *Usecase) prepareSlot(ctx context.Context, facilityID string, in SlotInput) (Slot, Type, error) {
 	typ, err := s.deps.Types.Get(ctx, in.TypeID)

@@ -18,7 +18,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
 )
 
-// TestEveryV1RouteIsInSpec は、gin に登録した /v1 の経路が全て openapi.yaml の定義にあることを確かめる。
+// TestEveryV1RouteIsInSpec は、gin に登録した /v1 の経路が全て openapi.yaml の定義にあることを確認する。
 // 定義に無い経路は、リクエストの検証を通らずに handler に届くためである。
 func TestEveryV1RouteIsInSpec(t *testing.T) {
 	spec, err := openapi.GetSpec()
@@ -54,7 +54,7 @@ func TestEveryPathParamHasResource(t *testing.T) {
 		for _, seg := range strings.Split(route.Path, "/") {
 			if name, ok := strings.CutPrefix(seg, ":"); ok {
 				if _, known := pathResources[name]; !known {
-					t.Errorf("%s %s: 引数 %s の事業所を確かめられない", route.Method, route.Path, name)
+					t.Errorf("%s %s: 引数 %s の事業所を確認できない", route.Method, route.Path, name)
 				}
 			}
 		}

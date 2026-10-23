@@ -101,7 +101,7 @@ func TestCalendarExportHoldAndResolve(t *testing.T) {
 		t.Fatalf("取った待ちの Open = %+v, %v", e, err)
 	}
 
-	// 終わっていない待ちを確かめが要る待ちにすると、書いていた処理の結果は捨てる
+	// 終わっていない待ちを確認が必要な待ちにすると、書いていた処理の結果は捨てる
 	if err := r.Hold(ctx, holdID, single, calendar.ErrorPreconditionFailed); err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +110,7 @@ func TestCalendarExportHoldAndResolve(t *testing.T) {
 	}
 	e, err := r.Get(ctx, exportID)
 	if err != nil || e.Status != calendar.ExportConflict || *e.ErrorCode != calendar.ErrorPreconditionFailed || e.LockedUntil != nil || !e.Acceptable() {
-		t.Fatalf("確かめが要る待ち = %+v, %v", e, err)
+		t.Fatalf("確認が必要な待ち = %+v, %v", e, err)
 	}
 	if _, err := r.Get(ctx, holdID); !errors.Is(err, apperr.ErrNotFound) {
 		t.Errorf("終わっていない待ちがあるのに足した: %v", err)
@@ -130,19 +130,19 @@ func TestCalendarExportHoldAndResolve(t *testing.T) {
 		t.Errorf("解いた待ちをもう一度解く: err = %v", err)
 	}
 
-	// 待ちが無ければ、確かめが要る待ちを足す。繰り返しの予定の待ちは、Google の内容で解けない
+	// 待ちが無ければ、確認が必要な待ちを足す。繰り返しの予定の待ちは、Google の内容で解けない
 	recurring := calendar.Target{FacilityID: seedFacility, RecurringScheduleID: seedRecurring}
 	if err := r.Hold(ctx, newID, recurring, calendar.ErrorUnappliable); err != nil {
 		t.Fatal(err)
 	}
 	e, err = r.Open(ctx, recurring)
 	if err != nil || e.ID != newID || e.Status != calendar.ExportConflict || *e.ErrorCode != calendar.ErrorUnappliable || e.Acceptable() {
-		t.Errorf("足した確かめが要る待ち = %+v, %v", e, err)
+		t.Errorf("足した確認が必要な待ち = %+v, %v", e, err)
 	}
 }
 
 // TestCalendarSyncAppliesVisitChanges は、取り込んだ訪問の予定の、Google での利用者の変更と回の取り消しを、
-// 同期の処理が表の制約に合う形で当てられることを確かめる。
+// 同期の処理が表の制約に合う形で当てられることを確認する。
 func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
 	ctx := txContext(t)
 	ctx = principal.With(ctx, principal.Principal{Staff: staff.Detail{

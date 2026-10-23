@@ -50,7 +50,7 @@ func viewerCtx(grants ...staff.PolicyGrant) context.Context {
 	}})
 }
 
-// TestSchedulesAuthorization は、7 つの権限ごとに、ほかの職員の予定の閲覧と編集、自分の予定の編集の許可と拒否を確かめる。
+// TestSchedulesAuthorization は、7 つの権限ごとに、ほかの職員の予定の閲覧と編集、自分の予定の編集の許可と拒否を確認する。
 // 見てよくない予定は一覧から除き、1 件を指す操作は apperr.ErrForbidden を返す。
 func TestSchedulesAuthorization(t *testing.T) {
 	tests := []struct {
@@ -129,7 +129,7 @@ func TestSchedulesAuthorization(t *testing.T) {
 	}
 }
 
-// TestSchedulesUpdateToOtherStaff は、自分の予定の職員をほかの職員に替えるには、替える先の職員の編集の権限が要ることを確かめる。
+// TestSchedulesUpdateToOtherStaff は、自分の予定の職員をほかの職員に替えるには、替える先の職員の編集の権限が要ることを確認する。
 func TestSchedulesUpdateToOtherStaff(t *testing.T) {
 	uc, _ := newSchedules(authzStore())
 	if _, err := uc.Update(viewerCtx(staff.PolicyGrant{PolicyCode: organization.ScheduleSelfEdit}), ownScheduleID, normalSlot()); !errors.Is(err, apperr.ErrForbidden) {

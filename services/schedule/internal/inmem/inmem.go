@@ -834,7 +834,7 @@ func (s Exports) ListIssues(_ context.Context, facilityID string) ([]calendar.Ex
 	return out, nil
 }
 
-// Retry は、確かめが要る待ちを、buddy の内容で書き直す pending の待ちにする。
+// Retry は、確認が必要な待ちを、buddy の内容で書き直す pending の待ちにする。
 func (s Exports) Retry(_ context.Context, id string) error {
 	e, err := get(s.Exports, id)
 	if err != nil {
@@ -856,7 +856,7 @@ func (s Exports) Open(_ context.Context, t calendar.Target) (calendar.Export, er
 	return calendar.Export{}, apperr.ErrNotFound
 }
 
-// Hold は、t の終わっていない待ちを確かめが要る待ちにするか、確かめが要る待ちを足す。
+// Hold は、t の終わっていない待ちを確認が必要な待ちにするか、確認が必要な待ちを足す。
 func (s Exports) Hold(_ context.Context, id string, t calendar.Target, code calendar.ExportErrorCode) error {
 	e, ok := s.open(t)
 	if !ok {
@@ -868,7 +868,7 @@ func (s Exports) Hold(_ context.Context, id string, t calendar.Target, code cale
 	return nil
 }
 
-// Resolve は、確かめが要る待ちを終えた待ちにする。
+// Resolve は、確認が必要な待ちを終えた待ちにする。
 func (s Exports) Resolve(_ context.Context, id string, revision int) error {
 	e, err := get(s.Exports, id)
 	if err != nil {

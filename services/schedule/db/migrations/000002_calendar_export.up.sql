@@ -2,7 +2,7 @@
 -- 前のバージョンのアプリが動いたまま当てられるよう、列は既定値を持たせて足し、ビューは列を末尾に足す。
 
 ALTER TABLE schedules ADD COLUMN version integer NOT NULL DEFAULT 1;
--- 検査の制約は NOT VALID で足してから確かめ、表を走査する間に書き込みを止めない。
+-- 検査の制約は NOT VALID で足してから確認し、表を走査する間に書き込みを止めない。
 ALTER TABLE schedules ADD CONSTRAINT schedules_version_check CHECK (version >= 1) NOT VALID;
 ALTER TABLE schedules VALIDATE CONSTRAINT schedules_version_check;
 ALTER TABLE recurring_schedules ADD COLUMN version integer NOT NULL DEFAULT 1;

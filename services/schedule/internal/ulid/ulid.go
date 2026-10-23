@@ -1,4 +1,4 @@
-// Package ulid は、kernel.IDGenerator を ULID で実装し、ID の形を確かめる。
+// Package ulid は、kernel.IDGenerator を ULID で実装し、ID の形を確認する。
 package ulid
 
 import (

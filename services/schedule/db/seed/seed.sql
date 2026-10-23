@@ -84,7 +84,7 @@ INSERT INTO recurring_schedules (id, facility_id, staff_id, schedule_type_id, da
     ('01M3TC6E9G4N8Q2R5T7V9W1X3Y', '01M3TC5H00QV17BC0J9V3393ZP', '01M3TC5TRG5200KYWTZW6ER3WN', '01M3TC68E05E1N46YCCBT6ZQB2',
      '2026-10-05', '17:30:00', '18:00:00', NULL, '週次の申し送り', NULL, 'weekly', 1, NULL, NULL, NULL);
 
--- 2 つ目の事業所。ログインした職員に、自分の事業所の予定だけが出ることを確かめるのに使う。
+-- 2 つ目の事業所。ログインした職員に、自分の事業所の予定だけが出ることを確認するのに使う。
 INSERT INTO facilities (id, name, org_id) VALUES
     ('01M5J5EE00QGG4M6GGZQ9AT9GW', 'サンプル第二訪問看護ステーション', 'org-sample-b');
 
@@ -107,7 +107,7 @@ INSERT INTO users (id, sub, username, email, phone_number, facility_id, departme
     ('01M5J5EE04P946KC3JAE2P1JQ4', '01M5J20JC4QZ0XQJD9RR1P5Z63', '上野 渚', 'nagisa.ueno@example.com', NULL,
      '01M5J5EE00QGG4M6GGZQ9AT9GW', '01M5J5EE01FKS73VPW3SR5W06C', '01M5J5EE027HQPBXW2QS38DE55', '01M5J5EE03MRY548V96BCRH79E');
 
--- 止めた職員。ブローカーのシードでも止めてあり、ログインを拒むことを確かめるのに使う。
+-- 止めた職員。ブローカーのシードでも止めてあり、ログインを拒むことを確認するのに使う。
 INSERT INTO users (id, sub, username, email, phone_number, facility_id, department_id, team_id, position_id, suspended_at) VALUES
     ('01M5J5EE0AV3M9P2QF6ZK8RTNC', '01M5J20JC5R7WQ2N8K4TB6XHDE', '小野 拓海', 'takumi.ono@example.com', NULL,
      '01M5J5EE00QGG4M6GGZQ9AT9GW', '01M5J5EE01FKS73VPW3SR5W06C', '01M5J5EE027HQPBXW2QS38DE55', '01M5J5EE03MRY548V96BCRH79E',

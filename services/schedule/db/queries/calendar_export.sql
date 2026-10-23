@@ -1,5 +1,5 @@
 -- name: EnqueueScheduleExport :exec
--- 終わっていない待ちがあれば積み直す。失敗した待ちは数え直し、確かめが要る待ちは状態と書く時刻を変えない。
+-- 終わっていない待ちがあれば積み直す。失敗した待ちは数え直し、確認が必要な待ちは状態と書く時刻を変えない。
 INSERT INTO calendar_exports (id, facility_id, schedule_id) VALUES ($1, $2, $3)
 ON CONFLICT (schedule_id) WHERE status <> 'succeeded' AND schedule_id IS NOT NULL
 DO UPDATE SET
@@ -82,7 +82,7 @@ WHERE e.facility_id = $1 AND e.status IN ('conflict', 'failed')
 ORDER BY e.updated_at DESC, e.id;
 
 -- name: HoldScheduleExport :exec
--- 外部の変更と buddy の変更が重なった予定を、確かめが要る待ちにする。書いている処理の結果は revision の違いで捨てる。
+-- 外部の変更と buddy の変更が重なった予定を、確認が必要な待ちにする。書いている処理の結果は revision の違いで捨てる。
 INSERT INTO calendar_exports (id, facility_id, schedule_id, status, error_code) VALUES ($1, $2, $3, 'conflict', $4)
 ON CONFLICT (schedule_id) WHERE status <> 'succeeded' AND schedule_id IS NOT NULL
 DO UPDATE SET
@@ -103,7 +103,7 @@ SELECT * FROM calendar_exports WHERE schedule_id = $1 AND status <> 'succeeded';
 SELECT * FROM calendar_exports WHERE recurring_schedule_id = $1 AND status <> 'succeeded';
 
 -- name: ResolveCalendarExport :execrows
--- 外部の内容を buddy に当てた、確かめが要る待ちを終える。読んだ後に積み直されたか保留し直された待ちは終えない。
+-- 外部の内容を buddy に当てた、確認が必要な待ちを終える。読んだ後に積み直されたか保留し直された待ちは終えない。
 UPDATE calendar_exports
 SET status = 'succeeded', error_code = NULL, overwrite = false, locked_until = NULL, finished_at = now()
 WHERE id = sqlc.arg(id) AND revision = sqlc.arg(revision) AND status IN ('conflict', 'failed');

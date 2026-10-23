@@ -3,7 +3,7 @@
 
 ALTER TABLE calendar_sync_states ADD COLUMN next_sync_at timestamptz NOT NULL DEFAULT now();
 ALTER TABLE calendar_sync_states ADD COLUMN locked_until timestamptz NULL;
--- 000002 と同じく、検査の制約は NOT VALID で足してから確かめる。
+-- 000002 と同じく、検査の制約は NOT VALID で足してから確認する。
 ALTER TABLE calendar_sync_states ADD CONSTRAINT calendar_sync_states_last_error_check
     CHECK (last_error IN ('unreadable', 'unavailable', 'apply')) NOT VALID;
 ALTER TABLE calendar_sync_states VALIDATE CONSTRAINT calendar_sync_states_last_error_check;

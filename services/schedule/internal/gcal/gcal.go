@@ -79,7 +79,7 @@ func (r *Reader) Instances(ctx context.Context, calendarID, eventID string, time
 	return events, nil
 }
 
-// Check は、calendarID のカレンダーの予定を 1 件だけ読み、読めるかを確かめる。エラーは Events と同じである。
+// Check は、calendarID のカレンダーの予定を 1 件だけ読み、読めるかを確認する。エラーは Events と同じである。
 func (r *Reader) Check(ctx context.Context, calendarID string) error {
 	page, err := r.svc.Events.List(calendarID).MaxResults(1).Context(ctx).Do()
 	if err != nil {

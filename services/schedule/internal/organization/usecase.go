@@ -17,7 +17,7 @@ type Deps struct {
 	Policies    PolicyRepository
 }
 
-// Guard は、ctx の職員が職員の管理（StaffManage）を許されているかを確かめ、許されないときは apperr.ErrForbidden を返す。
+// Guard は、ctx の職員が職員の管理（StaffManage）を許されているかを確認し、許されないときは apperr.ErrForbidden を返す。
 // principal が organization と staff に依存するので、機能のパッケージは principal の判定を import せずに受け取る（ADR-0006）。
 type Guard func(ctx context.Context) error
 

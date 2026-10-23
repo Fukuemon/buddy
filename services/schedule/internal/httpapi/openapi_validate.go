@@ -17,17 +17,17 @@ import (
 )
 
 func init() {
-	// kin-openapi は email の形をデフォルトでは確かめないので、登録する。職員のメールは staff.New でも確かめる
+	// kin-openapi は email の形をデフォルトでは確認しないので、登録する。職員のメールは staff.New でも確認する
 	openapi3.DefineStringFormatValidator("email", openapi3.NewRegexpFormatValidator(openapi3.FormatOfStringForEmail))
 }
 
 // maxBodyBytes は、リクエストの本文の上限である。検証は本文を全てメモリに読むので、上限を超えた本文は読まずに拒む。
 const maxBodyBytes = 1 << 20
 
-// newRequestValidator は、リクエストのパスの引数、クエリ、本文を openapi.yaml の定義で確かめる gin のミドルウェアを作る。
+// newRequestValidator は、リクエストのパスの引数、クエリ、本文を openapi.yaml の定義で確認する gin のミドルウェアを作る。
 // 定義に合わなければ、handler を呼ばずに 400（code は invalid_input）を返す。
-// トークンの確認は authenticate が受け持つので、定義の security はここでは確かめない。
-// 空の値のクエリ（?date_from= など）は、ハンドラが指定なしとして扱うので、定義では確かめない。
+// トークンの確認は authenticate が受け持つので、定義の security はここでは確認しない。
+// 空の値のクエリ（?date_from= など）は、ハンドラが指定なしとして扱うので、定義では確認しない。
 func newRequestValidator() (gin.HandlerFunc, error) {
 	spec, err := openapi.GetSpec()
 	if err != nil {

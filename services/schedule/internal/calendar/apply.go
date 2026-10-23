@@ -58,9 +58,9 @@ type VisitStore interface {
 //   - 外部の予定の内容が buddy の予定と同じなら、予定の対応を今の etag と更新の番号にする。buddy に比べない項目（説明）の
 //     書き出していない変更があれば、etag だけを進めて書き出させる。
 //   - buddy の予定の更新の番号が予定の対応と同じなら、外部だけが変わったので、外部の内容を buddy に当てる。
-//   - 両方が変わったか、外部の変更を buddy の予定に読み替えられないときは、書き出しの待ちを確かめが要る待ちにする。
+//   - 両方が変わったか、外部の変更を buddy の予定に読み替えられないときは、書き出しの待ちを確認が必要な待ちにする。
 //
-// 確かめが要る待ちは、buddy の内容で書き直す（Usecase.RetryExport）か、外部の内容を当てる（Usecase.AcceptExport）と解ける。
+// 確認が必要な待ちは、buddy の内容で書き直す（Usecase.RetryExport）か、外部の内容を当てる（Usecase.AcceptExport）と解ける。
 type applier struct {
 	calendars    Repository
 	exports      ExportRepository
@@ -154,8 +154,8 @@ func (a applier) acceptSchedule(ctx context.Context, c ExternalCalendar, l Link,
 	return a.calendars.UpdateLink(ctx, l.ID, ev.ETag, version)
 }
 
-// syncRecurring は、繰り返しの予定に対応する外部の繰り返しの予定 ev の変更を確かめる。
-// 繰り返しの予定そのもの（規則、時刻、タイトル）の外部での変更と削除は buddy に当てず、確かめが要る待ちにする。
+// syncRecurring は、繰り返しの予定に対応する外部の繰り返しの予定 ev の変更を確認する。
+// 繰り返しの予定そのもの（規則、時刻、タイトル）の外部での変更と削除は buddy に当てず、確認が必要な待ちにする。
 func (a applier) syncRecurring(ctx context.Context, l Link, ev Event) error {
 	rs, err := a.recurring.GetForUpdate(ctx, *l.RecurringScheduleID)
 	if err != nil {
@@ -181,8 +181,8 @@ func (a applier) syncRecurring(ctx context.Context, l Link, ev Event) error {
 
 // syncOccurrence は、繰り返しの予定 parent の回で、まだ buddy の予定と対応の無い外部の例外の回 ev を当てる。
 // 取り消した回は、繰り返しの予定から除外する。変えた回は、元の回を除外し、回を置き換える単発の予定を作って対応を書く。
-// buddy でもその回を除外していれば、変えた回は両方が変わったので、確かめが要る待ちにする。取り消した回は、buddy がその回を
-// 置き換え、親の予定の EXDATE をまだ書き出していないときだけ、確かめが要る待ちにする。書き出した後なら、親の EXDATE が
+// buddy でもその回を除外していれば、変えた回は両方が変わったので、確認が必要な待ちにする。取り消した回は、buddy がその回を
+// 置き換え、親の予定の EXDATE をまだ書き出していないときだけ、確認が必要な待ちにする。書き出した後なら、親の EXDATE が
 // 戻ってきたものとみなす。
 func (a applier) syncOccurrence(ctx context.Context, c ExternalCalendar, parent Link, ev Event) error {
 	rs, err := a.recurring.GetForUpdate(ctx, *parent.RecurringScheduleID)
@@ -247,9 +247,9 @@ func (a applier) syncOccurrence(ctx context.Context, c ExternalCalendar, parent 
 }
 
 // sameContent は、外部の予定 ev が buddy の予定を書き出した内容と同じときに、予定の対応 l を ev の etag にする。
-// buddy の更新の番号 version が対応と同じなら、対応の番号も進め、確かめが要る待ち open を終える。
+// buddy の更新の番号 version が対応と同じなら、対応の番号も進め、確認が必要な待ち open を終える。
 // 違えば、比べない項目（説明、繰り返しの除外の日）に書き出していない buddy の変更があるので、番号は進めず、
-// 確かめが要る待ちを書き直す待ちにして、buddy の変更を書き出させる。
+// 確認が必要な待ちを書き直す待ちにして、buddy の変更を書き出させる。
 func (a applier) sameContent(ctx context.Context, l Link, version int, ev Event, open *Export) error {
 	if synced(l, version) || l.SyncedVersion == nil {
 		if err := a.calendars.UpdateLink(ctx, l.ID, ev.ETag, version); err != nil {
@@ -303,7 +303,7 @@ func (a applier) open(ctx context.Context, t Target) (*Export, error) {
 	return &e, nil
 }
 
-// resolve は、外部と buddy の予定が同じになったので、確かめが要る待ち open を終える。
+// resolve は、外部と buddy の予定が同じになったので、確認が必要な待ち open を終える。
 func (a applier) resolve(ctx context.Context, open *Export) error {
 	if open == nil || !open.InReview() {
 		return nil

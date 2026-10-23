@@ -399,7 +399,7 @@ func TestHealth(t *testing.T) {
 		wantCode   int
 		wantStatus string
 	}{
-		{"healthz は依存先を確かめない", routerWithReady(errors.New("down")), "/healthz", http.StatusOK, "ok"},
+		{"healthz は依存先を確認しない", routerWithReady(errors.New("down")), "/healthz", http.StatusOK, "ok"},
 		{"readyz は依存先に届けば 200", routerWithReady(nil), "/readyz", http.StatusOK, "ok"},
 		{"readyz は依存先に届かなければ 503", routerWithReady(errors.New("down")), "/readyz", http.StatusServiceUnavailable, "unavailable"},
 		{"Ready が nil の readyz は 200", newRouter(nil, nil, nil), "/readyz", http.StatusOK, "ok"},
@@ -482,7 +482,7 @@ func TestRemoveUserPolicy(t *testing.T) {
 	}
 }
 
-// TestUsecaseReceivesPrincipal は、操作が権限を判定できるよう、認証のミドルウェアが特定した職員を ctx で渡すことを確かめる。
+// TestUsecaseReceivesPrincipal は、操作が権限を判定できるよう、認証のミドルウェアが特定した職員を ctx で渡すことを確認する。
 func TestUsecaseReceivesPrincipal(t *testing.T) {
 	s := &fakeSchedules{}
 	do(t, newRouter(s, &fakeStaff{}, &fakePatients{}), http.MethodGet, "/v1/schedules/"+scheduleID, "")
@@ -510,7 +510,7 @@ func TestUsecaseReceivesRequestCancellation(t *testing.T) {
 	}
 }
 
-// TestCORSPreflight は、許した origin からのプリフライトのリクエストに、API が使う全てのメソッドを許すことを確かめる。
+// TestCORSPreflight は、許した origin からのプリフライトのリクエストに、API が使う全てのメソッドを許すことを確認する。
 func TestCORSPreflight(t *testing.T) {
 	const origin = "http://localhost:3000"
 	h := httpapi.NewRouter(httpapi.Usecases{Auth: fakeAuth{}}, httpapi.RouterConfig{
@@ -529,7 +529,7 @@ func TestCORSPreflight(t *testing.T) {
 	}
 }
 
-// TestCreateForbidden は、職員の管理の権限が無いときに、職員と利用者の登録が 403 になることを確かめる。
+// TestCreateForbidden は、職員の管理の権限が無いときに、職員と利用者の登録が 403 になることを確認する。
 func TestCreateForbidden(t *testing.T) {
 	h := newRouter(&fakeSchedules{}, &fakeStaff{err: apperr.ErrForbidden}, &fakePatients{err: apperr.ErrForbidden})
 	for target, body := range map[string]string{
@@ -544,7 +544,7 @@ func TestCreateForbidden(t *testing.T) {
 	}
 }
 
-// TestRequestConstraints は、openapi.yaml に書いた本文の制約で、handler を呼ぶ前に 400 を返すことを確かめる。
+// TestRequestConstraints は、openapi.yaml に書いた本文の制約で、handler を呼ぶ前に 400 を返すことを確認する。
 func TestRequestConstraints(t *testing.T) {
 	user := `{"username":"新人","email":"new@example.com","department_id":"` + staffID + `","team_id":"` + staffID + `","position_id":"` + staffID + `"`
 	tests := []struct {
@@ -570,7 +570,7 @@ func TestRequestConstraints(t *testing.T) {
 	}
 }
 
-// TestRequestValidationMessages は、定義の検証のエラーの文と、空のクエリと大きな本文の扱いを確かめる。
+// TestRequestValidationMessages は、定義の検証のエラーの文と、空のクエリと大きな本文の扱いを確認する。
 func TestRequestValidationMessages(t *testing.T) {
 	h := newRouter(&fakeSchedules{}, &fakeStaff{}, &fakePatients{})
 	list := "/v1/facilities/" + facilityID + "/schedules"
