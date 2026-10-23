@@ -2,10 +2,12 @@ package login_test
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -24,9 +26,13 @@ const (
 type fakeStaff struct {
 	members map[string]login.StaffMember
 	links   []login.UpstreamAccount
+	finds   int
+	// beforeLink が nil でなければ、Link の前に呼ぶ。同時のログインが先に結び付けた場面を作る
+	beforeLink func(f *fakeStaff, staffID string, a login.UpstreamAccount)
 }
 
 func (f *fakeStaff) FindByEmail(_ context.Context, email string) ([]login.StaffMember, error) {
+	f.finds++
 	var out []login.StaffMember
 	for _, m := range f.members {
 		if m.Email == email {
@@ -45,6 +51,12 @@ func (f *fakeStaff) Get(_ context.Context, id string) (login.StaffMember, error)
 }
 
 func (f *fakeStaff) Link(_ context.Context, staffID string, a login.UpstreamAccount) error {
+	if f.beforeLink != nil {
+		f.beforeLink(f, staffID, a)
+	}
+	if f.members[staffID].Upstream != (login.UpstreamAccount{}) {
+		return login.ErrConflict
+	}
 	for _, m := range f.members {
 		if m.Upstream == a {
 			return login.ErrConflict
@@ -60,6 +72,7 @@ func (f *fakeStaff) Link(_ context.Context, staffID string, a login.UpstreamAcco
 // fakeHydra は、受けた accept と reject を残し、ブラウザを転送する先に結果の種類を入れて返す。
 type fakeHydra struct {
 	login       hydra.LoginRequest
+	loginErr    error
 	consent     hydra.ConsentRequest
 	accepted    *hydra.AcceptLogin
 	consented   *hydra.AcceptConsent
@@ -68,7 +81,7 @@ type fakeHydra struct {
 }
 
 func (f *fakeHydra) LoginRequest(context.Context, string) (hydra.LoginRequest, error) {
-	return f.login, nil
+	return f.login, f.loginErr
 }
 
 func (f *fakeHydra) AcceptLogin(_ context.Context, _ string, b hydra.AcceptLogin) (string, error) {
@@ -100,6 +113,8 @@ type fakeUpstream struct {
 	identity upstream.Identity
 	err      error
 	orgs     []string
+	// iss は、Exchange が受けた認可レスポンスの iss パラメーターである。
+	iss string
 }
 
 func (f *fakeUpstream) AuthURL(_ context.Context, orgID string, a upstream.Attempt, hint string) (string, error) {
@@ -107,8 +122,9 @@ func (f *fakeUpstream) AuthURL(_ context.Context, orgID string, a upstream.Attem
 	return "https://" + orgID + ".example.com/authorize?" + url.Values{"state": {a.State}, "login_hint": {hint}}.Encode(), nil
 }
 
-func (f *fakeUpstream) Exchange(_ context.Context, orgID, code string, _ upstream.Attempt) (upstream.Identity, error) {
+func (f *fakeUpstream) Exchange(_ context.Context, orgID, code, iss string, _ upstream.Attempt) (upstream.Identity, error) {
 	f.orgs = append(f.orgs, orgID)
+	f.iss = iss
 	if code != "code-1" {
 		return upstream.Identity{}, upstream.ErrInvalidToken
 	}
@@ -123,6 +139,11 @@ type env struct {
 }
 
 func newEnv(limit int) *env {
+	return newEnvWith(limit, func(*login.Config) {})
+}
+
+// newEnvWith は、送り手のアドレスごとの上限を limit にし、設定を edit で替えた env を作る。
+func newEnvWith(limit int, edit func(*login.Config)) *env {
 	e := &env{
 		staff: &fakeStaff{members: map[string]login.StaffMember{
 			aokiID: {ID: aokiID, OrgID: "org-a", Email: "aoki@example.com", Status: login.StatusActive},
@@ -133,27 +154,42 @@ func newEnv(limit int) *env {
 			Issuer: issuerA, Subject: "u-aoki", Email: "Aoki@example.com", EmailVerified: true,
 		}},
 	}
-	e.h = login.NewHandler(login.Config{
-		Logger:   slog.New(slog.DiscardHandler),
-		Staff:    e.staff,
-		Hydra:    e.hydra,
-		Upstream: e.upstream,
-		Limiter:  login.NewLimiter(time.Hour, limit),
-	})
+	cfg := login.Config{
+		Logger:             slog.New(slog.DiscardHandler),
+		Staff:              e.staff,
+		Hydra:              e.hydra,
+		Upstream:           e.upstream,
+		Limiter:            login.NewLimiter(time.Hour, limit),
+		EmailLimiter:       login.NewLimiter(time.Hour, 10),
+		PublicURL:          "https://login.example.com",
+		AutoConsentClients: []string{"web"},
+	}
+	edit(&cfg)
+	h, err := login.NewHandler(cfg)
+	if err != nil {
+		panic(err)
+	}
+	e.h = h
 	return e
 }
 
 func (e *env) do(req *http.Request) *httptest.ResponseRecorder {
-	req.RemoteAddr = "192.0.2.1:1234"
 	rec := httptest.NewRecorder()
 	e.h.ServeHTTP(rec, req)
 	return rec
 }
 
 func (e *env) submit(email string) *httptest.ResponseRecorder {
+	return e.do(submitRequest(email))
+}
+
+// submitRequest は、ブラウザがログインの画面の form から送るのと同じ POST /login を作る。
+func submitRequest(email string) *http.Request {
 	req := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(url.Values{"login_challenge": {"ch"}, "email": {email}}.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	return e.do(req)
+	req.Header.Set("Sec-Fetch-Site", "same-origin")
+	req.Header.Set("Origin", "https://login.example.com")
+	return req
 }
 
 // callback は、submit の応答の cookie と state で、上流の IdP のコールバックを呼ぶ。
@@ -184,6 +220,9 @@ func TestShowLogin(t *testing.T) {
 	body := rec.Body.String()
 	if rec.Code != http.StatusOK || !strings.Contains(body, `name="email"`) || !strings.Contains(body, `value="ch&#34;"`) {
 		t.Errorf("code = %d, body = %s", rec.Code, body)
+	}
+	if got := rec.Header().Get("Content-Security-Policy"); got != "frame-ancestors 'none'" {
+		t.Errorf("Content-Security-Policy = %q, want frame-ancestors 'none'", got)
 	}
 	if rec := e.do(httptest.NewRequest(http.MethodGet, "/login", nil)); rec.Code != http.StatusBadRequest {
 		t.Errorf("login_challenge の無い code = %d, want 400", rec.Code)
@@ -273,6 +312,95 @@ func TestSubmitEmailRateLimit(t *testing.T) {
 	}
 	if !e.hydra.rejected {
 		t.Error("上限を超えた試行を拒んでいない")
+	}
+}
+
+// TestSubmitEmailInvalidChallenge は、Hydra が知らない login_challenge では、職員を引かずにログインの失敗の画面を出すことを確かめる。
+func TestSubmitEmailInvalidChallenge(t *testing.T) {
+	e := newEnv(10)
+	e.hydra.loginErr = errors.New("hydra: 404 not found")
+	rec := e.submit("aoki@example.com")
+	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "ログインできませんでした") {
+		t.Errorf("code = %d, body = %s", rec.Code, rec.Body)
+	}
+	if e.staff.finds != 0 || len(e.upstream.orgs) != 0 || e.hydra.rejected {
+		t.Errorf("職員を引いたか、Hydra に結果を返した: finds = %d, orgs = %v", e.staff.finds, e.upstream.orgs)
+	}
+}
+
+// TestSubmitEmailCrossOrigin は、ほかのサイトから送られた POST /login を、Hydra に問い合わせずに 403 で拒むことを確かめる。
+func TestSubmitEmailCrossOrigin(t *testing.T) {
+	tests := []struct {
+		name    string
+		headers map[string]string
+		allowed bool
+	}{
+		{"同じ origin の form", map[string]string{"Sec-Fetch-Site": "same-origin"}, true},
+		{"Sec-Fetch-Site が cross-site", map[string]string{"Sec-Fetch-Site": "cross-site", "Origin": "https://evil.example.net"}, false},
+		{"Sec-Fetch-Site が same-site", map[string]string{"Sec-Fetch-Site": "same-site", "Origin": "https://other.example.com"}, false},
+		{"Sec-Fetch-Site が無く、Origin が別のサイト", map[string]string{"Origin": "https://evil.example.net"}, false},
+		// プロキシの後ろで Host が違っても、PublicURL の origin は受ける
+		{"Sec-Fetch-Site が無く、Origin が PublicURL", map[string]string{"Origin": "https://login.example.com"}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := newEnv(10)
+			req := submitRequest("aoki@example.com")
+			req.Header.Del("Sec-Fetch-Site")
+			req.Header.Del("Origin")
+			for k, v := range tt.headers {
+				req.Header.Set(k, v)
+			}
+			rec := e.do(req)
+			if tt.allowed {
+				location(t, rec)
+				return
+			}
+			if rec.Code != http.StatusForbidden || e.staff.finds != 0 || e.hydra.rejected {
+				t.Errorf("code = %d, finds = %d, want 403 で職員を引かない", rec.Code, e.staff.finds)
+			}
+		})
+	}
+}
+
+// TestSubmitEmailRateLimitPerEmail は、送り手のアドレスを替えても、同じメールの試行を上限で止めることを確かめる。
+func TestSubmitEmailRateLimitPerEmail(t *testing.T) {
+	e := newEnvWith(100, func(c *login.Config) { c.EmailLimiter = login.NewLimiter(time.Hour, 2) })
+	for i, want := range []string{"org-a.example.com", "org-a.example.com", "hydra"} {
+		req := submitRequest("aoki@example.com")
+		req.RemoteAddr = "192.0.2." + strconv.Itoa(10+i) + ":1234"
+		to, err := url.Parse(location(t, e.do(req)))
+		if err != nil || to.Host != want {
+			t.Errorf("%d 回目の転送先 = %v, want %s", i+1, to, want)
+		}
+	}
+	if to, _ := url.Parse(location(t, e.submit("ueno@example.com"))); to.Host != "org-b.example.com" {
+		t.Errorf("別のメールまで止めた: %v", to)
+	}
+}
+
+// TestSubmitEmailClientIPHeader は、送り手のアドレスを、設定したヘッダーの最後の値から読むことを確かめる。
+// 最後の値は前段のプロキシが足したもので、ブラウザが先頭に書いた値では数え分けない。
+func TestSubmitEmailClientIPHeader(t *testing.T) {
+	e := newEnvWith(1, func(c *login.Config) { c.ClientIPHeader = "X-Forwarded-For" })
+	send := func(xff string) string {
+		req := submitRequest("aoki@example.com")
+		req.RemoteAddr = "10.0.0.1:1234"
+		req.Header.Set("X-Forwarded-For", xff)
+		to, err := url.Parse(location(t, e.do(req)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return to.Host
+	}
+	if got := send("198.51.100.1"); got != "org-a.example.com" {
+		t.Errorf("1 人目の転送先 = %s", got)
+	}
+	if got := send("198.51.100.2"); got != "org-a.example.com" {
+		t.Errorf("プロキシのアドレスで数え、別の送り手を止めた: %s", got)
+	}
+	if got := send("203.0.113.9, 198.51.100.1"); got != "hydra" {
+		t.Errorf("ブラウザが書いた先頭の値で数え分けた: %s", got)
 	}
 }
 
@@ -390,6 +518,46 @@ func TestCallbackBadRequest(t *testing.T) {
 	}
 }
 
+// TestCallbackConcurrentFirstLogin は、同じ上流のアカウントの同時の初回ログインで、先のログインが同じ職員に結び付けたなら、
+// ErrConflict でも accept することを確かめる。
+func TestCallbackConcurrentFirstLogin(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		linked  login.UpstreamAccount
+		wantLoc string
+	}{
+		{"先のログインが同じアカウントを結び付けた", login.UpstreamAccount{Issuer: issuerA, Subject: "u-aoki"}, "http://hydra/login-accepted"},
+		{"先のログインが別のアカウントを結び付けた", login.UpstreamAccount{Issuer: issuerA, Subject: "u-other"}, "http://hydra/login-rejected"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			e := newEnv(10)
+			e.staff.beforeLink = func(f *fakeStaff, staffID string, _ login.UpstreamAccount) {
+				m := f.members[staffID]
+				m.Upstream = tt.linked
+				f.members[staffID] = m
+			}
+			if got := location(t, e.callback(t, e.submit("aoki@example.com"), "code-1")); got != tt.wantLoc {
+				t.Errorf("Location = %q, want %q", got, tt.wantLoc)
+			}
+		})
+	}
+}
+
+// TestCallbackPassesIssuer は、認可レスポンスの iss パラメーターを、上流の IdP の RP に渡すことを確かめる。
+func TestCallbackPassesIssuer(t *testing.T) {
+	e := newEnv(10)
+	submitted := e.submit("aoki@example.com")
+	to, _ := url.Parse(submitted.Header().Get("Location"))
+	req := httptest.NewRequest(http.MethodGet, "/login/callback?"+url.Values{"state": {to.Query().Get("state")}, "code": {"code-1"}, "iss": {issuerA}}.Encode(), nil)
+	for _, c := range submitted.Result().Cookies() {
+		req.AddCookie(c)
+	}
+	location(t, e.do(req))
+	if e.upstream.iss != issuerA {
+		t.Errorf("iss = %q, want %q", e.upstream.iss, issuerA)
+	}
+}
+
 func TestCallbackUpstreamError(t *testing.T) {
 	e := newEnv(10)
 	submitted := e.submit("aoki@example.com")
@@ -424,6 +592,20 @@ func TestConsent(t *testing.T) {
 	e.staff.members[uenoID] = m
 	if got := location(t, e.do(httptest.NewRequest(http.MethodGet, "/consent?consent_challenge=ch", nil))); got != "http://hydra/consent-rejected" {
 		t.Errorf("止めた職員の Location = %q, want reject", got)
+	}
+}
+
+// TestConsentOtherClient は、同意を自動で accept するクライアントの一覧に無いクライアントの同意を拒むことを確かめる。
+func TestConsentOtherClient(t *testing.T) {
+	e := newEnv(10)
+	e.hydra.consent = hydra.ConsentRequest{
+		Subject:        aokiID,
+		RequestedScope: []string{"openid"},
+		Client:         hydra.OAuth2Client{ClientID: "third-party", Audience: []string{"schedule"}},
+	}
+	got := location(t, e.do(httptest.NewRequest(http.MethodGet, "/consent?consent_challenge=ch", nil)))
+	if got != "http://hydra/consent-rejected" || e.hydra.consented != nil {
+		t.Errorf("Location = %q, consented = %+v, want reject", got, e.hydra.consented)
 	}
 }
 

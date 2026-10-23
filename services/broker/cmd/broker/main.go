@@ -35,9 +35,12 @@ import (
 const readyTimeout = 2 * time.Second
 
 // ログインの画面でメールを送る試行は、送り手のアドレスごとに loginBurst 回まで続けられ、loginEvery ごとに 1 回ずつ戻る。
+// 入れたメールごとには emailBurst 回まで続けられ、emailEvery ごとに 1 回ずつ戻る。
 const (
 	loginBurst = 20
 	loginEvery = 10 * time.Second
+	emailBurst = 10
+	emailEvery = 30 * time.Second
 )
 
 func main() {
@@ -78,6 +81,22 @@ func run(getenv func(string) string) error {
 	}
 	defer db.Close()
 
+	loginHandler, err := login.NewHandler(login.Config{
+		Logger:             logger,
+		Staff:              postgres.NewStaffStore(db),
+		Hydra:              hydra.New(cfg.HydraAdminURL, nil),
+		Upstream:           rp,
+		Limiter:            login.NewLimiter(loginEvery, loginBurst),
+		EmailLimiter:       login.NewLimiter(emailEvery, emailBurst),
+		ClientIPHeader:     cfg.ClientIPHeader,
+		PublicURL:          cfg.PublicURL,
+		AutoConsentClients: cfg.AutoConsentClients,
+		SecureCookie:       strings.HasPrefix(cfg.PublicURL, "https:"),
+	})
+	if err != nil {
+		return err
+	}
+
 	srv := &http.Server{
 		Addr: net.JoinHostPort("", cfg.Port),
 		Handler: httpapi.NewHandler(httpapi.Config{
@@ -87,14 +106,7 @@ func run(getenv func(string) string) error {
 				defer cancel()
 				return db.Ping(ctx)
 			},
-			Login: login.NewHandler(login.Config{
-				Logger:       logger,
-				Staff:        postgres.NewStaffStore(db),
-				Hydra:        hydra.New(cfg.HydraAdminURL, nil),
-				Upstream:     rp,
-				Limiter:      login.NewLimiter(loginEvery, loginBurst),
-				SecureCookie: strings.HasPrefix(cfg.PublicURL, "https:"),
-			}),
+			Login: loginHandler,
 		}),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,

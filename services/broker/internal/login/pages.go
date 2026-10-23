@@ -56,6 +56,8 @@ func render(w http.ResponseWriter, logger *slog.Logger, code int, name string, d
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
+	// ほかのサイトの frame に入れて、メールの入力を盗み見る操作をさせない
+	w.Header().Set("Content-Security-Policy", "frame-ancestors 'none'")
 	w.WriteHeader(code)
 	_, _ = buf.WriteTo(w)
 }

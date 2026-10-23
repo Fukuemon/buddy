@@ -35,6 +35,11 @@ type Config struct {
 	// UpstreamBrowserOrigin は、上流の IdP の認可の画面へ転送するときに、scheme とホストを替える origin である。
 	// ローカル環境のように、ブローカーが discovery を読む issuer にブラウザが届かないときだけ渡す。
 	UpstreamBrowserOrigin string
+	// ClientIPHeader は、ログインの試行を数える送り手のアドレスを読む、前段のプロキシが付けるヘッダーの名前である。
+	// 空なら接続の相手のアドレスを使う。ブローカーに前段のプロキシを通らずに届かないときだけ渡す。
+	ClientIPHeader string
+	// AutoConsentClients は、同意の画面を出さずに accept するクライアントの ID である。
+	AutoConsentClients []string
 }
 
 // Load は、getenv（本番では os.Getenv）から設定を読む。DB_USER、DB_PASSWORD、DB_NAME、HYDRA_ADMIN_URL、
@@ -51,6 +56,8 @@ type Config struct {
 //   - UPSTREAM_IDP_CLIENT_SECRETS_FILE: 組織の ID と、上流の IdP の client secret の対応（JSON）のパス
 //   - PUBLIC_URL: ブラウザが開くブローカーの URL
 //   - UPSTREAM_IDP_BROWSER_ORIGIN: 上流の IdP の認可の画面へ転送するときに替える origin。無ければ替えない
+//   - CLIENT_IP_HEADER: ログインの試行を数える送り手のアドレスを読む、前段のプロキシが付けるヘッダーの名前。無ければ接続の相手のアドレス
+//   - AUTO_CONSENT_CLIENTS: 同意の画面を出さずに accept するクライアントの ID をカンマで区切った値。デフォルトは web
 func Load(getenv func(string) string) (Config, error) {
 	return load(getenv, true)
 }
@@ -82,6 +89,12 @@ func load(getenv func(string) string, broker bool) (Config, error) {
 		UpstreamClientSecretsFile: strings.TrimSpace(getenv("UPSTREAM_IDP_CLIENT_SECRETS_FILE")),
 		PublicURL:                 strings.TrimSuffix(strings.TrimSpace(getenv("PUBLIC_URL")), "/"),
 		UpstreamBrowserOrigin:     strings.TrimSpace(getenv("UPSTREAM_IDP_BROWSER_ORIGIN")),
+		ClientIPHeader:            strings.TrimSpace(getenv("CLIENT_IP_HEADER")),
+	}
+	for _, id := range strings.Split(get("AUTO_CONSENT_CLIENTS", "web"), ",") {
+		if id = strings.TrimSpace(id); id != "" {
+			c.AutoConsentClients = append(c.AutoConsentClients, id)
+		}
 	}
 	required := []string{"DB_USER", "DB_PASSWORD", "DB_NAME"}
 	if broker {

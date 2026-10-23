@@ -3,6 +3,8 @@ package config_test
 import (
 	"log/slog"
 	"maps"
+	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -29,6 +31,8 @@ func TestLoad(t *testing.T) {
 	m["UPSTREAM_IDPS_FILE"] = " /config/upstream-idps.json "
 	m["PUBLIC_URL"] = "https://login.example.com/"
 	m["UPSTREAM_IDP_BROWSER_ORIGIN"] = "http://localhost:9000"
+	m["CLIENT_IP_HEADER"] = "X-Forwarded-For"
+	m["AUTO_CONSENT_CLIENTS"] = "web, admin,"
 	c, err := config.Load(env(m))
 	if err != nil {
 		t.Fatal(err)
@@ -42,9 +46,21 @@ func TestLoad(t *testing.T) {
 		UpstreamClientSecretsFile: "/secrets/upstream-idp-client-secrets.json",
 		PublicURL:                 "https://login.example.com",
 		UpstreamBrowserOrigin:     "http://localhost:9000",
+		ClientIPHeader:            "X-Forwarded-For",
+		AutoConsentClients:        []string{"web", "admin"},
 	}
-	if c != want {
+	if !reflect.DeepEqual(c, want) {
 		t.Errorf("got %+v, want %+v", c, want)
+	}
+}
+
+func TestLoadDefaultAutoConsentClients(t *testing.T) {
+	c, err := config.Load(env(baseEnv()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(c.AutoConsentClients, []string{"web"}) || c.ClientIPHeader != "" {
+		t.Errorf("AutoConsentClients = %v, ClientIPHeader = %q", c.AutoConsentClients, c.ClientIPHeader)
 	}
 }
 

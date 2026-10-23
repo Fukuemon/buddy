@@ -13,6 +13,9 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/netip"
+	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/Fukuemon/buddy/services/broker/internal/hydra"
@@ -70,7 +73,7 @@ type Hydra interface {
 // Upstream は、上流の IdP の RP の処理である。約束は upstream.RP と同じである。
 type Upstream interface {
 	AuthURL(ctx context.Context, orgID string, a upstream.Attempt, loginHint string) (string, error)
-	Exchange(ctx context.Context, orgID, code string, a upstream.Attempt) (upstream.Identity, error)
+	Exchange(ctx context.Context, orgID, code, iss string, a upstream.Attempt) (upstream.Identity, error)
 }
 
 // Config は、NewHandler の設定である。
@@ -81,6 +84,15 @@ type Config struct {
 	Upstream Upstream
 	// Limiter は、ログインの画面でメールを送る試行を、送り手のアドレスごとに数える。
 	Limiter *Limiter
+	// EmailLimiter は、ログインの画面でメールを送る試行を、入れたメールごとに数える。
+	EmailLimiter *Limiter
+	// ClientIPHeader は、送り手のアドレスを読む、前段のプロキシが付けるヘッダーの名前である。
+	// 空なら、接続の相手のアドレスを送り手とみなす。値の読み方は clientAddr にある。
+	ClientIPHeader string
+	// PublicURL は、ブラウザが開くブローカーの URL である。POST /login の Origin をこの origin と比べる。
+	PublicURL string
+	// AutoConsentClients は、同意の画面を出さずに accept するクライアントの ID である。ほかのクライアントの同意は reject する。
+	AutoConsentClients []string
 	// SecureCookie が true なら、ログインの途中の cookie に Secure を付ける。
 	SecureCookie bool
 }
@@ -111,14 +123,31 @@ type handler struct {
 //   - POST /login: メールから職員を引き、その事業所の上流の IdP へ転送する
 //   - GET /login/callback: 上流の IdP のコールバック。職員を照らし、ログインを accept か reject する
 //   - GET /consent: Hydra の consent_challenge を受け、組織の ID と audience を付けて accept する
-func NewHandler(cfg Config) http.Handler {
+//
+// ほかのサイトから送られた POST は、Sec-Fetch-Site か Origin で見分けて 403 で拒む。cfg.PublicURL が URL として読めなければエラーを返す。
+func NewHandler(cfg Config) (http.Handler, error) {
 	h := handler{cfg}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /login", h.showLogin)
 	mux.HandleFunc("POST /login", h.submitEmail)
 	mux.HandleFunc("GET /login/callback", h.callback)
 	mux.HandleFunc("GET /consent", h.consent)
-	return mux
+
+	// プロキシの後ろで Host がブラウザの開いた origin と違っても、PublicURL の origin からの POST は受ける
+	cop := http.NewCrossOriginProtection()
+	if cfg.PublicURL != "" {
+		u, err := url.Parse(cfg.PublicURL)
+		if err != nil {
+			return nil, fmt.Errorf("PublicURL %q: %w", cfg.PublicURL, err)
+		}
+		if err := cop.AddTrustedOrigin(u.Scheme + "://" + u.Host); err != nil {
+			return nil, fmt.Errorf("PublicURL %q: %w", cfg.PublicURL, err)
+		}
+	}
+	cop.SetDenyHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h.fail(w, r, http.StatusForbidden, "ほかのサイトから送られた", nil)
+	}))
+	return cop.Handler(mux), nil
 }
 
 func (h handler) showLogin(w http.ResponseWriter, r *http.Request) {
@@ -153,11 +182,20 @@ func (h handler) submitEmail(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, r, http.StatusBadRequest, "login_challenge がない", nil)
 		return
 	}
-	if !h.Limiter.Allow(clientAddr(r)) {
-		h.reject(w, r, challenge, "メールの試行の回数の上限を超えた", nil)
+	// 使い終えたか、Hydra の知らない login_challenge では、職員を引かない
+	if _, err := h.Hydra.LoginRequest(ctx, challenge); err != nil {
+		h.fail(w, r, http.StatusBadRequest, "ログインの要求を読めない", err)
 		return
 	}
 	email := strings.ToLower(strings.TrimSpace(r.PostFormValue("email")))
+	if !h.Limiter.Allow(clientAddr(r, h.ClientIPHeader)) {
+		h.reject(w, r, challenge, "送り手のアドレスの試行の回数の上限を超えた", nil)
+		return
+	}
+	if !h.EmailLimiter.Allow(email) {
+		h.reject(w, r, challenge, "メールの試行の回数の上限を超えた", nil)
+		return
+	}
 	found, err := h.Staff.FindByEmail(ctx, email)
 	if err != nil {
 		h.fail(w, r, http.StatusInternalServerError, "職員を引けない", err)
@@ -206,7 +244,7 @@ func (h handler) callback(w http.ResponseWriter, r *http.Request) {
 		h.reject(w, r, p.Challenge, "職員を引けない", err)
 		return
 	}
-	id, err := h.Upstream.Exchange(ctx, m.OrgID, q.Get("code"), p.Attempt)
+	id, err := h.Upstream.Exchange(ctx, m.OrgID, q.Get("code"), q.Get("iss"), p.Attempt)
 	if err != nil {
 		h.reject(w, r, p.Challenge, "上流の IdP の ID token を検証できない", err)
 		return
@@ -239,6 +277,11 @@ func (h handler) match(ctx context.Context, m StaffMember, id upstream.Identity)
 	}
 	err := h.Staff.Link(ctx, m.ID, got)
 	if errors.Is(err, ErrConflict) {
+		// 同じ上流のアカウントで同時に初めてログインすると、先に結び付けたログインのほかは ErrConflict になる。
+		// 読み直して、この職員に同じアカウントが結び付いていれば受け入れる
+		if cur, err := h.Staff.Get(ctx, m.ID); err == nil && cur.Status == StatusActive && cur.Upstream == got {
+			return ""
+		}
 		return "上流のアカウントを結び付けられない"
 	}
 	if err != nil {
@@ -259,6 +302,13 @@ func (h handler) consent(w http.ResponseWriter, r *http.Request) {
 	req, err := h.Hydra.ConsentRequest(ctx, challenge)
 	if err != nil {
 		h.fail(w, r, http.StatusBadGateway, "同意の要求を読めない", err)
+		return
+	}
+	// 同意の画面を持たないので、画面を出さずに accept してよいと決めたクライアントのほかは拒む
+	if !slices.Contains(h.AutoConsentClients, req.Client.ClientID) {
+		h.Logger.WarnContext(ctx, "同意を拒む", "reason", "同意を自動で accept するクライアントでない", "client_id", req.Client.ClientID)
+		to, err := h.Hydra.RejectConsent(ctx, challenge, hydra.AccessDenied)
+		h.redirect(w, r, to, err)
 		return
 	}
 	m, err := h.Staff.Get(ctx, req.Subject)
@@ -342,8 +392,18 @@ func readPending(r *http.Request) (pending, error) {
 	return p, nil
 }
 
-// clientAddr は、試行を数える送り手のアドレスである。プロキシの後ろでは、プロキシのアドレスになる。
-func clientAddr(r *http.Request) string {
+// clientAddr は、試行を数える送り手のアドレスである。
+//
+// header が空なら、接続の相手のアドレスを使う。プロキシの後ろでは、プロキシのアドレスになる。
+// header が空でなければ、前段のプロキシが付けたそのヘッダーの、最後の値を使う。X-Forwarded-For のように値を足していく
+// ヘッダーでは、最後の値は前段のプロキシが見た送り手で、ブラウザが書いた値ではない。値が IP でなければ接続の相手のアドレスを使う。
+func clientAddr(r *http.Request, header string) string {
+	if values := r.Header.Values(header); header != "" && len(values) > 0 {
+		last := values[len(values)-1]
+		if ip, err := netip.ParseAddr(strings.TrimSpace(last[strings.LastIndex(last, ",")+1:])); err == nil {
+			return ip.String()
+		}
+	}
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		return r.RemoteAddr
