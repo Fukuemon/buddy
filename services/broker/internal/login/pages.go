@@ -45,6 +45,12 @@ var pages = template.Must(template.New("").Parse(`{{define "head"}}<!doctype htm
   <p>時間をおいて、もう一度ログインしてください。</p>
 </section>
 {{template "foot"}}{{end}}
+{{define "logoutFailure"}}{{template "head"}}
+<section>
+  <h1>ログアウトできませんでした</h1>
+  <p>時間をおいて、もう一度 buddy を開いてログアウトしてください。</p>
+</section>
+{{template "foot"}}{{end}}
 `))
 
 func render(w http.ResponseWriter, logger *slog.Logger, code int, name string, data any) {

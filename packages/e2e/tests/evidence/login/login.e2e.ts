@@ -9,6 +9,7 @@ import {
   TEAM_MEMBER,
 } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
+import { signInAtBroker } from '../../screens/login'
 import { brokerLogin, idpLogin } from '../../selectors/idp'
 
 /** 録画の外では、ログインせずに web の origin を開いておく。録画の中で、ログインの画面から操作する。 */
@@ -32,6 +33,13 @@ const signInUpstream = async (page: Page, email: string) => {
 }
 
 const DAY = `/schedule?view=day&date=${OFFICE_A_SCHEDULE.date}`
+
+/** 録画の外で、予定のカレンダーを開いてログインしておく。 */
+const signIn = async (page: Page) => {
+  await page.goto(DAY)
+  await signInAtBroker(page, LOGIN_EMAIL)
+  await expect(page.getByTestId('viewer-menu')).toContainText(LOGIN_STAFF.name)
+}
 
 test.describe('予定のカレンダー', () => {
   test.describe('ログイン', () => {
@@ -160,6 +168,68 @@ test.describe('予定のカレンダー', () => {
             await page.goto(DAY)
             await expect(brokerLogin(page).email).toBeVisible()
             await check('セッションが無いので、ブローカーのメールの入力の画面に移る')
+          },
+        )
+      })
+
+      test(`${prefix}ログアウトした後に、もう一度ログインしようとした場合、ブローカーのメールの入力の画面が出ること`, async ({
+        browser,
+      }) => {
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'logout-relogin',
+            title:
+              'ログアウトした後に、もう一度ログインしようとすると、ブローカーのメールの入力の画面が出る',
+            actor: `${LOGIN_STAFF.name}（マネージャー）`,
+            variant,
+          },
+          signIn,
+          async ({ page, step, check }) => {
+            await page.goto(DAY)
+            await expect(page.getByTestId('viewer-menu')).toContainText(LOGIN_STAFF.name)
+            await step('ログインして、予定のカレンダーを開いている')
+
+            await step('「ログアウト」を押す')
+            await page.getByTestId('viewer-logout').click()
+            await expect(brokerLogin(page).email).toBeVisible()
+            await check('Hydra のログインのセッションが消え、ブローカーのメールの入力の画面に移る')
+
+            await step('もう一度ログインしようとして、予定のカレンダーを開き直す')
+            await page.goto(DAY)
+            await expect(brokerLogin(page).email).toBeVisible()
+            await check('前の職員として入らず、ブローカーのメールの入力の画面が出る')
+          },
+        )
+      })
+
+      test(`${prefix}ログアウトした後に、ブラウザの戻るで前の画面を開いた場合、ログインの画面へ移ること`, async ({
+        browser,
+      }) => {
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'logout-back',
+            title: 'ログアウトした後に、ブラウザの戻るで前の画面を開くと、ログインの画面へ移る',
+            actor: `${LOGIN_STAFF.name}（マネージャー）`,
+            variant,
+          },
+          signIn,
+          async ({ page, step, check }) => {
+            await page.goto(DAY)
+            await expect(page.getByTestId('viewer-menu')).toContainText(LOGIN_STAFF.name)
+            await step('ログインして、予定のカレンダーを開いている')
+
+            await step('「ログアウト」を押す')
+            await page.getByTestId('viewer-logout').click()
+            await expect(brokerLogin(page).email).toBeVisible()
+            await check('ブローカーのメールの入力の画面に移る')
+
+            await step('ブラウザの戻るを押す')
+            await page.goBack()
+            await expect(brokerLogin(page).email).toBeVisible()
+            await expect(page.getByTestId('viewer-menu')).toHaveCount(0)
+            await check('前の予定のカレンダーは出ず、ブローカーのメールの入力の画面に移る')
           },
         )
       })

@@ -1,4 +1,4 @@
-// Package httpapi は、ブローカーの HTTP のハンドラを持つ。ヘルスチェックを持ち、ログインと同意の画面を login のハンドラに、
+// Package httpapi は、ブローカーの HTTP のハンドラを持つ。ヘルスチェックを持ち、ログインと同意とログアウトの画面を login のハンドラに、
 // /internal/ の下を内部の API のハンドラに渡す。cmd/broker は、画面と内部の API を別のポートの 2 つのハンドラで待ち受ける。
 package httpapi
 
@@ -14,7 +14,7 @@ type Config struct {
 	Logger *slog.Logger
 	// Ready は GET /readyz が依存先を確かめる関数で、nil なら常にリクエストを受けられるとみなす。
 	Ready func(context.Context) error
-	// Login は、/login と /consent の下の画面のハンドラである。nil なら、これらのパスは 404 を返す。
+	// Login は、/login と /consent と /logout の下の画面のハンドラである。nil なら、これらのパスは 404 を返す。
 	Login http.Handler
 	// Internal は、/internal/ の下の内部の API のハンドラである。nil なら、これらのパスは 404 を返す。
 	Internal http.Handler
@@ -42,7 +42,7 @@ func NewHandler(cfg Config) http.Handler {
 		writeJSON(cfg.Logger, w, http.StatusOK, status{"ok"})
 	})
 	if cfg.Login != nil {
-		for _, p := range []string{"/login", "/login/", "/consent"} {
+		for _, p := range []string{"/login", "/login/", "/consent", "/logout"} {
 			mux.Handle(p, cfg.Login)
 		}
 	}

@@ -20,12 +20,16 @@ const env = {
 }
 
 describe('loadServerConfig', () => {
-  it('必須の値を読み、認可の URL の上書きは任意にする', () => {
+  it('必須の値を読み、認可とログアウトの URL の上書きは任意にする', () => {
     expect(loadServerConfig(env).oidc.authorizationEndpoint).toBeUndefined()
-    expect(
-      loadServerConfig({ ...env, OIDC_AUTHORIZATION_ENDPOINT: 'http://localhost:9000/a' }).oidc
-        .authorizationEndpoint,
-    ).toBe('http://localhost:9000/a')
+    expect(loadServerConfig(env).oidc.endSessionEndpoint).toBeUndefined()
+    const oidc = loadServerConfig({
+      ...env,
+      OIDC_AUTHORIZATION_ENDPOINT: 'http://localhost:9000/a',
+      OIDC_END_SESSION_ENDPOINT: 'http://localhost:9000/logout',
+    }).oidc
+    expect(oidc.authorizationEndpoint).toBe('http://localhost:9000/a')
+    expect(oidc.endSessionEndpoint).toBe('http://localhost:9000/logout')
   })
 
   it('欠けた値の名前を並べ、短い署名の鍵を拒む', () => {

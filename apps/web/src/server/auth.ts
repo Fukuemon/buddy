@@ -25,6 +25,8 @@ export type Session = Omit<Viewer, 'canManageStaff'> & {
   refreshToken?: string
   /** access token の期限の UNIX 時刻（ミリ秒）。分からなければ undefined。 */
   expiresAt?: number
+  /** ログアウトで Hydra に添える ID token。この項目を足す前に作ったセッションには無い。 */
+  idToken?: string
 }
 
 type LoginTransaction = { codeVerifier: string; nonce: string; returnTo: string }
@@ -110,7 +112,12 @@ export const safeReturnTo = (value: string | null) => {
 const expiresAtOf = (tokens: Tokens, now: number) =>
   tokens.expiresIn === undefined ? undefined : now + tokens.expiresIn * 1000
 
-/** GET /auth/login。ブラウザをブローカーの認可の画面へ転送する。クエリの returnTo はログインの後に戻る先である。 */
+/**
+ * GET /auth/login。ブラウザをブローカーの認可の画面へ転送する。クエリの returnTo はログインの後に戻る先である。
+ *
+ * クエリの prompt が login なら、Hydra が覚えたログインのセッションを使わずに、ブローカーのメールの入力の画面を出させる。
+ * ログインの失敗の画面から入り直すときに使う。Hydra は失敗した職員のログインも覚えているので、使うと同じ職員に戻ってしまう。
+ */
 export const startLogin = async (request: Request, deps: AuthDeps): Promise<Response> => {
   const url = new URL(request.url)
   const state = randomState()
@@ -127,6 +134,7 @@ export const startLogin = async (request: Request, deps: AuthDeps): Promise<Resp
     state,
     nonce,
     codeChallenge: await codeChallengeOf(codeVerifier),
+    prompt: url.searchParams.get('prompt') === 'login' ? 'login' : undefined,
   })
   return redirect(authorizationUrl.toString(), [
     cookie(deps, LOGIN_COOKIE, signValue(state, deps.secret), LOGIN_TTL_SECONDS),
@@ -177,6 +185,7 @@ export const finishLogin = async (request: Request, deps: AuthDeps): Promise<Res
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,
     expiresAt: expiresAtOf(tokens, (deps.now ?? Date.now)()),
+    idToken: tokens.idToken,
   }
   await deps.store.set(sessionKey(id), session, SESSION_TTL_SECONDS)
   return redirect(tx.returnTo, [
@@ -185,11 +194,23 @@ export const finishLogin = async (request: Request, deps: AuthDeps): Promise<Res
   ])
 }
 
-/** POST /auth/logout。セッションを消して / へ転送する。ブローカーのセッションは消さない。 */
+/**
+ * POST /auth/logout。セッションを消し、ブラウザを Hydra の RP-Initiated Logout へ転送する。
+ * Hydra はブローカーのログアウトの画面を呼んでログインのセッションを消し、web の / へ戻す。
+ *
+ * セッションか ID token が無いときは / へ転送する。ID token を置く前のセッションは、Hydra がログインを覚えていない。
+ */
 export const logout = async (request: Request, deps: AuthDeps): Promise<Response> => {
   const id = sessionIdOf(request, deps.secret)
+  const session = id === undefined ? undefined : await deps.store.get<Session>(sessionKey(id))
   if (id !== undefined) await deps.store.delete(sessionKey(id))
-  return redirect('/', [cookie(deps, SESSION_COOKIE, '', 0)])
+  const clearSession = cookie(deps, SESSION_COOKIE, '', 0)
+  if (session?.idToken === undefined) return redirect('/', [clearSession])
+  const endSessionUrl = deps.oidc.endSessionUrl({
+    idTokenHint: session.idToken,
+    postLogoutRedirectUri: new URL('/', request.url).toString(),
+  })
+  return redirect(endSessionUrl.toString(), [clearSession])
 }
 
 const sessionIdOf = (request: Request, secret: string) =>
@@ -262,6 +283,7 @@ const refresh = async (
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken ?? latest.refreshToken,
         expiresAt: expiresAtOf(tokens, now),
+        idToken: tokens.idToken ?? latest.idToken,
       }
       return (await deps.store.replace(sessionKey(id), refreshed)) ? refreshed : undefined
     } catch (error) {

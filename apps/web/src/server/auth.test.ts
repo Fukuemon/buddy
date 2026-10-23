@@ -19,16 +19,21 @@ const SECRET = 'x'.repeat(32)
 const VIEWER = { staffId: 'staff-1', staffName: '青木 陽菜', facilityId: 'facility-1' }
 
 const fakeOidc = (overrides: Partial<OidcClient> = {}): OidcClient => ({
-  authorizationUrl: ({ redirectUri, state }) =>
+  authorizationUrl: ({ redirectUri, state, prompt }) =>
     new URL(
-      `http://idp.test/authorize?redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`,
+      `http://idp.test/authorize?redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}${prompt === undefined ? '' : `&prompt=${prompt}`}`,
     ),
   exchangeCode: async () => ({
     accessToken: 'access-1',
     refreshToken: 'refresh-1',
     expiresIn: 3600,
+    idToken: 'id-1',
   }),
   refresh: async () => ({ accessToken: 'access-2', expiresIn: 3600 }),
+  endSessionUrl: ({ idTokenHint, postLogoutRedirectUri }) =>
+    new URL(
+      `http://idp.test/logout?id_token_hint=${idTokenHint}&post_logout_redirect_uri=${encodeURIComponent(postLogoutRedirectUri)}`,
+    ),
   ...overrides,
 })
 
@@ -89,8 +94,21 @@ describe('ログイン', () => {
       new Request('http://web.test/', { headers: { Cookie: cookiesOf(done) } }),
       deps,
     )
-    expect(session).toMatchObject({ ...VIEWER, accessToken: 'access-1' })
+    expect(session).toMatchObject({ ...VIEWER, accessToken: 'access-1', idToken: 'id-1' })
     expect([...store.values.keys()].filter((k) => k.startsWith('login:'))).toEqual([])
+  })
+
+  it('prompt=login のときだけ、Hydra に prompt=login を渡す', async () => {
+    const { deps } = setup()
+    const promptOf = async (query: string) =>
+      new URL(
+        (await startLogin(new Request(`http://web.test/auth/login${query}`), deps)).headers.get(
+          'Location',
+        ) ?? '',
+      ).searchParams.get('prompt')
+    expect(await promptOf('?prompt=login')).toBe('login')
+    expect(await promptOf('?prompt=none')).toBeNull()
+    expect(await promptOf('')).toBeNull()
   })
 
   it('secureCookie なら cookie に Secure を付ける', async () => {
@@ -191,14 +209,41 @@ describe('readSession', () => {
   it('期限が近い access token は refresh token で取り直して置き直す', async () => {
     const { deps } = setup()
     const req = await withSession(
-      { ...VIEWER, accessToken: 'old', refreshToken: 'refresh-1', expiresAt: 1_000_000 + 30_000 },
+      {
+        ...VIEWER,
+        accessToken: 'old',
+        refreshToken: 'refresh-1',
+        expiresAt: 1_000_000 + 30_000,
+        idToken: 'id-1',
+      },
       deps,
     )
+    // 取り直しでブローカーが ID token を返さなければ、前の ID token をログアウトに使う
     expect(await readSession(req, deps)).toMatchObject({
       accessToken: 'access-2',
       refreshToken: 'refresh-1',
+      idToken: 'id-1',
     })
     expect(await deps.store.get('session:id-1')).toMatchObject({ accessToken: 'access-2' })
+  })
+
+  it('取り直しでブローカーが ID token を返したら、新しい ID token に置き換える', async () => {
+    const { deps } = setup({
+      oidc: fakeOidc({
+        refresh: async () => ({ accessToken: 'access-2', expiresIn: 3600, idToken: 'id-2' }),
+      }),
+    })
+    const req = await withSession(
+      {
+        ...VIEWER,
+        accessToken: 'old',
+        refreshToken: 'r',
+        expiresAt: 1_000_000 + 30_000,
+        idToken: 'id-1',
+      },
+      deps,
+    )
+    expect((await readSession(req, deps))?.idToken).toBe('id-2')
   })
 
   it('同じセッションの取り直しを 1 本にまとめる', async () => {
@@ -326,13 +371,30 @@ describe('readSession', () => {
     expect(await deps.store.get('session:id-1')).toBeUndefined()
   })
 
-  it('ログアウトでセッションを消し、cookie を消す', async () => {
+  it('ログアウトでセッションと cookie を消し、ID token を添えて Hydra のログアウトへ転送する', async () => {
+    const { deps } = setup()
+    const req = await withSession({ ...VIEWER, accessToken: 'a', idToken: 'id-1' }, deps)
+    const res = await logout(req, deps)
+    const location = new URL(res.headers.get('Location') ?? '')
+    expect(location.origin + location.pathname).toBe('http://idp.test/logout')
+    expect(location.searchParams.get('id_token_hint')).toBe('id-1')
+    expect(location.searchParams.get('post_logout_redirect_uri')).toBe('http://web.test/')
+    expect(res.headers.getSetCookie()[0]).toContain('Max-Age=0')
+    expect(await deps.store.get('session:id-1')).toBeUndefined()
+  })
+
+  it('ID token の無い古いセッションのログアウトは、セッションを消して / へ転送する', async () => {
     const { deps } = setup()
     const req = await withSession({ ...VIEWER, accessToken: 'a' }, deps)
     const res = await logout(req, deps)
     expect(res.headers.get('Location')).toBe('/')
     expect(res.headers.getSetCookie()[0]).toContain('Max-Age=0')
     expect(await deps.store.get('session:id-1')).toBeUndefined()
+  })
+
+  it('セッションが無くてもログアウトは / へ転送する', async () => {
+    const res = await logout(new Request('http://web.test/auth/logout'), setup().deps)
+    expect(res.headers.get('Location')).toBe('/')
   })
 })
 

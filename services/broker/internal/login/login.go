@@ -1,7 +1,8 @@
-// Package login は、ブローカーのログインと同意の画面を持つ（ADR-0016、ADR-0017）。
+// Package login は、ブローカーのログインと同意とログアウトの画面を持つ（ADR-0016、ADR-0017）。
 //
 // ログインの画面で入れたメールから職員と事業所を決め、その事業所の上流の IdP へ転送する。上流の IdP のコールバックで
 // 職員を照らし、Hydra のログインの要求を accept するか reject する。同意の画面は、職員の事業所の組織の ID を access token に足す。
+// ログアウトの画面は、Hydra のログアウトの要求を accept する。上流の IdP のセッションは消さない。
 package login
 
 import (
@@ -21,6 +22,9 @@ import (
 	"github.com/Fukuemon/buddy/services/broker/internal/hydra"
 	"github.com/Fukuemon/buddy/services/broker/internal/upstream"
 )
+
+// rememberFor は、Hydra がログインのセッションを覚える秒数である。上流でのログインから 12 時間でトークンを拒むのと同じ長さにする。
+const rememberFor = 12 * 60 * 60
 
 // 職員の状態。有効な職員にだけトークンを出す。登録の途中の職員は、予定の API が職員を書き終えると有効になる。
 const (
@@ -61,7 +65,7 @@ type Staff interface {
 	Link(ctx context.Context, staffID string, a UpstreamAccount) error
 }
 
-// Hydra は、Hydra の admin API のログインと同意の呼び出しである。約束は hydra.Client と同じである。
+// Hydra は、Hydra の admin API のログインと同意とログアウトの呼び出しである。約束は hydra.Client と同じである。
 type Hydra interface {
 	LoginRequest(ctx context.Context, challenge string) (hydra.LoginRequest, error)
 	AcceptLogin(ctx context.Context, challenge string, body hydra.AcceptLogin) (string, error)
@@ -69,6 +73,7 @@ type Hydra interface {
 	ConsentRequest(ctx context.Context, challenge string) (hydra.ConsentRequest, error)
 	AcceptConsent(ctx context.Context, challenge string, body hydra.AcceptConsent) (string, error)
 	RejectConsent(ctx context.Context, challenge string, body hydra.Rejection) (string, error)
+	AcceptLogout(ctx context.Context, challenge string) (string, error)
 }
 
 // Upstream は、上流の IdP の RP の処理である。約束は upstream.RP と同じである。
@@ -124,6 +129,7 @@ type handler struct {
 //   - POST /login: メールから職員を引き、その事業所の上流の IdP へ転送する
 //   - GET /login/callback: 上流の IdP のコールバック。職員を照らし、ログインを accept か reject する
 //   - GET /consent: Hydra の consent_challenge を受け、組織の ID と audience を付けて accept する
+//   - GET /logout: Hydra の logout_challenge を受け、画面を出さずに accept する
 //
 // ほかのサイトから送られた POST は、Sec-Fetch-Site か Origin で見分けて 403 で拒む。cfg.PublicURL が URL として読めなければエラーを返す。
 func NewHandler(cfg Config) (http.Handler, error) {
@@ -133,6 +139,7 @@ func NewHandler(cfg Config) (http.Handler, error) {
 	mux.HandleFunc("POST /login", h.submitEmail)
 	mux.HandleFunc("GET /login/callback", h.callback)
 	mux.HandleFunc("GET /consent", h.consent)
+	mux.HandleFunc("GET /logout", h.logout)
 
 	// プロキシの後ろで Host がブラウザの開いた origin と違っても、PublicURL の origin からの POST は受ける
 	cop := http.NewCrossOriginProtection()
@@ -328,10 +335,26 @@ func (h handler) consent(w http.ResponseWriter, r *http.Request) {
 	h.redirect(w, r, to, err)
 }
 
+// logout は、Hydra のログアウトの要求を accept する。確認の画面は出さない。
+// web はログアウトのボタンで BFF のセッションを消してから転送してくるので、職員はもうログアウトを選んでいる。
+func (h handler) logout(w http.ResponseWriter, r *http.Request) {
+	challenge := r.URL.Query().Get("logout_challenge")
+	if challenge == "" {
+		h.failLogout(w, r, http.StatusBadRequest, "logout_challenge がない", nil)
+		return
+	}
+	to, err := h.Hydra.AcceptLogout(r.Context(), challenge)
+	if err != nil {
+		h.failLogout(w, r, http.StatusBadGateway, "Hydra にログアウトを返せない", err)
+		return
+	}
+	http.Redirect(w, r, to, http.StatusSeeOther)
+}
+
+// accept は、ログインを受け入れる。Hydra はログインのセッションを rememberFor 秒だけ覚え、その間の認可でログインの画面を出さない。
+// web のログアウトは Hydra のログインのセッションを消すので、ログアウトの後のログインはログインの画面を通る。
 func (h handler) accept(w http.ResponseWriter, r *http.Request, challenge, staffID string) {
-	// ログアウトで Hydra のログインのセッションを消せるようになるまで、セッションを覚えない。
-	// 覚えると、web のセッションを消した後に、ログインの画面を通らずに入り直せてしまう
-	to, err := h.Hydra.AcceptLogin(r.Context(), challenge, hydra.AcceptLogin{Subject: staffID})
+	to, err := h.Hydra.AcceptLogin(r.Context(), challenge, hydra.AcceptLogin{Subject: staffID, Remember: true, RememberFor: rememberFor})
 	h.redirect(w, r, to, err)
 }
 
@@ -359,6 +382,16 @@ func (h handler) fail(w http.ResponseWriter, r *http.Request, code int, reason s
 	}
 	h.Logger.Log(r.Context(), level, "ログインの失敗の画面を出す", "reason", reason, "error", err)
 	renderFailure(w, h.Logger, code)
+}
+
+// failLogout は、Hydra へ返せないログアウトの失敗で、ログアウトの失敗の画面を出す。
+func (h handler) failLogout(w http.ResponseWriter, r *http.Request, code int, reason string, err error) {
+	level := slog.LevelWarn
+	if code >= http.StatusInternalServerError {
+		level = slog.LevelError
+	}
+	h.Logger.Log(r.Context(), level, "ログアウトの失敗の画面を出す", "reason", reason, "error", err)
+	render(w, h.Logger, code, "logoutFailure", nil)
 }
 
 func (h handler) setCookie(w http.ResponseWriter, value string, maxAge int) {

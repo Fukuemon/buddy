@@ -74,5 +74,33 @@ test.describe('予定のカレンダー', () => {
 
       await expect(brokerLogin(page).email).toBeVisible()
     })
+
+    test('ログアウトした後にブラウザの戻るで前の画面を開いた場合、ログインの画面へ移ること', async ({
+      page,
+    }) => {
+      await page.goto('/schedule')
+      await signInAtBroker(page, LOGIN_EMAIL)
+      await expect(page.getByTestId('viewer-menu')).toContainText(LOGIN_STAFF.name)
+      await page.getByTestId('viewer-logout').click()
+      await expect(brokerLogin(page).email).toBeVisible()
+
+      await page.goBack()
+
+      await expect(brokerLogin(page).email).toBeVisible()
+      await expect(page.getByTestId('viewer-menu')).toHaveCount(0)
+    })
+
+    test('Hydra がログインを覚えている間に、ログインの失敗の画面から入り直した場合、メールの入力の画面が出ること', async ({
+      page,
+    }) => {
+      await page.goto('/schedule')
+      await signInAtBroker(page, LOGIN_EMAIL)
+      await expect(page.getByTestId('viewer-menu')).toContainText(LOGIN_STAFF.name)
+      await page.goto('/auth/error?reason=forbidden')
+
+      await page.getByTestId('auth-error-login').click()
+
+      await expect(brokerLogin(page).email).toBeVisible()
+    })
   })
 })

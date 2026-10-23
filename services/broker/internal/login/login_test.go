@@ -78,6 +78,8 @@ type fakeHydra struct {
 	consented   *hydra.AcceptConsent
 	rejected    bool
 	rejectedCon bool
+	logoutErr   error
+	loggedOut   string
 }
 
 func (f *fakeHydra) LoginRequest(context.Context, string) (hydra.LoginRequest, error) {
@@ -106,6 +108,14 @@ func (f *fakeHydra) AcceptConsent(_ context.Context, _ string, b hydra.AcceptCon
 func (f *fakeHydra) RejectConsent(context.Context, string, hydra.Rejection) (string, error) {
 	f.rejectedCon = true
 	return "http://hydra/consent-rejected", nil
+}
+
+func (f *fakeHydra) AcceptLogout(_ context.Context, challenge string) (string, error) {
+	if f.logoutErr != nil {
+		return "", f.logoutErr
+	}
+	f.loggedOut = challenge
+	return "http://hydra/logout-accepted", nil
 }
 
 // fakeUpstream は、認可の画面の URL に組織と state を入れ、認可コードに対して identity を返す。
@@ -472,8 +482,8 @@ func TestCallback(t *testing.T) {
 			rec := e.callback(t, e.submit("aoki@example.com"), tt.code)
 			got := location(t, rec)
 			if tt.accepted {
-				if got != "http://hydra/login-accepted" || e.hydra.accepted.Subject != aokiID || e.hydra.accepted.Remember {
-					t.Errorf("Location = %q, accepted = %+v, want 職員の ID で覚えずに accept", got, e.hydra.accepted)
+				if a := e.hydra.accepted; got != "http://hydra/login-accepted" || a.Subject != aokiID || !a.Remember || a.RememberFor != 12*60*60 {
+					t.Errorf("Location = %q, accepted = %+v, want 職員の ID で 12 時間覚えて accept", got, a)
 				}
 			} else if got != "http://hydra/login-rejected" {
 				t.Errorf("Location = %q, want reject", got)
@@ -612,6 +622,21 @@ func TestConsentOtherClient(t *testing.T) {
 	got := location(t, e.do(httptest.NewRequest(http.MethodGet, "/consent?consent_challenge=ch", nil)))
 	if got != "http://hydra/consent-rejected" || e.hydra.consented != nil {
 		t.Errorf("Location = %q, consented = %+v, want reject", got, e.hydra.consented)
+	}
+}
+
+// TestLogout は、ログアウトの要求を画面を出さずに accept し、Hydra へ返せなければログアウトの失敗の画面を出すことを確かめる。
+func TestLogout(t *testing.T) {
+	e := newEnv(10)
+	if got := location(t, e.do(httptest.NewRequest(http.MethodGet, "/logout?logout_challenge=ch", nil))); got != "http://hydra/logout-accepted" || e.hydra.loggedOut != "ch" {
+		t.Errorf("Location = %q, accepted = %q, want ch の accept", got, e.hydra.loggedOut)
+	}
+	if rec := e.do(httptest.NewRequest(http.MethodGet, "/logout", nil)); rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "ログアウトできませんでした") {
+		t.Errorf("logout_challenge の無い code = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	e.hydra.logoutErr = errors.New("hydra down")
+	if rec := e.do(httptest.NewRequest(http.MethodGet, "/logout?logout_challenge=ch", nil)); rec.Code != http.StatusBadGateway || !strings.Contains(rec.Body.String(), "ログアウトできませんでした") {
+		t.Errorf("Hydra の失敗の code = %d, body = %s", rec.Code, rec.Body.String())
 	}
 }
 

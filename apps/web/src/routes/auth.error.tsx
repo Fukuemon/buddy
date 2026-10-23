@@ -20,7 +20,8 @@ function AuthErrorPage() {
     <div className="flex h-dvh flex-col">
       <SiteHeader />
       <main className="grow p-6">
-        <AuthErrorMessage reason={reason} loginHref="/auth/login" />
+        {/* Hydra は失敗した職員のログインも覚えているので、メールの入力の画面から入り直させる */}
+        <AuthErrorMessage reason={reason} loginHref="/auth/login?prompt=login" />
       </main>
     </div>
   )

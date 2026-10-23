@@ -4,7 +4,7 @@ title: 認証のブローカー
 description: Ory Hydra の login and consent app として動くブローカーの責務、Hydra との分担、ログイン、職員の登録と停止、ログアウトの流れ、ローカル環境の構成
 status: draft
 governs: services/broker
-verified_commit: 8ec033d
+verified_commit: 134c57e
 ---
 
 # 認証のブローカー
@@ -118,7 +118,7 @@ sequenceDiagram
 
 - 登録されていないメールと、有効でない職員（止めた職員、登録の途中の職員）は、上流の IdP へ転送せずにログインの reject で返す。web はログインの失敗の画面を出すので、事業所を示さず、ログインの失敗と同じ文言になる。
 - メールを受けたら、職員を引く前に、Hydra の admin API で `login_challenge` のログインの要求を読む。読めなければ、職員を引かずにログインの失敗の画面を出す。
-- メールの有無を確かめる試行は、送り手のアドレスごとと、入れたメールごとに数える。超えた試行は reject で返す。数えるのはプロセスの中だけである。
+- メールの有無を確認する試行は、送り手のアドレスごとと、入れたメールごとに数える。超えた試行は reject で返す。数えるのはプロセスの中だけである。
   - 送り手のアドレスごとには、続けて 20 回、以後は 10 秒に 1 回までにする。
   - メールごとには、続けて 10 回、以後は 30 秒に 1 回までにする。送り手のアドレスを替えて 1 つのメールを試す操作を止める。その代わり、他人がそのメールを入れ続けると、その職員も上限まで待たされる。
   - 送り手のアドレスは、デフォルトでは接続の相手のアドレスである。前段のプロキシの後ろに置くと、全ての利用者がプロキシのアドレスで 1 つの上限を共有する。
@@ -132,10 +132,12 @@ sequenceDiagram
 - 上流の IdP の discovery の文書は、事業所ごとに初めて使うときに読み、覚える。1 つの事業所の IdP が応答しなくても、ほかの事業所のログインは待たない。読めなかった事業所は、その失敗を 30 秒覚えて返し、過ぎてから読み直す。
 - 上流の IdP へ転送している間の値（ログインの要求、職員の ID、state、nonce、PKCE の code verifier）は、ブラウザの cookie に置き、コールバックの `state` と照らす。
   - cookie は署名しない。書き換えられるのはブラウザの利用者だけで、事業所と上流の IdP は職員の ID から DB で引き直すので、別のメールを入れたのと同じ結果にしかならない。
-- ブローカーの画面の文言は、web のログインの失敗の画面と同じにする。コールバックの値がこのブラウザで始めたログインのものと確かめられないときは、Hydra へ返さずにブローカーがログインの失敗の画面を出す。
+- ブローカーの画面の文言は、web のログインの失敗の画面と同じにする。コールバックの値がこのブラウザで始めたログインのものと確認できないときは、Hydra へ返さずにブローカーがログインの失敗の画面を出す。
 - 同意の accept は、web のクライアントに許した audience を `aud` に、職員の事業所の組織の ID を `org_id` に入れる。Hydra は `skip_consent` のクライアントでも同意の画面を呼ぶので、ブローカーは画面を出さずに accept する。
   - 画面を出さずに accept するのは、`AUTO_CONSENT_CLIENTS` に挙げたクライアント（デフォルトは `web`）だけである。ほかのクライアントの同意は reject で返す。ブローカーは同意の画面を持たない。
-- Hydra のログインのセッションは、12 時間で切れる。ログアウトで Hydra のログインのセッションを消せるようになるまで、ブローカーはログインの accept でセッションを覚えさせない。覚えると、web のセッションを消した後に、ログインの画面を通らずに入り直せる。
+- ブローカーは、ログインの accept で、Hydra にログインのセッションを 12 時間覚えさせる（`remember`、`remember_for` は 43200 秒）。覚えている間、Hydra はブローカーのログインの画面を出させずに accept させる。ブローカーは、止めた職員と登録の途中の職員を、覚えたセッションでも reject で返す。
+  - web のログアウトは、Hydra のログインのセッションを消す。ログアウトの後のログインは、ブローカーのメールの入力の画面を通る。
+  - Hydra は、web がトークンを受け取れなかったログイン（事業所に登録されていない職員）も覚える。web のログインの失敗の画面は、`prompt=login` を付けて入り直させ、Hydra にブローカーのログインの画面を出させる。
 
 ### トークンの発行の確認
 
@@ -207,6 +209,32 @@ sequenceDiagram
 
 web は BFF のセッションを消した後に、ブラウザを Hydra の RP-Initiated Logout へ、ID token を添えて転送する。Hydra はブローカーのログアウトの画面を呼び、ブローカーが accept すると、Hydra のログインのセッションが消える。上流の IdP のセッションは消さない。
 
+```mermaid
+sequenceDiagram
+  autonumber
+  participant B as ブラウザ
+  participant W as web
+  participant H as Hydra
+  participant K as ブローカー
+  B->>W: POST /auth/logout
+  W->>W: BFF のセッションを消す
+  W-->>B: Hydra の end_session_endpoint へ転送（id_token_hint、post_logout_redirect_uri）
+  B->>H: GET /oauth2/sessions/logout
+  H-->>B: ブローカーのログアウトの画面へ転送（logout_challenge）
+  B->>K: GET /logout
+  K->>H: ログアウトの accept
+  H-->>K: 転送する先
+  K-->>B: Hydra へ転送
+  B->>H: ログインのセッションを消す
+  H-->>B: web の / へ転送
+```
+
+- ブローカーは、ログアウトの確認の画面を出さずに accept する。職員は web のログアウトのボタンでログアウトを選んでいる。
+- Hydra へ accept を返せないときは、ブローカーはログアウトの失敗の画面を出す。
+- web は、ID token をセッションに置く。refresh でブローカーが ID token を返さなければ、前の ID token を使う。Hydra は、期限の切れた ID token もログアウトの `id_token_hint` として受ける。
+- ID token の無いセッション（ID token を置く前に作ったセッション）と、セッションの無いログアウトは、web の / へ転送する。ID token を置く前のログインは、Hydra にセッションを覚えさせていない。
+- Hydra の web のクライアントは、ログアウトの後に戻る先（`post_logout_redirect_uris`）に web の / を持つ。
+
 ### ローカル環境
 
 compose は、開発用の IdP（mock-oauth2-server）を、上流の IdP のフェイクとして置く。mock-oauth2-server はパスの最初の部分を issuer にするので、1 つのコンテナで 2 つの事業所の IdP（`/office-a`、`/office-b`）を立てる。
@@ -214,8 +242,11 @@ compose は、開発用の IdP（mock-oauth2-server）を、上流の IdP のフ
 - Hydra は、同じ PostgreSQL の別のデータベースを使う。
 - 初期化のコンテナが、Hydra に web と予定の API のクライアントを登録する。予定の API のクライアントは、client credentials で `aud` が `broker` の access token だけを取れる。
 - Hydra の `oauth2.token_hook` は、コンテナの間の名前で、ブローカーの内部のポート（`http://broker:8081/internal/token-hook`）を呼ぶ。予定の API も、内部の API をこのポートで呼ぶ。
+- Hydra の `urls.logout` は、ブローカーのログアウトの画面（`/logout`）を指す。
+- Hydra は、discovery の `end_session_endpoint` を Issuer の URL（コンテナの間の名前 `hydra`）から作る。
+  - web には、ブラウザが開くローカルのポートのログアウトの URL を `OIDC_END_SESSION_ENDPOINT` で渡す。
 - compose は、E2E がトークンなしの呼び出しを試せるよう、内部のポートを `127.0.0.1` の 8101 に公開する。
-- 上流の IdP ごとの違い（署名の方式、Google の `hd`）は、フェイクで確かめず、ブローカーの単体のテストで確かめる。
+- 上流の IdP ごとの違い（署名の方式、Google の `hd`）は、フェイクで確認せず、ブローカーの単体のテストで確認する。
 - フェイクは、ログインの画面で入れた名前を `sub` に、クレームの欄の JSON を ID token のクレームにする。
 - コンテナは、Hydra の discovery の文書と上流の IdP の discovery の文書を、コンテナの間の名前（`hydra`、`idp`）で読む。
   - ブラウザはこの名前を引けない。Hydra は、認可のエンドポイントを `urls.self.public` のローカルのポートで示す。
@@ -239,7 +270,7 @@ compose は、開発用の IdP（mock-oauth2-server）を、上流の IdP のフ
   - Hydra が token_hook を呼ぶときのヘッダーの値（`TOKEN_HOOK_KEY`）。シークレットとして渡す
   - ブローカーの DB の接続先（`DB_HOST`、`DB_PORT`、`DB_USER`、`DB_PASSWORD`、`DB_NAME`）
   - 2 つのファイルに必須の値が無いか、client secret の無い上流の IdP があれば、ブローカーは起動しない。値の一覧と形は [README](https://github.com/Fukuemon/buddy/blob/develop/services/broker/README.md#起動する) にある。
-- ヘルスチェック: `GET /healthz`（依存先を確かめない）、`GET /readyz`（DB に届かなければ 503）、`broker healthcheck` のサブコマンド
-- 公開する画面: ログイン（`GET` と `POST /login`）、上流の IdP のコールバック（`GET /login/callback`）、同意（`GET /consent`）、ログアウト（未実装）
+- ヘルスチェック: `GET /healthz`（依存先を確認しない）、`GET /readyz`（DB に届かなければ 503）、`broker healthcheck` のサブコマンド
+- 公開する画面: ログイン（`GET` と `POST /login`）、上流の IdP のコールバック（`GET /login/callback`）、同意（`GET /consent`）、ログアウト（`GET /logout`）
 - 内部の API: 職員の登録、有効化、削除、停止と、Hydra の `oauth2.token_hook`（`POST /internal/token-hook`）。`INTERNAL_PORT` で待ち受ける。パスは [職員の登録と停止](#職員の登録と停止) の表にある
 - マイグレーションとシード: `migrate up`、`migrate down [N]`、`migrate seed`。シードは職員がいない DB にだけ入る

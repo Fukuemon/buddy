@@ -26,7 +26,11 @@ export const AuthErrorMessage = ({ reason, loginHref }: AuthErrorMessageProps) =
     <section className="flex max-w-xl flex-col items-start gap-4" data-testid="auth-error">
       <h1 className="text-heading-md">{title}</h1>
       <p className="text-body">{body}</p>
-      <a className={buttonClassName({ variant: 'secondary' })} href={loginHref}>
+      <a
+        className={buttonClassName({ variant: 'secondary' })}
+        href={loginHref}
+        data-testid="auth-error-login"
+      >
         もう一度ログインする
       </a>
     </section>
