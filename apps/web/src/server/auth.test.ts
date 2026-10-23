@@ -206,7 +206,7 @@ describe('readSession', () => {
     expect(await readSession(forged, deps)).toBeUndefined()
   })
 
-  it('期限が近い access token は refresh token で取り直して置き直す', async () => {
+  it('期限が近い access token は refresh token で更新して置き直す', async () => {
     const { deps } = setup()
     const req = await withSession(
       {
@@ -246,7 +246,7 @@ describe('readSession', () => {
     expect((await readSession(req, deps))?.idToken).toBe('id-2')
   })
 
-  it('同じセッションの取り直しを 1 本にまとめる', async () => {
+  it('同じセッションの更新を 1 本にまとめる', async () => {
     const refresh = vi.fn<OidcClient['refresh']>(async () => ({
       accessToken: 'access-2',
       expiresIn: 3600,
@@ -262,7 +262,7 @@ describe('readSession', () => {
     expect(await deps.store.get('refresh-lock:id-1')).toBeUndefined()
   })
 
-  it('ほかのプロセスが取り直している間は、置かれた値を待って使う', async () => {
+  it('ほかのプロセスが更新している間は、置かれた値を待って使う', async () => {
     const refresh = vi.fn<OidcClient['refresh']>()
     const { deps } = setup({ oidc: fakeOidc({ refresh }) })
     const req = await withSession(
@@ -281,7 +281,7 @@ describe('readSession', () => {
     expect(refresh).not.toHaveBeenCalled()
   })
 
-  it('鍵を取る前にほかのリクエストが取り直し終えていたら、古い refresh token を送らない', async () => {
+  it('鍵を取る前にほかのリクエストが更新し終えていたら、古い refresh token を送らない', async () => {
     const refresh = vi.fn<OidcClient['refresh']>()
     const { deps } = setup({ oidc: fakeOidc({ refresh }) })
     const req = await withSession(
@@ -292,7 +292,7 @@ describe('readSession', () => {
     let reads = 0
     deps.store.get = async <T>(key: string) => {
       reads++
-      // readSession の 1 回目の読み取りの後に、ほかのリクエストが取り直し終えたとする
+      // readSession の 1 回目の読み取りの後に、ほかのリクエストが更新終えたとする
       if (reads === 2) {
         await deps.store.set(
           'session:id-1',
@@ -322,7 +322,7 @@ describe('readSession', () => {
     expect(waits).toBe(1)
   })
 
-  it('取り直しの間にセッションが消えたら、置き直さない', async () => {
+  it('更新の間にセッションが消えたら、置き直さない', async () => {
     const { deps } = setup({
       oidc: fakeOidc({
         refresh: async () => {

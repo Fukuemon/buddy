@@ -12,7 +12,7 @@ info:
       外部のカレンダーの操作の calendar_unreadable、calendar_unavailable、calendar_not_configured と、
       409 の原因を分ける calendar_taken、calendar_already_linked、staff_has_calendar、import_running、import_preview_changed、export_not_in_review、
       export_not_acceptable、external_change_unappliable のいずれかである。
-    - `/v1` は全て、OIDC のブローカーが発行した access token（JWT）を `Authorization: Bearer` で求める。
+    - `/v1` は全て、Hydra が発行した access token（JWT）を `Authorization: Bearer` で求める。
       トークンがないか検証に失敗したときは 401 を、トークンの組織と職員の事業所が、パスの指す事業所と違うときは 403 を返す。
     - 読めないクエリ（例は `;` を含むもの）は 400 を返す。
 security:
@@ -1299,7 +1299,7 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: |
-        OIDC のブローカーが発行した access token。署名（RS256 か ES256）、iss、aud、exp、nbf を確認する。
+        Hydra が発行した access token。署名（RS256 か ES256）、iss、aud、exp、nbf を確認する。
         `sub` で職員を探し、初回は確認済みの `email` で登録済みの職員に結び付ける。組織のクレーム（デフォルトは `org_id`）が事業所を決める。
   parameters:
     FacilityID:

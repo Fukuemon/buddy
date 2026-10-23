@@ -64,7 +64,7 @@ type discovery struct {
 	failedAt time.Time
 }
 
-// NewRP は、idps の上流の IdP に、redirectURL をコールバックにしてリダイレクトする RP を作る。
+// NewRP は、redirectURL をコールバックにして、ブラウザを idps の上流の IdP へリダイレクトする RP を作る。
 //
 // browserOrigin は、ローカル環境のように、ブローカーが discovery を読む issuer の URL にブラウザが届かないときだけ渡す。
 // 認可のエンドポイントの scheme とホストを browserOrigin に替えて、ブラウザをリダイレクトする。空なら替えない。

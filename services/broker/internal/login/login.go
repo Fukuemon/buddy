@@ -179,7 +179,7 @@ func (h handler) showLogin(w http.ResponseWriter, r *http.Request) {
 	// Hydra がログインのセッションを保っているときも、有効でない職員には出さない
 	m, err := h.Staff.Get(ctx, req.Subject)
 	if err != nil || m.Status != StatusActive {
-		h.reject(w, r, challenge, "保ったセッションの職員が有効でない", err)
+		h.reject(w, r, challenge, "Hydra が保つセッションの職員が有効でない", err)
 		return
 	}
 	h.accept(w, r, challenge, m.ID)

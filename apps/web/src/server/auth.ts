@@ -44,7 +44,7 @@ export type AuthDeps = {
   /** access token の職員を予定の API の GET /v1/me で引く。 */
   fetchMe: (accessToken: string) => Promise<MeResult>
   now?: () => number
-  /** ほかのリクエストが取り直すのを待つときに使う。テストで替える。 */
+  /** ほかのリクエストが更新するのを待つときに使う。テストで替える。 */
   wait?: (ms: number) => Promise<void>
 }
 
@@ -52,11 +52,11 @@ export const SESSION_COOKIE = 'buddy_session'
 const LOGIN_COOKIE = 'buddy_login'
 const SESSION_TTL_SECONDS = 12 * 60 * 60
 const LOGIN_TTL_SECONDS = 10 * 60
-/** 期限まで、この長さを切った access token は、使う前に取り直す。 */
+/** 期限まで、この長さを切った access token は、使う前に更新する。 */
 const REFRESH_MARGIN_MS = 60 * 1000
 /** 更新の鍵を持つ長さ。Hydra のレスポンスを待つ上限の 2 倍にする。 */
 const REFRESH_LOCK_MS = OIDC_TIMEOUT_SECONDS * 2 * 1000
-/** ほかのリクエストの取り直しを待つ間隔。待つのは、鍵が放されるか期限が切れるまでである。 */
+/** ほかのリクエストの更新を待つ間隔。待つのは、鍵が放されるか期限が切れるまでである。 */
 const REFRESH_POLL_MS = 200
 
 const sessionKey = (id: string) => `session:${id}`
@@ -217,7 +217,7 @@ const sessionIdOf = (request: Request, secret: string) =>
   verifySignedValue(readCookie(request.headers.get('Cookie'), SESSION_COOKIE), secret)
 
 /**
- * リクエストの cookie のセッションを返す。access token の期限が近ければ refresh token で取り直して置き直す。
+ * リクエストの cookie のセッションを返す。access token の期限が近ければ refresh token で更新して置き直す。
  *
  * セッションが無いとき、期限が切れて更新できないときは undefined を返す。Hydra が refresh token を拒んだときだけ、
  * セッションを消す。通信の失敗では消さず、access token がまだ使えればそれを返し、使えなければ投げる。
@@ -236,7 +236,7 @@ export const readSession = async (
   return refreshOnce(id, session, now, deps)
 }
 
-/** 同じプロセスの中で、同じセッションの取り直しを 1 本にまとめる。 */
+/** 同じプロセスの中で、同じセッションの更新を 1 本にまとめる。 */
 const inFlight = new Map<string, Promise<Session | undefined>>()
 
 const refreshOnce = (id: string, session: Session, now: number, deps: AuthDeps) => {
@@ -248,8 +248,8 @@ const refreshOnce = (id: string, session: Session, now: number, deps: AuthDeps) 
 }
 
 /**
- * Valkey の鍵で、ほかのプロセスとも取り直しを 1 本にする。refresh token をローテーションする Hydra は、使い回しを拒むためである。
- * 鍵を取れなかったリクエストは、取り直した値が置かれるか鍵が放されるまで待つ。
+ * Valkey の鍵で、ほかのプロセスとも更新を 1 本にする。refresh token をローテーションする Hydra は、使い回しを拒むためである。
+ * 鍵を取れなかったリクエストは、更新した値が置かれるか鍵が放されるまで待つ。
  */
 const refresh = async (
   id: string,
@@ -271,7 +271,7 @@ const refresh = async (
     return stillValid(session) ? session : undefined
   }
   try {
-    // 鍵を取る前に、ほかのリクエストが取り直し終えていることがある。古い refresh token を送らないよう読み直す
+    // 鍵を取る前に、ほかのリクエストが更新し終えていることがある。古い refresh token を送らないよう読み直す
     const latest = await deps.store.get<Session>(sessionKey(id))
     if (latest === undefined) return undefined
     if (latest.accessToken !== session.accessToken || latest.refreshToken === undefined)

@@ -5,7 +5,7 @@
 //   - PORT: 待ち受けるポート。デフォルトは 8080。
 //   - MAX_UPLOAD_BYTES: POST /v1/checks の本文の上限のバイト数。デフォルトは 10485760（10 MiB）。
 //   - LOG_LEVEL: debug、info、warn、error のいずれか。デフォルトは info。
-//   - OIDC_ISSUER: 必須。ブローカーの Issuer の URL。トークンの iss と一致させ、discovery の文書をここから読む。
+//   - OIDC_ISSUER: 必須。Hydra の Issuer の URL。トークンの iss と一致させ、discovery の文書をここから読む。
 //   - OIDC_AUDIENCE: 必須。トークンの aud に求める値。
 //   - OIDC_ORG_CLAIM: 組織の ID を持つクレームの名前。デフォルトは org_id。
 //   - CORS_ALLOW_ORIGINS: CORS でレスポンスを読ませるオリジンを、カンマで区切って並べる。空なら CORS のヘッダーを返さない。

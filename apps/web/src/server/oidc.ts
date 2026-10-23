@@ -39,13 +39,13 @@ export interface OidcClient {
     currentUrl: URL,
     checks: { codeVerifier: string; state: string; nonce: string },
   ): Promise<Tokens>
-  /** refresh token で access token を取り直す。拒まれたら GrantRejectedError を、通信の失敗などはそのほかの Error を投げる。 */
+  /** refresh token で access token を更新する。拒まれたら GrantRejectedError を、通信の失敗などはそのほかの Error を投げる。 */
   refresh(refreshToken: string): Promise<Tokens>
   /** ブラウザをリダイレクトする、Hydra の RP-Initiated Logout の URL。 */
   endSessionUrl(params: { idTokenHint: string; postLogoutRedirectUri: string }): URL
 }
 
-/** refresh のエラーのうち、取り直しても通らないので、セッションを捨ててよいものの OAuth のエラーの値。 */
+/** refresh のエラーのうち、更新しても通らないので、セッションを捨ててよいものの OAuth のエラーの値。 */
 const REJECTED_GRANT_ERRORS = new Set(['invalid_grant', 'access_denied'])
 
 /** error が、Hydra が refresh token を拒んだことを示すかを返す。 */

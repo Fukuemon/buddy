@@ -1,5 +1,5 @@
 // Command broker は、Ory Hydra の login and consent app として動く ID ブローカーを起動する（ADR-0016）。
-// ログイン、同意、ログアウトの画面、職員の登録と停止の内部の API、Hydra の oauth2.token_hook、ヘルスチェックを持つ。
+// ログイン、同意、ログアウトの画面、職員の登録、休職、復職、退職の内部の API、Hydra の oauth2.token_hook、ヘルスチェックを持つ。
 // ログイン、同意、ログアウトの画面は PORT で、内部の API と token_hook は INTERNAL_PORT で待ち受ける。内部のポートはブラウザに開かない。
 //
 // 設定は環境変数から読む。読む値とデフォルト値は config.Load にある。

@@ -72,12 +72,12 @@ type Config struct {
 //   - DB_HOST: デフォルトは localhost
 //   - DB_PORT: デフォルトは 5432
 //   - DB_USER、DB_PASSWORD、DB_NAME
-//   - OIDC_ISSUER: ブローカーの Issuer の URL。トークンの iss と一致させ、discovery の文書をここから読む
+//   - OIDC_ISSUER: Hydra の Issuer の URL。トークンの iss と一致させ、discovery の文書をここから読む
 //   - OIDC_AUDIENCE: トークンの aud に求める値
 //   - OIDC_ORG_CLAIM: 組織の ID を持つクレームの名前。デフォルトは org_id
 //   - CORS_ALLOW_ORIGINS: カンマで区切ったオリジン。空なら CORS のヘッダーを返さない
 //   - LOG_LEVEL: debug、info、warn、error。デフォルトは info
-//   - BROKER_URL: ID ブローカーの URL。職員の登録と停止で内部の API を呼ぶ
+//   - BROKER_URL: ID ブローカーの URL。職員の登録、休職、復職、退職で内部の API を呼ぶ
 //   - BROKER_TOKEN_URL: 内部の API を呼ぶ access token を client credentials で取る Hydra のトークンのエンドポイント
 //   - BROKER_CLIENT_ID: Hydra に登録した予定の API のクライアントの ID。デフォルトは schedule
 //   - BROKER_CLIENT_SECRET: Hydra に登録した予定の API のクライアントの secret

@@ -69,7 +69,7 @@ func (f *fakeStaff) Link(_ context.Context, staffID string, a login.UpstreamAcco
 	return nil
 }
 
-// fakeHydra は、受けた accept と reject を残し、ブラウザをリダイレクト先に結果の種類を入れて返す。
+// fakeHydra は、受けた accept と reject を残し、ブラウザのリダイレクト先に結果の種類を入れて返す。
 type fakeHydra struct {
 	login       hydra.LoginRequest
 	loginErr    error

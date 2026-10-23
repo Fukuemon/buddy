@@ -250,7 +250,7 @@ services:
       # トークンの iss は Hydra の urls.self.issuer で、API はコンテナの間の名前 hydra で JWKS を読む
       OIDC_ISSUER: http://hydra:4444
       OIDC_AUDIENCE: schedule
-      # 職員の登録と停止で、ブローカーの内部の API を呼ぶ。compose/hydra/clients.sh が登録した schedule のクライアントで、
+      # 職員の登録、休職、復職、退職で、ブローカーの内部の API を呼ぶ。compose/hydra/clients.sh が登録した schedule のクライアントで、
       # client credentials の access token を取る
       BROKER_URL: http://broker:8081
       BROKER_TOKEN_URL: http://hydra:4444/oauth2/token
