@@ -1,27 +1,18 @@
 import { expect, test, type APIRequestContext } from '@playwright/test'
 
-import { issueAccessToken } from '../../fixtures/apiReference'
-import { LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
+import { LOGIN_STAFF } from '../../fixtures/env'
 import { createNormalSchedule, getSchedule } from '../../fixtures/schedule'
-import { newStaff, registerStaff, STAFF_FORM, suspendStaff } from '../../fixtures/staff'
+import {
+  issueManagerToken,
+  leaveStaff,
+  newStaff,
+  registerStaff,
+  reinstateStaff,
+  STAFF_FORM,
+} from '../../fixtures/staff'
 
 /** 予定の API で作る予定の日。 */
 const SCHEDULE_DATE = '2026-10-20'
-
-/** 取り直すまでの時間。Hydra の access token の有効期間（5 分）より短くする。 */
-const TOKEN_REUSE_MS = 4 * 60 * 1000
-
-/**
- * マネージャーの access token。ブローカーはメールごとにログインの試行の回数を数えるので、
- * worker の中で 1 つを使い回し、TOKEN_REUSE_MS を過ぎたら取り直す。
- */
-let managerToken: { value: string; issuedAt: number } | undefined
-const issueManagerToken = async (request: APIRequestContext) => {
-  if (managerToken === undefined || Date.now() - managerToken.issuedAt > TOKEN_REUSE_MS) {
-    managerToken = { value: await issueAccessToken(request, LOGIN_EMAIL), issuedAt: Date.now() }
-  }
-  return managerToken.value
-}
 
 /** 職員を 1 人登録し、ID と名前を返す。 */
 const register = async (request: APIRequestContext, token: string, label: string) => {
@@ -36,7 +27,7 @@ const registerActiveAndSuspended = async (request: APIRequestContext) => {
   const manager = await issueManagerToken(request)
   const active = await register(request, manager, 'active')
   const suspended = await register(request, manager, 'hidden')
-  expect((await suspendStaff(request, manager, suspended.id)).status()).toBe(200)
+  expect((await leaveStaff(request, manager, suspended.id)).status()).toBe(200)
   return { active: active.id, suspended: suspended.id }
 }
 
@@ -54,6 +45,20 @@ test.describe('予定のカレンダー', () => {
       await expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible()
       await expect(page.getByTestId(`day-grid-staff-${active}`)).toBeVisible()
       await expect(page.getByTestId(`day-grid-staff-${suspended}`)).toHaveCount(0)
+    })
+
+    test('休職の職員を復職にした場合、日の表示にその職員の列が戻ること', async ({
+      page,
+      request,
+    }) => {
+      const { suspended } = await registerActiveAndSuspended(request)
+      expect(
+        (await reinstateStaff(request, await issueManagerToken(request), suspended)).status(),
+      ).toBe(200)
+
+      await page.goto('/schedule?view=day')
+
+      await expect(page.getByTestId(`day-grid-staff-${suspended}`)).toBeVisible()
     })
 
     test('止めた職員がいる事業所で職員の絞り込みを見た場合、止めた職員が候補に出ないこと', async ({
@@ -106,7 +111,7 @@ test.describe('予定の編集', () => {
       })
       expect(created.status()).toBe(201)
       const scheduleId = ((await created.json()) as { id: string }).id
-      expect((await suspendStaff(request, manager, assigned.id)).status()).toBe(200)
+      expect((await leaveStaff(request, manager, assigned.id)).status()).toBe(200)
 
       await page.goto(`/schedule/${scheduleId}/edit`)
 
@@ -131,7 +136,7 @@ test.describe('予定の編集', () => {
       })
       expect(created.status()).toBe(201)
       const scheduleId = ((await created.json()) as { id: string }).id
-      expect((await suspendStaff(request, manager, assigned.id)).status()).toBe(200)
+      expect((await leaveStaff(request, manager, assigned.id)).status()).toBe(200)
       const changed = `E2E の会議（変更）${stamp}`
 
       await page.goto(`/schedule/${scheduleId}/edit`)
