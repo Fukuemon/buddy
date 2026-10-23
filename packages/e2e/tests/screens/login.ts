@@ -3,6 +3,13 @@ import type { Page } from '@playwright/test'
 import { BASE_URL } from '../fixtures/env'
 import { brokerLogin, idpLogin } from '../selectors/idp'
 
+/** ブローカーのログインの画面で email を入れて次へ進む。 */
+export const enterEmailAtBroker = async (page: Page, email: string) => {
+  const broker = brokerLogin(page)
+  await broker.email.fill(email)
+  await broker.next.click()
+}
+
 /**
  * ブローカーのログインの画面で email を入れ、事業所の上流の IdP のフェイクで入り、buddy の画面に戻るまで待つ。
  * ログインに失敗した案内の画面でも戻る。
@@ -18,9 +25,7 @@ export const signInAtBroker = async (
   o: { upstreamEmail?: string } = {},
 ) => {
   const upstreamEmail = o.upstreamEmail ?? email
-  const broker = brokerLogin(page)
-  await broker.email.fill(email)
-  await broker.next.click()
+  await enterEmailAtBroker(page, email)
   const idp = idpLogin(page)
   await idp.username.fill(upstreamEmail.split('@')[0])
   await idp.claims.fill(JSON.stringify({ email: upstreamEmail, email_verified: true }))
