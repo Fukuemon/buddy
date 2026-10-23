@@ -35,8 +35,8 @@ AI が書くときの手順は、スキル `write-e2e-test` が持つ。この�
 
 持たないもの。
 
-- testid の名前の規則。`context/conventions.md` の E2E の節が持つ
-- 流すコマンド、環境、テストデータの中身。`context/testing.md` の E2E の節が持つ
+- testid の名前の規則。`context/conventions.md` の E2E のセクションが持つ
+- 流すコマンド、環境、テストデータの中身。`context/testing.md` の E2E のセクションが持つ
 - リグレッションテストの寿命と、実行の契機。`context/testing.md` が持つ
 - API の mock の置き方。デプロイ済みの環境に向けて流すテストでは使わない
 

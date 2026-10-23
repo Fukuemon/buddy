@@ -25,7 +25,7 @@ pnpm --filter @buddy/ui storybook
 
 画面の Storybook（apps/web）も、このパッケージのコンポーネントを載せる。
 
-## 文書
+## ドキュメント
 
 - [DESIGN.md](DESIGN.md): トークンとコンポーネントの使い方、カタログの組み方
 - [ADR-0004](../../docs/adr/0004-design-system.md): トークンの段の分け方とコンポーネントの配置先の判断

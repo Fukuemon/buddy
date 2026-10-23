@@ -1,4 +1,4 @@
-# 文書のサイトの設定。文書の配置先は context/project.yml の docs と揃える
+# ドキュメントサイトの設定。文書の配置先は context/project.yml の docs と揃える
 [project]
 site_name = "buddy"
 site_description = "予定の管理とレセプトの照合の設計書"

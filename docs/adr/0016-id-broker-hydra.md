@@ -14,7 +14,7 @@ ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッ�
 - 事業所ごとに上流の IdP が違う。Google、LINE、Entra ID のような OIDC の IdP を想定する。
 - ブローカーは、事業所と職員の所属のような buddy の業務のデータを扱う。持つものの範囲は ADR-0017 で決める。
   - ADR-0017: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](0017-identity-boundary.md)
-- 認可コード、トークンの発行、鍵の回転、refresh token の回転と再利用の検出、失効は、どのプロダクトでも同じ処理で、誤ると被害が大きい。
+- 認可コード、トークンの発行、鍵のローテーション、refresh token のローテーションと再利用の検出、失効は、どのプロダクトでも同じ処理で、誤ると被害が大きい。
 - 2 つの API は、access token の JWT を、discovery の `jwks_uri` で検証している（`packages/go/oidc`）。
 - インフラは別のリポジトリが持ち、buddy はデプロイ先のクラウドを知らない。
 
@@ -22,7 +22,7 @@ ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッ�
 
 トークンの発行は Ory Hydra に任せ、ブローカーは Hydra の login and consent app として自作する。web と 2 つの API から見える Issuer は Hydra だけになる。
 
-- Hydra は、認可コード、トークンの発行、JWKS、refresh token の回転、失効、ログアウトを持つ。
+- Hydra は、認可コード、トークンの発行、JWKS、refresh token のローテーション、失効、ログアウトを持つ。
 - 自作のブローカーは、ログインと同意とログアウトの画面、上流の IdP への振り分けと RP の処理、職員の身元を持つ。RP の処理は `go-oidc` と `golang.org/x/oauth2` で書く。
 - web は自社のアプリなので、Hydra のクライアントに `skip_consent` を設定し、同意の画面を出さない。
 - 本番も OSS 版の Hydra を、インフラのリポジトリで運用する。
@@ -44,7 +44,7 @@ ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッ�
 | 選択肢 | 強み | 弱み |
 | --- | --- | --- |
 | **採用:** Hydra に発行を任せ、login and consent app を自作する | 汎用の処理を自分で持たない。業務のデータモデルを製品に合わせなくてよい | Hydra とブローカーの 2 つを動かす。Hydra のメジャーなアップグレードを自分で回す |
-| ブローカーを全て自作する | 依存が少ない | トークンの発行、鍵の回転、失効、refresh token の再利用の検出を持ち続ける |
+| ブローカーを全て自作する | 依存が少ない | トークンの発行、鍵のローテーション、失効、refresh token の再利用の検出を持ち続ける |
 | Keycloak か Zitadel を使う | 上流の IdP の連携と組織を製品が持つ | 事業所と職員のデータモデルを製品に合わせる。Keycloak は JVM の運用が増える |
 | Hydra と Kratos を使う | 上流の IdP の連携を Kratos が持つ | 組織（B2B Organizations）は Kratos の商用版の機能である |
 | access token を opaque にし、API が introspection で確認する | すぐに失効できる | Hydra の可用性が buddy の全体の可用性になる。admin API を 2 つの API に開く |

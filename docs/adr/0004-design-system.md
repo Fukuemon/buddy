@@ -96,12 +96,12 @@ DADS が参照する WCAG 2.2 の AA を基準にし、DADS の指針の値を�
 | 文字でないもののコントラスト | 入力欄と押せる枠の境界、フォーカスの表示が 3:1 以上 | 意味のトークンの組のコントラストを計算する Vitest のテストを置く。axe は枠の色を確認しないため |
 | フォーカスの見え方 | 全ての操作できる要素で `focus-ring` を `:focus-visible` に出す | story の play 関数で Tab キーを押し、フォーカスの位置を確認する |
 | ターゲットの大きさ | ボタンは 44×44 CSS px 以上。S のボタンとアイコンのボタンは、見た目の外に押せる領域を広げる | コンポーネントの Vitest のテストで、押せる領域の大きさを確認する |
-| キーボードの操作 | コンポーネントごとの操作を DESIGN.md のコンポーネントの節に書き、その通りに動く | story の play 関数と Vitest で、キーを押した結果を確認する |
+| キーボードの操作 | コンポーネントごとの操作を DESIGN.md のコンポーネントのセクションに書き、その通りに動く | story の play 関数と Vitest で、キーを押した結果を確認する |
 
 - 出典: [DADS の色](https://design.digital.go.jp/dads/foundations/color/)
 - 出典: [DADS のボタンのアクセシビリティ](https://design.digital.go.jp/dads/components/button/accessibility/)
 
-story をテストとして実行するのは、Storybook の Vitest のアドオンにする。`pnpm --filter @buddy/ui test` が、コンポーネントの単体のテストと story のテストの両方を実行する。
+story をテストとして実行するのは、Storybook の Vitest のアドオンにする。`pnpm --filter @buddy/ui test` が、コンポーネントの単体テストと story のテストの両方を実行する。
 
 ### DADS の指針から外れる 3 点は、理由を DESIGN.md に書いて残す
 
@@ -132,7 +132,7 @@ apps/web は packages/ui に依存するので、依存の向きを変えずに 
 - カタログのページは、はじめに、トークン、コンポーネント、パターン、画面の 5 つに分ける。DADS のサイトと SmartHR Design System のように、原則とトークンとコンポーネントの使い方を読めるサイトにする。
   - 出典: [SmartHR Design System](https://smarthr.design/)
 - title は、ファイルの配置先から機械的に決める。規則は DESIGN.md にある。
-- カタログは、文書のサイトと 1 つの Cloudflare Worker の静的なファイルとして公開し（`/storybook/`）、Cloudflare Access で許可した人だけが開けるようにする。pull request ごとにプレビューを出し、develop に入ったら本番に出す。デプロイの構成は `apps/docs-site/README.md` にある。
+- カタログは、ドキュメントサイトと 1 つの Cloudflare Worker の静的なファイルとして公開し（`/storybook/`）、Cloudflare Access で許可した人だけが開けるようにする。pull request ごとにプレビューを出し、develop に入ったら本番に出す。デプロイの構成は `apps/docs-site/README.md` にある。
 - Access で絞っても、カタログに載せるのはコンポーネントとダミーデータだけにする。許可した人の範囲は変わりうるためである。
 
 ## Considered Options
@@ -159,8 +159,8 @@ apps/web は packages/ui に依存するので、依存の向きを変えずに 
 
 | 選択肢 | 強み | 弱み |
 | --- | --- | --- |
-| **採用:** 文書のサイトと 1 つの Cloudflare Worker にまとめ、Worker の Cloudflare Access で守る | 無料のプランで private のリポジトリから出せる。Access で開ける人を絞れ、プレビューの URL も同じ Access で守れる | Cloudflare のアカウントと Access の設定を保つ必要がある。どちらかを変えると、両方をビルドし直す |
-| 文書のサイトとカタログを、別々の Worker に出す | 変えた方だけを出せる | Worker の作成と Access の設定、URL、プレビューのコメントが 2 つずつになる。文書からカタログへ相対のリンクで行き来できない |
+| **採用:** ドキュメントサイトと 1 つの Cloudflare Worker にまとめ、Worker の Cloudflare Access で守る | 無料のプランで private のリポジトリから出せる。Access で開ける人を絞れ、プレビューの URL も同じ Access で守れる | Cloudflare のアカウントと Access の設定を保つ必要がある。どちらかを変えると、両方をビルドし直す |
+| ドキュメントサイトとカタログを、別々の Worker に出す | 変えた方だけを出せる | Worker の作成と Access の設定、URL、プレビューのコメントが 2 つずつになる。文書からカタログへ相対のリンクで行き来できない |
 | Cloudflare Pages と Access | 静的なサイトの公開の仕組みとして長く使われている | Worker の Access のように、本番とプレビューの URL を 1 つの設定でまとめて守る仕組みが、Pages には文書で確認できなかった。CLI の `cf` は Pages を `cf pages deploy` として、Worker の設定（`cloudflare.config.ts`）と別に扱う |
 | GitHub Pages | GitHub だけで完結する | 無料のプランでは private のリポジトリから出せない。Pro にしても、URL を知る人は誰でも開ける |
 | Chromatic | Storybook のための公開とレビューの仕組みが揃う | 開ける人を絞るには有料のプランが要る。照合と予定のアプリのほかに、サービスの契約が増える |

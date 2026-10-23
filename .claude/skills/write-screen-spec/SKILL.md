@@ -20,12 +20,12 @@ description: 画面仕様書（docs/screens/<画面 ID>_<画面の名前>/ の i
    - 共通の見た目は `docs/screens/_common/wireframe.css` の `wf-*` から探し、無いものだけを書く。配置先は規約の「幅と配置」にある。
    - 構成要素の表に載せる要素に、規約の「構成番号と data-testid」のとおり `data-m` を振る。
    - 開閉式の要素と、開いて初めて見える要素にも `data-m` を振り、開くと出る印を仕様書の状態の説明に書く。
-5. 全てのモックを書いた後に、各要素のインタラクションの節の操作を、規約の「画面の中の操作」の属性でモックに付ける。
+5. 全てのモックを書いた後に、各要素のインタラクションのセクションの操作を、規約の「画面の中の操作」の属性でモックに付ける。
    - 操作ごとに、結果に最も近い状態のモックを `data-go` の先に選ぶ。先が別の画面なら、その画面のモックを指す。
    - 規約が属性を付けないとする操作と、当たる状態のモックが無い操作には付けない。
-6. `index.md` を、規約の「仕様書のページ」の節の順で書く。
-   - 要素ごとの節の「値のソース」は、画面に出る文言を「」で引く。実装と PRD が食い違うときは、推測で埋めず、未決に書く。
-   - カタログの欄の story は、規約の「要素ごとの節」の選び方で選ぶ。候補は `rg -n "^  title:|^export const" -g '*.stories.tsx' apps/web/src packages/ui/src` で探す。story の ID は、`pnpm --filter @buddy/web storybook` で開いた URL の `path=/story/` の後ろで確認する。
+6. `index.md` を、規約の「仕様書のページ」のセクションの順で書く。
+   - 要素ごとのセクションの「値のソース」は、画面に出る文言を「」で引く。実装と PRD が食い違うときは、推測で埋めず、未決に書く。
+   - カタログの欄の story は、規約の「要素ごとのセクション」の選び方で選ぶ。候補は `rg -n "^  title:|^export const" -g '*.stories.tsx' apps/web/src packages/ui/src` で探す。story の ID は、`pnpm --filter @buddy/web storybook` で開いた URL の `path=/story/` の後ろで確認する。
 7. `api.md` に、要素ごとの web の型の項目（`apps/web/src/api/types.ts`）と OpenAPI の項目（`services/*/openapi.yaml` の operationId と項目）を書く。
 8. `zensical.toml` の `nav` に `index.md` を足す。
 9. 下の「確認する」を行う。

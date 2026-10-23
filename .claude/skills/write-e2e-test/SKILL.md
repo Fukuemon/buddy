@@ -11,8 +11,8 @@ E2E のテストのコードを、落ちにくく、直す場所が 1 か所で�
 
 ## 始める前に読むもの
 
-- `context/conventions.md` の E2E の節。testid の命名、固定の待ちを許すファイル、画面 ID の形が書いてある。食い違うときは、context に従う
-- `context/testing.md` の E2E の節。流すコマンド、project、環境
+- `context/conventions.md` の E2E のセクション。testid の命名、固定の待ちを許すファイル、画面 ID の形が書いてある。食い違うときは、context に従う
+- `context/testing.md` の E2E のセクション。流すコマンド、project、環境
 - 同じ画面を触る、既にある spec を 1 本
 
 ## 層
@@ -68,7 +68,7 @@ E2E のテストのコードを、落ちにくく、直す場所が 1 か所で�
 - 既にあるテストから操作の列をコピーするときは、その操作が初期値に対して何をするかを先に確認する。レスポンスが条件によらず同じなら、リクエストの中身を確認する。
 - 共通のコンポーネントに渡した testid で入力の値を確認するときは、testid を起点に中の `input` か `select` に辿る。`select` の「空であること」は値で確認する。
 
-次の場面では、[references/situations.md](references/situations.md) の該当の節を読む。
+次の場面では、[references/situations.md](references/situations.md) の該当のセクションを読む。
 
 - 新しいタブを開く画面を確認する
 - 一定の間隔で取り直す画面や、日付で表示が変わる画面を確認する
@@ -95,6 +95,6 @@ spec に時間を書かない。全体と project の時間は Playwright の設
 
 ## 書いたら
 
-1. `context/testing.md` の E2E の節にある lint と型のチェックを流す。
+1. `context/testing.md` の E2E のセクションにある lint と型のチェックを流す。
 2. 書いた spec を 1 本だけ流す。
 3. 期待を一時的に逆にして、落ちることを確認してから戻す。落ちなければ、確認の方法を直す。

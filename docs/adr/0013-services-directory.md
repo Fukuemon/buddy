@@ -6,17 +6,17 @@
 
 ## Context
 
-2 つの Go の API は `apps/schedule-api` と `apps/receipt-api` にあり、画面（`apps/web`）と文書のサイト（`apps/docs-site`）と同じ `apps/` に並んでいた。
+2 つの Go の API は `apps/schedule-api` と `apps/receipt-api` にあり、画面（`apps/web`）とドキュメントサイト（`apps/docs-site`）と同じ `apps/` に並んでいた。
 
 - ディレクトリの名前は `-api` の接尾辞で API であることを表している。接尾辞だけを外して `apps/schedule` にすると、web にも予定と照合の機能があるので、API か画面かが名前から分からない。
 - リリースのタグは、ディレクトリと 1 対 1 に対応させる `apps/<アプリ>/vX.Y.Z` の形と決めている。ディレクトリを変えると、タグの形も決め直す必要がある。
   - ADR-0003: [git flow でマージし、アプリごとのバージョンでリリースする](0003-branch-and-release.md)
-- compose のサービス名、トークンの `aud`、テーブル定義書の出力先、文書のサイトの API の仕様のページは、`schedule-api` と `receipt-api` の名前で指している。
+- compose のサービス名、トークンの `aud`、テーブル定義書の出力先、ドキュメントサイトの API の仕様のページは、`schedule-api` と `receipt-api` の名前で指している。
 - 予定の API と照合の API はまだリリースしておらず、リリースのタグも無い。
 
 ## Decision
 
-画面と BFF、文書のサイトは `apps/` に、Go の API は `services/` に置く。API のディレクトリは、接尾辞を付けず機能の名前にする（`services/schedule`、`services/receipt`）。共有のコードは今と同じく `packages/` に置く。
+画面と BFF、ドキュメントサイトは `apps/` に、Go の API は `services/` に置く。API のディレクトリは、接尾辞を付けず機能の名前にする（`services/schedule`、`services/receipt`）。共有のコードは今と同じく `packages/` に置く。
 
 - 理由: トップのディレクトリで画面と API が分かれるので、同じ機能の名前を使っても区別できる。Go の module のパスも `github.com/Fukuemon/buddy/services/schedule` と短くなる。
 - タグは `<ディレクトリ>/vX.Y.Z` の形にする（`apps/web/v1.0.0`、`services/schedule/v1.0.0`）。ディレクトリとタグを 1 対 1 に対応させる ADR-0003 の方針を保つ。リリースのタグがまだ無いので、付け直すタグは無い。

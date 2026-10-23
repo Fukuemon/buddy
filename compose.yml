@@ -255,7 +255,7 @@ services:
       BROKER_URL: http://broker:8081
       BROKER_TOKEN_URL: http://hydra:4444/oauth2/token
       BROKER_CLIENT_SECRET: schedule-dev
-      # web と、API の仕様のページでリクエストを試すローカル環境の文書のサイト（zensical serve）に許す
+      # web と、API の仕様のページでリクエストを試すローカル環境のドキュメントサイト（zensical serve）に許す
       CORS_ALLOW_ORIGINS: http://localhost:${WEB_PORT:-3000},http://localhost:8000
       # 事業所の組織と、ダミーのサービスアカウントの対応
       GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE: /config/google-calendar-service-accounts.json
@@ -290,7 +290,7 @@ services:
     environment:
       OIDC_ISSUER: http://hydra:4444
       OIDC_AUDIENCE: receipt
-      # API の仕様のページでリクエストを試すローカル環境の文書のサイト（zensical serve）に許す
+      # API の仕様のページでリクエストを試すローカル環境のドキュメントサイト（zensical serve）に許す
       CORS_ALLOW_ORIGINS: http://localhost:8000
       # 照合の対象の森のカレンダーと、予定の API と同じダミーのサービスアカウントの対応
       GOOGLE_CALENDARS_FILE: /config/receipt-calendars.json

@@ -126,7 +126,7 @@ route は `src/routes/` のファイルから TanStack Router が生成する。
 - 画面は、予定の API の Google カレンダーの操作を `BuddyApi`（`src/api/client.ts`）の `calendars` で呼ぶ。結び付けたカレンダー、取り込みのプレビューと結果、書き出しの型は、予定の API の型をそのまま使う（`src/api/types.ts`）。
 - フェイクの API（`fake`）は、ID の末尾が `@example.com` のカレンダーだけを読めるものとして扱う（`src/api/fake/fakeBuddyApi.ts`）。
 
-## 文書
+## ドキュメント
 
 - [画面仕様書](../../docs/screens/index.md): 画面ごとの表示と操作、構成要素の `data-testid`
 - [全体の Design Doc](../../docs/design/DesignDoc.md): 画面と BFF の責務、認証とセッション

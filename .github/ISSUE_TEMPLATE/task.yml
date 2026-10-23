@@ -21,7 +21,7 @@ body:
     id: design
     attributes:
       label: 対応方針
-      description: どう対応するかを文で書く。根拠になる Design Doc や ADR の節は、文の直後にリンクで示す
+      description: どう対応するかを文で書く。根拠になる Design Doc や ADR のセクションは、文の直後にリンクで示す
     validations:
       required: true
   - type: textarea

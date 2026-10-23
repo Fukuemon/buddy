@@ -87,7 +87,7 @@ DADS のキーの色は、light-blue に当て直している。`primary` と `p
 | `text-body-dense` | Dns-16N-130 | 表のセル、入力欄の値、選択肢の文字 |
 | `text-body` | Std-16N-170 | 本文。`body` のデフォルト |
 | `text-label` | Oln-16B-100 | ボタン、切り替えの選択肢 |
-| `text-heading-sm` | Std-18B-160 | 節の見出し、ダイアログのタイトル、ロゴ |
+| `text-heading-sm` | Std-18B-160 | セクションの見出し、ダイアログのタイトル、ロゴ |
 | `text-heading-md` | Std-20B-150 | 画面の見出し、画面全体の待ちの文 |
 
 - 出典: [DADS のタイポグラフィ](https://design.digital.go.jp/dads/foundations/typography/)
@@ -178,7 +178,7 @@ title は、ファイルの配置先から機械的に決め、story を作る�
 
 ### カタログに載せてよいもの
 
-カタログは文書のサイトの `/storybook/` として Cloudflare に公開し、Cloudflare Access で許可した人だけが開ける（`apps/docs-site/README.md`）。許可した人の範囲は変わりうるので、story と MDX には、コンポーネントとダミーデータだけを載せる。
+カタログはドキュメントサイトの `/storybook/` として Cloudflare に公開し、Cloudflare Access で許可した人だけが開ける（`apps/docs-site/README.md`）。許可した人の範囲は変わりうるので、story と MDX には、コンポーネントとダミーデータだけを載せる。
 
 - 利用者と職員の名前、事業所、予定は、`青木 一郎` のようなダミーの値にする。実際の画面やデータベースからコピーしない。
 - API を呼ぶ story を作らない。データは story の中か、ダミーデータのファイルから渡す。

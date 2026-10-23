@@ -32,9 +32,9 @@ status: stable
 
 コメントの書き方は、スキル write-comments に従う。言語は日本語の常体にする。
 
-- Go は、文書コメントの有無を `services/receipt`、`services/schedule`、`services/broker`、`packages/go` の revive（`exported`、`package-comments`）で確認する。生成物（`// Code generated ... DO NOT EDIT.` のファイル）とテストは、revive が対象にしない。
-- TypeScript は、文書コメントの有無を、ルートの `vite.config.ts` の `lint` で確認する。Oxlint の jsdoc のプラグインに require-jsdoc が無いので、eslint-plugin-jsdoc を `jsPlugins` で読ませる。対象は export する関数、クラス、型で、名前が `Props` で終わる型は除く。Props の型は、コンポーネントの文書コメントが説明するからである。生成物は lint の対象から外してある。呼び出しで包んで作る関数（`createServerFn(...)`、`memo(...)`）と、クラスのメソッドは確認しない。確認するのは web、ui、e2e の check である。
-- Go の文書コメントは、`// Package <名前> は、…。`、`// <名前> は、…。` の形で書く。
+- Go は、ドキュメントコメントの有無を revive（`exported`、`package-comments`）で確認する。対象は `services/receipt`、`services/schedule`、`services/broker`、`packages/go` である。生成物（`// Code generated ... DO NOT EDIT.` のファイル）とテストは、revive が対象にしない。
+- TypeScript は、ドキュメントコメントの有無を、ルートの `vite.config.ts` の `lint` で確認する。Oxlint の jsdoc のプラグインに require-jsdoc が無いので、eslint-plugin-jsdoc を `jsPlugins` で読ませる。対象は export する関数、クラス、型で、名前が `Props` で終わる型は除く。Props の型は、コンポーネントのドキュメントコメントが説明するからである。生成物は lint の対象から外してある。呼び出しで包んで作る関数（`createServerFn(...)`、`memo(...)`）と、クラスのメソッドは確認しない。確認するのは web、ui、e2e の check である。
+- Go のドキュメントコメントは、`// Package <名前> は、…。`、`// <名前> は、…。` の形で書く。
 - 外部の制約を書く実装のコメントには、出典の URL を添える。
 
 ## Documents
@@ -42,12 +42,12 @@ status: stable
 文書の書き方は、スキル write-prose と write-design-docs に従う。buddy だけの規則は次のとおり。
 
 - PRD は `docs/PRD.md`、全体の Design Doc は `docs/design/`、ADR は `docs/adr/`、画面仕様書は `docs/screens/` に置き、Zensical のサイトで読む。Design Doc と ADR の配置先は `context/project.yml` の `docs` と同じにする。
-- アプリとパッケージの README は、「セットアップ、起動する、テストとチェック、コードの生成、文書」の順に見出しを置き、当てはまらない節は省く。
+- アプリとパッケージの README は、「セットアップ、起動する、テストとチェック、コードの生成、ドキュメント」の順に見出しを置き、当てはまらないセクションは省く。
 - 機能ごとの Design Doc は、コードの隣（`services/<API>/DesignDoc.md`、`packages/<パッケージ>/DesignDoc.md`）に置く。サイトには、`docs/design/services/` か `docs/design/packages/` のファイル単位のシンボリックリンクで載せる。リンク先は `zensical.toml` の `watch` にも並べる。
 - 機能ごとの Design Doc と ADR から `docs/`、`apps/`、`services/` の文書へのリンクは、GitHub の `develop` の URL で書く。相対リンクは、GitHub とサイトで指す先が変わり、どちらかで切れる。
 - 技術用語は、一般的なカタカナ語か英語で書き、和語に言い換えない（テーブル、カラム、マージ、リクエスト、レスポンス、デフォルト、ローカル環境）。業務の機能の名前（予定の取り込み、予定の書き出し、結び付け）は和語のまま書く。言い換えの一覧は `prh.yml` にある。
 - 見出しのアンカーは、日本語のまま残す（`zensical.toml` の toc の slugify）。見出しを変えるときは、ほかの文書からのリンクを探して直す。
-- 画面仕様書の画面 ID の規則は [画面仕様書の目次](../docs/screens/index.md) の「画面の ID の規則」に、ページの節の規則は [画面仕様書の規約](../docs/screens/rules.md) の「仕様書のページ」にある。
+- 画面仕様書の画面 ID の規則は [画面仕様書の目次](../docs/screens/index.md) の「画面の ID の規則」に、ページのセクションの規則は [画面仕様書の規約](../docs/screens/rules.md) の「仕様書のページ」にある。
 - 文章のチェックは textlint で、業務の用語「照合」「正本」を許す語にしている（`.textlintrc.json`）。
 
 ## Shared Configuration

@@ -12,7 +12,7 @@ status: draft
 buddy は、訪問看護の事業所の職員が使う、予定の管理とレセプトの照合のアプリである。  
 職員はブラウザで web を開き、web が予定の API と照合の API を呼ぶ。  
 誰のどの課題を解くかと、提供する機能と画面は [PRD](../PRD.md) にある。  
-文書のサイトとカタログのデプロイの構成（`apps/docs-site`）は、[apps/docs-site/README.md](https://github.com/Fukuemon/buddy/blob/develop/apps/docs-site/README.md) にある。
+ドキュメントサイトとカタログのデプロイの構成（`apps/docs-site`）は、[apps/docs-site/README.md](https://github.com/Fukuemon/buddy/blob/develop/apps/docs-site/README.md) にある。
 
 ## Goals and Non-Goals
 
@@ -109,7 +109,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 
 ### ID ブローカーと Hydra
 
-- Hydra は、認可コード、トークンの発行、JWKS、refresh token の回転を持つ。web と 2 つの API から見える Issuer は Hydra だけである。
+- Hydra は、認可コード、トークンの発行、JWKS、refresh token のローテーションを持つ。web と 2 つの API から見える Issuer は Hydra だけである。
 - ブローカーは、Hydra の login and consent app として、ログインと同意の画面を持つ。入れたメールから職員と事業所を決め、事業所の上流の IdP へ RP としてリダイレクトし、上流のアカウントを職員に結び付ける。
 - ブローカーは、職員の ID、メール、所属の事業所、有効か休職か退職か、上流のアカウントを持つ。access token の `sub` は職員の ID で、予定の API の `users.sub` に入る。
 - 持たないもの: 職員の名前、役職、権限。予定の API が持つ。
@@ -144,7 +144,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 - ブラウザと web: HTTPS でつなぐ。
   - cookie にはセッションの ID を入れ、トークンは入れない。
   - 画面の操作は、web のサーバーの関数（BFF）を呼ぶ。API はブラウザから直接は呼ばれない。
-  - 例外は、開発者がローカルで文書のサイトの API の仕様のページから、ローカルの API を試すときだけである。API は `CORS_ALLOW_ORIGINS` に挙げたオリジンにだけ CORS のヘッダーを返し、ローカルの compose は、web とローカルの文書のサイトのオリジンを挙げる。
+  - 例外は、開発者がローカルでドキュメントサイトの API の仕様のページから、ローカルの API を試すときだけである。API は `CORS_ALLOW_ORIGINS` に挙げたオリジンにだけ CORS のヘッダーを返し、ローカルの compose は、web とローカルのドキュメントサイトのオリジンを挙げる。
 - ブラウザと Hydra とブローカー: ログインのときに、web がブラウザを Hydra の認可の画面へリダイレクトし、Hydra がブローカーのログインの画面へリダイレクトする。ブローカーは、職員の事業所の上流の IdP へリダイレクトする。
   - ログアウトのときは、web が自分のセッションを消してから、ブラウザを Hydra の RP-Initiated Logout へ ID token を添えてリダイレクトする。Hydra はブローカーのログアウトの画面を呼んでログインのセッションを消し、web の / へ戻す。上流の IdP のセッションは消さない。
 - web と Hydra: 認可コードフローでトークンを取得し、更新する。トークンは Valkey のセッションに置く。
@@ -268,7 +268,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 .
 ├── apps/
 │   ├── web/             # TanStack Start、React、Vite+
-│   └── docs-site/       # 文書のサイトとカタログを公開する Cloudflare Worker
+│   └── docs-site/       # ドキュメントサイトとカタログを公開する Cloudflare Worker
 ├── services/
 │   ├── schedule/        # 予定の API。Go、gin、sqlc、golang-migrate
 │   │   ├── DesignDoc.md # 予定の管理の Design Doc

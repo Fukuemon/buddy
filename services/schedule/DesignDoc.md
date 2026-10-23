@@ -64,7 +64,7 @@ verified_commit: 961beb1
 
 ### テーブルの構成
 
-次の図は、予定の API の全てのテーブルと、その間の関係を示す。カラム、制約、インデックスは、マイグレーションから生成した[テーブル定義書](https://github.com/Fukuemon/buddy/blob/develop/docs/db/schedule/README.md)（文書のサイトでは「DB の設計」の「テーブルの一覧」）にある。テーブル定義書の Viewpoints は、事業所と組織、職員と権限、利用者、予定と訪問、繰り返しの予定、外部のカレンダーの取り込みと書き出しの観点ごとに、テーブルを絞った ER 図を持つ。  
+次の図は、予定の API の全てのテーブルと、その間の関係を示す。カラム、制約、インデックスは、マイグレーションから生成した[テーブル定義書](https://github.com/Fukuemon/buddy/blob/develop/docs/db/schedule/README.md)（ドキュメントサイトでは「DB の設計」の「テーブルの一覧」）にある。テーブル定義書の Viewpoints は、事業所と組織、職員と権限、利用者、予定と訪問、繰り返しの予定、外部のカレンダーの取り込みと書き出しの観点ごとに、テーブルを絞った ER 図を持つ。  
 DB は PostgreSQL 18 で、見直したテーブルは初期のマイグレーションで作り、書き出しと同期のカラムとテーブルは段階ごとのマイグレーションで足す（ADR-0011）。テーブルとカラムの説明は、マイグレーションの `COMMENT ON` に書く。
 
 - ADR-0011: [予定の API の DB を PostgreSQL にし、見直したテーブルでマイグレーションを作り直す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0011-schedule-api-postgresql.md)
