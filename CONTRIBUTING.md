@@ -61,7 +61,7 @@ apm lifecycle trust
 docker compose up --build --wait
 ```
 
-`--wait` は、全てのサービスのヘルスチェックが通るまで待つ。予定の API とブローカーは、起動の前にマイグレーションとシードを適用する。シードは、予定の API では事業所が、ブローカーでは職員が既にあれば適用しない。Hydra は起動の前にマイグレーションを適用し、初期化のコンテナが web と予定の API のクライアントを登録する。
+`--wait` は、全てのサービスのヘルスチェックが通るまで待つ。予定の API とブローカーは、起動の前にマイグレーションとシードを適用する。シードは、予定の API では事業所が、ブローカーでは職員が既にあれば適用しない。Hydra は起動の前にマイグレーションを適用し、初期化のコンテナが web と予定の API のクライアントを登録する。Hydra は、トークンを発行するたびに、ブローカーで職員が止まっていないかを確認する。
 
 ポートは `127.0.0.1` にだけ公開する。
 
@@ -71,6 +71,7 @@ docker compose up --build --wait
 | schedule | `http://localhost:8080` | `SCHEDULE_PORT` |
 | receipt | `http://localhost:8090` | `RECEIPT_PORT` |
 | broker（ログインの画面） | `http://localhost:8100` | `BROKER_PORT` |
+| broker（内部の API と token_hook。E2E が呼ぶ） | `http://localhost:8101` | `BROKER_INTERNAL_PORT` |
 | hydra（public API と admin API） | `http://localhost:4444`、`http://localhost:4445` | `HYDRA_PUBLIC_PORT`、`HYDRA_ADMIN_PORT` |
 | idp（上流の IdP のフェイク。事業所ごとに `/office-a`、`/office-b`） | `http://localhost:9000` | `IDP_PORT` |
 | postgres | `localhost:15432` | `POSTGRES_PORT` |
@@ -91,7 +92,9 @@ docker compose up --build --wait
 - 照合の API は、calendarpit の森 健太のカレンダーを読む。読むカレンダーは `compose/receipt-calendars.json` にある。
   - 照合の画面で、予定の取り方に「Google カレンダー」を、対象の月に `2026-11` を選ぶと、`compose/calendarpit/fixture.json` の森のその月の予定で照合できる。
 - データを消して最初からにするときは、`docker compose down -v` で PostgreSQL と calendarpit のボリュームを消す。
-- 別の worktree で同時に起動するときは、`docker compose -p <名前> up --build --wait` でプロジェクトの名前を変え、上の表の環境変数でポートをずらす。コンテナ、ボリューム、予定の API のイメージがプロジェクトごとに分かれる。E2E は `E2E_BASE_URL`、`E2E_CALENDARPIT_URL`、`E2E_GCALHOLD_URL`、`E2E_HYDRA_URL` を合わせて流す。
+- 別の worktree で同時に起動するときは、`docker compose -p <名前> up --build --wait` でプロジェクトの名前を変え、上の表の環境変数でポートをずらす。コンテナ、ボリューム、予定の API のイメージがプロジェクトごとに分かれる。E2E は、URL の環境変数をずらしたポートに合わせて流す。
+  - 画面と外部のサービスの URL は、`E2E_BASE_URL`、`E2E_CALENDARPIT_URL`、`E2E_GCALHOLD_URL`、`E2E_HYDRA_URL` で合わせる。
+  - API とブローカーの URL は、`E2E_SCHEDULE_URL`、`E2E_BROKER_URL`、`E2E_BROKER_INTERNAL_URL` で合わせる。
 
 予定の API を手で呼ぶときは、`compose/dev-token.sh` でトークンを取る。ブラウザの代わりに、Hydra、ブローカー、上流の IdP のフェイクの画面を curl で順に通り、引数のメールの職員の access token を書く。ポートを変えて起動したときは、同じ環境変数を渡す。
 

@@ -125,7 +125,7 @@ SELECT u.id, u.sub, u.username, u.email, u.phone_number, u.facility_id,
        u.department_id, d.name AS department_name,
        u.team_id, t.name AS team_name,
        u.position_id, p.name AS position_name,
-       u.created_at, u.updated_at
+       u.suspended_at, u.created_at, u.updated_at
 FROM users u
 JOIN departments d ON d.id = u.department_id
 JOIN teams t ON t.id = u.team_id
@@ -146,6 +146,7 @@ type GetUserRow struct {
 	TeamName       string
 	PositionID     string
 	PositionName   string
+	SuspendedAt    *time.Time
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
@@ -166,6 +167,7 @@ func (q *Queries) GetUser(ctx context.Context, id string) (GetUserRow, error) {
 		&i.TeamName,
 		&i.PositionID,
 		&i.PositionName,
+		&i.SuspendedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -199,23 +201,6 @@ func (q *Queries) GetUserRef(ctx context.Context, id string) (GetUserRefRow, err
 	var i GetUserRefRow
 	err := row.Scan(&i.ID, &i.FacilityID, &i.TeamID)
 	return i, err
-}
-
-const linkUserSub = `-- name: LinkUserSub :exec
-UPDATE users SET sub = $1
-WHERE facility_id = $2 AND email = $3 AND sub IS NULL
-`
-
-type LinkUserSubParams struct {
-	Sub        *string
-	FacilityID string
-	Email      string
-}
-
-// 条件の sub IS NULL で、同時に来た初回のログインのうち 1 つだけが書く。email は小文字にそろえて渡す。
-func (q *Queries) LinkUserSub(ctx context.Context, arg LinkUserSubParams) error {
-	_, err := q.db.Exec(ctx, linkUserSub, arg.Sub, arg.FacilityID, arg.Email)
-	return err
 }
 
 const listUserPolicies = `-- name: ListUserPolicies :many
@@ -329,7 +314,7 @@ SELECT u.id, u.sub, u.username, u.email, u.phone_number, u.facility_id,
        u.department_id, d.name AS department_name,
        u.team_id, t.name AS team_name,
        u.position_id, p.name AS position_name,
-       u.created_at, u.updated_at
+       u.suspended_at, u.created_at, u.updated_at
 FROM users u
 JOIN departments d ON d.id = u.department_id
 JOIN teams t ON t.id = u.team_id
@@ -371,6 +356,7 @@ type ListUsersByFacilityRow struct {
 	TeamName       string
 	PositionID     string
 	PositionName   string
+	SuspendedAt    *time.Time
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
@@ -404,6 +390,7 @@ func (q *Queries) ListUsersByFacility(ctx context.Context, arg ListUsersByFacili
 			&i.TeamName,
 			&i.PositionID,
 			&i.PositionName,
+			&i.SuspendedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -415,6 +402,19 @@ func (q *Queries) ListUsersByFacility(ctx context.Context, arg ListUsersByFacili
 		return nil, err
 	}
 	return items, nil
+}
+
+const suspendUser = `-- name: SuspendUser :execrows
+UPDATE users SET suspended_at = coalesce(suspended_at, now()) WHERE id = $1
+`
+
+// 止めた職員を止め直しても、最初に止めた時刻を残す。
+func (q *Queries) SuspendUser(ctx context.Context, id string) (int64, error) {
+	result, err := q.db.Exec(ctx, suspendUser, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const updateUserPosition = `-- name: UpdateUserPosition :exec

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"testing"
@@ -12,6 +13,8 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
+
+	"github.com/Fukuemon/buddy/services/broker/db"
 )
 
 // testImage は、compose と CI と同じ PostgreSQL のイメージである。
@@ -74,11 +77,21 @@ func migrated(t *testing.T) *pgxpool.Pool {
 	}
 	t.Cleanup(func() {
 		pool.Close()
-		if err := MigrateDown(testConfig, 1); err != nil {
+		if err := MigrateDown(testConfig, migrations(t)); err != nil {
 			t.Error(err)
 		}
 	})
 	return pool
+}
+
+// migrations は、db.Migrations にあるマイグレーションの版の数を返す。
+func migrations(t *testing.T) int {
+	t.Helper()
+	ups, err := fs.Glob(db.Migrations, "migrations/*.up.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return len(ups)
 }
 
 const (
@@ -108,10 +121,11 @@ func TestSchema(t *testing.T) {
 		args       []any
 		constraint string
 	}{
-		{"別の事業所なら同じメールを登録できる", `INSERT INTO staff (id, org_id, email) VALUES ($1, 'org-b', 'aoki@example.com')`, []any{staffB}, ""},
-		{"事業所の中でメールが重なる", `INSERT INTO staff (id, org_id, email) VALUES ($1, 'org-a', 'aoki@example.com')`, []any{staffB}, "staff_org_email_key"},
+		{"事業所の中でメールが重なる", `INSERT INTO staff (id, org_id, email) VALUES ($1, 'org-a', 'aoki@example.com')`, []any{staffB}, "staff_email_key"},
+		{"別の事業所でもメールが重なる", `INSERT INTO staff (id, org_id, email) VALUES ($1, 'org-b', 'aoki@example.com')`, []any{staffB}, "staff_email_key"},
 		{"大文字を含むメール", `INSERT INTO staff (id, org_id, email) VALUES ($1, 'org-a', 'Aoki@example.com')`, []any{staffB}, "staff_email_lower_check"},
-		{"状態が有効と停止のどちらでもない", `UPDATE staff SET status = 'deleted' WHERE id = $1`, []any{staffA}, "staff_status_check"},
+		{"登録の途中の状態", `UPDATE staff SET status = 'pending' WHERE id = $1`, []any{staffA}, ""},
+		{"状態が登録の途中、有効、停止のどれでもない", `UPDATE staff SET status = 'deleted' WHERE id = $1`, []any{staffA}, "staff_status_check"},
 		{"ULID の形でない職員の ID", `INSERT INTO staff (id, org_id, email) VALUES ('staff-1', 'org-a', 'kato@example.com')`, nil, "staff_id_check"},
 		{"空の組織の ID", `INSERT INTO staff (id, org_id, email) VALUES ($1, '', 'kato@example.com')`, []any{staffB}, "staff_org_id_check"},
 		{"1 人の職員に 2 つ目の上流のアカウント", `INSERT INTO upstream_accounts (staff_id, iss, sub) VALUES ($1, 'https://idp.example.com', 'sub-x')`, []any{staffA}, "upstream_accounts_pkey"},

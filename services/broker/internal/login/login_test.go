@@ -238,6 +238,7 @@ func TestShowLoginSkip(t *testing.T) {
 	}{
 		{"有効な職員", login.StatusActive, "http://hydra/login-accepted"},
 		{"止めた職員", login.StatusSuspended, "http://hydra/login-rejected"},
+		{"登録の途中の職員", login.StatusPending, "http://hydra/login-rejected"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			e := newEnv(10)
@@ -279,6 +280,11 @@ func TestSubmitEmailRejects(t *testing.T) {
 		{"止めた職員", "aoki@example.com", func(s *fakeStaff) {
 			m := s.members[aokiID]
 			m.Status = login.StatusSuspended
+			s.members[aokiID] = m
+		}},
+		{"登録の途中の職員", "aoki@example.com", func(s *fakeStaff) {
+			m := s.members[aokiID]
+			m.Status = login.StatusPending
 			s.members[aokiID] = m
 		}},
 		{"2 つの事業所に同じメール", "aoki@example.com", func(s *fakeStaff) {

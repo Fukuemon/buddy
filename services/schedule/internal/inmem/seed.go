@@ -23,13 +23,16 @@ const (
 	NormalTypeID    = "NORMAL"
 	VisitTypeID     = "VISIT"
 	RecurringID     = "RECURRING"
+	// OrgID と OtherOrgID は、2 つの事業所の認証の組織の ID である。
+	OrgID      = "org-a"
+	OtherOrgID = "org-b"
 )
 
 // Seeded は、2 つの事業所と、その職員、利用者、訪問の情報のマスタ、予定の種類、繰り返しの予定を入れた Store を返す。
 func Seeded() *Store {
 	s := NewStore()
-	s.Facilities[FacilityID] = organization.Facility{ID: FacilityID}
-	s.Facilities[OtherFacilityID] = organization.Facility{ID: OtherFacilityID}
+	s.Facilities[FacilityID] = organization.Facility{ID: FacilityID, OrgID: OrgID}
+	s.Facilities[OtherFacilityID] = organization.Facility{ID: OtherFacilityID, OrgID: OtherOrgID}
 	for id, fid := range map[string]string{StaffID: FacilityID, CompanionID: FacilityID, OtherStaffID: OtherFacilityID} {
 		s.Staff[id] = staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: id, FacilityID: fid}}}
 	}

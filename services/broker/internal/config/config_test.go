@@ -22,6 +22,8 @@ func baseEnv() map[string]string {
 		"UPSTREAM_IDPS_FILE":               "/config/upstream-idps.json",
 		"UPSTREAM_IDP_CLIENT_SECRETS_FILE": "/secrets/upstream-idp-client-secrets.json",
 		"PUBLIC_URL":                       "https://login.example.com",
+		"HYDRA_ISSUER":                     "http://hydra:4444",
+		"TOKEN_HOOK_KEY":                   "hook-key",
 	}
 }
 
@@ -33,12 +35,15 @@ func TestLoad(t *testing.T) {
 	m["UPSTREAM_IDP_BROWSER_ORIGIN"] = "http://localhost:9000"
 	m["CLIENT_IP_HEADER"] = "X-Forwarded-For"
 	m["AUTO_CONSENT_CLIENTS"] = "web, admin,"
+	m["INTERNAL_PORT"] = "9090"
+	m["INTERNAL_API_CLIENTS"] = "schedule, receipt"
 	c, err := config.Load(env(m))
 	if err != nil {
 		t.Fatal(err)
 	}
 	want := config.Config{
 		Port:                      "8080",
+		InternalPort:              "9090",
 		LogLevel:                  slog.LevelDebug,
 		DB:                        config.DB{Host: "localhost", Port: "5432", User: "broker", Password: "secret", Name: "broker"},
 		HydraAdminURL:             "http://hydra:4445",
@@ -48,19 +53,26 @@ func TestLoad(t *testing.T) {
 		UpstreamBrowserOrigin:     "http://localhost:9000",
 		ClientIPHeader:            "X-Forwarded-For",
 		AutoConsentClients:        []string{"web", "admin"},
+		HydraIssuer:               "http://hydra:4444",
+		InternalAPIAudience:       "broker",
+		InternalAPIClients:        []string{"schedule", "receipt"},
+		TokenHookKey:              "hook-key",
 	}
 	if !reflect.DeepEqual(c, want) {
 		t.Errorf("got %+v, want %+v", c, want)
 	}
 }
 
-func TestLoadDefaultAutoConsentClients(t *testing.T) {
+func TestLoadDefaults(t *testing.T) {
 	c, err := config.Load(env(baseEnv()))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !slices.Equal(c.AutoConsentClients, []string{"web"}) || c.ClientIPHeader != "" {
 		t.Errorf("AutoConsentClients = %v, ClientIPHeader = %q", c.AutoConsentClients, c.ClientIPHeader)
+	}
+	if c.InternalPort != "8081" || !slices.Equal(c.InternalAPIClients, []string{"schedule"}) {
+		t.Errorf("InternalPort = %q, InternalAPIClients = %v", c.InternalPort, c.InternalAPIClients)
 	}
 }
 
@@ -80,11 +92,14 @@ func TestLoadErrors(t *testing.T) {
 		set  map[string]string
 		want string
 	}{
-		{"必須の値が無い", map[string]string{"DB_PASSWORD": "", "HYDRA_ADMIN_URL": " ", "UPSTREAM_IDPS_FILE": "", "UPSTREAM_IDP_CLIENT_SECRETS_FILE": "", "PUBLIC_URL": ""},
-			"DB_PASSWORD、HYDRA_ADMIN_URL、UPSTREAM_IDPS_FILE、UPSTREAM_IDP_CLIENT_SECRETS_FILE、PUBLIC_URL"},
+		{"必須の値が無い", map[string]string{"DB_PASSWORD": "", "HYDRA_ADMIN_URL": " ", "HYDRA_ISSUER": "", "UPSTREAM_IDPS_FILE": "", "UPSTREAM_IDP_CLIENT_SECRETS_FILE": "", "PUBLIC_URL": "", "TOKEN_HOOK_KEY": ""},
+			"DB_PASSWORD、HYDRA_ADMIN_URL、HYDRA_ISSUER、UPSTREAM_IDPS_FILE、UPSTREAM_IDP_CLIENT_SECRETS_FILE、PUBLIC_URL、TOKEN_HOOK_KEY"},
 		{"ポートが数でない", map[string]string{"PORT": "http"}, "ポート"},
+		{"内部のポートが数でない", map[string]string{"INTERNAL_PORT": "x"}, "ポート"},
+		{"内部のポートが画面のポートと同じ", map[string]string{"PORT": "8081"}, "INTERNAL_PORT"},
 		{"DB のポートが範囲の外", map[string]string{"DB_PORT": "70000"}, "ポート"},
 		{"HYDRA_ADMIN_URL が URL でない", map[string]string{"HYDRA_ADMIN_URL": "hydra:4445"}, "HYDRA_ADMIN_URL"},
+		{"HYDRA_ISSUER が URL でない", map[string]string{"HYDRA_ISSUER": "hydra"}, "HYDRA_ISSUER"},
 		{"PUBLIC_URL が URL でない", map[string]string{"PUBLIC_URL": "/login"}, "PUBLIC_URL"},
 		{"UPSTREAM_IDP_BROWSER_ORIGIN が URL でない", map[string]string{"UPSTREAM_IDP_BROWSER_ORIGIN": "localhost:9000"}, "UPSTREAM_IDP_BROWSER_ORIGIN"},
 		{"LOG_LEVEL が不正", map[string]string{"LOG_LEVEL": "verbose"}, "LOG_LEVEL"},

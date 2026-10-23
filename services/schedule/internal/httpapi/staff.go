@@ -17,6 +17,7 @@ type StaffUsecase interface {
 	ChangePosition(ctx context.Context, id, positionID string) (staff.Detail, error)
 	AddGrant(ctx context.Context, id string, in staff.GrantInput) (staff.Detail, error)
 	RemoveGrant(ctx context.Context, id, userPolicyID string) (staff.Detail, error)
+	Suspend(ctx context.Context, id string) (staff.Detail, error)
 }
 
 func toStaff(s staff.Summary) openapi.Staff {
@@ -29,6 +30,7 @@ func toStaff(s staff.Summary) openapi.Staff {
 		Department:  openapi.Ref{Id: s.DepartmentID, Name: s.DepartmentName},
 		Team:        openapi.Ref{Id: s.TeamID, Name: s.TeamName},
 		Position:    openapi.Ref{Id: s.PositionID, Name: s.PositionName},
+		SuspendedAt: s.SuspendedAt,
 		CreatedAt:   s.CreatedAt,
 		UpdatedAt:   s.UpdatedAt,
 	}
@@ -45,6 +47,7 @@ func toStaffDetail(d staff.Detail) openapi.StaffDetail {
 		Department:  s.Department,
 		Team:        s.Team,
 		Position:    s.Position,
+		SuspendedAt: s.SuspendedAt,
 		CreatedAt:   s.CreatedAt,
 		UpdatedAt:   s.UpdatedAt,
 		Sub:         d.Sub,
@@ -140,6 +143,15 @@ func (s server) RemoveUserPolicy(ctx context.Context, req openapi.RemoveUserPoli
 		return nil, err
 	}
 	return openapi.RemoveUserPolicy200JSONResponse(toStaffDetail(d)), nil
+}
+
+// SuspendUser は、職員を止め、止めた職員を返す。
+func (s server) SuspendUser(ctx context.Context, req openapi.SuspendUserRequestObject) (openapi.SuspendUserResponseObject, error) {
+	d, err := s.u.Staff.Suspend(ctx, req.UserId)
+	if err != nil {
+		return nil, err
+	}
+	return openapi.SuspendUser200JSONResponse(toStaffDetail(d)), nil
 }
 
 // ids は、省略できる ID の配列を返す。省略されたときは nil を返す。

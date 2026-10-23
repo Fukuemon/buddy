@@ -162,6 +162,7 @@ func staffSummary(u sqlcgen.ListUsersByFacilityRow) staff.Summary {
 			DepartmentID: u.DepartmentID,
 			TeamID:       u.TeamID,
 			PositionID:   u.PositionID,
+			SuspendedAt:  u.SuspendedAt,
 		},
 		DepartmentName: u.DepartmentName,
 		TeamName:       u.TeamName,
@@ -177,13 +178,16 @@ func (r *StaffRepository) FindIDBySub(ctx context.Context, sub string) (string, 
 	return id, translate("get user by sub", err)
 }
 
-// LinkSub は、事業所 facilityID の、メールが email で Sub がまだない職員にだけ sub を書く。当たる職員がいなければ何もせず、エラーも返さない。
-// 同時に呼ばれても書くのは 1 回だけである。sub が別の職員と重なるときは apperr.ErrConflict を返す。
-func (r *StaffRepository) LinkSub(ctx context.Context, facilityID, email, sub string) error {
-	err := r.q(ctx).LinkUserSub(ctx, sqlcgen.LinkUserSubParams{
-		Sub: ptr(sub), FacilityID: facilityID, Email: email,
-	})
-	return translate("link user sub", err)
+// Suspend は、職員 id を止めた時刻を書く。止めた職員を止め直しても、最初に止めた時刻を残す。職員が無いときは apperr.ErrNotFound を返す。
+func (r *StaffRepository) Suspend(ctx context.Context, id string) error {
+	n, err := r.q(ctx).SuspendUser(ctx, id)
+	if err != nil {
+		return translate("suspend user", err)
+	}
+	if n == 0 {
+		return apperr.ErrNotFound
+	}
+	return nil
 }
 
 // StaffRefRepository は、ほかの機能が職員を参照するための kernel.Finder[staff.Ref] を実装する。

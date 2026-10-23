@@ -50,7 +50,7 @@ CREATE VIEW visit_info_details AS (
 | ----------------------------------------------- | ------- | ---------------------------------------- | ---------- |
 | [public.visit_infos](public.visit_infos.md)     | 8       | 訪問の情報                               | BASE TABLE |
 | [public.patients](public.patients.md)           | 9       | 利用者                                   | BASE TABLE |
-| [public.users](public.users.md)                 | 11      | 職員                                     | BASE TABLE |
+| [public.users](public.users.md)                 | 12      | 職員                                     | BASE TABLE |
 | [public.service_codes](public.service_codes.md) | 6       | サービスコード。マイグレーションで入れる | BASE TABLE |
 
 ## Viewpoints

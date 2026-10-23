@@ -183,5 +183,5 @@ type tokenVerifier struct{ v *oidc.Verifier }
 
 func (t tokenVerifier) Verify(ctx context.Context, raw string) (principal.Identity, error) {
 	id, err := t.v.Verify(ctx, raw)
-	return principal.Identity(id), err
+	return principal.Identity{Subject: id.Subject, OrgID: id.OrgID}, err
 }

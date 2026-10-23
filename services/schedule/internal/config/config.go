@@ -39,6 +39,19 @@ type Calendar struct {
 	SyncInterval time.Duration
 }
 
+// Broker は、認証のブローカーの内部の API（職員の登録と停止）を呼ぶ設定である（ADR-0017）。
+type Broker struct {
+	// URL は、ブローカーの URL である。
+	URL string
+	// TokenURL は、client credentials の access token を取る Hydra のトークンのエンドポイントである。
+	TokenURL string
+	// ClientID と ClientSecret は、Hydra に登録した予定の API のクライアントである。ClientSecret はシークレットとして渡す。
+	ClientID     string
+	ClientSecret string
+	// Audience は、access token の aud にする値である。
+	Audience string
+}
+
 // Config は、API とマイグレーションの設定である。
 type Config struct {
 	Port         string
@@ -47,10 +60,12 @@ type Config struct {
 	AllowOrigins []string
 	LogLevel     slog.Level
 	Calendar     Calendar
+	Broker       Broker
 }
 
 // Load は、getenv（本番では os.Getenv）から設定を読む。DB_USER、DB_PASSWORD、DB_NAME、OIDC_ISSUER、
-// OIDC_AUDIENCE は必須で、欠けているときは欠けた名前を並べたエラーを返す。パスワードにデフォルト値はない。
+// OIDC_AUDIENCE、BROKER_URL、BROKER_TOKEN_URL、BROKER_CLIENT_SECRET は必須で、欠けているときは欠けた名前を並べたエラーを返す。
+// パスワードと client secret にデフォルト値はない。
 //
 // 読む環境変数とデフォルト値:
 //   - PORT: HTTP の待ち受けのポート。デフォルトは 8080
@@ -62,6 +77,11 @@ type Config struct {
 //   - OIDC_ORG_CLAIM: 組織の ID を持つクレームの名前。デフォルトは org_id
 //   - CORS_ALLOW_ORIGINS: カンマで区切ったオリジン。空なら CORS のヘッダーを返さない
 //   - LOG_LEVEL: debug、info、warn、error。デフォルトは info
+//   - BROKER_URL: 認証のブローカーの URL。職員の登録と停止で内部の API を呼ぶ
+//   - BROKER_TOKEN_URL: 内部の API を呼ぶ access token を client credentials で取る Hydra のトークンのエンドポイント
+//   - BROKER_CLIENT_ID: Hydra に登録した予定の API のクライアントの ID。デフォルトは schedule
+//   - BROKER_CLIENT_SECRET: Hydra に登録した予定の API のクライアントの secret
+//   - BROKER_AUDIENCE: 内部の API を呼ぶ access token の aud。デフォルトは broker
 //   - GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE: 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応（JSON）のパス。
 //     空なら Google カレンダーを読まない。Application Default Credentials で認証し、事業所のサービスアカウントになりすます（ADR-0012）
 //   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit で試すためのもので、GOOGLE_APPLICATION_CREDENTIALS を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使い、渡さなければ認証をしない。
@@ -103,10 +123,17 @@ func load(getenv func(string) string, api bool) (Config, error) {
 			Audience: getenv("OIDC_AUDIENCE"),
 			OrgClaim: get("OIDC_ORG_CLAIM", "org_id"),
 		},
+		Broker: Broker{
+			URL:          strings.TrimSpace(getenv("BROKER_URL")),
+			TokenURL:     strings.TrimSpace(getenv("BROKER_TOKEN_URL")),
+			ClientID:     get("BROKER_CLIENT_ID", "schedule"),
+			ClientSecret: getenv("BROKER_CLIENT_SECRET"),
+			Audience:     get("BROKER_AUDIENCE", "broker"),
+		},
 	}
 	required := []string{"DB_USER", "DB_PASSWORD", "DB_NAME"}
 	if api {
-		required = append(required, "OIDC_ISSUER", "OIDC_AUDIENCE")
+		required = append(required, "OIDC_ISSUER", "OIDC_AUDIENCE", "BROKER_URL", "BROKER_TOKEN_URL", "BROKER_CLIENT_SECRET")
 	}
 	var missing []string
 	for _, key := range required {
@@ -122,8 +149,16 @@ func load(getenv func(string) string, api bool) (Config, error) {
 			return Config{}, fmt.Errorf("ポート %q は 1 から 65535 の数です", p)
 		}
 	}
-	if u, err := url.Parse(c.OIDC.Issuer); api && (err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "") {
-		return Config{}, fmt.Errorf("OIDC_ISSUER %q は http か https の URL です", c.OIDC.Issuer)
+	if api {
+		for _, v := range []struct{ key, value string }{
+			{"OIDC_ISSUER", c.OIDC.Issuer},
+			{"BROKER_URL", c.Broker.URL},
+			{"BROKER_TOKEN_URL", c.Broker.TokenURL},
+		} {
+			if u, err := url.Parse(v.value); err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" {
+				return Config{}, fmt.Errorf("%s %q は http か https の URL です", v.key, v.value)
+			}
+		}
 	}
 	for _, o := range strings.Split(getenv("CORS_ALLOW_ORIGINS"), ",") {
 		if o = strings.TrimSpace(o); o != "" {

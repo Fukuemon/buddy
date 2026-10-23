@@ -353,7 +353,7 @@ type Team struct {
 type User struct {
 	ID         string
 	FacilityID string
-	// ブローカーの subject。初回のログインまで NULL
+	// ブローカーの職員の ID。登録のときにブローカーが発行する
 	Sub *string
 	// 電子カルテの職員名と同じ表記。照合が名前で比べる
 	Username string
@@ -365,6 +365,8 @@ type User struct {
 	PositionID   string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
+	// 職員を止めた時刻。止めていなければ NULL
+	SuspendedAt *time.Time
 }
 
 // 職員が持つ権限。職員と権限の組で一意

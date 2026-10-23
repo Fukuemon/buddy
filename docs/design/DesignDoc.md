@@ -82,7 +82,7 @@ flowchart TB
 ```
 
 矢印ごとの約束は、[コンテナの間の契約](#コンテナの間の契約) にある。  
-図に描いていない流れが 2 つある。予定の API と照合の API は、access token を検証するために、Hydra の JWKS を読む。ブローカーは、ログインと同意の結果を Hydra の admin API に返す。
+図に描いていない流れが 4 つある。予定の API と照合の API は、access token を検証するために、Hydra の JWKS を読む。ブローカーは、ログインと同意の結果を Hydra の admin API に返す。予定の API は、職員の登録と停止で、ブローカーの内部の API を呼ぶ。Hydra は、トークンを発行するたびに、ブローカーの token_hook を呼ぶ。
 
 ### 業務の区切りとコンテナ
 
@@ -149,6 +149,9 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 - web と Hydra: 認可コードフローでトークンを取得し、更新する。トークンは Valkey のセッションに置く。
 - ブローカーと Hydra: ブローカーが Hydra の admin API でログインと同意を accept か reject する。同意の accept で、access token の `aud`（`schedule`、`receipt`）と `org_id` を決める。
 - ブローカーと上流の IdP: 認可コードフローで ID token を取り、署名、`iss`、`aud`、`nonce` を確かめる。
+- 予定の API とブローカー: 職員の登録と停止で、予定の API が職員の管理の権限を確認してから、ブローカーの内部の API を呼ぶ。予定の API は、Hydra の client credentials で `aud` が `broker` の access token を取って付ける。
+  - ブローカーは、内部の API と token_hook を、ログインの画面と別のポートで待ち受け、許したクライアントのトークンだけを受ける。
+- Hydra とブローカー: Hydra は、トークンを発行するたびに `oauth2.token_hook` でブローカーを呼び、有効でない職員と、上流でのログインから 12 時間を過ぎたログインのトークンを出さない。
 - web と予定の API、照合の API: `Authorization` に access token を Bearer で付ける。
   - 契約の正本は [予定の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/openapi.yaml) と [照合の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/openapi.yaml) である。サーバーの Go のコードと web の型は、そこから生成する。
   - 契約を変えるときの互換の規則は ADR-0003 にある。

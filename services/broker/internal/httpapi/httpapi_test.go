@@ -64,3 +64,15 @@ func TestLoginRoutes(t *testing.T) {
 		}
 	}
 }
+
+func TestInternalRoutes(t *testing.T) {
+	internal := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusTeapot) })
+	h := httpapi.NewHandler(httpapi.Config{Logger: slog.New(slog.DiscardHandler), Internal: internal})
+	for _, path := range []string{"/internal/staff", "/internal/token-hook"} {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, path, nil))
+		if rec.Code != http.StatusTeapot {
+			t.Errorf("%s の code = %d, want 内部の API のハンドラ", path, rec.Code)
+		}
+	}
+}

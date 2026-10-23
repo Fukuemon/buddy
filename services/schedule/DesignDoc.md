@@ -1,7 +1,7 @@
 ---
 type: feature-design
 title: 予定の管理
-description: 予定の API のコードの構成、テーブルの構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更とキャンセル、Google カレンダーの取り込み、書き出し、同期
+description: 予定の API のコードの構成、テーブルの構成（ER）、認証から事業所の確認までの流れ、職員の登録と停止、繰り返しの予定、予定の変更とキャンセル、Google カレンダーの取り込み、書き出し、同期
 status: stable
 governs: services/schedule
 verified_commit: b80bb16
@@ -49,6 +49,7 @@ verified_commit: b80bb16
 | 認証 | `internal/access` | トークンから職員を特定する手順と、パスが指すリソースの事業所を引く手順 |
 | テスト | `internal/inmem` | 機能のパッケージのテストが共有する、メモリ上のリポジトリ |
 | アダプタ | `internal/postgres` | 機能のパッケージのリポジトリを、pgx/v5 の接続のプールと sqlc の生成コード（`sqlcgen`）で実装する |
+| アダプタ | `internal/broker` | `staff.Identities` を、認証のブローカーの内部の API で実装する。Hydra の client credentials の access token（`aud` は `broker`）で呼ぶ |
 | アダプタ | `internal/ulid` | `IDGenerator` を ULID で実装し、ID の形を確かめる |
 | アダプタ | `internal/gcal` | `calendar.EventSource`（`Reader`）と `calendar.EventWriter`（`Writer`）を Google Calendar API で実装する。繰り返しの予定を展開せずに、親の予定と例外の回を読み、回ごとにする繰り返しだけを events.instances で回に展開する。`calendar.Accounts` の実装（`Accounts`）は、事業所の組織のサービスアカウントで `Reader` と `Writer` を作る。テストのフェイクの API は `internal/gcal/gcaltest` に置く |
 | 設定 | `internal/config` | 環境変数から API とマイグレーションの設定を読む。DB の接続の値は自分の型で持ち、`cmd` がアダプタの設定にコピーする |
@@ -59,7 +60,7 @@ verified_commit: b80bb16
 
 - `kernel` は、ADR-0010 の「`apperr` と同じ段の小さなパッケージ」に当たる。`kernel.Finder[T]` は ID で 1 件を読む 1 つのメソッドのインターフェイスで、機能のパッケージは、ほかの機能のエンティティをこの形で受ける。同じ形のインターフェイスを機能ごとに書かずに済ませるためである。
 - `access` は機能のパッケージではないので、型の名前を `Service` のままにし、`Usecase` への改名と「1〜2 のメソッド」の規則の対象から外す。
-- `access.Staff` は、`FindIDBySub`、`LinkSub`、`Get` の 3 つのメソッドを持つ。初回のログインで sub を職員に結び付け、職員と権限を読むために、3 つともが要る。
+- `access.Staff` は、`FindIDBySub` と `Get` の 2 つのメソッドを持つ。sub で職員を探し、職員と権限を読むために、2 つともが要る。
 
 ### テーブルの構成
 
@@ -127,8 +128,9 @@ erDiagram
 - 区分値（`frequency`、`preferred_time` など）は `text` と CHECK で持つ。名前の付いた CHECK と一意の制約は `<テーブル>_<意味>_{key,fkey,check}` の名前にする。
 - `departments`、`teams`、`positions` は事業所ごとに持つ。名前が同じ部署でも、事業所が違えば別のレコードにする。事業所の間で部署を共有すると、事業所が部署の名前を変えたときにほかの事業所に波及するためである。
 - `facilities.org_id` は、認証の基盤の組織の ID を持つ。NULL を許し、値があれば一意にする。認証のミドルウェアは、トークンの組織のクレームでこのカラムを探す。
-- `users.sub` は、認証の基盤の利用者の識別子を持つ。初回のログインまでは NULL で、値があれば全ての事業所を通じて一意にする。
-- `users.email` は、事業所の中で一意にする（`facility_id` と `email` の組）。初回のログインは事業所とメールで職員を探すので、当たる職員は 1 人に限られる。予定の API は、メールを小文字にそろえてから保存し、比べる。そろえ忘れた書き込みは CHECK が拒む。`users.username` は表示名で、一意にしない。
+- `users.sub` は、ブローカーの職員の ID を持つ。職員の登録のときにブローカーが発行した値を入れ、全ての事業所を通じて一意にする。ブローカーで職員を作る前に登録した職員では NULL のことがあり、その職員はログインできない。
+- `users.email` は、事業所の中で一意にする（`facility_id` と `email` の組）。ブローカーは職員のメールを全ての事業所で一意にするので、ほかの事業所と重なるメールの登録はブローカーが拒む。予定の API は、メールを小文字にそろえてから保存し、比べる。そろえ忘れた書き込みは CHECK が拒む。`users.username` は表示名で、一意にしない。
+- `users.suspended_at` は、職員を止めた時刻を持つ。止めていなければ NULL である。止め直しても、最初に止めた時刻を残す。
 - 訪問の区分は、`visit_info_visit_categories` で 1 件の訪問に複数を付けられる。
 - 予定の種類の規則（通常はタイトルが必須、訪問は訪問の情報が必須）は、`schedule_types.code`（`normal`、`visit`）で読む。`name` は表示と一覧の絞り込みに使う。
 - 1 つの訪問の情報は、1 つの予定か 1 つの繰り返しの予定だけが指す（`visit_info_id` の一意の制約）。
@@ -164,7 +166,7 @@ erDiagram
 職員の役職は `PUT /v1/users/{user_id}/position` で変える。  
 職員ごとに権限を足す（`POST /v1/users/{user_id}/policies`）ときは、`needs_target` が true の権限に、code に合わせて職員かチームの対象を 1 つ以上付ける。対象は同じ事業所のものに限る。外す（`DELETE /v1/users/{user_id}/policies/{user_policy_id}`）と、対象も消える。
 
-職員と利用者の登録、役職の作成、役職を変える操作、権限を足し外す操作は、`staff.manage` を持つ職員だけに許す。
+職員と利用者の登録、職員の停止、役職の作成、役職を変える操作、権限を足し外す操作は、`staff.manage` を持つ職員だけに許す。
 
 - ADR-0006: [職員と利用者の登録と、職員の権限と役職を変える操作を、職員の管理の権限で許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0006-staff-manage-policy.md)
 
@@ -188,19 +190,12 @@ sequenceDiagram
   alt 組織のクレームがない、または事業所がない
     M-->>W: 403
   end
-  M->>DB: sub で職員を探す
+  M->>DB: sub（ブローカーの職員の ID）で職員を探す
   alt sub の職員がいない
-    alt email が未確認
-      M-->>W: 403
-    end
-    M->>DB: 組織の事業所で、email が一致し sub が NULL の職員にだけ sub を書く
-    M->>DB: sub で職員を探し直す
-    alt 職員がいない
-      M-->>W: 403
-    end
+    M-->>W: 403
   end
   M->>M: 職員の事業所と組織の事業所を比べる
-  alt 職員の事業所が組織の事業所と違う
+  alt 職員の事業所が組織の事業所と違うか、職員が止められている
     M-->>W: 403
   end
   M->>DB: パスの ID が指すリソースの事業所を読む
@@ -220,7 +215,8 @@ sequenceDiagram
 - 署名のアルゴリズムは RS256 と ES256 だけを受け付ける。JWKS は、起動のときに discovery の文書から場所を読み、1 時間ごとに取り直す。知らない `kid` のトークンが来たときも取り直すが、間隔は 1 分以上あける。
 - トークンが無いときは `WWW-Authenticate: Bearer` を、検証に失敗したときは `WWW-Authenticate: Bearer error="invalid_token"` を付けて、401 を返す。
 - 組織の ID を持つクレームの名前は `OIDC_ORG_CLAIM` で決め、デフォルトは `org_id` にする。ブローカーごとにクレームの名前が違うためである。
-- sub を書く UPDATE は `sub IS NULL` を条件にする。同じ職員の初回のログインが同時に 2 つ来ても、書くのは 1 回だけになる。
+- 予定の API は、職員を sub だけで探し、トークンのメールを見ない。sub は登録のときに入れるので、初回のログインで職員を結び付ける処理を持たない（ADR-0017）。
+- 止めた職員のリクエストは、web が持つ access token の期限（5 分）を待たずに 403 で拒む。
 - ミドルウェアは、パスの引数ごとに、指すリソースの事業所を職員の事業所と比べる。
   - `facility_id` は、値をそのまま職員の事業所と比べる。
   - `department_id`、`team_id`、`position_id`、`user_id`、`schedule_id`、`recurring_schedule_id` は、リソースを読んでその事業所と比べる。
@@ -234,6 +230,23 @@ sequenceDiagram
   4. パスが指す事業所（403）
   5. パスの ID が ULID か（400）
   6. リクエストが `openapi.yaml` の定義に合うか（400）
+
+### 職員の登録と停止
+
+職員の身元はブローカーが持ち、名前、役職、権限は予定の API が持つ（ADR-0017）。  
+職員の登録（`POST /v1/facilities/{facility_id}/users`）と停止（`POST /v1/users/{user_id}/suspend`）は、`staff.Usecase` が職員の管理の権限を確認してから行う。  
+ブローカーは、`staff.Identities`（`internal/broker`）で内部の API を呼んで書く。
+
+- 登録は、入力と部署、チーム、役職を確認してから、事業所の組織の ID とメールでブローカーに登録の途中の職員を登録させ、返った職員の ID を `users.sub` に入れて書く。書けたら、ブローカーの職員を有効にする。事業所に組織の ID が無ければ、ブローカーを呼ばずに 400 を返す。
+- 同じメールの職員がブローカーで止められていれば、409 を返す。ほかの事業所に同じメールの職員がいれば、事業所を示さない 409（「メール … の職員は登録できません」）を返す。
+- ブローカーが入力を 400 で拒めば、ブローカーの文を付けて 400 を返す。
+- 予定の API に書けなかったときは、この呼び出しでブローカーの職員を作っていて、その ID の職員がまだいなければ、ブローカーの職員を消して戻す。
+- 停止は、ブローカーの職員を先に止めてから、`users.suspended_at` を書く。ブローカーで止められなければ、予定の API にも書かない。止めた職員を止めても成功する。
+  - ブローカーが止めた後に Hydra の取り消しに失敗したときは、`users.suspended_at` を書いてから 500 を返す。送り直すと取り消しをやり直す。
+  - ブローカーにいない職員は、予定の API でだけ止める。
+- 職員は自分を止められない。409 を返す。
+- 2 か所の書き込みの片方だけが残ったときの扱いは、[認証のブローカーの Design Doc の職員の登録と停止](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#職員の登録と停止) にある。
+- ADR-0017: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0017-identity-boundary.md)
 
 ### 予定の認可
 
@@ -485,14 +498,14 @@ calendarpit で足りない振る舞いと、その扱い
 - エラーは `{"code","message"}` の JSON で返す。`message` は人が読む説明で、文言は変わることがあるので、利用者は `code` で分岐する。
   - 400 の `invalid_input`: クエリを読めない、パスの ID が ULID でない、リクエストが `openapi.yaml` の定義に合わない、本文の値が規則に合わない、本文が指す参照が見つからないか別の事業所のもの
   - 401 の `unauthenticated`: トークンが無いか、検証に失敗した
-  - 403 の `forbidden`: 職員を特定できない、事業所が違う、権限で許されない
+  - 403 の `forbidden`: 職員を特定できない、職員が止められている、事業所が違う、権限で許されない
   - 404 の `not_found`: パスで指したリソースが無い
-  - 409 の `conflict`: 一意の値が重なる、キャンセル済みの予定を変えるかキャンセルする、繰り返しの回をすでに置き換えた
+  - 409 の `conflict`: 一意の値が重なる、同じメールの職員がブローカーで止められているかほかの事業所にいる、自分を止める、キャンセル済みの予定を変えるかキャンセルする、繰り返しの回をすでに置き換えた
   - 409 の `calendar_taken`、`calendar_already_linked`、`staff_has_calendar`: カレンダーを結び付けられない原因
   - 409 の `import_running`、`import_preview_changed`: 取り込みを確定できない原因
   - 409 の `export_not_in_review`、`export_not_acceptable`、`external_change_unappliable`: 確かめが要る書き出しを解けない原因
   - 422 の `calendar_unreadable`: Google カレンダーが無いか、事業所のサービスアカウントに共有されていない
-  - 500 の `internal`: サーバーのエラー
+  - 500 の `internal`: サーバーのエラー。ブローカーに届かないときも含む
   - 502 の `calendar_unavailable`: Google に届かないか、Google がエラーを返した
   - 503 の `calendar_not_configured`: 事業所のサービスアカウントが設定されていない
 - CORS は、`CORS_ALLOW_ORIGINS` に並べた Origin だけに許す。空なら CORS のヘッダーを返さない。
