@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { docsPage } from '../../selectors/docsSite'
@@ -25,14 +25,8 @@ const openCalendarSpec = async (page: Page) => {
   await expect(docsPage(page).mock).toBeVisible()
 }
 
-/** 先頭の書体の名前。引用符を外す */
-const firstFont = (target: Locator) =>
-  target.evaluate((el) =>
-    getComputedStyle(el)
-      .fontFamily.split(',')[0]
-      .trim()
-      .replace(/^["']|["']$/g, ''),
-  )
+/** font-family の先頭が name であること。ブラウザは書体の名前を引用符で囲んで返す */
+const startsWithFont = (name: string) => new RegExp(`^"?${name}"?(,|$)`)
 
 test.describe('文書のサイト', () => {
   test.describe('背景と書体', () => {
@@ -40,7 +34,7 @@ test.describe('文書のサイト', () => {
       const prefix = variant.label ? `${variant.label}: ` : ''
       const expected = variant.name === 'before' ? EXPECTED.before : EXPECTED.after
 
-      test(`${prefix}文書のサイトのページを開いた場合、ページの背景が canvas の色で出ること`, async ({
+      test(`${prefix}文書のサイトのページを開いた場合、ページの背景が ${expected.canvas} で出ること`, async ({
         browser,
       }) => {
         await recordPrEvidence(
@@ -63,7 +57,7 @@ test.describe('文書のサイト', () => {
         )
       })
 
-      test(`${prefix}文書のサイトのページを開いた場合、本文が Noto Sans JP、コードが Noto Sans Mono の書体で出ること`, async ({
+      test(`${prefix}文書のサイトのページを開いた場合、本文が ${expected.text}、コードが ${expected.code} の書体で出ること`, async ({
         browser,
       }) => {
         await recordPrEvidence(
@@ -79,8 +73,14 @@ test.describe('文書のサイト', () => {
             await openDesignSystem(page)
             await step('文書のサイトの「デザインシステム」の「使い方」のページを開いている')
             await expect(docsPage(page).code).toBeVisible()
-            expect(await firstFont(docsPage(page).content)).toBe(expected.text)
-            expect(await firstFont(docsPage(page).code)).toBe(expected.code)
+            await expect(docsPage(page).content).toHaveCSS(
+              'font-family',
+              startsWithFont(expected.text),
+            )
+            await expect(docsPage(page).code).toHaveCSS(
+              'font-family',
+              startsWithFont(expected.code),
+            )
             await check(
               `（撮影のため、録画で読み取りにくい書体の名前を出す）本文は ${expected.text}、コードは ${expected.code}`,
             )
@@ -88,14 +88,14 @@ test.describe('文書のサイト', () => {
         )
       })
 
-      test(`${prefix}文書のサイトの画面仕様書を開いた場合、モックと表が本文の幅で出ること`, async ({
+      test(`${prefix}文書のサイトの画面仕様書を開いた場合、表とモックが出ること`, async ({
         browser,
       }) => {
         await recordPrEvidence(
           browser,
           {
             name: 'docs-site-layout',
-            title: '文書のサイトの予定のカレンダーの画面仕様書で、モックと表のレイアウトを見る',
+            title: '文書のサイトの予定のカレンダーの画面仕様書で、表とモックのレイアウトを見る',
             actor: ACTOR,
             variant,
           },
@@ -104,13 +104,13 @@ test.describe('文書のサイト', () => {
             await openCalendarSpec(page)
             await step('文書のサイトの「画面仕様書」の「予定のカレンダー」のページを開いている')
             await expect(docsPage(page).table).toBeVisible()
-            await check('表が本文の幅で出る')
+            await check('表が出る')
 
             await step('（撮影のため、モックが見える位置まで送る）')
             const mock = docsPage(page).mock
             await mock.scrollIntoViewIfNeeded()
             await expect(mock).toBeInViewport()
-            await check('モックが本文の幅で出る')
+            await check('モックが出る')
           },
         )
       })
