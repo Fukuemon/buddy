@@ -5,7 +5,8 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './StaffFilterSidebarContainer.stories'
 
-const { WithCalendar, WithSuspendedStaff, WithSuspendedStaffSelected } = composeStories(stories)
+const { WithCalendar, WithSuspendedStaff, WithSuspendedStaffSelected, WithSuspendedStaffWeek } =
+  composeStories(stories)
 
 describe('StaffFilterSidebarContainer', () => {
   it('止めた職員を、絞り込みの候補と日の表の列に出さず、その予定も出さない', async () => {
@@ -39,5 +40,11 @@ describe('StaffFilterSidebarContainer', () => {
     expect(await screen.findByTestId('day-grid-staff-staff-3')).toBeInTheDocument()
     expect(screen.getByTestId('staff-filter-staff-staff-4')).not.toBeChecked()
     expect(screen.queryByTestId('day-grid-staff-staff-4')).not.toBeInTheDocument()
+  })
+
+  it('週の表示でも、止めた職員の予定を出さない', async () => {
+    render(<WithSuspendedStaffWeek />)
+    expect(await screen.findByTestId('schedule-event-schedule-1')).toBeInTheDocument()
+    expect(screen.queryByTestId('schedule-event-schedule-2')).not.toBeInTheDocument()
   })
 })

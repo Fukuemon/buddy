@@ -95,3 +95,12 @@ export const WithSuspendedStaffSelected: Story = {
     layout: 'fullscreen',
   },
 }
+
+/** 止めた職員がいる事業所の週の表示。止めた職員の予定を出さない。 */
+export const WithSuspendedStaffWeek: Story = {
+  ...WithCalendar,
+  parameters: {
+    ...route({ url: '/schedule?view=week', api: suspendedStaffApi() }),
+    layout: 'fullscreen',
+  },
+}
