@@ -40,6 +40,8 @@ const (
 	seedAoki          = "01M3TC5TRG5200KYWTZW6ER3WN"
 	seedMori          = "01M3TC5VQR3MKFF9AA4BVKF44Z"
 	seedHayashi       = "01M3TC5WQ08KWBZX85WAZ1C4N7"
+	seedMoriSub       = "01M5J20JC1DAXJCPMP36TYGJ0A"
+	seedHayashiSub    = "01M5J20JC21Z5PZ92E3CD6HN03"
 	seedPatient       = "01M3TC66FGZVK39Y7GRVZSGWS1"
 	seedServiceCode   = "01M3TC60M0XC173N54CJQRKFVR"
 	seedEmergency     = "01M3TC64H0JJHBDMJQPGBX9FM7"
@@ -121,7 +123,7 @@ func TestStaffGetWithPolicies(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.PositionName != "リーダー" || got.TeamName != "B" || got.Sub == nil || *got.Sub != "dev-mori" {
+	if got.PositionName != "リーダー" || got.TeamName != "B" || got.Sub == nil || *got.Sub != seedMoriSub {
 		t.Errorf("got %+v", got.Summary)
 	}
 	byID := make(map[string]staff.PolicyGrant, len(got.Policies))
@@ -176,8 +178,17 @@ func TestStaffRef(t *testing.T) {
 	}
 }
 
+// unlinkSub は、シードで結び付け済みの職員 id の sub を、トランザクションの中で初回のログインの前の状態に戻す。
+func unlinkSub(t *testing.T, ctx context.Context, id string) {
+	t.Helper()
+	if _, err := ctx.Value(txKey{}).(pgx.Tx).Exec(ctx, "UPDATE users SET sub = NULL WHERE id = $1", id); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestStaffLinkSub(t *testing.T) {
 	ctx := txContext(t)
+	unlinkSub(t, ctx, seedAoki)
 	r := NewStaffRepository(testDB)
 	if err := r.LinkSub(ctx, unknownID, "hina.aoki@example.com", "sub-other-facility"); err != nil {
 		t.Fatal(err)
@@ -205,8 +216,11 @@ func TestStaffLinkSubConcurrent(t *testing.T) {
 		t.Skip("PostgreSQL を使うテストは -short では動かさない")
 	}
 	ctx := context.Background()
+	if _, err := testDB.Exec(ctx, "UPDATE users SET sub = NULL WHERE id = $1", seedHayashi); err != nil {
+		t.Fatal(err)
+	}
 	t.Cleanup(func() {
-		if _, err := testDB.Exec(ctx, "UPDATE users SET sub = NULL WHERE id = $1", seedHayashi); err != nil {
+		if _, err := testDB.Exec(ctx, "UPDATE users SET sub = $2 WHERE id = $1", seedHayashi, seedHayashiSub); err != nil {
 			t.Error(err)
 		}
 	})
@@ -286,6 +300,7 @@ func TestStaffCreate(t *testing.T) {
 // 別の事業所に同じメールの職員がいても、結び付けが指定の事業所の職員にだけ書くことを確かめる。
 func TestStaffUniqueness(t *testing.T) {
 	ctx := txContext(t)
+	unlinkSub(t, ctx, seedAoki)
 	tx := ctx.Value(txKey{}).(pgx.Tx)
 	const (
 		otherFacility   = "01M3TD00000000000000000020"
