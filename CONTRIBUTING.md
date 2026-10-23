@@ -230,6 +230,21 @@ pull request と issue のタイトルと本文の形は、[issue-pr-body.yml](.
 
 E2E が CI だけで失敗したときは、ワークフローの実行の画面から artifact の `e2e-test-results` を落とし、中の trace を「E2E のテストを流す」の手順で開く。
 
+ワークフローのジョブは、リポジトリの変数 `RUNS_ON` が指すランナーで流れる。  
+変数が無ければ GitHub のランナー（`ubuntu-latest`）で流れる。  
+メンテナーの self-hosted runner で流すときは、変数にラベルの JSON の配列を入れる。
+
+```sh
+gh variable set RUNS_ON -R Fukuemon/buddy --body '["self-hosted","macOS","ARM64"]'
+```
+
+GitHub のランナーに戻すときは、`gh variable delete RUNS_ON -R Fukuemon/buddy` で変数を消す。
+
+- self-hosted runner の機械では、ローカル環境の compose が動いていることがある。
+  - CI の E2E は、compose のプロジェクトの名前を `buddy-ci` にし、ポートを全てずらして起動する。ずらしたポートは [ci.yml](.github/workflows/ci.yml) の `e2e` のジョブにある。
+- self-hosted runner は、ジョブの後に、使われていない Docker のイメージと 7 日より古いビルドのキャッシュを消す。
+- self-hosted runner は、private のリポジトリだけに使う。public のリポジトリでは、外部の人の pull request のコードが runner の機械で流れる。
+
 ## コミットするとき
 
 - commit-msg のフックが、メッセージの形式を commitlint で確認する。形式は `commitlint.config.mjs` にある。フックは `pnpm install` の `prepare` が入れる。
