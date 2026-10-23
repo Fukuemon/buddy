@@ -288,14 +288,7 @@ func (s *Usecase) stop(ctx context.Context, id string, write func(ctx context.Co
 		}
 	}
 	return s.tx.WithinTx(ctx, func(ctx context.Context) error {
-		ref, err := s.deps.Staff.Get(ctx, id)
-		if err != nil {
-			return err
-		}
-		if err := s.deps.Staff.LockFacility(ctx, ref.FacilityID); err != nil {
-			return err
-		}
-		cur, err := s.deps.Staff.Get(ctx, id)
+		cur, err := s.locked(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -304,6 +297,19 @@ func (s *Usecase) stop(ctx context.Context, id string, write func(ctx context.Co
 		}
 		return write(ctx, cur)
 	})
+}
+
+// locked は、トランザクションの中で職員 id の事業所をロックし、ロックの後に読み直した職員を返す。
+// 休職、復職、退職は、このロックで同じ事業所の中で 1 つずつ行う。
+func (s *Usecase) locked(ctx context.Context, id string) (Detail, error) {
+	ref, err := s.deps.Staff.Get(ctx, id)
+	if err != nil {
+		return Detail{}, err
+	}
+	if err := s.deps.Staff.LockFacility(ctx, ref.FacilityID); err != nil {
+		return Detail{}, err
+	}
+	return s.deps.Staff.Get(ctx, id)
 }
 
 // lastManager は、cur が事業所で職員の管理の権限を持つ最後の有効な職員なら apperr.ErrConflict を返す。
@@ -327,24 +333,41 @@ func (s *Usecase) lastManager(ctx context.Context, cur Detail) error {
 // Reinstate は、休職の職員を有効に戻し（復職）、戻した職員を返す。有効な職員を戻しても成功する。職員が見つからないときは
 // apperr.ErrNotFound を、職員の管理の権限が無いときは apperr.ErrForbidden を、退職した職員を戻そうとしたときは apperr.ErrConflict を返す。
 //
-// 休職と逆に、ここで休職を外してから、ブローカーの職員を有効に戻す。ログインできるようにする書き込みを最後にし、片方だけが書けたときに
-// ログインできる職員が予定の API で休職のまま残らないようにする。ブローカーが退職か、止めていない職員と答えたときは、ここの書き込みも
-// ロールバックする。ブローカーに届かなかったときは、ここで外した休職を残してエラーを返す。送り直すと、ブローカーの職員を戻し直す。
+// 休職と逆に、ここで休職を外してコミットしてから、ブローカーの職員を有効に戻す。ログインできるようにする書き込みを最後にし、
+// 片方だけが書けたときに、ログインできる職員が予定の API で休職のまま残らないようにする。
+// ブローカーを呼ぶ 2 つ目のトランザクションは、事業所をロックして職員を読み直し、有効なままのときだけ呼ぶ。
+// 1 つ目のコミットの後に休職にし直されていれば、ブローカーの職員を戻さない。ブローカーが戻したときは 2 つ目でここに書かないので、
+// ブローカーが戻した後にコミットに失敗しても、状態は食い違わない。
+// ブローカーが退職か、止めていない職員と答えたときは、外した休職を書き戻して apperr.ErrConflict を返す。
+// ブローカーに届かなかったときは、外した休職を残してエラーを返す。その間、職員はブローカーで止めたままなのでログインできない。
+// 送り直すと、ブローカーの職員を戻し直す。
 func (s *Usecase) Reinstate(ctx context.Context, id string) (Detail, error) {
 	if err := s.guard(ctx); err != nil {
 		return Detail{}, err
 	}
-	var brokerErr error
+	var before Detail
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
-		cur, err := s.deps.Staff.Get(ctx, id)
+		var err error
+		before, err = s.locked(ctx, id)
 		if err != nil {
 			return err
 		}
-		if cur.Status() == StatusRetired {
+		if before.Status() == StatusRetired {
 			return apperr.Conflict("退職した職員は復職できません")
 		}
-		if err := s.deps.Staff.EndLeave(ctx, cur.ID); err != nil {
+		return s.deps.Staff.EndLeave(ctx, before.ID)
+	})
+	if err != nil {
+		return Detail{}, err
+	}
+	var brokerErr error
+	err = s.tx.WithinTx(ctx, func(ctx context.Context) error {
+		cur, err := s.locked(ctx, id)
+		if err != nil {
 			return err
+		}
+		if cur.Status() != StatusActive {
+			return apperr.Conflict("復職の途中に、職員がほかの操作で休職か退職になりました")
 		}
 		if cur.Sub == nil {
 			return nil
@@ -353,11 +376,14 @@ func (s *Usecase) Reinstate(ctx context.Context, id string) (Detail, error) {
 		case err == nil, errors.Is(err, apperr.ErrNotFound):
 			// ブローカーにいない職員はログインできないので、ここでだけ戻す
 		case errors.Is(err, ErrIdentityRetired):
-			return apperr.Conflict("職員はブローカーで退職しています。退職をやり直してください")
+			brokerErr = apperr.Conflict("職員はブローカーで退職しています。退職をやり直してください")
 		case errors.Is(err, apperr.ErrConflict):
-			return apperr.Conflict("ブローカーの職員は休職していないので、復職できません")
+			brokerErr = apperr.Conflict("ブローカーの職員は休職していないので、復職できません")
 		default:
-			brokerErr = err
+			return fmt.Errorf("休職を外しましたが、ブローカーの職員を戻せませんでした。もう一度復職にしてください: %w", err)
+		}
+		if brokerErr != nil && before.Status() == StatusOnLeave {
+			return s.deps.Staff.StartLeave(ctx, cur.ID, before.LeaveReturnDate)
 		}
 		return nil
 	})
@@ -365,7 +391,7 @@ func (s *Usecase) Reinstate(ctx context.Context, id string) (Detail, error) {
 		return Detail{}, err
 	}
 	if brokerErr != nil {
-		return Detail{}, fmt.Errorf("休職を外しましたが、ブローカーの職員を戻せませんでした。もう一度復職にしてください: %w", brokerErr)
+		return Detail{}, brokerErr
 	}
 	return s.deps.Staff.Get(ctx, id)
 }

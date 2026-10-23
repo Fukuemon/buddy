@@ -267,6 +267,22 @@ func stopUsecase(s *inmem.Store, ids *inmem.Identities, guard organization.Guard
 	}, &inmem.Tx{}, &inmem.SeqIDs{}, guard)
 }
 
+// betweenTx は、fn をそのまま呼ぶ tx.Transactor で、after 回目のトランザクションを終えた後に run を呼ぶ。
+// トランザクションの間に、ほかのリクエストが職員を書いたことを表す。
+type betweenTx struct {
+	after, calls int
+	run          func()
+}
+
+func (t *betweenTx) WithinTx(ctx context.Context, fn func(ctx context.Context) error) error {
+	err := fn(ctx)
+	t.calls++
+	if t.calls == t.after {
+		t.run()
+	}
+	return err
+}
+
 // clearAssignments は、seed の繰り返しの予定を外し、staffID に残る予定と担当の利用者を無くす。
 func clearAssignments(s *inmem.Store) { delete(s.Recurring, inmem.RecurringID) }
 
@@ -442,6 +458,23 @@ func TestStaffReinstate(t *testing.T) {
 		ids.Members["broker-1"] = m
 		if _, err := stopUsecase(s, ids, allow).Reinstate(ctx, staffID); !errors.Is(err, apperr.ErrConflict) {
 			t.Errorf("err = %v, want ErrConflict", err)
+		}
+		if d := s.Staff[staffID]; d.Status() != staff.StatusOnLeave || d.LeaveReturnDate == nil || *d.LeaveReturnDate != (civil.Date{Year: 2027, Month: 4, Day: 1}) {
+			t.Errorf("職員 = %+v, want 外した休職を戻る予定の日ごと書き戻す", d.Staff)
+		}
+	})
+	t.Run("休職を外した後に休職にし直されていれば、ブローカーの職員を戻さない", func(t *testing.T) {
+		s, ids := onLeave()
+		u := staff.NewUsecase(staff.Deps{
+			Facilities: inmem.Facilities{Store: s}, Staff: inmem.Staff{Store: s}, Identities: ids,
+			Assignments: inmem.StaffAssignments{Store: s},
+		}, &betweenTx{after: 1, run: func() {
+			d := s.Staff[staffID]
+			d.LeaveStartedAt = ptr(time.Now())
+			s.Staff[staffID] = d
+		}}, &inmem.SeqIDs{}, allow)
+		if _, err := u.Reinstate(ctx, staffID); !errors.Is(err, apperr.ErrConflict) || !ids.Members["broker-1"].Suspended {
+			t.Errorf("err = %v, ブローカー = %+v, want ErrConflict でブローカーは止めたまま", err, ids.Members)
 		}
 	})
 	t.Run("退職した職員は ErrConflict", func(t *testing.T) {
