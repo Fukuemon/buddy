@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
+import type { BuddyApi } from '#/api/client'
+import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import {
   emptyBuddyApi,
   failingBuddyApi,
@@ -57,4 +59,48 @@ export const WithCalendar: Story = {
       </div>
     </div>
   ),
+}
+
+/** 石川 二葉（staff-2）を止めたフェイクの API。 */
+const suspendedStaffApi = (): BuddyApi => {
+  const base = createFakeBuddyApi()
+  return {
+    ...base,
+    staff: {
+      list: async (...args) =>
+        (await base.staff.list(...args)).map((staff) =>
+          staff.id === 'staff-2' ? { ...staff, suspendedAt: '2026-10-01T09:00:00Z' } : staff,
+        ),
+    },
+  }
+}
+
+/** 止めた職員（石川 二葉）がいる事業所。絞り込みとカレンダーに、止めた職員と、その予定を出さない。 */
+export const WithSuspendedStaff: Story = {
+  ...WithCalendar,
+  parameters: {
+    ...route({ url: '/schedule?view=day', api: suspendedStaffApi() }),
+    layout: 'fullscreen',
+  },
+}
+
+/** URL の staff に、止めた職員（石川 二葉）の ID が残っている。止める前に作ったブックマークで開いた形。 */
+export const WithSuspendedStaffSelected: Story = {
+  ...WithCalendar,
+  parameters: {
+    ...route({
+      url: '/schedule?view=day&staff=%5B%22staff-1%22%2C%22staff-2%22%5D',
+      api: suspendedStaffApi(),
+    }),
+    layout: 'fullscreen',
+  },
+}
+
+/** 止めた職員がいる事業所の週の表示。止めた職員の予定を出さない。 */
+export const WithSuspendedStaffWeek: Story = {
+  ...WithCalendar,
+  parameters: {
+    ...route({ url: '/schedule?view=week', api: suspendedStaffApi() }),
+    layout: 'fullscreen',
+  },
 }
