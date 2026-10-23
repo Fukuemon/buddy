@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 文書のサイト（Zensical の site/）と、apps/web の Storybook（storybook-static/）と、表の ER 図のサイト（erd/）を、
+ * ドキュメントサイト（Zensical の site/）と、apps/web の Storybook（storybook-static/）と、表の ER 図のサイト（erd/）を、
  * apps/docs-site/public/ に 1 つのサイトとして並べる。/ に文書、/storybook/ にカタログ、/erd/ に ER 図を置く。
  *
  * 使い方: node scripts/build-docs-site.mjs（先に zensical build と build-storybook と pnpm build:erd を流す）
@@ -38,4 +38,4 @@ rmSync(out, { recursive: true, force: true })
 for (const { source, target, skip = [] } of parts) {
   cpSync(source, target, { recursive: true, filter: (path) => !skip.includes(basename(path)) })
 }
-console.log(`${out} に文書のサイトと Storybook と ER 図を並べた`)
+console.log(`${out} にドキュメントサイトと Storybook と ER 図を並べた`)

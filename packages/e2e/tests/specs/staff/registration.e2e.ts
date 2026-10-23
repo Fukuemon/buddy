@@ -34,7 +34,7 @@ test.describe('予定のカレンダー', () => {
       const res = await registerStaff(request, leader, staff)
       expect(res.status()).toBe(403)
 
-      // ブローカーに職員ができていれば、上流の IdP へ転送される。できていなければ、登録していないメールと同じく失敗する
+      // ブローカーに職員ができていれば、上流の IdP へリダイレクトされる。できていなければ、登録していないメールと同じく失敗する
       await page.goto('/schedule')
       await enterEmailAtBroker(page, staff.email)
 

@@ -39,7 +39,7 @@ func mustLoadLocation(name string) *time.Location {
 // Calendar は、照合の対象のカレンダーである。
 type Calendar struct {
 	ID string `json:"calendar_id"`
-	// OrgID は、カレンダーを使う事業所の、認証のブローカーの組織の ID である。この組織のトークンのリクエストだけが読む。
+	// OrgID は、カレンダーを使う事業所の、ID ブローカーの組織の ID である。この組織のトークンのリクエストだけが読む。
 	OrgID string `json:"org_id"`
 	// StaffName は主訪問者の名前である。空なら、カレンダーの表示名を主訪問者にする。
 	StaffName string `json:"staff_name,omitempty"`

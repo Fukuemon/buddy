@@ -34,11 +34,11 @@ type Config struct {
 	UpstreamClientSecretsFile string
 	// PublicURL は、ブラウザが開くブローカーの URL である。上流の IdP のコールバックの URL をここから作る。
 	PublicURL string
-	// UpstreamBrowserOrigin は、上流の IdP の認可の画面へ転送するときに、scheme とホストを替える origin である。
+	// UpstreamBrowserOrigin は、上流の IdP の認可の画面へリダイレクトするときに、scheme とホストを替える origin である。
 	// ローカル環境のように、ブローカーが discovery を読む issuer にブラウザが届かないときだけ渡す。
 	UpstreamBrowserOrigin string
-	// ClientIPHeader は、ログインの試行を数える送り手のアドレスを読む、前段のプロキシが付けるヘッダーの名前である。
-	// 空なら接続の相手のアドレスを使う。ブローカーに前段のプロキシを通らずに届かないときだけ渡す。
+	// ClientIPHeader は、ログインの試行を数える送信元の IP アドレスを読む、リバースプロキシが付けるヘッダーの名前である。
+	// 空なら接続の相手のアドレスを使う。ブローカーにリバースプロキシを通らずに届かないときだけ渡す。
 	ClientIPHeader string
 	// AutoConsentClients は、同意の画面を出さずに accept するクライアントの ID である。
 	AutoConsentClients []string
@@ -67,8 +67,8 @@ type Config struct {
 //   - UPSTREAM_IDPS_FILE: 組織の ID と、上流の IdP の issuer と client ID の対応（JSON）のパス
 //   - UPSTREAM_IDP_CLIENT_SECRETS_FILE: 組織の ID と、上流の IdP の client secret の対応（JSON）のパス
 //   - PUBLIC_URL: ブラウザが開くブローカーの URL
-//   - UPSTREAM_IDP_BROWSER_ORIGIN: 上流の IdP の認可の画面へ転送するときに替える origin。無ければ替えない
-//   - CLIENT_IP_HEADER: ログインの試行を数える送り手のアドレスを読む、前段のプロキシが付けるヘッダーの名前。無ければ接続の相手のアドレス
+//   - UPSTREAM_IDP_BROWSER_ORIGIN: 上流の IdP の認可の画面へリダイレクトするときに替える origin。無ければ替えない
+//   - CLIENT_IP_HEADER: ログインの試行を数える送信元の IP アドレスを読む、リバースプロキシが付けるヘッダーの名前。無ければ接続の相手のアドレス
 //   - AUTO_CONSENT_CLIENTS: 同意の画面を出さずに accept するクライアントの ID をカンマで区切った値。デフォルトは web
 //   - HYDRA_ISSUER: Hydra のトークンの iss。内部の API が access token を検証する discovery の文書をここから読む
 //   - INTERNAL_API_AUDIENCE: 内部の API が access token の aud に求める値。デフォルトは broker

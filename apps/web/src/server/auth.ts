@@ -44,7 +44,7 @@ export type AuthDeps = {
   /** access token の職員を予定の API の GET /v1/me で引く。 */
   fetchMe: (accessToken: string) => Promise<MeResult>
   now?: () => number
-  /** ほかのリクエストが取り直すのを待つときに使う。テストで替える。 */
+  /** ほかのリクエストが更新するのを待つときに使う。テストで替える。 */
   wait?: (ms: number) => Promise<void>
 }
 
@@ -52,11 +52,11 @@ export const SESSION_COOKIE = 'buddy_session'
 const LOGIN_COOKIE = 'buddy_login'
 const SESSION_TTL_SECONDS = 12 * 60 * 60
 const LOGIN_TTL_SECONDS = 10 * 60
-/** 期限まで、この長さを切った access token は、使う前に取り直す。 */
+/** 期限まで、この長さを切った access token は、使う前に更新する。 */
 const REFRESH_MARGIN_MS = 60 * 1000
-/** 取り直しの鍵を持つ長さ。ブローカーのレスポンスを待つ上限の 2 倍にする。 */
+/** 更新の鍵を持つ長さ。Hydra のレスポンスを待つ上限の 2 倍にする。 */
 const REFRESH_LOCK_MS = OIDC_TIMEOUT_SECONDS * 2 * 1000
-/** ほかのリクエストの取り直しを待つ間隔。待つのは、鍵が放されるか期限が切れるまでである。 */
+/** ほかのリクエストの更新を待つ間隔。待つのは、鍵が放されるか期限が切れるまでである。 */
 const REFRESH_POLL_MS = 200
 
 const sessionKey = (id: string) => `session:${id}`
@@ -113,10 +113,10 @@ const expiresAtOf = (tokens: Tokens, now: number) =>
   tokens.expiresIn === undefined ? undefined : now + tokens.expiresIn * 1000
 
 /**
- * GET /auth/login。ブラウザをブローカーの認可の画面へ転送する。クエリの returnTo はログインの後に戻る先である。
+ * GET /auth/login。ブラウザを Hydra の認可のエンドポイントへリダイレクトする。クエリの returnTo はログインの後に戻る先である。
  *
- * クエリの prompt が login なら、Hydra が覚えたログインのセッションを使わずに、ブローカーのメールの入力の画面を出させる。
- * ログインの失敗の画面から入り直すときに使う。Hydra は失敗した職員のログインも覚えているので、使うと同じ職員に戻ってしまう。
+ * クエリの prompt が login なら、Hydra が保ったログインのセッションを使わずに、ブローカーのメールの入力の画面を出させる。
+ * ログインの失敗の画面から入り直すときに使う。Hydra は失敗した職員のログインのセッションも保っているので、使うと同じ職員に戻ってしまう。
  */
 export const startLogin = async (request: Request, deps: AuthDeps): Promise<Response> => {
   const url = new URL(request.url)
@@ -142,10 +142,10 @@ export const startLogin = async (request: Request, deps: AuthDeps): Promise<Resp
 }
 
 /**
- * GET /auth/callback。認可コードをトークンに替え、職員を引いてセッションを作り、戻る先へ転送する。
+ * GET /auth/callback。認可コードをトークンと交換し、職員を引いてセッションを作り、戻る先へリダイレクトする。
  *
  * state が cookie と合わない、ログインの途中の値が無い、トークンを取れない、のいずれかで /auth/error?reason=failed へ、
- * 職員が事業所に登録されていなければ /auth/error?reason=forbidden へ転送する。
+ * 職員が事業所に登録されていなければ /auth/error?reason=forbidden へリダイレクトする。
  */
 export const finishLogin = async (request: Request, deps: AuthDeps): Promise<Response> => {
   const url = new URL(request.url)
@@ -195,10 +195,10 @@ export const finishLogin = async (request: Request, deps: AuthDeps): Promise<Res
 }
 
 /**
- * POST /auth/logout。セッションを消し、ブラウザを Hydra の RP-Initiated Logout へ転送する。
+ * POST /auth/logout。セッションを消し、ブラウザを Hydra の RP-Initiated Logout へリダイレクトする。
  * Hydra はブローカーのログアウトの画面を呼んでログインのセッションを消し、web の / へ戻す。
  *
- * セッションか ID token が無いときは / へ転送する。ID token を置く前のセッションは、Hydra がログインを覚えていない。
+ * セッションか ID token が無いときは / へリダイレクトする。ID token を置く前のセッションは、Hydra がログインのセッションを保っていない。
  */
 export const logout = async (request: Request, deps: AuthDeps): Promise<Response> => {
   const id = sessionIdOf(request, deps.secret)
@@ -217,9 +217,9 @@ const sessionIdOf = (request: Request, secret: string) =>
   verifySignedValue(readCookie(request.headers.get('Cookie'), SESSION_COOKIE), secret)
 
 /**
- * リクエストの cookie のセッションを返す。access token の期限が近ければ refresh token で取り直して置き直す。
+ * リクエストの cookie のセッションを返す。access token の期限が近ければ refresh token で更新して置き直す。
  *
- * セッションが無いとき、期限が切れて取り直せないときは undefined を返す。ブローカーが refresh token を拒んだときだけ、
+ * セッションが無いとき、期限が切れて更新できないときは undefined を返す。Hydra が refresh token を拒んだときだけ、
  * セッションを消す。通信の失敗では消さず、access token がまだ使えればそれを返し、使えなければ投げる。
  */
 export const readSession = async (
@@ -236,7 +236,7 @@ export const readSession = async (
   return refreshOnce(id, session, now, deps)
 }
 
-/** 同じプロセスの中で、同じセッションの取り直しを 1 本にまとめる。 */
+/** 同じプロセスの中で、同じセッションの更新を 1 本にまとめる。 */
 const inFlight = new Map<string, Promise<Session | undefined>>()
 
 const refreshOnce = (id: string, session: Session, now: number, deps: AuthDeps) => {
@@ -248,8 +248,8 @@ const refreshOnce = (id: string, session: Session, now: number, deps: AuthDeps) 
 }
 
 /**
- * Valkey の鍵で、ほかのプロセスとも取り直しを 1 本にする。refresh token を回すブローカーは、使い回しを拒むためである。
- * 鍵を取れなかったリクエストは、取り直した値が置かれるか鍵が放されるまで待つ。
+ * Valkey の鍵で、ほかのプロセスとも更新を 1 本にする。refresh token をローテーションする Hydra は、使い回しを拒むためである。
+ * 鍵を取れなかったリクエストは、更新した値が置かれるか鍵が放されるまで待つ。
  */
 const refresh = async (
   id: string,
@@ -271,7 +271,7 @@ const refresh = async (
     return stillValid(session) ? session : undefined
   }
   try {
-    // 鍵を取る前に、ほかのリクエストが取り直し終えていることがある。古い refresh token を送らないよう読み直す
+    // 鍵を取る前に、ほかのリクエストが更新し終えていることがある。古い refresh token を送らないよう読み直す
     const latest = await deps.store.get<Session>(sessionKey(id))
     if (latest === undefined) return undefined
     if (latest.accessToken !== session.accessToken || latest.refreshToken === undefined)

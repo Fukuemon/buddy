@@ -10,7 +10,7 @@ export interface SessionStore {
   replace(key: string, value: unknown): Promise<boolean>
   /** key の鍵を ttlMs の間だけ取り、放すときに渡す値を返す。ほかが取っていれば undefined を返す。 */
   lock(key: string, ttlMs: number): Promise<string | undefined>
-  /** lock が返した値の鍵だけを放す。期限が切れてほかが取り直した鍵は放さない。 */
+  /** lock が返した値の鍵だけを放す。期限が切れてほかが更新した鍵は放さない。 */
   unlock(key: string, token: string): Promise<void>
   /** key の鍵か値があれば true を返す。 */
   exists(key: string): Promise<boolean>
@@ -24,7 +24,7 @@ export interface SessionStore {
 const parse = <T>(raw: string | null): T | undefined =>
   raw === null ? undefined : (JSON.parse(raw) as T)
 
-/** 値が token のときだけ鍵を消す。get と del の間にほかが取り直した鍵を消さないよう、1 つの命令にする。 */
+/** 値が token のときだけ鍵を消す。get と del の間にほかが更新した鍵を消さないよう、1 つの命令にする。 */
 const UNLOCK_SCRIPT =
   "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) end return 0"
 

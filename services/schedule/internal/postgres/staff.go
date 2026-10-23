@@ -177,7 +177,7 @@ func staffSummary(u sqlcgen.ListUsersByFacilityRow) staff.Summary {
 	}
 }
 
-// FindIDBySub は、認証のブローカーの Sub が sub の職員の ID を返す。無いときは apperr.ErrNotFound を返す。
+// FindIDBySub は、ID ブローカーの Sub が sub の職員の ID を返す。無いときは apperr.ErrNotFound を返す。
 func (r *StaffRepository) FindIDBySub(ctx context.Context, sub string) (string, error) {
 	id, err := r.q(ctx).GetUserIDBySub(ctx, ptr(sub))
 	return id, translate("get user by sub", err)

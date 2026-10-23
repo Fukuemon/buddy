@@ -37,7 +37,7 @@ export const getRuntime = (): Runtime => {
 const getOidc = (config: ServerConfig) => {
   if (oidc === undefined) {
     oidc = createOidcClient(config.oidc).catch((error: unknown) => {
-      // 起動の直後にブローカーへ届かなくても、次のリクエストで discovery を試し直す
+      // 起動の直後に Hydra へ届かなくても、次のリクエストで discovery を試し直す
       oidc = undefined
       throw error
     })

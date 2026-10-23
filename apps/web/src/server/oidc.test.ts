@@ -15,7 +15,7 @@ describe('isGrantRejected', () => {
     expect(isGrantRejected(bodyError('invalid_grant'))).toBe(true)
   })
 
-  it('ブローカーの token_hook が拒んだ access_denied を、拒まれた refresh とみなす', () => {
+  it('ブローカーが token_hook で拒ませた access_denied を、拒まれた refresh とみなす', () => {
     expect(isGrantRejected(bodyError('access_denied'))).toBe(true)
   })
 

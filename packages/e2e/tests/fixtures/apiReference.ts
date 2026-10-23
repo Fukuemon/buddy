@@ -9,7 +9,7 @@ import { BASE_URL, HYDRA_URL, RECEIPT_URL, SCHEDULE_URL } from './env'
 const root = fileURLToPath(new URL('../../../..', import.meta.url))
 
 /**
- * API の参照のページを開く origin。ローカル環境の文書のサイト（zensical serve）と同じにする。
+ * API の参照のページを開く origin。ローカル環境のドキュメントサイト（zensical serve）と同じにする。
  * compose の 2 つの API は、この origin だけに CORS を許す。
  */
 export const API_REFERENCE_ORIGIN = 'http://localhost:8000'
@@ -28,7 +28,7 @@ const CONTENT_TYPES: Record<string, string> = {
 }
 
 /**
- * API の参照のページ（docs/api/）を、文書のサイトを起動せずに、リポジトリのファイルから開けるようにする。
+ * API の参照のページ（docs/api/）を、ドキュメントサイトを起動せずに、リポジトリのファイルから開けるようにする。
  * ページが openapi.yaml の servers（compose のデフォルトのポート）へ送ったリクエストは、撮る compose の API へ送り直す。
  * 撮る compose のポートをずらしても、ページの Server の欄は openapi.yaml のままになる。
  */
@@ -60,7 +60,7 @@ export const issueAccessToken = async (request: APIRequestContext, email: string
       ? await request.post(url, { form, maxRedirects: 0 })
       : await request.get(url, { maxRedirects: 0 })
     const location = res.headers().location
-    if (!location) throw new Error(`転送されない: ${res.status()} ${url}`)
+    if (!location) throw new Error(`リダイレクトされない: ${res.status()} ${url}`)
     return new URL(location, url)
   }
   const auth = new URL(`${HYDRA_URL}/oauth2/auth`)

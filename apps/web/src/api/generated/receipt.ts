@@ -30,7 +30,7 @@ export interface paths {
         };
         /**
          * リクエストを受けられるかを返す
-         * @description 照合の API は、起動のときにブローカーの discovery を読み、読めなければ起動しない。起動した後は依存先を確認しないので、レスポンスを返せれば 200 を返す。
+         * @description 照合の API は、起動のときに Hydra の discovery の文書を読み、読めなければ起動しない。起動した後は依存先を確認しないので、レスポンスを返せれば 200 を返す。
          */
         get: operations["getReadyz"];
         put?: never;

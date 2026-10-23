@@ -113,7 +113,7 @@ func TestAuthURL(t *testing.T) {
 		t.Errorf("scope = %q", q.Get("scope"))
 	}
 	if _, err := newRP(t, f, "").AuthURL(context.Background(), "org-x", a, ""); err == nil {
-		t.Error("設定の無い組織で転送した")
+		t.Error("設定の無い組織でリダイレクトした")
 	}
 }
 
@@ -269,7 +269,7 @@ func TestProviderRemembersFailure(t *testing.T) {
 
 	for range 2 {
 		if _, err := rp.AuthURL(context.Background(), "org-a", upstream.NewAttempt(), ""); err == nil {
-			t.Fatal("読めない discovery で転送した")
+			t.Fatal("読めない discovery でリダイレクトした")
 		}
 	}
 	if got := f.discoveries.Load(); got != 1 {

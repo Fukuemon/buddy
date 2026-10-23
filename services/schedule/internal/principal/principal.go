@@ -12,7 +12,7 @@ import (
 )
 
 // Identity は、署名と有効期限を検証した access token の主張である。Subject はブローカーの職員の ID である。
-// OrgID は、認証のブローカーの組織の ID で、トークンに組織がないときは空である。
+// OrgID は、ID ブローカーの組織の ID で、トークンに組織がないときは空である。
 type Identity struct {
 	Subject string
 	OrgID   string

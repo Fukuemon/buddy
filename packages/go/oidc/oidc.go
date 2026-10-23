@@ -1,4 +1,4 @@
-// Package oidc は、OIDC のブローカーが発行した access token の JWT を、ブローカーの JWKS で検証する。
+// Package oidc は、Hydra が発行した access token の JWT を、Hydra の JWKS で検証する。
 // 予定の API と照合の API が共有する module packages/go にある（ADR-0007）。
 package oidc
 
@@ -32,7 +32,7 @@ var allowedAlgs = []string{"RS256", "ES256"}
 
 // Identity は、署名と有効期限を検証した access token の主張である。
 // Email は、EmailVerified が true のときだけ、職員を結び付ける根拠に使える。
-// OrgID は、認証のブローカーの組織の ID で、トークンに組織がないときは空である。
+// OrgID は、ID ブローカーの組織の ID で、トークンに組織がないときは空である。
 type Identity struct {
 	Subject       string
 	Email         string
@@ -42,7 +42,7 @@ type Identity struct {
 
 // Config は、検証の設定である。
 type Config struct {
-	// Issuer は、ブローカーの Issuer の URL で、トークンの iss と一致させる。
+	// Issuer は、Hydra の Issuer の URL で、トークンの iss と一致させる。
 	Issuer string
 	// Audience は、トークンの aud に含まれることを求める値である。
 	Audience string
@@ -114,7 +114,7 @@ func (v *Verifier) Verify(ctx context.Context, raw string) (Identity, error) {
 	return id, nil
 }
 
-// discover は、OpenID Connect Discovery 1.0 の 4 節に従い、issuer の文書から jwks_uri を返す。
+// discover は、OpenID Connect Discovery 1.0 のセクション 4 に従い、issuer の文書から jwks_uri を返す。
 // https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfig
 func discover(ctx context.Context, client *http.Client, issuer string) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, discoveryTimeout)

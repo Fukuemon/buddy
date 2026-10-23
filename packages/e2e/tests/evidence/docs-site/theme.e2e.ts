@@ -4,8 +4,8 @@ import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { docsPage } from '../../selectors/docsSite'
 import { pageBody } from '../../selectors/page'
 
-// 文書のサイトは `uv run zensical build` の site/ を静的に配る。E2E_BASE_URL にその URL を渡す
-const ACTOR = 'ログインなし（文書のサイト）'
+// ドキュメントサイトは `uv run zensical build` の site/ を静的に配る。E2E_BASE_URL にその URL を渡す
+const ACTOR = 'ログインなし（ドキュメントサイト）'
 const DESIGN_SYSTEM = '/design/packages/ui/'
 const CALENDAR_SPEC = '/screens/schedule-calendar_予定のカレンダー/'
 
@@ -28,27 +28,27 @@ const openCalendarSpec = async (page: Page) => {
 /** font-family の先頭が name であること。ブラウザは書体の名前を引用符で囲んで返す */
 const startsWithFont = (name: string) => new RegExp(`^"?${name}"?(,|$)`)
 
-test.describe('文書のサイト', () => {
+test.describe('ドキュメントサイト', () => {
   test.describe('背景と書体', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       const prefix = variant.label ? `${variant.label}: ` : ''
       const expected = variant.name === 'before' ? EXPECTED.before : EXPECTED.after
 
-      test(`${prefix}文書のサイトのページを開いた場合、ページの背景が ${expected.canvas} で出ること`, async ({
+      test(`${prefix}ドキュメントサイトのページを開いた場合、ページの背景が ${expected.canvas} で出ること`, async ({
         browser,
       }) => {
         await recordPrEvidence(
           browser,
           {
             name: 'docs-site-canvas',
-            title: '文書のサイトのデザインシステムの使い方のページで、ページの背景の色を見る',
+            title: 'ドキュメントサイトのデザインシステムの使い方のページで、ページの背景の色を見る',
             actor: ACTOR,
             variant,
           },
           openDesignSystem,
           async ({ page, step, check }) => {
             await openDesignSystem(page)
-            await step('文書のサイトの「デザインシステム」の「使い方」のページを開いている')
+            await step('ドキュメントサイトの「デザインシステム」の「使い方」のページを開いている')
             await expect(pageBody(page)).toHaveCSS('background-color', expected.canvas)
             await check(
               `（撮影のため、録画で見分けにくい色の値を出す）ページの背景は ${expected.canvas}`,
@@ -57,21 +57,22 @@ test.describe('文書のサイト', () => {
         )
       })
 
-      test(`${prefix}文書のサイトのページを開いた場合、本文が ${expected.text}、コードが ${expected.code} の書体で出ること`, async ({
+      test(`${prefix}ドキュメントサイトのページを開いた場合、本文が ${expected.text}、コードが ${expected.code} の書体で出ること`, async ({
         browser,
       }) => {
         await recordPrEvidence(
           browser,
           {
             name: 'docs-site-font',
-            title: '文書のサイトのデザインシステムの使い方のページで、本文とコードの書体を見る',
+            title:
+              'ドキュメントサイトのデザインシステムの使い方のページで、本文とコードの書体を見る',
             actor: ACTOR,
             variant,
           },
           openDesignSystem,
           async ({ page, step, check }) => {
             await openDesignSystem(page)
-            await step('文書のサイトの「デザインシステム」の「使い方」のページを開いている')
+            await step('ドキュメントサイトの「デザインシステム」の「使い方」のページを開いている')
             await expect(docsPage(page).code).toBeVisible()
             await expect(docsPage(page).content).toHaveCSS(
               'font-family',
@@ -88,21 +89,24 @@ test.describe('文書のサイト', () => {
         )
       })
 
-      test(`${prefix}文書のサイトの画面仕様書を開いた場合、表とモックが出ること`, async ({
+      test(`${prefix}ドキュメントサイトの画面仕様書を開いた場合、表とモックが出ること`, async ({
         browser,
       }) => {
         await recordPrEvidence(
           browser,
           {
             name: 'docs-site-layout',
-            title: '文書のサイトの予定のカレンダーの画面仕様書で、表とモックのレイアウトを見る',
+            title:
+              'ドキュメントサイトの予定のカレンダーの画面仕様書で、表とモックのレイアウトを見る',
             actor: ACTOR,
             variant,
           },
           openCalendarSpec,
           async ({ page, step, check }) => {
             await openCalendarSpec(page)
-            await step('文書のサイトの「画面仕様書」の「予定のカレンダー」のページを開いている')
+            await step(
+              'ドキュメントサイトの「画面仕様書」の「予定のカレンダー」のページを開いている',
+            )
             await expect(docsPage(page).table).toBeVisible()
             await check('表が出る')
 

@@ -1,4 +1,4 @@
-/* Scalar の色と字を、文書のサイトと同じ buddy のトークン（tokens.css）に当てる */
+/* Scalar の色と字を、ドキュメントサイトと同じ buddy のトークン（tokens.css）に当てる */
 :root {
   --scalar-custom-header-height: 48px;
   --scalar-font: var(--font-family-sans);
@@ -14,7 +14,7 @@ body {
 }
 
 /*
- * 文書のサイトへ戻る帯。Scalar は --scalar-custom-header-height の分だけ、サイドバーとモバイルの見出しを下げて描く。
+ * ドキュメントサイトへ戻る帯。Scalar は --scalar-custom-header-height の分だけ、サイドバーとモバイルの見出しを下げて描く。
  * 出典: https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.73.0/dist/browser/standalone.js
  */
 .api-header {

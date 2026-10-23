@@ -144,7 +144,7 @@ services:
     depends_on:
       broker-migrate: { condition: service_completed_successfully }
 
-  # 認証のブローカー（ADR-0016）。Hydra のログインと同意の画面を持ち、職員の事業所の上流の IdP へ転送する
+  # ID ブローカー（ADR-0016）。Hydra のログインと同意の画面を持ち、職員の事業所の上流の IdP へリダイレクトする
   broker:
     image: ${COMPOSE_PROJECT_NAME}-broker
     # イメージは broker-migrate がビルドする
@@ -156,7 +156,7 @@ services:
       UPSTREAM_IDPS_FILE: /config/upstream-idps.json
       UPSTREAM_IDP_CLIENT_SECRETS_FILE: /config/upstream-idp-client-secrets.json
       # ブローカーは上流の IdP の discovery の文書をコンテナの間の名前 idp で読む。ブラウザは idp の名前を引けないので、
-      # 認可の画面だけローカルのポートへ転送する
+      # 認可の画面だけローカルのポートへリダイレクトする
       UPSTREAM_IDP_BROWSER_ORIGIN: http://localhost:${IDP_PORT:-9000}
       # 内部の API は、予定の API の client credentials の access token を、Hydra の JWKS で検証する
       HYDRA_ISSUER: http://hydra:4444
@@ -250,7 +250,7 @@ services:
       # トークンの iss は Hydra の urls.self.issuer で、API はコンテナの間の名前 hydra で JWKS を読む
       OIDC_ISSUER: http://hydra:4444
       OIDC_AUDIENCE: schedule
-      # 職員の登録と停止で、ブローカーの内部の API を呼ぶ。compose/hydra/clients.sh が登録した schedule のクライアントで、
+      # 職員の登録、休職、復職、退職で、ブローカーの内部の API を呼ぶ。compose/hydra/clients.sh が登録した schedule のクライアントで、
       # client credentials の access token を取る
       BROKER_URL: http://broker:8081
       BROKER_TOKEN_URL: http://hydra:4444/oauth2/token

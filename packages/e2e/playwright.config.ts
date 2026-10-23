@@ -5,7 +5,7 @@ import { TIMEOUTS } from './tests/fixtures/timeouts'
 
 /**
  * ルートの compose で立てた全体に向けて流す。先に `docker compose up --build --wait` で起動しておく。
- * spec は職員ごとのログインの状態のファイルを共有するので、worker は 1 つにする（kit の ensureSavedLogin の文書コメント）。
+ * spec は職員ごとのログインの状態のファイルを共有するので、worker は 1 つにする（kit の ensureSavedLogin のドキュメントコメント）。
  * evidence の project はエビデンスの動画を撮る spec を流す。`pnpm e2e` と CI は e2e の project だけを流し、evidence は `pnpm --filter @buddy/e2e evidence` で流す。
  */
 export default defineConfig({
