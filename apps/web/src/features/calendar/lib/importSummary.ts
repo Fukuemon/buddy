@@ -51,11 +51,15 @@ export const canSubmitImport = (preview: ImportPreview, choices: ReviewChoices) 
   (preview.counts.import > 0 || preview.needs_review.length > 0) &&
   countRemaining(preview.needs_review, choices) === 0
 
-/** プレビューの結果が、全て前の取り込みで取り込み済みかを返す。 */
+/**
+ * プレビューの結果が、全て前の取り込みで取り込み済みかを返す。休職の職員の新しい予定があれば、取り込み済みでない予定が
+ * 残るので偽にする。
+ */
 export const isAllImported = (preview: ImportPreview) =>
   preview.counts.import === 0 &&
   preview.needs_review.length === 0 &&
-  preview.counts.already_imported > 0
+  preview.counts.already_imported > 0 &&
+  !preview.skipped.some((item) => item.reason === 'staff_on_leave')
 
 /** 取り込まない理由の文言。並びは、理由ごとの件数を出す順である。 */
 export const SKIP_REASON_LABEL: Record<ImportSkippedItem['reason'], string> = {

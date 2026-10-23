@@ -45,6 +45,24 @@ describe('取り込み方の選択', () => {
     expect(isAllImported(imported)).toBe(true)
     expect(canSubmitImport(imported, {})).toBe(false)
   })
+
+  it('休職の職員の新しい予定があれば、全て取り込み済みとしない', () => {
+    const imported = createMockImportedPreview(range)
+    const onLeave = {
+      ...imported,
+      skipped: [
+        {
+          date: '2026-11-04',
+          start_time: '10:00',
+          end_time: '11:00',
+          all_day: false,
+          reason: 'staff_on_leave' as const,
+        },
+      ],
+    }
+    expect(isAllImported(onLeave)).toBe(false)
+    expect(canSubmitImport(onLeave, {})).toBe(false)
+  })
 })
 
 describe('件数の文', () => {
