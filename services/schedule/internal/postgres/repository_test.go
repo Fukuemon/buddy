@@ -159,8 +159,20 @@ func TestStaffRef(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got != (staff.Ref{ID: seedMori, FacilityID: seedFacility, TeamID: seedTeamB}) {
+	if got != (staff.Ref{ID: seedMori, FacilityID: seedFacility, TeamID: seedTeamB, Status: staff.StatusActive}) {
 		t.Errorf("got %+v", got)
+	}
+	staffRepo := NewStaffRepository(testDB)
+	if err := staffRepo.StartLeave(ctx, seedHayashi, nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := staffRepo.Retire(ctx, seedAoki); err != nil {
+		t.Fatal(err)
+	}
+	for id, want := range map[string]staff.Status{seedHayashi: staff.StatusOnLeave, seedAoki: staff.StatusRetired} {
+		if ref, err := r.Get(ctx, id); err != nil || ref.Status != want {
+			t.Errorf("%s の状態 = %q, %v, want %q", id, ref.Status, err, want)
+		}
 	}
 	if _, err := r.Get(ctx, unknownID); !errors.Is(err, apperr.ErrNotFound) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
@@ -789,6 +801,69 @@ func TestScheduleGetForUpdateBlocksCancel(t *testing.T) {
 	}
 	if err := <-done; err != nil {
 		t.Fatal(err)
+	}
+}
+
+// 予定と担当の新しい割り振りの LockStatuses と、休職と退職の LockFacility は、互いをトランザクションの終わりまで待たせる。
+// 割り振りどうしは待たせない。退職の残る予定の確認と、予定の作成が行き違わないことを確認する（#269）。
+func TestStaffLockStatusesAndLockFacilityWaitForEachOther(t *testing.T) {
+	if testDB == nil {
+		t.Skip("PostgreSQL を使うテストは -short では動かさない")
+	}
+	bg := context.Background()
+	refs := NewStaffRefRepository(testDB)
+	staffRepo := NewStaffRepository(testDB)
+	begin := func() context.Context {
+		t.Helper()
+		tx, err := testDB.Begin(bg)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = tx.Rollback(bg) })
+		return context.WithValue(bg, txKey{}, tx)
+	}
+	rollback := func(ctx context.Context) {
+		t.Helper()
+		if err := ctx.Value(txKey{}).(pgx.Tx).Rollback(bg); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// waits は、first のロックを持つ間、second が終わらず、first をロールバックすると終わることを確認する。
+	waits := func(t *testing.T, first, second func(ctx context.Context) error) {
+		t.Helper()
+		holder, waiter := begin(), begin()
+		if err := first(holder); err != nil {
+			t.Fatal(err)
+		}
+		done := make(chan error, 1)
+		go func() { done <- second(waiter) }()
+		select {
+		case err := <-done:
+			t.Fatalf("ロックの間に終わった: err = %v", err)
+		case <-time.After(300 * time.Millisecond):
+		}
+		rollback(holder)
+		if err := <-done; err != nil {
+			t.Fatal(err)
+		}
+		rollback(waiter)
+	}
+	lockStatuses := func(ctx context.Context) error { return refs.LockStatuses(ctx, seedFacility) }
+	lockFacility := func(ctx context.Context) error { return staffRepo.LockFacility(ctx, seedFacility) }
+
+	t.Run("割り振りの間は、休職と退職が待つ", func(t *testing.T) { waits(t, lockStatuses, lockFacility) })
+	t.Run("休職と退職の間は、割り振りが待つ", func(t *testing.T) { waits(t, lockFacility, lockStatuses) })
+	t.Run("割り振りどうしは待たない", func(t *testing.T) {
+		a, b := begin(), begin()
+		if err := lockStatuses(a); err != nil {
+			t.Fatal(err)
+		}
+		if err := lockStatuses(b); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if err := refs.LockStatuses(begin(), unknownID); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("いない事業所の LockStatuses の err = %v, want ErrNotFound", err)
 	}
 }
 

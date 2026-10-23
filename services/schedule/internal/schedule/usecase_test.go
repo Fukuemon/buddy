@@ -3,6 +3,8 @@ package schedule_test
 import (
 	"context"
 	"errors"
+	"maps"
+	"strings"
 	"testing"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
@@ -356,5 +358,125 @@ func TestSchedulesList(t *testing.T) {
 	}
 	if _, err := uc.List(ctx, "MISSING", schedule.ListQuery{}); !errors.Is(err, apperr.ErrNotFound) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
+	}
+}
+
+// stop は、職員 id を休職か退職にする。
+func stop(t *testing.T, s *inmem.Store, id string, status staff.Status) {
+	t.Helper()
+	var err error
+	switch status {
+	case staff.StatusOnLeave:
+		err = inmem.Staff{Store: s}.StartLeave(context.Background(), id, nil)
+	case staff.StatusRetired:
+		err = inmem.Staff{Store: s}.Retire(context.Background(), id)
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// 予定の作成、職員の変更、繰り返しの予定の作成と回の置き換えは、休職か退職の職員を予定の職員、主訪問者、同行者に指すと
+// 入力のエラーで拒む（#269 の検証の観点 1、3）。
+func TestSchedulesRejectInactiveStaff(t *testing.T) {
+	slots := map[string]func() schedule.SlotInput{
+		"予定の職員": func() schedule.SlotInput {
+			in := normalSlot()
+			in.StaffID = companionID
+			return in
+		},
+		"主訪問者": func() schedule.SlotInput {
+			v := validVisit()
+			v.AssignedStaffID, v.CompanionID = companionID, nil
+			return visitSlot(v)
+		},
+		"同行者": func() schedule.SlotInput { return visitSlot(validVisit()) },
+	}
+	// 操作は、休職か退職にする stopCompanion を、職員を指す前に呼ぶ。
+	ops := map[string]func(uc *schedule.Usecase, ctx context.Context, in schedule.SlotInput, stopCompanion func()) error{
+		"予定の作成": func(uc *schedule.Usecase, ctx context.Context, in schedule.SlotInput, stopCompanion func()) error {
+			stopCompanion()
+			_, err := uc.Create(ctx, facilityID, in)
+			return err
+		},
+		"繰り返しの予定の作成": func(uc *schedule.Usecase, ctx context.Context, in schedule.SlotInput, stopCompanion func()) error {
+			stopCompanion()
+			_, err := uc.CreateRecurring(ctx, facilityID, in, schedule.RuleInput{Frequency: schedule.Weekly, DayOfWeek: ptr(1)})
+			return err
+		},
+		"回の置き換え": func(uc *schedule.Usecase, ctx context.Context, in schedule.SlotInput, stopCompanion func()) error {
+			stopCompanion()
+			_, err := uc.ChangeOccurrence(ctx, recurringID, civil.Date{Year: 2026, Month: 10, Day: 12}, in)
+			return err
+		},
+		"予定の変更": func(uc *schedule.Usecase, ctx context.Context, in schedule.SlotInput, stopCompanion func()) error {
+			created, err := uc.Create(ctx, facilityID, normalSlot())
+			if err != nil {
+				return err
+			}
+			stopCompanion()
+			_, err = uc.Update(ctx, created.ID, in)
+			return err
+		},
+	}
+	for _, status := range []staff.Status{staff.StatusOnLeave, staff.StatusRetired} {
+		for opName, op := range ops {
+			for slotName, slot := range slots {
+				t.Run(string(status)+"/"+opName+"/"+slotName, func(t *testing.T) {
+					s := inmem.Seeded()
+					uc, _ := newSchedules(s)
+					var before map[string]schedule.Detail
+					err := op(uc, editorCtx(), slot(), func() {
+						stop(t, s, companionID, status)
+						before = maps.Clone(s.Schedules)
+					})
+					if !errors.Is(err, apperr.ErrInvalidInput) || !strings.Contains(err.Error(), companionID) {
+						t.Fatalf("err = %v, want 職員 %s の ErrInvalidInput", err, companionID)
+					}
+					if !maps.EqualFunc(s.Schedules, before, func(a, b schedule.Detail) bool { return a.Schedule == b.Schedule }) {
+						t.Error("拒んだのに予定が変わった")
+					}
+					if _, ok := s.Recurring[recurringID]; !ok || len(s.Recurring) != 1 {
+						t.Errorf("繰り返しの予定 = %d 件, want 1 件", len(s.Recurring))
+					}
+				})
+			}
+		}
+	}
+}
+
+// 休職か退職の職員に割り振った予定と、繰り返しの予定の回は、職員を変えずに保存できる（#269 の検証の観点 2）。
+func TestSchedulesKeepInactiveStaff(t *testing.T) {
+	for _, status := range []staff.Status{staff.StatusOnLeave, staff.StatusRetired} {
+		t.Run(string(status), func(t *testing.T) {
+			s := inmem.Seeded()
+			uc, _ := newSchedules(s)
+			ctx := editorCtx()
+			created, err := uc.Create(ctx, facilityID, visitSlot(validVisit()))
+			if err != nil {
+				t.Fatal(err)
+			}
+			stop(t, s, staffID, status)
+			stop(t, s, companionID, status)
+			in := visitSlot(validVisit())
+			in.StartTime, in.EndTime = civil.Time{Hour: 10}, civil.Time{Hour: 11}
+			got, err := uc.Update(ctx, created.ID, in)
+			if err != nil {
+				t.Fatalf("職員を変えずに保存: err = %v", err)
+			}
+			if got.StartTime != in.StartTime || got.StaffID != staffID {
+				t.Errorf("got %+v", got.Schedule)
+			}
+			// 繰り返しの予定の職員のまま、回の時刻だけを変える
+			if _, err := uc.ChangeOccurrence(ctx, recurringID, civil.Date{Year: 2026, Month: 10, Day: 12}, normalSlot()); err != nil {
+				t.Fatalf("回の職員を変えずに保存: err = %v", err)
+			}
+			// 同行者を外しても、残る主訪問者と予定の職員は割り振ったまま保存できる
+			v := validVisit()
+			v.CompanionID = nil
+			if _, err := uc.Update(ctx, created.ID, visitSlot(v)); err != nil {
+				t.Fatalf("同行者を外して保存: err = %v", err)
+			}
+		})
 	}
 }

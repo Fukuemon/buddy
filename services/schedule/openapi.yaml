@@ -680,7 +680,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Patient" }
-        "400": { $ref: "#/components/responses/BadRequest" }
+        "400": { $ref: "#/components/responses/AssignBadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -791,7 +791,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Schedule" }
-        "400": { $ref: "#/components/responses/BadRequest" }
+        "400": { $ref: "#/components/responses/AssignBadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -820,7 +820,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/RecurringSchedule" }
-        "400": { $ref: "#/components/responses/BadRequest" }
+        "400": { $ref: "#/components/responses/AssignBadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -863,7 +863,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Schedule" }
-        "400": { $ref: "#/components/responses/BadRequest" }
+        "400": { $ref: "#/components/responses/AssignBadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -955,7 +955,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Schedule" }
-        "400": { $ref: "#/components/responses/BadRequest" }
+        "400": { $ref: "#/components/responses/AssignBadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -1353,6 +1353,24 @@ components:
             query:
               summary: クエリを読めない
               value: { code: invalid_input, message: "クエリの形が正しくありません: invalid semicolon separator in query" }
+    AssignBadRequest:
+      description: |
+        入力のエラー。`code` は invalid_input。`message` はエラーの箇所と理由で、入力によって変わる。
+        予定の職員、主訪問者、同行者、利用者の担当の職員に、休職か退職の職員を新しく指したときも返す。
+        予定と繰り返しの予定に既に割り振った職員は、休職か退職でも、職員を変えずに保存できる。
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          examples:
+            body:
+              summary: 本文の値が規則に合わない
+              value: { code: invalid_input, message: "終了の時刻は開始の時刻より後にします" }
+            onLeave:
+              summary: 休職の職員を指した
+              value: { code: invalid_input, message: "休職の職員 01M3TC5TRG5200KYWTZW6ER3WN には、予定と担当を割り振れません" }
+            retired:
+              summary: 退職した職員を指した
+              value: { code: invalid_input, message: "退職した職員 01M3TC5TRG5200KYWTZW6ER3WN には、予定と担当を割り振れません" }
     Unauthorized:
       description: トークンがないか、検証に失敗した。`code` は unauthenticated
       headers:

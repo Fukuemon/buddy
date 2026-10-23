@@ -3,12 +3,14 @@ package schedule
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
+	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 	"github.com/Fukuemon/buddy/services/schedule/internal/visit"
 )
@@ -194,7 +196,7 @@ func (s *Usecase) CreateRecurring(ctx context.Context, facilityID string, in Slo
 	}
 	var created RecurringDetail
 	err = s.tx.WithinTx(ctx, func(ctx context.Context) error {
-		slot, typ, err := s.prepareSlot(ctx, facilityID, in)
+		slot, typ, err := s.prepareSlot(ctx, facilityID, in, nil)
 		if err != nil {
 			return err
 		}
@@ -235,7 +237,7 @@ func (s *Usecase) ChangeOccurrence(ctx context.Context, recurringScheduleID stri
 			return apperr.AsConflict(err, "%s の回はすでに置き換えられています", originalDate)
 		}
 		var err error
-		created, err = s.createSchedule(ctx, rs.FacilityID, in, &occurrence{recurringScheduleID: rs.ID, originalDate: originalDate})
+		created, err = s.createSchedule(ctx, rs.FacilityID, in, &occurrence{recurringScheduleID: rs.ID, originalDate: originalDate, kept: assigned(rs.StaffID, rs.Visit)})
 		if err != nil {
 			return err
 		}
@@ -287,7 +289,7 @@ func (s *Usecase) Update(ctx context.Context, scheduleID string, in SlotInput) (
 		if cur.Cancel != nil {
 			return apperr.Conflict("キャンセル済みの予定は変えられません")
 		}
-		slot, typ, err := s.prepareSlot(ctx, cur.FacilityID, in)
+		slot, typ, err := s.prepareSlot(ctx, cur.FacilityID, in, assigned(cur.StaffID, cur.Visit))
 		if err != nil {
 			return err
 		}
@@ -314,14 +316,21 @@ func (s *Usecase) Update(ctx context.Context, scheduleID string, in SlotInput) (
 }
 
 // occurrence は、単発の予定が置き換える繰り返しの予定の回である。
+// kept は、繰り返しの予定に割り振った職員である。
 type occurrence struct {
 	recurringScheduleID string
 	originalDate        civil.Date
+	kept                []string
 }
 
 // createSchedule は、単発の予定を作る。replaces は、繰り返しの予定の回を置き換えるときだけ指定する。
+// 回を置き換えるときは、繰り返しの予定に割り振った職員を、休職か退職でも割り振ったまま保存できる。
 func (s *Usecase) createSchedule(ctx context.Context, facilityID string, in SlotInput, replaces *occurrence) (Detail, error) {
-	slot, typ, err := s.prepareSlot(ctx, facilityID, in)
+	var kept []string
+	if replaces != nil {
+		kept = replaces.kept
+	}
+	slot, typ, err := s.prepareSlot(ctx, facilityID, in, kept)
 	if err != nil {
 		return Detail{}, err
 	}
@@ -358,12 +367,38 @@ func (s *Usecase) recurringChanged(ctx context.Context, slot Slot, id string) er
 	return s.deps.Exports.RecurringChanged(ctx, slot.FacilityID, slot.StaffID, id)
 }
 
+// assigned は、予定に割り振った職員（予定の職員、主訪問者、同行者）の ID を返す。
+func assigned(staffID string, v *visit.Detail) []string {
+	ids := []string{staffID}
+	if v != nil {
+		ids = append(ids, v.AssignedStaffID)
+		if v.CompanionID != nil {
+			ids = append(ids, *v.CompanionID)
+		}
+	}
+	return ids
+}
+
+// assignable は、職員 st を予定に割り振れるかを確認する。kept にある職員は、予定に既に割り振った職員なので、
+// 休職か退職でも割り振ったまま保存できる（ADR-0018）。
+func assignable(st staff.Ref, kept []string) error {
+	if slices.Contains(kept, st.ID) {
+		return nil
+	}
+	return st.Assignable()
+}
+
 // prepareSlot は、予定の種類と職員と、職員の予定を編集する権限を確認し、訪問の情報があれば保存して、予定の属性を組み立てる。
+// 予定の職員、主訪問者、同行者のうち、kept に無い職員が休職か退職なら、入力のエラーを返す。kept は、予定に既に割り振った職員である。
+// 職員の状態を確認する前に、事業所の職員の休職と退職をトランザクションの終わりまで待たせ、確認した後に状態が変わらないようにする。
 // 訪問の情報を保存するので、トランザクションの中で呼ぶ。
-func (s *Usecase) prepareSlot(ctx context.Context, facilityID string, in SlotInput) (Slot, Type, error) {
+func (s *Usecase) prepareSlot(ctx context.Context, facilityID string, in SlotInput, kept []string) (Slot, Type, error) {
 	typ, err := s.deps.Types.Get(ctx, in.TypeID)
 	if err != nil {
 		return Slot{}, Type{}, apperr.Reference("予定の種類", in.TypeID, err)
+	}
+	if err := s.deps.Staff.LockStatuses(ctx, facilityID); err != nil {
+		return Slot{}, Type{}, err
 	}
 	st, err := s.deps.Staff.Get(ctx, in.StaffID)
 	if err != nil {
@@ -377,6 +412,9 @@ func (s *Usecase) prepareSlot(ctx context.Context, facilityID string, in SlotInp
 		return Slot{}, Type{}, err
 	}
 	if err := allow(p, st, true); err != nil {
+		return Slot{}, Type{}, err
+	}
+	if err := assignable(st, kept); err != nil {
 		return Slot{}, Type{}, err
 	}
 	slot := Slot{
@@ -395,6 +433,20 @@ func (s *Usecase) prepareSlot(ctx context.Context, facilityID string, in SlotInp
 		id, err := s.deps.Visits.Create(ctx, facilityID, *in.Visit)
 		if err != nil {
 			return Slot{}, Type{}, err
+		}
+		// 訪問の情報の保存が、主訪問者と同行者がいて同じ事業所にいることを確認している
+		visitStaff := []string{in.Visit.AssignedStaffID}
+		if in.Visit.CompanionID != nil {
+			visitStaff = append(visitStaff, *in.Visit.CompanionID)
+		}
+		for _, staffID := range visitStaff {
+			ref, err := s.deps.Staff.Get(ctx, staffID)
+			if err != nil {
+				return Slot{}, Type{}, err
+			}
+			if err := assignable(ref, kept); err != nil {
+				return Slot{}, Type{}, err
+			}
 		}
 		slot.VisitInfoID = &id
 	}

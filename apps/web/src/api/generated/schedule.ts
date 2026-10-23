@@ -1264,6 +1264,19 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
+        /**
+         * @description 入力のエラー。`code` は invalid_input。`message` はエラーの箇所と理由で、入力によって変わる。
+         *     予定の職員、主訪問者、同行者、利用者の担当の職員に、休職か退職の職員を新しく指したときも返す。
+         *     予定と繰り返しの予定に既に割り振った職員は、休職か退職でも、職員を変えずに保存できる。
+         */
+        AssignBadRequest: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
         /** @description トークンがないか、検証に失敗した。`code` は unauthenticated */
         Unauthorized: {
             headers: {
@@ -2243,7 +2256,7 @@ export interface operations {
                     "application/json": components["schemas"]["Patient"];
                 };
             };
-            400: components["responses"]["BadRequest"];
+            400: components["responses"]["AssignBadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
@@ -2383,7 +2396,7 @@ export interface operations {
                     "application/json": components["schemas"]["Schedule"];
                 };
             };
-            400: components["responses"]["BadRequest"];
+            400: components["responses"]["AssignBadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
@@ -2416,7 +2429,7 @@ export interface operations {
                     "application/json": components["schemas"]["RecurringSchedule"];
                 };
             };
-            400: components["responses"]["BadRequest"];
+            400: components["responses"]["AssignBadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
@@ -2474,7 +2487,7 @@ export interface operations {
                     "application/json": components["schemas"]["Schedule"];
                 };
             };
-            400: components["responses"]["BadRequest"];
+            400: components["responses"]["AssignBadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
@@ -2601,7 +2614,7 @@ export interface operations {
                     "application/json": components["schemas"]["Schedule"];
                 };
             };
-            400: components["responses"]["BadRequest"];
+            400: components["responses"]["AssignBadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];

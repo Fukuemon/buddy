@@ -413,18 +413,28 @@ func (s StaffAssignments) From(_ context.Context, facilityID, staffID string, fr
 // StaffRefs は、kernel.Finder[staff.Ref] と、予定が使う職員の一覧のメモリ上の実装である。
 type StaffRefs struct{ *Store }
 
-// Get は、職員の事業所とチームを返す。
+// Get は、職員の事業所、チーム、状態を返す。
 func (s StaffRefs) Get(_ context.Context, id string) (staff.Ref, error) {
 	d, err := get(s.Staff, id)
-	return staff.Ref{ID: d.ID, FacilityID: d.FacilityID, TeamID: d.TeamID}, err
+	return ref(d), err
 }
 
-// ListByFacility は、事業所の職員の事業所とチームを返す。
+func ref(d staff.Detail) staff.Ref {
+	return staff.Ref{ID: d.ID, FacilityID: d.FacilityID, TeamID: d.TeamID, Status: d.Status()}
+}
+
+// LockStatuses は、事業所があるかだけを確認する。メモリ上の実装はロックを取らない。
+func (s StaffRefs) LockStatuses(_ context.Context, facilityID string) error {
+	_, err := get(s.Facilities, facilityID)
+	return err
+}
+
+// ListByFacility は、事業所の職員の事業所、チーム、状態を返す。
 func (s StaffRefs) ListByFacility(_ context.Context, facilityID string) ([]staff.Ref, error) {
 	var out []staff.Ref
 	for _, d := range s.Staff {
 		if d.FacilityID == facilityID {
-			out = append(out, staff.Ref{ID: d.ID, FacilityID: d.FacilityID, TeamID: d.TeamID})
+			out = append(out, ref(d))
 		}
 	}
 	return out, nil
@@ -557,9 +567,10 @@ func (s Schedules) Update(_ context.Context, sc schedule.Schedule) error {
 	return nil
 }
 
-// Get は、単発の予定と、あればキャンセルを返す。
+// Get は、単発の予定と、あれば訪問の情報とキャンセルを返す。訪問の情報は、ID と職員と利用者とサービスコードだけを持つ。
 func (s Schedules) Get(_ context.Context, id string) (schedule.Detail, error) {
 	d, err := get(s.Schedules, id)
+	d.Visit = s.visit(d.VisitInfoID)
 	if c, ok := s.Cancels[id]; ok {
 		d.Cancel = &c
 	}
@@ -613,9 +624,25 @@ func (s RecurringSchedules) GetForUpdate(ctx context.Context, id string) (schedu
 	return s.Get(ctx, id)
 }
 
-// Get は、繰り返しの予定を返す。
+// Get は、繰り返しの予定と、あれば訪問の情報を返す。訪問の情報は、Schedules.Get と同じ項目だけを持つ。
 func (s RecurringSchedules) Get(_ context.Context, id string) (schedule.RecurringDetail, error) {
-	return get(s.Recurring, id)
+	d, err := get(s.Recurring, id)
+	d.Visit = s.visit(d.VisitInfoID)
+	return d, err
+}
+
+// visit は、ID が id の訪問の情報を返す。id が nil か、訪問の情報が無ければ nil を返す。
+func (s *Store) visit(id *string) *visit.Detail {
+	if id == nil {
+		return nil
+	}
+	i, ok := s.Infos[*id]
+	if !ok {
+		return nil
+	}
+	return &visit.Detail{
+		ID: i.ID, PatientID: i.PatientID, AssignedStaffID: i.AssignedStaffID, CompanionID: i.CompanionID, ServiceCodeID: i.ServiceCodeID,
+	}
 }
 
 // ListByFacility は、事業所の繰り返しの予定を返す。

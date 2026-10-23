@@ -130,10 +130,23 @@ func normalizePhone(phone string) (string, error) {
 }
 
 // Ref は、ほかの機能が職員を参照するときに要る項目である。事業所とチームは、参照の確認と予定の権限の判定に使う。
+// Status は、予定と担当の新しい割り振りの確認に使う。
 type Ref struct {
 	ID         string
 	FacilityID string
 	TeamID     string
+	Status     Status
+}
+
+// Assignable は、職員に予定と担当を新しく割り振れるかを確認する。休職と退職の職員には割り振れず、入力のエラーを返す（ADR-0018）。
+func (r Ref) Assignable() error {
+	switch r.Status {
+	case StatusOnLeave:
+		return apperr.Invalid("休職の職員 %s には、予定と担当を割り振れません", r.ID)
+	case StatusRetired:
+		return apperr.Invalid("退職した職員 %s には、予定と担当を割り振れません", r.ID)
+	}
+	return nil
 }
 
 // Grant は、職員に与える 1 つの権限と、その対象である。
@@ -203,7 +216,7 @@ type ListQuery struct {
 // 戻る予定の日だけを書き換える。EndLeave は、休職を外す。Retire は、職員を退職にし、メールと電話番号を消す。
 // 退職し直しても、最初に退職にした時刻を残す。StartLeave と EndLeave は、退職した職員では apperr.ErrConflict を返す。
 //
-// LockFacility は、トランザクションが終わるまで、事業所の職員の休職と退職をほかのトランザクションに待たせる。
+// LockFacility は、トランザクションが終わるまで、事業所の職員の休職と退職と、予定と担当の新しい割り振りを、ほかのトランザクションに待たせる。
 // ActiveManagers は、事業所で職員の管理の権限を持つ有効な職員の ID を返す。
 //
 // ChangePosition は、職員の役職を positionID にし、職員の権限と対象を全て消してから grants を書く。
