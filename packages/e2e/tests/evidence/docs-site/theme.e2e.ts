@@ -103,13 +103,14 @@ test.describe('文書のサイト', () => {
           async ({ page, step, check }) => {
             await openCalendarSpec(page)
             await step('文書のサイトの「画面仕様書」の「予定のカレンダー」のページを開いている')
-            await check('モックが本文の幅で出る')
-
-            await step('（撮影のため、表が見える位置まで送る）')
-            const table = docsPage(page).table
-            await table.scrollIntoViewIfNeeded()
-            await expect(table).toBeVisible()
+            await expect(docsPage(page).table).toBeVisible()
             await check('表が本文の幅で出る')
+
+            await step('（撮影のため、モックが見える位置まで送る）')
+            const mock = docsPage(page).mock
+            await mock.scrollIntoViewIfNeeded()
+            await expect(mock).toBeInViewport()
+            await check('モックが本文の幅で出る')
           },
         )
       })
