@@ -28,6 +28,15 @@ ttl:
 oauth2:
   # ブローカーが同意の accept で足す組織の ID を、access token の JWT の top level に出す（ADR-0016）
   allowed_top_level_claims: [org_id]
+  # トークンを発行するたびにブローカーを呼び、止めた職員と、上流でのログインから 12 時間を過ぎたトークンを拒ませる（ADR-0017）
+  token_hook:
+    url: http://broker:8080/internal/token-hook
+    auth:
+      type: api_key
+      config:
+        in: header
+        name: Token-Hook-Key
+        value: buddy-dev-token-hook-key-for-compose-only
 
 secrets:
   system: [buddy-dev-hydra-system-secret-for-compose-only]

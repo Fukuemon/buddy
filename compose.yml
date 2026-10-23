@@ -155,6 +155,10 @@ services:
       # ブローカーは上流の IdP の discovery の文書をコンテナの間の名前 idp で読む。ブラウザは idp の名前を引けないので、
       # 認可の画面だけローカルのポートへ転送する
       UPSTREAM_IDP_BROWSER_ORIGIN: http://localhost:${IDP_PORT:-9000}
+      # 内部の API は、予定の API の client credentials の access token を、Hydra の JWKS で検証する
+      HYDRA_ISSUER: http://hydra:4444
+      # Hydra が token_hook を呼ぶときのヘッダーの値。compose/hydra/hydra.yml の oauth2.token_hook と同じにする
+      TOKEN_HOOK_KEY: buddy-dev-token-hook-key-for-compose-only
     volumes:
       - ./compose/broker/upstream-idps.json:/config/upstream-idps.json:ro
       - ./compose/broker/upstream-idp-client-secrets.json:/config/upstream-idp-client-secrets.json:ro
@@ -242,6 +246,11 @@ services:
       # トークンの iss は Hydra の urls.self.issuer で、API はコンテナの間の名前 hydra で JWKS を読む
       OIDC_ISSUER: http://hydra:4444
       OIDC_AUDIENCE: schedule
+      # 職員の登録と停止で、ブローカーの内部の API を呼ぶ。compose/hydra/clients.sh が登録した schedule のクライアントで、
+      # client credentials の access token を取る
+      BROKER_URL: http://broker:8080
+      BROKER_TOKEN_URL: http://hydra:4444/oauth2/token
+      BROKER_CLIENT_SECRET: schedule-dev
       # web と、API の仕様のページでリクエストを試すローカル環境の文書のサイト（zensical serve）に許す
       CORS_ALLOW_ORIGINS: http://localhost:${WEB_PORT:-3000},http://localhost:8000
       # 事業所の組織と、ダミーのサービスアカウントの対応
@@ -267,6 +276,8 @@ services:
     depends_on:
       schedule-seed: { condition: service_completed_successfully }
       hydra: { condition: service_healthy }
+      hydra-clients: { condition: service_completed_successfully }
+      broker: { condition: service_healthy }
       calendarpit-authorize: { condition: service_completed_successfully }
       gcalhold: { condition: service_healthy }
 
