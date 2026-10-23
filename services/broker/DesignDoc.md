@@ -4,7 +4,7 @@ title: 認証のブローカー
 description: Ory Hydra の login and consent app として動くブローカーの責務、Hydra との分担、ログイン、職員の登録と停止、ログアウトの流れ、ローカル環境の構成
 status: draft
 governs: services/broker
-verified_commit: 787190c
+verified_commit: ef7b4d4
 ---
 
 # 認証のブローカー
@@ -114,9 +114,14 @@ sequenceDiagram
   W->>H: 認可コードをトークンに替える
 ```
 
-- 登録されていないメールには、事業所を示さず、ログインの失敗と同じ文言を返す。メールの有無を確かめる試行は、回数で制限する。
-- 止めた職員、上流のメールが確認済みでない職員、登録のメールと上流のメールが違う職員は、ログインの reject で返す。web はログインの失敗の画面を出す。
-- Hydra のログインのセッションは、12 時間で切れる。
+- 登録されていないメール、止めた職員、2 つの事業所に同じメールがある職員は、上流の IdP へ転送せずにログインの reject で返す。web はログインの失敗の画面を出すので、事業所を示さず、ログインの失敗と同じ文言になる。
+- メールの有無を確かめる試行は、送り手のアドレスごとに数え、続けて 20 回、以後は 10 秒に 1 回までにする。超えた試行は reject で返す。数えるのはプロセスの中だけである。
+- 上流のメールが確認済みでない職員、登録のメールと上流のメールが違う職員、結び付けた上流のアカウントと違うアカウントで入った職員は、ログインの reject で返す。
+- 上流の IdP へ転送している間の値（ログインの要求、職員の ID、state、nonce、PKCE の code verifier）は、ブラウザの cookie に置き、コールバックの `state` と照らす。
+  - cookie は署名しない。書き換えられるのはブラウザの利用者だけで、事業所と上流の IdP は職員の ID から DB で引き直すので、別のメールを入れたのと同じ結果にしかならない。
+- ブローカーの画面の文言は、web のログインの失敗の画面と同じにする。コールバックの値がこのブラウザで始めたログインのものと確かめられないときは、Hydra へ返さずにブローカーがログインの失敗の画面を出す。
+- 同意の accept は、web のクライアントに許した audience を `aud` に、職員の事業所の組織の ID を `org_id` に入れる。Hydra は `skip_consent` のクライアントでも同意の画面を呼ぶので、ブローカーは画面を出さずに accept する。
+- Hydra のログインのセッションは、12 時間で切れる。ログアウトで Hydra のログインのセッションを消せるようになるまで、ブローカーはログインの accept でセッションを覚えさせない。覚えると、web のセッションを消した後に、ログインの画面を通らずに入り直せる。
 
 ### トークンの発行の確かめ
 
@@ -140,16 +145,23 @@ compose は、開発用の IdP（mock-oauth2-server）を、上流の IdP のフ
 - Hydra は、同じ PostgreSQL の別のデータベースを使う。
 - 初期化のコンテナが、Hydra に web と予定の API のクライアントを登録する。
 - 上流の IdP ごとの違い（署名の方式、Google の `hd`）は、フェイクで確かめず、ブローカーの単体のテストで確かめる。
+- フェイクは、ログインの画面で入れた名前を `sub` に、クレームの欄の JSON を ID token のクレームにする。
+- コンテナは、Hydra の discovery の文書と上流の IdP の discovery の文書を、コンテナの間の名前（`hydra`、`idp`）で読む。
+  - ブラウザはこの名前を引けない。Hydra は、認可のエンドポイントを `urls.self.public` のローカルのポートで示す。
+  - ブローカーは、上流の IdP の認可の画面の origin を `UPSTREAM_IDP_BROWSER_ORIGIN` に替えて転送する。
+- ブローカーと予定の API のシードは、同じ職員の ID を持つ。2 つの事業所（`org-sample`、`org-sample-b`）の職員がいる。
 
 ## Interface
 
 - 置く場所: `services/broker`
 - 読む設定
   - Hydra の admin API の URL（`HYDRA_ADMIN_URL`）
+  - ブラウザが開くブローカーの URL（`PUBLIC_URL`）。上流の IdP のコールバックの URL を作る
   - 事業所の組織の ID と、上流の IdP の issuer と client ID の対応のファイル（`UPSTREAM_IDPS_FILE`）
   - 組織の ID と、上流の IdP の client secret の対応のファイル（`UPSTREAM_IDP_CLIENT_SECRETS_FILE`）。シークレットとして渡す
   - ブローカーの DB の接続先（`DB_HOST`、`DB_PORT`、`DB_USER`、`DB_PASSWORD`、`DB_NAME`）
   - 2 つのファイルに必須の値が無いか、client secret の無い上流の IdP があれば、ブローカーは起動しない。値の一覧と形は [README](https://github.com/Fukuemon/buddy/blob/develop/services/broker/README.md#起動する) にある。
 - ヘルスチェック: `GET /healthz`（依存先を確かめない）、`GET /readyz`（DB に届かなければ 503）、`broker healthcheck` のサブコマンド
-- 公開する画面: ログイン（メールの入力）、上流の IdP のコールバック、同意、ログアウト
-- 内部の API: 職員の登録、職員の停止、Hydra の `oauth2.token_hook`
+- 公開する画面: ログイン（`GET` と `POST /login`）、上流の IdP のコールバック（`GET /login/callback`）、同意（`GET /consent`）、ログアウト（未実装）
+- 内部の API: 職員の登録、職員の停止、Hydra の `oauth2.token_hook`（未実装）
+- マイグレーションとシード: `migrate up`、`migrate down [N]`、`migrate seed`。シードは職員がいない DB にだけ入る

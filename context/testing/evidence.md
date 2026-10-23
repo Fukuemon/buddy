@@ -53,12 +53,13 @@ compose を、E2E と別のプロジェクトの名前とポートで起動し�
 
 ```sh
 export WEB_PORT=3850 SCHEDULE_PORT=8850 RECEIPT_PORT=8851 GCALHOLD_PORT=8852 \
-  VALKEY_PORT=6850 IDP_PORT=9850 CALENDARPIT_PORT=4850 POSTGRES_PORT=15850
+  VALKEY_PORT=6850 IDP_PORT=9850 CALENDARPIT_PORT=4850 POSTGRES_PORT=15850 \
+  HYDRA_PUBLIC_PORT=4854 HYDRA_ADMIN_PORT=4855 BROKER_PORT=8853
 docker compose -p buddy-evidence up --build --wait
 EVIDENCE_NO=<番号> E2E_BASE_URL=http://localhost:3850 \
   E2E_CALENDARPIT_URL=http://localhost:4850 E2E_GCALHOLD_URL=http://localhost:8852 \
   E2E_SCHEDULE_URL=http://localhost:8850 E2E_RECEIPT_URL=http://localhost:8851 \
-  E2E_IDP_URL=http://localhost:9850 \
+  E2E_HYDRA_URL=http://localhost:4854 \
   pnpm --filter @buddy/e2e evidence -g '<test の名前の一部>'
 docker compose -p buddy-evidence down -v
 ```
@@ -72,7 +73,7 @@ docker compose -p buddy-evidence down -v
 | `E2E_STORYBOOK_URL` | Storybook の URL | `http://localhost:6006` |
 | `E2E_SCHEDULE_URL` | 撮る予定の API の URL。API の参照のページから送ったリクエストを、ここへ送り直す | `http://localhost:8080` |
 | `E2E_RECEIPT_URL` | 撮る照合の API の URL。API の参照のページから送ったリクエストを、ここへ送り直す | `http://localhost:8090` |
-| `E2E_IDP_URL` | 撮る compose の IdP の URL。API の参照のページに入れるトークンを、ここから取る | `http://localhost:9000` |
+| `E2E_HYDRA_URL` | 撮る compose の Hydra の URL。API の参照のページに入れるトークンを、ここから取る | `http://localhost:4444` |
 
 - 改修前と比べるときは、改修前のブランチの worktree で、2 つ目の compose を別の `-p` とポートで起動する。
   - spec は、両方とも改修後の worktree から流す。改修前は `E2E_BASE_URL` を改修前の compose の web に向けて `EVIDENCE_ONLY=before` で、改修後は改修後の compose に向けて `EVIDENCE_ONLY=after` で撮る。同じ `<name>/` の `compare/` に比較の画像ができる。
@@ -80,7 +81,8 @@ docker compose -p buddy-evidence down -v
 
     ```sh
     export WEB_PORT=3860 SCHEDULE_PORT=8860 RECEIPT_PORT=8861 GCALHOLD_PORT=8862 \
-      VALKEY_PORT=6860 IDP_PORT=9860 CALENDARPIT_PORT=4860 POSTGRES_PORT=15860
+      VALKEY_PORT=6860 IDP_PORT=9860 CALENDARPIT_PORT=4860 POSTGRES_PORT=15860 \
+      HYDRA_PUBLIC_PORT=4864 HYDRA_ADMIN_PORT=4865 BROKER_PORT=8863
     docker compose -p buddy-evidence-before up --build --wait
     ```
 
@@ -88,7 +90,7 @@ docker compose -p buddy-evidence down -v
 
 ### ログインとテストデータ
 
-- `recordPrEvidence` の `prepare` で、compose の IdP にログインする。名前は `packages/e2e/tests/fixtures/env.ts` の `LOGIN_NAME`（青木 陽菜、マネージャー）か `LEADER.loginName`（森 健太、チームリーダー）にする。
+- `recordPrEvidence` の `prepare` で、`packages/e2e/tests/screens/login.ts` の `signInAtBroker` で compose のブローカーにログインする。メールは `packages/e2e/tests/fixtures/env.ts` の `LOGIN_EMAIL`（青木 陽菜、マネージャー）か `LEADER.email`（森 健太、チームリーダー）にする。
   - `setup` の project が保存したログインの状態は使わない。`recordEvidence` は新しいコンテキストで録画するためである。
 - テストデータは、シードの職員と利用者を使い、足りないものは `prepare` で作る。作り方は E2E の spec と同じく、画面の操作か calendarpit の管理の API にする。
   - 録画の中では、観点の操作だけを行う。

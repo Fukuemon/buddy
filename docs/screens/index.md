@@ -24,7 +24,7 @@
 | `staff-edit` | 職員の編集（権限の変更を含む） | 未決 | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | なし |
 | `receipt-upload` | 照合（対象の月の選択、CSV のアップロード） | `/receipt` | 全ての職員 | [照合](receipt-upload_照合/index.md) |
 | `receipt-result` | 照合の結果 | `/receipt/result` | 全ての職員 | [照合の結果](receipt-result_照合の結果/index.md) |
-| `account-login` | ログイン | `/auth/login` | 全ての職員 | なし。認証の基盤の画面へ転送し、buddy は画面を持たない |
+| `account-login` | ログイン | `/auth/login` | 全ての職員 | なし。Hydra を通して、認証のブローカー（`services/broker`）のメールの入力の画面へ転送する。ブローカーの画面は web の画面ではない |
 | `account-error` | ログインの失敗 | `/auth/error` | 全ての職員 | [ログインの失敗](account-error_ログインの失敗/index.md) |
 | `account-profile` | プロフィール | 未決 | 全ての職員 | なし |
 
