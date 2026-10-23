@@ -74,7 +74,7 @@ const login = async (deps: AuthDeps, returnTo = '/schedule') => {
 }
 
 describe('ログイン', () => {
-  it('IdP へ転送し、コールバックでセッションを作って戻る先へ転送する', async () => {
+  it('IdP へリダイレクトし、コールバックでセッションを作って戻る先へリダイレクトする', async () => {
     const start = await startLogin(
       new Request('http://web.test/auth/login?returnTo=/schedule'),
       setup().deps,
@@ -134,7 +134,7 @@ describe('ログイン', () => {
     expect([...store.values.keys()].filter((k) => k.startsWith('session:'))).toHaveLength(1)
   })
 
-  it('state が cookie と違えば、トークンを取らずに失敗へ転送する', async () => {
+  it('state が cookie と違えば、トークンを取らずに失敗へリダイレクトする', async () => {
     const exchangeCode = vi.fn<OidcClient['exchangeCode']>()
     const { deps } = setup({ oidc: fakeOidc({ exchangeCode }) })
     const start = await startLogin(new Request('http://web.test/auth/login'), deps)
@@ -148,14 +148,14 @@ describe('ログイン', () => {
     expect(exchangeCode).not.toHaveBeenCalled()
   })
 
-  it('事業所に登録されていない職員は forbidden へ転送し、セッションを作らない', async () => {
+  it('事業所に登録されていない職員は forbidden へリダイレクトし、セッションを作らない', async () => {
     const { store, deps } = setup({ fetchMe: async () => ({ ok: false, reason: 'forbidden' }) })
     const res = await login(deps)
     expect(res.headers.get('Location')).toBe('/auth/error?reason=forbidden')
     expect([...store.values.keys()].some((k) => k.startsWith('session:'))).toBe(false)
   })
 
-  it('トークンを取れなければ failed へ転送する', async () => {
+  it('トークンを取れなければ failed へリダイレクトする', async () => {
     const { deps } = setup({
       oidc: fakeOidc({
         exchangeCode: async () => {
@@ -218,7 +218,7 @@ describe('readSession', () => {
       },
       deps,
     )
-    // 取り直しでブローカーが ID token を返さなければ、前の ID token をログアウトに使う
+    // 更新で Hydra が ID token を返さなければ、前の ID token をログアウトに使う
     expect(await readSession(req, deps)).toMatchObject({
       accessToken: 'access-2',
       refreshToken: 'refresh-1',
@@ -227,7 +227,7 @@ describe('readSession', () => {
     expect(await deps.store.get('session:id-1')).toMatchObject({ accessToken: 'access-2' })
   })
 
-  it('取り直しでブローカーが ID token を返したら、新しい ID token に置き換える', async () => {
+  it('更新で Hydra が ID token を返したら、新しい ID token に置き換える', async () => {
     const { deps } = setup({
       oidc: fakeOidc({
         refresh: async () => ({ accessToken: 'access-2', expiresIn: 3600, idToken: 'id-2' }),
@@ -371,7 +371,7 @@ describe('readSession', () => {
     expect(await deps.store.get('session:id-1')).toBeUndefined()
   })
 
-  it('ログアウトでセッションと cookie を消し、ID token を添えて Hydra のログアウトへ転送する', async () => {
+  it('ログアウトでセッションと cookie を消し、ID token を添えて Hydra のログアウトへリダイレクトする', async () => {
     const { deps } = setup()
     const req = await withSession({ ...VIEWER, accessToken: 'a', idToken: 'id-1' }, deps)
     const res = await logout(req, deps)
@@ -383,7 +383,7 @@ describe('readSession', () => {
     expect(await deps.store.get('session:id-1')).toBeUndefined()
   })
 
-  it('ID token の無い古いセッションのログアウトは、セッションを消して / へ転送する', async () => {
+  it('ID token の無い古いセッションのログアウトは、セッションを消して / へリダイレクトする', async () => {
     const { deps } = setup()
     const req = await withSession({ ...VIEWER, accessToken: 'a' }, deps)
     const res = await logout(req, deps)
@@ -392,7 +392,7 @@ describe('readSession', () => {
     expect(await deps.store.get('session:id-1')).toBeUndefined()
   })
 
-  it('セッションが無くてもログアウトは / へ転送する', async () => {
+  it('セッションが無くてもログアウトは / へリダイレクトする', async () => {
     const res = await logout(new Request('http://web.test/auth/logout'), setup().deps)
     expect(res.headers.get('Location')).toBe('/')
   })

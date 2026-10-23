@@ -28,7 +28,7 @@ type Identity struct {
 	EmailVerified bool
 }
 
-// Attempt は、上流の IdP へ転送する 1 回のログインの値である。ブラウザの cookie に置き、コールバックで照らす。
+// Attempt は、上流の IdP へリダイレクトする 1 回のログインの値である。ブラウザの cookie に置き、コールバックで照合する。
 type Attempt struct {
 	State        string
 	Nonce        string
@@ -64,10 +64,10 @@ type discovery struct {
 	failedAt time.Time
 }
 
-// NewRP は、idps の上流の IdP に、redirectURL をコールバックにして転送する RP を作る。
+// NewRP は、idps の上流の IdP に、redirectURL をコールバックにしてリダイレクトする RP を作る。
 //
 // browserOrigin は、ローカル環境のように、ブローカーが discovery を読む issuer の URL にブラウザが届かないときだけ渡す。
-// 認可のエンドポイントの scheme とホストを browserOrigin に替えて、ブラウザを転送する。空なら替えない。
+// 認可のエンドポイントの scheme とホストを browserOrigin に替えて、ブラウザをリダイレクトする。空なら替えない。
 // client が nil なら、上流の IdP へのリクエストを 10 秒で打ち切る client を使う。
 func NewRP(idps IdPs, redirectURL, browserOrigin string, client *http.Client) (*RP, error) {
 	rp := &RP{

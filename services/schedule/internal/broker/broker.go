@@ -1,4 +1,4 @@
-// Package broker は、認証のブローカーの内部の API（職員の登録、有効化、削除、休職、復職、退職）を呼ぶ（ADR-0017）。
+// Package broker は、ID ブローカーの内部の API（職員の登録、有効化、削除、休職、復職、退職）を呼ぶ（ADR-0017）。
 // 内部の API は、Hydra の client credentials の access token（aud は broker）で呼ぶ。
 package broker
 
@@ -161,7 +161,7 @@ func (c *Client) do(ctx context.Context, method, path string, body []byte, out a
 		err := fmt.Errorf("broker %s %s: %d %s", method, path, resp.StatusCode, bytes.TrimSpace(msg))
 		switch {
 		case resp.StatusCode == http.StatusBadRequest:
-			return 0, apperr.Invalid("認証のブローカーが受け付けません: %s", e.Message)
+			return 0, apperr.Invalid("ID ブローカーが受け付けません: %s", e.Message)
 		case resp.StatusCode == http.StatusNotFound:
 			return 0, fmt.Errorf("%w: %w", apperr.ErrNotFound, err)
 		case resp.StatusCode == http.StatusConflict && e.Code == "email_taken":

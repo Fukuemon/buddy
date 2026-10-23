@@ -41,7 +41,7 @@ type OAuth2Client struct {
 }
 
 // LoginRequest は、Hydra がブローカーのログインの画面に渡す要求である。
-// Skip が true なら、Hydra は Subject のログインのセッションを覚えていて、ブローカーは画面を出さずに accept する。
+// Skip が true なら、Hydra は Subject のログインのセッションを保っていて、ブローカーは画面を出さずに accept する。
 type LoginRequest struct {
 	Challenge string       `json:"challenge"`
 	Skip      bool         `json:"skip"`
@@ -96,12 +96,12 @@ func (c *Client) LoginRequest(ctx context.Context, challenge string) (LoginReque
 	return out, err
 }
 
-// AcceptLogin は、ログインを受け入れ、ブラウザを転送する先を返す。
+// AcceptLogin は、ログインを受け入れ、ブラウザをリダイレクト先を返す。
 func (c *Client) AcceptLogin(ctx context.Context, challenge string, body AcceptLogin) (string, error) {
 	return c.redirect(ctx, "/admin/oauth2/auth/requests/login/accept", "login_challenge", challenge, body)
 }
 
-// RejectLogin は、ログインを拒み、ブラウザを転送する先を返す。
+// RejectLogin は、ログインを拒み、ブラウザをリダイレクト先を返す。
 func (c *Client) RejectLogin(ctx context.Context, challenge string, body Rejection) (string, error) {
 	return c.redirect(ctx, "/admin/oauth2/auth/requests/login/reject", "login_challenge", challenge, body)
 }
@@ -113,17 +113,17 @@ func (c *Client) ConsentRequest(ctx context.Context, challenge string) (ConsentR
 	return out, err
 }
 
-// AcceptConsent は、同意を受け入れ、ブラウザを転送する先を返す。
+// AcceptConsent は、同意を受け入れ、ブラウザをリダイレクト先を返す。
 func (c *Client) AcceptConsent(ctx context.Context, challenge string, body AcceptConsent) (string, error) {
 	return c.redirect(ctx, "/admin/oauth2/auth/requests/consent/accept", "consent_challenge", challenge, body)
 }
 
-// RejectConsent は、同意を拒み、ブラウザを転送する先を返す。
+// RejectConsent は、同意を拒み、ブラウザをリダイレクト先を返す。
 func (c *Client) RejectConsent(ctx context.Context, challenge string, body Rejection) (string, error) {
 	return c.redirect(ctx, "/admin/oauth2/auth/requests/consent/reject", "consent_challenge", challenge, body)
 }
 
-// AcceptLogout は、ログアウトを受け入れ、ブラウザを転送する先を返す。Hydra は、ブラウザのログインのセッションを消す。
+// AcceptLogout は、ログアウトを受け入れ、ブラウザをリダイレクト先を返す。Hydra は、ブラウザのログインのセッションを消す。
 func (c *Client) AcceptLogout(ctx context.Context, challenge string) (string, error) {
 	return c.redirect(ctx, "/admin/oauth2/auth/requests/logout/accept", "logout_challenge", challenge, nil)
 }

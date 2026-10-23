@@ -5,7 +5,7 @@
   white-space: pre-wrap;
 }
 
-/* 行の区切り線は出さず、節の見出しの線だけで分ける（apps/web の ScheduleDetailModal の Row） */
+/* 行の区切り線は出さず、セクションの見出しの線だけで分ける（apps/web の ScheduleDetailModal の Row） */
 .sd-rows .wf-row {
   padding: 8px 0;
   border-bottom: 0;

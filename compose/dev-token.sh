@@ -15,10 +15,10 @@ redirect=http://localhost:${WEB_PORT:-3000}/auth/callback
 jar=$(mktemp)
 trap 'rm -f "$jar"' EXIT
 
-# 転送先を返す。転送しない応答はエラーで止める
+# リダイレクト先を返す。リダイレクトしない応答はエラーで止める
 next() {
   to=$(curl -sS -b "$jar" -c "$jar" -o /dev/null -w '%{redirect_url}' "$@")
-  [ -n "$to" ] || { echo "転送されない: $*" >&2; exit 1; }
+  [ -n "$to" ] || { echo "リダイレクトされない: $*" >&2; exit 1; }
   echo "$to"
 }
 

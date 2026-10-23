@@ -34,7 +34,7 @@ const AI_OUT = /(^|[^\w.-])\.?\/?\.ai-out\//m
 const SKIP_AUTHORS = new Set(['dependabot[bot]'])
 const MARKER = '<!-- issue-pr-body-check -->'
 
-/** HTML のコメント、コードブロック、details の中身を消した本文を返す。どれもテンプレートの説明か補足で、節ではない。 */
+/** HTML のコメント、コードブロック、details の中身を消した本文を返す。どれもテンプレートの説明か補足で、セクションではない。 */
 export function stripNonText(body) {
   return body
     .replace(/<!--[\s\S]*?-->/g, '')
@@ -73,13 +73,13 @@ export function linkedIssue(body) {
   return m ? { keyword: m[1], number: Number(m[2]) } : null
 }
 
-/** `##` の見出しが、テンプレートの節の名前と順に合わなければ、指摘の文を返す。検証とエビデンスは無くてもよい。 */
+/** `##` の見出しが、テンプレートのセクションの名前と順に合わなければ、指摘の文を返す。検証とエビデンスは無くてもよい。 */
 export function checkSections(body) {
   const headings = [...stripNonText(body).matchAll(/^## (.+?)\s*$/gm)].map((m) => m[1])
   const expected = SECTIONS.filter((s) => !OPTIONAL_SECTIONS.has(s) || headings.includes(s))
   if (headings.join('\n') === expected.join('\n')) return []
   return [
-    `節の名前か順がテンプレートと違う。期待: ${expected.join('、')}。実際: ${headings.join('、') || 'なし'}`,
+    `セクションの名前か順がテンプレートと違う。期待: ${expected.join('、')}。実際: ${headings.join('、') || 'なし'}`,
   ]
 }
 
@@ -118,7 +118,7 @@ export function checkPullRequest({ repo, number, title, body, issueTitle }) {
   return { errors, warnings }
 }
 
-/** issue の指摘を返す。issue は form で書くので、節は確認しない。 */
+/** issue の指摘を返す。issue は form で書くので、セクションは確認しない。 */
 export function checkIssue({ title, body }) {
   return { errors: [...checkTitle(title), ...checkCommon(body)], warnings: [] }
 }

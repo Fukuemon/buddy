@@ -26,7 +26,7 @@ func (r *FacilityRepository) Get(ctx context.Context, id string) (organization.F
 	return toFacility(f), nil
 }
 
-// GetByOrgID は、認証のブローカーの組織の ID が orgID の事業所を返す。結び付いた事業所が無いときは apperr.ErrNotFound を返す。
+// GetByOrgID は、ID ブローカーの組織の ID が orgID の事業所を返す。結び付いた事業所が無いときは apperr.ErrNotFound を返す。
 func (r *FacilityRepository) GetByOrgID(ctx context.Context, orgID string) (organization.Facility, error) {
 	f, err := r.q(ctx).GetFacilityByOrgID(ctx, ptr(orgID))
 	if err != nil {

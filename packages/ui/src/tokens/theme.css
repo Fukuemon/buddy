@@ -60,7 +60,7 @@
   --text-label--line-height: var(--line-height-100);
   --text-label--letter-spacing: 0.02em;
   --text-label--font-weight: var(--font-weight-700);
-  /* heading-sm (Std-18B-160): 節の見出し、ダイアログのタイトル */
+  /* heading-sm (Std-18B-160): セクションの見出し、ダイアログのタイトル */
   --text-heading-sm: var(--font-size-18);
   --text-heading-sm--line-height: var(--line-height-160);
   --text-heading-sm--letter-spacing: 0.02em;

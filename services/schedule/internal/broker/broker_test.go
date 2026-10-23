@@ -91,7 +91,7 @@ func TestErrors(t *testing.T) {
 	}
 	invalid := newClient(t, http.StatusBadRequest, `{"code":"invalid","message":"組織の上流の IdP の設定がありません"}`, &calls, &form)
 	if _, err := invalid.Register(ctx, "org-x", "a@example.com"); !errors.Is(err, apperr.ErrInvalidInput) ||
-		err.Error() != "認証のブローカーが受け付けません: 組織の上流の IdP の設定がありません" {
+		err.Error() != "ID ブローカーが受け付けません: 組織の上流の IdP の設定がありません" {
 		t.Errorf("400 の Register の err = %v, want 本文の文の ErrInvalidInput", err)
 	}
 	notPending := newClient(t, http.StatusConflict, `{"code":"not_pending"}`, &calls, &form)

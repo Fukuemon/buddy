@@ -1,4 +1,4 @@
-// 文書のサイトと Storybook のカタログを出す Worker。中身は scripts/build-docs-site.mjs が並べた静的なファイルだけで、スクリプトを持たない。
+// ドキュメントサイトと Storybook のカタログを出す Worker。中身は scripts/build-docs-site.mjs が並べた静的なファイルだけで、スクリプトを持たない。
 // Worker には Cloudflare の画面で Access を掛けてある（手順は README.md）。名前を変えると、新しい Worker が Access なしで出る。
 import { defineConfig } from 'cf/config'
 

@@ -40,7 +40,7 @@ import (
 // readyTimeout は、GET /readyz が DB の疎通を待つ上限である。
 const readyTimeout = 2 * time.Second
 
-// ログインの画面でメールを送る試行は、送り手のアドレスごとに loginBurst 回まで続けられ、loginEvery ごとに 1 回ずつ戻る。
+// ログインの画面でメールを送る試行は、送信元の IP アドレスごとに loginBurst 回まで続けられ、loginEvery ごとに 1 回ずつ戻る。
 // 入れたメールごとには emailBurst 回まで続けられ、emailEvery ごとに 1 回ずつ戻る。
 const (
 	loginBurst = 20

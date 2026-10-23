@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 
-/** 文書のサイト（Zensical）のページ。buddy の画面ではないので testid が無い。 */
+/** ドキュメントサイト（Zensical）のページ。buddy の画面ではないので testid が無い。 */
 export const docsPage = (page: Page) => ({
   /** 本文 */
   content: page.locator('article.md-typeset'),

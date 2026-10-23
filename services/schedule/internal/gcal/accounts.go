@@ -12,7 +12,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/calendar"
 )
 
-// OrgOf は、事業所 facilityID の、認証のブローカーの組織の ID を返す。結び付けていなければ空を返す。
+// OrgOf は、事業所 facilityID の、ID ブローカーの組織の ID を返す。結び付けていなければ空を返す。
 type OrgOf func(ctx context.Context, facilityID string) (string, error)
 
 // Clients は、組織のサービスアカウントで Calendar API を呼ぶ calendarv3.Service を返す。実装は gcalauth.Clients である。

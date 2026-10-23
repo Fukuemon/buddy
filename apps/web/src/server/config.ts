@@ -1,17 +1,17 @@
 /** BFF がサーバーで読む設定。全ての値は環境変数から読む。 */
 export type ServerConfig = {
   oidc: {
-    /** ブローカーの Issuer の URL。discovery の文書をここから読む。 */
+    /** Hydra の Issuer の URL。discovery の文書をここから読む。 */
     issuer: string
     clientId: string
     clientSecret: string
     /**
-     * ブラウザを転送する認可の URL。discovery の authorization_endpoint の代わりに使う。
+     * ブラウザをリダイレクトする認可の URL。discovery の authorization_endpoint の代わりに使う。
      * ローカル環境の compose のように、web とブラウザから届く IdP の URL が違うときだけ渡す。
      */
     authorizationEndpoint?: string
     /**
-     * ブラウザを転送する RP-Initiated Logout の URL。discovery の end_session_endpoint の代わりに使う。
+     * ブラウザをリダイレクトする RP-Initiated Logout の URL。discovery の end_session_endpoint の代わりに使う。
      * Hydra は end_session_endpoint を Issuer の URL から作るので、web とブラウザから届く IdP の URL が違うときに渡す。
      */
     endSessionEndpoint?: string

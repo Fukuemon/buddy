@@ -49,14 +49,14 @@ func (s *server) authenticate(next http.Handler) http.Handler {
 	})
 }
 
-// unauthorized は、RFC 6750 の 3 節に従い、WWW-Authenticate を付けて 401 を返す。
+// unauthorized は、RFC 6750 のセクション 3 に従い、WWW-Authenticate を付けて 401 を返す。
 // https://www.rfc-editor.org/rfc/rfc6750#section-3
 func (s *server) unauthorized(w http.ResponseWriter, challenge, message string) {
 	w.Header().Set("WWW-Authenticate", challenge)
 	s.writeJSON(w, http.StatusUnauthorized, errorBody(openapi.Unauthenticated, message))
 }
 
-// bearerToken は、"Bearer <token>" の <token> を返す。スキームの大文字と小文字は区別しない（RFC 7235 の 2.1 節）。
+// bearerToken は、"Bearer <token>" の <token> を返す。スキームの大文字と小文字は区別しない（RFC 7235 のセクション 2.1）。
 func bearerToken(header string) (string, bool) {
 	scheme, token, ok := strings.Cut(header, " ")
 	if !ok || !strings.EqualFold(scheme, "Bearer") {

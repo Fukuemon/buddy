@@ -69,7 +69,7 @@ func (f *fakeStaff) Link(_ context.Context, staffID string, a login.UpstreamAcco
 	return nil
 }
 
-// fakeHydra は、受けた accept と reject を残し、ブラウザを転送する先に結果の種類を入れて返す。
+// fakeHydra は、受けた accept と reject を残し、ブラウザをリダイレクト先に結果の種類を入れて返す。
 type fakeHydra struct {
 	login       hydra.LoginRequest
 	loginErr    error
@@ -152,7 +152,7 @@ func newEnv(limit int) *env {
 	return newEnvWith(limit, func(*login.Config) {})
 }
 
-// newEnvWith は、送り手のアドレスごとの上限を limit にし、設定を edit で替えた env を作る。
+// newEnvWith は、送信元の IP アドレスごとの上限を limit にし、設定を edit で替えた env を作る。
 func newEnvWith(limit int, edit func(*login.Config)) *env {
 	e := &env{
 		staff: &fakeStaff{members: map[string]login.StaffMember{
@@ -316,7 +316,7 @@ func TestSubmitEmailRejects(t *testing.T) {
 				t.Errorf("Location = %q, want reject", got)
 			}
 			if len(e.upstream.orgs) != 0 || len(rec.Result().Cookies()) != 0 {
-				t.Errorf("上流の IdP へ転送した: orgs = %v", e.upstream.orgs)
+				t.Errorf("上流の IdP へリダイレクトした: orgs = %v", e.upstream.orgs)
 			}
 		})
 	}
@@ -327,7 +327,7 @@ func TestSubmitEmailRateLimit(t *testing.T) {
 	for i, want := range []string{"org-a.example.com", "org-a.example.com", "hydra"} {
 		to, err := url.Parse(location(t, e.submit("aoki@example.com")))
 		if err != nil || to.Host != want {
-			t.Errorf("%d 回目の転送先 = %v, want %s", i+1, to, want)
+			t.Errorf("%d 回目のリダイレクト先 = %v, want %s", i+1, to, want)
 		}
 	}
 	if !e.hydra.rejected {
@@ -383,7 +383,7 @@ func TestSubmitEmailCrossOrigin(t *testing.T) {
 	}
 }
 
-// TestSubmitEmailRateLimitPerEmail は、送り手のアドレスを替えても、同じメールの試行を上限で止めることを確認する。
+// TestSubmitEmailRateLimitPerEmail は、送信元の IP アドレスを替えても、同じメールの試行を上限で止めることを確認する。
 func TestSubmitEmailRateLimitPerEmail(t *testing.T) {
 	e := newEnvWith(100, func(c *login.Config) { c.EmailLimiter = login.NewLimiter(time.Hour, 2) })
 	for i, want := range []string{"org-a.example.com", "org-a.example.com", "hydra"} {
@@ -391,7 +391,7 @@ func TestSubmitEmailRateLimitPerEmail(t *testing.T) {
 		req.RemoteAddr = "192.0.2." + strconv.Itoa(10+i) + ":1234"
 		to, err := url.Parse(location(t, e.do(req)))
 		if err != nil || to.Host != want {
-			t.Errorf("%d 回目の転送先 = %v, want %s", i+1, to, want)
+			t.Errorf("%d 回目のリダイレクト先 = %v, want %s", i+1, to, want)
 		}
 	}
 	if to, _ := url.Parse(location(t, e.submit("ueno@example.com"))); to.Host != "org-b.example.com" {
@@ -399,8 +399,8 @@ func TestSubmitEmailRateLimitPerEmail(t *testing.T) {
 	}
 }
 
-// TestSubmitEmailClientIPHeader は、送り手のアドレスを、設定したヘッダーの最後の値から読むことを確認する。
-// 最後の値は前段のプロキシが足したもので、ブラウザが先頭に書いた値では数え分けない。
+// TestSubmitEmailClientIPHeader は、送信元の IP アドレスを、設定したヘッダーの最後の値から読むことを確認する。
+// 最後の値はリバースプロキシが足したもので、ブラウザが先頭に書いた値では数え分けない。
 func TestSubmitEmailClientIPHeader(t *testing.T) {
 	e := newEnvWith(1, func(c *login.Config) { c.ClientIPHeader = "X-Forwarded-For" })
 	send := func(xff string) string {
@@ -414,10 +414,10 @@ func TestSubmitEmailClientIPHeader(t *testing.T) {
 		return to.Host
 	}
 	if got := send("198.51.100.1"); got != "org-a.example.com" {
-		t.Errorf("1 人目の転送先 = %s", got)
+		t.Errorf("1 人目のリダイレクト先 = %s", got)
 	}
 	if got := send("198.51.100.2"); got != "org-a.example.com" {
-		t.Errorf("プロキシのアドレスで数え、別の送り手を止めた: %s", got)
+		t.Errorf("プロキシのアドレスで数え、別の送信元を止めた: %s", got)
 	}
 	if got := send("203.0.113.9, 198.51.100.1"); got != "hydra" {
 		t.Errorf("ブラウザが書いた先頭の値で数え分けた: %s", got)
@@ -450,7 +450,7 @@ func TestCallback(t *testing.T) {
 			code:     "code-1",
 		},
 		{
-			name:     "結び付け済みなら iss と sub で照らし、メールを見ない",
+			name:     "結び付け済みなら iss と sub で照合し、メールを見ない",
 			identity: upstream.Identity{Issuer: issuerA, Subject: "u-aoki", Email: "renamed@example.com"},
 			linked:   login.UpstreamAccount{Issuer: issuerA, Subject: "u-aoki"},
 			code:     "code-1", accepted: true,

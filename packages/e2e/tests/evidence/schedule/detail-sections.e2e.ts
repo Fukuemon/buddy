@@ -17,18 +17,18 @@ const openDetail = (url: string) => async (page: Page) => {
 }
 
 test.describe('予定のカレンダー', () => {
-  test.describe('予定の詳細の節', () => {
+  test.describe('予定の詳細のセクション', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       const prefix = variant.label ? `${variant.label}: ` : ''
 
-      test(`${prefix}訪問の予定の詳細を開いた場合、日時の見出しと、訪問の情報の節とメモの節が出ること`, async ({
+      test(`${prefix}訪問の予定の詳細を開いた場合、日時の見出しと、訪問の情報のセクションとメモのセクションが出ること`, async ({
         browser,
       }) => {
         await recordPrEvidence(
           browser,
           {
             name: 'schedule-detail-visit-sections',
-            title: '訪問の予定の詳細を開き、日時の見出しと節の分け方を見る',
+            title: '訪問の予定の詳細を開き、日時の見出しとセクションの分け方を見る',
             actor: ACTOR,
             variant,
           },
@@ -47,20 +47,20 @@ test.describe('予定のカレンダー', () => {
             )
             await expect(page.getByTestId('schedule-detail-memo')).toBeVisible()
             await check(
-              '日時と曜日が見出しになり、利用者、サービスコード、訪問の種類が「訪問の情報」の節に 2 列でまとまり、メモが最後の節に出る',
+              '日時と曜日が見出しになり、利用者、サービスコード、訪問の種類が「訪問の情報」のセクションに 2 列でまとまり、メモが最後のセクションに出る',
             )
           },
         )
       })
 
-      test(`${prefix}通常の予定の詳細を開いた場合、訪問の情報の節が出ないこと`, async ({
+      test(`${prefix}通常の予定の詳細を開いた場合、訪問の情報のセクションが出ないこと`, async ({
         browser,
       }) => {
         await recordPrEvidence(
           browser,
           {
             name: 'schedule-detail-normal-sections',
-            title: '通常の予定の詳細を開き、節の分け方を見る',
+            title: '通常の予定の詳細を開き、セクションの分け方を見る',
             actor: ACTOR,
             variant,
           },
@@ -71,7 +71,7 @@ test.describe('予定のカレンダー', () => {
             await expect(page.getByTestId('schedule-detail-visit')).toHaveCount(0)
             await expect(page.getByTestId('schedule-detail-memo')).toBeVisible()
             await check(
-              '日時の見出しの下に種類、タイトル、予定者が並び、訪問の情報の節は出ず、メモの節が出る',
+              '日時の見出しの下に種類、タイトル、予定者が並び、訪問の情報のセクションは出ず、メモのセクションが出る',
             )
           },
         )

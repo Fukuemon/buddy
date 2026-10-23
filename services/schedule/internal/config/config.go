@@ -39,7 +39,7 @@ type Calendar struct {
 	SyncInterval time.Duration
 }
 
-// Broker は、認証のブローカーの内部の API（職員の登録と停止）を呼ぶ設定である（ADR-0017）。
+// Broker は、ID ブローカーの内部の API（職員の登録、休職、復職、退職）を呼ぶ設定である（ADR-0017）。
 type Broker struct {
 	// URL は、ブローカーの URL である。
 	URL string
@@ -77,7 +77,7 @@ type Config struct {
 //   - OIDC_ORG_CLAIM: 組織の ID を持つクレームの名前。デフォルトは org_id
 //   - CORS_ALLOW_ORIGINS: カンマで区切ったオリジン。空なら CORS のヘッダーを返さない
 //   - LOG_LEVEL: debug、info、warn、error。デフォルトは info
-//   - BROKER_URL: 認証のブローカーの URL。職員の登録と停止で内部の API を呼ぶ
+//   - BROKER_URL: ID ブローカーの URL。職員の登録と停止で内部の API を呼ぶ
 //   - BROKER_TOKEN_URL: 内部の API を呼ぶ access token を client credentials で取る Hydra のトークンのエンドポイント
 //   - BROKER_CLIENT_ID: Hydra に登録した予定の API のクライアントの ID。デフォルトは schedule
 //   - BROKER_CLIENT_SECRET: Hydra に登録した予定の API のクライアントの secret

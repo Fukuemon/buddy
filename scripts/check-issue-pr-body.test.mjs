@@ -32,10 +32,10 @@ test('テンプレートどおりの pull request は指摘なしになる', () 
   assert.deepEqual(pr(), { errors: [], warnings: [] })
 })
 
-test('検証とエビデンスの節は、あってもなくても通り、位置が違えば指摘する', () => {
+test('検証とエビデンスのセクションは、あってもなくても通り、位置が違えば指摘する', () => {
   const at = (i) => [...SECTIONS.slice(0, i), '検証とエビデンス', ...SECTIONS.slice(i)]
   assert.deepEqual(pr({ body: body({ sections: at(4) }) }).errors, [])
-  assert.match(pr({ body: body({ sections: at(1) }) }).errors[0], /節の名前か順/)
+  assert.match(pr({ body: body({ sections: at(1) }) }).errors[0], /セクションの名前か順/)
 })
 
 test('接頭辞の無いタイトルを指摘する', () => {
@@ -58,13 +58,13 @@ test('先頭の行が Closes か Refs でなければ指摘し、リンク先の
   assert.deepEqual(linkedIssue(body({ first: 'Refs #7' })), { keyword: 'Refs', number: 7 })
 })
 
-test('節の欠け、足し、順の違いを指摘する', () => {
+test('セクションの欠け、足し、順の違いを指摘する', () => {
   for (const sections of [
     SECTIONS.slice(0, -1),
     [...SECTIONS, '表の指摘ごとの対応'],
     ['対応内容', '概要', ...SECTIONS.slice(2)],
   ]) {
-    assert.match(pr({ body: body({ sections }) }).errors[0], /節の名前か順/)
+    assert.match(pr({ body: body({ sections }) }).errors[0], /セクションの名前か順/)
   }
 })
 

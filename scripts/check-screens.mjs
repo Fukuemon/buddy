@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * 画面仕様書（docs/screens/<画面 ID>_<画面の名前>/）を、docs/screens/rules.md の規約で確認する。
- * 見る項目は、規約の「点検」の節にある。
+ * 見る項目は、規約の「点検」のセクションにある。
  *
  * 引数でディレクトリを渡すと、そのディレクトリだけを見る。省くと docs/screens/ の下の全ての画面を見る。
  *
@@ -50,7 +50,7 @@ const { toId, storyNameFromExport } = createRequire(join(ROOT, 'apps/web/package
   'storybook/internal/csf',
 )
 const STORY_DIRS = ['packages/ui/src', 'apps/web/src']
-// カタログは本番の文書のサイトの /storybook/ にある（apps/docs-site/README.md）
+// カタログは本番のドキュメントサイトの /storybook/ にある（apps/docs-site/README.md）
 const STORYBOOK_URL =
   /^https:\/\/buddy-docs\.emon-apps\.workers\.dev\/storybook\/\?path=\/(story|docs)\/([^)\s]+)$/
 const LINK_TARGET = /\]\(([^)\s]+)\)/g
@@ -130,7 +130,7 @@ const isContiguous = (numbers) => {
 /** 開始タグの中の属性の値を返す。 */
 const attr = (tag, name) => tag.match(new RegExp(`(?:^|\\s)${name}="([^"]*)"`))?.[1]
 
-/** 「構成」の節の状態のタブ（=== "状態"）の中の、iframe の src と構成要素の表の番号を返す。 */
+/** 「構成」のセクションの状態のタブ（=== "状態"）の中の、iframe の src と構成要素の表の番号を返す。 */
 const readStates = (markdown, specPath) => {
   const states = []
   let current = null
@@ -387,7 +387,7 @@ const checkScreen = (dir) => {
       report(specPath, `${state.src} の data-m ${extra.join('、')} が「${state.name}」の表に無い`)
   }
   for (const src of mocks.keys()) {
-    if (!embedded.has(src)) report(specPath, `${src} を「構成」の節に埋め込んでいない`)
+    if (!embedded.has(src)) report(specPath, `${src} を「構成」のセクションに埋め込んでいない`)
   }
 }
 

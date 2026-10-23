@@ -15,7 +15,7 @@ const maxNameLen = 255
 type Facility struct {
 	ID   string
 	Name string
-	// OrgID は、認証のブローカーの組織の ID で、結び付けるまで空である。
+	// OrgID は、ID ブローカーの組織の ID で、結び付けるまで空である。
 	OrgID     string
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -109,7 +109,7 @@ func NewPosition(id, facilityID, name string, policies []Policy) (Position, erro
 }
 
 // FacilityRepository は、事業所を読む。見つからないときは apperr.ErrNotFound を返す。
-// GetByOrgID は、認証のブローカーの組織の ID に結び付けた事業所を返す。
+// GetByOrgID は、ID ブローカーの組織の ID に結び付けた事業所を返す。
 type FacilityRepository interface {
 	Get(ctx context.Context, id string) (Facility, error)
 	GetByOrgID(ctx context.Context, orgID string) (Facility, error)

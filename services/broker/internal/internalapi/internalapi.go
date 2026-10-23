@@ -90,7 +90,7 @@ type Config struct {
 	Hydra    Hydra
 	Verifier TokenVerifier
 	// Clients は、内部の API を呼んでよいクライアントの ID である。client credentials のトークンの sub と、
-	// token_hook が素通しする client credentials の要求の client_id を、ここに挙げた ID と照らす。
+	// token_hook が素通しする client credentials の要求の client_id を、ここに挙げた ID と照合する。
 	Clients []string
 	// KnownOrg は、組織の ID が上流の IdP の設定にあるかを返す。設定に無い事業所には職員を登録しない。
 	KnownOrg func(orgID string) bool

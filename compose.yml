@@ -144,7 +144,7 @@ services:
     depends_on:
       broker-migrate: { condition: service_completed_successfully }
 
-  # 認証のブローカー（ADR-0016）。Hydra のログインと同意の画面を持ち、職員の事業所の上流の IdP へ転送する
+  # ID ブローカー（ADR-0016）。Hydra のログインと同意の画面を持ち、職員の事業所の上流の IdP へリダイレクトする
   broker:
     image: ${COMPOSE_PROJECT_NAME}-broker
     # イメージは broker-migrate がビルドする
@@ -156,7 +156,7 @@ services:
       UPSTREAM_IDPS_FILE: /config/upstream-idps.json
       UPSTREAM_IDP_CLIENT_SECRETS_FILE: /config/upstream-idp-client-secrets.json
       # ブローカーは上流の IdP の discovery の文書をコンテナの間の名前 idp で読む。ブラウザは idp の名前を引けないので、
-      # 認可の画面だけローカルのポートへ転送する
+      # 認可の画面だけローカルのポートへリダイレクトする
       UPSTREAM_IDP_BROWSER_ORIGIN: http://localhost:${IDP_PORT:-9000}
       # 内部の API は、予定の API の client credentials の access token を、Hydra の JWKS で検証する
       HYDRA_ISSUER: http://hydra:4444

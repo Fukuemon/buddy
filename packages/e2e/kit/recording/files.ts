@@ -183,7 +183,7 @@ const writeReadme = (dir: string): void => {
 const COMPARE_HALF_WIDTH = 1280
 
 /**
- * 同じ例の行の改修前と改修後のスクリーンショットを、判定の字幕の順に左右に並べて compare/ に書き出し、README の節を返す。
+ * 同じ例の行の改修前と改修後のスクリーンショットを、判定の字幕の順に左右に並べて compare/ に書き出し、README のセクションを返す。
  * 左が改修前、右が改修後。片方しか撮っていない例の行は飛ばす。
  */
 const writeComparisons = (dir: string, takes: Take[]): string[] => {
@@ -233,7 +233,7 @@ const writeComparisons = (dir: string, takes: Take[]): string[] => {
   ]
 }
 
-/** 検証シナリオの備考で、改修前と違ってよいとされた差のうち、どのスクリーンショットにも映りうるものの節 */
+/** 検証シナリオの備考で、改修前と違ってよいとされた差のうち、どのスクリーンショットにも映りうるもののセクション */
 const differencesSection = (scenario: Scenario): string[] =>
   scenario.differences?.length
     ? [

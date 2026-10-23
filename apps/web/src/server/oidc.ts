@@ -3,13 +3,13 @@ import * as client from 'openid-client'
 import type { ServerConfig } from './config'
 
 /**
- * ブローカーが refresh token を拒んだときに投げる。セッションを捨ててよい。
- * 取り消した refresh token は invalid_grant に、ブローカーの token_hook が拒んだ refresh（止めた職員、上流でのログインから
+ * Hydra が refresh token を拒んだときに投げる。セッションを捨ててよい。
+ * 取り消した refresh token は invalid_grant に、ブローカーが token_hook で拒ませた refresh（止めた職員、上流でのログインから
  * 12 時間を過ぎたログイン）は access_denied になる。
  */
 export class GrantRejectedError extends Error {
   constructor() {
-    super('ブローカーが refresh token を拒んだ')
+    super('Hydra が refresh token を拒んだ')
     this.name = 'GrantRejectedError'
   }
 }
@@ -18,20 +18,20 @@ export class GrantRejectedError extends Error {
 export type Tokens = {
   accessToken: string
   refreshToken?: string
-  /** access token の残りの秒数。ブローカーが返さなければ undefined。 */
+  /** access token の残りの秒数。Hydra が返さなければ undefined。 */
   expiresIn?: number
-  /** ログアウトで Hydra に添える ID token。refresh でブローカーが返さなければ undefined。 */
+  /** ログアウトで Hydra に添える ID token。refresh で Hydra が返さなければ undefined。 */
   idToken?: string
 }
 
-/** BFF がブローカーと交わす操作。テストではフェイクに替える。 */
+/** BFF が Hydra と交わす操作。テストではフェイクに替える。 */
 export interface OidcClient {
   authorizationUrl(params: {
     redirectUri: string
     state: string
     nonce: string
     codeChallenge: string
-    /** login なら、Hydra が覚えたログインのセッションを使わず、ブローカーのログインの画面を出させる。 */
+    /** login なら、Hydra が保ったログインのセッションを使わず、ブローカーのメールの入力の画面を出させる。 */
     prompt?: 'login'
   }): URL
   /** currentUrl はコールバックのリクエストの URL で、code と state を持つ。検証に失敗すると Error を投げる。 */
@@ -41,18 +41,18 @@ export interface OidcClient {
   ): Promise<Tokens>
   /** refresh token で access token を取り直す。拒まれたら GrantRejectedError を、通信の失敗などはそのほかの Error を投げる。 */
   refresh(refreshToken: string): Promise<Tokens>
-  /** ブラウザを転送する、Hydra の RP-Initiated Logout の URL。 */
+  /** ブラウザをリダイレクトする、Hydra の RP-Initiated Logout の URL。 */
   endSessionUrl(params: { idTokenHint: string; postLogoutRedirectUri: string }): URL
 }
 
 /** refresh のエラーのうち、取り直しても通らないので、セッションを捨ててよいものの OAuth のエラーの値。 */
 const REJECTED_GRANT_ERRORS = new Set(['invalid_grant', 'access_denied'])
 
-/** error が、ブローカーが refresh token を拒んだことを示すかを返す。 */
+/** error が、Hydra が refresh token を拒んだことを示すかを返す。 */
 export const isGrantRejected = (error: unknown) =>
   error instanceof client.ResponseBodyError && REJECTED_GRANT_ERRORS.has(error.error)
 
-/** ブローカーへのリクエストを待つ上限。auth.ts の取り直しの鍵の期限より短くする。 */
+/** Hydra へのリクエストを待つ上限。auth.ts の更新の鍵の期限より短くする。 */
 export const OIDC_TIMEOUT_SECONDS = 5
 
 const toTokens = (res: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers) => ({
