@@ -98,6 +98,8 @@ DADS が参照する WCAG 2.2 の AA を基準にし、DADS の指針の値を�
 | ターゲットの大きさ | ボタンは 44×44 CSS px 以上。S のボタンとアイコンのボタンは、見た目の外に押せる領域を広げる | コンポーネントの Vitest のテストで、押せる領域の大きさを確認する |
 | キーボードの操作 | コンポーネントごとの操作を DESIGN.md のコンポーネントのセクションに書き、その通りに動く | story の play 関数と Vitest で、キーを押した結果を確認する |
 
+文字でないもののコントラストの確認の方法について、この判断は [ADR-0019](0019-docs-site-publish-and-contrast-check.md) で置き換えた。
+
 - 出典: [DADS の色](https://design.digital.go.jp/dads/foundations/color/)
 - 出典: [DADS のボタンのアクセシビリティ](https://design.digital.go.jp/dads/components/button/accessibility/)
 
@@ -133,6 +135,7 @@ apps/web は packages/ui に依存するので、依存の向きを変えずに 
   - 出典: [SmartHR Design System](https://smarthr.design/)
 - title は、ファイルの配置先から機械的に決める。規則は DESIGN.md にある。
 - カタログは、ドキュメントサイトと 1 つの Cloudflare Worker の静的なファイルとして公開し（`/storybook/`）、Cloudflare Access で許可した人だけが開けるようにする。pull request ごとにプレビューを出し、develop に入ったら本番に出す。デプロイの構成は `apps/docs-site/README.md` にある。
+  - pull request ごとのプレビューについて、この判断は [ADR-0019](0019-docs-site-publish-and-contrast-check.md) で置き換えた。
 - Access で絞っても、カタログに載せるのはコンポーネントとダミーデータだけにする。許可した人の範囲は変わりうるためである。
 
 ## Considered Options
