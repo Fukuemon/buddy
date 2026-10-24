@@ -13,7 +13,8 @@ pnpm --filter @buddy/ui exec playwright install chromium
 
 | コマンド | 確認すること |
 | --- | --- |
-| `pnpm --filter @buddy/ui test` | Vitest の 3 つの project（トークンの単体、ブラウザでのコンポーネント、story の描画とアクセシビリティ）が通る |
+| `pnpm --filter @buddy/ui test` | Vitest の 2 つの project（ブラウザでのコンポーネント、story の描画とアクセシビリティ）が通る |
+| `pnpm check:contrast`（ルートで実行する） | 意味のトークンの組が、WCAG 2.2 のコントラスト比の基準に届く |
 | `pnpm --filter @buddy/ui check` | 整形と lint（Vite+） |
 | `pnpm --filter @buddy/ui typecheck` | `tsc` の型のチェック |
 
