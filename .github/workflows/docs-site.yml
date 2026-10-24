@@ -1,6 +1,7 @@
 # ドキュメントサイトと、Storybook のカタログと、表の ER 図を、1 つの Worker（buddy-docs）として Cloudflare に出す。
 # 手順と Access の設定は apps/docs-site/README.md にある。
-# pull request ではプレビューを出して URL をコメントし、develop に入ったら本番に出す。
+# pull request ではプレビューを出して URL をコメントし、develop に入ったら本番に出す。どちらも、出した後に Access の保護を確認する。
+# 並べるものは context/project.yml の docs_site.parts にあり、pnpm site:build（scripts/build-docs-site.mjs）が並べる。
 # フォークと Dependabot の pull request には GitHub が secret を渡さないので、ビルドだけを流し、プレビューとコメントを飛ばす。
 # 文書の元は docs/ のほか、services/ と packages/ の Design Doc にも散るので、変えた場所で絞らない。
 
@@ -76,3 +77,15 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: pnpm run deploy:production
+
+      # 出したサイトを Access が守っているかを、認証のない要求で確認する（scripts/check-docs-site-protection.mjs）。
+      # 文字列は、各 part の中身にだけあり、Access のログインの画面に出ないものにする。サイトの名前と Worker の名前は、ログインの画面にも出る
+      # 認証の画面のホストは、Access の team のドメインの親を渡す。スクリプトはサブドメインも認める
+      - name: Access の保護を確認する
+        if: steps.preview.outputs.url != '' || github.event_name == 'push'
+        env:
+          SITE_URL: ${{ steps.preview.outputs.url || 'https://buddy-docs.emon-apps.workers.dev' }}
+        run: |
+          node scripts/check-docs-site-protection.mjs "$SITE_URL/" "予定の管理とレセプトの照合の設計書" cloudflareaccess.com
+          node scripts/check-docs-site-protection.mjs "$SITE_URL/storybook/" "sb-addons" cloudflareaccess.com
+          node scripts/check-docs-site-protection.mjs "$SITE_URL/erd/" "Liam ERD" cloudflareaccess.com

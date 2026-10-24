@@ -17,13 +17,18 @@
 pnpm site:build
 ```
 
-次の順に動く。
+`scripts/build-docs-site.mjs --build` が、`context/project.yml` の `docs_site.parts` に並べたものを作り、`apps/docs-site/public/` に並べる。  
+`cf build` が、それを公開する形にする。
 
 1. `uv run zensical build --clean` で、ドキュメントサイトを `site/` に作る。
 2. `pnpm --filter @buddy/web build-storybook` で、Storybook を `apps/web/storybook-static/` に作る。
 3. `pnpm build:erd`（`scripts/build-erd.mjs`）で、tbls の `docs/db/schedule/schema.json` から、Liam ERD の ER 図のサイトを `erd/` に作る。
-4. `scripts/build-docs-site.mjs` で、3 つを `apps/docs-site/public/` に並べる。`/` に文書、`/storybook/` にカタログ、`/erd/` に ER 図を置く。
+4. 3 つを `apps/docs-site/public/` に並べる。`/` に文書、`/storybook/` にカタログ、`/erd/` に ER 図を置く。part の出力どうしでファイルがぶつかると、上書きせずに止まる。
 5. `cf build --mode production` で、公開する形の成果物を `apps/docs-site/.cloudflare/output/` に作る。
+
+並べるものを足すときは、`docs_site.parts` に足す。  
+次の 3 つは、agent-harness のパッケージ docs-site のスクリプトを写したものである。組み立ての `scripts/build-docs-site.mjs`、値を読む `scripts/read-docs-site-config.mjs`、保護を確認する `scripts/check-docs-site-protection.mjs`。  
+パッケージを上げたら、`node .claude/skills/setup-agent-harness/scripts/setup.mjs --diff` で差分を見て取り込む。
 
 `pnpm --filter @buddy/docs-site deploy:dry-run` で、Cloudflare に送らずに成果物を確認できる。認証は要らない。
 
@@ -62,4 +67,10 @@ ER 図のサイトは、Liam ERD の CLI が出す静的なファイルで、リ
 
 - アカウント全体の Access（Workers & Pages の概要の「Cloudflare Access」のスイッチ）は使わない。同じアカウントの、公開しているほかの Worker も守られて開けなくなるためである。
 - Worker の名前を変えると、新しい Worker が Access なしで出る。名前を変えるときは、先に手順 2、3、5、6 を新しい名前で行う。
-- Access で守られているかは、`curl -I https://buddy-docs.emon-apps.workers.dev` が `*.cloudflareaccess.com` への 302 を返すことで確認する。
+- Access で守られているかは、ワークフローがプレビューと本番を出すたびに、`scripts/check-docs-site-protection.mjs` で URL ごとに確認する。
+  - 文書、カタログ、ER 図の 3 つの URL を、それぞれの中身にだけある文字列で確認する。
+  - ローカルで本番の文書を確認するときは、次を流す。
+
+    ```sh
+    node scripts/check-docs-site-protection.mjs https://buddy-docs.emon-apps.workers.dev/ "予定の管理とレセプトの照合の設計書" cloudflareaccess.com
+    ```
