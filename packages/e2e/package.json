@@ -7,14 +7,13 @@
     "evidence": "playwright test --project=evidence",
     "check": "vp check && eslint && tsc --noEmit",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit",
-    "test:rules": "node --test eslint/*.test.mjs"
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@fukuemon/e2e-kit": "0.1.1",
     "@playwright/test": "1.59.1",
     "@types/node": "^22.10.2",
     "@typescript-eslint/parser": "8.71.1",
-    "@typescript-eslint/utils": "8.71.1",
     "eslint": "10.12.0",
     "typescript": "^6.0.2"
   }

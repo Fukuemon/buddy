@@ -2,17 +2,8 @@
 // シナリオアウトラインでないシナリオは、CASES を消し、body の c を外してシナリオの文と操作を直に書き、recordEvidence に example を渡さない。
 // context に kit を呼ぶ薄い層があれば、TARGET と VARIANTS をその層から import して置き換える。
 import { test, type Page } from '@playwright/test'
-import {
-  recordEvidence,
-  type Recording,
-  type RecordingTarget,
-} from '<packages/e2e/kit/recording への相対パス>/index.js'
-import {
-  evidenceDate,
-  evidenceDir,
-  variants,
-  type Scenario,
-} from '<packages/e2e/kit/evidence への相対パス>/index.js'
+import { recordEvidence, type Recording, type RecordingTarget } from '@fukuemon/e2e-kit/recording'
+import { evidenceDate, evidenceDir, variants, type Scenario } from '@fukuemon/e2e-kit/evidence'
 
 // <何を撮るか>。判定は、人が動画を見て行う。字幕の文はシナリオの文をコピーする
 const SCENARIO: Scenario = {

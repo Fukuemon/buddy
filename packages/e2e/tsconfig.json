@@ -8,5 +8,5 @@
     "lib": ["ES2022", "DOM"],
     "types": ["node"]
   },
-  "include": ["kit", "tests", "*.ts"]
+  "include": ["tests", "*.ts"]
 }

@@ -1,6 +1,6 @@
 import { type Page, test as setup } from '@playwright/test'
 
-import { ensureSavedLogin } from '../../kit/auth/index.js'
+import { ensureSavedLogin } from '@fukuemon/e2e-kit/auth'
 import {
   BASE_URL,
   LEADER,
