@@ -27,6 +27,7 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
 | 時刻の固定 | `page.clock.setFixedTime(time)`。時刻は、UTC でも日本時間でも同じ日付になるもの（例: `06:00:00Z`）にする |
 
 - buddy の画面は path で route を分ける。画面の中の移動は、`page.goto` で path を開いて作る。
+- 規則が止める値の読み取りは一部だけなので、`count()` と `isVisible()` で読んでから比べる書き方も自分で避ける。locator をそのまま `expect` に渡す。
 
 ## Test IDs
 
@@ -47,6 +48,7 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
   - 待つ時間の名前を定めるファイルは、`tests/fixtures/timeouts.ts` である。
   - `screenIdPattern` は、`docs/screens/index.md` の画面の ID の規則のドメインと種類の組を止める。ドメインか種類を足したら、`screenIdPattern` にも足す。
     - `schedule-calendar` や `receipt-result-table` のように、画面 ID で始まる testid は `widgets/` に直に書けない。`widgets/` を作るときは、testid の接頭辞を引数で受ける。
+  - `widgets/` が開いてよい URL（`widgetGotoAllowedUrl`）は渡さず、規則のデフォルトの `/` を使う。
 
 ## Running Tests
 

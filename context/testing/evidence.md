@@ -25,10 +25,12 @@ status: draft
   - 例外は、スキル attach-evidence がコメントを使うとする、撮り直したときの知らせと、本文が上限を超えたときだけにする。
 - Google Drive には置かない。
 - 入れる前の元のファイルは、`.ai-out/evidence/<番号>/` に一時的に置く。`.ai-out/` は Git で追跡しない。本文に入れ終えたら消す。
-  - `<番号>` は、本文に入れる pull request の番号にする。pull request を作る前に撮るときは、対応する issue の番号にする。
-  - 配置先と名前は、スキル capture-browser-evidence の配置先と名前の規則ではなく、`packages/e2e/kit/` の `evidence` が決める。ファイルは `<番号>/<name>.mp4` と `<番号>/<name>/` に出る。`<name>` は、spec の `recordPrEvidence` に渡した `name` である。
+  - `<番号>` は、最初に撮ったときの pull request か issue の番号にし、使い続ける。pull request を作る前に撮ったなら、作った後も issue の番号を使う。改修前と改修後が別のフォルダに分かれないためである。
+  - `<番号>` は、撮る人が環境変数 `EVIDENCE_NO` で渡す。数字だけにし、`issue-` と `pr-` の接頭辞は付けない。buddy の kit は、npm の kit に置き換えるまで数字の番号を使う。
+  - 配置先と名前は、スキル capture-browser-evidence の規則ではなく、薄い層の `recordPrEvidence` が `EVIDENCE_NO` と `name` から決める。ファイルは `<番号>/<name>.mp4` と `<番号>/<name>/` に出る。`<name>` は、spec の `recordPrEvidence` に渡した `name` である。
+    - 改修前と改修後を撮ったときは、`<番号>/<name>-before.mp4` と `<番号>/<name>-after.mp4` に出る。
   - `<name>/` には、kit の README、判定のスクリーンショット（`frames/`）、撮った記録（`.records/`）、改修前と比べたときの比較の画像（`compare/`）が入る。
-  - 本文に入れるのは、`<name>.mp4` と、`<name>/frames/` の判定のスクリーンショットである。README と `.records/` は確認に使い、入れない。
+  - 本文に入れるのは、`<name>.mp4`（改修前と比べたときは `<name>-before.mp4` と `<name>-after.mp4`）と、`<name>/frames/` の判定のスクリーンショットである。README と `.records/` は確認に使い、入れない。
 - 本文に入れたファイルは、リポジトリを見られる人が開ける。リポジトリを public にすると、見られる人が誰にでも広がる。
   - 写すのは、ローカルのシード、テストデータ、仮の名前だけにする。実在の利用者、職員、事業所のデータは、検証環境で撮るときも写さない。
   - ログインの値とトークンを、画面と字幕に写さない。
@@ -41,7 +43,8 @@ status: draft
   - agent-browser では、エビデンスを撮らない。spec を書く前に、画面の操作の位置を確認するのには使ってよい。
 - 配置先は `packages/e2e/tests/evidence/<機能>/<振る舞い>.e2e.ts` にする。`<機能>` と `<振る舞い>` は、E2E の spec と同じ名前の付け方（スキル write-e2e-test の「名前」）にする。
   - 1 つの test が 1 つの観点を撮る。テストの名前は、E2E と同じ「{条件}の場合、{期待}であること」にする。
-  - `recordPrEvidence` の `name` は、観点が分かる英小文字、数字、ハイフンにする。本文に入れる動画のファイル名になり、本文の表の「確認の方法」に test の名前と並べて書く。
+  - `recordPrEvidence` の `name` は、観点が分かる英小文字、数字、ハイフンにする。本文に入れる動画のファイル名になる。
+  - 本文の表の「確認の方法」には、pull request のテンプレートのとおり、spec のファイル名と `name` を書く（`` `<spec のファイル名>` の `<name>` ``）。
   - 字幕に出すアクターは、`prepare` でログインする職員の名前と役職にする。
   - 過去の pull request の機能も、同じ配置先に機能ごとに足す。同じ spec で、改修のたびに撮り直す。
 - 見本の spec
@@ -88,7 +91,7 @@ docker compose -p buddy-evidence down -v
 
 | 環境変数 | 値 | デフォルト |
 | --- | --- | --- |
-| `EVIDENCE_NO` | 本文に入れる pull request の番号か、作る前なら issue の番号。出力の配置先と字幕に出る | なし。無ければ spec が失敗する |
+| `EVIDENCE_NO` | 最初に撮ったときの pull request か issue の番号。pull request を作る前に撮ったなら、作った後も issue の番号を使い続ける。数字だけで、`issue-` と `pr-` の接頭辞は付けない。出力の配置先と字幕に出る | なし。無ければ spec が失敗する |
 | `E2E_BASE_URL` | 撮る web の URL | `http://localhost:3000` |
 | `EVIDENCE_BEFORE_URL` | 改修前の web の URL。渡すと、改修前と改修後を 1 回で撮る | なし |
 | `EVIDENCE_ONLY` | `before` か `after`。`E2E_BASE_URL` をその版として 1 つだけ撮る | なし |
@@ -138,7 +141,14 @@ docker compose -p buddy-evidence down -v
 
 ファイルは、gh の `--attach` で pull request と issue の本文に入れる。`--attach` は gh の 2.99 以降にある。  
 先に `gh pr create --help` に `--attach` があるかを確認し、無ければ `mise which gh` のパスの gh を使う。  
-上げられるファイルの大きさの上限は、GitHub の文書の [Attaching files](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/attaching-files) で確認する。超えるときは、観点を分けて短く撮り直す。
+上げられるファイルの大きさの上限は、GitHub の文書の [Attaching files](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/attaching-files) で確認する。超えるときは、観点を分けて短く撮り直す。  
+上げるには、gh でログインしたアカウントが、pull request か issue の本文を編集できる権限（リポジトリへの書き込みか、自分が作った pull request と issue）を持つ。  
+本文の文字数の上限は、GitHub の文書の [Repository limits](https://docs.github.com/en/repositories/creating-and-managing-repositories/repository-limits) の Text limits で確認する。
+
+### 表の形
+
+- 列は、pull request のテンプレートの「検証とエビデンス」のとおりにする。
+- 改修前と比べるときは、「エビデンス」の列を「改修前」と「改修後」の 2 列にし、同じ行に並べる。
 
 ### 本文に入れる
 
@@ -152,7 +162,7 @@ docker compose -p buddy-evidence down -v
 - 本文が参照しないファイルは、本文の末尾に足される。
 - 一部のファイルだけが失敗すると、gh は 0 以外で終わり、上がったファイルだけで本文を作る。失敗したファイルを、作った後に足す手順で足す。
 - issue には、`gh issue create` か `gh issue edit` の `--attach` を、同じ形で使う。
-- 本文の文字数の上限は未確認である。超えたら、スキル attach-evidence のとおり、表とスクリーンショットを本文に残し、`<details>` の中身をコメントへ移す。
+- 本文が上限を超えたら、スキル attach-evidence のとおり、表とスクリーンショットを本文に残し、`<details>` の中身をコメントへ移す。
 
 ### 入ったことを確認する
 

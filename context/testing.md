@@ -82,6 +82,7 @@ pull request と develop への push では、CI（[ci.yml](../.github/workflows
 ## E2E
 
 - E2E のテストのツールでの書き方、流すコマンド、project、環境変数、テストデータとログインは、[E2E のテスト](testing/e2e.md) にある。
+- E2E の lint と型のチェックのコマンドは、[E2E のテスト](testing/e2e.md) の Running Tests にある。
 - 画面を変える pull request では、その画面の流れの E2E を流す。testid を変えたら、E2E と画面仕様書の両方を直す。
 
 手動検証のエビデンスの取り決めは、[エビデンス](testing/evidence.md) にある。
