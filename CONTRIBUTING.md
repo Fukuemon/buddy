@@ -132,13 +132,21 @@ pnpm e2e
 - エビデンスの動画を撮る spec は、`pnpm e2e` では流れない。撮るコマンドは [エビデンス](context/testing/evidence.md) の Capture Environment にある。
 - 失敗したテストの trace は `packages/e2e/test-results/` に残る。`pnpm --filter @buddy/e2e exec playwright show-trace <trace.zip>` で開く。trace.zip は、`packages/e2e` からの相対パス（Playwright が出す `test-results/...`）で渡す。
 
-## ドキュメントサイトのプレビュー
+## ドキュメントサイトを組み立てる
 
-pull request を作ると、ワークフロー「ドキュメントサイト」がプレビューを出し、URL を pull request にコメントする。プレビューには、ドキュメントサイトと、Storybook のカタログ（`/storybook/`）と、ER 図（`/erd/`）がある。プレビューと本番は、Cloudflare Access で許可した人だけが開ける。
+ドキュメントサイトには、文書と、Storybook のカタログ（`/storybook/`）と、ER 図（`/erd/`）がある。  
+pull request では、ワークフロー「ドキュメントサイト」がサイトを組み立てるだけで、プレビューは出さない（[ADR-0019](docs/adr/0019-docs-site-publish-and-contrast-check.md)）。  
+develop に入ると本番に出す。本番は、Cloudflare Access で許可した人だけが開ける。
 
-- ローカルで成果物を作るときは、ルートで `pnpm site:build` を実行する。
+- マージする前に公開した形で見るときは、ルートで `pnpm site:build` を実行し、`apps/docs-site/public/` を静的なファイルとして配信して開く。
+
+  ```sh
+  pnpm site:build
+  uv run python -m http.server 8002 --bind 127.0.0.1 -d apps/docs-site/public   # http://127.0.0.1:8002 で開く
+  ```
+
   - サイトに並べるものとサブパスは、`context/project.yml` の `docs_site.parts` にある。`scripts/build-docs-site.mjs` が、各 part を作ってから `apps/docs-site/public/` に並べる。
-- プレビューと本番を出した後に、ワークフローが `scripts/check-docs-site-protection.mjs` で、文書、カタログ、ER 図が Access で守られているかを確認する。
+- 本番に出した後に、ワークフローが `scripts/check-docs-site-protection.mjs` で、文書、カタログ、ER 図が Access で守られているかを確認する。
 - ER 図だけをローカルで見るときは、ルートで `pnpm build:erd` を実行して `erd/` を作り、静的なファイルとして配信して開く。
   - ER 図は `docs/db/schedule/schema.json` から作るので、テーブルを変えたときは先に `pnpm generate:db-docs` を流す。
 

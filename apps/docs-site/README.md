@@ -7,7 +7,6 @@
 | 環境 | ドキュメントサイト | カタログ | ER 図 | 出す契機 |
 | --- | --- | --- | --- | --- |
 | 本番 | `https://buddy-docs.emon-apps.workers.dev` | 同じ URL の `/storybook/` | 同じ URL の `/erd/` | develop に push したとき |
-| プレビュー | pull request ごとの URL。ワークフローが pull request にコメントする | 同じ URL の `/storybook/` | 同じ URL の `/erd/` | pull request を作るか、push したとき |
 
 ## 成果物を作る
 
@@ -40,14 +39,16 @@ ER 図のサイトは、Liam ERD の CLI が出す静的なファイルで、リ
 
 `.github/workflows/docs-site.yml` が、Cloudflare の CLI `cf` でデプロイする。
 
-- pull request では `cf previews deploy pr-<番号>` でプレビューを出し、URL を pull request にコメントする。
-- develop への push では `cf deploy --prebuilt --mode production` で本番にデプロイする。
-- プレビューの手順は pull request のコードを実行し、そこへ Cloudflare のトークンを渡す。同じリポジトリの pull request には GitHub が secret を渡すため、書き込みの権限を持つ人はワークフローを書き換えてトークンを読める。
-  - トークンの範囲を Worker `buddy-docs` の Editor に絞り、漏れたときに書き換えられるものを、このサイトの中身と設定に限る。Access の設定はトークンで変えられない。
-  - fork と Dependabot の pull request には GitHub が secret を渡さないため、ワークフローはサイトをビルドするだけで、プレビューとコメントの手順を飛ばす。
-- 文書の元は docs/ のほか、services/ と packages/ の Design Doc にもあるので、変えた場所で絞らずに全ての pull request で実行する。
+- pull request では、サイトを組み立てるだけにする。pull request ごとのプレビューは出さない（[ADR-0019](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0019-docs-site-publish-and-contrast-check.md)）。
+  - プレビューは pull request のコードへトークンを渡す。書き込みの権限を持つ人は、ワークフローを書き換えてトークンを読める。
+- develop への push では、`cf deploy --prebuilt --mode production` で本番にデプロイし、Access の保護を確認する。
+- トークンは、GitHub の environment `docs-site` の secret にある。environment にデプロイできるブランチは develop だけにしてある。
+  - ワークフローの条件だけで develop に絞ると、条件を外したワークフローを別のブランチへ push してトークンを読める。
+  - トークンの範囲は Worker `buddy-docs` の Editor に絞り、漏れたときに書き換えられるものを、このサイトの中身と設定に限る。Access の設定はトークンで変えられない。
+- 文書の元は docs/ のほか、services/ と packages/ の Design Doc にもあるので、変えた場所で絞らずに全ての pull request で組み立てる。
 - `cloudflare.config.ts` が Worker の名前（`buddy-docs`）と、workers.dev とプレビューの URL を有効にする設定を持つ。静的なファイルの配置先は `wrangler.config.ts` にある。`cf` の 1.0.0-beta は、静的なファイルのビルドを wrangler に任せるためである。
-- `cf` は beta なので、バージョンを固定している。上げるときは、pull request のプレビューと `deploy:dry-run` が通ることを確認する。
+  - プレビューは出さないが、プレビューの URL の設定は有効のまま残している。前に出したプレビューも Access で守られる。
+- `cf` は beta なので、バージョンを固定している。上げるときは、`deploy:dry-run` が通ることを確認し、develop に入った後の本番の公開と保護の確認を見る。
 
 ## Cloudflare のセットアップ
 
@@ -59,15 +60,19 @@ ER 図のサイトは、Liam ERD の CLI が出す静的なファイルで、リ
    - 権限は 1 つだけにする。製品は Workers、範囲は Specified Workers の `buddy-docs`、役割は Editor。
    - Editor は Worker の中身と設定を書き換えて出せるが、Worker を消せない。ほかの Worker と Access の設定には届かない。
    - 送り元の IP は絞らない。GitHub Actions の runner の IP は決まっていない。
-4. GitHub のリポジトリの「Settings → Secrets and variables → Actions」に登録する。
+4. GitHub のリポジトリの「Settings → Environments」で、environment `docs-site` を作る。
+   - 「Deployment branches and tags」で「Selected branches and tags」を選び、`develop` だけを足す。
    - Secrets: `CLOUDFLARE_API_TOKEN`（手順 3 のトークン）
-   - Variables: `CLOUDFLARE_ACCOUNT_ID`（ダッシュボードの Account ID）
-5. Worker の Access のタブで「すべてのトラフィック」を選び、開ける人（メールアドレスかメールのドメイン）を決める。本番とプレビューの URL が、両方とも守られる。
-6. Worker の「設定」の「ドメインとルート」で、プレビュー URL を有効にする。無効のままだと、`cf previews deploy` はプレビューを上げるが URL を返さない。
+   - Variables: 次の 4 つ
+     - `CLOUDFLARE_ACCOUNT_ID`: ダッシュボードの Account ID
+     - `DOCS_SITE_URL`: 本番の URL
+     - `DOCS_SITE_MARKER`: トップのページにだけある文字列
+     - `DOCS_SITE_AUTH_HOST`: `cloudflareaccess.com`
+5. Worker の Access のタブで「すべてのトラフィック」を選び、開ける人（メールアドレスかメールのドメイン）を決める。workers.dev の URL とプレビューの URL が、両方とも守られる。
 
 - アカウント全体の Access（Workers & Pages の概要の「Cloudflare Access」のスイッチ）は使わない。同じアカウントの、公開しているほかの Worker も守られて開けなくなるためである。
-- Worker の名前を変えると、新しい Worker が Access なしで出る。名前を変えるときは、先に手順 2、3、5、6 を新しい名前で行う。
-- Access で守られているかは、ワークフローがプレビューと本番を出すたびに、`scripts/check-docs-site-protection.mjs` で URL ごとに確認する。
+- Worker の名前を変えると、新しい Worker が Access なしで出る。名前を変えるときは、先に手順 2、3、5 を新しい名前で行う。
+- Access で守られているかは、ワークフローが本番に出すたびに、`scripts/check-docs-site-protection.mjs` で URL ごとに確認する。
   - 文書、カタログ、ER 図の 3 つの URL を、それぞれの中身にだけある文字列で確認する。
   - ローカルで本番の文書を確認するときは、次を流す。
 

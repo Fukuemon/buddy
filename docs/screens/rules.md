@@ -83,7 +83,7 @@ docs/screens/
 
 - 4 つの欄は、デフォルト値（常に活性、常に表示）でも省かない。
 - カタログの欄のリンクの先は、画面の文言とデータで要素を見せる、apps/web のコンポーネントの story にする。要素を描く apps/web のコンポーネントのうち、story があり、その story に要素が出るいちばん小さいものを選ぶ。story は、仕様書の状態に近いものを選ぶ。apps/web のどの story にも要素が出ないときだけ、packages/ui のコンポーネントの story を選ぶ。route に直に書いた要素のように、どの story にも出なければ欄ごと省く。
-  - リンクは本番のカタログ（`https://buddy-docs.emon-apps.workers.dev/storybook/`）の URL で書く。ローカルの `zensical serve` にはカタログが無く、`/storybook/` で始まるリンクはリンクのチェックがローカルのファイルとして探して失敗するためである。pull request のプレビューから開くと、develop のカタログが開く。
+  - リンクは本番のカタログ（`https://buddy-docs.emon-apps.workers.dev/storybook/`）の URL で書く。ローカルの `zensical serve` にはカタログが無く、`/storybook/` で始まるリンクはリンクのチェックがローカルのファイルとして探して失敗するためである。
   - story の候補は、`rg -n "^  title:|^export const" -g '*.stories.tsx' apps/web/src packages/ui/src` で探す。
   - story の ID は、Storybook の画面の URL の `path=/story/` の後ろの値である。story の `title` と export の名前から決まる。日本語は、ブラウザの URL のように `%` でエンコードせずに書く。
     - `pnpm --filter @buddy/web storybook` で開いた URL で確認する。

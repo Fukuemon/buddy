@@ -5,8 +5,7 @@
   "scripts": {
     "build": "cf build --mode production",
     "deploy:production": "cf deploy --prebuilt --mode production",
-    "deploy:dry-run": "cf deploy --prebuilt --mode production --dry-run",
-    "deploy:preview": "cf previews deploy"
+    "deploy:dry-run": "cf deploy --prebuilt --mode production --dry-run"
   },
   "devDependencies": {
     "cf": "1.0.0-beta.12",
