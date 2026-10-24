@@ -11,7 +11,6 @@ watch = [
   "services/broker/DesignDoc.md",
   "packages/ui/DESIGN.md",
   "packages/e2e/DesignDoc.md",
-  "packages/e2e/kit/recording/DesignDoc.md",
 ]
 # ADR、画面仕様書、ワイヤーフレームのテンプレートは文書ではないので、サイトに載せない
 exclude_docs = """
@@ -31,7 +30,6 @@ nav = [
     { "レセプトの照合" = "design/services/receipt.md" },
     { "ID ブローカー" = "design/services/broker.md" },
     { "E2E のテストのコード" = "design/packages/e2e.md" },
-    { "エビデンスの録画" = "design/packages/e2e-recording.md" },
   ] },
   { "画面仕様書" = [
     { "画面の一覧" = "screens/index.md" },

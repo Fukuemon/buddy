@@ -13,7 +13,8 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
 ## Test Tool
 
 - テストのツールは Playwright（`@playwright/test`）である。バージョンは `packages/e2e/package.json` にある。
-- kit は、`packages/e2e/kit/` の `recording`、`evidence`、`auth` を相対パスで読む。npm の kit に置き換えるまでは、buddy のコピーを直して使う。
+- kit は、npm の `@fukuemon/e2e-kit` を `packages/e2e` の開発の依存に固定のバージョンで入れ、サブパスの `recording`、`evidence`、`auth`、`eslint` から読む。
+  - バージョンは、agent-harness のパッケージ e2e のスキル setup-e2e の `kit-version.json` とそろえる。`apm.yml` の e2e を上げたら、kit も同じバージョンに上げる。
 - スキル write-e2e-test が一般の語で書いたものは、Playwright の次の API に当たる。
 
 | スキルの語 | Playwright の API |
@@ -41,7 +42,7 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
 
 ## Lint Rule Options
 
-- テストの書き方の規則は、`packages/e2e/eslint/e2e-authoring-rule.mjs` にある。npm の kit に置き換えるまでは、buddy のコピーを使う。規則のテストは `pnpm --filter @buddy/e2e test:rules` で流す。
+- テストの書き方の規則は、kit の `@fukuemon/e2e-kit/eslint` の `plugin` にある。
 - options は `packages/e2e/eslint.config.mjs` で渡す。
   - テストのディレクトリは、デフォルトの `tests/` のままにする。規則は ESLint の cwd から見た `tests/` だけを見るので、ルートやエディタから流すと、違反があっても何も言わずに通る。`packages/e2e` で流す。
   - 固定の待ちを許すファイルは無い。

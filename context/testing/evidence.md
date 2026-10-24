@@ -9,7 +9,7 @@ status: draft
 
 機能の追加と改修で何を確認したかを示す動画と画像の取り決め。  
 観点の決め方、撮り方、pull request の本文への入れ方は、パッケージ verification のスキル attach-evidence にある。ここには、buddy で決めた値だけを書く。  
-エビデンスの動画は、`packages/e2e/kit/` の `recording` と `evidence` を呼ぶ Playwright の spec で撮る。
+エビデンスの動画は、npm の kit `@fukuemon/e2e-kit` の `recording` と `evidence` を呼ぶ Playwright の spec で撮る。
 
 ## Evidence Scope
 
@@ -24,11 +24,12 @@ status: draft
   - コメントには付けない。観点の条件と期待結果とエビデンスを、本文の 1 つの表で読み合わせるためである。
   - 例外は、スキル attach-evidence がコメントを使うとする、撮り直したときの知らせと、本文が上限を超えたときだけにする。
 - Google Drive には置かない。
-- 入れる前の元のファイルは、`.ai-out/evidence/<番号>/` に一時的に置く。`.ai-out/` は Git で追跡しない。本文に入れ終えたら消す。
-  - `<番号>` は、最初に撮ったときの pull request か issue の番号にし、使い続ける。pull request を作る前に撮ったなら、作った後も issue の番号を使う。改修前と改修後が別のフォルダに分かれないためである。
-  - `<番号>` は、撮る人が環境変数 `EVIDENCE_NO` で渡す。数字だけにし、`issue-` と `pr-` の接頭辞は付けない。buddy の kit は、npm の kit に置き換えるまで数字の番号を使う。
-  - 配置先と名前は、スキル capture-browser-evidence の規則ではなく、薄い層の `recordPrEvidence` が `EVIDENCE_NO` と `name` から決める。ファイルは `<番号>/<name>.mp4` と `<番号>/<name>/` に出る。`<name>` は、spec の `recordPrEvidence` に渡した `name` である。
-    - 改修前と改修後を撮ったときは、`<番号>/<name>-before.mp4` と `<番号>/<name>-after.mp4` に出る。
+- 入れる前の元のファイルは、`.ai-out/evidence/<入れる先>/` に一時的に置く。`.ai-out/` は Git で追跡しない。本文に入れ終えたら消す。
+  - `<入れる先>` は、issue なら `issue-<番号>`、pull request なら `pr-<番号>` にする。
+  - 最初に撮ったときの入れる先を使い続ける。pull request を作る前に撮ったなら、作った後も `issue-<番号>` を使う。改修前と改修後が別のフォルダに分かれないためである。
+  - `<入れる先>` は、撮る人が環境変数 `EVIDENCE_FOR` で渡す。kit は、`issue-<番号>` か `pr-<番号>` の形でなければ撮らずに失敗する。
+  - 配置先と名前は、kit の `recordPrEvidence` が `EVIDENCE_FOR` と `name` から決める。ファイル名は、スキル capture-browser-evidence の規則ではなく kit の形にする。ファイルは `<入れる先>/<name>.mp4` と `<入れる先>/<name>/` に出る。`<name>` は、spec の `recordPrEvidence` に渡した `name` である。
+    - 改修前と改修後を撮ったときは、`<入れる先>/<name>-before.mp4` と `<入れる先>/<name>-after.mp4` に出る。
   - `<name>/` には、kit の README、判定のスクリーンショット（`frames/`）、撮った記録（`.records/`）、改修前と比べたときの比較の画像（`compare/`）が入る。
   - 本文に入れるのは、`<name>.mp4`（改修前と比べたときは `<name>-before.mp4` と `<name>-after.mp4`）と、`<name>/frames/` の判定のスクリーンショットである。README と `.records/` は確認に使い、入れない。
 - 本文に入れたファイルは、リポジトリを見られる人が開ける。リポジトリを public にすると、見られる人が誰にでも広がる。
@@ -38,7 +39,8 @@ status: draft
 
 ## Capture Tools
 
-- エビデンスは、Playwright の spec で撮る。spec は、薄い層の `packages/e2e/tests/fixtures/evidence.ts` の `recordPrEvidence` から、`packages/e2e/kit/` の `recordEvidence` を呼ぶ。録画の設計は [エビデンスの録画](../../packages/e2e/kit/recording/DesignDoc.md) にある。
+- エビデンスは、Playwright の spec で撮る。spec は、薄い層の `packages/e2e/tests/fixtures/evidence.ts` の `recordPrEvidence` を呼ぶ。
+  - 薄い層は、kit の `recordPrEvidence` に buddy の値（アプリの名前、viewport、時間帯）を渡して呼ぶ。録画の設計は [agent-harness の e2e の Design Doc](https://github.com/Fukuemon/agent-harness/blob/5560ae1e031686f5821ecac0d7c12d8fb6ea3499/packages/e2e/DesignDoc.md) にある。
   - kit は字幕とカーソルを重ね、H.264 の mp4 を書き出す。変換しない。
   - agent-browser では、エビデンスを撮らない。spec を書く前に、画面の操作の位置を確認するのには使ってよい。
 - 配置先は `packages/e2e/tests/evidence/<機能>/<振る舞い>.e2e.ts` にする。`<機能>` と `<振る舞い>` は、E2E の spec と同じ名前の付け方（スキル write-e2e-test の「名前」）にする。
@@ -81,7 +83,7 @@ export WEB_PORT=3850 SCHEDULE_PORT=8850 RECEIPT_PORT=8851 GCALHOLD_PORT=8852 \
   VALKEY_PORT=6850 IDP_PORT=9850 CALENDARPIT_PORT=4850 POSTGRES_PORT=15850 \
   HYDRA_PUBLIC_PORT=4854 HYDRA_ADMIN_PORT=4855 BROKER_PORT=8853
 docker compose -p buddy-evidence up --build --wait
-EVIDENCE_NO=<番号> E2E_BASE_URL=http://localhost:3850 \
+EVIDENCE_FOR=<入れる先> E2E_BASE_URL=http://localhost:3850 \
   E2E_CALENDARPIT_URL=http://localhost:4850 E2E_GCALHOLD_URL=http://localhost:8852 \
   E2E_SCHEDULE_URL=http://localhost:8850 E2E_RECEIPT_URL=http://localhost:8851 \
   E2E_HYDRA_URL=http://localhost:4854 \
@@ -91,7 +93,7 @@ docker compose -p buddy-evidence down -v
 
 | 環境変数 | 値 | デフォルト |
 | --- | --- | --- |
-| `EVIDENCE_NO` | 最初に撮ったときの pull request か issue の番号。pull request を作る前に撮ったなら、作った後も issue の番号を使い続ける。数字だけで、`issue-` と `pr-` の接頭辞は付けない。出力の配置先と字幕に出る | なし。無ければ spec が失敗する |
+| `EVIDENCE_FOR` | 入れる先。`issue-<番号>` か `pr-<番号>`。最初に撮ったときの入れる先を使い続ける。出力の配置先と字幕に出る | なし。無ければ spec が失敗する |
 | `E2E_BASE_URL` | 撮る web の URL | `http://localhost:3000` |
 | `EVIDENCE_BEFORE_URL` | 改修前の web の URL。渡すと、改修前と改修後を 1 回で撮る | なし |
 | `EVIDENCE_ONLY` | `before` か `after`。`E2E_BASE_URL` をその版として 1 つだけ撮る | なし |
@@ -152,7 +154,7 @@ docker compose -p buddy-evidence down -v
 
 ### 本文に入れる
 
-- 本文は `.ai-out/prs/` のファイルに書き、エビデンスの参照を `![<名前>](./.ai-out/evidence/<番号>/<ファイル>)` にする。
+- 本文は `.ai-out/prs/` のファイルに書き、エビデンスの参照を `![<名前>](./.ai-out/evidence/<入れる先>/<ファイル>)` にする。
 - リポジトリのルートで流し、`--attach` に本文と同じパスを渡す。gh が本文の参照を、アップロード先の URL に書き換える。
   - 作るとき: `gh pr create -B develop -t "<題>" -F <本文> --attach <動画> --attach <画像>`。マージ先は `develop` である。
   - 作った後に足すとき: `gh pr edit <番号> -F <本文> --attach <足すファイル>`

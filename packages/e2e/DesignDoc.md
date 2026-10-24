@@ -15,10 +15,10 @@ verified_commit: unverified
 プロダクトのチームの開発者が、Playwright の E2E のテストのコードを書くときの考え方と構成を示す。手動検証のエビデンスを撮る spec も、同じ考え方で書く。
 
 E2E を足すたびに書き方が人によって変わると、失敗したときにどこを読めばよいかが分からなくなる。待ちの書き忘れは spec ごとに同じ形で起き、要素の指し方は画面の作りを変えるたびに使えなくなる。  
-そこで、処理を置く層と待ち方を決め、機械で判定できるものは ESLint の規則（`packages/e2e/eslint/e2e-authoring-rule.mjs`）で止める。
+そこで、処理を置く層と待ち方を決め、機械で判定できるものは ESLint の規則（kit の `@fukuemon/e2e-kit/eslint`）で止める。
 
-エビデンスの録画の流れは [エビデンスの録画](https://github.com/Fukuemon/buddy/blob/develop/packages/e2e/kit/recording/DesignDoc.md) にある。  
-この文書、kit、規則は、元のリポジトリ（非公開）からコピーした。buddy で使いながら直し、後で汎用の形に戻す。地図の操作（`map/google`）は buddy に地図が無いのでコピーしていない。  
+エビデンスの録画の流れは [agent-harness の e2e の Design Doc](https://github.com/Fukuemon/agent-harness/blob/5560ae1e031686f5821ecac0d7c12d8fb6ea3499/packages/e2e/DesignDoc.md) にある。  
+この文書は、元のリポジトリ（非公開）からコピーし、buddy で使いながら直した。kit と規則は、npm の `@fukuemon/e2e-kit` を使う。  
 AI が書くときの手順は、agent-harness のパッケージ e2e のスキル `write-e2e-test` が持つ。この文書は、その手順の理由と構成を人に向けて示す。
 
 ## Scope
@@ -64,7 +64,7 @@ flowchart TB
     widgets["widgets/<br/>完了が DOM に出ない UI"]
     selectors["selectors/<br/>testid の無い要素の指し方"]
   end
-  kit["packages/e2e/kit<br/>録画、ログイン、エビデンスの配置先"]
+  kit["@fukuemon/e2e-kit<br/>録画、ログイン、エビデンスの配置先"]
 
   specs --> screens
   setup --> screens
@@ -244,7 +244,7 @@ testid は、テストのコードではなくアプリのコンポーネント�
 
 ### 禁止する書き方
 
-失敗の原因になりやすい書き方を禁じる。機械で判定できるものは、ESLint の規則(`packages/e2e/eslint/e2e-authoring-rule.mjs`)が止める。「レビュー」のものは、書かれていないことや順番の判定で、コードの形からは決められない。
+失敗の原因になりやすい書き方を禁じる。機械で判定できるものは、ESLint の規則(kit の `@fukuemon/e2e-kit/eslint`)が止める。「レビュー」のものは、書かれていないことや順番の判定で、コードの形からは決められない。
 
 | 禁じること | 代わりに | なぜ | 止め方 |
 | --- | --- | --- | --- |
