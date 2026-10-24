@@ -9,14 +9,7 @@ site/**
 packages/e2e/test-results/**
 packages/e2e/playwright-report/**
 # apm が配置するスキル。元のリポジトリで直す
-.claude/skills/setup-*/**
-.claude/skills/write-comments/**
-.claude/skills/write-commit/**
-.claude/skills/write-context/**
-.claude/skills/write-design-docs/**
-.claude/skills/write-issue-pr/**
-.claude/skills/write-prose/**
-.claude/skills/write-skill/**
+.claude/skills/**
 .agents/**
 .codex/**
 # tbls の生成物。説明は services/schedule/.tbls.yml で直す
