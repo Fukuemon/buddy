@@ -5,7 +5,7 @@
  *   ?view= が無く、表示の幅が NARROW_WIDTH 未満（スマートフォンで仕様書を読むとき）は、モバイルで描く。
  * - data-m を持つ要素の左上に、構成番号の印を .markers に重ねる。data-testid があれば、印の横に出せる。
  * - デバイス、番号、testid、幅に合わせるかを切り替えるツールバーを body の末尾に作る。
- * - 埋め込んだ親のページに、中身の高さを postMessage で知らせる（docs/javascripts/embed-mock.js が受ける）。
+ * - 埋め込んだ親のページに、中身の高さを postMessage で知らせる（同じディレクトリの embed-mock.js が受ける）。
  *
  * 画面の中の操作で表示を変えたら、mockRefresh() を呼んで印を置き直す。
  */
@@ -19,6 +19,8 @@
   }
   const DEFAULT_VIEW = 'desktop'
   const NARROW_WIDTH = 600
+  /** 親のページへのメッセージの source。embed-mock.js の MESSAGE_SOURCE と同じ値にする */
+  const MESSAGE_SOURCE = 'screen-mock'
 
   const params = new URLSearchParams(location.search)
   const body = document.body
@@ -90,7 +92,7 @@
     const height = Math.ceil(body.getBoundingClientRect().height)
     if (height === sentHeight) return
     sentHeight = height
-    window.parent.postMessage({ source: 'buddy-mock', type: 'resize', height }, '*')
+    window.parent.postMessage({ source: MESSAGE_SOURCE, type: 'resize', height }, '*')
   }
 
   function syncUrl() {
@@ -166,6 +168,8 @@
   buildToolbar()
   refresh()
   window.addEventListener('resize', refresh)
+  // 横に送る表をスクロールすると要素が動くので、印を置き直す。要素の scroll は伝わらないので capture で受ける
+  screen.addEventListener('scroll', placeMarkers, { capture: true, passive: true })
   window.addEventListener('load', refresh)
   document.fonts?.ready.then(refresh)
 

@@ -110,7 +110,10 @@
 
   screen.addEventListener('click', (event) => {
     const el = event.target.closest(ACTION)
-    if (el) act(el)
+    if (!el) return
+    // a の href への移動は、go() が付ける search params を落とすので止める
+    if (el.matches('a[href]')) event.preventDefault()
+    act(el)
   })
 
   screen.addEventListener('keydown', (event) => {

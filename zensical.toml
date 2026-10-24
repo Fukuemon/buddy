@@ -19,7 +19,7 @@ adr/template.md
 screens/_template/
 """
 # 画面仕様書に埋め込んだモックの iframe の高さを、中身に合わせる
-extra_javascript = ["javascripts/embed-mock.js"]
+extra_javascript = ["screens/_common/embed-mock.js"]
 # サイトの色を画面と同じデザインシステムのトークンにする。tokens.css は scripts/build-mock-tokens.mjs の生成物
 extra_css = ["screens/_common/tokens.css", "stylesheets/extra.css"]
 nav = [
