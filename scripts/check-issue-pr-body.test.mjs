@@ -101,7 +101,7 @@ test('コメント、コードブロック、details の中の見出しと .ai-o
 })
 
 test('インラインのコードの .ai-out は話題として通す', () => {
-  const extra = '`recordPrEvidence` が `.ai-out/evidence/<番号>/` に書き出す。'
+  const extra = '`recordPrEvidence` が `.ai-out/evidence/<入れる先>/` に書き出す。'
   assert.deepEqual(pr({ body: body({ extra }) }).errors, [])
 })
 

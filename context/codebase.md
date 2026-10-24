@@ -36,7 +36,7 @@ status: stable
   - `postgres`、`oidc`、`ulid`、`gcal` は機能のパッケージのインターフェイスを実装する。`httpapi` から `postgres` と `oidc` を import するのは、テストのファイルだけにする。`httpapi` は、パスの ID の形の確認に `ulid` を使う。
   - `inmem` を import するのは、テストのファイルだけにする。
 - `services/receipt` の依存は、`record` と `civil` を末端にして、読み込み、正規化、対の作成、判定、つなぐ段（`check`）、データソース、HTTP の順の 1 方向に限る。判定はサービスの規則（`servicerule`）を、データソースは Google カレンダー（`gcal`）を使う。
-- 依存の向きを確認する lint は入れていない。レビューで確認する。E2E の層の向きだけは、`packages/e2e/eslint/e2e-authoring-rule.mjs` が止める。
+- 依存の向きを確認する lint は入れていない。レビューで確認する。E2E の層の向きだけは、kit の ESLint の規則（`@fukuemon/e2e-kit/eslint`）が止める。
 
 ## State Ownership
 

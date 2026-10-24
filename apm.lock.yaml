@@ -389,12 +389,12 @@ dependencies:
   materialization_repo_url: Fukuemon/agent-harness
   name: e2e
   host: github.com
-  resolved_commit: c00a60240c4ea35e2d4ac0f1c48929ce503e3e65
-  resolved_ref: e2e-v0.1.0
-  version: 0.1.0
+  resolved_commit: 5560ae1e031686f5821ecac0d7c12d8fb6ea3499
+  resolved_ref: e2e-v0.1.1
+  version: 0.1.1
   virtual_path: packages/e2e
   is_virtual: true
-  package_type: skill_bundle
+  package_type: marketplace_plugin
   deployed_files:
   - .agents/skills/setup-e2e
   - .agents/skills/setup-e2e/SKILL.md
@@ -422,26 +422,26 @@ dependencies:
   - .claude/skills/write-e2e-test/references/situations.md
   deployed_file_hashes:
     .agents/skills/setup-e2e/SKILL.md: sha256:f1d9c51e5aadebf74de12f6363d2c424103c7e33dc00b2209736ef8aeda22dc7
-    .agents/skills/setup-e2e/kit-version.json: sha256:515482625ffbdbe2fb9e85eb09acb84e0e90ca32b1f4bbb74f7e10f502045361
+    .agents/skills/setup-e2e/kit-version.json: sha256:b628bb58556250399835c787c31f46d85cba6f92ae8fc6889b4793968d3ea6ed
     .agents/skills/setup-e2e/references/playwright/eslint.config.mjs: sha256:28be1ed6eeca7a792e0ab57bc3c268f0e52296ca952adbf34e6383774479935e
     .agents/skills/setup-e2e/references/playwright/playwright.config.ts: sha256:c5065b96a15bc0ac62ed24387ec4c6c1b5fbce35bf1094b588a12c38ec82341c
     .agents/skills/setup-e2e/references/playwright/tests/fixtures/env.ts: sha256:8546bec055403abdf7c346990ab05aef2e768dbd9ca66c37c744d36db07b59c0
-    .agents/skills/setup-e2e/references/playwright/tests/fixtures/evidence.ts: sha256:790dd19690da3c3936fc069a584b9a285515791fbfa7e5edd879f3d07a63f6b9
+    .agents/skills/setup-e2e/references/playwright/tests/fixtures/evidence.ts: sha256:d96c16295d2c4ec30b2f59b4eb61bf8d8d60d808643292475da4b6f1eb58e842
     .agents/skills/setup-e2e/references/playwright/tests/fixtures/timeouts.ts: sha256:d8a7326ab0e5ae6574801fc3dd3111bafff943dd9a007c0bf863c4c44cb89ec8
-    .agents/skills/write-e2e-test/SKILL.md: sha256:42dfe5730ad4c70e882a2d325aa1e313a637fce1282b6077d829e6b4758e548a
-    .agents/skills/write-e2e-test/assets/context/testing/e2e.md: sha256:6816655f5de3194bf1746cd920ba2938e9cbbdabb4734864d98f7e4eb21314ae
+    .agents/skills/write-e2e-test/SKILL.md: sha256:b83e88767ab21429e3584072ff8d3b1aafaef4e30adaa987e5b9f098e048d014
+    .agents/skills/write-e2e-test/assets/context/testing/e2e.md: sha256:6a884094355a530fcc6b62660a17c0523b08665cc352b332b26309140b713286
     .agents/skills/write-e2e-test/references/situations.md: sha256:495705a9b8b6a9eee045b4693ae4a0dfdea251c159d2a941fe2b2afa3c5cd4b9
     .claude/skills/setup-e2e/SKILL.md: sha256:f1d9c51e5aadebf74de12f6363d2c424103c7e33dc00b2209736ef8aeda22dc7
-    .claude/skills/setup-e2e/kit-version.json: sha256:515482625ffbdbe2fb9e85eb09acb84e0e90ca32b1f4bbb74f7e10f502045361
+    .claude/skills/setup-e2e/kit-version.json: sha256:b628bb58556250399835c787c31f46d85cba6f92ae8fc6889b4793968d3ea6ed
     .claude/skills/setup-e2e/references/playwright/eslint.config.mjs: sha256:28be1ed6eeca7a792e0ab57bc3c268f0e52296ca952adbf34e6383774479935e
     .claude/skills/setup-e2e/references/playwright/playwright.config.ts: sha256:c5065b96a15bc0ac62ed24387ec4c6c1b5fbce35bf1094b588a12c38ec82341c
     .claude/skills/setup-e2e/references/playwright/tests/fixtures/env.ts: sha256:8546bec055403abdf7c346990ab05aef2e768dbd9ca66c37c744d36db07b59c0
-    .claude/skills/setup-e2e/references/playwright/tests/fixtures/evidence.ts: sha256:790dd19690da3c3936fc069a584b9a285515791fbfa7e5edd879f3d07a63f6b9
+    .claude/skills/setup-e2e/references/playwright/tests/fixtures/evidence.ts: sha256:d96c16295d2c4ec30b2f59b4eb61bf8d8d60d808643292475da4b6f1eb58e842
     .claude/skills/setup-e2e/references/playwright/tests/fixtures/timeouts.ts: sha256:d8a7326ab0e5ae6574801fc3dd3111bafff943dd9a007c0bf863c4c44cb89ec8
-    .claude/skills/write-e2e-test/SKILL.md: sha256:42dfe5730ad4c70e882a2d325aa1e313a637fce1282b6077d829e6b4758e548a
-    .claude/skills/write-e2e-test/assets/context/testing/e2e.md: sha256:6816655f5de3194bf1746cd920ba2938e9cbbdabb4734864d98f7e4eb21314ae
+    .claude/skills/write-e2e-test/SKILL.md: sha256:b83e88767ab21429e3584072ff8d3b1aafaef4e30adaa987e5b9f098e048d014
+    .claude/skills/write-e2e-test/assets/context/testing/e2e.md: sha256:6a884094355a530fcc6b62660a17c0523b08665cc352b332b26309140b713286
     .claude/skills/write-e2e-test/references/situations.md: sha256:495705a9b8b6a9eee045b4693ae4a0dfdea251c159d2a941fe2b2afa3c5cd4b9
-  content_hash: sha256:76340775bbce2eb985763472ebb447a24d28778dbada24074a5e490512afa0fb
+  content_hash: sha256:2d629da85e184f2c366a384f0df9398d3967eb67d5afb5b03cc88d716ff70089
   declared_license: MIT
 - repo_url: fukuemon/agent-harness
   materialization_repo_url: Fukuemon/agent-harness
@@ -1258,7 +1258,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/e2e
   active_owner: fukuemon/agent-harness/packages/e2e
-  content_hash: sha256:515482625ffbdbe2fb9e85eb09acb84e0e90ca32b1f4bbb74f7e10f502045361
+  content_hash: sha256:b628bb58556250399835c787c31f46d85cba6f92ae8fc6889b4793968d3ea6ed
 - kind: project-relative
   target: claude
   value: .claude/skills/setup-e2e/references/playwright/eslint.config.mjs
@@ -1294,7 +1294,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/e2e
   active_owner: fukuemon/agent-harness/packages/e2e
-  content_hash: sha256:790dd19690da3c3936fc069a584b9a285515791fbfa7e5edd879f3d07a63f6b9
+  content_hash: sha256:d96c16295d2c4ec30b2f59b4eb61bf8d8d60d808643292475da4b6f1eb58e842
 - kind: project-relative
   target: claude
   value: .claude/skills/setup-e2e/references/playwright/tests/fixtures/timeouts.ts
@@ -1519,7 +1519,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/e2e
   active_owner: fukuemon/agent-harness/packages/e2e
-  content_hash: sha256:42dfe5730ad4c70e882a2d325aa1e313a637fce1282b6077d829e6b4758e548a
+  content_hash: sha256:b83e88767ab21429e3584072ff8d3b1aafaef4e30adaa987e5b9f098e048d014
 - kind: project-relative
   target: claude
   value: .claude/skills/write-e2e-test/assets/context/testing/e2e.md
@@ -1528,7 +1528,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/e2e
   active_owner: fukuemon/agent-harness/packages/e2e
-  content_hash: sha256:6816655f5de3194bf1746cd920ba2938e9cbbdabb4734864d98f7e4eb21314ae
+  content_hash: sha256:6a884094355a530fcc6b62660a17c0523b08665cc352b332b26309140b713286
 - kind: project-relative
   target: claude
   value: .claude/skills/write-e2e-test/references/situations.md
@@ -2410,7 +2410,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/e2e
   active_owner: fukuemon/agent-harness/packages/e2e
-  content_hash: sha256:515482625ffbdbe2fb9e85eb09acb84e0e90ca32b1f4bbb74f7e10f502045361
+  content_hash: sha256:b628bb58556250399835c787c31f46d85cba6f92ae8fc6889b4793968d3ea6ed
 - kind: project-relative
   target: codex
   value: .agents/skills/setup-e2e/references/playwright/eslint.config.mjs
@@ -2446,7 +2446,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/e2e
   active_owner: fukuemon/agent-harness/packages/e2e
-  content_hash: sha256:790dd19690da3c3936fc069a584b9a285515791fbfa7e5edd879f3d07a63f6b9
+  content_hash: sha256:d96c16295d2c4ec30b2f59b4eb61bf8d8d60d808643292475da4b6f1eb58e842
 - kind: project-relative
   target: codex
   value: .agents/skills/setup-e2e/references/playwright/tests/fixtures/timeouts.ts
@@ -2671,7 +2671,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/e2e
   active_owner: fukuemon/agent-harness/packages/e2e
-  content_hash: sha256:42dfe5730ad4c70e882a2d325aa1e313a637fce1282b6077d829e6b4758e548a
+  content_hash: sha256:b83e88767ab21429e3584072ff8d3b1aafaef4e30adaa987e5b9f098e048d014
 - kind: project-relative
   target: codex
   value: .agents/skills/write-e2e-test/assets/context/testing/e2e.md
@@ -2680,7 +2680,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/e2e
   active_owner: fukuemon/agent-harness/packages/e2e
-  content_hash: sha256:6816655f5de3194bf1746cd920ba2938e9cbbdabb4734864d98f7e4eb21314ae
+  content_hash: sha256:6a884094355a530fcc6b62660a17c0523b08665cc352b332b26309140b713286
 - kind: project-relative
   target: codex
   value: .agents/skills/write-e2e-test/references/situations.md

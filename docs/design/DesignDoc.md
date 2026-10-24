@@ -282,9 +282,8 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 ├── packages/
 │   ├── ui/              # デザインシステム。トークン、Base と Case のコンポーネント、Storybook
 │   │   └── DESIGN.md    # デザインシステムの設計
-│   ├── e2e/             # E2E のテストと、手動検証のエビデンスを撮る kit
-│   │   ├── DesignDoc.md # E2E のテストのコードの設計
-│   │   └── kit/recording/DesignDoc.md # エビデンスの録画の設計
+│   ├── e2e/             # E2E のテストと、手動検証のエビデンスを撮る spec。kit は npm の @fukuemon/e2e-kit
+│   │   └── DesignDoc.md # E2E のテストのコードの設計
 │   └── go/              # 2 つの API が共有する Go の module。OIDC の検証、ヘルスチェック、Google カレンダーのタイトルの解釈とサービスアカウントのクライアント
 ├── docs/                # Zensical のサイトの元。PRD、Design Doc、ADR、画面仕様書、API の仕様、DB の設計
 │   ├── PRD.md
