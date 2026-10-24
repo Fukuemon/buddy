@@ -36,10 +36,8 @@ ADR-0007: [2 つの Go の API が共有するコードを、別の module に�
 - `go.work` の下でビルドすると各 API の `go.sum` に行が増える。増えた行はコミットに含めない。
 
 agent-harness のスキルとフックは apm で配置し、Git で追跡しない。  
-buddy だけのスキルは `.claude/skills/` に置き、Git で追跡する。  
-buddy だけのスキルは次の 5 つ。  
-write-e2e-test、write-screen-spec、write-verification-spec、run-verification-scenarios、attach-evidence。  
-codex が読むよう、`.agents/skills/` に同じ名前のシンボリックリンクを置く。  
+入れるパッケージは `apm.yml` にある。検証とエビデンス、E2E のテスト、画面仕様書のスキルも、パッケージ verification、e2e、screens から配置する。  
+スキルが読む buddy の値は、`context/` と `context/project.yml` のキーにある。  
 Claude Code か Codex を使うときは、clone した後の最初のセッションで、セッションの開始のフックが apm のスキルとフックを配置する。  
 文書のチェックのスクリプト（`.claude/hooks/docs/`）も apm が配置する。コーディングエージェントを使わないときは、手で次を実行する。
 
@@ -130,8 +128,8 @@ pnpm e2e
 ```
 
 - 書き方は、スキル write-e2e-test に従う。書いたら `pnpm --filter @buddy/e2e check` で、整形、lint、E2E の書き方の規則、型を確認する。
-- 環境変数と、テストのデータの扱いは `context/testing.md` の E2E のセクションにある。
-- エビデンスの動画を撮る spec は、`pnpm e2e` では流れない。撮るコマンドは [エビデンス](context/testing/evidence.md) の「撮るコマンド」にある。
+- 環境変数と、テストのデータの扱いは [E2E のテスト](context/testing/e2e.md) にある。
+- エビデンスの動画を撮る spec は、`pnpm e2e` では流れない。撮るコマンドは [エビデンス](context/testing/evidence.md) の Capture Environment にある。
 - 失敗したテストの trace は `packages/e2e/test-results/` に残る。`pnpm --filter @buddy/e2e exec playwright show-trace <trace.zip>` で開く。trace.zip は、`packages/e2e` からの相対パス（Playwright が出す `test-results/...`）で渡す。
 
 ## ドキュメントサイトのプレビュー

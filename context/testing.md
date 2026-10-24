@@ -19,7 +19,7 @@ status: stable
 | 照合の互換のテスト | Go の照合が、元の Python の実装と同じ結果を返す | `services/receipt/internal/check/parity_test.go` と `testdata/parity/` | `go test ./...`。期待値の作り直しは `tools/parity/run.sh` |
 | web の単体とコンポーネントのテスト | 変換、表示の規則（照合の印と CSV）、コンポーネントの操作 | 対象の隣の `*.test.ts(x)`。コンポーネントは story を `composeStories` で使う | `pnpm --filter @buddy/web test`（jsdom） |
 | デザインシステムのテスト | トークンのコントラスト、押せる領域とフォーカスの移り方、story の描画とアクセシビリティ | `packages/ui/src` の `*.test.ts(x)` と story | `pnpm --filter @buddy/ui test`（トークンは node、コンポーネントと story はブラウザ） |
-| E2E | ログインから画面の操作までの流れが、compose の全体で動く | `packages/e2e/tests/` | `pnpm e2e`（下の E2E のセクション） |
+| E2E | ログインから画面の操作までの流れが、compose の全体で動く | `packages/e2e/tests/` | `pnpm e2e`（[E2E のテスト](testing/e2e.md)） |
 | 生成物のそろい | `openapi.yaml` と SQL から生成したコードが最新である | `scripts/check-generated.sh` | `pnpm check:generated` |
 | テーブル定義書のそろい | マイグレーションを適用した PostgreSQL から作ったテーブル定義書と ER 図の元が、コミットした `docs/db/` と同じである。全てのテーブルがどれかの viewpoint に入る | `scripts/build-db-docs.sh` | `pnpm generate:db-docs`（Docker が要る）。CI の `db-docs` は、生成した後に `docs/db/` の差分を確認する |
 | OpenAPI の定義の lint | 各 API の `openapi.yaml` が Redocly CLI の `recommended-strict` の規則に合う | `redocly.yaml`、`.redocly.lint-ignore.yaml` | `pnpm lint:openapi` |
@@ -81,20 +81,7 @@ pull request と develop への push では、CI（[ci.yml](../.github/workflows
 
 ## E2E
 
-- E2E のテストは `packages/e2e/tests/` に置き、ルートの compose で立てた全体に向けて流す。手順は CONTRIBUTING.md の「E2E のテストを流す」にある。
-  - API、Hydra、ブローカーは置き換えず、compose の本物を使う。事業所の上流の IdP は、compose のフェイクを使う。テストのデータは予定の API に作り、消さない。spec は、タイトルに時刻を入れて自分の作ったデータを見分ける。
-  - project は 3 つある。`setup` は compose のブローカーにログインした状態を `packages/e2e/.auth/` に保存し、`e2e` はその状態で `tests/specs/` の spec を流す。`evidence` は `tests/evidence/` のエビデンスの spec を流し、`pnpm e2e` と CI は流さない（[エビデンス](testing/evidence.md)）。
-  - `setup` は、青木 陽菜（マネージャー）と森 健太（チームリーダー）の 2 人のログインの状態を保存する。リーダーで確認する spec は、`test.use({ storageState: LEADER_STATE })` で切り替える。
-  - 環境変数 `E2E_BASE_URL`（デフォルトは `http://localhost:3000`）で、向ける画面を変える。ログインのメールは、`packages/e2e/tests/fixtures/env.ts` の `LOGIN_EMAIL` と `LEADER.email` である。
-  - Google カレンダーの spec が向ける calendarpit と gcalhold は、環境変数 `E2E_CALENDARPIT_URL` と `E2E_GCALHOLD_URL` で変える。デフォルトは、それぞれ `http://localhost:4173` と `http://localhost:8085` である。
-  - 職員の登録と停止の spec は、予定の API とブローカーを直に呼ぶ。向ける先は `E2E_SCHEDULE_URL`、`E2E_HYDRA_URL`、`E2E_BROKER_URL`、`E2E_BROKER_INTERNAL_URL` で変える。
-    - デフォルトは、それぞれ `http://localhost:8080`、`http://localhost:4444`、`http://localhost:8100`、`http://localhost:8101` である。
-  - 職員の登録、休職、退職の spec は、流すたびに新しいメールの職員を登録し、消さない。休職にした職員がログインの画面へ戻るのを待つ spec は、web が access token を取り直すまで、4 分ほどかかる。
-  - ブローカーは、初回のログインで上流の IdP の `sub` を職員に結び付ける。E2E は、メールの @ の前の部分を上流の `sub` にして入る。ローカルで同じ職員に別の名前で入ったことがあれば、`docker compose down -v` でデータを消す。
-  - Google カレンダーの取り込みの spec は、森にカレンダーを結び付けて取り込んだまま残す。同じ DB で 2 回目を流すと落ちるので、流し直すときは `docker compose down -v` で作り直す。
-  - シードは空の DB にだけ適用される。森 健太や上野 渚で入れないときや、職員の一覧に佐藤 美咲がいないときは、シードを変える前の DB なので、`docker compose down -v` で作り直す。
+- E2E のテストのツールでの書き方、流すコマンド、project、環境変数、テストデータとログインは、[E2E のテスト](testing/e2e.md) にある。
 - 画面を変える pull request では、その画面の流れの E2E を流す。testid を変えたら、E2E と画面仕様書の両方を直す。
-- lint と型のチェックは、`packages/e2e` で `pnpm check` を流す。ESLint の規則（`packages/e2e/eslint/e2e-authoring-rule.mjs`）と、その規則のテスト（`pnpm test:rules`）もここにある。
-  - 規則は ESLint の cwd から見た `tests/` だけを見る。ルートやエディタから流すと、違反があっても何も言わずに通る。
 
 手動検証のエビデンスの取り決めは、[エビデンス](testing/evidence.md) にある。

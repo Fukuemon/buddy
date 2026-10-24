@@ -83,7 +83,9 @@ docs/screens/
 - 4 つの欄は、デフォルト値（常に活性、常に表示）でも省かない。
 - カタログの欄のリンクの先は、画面の文言とデータで要素を見せる、apps/web のコンポーネントの story にする。要素を描く apps/web のコンポーネントのうち、story があり、その story に要素が出るいちばん小さいものを選ぶ。story は、仕様書の状態に近いものを選ぶ。apps/web のどの story にも要素が出ないときだけ、packages/ui のコンポーネントの story を選ぶ。route に直に書いた要素のように、どの story にも出なければ欄ごと省く。
   - リンクは本番のカタログ（`https://buddy-docs.emon-apps.workers.dev/storybook/`）の URL で書く。ローカルの `zensical serve` にはカタログが無く、`/storybook/` で始まるリンクはリンクのチェックがローカルのファイルとして探して失敗するためである。pull request のプレビューから開くと、develop のカタログが開く。
+  - story の候補は、`rg -n "^  title:|^export const" -g '*.stories.tsx' apps/web/src packages/ui/src` で探す。
   - story の ID は、Storybook の画面の URL の `path=/story/` の後ろの値である。story の `title` と export の名前から決まる。日本語は、ブラウザの URL のように `%` でエンコードせずに書く。
+    - `pnpm --filter @buddy/web storybook` で開いた URL で確認する。
   - packages/ui のコンポーネントの使い方のページ（`.mdx`）へは、`path=/docs/<title の ID>--docs` でリンクしてよい。
   - 1 つの要素を 2 つ以上のコンポーネントが描くとき、仕様書の 2 つ以上の状態を別の story が描くときは、リンクを「、」でつなぐ。
 - インタラクションは、操作を起点に画面が変わるものだけを書く。無ければセクションごと省く。
@@ -124,7 +126,7 @@ docs/screens/
 - 構成要素の表の要素に `data-m="<番号>"` を付ける。座標は書かない。`mock.js` が要素の左上に番号の印を重ねる。
 - 構成番号は、その状態で見える要素にだけ付ける。
 - 幅で出し分ける開閉式の要素と、それを開いて初めて見える要素は、その状態で見える要素として扱い、同じ状態の表に載せて `data-m` を付ける。`mock.js` は見えない要素に印を置かないので、印は開いたときに出る。どの印が開くと出るかと、どの幅で出すかを、仕様書の構成のセクションかその状態の説明に、要素の名前で書く。
-- E2E が指す要素に `data-testid` を付ける。モックの `data-testid` を画面の testid の正本にする。E2E が使う testid は、どれかのモックにある値か、モックの `x-{…}` の形と同じ始まりにする（`pnpm check:screens` が確認する）。`x-{…}` の `{…}` には、職員の ID やサービスコードのように、どの値が入ってもよい。形は [コードと文書の規約の E2E](https://github.com/Fukuemon/buddy/blob/develop/context/conventions.md#e2e) にある。
+- E2E が指す要素に `data-testid` を付ける。モックの `data-testid` を画面の testid の正本にする。E2E が使う testid は、どれかのモックにある値か、モックの `x-{…}` の形と同じ始まりにする（`pnpm check:screens` が確認する）。`x-{…}` の `{…}` には、職員の ID やサービスコードのように、どの値が入ってもよい。形は [E2E のテストの Test IDs](https://github.com/Fukuemon/buddy/blob/develop/context/testing/e2e.md#test-ids) にある。
 - 例外として、全ての画面に共通する状態（[目次の全ての画面に共通する状態](index.md#全ての画面に共通する状態)）はモックを持たず、testid の正本は目次のセクションである。`pnpm check:screens` は画面のディレクトリのモックだけを読むので、E2E がその testid を指すときは、点検が通るように共通の状態を描く画面のモックを足す。
 - ツールバーの「data-testid」を入れると、番号の印の横に testid を出す。
 
