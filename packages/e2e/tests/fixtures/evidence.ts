@@ -7,6 +7,7 @@ import { variantsFromEnv, type Variant } from '@fukuemon/e2e-kit/evidence'
 import {
   recordPrEvidence as recordKitPrEvidence,
   type Recording,
+  type Viewport,
 } from '@fukuemon/e2e-kit/recording'
 
 import { BASE_URL, TIMEZONE_ID } from './env'
@@ -21,10 +22,10 @@ const root = fileURLToPath(new URL('../../../..', import.meta.url))
 export const EVIDENCE_VARIANTS = variantsFromEnv(BASE_URL)
 
 /** パソコンの幅の画面と録画の大きさ。pull request の本文で読める大きさにする */
-export const DESKTOP_VIEWPORT = { width: 1280, height: 800 }
+export const DESKTOP_VIEWPORT: Viewport = { width: 1280, height: 800 }
 
 /** スマートフォンの幅の画面と録画の大きさ */
-export const PHONE_VIEWPORT = { width: 390, height: 844 }
+export const PHONE_VIEWPORT: Viewport = { width: 390, height: 844 }
 
 /** Storybook の URL。デフォルトは `pnpm --filter @buddy/web storybook` の開発サーバーである */
 export const STORYBOOK_URL = process.env.E2E_STORYBOOK_URL ?? 'http://localhost:6006'
@@ -65,7 +66,7 @@ export const recordPrEvidence = async <T>(
     title: string
     actor: string
     variant: Variant
-    viewport?: { width: number; height: number }
+    viewport?: Viewport
   },
   prepare: (page: Page) => Promise<T>,
   body: (r: Recording, prepared: T) => Promise<void>,
