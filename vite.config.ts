@@ -19,6 +19,8 @@ export default defineConfig({
       '**/src/api/generated/**',
       '**/dist/**',
       '**/storybook-static/**',
+      // 写して <…> を埋める spec の見本。埋める前は import の先が無い
+      'packages/e2e/templates/**',
     ],
     jsPlugins: [
       { name: 'vite-plus', specifier: 'vite-plus/oxlint-plugin' },

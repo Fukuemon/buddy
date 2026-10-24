@@ -5,7 +5,6 @@ description: buddy の E2E のテストのコード（packages/e2e）を、層�
 status: draft
 governs:
   - packages/e2e/
-  - .claude/skills/write-e2e-test/
 verified_commit: unverified
 ---
 
@@ -19,8 +18,8 @@ E2E を足すたびに書き方が人によって変わると、失敗したと�
 そこで、処理を置く層と待ち方を決め、機械で判定できるものは ESLint の規則（`packages/e2e/eslint/e2e-authoring-rule.mjs`）で止める。
 
 エビデンスの録画の流れは [エビデンスの録画](https://github.com/Fukuemon/buddy/blob/develop/packages/e2e/kit/recording/DesignDoc.md) にある。  
-この文書、kit、規則、スキルは、元のリポジトリ（非公開）からコピーした。buddy で使いながら直し、後で汎用の形に戻す。地図の操作（`map/google`）は buddy に地図が無いのでコピーしていない。  
-AI が書くときの手順は、スキル `write-e2e-test` が持つ。この文書は、その手順の理由と構成を人に向けて示す。
+この文書、kit、規則は、元のリポジトリ（非公開）からコピーした。buddy で使いながら直し、後で汎用の形に戻す。地図の操作（`map/google`）は buddy に地図が無いのでコピーしていない。  
+AI が書くときの手順は、agent-harness のパッケージ e2e のスキル `write-e2e-test` が持つ。この文書は、その手順の理由と構成を人に向けて示す。
 
 ## Scope
 
@@ -35,8 +34,7 @@ AI が書くときの手順は、スキル `write-e2e-test` が持つ。この�
 
 持たないもの。
 
-- testid の名前の規則。`context/conventions.md` の E2E のセクションが持つ
-- 流すコマンド、環境、テストデータの中身。`context/testing.md` の E2E のセクションが持つ
+- testid の名前の規則、流すコマンド、環境、テストデータの中身。`context/testing/e2e.md` が持つ
 - リグレッションテストの寿命と、実行の契機。`context/testing.md` が持つ
 - API の mock の置き方。デプロイ済みの環境に向けて流すテストでは使わない
 

@@ -12,3 +12,12 @@ process:
     breakdown_at: design
     review: [requirements, design, integration]
   additional: []
+
+e2e:
+  dir: packages/e2e
+
+screens:
+  dir: docs/screens
+  tokens_css: docs/screens/_common/tokens.css
+  catalog_url: https://buddy-docs.emon-apps.workers.dev/storybook/
+  e2e_dir: packages/e2e/tests

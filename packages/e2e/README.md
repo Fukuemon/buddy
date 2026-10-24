@@ -6,8 +6,9 @@ buddy の E2E のテストと、手動検証のエビデンスを撮る仕組み
 - `eslint/`: E2E のテストのコードの書き方の規則（`e2e-authoring-rule.mjs`）と、そのテスト
 - `tests/`: E2E のテスト。層（specs、setup、screens、widgets、selectors、fixtures）は [DesignDoc.md](DesignDoc.md) にある
   - `tests/evidence/`: エビデンスの動画を撮る spec。kit を呼ぶ薄い層は `tests/fixtures/evidence.ts` にある
+- `templates/`: 検証シナリオのエビデンスを撮る spec の見本。型のチェックと ESLint の対象の外に置く
 
-書き方は、スキル write-e2e-test、write-verification-spec、run-verification-scenarios（`.claude/skills/`）が持つ。buddy で決めた値は `context/conventions.md` と `context/testing.md` の E2E のセクションにある。
+書き方は、agent-harness のパッケージ e2e と verification のスキル write-e2e-test、write-verification-spec、run-verification-scenarios が持つ。buddy で決めた値は `context/testing/e2e.md` と `context/testing/evidence.md` にある。
 
 ## テストとチェック
 
@@ -22,7 +23,7 @@ buddy の E2E のテストと、手動検証のエビデンスを撮る仕組み
 
 ## 元のリポジトリ
 
-kit、規則、スキル、Design Doc は、元のリポジトリ（非公開）からコピーした。依存として入れず、buddy で使いながら直し、後で汎用の形に戻す。  
+kit、規則、Design Doc は、元のリポジトリ（非公開）からコピーした。依存として入れず、buddy で使いながら直し、後で汎用の形に戻す。  
 地図の操作（`map/google`）は、buddy に地図が無いのでコピーしていない。
 
 ## ドキュメント
