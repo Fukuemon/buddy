@@ -1,12 +1,15 @@
-import { execFileSync } from 'node:child_process'
-import { copyFileSync, rmSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import type { Browser, Page } from '@playwright/test'
 
-import { evidenceName, variants, type Variant } from '../../kit/evidence/index.js'
-import { recordEvidence, type Recording } from '../../kit/recording/index.js'
+import { variantsFromEnv, type Variant } from '@fukuemon/e2e-kit/evidence'
+import {
+  recordPrEvidence as recordKitPrEvidence,
+  type Recording,
+  type Viewport,
+} from '@fukuemon/e2e-kit/recording'
+
 import { BASE_URL, TIMEZONE_ID } from './env'
 
 const root = fileURLToPath(new URL('../../../..', import.meta.url))
@@ -16,17 +19,13 @@ const root = fileURLToPath(new URL('../../../..', import.meta.url))
  * EVIDENCE_BEFORE_URL を渡すと、E2E_BASE_URL を改修後、EVIDENCE_BEFORE_URL を改修前として両方を撮る。
  * EVIDENCE_ONLY に before か after を渡すと、E2E_BASE_URL をその版として 1 つだけ撮る。
  */
-export const EVIDENCE_VARIANTS = variants({
-  baseUrl: BASE_URL,
-  beforeBaseUrl: process.env.EVIDENCE_BEFORE_URL,
-  only: process.env.EVIDENCE_ONLY,
-})
+export const EVIDENCE_VARIANTS = variantsFromEnv(BASE_URL)
 
 /** パソコンの幅の画面と録画の大きさ。pull request の本文で読める大きさにする */
-export const DESKTOP_VIEWPORT = { width: 1280, height: 800 }
+export const DESKTOP_VIEWPORT: Viewport = { width: 1280, height: 800 }
 
 /** スマートフォンの幅の画面と録画の大きさ */
-export const PHONE_VIEWPORT = { width: 390, height: 844 }
+export const PHONE_VIEWPORT: Viewport = { width: 390, height: 844 }
 
 /** Storybook の URL。デフォルトは `pnpm --filter @buddy/web storybook` の開発サーバーである */
 export const STORYBOOK_URL = process.env.E2E_STORYBOOK_URL ?? 'http://localhost:6006'
@@ -47,18 +46,10 @@ export const storyUrl = (id: string): string =>
 export const mockUrl = (file: string): string =>
   pathToFileURL(path.join(root, 'docs/screens', file)).href
 
-/** 撮った worktree のコミット。未コミットの変更があれば末尾に -dirty が付く。改修前の版は別のコードなので空にする */
-const versionOf = (variant: Variant): string =>
-  variant.name === 'before'
-    ? ''
-    : execFileSync('git', ['describe', '--always', '--dirty', '--match=__none__'], {
-        cwd: root,
-        encoding: 'utf8',
-      }).trim()
-
 /**
- * pull request か issue のエビデンスを 1 本撮る。環境変数 EVIDENCE_NO の番号の `.ai-out/evidence/<番号>/` に書き出す。
- * kit の録画は `<番号>/<name>/` に mp4、スクリーンショット、README を書き、添付する mp4 を `<番号>/<name>.mp4` にコピーする。
+ * pull request か issue のエビデンスを 1 本撮る。kit の recordPrEvidence に buddy の値を渡す。
+ * 環境変数 EVIDENCE_FOR（`issue-<番号>` か `pr-<番号>`）の `.ai-out/evidence/<EVIDENCE_FOR>/` に書き出す。
+ * kit の録画は `<EVIDENCE_FOR>/<name>/` に mp4、スクリーンショット、README を書き、添付する mp4 を `<EVIDENCE_FOR>/<name>.mp4` にコピーする。
  * 改修前と改修後を撮るときは、`<name>-before.mp4` と `<name>-after.mp4` にする。
  *
  * @param o.name 観点が分かる英小文字、数字、ハイフンの名前。添付したファイル名として動画の上に出る
@@ -75,38 +66,20 @@ export const recordPrEvidence = async <T>(
     title: string
     actor: string
     variant: Variant
-    viewport?: { width: number; height: number }
+    viewport?: Viewport
   },
   prepare: (page: Page) => Promise<T>,
   body: (r: Recording, prepared: T) => Promise<void>,
-): Promise<void> => {
-  const no = process.env.EVIDENCE_NO
-  if (!no || !/^\d+$/.test(no))
-    throw new Error(`EVIDENCE_NO に pull request か issue の番号を渡す: ${no ?? ''}`)
-  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(o.name))
-    throw new Error(`name は英小文字、数字、ハイフンにする: ${o.name}`)
-  const out = path.join(root, '.ai-out/evidence', no)
-  const dir = path.join(out, o.name)
-  const suffix = o.variant.name === 'single' ? '' : `-${o.variant.name}`
-  const attached = path.join(out, `${o.name}${suffix}.mp4`)
-  // 撮影が途中で失敗したときに、前の撮影の動画を添付しないよう、先に消す
-  rmSync(attached, { force: true })
-  await recordEvidence(
+): Promise<void> =>
+  recordKitPrEvidence(
     browser,
     {
-      dir,
+      root,
       appName: 'buddy',
-      envLabel: 'ローカル環境',
-      readVersion: async () => versionOf(o.variant),
-      timezoneId: TIMEZONE_ID,
       viewport: o.viewport ?? DESKTOP_VIEWPORT,
+      timezoneId: TIMEZONE_ID,
     },
-    {
-      scenario: { issue: no, id: `#${no} ${o.name}`, actor: o.actor, no: 0, title: o.title },
-      variant: o.variant,
-    },
+    { name: o.name, title: o.title, actor: o.actor, variant: o.variant },
     prepare,
     body,
   )
-  copyFileSync(path.join(dir, `${evidenceName(o.variant)}.mp4`), attached)
-}

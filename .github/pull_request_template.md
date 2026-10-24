@@ -27,7 +27,7 @@ Closes #
 
 | # | 条件（WHEN / IF） | 期待結果（SHALL） | 確認の方法 | 結果 | エビデンス |
 | --- | --- | --- | --- | --- | --- |
-| 1 | <〇〇のとき、〇〇ならば> | <外から観測できる結果> | `<spec のファイル名>` の `<name>` | 通った | `![<name>](./.ai-out/evidence/<番号>/<name>.mp4)` `![<判定の文>](./.ai-out/evidence/<番号>/<name>/frames/<判定の画像>.png)` |
+| 1 | <〇〇のとき、〇〇ならば> | <外から観測できる結果> | `<spec のファイル名>` の `<name>` | 通った | `![<name>](./.ai-out/evidence/<入れる先>/<name>.mp4)` `![<判定の文>](./.ai-out/evidence/<入れる先>/<name>/frames/<判定の画像>.png)` |
 
 <details><summary>観点の設計</summary>
 

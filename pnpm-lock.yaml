@@ -216,6 +216,9 @@ importers:
 
   packages/e2e:
     devDependencies:
+      '@fukuemon/e2e-kit':
+        specifier: 0.1.1
+        version: 0.1.1(@playwright/test@1.59.1)(eslint@10.12.0(jiti@2.7.0))
       '@playwright/test':
         specifier: 1.59.1
         version: 1.59.1
@@ -223,9 +226,6 @@ importers:
         specifier: ^22.10.2
         version: 22.20.5
       '@typescript-eslint/parser':
-        specifier: 8.71.1
-        version: 8.71.1(eslint@10.12.0(jiti@2.7.0))(typescript@6.0.3)
-      '@typescript-eslint/utils':
         specifier: 8.71.1
         version: 8.71.1(eslint@10.12.0(jiti@2.7.0))(typescript@6.0.3)
       eslint:
@@ -1067,6 +1067,16 @@ packages:
 
   '@fontsource/noto-sans-jp@5.3.1':
     resolution: {integrity: sha512-9NNBB/M9PextLYVXGSfIaLZsPnrt5UDw8g2B6T0M775H2yb/oekApSjuS1XKOP7FPcMMEnTavR5rJGDM66qKtA==}
+
+  '@fukuemon/e2e-kit@0.1.1':
+    resolution: {integrity: sha512-Zoz1W/mBU7z0sU418+dyLj6zBc3R8na4oqvPUWTJypk0ndqC0CWUrDeXxFYKfYNQUQ+1cLzhm/btC37LRpGYCw==}
+    engines: {node: '>=22.12'}
+    peerDependencies:
+      '@playwright/test': '>=1.59.0 <2'
+      eslint: '>=9.0.0'
+    peerDependenciesMeta:
+      eslint:
+        optional: true
 
   '@fullcalendar/core@6.1.22':
     resolution: {integrity: sha512-ju5PJUE++zr8XXCGtlXlrodF6doUy9BDfzx+VmE0B+XDBM2A5cUi/aU3M1ANfw/StmKhwqew7Ps7bXMiv/JREg==}
@@ -6774,6 +6784,12 @@ snapshots:
   '@floating-ui/utils@0.2.12': {}
 
   '@fontsource/noto-sans-jp@5.3.1': {}
+
+  '@fukuemon/e2e-kit@0.1.1(@playwright/test@1.59.1)(eslint@10.12.0(jiti@2.7.0))':
+    dependencies:
+      '@playwright/test': 1.59.1
+    optionalDependencies:
+      eslint: 10.12.0(jiti@2.7.0)
 
   '@fullcalendar/core@6.1.22':
     dependencies:

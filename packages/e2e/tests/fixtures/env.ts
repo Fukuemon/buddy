@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { savedLoginPath } from '../../kit/auth/index.js'
+import { savedLoginPath } from '@fukuemon/e2e-kit/auth'
 
 const root = fileURLToPath(new URL('../../../..', import.meta.url))
 
