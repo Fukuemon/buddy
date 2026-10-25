@@ -155,7 +155,7 @@ golangci-lint run
 `go test ./...` は、リポジトリの結合テストのために、testcontainers-go で PostgreSQL 18 のコンテナを起動する。  
 `-short` を付けると、コンテナを使うテストを飛ばす。  
 テストと lint は `GOWORK=off` を付けて流す。  
-理由は [CONTRIBUTING.md](../../CONTRIBUTING.md) の Setup にある。
+理由は [CONTRIBUTING.md](../../CONTRIBUTING.md) の「Go のモジュール」にある。
 
 テストの種類ごとに保証することと配置先は、[テスト](../../context/testing.md) にある。
 

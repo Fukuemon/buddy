@@ -89,7 +89,7 @@ golangci-lint run
 ```
 
 テストと lint は `GOWORK=off` を付けて流す。  
-理由は [CONTRIBUTING.md](../../CONTRIBUTING.md) の Setup にある。
+理由は [CONTRIBUTING.md](../../CONTRIBUTING.md) の「Go のモジュール」にある。
 
 `internal/postgres` のテストは、testcontainers で PostgreSQL のコンテナを起動し、マイグレーションを当ててテーブルの制約を確認する。Docker が無い環境では `go test -short ./...` で飛ばす。
 

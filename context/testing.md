@@ -73,7 +73,7 @@ status: stable
 
 マージする前に、変えたアプリの `test` と `check`（Go は `go test ./...`、`go vet ./...`、`golangci-lint run`）を流す。  
 Go のテストと lint は `GOWORK=off` を付けて流す。  
-理由は [CONTRIBUTING.md](../CONTRIBUTING.md) の Setup にある。  
+理由は [CONTRIBUTING.md](../CONTRIBUTING.md) の「Go のモジュール」にある。  
 `packages/go` を変えたときは、2 つの API でも流す。
 
 pull request と develop への push では、CI（[ci.yml](../.github/workflows/ci.yml)）が、変えた場所によらず全てのジョブを流す。1 つでも失敗した pull request はマージしない。

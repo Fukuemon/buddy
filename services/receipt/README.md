@@ -68,7 +68,7 @@ golangci-lint run
 ```
 
 テストと lint は `GOWORK=off` を付けて流す。  
-理由は [CONTRIBUTING.md](../../CONTRIBUTING.md) の Setup にある。
+理由は [CONTRIBUTING.md](../../CONTRIBUTING.md) の「Go のモジュール」にある。
 
 ## Code Generation
 

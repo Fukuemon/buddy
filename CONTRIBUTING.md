@@ -33,7 +33,7 @@ MISE_AQUA_GITHUB_ATTESTATIONS=false mise install aqua:cli/cli
 
 ### スキルとフック
 
-agent-harness のスキルとフックは apm で配置し、Git で追跡しない。  
+agent-harness のスキルとフックは apm で配置し、Git で追跡しない。文書のチェックのスクリプト（`.claude/hooks/docs/`）も apm が配置する。  
 Claude Code か Codex を使うときは、clone した後の最初のセッションで、セッションの開始のフックが配置する。  
 コーディングエージェントを使わないときは、手で配置する。
 
@@ -74,7 +74,7 @@ docker compose up --build --wait
 - `http://localhost:3000` を開き、ブローカーのログインの画面でメールに `hina.aoki@example.com` を入れる。
   - 上流の IdP のフェイクの画面で、クレームの欄に `{"email": "hina.aoki@example.com", "email_verified": true}` を書いて入ると、青木 陽菜（マネージャー）としてログインする。
   - クレームのメールが無いときと、ブローカーで入れたメールと違うときは、ログインの失敗の画面になる。
-  - 初回に名前の欄に入れた値が職員に結び付くので、以後は同じ値で入る。
+  - フェイクの画面の名前の欄の値は、初回のログインで職員に結び付く。以後は同じ値で入る。別の値で入るときは、`docker compose down -v` でデータを消す。
 - シードの職員のメールは次のとおり。
   - 1 つ目の事業所（組織 `org-sample`）: `hina.aoki@example.com`（青木 陽菜、マネージャー）、`kenta.mori@example.com`（森 健太、チームリーダー）
     - ほかに `sakura.hayashi@example.com` と `misaki.sato@example.com` がいる
@@ -190,7 +190,9 @@ pnpm build:tokens     # 画面のモックとドキュメントサイトが読�
 
 各 API の定義の正本は、`services/schedule/openapi.yaml` と `services/receipt/openapi.yaml` である。  
 openapi.yaml を変えたら、`pnpm lint:openapi` を流し、同じコミットで生成物も生成し直す。  
-定義の書き方の規約は、[コードと文書の規約](context/conventions.md#api-definitions) にある。
+定義の書き方の規約は、[コードと文書の規約](context/conventions.md#api-definitions) にある。  
+項目の削除と意味の変更は、互換なしとして新しいパスで出す。  
+ADR-0003: [git flow でマージし、アプリごとのバージョンでリリースする](docs/adr/0003-branch-and-release.md)
 
 | 変えたもの | 生成のコマンド | 生成物 |
 | --- | --- | --- |
@@ -232,7 +234,7 @@ ADR-0003: [git flow でマージし、アプリごとのバージョンでリリ
 
 - `main` はリリース済みの状態を指す。`develop` は次のリリースに向けて変更を集める。
 - `develop` の状態を検証環境に、`main` の状態を本番環境に反映する。
-  - 検証環境と本番環境は、外部の人は開けない。外部の人は、ローカルの compose で確認する。
+  - 検証環境で確認する前の変更と、外部の人が試す変更は、ローカルの compose で確認する。検証環境と本番環境は、外部の人は開けない。
 - 作業用のブランチは `develop` から切る。名前は `feature/<issue 番号>` にし、不具合は `fix/<issue 番号>` にする。1 つの issue を複数の pull request に分けるときは、`feature/<issue 番号>-<短い名前>` にする。
 - リリースは、検証した `develop` を `main` へ pull request でマージし、`main` のコミットにアプリごとのタグを手で付ける。タグは `<ディレクトリ>/vX.Y.Z`（`apps/web/v1.0.0`、`services/schedule/v1.0.0` など）の形で、バージョンはセマンティック バージョニングに従う。
 - リリース後の緊急の修正は、`main` から `hotfix/<issue 番号>` を切り、`main` と `develop` の両方へマージする。
@@ -267,7 +269,7 @@ gitGraph
 - タスクと不具合は、親の要求の sub-issue にする。
   - 保守のタスク（依存の更新、Dependabot と CI の設定、開発の環境、規約とテンプレートの直し）は、保守の要求 #220 の sub-issue にする。
   - 不具合は、不具合が起きた機能の要求の sub-issue にする。当てはまる要求が無ければ #220 にする。不具合の form には親の欄が無いので、起票した後に sub-issue にする。
-- タイトルと本文の書き方は、スキル write-issue-pr に従う。
+- タイトルと本文の書き方は、スキル write-issue-pr に従う。pull request の本文は `.github/pull_request_template.md` のセクションで書く。
 - 起票の前の下書きは `.ai-out/issues/` か `.ai-out/prs/` に置き、`pnpm exec textlint --ignore-path /dev/null <下書きのパス>` で確認する。check-history と check-links は、下書きには流さない。
 - 本文とコメントに、コーディングエージェントが生成したことを示す行（Generated with Claude Code）と、セッションの URL を付けない。
 - pull request は 1 つの issue に対応させる。大きい issue は、関心事ごとに複数の pull request に分ける。最後にマージする pull request の本文に `Closes #<番号>` を書き、ほかは `Refs #<番号>` を書く。
