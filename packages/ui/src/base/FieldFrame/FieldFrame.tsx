@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import type { ReactNode } from 'react'
+import type { MouseEvent, ReactNode } from 'react'
 
 export type FieldFrameProps = {
   htmlFor: string
@@ -57,3 +57,18 @@ export const fieldInputClassName =
 /** 入力欄に付ける、エラーの有無と、エラーの文への参照の属性を返す。エラーがなければ何も付けない。 */
 export const fieldErrorProps = (error: string | undefined, errorId: string) =>
   error === undefined ? {} : ({ 'aria-invalid': true, 'aria-describedby': errorId } as const)
+
+/**
+ * 日付と時刻の入力欄の onClick に渡し、ブラウザのピッカーを開く。
+ * 右のアイコンは飾りで、ブラウザのピッカーのボタンは隠しているため、枠のどこを押しても開くようにする。
+ * showPicker を持たないブラウザと、開けない状態（無効、iframe の制限）では何もしない。
+ */
+export const showPickerOnClick = (event: MouseEvent<HTMLInputElement>) => {
+  const input = event.currentTarget
+  if (input.disabled || input.readOnly || typeof input.showPicker !== 'function') return
+  try {
+    input.showPicker()
+  } catch {
+    // 利用者の操作の外か、別のオリジンの iframe の中で呼ぶと NotAllowedError になる。入力欄はそのまま使える。
+  }
+}

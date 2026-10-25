@@ -3,7 +3,12 @@ import { useController, type Control, type FieldPath, type FieldValues } from 'r
 
 import { TimerIcon } from '../../icons/TimerIcon'
 
-import { FieldFrame, fieldErrorProps, fieldInputClassName } from '../FieldFrame/FieldFrame'
+import {
+  FieldFrame,
+  fieldErrorProps,
+  fieldInputClassName,
+  showPickerOnClick,
+} from '../FieldFrame/FieldFrame'
 
 export type TimePickerProps<T extends FieldValues> = Omit<
   ComponentPropsWithoutRef<'input'>,
@@ -21,6 +26,7 @@ export const TimePicker = <T extends FieldValues>({
   control,
   label,
   isWide,
+  onClick,
   ...props
 }: TimePickerProps<T>) => {
   const { field, fieldState } = useController({ name, control })
@@ -43,6 +49,10 @@ export const TimePicker = <T extends FieldValues>({
         {...fieldErrorProps(error, errorId)}
         className={fieldInputClassName}
         id={inputId}
+        onClick={(event) => {
+          showPickerOnClick(event)
+          onClick?.(event)
+        }}
         type="time"
         value={(field.value as string | undefined) ?? ''}
       />
