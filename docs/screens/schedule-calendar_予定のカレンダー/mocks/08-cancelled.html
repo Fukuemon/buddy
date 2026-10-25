@@ -15,81 +15,93 @@
         <div class="screen-body">
           <header class="wf-site-header">
             <div class="wf-site-header__brand">
+              <span class="wf-btn wf-btn--icon wf-site-menu" aria-label="メニュー" data-open="site-nav" data-m="28" data-testid="site-nav-open"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z" fill="currentColor" /></svg></span>
               <strong>buddy</strong>
-              <nav data-m="1" data-testid="site-nav">
-                <span aria-current="page" data-go="01-month.html">予定</span>
-                <span data-go="../../receipt-upload_照合/mocks/01-initial.html">照合</span>
-              </nav>
             </div>
             <div class="wf-site-header__viewer" data-testid="viewer-menu">
               <span class="wf-text wf-text--s" data-m="2"></span>
               <span class="wf-btn" data-m="3" data-testid="viewer-logout">ログアウト</span>
             </div>
           </header>
-          <div class="sc-body">
-            <div class="sc-drawer" role="dialog" aria-label="職員の絞り込み" data-m="20" data-testid="staff-filter-drawer" data-panel="staff-filter" data-panel-modal>
-              <div class="sc-drawer__head">
-                <strong class="sc-drawer__title">職員の絞り込み</strong>
-                <span class="wf-btn wf-btn--icon sc-icon-btn" aria-label="閉じる" data-escape data-close="staff-filter" data-m="21" data-testid="staff-filter-close"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
+          <div class="wf-site-body">
+            <div class="wf-site-drawer" role="dialog" aria-label="メニュー" data-testid="site-nav-drawer" data-panel="site-nav" data-panel-modal>
+              <div class="wf-site-drawer__head">
+                <strong>メニュー</strong>
+                <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-escape data-close="site-nav" data-m="29" data-testid="site-nav-close"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
               </div>
-              <nav class="sc-side" aria-label="職員の絞り込み" data-m="4" data-testid="staff-filter-sidebar">
-                <div class="sc-side__head">
-                  <strong class="wf-label">職員</strong>
-                  <span class="sc-side__actions"><span class="wf-btn wf-btn--text" data-m="24" data-testid="staff-filter-only-me">自分だけ</span><span class="wf-btn wf-btn--text" aria-disabled="true" data-m="5" data-testid="staff-filter-reset">全員を表示</span></span>
-                </div>
-                <div class="wf-search" data-m="25" data-testid="staff-filter-search">
-                  <span class="wf-label">名前で絞り込む</span>
-                </div>
-                <div class="sc-team">
-                  <span class="wf-check is-on" data-m="6" data-testid="staff-filter-team-{チームの id}" data-toggle>チーム 1</span>
-                  <span class="wf-check is-on sc-member" data-m="7" data-testid="staff-filter-staff-{職員の id}" data-toggle>職員 A</span>
-                  <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}" data-toggle>職員 B</span>
-                  <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}" data-toggle>職員 C</span>
-                </div>
-                <div class="sc-team">
-                  <span class="wf-check is-on" data-testid="staff-filter-team-{チームの id}" data-toggle>チーム 2</span>
-                  <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}" data-toggle>職員 D</span>
-                  <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}" data-toggle>職員 E</span>
-                  <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}" data-toggle>職員 F</span>
-                </div>
+              <nav class="wf-site-nav" aria-label="画面" data-m="1" data-testid="site-nav">
+                <span class="wf-site-nav__item" aria-current="page" data-go="01-month.html"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z" fill="currentColor" /></svg><span>予定</span></span>
+                <span class="wf-site-nav__item" data-go="../../receipt-upload_照合/mocks/01-initial.html"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M160-120q-33 0-56.5-23.5T80-200v-560q0-33 23.5-56.5T160-840h640q33 0 56.5 23.5T880-760v560q0 33-23.5 56.5T800-120H160Zm0-80h640v-560H160v560Zm40-80h200v-80H200v80Zm382-80 198-198-57-57-141 142-57-57-56 57 113 113Zm-382-80h200v-80H200v80Zm0-160h200v-80H200v80Z" fill="currentColor" /></svg><span>照合</span></span>
               </nav>
             </div>
-            <div class="wf-overlay sc-drawer-overlay" tabindex="-1" data-close="staff-filter"></div>
-            <main class="sc-main">
-              <div class="sc-toolbar">
-                <div class="sc-toolbar__group">
-                  <span class="wf-btn wf-btn--icon sc-icon-btn" aria-label="前へ" data-m="8" data-testid="calendar-prev"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M12 4 6 10l6 6" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
-                  <span class="wf-btn" data-m="9" data-testid="calendar-today">今日</span>
-                  <span class="wf-btn wf-btn--icon sc-icon-btn" aria-label="次へ" data-m="10" data-testid="calendar-next"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 4l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
-                  <span class="sc-title" data-m="22" data-testid="calendar-title">2026年10月21日（水）</span>
-                  <span class="wf-input sc-date" data-m="11" data-testid="calendar-date">2026/10/21</span>
-                </div>
-                <div class="sc-toolbar__group">
-                  <span class="wf-check is-on" data-m="26" data-testid="calendar-show-cancelled" data-go="03-day.html">キャンセルした予定を出す</span>
-                  <div class="wf-tabs sc-view" data-m="12" data-testid="calendar-view">
-                    <span class="wf-tab" data-testid="calendar-view-month" data-go="01-month.html">月</span>
-                    <span class="wf-tab" data-testid="calendar-view-week" data-go="02-week.html">週</span>
-                    <span class="wf-tab is-active" data-testid="calendar-view-day">日</span>
+            <div class="wf-overlay wf-site-drawer-overlay" tabindex="-1" data-close="site-nav"></div>
+            <div class="wf-site-main">
+              <div class="sc-body">
+                <div class="sc-drawer" role="dialog" aria-label="職員の絞り込み" data-m="20" data-testid="staff-filter-drawer" data-panel="staff-filter" data-panel-modal>
+                  <div class="sc-drawer__head">
+                    <strong class="sc-drawer__title">職員の絞り込み</strong>
+                    <span class="wf-btn wf-btn--icon sc-icon-btn" aria-label="閉じる" data-escape data-close="staff-filter" data-m="21" data-testid="staff-filter-close"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
                   </div>
-                  <span class="wf-btn sc-filter-open" aria-expanded="false" data-open="staff-filter" data-m="19" data-testid="staff-filter-open">職員の絞り込み</span>
-                  <span class="wf-btn wf-btn--primary" data-m="13" data-testid="schedule-create-open" data-go="../../schedule-new_予定の作成/mocks/01-visit.html">予定を作成</span>
+                  <nav class="sc-side" aria-label="職員の絞り込み" data-m="4" data-testid="staff-filter-sidebar">
+                    <div class="sc-side__head">
+                      <strong class="wf-label">職員</strong>
+                      <span class="sc-side__actions"><span class="wf-btn wf-btn--text" data-m="24" data-testid="staff-filter-only-me">自分だけ</span><span class="wf-btn wf-btn--text" aria-disabled="true" data-m="5" data-testid="staff-filter-reset">全員を表示</span></span>
+                    </div>
+                    <div class="wf-search" data-m="25" data-testid="staff-filter-search">
+                      <span class="wf-label">名前で絞り込む</span>
+                    </div>
+                    <div class="sc-team">
+                      <span class="wf-check is-on" data-m="6" data-testid="staff-filter-team-{チームの id}" data-toggle>チーム 1</span>
+                      <span class="wf-check is-on sc-member" data-m="7" data-testid="staff-filter-staff-{職員の id}" data-toggle>職員 A</span>
+                      <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}" data-toggle>職員 B</span>
+                      <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}" data-toggle>職員 C</span>
+                    </div>
+                    <div class="sc-team">
+                      <span class="wf-check is-on" data-testid="staff-filter-team-{チームの id}" data-toggle>チーム 2</span>
+                      <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}" data-toggle>職員 D</span>
+                      <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}" data-toggle>職員 E</span>
+                      <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}" data-toggle>職員 F</span>
+                    </div>
+                  </nav>
                 </div>
+                <div class="wf-overlay sc-drawer-overlay" tabindex="-1" data-close="staff-filter"></div>
+                <main class="sc-main">
+                  <div class="sc-toolbar">
+                    <div class="sc-toolbar__group">
+                      <span class="wf-btn wf-btn--icon sc-icon-btn" aria-label="前へ" data-m="8" data-testid="calendar-prev"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M12 4 6 10l6 6" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
+                      <span class="wf-btn" data-m="9" data-testid="calendar-today">今日</span>
+                      <span class="wf-btn wf-btn--icon sc-icon-btn" aria-label="次へ" data-m="10" data-testid="calendar-next"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 4l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
+                      <span class="sc-title" data-m="22" data-testid="calendar-title">2026年10月21日（水）</span>
+                      <span class="wf-input sc-date" data-m="11" data-testid="calendar-date">2026/10/21</span>
+                    </div>
+                    <div class="sc-toolbar__group">
+                      <span class="wf-check is-on" data-m="26" data-testid="calendar-show-cancelled" data-go="03-day.html">キャンセルした予定を出す</span>
+                      <div class="wf-tabs sc-view" data-m="12" data-testid="calendar-view">
+                        <span class="wf-tab" data-testid="calendar-view-month" data-go="01-month.html">月</span>
+                        <span class="wf-tab" data-testid="calendar-view-week" data-go="02-week.html">週</span>
+                        <span class="wf-tab is-active" data-testid="calendar-view-day">日</span>
+                      </div>
+                      <span class="wf-btn sc-filter-open" aria-expanded="false" data-open="staff-filter" data-m="19" data-testid="staff-filter-open">職員の絞り込み</span>
+                      <span class="wf-btn wf-btn--primary" data-m="13" data-testid="schedule-create-open" data-go="../../schedule-new_予定の作成/mocks/01-visit.html">予定を作成</span>
+                    </div>
+                  </div>
+                  <div class="sc-day-wrap" data-m="14" data-testid="staff-schedule-day-grid">
+                    <div class="sc-day">
+                      <div class="sc-head"></div>
+                      <div class="sc-head" data-m="15">職員 A</div>
+                      <div class="sc-head">職員 B</div>
+                      <div class="sc-head">職員 C</div>
+                      <div class="sc-head">職員 D</div>
+                      <div class="sc-times"><div>06:00</div><div>07:00</div><div>08:00</div><div>09:00</div><div>10:00</div><div>11:00</div><div>12:00</div><div>13:00</div><div>14:00</div><div>15:00</div><div>16:00</div><div>17:00</div><div>18:00</div><div>19:00</div><div>20:00</div><div>21:00</div></div>
+                      <div class="sc-col" data-m="16" data-testid="day-grid-staff-{職員の id}"><span class="sc-now" data-m="23" data-testid="day-grid-now-{職員の id}" style="top: 260px"></span><span class="sc-event" data-m="18" data-testid="schedule-event-{予定の id}" style="top: 96px; height: 16px" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html">09:00-09:30 利用者 A 訪問</span><span class="sc-slot sc-free" data-m="17" data-testid="day-grid-slot-{職員の id}-{HH:mm}" style="top: 160px; height: 16px" data-go="../../schedule-new_予定の作成/mocks/01-visit.html"></span></div>
+                      <div class="sc-col" data-testid="day-grid-staff-{職員の id}"><span class="sc-now" style="top: 260px"></span><span class="sc-event" data-testid="schedule-event-{予定の id}" style="top: 144px; height: 32px" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html">10:30-11:30 利用者 B 訪問</span></div>
+                      <div class="sc-col" data-testid="day-grid-staff-{職員の id}"><span class="sc-now" style="top: 260px"></span><span class="sc-event" data-testid="schedule-event-{予定の id}" style="top: 224px; height: 32px" data-go="../../schedule-detail_予定の詳細/mocks/02-normal.html">13:00-14:00 会議</span></div>
+                      <div class="sc-col" data-testid="day-grid-staff-{職員の id}"><span class="sc-event sc-event--cancelled" data-m="27" data-testid="schedule-event-{予定の id}" style="top: 160px; height: 32px" data-go="../../schedule-detail_予定の詳細/mocks/06-cancelled.html"><span class="sc-cancel-mark">キャンセル</span><s>11:00-12:00 利用者 C 訪問</s></span><span class="sc-now" style="top: 260px"></span></div>
+                    </div>
+                  </div>
+                </main>
               </div>
-              <div class="sc-day-wrap" data-m="14" data-testid="staff-schedule-day-grid">
-                <div class="sc-day">
-                  <div class="sc-head"></div>
-                  <div class="sc-head" data-m="15">職員 A</div>
-                  <div class="sc-head">職員 B</div>
-                  <div class="sc-head">職員 C</div>
-                  <div class="sc-head">職員 D</div>
-                  <div class="sc-times"><div>06:00</div><div>07:00</div><div>08:00</div><div>09:00</div><div>10:00</div><div>11:00</div><div>12:00</div><div>13:00</div><div>14:00</div><div>15:00</div><div>16:00</div><div>17:00</div><div>18:00</div><div>19:00</div><div>20:00</div><div>21:00</div></div>
-                  <div class="sc-col" data-m="16" data-testid="day-grid-staff-{職員の id}"><span class="sc-now" data-m="23" data-testid="day-grid-now-{職員の id}" style="top: 260px"></span><span class="sc-event" data-m="18" data-testid="schedule-event-{予定の id}" style="top: 96px; height: 16px" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html">09:00-09:30 利用者 A 訪問</span><span class="sc-slot sc-free" data-m="17" data-testid="day-grid-slot-{職員の id}-{HH:mm}" style="top: 160px; height: 16px" data-go="../../schedule-new_予定の作成/mocks/01-visit.html"></span></div>
-                  <div class="sc-col" data-testid="day-grid-staff-{職員の id}"><span class="sc-now" style="top: 260px"></span><span class="sc-event" data-testid="schedule-event-{予定の id}" style="top: 144px; height: 32px" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html">10:30-11:30 利用者 B 訪問</span></div>
-                  <div class="sc-col" data-testid="day-grid-staff-{職員の id}"><span class="sc-now" style="top: 260px"></span><span class="sc-event" data-testid="schedule-event-{予定の id}" style="top: 224px; height: 32px" data-go="../../schedule-detail_予定の詳細/mocks/02-normal.html">13:00-14:00 会議</span></div>
-                  <div class="sc-col" data-testid="day-grid-staff-{職員の id}"><span class="sc-event sc-event--cancelled" data-m="27" data-testid="schedule-event-{予定の id}" style="top: 160px; height: 32px" data-go="../../schedule-detail_予定の詳細/mocks/06-cancelled.html"><span class="sc-cancel-mark">キャンセル</span><s>11:00-12:00 利用者 C 訪問</s></span><span class="sc-now" style="top: 260px"></span></div>
-                </div>
-              </div>
-            </main>
+            </div>
           </div>
         </div>
       </div>
