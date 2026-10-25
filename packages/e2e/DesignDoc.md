@@ -104,7 +104,8 @@ flowchart TB
 
 次の図は、エビデンスの spec が、層と kit をどの順で呼ぶかを示す。spec が持つのは、操作の順、押す要素、字幕の文だけである。  
 配置先とアプリの値(`recordEvidence` に渡す `RecordingTarget`)は、kit を呼ぶ薄い層(`tests/fixtures/evidence.ts`)が持つ。  
-録画は、ログインを録画の外で済ませてから始まる。灰色の帯は録画に映らず、黄色の帯が録画に映る。
+録画は、ログインを録画の外で済ませてから始まる。灰色の帯は録画に映らず、黄色の帯が録画に映る。  
+`prepare` に渡るページは、`recordEvidence` が新しく作るコンテキストのページで、`setup` が保存したログインの状態を持たない。そのため、`prepare` の中でログインする。
 
 ```mermaid
 sequenceDiagram

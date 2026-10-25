@@ -87,7 +87,7 @@ Google カレンダーは、今も職員が予定を入れる場所なので、�
   - ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](https://github.com/Fukuemon/buddy/blob/876381365355f7e4dab03f6dfdb3d6fb8a9f6947/docs/adr/0012-google-calendar-facility-service-accounts.md)
   - Application Default Credentials が事業所のサービスアカウントそのものとして動くとき（そのアカウントになりすました認証情報か、そのアカウントのキー）は、重ねてなりすまさない。サービスアカウント自身へのトークン作成者のロールを求めないためである。見分けは、認証情報のファイルの `client_email` か、なりすます先の URL のメールアドレスで行う。
   - `GOOGLE_CALENDAR_ENDPOINT` で Calendar API の代わりにフェイク（ローカル環境の calendarpit）を呼ぶときは、なりすまさない。フェイクはなりすましの token を出せないためである。`GOOGLE_APPLICATION_CREDENTIALS` を渡したときだけ、その認証情報を全ての事業所で使い、渡さなければ認証をしない。開発者の Application Default Credentials をフェイクに送らないためである。
-- 職員が、自分の事業所のサービスアカウントにカレンダーを共有する。
+- ドメイン全体の委任は使わない。職員が、自分の事業所のサービスアカウントにカレンダーを共有する。サービスアカウントが読めるカレンダーを、共有されたものだけに絞るためである。
   - 共有の権限は、予定の API の書き出しと同じアカウントなので、[基盤と運用の事業所を足す手順](https://github.com/Fukuemon/buddy/blob/develop/context/operations.md#adding-a-facility) にある。
 - 組織とサービスアカウントの対応は、カレンダーの設定と別のファイル（`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`）に置く。形は予定の API と同じにする。
   - 対応は事業所ごとに 1 行で、運営側がアカウントを作るときに足す。カレンダーの設定は職員ごとの行で、職員が入れ替わるたびに変わる。更新する人と頻度が違うので、分ける。

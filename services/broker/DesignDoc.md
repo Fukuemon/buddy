@@ -152,6 +152,9 @@ sequenceDiagram
   - `CLIENT_IP_HEADER` は、ブローカーにプロキシを通らずに届かない構成でだけ渡す。直接届くと、ブラウザがヘッダーを書いて上限を外せる。
 - `POST /login` は、ほかのサイトから送られたものを 403 で拒み、ログインの失敗の画面を出す。判定は Go の `http.CrossOriginProtection` に任せ、`PUBLIC_URL` の origin を信頼する origin に足す。
   - `Origin` が `PUBLIC_URL` の origin なら受ける。リバースプロキシの後ろで `Host` がブラウザの開いた origin と違っても受けるためである。
+  - `Sec-Fetch-Site` が `same-origin` か `none`（利用者が直接始めた遷移）なら受け、ほかの値なら拒む。
+  - `Sec-Fetch-Site` が無ければ、`Origin` の host を `Host` と比べ、違えば拒む。scheme は比べない。
+  - どちらのヘッダーも無いリクエスト（ブラウザでないクライアント）は受ける。
 - ブローカーの画面は `Content-Security-Policy: frame-ancestors 'none'` を返し、ほかのサイトの frame に入らない。
 - 上流のメールが確認済みでない職員、登録のメールと上流のメールが違う職員、結び付けた上流のアカウントと違うアカウントで入った職員は、ログインの reject で返す。
 - 同じ上流のアカウントで同時に初めてログインすると、先に結び付けたログインのほかは、結び付けが一意の制約で失敗する。ブローカーは職員を読み直し、同じ上流のアカウントが結び付いていれば accept する。
