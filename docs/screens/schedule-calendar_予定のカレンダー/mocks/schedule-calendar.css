@@ -1,11 +1,11 @@
 /* 予定のカレンダーのモックだけの見た目 */
 
-/* 左のサイドバーにキャンセルの切り替え、職員の絞り込み、ミニカレンダー、右にカレンダーを置く。幅 768px 未満では、サイドバーの中身を左端から開くドロワーに入れ、閉じた状態で始める */
+/* 左のサイドバーに、上からミニカレンダー、キャンセルの切り替え、職員の絞り込みを並べ、右にカレンダーを置く。幅 768px 未満では、サイドバーの中身を左端から開くドロワーに入れ、閉じた状態で始める */
 .sc-body {
   display: flex;
 }
 
-/* 幅 768px 以上では、ドロワーの見出しを持たず、幅 320px（apps/web の w-80）のサイドバーとして左に置く */
+/* 幅 768px 以上では、ドロワーの見出しを持たず、幅 320px（apps/web の w-80）のサイドバーとして左に置く。実装はサイドバー全体を 1 つの領域としてスクロールする */
 .sc-drawer {
   display: flex;
   flex: none;
@@ -36,15 +36,13 @@
   padding: 16px;
 }
 
-/* ミニカレンダー。幅 768px 以上ではサイドバーの下端に留め、未満ではドロワーの先頭に置く */
+/* ミニカレンダー。サイドバーとドロワーの先頭に置く */
 .sc-mini {
   display: flex;
-  order: 1;
   flex-direction: column;
   gap: 4px;
-  margin-top: auto;
-  padding: 8px;
-  border-top: 1px solid var(--wf-line-soft);
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--wf-line-soft);
 }
 
 .sc-mini__head {
@@ -225,13 +223,6 @@
 
   .sc-drawer__title {
     font-size: 15px;
-  }
-
-  .sc-mini {
-    order: 0;
-    margin-top: 0;
-    border-top: 0;
-    border-bottom: 1px solid var(--wf-line-soft);
   }
 
   .sc-filter-open {
