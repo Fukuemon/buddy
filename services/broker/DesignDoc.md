@@ -57,7 +57,6 @@ flowchart TB
 ```
 
 - ブローカーの内部の API を呼ぶのは予定の API だけである。照合の API は、ブローカーを呼ばない。
-
 - ブローカーの DB は、ブローカーの職員と上流のアカウントを持つ。Hydra の DB とは分ける。
 - access token は JWT で、期限は 5 分である。`org_id` は `oauth2.allowed_top_level_claims` で JWT の top level に出す。
 - Hydra の web のクライアントは `skip_consent` を持ち、許す audience は `schedule` と `receipt` である。
@@ -82,14 +81,11 @@ erDiagram
   }
 ```
 
-- 職員の ID は、ブローカーが登録のときに発行する。
 - 事業所のテーブルは持たない。`org_id` は、上流の IdP の設定のファイルの `org_id` と同じ値で、access token の `org_id` にもなる。
-- メールは小文字にそろえて入れ、全ての事業所で一意にする。1 人の職員は 1 つの事業所にだけ属する（ADR-0017）。
+- メールを全ての事業所で一意にする。
   - 事業所の中だけで一意にすると、ほかの事業所の管理者が同じメールの職員を登録でき、ログインで事業所を 1 つに決められなくなる。もとの職員もログインできなくなる。
-- 職員の状態は、登録の途中（`pending`）、有効（`active`）、休職（`suspended`）、退職（`retired`）である。有効な職員だけがログインでき、トークンを受け取れる。
-  - 退職した職員は、メールと上流のアカウントを持たない。同じメールと同じ上流のアカウントで、新しい職員を登録し直せる。DB の CHECK が、退職とメールの NULL を組で持たせる。
+- 職員の状態の意味と移り方、メールと上流のアカウントの不変条件は、[職員とログイン](https://github.com/Fukuemon/buddy/blob/develop/context/domain/staff-login.md) にある。
   - ADR-0018: [職員の停止を、戻せる休職と、戻せない退職に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0018-staff-leave-and-retirement.md)
-- 1 人の職員は、上流のアカウントを 1 つだけ持つ。同じ `iss` と `sub` を 2 人の職員に結び付けられない。
 
 ### ログイン
 
@@ -248,6 +244,7 @@ sequenceDiagram
   - ブローカーは登録の途中の職員だけを消す。ほかの登録が書き終えて有効にした職員は、戻しで消えない。
   - 戻しが、予定の API にその ID の職員がいないことを確認してから消すまでの間に、ほかの登録が書くと、ほかの登録の有効化は 404 で失敗し、予定の API は 500 を返す。
   - このとき予定の API に書いた職員は、ブローカーにいないのでログインできない。ほかの職員として入る手段はできない。
+
 休職と退職の流れを示す。予定の API は、事業所の行をロックしたトランザクションの中で、確認からブローカーの書き込みと予定の API の書き込みまでを行う。
 
 ```mermaid
@@ -281,7 +278,6 @@ sequenceDiagram
   - 2 つ目のトランザクションは、ブローカーが戻したときに予定の API に書かない。ブローカーが戻した後に接続が切れても、状態は食い違わない。
   - ブローカーが `retired` か `not_suspended` の 409 を返したときは、予定の API で外した休職を書き戻して 409 を返す。
   - ブローカーに届かないか 5xx を返したときは、予定の API で外した休職を残して 500 を返す。職員はブローカーで止めたままなのでログインできず、送り直すと、予定の API で有効な職員でもブローカーの職員を戻し直す。
-- 職員は自分を休職と退職にできない。事業所で職員の管理の権限を持つ最後の有効な職員も、休職と退職にできない。予定の API は 409 を返す。
 
 ### ログアウト
 
@@ -317,38 +313,14 @@ sequenceDiagram
 
 compose は、開発用の IdP（mock-oauth2-server）を、上流の IdP のフェイクとして置く。mock-oauth2-server はパスの最初の部分を issuer にするので、1 つのコンテナで 2 つの事業所の IdP（`/office-a`、`/office-b`）を立てる。
 
-- Hydra は、同じ PostgreSQL の別のデータベースを使う。
-- 初期化のコンテナが、Hydra に web と予定の API のクライアントを登録する。予定の API のクライアントは、client credentials で `aud` が `broker` の access token だけを取れる。
-- Hydra の `oauth2.token_hook` は、コンテナの間の名前で、ブローカーの内部のポート（`http://broker:8081/internal/token-hook`）を呼ぶ。予定の API も、内部の API をこのポートで呼ぶ。
-- Hydra の `urls.logout` は、ブローカーのログアウトの画面（`/logout`）を指す。
-- Hydra は、discovery の `end_session_endpoint` を Issuer の URL（コンテナの間の名前 `hydra`）から作る。
-  - web には、ブラウザが開くローカルのポートのログアウトの URL を `OIDC_END_SESSION_ENDPOINT` で渡す。
 - compose は、E2E がトークンなしの呼び出しを試せるよう、内部のポートを `127.0.0.1` の 8101 に公開する。
 - 上流の IdP ごとの違い（署名の方式、Google の `hd`）は、フェイクで確認せず、ブローカーの単体テストで確認する。
-- フェイクは、ログインの画面で入れた名前を `sub` に、クレームの欄の JSON を ID token のクレームにする。
-- コンテナは、Hydra の discovery の文書と上流の IdP の discovery の文書を、コンテナの間の名前（`hydra`、`idp`）で読む。
-  - ブラウザはこの名前を引けない。Hydra は、認可のエンドポイントを `urls.self.public` のローカルのポートで示す。
-  - ブローカーは、上流の IdP の認可の画面の origin を `UPSTREAM_IDP_BROWSER_ORIGIN` に替えてリダイレクトする。
 - ブローカーと予定の API のシードは、同じ職員の ID を持つ。2 つの事業所（`org-sample`、`org-sample-b`）の職員がいる。
   - `org-sample-b` には、両方で休職にした職員もいる。E2E は、この職員のログインが拒まれることを確認する。
 
 ## Interface
 
-- 置く場所: `services/broker`
-- 読む設定
-  - Hydra の admin API の URL（`HYDRA_ADMIN_URL`）
-  - ブラウザが開くブローカーの URL（`PUBLIC_URL`）。上流の IdP のコールバックの URL を作る
-  - 事業所の組織の ID と、上流の IdP の issuer と client ID の対応のファイル（`UPSTREAM_IDPS_FILE`）
-  - 組織の ID と、上流の IdP の client secret の対応のファイル（`UPSTREAM_IDP_CLIENT_SECRETS_FILE`）。シークレットとして渡す
-  - リバースプロキシが送信元の IP アドレスを書くヘッダーの名前（`CLIENT_IP_HEADER`）。リバースプロキシの後ろに置くときだけ渡す
-  - 同意の画面を出さずに accept するクライアントの ID（`AUTO_CONSENT_CLIENTS`）
-  - Hydra のトークンの `iss`（`HYDRA_ISSUER`）。内部の API は、この discovery の文書の JWKS で access token を検証する
-  - 内部の API が access token の `aud` に求める値（`INTERNAL_API_AUDIENCE`、デフォルトは `broker`）
-  - 内部の API を呼んでよいクライアントの ID（`INTERNAL_API_CLIENTS`、デフォルトは `schedule`）
-  - ログインの画面の待ち受けのポート（`PORT`、デフォルトは 8080）と、内部の API と token_hook の待ち受けのポート（`INTERNAL_PORT`、デフォルトは 8081）
-  - Hydra が token_hook を呼ぶときのヘッダーの値（`TOKEN_HOOK_KEY`）。シークレットとして渡す
-  - ブローカーの DB の接続先（`DB_HOST`、`DB_PORT`、`DB_USER`、`DB_PASSWORD`、`DB_NAME`）
-  - 2 つのファイルに必須の値が無いか、client secret の無い上流の IdP があれば、ブローカーは起動しない。値の一覧と形は [README](https://github.com/Fukuemon/buddy/blob/develop/services/broker/README.md#running) にある。
+- 読む設定と、起動しない条件は [README](https://github.com/Fukuemon/buddy/blob/develop/services/broker/README.md#running) にある
 - ヘルスチェック: `GET /healthz`（依存先を確認しない）、`GET /readyz`（DB に届かなければ 503）、`broker healthcheck` のサブコマンド
 - 公開する画面: ログイン（`GET` と `POST /login`）、上流の IdP のコールバック（`GET /login/callback`）、同意（`GET /consent`）、ログアウト（`GET /logout`）
 - 内部の API: 職員の登録、有効化、削除、休職、復職、退職と、Hydra の `oauth2.token_hook`（`POST /internal/token-hook`）。`INTERNAL_PORT` で待ち受ける。パスは [職員の登録、休職、復職、退職](#職員の登録休職復職退職) の表にある
