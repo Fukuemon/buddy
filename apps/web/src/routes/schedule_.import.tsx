@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { SiteHeaderContainer } from '#/components/site/SiteHeaderContainer'
+import { SiteLayoutContainer } from '#/components/site/SiteLayoutContainer'
 import { IMPORT_NAV_ITEM } from '#/components/site/SiteNav'
 import { CalendarImportContainer } from '#/features/calendar/components/CalendarImportContainer'
 import { calendarImportSearchSchema } from '#/features/calendar/schema/calendarImportSearch'
@@ -18,14 +18,13 @@ function CalendarImportPage() {
   const { staff } = Route.useSearch()
   const navigate = Route.useNavigate()
   return (
-    <div className="flex min-h-dvh flex-col">
-      <SiteHeaderContainer current={IMPORT_NAV_ITEM.href} />
+    <SiteLayoutContainer current={IMPORT_NAV_ITEM.href}>
       <main className="min-w-0 p-4 desktop:p-6">
         <CalendarImportContainer
           onStaffChange={(staffId) => navigate({ search: { staff: staffId }, replace: true })}
           staffId={staff}
         />
       </main>
-    </div>
+    </SiteLayoutContainer>
   )
 }

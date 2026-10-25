@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { SiteHeaderContainer } from '#/components/site/SiteHeaderContainer'
+import { SiteLayoutContainer } from '#/components/site/SiteLayoutContainer'
 import { IMPORT_NAV_ITEM } from '#/components/site/SiteNav'
 import { CalendarLinkContainer } from '#/features/calendar/components/CalendarLinkContainer'
 
@@ -14,11 +14,10 @@ export const Route = createFileRoute('/schedule_/link')({
 
 function CalendarLinkPage() {
   return (
-    <div className="flex min-h-dvh flex-col">
-      <SiteHeaderContainer current={IMPORT_NAV_ITEM.href} />
+    <SiteLayoutContainer current={IMPORT_NAV_ITEM.href}>
       <main className="min-w-0 p-4 desktop:p-6">
         <CalendarLinkContainer />
       </main>
-    </div>
+    </SiteLayoutContainer>
   )
 }

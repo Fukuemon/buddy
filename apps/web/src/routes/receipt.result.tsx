@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { SiteHeaderContainer } from '#/components/site/SiteHeaderContainer'
+import { SiteLayoutContainer } from '#/components/site/SiteLayoutContainer'
 import { ReceiptResultContainer } from '#/features/receipt/components/ReceiptResultContainer'
 
 export const Route = createFileRoute('/receipt/result')({
@@ -12,11 +12,10 @@ export const Route = createFileRoute('/receipt/result')({
 
 function ReceiptResultPage() {
   return (
-    <div className="flex min-h-dvh flex-col">
-      <SiteHeaderContainer current="/receipt" />
+    <SiteLayoutContainer current="/receipt">
       <main className="min-w-0 p-6">
         <ReceiptResultContainer />
       </main>
-    </div>
+    </SiteLayoutContainer>
   )
 }
