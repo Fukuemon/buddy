@@ -9,6 +9,7 @@ export type ModalProps = {
   onCloseRequest?: () => void
   /** ダイアログの名前。開いたときに、ここへフォーカスを移す。 */
   title?: string
+  /** ヘッダーのタイトルの右に置き、右端に寄せて出す要素。 */
   headerContent?: ReactNode
   /** 下端に固定して出す領域。送信のボタンを置く。 */
   stickyFooter?: ReactNode
@@ -72,11 +73,13 @@ export const Modal = ({
           >
             <CloseIcon height={24} width={24} />
           </button>
-          {headerContent !== undefined && <div className="flex-1">{headerContent}</div>}
           {title !== undefined && (
             <h2 className="text-heading-sm outline-none" id={titleId} ref={titleRef} tabIndex={-1}>
               {title}
             </h2>
+          )}
+          {headerContent !== undefined && (
+            <div className="flex min-w-0 flex-1 justify-end">{headerContent}</div>
           )}
         </div>
         <div className="flex-1">{children}</div>
