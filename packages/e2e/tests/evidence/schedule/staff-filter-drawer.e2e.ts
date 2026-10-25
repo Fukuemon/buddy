@@ -31,7 +31,7 @@ test.describe('予定のカレンダー', () => {
             await expect(drawer).toBeHidden()
             await check('幅 390px で日の表示を開くと、職員の絞り込みは閉じている')
 
-            await step('ツールバーの「職員の絞り込み」を押す')
+            await step('ツールバーの「日付と絞り込み」を押す')
             await page.getByTestId('staff-filter-open').click()
             await expect(drawer).toBeVisible()
             await check('左端から職員の絞り込みのドロワーが開く')
@@ -44,7 +44,7 @@ test.describe('予定のカレンダー', () => {
             await expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeHidden()
             await check(`ドロワーが閉じ、日の表示から ${LOGIN_STAFF.name} の列が消える`)
 
-            await step('もう一度「職員の絞り込み」を押して開き、Escape キーを押す')
+            await step('もう一度「日付と絞り込み」を押して開き、Escape キーを押す')
             await page.getByTestId('staff-filter-open').click()
             await expect(drawer).toBeVisible()
             await page.keyboard.press('Escape')
