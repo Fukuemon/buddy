@@ -12,7 +12,7 @@ describe('ScheduleMiniCalendar', () => {
   it('基準の日の月を出し、今日に aria-current を付ける', () => {
     render(<Week />)
     expect(screen.getByTestId('mini-calendar-month')).toHaveTextContent('2026年10月')
-    expect(screen.getByRole('button', { name: '2026年10月20日' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: '2026年10月20日（表示中）' })).toHaveAttribute(
       'aria-current',
       'date',
     )
@@ -58,5 +58,24 @@ describe('ScheduleMiniCalendar', () => {
     await userEvent.click(screen.getByTestId('mini-calendar-next'))
     rerender(<Week date="2026-11-03" />)
     expect(screen.getByTestId('mini-calendar-month')).toHaveTextContent('2026年11月')
+  })
+
+  it('日の表は Tab で基準の日だけに止まり、矢印のキーで日を動かし、表の外へ動くと月を変える', async () => {
+    render(<Week />)
+    await userEvent.click(screen.getByTestId('mini-calendar-next'))
+    await userEvent.tab()
+    // 前後のボタンで基準の日の無い月を出したときは、月の 1 日で止まる
+    expect(screen.getByTestId('mini-calendar-day-2026-11-01')).toHaveFocus()
+    await userEvent.keyboard('{ArrowUp}')
+    expect(screen.getByTestId('mini-calendar-month')).toHaveTextContent('2026年10月')
+    expect(screen.getByTestId('mini-calendar-day-2026-10-25')).toHaveFocus()
+    await userEvent.keyboard('{ArrowRight}')
+    expect(screen.getByTestId('mini-calendar-day-2026-10-26')).toHaveFocus()
+    expect(screen.getAllByRole('button').filter((button) => button.tabIndex === 0)).toHaveLength(3)
+  })
+
+  it('週の表示では、出している 7 日の名前に「表示中」を付ける', () => {
+    render(<Week />)
+    expect(screen.getAllByRole('button', { name: /（表示中）$/ })).toHaveLength(7)
   })
 })

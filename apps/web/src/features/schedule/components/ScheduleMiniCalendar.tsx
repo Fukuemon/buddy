@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { useState } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import PrevIcon from '#/assets/icons/arrow-left.svg?react'
 import NextIcon from '#/assets/icons/arrow-right.svg?react'
 
@@ -19,6 +19,14 @@ const monthGridDays = (monthKey: string) => {
     toDateKey(new Date(start.getFullYear(), start.getMonth(), start.getDate() + index)),
   )
 }
+
+const shiftDays = (dateKey: string, days: number) => {
+  const date = fromDateKey(dateKey)
+  return toDateKey(new Date(date.getFullYear(), date.getMonth(), date.getDate() + days))
+}
+
+/** 矢印のキーで動かす日数。 */
+const KEY_DAYS: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }
 
 const shiftMonth = (monthKey: string, direction: 1 | -1) => {
   const date = fromDateKey(monthKey)
@@ -44,6 +52,7 @@ export type ScheduleMiniCalendarProps = {
  * 日付を選んでカレンダーの表示を移す、月のミニカレンダー。
  * 日と週の表示では、カレンダーが出している期間の日に面の色を付ける。今日は丸の印で示す。
  * 前後のボタンはミニカレンダーの月だけを動かす。カレンダーの基準の日が変わると、その日の月に戻す。
+ * 日の表は Tab で 1 度だけ止まり、矢印のキーで日を動かす。表の外の日へ動くと、その日の月を出す。
  */
 export const ScheduleMiniCalendar = ({
   view,
@@ -52,11 +61,20 @@ export const ScheduleMiniCalendar = ({
   onSelect,
 }: ScheduleMiniCalendarProps) => {
   const [shownMonth, setShownMonth] = useState(() => toMonthKey(date))
+  const [focusedDay, setFocusedDay] = useState(date)
   const [syncedDate, setSyncedDate] = useState(date)
   if (syncedDate !== date) {
     setSyncedDate(date)
     setShownMonth(toMonthKey(date))
+    setFocusedDay(date)
   }
+  const tableRef = useRef<HTMLTableElement>(null)
+  const [shouldFocus, setShouldFocus] = useState(false)
+  useEffect(() => {
+    if (!shouldFocus) return
+    tableRef.current?.querySelector<HTMLButtonElement>('[tabindex="0"]')?.focus()
+    setShouldFocus(false)
+  }, [shouldFocus])
 
   const range = getCalendarRange(view, date)
   const inRange = (dateKey: string) =>
@@ -64,6 +82,18 @@ export const ScheduleMiniCalendar = ({
   const days = monthGridDays(shownMonth)
   const weeks = Array.from({ length: 6 }, (_, index) => days.slice(index * 7, index * 7 + 7))
   const monthDate = fromDateKey(shownMonth)
+  // 動かした日が表に無いとき（前後のボタンで月を変えた後）は、月の 1 日で止まる
+  const tabbableDay = days.includes(focusedDay) ? focusedDay : shownMonth
+
+  const moveFocus = (event: KeyboardEvent<HTMLButtonElement>, dateKey: string) => {
+    const offset = KEY_DAYS[event.key]
+    if (offset === undefined) return
+    event.preventDefault()
+    const next = shiftDays(dateKey, offset)
+    if (!monthGridDays(shownMonth).includes(next)) setShownMonth(toMonthKey(next))
+    setFocusedDay(next)
+    setShouldFocus(true)
+  }
 
   return (
     <section aria-label="日付を選ぶ" className="flex flex-col gap-1" data-testid="mini-calendar">
@@ -96,7 +126,7 @@ export const ScheduleMiniCalendar = ({
           </button>
         </div>
       </div>
-      <table className="w-full table-fixed border-collapse text-center">
+      <table ref={tableRef} className="w-full table-fixed border-collapse text-center">
         <thead>
           <tr>
             {WEEKDAYS.map((weekday) => (
@@ -115,23 +145,26 @@ export const ScheduleMiniCalendar = ({
             <tr key={week[0]}>
               {week.map((dateKey) => {
                 const isToday = dateKey === today
+                const isShown = inRange(dateKey)
                 const isOtherMonth = dateKey.slice(0, 7) !== shownMonth.slice(0, 7)
                 return (
-                  <td
-                    className={clsx('p-0', inRange(dateKey) && 'bg-primary-surface')}
-                    key={dateKey}
-                  >
+                  <td className={clsx('p-0', isShown && 'bg-primary-surface')} key={dateKey}>
                     <button
                       aria-current={isToday ? 'date' : undefined}
-                      aria-label={formatDay(dateKey)}
+                      aria-label={isShown ? `${formatDay(dateKey)}（表示中）` : formatDay(dateKey)}
                       className="group grid h-11 w-full place-items-center rounded-8 focus-visible:focus-ring"
                       data-testid={`mini-calendar-day-${dateKey}`}
-                      onClick={() => onSelect(dateKey)}
+                      onClick={() => {
+                        setFocusedDay(dateKey)
+                        onSelect(dateKey)
+                      }}
+                      onKeyDown={(event) => moveFocus(event, dateKey)}
+                      tabIndex={dateKey === tabbableDay ? 0 : -1}
                       type="button"
                     >
                       <span
                         className={clsx(
-                          'grid size-8 place-items-center rounded-full text-caption group-hover:underline',
+                          'grid size-8 place-items-center rounded-full text-body-dense group-hover:underline',
                           isToday
                             ? 'bg-primary font-bold text-text-inverse'
                             : isOtherMonth

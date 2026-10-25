@@ -91,7 +91,7 @@ test.describe('予定のカレンダー', () => {
             const title = page.getByTestId('calendar-title')
             const month = page.getByTestId('mini-calendar-month')
             await expect(title).toHaveText('2026年10月25日〜31日')
-            await step('週の表示を開いている。左下のミニカレンダーは今日（10月25日）を丸で示す')
+            await step('週の表示を開いている。左上のミニカレンダーは今日（10月25日）を丸で示す')
 
             await step('ミニカレンダーの 11月5日を押す')
             await page.getByTestId('mini-calendar-day-2026-11-05').click()
