@@ -4,9 +4,7 @@ import { EVIDENCE_VARIANTS, recordPrEvidence, storyUrl } from '../../fixtures/ev
 
 const ACTOR = 'ログインなし（Storybook の story）'
 const DAY_URL = storyUrl('画面-schedule-schedulepagelayout--day')
-const DAY_WITH_CANCELLED_URL = storyUrl(
-  '画面-schedule-schedulepagelayout--day-with-cancelled',
-)
+const DAY_WITH_CANCELLED_URL = storyUrl('画面-schedule-schedulepagelayout--day-with-cancelled')
 const DETAIL_URL = storyUrl('画面-schedule-scheduledetailmodalcontainer--cancelled')
 
 const openDay = (url: string) => async (page: Page) => {
