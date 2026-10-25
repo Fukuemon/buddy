@@ -239,7 +239,7 @@
 
 **表示条件**: 幅 768px 以上では、ヘッダーの下の左端に、アイコンと名前を縦に並べて常に出す。今の画面のリンクは、面の色で示す。幅 768px 未満では、メニューのドロワーの中に、アイコンの右に名前を置いて出す。
 
-**カタログ**: [SiteNav の Import](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-sitenav--import)、[SiteNav の List](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-sitenav--list)
+**カタログ**: [SiteNav の Review](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-sitenav--review)、[SiteNav の List](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-sitenav--list)
 
 ### インタラクション
 

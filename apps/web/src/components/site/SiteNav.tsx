@@ -39,10 +39,10 @@ export const SiteNav = ({ items, current, layout }: SiteNavProps) => (
               className={clsx(
                 'flex rounded-8 focus-visible:focus-ring',
                 layout === 'rail'
-                  ? 'w-18 flex-col items-center gap-1 py-2 text-body-dense'
-                  : 'h-12 items-center gap-4 px-4 text-body-dense',
+                  ? 'w-18 flex-col items-center gap-1 py-2 text-label'
+                  : 'h-12 items-center gap-4 px-4 text-label',
                 isCurrent
-                  ? 'bg-primary-surface font-bold text-primary'
+                  ? 'bg-primary-surface text-primary'
                   : 'text-text-secondary hover:bg-surface-subtle hover:text-text',
               )}
             >

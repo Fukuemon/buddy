@@ -20,3 +20,6 @@ export const Import: Story = { args: { items: siteNavItems(true), current: '/sch
 
 /** 幅 768px 未満のドロワーの中の並び。 */
 export const List: Story = { args: { items: siteNavItems(true), layout: 'list' } }
+
+/** 職員の管理の権限を持つ職員が、確認が必要な予定を開いているとき。 */
+export const Review: Story = { args: { items: siteNavItems(true), current: '/schedule/review' } }

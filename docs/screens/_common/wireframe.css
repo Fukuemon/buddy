@@ -504,13 +504,13 @@ body {
   padding: 8px 0;
   border-radius: var(--wf-radius);
   color: var(--wf-muted);
+  font-weight: 700;
   white-space: nowrap;
 }
 
 .wf-site-nav__item[aria-current='page'] {
   background: var(--wf-primary-surface);
   color: var(--wf-primary);
-  font-weight: 700;
 }
 
 @container screen (width < 768px) {

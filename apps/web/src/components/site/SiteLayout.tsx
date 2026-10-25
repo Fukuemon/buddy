@@ -50,9 +50,9 @@ export const SiteLayout = ({ navItems, current, actions, children }: SiteLayoutP
       />
       <div className="flex min-h-0 grow">
         {isDesktop ? (
-          <aside className="shrink-0 overflow-auto border-r border-border bg-surface p-2">
+          <div className="shrink-0 overflow-auto border-r border-border bg-surface p-2">
             <SiteNav current={current} items={navItems} layout="rail" />
-          </aside>
+          </div>
         ) : (
           <Drawer
             closeButtonTestId="site-nav-close"
@@ -67,7 +67,12 @@ export const SiteLayout = ({ navItems, current, actions, children }: SiteLayoutP
             </div>
           </Drawer>
         )}
-        <div className="flex min-h-0 min-w-0 grow flex-col overflow-auto">{children}</div>
+        <div
+          className="flex min-h-0 min-w-0 grow flex-col overflow-auto"
+          data-scroll-restoration-id="site-main"
+        >
+          {children}
+        </div>
       </div>
     </div>
   )
