@@ -36,24 +36,11 @@ verified_commit: 581e5d4
 
 ### パッケージは正規化、対の作成、判定の段ごとに分ける
 
-- `internal/record`: 正規化した後の予定と実績の 1 行、入力の行のエラー、照合に使わなかった予定の警告
-- `internal/civil`: 時差を持たない日付と、1 日の中の時刻
-- `internal/csvio`: 入力の CSV の文字コードの判別とカラムの取り出し
-- `internal/normalize`: 時刻、利用者名、主訪問者、サービス内容の表記をそろえ、予定の側だけ終了時間と提供時間を調整する
-- `internal/servicerule`: サービス内容ごとの許容範囲、1 分引くサービス内容の一覧、`医` の特例
-- `internal/match`: キー（訪問日、利用者名、主訪問者）で予定と実績を対にする
-- `internal/judge`: 対ごとに項目を判定し、不整合、予定のみ、実績のみ、整合に分ける
-- `internal/check`: 上の 4 つをつなぐ。予定のデータソースは `ScheduleSource` で受ける
-- `internal/gcal`: Google カレンダーの予定を、予定の CSV と同じ `csvio.Row` にしてから `normalize.Schedules` に通す
-- `internal/gcal/gcaltest`: テストに使う、Calendar API の events.list のフェイク
-- `internal/source`: リクエストの `schedules` と `month` とトークンの組織から、予定のデータソース（`CSVSchedules` か `internal/gcal`）を選ぶ
-- access token の検証は、共有の module の `packages/go/oidc` を使う（[ADR-0007](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0007-go-shared-module.md)）
-- タイトルの解釈（`IsVisitTitle`、`ParseTitle`）と、表記をそろえる処理（`NormalizeClient`、`NormalizeService`）は、予定の API と共有する `packages/go/gcaltitle` を使う
-  - `internal/normalize` は、`NormalizeClient` で利用者名を、`NormalizeService` でサービス内容をそろえる
+- `internal/normalize`、`internal/match`、`internal/judge` を、`internal/check` がつなぐ
+- access token の検証は、共有の module の `packages/go/oidc` を使う
+  - ADR-0007: [2 つの Go の API が共有するコードを、別の module にまとめる](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0007-go-shared-module.md)
+- タイトルの解釈と、利用者名とサービス内容の表記をそろえる処理は、予定の API と共有する `packages/go/gcaltitle` を使う
 - 組織ごとのサービスアカウントで Calendar API を呼ぶクライアントは、予定の API と共有する `packages/go/gcalauth` を使う
-- `internal/httpapi`: `GET /healthz`、`GET /readyz`、`POST /v1/checks`。`/healthz` と `/readyz` 以外のリクエストのトークンを `packages/go/oidc` で確認する
-- `cmd/api`: 環境変数を読んで API のサーバーを起動する
-- `cmd/devissuer`: ローカルで API を試すためのフェイクの OIDC の Issuer。イメージに入れない
 
 ### 処理の流れ
 
@@ -98,10 +85,9 @@ Google カレンダーは、今も職員が予定を入れる場所なので、�
 
 - 認証は Application Default Credentials で、カレンダーの組織のサービスアカウントになりすました token で読む。スコープは `calendar.readonly` だけにする。
   - ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](https://github.com/Fukuemon/buddy/blob/876381365355f7e4dab03f6dfdb3d6fb8a9f6947/docs/adr/0012-google-calendar-facility-service-accounts.md)
-  - ローカルでは、検証の事業所のサービスアカウントになりすました Application Default Credentials を使う。クラスタでは Workload Identity Federation を使う。どちらもサービスアカウントのキーを使わない。
   - Application Default Credentials が事業所のサービスアカウントそのものとして動くとき（そのアカウントになりすました認証情報か、そのアカウントのキー）は、重ねてなりすまさない。サービスアカウント自身へのトークン作成者のロールを求めないためである。見分けは、認証情報のファイルの `client_email` か、なりすます先の URL のメールアドレスで行う。
   - `GOOGLE_CALENDAR_ENDPOINT` で Calendar API の代わりにフェイク（ローカル環境の calendarpit）を呼ぶときは、なりすまさない。フェイクはなりすましの token を出せないためである。`GOOGLE_APPLICATION_CREDENTIALS` を渡したときだけ、その認証情報を全ての事業所で使い、渡さなければ認証をしない。開発者の Application Default Credentials をフェイクに送らないためである。
-- ドメイン全体の委任は使わない。職員が、自分の事業所のサービスアカウントにカレンダーを共有する。サービスアカウントが読めるカレンダーを、共有されたものだけに絞るためである。
+- 職員が、自分の事業所のサービスアカウントにカレンダーを共有する。
   - 共有の権限は、予定の API の書き出しと同じアカウントなので、[基盤と運用の事業所を足す手順](https://github.com/Fukuemon/buddy/blob/develop/context/operations.md#adding-a-facility) にある。
 - 組織とサービスアカウントの対応は、カレンダーの設定と別のファイル（`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`）に置く。形は予定の API と同じにする。
   - 対応は事業所ごとに 1 行で、運営側がアカウントを作るときに足す。カレンダーの設定は職員ごとの行で、職員が入れ替わるたびに変わる。更新する人と頻度が違うので、分ける。
@@ -241,20 +227,8 @@ Google カレンダーは、今も職員が予定を入れる場所なので、�
 ### 結果の JSON
 
 API は、判定の結果だけを JSON で返す。記号と CSV は返さない。  
-記号は元の Python のデスクトップのツール（tkinter）の表示の名残で、表示を変えるたびに API を変えないためである。
-
-- `summary` は、区分ごとの行の数を持つ。
-- `rows` は、不整合、予定のみ、実績のみ、整合の順に並べ、区分の中は訪問日、開始時間、利用者名、主訪問者の順に並べる。
-- `warnings` は、Google カレンダーの予定のうち解釈できずに照合に使わなかったものを持つ。なければ空の配列にする。
-- `rows` の 1 行は、次の値を持つ。
-  - `category`: 区分（`mismatch`、`schedule_only`、`visit_only`、`match`）
-  - `date`、`client`、`staff`: 訪問日、利用者名、主訪問者
-  - `schedule` と `visit`: 両側の入力の行番号（Google カレンダーから取った予定では 0）、開始時間、終了時間、提供時間、サービス内容。実績の側は加算（`additions`）も持つ。片側がない行では `null`
-  - `checks`: 両側があるときだけ持ち、片側だけの行では `null`。キーは次のとおり。
-    - `start`、`service`、`additions`: 開始時間、サービス内容、加算の判定（`ok`）
-    - `schedule_elapsed`、`visit_elapsed`: 予定と実績の、終了時間から開始時間を引いた分の判定。判定した分（`minutes`）、許容範囲（`range`）、`ok` を持つ
-    - `schedule_duration`、`visit_duration`: 予定と実績の、提供時間の判定。`schedule_elapsed` と同じ形の値を持つ
-    - `duration_equal`、`end_equal`: 提供時間と終了時間の値が両側で同じか
+記号は元の Python のデスクトップのツール（tkinter）の表示の名残で、表示を変えるたびに API を変えないためである。  
+結果の項目と並び順は [openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/openapi.yaml) の `Report` にある。
 
 ### 画面が JSON から作る表示
 
@@ -278,20 +252,11 @@ API の定義の正本は [openapi.yaml](https://github.com/Fukuemon/buddy/blob/
 - `POST /v1/checks`
   - `Authorization: Bearer` の access token を求める。署名、`iss`、`aud`、`exp`、`nbf` を JWKS で確認し、`sub` の無いトークンも拒む。`/healthz` と `/readyz` のほかは、定義に無いパスにもトークンを求める。
   - 署名のアルゴリズムは RS256 と ES256 だけを受け付ける。
-  - `multipart/form-data` で、ファイル `visits`（実績の CSV）と予定を受ける。
-  - 予定は、ファイル `schedules`（予定の CSV）があればそれを使う。なくてフォームの値 `month`（`2026-10` の形）があれば、その月の予定を Google カレンダーから取る。
-  - 結果は、`Accept` によらず結果の JSON で返す。
-- エラーは `{"code","message"}` の JSON で返す。`message` は人が読む説明で、文言は変わることがあるので、利用者は `code` で分岐する。
-  - トークンがないか、検証に失敗した: 401 の `unauthenticated`。トークンが無いときは `WWW-Authenticate: Bearer` を、検証に失敗したときは `WWW-Authenticate: Bearer error="invalid_token"` を付ける
+- エラーは `{"code","message"}` の JSON で返す。`code` ごとの意味は openapi.yaml にある。
   - 定義に無いパスかメソッド: 404 の `not_found`
   - `month` で呼ばれたが、トークンに組織がない: 403 の `forbidden`。読むカレンダーを決められないためである
-  - 本文が multipart として読めない、`month` の形が違う: 400 の `bad_request`
-  - `visits` がない、`schedules` も `month` もない: 400 の `missing_file`
-  - 本文が上限（`MAX_UPLOAD_BYTES`）を超える: 413 の `payload_too_large`
-  - 入力の CSV のエラー: 422 の `invalid_csv`。行のエラーがあれば、行ごとのエラー（`errors` の `source`、`line`、`column`、`message`）を持つ。CSV の形の誤り（引用符の閉じ忘れなど）のように列を決められないエラーは、`column` を持たない。CSV が空のとき、カラムが足りないとき、文字コードを読めないときは `errors` を持たない
-  - Calendar API の呼び出しに失敗した: 502 の `schedule_source_failed`
+  - 入力の CSV のエラー: 422 の `invalid_csv`。CSV の形の誤り（引用符の閉じ忘れなど）のように列を決められないエラーは、`column` を持たない
   - Google カレンダーの設定がないか、トークンの組織のカレンダーがないのに `month` で呼ばれた: 503 の `calendar_not_configured`。リクエストの形は正しく、照合できない原因がサーバーの設定にあるので、400 にしない
-  - 照合の途中のそのほかのエラー: 500 の `internal`
 - CORS は、`CORS_ALLOW_ORIGINS` に並べた Origin だけに許す。空なら CORS のヘッダーを返さない。
   - 許す Origin の事前のリクエスト（OPTIONS で `Access-Control-Request-Method` を持つ）には、トークンを求めずに 204 を返す。許すメソッドは GET、POST、OPTIONS、ヘッダーは `Authorization` と `Content-Type` にする。
   - 許さない Origin のリクエストは、CORS のヘッダーを付けずに通す。ブラウザは、ヘッダーの無いレスポンスを画面に読ませない。

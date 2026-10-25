@@ -6,11 +6,9 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 
 - 出典: [デジタル庁デザインシステム](https://design.digital.go.jp/dads/)
 
-トークンとコンポーネントの見た目と使い方は、[カタログ（Storybook）](https://buddy-docs.emon-apps.workers.dev/storybook/)で見る。カタログは Cloudflare Access で許可した人だけが開ける。ローカルでは `pnpm --filter @buddy/web storybook` で開く。
+トークンとコンポーネントの見た目と使い方は、[カタログ（Storybook）](https://buddy-docs.emon-apps.workers.dev/storybook/)で見る。ローカルでは `pnpm --filter @buddy/web storybook` で開く。
 
 ## 知りたいことごとの参照先
-
-この文書には、使い方の規則だけを書き、値と振る舞いはコードを参照先にする。
 
 | 知りたいこと | 参照先 |
 | --- | --- |
@@ -58,9 +56,9 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 | `success`、`success-surface` | 完了と整合 |
 | `categorical-1` から `categorical-10` | 職員のように、意味を持たない並びの区別。番号の順に割り当て、11 個目からは 1 に戻る |
 
-DADS のキーの色は、light-blue に当て直している。`primary` と `primary-surface` は、キーの色の 800 と 50 を参照する。  
-`surface-canvas` だけは、DADS に無い値を直に持つ。背景を指定しない要素は canvas の色になるので、カード、表、入力欄には `bg-surface` を付ける。  
-どちらも、もともとのデザイン案の色に寄せるためで、理由と値は [ADR-0015](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0015-key-color-and-canvas.md) と `semantic.css` にある。
+背景を指定しない要素は `surface-canvas` の色になるので、カード、表、入力欄には `bg-surface` を付ける。
+
+- ADR-0015: [キーの色を light-blue にし、画面の背景だけ DADS に無い値を持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0015-key-color-and-canvas.md)
 
 `*-surface` の面の上の文字は、同じ系統の文字の色（`danger-surface` の上なら `danger`）か `text` にする。どちらも 4.5:1 以上になる。
 
@@ -112,8 +110,6 @@ DADS は、重ねて出すものを下のコンポーネントより 2 段以上
 ## コンポーネントの選び方
 
 コンポーネントは、BCD Design の Base（基本のコンポーネント）と Case（場面を持つコンポーネント）だけを packages/ui に置く。  
-予定や職員のようなドメインの名前を持つコンポーネントは、apps/web の `features/<機能>/components` に置く。  
-名前は、ドメイン、場面、基本の語の順に並べる（例は `StaffSearchBox`）。  
 `src/icons/` には、packages/ui のコンポーネントが中で使う印（SVG を描くコンポーネント）を置く。  
 印は `index.ts` から export せず、カタログにも載せない。  
 apps/web の画面だけが使う印は、`apps/web/src/assets/icons/` の SVG を使う。
@@ -145,9 +141,6 @@ apps/web の画面だけが使う印は、`apps/web/src/assets/icons/` の SVG �
 
 ## Storybook のカタログ
 
-[カタログ](https://buddy-docs.emon-apps.workers.dev/storybook/)は apps/web の Storybook で組み、packages/ui の MDX と story も読み込む。  
-packages/ui の Storybook は、コンポーネントを単独で開発し、story のテストを実行するために使う。
-
 ### カタログのページ
 
 | ページ | 書くこと | 配置先 |
@@ -174,11 +167,9 @@ title は、ファイルの配置先から機械的に決め、story を作る�
 | `apps/web/src/features/<機能>/components/<コンポーネント>.stories.tsx` | `画面/<機能>/<コンポーネント>`。`<機能>` は kebab-case のディレクトリ名を PascalCase にしたもの（`schedule` から `Schedule`） |
 | `apps/web/src/components/<ディレクトリ>/<コンポーネント>.stories.tsx` | `画面/Common/<コンポーネント>` |
 
-サイドバーの並びは、はじめに、トークン、コンポーネント、パターン、画面の順にする。
-
 ### カタログに載せてよいもの
 
-カタログはドキュメントサイトの `/storybook/` として Cloudflare に公開し、Cloudflare Access で許可した人だけが開ける（`apps/docs-site/README.md`）。許可した人の範囲は変わりうるので、story と MDX には、コンポーネントとダミーデータだけを載せる。
+カタログは Cloudflare Access で許可した人だけが開ける。許可した人の範囲は変わりうるので、story と MDX には、コンポーネントとダミーデータだけを載せる。
 
 - 利用者と職員の名前、事業所、予定は、`青木 一郎` のようなダミーの値にする。実際の画面やデータベースからコピーしない。
 - API を呼ぶ story を作らない。データは story の中か、ダミーデータのファイルから渡す。
