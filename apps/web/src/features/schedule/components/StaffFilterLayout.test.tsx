@@ -1,33 +1,13 @@
 import { composeStories } from '@storybook/react-vite'
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
+
+import { stubViewport } from '#/test/stubViewport'
 
 import * as stories from './StaffFilterLayout.stories'
 
 const { Desktop, Mobile } = composeStories(stories)
-
-// jsdom は matchMedia を持たない。表示の幅が 768px 以上かを決め、resize で変えて change を送る。
-const stubViewport = (isDesktop: boolean) => {
-  const listeners = new Set<() => void>()
-  let matches = isDesktop
-  vi.stubGlobal('matchMedia', (query: string) => ({
-    get matches() {
-      return matches
-    },
-    media: query,
-    addEventListener: (_type: 'change', listener: () => void) => listeners.add(listener),
-    removeEventListener: (_type: 'change', listener: () => void) => listeners.delete(listener),
-  }))
-  return {
-    resize: (nextIsDesktop: boolean) => {
-      matches = nextIsDesktop
-      act(() => {
-        for (const listener of listeners) listener()
-      })
-    },
-  }
-}
 
 afterEach(() => {
   vi.unstubAllGlobals()
