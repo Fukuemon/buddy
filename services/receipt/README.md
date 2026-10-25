@@ -76,7 +76,7 @@ go generate ./...
 
 ## API
 
-リクエストとレスポンスの項目の定義は [openapi.yaml](openapi.yaml) に、`POST /v1/checks` の振る舞いとエラーは [DesignDoc.md](DesignDoc.md) の Interface にある。
+リクエストとレスポンスの項目、`POST /v1/checks` の振る舞いとエラーの定義は [openapi.yaml](openapi.yaml) にある。
 
 `testdata/` のダミーの CSV で試すときは、次を実行する。
 

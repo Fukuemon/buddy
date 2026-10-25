@@ -5,7 +5,7 @@
 
 ## Setup
 
-セットアップとローカル環境での起動の手順は、[CONTRIBUTING.md](CONTRIBUTING.md) の Setup と Running Locally にある。
+必要なツール、セットアップ、ローカル環境での起動の手順は、[CONTRIBUTING.md](CONTRIBUTING.md) の Prerequisites、Setup、Running Locally にある。
 
 ## Documentation
 
