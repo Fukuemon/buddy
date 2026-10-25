@@ -3,7 +3,12 @@ import { useController, type Control, type FieldPath, type FieldValues } from 'r
 
 import { CalendarIcon } from '../../icons/CalendarIcon'
 
-import { FieldFrame, fieldErrorProps, fieldInputClassName } from '../FieldFrame/FieldFrame'
+import {
+  FieldFrame,
+  fieldErrorProps,
+  fieldInputClassName,
+  showPickerOnClick,
+} from '../FieldFrame/FieldFrame'
 
 export type DatePickerProps<T extends FieldValues> = Omit<
   ComponentPropsWithoutRef<'input'>,
@@ -21,6 +26,7 @@ export const DatePicker = <T extends FieldValues>({
   control,
   label,
   isWide,
+  onClick,
   ...props
 }: DatePickerProps<T>) => {
   const { field, fieldState } = useController({ name, control })
@@ -43,6 +49,10 @@ export const DatePicker = <T extends FieldValues>({
         {...fieldErrorProps(error, errorId)}
         className={fieldInputClassName}
         id={inputId}
+        onClick={(event) => {
+          showPickerOnClick(event)
+          onClick?.(event)
+        }}
         type="date"
         value={(field.value as string | undefined) ?? ''}
       />
