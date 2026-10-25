@@ -37,7 +37,7 @@ describe('StaffFilterLayout', () => {
     const opener = screen.getByTestId('staff-filter-open')
 
     await userEvent.click(opener)
-    const drawer = screen.getByRole('dialog', { name: '職員の絞り込み' })
+    const drawer = screen.getByRole('dialog', { name: '日付と絞り込み' })
     expect(opener).toHaveAttribute('aria-expanded', 'true')
     expect(opener).toHaveAttribute('aria-controls', drawer.id)
     expect(screen.getByRole('navigation', { name: '職員の絞り込み' })).toBeVisible()
@@ -63,7 +63,7 @@ describe('StaffFilterLayout', () => {
     const viewport = stubViewport(false)
     render(<Mobile />)
     await userEvent.click(screen.getByTestId('staff-filter-open'))
-    expect(screen.getByRole('dialog', { name: '職員の絞り込み' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: '日付と絞り込み' })).toBeInTheDocument()
 
     viewport.resize(true)
     expect(screen.queryByTestId('staff-filter-open')).not.toBeInTheDocument()

@@ -1,9 +1,7 @@
 import { Outlet, createFileRoute, stripSearchParams } from '@tanstack/react-router'
 
 import { SiteLayoutContainer } from '#/components/site/SiteLayoutContainer'
-import { ScheduleCalendarContainer } from '#/features/schedule/components/ScheduleCalendarContainer'
-import { StaffFilterLayout } from '#/features/schedule/components/StaffFilterLayout'
-import { StaffFilterSidebarContainer } from '#/features/schedule/components/StaffFilterSidebarContainer'
+import { SchedulePageLayout } from '#/features/schedule/components/SchedulePageLayout'
 import {
   scheduleSearchDefaults,
   scheduleSearchSchema,
@@ -21,12 +19,7 @@ export const Route = createFileRoute('/schedule')({
 function SchedulePage() {
   return (
     <SiteLayoutContainer current="/schedule">
-      <StaffFilterLayout
-        renderCalendar={(staffFilterToggle) => (
-          <ScheduleCalendarContainer staffFilterToggle={staffFilterToggle} />
-        )}
-        staffFilter={<StaffFilterSidebarContainer />}
-      />
+      <SchedulePageLayout />
       <Outlet />
     </SiteLayoutContainer>
   )

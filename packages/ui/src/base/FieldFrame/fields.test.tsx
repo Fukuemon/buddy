@@ -1,6 +1,6 @@
 import { composeStories } from '@storybook/react-vite'
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vite-plus/test'
+import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
 import { userEvent } from 'vite-plus/test/browser/context'
 
 import * as datePickerStories from '../DatePicker/DatePicker.stories'
@@ -41,5 +41,26 @@ describe.each(fields)('$name', ({ label, stories }) => {
     expect(
       Math.max(target.getBoundingClientRect().height, input.getBoundingClientRect().height),
     ).toBeGreaterThanOrEqual(44)
+  })
+})
+
+const pickers = fields.filter(({ name }) => name === 'DatePicker' || name === 'TimePicker')
+
+describe.each(pickers)('$name のピッカー', ({ label, stories }) => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('右のアイコンのあたりを押すと、ブラウザのピッカーを開く', async () => {
+    const showPicker = vi
+      .spyOn(HTMLInputElement.prototype, 'showPicker')
+      .mockImplementation(() => {})
+    render(<stories.Default />)
+    const frame = screen.getByLabelText(label).closest('label')
+    if (frame === null) throw new Error('入力の枠がない')
+    const rect = frame.getBoundingClientRect()
+    // 右の飾りのアイコンの中心。枠の右端から 6px の余白と 40px のアイコンの半分の位置
+    await userEvent.click(frame, { position: { x: rect.width - 26, y: rect.height / 2 } })
+    expect(showPicker).toHaveBeenCalledOnce()
   })
 })

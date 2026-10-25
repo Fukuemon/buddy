@@ -7,7 +7,7 @@ import { formatCalendarTitle } from '../lib/calendarRange'
 
 const VIEW_OPTIONS = CALENDAR_VIEWS.map((view) => ({ id: view, label: CALENDAR_VIEW_LABEL[view] }))
 
-/** 職員の絞り込みのドロワーを開くボタンに渡す値。 */
+/** ミニカレンダーと職員の絞り込みのドロワーを開くボタンに渡す値。 */
 export type StaffFilterToggle = {
   isOpen: boolean
   /** ドロワーの `<dialog>` の id */
@@ -23,19 +23,15 @@ export type ScheduleCalendarToolbarProps = {
   onNext: () => void
   onToday: () => void
   onViewChange: (view: CalendarView) => void
-  onDateChange: (dateKey: string) => void
-  /** キャンセルした予定を出しているか。 */
-  showCancelled: boolean
-  onShowCancelledChange: (showCancelled: boolean) => void
   /** 渡したときだけ、予定の作成のボタンを出す。 */
   onCreate?: () => void
-  /** 渡したときだけ、職員の絞り込みを開くボタンを出す。幅 768px 未満で渡す。 */
+  /** 渡したときだけ、ドロワーを開くボタンを出す。幅 768px 未満で渡す。 */
   staffFilterToggle?: StaffFilterToggle
 }
 
 /**
- * カレンダーの上の操作。前後への移動、今日、表示の期間の見出し、日付の指定、キャンセルした予定を出す切り替え、
- * 表示の種類、職員の絞り込みを開く、予定の作成を並べる。
+ * カレンダーの上の操作。前後への移動、今日、表示の期間の見出し、表示の種類、日付と絞り込みのドロワーを開く、予定の作成を並べる。
+ * 日付の指定とキャンセルした予定を出す切り替えは、左のサイドバーに置く。
  */
 export const ScheduleCalendarToolbar = ({
   view,
@@ -44,9 +40,6 @@ export const ScheduleCalendarToolbar = ({
   onNext,
   onToday,
   onViewChange,
-  onDateChange,
-  showCancelled,
-  onShowCancelledChange,
   onCreate,
   staffFilterToggle,
 }: ScheduleCalendarToolbarProps) => (
@@ -77,28 +70,8 @@ export const ScheduleCalendarToolbar = ({
       <h1 aria-live="polite" className="ml-2 text-heading-md" data-testid="calendar-title">
         {formatCalendarTitle(view, date)}
       </h1>
-      <input
-        aria-label="表示する日付"
-        className="ml-2 h-11 rounded-8 bg-surface px-3 text-body-dense ring-1 ring-border-field ring-inset outline-none focus-visible:focus-ring"
-        data-testid="calendar-date"
-        onChange={(event) => {
-          if (event.target.value !== '') onDateChange(event.target.value)
-        }}
-        type="date"
-        value={date}
-      />
     </div>
     <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-2 desktop:w-auto">
-      <label className="flex min-h-11 items-center gap-2 text-body-dense">
-        <input
-          checked={showCancelled}
-          className="size-5"
-          data-testid="calendar-show-cancelled"
-          onChange={(event) => onShowCancelledChange(event.target.checked)}
-          type="checkbox"
-        />
-        キャンセルした予定を出す
-      </label>
       <div className="w-full desktop:w-48">
         <SegmentedControl
           data-testid="calendar-view"
@@ -118,7 +91,7 @@ export const ScheduleCalendarToolbar = ({
           size="S"
           variant="secondary"
         >
-          職員の絞り込み
+          日付と絞り込み
         </Button>
       )}
       {onCreate !== undefined && (

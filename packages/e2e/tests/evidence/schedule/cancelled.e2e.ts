@@ -3,10 +3,8 @@ import { expect, test, type Page } from '@playwright/test'
 import { EVIDENCE_VARIANTS, recordPrEvidence, storyUrl } from '../../fixtures/evidence'
 
 const ACTOR = 'ログインなし（Storybook の story）'
-const DAY_URL = storyUrl('画面-schedule-schedulecalendarcontainer--day')
-const DAY_WITH_CANCELLED_URL = storyUrl(
-  '画面-schedule-schedulecalendarcontainer--day-with-cancelled',
-)
+const DAY_URL = storyUrl('画面-schedule-schedulepagelayout--day')
+const DAY_WITH_CANCELLED_URL = storyUrl('画面-schedule-schedulepagelayout--day-with-cancelled')
 const DETAIL_URL = storyUrl('画面-schedule-scheduledetailmodalcontainer--cancelled')
 
 const openDay = (url: string) => async (page: Page) => {
@@ -34,7 +32,7 @@ test.describe('予定のカレンダー', () => {
           async ({ page, step, check }) => {
             await openDay(DAY_URL)(page)
             await step(
-              '予定のカレンダーの日の表示（Storybook の ScheduleCalendarContainer の Day）を開いている。江藤 四郎の 11:00 の訪問はキャンセルした予定である（架空のデータ）',
+              '予定のカレンダーの日の表示（Storybook の SchedulePageLayout の Day）を開いている。江藤 四郎の 11:00 の訪問はキャンセルした予定である（架空のデータ）',
             )
             const cancelled = page.getByTestId('schedule-event-schedule-6')
             // 予定が描かれてから、キャンセルした予定が無いことを確認する
@@ -43,7 +41,7 @@ test.describe('予定のカレンダー', () => {
             await expect(cancelled).toHaveCount(0)
             await check('切り替えが外れている間は、キャンセルした予定が出ない')
 
-            await step('ツールバーの「キャンセルした予定を出す」を入れる')
+            await step('左のサイドバーの「キャンセルした予定を出す」を入れる')
             await page.getByTestId('calendar-show-cancelled').check()
             await expect(cancelled).toBeVisible()
             await expect(cancelled).toContainText('キャンセル')
@@ -73,7 +71,7 @@ test.describe('予定のカレンダー', () => {
           async ({ page, step, check }) => {
             await openDay(DAY_WITH_CANCELLED_URL)(page)
             await step(
-              '`/schedule?view=day&cancelled=true` を開いている（Storybook の ScheduleCalendarContainer の DayWithCancelled）',
+              '`/schedule?view=day&cancelled=true` を開いている（Storybook の SchedulePageLayout の DayWithCancelled）',
             )
             await expect(page.getByTestId('calendar-show-cancelled')).toBeChecked()
             await expect(page.getByTestId('schedule-event-schedule-6')).toBeVisible()
