@@ -4,10 +4,8 @@
 比べるケースは `testdata/parity/<ケース>/` にあり、各ケースは `visits.csv`、`schedules.csv`、`expected.csv` を持つ。
 
 - `run_python.py`: 元の照合の実装の `server/libs` の `receipt_check` を呼ぶ。予定は GAS から取らず、`schedules.csv` を読んで渡す。`requests` の送信は例外にしてあり、ネットワークに出ない
-- `report/`: 照合の結果を、Python の結果と同じ記号つきの CSV に書く。API は記号を付けず、JSON だけを返すので、このパッケージは比べるためだけにある
-- `goreport/`: `check.Run` の結果を `report` で CSV に書く
-- `compare.py`: Python の結果を Go の形にそろえてから比べる。`--golden` で、そろえた結果を `expected.csv` として書く
-- `run.sh`: 全ケースで `run_python.py`、`goreport`、`compare.py` を流す
+- `report/`: 照合の結果を、Python の結果と同じ記号つきの CSV に書く。比べるためだけにあり、API は使わない
+- `compare.py`: Python の結果を Go の形にそろえてから比べる
 
 ## Running
 
@@ -36,7 +34,7 @@ GOWORK=off go test ./internal/check -run TestRunParity
 
 ## 吸収する違い
 
-`compare.py` は、Python の結果に次の置き換えをしてから比べる。カラム名、区切りの行、記号の違いは、`report` の CSV の形の違いで、API の挙動ではない。並べ直しは [DesignDoc.md の Verification](../../DesignDoc.md#verification) の、元の Python と GAS から挙動を変えた点の一覧に当たる。提供時間の `.0` は pandas の型の都合である。
+`compare.py` は、Python の結果に次の置き換えをしてから比べる。カラム名、区切りの行、記号の違いは、`report` の CSV の形の違いで、API の挙動ではない。並べ直しは [DesignDoc.md の Verification](../../DesignDoc.md#verification) の、元の Python と GAS から挙動を変えた点の一覧に当たる。
 
 - カラム名の接尾辞 `_カレンダー` と `_Ibow` を `_予定` と `_実績` に、区切りの行の `カレンダーのみ` と `Ibowのみ` を `予定のみ` と `実績のみ` にする
 - 範囲を持たないサービス内容の ` ❌ ()` を ` ❌` に、予定の提供時間の `  ❌` を ` ❌` にする

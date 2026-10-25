@@ -7,12 +7,12 @@ status: stable
 
 # E2E のテスト
 
-E2E のテストのコード（`packages/e2e/tests/`）の書き方は、スキル write-e2e-test と [E2E のテストのコードの設計](../../packages/e2e/DesignDoc.md) に従う。ここには、buddy で決めた値だけを書く。  
+E2E のテストのコード（`packages/e2e/tests/`）の書き方は、スキル write-e2e-test と [E2E のテストのコードの設計](../../packages/e2e/DesignDoc.md) に従う。  
 E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`（`packages/e2e`）にある。
 
 ## Test Tool
 
-- テストのツールは Playwright（`@playwright/test`）である。バージョンは `packages/e2e/package.json` にある。
+- テストのツールは Playwright（`@playwright/test`）である。
 - kit は、npm の `@fukuemon/e2e-kit` を `packages/e2e` の開発の依存に固定のバージョンで入れ、サブパスの `recording`、`evidence`、`auth`、`eslint` から読む。
   - バージョンは、agent-harness のパッケージ e2e のスキル setup-e2e の `kit-version.json` とそろえる。`apm.yml` の e2e を上げたら、kit も同じバージョンに上げる。
 - スキル write-e2e-test が一般の語で書いたものは、Playwright の次の API に当たる。
@@ -54,6 +54,7 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
 ## Running Tests
 
 - E2E は、ルートの compose で立てた全体に向けて流す。手順は [CONTRIBUTING.md](../../CONTRIBUTING.md) の E2E Tests にある。
+- 整形、lint、E2E の書き方の規則、型のチェックは、`pnpm --filter @buddy/e2e check` で流す。
   - API、Hydra、ブローカーは置き換えず、compose の本物を使う。事業所の上流の IdP は、compose のフェイクを使う。
 - project は 3 つある。
   - `setup` は、compose のブローカーにログインした状態を `packages/e2e/.auth/` に保存する。
@@ -64,7 +65,6 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
   - Google カレンダーの spec が向ける calendarpit と gcalhold は、`E2E_CALENDARPIT_URL` と `E2E_GCALHOLD_URL` で変える。デフォルトは、それぞれ `http://localhost:4173` と `http://localhost:8085` である。
   - 職員の登録と停止の spec は、予定の API とブローカーを直に呼ぶ。向ける先は `E2E_SCHEDULE_URL`、`E2E_HYDRA_URL`、`E2E_BROKER_URL`、`E2E_BROKER_INTERNAL_URL` で変える。
     - デフォルトは、それぞれ `http://localhost:8080`、`http://localhost:4444`、`http://localhost:8100`、`http://localhost:8101` である。
-- 整形、lint、E2E の書き方の規則、型のチェックは、`pnpm --filter @buddy/e2e check` で流す。
 
 ## Test Data and Login
 
@@ -73,12 +73,12 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
   - リーダーで確認する spec は、`test.use({ storageState: LEADER_STATE })` で切り替える。
   - ログインのメールは、`packages/e2e/tests/fixtures/env.ts` の `LOGIN_EMAIL` と `LEADER.email` である。
   - ログインの状態を保存したアカウントを、並列の worker で共有しない。保存したファイルを書き合うためである。
-- ブローカーは、初回のログインで上流の IdP の `sub` を職員に結び付ける。E2E は、メールの @ の前の部分を上流の `sub` にして入る。
+- E2E は、メールの @ の前の部分を上流の `sub` にして入る。
   - ローカルで同じ職員に別の名前で入ったことがあれば、`docker compose down -v` でデータを消す。
 - 職員の登録、休職、退職の spec は、流すたびに新しいメールの職員を登録し、消さない。
   - 休職にした職員がログインの画面へ戻るのを待つ spec は、web が access token を取り直すまで、4 分ほどかかる。
 - Google カレンダーの取り込みの spec は、森にカレンダーを結び付けて取り込んだまま残す。同じ DB で 2 回目を流すと落ちるので、流し直すときは `docker compose down -v` で作り直す。
-- シードは空の DB にだけ適用される。森 健太や上野 渚で入れないときや、職員の一覧に佐藤 美咲がいないときは、シードを変える前の DB なので、`docker compose down -v` で作り直す。
+- 森 健太や上野 渚で入れないときや、職員の一覧に佐藤 美咲がいないときは、シードを変える前の DB なので、`docker compose down -v` で作り直す。
 
 ## Timeouts
 

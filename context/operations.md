@@ -7,7 +7,7 @@ status: stable
 
 # 基盤と運用
 
-基盤の構成、デプロイの手順、監視のツールは、インフラのリポジトリ（非公開）が持つ。buddy はデプロイ先を知らず、インフラとの約束は [buddy Design Doc のインフラとの約束](../docs/design/DesignDoc.md#インフラとの約束)（イメージ、環境変数、ヘルスチェック、マイグレーション）だけである。ここには、buddy の側が守る取り決めを書く。
+基盤の構成、デプロイの手順、監視のツールは、インフラのリポジトリ（非公開）が持つ。buddy はデプロイ先を知らず、インフラとの約束は [buddy Design Doc のインフラとの約束](../docs/design/DesignDoc.md#インフラとの約束)（イメージ、環境変数、ヘルスチェック、マイグレーション）だけである。
 
 ## Environments
 
@@ -18,11 +18,11 @@ status: stable
 | 本番 | 事業所の職員が使う | `main` |
 
 - 検証環境と本番環境は、インフラのリポジトリが作る。
-- `develop` から `main` へは、検証環境で確認した状態をまとめてマージする（[ADR-0003](../docs/adr/0003-branch-and-release.md)）。
+- `develop` から `main` へのマージとリリースの手順は、[CONTRIBUTING.md](../CONTRIBUTING.md) の Branches and Releases にある。
 
 ## Deployment Conditions
 
-- デプロイする単位は、アプリごとのイメージである。リリースは、`main` のコミットに付けたアプリごとのタグ（`<ディレクトリ>/vX.Y.Z`。`apps/web/v1.0.0`、`services/schedule/v1.0.0` など）で指す。
+- デプロイする単位は、アプリごとのイメージである。リリースは、`main` のコミットに付けたアプリごとのタグで指す。
 - マージする前に、変えたアプリのテストとチェック、`pnpm check:generated` が通っている（[テスト](testing.md)）。
 - API と画面を一緒に変えたときは、API を先にデプロイする。画面は、デプロイ済みの API が持つ項目だけを使う。
 - マイグレーションの適用のしかたと、ヘルスチェックの約束は、[buddy Design Doc のインフラとの約束](../docs/design/DesignDoc.md#インフラとの約束) にある。
@@ -42,6 +42,7 @@ status: stable
 ## Secrets
 
 - シークレットは、`OIDC_CLIENT_SECRET`、`SESSION_SECRET`、`DB_PASSWORD`、Google の Workload Identity Federation の外部アカウントの設定である。
+  - ブローカーでは、上流の IdP の client secret のファイル（`UPSTREAM_IDP_CLIENT_SECRETS_FILE`）と、token_hook のヘッダーの値（`TOKEN_HOOK_KEY`）もシークレットである。
   - Google のサービスアカウントのキーは作らず、どこにも置かない。API は、Application Default Credentials で認証し、事業所のサービスアカウントになりすます。
   - ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](../docs/adr/0012-google-calendar-facility-service-accounts.md)
 - 組織とサービスアカウントの対応のファイル（`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`）は、buddy のリポジトリに置かない。

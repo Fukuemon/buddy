@@ -44,14 +44,6 @@ status: stable
 | ローカル環境の全体の起動 | Docker Compose（PostgreSQL、Valkey、Ory Hydra、mock-oauth2-server、calendarpit） | `compose.yml` のイメージのタグ |
 | 実行のイメージ | distroless（API、ブローカー）、`node:24-slim`（web） | `services/*/Dockerfile` |
 
-- パッケージマネージャーが管理しないツールは、次の場所で固定する。
-  - mise（`mise.toml`）
-  - Go の `tool`（`go.mod`）
-  - Docker のイメージのタグ（`compose.yml`、`Dockerfile`）
-  - PostgreSQL のイメージのタグ（場所は「Upgrade Checks」にある）
-  - `services/schedule/README.md` の手順の、PostgreSQL と calendarpit のイメージのタグ
-  - CDN の URL（`docs/api/reference.js` の Scalar）
-  - CI の uv（`.github/workflows/docs-site.yml` の setup-uv の `version`）
 - 録画に要る `ffmpeg` と `ffprobe` は、どこでも固定していない。各自が入れる。
 
 ## Upgrade Checks

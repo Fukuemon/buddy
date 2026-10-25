@@ -1,18 +1,15 @@
 # @buddy/web
 
-予定の管理とレセプトの照合の画面。TanStack Start で作り、ツールチェーンに Vite+ を使う。  
-`VITE_API_MODE` を指定しなければ、データをローカルのフェイクの API（`src/api/fake/`）から取る。BFF を通して予定の API と照合の API を呼ぶように切り替えられる（「API を切り替える」）。
+予定の管理とレセプトの照合の画面。  
+`VITE_API_MODE` を指定しなければ、データをローカルのフェイクの API（`src/api/fake/`）から取る。
 
 ## Running
 
-リポジトリのルートで依存を入れてから、開発サーバーを起動する。
-
 ```sh
-pnpm install
 pnpm --filter @buddy/web dev
 ```
 
-開発サーバーは `http://localhost:3000` で待ち受ける。`/` は `/schedule` へリダイレクトする。  
+開発サーバーは `http://localhost:3000` で待ち受ける。  
 ルートの compose の web も 3000 を使うので、compose の全体を起動しているときは `docker compose stop web` で止めてから起動する。  
 フェイクの API はブラウザのメモリにデータを持つため、ページを読み直すと作った予定は消える。
 
@@ -47,7 +44,7 @@ pnpm --filter @buddy/web dev:msw
 | `pnpm --filter @buddy/web typecheck` | `tsc` の型のチェックが通る |
 | `pnpm --filter @buddy/web check` | 整形、lint、型のチェックを Vite+ でまとめて実行する |
 
-`vp check --fix` は整形を直す。整形と lint の設定は、ルートの `vite.config.ts` にある。
+`vp check --fix` は整形を直す。
 
 ## Storybook を開く
 
@@ -55,24 +52,9 @@ pnpm --filter @buddy/web dev:msw
 pnpm --filter @buddy/web storybook
 ```
 
-Storybook は `.storybook/vite.config.ts` で動く。アプリの `vite.config.ts` は TanStack Start の plugin を持ち、Storybook の中では動かないため、設定を分けている。
-
 ## Code Generation
 
-API の型は、各 API の openapi.yaml から openapi-typescript で生成し、`src/api/generated/` に置く。生成物はコミットする。
-
-| 生成物 | 元の定義 |
-| --- | --- |
-| `src/api/generated/schedule.ts` | `services/schedule/openapi.yaml`（予定の API） |
-| `src/api/generated/receipt.ts` | `services/receipt/openapi.yaml`（照合の API） |
-
-openapi.yaml が変わったら、生成し直す。
-
-```sh
-pnpm --filter @buddy/web generate:api
-```
-
-生成物は整形と lint の対象から外してある（ルートの `vite.config.ts` の `ignorePatterns`）。
+API の型は、各 API の openapi.yaml から生成し、`src/api/generated/` に置く。生成のコマンドは、[CONTRIBUTING.md](../../CONTRIBUTING.md) の Changing the API Definition にある。
 
 ## route を足す
 
@@ -84,16 +66,15 @@ route は `src/routes/` のファイルから TanStack Router が生成する。
 `bff` では、web が BFF として Hydra と認可コードフロー（PKCE つき）でやり取りする。職員の確認は、Hydra が呼ぶ ID ブローカー（`services/broker`）が行う。
 
 - `/auth/login` は、Hydra の認可のエンドポイントへリダイレクトする。`/auth/callback` は、トークンを取り、予定の API の `GET /v1/me` で職員と事業所を引いてセッションを作る。
-- セッションは Valkey に置き、ブラウザには署名つきの cookie でセッションの ID だけを渡す。cookie は HttpOnly、SameSite=Lax、Secure で、Secure は `SESSION_COOKIE_SECURE=false` のときだけ外す。
+- セッションは Valkey に置き、ブラウザには署名つきの cookie でセッションの ID だけを渡す。
+  - ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにする](../../docs/adr/0001-auth.md)
 - 画面の API の呼び出しは、server function（`src/api/bff/serverFns.ts`）を通る。サーバーは、画面が渡した事業所の代わりにセッションの事業所を使う。
 - access token の期限が 1 分を切ったら、refresh token で更新する。同じセッションの更新は、Valkey のキーで 1 本にまとめる。Hydra が refresh token を拒めばセッションを消し、画面はログインへ移る。
 - ほかのサイトのページからの POST は、TanStack Start の CSRF の middleware で 403 を返す（`src/start.ts`）。
 - 画面の引数は、server function で操作ごとの形を確認し、合わなければ 400 を返す。
 - 事業所に登録されていない職員は、`/auth/error?reason=forbidden` に案内を出す。
 
-サーバーが読む環境変数は、[全体の Design Doc の環境変数の表](../../docs/design/DesignDoc.md#環境変数) にある。ブラウザと web から届く Issuer の URL が違い、discovery の文書の認可のエンドポイントにブラウザが届かないことがある。そのときは、`OIDC_AUTHORIZATION_ENDPOINT` でブラウザをリダイレクトする認可の URL を渡す。ブラウザが Issuer の URL に届かないときは、`OIDC_END_SESSION_ENDPOINT` でログアウトのリダイレクト先の URL も渡す。
-
-`/healthz` はプロセスが動いていれば 200 を、`/readyz` は Valkey に届けば 200、届かなければ 503 を返す。
+サーバーが読む環境変数は、[全体の Design Doc の環境変数の表](../../docs/design/DesignDoc.md#環境変数) にある。
 
 ## 予定の API との変換
 
@@ -111,9 +92,8 @@ route は `src/routes/` のファイルから TanStack Router が生成する。
 
 照合の画面（`/receipt`）と結果の画面（`/receipt/result`）は `src/features/receipt/` にある。画面の仕様は `docs/screens/receipt-upload_照合/` と `docs/screens/receipt-result_照合の結果/` にある。
 
-- 照合の API は判定の JSON だけを返す。結果の表の印（❌、※、許容範囲）と CSV は、画面の `src/features/receipt/lib/reportCells.ts` が作る。
+- 結果の表の印（❌、※、許容範囲）と CSV は、`src/features/receipt/lib/reportCells.ts` が作る。
   - 印の付け方と値の引用は、照合の API の `tools/parity/report` と同じにし、同じ期待値のテストで確認する。行の区切りだけは、Excel で開くために CRLF にした（Go は LF）。
-- 照合の結果は保存せず、query の cache にだけ置く。結果の画面を読み直すと消える。
 - ファイルの合計の上限は、照合の API の `MAX_UPLOAD_BYTES` のデフォルト値（10 MiB）から multipart の分の 64 KiB を引いた値にする。server function の本文は、読む前に `src/start.ts` が 10 MiB を超えるものと長さの分からないものを 413 で拒む。
 - フェイクの API（`fake`）の照合は、入力によらず `src/api/fake/fakeReceiptApi.ts` の結果を返す。
 

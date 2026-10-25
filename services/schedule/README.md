@@ -1,12 +1,11 @@
 # 予定の API
 
 訪問看護の事業所の予定を管理する HTTP の API。  
-API の定義の正本は [openapi.yaml](openapi.yaml) である。サーバーのハンドラのインターフェイスと型、web のクライアントの型は、このファイルから生成する。
+API の定義の正本は [openapi.yaml](openapi.yaml) である。
 
 ## Setup
 
-Go、sqlc、golang-migrate、golangci-lint は、リポジトリのルートの `mise.toml` がバージョンを決める。  
-ルートで `mise install` を実行する。  
+ツールは、[CONTRIBUTING.md](../../CONTRIBUTING.md) の Setup の手順で入れる。  
 PostgreSQL 18 とテストは Docker を使う。
 
 ## Configuration
@@ -31,7 +30,7 @@ API とマイグレーションは、次の環境変数を読む。
 | `PORT` | いいえ | `8080` | API が待ち受けるポート |
 | `CORS_ALLOW_ORIGINS` | いいえ | 空 | カンマで区切ったオリジン。空なら CORS のヘッダーを返さない |
 | `LOG_LEVEL` | いいえ | `info` | `debug`、`info`、`warn`、`error` のいずれか |
-| `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` | いいえ | 空 | 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応（JSON）のパス。形は `[{"org_id": "...", "service_account": "..."}]` で、照合の API と同じ。空なら Google カレンダーを読み書きせず、カレンダーを読む操作は 503 を返し、予定の書き出しの処理を動かさない。対応の無い事業所のカレンダーの操作も 503 を返す。Application Default Credentials で認証し、事業所のサービスアカウントになりすます。書き出すときのスコープは `calendar.events` |
+| `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` | いいえ | 空 | 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応（JSON）のパス。形は `[{"org_id": "...", "service_account": "..."}]` で、照合の API と同じ。空なら Google カレンダーを読み書きせず、カレンダーを読む操作は 503 を返し、予定の書き出しの処理を動かさない。対応の無い事業所のカレンダーの操作も 503 を返す。書き出すときのスコープは `calendar.events` |
 | `GOOGLE_CALENDAR_ENDPOINT` | いいえ | 空 | Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit で試すためのもので、`GOOGLE_APPLICATION_CREDENTIALS` を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使い、渡さなければ認証をしない。`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` と一緒に渡す |
 | `GOOGLE_CALENDAR_EXPORT_ENABLED` | いいえ | `false` | `true` なら、予定を Google カレンダーに書き出す。`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` と一緒に渡す。`false` のときは書き出しの待ちを積まず、スコープは `calendar.readonly` で読む |
 | `GOOGLE_CALENDAR_EXPORT_INTERVAL` | いいえ | `30s` | 予定の書き出しの待ちを確認する間隔。Go の時間の書式で、`1s` 以上 |
@@ -129,7 +128,7 @@ compose の予定の API を実際の Google カレンダーに向けるとき�
 マイグレーションは `db/migrations` に golang-migrate の形式で置き、シードは `db/seed/seed.sql` に置く。  
 どちらもバイナリに埋め込むので、`cmd/migrate` は SQL のファイルがない環境でも動く。
 
-- `go run ./cmd/migrate up` は、未適用のマイグレーションをすべて適用する。事業所に属さず全ての環境で同じ値のマスタ（予定の種類、サービスコード、訪問の区分）も、マイグレーションが入れる。
+- `go run ./cmd/migrate up` は、未適用のマイグレーションをすべて適用する。
 - `go run ./cmd/migrate down [N]` は、マイグレーションを N 個戻す。N のデフォルトは 1。
 - `go run ./cmd/migrate seed` は、ダミーデータを入れる。事業所のレコードが既にあれば、何もせずに終わる。
 
@@ -140,8 +139,7 @@ migrate -path db/migrations \
   -database "pgx5://$DB_USER:$DB_PASSWORD@$DB_HOST:$DB_PORT/$DB_NAME" up
 ```
 
-新しいマイグレーションは `migrate create -ext sql -dir db/migrations -seq <名前>` で作る。  
-シードには実在の事業所、人、連絡先を入れず、メールは `example.com` を使う。
+新しいマイグレーションは `migrate create -ext sql -dir db/migrations -seq <名前>` で作る。
 
 ## Tests and Checks
 
@@ -163,15 +161,11 @@ golangci-lint run
 
 ### API の定義を変えたとき
 
-oapi-codegen が、openapi.yaml から gin の strict server のインターフェイスと型を `internal/httpapi/openapi/openapi.gen.go` に生成する。  
-oapi-codegen は `go.mod` の `tool` でバージョンを固定し、`go tool` で実行する。設定は [oapi-codegen.yaml](oapi-codegen.yaml) にある。  
-openapi.yaml を変えたら、生成し直し、生成物も同じコミットに入れる。
+openapi.yaml を変えたら、生成し直し、生成物も同じコミットに入れる。画面の型の生成と生成物の確認は、[CONTRIBUTING.md](../../CONTRIBUTING.md) の Changing the API Definition にある。
 
 ```sh
 go generate ./...
 ```
-
-画面の型も同じ openapi.yaml から生成する。生成物がそろっているかは、リポジトリのルートの `pnpm check:generated` で確認する（[CONTRIBUTING.md](../../CONTRIBUTING.md)）。
 
 ハンドラは `internal/httpapi` の `server` に、生成した `openapi.StrictServerInterface` のメソッドとして書く。
 
@@ -208,16 +202,9 @@ docker build -f Dockerfile -t schedule:local ../..
 イメージは distroless の上に `api` と `migrate` の 2 つのバイナリを持つ。エントリポイントは `api` である。  
 マイグレーションは `--entrypoint /usr/local/bin/migrate` を指定して実行する。
 
-## 認証
-
-認証から事業所の確認までの流れは、[DesignDoc.md](DesignDoc.md) の「認証から事業所の確認までの流れ」にある。`GET /healthz` と `GET /readyz` は認証を求めない。`/readyz` は、PostgreSQL に届かなければ 503 を返す。
-
-## コードの構成
-
-パッケージごとに持つものは [DesignDoc.md](DesignDoc.md) の「コードの構成」に、依存してよい向きは [コードベースの構造](../../context/codebase.md) にある。
-
 ## Documentation
 
 - [DesignDoc.md](DesignDoc.md): コードの構成、テーブルの構成、認証から事業所の確認までの流れ、繰り返しの予定
+- [コードベースの構造](../../context/codebase.md): パッケージの間の依存してよい向き
 - [全体の Design Doc](../../docs/design/DesignDoc.md): 画面と 2 つの API の責務、インフラとの約束
 - [ADR-0002](../../docs/adr/0002-pbac.md): 権限を役職のデフォルトと職員ごとの上書きで持つ判断
