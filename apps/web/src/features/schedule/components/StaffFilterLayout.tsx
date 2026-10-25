@@ -1,7 +1,7 @@
 import { Drawer } from '@buddy/ui'
 import { useId, useState, type ReactNode } from 'react'
 
-import { useIsDesktop } from '../lib/useIsDesktop'
+import { useIsDesktop } from '#/components/site/useIsDesktop'
 import type { StaffFilterToggle } from './ScheduleCalendarToolbar'
 
 export type StaffFilterLayoutProps = {

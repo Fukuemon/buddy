@@ -15,62 +15,74 @@
         <div class="screen-body">
           <header class="wf-site-header">
             <div class="wf-site-header__brand">
+              <span class="wf-btn wf-btn--icon wf-site-menu" aria-label="メニュー" data-open="site-nav" data-m="11" data-testid="site-nav-open"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z" fill="currentColor" /></svg></span>
               <strong>buddy</strong>
-              <nav data-m="1" data-testid="site-nav">
-                <span data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html">予定</span>
-                <span aria-current="page" data-go="../../receipt-upload_照合/mocks/01-initial.html">照合</span>
-              </nav>
             </div>
             <div class="wf-site-header__viewer" data-testid="viewer-menu">
               <span class="wf-text wf-text--s" data-m="2"></span>
               <span class="wf-btn" data-m="3" data-testid="viewer-logout">ログアウト</span>
             </div>
           </header>
-          <main class="rc-main" data-testid="receipt-result">
-            <div class="rc-title">
-              <div data-m="4">
-                <h1 class="wf-heading">照合の結果</h1>
-                <span class="wf-label">予定: 2024 年 4 月の Google カレンダー</span>
+          <div class="wf-site-body">
+            <div class="wf-site-drawer" role="dialog" aria-label="メニュー" data-testid="site-nav-drawer" data-panel="site-nav" data-panel-modal>
+              <div class="wf-site-drawer__head">
+                <strong>メニュー</strong>
+                <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-escape data-close="site-nav" data-m="12" data-testid="site-nav-close"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
               </div>
-              <div class="rc-actions">
-                <span class="wf-btn" data-m="5" data-go="../../receipt-upload_照合/mocks/01-initial.html">別のファイルで照合する</span>
-                <span class="wf-btn wf-btn--primary" data-m="6" data-testid="receipt-download">CSV をダウンロード</span>
-              </div>
+              <nav class="wf-site-nav" aria-label="画面" data-m="1" data-testid="site-nav">
+                <span class="wf-site-nav__item" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html" data-testid="site-nav-schedule"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z" fill="currentColor" /></svg><span>予定</span></span>
+                <span class="wf-site-nav__item" aria-current="page" data-go="../../receipt-upload_照合/mocks/01-initial.html" data-testid="site-nav-receipt"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M160-120q-33 0-56.5-23.5T80-200v-560q0-33 23.5-56.5T160-840h640q33 0 56.5 23.5T880-760v560q0 33-23.5 56.5T800-120H160Zm0-80h640v-560H160v560Zm40-80h200v-80H200v80Zm382-80 198-198-57-57-141 142-57-57-56 57 113 113Zm-382-80h200v-80H200v80Zm0-160h200v-80H200v80Z" fill="currentColor" /></svg><span>照合</span></span>
+              </nav>
             </div>
-            <dl class="rc-summary" data-m="7" data-testid="receipt-summary">
-              <div><dt class="wf-label">不整合データ</dt><dd data-testid="receipt-summary-mismatch">3 件</dd></div>
-              <div><dt class="wf-label">予定のみ</dt><dd data-testid="receipt-summary-schedule_only">1 件</dd></div>
-              <div><dt class="wf-label">実績のみ</dt><dd data-testid="receipt-summary-visit_only">1 件</dd></div>
-              <div><dt class="wf-label">整合データ</dt><dd data-testid="receipt-summary-match">3 件</dd></div>
-            </dl>
-            <div class="rc-table-wrap" data-m="8" data-testid="receipt-result-table">
-              <table class="wf-table">
-                <thead>
-                  <tr>
-                    <th>訪問日</th><th>利用者名</th><th>主訪問者</th><th>サービス内容_予定</th><th>開始時間_予定</th><th>終了時間_予定</th><th>提供時間_予定</th><th>サービス内容_実績</th><th>開始時間_実績</th><th>終了時間_実績</th><th>提供時間_実績</th><th>加算</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr class="rc-sep" data-m="9" data-testid="receipt-category-mismatch"><th colspan="12"><span class="rc-sep-label" data-testid="receipt-category-label-mismatch">不整合データ（3 件）</span></th></tr>
-                  <tr data-m="10">
-                    <td>2024-04-01</td><td><span class="wf-text wf-text--s"></span></td><td><span class="wf-text wf-text--s"></span></td><td>訪看I２</td><td class="rc-ng">10:00 ❌</td><td>10:29</td><td class="rc-ng">29 ❌</td><td>訪看I２</td><td class="rc-ng">10:05 ❌</td><td class="rc-ng">10:40 ❌ (20~29)</td><td class="rc-ng">35 ❌ ❌ (20~29)</td><td class="rc-note">緊急 ※</td>
-                  </tr>
-                  <tr class="rc-sep" data-m="9" data-testid="receipt-category-schedule_only"><th colspan="12"><span class="rc-sep-label" data-testid="receipt-category-label-schedule_only">予定のみ（1 件）</span></th></tr>
-                  <tr data-m="10">
-                    <td>2024-04-02</td><td><span class="wf-text wf-text--s"></span></td><td><span class="wf-text wf-text--s"></span></td><td>訪看I４</td><td>09:00</td><td>09:39</td><td>39</td><td>データなし</td><td>データなし</td><td>データなし</td><td>データなし</td><td>データなし</td>
-                  </tr>
-                  <tr class="rc-sep" data-m="9" data-testid="receipt-category-visit_only"><th colspan="12"><span class="rc-sep-label" data-testid="receipt-category-label-visit_only">実績のみ（1 件）</span></th></tr>
-                  <tr data-m="10">
-                    <td>2024-04-03</td><td><span class="wf-text wf-text--s"></span></td><td><span class="wf-text wf-text--s"></span></td><td>データなし</td><td>データなし</td><td>データなし</td><td>データなし</td><td>訪看I３</td><td>09:00</td><td>09:44</td><td>44</td><td>通常</td>
-                  </tr>
-                  <tr class="rc-sep" data-m="9" data-testid="receipt-category-match"><th colspan="12"><span class="rc-sep-label" data-testid="receipt-category-label-match">整合データ（3 件）</span></th></tr>
-                  <tr data-m="10">
-                    <td>2024-04-01</td><td><span class="wf-text wf-text--s"></span></td><td><span class="wf-text wf-text--s"></span></td><td>医</td><td>13:00</td><td class="rc-note">14:00 ※</td><td class="rc-note">60 ※ (30~90)</td><td>基本療養費(I)</td><td>13:00</td><td class="rc-note">13:50 ※</td><td class="rc-note">50 ※ (30~90)</td><td>通常</td>
-                  </tr>
-                </tbody>
-              </table>
+            <div class="wf-overlay wf-site-drawer-overlay" tabindex="-1" data-close="site-nav"></div>
+            <div class="wf-site-main">
+              <main class="rc-main" data-testid="receipt-result">
+                <div class="rc-title">
+                  <div data-m="4">
+                    <h1 class="wf-heading">照合の結果</h1>
+                    <span class="wf-label">予定: 2024 年 4 月の Google カレンダー</span>
+                  </div>
+                  <div class="rc-actions">
+                    <span class="wf-btn" data-m="5" data-go="../../receipt-upload_照合/mocks/01-initial.html">別のファイルで照合する</span>
+                    <span class="wf-btn wf-btn--primary" data-m="6" data-testid="receipt-download">CSV をダウンロード</span>
+                  </div>
+                </div>
+                <dl class="rc-summary" data-m="7" data-testid="receipt-summary">
+                  <div><dt class="wf-label">不整合データ</dt><dd data-testid="receipt-summary-mismatch">3 件</dd></div>
+                  <div><dt class="wf-label">予定のみ</dt><dd data-testid="receipt-summary-schedule_only">1 件</dd></div>
+                  <div><dt class="wf-label">実績のみ</dt><dd data-testid="receipt-summary-visit_only">1 件</dd></div>
+                  <div><dt class="wf-label">整合データ</dt><dd data-testid="receipt-summary-match">3 件</dd></div>
+                </dl>
+                <div class="rc-table-wrap" data-m="8" data-testid="receipt-result-table">
+                  <table class="wf-table">
+                    <thead>
+                      <tr>
+                        <th>訪問日</th><th>利用者名</th><th>主訪問者</th><th>サービス内容_予定</th><th>開始時間_予定</th><th>終了時間_予定</th><th>提供時間_予定</th><th>サービス内容_実績</th><th>開始時間_実績</th><th>終了時間_実績</th><th>提供時間_実績</th><th>加算</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr class="rc-sep" data-m="9" data-testid="receipt-category-mismatch"><th colspan="12"><span class="rc-sep-label" data-testid="receipt-category-label-mismatch">不整合データ（3 件）</span></th></tr>
+                      <tr data-m="10">
+                        <td>2024-04-01</td><td><span class="wf-text wf-text--s"></span></td><td><span class="wf-text wf-text--s"></span></td><td>訪看I２</td><td class="rc-ng">10:00 ❌</td><td>10:29</td><td class="rc-ng">29 ❌</td><td>訪看I２</td><td class="rc-ng">10:05 ❌</td><td class="rc-ng">10:40 ❌ (20~29)</td><td class="rc-ng">35 ❌ ❌ (20~29)</td><td class="rc-note">緊急 ※</td>
+                      </tr>
+                      <tr class="rc-sep" data-m="9" data-testid="receipt-category-schedule_only"><th colspan="12"><span class="rc-sep-label" data-testid="receipt-category-label-schedule_only">予定のみ（1 件）</span></th></tr>
+                      <tr data-m="10">
+                        <td>2024-04-02</td><td><span class="wf-text wf-text--s"></span></td><td><span class="wf-text wf-text--s"></span></td><td>訪看I４</td><td>09:00</td><td>09:39</td><td>39</td><td>データなし</td><td>データなし</td><td>データなし</td><td>データなし</td><td>データなし</td>
+                      </tr>
+                      <tr class="rc-sep" data-m="9" data-testid="receipt-category-visit_only"><th colspan="12"><span class="rc-sep-label" data-testid="receipt-category-label-visit_only">実績のみ（1 件）</span></th></tr>
+                      <tr data-m="10">
+                        <td>2024-04-03</td><td><span class="wf-text wf-text--s"></span></td><td><span class="wf-text wf-text--s"></span></td><td>データなし</td><td>データなし</td><td>データなし</td><td>データなし</td><td>訪看I３</td><td>09:00</td><td>09:44</td><td>44</td><td>通常</td>
+                      </tr>
+                      <tr class="rc-sep" data-m="9" data-testid="receipt-category-match"><th colspan="12"><span class="rc-sep-label" data-testid="receipt-category-label-match">整合データ（3 件）</span></th></tr>
+                      <tr data-m="10">
+                        <td>2024-04-01</td><td><span class="wf-text wf-text--s"></span></td><td><span class="wf-text wf-text--s"></span></td><td>医</td><td>13:00</td><td class="rc-note">14:00 ※</td><td class="rc-note">60 ※ (30~90)</td><td>基本療養費(I)</td><td>13:00</td><td class="rc-note">13:50 ※</td><td class="rc-note">50 ※ (30~90)</td><td>通常</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </main>
             </div>
-          </main>
+          </div>
         </div>
       </div>
       <div class="markers"></div>

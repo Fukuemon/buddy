@@ -5,7 +5,7 @@ import { SITE_NAV_ITEMS, SiteNav, siteNavItems } from './SiteNav'
 const meta = {
   title: '画面/Common/SiteNav',
   component: SiteNav,
-  args: { items: SITE_NAV_ITEMS, current: '/schedule' },
+  args: { items: SITE_NAV_ITEMS, current: '/schedule', layout: 'rail' },
 } satisfies Meta<typeof SiteNav>
 
 export default meta
@@ -17,3 +17,9 @@ export const Receipt: Story = { args: { current: '/receipt' } }
 
 /** 職員の管理の権限を持つ職員が、予定の取り込みかカレンダーの連携を開いているとき。 */
 export const Import: Story = { args: { items: siteNavItems(true), current: '/schedule/import' } }
+
+/** 幅 768px 未満のドロワーの中の並び。 */
+export const List: Story = { args: { items: siteNavItems(true), layout: 'list' } }
+
+/** 職員の管理の権限を持つ職員が、確認が必要な予定を開いているとき。 */
+export const Review: Story = { args: { items: siteNavItems(true), current: '/schedule/review' } }

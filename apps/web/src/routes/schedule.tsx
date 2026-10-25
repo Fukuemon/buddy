@@ -1,6 +1,6 @@
 import { Outlet, createFileRoute, stripSearchParams } from '@tanstack/react-router'
 
-import { SiteHeaderContainer } from '#/components/site/SiteHeaderContainer'
+import { SiteLayoutContainer } from '#/components/site/SiteLayoutContainer'
 import { SchedulePageLayout } from '#/features/schedule/components/SchedulePageLayout'
 import {
   scheduleSearchDefaults,
@@ -18,10 +18,9 @@ export const Route = createFileRoute('/schedule')({
 
 function SchedulePage() {
   return (
-    <div className="flex h-dvh flex-col">
-      <SiteHeaderContainer current="/schedule" />
+    <SiteLayoutContainer current="/schedule">
       <SchedulePageLayout />
       <Outlet />
-    </div>
+    </SiteLayoutContainer>
   )
 }

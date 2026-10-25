@@ -440,7 +440,7 @@ body {
   background: var(--wf-fill);
 }
 
-/* サイトのヘッダー（SiteHeader）。左にサイトの名前とナビゲーション、右にログインした職員を置く */
+/* サイトのヘッダー（SiteHeader）。左にメニューのボタンとサイトの名前、右にログインした職員を置く */
 .wf-site-header {
   display: flex;
   align-items: center;
@@ -454,17 +454,7 @@ body {
 .wf-site-header__brand {
   display: flex;
   align-items: center;
-}
-
-.wf-site-header nav {
-  display: flex;
-  gap: 16px;
-  margin-left: 32px;
-}
-
-.wf-site-header [aria-current='page'] {
-  font-weight: 700;
-  text-decoration: underline;
+  gap: 8px;
 }
 
 .wf-site-header__viewer {
@@ -473,20 +463,116 @@ body {
   gap: 12px;
 }
 
+/* 幅 768px 以上では、メニューのボタンとドロワーの枠を出さない */
+.wf-site-menu,
+.wf-site-drawer__head,
+.wf-site-drawer-overlay {
+  display: none;
+}
+
+/* ヘッダーの下を、左端のナビゲーションと画面の中身に分ける（SiteLayout） */
+.wf-site-body {
+  display: flex;
+}
+
+.wf-site-main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 幅 768px 以上では、ドロワーを左端の縦のナビゲーションとして常に出す */
+.wf-site-drawer {
+  flex-shrink: 0;
+  padding: 8px;
+  border-right: 1px solid var(--wf-line-soft);
+  background: var(--wf-surface);
+}
+
+/* 画面の間を移るリンクの並び（SiteNav）。幅 768px 以上ではアイコンの下に名前を置く */
+.wf-site-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wf-site-nav__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 72px;
+  padding: 8px 0;
+  border-radius: var(--wf-radius);
+  color: var(--wf-muted);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.wf-site-nav__item[aria-current='page'] {
+  background: var(--wf-primary-surface);
+  color: var(--wf-primary);
+}
+
 @container screen (width < 768px) {
   .wf-site-header {
-    padding: 0 16px;
-  }
-
-  /* 職員の管理の権限を持つ職員の 4 つのリンクを、幅 390px でも折り返さずに並べる */
-  .wf-site-header nav {
-    gap: 12px;
-    margin-left: 16px;
-    white-space: nowrap;
+    padding: 0 8px;
   }
 
   .wf-site-header__viewer .wf-text {
     display: none;
+  }
+
+  .wf-site-menu {
+    display: inline-flex;
+    width: 44px;
+    height: 44px;
+  }
+
+  .wf-site-drawer {
+    display: none;
+  }
+
+  /* ドロワーと覆いは、画面の上端から下端まで届かせる。--mock-height は mock.js が .screen に置くデバイスの高さ。2px は枠線 */
+  .wf-site-drawer.is-open {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    width: 320px;
+    min-height: calc(var(--mock-height, 844px) - 2px);
+    padding: 0;
+    border-right: 0;
+    box-shadow: 0 0 0 1px var(--wf-line);
+  }
+
+  .wf-site-drawer.is-open + .wf-site-drawer-overlay {
+    z-index: 3;
+    display: block;
+    min-height: calc(var(--mock-height, 844px) - 2px);
+  }
+
+  .wf-site-drawer__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 12px 12px 16px;
+    border-bottom: 1px solid var(--wf-line-soft);
+  }
+
+  .wf-site-nav {
+    gap: 4px;
+    padding: 8px;
+  }
+
+  /* ドロワーの中では、アイコンの右に名前を置く */
+  .wf-site-nav__item {
+    flex-direction: row;
+    gap: 16px;
+    width: auto;
+    height: 48px;
+    padding: 0 16px;
   }
 }
 

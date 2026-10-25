@@ -120,7 +120,7 @@ docs/screens/
 - body の末尾で `../../_common/mock.js`、`../../_common/interact.js` をこの順に読む。ほかの script は書かない。
 - head で `../../_common/mock.css`、`../../_common/tokens.css`、`../../_common/wireframe.css`、`<画面 ID>.css` をこの順に読む。
 - `body` の `data-view` は最初に見せるデバイスにする。表示の幅が 600px 未満のとき（スマートフォンで仕様書を読むとき）は、`data-view` によらずモバイルで描く。`mobile`（390px）、`tablet`（768px）、`tablet-wide`（1024px）、`desktop`（1440px）から選ぶ。値は `mock.js` の `VIEWS` にだけ書く。
-- サイトのヘッダーとナビゲーション（`SiteHeader`、`SiteNav`）は、その画面の構成要素にするときだけ描く。
+- サイトのヘッダーとナビゲーション（`SiteHeader`、`SiteNav`）は、その画面の構成要素にするときだけ描く。ヘッダーの後ろの `wf-site-body` に、ナビゲーションを入れた `wf-site-drawer`、覆いの `wf-site-drawer-overlay`、画面の中身の `wf-site-main` を順に置く。`wf-site-drawer` は、幅 768px 以上では左端の縦の並びになり、未満ではメニューのドロワーになる。
 
 ### 構成番号と data-testid
 
