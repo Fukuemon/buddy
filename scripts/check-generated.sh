@@ -8,7 +8,7 @@ set -eu
 (cd services/receipt && go generate ./...)
 (cd services/schedule && go generate ./... && sqlc generate)
 pnpm --filter @buddy/web generate:api
-node scripts/build-mock-tokens.mjs
+pnpm --silent build:tokens
 node scripts/build-broker-tokens.mjs
 
 set -- \

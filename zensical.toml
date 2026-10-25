@@ -19,7 +19,7 @@ screens/_template/
 """
 # 画面仕様書に埋め込んだモックの iframe の高さを、中身に合わせる
 extra_javascript = ["screens/_common/embed-mock.js"]
-# サイトの色を画面と同じデザインシステムのトークンにする。tokens.css は scripts/build-mock-tokens.mjs の生成物
+# サイトの色を画面と同じデザインシステムのトークンにする。tokens.css は `pnpm build:tokens`（`scripts/build-static-tokens.mjs`）の生成物
 extra_css = ["screens/_common/tokens.css", "stylesheets/extra.css"]
 nav = [
   { "トップ" = "index.md" },
@@ -88,6 +88,7 @@ nav = [
     "adr/0016-id-broker-hydra.md",
     "adr/0017-identity-boundary.md",
     "adr/0018-staff-leave-and-retirement.md",
+    "adr/0019-docs-site-publish-and-contrast-check.md",
   ] },
 ]
 

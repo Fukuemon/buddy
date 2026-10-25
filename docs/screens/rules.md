@@ -83,7 +83,7 @@ docs/screens/
 
 - 4 つの欄は、デフォルト値（常に活性、常に表示）でも省かない。
 - カタログの欄のリンクの先は、画面の文言とデータで要素を見せる、apps/web のコンポーネントの story にする。要素を描く apps/web のコンポーネントのうち、story があり、その story に要素が出るいちばん小さいものを選ぶ。story は、仕様書の状態に近いものを選ぶ。apps/web のどの story にも要素が出ないときだけ、packages/ui のコンポーネントの story を選ぶ。route に直に書いた要素のように、どの story にも出なければ欄ごと省く。
-  - リンクは本番のカタログ（`https://buddy-docs.emon-apps.workers.dev/storybook/`）の URL で書く。ローカルの `zensical serve` にはカタログが無く、`/storybook/` で始まるリンクはリンクのチェックがローカルのファイルとして探して失敗するためである。pull request のプレビューから開くと、develop のカタログが開く。
+  - リンクは本番のカタログ（`https://buddy-docs.emon-apps.workers.dev/storybook/`）の URL で書く。ローカルの `zensical serve` にはカタログが無く、`/storybook/` で始まるリンクはリンクのチェックがローカルのファイルとして探して失敗するためである。
   - story の候補は、`rg -n "^  title:|^export const" -g '*.stories.tsx' apps/web/src packages/ui/src` で探す。
   - story の ID は、Storybook の画面の URL の `path=/story/` の後ろの値である。story の `title` と export の名前から決まる。日本語は、ブラウザの URL のように `%` でエンコードせずに書く。
     - `pnpm --filter @buddy/web storybook` で開いた URL で確認する。
@@ -137,7 +137,7 @@ docs/screens/
 - スクロールする場所は作らず、画面の高さは中身に合わせる。ただし、実装が横に送る表は、モックでも横に送ってよい。
 - ダイアログ、覆い、トーストは、`.screen` の中に `position: absolute` で置く。`position: fixed` は使わない。
 - 色と角丸は `wireframe.css` の変数（`--wf-*`）で書く。`--wf-*` は、`tokens.css` の buddy の意味のトークン（`packages/ui/src/tokens/semantic.css` と同じ値）に当ててある。足りない色は、意味のトークンを `--wf-*` に当てて足す。DADS の基本のトークンと 16 進の色は、画面の CSS に直に書かない（`wireframe.css` の `:root` で角丸と書体に当てるときだけ使う）。
-- `tokens.css` は `node scripts/build-mock-tokens.mjs` が作る生成物である。意味のトークンを変えたら作り直す（`pnpm check:generated` が食い違いを見つける）。
+- `tokens.css` は `pnpm build:tokens`（`scripts/build-static-tokens.mjs`）が作る生成物である。意味のトークンを変えたら作り直す（`pnpm check:generated` が食い違いを見つける）。
 - 画面だけの見た目は `mocks/<画面 ID>.css` に書く。2 つ以上の画面で使う見た目は `_common/wireframe.css` に移す。
 
 ### 禁止

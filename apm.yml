@@ -8,8 +8,8 @@ dependencies:
     - Fukuemon/agent-harness/packages/verification#verification-v0.2.0
     - Fukuemon/agent-harness/packages/e2e#e2e-v0.1.1
     - Fukuemon/agent-harness/packages/screens#screens-v0.1.0
-    - Fukuemon/agent-harness/packages/design-system#design-system-v0.1.0
-    - Fukuemon/agent-harness/packages/docs-site#docs-site-v0.1.0
+    - Fukuemon/agent-harness/packages/design-system#design-system-v0.1.1
+    - Fukuemon/agent-harness/packages/docs-site#docs-site-v0.1.1
 lifecycle:
   post-install:
   - type: command

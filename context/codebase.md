@@ -56,6 +56,9 @@ status: stable
   - テストと story は対象の隣に置く（コロケーション）。
 - web の API の呼び出しは `src/api/` に置く。生成した型は `generated/` に置く。`VITE_API_MODE` で、ブラウザのメモリで動くフェイク（`fake/`）と、BFF の server function を呼ぶ実装（`bff/`）を切り替える。`http/` は、サーバーから API を呼ぶ実装で、`src/server/` から使う。サーバーだけで動く処理は `src/server/` に置く。
 - `packages/ui` へ移すのは、業務の名前を持たず、2 つ以上の画面で同じ形で使うコンポーネントだけにする。移すときは Base か Case かを [DESIGN.md](../packages/ui/DESIGN.md) の基準で決める。
+- デザインシステムの文書は `packages/ui/DESIGN.md` にある。画面とコンポーネントのコード（`apps/web/src`、`packages/ui/src`）を書く前に読む。
+  - トークンの基本の段は `@digital-go-jp/design-tokens` の `dist/tokens.css` にある。
+  - 意味の段は `packages/ui/src/tokens/semantic.css`、テーマの段は `packages/ui/src/tokens/theme.css` にある。
 - `services/schedule` のハンドラは `internal/httpapi` に、生成したインターフェイスのメソッドとして書く。クエリは `db/queries`、マイグレーションは `db/migrations`、シードは `db/seed` に置く。
 - `services/receipt` に照合の段を足すときは、段ごとに `internal/` の下にパッケージを作り、`check` でつなぐ。
 - E2E のコードの配置先は、[E2E のテストのコードの設計](../packages/e2e/DesignDoc.md) の判断の流れに従う。

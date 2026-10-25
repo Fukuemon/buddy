@@ -7,11 +7,8 @@ import { playwright } from 'vite-plus/test/browser-playwright'
 export default defineConfig({
   plugins: [tailwindcss(), viteReact()],
   test: {
+    // トークンのコントラストは、ルートの pnpm check:contrast（scripts/check-contrast.mjs）が計算する
     projects: [
-      {
-        extends: true,
-        test: { name: 'unit', environment: 'node', include: ['src/**/*.test.ts'] },
-      },
       {
         // 押せる領域の大きさとフォーカスの移り方は、描画とブラウザのキーの操作がないと確認できない。
         extends: true,

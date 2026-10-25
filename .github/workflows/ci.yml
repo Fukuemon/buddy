@@ -34,6 +34,7 @@ jobs:
       - run: pnpm --filter @buddy/ui exec playwright install --with-deps chromium
       - run: pnpm lint:openapi
       - run: pnpm check:screens
+      - run: pnpm check:contrast
       - run: pnpm -r check
       - run: pnpm -r typecheck
       - run: pnpm -r --filter '!@buddy/e2e' test

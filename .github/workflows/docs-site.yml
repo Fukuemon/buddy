@@ -1,8 +1,15 @@
 # ドキュメントサイトと、Storybook のカタログと、表の ER 図を、1 つの Worker（buddy-docs）として Cloudflare に出す。
-# 手順と Access の設定は apps/docs-site/README.md にある。
-# pull request ではプレビューを出して URL をコメントし、develop に入ったら本番に出す。
-# フォークと Dependabot の pull request には GitHub が secret を渡さないので、ビルドだけを流し、プレビューとコメントを飛ばす。
+# agent-harness のパッケージ docs-site のテンプレート（cloudflare-workers）を元にした。手順と Access の設定は apps/docs-site/README.md にある。
+# pull request ではサイトを組み立てるだけで、プレビューは出さない。プレビューは pull request のコードへトークンを渡すことになる（ADR-0019）。
+# develop に入ったら本番に出し、Access の保護を確認する。
+# 並べるものは context/project.yml の docs_site.parts にあり、pnpm site:build（scripts/build-docs-site.mjs）が並べる。
 # 文書の元は docs/ のほか、services/ と packages/ の Design Doc にも散るので、変えた場所で絞らない。
+#
+# 前提
+# - environment docs-site: デプロイできるブランチを develop だけに限り、Secrets に CLOUDFLARE_API_TOKEN（Worker buddy-docs の Editor だけのトークン）を置く。
+#   ジョブの if だけでは、if を外したワークフローを別のブランチへ push してトークンを読める。environment のブランチの制限は、ワークフローを書き換えても外せない。
+# - environment の Variables: CLOUDFLARE_ACCOUNT_ID、DOCS_SITE_URL（本番の URL）、DOCS_SITE_MARKER（トップのページにだけある文字列）、
+#   DOCS_SITE_AUTH_HOST（Access の認証の画面のホスト。team のドメインの親の cloudflareaccess.com を渡す。スクリプトはサブドメインも認める）
 
 name: ドキュメントサイト
 
@@ -10,24 +17,26 @@ on:
   pull_request:
   push:
     branches: [develop]
-
-concurrency:
-  group: docs-site-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_dispatch:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
-  docs-site:
+  # 公開しない実行（pull request と、develop 以外からの手動の実行）で、組み立てが通るかだけを確認する。secret は読まない
+  build:
+    if: github.ref_name != github.event.repository.default_branch
     runs-on: ${{ fromJSON(vars.RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 20
+    concurrency:
+      group: docs-site-build-${{ github.ref }}
+      cancel-in-progress: true
     env:
       CF_SEND_TELEMETRY: 'false'
-      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -36,43 +45,51 @@ jobs:
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           version: '0.13'
-      # プレビューの URL のコメントに gh を使う。GitHub のランナーには入っているが、self-hosted runner には無い
-      - uses: jdx/mise-action@8418fedb1110381a0d3ba51a7a415d7c1b884550 # v5.2.2
-        if: runner.environment == 'self-hosted'
-        with:
-          install_args: aqua:cli/cli
-          cache: false
       - run: pnpm install --frozen-lockfile
       - run: pnpm site:build
 
-      - name: プレビューを出す
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
-        id: preview
-        working-directory: apps/docs-site
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          pnpm run deploy:preview "pr-${{ github.event.pull_request.number }}" | tee preview.log
-          url=$(grep -oE 'https://[A-Za-z0-9.-]+\.workers\.dev' preview.log | head -1)
-          test -n "$url"
-          echo "url=$url" >> "$GITHUB_OUTPUT"
-
-      - name: プレビューの URL を pull request にコメントする
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh pr comment "${{ github.event.pull_request.number }}" --edit-last --create-if-none --body "ドキュメントサイトのプレビュー
-
-          - ドキュメントサイト: ${{ steps.preview.outputs.url }}/
-          - カタログ: ${{ steps.preview.outputs.url }}/storybook/
-          - ER 図: ${{ steps.preview.outputs.url }}/erd/
-
-          Cloudflare Access で許可した人だけが開ける。コミット ${{ github.event.pull_request.head.sha }}"
+  publish:
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ${{ fromJSON(vars.RUNS_ON || '"ubuntu-latest"') }}
+    timeout-minutes: 20
+    environment: docs-site
+    # 本番への公開は途中で止めず、順に流す
+    concurrency:
+      group: docs-site-publish
+      cancel-in-progress: false
+    env:
+      CF_SEND_TELEMETRY: 'false'
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: ${{ runner.environment == 'github-hosted' && 'pnpm' || '' }}
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.13'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm site:build
 
       - name: 本番に出す
-        if: github.event_name == 'push'
         working-directory: apps/docs-site
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: pnpm run deploy:production
+
+      # 値を run に直接埋めると、シェルが $ や引用符を解釈するので、環境変数で渡す
+      # カタログと ER 図は、それぞれの中身にだけあり、Access のログインの画面に出ない文字列で確認する。
+      # サイトの名前、Worker の名前、storybook はログインの画面にも出る
+      - name: Access の保護を確認する
+        env:
+          DOCS_SITE_URL: ${{ vars.DOCS_SITE_URL }}
+          DOCS_SITE_MARKER: ${{ vars.DOCS_SITE_MARKER }}
+          DOCS_SITE_AUTH_HOST: ${{ vars.DOCS_SITE_AUTH_HOST }}
+        run: |
+          node scripts/check-docs-site-protection.mjs "$DOCS_SITE_URL" "$DOCS_SITE_MARKER" "$DOCS_SITE_AUTH_HOST"
+          node scripts/check-docs-site-protection.mjs "${DOCS_SITE_URL%/}/storybook/" "sb-addons" "$DOCS_SITE_AUTH_HOST"
+          node scripts/check-docs-site-protection.mjs "${DOCS_SITE_URL%/}/erd/" "Liam ERD" "$DOCS_SITE_AUTH_HOST"

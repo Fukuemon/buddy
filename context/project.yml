@@ -21,3 +21,25 @@ screens:
   tokens_css: docs/screens/_common/tokens.css
   catalog_url: https://buddy-docs.emon-apps.workers.dev/storybook/
   e2e_dir: packages/e2e/tests
+
+# パッケージ design-system が読む。tokens_css と catalog_url は、screens の同じ名前のキーと同じ値にする。片方を変えたら、もう片方も直す
+design_system:
+  tokens_css: docs/screens/_common/tokens.css
+  catalog_url: https://buddy-docs.emon-apps.workers.dev/storybook/
+
+# パッケージ docs-site が読む。scripts/build-docs-site.mjs が、parts を並べた順に apps/docs-site/public/ のサブパスへ写す
+# catalog の subpath は storybook のままにする。文書のリンク、catalog_url、公開した URL がこのサブパスを指す
+docs_site:
+  parts:
+    - path: site
+      subpath: ""
+      build: "uv run zensical build --clean"
+    - path: apps/web/storybook-static
+      subpath: storybook
+      build: "pnpm --filter @buddy/web build-storybook"
+    # serve.json と .keep は、Liam ERD の CLI がローカルの配信のために置くもので、Worker では使わない
+    - path: erd
+      subpath: erd
+      build: "pnpm build:erd"
+      exclude: [serve.json, .keep]
+  tokens_css: docs/screens/_common/tokens.css

@@ -132,11 +132,21 @@ pnpm e2e
 - エビデンスの動画を撮る spec は、`pnpm e2e` では流れない。撮るコマンドは [エビデンス](context/testing/evidence.md) の Capture Environment にある。
 - 失敗したテストの trace は `packages/e2e/test-results/` に残る。`pnpm --filter @buddy/e2e exec playwright show-trace <trace.zip>` で開く。trace.zip は、`packages/e2e` からの相対パス（Playwright が出す `test-results/...`）で渡す。
 
-## ドキュメントサイトのプレビュー
+## ドキュメントサイトを組み立てる
 
-pull request を作ると、ワークフロー「ドキュメントサイト」がプレビューを出し、URL を pull request にコメントする。プレビューには、ドキュメントサイトと、Storybook のカタログ（`/storybook/`）と、ER 図（`/erd/`）がある。プレビューと本番は、Cloudflare Access で許可した人だけが開ける。
+ドキュメントサイトには、文書と、Storybook のカタログ（`/storybook/`）と、ER 図（`/erd/`）がある。  
+pull request では、ワークフロー「ドキュメントサイト」がサイトを組み立てるだけで、プレビューは出さない（[ADR-0019](docs/adr/0019-docs-site-publish-and-contrast-check.md)）。  
+develop に入ると本番に出す。本番は、Cloudflare Access で許可した人だけが開ける。
 
-- ローカルで成果物を作るときは、ルートで `pnpm site:build` を実行する。
+- マージする前に公開した形で見るときは、ルートで `pnpm site:build` を実行し、`apps/docs-site/public/` を静的なファイルとして配信して開く。
+
+  ```sh
+  pnpm site:build
+  uv run python -m http.server 8002 --bind 127.0.0.1 -d apps/docs-site/public   # http://127.0.0.1:8002 で開く
+  ```
+
+  - サイトに並べるものとサブパスは、`context/project.yml` の `docs_site.parts` にある。`scripts/build-docs-site.mjs` が、各 part を作ってから `apps/docs-site/public/` に並べる。
+- 本番に出した後に、ワークフローが `scripts/check-docs-site-protection.mjs` で、文書、カタログ、ER 図が Access で守られているかを確認する。
 - ER 図だけをローカルで見るときは、ルートで `pnpm build:erd` を実行して `erd/` を作り、静的なファイルとして配信して開く。
   - ER 図は `docs/db/schedule/schema.json` から作るので、テーブルを変えたときは先に `pnpm generate:db-docs` を流す。
 
@@ -181,6 +191,19 @@ node .claude/hooks/docs/hooks/check-links.mjs
 
 `verified_commit` の後に実装が変わった文書は、`node .claude/hooks/docs/hooks/list-drift.mjs` で一覧する。実装と読み比べてから `verified_commit` を進める。
 
+## デザインシステムを直すとき
+
+使い方の規則は [packages/ui/DESIGN.md](packages/ui/DESIGN.md) にある。トークンを直すときは、スキル write-design-system に従う。  
+意味のトークン（`packages/ui/src/tokens/semantic.css`）か DADS のバージョンを変えたら、次を流し、生成した `docs/screens/_common/tokens.css` を同じコミットに入れる。
+
+```sh
+pnpm check:contrast   # 意味のトークンの組が WCAG 2.2 のコントラスト比の基準に届くか
+pnpm build:tokens     # 画面のモックとドキュメントサイトが読む tokens.css を作り直す
+```
+
+- 組を足すときと外すときは、`scripts/check-contrast.mjs` の冒頭の `TEXT_PAIRS` と `NON_TEXT_PAIRS` を直す。
+- `scripts/check-contrast.mjs` と `scripts/build-static-tokens.mjs` は、agent-harness のパッケージ design-system のテンプレートを写したものである。パッケージを上げたら、スキル setup-design-system の手順で差分を見て取り込む。
+
 ## API の定義を変えるとき
 
 各 API の定義の正本は、`services/schedule/openapi.yaml` と `services/receipt/openapi.yaml` である。サーバーの Go のコードと画面の型は、そこから生成してコミットする。  
@@ -201,7 +224,7 @@ pnpm lint:openapi
 | `services/schedule/db/` の SQL | `services/schedule` で `sqlc generate` | `services/schedule/internal/postgres/sqlcgen/` |
 | どちらかの openapi.yaml | `pnpm --filter @buddy/web generate:api` | `apps/web/src/api/generated/` |
 | `services/schedule/db/migrations/`、`services/schedule/.tbls.yml` | `pnpm generate:db-docs`（Docker が要る） | `docs/db/schedule/`（テーブル定義書と ER 図） |
-| `packages/ui/src/tokens/semantic.css`、`@digital-go-jp/design-tokens` | `node scripts/build-mock-tokens.mjs` | `docs/screens/_common/tokens.css`（画面のモックが読む） |
+| `packages/ui/src/tokens/semantic.css`、`@digital-go-jp/design-tokens` | `pnpm build:tokens` | `docs/screens/_common/tokens.css`（画面のモックとドキュメントサイトが読む） |
 
 テーブルを足したときは、`.tbls.yml` の `viewpoints` のどれかに入れる。  
 どの viewpoint にも入らないテーブルがあると、`pnpm generate:db-docs` が tbls lint で 1 で終わる。  
@@ -220,7 +243,7 @@ pull request では、CI（[ci.yml](.github/workflows/ci.yml)）が次を流す�
 全部が通るまでマージしない。  
 変更ごとにローカルで流すテストは `context/testing.md` の Required Tests にある。
 
-- OpenAPI の lint（`pnpm lint:openapi`）と、画面仕様書の点検（`pnpm check:screens`）
+- OpenAPI の lint（`pnpm lint:openapi`）、画面仕様書の点検（`pnpm check:screens`）、意味のトークンのコントラストのチェック（`pnpm check:contrast`）
 - TypeScript と Go の lint、型のチェック、テスト
 - 生成物のそろい（`pnpm check:generated`）と、テーブル定義書のそろい（`db-docs`）
 - E2E

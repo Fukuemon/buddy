@@ -5,11 +5,13 @@
     "prepare": "[ -n \"$CI\" ] || lefthook install",
     "check:generated": "sh scripts/check-generated.sh",
     "check:screens": "node scripts/check-screens.mjs",
+    "check:contrast": "node scripts/check-contrast.mjs",
+    "build:tokens": "node scripts/build-static-tokens.mjs --out docs/screens/_common/tokens.css ./packages/ui/node_modules/@digital-go-jp/design-tokens/dist/tokens.css ./packages/ui/src/tokens/semantic.css",
     "lint:openapi": "redocly lint",
     "generate:db-docs": "sh scripts/build-db-docs.sh",
     "build:erd": "node scripts/build-erd.mjs",
     "e2e": "pnpm --filter @buddy/e2e test",
-    "site:build": "uv run zensical build --clean && pnpm --filter @buddy/web build-storybook && pnpm build:erd && node scripts/build-docs-site.mjs && pnpm --filter @buddy/docs-site build"
+    "site:build": "node scripts/build-docs-site.mjs --out apps/docs-site/public --build && pnpm --filter @buddy/docs-site build"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.4",
