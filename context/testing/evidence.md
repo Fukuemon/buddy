@@ -8,8 +8,7 @@ status: draft
 # エビデンス
 
 機能の追加と改修で何を確認したかを示す動画と画像の取り決め。  
-観点の決め方、撮り方、pull request の本文への入れ方は、パッケージ verification のスキル attach-evidence にある。ここには、buddy で決めた値だけを書く。  
-エビデンスの動画は、npm の kit `@fukuemon/e2e-kit` の `recording` と `evidence` を呼ぶ Playwright の spec で撮る。
+観点の決め方、撮り方、pull request の本文への入れ方は、パッケージ verification のスキル attach-evidence にある。
 
 ## Evidence Scope
 
@@ -30,8 +29,7 @@ status: draft
   - `<入れる先>` は、撮る人が環境変数 `EVIDENCE_FOR` で渡す。kit は、`issue-<番号>` か `pr-<番号>` の形でなければ撮らずに失敗する。
   - 配置先と名前は、kit の `recordPrEvidence` が `EVIDENCE_FOR` と `name` から決める。ファイル名は、スキル capture-browser-evidence の規則ではなく kit の形にする。ファイルは `<入れる先>/<name>.mp4` と `<入れる先>/<name>/` に出る。`<name>` は、spec の `recordPrEvidence` に渡した `name` である。
     - 改修前と改修後を撮ったときは、`<入れる先>/<name>-before.mp4` と `<入れる先>/<name>-after.mp4` に出る。
-  - `<name>/` には、kit の README、判定のスクリーンショット（`frames/`）、撮った記録（`.records/`）、改修前と比べたときの比較の画像（`compare/`）が入る。
-  - 本文に入れるのは、`<name>.mp4`（改修前と比べたときは `<name>-before.mp4` と `<name>-after.mp4`）と、`<name>/frames/` の判定のスクリーンショットである。README と `.records/` は確認に使い、入れない。
+  - 本文に入れるのは、`<name>.mp4`（改修前と比べたときは `<name>-before.mp4` と `<name>-after.mp4`）と、`<name>/frames/` の判定のスクリーンショットである。`<name>/` の README と `.records/` は確認に使い、入れない。
 - 本文に入れたファイルは、リポジトリを見られる人が開ける。リポジトリを public にすると、見られる人が誰にでも広がる。
   - 写すのは、ローカルのシード、テストデータ、仮の名前だけにする。実在の利用者、職員、事業所のデータは、検証環境で撮るときも写さない。
   - ログインの値とトークンを、画面と字幕に写さない。
@@ -40,7 +38,7 @@ status: draft
 ## Capture Tools
 
 - エビデンスは、Playwright の spec で撮る。spec は、薄い層の `packages/e2e/tests/fixtures/evidence.ts` の `recordPrEvidence` を呼ぶ。
-  - 薄い層は、kit の `recordPrEvidence` に buddy の値（アプリの名前、viewport、時間帯）を渡して呼ぶ。録画の設計は [agent-harness の e2e の Design Doc](https://github.com/Fukuemon/agent-harness/blob/5560ae1e031686f5821ecac0d7c12d8fb6ea3499/packages/e2e/DesignDoc.md) にある。
+  - 録画の設計は [agent-harness の e2e の Design Doc](https://github.com/Fukuemon/agent-harness/blob/5560ae1e031686f5821ecac0d7c12d8fb6ea3499/packages/e2e/DesignDoc.md) にある。
   - kit は字幕とカーソルを重ね、H.264 の mp4 を書き出す。変換しない。
   - agent-browser では、エビデンスを撮らない。spec を書く前に、画面の操作の位置を確認するのには使ってよい。
 - 配置先は `packages/e2e/tests/evidence/<機能>/<振る舞い>.e2e.ts` にする。`<機能>` と `<振る舞い>` は、E2E の spec と同じ名前の付け方（スキル write-e2e-test の「名前」）にする。
@@ -53,9 +51,7 @@ status: draft
   - pull request のエビデンス: `packages/e2e/tests/evidence/schedule/create-dialog.e2e.ts`。薄い層の `recordPrEvidence` を呼ぶ。
   - 検証シナリオのエビデンス: `packages/e2e/templates/verification-scenario.e2e.ts`。検証環境の値が決まるまで、kit を直に呼び、配置先とアプリの値を spec に書く。テンプレートは、`tsconfig.json` と ESLint の対象の外に置いてある。
 - viewport は、`recordPrEvidence` のデフォルトの `DESKTOP_VIEWPORT`（1280x800）にする。
-- CI の E2E は、エビデンスの spec を流さない。
-  - `packages/e2e/playwright.config.ts` の `e2e` の project は `tests/specs/` だけを、`evidence` の project は `tests/evidence/` だけを流す。
-  - `pnpm e2e` と CI は `--project=e2e` で流す。
+- CI の E2E は、エビデンスの spec を流さない。project の分け方は [E2E のテスト](e2e.md) の Running Tests にある。
 - kit 以外で撮った WebM を入れるときだけ、次で H.264 の mp4 に変換する。`yuv420p` は幅か高さが奇数だと失敗するので、`scale` で偶数にそろえる。
 
   ```sh

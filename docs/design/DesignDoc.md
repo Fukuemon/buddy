@@ -30,8 +30,7 @@ buddy は、訪問看護の事業所の職員が使う、予定の管理とレ�
 
 ## Assumptions and Constraints
 
-- 職員の IdP は事業所ごとに違い、事業所の外にある。buddy は、Hydra が発行するトークンだけを受ける。ログインの判断と職員の身元は、ID ブローカー（`services/broker`）が持つ。
-- ブローカーは、事業所を組織として持ち、access token に組織の識別子を入れる。
+- 職員の IdP は事業所ごとに違い、事業所の外にある。buddy は、Hydra が発行するトークンだけを受ける。
 - 1 つの事業所の職員は 100 人前後で、同時に使う職員は事業所あたり数十人である。
 - 日付と時刻は日本の時間（Asia/Tokyo）だけを扱う。
 - 電子カルテ（iBow）とは API でつながず、職員が書き出した CSV を受ける。
@@ -81,8 +80,7 @@ flowchart TB
   style buddy fill:none,stroke:#0b4884,stroke-dasharray:5 5
 ```
 
-矢印ごとの約束は、[コンテナの間の契約](#コンテナの間の契約) にある。  
-図に描いていない流れが 4 つある。予定の API と照合の API は、access token を検証するために、Hydra の JWKS を読む。ブローカーは、ログインと同意の結果を Hydra の admin API に返す。予定の API は、職員の登録、休職、復職、退職で、ブローカーの内部の API を呼ぶ。Hydra は、トークンを発行するたびに、ブローカーの token_hook を呼ぶ。
+矢印ごとの約束と、図に描いていない 4 つの流れ（Hydra の JWKS、Hydra の admin API、ブローカーの内部の API、token_hook）は、[コンテナの間の契約](#コンテナの間の契約) にある。
 
 ### 業務の区切りとコンテナ
 
@@ -110,7 +108,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 ### ID ブローカーと Hydra
 
 - Hydra は、認可コード、トークンの発行、JWKS、refresh token のローテーションを持つ。web と 2 つの API から見える Issuer は Hydra だけである。
-- ブローカーは、Hydra の login and consent app として、ログインと同意の画面を持つ。入れたメールから職員と事業所を決め、事業所の上流の IdP へ RP としてリダイレクトし、上流のアカウントを職員に結び付ける。
+- ブローカーは、Hydra の login and consent app として、ログインと同意の画面を持つ。
 - ブローカーは、職員の ID、メール、所属の事業所、有効か休職か退職か、上流のアカウントを持つ。access token の `sub` は職員の ID で、予定の API の `users.sub` に入る。
 - 持たないもの: 職員の名前、役職、権限。予定の API が持つ。
   - ADR-0016: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](../adr/0016-id-broker-hydra.md)
@@ -144,19 +142,17 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 - ブラウザと web: HTTPS でつなぐ。
   - cookie にはセッションの ID を入れ、トークンは入れない。
   - 画面の操作は、web のサーバーの関数（BFF）を呼ぶ。API はブラウザから直接は呼ばれない。
-  - 例外は、開発者がローカルでドキュメントサイトの API の仕様のページから、ローカルの API を試すときだけである。API は `CORS_ALLOW_ORIGINS` に挙げたオリジンにだけ CORS のヘッダーを返し、ローカルの compose は、web とローカルのドキュメントサイトのオリジンを挙げる。
-- ブラウザと Hydra とブローカー: ログインのときに、web がブラウザを Hydra の認可の画面へリダイレクトし、Hydra がブローカーのログインの画面へリダイレクトする。ブローカーは、職員の事業所の上流の IdP へリダイレクトする。
-  - ログアウトのときは、web が自分のセッションを消してから、ブラウザを Hydra の RP-Initiated Logout へ ID token を添えてリダイレクトする。Hydra はブローカーのログアウトの画面を呼んでログインのセッションを消し、web の / へ戻す。上流の IdP のセッションは消さない。
+  - 例外は、開発者がローカルでドキュメントサイトの API の仕様のページから、ローカルの API を試すときだけである。
+- ブラウザと Hydra とブローカー: ログインとログアウトのリダイレクトの流れは、ID ブローカーの Design Doc の [ログイン](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#ログイン) と [ログアウト](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#ログアウト) にある。
 - web と Hydra: 認可コードフローでトークンを取得し、更新する。トークンは Valkey のセッションに置く。
   - セッションは、トークンと ID token のほかに、ログインのときに予定の API の `GET /v1/me` で引いた職員の ID、名前、事業所、職員の管理の権限の有無を 12 時間持つ。refresh では読み直さない。名前や権限を変えても、画面の出し分けはログインし直すまで前の値のままである。リクエストを拒否するのは API なので、拒否の判定は変わった値で行われる。
-  - ログインに成功するたびに、同じブラウザの前のセッションを消す。
-- ブローカーと Hydra: ブローカーが Hydra の admin API でログインと同意を accept か reject し、ログアウトを accept する。ログインの accept で、Hydra にログインのセッションを 12 時間保たせる（`remember`）。同意の accept で、access token の `aud`（`schedule`、`receipt`）と `org_id` を決める。
+- ブローカーと Hydra: ブローカーが Hydra の admin API でログインと同意を accept か reject し、ログアウトを accept する。同意の accept で、access token の `aud`（`schedule`、`receipt`）と `org_id` を決める。
 - ブローカーと上流の IdP: 認可コードフローで ID token を取り、署名、`iss`、`aud`、`nonce` を確認する。
 - 予定の API とブローカー: 職員の登録、休職、復職、退職で、予定の API が職員の管理の権限を確認してから、ブローカーの内部の API を呼ぶ。予定の API は、Hydra の client credentials で `aud` が `broker` の access token を取って付ける。
-  - ブローカーは、内部の API と token_hook を、ログインの画面と別のポートで待ち受け、許したクライアントのトークンだけを受ける。
-- Hydra とブローカー: Hydra は、トークンを発行するたびに `oauth2.token_hook` でブローカーを呼び、有効でない職員と、上流でのログインから 12 時間を過ぎたログインのトークンを出さない。
+  - ブローカーが内部の API で受けるトークンは、[ID ブローカーの Design Doc の職員の登録、休職、復職、退職](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#職員の登録休職復職退職) にある。
+- Hydra とブローカー: Hydra は、トークンを発行するたびに `oauth2.token_hook` でブローカーを呼ぶ。トークンを出さない条件は、[ID ブローカーの Design Doc のトークンの発行の確認](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#トークンの発行の確認) にある。
 - web と予定の API、照合の API: `Authorization` に access token を Bearer で付ける。
-  - 契約の正本は [予定の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/openapi.yaml) と [照合の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/openapi.yaml) である。サーバーの Go のコードと web の型は、そこから生成する。
+  - 契約の正本は [予定の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/openapi.yaml) と [照合の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/openapi.yaml) である。
   - 契約を変えるときの互換の規則は ADR-0003 にある。
   - ADR-0003: [git flow でマージし、アプリごとのバージョンでリリースする](../adr/0003-branch-and-release.md)
 - 予定の API、照合の API と Hydra: Issuer の discovery と JWKS を読み、access token を検証する。検証に失敗したら 401 を返す。
@@ -211,13 +207,11 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 - web の `VITE_API_MODE` は、イメージのビルドのときに埋め込む値で、実行のときには読まない。イメージは `bff` でビルドする。
 - 照合の API と予定の API は、Google の認証情報を Application Default Credentials（`GOOGLE_APPLICATION_CREDENTIALS` など）で読む。  
   読んだ認証情報で、事業所のサービスアカウントになりすます。  
-  `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` があるときだけ読み、読めなければ起動しない。  
-  `GOOGLE_CALENDAR_ENDPOINT` でフェイクに向けるときは、`GOOGLE_APPLICATION_CREDENTIALS` を渡したときだけ、その認証情報をなりすまさずに使う。
-- Application Default Credentials で認証する主体に、事業所のサービスアカウントごとのトークン作成者のロール（`roles/iam.serviceAccountTokenCreator`）を付ける。プロジェクトでは IAM Service Account Credentials API を有効にする。予定の API のスコープは、書き出すとき（`GOOGLE_CALENDAR_EXPORT_ENABLED`）は `calendar.events`、ほかは `calendar.readonly` である。
-- 予定の API は、同じプロセスの中で予定の書き出しの処理を実行する。複数のレプリカで実行しても、同じ書き出しの待ちは 1 つのレプリカだけが書く（レコードのロックと期限）。
+  `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` があるときだけ読み、読めなければ起動しない。
+- Application Default Credentials で認証する主体に付けるロールと、有効にする API は、[基盤と運用の Adding a Facility](https://github.com/Fukuemon/buddy/blob/develop/context/operations.md#adding-a-facility) にある。
+- 予定の API は、同じプロセスの中で予定の書き出しの処理を実行する。複数のレプリカで実行しても、同じ書き出しの待ちは 1 つのレプリカだけが書く。
 
-シークレットは、`OIDC_CLIENT_SECRET`、`SESSION_SECRET`、`DB_PASSWORD`、Workload Identity Federation の外部アカウントの設定である。ブローカーでは、上流の IdP の client secret のファイルもシークレットである。  
-インフラのリポジトリが、シークレットの保存先から渡す。buddy のリポジトリには置かない。
+シークレットと、その渡し方は、[基盤と運用の Secrets](https://github.com/Fukuemon/buddy/blob/develop/context/operations.md#secrets) にある。
 
 #### ヘルスチェック
 
@@ -230,9 +224,8 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 
 - 予定の API のイメージは、`api` と `migrate` の 2 つのバイナリを持ち、エントリポイントは `api` である。
   - マイグレーションは、エントリポイントを `/usr/local/bin/migrate` にして `up` を渡すと適用して終わる。
-- マイグレーションは golang-migrate の形式で `services/schedule/db/migrations/` に置き、バイナリに埋め込む。
 - インフラは、新しいイメージを起動する前に、同じイメージで `migrate up` を 1 回実行する。マイグレーションは、前のバージョンのアプリが動いたまま適用できる変更だけにする。
-- ブローカーのイメージも、`broker` と `migrate` の 2 つのバイナリを持ち、同じ手順でマイグレーションを適用する。マイグレーションは `services/broker/db/migrations/` にある。
+- ブローカーのイメージも、`broker` と `migrate` の 2 つのバイナリを持ち、同じ手順でマイグレーションを適用する。
 - Hydra のマイグレーションは、Hydra のイメージの `migrate sql up` で適用する。
 
 ## Cross-Cutting Concerns
@@ -259,33 +252,33 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 
 ### ログと個人情報
 
-- トークン、cookie、DB の接続先、利用者の名前、CSV の中身をログに出さない。
-- テストとシードは、ダミーデータで作る。
+- ログに出さない値は、[基盤と運用の Health and Monitoring](https://github.com/Fukuemon/buddy/blob/develop/context/operations.md#health-and-monitoring) にある。
+- テストとシードのデータの規則は、[テストの Mocking and Test Data](https://github.com/Fukuemon/buddy/blob/develop/context/testing.md#mocking-and-test-data) にある。
 
 ## Repository Layout
 
 ```text
 .
 ├── apps/
-│   ├── web/             # TanStack Start、React、Vite+
+│   ├── web/             # 画面と BFF
 │   └── docs-site/       # ドキュメントサイトとカタログを公開する Cloudflare Worker
 ├── services/
-│   ├── schedule/        # 予定の API。Go、gin、sqlc、golang-migrate
+│   ├── schedule/        # 予定の API
 │   │   ├── DesignDoc.md # 予定の管理の Design Doc
 │   │   └── db/          # マイグレーション、クエリ、シード
-│   ├── receipt/         # 照合の API。Go
+│   ├── receipt/         # 照合の API
 │   │   ├── DesignDoc.md # レセプトの照合の Design Doc
 │   │   └── tools/       # 元の照合のアプリと結果を比べるスクリプト
-│   └── broker/          # ID ブローカー。Go、go-oidc
+│   └── broker/          # ID ブローカー
 │       ├── DesignDoc.md # ID ブローカーの Design Doc
 │       └── db/          # マイグレーションとシード
 ├── packages/
 │   ├── ui/              # デザインシステム。トークン、Base と Case のコンポーネント、Storybook
 │   │   └── DESIGN.md    # デザインシステムの設計
-│   ├── e2e/             # E2E のテストと、手動検証のエビデンスを撮る spec。kit は npm の @fukuemon/e2e-kit
+│   ├── e2e/             # E2E のテストと、手動検証のエビデンスを撮る spec
 │   │   └── DesignDoc.md # E2E のテストのコードの設計
-│   └── go/              # 2 つの API が共有する Go の module。OIDC の検証、ヘルスチェック、Google カレンダーのタイトルの解釈とサービスアカウントのクライアント
-├── docs/                # Zensical のサイトの元。PRD、Design Doc、ADR、画面仕様書、API の仕様、DB の設計
+│   └── go/              # 2 つの API が共有する Go の module
+├── docs/                # サイトの元。PRD、Design Doc、ADR、画面仕様書、API の仕様、DB の設計
 │   ├── PRD.md
 │   ├── design/
 │   │   ├── DesignDoc.md
@@ -300,5 +293,5 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 ├── compose.yml          # ローカル環境で全体を起動する
 ├── compose/             # Hydra とブローカーの設定、calendarpit の fixture と同意のスクリプト、サービスアカウントの対応のダミー
 ├── zensical.toml
-└── pyproject.toml       # Zensical を uv で入れる
+└── pyproject.toml
 ```

@@ -1,8 +1,9 @@
 /* 予定の作成のモックだけの見た目 */
 
-/* 種類のタブ。apps/web の headerContent の max-w-60 と同じ幅にする */
+/* 種類のタブ。apps/web の headerContent の w-60 と同じ幅にし、タイトルの右でヘッダーの右端に寄せる */
 .sn-kind {
   flex: 0 1 240px;
+  margin-left: auto;
 }
 
 .sn-kind .wf-tab {

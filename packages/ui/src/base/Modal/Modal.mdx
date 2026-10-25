@@ -22,6 +22,7 @@ import * as Stories from './Modal.stories'
 
 - `title` を渡し、ダイアログの名前にする
 - 送信のボタンは `stickyFooter` に置く
+- 種類の切り替えのような、ヘッダーに足す要素は `headerContent` に置く。タイトルの右に置き、ヘッダーの右端に寄せる
 - 入力の途中で閉じると変更が消えるときは `isDirty` を渡す
 
 ## Don't
@@ -40,6 +41,10 @@ DADS はモーダルのダイアログをフォームに使わないとしてい
 ### 下端の固定の領域
 
 <Canvas of={Stories.WithStickyFooter} />
+
+### ヘッダーに足す要素
+
+<Canvas of={Stories.WithHeaderContent} />
 
 ### 長い本文
 

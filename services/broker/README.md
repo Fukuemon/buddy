@@ -1,16 +1,11 @@
 # ID ブローカー
 
 Ory Hydra の login and consent app として動き、事業所ごとの上流の IdP の前に立って職員の身元を持つサービス。  
-ログイン、同意、ログアウトの画面、上流の IdP への RP の処理、職員の登録、休職、復職、退職の内部の API、Hydra の token_hook、ヘルスチェック、職員の身元の DB のマイグレーションとシードを持つ。  
 責務と流れは [DesignDoc.md](DesignDoc.md) にある。
 
 ## Setup
 
-Go と golangci-lint のバージョンは、リポジトリのルートの `mise.toml` にある。
-
-```sh
-mise install go golangci-lint
-```
+ツールは、[CONTRIBUTING.md](../../CONTRIBUTING.md) の Setup の手順で入れる。
 
 ## Running
 
@@ -91,7 +86,7 @@ golangci-lint run
 テストと lint は `GOWORK=off` を付けて流す。  
 理由は [CONTRIBUTING.md](../../CONTRIBUTING.md) の「Go のモジュール」にある。
 
-`internal/postgres` のテストは、testcontainers で PostgreSQL のコンテナを起動し、マイグレーションを当ててテーブルの制約を確認する。Docker が無い環境では `go test -short ./...` で飛ばす。
+`internal/postgres` のテストは、testcontainers で PostgreSQL のコンテナを起動する。Docker が無い環境では `go test -short ./...` で飛ばす。
 
 ## Documentation
 
