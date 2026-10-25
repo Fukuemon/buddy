@@ -151,8 +151,13 @@ test.describe('画面の間のナビゲーション', () => {
             await step('ドロワーの「照合」を押す')
             await drawer.getByTestId('site-nav-receipt').click()
             await expect(page).toHaveURL(/\/receipt$/)
-            await expect(page.getByTestId('site-nav-drawer')).toBeHidden()
-            await check('照合の画面に移る。ドロワーは閉じている')
+            await expect(page.getByTestId('site-nav-open')).toBeVisible()
+            await step('照合の画面に移ったので、もう一度メニューのボタンを押す')
+            await page.getByTestId('site-nav-open').click()
+            await expect(
+              page.getByTestId('site-nav-drawer').getByTestId('site-nav-receipt'),
+            ).toHaveAttribute('aria-current', 'page')
+            await check('照合の画面に移る。メニューを開き直すと、照合に今の画面の印が付いている')
           },
         )
       })
