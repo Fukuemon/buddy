@@ -9,7 +9,7 @@ buddy の E2E のテストと、手動検証のエビデンスを撮る spec。
 録画、エビデンスの配置先と名前、ログインの状態の保存、テストの書き方の ESLint の規則は、npm の kit `@fukuemon/e2e-kit` が持つ。バージョンは `package.json` に固定で書き、agent-harness のパッケージ e2e のスキル setup-e2e の `kit-version.json` とそろえる。  
 書き方は、agent-harness のパッケージ e2e と verification のスキル write-e2e-test、write-verification-spec、run-verification-scenarios が持つ。buddy で決めた値は `context/testing/e2e.md` と `context/testing/evidence.md` にある。
 
-## テストとチェック
+## Tests and Checks
 
 | コマンド | 確認すること |
 | --- | --- |
@@ -19,8 +19,8 @@ buddy の E2E のテストと、手動検証のエビデンスを撮る spec。
 
 録画には、`ffmpeg` と `ffprobe` が要る。
 
-## ドキュメント
+## Documentation
 
 - [DesignDoc.md](DesignDoc.md): テストのコードの層、配置先、名前、待ち方、確認の方法
 - kit の録画とエビデンスの配置先の設計: [agent-harness の e2e の Design Doc](https://github.com/Fukuemon/agent-harness/blob/5560ae1e031686f5821ecac0d7c12d8fb6ea3499/packages/e2e/DesignDoc.md)
-- 流し方は [CONTRIBUTING.md](../../CONTRIBUTING.md) の「E2E のテストを流す」にある
+- 流し方は [CONTRIBUTING.md](../../CONTRIBUTING.md) の E2E Tests にある

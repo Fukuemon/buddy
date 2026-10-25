@@ -1,7 +1,7 @@
 ---
 type: context
 title: 基盤と運用
-description: 環境の種類、デプロイと切り戻しの条件、監視、シークレットの配置先の方針、事業所を足すときの Google のサービスアカウントの手順
+description: 環境の種類、デプロイと切り戻しの条件、監視、シークレットの配置先の方針、事業所を足すときの Google のサービスアカウントの手順、CI のランナーの切り替え
 status: stable
 ---
 
@@ -65,3 +65,24 @@ status: stable
 
 事業所のアカウントに切り替える前の 1 つのアカウントに共有したカレンダーは、切り替えると読めなくなる。  
 職員が事業所のアカウントに共有し直した後に、運営側は前のアカウントへの共有を外してもらい、前のアカウントを止める。
+
+## CI Runners
+
+ワークフローのジョブは、リポジトリの変数 `RUNS_ON` が指すランナーで流れる。  
+変数が無ければ GitHub のランナー（`ubuntu-latest`）で流れる。  
+メンテナーの self-hosted runner で流すときは、変数にラベルの JSON の配列を入れる。
+
+```sh
+gh variable set RUNS_ON -R Fukuemon/buddy --body '["self-hosted","macOS","ARM64"]'
+```
+
+GitHub のランナーに戻すときは、`gh variable delete RUNS_ON -R Fukuemon/buddy` で変数を消す。
+
+- self-hosted runner の機械では、ローカル環境の compose が動いていることがある。
+  - CI の E2E は、compose のプロジェクトの名前を `buddy-ci` にし、ポートを全てずらして起動する。ずらしたポートは `.github/workflows/ci.yml` の `e2e` のジョブにある。
+- self-hosted runner は、E2E のジョブの後に、タグの無い Docker のイメージと 7 日より古いビルドのキャッシュを消す。
+  - Docker は runner の機械のローカル環境と共有なので、ローカル環境のものも消える。
+- self-hosted runner は、runner の `.env` で Go、pnpm、mise、Playwright のキャッシュの配置先を `~/actions-runner/_cache` に分ける。
+  - `.path` では、PATH を Homebrew とシステムのディレクトリに絞る。
+  - ローカル環境のツールとキャッシュを CI と共有しないためである。runner を作り直すときも、同じ設定にする。
+- self-hosted runner は、private のリポジトリだけに使う。public のリポジトリでは、外部の人の pull request のコードが runner の機械で流れる。

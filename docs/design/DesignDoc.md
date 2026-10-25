@@ -173,7 +173,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 #### コンテナのイメージ
 
 - アプリごとに 1 つのイメージを作る。web、予定の API、照合の API、ブローカー。Hydra は Ory の公開のイメージを使う。
-- ブローカーのイメージは、ヘルスチェックのための `broker healthcheck` のサブコマンドを持つ。ブローカーの環境変数は [ブローカーの README](https://github.com/Fukuemon/buddy/blob/develop/services/broker/README.md#起動する) にある。
+- ブローカーのイメージは、ヘルスチェックのための `broker healthcheck` のサブコマンドを持つ。ブローカーの環境変数は [ブローカーの README](https://github.com/Fukuemon/buddy/blob/develop/services/broker/README.md#running) にある。
 - API のイメージは、ヘルスチェックのための `api healthcheck` のサブコマンドを持つ。
 - イメージは設定を持たず、全ての設定を環境変数で受ける。
 - プロセスは 1 つの HTTP のポートで待ち受け、ポートは環境変数 `PORT` で受ける。

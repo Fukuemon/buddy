@@ -1,7 +1,7 @@
 # pull request と develop への push で、取り込む前に通す検査を流す。
 # 検査の一覧とローカル環境での流し方は context/testing.md と CONTRIBUTING.md にある。
 # Go、golangci-lint、sqlc のバージョンは mise.toml から入れ、ローカル環境とそろえる。Node と pnpm は docs-site.yml と同じ入れ方にする。
-# ランナーは、リポジトリの変数 RUNS_ON で self-hosted runner に替えられる（CONTRIBUTING.md の「CI のチェック」）。
+# ランナーは、リポジトリの変数 RUNS_ON で self-hosted runner に替えられる（context/operations.md の CI Runners）。
 # self-hosted runner は Go、pnpm、mise のキャッシュを機械に残すので、actions/cache と setup-node と mise のキャッシュは GitHub のランナーでだけ使う。
 
 name: CI
@@ -130,7 +130,7 @@ jobs:
     runs-on: ${{ fromJSON(vars.RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 30
     # self-hosted runner の機械では、ローカル環境の compose が動いていることがある。
-    # プロジェクトの名前を分け、ポートをローカル環境のデフォルトから全てずらす（CONTRIBUTING.md の「ローカル環境で全体を起動する」）
+    # プロジェクトの名前を分け、ポートをローカル環境のデフォルトから全てずらす（CONTRIBUTING.md の Running Locally）
     env:
       COMPOSE_PROJECT_NAME: buddy-ci
       WEB_PORT: '13000'

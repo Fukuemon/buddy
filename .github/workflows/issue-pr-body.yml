@@ -1,6 +1,6 @@
 # pull request と issue のタイトルと本文の形を、scripts/check-issue-pr-body.mjs で確認する。
 # pull request は違反でチェックを失敗にする。issue は違反を 1 つのコメントで知らせ、直ったら消す。
-# 規則は CONTRIBUTING.md の「issue と pull request」とスキル write-issue-pr にある。
+# 規則は CONTRIBUTING.md の Issues and Pull Requests とスキル write-issue-pr にある。
 
 name: issue と pull request の本文
 
