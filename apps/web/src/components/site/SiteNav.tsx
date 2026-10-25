@@ -8,6 +8,8 @@ import ReceiptIcon from '#/assets/icons/fact-check.svg?react'
 
 /** 並びの 1 つのリンク。 */
 export type SiteNavItem = {
+  /** testid の末尾。`site-nav-<id>` を付ける。 */
+  id: string
   href: string
   label: string
   icon: ComponentType<SVGProps<SVGSVGElement>>
@@ -32,6 +34,7 @@ export const SiteNav = ({ items, current, layout }: SiteNavProps) => (
           <li key={item.href}>
             <a
               href={item.href}
+              data-testid={`site-nav-${item.id}`}
               aria-current={isCurrent ? 'page' : undefined}
               className={clsx(
                 'flex rounded-8 focus-visible:focus-ring',
@@ -55,12 +58,13 @@ export const SiteNav = ({ items, current, layout }: SiteNavProps) => (
 
 /** buddy の画面の一覧。 */
 export const SITE_NAV_ITEMS: readonly SiteNavItem[] = [
-  { href: '/schedule', label: '予定', icon: ScheduleIcon },
-  { href: '/receipt', label: '照合', icon: ReceiptIcon },
+  { id: 'schedule', href: '/schedule', label: '予定', icon: ScheduleIcon },
+  { id: 'receipt', href: '/receipt', label: '照合', icon: ReceiptIcon },
 ]
 
 /** 職員の管理の権限を持つ職員にだけ出す、予定の取り込みのリンク。カレンダーの連携の画面も、このリンクを今の画面とする。 */
 export const IMPORT_NAV_ITEM: SiteNavItem = {
+  id: 'import',
   href: '/schedule/import',
   label: '取り込み',
   icon: ImportIcon,
@@ -68,6 +72,7 @@ export const IMPORT_NAV_ITEM: SiteNavItem = {
 
 /** 職員の管理の権限を持つ職員にだけ出す、確認が必要な予定（Google カレンダーと食い違った予定）のリンク。 */
 export const REVIEW_NAV_ITEM: SiteNavItem = {
+  id: 'review',
   href: '/schedule/review',
   label: '要確認',
   icon: ReviewIcon,
