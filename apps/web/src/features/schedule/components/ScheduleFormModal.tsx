@@ -38,7 +38,7 @@ export const ScheduleFormModal = ({
       data-testid="schedule-form-modal"
       headerContent={
         onKindChange === undefined ? undefined : (
-          <div className="max-w-60">
+          <div className="w-60 max-w-full">
             <SegmentedControl
               data-testid="schedule-kind-tab"
               label="予定の種類"
