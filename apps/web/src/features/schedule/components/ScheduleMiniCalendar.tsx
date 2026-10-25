@@ -69,12 +69,13 @@ export const ScheduleMiniCalendar = ({
     setFocusedDay(date)
   }
   const tableRef = useRef<HTMLTableElement>(null)
-  const [shouldFocus, setShouldFocus] = useState(false)
+  // 矢印のキーで動かした後の描画で、Tab の止まる日にフォーカスを移す
+  const shouldFocusRef = useRef(false)
   useEffect(() => {
-    if (!shouldFocus) return
+    if (!shouldFocusRef.current) return
+    shouldFocusRef.current = false
     tableRef.current?.querySelector<HTMLButtonElement>('[tabindex="0"]')?.focus()
-    setShouldFocus(false)
-  }, [shouldFocus])
+  })
 
   const range = getCalendarRange(view, date)
   const inRange = (dateKey: string) =>
@@ -92,7 +93,7 @@ export const ScheduleMiniCalendar = ({
     const next = shiftDays(dateKey, offset)
     if (!monthGridDays(shownMonth).includes(next)) setShownMonth(toMonthKey(next))
     setFocusedDay(next)
-    setShouldFocus(true)
+    shouldFocusRef.current = true
   }
 
   return (
