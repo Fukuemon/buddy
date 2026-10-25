@@ -27,6 +27,11 @@ export const WithStickyFooter: Story = {
   args: { stickyFooter: <Button>作成</Button> },
 }
 
+/** headerContent は、タイトルの右に置き、ヘッダーの右端に寄せる。 */
+export const WithHeaderContent: Story = {
+  args: { headerContent: <Button variant="secondary">切り替え</Button> },
+}
+
 export const LongContent: Story = {
   args: {
     children: (

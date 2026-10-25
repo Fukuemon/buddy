@@ -6,7 +6,7 @@ import { userEvent } from 'vite-plus/test/browser/context'
 
 import * as stories from './Modal.stories'
 
-const { Default, Closed, WithOpener } = composeStories(stories)
+const { Default, Closed, WithOpener, WithHeaderContent } = composeStories(stories)
 
 describe('Modal', () => {
   it('モーダルのダイアログとして開き、タイトルにフォーカスを移す', () => {
@@ -103,6 +103,20 @@ describe('Modal', () => {
     const rect = screen.getByRole('button', { name: '閉じる' }).getBoundingClientRect()
     expect(rect.width).toBeGreaterThanOrEqual(44)
     expect(rect.height).toBeGreaterThanOrEqual(44)
+  })
+
+  it('headerContent を渡しても、タイトルは閉じるボタンの右隣に出し、headerContent を右端に寄せる', () => {
+    render(<WithHeaderContent />)
+    const close = screen.getByRole('button', { name: '閉じる' }).getBoundingClientRect()
+    const title = screen.getByRole('heading', { name: '予定の詳細' }).getBoundingClientRect()
+    const content = screen.getByRole('button', { name: '切り替え' }).getBoundingClientRect()
+    const dialog = screen.getByRole('dialog').getBoundingClientRect()
+
+    expect(title.left).toBeGreaterThan(close.right)
+    expect(title.left - close.right).toBeLessThanOrEqual(16)
+    expect(content.left).toBeGreaterThan(title.right)
+    // ヘッダーの余白（p-3、12px）の分だけ、ダイアログの右端から離れる
+    expect(Math.round(dialog.right - content.right)).toBe(12)
   })
 
   it('isOpen が false なら何も出さない', () => {
