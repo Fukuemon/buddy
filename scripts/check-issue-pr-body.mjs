@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * pull request と issue のタイトルと本文の形を、スキル write-issue-pr と CONTRIBUTING.md の「issue と pull request」の規則で確認する。
+ * pull request と issue のタイトルと本文の形を、スキル write-issue-pr と CONTRIBUTING.md の Issues and Pull Requests の規則で確認する。
  * GitHub Actions の issue-pr-body.yml が、イベントの JSON（GITHUB_EVENT_PATH）を渡して流す。
  *
  * pull request は、違反があれば終了コード 1 で終わる。issue は、違反を 1 つのコメントで知らせ、直ったらそのコメントを消す。
@@ -206,7 +206,7 @@ async function syncIssueComment(number, text) {
     if (mine) await send(`/issues/comments/${mine.id}`, 'DELETE')
     return
   }
-  const body = `${MARKER}\nタイトルと本文の形の確認で、次の点が見つかった。規則は CONTRIBUTING.md の「issue と pull request」とスキル write-issue-pr にある。\n\n${text}`
+  const body = `${MARKER}\nタイトルと本文の形の確認で、次の点が見つかった。規則は CONTRIBUTING.md の Issues and Pull Requests とスキル write-issue-pr にある。\n\n${text}`
   if (mine) await send(`/issues/comments/${mine.id}`, 'PATCH', body)
   else await send(`/issues/${number}/comments`, 'POST', body)
 }

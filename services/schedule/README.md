@@ -3,13 +3,13 @@
 訪問看護の事業所の予定を管理する HTTP の API。  
 API の定義の正本は [openapi.yaml](openapi.yaml) である。サーバーのハンドラのインターフェイスと型、web のクライアントの型は、このファイルから生成する。
 
-## セットアップ
+## Setup
 
 Go、sqlc、golang-migrate、golangci-lint は、リポジトリのルートの `mise.toml` がバージョンを決める。  
 ルートで `mise install` を実行する。  
 PostgreSQL 18 とテストは Docker を使う。
 
-## 設定
+## Configuration
 
 API とマイグレーションは、次の環境変数を読む。
 
@@ -43,7 +43,7 @@ API とマイグレーションは、次の環境変数を読む。
 `cmd/migrate` は OIDC とブローカーの変数を求めず、必須として確認するのは `DB_USER`、`DB_PASSWORD`、`DB_NAME` だけである。  
 ほかの変数も API と同じ規則で読むので、`PORT`、`LOG_LEVEL`、`GOOGLE_CALENDAR_` で始まる変数の値が正しくないときは、マイグレーションも失敗する。
 
-## 起動する
+## Running
 
 コマンドは、このディレクトリで実行する。  
 パスワードはローカルでだけ使う値を決めて、環境変数に入れる。  
@@ -143,7 +143,7 @@ migrate -path db/migrations \
 新しいマイグレーションは `migrate create -ext sql -dir db/migrations -seq <名前>` で作る。  
 シードには実在の事業所、人、連絡先を入れず、メールは `example.com` を使う。
 
-## テストとチェック
+## Tests and Checks
 
 ```sh
 go test ./...
@@ -155,11 +155,11 @@ golangci-lint run
 `go test ./...` は、リポジトリの結合テストのために、testcontainers-go で PostgreSQL 18 のコンテナを起動する。  
 `-short` を付けると、コンテナを使うテストを飛ばす。  
 テストと lint は `GOWORK=off` を付けて流す。  
-理由は [CONTRIBUTING.md](../../CONTRIBUTING.md) の「開発環境のセットアップ」にある。
+理由は [CONTRIBUTING.md](../../CONTRIBUTING.md) の Setup にある。
 
 テストの種類ごとに保証することと配置先は、[テスト](../../context/testing.md) にある。
 
-## コードの生成
+## Code Generation
 
 ### API の定義を変えたとき
 
@@ -216,7 +216,7 @@ docker build -f Dockerfile -t schedule:local ../..
 
 パッケージごとに持つものは [DesignDoc.md](DesignDoc.md) の「コードの構成」に、依存してよい向きは [コードベースの構造](../../context/codebase.md) にある。
 
-## ドキュメント
+## Documentation
 
 - [DesignDoc.md](DesignDoc.md): コードの構成、テーブルの構成、認証から事業所の確認までの流れ、繰り返しの予定
 - [全体の Design Doc](../../docs/design/DesignDoc.md): 画面と 2 つの API の責務、インフラとの約束

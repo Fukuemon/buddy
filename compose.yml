@@ -1,4 +1,4 @@
-# ローカル環境で全体を起動する構成。手順は CONTRIBUTING.md の「ローカル環境で全体を起動する」にある。
+# ローカル環境で全体を起動する構成。手順は CONTRIBUTING.md の Running Locally にある。
 # 値は全て開発用のダミーの値で、ほかの環境で使わない。
 
 name: buddy

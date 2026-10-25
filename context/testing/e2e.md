@@ -53,7 +53,7 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
 
 ## Running Tests
 
-- E2E は、ルートの compose で立てた全体に向けて流す。手順は [CONTRIBUTING.md](../../CONTRIBUTING.md) の「E2E のテストを流す」にある。
+- E2E は、ルートの compose で立てた全体に向けて流す。手順は [CONTRIBUTING.md](../../CONTRIBUTING.md) の E2E Tests にある。
   - API、Hydra、ブローカーは置き換えず、compose の本物を使う。事業所の上流の IdP は、compose のフェイクを使う。
 - project は 3 つある。
   - `setup` は、compose のブローカーにログインした状態を `packages/e2e/.auth/` に保存する。

@@ -9,7 +9,7 @@
 - `compare.py`: Python の結果を Go の形にそろえてから比べる。`--golden` で、そろえた結果を `expected.csv` として書く
 - `run.sh`: 全ケースで `run_python.py`、`goreport`、`compare.py` を流す
 
-## 実行
+## Running
 
 Python と Go を比べるには、元の照合の実装のチェックアウトが要る。元の照合の実装は、非公開のリポジトリにある。Python の照合のコードは、このリポジトリにコピーしない。  
 外部の人は元の照合の実装を持たないので、このセクションの末尾のコマンドで、`expected.csv` との比較だけを流せる。

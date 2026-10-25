@@ -31,7 +31,7 @@ status: stable
 - 予定の API の結合テストは Docker が要る。testcontainers-go が PostgreSQL のコンテナを起動し、接続の値はテストの中に固定してある。環境変数は要らない。
 - 照合の API のテストと web の Vitest は、外部のネットワークと環境変数を要らない。照合の API のテストは、フェイクの Issuer と Calendar API を loopback で立てる。web は `VITE_API_MODE` を指定しなければフェイクの API で動く。
 - `packages/ui` のテストは、Playwright の chromium が要る（`pnpm --filter @buddy/ui exec playwright install chromium`）。
-- E2E は、ルートの compose の全体（ポートは [CONTRIBUTING.md](../CONTRIBUTING.md) の「ローカル環境で全体を起動する」）と、Playwright の chromium が要る。
+- E2E は、ルートの compose の全体（ポートは [CONTRIBUTING.md](../CONTRIBUTING.md) の Running Locally）と、Playwright の chromium が要る。
 - 照合の互換のテストの期待値を作り直すときだけ、元の Python の実装のチェックアウトと uv が要る（`services/receipt/tools/parity/README.md`）。
 
 ## Mocking and Test Data
@@ -73,7 +73,7 @@ status: stable
 
 マージする前に、変えたアプリの `test` と `check`（Go は `go test ./...`、`go vet ./...`、`golangci-lint run`）を流す。  
 Go のテストと lint は `GOWORK=off` を付けて流す。  
-理由は [CONTRIBUTING.md](../CONTRIBUTING.md) の「開発環境のセットアップ」にある。  
+理由は [CONTRIBUTING.md](../CONTRIBUTING.md) の Setup にある。  
 `packages/go` を変えたときは、2 つの API でも流す。
 
 pull request と develop への push では、CI（[ci.yml](../.github/workflows/ci.yml)）が、変えた場所によらず全てのジョブを流す。1 つでも失敗した pull request はマージしない。

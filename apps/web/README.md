@@ -3,7 +3,7 @@
 予定の管理とレセプトの照合の画面。TanStack Start で作り、ツールチェーンに Vite+ を使う。  
 `VITE_API_MODE` を指定しなければ、データをローカルのフェイクの API（`src/api/fake/`）から取る。BFF を通して予定の API と照合の API を呼ぶように切り替えられる（「API を切り替える」）。
 
-## 起動する
+## Running
 
 リポジトリのルートで依存を入れてから、開発サーバーを起動する。
 
@@ -25,7 +25,7 @@ pnpm --filter @buddy/web dev
 | `fake`（デフォルト） | フェイクの API（`src/api/fake/`）を呼ぶ。ログインせず、ダミーの職員として動く |
 | `bff` | サーバーの BFF が、セッションの access token を付けて予定の API と照合の API を呼ぶ。ログインを求める |
 
-コンテナのイメージは `bff` でビルドする。`bff` の動きは、リポジトリのルートの compose で確認する（CONTRIBUTING.md の「ローカル環境で全体を起動する」）。  
+コンテナのイメージは `bff` でビルドする。`bff` の動きは、リポジトリのルートの compose で確認する（CONTRIBUTING.md の Running Locally）。  
 開発サーバーを `bff` で起動すると、トークンの `iss` が compose の API の求める値と合わないので、compose の API には向けない。
 
 BFF の処理をローカルの開発サーバーで確認するときは、`dev:msw` で起動する。ログインは compose の上流の IdP のフェイク（`idp`）を Issuer として直に使い、Hydra とブローカーを通さない。セッションは compose の Valkey に置き、2 つの API へのリクエストは MSW のフェイクの handler（`src/mocks/`）が受ける。Go の API と PostgreSQL は立てない。設定は `.env.msw` にある。
@@ -37,7 +37,7 @@ pnpm --filter @buddy/web dev:msw
 
 フェイクの handler は決まった予定を返し、作った予定と置き換えた予定を残さない。本番のビルドには MSW を含めない（`src/server/runtime.ts`）。
 
-## テストとチェック
+## Tests and Checks
 
 | コマンド | 確認すること |
 | --- | --- |
@@ -57,7 +57,7 @@ pnpm --filter @buddy/web storybook
 
 Storybook は `.storybook/vite.config.ts` で動く。アプリの `vite.config.ts` は TanStack Start の plugin を持ち、Storybook の中では動かないため、設定を分けている。
 
-## コードの生成
+## Code Generation
 
 API の型は、各 API の openapi.yaml から openapi-typescript で生成し、`src/api/generated/` に置く。生成物はコミットする。
 
@@ -126,7 +126,7 @@ route は `src/routes/` のファイルから TanStack Router が生成する。
 - 画面は、予定の API の Google カレンダーの操作を `BuddyApi`（`src/api/client.ts`）の `calendars` で呼ぶ。結び付けたカレンダー、取り込みのプレビューと結果、書き出しの型は、予定の API の型をそのまま使う（`src/api/types.ts`）。
 - フェイクの API（`fake`）は、ID の末尾が `@example.com` のカレンダーだけを読めるものとして扱う（`src/api/fake/fakeBuddyApi.ts`）。
 
-## ドキュメント
+## Documentation
 
 - [画面仕様書](../../docs/screens/index.md): 画面ごとの表示と操作、構成要素の `data-testid`
 - [全体の Design Doc](../../docs/design/DesignDoc.md): 画面と BFF の責務、認証とセッション

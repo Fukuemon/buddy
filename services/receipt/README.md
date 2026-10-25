@@ -3,7 +3,7 @@
 iBow から出した実訪問の CSV と予定（予定の CSV か Google カレンダー）を照合し、不整合、予定のみ、実績のみ、整合の 4 つに分けて返す API。  
 照合の規則と、元の Python との違いは [DesignDoc.md](DesignDoc.md) にある。
 
-## セットアップ
+## Setup
 
 Go と golangci-lint のバージョンは、リポジトリのルートの `mise.toml` にある。
 
@@ -11,7 +11,7 @@ Go と golangci-lint のバージョンは、リポジトリのルートの `mis
 mise install go golangci-lint
 ```
 
-## 起動する
+## Running
 
 API の 8080 とフェイクの Issuer の 9000 は、ルートの compose の予定の API と IdP と重なる。  
 compose を起動しているときは、重なる 2 つを `docker compose stop schedule idp` で止めてから実行する。
@@ -55,9 +55,9 @@ docker run --rm -p 8080:8080 -e OIDC_ISSUER=<Issuer の URL> -e OIDC_AUDIENCE=re
 ルートの compose の照合の API は、Google カレンダーの代わりに calendarpit を読む。  
 読むカレンダーは `compose/receipt-calendars.json` の森 健太のカレンダーで、サービスアカウントの対応と認証の情報は予定の API と同じものを使う。  
 `compose/calendarpit/fixture.json` の森の予定は `2026-11` の月にあるので、`month=2026-11` で照合すると、その予定が結果に出る。  
-起動とトークンの取り方は、[CONTRIBUTING.md](../../CONTRIBUTING.md) の「ローカル環境で全体を起動する」にある。
+起動とトークンの取り方は、[CONTRIBUTING.md](../../CONTRIBUTING.md) の Running Locally にある。
 
-## テストとチェック
+## Tests and Checks
 
 `services/receipt` で実行する。
 
@@ -68,9 +68,9 @@ golangci-lint run
 ```
 
 テストと lint は `GOWORK=off` を付けて流す。  
-理由は [CONTRIBUTING.md](../../CONTRIBUTING.md) の「開発環境のセットアップ」にある。
+理由は [CONTRIBUTING.md](../../CONTRIBUTING.md) の Setup にある。
 
-## コードの生成
+## Code Generation
 
 API の定義の正本は [openapi.yaml](openapi.yaml) である。  
 oapi-codegen が、そこから net/http の strict server のインターフェイスと型を `internal/httpapi/openapi/openapi.gen.go` に生成する。`internal/httpapi` がそのインターフェイスを実装する。  
@@ -175,7 +175,7 @@ Application Default Credentials が検証の事業所のサービスアカウン
 認証する主体に、事業所のサービスアカウントごとのトークン作成者のロールを付ける。  
 Workload Identity Federation のプールとプロバイダーの作り方は、インフラのリポジトリが持つ。
 
-## ドキュメント
+## Documentation
 
 - [DesignDoc.md](DesignDoc.md): パッケージの構成、入力の CSV、判定の規則、元の実装との違い
 - [tools/parity/README.md](tools/parity/README.md): 元の Python の実装と結果を比べる手順

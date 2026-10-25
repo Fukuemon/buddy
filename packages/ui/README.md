@@ -3,7 +3,7 @@
 buddy のデザインシステム。DADS のトークンを元にした意味のトークンと、Base と Case のコンポーネントを持つ。  
 apps/web は `@buddy/ui` を `workspace:*` で読み、ビルドせずに TypeScript のまま使う。
 
-## テストとチェック
+## Tests and Checks
 
 `component` と `storybook` の project はブラウザで動くので、初めて流すときは Playwright の chromium を入れる。
 
@@ -26,7 +26,7 @@ pnpm --filter @buddy/ui storybook
 
 画面の Storybook（apps/web）も、このパッケージのコンポーネントを載せる。
 
-## ドキュメント
+## Documentation
 
 - [DESIGN.md](DESIGN.md): トークンとコンポーネントの使い方、カタログの組み方
 - [ADR-0004](../../docs/adr/0004-design-system.md): トークンの段の分け方とコンポーネントの配置先の判断

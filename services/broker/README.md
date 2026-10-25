@@ -4,7 +4,7 @@ Ory Hydra の login and consent app として動き、事業所ごとの上流�
 ログイン、同意、ログアウトの画面、上流の IdP への RP の処理、職員の登録、休職、復職、退職の内部の API、Hydra の token_hook、ヘルスチェック、職員の身元の DB のマイグレーションとシードを持つ。  
 責務と流れは [DesignDoc.md](DesignDoc.md) にある。
 
-## セットアップ
+## Setup
 
 Go と golangci-lint のバージョンは、リポジトリのルートの `mise.toml` にある。
 
@@ -12,9 +12,9 @@ Go と golangci-lint のバージョンは、リポジトリのルートの `mis
 mise install go golangci-lint
 ```
 
-## 起動する
+## Running
 
-ルートの compose は、ブローカーを Hydra と上流の IdP のフェイクと一緒に起動する（[CONTRIBUTING.md](../../CONTRIBUTING.md) の「ローカル環境で全体を起動する」）。  
+ルートの compose は、ブローカーを Hydra と上流の IdP のフェイクと一緒に起動する（[CONTRIBUTING.md](../../CONTRIBUTING.md) の Running Locally）。  
 ここでは、compose のブローカーを止め、ローカルで `go run` で起動する手順を示す。ブローカーの DB は、compose の PostgreSQL の `broker` のデータベースである。Hydra と予定の API の DB とは分ける。
 
 ```sh
@@ -78,7 +78,7 @@ docker build -f Dockerfile -t broker ../..
 docker run --rm broker migrate up   # DB の環境変数を -e で渡す
 ```
 
-## テストとチェック
+## Tests and Checks
 
 `services/broker` で実行する。
 
@@ -89,11 +89,11 @@ golangci-lint run
 ```
 
 テストと lint は `GOWORK=off` を付けて流す。  
-理由は [CONTRIBUTING.md](../../CONTRIBUTING.md) の「開発環境のセットアップ」にある。
+理由は [CONTRIBUTING.md](../../CONTRIBUTING.md) の Setup にある。
 
 `internal/postgres` のテストは、testcontainers で PostgreSQL のコンテナを起動し、マイグレーションを当ててテーブルの制約を確認する。Docker が無い環境では `go test -short ./...` で飛ばす。
 
-## ドキュメント
+## Documentation
 
 - [DesignDoc.md](DesignDoc.md): ブローカーの責務、Hydra との分担、ログイン、職員の登録、休職、復職、退職、ログアウトの流れ
 - ADR-0016: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](../../docs/adr/0016-id-broker-hydra.md)
