@@ -8,7 +8,8 @@
 | チームのチェックボックス | チームの名前 | `Team.name` | `listTeams` の `Unit.name` |
 | 職員のチェックボックス | 職員の名前と、属するチーム | `Staff.name`、`Staff.teamId` | `listUsers` の `Staff.username`、`Staff.team.id` |
 | 職員のチェックボックス、職員の列、予定 | 休職と退職の職員を除くか | `Staff.status` | `listUsers` の `Staff.status` |
-| 表示する日付 | 表示の基準の日付 | search params の `date` | なし |
+| ミニカレンダー、ミニカレンダーの日 | 表示の基準の日付 | search params の `date` | なし |
+| キャンセルした予定を出す | キャンセルした予定を出すか | search params の `cancelled` | なし |
 | 表示の単位 | 月、週、日 | search params の `view` | なし |
 | 予定 | 日付と開始の時刻 | `Schedule.startsAt` | `listSchedules` の `Schedule.date`、`start_time` |
 | 予定 | 終了の時刻（日の表示） | `Schedule.endsAt` | `listSchedules` の `Schedule.end_time` |

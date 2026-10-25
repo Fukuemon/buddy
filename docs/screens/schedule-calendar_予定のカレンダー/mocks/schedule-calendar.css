@@ -1,13 +1,17 @@
 /* 予定のカレンダーのモックだけの見た目 */
 
-/* 左に職員の絞り込み、右にカレンダーを置く。幅 768px 未満では、絞り込みを左端から開くドロワーに入れ、閉じた状態で始める */
+/* 左のサイドバーにキャンセルの切り替え、職員の絞り込み、ミニカレンダー、右にカレンダーを置く。幅 768px 未満では、サイドバーの中身を左端から開くドロワーに入れ、閉じた状態で始める */
 .sc-body {
   display: flex;
 }
 
-/* 幅 768px 以上では、ドロワーの枠を持たず、中の職員の絞り込みだけを左に置く */
+/* 幅 768px 以上では、ドロワーの見出しを持たず、幅 320px（apps/web の w-80）のサイドバーとして左に置く */
 .sc-drawer {
-  display: contents;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: 320px;
+  border-right: 1px solid var(--wf-line-soft);
 }
 
 .sc-drawer__head,
@@ -16,14 +20,88 @@
   display: none;
 }
 
+.sc-cancelled {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--wf-line-soft);
+}
+
+.sc-cancelled .wf-check {
+  min-height: 44px;
+}
+
 .sc-side {
   display: flex;
-  flex: none;
   flex-direction: column;
   gap: 16px;
-  width: 224px;
   padding: 16px;
-  border-right: 1px solid var(--wf-line-soft);
+}
+
+/* ミニカレンダー。幅 768px 以上ではサイドバーの下端に留め、未満ではドロワーの先頭に置く */
+.sc-mini {
+  display: flex;
+  order: 1;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: auto;
+  padding: 8px;
+  border-top: 1px solid var(--wf-line-soft);
+}
+
+.sc-mini__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sc-mini__month {
+  padding-left: 8px;
+  font-size: 14px;
+}
+
+.sc-mini__nav {
+  display: flex;
+}
+
+.sc-mini__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  text-align: center;
+}
+
+.sc-mini__weekday {
+  color: var(--wf-muted);
+  font-size: 12px;
+  line-height: 32px;
+}
+
+/* 日の押せる領域は高さ 44px。期間の日は面を塗り、今日は丸で示す */
+.sc-mini__day {
+  display: grid;
+  place-items: center;
+  height: 44px;
+  font-size: 12px;
+}
+
+.sc-mini__day > span {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.sc-mini__day--out {
+  color: var(--wf-muted);
+}
+
+.sc-mini__day.is-range {
+  background: var(--wf-primary-surface);
+}
+
+.sc-mini__day.is-today > span {
+  background: var(--wf-primary);
+  color: var(--wf-surface);
+  font-weight: 700;
 }
 
 .sc-side__actions {
@@ -100,12 +178,6 @@
   line-height: 1.5;
 }
 
-.sc-date {
-  min-height: 44px;
-  width: 160px;
-  margin-left: 8px;
-}
-
 .sc-view {
   width: 192px;
 }
@@ -131,8 +203,8 @@
     z-index: 2;
     display: flex;
     flex-direction: column;
-    width: 320px;
     min-height: calc(var(--mock-height, 844px) - 2px);
+    border-right: 0;
     background: var(--wf-surface);
     box-shadow: 0 0 0 1px var(--wf-line);
   }
@@ -155,9 +227,11 @@
     font-size: 15px;
   }
 
-  .sc-side {
-    width: auto;
-    border-right: 0;
+  .sc-mini {
+    order: 0;
+    margin-top: 0;
+    border-top: 0;
+    border-bottom: 1px solid var(--wf-line-soft);
   }
 
   .sc-filter-open {
