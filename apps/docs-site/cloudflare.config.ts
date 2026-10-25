@@ -6,8 +6,8 @@ export default defineConfig({
   worker: {
     name: 'buddy-docs',
     compatibilityDate: '2026-10-01',
-    // 本番の workers.dev の URL を出し、Access で守る。プレビューは出さない（ADR-0019）が、前に出したプレビューの URL の設定は有効のまま残す
+    // 本番の workers.dev の URL だけを出し、Access で守る。プレビューは出さない（ADR-0019）ので、プレビューの URL は無効にする
     workersDev: true,
-    previewUrls: true,
+    previewUrls: false,
   },
 })
