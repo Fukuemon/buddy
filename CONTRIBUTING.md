@@ -1,45 +1,41 @@
-# 変更をマージするまで
+# Contributing
 
-## 開発環境のセットアップ
+## Prerequisites
 
-必要なものは mise、Docker、jq である。  
-ランタイムとツール（Node、pnpm、Go、sqlc、golang-migrate、golangci-lint、uv、tbls、apm、gh）のバージョンは `mise.toml` にある。  
-gh は、エビデンスの動画を pull request の本文と issue に入れる `--attach` のために、2.99 以降をそろえる。  
-pnpm は `package.json` の `packageManager` と同じバージョンにする。  
-jq は `mise.toml` に無く、API を手で呼ぶ手順でトークンを取り出すのに使う。  
-ドキュメントサイトをビルドする Zensical は、mise が入れる `uv` で実行する。  
-ほかのツールとバージョンの所在は、[技術スタック](context/tech-stack.md) にある。
+- mise
+- Docker
+- jq
+
+## Setup
 
 ```sh
 mise install
 pnpm install
 ```
 
-mise が gh の attestation を確認するときに `error decoding response body` で失敗することがある。  
-そのときは、mise のエラーに出た zip を `gh attestation verify <zip> --repo cli/cli` で確認してから、確認を外して入れる。
+`pnpm install` が、lefthook の Git のフックを入れる。
+
+mise が gh の attestation の確認で `error decoding response body` を出して失敗することがある。  
+そのときは、エラーに出た zip を `gh attestation verify <zip> --repo cli/cli` で確認してから、確認を外して入れる。
 
 ```sh
 MISE_AQUA_GITHUB_ATTESTATIONS=false mise install aqua:cli/cli
 ```
 
-`pnpm install` の `prepare` が、lefthook の Git のフック（commit-msg の commitlint、pre-commit の textlint と `pnpm lint:openapi`）を入れる。
+### Go のモジュール
 
-Go のモジュールは `services/schedule`、`services/receipt`、ID ブローカーの `services/broker` と、それらが共有するコードの `packages/go` の 4 つである。  
-2 つの API とブローカーは `packages/go` を `go.mod` の `replace` で読む。  
-ADR-0007: [2 つの Go の API が共有するコードを、別の module にまとめる](docs/adr/0007-go-shared-module.md)
-
-- エディタで 4 つを読むときは、ルートで `go work init ./services/receipt ./services/schedule ./services/broker ./packages/go` を流す。
+- エディタで Go の 4 つのモジュールを読むときは、ルートで `go work init ./services/receipt ./services/schedule ./services/broker ./packages/go` を流す。
 - `go.work` は追跡しない。
   - `go.work` の下では、4 つのモジュールが共有する依存のバージョンが高い方にそろい、コンテナのイメージ（各 `go.mod` だけでビルドする）とずれるためである。
-- テストと lint は、各 API、ブローカー、`packages/go` のディレクトリで `GOWORK=off` を付けて流す。
+- テストと lint は、各モジュールのディレクトリで `GOWORK=off` を付けて流す。
 - `packages/go` を変えたときは、2 つの API とブローカーのテストも流す。
 - `go.work` の下でビルドすると各 API の `go.sum` に行が増える。増えた行はコミットに含めない。
 
+### スキルとフック
+
 agent-harness のスキルとフックは apm で配置し、Git で追跡しない。  
-入れるパッケージは `apm.yml` にある。検証とエビデンス、E2E のテスト、画面仕様書のスキルも、パッケージ verification、e2e、screens から配置する。  
-スキルが読む buddy の値は、`context/` と `context/project.yml` のキーにある。  
-Claude Code か Codex を使うときは、clone した後の最初のセッションで、セッションの開始のフックが apm のスキルとフックを配置する。  
-文書のチェックのスクリプト（`.claude/hooks/docs/`）も apm が配置する。コーディングエージェントを使わないときは、手で次を実行する。
+Claude Code か Codex を使うときは、clone した後の最初のセッションで、セッションの開始のフックが配置する。  
+コーディングエージェントを使わないときは、手で配置する。
 
 ```sh
 apm install --frozen
@@ -51,15 +47,13 @@ apm install --frozen
 apm lifecycle trust
 ```
 
-## ローカル環境で全体を起動する
+## Running Locally
 
-画面、2 つの API、ID ブローカー、Hydra、PostgreSQL、Valkey、事業所の上流の IdP のフェイク、calendarpit、gcalhold は、リポジトリのルートの `compose.yml` で一緒に起動する。Docker が要る。
+画面、API、ID ブローカーと、それらが使うサービスを、ルートの `compose.yml` で一緒に起動する。
 
 ```sh
 docker compose up --build --wait
 ```
-
-`--wait` は、全てのサービスのヘルスチェックが通るまで待つ。予定の API とブローカーは、起動の前にマイグレーションとシードを適用する。シードは、予定の API では事業所が、ブローカーでは職員が既にあれば適用しない。Hydra は起動の前にマイグレーションを適用し、初期化のコンテナが web と予定の API のクライアントを登録する。Hydra は、トークンを発行するたびに、ブローカーで職員が止まっていないかを確認する。
 
 ポートは `127.0.0.1` にだけ公開する。
 
@@ -69,57 +63,56 @@ docker compose up --build --wait
 | schedule | `http://localhost:8080` | `SCHEDULE_PORT` |
 | receipt | `http://localhost:8090` | `RECEIPT_PORT` |
 | broker（ログインの画面） | `http://localhost:8100` | `BROKER_PORT` |
-| broker（内部の API と token_hook。E2E が呼ぶ） | `http://localhost:8101` | `BROKER_INTERNAL_PORT` |
+| broker（内部の API） | `http://localhost:8101` | `BROKER_INTERNAL_PORT` |
 | hydra（public API と admin API） | `http://localhost:4444`、`http://localhost:4445` | `HYDRA_PUBLIC_PORT`、`HYDRA_ADMIN_PORT` |
 | idp（上流の IdP のフェイク。事業所ごとに `/office-a`、`/office-b`） | `http://localhost:9000` | `IDP_PORT` |
 | postgres | `localhost:15432` | `POSTGRES_PORT` |
 | valkey | `localhost:6379` | `VALKEY_PORT` |
-| calendarpit（Google Calendar API と OAuth をローカル環境で再現する。管理の画面で職員のカレンダーと予定を見て、直す） | `http://localhost:4173` | `CALENDARPIT_PORT` |
-| gcalhold（予定の API と calendarpit の間の中継。E2E が Google の変更を予定の API に渡さないようにする） | `http://localhost:8085` | `GCALHOLD_PORT` |
+| calendarpit（Google Calendar API のフェイク） | `http://localhost:4173` | `CALENDARPIT_PORT` |
+| gcalhold（予定の API と calendarpit の間の中継） | `http://localhost:8085` | `GCALHOLD_PORT` |
 
-- `http://localhost:3000` を開くと、Hydra を通ってブローカーのログインの画面へ移る。メールに `hina.aoki@example.com` を入れると、事業所の上流の IdP のフェイクのログインの画面へ移る。
-  - フェイクは navikt/mock-oauth2-server である。名前に入れた値が上流の `sub` になり、クレームの欄に書いた JSON が ID token のクレームになる。
-  - クレームの欄に `{"email": "hina.aoki@example.com", "email_verified": true}` を書いて入ると、青木 陽菜（マネージャー）としてログインする。メールを入れなかったり、ブローカーで入れたメールと違ったりすると、ログインの失敗の画面になる。
-  - ブローカーは、初回のログインで上流の `iss` と `sub` を職員に結び付ける。以後、同じ職員には同じ名前で入る。
-- シードの職員は、ブローカーと予定の API で同じ ID を持つ。メールは次のとおり。
+- `http://localhost:3000` を開き、ブローカーのログインの画面でメールに `hina.aoki@example.com` を入れる。
+  - 上流の IdP のフェイクの画面で、クレームの欄に `{"email": "hina.aoki@example.com", "email_verified": true}` を書いて入ると、青木 陽菜（マネージャー）としてログインする。
+  - クレームのメールが無いときと、ブローカーで入れたメールと違うときは、ログインの失敗の画面になる。
+  - 初回に名前の欄に入れた値が職員に結び付くので、以後は同じ値で入る。
+- シードの職員のメールは次のとおり。
   - 1 つ目の事業所（組織 `org-sample`）: `hina.aoki@example.com`（青木 陽菜、マネージャー）、`kenta.mori@example.com`（森 健太、チームリーダー）
     - ほかに `sakura.hayashi@example.com` と `misaki.sato@example.com` がいる
   - 2 つ目の事業所（組織 `org-sample-b`）: `nagisa.ueno@example.com`（上野 渚、マネージャー）
     - ほかに、休職の職員の `takumi.ono@example.com`（小野 拓海）がいる。ログインの失敗の画面になる
-  - シードは、空の DB にだけ適用される。シードを変えた後と、ブローカーの無い前の compose で作った DB は、`docker compose down -v` で作り直す。
-- API が受けるトークンの `iss` は `http://hydra:4444` である。web と 2 つの API は、コンテナの間の名前 `hydra` で Hydra の discovery の文書と JWKS を読む。
-- 照合の API は、calendarpit の森 健太のカレンダーを読む。読むカレンダーは `compose/receipt-calendars.json` にある。
-  - 照合の画面で、予定の取り方に「Google カレンダー」を、対象の月に `2026-11` を選ぶと、`compose/calendarpit/fixture.json` の森のその月の予定で照合できる。
-- データを消して最初からにするときは、`docker compose down -v` で PostgreSQL と calendarpit のボリュームを消す。
-- 別の worktree で同時に起動するときは、`docker compose -p <名前> up --build --wait` でプロジェクトの名前を変え、上の表の環境変数でポートをずらす。コンテナ、ボリューム、予定の API のイメージがプロジェクトごとに分かれる。E2E は、URL の環境変数をずらしたポートに合わせて流す。
-  - 画面と外部のサービスの URL は、`E2E_BASE_URL`、`E2E_CALENDARPIT_URL`、`E2E_GCALHOLD_URL`、`E2E_HYDRA_URL` で合わせる。
-  - API とブローカーの URL は、`E2E_SCHEDULE_URL`、`E2E_BROKER_URL`、`E2E_BROKER_INTERNAL_URL` で合わせる。
+  - シードは、空の DB にだけ適用される。シードを変えた後は、`docker compose down -v` で作り直す。
+- 照合の画面で、予定の取り方に「Google カレンダー」を、対象の月に `2026-11` を選ぶと、calendarpit の森 健太のカレンダーの予定で照合できる。
+- データを消して最初からにするときは、`docker compose down -v` でボリュームを消す。
+- 別の worktree で同時に起動するときは、`docker compose -p <名前> up --build --wait` でプロジェクトの名前を変え、表の環境変数でポートをずらす。
+  - E2E は、ずらしたポートに URL の環境変数を合わせて流す。
+    - 画面と外部のサービスは `E2E_BASE_URL`、`E2E_CALENDARPIT_URL`、`E2E_GCALHOLD_URL`、`E2E_HYDRA_URL`
+    - API とブローカーは `E2E_SCHEDULE_URL`、`E2E_BROKER_URL`、`E2E_BROKER_INTERNAL_URL`
 
-予定の API を手で呼ぶときは、`compose/dev-token.sh` でトークンを取る。ブラウザの代わりに、Hydra、ブローカー、上流の IdP のフェイクの画面を curl で順に通り、引数のメールの職員の access token を書く。ポートを変えて起動したときは、同じ環境変数を渡す。
+### API を手で呼ぶ
+
+`compose/dev-token.sh` で、引数のメールの職員の access token を取る。ポートを変えて起動したときは、同じ環境変数を渡す。
 
 ```sh
 TOKEN=$(compose/dev-token.sh hina.aoki@example.com)
 curl -H "Authorization: Bearer $TOKEN" localhost:8080/v1/facilities/01M3TC5H00QV17BC0J9V3393ZP
 ```
 
-照合の API も、同じトークンで呼べる。`month` を送ると、calendarpit の森のカレンダーのその月の予定と照合する。
+照合の API も、同じトークンで呼べる。`month` を送ると、calendarpit の森 健太のカレンダーのその月の予定と照合する。
 
 ```sh
 curl -H "Authorization: Bearer $TOKEN" -F visits=@services/receipt/testdata/visits_utf8.csv -F month=2026-11 localhost:8090/v1/checks
 ```
 
-ドキュメントサイトの API の仕様のページからも、ローカルの API を呼べる。
+ドキュメントサイトの API の仕様のページからも、ローカルの API を呼べる。公開したドキュメントサイトからは呼べない。
 
 1. `docker compose up --build --wait schedule receipt` で API を立てる。
-2. `uv run zensical serve` で、ドキュメントサイトを `http://localhost:8000` で開く。compose の 2 つの API は、このオリジンだけに CORS を許すので、`127.0.0.1` ではなく `localhost` で開く。
+2. `uv run zensical serve` で、ドキュメントサイトを `http://localhost:8000` で開く。`127.0.0.1` で開くと CORS で失敗する。
 3. 「API の仕様」のページで操作を選び、「Test Request」を押す。
-4. 上の手順で取った `$TOKEN` の値を「Bearer Token」の欄に貼り、「Send」を押す。
+4. `$TOKEN` の値を「Bearer Token」の欄に貼り、「Send」を押す。
 
-公開したドキュメントサイトからは呼べない。API がそのオリジンに CORS を許していないうえ、https のページからローカルの API へのリクエストをブラウザが止めることがあるためである。
+## E2E Tests
 
-## E2E のテストを流す
-
-E2E のテストは `packages/e2e` にあり、ルートの compose で立てた全体に向けて流す。初めて流すときは、Playwright のブラウザを入れる。
+初めて流すときは、Playwright のブラウザを入れる。
 
 ```sh
 pnpm --filter @buddy/e2e exec playwright install chromium
@@ -127,28 +120,24 @@ docker compose up --build --wait
 pnpm e2e
 ```
 
-- 書き方は、スキル write-e2e-test に従う。書いたら `pnpm --filter @buddy/e2e check` で、整形、lint、E2E の書き方の規則、型を確認する。
+- 書いたら `pnpm --filter @buddy/e2e check` を流す。
 - 環境変数と、テストのデータの扱いは [E2E のテスト](context/testing/e2e.md) にある。
 - エビデンスの動画を撮る spec は、`pnpm e2e` では流れない。撮るコマンドは [エビデンス](context/testing/evidence.md) の Capture Environment にある。
 - 失敗したテストの trace は `packages/e2e/test-results/` に残る。`pnpm --filter @buddy/e2e exec playwright show-trace <trace.zip>` で開く。trace.zip は、`packages/e2e` からの相対パス（Playwright が出す `test-results/...`）で渡す。
 
-## ドキュメントサイトを組み立てる
+## Docs Site
 
-ドキュメントサイトには、文書と、Storybook のカタログ（`/storybook/`）と、ER 図（`/erd/`）がある。  
-pull request では、ワークフロー「ドキュメントサイト」がサイトを組み立てるだけで、プレビューは出さない（[ADR-0019](docs/adr/0019-docs-site-publish-and-contrast-check.md)）。  
-develop に入ると本番に出す。本番は、Cloudflare Access で許可した人だけが開ける。
+pull request ではプレビューを出さない。develop に入ると本番に出る。  
+ADR-0019: [ドキュメントサイトのプレビューをやめ、トークンの組のコントラストを pnpm check:contrast で確認する](docs/adr/0019-docs-site-publish-and-contrast-check.md)
 
-- マージする前に公開した形で見るときは、ルートで `pnpm site:build` を実行し、`apps/docs-site/public/` を静的なファイルとして配信して開く。
+- マージする前に公開した形で見るときは、ルートでサイトを組み立て、静的なファイルとして配信して開く。
 
   ```sh
   pnpm site:build
   uv run python -m http.server 8002 --bind 127.0.0.1 -d apps/docs-site/public   # http://127.0.0.1:8002 で開く
   ```
 
-  - サイトに並べるものとサブパスは、`context/project.yml` の `docs_site.parts` にある。`scripts/build-docs-site.mjs` が、各 part を作ってから `apps/docs-site/public/` に並べる。
-- 本番に出した後に、ワークフローが `scripts/check-docs-site-protection.mjs` で、文書、カタログ、ER 図が Access で守られているかを確認する。
-- ER 図だけをローカルで見るときは、ルートで `pnpm build:erd` を実行して `erd/` を作り、静的なファイルとして配信して開く。
-  - ER 図は `docs/db/schedule/schema.json` から作るので、テーブルを変えたときは先に `pnpm generate:db-docs` を流す。
+- ER 図だけを見るときは、`erd/` を作って配信する。テーブルを変えたときは、先に `pnpm generate:db-docs` を流す。
 
   ```sh
   pnpm build:erd
@@ -157,27 +146,21 @@ develop に入ると本番に出す。本番は、Cloudflare Access で許可し
 
 - デプロイの構成と Cloudflare のセットアップは、[apps/docs-site/README.md](apps/docs-site/README.md) にある。
 
-## 文書を直すとき
-
-PRD、Design Doc、ADR は `docs/` にあり、Zensical のサイトとして読む。
-Zensical は `uv` で入れ、バージョンは `pyproject.toml` と `uv.lock` にある。
+## Editing Documents
 
 ```sh
 uv run zensical serve   # http://localhost:8000 で読みながら直す
 uv run zensical build   # 出力の最後が "No issues found" になることを確認する
 ```
 
-- `zensical build` は、リンクの先のページと見出しのアンカーがないと "Warning" を出す。警告が残ったままマージしない。
-- 画面仕様書とモックの書き方は、スキル write-screen-spec に従う。
-- 画面仕様書かモックを直したら、`pnpm check:screens` を流す。story の `title` か export の名前を変えたときも流す。
-  - [画面仕様書の規約](docs/screens/rules.md) の名前、構造、構成番号、`data-testid` の形、E2E が使う testid がモックにあるか、カタログの欄の story があるかを確認する。
-  - CI も同じ点検を流す。
-  - 1 つの画面だけを見るときは `node scripts/check-screens.mjs docs/screens/<ディレクトリ>` を流す。この形では、E2E の testid の照合は流れない。
-- モックの `data-testid` を実装に合わせるときは、実装の testid を `rg -n 'data-testid' apps/web/src` で集める。
-- ページを足したら、`zensical.toml` の `nav` に足す。`nav` にないページはナビゲーションから開けない。
+- `zensical build` の "Warning" が残ったままマージしない。リンクの先のページか見出しのアンカーがないと出る。
+- ページを足したら、`zensical.toml` の `nav` に足す。
 - 機能ごとの Design Doc の配置先、サイトへの載せ方、リンクの書き方は、[コードと文書の規約](context/conventions.md#documents) にある。
+- 画面仕様書かモックを直したときと、story の `title` か export の名前を変えたときは、`pnpm check:screens` を流す。
+  - 1 つの画面だけを見るときは `node scripts/check-screens.mjs docs/screens/<ディレクトリ>` を流す。この形では、E2E の testid の照合は流れない。
+  - モックの `data-testid` を実装に合わせるときは、実装の testid を `rg -n 'data-testid' apps/web/src` で集める。
 
-文章の規則は textlint で、経緯の混入とリンクは docs のスクリプトで確認する。指摘された語は言い換え、`--fix` は使わない。プロジェクトの用語と見出しの語が指摘されたときは、言い換えずに、`.textlintrc.json` の `allows` に足すかをメンテナーと決める。
+文書のチェックは次の 3 つ。
 
 ```sh
 pnpm exec textlint "**/*.md"
@@ -185,13 +168,12 @@ node .claude/hooks/docs/hooks/check-history.mjs
 node .claude/hooks/docs/hooks/check-links.mjs
 ```
 
-- pre-commit のフックが、ステージした Markdown に textlint を流す。
-- `.textlintignore` は、Git で追跡しないものと、`docs/design/` の下のシンボリックリンクを外す。シンボリックリンクの先の文書は、元の場所で確認する。
-- `docs/` のスクリプトは apm が `.claude/hooks/docs/` に配置する。無ければ `apm install --frozen` を流す。
+- textlint に指摘された語は言い換え、`--fix` は使わない。
+- プロジェクトの用語と見出しの語が指摘されたときは、言い換えずに、`.textlintrc.json` の `allows` に足すかをメンテナーと決める。
 
 `verified_commit` の後に実装が変わった文書は、`node .claude/hooks/docs/hooks/list-drift.mjs` で一覧する。実装と読み比べてから `verified_commit` を進める。
 
-## デザインシステムを直すとき
+## Editing the Design System
 
 使い方の規則は [packages/ui/DESIGN.md](packages/ui/DESIGN.md) にある。トークンを直すときは、スキル write-design-system に従う。  
 意味のトークン（`packages/ui/src/tokens/semantic.css`）か DADS のバージョンを変えたら、次を流し、生成した `docs/screens/_common/tokens.css` を同じコミットに入れる。
@@ -204,18 +186,11 @@ pnpm build:tokens     # 画面のモックとドキュメントサイトが読�
 - 組を足すときと外すときは、`scripts/check-contrast.mjs` の冒頭の `TEXT_PAIRS` と `NON_TEXT_PAIRS` を直す。
 - `scripts/check-contrast.mjs` と `scripts/build-static-tokens.mjs` は、agent-harness のパッケージ design-system のテンプレートを写したものである。パッケージを上げたら、スキル setup-design-system の手順で差分を見て取り込む。
 
-## API の定義を変えるとき
+## Changing the API Definition
 
-各 API の定義の正本は、`services/schedule/openapi.yaml` と `services/receipt/openapi.yaml` である。サーバーの Go のコードと画面の型は、そこから生成してコミットする。  
-openapi.yaml を変えたら、同じコミットで生成物も生成し直す。
-
-定義の書き方は Redocly CLI の `recommended-strict` の規則で確認する。pre-commit のフックが、`openapi.yaml` か lint の設定をステージしたときに `pnpm lint:openapi` を流す。
-
-null を許す項目は、`type` と `nullable: true` を同じ階層に置き、参照する型は `allOf` で包む。OpenAPI 3.0 は `type` の無い `nullable` を無視する。サーバーが使う kin-openapi は、外側の `nullable` を見て、`allOf` の中を確認する前に null を通す。規則を外す箇所は `.redocly.lint-ignore.yaml` に理由と一緒に書き、規則ごと外すものは `redocly.yaml` に書く。
-
-```sh
-pnpm lint:openapi
-```
+各 API の定義の正本は、`services/schedule/openapi.yaml` と `services/receipt/openapi.yaml` である。  
+openapi.yaml を変えたら、`pnpm lint:openapi` を流し、同じコミットで生成物も生成し直す。  
+定義の書き方の規約は、[コードと文書の規約](context/conventions.md#api-definitions) にある。
 
 | 変えたもの | 生成のコマンド | 生成物 |
 | --- | --- | --- |
@@ -224,70 +199,42 @@ pnpm lint:openapi
 | `services/schedule/db/` の SQL | `services/schedule` で `sqlc generate` | `services/schedule/internal/postgres/sqlcgen/` |
 | どちらかの openapi.yaml | `pnpm --filter @buddy/web generate:api` | `apps/web/src/api/generated/` |
 | `services/schedule/db/migrations/`、`services/schedule/.tbls.yml` | `pnpm generate:db-docs`（Docker が要る） | `docs/db/schedule/`（テーブル定義書と ER 図） |
-| `packages/ui/src/tokens/semantic.css`、`@digital-go-jp/design-tokens` | `pnpm build:tokens` | `docs/screens/_common/tokens.css`（画面のモックとドキュメントサイトが読む） |
+| `packages/ui/src/tokens/semantic.css`、`@digital-go-jp/design-tokens` | `pnpm build:tokens` | `docs/screens/_common/tokens.css` |
 
 テーブルを足したときは、`.tbls.yml` の `viewpoints` のどれかに入れる。  
-どの viewpoint にも入らないテーブルがあると、`pnpm generate:db-docs` が tbls lint で 1 で終わる。  
 viewpoint を足したときは、生成した文書を `zensical.toml` の nav の「DB の設計」にも足す。  
-nav に無い viewpoint の文書があっても、`pnpm generate:db-docs` が 1 で終わる。
+どちらかが抜けていると、`pnpm generate:db-docs` が 1 で終わる。
 
-マージする前に、生成物がそろっているかをリポジトリのルートで確認する。テーブル定義書を除く全ての生成を流し直し、差分か追跡していない生成物があれば 1 で終わる。テーブル定義書は Docker が要るので外しており、CI の `db-docs` のジョブが同じように確認する。
+マージする前に、ルートで生成物がそろっているかを確認する。テーブル定義書は、CI の `db-docs` のジョブが確認する。
 
 ```sh
 pnpm check:generated
 ```
 
-## CI のチェック
+## CI
 
-pull request では、CI（[ci.yml](.github/workflows/ci.yml)）が次を流す。  
-全部が通るまでマージしない。  
+pull request では、CI（[ci.yml](.github/workflows/ci.yml)）が通るまでマージしない。  
 変更ごとにローカルで流すテストは `context/testing.md` の Required Tests にある。
 
-- OpenAPI の lint（`pnpm lint:openapi`）、画面仕様書の点検（`pnpm check:screens`）、意味のトークンのコントラストのチェック（`pnpm check:contrast`）
-- TypeScript と Go の lint、型のチェック、テスト
-- 生成物のそろい（`pnpm check:generated`）と、テーブル定義書のそろい（`db-docs`）
-- E2E
+- pull request と issue のタイトルと本文の形は、[issue-pr-body.yml](.github/workflows/issue-pr-body.yml) が確認する。
+- E2E が CI だけで失敗したときは、ワークフローの実行の画面から artifact の `e2e-test-results` を落とし、中の trace を [E2E Tests](#e2e-tests) の手順で開く。
+- ジョブを流すランナーの切り替えは、[基盤と運用](context/operations.md#ci-runners) にある。
 
-pull request と issue のタイトルと本文の形は、[issue-pr-body.yml](.github/workflows/issue-pr-body.yml) が確認する。タイトルの接頭辞、issue とのタイトルの一致、先頭の `Closes` か `Refs`、セクションの名前と順、帰属表示、`.ai-out/` のパスの残り、本文の textlint を見る。pull request は違反でチェックが失敗し、issue は違反をコメントで知らせる。
+## Commits
 
-E2E が CI だけで失敗したときは、ワークフローの実行の画面から artifact の `e2e-test-results` を落とし、中の trace を「E2E のテストを流す」の手順で開く。
-
-ワークフローのジョブは、リポジトリの変数 `RUNS_ON` が指すランナーで流れる。  
-変数が無ければ GitHub のランナー（`ubuntu-latest`）で流れる。  
-メンテナーの self-hosted runner で流すときは、変数にラベルの JSON の配列を入れる。
-
-```sh
-gh variable set RUNS_ON -R Fukuemon/buddy --body '["self-hosted","macOS","ARM64"]'
-```
-
-GitHub のランナーに戻すときは、`gh variable delete RUNS_ON -R Fukuemon/buddy` で変数を消す。
-
-- self-hosted runner の機械では、ローカル環境の compose が動いていることがある。
-  - CI の E2E は、compose のプロジェクトの名前を `buddy-ci` にし、ポートを全てずらして起動する。ずらしたポートは [ci.yml](.github/workflows/ci.yml) の `e2e` のジョブにある。
-- self-hosted runner は、E2E のジョブの後に、タグの無い Docker のイメージと 7 日より古いビルドのキャッシュを消す。
-  - Docker は runner の機械のローカル環境と共有なので、ローカル環境のものも消える。
-- self-hosted runner は、runner の `.env` で Go、pnpm、mise、Playwright のキャッシュの配置先を `~/actions-runner/_cache` に分ける。
-  - `.path` では、PATH を Homebrew とシステムのディレクトリに絞る。
-  - ローカル環境のツールとキャッシュを CI と共有しないためである。runner を作り直すときも、同じ設定にする。
-- self-hosted runner は、private のリポジトリだけに使う。public のリポジトリでは、外部の人の pull request のコードが runner の機械で流れる。
-
-## コミットするとき
-
-- commit-msg のフックが、メッセージの形式を commitlint で確認する。形式は `commitlint.config.mjs` にある。フックは `pnpm install` の `prepare` が入れる。
+- commit-msg のフックが、commitlint でメッセージの形式を確認する。
 - 変更の分け方とメッセージの書き方は、スキル write-commit に従う。
 
-## ブランチとリリース
+## Branches and Releases
 
-ブランチは、`main`、`develop`、issue ごとの作業用のブランチにする。運用とリリースの方針を決めた理由は [ADR-0003](docs/adr/0003-branch-and-release.md) にある。
+ブランチは、`main`、`develop`、issue ごとの作業用のブランチにする。  
+ADR-0003: [git flow でマージし、アプリごとのバージョンでリリースする](docs/adr/0003-branch-and-release.md)
 
 - `main` はリリース済みの状態を指す。`develop` は次のリリースに向けて変更を集める。
 - `develop` の状態を検証環境に、`main` の状態を本番環境に反映する。
-  - 検証環境と本番環境は、メンテナーが非公開のインフラで運用する。
-    - 外部の人は開けない。
-  - 検証環境で確認する前の変更と、外部の人が試す変更は、ローカルの compose で確認する。
+  - 検証環境と本番環境は、外部の人は開けない。外部の人は、ローカルの compose で確認する。
 - 作業用のブランチは `develop` から切る。名前は `feature/<issue 番号>` にし、不具合は `fix/<issue 番号>` にする。1 つの issue を複数の pull request に分けるときは、`feature/<issue 番号>-<短い名前>` にする。
-- リリースは、検証した `develop` を `main` へ pull request でマージし、`main` のコミットにアプリごとのタグを付ける。タグは `<ディレクトリ>/vX.Y.Z`（`apps/web/v1.0.0`、`services/schedule/v1.0.0` など）の形で、バージョンはセマンティック バージョニングに従う。タグは手で付ける。
-- API の互換の規則（項目の追加は同じパス、削除と意味の変更は新しいパス、API を先にデプロイする）は ADR-0003 にある。
+- リリースは、検証した `develop` を `main` へ pull request でマージし、`main` のコミットにアプリごとのタグを手で付ける。タグは `<ディレクトリ>/vX.Y.Z`（`apps/web/v1.0.0`、`services/schedule/v1.0.0` など）の形で、バージョンはセマンティック バージョニングに従う。
 - リリース後の緊急の修正は、`main` から `hotfix/<issue 番号>` を切り、`main` と `develop` の両方へマージする。
 - 保護するブランチは `main`、`develop` である。直接はコミットせず、pull request を通してマージする。
 
@@ -314,24 +261,24 @@ gitGraph
     merge develop id: "release" tag: "apps/web/v1.0.0"
 ```
 
-## issue と pull request
+## Issues and Pull Requests
 
-- 作業は issue から始める。issue は、issue テンプレート（`.github/ISSUE_TEMPLATE/`）の要求、不具合、タスクから選ぶ。種類は `type:` のラベル、対象のアプリとパッケージは `pkg:` のラベルで示す。
+- 作業は issue から始める。issue は、issue テンプレートの要求、不具合、タスクから選ぶ。対象のアプリとパッケージは `pkg:` のラベルで示す。
 - タスクと不具合は、親の要求の sub-issue にする。
   - 保守のタスク（依存の更新、Dependabot と CI の設定、開発の環境、規約とテンプレートの直し）は、保守の要求 #220 の sub-issue にする。
   - 不具合は、不具合が起きた機能の要求の sub-issue にする。当てはまる要求が無ければ #220 にする。不具合の form には親の欄が無いので、起票した後に sub-issue にする。
-- タイトルと本文の書き方は、スキル write-issue-pr に従う。pull request の本文は `.github/pull_request_template.md` のセクションで書く。
-- 起票の前の下書きは `.ai-out/issues/` か `.ai-out/prs/` に置く。`.textlintignore` が `.ai-out/` を外すので、下書きは `pnpm exec textlint --ignore-path /dev/null <下書きのパス>` で確認する。docs のスクリプト（check-history、check-links）は文書のファイルのためのもので、下書きには流さない。
-- 本文とコメントに、コーディングエージェントが生成したことを示す行（Generated with Claude Code）と、セッションの URL を付けない。コミットでは commitlint が同じ行を拒む。
+- タイトルと本文の書き方は、スキル write-issue-pr に従う。
+- 起票の前の下書きは `.ai-out/issues/` か `.ai-out/prs/` に置き、`pnpm exec textlint --ignore-path /dev/null <下書きのパス>` で確認する。check-history と check-links は、下書きには流さない。
+- 本文とコメントに、コーディングエージェントが生成したことを示す行（Generated with Claude Code）と、セッションの URL を付けない。
 - pull request は 1 つの issue に対応させる。大きい issue は、関心事ごとに複数の pull request に分ける。最後にマージする pull request の本文に `Closes #<番号>` を書き、ほかは `Refs #<番号>` を書く。
-- 機能の追加と改修の pull request では、本文の「検証とエビデンス」に、観点ごとのエビデンスの動画を入れる。文書、スキル、設定だけの変更のように、動作を確認しない変更では、このセクションを消す。対象と格納先は [エビデンス](context/testing/evidence.md)、観点の設計、撮り方、本文への入れ方はスキル attach-evidence にある。
-- レビューの指摘に対応してからマージする。返信と本文の直しは「[マージと片付け](#マージと片付け)」の手順で行う。
+- 機能の追加と改修の pull request では、本文の「検証とエビデンス」に、観点ごとのエビデンスの動画を入れる。動作を確認しない変更では、このセクションを消す。
+  - 対象と格納先は [エビデンス](context/testing/evidence.md) に、撮り方と本文への入れ方はスキル attach-evidence にある。
+- レビューの指摘に対応してから、[Merging and Cleanup](#merging-and-cleanup) の手順でマージする。
   - Codex のボットは、pull request を開いたときにレビューする。もう一度頼むときは、直したコミットを示す返信の末尾に `@codex review` と書く。`@codex review` だけのコメントを作らない。
   - Codex が使用量の上限に達したときは、頼み直さずに、読み取りだけのサブエージェントでレビューする。
   - サブエージェントのレビューの結果は、1 つのコメントにまとめ、指摘ごとに重要度を付ける。重要度は、must（マージの前に直す誤り）、imo（直すとよい提案）、nits（表記の小さな直し）、ask（書き手への問い）の 4 つにする。
-- デフォルトのブランチは `develop` なので、`develop` へマージした pull request に `Closes` があれば、issue が閉じる。マージの手順は「[マージと片付け](#マージと片付け)」にある。
 
-## マージと片付け
+## Merging and Cleanup
 
 作業用のブランチから `develop` への pull request は、次の順にマージする。  
 各段の確認が済むまで、次の段に進まない。

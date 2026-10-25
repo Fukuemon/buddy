@@ -1,7 +1,7 @@
 ---
 type: context
 title: コードと文書の規約
-description: 命名、コメント、文書の書き方のうちこのリポジトリだけの規則、共有の設定、自動チェックの除外。lint で検出できる規則は書かない
+description: 命名、コメント、文書と API の定義の書き方のうちこのリポジトリだけの規則、共有の設定、自動チェックの除外。lint で検出できる規則は書かない
 status: stable
 ---
 
@@ -42,13 +42,21 @@ status: stable
 文書の書き方は、スキル write-prose と write-design-docs に従う。buddy だけの規則は次のとおり。
 
 - PRD は `docs/PRD.md`、全体の Design Doc は `docs/design/`、ADR は `docs/adr/`、画面仕様書は `docs/screens/` に置き、Zensical のサイトで読む。Design Doc と ADR の配置先は `context/project.yml` の `docs` と同じにする。
-- アプリとパッケージの README は、「セットアップ、起動する、テストとチェック、コードの生成、ドキュメント」の順に見出しを置き、当てはまらないセクションは省く。
+- 決まった名前のセクションの見出しは英語で書く。CONTRIBUTING.md の見出し、README の決まったセクション、context の Glossary や Required Tests のようなセクションが当たる。その文書だけの話題の見出しは日本語で書く。
+- アプリとパッケージの README は、Setup、Running、Tests and Checks、Code Generation、Documentation の順に見出しを置き、当てはまらないセクションは省く。
 - 機能ごとの Design Doc は、コードの隣（`services/<API>/DesignDoc.md`、`packages/<パッケージ>/DesignDoc.md`）に置く。サイトには、`docs/design/services/` か `docs/design/packages/` のファイル単位のシンボリックリンクで載せる。リンク先は `zensical.toml` の `watch` にも並べる。
 - 機能ごとの Design Doc と ADR から `docs/`、`apps/`、`services/` の文書へのリンクは、GitHub の `develop` の URL で書く。相対リンクは、GitHub とサイトで指す先が変わり、どちらかで切れる。
 - 技術用語は、一般的なカタカナ語か英語で書き、和語に言い換えない（テーブル、カラム、マージ、リクエスト、レスポンス、デフォルト、ローカル環境）。業務の機能の名前（予定の取り込み、予定の書き出し、結び付け）は和語のまま書く。言い換えの一覧は `prh.yml` にある。
 - 見出しのアンカーは、日本語のまま残す（`zensical.toml` の toc の slugify）。見出しを変えるときは、ほかの文書からのリンクを探して直す。
 - 画面仕様書の画面 ID の規則は [画面仕様書の目次](../docs/screens/index.md) の「画面の ID の規則」に、ページのセクションの規則は [画面仕様書の規約](../docs/screens/rules.md) の「仕様書のページ」にある。
 - 文章のチェックは textlint で、業務の用語「照合」「正本」を許す語にしている（`.textlintrc.json`）。
+
+## API Definitions
+
+- 定義の書き方は、Redocly CLI の `recommended-strict` の規則で確認する（`pnpm lint:openapi`）。
+  - 規則を外す箇所は `.redocly.lint-ignore.yaml` に理由と一緒に書き、規則ごと外すものは `redocly.yaml` に書く。
+- null を許す項目は、`type` と `nullable: true` を同じ階層に置き、参照する型は `allOf` で包む。
+  - OpenAPI 3.0 は `type` の無い `nullable` を無視するためである。サーバーが使う kin-openapi は、外側の `nullable` を見て、`allOf` の中を確認する前に null を通す。
 
 ## Shared Configuration
 
