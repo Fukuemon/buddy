@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
 
 import { ScheduleCalendarToolbar } from './ScheduleCalendarToolbar'
+import { ScheduleMiniCalendar } from './ScheduleMiniCalendar'
 import { StaffFilterLayout } from './StaffFilterLayout'
 import { StaffFilterSidebar } from './StaffFilterSidebar'
 import { STORY_DATE, storyStaff, storyTeams } from './storyData'
@@ -27,14 +28,19 @@ const meta = {
         teams={storyTeams}
       />
     ),
+    renderMiniCalendar: (onSelected) => (
+      <ScheduleMiniCalendar
+        date={STORY_DATE}
+        onSelect={() => onSelected?.()}
+        today={STORY_DATE}
+        view="month"
+      />
+    ),
     renderCalendar: (staffFilterToggle) => (
       <div className="px-2 py-2 desktop:px-6">
         <ScheduleCalendarToolbar
           date={STORY_DATE}
           onCreate={fn()}
-          onDateChange={fn()}
-          onShowCancelledChange={fn()}
-          showCancelled={false}
           onNext={fn()}
           onPrev={fn()}
           onToday={fn()}

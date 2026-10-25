@@ -25,10 +25,10 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** 職員の絞り込みの幅（StaffFilterLayout の w-56）にそろえる。 */
+/** 職員の絞り込みの幅（StaffFilterLayout の w-80）にそろえる。 */
 const narrow: NonNullable<Story['decorators']> = [
   (Story) => (
-    <div className="w-56">
+    <div className="w-80">
       <Story />
     </div>
   ),
@@ -50,7 +50,7 @@ export const WithCalendar: Story = {
   parameters: { ...route({ url: '/schedule?view=day' }), layout: 'fullscreen' },
   render: () => (
     <div className="flex h-[720px]">
-      <div className="w-56 shrink-0 border-r border-border">
+      <div className="w-80 shrink-0 border-r border-border">
         <StaffFilterSidebarContainer />
       </div>
       <div className="min-w-0 grow">

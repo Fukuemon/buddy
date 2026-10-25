@@ -90,9 +90,6 @@ export const ScheduleCalendarContainer = ({
       <div className="px-2 py-2 desktop:px-6">
         <ScheduleCalendarToolbar
           date={date}
-          onDateChange={(dateKey) => updateSearch({ date: dateKey })}
-          onShowCancelledChange={(cancelled) => updateSearch({ cancelled })}
-          showCancelled={search.cancelled}
           onNext={() => updateSearch({ date: shiftCalendarDate(search.view, date, 1) })}
           onPrev={() => updateSearch({ date: shiftCalendarDate(search.view, date, -1) })}
           onCreate={() => openCreate(date)}

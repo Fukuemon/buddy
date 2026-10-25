@@ -1,7 +1,5 @@
 import { composeStories } from '@storybook/react-vite'
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { fn } from 'storybook/test'
 import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './ScheduleCalendarToolbar.stories'
@@ -19,12 +17,5 @@ describe('ScheduleCalendarToolbar', () => {
   it('日の表示では、日付と曜日を見出しにする', () => {
     render(<DayView />)
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('2026年10月20日（火）')
-  })
-
-  it('キャンセルした予定を出す切り替えを入れると、true を渡す', async () => {
-    const onShowCancelledChange = fn()
-    render(<Default onShowCancelledChange={onShowCancelledChange} />)
-    await userEvent.click(screen.getByTestId('calendar-show-cancelled'))
-    expect(onShowCancelledChange).toHaveBeenCalledWith(true)
   })
 })
