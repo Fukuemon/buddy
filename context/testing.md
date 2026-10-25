@@ -72,18 +72,15 @@ status: stable
 | 画面仕様書、モック、story の `title` と export の名前、E2E の testid | `pnpm check:screens` |
 
 マージする前に、変えたアプリの `test` と `check`（Go は `go test ./...`、`go vet ./...`、`golangci-lint run`）を流す。  
-Go のテストと lint は `GOWORK=off` を付けて流す。  
-理由は [CONTRIBUTING.md](../CONTRIBUTING.md) の「Go のモジュール」にある。  
-`packages/go` を変えたときは、2 つの API でも流す。
+Go のテストと lint の流し方（`GOWORK=off`、`packages/go` を変えたとき）は、[CONTRIBUTING.md](../CONTRIBUTING.md) の「Go のモジュール」にある。
 
-pull request と develop への push では、CI（[ci.yml](../.github/workflows/ci.yml)）が、変えた場所によらず全てのジョブを流す。1 つでも失敗した pull request はマージしない。
+pull request と develop への push では、CI（[ci.yml](../.github/workflows/ci.yml)）が、変えた場所によらず全てのジョブを流す。
 
 リリースの前に通すテストの一覧は未定である。[エビデンス](testing/evidence.md) の取り決めと同じ時期に決める。
 
 ## E2E
 
 - E2E のテストのツールでの書き方、流すコマンド、project、環境変数、テストデータとログインは、[E2E のテスト](testing/e2e.md) にある。
-- E2E の lint と型のチェックのコマンドは、[E2E のテスト](testing/e2e.md) の Running Tests にある。
 - 画面を変える pull request では、その画面の流れの E2E を流す。testid を変えたら、E2E と画面仕様書の両方を直す。
 
 手動検証のエビデンスの取り決めは、[エビデンス](testing/evidence.md) にある。

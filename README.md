@@ -5,20 +5,12 @@
 
 ## Setup
 
-mise と Docker を入れてから、次を実行する。
-
-```sh
-mise install
-pnpm install
-docker compose up --build --wait
-```
-
-`http://localhost:3000` を開く。ログインの手順、ポート、データの消し方は、[CONTRIBUTING.md](CONTRIBUTING.md) の Running Locally にある。
+セットアップとローカル環境での起動の手順は、[CONTRIBUTING.md](CONTRIBUTING.md) の Setup と Running Locally にある。
 
 ## Documentation
 
 設計書（PRD、Design Doc、ADR、画面仕様書、API と DB の仕様）は [docs](docs) にある。  
-ルートで `uv run zensical serve` を実行すると、ドキュメントサイトとして `http://localhost:8000` で読める。
+ドキュメントサイトとして読む手順は、[CONTRIBUTING.md](CONTRIBUTING.md) の Editing Documents にある。
 
 ## Contributing
 

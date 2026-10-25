@@ -1,16 +1,11 @@
 # ID ブローカー
 
 Ory Hydra の login and consent app として動き、事業所ごとの上流の IdP の前に立って職員の身元を持つサービス。  
-ログイン、同意、ログアウトの画面、上流の IdP への RP の処理、職員の登録、休職、復職、退職の内部の API、Hydra の token_hook、ヘルスチェック、職員の身元の DB のマイグレーションとシードを持つ。  
 責務と流れは [DesignDoc.md](DesignDoc.md) にある。
 
 ## Setup
 
-Go と golangci-lint のバージョンは、リポジトリのルートの `mise.toml` にある。
-
-```sh
-mise install go golangci-lint
-```
+ツールは、[CONTRIBUTING.md](../../CONTRIBUTING.md) の Setup の手順で入れる。
 
 ## Running
 
@@ -60,13 +55,7 @@ compose の Hydra の token_hook は、コンテナの間の名前 `broker` を�
 - `INTERNAL_API_CLIENTS`: 内部の API を呼んでよいクライアントの ID をカンマで区切った値。デフォルトは `schedule`。access token の `sub` と、token_hook が通す client credentials の要求の `client_id` を照合する
 - `TOKEN_HOOK_KEY`: 必須。Hydra が `oauth2.token_hook` を呼ぶときに、ヘッダー `Token-Hook-Key` に入れる値。シークレットとして渡し、Hydra の `oauth2.token_hook.auth` と同じ値にする
 
-上流の IdP の設定は、待ち受けを始める前に読む。次のいずれかでは、ブローカーは起動せず、終了コード 1 で終わる。
-
-- 2 つのファイルのどちらかを読めないか、JSON の形が違うか、知らないキーがある
-- 上流の IdP の一覧が空である
-- `org_id`、`issuer`、`client_id` のいずれかが空であるか、`issuer` が http か https の URL でない
-- `org_id` が重なっている
-- 上流の IdP の client secret が無いか、上流の IdP の設定に無い組織の client secret がある
+上流の IdP の設定は、待ち受けを始める前に読む。2 つのファイルの値が正しくなければ、ブローカーは起動せず、終了コード 1 で終わる。
 
 2 つの例のファイルの値は、開発用のダミーである。issuer は、compose の上流の IdP のフェイク（mock-oauth2-server）の 2 つの事業所（`/office-a`、`/office-b`）を、ローカルから届く `localhost:9000` で指す。compose のブローカーは、コンテナの間の名前 `idp` で指す `compose/broker/` のファイルを読む。
 
@@ -91,7 +80,7 @@ golangci-lint run
 テストと lint は `GOWORK=off` を付けて流す。  
 理由は [CONTRIBUTING.md](../../CONTRIBUTING.md) の「Go のモジュール」にある。
 
-`internal/postgres` のテストは、testcontainers で PostgreSQL のコンテナを起動し、マイグレーションを当ててテーブルの制約を確認する。Docker が無い環境では `go test -short ./...` で飛ばす。
+`internal/postgres` のテストは、testcontainers で PostgreSQL のコンテナを起動する。Docker が無い環境では `go test -short ./...` で飛ばす。
 
 ## Documentation
 

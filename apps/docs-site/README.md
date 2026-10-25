@@ -19,12 +19,6 @@ pnpm site:build
 `scripts/build-docs-site.mjs --build` が、`context/project.yml` の `docs_site.parts` に並べたものを作り、`apps/docs-site/public/` に並べる。  
 `cf build` が、それを公開する形にする。
 
-1. `uv run zensical build --clean` で、ドキュメントサイトを `site/` に作る。
-2. `pnpm --filter @buddy/web build-storybook` で、Storybook を `apps/web/storybook-static/` に作る。
-3. `pnpm build:erd`（`scripts/build-erd.mjs`）で、tbls の `docs/db/schedule/schema.json` から、Liam ERD の ER 図のサイトを `erd/` に作る。
-4. 3 つを `apps/docs-site/public/` に並べる。`/` に文書、`/storybook/` にカタログ、`/erd/` に ER 図を置く。part の出力どうしでファイルがぶつかると、上書きせずに止まる。
-5. `cf build --mode production` で、公開する形の成果物を `apps/docs-site/.cloudflare/output/` に作る。
-
 並べるものを足すときは、`docs_site.parts` に足す。  
 次の 3 つは、agent-harness のパッケージ docs-site のスクリプトを写したものである。組み立ての `scripts/build-docs-site.mjs`、値を読む `scripts/read-docs-site-config.mjs`、保護を確認する `scripts/check-docs-site-protection.mjs`。  
 パッケージを上げたら、`node .claude/skills/setup-agent-harness/scripts/setup.mjs --diff` で差分を見て取り込む。
@@ -33,14 +27,11 @@ pnpm site:build
 
 ドキュメントサイトのリンクは相対の URL なので、カタログを下のパスに置いても行き来できる。文書のトップのカタログへのリンク（`storybook/`）と ER 図へのリンク（`erd/`）は、ローカルの `zensical serve` では開けない。
 
-ER 図のサイトは、Liam ERD の CLI が出す静的なファイルで、リソースを相対のパスで読むので `/erd/` の下で動く。Liam ERD のライセンスは Apache-2.0 である（[liam-hq/liam](https://github.com/liam-hq/liam)）。開くと Google Fonts から字形を読む。届かなくても、ER 図は代わりの字形で描かれる。
-
 ## デプロイの構成
 
 `.github/workflows/docs-site.yml` が、Cloudflare の CLI `cf` でデプロイする。
 
 - pull request では、サイトを組み立てるだけにする。pull request ごとのプレビューは出さない（[ADR-0019](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0019-docs-site-publish-and-contrast-check.md)）。
-  - プレビューは pull request のコードへトークンを渡す。書き込みの権限を持つ人は、ワークフローを書き換えてトークンを読める。
 - develop への push では、`cf deploy --prebuilt --mode production` で本番にデプロイし、Access の保護を確認する。
 - トークンは、GitHub の environment `docs-site` の secret にある。environment にデプロイできるブランチは develop だけにしてある。
   - ワークフローの条件だけで develop に絞ると、条件を外したワークフローを別のブランチへ push してトークンを読める。
@@ -72,7 +63,6 @@ ER 図のサイトは、Liam ERD の CLI が出す静的なファイルで、リ
 - アカウント全体の Access（Workers & Pages の概要の「Cloudflare Access」のスイッチ）は使わない。同じアカウントの、公開しているほかの Worker も守られて開けなくなるためである。
 - Worker の名前を変えると、新しい Worker が Access なしで出る。名前を変えるときは、先に手順 2、3、5 を新しい名前で行う。
 - Access で守られているかは、ワークフローが本番に出すたびに、`scripts/check-docs-site-protection.mjs` で URL ごとに確認する。
-  - 文書、カタログ、ER 図の 3 つの URL を、それぞれの中身にだけある文字列で確認する。
   - ローカルで本番の文書を確認するときは、次を流す。
 
     ```sh
