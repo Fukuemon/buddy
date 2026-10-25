@@ -397,12 +397,12 @@ body {
   overflow: hidden;
   background:
     linear-gradient(var(--wf-fill-strong), var(--wf-fill-strong)) 0 0 / 100% 56px no-repeat,
-    linear-gradient(var(--wf-fill), var(--wf-fill)) 0 56px / 224px 100% no-repeat,
-    linear-gradient(var(--wf-fill), var(--wf-fill)) 248px 72px / calc(100% - 272px) 40px no-repeat,
-    repeating-linear-gradient(90deg, var(--wf-line-soft) 0 1px, transparent 1px 120px) 248px 128px /
-      calc(100% - 272px) calc(100% - 144px) no-repeat,
-    repeating-linear-gradient(var(--wf-line-soft) 0 1px, transparent 1px 48px) 248px 128px /
-      calc(100% - 272px) calc(100% - 144px) no-repeat,
+    linear-gradient(var(--wf-fill), var(--wf-fill)) 0 56px / 320px 100% no-repeat,
+    linear-gradient(var(--wf-fill), var(--wf-fill)) 344px 72px / calc(100% - 368px) 40px no-repeat,
+    repeating-linear-gradient(90deg, var(--wf-line-soft) 0 1px, transparent 1px 120px) 344px 128px /
+      calc(100% - 368px) calc(100% - 144px) no-repeat,
+    repeating-linear-gradient(var(--wf-line-soft) 0 1px, transparent 1px 48px) 344px 128px /
+      calc(100% - 368px) calc(100% - 144px) no-repeat,
     var(--wf-surface);
 }
 
