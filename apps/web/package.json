@@ -67,7 +67,7 @@
     "openapi-msw": "2.1.0",
     "openapi-typescript": "7.13.0",
     "storybook": "^10.6.3",
-    "typescript": "^6.0.2",
+    "typescript": "^7.0.2",
     "vite": "catalog:",
     "vite-plugin-svgr": "^5.2.0",
     "vite-plus": "catalog:"
