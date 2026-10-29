@@ -34,11 +34,12 @@ export default defineConfig({
           publicOnly: true,
           require: {
             FunctionDeclaration: true,
-            ArrowFunctionExpression: true,
             ClassDeclaration: true,
-            FunctionExpression: true,
           },
           contexts: [
+            // オブジェクトのプロパティの関数（Story の play と render、クエリキー）は対象にしない
+            'VariableDeclarator > ArrowFunctionExpression',
+            'VariableDeclarator > FunctionExpression',
             'TSInterfaceDeclaration:not([id.name=/Props$/])',
             'TSTypeAliasDeclaration:not([id.name=/Props$/])',
             'TSEnumDeclaration',

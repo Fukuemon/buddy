@@ -23,10 +23,13 @@ export const Table = ({ children, stickyColumn = false }: TableProps) => (
   </table>
 )
 
+/** 見出しの行を入れる thead。 */
 const TableHeader = ({ children }: { children: ReactNode }) => <thead>{children}</thead>
 
+/** データの行を入れる tbody。 */
 const TableBody = ({ children }: { children: ReactNode }) => <tbody>{children}</tbody>
 
+/** 表の 1 行。 */
 const TableRow = ({ children, className }: { children: ReactNode; className?: string }) => (
   <tr className={clsx('border-b border-border bg-surface', className)}>{children}</tr>
 )
@@ -53,6 +56,7 @@ const TableHeaderCell = ({ children, expanded = false, width }: TableCellProps) 
   </th>
 )
 
+/** データのセル。Table.Body の行に置く。 */
 const TableCell = ({ children, expanded = false, width }: TableCellProps) => (
   <td className={cellClassName(expanded)} style={{ minWidth: width }}>
     {children}
