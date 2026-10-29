@@ -255,6 +255,8 @@
 
 **表示条件**: 職員の管理の権限を持つ職員にだけ、画面の中身の上端に出す。
 
+**カタログ**: [SiteSubNav の Calendar](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-sitesubnav--calendar)
+
 ### インタラクション
 
 #### 1. 「カレンダー」を押す
