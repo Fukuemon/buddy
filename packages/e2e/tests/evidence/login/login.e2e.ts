@@ -224,7 +224,8 @@ test.describe('予定のカレンダー', () => {
             await expect(page.getByTestId('viewer-menu')).toContainText(LOGIN_STAFF.name)
             await step('ログインして、予定のカレンダーを開いている')
 
-            await step('「ログアウト」を押す')
+            await step('アカウントのボタンを押し、メニューの「ログアウト」を押す')
+            await page.getByTestId('viewer-menu-open').click()
             await page.getByTestId('viewer-logout').click()
             await expect(brokerLogin(page).email).toBeVisible()
             await check('Hydra のログインのセッションが消え、ブローカーのメールの入力の画面に移る')
@@ -254,7 +255,8 @@ test.describe('予定のカレンダー', () => {
             await expect(page.getByTestId('viewer-menu')).toContainText(LOGIN_STAFF.name)
             await step('ログインして、予定のカレンダーを開いている')
 
-            await step('「ログアウト」を押す')
+            await step('アカウントのボタンを押し、メニューの「ログアウト」を押す')
+            await page.getByTestId('viewer-menu-open').click()
             await page.getByTestId('viewer-logout').click()
             await expect(brokerLogin(page).email).toBeVisible()
             await check('ブローカーのメールの入力の画面に移る')

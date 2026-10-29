@@ -7,18 +7,19 @@ import { signInAtBroker } from '../../screens/login'
 const MANAGER = `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`
 
 test.describe('画面の間のナビゲーション', () => {
-  test.describe('左端の縦のナビゲーション', () => {
+  test.describe('左のサイドバーのナビゲーション', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       const prefix = variant.label ? `${variant.label}: ` : ''
 
-      test(`${prefix}PC の幅でマネージャーが予定の画面を開いた場合、左端に 4 つの項目が並び、予定に今の画面の印が付くこと`, async ({
+      test(`${prefix}PC の幅でマネージャーが予定の画面を開いた場合、左のサイドバーに予定、字下げした取り込みと要確認、照合が並び、予定に今の画面の印が付くこと`, async ({
         browser,
       }) => {
         await recordPrEvidence(
           browser,
           {
             name: 'site-nav-rail-manager',
-            title: 'PC の幅で、マネージャーが予定の画面を開き、左端のナビゲーションを見る',
+            title:
+              'PC の幅で、マネージャーが予定の画面を開き、左のサイドバーのナビゲーションを見る',
             actor: MANAGER,
             variant,
           },
@@ -31,27 +32,27 @@ test.describe('画面の間のナビゲーション', () => {
             const nav = page.getByTestId('site-nav')
             await expect(nav).toBeVisible()
             await step('幅 1280px で予定の画面を開いている')
-            await expect(nav).toContainText(['予定', '照合', '取り込み', '要確認'].join(''))
+            await expect(nav).toContainText(['予定', '取り込み', '要確認', '照合'].join(''))
             await expect(page.getByTestId('site-nav-schedule')).toHaveAttribute(
               'aria-current',
               'page',
             )
-            await expect(page.getByTestId('site-nav-open')).toHaveCount(0)
+            await expect(page.getByTestId('site-nav-open')).toHaveAttribute('aria-expanded', 'true')
             await check(
-              '左端に、予定、照合、取り込み、要確認がアイコンと名前で並び、予定に面の色の印が付く。ヘッダーには buddy とログインした職員だけがある',
+              '左のサイドバーに、予定、字下げした取り込みと要確認、照合が並び、予定に面の色の印が付く。ヘッダーには、メニューのボタン、buddy、アカウントのボタンだけがある',
             )
           },
         )
       })
 
-      test(`${prefix}左端のナビゲーションの照合を押した場合、照合の画面に移り、照合に今の画面の印が付くこと`, async ({
+      test(`${prefix}左のサイドバーの照合を押した場合、照合の画面に移り、照合に今の画面の印が付くこと`, async ({
         browser,
       }) => {
         await recordPrEvidence(
           browser,
           {
             name: 'site-nav-rail-move',
-            title: '左端のナビゲーションの「照合」を押し、照合の画面に移る',
+            title: '左のサイドバーの「照合」を押し、照合の画面に移る',
             actor: MANAGER,
             variant,
           },
@@ -65,7 +66,7 @@ test.describe('画面の間のナビゲーション', () => {
               'aria-current',
               'page',
             )
-            await step('左端のナビゲーションの「照合」を押す')
+            await step('左のサイドバーの「照合」を押す')
             await page.getByTestId('site-nav-receipt').click()
             await expect(page).toHaveURL(/\/receipt$/)
             await expect(page.getByTestId('site-nav-receipt')).toHaveAttribute(
@@ -73,7 +74,7 @@ test.describe('画面の間のナビゲーション', () => {
               'page',
             )
             await expect(page.getByTestId('site-nav-schedule')).not.toHaveAttribute('aria-current')
-            await check('照合の画面に移り、左端の照合に面の色の印が付く')
+            await check('照合の画面に移り、左のサイドバーの照合に面の色の印が付く')
           },
         )
       })
@@ -101,7 +102,7 @@ test.describe('画面の間のナビゲーション', () => {
             await expect(page.getByTestId('site-nav-receipt')).toBeVisible()
             await expect(page.getByTestId('site-nav-import')).toHaveCount(0)
             await expect(page.getByTestId('site-nav-review')).toHaveCount(0)
-            await check('左端に予定と照合だけが並び、取り込みと要確認は出ない')
+            await check('左のサイドバーに予定と照合だけが並び、取り込みと要確認は出ない')
           },
         )
       })
@@ -133,9 +134,7 @@ test.describe('画面の間のナビゲーション', () => {
             const drawer = page.getByTestId('site-nav-drawer')
             await expect(page.getByTestId('site-nav-open')).toBeVisible()
             await expect(drawer).toBeHidden()
-            await check(
-              '幅 390px では、左端のナビゲーションが無く、ヘッダーの左にメニューのボタンがある',
-            )
+            await check('幅 390px では、左のサイドバーが無く、ヘッダーの左にメニューのボタンがある')
 
             await step('ヘッダーの左のメニューのボタンを押す')
             await page.getByTestId('site-nav-open').click()
@@ -145,7 +144,7 @@ test.describe('画面の間のナビゲーション', () => {
               'page',
             )
             await check(
-              '左端からドロワーが開き、予定、照合、取り込み、要確認が並ぶ。予定に印が付く',
+              '左端からドロワーが開き、予定、取り込み、要確認、照合が並ぶ。予定に印が付く',
             )
 
             await step('ドロワーの「照合」を押す')
