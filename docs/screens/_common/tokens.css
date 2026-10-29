@@ -285,15 +285,16 @@
   --buddy-color-focus-outline: var(--color-neutral-black);
   --buddy-color-focus-halo: var(--color-primitive-yellow-300);
 
-  /* 区別の色: 職員のように、意味を持たない並びを色で分ける。白の文字で 4.5:1 以上 */
-  --buddy-color-categorical-1: var(--color-primitive-blue-800);
-  --buddy-color-categorical-2: var(--color-primitive-light-blue-900);
-  --buddy-color-categorical-3: var(--color-primitive-cyan-900);
-  --buddy-color-categorical-4: var(--color-primitive-green-800);
-  --buddy-color-categorical-5: var(--color-primitive-lime-900);
-  --buddy-color-categorical-6: var(--color-primitive-yellow-1000);
-  --buddy-color-categorical-7: var(--color-primitive-orange-900);
-  --buddy-color-categorical-8: var(--color-primitive-red-900);
-  --buddy-color-categorical-9: var(--color-primitive-magenta-800);
-  --buddy-color-categorical-10: var(--color-primitive-purple-800);
+  /* 区別の色: 職員のように、意味を持たない並びを色で分ける。白の文字で 4.5:1 以上
+     primary と状態の色に近い青、緑、橙、赤は、人数の少ない事業所で使わないよう後ろに置く */
+  --buddy-color-categorical-1: var(--color-primitive-purple-800);
+  --buddy-color-categorical-2: var(--color-primitive-cyan-900);
+  --buddy-color-categorical-3: var(--color-primitive-magenta-800);
+  --buddy-color-categorical-4: var(--color-primitive-lime-900);
+  --buddy-color-categorical-5: var(--color-primitive-yellow-1000);
+  --buddy-color-categorical-6: var(--color-primitive-blue-800);
+  --buddy-color-categorical-7: var(--color-primitive-green-800);
+  --buddy-color-categorical-8: var(--color-primitive-orange-900);
+  --buddy-color-categorical-9: var(--color-primitive-red-900);
+  --buddy-color-categorical-10: var(--color-primitive-light-blue-900);
 }

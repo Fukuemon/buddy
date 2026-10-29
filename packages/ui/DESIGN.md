@@ -54,7 +54,7 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 | `danger`、`danger-surface` | エラーの文と枠、取り消せない操作のボタン |
 | `warning`、`warning-surface` | 確認してほしい値。エラーではないもの |
 | `success`、`success-surface` | 完了と整合 |
-| `categorical-1` から `categorical-10` | 職員のように、意味を持たない並びの区別。番号の順に割り当て、11 個目からは 1 に戻る |
+| `categorical-1` から `categorical-10` | 職員のように、意味を持たない並びの区別。番号の順に割り当て、11 個目からは 1 に戻る。`primary` と状態の色に近い青、緑、橙、赤は、6 番目より後ろに置き、選ばれている表示や状態と見分けられるようにする |
 
 背景を指定しない要素は `surface-canvas` の色になるので、カード、表、入力欄には `bg-surface` を付ける。
 
