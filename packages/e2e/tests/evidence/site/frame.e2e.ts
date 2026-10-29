@@ -3,6 +3,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { brokerLogin } from '../../selectors/idp'
+import { calendarColumnHeader } from '../../selectors/scheduleCalendar'
 import { signInAtBroker } from '../../screens/login'
 
 const MANAGER = `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`
@@ -14,10 +15,7 @@ const signIn = async (page: Page) => {
 
 // 枠だけでなく、月の格子の列も広がったかを見るため、土曜の列の見出しの右端を測る
 const gridRight = async (page: Page) => {
-  const box = await page
-    .getByTestId('schedule-calendar')
-    .getByRole('columnheader', { name: '土' })
-    .boundingBox()
+  const box = await calendarColumnHeader(page, '土').boundingBox()
   return box === null ? 0 : box.x + box.width
 }
 
