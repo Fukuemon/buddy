@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
-import { FAKE_VIEWER } from '#/api/fake/fixtures'
 import { withAppRouter, type AppRouterParameters } from '#/storybook/withAppRouter'
 
 import { SiteLayoutContainer } from './SiteLayoutContainer'
@@ -29,24 +28,14 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** 照合の画面。ヘッダーに機能のタブを出し、照合に印を付ける。左の欄とメニューのボタンは出さない。 */
+/** 照合の画面。ヘッダーに「照合」の名前、アプリのボタン、アカウントのボタンを出す。左の欄とメニューのボタンは出さない。 */
 export const StaffManager: Story = {}
 
-/** 職員の管理の権限を持つ職員が、確認が必要な予定を開いているとき。画面の中身の上端に、予定の中のタブを出す。 */
-export const ScheduleManager: Story = {
+/** 確認が必要な予定の画面。ヘッダーに「予定」の名前を出す。 */
+export const Review: Story = {
   parameters: route({ route: '/schedule_/review', url: '/schedule/review' }),
   args: { current: '/schedule/review' },
 }
 
-/** 職員の管理の権限を持たない職員が、確認が必要な予定を開いているとき。予定の中のタブを出さない。 */
-export const Staff: Story = {
-  parameters: route({
-    route: '/schedule_/review',
-    url: '/schedule/review',
-    viewer: { ...FAKE_VIEWER, canManageStaff: false },
-  }),
-  args: { current: '/schedule/review' },
-}
-
-/** 幅 768px 未満。ヘッダーに機能のタブを出す。 */
+/** 幅 768px 未満。 */
 export const Mobile: Story = { globals: MOBILE }

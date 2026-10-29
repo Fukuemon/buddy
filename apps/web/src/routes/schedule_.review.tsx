@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { SiteLayoutContainer } from '#/components/site/SiteLayoutContainer'
 import { REVIEW_NAV_ITEM } from '#/components/site/SiteNav'
+import { CalendarHeaderToolsContainer } from '#/features/calendar/components/CalendarHeaderToolsContainer'
 import { CalendarReviewContainer } from '#/features/calendar/components/CalendarReviewContainer'
 
 // `/schedule` の子にすると予定のカレンダーの上に重なるので、名前の `_` で入れ子から外す
@@ -14,7 +15,7 @@ export const Route = createFileRoute('/schedule_/review')({
 
 function CalendarReviewPage() {
   return (
-    <SiteLayoutContainer current={REVIEW_NAV_ITEM.href}>
+    <SiteLayoutContainer current={REVIEW_NAV_ITEM.href} tools={<CalendarHeaderToolsContainer />}>
       <main className="min-w-0 p-4 desktop:p-6">
         <CalendarReviewContainer />
       </main>

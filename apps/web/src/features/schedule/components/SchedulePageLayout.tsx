@@ -8,20 +8,23 @@ import { ScheduleMiniCalendarContainer } from './ScheduleMiniCalendarContainer'
 import { StaffFilterSidebarContainer } from './StaffFilterSidebarContainer'
 
 export type SchedulePageLayoutProps = {
+  /** ヘッダーの右に置く、取り込みと要確認のボタン。 */
+  tools?: ReactNode
   /** カレンダーの上に重ねる、予定の作成と詳細のダイアログ。 */
   children?: ReactNode
 }
 
 /**
- * `/schedule` の画面。左のサイドバーの、画面の間を移るリンクの下に、ミニカレンダー、キャンセルした予定の切り替え、職員の絞り込みを置き、右にカレンダーを置く。
- * 幅 768px 未満では、ミニカレンダーの日を押すと、サイドバーのドロワーを閉じる。
+ * `/schedule` の画面。左の欄に、ミニカレンダー、キャンセルした予定の切り替え、職員の絞り込みを置き、右にカレンダーを置く。
+ * 幅 768px 未満では、ミニカレンダーの日を押すと、左の欄のドロワーを閉じる。
  */
-export const SchedulePageLayout = ({ children }: SchedulePageLayoutProps) => (
+export const SchedulePageLayout = ({ tools, children }: SchedulePageLayoutProps) => (
   <SiteLayoutContainer
     current="/schedule"
+    tools={tools}
     renderSidebar={(closeDrawer) => (
       <>
-        <div className="border-b border-border px-1 py-2">
+        <div className="border-b border-border px-4 pt-4 pb-5">
           <ScheduleMiniCalendarContainer onSelected={closeDrawer} />
         </div>
         <ScheduleCancelledToggleContainer />

@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { SiteLayoutContainer } from '#/components/site/SiteLayoutContainer'
+import { CalendarHeaderToolsContainer } from '#/features/calendar/components/CalendarHeaderToolsContainer'
 import { ReceiptResultContainer } from '#/features/receipt/components/ReceiptResultContainer'
 
 export const Route = createFileRoute('/receipt/result')({
@@ -12,7 +13,7 @@ export const Route = createFileRoute('/receipt/result')({
 
 function ReceiptResultPage() {
   return (
-    <SiteLayoutContainer current="/receipt">
+    <SiteLayoutContainer current="/receipt" tools={<CalendarHeaderToolsContainer />}>
       <main className="min-w-0 p-6">
         <ReceiptResultContainer />
       </main>
