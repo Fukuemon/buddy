@@ -2,7 +2,7 @@
 
 /* サイドバーの下の段（wf-site-sidebar）に、上からミニカレンダー、キャンセルの切り替え、職員の絞り込みを並べる */
 .sc-cancelled {
-  padding: 8px 16px;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--wf-line-soft);
 }
 
@@ -13,16 +13,16 @@
 .sc-side {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 16px;
+  gap: 20px;
+  padding: 20px;
 }
 
 /* ミニカレンダー。サイドバーの下の段の先頭に置く */
 .sc-mini {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 8px 4px;
+  gap: 8px;
+  padding: 16px 16px 20px;
   border-bottom: 1px solid var(--wf-line-soft);
 }
 
@@ -33,8 +33,8 @@
 }
 
 .sc-mini__month {
-  padding-left: 8px;
-  font-size: 14px;
+  padding-left: 4px;
+  font-size: 16px;
 }
 
 .sc-mini__nav {
