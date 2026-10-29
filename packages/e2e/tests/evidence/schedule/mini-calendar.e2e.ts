@@ -1,11 +1,13 @@
 import { expect, test, type Page } from '@playwright/test'
 
+import { LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import {
   EVIDENCE_VARIANTS,
   PHONE_VIEWPORT,
   recordPrEvidence,
   storyUrl,
 } from '../../fixtures/evidence'
+import { signInAtBroker } from '../../screens/login'
 
 const ACTOR = 'ログインなし（Storybook の story）'
 
@@ -123,24 +125,28 @@ test.describe('予定のカレンダー', () => {
           browser,
           {
             name: 'schedule-mini-calendar-phone',
-            title: 'スマートフォンの幅で、日付と絞り込みのドロワーを開き、ミニカレンダーの日を押す',
-            actor: ACTOR,
+            title:
+              'スマートフォンの幅で、メニューのボタンからドロワーを開き、ミニカレンダーの日を押す',
+            actor: `${LOGIN_STAFF.name}（マネージャー）`,
             variant,
             viewport: PHONE_VIEWPORT,
           },
-          (page) => open(page, 'week'),
+          async (page) => {
+            await page.goto('/schedule')
+            await signInAtBroker(page, LOGIN_EMAIL)
+          },
           async ({ page, step, check }) => {
-            await page.clock.install({ time: NOW })
-            await open(page, 'week')
-            const drawer = page.getByTestId('staff-filter-drawer')
+            await page.goto('/schedule?view=week&date=2026-10-25')
+            await expect(page.getByTestId('calendar-title')).toHaveText('2026年10月25日〜31日')
+            const drawer = page.getByTestId('site-nav-drawer')
             await expect(drawer).toBeHidden()
             await step('幅 390px で週の表示を開いている。日付の欄はツールバーに無い')
 
-            await step('ツールバーの「日付と絞り込み」を押す')
-            await page.getByTestId('staff-filter-open').click()
+            await step('ヘッダーの左のメニューのボタンを押す')
+            await page.getByTestId('site-nav-open').click()
             await expect(drawer).toBeVisible()
             await expect(drawer.getByTestId('mini-calendar')).toBeVisible()
-            await check('ドロワーの上にミニカレンダーが出る')
+            await check('ドロワーのナビゲーションの下にミニカレンダーが出る')
 
             await step('ミニカレンダーの 10月14日を押す')
             await drawer.getByTestId('mini-calendar-day-2026-10-14').click()
