@@ -15,8 +15,8 @@
         <div class="screen-body">
           <header class="wf-site-header">
             <div class="wf-site-header__brand">
-              <span class="wf-btn wf-btn--icon wf-site-menu" aria-label="メニュー" data-open="site-nav" data-m="14" data-testid="site-nav-open"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z" fill="currentColor" /></svg></span>
               <strong>buddy</strong>
+              <nav class="wf-site-tabs" aria-label="画面" data-m="1" data-testid="site-nav"><span class="wf-site-tabs__item" aria-current="page" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html" data-testid="site-nav-schedule">予定</span><span class="wf-site-tabs__item" data-go="../../receipt-upload_照合/mocks/01-initial.html" data-testid="site-nav-receipt">照合</span></nav>
             </div>
             <div class="wf-site-header__viewer" data-testid="viewer-menu">
               <span class="wf-site-avatar" aria-label="アカウント" data-m="2" data-open="viewer-menu" data-testid="viewer-menu-open">青</span>
@@ -27,20 +27,8 @@
             </div>
           </header>
           <div class="wf-site-body">
-            <div class="wf-site-drawer" role="dialog" aria-label="メニュー" data-testid="site-nav-drawer" data-panel="site-nav" data-panel-modal>
-              <div class="wf-site-drawer__head">
-                <strong>メニュー</strong>
-                <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-escape data-close="site-nav" data-m="15" data-testid="site-nav-close"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
-              </div>
-              <nav class="wf-site-nav" aria-label="画面" data-m="1" data-testid="site-nav">
-                <span class="wf-site-nav__item" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html" data-testid="site-nav-schedule"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z" fill="currentColor" /></svg><span>予定</span></span>
-                <span class="wf-site-nav__item wf-site-nav__item--sub" aria-current="page" data-go="../../schedule-import_予定の取り込み/mocks/01-initial.html" data-testid="site-nav-import"><span>取り込み</span></span>
-                <span class="wf-site-nav__item wf-site-nav__item--sub" data-go="../../schedule-review_確認が必要な予定/mocks/01-list.html" data-testid="site-nav-review"><span>要確認</span></span>
-                <span class="wf-site-nav__item" data-go="../../receipt-upload_照合/mocks/01-initial.html" data-testid="site-nav-receipt"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M160-120q-33 0-56.5-23.5T80-200v-560q0-33 23.5-56.5T160-840h640q33 0 56.5 23.5T880-760v560q0 33-23.5 56.5T800-120H160Zm0-80h640v-560H160v560Zm40-80h200v-80H200v80Zm382-80 198-198-57-57-141 142-57-57-56 57 113 113Zm-382-80h200v-80H200v80Zm0-160h200v-80H200v80Z" fill="currentColor" /></svg><span>照合</span></span>
-              </nav>
-            </div>
-            <div class="wf-overlay wf-site-drawer-overlay" tabindex="-1" data-close="site-nav"></div>
             <div class="wf-site-main">
+              <nav class="wf-site-subtabs" aria-label="予定の画面" data-m="14" data-testid="site-subnav"><span class="wf-site-subtabs__item" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html" data-testid="site-nav-calendar">カレンダー</span><span class="wf-site-subtabs__item" aria-current="page" data-go="01-initial.html" data-testid="site-nav-import">取り込み</span><span class="wf-site-subtabs__item" data-go="../../schedule-review_確認が必要な予定/mocks/01-list.html" data-testid="site-nav-review">要確認</span></nav>
               <main class="wf-page">
                 <div class="si-title">
                   <h1 class="wf-heading" data-m="4">予定の取り込み</h1>
