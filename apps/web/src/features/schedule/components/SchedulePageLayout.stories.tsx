@@ -41,7 +41,7 @@ export const WeekAcrossYears: Story = {
 
 export const Day: Story = { parameters: route({ url: '/schedule?view=day' }) }
 
-/** 幅 768px 未満。日付と絞り込みは閉じたドロワーにあり、ツールバーのボタンで開く。 */
+/** 幅 768px 未満。日付と絞り込みは閉じたサイドバーのドロワーにあり、ヘッダーのメニューのボタンで開く。 */
 export const Mobile: Story = {
   parameters: route({ url: '/schedule?view=week' }),
   globals: { viewport: { value: 'mobile2', isRotated: false } },

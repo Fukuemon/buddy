@@ -14,57 +14,82 @@ export type SiteLayoutProps = {
   current: string
   /** ヘッダーの右端に置く要素。 */
   actions?: ReactNode
+  /**
+   * サイドバーのリンクの下に置く、画面ごとの操作の欄を描く。
+   * 幅 768px 未満では、ドロワーを閉じる関数を受ける。日付を選んだ後のように、操作の後にドロワーを閉じるときに呼ぶ。
+   */
+  renderSidebar?: (closeDrawer: (() => void) | undefined) => ReactNode
   children: ReactNode
 }
 
 /**
- * ヘッダー、画面の間を移るリンク、画面の中身を並べる。
- * 幅 768px 以上では、リンクを左端の縦の並びに常に出す。未満では、ヘッダーの左のボタンで開くドロワーに入れ、閉じた状態で始める。
+ * ヘッダー、左のサイドバー、画面の中身を並べる。サイドバーには、画面の間を移るリンクと、画面ごとの操作の欄を置く。
+ * ヘッダーの左のメニューのボタンで、サイドバーを開閉する。
+ * 幅 768px 以上では、サイドバーを開いた状態で始め、閉じると画面の中身を広げる。未満では、サイドバーをドロワーに入れ、閉じた状態で始める。
  * ドロワーを開いたまま 768px 以上になると、ドロワーを閉じる。
  */
-export const SiteLayout = ({ navItems, current, actions, children }: SiteLayoutProps) => {
+export const SiteLayout = ({
+  navItems,
+  current,
+  actions,
+  renderSidebar,
+  children,
+}: SiteLayoutProps) => {
   const isDesktop = useIsDesktop()
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
-  const drawerId = useId()
+  const sidebarId = useId()
   if (isDesktop && isDrawerOpen) setIsDrawerOpen(false)
+
+  const sidebar = (closeDrawer: (() => void) | undefined) => (
+    <>
+      <div className="p-2">
+        <SiteNav current={current} items={navItems} />
+      </div>
+      {renderSidebar !== undefined && (
+        <div className="border-t border-border">{renderSidebar(closeDrawer)}</div>
+      )}
+    </>
+  )
 
   return (
     <div className="flex h-dvh flex-col">
       <SiteHeader
         menuButton={
-          !isDesktop && (
-            <button
-              aria-controls={drawerId}
-              aria-expanded={isDrawerOpen}
-              aria-label="メニュー"
-              className="grid size-11 shrink-0 place-items-center rounded-8 hover:bg-surface-subtle focus-visible:focus-ring"
-              data-testid="site-nav-open"
-              onClick={() => setIsDrawerOpen(true)}
-              type="button"
-            >
-              <MenuIcon aria-hidden="true" height={24} width={24} />
-            </button>
-          )
+          <button
+            aria-controls={sidebarId}
+            aria-expanded={isDesktop ? isSidebarOpen : isDrawerOpen}
+            aria-label="メニュー"
+            className="grid size-11 shrink-0 place-items-center rounded-8 hover:bg-surface-subtle focus-visible:focus-ring"
+            data-testid="site-nav-open"
+            onClick={() => (isDesktop ? setIsSidebarOpen((open) => !open) : setIsDrawerOpen(true))}
+            type="button"
+          >
+            <MenuIcon aria-hidden="true" height={24} width={24} />
+          </button>
         }
         actions={actions}
       />
       <div className="flex min-h-0 grow">
         {isDesktop ? (
-          <div className="shrink-0 overflow-auto border-r border-border bg-surface p-2">
-            <SiteNav current={current} items={navItems} layout="rail" />
-          </div>
+          isSidebarOpen && (
+            <aside
+              className="w-64 shrink-0 overflow-auto border-r border-border bg-surface"
+              id={sidebarId}
+            >
+              {sidebar(undefined)}
+            </aside>
+          )
         ) : (
           <Drawer
             closeButtonTestId="site-nav-close"
             data-testid="site-nav-drawer"
-            id={drawerId}
+            id={sidebarId}
             isOpen={isDrawerOpen}
             onCloseRequest={() => setIsDrawerOpen(false)}
             title="メニュー"
           >
-            <div className="p-2">
-              <SiteNav current={current} items={navItems} layout="list" />
-            </div>
+            {sidebar(() => setIsDrawerOpen(false))}
           </Drawer>
         )}
         <div

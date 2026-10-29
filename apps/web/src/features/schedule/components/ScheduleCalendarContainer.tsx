@@ -17,7 +17,7 @@ import {
 } from '../queries'
 import { pickCalendarSearch, type ScheduleSearch } from '../schema/scheduleSearch'
 import { ScheduleCalendar } from './ScheduleCalendar'
-import { ScheduleCalendarToolbar, type StaffFilterToggle } from './ScheduleCalendarToolbar'
+import { ScheduleCalendarToolbar } from './ScheduleCalendarToolbar'
 import { StaffScheduleDayGrid } from './StaffScheduleDayGrid'
 
 /** 日の表示だけが 1 分ごとに描き直されるよう、今の時刻をここで読んで日の表に渡す。 */
@@ -29,15 +29,8 @@ const DayGridWithNow = ({
   return <StaffScheduleDayGrid {...props} now={nowForDay(date, now)} />
 }
 
-export type ScheduleCalendarContainerProps = {
-  /** 渡したときだけ、ツールバーに職員の絞り込みを開くボタンを出す。 */
-  staffFilterToggle?: StaffFilterToggle
-}
-
 /** `/schedule` の search params を読み、予定を取ってカレンダーに出す。 */
-export const ScheduleCalendarContainer = ({
-  staffFilterToggle,
-}: ScheduleCalendarContainerProps) => {
+export const ScheduleCalendarContainer = () => {
   const search = useSearch({ from: '/schedule' })
   const navigate = useNavigate({ from: '/schedule' })
   const { api, facilityId } = useBuddyApi()
@@ -95,7 +88,6 @@ export const ScheduleCalendarContainer = ({
           onCreate={() => openCreate(date)}
           onToday={() => updateSearch({ date: undefined })}
           onViewChange={(view) => updateSearch({ view })}
-          staffFilterToggle={staffFilterToggle}
           view={search.view}
         />
       </div>
