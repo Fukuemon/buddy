@@ -21,7 +21,7 @@ test.describe('画面の枠', () => {
   for (const variant of EVIDENCE_VARIANTS) {
     const prefix = variant.label ? `${variant.label}: ` : ''
 
-    test(`${prefix}PC の幅で予定のカレンダーを開いた場合、左の欄にミニカレンダーと職員の絞り込みが並び、ナビゲーションはヘッダーにあること`, async ({
+    test(`${prefix}PC の幅で予定のカレンダーを開いた場合、左の欄にミニカレンダーと職員の絞り込みが並び、ヘッダーに予定の名前が出ること`, async ({
       browser,
     }) => {
       await recordPrEvidence(
@@ -37,11 +37,11 @@ test.describe('画面の枠', () => {
           await page.goto('/schedule')
           await expect(page.getByTestId('schedule-calendar')).toBeVisible()
           await step('幅 1280px で予定のカレンダーを開いている')
-          await expect(page.getByTestId('site-nav')).toBeVisible()
+          await expect(page.getByTestId('site-title')).toHaveText('予定')
           await expect(page.getByTestId('mini-calendar')).toBeVisible()
           await expect(page.getByTestId('staff-filter-sidebar')).toBeVisible()
           await check(
-            '左の欄に、ミニカレンダー、キャンセルした予定の切り替え、職員の絞り込みだけが並ぶ。画面の間を移るタブはヘッダーにある',
+            '左の欄に、ミニカレンダー、キャンセルした予定の切り替え、職員の絞り込みだけが並ぶ。ヘッダーの左に「予定」の名前が出る',
           )
         },
       )
