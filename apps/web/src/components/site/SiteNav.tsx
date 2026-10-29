@@ -1,10 +1,6 @@
 import { clsx } from 'clsx'
-import type { ComponentType, SVGProps } from 'react'
 
-import ScheduleIcon from '#/assets/icons/calendar-month.svg?react'
-import ReceiptIcon from '#/assets/icons/fact-check.svg?react'
-
-/** 機能の中の画面のリンク。アイコンを付けず、機能のリンクの下に字下げして置く。 */
+/** 画面の間を移るリンク。 */
 export type SiteNavLink = {
   /** testid の末尾。`site-nav-<id>` を付ける。 */
   id: string
@@ -12,63 +8,49 @@ export type SiteNavLink = {
   label: string
 }
 
-/** 機能のリンク。 */
+/** 機能のタブ。 */
 export type SiteNavItem = SiteNavLink & {
-  icon: ComponentType<SVGProps<SVGSVGElement>>
-  /** 機能の中の画面のリンク。 */
+  /** 機能の中のタブ。渡したときだけ、機能の画面の中身の上端に出す。 */
   children?: readonly SiteNavLink[]
 }
 
+/** 今の画面の href が、その機能のタブの中にあるかを返す。 */
+export const isInFeature = (item: SiteNavItem, current: string) =>
+  current === item.href ||
+  current.startsWith(`${item.href}/`) ||
+  (item.children ?? []).some((child) => child.href === current)
+
+/** タブのリンクのクラス。今の画面のタブに下線を引く。機能のタブと機能の中のタブで共有する。 */
+export const tabClassName = (isCurrent: boolean) =>
+  clsx(
+    'flex items-center border-b-3 px-3 whitespace-nowrap focus-visible:focus-ring',
+    isCurrent
+      ? 'border-primary text-primary'
+      : 'border-transparent text-text-secondary hover:text-text',
+  )
+
 export type SiteNavProps = {
   items: readonly SiteNavItem[]
-  /** 今の画面の href。そのリンクに aria-current を付ける。 */
+  /** 今の画面の href。その画面を含む機能のタブに aria-current を付ける。 */
   current: string
 }
 
-const linkClassName = (isCurrent: boolean) =>
-  clsx(
-    'flex items-center rounded-8 px-4 focus-visible:focus-ring',
-    isCurrent
-      ? 'bg-primary-surface text-primary'
-      : 'text-text-secondary hover:bg-surface-subtle hover:text-text',
-  )
-
-/** 画面の間を移るリンクの並び。今の画面のリンクは、面の色と aria-current で示す。 */
+/** ヘッダーの機能のタブ。今の機能のタブは、下線と aria-current で示す。 */
 export const SiteNav = ({ items, current }: SiteNavProps) => (
-  <nav aria-label="画面" data-testid="site-nav">
-    <ul className="flex flex-col gap-1">
+  <nav aria-label="画面" className="flex self-stretch" data-testid="site-nav">
+    <ul className="flex gap-1">
       {items.map((item) => {
-        const Icon = item.icon
+        const isCurrent = isInFeature(item, current)
         return (
-          <li key={item.href}>
+          <li className="flex" key={item.href}>
             <a
-              href={item.href}
+              aria-current={isCurrent ? 'page' : undefined}
+              className={clsx(tabClassName(isCurrent), 'text-label')}
               data-testid={`site-nav-${item.id}`}
-              aria-current={item.href === current ? 'page' : undefined}
-              className={clsx(linkClassName(item.href === current), 'h-12 gap-4 text-label')}
+              href={item.href}
             >
-              <Icon aria-hidden="true" className="shrink-0" height={24} width={24} />
-              <span className="whitespace-nowrap">{item.label}</span>
+              {item.label}
             </a>
-            {item.children !== undefined && item.children.length > 0 && (
-              <ul className="mt-1 flex flex-col gap-1">
-                {item.children.map((child) => (
-                  <li key={child.href}>
-                    <a
-                      href={child.href}
-                      data-testid={`site-nav-${child.id}`}
-                      aria-current={child.href === current ? 'page' : undefined}
-                      className={clsx(
-                        linkClassName(child.href === current),
-                        'h-10 pl-14 text-body',
-                      )}
-                    >
-                      <span className="whitespace-nowrap">{child.label}</span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            )}
           </li>
         )
       })}
@@ -76,38 +58,34 @@ export const SiteNav = ({ items, current }: SiteNavProps) => (
   </nav>
 )
 
-/** 職員の管理の権限を持つ職員にだけ出す、予定の取り込みのリンク。カレンダーの連携の画面も、このリンクを今の画面とする。 */
+/** 予定のカレンダーのタブ。 */
+export const CALENDAR_NAV_ITEM: SiteNavLink = {
+  id: 'calendar',
+  href: '/schedule',
+  label: 'カレンダー',
+}
+
+/** 職員の管理の権限を持つ職員にだけ出す、予定の取り込みのタブ。カレンダーの連携の画面も、このタブを今の画面とする。 */
 export const IMPORT_NAV_ITEM: SiteNavLink = {
   id: 'import',
   href: '/schedule/import',
   label: '取り込み',
 }
 
-/** 職員の管理の権限を持つ職員にだけ出す、確認が必要な予定（Google カレンダーと食い違った予定）のリンク。 */
+/** 職員の管理の権限を持つ職員にだけ出す、確認が必要な予定（Google カレンダーと食い違った予定）のタブ。 */
 export const REVIEW_NAV_ITEM: SiteNavLink = {
   id: 'review',
   href: '/schedule/review',
   label: '要確認',
 }
 
-const SCHEDULE_NAV_ITEM: SiteNavItem = {
-  id: 'schedule',
-  href: '/schedule',
-  label: '予定',
-  icon: ScheduleIcon,
-}
-
-const RECEIPT_NAV_ITEM: SiteNavItem = {
-  id: 'receipt',
-  href: '/receipt',
-  label: '照合',
-  icon: ReceiptIcon,
-}
-
-/** ログインした職員に出すリンクの並びを返す。職員の管理の権限を持つ職員には、予定の下に取り込みと要確認を足す。 */
+/** ログインした職員に出す機能のタブを返す。職員の管理の権限を持つ職員には、予定の中にカレンダー、取り込み、要確認のタブを足す。 */
 export const siteNavItems = (canManageStaff: boolean): readonly SiteNavItem[] => [
-  canManageStaff
-    ? { ...SCHEDULE_NAV_ITEM, children: [IMPORT_NAV_ITEM, REVIEW_NAV_ITEM] }
-    : SCHEDULE_NAV_ITEM,
-  RECEIPT_NAV_ITEM,
+  {
+    id: 'schedule',
+    href: '/schedule',
+    label: '予定',
+    children: canManageStaff ? [CALENDAR_NAV_ITEM, IMPORT_NAV_ITEM, REVIEW_NAV_ITEM] : undefined,
+  },
+  { id: 'receipt', href: '/receipt', label: '照合' },
 ]

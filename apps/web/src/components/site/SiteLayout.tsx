@@ -4,18 +4,19 @@ import { useId, useState, type ReactNode } from 'react'
 import MenuIcon from '#/assets/icons/menu.svg?react'
 
 import { SiteHeader } from './SiteHeader'
-import { SiteNav, type SiteNavItem } from './SiteNav'
+import { SiteNav, isInFeature, type SiteNavItem } from './SiteNav'
+import { SiteSubNav } from './SiteSubNav'
 import { useIsDesktop } from './useIsDesktop'
 
 export type SiteLayoutProps = {
-  /** 画面の間を移るリンク。 */
+  /** 機能のタブ。今の機能が中のタブを持てば、画面の中身の上端に出す。 */
   navItems: readonly SiteNavItem[]
-  /** 今の画面のリンクの href。 */
+  /** 今の画面の href。 */
   current: string
   /** ヘッダーの右端に置く要素。 */
   actions?: ReactNode
   /**
-   * サイドバーのリンクの下に置く、画面ごとの操作の欄を描く。
+   * 左の欄に置く、画面の中の操作の欄を描く。渡した画面だけに、左の欄とメニューのボタンを出す。
    * 幅 768px 未満では、ドロワーを閉じる関数を受ける。日付を選んだ後のように、操作の後にドロワーを閉じるときに呼ぶ。
    */
   renderSidebar?: (closeDrawer: (() => void) | undefined) => ReactNode
@@ -23,10 +24,9 @@ export type SiteLayoutProps = {
 }
 
 /**
- * ヘッダー、左のサイドバー、画面の中身を並べる。サイドバーには、画面の間を移るリンクと、画面ごとの操作の欄を置く。
- * ヘッダーの左のメニューのボタンで、サイドバーを開閉する。
- * 幅 768px 以上では、サイドバーを開いた状態で始め、閉じると画面の中身を広げる。未満では、サイドバーをドロワーに入れ、閉じた状態で始める。
- * ドロワーを開いたまま 768px 以上になると、ドロワーを閉じる。
+ * ヘッダー、機能の中のタブ、左の欄、画面の中身を並べる。ヘッダーには機能のタブを置く。
+ * 左の欄は、ヘッダーの左のメニューのボタンで開閉する。幅 768px 以上では開いた状態で始め、閉じると画面の中身を広げる。
+ * 未満では、左の欄をドロワーに入れ、閉じた状態で始める。ドロワーを開いたまま 768px 以上になると、ドロワーを閉じる。
  */
 export const SiteLayout = ({
   navItems,
@@ -41,61 +41,66 @@ export const SiteLayout = ({
   const sidebarId = useId()
   if (isDesktop && isDrawerOpen) setIsDrawerOpen(false)
 
-  const sidebar = (closeDrawer: (() => void) | undefined) => (
-    <>
-      <div className="p-2">
-        <SiteNav current={current} items={navItems} />
-      </div>
-      {renderSidebar !== undefined && (
-        <div className="border-t border-border">{renderSidebar(closeDrawer)}</div>
-      )}
-    </>
-  )
+  const feature = navItems.find((item) => isInFeature(item, current))
+  const hasSidebar = renderSidebar !== undefined
 
   return (
     <div className="flex h-dvh flex-col">
       <SiteHeader
-        menuButton={
-          <button
-            aria-controls={sidebarId}
-            aria-expanded={isDesktop ? isSidebarOpen : isDrawerOpen}
-            aria-label="メニュー"
-            className="grid size-11 shrink-0 place-items-center rounded-8 hover:bg-surface-subtle focus-visible:focus-ring"
-            data-testid="site-nav-open"
-            onClick={() => (isDesktop ? setIsSidebarOpen((open) => !open) : setIsDrawerOpen(true))}
-            type="button"
-          >
-            <MenuIcon aria-hidden="true" height={24} width={24} />
-          </button>
-        }
         actions={actions}
+        menuButton={
+          hasSidebar && (
+            <button
+              aria-controls={sidebarId}
+              aria-expanded={isDesktop ? isSidebarOpen : isDrawerOpen}
+              aria-label="日付と絞り込み"
+              className="grid size-11 shrink-0 place-items-center rounded-8 hover:bg-surface-subtle focus-visible:focus-ring"
+              data-testid="site-sidebar-open"
+              onClick={() =>
+                isDesktop ? setIsSidebarOpen((open) => !open) : setIsDrawerOpen(true)
+              }
+              type="button"
+            >
+              <MenuIcon aria-hidden="true" height={24} width={24} />
+            </button>
+          )
+        }
+        nav={<SiteNav current={current} items={navItems} />}
       />
       <div className="flex min-h-0 grow">
-        {isDesktop ? (
-          isSidebarOpen && (
-            <aside
-              className="w-64 shrink-0 overflow-auto border-r border-border bg-surface"
+        {hasSidebar &&
+          (isDesktop ? (
+            isSidebarOpen && (
+              <aside
+                className="w-64 shrink-0 overflow-auto border-r border-border bg-surface"
+                id={sidebarId}
+              >
+                {renderSidebar(undefined)}
+              </aside>
+            )
+          ) : (
+            <Drawer
+              closeButtonTestId="site-sidebar-close"
+              data-testid="site-sidebar-drawer"
               id={sidebarId}
+              isOpen={isDrawerOpen}
+              onCloseRequest={() => setIsDrawerOpen(false)}
+              title="日付と絞り込み"
             >
-              {sidebar(undefined)}
-            </aside>
-          )
-        ) : (
-          <Drawer
-            closeButtonTestId="site-nav-close"
-            data-testid="site-nav-drawer"
-            id={sidebarId}
-            isOpen={isDrawerOpen}
-            onCloseRequest={() => setIsDrawerOpen(false)}
-            title="メニュー"
-          >
-            {sidebar(() => setIsDrawerOpen(false))}
-          </Drawer>
-        )}
+              {renderSidebar(() => setIsDrawerOpen(false))}
+            </Drawer>
+          ))}
         <div
           className="flex min-h-0 min-w-0 grow flex-col overflow-auto"
           data-scroll-restoration-id="site-main"
         >
+          {feature?.children !== undefined && (
+            <SiteSubNav
+              current={current}
+              items={feature.children}
+              label={`${feature.label}の画面`}
+            />
+          )}
           {children}
         </div>
       </div>
