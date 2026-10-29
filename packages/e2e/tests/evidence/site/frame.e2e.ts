@@ -21,14 +21,14 @@ test.describe('画面の枠', () => {
   for (const variant of EVIDENCE_VARIANTS) {
     const prefix = variant.label ? `${variant.label}: ` : ''
 
-    test(`${prefix}PC の幅で予定のカレンダーを開いた場合、左のサイドバーにナビゲーション、ミニカレンダー、職員の絞り込みが並ぶこと`, async ({
+    test(`${prefix}PC の幅で予定のカレンダーを開いた場合、左の欄にミニカレンダーと職員の絞り込みが並び、ナビゲーションはヘッダーにあること`, async ({
       browser,
     }) => {
       await recordPrEvidence(
         browser,
         {
           name: 'site-sidebar-schedule',
-          title: 'PC の幅で予定のカレンダーを開き、左のサイドバーを見る',
+          title: 'PC の幅で予定のカレンダーを開き、左の欄とヘッダーを見る',
           actor: MANAGER,
           variant,
         },
@@ -41,44 +41,44 @@ test.describe('画面の枠', () => {
           await expect(page.getByTestId('mini-calendar')).toBeVisible()
           await expect(page.getByTestId('staff-filter-sidebar')).toBeVisible()
           await check(
-            '左のサイドバーの上に画面の間を移るリンクが、その下にミニカレンダー、キャンセルした予定の切り替え、職員の絞り込みが並ぶ',
+            '左の欄に、ミニカレンダー、キャンセルした予定の切り替え、職員の絞り込みだけが並ぶ。画面の間を移るタブはヘッダーにある',
           )
         },
       )
     })
 
-    test(`${prefix}PC の幅でメニューのボタンを押した場合、サイドバーを閉じてカレンダーを広げ、もう一度押すと開くこと`, async ({
+    test(`${prefix}PC の幅でメニューのボタンを押した場合、左の欄を閉じてカレンダーを広げ、もう一度押すと開くこと`, async ({
       browser,
     }) => {
       await recordPrEvidence(
         browser,
         {
           name: 'site-sidebar-toggle',
-          title: 'PC の幅で、ヘッダーのメニューのボタンでサイドバーを閉じて開く',
+          title: 'PC の幅で、ヘッダーのメニューのボタンで左の欄を閉じて開く',
           actor: MANAGER,
           variant,
         },
         signIn,
         async ({ page, step, check }) => {
           await page.goto('/schedule')
-          const opener = page.getByTestId('site-nav-open')
-          await expect(page.getByTestId('site-nav')).toBeVisible()
+          const opener = page.getByTestId('site-sidebar-open')
+          await expect(page.getByTestId('mini-calendar')).toBeVisible()
           const openWidth = await columnWidth(page)
-          await step('幅 1280px で予定のカレンダーを開いている。サイドバーは開いている')
+          await step('幅 1280px で予定のカレンダーを開いている。左の欄は開いている')
 
           await step('ヘッダーの左のメニューのボタンを押す')
           await opener.click()
           await expect(opener).toHaveAttribute('aria-expanded', 'false')
-          await expect(page.getByTestId('site-nav')).toBeHidden()
-          // サイドバーの幅 256px を 7 列で分けた分（約 36px）だけ、列が広がる
+          await expect(page.getByTestId('mini-calendar')).toBeHidden()
+          // 左の欄の幅 256px を 7 列で分けた分（約 36px）だけ、列が広がる
           await expect.poll(() => columnWidth(page)).toBeGreaterThan(openWidth + 30)
-          await check('サイドバーが閉じ、カレンダーが表示の幅いっぱいに広がる')
+          await check('左の欄が閉じ、カレンダーが表示の幅いっぱいに広がる')
 
           await step('もう一度メニューのボタンを押す')
           await opener.click()
           await expect(opener).toHaveAttribute('aria-expanded', 'true')
-          await expect(page.getByTestId('site-nav')).toBeVisible()
-          await check('サイドバーが開き、ナビゲーションとミニカレンダーがもう一度出る')
+          await expect(page.getByTestId('mini-calendar')).toBeVisible()
+          await check('左の欄が開き、ミニカレンダーと職員の絞り込みがもう一度出る')
         },
       )
     })
