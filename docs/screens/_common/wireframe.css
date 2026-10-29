@@ -440,7 +440,7 @@ body {
   background: var(--wf-fill);
 }
 
-/* サイトのヘッダー（SiteHeader）。左にメニューのボタン、サイトの名前、機能のタブを、右にログインした職員のメニューを置く */
+/* サイトのヘッダー（SiteHeader）。左にメニューのボタン、サイトの名前、今の機能の名前を、右に取り込み、要確認、アプリ、アカウントのボタンを置く */
 .wf-site-header {
   position: relative;
   display: flex;
@@ -524,48 +524,82 @@ body {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  width: 256px;
+  width: 288px;
   border-right: 1px solid var(--wf-line-soft);
   background: var(--wf-surface);
 }
 
-/* 機能のタブ（SiteNav）。ヘッダーの buddy の右に置き、今の機能に下線を引く */
-.wf-site-tabs {
-  display: flex;
-  align-self: stretch;
-  gap: 4px;
-  margin-left: 16px;
+/* 今の機能の名前。buddy の右に置く */
+.wf-site-title {
+  margin-left: 8px;
+  font-size: 20px;
 }
 
-.wf-site-tabs__item,
-.wf-site-subtabs__item {
+/* ヘッダーの右端。取り込み、要確認、アプリ、アカウントの順に並べる */
+.wf-site-header__actions {
   display: flex;
   align-items: center;
-  padding: 0 12px;
-  border-bottom: 3px solid transparent;
-  color: var(--wf-muted);
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.wf-site-tabs__item[aria-current='page'],
-.wf-site-subtabs__item[aria-current='page'] {
-  border-bottom-color: var(--wf-primary);
-  color: var(--wf-primary);
-}
-
-/* 予定の中のタブ（ScheduleTabs）。画面の中身の上端に置く */
-.wf-site-subtabs {
-  display: flex;
   gap: 4px;
-  height: 48px;
-  padding: 0 12px;
-  border-bottom: 1px solid var(--wf-line-soft);
-  background: var(--wf-surface);
 }
 
-.wf-site-subtabs__item {
-  font-weight: 400;
+.wf-site-icon {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: var(--wf-muted);
+}
+
+/* 要確認の件数の印 */
+.wf-site-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--buddy-color-danger);
+  color: var(--wf-surface);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* アプリのメニュー（SiteNav）。アプリのボタンの下に開き、予定と照合を並べる */
+.wf-site-apps {
+  position: absolute;
+  top: 52px;
+  right: 56px;
+  z-index: 5;
+  display: none;
+  grid-template-columns: repeat(2, 96px);
+  gap: 8px;
+  padding: 16px;
+  border-radius: var(--wf-radius);
+  background: var(--wf-surface);
+  box-shadow: 0 0 0 1px var(--wf-line);
+}
+
+.wf-site-apps.is-open {
+  display: grid;
+}
+
+.wf-site-apps__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  border-radius: var(--wf-radius);
+}
+
+.wf-site-apps__item[aria-current='page'] {
+  background: var(--wf-primary-surface);
+  color: var(--wf-primary);
 }
 
 @container screen (width < 768px) {
