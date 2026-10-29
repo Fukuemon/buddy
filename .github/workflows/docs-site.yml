@@ -1,15 +1,14 @@
 # ドキュメントサイトと、Storybook のカタログと、表の ER 図を、1 つの Worker（buddy-docs）として Cloudflare に出す。
-# agent-harness のパッケージ docs-site のテンプレート（cloudflare-workers）を元にした。手順と Access の設定は apps/docs-site/README.md にある。
+# agent-harness のパッケージ docs-site のテンプレート（cloudflare-workers）を元にした。手順は apps/docs-site/README.md にある。
 # pull request ではサイトを組み立てるだけで、プレビューは出さない。プレビューは pull request のコードへトークンを渡すことになる（ADR-0019）。
-# develop に入ったら本番に出し、Access の保護を確認する。
+# develop に入ったら本番に出し、ログインなしで開けることを確認する。サイトは Access で守らず、誰でも開ける（ADR-0020）。
 # 並べるものは context/project.yml の docs_site.parts にあり、pnpm site:build（scripts/build-docs-site.mjs）が並べる。
 # 文書の元は docs/ のほか、services/ と packages/ の Design Doc にも散るので、変えた場所で絞らない。
 #
 # 前提
 # - environment docs-site: デプロイできるブランチを develop だけに限り、Secrets に CLOUDFLARE_API_TOKEN（Worker buddy-docs の Editor だけのトークン）を置く。
 #   ジョブの if だけでは、if を外したワークフローを別のブランチへ push してトークンを読める。environment のブランチの制限は、ワークフローを書き換えても外せない。
-# - environment の Variables: CLOUDFLARE_ACCOUNT_ID、DOCS_SITE_URL（本番の URL）、DOCS_SITE_MARKER（トップのページにだけある文字列）、
-#   DOCS_SITE_AUTH_HOST（Access の認証の画面のホスト。team のドメインの親の cloudflareaccess.com を渡す。スクリプトはサブドメインも認める）
+# - environment の Variables: CLOUDFLARE_ACCOUNT_ID、DOCS_SITE_URL（本番の URL）、DOCS_SITE_MARKER（トップのページにだけある文字列）
 
 name: ドキュメントサイト
 
@@ -82,14 +81,20 @@ jobs:
         run: pnpm run deploy:production
 
       # 値を run に直接埋めると、シェルが $ や引用符を解釈するので、環境変数で渡す
-      # カタログと ER 図は、それぞれの中身にだけあり、Access のログインの画面に出ない文字列で確認する。
-      # サイトの名前、Worker の名前、storybook はログインの画面にも出る
-      - name: Access の保護を確認する
+      # リダイレクトをたどらずに取り、中身にだけある文字列で確認する。認証の画面やエラーのページに転送されると、文字列が無く失敗する
+      - name: ログインなしで開けることを確認する
         env:
           DOCS_SITE_URL: ${{ vars.DOCS_SITE_URL }}
           DOCS_SITE_MARKER: ${{ vars.DOCS_SITE_MARKER }}
-          DOCS_SITE_AUTH_HOST: ${{ vars.DOCS_SITE_AUTH_HOST }}
         run: |
-          node scripts/check-docs-site-protection.mjs "$DOCS_SITE_URL" "$DOCS_SITE_MARKER" "$DOCS_SITE_AUTH_HOST"
-          node scripts/check-docs-site-protection.mjs "${DOCS_SITE_URL%/}/storybook/" "sb-addons" "$DOCS_SITE_AUTH_HOST"
-          node scripts/check-docs-site-protection.mjs "${DOCS_SITE_URL%/}/erd/" "Liam ERD" "$DOCS_SITE_AUTH_HOST"
+          check() {
+            body=$(curl -sS --fail "$1")
+            if ! printf '%s' "$body" | grep -qF -- "$2"; then
+              echo "::error::$1 の応答に「$2」がない"
+              exit 1
+            fi
+            echo "開ける: $1"
+          }
+          check "$DOCS_SITE_URL" "$DOCS_SITE_MARKER"
+          check "${DOCS_SITE_URL%/}/storybook/" "sb-addons"
+          check "${DOCS_SITE_URL%/}/erd/" "Liam ERD"
