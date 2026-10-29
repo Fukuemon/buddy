@@ -10,6 +10,7 @@
  *   開いている間は panel に is-open を付け、開くボタンの aria-expanded を true にする。デバイスを切り替えると閉じる。
  *   開くと panel の中の最初のフォーカスできる要素へ、閉じると開くボタンへフォーカスを移す。
  *   data-panel-modal も付けた panel を開いている間は、panel の外の要素に構成番号の印を出さない。
+ *   data-panel-dismiss も付けた panel は、panel と開くボタンの外を押すか、Escape キーを押すと閉じる。メニューに使う。
  * - data-escape: Escape キーで押す。見えている要素だけを押す。
  *
  * 押せる要素には tabindex="0" を付け、Enter と Space でも押せるようにする。aria-disabled="true" の要素は押せない。
@@ -110,7 +111,21 @@
     mockRefresh()
   }
 
+  /** 開いている data-panel-dismiss の panel のうち、except の中に無いものを閉じる。閉じたら true を返す */
+  function dismissPanels(except) {
+    let closed = false
+    for (const panel of screen.querySelectorAll('[data-panel-dismiss].is-open')) {
+      const name = CSS.escape(panel.dataset.panel)
+      if (except?.closest(`[data-panel="${name}"], [data-open="${name}"]`)) continue
+      setPanel(panel, false)
+      closed = true
+    }
+    if (closed) mockRefresh()
+    return closed
+  }
+
   screen.addEventListener('click', (event) => {
+    dismissPanels(event.target)
     const el = event.target.closest(ACTION)
     if (!el) return
     // a の href への移動は、go() が付ける search params を落とすので止める
@@ -128,6 +143,7 @@
 
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return
+    if (dismissPanels()) return
     const el = [...screen.querySelectorAll('[data-escape]')].find(isVisible)
     if (el) act(el)
   })
