@@ -89,7 +89,7 @@ jobs:
         run: |
           check() {
             body=$(curl -sS --fail "$1")
-            if ! printf '%s' "$body" | grep -qF -- "$2"; then
+            if ! grep -qF -- "$2" <<<"$body"; then
               echo "::error::$1 の応答に「$2」がない"
               exit 1
             fi
