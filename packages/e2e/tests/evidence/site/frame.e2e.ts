@@ -12,8 +12,14 @@ const signIn = async (page: Page) => {
   await signInAtBroker(page, LOGIN_EMAIL)
 }
 
-const calendarWidth = async (page: Page) =>
-  (await page.getByTestId('schedule-calendar').boundingBox())?.width ?? 0
+// 枠だけでなく、月の格子の列も広がったかを見るため、土曜の列の見出しの右端を測る
+const gridRight = async (page: Page) => {
+  const box = await page
+    .getByTestId('schedule-calendar')
+    .getByRole('columnheader', { name: '土' })
+    .boundingBox()
+  return box === null ? 0 : box.x + box.width
+}
 
 test.describe('画面の枠', () => {
   for (const variant of EVIDENCE_VARIANTS) {
@@ -61,14 +67,15 @@ test.describe('画面の枠', () => {
           await page.goto('/schedule')
           const opener = page.getByTestId('site-nav-open')
           await expect(page.getByTestId('site-nav')).toBeVisible()
-          const openWidth = await calendarWidth(page)
+          const openRight = await gridRight(page)
           await step('幅 1280px で予定のカレンダーを開いている。サイドバーは開いている')
 
           await step('ヘッダーの左のメニューのボタンを押す')
           await opener.click()
           await expect(opener).toHaveAttribute('aria-expanded', 'false')
           await expect(page.getByTestId('site-nav')).toBeHidden()
-          await expect.poll(() => calendarWidth(page)).toBeGreaterThan(openWidth)
+          // サイドバーの幅 256px の分だけ、格子の右端が右へ動く
+          await expect.poll(() => gridRight(page)).toBeGreaterThan(openRight + 200)
           await check('サイドバーが閉じ、カレンダーが表示の幅いっぱいに広がる')
 
           await step('もう一度メニューのボタンを押す')
