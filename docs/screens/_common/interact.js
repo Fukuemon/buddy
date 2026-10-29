@@ -6,7 +6,7 @@
  *   デバイス、構成番号、testid、幅に合わせるかの選択は、mock.js が body の data-* に置いた値を search params にして引き継ぐ。
  * - data-toggle: 押すと、is-on を付け外す。チェックボックスとトグルに使う。
  * - data-choice="<組の名前>": 押すと is-on を付け、同じ組のほかの要素から外す。ラジオボタンとチップに使う。
- * - data-panel="<名前>": 開閉する要素。data-open="<名前>" を押すと開き、data-close="<名前>" を押すと閉じる。
+ * - data-panel="<名前>": 開閉する要素。data-open="<名前>" を押すと開き、開いていれば閉じる。data-close="<名前>" を押すと閉じる。
  *   開いている間は panel に is-open を付け、開くボタンの aria-expanded を true にする。デバイスを切り替えると閉じる。
  *   開くと panel の中の最初のフォーカスできる要素へ、閉じると開くボタンへフォーカスを移す。
  *   data-panel-modal も付けた panel を開いている間は、panel の外の要素に構成番号の印を出さない。
@@ -103,7 +103,9 @@
         syncChecked(other)
       }
     }
-    if (el.dataset.open) for (const panel of panels(el.dataset.open)) setPanel(panel, true)
+    if (el.dataset.open)
+      for (const panel of panels(el.dataset.open))
+        setPanel(panel, !panel.classList.contains('is-open'))
     if (el.dataset.close) for (const panel of panels(el.dataset.close)) setPanel(panel, false)
     mockRefresh()
   }
