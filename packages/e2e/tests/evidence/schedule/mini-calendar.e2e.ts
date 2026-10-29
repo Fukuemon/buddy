@@ -138,15 +138,15 @@ test.describe('予定のカレンダー', () => {
           async ({ page, step, check }) => {
             await page.goto('/schedule?view=week&date=2026-10-25')
             await expect(page.getByTestId('calendar-title')).toHaveText('2026年10月25日〜31日')
-            const drawer = page.getByTestId('site-nav-drawer')
+            const drawer = page.getByTestId('site-sidebar-drawer')
             await expect(drawer).toBeHidden()
             await step('幅 390px で週の表示を開いている。日付の欄はツールバーに無い')
 
             await step('ヘッダーの左のメニューのボタンを押す')
-            await page.getByTestId('site-nav-open').click()
+            await page.getByTestId('site-sidebar-open').click()
             await expect(drawer).toBeVisible()
             await expect(drawer.getByTestId('mini-calendar')).toBeVisible()
-            await check('ドロワーのナビゲーションの下にミニカレンダーが出る')
+            await check('ドロワーにミニカレンダーが出る')
 
             await step('ミニカレンダーの 10月14日を押す')
             await drawer.getByTestId('mini-calendar-day-2026-10-14').click()
