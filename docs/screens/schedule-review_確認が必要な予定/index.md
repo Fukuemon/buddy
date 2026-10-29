@@ -267,7 +267,7 @@
 
 **表示条件**: 職員の管理の権限を持つ職員にだけ、ヘッダーの右の、アプリのボタンの左に出す。モックは、職員の管理の権限を持つ職員の画面を描く。
 
-**カタログ**: [SiteSubNav の Calendar](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-sitesubnav--calendar)
+**カタログ**: [CalendarHeaderTools の WithReview](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarheadertools--with-review)、[CalendarHeaderTools の NoReview](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarheadertools--no-review)
 
 ### インタラクション
 
@@ -284,6 +284,8 @@
 **活性条件**: 常に活性
 
 **表示条件**: 職員の管理の権限を持つ職員にだけ、ヘッダーの右の、要確認のボタンの左に出す。モックは、職員の管理の権限を持つ職員の画面を描く。
+
+**カタログ**: [CalendarHeaderTools の WithReview](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarheadertools--with-review)
 
 ### インタラクション
 
