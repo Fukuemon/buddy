@@ -27,6 +27,7 @@ buddy の `contrast.test.ts` と同じ 44 組を、同じ結果で確認でき�
 - Cloudflare のトークンは、GitHub の environment `docs-site` の secret に置き、environment にデプロイできるブランチを develop だけにする。
   - ワークフローの条件だけで develop に絞ると、条件を外したワークフローを別のブランチへ push してトークンを読める。environment のブランチの制限は、ワークフローを書き換えても外せない。
 - ワークフローは、パッケージ docs-site のテンプレートを元にし、公開の後に文書、カタログ、ER 図の保護を確認する。
+  - 保護の確認について、この判断は [ADR-0020](0020-docs-site-without-access.md) で置き換えた。
 - 意味のトークンの組のコントラストは、ルートの `pnpm check:contrast`（`scripts/check-contrast.mjs`）で計算し、CI で流す。Vitest のテスト `contrast.test.ts` は消す。
   - 計算の直しが agent-harness から届くようにするためである。組は `scripts/check-contrast.mjs` の冒頭に置く。
 

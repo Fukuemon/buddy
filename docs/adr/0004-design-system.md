@@ -136,6 +136,7 @@ apps/web は packages/ui に依存するので、依存の向きを変えずに 
 - title は、ファイルの配置先から機械的に決める。規則は DESIGN.md にある。
 - カタログは、ドキュメントサイトと 1 つの Cloudflare Worker の静的なファイルとして公開し（`/storybook/`）、Cloudflare Access で許可した人だけが開けるようにする。pull request ごとにプレビューを出し、develop に入ったら本番に出す。デプロイの構成は `apps/docs-site/README.md` にある。
   - pull request ごとのプレビューについて、この判断は [ADR-0019](0019-docs-site-publish-and-contrast-check.md) で置き換えた。
+  - Cloudflare Access で許可した人だけが開けるようにすることについて、この判断は [ADR-0020](0020-docs-site-without-access.md) で置き換えた。
 - Access で絞っても、カタログに載せるのはコンポーネントとダミーデータだけにする。許可した人の範囲は変わりうるためである。
 
 ## Considered Options
