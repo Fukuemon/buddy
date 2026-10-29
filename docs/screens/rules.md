@@ -120,9 +120,10 @@ docs/screens/
 - body の末尾で `../../_common/mock.js`、`../../_common/interact.js` をこの順に読む。ほかの script は書かない。
 - head で `../../_common/mock.css`、`../../_common/tokens.css`、`../../_common/wireframe.css`、`<画面 ID>.css` をこの順に読む。
 - `body` の `data-view` は最初に見せるデバイスにする。表示の幅が 600px 未満のとき（スマートフォンで仕様書を読むとき）は、`data-view` によらずモバイルで描く。`mobile`（390px）、`tablet`（768px）、`tablet-wide`（1024px）、`desktop`（1440px）から選ぶ。値は `mock.js` の `VIEWS` にだけ書く。
-- サイトのヘッダーとナビゲーション（`SiteHeader`、`SiteNav`）は、その画面の構成要素にするときだけ描く。ヘッダーの後ろの `wf-site-body` に、ナビゲーションを入れた `wf-site-drawer`、覆いの `wf-site-drawer-overlay`、画面の中身の `wf-site-main` を順に置く。`wf-site-drawer` は、幅 768px 以上では開いた状態の左のサイドバーになり、未満ではメニューのドロワーになる。モックは幅 768px 以上でサイドバーを閉じた状態を描かない。
-  - `wf-site-drawer` の中に、ナビゲーションの `wf-site-nav` を置き、画面ごとの操作の欄があれば、その後ろの `wf-site-sidebar` に置く。機能の中の画面のリンクは `wf-site-nav__item--sub` にし、アイコンを付けずに機能のリンクの直後に置く。
-  - ヘッダーの右端には、アカウントのボタン `wf-site-avatar` と、名前とログアウトを入れた `wf-site-viewer-menu` を置く。メニューは `data-panel="viewer-menu"` で開閉する。
+- サイトのヘッダーと機能のタブ（`SiteHeader`、`SiteNav`）は、その画面の構成要素にするときだけ描く。
+  - ヘッダーの `wf-site-header__brand` に、サイトの名前と、機能のタブの `wf-site-tabs` を置く。右端には、アカウントのボタン `wf-site-avatar` と、名前とログアウトを入れた `wf-site-viewer-menu` を置く。メニューは `data-panel="viewer-menu"` で開閉する。
+  - ヘッダーの後ろの `wf-site-body` に、画面の中身の `wf-site-main` を置く。予定の画面では、`wf-site-main` の先頭に、予定の中のタブの `wf-site-subtabs` を置く。
+  - 左の欄がある画面（予定のカレンダー）だけ、ヘッダーの先頭にメニューのボタン `wf-site-menu` を置く。`wf-site-main` の前には、左の欄の `wf-site-drawer` と覆いの `wf-site-drawer-overlay` を置く。`wf-site-drawer` は、幅 768px 以上では開いた状態の左の欄になり、未満ではドロワーになる。モックは幅 768px 以上で左の欄を閉じた状態を描かない。
 
 ### 構成番号と data-testid
 
