@@ -440,7 +440,7 @@ body {
   background: var(--wf-fill);
 }
 
-/* サイトのヘッダー（SiteHeader）。左にメニューのボタンとサイトの名前、右にログインした職員のメニューを置く */
+/* サイトのヘッダー（SiteHeader）。左にメニューのボタン、サイトの名前、機能のタブを、右にログインした職員のメニューを置く */
 .wf-site-header {
   position: relative;
   display: flex;
@@ -454,6 +454,7 @@ body {
 
 .wf-site-header__brand {
   display: flex;
+  align-self: stretch;
   align-items: center;
   gap: 8px;
 }
@@ -508,7 +509,7 @@ body {
   display: none;
 }
 
-/* ヘッダーの下を、左のサイドバーと画面の中身に分ける（SiteLayout） */
+/* ヘッダーの下を、左の欄と画面の中身に分ける（SiteLayout） */
 .wf-site-body {
   display: flex;
 }
@@ -518,7 +519,7 @@ body {
   min-width: 0;
 }
 
-/* 幅 768px 以上では、ドロワーを左のサイドバーとして開いた状態で出す。モックは閉じた状態を描かない */
+/* 幅 768px 以上では、ドロワーを予定のカレンダーの左の欄として開いた状態で出す。モックは閉じた状態を描かない */
 .wf-site-drawer {
   display: flex;
   flex-direction: column;
@@ -528,40 +529,43 @@ body {
   background: var(--wf-surface);
 }
 
-/* 画面の間を移るリンクの並び（SiteNav）。アイコンの右に名前を置き、機能の中の画面は字下げする */
-.wf-site-nav {
+/* 機能のタブ（SiteNav）。ヘッダーの buddy の右に置き、今の機能に下線を引く */
+.wf-site-tabs {
   display: flex;
-  flex-direction: column;
+  align-self: stretch;
   gap: 4px;
-  padding: 8px;
+  margin-left: 16px;
 }
 
-.wf-site-nav__item {
+.wf-site-tabs__item,
+.wf-site-subtabs__item {
   display: flex;
   align-items: center;
-  gap: 16px;
-  height: 48px;
-  padding: 0 16px;
-  border-radius: var(--wf-radius);
+  padding: 0 12px;
+  border-bottom: 3px solid transparent;
   color: var(--wf-muted);
   font-weight: 700;
   white-space: nowrap;
 }
 
-.wf-site-nav__item--sub {
-  height: 40px;
-  padding-left: 56px;
-  font-weight: 400;
-}
-
-.wf-site-nav__item[aria-current='page'] {
-  background: var(--wf-primary-surface);
+.wf-site-tabs__item[aria-current='page'],
+.wf-site-subtabs__item[aria-current='page'] {
+  border-bottom-color: var(--wf-primary);
   color: var(--wf-primary);
 }
 
-/* サイドバーの下の段。画面ごとの操作の欄を置く */
-.wf-site-sidebar {
-  border-top: 1px solid var(--wf-line-soft);
+/* 予定の中のタブ（ScheduleTabs）。画面の中身の上端に置く */
+.wf-site-subtabs {
+  display: flex;
+  gap: 4px;
+  height: 48px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--wf-line-soft);
+  background: var(--wf-surface);
+}
+
+.wf-site-subtabs__item {
+  font-weight: 400;
 }
 
 @container screen (width < 768px) {
