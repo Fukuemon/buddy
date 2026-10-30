@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test'
 import { LEADER, LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, PHONE_VIEWPORT, recordPrEvidence } from '../../fixtures/evidence'
 import { signInAtBroker } from '../../screens/login'
+import { calendarColumnHeader } from '../../selectors/scheduleCalendar'
 
 test.describe('予定のカレンダー', () => {
   test.describe('日付と絞り込みのドロワー', () => {
@@ -55,6 +56,52 @@ test.describe('予定のカレンダー', () => {
             await page.keyboard.press('Escape')
             await expect(drawer).toBeHidden()
             await check('Escape キーでドロワーが閉じる')
+          },
+        )
+      })
+
+      test(`${variant.label ? `${variant.label}: ` : ''}PC の幅でツールバーの「日付と絞り込み」のボタンを押した場合、左の欄をたたんでカレンダーを広げ、もう一度押すと開くこと`, async ({
+        browser,
+      }) => {
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'schedule-sidebar-collapse',
+            title: 'PC の幅で、ツールバーのボタンから左の欄をたたみ、もう一度開く',
+            actor: `${LOGIN_STAFF.name}（マネージャー）`,
+            variant,
+          },
+          async (page) => {
+            await page.goto('/schedule')
+            await signInAtBroker(page, LOGIN_EMAIL)
+          },
+          async ({ page, step, check }) => {
+            await page.goto('/schedule')
+            const toggle = page.getByTestId('site-sidebar-open')
+            const columnWidth = async () =>
+              (await calendarColumnHeader(page, '土').boundingBox())?.width ?? 0
+            await expect(page.getByTestId('mini-calendar')).toBeVisible()
+            await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+            const openColumnWidth = await columnWidth()
+            await check(
+              '幅 1280px で予定のカレンダーを開くと、左の欄にミニカレンダーと職員の絞り込みが出ている',
+            )
+
+            await step('ツールバーの「日付と絞り込み」のボタンを押す')
+            await toggle.click()
+            await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+            await expect(page.getByTestId('mini-calendar')).toBeHidden()
+            await expect(page.getByTestId('staff-filter-sidebar')).toBeHidden()
+            // 左の欄の 288px を 7 列で分けた分（約 41px）だけ、列が広がる
+            await expect.poll(columnWidth).toBeGreaterThan(openColumnWidth + 30)
+            await check('左の欄がたたまれ、カレンダーが左の欄の分だけ広がる')
+
+            await step('もう一度「日付と絞り込み」のボタンを押す')
+            await toggle.click()
+            await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+            await expect(page.getByTestId('mini-calendar')).toBeVisible()
+            await expect(page.getByTestId('staff-filter-sidebar')).toBeVisible()
+            await check('左の欄が開き、ミニカレンダーと職員の絞り込みが出る')
           },
         )
       })
