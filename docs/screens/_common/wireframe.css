@@ -585,7 +585,10 @@ body {
   display: none;
 }
 
-/* 予定のカレンダーの左の欄。幅 768px 以上では開いた状態で出す */
+/*
+ * 予定のカレンダーの左の欄。幅 768px 以上では開いた状態で始め、ツールバーの「日付と絞り込み」のボタンでたたむ。
+ * 幅 768px 以上の is-open は、たたんだ状態を表す
+ */
 .wf-site-drawer {
   display: flex;
   flex-direction: column;
@@ -593,6 +596,12 @@ body {
   width: 288px;
   border-right: 1px solid var(--wf-line-soft);
   background: var(--wf-surface);
+}
+
+@container screen (width >= 768px) {
+  .wf-site-drawer.is-open {
+    display: none;
+  }
 }
 
 /*
