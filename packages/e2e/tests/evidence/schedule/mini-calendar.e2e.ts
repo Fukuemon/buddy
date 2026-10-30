@@ -126,7 +126,7 @@ test.describe('予定のカレンダー', () => {
           {
             name: 'schedule-mini-calendar-phone',
             title:
-              'スマートフォンの幅で、メニューのボタンからドロワーを開き、ミニカレンダーの日を押す',
+              'スマートフォンの幅で、ツールバーのボタンからドロワーを開き、ミニカレンダーの日を押す',
             actor: `${LOGIN_STAFF.name}（マネージャー）`,
             variant,
             viewport: PHONE_VIEWPORT,
@@ -142,7 +142,7 @@ test.describe('予定のカレンダー', () => {
             await expect(drawer).toBeHidden()
             await step('幅 390px で週の表示を開いている。日付の欄はツールバーに無い')
 
-            await step('ヘッダーの左のメニューのボタンを押す')
+            await step('ツールバーの「日付と絞り込み」のボタンを押す')
             await page.getByTestId('site-sidebar-open').click()
             await expect(drawer).toBeVisible()
             await expect(drawer.getByTestId('mini-calendar')).toBeVisible()

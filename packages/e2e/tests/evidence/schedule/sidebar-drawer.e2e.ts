@@ -7,7 +7,7 @@ import { signInAtBroker } from '../../screens/login'
 test.describe('予定のカレンダー', () => {
   test.describe('日付と絞り込みのドロワー', () => {
     for (const variant of EVIDENCE_VARIANTS) {
-      test(`${variant.label ? `${variant.label}: ` : ''}スマートフォンの幅でメニューのボタンを押した場合、日付と絞り込みのドロワーにミニカレンダーと職員の絞り込みが出て、職員を外して閉じるとその職員の列が消えること`, async ({
+      test(`${variant.label ? `${variant.label}: ` : ''}スマートフォンの幅でツールバーの「日付と絞り込み」のボタンを押した場合、日付と絞り込みのドロワーにミニカレンダーと職員の絞り込みが出て、職員を外して閉じるとその職員の列が消えること`, async ({
         browser,
       }) => {
         await recordPrEvidence(
@@ -15,7 +15,7 @@ test.describe('予定のカレンダー', () => {
           {
             name: 'schedule-sidebar-drawer',
             title:
-              'スマートフォンの幅で、メニューのボタンからドロワーを開き、職員を外して、閉じるボタンと Escape で閉じる',
+              'スマートフォンの幅で、ツールバーのボタンからドロワーを開き、職員を外して、閉じるボタンと Escape で閉じる',
             actor: `${LOGIN_STAFF.name}（マネージャー）`,
             variant,
             viewport: PHONE_VIEWPORT,
@@ -31,7 +31,7 @@ test.describe('予定のカレンダー', () => {
             await expect(drawer).toBeHidden()
             await check('幅 390px で日の表示を開くと、日付と絞り込みのドロワーは閉じている')
 
-            await step('ヘッダーの左のメニューのボタンを押す')
+            await step('ツールバーの「日付と絞り込み」のボタンを押す')
             await page.getByTestId('site-sidebar-open').click()
             await expect(drawer).toBeVisible()
             await expect(drawer.getByTestId('mini-calendar')).toBeVisible()
@@ -49,7 +49,7 @@ test.describe('予定のカレンダー', () => {
             await expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeHidden()
             await check(`ドロワーが閉じ、日の表示から ${LOGIN_STAFF.name} の列が消える`)
 
-            await step('もう一度メニューのボタンを押して開き、Escape キーを押す')
+            await step('もう一度「日付と絞り込み」のボタンを押して開き、Escape キーを押す')
             await page.getByTestId('site-sidebar-open').click()
             await expect(drawer).toBeVisible()
             await page.keyboard.press('Escape')
