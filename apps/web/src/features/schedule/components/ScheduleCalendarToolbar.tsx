@@ -7,6 +7,14 @@ import { formatCalendarTitle } from '../lib/calendarRange'
 
 const VIEW_OPTIONS = CALENDAR_VIEWS.map((view) => ({ id: view, label: CALENDAR_VIEW_LABEL[view] }))
 
+/** ミニカレンダーと職員の絞り込みのドロワーを開くボタンに渡す値。 */
+export type StaffFilterToggle = {
+  isOpen: boolean
+  /** ドロワーの `<dialog>` の id */
+  controlsId: string
+  onOpen: () => void
+}
+
 export type ScheduleCalendarToolbarProps = {
   view: CalendarView
   /** `YYYY-MM-DD` */
@@ -17,10 +25,12 @@ export type ScheduleCalendarToolbarProps = {
   onViewChange: (view: CalendarView) => void
   /** 渡したときだけ、予定の作成のボタンを出す。 */
   onCreate?: () => void
+  /** 渡したときだけ、ドロワーを開くボタンを出す。幅 768px 未満で渡す。 */
+  staffFilterToggle?: StaffFilterToggle
 }
 
 /**
- * カレンダーの上の操作。前後への移動、今日、表示の期間の見出し、表示の種類、予定の作成を並べる。
+ * カレンダーの上の操作。前後への移動、今日、表示の期間の見出し、表示の種類、日付と絞り込みのドロワーを開く、予定の作成を並べる。
  * 日付の指定とキャンセルした予定を出す切り替えは、左のサイドバーに置く。
  */
 export const ScheduleCalendarToolbar = ({
@@ -31,6 +41,7 @@ export const ScheduleCalendarToolbar = ({
   onToday,
   onViewChange,
   onCreate,
+  staffFilterToggle,
 }: ScheduleCalendarToolbarProps) => (
   <div className="flex min-h-16 flex-wrap items-center justify-between gap-x-4 gap-y-2 py-2 desktop:gap-x-10">
     <div className="flex flex-wrap items-center gap-2">
@@ -70,6 +81,19 @@ export const ScheduleCalendarToolbar = ({
           value={view}
         />
       </div>
+      {staffFilterToggle !== undefined && (
+        <Button
+          aria-controls={staffFilterToggle.controlsId}
+          aria-expanded={staffFilterToggle.isOpen}
+          aria-haspopup="dialog"
+          data-testid="site-sidebar-open"
+          onClick={staffFilterToggle.onOpen}
+          size="S"
+          variant="secondary"
+        >
+          日付と絞り込み
+        </Button>
+      )}
       {onCreate !== undefined && (
         <Button data-testid="schedule-create-open" onClick={onCreate} size="S">
           予定を作成

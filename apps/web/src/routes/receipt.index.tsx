@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { SiteLayoutContainer } from '#/components/site/SiteLayoutContainer'
-import { CalendarHeaderToolsContainer } from '#/features/calendar/components/CalendarHeaderToolsContainer'
+import { CalendarReviewBadgeContainer } from '#/features/calendar/components/CalendarReviewBadgeContainer'
 import { ReceiptCheckFormContainer } from '#/features/receipt/components/ReceiptCheckFormContainer'
 
 export const Route = createFileRoute('/receipt/')({
@@ -13,7 +13,7 @@ export const Route = createFileRoute('/receipt/')({
 
 function ReceiptPage() {
   return (
-    <SiteLayoutContainer current="/receipt" tools={<CalendarHeaderToolsContainer />}>
+    <SiteLayoutContainer current="/receipt" reviewBadge={<CalendarReviewBadgeContainer />}>
       <main className="flex flex-col gap-6 p-6">
         <h1 className="text-heading-md">照合</h1>
         <p className="max-w-2xl text-body">

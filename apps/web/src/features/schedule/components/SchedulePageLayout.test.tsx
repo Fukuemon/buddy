@@ -14,20 +14,15 @@ afterEach(() => {
 })
 
 describe('SchedulePageLayout', () => {
-  it('PC の幅では、左の欄にミニカレンダーと職員の絞り込みを出し、メニューのボタンで閉じて開く', async () => {
+  it('PC の幅では、ナビゲーションをレールで始め、左の欄にミニカレンダーと職員の絞り込みを常に出す', async () => {
     stubViewport(true)
     render(<Month />)
-    const opener = await screen.findByTestId('site-sidebar-open')
-    expect(opener).toHaveAttribute('aria-expanded', 'true')
+    expect(await screen.findByTestId('site-nav-toggle')).toHaveAttribute('aria-expanded', 'false')
     expect(await screen.findByTestId('mini-calendar')).toBeVisible()
     expect(screen.getByRole('navigation', { name: '職員の絞り込み' })).toBeVisible()
+    expect(screen.queryByTestId('site-sidebar-open')).not.toBeInTheDocument()
 
-    await userEvent.click(opener)
-    expect(opener).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByTestId('mini-calendar')).not.toBeInTheDocument()
-
-    await userEvent.click(opener)
-    expect(opener).toHaveAttribute('aria-expanded', 'true')
+    await userEvent.click(screen.getByTestId('site-nav-toggle'))
     expect(screen.getByTestId('mini-calendar')).toBeVisible()
   })
 

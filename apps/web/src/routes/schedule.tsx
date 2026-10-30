@@ -1,6 +1,6 @@
 import { Outlet, createFileRoute, stripSearchParams } from '@tanstack/react-router'
 
-import { CalendarHeaderToolsContainer } from '#/features/calendar/components/CalendarHeaderToolsContainer'
+import { CalendarReviewBadgeContainer } from '#/features/calendar/components/CalendarReviewBadgeContainer'
 import { SchedulePageLayout } from '#/features/schedule/components/SchedulePageLayout'
 import {
   scheduleSearchDefaults,
@@ -18,7 +18,7 @@ export const Route = createFileRoute('/schedule')({
 
 function SchedulePage() {
   return (
-    <SchedulePageLayout tools={<CalendarHeaderToolsContainer />}>
+    <SchedulePageLayout reviewBadge={<CalendarReviewBadgeContainer />}>
       <Outlet />
     </SchedulePageLayout>
   )

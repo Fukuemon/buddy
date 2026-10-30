@@ -8,7 +8,7 @@ export type ViewerMenuProps = {
 }
 
 /**
- * ヘッダーの右端の、ログインした職員のアカウントのボタン。名前の先頭の 1 文字を丸に入れる。
+ * ヘッダーの右端の、ログインした職員のアカウントのボタン。名前の先頭の 1 文字を入れた丸と、名前を並べる。幅 768px 未満では丸だけにする。
  * 押すと、名前とログアウトを入れたメニューをボタンの下に開く。メニューはブラウザの popover で、外を押すか Esc で閉じる。
  */
 export const ViewerMenu = ({ staffName, canLogout }: ViewerMenuProps) => {
@@ -16,17 +16,20 @@ export const ViewerMenu = ({ staffName, canLogout }: ViewerMenuProps) => {
   return (
     <div data-testid="viewer-menu">
       <button
-        aria-label="アカウント"
-        className="grid size-11 place-items-center rounded-full focus-visible:focus-ring"
+        aria-label={`アカウント（${staffName}）`}
+        className="flex h-11 items-center gap-2 rounded-full p-1 hover:bg-surface-subtle focus-visible:focus-ring desktop:pr-3"
         data-testid="viewer-menu-open"
         popoverTarget={menuId}
         type="button"
       >
         <span
           aria-hidden="true"
-          className="grid size-9 place-items-center rounded-full bg-primary text-label text-text-inverse"
+          className="grid size-8 place-items-center rounded-full bg-primary text-label text-text-inverse"
         >
           {staffName.charAt(0)}
+        </span>
+        <span aria-hidden="true" className="hidden text-body whitespace-nowrap desktop:inline">
+          {staffName}
         </span>
       </button>
       {/* popover は最上層に出て既定で画面の中央に置かれるので、ヘッダーの右端の下へ置き直す */}
