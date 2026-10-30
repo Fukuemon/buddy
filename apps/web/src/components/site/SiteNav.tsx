@@ -53,7 +53,7 @@ export const SiteNav = ({ groups, current, isRail = false, badges = {}, id }: Si
   return (
     <nav
       aria-label="画面"
-      className={clsx('flex flex-col', isRail ? 'gap-2 px-1 py-3' : 'gap-4 p-3')}
+      className={clsx('flex flex-col', isRail ? 'gap-2 px-0.5 py-3' : 'gap-4 p-3')}
       data-testid="site-nav"
       id={id}
     >
@@ -97,7 +97,9 @@ export const SiteNav = ({ groups, current, isRail = false, badges = {}, id }: Si
                       href={item.href}
                     >
                       <Icon aria-hidden="true" className="shrink-0" height={24} width={24} />
-                      <span className={clsx(!isRail && 'grow')}>{item.label}</span>
+                      <span className={clsx(isRail ? 'whitespace-nowrap' : 'grow')}>
+                        {item.label}
+                      </span>
                       {badge !== undefined && (
                         <span className={clsx(isRail && 'absolute top-0.5 right-3.5')}>
                           {badge}
