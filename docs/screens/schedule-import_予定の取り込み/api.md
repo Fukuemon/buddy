@@ -4,7 +4,7 @@
 
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
-| ナビゲーション | 「取り込み」を出すか | `Viewer.canManageStaff` | `getMe` の `policies[].code` に `staff.manage` があるか |
+| ナビゲーション | 「取り込み」「要確認」「連携」を出すか | `Viewer.canManageStaff` | `getMe` の `policies[].code` に `staff.manage` があるか |
 | ログインした職員 | 職員の名前 | `Viewer.staffName` | `getMe` の `username` |
 | 職員 | 結び付けた職員の名前 | `ExternalCalendar.staff_id` と `Staff.name` | `listExternalCalendars` の `items[].staff_id` と、`listUsers` の `Staff.username` |
 | 期間の開始日、期間の終了日 | 日付 | `ImportRange.range_start`、`range_end` | リクエストの `range_start`、`range_end` |
