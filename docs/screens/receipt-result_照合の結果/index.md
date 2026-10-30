@@ -105,7 +105,7 @@
 
 **表示条件**: 常に、ヘッダーの下の左端に出す。幅 768px 以上では、この画面では開いた形で始める。幅 768px 未満では、メニューのボタンで開いたドロワーの中に出す。「取り込み」「要確認」「連携」は、職員の管理の権限を持つ職員にだけ出す（[予定のカレンダー](../schedule-calendar_予定のカレンダー/index.md#ナビゲーション)）。モックは、職員の管理の権限を持たない職員の画面を描くので、「カレンダー」と「照合」だけを出す。
 
-**カタログ**: [SiteNav の Receipt](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-sitenav--receipt)
+**カタログ**: [SiteNav の Staff](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-sitenav--staff)
 
 ### インタラクション
 

@@ -362,7 +362,7 @@
 
 **表示条件**: 常に、ヘッダーの下の左端に出す。幅 768px 以上では、この画面ではレールで始める。幅 768px 未満では、メニューのボタンで開いたドロワーの中に出す。「取り込み」「要確認」「連携」は、職員の管理の権限を持つ職員にだけ出す。モックは、職員の管理の権限を持つ職員の画面を描く。
 
-**カタログ**: [SiteNav の Schedule](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-sitenav--schedule)
+**カタログ**: [SiteNav の Rail](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-sitenav--rail)
 
 ### インタラクション
 
@@ -392,7 +392,7 @@
 
 **表示条件**: 職員の管理の権限を持つ職員にだけ、ナビゲーションの「取り込み」と「連携」の間に出す。モックは、職員の管理の権限を持つ職員の画面を描く。
 
-**カタログ**: [CalendarHeaderTools の WithReview](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarheadertools--with-review)、[CalendarHeaderTools の NoReview](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarheadertools--no-review)
+**カタログ**: [CalendarReviewBadge の WithReview](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarreviewbadge--with-review)、[CalendarReviewBadge の NoReview](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarreviewbadge--no-review)
 
 ### インタラクション
 
@@ -410,7 +410,7 @@
 
 **表示条件**: 職員の管理の権限を持つ職員にだけ、ナビゲーションの「カレンダー」と「要確認」の間に出す。モックは、職員の管理の権限を持つ職員の画面を描く。
 
-**カタログ**: [CalendarHeaderTools の WithReview](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarheadertools--with-review)
+**カタログ**: [SiteNav の Manager](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-sitenav--manager)
 
 ### インタラクション
 
