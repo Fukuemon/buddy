@@ -440,7 +440,7 @@ body {
   background: var(--wf-fill);
 }
 
-/* サイトのヘッダー（SiteHeader）。左にメニューのボタン、サイトの名前、今の機能の名前を、右に取り込み、要確認、アプリ、アカウントのボタンを置く */
+/* サイトのヘッダー（SiteHeader）。左にナビゲーションを開閉するボタンとサイトの名前を、右にアカウントのボタンを置く */
 .wf-site-header {
   position: relative;
   display: flex;
@@ -465,18 +465,26 @@ body {
   height: 44px;
 }
 
-/* ログインした職員のメニュー（ViewerMenu）。名前の頭文字の丸いボタンで、名前とログアウトを入れたメニューを開く */
+/* ログインした職員のメニュー（ViewerMenu）。名前の頭文字の丸と名前を並べたボタンで、名前とログアウトを入れたメニューを開く */
 .wf-site-header__viewer {
   display: flex;
   align-items: center;
 }
 
+.wf-site-account {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 12px 0 4px;
+  border-radius: 22px;
+}
+
 .wf-site-avatar {
   display: inline-grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
-  margin: 4px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--wf-primary);
   color: var(--wf-surface);
@@ -503,13 +511,7 @@ body {
   display: flex;
 }
 
-/* 幅 768px 以上では、ドロワーの枠を出さない */
-.wf-site-drawer__head,
-.wf-site-drawer-overlay {
-  display: none;
-}
-
-/* ヘッダーの下を、左の欄と画面の中身に分ける（SiteLayout） */
+/* ヘッダーの下を、ナビゲーション、予定のカレンダーの左の欄、画面の中身に分ける（SiteLayout） */
 .wf-site-body {
   display: flex;
 }
@@ -519,46 +521,52 @@ body {
   min-width: 0;
 }
 
-/* 幅 768px 以上では、ドロワーを予定のカレンダーの左の欄として開いた状態で出す。モックは閉じた状態を描かない */
-.wf-site-drawer {
+/* ナビゲーション（SiteNav）。予定と照合のグループの見出しの下に、画面のアイコンと名前を並べる */
+.wf-site-nav {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  width: 288px;
+  gap: 16px;
+  width: 224px;
+  padding: 12px;
   border-right: 1px solid var(--wf-line-soft);
   background: var(--wf-surface);
 }
 
-/* 今の機能の名前。buddy の右に置く */
-.wf-site-title {
-  margin-left: 8px;
-  font-size: 20px;
+.wf-site-nav__group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-/* ヘッダーの右端。取り込み、要確認、アプリ、アカウントの順に並べる */
-.wf-site-header__actions {
+.wf-site-nav__heading {
+  padding: 4px 12px;
+  color: var(--wf-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.wf-site-nav__item {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 12px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 20px;
 }
 
-.wf-site-icon {
-  position: relative;
-  display: inline-grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  color: var(--wf-muted);
+.wf-site-nav__item[aria-current='page'] {
+  background: var(--wf-primary-surface);
+  color: var(--wf-primary);
+  font-weight: 700;
 }
 
 /* 要確認の件数の印 */
 .wf-site-badge {
-  position: absolute;
-  top: 4px;
-  right: 4px;
   min-width: 18px;
   height: 18px;
+  margin-left: auto;
   padding: 0 4px;
   border-radius: 9px;
   background: var(--buddy-color-danger);
@@ -569,45 +577,68 @@ body {
   text-align: center;
 }
 
-/* アプリのメニュー（SiteNav）。アプリのボタンの下に開き、予定と照合を並べる */
-.wf-site-apps {
-  position: absolute;
-  top: 52px;
-  right: 56px;
-  z-index: 5;
+/* 幅 768px 未満で開く、ナビゲーションのドロワーの見出しと覆い */
+.wf-site-nav__head,
+.wf-site-nav-overlay,
+.wf-site-drawer__head,
+.wf-site-drawer-overlay {
   display: none;
-  grid-template-columns: repeat(2, 96px);
-  gap: 8px;
-  padding: 16px;
-  border-radius: var(--wf-radius);
-  background: var(--wf-surface);
-  box-shadow: 0 0 0 1px var(--wf-line);
 }
 
-.wf-site-apps.is-open {
-  display: grid;
-}
-
-.wf-site-apps__item {
+/* 予定のカレンダーの左の欄。幅 768px 以上では開いた状態で出す */
+.wf-site-drawer {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 0;
-  border-radius: var(--wf-radius);
+  flex-shrink: 0;
+  width: 288px;
+  border-right: 1px solid var(--wf-line-soft);
+  background: var(--wf-surface);
 }
 
-.wf-site-apps__item[aria-current='page'] {
-  background: var(--wf-primary-surface);
-  color: var(--wf-primary);
+/*
+ * 幅 768px 以上で、ナビゲーションをたたんだレール。アイコンの下に名前を置き、グループを区切り線で分ける。
+ * 予定のカレンダー（data-start="rail"）はたたんだ状態で始め、ほかの画面は開いた状態で始める。メニューのボタンで切り替える
+ */
+@container screen (width >= 768px) {
+  .wf-site-nav:is([data-start='rail']:not(.is-open), :not([data-start='rail']).is-open) {
+    gap: 8px;
+    width: 80px;
+    padding: 12px 4px;
+  }
+
+  .wf-site-nav:is([data-start='rail']:not(.is-open), :not([data-start='rail']).is-open) .wf-site-nav__heading {
+    display: none;
+  }
+
+  .wf-site-nav:is([data-start='rail']:not(.is-open), :not([data-start='rail']).is-open) .wf-site-nav__group + .wf-site-nav__group {
+    padding-top: 8px;
+    border-top: 1px solid var(--wf-line-soft);
+  }
+
+  .wf-site-nav:is([data-start='rail']:not(.is-open), :not([data-start='rail']).is-open) .wf-site-nav__item {
+    flex-direction: column;
+    gap: 4px;
+    height: auto;
+    padding: 6px 0;
+    border-radius: var(--wf-radius);
+    font-size: 12px;
+  }
+
+  .wf-site-nav:is([data-start='rail']:not(.is-open), :not([data-start='rail']).is-open) .wf-site-badge {
+    position: absolute;
+    top: 2px;
+    right: 14px;
+  }
 }
 
 @container screen (width < 768px) {
+  .wf-site-nav,
   .wf-site-drawer {
     display: none;
   }
 
   /* ドロワーと覆いは、画面の上端から下端まで届かせる。--mock-height は mock.js が .screen に置くデバイスの高さ。2px は枠線 */
+  .wf-site-nav.is-open,
   .wf-site-drawer.is-open {
     position: absolute;
     top: 0;
@@ -620,10 +651,18 @@ body {
     box-shadow: 0 0 0 1px var(--wf-line);
   }
 
+  .wf-site-nav.is-open + .wf-site-nav-overlay,
   .wf-site-drawer.is-open + .wf-site-drawer-overlay {
     z-index: 3;
     display: block;
     min-height: calc(var(--mock-height, 844px) - 2px);
+  }
+
+  .wf-site-nav__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0 4px 12px;
   }
 
   .wf-site-drawer__head {
@@ -632,6 +671,11 @@ body {
     justify-content: space-between;
     padding: 12px 12px 12px 16px;
     border-bottom: 1px solid var(--wf-line-soft);
+  }
+
+  /* 幅 768px 未満では、職員の名前を出さず、頭文字の丸だけにする */
+  .wf-site-account__name {
+    display: none;
   }
 }
 

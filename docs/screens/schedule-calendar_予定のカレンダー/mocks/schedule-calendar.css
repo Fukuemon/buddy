@@ -165,7 +165,16 @@
   flex: 1;
 }
 
+/* 左の欄のドロワーを開くボタン。幅 768px 以上では左の欄を常に出すので、出さない */
+.sc-filter-open {
+  display: none;
+}
+
 @container screen (width < 768px) {
+  .sc-filter-open {
+    display: inline-flex;
+  }
+
   .sc-main {
     padding: 8px;
   }
