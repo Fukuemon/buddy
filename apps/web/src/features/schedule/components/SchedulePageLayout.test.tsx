@@ -14,16 +14,35 @@ afterEach(() => {
 })
 
 describe('SchedulePageLayout', () => {
-  it('PC の幅では、ナビゲーションをレールで始め、左の欄にミニカレンダーと職員の絞り込みを常に出す', async () => {
+  it('PC の幅では、ナビゲーションをレールで始め、左の欄にミニカレンダーと職員の絞り込みを開いた状態で出す', async () => {
     stubViewport(true)
     render(<Month />)
     expect(await screen.findByTestId('site-nav-toggle')).toHaveAttribute('aria-expanded', 'false')
     expect(await screen.findByTestId('mini-calendar')).toBeVisible()
     expect(screen.getByRole('navigation', { name: '職員の絞り込み' })).toBeVisible()
-    expect(screen.queryByTestId('site-sidebar-open')).not.toBeInTheDocument()
+    const toggle = screen.getByTestId('site-sidebar-open')
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(toggle).not.toHaveAttribute('aria-haspopup')
 
     await userEvent.click(screen.getByTestId('site-nav-toggle'))
     expect(screen.getByTestId('mini-calendar')).toBeVisible()
+  })
+
+  it('PC の幅で「日付と絞り込み」を押すと、左の欄をたたみ、もう一度押すと開く', async () => {
+    stubViewport(true)
+    render(<Month />)
+    const toggle = await screen.findByTestId('site-sidebar-open')
+    const sidebar = document.getElementById(toggle.getAttribute('aria-controls') ?? '')
+    expect(sidebar).toContainElement(await screen.findByTestId('mini-calendar'))
+
+    await userEvent.click(toggle)
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByTestId('mini-calendar')).not.toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: '職員の絞り込み' })).not.toBeInTheDocument()
+
+    await userEvent.click(toggle)
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(await screen.findByTestId('mini-calendar')).toBeVisible()
   })
 
   it('スマートフォンの幅では、左の欄を閉じたドロワーに入れ、メニューのボタンで開いて閉じる', async () => {

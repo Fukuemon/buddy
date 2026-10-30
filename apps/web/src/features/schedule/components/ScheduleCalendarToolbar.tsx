@@ -7,12 +7,14 @@ import { formatCalendarTitle } from '../lib/calendarRange'
 
 const VIEW_OPTIONS = CALENDAR_VIEWS.map((view) => ({ id: view, label: CALENDAR_VIEW_LABEL[view] }))
 
-/** ミニカレンダーと職員の絞り込みのドロワーを開くボタンに渡す値。 */
+/** ミニカレンダーと職員の絞り込みの左の欄を開閉するボタンに渡す値。 */
 export type StaffFilterToggle = {
   isOpen: boolean
-  /** ドロワーの `<dialog>` の id */
+  /** 左の欄か、それを入れたドロワーの `<dialog>` の id */
   controlsId: string
-  onOpen: () => void
+  /** true なら、ボタンはドロワーを開く。幅 768px 未満で渡す。 */
+  opensDialog: boolean
+  onToggle: () => void
 }
 
 export type ScheduleCalendarToolbarProps = {
@@ -25,12 +27,12 @@ export type ScheduleCalendarToolbarProps = {
   onViewChange: (view: CalendarView) => void
   /** 渡したときだけ、予定の作成のボタンを出す。 */
   onCreate?: () => void
-  /** 渡したときだけ、ドロワーを開くボタンを出す。幅 768px 未満で渡す。 */
+  /** 渡したときだけ、左の欄を開閉するボタンを出す。 */
   staffFilterToggle?: StaffFilterToggle
 }
 
 /**
- * カレンダーの上の操作。前後への移動、今日、表示の期間の見出し、表示の種類、日付と絞り込みのドロワーを開く、予定の作成を並べる。
+ * カレンダーの上の操作。前後への移動、今日、表示の期間の見出し、表示の種類、日付と絞り込みの開閉、予定の作成を並べる。
  * 日付の指定とキャンセルした予定を出す切り替えは、左のサイドバーに置く。
  */
 export const ScheduleCalendarToolbar = ({
@@ -85,9 +87,9 @@ export const ScheduleCalendarToolbar = ({
         <Button
           aria-controls={staffFilterToggle.controlsId}
           aria-expanded={staffFilterToggle.isOpen}
-          aria-haspopup="dialog"
+          aria-haspopup={staffFilterToggle.opensDialog ? 'dialog' : undefined}
           data-testid="site-sidebar-open"
-          onClick={staffFilterToggle.onOpen}
+          onClick={staffFilterToggle.onToggle}
           size="S"
           variant="secondary"
         >
