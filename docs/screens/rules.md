@@ -126,7 +126,7 @@ docs/screens/
   - ヘッダーの後ろの `wf-site-body` の先頭に、ナビゲーションの `wf-site-nav` と覆いの `wf-site-nav-overlay` を置き、最後に画面の中身の `wf-site-main` を置く。
   - `wf-site-nav` には、機能ごとの `wf-site-nav__group` を置き、見出しの `wf-site-nav__heading` と、画面の `wf-site-nav__item` を並べる。要確認の件数の印は `wf-site-badge` にする。
   - `wf-site-nav` は、幅 768px 以上では開いた形で描き、`data-start="rail"` を付けるとレールで描く。メニューのボタンの `data-open="site-nav"` で形を切り替える。未満ではドロワーになる。
-  - 左の欄がある画面（予定のカレンダー）だけ、`wf-site-main` の前に、左の欄の `wf-site-drawer` と覆いの `wf-site-drawer-overlay` を置く。`wf-site-drawer` は、幅 768px 以上では常に出し、未満ではドロワーになる。
+  - 左の欄がある画面（予定のカレンダー）だけ、`wf-site-main` の前に、左の欄の `wf-site-drawer` と覆いの `wf-site-drawer-overlay` を置く。`wf-site-drawer` は、幅 768px 以上では開いた状態で始め、`data-open` のボタンでたたむ。未満ではドロワーになる。幅 768px 以上の `is-open` は、たたんだ状態を表す。
 
 ### 構成番号と data-testid
 

@@ -9,7 +9,7 @@
  * - data-panel="<名前>": 開閉する要素。data-open="<名前>" を押すと開き、開いていれば閉じる。data-close="<名前>" を押すと閉じる。
  *   開いている間は panel に is-open を付け、開くボタンの aria-expanded を true にする。デバイスを切り替えると閉じる。
  *   開くと panel の中の最初のフォーカスできる要素へ、閉じると開くボタンへフォーカスを移す。
- *   data-panel-modal も付けた panel を開いている間は、panel の外の要素に構成番号の印を出さない。
+ *   data-panel-modal も付けた panel を開いて見えている間は、panel の外の要素に構成番号の印を出さない。
  *   data-panel-dismiss も付けた panel は、panel と開くボタンの外を押すか、Escape キーを押すと閉じる。メニューに使う。
  * - data-escape: Escape キーで押す。見えている要素だけを押す。
  *
@@ -65,7 +65,8 @@
     panel.classList.toggle('is-open', isOpen)
     const openers = [...screen.querySelectorAll(`[data-open="${CSS.escape(panel.dataset.panel)}"]`)]
     for (const opener of openers) opener.setAttribute('aria-expanded', String(isOpen))
-    if (panel.hasAttribute('data-panel-modal')) coverMarkers(panel, isOpen)
+    // 予定のカレンダーの左の欄は、幅 768px 以上では is-open でたたむので、見えているときだけ印を隠す
+    if (panel.hasAttribute('data-panel-modal')) coverMarkers(panel, isOpen && isVisible(panel))
     const target = isOpen
       ? [...panel.querySelectorAll(FOCUSABLE)].find(isVisible)
       : openers.find(isVisible)
