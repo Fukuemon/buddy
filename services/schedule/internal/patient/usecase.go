@@ -203,7 +203,7 @@ func (p *Usecase) End(ctx context.Context, id string) (Detail, error) {
 			return err
 		}
 		if !cur.Ended() {
-			rem, err := p.deps.Schedules.From(ctx, cur.FacilityID, cur.ID, civil.Today(p.deps.Now()))
+			rem, err := p.remaining(ctx, cur)
 			if err != nil {
 				return err
 			}
@@ -218,6 +218,26 @@ func (p *Usecase) End(ctx context.Context, id string) (Detail, error) {
 		return err
 	})
 	return ended, err
+}
+
+// RemainingSchedules は、利用者の、今日（事業所の現地の日付）以降の予定と、今日以降に終わる繰り返しの予定を返す。何も書かない。
+// 利用の終了を確定する前に、画面が残る一覧を示すのに使う。一覧は、利用の終了と同じ remaining で作る。
+// 利用者が見つからないときは apperr.ErrNotFound を、職員の管理の権限が無いときは apperr.ErrForbidden を返す。
+func (p *Usecase) RemainingSchedules(ctx context.Context, id string) (Remaining, error) {
+	if err := p.guard(ctx); err != nil {
+		return Remaining{}, err
+	}
+	cur, err := p.deps.Patients.Get(ctx, id)
+	if err != nil {
+		return Remaining{}, err
+	}
+	return p.remaining(ctx, cur)
+}
+
+// remaining は、利用者 cur の、今日（事業所の現地の日付）以降の予定と、今日以降に終わる繰り返しの予定を返す。
+// 利用の終了と RemainingSchedules が同じ一覧を返すよう、2 つともこれで作る。
+func (p *Usecase) remaining(ctx context.Context, cur Detail) (Remaining, error) {
+	return p.deps.Schedules.From(ctx, cur.FacilityID, cur.ID, civil.Today(p.deps.Now()))
 }
 
 // Resume は、利用者を利用中に戻し（利用の再開）、担当の職員を assignedStaffID にして、戻した利用者を返す。利用中の利用者を戻しても成功し、担当を書き換える。
@@ -254,6 +274,15 @@ func (p *Usecase) locked(ctx context.Context, id string) (Detail, error) {
 		return Detail{}, err
 	}
 	if err := p.deps.Locks.LockFacility(ctx, cur.FacilityID); err != nil {
+		return Detail{}, err
+	}
+	return p.deps.Patients.Get(ctx, id)
+}
+
+// Get は、利用者を返す。利用の終了の利用者も返す。
+// 利用者が見つからないときは apperr.ErrNotFound を、職員の管理の権限が無いときは apperr.ErrForbidden を返す。
+func (p *Usecase) Get(ctx context.Context, id string) (Detail, error) {
+	if err := p.guard(ctx); err != nil {
 		return Detail{}, err
 	}
 	return p.deps.Patients.Get(ctx, id)
