@@ -12,6 +12,33 @@ WHERE u.id = sqlc.arg(user_id);
 -- name: UpdateUserPosition :exec
 UPDATE users SET position_id = sqlc.arg(position_id) WHERE id = sqlc.arg(id);
 
+-- name: UpdateUserProfile :execrows
+-- 退職した職員は書かない。メールはブローカーが持つので変えない。
+UPDATE users
+SET username = sqlc.arg(username), phone_number = sqlc.narg(phone_number),
+    department_id = sqlc.arg(department_id), team_id = sqlc.arg(team_id)
+WHERE id = sqlc.arg(id) AND retired_at IS NULL;
+
+-- name: DeleteUserTeamTargetsCovered :exec
+-- 職員の権限のうち、古いチームと新しいチームの両方を対象にするものから、古いチームの対象を消す。
+-- 次の MoveUserTeamTargets が、同じ権限に同じチームの対象を 2 つ作らないためである。
+DELETE FROM user_policy_targets upt
+USING user_policies up
+WHERE up.id = upt.user_policy_id AND up.user_id = sqlc.arg(user_id)
+  AND upt.target_team_id = sqlc.arg(old_team_id)
+  AND EXISTS (
+    SELECT 1 FROM user_policy_targets n
+    WHERE n.user_policy_id = upt.user_policy_id AND n.target_team_id = sqlc.arg(new_team_id)
+  );
+
+-- name: MoveUserTeamTargets :exec
+-- 職員の権限のうち、古いチームを指す対象を新しいチームに移す。ほかのチームの対象は残す。
+UPDATE user_policy_targets upt
+SET target_team_id = sqlc.arg(new_team_id)
+FROM user_policies up
+WHERE up.id = upt.user_policy_id AND up.user_id = sqlc.arg(user_id)
+  AND upt.target_team_id = sqlc.arg(old_team_id);
+
 -- name: DeleteUserPolicies :exec
 -- user_policy_targets は外部キーの ON DELETE CASCADE で消える。
 DELETE FROM user_policies WHERE user_id = $1;
@@ -98,7 +125,7 @@ SET retired_at = coalesce(retired_at, now()), leave_started_at = NULL, leave_ret
 WHERE id = $1;
 
 -- name: LockFacility :one
--- 事業所の職員の休職、退職、役職を変える操作、権限を外す操作を 1 つずつにする。職員の管理の権限を持つ有効な職員を数えてから書くまでの間に、ほかの操作が割り込まない。
+-- 事業所の職員の休職、退職、役職とチームを変える操作、権限を外す操作を 1 つずつにする。職員の管理の権限を持つ有効な職員を数えてから書くまでの間に、ほかの操作が割り込まない。
 -- 予定と担当の新しい割り振り（ShareFacility）とも 1 つずつにし、退職の残る予定の確認と予定の作成が行き違わない。
 SELECT id FROM facilities WHERE id = $1 FOR UPDATE;
 

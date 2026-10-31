@@ -51,6 +51,28 @@ func (r *StaffRepository) ChangePosition(ctx context.Context, id, positionID str
 	return addGrants(ctx, q, id, grants)
 }
 
+// UpdateProfile は、職員の更新と、チームの対象の移し替えを続けて書く。途中で失敗したときに残さないよう、呼び出し側がトランザクションの中で呼ぶ。
+// 職員が無いときは apperr.ErrNotFound を、退職した職員なら apperr.ErrConflict を返す。
+func (r *StaffRepository) UpdateProfile(ctx context.Context, id string, p staff.Profile, oldTeamID string) error {
+	q := r.q(ctx)
+	n, err := q.UpdateUserProfile(ctx, sqlcgen.UpdateUserProfileParams{
+		ID: id, Username: p.Username, PhoneNumber: p.PhoneNumber, DepartmentID: p.DepartmentID, TeamID: p.TeamID,
+	})
+	if err != nil {
+		return translate("update user profile", err)
+	}
+	if err := r.unchanged(ctx, id, n); err != nil || oldTeamID == p.TeamID {
+		return err
+	}
+	if err := q.DeleteUserTeamTargetsCovered(ctx, sqlcgen.DeleteUserTeamTargetsCoveredParams{
+		UserID: id, OldTeamID: ptr(oldTeamID), NewTeamID: ptr(p.TeamID),
+	}); err != nil {
+		return translate("delete user team targets", err)
+	}
+	err = q.MoveUserTeamTargets(ctx, sqlcgen.MoveUserTeamTargetsParams{UserID: id, OldTeamID: ptr(oldTeamID), NewTeamID: ptr(p.TeamID)})
+	return translate("move user team targets", err)
+}
+
 // AddGrant は、権限と対象を続けて書く。途中で失敗したときに残さないよう、呼び出し側がトランザクションの中で呼ぶ。
 func (r *StaffRepository) AddGrant(ctx context.Context, id string, g staff.Grant) error {
 	return addGrants(ctx, r.q(ctx), id, []staff.Grant{g})

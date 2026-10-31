@@ -100,6 +100,30 @@ func New(p NewParams) (Staff, error) {
 	return s, nil
 }
 
+// Profile は、登録した後に変えられる職員の名前、電話番号、部署、チームである。PhoneNumber が nil なら電話番号を消す。
+// メールはブローカーが持つので含めない（ADR-0017）。
+type Profile struct {
+	Username     string
+	PhoneNumber  *string
+	DepartmentID string
+	TeamID       string
+}
+
+// NewProfile は、New と同じ規則で名前と電話番号を検証し、電話番号の先頭に "+" を付けた Profile を返す。
+func NewProfile(p Profile) (Profile, error) {
+	if err := kernel.RequireText("職員の名前", p.Username, maxUsernameLen); err != nil {
+		return Profile{}, err
+	}
+	if p.PhoneNumber != nil {
+		phone, err := normalizePhone(*p.PhoneNumber)
+		if err != nil {
+			return Profile{}, err
+		}
+		p.PhoneNumber = &phone
+	}
+	return p, nil
+}
+
 // NormalizeEmail は、メールを小文字にそろえる。職員のメールは、そろえた値で保存し、比べる。
 func NormalizeEmail(email string) string {
 	return strings.ToLower(email)
@@ -216,17 +240,22 @@ type ListQuery struct {
 // 戻る予定の日だけを書き換える。EndLeave は、休職を外す。Retire は、職員を退職にし、メールと電話番号を消す。
 // 退職し直しても、最初に退職にした時刻を残す。StartLeave と EndLeave は、退職した職員では apperr.ErrConflict を返す。
 //
-// LockFacility は、トランザクションが終わるまで、事業所の職員の休職、退職、役職を変える操作、権限を外す操作と、予定と担当の新しい割り振りを、
+// LockFacility は、トランザクションが終わるまで、事業所の職員の休職、退職、役職とチームを変える操作、権限を外す操作と、予定と担当の新しい割り振りを、
 // ほかのトランザクションに待たせる。
 // ActiveManagers は、事業所で職員の管理の権限を持つ有効な職員の ID を返す。
 //
 // ChangePosition は、職員の役職を positionID にし、職員の権限と対象を全て消してから grants を書く。
+//
+// UpdateProfile は、職員の名前、電話番号、部署、チームを p にし、職員の権限のうちチーム oldTeamID を指す対象を p.TeamID に移す。
+// 同じ権限が p.TeamID を既に対象にしていれば、oldTeamID の対象を消す。職員が無いときは apperr.ErrNotFound を、
+// 退職した職員なら apperr.ErrConflict を返す。
 //
 // AddGrant は、職員に 1 つの権限と対象を書く。同じ権限が既にあるときは apperr.ErrConflict を返す。
 // RemoveGrant は、職員の権限 userPolicyID と対象を消す。職員のその権限が無いときは apperr.ErrNotFound を返す。
 type Repository interface {
 	Create(ctx context.Context, s Staff, grants []Grant) error
 	ChangePosition(ctx context.Context, id, positionID string, grants []Grant) error
+	UpdateProfile(ctx context.Context, id string, p Profile, oldTeamID string) error
 	AddGrant(ctx context.Context, id string, g Grant) error
 	RemoveGrant(ctx context.Context, id, userPolicyID string) error
 	Get(ctx context.Context, id string) (Detail, error)

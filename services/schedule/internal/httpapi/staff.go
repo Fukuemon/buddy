@@ -15,11 +15,13 @@ type StaffUsecase interface {
 	Get(ctx context.Context, id string) (staff.Detail, error)
 	List(ctx context.Context, facilityID string, q staff.ListQuery) ([]staff.Summary, error)
 	ChangePosition(ctx context.Context, id, positionID string) (staff.Detail, error)
+	UpdateProfile(ctx context.Context, id string, p staff.Profile) (staff.Detail, error)
 	AddGrant(ctx context.Context, id string, in staff.GrantInput) (staff.Detail, error)
 	RemoveGrant(ctx context.Context, id, userPolicyID string) (staff.Detail, error)
 	Leave(ctx context.Context, id string, in staff.LeaveInput) (staff.StatusChange, error)
 	Reinstate(ctx context.Context, id string) (staff.Detail, error)
 	Retire(ctx context.Context, id string) (staff.StatusChange, error)
+	RemainingAssignments(ctx context.Context, id string) (staff.Assignments, error)
 }
 
 func toStaff(s staff.Summary) openapi.Staff {
@@ -134,6 +136,21 @@ func (s server) ChangeUserPosition(ctx context.Context, req openapi.ChangeUserPo
 	return openapi.ChangeUserPosition200JSONResponse(toStaffDetail(d)), nil
 }
 
+// UpdateUser は、職員の名前、電話番号、部署、チームを変え、変えた職員を返す。
+func (s server) UpdateUser(ctx context.Context, req openapi.UpdateUserRequestObject) (openapi.UpdateUserResponseObject, error) {
+	b := req.Body
+	d, err := s.u.Staff.UpdateProfile(ctx, req.UserId, staff.Profile{
+		Username:     b.Username,
+		PhoneNumber:  b.PhoneNumber,
+		DepartmentID: b.DepartmentId,
+		TeamID:       b.TeamId,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return openapi.UpdateUser200JSONResponse(toStaffDetail(d)), nil
+}
+
 // AddUserPolicy は、職員に権限を足し、権限つきの職員を返す。
 func (s server) AddUserPolicy(ctx context.Context, req openapi.AddUserPolicyRequestObject) (openapi.AddUserPolicyResponseObject, error) {
 	b := req.Body
@@ -194,6 +211,15 @@ func (s server) RetireUser(ctx context.Context, req openapi.RetireUserRequestObj
 		return nil, err
 	}
 	return openapi.RetireUser200JSONResponse(toStatusChange(c)), nil
+}
+
+// GetUserRemainingAssignments は、職員の今日以降に残る予定と担当の利用者を返す。
+func (s server) GetUserRemainingAssignments(ctx context.Context, req openapi.GetUserRemainingAssignmentsRequestObject) (openapi.GetUserRemainingAssignmentsResponseObject, error) {
+	a, err := s.u.Staff.RemainingAssignments(ctx, req.UserId)
+	if err != nil {
+		return nil, err
+	}
+	return openapi.GetUserRemainingAssignments200JSONResponse(toAssignments(a)), nil
 }
 
 func toStatusChange(c staff.StatusChange) openapi.StaffStatusChange {

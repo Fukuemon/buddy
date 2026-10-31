@@ -52,6 +52,37 @@ export const createScheduleHandlers = (baseUrl: string) => {
       '/v1/facilities/{facility_id}/users',
       withAuth(({ response }) => response(200).json(mockStaff)),
     ),
+    http.put(
+      '/v1/users/{user_id}',
+      withAuth(async ({ params, request, response }) => {
+        const found = mockStaff.find((s) => s.id === params.user_id)
+        if (found === undefined)
+          return response(404).json({ code: 'not_found', message: 'リソースが見つかりません' })
+        const { username, phone_number, department_id, team_id } = await request.json()
+        const team = mockTeams.find((t) => t.id === team_id)
+        if (department_id !== found.department.id || team === undefined)
+          return response(400).json({
+            code: 'invalid_input',
+            message: '部署かチームがこの事業所に属していません',
+          })
+        return response(200).json({
+          ...found,
+          username,
+          phone_number: phone_number == null ? null : `+${phone_number.replace(/^\+/, '')}`,
+          team: { id: team.id, name: team.name },
+          sub: null,
+          policies: [],
+        })
+      }),
+    ),
+    http.get(
+      '/v1/users/{user_id}/remaining_assignments',
+      withAuth(({ params, response }) =>
+        mockStaff.some((s) => s.id === params.user_id)
+          ? response(200).json({ schedules: [], recurring_schedules: [], patients: [] })
+          : response(404).json({ code: 'not_found', message: 'リソースが見つかりません' }),
+      ),
+    ),
     http.get(
       '/v1/facilities/{facility_id}/patients',
       withAuth(({ response }) => response(200).json(mockPatients)),

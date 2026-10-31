@@ -201,7 +201,7 @@ func (s *Usecase) Leave(ctx context.Context, id string, in LeaveInput) (StatusCh
 		if cur.Status() == StatusRetired {
 			return apperr.Conflict("退職した職員は休職にできません")
 		}
-		a, err := s.deps.Assignments.From(ctx, cur.FacilityID, cur.ID, civil.Today(s.deps.Now()))
+		a, err := s.remaining(ctx, cur)
 		if err != nil {
 			return err
 		}
@@ -233,6 +233,26 @@ func (s *Usecase) Leave(ctx context.Context, id string, in LeaveInput) (StatusCh
 	return out, nil
 }
 
+// RemainingAssignments は、職員の、今日（事業所の現地の日付）以降の予定、繰り返しの予定、担当の利用者を返す。何も書かない。
+// 休職と退職を確定する前に、画面が残る一覧を示すのに使う。一覧は、休職と退職と同じ remaining で作る。
+// 職員が見つからないときは apperr.ErrNotFound を、職員の管理の権限が無いときは apperr.ErrForbidden を返す。
+func (s *Usecase) RemainingAssignments(ctx context.Context, id string) (Assignments, error) {
+	if err := s.guard(ctx); err != nil {
+		return Assignments{}, err
+	}
+	cur, err := s.deps.Staff.Get(ctx, id)
+	if err != nil {
+		return Assignments{}, err
+	}
+	return s.remaining(ctx, cur)
+}
+
+// remaining は、職員 cur の、今日（事業所の現地の日付）以降の予定、繰り返しの予定、担当の利用者を返す。
+// 休職、退職、RemainingAssignments が同じ一覧を返すよう、3 つともこれで作る。
+func (s *Usecase) remaining(ctx context.Context, cur Detail) (Assignments, error) {
+	return s.deps.Assignments.From(ctx, cur.FacilityID, cur.ID, civil.Today(s.deps.Now()))
+}
+
 // Retire は、職員を退職にし、名前、所属、役職を残してメールと電話番号を消し、職員の外部のカレンダーを外す。
 // カレンダーのレコードと予定の対応は残す。その日以降の予定、繰り返しの予定、担当の利用者が
 // 残れば、書かずに残る一覧を持つ *AssignedError を返す。退職した職員を退職にしても成功する。職員が見つからないときは
@@ -245,7 +265,7 @@ func (s *Usecase) Retire(ctx context.Context, id string) (StatusChange, error) {
 	var out StatusChange
 	var revokeErr error
 	err := s.stop(ctx, id, func(ctx context.Context, cur Detail) error {
-		a, err := s.deps.Assignments.From(ctx, cur.FacilityID, cur.ID, civil.Today(s.deps.Now()))
+		a, err := s.remaining(ctx, cur)
 		if err != nil {
 			return err
 		}
@@ -305,7 +325,7 @@ func (s *Usecase) stop(ctx context.Context, id string, write func(ctx context.Co
 }
 
 // locked は、トランザクションの中で職員 id の事業所をロックし、ロックの後に読み直した職員を返す。
-// 休職、復職、退職、役職を変える操作、権限を外す操作は、このロックで同じ事業所の中で 1 つずつ行う。
+// 休職、復職、退職、役職とチームを変える操作、権限を外す操作は、このロックで同じ事業所の中で 1 つずつ行う。
 func (s *Usecase) locked(ctx context.Context, id string) (Detail, error) {
 	st, err := s.deps.Staff.Get(ctx, id)
 	if err != nil {
@@ -430,6 +450,52 @@ func (s *Usecase) ChangePosition(ctx context.Context, id, positionID string) (De
 		}
 		if err := s.deps.Staff.ChangePosition(ctx, cur.ID, pos.ID, DefaultGrants(pos, cur.TeamID, s.ids)); err != nil {
 			return err
+		}
+		changed, err = s.deps.Staff.Get(ctx, cur.ID)
+		return err
+	})
+	return changed, err
+}
+
+// UpdateProfile は、職員の名前、電話番号、部署、チームを p にし、変えた職員を返す。メールは変えない（ADR-0017）。
+// チームを変えたときは、職員の権限のうち古いチームを指す対象を新しいチームに移し、ほかのチームの対象は残す。
+// 登録と役職の変更で付けたチームの対象は所属のチームを指すが、予定の判定は保存した対象のチームだけを読むためである。
+// 職員が見つからないときは apperr.ErrNotFound を、職員の管理の権限が無いときは apperr.ErrForbidden を、
+// 退職した職員を変えようとしたときは apperr.ErrConflict を、部署かチームが見つからないか別の事業所のものであるときは入力のエラーを返す。
+// 役職を変える操作と同じく事業所をロックし、読んだ古いチームが、書くまでにほかの操作で変わらないようにする。
+func (s *Usecase) UpdateProfile(ctx context.Context, id string, p Profile) (Detail, error) {
+	if err := s.guard(ctx); err != nil {
+		return Detail{}, err
+	}
+	var changed Detail
+	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
+		cur, err := s.locked(ctx, id)
+		if err != nil {
+			return err
+		}
+		if cur.Status() == StatusRetired {
+			return apperr.Conflict("退職した職員は変えられません")
+		}
+		dep, err := s.deps.Departments.Get(ctx, p.DepartmentID)
+		if err != nil {
+			return apperr.Reference("部署", p.DepartmentID, err)
+		}
+		if err := apperr.SameFacility("部署", dep.ID, dep.FacilityID, cur.FacilityID); err != nil {
+			return err
+		}
+		team, err := s.deps.Teams.Get(ctx, p.TeamID)
+		if err != nil {
+			return apperr.Reference("チーム", p.TeamID, err)
+		}
+		if err := apperr.SameFacility("チーム", team.ID, team.FacilityID, cur.FacilityID); err != nil {
+			return err
+		}
+		p, err := NewProfile(p)
+		if err != nil {
+			return err
+		}
+		if err := s.deps.Staff.UpdateProfile(ctx, cur.ID, p, cur.TeamID); err != nil {
+			return apperr.AsConflict(err, "退職した職員は変えられません")
 		}
 		changed, err = s.deps.Staff.Get(ctx, cur.ID)
 		return err
