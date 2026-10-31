@@ -7,17 +7,19 @@ OpenAPI の項目は、`createCheck`（`POST /v1/checks`）の本文とレスポ
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
 | ログインした職員 | 職員の名前 | `Viewer.staffName` | `getMe` の `username` |
+| 権限が無いこと | 照合の権限を持つか | `Viewer.canCheckReceipt` | `getMe` の `policies[].code` に `receipt.check` があるか |
 | 予定の取り方 | Google カレンダーか予定の CSV | `ScheduleSource`（`calendar`、`csv`）。画面の中だけの値 | `month` と `schedules` のどちらを送るか |
 | 対象の月 | `YYYY-MM` の月 | `ReceiptCheckInput.month` | 本文の `month` |
 | 予定の CSV | ファイル | `ReceiptCheckInput.schedules` | 本文の `schedules` |
 | 実績の CSV | ファイル | `ReceiptCheckInput.visits` | 本文の `visits` |
-| 失敗の文 | 状態ごとの文 | `ApiError.status` | レスポンスの status |
+| 失敗の文 | 状態ごとの文 | `ApiError.status`、`ApiError.code` | レスポンスの status、`Error.code` |
 | 失敗の文 | 入力の CSV の誤りの一覧 | `ApiError.csvErrors`（`ReceiptCsvError`） | `Error.errors[]` の `source`、`reason`、`line`、`column` |
 | 照合する | 照合の結果 | `ReceiptReport`。`ReceiptResult` に包んで query の cache（`receiptResultKey`）に置く | レスポンスの `Report` |
 
 - 失敗の文と status の対応は `apps/web/src/features/receipt/lib/errorMessage.ts` の `checkErrorMessage` にある。status と `Error.code` は次のとおり。
   - 400 は `bad_request` か `missing_file`、413 は `payload_too_large`、422 は `invalid_csv`
-  - 403 は `forbidden`、502 は `schedule_source_failed`、503 は `calendar_not_configured`
+  - 403 は `forbidden`、502 は `schedule_source_failed` か `permission_check_failed`、503 は `calendar_not_configured`
+  - 502 は、`ApiError.code`（`Error.code`）で、照合の権限を確認できない文と Google カレンダーの失敗の文を分ける
   - 500（`internal`）とそのほかは照合の失敗の文にする
 - 入力の CSV の誤りの文は、同じファイルの `csvErrorLines` が `reason` と `line` と `column` から作る。`Error.message` と `errors[].message` は画面に出さない。
   - ファイルの名前は、`source` が `schedules` なら「予定の CSV」、`visits` なら「実績の CSV」にする。
