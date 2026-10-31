@@ -372,18 +372,20 @@ func (s *Usecase) recurringChanged(ctx context.Context, slot Slot, id string) er
 	return s.deps.Exports.RecurringChanged(ctx, slot.FacilityID, slot.StaffID, id)
 }
 
-// assignment は、予定に既に割り振った職員を役割ごとに持つ。役割に職員がいなければ空である。
+// assignment は、予定に既に割り振った職員を役割ごとに持ち、訪問の予定なら既に付けた利用者を持つ。役割に職員がいなければ空である。
 type assignment struct {
 	staffID         string
 	assignedStaffID string
 	companionID     string
+	patientID       string
 }
 
-// assignedOf は、予定の職員 staffID と訪問の情報 v から、予定に割り振った職員を返す。
+// assignedOf は、予定の職員 staffID と訪問の情報 v から、予定に割り振った職員と利用者を返す。
 func assignedOf(staffID string, v *visit.Detail) assignment {
 	a := assignment{staffID: staffID}
 	if v != nil {
 		a.assignedStaffID = v.AssignedStaffID
+		a.patientID = v.PatientID
 		if v.CompanionID != nil {
 			a.companionID = *v.CompanionID
 		}
@@ -402,7 +404,8 @@ func assignable(st staff.Ref, keptID string, date, today civil.Date) error {
 }
 
 // prepareSlot は、予定の種類と職員と、職員の予定を編集する権限を確認し、訪問の情報があれば保存して、予定の属性を組み立てる。
-// 予定の職員、主訪問者、同行者のうち、kept の同じ役割の職員と違う職員が休職か退職なら、入力のエラーを返す。kept は、予定に既に割り振った職員である。
+// 予定の職員、主訪問者、同行者のうち、kept の同じ役割の職員と違う職員が休職か退職なら、入力のエラーを返す。kept は、予定に既に割り振った職員と利用者である。
+// 利用の終了の利用者は、kept の利用者のまま、今日より前の予定でだけ保存できる（ADR-0021）。退職した職員と同じく、利用の終了の利用者に今日以降の予定を残さない。
 // 職員の状態を確認する前に、事業所の職員の休職と退職をトランザクションの終わりまで待たせ、確認した後に状態が変わらないようにする。
 // 訪問の情報を保存するので、トランザクションの中で呼ぶ。
 func (s *Usecase) prepareSlot(ctx context.Context, facilityID string, in SlotInput, kept assignment) (Slot, Type, error) {
@@ -444,7 +447,12 @@ func (s *Usecase) prepareSlot(ctx context.Context, facilityID string, in SlotInp
 		if typ.Code != CodeVisit {
 			return Slot{}, Type{}, apperr.Invalid("訪問の情報は訪問の予定にだけ付けられます")
 		}
-		id, err := s.deps.Visits.Create(ctx, facilityID, *in.Visit)
+		vin := *in.Visit
+		vin.KeptPatientID = ""
+		if in.Date.Before(today) {
+			vin.KeptPatientID = kept.patientID
+		}
+		id, err := s.deps.Visits.Create(ctx, facilityID, vin)
 		if err != nil {
 			return Slot{}, Type{}, err
 		}

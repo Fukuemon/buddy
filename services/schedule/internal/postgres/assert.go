@@ -21,6 +21,8 @@ var (
 	_ kernel.Finder[staff.Ref]          = (*StaffRefRepository)(nil)
 	_ schedule.StaffRefs                = (*StaffRefRepository)(nil)
 	_ patient.Repository                = (*PatientRepository)(nil)
+	_ patient.ScheduleReader            = (*PatientScheduleReader)(nil)
+	_ patient.FacilityLocker            = (*StaffRepository)(nil)
 	_ visit.InfoRepository              = (*VisitInfoRepository)(nil)
 	_ visit.MasterRepository            = (*VisitMasterRepository)(nil)
 	_ schedule.Repository               = (*ScheduleRepository)(nil)

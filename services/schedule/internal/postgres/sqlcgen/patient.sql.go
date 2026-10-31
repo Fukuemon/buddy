@@ -8,6 +8,8 @@ package sqlcgen
 import (
 	"context"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createPatient = `-- name: CreatePatient :exec
@@ -38,11 +40,26 @@ func (q *Queries) CreatePatient(ctx context.Context, arg CreatePatientParams) er
 	return err
 }
 
+const endPatientService = `-- name: EndPatientService :execrows
+UPDATE patients
+SET ended_at = COALESCE(ended_at, now()), updated_at = now()
+WHERE id = $1
+`
+
+// 利用者を利用の終了にする。利用の終了の利用者では、最初に利用の終了にした時刻を残す。
+func (q *Queries) EndPatientService(ctx context.Context, id string) (int64, error) {
+	result, err := q.db.Exec(ctx, endPatientService, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getPatient = `-- name: GetPatient :one
 SELECT pa.id, pa.facility_id, pa.name, pa.preferred_time, pa.preferred_gender,
        pa.service_code_id, sc.code AS service_code,
        pa.assigned_staff_id, u.username AS assigned_staff_name,
-       pa.created_at, pa.updated_at
+       pa.ended_at, pa.created_at, pa.updated_at
 FROM patients pa
 JOIN service_codes sc ON sc.id = pa.service_code_id
 JOIN users u ON u.id = pa.assigned_staff_id
@@ -59,6 +76,7 @@ type GetPatientRow struct {
 	ServiceCode       string
 	AssignedStaffID   string
 	AssignedStaffName string
+	EndedAt           *time.Time
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 }
@@ -76,35 +94,139 @@ func (q *Queries) GetPatient(ctx context.Context, id string) (GetPatientRow, err
 		&i.ServiceCode,
 		&i.AssignedStaffID,
 		&i.AssignedStaffName,
+		&i.EndedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
 }
 
+const listPatientRecurringSchedulesFrom = `-- name: ListPatientRecurringSchedulesFrom :many
+SELECT r.id, r.date, r.end_date, r.start_time, r.end_time
+FROM recurring_schedules r
+JOIN visit_infos v ON v.id = r.visit_info_id
+WHERE r.facility_id = $1
+  AND v.patient_id = $2
+  AND (r.end_date IS NULL OR r.end_date >= $3::date)
+ORDER BY r.date, r.start_time, r.id
+`
+
+type ListPatientRecurringSchedulesFromParams struct {
+	FacilityID string
+	PatientID  string
+	FromDate   time.Time
+}
+
+type ListPatientRecurringSchedulesFromRow struct {
+	ID        string
+	Date      time.Time
+	EndDate   *time.Time
+	StartTime pgtype.Time
+	EndTime   pgtype.Time
+}
+
+// 訪問の情報の利用者が patient_id の、from 以降に終わる繰り返しの予定を返す。終了日の無い繰り返しは含める。
+func (q *Queries) ListPatientRecurringSchedulesFrom(ctx context.Context, arg ListPatientRecurringSchedulesFromParams) ([]ListPatientRecurringSchedulesFromRow, error) {
+	rows, err := q.db.Query(ctx, listPatientRecurringSchedulesFrom, arg.FacilityID, arg.PatientID, arg.FromDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPatientRecurringSchedulesFromRow{}
+	for rows.Next() {
+		var i ListPatientRecurringSchedulesFromRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.EndDate,
+			&i.StartTime,
+			&i.EndTime,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPatientSchedulesFrom = `-- name: ListPatientSchedulesFrom :many
+SELECT s.id, s.date, s.start_time, s.end_time
+FROM schedules s
+JOIN visit_infos v ON v.id = s.visit_info_id
+WHERE s.facility_id = $1
+  AND v.patient_id = $2
+  AND s.date >= $3
+  AND NOT EXISTS (SELECT 1 FROM schedule_cancels c WHERE c.schedule_id = s.id)
+ORDER BY s.date, s.start_time, s.id
+`
+
+type ListPatientSchedulesFromParams struct {
+	FacilityID string
+	PatientID  string
+	FromDate   time.Time
+}
+
+type ListPatientSchedulesFromRow struct {
+	ID        string
+	Date      time.Time
+	StartTime pgtype.Time
+	EndTime   pgtype.Time
+}
+
+// 訪問の情報の利用者が patient_id の、from 以降のキャンセルしていない単発の予定を返す。
+func (q *Queries) ListPatientSchedulesFrom(ctx context.Context, arg ListPatientSchedulesFromParams) ([]ListPatientSchedulesFromRow, error) {
+	rows, err := q.db.Query(ctx, listPatientSchedulesFrom, arg.FacilityID, arg.PatientID, arg.FromDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPatientSchedulesFromRow{}
+	for rows.Next() {
+		var i ListPatientSchedulesFromRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.StartTime,
+			&i.EndTime,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPatientsByFacility = `-- name: ListPatientsByFacility :many
 SELECT pa.id, pa.facility_id, pa.name, pa.preferred_time, pa.preferred_gender,
        pa.service_code_id, sc.code AS service_code,
        pa.assigned_staff_id, u.username AS assigned_staff_name,
-       pa.created_at, pa.updated_at
+       pa.ended_at, pa.created_at, pa.updated_at
 FROM patients pa
 JOIN service_codes sc ON sc.id = pa.service_code_id
 JOIN users u ON u.id = pa.assigned_staff_id
 WHERE pa.facility_id = $1
-  AND ($2::text IS NULL OR pa.name = $2)
-  AND ($3::text IS NULL OR pa.preferred_time = $3)
-  AND ($4::text IS NULL OR pa.preferred_gender = $4)
-  AND ($5::text IS NULL OR u.username = $5)
+  AND ($2::boolean OR pa.ended_at IS NULL)
+  AND ($3::text IS NULL OR pa.name = $3)
+  AND ($4::text IS NULL OR pa.preferred_time = $4)
+  AND ($5::text IS NULL OR pa.preferred_gender = $5)
+  AND ($6::text IS NULL OR u.username = $6)
 ORDER BY
-  CASE WHEN $6::text = 'name_asc' THEN pa.name END ASC,
-  CASE WHEN $6::text = 'name_desc' THEN pa.name END DESC,
-  CASE WHEN $6::text = 'created_at_asc' THEN pa.created_at END ASC,
-  CASE WHEN $6::text = 'created_at_desc' THEN pa.created_at END DESC,
+  CASE WHEN $7::text = 'name_asc' THEN pa.name END ASC,
+  CASE WHEN $7::text = 'name_desc' THEN pa.name END DESC,
+  CASE WHEN $7::text = 'created_at_asc' THEN pa.created_at END ASC,
+  CASE WHEN $7::text = 'created_at_desc' THEN pa.created_at END DESC,
   pa.id
 `
 
 type ListPatientsByFacilityParams struct {
 	FacilityID      string
+	IncludeEnded    bool
 	Name            *string
 	PreferredTime   *string
 	PreferredGender *string
@@ -122,13 +244,16 @@ type ListPatientsByFacilityRow struct {
 	ServiceCode       string
 	AssignedStaffID   string
 	AssignedStaffName string
+	EndedAt           *time.Time
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 }
 
+// include_ended が false なら、利用の終了の利用者を除く。
 func (q *Queries) ListPatientsByFacility(ctx context.Context, arg ListPatientsByFacilityParams) ([]ListPatientsByFacilityRow, error) {
 	rows, err := q.db.Query(ctx, listPatientsByFacility,
 		arg.FacilityID,
+		arg.IncludeEnded,
 		arg.Name,
 		arg.PreferredTime,
 		arg.PreferredGender,
@@ -152,6 +277,7 @@ func (q *Queries) ListPatientsByFacility(ctx context.Context, arg ListPatientsBy
 			&i.ServiceCode,
 			&i.AssignedStaffID,
 			&i.AssignedStaffName,
+			&i.EndedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -163,4 +289,54 @@ func (q *Queries) ListPatientsByFacility(ctx context.Context, arg ListPatientsBy
 		return nil, err
 	}
 	return items, nil
+}
+
+const resumePatientService = `-- name: ResumePatientService :execrows
+UPDATE patients
+SET ended_at = NULL, assigned_staff_id = $2, updated_at = now()
+WHERE id = $1
+`
+
+type ResumePatientServiceParams struct {
+	ID              string
+	AssignedStaffID string
+}
+
+// 利用者を利用中に戻し、担当の職員を書き換える。
+func (q *Queries) ResumePatientService(ctx context.Context, arg ResumePatientServiceParams) (int64, error) {
+	result, err := q.db.Exec(ctx, resumePatientService, arg.ID, arg.AssignedStaffID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const updatePatient = `-- name: UpdatePatient :execrows
+UPDATE patients
+SET name = $2, preferred_time = $3, preferred_gender = $4, service_code_id = $5, assigned_staff_id = $6, updated_at = now()
+WHERE id = $1
+`
+
+type UpdatePatientParams struct {
+	ID              string
+	Name            string
+	PreferredTime   string
+	PreferredGender string
+	ServiceCodeID   string
+	AssignedStaffID string
+}
+
+func (q *Queries) UpdatePatient(ctx context.Context, arg UpdatePatientParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updatePatient,
+		arg.ID,
+		arg.Name,
+		arg.PreferredTime,
+		arg.PreferredGender,
+		arg.ServiceCodeID,
+		arg.AssignedStaffID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

@@ -29,18 +29,26 @@ func (v *Usecase) ListCategories(ctx context.Context) ([]Category, error) {
 }
 
 // Input は、訪問の予定に付ける訪問の情報の入力である。
+// KeptPatientID は、利用の終了の利用者のまま保存してよい、予定に既に付けた利用者である。呼ぶ側は、今日より前の予定でだけ指定する（ADR-0021）。
 type Input struct {
 	PatientID       string
 	AssignedStaffID string
 	CompanionID     *string
 	ServiceCodeID   string
 	CategoryIDs     []string
+	KeptPatientID   string
 }
 
-// PatientFinder は、ID が id の利用者を探し、利用者の ID と、利用者が属する事業所の ID を返す。
-// 利用者が見つからないときは apperr.ErrNotFound を返す。
+// PatientRef は、訪問の情報が参照する利用者の ID、事業所、利用の終了かである。
+type PatientRef struct {
+	ID         string
+	FacilityID string
+	Ended      bool
+}
+
+// PatientFinder は、ID が id の利用者を探して返す。利用者が見つからないときは apperr.ErrNotFound を返す。
 // patient が visit に依存するので、visit は patient を import せずに関数で受け取る。
-type PatientFinder func(ctx context.Context, id string) (patientID, facilityID string, err error)
+type PatientFinder func(ctx context.Context, id string) (PatientRef, error)
 
 // WriterDeps は、Writer が使うリポジトリと、ほかの機能のデータを読むインターフェイスである。
 type WriterDeps struct {
@@ -62,14 +70,19 @@ func NewWriter(deps WriterDeps, ids kernel.IDGenerator) Writer {
 }
 
 // Create は、in の参照が facilityID の事業所に属することを確認して訪問の情報を保存し、その ID を返す。
+// 利用者が利用の終了で、in.KeptPatientID と違うときは、入力のエラーを返す（ADR-0021）。
 func (w Writer) Create(ctx context.Context, facilityID string, in Input) (string, error) {
-	patientID, patientFacilityID, err := w.deps.Patients(ctx, in.PatientID)
+	pa, err := w.deps.Patients(ctx, in.PatientID)
 	if err != nil {
 		return "", apperr.Reference("利用者", in.PatientID, err)
 	}
-	if err := apperr.SameFacility("利用者", patientID, patientFacilityID, facilityID); err != nil {
+	if err := apperr.SameFacility("利用者", pa.ID, pa.FacilityID, facilityID); err != nil {
 		return "", err
 	}
+	if pa.Ended && pa.ID != in.KeptPatientID {
+		return "", apperr.Invalid("利用の終了の利用者 %s には、今日以降の予定と新しい予定を作れません", pa.ID)
+	}
+	patientID := pa.ID
 	staffIDs := []string{in.AssignedStaffID}
 	if in.CompanionID != nil {
 		staffIDs = append(staffIDs, *in.CompanionID)

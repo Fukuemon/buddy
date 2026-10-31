@@ -141,16 +141,40 @@ func (f *fakeStaff) List(_ context.Context, _ string, q staff.ListQuery) ([]staf
 }
 
 type fakePatients struct {
-	listCalls int
-	err       error
+	listCalls  int
+	lastQuery  patient.ListQuery
+	lastID     string
+	lastUpdate patient.UpdateInput
+	lastStaff  string
+	err        error
 }
 
 func (f *fakePatients) Create(context.Context, patient.CreateInput) (patient.Detail, error) {
 	return patient.Detail{}, f.err
 }
 
-func (f *fakePatients) List(context.Context, string, patient.ListQuery) ([]patient.Detail, error) {
+func (f *fakePatients) Update(_ context.Context, id string, in patient.UpdateInput) (patient.Detail, error) {
+	f.lastID, f.lastUpdate = id, in
+	return patient.Detail{Patient: patient.Patient{
+		ID: id, Name: in.Name, PreferredTime: in.PreferredTime, PreferredGender: in.PreferredGender,
+		ServiceCodeID: in.ServiceCodeID, AssignedStaffID: in.AssignedStaffID,
+	}}, f.err
+}
+
+func (f *fakePatients) End(_ context.Context, id string) (patient.Detail, error) {
+	f.lastID = id
+	at := time.Date(2026, 10, 31, 9, 0, 0, 0, time.UTC)
+	return patient.Detail{Patient: patient.Patient{ID: id, PreferredTime: patient.Morning, PreferredGender: patient.Female, EndedAt: &at}}, f.err
+}
+
+func (f *fakePatients) Resume(_ context.Context, id, assignedStaffID string) (patient.Detail, error) {
+	f.lastID, f.lastStaff = id, assignedStaffID
+	return patient.Detail{Patient: patient.Patient{ID: id, PreferredTime: patient.Morning, PreferredGender: patient.Female, AssignedStaffID: assignedStaffID}}, f.err
+}
+
+func (f *fakePatients) List(_ context.Context, _ string, q patient.ListQuery) ([]patient.Detail, error) {
 	f.listCalls++
+	f.lastQuery = q
 	return []patient.Detail{}, nil
 }
 
@@ -506,6 +530,85 @@ func TestRetireUser(t *testing.T) {
 	rec, body = do(t, newRouter(&fakeSchedules{}, &fakeStaff{err: apperr.Conflict("職員の管理の権限を持つ最後の有効な職員は、休職と退職にできません")}, &fakePatients{}), http.MethodPost, "/v1/users/"+staffID+"/retire", "")
 	if rec.Code != http.StatusConflict || body["code"] != "conflict" || body["assignments"] != nil {
 		t.Errorf("最後の管理者: status = %d, body = %v, want 一覧の無い 409 conflict", rec.Code, body)
+	}
+}
+
+const patientID = "01M3TC5H00QV17BC0J9V3393ZQ"
+
+// 利用者の一覧は、デフォルトで利用中の利用者だけを、include_ended=true なら利用の終了の利用者も返す（#346 の検証の観点 3）。
+func TestListPatientsIncludeEnded(t *testing.T) {
+	p := &fakePatients{}
+	h := newRouter(nil, &fakeStaff{}, p)
+	for target, want := range map[string]bool{
+		"/v1/facilities/" + facilityID + "/patients":                     false,
+		"/v1/facilities/" + facilityID + "/patients?include_ended=false": false,
+		"/v1/facilities/" + facilityID + "/patients?include_ended=true":  true,
+	} {
+		rec, _ := do(t, h, http.MethodGet, target, "")
+		if rec.Code != http.StatusOK || p.lastQuery.IncludeEnded != want {
+			t.Errorf("%s: status = %d, IncludeEnded = %v, want %v", target, rec.Code, p.lastQuery.IncludeEnded, want)
+		}
+	}
+	rec, _ := do(t, h, http.MethodGet, "/v1/facilities/"+facilityID+"/patients?include_ended=yes", "")
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("真偽値でない include_ended: status = %d, want 400", rec.Code)
+	}
+}
+
+const patientBody = `{"name":"見本 花子","preferred_time":"午後","preferred_gender":"女性","service_code_id":"` + typeID + `","assigned_staff_id":"` + staffID + `"}`
+
+// 利用者の変更は、本文の値を usecase に渡し、変えた利用者を返す。入力のエラーは 400、権限が無ければ 403 を返す（#346 の検証の観点 1、2、5）。
+func TestUpdatePatient(t *testing.T) {
+	p := &fakePatients{}
+	rec, body := do(t, newRouter(nil, &fakeStaff{}, p), http.MethodPut, "/v1/patients/"+patientID, patientBody)
+	want := patient.UpdateInput{Name: "見本 花子", PreferredTime: patient.Afternoon, PreferredGender: patient.Female, ServiceCodeID: typeID, AssignedStaffID: staffID}
+	if rec.Code != http.StatusOK || p.lastID != patientID || p.lastUpdate != want || body["name"] != "見本 花子" || body["ended_at"] != nil {
+		t.Fatalf("status = %d, id = %s, 入力 = %+v, body = %v", rec.Code, p.lastID, p.lastUpdate, body)
+	}
+	rec, body = do(t, newRouter(nil, &fakeStaff{}, &fakePatients{err: apperr.Invalid("休職の職員 %s には、予定と担当を割り振れません", staffID)}),
+		http.MethodPut, "/v1/patients/"+patientID, patientBody)
+	if rec.Code != http.StatusBadRequest || body["code"] != "invalid_input" {
+		t.Errorf("休職の担当: status = %d, body = %v, want 400", rec.Code, body)
+	}
+	rec, _ = do(t, newRouter(nil, &fakeStaff{}, &fakePatients{err: apperr.ErrForbidden}), http.MethodPut, "/v1/patients/"+patientID, patientBody)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("権限なし: status = %d, want 403", rec.Code)
+	}
+}
+
+// 利用の終了は、利用の終了にした時刻を返す。その日以降の予定が残れば、409 で残る一覧を返す（#346 の検証の観点 3）。
+func TestEndPatientService(t *testing.T) {
+	p := &fakePatients{}
+	rec, body := do(t, newRouter(nil, &fakeStaff{}, p), http.MethodPost, "/v1/patients/"+patientID+"/end_service", "")
+	if rec.Code != http.StatusOK || p.lastID != patientID || body["ended_at"] != "2026-10-31T09:00:00Z" {
+		t.Fatalf("status = %d, id = %s, body = %v", rec.Code, p.lastID, body)
+	}
+
+	scheduled := &patient.ScheduledError{Remaining: patient.Remaining{
+		Schedules: []patient.RemainingSchedule{{ID: scheduleID, Date: civil.Date{Year: 2026, Month: 11, Day: 2}, StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10}}},
+	}}
+	rec, body = do(t, newRouter(nil, &fakeStaff{}, &fakePatients{err: scheduled}), http.MethodPost, "/v1/patients/"+patientID+"/end_service", "")
+	if rec.Code != http.StatusConflict || body["code"] != "patient_has_schedules" {
+		t.Fatalf("残る予定: status = %d, body = %v, want 409 patient_has_schedules", rec.Code, body)
+	}
+	r := body["schedules"].(map[string]any)
+	scheds := r["schedules"].([]any)
+	if len(scheds) != 1 || scheds[0].(map[string]any)["date"] != "2026-11-02" || len(r["recurring_schedules"].([]any)) != 0 {
+		t.Errorf("schedules = %v, want 予定 1 件と空の繰り返し", r)
+	}
+}
+
+// 利用の再開は、本文の担当の職員を usecase に渡す。担当の職員を省くと 400 を返す（ADR-0021）。
+func TestResumePatientService(t *testing.T) {
+	p := &fakePatients{}
+	rec, body := do(t, newRouter(nil, &fakeStaff{}, p), http.MethodPost, "/v1/patients/"+patientID+"/resume_service", `{"assigned_staff_id":"`+staffID+`"}`)
+	if rec.Code != http.StatusOK || p.lastID != patientID || p.lastStaff != staffID || body["assigned_staff_id"] != staffID || body["ended_at"] != nil {
+		t.Fatalf("status = %d, id = %s, 担当 = %s, body = %v", rec.Code, p.lastID, p.lastStaff, body)
+	}
+	p = &fakePatients{}
+	rec, _ = do(t, newRouter(nil, &fakeStaff{}, p), http.MethodPost, "/v1/patients/"+patientID+"/resume_service", `{}`)
+	if rec.Code != http.StatusBadRequest || p.lastID != "" {
+		t.Errorf("担当なし: status = %d, usecase = %q, want 400 で usecase を呼ばない", rec.Code, p.lastID)
 	}
 }
 

@@ -100,13 +100,10 @@ func run() error {
 		outbox = calendar.NewOutbox(exports, calendars, ids)
 	}
 	visitInfos := visit.NewWriter(visit.WriterDeps{
-		Staff: staffRefs,
-		Patients: func(ctx context.Context, id string) (string, string, error) {
-			pa, err := patients.Get(ctx, id)
-			return pa.ID, pa.FacilityID, err
-		},
-		Infos:   postgres.NewVisitInfoRepository(db),
-		Masters: visitMasters,
+		Staff:    staffRefs,
+		Patients: patient.VisitFinder(patients),
+		Infos:    postgres.NewVisitInfoRepository(db),
+		Masters:  visitMasters,
 	}, ids)
 
 	router := httpapi.NewRouter(httpapi.Usecases{
@@ -124,6 +121,7 @@ func run() error {
 		}, tx, ids, principal.RequireStaffManage),
 		Patients: patient.NewUsecase(patient.Deps{
 			Facilities: facilities, Staff: staffRefs, ServiceCodes: visitMasters, Patients: patients,
+			Schedules: postgres.NewPatientScheduleReader(db), Locks: staffRepo,
 		}, tx, ids, principal.RequireStaffManage),
 		VisitMasters: visit.NewUsecase(visitMasters),
 		Schedules: schedule.NewUsecase(schedule.Deps{
@@ -139,7 +137,7 @@ func run() error {
 		}, tx, ids, principal.RequireStaffManage),
 		Auth: access.NewService(access.Deps{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions,
-			Staff: staffRepo, StaffRefs: staffRefs, Schedules: schedules, Recurring: recurring, Calendars: calendars,
+			Staff: staffRepo, StaffRefs: staffRefs, Patients: patients, Schedules: schedules, Recurring: recurring, Calendars: calendars,
 			Exports: exports,
 		}),
 	}, httpapi.RouterConfig{Logger: log, AllowOrigins: cfg.AllowOrigins, Verifier: tokenVerifier{verifier}, Ready: func(ctx context.Context) error {

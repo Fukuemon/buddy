@@ -133,7 +133,8 @@ WHERE r.facility_id = sqlc.arg(facility_id)
 ORDER BY r.date, r.start_time, r.id;
 
 -- name: ListStaffAssignedPatients :many
-SELECT id, name FROM patients WHERE facility_id = $1 AND assigned_staff_id = $2 ORDER BY name, id;
+-- 利用の終了の利用者は、担当に数えない（ADR-0021）。
+SELECT id, name FROM patients WHERE facility_id = $1 AND assigned_staff_id = $2 AND ended_at IS NULL ORDER BY name, id;
 
 -- name: GetUserRef :one
 -- ほかの機能が職員を参照するときに要るカラムだけを読む。

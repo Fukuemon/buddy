@@ -261,7 +261,7 @@ func (q *Queries) ListActiveStaffManagers(ctx context.Context, facilityID string
 }
 
 const listStaffAssignedPatients = `-- name: ListStaffAssignedPatients :many
-SELECT id, name FROM patients WHERE facility_id = $1 AND assigned_staff_id = $2 ORDER BY name, id
+SELECT id, name FROM patients WHERE facility_id = $1 AND assigned_staff_id = $2 AND ended_at IS NULL ORDER BY name, id
 `
 
 type ListStaffAssignedPatientsParams struct {
@@ -274,6 +274,7 @@ type ListStaffAssignedPatientsRow struct {
 	Name string
 }
 
+// 利用の終了の利用者は、担当に数えない（ADR-0021）。
 func (q *Queries) ListStaffAssignedPatients(ctx context.Context, arg ListStaffAssignedPatientsParams) ([]ListStaffAssignedPatientsRow, error) {
 	rows, err := q.db.Query(ctx, listStaffAssignedPatients, arg.FacilityID, arg.AssignedStaffID)
 	if err != nil {

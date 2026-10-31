@@ -10,6 +10,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
@@ -34,6 +35,7 @@ type Deps struct {
 	Positions   kernel.Finder[organization.Position]
 	Staff       Staff
 	StaffRefs   kernel.Finder[staff.Ref]
+	Patients    kernel.Finder[patient.Detail]
 	Schedules   kernel.Finder[schedule.Detail]
 	Recurring   kernel.Finder[schedule.RecurringDetail]
 	Calendars   kernel.Finder[calendar.ExternalCalendar]
@@ -54,6 +56,7 @@ const (
 	ResourceRecurringSchedule
 	ResourceExternalCalendar
 	ResourceCalendarExport
+	ResourcePatient
 )
 
 // Service は、検証したトークンから職員を特定する操作である。
@@ -130,6 +133,9 @@ func (a *Service) FacilityOf(ctx context.Context, r Resource, id string) (string
 	case ResourceCalendarExport:
 		e, err := a.deps.Exports.Get(ctx, id)
 		return e.FacilityID, err
+	case ResourcePatient:
+		p, err := a.deps.Patients.Get(ctx, id)
+		return p.FacilityID, err
 	default:
 		return "", fmt.Errorf("事業所を求められないリソースの種類 %d です", r)
 	}

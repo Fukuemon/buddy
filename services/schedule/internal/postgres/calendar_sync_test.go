@@ -16,6 +16,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
 	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
@@ -172,12 +173,9 @@ func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
 	types := NewScheduleTypeRepository(testDB)
 	ids := ulid.Generator{}
 	visits := visit.NewWriter(visit.WriterDeps{
-		Staff: staffRefs,
-		Patients: func(ctx context.Context, id string) (string, string, error) {
-			p, err := patients.Get(ctx, id)
-			return p.ID, p.FacilityID, err
-		},
-		Infos: NewVisitInfoRepository(testDB), Masters: masters,
+		Staff:    staffRefs,
+		Patients: patient.VisitFinder(patients),
+		Infos:    NewVisitInfoRepository(testDB), Masters: masters,
 	}, ids)
 	source := gcal.NewReader(gcaltest.Start(t, srv))
 	tx := NewTransactor(testDB)

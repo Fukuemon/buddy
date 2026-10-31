@@ -44,7 +44,7 @@ func authStore() *inmem.Store {
 func newAuth(s *inmem.Store) *access.Service {
 	return access.NewService(access.Deps{
 		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s}, Positions: inmem.Positions{Store: s},
-		Staff: inmem.Staff{Store: s}, StaffRefs: inmem.StaffRefs{Store: s}, Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s},
+		Staff: inmem.Staff{Store: s}, StaffRefs: inmem.StaffRefs{Store: s}, Patients: inmem.Patients{Store: s}, Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s},
 	})
 }
 
@@ -112,6 +112,7 @@ func TestFacilityOf(t *testing.T) {
 		{r: access.ResourceStaff, id: otherStaffID, want: otherFacilityID},
 		{r: access.ResourceSchedule, id: "SCH", want: otherFacilityID},
 		{r: access.ResourceRecurringSchedule, id: recurringID, want: facilityID},
+		{r: access.ResourcePatient, id: inmem.OtherPatientID, want: otherFacilityID},
 	}
 	for _, tt := range tests {
 		got, err := a.FacilityOf(context.Background(), tt.r, tt.id)

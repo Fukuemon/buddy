@@ -405,6 +405,7 @@ func (a applier) slotOf(ctx context.Context, base schedule.Slot, v *visit.Detail
 
 // createVisit は、訪問の情報 v を、外部の予定 ev のタイトルのサービス内容と利用者名にして書き、ID を返す。担当、同行、訪問の区分は v のままにする。
 // タイトルがサービス内容か利用者名を変えていて、サービスコードか利用者を 1 つに引けないときは errUnappliable を返す。
+// 利用の終了の利用者は、今日より前の予定で、v の利用者のままのときだけ書ける（ADR-0021）。書けないときも errUnappliable を返す。
 func (a applier) createVisit(ctx context.Context, facilityID string, v *visit.Detail, ev Event) (*string, error) {
 	in := visit.Input{
 		PatientID: v.PatientID, AssignedStaffID: v.AssignedStaffID, CompanionID: v.CompanionID, ServiceCodeID: v.ServiceCodeID,
@@ -414,6 +415,9 @@ func (a applier) createVisit(ctx context.Context, facilityID string, v *visit.De
 		in.CategoryIDs[i] = c.ID
 	}
 	c := Classify(ev)
+	if c.Date.Before(civil.Today(a.now())) {
+		in.KeptPatientID = v.PatientID
+	}
 	if serviceKey(c.Service) != serviceKey(v.ServiceCode) {
 		id, err := a.serviceCodeID(ctx, c.Service)
 		if err != nil {
