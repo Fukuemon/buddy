@@ -15,7 +15,60 @@
         <div class="screen-body">
           <!-- 画面を書く。構成要素の表の要素に data-m="<番号>" を、E2E が指す要素に data-testid を付ける -->
           <!-- 画面の中の操作は、data-go、data-toggle、data-choice、data-open と data-close で付ける。書き方は画面仕様書の規約の「画面の中の操作」にある -->
-          <button type="button" class="wf-btn" data-m="1" data-testid="<画面 ID>-<要素>">ボタン</button>
+          <!-- 一覧の画面の形。一覧の画面でなければ、main の中を書き換える。形は画面仕様書の規約の「一覧」にある -->
+          <main class="wf-page">
+            <div class="wf-page-head">
+              <h1 class="wf-heading" data-m="1">一覧の見出し</h1>
+              <span class="wf-btn wf-btn--primary" data-m="2" data-testid="<画面 ID>-new" data-go="02-form.html">登録</span>
+            </div>
+            <div class="wf-list-tools">
+              <div class="wf-search" data-m="3" data-testid="<画面 ID>-search"><span class="wf-label">名前で検索</span></div>
+              <span class="wf-select" data-m="4" data-testid="<画面 ID>-filter-<項目>">区分: すべて</span>
+              <span class="wf-select is-on" data-testid="<画面 ID>-filter-<項目>">状態: 有効</span>
+              <span class="wf-count" data-m="5" data-testid="<画面 ID>-count">4 件</span>
+            </div>
+            <table class="wf-table wf-table--rows" data-m="6" data-testid="<画面 ID>-table">
+              <thead>
+                <tr>
+                  <th>名前</th>
+                  <th>区分</th>
+                  <th>担当</th>
+                  <th>状態</th>
+                  <th><span class="wf-visually-hidden">詳細</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-m="7" data-testid="<画面 ID>-row-{id}" data-go="<詳細の画面のモック>">
+                  <td class="wf-cell-primary">項目 A</td>
+                  <td class="wf-cell-meta">区分 1</td>
+                  <td class="wf-cell-meta">担当 A</td>
+                  <td class="wf-cell-status"><span class="wf-status">有効</span></td>
+                  <td class="wf-cell-go" aria-hidden="true">›</td>
+                </tr>
+                <tr data-testid="<画面 ID>-row-{id}" data-go="<詳細の画面のモック>">
+                  <td class="wf-cell-primary">項目 B</td>
+                  <td class="wf-cell-meta">区分 1</td>
+                  <td class="wf-cell-meta">担当 B</td>
+                  <td class="wf-cell-status"><span class="wf-status wf-status--warning">注意</span></td>
+                  <td class="wf-cell-go" aria-hidden="true">›</td>
+                </tr>
+                <tr data-testid="<画面 ID>-row-{id}" data-go="<詳細の画面のモック>">
+                  <td class="wf-cell-primary">項目 C</td>
+                  <td class="wf-cell-meta">区分 2</td>
+                  <td class="wf-cell-meta">担当 A</td>
+                  <td class="wf-cell-status"><span class="wf-status">有効</span></td>
+                  <td class="wf-cell-go" aria-hidden="true">›</td>
+                </tr>
+                <tr data-testid="<画面 ID>-row-{id}" data-go="<詳細の画面のモック>">
+                  <td class="wf-cell-primary">項目 D</td>
+                  <td class="wf-cell-meta">区分 2</td>
+                  <td class="wf-cell-meta">担当 C</td>
+                  <td class="wf-cell-status"><span class="wf-status wf-status--muted">終了</span></td>
+                  <td class="wf-cell-go" aria-hidden="true">›</td>
+                </tr>
+              </tbody>
+            </table>
+          </main>
         </div>
       </div>
       <div class="markers"></div>
