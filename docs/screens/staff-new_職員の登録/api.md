@@ -2,20 +2,19 @@
 
 [職員の登録](index.md) の項目と、web の型と OpenAPI の項目の対応。  
 画面を作る人と API を変える人が読む。  
-画面は未実装なので、web の型の項目のうち、今の型に無いものは「足す」と書く。
 
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
-| 名前 | 入れた名前 | 足す | `createUser` の本文の `username` |
-| メールアドレス | 入れたメールアドレス | 足す | `createUser` の本文の `email` |
-| 電話番号 | 入れた電話番号。空なら送らない | 足す | `createUser` の本文の `phone_number` |
-| 部署 | 選択肢 | 足す | `listDepartments` の `Unit` の `id`、`name` |
-| 部署 | 選んだ部署 | 足す | `createUser` の本文の `department_id` |
+| 名前 | 入れた名前 | `StaffCreateInput.username`（`staff.create` の引数） | `createUser` の本文の `username` |
+| メールアドレス | 入れたメールアドレス | `StaffCreateInput.email` | `createUser` の本文の `email` |
+| 電話番号 | 入れた電話番号。空なら送らない | `StaffCreateInput.phone_number` | `createUser` の本文の `phone_number` |
+| 部署 | 選択肢 | `Department`（`departments.list` の戻り値） | `listDepartments` の `Unit` の `id`、`name` |
+| 部署 | 選んだ部署 | `StaffCreateInput.department_id` | `createUser` の本文の `department_id` |
 | チーム | 選択肢 | `Team`（`teams.list` の戻り値） | `listTeams` の `Unit` の `id`、`name` |
-| チーム | 選んだチーム | 足す | `createUser` の本文の `team_id` |
-| 役職 | 選択肢 | 足す | `listPositions` の `Position` の `id`、`name` |
-| 役職 | 選んだ役職 | 足す | `createUser` の本文の `position_id` |
-| 登録 | 登録した職員 | 足す | `createUser` のレスポンスの `StaffDetail` |
+| チーム | 選んだチーム | `StaffCreateInput.team_id` | `createUser` の本文の `team_id` |
+| 役職 | 選択肢 | `Position`（`positions.list` の戻り値） | `listPositions` の `Position` の `id`、`name` |
+| 役職 | 選んだ役職 | `StaffCreateInput.position_id` | `createUser` の本文の `position_id` |
+| 登録 | 登録した職員 | `StaffDetail`（`staff.create` の戻り値） | `createUser` のレスポンスの `StaffDetail` |
 | 登録の失敗の文 | 理由ごとの文 | `ApiError.status`、`ApiError.code` | レスポンスの status と `Error.code` |
 
 ## 操作
