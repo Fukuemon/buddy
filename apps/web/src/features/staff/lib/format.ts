@@ -85,9 +85,10 @@ export const policyTargetText = (
   return ids.length === 0 ? 'なし' : ids.map((id) => names.get(id) ?? id).join('、')
 }
 
-/** 職員の権限のうち、役職のデフォルトの権限に無い、職員ごとに足した権限の名前。 */
+/** 職員の権限のうち、役職に決まっていない、個別に足した権限の名前。役職を読み終えるまでは空にする。 */
 export const addedPolicyNames = (staff: StaffDetail, position: Position | undefined) => {
-  const defaults = new Set(position?.policies.map((p) => p.id))
+  if (position === undefined) return []
+  const defaults = new Set(position.policies.map((p) => p.id))
   return staff.policies.filter((p) => !defaults.has(p.policy_id)).map((p) => p.name)
 }
 
@@ -96,9 +97,6 @@ export const policyTargetKind = (policy: Pick<Policy, 'code' | 'needs_target'>) 
   if (!policy.needs_target) return undefined
   return policy.code.startsWith('schedule.team.') ? 'team' : 'user'
 }
-
-/** 権限の数。権限は予定の API のマイグレーションが入れる 8 つで、事業所ごとには持たない。 */
-export const POLICY_COUNT = 8
 
 /** 状態の印の色の調子。休職は注意、退職は終わった状態である。 */
 export const statusTone = (staff: Pick<StaffRecord, 'status'>) =>

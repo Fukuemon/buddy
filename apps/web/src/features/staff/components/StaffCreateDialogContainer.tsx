@@ -35,7 +35,7 @@ const StaffCreateDialogContent = () => {
       onClose={() => navigate({ to: '/staff' })}
       onSubmit={(input) =>
         create.mutate(input, {
-          onSuccess: (staff) => navigate({ href: `/staff/${staff.id}` }),
+          onSuccess: (staff) => navigate({ to: '/staff/$staffId', params: { staffId: staff.id } }),
         })
       }
       positions={optionsFailed ? undefined : positions.data}

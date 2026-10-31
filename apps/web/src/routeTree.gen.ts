@@ -25,6 +25,7 @@ import { Route as ScheduleImportRouteImport } from './routes/schedule_.import'
 import { Route as ScheduleLinkRouteImport } from './routes/schedule_.link'
 import { Route as ScheduleReviewRouteImport } from './routes/schedule_.review'
 import { Route as StaffNewRouteImport } from './routes/staff.new'
+import { Route as StaffStaffIdRouteImport } from './routes/staff_.$staffId'
 import { Route as ScheduleScheduleIdIndexRouteImport } from './routes/schedule.$scheduleId.index'
 import { Route as ScheduleScheduleIdEditRouteImport } from './routes/schedule.$scheduleId.edit'
 
@@ -108,6 +109,11 @@ const StaffNewRoute = StaffNewRouteImport.update({
   path: '/new',
   getParentRoute: () => StaffRoute,
 } as any)
+const StaffStaffIdRoute = StaffStaffIdRouteImport.update({
+  id: '/staff_/$staffId',
+  path: '/staff/$staffId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ScheduleScheduleIdIndexRoute = ScheduleScheduleIdIndexRouteImport.update({
   id: '/$scheduleId/',
   path: '/$scheduleId/',
@@ -135,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/schedule/link': typeof ScheduleLinkRoute
   '/schedule/review': typeof ScheduleReviewRoute
   '/staff/new': typeof StaffNewRoute
+  '/staff/$staffId': typeof StaffStaffIdRoute
   '/receipt/': typeof ReceiptIndexRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
   '/schedule/$scheduleId/': typeof ScheduleScheduleIdIndexRoute
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/schedule/link': typeof ScheduleLinkRoute
   '/schedule/review': typeof ScheduleReviewRoute
   '/staff/new': typeof StaffNewRoute
+  '/staff/$staffId': typeof StaffStaffIdRoute
   '/receipt': typeof ReceiptIndexRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
   '/schedule/$scheduleId': typeof ScheduleScheduleIdIndexRoute
@@ -176,6 +184,7 @@ export interface FileRoutesById {
   '/schedule_/link': typeof ScheduleLinkRoute
   '/schedule_/review': typeof ScheduleReviewRoute
   '/staff/new': typeof StaffNewRoute
+  '/staff_/$staffId': typeof StaffStaffIdRoute
   '/receipt/': typeof ReceiptIndexRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
   '/schedule/$scheduleId/': typeof ScheduleScheduleIdIndexRoute
@@ -198,6 +207,7 @@ export interface FileRouteTypes {
     | '/schedule/link'
     | '/schedule/review'
     | '/staff/new'
+    | '/staff/$staffId'
     | '/receipt/'
     | '/schedule/$scheduleId/edit'
     | '/schedule/$scheduleId/'
@@ -218,6 +228,7 @@ export interface FileRouteTypes {
     | '/schedule/link'
     | '/schedule/review'
     | '/staff/new'
+    | '/staff/$staffId'
     | '/receipt'
     | '/schedule/$scheduleId/edit'
     | '/schedule/$scheduleId'
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | '/schedule_/link'
     | '/schedule_/review'
     | '/staff/new'
+    | '/staff_/$staffId'
     | '/receipt/'
     | '/schedule/$scheduleId/edit'
     | '/schedule/$scheduleId/'
@@ -257,6 +269,7 @@ export interface RootRouteChildren {
   ScheduleImportRoute: typeof ScheduleImportRoute
   ScheduleLinkRoute: typeof ScheduleLinkRoute
   ScheduleReviewRoute: typeof ScheduleReviewRoute
+  StaffStaffIdRoute: typeof StaffStaffIdRoute
   ReceiptIndexRoute: typeof ReceiptIndexRoute
 }
 
@@ -374,6 +387,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffNewRouteImport
       parentRoute: typeof StaffRoute
     }
+    '/staff_/$staffId': {
+      id: '/staff_/$staffId'
+      path: '/staff/$staffId'
+      fullPath: '/staff/$staffId'
+      preLoaderRoute: typeof StaffStaffIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/schedule/$scheduleId/': {
       id: '/schedule/$scheduleId/'
       path: '/$scheduleId'
@@ -431,6 +451,7 @@ const rootRouteChildren: RootRouteChildren = {
   ScheduleImportRoute: ScheduleImportRoute,
   ScheduleLinkRoute: ScheduleLinkRoute,
   ScheduleReviewRoute: ScheduleReviewRoute,
+  StaffStaffIdRoute: StaffStaffIdRoute,
   ReceiptIndexRoute: ReceiptIndexRoute,
 }
 export const routeTree = rootRouteImport
