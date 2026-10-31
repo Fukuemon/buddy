@@ -55,12 +55,12 @@ const STORYBOOK_URL =
   /^https:\/\/buddy-docs\.emon-apps\.workers\.dev\/storybook\/\?path=\/(story|docs)\/([^)\s]+)$/
 const LINK_TARGET = /\]\(([^)\s]+)\)/g
 
-/** dir の下の *.stories.tsx を全て返す。 */
-const storyFiles = (dir) =>
+/** dir の下の、名前が suffix で終わるファイルを全て返す。 */
+const filesEndingWith = (dir, suffix) =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name)
-    if (entry.isDirectory()) return storyFiles(path)
-    return entry.name.endsWith('.stories.tsx') ? [path] : []
+    if (entry.isDirectory()) return filesEndingWith(path, suffix)
+    return entry.name.endsWith(suffix) ? [path] : []
   })
 
 /**
@@ -70,7 +70,8 @@ const storyFiles = (dir) =>
 const readCatalogIds = () => {
   const stories = new Set()
   const docs = new Set()
-  for (const file of STORY_DIRS.flatMap((dir) => storyFiles(join(ROOT, dir)))) {
+  const files = STORY_DIRS.flatMap((dir) => filesEndingWith(join(ROOT, dir), '.stories.tsx'))
+  for (const file of files) {
     const code = readFileSync(file, 'utf8')
     const title = code.match(/^ {2}title: '([^']+)'/m)?.[1]
     if (title === undefined) {
@@ -401,14 +402,6 @@ const targets =
 
 for (const dir of targets) checkScreen(dir)
 
-/** packages/e2e/tests の .ts のファイルを全て返す。 */
-const e2eFiles = (dir) =>
-  readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name)
-    if (entry.isDirectory()) return e2eFiles(path)
-    return entry.name.endsWith('.ts') ? [path] : []
-  })
-
 /** getByTestId の引数から、照合する値を返す。exact は同じ値、prefix は始まり。読めなければ null */
 const readTestIdArg = (arg) => {
   const quoted = arg.match(/^(['"])([^'"]+)\1/)
@@ -438,7 +431,7 @@ const matchesPlaceholder = (testId) =>
 // 文字列の testid は同じ値か、モックの x-{…} の形を、`x-${…}` と /^x-/ は x- で始まる値（モックの x-{…} を含む）を探す
 if (process.argv.length <= 2) {
   const E2E_DIR = relative(process.cwd(), join(ROOT, 'packages/e2e/tests')) || '.'
-  for (const file of e2eFiles(E2E_DIR)) {
+  for (const file of filesEndingWith(E2E_DIR, '.ts')) {
     const code = readFileSync(file, 'utf8')
     for (const match of code.matchAll(/getByTestId\(\s*([^)\n]*)/g)) {
       const target = readTestIdArg(match[1])
