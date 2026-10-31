@@ -64,6 +64,9 @@ const (
 // StaffManage は、職員の権限を足し外し、役職を変える権限である（ADR-0006）。予定の範囲には及ばない。
 const StaffManage PolicyCode = "staff.manage"
 
+// ReceiptCheck は、照合の API が照合を許す権限である（ADR-0022）。予定の API の判定には使わない。
+const ReceiptCheck PolicyCode = "receipt.check"
+
 // TargetsTeam は、権限の対象がチームであるかを返す。
 func (c PolicyCode) TargetsTeam() bool {
 	return c == ScheduleTeamRead || c == ScheduleTeamEdit

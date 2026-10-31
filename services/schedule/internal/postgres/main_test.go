@@ -6,7 +6,9 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"maps"
 	"os"
+	"slices"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
@@ -222,7 +224,7 @@ func TestMigrateDownAndUp(t *testing.T) {
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)
 	}
-	if err := MigrateDown(cfg, 7); err != nil {
+	if err := MigrateDown(cfg, 8); err != nil {
 		t.Fatal(err)
 	}
 	pool, err := Open(ctx, cfg)
@@ -253,4 +255,68 @@ func countFacilities(t *testing.T, pool *pgxpool.Pool) int {
 		t.Fatal(err)
 	}
 	return n
+}
+
+// TestMigrateReceiptCheckPolicy は、照合の権限のマイグレーションが、今ある事業所に事務の役職を足し、
+// 職員の管理の権限をデフォルトに持つ役職に照合の権限を足すことを確認する（ADR-0022）。
+func TestMigrateReceiptCheckPolicy(t *testing.T) {
+	cfg := newDatabase(t, "migrate_receipt_check")
+	ctx := context.Background()
+	if err := MigrateUp(cfg); err != nil {
+		t.Fatal(err)
+	}
+	if err := MigrateDown(cfg, 1); err != nil {
+		t.Fatal(err)
+	}
+	pool, err := Open(ctx, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pool.Close()
+	const (
+		facility = "01M3TD00000000000000000010"
+		manager  = "01M3TD00000000000000000011"
+		member   = "01M3TD00000000000000000012"
+	)
+	_, err = pool.Exec(ctx, `
+		INSERT INTO facilities (id, name) VALUES ('`+facility+`', '事業所');
+		INSERT INTO positions (id, facility_id, name) VALUES
+			('`+manager+`', '`+facility+`', '管理者'), ('`+member+`', '`+facility+`', 'メンバー');
+		INSERT INTO position_policies (position_id, policy_id)
+		SELECT '`+manager+`', id FROM policies WHERE code IN ('schedule.all.read', 'staff.manage')
+		UNION ALL SELECT '`+member+`', id FROM policies WHERE code = 'schedule.self.edit';`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := MigrateUp(cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	got := map[string][]string{}
+	rows, err := pool.Query(ctx, `
+		SELECT ps.name, p.code FROM positions ps
+		JOIN position_policies pp ON pp.position_id = ps.id
+		JOIN policies p ON p.id = pp.policy_id
+		WHERE ps.facility_id = $1 ORDER BY ps.name, p.code`, facility)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for rows.Next() {
+		var name, code string
+		if err := rows.Scan(&name, &code); err != nil {
+			t.Fatal(err)
+		}
+		got[name] = append(got[name], code)
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	want := map[string][]string{
+		"管理者":  {"receipt.check", "schedule.all.read", "staff.manage"},
+		"メンバー": {"schedule.self.edit"},
+		"事務":   {"receipt.check", "schedule.all.edit", "schedule.all.read"},
+	}
+	if !maps.EqualFunc(got, want, slices.Equal) {
+		t.Errorf("役職のデフォルトの権限 = %v, want %v", got, want)
+	}
 }
