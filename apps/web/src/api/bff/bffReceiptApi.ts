@@ -21,6 +21,6 @@ export const createBffReceiptApi = (
     const result = await checkReceipt(form)
     if (result.ok) return result.report
     if (result.status === 401 && typeof window !== 'undefined') return redirectToLogin()
-    throw new ApiError(result.status, result.message, result.rowErrors)
+    throw new ApiError(result.status, result.message, result.csvErrors)
   },
 })

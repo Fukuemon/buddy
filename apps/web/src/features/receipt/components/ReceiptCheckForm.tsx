@@ -1,8 +1,6 @@
 import { Button, SegmentedControl } from '@buddy/ui'
 import { useId, type FormEvent } from 'react'
 
-import type { ReceiptRowError } from '#/api/types'
-
 import { CsvFileField } from './CsvFileField'
 
 /** 予定の取り方。calendar は Google カレンダーの対象の月、csv は予定の CSV。 */
@@ -27,13 +25,8 @@ export type ReceiptCheckFormProps = {
   onSubmit: () => void
   /** 照合の失敗の文。 */
   errorMessage?: string
-  /** 入力の CSV の行ごとのエラー。 */
-  rowErrors?: readonly ReceiptRowError[]
-}
-
-const SOURCE_LABEL: Record<ReceiptRowError['source'], string> = {
-  schedules: '予定の CSV',
-  visits: '実績の CSV',
+  /** 失敗の文の下に並べる、入力の CSV の誤りの文。csvErrorLines で作る。 */
+  errorLines?: readonly string[]
 }
 
 /** 照合の入力。予定の取り方、対象の月か予定の CSV、実績の CSV を選んで送る。 */
@@ -48,7 +41,7 @@ export const ReceiptCheckForm = ({
   isSubmitting,
   onSubmit,
   errorMessage,
-  rowErrors = [],
+  errorLines = [],
 }: ReceiptCheckFormProps) => {
   const monthId = useId()
   const handleSubmit = (event: FormEvent) => {
@@ -105,13 +98,10 @@ export const ReceiptCheckForm = ({
       {errorMessage !== undefined && (
         <div className="flex flex-col gap-2" role="alert" data-testid="receipt-check-error">
           <p className="text-body text-danger">{errorMessage}</p>
-          {rowErrors.length > 0 && (
+          {errorLines.length > 0 && (
             <ul className="list-disc pl-6 text-body-dense text-danger">
-              {rowErrors.map((e) => (
-                <li key={`${e.source}-${e.line}-${e.column ?? ''}`}>
-                  {SOURCE_LABEL[e.source]} の {e.line} 行目
-                  {e.column === undefined ? '' : `の「${e.column}」`}: {e.message}
-                </li>
+              {errorLines.map((line) => (
+                <li key={line}>{line}</li>
               ))}
             </ul>
           )}

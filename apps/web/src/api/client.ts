@@ -10,7 +10,7 @@ import type {
   NameSearchParams,
   Patient,
   ReceiptReport,
-  ReceiptRowError,
+  ReceiptCsvError,
   Schedule,
   ScheduleInput,
   ScheduleListParams,
@@ -20,19 +20,19 @@ import type {
 
 /**
  * API が失敗の状態を返したときに投げる。code は API の Error の code で、分からなければ undefined である。
- * rowErrors は、照合の入力の CSV の行ごとのエラー（status が 422）である。
+ * csvErrors は、照合の入力の CSV の誤り（status が 422）である。
  */
 export class ApiError extends Error {
   readonly status: number
   readonly code: string | undefined
-  readonly rowErrors: ReceiptRowError[]
+  readonly csvErrors: ReceiptCsvError[]
 
-  constructor(status: number, message: string, rowErrors: ReceiptRowError[] = [], code?: string) {
+  constructor(status: number, message: string, csvErrors: ReceiptCsvError[] = [], code?: string) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.code = code
-    this.rowErrors = rowErrors
+    this.csvErrors = csvErrors
   }
 }
 

@@ -17,7 +17,7 @@ export const checkReceipt = async (
 ): Promise<ReceiptCheckResult> => {
   const session = await readSession(request, deps.auth)
   if (session === undefined) {
-    return { ok: false, status: 401, message: 'ログインが必要です', rowErrors: [] }
+    return { ok: false, status: 401, message: 'ログインが必要です', csvErrors: [] }
   }
   const api = createReceiptApi({
     baseUrl: deps.receiptApiUrl,
@@ -33,7 +33,7 @@ export const checkReceipt = async (
     return { ok: true, report: await api.check(input) }
   } catch (error) {
     if (error instanceof ApiError) {
-      return { ok: false, status: error.status, message: error.message, rowErrors: error.rowErrors }
+      return { ok: false, status: error.status, message: error.message, csvErrors: error.csvErrors }
     }
     throw error
   }
