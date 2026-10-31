@@ -120,7 +120,13 @@ docs/screens/
 - body の末尾で `../../_common/mock.js`、`../../_common/interact.js` をこの順に読む。ほかの script は書かない。
 - head で `../../_common/mock.css`、`../../_common/tokens.css`、`../../_common/wireframe.css`、`<画面 ID>.css` をこの順に読む。
 - `body` の `data-view` は最初に見せるデバイスにする。表示の幅が 600px 未満のとき（スマートフォンで仕様書を読むとき）は、`data-view` によらずモバイルで描く。`mobile`（390px）、`tablet`（768px）、`tablet-wide`（1024px）、`desktop`（1440px）から選ぶ。値は `mock.js` の `VIEWS` にだけ書く。
-- サイトのヘッダーとナビゲーション（`SiteHeader`、`SiteNav`）は、その画面の構成要素にするときだけ描く。ヘッダーの後ろの `wf-site-body` に、ナビゲーションを入れた `wf-site-drawer`、覆いの `wf-site-drawer-overlay`、画面の中身の `wf-site-main` を順に置く。`wf-site-drawer` は、幅 768px 以上では左端の縦の並びになり、未満ではメニューのドロワーになる。
+- サイトのヘッダーとナビゲーション（`SiteHeader`、`SiteNav`）は、その画面の構成要素にするときだけ描く。
+  - ヘッダーの `wf-site-header__brand` に、メニューのボタン `wf-site-menu` とサイトの名前を置く。右端の `wf-site-header__viewer` に、アカウントのボタン `wf-site-account` と、メニュー `wf-site-viewer-menu` を置く。
+  - アカウントのメニューは `data-panel` と `data-panel-dismiss` で開閉し、外を押すか Escape キーで閉じる。
+  - ヘッダーの後ろの `wf-site-body` の先頭に、ナビゲーションの `wf-site-nav` と覆いの `wf-site-nav-overlay` を置き、最後に画面の中身の `wf-site-main` を置く。
+  - `wf-site-nav` には、機能ごとの `wf-site-nav__group` を置き、見出しの `wf-site-nav__heading` と、画面の `wf-site-nav__item` を並べる。要確認の件数の印は `wf-site-badge` にする。
+  - `wf-site-nav` は、幅 768px 以上では開いた形で描き、`data-start="rail"` を付けるとレールで描く。メニューのボタンの `data-open="site-nav"` で形を切り替える。未満ではドロワーになる。
+  - 左の欄がある画面（予定のカレンダー）だけ、`wf-site-main` の前に、左の欄の `wf-site-drawer` と覆いの `wf-site-drawer-overlay` を置く。`wf-site-drawer` は、幅 768px 以上では開いた状態で始め、`data-open` のボタンでたたむ。未満ではドロワーになる。幅 768px 以上の `is-open` は、たたんだ状態を表す。
 
 ### 構成番号と data-testid
 

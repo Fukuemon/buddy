@@ -6,10 +6,11 @@
  *   デバイス、構成番号、testid、幅に合わせるかの選択は、mock.js が body の data-* に置いた値を search params にして引き継ぐ。
  * - data-toggle: 押すと、is-on を付け外す。チェックボックスとトグルに使う。
  * - data-choice="<組の名前>": 押すと is-on を付け、同じ組のほかの要素から外す。ラジオボタンとチップに使う。
- * - data-panel="<名前>": 開閉する要素。data-open="<名前>" を押すと開き、data-close="<名前>" を押すと閉じる。
+ * - data-panel="<名前>": 開閉する要素。data-open="<名前>" を押すと開き、開いていれば閉じる。data-close="<名前>" を押すと閉じる。
  *   開いている間は panel に is-open を付け、開くボタンの aria-expanded を true にする。デバイスを切り替えると閉じる。
  *   開くと panel の中の最初のフォーカスできる要素へ、閉じると開くボタンへフォーカスを移す。
- *   data-panel-modal も付けた panel を開いている間は、panel の外の要素に構成番号の印を出さない。
+ *   data-panel-modal も付けた panel を開いて見えている間は、panel の外の要素に構成番号の印を出さない。
+ *   data-panel-dismiss も付けた panel は、panel と開くボタンの外を押すか、Escape キーを押すと閉じる。メニューに使う。
  * - data-escape: Escape キーで押す。見えている要素だけを押す。
  *
  * 押せる要素には tabindex="0" を付け、Enter と Space でも押せるようにする。aria-disabled="true" の要素は押せない。
@@ -64,7 +65,8 @@
     panel.classList.toggle('is-open', isOpen)
     const openers = [...screen.querySelectorAll(`[data-open="${CSS.escape(panel.dataset.panel)}"]`)]
     for (const opener of openers) opener.setAttribute('aria-expanded', String(isOpen))
-    if (panel.hasAttribute('data-panel-modal')) coverMarkers(panel, isOpen)
+    // 予定のカレンダーの左の欄は、幅 768px 以上では is-open でたたむので、見えているときだけ印を隠す
+    if (panel.hasAttribute('data-panel-modal')) coverMarkers(panel, isOpen && isVisible(panel))
     const target = isOpen
       ? [...panel.querySelectorAll(FOCUSABLE)].find(isVisible)
       : openers.find(isVisible)
@@ -103,12 +105,28 @@
         syncChecked(other)
       }
     }
-    if (el.dataset.open) for (const panel of panels(el.dataset.open)) setPanel(panel, true)
+    if (el.dataset.open)
+      for (const panel of panels(el.dataset.open))
+        setPanel(panel, !panel.classList.contains('is-open'))
     if (el.dataset.close) for (const panel of panels(el.dataset.close)) setPanel(panel, false)
     mockRefresh()
   }
 
+  /** 開いている data-panel-dismiss の panel のうち、except の中に無いものを閉じる。閉じたら true を返す */
+  function dismissPanels(except) {
+    let closed = false
+    for (const panel of screen.querySelectorAll('[data-panel-dismiss].is-open')) {
+      const name = CSS.escape(panel.dataset.panel)
+      if (except?.closest(`[data-panel="${name}"], [data-open="${name}"]`)) continue
+      setPanel(panel, false)
+      closed = true
+    }
+    if (closed) mockRefresh()
+    return closed
+  }
+
   screen.addEventListener('click', (event) => {
+    dismissPanels(event.target)
     const el = event.target.closest(ACTION)
     if (!el) return
     // a の href への移動は、go() が付ける search params を落とすので止める
@@ -126,6 +144,7 @@
 
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return
+    if (dismissPanels()) return
     const el = [...screen.querySelectorAll('[data-escape]')].find(isVisible)
     if (el) act(el)
   })
