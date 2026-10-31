@@ -44,10 +44,6 @@
   overflow-wrap: anywhere;
 }
 
-.sl-muted {
-  color: var(--wf-muted);
-}
-
 .sl-result {
   margin: 0;
   padding: 10px 12px;
@@ -77,5 +73,10 @@
     order: 2;
     width: auto;
     margin-left: auto;
+  }
+
+  /* 値の無いセルは 2 行目に出さず、「・」だけが残らないようにする。読み上げの文は、セルの中の見えない文で補う */
+  .sl-table .sl-cell-empty {
+    display: none;
   }
 }
