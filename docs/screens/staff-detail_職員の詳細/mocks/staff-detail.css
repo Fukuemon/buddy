@@ -1,4 +1,4 @@
-/* 職員の管理の画面のモックだけの見た目。職員の一覧、登録、詳細が同じ内容のファイルを持つ */
+/* 職員の管理の画面のモックだけの見た目。職員の一覧と登録も同じ内容のファイルを持つ。権限の一覧と権限を変えるダイアログの見た目は、職員の詳細だけが持つ */
 .st-h2 {
   margin: 0;
   font-size: 15px;
@@ -157,35 +157,58 @@
   color: var(--wf-muted);
 }
 
-/* 権限が付いているかの印。文字で示し、色だけに頼らない */
-.st-mark {
-  white-space: nowrap;
+/* 権限の一覧。付いている権限だけを、付いた理由のまとまりに分けて並べる。どの幅でも同じ形にする */
+.st-policy-groups {
+  display: grid;
+  gap: 16px;
 }
 
-.st-mark--on {
+.st-policy-group {
+  display: grid;
+  gap: 4px;
+}
+
+.st-policy-group__title {
+  margin: 0;
+  padding: 0;
+  color: var(--wf-muted);
+  font-size: 12px;
   font-weight: 700;
 }
 
-.st-mark--off {
-  color: var(--wf-muted);
+.st-policy-items {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-/* 権限の出どころ。役職で付くか、個別に足したか */
-.st-origin {
-  display: inline-block;
-  padding: 0 6px;
-  border: 1px solid var(--wf-line-soft);
-  border-radius: 4px;
+/* 1 行目に権限の名前、対象を指定する権限だけ 2 行目に対象を置く */
+.st-policy-item {
+  display: grid;
+  gap: 2px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--wf-line-soft);
+}
+
+.st-policy-item__targets {
   color: var(--wf-muted);
   font-size: 12px;
-  white-space: nowrap;
 }
 
-.st-policy-table td:first-child {
-  white-space: nowrap;
+/* 権限を変えるダイアログ。付いた理由のまとまりを fieldset にし、legend に見出しを書く */
+.st-policy-fieldsets {
+  display: grid;
+  gap: 16px;
 }
 
-/* 権限を変えるモーダルの、権限ごとの行。チェックボックスと出どころを並べ、対象の要る権限は下に対象を並べる */
+.st-policy-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
 .st-policy-options {
   display: grid;
   margin: 0;
@@ -200,17 +223,58 @@
   border-bottom: 1px solid var(--wf-line-soft);
 }
 
-.st-policy-option__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 12px;
-}
-
 .st-targets {
   display: grid;
   gap: 6px;
   padding-left: 20px;
+}
+
+/* 選んだ対象。名前と、外す × のボタンを並べる */
+.st-target {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 32px;
+  padding: 0 0 0 10px;
+  border: 1px solid var(--wf-line);
+  border-radius: var(--wf-radius);
+}
+
+.st-target__remove {
+  width: 32px;
+  height: 30px;
+  border: 0;
+}
+
+/* 対象を足す、検索できる選択 */
+.st-target-add {
+  height: 32px;
+  color: var(--wf-muted);
+}
+
+/* 対象を足すの候補。欄の下の左端にそろえて開く */
+.st-target-add-anchor {
+  position: relative;
+  display: inline-flex;
+}
+
+.st-target-options {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  padding: 4px 0;
+  border-radius: var(--wf-radius);
+  background: var(--wf-surface);
+  box-shadow: 0 0 0 1px var(--wf-line);
+}
+
+.st-target-option {
+  padding: 10px 16px;
+  white-space: nowrap;
 }
 
 /* 休職か退職にした後に残る予定と担当の利用者 */
@@ -264,66 +328,5 @@
 
   .st-row {
     flex-direction: column;
-  }
-
-  /* 権限の一覧は、1 行目に権限の名前と印、2 行目に出どころと対象を置く */
-  .st-policy-table thead {
-    display: none;
-  }
-
-  .st-policy-table,
-  .st-policy-table tbody {
-    display: block;
-  }
-
-  .st-policy-table tr {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 2px 8px;
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--wf-line-soft);
-  }
-
-  .st-policy-table td {
-    display: block;
-    padding: 0;
-    border: 0;
-  }
-
-  .st-policy-table td:first-child {
-    flex: 1;
-    min-width: 0;
-    white-space: normal;
-  }
-
-  .st-policy-table td:nth-child(3),
-  .st-policy-table td:nth-child(4) {
-    font-size: 12px;
-  }
-
-  .st-policy-table td:nth-child(3) {
-    flex-basis: auto;
-  }
-
-  .st-policy-table tr::after {
-    content: '';
-    order: 3;
-    flex-basis: 100%;
-  }
-
-  .st-policy-table td:nth-child(2) {
-    order: 2;
-  }
-
-  .st-policy-table td:nth-child(3),
-  .st-policy-table td:nth-child(4) {
-    order: 4;
-    color: var(--wf-muted);
-  }
-
-  /* 付いていない権限は 2 行目を出さない */
-  .st-policy-table td.st-empty {
-    display: none;
   }
 }
