@@ -31,6 +31,13 @@ describe('ScheduleDetailModal', () => {
     expect(onEdit).toHaveBeenCalledOnce()
   })
 
+  it('メモが空の予定は、メモの見出しごと出さない', () => {
+    render(<Normal schedule={{ ...Normal.args.schedule!, description: '' }} />)
+    expect(screen.queryByRole('region', { name: 'メモ' })).not.toBeInTheDocument()
+    expect(screen.queryByTestId('schedule-detail-memo')).not.toBeInTheDocument()
+    expect(screen.queryByText('なし')).not.toBeInTheDocument()
+  })
+
   it('キャンセルした予定は理由を出し、編集のボタンを出さない', () => {
     render(<Cancelled />)
     expect(screen.getByTestId('schedule-detail-cancel')).toHaveTextContent(
