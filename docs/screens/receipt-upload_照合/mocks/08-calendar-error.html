@@ -45,7 +45,19 @@
             <div class="wf-site-main">
               <main class="ru-main">
                 <h1 class="wf-heading" data-m="4">照合</h1>
-                <p class="ru-lead" data-m="5">予定と、電子カルテから書き出した実績の CSV を比べ、食い違いを不整合、予定のみ、実績のみ、整合の 4 つに分けます。</p>
+                <div class="wf-more ru-lead" data-m="5">
+                  <p>予定と、電子カルテから書き出した実績を比べ、食い違いを見つけます。</p>
+                  <span class="wf-btn wf-btn--text wf-more__toggle" aria-expanded="false" data-open="receipt-more" data-testid="receipt-more">詳しく</span>
+                  <div class="wf-more__body" data-panel="receipt-more" data-testid="receipt-more-text">
+                    <p>訪問日、利用者名、主訪問者が同じ予定と実績を比べ、結果を次の 4 つに分けます。</p>
+                    <ul>
+                      <li>不整合データ: 予定と実績の両方があり、時間、サービス内容、加算のどれかが合いません。</li>
+                      <li>予定のみ: 予定はあり、実績がありません。</li>
+                      <li>実績のみ: 実績はあり、予定がありません。</li>
+                      <li>整合データ: 予定と実績の両方があり、合っています。</li>
+                    </ul>
+                  </div>
+                </div>
                 <form class="ru-form" data-testid="receipt-check-form">
                   <div class="ru-field">
                     <span class="wf-label">予定の取り方</span>
@@ -62,7 +74,7 @@
                   <div class="ru-field">
                     <span class="wf-label">実績の CSV</span>
                     <div class="wf-input ru-file" data-m="8" data-testid="receipt-visits-file"><span class="wf-btn">ファイルを選択</span><span>visits.csv</span></div>
-                    <span class="ru-hint">電子カルテから書き出した CSV。UTF-8 か Shift_JIS で、10 MB まで。</span>
+                    <span class="ru-hint">電子カルテから書き出した CSV。10 MB まで。</span>
                   </div>
                   <div class="ru-error" role="alert" data-m="9" data-testid="receipt-check-error">
                     <p class="wf-alert">Google カレンダーから予定を取れませんでした。時間をおいて、もう一度照合してください。</p>
