@@ -47,6 +47,14 @@ describe('ScheduleFormModal', () => {
     })
   })
 
+  it('利用者の候補に、利用の終了の利用者を出さない', async () => {
+    render(<Visit />)
+
+    await userEvent.click(screen.getByTestId('schedule-field-patient'))
+    expect(screen.getByTestId('patient-select-option-patient-1')).toBeInTheDocument()
+    expect(screen.queryByTestId('patient-select-option-patient-5')).not.toBeInTheDocument()
+  })
+
   it('サービスコードを変えると、提供時間をそのコードの上限にする', async () => {
     render(<Visit />)
     await userEvent.click(screen.getByTestId('service-code-訪看I4'))
