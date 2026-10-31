@@ -20,6 +20,8 @@ export type SiteLayoutProps = {
   account?: ReactNode
   /** 幅 768px 以上で、ナビゲーションと画面の中身の間に置く欄。予定のカレンダーの日付と絞り込みを置く。 */
   sidebar?: ReactNode
+  /** false なら、左の欄を描いたまま隠す。たたんでも、中の入力の途中の状態と、開閉するボタンの aria-controls の参照先を残す。 */
+  isSidebarOpen?: boolean
   children: ReactNode
 }
 
@@ -35,6 +37,7 @@ export const SiteLayout = ({
   startsWithRail = false,
   account,
   sidebar,
+  isSidebarOpen = true,
   children,
 }: SiteLayoutProps) => {
   const isDesktop = useIsDesktop()
@@ -51,6 +54,7 @@ export const SiteLayout = ({
           <button
             aria-controls={navId}
             aria-expanded={isDesktop ? !isRail : isDrawerOpen}
+            aria-haspopup={isDesktop ? undefined : 'dialog'}
             aria-label="メニュー"
             className="grid size-11 shrink-0 place-items-center rounded-8 hover:bg-surface-subtle focus-visible:focus-ring"
             data-testid="site-nav-toggle"
@@ -86,7 +90,10 @@ export const SiteLayout = ({
           </Drawer>
         )}
         {isDesktop && sidebar !== undefined && (
-          <aside className="w-72 shrink-0 overflow-auto border-r border-border bg-surface">
+          <aside
+            className="w-72 shrink-0 overflow-auto border-r border-border bg-surface"
+            hidden={!isSidebarOpen}
+          >
             {sidebar}
           </aside>
         )}

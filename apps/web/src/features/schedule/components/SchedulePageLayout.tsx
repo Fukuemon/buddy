@@ -43,7 +43,8 @@ export const SchedulePageLayout = ({ reviewBadge, children }: SchedulePageLayout
     <SiteLayoutContainer
       current="/schedule"
       reviewBadge={reviewBadge}
-      sidebar={isSidebarOpen ? <div id={sidebarId}>{renderSidebar()}</div> : undefined}
+      isSidebarOpen={isSidebarOpen}
+      sidebar={<div id={sidebarId}>{renderSidebar()}</div>}
       startsWithRail
     >
       {!isDesktop && (

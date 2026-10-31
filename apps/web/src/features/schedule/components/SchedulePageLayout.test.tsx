@@ -37,8 +37,8 @@ describe('SchedulePageLayout', () => {
 
     await userEvent.click(toggle)
     expect(toggle).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByTestId('mini-calendar')).not.toBeInTheDocument()
-    expect(screen.queryByRole('navigation', { name: '職員の絞り込み' })).not.toBeInTheDocument()
+    expect(screen.getByTestId('mini-calendar')).not.toBeVisible()
+    expect(sidebar).toBeInTheDocument()
 
     await userEvent.click(toggle)
     expect(toggle).toHaveAttribute('aria-expanded', 'true')

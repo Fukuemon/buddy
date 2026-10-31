@@ -12,6 +12,7 @@ export type SiteLayoutContainerProps = {
   reviewBadge?: ReactNode
   startsWithRail?: SiteLayoutProps['startsWithRail']
   sidebar?: SiteLayoutProps['sidebar']
+  isSidebarOpen?: SiteLayoutProps['isSidebarOpen']
   children: ReactNode
 }
 
@@ -24,6 +25,7 @@ export const SiteLayoutContainer = ({
   reviewBadge,
   startsWithRail,
   sidebar,
+  isSidebarOpen,
   children,
 }: SiteLayoutContainerProps) => {
   const { viewer, mode } = useRouteContext({ from: '__root__' })
@@ -35,6 +37,7 @@ export const SiteLayoutContainer = ({
       current={current}
       navBadges={{ review: reviewBadge }}
       navGroups={siteNavGroups(viewer?.canManageStaff === true)}
+      isSidebarOpen={isSidebarOpen}
       sidebar={sidebar}
       startsWithRail={startsWithRail}
     >
