@@ -11,7 +11,7 @@ describe('PageLead', () => {
   it('続きの説明を閉じた状態で始め、「詳しく」で開閉する', async () => {
     render(<Default />)
     const toggle = screen.getByRole('button', { name: '詳しく' })
-    const more = screen.getByTestId('page-lead-more')
+    const more = screen.getByTestId('page-more-text')
     expect(toggle).toHaveAttribute('aria-expanded', 'false')
     expect(more).not.toBeVisible()
 

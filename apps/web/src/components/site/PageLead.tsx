@@ -6,7 +6,7 @@ export type PageLeadProps = {
   children: ReactNode
   /** 「詳しく」で開く続きの説明。初めてのときだけ要る説明を入れる。 */
   more: ReactNode
-  /** 開くボタンに `<testId>-toggle`、続きの説明に `<testId>-more` を付ける。 */
+  /** 開くボタンの testid。続きの説明には `<testId>-text` を付ける。画面仕様書の `<画面 ID>-more` に当たる。 */
   testId: string
 }
 
@@ -24,7 +24,7 @@ export const PageLead = ({ children, more, testId }: PageLeadProps) => {
         aria-controls={moreId}
         aria-expanded={isOpen}
         className="inline-flex min-h-11 items-center gap-1.5 rounded-8 px-2 text-label text-primary underline underline-offset-4 focus-visible:focus-ring"
-        data-testid={`${testId}-toggle`}
+        data-testid={testId}
         onClick={() => setIsOpen((open) => !open)}
         type="button"
       >
@@ -39,7 +39,7 @@ export const PageLead = ({ children, more, testId }: PageLeadProps) => {
       </button>
       <div
         className="border-l-4 border-border bg-surface-subtle px-4 py-3 text-body"
-        data-testid={`${testId}-more`}
+        data-testid={`${testId}-text`}
         hidden={!isOpen}
         id={moreId}
       >

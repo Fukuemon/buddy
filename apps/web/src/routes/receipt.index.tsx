@@ -18,7 +18,7 @@ function ReceiptPage() {
     <SiteLayoutContainer current="/receipt" reviewBadge={<CalendarReviewBadgeContainer />}>
       <main className="flex flex-col gap-6 p-6">
         <h1 className="text-heading-md">照合</h1>
-        <PageLead more={<ReceiptCategoryGuide />} testId="receipt-lead">
+        <PageLead more={<ReceiptCategoryGuide />} testId="receipt-more">
           予定と、電子カルテから書き出した実績を比べ、食い違いを見つけます。
         </PageLead>
         <ReceiptCheckFormContainer />
