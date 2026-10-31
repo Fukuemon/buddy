@@ -5,7 +5,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { LOGIN_EMAIL, LOGIN_STAFF, RECEIPT_TESTDATA } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, PHONE_VIEWPORT, recordPrEvidence } from '../../fixtures/evidence'
 import { signInAtBroker } from '../../screens/login'
-import { receiptResultRow } from '../../selectors/receipt'
+import { receiptResultHeaderCells, receiptResultRow } from '../../selectors/receipt'
 
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー）`
 
@@ -80,6 +80,55 @@ test.describe('照合の結果', () => {
             expect((labelBox?.x ?? 0) - (tableBox?.x ?? 0)).toBeGreaterThanOrEqual(0)
             expect((labelBox?.x ?? 0) - (tableBox?.x ?? 0)).toBeLessThan(40)
             await shot('表を右へ送っても、「不整合データ（3 件）」の文字が表の左端に残る')
+          },
+        )
+      })
+
+      test(`${prefix}結果の表を横に送った場合、訪問日と利用者名の列が左端に残ること`, async ({
+        browser,
+      }) => {
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'receipt-result-sticky-columns',
+            title:
+              'スマートフォンの幅で照合の結果の表を右端まで送っても、訪問日と利用者名の 2 列が表の左端に残る',
+            actor: ACTOR,
+            variant,
+            viewport: PHONE_VIEWPORT,
+          },
+          signIn,
+          async ({ page, step, check: shot }) => {
+            await page.goto('/receipt')
+            await step('照合の画面を、幅 390px で開いている')
+
+            await step('予定と実績のダミーの CSV を選び、照合する')
+            await check(page, RECEIPT_TESTDATA.schedules, RECEIPT_TESTDATA.visits)
+            const table = page.getByTestId('receipt-result-table')
+            const headers = receiptResultHeaderCells(page)
+            const date = headers.nth(0)
+            const patient = headers.nth(1)
+            const staff = headers.nth(2)
+            await table.scrollIntoViewIfNeeded()
+            await expect(date).toHaveText('訪問日')
+            await expect(patient).toHaveText('利用者名')
+            await shot('結果の表の左端に、訪問日と利用者名の列がある')
+
+            await step('結果の表を右端まで送る')
+            await table.hover()
+            await page.mouse.wheel(2000, 0)
+            // 送った後も、3 列目（主訪問者）は表の外へ出て、2 列目までは表の左端からの位置を変えない
+            await expect(staff).not.toBeInViewport()
+            const tableBox = await table.boundingBox()
+            const dateBox = await date.boundingBox()
+            const patientBox = await patient.boundingBox()
+            expect(Math.round((dateBox?.x ?? -1) - (tableBox?.x ?? 0))).toBe(0)
+            expect(Math.round((patientBox?.x ?? -1) - (dateBox?.x ?? 0))).toBe(
+              Math.round(dateBox?.width ?? 0),
+            )
+            await shot(
+              '表を右端まで送っても、訪問日と利用者名の 2 列が表の左端に残り、主訪問者から右の列だけが送られる',
+            )
           },
         )
       })
