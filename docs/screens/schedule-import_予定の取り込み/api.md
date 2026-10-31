@@ -1,6 +1,10 @@
 # schedule-import API との対応
 
-[予定の取り込み](index.md) の項目と、web の型と OpenAPI の項目の対応。画面を作る人と API を変える人が読む。web は `BuddyApi.calendars`（`apps/web/src/api/client.ts`）で API を呼ぶ。型は、OpenAPI の型をそのまま使う（`apps/web/src/api/types.ts` の `ImportPreview`、`ImportDecision`、`ImportResult`）。結び付けの操作は、[カレンダーの連携の API との対応](../schedule-link_カレンダーの連携/api.md) にある。
+[予定の取り込み](index.md) の項目と、web の型と OpenAPI の項目の対応。  
+画面を作る人と API を変える人が読む。  
+web は `BuddyApi.calendars`（`apps/web/src/api/client.ts`）で API を呼ぶ。  
+型は、OpenAPI の型をそのまま使う（`apps/web/src/api/types.ts` の `ImportPreview`、`ImportDecision`、`ImportResult`）。  
+結び付けの操作は、[カレンダーの連携の API との対応](../schedule-link_カレンダーの連携/api.md) にある。
 
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
@@ -19,7 +23,8 @@
 
 ## 操作
 
-2 つの操作は、事業所の確認の後に、ログインした職員が職員の管理の権限（`staff.manage`）を持つかを確認し、持たなければ 403（`forbidden`）を返す。パスの `external_calendar_id` は、buddy の `external_calendars.id` である。
+2 つの操作は、事業所の確認の後に、ログインした職員が職員の管理の権限（`staff.manage`）を持つかを確認し、持たなければ 403（`forbidden`）を返す。  
+パスの `external_calendar_id` は、buddy の `external_calendars.id` である。
 
 | operationId | メソッドとパス | リクエスト | 成功のレスポンス | エラー |
 | --- | --- | --- | --- | --- |

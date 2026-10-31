@@ -1,6 +1,7 @@
 # account-login API との対応
 
-[ログイン](index.md) の項目と、web の型と OpenAPI の項目の対応。この画面はブローカーの画面で、web の型と OpenAPI の項目を使わない。
+[ログイン](index.md) の項目と、web の型と OpenAPI の項目の対応。  
+この画面はブローカーの画面で、web の型と OpenAPI の項目を使わない。
 
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
