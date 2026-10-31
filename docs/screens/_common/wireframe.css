@@ -940,6 +940,101 @@ body {
   gap: 12px;
 }
 
+/* 見出しと、その右の ? のヘルプを並べる */
+.wf-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/*
+ * ? のヘルプ。初めてのときだけ要る説明を、? を押したときだけ見出しの下に出す。
+ * 開くボタン .wf-help__toggle と説明 .wf-help__panel を .wf-help で囲み、data-open、data-panel、data-panel-dismiss で開閉する
+ */
+.wf-help {
+  position: relative;
+  display: inline-flex;
+}
+
+.wf-help__toggle {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  border: 1px solid var(--wf-line);
+  border-radius: 50%;
+  color: var(--wf-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.wf-help__panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 5;
+  display: none;
+  width: max-content;
+  max-width: min(320px, calc(100cqw - 32px));
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: var(--wf-radius);
+  background: var(--wf-surface);
+  box-shadow: 0 0 0 1px var(--wf-line);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.wf-help__panel.is-open {
+  display: block;
+}
+
+/*
+ * 「詳しく」で開く補足。常に出す 1 文の後に「詳しく」を置き、押すと続きの説明を開き、もう一度押すと閉じる。
+ * 開くボタン .wf-more__toggle と説明 .wf-more__body を .wf-more で囲み、data-open と data-panel で開閉する
+ */
+.wf-more {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  max-width: 672px;
+}
+
+.wf-more > p {
+  margin: 0;
+}
+
+.wf-more__toggle::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentcolor;
+  border-bottom: 1.5px solid currentcolor;
+  transform: translateY(-2px) rotate(45deg);
+}
+
+.wf-more__toggle[aria-expanded='true']::after {
+  transform: translateY(1px) rotate(-135deg);
+}
+
+.wf-more__body {
+  display: none;
+  padding: 12px 16px;
+  border-left: 3px solid var(--wf-line-soft);
+  background: var(--wf-fill);
+}
+
+.wf-more__body.is-open {
+  display: block;
+}
+
+.wf-more__body > :first-child {
+  margin-top: 0;
+}
+
+.wf-more__body > :last-child {
+  margin-bottom: 0;
+}
+
 /* 見せずに、読み上げにだけ出す文字（操作の列の見出しなど） */
 .wf-visually-hidden {
   position: absolute;
