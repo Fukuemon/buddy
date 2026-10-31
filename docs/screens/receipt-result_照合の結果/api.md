@@ -8,7 +8,7 @@ OpenAPI の項目は、`createCheck`（`POST /v1/checks`）のレスポンスの
 | ログインした職員 | 職員の名前 | `Viewer.staffName` | `getMe` の `username` |
 | ページのタイトル | 予定の取り方 | `ReceiptResult.month` | リクエストの `month` |
 | 区分ごとの件数 | 4 つの区分の件数 | `ReceiptReport.summary` | `summary` |
-| 照合に使わなかった予定 | 開始の日時と理由 | `ReceiptReport.warnings` | `warnings[].start`、`warnings[].message` |
+| 照合に使わなかった予定 | 開始の日時と理由 | `ReceiptReport.warnings`（`ReceiptWarning`） | `warnings[].start`、`warnings[].reason`、`warnings[].column` |
 | 結果の表 | 対の一覧 | `ReceiptReport.rows` | `rows` |
 | 区分の見出しの行 | 区分 | `ReceiptRow.category` | `rows[].category` |
 | 結果の行 | 訪問日、利用者名、主訪問者 | `ReceiptRow` | `rows[].date`、`client`、`staff` |
@@ -22,4 +22,5 @@ OpenAPI の項目は、`createCheck`（`POST /v1/checks`）のレスポンスの
   - 終了時間の許容範囲は `checks.schedule_elapsed` と `checks.visit_elapsed` で決める
   - 提供時間の許容範囲は `checks.schedule_duration` と `checks.visit_duration` で決める。4 つとも `ok`、`minutes`、`range` を持つ
   - 加算は `checks.additions.ok`
+- 照合に使わなかった予定の理由の文は、`apps/web/src/features/receipt/lib/errorMessage.ts` の `warningReasonText` が `reason` と `column` から作る。`warnings[].message` は画面に出さない。
 - 印と CSV は、`apps/web/src/features/receipt/lib/reportCells.ts` が、照合の API の `tools/parity/report` と同じ付け方で作る。

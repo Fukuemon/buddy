@@ -20,7 +20,11 @@ describe('ReceiptResultView', () => {
 
   it('照合に使わなかった予定があるときだけ一覧を出す', () => {
     const { unmount } = render(<Default />)
-    expect(screen.getByTestId('receipt-warnings').textContent).toContain('2024-04-05 10:00')
+    const warnings = screen.getByTestId('receipt-warnings').textContent
+    expect(warnings).toContain(
+      '2024-04-05 10:00: タイトルが「【サービス内容】利用者名」の形になっていません。',
+    )
+    expect(warnings).not.toContain('の組がない')
     unmount()
     render(<WithoutWarnings />)
     expect(screen.queryByTestId('receipt-warnings')).toBeNull()

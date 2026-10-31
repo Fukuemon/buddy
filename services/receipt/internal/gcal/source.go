@@ -169,11 +169,10 @@ func (s monthSource) Schedules(ctx context.Context) ([]record.Record, []record.W
 					staff = evs.Summary
 				}
 				for _, ev := range evs.Items {
-					rec, ok, msg := s.convert(ev, staff)
-					if msg != "" {
-						warns = append(warns, record.Warning{
-							CalendarID: cal.ID, EventID: ev.Id, Start: ev.Start.DateTime, Message: msg,
-						})
+					rec, ok, problem := s.convert(ev, staff)
+					if problem != nil {
+						problem.CalendarID, problem.EventID, problem.Start = cal.ID, ev.Id, ev.Start.DateTime
+						warns = append(warns, *problem)
 					}
 					if ok {
 						recs = append(recs, rec)
@@ -196,32 +195,35 @@ func (s monthSource) Schedules(ctx context.Context) ([]record.Record, []record.W
 }
 
 // convert は、予定を Record にする。照合に使わない予定では ok が false になる。
-// 解釈できずに除いた予定では、warning に理由を返す。
-func (s monthSource) convert(ev *calendar.Event, staff string) (rec record.Record, ok bool, warning string) {
+// 解釈できずに除いた予定では、problem に理由を返す。problem のカレンダーと予定と開始の日時は、呼ぶ側が埋める。
+func (s monthSource) convert(ev *calendar.Event, staff string) (rec record.Record, ok bool, problem *record.Warning) {
+	skip := func(reason record.Reason, column, message string) (record.Record, bool, *record.Warning) {
+		return record.Record{}, false, &record.Warning{Reason: reason, Column: column, Message: message}
+	}
 	if ev.Status == "cancelled" || ev.Start == nil || ev.End == nil || ev.Start.DateTime == "" {
-		return record.Record{}, false, ""
+		return record.Record{}, false, nil
 	}
 	if !gcaltitle.IsVisitTitle(ev.Summary) {
-		return record.Record{}, false, ""
+		return record.Record{}, false, nil
 	}
 	start, err := time.Parse(time.RFC3339, ev.Start.DateTime)
 	if err != nil {
-		return record.Record{}, false, "開始の日時を読めない"
+		return skip(record.ReasonUnreadableTime, "", "開始の日時を読めない")
 	}
 	end, err := time.Parse(time.RFC3339, ev.End.DateTime)
 	if err != nil {
-		return record.Record{}, false, "終了の日時を読めない"
+		return skip(record.ReasonUnreadableTime, "", "終了の日時を読めない")
 	}
 	start, end = start.In(tokyo), end.In(tokyo)
 	if start.Before(s.start) || !start.Before(s.end) {
-		return record.Record{}, false, ""
+		return record.Record{}, false, nil
 	}
 	service, client, err := gcaltitle.ParseTitle(ev.Summary)
 	if err != nil {
-		return record.Record{}, false, err.Error()
+		return skip(record.ReasonUnreadableTitle, "", err.Error())
 	}
 	if start.Format(time.DateOnly) != end.Format(time.DateOnly) {
-		return record.Record{}, false, "日付をまたぐ予定は扱わない"
+		return skip(record.ReasonSpansDays, "", "日付をまたぐ予定は扱わない")
 	}
 
 	row := csvio.NewRow(0, map[string]string{
@@ -235,11 +237,9 @@ func (s monthSource) convert(ev *calendar.Event, staff string) (rec record.Recor
 	})
 	recs, rowErrs := normalize.Schedules([]csvio.Row{row})
 	if len(rowErrs) > 0 {
-		msgs := make([]string, len(rowErrs))
-		for i, e := range rowErrs {
-			msgs[i] = e.Column + ": " + e.Message
-		}
-		return record.Record{}, false, strings.Join(msgs, "。")
+		// 画面は 1 つの予定に 1 つの理由を出す。直して照合し直せば、残りの誤りも次の警告に出る
+		e := rowErrs[0]
+		return skip(e.Reason, e.Column, e.Column+": "+e.Message)
 	}
-	return recs[0], true, ""
+	return recs[0], true, nil
 }

@@ -5,7 +5,7 @@
   font-weight: 700;
 }
 
-/* 共有の手順の案内。手順の番号付きの一覧と、サービスアカウントのメールアドレスを縦に積む */
+/* カレンダーの共有の枠。共有する相手のメールアドレスと、「詳しく」で開く共有の手順を縦に積む */
 .sl-guide {
   display: grid;
   gap: 12px;
@@ -13,10 +13,14 @@
 }
 
 .sl-steps {
-  display: grid;
+  display: none;
   gap: 6px;
   margin: 0;
-  padding-left: 20px;
+  padding-left: 36px;
+}
+
+.sl-steps.is-open {
+  display: grid;
 }
 
 .sl-account {
@@ -40,24 +44,6 @@
   overflow-wrap: anywhere;
 }
 
-.sl-muted {
-  color: var(--wf-muted);
-}
-
-.sl-actions__inner {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.sl-visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-}
-
 .sl-result {
   margin: 0;
   padding: 10px 12px;
@@ -66,62 +52,31 @@
   font-weight: 700;
 }
 
-/* 幅 768px 未満では、職員の一覧の行を、見出しと値の組を縦に積んだ箱にする */
+/* 職員の一覧は詳細の画面を持たないので、行を押せる形にせず、右端に行の操作を置く */
+.sl-table tbody tr {
+  cursor: auto;
+}
+
+.sl-table .sl-cell-action {
+  width: 1%;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* 幅 768px 未満では、行の操作を 1 行目の右端に置く。「›」の場所を空けない */
 @container screen (width < 768px) {
-  .sl-table thead {
+  .sl-table tbody tr {
+    padding-right: 12px;
+  }
+
+  .sl-table .sl-cell-action {
+    order: 2;
+    width: auto;
+    margin-left: auto;
+  }
+
+  /* 値の無いセルは 2 行目に出さず、「・」だけが残らないようにする。読み上げの文は、セルの中の見えない文で補う */
+  .sl-table .sl-cell-empty {
     display: none;
   }
-
-  .sl-table,
-  .sl-table tbody,
-  .sl-table tr,
-  .sl-table td {
-    display: block;
-  }
-
-  .sl-table {
-    border-collapse: separate;
-  }
-
-  .sl-table tr {
-    margin-bottom: 12px;
-    border: 1px solid var(--wf-line-soft);
-    border-radius: var(--wf-radius);
-  }
-
-  .sl-table td {
-    border: 0;
-    overflow-wrap: anywhere;
-  }
-
-  .sl-table td[data-label]::before {
-    content: attr(data-label);
-    display: block;
-    color: var(--wf-muted);
-    font-size: 12px;
-  }
-
-  .sl-actions__inner {
-    justify-content: flex-start;
-  }
-}
-
-/* 共有の手順の見出しの行。見出しの右に、手順を開閉するボタンを置く */
-.sl-guide__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 12px;
-}
-
-.sl-help {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* 共有の手順は、ボタンで開いている間だけ出す */
-.sl-steps:not(.is-open) {
-  display: none;
 }
