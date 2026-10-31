@@ -940,8 +940,12 @@ body {
   gap: 12px;
 }
 
-/* 見出しと、その右の ? のヘルプを並べる */
+/*
+ * 見出しと、その右の ? のヘルプを並べる。
+ * ヘルプの説明は、? ではなく見出しの左端にそろえて開く。? の右から開くと、幅 768px 未満で説明が画面の右端で切れるため
+ */
 .wf-title {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -949,10 +953,9 @@ body {
 
 /*
  * ? のヘルプ。初めてのときだけ要る説明を、? を押したときだけ見出しの下に出す。
- * 開くボタン .wf-help__toggle と説明 .wf-help__panel を .wf-help で囲み、data-open、data-panel、data-panel-dismiss で開閉する
+ * 開くボタン .wf-help__toggle と説明 .wf-help__panel を .wf-help で囲み、.wf-title の中に置き、data-open、data-panel、data-panel-dismiss で開閉する
  */
 .wf-help {
-  position: relative;
   display: inline-flex;
 }
 
