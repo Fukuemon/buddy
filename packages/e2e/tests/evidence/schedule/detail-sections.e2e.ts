@@ -10,6 +10,8 @@ import {
 const ACTOR = 'ログインなし（Storybook の story）'
 const VISIT_URL = storyUrl('画面-schedule-scheduledetailmodal--visit')
 const NORMAL_URL = storyUrl('画面-schedule-scheduledetailmodal--normal')
+const TWO_COLUMN_TRACKS = /^\S+ \S+$/
+const ONE_COLUMN_TRACK = /^\S+$/
 
 const openDetail = (url: string) => async (page: Page) => {
   await page.goto(url)
@@ -40,10 +42,9 @@ test.describe('予定のカレンダー', () => {
               '2026年10月20日（火） 09:00〜09:29',
             )
             await expect(page.getByTestId('schedule-detail-visit')).toContainText('加藤 春子')
-            // 2 列の格子は、列の幅を 2 つ持つ
             await expect(page.getByTestId('schedule-detail-visit-fields')).toHaveCSS(
               'grid-template-columns',
-              /^\S+ \S+$/,
+              TWO_COLUMN_TRACKS,
             )
             await expect(page.getByTestId('schedule-detail-memo')).toBeVisible()
             await check(
@@ -93,10 +94,9 @@ test.describe('予定のカレンダー', () => {
           async ({ page, step, check }) => {
             await openDetail(VISIT_URL)(page)
             await step('幅 390px で、訪問の予定の詳細を開いている')
-            // 1 列の格子は、列の幅を 1 つだけ持つ
             await expect(page.getByTestId('schedule-detail-visit-fields')).toHaveCSS(
               'grid-template-columns',
-              /^\S+$/,
+              ONE_COLUMN_TRACK,
             )
             await check('訪問の情報の 3 つの項目が、1 列で縦に並ぶ')
           },

@@ -14,7 +14,6 @@ const ACTOR = 'ログインなし（Storybook の story）'
 // ミニカレンダーの今日と表示の期間を毎回同じにするため、ブラウザの時計を 2026/10/25（日）10:00 から進める。
 // ブラウザは Asia/Tokyo で動くので、spec を流す環境の時間帯によらないよう時差を付けて書く
 const NOW = new Date('2026-10-25T10:00:00+09:00')
-// フィードバックを受けた画面の幅
 const FEEDBACK_VIEWPORT = { width: 1409, height: 778 }
 
 const open = async (page: Page, story: string) => {
