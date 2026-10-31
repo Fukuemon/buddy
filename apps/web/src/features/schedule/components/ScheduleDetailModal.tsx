@@ -29,6 +29,7 @@ const SectionHeading = ({ id, children }: { id: string; children: React.ReactNod
 /**
  * 予定の詳細をモーダルで出す。
  * 日時を見出しにし、その下に種類と担当者を、訪問の予定では訪問の情報を、最後にメモをセクションに分けて並べる。
+ * 見出しと値は、全てのセクションで同じ 1 列の並びにし、値の列の位置をそろえる。
  * キャンセルした予定は、先頭にキャンセルの理由を出し、編集のボタンを出さない。
  */
 export const ScheduleDetailModal = ({
@@ -79,10 +80,7 @@ export const ScheduleDetailModal = ({
         {schedule.visit !== undefined && (
           <section aria-labelledby={visitHeadingId} data-testid="schedule-detail-visit">
             <SectionHeading id={visitHeadingId}>訪問の情報</SectionHeading>
-            <dl
-              className="grid desktop:grid-cols-2 desktop:gap-x-6"
-              data-testid="schedule-detail-visit-fields"
-            >
+            <dl data-testid="schedule-detail-visit-fields">
               <Row label="利用者">{patient?.name ?? '利用者不明'}</Row>
               <Row label="サービスコード">{schedule.visit.serviceCode}</Row>
               <Row label="訪問の種類">
