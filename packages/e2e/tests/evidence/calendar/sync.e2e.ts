@@ -161,16 +161,18 @@ test.describe('確認が必要な予定', () => {
               }).toPass()
               await expect(
                 reviewRow(page, scheduleId).getByTestId(/^calendar-review-reason-/),
-              ).toHaveText(
-                'buddy と Google カレンダーの両方で予定が変わりました。どちらの内容に合わせるかを選んでください。',
-              )
+              ).toHaveText('buddy と Google カレンダーの両方で予定が変わりました。')
               await check(
-                `${SATO.name} の今回の予定の行（最後に変わった日時がいちばん新しい行）が、「buddy と Google カレンダーの両方で予定が変わりました。…」の理由で出る`,
+                `${SATO.name} の今回の予定の行（最後に変わった日時がいちばん新しい行）が、「buddy と Google カレンダーの両方で予定が変わりました。」の理由で出る`,
               )
               await holdGoogleChanges(request, false)
 
-              await step('「Google の内容に合わせる」を押し、確認のダイアログで合わせる')
-              await reviewRow(page, scheduleId)
+              await step(
+                '今回の予定の行を押し、出たダイアログの「Google の内容に合わせる」を押し、確認のダイアログで合わせる',
+              )
+              await reviewRow(page, scheduleId).click()
+              await page
+                .getByTestId('calendar-review-dialog')
                 .getByTestId(/^calendar-review-accept-/)
                 .click()
               const dialog = page.getByTestId('calendar-accept-dialog')

@@ -26,7 +26,7 @@ test.describe('予定の取り込み', () => {
         await page.getByTestId('calendar-link-input').fill('nobody@example.com')
         await page.getByTestId('calendar-link-check').click()
         await expect(page.getByTestId('calendar-link-check-result')).toContainText(
-          'このカレンダーを読めません。カレンダーをこの事業所の buddy のサービスアカウントに共有したか',
+          'このカレンダーを読めません。カレンダーが、上に出ている buddy のメールアドレスに共有されているか',
         )
         await expect(page.getByTestId('calendar-link-submit')).toBeDisabled()
 
@@ -41,6 +41,7 @@ test.describe('予定の取り込み', () => {
       })
 
       await test.step('11 月をプレビューすると、件数と取り込まない理由が出る', async () => {
+        await page.getByTestId(`calendar-link-menu-${MORI.id}`).click()
         await page.getByTestId(`calendar-link-import-${MORI.id}`).click()
         await expect(page).toHaveURL(/\/schedule\/import/)
         await expect(page.getByTestId('calendar-import-staff')).toHaveValue(MORI.id)
