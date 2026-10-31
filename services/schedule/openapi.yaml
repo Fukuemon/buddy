@@ -772,6 +772,26 @@ paths:
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/patients/{patient_id}:
+    get:
+      tags: [patient]
+      operationId: getPatient
+      summary: 利用者を取得する
+      description: |
+        利用者を 1 人返す。利用の終了の利用者も返し、ended_at に利用の終了にした時刻を入れる。
+        職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+      parameters:
+        - { name: patient_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
+      responses:
+        "200":
+          description: 利用者
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Patient" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
     put:
       tags: [patient]
       operationId: updatePatient
@@ -841,6 +861,28 @@ paths:
                 schedules:
                   schedules: [{ id: 01M3TC5H00QV17BC0J9V3393ZP, date: "2026-11-02", start_time: "09:00", end_time: "10:00" }]
                   recurring_schedules: []
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/patients/{patient_id}/remaining_schedules:
+    get:
+      tags: [patient]
+      operationId: getPatientRemainingSchedules
+      summary: 利用者に残る予定を返す
+      description: |
+        利用者を利用の終了にする前に、その日（事業所の現地の日付）以降の予定と、その日以降に終わる繰り返しの予定を返す。
+        一覧は、利用の終了の 409（patient_has_schedules）が返す一覧と同じ規則で作る。何も書かない。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+      parameters:
+        - { name: patient_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
+      responses:
+        "200":
+          description: その日以降に残る予定と繰り返しの予定
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PatientSchedules" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/patients/{patient_id}/resume_service:

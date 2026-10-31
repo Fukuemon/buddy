@@ -1,1 +1,21 @@
 /* 予定の編集のモックだけの見た目。共通の見た目は _common/wireframe.css にある */
+
+/* 入力の欄と、その下の誤りの文を縦に積む（packages/ui の FieldFrame と同じ） */
+.se-field {
+  display: grid;
+  gap: 4px;
+}
+
+/* 誤りのある入力の欄は、枠を危険の色で太くする */
+.se-input--invalid {
+  border-color: var(--wf-danger);
+}
+
+.se-error {
+  color: var(--wf-danger);
+}
+
+/* 誤りの文で片方の欄が高くなっても、隣の入力の欄を伸ばさない */
+.se-row {
+  align-items: start;
+}

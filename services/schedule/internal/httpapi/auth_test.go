@@ -147,6 +147,10 @@ func TestForbidden(t *testing.T) {
 		{name: "ほかの事業所の予定の更新", method: http.MethodPut, target: "/v1/schedules/" + otherScheduleID, body: validSlotBody, org: testOrgID},
 		{name: "ほかの事業所の予定のキャンセル", method: http.MethodPost, target: "/v1/schedules/" + otherScheduleID + "/cancel",
 			body: `{"reason":"体調不良"}`, org: testOrgID},
+		// 利用者の 2 つの読み取りは、職員の取得と同じく、パスの ID が指す事業所で拒む（#353 の検証の観点 4）。
+		{name: "ほかの事業所の職員", method: http.MethodGet, target: "/v1/users/" + otherScheduleID, org: testOrgID},
+		{name: "ほかの事業所の利用者", method: http.MethodGet, target: "/v1/patients/" + otherScheduleID, org: testOrgID},
+		{name: "ほかの事業所の利用者に残る予定", method: http.MethodGet, target: "/v1/patients/" + otherScheduleID + "/remaining_schedules", org: testOrgID},
 		{name: "組織のクレームがない", method: http.MethodGet, target: "/v1/facilities/" + facilityID + "/schedules"},
 		{name: "職員を特定できない組織", method: http.MethodGet, target: "/v1/facilities/" + facilityID + "/schedules", org: "org-x"},
 	}
