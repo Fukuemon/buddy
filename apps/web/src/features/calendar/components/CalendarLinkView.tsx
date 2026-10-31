@@ -62,7 +62,11 @@ export const CalendarLinkView = ({
             を動かしている管理者に、Google カレンダーの設定を頼んでください。
           </p>
         ) : (
-          <CalendarShareGuide copy={copy} serviceAccount={state.serviceAccount} />
+          <CalendarShareGuide
+            copy={copy}
+            serviceAccount={state.serviceAccount}
+            startsWithStepsOpen={state.rows.every((row) => row.calendar === undefined)}
+          />
         )}
         <CalendarLinkTable
           canLink={state.serviceAccount !== null}

@@ -1,11 +1,15 @@
 import { Button } from '@buddy/ui'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
+
+import HelpIcon from '#/assets/icons/help.svg?react'
 
 const COPIED_MS = 2000
 
 export type CalendarShareGuideProps = {
   /** この事業所の buddy のサービスアカウントのメールアドレス。 */
   serviceAccount: string
+  /** true なら、共有の手順を開いた状態で始める。どの職員も結び付けていない事業所で渡す。 */
+  startsWithStepsOpen?: boolean
   /** クリップボードにコピーする。デフォルトはブラウザの Clipboard API で、拒まれると reject する。 */
   copy?: (text: string) => Promise<void>
 }
@@ -14,12 +18,16 @@ const writeClipboard = (text: string) => navigator.clipboard.writeText(text)
 
 /**
  * 職員がカレンダーをサービスアカウントに共有する手順と、サービスアカウントのメールアドレス。
+ * メールアドレスは常に出し、1 度覚えれば要らない手順は、見出しの右の「共有の手順」のボタンで開閉する。
  * コピーを押すとメールアドレスをコピーし、2 秒だけボタンの文字を変える。コピーできなければ、メールアドレスの文字を選ぶ。
  */
 export const CalendarShareGuide = ({
   serviceAccount,
+  startsWithStepsOpen = false,
   copy = writeClipboard,
 }: CalendarShareGuideProps) => {
+  const [isStepsOpen, setIsStepsOpen] = useState(startsWithStepsOpen)
+  const stepsId = useId()
   const [copied, setCopied] = useState(false)
   const emailRef = useRef<HTMLElement>(null)
 
@@ -49,8 +57,28 @@ export const CalendarShareGuide = ({
       className="flex flex-col gap-3 rounded-8 border border-border bg-surface-subtle p-4 desktop:px-5"
       data-testid="calendar-link-guide"
     >
-      <h2 className="text-heading-sm">カレンダーを共有する手順</h2>
-      <ol className="flex list-decimal flex-col gap-1.5 pl-5 text-body">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <h2 className="text-heading-sm">カレンダーの共有</h2>
+        <Button
+          aria-controls={stepsId}
+          aria-expanded={isStepsOpen}
+          data-testid="calendar-link-guide-toggle"
+          onClick={() => setIsStepsOpen((open) => !open)}
+          size="S"
+          variant="secondary"
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <HelpIcon aria-hidden="true" height={20} width={20} />
+            共有の手順
+          </span>
+        </Button>
+      </div>
+      <ol
+        className="flex list-decimal flex-col gap-1.5 pl-5 text-body"
+        data-testid="calendar-link-steps"
+        hidden={!isStepsOpen}
+        id={stepsId}
+      >
         <li>
           職員が、Google
           カレンダーの「設定と共有」で、自分のカレンダーの「特定のユーザーまたはグループと共有する」に、次のメールアドレスを足します。

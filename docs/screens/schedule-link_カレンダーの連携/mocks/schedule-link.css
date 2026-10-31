@@ -105,3 +105,23 @@
     justify-content: flex-start;
   }
 }
+
+/* 共有の手順の見出しの行。見出しの右に、手順を開閉するボタンを置く */
+.sl-guide__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.sl-help {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 共有の手順は、ボタンで開いている間だけ出す */
+.sl-steps:not(.is-open) {
+  display: none;
+}
