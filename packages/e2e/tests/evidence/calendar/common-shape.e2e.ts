@@ -222,6 +222,7 @@ test.describe('画面の共通の形', () => {
           await step(`${HAYASHI.name} の行の右端の「…」を押す`)
           await page.getByTestId(`calendar-link-menu-${HAYASHI.id}`).click()
           const menu = page.getByTestId(`calendar-link-menu-list-${HAYASHI.id}`)
+          await page.getByTestId(`calendar-link-remove-${HAYASHI.id}`).scrollIntoViewIfNeeded()
           await expect(commonShapeParts(menu).menuItems).toHaveText(['取り込む', '外す'])
           await check('メニューに「取り込む」と、赤の「外す」がこの順に出る')
         },
