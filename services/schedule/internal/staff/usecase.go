@@ -305,7 +305,7 @@ func (s *Usecase) stop(ctx context.Context, id string, write func(ctx context.Co
 }
 
 // locked は、トランザクションの中で職員 id の事業所をロックし、ロックの後に読み直した職員を返す。
-// 休職、復職、退職、役職を変える操作、権限を外す操作は、このロックで同じ事業所の中で 1 つずつ行う。
+// 休職、復職、退職、役職とチームを変える操作、権限を外す操作は、このロックで同じ事業所の中で 1 つずつ行う。
 func (s *Usecase) locked(ctx context.Context, id string) (Detail, error) {
 	st, err := s.deps.Staff.Get(ctx, id)
 	if err != nil {
@@ -442,13 +442,14 @@ func (s *Usecase) ChangePosition(ctx context.Context, id, positionID string) (De
 // 登録と役職の変更で付けたチームの対象は所属のチームを指すが、予定の判定は保存した対象のチームだけを読むためである。
 // 職員が見つからないときは apperr.ErrNotFound を、職員の管理の権限が無いときは apperr.ErrForbidden を、
 // 退職した職員を変えようとしたときは apperr.ErrConflict を、部署かチームが見つからないか別の事業所のものであるときは入力のエラーを返す。
+// 役職を変える操作と同じく事業所をロックし、読んだ古いチームが、書くまでにほかの操作で変わらないようにする。
 func (s *Usecase) UpdateProfile(ctx context.Context, id string, p Profile) (Detail, error) {
 	if err := s.guard(ctx); err != nil {
 		return Detail{}, err
 	}
 	var changed Detail
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
-		cur, err := s.deps.Staff.Get(ctx, id)
+		cur, err := s.locked(ctx, id)
 		if err != nil {
 			return err
 		}
