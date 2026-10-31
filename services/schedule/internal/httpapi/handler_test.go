@@ -129,6 +129,11 @@ func (f *fakeStaff) ChangePosition(_ context.Context, _, positionID string) (sta
 	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: staffID, PositionID: positionID}}, Policies: []staff.PolicyGrant{}}, f.err
 }
 
+func (f *fakeStaff) RemainingAssignments(_ context.Context, id string) (staff.Assignments, error) {
+	f.lastStopped = id
+	return f.assignments, f.err
+}
+
 func (f *fakeStaff) UpdateProfile(_ context.Context, id string, p staff.Profile) (staff.Detail, error) {
 	f.lastProfile = p
 	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: id, Username: p.Username, PhoneNumber: p.PhoneNumber, DepartmentID: p.DepartmentID, TeamID: p.TeamID}}, Policies: []staff.PolicyGrant{}}, f.err
@@ -432,6 +437,26 @@ func TestHealth(t *testing.T) {
 				t.Fatalf("status = %d, body = %v", rec.Code, body)
 			}
 		})
+	}
+}
+
+func TestGetUserRemainingAssignments(t *testing.T) {
+	st := &fakeStaff{assignments: staff.Assignments{
+		Schedules: []staff.AssignedSchedule{{ID: "01M3TC5H00QV17BC0J9V3393ZP", Date: civil.Date{Year: 2026, Month: 11, Day: 2},
+			StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10}}},
+		Patients: []staff.AssignedPatient{{ID: "01M3TC5H00QV17BC0J9V3393ZQ", Name: "山田 花子"}},
+	}}
+	rec, body := do(t, newRouter(&fakeSchedules{}, st, &fakePatients{}), http.MethodGet, "/v1/users/"+staffID+"/remaining_assignments", "")
+	if rec.Code != http.StatusOK || st.lastStopped != staffID {
+		t.Fatalf("status = %d, 職員 = %s, body = %v", rec.Code, st.lastStopped, body)
+	}
+	scheds, recs, pats := body["schedules"].([]any), body["recurring_schedules"].([]any), body["patients"].([]any)
+	if len(scheds) != 1 || scheds[0].(map[string]any)["date"] != "2026-11-02" || len(recs) != 0 || len(pats) != 1 {
+		t.Errorf("body = %v, want 予定 1 件と利用者 1 人と空の繰り返し", body)
+	}
+	forbidden := newRouter(&fakeSchedules{}, &fakeStaff{err: apperr.ErrForbidden}, &fakePatients{})
+	if rec, body := do(t, forbidden, http.MethodGet, "/v1/users/"+staffID+"/remaining_assignments", ""); rec.Code != http.StatusForbidden || body["code"] != "forbidden" {
+		t.Errorf("職員の管理の権限が無い: status = %d, body = %v", rec.Code, body)
 	}
 }
 

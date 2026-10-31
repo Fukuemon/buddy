@@ -556,6 +556,28 @@ paths:
               example: { code: conflict, message: "退職した職員は復職できません" }
         "500": { $ref: "#/components/responses/InternalError" }
 
+  /v1/users/{user_id}/remaining_assignments:
+    get:
+      tags: [staff]
+      operationId: getUserRemainingAssignments
+      summary: 職員に残る予定と担当の利用者を返す
+      description: |
+        職員を休職か退職にする前に、その日（事業所の現地の日付）以降の予定、繰り返しの予定、担当の利用者を返す。
+        一覧は、休職と退職が返す一覧と同じ規則で作る。何も書かない。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+      parameters:
+        - { name: user_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
+      responses:
+        "200":
+          description: その日以降に残る予定と担当の利用者
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffAssignments" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
   /v1/users/{user_id}/retire:
     post:
       tags: [staff]

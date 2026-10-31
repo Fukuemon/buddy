@@ -201,7 +201,7 @@ func (s *Usecase) Leave(ctx context.Context, id string, in LeaveInput) (StatusCh
 		if cur.Status() == StatusRetired {
 			return apperr.Conflict("退職した職員は休職にできません")
 		}
-		a, err := s.deps.Assignments.From(ctx, cur.FacilityID, cur.ID, civil.Today(s.deps.Now()))
+		a, err := s.remaining(ctx, cur)
 		if err != nil {
 			return err
 		}
@@ -233,6 +233,26 @@ func (s *Usecase) Leave(ctx context.Context, id string, in LeaveInput) (StatusCh
 	return out, nil
 }
 
+// RemainingAssignments は、職員の、今日（事業所の現地の日付）以降の予定、繰り返しの予定、担当の利用者を返す。何も書かない。
+// 休職と退職を確定する前に、画面が残る一覧を示すのに使う。一覧は、休職と退職と同じ remaining で作る。
+// 職員が見つからないときは apperr.ErrNotFound を、職員の管理の権限が無いときは apperr.ErrForbidden を返す。
+func (s *Usecase) RemainingAssignments(ctx context.Context, id string) (Assignments, error) {
+	if err := s.guard(ctx); err != nil {
+		return Assignments{}, err
+	}
+	cur, err := s.deps.Staff.Get(ctx, id)
+	if err != nil {
+		return Assignments{}, err
+	}
+	return s.remaining(ctx, cur)
+}
+
+// remaining は、職員 cur の、今日（事業所の現地の日付）以降の予定、繰り返しの予定、担当の利用者を返す。
+// 休職、退職、RemainingAssignments が同じ一覧を返すよう、3 つともこれで作る。
+func (s *Usecase) remaining(ctx context.Context, cur Detail) (Assignments, error) {
+	return s.deps.Assignments.From(ctx, cur.FacilityID, cur.ID, civil.Today(s.deps.Now()))
+}
+
 // Retire は、職員を退職にし、名前、所属、役職を残してメールと電話番号を消し、職員の外部のカレンダーを外す。
 // カレンダーのレコードと予定の対応は残す。その日以降の予定、繰り返しの予定、担当の利用者が
 // 残れば、書かずに残る一覧を持つ *AssignedError を返す。退職した職員を退職にしても成功する。職員が見つからないときは
@@ -245,7 +265,7 @@ func (s *Usecase) Retire(ctx context.Context, id string) (StatusChange, error) {
 	var out StatusChange
 	var revokeErr error
 	err := s.stop(ctx, id, func(ctx context.Context, cur Detail) error {
-		a, err := s.deps.Assignments.From(ctx, cur.FacilityID, cur.ID, civil.Today(s.deps.Now()))
+		a, err := s.remaining(ctx, cur)
 		if err != nil {
 			return err
 		}
