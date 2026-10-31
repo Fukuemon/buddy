@@ -866,7 +866,7 @@ buddy の内容で書き直すか Google の内容に合わせるを押すと、
   - 予定の API は外したカレンダーに書かないので、buddy の内容で書き直しても、外したカレンダーの予定は消さず、書き直さない。書き直す待ちを終えて、一覧から消すだけである。
   - キャンセルしていない予定は、職員が別のカレンダーを結び付け直していれば、そのカレンダーに buddy の内容で作る。
   - 一覧と書き直すダイアログは、結び付けを外したかを示さない。
-- 書き出しと同期の設計は、[予定の API の Design Doc の Google カレンダーとの同期](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#google-カレンダーとの同期) にある。
+- 書き出しと同期の設計は、[Google カレンダーとの連携の Design Doc の Google カレンダーとの同期](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/calendar/DesignDoc.md#google-カレンダーとの同期) にある。
 
 ### 権限の確認
 
