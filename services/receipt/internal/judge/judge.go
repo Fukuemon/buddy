@@ -27,8 +27,45 @@ func Categories() []Category {
 	return []Category{Mismatch, ScheduleOnly, VisitOnly, Match}
 }
 
-// RequiredAddition は、整合とする加算の値である。加算①〜加算⑤のうちこの値の 1 つだけが入っているときに整合とする。
+// RequiredAddition は、時間帯を問わずに整合とする加算の値である。加算①〜加算⑤のうちこの値の 1 つだけが入っているときに整合とする。
 const RequiredAddition = "通常"
+
+// 時間帯の加算の値。加算①〜加算⑤のうちこの値の 1 つだけが入り、予定の開始時間が TimeBandOf の時間帯に入るときに整合とする。
+// AdditionLateNight は、電子カルテの実績で確認していない値で、名前は推測である。
+const (
+	AdditionEarlyMorning = "早朝"
+	AdditionNight        = "夜間"
+	AdditionLateNight    = "深夜"
+)
+
+// TimeBandOf は、開始時間が入る時間帯の加算の値を返す。
+// 早朝は 6:00 以上 8:00 未満、夜間は 18:00 以上 22:00 未満、深夜は 22:00 以上か 6:00 未満である。
+// どの時間帯にも入らなければ ok は false である。
+func TimeBandOf(start civil.Clock) (addition string, ok bool) {
+	const hour = 60
+	switch {
+	case start < 6*hour || start >= 22*hour:
+		return AdditionLateNight, true
+	case start < 8*hour:
+		return AdditionEarlyMorning, true
+	case start >= 18*hour:
+		return AdditionNight, true
+	}
+	return "", false
+}
+
+// additionsMatch は、実績の加算が、予定の開始時間に対して規則に合うかを返す。
+// 「通常」か、開始時間の時間帯の加算の 1 つだけのときに合う。緊急時の訪問の加算を含むときと、2 つ以上並ぶときは合わない。
+func additionsMatch(scheduleStart civil.Clock, additions []string) bool {
+	if len(additions) != 1 {
+		return false
+	}
+	if additions[0] == RequiredAddition {
+		return true
+	}
+	band, ok := TimeBandOf(scheduleStart)
+	return ok && additions[0] == band
+}
 
 // Check は、1 つの項目の判定である。
 type Check struct {
@@ -173,7 +210,7 @@ func check(s, v record.Record) Checks {
 		VisitElapsed:     inRange(v.Service, new(v.Elapsed())),
 		ScheduleDuration: inRange(s.Service, s.Duration),
 		VisitDuration:    inRange(v.Service, v.Duration),
-		Additions:        Check{OK: v.AdditionText() == RequiredAddition},
+		Additions:        Check{OK: additionsMatch(s.Start, v.Additions)},
 		DurationEqual:    s.Duration != nil && v.Duration != nil && *s.Duration == *v.Duration,
 		EndEqual:         s.End == v.End,
 	}

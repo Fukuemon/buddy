@@ -349,6 +349,8 @@ type Team struct {
 	Name      string
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	// チームの色。packages/ui のチームの色のトークンの名前（team- の後ろ）。事業所の中で重なってよい
+	Color string
 }
 
 // 職員

@@ -9,14 +9,18 @@ export const MOCK_FACILITY_ID = 'facility-demo'
 const STAMP = '2026-10-01T00:00:00Z'
 const stamps = { created_at: STAMP, updated_at: STAMP }
 
-const team = (id: string, name: string): Schemas['Unit'] => ({
+const team = (id: string, name: string, color: Schemas['TeamColor']): Schemas['Team'] => ({
   id,
   facility_id: MOCK_FACILITY_ID,
   name,
+  color,
   ...stamps,
 })
 
-export const mockTeams: Schemas['Unit'][] = [team('team-a', 'A チーム'), team('team-b', 'B チーム')]
+export const mockTeams: Schemas['Team'][] = [
+  team('team-a', 'A チーム', 'blue'),
+  team('team-b', 'B チーム', 'orange'),
+]
 
 const staff = (id: string, username: string, teamRef: Schemas['Ref']): Schemas['Staff'] => ({
   id,

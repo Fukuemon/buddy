@@ -23,7 +23,7 @@ type Guard func(ctx context.Context) error
 
 // Usecase は、事業所、部署、チーム、役職、権限の操作である。
 // 事業所ごとの一覧は、事業所が見つからないときに apperr.ErrNotFound を返す。
-// 役職の作成は、役職のデフォルトの権限を職員に配るので、guard が許すときだけ行う。
+// 役職とチームの作成は、guard が許すときだけ行う。役職はデフォルトの権限を職員に配り、チームはチームを対象にする権限の範囲を決めるためである。
 type Usecase struct {
 	deps  Deps
 	tx    tx.Transactor
@@ -67,16 +67,52 @@ func (o *Usecase) ListTeams(ctx context.Context, facilityID string) ([]Team, err
 	return o.deps.Teams.ListByFacility(ctx, facilityID)
 }
 
-// CreateTeam は、事業所にチームを作り、保存したチームを返す。同じ事業所に同じ名前のチームがあるときは apperr.ErrConflict を返す。
-func (o *Usecase) CreateTeam(ctx context.Context, facilityID, name string) (Team, error) {
+// CreateTeam は、事業所にチームを作り、保存したチームを返す。color が空なら NextTeamColor で事業所のチームの色から選ぶ。
+// 職員の管理の権限が無いときは apperr.ErrForbidden を、color が 8 色にないときは入力のエラーを、
+// 同じ事業所に同じ名前のチームがあるときは apperr.ErrConflict を返す。
+func (o *Usecase) CreateTeam(ctx context.Context, facilityID, name string, color TeamColor) (Team, error) {
+	if err := o.guard(ctx); err != nil {
+		return Team{}, err
+	}
 	if _, err := o.deps.Facilities.Get(ctx, facilityID); err != nil {
 		return Team{}, err
 	}
-	t, err := NewTeam(o.ids.NewID(), facilityID, name)
+	if color == "" {
+		teams, err := o.deps.Teams.ListByFacility(ctx, facilityID)
+		if err != nil {
+			return Team{}, err
+		}
+		used := make([]TeamColor, len(teams))
+		for i, t := range teams {
+			used[i] = t.Color
+		}
+		color = NextTeamColor(used)
+	}
+	t, err := NewTeam(o.ids.NewID(), facilityID, name, color)
 	if err != nil {
 		return Team{}, err
 	}
 	if err := o.deps.Teams.Create(ctx, t); err != nil {
+		return Team{}, apperr.AsConflict(err, "チーム %s はこの事業所にすでにあります", t.Name)
+	}
+	return o.deps.Teams.Get(ctx, t.ID)
+}
+
+// UpdateTeam は、チーム id の名前と色を変え、変えたチームを返す。職員の管理の権限が無いときは apperr.ErrForbidden を、
+// 名前か色が不正なときは入力のエラーを、同じ事業所にほかの同じ名前のチームがあるときは apperr.ErrConflict を返す。
+func (o *Usecase) UpdateTeam(ctx context.Context, id, name string, color TeamColor) (Team, error) {
+	if err := o.guard(ctx); err != nil {
+		return Team{}, err
+	}
+	cur, err := o.deps.Teams.Get(ctx, id)
+	if err != nil {
+		return Team{}, err
+	}
+	t, err := NewTeam(cur.ID, cur.FacilityID, name, color)
+	if err != nil {
+		return Team{}, err
+	}
+	if err := o.deps.Teams.Update(ctx, t); err != nil {
 		return Team{}, apperr.AsConflict(err, "チーム %s はこの事業所にすでにあります", t.Name)
 	}
 	return o.deps.Teams.Get(ctx, t.ID)

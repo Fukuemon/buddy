@@ -7,21 +7,23 @@
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
 | 職員の名前 | 名前 | 足す | `getUser` の `StaffDetail.username` |
-| 状態の印、在籍の状態 | 状態、休職にした日、戻る予定の日、退職にした日 | 足す | `StaffDetail.status`、`leave_started_at`、`leave_return_date`、`retired_at` |
-| 基本の情報 | メールアドレス、電話番号 | 足す | `StaffDetail.email`、`phone_number`。退職した職員では `null` |
-| 基本の情報 | 部署、チーム | 足す | `StaffDetail.department.name`、`team.name` |
+| 状態の印、在籍の状態 | 状態、休職にした日、戻る予定の日、退職にした日 | 足す | `StaffDetail.status`、`leave_started_at`、`leave_return_date`、`retired_at`。`status` が有効なら、どちらも出さない |
+| メールアドレス、プロフィール | メールアドレス、電話番号 | 足す | `StaffDetail.email`、`phone_number`。退職した職員では `null` で、どちらも出さない。`phone_number` が `null` なら、電話番号の行を出さない |
+| プロフィール | 部署、チーム | 足す | `StaffDetail.department.name`、`team.name` |
 | 名前の入力、電話番号の入力、部署の選択、チームの選択 | 送る値 | 足す | `updateUser` の本文の `username`、`phone_number`、`department_id`、`team_id` |
 | 部署の選択、チームの選択 | 選択肢 | 足す、`Team` | `listDepartments`、`listTeams` の `Unit` |
 | 役職 | 役職の名前 | 足す | `StaffDetail.position.name` |
 | 役職の選択 | 選択肢 | 足す | `listPositions` の `Position` の `id`、`name` |
-| 役職を変えるときの注意 | 職員ごとに足した権限の名前 | 足す | `StaffDetail.policies` のうち、`listPositions` の `Position` で `id` が `StaffDetail.position.id` のものの `policies` に無い権限の `name`。`StaffDetail.position` は `id` と `name` だけの `Ref` で、デフォルトの権限を持たない |
+| 役職を変えるときの注意 | 職員ごとに足した権限の名前 | 足す | `StaffDetail.policies` のうち、`getPosition` で `StaffDetail.position.id` を読んだ `Position.policies` に無い権限の `name`。`StaffDetail.position` は `id` と `name` だけの `Ref` で、デフォルトの権限を持たない |
 | ダイアログの役職を変える | 送る役職 | 足す | `changeUserPosition` の本文の `position_id` |
-| 権限の一覧 | 権限の名前 | 足す | `StaffDetail.policies[].name` |
-| 権限の一覧 | 対象の名前 | 足す | `policies[].target_user_ids` を `listUsers` の `Staff.username` に、`target_team_ids` を `listTeams` の `Unit.name` に引き当てる |
-| 外す | 外す権限 | 足す | `removeUserPolicy` のパスの `user_policy_id` |
+| 権限の一覧 | 付いている権限の名前 | 足す | `StaffDetail.policies[].name` |
+| 権限のまとまりの見出し | 役職の名前、まとまりの分け方 | 足す | 役職の名前は `StaffDetail.position.name`。`getPosition` で `StaffDetail.position.id` を読み、`Position.policies[].id` に `policy_id` が入る権限を役職のまとまりに、入らない権限を「個別に足した権限」（ダイアログでは「ほかの権限」）に入れる |
+| 権限の対象 | 対象の名前 | 足す | `policies[].target_user_ids` を `listUsers` の `Staff.username` に、`target_team_ids` を `listTeams` の `Unit.name` に引き当てる |
 | 権限の選択 | 選択肢 | 足す | `listPolicies` の `Policy` の `id`、`name`、`code`、`needs_target` |
 | 対象の選択 | 職員かチームか | 足す | `Policy.code` が `schedule.user.` で始まれば職員、`schedule.team.` で始まればチーム |
-| ダイアログの足す | 送る権限と対象 | 足す | `addUserPolicy` の本文の `policy_id`、`target_user_ids`、`target_team_ids` |
+| 対象の候補 | 候補 | 足す、`Team` | `listUsers` の有効な `Staff` か、`listTeams` の `Unit` のうち、選んでいないもの |
+| 権限の保存 | 足す権限と対象 | 足す | `addUserPolicy` の本文の `policy_id`、`target_user_ids`、`target_team_ids` |
+| 権限の保存 | 外す権限 | 足す | `removeUserPolicy` のパスの `user_policy_id` |
 | 残る予定と担当の一覧 | 残る予定、繰り返しの予定、担当の利用者 | 足す | `getUserRemainingAssignments` の `StaffAssignments`。退職を拒んだときは `retireUser` の 409 の `RetireConflict.assignments` |
 | 残る予定 | 日付と時間 | 足す | `StaffAssignments.schedules[]` の `id`、`date`、`start_time`、`end_time` |
 | 残る繰り返しの予定 | 最初の回の日付、終了日、時間 | 足す | `StaffAssignments.recurring_schedules[]` の `date`、`end_date`、`start_time`、`end_time` |
@@ -46,6 +48,7 @@
 | `reinstateUser` | `POST /v1/users/{user_id}/reinstate` | なし | 200。`StaffDetail` | 409 `conflict`: 退職した職員 |
 | `retireUser` | `POST /v1/users/{user_id}/retire` | なし | 200。`StaffStatusChange` | 409 `staff_has_assignments`: 予定か担当の利用者が残る。`assignments` に一覧がある。409 `conflict`: 自分か、職員の管理の権限を持つ最後の有効な職員 |
 | `listPositions` | `GET /v1/facilities/{facility_id}/positions` | なし | 200。`Position` の配列 | なし |
+| `getPosition` | `GET /v1/positions/{position_id}` | なし | 200。`Position` | 404 `not_found` |
 | `listPolicies` | `GET /v1/policies` | なし | 200。`Policy` の配列 | なし |
 | `listDepartments`、`listTeams`、`listUsers` | [職員の登録の API との対応](../staff-new_職員の登録/api.md) と同じ | | | |
 

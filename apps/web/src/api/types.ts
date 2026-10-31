@@ -19,8 +19,8 @@ export type Viewer = {
   canManageStaff: boolean
 }
 
-/** チーム。API の型の ID と名前だけを使う。 */
-export type Team = Pick<ScheduleComponents['schemas']['Unit'], 'id' | 'name'>
+/** チーム。API の型の ID、名前、色だけを使う。色はチームの色のトークンの名前（team- の後ろ）である。 */
+export type Team = Pick<ScheduleComponents['schemas']['Team'], 'id' | 'name' | 'color'>
 
 /** 職員。名前は API の username である。 */
 export type Staff = {

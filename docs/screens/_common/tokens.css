@@ -297,4 +297,14 @@
   --buddy-color-categorical-8: var(--color-primitive-orange-900);
   --buddy-color-categorical-9: var(--color-primitive-red-900);
   --buddy-color-categorical-10: var(--color-primitive-light-blue-900);
+
+  /* チームの色: 名前の横の点。名前の後ろの部分は、予定の API がチームに持つ値と同じ。選び方は DESIGN.md の「チームの色」にある */
+  --buddy-color-team-blue: var(--color-primitive-blue-500);
+  --buddy-color-team-orange: var(--color-primitive-orange-700);
+  --buddy-color-team-magenta: var(--color-primitive-magenta-600);
+  --buddy-color-team-cyan: var(--color-primitive-cyan-700);
+  --buddy-color-team-yellow: var(--color-primitive-yellow-800);
+  --buddy-color-team-purple: var(--color-primitive-purple-500);
+  --buddy-color-team-green: var(--color-primitive-green-600);
+  --buddy-color-team-lime: var(--color-primitive-lime-800);
 }
