@@ -23,14 +23,11 @@ export type SiteNavGroup = {
 }
 
 /**
- * 今の画面の href に当たる項目の id を返す。href が今の画面と同じか、今の画面がその下にある項目のうち、href が最も長いものを選ぶ。
- * `/schedule/import` では、カレンダー（`/schedule`）ではなく取り込みを選ぶ。
+ * href が今の画面と同じ項目の id を返す。
+ * 権限が無くて出していない画面（`/schedule/review` など）では、どの項目も選ばない。親のカレンダー（`/schedule`）を選ぶと、今の画面を取り違えて読み上げる。
  */
 export const findCurrentItemId = (groups: readonly SiteNavGroup[], current: string) =>
-  groups
-    .flatMap((group) => group.items)
-    .filter((item) => current === item.href || current.startsWith(`${item.href}/`))
-    .sort((a, b) => b.href.length - a.href.length)[0]?.id
+  groups.flatMap((group) => group.items).find((item) => item.href === current)?.id
 
 export type SiteNavProps = {
   groups: readonly SiteNavGroup[]

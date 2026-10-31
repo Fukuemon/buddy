@@ -7,7 +7,7 @@ import { stubViewport } from '#/test/stubViewport'
 
 import * as stories from './SiteLayoutContainer.stories'
 
-const { StaffManager, Staff, Review, Mobile } = composeStories(stories)
+const { StaffManager, Staff, Review, ReviewForbidden, Mobile } = composeStories(stories)
 
 const navLabels = (nav: HTMLElement) =>
   within(nav)
@@ -47,6 +47,14 @@ describe('SiteLayoutContainer', () => {
     )
   })
 
+  it('権限が無くて出していない画面では、カレンダーにも印を付けない', async () => {
+    stubViewport(true)
+    render(<ReviewForbidden />)
+    const nav = await screen.findByTestId('site-nav')
+    expect(navLabels(nav)).toEqual(['カレンダー', '照合'])
+    expect(within(nav).queryByRole('link', { current: 'page' })).not.toBeInTheDocument()
+  })
+
   it('PC の幅では、ナビゲーションを開いた形で始め、メニューのボタンでレールにたたんで開く', async () => {
     stubViewport(true)
     render(<StaffManager />)
@@ -68,6 +76,7 @@ describe('SiteLayoutContainer', () => {
     const toggle = await screen.findByTestId('site-nav-toggle')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 
+    expect(toggle).toHaveAttribute('aria-haspopup', 'dialog')
     await userEvent.click(toggle)
     const drawer = screen.getByRole('dialog', { name: 'buddy' })
     expect(toggle).toHaveAttribute('aria-expanded', 'true')

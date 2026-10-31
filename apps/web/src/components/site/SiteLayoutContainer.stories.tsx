@@ -43,5 +43,15 @@ export const Review: Story = {
   args: { current: '/schedule/review' },
 }
 
+/** 職員の管理の権限を持たない職員が、確認が必要な予定の画面を開いた状態。どの項目にも印を付けない。 */
+export const ReviewForbidden: Story = {
+  parameters: route({
+    route: '/schedule_/review',
+    url: '/schedule/review',
+    viewer: { ...FAKE_VIEWER, canManageStaff: false },
+  }),
+  args: { current: '/schedule/review' },
+}
+
 /** 幅 768px 未満。ナビゲーションはメニューのボタンで開くドロワーに入る。 */
 export const Mobile: Story = { globals: MOBILE }
