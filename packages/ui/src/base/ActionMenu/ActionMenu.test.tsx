@@ -71,6 +71,18 @@ describe('ActionMenu', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
+  it('項目を選ぶと、onSelect を呼ぶ前にフォーカスを開くボタンに戻す', async () => {
+    let focused: Element | null = null
+    const onImport = fn(() => {
+      focused = document.activeElement
+    })
+    render(<Default items={itemsOf(onImport)} />)
+    await userEvent.click(openButton())
+    await userEvent.keyboard('{Enter}')
+    expect(focused).toBe(openButton())
+    expect(openButton()).toHaveFocus()
+  })
+
   it('押せない項目は、選んでも onSelect を呼ばず、メニューを開いたままにする', async () => {
     const onImport = fn()
     render(<Default items={itemsOf(onImport, fn(), true)} />)
