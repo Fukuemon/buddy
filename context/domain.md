@@ -14,7 +14,7 @@ status: stable
 | 用語 | 意味 | コードの識別子 |
 | --- | --- | --- |
 | 事業所 | 訪問看護の事業所。データを分ける単位 | Go `organization.Facility`、テーブル `facilities`、API `Facility` |
-| 組織 | ID ブローカーが持つ組織。事業所と 1 対 1 に対応し、access token に組織の ID が入る。組織の ID（`org_id`）は、同じ事業所を認証の側から指す ID である。予定の API の Go のパッケージ `organization` は名前が似ているが、事業所と、その中の部署、チーム、役職、権限を持つパッケージで、組織とは別のものである | `facilities.org_id`、`principal.Identity.OrgID`、ブローカーの `staff.org_id`、クレームの名前は `OIDC_ORG_CLAIM` |
+| 組織 | ID ブローカーが持つ組織。事業所と 1 対 1 に対応し、access token に組織の ID が入る。組織の ID（`org_id`）は、同じ事業所を認証の側から指す。予定の API の Go のパッケージ `organization` は、名前が似ているが組織とは別のもので、事業所と、その中の部署、チーム、役職、権限を持つ | `facilities.org_id`、`principal.Identity.OrgID`、ブローカーの `staff.org_id`、クレームの名前は `OIDC_ORG_CLAIM` |
 | 部署、チーム | 事業所の中の職員の所属 | `organization.Department`、`organization.Team`、テーブル `departments`、`teams` |
 | 役職 | 職員の役割。職員に付けるデフォルトの権限を持つ | `organization.Position`、テーブル `positions`、`position_policies` |
 | マネージャー、チームリーダー、メンバー | PRD が使う役職の 3 つの呼び方。デフォルトの権限が違う | テーブル `positions` のレコード。名前は事業所ごとに決める |
@@ -82,7 +82,7 @@ status: stable
 - [予定](domain/schedule.md) — 単発の予定の種類、キャンセル、変更
 - [繰り返しの予定](domain/recurring-schedule.md) — 規則、回、除外、回の置き換え
 - [訪問の情報](domain/visit.md) — 訪問の予定に付く利用者と職員とサービス
-- [職員とログイン](domain/staff-login.md) — 職員の登録、休職、復職、退職、ブローカーが上流の IdP のアカウントを職員に結び付け、予定の API が `sub` で職員を引く
+- [職員とログイン](domain/staff-login.md) — 職員の登録、休職、復職、退職の規則。ブローカーが上流の IdP のアカウントを職員に結び付ける規則と、予定の API が `sub` で職員を引く規則
 - [事業所の分離](domain/facility.md) — 事業所をまたぐ参照の拒否
 - [権限](domain/permission.md) — 役職のデフォルトの権限と職員ごとの権限
 - [照合](domain/receipt-check.md) — 予定と実績の対の作り方と区分の決め方

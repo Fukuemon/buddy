@@ -15,7 +15,7 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
 - テストのツールは Playwright（`@playwright/test`）である。
 - kit は、npm の `@fukuemon/e2e-kit` を `packages/e2e` の開発の依存に固定のバージョンで入れ、サブパスの `recording`、`evidence`、`auth`、`eslint` から読む。
   - バージョンは、agent-harness のパッケージ e2e のスキル setup-e2e の `kit-version.json` とそろえる。`apm.yml` の e2e を上げたら、kit も同じバージョンに上げる。
-- スキル write-e2e-test が一般の語で書いたものは、Playwright の次の API に当たる。
+- スキル write-e2e-test の一般の語は、Playwright の次の API に当たる。
 
 | スキルの語 | Playwright の API |
 | --- | --- |
@@ -28,7 +28,7 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
 | 時刻の固定 | `page.clock.setFixedTime(time)`。時刻は、UTC でも日本時間でも同じ日付になるもの（例: `06:00:00Z`）にする |
 
 - buddy の画面は path で route を分ける。画面の中の移動は、`page.goto` で path を開いて作る。
-- 規則が止める値の読み取りは一部だけなので、`count()` と `isVisible()` で読んでから比べる書き方も自分で避ける。locator をそのまま `expect` に渡す。
+- 値を読んでから比べる書き方は、lint の規則が一部しか止めない。`count()` と `isVisible()` で読んでから比べる書き方も自分で避け、locator をそのまま `expect` に渡す。
 
 ## Test IDs
 
@@ -44,7 +44,8 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
 
 - テストの書き方の規則は、kit の `@fukuemon/e2e-kit/eslint` の `plugin` にある。
 - options は `packages/e2e/eslint.config.mjs` で渡す。
-  - テストのディレクトリは、デフォルトの `tests/` のままにする。規則は ESLint の cwd から見た `tests/` だけを見るので、ルートやエディタから流すと、違反があっても何も言わずに通る。`packages/e2e` で流す。
+  - テストのディレクトリは、デフォルトの `tests/` のままにする。
+    - 規則は ESLint の cwd から見た `tests/` だけを見る。ルートやエディタから流すと、違反があっても何も言わずに通るので、`packages/e2e` で流す。
   - 固定の待ちを許すファイルは無い。
   - 待つ時間の名前を定めるファイルは、`tests/fixtures/timeouts.ts` である。
   - `screenIdPattern` は、`docs/screens/index.md` の画面の ID の規則のドメインと種類の組を止める。ドメインか種類を足したら、`screenIdPattern` にも足す。
@@ -54,13 +55,14 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
 ## Running Tests
 
 - E2E は、ルートの compose で立てた全体に向けて流す。手順は [CONTRIBUTING.md](../../CONTRIBUTING.md) の E2E Tests にある。
-- 整形、lint、E2E の書き方の規則、型のチェックは、`pnpm --filter @buddy/e2e check` で流す。
   - API、Hydra、ブローカーは置き換えず、compose の本物を使う。事業所の上流の IdP は、compose のフェイクを使う。
+- 整形、lint、E2E の書き方の規則、型のチェックは、`pnpm --filter @buddy/e2e check` で流す。
 - project は 3 つある。
   - `setup` は、compose のブローカーにログインした状態を `packages/e2e/.auth/` に保存する。
   - `e2e` は、その状態で `tests/specs/` の spec を流す。`pnpm e2e` と CI は、`--project=e2e` でこの project だけを流す。
   - `evidence` は、`tests/evidence/` のエビデンスの spec を流す。`pnpm --filter @buddy/e2e evidence` で流す（[エビデンス](evidence.md)）。
-- worker は 1 つにする（`packages/e2e/playwright.config.ts`）。spec は職員ごとのログインの状態のファイルを共有するためである。ローカルの dev サーバに向けて流すときも、`--workers` で増やさない。
+- worker は 1 つにする（`packages/e2e/playwright.config.ts`）。spec は職員ごとのログインの状態のファイルを共有するためである。
+  - ローカルの dev サーバに向けて流すときも、`--workers` で増やさない。
 - 環境変数 `E2E_BASE_URL`（デフォルトは `http://localhost:3000`）で、向ける画面を変える。
   - Google カレンダーの spec が向ける calendarpit と gcalhold は、`E2E_CALENDARPIT_URL` と `E2E_GCALHOLD_URL` で変える。デフォルトは、それぞれ `http://localhost:4173` と `http://localhost:8085` である。
   - 職員の登録と停止の spec は、予定の API とブローカーを直に呼ぶ。向ける先は `E2E_SCHEDULE_URL`、`E2E_HYDRA_URL`、`E2E_BROKER_URL`、`E2E_BROKER_INTERNAL_URL` で変える。
@@ -77,11 +79,13 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
   - ローカルで同じ職員に別の名前で入ったことがあれば、`docker compose down -v` でデータを消す。
 - 職員の登録、休職、退職の spec は、流すたびに新しいメールの職員を登録し、消さない。
   - 休職にした職員がログインの画面へ戻るのを待つ spec は、web が access token を取り直すまで、4 分ほどかかる。
-- Google カレンダーの取り込みの spec は、森にカレンダーを結び付けて取り込んだまま残す。同じ DB で 2 回目を流すと落ちるので、流し直すときは `docker compose down -v` で作り直す。
-- 森 健太や上野 渚で入れないときや、職員の一覧に佐藤 美咲がいないときは、シードを変える前の DB なので、`docker compose down -v` で作り直す。
+- Google カレンダーの取り込みの spec は、森にカレンダーを結び付けて取り込んだまま残す。
+  - 同じ DB で 2 回目を流すと落ちるので、流し直すときは `docker compose down -v` で作り直す。
+- 森 健太や上野 渚で入れないときや、職員の一覧に佐藤 美咲がいないときは、シードを変える前の DB である。`docker compose down -v` で作り直す。
 
 ## Timeouts
 
 - 待つ時間の名前は、`packages/e2e/tests/fixtures/timeouts.ts` に置く。
-- CI は、テストごとの所要時間を、ジョブのログ（list のレポーター）と、JUnit の形式の `packages/e2e/test-results/junit.xml` に書く。junit.xml は、失敗したときだけ artifact の `e2e-test-results` に残る。
+- CI は、テストごとの所要時間を、ジョブのログ（list のレポーター）と、JUnit の形式の `packages/e2e/test-results/junit.xml` に書く。
+  - junit.xml は、失敗したときだけ artifact の `e2e-test-results` に残る。
 - 値を変えるときは、複数の CI の実行のログから、成功したテストごとの所要時間を集めて決める。

@@ -27,7 +27,8 @@ status: draft
   - `<入れる先>` は、issue なら `issue-<番号>`、pull request なら `pr-<番号>` にする。
   - 最初に撮ったときの入れる先を使い続ける。pull request を作る前に撮ったなら、作った後も `issue-<番号>` を使う。改修前と改修後が別のフォルダに分かれないためである。
   - `<入れる先>` は、撮る人が環境変数 `EVIDENCE_FOR` で渡す。kit は、`issue-<番号>` か `pr-<番号>` の形でなければ撮らずに失敗する。
-  - 配置先と名前は、kit の `recordPrEvidence` が `EVIDENCE_FOR` と `name` から決める。ファイル名は、スキル capture-browser-evidence の規則ではなく kit の形にする。ファイルは `<入れる先>/<name>.mp4` と `<入れる先>/<name>/` に出る。`<name>` は、spec の `recordPrEvidence` に渡した `name` である。
+  - 配置先と名前は、kit の `recordPrEvidence` が `EVIDENCE_FOR` と `name` から決める。ファイル名は、スキル capture-browser-evidence の規則ではなく kit の形にする。
+    - ファイルは `<入れる先>/<name>.mp4` と `<入れる先>/<name>/` に出る。`<name>` は、spec の `recordPrEvidence` に渡した `name` である。
     - 改修前と改修後を撮ったときは、`<入れる先>/<name>-before.mp4` と `<入れる先>/<name>-after.mp4` に出る。
   - 本文に入れるのは、`<name>.mp4`（改修前と比べたときは `<name>-before.mp4` と `<name>-after.mp4`）と、`<name>/frames/` の判定のスクリーンショットである。`<name>/` の README と `.records/` は確認に使い、入れない。
 - 本文に入れたファイルは、リポジトリを見られる人が開ける。リポジトリを public にすると、見られる人が誰にでも広がる。
@@ -49,7 +50,9 @@ status: draft
   - 過去の pull request の機能も、同じ配置先に機能ごとに足す。同じ spec で、改修のたびに撮り直す。
 - 見本の spec
   - pull request のエビデンス: `packages/e2e/tests/evidence/schedule/create-dialog.e2e.ts`。薄い層の `recordPrEvidence` を呼ぶ。
-  - 検証シナリオのエビデンス: `packages/e2e/templates/verification-scenario.e2e.ts`。検証環境の値が決まるまで、kit を直に呼び、配置先とアプリの値を spec に書く。テンプレートは、`tsconfig.json` と ESLint の対象の外に置いてある。
+  - 検証シナリオのエビデンス: `packages/e2e/templates/verification-scenario.e2e.ts`。
+    - 検証環境の値が決まるまで、kit を直に呼び、配置先とアプリの値を spec に書く。
+    - テンプレートは、`tsconfig.json` と ESLint の対象の外に置いてある。
 - viewport は、`recordPrEvidence` のデフォルトの `DESKTOP_VIEWPORT`（1280x800）にする。
 - CI の E2E は、エビデンスの spec を流さない。project の分け方は [E2E のテスト](e2e.md) の Running Tests にある。
 - kit 以外で撮った WebM を入れるときだけ、次で H.264 の mp4 に変換する。`yuv420p` は幅か高さが奇数だと失敗するので、`scale` で偶数にそろえる。
@@ -89,7 +92,7 @@ docker compose -p buddy-evidence down -v
 
 | 環境変数 | 値 | デフォルト |
 | --- | --- | --- |
-| `EVIDENCE_FOR` | 入れる先。`issue-<番号>` か `pr-<番号>`。最初に撮ったときの入れる先を使い続ける。出力の配置先と字幕に出る | なし。無ければ spec が失敗する |
+| `EVIDENCE_FOR` | 入れる先。`issue-<番号>` か `pr-<番号>`。出力の配置先と字幕に出る | なし。無ければ spec が失敗する |
 | `E2E_BASE_URL` | 撮る web の URL | `http://localhost:3000` |
 | `EVIDENCE_BEFORE_URL` | 改修前の web の URL。渡すと、改修前と改修後を 1 回で撮る | なし |
 | `EVIDENCE_ONLY` | `before` か `after`。`E2E_BASE_URL` をその版として 1 つだけ撮る | なし |
@@ -104,7 +107,10 @@ docker compose -p buddy-evidence down -v
 ### 改修前と比べるとき
 
 - `apps/web` だけの改修では、改修前のブランチの worktree で、2 つ目の compose を別の `-p` とポートで起動する。
-  - spec は、両方とも改修後の worktree から流す。改修前は `E2E_BASE_URL` を改修前の compose の web に向けて `EVIDENCE_ONLY=before` で、改修後は改修後の compose に向けて `EVIDENCE_ONLY=after` で撮る。同じ `<name>/` の `compare/` に比較の画像ができる。
+  - spec は、両方とも改修後の worktree から流す。
+    - 改修前は、`E2E_BASE_URL` を改修前の compose の web に向け、`EVIDENCE_ONLY=before` で撮る。
+    - 改修後は、`E2E_BASE_URL` を改修後の compose の web に向け、`EVIDENCE_ONLY=after` で撮る。
+    - 同じ `<name>/` の `compare/` に比較の画像ができる。
   - 2 つ目の compose のポートの組の例は次のとおり。改修前の spec は `E2E_BASE_URL=http://localhost:3860` で流す。
 
     ```sh
@@ -123,12 +129,14 @@ docker compose -p buddy-evidence down -v
 - ログインしない story とモックでも、`prepare` で同じ URL を開く。kit は `prepare` が開いた画面から sessionStorage を読むので、何も開かないと失敗する。
 - スマートフォンの幅は、`recordPrEvidence` の `viewport` に `PHONE_VIEWPORT`（390x844）を渡して撮る。幅だけをそろえ、タッチの操作は再現しない。幅は本文の撮った条件に書く。
 - API だけの変更のうち、画面から確認できない操作は、API の参照のページ（Scalar）の「Test Request」から送って撮る。
-  - `prepare` に `packages/e2e/tests/fixtures/apiReference.ts` の `prepareApiReference` を渡し、録画の中で `routeApiReference` を張ってからページを開く。ページはドキュメントサイトを起動せずに `docs/api/` のファイルから開き、リクエストを撮る compose の API へ送り直す。
+  - `prepare` に `packages/e2e/tests/fixtures/apiReference.ts` の `prepareApiReference` を渡し、録画の中で `routeApiReference` を張ってからページを開く。
+  - ページはドキュメントサイトを起動せずに `docs/api/` のファイルから開く。リクエストは、撮る compose の API へ送り直す。
   - トークンは認証の欄に伏せ字のまま入れる。字幕には職員の名前だけを出し、トークンの値を出さない。
 
 ## Login and Test Data
 
-- `recordPrEvidence` の `prepare` で、`packages/e2e/tests/screens/login.ts` の `signInAtBroker` で compose のブローカーにログインする。メールは `packages/e2e/tests/fixtures/env.ts` の `LOGIN_EMAIL`（青木 陽菜、マネージャー）か `LEADER.email`（森 健太、チームリーダー）にする。
+- `recordPrEvidence` の `prepare` で、`packages/e2e/tests/screens/login.ts` の `signInAtBroker` を使って compose のブローカーにログインする。
+  - メールは `packages/e2e/tests/fixtures/env.ts` の `LOGIN_EMAIL`（青木 陽菜、マネージャー）か `LEADER.email`（森 健太、チームリーダー）にする。
   - `setup` の project が保存したログインの状態は使わない。`recordEvidence` は新しいコンテキストで録画するためである。
 - テストデータは、シードの職員と利用者を使い、足りないものは `prepare` で作る。作り方は E2E の spec と同じく、画面の操作か calendarpit の管理の API にする。
   - 録画の中では、観点の操作だけを行う。

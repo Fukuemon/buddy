@@ -33,7 +33,8 @@ MISE_AQUA_GITHUB_ATTESTATIONS=false mise install aqua:cli/cli
 
 ### スキルとフック
 
-agent-harness のスキルとフックは apm で配置し、Git で追跡しない。文書のチェックのスクリプト（`.claude/hooks/docs/`）も apm が配置する。  
+agent-harness のスキルとフックは apm で配置し、Git で追跡しない。  
+文書のチェックのスクリプト（`.claude/hooks/docs/`）も apm が配置する。  
 Claude Code か Codex を使うときは、clone した後の最初のセッションで、セッションの開始のフックが配置する。  
 コーディングエージェントを使わないときは、手で配置する。
 
@@ -74,14 +75,15 @@ docker compose up --build --wait
 - `http://localhost:3000` を開き、ブローカーのログインの画面でメールに `hina.aoki@example.com` を入れる。
   - 上流の IdP のフェイクの画面で、クレームの欄に `{"email": "hina.aoki@example.com", "email_verified": true}` を書いて入ると、青木 陽菜（マネージャー）としてログインする。
   - クレームのメールが無いときと、ブローカーで入れたメールと違うときは、ログインの失敗の画面になる。
-  - フェイクの画面の名前の欄の値は、初回のログインで職員に結び付く。以後は同じ値で入る。別の値で入るときは、`docker compose down -v` でデータを消す。
+  - フェイクの画面の名前の欄の値は、初回のログインで職員に結び付く。以後は同じ値で入る。
+    - 別の値で入るときは、`docker compose down -v` でデータを消す。
 - シードの職員のメールは次のとおり。
   - 1 つ目の事業所（組織 `org-sample`）: `hina.aoki@example.com`（青木 陽菜、マネージャー）、`kenta.mori@example.com`（森 健太、チームリーダー）
     - ほかに `sakura.hayashi@example.com` と `misaki.sato@example.com` がいる
   - 2 つ目の事業所（組織 `org-sample-b`）: `nagisa.ueno@example.com`（上野 渚、マネージャー）
     - ほかに、休職の職員の `takumi.ono@example.com`（小野 拓海）がいる。ログインの失敗の画面になる
-  - シードは、空の DB にだけ適用される。シードを変えた後は、`docker compose down -v` で作り直す。
-- 照合の画面で、予定の取り方に「Google カレンダー」を、対象の月に `2026-11` を選ぶと、calendarpit の森 健太のカレンダーの予定で照合できる。
+  - シードは、空の DB にだけ適用される。
+    - シードを変えた後は、`docker compose down -v` で作り直す。- 照合の画面で、予定の取り方に「Google カレンダー」を、対象の月に `2026-11` を選ぶと、calendarpit の森 健太のカレンダーの予定で照合できる。
 - データを消して最初からにするときは、`docker compose down -v` でボリュームを消す。
 - 別の worktree で同時に起動するときは、`docker compose -p <名前> up --build --wait` でプロジェクトの名前を変え、表の環境変数でポートをずらす。
   - E2E は、ずらしたポートに URL の環境変数を合わせて流す。
@@ -90,20 +92,23 @@ docker compose up --build --wait
 
 ### API を手で呼ぶ
 
-`compose/dev-token.sh` で、引数のメールの職員の access token を取る。ポートを変えて起動したときは、同じ環境変数を渡す。
+`compose/dev-token.sh` で、引数のメールの職員の access token を取る。  
+ポートを変えて起動したときは、同じ環境変数を渡す。
 
 ```sh
 TOKEN=$(compose/dev-token.sh hina.aoki@example.com)
 curl -H "Authorization: Bearer $TOKEN" localhost:8080/v1/facilities/01M3TC5H00QV17BC0J9V3393ZP
 ```
 
-照合の API も、同じトークンで呼べる。`month` を送ると、calendarpit の森 健太のカレンダーのその月の予定と照合する。
+照合の API も、同じトークンで呼べる。  
+`month` を送ると、calendarpit の森 健太のカレンダーのその月の予定と照合する。
 
 ```sh
 curl -H "Authorization: Bearer $TOKEN" -F visits=@services/receipt/testdata/visits_utf8.csv -F month=2026-11 localhost:8090/v1/checks
 ```
 
-ドキュメントサイトの API の仕様のページからも、ローカルの API を呼べる。公開したドキュメントサイトからは呼べない。
+ドキュメントサイトの API の仕様のページからも、ローカルの API を呼べる。  
+公開したドキュメントサイトからは呼べない。
 
 1. `docker compose up --build --wait schedule receipt` で API を立てる。
 2. `uv run zensical serve` で、ドキュメントサイトを `http://localhost:8000` で開く。`127.0.0.1` で開くと CORS で失敗する。
@@ -123,7 +128,8 @@ pnpm e2e
 - 書いたら `pnpm --filter @buddy/e2e check` を流す。
 - 環境変数と、テストのデータの扱いは [E2E のテスト](context/testing/e2e.md) にある。
 - エビデンスの動画を撮る spec は、`pnpm e2e` では流れない。撮るコマンドは [エビデンス](context/testing/evidence.md) の Capture Environment にある。
-- 失敗したテストの trace は `packages/e2e/test-results/` に残る。`pnpm --filter @buddy/e2e exec playwright show-trace <trace.zip>` で開く。trace.zip は、`packages/e2e` からの相対パス（Playwright が出す `test-results/...`）で渡す。
+- 失敗したテストの trace は `packages/e2e/test-results/` に残る。`pnpm --filter @buddy/e2e exec playwright show-trace <trace.zip>` で開く。
+  - trace.zip は、`packages/e2e` からの相対パス（Playwright が出す `test-results/...`）で渡す。
 
 ## Docs Site
 
@@ -175,7 +181,8 @@ node .claude/hooks/docs/hooks/check-links.mjs
 
 ## Editing the Design System
 
-使い方の規則は [packages/ui/DESIGN.md](packages/ui/DESIGN.md) にある。トークンを直すときは、スキル write-design-system に従う。  
+使い方の規則は [packages/ui/DESIGN.md](packages/ui/DESIGN.md) にある。  
+トークンを直すときは、スキル write-design-system に従う。  
 意味のトークン（`packages/ui/src/tokens/semantic.css`）か DADS のバージョンを変えたら、次を流し、生成した `docs/screens/_common/tokens.css` を同じコミットに入れる。
 
 ```sh
@@ -184,7 +191,8 @@ pnpm build:tokens     # 画面のモックとドキュメントサイトが読�
 ```
 
 - 組を足すときと外すときは、`scripts/check-contrast.mjs` の冒頭の `TEXT_PAIRS` と `NON_TEXT_PAIRS` を直す。
-- `scripts/check-contrast.mjs` と `scripts/build-static-tokens.mjs` は、agent-harness のパッケージ design-system のテンプレートを写したものである。パッケージを上げたら、スキル setup-design-system の手順で差分を見て取り込む。
+- `scripts/check-contrast.mjs` と `scripts/build-static-tokens.mjs` は、agent-harness のパッケージ design-system のテンプレートを写したものである。
+  - パッケージを上げたら、スキル setup-design-system の手順で差分を見て取り込む。
 
 ## Changing the API Definition
 
@@ -207,7 +215,8 @@ ADR-0003: [git flow でマージし、アプリごとのバージョンでリリ
 viewpoint を足したときは、生成した文書を `zensical.toml` の nav の「DB の設計」にも足す。  
 どちらかが抜けていると、`pnpm generate:db-docs` が 1 で終わる。
 
-マージする前に、ルートで生成物がそろっているかを確認する。テーブル定義書は、CI の `db-docs` のジョブが確認する。
+マージする前に、ルートで生成物がそろっているかを確認する。  
+テーブル定義書は、CI の `db-docs` のジョブが確認する。
 
 ```sh
 pnpm check:generated
@@ -216,7 +225,7 @@ pnpm check:generated
 ## CI
 
 pull request では、CI（[ci.yml](.github/workflows/ci.yml)）が通るまでマージしない。  
-変更ごとにローカルで流すテストは `context/testing.md` の Required Tests にある。
+変更ごとにローカルで流すテストは、[テスト](context/testing.md#required-tests) の Required Tests にある。
 
 - pull request と issue のタイトルと本文の形は、[issue-pr-body.yml](.github/workflows/issue-pr-body.yml) が確認する。
 - E2E が CI だけで失敗したときは、ワークフローの実行の画面から artifact の `e2e-test-results` を落とし、中の trace を [E2E Tests](#e2e-tests) の手順で開く。
@@ -233,10 +242,15 @@ pull request では、CI（[ci.yml](.github/workflows/ci.yml)）が通るまで�
 ADR-0003: [git flow でマージし、アプリごとのバージョンでリリースする](docs/adr/0003-branch-and-release.md)
 
 - `main` はリリース済みの状態を指す。`develop` は次のリリースに向けて変更を集める。
-- `develop` の状態を検証環境に、`main` の状態を本番環境に反映する。
-  - 検証環境で確認する前の変更と、外部の人が試す変更は、ローカルの compose で確認する。検証環境と本番環境は、外部の人は開けない。
-- 作業用のブランチは `develop` から切る。名前は `feature/<issue 番号>` にし、不具合は `fix/<issue 番号>` にする。1 つの issue を複数の pull request に分けるときは、`feature/<issue 番号>-<短い名前>` にする。
-- リリースは、検証した `develop` を `main` へ pull request でマージし、`main` のコミットにアプリごとのタグを手で付ける。タグは `<ディレクトリ>/vX.Y.Z`（`apps/web/v1.0.0`、`services/schedule/v1.0.0` など）の形で、バージョンはセマンティック バージョニングに従う。
+- `develop` の状態を検証環境に、`main` の状態を本番環境に反映する。環境ごとの用途は [基盤と運用](context/operations.md#environments) にある。
+  - 検証環境で確認する前の変更と、外部の人が試す変更は、ローカルの compose で確認する。
+  - 検証環境と本番環境は、外部の人は開けない。
+- 作業用のブランチは `develop` から切る。
+  - 名前は `feature/<issue 番号>` にし、不具合は `fix/<issue 番号>` にする。
+  - 1 つの issue を複数の pull request に分けるときは、`feature/<issue 番号>-<短い名前>` にする。
+- リリースは、検証した `develop` を `main` へ pull request でマージし、`main` のコミットにアプリごとのタグを手で付ける。
+  - タグは `<ディレクトリ>/vX.Y.Z`（`apps/web/v1.0.0`、`services/schedule/v1.0.0` など）の形にする。
+  - バージョンはセマンティック バージョニングに従う。
 - リリース後の緊急の修正は、`main` から `hotfix/<issue 番号>` を切り、`main` と `develop` の両方へマージする。
 - 保護するブランチは `main`、`develop` である。直接はコミットせず、pull request を通してマージする。
 
@@ -265,20 +279,30 @@ gitGraph
 
 ## Issues and Pull Requests
 
-- 作業は issue から始める。issue は、issue テンプレートの要求、不具合、タスクから選ぶ。対象のアプリとパッケージは `pkg:` のラベルで示す。
+- 作業は issue から始める。
+  - issue は、issue テンプレートの要求、不具合、タスクから選ぶ。
+  - 対象のアプリとパッケージは `pkg:` のラベルで示す。
 - タスクと不具合は、親の要求の sub-issue にする。
   - 保守のタスク（依存の更新、Dependabot と CI の設定、開発の環境、規約とテンプレートの直し）は、保守の要求 #220 の sub-issue にする。
-  - 不具合は、不具合が起きた機能の要求の sub-issue にする。当てはまる要求が無ければ #220 にする。不具合の form には親の欄が無いので、起票した後に sub-issue にする。
-- タイトルと本文の書き方は、スキル write-issue-pr に従う。pull request の本文は `.github/pull_request_template.md` のセクションで書く。
-- 起票の前の下書きは `.ai-out/issues/` か `.ai-out/prs/` に置き、`pnpm exec textlint --ignore-path /dev/null <下書きのパス>` で確認する。check-history と check-links は、下書きには流さない。
+  - 不具合は、不具合が起きた機能の要求の sub-issue にする。当てはまる要求が無ければ #220 にする。
+    - 不具合の form には親の欄が無いので、起票した後に sub-issue にする。
+- タイトルと本文の書き方は、スキル write-issue-pr に従う。
+  - pull request の本文は `.github/pull_request_template.md` のセクションで書く。
+- 起票の前の下書きは `.ai-out/issues/` か `.ai-out/prs/` に置き、`pnpm exec textlint --ignore-path /dev/null <下書きのパス>` で確認する。
+  - check-history と check-links は、下書きには流さない。
 - 本文とコメントに、コーディングエージェントが生成したことを示す行（Generated with Claude Code）と、セッションの URL を付けない。
-- pull request は 1 つの issue に対応させる。大きい issue は、関心事ごとに複数の pull request に分ける。最後にマージする pull request の本文に `Closes #<番号>` を書き、ほかは `Refs #<番号>` を書く。
-- 機能の追加と改修の pull request では、本文の「検証とエビデンス」に、観点ごとのエビデンスの動画を入れる。動作を確認しない変更では、このセクションを消す。
+- pull request は 1 つの issue に対応させる。
+  - 大きい issue は、関心事ごとに複数の pull request に分ける。
+  - 最後にマージする pull request の本文に `Closes #<番号>` を書き、ほかは `Refs #<番号>` を書く。
+- 機能の追加と改修の pull request では、本文の「検証とエビデンス」に、観点ごとのエビデンスの動画を入れる。
+  - 動作を確認しない変更では、「検証とエビデンス」のセクションを消す。
   - 対象と格納先は [エビデンス](context/testing/evidence.md) に、撮り方と本文への入れ方はスキル attach-evidence にある。
 - レビューの指摘に対応してから、[Merging and Cleanup](#merging-and-cleanup) の手順でマージする。
-  - Codex のボットは、pull request を開いたときにレビューする。もう一度頼むときは、直したコミットを示す返信の末尾に `@codex review` と書く。`@codex review` だけのコメントを作らない。
+  - Codex のボットは、pull request を開いたときにレビューする。
+    - もう一度頼むときは、直したコミットを示す返信の末尾に `@codex review` と書く。`@codex review` だけのコメントを作らない。
   - Codex が使用量の上限に達したときは、頼み直さずに、読み取りだけのサブエージェントでレビューする。
-  - サブエージェントのレビューの結果は、1 つのコメントにまとめ、指摘ごとに重要度を付ける。重要度は、must（マージの前に直す誤り）、imo（直すとよい提案）、nits（表記の小さな直し）、ask（書き手への問い）の 4 つにする。
+  - サブエージェントのレビューの結果は、1 つのコメントにまとめ、指摘ごとに重要度を付ける。
+    - 重要度は、must（マージの前に直す誤り）、imo（直すとよい提案）、nits（表記の小さな直し）、ask（書き手への問い）の 4 つにする。
 
 ## Merging and Cleanup
 

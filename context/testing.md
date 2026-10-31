@@ -28,8 +28,11 @@ status: stable
 
 ## Runtime Requirements
 
-- 予定の API の結合テストは Docker が要る。testcontainers-go が PostgreSQL のコンテナを起動し、接続の値はテストの中に固定してある。環境変数は要らない。
-- 照合の API のテストと web の Vitest は、外部のネットワークと環境変数を要らない。照合の API のテストは、フェイクの Issuer と Calendar API を loopback で立てる。web は `VITE_API_MODE` を指定しなければフェイクの API で動く。
+- 予定の API の結合テストは Docker が要る。環境変数は要らない。
+  - testcontainers-go が PostgreSQL のコンテナを起動し、接続の値はテストの中に固定してある。
+- 照合の API のテストと web の Vitest は、外部のネットワークと環境変数を要らない。
+  - 照合の API のテストは、フェイクの Issuer と Calendar API を loopback で立てる。
+  - web は `VITE_API_MODE` を指定しなければフェイクの API で動く。
 - `packages/ui` のテストは、Playwright の chromium が要る（`pnpm --filter @buddy/ui exec playwright install chromium`）。
 - E2E は、ルートの compose の全体（ポートは [CONTRIBUTING.md](../CONTRIBUTING.md) の Running Locally）と、Playwright の chromium が要る。
 - 照合の互換のテストの期待値を作り直すときだけ、元の Python の実装のチェックアウトと uv が要る（`services/receipt/tools/parity/README.md`）。
@@ -45,14 +48,20 @@ status: stable
 | web のサーバーから見た 2 つの API | MSW の handler（`apps/web/src/mocks/`、`src/test/server.ts`） | compose の本物 |
 
 - テストのデータは、ダミーデータだけを使う。実在の事業所、人、連絡先を入れず、メールは `example.com` にする。
-- 予定の API のシードは `services/schedule/db/seed/seed.sql` にあり、結合テストと compose が同じシードを適用する。全ての環境で同じマスタは、シードではなくマイグレーションが入れる。
+- 予定の API のシードは `services/schedule/db/seed/seed.sql` にあり、結合テストと compose が同じシードを適用する。
+  - 全ての環境で同じマスタは、シードではなくマイグレーションが入れる。
 - 照合の入力の CSV は `services/receipt/testdata/` に、互換のテストのケースは `testdata/parity/<ケース>/` に置く。
-- web のテストで HTTP を受けるのは MSW だけにし、fetch を引数で差し替えない。共通の handler は成功のレスポンスだけを返し、異常系はテストごとに `server.use()` で上書きする。handler の無いリクエストはテストを失敗させる。
+- web のテストで HTTP を受けるのは MSW だけにし、fetch を引数で差し替えない。
+  - 共通の handler は成功のレスポンスだけを返し、異常系はテストごとに `server.use()` で上書きする。
+  - handler の無いリクエストはテストを失敗させる。
   - 送ったリクエストの中身はテストの側で確認しない。上書きした handler が中身を確認し、合わなければ 400 を返して、テストの結果を変える。
   - API を呼ばないことを確認するときは、その API の全てのリクエストに 500 を返す handler（`http.all`）で上書きし、結果が変わらないことを見る。
   - handler は `openapi-msw` で各 API の `openapi.yaml` から生成した型を使い、レスポンスが API の定義からずれると型のチェックで失敗する。
-- web の story は、ダミーデータだけを使い、本物の API を呼ばない。データは、schedule が `features/schedule/components/storyData.ts`、receipt がフェイクの API の `fakeReceiptReport` である。
-  - Container の story は、`apps/web/src/storybook/withAppRouter.tsx` の decorator の中で描く。decorator は、アプリと同じ ID の route と、フェイクの `BuddyApi`（`src/api/fake/`）を用意する。空、失敗、読み込み中は、同じファイルのフェイクの API の変種で作る。1 つの story だけで使うレスポンス（照合の行のエラーなど）は、その story の中でフェイクの API を作ってよい。
+- web の story は、ダミーデータだけを使い、本物の API を呼ばない。
+  - データは、schedule が `features/schedule/components/storyData.ts`、receipt がフェイクの API の `fakeReceiptReport` である。
+  - Container の story は、`apps/web/src/storybook/withAppRouter.tsx` の decorator の中で描く。decorator は、アプリと同じ ID の route と、フェイクの `BuddyApi`（`src/api/fake/`）を用意する。
+  - 空、失敗、読み込み中は、`withAppRouter.tsx` のフェイクの API の変種で作る。
+  - 1 つの story だけで使うレスポンス（照合の行のエラーなど）は、その story の中でフェイクの API を作ってよい。
 
 ## Required Tests
 
@@ -72,7 +81,7 @@ status: stable
 | 画面仕様書、モック、story の `title` と export の名前、E2E の testid | `pnpm check:screens` |
 
 マージする前に、変えたアプリの `test` と `check`（Go は `go test ./...`、`go vet ./...`、`golangci-lint run`）を流す。  
-Go のテストと lint の流し方（`GOWORK=off`、`packages/go` を変えたとき）は、[CONTRIBUTING.md](../CONTRIBUTING.md) の「Go のモジュール」にある。
+Go のテストと lint の流し方（`GOWORK=off`、`packages/go` を変えたとき）は、[CONTRIBUTING.md の Go のモジュール](../CONTRIBUTING.md#go-のモジュール) にある。
 
 pull request と develop への push では、CI（[ci.yml](../.github/workflows/ci.yml)）が、変えた場所によらず全てのジョブを流す。
 
