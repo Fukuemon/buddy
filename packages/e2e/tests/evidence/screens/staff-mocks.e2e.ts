@@ -200,12 +200,39 @@ test.describe('職員の管理の画面仕様書のモック', () => {
           await expect(page).toHaveURL(/06-on-leave\.html/)
           await expect(page.getByTestId('staff-detail-reinstate')).toBeVisible()
           await check('休職の職員のモック（06-on-leave.html）へ移り、「復職にする」が出る')
+        },
+      )
+    })
+
+    test(`${prefix}休職の職員の詳細のモックで復職にするを押した場合、有効な職員の詳細のモックへ移ること`, async ({
+      browser,
+    }) => {
+      const onLeave = 'staff-detail_職員の詳細/mocks/06-on-leave.html'
+      await recordPrEvidence(
+        browser,
+        {
+          name: 'staff-mock-reinstate',
+          title: '休職の職員の詳細のモックで復職にするを押すと、有効な職員の詳細のモックへ移る',
+          actor: 'ログインなし',
+          variant,
+        },
+        async (page) => {
+          await page.goto(mockUrl(onLeave))
+        },
+        async ({ page, step, check }) => {
+          await page.goto(mockUrl(onLeave))
+          await expect(page.getByTestId('staff-detail-status')).toHaveText(
+            '休職（2027/04/01 に戻る予定）',
+          )
+          await check(
+            '休職の職員の詳細のモック（06-on-leave.html）に、休職の印と「復職にする」が出ている',
+          )
 
           await step('「復職にする」を押す')
           await page.getByTestId('staff-detail-reinstate').click()
           await expect(page).toHaveURL(/01-detail\.html/)
           await expect(page.getByTestId('staff-detail-status')).toHaveText('有効')
-          await check('有効な職員の詳細のモック（01-detail.html）へ戻る')
+          await check('有効な職員の詳細のモック（01-detail.html）へ移り、有効の印が出る')
         },
       )
     })
