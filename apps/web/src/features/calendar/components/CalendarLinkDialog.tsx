@@ -1,8 +1,5 @@
-import { Button } from '@buddy/ui'
+import { BusyLabel, Button, HelpToggle, InputDialog } from '@buddy/ui'
 import { useId } from 'react'
-
-import { BusyLabel } from './BusyLabel'
-import { CalendarDialog } from './CalendarDialog'
 
 /** 読めるかの確認の状態。failed は、確認か結び付けが失敗したときである。 */
 export type CalendarCheckStatus = 'idle' | 'checking' | 'readable' | 'failed'
@@ -26,7 +23,10 @@ export type CalendarLinkDialogProps = {
 const inputClassName =
   'min-h-11 w-full rounded-8 px-3 text-body ring-1 ring-border-field ring-inset focus-visible:focus-ring disabled:bg-surface-disabled disabled:text-text-disabled'
 
-/** 1 人の職員に Google カレンダーを結び付けるダイアログ。読めると確認したカレンダーだけを結び付けられる。 */
+/**
+ * 1 人の職員に Google カレンダーを結び付けるダイアログ。読めると確認したカレンダーだけを結び付けられる。
+ * カレンダーの ID がどこにあるかは、初めて結び付けるときだけ要る説明なので、見出しの右の ? のヘルプに入れる。
+ */
 export const CalendarLinkDialog = ({
   staffName,
   calendarId,
@@ -38,36 +38,20 @@ export const CalendarLinkDialog = ({
   onSubmit,
   onClose,
 }: CalendarLinkDialogProps) => {
-  const titleId = useId()
   const inputId = useId()
-  const hintId = useId()
   const checking = checkStatus === 'checking'
   return (
-    <CalendarDialog
-      canClose={!isSubmitting}
-      data-testid="calendar-link-dialog"
-      labelledBy={titleId}
+    <InputDialog
+      busyLabel="結び付ける"
+      canSubmit={checkStatus === 'readable'}
+      closeTestId="calendar-link-dialog-close"
+      isSubmitting={isSubmitting}
       onClose={onClose}
+      onSubmit={onSubmit}
+      submitLabel="結び付ける"
+      testIdPrefix="calendar-link"
+      title="カレンダーを結び付ける"
     >
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="text-heading-sm" id={titleId}>
-          カレンダーを結び付ける
-        </h2>
-        <button
-          aria-disabled={isSubmitting || undefined}
-          aria-label="閉じる"
-          className="grid size-11 shrink-0 place-items-center rounded-8 hover:bg-surface-subtle focus-visible:focus-ring aria-disabled:text-text-disabled"
-          data-testid="calendar-link-dialog-close"
-          onClick={() => {
-            if (!isSubmitting) onClose()
-          }}
-          type="button"
-        >
-          <svg aria-hidden height="20" viewBox="0 0 20 20" width="20">
-            <path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" strokeWidth="1.8" />
-          </svg>
-        </button>
-      </div>
       <div className="flex flex-col gap-1">
         <span className="text-caption text-text-secondary">職員</span>
         <span className="text-body" data-testid="calendar-link-staff">
@@ -75,11 +59,16 @@ export const CalendarLinkDialog = ({
         </span>
       </div>
       <div className="flex flex-col gap-1">
-        <label className="text-label" htmlFor={inputId}>
-          カレンダーの ID
-        </label>
+        <div className="relative flex items-center gap-1">
+          <label className="text-label" htmlFor={inputId}>
+            カレンダーの ID
+          </label>
+          <HelpToggle data-testid="schedule-link-calendar-id-help">
+            Google カレンダーの「カレンダーの統合」にある ID です。個人のカレンダーでは、Google
+            のメールアドレスです。
+          </HelpToggle>
+        </div>
         <input
-          aria-describedby={hintId}
           autoComplete="off"
           className={inputClassName}
           data-testid="calendar-link-input"
@@ -89,10 +78,6 @@ export const CalendarLinkDialog = ({
           type="text"
           value={calendarId}
         />
-        <span className="text-caption text-text-secondary" id={hintId}>
-          Google カレンダーの「カレンダーの統合」にある ID。個人のカレンダーでは、Google
-          のメールアドレスです。
-        </span>
       </div>
       <div>
         <Button
@@ -122,25 +107,6 @@ export const CalendarLinkDialog = ({
           {errorMessage}
         </p>
       )}
-      <div className="flex flex-wrap justify-end gap-3">
-        <Button
-          data-testid="calendar-link-cancel"
-          disabled={isSubmitting}
-          onClick={onClose}
-          size="S"
-          variant="secondary"
-        >
-          キャンセル
-        </Button>
-        <Button
-          data-testid="calendar-link-submit"
-          disabled={checkStatus !== 'readable' || isSubmitting}
-          onClick={onSubmit}
-          size="S"
-        >
-          <BusyLabel busy={isSubmitting}>結び付ける</BusyLabel>
-        </Button>
-      </div>
-    </CalendarDialog>
+    </InputDialog>
   )
 }

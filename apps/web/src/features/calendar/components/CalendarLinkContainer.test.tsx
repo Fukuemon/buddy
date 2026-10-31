@@ -44,7 +44,7 @@ describe('CalendarLinkContainer', () => {
     await userEvent.click(within(dialog).getByTestId('calendar-link-check'))
 
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(
-      'このカレンダーを読めません。カレンダーをこの事業所の buddy のサービスアカウントに共有したかと、カレンダーの ID が合っているかを確認してください。',
+      'このカレンダーを読めません。カレンダーが、上に出ている buddy のメールアドレスに共有されているかと、カレンダーの ID が合っているかを確認してください。',
     )
     expect(within(dialog).getByTestId('calendar-link-submit')).toHaveAttribute(
       'aria-disabled',
@@ -84,10 +84,12 @@ describe('CalendarLinkContainer', () => {
 
   it('外すダイアログで外すと、その職員の行を結び付けていないにする', async () => {
     render(<Default />)
-    await userEvent.click(await screen.findByTestId('calendar-link-remove-staff-1'))
+    await userEvent.click(await screen.findByTestId('calendar-link-menu-staff-1'))
+    expect(screen.getByTestId('calendar-link-import-staff-1')).toBeInTheDocument()
+    await userEvent.click(screen.getByTestId('calendar-link-remove-staff-1'))
     const dialog = screen.getByTestId('calendar-unlink-dialog')
     expect(dialog).toHaveTextContent(
-      '青木 一郎 の Google カレンダー（staff-1@example.com）を外します。取り込んだ予定は buddy に残ります。',
+      '青木 一郎 の Google カレンダー（staff-1@example.com）を外します。取り込んだ予定は buddy に残ります。結び付け直しても、同じ予定を二度は取り込みません。',
     )
     await userEvent.click(within(dialog).getByTestId('calendar-unlink-submit'))
 
@@ -103,7 +105,7 @@ describe('CalendarLinkContainer', () => {
     expect(screen.queryByTestId('calendar-link-dialog')).toBeNull()
   })
 
-  it('サービスアカウントが無ければ、知らせを出し、結び付けるを押せない', async () => {
+  it('事業所の Google カレンダーの設定が無ければ、知らせを出し、結び付けるを押せない', async () => {
     render(<NotConfigured />)
     expect(await screen.findByTestId('calendar-link-not-configured')).toBeInTheDocument()
     expect(screen.queryByTestId('calendar-link-guide')).toBeNull()
@@ -111,7 +113,10 @@ describe('CalendarLinkContainer', () => {
       'aria-disabled',
       'true',
     )
-    expect(screen.getByTestId('calendar-link-remove-staff-1')).not.toHaveAttribute('aria-disabled')
+    expect(await screen.findByTestId('calendar-link-not-configured')).toHaveTextContent(
+      'この事業所では、まだ Google カレンダーを使う準備ができていません。事業所の管理者に、設定を頼んでください。',
+    )
+    expect(screen.getByTestId('calendar-link-menu-staff-1')).not.toHaveAttribute('aria-disabled')
   })
 
   it('一覧を読めなければ、失敗の文と読み直すを出す', async () => {

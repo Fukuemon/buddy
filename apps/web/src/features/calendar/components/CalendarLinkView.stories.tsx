@@ -40,7 +40,7 @@ export const LoadError: Story = {
   args: { state: { status: 'error', message: LINK_LOAD_ERROR_MESSAGE } },
 }
 
-/** サービスアカウントが設定されていない。結び付けるを押せない。 */
+/** 事業所の Google カレンダーの設定が無い。結び付けるを押せない。 */
 export const NotConfigured: Story = {
   args: { state: { status: 'ready', rows: storyLinkRows, serviceAccount: null } },
 }

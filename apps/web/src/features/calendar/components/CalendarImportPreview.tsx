@@ -1,4 +1,4 @@
-import { Button } from '@buddy/ui'
+import { BusyLabel, Button } from '@buddy/ui'
 
 import type { ImportPreview, ImportReviewItem, Patient } from '#/api/types'
 
@@ -13,7 +13,6 @@ import {
   type ReviewChoice,
   type ReviewChoices,
 } from '../lib/importSummary'
-import { BusyLabel } from './BusyLabel'
 import { CalendarImportCounts } from './CalendarImportCounts'
 import { CalendarImportReviewItem } from './CalendarImportReviewItem'
 
