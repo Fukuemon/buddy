@@ -13,7 +13,9 @@ type PatientUsecase interface {
 	Create(ctx context.Context, in patient.CreateInput) (patient.Detail, error)
 	Update(ctx context.Context, id string, in patient.UpdateInput) (patient.Detail, error)
 	End(ctx context.Context, id string) (patient.Detail, error)
+	RemainingSchedules(ctx context.Context, id string) (patient.Remaining, error)
 	Resume(ctx context.Context, id, assignedStaffID string) (patient.Detail, error)
+	Get(ctx context.Context, id string) (patient.Detail, error)
 	List(ctx context.Context, facilityID string, q patient.ListQuery) ([]patient.Detail, error)
 }
 
@@ -81,6 +83,24 @@ func (s server) CreatePatient(ctx context.Context, req openapi.CreatePatientRequ
 		return nil, err
 	}
 	return openapi.CreatePatient201JSONResponse(toPatient(p)), nil
+}
+
+// GetPatient は、利用中か利用の終了の利用者を 1 人返す。
+func (s server) GetPatient(ctx context.Context, req openapi.GetPatientRequestObject) (openapi.GetPatientResponseObject, error) {
+	p, err := s.u.Patients.Get(ctx, req.PatientId)
+	if err != nil {
+		return nil, err
+	}
+	return openapi.GetPatient200JSONResponse(toPatient(p)), nil
+}
+
+// GetPatientRemainingSchedules は、利用者の今日以降に残る予定と繰り返しの予定を、利用の終了の 409 と同じ形で返す。
+func (s server) GetPatientRemainingSchedules(ctx context.Context, req openapi.GetPatientRemainingSchedulesRequestObject) (openapi.GetPatientRemainingSchedulesResponseObject, error) {
+	r, err := s.u.Patients.RemainingSchedules(ctx, req.PatientId)
+	if err != nil {
+		return nil, err
+	}
+	return openapi.GetPatientRemainingSchedules200JSONResponse(toPatientSchedules(r)), nil
 }
 
 // UpdatePatient は、利用者の名前、希望、サービスコード、担当の職員を変え、変えた利用者を返す。

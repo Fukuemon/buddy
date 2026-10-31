@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -157,7 +158,19 @@ type fakePatients struct {
 	lastID     string
 	lastUpdate patient.UpdateInput
 	lastStaff  string
+	remaining  patient.Remaining
 	err        error
+}
+
+func (f *fakePatients) Get(_ context.Context, id string) (patient.Detail, error) {
+	f.lastID = id
+	at := time.Date(2026, 10, 31, 9, 0, 0, 0, time.UTC)
+	return patient.Detail{Patient: patient.Patient{ID: id, Name: "見本 花子", PreferredTime: patient.Morning, PreferredGender: patient.Female, EndedAt: &at}}, f.err
+}
+
+func (f *fakePatients) RemainingSchedules(_ context.Context, id string) (patient.Remaining, error) {
+	f.lastID = id
+	return f.remaining, f.err
 }
 
 func (f *fakePatients) Create(context.Context, patient.CreateInput) (patient.Detail, error) {
@@ -626,6 +639,44 @@ func TestEndPatientService(t *testing.T) {
 	scheds := r["schedules"].([]any)
 	if len(scheds) != 1 || scheds[0].(map[string]any)["date"] != "2026-11-02" || len(r["recurring_schedules"].([]any)) != 0 {
 		t.Errorf("schedules = %v, want 予定 1 件と空の繰り返し", r)
+	}
+}
+
+// 利用者を 1 人読むと、利用の終了の利用者も、利用の終了にした時刻と一緒に返る。権限が無ければ 403 を返す（#353 の検証の観点 1、3）。
+func TestGetPatient(t *testing.T) {
+	p := &fakePatients{}
+	rec, body := do(t, newRouter(nil, &fakeStaff{}, p), http.MethodGet, "/v1/patients/"+patientID, "")
+	if rec.Code != http.StatusOK || p.lastID != patientID || body["name"] != "見本 花子" || body["ended_at"] != "2026-10-31T09:00:00Z" {
+		t.Fatalf("status = %d, id = %s, body = %v", rec.Code, p.lastID, body)
+	}
+	rec, body = do(t, newRouter(nil, &fakeStaff{}, &fakePatients{err: apperr.ErrForbidden}), http.MethodGet, "/v1/patients/"+patientID, "")
+	if rec.Code != http.StatusForbidden || body["code"] != "forbidden" {
+		t.Errorf("権限なし: status = %d, body = %v, want 403", rec.Code, body)
+	}
+	rec, _ = do(t, newRouter(nil, &fakeStaff{}, &fakePatients{err: apperr.ErrNotFound}), http.MethodGet, "/v1/patients/"+patientID, "")
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("いない利用者: status = %d, want 404", rec.Code)
+	}
+}
+
+// 利用者に残る予定は、利用の終了の 409 の schedules と同じ形で返る。権限が無ければ 403 を返す（#353 の検証の観点 2、3）。
+func TestGetPatientRemainingSchedules(t *testing.T) {
+	rem := patient.Remaining{
+		Schedules: []patient.RemainingSchedule{{ID: scheduleID, Date: civil.Date{Year: 2026, Month: 11, Day: 2}, StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10}}},
+		Recurring: []patient.RemainingRecurring{{ID: patientID, Date: civil.Date{Year: 2026, Month: 9, Day: 1}, StartTime: civil.Time{Hour: 13}, EndTime: civil.Time{Hour: 14}}},
+	}
+	p := &fakePatients{remaining: rem}
+	rec, body := do(t, newRouter(nil, &fakeStaff{}, p), http.MethodGet, "/v1/patients/"+patientID+"/remaining_schedules", "")
+	if rec.Code != http.StatusOK || p.lastID != patientID {
+		t.Fatalf("status = %d, id = %s, body = %v", rec.Code, p.lastID, body)
+	}
+	_, conflict := do(t, newRouter(nil, &fakeStaff{}, &fakePatients{err: &patient.ScheduledError{Remaining: rem}}), http.MethodPost, "/v1/patients/"+patientID+"/end_service", "")
+	if !reflect.DeepEqual(body, conflict["schedules"]) {
+		t.Errorf("body = %v, want 利用の終了の 409 の schedules（%v）と同じ", body, conflict["schedules"])
+	}
+	rec, body = do(t, newRouter(nil, &fakeStaff{}, &fakePatients{err: apperr.ErrForbidden}), http.MethodGet, "/v1/patients/"+patientID+"/remaining_schedules", "")
+	if rec.Code != http.StatusForbidden || body["code"] != "forbidden" {
+		t.Errorf("権限なし: status = %d, body = %v, want 403", rec.Code, body)
 	}
 }
 
