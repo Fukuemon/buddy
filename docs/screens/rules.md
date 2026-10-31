@@ -125,8 +125,8 @@ docs/screens/
   - アカウントのメニューは `data-panel` と `data-panel-dismiss` で開閉し、外を押すか Escape キーで閉じる。
   - ヘッダーの後ろの `wf-site-body` の先頭に、ナビゲーションの `wf-site-nav` と覆いの `wf-site-nav-overlay` を置き、最後に画面の中身の `wf-site-main` を置く。
   - `wf-site-nav` には、機能ごとの `wf-site-nav__group` を置き、見出しの `wf-site-nav__heading` と、画面の `wf-site-nav__item` を並べる。要確認の件数の印は `wf-site-badge` にする。
-  - `wf-site-nav` は、幅 768px 以上では開いた形で描き、`data-start="rail"` を付けるとレールで描く。メニューのボタンの `data-open="site-nav"` で形を切り替える。未満ではドロワーになる。
-  - 左の欄がある画面（予定のカレンダー）だけ、`wf-site-main` の前に、左の欄の `wf-site-drawer` と覆いの `wf-site-drawer-overlay` を置く。`wf-site-drawer` は、幅 768px 以上では開いた状態で始め、`data-open` のボタンでたたむ。未満ではドロワーになる。幅 768px 以上の `is-open` は、たたんだ状態を表す。
+  - `wf-site-nav` は、幅 768px 以上では開いた形で描き、`data-start="rail"` を付けるとレールで描く。メニューのボタンの `data-open="site-nav"` で形を切り替える。未満ではドロワーになる。付ける `data-panel-wide` の値は、[画面の中の操作](#画面の中の操作) にある。
+  - 左の欄がある画面（予定のカレンダー）だけ、`wf-site-main` の前に、左の欄の `wf-site-drawer` と覆いの `wf-site-drawer-overlay` を置く。`wf-site-drawer` は、幅 768px 以上では開いた状態で始め、`data-open` のボタンでたたむ。未満ではドロワーになる。幅 768px 以上の `is-open` は、たたんだ状態を表す。付ける `data-panel-wide` の値は、[画面の中の操作](#画面の中の操作) にある。
 
 ### 構成番号と data-testid
 
@@ -178,6 +178,10 @@ docs/screens/
 - `interact.js` は、表示を変えた後に `mockRefresh()` を呼び、番号の印を置き直す。
 - `data-panel` に `data-panel-modal` も付けると、開いている間は panel の外の要素の印を出さない。デバイスを切り替えると、開いている panel を閉じる。
 - panel を開くと、panel の中の最初のフォーカスできる要素へフォーカスを移す。閉じると、見えている開くボタンへフォーカスを戻す。
+- 幅 768px 以上で、開閉ではなく形の切り替えになる panel には、`data-panel-wide` を付ける。サイトのナビゲーションと、予定のカレンダーの左の欄に付ける。
+  - 幅 768px 以上で `is-open` がたたんだ状態を表す panel は、値を `collapse` にする。左の欄と、`data-start="rail"` の無いナビゲーションである。`interact.js` は、幅 768px 以上では開くボタンの `aria-expanded` を `is-open` の逆にする。
+  - `data-start="rail"` のナビゲーションは、値を `expand` にする。
+  - どちらの値でも、幅 768px 以上ではフォーカスを開くボタンに残す。
 - 属性で書けない操作が要るときは、モックに script を書かず、`interact.js` に属性を足す。
 
 モックの印の位置は、Chromium と Firefox の今のバージョン（CSS の `zoom` を標準の形で扱うもの）で確認する。Safari での位置は確認していない。

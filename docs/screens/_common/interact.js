@@ -11,6 +11,9 @@
  *   開くと panel の中の最初のフォーカスできる要素へ、閉じると開くボタンへフォーカスを移す。
  *   data-panel-modal も付けた panel を開いて見えている間は、panel の外の要素に構成番号の印を出さない。
  *   data-panel-dismiss も付けた panel は、panel と開くボタンの外を押すか、Escape キーを押すと閉じる。メニューに使う。
+ *   data-panel-wide も付けた panel は、幅 768px 以上では形を切り替えるだけで、フォーカスを開くボタンに残す。
+ *   値が collapse の panel は、幅 768px 以上では is-open でたたむので、開くボタンの aria-expanded を is-open の逆にする。
+ *   値が expand の panel は、幅 768px 以上では is-open で広げるので、aria-expanded は is-open のままにする。
  * - data-escape: Escape キーで押す。見えている要素だけを押す。
  *
  * 押せる要素には tabindex="0" を付け、Enter と Space でも押せるようにする。aria-disabled="true" の要素は押せない。
@@ -61,15 +64,35 @@
     return screen.querySelectorAll(`[data-panel="${CSS.escape(name)}"]`)
   }
 
+  function openers(panel) {
+    return [...screen.querySelectorAll(`[data-open="${CSS.escape(panel.dataset.panel)}"]`)]
+  }
+
+  /** wireframe.css が、幅 768px 以上で data-panel-wide の panel に --wf-panel-wide を置く */
+  function isWide(panel) {
+    return getComputedStyle(panel).getPropertyValue('--wf-panel-wide').trim() === '1'
+  }
+
+  function syncExpanded(panel) {
+    const isOpen = panel.classList.contains('is-open')
+    const isCollapsed = panel.dataset.panelWide === 'collapse' && isWide(panel)
+    for (const opener of openers(panel))
+      opener.setAttribute('aria-expanded', String(isCollapsed ? !isOpen : isOpen))
+  }
+
+  function syncAllExpanded() {
+    for (const panel of screen.querySelectorAll('[data-panel]')) syncExpanded(panel)
+  }
+
   function setPanel(panel, isOpen) {
     panel.classList.toggle('is-open', isOpen)
-    const openers = [...screen.querySelectorAll(`[data-open="${CSS.escape(panel.dataset.panel)}"]`)]
-    for (const opener of openers) opener.setAttribute('aria-expanded', String(isOpen))
+    syncExpanded(panel)
     // 予定のカレンダーの左の欄は、幅 768px 以上では is-open でたたむので、見えているときだけ印を隠す
     if (panel.hasAttribute('data-panel-modal')) coverMarkers(panel, isOpen && isVisible(panel))
-    const target = isOpen
-      ? [...panel.querySelectorAll(FOCUSABLE)].find(isVisible)
-      : openers.find(isVisible)
+    const target =
+      isOpen && !isWide(panel)
+        ? [...panel.querySelectorAll(FOCUSABLE)].find(isVisible)
+        : openers(panel).find(isVisible)
     target?.focus()
   }
 
@@ -149,10 +172,14 @@
     if (el) act(el)
   })
 
+  // mock.js が先にデバイスの幅を変えるので、変えた後の幅で aria-expanded を置き直す
   document.querySelector('.mock-toolbar').addEventListener('click', (event) => {
     if (!event.target.closest('[data-view-name]')) return
     const open = screen.querySelectorAll('[data-panel].is-open')
     for (const panel of open) setPanel(panel, false)
+    syncAllExpanded()
     if (open.length > 0) mockRefresh()
   })
+
+  syncAllExpanded()
 })()
