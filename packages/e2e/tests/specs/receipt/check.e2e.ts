@@ -36,7 +36,9 @@ test.describe('照合の結果', () => {
       page,
     }) => {
       await expect(page.getByTestId('receipt-category-mismatch')).toHaveText('不整合データ（3 件）')
-      await expect(page.getByTestId('receipt-category-schedule_only')).toHaveText('予定のみ（1 件）')
+      await expect(page.getByTestId('receipt-category-schedule_only')).toHaveText(
+        '予定のみ（1 件）',
+      )
       await expect(page.getByTestId('receipt-category-visit_only')).toHaveText('実績のみ（1 件）')
       await expect(page.getByTestId('receipt-category-match')).toHaveText('整合データ（3 件）')
     })
