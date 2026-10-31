@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, request, test, type APIRequestContext, type Page } from '@playwright/test'
 
 import { prepareApiReference, routeApiReference } from '../../fixtures/apiReference'
 import { LEADER, LOGIN_STAFF, RECEIPT_TESTDATA, TEAM_MEMBER } from '../../fixtures/env'
@@ -13,6 +13,19 @@ const RECEIPT_CHECK_POLICY = '01M69C7BNKSXX7PPWX7SWZGFWK'
 
 /** 予定の API のシードの、1 つ目の事業所の事務の役職。デフォルトの権限に照合の権限を持つ。 */
 const CLERK_POSITION = '01M69C7BTRKYP0EQD62TQ2KARJ'
+
+/**
+ * 録画のブラウザと cookie を分けたリクエストで、マネージャーとして fn を呼ぶ。
+ * 同じブラウザでマネージャーのトークンを取ると、Hydra のログインの状態が残り、録画の職員でログインできないためである。
+ */
+const asManager = async <T>(fn: (api: APIRequestContext, token: string) => Promise<T>) => {
+  const api = await request.newContext()
+  try {
+    return await fn(api, await issueManagerToken(api))
+  } finally {
+    await api.dispose()
+  }
+}
 
 /** 予定の CSV と実績の CSV で照合し、結果の画面が開くまでを撮る。 */
 const checkWithCsv = async (page: Page, step: (text: string) => Promise<void>) => {
@@ -44,11 +57,9 @@ test.describe('照合の権限', () => {
           variant,
         },
         async (page) => {
-          const manager = await issueManagerToken(page.request)
-          const res = await registerStaff(page.request, manager, {
-            ...clerk,
-            positionId: CLERK_POSITION,
-          })
+          const res = await asManager((api, token) =>
+            registerStaff(api, token, { ...clerk, positionId: CLERK_POSITION }),
+          )
           expect(res.status()).toBe(201)
           await page.goto('/schedule')
           await signInAtBroker(page, clerk.email)
@@ -156,8 +167,9 @@ test.describe('照合の権限', () => {
           variant,
         },
         async (page) => {
-          const manager = await issueManagerToken(page.request)
-          const res = await addPolicy(page.request, manager, TEAM_MEMBER.id, RECEIPT_CHECK_POLICY)
+          const res = await asManager((api, token) =>
+            addPolicy(api, token, TEAM_MEMBER.id, RECEIPT_CHECK_POLICY),
+          )
           expect([201, 409]).toContain(res.status())
           await page.goto('/schedule')
           await signInAtBroker(page, TEAM_MEMBER.email)
