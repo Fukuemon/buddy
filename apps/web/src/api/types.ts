@@ -1,5 +1,8 @@
 import type { components as ReceiptComponents } from './generated/receipt'
-import type { components as ScheduleComponents } from './generated/schedule'
+import type {
+  components as ScheduleComponents,
+  operations as ScheduleOperations,
+} from './generated/schedule'
 
 /** 事業所の ID。API の `/v1/facilities/{facility_id}` に入る。 */
 export type FacilityId = string
@@ -135,3 +138,32 @@ export type ImportResult = ScheduleSchemas['ImportResult']
 export type CalendarExport = ScheduleSchemas['CalendarExport']
 /** 確認が必要な書き出しと、その予定の日時と職員。予定のタイトルと利用者名は持たない。 */
 export type CalendarExportIssue = ScheduleSchemas['CalendarExportIssue']
+
+type RequestBody<K extends keyof ScheduleOperations> = ScheduleOperations[K] extends {
+  requestBody: { content: { 'application/json': infer Body } }
+}
+  ? Body
+  : never
+
+/** 職員の管理の画面で出す職員。予定の API の Staff をそのまま使う。 */
+export type StaffRecord = ScheduleSchemas['Staff']
+/** 職員と、職員が持つ権限。予定の API の StaffDetail をそのまま使う。 */
+export type StaffDetail = ScheduleSchemas['StaffDetail']
+/** 職員が持つ権限 1 つと、その対象。 */
+export type StaffPolicy = StaffDetail['policies'][number]
+/** 職員を休職か退職にするときに残る、今日以降の予定、繰り返しの予定、担当の利用者。 */
+export type StaffAssignments = ScheduleSchemas['StaffAssignments']
+/** 部署。API の型の ID と名前だけを使う。 */
+export type Department = Pick<ScheduleSchemas['Unit'], 'id' | 'name'>
+/** 役職と、そのデフォルトの権限。予定の API の Position をそのまま使う。 */
+export type Position = ScheduleSchemas['Position']
+/** 職員に与える権限。予定の API の Policy をそのまま使う。 */
+export type Policy = ScheduleSchemas['Policy']
+/** 職員の登録で送る値。予定の API の createUser の本文をそのまま使う。 */
+export type StaffCreateInput = RequestBody<'createUser'>
+/** 職員の名前、電話番号、部署、チームの変更で送る値。予定の API の updateUser の本文をそのまま使う。 */
+export type StaffUpdateInput = RequestBody<'updateUser'>
+/** 職員に権限を足すときに送る値。予定の API の addUserPolicy の本文をそのまま使う。 */
+export type StaffPolicyInput = RequestBody<'addUserPolicy'>
+/** 退職の結果。予定か担当の利用者が残って拒まれたときは、残るものを assignments に持つ。 */
+export type StaffRetireResult = { retired: StaffDetail } | { assignments: StaffAssignments }

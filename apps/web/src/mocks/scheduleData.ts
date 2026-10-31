@@ -60,6 +60,56 @@ export const mockMe: Schemas['StaffDetail'] = {
   ],
 }
 
+export const mockDepartments: Schemas['Unit'][] = [
+  team('department-1', '訪問看護部'),
+  team('department-2', 'リハビリ部'),
+]
+
+const policy = (id: string, code: string, name: string, needsTarget: boolean) => ({
+  id,
+  code,
+  name,
+  needs_target: needsTarget,
+  ...stamps,
+})
+
+/** 権限。code と名前は、予定の API のマイグレーション（000001）が入れる 8 行と同じにする。 */
+export const mockPolicies: Schemas['Policy'][] = [
+  policy('policy-self-edit', 'schedule.self.edit', '自分の予定の編集', false),
+  policy('policy-user-read', 'schedule.user.read', '指定した職員の予定の閲覧', true),
+  policy('policy-user-edit', 'schedule.user.edit', '指定した職員の予定の編集', true),
+  policy('policy-team-read', 'schedule.team.read', '指定したチームの職員の予定の閲覧', true),
+  policy('policy-team-edit', 'schedule.team.edit', '指定したチームの職員の予定の編集', true),
+  policy('policy-all-read', 'schedule.all.read', '事業所の全ての予定の閲覧', false),
+  policy('policy-all-edit', 'schedule.all.edit', '事業所の全ての予定の編集', false),
+  policy('policy-staff-manage', STAFF_MANAGE, '職員の管理', false),
+]
+
+const policiesOf = (...codes: string[]) => mockPolicies.filter((p) => codes.includes(p.code))
+
+/** 役職。名前の順に並べる。 */
+export const mockPositions: Schemas['Position'][] = [
+  {
+    id: 'position-1',
+    facility_id: MOCK_FACILITY_ID,
+    name: '看護師',
+    policies: policiesOf('schedule.self.edit', 'schedule.team.read'),
+    ...stamps,
+  },
+  {
+    id: 'position-manager',
+    facility_id: MOCK_FACILITY_ID,
+    name: 'マネージャー',
+    policies: policiesOf(
+      'schedule.self.edit',
+      'schedule.all.read',
+      'schedule.all.edit',
+      STAFF_MANAGE,
+    ),
+    ...stamps,
+  },
+]
+
 export const mockScheduleTypes: Schemas['ScheduleType'][] = [
   { id: 'type-normal', name: '通常' },
   { id: 'type-visit', name: '訪問' },

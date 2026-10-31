@@ -1,6 +1,7 @@
 import type {
   CalendarExport,
   CalendarExportIssue,
+  Department,
   ExternalCalendar,
   FacilityId,
   ImportDecision,
@@ -9,12 +10,22 @@ import type {
   ImportResult,
   NameSearchParams,
   Patient,
+  Policy,
+  Position,
   ReceiptReport,
   ReceiptRowError,
   Schedule,
   ScheduleInput,
   ScheduleListParams,
   Staff,
+  StaffAssignments,
+  StaffCreateInput,
+  StaffDetail,
+  StaffPolicy,
+  StaffPolicyInput,
+  StaffRecord,
+  StaffRetireResult,
+  StaffUpdateInput,
   Team,
 } from './types'
 
@@ -65,11 +76,80 @@ export interface BuddyApi {
       input: ScheduleInput,
     ): Promise<Schedule>
   }
+  /**
+   * 職員。list のほかは職員の管理の画面が使う。
+   * 変える操作は、職員の管理の権限が無ければ status が 403 の ApiError を、職員が見つからなければ 404 の ApiError を投げる。
+   */
   staff: {
     list(facilityId: FacilityId, params?: NameSearchParams): Promise<Staff[]>
+    /** 休職と退職の職員を含めた全ての職員を、部署、チーム、役職、在籍の状態とともに、名前の順で返す。 */
+    listRecords(facilityId: FacilityId): Promise<StaffRecord[]>
+    /** 職員と権限を返す。ほかの事業所の職員を指すと status が 403 の ApiError を投げる。 */
+    get(facilityId: FacilityId, staffId: Staff['id']): Promise<StaffDetail>
+    /**
+     * 職員を登録し、役職のデフォルトの権限を付ける。同じメールアドレスの職員がいれば status が 409 の、
+     * 部署、チーム、役職が無ければ 400 の ApiError を投げる。
+     */
+    create(facilityId: FacilityId, input: StaffCreateInput): Promise<StaffDetail>
+    /** 名前、電話番号、部署、チームを変える。退職した職員では status が 409 の ApiError を投げる。 */
+    update(
+      facilityId: FacilityId,
+      staffId: Staff['id'],
+      input: StaffUpdateInput,
+    ): Promise<StaffDetail>
+    /**
+     * 役職を変え、権限を新しい役職のデフォルトの権限に置き換える。職員の管理の権限を持つ最後の有効な職員を、
+     * その権限を持たない役職に変えようとすると、status が 409 の ApiError を投げる。
+     */
+    changePosition(
+      facilityId: FacilityId,
+      staffId: Staff['id'],
+      positionId: Position['id'],
+    ): Promise<StaffDetail>
+    /** 権限を足す。同じ権限を持っていれば status が 409 の ApiError を投げる。 */
+    addPolicy(
+      facilityId: FacilityId,
+      staffId: Staff['id'],
+      input: StaffPolicyInput,
+    ): Promise<StaffDetail>
+    /** 権限を外す。職員の管理の権限を持つ最後の有効な職員から外そうとすると、status が 409 の ApiError を投げる。 */
+    removePolicy(
+      facilityId: FacilityId,
+      staffId: Staff['id'],
+      userPolicyId: StaffPolicy['user_policy_id'],
+    ): Promise<StaffDetail>
+    /** 事業所の現地の日付で今日以降に残る、予定、繰り返しの予定、担当の利用者を返す。 */
+    remainingAssignments(facilityId: FacilityId, staffId: Staff['id']): Promise<StaffAssignments>
+    /**
+     * 休職にする。returnDate（YYYY-MM-DD）は戻る予定の日のメモで、null なら持たない。
+     * 自分か、職員の管理の権限を持つ最後の有効な職員か、退職した職員では status が 409 の ApiError を投げる。
+     */
+    startLeave(
+      facilityId: FacilityId,
+      staffId: Staff['id'],
+      returnDate: string | null,
+    ): Promise<StaffDetail>
+    /** 休職の職員を有効に戻す。退職した職員では status が 409 の ApiError を投げる。 */
+    reinstate(facilityId: FacilityId, staffId: Staff['id']): Promise<StaffDetail>
+    /**
+     * 退職にする。予定か担当の利用者が残れば、拒まれた結果として残るものを返す。
+     * 自分か、職員の管理の権限を持つ最後の有効な職員では status が 409 の ApiError を投げる。
+     */
+    retire(facilityId: FacilityId, staffId: Staff['id']): Promise<StaffRetireResult>
   }
   teams: {
     list(facilityId: FacilityId): Promise<Team[]>
+  }
+  departments: {
+    list(facilityId: FacilityId): Promise<Department[]>
+  }
+  positions: {
+    /** 役職を名前の順で返す。 */
+    list(facilityId: FacilityId): Promise<Position[]>
+  }
+  policies: {
+    /** 8 つの権限を返す。権限は事業所ごとには持たないが、ほかの操作とそろえて事業所を受ける。 */
+    list(facilityId: FacilityId): Promise<Policy[]>
   }
   patients: {
     /** 利用の終了の利用者も返す。過去の予定の利用者名を出すためである。予定の利用者の候補は、呼ぶ側が activePatients で絞る。 */

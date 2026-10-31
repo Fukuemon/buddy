@@ -191,6 +191,110 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
         // API の username と name は完全一致なので、全件を取って部分一致で絞る
         return users.map(fromApiStaff).filter((staff) => matchesName(staff.name, params))
       },
+      listRecords: (facilityId) =>
+        unwrap(
+          client.GET('/v1/facilities/{facility_id}/users', {
+            params: {
+              path: { facility_id: facilityId },
+              query: { sort_field: 'username', sort_order: 'asc' },
+            },
+          }),
+        ),
+      get: async (facilityId, staffId) => {
+        const staff = await unwrap(
+          client.GET('/v1/users/{user_id}', { params: { path: { user_id: staffId } } }),
+        )
+        if (staff.facility_id !== facilityId) {
+          throw new ApiError(403, `事業所 ${facilityId} の操作は許可されていません`)
+        }
+        return staff
+      },
+      create: (facilityId, input) =>
+        unwrap(
+          client.POST('/v1/facilities/{facility_id}/users', {
+            params: { path: { facility_id: facilityId } },
+            body: input,
+          }),
+        ),
+      update: (_facilityId, staffId, input) =>
+        unwrap(
+          client.PUT('/v1/users/{user_id}', {
+            params: { path: { user_id: staffId } },
+            body: input,
+          }),
+        ),
+      changePosition: (_facilityId, staffId, positionId) =>
+        unwrap(
+          client.PUT('/v1/users/{user_id}/position', {
+            params: { path: { user_id: staffId } },
+            body: { position_id: positionId },
+          }),
+        ),
+      addPolicy: (_facilityId, staffId, input) =>
+        unwrap(
+          client.POST('/v1/users/{user_id}/policies', {
+            params: { path: { user_id: staffId } },
+            body: input,
+          }),
+        ),
+      removePolicy: (_facilityId, staffId, userPolicyId) =>
+        unwrap(
+          client.DELETE('/v1/users/{user_id}/policies/{user_policy_id}', {
+            params: { path: { user_id: staffId, user_policy_id: userPolicyId } },
+          }),
+        ),
+      remainingAssignments: (_facilityId, staffId) =>
+        unwrap(
+          client.GET('/v1/users/{user_id}/remaining_assignments', {
+            params: { path: { user_id: staffId } },
+          }),
+        ),
+      startLeave: async (_facilityId, staffId, returnDate) => {
+        const { staff } = await unwrap(
+          client.POST('/v1/users/{user_id}/leave', {
+            params: { path: { user_id: staffId } },
+            body: { return_date: returnDate },
+          }),
+        )
+        return staff
+      },
+      reinstate: (_facilityId, staffId) =>
+        unwrap(
+          client.POST('/v1/users/{user_id}/reinstate', {
+            params: { path: { user_id: staffId } },
+          }),
+        ),
+      retire: async (_facilityId, staffId) => {
+        const { data, error, response } = await client.POST('/v1/users/{user_id}/retire', {
+          params: { path: { user_id: staffId } },
+        })
+        if (response.ok && data !== undefined) return { retired: data.staff }
+        if (error !== undefined && 'assignments' in error && error.assignments !== undefined) {
+          return { assignments: error.assignments }
+        }
+        throw apiError(error, response)
+      },
+    },
+    departments: {
+      list: async (facilityId) => {
+        const departments = await unwrap(
+          client.GET('/v1/facilities/{facility_id}/departments', {
+            params: { path: { facility_id: facilityId } },
+          }),
+        )
+        return departments.map(({ id, name }) => ({ id, name }))
+      },
+    },
+    positions: {
+      list: (facilityId) =>
+        unwrap(
+          client.GET('/v1/facilities/{facility_id}/positions', {
+            params: { path: { facility_id: facilityId } },
+          }),
+        ),
+    },
+    policies: {
+      list: () => unwrap(client.GET('/v1/policies')),
     },
     teams: {
       list: async (facilityId) => {

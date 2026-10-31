@@ -183,6 +183,7 @@ export const emptyBuddyApi = (base: BuddyApi = createFakeBuddyApi()): BuddyApi =
 export const suspendedStaffBuddyApi = (base: BuddyApi = createFakeBuddyApi()): BuddyApi => ({
   ...base,
   staff: {
+    ...base.staff,
     list: async (...args) =>
       (await base.staff.list(...args)).map((staff) =>
         staff.id === 'staff-2' ? { ...staff, status: 'on_leave' } : staff,
@@ -193,8 +194,24 @@ export const suspendedStaffBuddyApi = (base: BuddyApi = createFakeBuddyApi()): B
 /** 全ての操作を operation にしたフェイクの API を作る。 */
 const buddyApiOf = (operation: () => Promise<never>): BuddyApi => ({
   schedules: { list: operation, get: operation, create: operation, update: operation },
-  staff: { list: operation },
+  staff: {
+    list: operation,
+    listRecords: operation,
+    get: operation,
+    create: operation,
+    update: operation,
+    changePosition: operation,
+    addPolicy: operation,
+    removePolicy: operation,
+    remainingAssignments: operation,
+    startLeave: operation,
+    reinstate: operation,
+    retire: operation,
+  },
   teams: { list: operation },
+  departments: { list: operation },
+  positions: { list: operation },
+  policies: { list: operation },
   patients: { list: operation },
   calendars: {
     serviceAccount: operation,
