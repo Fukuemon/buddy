@@ -1,11 +1,16 @@
-import { Button, Loading } from '@buddy/ui'
-import type { ReactNode } from 'react'
+import { Button, Loading, SearchBox } from '@buddy/ui'
 
-import type { StaffRecord } from '#/api/types'
+import type { Department, Position, StaffRecord, Team } from '#/api/types'
+import { HelpToggle } from '#/components/site/HelpToggle'
+import { FilterSelect, ListCount, ListEmpty, ListTools } from '#/components/site/ListTools'
+import { RowTable, RowTableRow } from '#/components/site/RowTable'
+import { Avatar, StatusBadge } from '#/components/site/StatusBadge'
 
-import { StaffStatusBadge } from './StaffStatusBadge'
+import { STATUS_FILTER_OPTIONS, type StaffListFilter } from '../lib/filter'
+import { statusLabel, statusTone } from '../lib/format'
+import { sortByName } from './StaffFormFields'
 
-/** 職員の一覧の画面の状態。 */
+/** 職員の一覧の画面の状態。ready の staff は、絞り込んだ後の職員である。 */
 export type StaffListViewState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
@@ -13,73 +18,50 @@ export type StaffListViewState =
 
 export type StaffListViewProps = {
   state: StaffListViewState
+  filter: StaffListFilter
+  onFilterChange: (filter: StaffListFilter) => void
+  /** 名前の検索と絞り込みを、開いた直後の値に戻す。 */
+  onFilterClear: () => void
+  /** 絞り込みの選択肢。読み終えるまでは undefined にする。 */
+  departments?: readonly Department[]
+  teams?: readonly Team[]
+  positions?: readonly Position[]
   onRetry: () => void
   onCreate: () => void
 }
 
-const headerClassName = 'px-5 py-2 text-left text-body-dense font-normal text-text-secondary'
-
-const Cell = ({ label, children }: { label: string; children: ReactNode }) => (
-  <td className="block px-4 py-1 text-body-dense break-all desktop:table-cell desktop:px-5 desktop:py-3">
-    <span className="block text-caption text-text-secondary desktop:hidden">{label}</span>
-    {children}
-  </td>
-)
-
-const StaffTable = ({ staff }: { staff: readonly StaffRecord[] }) => (
-  <table className="block w-full border-collapse desktop:table" data-testid="staff-list-table">
-    <thead className="hidden desktop:table-header-group">
-      <tr className="border-b border-border">
-        {['名前', '部署', 'チーム', '役職', '状態'].map((label) => (
-          <th className={headerClassName} key={label} scope="col">
-            {label}
-          </th>
-        ))}
-      </tr>
-    </thead>
-    <tbody className="flex flex-col gap-3 desktop:table-row-group">
-      {staff.map((s) => (
-        <tr
-          className="block rounded-8 border border-border bg-surface py-2 desktop:table-row desktop:rounded-none desktop:border-0 desktop:border-b desktop:py-0"
-          data-testid={`staff-list-row-${s.id}`}
-          key={s.id}
-        >
-          <Cell label="名前">
-            <a
-              className="inline-flex min-h-11 items-center rounded-8 text-primary underline underline-offset-4 focus-visible:focus-ring"
-              data-testid={`staff-list-open-${s.id}`}
-              href={`/staff/${s.id}`}
-            >
-              {s.username}
-            </a>
-          </Cell>
-          <Cell label="部署">{s.department.name}</Cell>
-          <Cell label="チーム">{s.team.name}</Cell>
-          <Cell label="役職">{s.position.name}</Cell>
-          <Cell label="状態">
-            <StaffStatusBadge data-testid={`staff-list-status-${s.id}`} staff={s} />
-          </Cell>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-)
+const unitOptions = (units: readonly { id: string; name: string }[] | undefined) => [
+  { value: '', label: 'すべて' },
+  ...(sortByName(units) ?? []).map((u) => ({ value: u.id, label: u.name })),
+]
 
 /**
- * 職員の一覧の画面の本文。タイトルと職員を登録のボタン、説明の文の下に、職員の表を並べる。
- * 幅 768px 未満では、表の行を、カラムの名前と値を縦に積んだ箱にする。
+ * 職員の一覧の画面の本文。タイトルとヘルプと職員を登録のボタン、名前の検索と絞り込みと人数の下に、
+ * 行全体を押せる職員の表を並べる。絞り込みで 0 件なら、表の代わりに絞り込みを外すボタンを出す。
  */
-export const StaffListView = ({ state, onRetry, onCreate }: StaffListViewProps) => (
-  <div className="flex flex-col gap-6">
+export const StaffListView = ({
+  state,
+  filter,
+  onFilterChange,
+  onFilterClear,
+  departments,
+  teams,
+  positions,
+  onRetry,
+  onCreate,
+}: StaffListViewProps) => (
+  <div className="flex flex-col gap-5">
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <h1 className="text-heading-md">職員</h1>
+      <div className="relative flex items-center gap-1">
+        <h1 className="text-heading-md">職員</h1>
+        <HelpToggle data-testid="staff-list-help">
+          休職と退職の職員は、ログインできず、予定の担当の候補に出ません。
+        </HelpToggle>
+      </div>
       <Button data-testid="staff-list-new" onClick={onCreate} size="S">
         職員を登録
       </Button>
     </div>
-    <p className="max-w-3xl text-body">
-      事業所の職員を登録し、役職、権限、休職、復職、退職を変えます。休職と退職の職員は、ログインできず、予定の担当の候補に出ません。
-    </p>
     {state.status === 'loading' && (
       <div data-testid="staff-list-loading">
         <Loading description="読み込んでいます" />
@@ -95,6 +77,90 @@ export const StaffListView = ({ state, onRetry, onCreate }: StaffListViewProps) 
         </Button>
       </div>
     )}
-    {state.status === 'ready' && <StaffTable staff={state.staff} />}
+    {state.status === 'ready' && (
+      <>
+        <ListTools>
+          <div className="w-full desktop:w-60">
+            <SearchBox
+              aria-label="名前で検索"
+              data-testid="staff-list-search"
+              onSearch={(name) => onFilterChange({ ...filter, name })}
+              placeholder="名前で検索"
+              value={filter.name}
+            />
+          </div>
+          <FilterSelect
+            data-testid="staff-list-filter-department"
+            disabled={departments === undefined}
+            label="部署"
+            onChange={(departmentId) => onFilterChange({ ...filter, departmentId })}
+            options={unitOptions(departments)}
+            value={filter.departmentId}
+          />
+          <FilterSelect
+            data-testid="staff-list-filter-team"
+            disabled={teams === undefined}
+            label="チーム"
+            onChange={(teamId) => onFilterChange({ ...filter, teamId })}
+            options={unitOptions(teams)}
+            value={filter.teamId}
+          />
+          <FilterSelect
+            data-testid="staff-list-filter-position"
+            disabled={positions === undefined}
+            label="役職"
+            onChange={(positionId) => onFilterChange({ ...filter, positionId })}
+            options={unitOptions(positions)}
+            value={filter.positionId}
+          />
+          <FilterSelect
+            data-testid="staff-list-filter-status"
+            isOn
+            label="状態"
+            onChange={(status) => onFilterChange({ ...filter, status })}
+            options={STATUS_FILTER_OPTIONS}
+            value={filter.status}
+          />
+          <ListCount data-testid="staff-list-count">{state.staff.length} 人</ListCount>
+        </ListTools>
+        {state.staff.length === 0 ? (
+          <ListEmpty
+            clearLabel="絞り込みを外す"
+            clearTestId="staff-list-filter-clear"
+            data-testid="staff-list-empty"
+            message="条件に合う職員はいません。"
+            onClear={onFilterClear}
+          />
+        ) : (
+          <RowTable
+            data-testid="staff-list-table"
+            metaHeaders={['部署', 'チーム', '役職']}
+            primaryHeader="名前"
+            statusHeader="状態"
+          >
+            {state.staff.map((s) => (
+              <RowTableRow
+                data-testid={`staff-list-row-${s.id}`}
+                href={`/staff/${s.id}`}
+                key={s.id}
+                leading={<Avatar isMuted={s.status === 'retired'} name={s.username} />}
+                meta={[
+                  { header: '部署', value: s.department.name },
+                  { header: 'チーム', value: s.team.name },
+                  { header: '役職', value: s.position.name },
+                ]}
+                name={s.username}
+                status={
+                  <StatusBadge data-testid={`staff-list-status-${s.id}`} tone={statusTone(s)}>
+                    {statusLabel(s)}
+                  </StatusBadge>
+                }
+                subtext={s.email ?? 'メールアドレスなし'}
+              />
+            ))}
+          </RowTable>
+        )}
+      </>
+    )}
   </div>
 )

@@ -99,3 +99,7 @@ export const policyTargetKind = (policy: Pick<Policy, 'code' | 'needs_target'>) 
 
 /** 権限の数。権限は予定の API のマイグレーションが入れる 8 つで、事業所ごとには持たない。 */
 export const POLICY_COUNT = 8
+
+/** 状態の印の色の調子。休職は注意、退職は終わった状態である。 */
+export const statusTone = (staff: Pick<StaffRecord, 'status'>) =>
+  staff.status === 'on_leave' ? 'warning' : staff.status === 'retired' ? 'muted' : 'default'

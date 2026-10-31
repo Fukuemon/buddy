@@ -39,6 +39,8 @@ export type StoryRouteId =
   | '/schedule_/link'
   | '/schedule_/import'
   | '/schedule_/review'
+  | '/staff'
+  | '/staff/new'
 
 /** story の parameters の appRouter に渡す値。 */
 export type AppRouterParameters = {
@@ -132,6 +134,17 @@ const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
     component: at('/schedule_/review'),
   })
 
+  const staff = createRoute({
+    getParentRoute: () => root,
+    path: 'staff',
+    component: at('/staff'),
+  })
+  const staffNew = createRoute({
+    getParentRoute: () => staff,
+    path: 'new',
+    component: at('/staff/new'),
+  })
+
   const router = createRouter({
     routeTree: root.addChildren([
       schedule.addChildren([scheduleNew, scheduleDetail, scheduleEdit]),
@@ -140,6 +153,7 @@ const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
       scheduleLink,
       scheduleImport,
       scheduleReview,
+      staff.addChildren([staffNew]),
     ]),
     history: createMemoryHistory({ initialEntries: [params.url] }),
     context,
