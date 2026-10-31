@@ -152,14 +152,12 @@ const CalendarImportContent = ({ staffId, onStaffChange }: CalendarImportContain
           )}
           {previewed !== undefined && runImport.data !== undefined && (
             <CalendarImportDone
-              decisions={decisions}
               onOpenCalendar={() =>
                 navigate({
                   to: '/schedule',
                   search: { view: 'month', date: previewed.range_start, staff: [current.staff.id] },
                 })
               }
-              preview={previewed}
               result={runImport.data}
             />
           )}

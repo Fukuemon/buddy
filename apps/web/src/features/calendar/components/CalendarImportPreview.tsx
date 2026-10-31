@@ -7,7 +7,6 @@ import {
   SKIP_REASON_LABEL,
   canSubmitImport,
   countRemaining,
-  countSkippedByReason,
   isAllImported,
   previewCountBoxes,
   type ReviewChoice,
@@ -32,7 +31,7 @@ export type CalendarImportPreviewProps = {
 }
 
 /**
- * プレビューの結果。件数、確認が必要な予定と取り込み方、取り込まない予定、確定して取り込むを縦に並べる。
+ * プレビューの結果。件数、確認が必要な予定と取り込み方、取り込まない予定の表、確定して取り込むを縦に並べる。
  * 確認が必要な予定の全てに取り込み方を選ぶまで、確定して取り込むは押せない。
  */
 export const CalendarImportPreview = ({
@@ -47,7 +46,6 @@ export const CalendarImportPreview = ({
 }: CalendarImportPreviewProps) => {
   const remaining = countRemaining(preview.needs_review, choices)
   const allImported = isAllImported(preview)
-  const reasons = countSkippedByReason(preview.skipped)
   return (
     <section
       className="flex flex-col gap-5 border-t border-border pt-5"
@@ -68,8 +66,7 @@ export const CalendarImportPreview = ({
         <section className="flex flex-col gap-2">
           <h3 className="text-label">確認が必要な予定</h3>
           <p className="text-caption text-text-secondary">
-            タイトルから利用者を 1
-            人に決められなかった予定です。予定ごとに、取り込み方を選んでください。
+            タイトルから利用者を 1 人に決められなかった予定です。
           </p>
           <ul className="m-0 flex list-none flex-col gap-3 p-0">
             {preview.needs_review.map((item) => (
@@ -87,14 +84,9 @@ export const CalendarImportPreview = ({
       )}
       {preview.skipped.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h3 className="text-label">取り込まない予定</h3>
-          <ul className="m-0 flex flex-col gap-1 pl-5 text-body">
-            {reasons.map(({ reason, count }) => (
-              <li data-testid={`calendar-import-skipped-reason-${reason}`} key={reason}>
-                {SKIP_REASON_LABEL[reason]}: {count} 件
-              </li>
-            ))}
-          </ul>
+          <h3 className="text-label" data-testid="calendar-import-skipped-heading">
+            取り込まない予定（{preview.skipped.length} 件）
+          </h3>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse" data-testid="calendar-import-skipped">
               <thead>
