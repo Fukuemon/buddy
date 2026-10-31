@@ -5,7 +5,6 @@ import (
 	"encoding/base32"
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 	"time"
 
@@ -152,9 +151,7 @@ func RecurrenceOf(rs schedule.RecurringSchedule, exdates []civil.Date) []string 
 	}
 	lines := []string{"RRULE:" + rule}
 	if len(exdates) > 0 {
-		dates := slices.Clone(exdates)
-		slices.SortFunc(dates, func(a, b civil.Date) int { return a.Time().Compare(b.Time()) })
-		dates = slices.Compact(dates)
+		dates := sortedUniqueDates(exdates)
 		values := make([]string, len(dates))
 		for i, d := range dates {
 			values[i] = fmt.Sprintf("%04d%02d%02dT%02d%02d00", d.Year, d.Month, d.Day, rs.StartTime.Hour, rs.StartTime.Minute)
