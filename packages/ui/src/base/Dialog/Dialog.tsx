@@ -1,5 +1,7 @@
 import { clsx } from 'clsx'
-import { useEffect, useRef, type ReactNode, type SyntheticEvent } from 'react'
+import { useRef, type ReactNode } from 'react'
+
+import { useModalDialog } from '../ModalDialog/useModalDialog'
 
 export type DialogProps = {
   /** alertdialog は、取り消せない操作を確認するダイアログに使う。 */
@@ -30,28 +32,19 @@ export const Dialog = ({
   children,
   'data-testid': testId,
 }: DialogProps) => {
-  const ref = useRef<HTMLDialogElement>(null)
-
-  useEffect(() => {
-    const dialog = ref.current
-    if (dialog === null) return
-    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
-    if (!dialog.open) dialog.showModal()
-    return () => {
-      if (dialog.open) dialog.close()
-      if (opener?.isConnected) opener.focus()
-    }
-  }, [])
-
-  // Escape のデフォルトの動きはダイアログを閉じるので止め、閉じるかを呼び出す側に任せる
-  const handleCancel = (event: SyntheticEvent<HTMLDialogElement>) => {
-    event.preventDefault()
-    if (canClose) onClose()
-  }
+  // タイトルは Tab で移れないので、useModalDialog の Shift+Tab の回り込みの起点にしない
+  const titleRef = useRef<HTMLElement>(null)
+  // 覆い、Escape、止められない cancel の後の close は useModalDialog が扱う。canClose が false なら閉じずに開き直す
+  const ref = useModalDialog({
+    isOpen: true,
+    onCloseRequest: () => {
+      if (canClose) onClose()
+    },
+    getInitialFocus: () => null,
+    titleRef,
+  })
 
   return (
-    // 覆いを押したときは、クリックの対象が dialog 自身になる。キーボードでは Escape で閉じる
-    // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
     <dialog
       aria-labelledby={labelledBy}
       aria-modal="true"
@@ -60,10 +53,6 @@ export const Dialog = ({
         width === 'narrow' ? 'max-w-md' : 'max-w-lg',
       )}
       data-testid={testId}
-      onCancel={handleCancel}
-      onClick={(event) => {
-        if (event.target === event.currentTarget && canClose) onClose()
-      }}
       ref={ref}
       role={role}
     >

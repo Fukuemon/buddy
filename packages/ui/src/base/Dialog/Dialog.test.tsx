@@ -42,6 +42,43 @@ describe('Dialog', () => {
     expect(screen.getByRole('dialog')).toHaveProperty('open', true)
   })
 
+  it('止められない cancel で閉じても、canClose が false なら開き直し、onClose を呼ばない', async () => {
+    const onClose = fn()
+    render(<Submitting onClose={onClose} />)
+    const dialog = screen.getByRole<HTMLDialogElement>('dialog')
+    const closed = new Promise((resolve) =>
+      dialog.addEventListener('close', resolve, { once: true }),
+    )
+    dialog.dispatchEvent(new Event('cancel', { cancelable: false }))
+    dialog.close()
+    await closed
+    expect(onClose).not.toHaveBeenCalled()
+    expect(dialog).toHaveProperty('open', true)
+  })
+
+  it('止められない cancel で閉じたときは、onClose を 1 回だけ呼ぶ', async () => {
+    const onClose = fn()
+    render(<Default onClose={onClose} />)
+    const dialog = screen.getByRole<HTMLDialogElement>('dialog')
+    const closed = new Promise((resolve) =>
+      dialog.addEventListener('close', resolve, { once: true }),
+    )
+    dialog.dispatchEvent(new Event('cancel', { cancelable: false }))
+    dialog.close()
+    await closed
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
+  it('中身で押して覆いで離しても、onClose を呼ばない', () => {
+    const onClose = fn()
+    render(<Default onClose={onClose} />)
+    screen
+      .getByRole('textbox', { name: '理由' })
+      .dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    screen.getByRole('dialog').dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
   it('ヘッダーの閉じるボタンで onClose を呼ぶ', async () => {
     const onClose = fn()
     render(<Default onClose={onClose} />)
