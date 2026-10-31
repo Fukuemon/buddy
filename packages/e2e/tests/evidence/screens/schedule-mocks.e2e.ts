@@ -39,7 +39,8 @@ test.describe('予定の画面仕様書のモック', () => {
             .poll(async () => {
               const inputBox = await input.boundingBox()
               const errorBox = await error.boundingBox()
-              return (errorBox?.y ?? 0) - ((inputBox?.y ?? 0) + (inputBox?.height ?? 0))
+              if (inputBox === null || errorBox === null) return Number.NEGATIVE_INFINITY
+              return errorBox.y - (inputBox.y + inputBox.height)
             })
             .toBeGreaterThanOrEqual(0)
           await check(

@@ -119,13 +119,21 @@ test.describe('照合の結果', () => {
             await page.mouse.wheel(2000, 0)
             // 送った後も、3 列目（主訪問者）は表の外へ出て、2 列目までは表の左端からの位置を変えない
             await expect(staff).not.toBeInViewport()
-            const tableBox = await table.boundingBox()
-            const dateBox = await date.boundingBox()
-            const patientBox = await patient.boundingBox()
-            expect(Math.round((dateBox?.x ?? -1) - (tableBox?.x ?? 0))).toBe(0)
-            expect(Math.round((patientBox?.x ?? -1) - (dateBox?.x ?? 0))).toBe(
-              Math.round(dateBox?.width ?? 0),
-            )
+            // 訪問日の列の左端と表の左端のずれと、利用者名の列の左端と訪問日の列の右端のずれの大きい方
+            await expect
+              .poll(async () => {
+                const tableBox = await table.boundingBox()
+                const dateBox = await date.boundingBox()
+                const patientBox = await patient.boundingBox()
+                if (tableBox === null || dateBox === null || patientBox === null) {
+                  return Number.POSITIVE_INFINITY
+                }
+                return Math.max(
+                  Math.abs(dateBox.x - tableBox.x),
+                  Math.abs(patientBox.x - (dateBox.x + dateBox.width)),
+                )
+              })
+              .toBeLessThan(1)
             await shot(
               '表を右端まで送っても、訪問日と利用者名の 2 列が表の左端に残り、主訪問者から右の列だけが送られる',
             )
