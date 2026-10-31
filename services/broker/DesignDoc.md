@@ -11,7 +11,9 @@ verified_commit: 71728ae
 
 ## Overview
 
-ID ブローカー（`services/broker`、以下ブローカー）は、事業所ごとに違う上流の IdP の前に立ち、職員の身元を持つ。トークンを発行するのは Ory Hydra で、ブローカーは Hydra の login and consent app として、ログインと同意とログアウトを判断する。web と 2 つの API から見える Issuer は Hydra だけである。
+ID ブローカー（`services/broker`、以下ブローカー）は、事業所ごとに違う上流の IdP の前に立ち、職員の身元を持つ。  
+トークンを発行するのは Ory Hydra で、ブローカーは Hydra の login and consent app として、ログインと同意とログアウトを判断する。  
+web と 2 つの API から見える Issuer は Hydra だけである。
 
 - 全体の責務と依存は [buddy Design Doc](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md) にある。
 - ADR-0016: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0016-id-broker-hydra.md)
@@ -63,7 +65,8 @@ flowchart TB
 
 ### 職員の身元のテーブル
 
-ブローカーの DB のテーブルを示す。名前、役職、権限などの業務のデータは予定の API が持ち、ここには置かない（ADR-0017）。
+ブローカーの DB のテーブルを示す。  
+名前、役職、権限などの業務のデータは予定の API が持ち、ここには置かない（ADR-0017）。
 
 ```mermaid
 erDiagram
@@ -89,7 +92,8 @@ erDiagram
 
 ### ログイン
 
-職員が初めてログインするときの流れを示す。2 回目からは、結び付けた `iss` と `sub` が上流の ID token と同じかを比べ、結び付けの手順を通らない。
+職員が初めてログインするときの流れを示す。  
+2 回目からは、結び付けた `iss` と `sub` が上流の ID token と同じかを比べ、結び付けの手順を通らない。
 
 ```mermaid
 sequenceDiagram
@@ -141,7 +145,6 @@ sequenceDiagram
 
 - web は、`/auth/login` で state、nonce、PKCE の code verifier、戻る先を Valkey に 10 分置き、署名した state だけを cookie に入れる。`/auth/callback` は、state が合わないか、値が無いか、トークンと交換できなければ `reason=failed` へリダイレクトする。ブローカーが reject したログインは、トークンと交換できずに `reason=failed` になる。
 - 図の token_hook は、[トークンの発行の確認](#トークンの発行の確認) にある。
-
 - 登録されていないメールと、有効でない職員（休職と退職の職員、登録の途中の職員）は、上流の IdP へリダイレクトせずにログインの reject で返す。web はログインの失敗の画面を出すので、事業所を示さず、ログインの失敗と同じ文言になる。
 - メールを受けたら、職員を引く前に、Hydra の admin API で `login_challenge` のログインの要求を読む。読めなければ、職員を引かずにログインの失敗の画面を出す。
 - メールの有無を確認する試行は、送信元の IP アドレスごとと、入れたメールごとに数える。超えた試行は reject で返す。数えるのはプロセスの中だけである。
@@ -182,7 +185,9 @@ sequenceDiagram
 
 ### トークンの発行の確認
 
-Hydra は、トークンを発行するたびに `oauth2.token_hook` でブローカーの `POST /internal/token-hook` を呼ぶ。ブローカーは、職員が有効でないとき（休職と退職の職員と登録の途中の職員）と、上流でのログインから 12 時間を過ぎたときに 403 を返し、Hydra はトークンの要求に `access_denied` を返す。発行してよいときは 204 を返す。
+Hydra は、トークンを発行するたびに `oauth2.token_hook` でブローカーの `POST /internal/token-hook` を呼ぶ。  
+ブローカーは、職員が有効でないとき（休職と退職の職員と登録の途中の職員）と、上流でのログインから 12 時間を過ぎたときに 403 を返し、Hydra はトークンの要求に `access_denied` を返す。  
+発行してよいときは 204 を返す。
 
 - 上流でのログインの時刻には、Hydra が本文の `session.id_token.id_token_claims.auth_time` に入れる値を使う。ブローカーは時刻を DB に持たない。
   - `auth_time` は、Hydra がログインの accept を受けた時刻である。ブローカーは上流の IdP の ID token を受けた直後に accept するので、上流でのログインの時刻と同じとみなせる。
@@ -245,7 +250,8 @@ sequenceDiagram
   - 戻しが、予定の API にその ID の職員がいないことを確認してから消すまでの間に、ほかの登録が書くと、ほかの登録の有効化は 404 で失敗し、予定の API は 500 を返す。
   - このとき予定の API に書いた職員は、ブローカーにいないのでログインできない。ほかの職員として入る手段はできない。
 
-休職と退職の流れを示す。予定の API は、事業所の行をロックしたトランザクションの中で、確認からブローカーの書き込みと予定の API の書き込みまでを行う。
+休職と退職の流れを示す。  
+予定の API は、事業所の行をロックしたトランザクションの中で、確認からブローカーの書き込みと予定の API の書き込みまでを行う。
 
 ```mermaid
 sequenceDiagram
@@ -281,7 +287,9 @@ sequenceDiagram
 
 ### ログアウト
 
-web は自分のセッションを消した後に、ブラウザを Hydra の RP-Initiated Logout へ、ID token を添えてリダイレクトする。Hydra はブローカーのログアウトの画面を呼び、ブローカーが accept すると、Hydra のログインのセッションが消える。上流の IdP のセッションは消さない。
+web は自分のセッションを消した後に、ブラウザを Hydra の RP-Initiated Logout へ、ID token を添えてリダイレクトする。  
+Hydra はブローカーのログアウトの画面を呼び、ブローカーが accept すると、Hydra のログインのセッションが消える。  
+上流の IdP のセッションは消さない。
 
 ```mermaid
 sequenceDiagram
@@ -311,7 +319,8 @@ sequenceDiagram
 
 ### ローカル環境
 
-compose は、開発用の IdP（mock-oauth2-server）を、上流の IdP のフェイクとして置く。mock-oauth2-server はパスの最初の部分を issuer にするので、1 つのコンテナで 2 つの事業所の IdP（`/office-a`、`/office-b`）を立てる。
+compose は、開発用の IdP（mock-oauth2-server）を、上流の IdP のフェイクとして置く。  
+mock-oauth2-server はパスの最初の部分を issuer にするので、1 つのコンテナで 2 つの事業所の IdP（`/office-a`、`/office-b`）を立てる。
 
 - compose は、E2E がトークンなしの呼び出しを試せるよう、内部のポートを `127.0.0.1` の 8101 に公開する。
 - 上流の IdP ごとの違い（署名の方式、Google の `hd`）は、フェイクで確認せず、ブローカーの単体テストで確認する。

@@ -75,7 +75,8 @@ sequenceDiagram
   W-->>S: 結果の表を表示する。求められたら CSV に書き出す
 ```
 
-予定のデータソースは、予定の CSV を読む `CSVSchedules` と、Google カレンダーを読む `internal/gcal` の 2 つで、同じインターフェイス（`ScheduleSource`）で差し替える。  
+予定のデータソースは、予定の CSV を読む `CSVSchedules` と、Google カレンダーを読む `internal/gcal` の 2 つである。  
+2 つは、同じインターフェイス（`ScheduleSource`）で差し替える。  
 Google カレンダーの予定も、予定の CSV と同じ正規化と照合を通す。
 
 ### 予定のデータソース: Google カレンダー
@@ -86,7 +87,8 @@ Google カレンダーは、今も職員が予定を入れる場所なので、�
 - 認証は Application Default Credentials で、カレンダーの組織のサービスアカウントになりすました token で読む。スコープは `calendar.readonly` だけにする。
   - ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](https://github.com/Fukuemon/buddy/blob/876381365355f7e4dab03f6dfdb3d6fb8a9f6947/docs/adr/0012-google-calendar-facility-service-accounts.md)
   - Application Default Credentials が事業所のサービスアカウントそのものとして動くとき（そのアカウントになりすました認証情報か、そのアカウントのキー）は、重ねてなりすまさない。サービスアカウント自身へのトークン作成者のロールを求めないためである。見分けは、認証情報のファイルの `client_email` か、なりすます先の URL のメールアドレスで行う。
-  - `GOOGLE_CALENDAR_ENDPOINT` で Calendar API の代わりにフェイク（ローカル環境の calendarpit）を呼ぶときは、なりすまさない。フェイクはなりすましの token を出せないためである。`GOOGLE_APPLICATION_CREDENTIALS` を渡したときだけ、その認証情報を全ての事業所で使い、渡さなければ認証をしない。開発者の Application Default Credentials をフェイクに送らないためである。
+  - `GOOGLE_CALENDAR_ENDPOINT` で Calendar API の代わりにフェイク（ローカル環境の calendarpit）を呼ぶときは、なりすまさない。フェイクはなりすましの token を出せないためである。
+    - `GOOGLE_APPLICATION_CREDENTIALS` を渡したときだけ、その認証情報を全ての事業所で使い、渡さなければ認証をしない。開発者の Application Default Credentials をフェイクに送らないためである。
 - ドメイン全体の委任は使わない。職員が、自分の事業所のサービスアカウントにカレンダーを共有する。サービスアカウントが読めるカレンダーを、共有されたものだけに絞るためである。
   - 共有の権限は、予定の API の書き出しと同じアカウントなので、[基盤と運用の事業所を足す手順](https://github.com/Fukuemon/buddy/blob/develop/context/operations.md#adding-a-facility) にある。
 - 組織とサービスアカウントの対応は、カレンダーの設定と別のファイル（`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`）に置く。形は予定の API と同じにする。
@@ -120,7 +122,8 @@ Google カレンダーは、今も職員が予定を入れる場所なので、�
 
 ### 予定のデータソース: 予定の CSV
 
-予定の CSV は、Google カレンダーを使わずに照合するときと、テストのときに使う。カラムは次の入力の CSV の表にある。
+予定の CSV は、Google カレンダーを使わずに照合するときと、テストのときに使う。  
+カラムは [入力の CSV](#入力の-csv) の表にある。
 
 ### 入力の CSV
 
@@ -181,7 +184,7 @@ Google カレンダーは、今も職員が予定を入れる場所なので、�
   3. 予定か実績のどちらかがなくなるまで 2 を繰り返す。
 - 対にならなかった予定は予定のみに、対にならなかった実績は実績のみに入れる。
 
-開始時間が最も近いものどうしを対にする理由は、同じ日の 2 回の訪問は、開始時間が数時間離れるのが普通で、近いものどうしが同じ訪問を指すためである。  
+開始時間が最も近いものどうしを対にするのは、同じ日の 2 回の訪問は開始時間が数時間離れるのが普通で、近いものどうしが同じ訪問を指すためである。  
 3 つのキーで全ての組を作る結合では、2 回の訪問が 4 行になり、存在しない食い違いが出る。
 
 ### 判定
@@ -232,7 +235,8 @@ API は、判定の結果だけを JSON で返す。記号と CSV は返さな�
 
 ### 画面が JSON から作る表示
 
-画面（apps/web）は、結果の JSON から次の表示を作る。記号の規則は API ではなく画面が持ち、[reportCells.ts](https://github.com/Fukuemon/buddy/blob/develop/apps/web/src/features/receipt/lib/reportCells.ts) が作る。
+画面（apps/web）は、結果の JSON から次の表示を作る。  
+記号の規則は API ではなく画面が持ち、[reportCells.ts](https://github.com/Fukuemon/buddy/blob/develop/apps/web/src/features/receipt/lib/reportCells.ts) が作る。
 
 - 不整合の行では、次の値の後ろに不一致の印を付ける。
   - 開始時間かサービス内容の判定が規則に合わないときは、その項目の両側の値

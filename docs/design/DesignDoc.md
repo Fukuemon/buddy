@@ -145,7 +145,9 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
   - 例外は、開発者がローカルでドキュメントサイトの API の仕様のページから、ローカルの API を試すときだけである。
 - ブラウザと Hydra とブローカー: ログインとログアウトのリダイレクトの流れは、ID ブローカーの Design Doc の [ログイン](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#ログイン) と [ログアウト](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#ログアウト) にある。
 - web と Hydra: 認可コードフローでトークンを取得し、更新する。トークンは Valkey のセッションに置く。
-  - セッションは、トークンと ID token のほかに、ログインのときに予定の API の `GET /v1/me` で引いた職員の ID、名前、事業所、職員の管理の権限の有無を 12 時間持つ。refresh では読み直さない。名前や権限を変えても、画面の出し分けはログインし直すまで前の値のままである。リクエストを拒否するのは API なので、拒否の判定は変わった値で行われる。
+  - セッションは、トークンと ID token のほかに、ログインのときに予定の API の `GET /v1/me` で引いた職員の ID、名前、事業所、職員の管理の権限の有無を 12 時間持つ。
+    - セッションの職員の値は、refresh では読み直さない。名前や権限を変えても、画面の出し分けはログインし直すまで前の値のままである。
+    - リクエストを拒否するのは API なので、拒否の判定は変わった値で行われる。
 - ブローカーと Hydra: ブローカーが Hydra の admin API でログインと同意を accept か reject し、ログアウトを accept する。同意の accept で、access token の `aud`（`schedule`、`receipt`）と `org_id` を決める。
 - ブローカーと上流の IdP: 認可コードフローで ID token を取り、署名、`iss`、`aud`、`nonce` を確認する。
 - 予定の API とブローカー: 職員の登録、休職、復職、退職で、予定の API が職員の管理の権限を確認してから、ブローカーの内部の API を呼ぶ。予定の API は、Hydra の client credentials で `aud` が `broker` の access token を取って付ける。
@@ -156,7 +158,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
   - 契約を変えるときの互換の規則は ADR-0003 にある。
   - ADR-0003: [git flow でマージし、アプリごとのバージョンでリリースする](../adr/0003-branch-and-release.md)
 - 予定の API、照合の API と Hydra: Issuer の discovery と JWKS を読み、access token を検証する。検証に失敗したら 401 を返す。
-- 照合の API、予定の API と Google Calendar API: 事業所ごとのサービスアカウントになりすました token で、そのアカウントに共有されたカレンダーの予定を読み書きする。サービスアカウントのキーは使わない。
+- 照合の API、予定の API と Google Calendar API: 事業所ごとのサービスアカウントになりすまして得たトークンで、そのアカウントに共有されたカレンダーの予定を読み書きする。サービスアカウントのキーは使わない。
   - ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](../adr/0012-google-calendar-facility-service-accounts.md)
   - 事業所は、リクエストの職員かトークンの組織から決める。リクエストを受けない書き出しと増分の取得は、結び付けたカレンダーのレコードの事業所で決める。
 - 予定の API と PostgreSQL: 予定の API だけが読み書きする。
@@ -168,7 +170,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 
 #### コンテナのイメージ
 
-- アプリごとに 1 つのイメージを作る。web、予定の API、照合の API、ブローカー。Hydra は Ory の公開のイメージを使う。
+- イメージは、web、予定の API、照合の API、ブローカーのアプリごとに 1 つ作る。Hydra は Ory の公開のイメージを使う。
 - ブローカーのイメージは、ヘルスチェックのための `broker healthcheck` のサブコマンドを持つ。ブローカーの環境変数は [ブローカーの README](https://github.com/Fukuemon/buddy/blob/develop/services/broker/README.md#running) にある。
 - API のイメージは、ヘルスチェックのための `api healthcheck` のサブコマンドを持つ。
 - イメージは設定を持たず、全ての設定を環境変数で受ける。
@@ -232,7 +234,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 
 ### 認証
 
-- 職員のログインは、web の BFF と Hydra の認可コードフローで行い、トークンはブラウザに渡さない。職員が上流の IdP で誰かを確認するのは、ブローカーである。
+- 職員のログインは、web の BFF と Hydra の認可コードフローで行い、トークンはブラウザに渡さない。上流の IdP で職員が誰かを確認するのは、ブローカーである。
   - ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにする](../adr/0001-auth.md)
 - 2 つの API は、access token の検証を同じ規則で行う。確認する項目は、各 API の Design Doc にある。
 - 職員とログインのアカウントの結び付け方は、[職員とログイン](https://github.com/Fukuemon/buddy/blob/develop/context/domain/staff-login.md) にある。
@@ -246,7 +248,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 
 ### 認可
 
-- 予定の閲覧と編集は、職員の権限で予定の API が判定する。見てよくない予定は一覧から除き、1 件を指す操作には 403 を返す。
+- 予定の閲覧と編集は、職員の権限で予定の API が判定する。職員が見てはいけない予定は一覧から除き、1 件を指す操作には 403 を返す。
   - 規則は [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#予定の認可) にある。
   - ADR-0002: [権限を役職のデフォルトと職員ごとの上書きで持つ（PBAC）](../adr/0002-pbac.md)
 
