@@ -75,15 +75,14 @@ func NewRouter(u Usecases, cfg RouterConfig) *gin.Engine {
 	}
 	r.Use(v1Only(am.authenticate), v1Only(am.checkFacility), v1Only(requireULIDParams), v1Only(validateRequest))
 
+	handlerError := func(c *gin.Context, err error) { writeError(c, cfg.Logger, err) }
 	strict := openapi.NewStrictHandlerWithOptions(server{u: u, ready: cfg.Ready, log: cfg.Logger}, nil,
 		openapi.StrictGinServerOptions{
 			RequestErrorHandlerFunc: func(c *gin.Context, err error) {
 				badRequest(c, bodyErrorPrefix+err.Error())
 			},
-			HandlerErrorFunc: func(c *gin.Context, err error) { writeError(c, cfg.Logger, err) },
-			ResponseErrorHandlerFunc: func(c *gin.Context, err error) {
-				writeError(c, cfg.Logger, err)
-			},
+			HandlerErrorFunc:         handlerError,
+			ResponseErrorHandlerFunc: handlerError,
 		})
 	openapi.RegisterHandlersWithOptions(r, strict, openapi.GinServerOptions{
 		ErrorHandler: func(c *gin.Context, err error, _ int) {

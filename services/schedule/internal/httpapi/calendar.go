@@ -104,14 +104,6 @@ func toImportSkippedItem(s calendar.Skipped) openapi.ImportSkippedItem {
 	}
 }
 
-func stringPtr[T interface{ String() string }](v *T) *string {
-	if v == nil {
-		return nil
-	}
-	s := (*v).String()
-	return &s
-}
-
 // importRange は、本文の期間を読み、期間の規則を検証する。
 func importRange(start, end string) (calendar.Range, error) {
 	s, err := bodyDate(start)
