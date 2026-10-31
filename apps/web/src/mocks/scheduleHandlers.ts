@@ -68,7 +68,7 @@ export const createScheduleHandlers = (baseUrl: string) => {
         return response(200).json({
           ...found,
           username,
-          phone_number: phone_number ?? null,
+          phone_number: phone_number == null ? null : `+${phone_number.replace(/^\+/, '')}`,
           team: { id: team.id, name: team.name },
           sub: null,
           policies: [],

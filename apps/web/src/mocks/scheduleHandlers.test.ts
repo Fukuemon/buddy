@@ -25,7 +25,7 @@ describe('PUT /v1/users/{user_id} のフェイク', () => {
     expect(data).toMatchObject({
       id: 'staff-1',
       username: '青木 ひな',
-      phone_number: '09012345678',
+      phone_number: '+09012345678',
       team: { id: 'team-b', name: 'B チーム' },
     })
   })
