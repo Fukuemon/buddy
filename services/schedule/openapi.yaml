@@ -139,7 +139,7 @@ paths:
             application/json:
               schema:
                 type: array
-                items: { $ref: "#/components/schemas/Unit" }
+                items: { $ref: "#/components/schemas/Team" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -149,18 +149,26 @@ paths:
       tags: [organization]
       operationId: createTeam
       summary: チームを作る
+      description: |
+        color を省くと、事業所のチームが使っているチームが最も少ない色を、同じ数なら TeamColor の並びの先の色を入れる。
+        事業所で使われていない色があれば、その先頭になる。
       parameters: [$ref: "#/components/parameters/FacilityID"]
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/CreateNameRequest" }
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 255 }
+                color: { $ref: "#/components/schemas/TeamColor" }
       responses:
         "201":
           description: 作ったチーム
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/Unit" }
+              schema: { $ref: "#/components/schemas/Team" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -185,11 +193,47 @@ paths:
           description: チーム
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/Unit" }
+              schema: { $ref: "#/components/schemas/Team" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+    put:
+      tags: [organization]
+      operationId: updateTeam
+      summary: チームの名前と色を変える
+      description: |
+        チームの名前と色を本文の値に置き換える。部分の更新は持たない。
+        職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+      parameters:
+        - { name: team_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, color]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 255 }
+                color: { $ref: "#/components/schemas/TeamColor" }
+      responses:
+        "200":
+          description: 変えたチーム
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Team" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: 同じ事業所にほかの同じ名前のチームがある
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { code: conflict, message: "チーム 訪問看護 はこの事業所にすでにあります" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/facilities/{facility_id}/positions:
@@ -1708,11 +1752,6 @@ components:
         message:
           type: string
           description: 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う
-    CreateNameRequest:
-      type: object
-      required: [name]
-      properties:
-        name: { type: string, minLength: 1, maxLength: 255 }
     Facility:
       type: object
       required: [id, name, created_at, updated_at]
@@ -1722,7 +1761,7 @@ components:
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
     Unit:
-      description: 部署かチーム
+      description: 部署
       type: object
       required: [id, facility_id, name, created_at, updated_at]
       properties:
@@ -1731,6 +1770,22 @@ components:
         name: { type: string }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
+    Team:
+      type: object
+      required: [id, facility_id, name, color, created_at, updated_at]
+      properties:
+        id: { $ref: "#/components/schemas/ID" }
+        facility_id: { $ref: "#/components/schemas/ID" }
+        name: { type: string }
+        color: { $ref: "#/components/schemas/TeamColor" }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    TeamColor:
+      description: |
+        チームの色。画面は packages/ui のチームの色のトークン（team- の後ろがこの値）で塗る。事業所の中で重なってよい。
+        並びは、色を省いて作ったチームに選ぶ順である。
+      type: string
+      enum: [blue, orange, magenta, cyan, yellow, purple, green, lime]
     Policy:
       type: object
       description: 職員に与える権限。8 つのレコードをマイグレーションが入れ、API では作らない
