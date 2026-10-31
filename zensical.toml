@@ -95,6 +95,7 @@ nav = [
     "adr/0018-staff-leave-and-retirement.md",
     "adr/0019-docs-site-publish-and-contrast-check.md",
     "adr/0020-docs-site-without-access.md",
+    "adr/0021-patient-service-end.md",
   ] },
 ]
 

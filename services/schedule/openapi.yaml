@@ -401,6 +401,50 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
+    put:
+      tags: [staff]
+      operationId: updateUser
+      summary: 職員の名前、電話番号、部署、チームを変える
+      description: |
+        職員の名前、電話番号、部署、チームを本文の値に置き換える。部分の更新は持たず、phone_number を省くか null にすると電話番号を消す。
+        部署とチームは、職員と同じ事業所のものに限る。メールは ID ブローカーが持つので変えない。
+        チームを変えると、チームを対象にする職員の権限のうち、古いチームを指す対象を新しいチームに移す。ほかのチームの対象は残す。
+        職員の管理の権限（staff.manage）を持つ職員だけが呼べる。休職の職員は変えられ、退職した職員は変えられない。
+      parameters:
+        - { name: user_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, department_id, team_id]
+              properties:
+                username: { type: string, minLength: 1, maxLength: 128 }
+                phone_number:
+                  type: string
+                  nullable: true
+                  maxLength: 12
+                  description: 11 桁以内の数字。先頭の + は省いてよい。省くか null なら電話番号を消す
+                department_id: { $ref: "#/components/schemas/ID" }
+                team_id: { $ref: "#/components/schemas/ID" }
+      responses:
+        "200":
+          description: 変えた職員と権限
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffDetail" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: 退職した職員を変えようとした。職員は変わらない
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { code: conflict, message: "退職した職員は変えられません" }
+        "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/users/{user_id}/position:
     put:
@@ -510,6 +554,28 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
               example: { code: conflict, message: "退職した職員は復職できません" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/users/{user_id}/remaining_assignments:
+    get:
+      tags: [staff]
+      operationId: getUserRemainingAssignments
+      summary: 職員に残る予定と担当の利用者を返す
+      description: |
+        職員を休職か退職にする前に、その日（事業所の現地の日付）以降の予定、繰り返しの予定、担当の利用者を返す。
+        一覧は、休職と退職が返す一覧と同じ規則で作る。何も書かない。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+      parameters:
+        - { name: user_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
+      responses:
+        "200":
+          description: その日以降に残る予定と担当の利用者
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffAssignments" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/users/{user_id}/retire:
