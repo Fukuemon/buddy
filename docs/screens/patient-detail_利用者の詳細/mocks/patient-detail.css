@@ -1,0 +1,232 @@
+/* 利用者の管理の画面のモックだけの見た目。利用者の一覧、登録、詳細が同じ内容のファイルを持つ。職員の管理の画面の CSS を元にした */
+.pt-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.pt-h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.pt-h3 {
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pt-link {
+  color: var(--wf-primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.pt-muted {
+  color: var(--wf-muted);
+}
+
+/* 状態の印。利用中は枠だけ、利用の終了は薄い面で示す */
+.pt-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--wf-line-soft);
+  border-radius: 999px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.pt-status--ended {
+  background: var(--wf-fill-strong);
+  color: var(--wf-muted);
+}
+
+.pt-radios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+.pt-back {
+  justify-self: start;
+}
+
+/* 詳細のページの見出し。名前のすぐ右に状態の印を置く */
+.pt-head--start {
+  justify-content: flex-start;
+}
+
+.pt-section {
+  display: grid;
+  gap: 12px;
+  padding: 16px 20px;
+}
+
+.pt-section__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.pt-section p {
+  margin: 0;
+}
+
+/* 基本の情報の、項目の名前と値の組 */
+.pt-dl {
+  display: grid;
+  grid-template-columns: 10em 1fr;
+  gap: 8px 16px;
+  margin: 0;
+}
+
+.pt-dl dt {
+  color: var(--wf-muted);
+}
+
+.pt-dl dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.pt-row > .wf-field {
+  flex: 1;
+}
+
+/* 選ぶ欄。右端に下向きの印を置く */
+.pt-select {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.pt-select::after {
+  content: '▾';
+  margin-left: auto;
+  color: var(--wf-muted);
+}
+
+.pt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.pt-actions--start {
+  justify-content: flex-start;
+}
+
+.pt-cell-actions {
+  text-align: right;
+}
+
+.pt-fieldset {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.pt-note {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 4px solid var(--wf-ink);
+  background: var(--wf-warning-surface);
+}
+
+/* 利用の終了にする前に残る予定 */
+.pt-warning {
+  display: grid;
+  gap: 6px;
+  padding: 12px 16px;
+  border-left: 4px solid var(--wf-ink);
+  background: var(--wf-warning-surface);
+}
+
+.pt-warning p {
+  margin: 0;
+}
+
+.pt-warning__title {
+  font-weight: 700;
+}
+
+.pt-assignments {
+  display: grid;
+  gap: 4px;
+}
+
+.pt-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.pt-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* 幅 768px 未満では、表の行を、見出しと値の組を縦に積んだ箱にし、入力の欄を縦に並べる */
+@container screen (width < 768px) {
+  .pt-table thead {
+    display: none;
+  }
+
+  .pt-table,
+  .pt-table tbody,
+  .pt-table tr,
+  .pt-table td {
+    display: block;
+  }
+
+  .pt-table {
+    border-collapse: separate;
+  }
+
+  .pt-table tr {
+    margin-bottom: 12px;
+    border: 1px solid var(--wf-line-soft);
+    border-radius: var(--wf-radius);
+  }
+
+  .pt-table td {
+    border: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .pt-table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--wf-muted);
+    font-size: 12px;
+  }
+
+  .pt-cell-actions {
+    text-align: left;
+  }
+
+  .pt-dl {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .pt-dl dd {
+    margin-bottom: 8px;
+  }
+
+  .pt-row {
+    flex-direction: column;
+  }
+}
