@@ -355,4 +355,31 @@ func TestMigrateReceiptCheckPolicy(t *testing.T) {
 	if !slices.Equal(checkers, []string{managerU}) {
 		t.Errorf("照合の権限を持つ職員 = %v, want 職員の管理の権限を持つ退職していない職員 %s だけ", checkers, managerU)
 	}
+
+	// 戻しても事務の役職は残り、照合の権限だけが消える。
+	if err := MigrateDown(cfg, 1); err != nil {
+		t.Fatal(err)
+	}
+	var clerkPolicies []string
+	rows, err = pool.Query(ctx, `
+		SELECT p.code FROM positions ps
+		JOIN position_policies pp ON pp.position_id = ps.id
+		JOIN policies p ON p.id = pp.policy_id
+		WHERE ps.facility_id = $1 AND ps.name = '事務' ORDER BY p.code`, facility)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for rows.Next() {
+		var code string
+		if err := rows.Scan(&code); err != nil {
+			t.Fatal(err)
+		}
+		clerkPolicies = append(clerkPolicies, code)
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{"schedule.all.edit", "schedule.all.read"}; !slices.Equal(clerkPolicies, want) {
+		t.Errorf("戻した後の事務の役職のデフォルトの権限 = %v, want %v", clerkPolicies, want)
+	}
 }
