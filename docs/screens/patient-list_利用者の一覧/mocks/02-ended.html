@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>patient-list 利用の終了の利用者も出す</title>
+    <title>patient-list 利用の終了の利用者</title>
     <link rel="stylesheet" href="../../_common/mock.css" />
     <link rel="stylesheet" href="../../_common/tokens.css" />
     <link rel="stylesheet" href="../../_common/wireframe.css" />
@@ -68,56 +68,38 @@
                 <div class="wf-list-tools">
                   <div class="wf-search" data-m="7" data-testid="patient-list-search"><span class="wf-label">名前で検索</span></div>
                   <span class="wf-select" data-m="8" data-testid="patient-list-filter-staff">担当の職員: すべて</span>
-                  <span class="wf-select is-on" data-m="9" data-testid="patient-list-filter-status" data-go="../../patient-list_利用者の一覧/mocks/01-list.html">状態: すべて</span>
-                  <span class="wf-count" data-m="10" data-testid="patient-list-count">4 人</span>
+                  <span class="wf-select is-on" data-m="9" data-testid="patient-list-filter-status" data-go="../../patient-list_利用者の一覧/mocks/01-list.html">状態: 利用の終了</span>
+                  <span class="wf-count" data-m="10" data-testid="patient-list-count">2 人</span>
                 </div>
                 <table class="wf-table wf-table--rows" data-m="11" data-testid="patient-list-table">
                   <thead>
                     <tr>
                       <th>名前</th>
+                      <th>担当の職員</th>
                       <th>サービス</th>
                       <th>希望の時間帯</th>
                       <th>希望する担当の性別</th>
-                      <th>担当の職員</th>
-                      <th>状態</th>
+                      <th>利用の終了にした日</th>
                       <th><span class="wf-visually-hidden">詳細</span></th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr data-m="12" data-testid="patient-list-row-{利用者の id}" data-go="../../patient-detail_利用者の詳細/mocks/01-detail.html">
-                      <td class="wf-cell-primary">見本 一郎</td>
-                      <td class="wf-cell-meta">訪看I2</td>
-                      <td class="wf-cell-meta">午前</td>
-                      <td class="wf-cell-meta">男性</td>
-                      <td class="wf-cell-meta">森 健太</td>
-                      <td class="wf-cell-status"></td>
-                      <td class="wf-cell-go" aria-hidden="true">›</td>
-                    </tr>
-                    <tr data-testid="patient-list-row-{利用者の id}" data-go="../../patient-detail_利用者の詳細/mocks/01-detail.html">
-                      <td class="wf-cell-primary">見本 三郎</td>
-                      <td class="wf-cell-meta">訪看I4</td>
-                      <td class="wf-cell-meta">午前</td>
-                      <td class="wf-cell-meta">男性</td>
-                      <td class="wf-cell-meta">小野 拓海（休職）</td>
-                      <td class="wf-cell-status"></td>
-                      <td class="wf-cell-go" aria-hidden="true">›</td>
-                    </tr>
-                    <tr data-testid="patient-list-row-{利用者の id}" data-go="../../patient-detail_利用者の詳細/mocks/01-detail.html">
-                      <td class="wf-cell-primary">見本 二葉</td>
-                      <td class="wf-cell-meta">訪看I3</td>
-                      <td class="wf-cell-meta">午後</td>
-                      <td class="wf-cell-meta">女性</td>
+                    <tr data-m="12" data-testid="patient-list-row-{利用者の id}" data-go="../../patient-detail_利用者の詳細/mocks/06-ended.html">
+                      <td class="wf-cell-primary">見本 五郎</td>
                       <td class="wf-cell-meta">佐藤 美咲</td>
-                      <td class="wf-cell-status"></td>
+                      <td class="wf-cell-meta">訪看I3</td>
+                      <td class="wf-cell-meta">午前</td>
+                      <td class="wf-cell-meta">男性</td>
+                      <td class="wf-cell-status"><span data-m="13" data-testid="patient-list-ended-on-{利用者の id}">2026/08/31 に利用の終了</span></td>
                       <td class="wf-cell-go" aria-hidden="true">›</td>
                     </tr>
                     <tr data-testid="patient-list-row-{利用者の id}" data-go="../../patient-detail_利用者の詳細/mocks/06-ended.html">
                       <td class="wf-cell-primary">見本 四季</td>
+                      <td class="wf-cell-meta">西村 学（退職）</td>
                       <td class="wf-cell-meta">訪看I2</td>
                       <td class="wf-cell-meta">午後</td>
                       <td class="wf-cell-meta">女性</td>
-                      <td class="wf-cell-meta">西村 学（退職）</td>
-                      <td class="wf-cell-status"><span class="wf-status wf-status--muted" data-m="13" data-testid="patient-list-status-{利用者の id}">利用の終了（2026/09/30）</span></td>
+                      <td class="wf-cell-status"><span data-testid="patient-list-ended-on-{利用者の id}">2026/09/30 に利用の終了</span></td>
                       <td class="wf-cell-go" aria-hidden="true">›</td>
                     </tr>
                   </tbody>

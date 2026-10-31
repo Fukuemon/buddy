@@ -15,8 +15,8 @@
 | 利用者の一覧 | 担当の職員が休職か退職か | `Staff.status`（`staff.list` の戻り値） | `Patient.assigned_staff_id` を `listUsers` の `Staff.id` に引き当てた `Staff.status` |
 | 名前の検索 | 名前 | `Patient.name` | `Patient.name` |
 | 利用者の行 | 詳細の URL の利用者 | `Patient.id` | `Patient.id` |
-| 状態の印、状態の絞り込み | 利用の終了か | `Patient.ended` | `Patient.ended_at` が `null` でないか |
-| 状態の印 | 利用の終了にした日 | 足す | `Patient.ended_at` の日付（事業所の現地の日付） |
+| 状態の絞り込み | 利用の終了か | `Patient.ended` | `Patient.ended_at` が `null` でないか |
+| 利用の終了にした日 | 日付 | 足す | `Patient.ended_at` の日付（事業所の現地の日付） |
 | 読み込みの失敗の文 | 読めなかったか | `ApiError` | `listPatients`、`listUsers` のエラー |
 
 ## 操作
