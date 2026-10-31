@@ -58,7 +58,8 @@ test.describe('照合の結果', () => {
           browser,
           {
             name: 'receipt-night-addition-match',
-            title: '予定の開始が 19:00 で実績の加算が夜間だけの行は、整合に入り、加算に ※ が付かない',
+            title:
+              '予定の開始が 19:00 で実績の加算が夜間だけの行は、整合に入り、加算に ※ が付かない',
             actor: ACTOR,
             variant,
           },
