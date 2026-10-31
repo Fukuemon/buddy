@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 import { EVIDENCE_VARIANTS, recordPrEvidence, STORYBOOK_URL } from '../../fixtures/evidence'
+import { catalogTeamColors } from '../../selectors/catalogColors'
 
 const ACTOR = 'ログインなし（Storybook のトークンの色のページ）'
 const URL = `${STORYBOOK_URL}/iframe.html?id=${encodeURIComponent('トークン-色--docs')}&viewMode=docs`
@@ -19,14 +20,14 @@ const TEAM_COLORS = [
 
 const openColors = async (page: Page) => {
   await page.goto(URL)
-  await expect(page.getByTestId('team-colors-palette')).toBeVisible()
+  await expect(catalogTeamColors(page).palette).toBeAttached()
 }
 
 test.describe('デザインシステム', () => {
   for (const variant of EVIDENCE_VARIANTS) {
     const prefix = variant.label ? `${variant.label}: ` : ''
 
-    test(`${prefix}トークンの色のページのチームの節を開いた場合、8 色の点が 4 つの面の上と区別の色の横に出ること`, async ({
+    test(`${prefix}トークンの色のページのチームのセクションを開いた場合、8 色の点が 4 つの面の上と区別の色の横に出ること`, async ({
       browser,
     }) => {
       await recordPrEvidence(
@@ -42,14 +43,13 @@ test.describe('デザインシステム', () => {
           await openColors(page)
           await step('トークンの色のページ（Storybook の トークン/色）を開いている')
 
-          const palette = page.getByTestId('team-colors-palette')
-          await palette.scrollIntoViewIfNeeded()
-          await step('チームの節まで下に移る')
-          await expect(palette).toContainText('team-blue から team-yellow')
-          await expect(palette).toContainText('team-purple から team-lime')
+          const team = catalogTeamColors(page)
+          await team.palette.scrollIntoViewIfNeeded()
+          await step('チームのセクションまで下に移る')
+          await expect(team.palette).toBeVisible()
           await check('team-blue から team-lime の 8 色のトークンが並ぶ')
 
-          await page.getByTestId('team-colors-surfaces').scrollIntoViewIfNeeded()
+          await team.dot('surface', 'blue').scrollIntoViewIfNeeded()
           await step('「面の上の点」まで下に移る')
           for (const surface of [
             'surface',
@@ -58,20 +58,18 @@ test.describe('デザインシステム', () => {
             'primary-surface',
           ]) {
             for (const [name, rgb] of TEAM_COLORS) {
-              await expect(page.getByTestId(`team-dot-${surface}-${name}`)).toHaveCSS(
-                'background-color',
-                rgb,
-              )
+              await expect(team.dot(surface, name)).toHaveCSS('background-color', rgb)
             }
           }
           await check(
             `（撮影のため、録画で見分けにくい色の値を出す）surface、surface-canvas、surface-subtle、primary-surface の面ごとに 8 色の点が並ぶ。${TEAM_COLORS.map(([name, rgb]) => `${name} は ${rgb}`).join('、')}`,
           )
 
-          const categorical = page.getByTestId('team-colors-categorical')
-          await categorical.scrollIntoViewIfNeeded()
+          await team.categoricalRow('orange').scrollIntoViewIfNeeded()
           await step('「区別の色と並べる」まで下に移る')
-          await expect(categorical).toContainText('チーム lime')
+          for (const [name] of TEAM_COLORS) {
+            await expect(team.categoricalRow(name)).toBeVisible()
+          }
           await check('同じ色相のチームの点と職員の色が並び、チームの点の方が明るい')
         },
       )

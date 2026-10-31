@@ -151,7 +151,6 @@ import { ColorItem, ColorPalette, Meta } from '@storybook/addon-docs/blocks'
 チームのまとまりを、名前の横の点で示す。点は名前と並べて出し、面と文字には使わない。
 区別の色より明るい段から選び、どの面の上でも 3:1 以上になる。選び方は DESIGN.md の「チームの色」にある。
 
-<div data-testid="team-colors-palette">
 <ColorPalette>
   <ColorItem
     title="team-blue から team-yellow"
@@ -174,13 +173,12 @@ import { ColorItem, ColorPalette, Meta } from '@storybook/addon-docs/blocks'
     }}
   />
 </ColorPalette>
-</div>
 
 ### 面の上の点
 
 点が載る 4 つの面ごとに、8 色を並べる。
 
-<div data-testid="team-colors-surfaces" className="flex flex-col gap-2">
+<div className="flex flex-col gap-2">
   {['bg-surface', 'bg-surface-canvas', 'bg-surface-subtle', 'bg-primary-surface'].map((bg) => (
     <div key={bg} className={`flex flex-wrap items-center gap-4 rounded-8 border border-border p-4 ${bg}`}>
       <span className="w-40 text-caption text-text-secondary">{bg.replace('bg-', '')}</span>
@@ -195,7 +193,7 @@ import { ColorItem, ColorPalette, Meta } from '@storybook/addon-docs/blocks'
         ['bg-team-lime', 'lime'],
       ].map(([cls, name]) => (
         <span key={name} className="flex items-center gap-1 text-caption text-text">
-          <span aria-hidden="true" data-testid={`team-dot-${bg.replace('bg-', '')}-${name}`} className={`inline-block size-3 rounded-full ${cls}`} />
+          <span aria-hidden="true" className={`inline-block size-3 rounded-full ${cls}`} />
           {name}
         </span>
       ))}
@@ -207,7 +205,7 @@ import { ColorItem, ColorPalette, Meta } from '@storybook/addon-docs/blocks'
 
 カレンダーの職員の絞り込みでは、職員の区別の色とチームの点が並ぶ。同じ色相どうしを並べ、明るさで見分けられることを示す。
 
-<div data-testid="team-colors-categorical" className="flex flex-col gap-2 rounded-8 border border-border bg-surface p-4">
+<div className="flex flex-col gap-2 rounded-8 border border-border bg-surface p-4">
   {[
     ['bg-team-purple', 'bg-categorical-1', 'purple'],
     ['bg-team-cyan', 'bg-categorical-2', 'cyan'],
