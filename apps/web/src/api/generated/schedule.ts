@@ -235,7 +235,14 @@ export interface paths {
         };
         /** 職員を取得する */
         get: operations["getUser"];
-        put?: never;
+        /**
+         * 職員の名前、電話番号、部署、チームを変える
+         * @description 職員の名前、電話番号、部署、チームを本文の値に置き換える。部分の更新は持たず、phone_number を省くか null にすると電話番号を消す。
+         *     部署とチームは、職員と同じ事業所のものに限る。メールは ID ブローカーが持つので変えない。
+         *     チームを変えると、チームを対象にする職員の権限のうち、古いチームを指す対象を新しいチームに移す。ほかのチームの対象は残す。
+         *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。休職の職員は変えられ、退職した職員は変えられない。
+         */
+        put: operations["updateUser"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1904,6 +1911,58 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    updateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["ID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    username: string;
+                    /** @description 11 桁以内の数字。先頭の + は省いてよい。省くか null なら電話番号を消す */
+                    phone_number?: string | null;
+                    department_id: components["schemas"]["ID"];
+                    team_id: components["schemas"]["ID"];
+                };
+            };
+        };
+        responses: {
+            /** @description 変えた職員と権限 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffDetail"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description 退職した職員を変えようとした。職員は変わらない */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "conflict",
+                     *       "message": "退職した職員は変えられません"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };
