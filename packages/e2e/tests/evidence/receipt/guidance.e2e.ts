@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 
 import { LEADER, LOGIN_EMAIL, LOGIN_STAFF, RECEIPT_TESTDATA } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
-import { createGoogleEvent } from '../../fixtures/googleCalendar'
+import { createGoogleEvent, deleteGoogleEvent } from '../../fixtures/googleCalendar'
 import { signInAtBroker } from '../../screens/login'
 import { pageBody } from '../../selectors/page'
 import { receiptCheckErrorItems, receiptWarningItems } from '../../selectors/receipt'
@@ -174,37 +174,42 @@ test.describe('照合', () => {
           },
           async (page) => {
             await signIn(page)
-            await createGoogleEvent(page.request, MORI_CALENDAR, {
+            return createGoogleEvent(page.request, MORI_CALENDAR, {
               summary: '】訪看I2【見本 一郎',
               date: '2026-11-20',
               start: '10:00',
               end: '10:30',
             })
           },
-          async ({ page, step, check }) => {
-            await page.goto('/receipt')
-            await expect(page.getByTestId('receipt-check-submit')).toBeVisible()
-            await step(
-              '照合の画面を開いている。森 健太のカレンダーの 2026-11-20 に、タイトルが「】訪看I2【見本 一郎」の予定を足してある',
-            )
+          async ({ page, step, check }, event) => {
+            try {
+              await page.goto('/receipt')
+              await expect(page.getByTestId('receipt-check-submit')).toBeVisible()
+              await step(
+                '照合の画面を開いている。森 健太のカレンダーの 2026-11-20 に、タイトルが「】訪看I2【見本 一郎」の予定を足してある',
+              )
 
-            await step(
-              '予定の取り方に「Google カレンダー」を選び、対象の月に 2026-11 を、実績の CSV に visits_2026-11_utf8.csv を選んで「照合する」を押す',
-            )
-            await page.getByTestId('receipt-source-calendar').check()
-            await page.getByTestId('receipt-month').fill('2026-11')
-            await page
-              .getByTestId('receipt-visits-file')
-              .setInputFiles(RECEIPT_TESTDATA.calendarVisits)
-            await page.getByTestId('receipt-check-submit').click()
-            const warnings = page.getByTestId('receipt-warnings')
-            await expect(receiptWarningItems(page)).toHaveText([
-              '2026-11-20 10:00: タイトルが「【サービス内容】利用者名」の形になっていません。',
-            ])
-            await expect(warnings).not.toContainText('の組がない')
-            await check(
-              '「照合に使わなかった予定」に「2026-11-20 10:00: タイトルが「【サービス内容】利用者名」の形になっていません。」が出て、API の文（タイトルに【…】の組がない）は出ない',
-            )
+              await step(
+                '予定の取り方に「Google カレンダー」を選び、対象の月に 2026-11 を、実績の CSV に visits_2026-11_utf8.csv を選んで「照合する」を押す',
+              )
+              await page.getByTestId('receipt-source-calendar').check()
+              await page.getByTestId('receipt-month').fill('2026-11')
+              await page
+                .getByTestId('receipt-visits-file')
+                .setInputFiles(RECEIPT_TESTDATA.calendarVisits)
+              await page.getByTestId('receipt-check-submit').click()
+              const warnings = page.getByTestId('receipt-warnings')
+              await expect(receiptWarningItems(page)).toHaveText([
+                '2026-11-20 10:00: タイトルが「【サービス内容】利用者名」の形になっていません。',
+              ])
+              await expect(warnings).not.toContainText('の組がない')
+              await check(
+                '「照合に使わなかった予定」に「2026-11-20 10:00: タイトルが「【サービス内容】利用者名」の形になっていません。」が出て、API の文（タイトルに【…】の組がない）は出ない',
+              )
+            } finally {
+              await step('（撮影のため、撮り直しても 1 件になるよう、足した予定を消す）')
+              await deleteGoogleEvent(page.request, MORI_CALENDAR, event.id)
+            }
           },
         )
       })
