@@ -101,13 +101,13 @@ func load(getenv func(string) string, broker bool) (Config, error) {
 			Password: getenv("DB_PASSWORD"),
 			Name:     getenv("DB_NAME"),
 		},
-		HydraAdminURL:             strings.TrimSpace(getenv("HYDRA_ADMIN_URL")),
-		UpstreamIdPsFile:          strings.TrimSpace(getenv("UPSTREAM_IDPS_FILE")),
-		UpstreamClientSecretsFile: strings.TrimSpace(getenv("UPSTREAM_IDP_CLIENT_SECRETS_FILE")),
-		PublicURL:                 strings.TrimSuffix(strings.TrimSpace(getenv("PUBLIC_URL")), "/"),
-		UpstreamBrowserOrigin:     strings.TrimSpace(getenv("UPSTREAM_IDP_BROWSER_ORIGIN")),
-		ClientIPHeader:            strings.TrimSpace(getenv("CLIENT_IP_HEADER")),
-		HydraIssuer:               strings.TrimSpace(getenv("HYDRA_ISSUER")),
+		HydraAdminURL:             get("HYDRA_ADMIN_URL", ""),
+		UpstreamIdPsFile:          get("UPSTREAM_IDPS_FILE", ""),
+		UpstreamClientSecretsFile: get("UPSTREAM_IDP_CLIENT_SECRETS_FILE", ""),
+		PublicURL:                 strings.TrimSuffix(get("PUBLIC_URL", ""), "/"),
+		UpstreamBrowserOrigin:     get("UPSTREAM_IDP_BROWSER_ORIGIN", ""),
+		ClientIPHeader:            get("CLIENT_IP_HEADER", ""),
+		HydraIssuer:               get("HYDRA_ISSUER", ""),
 		InternalAPIAudience:       get("INTERNAL_API_AUDIENCE", "broker"),
 		TokenHookKey:              getenv("TOKEN_HOOK_KEY"),
 	}
@@ -119,7 +119,7 @@ func load(getenv func(string) string, broker bool) (Config, error) {
 	}
 	var missing []string
 	for _, key := range required {
-		if strings.TrimSpace(getenv(key)) == "" {
+		if get(key, "") == "" {
 			missing = append(missing, key)
 		}
 	}
@@ -131,10 +131,10 @@ func load(getenv func(string) string, broker bool) (Config, error) {
 			return Config{}, fmt.Errorf("ポート %q は 1 から 65535 の数にする", p)
 		}
 	}
-	if broker && c.Port == c.InternalPort {
-		return Config{}, fmt.Errorf("INTERNAL_PORT %q は PORT と違う値にする", c.InternalPort)
-	}
 	if broker {
+		if c.Port == c.InternalPort {
+			return Config{}, fmt.Errorf("INTERNAL_PORT %q は PORT と違う値にする", c.InternalPort)
+		}
 		for _, v := range []struct{ key, value string }{
 			{"HYDRA_ADMIN_URL", c.HydraAdminURL},
 			{"HYDRA_ISSUER", c.HydraIssuer},
