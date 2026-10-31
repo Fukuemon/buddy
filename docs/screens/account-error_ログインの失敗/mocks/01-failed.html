@@ -13,16 +13,12 @@
     <div class="stage">
       <div class="screen">
         <div class="screen-body">
-          <header class="wf-site-header" data-m="1">
-            <div class="wf-site-header__brand">
-              <strong>buddy</strong>
-            </div>
-          </header>
-          <main>
-            <section class="ae-main" data-testid="auth-error">
-              <h1 class="wf-heading" data-m="2">ログインできませんでした</h1>
-              <p data-m="3">時間をおいて、もう一度ログインしてください。</p>
-              <span class="wf-btn" data-m="4" data-testid="auth-error-login" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html">もう一度ログインする</span>
+          <main class="ae-page">
+            <section class="ae-card" data-testid="auth-error">
+              <p aria-hidden="true" class="ae-logo" data-m="1">buddy</p>
+              <h1 class="ae-title" data-m="2">ログインできませんでした</h1>
+              <p class="ae-message" data-m="3">時間をおいて、もう一度ログインしてください。</p>
+              <span class="wf-btn wf-btn--primary ae-login" data-m="4" data-testid="auth-error-login" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html">もう一度ログインする</span>
             </section>
           </main>
         </div>
