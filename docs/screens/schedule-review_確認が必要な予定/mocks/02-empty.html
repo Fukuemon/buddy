@@ -15,7 +15,7 @@
         <div class="screen-body">
           <header class="wf-site-header">
             <div class="wf-site-header__brand">
-              <span class="wf-btn wf-btn--icon wf-site-menu" aria-label="メニュー" data-open="site-nav" data-m="9" data-testid="site-nav-toggle"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z" fill="currentColor" /></svg></span>
+              <span class="wf-btn wf-btn--icon wf-site-menu" aria-label="メニュー" data-open="site-nav" data-m="10" data-testid="site-nav-toggle"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z" fill="currentColor" /></svg></span>
               <strong>buddy</strong>
             </div>
             <div class="wf-site-header__viewer" data-testid="viewer-menu">
@@ -35,8 +35,8 @@
               <div class="wf-site-nav__group" role="group" aria-label="予定">
                 <span class="wf-site-nav__heading" aria-hidden="true">予定</span>
                 <span class="wf-site-nav__item" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html" data-testid="site-nav-schedule"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z" fill="currentColor" /></svg><span class="wf-site-nav__label">カレンダー</span></span>
-                <span class="wf-site-nav__item" data-m="8" data-go="../../schedule-import_予定の取り込み/mocks/01-initial.html" data-testid="site-nav-import"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z" fill="currentColor" /></svg><span class="wf-site-nav__label">取り込み</span></span>
-                <span class="wf-site-nav__item" aria-current="page" data-m="7" data-go="01-list.html" data-testid="site-nav-review"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M160-200v-80h80v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h80v80H160Zm320 120q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80Z" fill="currentColor" /></svg><span class="wf-site-nav__label">要確認</span></span>
+                <span class="wf-site-nav__item" data-go="../../schedule-import_予定の取り込み/mocks/01-initial.html" data-m="9" data-testid="site-nav-import"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z" fill="currentColor" /></svg><span class="wf-site-nav__label">取り込み</span></span>
+                <span class="wf-site-nav__item" aria-current="page" aria-label="要確認 3 件" data-go="01-list.html" data-m="8" data-testid="site-nav-review"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M160-200v-80h80v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h80v80H160Zm320 120q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80Z" fill="currentColor" /></svg><span class="wf-site-nav__label">要確認</span><span class="wf-site-badge" data-testid="site-nav-review-count">3</span></span>
                 <span class="wf-site-nav__item" data-go="../../schedule-link_カレンダーの連携/mocks/01-list.html" data-testid="site-nav-link"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M440-280H280q-83 0-141.5-58.5T80-480q0-83 58.5-141.5T280-680h160v80H280q-50 0-85 35t-35 85q0 50 35 85t85 35h160v80ZM320-440v-80h320v80H320Zm200 160v-80h160q50 0 85-35t35-85q0-50-35-85t-85-35H520v-80h160q83 0 141.5 58.5T880-480q0 83-58.5 141.5T680-280H520Z" fill="currentColor" /></svg><span class="wf-site-nav__label">連携</span></span>
               </div>
               <div class="wf-site-nav__group" role="group" aria-label="照合">
@@ -48,8 +48,15 @@
             <div class="wf-site-main">
               <main class="wf-page">
                 <h1 class="wf-heading" data-m="4">確認が必要な予定</h1>
-                <p class="wf-lead" data-m="5">buddy の予定のうち、Google カレンダーに書き出せなかった予定と、buddy と Google カレンダーの両方で変わった予定です。片方だけで変わった予定は、変わった側に合わせるので、ここには出ません。buddy の内容で書き直すと Google カレンダーの予定を buddy の内容にし、Google の内容に合わせると buddy の予定を Google カレンダーの内容にします。</p>
-                <p class="sr-muted" data-m="6" data-testid="calendar-review-empty">確認が必要な予定はありません。</p>
+                <div class="wf-more">
+                  <p data-m="5">Google カレンダーと食い違った予定です。どちらの内容に合わせるかを選んでください。</p>
+                  <span class="wf-btn wf-btn--text wf-more__toggle" aria-expanded="false" data-open="page-more" data-m="6" data-testid="calendar-review-more">詳しく</span>
+                  <div class="wf-more__body" data-panel="page-more" data-testid="calendar-review-more-text">
+                    <p>Google カレンダーに書き出せなかった予定と、buddy と Google カレンダーの両方で変わった予定が出ます。片方だけで変わった予定は、変わった側に合わせるので、ここには出ません。</p>
+                    <p>buddy の内容で書き直すと、Google カレンダーの予定を buddy の内容にします。Google の内容に合わせると、buddy の予定を Google カレンダーの内容にします。</p>
+                  </div>
+                </div>
+                <p class="sr-muted" data-m="7" data-testid="calendar-review-empty">確認が必要な予定はありません。</p>
               </main>
             </div>
           </div>
