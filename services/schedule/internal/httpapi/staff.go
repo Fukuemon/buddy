@@ -15,6 +15,7 @@ type StaffUsecase interface {
 	Get(ctx context.Context, id string) (staff.Detail, error)
 	List(ctx context.Context, facilityID string, q staff.ListQuery) ([]staff.Summary, error)
 	ChangePosition(ctx context.Context, id, positionID string) (staff.Detail, error)
+	UpdateProfile(ctx context.Context, id string, p staff.Profile) (staff.Detail, error)
 	AddGrant(ctx context.Context, id string, in staff.GrantInput) (staff.Detail, error)
 	RemoveGrant(ctx context.Context, id, userPolicyID string) (staff.Detail, error)
 	Leave(ctx context.Context, id string, in staff.LeaveInput) (staff.StatusChange, error)
@@ -132,6 +133,21 @@ func (s server) ChangeUserPosition(ctx context.Context, req openapi.ChangeUserPo
 		return nil, err
 	}
 	return openapi.ChangeUserPosition200JSONResponse(toStaffDetail(d)), nil
+}
+
+// UpdateUser は、職員の名前、電話番号、部署、チームを変え、変えた職員を返す。
+func (s server) UpdateUser(ctx context.Context, req openapi.UpdateUserRequestObject) (openapi.UpdateUserResponseObject, error) {
+	b := req.Body
+	d, err := s.u.Staff.UpdateProfile(ctx, req.UserId, staff.Profile{
+		Username:     b.Username,
+		PhoneNumber:  b.PhoneNumber,
+		DepartmentID: b.DepartmentId,
+		TeamID:       b.TeamId,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return openapi.UpdateUser200JSONResponse(toStaffDetail(d)), nil
 }
 
 // AddUserPolicy は、職員に権限を足し、権限つきの職員を返す。

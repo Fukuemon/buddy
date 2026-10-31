@@ -437,6 +437,51 @@ func (s *Usecase) ChangePosition(ctx context.Context, id, positionID string) (De
 	return changed, err
 }
 
+// UpdateProfile は、職員の名前、電話番号、部署、チームを p にし、変えた職員を返す。メールは変えない（ADR-0017）。
+// チームを変えたときは、職員の権限のうち古いチームを指す対象を新しいチームに移し、ほかのチームの対象は残す。
+// 登録と役職の変更で付けたチームの対象は所属のチームを指すが、予定の判定は保存した対象のチームだけを読むためである。
+// 職員が見つからないときは apperr.ErrNotFound を、職員の管理の権限が無いときは apperr.ErrForbidden を、
+// 退職した職員を変えようとしたときは apperr.ErrConflict を、部署かチームが見つからないか別の事業所のものであるときは入力のエラーを返す。
+func (s *Usecase) UpdateProfile(ctx context.Context, id string, p Profile) (Detail, error) {
+	if err := s.guard(ctx); err != nil {
+		return Detail{}, err
+	}
+	var changed Detail
+	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
+		cur, err := s.deps.Staff.Get(ctx, id)
+		if err != nil {
+			return err
+		}
+		if cur.Status() == StatusRetired {
+			return apperr.Conflict("退職した職員は変えられません")
+		}
+		dep, err := s.deps.Departments.Get(ctx, p.DepartmentID)
+		if err != nil {
+			return apperr.Reference("部署", p.DepartmentID, err)
+		}
+		if err := apperr.SameFacility("部署", dep.ID, dep.FacilityID, cur.FacilityID); err != nil {
+			return err
+		}
+		team, err := s.deps.Teams.Get(ctx, p.TeamID)
+		if err != nil {
+			return apperr.Reference("チーム", p.TeamID, err)
+		}
+		if err := apperr.SameFacility("チーム", team.ID, team.FacilityID, cur.FacilityID); err != nil {
+			return err
+		}
+		p, err := NewProfile(p)
+		if err != nil {
+			return err
+		}
+		if err := s.deps.Staff.UpdateProfile(ctx, cur.ID, p, cur.TeamID); err != nil {
+			return apperr.AsConflict(err, "退職した職員は変えられません")
+		}
+		changed, err = s.deps.Staff.Get(ctx, cur.ID)
+		return err
+	})
+	return changed, err
+}
+
 // GrantInput は、職員に足す権限と対象である。対象は、権限の code に合わせて職員かチームを指定する。
 type GrantInput struct {
 	PolicyID      string

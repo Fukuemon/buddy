@@ -88,6 +88,7 @@ type fakeStaff struct {
 	lastPositionID   string
 	lastGrant        staff.GrantInput
 	lastUserPolicyID string
+	lastProfile      staff.Profile
 	lastStopped      string
 	lastLeave        staff.LeaveInput
 	assignments      staff.Assignments
@@ -126,6 +127,11 @@ func (f *fakeStaff) RemoveGrant(_ context.Context, _, userPolicyID string) (staf
 func (f *fakeStaff) ChangePosition(_ context.Context, _, positionID string) (staff.Detail, error) {
 	f.lastPositionID = positionID
 	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: staffID, PositionID: positionID}}, Policies: []staff.PolicyGrant{}}, f.err
+}
+
+func (f *fakeStaff) UpdateProfile(_ context.Context, id string, p staff.Profile) (staff.Detail, error) {
+	f.lastProfile = p
+	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: id, Username: p.Username, PhoneNumber: p.PhoneNumber, DepartmentID: p.DepartmentID, TeamID: p.TeamID}}, Policies: []staff.PolicyGrant{}}, f.err
 }
 
 func (f *fakeStaff) Create(context.Context, staff.CreateInput) (staff.Detail, error) {
@@ -527,6 +533,50 @@ func TestChangeUserPosition(t *testing.T) {
 	last := newRouter(&fakeSchedules{}, &fakeStaff{err: apperr.Conflict("職員の管理の権限を持つ最後の有効な職員の役職は、その権限を持たない役職に変えられません")}, &fakePatients{})
 	if rec, body := do(t, last, http.MethodPut, "/v1/users/"+staffID+"/position", `{"position_id":"`+positionID+`"}`); rec.Code != http.StatusConflict || body["code"] != "conflict" {
 		t.Errorf("最後の管理者: status = %d, body = %v, want 409 conflict", rec.Code, body)
+	}
+}
+
+func TestUpdateUser(t *testing.T) {
+	const depID, teamID = "01M3TC5HZ8A18D2TP3PTKDXJMN", "01M3TC5MX04QJ19X6XR1ZCBZRJ"
+	st := &fakeStaff{}
+	h := newRouter(&fakeSchedules{}, st, &fakePatients{})
+	rec, body := do(t, h, http.MethodPut, "/v1/users/"+staffID,
+		`{"username":"青木 ひな","phone_number":"09012345678","department_id":"`+depID+`","team_id":"`+teamID+`"}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
+	}
+	p := st.lastProfile
+	if p.Username != "青木 ひな" || p.PhoneNumber == nil || *p.PhoneNumber != "09012345678" || p.DepartmentID != depID || p.TeamID != teamID {
+		t.Errorf("入力 = %+v", p)
+	}
+	if body["username"] != "青木 ひな" || body["team"].(map[string]any)["id"] != teamID {
+		t.Errorf("body = %v", body)
+	}
+	if rec, _ := do(t, h, http.MethodPut, "/v1/users/"+staffID, `{"username":"青木","department_id":"`+depID+`","team_id":"`+teamID+`"}`); rec.Code != http.StatusOK || st.lastProfile.PhoneNumber != nil {
+		t.Errorf("電話番号を省く: status = %d, 電話番号 = %v, want 200 で nil", rec.Code, st.lastProfile.PhoneNumber)
+	}
+	for name, b := range map[string]string{
+		"名前が無い":         `{"department_id":"` + depID + `","team_id":"` + teamID + `"}`,
+		"チームの ID の形が誤り": `{"username":"青木","department_id":"` + depID + `","team_id":"x"}`,
+	} {
+		if rec, _ := do(t, h, http.MethodPut, "/v1/users/"+staffID, b); rec.Code != http.StatusBadRequest {
+			t.Errorf("%s: status = %d", name, rec.Code)
+		}
+	}
+	valid := `{"username":"青木","department_id":"` + depID + `","team_id":"` + teamID + `"}`
+	for name, c := range map[string]struct {
+		err    error
+		status int
+		code   string
+	}{
+		"ほかの事業所のチーム":  {apperr.Invalid("チーム %s はこの事業所に属していません", teamID), http.StatusBadRequest, "invalid_input"},
+		"職員の管理の権限が無い": {apperr.ErrForbidden, http.StatusForbidden, "forbidden"},
+		"退職した職員":      {apperr.Conflict("退職した職員は変えられません"), http.StatusConflict, "conflict"},
+	} {
+		h := newRouter(&fakeSchedules{}, &fakeStaff{err: c.err}, &fakePatients{})
+		if rec, body := do(t, h, http.MethodPut, "/v1/users/"+staffID, valid); rec.Code != c.status || body["code"] != c.code {
+			t.Errorf("%s: status = %d, body = %v, want %d %s", name, rec.Code, body, c.status, c.code)
+		}
 	}
 }
 
