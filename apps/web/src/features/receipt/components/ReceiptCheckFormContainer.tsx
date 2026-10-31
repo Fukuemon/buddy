@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { MAX_RECEIPT_UPLOAD_BYTES } from '#/api/bff/receiptCall'
 import { ApiError, type ReceiptCheckInput } from '#/api/client'
 
-import { TOO_LARGE_MESSAGE, checkErrorMessage } from '../lib/errorMessage'
+import { TOO_LARGE_MESSAGE, checkErrorMessage, csvErrorLines } from '../lib/errorMessage'
 import { isMonth, previousMonth } from '../lib/month'
 import { receiptResultKey, type ReceiptResult } from '../queries'
 import { ReceiptCheckForm, type ScheduleSource } from './ReceiptCheckForm'
@@ -67,7 +67,9 @@ export const ReceiptCheckFormContainer = () => {
       errorMessage={
         tooLarge ? TOO_LARGE_MESSAGE : check.isError ? checkErrorMessage(check.error) : undefined
       }
-      rowErrors={!tooLarge && check.error instanceof ApiError ? check.error.rowErrors : []}
+      errorLines={
+        !tooLarge && check.error instanceof ApiError ? csvErrorLines(check.error.csvErrors) : []
+      }
     />
   )
 }

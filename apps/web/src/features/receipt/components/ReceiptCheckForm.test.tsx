@@ -41,12 +41,12 @@ describe('ReceiptCheckForm', () => {
     expect(onVisitsChange).toHaveBeenCalledWith(file)
   })
 
-  it('入力の CSV のエラーを、ファイルと行と列で並べる', () => {
+  it('入力の CSV の誤りの文を、失敗の文の下に並べる', () => {
     render(<RowErrors />)
-    const alert = screen.getByRole('alert')
-    expect(alert.textContent).toContain(
-      '実績の CSV の 3 行目の「訪問日」: 暦にない日付: 2024-13-01',
-    )
-    expect(alert.textContent).toContain('予定の CSV の 5 行目: 列の数が見出しと違う')
+    const items = screen.getAllByRole('listitem').map((item) => item.textContent)
+    expect(items).toEqual([
+      '実績の CSV に「提供時間」の列がありません。電子カルテから書き出し直してください。',
+      '予定の CSV の 5 行目の「訪問日」を日付として読めません。',
+    ])
   })
 })

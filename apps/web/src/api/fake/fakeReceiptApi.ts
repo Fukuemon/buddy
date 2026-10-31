@@ -90,7 +90,8 @@ export const fakeReceiptReport: ReceiptReport = {
       calendar_id: 'calendar-demo',
       event_id: 'event-1',
       start: '2024-04-05T10:00:00+09:00',
-      message: '予定のタイトルから利用者名とサービス内容を読めない',
+      reason: 'unreadable_title',
+      message: 'タイトルに `【…】` の組がない',
     },
   ],
 }

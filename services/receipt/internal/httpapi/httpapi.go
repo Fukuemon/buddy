@@ -106,10 +106,8 @@ func (s *server) CreateCheck(ctx context.Context, req openapi.CreateCheckRequest
 	if err != nil {
 		if ie, ok := errors.AsType[*record.InputError](err); ok {
 			body := errorBody(openapi.InvalidCsv, ie.Message)
-			if len(ie.Rows) > 0 {
-				rows := rowErrors(ie.Rows)
-				body.Errors = &rows
-			}
+			errs := csvErrors(ie.Errors)
+			body.Errors = &errs
 			return openapi.CreateCheck422JSONResponse(body), nil
 		}
 		if _, ok := errors.AsType[*check.SourceError](err); ok {
