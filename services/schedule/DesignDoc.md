@@ -154,11 +154,14 @@ erDiagram
 - ADR-0002: [権限を役職のデフォルトと職員ごとの上書きで持つ（PBAC）](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0002-pbac.md)
 - ADR-0022: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0022-receipt-check-policy-and-non-visiting-staff.md)
 
-照合の権限を足したマイグレーション（`000008_receipt_check_policy`）は、役職のデフォルトの権限だけを変え、今いる職員の権限を変えない。
+照合の権限を足したマイグレーション（`000008_receipt_check_policy`）は、役職のデフォルトの権限と、職員の管理の権限を持つ今いる職員の権限を変える。
 
 - 各事業所に、事務の役職を足す。事務の役職のデフォルトの権限は、`schedule.all.read`、`schedule.all.edit`、`receipt.check` である。既に同じ名前の役職がある事業所には足さない。
 - `staff.manage` をデフォルトに持つ役職に、`receipt.check` を足す。役職の名前は事業所ごとに変えてよいので、名前でマネージャーの役職を探せない。PRD の役職ごとの権限の表で `staff.manage` をデフォルトに持つのはマネージャーだけである。
-- 今照合を使っている職員も、`receipt.check` を足すまで照合できない（ADR-0022 の Consequences）。`staff.manage` を持つ職員が、職員ごとに足す。
+- `staff.manage` を持つ退職していない職員に、`receipt.check` を職員ごとの権限として足す。
+  - マイグレーションの前は全ての職員が照合を使える。役職のデフォルトだけを変えると、デプロイの直後に、マネージャーを含めて誰も照合できず、照合の権限を足せる職員の画面もまだ無いためである。
+  - ADR-0022 の Consequences は、今いる職員の権限を変えないとしていた。#376 で、この扱いを補った。
+  - ほかの職員は、`staff.manage` を持つ職員が職員ごとに足す。
 
 職員の役職は `PUT /v1/users/{user_id}/position` で変える。  
 職員の名前、電話番号、部署、チームは `PUT /v1/users/{user_id}` で変える。  
