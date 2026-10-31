@@ -1,3 +1,4 @@
+import { clsx } from 'clsx'
 import { buttonClassName } from '@buddy/ui'
 
 /** ログインできなかった理由。failed はログインの途中の失敗、forbidden は事業所に登録されていない職員である。 */
@@ -19,15 +20,24 @@ const messages: Record<AuthErrorReason, { title: string; body: string }> = {
   },
 }
 
-/** ログインに失敗したときの案内。 */
+/**
+ * ログインに失敗したときの案内。
+ * ブローカーのログインの画面（services/broker/internal/login/pages.go）と同じ中央のカードに、ロゴ、理由、次にすることを出す。
+ */
 export const AuthErrorMessage = ({ reason, loginHref }: AuthErrorMessageProps) => {
   const { title, body } = messages[reason]
   return (
-    <section className="flex max-w-xl flex-col items-start gap-4" data-testid="auth-error">
-      <h1 className="text-heading-md">{title}</h1>
-      <p className="text-body">{body}</p>
+    <section
+      className="w-full max-w-lg rounded-8 bg-surface px-6 py-10 ring-1 ring-border desktop:px-18 desktop:py-14"
+      data-testid="auth-error"
+    >
+      <p aria-hidden className="text-center text-heading-md text-primary">
+        buddy
+      </p>
+      <h1 className="mt-2 mb-4 text-center text-heading-sm">{title}</h1>
+      <p className="text-center text-body">{body}</p>
       <a
-        className={buttonClassName({ variant: 'secondary' })}
+        className={clsx(buttonClassName({ isWide: true }), 'mt-8')}
         href={loginHref}
         data-testid="auth-error-login"
       >
