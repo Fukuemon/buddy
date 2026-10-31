@@ -378,22 +378,22 @@ func (h handler) redirect(w http.ResponseWriter, r *http.Request, to string, err
 
 // fail は、Hydra へ返せない失敗で、ログインの失敗の画面を出す。
 func (h handler) fail(w http.ResponseWriter, r *http.Request, code int, reason string, err error) {
-	level := slog.LevelWarn
-	if code >= http.StatusInternalServerError {
-		level = slog.LevelError
-	}
-	h.Logger.Log(r.Context(), level, "ログインの失敗の画面を出す", "reason", reason, "error", err)
-	renderFailure(w, h.Logger, code)
+	h.failPage(w, r, code, "failure", "ログインの失敗の画面を出す", reason, err)
 }
 
 // failLogout は、Hydra へ返せないログアウトの失敗で、ログアウトの失敗の画面を出す。
 func (h handler) failLogout(w http.ResponseWriter, r *http.Request, code int, reason string, err error) {
+	h.failPage(w, r, code, "logoutFailure", "ログアウトの失敗の画面を出す", reason, err)
+}
+
+// failPage は、失敗を code が 5xx なら Error、ほかは Warn でログに書き、page の画面を code で出す。
+func (h handler) failPage(w http.ResponseWriter, r *http.Request, code int, page, msg, reason string, err error) {
 	level := slog.LevelWarn
 	if code >= http.StatusInternalServerError {
 		level = slog.LevelError
 	}
-	h.Logger.Log(r.Context(), level, "ログアウトの失敗の画面を出す", "reason", reason, "error", err)
-	render(w, h.Logger, code, "logoutFailure", nil)
+	h.Logger.Log(r.Context(), level, msg, "reason", reason, "error", err)
+	render(w, h.Logger, code, page, nil)
 }
 
 func (h handler) setCookie(w http.ResponseWriter, value string, maxAge int) {

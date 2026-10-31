@@ -114,7 +114,3 @@ func render(w http.ResponseWriter, logger *slog.Logger, code int, name string, d
 func renderLogin(w http.ResponseWriter, logger *slog.Logger, challenge string) {
 	render(w, logger, http.StatusOK, "login", struct{ Challenge string }{challenge})
 }
-
-func renderFailure(w http.ResponseWriter, logger *slog.Logger, code int) {
-	render(w, logger, code, "failure", nil)
-}
