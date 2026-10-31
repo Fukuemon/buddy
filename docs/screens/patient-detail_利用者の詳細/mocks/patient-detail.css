@@ -44,6 +44,33 @@
   color: var(--wf-muted);
 }
 
+/* ページのタイトルの右の ? で開くヘルプ。タイトルの下に重ねて出す */
+.pt-title {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pt-help-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 5;
+  display: none;
+  width: max-content;
+  max-width: 320px;
+  margin: 4px 0 0;
+  padding: 12px 16px;
+  border-radius: var(--wf-radius);
+  background: var(--wf-surface);
+  box-shadow: 0 0 0 1px var(--wf-line);
+}
+
+.pt-help-panel.is-open {
+  display: block;
+}
+
 .pt-radios {
   display: flex;
   flex-wrap: wrap;

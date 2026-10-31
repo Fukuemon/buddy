@@ -56,10 +56,13 @@
             <div class="wf-site-main">
               <main class="wf-page">
                 <div class="pt-head">
-                  <h1 class="wf-heading" data-m="4">利用者</h1>
+                  <div class="pt-title">
+                    <h1 class="wf-heading" data-m="4">利用者</h1>
+                    <span class="wf-btn wf-btn--icon pt-help" aria-label="ヘルプ" data-open="list-help" data-m="5" data-testid="patient-list-help">?</span>
+                    <p class="pt-help-panel" data-panel="list-help" data-panel-dismiss data-testid="patient-list-help-text">利用の終了の利用者は、予定の利用者の候補に出ません。</p>
+                  </div>
                   <span class="wf-btn wf-btn--primary" data-m="6" data-testid="patient-list-new" data-go="../../patient-new_利用者の登録/mocks/01-initial.html">利用者を登録</span>
                 </div>
-                <p class="wf-lead" data-m="5">事業所の利用者を登録し、サービス、希望、担当の職員を変え、利用の終了と利用の再開を行います。利用の終了の利用者は、予定の利用者の候補に出ません。</p>
                 <span class="wf-check" data-m="7" data-testid="patient-list-include-ended" data-go="02-with-ended.html">利用の終了の利用者も表示する</span>
                 <table class="wf-table pt-table" data-m="8" data-testid="patient-list-table">
                   <thead>
