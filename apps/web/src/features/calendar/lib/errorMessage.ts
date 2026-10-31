@@ -52,7 +52,7 @@ export const previewErrorMessage = (error: unknown, staffName: string) => {
     case 'calendar_unreadable':
       return `${staffName} の Google カレンダーを読めません。カレンダーの共有が外れていないかを、職員に確認してください。`
     case 'calendar_not_configured':
-      return 'この事業所のサービスアカウントが設定されていないので、予定を読めません。buddy を動かしている管理者に、Google カレンダーの設定を頼んでください。'
+      return 'この事業所では、まだ Google カレンダーを使う準備ができていません。事業所の管理者に、設定を頼んでください。'
     case 'not_found':
       return 'この職員のカレンダーの結び付けが外れています。画面を読み直してください。'
     default:

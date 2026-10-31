@@ -28,8 +28,7 @@ export const CalendarImportView = ({ state, onRetry, children }: CalendarImportV
       </a>
     </div>
     <p className="max-w-3xl text-body">
-      職員の Google カレンダーの予定を、期間を選んで buddy
-      に取り込みます。取り込む前に、取り込む予定と取り込まない予定をプレビューできます。
+      職員の Google カレンダーの予定を、期間を選んで buddy に取り込みます。
     </p>
     {state.status === 'loading' && (
       <div data-testid="calendar-import-loading">

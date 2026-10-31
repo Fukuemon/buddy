@@ -18,8 +18,8 @@
             <div class="wf-overlay" data-m="1" tabindex="-1" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html"></div>
             <div aria-label="予定の詳細" class="wf-modal" data-m="2" data-testid="schedule-detail-modal" role="dialog">
               <div class="wf-modal__header">
-                <span aria-label="閉じる" class="wf-btn wf-btn--icon" data-m="3" data-testid="modal-close" data-escape data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html">×</span>
-                <h2 class="wf-modal__title" data-m="4">予定の詳細</h2>
+                <h2 class="wf-modal__title wf-dialog__title" data-m="3">予定の詳細</h2>
+                <span aria-label="閉じる" class="wf-btn wf-btn--icon" data-m="4" data-testid="modal-close" data-escape data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html">×</span>
               </div>
               <div class="wf-modal__body">
                 <h3 class="sd-datetime" data-m="5" data-testid="schedule-detail-datetime">2026年10月20日（火） 13:00〜14:00</h3>
@@ -43,7 +43,8 @@
                 </section>
               </div>
               <div class="wf-modal__footer">
-                <span class="wf-btn" data-m="10" data-testid="schedule-detail-edit" data-go="../../schedule-edit_予定の編集/mocks/08-normal.html">編集</span>
+                <span class="wf-btn" data-m="10" data-testid="schedule-detail-close" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html">閉じる</span>
+                <span class="wf-btn" data-m="11" data-testid="schedule-detail-edit" data-go="../../schedule-edit_予定の編集/mocks/08-normal.html">編集</span>
               </div>
             </div>
           </div>

@@ -2,6 +2,7 @@ import { Button, buttonClassName } from '@buddy/ui'
 
 import type { ReceiptReport } from '#/api/types'
 
+import { warningReasonText } from '../lib/errorMessage'
 import { RECEIPT_CATEGORIES } from '../lib/reportCells'
 import { ReceiptResultTable } from './ReceiptResultTable'
 
@@ -62,7 +63,7 @@ export const ReceiptResultView = ({
         <ul className="list-disc pl-6 text-body-dense">
           {report.warnings.map((w) => (
             <li key={`${w.calendar_id}-${w.event_id}`}>
-              {w.start.slice(0, 16).replace('T', ' ')}: {w.message}
+              {w.start.slice(0, 16).replace('T', ' ')}: {warningReasonText(w)}
             </li>
           ))}
         </ul>

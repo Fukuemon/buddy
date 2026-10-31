@@ -18,12 +18,12 @@
             <div class="wf-overlay" data-m="1" tabindex="-1" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html"></div>
             <div class="wf-modal" role="dialog" aria-label="予定の作成" data-testid="schedule-form-modal">
               <div class="wf-modal__header">
-                <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-m="2" data-testid="modal-close" data-escape data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html">×</span>
-                <h2 class="wf-modal__title" data-m="3">予定の作成</h2>
-                <div class="wf-tabs sn-kind" role="radiogroup" aria-label="予定の種類" data-m="4" data-testid="schedule-kind-tab">
+                <h2 class="wf-modal__title wf-dialog__title" data-m="2">予定の作成</h2>
+                <div class="wf-tabs sn-kind" role="radiogroup" aria-label="予定の種類" data-m="3" data-testid="schedule-kind-tab">
                   <span class="wf-tab" data-testid="schedule-kind-tab-normal" data-go="02-normal.html">通常</span>
                   <span class="wf-tab is-active" data-testid="schedule-kind-tab-visit">訪問</span>
                 </div>
+                <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-m="4" data-testid="modal-close" data-escape data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html">×</span>
               </div>
               <div class="wf-modal__body">
                 <div class="wf-split" data-testid="schedule-form">
@@ -76,7 +76,8 @@
                 </div>
               </div>
               <div class="wf-modal__footer">
-                <span class="wf-btn wf-btn--primary" data-m="8" data-testid="schedule-create-submit" data-go="09-invalid.html">作成</span>
+                <span class="wf-btn" data-m="8" data-testid="schedule-new-cancel" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html">キャンセル</span>
+                <span class="wf-btn wf-btn--primary" data-m="9" data-testid="schedule-create-submit" data-go="09-invalid.html">作成</span>
               </div>
             </div>
           </div>

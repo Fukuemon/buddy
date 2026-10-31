@@ -52,106 +52,107 @@
             <div class="wf-site-main">
               <main class="wf-page">
                 <h1 class="wf-heading">カレンダーの連携</h1>
-                <p class="wf-lead">職員ごとに Google カレンダーを結び付けます。結び付けたカレンダーの予定は、予定の取り込みで buddy に取り込めます。</p>
+                <p class="wf-lead">職員ごとに Google カレンダーを結び付けます。</p>
                 <section class="sl-guide wf-panel" data-testid="calendar-link-guide">
-                  <div class="sl-guide__head">
-                    <h2 class="sl-h2">カレンダーの共有</h2>
-                    <span class="wf-btn sl-help" aria-controls="link-steps" aria-expanded="false" data-testid="calendar-link-guide-toggle" data-open="link-steps"><svg width="20" height="20" viewBox="0 -960 960 960" aria-hidden="true"><path d="M478-240q21 0 35.5-14.5T528-290q0-21-14.5-35.5T478-340q-21 0-35.5 14.5T428-290q0 21 14.5 35.5T478-240Zm-36-154h74q0-33 7.5-52t42.5-52q26-26 41-49.5t15-56.5q0-56-41-86t-97-30q-57 0-92.5 30T342-618l66 26q5-18 22.5-39t53.5-21q32 0 48 17.5t16 38.5q0 20-12 37.5T506-526q-44 39-54 59t-10 73Zm38 314q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z" fill="currentColor" /></svg>共有の手順</span>
-                  </div>
-                  <ol class="sl-steps" id="link-steps" data-panel="link-steps" data-testid="calendar-link-steps">
-                    <li>職員が、Google カレンダーの「設定と共有」で、自分のカレンダーの「特定のユーザーまたはグループと共有する」に、次のメールアドレスを足します。</li>
-                    <li>権限は「予定の変更」を選びます。buddy の予定を、このカレンダーに書き出すためです。</li>
-                    <li>この画面で、職員の行の「結び付ける」を押し、カレンダーの ID を入れます。カレンダーの ID は、「カレンダーの統合」にあります。個人のカレンダーでは、職員の Google のメールアドレスです。</li>
-                  </ol>
+                  <h2 class="sl-h2">カレンダーの共有</h2>
                   <div class="sl-account">
-                    <span class="wf-label">この事業所の buddy のサービスアカウント</span>
+                    <span class="wf-label">共有する相手のメールアドレス</span>
                     <div class="sl-account__row">
                       <code class="sl-email" data-testid="calendar-link-service-account">buddy-calendar@buddy-example.iam.gserviceaccount.com</code>
                       <span class="wf-btn" data-testid="calendar-link-copy">コピー</span>
                     </div>
                   </div>
+                  <div class="wf-more">
+                    <p>職員に、自分の Google カレンダーをこのメールアドレスに共有してもらいます。</p>
+                    <span class="wf-btn wf-btn--text wf-more__toggle" aria-controls="link-steps" aria-expanded="false" data-open="link-steps" data-testid="calendar-link-guide-toggle">詳しく</span>
+                    <ol class="wf-more__body sl-steps" id="link-steps" data-panel="link-steps" data-testid="calendar-link-steps">
+                      <li>職員が、Google カレンダーの「設定と共有」で、自分のカレンダーの「特定のユーザーまたはグループと共有する」に、上のメールアドレスを足します。</li>
+                      <li>権限は「予定の変更」を選びます。buddy の予定を、このカレンダーに書き出すためです。</li>
+                      <li>この画面で、職員の行の「結び付ける」を押し、カレンダーの ID を入れます。カレンダーの ID は、「カレンダーの統合」にあります。個人のカレンダーでは、職員の Google のメールアドレスです。</li>
+                    </ol>
+                  </div>
                 </section>
-                <table class="wf-table sl-table" data-testid="calendar-link-table">
+                <table class="wf-table wf-table--rows sl-table" data-testid="calendar-link-table">
                   <thead>
                     <tr>
                       <th>職員</th>
                       <th>Google カレンダー</th>
                       <th>最後の取り込み</th>
-                      <th><span class="sl-visually-hidden">操作</span></th>
+                      <th><span class="wf-visually-hidden">操作</span></th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr data-testid="calendar-link-row-{職員の id}">
-                      <td data-label="職員">職員 A</td>
-                      <td data-label="Google カレンダー"><span data-testid="calendar-link-calendar-id-{職員の id}">staff-a@example.com</span></td>
-                      <td data-label="最後の取り込み"><span>2026/10/20 15:42（2026/10/01〜2026/10/31）</span></td>
-                      <td class="sl-actions">
-                        <div class="sl-actions__inner">
-                          <span class="wf-btn" data-testid="calendar-link-import-{職員の id}" data-go="../../schedule-import_予定の取り込み/mocks/01-initial.html">取り込む</span>
-                          <span class="wf-btn" data-testid="calendar-link-remove-{職員の id}">外す</span>
-                        </div>
+                      <td class="wf-cell-primary">職員 A</td>
+                      <td class="wf-cell-meta"><span data-testid="calendar-link-calendar-id-{職員の id}">staff-a@example.com</span></td>
+                      <td class="wf-cell-meta"><span>2026/10/20 15:42（2026/10/01〜2026/10/31）</span></td>
+                      <td class="sl-cell-action">
+                        <span class="wf-menu-anchor">
+                          <span class="wf-btn wf-btn--icon" aria-label="職員 Aの操作" aria-haspopup="menu" data-go="11-menu.html" aria-expanded="false" data-testid="calendar-link-menu-{職員の id}"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="4" cy="10" r="1.6" fill="currentColor" /><circle cx="10" cy="10" r="1.6" fill="currentColor" /><circle cx="16" cy="10" r="1.6" fill="currentColor" /></svg></span>
+                          <span class="wf-menu" role="menu" data-testid="calendar-link-menu-list-{職員の id}">
+                            <span class="wf-menu__item" role="menuitem" data-testid="calendar-link-import-{職員の id}" data-go="../../schedule-import_予定の取り込み/mocks/01-initial.html">取り込む</span>
+                            <span class="wf-menu__item wf-menu__item--danger" role="menuitem" data-testid="calendar-link-remove-{職員の id}" data-go="05-unlink.html">外す</span>
+                          </span>
+                        </span>
                       </td>
                     </tr>
                     <tr data-testid="calendar-link-row-{職員の id}">
-                      <td data-label="職員">職員 B</td>
-                      <td data-label="Google カレンダー"><span class="sl-muted" data-testid="calendar-link-calendar-id-{職員の id}">結び付けていません</span></td>
-                      <td data-label="最後の取り込み"><span class="sl-muted">—</span></td>
-                      <td class="sl-actions">
-                        <div class="sl-actions__inner">
-                          <span class="wf-btn wf-btn--primary" data-testid="calendar-link-open-{職員の id}">結び付ける</span>
-                        </div>
+                      <td class="wf-cell-primary">職員 B</td>
+                      <td class="wf-cell-meta sl-cell-empty"><span class="wf-visually-hidden" data-testid="calendar-link-calendar-id-{職員の id}">結び付けていません</span></td>
+                      <td class="wf-cell-meta sl-cell-empty"><span class="wf-visually-hidden">まだ取り込んでいません</span></td>
+                      <td class="sl-cell-action"><span class="wf-btn" data-testid="calendar-link-open-{職員の id}" data-go="02-link.html">結び付ける</span></td>
+                    </tr>
+                    <tr data-testid="calendar-link-row-{職員の id}">
+                      <td class="wf-cell-primary">職員 C</td>
+                      <td class="wf-cell-meta"><span data-testid="calendar-link-calendar-id-{職員の id}">staff-c@example.com</span></td>
+                      <td class="wf-cell-meta sl-cell-empty"><span class="wf-visually-hidden">まだ取り込んでいません</span></td>
+                      <td class="sl-cell-action">
+                        <span class="wf-menu-anchor">
+                          <span class="wf-btn wf-btn--icon" aria-label="職員 Cの操作" aria-haspopup="menu" data-go="11-menu.html" aria-expanded="false" data-testid="calendar-link-menu-{職員の id}"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="4" cy="10" r="1.6" fill="currentColor" /><circle cx="10" cy="10" r="1.6" fill="currentColor" /><circle cx="16" cy="10" r="1.6" fill="currentColor" /></svg></span>
+                          <span class="wf-menu" role="menu" data-testid="calendar-link-menu-list-{職員の id}">
+                            <span class="wf-menu__item" role="menuitem" data-testid="calendar-link-import-{職員の id}" data-go="../../schedule-import_予定の取り込み/mocks/01-initial.html">取り込む</span>
+                            <span class="wf-menu__item wf-menu__item--danger" role="menuitem" data-testid="calendar-link-remove-{職員の id}" data-go="05-unlink.html">外す</span>
+                          </span>
+                        </span>
                       </td>
                     </tr>
                     <tr data-testid="calendar-link-row-{職員の id}">
-                      <td data-label="職員">職員 C</td>
-                      <td data-label="Google カレンダー"><span data-testid="calendar-link-calendar-id-{職員の id}">staff-c@example.com</span></td>
-                      <td data-label="最後の取り込み"><span>なし</span></td>
-                      <td class="sl-actions">
-                        <div class="sl-actions__inner">
-                          <span class="wf-btn" data-testid="calendar-link-import-{職員の id}" data-go="../../schedule-import_予定の取り込み/mocks/01-initial.html">取り込む</span>
-                          <span class="wf-btn" data-testid="calendar-link-remove-{職員の id}">外す</span>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr data-testid="calendar-link-row-{職員の id}">
-                      <td data-label="職員">職員 D</td>
-                      <td data-label="Google カレンダー"><span class="sl-muted" data-testid="calendar-link-calendar-id-{職員の id}">結び付けていません</span></td>
-                      <td data-label="最後の取り込み"><span class="sl-muted">—</span></td>
-                      <td class="sl-actions">
-                        <div class="sl-actions__inner">
-                          <span class="wf-btn wf-btn--primary" data-testid="calendar-link-open-{職員の id}">結び付ける</span>
-                        </div>
-                      </td>
+                      <td class="wf-cell-primary">職員 D</td>
+                      <td class="wf-cell-meta sl-cell-empty"><span class="wf-visually-hidden" data-testid="calendar-link-calendar-id-{職員の id}">結び付けていません</span></td>
+                      <td class="wf-cell-meta sl-cell-empty"><span class="wf-visually-hidden">まだ取り込んでいません</span></td>
+                      <td class="sl-cell-action"><span class="wf-btn" data-testid="calendar-link-open-{職員の id}" data-go="02-link.html">結び付ける</span></td>
                     </tr>
                   </tbody>
                 </table>
               </main>
               <div class="wf-overlay" tabindex="-1" data-m="1" data-go="01-list.html"></div>
               <div class="wf-dialog" role="dialog" aria-modal="true" aria-labelledby="link-title" data-testid="calendar-link-dialog">
-                <div class="wf-modal__header">
-                  <h2 class="wf-modal__title wf-dialog__title" id="link-title" data-m="2">カレンダーを結び付ける</h2>
+                <div class="wf-dialog__header">
+                  <h2 class="wf-dialog__title" id="link-title" data-m="2">カレンダーを結び付ける</h2>
                   <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-escape data-m="3" data-testid="calendar-link-dialog-close" data-go="01-list.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
                 </div>
-                <div class="wf-modal__body">
-                  <div class="wf-fields">
-                    <div class="wf-field">
-                      <span class="wf-label">職員</span>
-                      <span data-m="4" data-testid="calendar-link-staff">職員 B</span>
-                    </div>
-                    <div class="wf-field">
+                <div class="wf-dialog__body">
+                  <div class="wf-field">
+                    <span class="wf-label">職員</span>
+                    <span data-m="4" data-testid="calendar-link-staff">職員 B</span>
+                  </div>
+                  <div class="wf-field">
+                    <div class="wf-title">
                       <span class="wf-label">カレンダーの ID</span>
-                      <div class="wf-input wf-field__input" data-m="5" data-testid="calendar-link-input">staff-b@example.com</div>
-                      <span class="wf-hint">Google カレンダーの「カレンダーの統合」にある ID。個人のカレンダーでは、Google のメールアドレスです。</span>
+                      <span class="wf-help">
+                        <span class="wf-btn wf-btn--icon wf-help__toggle" aria-label="ヘルプ" data-open="calendar-id-help" data-m="5" data-testid="schedule-link-calendar-id-help">?</span>
+                        <p class="wf-help__panel" data-panel="calendar-id-help" data-panel-dismiss data-testid="schedule-link-calendar-id-help-text">Google カレンダーの「カレンダーの統合」にある ID です。個人のカレンダーでは、Google のメールアドレスです。</p>
+                      </span>
                     </div>
-                    <div>
-                      <span class="wf-btn" data-m="6" data-testid="calendar-link-check">読めるか確認する</span>
-                    </div>
-
+                    <div class="wf-input wf-field__input" data-m="6" data-testid="calendar-link-input">staff-b@example.com</div>
+                  </div>
+                  <div>
+                    <span class="wf-btn" data-m="7" data-testid="calendar-link-check">読めるか確認する</span>
                   </div>
                 </div>
-                <div class="wf-modal__footer">
-                  <span class="wf-btn" data-m="7" data-testid="calendar-link-cancel" data-go="01-list.html">キャンセル</span>
-                  <span class="wf-btn wf-btn--primary" aria-disabled="true" data-m="8" data-testid="calendar-link-submit">結び付ける</span>
+                <div class="wf-dialog__footer">
+                  <span class="wf-btn" data-m="8" data-testid="calendar-link-cancel" data-go="01-list.html">キャンセル</span>
+                  <span class="wf-btn wf-btn--primary" aria-disabled="true" data-m="9" data-testid="calendar-link-submit">結び付ける</span>
                 </div>
               </div>
             </div>

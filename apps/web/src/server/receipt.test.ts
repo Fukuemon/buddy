@@ -78,8 +78,10 @@ describe('checkReceipt', () => {
     expect(result).toEqual({ ok: true, report: fakeReceiptReport })
   })
 
-  it('行のエラーを rowErrors で返す', async () => {
-    const errors = [{ source: 'visits' as const, line: 2, message: 'x' }]
+  it('入力の CSV の誤りを csvErrors で返す', async () => {
+    const errors = [
+      { source: 'visits' as const, reason: 'empty_value' as const, line: 2, message: 'x' },
+    ]
     server.use(
       receiptHttp.post('/v1/checks', ({ response }) =>
         response(422).json({ code: 'invalid_csv', message: 'm', errors }),
@@ -90,7 +92,7 @@ describe('checkReceipt', () => {
       form({ visits: new Blob(['v']), schedules: new Blob(['s']) }),
       { auth: await setup(), receiptApiUrl: TEST_RECEIPT_URL },
     )
-    expect(failed).toEqual({ ok: false, status: 422, message: 'm', rowErrors: errors })
+    expect(failed).toEqual({ ok: false, status: 422, message: 'm', csvErrors: errors })
   })
 
   it('セッションが無ければ 401 を返し、API を呼ばない', async () => {

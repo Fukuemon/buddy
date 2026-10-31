@@ -33,10 +33,10 @@ export const Submitting: Story = { args: { canSubmit: true, isSubmitting: true }
 export const RowErrors: Story = {
   args: {
     canSubmit: true,
-    errorMessage: '入力の CSV に誤りがあります。次の行を直して、もう一度照合してください。',
-    rowErrors: [
-      { source: 'visits', line: 3, column: '訪問日', message: '暦にない日付: 2024-13-01' },
-      { source: 'schedules', line: 5, message: '列の数が見出しと違う' },
+    errorMessage: '入力の CSV に誤りがあります。次のところを直して、もう一度照合してください。',
+    errorLines: [
+      '実績の CSV に「提供時間」の列がありません。電子カルテから書き出し直してください。',
+      '予定の CSV の 5 行目の「訪問日」を日付として読めません。',
     ],
   },
 }

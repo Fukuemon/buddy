@@ -115,8 +115,10 @@ export type ReceiptReport = ReceiptComponents['schemas']['Report']
 export type ReceiptRow = ReceiptComponents['schemas']['Result']
 /** 照合の結果の区分。mismatch は不整合、schedule_only は予定のみ、visit_only は実績のみ、match は整合。 */
 export type ReceiptCategory = ReceiptComponents['schemas']['Category']
-/** CSV の行を読めなかった理由。照合の API の RowError をそのまま使う。 */
-export type ReceiptRowError = ReceiptComponents['schemas']['RowError']
+/** 入力の CSV の誤りの 1 件。照合の API の CsvError をそのまま使う。 */
+export type ReceiptCsvError = ReceiptComponents['schemas']['CsvError']
+/** 照合に使わなかった Google カレンダーの予定。照合の API の Warning をそのまま使う。 */
+export type ReceiptWarning = ReceiptComponents['schemas']['Warning']
 
 type ScheduleSchemas = ScheduleComponents['schemas']
 

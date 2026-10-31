@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -104,17 +105,37 @@ func TestChecksJSON(t *testing.T) {
 func TestChecksErrors(t *testing.T) {
 	badVisits := []byte("訪問日,利用者名,開始時間,終了時間,提供時間,サービス内容,主訪問者,加算①,加算②,加算③,加算④,加算⑤\n" +
 		"2024/04/01,利用者A,10:00,9:00,30,訪看I２,職員B,通常,,,,\n")
+	header := "訪問日,利用者名,開始時間,終了時間,提供時間,サービス内容,主訪問者,加算①,加算②,加算③,加算④,加算⑤\n"
+	schedules := testdata(t, "schedules_utf8.csv")
+	// csvError は、レスポンスの CSV の誤りを、比べやすい形にしたものである。行と列が無ければ 0 と空にする。
+	type csvError struct {
+		Source openapi.InputSource
+		Reason openapi.InputReason
+		Line   int
+		Column string
+	}
 	tests := []struct {
 		name       string
 		files      map[string][]byte
 		wantStatus int
 		wantCode   openapi.ErrorCode
-		wantRows   int
+		wantErrors []csvError
 	}{
-		{"schedules がない", map[string][]byte{FieldVisits: testdata(t, "visits_utf8.csv")}, http.StatusBadRequest, openapi.MissingFile, 0},
-		{"visits がない", map[string][]byte{FieldSchedules: testdata(t, "schedules_utf8.csv")}, http.StatusBadRequest, openapi.MissingFile, 0},
-		{"列が足りない", map[string][]byte{FieldVisits: []byte("訪問日\n2024/04/01\n"), FieldSchedules: testdata(t, "schedules_utf8.csv")}, http.StatusUnprocessableEntity, openapi.InvalidCsv, 0},
-		{"行のエラー", map[string][]byte{FieldVisits: badVisits, FieldSchedules: testdata(t, "schedules_utf8.csv")}, http.StatusUnprocessableEntity, openapi.InvalidCsv, 1},
+		{"schedules がない", map[string][]byte{FieldVisits: testdata(t, "visits_utf8.csv")}, http.StatusBadRequest, openapi.MissingFile, nil},
+		{"visits がない", map[string][]byte{FieldSchedules: schedules}, http.StatusBadRequest, openapi.MissingFile, nil},
+		{"列が足りない", map[string][]byte{FieldVisits: []byte(strings.Replace(header, "提供時間,", "", 1)), FieldSchedules: schedules},
+			http.StatusUnprocessableEntity, openapi.InvalidCsv, []csvError{{openapi.Visits, openapi.MissingColumn, 0, "提供時間"}}},
+		{"文字コードを読めない", map[string][]byte{FieldVisits: {0x81, 0x20, 0xFF}, FieldSchedules: schedules},
+			http.StatusUnprocessableEntity, openapi.InvalidCsv, []csvError{{openapi.Visits, openapi.Encoding, 0, ""}}},
+		{"引用符の閉じ忘れ", map[string][]byte{FieldVisits: []byte(header + "2024/04/01,\"利用者A,10:00,10:30,30,訪看I２,職員B,通常,,,,\n"), FieldSchedules: schedules},
+			http.StatusUnprocessableEntity, openapi.InvalidCsv, []csvError{{openapi.Visits, openapi.MalformedRow, 2, ""}}},
+		{"行のエラー", map[string][]byte{FieldVisits: badVisits, FieldSchedules: schedules},
+			http.StatusUnprocessableEntity, openapi.InvalidCsv, []csvError{{openapi.Visits, openapi.EndBeforeStart, 2, "終了時間"}}},
+		{"両方の CSV の誤り", map[string][]byte{FieldVisits: badVisits, FieldSchedules: nil},
+			http.StatusUnprocessableEntity, openapi.InvalidCsv, []csvError{
+				{openapi.Visits, openapi.EndBeforeStart, 2, "終了時間"},
+				{openapi.Schedules, openapi.EmptyFile, 0, ""},
+			}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -126,15 +147,27 @@ func TestChecksErrors(t *testing.T) {
 			if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 				t.Fatal(err)
 			}
-			var rows []openapi.RowError
-			if body.Errors != nil {
-				rows = *body.Errors
-			}
-			if body.Code != tt.wantCode || body.Message == "" || len(rows) != tt.wantRows {
+			if body.Code != tt.wantCode || body.Message == "" {
 				t.Errorf("body = %+v", body)
 			}
-			if tt.wantRows > 0 && (rows[0].Line != 2 || rows[0].Column == nil || *rows[0].Column != "終了時間") {
-				t.Errorf("行のエラー = %+v", rows[0])
+			var got []csvError
+			if body.Errors != nil {
+				for _, e := range *body.Errors {
+					if e.Message == "" {
+						t.Errorf("message が空 = %+v", e)
+					}
+					c := csvError{Source: e.Source, Reason: e.Reason}
+					if e.Line != nil {
+						c.Line = *e.Line
+					}
+					if e.Column != nil {
+						c.Column = *e.Column
+					}
+					got = append(got, c)
+				}
+			}
+			if !reflect.DeepEqual(got, tt.wantErrors) {
+				t.Errorf("errors = %+v, want %+v", got, tt.wantErrors)
 			}
 		})
 	}

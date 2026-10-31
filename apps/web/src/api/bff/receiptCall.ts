@@ -1,4 +1,4 @@
-import type { ReceiptReport, ReceiptRowError } from '../types'
+import type { ReceiptReport, ReceiptCsvError } from '../types'
 
 /**
  * 照合の入力のファイルの合計の上限のバイト数。照合の API の MAX_UPLOAD_BYTES のデフォルト（10 MiB）は multipart の本文の全体に
@@ -14,7 +14,7 @@ const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/
 /** BFF の照合のレスポンス。ApiError は class のままでは server function を越えられないので、値にして返す。 */
 export type ReceiptCheckResult =
   | { ok: true; report: ReceiptReport }
-  | { ok: false; status: number; message: string; rowErrors: ReceiptRowError[] }
+  | { ok: false; status: number; message: string; csvErrors: ReceiptCsvError[] }
 
 /**
  * server function の入力の FormData を、照合の入力として確認する。

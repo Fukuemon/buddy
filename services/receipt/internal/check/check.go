@@ -47,7 +47,7 @@ func (s CSVSchedules) Schedules(_ context.Context) ([]record.Record, []record.Wa
 	}
 	recs, rowErrs := normalize.Schedules(rows)
 	if len(rowErrs) > 0 {
-		return nil, nil, &record.InputError{Message: "予定の CSV に誤りがある", Rows: rowErrs}
+		return nil, nil, &record.InputError{Message: "予定の CSV に誤りがある", Errors: rowErrs}
 	}
 	return recs, nil, nil
 }
@@ -95,7 +95,7 @@ func Run(ctx context.Context, visits []byte, schedules ScheduleSource) (Report, 
 		var msgs []string
 		for _, ie := range inputErrs {
 			msgs = append(msgs, ie.Message)
-			merged.Rows = append(merged.Rows, ie.Rows...)
+			merged.Errors = append(merged.Errors, ie.Errors...)
 		}
 		merged.Message = strings.Join(msgs, "。")
 		return Report{}, merged
@@ -128,7 +128,7 @@ func readVisits(data []byte) ([]record.Record, error) {
 	}
 	recs, rowErrs := normalize.Visits(rows)
 	if len(rowErrs) > 0 {
-		return nil, &record.InputError{Message: "実績の CSV に誤りがある", Rows: rowErrs}
+		return nil, &record.InputError{Message: "実績の CSV に誤りがある", Errors: rowErrs}
 	}
 	return recs, nil
 }

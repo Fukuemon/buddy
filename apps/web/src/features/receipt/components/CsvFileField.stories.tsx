@@ -15,5 +15,5 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {}
 
 export const WithDescription: Story = {
-  args: { description: '電子カルテから書き出した CSV。UTF-8 か Shift_JIS で、10 MB まで。' },
+  args: { description: '電子カルテから書き出した CSV。10 MB まで。' },
 }

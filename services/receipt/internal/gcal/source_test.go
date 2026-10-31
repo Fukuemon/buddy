@@ -167,12 +167,20 @@ func TestSchedulesEvents(t *testing.T) {
 		}
 	}
 
-	wantWarns := []string{"bad-order", "no-client", "overnight"}
+	wantWarns := []struct {
+		eventID string
+		reason  record.Reason
+	}{
+		{"bad-order", record.ReasonUnreadableTitle},
+		{"no-client", record.ReasonUnreadableTitle},
+		{"overnight", record.ReasonSpansDays},
+	}
 	if len(warns) != len(wantWarns) {
 		t.Fatalf("warnings = %+v", warns)
 	}
 	for i, w := range warns {
-		if w.EventID != wantWarns[i] || w.CalendarID != "staff-a@example.com" || w.Start == "" || w.Message == "" {
+		want := wantWarns[i]
+		if w.EventID != want.eventID || w.Reason != want.reason || w.CalendarID != "staff-a@example.com" || w.Start == "" || w.Message == "" {
 			t.Errorf("warnings[%d] = %+v", i, w)
 		}
 	}
