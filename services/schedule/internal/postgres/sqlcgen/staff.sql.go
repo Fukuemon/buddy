@@ -122,6 +122,30 @@ func (q *Queries) DeleteUserPolicy(ctx context.Context, arg DeleteUserPolicyPara
 	return result.RowsAffected(), nil
 }
 
+const deleteUserTeamTargetsCovered = `-- name: DeleteUserTeamTargetsCovered :exec
+DELETE FROM user_policy_targets upt
+USING user_policies up
+WHERE up.id = upt.user_policy_id AND up.user_id = $1
+  AND upt.target_team_id = $2
+  AND EXISTS (
+    SELECT 1 FROM user_policy_targets n
+    WHERE n.user_policy_id = upt.user_policy_id AND n.target_team_id = $3
+  )
+`
+
+type DeleteUserTeamTargetsCoveredParams struct {
+	UserID    string
+	OldTeamID *string
+	NewTeamID *string
+}
+
+// 職員の権限のうち、古いチームと新しいチームの両方を対象にするものから、古いチームの対象を消す。
+// 次の MoveUserTeamTargets が、同じ権限に同じチームの対象を 2 つ作らないためである。
+func (q *Queries) DeleteUserTeamTargetsCovered(ctx context.Context, arg DeleteUserTeamTargetsCoveredParams) error {
+	_, err := q.db.Exec(ctx, deleteUserTeamTargetsCovered, arg.UserID, arg.OldTeamID, arg.NewTeamID)
+	return err
+}
+
 const endUserLeave = `-- name: EndUserLeave :execrows
 UPDATE users SET leave_started_at = NULL, leave_return_date = NULL WHERE id = $1 AND retired_at IS NULL
 `
@@ -613,13 +637,33 @@ const lockFacility = `-- name: LockFacility :one
 SELECT id FROM facilities WHERE id = $1 FOR UPDATE
 `
 
-// 事業所の職員の休職、退職、役職を変える操作、権限を外す操作を 1 つずつにする。職員の管理の権限を持つ有効な職員を数えてから書くまでの間に、ほかの操作が割り込まない。
+// 事業所の職員の休職、退職、役職とチームを変える操作、権限を外す操作を 1 つずつにする。職員の管理の権限を持つ有効な職員を数えてから書くまでの間に、ほかの操作が割り込まない。
 // 予定と担当の新しい割り振り（ShareFacility）とも 1 つずつにし、退職の残る予定の確認と予定の作成が行き違わない。
 func (q *Queries) LockFacility(ctx context.Context, id string) (string, error) {
 	row := q.db.QueryRow(ctx, lockFacility, id)
 	var id_2 string
 	err := row.Scan(&id_2)
 	return id_2, err
+}
+
+const moveUserTeamTargets = `-- name: MoveUserTeamTargets :exec
+UPDATE user_policy_targets upt
+SET target_team_id = $1
+FROM user_policies up
+WHERE up.id = upt.user_policy_id AND up.user_id = $2
+  AND upt.target_team_id = $3
+`
+
+type MoveUserTeamTargetsParams struct {
+	NewTeamID *string
+	UserID    string
+	OldTeamID *string
+}
+
+// 職員の権限のうち、古いチームを指す対象を新しいチームに移す。ほかのチームの対象は残す。
+func (q *Queries) MoveUserTeamTargets(ctx context.Context, arg MoveUserTeamTargetsParams) error {
+	_, err := q.db.Exec(ctx, moveUserTeamTargets, arg.NewTeamID, arg.UserID, arg.OldTeamID)
+	return err
 }
 
 const retireUser = `-- name: RetireUser :execrows
@@ -683,4 +727,34 @@ type UpdateUserPositionParams struct {
 func (q *Queries) UpdateUserPosition(ctx context.Context, arg UpdateUserPositionParams) error {
 	_, err := q.db.Exec(ctx, updateUserPosition, arg.PositionID, arg.ID)
 	return err
+}
+
+const updateUserProfile = `-- name: UpdateUserProfile :execrows
+UPDATE users
+SET username = $1, phone_number = $2,
+    department_id = $3, team_id = $4
+WHERE id = $5 AND retired_at IS NULL
+`
+
+type UpdateUserProfileParams struct {
+	Username     string
+	PhoneNumber  *string
+	DepartmentID string
+	TeamID       string
+	ID           string
+}
+
+// 退職した職員は書かない。メールはブローカーが持つので変えない。
+func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateUserProfile,
+		arg.Username,
+		arg.PhoneNumber,
+		arg.DepartmentID,
+		arg.TeamID,
+		arg.ID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

@@ -233,6 +233,43 @@ func (s Staff) ChangePosition(_ context.Context, id, positionID string, grants [
 	return nil
 }
 
+// UpdateProfile は、職員の名前、電話番号、部署、チームを p にし、Grants と職員の Policies のうち oldTeamID を指す対象を
+// p.TeamID に移す。同じ権限が p.TeamID を既に対象にしていれば、oldTeamID の対象を消す。退職した職員なら apperr.ErrConflict を返す。
+func (s Staff) UpdateProfile(_ context.Context, id string, p staff.Profile, oldTeamID string) error {
+	d, ok := s.Staff[id]
+	switch {
+	case !ok:
+		return apperr.ErrNotFound
+	case d.RetiredAt != nil:
+		return apperr.ErrConflict
+	}
+	d.Username, d.PhoneNumber, d.DepartmentID, d.TeamID = p.Username, p.PhoneNumber, p.DepartmentID, p.TeamID
+	if oldTeamID != p.TeamID {
+		for i, g := range d.Policies {
+			if slices.Contains(g.TargetTeamIDs, oldTeamID) {
+				teams := slices.DeleteFunc(slices.Clone(g.TargetTeamIDs), func(t string) bool { return t == oldTeamID || t == p.TeamID })
+				d.Policies[i].TargetTeamIDs = append(teams, p.TeamID)
+			}
+		}
+		for i, g := range s.Grants[id] {
+			covered := slices.ContainsFunc(g.Targets, func(t staff.Target) bool { return t.TeamID == p.TeamID })
+			var targets []staff.Target
+			for _, t := range g.Targets {
+				if t.TeamID == oldTeamID {
+					if covered {
+						continue
+					}
+					t.TeamID = p.TeamID
+				}
+				targets = append(targets, t)
+			}
+			s.Grants[id][i].Targets = targets
+		}
+	}
+	s.Staff[id] = d
+	return nil
+}
+
 // AddGrant は、職員の権限に g を足す。同じ権限が Grants か職員の Policies にあれば apperr.ErrConflict を返す。
 func (s Staff) AddGrant(_ context.Context, id string, g staff.Grant) error {
 	d, ok := s.Staff[id]

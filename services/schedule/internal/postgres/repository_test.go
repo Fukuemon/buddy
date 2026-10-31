@@ -1145,6 +1145,55 @@ func TestStaffChangePosition(t *testing.T) {
 	}
 }
 
+// TestStaffUpdateProfile は、職員の名前、電話番号、部署、チームを書き、古いチームを指す対象を新しいチームに移し、
+// 新しいチームを既に対象にする権限では古いチームの対象を消すことと、退職した職員と無い職員を拒むことを確認する。
+func TestStaffUpdateProfile(t *testing.T) {
+	ctx := txContext(t)
+	r := NewStaffRepository(testDB)
+	before, err := r.Get(ctx, seedMori)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var teamRead string
+	for _, p := range before.Policies {
+		if p.PolicyID == seedTeamRead {
+			teamRead = p.UserPolicyID
+		}
+	}
+	tx := ctx.Value(txKey{}).(pgx.Tx)
+	if _, err := tx.Exec(ctx, "INSERT INTO user_policy_targets (id, facility_id, user_policy_id, target_team_id) VALUES ($1, $2, $3, $4)",
+		"01M3TD00000000000000000040", seedFacility, teamRead, seedTeam); err != nil {
+		t.Fatal(err)
+	}
+	phone := "+819012345678"
+	p := staff.Profile{Username: "森 新", PhoneNumber: &phone, DepartmentID: seedDepartment, TeamID: seedTeam}
+	if err := r.UpdateProfile(ctx, seedMori, p, seedTeamB); err != nil {
+		t.Fatal(err)
+	}
+	got, err := r.Get(ctx, seedMori)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Username != "森 新" || got.PhoneNumber == nil || *got.PhoneNumber != phone || got.TeamID != seedTeam || got.Email == "" {
+		t.Errorf("職員 = %+v, want 名前、電話番号、チームだけが変わる", got.Summary)
+	}
+	for _, g := range got.Policies {
+		if (g.PolicyID == seedTeamRead || g.PolicyID == seedTeamEdit) && !slices.Equal(g.TargetTeamIDs, []string{seedTeam}) {
+			t.Errorf("チームの権限 %s の対象 = %v, want 新しいチームだけ", g.PolicyID, g.TargetTeamIDs)
+		}
+	}
+
+	if err := r.Retire(ctx, seedHayashi); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.UpdateProfile(ctx, seedHayashi, p, seedTeam); !errors.Is(err, apperr.ErrConflict) {
+		t.Errorf("退職した職員: err = %v, want ErrConflict", err)
+	}
+	if err := r.UpdateProfile(ctx, unknownID, p, seedTeam); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("無い職員: err = %v, want ErrNotFound", err)
+	}
+}
+
 // TestStaffAddAndRemoveGrant は、権限と対象を足し、同じ権限の 2 つ目を拒み、外すと対象も消えることを確認する。
 func TestStaffAddAndRemoveGrant(t *testing.T) {
 	ctx := txContext(t)
