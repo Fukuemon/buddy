@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>staff-detail 詳細</title>
+    <title>staff-detail プロフィール</title>
     <link rel="stylesheet" href="../../_common/mock.css" />
     <link rel="stylesheet" href="../../_common/tokens.css" />
     <link rel="stylesheet" href="../../_common/wireframe.css" />
@@ -15,7 +15,7 @@
         <div class="screen-body">
           <header class="wf-site-header">
             <div class="wf-site-header__brand">
-              <span class="wf-btn wf-btn--icon wf-site-menu" aria-label="メニュー" data-open="site-nav" data-m="17" data-testid="site-nav-toggle"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z" fill="currentColor" /></svg></span>
+              <span class="wf-btn wf-btn--icon wf-site-menu" aria-label="メニュー" data-open="site-nav" data-m="15" data-testid="site-nav-toggle"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z" fill="currentColor" /></svg></span>
               <strong>buddy</strong>
             </div>
             <div class="wf-site-header__viewer" data-testid="viewer-menu">
@@ -51,65 +51,35 @@
             <div class="wf-overlay wf-site-nav-overlay" tabindex="-1" data-close="site-nav"></div>
             <div class="wf-site-main">
               <main class="wf-page">
-                <span class="wf-btn wf-btn--text st-back" data-m="4" data-testid="staff-detail-back" data-go="../../staff-list_職員の一覧/mocks/01-list.html">← 職員の一覧</span>
-                <div class="st-head st-head--start">
-                  <h1 class="wf-heading" data-m="5" data-testid="staff-detail-name">林 さくら</h1>
-                  <span class="st-status" data-m="6" data-testid="staff-detail-status">有効</span>
-                </div>
-                <section class="wf-panel st-section" data-testid="staff-detail-profile">
-                  <div class="st-section__head">
-                    <h2 class="st-h2">基本の情報</h2>
-                    <span class="wf-btn" data-m="8" data-testid="staff-detail-edit" data-go="02-edit.html">編集</span>
+                <span class="st-back st-link" data-m="4" data-testid="staff-detail-back" data-go="../../staff-list_職員の一覧/mocks/01-list.html">← 職員の一覧</span>
+                <div class="st-hero">
+                  <span class="wf-site-avatar st-avatar" aria-hidden="true">林</span>
+                  <div class="st-hero__text">
+                    <div class="st-hero__name">
+                      <h1 class="wf-heading" data-m="5" data-testid="staff-detail-name">林 さくら</h1>
+                      <span class="wf-status" data-m="6" data-testid="staff-detail-status">有効</span>
+                    </div>
+                    <span class="st-muted" data-m="7" data-testid="staff-detail-email">sakura.hayashi@example.com</span>
                   </div>
-                  <dl class="st-dl" data-m="7">
-                    <dt>名前</dt><dd>林 さくら</dd>
-                    <dt>メールアドレス</dt><dd>sakura.hayashi@example.com</dd>
+                  <div class="st-hero__actions">
+                    <span class="wf-btn" data-m="8" data-testid="staff-detail-edit" data-go="04-edit.html">編集</span>
+                    <span class="wf-menu-anchor">
+                      <span class="wf-btn wf-btn--icon" aria-label="ほかの操作" aria-haspopup="menu" aria-expanded="false" data-m="9" data-testid="staff-detail-menu" data-go="03-menu.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="4" cy="10" r="1.6" fill="currentColor" /><circle cx="10" cy="10" r="1.6" fill="currentColor" /><circle cx="16" cy="10" r="1.6" fill="currentColor" /></svg></span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-tabs st-tabs" role="tablist" data-m="10" data-testid="staff-detail-tabs">
+                  <span class="wf-tab is-active" role="tab" aria-selected="true" data-testid="staff-detail-tab-profile">プロフィール</span>
+                  <span class="wf-tab" role="tab" aria-selected="false" data-testid="staff-detail-tab-policies" data-go="02-policies.html">権限</span>
+                </div>
+                <section class="wf-panel st-section" role="tabpanel" data-testid="staff-detail-profile">
+                  <dl class="st-dl" data-m="11">
                     <dt>電話番号</dt><dd>09000000001</dd>
                     <dt>部署</dt><dd>看護部</dd>
                     <dt>チーム</dt><dd>東チーム</dd>
+                    <dt>役職</dt><dd><span data-m="12" data-testid="staff-detail-position-name">メンバー</span><span class="wf-btn wf-btn--text" data-m="13" data-testid="staff-detail-position-change" data-go="05-position.html">役職を変える</span></dd>
+                    <dt>在籍</dt><dd data-m="14" data-testid="staff-detail-status-text">有効です。ログインして、予定を使えます。</dd>
                   </dl>
-                </section>
-                <section class="wf-panel st-section" data-testid="staff-detail-position">
-                  <div class="st-section__head">
-                    <h2 class="st-h2">役職</h2>
-                    <span class="wf-btn" data-m="10" data-testid="staff-detail-position-change" data-go="03-position.html">役職を変える</span>
-                  </div>
-                  <p data-m="9" data-testid="staff-detail-position-name">メンバー</p>
-                </section>
-                <section class="wf-panel st-section" data-testid="staff-detail-policies">
-                  <div class="st-section__head">
-                    <h2 class="st-h2">権限</h2>
-                    <span class="wf-btn" data-m="13" data-testid="staff-policy-add" data-go="04-add-policy.html">権限を足す</span>
-                  </div>
-                  <table class="wf-table st-table" data-m="11" data-testid="staff-policy-table">
-                    <thead>
-                      <tr>
-                        <th>権限</th>
-                        <th>対象</th>
-                        <th><span class="st-visually-hidden">操作</span></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                    <tr data-testid="staff-policy-row-{職員の権限の id}">
-                      <td data-label="権限">自分の予定の編集</td>
-                      <td data-label="対象"><span class="st-muted">なし</span></td>
-                      <td class="st-cell-actions"><span class="wf-btn" data-m="12" data-testid="staff-policy-remove-{職員の権限の id}">外す</span></td>
-                    </tr>
-                    <tr data-testid="staff-policy-row-{職員の権限の id}">
-                      <td data-label="権限">指定した職員の予定の閲覧</td>
-                      <td data-label="対象">森 健太、佐藤 美咲</td>
-                      <td class="st-cell-actions"><span class="wf-btn" data-testid="staff-policy-remove-{職員の権限の id}">外す</span></td>
-                    </tr>
-                    </tbody>
-                  </table>
-                </section>
-                <section class="wf-panel st-section" data-testid="staff-detail-employment">
-                  <h2 class="st-h2">在籍</h2>
-                  <p data-m="14" data-testid="staff-detail-status-text">有効です。ログインして、予定を使えます。</p>
-                  <div class="st-actions st-actions--start">
-                    <span class="wf-btn" data-m="15" data-testid="staff-detail-leave" data-go="05-leave.html">休職にする</span>
-                    <span class="wf-btn wf-btn--danger" data-m="16" data-testid="staff-detail-retire" data-go="08-retire-refused.html">退職にする</span>
-                  </div>
                 </section>
               </main>
             </div>

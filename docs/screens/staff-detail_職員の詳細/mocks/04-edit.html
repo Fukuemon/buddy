@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>staff-detail 権限を足す</title>
+    <title>staff-detail プロフィールの編集</title>
     <link rel="stylesheet" href="../../_common/mock.css" />
     <link rel="stylesheet" href="../../_common/tokens.css" />
     <link rel="stylesheet" href="../../_common/wireframe.css" />
@@ -51,95 +51,72 @@
             <div class="wf-overlay wf-site-nav-overlay" tabindex="-1" data-close="site-nav"></div>
             <div class="wf-site-main">
               <main class="wf-page">
-                <span class="wf-btn wf-btn--text st-back" data-testid="staff-detail-back" data-go="../../staff-list_職員の一覧/mocks/01-list.html">← 職員の一覧</span>
-                <div class="st-head st-head--start">
-                  <h1 class="wf-heading" data-testid="staff-detail-name">林 さくら</h1>
-                  <span class="st-status" data-testid="staff-detail-status">有効</span>
-                </div>
-                <section class="wf-panel st-section" data-testid="staff-detail-profile">
-                  <div class="st-section__head">
-                    <h2 class="st-h2">基本の情報</h2>
-                    <span class="wf-btn" data-testid="staff-detail-edit" data-go="02-edit.html">編集</span>
+                <span class="st-back st-link" data-testid="staff-detail-back" data-go="../../staff-list_職員の一覧/mocks/01-list.html">← 職員の一覧</span>
+                <div class="st-hero">
+                  <span class="wf-site-avatar st-avatar" aria-hidden="true">林</span>
+                  <div class="st-hero__text">
+                    <div class="st-hero__name">
+                      <h1 class="wf-heading" data-testid="staff-detail-name">林 さくら</h1>
+                      <span class="wf-status" data-testid="staff-detail-status">有効</span>
+                    </div>
+                    <span class="st-muted" data-testid="staff-detail-email">sakura.hayashi@example.com</span>
                   </div>
+                  <div class="st-hero__actions">
+                    <span class="wf-btn" data-testid="staff-detail-edit" data-go="04-edit.html">編集</span>
+                    <span class="wf-menu-anchor">
+                      <span class="wf-btn wf-btn--icon" aria-label="ほかの操作" aria-haspopup="menu" aria-expanded="false" data-testid="staff-detail-menu" data-go="03-menu.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="4" cy="10" r="1.6" fill="currentColor" /><circle cx="10" cy="10" r="1.6" fill="currentColor" /><circle cx="16" cy="10" r="1.6" fill="currentColor" /></svg></span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-tabs st-tabs" role="tablist" data-testid="staff-detail-tabs">
+                  <span class="wf-tab is-active" role="tab" aria-selected="true" data-testid="staff-detail-tab-profile">プロフィール</span>
+                  <span class="wf-tab" role="tab" aria-selected="false" data-testid="staff-detail-tab-policies" data-go="02-policies.html">権限</span>
+                </div>
+                <section class="wf-panel st-section" role="tabpanel" data-testid="staff-detail-profile">
                   <dl class="st-dl">
-                    <dt>名前</dt><dd>林 さくら</dd>
-                    <dt>メールアドレス</dt><dd>sakura.hayashi@example.com</dd>
                     <dt>電話番号</dt><dd>09000000001</dd>
                     <dt>部署</dt><dd>看護部</dd>
                     <dt>チーム</dt><dd>東チーム</dd>
+                    <dt>役職</dt><dd><span data-testid="staff-detail-position-name">メンバー</span><span class="wf-btn wf-btn--text" data-testid="staff-detail-position-change" data-go="05-position.html">役職を変える</span></dd>
+                    <dt>在籍</dt><dd data-testid="staff-detail-status-text">有効です。ログインして、予定を使えます。</dd>
                   </dl>
-                </section>
-                <section class="wf-panel st-section" data-testid="staff-detail-position">
-                  <div class="st-section__head">
-                    <h2 class="st-h2">役職</h2>
-                    <span class="wf-btn" data-testid="staff-detail-position-change" data-go="03-position.html">役職を変える</span>
-                  </div>
-                  <p data-testid="staff-detail-position-name">メンバー</p>
-                </section>
-                <section class="wf-panel st-section" data-testid="staff-detail-policies">
-                  <div class="st-section__head">
-                    <h2 class="st-h2">権限</h2>
-                    <span class="wf-btn" data-testid="staff-policy-add" data-go="04-add-policy.html">権限を足す</span>
-                  </div>
-                  <table class="wf-table st-table" data-testid="staff-policy-table">
-                    <thead>
-                      <tr>
-                        <th>権限</th>
-                        <th>対象</th>
-                        <th><span class="st-visually-hidden">操作</span></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                    <tr data-testid="staff-policy-row-{職員の権限の id}">
-                      <td data-label="権限">自分の予定の編集</td>
-                      <td data-label="対象"><span class="st-muted">なし</span></td>
-                      <td class="st-cell-actions"><span class="wf-btn" data-testid="staff-policy-remove-{職員の権限の id}">外す</span></td>
-                    </tr>
-                    <tr data-testid="staff-policy-row-{職員の権限の id}">
-                      <td data-label="権限">指定した職員の予定の閲覧</td>
-                      <td data-label="対象">森 健太、佐藤 美咲</td>
-                      <td class="st-cell-actions"><span class="wf-btn" data-testid="staff-policy-remove-{職員の権限の id}">外す</span></td>
-                    </tr>
-                    </tbody>
-                  </table>
-                </section>
-                <section class="wf-panel st-section" data-testid="staff-detail-employment">
-                  <h2 class="st-h2">在籍</h2>
-                  <p data-testid="staff-detail-status-text">有効です。ログインして、予定を使えます。</p>
-                  <div class="st-actions st-actions--start">
-                    <span class="wf-btn" data-testid="staff-detail-leave" data-go="05-leave.html">休職にする</span>
-                    <span class="wf-btn wf-btn--danger" data-testid="staff-detail-retire" data-go="08-retire-refused.html">退職にする</span>
-                  </div>
                 </section>
               </main>
               <div class="wf-overlay" tabindex="-1" data-m="1" data-go="01-detail.html"></div>
-              <div class="wf-dialog" role="dialog" aria-modal="true" aria-labelledby="staff-policy-add-title" data-testid="staff-policy-add-dialog">
-                <div class="wf-modal__header">
-                  <h2 class="wf-modal__title wf-dialog__title" id="staff-policy-add-title" data-m="2">権限を足す</h2>
+              <div class="wf-dialog" role="dialog" aria-modal="true" aria-labelledby="edit-title" data-testid="staff-detail-edit-dialog">
+                <div class="wf-dialog__header">
+                  <h2 class="wf-dialog__title" id="edit-title" data-m="2">プロフィールを編集</h2>
+                  <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-escape data-m="3" data-testid="staff-detail-edit-close" data-go="01-detail.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
                 </div>
-                <div class="wf-modal__body">
-                  <div class="wf-fields">
-                    <fieldset class="st-fieldset" data-m="3" data-testid="staff-policy-add-options">
-                      <legend class="wf-label">権限</legend>
-                      <span class="wf-radio" aria-disabled="true" data-testid="staff-policy-add-option-{権限の id}">自分の予定の編集（付いています）</span>
-                      <span class="wf-radio" aria-disabled="true" data-testid="staff-policy-add-option-{権限の id}">指定した職員の予定の閲覧（付いています）</span>
-                      <span class="wf-radio" data-choice="policy" data-testid="staff-policy-add-option-{権限の id}">指定した職員の予定の編集</span>
-                      <span class="wf-radio is-on" data-choice="policy" data-testid="staff-policy-add-option-{権限の id}">指定したチームの職員の予定の閲覧</span>
-                      <span class="wf-radio" data-choice="policy" data-testid="staff-policy-add-option-{権限の id}">指定したチームの職員の予定の編集</span>
-                      <span class="wf-radio" data-choice="policy" data-testid="staff-policy-add-option-{権限の id}">事業所の全ての予定の閲覧</span>
-                      <span class="wf-radio" data-choice="policy" data-testid="staff-policy-add-option-{権限の id}">事業所の全ての予定の編集</span>
-                      <span class="wf-radio" data-choice="policy" data-testid="staff-policy-add-option-{権限の id}">職員の管理</span>
-                    </fieldset>
-                    <fieldset class="st-fieldset" data-m="4" data-testid="staff-policy-add-targets">
-                      <legend class="wf-label">対象のチーム</legend>
-                      <span class="wf-check is-on" data-toggle data-testid="staff-policy-add-target-{チームの id}">東チーム</span>
-                      <span class="wf-check" data-toggle data-testid="staff-policy-add-target-{チームの id}">西チーム</span>
-                    </fieldset>
+                <div class="wf-dialog__body" data-testid="staff-detail-profile-form">
+                  <div class="wf-field">
+                    <span class="wf-label">名前</span>
+                    <div class="wf-input wf-field__input" data-m="4" data-testid="staff-detail-name-input">林 さくら</div>
+                  </div>
+                  <div class="wf-field">
+                    <span class="wf-label">メールアドレス</span>
+                    <span data-m="5" data-testid="staff-detail-email-readonly">sakura.hayashi@example.com</span>
+                    <span class="wf-hint">メールアドレスは変えられません。</span>
+                  </div>
+                  <div class="wf-field">
+                    <span class="wf-label">電話番号（任意）</span>
+                    <div class="wf-input wf-field__input" data-m="6" data-testid="staff-detail-phone-input">09000000001</div>
+                  </div>
+                  <div class="st-row">
+                    <div class="wf-field">
+                      <span class="wf-label">部署</span>
+                      <div class="wf-input wf-field__input st-select" data-m="7" data-testid="staff-detail-department-input">看護部</div>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">チーム</span>
+                      <div class="wf-input wf-field__input st-select" data-m="8" data-testid="staff-detail-team-input">西チーム</div>
+                      <span class="wf-hint" data-m="9">チームを変えると、今のチームを対象にしている権限は、新しいチームが対象になります。</span>
+                    </div>
                   </div>
                 </div>
-                <div class="wf-modal__footer">
-                  <span class="wf-btn" data-escape data-m="5" data-testid="staff-policy-add-cancel" data-go="01-detail.html">キャンセル</span>
-                  <span class="wf-btn wf-btn--primary" data-m="6" data-testid="staff-policy-add-submit">足す</span>
+                <div class="wf-dialog__footer">
+                  <span class="wf-btn" data-m="10" data-testid="staff-detail-edit-cancel" data-go="01-detail.html">キャンセル</span>
+                  <span class="wf-btn wf-btn--primary" data-m="11" data-testid="staff-detail-save" data-go="01-detail.html">保存</span>
                 </div>
               </div>
             </div>
