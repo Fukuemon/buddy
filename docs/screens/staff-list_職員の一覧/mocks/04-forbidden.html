@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>staff-list 権限が無い</title>
+    <link rel="stylesheet" href="../../_common/mock.css" />
+    <link rel="stylesheet" href="../../_common/tokens.css" />
+    <link rel="stylesheet" href="../../_common/wireframe.css" />
+    <link rel="stylesheet" href="staff-list.css" />
+  </head>
+  <body data-view="desktop">
+    <div class="stage">
+      <div class="screen">
+        <div class="screen-body">
+          <header class="wf-site-header">
+            <div class="wf-site-header__brand">
+              <span class="wf-btn wf-btn--icon wf-site-menu" aria-label="メニュー" data-open="site-nav" data-m="7" data-testid="site-nav-toggle"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z" fill="currentColor" /></svg></span>
+              <strong>buddy</strong>
+            </div>
+            <div class="wf-site-header__viewer" data-testid="viewer-menu">
+              <span class="wf-site-account" aria-label="アカウント（林 さくら）" data-open="viewer-menu" data-m="2" data-testid="viewer-menu-open"><span class="wf-site-avatar" aria-hidden="true">林</span><span class="wf-site-account__name">林 さくら</span></span>
+              <div class="wf-site-viewer-menu" data-panel="viewer-menu" data-panel-dismiss>
+                <span class="wf-text wf-text--s">林 さくら</span>
+                <span class="wf-btn" data-m="3" data-testid="viewer-logout">ログアウト</span>
+              </div>
+            </div>
+          </header>
+          <div class="wf-site-body">
+            <nav class="wf-site-nav" aria-label="画面" data-m="1" data-testid="site-nav" data-panel="site-nav" data-panel-wide="collapse">
+              <div class="wf-site-nav__head">
+                <strong>buddy</strong>
+                <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-escape data-close="site-nav" data-testid="site-nav-close"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
+              </div>
+              <div class="wf-site-nav__group" role="group" aria-label="予定">
+                <span class="wf-site-nav__heading" aria-hidden="true">予定</span>
+                <span class="wf-site-nav__item" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html" data-testid="site-nav-schedule"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z" fill="currentColor" /></svg><span class="wf-site-nav__label">カレンダー</span></span>
+              </div>
+              <div class="wf-site-nav__group" role="group" aria-label="照合">
+                <span class="wf-site-nav__heading" aria-hidden="true">照合</span>
+                <span class="wf-site-nav__item" data-go="../../receipt-upload_照合/mocks/01-initial.html" data-testid="site-nav-receipt"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M160-120q-33 0-56.5-23.5T80-200v-560q0-33 23.5-56.5T160-840h640q33 0 56.5 23.5T880-760v560q0 33-23.5 56.5T800-120H160Zm0-80h640v-560H160v560Zm40-80h200v-80H200v80Zm382-80 198-198-57-57-141 142-57-57-56 57 113 113Zm-382-80h200v-80H200v80Zm0-160h200v-80H200v80Z" fill="currentColor" /></svg><span class="wf-site-nav__label">照合</span></span>
+              </div>
+            </nav>
+            <div class="wf-overlay wf-site-nav-overlay" tabindex="-1" data-close="site-nav"></div>
+            <div class="wf-site-main">
+              <main class="wf-page">
+                <section class="wf-message" data-testid="page-forbidden">
+                  <h1 class="wf-heading" data-m="4">この画面を開く権限がありません</h1>
+                  <p data-m="5">職員の管理の権限を持つ職員だけが開けます。権限が要るときは、職員の管理の権限を持つ職員に頼んでください。</p>
+                  <span class="wf-btn" data-m="6" data-testid="page-forbidden-back" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html">予定のカレンダーへ</span>
+                </section>
+              </main>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="markers"></div>
+    </div>
+    <script src="../../_common/mock.js"></script>
+    <script src="../../_common/interact.js"></script>
+  </body>
+</html>
