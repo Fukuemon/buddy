@@ -64,9 +64,16 @@ export const mockMe: Schemas['StaffDetail'] = {
   ],
 }
 
+const department = (id: string, name: string): Schemas['Unit'] => ({
+  id,
+  facility_id: MOCK_FACILITY_ID,
+  name,
+  ...stamps,
+})
+
 export const mockDepartments: Schemas['Unit'][] = [
-  team('department-1', '訪問看護部'),
-  team('department-2', 'リハビリ部'),
+  department('department-1', '訪問看護部'),
+  department('department-2', 'リハビリ部'),
 ]
 
 const policy = (id: string, code: string, name: string, needsTarget: boolean) => ({

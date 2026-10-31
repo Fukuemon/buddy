@@ -6,7 +6,7 @@ import { FilterSelect, ListCount, ListEmpty, ListTools } from '#/components/site
 import { RowTable, RowTableRow } from '#/components/site/RowTable'
 import { DotLabel, StatusBadge } from '#/components/site/StatusBadge'
 
-import { STATUS_FILTER_OPTIONS, teamColorIndex, type StaffListFilter } from '../lib/filter'
+import { STATUS_FILTER_OPTIONS, teamDotClassName, type StaffListFilter } from '../lib/filter'
 import { formatDate, formatDateTimeAsDate, statusLabel, statusTone } from '../lib/format'
 import { sortByName } from './StaffFormFields'
 
@@ -183,7 +183,7 @@ export const StaffListView = ({
                   {
                     header: 'チーム',
                     value: (
-                      <DotLabel colorIndex={teamColorIndex(teams ?? [], s.team.id)}>
+                      <DotLabel dotClassName={teamDotClassName(teams ?? [], s.team.id)}>
                         {s.team.name}
                       </DotLabel>
                     ),
