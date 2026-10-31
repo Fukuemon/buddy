@@ -74,3 +74,40 @@ export const listStaff = (request: APIRequestContext, token: string, facilityId:
   request.get(`${SCHEDULE_URL}/v1/facilities/${facilityId}/users`, {
     headers: { Authorization: `Bearer ${token}` },
   })
+
+/** 予定の API の役職、チーム、部署の一覧の 1 件。 */
+export type NamedUnit = { id: string; name: string }
+
+/** 予定の API の役職の一覧（GET /v1/facilities/{facility_id}/positions）を、役職に決まっている権限の code とともに返す。 */
+export const listPositions = async (request: APIRequestContext, token: string) => {
+  const res = await request.get(
+    `${SCHEDULE_URL}/v1/facilities/${STAFF_FORM.facilityId}/positions`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  )
+  return (await res.json()) as (NamedUnit & { policies: { code: string }[] })[]
+}
+
+/** 予定の API の 1 つ目の事業所の、チームか部署の一覧を返す。 */
+export const listUnits = async (
+  request: APIRequestContext,
+  token: string,
+  kind: 'teams' | 'departments',
+) => {
+  const res = await request.get(`${SCHEDULE_URL}/v1/facilities/${STAFF_FORM.facilityId}/${kind}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  return (await res.json()) as NamedUnit[]
+}
+
+/** 職員を登録し、登録した職員の ID を返す。登録できなければ Error を投げる。 */
+export const registerStaffId = async (
+  request: APIRequestContext,
+  token: string,
+  staff: { email: string; name: string },
+) => {
+  const res = await registerStaff(request, token, staff)
+  if (res.status() !== 201) throw new Error(`職員を登録できなかった: ${res.status()}`)
+  return ((await res.json()) as { id: string }).id
+}
