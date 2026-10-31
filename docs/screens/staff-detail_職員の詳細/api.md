@@ -15,7 +15,7 @@
 | 部署の選択、チームの選択 | 選択肢 | 足す、`Team` | `listDepartments`、`listTeams` の `Unit` |
 | 役職 | 役職の名前 | 足す | `StaffDetail.position.name` |
 | 役職の選択 | 選択肢 | 足す | `listPositions` の `Position` の `id`、`name` |
-| 役職を変えるときの注意 | 職員ごとに足した権限の名前 | 足す | `StaffDetail.policies` のうち、`StaffDetail.position` の `Position.policies` に無い権限の `name` |
+| 役職を変えるときの注意 | 職員ごとに足した権限の名前 | 足す | `StaffDetail.policies` のうち、`listPositions` の `Position` で `id` が `StaffDetail.position.id` のものの `policies` に無い権限の `name`。`StaffDetail.position` は `id` と `name` だけの `Ref` で、デフォルトの権限を持たない |
 | ダイアログの役職を変える | 送る役職 | 足す | `changeUserPosition` の本文の `position_id` |
 | 権限の一覧 | 権限の名前 | 足す | `StaffDetail.policies[].name` |
 | 権限の一覧 | 対象の名前 | 足す | `policies[].target_user_ids` を `listUsers` の `Staff.username` に、`target_team_ids` を `listTeams` の `Unit.name` に引き当てる |
