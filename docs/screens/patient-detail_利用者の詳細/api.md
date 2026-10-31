@@ -10,10 +10,10 @@
 | 利用者の名前 | 名前 | `Patient.name` | `getPatient` の `Patient.name` |
 | 状態の印、利用の状態 | 利用中か、利用の終了か | `Patient.ended` | `Patient.ended_at` が `null` か |
 | 状態の印、利用の状態 | 利用の終了にした日 | 足す | `Patient.ended_at` の日付（事業所の現地の日付） |
-| 基本の情報 | サービス | 足す | `Patient.service_code` と、`listServiceCodes` の `ServiceCode` のうち `id` が `Patient.service_code_id` のものの時間の範囲 |
-| 基本の情報 | 希望の時間帯、希望する担当の性別 | 足す | `Patient.preferred_time`、`Patient.preferred_gender` |
-| 基本の情報 | 担当の職員の名前 | 足す | `Patient.assigned_staff_name` |
-| 基本の情報、担当の職員の選択、今の担当の職員の注意 | 担当の職員が休職か退職か | `Staff.status`（`staff.list` の戻り値） | `Patient.assigned_staff_id` を `listUsers` の `Staff.id` に引き当てた `Staff.status` |
+| プロフィール | サービス | 足す | `Patient.service_code` と、`listServiceCodes` の `ServiceCode` のうち `id` が `Patient.service_code_id` のものの時間の範囲 |
+| プロフィール | 希望の時間帯、希望する担当の性別 | 足す | `Patient.preferred_time`、`Patient.preferred_gender` |
+| プロフィール | 担当の職員の名前 | 足す | `Patient.assigned_staff_name` |
+| プロフィール、担当の職員の選択、今の担当の職員の注意 | 担当の職員が休職か退職か | `Staff.status`（`staff.list` の戻り値） | `Patient.assigned_staff_id` を `listUsers` の `Staff.id` に引き当てた `Staff.status` |
 | 名前の入力、サービスの選択、希望の時間帯の選択、希望する担当の性別の選択、担当の職員の選択 | 送る値 | 足す | `updatePatient` の本文の `name`、`service_code_id`、`preferred_time`、`preferred_gender`、`assigned_staff_id` |
 | サービスの選択 | 選択肢 | 足す | `listServiceCodes` の `ServiceCode` |
 | 担当の職員の選択、再開の担当の職員 | 選択肢 | `Staff`（`staff.list` の戻り値） | `listUsers` の `Staff` のうち `status` が `active` の職員 |

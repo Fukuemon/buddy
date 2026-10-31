@@ -15,7 +15,7 @@
         <div class="screen-body">
           <header class="wf-site-header">
             <div class="wf-site-header__brand">
-              <span class="wf-btn wf-btn--icon wf-site-menu" aria-label="メニュー" data-open="site-nav" data-m="10" data-testid="site-nav-toggle"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z" fill="currentColor" /></svg></span>
+              <span class="wf-btn wf-btn--icon wf-site-menu" aria-label="メニュー" data-open="site-nav" data-m="9" data-testid="site-nav-toggle"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z" fill="currentColor" /></svg></span>
               <strong>buddy</strong>
             </div>
             <div class="wf-site-header__viewer" data-testid="viewer-menu">
@@ -55,18 +55,19 @@
             <div class="wf-overlay wf-site-nav-overlay" tabindex="-1" data-close="site-nav"></div>
             <div class="wf-site-main">
               <main class="wf-page">
-                <div class="pt-head">
-                  <div class="pt-title">
+                <div class="wf-page-head">
+                  <div class="wf-title">
                     <h1 class="wf-heading" data-m="4">利用者</h1>
-                    <span class="wf-btn wf-btn--icon pt-help" aria-label="ヘルプ" data-open="list-help" data-m="5" data-testid="patient-list-help">?</span>
-                    <p class="pt-help-panel" data-panel="list-help" data-panel-dismiss data-testid="patient-list-help-text">利用の終了の利用者は、予定の利用者の候補に出ません。</p>
+                    <span class="wf-help">
+                      <span class="wf-btn wf-btn--icon wf-help__toggle" aria-label="ヘルプ" data-open="list-help" data-m="5" data-testid="patient-list-help">?</span>
+                      <p class="wf-help__panel" data-panel="list-help" data-panel-dismiss data-testid="patient-list-help-text">利用の終了の利用者は、予定の利用者の候補に出ません。</p>
+                    </span>
                   </div>
                   <span class="wf-btn wf-btn--primary" data-m="6" data-testid="patient-list-new" data-go="../../patient-new_利用者の登録/mocks/01-initial.html">利用者を登録</span>
                 </div>
-                <span class="wf-check" data-m="7" data-testid="patient-list-include-ended">利用の終了の利用者も表示する</span>
                 <div class="wf-fields">
-                  <p class="wf-alert" role="alert" data-m="8" data-testid="patient-list-error">利用者を読み込めませんでした。時間をおいて、読み直してください。</p>
-                  <div><span class="wf-btn" data-m="9" data-testid="patient-list-retry" data-go="01-list.html">読み直す</span></div>
+                  <p class="wf-alert" role="alert" data-m="7" data-testid="patient-list-error">利用者を読み込めませんでした。時間をおいて、読み直してください。</p>
+                  <div><span class="wf-btn" data-m="8" data-testid="patient-list-retry" data-go="01-list.html">読み直す</span></div>
                 </div>
               </main>
 

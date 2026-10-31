@@ -3,11 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>patient-list 利用の終了を含める</title>
+    <title>patient-detail 「…」のメニュー</title>
     <link rel="stylesheet" href="../../_common/mock.css" />
     <link rel="stylesheet" href="../../_common/tokens.css" />
     <link rel="stylesheet" href="../../_common/wireframe.css" />
-    <link rel="stylesheet" href="patient-list.css" />
+    <link rel="stylesheet" href="patient-detail.css" />
   </head>
   <body data-view="desktop">
     <div class="stage">
@@ -55,63 +55,36 @@
             <div class="wf-overlay wf-site-nav-overlay" tabindex="-1" data-close="site-nav"></div>
             <div class="wf-site-main">
               <main class="wf-page">
-                <div class="pt-head">
-                  <div class="pt-title">
-                    <h1 class="wf-heading" data-m="4">利用者</h1>
-                    <span class="wf-btn wf-btn--icon pt-help" aria-label="ヘルプ" data-open="list-help" data-m="5" data-testid="patient-list-help">?</span>
-                    <p class="pt-help-panel" data-panel="list-help" data-panel-dismiss data-testid="patient-list-help-text">利用の終了の利用者は、予定の利用者の候補に出ません。</p>
+                <span class="pt-back pt-link" data-m="4" data-testid="patient-detail-back" data-go="../../patient-list_利用者の一覧/mocks/01-list.html">← 利用者の一覧</span>
+                <div class="pt-hero">
+                  <span class="wf-site-avatar pt-avatar" aria-hidden="true">見</span>
+                  <div class="pt-hero__text">
+                    <div class="pt-hero__name">
+                      <h1 class="wf-heading" data-m="5" data-testid="patient-detail-name">見本 一郎</h1>
+                      <span class="wf-status" data-m="6" data-testid="patient-detail-status">利用中</span>
+                    </div>
                   </div>
-                  <span class="wf-btn wf-btn--primary" data-m="6" data-testid="patient-list-new" data-go="../../patient-new_利用者の登録/mocks/01-initial.html">利用者を登録</span>
+                  <div class="pt-hero__actions">
+                    <span class="wf-btn" data-m="7" data-testid="patient-detail-edit" data-go="03-edit.html">編集</span>
+                    <span class="wf-menu-anchor">
+                      <span class="wf-btn wf-btn--icon" aria-label="ほかの操作" aria-haspopup="menu" aria-expanded="true" data-m="8" data-testid="patient-detail-menu" data-go="01-detail.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="4" cy="10" r="1.6" fill="currentColor" /><circle cx="10" cy="10" r="1.6" fill="currentColor" /><circle cx="16" cy="10" r="1.6" fill="currentColor" /></svg></span>
+                      <div class="wf-menu is-open" role="menu" data-testid="patient-detail-menu-list">
+                        <span class="wf-menu__item" role="menuitem" data-m="11" data-testid="patient-detail-end" data-go="05-end-refused.html">利用の終了にする</span>
+                      </div>
+                    </span>
+                  </div>
                 </div>
-                <span class="wf-check is-on" data-m="7" data-testid="patient-list-include-ended" data-go="01-list.html">利用の終了の利用者も表示する</span>
-                <table class="wf-table pt-table" data-m="8" data-testid="patient-list-table">
-                  <thead>
-                    <tr>
-                      <th>名前</th>
-                      <th>サービス</th>
-                      <th>希望の時間帯</th>
-                      <th>希望する担当の性別</th>
-                      <th>担当の職員</th>
-                      <th>状態</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr data-testid="patient-list-row-{利用者の id}">
-                      <td data-label="名前"><span class="pt-link" data-m="9" data-testid="patient-list-open-{利用者の id}" data-go="../../patient-detail_利用者の詳細/mocks/01-detail.html">見本 一郎</span></td>
-                      <td data-label="サービス">訪看I2</td>
-                      <td data-label="希望の時間帯">午前</td>
-                      <td data-label="希望する担当の性別">男性</td>
-                      <td data-label="担当の職員"><span data-testid="patient-list-staff-{利用者の id}">森 健太</span></td>
-                      <td data-label="状態"><span class="pt-status" data-testid="patient-list-status-{利用者の id}">利用中</span></td>
-                    </tr>
-                    <tr data-testid="patient-list-row-{利用者の id}">
-                      <td data-label="名前"><span class="pt-link" data-testid="patient-list-open-{利用者の id}" data-go="../../patient-detail_利用者の詳細/mocks/01-detail.html">見本 三郎</span></td>
-                      <td data-label="サービス">訪看I4</td>
-                      <td data-label="希望の時間帯">午前</td>
-                      <td data-label="希望する担当の性別">男性</td>
-                      <td data-label="担当の職員"><span data-m="10" data-testid="patient-list-staff-{利用者の id}">小野 拓海（休職）</span></td>
-                      <td data-label="状態"><span class="pt-status" data-testid="patient-list-status-{利用者の id}">利用中</span></td>
-                    </tr>
-                    <tr data-testid="patient-list-row-{利用者の id}">
-                      <td data-label="名前"><span class="pt-link" data-testid="patient-list-open-{利用者の id}" data-go="../../patient-detail_利用者の詳細/mocks/01-detail.html">見本 二葉</span></td>
-                      <td data-label="サービス">訪看I3</td>
-                      <td data-label="希望の時間帯">午後</td>
-                      <td data-label="希望する担当の性別">女性</td>
-                      <td data-label="担当の職員"><span data-testid="patient-list-staff-{利用者の id}">佐藤 美咲</span></td>
-                      <td data-label="状態"><span class="pt-status" data-testid="patient-list-status-{利用者の id}">利用中</span></td>
-                    </tr>
-                    <tr data-testid="patient-list-row-{利用者の id}">
-                      <td data-label="名前"><span class="pt-link" data-testid="patient-list-open-{利用者の id}" data-go="../../patient-detail_利用者の詳細/mocks/05-ended.html">見本 四季</span></td>
-                      <td data-label="サービス">訪看I2</td>
-                      <td data-label="希望の時間帯">午後</td>
-                      <td data-label="希望する担当の性別">女性</td>
-                      <td data-label="担当の職員"><span data-testid="patient-list-staff-{利用者の id}">西村 学（退職）</span></td>
-                      <td data-label="状態"><span class="pt-status pt-status--ended" data-m="11" data-testid="patient-list-status-{利用者の id}">利用の終了（2026/09/30）</span></td>
-                    </tr>
-                  </tbody>
-                </table>
+                <section class="wf-panel pt-section" data-testid="patient-detail-profile">
+                  <dl class="pt-dl" data-m="9">
+                    <dt>サービス</dt><dd>訪看I2（20〜29 分）</dd>
+                    <dt>希望の時間帯</dt><dd>午前</dd>
+                    <dt>希望する担当の性別</dt><dd>男性</dd>
+                    <dt>担当の職員</dt><dd>森 健太</dd>
+                    <dt>利用</dt><dd data-m="10" data-testid="patient-detail-status-text">利用中です。予定の利用者に選べます。</dd>
+                  </dl>
+                </section>
               </main>
-
+              <div class="wf-menu-scrim" tabindex="-1" data-escape data-testid="patient-detail-menu-close" data-go="01-detail.html"></div>
             </div>
           </div>
         </div>

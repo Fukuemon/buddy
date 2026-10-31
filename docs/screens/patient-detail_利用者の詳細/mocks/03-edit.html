@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>patient-detail 利用の再開</title>
+    <title>patient-detail 利用者の編集</title>
     <link rel="stylesheet" href="../../_common/mock.css" />
     <link rel="stylesheet" href="../../_common/tokens.css" />
     <link rel="stylesheet" href="../../_common/wireframe.css" />
@@ -55,50 +55,73 @@
             <div class="wf-overlay wf-site-nav-overlay" tabindex="-1" data-close="site-nav"></div>
             <div class="wf-site-main">
               <main class="wf-page">
-                <span class="wf-btn wf-btn--text pt-back" data-testid="patient-detail-back" data-go="../../patient-list_利用者の一覧/mocks/02-with-ended.html">← 利用者の一覧</span>
-                <div class="pt-head pt-head--start">
-                  <h1 class="wf-heading" data-testid="patient-detail-name">見本 四季</h1>
-                  <span class="pt-status pt-status--ended" data-testid="patient-detail-status">利用の終了（2026/09/30）</span>
-                </div>
-                <section class="wf-panel pt-section" data-testid="patient-detail-profile">
-                  <div class="pt-section__head">
-                    <h2 class="pt-h2">基本の情報</h2>
-                    <span class="wf-btn" data-testid="patient-detail-edit" data-go="02-edit.html">編集</span>
-                  </div>
-                  <dl class="pt-dl">
-                    <dt>名前</dt><dd>見本 四季</dd>
-                    <dt>サービス</dt><dd>訪看I2（20〜29 分）</dd>
-                    <dt>希望の時間帯</dt><dd>午後</dd>
-                    <dt>希望する担当の性別</dt><dd>女性</dd>
-                    <dt>担当の職員</dt><dd>西村 学（退職）</dd>
-                  </dl>
-                </section>
-                <section class="wf-panel pt-section" data-testid="patient-detail-usage">
-                  <h2 class="pt-h2">利用</h2>
-                  <p data-testid="patient-detail-status-text">2026/09/30 に利用の終了にしました。予定の利用者に選べません。</p>
-                  <div class="pt-actions pt-actions--start">
-                    <span class="wf-btn" data-testid="patient-detail-resume" data-go="06-resume.html">利用を再開する</span>
-                  </div>
-                </section>
-              </main>
-              <div class="wf-overlay" tabindex="-1" data-m="1" data-go="05-ended.html"></div>
-              <div class="wf-dialog wf-dialog--narrow" role="dialog" aria-modal="true" aria-labelledby="patient-resume-title" data-testid="patient-resume-dialog">
-                <div class="wf-modal__header">
-                  <h2 class="wf-modal__title wf-dialog__title" id="patient-resume-title" data-m="2">見本 四季 の利用を再開しますか</h2>
-                </div>
-                <div class="wf-modal__body">
-                  <div class="wf-fields">
-                    <p data-m="3">利用を再開すると、見本 四季 は予定の利用者の候補と、利用者の一覧に戻ります。利用の終了の前の予定は、同じ利用者の予定のまま残ります。</p>
-                    <div class="wf-field">
-                      <span class="wf-label">担当の職員</span>
-                      <div class="wf-input wf-field__input pt-select" data-m="4" data-testid="patient-resume-staff">林 さくら</div>
-                      <span class="wf-hint" data-m="5" data-testid="patient-resume-staff-note">今の担当の 西村 学 は退職しています。担当の職員を選んでください。</span>
+                <span class="pt-back pt-link" data-testid="patient-detail-back" data-go="../../patient-list_利用者の一覧/mocks/01-list.html">← 利用者の一覧</span>
+                <div class="pt-hero">
+                  <span class="wf-site-avatar pt-avatar" aria-hidden="true">見</span>
+                  <div class="pt-hero__text">
+                    <div class="pt-hero__name">
+                      <h1 class="wf-heading" data-testid="patient-detail-name">見本 一郎</h1>
+                      <span class="wf-status" data-testid="patient-detail-status">利用中</span>
                     </div>
                   </div>
+                  <div class="pt-hero__actions">
+                    <span class="wf-btn" data-testid="patient-detail-edit" data-go="03-edit.html">編集</span>
+                    <span class="wf-menu-anchor">
+                      <span class="wf-btn wf-btn--icon" aria-label="ほかの操作" aria-haspopup="menu" aria-expanded="false" data-testid="patient-detail-menu" data-go="02-menu.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="4" cy="10" r="1.6" fill="currentColor" /><circle cx="10" cy="10" r="1.6" fill="currentColor" /><circle cx="16" cy="10" r="1.6" fill="currentColor" /></svg></span>
+                      <div class="wf-menu" role="menu" data-testid="patient-detail-menu-list">
+                        <span class="wf-menu__item" role="menuitem" data-testid="patient-detail-end" data-go="05-end-refused.html">利用の終了にする</span>
+                      </div>
+                    </span>
+                  </div>
                 </div>
-                <div class="wf-modal__footer">
-                  <span class="wf-btn" data-escape data-m="6" data-testid="patient-resume-cancel" data-go="05-ended.html">キャンセル</span>
-                  <span class="wf-btn wf-btn--primary" data-m="7" data-testid="patient-resume-submit" data-go="01-detail.html">利用を再開する</span>
+                <section class="wf-panel pt-section" data-testid="patient-detail-profile">
+                  <dl class="pt-dl">
+                    <dt>サービス</dt><dd>訪看I2（20〜29 分）</dd>
+                    <dt>希望の時間帯</dt><dd>午前</dd>
+                    <dt>希望する担当の性別</dt><dd>男性</dd>
+                    <dt>担当の職員</dt><dd>森 健太</dd>
+                    <dt>利用</dt><dd data-testid="patient-detail-status-text">利用中です。予定の利用者に選べます。</dd>
+                  </dl>
+                </section>
+              </main>
+              <div class="wf-overlay" tabindex="-1" data-m="1" data-go="01-detail.html"></div>
+              <div class="wf-dialog" role="dialog" aria-modal="true" aria-labelledby="edit-title" data-testid="patient-detail-edit-dialog">
+                <div class="wf-dialog__header">
+                  <h2 class="wf-dialog__title" id="edit-title" data-m="2">利用者を編集</h2>
+                  <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-escape data-m="3" data-testid="patient-detail-edit-close" data-go="01-detail.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
+                </div>
+                <div class="wf-dialog__body" data-testid="patient-detail-profile-form">
+                  <div class="wf-field">
+                    <span class="wf-label">名前</span>
+                    <div class="wf-input wf-field__input" data-m="4" data-testid="patient-detail-name-input">見本 一郎</div>
+                  </div>
+                  <div class="wf-field">
+                    <span class="wf-label">サービス</span>
+                    <div class="wf-input wf-field__input pt-select" data-m="5" data-testid="patient-detail-service-input">訪看I3（30〜59 分）</div>
+                  </div>
+                  <fieldset class="pt-fieldset" data-m="6" data-testid="patient-detail-time-input">
+                    <legend class="wf-label">希望の時間帯</legend>
+                    <div class="pt-radios">
+                      <span class="wf-radio is-on" data-choice="patient-detail-time-input" data-testid="patient-detail-time-input-morning">午前</span>
+                      <span class="wf-radio" data-choice="patient-detail-time-input" data-testid="patient-detail-time-input-afternoon">午後</span>
+                    </div>
+                  </fieldset>
+                  <fieldset class="pt-fieldset" data-m="7" data-testid="patient-detail-gender-input">
+                    <legend class="wf-label">希望する担当の性別</legend>
+                    <div class="pt-radios">
+                      <span class="wf-radio is-on" data-choice="patient-detail-gender-input" data-testid="patient-detail-gender-input-male">男性</span>
+                      <span class="wf-radio" data-choice="patient-detail-gender-input" data-testid="patient-detail-gender-input-female">女性</span>
+                    </div>
+                  </fieldset>
+                  <div class="wf-field">
+                    <span class="wf-label">担当の職員</span>
+                    <div class="wf-input wf-field__input pt-select" data-m="8" data-testid="patient-detail-staff-input">森 健太</div>
+                    <span class="wf-hint" data-m="9">休職と退職の職員は、新しく選べません。今の担当のままなら保存できます。</span>
+                  </div>
+                </div>
+                <div class="wf-dialog__footer">
+                  <span class="wf-btn" data-m="10" data-testid="patient-detail-edit-cancel" data-go="01-detail.html">キャンセル</span>
+                  <span class="wf-btn wf-btn--primary" data-m="11" data-testid="patient-detail-save" data-go="01-detail.html">保存</span>
                 </div>
               </div>
             </div>

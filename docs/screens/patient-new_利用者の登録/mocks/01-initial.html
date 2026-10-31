@@ -55,16 +55,23 @@
             <div class="wf-overlay wf-site-nav-overlay" tabindex="-1" data-close="site-nav"></div>
             <div class="wf-site-main">
               <main class="wf-page">
-                <div class="pt-head">
-                  <div class="pt-title">
+                <div class="wf-page-head">
+                  <div class="wf-title">
                     <h1 class="wf-heading">利用者</h1>
-                    <span class="wf-btn wf-btn--icon pt-help" aria-label="ヘルプ" data-open="list-help" data-testid="patient-list-help">?</span>
-                    <p class="pt-help-panel" data-panel="list-help" data-panel-dismiss data-testid="patient-list-help-text">利用の終了の利用者は、予定の利用者の候補に出ません。</p>
+                    <span class="wf-help">
+                      <span class="wf-btn wf-btn--icon wf-help__toggle" aria-label="ヘルプ" data-open="list-help" data-testid="patient-list-help">?</span>
+                      <p class="wf-help__panel" data-panel="list-help" data-panel-dismiss data-testid="patient-list-help-text">利用の終了の利用者は、予定の利用者の候補に出ません。</p>
+                    </span>
                   </div>
                   <span class="wf-btn wf-btn--primary" data-testid="patient-list-new" data-go="../../patient-new_利用者の登録/mocks/01-initial.html">利用者を登録</span>
                 </div>
-                <span class="wf-check" data-testid="patient-list-include-ended">利用の終了の利用者も表示する</span>
-                <table class="wf-table pt-table" data-testid="patient-list-table">
+                <div class="wf-list-tools">
+                  <div class="wf-search" data-testid="patient-list-search"><span class="wf-label">名前で検索</span></div>
+                  <span class="wf-select" data-testid="patient-list-filter-staff">担当の職員: すべて</span>
+                  <span class="wf-select is-on" data-testid="patient-list-filter-status" data-go="../../patient-list_利用者の一覧/mocks/02-all.html">状態: 利用中</span>
+                  <span class="wf-count" data-testid="patient-list-count">3 人</span>
+                </div>
+                <table class="wf-table wf-table--rows" data-testid="patient-list-table">
                   <thead>
                     <tr>
                       <th>名前</th>
@@ -73,76 +80,78 @@
                       <th>希望する担当の性別</th>
                       <th>担当の職員</th>
                       <th>状態</th>
+                      <th><span class="wf-visually-hidden">詳細</span></th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr data-testid="patient-list-row-{利用者の id}">
-                      <td data-label="名前"><span class="pt-link" data-testid="patient-list-open-{利用者の id}" data-go="../../patient-detail_利用者の詳細/mocks/01-detail.html">見本 一郎</span></td>
-                      <td data-label="サービス">訪看I2</td>
-                      <td data-label="希望の時間帯">午前</td>
-                      <td data-label="希望する担当の性別">男性</td>
-                      <td data-label="担当の職員"><span data-testid="patient-list-staff-{利用者の id}">森 健太</span></td>
-                      <td data-label="状態"><span class="pt-status" data-testid="patient-list-status-{利用者の id}">利用中</span></td>
+                    <tr data-testid="patient-list-row-{利用者の id}" data-go="../../patient-detail_利用者の詳細/mocks/01-detail.html">
+                      <td class="wf-cell-primary">見本 一郎</td>
+                      <td class="wf-cell-meta">訪看I2</td>
+                      <td class="wf-cell-meta">午前</td>
+                      <td class="wf-cell-meta">男性</td>
+                      <td class="wf-cell-meta">森 健太</td>
+                      <td class="wf-cell-status"><span class="wf-status" data-testid="patient-list-status-{利用者の id}">利用中</span></td>
+                      <td class="wf-cell-go" aria-hidden="true">›</td>
                     </tr>
-                    <tr data-testid="patient-list-row-{利用者の id}">
-                      <td data-label="名前"><span class="pt-link" data-testid="patient-list-open-{利用者の id}" data-go="../../patient-detail_利用者の詳細/mocks/01-detail.html">見本 三郎</span></td>
-                      <td data-label="サービス">訪看I4</td>
-                      <td data-label="希望の時間帯">午前</td>
-                      <td data-label="希望する担当の性別">男性</td>
-                      <td data-label="担当の職員"><span data-testid="patient-list-staff-{利用者の id}">小野 拓海（休職）</span></td>
-                      <td data-label="状態"><span class="pt-status" data-testid="patient-list-status-{利用者の id}">利用中</span></td>
+                    <tr data-testid="patient-list-row-{利用者の id}" data-go="../../patient-detail_利用者の詳細/mocks/01-detail.html">
+                      <td class="wf-cell-primary">見本 三郎</td>
+                      <td class="wf-cell-meta">訪看I4</td>
+                      <td class="wf-cell-meta">午前</td>
+                      <td class="wf-cell-meta">男性</td>
+                      <td class="wf-cell-meta">小野 拓海（休職）</td>
+                      <td class="wf-cell-status"><span class="wf-status" data-testid="patient-list-status-{利用者の id}">利用中</span></td>
+                      <td class="wf-cell-go" aria-hidden="true">›</td>
                     </tr>
-                    <tr data-testid="patient-list-row-{利用者の id}">
-                      <td data-label="名前"><span class="pt-link" data-testid="patient-list-open-{利用者の id}" data-go="../../patient-detail_利用者の詳細/mocks/01-detail.html">見本 二葉</span></td>
-                      <td data-label="サービス">訪看I3</td>
-                      <td data-label="希望の時間帯">午後</td>
-                      <td data-label="希望する担当の性別">女性</td>
-                      <td data-label="担当の職員"><span data-testid="patient-list-staff-{利用者の id}">佐藤 美咲</span></td>
-                      <td data-label="状態"><span class="pt-status" data-testid="patient-list-status-{利用者の id}">利用中</span></td>
+                    <tr data-testid="patient-list-row-{利用者の id}" data-go="../../patient-detail_利用者の詳細/mocks/01-detail.html">
+                      <td class="wf-cell-primary">見本 二葉</td>
+                      <td class="wf-cell-meta">訪看I3</td>
+                      <td class="wf-cell-meta">午後</td>
+                      <td class="wf-cell-meta">女性</td>
+                      <td class="wf-cell-meta">佐藤 美咲</td>
+                      <td class="wf-cell-status"><span class="wf-status" data-testid="patient-list-status-{利用者の id}">利用中</span></td>
+                      <td class="wf-cell-go" aria-hidden="true">›</td>
                     </tr>
                   </tbody>
                 </table>
               </main>
               <div class="wf-overlay" tabindex="-1" data-m="1" data-go="../../patient-list_利用者の一覧/mocks/01-list.html"></div>
               <div class="wf-dialog" role="dialog" aria-modal="true" aria-labelledby="patient-new-title" data-testid="patient-new-dialog">
-                <div class="wf-modal__header">
-                  <h2 class="wf-modal__title wf-dialog__title" id="patient-new-title" data-m="2">利用者を登録</h2>
+                <div class="wf-dialog__header">
+                  <h2 class="wf-dialog__title" id="patient-new-title" data-m="2">利用者を登録</h2>
                   <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-escape data-m="3" data-testid="patient-new-close" data-go="../../patient-list_利用者の一覧/mocks/01-list.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
                 </div>
-                <div class="wf-modal__body">
-                  <div class="wf-fields">
-                    <div class="wf-field">
-                      <span class="wf-label">名前</span>
-                      <div class="wf-input wf-field__input" data-m="4" data-testid="patient-new-name"></div>
+                <div class="wf-dialog__body">
+                  <div class="wf-field">
+                    <span class="wf-label">名前</span>
+                    <div class="wf-input wf-field__input" data-m="4" data-testid="patient-new-name"></div>
+                  </div>
+                  <div class="wf-field">
+                    <span class="wf-label">サービス</span>
+                    <div class="wf-input wf-field__input pt-select" data-m="5" data-testid="patient-new-service"><span class="pt-muted">選んでください</span></div>
+                  </div>
+                  <fieldset class="pt-fieldset" data-m="6" data-testid="patient-new-time">
+                    <legend class="wf-label">希望の時間帯</legend>
+                    <div class="pt-radios">
+                      <span class="wf-radio" data-choice="patient-new-time" data-testid="patient-new-time-morning">午前</span>
+                      <span class="wf-radio" data-choice="patient-new-time" data-testid="patient-new-time-afternoon">午後</span>
                     </div>
-                    <div class="wf-field">
-                      <span class="wf-label">サービス</span>
-                      <div class="wf-input wf-field__input pt-select" data-m="5" data-testid="patient-new-service"><span class="pt-muted">選んでください</span></div>
+                  </fieldset>
+                  <fieldset class="pt-fieldset" data-m="7" data-testid="patient-new-gender">
+                    <legend class="wf-label">希望する担当の性別</legend>
+                    <div class="pt-radios">
+                      <span class="wf-radio" data-choice="patient-new-gender" data-testid="patient-new-gender-male">男性</span>
+                      <span class="wf-radio" data-choice="patient-new-gender" data-testid="patient-new-gender-female">女性</span>
                     </div>
-                    <fieldset class="pt-fieldset" data-m="6" data-testid="patient-new-time">
-                      <legend class="wf-label">希望の時間帯</legend>
-                      <div class="pt-radios">
-                        <span class="wf-radio" data-choice="patient-new-time" data-testid="patient-new-time-morning">午前</span>
-                        <span class="wf-radio" data-choice="patient-new-time" data-testid="patient-new-time-afternoon">午後</span>
-                      </div>
-                    </fieldset>
-                    <fieldset class="pt-fieldset" data-m="7" data-testid="patient-new-gender">
-                      <legend class="wf-label">希望する担当の性別</legend>
-                      <div class="pt-radios">
-                        <span class="wf-radio" data-choice="patient-new-gender" data-testid="patient-new-gender-male">男性</span>
-                        <span class="wf-radio" data-choice="patient-new-gender" data-testid="patient-new-gender-female">女性</span>
-                      </div>
-                    </fieldset>
-                    <div class="wf-field">
-                      <span class="wf-label">担当の職員</span>
-                      <div class="wf-input wf-field__input pt-select" data-m="8" data-testid="patient-new-staff"><span class="pt-muted">選んでください</span></div>
-                    </div>
-                    <p class="wf-hint" data-m="9">担当の職員には、休職と退職の職員を選べません。</p>
+                  </fieldset>
+                  <div class="wf-field">
+                    <span class="wf-label">担当の職員</span>
+                    <div class="wf-input wf-field__input pt-select" data-m="8" data-testid="patient-new-staff"><span class="pt-muted">選んでください</span></div>
+                    <span class="wf-hint">休職と退職の職員は選べません。</span>
                   </div>
                 </div>
-                <div class="wf-modal__footer">
-                  <span class="wf-btn" data-m="10" data-testid="patient-new-cancel" data-go="../../patient-list_利用者の一覧/mocks/01-list.html">キャンセル</span>
-                  <span class="wf-btn wf-btn--primary" data-m="11" data-testid="patient-new-submit" data-go="02-invalid.html">登録</span>
+                <div class="wf-dialog__footer">
+                  <span class="wf-btn" data-m="9" data-testid="patient-new-cancel" data-go="../../patient-list_利用者の一覧/mocks/01-list.html">キャンセル</span>
+                  <span class="wf-btn wf-btn--primary" data-m="10" data-testid="patient-new-submit" data-go="02-invalid.html">登録</span>
                 </div>
               </div>
             </div>

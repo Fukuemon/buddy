@@ -55,30 +55,33 @@
             <div class="wf-overlay wf-site-nav-overlay" tabindex="-1" data-close="site-nav"></div>
             <div class="wf-site-main">
               <main class="wf-page">
-                <span class="wf-btn wf-btn--text pt-back" data-m="4" data-testid="patient-detail-back" data-go="../../patient-list_利用者の一覧/mocks/01-list.html">← 利用者の一覧</span>
-                <div class="pt-head pt-head--start">
-                  <h1 class="wf-heading" data-m="5" data-testid="patient-detail-name">見本 一郎</h1>
-                  <span class="pt-status" data-m="6" data-testid="patient-detail-status">利用中</span>
+                <span class="pt-back pt-link" data-m="4" data-testid="patient-detail-back" data-go="../../patient-list_利用者の一覧/mocks/01-list.html">← 利用者の一覧</span>
+                <div class="pt-hero">
+                  <span class="wf-site-avatar pt-avatar" aria-hidden="true">見</span>
+                  <div class="pt-hero__text">
+                    <div class="pt-hero__name">
+                      <h1 class="wf-heading" data-m="5" data-testid="patient-detail-name">見本 一郎</h1>
+                      <span class="wf-status" data-m="6" data-testid="patient-detail-status">利用中</span>
+                    </div>
+                  </div>
+                  <div class="pt-hero__actions">
+                    <span class="wf-btn" data-m="7" data-testid="patient-detail-edit" data-go="03-edit.html">編集</span>
+                    <span class="wf-menu-anchor">
+                      <span class="wf-btn wf-btn--icon" aria-label="ほかの操作" aria-haspopup="menu" aria-expanded="false" data-m="8" data-testid="patient-detail-menu" data-go="02-menu.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="4" cy="10" r="1.6" fill="currentColor" /><circle cx="10" cy="10" r="1.6" fill="currentColor" /><circle cx="16" cy="10" r="1.6" fill="currentColor" /></svg></span>
+                      <div class="wf-menu" role="menu" data-testid="patient-detail-menu-list">
+                        <span class="wf-menu__item" role="menuitem" data-testid="patient-detail-end" data-go="05-end-refused.html">利用の終了にする</span>
+                      </div>
+                    </span>
+                  </div>
                 </div>
                 <section class="wf-panel pt-section" data-testid="patient-detail-profile">
-                  <div class="pt-section__head">
-                    <h2 class="pt-h2">基本の情報</h2>
-                    <span class="wf-btn" data-m="8" data-testid="patient-detail-edit" data-go="02-edit.html">編集</span>
-                  </div>
-                  <dl class="pt-dl" data-m="7">
-                    <dt>名前</dt><dd>見本 一郎</dd>
+                  <dl class="pt-dl" data-m="9">
                     <dt>サービス</dt><dd>訪看I2（20〜29 分）</dd>
                     <dt>希望の時間帯</dt><dd>午前</dd>
                     <dt>希望する担当の性別</dt><dd>男性</dd>
                     <dt>担当の職員</dt><dd>森 健太</dd>
+                    <dt>利用</dt><dd data-m="10" data-testid="patient-detail-status-text">利用中です。予定の利用者に選べます。</dd>
                   </dl>
-                </section>
-                <section class="wf-panel pt-section" data-testid="patient-detail-usage">
-                  <h2 class="pt-h2">利用</h2>
-                  <p data-m="9" data-testid="patient-detail-status-text">利用中です。予定の利用者に選べます。</p>
-                  <div class="pt-actions pt-actions--start">
-                    <span class="wf-btn" data-m="10" data-testid="patient-detail-end" data-go="04-end-refused.html">利用の終了にする</span>
-                  </div>
                 </section>
               </main>
 

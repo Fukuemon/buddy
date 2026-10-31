@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>patient-detail 読み込みの失敗</title>
+    <title>patient-detail 利用の終了の利用者</title>
     <link rel="stylesheet" href="../../_common/mock.css" />
     <link rel="stylesheet" href="../../_common/tokens.css" />
     <link rel="stylesheet" href="../../_common/wireframe.css" />
@@ -15,7 +15,7 @@
         <div class="screen-body">
           <header class="wf-site-header">
             <div class="wf-site-header__brand">
-              <span class="wf-btn wf-btn--icon wf-site-menu" aria-label="メニュー" data-open="site-nav" data-m="7" data-testid="site-nav-toggle"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z" fill="currentColor" /></svg></span>
+              <span class="wf-btn wf-btn--icon wf-site-menu" aria-label="メニュー" data-open="site-nav" data-m="11" data-testid="site-nav-toggle"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z" fill="currentColor" /></svg></span>
               <strong>buddy</strong>
             </div>
             <div class="wf-site-header__viewer" data-testid="viewer-menu">
@@ -55,11 +55,34 @@
             <div class="wf-overlay wf-site-nav-overlay" tabindex="-1" data-close="site-nav"></div>
             <div class="wf-site-main">
               <main class="wf-page">
-                <span class="wf-btn wf-btn--text pt-back" data-m="4" data-testid="patient-detail-back" data-go="../../patient-list_利用者の一覧/mocks/01-list.html">← 利用者の一覧</span>
-                <div class="wf-fields">
-                  <p class="wf-alert" role="alert" data-m="5" data-testid="patient-detail-error">利用者を読み込めませんでした。時間をおいて、読み直してください。</p>
-                  <div><span class="wf-btn" data-m="6" data-testid="patient-detail-retry" data-go="01-detail.html">読み直す</span></div>
+                <span class="pt-back pt-link" data-m="4" data-testid="patient-detail-back" data-go="../../patient-list_利用者の一覧/mocks/02-all.html">← 利用者の一覧</span>
+                <div class="pt-hero">
+                  <span class="wf-site-avatar pt-avatar pt-avatar--muted" aria-hidden="true">見</span>
+                  <div class="pt-hero__text">
+                    <div class="pt-hero__name">
+                      <h1 class="wf-heading" data-m="5" data-testid="patient-detail-name">見本 四季</h1>
+                      <span class="wf-status wf-status--muted" data-m="6" data-testid="patient-detail-status">利用の終了（2026/09/30）</span>
+                    </div>
+                  </div>
+                  <div class="pt-hero__actions">
+                    <span class="wf-btn" data-m="7" data-testid="patient-detail-edit" data-go="03-edit.html">編集</span>
+                    <span class="wf-menu-anchor">
+                      <span class="wf-btn wf-btn--icon" aria-label="ほかの操作" aria-haspopup="menu" aria-expanded="false" data-m="8" data-testid="patient-detail-menu" data-go="07-ended-menu.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="4" cy="10" r="1.6" fill="currentColor" /><circle cx="10" cy="10" r="1.6" fill="currentColor" /><circle cx="16" cy="10" r="1.6" fill="currentColor" /></svg></span>
+                      <div class="wf-menu" role="menu" data-testid="patient-detail-menu-list">
+                        <span class="wf-menu__item" role="menuitem" data-testid="patient-detail-resume" data-go="08-resume.html">利用を再開する</span>
+                      </div>
+                    </span>
+                  </div>
                 </div>
+                <section class="wf-panel pt-section" data-testid="patient-detail-profile">
+                  <dl class="pt-dl" data-m="9">
+                    <dt>サービス</dt><dd>訪看I2（20〜29 分）</dd>
+                    <dt>希望の時間帯</dt><dd>午後</dd>
+                    <dt>希望する担当の性別</dt><dd>女性</dd>
+                    <dt>担当の職員</dt><dd>西村 学（退職）</dd>
+                    <dt>利用</dt><dd data-m="10" data-testid="patient-detail-status-text">2026/09/30 に利用の終了にしました。予定の利用者に選べません。</dd>
+                  </dl>
+                </section>
               </main>
 
             </div>

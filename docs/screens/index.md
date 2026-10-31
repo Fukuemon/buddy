@@ -18,7 +18,7 @@ PRD がカレンダーにまとめているモーダルは、URL が違うので
 | `schedule-review` | 確認が必要な予定（Google カレンダーと食い違った予定） | `/schedule/review` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [確認が必要な予定](schedule-review_確認が必要な予定/index.md) |
 | `patient-list` | 利用者の一覧 | `/patients` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [利用者の一覧](patient-list_利用者の一覧/index.md) |
 | `patient-new` | 利用者の登録 | `/patients/new` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [利用者の登録](patient-new_利用者の登録/index.md) |
-| `patient-detail` | 利用者の詳細（基本の情報の編集、利用の終了、利用の再開を含む） | `/patients/$patientId` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [利用者の詳細](patient-detail_利用者の詳細/index.md) |
+| `patient-detail` | 利用者の詳細（利用者の編集、利用の終了、利用の再開を含む） | `/patients/$patientId` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [利用者の詳細](patient-detail_利用者の詳細/index.md) |
 | `staff-list` | 職員の一覧 | `/staff` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [職員の一覧](staff-list_職員の一覧/index.md) |
 | `staff-new` | 職員の登録 | `/staff/new` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [職員の登録](staff-new_職員の登録/index.md) |
 | `staff-detail` | 職員の詳細（基本の情報の編集、役職と権限の変更、休職、復職、退職を含む） | `/staff/$staffId` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [職員の詳細](staff-detail_職員の詳細/index.md) |

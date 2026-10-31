@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>patient-detail 利用の終了を拒む</title>
+    <title>patient-detail 読み込み中</title>
     <link rel="stylesheet" href="../../_common/mock.css" />
     <link rel="stylesheet" href="../../_common/tokens.css" />
     <link rel="stylesheet" href="../../_common/wireframe.css" />
@@ -15,19 +15,19 @@
         <div class="screen-body">
           <header class="wf-site-header">
             <div class="wf-site-header__brand">
-              <span class="wf-btn wf-btn--icon wf-site-menu" aria-label="メニュー" data-open="site-nav" data-testid="site-nav-toggle"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z" fill="currentColor" /></svg></span>
+              <span class="wf-btn wf-btn--icon wf-site-menu" aria-label="メニュー" data-open="site-nav" data-m="6" data-testid="site-nav-toggle"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z" fill="currentColor" /></svg></span>
               <strong>buddy</strong>
             </div>
             <div class="wf-site-header__viewer" data-testid="viewer-menu">
-              <span class="wf-site-account" aria-label="アカウント（青木 陽菜）" data-open="viewer-menu" data-testid="viewer-menu-open"><span class="wf-site-avatar" aria-hidden="true">青</span><span class="wf-site-account__name">青木 陽菜</span></span>
+              <span class="wf-site-account" aria-label="アカウント（青木 陽菜）" data-open="viewer-menu" data-m="2" data-testid="viewer-menu-open"><span class="wf-site-avatar" aria-hidden="true">青</span><span class="wf-site-account__name">青木 陽菜</span></span>
               <div class="wf-site-viewer-menu" data-panel="viewer-menu" data-panel-dismiss>
                 <span class="wf-text wf-text--s">青木 陽菜</span>
-                <span class="wf-btn" data-testid="viewer-logout">ログアウト</span>
+                <span class="wf-btn" data-m="3" data-testid="viewer-logout">ログアウト</span>
               </div>
             </div>
           </header>
           <div class="wf-site-body">
-            <nav class="wf-site-nav" aria-label="画面" data-testid="site-nav" data-panel="site-nav" data-panel-wide="collapse">
+            <nav class="wf-site-nav" aria-label="画面" data-m="1" data-testid="site-nav" data-panel="site-nav" data-panel-wide="collapse">
               <div class="wf-site-nav__head">
                 <strong>buddy</strong>
                 <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-escape data-close="site-nav" data-testid="site-nav-close"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
@@ -55,61 +55,10 @@
             <div class="wf-overlay wf-site-nav-overlay" tabindex="-1" data-close="site-nav"></div>
             <div class="wf-site-main">
               <main class="wf-page">
-                <span class="wf-btn wf-btn--text pt-back" data-testid="patient-detail-back" data-go="../../patient-list_利用者の一覧/mocks/01-list.html">← 利用者の一覧</span>
-                <div class="pt-head pt-head--start">
-                  <h1 class="wf-heading" data-testid="patient-detail-name">見本 一郎</h1>
-                  <span class="pt-status" data-testid="patient-detail-status">利用中</span>
-                </div>
-                <section class="wf-panel pt-section" data-testid="patient-detail-profile">
-                  <div class="pt-section__head">
-                    <h2 class="pt-h2">基本の情報</h2>
-                    <span class="wf-btn" data-testid="patient-detail-edit" data-go="02-edit.html">編集</span>
-                  </div>
-                  <dl class="pt-dl">
-                    <dt>名前</dt><dd>見本 一郎</dd>
-                    <dt>サービス</dt><dd>訪看I2（20〜29 分）</dd>
-                    <dt>希望の時間帯</dt><dd>午前</dd>
-                    <dt>希望する担当の性別</dt><dd>男性</dd>
-                    <dt>担当の職員</dt><dd>森 健太</dd>
-                  </dl>
-                </section>
-                <section class="wf-panel pt-section" data-testid="patient-detail-usage">
-                  <h2 class="pt-h2">利用</h2>
-                  <p data-testid="patient-detail-status-text">利用中です。予定の利用者に選べます。</p>
-                  <div class="pt-actions pt-actions--start">
-                    <span class="wf-btn" data-testid="patient-detail-end" data-go="04-end-refused.html">利用の終了にする</span>
-                  </div>
-                </section>
+                <span class="pt-back pt-link" data-m="4" data-testid="patient-detail-back" data-go="../../patient-list_利用者の一覧/mocks/01-list.html">← 利用者の一覧</span>
+                <div class="wf-loading" role="status" data-m="5" data-testid="patient-detail-loading">読み込んでいます</div>
               </main>
-              <div class="wf-overlay" tabindex="-1" data-m="1" data-go="01-detail.html"></div>
-              <div class="wf-dialog" role="dialog" aria-modal="true" aria-labelledby="patient-end-title" data-testid="patient-end-dialog">
-                <div class="wf-modal__header">
-                  <h2 class="wf-modal__title wf-dialog__title" id="patient-end-title" data-m="2">見本 一郎 を利用の終了にできません</h2>
-                </div>
-                <div class="wf-modal__body">
-                  <div class="wf-fields">
-                    <p data-m="3">利用の終了にすると、見本 一郎 は予定の利用者の候補と、利用者の一覧に、ふだんは出なくなります。過去の予定は残り、利用を再開すると同じ利用者として戻せます。</p>
-                    <section class="pt-warning" role="status" data-m="4" data-testid="patient-end-schedules">
-                      <p class="pt-warning__title">今日以降の予定が残っています。予定をキャンセルするか、繰り返しを終えてから、利用の終了にしてください。</p>
-                      <div class="pt-assignments">
-                        <h3 class="pt-h3">予定（2 件）</h3>
-                        <ul class="pt-list">
-                          <li><span class="pt-link" data-m="5" data-testid="patient-end-schedule-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html">2026/11/02 09:00〜09:29</span></li>
-                          <li><span class="pt-link" data-testid="patient-end-schedule-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html">2026/11/09 09:00〜09:29</span></li>
-                        </ul>
-                        <h3 class="pt-h3">繰り返しの予定（1 件）</h3>
-                        <ul class="pt-list">
-                          <li data-m="6" data-testid="patient-end-recurring-{繰り返しの予定の id}">2026/10/05 から 終了日なし、09:00〜09:29</li>
-                        </ul>
-                      </div>
-                    </section>
-                  </div>
-                </div>
-                <div class="wf-modal__footer">
-                  <span class="wf-btn" data-escape data-m="7" data-testid="patient-end-cancel" data-go="01-detail.html">キャンセル</span>
-                  <span class="wf-btn wf-btn--primary" aria-disabled="true" data-m="8" data-testid="patient-end-submit">利用の終了にする</span>
-                </div>
-              </div>
+
             </div>
           </div>
         </div>
