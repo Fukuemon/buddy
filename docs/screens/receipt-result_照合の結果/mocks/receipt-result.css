@@ -102,10 +102,11 @@
   display: inline-block;
 }
 
-/* 幅 768px 未満では、長い利用者名で残す 2 列が送る列を覆わないよう、利用者名の列を 10rem までにして折り返す */
+/* 幅 768px 未満では、長い利用者名で残す 2 列が送る列を覆わないよう、利用者名の列を 8rem にして折り返す */
 @container screen (width < 768px) {
   .rc-table-wrap tr > :nth-child(2) {
-    max-width: 10rem;
+    min-width: 8rem;
+    max-width: 8rem;
     white-space: normal;
   }
 }
