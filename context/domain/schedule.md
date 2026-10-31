@@ -7,7 +7,8 @@ status: stable
 
 # 予定
 
-予定は、1 人の職員の 1 日の時間の枠である。繰り返しの予定は [繰り返しの予定](recurring-schedule.md) にある。
+予定は、1 人の職員の 1 日の時間の枠である。  
+繰り返しの予定は [繰り返しの予定](recurring-schedule.md) にある。
 
 ## States and Transitions
 
