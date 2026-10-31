@@ -260,6 +260,25 @@ sequenceDiagram
 - ADR-0017: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0017-identity-boundary.md)
 - ADR-0018: [職員の停止を、戻せる休職と、戻せない退職に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0018-staff-leave-and-retirement.md)
 
+### 利用者の変更、利用の終了、利用の再開
+
+利用者の変更は `PUT /v1/patients/{patient_id}`、利用の終了と利用の再開は `POST /v1/patients/{patient_id}/` の下の `end_service` と `resume_service` で行う。  
+どれも、`patient.Usecase` が職員の管理の権限を確認してから行う。  
+利用の終了の規則は [利用者](https://github.com/Fukuemon/buddy/blob/develop/context/domain/patient.md) にある。
+
+- 利用者の変更は、名前、希望、サービスコード、担当の職員を本文の値に置き換え、部分の更新は持たない。利用の終了の利用者も変えられる。
+  - 担当の職員を変えないときは、今の担当が休職か退職でも 400 にしない。
+    - 理由: 予定に既に割り振った職員を、職員を変えずに保存できるのと同じ扱いにし、担当の職員の休職と退職が、名前やサービスの変更を止めないようにする。
+  - 担当を別の職員に変えるときは、予定の作成と同じく、事業所の行に共有のロックを取ってから職員の状態を読む。
+- 利用の終了と利用の再開は、事業所の行に排他のロックを取ってから利用者を読み直す。職員の休職と退職と同じロック（`patient.FacilityLocker`、`postgres.StaffRepository`）である。
+  - 利用の終了は、ロックの後にその日以降の予定を数える。予定の作成は共有のロックを取ってから利用者を読むので、数えた後に、利用の終了の利用者へ予定ができることは無い。
+  - 残る予定があれば、書かずに 409（`patient_has_schedules`）で残る一覧を返す。一覧は `PatientSchedules` の形にする。
+  - 利用の再開は、担当の職員の状態を同じロックの中で読む。職員の退職の確認と行き違わず、退職した職員が利用中の利用者の担当に残らない。
+- 利用の終了の利用者は、`patients.ended_at` に利用の終了にした時刻を持つ。利用の再開で NULL に戻す。
+- 職員の退職の確認と、休職、退職、`remaining_assignments` が返す担当の利用者は、利用の終了の利用者を数えない。3 つは同じクエリ（`ListStaffAssignedPatients`）で一覧を作る。
+  - 理由: 休職の一覧に、退職の確認が数えない利用者を出すと、管理者が割り振り直さなくてよい利用者まで割り振り直すためである。
+- ADR-0021: [利用者を、戻せる利用の終了にでき、終了の利用者を予定の候補と職員の退職の確認から外す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0021-patient-service-end.md)
+
 ### 予定の認可
 
 予定の操作は、`schedule.Usecase` が、ミドルウェアが context に入れた職員（`principal.Principal`）の `user_policies` で判定する。  
@@ -272,7 +291,7 @@ sequenceDiagram
 
 - 一覧は、見てよくない職員の予定を除いて返す。1 件を指す操作（取得、変更、キャンセル、回の置き換え）は 403 を返す。
 - 作成と変更は、予定の職員の予定を編集する権限を求める。変更と回の置き換えは、元の予定の職員と、新しい予定の職員の両方の編集の権限を求める。
-- 職員と利用者の登録、職員の休職、復職、退職、役職の作成、職員の名前、電話番号、部署、チーム、権限、役職を変える操作は `staff.manage` で判定する（[権限のレコード](#権限のレコード)）。それ以外の職員、利用者、訪問の情報、組織の API は、権限で判定せず、事業所の分離だけを確認する。
+- 職員と利用者の登録、利用者の変更、利用の終了、利用の再開、職員の休職、復職、退職、役職の作成、職員の名前、電話番号、部署、チーム、権限、役職を変える操作は `staff.manage` で判定する（[権限のレコード](#権限のレコード)）。それ以外の職員、利用者、訪問の情報、組織の API は、権限で判定せず、事業所の分離だけを確認する。
 
 ### 繰り返しの予定
 
@@ -307,6 +326,16 @@ sequenceDiagram
   - 取り込みと同期での休職の職員の扱いは、[Google カレンダーの取り込み](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/calendar/DesignDoc.md#google-カレンダーの取り込み) と [Google カレンダーとの同期](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/calendar/DesignDoc.md#google-カレンダーとの同期) にある。
 - ADR-0018: [職員の停止を、戻せる休職と、戻せない退職に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0018-staff-leave-and-retirement.md)
 
+### 利用の終了の利用者への予定
+
+予定の作成、予定の変更、繰り返しの予定の作成、繰り返しの回の置き換えは、利用の終了の利用者を予定の利用者に新しく指すと 400 で拒む。
+
+- 確認は、訪問の情報を書く `visit.Writer` が行う。`visit.Input.KeptPatientID` は、利用の終了のまま保存してよい利用者である。
+  - `schedule.Usecase` は、保存した後の日付が今日より前の予定でだけ、元の予定か繰り返しの予定の利用者を `KeptPatientID` に入れる。退職した職員と同じく、利用の終了の利用者に今日以降の予定を残さないためである。
+  - Google カレンダーとの同期が予定を外部の内容に合わせるときも、外部の予定の日付が今日より前なら、元の訪問の情報の利用者を `KeptPatientID` に入れる。
+  - 取り込みと同期がタイトルの利用者名で利用者を探すときは、利用中の利用者だけから探す。利用の終了の利用者の名前の予定は、利用者を 1 人に決められない予定として扱う。
+- 利用者の状態は、予定の作成と同じ共有のロックを取った後に読む（[利用者の変更、利用の終了、利用の再開](#利用者の変更利用の終了利用の再開)）。
+
 ### キャンセル
 
 - 予定をキャンセルすると、`schedule_cancels` に理由とともに 1 レコードを足す。
@@ -325,6 +354,7 @@ sequenceDiagram
 - エラーは `{"code","message"}` の JSON で返す。
   - 400 の `invalid_input`: クエリを読めない、パスの ID が ULID でない、リクエストが `openapi.yaml` の定義に合わない、本文の値が規則に合わない、本文が指す参照が見つからないか別の事業所のもの
     - 休職か退職の職員に、予定か担当を新しく割り振ったときも返す
+    - 利用の終了の利用者を、予定の利用者に新しく指したときも返す
   - 401 の `unauthenticated`: トークンが無いか、検証に失敗した
   - 403 の `forbidden`: 職員を特定できない、職員が休職か退職している、事業所が違う、権限で許されない
   - 404 の `not_found`: パスで指したリソースが無い
@@ -332,6 +362,7 @@ sequenceDiagram
   - 409 の `conflict`（職員）: 同じメールの職員がブローカーで休職しているかほかの事業所にいる、自分か最後の有効な管理者を休職か退職にする、退職した職員を休職か復職にするか、名前、電話番号、部署、チームを変える
     - 最後の有効な管理者から `staff.manage` を外すか、`staff.manage` を持たない役職に変えたときも返す
   - 409 の `staff_has_assignments`: 退職にする職員に、その日以降の予定、繰り返しの予定、担当の利用者が残る。本文の `assignments` に残る一覧を持つ
+  - 409 の `patient_has_schedules`: 利用の終了にする利用者に、その日以降の予定か繰り返しの予定が残る。本文の `schedules` に残る一覧を持つ
   - 409 の `calendar_taken`、`calendar_already_linked`、`staff_has_calendar`: カレンダーを結び付けられない原因
   - 409 の `import_running`、`import_preview_changed`: 取り込みを確定できない原因
   - 409 の `export_not_in_review`、`export_not_acceptable`、`external_change_unappliable`: 確認が必要な書き出しを解けない原因
