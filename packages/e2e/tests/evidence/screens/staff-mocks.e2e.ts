@@ -1,310 +1,528 @@
-import { expect, test } from '@playwright/test'
+import { type Browser, type Page, expect, test } from '@playwright/test'
 
-import { EVIDENCE_VARIANTS, mockUrl, recordPrEvidence } from '../../fixtures/evidence'
+import {
+  EVIDENCE_VARIANTS,
+  PHONE_VIEWPORT,
+  mockUrl,
+  recordPrEvidence,
+} from '../../fixtures/evidence'
+import { pageRoot } from '../../selectors/page'
 
-const LIST = 'staff-list_職員の一覧/mocks/01-list.html'
-const DETAIL = 'staff-detail_職員の詳細/mocks/01-detail.html'
+const LIST = 'staff-list_職員の一覧/mocks'
+const NEW = 'staff-new_職員の登録/mocks'
+const DETAIL = 'staff-detail_職員の詳細/mocks'
+
+type Steps = Parameters<Parameters<typeof recordPrEvidence>[3]>[0]
+
+/** モックを開いてから、観点の操作を撮る。ログインしないので、prepare では同じモックを開くだけにする */
+async function recordMock(
+  browser: Browser,
+  variant: (typeof EVIDENCE_VARIANTS)[number],
+  o: { name: string; title: string; file: string; phone?: boolean },
+  body: (steps: Steps & { page: Page }) => Promise<void>,
+) {
+  await recordPrEvidence(
+    browser,
+    {
+      name: o.name,
+      title: o.title,
+      actor: 'ログインなし',
+      variant,
+      ...(o.phone ? { viewport: PHONE_VIEWPORT } : {}),
+    },
+    async (page) => {
+      await page.goto(mockUrl(o.file))
+    },
+    async (steps) => {
+      await steps.page.goto(mockUrl(o.file))
+      await body(steps)
+    },
+  )
+}
 
 test.describe('職員の管理の画面仕様書のモック', () => {
   for (const variant of EVIDENCE_VARIANTS) {
     const prefix = variant.label ? `${variant.label}: ` : ''
 
-    test(`${prefix}職員の一覧のモックで職員の名前を押した場合、職員の詳細のモックへ移ること`, async ({
+    test(`${prefix}パソコンの幅で職員の一覧のモックを開いた場合、絞り込みと人数と行全体を押せる表が出て、行を押すと職員の詳細へ移ること`, async ({
       browser,
     }) => {
-      await recordPrEvidence(
+      await recordMock(
         browser,
+        variant,
         {
-          name: 'staff-mock-list',
+          name: 'staff-list-desktop',
           title:
-            '職員の一覧のモックに休職と退職の印が出て、職員の名前を押すと職員の詳細のモックへ移る',
-          actor: 'ログインなし',
-          variant,
-        },
-        async (page) => {
-          await page.goto(mockUrl(LIST))
+            '職員の一覧は、検索、部署、チーム、役職、状態の絞り込みと人数の下に、行全体を押せる表を出す',
+          file: `${LIST}/01-list.html`,
         },
         async ({ page, step, check }) => {
-          await page.goto(mockUrl(LIST))
-          const statuses = page.getByTestId('staff-list-status-{職員の id}')
-          await expect(statuses.nth(3)).toHaveText('休職（2027/04/01 に戻る予定）')
-          await expect(statuses.nth(5)).toHaveText('退職（2026/09/30）')
-          await check('職員の一覧のモック（01-list.html）に、休職と退職の印が出ている')
+          await expect(page.getByTestId('staff-list-filter-status')).toHaveText('状態: 在籍')
+          await expect(page.getByTestId('staff-list-count')).toHaveText('5 人')
+          await expect(page.getByTestId('staff-list-row-{職員の id}').first()).toHaveCSS(
+            'cursor',
+            'pointer',
+          )
+          await check(
+            '検索、部署、チーム、役職、状態の絞り込みと「5 人」が並び、行全体が押せる表になっている',
+          )
 
-          await step('林 さくら の名前を押す')
-          await page.getByTestId('staff-list-open-{職員の id}').nth(1).click()
+          await step('林 さくら の行を押す')
+          await page.getByTestId('staff-list-row-{職員の id}').nth(3).click()
           await expect(page).toHaveURL(/staff-detail_.+\/01-detail\.html/)
           await check('職員の詳細のモック（01-detail.html）へ移る')
         },
       )
     })
 
-    test(`${prefix}職員の一覧のモックで職員を登録を押した場合、職員の登録のモックへ移り、登録で詳細のモックへ移ること`, async ({
+    test(`${prefix}スマートフォンの幅で職員の一覧のモックを開いた場合、2 行のリストになり、横にスクロールしないこと`, async ({
       browser,
     }) => {
-      await recordPrEvidence(
+      await recordMock(
         browser,
+        variant,
         {
-          name: 'staff-mock-new',
+          name: 'staff-list-phone',
           title:
-            '職員を登録を押すと職員の登録のモックへ移り、登録を押すと登録した職員の詳細のモックへ移る',
-          actor: 'ログインなし',
-          variant,
+            'スマートフォンの幅の職員の一覧は、1 行目に名前と状態の印、2 行目に部署、チーム、役職を置く',
+          file: `${LIST}/01-list.html`,
+          phone: true,
         },
-        async (page) => {
-          await page.goto(mockUrl(LIST))
+        async ({ page, check }) => {
+          await expect(page.getByTestId('staff-list-row-{職員の id}').first()).toHaveCSS(
+            'display',
+            'flex',
+          )
+          await expect(pageRoot(page)).toHaveJSProperty('scrollWidth', PHONE_VIEWPORT.width)
+          await check('行が 2 行のリストになり、横にスクロールしない')
+        },
+      )
+    })
+
+    test(`${prefix}職員の一覧のモックで状態の絞り込みを押した場合、退職の職員も出すモックへ移ること`, async ({
+      browser,
+    }) => {
+      await recordMock(
+        browser,
+        variant,
+        {
+          name: 'staff-list-all',
+          title: '状態の絞り込みを「すべて」にすると、退職の職員も一覧に出る',
+          file: `${LIST}/01-list.html`,
         },
         async ({ page, step, check }) => {
-          await page.goto(mockUrl(LIST))
-          await expect(page.getByTestId('staff-list-new')).toBeVisible()
-          await step('職員の一覧のモック（01-list.html）を開いている')
+          await expect(page.getByTestId('staff-list-count')).toHaveText('5 人')
+          await step('状態の絞り込みを押す')
+          await page.getByTestId('staff-list-filter-status').click()
+          await expect(page).toHaveURL(/02-all\.html/)
+          await expect(page.getByTestId('staff-list-filter-status')).toHaveText('状態: すべて')
+          await expect(page.getByTestId('staff-list-count')).toHaveText('6 人')
+          await expect(page.getByTestId('staff-list-status-{職員の id}').nth(3)).toHaveText(
+            '退職（2026/09/30）',
+          )
+          await check(
+            '「退職の職員も出す」のモック（02-all.html）へ移り、退職の職員が「6 人」の中に出る',
+          )
+        },
+      )
+    })
 
-          await step('「職員を登録」を押す')
-          await page.getByTestId('staff-list-new').click()
-          await expect(page).toHaveURL(/staff-new_.+\/01-initial\.html/)
+    test(`${prefix}職員の一覧で絞り込みに合う職員がいない場合、0 件の知らせが出て、絞り込みを外すで一覧へ戻ること`, async ({
+      browser,
+    }) => {
+      await recordMock(
+        browser,
+        variant,
+        {
+          name: 'staff-list-empty',
+          title: '絞り込みで 0 件のときは知らせを出し、「絞り込みを外す」で一覧に戻る',
+          file: `${LIST}/03-empty.html`,
+        },
+        async ({ page, step, check }) => {
+          await expect(page.getByTestId('staff-list-empty')).toContainText(
+            '条件に合う職員はいません。',
+          )
+          await expect(page.getByTestId('staff-list-count')).toHaveText('0 人')
+          await check(
+            '「絞り込みで 0 件」のモック（03-empty.html）に、0 件の知らせと「絞り込みを外す」が出る',
+          )
+
+          await step('「絞り込みを外す」を押す')
+          await page.getByTestId('staff-list-filter-clear').click()
+          await expect(page).toHaveURL(/01-list\.html/)
+          await expect(page.getByTestId('staff-list-count')).toHaveText('5 人')
+          await check('一覧のモック（01-list.html）へ戻る')
+        },
+      )
+    })
+
+    test(`${prefix}職員の一覧のモックでヘルプを押した場合、休職と退職の職員の説明が出ること`, async ({
+      browser,
+    }) => {
+      await recordMock(
+        browser,
+        variant,
+        {
+          name: 'staff-list-help',
+          title: '? を押すと、休職と退職の職員の扱いの説明が出る',
+          file: `${LIST}/01-list.html`,
+        },
+        async ({ page, step, check }) => {
+          await expect(page.getByTestId('staff-list-help-text')).toBeHidden()
+          await step('ページのタイトルの右の ? を押す')
+          await page.getByTestId('staff-list-help').click()
+          await expect(page.getByTestId('staff-list-help-text')).toHaveText(
+            '休職と退職の職員は、ログインできず、予定の担当の候補に出ません。',
+          )
+          await check('ページのタイトルの下に、休職と退職の職員の説明が出る')
+        },
+      )
+    })
+
+    test(`${prefix}職員の登録のモックを開いた場合、入力のダイアログの形で出て、閉じるで一覧へ戻ること`, async ({
+      browser,
+    }) => {
+      await recordMock(
+        browser,
+        variant,
+        {
+          name: 'staff-new-dialog',
+          title:
+            '職員の登録は、× を右上に、? をタイトルの右に、キャンセルと登録をフッターの右に置く',
+          file: `${NEW}/01-initial.html`,
+        },
+        async ({ page, step, check }) => {
           await expect(page.getByTestId('staff-new-dialog')).toBeVisible()
-          await check(
-            '職員の登録のモック（01-initial.html）へ移り、名前、メールアドレス、電話番号、部署、チーム、役職の欄が出る',
-          )
+          await expect(page.getByTestId('staff-new-close')).toBeVisible()
+          await expect(page.getByTestId('staff-new-cancel')).toHaveText('キャンセル')
+          await check('入力のダイアログに、×、?、キャンセル、登録が出る')
 
-          await step('「登録」を押す')
-          await page.getByTestId('staff-new-submit').click()
-          await expect(page).toHaveURL(/staff-detail_.+\/01-detail\.html/)
-          await check('登録した職員の詳細のモック（01-detail.html）へ移る')
+          await step('? を押す')
+          await page.getByTestId('staff-new-help').click()
+          await expect(page.getByTestId('staff-new-help-text')).toBeVisible()
+          await check('タイトルの下に、いつから使えるかの説明が出る')
+
+          await step('× を押す')
+          await page.getByTestId('staff-new-close').click()
+          await expect(page).toHaveURL(/staff-list_.+\/01-list\.html/)
+          await check('職員の一覧のモック（01-list.html）へ戻る')
         },
       )
     })
 
-    test(`${prefix}職員の詳細のモックで編集を押した場合、基本の情報の編集のモックへ移り、キャンセルで詳細へ戻ること`, async ({
+    test(`${prefix}職員の詳細のモックで権限のタブを押した場合、8 つの権限と付いているかと付いた理由が出ること`, async ({
       browser,
     }) => {
-      await recordPrEvidence(
+      await recordMock(
         browser,
+        variant,
         {
-          name: 'staff-mock-detail',
-          title:
-            '職員の詳細のモックで編集を押すと基本の情報の編集のモックへ移り、キャンセルで詳細へ戻る',
-          actor: 'ログインなし',
-          variant,
-        },
-        async (page) => {
-          await page.goto(mockUrl(DETAIL))
+          name: 'staff-detail-tabs',
+          title: 'プロフィールのタブに役職と在籍があり、権限のタブに 8 つの権限と付いた理由が出る',
+          file: `${DETAIL}/01-detail.html`,
         },
         async ({ page, step, check }) => {
-          await page.goto(mockUrl(DETAIL))
-          await expect(page.getByTestId('staff-detail-policies')).toBeVisible()
-          await check(
-            '職員の詳細のモック（01-detail.html）に、基本の情報、役職、権限、在籍が出ている',
+          await expect(page.getByTestId('staff-detail-position-name')).toHaveText('メンバー')
+          await expect(page.getByTestId('staff-detail-status-text')).toHaveText(
+            '有効です。ログインして、予定を使えます。',
           )
+          await check('プロフィールのタブ（01-detail.html）に、役職と在籍が出る')
 
-          await step('基本の情報の「編集」を押す')
-          await page.getByTestId('staff-detail-edit').click()
-          await expect(page).toHaveURL(/02-edit\.html/)
-          await expect(page.getByTestId('staff-detail-team-input')).toBeVisible()
-          await check(
-            '基本の情報の編集のモック（02-edit.html）へ移り、名前、電話番号、部署、チームの欄が出る',
+          await step('タブの「権限」を押す')
+          await page.getByTestId('staff-detail-tab-policies').click()
+          await expect(page).toHaveURL(/02-policies\.html/)
+          await expect(page.getByTestId('staff-policy-row-{権限の code}')).toHaveCount(8)
+          await expect(page.getByTestId('staff-policy-row-{権限の code}').nth(1)).toContainText(
+            '個別に足した',
           )
+          await check(
+            '権限のタブ（02-policies.html）に 8 つの権限が並び、付いているかと付いた理由が出る',
+          )
+        },
+      )
+    })
 
-          await step('「キャンセル」を押す')
-          await page.getByTestId('staff-detail-edit-cancel').click()
+    test(`${prefix}スマートフォンの幅で職員の詳細の権限のタブを開いた場合、権限の一覧が 2 行のリストになること`, async ({
+      browser,
+    }) => {
+      await recordMock(
+        browser,
+        variant,
+        {
+          name: 'staff-detail-policies-phone',
+          title:
+            'スマートフォンの幅の権限の一覧は、1 行目に権限と印、2 行目に付いた理由と対象を置く',
+          file: `${DETAIL}/02-policies.html`,
+          phone: true,
+        },
+        async ({ page, check }) => {
+          await expect(page.getByTestId('staff-policy-row-{権限の code}').first()).toHaveCSS(
+            'display',
+            'flex',
+          )
+          await expect(pageRoot(page)).toHaveJSProperty('scrollWidth', PHONE_VIEWPORT.width)
+          await check('権限の一覧が 2 行のリストになり、横にスクロールしない')
+        },
+      )
+    })
+
+    test(`${prefix}職員の詳細のモックで「…」を押した場合、休職にすると赤の退職にするのメニューが開き、Escape で閉じること`, async ({
+      browser,
+    }) => {
+      await recordMock(
+        browser,
+        variant,
+        {
+          name: 'staff-detail-menu',
+          title: '「…」を押すと、休職にすると退職にするのメニューが開き、Escape で閉じる',
+          file: `${DETAIL}/01-detail.html`,
+        },
+        async ({ page, step, check }) => {
+          await step('「…」を押す')
+          await page.getByTestId('staff-detail-menu').click()
+          await expect(page).toHaveURL(/03-menu\.html/)
+          await expect(page.getByTestId('staff-detail-leave')).toBeVisible()
+          await expect(page.getByTestId('staff-detail-retire')).toHaveClass(/wf-menu__item--danger/)
+          await check('「…」のメニュー（03-menu.html）に、休職にすると、赤の退職にするが出る')
+
+          await step('Escape キーを押す')
+          await page.keyboard.press('Escape')
           await expect(page).toHaveURL(/01-detail\.html/)
-          await check('職員の詳細のモック（01-detail.html）へ戻る')
+          await check('メニューが閉じ、プロフィール（01-detail.html）へ戻る')
         },
       )
     })
 
-    test(`${prefix}職員の詳細のモックで役職を変えると権限を足すを押した場合、それぞれのダイアログのモックへ移ること`, async ({
+    test(`${prefix}職員の詳細のモックで編集を押した場合、プロフィールの編集のダイアログが開き、閉じるで戻ること`, async ({
       browser,
     }) => {
-      await recordPrEvidence(
+      await recordMock(
         browser,
+        variant,
         {
-          name: 'staff-mock-position-policy',
-          title:
-            '役職を変えると権限を足すのダイアログのモックで選び、権限の一覧の行ごとに外すが出る',
-          actor: 'ログインなし',
-          variant,
-        },
-        async (page) => {
-          await page.goto(mockUrl(DETAIL))
+          name: 'staff-detail-edit',
+          title: '編集を押すとプロフィールの編集のダイアログが開き、× で閉じる',
+          file: `${DETAIL}/01-detail.html`,
         },
         async ({ page, step, check }) => {
-          await page.goto(mockUrl(DETAIL))
-          await expect(page.getByTestId('staff-policy-remove-{職員の権限の id}')).toHaveCount(2)
+          await step('「編集」を押す')
+          await page.getByTestId('staff-detail-edit').click()
+          await expect(page).toHaveURL(/04-edit\.html/)
+          await expect(page.getByTestId('staff-detail-team-input')).toHaveText('西チーム')
           await check(
-            '職員の詳細のモック（01-detail.html）の権限の一覧の行ごとに、「外す」が出ている',
+            'プロフィールの編集のダイアログ（04-edit.html）に、名前、メールアドレス、電話番号、部署、チームが出る',
           )
 
+          await step('× を押す')
+          await page.getByTestId('staff-detail-edit-close').click()
+          await expect(page).toHaveURL(/01-detail\.html/)
+          await check('プロフィール（01-detail.html）へ戻る')
+        },
+      )
+    })
+
+    test(`${prefix}職員の詳細のモックで役職を変えるを押した場合、個別に足した権限が消える注意と赤のボタンが出ること`, async ({
+      browser,
+    }) => {
+      await recordMock(
+        browser,
+        variant,
+        {
+          name: 'staff-detail-position',
+          title:
+            '役職を変えるダイアログに、個別に足した権限が消える注意と赤の「役職を変える」が出る',
+          file: `${DETAIL}/01-detail.html`,
+        },
+        async ({ page, step, check }) => {
           await step('「役職を変える」を押す')
           await page.getByTestId('staff-detail-position-change').click()
-          await expect(page).toHaveURL(/03-position\.html/)
-          await expect(page.getByTestId('staff-position-dialog')).toBeVisible()
-          await check(
-            '役職を変えるダイアログのモック（03-position.html）へ移り、権限が置き換わる注意が出る',
+          await expect(page).toHaveURL(/05-position\.html/)
+          await expect(page.getByTestId('staff-position-note')).toContainText(
+            '個別に足した権限（指定した職員の予定の閲覧）は消えます。',
           )
-
-          await step('「マネージャー」を選び、「キャンセル」を押す')
-          const positions = page.getByTestId('staff-position-option-{役職の id}')
-          await positions.first().click()
-          await expect(positions.first()).toHaveAttribute('aria-checked', 'true')
-          await page.getByTestId('staff-position-cancel').click()
-          await expect(page).toHaveURL(/01-detail\.html/)
-
-          await step('「権限を足す」を押す')
-          await page.getByTestId('staff-policy-add').click()
-          await expect(page).toHaveURL(/04-add-policy\.html/)
-          await expect(page.getByTestId('staff-policy-add-targets')).toBeVisible()
+          await expect(page.getByTestId('staff-position-submit')).toHaveClass(/wf-btn--danger/)
           await check(
-            '権限を足すダイアログのモック（04-add-policy.html）へ移り、付いている権限は選べず、対象のチームを選べる',
+            '役職を変えるダイアログ（05-position.html）に、消える権限の注意と赤の「役職を変える」が出る',
           )
-
-          await step('対象の「西チーム」を選ぶ')
-          const target = page.getByTestId('staff-policy-add-target-{チームの id}').nth(1)
-          await target.click()
-          await expect(target).toHaveAttribute('aria-checked', 'true')
-          await check('「西チーム」が選ばれる')
         },
       )
     })
 
-    test(`${prefix}職員の詳細のモックで休職にするを押した場合、残る予定と担当の一覧を出した休職のダイアログのモックへ移ること`, async ({
+    test(`${prefix}職員の詳細のモックで権限を変えて保存した場合、権限のタブへ戻ること`, async ({
       browser,
     }) => {
-      await recordPrEvidence(
+      await recordMock(
         browser,
+        variant,
         {
-          name: 'staff-mock-leave',
+          name: 'staff-detail-policies-save',
           title:
-            '休職にするを押すと残る予定と担当の利用者を出した休職のダイアログのモックへ移り、確定で休職の職員のモックへ移る',
-          actor: 'ログインなし',
-          variant,
-        },
-        async (page) => {
-          await page.goto(mockUrl(DETAIL))
+            '権限を変えるダイアログで、権限にチェックを付け、対象を選んで保存すると、権限のタブへ戻る',
+          file: `${DETAIL}/02-policies.html`,
         },
         async ({ page, step, check }) => {
-          await page.goto(mockUrl(DETAIL))
-          await expect(page.getByTestId('staff-detail-leave')).toBeVisible()
-          await step('有効な職員の詳細のモック（01-detail.html）を開いている')
+          await step('「権限を変える」を押す')
+          await page.getByTestId('staff-detail-policies-change').click()
+          await expect(page).toHaveURL(/06-policies\.html/)
+          await check(
+            '権限を変えるダイアログ（06-policies.html）に、8 つの権限のチェックボックスと付いた理由が出る',
+          )
 
+          await step('「指定した職員の予定の編集」にチェックを付ける')
+          const options = page.getByTestId('staff-policies-option-{権限の code}')
+          await options.nth(2).click()
+          await expect(options.nth(2)).toHaveAttribute('aria-checked', 'true')
+          await step('「指定した職員の予定の閲覧」の対象に、青木 陽菜 を選ぶ')
+          const targets = page.getByTestId('staff-policies-target-{職員の id}')
+          await targets.first().click()
+          await expect(targets.first()).toHaveAttribute('aria-checked', 'true')
+          await check('チェックと対象を選べる')
+
+          await step('「保存」を押す')
+          await page.getByTestId('staff-policies-submit').click()
+          await expect(page).toHaveURL(/02-policies\.html/)
+          await check(
+            'ダイアログが閉じ、権限のタブ（02-policies.html）へ戻る。モックは保存した後の値を描かない',
+          )
+        },
+      )
+    })
+
+    test(`${prefix}権限の保存の一部が拒まれた場合、変えられなかった権限と理由が出ること`, async ({
+      browser,
+    }) => {
+      await recordMock(
+        browser,
+        variant,
+        {
+          name: 'staff-detail-policies-error',
+          title:
+            '権限の保存の一部が拒まれると、ダイアログを閉じずに、変えられなかった権限と理由を出す',
+          file: `${DETAIL}/07-policies-error.html`,
+        },
+        async ({ page, check }) => {
+          await expect(page.getByTestId('staff-policies-error')).toContainText(
+            '職員の管理: 職員の管理の権限を持つ最後の有効な職員から、その権限は外せません。',
+          )
+          await expect(page.getByTestId('staff-policies-dialog')).toBeVisible()
+          await check(
+            '権限の保存の一部の失敗（07-policies-error.html）に、変えられなかった権限と理由と、ほかを保存したことが出る',
+          )
+        },
+      )
+    })
+
+    test(`${prefix}休職の確認で休職にした場合、休職の職員になり、「…」に復職にするが出ること`, async ({
+      browser,
+    }) => {
+      await recordMock(
+        browser,
+        variant,
+        {
+          name: 'staff-detail-leave',
+          title: '休職の確認から休職にすると休職の職員になり、「…」のメニューに復職にするが出る',
+          file: `${DETAIL}/03-menu.html`,
+        },
+        async ({ page, step, check }) => {
           await step('「休職にする」を押す')
           await page.getByTestId('staff-detail-leave').click()
-          await expect(page).toHaveURL(/05-leave\.html/)
+          await expect(page).toHaveURL(/08-leave\.html/)
           await expect(page.getByTestId('staff-leave-assignments')).toBeVisible()
+          await expect(page.getByTestId('staff-leave-submit')).toHaveClass(/wf-btn--primary/)
           await check(
-            '休職のダイアログのモック（05-leave.html）へ移り、残る予定、繰り返しの予定、担当の利用者が出る',
+            '休職の確認（08-leave.html）に、残る予定と担当の利用者と、青の「休職にする」が出る',
           )
 
-          await step('ダイアログの「休職にする」を押す')
+          await step('「休職にする」を押す')
           await page.getByTestId('staff-leave-submit').click()
-          await expect(page).toHaveURL(/06-on-leave\.html/)
-          await expect(page.getByTestId('staff-detail-reinstate')).toBeVisible()
-          await check('休職の職員のモック（06-on-leave.html）へ移り、「復職にする」が出る')
-        },
-      )
-    })
-
-    test(`${prefix}休職の職員の詳細のモックで復職にするを押した場合、有効な職員の詳細のモックへ移ること`, async ({
-      browser,
-    }) => {
-      const onLeave = 'staff-detail_職員の詳細/mocks/06-on-leave.html'
-      await recordPrEvidence(
-        browser,
-        {
-          name: 'staff-mock-reinstate',
-          title: '休職の職員の詳細のモックで復職にするを押すと、有効な職員の詳細のモックへ移る',
-          actor: 'ログインなし',
-          variant,
-        },
-        async (page) => {
-          await page.goto(mockUrl(onLeave))
-        },
-        async ({ page, step, check }) => {
-          await page.goto(mockUrl(onLeave))
+          await expect(page).toHaveURL(/09-on-leave\.html/)
           await expect(page.getByTestId('staff-detail-status')).toHaveText(
             '休職（2027/04/01 に戻る予定）',
           )
-          await check(
-            '休職の職員の詳細のモック（06-on-leave.html）に、休職の印と「復職にする」が出ている',
-          )
+          await check('休職の職員（09-on-leave.html）になる')
 
+          await step('「…」を押す')
+          await page.getByTestId('staff-detail-menu').click()
+          await expect(page.getByTestId('staff-detail-reinstate')).toBeVisible()
+          await check('「…」のメニュー（10-on-leave-menu.html）に、復職にすると退職にするが出る')
+        },
+      )
+    })
+
+    test(`${prefix}休職の職員の「…」で復職にした場合、有効の職員に戻ること`, async ({
+      browser,
+    }) => {
+      await recordMock(
+        browser,
+        variant,
+        {
+          name: 'staff-detail-reinstate',
+          title: '休職の職員の「…」のメニューで復職にすると、有効の職員に戻る',
+          file: `${DETAIL}/10-on-leave-menu.html`,
+        },
+        async ({ page, step, check }) => {
+          await expect(page.getByTestId('staff-detail-status')).toHaveText(
+            '休職（2027/04/01 に戻る予定）',
+          )
           await step('「復職にする」を押す')
           await page.getByTestId('staff-detail-reinstate').click()
           await expect(page).toHaveURL(/01-detail\.html/)
           await expect(page.getByTestId('staff-detail-status')).toHaveText('有効')
-          await check('有効な職員の詳細のモック（01-detail.html）へ移り、有効の印が出る')
+          await check('有効の職員のプロフィール（01-detail.html）に戻る')
         },
       )
     })
 
-    test(`${prefix}職員の詳細のモックで予定が残る職員の退職にするを押した場合、退職を拒むダイアログのモックへ移ること`, async ({
+    test(`${prefix}退職の確認で退職にした場合、退職した職員になり、編集と「…」が出ないこと`, async ({
       browser,
     }) => {
-      await recordPrEvidence(
+      await recordMock(
         browser,
+        variant,
         {
-          name: 'staff-mock-retire-refused',
+          name: 'staff-detail-retire',
           title:
-            '予定が残る職員の退職にするを押すと、残る一覧を出して退職にするを押せないダイアログのモックへ移る',
-          actor: 'ログインなし',
-          variant,
-        },
-        async (page) => {
-          await page.goto(mockUrl(DETAIL))
+            '退職の確認の赤の「退職にする」を押すと、退職した職員になり、編集と「…」が無くなる',
+          file: `${DETAIL}/03-menu.html`,
         },
         async ({ page, step, check }) => {
-          await page.goto(mockUrl(DETAIL))
-          await expect(page.getByTestId('staff-detail-retire')).toBeVisible()
-          await step('予定と担当の利用者が残る職員の詳細のモック（01-detail.html）を開いている')
-
           await step('「退職にする」を押す')
           await page.getByTestId('staff-detail-retire').click()
-          await expect(page).toHaveURL(/08-retire-refused\.html/)
+          await expect(page).toHaveURL(/11-retire\.html/)
+          await expect(page.getByTestId('staff-retire-submit')).toHaveClass(/wf-btn--danger/)
+          await check('退職の確認（11-retire.html）に、退職の注意と赤の「退職にする」が出る')
+
+          await step('「退職にする」を押す')
+          await page.getByTestId('staff-retire-submit').click()
+          await expect(page).toHaveURL(/13-retired\.html/)
+          await expect(page.getByTestId('staff-detail-status')).toHaveText('退職（2026/09/30）')
+          await expect(page.getByTestId('staff-detail-edit')).toHaveCount(0)
+          await expect(page.getByTestId('staff-detail-menu')).toHaveCount(0)
+          await check('退職した職員（13-retired.html）になり、編集と「…」が出ない')
+        },
+      )
+    })
+
+    test(`${prefix}予定が残る職員を退職にしようとした場合、退職にするが押せないこと`, async ({
+      browser,
+    }) => {
+      await recordMock(
+        browser,
+        variant,
+        {
+          name: 'staff-detail-retire-refused',
+          title: '予定か担当の利用者が残る職員の退職のダイアログでは、退職にするが押せない',
+          file: `${DETAIL}/12-retire-refused.html`,
+        },
+        async ({ page, check }) => {
           await expect(page.getByTestId('staff-retire-assignments')).toBeVisible()
           await expect(page.getByTestId('staff-retire-submit')).toHaveAttribute(
             'aria-disabled',
             'true',
           )
           await check(
-            '退職を拒むダイアログのモック（08-retire-refused.html）へ移り、残る一覧が出て、「退職にする」を押せない',
+            '退職を拒む（12-retire-refused.html）に、残る予定と担当の利用者が出て、「退職にする」が押せない',
           )
-
-          await step('「キャンセル」を押す')
-          await page.getByTestId('staff-retire-cancel').click()
-          await expect(page).toHaveURL(/01-detail\.html/)
-          await check('職員の詳細のモック（01-detail.html）へ戻る')
-        },
-      )
-    })
-
-    test(`${prefix}職員の管理の権限を持たない職員が職員の一覧を開いた場合、権限が無いのモックになること`, async ({
-      browser,
-    }) => {
-      const forbidden = 'staff-list_職員の一覧/mocks/04-forbidden.html'
-      await recordPrEvidence(
-        browser,
-        {
-          name: 'staff-mock-forbidden',
-          title:
-            '職員の管理の権限を持たない職員の権限が無いのモックに、職員のナビゲーションが無く、予定のカレンダーへ戻れる',
-          actor: 'ログインなし',
-          variant,
-        },
-        async (page) => {
-          await page.goto(mockUrl(forbidden))
-        },
-        async ({ page, step, check }) => {
-          await page.goto(mockUrl(forbidden))
-          await expect(page.getByTestId('page-forbidden')).toBeVisible()
-          await expect(page.getByTestId('site-nav-staff')).toHaveCount(0)
-          await check(
-            '権限が無いのモック（04-forbidden.html）に、権限が無いことが出て、ナビゲーションに「職員」が無い',
-          )
-
-          await step('「予定のカレンダーへ」を押す')
-          await page.getByTestId('page-forbidden-back').click()
-          await expect(page).toHaveURL(/schedule-calendar_.+\/01-month\.html/)
-          await check('予定のカレンダーのモック（01-month.html）へ移る')
         },
       )
     })
