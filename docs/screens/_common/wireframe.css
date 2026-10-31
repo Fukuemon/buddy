@@ -604,6 +604,13 @@ body {
   }
 }
 
+/* interact.js が、data-panel-wide の panel の形が幅 768px 以上のものかを、この値で読む */
+@container screen (width >= 768px) {
+  [data-panel-wide] {
+    --wf-panel-wide: 1;
+  }
+}
+
 /*
  * 幅 768px 以上で、ナビゲーションをたたんだレール。アイコンの下に名前を置き、グループを区切り線で分ける。
  * 予定のカレンダー（data-start="rail"）はたたんだ状態で始め、ほかの画面は開いた状態で始める。メニューのボタンで切り替える
