@@ -182,7 +182,10 @@ test.describe('職員の詳細', () => {
       await expect(page.getByTestId('staff-detail-status')).toHaveText('休職')
     })
 
-    test('休職の職員を復職にした場合、職員の状態が有効に戻ること', async ({ page, request }) => {
+    test('休職の職員を復職にした場合、休職の印が消えて有効に戻ること', async ({
+      page,
+      request,
+    }) => {
       const manager = await issueManagerToken(request)
       const id = await registerStaffId(request, manager, newStaff('reinstate-screen'))
       expect((await leaveStaff(request, manager, id)).status()).toBe(200)
@@ -192,7 +195,7 @@ test.describe('職員の詳細', () => {
       await page.getByTestId('staff-detail-menu').click()
       await page.getByTestId('staff-detail-reinstate').click()
 
-      await expect(page.getByTestId('staff-detail-status')).toHaveText('有効')
+      await expect(page.getByTestId('staff-detail-status')).toHaveCount(0)
     })
   })
 
