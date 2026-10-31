@@ -1,19 +1,25 @@
 import { expect, test, type Locator } from '@playwright/test'
 
 import { EVIDENCE_VARIANTS, mockUrl, recordPrEvidence } from '../../fixtures/evidence'
-import { scheduleModalTitle } from '../../selectors/calendarMocks'
+import { scheduleModalTitle } from '../../selectors/scheduleModalMock'
 
 const NEW = 'schedule-new_予定の作成/mocks/01-visit.html'
 const EDIT = 'schedule-edit_予定の編集/mocks/03-initial.html'
 const DETAIL = 'schedule-detail_予定の詳細/mocks/01-visit.html'
 
-/** 閉じるボタン（×）が、タイトルより右にあるか */
-const expectCloseRightOfTitle = async (title: Locator, close: Locator) => {
-  const titleBox = await title.boundingBox()
-  const closeBox = await close.boundingBox()
-  expect(titleBox).not.toBeNull()
-  expect(closeBox).not.toBeNull()
-  expect(closeBox!.x).toBeGreaterThan(titleBox!.x + titleBox!.width)
+/**
+ * right の左端が left の右端より右に来るまで待つ。× がタイトルの右にあることと、フッターのボタンの順を確認する。
+ * 座標が読めないうちは負の値を返し、描き終えるまで待ち続ける。
+ */
+const expectRightOf = async (left: Locator, right: Locator) => {
+  await expect
+    .poll(async () => {
+      const a = await left.boundingBox()
+      const b = await right.boundingBox()
+      if (!a || !b) return -1
+      return b.x - (a.x + a.width)
+    })
+    .toBeGreaterThan(0)
 }
 
 test.describe('予定のダイアログの画面仕様書のモック', () => {
@@ -38,7 +44,7 @@ test.describe('予定のダイアログの画面仕様書のモック', () => {
         async ({ page, step, check }) => {
           await page.goto(mockUrl(NEW))
           const modal = page.getByTestId('schedule-form-modal')
-          await expectCloseRightOfTitle(
+          await expectRightOf(
             scheduleModalTitle(modal, '予定の作成'),
             page.getByTestId('modal-close'),
           )
@@ -74,7 +80,7 @@ test.describe('予定のダイアログの画面仕様書のモック', () => {
         async ({ page, step, check }) => {
           await page.goto(mockUrl(EDIT))
           const modal = page.getByTestId('schedule-form-modal')
-          await expectCloseRightOfTitle(
+          await expectRightOf(
             scheduleModalTitle(modal, '予定の編集'),
             page.getByTestId('modal-close'),
           )
@@ -110,7 +116,7 @@ test.describe('予定のダイアログの画面仕様書のモック', () => {
         async ({ page, step, check }) => {
           await page.goto(mockUrl(DETAIL))
           const modal = page.getByTestId('schedule-detail-modal')
-          await expectCloseRightOfTitle(
+          await expectRightOf(
             scheduleModalTitle(modal, '予定の詳細'),
             page.getByTestId('modal-close'),
           )

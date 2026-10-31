@@ -33,7 +33,8 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
         async ({ page, step, check }) => {
           await page.goto(mockUrl(`${REVIEW}01-list.html`))
           const row = page.getByTestId('calendar-review-row-schedule-schedule-1')
-          await expect(row).toBeVisible()
+          // 行の role は interact.js が付ける。付け終えてから、行の中にボタンが無いことを確認する
+          await expect(row).toHaveAttribute('role', 'button')
           await expect(reviewMockRowParts(row).buttons).toHaveCount(0)
           await expect(reviewMockRowParts(row).go).toHaveText('›')
           await expect(reviewMockRowParts(row).staff).toHaveCSS('white-space', 'nowrap')
@@ -77,9 +78,7 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
           await expect(row).toHaveCSS('display', 'flex')
           await expect(page.getByTestId('calendar-review-reason-export-1')).toBeHidden()
           await expect(mockRoot(page)).toHaveJSProperty('scrollWidth', PHONE_VIEWPORT.width)
-          await check(
-            '行が 2 行のリストになり、1 行目に予定の日時、2 行目に職員と最後に変わった日時が「・」でつながる。理由は出ず、横にスクロールしない',
-          )
+          await check('行が 2 行のリストの形になり、理由は出ず、横にスクロールしない')
         },
       )
     })
@@ -211,6 +210,7 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
           await step('5 行目の、buddy でキャンセルした予定を押す')
           await page.getByTestId('calendar-review-row-schedule-schedule-4').click()
           await expect(page).toHaveURL(/12-detail-cancelled\.html/)
+          await expect(page.getByTestId('calendar-review-rewrite-export-5')).toBeVisible()
           await expect(page.getByTestId(/^calendar-review-accept-/)).toHaveCount(0)
           await check(
             'キャンセルした予定の確認（12-detail-cancelled.html）に、「Google の内容に合わせる」が無く、「buddy の内容で書き直す」だけがある',
@@ -297,11 +297,16 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
         },
         async ({ page, check }) => {
           await page.goto(mockUrl(`${LINK}01-list.html`))
-          await expect(page.getByTestId('calendar-link-open-{職員の id}').first()).toHaveText(
+          const rows = page.getByTestId('calendar-link-row-{職員の id}')
+          const linked = rows.nth(0)
+          const unlinked = rows.nth(1)
+          await expect(linked.getByTestId('calendar-link-menu-{職員の id}')).toBeVisible()
+          await expect(linked.getByTestId('calendar-link-open-{職員の id}')).toHaveCount(0)
+          await expect(linked.getByTestId('calendar-link-remove-{職員の id}')).toBeHidden()
+          await expect(unlinked.getByTestId('calendar-link-open-{職員の id}')).toHaveText(
             '結び付ける',
           )
-          await expect(page.getByTestId('calendar-link-menu-{職員の id}').first()).toBeVisible()
-          await expect(page.getByTestId('calendar-link-remove-{職員の id}').first()).toBeHidden()
+          await expect(unlinked.getByTestId('calendar-link-menu-{職員の id}')).toHaveCount(0)
           await expect(page.getByTestId('calendar-link-guide')).toContainText(
             '共有する相手のメールアドレス',
           )

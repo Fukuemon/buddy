@@ -18,7 +18,3 @@ export const mockRoot = (page: Page) => page.locator('html')
 
 /** モックの画面の本文。画面に出す語を確認するために使う */
 export const mockMain = (page: Page) => page.locator('main')
-
-/** 予定のモーダルのタイトル。testid を持たないので、見出しの名前で指す */
-export const scheduleModalTitle = (modal: Locator, name: string) =>
-  modal.getByRole('heading', { name })
