@@ -17,8 +17,21 @@
           <!-- 画面の中の操作は、data-go、data-toggle、data-choice、data-open と data-close で付ける。書き方は画面仕様書の規約の「画面の中の操作」にある -->
           <main class="wf-page">
             <div class="wf-page-head">
-              <h1 class="wf-heading">一覧の見出し</h1>
+              <div class="wf-title">
+                <h1 class="wf-heading">一覧の見出し</h1>
+                <span class="wf-help">
+                  <span class="wf-btn wf-btn--icon wf-help__toggle" aria-label="ヘルプ" data-open="page-help" data-testid="<画面 ID>-help">?</span>
+                  <p class="wf-help__panel" data-panel="page-help" data-panel-dismiss data-testid="<画面 ID>-help-text">初めてのときだけ要る説明を、1〜2 文で書く。</p>
+                </span>
+              </div>
               <span class="wf-btn wf-btn--primary" data-testid="<画面 ID>-new" data-go="02-form.html">登録</span>
+            </div>
+            <div class="wf-more">
+              <p>常に出す説明の 1 文。</p>
+              <span class="wf-btn wf-btn--text wf-more__toggle" aria-expanded="false" data-open="page-more" data-testid="<画面 ID>-more">詳しく</span>
+              <div class="wf-more__body" data-panel="page-more" data-testid="<画面 ID>-more-text">
+                <p>「詳しく」を押したときだけ出す、続きの説明。手順は番号付きの一覧にしてよい。</p>
+              </div>
             </div>
             <div class="wf-list-tools">
               <div class="wf-search" data-testid="<画面 ID>-search"><span class="wf-label">名前で検索</span></div>
