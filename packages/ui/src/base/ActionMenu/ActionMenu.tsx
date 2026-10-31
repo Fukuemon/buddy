@@ -87,6 +87,8 @@ export const ActionMenu = ({
               key={item['data-testid']}
               onClick={() => {
                 if (item.disabled) return
+                // 項目は閉じると消えるので、先に開くボタンへ戻す。onSelect が開くダイアログは、このボタンへフォーカスを返す
+                buttonRef.current?.focus()
                 setOpen(false)
                 item.onSelect()
               }}
