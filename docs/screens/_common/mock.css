@@ -18,10 +18,11 @@ body {
   margin: 0 auto;
 }
 
-/* デバイスの画面。幅による切り替えは @container screen で書く */
+/* デバイスの画面。幅による切り替えは @container screen で書く。中身の幅をデバイスの幅にするため、枠線を幅の外に置く */
 .screen {
   position: relative;
   container: screen / inline-size;
+  box-sizing: content-box;
   width: var(--mock-width, 1440px);
   min-height: var(--mock-height, 900px);
   overflow: hidden;
