@@ -43,7 +43,7 @@ describe('previewErrorMessage', () => {
     [apiError(422, 'calendar_unreadable'), '青木 一郎 の Google カレンダーを読めません。'],
     [
       apiError(503, 'calendar_not_configured'),
-      'この事業所のサービスアカウントが設定されていないので',
+      'まだ Google カレンダーを使う準備ができていません。事業所の管理者に',
     ],
     [apiError(404, 'not_found'), 'この職員のカレンダーの結び付けが外れています。'],
     [apiError(403, 'forbidden'), FORBIDDEN_MESSAGE],
