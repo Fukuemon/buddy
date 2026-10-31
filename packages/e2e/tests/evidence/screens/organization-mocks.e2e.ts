@@ -10,6 +10,17 @@ import { pageRoot } from '../../selectors/page'
 
 const MOCKS = 'organization-list_部署とチーム/mocks'
 
+const TEAM_COLORS = [
+  ['blue', '青'],
+  ['orange', 'オレンジ'],
+  ['magenta', '赤紫'],
+  ['cyan', '青緑'],
+  ['yellow', '黄'],
+  ['purple', '紫'],
+  ['green', '緑'],
+  ['lime', '黄緑'],
+] as const
+
 type Steps = Parameters<Parameters<typeof recordPrEvidence>[3]>[0]
 
 /** モックを開いてから、観点の操作を撮る。ログインしないので、prepare では同じモックを開くだけにする */
@@ -187,9 +198,11 @@ test.describe('部署とチームの画面仕様書のモック', () => {
           await step('「チームを作る」を押す')
           await page.getByTestId('organization-list-team-new').click()
           await expect(page).toHaveURL(/04-team-new\.html/)
-          await expect(page.getByTestId('organization-list-team-color')).toHaveText(
-            '青オレンジ赤紫青緑黄紫緑黄緑',
-          )
+          for (const [value, label] of TEAM_COLORS) {
+            await expect(page.getByTestId(`organization-list-team-color-${value}`)).toHaveText(
+              label,
+            )
+          }
           await expect(page.getByTestId('organization-list-team-color-cyan')).toHaveAttribute(
             'aria-checked',
             'true',
