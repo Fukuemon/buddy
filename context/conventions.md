@@ -9,7 +9,8 @@ status: stable
 
 ## Naming
 
-- web のコンポーネントの名前は、BCD Design の「ドメイン、場面、基本の語」の順に並べる（例 `StaffFilterSidebar`、`ServiceCodeRadioGroup`）。Base と Case か Domain かは、名前の接頭辞ではなく配置先（`packages/ui` か `features/<機能>/components/`）で表す。
+- web のコンポーネントの名前は、BCD Design の「ドメイン、場面、基本の語」の順に並べる（例 `StaffFilterSidebar`、`ServiceCodeRadioGroup`）。
+  - Base と Case か Domain かは、名前の接頭辞ではなく配置先（`packages/ui` か `features/<機能>/components/`）で表す。
 - Container は Presentational の名前に `Container` を付ける。対になる Presentational が無い Container（モーダルを開いて閉じるだけのものなど）は、使うコンポーネントの名前に `Container` を付けない別の名前にしてよい。
 - query の hook は `use<動詞><対象>`、query options は `<対象>QueryOptions` と名付け、機能の `queries.ts` に置く。
 - web の API の実装のファイルは、種類を接頭辞にする（`fakeBuddyApi.ts`、`httpBuddyApi.ts`、`bffBuddyApi.ts`）。照合の API の HTTP の実装（`http/receiptApi.ts`）だけは接頭辞を持たない。
@@ -25,27 +26,41 @@ status: stable
     - 繰り返しの予定の 1 回の置き換えは、1 件の下の `/occurrences` に置く。
   - ログインした職員自身は、ID を持たない `/v1/me` で表す。
   - 動作はサブパス（`/cancel`）で表す。
-- DB のテーブルは複数形の snake_case にする。buddy が振る ID は ULID の文字列を `text COLLATE "C"` で持つ。ULID の形の CHECK は、テーブルが振る `id` の主キーにだけ付け、外部キーのカラムには主キーを兼ねていても付けない。外部の ID（Google カレンダーの ID、組織の `org_id`、IdP の `sub`）は対象の外である。真偽のカラムは、`is_`、`has_`、`needs_` で始めるか、true のときの動作を動詞で書く（`is_over_time_work`、`needs_target`、`overwrite`）。
+- DB のテーブルは複数形の snake_case にする。
+- buddy が振る ID は、ULID の文字列を `text COLLATE "C"` で持つ。
+  - ULID の形の CHECK は、テーブルが振る `id` の主キーにだけ付ける。外部キーのカラムには、主キーを兼ねていても付けない。
+  - 外部の ID（Google カレンダーの ID、組織の `org_id`、IdP の `sub`）は、ULID の規則の対象の外である。
+- 真偽のカラムは、`is_`、`has_`、`needs_` で始めるか、true のときの動作を動詞で書く（`is_over_time_work`、`needs_target`、`overwrite`）。
 - 業務の用語の表記は [業務の知識](domain.md) の用語にそろえる。
 
 ## Comments
 
-コメントの書き方は、スキル write-comments に従う。言語は日本語の常体にする。
+コメントの書き方は、スキル write-comments に従う。  
+言語は日本語の常体にする。
 
-- Go は、ドキュメントコメントの有無を revive（`exported`、`package-comments`）で確認する。対象は `services/receipt`、`services/schedule`、`services/broker`、`packages/go` である。生成物（`// Code generated ... DO NOT EDIT.` のファイル）とテストは、revive が対象にしない。
-- TypeScript は、ドキュメントコメントの有無を、ルートの `vite.config.ts` の `lint` で確認する。対象は export する関数、クラス、型で、名前が `Props` で終わる型は除く。Props の型は、コンポーネントのドキュメントコメントが説明するからである。呼び出しで包んで作る関数（`createServerFn(...)`、`memo(...)`）と、クラスのメソッドは確認しない。確認するのは web、ui、e2e の check である。
+- Go は、ドキュメントコメントの有無を revive（`exported`、`package-comments`）で確認する。
+  - 対象は `services/receipt`、`services/schedule`、`services/broker`、`packages/go` である。
+  - 生成物（`// Code generated ... DO NOT EDIT.` のファイル）とテストは、revive が対象にしない。
+- TypeScript は、ドキュメントコメントの有無を、ルートの `vite.config.ts` の `lint` で確認する。確認するのは web、ui、e2e の check である。
+  - 対象は export する関数、クラス、型である。名前が `Props` で終わる型は除く。Props の型は、コンポーネントのドキュメントコメントが説明するからである。
+  - 呼び出しで包んで作る関数（`createServerFn(...)`、`memo(...)`）と、クラスのメソッドは確認しない。
 - Go のドキュメントコメントは、`// Package <名前> は、…。`、`// <名前> は、…。` の形で書く。
 - 外部の制約を書く実装のコメントには、出典の URL を添える。
 
 ## Documents
 
-文書の書き方は、スキル write-prose と write-design-docs に従う。buddy だけの規則は次のとおり。
+文書の書き方は、スキル write-prose と write-design-docs に従う。  
+buddy だけの規則は次のとおり。
 
-- PRD は `docs/PRD.md`、全体の Design Doc は `docs/design/`、ADR は `docs/adr/`、画面仕様書は `docs/screens/` に置き、Zensical のサイトで読む。Design Doc と ADR の配置先は `context/project.yml` の `docs` と同じにする。
+- PRD は `docs/PRD.md`、全体の Design Doc は `docs/design/`、ADR は `docs/adr/`、画面仕様書は `docs/screens/` に置き、Zensical のサイトで読む。
+  - Design Doc と ADR の配置先は、`context/project.yml` の `docs` と同じにする。
 - アプリとパッケージの README の見出しは、Setup、Configuration、Running、Tests and Checks、Code Generation、Documentation の順に置く。当てはまらないセクションは省く。
-- 機能ごとの Design Doc は、コードの隣（`services/<API>/DesignDoc.md`、`packages/<パッケージ>/DesignDoc.md`）に置く。サイトには、`docs/design/services/` か `docs/design/packages/` のファイル単位のシンボリックリンクで載せる。リンク先は `zensical.toml` の `watch` にも並べる。
-- 機能ごとの Design Doc と ADR から `docs/`、`apps/`、`services/` の文書へのリンクは、GitHub の `develop` の URL で書く。相対リンクは、GitHub とサイトで指す先が変わり、どちらかで切れる。
-- 見出しのアンカーは、日本語のまま残す（`zensical.toml` の toc の slugify）。見出しを変えるときは、ほかの文書からのリンクを探して直す。
+- 機能ごとの Design Doc は、コードの隣（`services/<API>/DesignDoc.md`、`packages/<パッケージ>/DesignDoc.md`）に置く。
+  - サイトには、`docs/design/services/` か `docs/design/packages/` のファイル単位のシンボリックリンクで載せる。リンク先は `zensical.toml` の `watch` にも並べる。
+- 機能ごとの Design Doc と ADR から `docs/`、`apps/`、`services/` の文書へのリンクは、GitHub の `develop` の URL で書く。
+  - 相対リンクは、GitHub とサイトで指す先が変わり、どちらかで切れる。
+- 見出しのアンカーは、日本語のまま残す（`zensical.toml` の toc の slugify）。
+  - 見出しを変えるときは、ほかの文書からのリンクを探して直す。
 - 画面仕様書の画面 ID の規則は [画面仕様書の目次](../docs/screens/index.md) の「画面の ID の規則」に、ページのセクションの規則は [画面仕様書の規約](../docs/screens/rules.md) の「仕様書のページ」にある。
 
 ## API Definitions
@@ -53,7 +68,8 @@ status: stable
 - 定義の書き方は、Redocly CLI の `recommended-strict` の規則で確認する（`pnpm lint:openapi`）。
   - 規則を外す箇所は `.redocly.lint-ignore.yaml` に理由と一緒に書き、規則ごと外すものは `redocly.yaml` に書く。
 - null を許す項目は、`type` と `nullable: true` を同じ階層に置き、参照する型は `allOf` で包む。
-  - OpenAPI 3.0 は `type` の無い `nullable` を無視するためである。サーバーが使う kin-openapi は、外側の `nullable` を見て、`allOf` の中を確認する前に null を通す。
+  - OpenAPI 3.0 は `type` の無い `nullable` を無視するためである。
+  - サーバーが使う kin-openapi は、外側の `nullable` を見て、`allOf` の中を確認する前に null を通す。
 
 ## Shared Configuration
 
