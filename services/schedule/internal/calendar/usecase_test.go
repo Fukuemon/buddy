@@ -138,15 +138,9 @@ func newUsecase(e env, acc calendar.Accounts, st calendar.StaffRefs) *calendar.U
 		Staff: st, Patients: inmem.Patients{Store: s}, ServiceCodes: inmem.VisitMasters{Store: s},
 		Types: inmem.ScheduleTypes{Store: s}, Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, RecurringSchedules: inmem.RecurringSchedules{Store: s},
 		Visits: visit.NewWriter(visit.WriterDeps{
-			Staff: inmem.StaffRefs{Store: s},
-			Patients: func(_ context.Context, id string) (string, string, error) {
-				p, ok := s.Patients[id]
-				if !ok {
-					return "", "", apperr.ErrNotFound
-				}
-				return p.ID, p.FacilityID, nil
-			},
-			Infos: inmem.VisitInfos{Store: s}, Masters: inmem.VisitMasters{Store: s},
+			Staff:    inmem.StaffRefs{Store: s},
+			Patients: patient.VisitFinder(inmem.Patients{Store: s}),
+			Infos:    inmem.VisitInfos{Store: s}, Masters: inmem.VisitMasters{Store: s},
 		}, ids),
 	}, &inmem.Tx{}, ids, principal.RequireStaffManage)
 }

@@ -72,6 +72,7 @@ export interface BuddyApi {
     list(facilityId: FacilityId): Promise<Team[]>
   }
   patients: {
+    /** 利用の終了の利用者も返す。過去の予定の利用者名を出すためである。予定の利用者の候補は、呼ぶ側が activePatients で絞る。 */
     list(facilityId: FacilityId, params?: NameSearchParams): Promise<Patient[]>
   }
   /**

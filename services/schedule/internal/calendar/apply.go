@@ -341,6 +341,9 @@ func (a applier) applySchedule(ctx context.Context, d schedule.Detail, ev Event)
 	keep := d.Visit != nil && sameVisit(d.Visit, ev)
 	switch {
 	case keep:
+		if err := a.keepable(ctx, d.FacilityID, d.Visit.PatientID, slot.Date); err != nil {
+			return 0, err
+		}
 		slot.VisitInfoID = d.VisitInfoID
 	case d.Visit != nil:
 		if slot.VisitInfoID, err = a.createVisit(ctx, d.FacilityID, d.Visit, ev); err != nil {
@@ -405,6 +408,7 @@ func (a applier) slotOf(ctx context.Context, base schedule.Slot, v *visit.Detail
 
 // createVisit は、訪問の情報 v を、外部の予定 ev のタイトルのサービス内容と利用者名にして書き、ID を返す。担当、同行、訪問の区分は v のままにする。
 // タイトルがサービス内容か利用者名を変えていて、サービスコードか利用者を 1 つに引けないときは errUnappliable を返す。
+// 利用の終了の利用者は、今日より前の予定で、v の利用者のままのときだけ書ける（ADR-0021）。書けないときも errUnappliable を返す。
 func (a applier) createVisit(ctx context.Context, facilityID string, v *visit.Detail, ev Event) (*string, error) {
 	in := visit.Input{
 		PatientID: v.PatientID, AssignedStaffID: v.AssignedStaffID, CompanionID: v.CompanionID, ServiceCodeID: v.ServiceCodeID,
@@ -414,6 +418,9 @@ func (a applier) createVisit(ctx context.Context, facilityID string, v *visit.De
 		in.CategoryIDs[i] = c.ID
 	}
 	c := Classify(ev)
+	if c.Date.Before(civil.Today(a.now())) {
+		in.KeptPatientID = v.PatientID
+	}
 	if serviceKey(c.Service) != serviceKey(v.ServiceCode) {
 		id, err := a.serviceCodeID(ctx, c.Service)
 		if err != nil {
@@ -452,6 +459,22 @@ func (a applier) serviceCodeID(ctx context.Context, service string) (string, err
 		}
 	}
 	return "", errUnappliable
+}
+
+// keepable は、利用者 patientID の訪問の情報を、date の予定に付けたまま保存できるかを確認する。
+// 利用の終了の利用者は、今日より前の予定でだけ保存でき、今日以降なら errUnappliable を返す（ADR-0021）。
+func (a applier) keepable(ctx context.Context, facilityID, patientID string, date civil.Date) error {
+	if date.Before(civil.Today(a.now())) {
+		return nil
+	}
+	pats, err := a.patients.ListByFacility(ctx, facilityID, patient.ListQuery{Sort: kernel.Sort{Field: "name"}})
+	if err != nil {
+		return err
+	}
+	if !slices.ContainsFunc(pats, func(p patient.Detail) bool { return p.ID == patientID }) {
+		return errUnappliable
+	}
+	return nil
 }
 
 // patientID は、タイトルの利用者名 client の事業所の利用者を 1 人に引けたときに、その ID を返す。

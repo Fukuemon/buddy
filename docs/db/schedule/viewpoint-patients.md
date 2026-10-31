@@ -11,7 +11,7 @@
 | [public.facilities](public.facilities.md)       | 6       | 訪問看護の事業所                         | BASE TABLE |
 | [public.users](public.users.md)                 | 14      | 職員                                     | BASE TABLE |
 | [public.service_codes](public.service_codes.md) | 6       | サービスコード。マイグレーションで入れる | BASE TABLE |
-| [public.patients](public.patients.md)           | 9       | 利用者                                   | BASE TABLE |
+| [public.patients](public.patients.md)           | 10      | 利用者                                   | BASE TABLE |
 
 ## Relations
 
@@ -65,6 +65,7 @@ erDiagram
   text assigned_staff_id
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  timestamp_with_time_zone ended_at
 }
 ```
 

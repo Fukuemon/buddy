@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vite-plus/test'
 import type { paths } from '#/api/generated/schedule'
 import { TEST_SCHEDULE_URL } from '#/test/server'
 
+import { MOCK_FACILITY_ID } from './scheduleData'
+
 const client = () =>
   createClient<paths>({ baseUrl: TEST_SCHEDULE_URL, headers: { Authorization: 'Bearer test' } })
 
@@ -52,5 +54,18 @@ describe('職員を変える API と、残る予定の API のフェイク', () 
       body,
     })
     expect(response.status).toBe(404)
+  })
+})
+
+describe('利用者の一覧の API のフェイク', () => {
+  it('デフォルトは利用中の利用者だけを返し、include_ended=true なら利用の終了の利用者も返す', async () => {
+    const list = (include_ended?: boolean) =>
+      client().GET('/v1/facilities/{facility_id}/patients', {
+        params: { path: { facility_id: MOCK_FACILITY_ID }, query: { include_ended } },
+      })
+    const active = await list()
+    expect(active.data?.map((patient) => patient.id)).not.toContain('patient-ended')
+    const all = await list(true)
+    expect(all.data?.find((patient) => patient.id === 'patient-ended')?.ended_at).not.toBeNull()
   })
 })

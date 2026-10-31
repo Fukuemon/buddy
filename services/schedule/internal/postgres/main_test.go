@@ -222,7 +222,7 @@ func TestMigrateDownAndUp(t *testing.T) {
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)
 	}
-	if err := MigrateDown(cfg, 6); err != nil {
+	if err := MigrateDown(cfg, 7); err != nil {
 		t.Fatal(err)
 	}
 	pool, err := Open(ctx, cfg)

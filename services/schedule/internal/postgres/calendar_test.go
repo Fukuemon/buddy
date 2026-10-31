@@ -14,6 +14,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
 	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
@@ -195,12 +196,9 @@ func TestCalendarImportInOneTransaction(t *testing.T) {
 		Staff: staffRefs, Patients: patients, ServiceCodes: masters, Types: NewScheduleTypeRepository(testDB),
 		Schedules: schedules, Recurring: recurring, RecurringSchedules: recurring,
 		Visits: visit.NewWriter(visit.WriterDeps{
-			Staff: staffRefs,
-			Patients: func(ctx context.Context, id string) (string, string, error) {
-				p, err := patients.Get(ctx, id)
-				return p.ID, p.FacilityID, err
-			},
-			Infos: NewVisitInfoRepository(testDB), Masters: masters,
+			Staff:    staffRefs,
+			Patients: patient.VisitFinder(patients),
+			Infos:    NewVisitInfoRepository(testDB), Masters: masters,
 		}, ids),
 	}, NewTransactor(testDB), ids, principal.RequireStaffManage)
 	rng, err := calendar.NewRange(civil.Date{Year: 2026, Month: 11, Day: 1}, civil.Date{Year: 2026, Month: 11, Day: 30})

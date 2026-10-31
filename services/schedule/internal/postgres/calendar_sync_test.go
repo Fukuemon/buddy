@@ -16,7 +16,9 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
 	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
+	"github.com/Fukuemon/buddy/services/schedule/internal/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 	"github.com/Fukuemon/buddy/services/schedule/internal/visit"
@@ -172,12 +174,9 @@ func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
 	types := NewScheduleTypeRepository(testDB)
 	ids := ulid.Generator{}
 	visits := visit.NewWriter(visit.WriterDeps{
-		Staff: staffRefs,
-		Patients: func(ctx context.Context, id string) (string, string, error) {
-			p, err := patients.Get(ctx, id)
-			return p.ID, p.FacilityID, err
-		},
-		Infos: NewVisitInfoRepository(testDB), Masters: masters,
+		Staff:    staffRefs,
+		Patients: patient.VisitFinder(patients),
+		Infos:    NewVisitInfoRepository(testDB), Masters: masters,
 	}, ids)
 	source := gcal.NewReader(gcaltest.Start(t, srv))
 	tx := NewTransactor(testDB)
@@ -240,5 +239,93 @@ func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
 	}
 	if len(rs.ExclusionDates) != 1 || rs.ExclusionDates[0] != (civil.Date{Year: 2026, Month: 11, Day: 9}) || *parent.SyncedVersion != rs.Version {
 		t.Errorf("取り消した回を除外した繰り返しの予定 = %v, 版 %d, 対応 %+v", rs.ExclusionDates, rs.Version, parent)
+	}
+}
+
+// TestCalendarSyncKeepsEndedPatientOnlyInPast は、利用の終了の利用者の取り込んだ予定に、Google での今日より前の変更は当て、
+// 利用者を変えずに今日以降へ動かす変更は当てないことを確認する（ADR-0021）。
+func TestCalendarSyncKeepsEndedPatientOnlyInPast(t *testing.T) {
+	ctx := txContext(t)
+	ctx = principal.With(ctx, principal.Principal{Staff: staff.Detail{
+		Summary:  staff.Summary{Staff: staff.Staff{ID: seedAoki, FacilityID: seedFacility}},
+		Policies: []staff.PolicyGrant{{PolicyCode: organization.StaffManage}},
+	}})
+	const futaba = "01M3TC67EREWP3ED55WDTKD23Z"
+	srv := &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{"mori@example.com": {{
+		{Id: "past", Status: "confirmed", Summary: "【訪看I2】見本 二葉", Etag: `"past"`,
+			Start: &calendarv3.EventDateTime{DateTime: "2026-10-05T10:00:00+09:00"}, End: &calendarv3.EventDateTime{DateTime: "2026-10-05T10:30:00+09:00"}},
+	}}}}
+	calendars := NewCalendarRepository(testDB)
+	const calID = "01M3TD000000000000000000C6"
+	if err := calendars.Create(ctx, calendar.ExternalCalendar{ID: calID, FacilityID: seedFacility, StaffID: seedMori, Provider: calendar.ProviderGoogle, CalendarID: "mori@example.com"}); err != nil {
+		t.Fatal(err)
+	}
+	patients := NewPatientRepository(testDB)
+	masters := NewVisitMasterRepository(testDB)
+	staffRefs := NewStaffRefRepository(testDB)
+	schedules := NewScheduleRepository(testDB)
+	recurring := NewRecurringScheduleRepository(testDB)
+	types := NewScheduleTypeRepository(testDB)
+	ids := ulid.Generator{}
+	visits := visit.NewWriter(visit.WriterDeps{
+		Staff: staffRefs, Patients: patient.VisitFinder(patients), Infos: NewVisitInfoRepository(testDB), Masters: masters,
+	}, ids)
+	source := gcal.NewReader(gcaltest.Start(t, srv))
+	tx := NewTransactor(testDB)
+	uc := calendar.NewUsecase(calendar.Deps{
+		Calendars: calendars, Accounts: sameAccount{source},
+		Staff: staffRefs, Patients: patients, ServiceCodes: masters, Types: types,
+		Schedules: schedules, Recurring: recurring, RecurringSchedules: recurring, Visits: visits,
+	}, tx, ids, principal.RequireStaffManage)
+	rng, err := calendar.NewRange(civil.Date{Year: 2026, Month: 10, Day: 1}, civil.Date{Year: 2026, Month: 10, Day: 31})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := uc.Import(ctx, calID, rng, nil); err != nil {
+		t.Fatal(err)
+	}
+	syncer := calendar.NewSyncer(calendar.SyncerDeps{
+		Syncs: NewCalendarSyncRepository(testDB), Calendars: calendars, Staff: staffRefs, Exports: NewCalendarExportRepository(testDB), Sources: func(context.Context, string) (calendar.EventSource, error) { return source, nil },
+		Schedules: schedules, Recurring: recurring, Types: types, Patients: patients, ServiceCodes: masters, Visits: visits,
+	}, tx, ids, 0, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	sync := func() {
+		t.Helper()
+		if _, err := syncer.SyncDue(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	sync()
+	if err := patients.End(ctx, futaba); err != nil {
+		t.Fatal(err)
+	}
+	link, err := calendars.LinkByEvent(ctx, calID, "past")
+	if err != nil {
+		t.Fatal(err)
+	}
+	get := func() schedule.Detail {
+		t.Helper()
+		d, err := schedules.Get(ctx, *link.ScheduleID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return d
+	}
+
+	// 今日より前のまま時刻だけを変えた変更は当てる
+	srv.Edit("mori@example.com", "past", func(e *calendarv3.Event) {
+		e.Start.DateTime, e.End.DateTime = "2026-10-05T11:00:00+09:00", "2026-10-05T11:30:00+09:00"
+	})
+	sync()
+	if d := get(); d.StartTime != (civil.Time{Hour: 11}) || d.Visit == nil || d.Visit.PatientID != futaba {
+		t.Fatalf("今日より前の変更を当てた予定 = %+v, 訪問 %+v", d.Slot, d.Visit)
+	}
+
+	// 利用者を変えずに今日以降へ動かした変更は当てない
+	srv.Edit("mori@example.com", "past", func(e *calendarv3.Event) {
+		e.Start.DateTime, e.End.DateTime = "2099-01-05T11:00:00+09:00", "2099-01-05T11:30:00+09:00"
+	})
+	sync()
+	if d := get(); d.Date != (civil.Date{Year: 2026, Month: 10, Day: 5}) {
+		t.Errorf("利用の終了の利用者の予定を今日以降へ動かした: %+v", d.Slot)
 	}
 }

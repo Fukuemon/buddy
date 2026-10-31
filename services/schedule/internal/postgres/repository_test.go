@@ -497,6 +497,86 @@ func TestPatientList(t *testing.T) {
 	}
 }
 
+// 利用者の変更、利用の終了、利用の再開を書き、利用の終了の利用者は、デフォルトの一覧と職員の担当の利用者から除く（#346、ADR-0021）。
+func TestPatientUpdateEndResume(t *testing.T) {
+	ctx := txContext(t)
+	r := NewPatientRepository(testDB)
+	err := r.Update(ctx, patient.Patient{
+		ID: seedPatient, Name: "見本 一子", PreferredTime: patient.Afternoon, PreferredGender: patient.Female,
+		ServiceCodeID: seedServiceCode, AssignedStaffID: seedHayashi,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := r.Get(ctx, seedPatient)
+	if err != nil || got.Name != "見本 一子" || got.PreferredTime != patient.Afternoon || got.AssignedStaffName != "林 さくら" || got.Ended() {
+		t.Fatalf("変えた利用者 = %+v, %v", got, err)
+	}
+	if err := r.Update(ctx, patient.Patient{ID: unknownID, Name: "x", PreferredTime: patient.Morning, PreferredGender: patient.Male,
+		ServiceCodeID: seedServiceCode, AssignedStaffID: seedMori}); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("いない利用者の変更: err = %v, want ErrNotFound", err)
+	}
+
+	if err := r.End(ctx, seedPatient); err != nil {
+		t.Fatal(err)
+	}
+	first, err := r.Get(ctx, seedPatient)
+	if err != nil || first.EndedAt == nil {
+		t.Fatalf("利用の終了 = %+v, %v", first.EndedAt, err)
+	}
+	if err := r.End(ctx, seedPatient); err != nil {
+		t.Fatal(err)
+	}
+	if again, _ := r.Get(ctx, seedPatient); !again.EndedAt.Equal(*first.EndedAt) {
+		t.Errorf("利用の終了にし直した時刻 = %v, want 最初の %v", again.EndedAt, first.EndedAt)
+	}
+	sort := kernel.Sort{Field: "name"}
+	if rows, err := r.ListByFacility(ctx, seedFacility, patient.ListQuery{Sort: sort}); err != nil || len(rows) != 1 || rows[0].Name != "見本 二葉" {
+		t.Errorf("デフォルトの一覧 = %+v, %v, want 利用中の 見本 二葉 だけ", rows, err)
+	}
+	if rows, err := r.ListByFacility(ctx, seedFacility, patient.ListQuery{IncludeEnded: true, Sort: sort}); err != nil || len(rows) != 2 || rows[0].EndedAt == nil {
+		t.Errorf("include_ended の一覧 = %+v, %v, want 利用の終了の利用者を含む 2 人", rows, err)
+	}
+	a, err := NewStaffAssignmentReader(testDB).From(ctx, seedFacility, seedHayashi, civil.Date{Year: 2026, Month: 10, Day: 22})
+	if err != nil || len(a.Patients) != 1 || a.Patients[0].Name != "見本 二葉" {
+		t.Errorf("林の担当の利用者 = %+v, %v, want 利用の終了の 見本 一子 を除く", a.Patients, err)
+	}
+
+	if err := r.Resume(ctx, seedPatient, seedAoki); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := r.Get(ctx, seedPatient); err != nil || got.Ended() || got.AssignedStaffID != seedAoki {
+		t.Errorf("再開した利用者 = %+v, %v, want 利用中で担当が青木", got, err)
+	}
+	if err := r.Resume(ctx, unknownID, seedAoki); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("いない利用者の再開: err = %v, want ErrNotFound", err)
+	}
+	if err := r.End(ctx, unknownID); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("いない利用者の利用の終了: err = %v, want ErrNotFound", err)
+	}
+}
+
+// 利用者に残る予定は、訪問の情報の利用者がその利用者の、その日以降のキャンセルしていない予定である（ADR-0021）。
+func TestPatientSchedules(t *testing.T) {
+	ctx := txContext(t)
+	rd := NewPatientScheduleReader(testDB)
+	from := civil.Date{Year: 2026, Month: 10, Day: 21}
+	got, err := rd.From(ctx, seedFacility, seedPatient, from)
+	if err != nil || len(got.Schedules) != 1 || got.Schedules[0].ID != seedVisitSchedule || got.Schedules[0].StartTime != (civil.Time{Hour: 9, Minute: 30}) ||
+		len(got.Recurring) != 0 {
+		t.Errorf("当日から = %+v, %v, want 訪問の予定 1 件", got, err)
+	}
+	if got, err := rd.From(ctx, seedFacility, seedPatient, civil.Date{Year: 2026, Month: 10, Day: 22}); err != nil || !got.Empty() {
+		t.Errorf("翌日から = %+v, %v, want なし", got, err)
+	}
+	if err := NewScheduleRepository(testDB).CreateCancel(ctx, schedule.Cancel{ID: "01M3TD00000000000000000033", ScheduleID: seedVisitSchedule, Reason: "中止"}); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := rd.From(ctx, seedFacility, seedPatient, from); err != nil || !got.Empty() {
+		t.Errorf("キャンセルの後 = %+v, %v, want なし", got, err)
+	}
+}
+
 func TestVisitInfoCreate(t *testing.T) {
 	ctx := txContext(t)
 	r := NewVisitInfoRepository(testDB)

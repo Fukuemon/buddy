@@ -27,6 +27,7 @@ import { CalendarImportDone } from './CalendarImportDone'
 import { CalendarImportForm } from './CalendarImportForm'
 import { CalendarImportPreview } from './CalendarImportPreview'
 import { CalendarImportView, type CalendarImportViewState } from './CalendarImportView'
+import { activePatients } from '#/features/schedule/lib/activePatients'
 
 export type CalendarImportContainerProps = {
   /** search params の staff。カレンダーが結び付いていない職員なら、名前の順で最初の職員を選ぶ。 */
@@ -144,7 +145,7 @@ const CalendarImportContent = ({ staffId, onStaffChange }: CalendarImportContain
                   decisions,
                 })
               }
-              patients={patientsQuery.data ?? []}
+              patients={activePatients(patientsQuery.data ?? [])}
               preview={previewed}
               staffName={current.staff.name}
             />

@@ -13,6 +13,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
@@ -53,13 +54,10 @@ func newSchedulesWithRefs(s *inmem.Store, refs schedule.StaffRefs) (*schedule.Us
 	tx := &inmem.Tx{}
 	ids := &inmem.SeqIDs{}
 	visits := visit.NewWriter(visit.WriterDeps{
-		Staff: inmem.StaffRefs{Store: s},
-		Patients: func(ctx context.Context, id string) (string, string, error) {
-			pa, err := inmem.Patients{Store: s}.Get(ctx, id)
-			return pa.ID, pa.FacilityID, err
-		},
-		Infos:   inmem.VisitInfos{Store: s},
-		Masters: inmem.VisitMasters{Store: s},
+		Staff:    inmem.StaffRefs{Store: s},
+		Patients: patient.VisitFinder(inmem.Patients{Store: s}),
+		Infos:    inmem.VisitInfos{Store: s},
+		Masters:  inmem.VisitMasters{Store: s},
 	}, ids)
 	return schedule.NewUsecase(schedule.Deps{
 		Facilities: inmem.Facilities{Store: s},
@@ -535,6 +533,72 @@ func TestSchedulesKeepRulesForInactiveStaff(t *testing.T) {
 			}
 			stop(t, s, staffID, tt.status)
 			stop(t, s, companionID, tt.status)
+			err = tt.change(uc, ctx, created.ID)
+			if tt.wantErr != errors.Is(err, apperr.ErrInvalidInput) || (!tt.wantErr && err != nil) {
+				t.Fatalf("err = %v, want 入力のエラー: %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+// 利用の終了の利用者は、新しい予定に指せない。既に付けた予定は、利用者を変えずに、今日より前の日付でだけ保存できる（ADR-0021）。
+func TestSchedulesEndedPatient(t *testing.T) {
+	const activePatientID = "ACTIVEPATIENT"
+	tests := []struct {
+		name    string
+		change  func(uc *schedule.Usecase, ctx context.Context, createdID string) error
+		wantErr bool
+	}{
+		{name: "利用の終了の利用者に予定を作る", wantErr: true, change: func(uc *schedule.Usecase, ctx context.Context, _ string) error {
+			_, err := uc.Create(ctx, facilityID, visitSlot(validVisit()))
+			return err
+		}},
+		{name: "利用の終了の利用者に繰り返しの予定を作る", wantErr: true, change: func(uc *schedule.Usecase, ctx context.Context, _ string) error {
+			_, err := uc.CreateRecurring(ctx, facilityID, visitSlot(validVisit()), schedule.RuleInput{Frequency: schedule.Weekly})
+			return err
+		}},
+		{name: "予定の利用者を利用の終了の利用者に変える", wantErr: true, change: func(uc *schedule.Usecase, ctx context.Context, _ string) error {
+			v := validVisit()
+			v.PatientID = activePatientID
+			other, err := uc.Create(ctx, facilityID, visitSlot(v))
+			if err != nil {
+				return err
+			}
+			_, err = uc.Update(ctx, other.ID, visitSlot(validVisit()))
+			return err
+		}},
+		{name: "利用者を変えずに過去の予定の時刻を変える", change: func(uc *schedule.Usecase, ctx context.Context, id string) error {
+			in := visitSlot(validVisit())
+			in.StartTime, in.EndTime = civil.Time{Hour: 10}, civil.Time{Hour: 11}
+			_, err := uc.Update(ctx, id, in)
+			return err
+		}},
+		{name: "利用者を変えずに過去の予定を今日に動かす", wantErr: true, change: func(uc *schedule.Usecase, ctx context.Context, id string) error {
+			in := visitSlot(validVisit())
+			in.Date = today
+			_, err := uc.Update(ctx, id, in)
+			return err
+		}},
+		{name: "過去の予定の利用者を利用中の利用者に変える", change: func(uc *schedule.Usecase, ctx context.Context, id string) error {
+			v := validVisit()
+			v.PatientID = activePatientID
+			_, err := uc.Update(ctx, id, visitSlot(v))
+			return err
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := inmem.Seeded()
+			s.Patients[activePatientID] = patient.Detail{Patient: patient.Patient{ID: activePatientID, FacilityID: facilityID}}
+			uc, _ := newSchedules(s)
+			ctx := editorCtx()
+			created, err := uc.Create(ctx, facilityID, visitSlot(validVisit()))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := (inmem.Patients{Store: s}).End(ctx, patientID); err != nil {
+				t.Fatal(err)
+			}
 			err = tt.change(uc, ctx, created.ID)
 			if tt.wantErr != errors.Is(err, apperr.ErrInvalidInput) || (!tt.wantErr && err != nil) {
 				t.Fatalf("err = %v, want 入力のエラー: %v", err, tt.wantErr)

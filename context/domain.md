@@ -22,6 +22,7 @@ status: stable
 | 職員 | 事業所で働き、buddy にログインする人 | Go `staff.Staff`、テーブル `users`、API `Staff`、パス `/users`、web `Staff`、`Viewer` |
 | 利用者 | 事業所が訪問する相手 | Go `patient.Patient`、テーブル `patients`、API `Patient` |
 | 担当の職員 | 利用者を主に担当する職員 | `Patient.AssignedStaffID`、`patients.assigned_staff_id` |
+| 利用の終了 | サービスを終えた利用者の状態。利用の再開で利用中に戻せる | `Patient.EndedAt`、`patients.ended_at`、API `Patient.ended_at`、`end_service`、`resume_service`、web `Patient.ended` |
 
 ### 予定
 
@@ -82,6 +83,7 @@ status: stable
 - [予定](domain/schedule.md) — 単発の予定の種類、キャンセル、変更
 - [繰り返しの予定](domain/recurring-schedule.md) — 規則、回、除外、回の置き換え
 - [訪問の情報](domain/visit.md) — 訪問の予定に付く利用者と職員とサービス
+- [利用者](domain/patient.md) — 利用者の利用の終了と再開。終了の利用者を予定の候補と職員の退職の確認から外す規則
 - [職員とログイン](domain/staff-login.md) — 職員の登録、休職、復職、退職の規則。ブローカーが上流の IdP のアカウントを職員に結び付ける規則と、予定の API が `sub` で職員を引く規則
 - [事業所の分離](domain/facility.md) — 事業所をまたぐ参照の拒否
 - [権限](domain/permission.md) — 役職のデフォルトの権限と職員ごとの権限

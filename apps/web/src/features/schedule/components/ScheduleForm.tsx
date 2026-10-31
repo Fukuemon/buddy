@@ -5,6 +5,7 @@ import type { Patient, Staff } from '#/api/types'
 import { TextareaField } from '@buddy/ui'
 
 import { SCHEDULE_CATEGORY_LABEL } from '../constants/scheduleLabels'
+import { activePatients } from '../lib/activePatients'
 import { activeStaff } from '../lib/activeStaff'
 import { visitEndTimeOfInput } from '../lib/scheduleFormMapper'
 import type { ScheduleFormValues } from '../schema/scheduleForm'
@@ -134,7 +135,7 @@ export const ScheduleForm = ({ id, form, staffList, patients, onSubmit }: Schedu
             render={({ field }) => (
               <PatientSelectList
                 onChange={field.onChange}
-                patients={patients}
+                patients={activePatients(patients)}
                 value={field.value ?? ''}
               />
             )}

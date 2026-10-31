@@ -259,8 +259,8 @@ describe('createHttpBuddyApi', () => {
     ])
   })
 
-  it('利用者は名前の一部で絞る', async () => {
-    const patient = (id: string, name: string) => ({
+  it('利用者は利用の終了の利用者を含めて取り、名前の一部で絞る', async () => {
+    const patient = (id: string, name: string, ended_at: string | null = null) => ({
       id,
       facility_id: 'facility-1',
       name,
@@ -270,21 +270,27 @@ describe('createHttpBuddyApi', () => {
       service_code: '訪看I2',
       assigned_staff_id: 'staff-1',
       assigned_staff_name: '青木 一郎',
+      ended_at,
       created_at: '2026-10-01T00:00:00Z',
       updated_at: '2026-10-01T00:00:00Z',
     })
     server.use(
-      scheduleHttp.get('/v1/facilities/{facility_id}/patients', ({ request, response }) =>
-        new URL(request.url).searchParams.has('name')
-          ? response(400).json(invalid('名前を API に送っている'))
-          : response(200).json([
-              patient('patient-1', '利用者 A'),
-              patient('patient-2', '利用者 B'),
-            ]),
-      ),
+      scheduleHttp.get('/v1/facilities/{facility_id}/patients', ({ request, response }) => {
+        const query = new URL(request.url).searchParams
+        if (query.has('name')) return response(400).json(invalid('名前を API に送っている'))
+        if (query.get('include_ended') !== 'true') {
+          return response(400).json(invalid('利用の終了の利用者を含めていない'))
+        }
+        return response(200).json([
+          patient('patient-1', '利用者 A'),
+          patient('patient-2', '利用者 B'),
+          patient('patient-3', '利用者 B2', '2026-10-31T00:00:00Z'),
+        ])
+      }),
     )
     await expect(api().patients.list('facility-1', { name: 'B' })).resolves.toEqual([
       { id: 'patient-2', name: '利用者 B' },
+      { id: 'patient-3', name: '利用者 B2', ended: true },
     ])
   })
 

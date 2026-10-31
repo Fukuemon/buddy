@@ -12,7 +12,7 @@
 | [public.users](public.users.md)                                             | 14      | 職員                                                         | BASE TABLE |
 | [public.service_codes](public.service_codes.md)                             | 6       | サービスコード。マイグレーションで入れる                     | BASE TABLE |
 | [public.visit_categories](public.visit_categories.md)                       | 4       | 訪問の区分（夜勤、緊急、入院）。マイグレーションで入れる     | BASE TABLE |
-| [public.patients](public.patients.md)                                       | 9       | 利用者                                                       | BASE TABLE |
+| [public.patients](public.patients.md)                                       | 10      | 利用者                                                       | BASE TABLE |
 | [public.visit_infos](public.visit_infos.md)                                 | 8       | 訪問の情報                                                   | BASE TABLE |
 | [public.visit_info_visit_categories](public.visit_info_visit_categories.md) | 2       | 訪問に付けた区分。1 件の訪問に複数を付けられる               | BASE TABLE |
 | [public.schedule_types](public.schedule_types.md)                           | 5       | 予定の種類（通常、訪問）。マイグレーションで入れる           | BASE TABLE |
@@ -96,6 +96,7 @@ erDiagram
   text assigned_staff_id
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  timestamp_with_time_zone ended_at
 }
 "public.visit_infos" {
   text id

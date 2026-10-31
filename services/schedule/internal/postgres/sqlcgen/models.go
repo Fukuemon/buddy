@@ -148,6 +148,8 @@ type Patient struct {
 	AssignedStaffID string
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
+	// 利用者を利用の終了にした時刻。利用中なら NULL
+	EndedAt *time.Time
 }
 
 // 権限。マイグレーションで入れ、API では作らない

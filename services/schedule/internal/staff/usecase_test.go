@@ -631,6 +631,19 @@ func TestStaffRetireRejectsAssignments(t *testing.T) {
 			}
 		})
 	}
+	// 担当の利用者が利用の終了の利用者だけなら、退職できる（#346 の検証の観点 4、ADR-0021）
+	t.Run("利用の終了の担当の利用者は数えない", func(t *testing.T) {
+		s, ids := stopFixture()
+		clearAssignments(s)
+		p := s.Patients[inmem.PatientID]
+		p.AssignedStaffID = staffID
+		p.EndedAt = ptr(time.Now())
+		s.Patients[inmem.PatientID] = p
+		got, err := stopUsecase(s, ids, allow).Retire(ctx, staffID)
+		if err != nil || got.Staff.Status() != staff.StatusRetired {
+			t.Errorf("err = %v, want 退職できる", err)
+		}
+	})
 	t.Run("キャンセルした予定は数えない", func(t *testing.T) {
 		s, ids := stopFixture()
 		clearAssignments(s)
