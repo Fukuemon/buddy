@@ -2,7 +2,7 @@ import { ApiError, type ReceiptCheckInput } from '#/api/client'
 import type { ReceiptCheckResult } from '#/api/bff/receiptCall'
 import { createReceiptApi } from '#/api/http/receiptApi'
 
-import { readSession, type AuthDeps } from './auth'
+import { fetchWithAccessToken, readSession, type AuthDeps } from './auth'
 
 /**
  * 画面から受けた照合の入力を、照合の API に送る。form は parseReceiptForm で確認した値である。
@@ -21,11 +21,7 @@ export const checkReceipt = async (
   }
   const api = createReceiptApi({
     baseUrl: deps.receiptApiUrl,
-    fetch: (input, init) => {
-      const authorized = new Request(input, init)
-      authorized.headers.set('Authorization', `Bearer ${session.accessToken}`)
-      return globalThis.fetch(authorized)
-    },
+    fetch: fetchWithAccessToken(session.accessToken),
   })
   const visits = form.get('visits') as Blob
   const schedules = form.get('schedules')

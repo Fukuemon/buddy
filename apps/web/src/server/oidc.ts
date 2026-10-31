@@ -55,11 +55,13 @@ export const isGrantRejected = (error: unknown) =>
 /** Hydra へのリクエストを待つ上限。auth.ts の更新の鍵の期限より短くする。 */
 export const OIDC_TIMEOUT_SECONDS = 5
 
-const toTokens = (res: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers) => ({
-  accessToken: res.access_token,
-  refreshToken: res.refresh_token,
-  expiresIn: res.expiresIn(),
-  idToken: res.id_token,
+const toTokens = (
+  response: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
+) => ({
+  accessToken: response.access_token,
+  refreshToken: response.refresh_token,
+  expiresIn: response.expiresIn(),
+  idToken: response.id_token,
 })
 
 /**

@@ -7,6 +7,6 @@
 export const exceedsBodyLimit = (request: Request, max: number) => {
   const length = request.headers.get('Content-Length')
   if (length === null) return request.headers.has('Transfer-Encoding')
-  const n = Number(length)
-  return !Number.isFinite(n) || n > max
+  const bytes = Number(length)
+  return !Number.isFinite(bytes) || bytes > max
 }
