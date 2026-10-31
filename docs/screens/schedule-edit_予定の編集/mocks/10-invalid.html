@@ -53,15 +53,17 @@
                         <span class="wf-label">訪問日</span>
                         <span>2026-10-20</span>
                       </div>
-                      <div class="wf-row">
+                      <div class="wf-row se-row">
                         <div class="wf-input" data-m="6" data-testid="schedule-form-start-time">
                           <span class="wf-label">開始時間</span>
                           <span>09:00</span>
                         </div>
-                        <div class="wf-input wf-input--invalid" data-m="7" data-testid="schedule-form-service-time">
-                          <span class="wf-label">提供時間（分）</span>
-                          <span></span>
-                          <span class="wf-error">提供時間を入力してください</span>
+                        <div class="se-field">
+                          <div class="wf-input wf-input--invalid se-input--invalid" data-m="7" data-testid="schedule-form-service-time" aria-invalid="true" aria-describedby="service-time-error">
+                            <span class="wf-label">提供時間（分）</span>
+                            <span></span>
+                          </div>
+                          <span class="wf-error se-error" id="service-time-error" role="alert">提供時間を入力してください</span>
                         </div>
                       </div>
                       <p class="wf-label" data-m="8" data-testid="schedule-form-end-time" style="margin: 0">終了時間 -</p>
