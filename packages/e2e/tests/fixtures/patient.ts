@@ -28,3 +28,9 @@ export const registerPatient = async (
     },
   })
 }
+
+/** 予定の API の利用の終了（POST /v1/patients/{patient_id}/end_service）を token の職員で呼び、レスポンスを返す。 */
+export const endPatientService = (request: APIRequestContext, token: string, patientId: string) =>
+  request.post(`${SCHEDULE_URL}/v1/patients/${patientId}/end_service`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
