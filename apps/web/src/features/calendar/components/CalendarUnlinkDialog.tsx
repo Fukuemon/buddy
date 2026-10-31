@@ -1,8 +1,8 @@
 import { Button } from '@buddy/ui'
 import { useId } from 'react'
 
-import { BusyLabel } from './BusyLabel'
-import { CalendarDialog } from './CalendarDialog'
+import { BusyLabel } from '#/components/site/BusyLabel'
+import { SiteDialog } from '#/components/site/SiteDialog'
 
 export type CalendarUnlinkDialogProps = {
   staffName: string
@@ -25,7 +25,7 @@ export const CalendarUnlinkDialog = ({
 }: CalendarUnlinkDialogProps) => {
   const titleId = useId()
   return (
-    <CalendarDialog
+    <SiteDialog
       canClose={!isSubmitting}
       data-testid="calendar-unlink-dialog"
       labelledBy={titleId}
@@ -69,6 +69,6 @@ export const CalendarUnlinkDialog = ({
           <BusyLabel busy={isSubmitting}>外す</BusyLabel>
         </Button>
       </div>
-    </CalendarDialog>
+    </SiteDialog>
   )
 }

@@ -1,8 +1,8 @@
 import { Button } from '@buddy/ui'
 import { useId } from 'react'
 
-import { BusyLabel } from './BusyLabel'
-import { CalendarDialog } from './CalendarDialog'
+import { BusyLabel } from '#/components/site/BusyLabel'
+import { SiteDialog } from '#/components/site/SiteDialog'
 
 /** 読めるかの確認の状態。failed は、確認か結び付けが失敗したときである。 */
 export type CalendarCheckStatus = 'idle' | 'checking' | 'readable' | 'failed'
@@ -43,7 +43,7 @@ export const CalendarLinkDialog = ({
   const hintId = useId()
   const checking = checkStatus === 'checking'
   return (
-    <CalendarDialog
+    <SiteDialog
       canClose={!isSubmitting}
       data-testid="calendar-link-dialog"
       labelledBy={titleId}
@@ -141,6 +141,6 @@ export const CalendarLinkDialog = ({
           <BusyLabel busy={isSubmitting}>結び付ける</BusyLabel>
         </Button>
       </div>
-    </CalendarDialog>
+    </SiteDialog>
   )
 }
