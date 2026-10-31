@@ -39,7 +39,7 @@ func NewRange(start, end civil.Date) (Range, error) {
 	return Range{Start: start, End: end}, nil
 }
 
-// TimeMin と TimeMax は、期間の始まりと、終了日の翌日の始まりの Asia/Tokyo の時刻である。
+// TimeMin は、期間の開始日の始まりの Asia/Tokyo の時刻である。
 func (r Range) TimeMin() time.Time { return midnight(r.Start) }
 
 // TimeMax は、期間の終了日の翌日の始まりの Asia/Tokyo の時刻である。
@@ -500,13 +500,13 @@ func (b *planner) add(e entry) bool {
 		return false
 	}
 	if b.in.staffOnLeave && !b.keepsAssignment(e) {
-		b.skip(Candidate{Date: e.cand.Date, StartTime: e.cand.StartTime, EndTime: e.cand.EndTime, SkipReason: SkipStaffOnLeave})
+		b.skipAs(e.cand, SkipStaffOnLeave)
 		return false
 	}
 	if e.cand.Kind == KindVisit {
 		id, ok := b.serviceIDs[serviceKey(e.cand.Service)]
 		if !ok {
-			b.skip(Candidate{Date: e.cand.Date, StartTime: e.cand.StartTime, EndTime: e.cand.EndTime, SkipReason: SkipServiceNotFound})
+			b.skipAs(e.cand, SkipServiceNotFound)
 			return false
 		}
 		e.serviceCodeID = id
@@ -595,6 +595,12 @@ func (b *planner) skip(c Candidate) {
 	}
 	b.p.skipped = append(b.p.skipped, s)
 	b.p.counts.Skipped++
+}
+
+// skipAs は、読み替えた予定 c を、日時はそのままに理由 reason の取り込まない予定に足す。
+func (b *planner) skipAs(c Candidate, reason SkipReason) {
+	c.Kind, c.SkipReason = KindSkipped, reason
+	b.skip(c)
 }
 
 func (b *planner) matchPatients(client string) []PatientRef {
