@@ -32,14 +32,13 @@ test.describe('照合の結果', () => {
       await expect(page).toHaveURL(/\/receipt\/result$/)
     })
 
-    test('予定と実績の CSV を上げた場合、4 つの区分の件数が結果の画面に出ること', async ({
+    test('予定と実績の CSV を上げた場合、4 つの区分の件数が区分の見出しにだけ出ること', async ({
       page,
     }) => {
-      await expect(page.getByTestId('receipt-summary-mismatch')).toHaveText('3 件')
-      await expect(page.getByTestId('receipt-summary-schedule_only')).toHaveText('1 件')
-      await expect(page.getByTestId('receipt-summary-visit_only')).toHaveText('1 件')
-      await expect(page.getByTestId('receipt-summary-match')).toHaveText('3 件')
       await expect(page.getByTestId('receipt-category-mismatch')).toHaveText('不整合データ（3 件）')
+      await expect(page.getByTestId('receipt-category-schedule_only')).toHaveText('予定のみ（1 件）')
+      await expect(page.getByTestId('receipt-category-visit_only')).toHaveText('実績のみ（1 件）')
+      await expect(page.getByTestId('receipt-category-match')).toHaveText('整合データ（3 件）')
     })
 
     test('狭い幅で結果の表を右端まで送った場合、区分の見出しの文字が表の左端に残ること', async ({
@@ -85,7 +84,7 @@ test.describe('照合の結果', () => {
       await expect(page.getByTestId('receipt-result')).toContainText(
         '2026 年 11 月の Google カレンダー',
       )
-      await expect(page.getByTestId('receipt-summary-visit_only')).toHaveText('7 件')
+      await expect(page.getByTestId('receipt-category-visit_only')).toHaveText('実績のみ（7 件）')
       await expect(page.getByTestId('receipt-category-schedule_only')).toBeVisible()
 
       // 毎週の予定は、取り消した 11 日の回を除き、18 日は置き換えた回の時刻で出る
