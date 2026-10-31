@@ -562,7 +562,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
         },
         async ({ page, check }) => {
           await expect(page.getByTestId('staff-detail-email')).toHaveCount(0)
-          await expect(page.getByTestId('staff-detail-profile')).not.toContainText('電話番号')
+          await expect(page.getByTestId('staff-detail-phone')).toHaveCount(0)
           await expect(page.getByTestId('staff-detail-status-text')).toContainText(
             'メールアドレスと電話番号は退職で消し',
           )
