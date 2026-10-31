@@ -46,6 +46,9 @@ nav = [
     { "職員の一覧" = "screens/staff-list_職員の一覧/index.md" },
     { "職員の登録" = "screens/staff-new_職員の登録/index.md" },
     { "職員の詳細" = "screens/staff-detail_職員の詳細/index.md" },
+    { "利用者の一覧" = "screens/patient-list_利用者の一覧/index.md" },
+    { "利用者の登録" = "screens/patient-new_利用者の登録/index.md" },
+    { "利用者の詳細" = "screens/patient-detail_利用者の詳細/index.md" },
     { "照合" = "screens/receipt-upload_照合/index.md" },
     { "照合の結果" = "screens/receipt-result_照合の結果/index.md" },
     { "ログイン" = "screens/account-login_ログイン/index.md" },
@@ -96,6 +99,7 @@ nav = [
     "adr/0019-docs-site-publish-and-contrast-check.md",
     "adr/0020-docs-site-without-access.md",
     "adr/0021-patient-service-end.md",
+    "adr/0022-receipt-check-policy-and-non-visiting-staff.md",
   ] },
 ]
 
