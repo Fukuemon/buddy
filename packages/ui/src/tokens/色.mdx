@@ -146,6 +146,89 @@ import { ColorItem, ColorPalette, Meta } from '@storybook/addon-docs/blocks'
   />
 </ColorPalette>
 
+## チーム
+
+チームのまとまりを、名前の横の点で示す。点は名前と並べて出し、面と文字には使わない。
+区別の色より明るい段から選び、どの面の上でも 3:1 以上になる。選び方は DESIGN.md の「チームの色」にある。
+
+<ColorPalette>
+  <ColorItem
+    title="team-blue から team-yellow"
+    subtitle="チームの点"
+    colors={{
+      'team-blue': 'var(--buddy-color-team-blue)',
+      'team-orange': 'var(--buddy-color-team-orange)',
+      'team-magenta': 'var(--buddy-color-team-magenta)',
+      'team-cyan': 'var(--buddy-color-team-cyan)',
+      'team-yellow': 'var(--buddy-color-team-yellow)',
+    }}
+  />
+  <ColorItem
+    title="team-purple から team-lime"
+    subtitle="チームの点"
+    colors={{
+      'team-purple': 'var(--buddy-color-team-purple)',
+      'team-green': 'var(--buddy-color-team-green)',
+      'team-lime': 'var(--buddy-color-team-lime)',
+    }}
+  />
+</ColorPalette>
+
+### 面の上の点
+
+点が載る 4 つの面ごとに、8 色を並べる。
+
+<div className="flex flex-col gap-2">
+  {['bg-surface', 'bg-surface-canvas', 'bg-surface-subtle', 'bg-primary-surface'].map((bg) => (
+    <div key={bg} className={`flex flex-wrap items-center gap-4 rounded-8 border border-border p-4 ${bg}`}>
+      <span className="w-40 text-caption text-text-secondary">{bg.replace('bg-', '')}</span>
+      {[
+        ['bg-team-blue', 'blue'],
+        ['bg-team-orange', 'orange'],
+        ['bg-team-magenta', 'magenta'],
+        ['bg-team-cyan', 'cyan'],
+        ['bg-team-yellow', 'yellow'],
+        ['bg-team-purple', 'purple'],
+        ['bg-team-green', 'green'],
+        ['bg-team-lime', 'lime'],
+      ].map(([cls, name]) => (
+        <span key={name} className="flex items-center gap-1 text-caption text-text">
+          <span aria-hidden="true" className={`inline-block size-3 rounded-full ${cls}`} />
+          {name}
+        </span>
+      ))}
+    </div>
+  ))}
+</div>
+
+### 区別の色と並べる
+
+カレンダーの職員の絞り込みでは、職員の区別の色とチームの点が並ぶ。同じ色相どうしを並べ、明るさで見分けられることを示す。
+
+<div className="flex flex-col gap-2 rounded-8 border border-border bg-surface p-4">
+  {[
+    ['bg-team-purple', 'bg-categorical-1', 'purple'],
+    ['bg-team-cyan', 'bg-categorical-2', 'cyan'],
+    ['bg-team-magenta', 'bg-categorical-3', 'magenta'],
+    ['bg-team-lime', 'bg-categorical-4', 'lime'],
+    ['bg-team-yellow', 'bg-categorical-5', 'yellow'],
+    ['bg-team-blue', 'bg-categorical-6', 'blue'],
+    ['bg-team-green', 'bg-categorical-7', 'green'],
+    ['bg-team-orange', 'bg-categorical-8', 'orange'],
+  ].map(([team, staff, name]) => (
+    <div key={name} className="flex items-center gap-4 text-caption text-text">
+      <span className="flex w-40 items-center gap-1">
+        <span aria-hidden="true" className={`inline-block size-3 rounded-full ${team}`} />
+        チーム {name}
+      </span>
+      <span className="flex items-center gap-1">
+        <span aria-hidden="true" className={`inline-block size-4 rounded-4 ${staff}`} />
+        職員の色
+      </span>
+    </div>
+  ))}
+</div>
+
 ## フォーカス
 
 フォーカスの表示は `focus-ring` のユーティリティだけを使う。黄色の輪（`--buddy-color-focus-halo`）と、その外の黒の枠（`--buddy-color-focus-outline`）の 2 重の表示である。

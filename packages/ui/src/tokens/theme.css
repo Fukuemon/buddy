@@ -40,6 +40,14 @@
   --color-categorical-8: var(--buddy-color-categorical-8);
   --color-categorical-9: var(--buddy-color-categorical-9);
   --color-categorical-10: var(--buddy-color-categorical-10);
+  --color-team-blue: var(--buddy-color-team-blue);
+  --color-team-orange: var(--buddy-color-team-orange);
+  --color-team-magenta: var(--buddy-color-team-magenta);
+  --color-team-cyan: var(--buddy-color-team-cyan);
+  --color-team-yellow: var(--buddy-color-team-yellow);
+  --color-team-purple: var(--buddy-color-team-purple);
+  --color-team-green: var(--buddy-color-team-green);
+  --color-team-lime: var(--buddy-color-team-lime);
 
   --font-sans: var(--font-family-sans);
 
