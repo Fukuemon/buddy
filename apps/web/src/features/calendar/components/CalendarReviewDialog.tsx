@@ -23,7 +23,7 @@ export type CalendarReviewDialogProps = {
 }
 
 const Row = ({ label, children }: { label: string; children: ReactNode }) => (
-  <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-x-3 py-1">
+  <div className="grid grid-cols-[10rem_minmax(0,1fr)] gap-x-3 py-1">
     <dt className="text-text-secondary">{label}</dt>
     <dd>{children}</dd>
   </div>
