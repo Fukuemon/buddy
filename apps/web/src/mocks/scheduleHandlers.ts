@@ -94,6 +94,23 @@ export const createScheduleHandlers = (baseUrl: string) => {
       ),
     ),
     http.get(
+      '/v1/patients/{patient_id}',
+      withAuth(({ params, response }) => {
+        const found = mockPatients.find((patient) => patient.id === params.patient_id)
+        return found
+          ? response(200).json(found)
+          : response(404).json({ code: 'not_found', message: 'リソースが見つかりません' })
+      }),
+    ),
+    http.get(
+      '/v1/patients/{patient_id}/remaining_schedules',
+      withAuth(({ params, response }) =>
+        mockPatients.some((patient) => patient.id === params.patient_id)
+          ? response(200).json({ schedules: [], recurring_schedules: [] })
+          : response(404).json({ code: 'not_found', message: 'リソースが見つかりません' }),
+      ),
+    ),
+    http.get(
       '/v1/facilities/{facility_id}/schedules',
       withAuth(({ response }) =>
         response(200).json({ schedules: createMockSchedules(new Date()), recurring_schedules: [] }),
