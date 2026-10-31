@@ -24,26 +24,31 @@ const isLoggedInAs = (staffName: string) => async (page: Page) => {
     .catch(() => false)
 }
 
-setup('compose のブローカーにログインした状態を保存する', async ({ browser }) => {
-  await ensureSavedLogin(browser, {
+const ACCOUNTS = [
+  {
+    title: 'compose のブローカーにログインした状態を保存する',
     path: LOGIN_STATE,
-    baseUrl: BASE_URL,
-    isLoggedIn: isLoggedInAs(LOGIN_STAFF.name),
-    login: async (page) => {
-      await page.goto('/schedule')
-      await signInAtBroker(page, LOGIN_EMAIL)
-    },
-  })
-})
-
-setup('compose のブローカーにチームリーダーでログインした状態を保存する', async ({ browser }) => {
-  await ensureSavedLogin(browser, {
+    email: LOGIN_EMAIL,
+    staffName: LOGIN_STAFF.name,
+  },
+  {
+    title: 'compose のブローカーにチームリーダーでログインした状態を保存する',
     path: LEADER_STATE,
-    baseUrl: BASE_URL,
-    isLoggedIn: isLoggedInAs(LEADER.staff.name),
-    login: async (page) => {
-      await page.goto('/schedule')
-      await signInAtBroker(page, LEADER.email)
-    },
+    email: LEADER.email,
+    staffName: LEADER.staff.name,
+  },
+]
+
+for (const { title, path, email, staffName } of ACCOUNTS) {
+  setup(title, async ({ browser }) => {
+    await ensureSavedLogin(browser, {
+      path,
+      baseUrl: BASE_URL,
+      isLoggedIn: isLoggedInAs(staffName),
+      login: async (page) => {
+        await page.goto('/schedule')
+        await signInAtBroker(page, email)
+      },
+    })
   })
-})
+}
