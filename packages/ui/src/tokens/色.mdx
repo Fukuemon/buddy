@@ -180,7 +180,10 @@ import { ColorItem, ColorPalette, Meta } from '@storybook/addon-docs/blocks'
 
 <div className="flex flex-col gap-2">
   {['bg-surface', 'bg-surface-canvas', 'bg-surface-subtle', 'bg-primary-surface'].map((bg) => (
-    <div key={bg} className={`flex flex-wrap items-center gap-4 rounded-8 border border-border p-4 ${bg}`}>
+    <div
+      key={bg}
+      className={`flex flex-wrap items-center gap-4 rounded-8 border border-border p-4 ${bg}`}
+    >
       <span className="w-40 text-caption text-text-secondary">{bg.replace('bg-', '')}</span>
       {[
         ['bg-team-blue', 'blue'],
