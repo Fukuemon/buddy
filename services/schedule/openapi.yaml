@@ -149,6 +149,7 @@ paths:
       tags: [organization]
       operationId: createTeam
       summary: チームを作る
+      description: 職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
       parameters: [$ref: "#/components/parameters/FacilityID"]
       requestBody:
         required: true
