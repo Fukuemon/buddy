@@ -69,3 +69,31 @@ describe('利用者の一覧の API のフェイク', () => {
     expect(all.data?.find((patient) => patient.id === 'patient-ended')?.ended_at).not.toBeNull()
   })
 })
+
+describe('利用者を 1 人読む API と、残る予定の API のフェイク', () => {
+  it('GET /v1/patients/{patient_id} は、利用の終了の利用者も、利用の終了の日時と一緒に返す', async () => {
+    const { data, response } = await client().GET('/v1/patients/{patient_id}', {
+      params: { path: { patient_id: 'patient-ended' } },
+    })
+    expect(response.status).toBe(200)
+    expect(data?.ended_at).not.toBeNull()
+  })
+
+  it('GET /v1/patients/{patient_id}/remaining_schedules のフェイクは、空の一覧を返す', async () => {
+    const { data, response } = await client().GET('/v1/patients/{patient_id}/remaining_schedules', {
+      params: { path: { patient_id: 'patient-ended' } },
+    })
+    expect(response.status).toBe(200)
+    expect(data).toEqual({ schedules: [], recurring_schedules: [] })
+  })
+
+  it('無い利用者を指すと 404 を返す', async () => {
+    const one = await client().GET('/v1/patients/{patient_id}', {
+      params: { path: { patient_id: 'patient-missing' } },
+    })
+    const remaining = await client().GET('/v1/patients/{patient_id}/remaining_schedules', {
+      params: { path: { patient_id: 'patient-missing' } },
+    })
+    expect([one.response.status, remaining.response.status]).toEqual([404, 404])
+  })
+})

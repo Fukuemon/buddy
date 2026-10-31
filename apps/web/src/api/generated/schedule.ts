@@ -455,7 +455,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * 利用者を取得する
+         * @description 利用者を 1 人返す。利用の終了の利用者も返し、ended_at に利用の終了にした時刻を入れる。
+         *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        get: operations["getPatient"];
         /**
          * 利用者の名前、サービス、希望、担当の職員を変える
          * @description 利用者の名前、希望の時間帯と性別、サービスコード、担当の職員を本文の値に置き換える。部分の更新は持たない。
@@ -488,6 +493,27 @@ export interface paths {
          *     利用の終了の利用者を利用の終了にしても成功し、最初に利用の終了にした時刻を残す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         post: operations["endPatientService"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/patients/{patient_id}/remaining_schedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 利用者に残る予定を返す
+         * @description 利用者を利用の終了にする前に、その日（事業所の現地の日付）以降の予定と、その日以降に終わる繰り返しの予定を返す。
+         *     一覧は、利用の終了の 409（patient_has_schedules）が返す一覧と同じ規則で作る。何も書かない。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        get: operations["getPatientRemainingSchedules"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2506,6 +2532,33 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    getPatient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: components["schemas"]["ID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 利用者 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Patient"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
     updatePatient: {
         parameters: {
             query?: never;
@@ -2593,6 +2646,33 @@ export interface operations {
                     "application/json": components["schemas"]["EndServiceConflict"];
                 };
             };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    getPatientRemainingSchedules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: components["schemas"]["ID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description その日以降に残る予定と繰り返しの予定 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientSchedules"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
         };
     };

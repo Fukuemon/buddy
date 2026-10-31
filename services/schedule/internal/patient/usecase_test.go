@@ -3,6 +3,7 @@ package patient_test
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 	"time"
 
@@ -123,6 +124,12 @@ func TestPatientGuard(t *testing.T) {
 	if _, err := uc.Resume(ctx, inmem.PatientID, inmem.StaffID); !errors.Is(err, apperr.ErrForbidden) {
 		t.Errorf("利用の再開: err = %v, want ErrForbidden", err)
 	}
+	if _, err := uc.Get(ctx, inmem.PatientID); !errors.Is(err, apperr.ErrForbidden) {
+		t.Errorf("取得: err = %v, want ErrForbidden", err)
+	}
+	if _, err := uc.RemainingSchedules(ctx, inmem.PatientID); !errors.Is(err, apperr.ErrForbidden) {
+		t.Errorf("残る予定: err = %v, want ErrForbidden", err)
+	}
 	if s.Patients[inmem.PatientID] != before {
 		t.Errorf("拒んだのに利用者が変わった: %+v", s.Patients[inmem.PatientID])
 	}
@@ -153,10 +160,18 @@ func TestPatientEndRejectsRemainingSchedules(t *testing.T) {
 		Rule: schedule.Rule{Frequency: schedule.Weekly},
 	}}
 	uc := newUsecase(s, allow)
-	_, err := uc.End(ctx, inmem.PatientID)
+	read, err := uc.RemainingSchedules(ctx, inmem.PatientID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = uc.End(ctx, inmem.PatientID)
 	se, ok := errors.AsType[*patient.ScheduledError](err)
 	if !ok || !errors.Is(err, apperr.ErrConflict) {
 		t.Fatalf("err = %v, want *ScheduledError", err)
+	}
+	// 利用の終了の前に読む一覧は、利用の終了の 409 と同じ一覧になる（#353 の検証の観点 2）。
+	if !reflect.DeepEqual(read, se.Remaining) {
+		t.Errorf("RemainingSchedules = %+v, want 利用の終了の一覧 %+v", read, se.Remaining)
 	}
 	if len(se.Remaining.Schedules) != 1 || se.Remaining.Schedules[0].ID != "TODAY" || len(se.Remaining.Recurring) != 1 || se.Remaining.Recurring[0].ID != "REC" {
 		t.Errorf("remaining = %+v, want 今日の予定と繰り返しの予定", se.Remaining)
@@ -199,6 +214,17 @@ func TestPatientEndAndList(t *testing.T) {
 	}
 	if _, err := uc.End(ctx, "MISSING"); !errors.Is(err, apperr.ErrNotFound) {
 		t.Errorf("いない利用者: err = %v, want ErrNotFound", err)
+	}
+	// 利用の終了の利用者も 1 人で読め、利用の終了にした時刻が返る（#353 の検証の観点 1）。
+	got, err := uc.Get(ctx, inmem.PatientID)
+	if err != nil || got.EndedAt == nil || !got.EndedAt.Equal(*first.EndedAt) {
+		t.Errorf("取得 = %+v, err = %v, want 利用の終了にした時刻 %v", got.Patient, err, first.EndedAt)
+	}
+	if _, err := uc.Get(ctx, "MISSING"); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("いない利用者の取得: err = %v, want ErrNotFound", err)
+	}
+	if _, err := uc.RemainingSchedules(ctx, "MISSING"); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("いない利用者の残る予定: err = %v, want ErrNotFound", err)
 	}
 }
 

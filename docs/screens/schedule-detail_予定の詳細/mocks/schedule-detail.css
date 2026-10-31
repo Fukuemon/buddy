@@ -5,8 +5,14 @@
   white-space: pre-wrap;
 }
 
-/* 行の区切り線は出さず、セクションの見出しの線だけで分ける（apps/web の ScheduleDetailModal の Row） */
+/*
+ * 行の区切り線は出さず、セクションの見出しの線だけで分ける（apps/web の ScheduleDetailModal の Row）。
+ * 全ての段で見出しの列の幅を同じにし、値の列の位置をそろえる。
+ * wireframe.css の後ろにある入力の横並びの .wf-row（flex）に上書きされないよう、grid を書き直す
+ */
 .sd-rows .wf-row {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr);
   padding: 8px 0;
   border-bottom: 0;
 }
@@ -33,15 +39,6 @@
 .sd-memo {
   margin: 8px 0 0;
   white-space: pre-wrap;
-}
-
-/* 幅 768px 以上では、訪問の情報を 2 列に並べる */
-@container screen (min-width: 768px) {
-  .sd-rows--2col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    column-gap: 24px;
-  }
 }
 
 /* キャンセルの理由（apps/web の ScheduleDetailModal の warning-surface の帯） */
