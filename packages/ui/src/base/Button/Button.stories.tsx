@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
 
 import { Button } from './Button'
+import { BusyLabel } from './BusyLabel'
 
 const meta = {
   title: 'コンポーネント/Base/Button',
@@ -19,6 +20,17 @@ export const PrimaryDisabled: Story = { args: { variant: 'primary', disabled: tr
 export const Secondary: Story = { args: { variant: 'secondary' } }
 
 export const Destructive: Story = { args: { variant: 'destructive', children: '削除' } }
+
+export const Danger: Story = { args: { variant: 'danger', children: '外す' } }
+
+export const DangerDisabled: Story = {
+  args: { variant: 'danger', children: '外す', disabled: true },
+}
+
+/** 送っている間に、文字を残したまま前に回転の印を出す。確認のダイアログの確定のボタンに使う。 */
+export const Busy: Story = {
+  args: { variant: 'danger', disabled: true, children: <BusyLabel busy>外す</BusyLabel> },
+}
 
 export const Small: Story = { args: { size: 'S' } }
 

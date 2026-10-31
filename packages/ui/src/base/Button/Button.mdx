@@ -7,7 +7,7 @@ import * as Stories from './Button.stories'
 
 # Button
 
-操作を 1 つ実行するボタン。`variant` で主、副、削除を、`size` で S、M、L を選ぶ。
+操作を 1 つ実行するボタン。`variant` で主、副、削除、確定の削除を、`size` で S、M、L を選ぶ。
 
 ## 使う場面
 
@@ -22,11 +22,14 @@ import * as Stories from './Button.stories'
 - 主のボタン（`variant="primary"`）は、1 つの画面かダイアログに 1 つまでにする
 - 押せない理由があるときは `disabled` にし、理由の文を近くに出す
 - 押した後の待ちは `isLoading` で示す
+- データを失う操作は、`variant="destructive"` のボタンで確認のダイアログを開き、確認のダイアログの確定のボタンを `variant="danger"` にする。文言は操作の動詞（「外す」「書き直す」）にする
+- 文字を読ませたまま待たせるときは、子に `BusyLabel` を渡し、文字の前に回転の印を出す
 
 ## Don't
 
 - 主のボタンを並べて、どれが主の操作か分からなくする
 - 削除のような取り消せない操作に `variant="primary"` を使う
+- 確認のダイアログの外で `variant="danger"` を使う。赤い面は、データを失う操作を確定する 1 か所だけにする
 - `className` で色や角丸を変える
 
 ## 状態
@@ -44,6 +47,20 @@ hover は文字に下線が付き、フォーカスは `focus-ring` を出す。
 ### 削除
 
 <Canvas of={Stories.Destructive} />
+
+### 確定の削除
+
+データを失う操作を、確認のダイアログで確定するボタン。
+
+<Canvas of={Stories.Danger} />
+
+### 確定の削除の無効
+
+<Canvas of={Stories.DangerDisabled} />
+
+### 文字を残した待ち
+
+<Canvas of={Stories.Busy} />
 
 ### 無効
 
