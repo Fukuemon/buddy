@@ -218,7 +218,9 @@ sequenceDiagram
 - トークンが無いときは `WWW-Authenticate: Bearer` を、検証に失敗したときは `WWW-Authenticate: Bearer error="invalid_token"` を付けて、401 を返す。
 - ミドルウェアは、パスの引数ごとに、指すリソースの事業所を職員の事業所と比べる。
   - `facility_id` は、値をそのまま職員の事業所と比べる。
-  - 次の引数は、リソースを読んでその事業所と比べる。`department_id`、`team_id`、`position_id`、`user_id`、`schedule_id`、`recurring_schedule_id`、`external_calendar_id`、`calendar_export_id`
+  - 次の引数は、リソースを読んでその事業所と比べる。
+    - 組織、職員、利用者: `department_id`、`team_id`、`position_id`、`user_id`、`patient_id`
+    - 予定とカレンダー: `schedule_id`、`recurring_schedule_id`、`external_calendar_id`、`calendar_export_id`
   - `policy_id` は、事業所に属さないので確認しない。`user_policy_id` は、同じパスの `user_id` で事業所を確認し、`staff.Usecase` が職員の権限かを確認する。
   - この一覧に無い引数を持つパスは、事業所を確認できないので 500 を返す。
 - パスの ID が ULID でないときと、リソースが見つからないときは、ミドルウェアは通す。ULID でない ID は次のミドルウェアが 400 を返し、見つからないリソースはハンドラが 404 を返す。
@@ -274,6 +276,10 @@ sequenceDiagram
 - 利用の終了と利用の再開は、事業所の行に排他のロックを取ってから利用者を読み直す。職員の休職と退職と同じロック（`patient.FacilityLocker`、`postgres.StaffRepository`）である。
   - 利用の終了は、ロックの後にその日以降の予定を数える。予定の作成は共有のロックを取ってから利用者を読むので、数えた後に、利用の終了の利用者へ予定ができることは無い。
   - 残る予定があれば、書かずに 409（`patient_has_schedules`）で残る一覧を返す。一覧は `PatientSchedules` の形にする。
+- 利用の終了を確定する前の残る一覧は、`GET /v1/patients/{patient_id}/remaining_schedules` で返す。何も書かない。
+  - 一覧は、利用の終了と同じ `patient.Usecase` の関数で作り、同じ規則の一覧を同じ形（`PatientSchedules`）で返す。
+- 利用者を 1 人読むのは `GET /v1/patients/{patient_id}` で、利用の終了の利用者も `ended_at` と一緒に返す。
+  - 2 つの読み取りも、`patient.Usecase` が職員の管理の権限を確認してから行う。ほかの事業所の利用者は、職員と同じく、ミドルウェアがパスの `patient_id` の事業所で 403 にする。
   - 利用の再開は、担当の職員の状態を同じロックの中で読む。職員の退職の確認と行き違わず、退職した職員が利用中の利用者の担当に残らない。
 - 利用の終了の利用者は、`patients.ended_at` に利用の終了にした時刻を持つ。利用の再開で NULL に戻す。
 - 職員の退職の確認と、休職、退職、`remaining_assignments` が返す担当の利用者は、利用の終了の利用者を数えない。3 つは同じクエリ（`ListStaffAssignedPatients`）で一覧を作る。
