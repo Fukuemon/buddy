@@ -1,4 +1,4 @@
-import { Button, Loading } from '@buddy/ui'
+import { Button, HelpToggle, Loading } from '@buddy/ui'
 
 import type { CalendarExportIssue } from '#/api/types'
 
@@ -13,27 +13,25 @@ export type CalendarReviewViewState =
 export type CalendarReviewViewProps = {
   state: CalendarReviewViewState
   onRetry: () => void
-  onOpenSchedule: (scheduleId: string) => void
-  onRewrite: (exportId: CalendarExportIssue['id']) => void
-  onAccept: (exportId: CalendarExportIssue['id']) => void
+  /** 一覧の行を押したときに呼ぶ。 */
+  onSelect: (exportId: CalendarExportIssue['id']) => void
 }
 
-/** 確認が必要な予定の画面の本文。タイトルと説明の文の下に、Google カレンダーと食い違った予定を並べる。 */
-export const CalendarReviewView = ({
-  state,
-  onRetry,
-  onOpenSchedule,
-  onRewrite,
-  onAccept,
-}: CalendarReviewViewProps) => (
+/**
+ * 確認が必要な予定の画面の本文。タイトルと 1 文の説明の下に、Google カレンダーと食い違った予定を並べる。
+ * 一覧に出ない予定があることは、初めてのときだけ要る説明なので、タイトルの右の ? のヘルプに入れる。
+ */
+export const CalendarReviewView = ({ state, onRetry, onSelect }: CalendarReviewViewProps) => (
   <div className="flex flex-col gap-6">
-    <h1 className="text-heading-md">確認が必要な予定</h1>
-    <p className="max-w-3xl text-body">
-      buddy の予定のうち、Google カレンダーに書き出せなかった予定と、buddy と Google
-      カレンダーの両方で変わった予定です。片方だけで変わった予定は、変わった側に合わせるので、ここには出ません。buddy
-      の内容で書き直すと Google カレンダーの予定を buddy の内容にし、Google の内容に合わせると buddy
-      の予定を Google カレンダーの内容にします。
-    </p>
+    <div className="flex flex-col gap-2">
+      <div className="relative flex items-center gap-1">
+        <h1 className="text-heading-md">確認が必要な予定</h1>
+        <HelpToggle data-testid="schedule-review-help">
+          片方だけで変わった予定は、変わった側に合わせるので、ここには出ません。
+        </HelpToggle>
+      </div>
+      <p className="max-w-3xl text-body">Google カレンダーと食い違った予定です。</p>
+    </div>
     {state.status === 'loading' && (
       <div data-testid="calendar-review-loading">
         <Loading description="読み込んでいます" />
@@ -55,12 +53,7 @@ export const CalendarReviewView = ({
           確認が必要な予定はありません。
         </p>
       ) : (
-        <CalendarReviewTable
-          issues={state.issues}
-          onAccept={onAccept}
-          onOpenSchedule={onOpenSchedule}
-          onRewrite={onRewrite}
-        />
+        <CalendarReviewTable issues={state.issues} onSelect={onSelect} />
       ))}
   </div>
 )
