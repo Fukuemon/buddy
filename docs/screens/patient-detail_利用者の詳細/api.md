@@ -8,8 +8,8 @@
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
 | 利用者の名前 | 名前 | `Patient.name` | `getPatient` の `Patient.name` |
-| 状態の印、利用の状態 | 利用中か、利用の終了か | `Patient.ended` | `Patient.ended_at` が `null` か |
-| 状態の印、利用の状態 | 利用の終了にした日 | 足す | `Patient.ended_at` の日付（事業所の現地の日付） |
+| 状態の印、利用の状態 | 利用の終了か（出すか） | `Patient.ended` | `Patient.ended_at` が `null` か |
+| 状態の印 | 利用の終了にした日 | 足す | `Patient.ended_at` の日付（事業所の現地の日付） |
 | プロフィール | サービス | 足す | `Patient.service_code` と、`listServiceCodes` の `ServiceCode` のうち `id` が `Patient.service_code_id` のものの時間の範囲 |
 | プロフィール | 希望の時間帯、希望する担当の性別 | 足す | `Patient.preferred_time`、`Patient.preferred_gender` |
 | プロフィール | 担当の職員の名前 | 足す | `Patient.assigned_staff_name` |
