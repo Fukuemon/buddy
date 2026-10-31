@@ -37,10 +37,12 @@ test.describe('職員の一覧', () => {
       await expect(page).toHaveURL(/\/staff\/[0-9A-HJKMNP-TV-Z]{26}$/)
       await expect(page.getByTestId('staff-detail-name')).toHaveText(staff.name)
       await page.getByTestId('staff-detail-tab-policies').click()
+      const positionGroup = page.getByTestId('staff-policy-group-position')
+      await expect(positionGroup).toContainText(`役職「${member?.name}」で付く権限`)
       for (const { code } of member?.policies ?? []) {
-        await expect(page.getByTestId(`staff-policy-row-${code}`)).toContainText('✓ 付いている')
-        await expect(page.getByTestId(`staff-policy-row-${code}`)).toContainText('役職で付く')
+        await expect(positionGroup.getByTestId(`staff-policy-row-${code}`)).toBeVisible()
       }
+      await expect(page.getByTestId('staff-policy-group-individual')).toHaveCount(0)
 
       await page.getByTestId('staff-detail-back').click()
       await page.getByTestId('staff-list-search').fill(staff.name)
@@ -134,7 +136,9 @@ test.describe('職員の詳細', () => {
 
       await page.getByTestId('staff-detail-tab-policies').click()
       const owned = other?.policies[0]?.code ?? ''
-      await expect(page.getByTestId(`staff-policy-row-${owned}`)).toContainText('✓ 付いている')
+      await expect(
+        page.getByTestId('staff-policy-group-position').getByTestId(`staff-policy-row-${owned}`),
+      ).toBeVisible()
       await page.getByTestId('staff-detail-policies-change').click()
       const policies = page.getByTestId('staff-policies-dialog')
       await policies.getByTestId(`staff-policies-option-${owned}`).uncheck()
@@ -142,10 +146,12 @@ test.describe('職員の詳細', () => {
       await policies.getByTestId('staff-policies-submit').click()
       await expect(policies).toHaveCount(0)
 
-      await expect(page.getByTestId(`staff-policy-row-${owned}`)).toContainText('— 付いていない')
-      const added = page.getByTestId('staff-policy-row-schedule.all.read')
-      await expect(added).toContainText('✓ 付いている')
-      await expect(added).toContainText('個別に足した')
+      await expect(
+        page
+          .getByTestId('staff-policy-group-individual')
+          .getByTestId('staff-policy-row-schedule.all.read'),
+      ).toBeVisible()
+      await expect(page.getByTestId(`staff-policy-row-${owned}`)).toHaveCount(0)
     })
   })
 
