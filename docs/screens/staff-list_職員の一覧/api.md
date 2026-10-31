@@ -13,7 +13,7 @@
 | 職員の行 | 役職、部署の名前 | `StaffRecord.position.name`、`department.name` | `Staff.position.name`、`Staff.department.name` |
 | 職員の行 | 詳細の URL の職員 | `StaffRecord.id` | `Staff.id` |
 | チーム | チームの名前 | `StaffRecord.team.name` | `Staff.team.name` |
-| チーム | 点の色 | 仮に、`teams.list` の名前の順の位置で区別の色（`categorical`）を選ぶ | #367 で決める |
+| チーム | 点の色 | `Team.color` に `team-` を付けたトークン（`teams.list` の戻り値） | `listTeams` の `Team.color` |
 | 名前の検索、チーム、役職、部署の絞り込み | 絞り込んだ職員 | 画面で絞り込む | `listUsers` が返した全ての職員の `username`、`team.id`、`position.id`、`department.id` |
 | 状態の絞り込み | 有効、休職、退職 | `StaffRecord.status` | `Staff.status`（`active`、`on_leave`、`retired`） |
 | 戻る予定の日 | 戻る予定の日 | `StaffRecord.leave_return_date` | `Staff.leave_return_date` |
