@@ -61,16 +61,34 @@
   padding: 24px;
 }
 
-/* 結果の表は折り返さず横に送り、訪問日の列を左端に残す（apps/web の Table の stickyColumn と同じ） */
+/*
+ * 結果の表は折り返さず横に送り、訪問日と利用者名の 2 列を左端に残す（apps/web の ReceiptResultTable と同じ）。
+ * apps/web は訪問日の列の幅を測って利用者名の列の位置を決める。モックは測らないので、訪問日の列の幅を決めて書く
+ */
+.rc-table-wrap {
+  --rc-first-column-width: 112px;
+}
+
 .rc-table-wrap th,
 .rc-table-wrap td {
   white-space: nowrap;
 }
 
-.rc-table-wrap tr > :first-child {
+.rc-table-wrap tr > :first-child,
+.rc-table-wrap tr > :nth-child(2) {
   position: sticky;
   left: 0;
   background: var(--wf-surface);
+}
+
+.rc-table-wrap tr > :first-child:not([colspan]) {
+  box-sizing: border-box;
+  width: var(--rc-first-column-width);
+  min-width: var(--rc-first-column-width);
+}
+
+.rc-table-wrap tr > :nth-child(2) {
+  left: var(--rc-first-column-width);
 }
 
 .rc-table-wrap .rc-sep > :first-child {
