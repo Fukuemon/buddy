@@ -59,12 +59,15 @@ func NewRow(line int, values map[string]string) Row {
 	return Row{Line: line, values: values}
 }
 
+// ErrEncoding は、Decode が UTF-8 としても CP932 としても読めないバイト列を受けたことを表す。
+var ErrEncoding = errors.New("文字コードが UTF-8 でも CP932 でもない")
+
 // Decode は、UTF-8（BOM の有無を問わない）か CP932 のバイト列を UTF-8 の文字列にする。
-// どちらとしても読めなければ *record.InputError を返す。
+// どちらとしても読めなければ ErrEncoding を返す。
 func Decode(data []byte) (string, error) {
 	if b, ok := bytes.CutPrefix(data, []byte(utf8BOM)); ok {
 		if !utf8.Valid(b) {
-			return "", &record.InputError{Message: "UTF-8 として読めないバイト列がある"}
+			return "", ErrEncoding
 		}
 		return string(b), nil
 	}
@@ -73,24 +76,25 @@ func Decode(data []byte) (string, error) {
 	}
 	s, err := japanese.ShiftJIS.NewDecoder().Bytes(data)
 	if err != nil || bytes.ContainsRune(s, utf8.RuneError) {
-		return "", &record.InputError{Message: "文字コードが UTF-8 でも CP932 でもない"}
+		return "", ErrEncoding
 	}
 	return string(s), nil
 }
 
 // ReadTable は、CSV を読み、columns の列を持つ行を返す。
-// 先頭の行をヘッダーとして扱い、columns のうちヘッダーにない列があれば *record.InputError を返す。
+// 先頭の行をヘッダーとして扱い、columns のうちヘッダーにない列があれば、列ごとの誤りを持つ *record.InputError を返す。
+// 文字コードを読めないとき、空のとき、CSV として読めない行があるときも *record.InputError を返す。
 // columns の値がすべて空の行は読み飛ばす。
 func ReadTable(data []byte, source record.Source, columns []string) ([]Row, error) {
 	text, err := Decode(data)
 	if err != nil {
-		return nil, err
+		return nil, fileError(source, record.ReasonEncoding, err.Error())
 	}
 	r := csv.NewReader(strings.NewReader(text))
 	r.FieldsPerRecord = -1
 	header, err := r.Read()
 	if errors.Is(err, io.EOF) {
-		return nil, &record.InputError{Message: fmt.Sprintf("%s の CSV が空である", source)}
+		return nil, fileError(source, record.ReasonEmptyFile, "CSV が空である")
 	}
 	if err != nil {
 		return nil, csvError(source, err)
@@ -99,16 +103,16 @@ func ReadTable(data []byte, source record.Source, columns []string) ([]Row, erro
 	for i, h := range header {
 		index[strings.TrimSpace(h)] = i
 	}
-	var missing []string
+	var missing []record.CSVError
 	for _, c := range columns {
 		if _, ok := index[c]; !ok {
-			missing = append(missing, c)
+			missing = append(missing, record.CSVError{
+				Source: source, Reason: record.ReasonMissingColumn, Column: c, Message: "列がない",
+			})
 		}
 	}
 	if len(missing) > 0 {
-		return nil, &record.InputError{
-			Message: fmt.Sprintf("%s の CSV に列がない: %s", source, strings.Join(missing, ", ")),
-		}
+		return nil, &record.InputError{Message: fmt.Sprintf("%s の CSV に列がない", source), Errors: missing}
 	}
 
 	var rows []Row
@@ -140,13 +144,18 @@ func ReadTable(data []byte, source record.Source, columns []string) ([]Row, erro
 	return rows, nil
 }
 
-func csvError(source record.Source, err error) error {
-	var pe *csv.ParseError
-	if errors.As(err, &pe) {
-		return &record.InputError{
-			Message: fmt.Sprintf("%s の CSV を読めない", source),
-			Rows:    []record.RowError{{Source: source, Line: pe.Line, Message: pe.Err.Error()}},
-		}
+func fileError(source record.Source, reason record.Reason, message string) *record.InputError {
+	return &record.InputError{
+		Message: fmt.Sprintf("%s の CSV を読めない", source),
+		Errors:  []record.CSVError{{Source: source, Reason: reason, Message: message}},
 	}
-	return &record.InputError{Message: fmt.Sprintf("%s の CSV を読めない: %v", source, err)}
+}
+
+func csvError(source record.Source, err error) error {
+	ie := fileError(source, record.ReasonMalformedRow, err.Error())
+	if pe, ok := errors.AsType[*csv.ParseError](err); ok {
+		ie.Errors[0].Line = pe.Line
+		ie.Errors[0].Message = pe.Err.Error()
+	}
+	return ie
 }
