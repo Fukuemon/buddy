@@ -7,7 +7,7 @@
 | --- | --- |
 | URL | `/schedule/link` |
 | 使う人 | 職員の管理の権限を持つ職員（デフォルトはマネージャー） |
-| 実装 | `apps/web/src/routes/schedule_.link.tsx`、`apps/web/src/features/calendar/components/CalendarLinkContainer.tsx`、`apps/web/src/features/calendar/components/CalendarLinkView.tsx`、`apps/web/src/features/calendar/components/CalendarShareGuide.tsx`、`apps/web/src/features/calendar/components/CalendarLinkTable.tsx`、`apps/web/src/features/calendar/components/CalendarLinkDialog.tsx`、`apps/web/src/features/calendar/components/CalendarUnlinkDialog.tsx`、`apps/web/src/features/calendar/components/CalendarDialog.tsx`、`apps/web/src/components/site/PageForbiddenMessage.tsx` |
+| 実装 | `apps/web/src/routes/schedule_.link.tsx`、`apps/web/src/features/calendar/components/CalendarLinkContainer.tsx`、`apps/web/src/features/calendar/components/CalendarLinkView.tsx`、`apps/web/src/features/calendar/components/CalendarShareGuide.tsx`、`apps/web/src/features/calendar/components/CalendarLinkTable.tsx`、`apps/web/src/features/calendar/components/CalendarLinkDialog.tsx`、`apps/web/src/features/calendar/components/CalendarUnlinkDialog.tsx`、`apps/web/src/components/site/PageForbiddenMessage.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
 
@@ -594,6 +594,8 @@ ADR-0012: [Google カレンダーのサービスアカウントを事業所ご�
 
 **表示条件**: カレンダーを結び付けた職員の行の右端
 
+**カタログ**: [CalendarLinkView の List](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkview--list)
+
 ### インタラクション
 
 #### 1. 押す
@@ -722,6 +724,8 @@ ADR-0012: [Google カレンダーのサービスアカウントを事業所ご�
 **活性条件**: 常に活性
 
 **表示条件**: 結び付けるダイアログを開いているとき。見出し「カレンダーの ID」の右に出す
+
+**カタログ**: [CalendarLinkDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarlinkdialog--default)
 
 ### インタラクション
 
@@ -943,7 +947,7 @@ ADR-0012: [Google カレンダーのサービスアカウントを事業所ご�
 
 **概要**: buddy が Google カレンダーを読めない設定であることと、誰に頼むかを示す。
 
-**値のソース**: 「この事業所では、まだ Google カレンダーを使う準備ができていません。buddy の管理者に設定を頼んでください。」
+**値のソース**: 「この事業所では、まだ Google カレンダーを使う準備ができていません。事業所の管理者に、設定を頼んでください。」
 
 **活性条件**: 常に活性
 
