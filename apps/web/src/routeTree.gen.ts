@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as HealthzRouteImport } from './routes/healthz'
 import { Route as ReadyzRouteImport } from './routes/readyz'
 import { Route as ScheduleRouteImport } from './routes/schedule'
+import { Route as StaffRouteImport } from './routes/staff'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthErrorRouteImport } from './routes/auth.error'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
@@ -23,6 +24,8 @@ import { Route as ScheduleNewRouteImport } from './routes/schedule.new'
 import { Route as ScheduleImportRouteImport } from './routes/schedule_.import'
 import { Route as ScheduleLinkRouteImport } from './routes/schedule_.link'
 import { Route as ScheduleReviewRouteImport } from './routes/schedule_.review'
+import { Route as StaffNewRouteImport } from './routes/staff.new'
+import { Route as StaffStaffIdRouteImport } from './routes/staff_.$staffId'
 import { Route as ScheduleScheduleIdIndexRouteImport } from './routes/schedule.$scheduleId.index'
 import { Route as ScheduleScheduleIdEditRouteImport } from './routes/schedule.$scheduleId.edit'
 
@@ -44,6 +47,11 @@ const ReadyzRoute = ReadyzRouteImport.update({
 const ScheduleRoute = ScheduleRouteImport.update({
   id: '/schedule',
   path: '/schedule',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StaffRoute = StaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
@@ -96,6 +104,16 @@ const ScheduleReviewRoute = ScheduleReviewRouteImport.update({
   path: '/schedule/review',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StaffNewRoute = StaffNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => StaffRoute,
+} as any)
+const StaffStaffIdRoute = StaffStaffIdRouteImport.update({
+  id: '/staff_/$staffId',
+  path: '/staff/$staffId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ScheduleScheduleIdIndexRoute = ScheduleScheduleIdIndexRouteImport.update({
   id: '/$scheduleId/',
   path: '/$scheduleId/',
@@ -112,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/healthz': typeof HealthzRoute
   '/readyz': typeof ReadyzRoute
   '/schedule': typeof ScheduleRouteWithChildren
+  '/staff': typeof StaffRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
@@ -121,6 +140,8 @@ export interface FileRoutesByFullPath {
   '/schedule/import': typeof ScheduleImportRoute
   '/schedule/link': typeof ScheduleLinkRoute
   '/schedule/review': typeof ScheduleReviewRoute
+  '/staff/new': typeof StaffNewRoute
+  '/staff/$staffId': typeof StaffStaffIdRoute
   '/receipt/': typeof ReceiptIndexRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
   '/schedule/$scheduleId/': typeof ScheduleScheduleIdIndexRoute
@@ -130,6 +151,7 @@ export interface FileRoutesByTo {
   '/healthz': typeof HealthzRoute
   '/readyz': typeof ReadyzRoute
   '/schedule': typeof ScheduleRouteWithChildren
+  '/staff': typeof StaffRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
@@ -139,6 +161,8 @@ export interface FileRoutesByTo {
   '/schedule/import': typeof ScheduleImportRoute
   '/schedule/link': typeof ScheduleLinkRoute
   '/schedule/review': typeof ScheduleReviewRoute
+  '/staff/new': typeof StaffNewRoute
+  '/staff/$staffId': typeof StaffStaffIdRoute
   '/receipt': typeof ReceiptIndexRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
   '/schedule/$scheduleId': typeof ScheduleScheduleIdIndexRoute
@@ -149,6 +173,7 @@ export interface FileRoutesById {
   '/healthz': typeof HealthzRoute
   '/readyz': typeof ReadyzRoute
   '/schedule': typeof ScheduleRouteWithChildren
+  '/staff': typeof StaffRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
@@ -158,6 +183,8 @@ export interface FileRoutesById {
   '/schedule_/import': typeof ScheduleImportRoute
   '/schedule_/link': typeof ScheduleLinkRoute
   '/schedule_/review': typeof ScheduleReviewRoute
+  '/staff/new': typeof StaffNewRoute
+  '/staff_/$staffId': typeof StaffStaffIdRoute
   '/receipt/': typeof ReceiptIndexRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
   '/schedule/$scheduleId/': typeof ScheduleScheduleIdIndexRoute
@@ -169,6 +196,7 @@ export interface FileRouteTypes {
     | '/healthz'
     | '/readyz'
     | '/schedule'
+    | '/staff'
     | '/auth/callback'
     | '/auth/error'
     | '/auth/login'
@@ -178,6 +206,8 @@ export interface FileRouteTypes {
     | '/schedule/import'
     | '/schedule/link'
     | '/schedule/review'
+    | '/staff/new'
+    | '/staff/$staffId'
     | '/receipt/'
     | '/schedule/$scheduleId/edit'
     | '/schedule/$scheduleId/'
@@ -187,6 +217,7 @@ export interface FileRouteTypes {
     | '/healthz'
     | '/readyz'
     | '/schedule'
+    | '/staff'
     | '/auth/callback'
     | '/auth/error'
     | '/auth/login'
@@ -196,6 +227,8 @@ export interface FileRouteTypes {
     | '/schedule/import'
     | '/schedule/link'
     | '/schedule/review'
+    | '/staff/new'
+    | '/staff/$staffId'
     | '/receipt'
     | '/schedule/$scheduleId/edit'
     | '/schedule/$scheduleId'
@@ -205,6 +238,7 @@ export interface FileRouteTypes {
     | '/healthz'
     | '/readyz'
     | '/schedule'
+    | '/staff'
     | '/auth/callback'
     | '/auth/error'
     | '/auth/login'
@@ -214,6 +248,8 @@ export interface FileRouteTypes {
     | '/schedule_/import'
     | '/schedule_/link'
     | '/schedule_/review'
+    | '/staff/new'
+    | '/staff_/$staffId'
     | '/receipt/'
     | '/schedule/$scheduleId/edit'
     | '/schedule/$scheduleId/'
@@ -224,6 +260,7 @@ export interface RootRouteChildren {
   HealthzRoute: typeof HealthzRoute
   ReadyzRoute: typeof ReadyzRoute
   ScheduleRoute: typeof ScheduleRouteWithChildren
+  StaffRoute: typeof StaffRouteWithChildren
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthErrorRoute: typeof AuthErrorRoute
   AuthLoginRoute: typeof AuthLoginRoute
@@ -232,6 +269,7 @@ export interface RootRouteChildren {
   ScheduleImportRoute: typeof ScheduleImportRoute
   ScheduleLinkRoute: typeof ScheduleLinkRoute
   ScheduleReviewRoute: typeof ScheduleReviewRoute
+  StaffStaffIdRoute: typeof StaffStaffIdRoute
   ReceiptIndexRoute: typeof ReceiptIndexRoute
 }
 
@@ -263,6 +301,13 @@ declare module '@tanstack/react-router' {
       path: '/schedule'
       fullPath: '/schedule'
       preLoaderRoute: typeof ScheduleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/staff': {
+      id: '/staff'
+      path: '/staff'
+      fullPath: '/staff'
+      preLoaderRoute: typeof StaffRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/callback': {
@@ -335,6 +380,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ScheduleReviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/staff/new': {
+      id: '/staff/new'
+      path: '/new'
+      fullPath: '/staff/new'
+      preLoaderRoute: typeof StaffNewRouteImport
+      parentRoute: typeof StaffRoute
+    }
+    '/staff_/$staffId': {
+      id: '/staff_/$staffId'
+      path: '/staff/$staffId'
+      fullPath: '/staff/$staffId'
+      preLoaderRoute: typeof StaffStaffIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/schedule/$scheduleId/': {
       id: '/schedule/$scheduleId/'
       path: '/$scheduleId'
@@ -368,11 +427,22 @@ const ScheduleRouteWithChildren = ScheduleRoute._addFileChildren(
   ScheduleRouteChildren,
 )
 
+interface StaffRouteChildren {
+  StaffNewRoute: typeof StaffNewRoute
+}
+
+const StaffRouteChildren: StaffRouteChildren = {
+  StaffNewRoute: StaffNewRoute,
+}
+
+const StaffRouteWithChildren = StaffRoute._addFileChildren(StaffRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HealthzRoute: HealthzRoute,
   ReadyzRoute: ReadyzRoute,
   ScheduleRoute: ScheduleRouteWithChildren,
+  StaffRoute: StaffRouteWithChildren,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthErrorRoute: AuthErrorRoute,
   AuthLoginRoute: AuthLoginRoute,
@@ -381,6 +451,7 @@ const rootRouteChildren: RootRouteChildren = {
   ScheduleImportRoute: ScheduleImportRoute,
   ScheduleLinkRoute: ScheduleLinkRoute,
   ScheduleReviewRoute: ScheduleReviewRoute,
+  StaffStaffIdRoute: StaffStaffIdRoute,
   ReceiptIndexRoute: ReceiptIndexRoute,
 }
 export const routeTree = rootRouteImport
