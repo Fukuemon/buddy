@@ -47,8 +47,8 @@ export const ReceiptResultTable = ({ rows }: ReceiptResultTableProps) => {
       className={clsx(
         'overflow-auto rounded-8 ring-1 ring-border',
         '[&_tr>:nth-child(2)]:sticky [&_tr>:nth-child(2)]:left-(--receipt-first-column-width) [&_tr>:nth-child(2)]:bg-surface',
-        // 狭い幅では、長い利用者名で固定する 2 列が送る箱を覆わないよう、利用者名の列を 10rem までにして折り返す
-        '[&_tr>:nth-child(2)]:max-w-40 [&_tr>:nth-child(2)]:whitespace-normal desktop:[&_tr>:nth-child(2)]:max-w-none desktop:[&_tr>:nth-child(2)]:whitespace-nowrap',
+        // 狭い幅では、長い利用者名で固定する 2 列が送る箱を覆わないよう、利用者名の列を 8rem にして折り返す。下限が無いと、表が縮んで 1 文字ずつ折り返す
+        '[&_tr>:nth-child(2)]:max-w-32 [&_tr>:nth-child(2)]:min-w-32 [&_tr>:nth-child(2)]:whitespace-normal desktop:[&_tr>:nth-child(2)]:max-w-none desktop:[&_tr>:nth-child(2)]:min-w-0 desktop:[&_tr>:nth-child(2)]:whitespace-nowrap',
       )}
       data-testid="receipt-result-table"
       ref={ref}
