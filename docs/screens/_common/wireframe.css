@@ -328,6 +328,8 @@ body {
 .wf-overlay {
   position: absolute;
   inset: 0;
+  /* 中身が画面より短いときも、覆いを画面の下端まで届かせる。--mock-height は mock.js が .screen に置くデバイスの高さ */
+  min-height: var(--mock-height, 900px);
   background: var(--wf-overlay);
 }
 
@@ -856,6 +858,45 @@ body {
   margin: 0;
 }
 
+/* 入力のダイアログのヘッダー。左にタイトルを、右上に閉じるボタン（×）を置く */
+.wf-dialog__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px 12px 20px;
+  border-bottom: 1px solid var(--wf-line-soft);
+}
+
+.wf-dialog__header > .wf-dialog__title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.wf-dialog__body {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+}
+
+.wf-dialog__body > p {
+  margin: 0;
+}
+
+/* ダイアログのフッター。右に「キャンセル」と主ボタンをこの順に置く */
+.wf-dialog__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--wf-line-soft);
+}
+
+.wf-dialog__footer > .wf-alert {
+  flex-basis: 100%;
+}
+
 @container screen (width < 768px) {
   .wf-page {
     padding: 16px;
@@ -866,4 +907,260 @@ body {
     top: 56px;
     width: calc(100% - 16px);
   }
+}
+
+/* 状態の印。文字で状態を示し、色だけに頼らない。通常は枠だけ、注意は注意の面、終わったものは薄い面にする */
+.wf-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--wf-line-soft);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.wf-status--warning {
+  border-color: var(--wf-ink);
+  background: var(--wf-warning-surface);
+  font-weight: 700;
+}
+
+.wf-status--muted {
+  background: var(--wf-fill-strong);
+  color: var(--wf-muted);
+}
+
+/* ページの見出しの行。左に見出しを、右に主ボタンを置く */
+.wf-page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* 見せずに、読み上げにだけ出す文字（操作の列の見出しなど） */
+.wf-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* 一覧の上の行。名前の検索、絞り込み、件数を並べ、件数を右端に寄せる */
+.wf-list-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.wf-list-tools > .wf-search {
+  flex: 1 1 200px;
+  max-width: 320px;
+}
+
+/* 絞り込みのセレクト。値を選んだものは枠を太くする */
+.wf-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--wf-line);
+  border-radius: var(--wf-radius);
+  background: var(--wf-surface);
+  white-space: nowrap;
+}
+
+.wf-select::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentcolor;
+  border-bottom: 1.5px solid currentcolor;
+  transform: translateY(-2px) rotate(45deg);
+}
+
+.wf-select.is-on {
+  border: 2px solid var(--wf-ink);
+  font-weight: 700;
+}
+
+.wf-count {
+  margin-left: auto;
+  color: var(--wf-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/*
+ * 行全体を押せる一覧。行を押すと詳細へ移り、右端の「›」で押せることを示す。横の線だけを引く。
+ * 名前の列は .wf-cell-primary、状態の印の列は .wf-cell-status、補足の値の列は .wf-cell-meta、「›」の列は .wf-cell-go にする
+ */
+.wf-table--rows th,
+.wf-table--rows td {
+  border-width: 0 0 1px;
+}
+
+.wf-table--rows th {
+  color: var(--wf-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.wf-table--rows tbody tr {
+  cursor: pointer;
+}
+
+.wf-table--rows tbody tr:hover {
+  background: var(--wf-fill);
+}
+
+.wf-table--rows .wf-cell-primary {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.wf-table--rows .wf-cell-go {
+  width: 40px;
+  color: var(--wf-muted);
+  text-align: right;
+}
+
+/*
+ * 幅 768px 未満では、表を 2 行のリストの行にする。1 行目に名前と状態の印、2 行目に補足の値を「・」でつなげて置く。
+ * 横にスクロールさせない
+ */
+@container screen (width < 768px) {
+  .wf-list-tools > .wf-search {
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .wf-table--rows thead {
+    display: none;
+  }
+
+  .wf-table--rows,
+  .wf-table--rows tbody {
+    display: block;
+  }
+
+  .wf-table--rows {
+    border-top: 1px solid var(--wf-line-soft);
+  }
+
+  .wf-table--rows tbody tr {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 2px;
+    padding: 10px 40px 10px 12px;
+    border-bottom: 1px solid var(--wf-line-soft);
+  }
+
+  /* 1 行目と 2 行目を分ける、幅いっぱいの空の項目 */
+  .wf-table--rows tbody tr::after {
+    content: '';
+    order: 3;
+    flex-basis: 100%;
+  }
+
+  .wf-table--rows td {
+    display: block;
+    padding: 0;
+    border: 0;
+  }
+
+  .wf-table--rows .wf-cell-primary {
+    order: 1;
+    min-width: 0;
+    margin-right: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .wf-table--rows .wf-cell-status {
+    order: 2;
+  }
+
+  .wf-table--rows .wf-cell-meta {
+    order: 4;
+    color: var(--wf-muted);
+    font-size: 12px;
+  }
+
+  .wf-table--rows .wf-cell-meta + .wf-cell-meta::before {
+    content: '・';
+  }
+
+  .wf-table--rows .wf-cell-go {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    width: auto;
+    transform: translateY(-50%);
+  }
+}
+
+/* 一覧が空のときと、絞り込みで 0 件のときの知らせ。説明の文と、条件を外すボタンを中央に積む */
+.wf-empty {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 48px 16px;
+  color: var(--wf-muted);
+  text-align: center;
+}
+
+.wf-empty > p {
+  margin: 0;
+}
+
+/*
+ * 「…」のメニュー。開くボタンを .wf-menu-anchor で囲み、ボタンの下の右端にそろえて開く。
+ * データを失う操作の項目は .wf-menu__item--danger にし、ほかの項目と線で分けて最後に置く
+ */
+.wf-menu-anchor {
+  position: relative;
+  display: inline-flex;
+}
+
+.wf-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 5;
+  display: none;
+  flex-direction: column;
+  min-width: 200px;
+  padding: 4px 0;
+  border-radius: var(--wf-radius);
+  background: var(--wf-surface);
+  box-shadow: 0 0 0 1px var(--wf-line);
+}
+
+.wf-menu.is-open {
+  display: flex;
+}
+
+.wf-menu__item {
+  padding: 10px 16px;
+  white-space: nowrap;
+}
+
+.wf-menu__item--danger {
+  border-top: 1px solid var(--wf-line-soft);
+  color: var(--wf-danger);
+}
+
+/* メニューを開いた状態の、見えない覆い。押すとメニューを閉じた状態へ戻る */
+.wf-menu-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
 }
