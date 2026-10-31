@@ -51,11 +51,16 @@
             <div class="wf-overlay wf-site-nav-overlay" tabindex="-1" data-close="site-nav"></div>
             <div class="wf-site-main">
               <main class="wf-page">
-                <div class="st-head">
-                  <h1 class="wf-heading" data-m="4">職員</h1>
+                <div class="wf-page-head">
+                  <div class="wf-title">
+                    <h1 class="wf-heading" data-m="4">職員</h1>
+                    <span class="wf-help">
+                      <span class="wf-btn wf-btn--icon wf-help__toggle" aria-label="ヘルプ" data-open="list-help" data-m="5" data-testid="staff-list-help">?</span>
+                      <p class="wf-help__panel" data-panel="list-help" data-panel-dismiss data-testid="staff-list-help-text">休職と退職の職員は、ログインできず、予定の担当の候補に出ません。</p>
+                    </span>
+                  </div>
                   <span class="wf-btn wf-btn--primary" data-m="6" data-testid="staff-list-new" data-go="../../staff-new_職員の登録/mocks/01-initial.html">職員を登録</span>
                 </div>
-                <p class="wf-lead" data-m="5">事業所の職員を登録し、役職、権限、休職、復職、退職を変えます。休職と退職の職員は、ログインできず、予定の担当の候補に出ません。</p>
                 <div class="wf-fields">
                   <p class="wf-alert" role="alert" data-m="7" data-testid="staff-list-error">職員を読み込めませんでした。時間をおいて、読み直してください。</p>
                   <div><span class="wf-btn" data-m="8" data-testid="staff-list-retry" data-go="01-list.html">読み直す</span></div>
