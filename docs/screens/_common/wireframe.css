@@ -20,10 +20,15 @@
   --wf-danger-surface: var(--buddy-color-danger-surface);
   --wf-warning-surface: var(--buddy-color-warning-surface);
   --wf-overlay: var(--buddy-color-overlay);
-  /* チームの色の仮の 3 色。チームの色のトークン（#367）が決まったら置き換える */
-  --wf-team-1: var(--buddy-color-categorical-1);
-  --wf-team-2: var(--buddy-color-categorical-2);
-  --wf-team-3: var(--buddy-color-categorical-3);
+  /* チームの色。チームが持つ値（blue など）で塗る */
+  --wf-team-blue: var(--buddy-color-team-blue);
+  --wf-team-orange: var(--buddy-color-team-orange);
+  --wf-team-magenta: var(--buddy-color-team-magenta);
+  --wf-team-cyan: var(--buddy-color-team-cyan);
+  --wf-team-yellow: var(--buddy-color-team-yellow);
+  --wf-team-purple: var(--buddy-color-team-purple);
+  --wf-team-green: var(--buddy-color-team-green);
+  --wf-team-lime: var(--buddy-color-team-lime);
   --wf-radius: var(--border-radius-8);
 
   color: var(--wf-ink);
@@ -951,16 +956,36 @@ body {
   background: var(--wf-muted);
 }
 
-.wf-dot--c1 {
-  background: var(--wf-team-1);
+.wf-dot--blue {
+  background: var(--wf-team-blue);
 }
 
-.wf-dot--c2 {
-  background: var(--wf-team-2);
+.wf-dot--orange {
+  background: var(--wf-team-orange);
 }
 
-.wf-dot--c3 {
-  background: var(--wf-team-3);
+.wf-dot--magenta {
+  background: var(--wf-team-magenta);
+}
+
+.wf-dot--cyan {
+  background: var(--wf-team-cyan);
+}
+
+.wf-dot--yellow {
+  background: var(--wf-team-yellow);
+}
+
+.wf-dot--purple {
+  background: var(--wf-team-purple);
+}
+
+.wf-dot--green {
+  background: var(--wf-team-green);
+}
+
+.wf-dot--lime {
+  background: var(--wf-team-lime);
 }
 
 /* ページの見出しの行。左に見出しを、右に主ボタンを置く */
