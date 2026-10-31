@@ -26,7 +26,7 @@ export type SiteNavGroup = {
  * href が今の画面と同じ項目の id を返す。
  * 権限が無くて出していない画面（`/schedule/review` など）では、どの項目も選ばない。親のカレンダー（`/schedule`）を選ぶと、今の画面を取り違えて読み上げる。
  */
-export const findCurrentItemId = (groups: readonly SiteNavGroup[], current: string) =>
+const findCurrentItemId = (groups: readonly SiteNavGroup[], current: string) =>
   groups.flatMap((group) => group.items).find((item) => item.href === current)?.id
 
 export type SiteNavProps = {
@@ -65,9 +65,9 @@ export const SiteNav = ({ groups, current, isRail = false, badges = {}, id }: Si
             key={group.label}
           >
             <span
-              className={clsx(
-                isRail ? 'sr-only' : 'px-3 py-1 text-caption font-bold text-text-secondary',
-              )}
+              className={
+                isRail ? 'sr-only' : 'px-3 py-1 text-caption font-bold text-text-secondary'
+              }
               id={headingId}
             >
               {group.label}
@@ -94,9 +94,7 @@ export const SiteNav = ({ groups, current, isRail = false, badges = {}, id }: Si
                       href={item.href}
                     >
                       <Icon aria-hidden="true" className="shrink-0" height={24} width={24} />
-                      <span className={clsx(isRail ? 'whitespace-nowrap' : 'grow')}>
-                        {item.label}
-                      </span>
+                      <span className={isRail ? 'whitespace-nowrap' : 'grow'}>{item.label}</span>
                       {badge !== undefined && (
                         <span className={clsx(isRail && 'absolute top-0.5 right-3.5')}>
                           {badge}
