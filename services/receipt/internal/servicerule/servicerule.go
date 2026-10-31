@@ -75,7 +75,7 @@ func AdjustsScheduleEnd(service string) bool {
 }
 
 // ServiceMatches は、予定と実績のサービス内容が対応するかを返す。
-// 両側を Base で「・夜」と「・深」を外してから比べる。加算が時間帯に合うかは judge が判定する。
+// 両側を Base で「・夜」と「・深」を外してから比べる。「・夜」「・深」と実績の加算の対応は確認しない。
 // 予定の `医` は、実績の `基本療養費` か `難病等複数回訪問` を含むサービス内容に対応する。
 func ServiceMatches(schedule, visit string) bool {
 	if Base(schedule) == Base(visit) {
