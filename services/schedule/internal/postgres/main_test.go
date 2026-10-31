@@ -258,7 +258,7 @@ func countFacilities(t *testing.T, pool *pgxpool.Pool) int {
 }
 
 // TestMigrateReceiptCheckPolicy は、照合の権限のマイグレーションが、今ある事業所に事務の役職を足し、
-// 職員の管理の権限をデフォルトに持つ役職に照合の権限を足すことを確認する（ADR-0022）。
+// 職員の管理の権限をデフォルトに持つ役職と、職員の管理の権限を持つ退職していない職員に、照合の権限を足すことを確認する（ADR-0022、#376）。
 func TestMigrateReceiptCheckPolicy(t *testing.T) {
 	cfg := newDatabase(t, "migrate_receipt_check")
 	ctx := context.Background()
@@ -277,6 +277,11 @@ func TestMigrateReceiptCheckPolicy(t *testing.T) {
 		facility = "01M3TD00000000000000000010"
 		manager  = "01M3TD00000000000000000011"
 		member   = "01M3TD00000000000000000012"
+		dept     = "01M3TD00000000000000000013"
+		team     = "01M3TD00000000000000000014"
+		managerU = "01M3TD00000000000000000015"
+		retiredU = "01M3TD00000000000000000016"
+		memberU  = "01M3TD00000000000000000017"
 	)
 	_, err = pool.Exec(ctx, `
 		INSERT INTO facilities (id, name) VALUES ('`+facility+`', '事業所');
@@ -284,7 +289,17 @@ func TestMigrateReceiptCheckPolicy(t *testing.T) {
 			('`+manager+`', '`+facility+`', '管理者'), ('`+member+`', '`+facility+`', 'メンバー');
 		INSERT INTO position_policies (position_id, policy_id)
 		SELECT '`+manager+`', id FROM policies WHERE code IN ('schedule.all.read', 'staff.manage')
-		UNION ALL SELECT '`+member+`', id FROM policies WHERE code = 'schedule.self.edit';`)
+		UNION ALL SELECT '`+member+`', id FROM policies WHERE code = 'schedule.self.edit';
+		INSERT INTO departments (id, facility_id, name) VALUES ('`+dept+`', '`+facility+`', '看護');
+		INSERT INTO teams (id, facility_id, name) VALUES ('`+team+`', '`+facility+`', 'A');
+		INSERT INTO users (id, facility_id, username, email, department_id, team_id, position_id) VALUES
+			('`+managerU+`', '`+facility+`', '管理者', 'manager@example.com', '`+dept+`', '`+team+`', '`+manager+`'),
+			('`+memberU+`', '`+facility+`', 'メンバー', 'member@example.com', '`+dept+`', '`+team+`', '`+member+`');
+		INSERT INTO users (id, facility_id, username, email, department_id, team_id, position_id, retired_at) VALUES
+			('`+retiredU+`', '`+facility+`', '退職', NULL, '`+dept+`', '`+team+`', '`+manager+`', now());
+		INSERT INTO user_policies (id, facility_id, user_id, policy_id)
+		SELECT '01M3TD0000000000000000002' || n, '`+facility+`', u, id FROM policies,
+			(VALUES ('0', '`+managerU+`'), ('1', '`+retiredU+`')) AS v(n, u) WHERE code = 'staff.manage';`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -318,5 +333,26 @@ func TestMigrateReceiptCheckPolicy(t *testing.T) {
 	}
 	if !maps.EqualFunc(got, want, slices.Equal) {
 		t.Errorf("役職のデフォルトの権限 = %v, want %v", got, want)
+	}
+
+	var checkers []string
+	rows, err = pool.Query(ctx, `
+		SELECT up.user_id FROM user_policies up JOIN policies p ON p.id = up.policy_id
+		WHERE p.code = 'receipt.check' ORDER BY up.user_id`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			t.Fatal(err)
+		}
+		checkers = append(checkers, id)
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(checkers, []string{managerU}) {
+		t.Errorf("照合の権限を持つ職員 = %v, want 職員の管理の権限を持つ退職していない職員 %s だけ", checkers, managerU)
 	}
 }

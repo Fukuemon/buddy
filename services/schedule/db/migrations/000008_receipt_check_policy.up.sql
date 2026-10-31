@@ -1,5 +1,5 @@
 -- 照合の権限と、事務の役職を足す（ADR-0022）。
--- 役職のデフォルトの権限だけを変え、今いる職員の権限は変えない。照合を続ける職員には、職員の管理の権限を持つ職員が照合の権限を足す。
+-- 今は全ての職員が照合を使えるので、職員の管理の権限を持つ今いる職員にも照合の権限を足し、デプロイの直後に照合できる職員を残す（#376）。
 
 INSERT INTO policies (id, code, name, needs_target) VALUES
     ('01M69C7BNKSXX7PPWX7SWZGFWK', 'receipt.check', '照合', false);
@@ -39,5 +39,16 @@ SELECT a.id, p.id
 FROM added a
 CROSS JOIN policies p
 WHERE p.code IN ('schedule.all.read', 'schedule.all.edit', 'receipt.check');
+
+INSERT INTO user_policies (id, facility_id, user_id, policy_id)
+SELECT pg_temp.new_ulid(), u.facility_id, u.id, '01M69C7BNKSXX7PPWX7SWZGFWK'
+FROM users u
+WHERE u.retired_at IS NULL
+  AND EXISTS (
+      SELECT 1 FROM user_policies up
+      JOIN policies p ON p.id = up.policy_id
+      WHERE up.user_id = u.id AND p.code = 'staff.manage'
+  )
+ON CONFLICT (user_id, policy_id) DO NOTHING;
 
 DROP FUNCTION pg_temp.new_ulid();
