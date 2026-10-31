@@ -91,7 +91,7 @@ export const ReceiptCheckForm = ({
       )}
       <CsvFileField
         label="実績の CSV"
-        description="電子カルテから書き出した CSV。UTF-8 か Shift_JIS で、10 MB まで。"
+        description="電子カルテから書き出した CSV。10 MB まで。"
         onChange={onVisitsChange}
         data-testid="receipt-visits-file"
       />
