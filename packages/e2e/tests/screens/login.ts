@@ -11,6 +11,17 @@ export const enterEmailAtBroker = async (page: Page, email: string) => {
 }
 
 /**
+ * 上流の IdP のフェイクのログインの画面で、email を確認済みのクレームにして入る。sub は email の @ の前の部分にする。
+ * 入った後の画面への移動は待たない。
+ */
+export const signInAtUpstreamIdp = async (page: Page, email: string) => {
+  const idp = idpLogin(page)
+  await idp.username.fill(email.split('@')[0])
+  await idp.claims.fill(JSON.stringify({ email, email_verified: true }))
+  await idp.signIn.click()
+}
+
+/**
  * ブローカーのログインの画面で email を入れ、事業所の上流の IdP のフェイクで入り、buddy の画面に戻るまで待つ。
  * ログインに失敗した案内の画面でも戻る。
  *
@@ -24,12 +35,8 @@ export const signInAtBroker = async (
   email: string,
   o: { upstreamEmail?: string } = {},
 ) => {
-  const upstreamEmail = o.upstreamEmail ?? email
   await enterEmailAtBroker(page, email)
-  const idp = idpLogin(page)
-  await idp.username.fill(upstreamEmail.split('@')[0])
-  await idp.claims.fill(JSON.stringify({ email: upstreamEmail, email_verified: true }))
-  await idp.signIn.click()
+  await signInAtUpstreamIdp(page, o.upstreamEmail ?? email)
   await page.waitForURL(
     (url) =>
       url.href.startsWith(BASE_URL) &&
