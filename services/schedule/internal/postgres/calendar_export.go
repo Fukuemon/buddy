@@ -125,11 +125,7 @@ func (r *CalendarExportRepository) ListIssues(ctx context.Context, facilityID st
 	}
 	out := make([]calendar.ExportIssue, len(rows))
 	for i, row := range rows {
-		start, err := parseTimeOfDay(row.StartTime)
-		if err != nil {
-			return nil, err
-		}
-		end, err := parseTimeOfDay(row.EndTime)
+		start, end, err := slotTimes(row.StartTime, row.EndTime)
 		if err != nil {
 			return nil, err
 		}

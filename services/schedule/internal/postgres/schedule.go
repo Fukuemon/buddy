@@ -24,7 +24,7 @@ func (r *ScheduleTypeRepository) Get(ctx context.Context, id string) (schedule.T
 	if err != nil {
 		return schedule.Type{}, translate("get schedule type", err)
 	}
-	return schedule.Type{ID: t.ID, Code: schedule.TypeCode(t.Code), Name: schedule.TypeName(t.Name)}, nil
+	return toScheduleType(t), nil
 }
 
 // List は、すべての予定の種類を名前、ID の順に返す。
@@ -35,9 +35,13 @@ func (r *ScheduleTypeRepository) List(ctx context.Context) ([]schedule.Type, err
 	}
 	out := make([]schedule.Type, len(rows))
 	for i, t := range rows {
-		out[i] = schedule.Type{ID: t.ID, Code: schedule.TypeCode(t.Code), Name: schedule.TypeName(t.Name)}
+		out[i] = toScheduleType(t)
 	}
 	return out, nil
+}
+
+func toScheduleType(t sqlcgen.ScheduleType) schedule.Type {
+	return schedule.Type{ID: t.ID, Code: schedule.TypeCode(t.Code), Name: schedule.TypeName(t.Name)}
 }
 
 // ScheduleRepository は、schedule.Repository を実装する。
@@ -143,11 +147,7 @@ func (r *ScheduleRepository) scheduleDetails(ctx context.Context, rows []sqlcgen
 	}
 	out := make([]schedule.Detail, len(rows))
 	for i, s := range rows {
-		start, err := parseTimeOfDay(s.StartTime)
-		if err != nil {
-			return nil, err
-		}
-		end, err := parseTimeOfDay(s.EndTime)
+		start, end, err := slotTimes(s.StartTime, s.EndTime)
 		if err != nil {
 			return nil, err
 		}
@@ -297,11 +297,7 @@ func (r *RecurringScheduleRepository) recurringDetails(ctx context.Context, rows
 	}
 	out := make([]schedule.RecurringDetail, len(rows))
 	for i, s := range rows {
-		start, err := parseTimeOfDay(s.StartTime)
-		if err != nil {
-			return nil, err
-		}
-		end, err := parseTimeOfDay(s.EndTime)
+		start, end, err := slotTimes(s.StartTime, s.EndTime)
 		if err != nil {
 			return nil, err
 		}
