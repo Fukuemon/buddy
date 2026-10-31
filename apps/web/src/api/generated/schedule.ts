@@ -108,6 +108,8 @@ export interface paths {
         /**
          * チームを作る
          * @description 職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         *     color を省くと、事業所のチームが使っているチームが最も少ない色を、同じ数なら TeamColor の並びの先の色を入れる。
+         *     事業所で使われていない色があれば、その先頭になる。
          */
         post: operations["createTeam"];
         delete?: never;
@@ -125,7 +127,12 @@ export interface paths {
         };
         /** チームを取得する */
         get: operations["getTeam"];
-        put?: never;
+        /**
+         * チームの名前と色を変える
+         * @description チームの名前と色を本文の値に置き換える。部分の更新は持たない。
+         *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        put: operations["updateTeam"];
         post?: never;
         delete?: never;
         options?: never;
@@ -926,9 +933,6 @@ export interface components {
             /** @description 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う */
             message: string;
         };
-        CreateNameRequest: {
-            name: string;
-        };
         Facility: {
             id: components["schemas"]["ID"];
             name: string;
@@ -937,7 +941,7 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
-        /** @description 部署かチーム */
+        /** @description 部署 */
         Unit: {
             id: components["schemas"]["ID"];
             facility_id: components["schemas"]["ID"];
@@ -947,6 +951,22 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
+        Team: {
+            id: components["schemas"]["ID"];
+            facility_id: components["schemas"]["ID"];
+            name: string;
+            color: components["schemas"]["TeamColor"];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /**
+         * @description チームの色。画面は packages/ui のチームの色のトークン（team- の後ろがこの値）で塗る。事業所の中で重なってよい。
+         *     並びは、色を省いて作ったチームに選ぶ順である。
+         * @enum {string}
+         */
+        TeamColor: "blue" | "orange" | "magenta" | "cyan" | "yellow" | "purple" | "green" | "lime";
         /** @description 職員に与える権限。8 つのレコードをマイグレーションが入れ、API では作らない */
         Policy: {
             id: components["schemas"]["ID"];
@@ -1703,7 +1723,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Unit"][];
+                    "application/json": components["schemas"]["Team"][];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -1724,7 +1744,10 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateNameRequest"];
+                "application/json": {
+                    name: string;
+                    color?: components["schemas"]["TeamColor"];
+                };
             };
         };
         responses: {
@@ -1734,7 +1757,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Unit"];
+                    "application/json": components["schemas"]["Team"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -1776,13 +1799,62 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Unit"];
+                    "application/json": components["schemas"]["Team"];
                 };
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    updateTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: components["schemas"]["ID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    color: components["schemas"]["TeamColor"];
+                };
+            };
+        };
+        responses: {
+            /** @description 変えたチーム */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Team"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description 同じ事業所にほかの同じ名前のチームがある */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "conflict",
+                     *       "message": "チーム 訪問看護 はこの事業所にすでにあります"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };

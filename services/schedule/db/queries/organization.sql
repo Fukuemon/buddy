@@ -17,7 +17,10 @@ SELECT * FROM teams WHERE id = $1;
 SELECT * FROM teams WHERE facility_id = $1 ORDER BY name, id;
 
 -- name: CreateTeam :exec
-INSERT INTO teams (id, facility_id, name) VALUES ($1, $2, $3);
+INSERT INTO teams (id, facility_id, name, color) VALUES ($1, $2, $3, $4);
+
+-- name: UpdateTeam :execrows
+UPDATE teams SET name = $2, color = $3, updated_at = now() WHERE id = $1;
 
 -- name: GetPosition :one
 SELECT * FROM positions WHERE id = $1;

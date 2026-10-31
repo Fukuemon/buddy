@@ -81,7 +81,7 @@ func (r *TeamRepository) Get(ctx context.Context, id string) (organization.Team,
 	if err != nil {
 		return organization.Team{}, translate("get team", err)
 	}
-	return organization.Team(t), nil
+	return toTeam(t), nil
 }
 
 // ListByFacility は、事業所 facilityID のチームを名前、ID の順に返す。無いときは空のスライスを返す。
@@ -92,15 +92,28 @@ func (r *TeamRepository) ListByFacility(ctx context.Context, facilityID string) 
 	}
 	out := make([]organization.Team, len(rows))
 	for i, t := range rows {
-		out[i] = organization.Team(t)
+		out[i] = toTeam(t)
 	}
 	return out, nil
 }
 
 // Create は、チームを書く。同じ事業所に同じ名前があるときは apperr.ErrConflict を、事業所が無いときは apperr.ErrInvalidInput のエラーを返す。
 func (r *TeamRepository) Create(ctx context.Context, t organization.Team) error {
-	err := r.q(ctx).CreateTeam(ctx, sqlcgen.CreateTeamParams{ID: t.ID, FacilityID: t.FacilityID, Name: t.Name})
+	err := r.q(ctx).CreateTeam(ctx, sqlcgen.CreateTeamParams{ID: t.ID, FacilityID: t.FacilityID, Name: t.Name, Color: string(t.Color)})
 	return translate("create team", err)
+}
+
+// Update は、チーム t.ID の名前と色を t の値にする。チームが無いときは apperr.ErrNotFound を、同じ事業所にほかの同じ名前のチームがあるときは apperr.ErrConflict を返す。
+func (r *TeamRepository) Update(ctx context.Context, t organization.Team) error {
+	n, err := r.q(ctx).UpdateTeam(ctx, sqlcgen.UpdateTeamParams{ID: t.ID, Name: t.Name, Color: string(t.Color)})
+	return touched("update team", n, err)
+}
+
+func toTeam(t sqlcgen.Team) organization.Team {
+	return organization.Team{
+		ID: t.ID, FacilityID: t.FacilityID, Name: t.Name, Color: organization.TeamColor(t.Color),
+		CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt,
+	}
 }
 
 // PositionRepository は、organization.PositionRepository を実装する。
