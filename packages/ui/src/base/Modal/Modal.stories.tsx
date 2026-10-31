@@ -27,6 +27,21 @@ export const WithStickyFooter: Story = {
   args: { stickyFooter: <Button>作成</Button> },
 }
 
+/** 関数で渡した stickyFooter は、閉じる要求を受け取り、「キャンセル」で閉じるボタンと同じく閉じる。 */
+export const WithCancel: Story = {
+  args: {
+    isDirty: true,
+    stickyFooter: (requestClose) => (
+      <>
+        <Button onClick={requestClose} size="S" variant="secondary">
+          キャンセル
+        </Button>
+        <Button size="S">保存</Button>
+      </>
+    ),
+  },
+}
+
 /** headerContent は、タイトルの右に置き、ヘッダーの右端に寄せる。 */
 export const WithHeaderContent: Story = {
   args: { headerContent: <Button variant="secondary">切り替え</Button> },
