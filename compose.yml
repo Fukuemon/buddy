@@ -290,6 +290,8 @@ services:
     environment:
       OIDC_ISSUER: http://hydra:4444
       OIDC_AUDIENCE: receipt
+      # 照合の前に、受けたトークンで予定の API の GET /v1/me を呼び、照合の権限を確認する（ADR-0022）
+      SCHEDULE_URL: http://schedule:8080
       # API の仕様のページでリクエストを試すローカル環境のドキュメントサイト（zensical serve）に許す
       CORS_ALLOW_ORIGINS: http://localhost:8000
       # 照合の対象の森のカレンダーと、予定の API と同じダミーのサービスアカウントの対応
@@ -310,6 +312,7 @@ services:
       retries: 30
     depends_on:
       hydra: { condition: service_healthy }
+      schedule: { condition: service_healthy }
       calendarpit-authorize: { condition: service_completed_successfully }
 
   web:

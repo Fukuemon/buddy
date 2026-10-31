@@ -192,7 +192,7 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 | `SESSION_STORE_URL` | 使う | 使わない | 使わない | Valkey の接続先 |
 | `SESSION_SECRET` | 使う | 使わない | 使わない | cookie の署名の鍵。32 バイト以上 |
 | `SESSION_COOKIE_SECURE` | 任意 | 使わない | 使わない | `false` のときだけ、セッションの cookie に Secure を付けない。https でないローカル環境で使う |
-| `SCHEDULE_URL` | 使う | 使わない | 使わない | 予定の API の URL |
+| `SCHEDULE_URL` | 使う | 使わない | 使う | 予定の API の URL。照合の API は、照合の権限を確認するために `GET /v1/me` を呼ぶ |
 | `RECEIPT_URL` | 使う | 使わない | 使わない | 照合の API の URL |
 | `DB_HOST`、`DB_PORT` | 使わない | 任意 | 使わない | PostgreSQL のホストとポート。デフォルトは `localhost` と `5432` |
 | `DB_USER`、`DB_PASSWORD`、`DB_NAME` | 使わない | 使う | 使わない | PostgreSQL の利用者、パスワード、データベースの名前 |

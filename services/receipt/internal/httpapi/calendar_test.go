@@ -50,7 +50,7 @@ func calendarHandler(t *testing.T) http.Handler {
 		{ID: "staff-x@example.com", OrgID: "org-other"},
 	})
 	return NewHandler(slog.New(slog.NewTextHandler(io.Discard, nil)), Config{
-		MaxUploadBytes: 1 << 20, Sources: source.Selector{Calendar: reader}, Verifier: fakeVerifier{},
+		MaxUploadBytes: 1 << 20, Sources: source.Selector{Calendar: reader}, Verifier: fakeVerifier{}, Permission: fakePermission{},
 	})
 }
 
@@ -139,7 +139,7 @@ func TestChecksCalendarErrors(t *testing.T) {
 		Sources: source.Selector{Calendar: gcal.NewReader(
 			gcaltest.Same{Svc: gcaltest.Start(t, gcaltest.NewServer(nil))}, []gcal.Calendar{{ID: "unknown@example.com", OrgID: orgSample}},
 		)},
-		Verifier: fakeVerifier{},
+		Verifier: fakeVerifier{}, Permission: fakePermission{},
 	})
 	tests := []struct {
 		name       string
