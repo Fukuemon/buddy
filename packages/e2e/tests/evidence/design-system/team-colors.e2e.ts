@@ -49,7 +49,7 @@ test.describe('デザインシステム', () => {
           await expect(team.palette).toBeVisible()
           await check('team-blue から team-lime の 8 色のトークンが並ぶ')
 
-          await team.dot('surface', 'blue').scrollIntoViewIfNeeded()
+          await team.dot('primary-surface', 'lime').scrollIntoViewIfNeeded()
           await step('「面の上の点」まで下に移る')
           for (const surface of [
             'surface',
