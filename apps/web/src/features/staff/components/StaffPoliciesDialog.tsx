@@ -1,14 +1,14 @@
-import { clsx } from 'clsx'
 import { useState } from 'react'
 
 import type { Policy, Position, StaffDetail } from '#/api/types'
+import { ChipPicker } from '#/components/site/ChipPicker'
 import { InputDialog } from '#/components/site/InputDialog'
 
 import { policyTargetKind } from '../lib/format'
 import {
   hasTargetsForAll,
+  groupPolicies,
   planPolicyChanges,
-  policyOrigin,
   selectionOf,
   type PolicyChange,
   type PolicySelection,
@@ -36,8 +36,9 @@ export type StaffPoliciesDialogProps = {
 
 /**
  * 8 つの権限のうち、職員に付けるものと、その対象を選ぶ入力のダイアログ。付いている権限にチェックを入れて始め、
- * 付いた理由の印を名前の右に出す。対象を指定する権限にチェックを入れると、その下に対象のチップを出す。
- * 開いたときから変え、対象を指定する権限の全てに対象を選ぶと保存できる。職員を読み直すと、選択を読み直した権限に合わせる。
+ * 役職で付く権限とほかの権限のまとまりに分けて並べる。対象を指定する権限にチェックを入れると、その下に選んだ対象のチップと、
+ * 名前で探して足す欄を出す。開いたときから変え、対象を指定する権限の全てに対象を選ぶと保存できる。
+ * 職員を読み直すと、選択を読み直した権限に合わせる。
  */
 export const StaffPoliciesDialog = ({
   staff,
@@ -57,6 +58,7 @@ export const StaffPoliciesDialog = ({
     setSelection(selectionOf(staff, policies))
   }
   const changes = planPolicyChanges(staff, policies, selection)
+  const groups = groupPolicies(policies, position)
   const update = (code: string, next: Partial<PolicySelection[string]>) =>
     setSelection((current) => ({ ...current, [code]: { ...current[code], ...next } }))
 
@@ -76,75 +78,67 @@ export const StaffPoliciesDialog = ({
       testIdPrefix="staff-policies"
       title="権限を変える"
     >
-      <ul className="flex flex-col divide-y divide-border" data-testid="staff-policies-options">
-        {policies.map((policy) => {
-          const selected = selection[policy.code] ?? { checked: false, targets: [] }
-          const owned = staff.policies.find((p) => p.policy_id === policy.id)
-          const kind = policyTargetKind(policy)
-          const options = kind === 'team' ? teamOptions : staffOptions
-          return (
-            <li className="flex flex-col gap-2 py-2" key={policy.id}>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <label className="flex min-h-11 cursor-pointer items-center gap-2 text-body">
-                  <input
-                    checked={selected.checked}
-                    data-testid={`staff-policies-option-${policy.code}`}
-                    disabled={isSubmitting}
-                    onChange={(event) => update(policy.code, { checked: event.target.checked })}
-                    type="checkbox"
-                  />
-                  {policy.name}
-                </label>
-                {owned !== undefined && (
-                  <span className="text-caption text-text-secondary">
-                    {policyOrigin(owned, position)}
-                  </span>
-                )}
-              </div>
-              {kind !== undefined && selected.checked && (
-                <fieldset
-                  className="flex flex-col gap-2 pb-2 pl-6"
-                  data-testid="staff-policies-targets"
-                >
-                  <legend className="mb-1 text-caption text-text-secondary">
-                    {kind === 'team' ? '対象のチーム' : '対象の職員'}
-                  </legend>
-                  <div className="flex flex-wrap gap-2">
-                    {options.map((option) => {
-                      const on = selected.targets.includes(option.id)
-                      return (
-                        <label
-                          className={clsx(
-                            'flex min-h-11 cursor-pointer items-center rounded-8 px-3 text-body-dense ring-inset has-[:focus-visible]:focus-ring',
-                            on ? 'font-bold ring-2 ring-text' : 'ring-1 ring-border-field',
-                          )}
-                          key={option.id}
-                        >
-                          <input
-                            checked={on}
-                            className="sr-only"
-                            data-testid={`staff-policies-target-${option.id}`}
-                            disabled={isSubmitting}
-                            onChange={(event) =>
-                              update(policy.code, {
-                                targets: event.target.checked
-                                  ? [...selected.targets, option.id]
-                                  : selected.targets.filter((id) => id !== option.id),
-                              })
+      <div className="flex flex-col gap-4" data-testid="staff-policies-options">
+        {[
+          {
+            id: 'position',
+            title: `役職「${staff.position.name}」で付く権限`,
+            items: groups.position,
+          },
+          { id: 'other', title: 'ほかの権限', items: groups.other },
+        ]
+          .filter((group) => group.items.length > 0)
+          .map((group) => (
+            <fieldset
+              className="flex flex-col"
+              data-testid={`staff-policies-group-${group.id}`}
+              key={group.id}
+            >
+              <legend className="mb-1 text-label text-text-secondary">{group.title}</legend>
+              <ul className="flex flex-col divide-y divide-border">
+                {group.items.map((policy) => {
+                  const selected = selection[policy.code] ?? { checked: false, targets: [] }
+                  const kind = policyTargetKind(policy)
+                  return (
+                    <li className="flex flex-col gap-2 py-1" key={policy.id}>
+                      <label className="flex min-h-11 cursor-pointer items-center gap-2 text-body">
+                        <input
+                          checked={selected.checked}
+                          data-testid={`staff-policies-option-${policy.code}`}
+                          disabled={isSubmitting}
+                          onChange={(event) =>
+                            update(policy.code, { checked: event.target.checked })
+                          }
+                          type="checkbox"
+                        />
+                        {policy.name}
+                      </label>
+                      {kind !== undefined && selected.checked && (
+                        <div className="pb-2 pl-6" data-testid="staff-policies-targets">
+                          <ChipPicker
+                            addAriaLabel={
+                              kind === 'team' ? '対象のチームを選ぶ' : '対象の職員を選ぶ'
                             }
-                            type="checkbox"
+                            addLabel={kind === 'team' ? '＋ チームを選ぶ' : '＋ 職員を選ぶ'}
+                            disabled={isSubmitting}
+                            emptyLabel={
+                              kind === 'team' ? '選べるチームはいません' : '選べる職員はいません'
+                            }
+                            label={kind === 'team' ? '対象のチーム' : '対象の職員'}
+                            onChange={(targets) => update(policy.code, { targets })}
+                            options={kind === 'team' ? teamOptions : staffOptions}
+                            selected={selected.targets}
+                            testIdPrefix="staff-policies-target"
                           />
-                          {option.name}
-                        </label>
-                      )
-                    })}
-                  </div>
-                </fieldset>
-              )}
-            </li>
-          )
-        })}
-      </ul>
+                        </div>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            </fieldset>
+          ))}
+      </div>
     </InputDialog>
   )
 }

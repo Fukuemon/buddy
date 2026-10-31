@@ -23,9 +23,17 @@ export const orderPolicies = (policies: readonly Policy[]) => [
   ...policies.filter((p) => p.code === STAFF_MANAGE),
 ]
 
-/** 付いている権限の、付いた理由。役職に決まっている権限は対象によらず「役職で付く」にする。 */
-export const policyOrigin = (policy: Pick<StaffPolicy, 'policy_id'>, position?: Position) =>
-  position?.policies.some((p) => p.id === policy.policy_id) ? '役職で付く' : '個別に足した'
+/**
+ * 権限を、職員の今の役職に決まっている権限と、ほかの権限の 2 つのまとまりに分ける。並びは渡した並びのままにする。
+ * 役職に決まっているかは権限で決め、対象では決めない。役職を読み終えるまでは、全てをほかの権限にする。
+ */
+export const groupPolicies = (policies: readonly Policy[], position?: Position) => {
+  const ofPosition = new Set(position?.policies.map((p) => p.id))
+  return {
+    position: policies.filter((p) => ofPosition.has(p.id)),
+    other: policies.filter((p) => !ofPosition.has(p.id)),
+  }
+}
 
 const targetsOf = (policy: StaffPolicy) => [...policy.target_user_ids, ...policy.target_team_ids]
 

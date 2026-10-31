@@ -55,22 +55,20 @@ export const hasNoAssignments = (assignments: StaffAssignments) =>
   assignments.recurring_schedules.length === 0 &&
   assignments.patients.length === 0
 
-/** 在籍の枠の文。休職は休職にした日と戻る予定の日を、退職は退職にした日を入れる。 */
+/** プロフィールの在籍の文。休職と退職だけに出し、状態の印が示す日付は繰り返さない。有効なら undefined を返す。 */
 export const employmentText = (
-  staff: Pick<StaffRecord, 'status' | 'leave_started_at' | 'leave_return_date' | 'retired_at'>,
+  staff: Pick<StaffRecord, 'status' | 'leave_started_at' | 'leave_return_date'>,
 ) => {
   if (staff.status === 'on_leave') {
     const since =
       staff.leave_started_at === null ? '' : `${formatDateTimeAsDate(staff.leave_started_at)} から`
     return staff.leave_return_date === null
       ? `${since}休職です。`
-      : `${since}休職です。戻る予定の日は ${formatDate(staff.leave_return_date)} です。この日に自動では戻りません。`
+      : `${since}休職です。戻る予定の日に自動では戻りません。`
   }
-  if (staff.status === 'retired') {
-    const on = staff.retired_at === null ? '' : `${formatDateTimeAsDate(staff.retired_at)} に`
-    return `${on}退職にしました。退職は戻せません。名前、所属、役職は、過去の予定と照合の結果のために残しています。`
-  }
-  return '有効です。ログインして、予定を使えます。'
+  if (staff.status === 'retired')
+    return '退職は戻せません。メールアドレスと電話番号は退職で消し、名前、所属、役職は過去の予定と照合の結果のために残しています。'
+  return undefined
 }
 
 /**

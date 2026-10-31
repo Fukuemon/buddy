@@ -15,11 +15,11 @@ const openPolicies = async () => {
 }
 
 describe('StaffDetailContainer', () => {
-  it('プロフィールに電話番号、部署、チーム、役職、在籍を出し、編集で名前とチームを変えると出し直す', async () => {
+  it('有効な職員には状態の印と在籍を出さず、編集で名前とチームを変えると、チームの権限の対象も出し直す', async () => {
     render(<Default />)
-    expect(await screen.findByTestId('staff-detail-status-text')).toHaveTextContent(
-      '有効です。ログインして、予定を使えます。',
-    )
+    expect(await screen.findByTestId('staff-detail-name')).toHaveTextContent('石川 二葉')
+    expect(screen.queryByTestId('staff-detail-status')).toBeNull()
+    expect(screen.queryByTestId('staff-detail-status-text')).toBeNull()
     await userEvent.click(screen.getByTestId('staff-detail-edit'))
     const dialog = screen.getByTestId('staff-detail-edit-dialog')
     const name = within(dialog).getByTestId('staff-detail-name-input')
@@ -35,35 +35,54 @@ describe('StaffDetailContainer', () => {
     expect(await screen.findByTestId('staff-detail-name')).toHaveTextContent('石川 双葉')
     expect(screen.queryByTestId('staff-detail-edit-dialog')).toBeNull()
     await userEvent.click(screen.getByTestId('staff-detail-tab-policies'))
-    expect(await screen.findByTestId('staff-policy-row-schedule.team.read')).toHaveTextContent(
+    expect(await screen.findByTestId('staff-policy-targets-schedule.team.read')).toHaveTextContent(
       'B チーム',
     )
   })
 
-  it('権限のタブに 8 つの権限を、付いているかと付いた理由とともに並べ、職員の管理を最後に置く', async () => {
+  it('権限のタブは、付いている権限だけを役職で付く権限のまとまりに並べ、個別に足した権限が無ければまとまりを出さない', async () => {
     render(<Default />)
     await userEvent.click(await screen.findByTestId('staff-detail-tab-policies'))
-    const rows = within(await screen.findByTestId('staff-policy-table')).getAllByRole('row')
-    expect(rows).toHaveLength(9)
-    expect(rows.at(-1)).toHaveTextContent('職員の管理— 付いていない')
-    expect(screen.getByTestId('staff-policy-row-schedule.self.edit')).toHaveTextContent(
-      '✓ 付いている役職で付く',
-    )
+    const group = await screen.findByTestId('staff-policy-group-position')
+    expect(group).toHaveTextContent('役職「看護師」で付く権限')
+    expect(within(group).getAllByRole('listitem')).toHaveLength(2)
+    expect(screen.queryByTestId('staff-policy-group-individual')).toBeNull()
+    expect(screen.queryByTestId('staff-policy-row-staff.manage')).toBeNull()
   })
 
-  it('権限を変えるで、対象の職員を選んで足すと、個別に足した権限と対象の名前を出す', async () => {
+  it('権限を変えるで、ほかの権限にチェックを入れて対象の職員を足すと、個別に足した権限に対象とともに出す', async () => {
     render(<Default />)
     const dialog = await openPolicies()
+    expect(within(dialog).getByTestId('staff-policies-group-position')).toHaveTextContent(
+      '役職「看護師」で付く権限',
+    )
     const submit = within(dialog).getByTestId('staff-policies-submit')
-    await userEvent.click(within(dialog).getByTestId('staff-policies-option-schedule.user.read'))
+    const option = within(dialog).getByTestId('staff-policies-option-schedule.user.read')
+    await userEvent.click(option)
+    const row = within(option.closest('li') as HTMLElement)
     expect(submit).toHaveAttribute('aria-disabled', 'true')
-    await userEvent.click(within(dialog).getByTestId('staff-policies-target-staff-3'))
+    await userEvent.click(row.getByTestId('staff-policies-target-add'))
+    await userEvent.click(row.getByTestId('staff-policies-target-option-staff-3'))
+    expect(row.getByTestId('staff-policies-target-staff-3')).toHaveTextContent('上田 三奈')
     await userEvent.click(submit)
 
-    const row = await screen.findByTestId('staff-policy-row-schedule.user.read')
-    await expect.poll(() => row.textContent).toContain('個別に足した')
-    expect(row).toHaveTextContent('上田 三奈')
+    const group = await screen.findByTestId('staff-policy-group-individual')
+    expect(within(group).getByTestId('staff-policy-targets-schedule.user.read')).toHaveTextContent(
+      '上田 三奈',
+    )
     expect(screen.queryByTestId('staff-policies-dialog')).toBeNull()
+  })
+
+  it('対象のチップの × で外すと、対象が無くなって保存を押せなくなる', async () => {
+    render(<Default />)
+    const dialog = await openPolicies()
+    await userEvent.click(within(dialog).getByTestId('staff-policies-target-remove-team-a'))
+    expect(within(dialog).queryByTestId('staff-policies-target-team-a')).toBeNull()
+    expect(within(dialog).getByTestId('staff-policies-target-add')).toHaveFocus()
+    expect(within(dialog).getByTestId('staff-policies-submit')).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    )
   })
 
   it('職員の管理の権限を持つ最後の有効な職員から外そうとすると、ほかの変更は残して理由を出す', async () => {
@@ -134,9 +153,8 @@ describe('StaffDetailContainer', () => {
     await within(dialog).findByText('石川 二葉 を退職にしますか')
     await userEvent.click(within(dialog).getByTestId('staff-retire-submit'))
 
-    expect(await screen.findByTestId('staff-detail-email')).toHaveTextContent(
-      'メールアドレスなし（退職で消しました）',
-    )
+    expect(await screen.findByTestId('staff-detail-status')).toHaveTextContent('退職')
+    expect(screen.queryByTestId('staff-detail-email')).toBeNull()
     expect(screen.queryByTestId('staff-detail-edit')).toBeNull()
   })
 
@@ -145,7 +163,7 @@ describe('StaffDetailContainer', () => {
     expect(await screen.findByTestId('staff-detail-status')).toHaveTextContent('休職')
     await userEvent.click(screen.getByTestId('staff-detail-menu'))
     await userEvent.click(screen.getByTestId('staff-detail-reinstate'))
-    await expect.poll(() => screen.getByTestId('staff-detail-status').textContent).toBe('有効')
+    await expect.poll(() => screen.queryByTestId('staff-detail-status')).toBeNull()
   })
 
   it('退職した職員と自分の詳細では、出さない操作がある', async () => {

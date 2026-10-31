@@ -6,8 +6,14 @@ import type { Policy, Position, StaffDetail } from '#/api/types'
 import { ActionMenu, type ActionMenuItem } from '#/components/site/ActionMenu'
 import { Avatar, StatusBadge } from '#/components/site/StatusBadge'
 
-import { employmentText, policyTargetText, statusLabel, statusTone } from '../lib/format'
-import { policyOrigin } from '../lib/policyChanges'
+import {
+  employmentText,
+  policyTargetKind,
+  policyTargetText,
+  statusLabel,
+  statusTone,
+} from '../lib/format'
+import { groupPolicies } from '../lib/policyChanges'
 
 /** 職員の詳細の画面の状態。canRetry は、職員が見つからなかったときに false にする。 */
 export type StaffDetailViewState =
@@ -132,16 +138,20 @@ const StaffDetailBody = ({
               <h1 className="text-heading-md" data-testid="staff-detail-name">
                 {staff.username}
               </h1>
-              <StatusBadge data-testid="staff-detail-status" tone={statusTone(staff)}>
-                {statusLabel(staff)}
-              </StatusBadge>
+              {staff.status !== 'active' && (
+                <StatusBadge data-testid="staff-detail-status" tone={statusTone(staff)}>
+                  {statusLabel(staff)}
+                </StatusBadge>
+              )}
             </div>
-            <span
-              className="text-body break-all text-text-secondary"
-              data-testid="staff-detail-email"
-            >
-              {staff.email ?? 'メールアドレスなし（退職で消しました）'}
-            </span>
+            {staff.email !== null && (
+              <span
+                className="text-body break-all text-text-secondary"
+                data-testid="staff-detail-email"
+              >
+                {staff.email}
+              </span>
+            )}
           </div>
         </div>
         {canChange && (
@@ -223,7 +233,7 @@ const StaffDetailBody = ({
           {policies === undefined ? (
             <Loading description="読み込んでいます" />
           ) : (
-            <PolicyTable
+            <PolicyList
               policies={policies}
               position={position}
               staff={staff}
@@ -245,11 +255,11 @@ const ProfileList = ({
   canChange: boolean
   onChangePosition: () => void
 }) => {
+  const employment = employmentText(staff)
   const rows: [string, ReactNode][] = [
-    [
-      '電話番号',
-      staff.phone_number ?? (staff.status === 'retired' ? 'なし（退職で消しました）' : 'なし'),
-    ],
+    ...(staff.phone_number !== null && staff.status !== 'retired'
+      ? ([['電話番号', staff.phone_number]] as [string, ReactNode][])
+      : []),
     ['部署', staff.department.name],
     ['チーム', staff.team.name],
     [
@@ -268,12 +278,16 @@ const ProfileList = ({
         )}
       </span>,
     ],
-    [
-      '在籍',
-      <span data-testid="staff-detail-status-text" key="status">
-        {employmentText(staff)}
-      </span>,
-    ],
+    ...(employment === undefined
+      ? []
+      : ([
+          [
+            '在籍',
+            <span data-testid="staff-detail-status-text" key="status">
+              {employment}
+            </span>,
+          ],
+        ] as [string, ReactNode][])),
   ]
   return (
     <dl className="grid gap-x-4 desktop:grid-cols-[8em_1fr] desktop:gap-y-2">
@@ -291,10 +305,8 @@ const ProfileList = ({
   )
 }
 
-const headClassName = 'px-3 py-2 text-left text-caption font-normal text-text-secondary'
-const cellClassName = 'desktop:table-cell desktop:px-3 desktop:py-3'
-
-const PolicyTable = ({
+/** 付いている権限を、役職で付く権限と個別に足した権限のまとまりに分け、対象を指定する権限には対象を添える。 */
+const PolicyList = ({
   staff,
   policies,
   position,
@@ -304,57 +316,66 @@ const PolicyTable = ({
   policies: readonly Policy[]
   position?: Position
   targetNames: ReadonlyMap<string, string>
-}) => (
-  <table className="block w-full border-collapse desktop:table" data-testid="staff-policy-table">
-    <thead className="hidden desktop:table-header-group">
-      <tr className="border-b border-border">
-        {['権限', '付いているか', '付いた理由', '対象'].map((label) => (
-          <th className={headClassName} key={label} scope="col">
-            {label}
-          </th>
-        ))}
-      </tr>
-    </thead>
-    <tbody className="block desktop:table-row-group">
-      {policies.map((policy) => {
-        const owned = staff.policies.find((p) => p.policy_id === policy.id)
-        const target = owned === undefined ? '—' : policyTargetText(owned, targetNames)
-        return (
-          <tr
-            className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5 border-b border-border py-2 desktop:table-row desktop:py-0"
-            data-testid={`staff-policy-row-${policy.code}`}
-            key={policy.id}
+}) => {
+  const owned = policies.filter((policy) => staff.policies.some((p) => p.policy_id === policy.id))
+  if (owned.length === 0)
+    return (
+      <p
+        className="px-4 py-8 text-center text-body text-text-secondary"
+        data-testid="staff-policy-list"
+      >
+        付いている権限はありません。
+      </p>
+    )
+  const groups = groupPolicies(owned, position)
+  return (
+    <div className="flex flex-col gap-5" data-testid="staff-policy-list">
+      {[
+        {
+          id: 'position',
+          title: `役職「${staff.position.name}」で付く権限`,
+          items: groups.position,
+        },
+        { id: 'individual', title: '個別に足した権限', items: groups.other },
+      ]
+        .filter((group) => group.items.length > 0)
+        .map((group) => (
+          <section
+            aria-labelledby={`staff-policy-group-${group.id}-title`}
+            className="flex flex-col gap-1"
+            data-testid={`staff-policy-group-${group.id}`}
+            key={group.id}
           >
-            <td className={clsx('text-body', cellClassName)}>{policy.name}</td>
-            <td className={clsx('text-body-dense', cellClassName)}>
-              {owned === undefined ? (
-                <span className="text-text-secondary">— 付いていない</span>
-              ) : (
-                <span className="font-bold">✓ 付いている</span>
-              )}
-            </td>
-            <td
-              className={clsx(
-                'text-caption text-text-secondary',
-                owned === undefined && 'hidden',
-                cellClassName,
-              )}
+            <h3
+              className="text-label text-text-secondary"
+              id={`staff-policy-group-${group.id}-title`}
             >
-              {owned !== undefined && policyOrigin(owned, position)}
-            </td>
-            <td
-              className={clsx(
-                'text-caption desktop:text-body-dense',
-                (owned === undefined || target === 'なし') && 'text-text-secondary',
-                owned === undefined && 'hidden',
-                cellClassName,
-              )}
-            >
-              {target === 'なし' ? '—' : target}
-            </td>
-          </tr>
-        )
-      })}
-    </tbody>
-  </table>
-)
+              {group.title}
+            </h3>
+            <ul className="flex flex-col divide-y divide-border">
+              {group.items.map((policy) => {
+                const grant = staff.policies.find((p) => p.policy_id === policy.id)
+                return (
+                  <li
+                    className="flex flex-col gap-0.5 py-2 text-body"
+                    data-testid={`staff-policy-row-${policy.code}`}
+                    key={policy.id}
+                  >
+                    {policy.name}
+                    {grant !== undefined && policyTargetKind(policy) !== undefined && (
+                      <span
+                        className="text-caption text-text-secondary"
+                        data-testid={`staff-policy-targets-${policy.code}`}
+                      >
+                        {policyTargetText(grant, targetNames)}
+                      </span>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+          </section>
+        ))}
+    </div>
+  )
+}
