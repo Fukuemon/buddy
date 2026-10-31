@@ -4,6 +4,10 @@ import type { Page } from '@playwright/test'
 export const receiptResultRow = (page: Page, patient: string) =>
   page.getByTestId('receipt-result-table').getByRole('row').filter({ hasText: patient })
 
+/** 照合の結果の表の、列の見出しのセル。列の順に並ぶ。 */
+export const receiptResultHeaderCells = (page: Page) =>
+  page.getByTestId('receipt-result-table').getByRole('columnheader')
+
 /**
  * 照合の結果の表で、区分の中の、訪問日と利用者名を含む行のセル。区分ごとに tbody が分かれ、先頭に区分の見出しの行がある。
  * セルは結果の表の列の順に並ぶ。

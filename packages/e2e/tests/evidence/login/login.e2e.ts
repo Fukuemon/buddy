@@ -135,6 +135,49 @@ test.describe('予定のカレンダー', () => {
         )
       })
 
+      test(`${prefix}ログインに失敗した場合、ログインの画面と同じ中央のカードで失敗の文が出ること`, async ({
+        browser,
+      }) => {
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'login-failed-card',
+            title:
+              'ログインに失敗すると、ブローカーのログインの画面と同じ、画面の中央のカードに失敗の文が出る',
+            actor: 'ログインなし',
+            variant,
+          },
+          openWeb,
+          async ({ page, step, check }) => {
+            await page.goto(DAY)
+            await expect(brokerLogin(page).email).toBeVisible()
+            await check('ブローカーのログインの画面は、画面の中央のカードにメールの入力を出す')
+
+            await step(`登録していないメール ${UNREGISTERED_EMAIL} を入れて「次へ」を押す`)
+            await enterEmailAtBroker(page, UNREGISTERED_EMAIL)
+            await expect(page).toHaveURL(/\/auth\/error\?reason=failed$/)
+            const card = page.getByTestId('auth-error')
+            await expect(card).toContainText('ログインできませんでした')
+            await expect(card).toContainText('時間をおいて、もう一度ログインしてください。')
+            const viewport = page.viewportSize()
+            // カードの中心と画面の中心のずれ。中央に置けば、縦と横のどちらも 1px 未満になる
+            await expect
+              .poll(async () => {
+                const box = await card.boundingBox()
+                if (box === null || viewport === null) return Number.POSITIVE_INFINITY
+                return Math.max(
+                  Math.abs(box.x + box.width / 2 - viewport.width / 2),
+                  Math.abs(box.y + box.height / 2 - viewport.height / 2),
+                )
+              })
+              .toBeLessThan(1)
+            await check(
+              'ログインの失敗の画面も、サイトのヘッダーを出さずに、画面の中央のカードにロゴ、「ログインできませんでした」、説明の文、「もう一度ログインする」を出す',
+            )
+          },
+        )
+      })
+
       test(`${prefix}止めた職員のメールを入れた場合、ログインの失敗の画面が出て予定の画面を開けないこと`, async ({
         browser,
       }) => {
