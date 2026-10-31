@@ -10,8 +10,6 @@ import {
 
 import type { CalendarLinkRow } from './CalendarLinkTable'
 
-// story のダミーデータ。正本はフェイクの API と共有する src/mocks/scheduleData.ts である
-
 /** 職員の一覧の行。青木 一郎と石川 二葉にカレンダーを結び付けてある。 */
 export const storyLinkRows: CalendarLinkRow[] = fakeStaff.map((staff) => ({
   staff,

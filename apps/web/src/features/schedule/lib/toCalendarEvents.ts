@@ -19,7 +19,7 @@ const CATEGORICAL_COLOR_COUNT = 10
  * 職員の並びの位置から、区別の色（categorical-1 から categorical-10）の CSS の変数を返す。
  * 11 人目からは 1 に戻り、色が重なる。
  */
-export const staffColor = (index: number) =>
+const staffColor = (index: number) =>
   `var(--buddy-color-categorical-${(index % CATEGORICAL_COLOR_COUNT) + 1})`
 
 /** 職員の id から区別の色への表。カレンダーの予定と職員の絞り込みの凡例が、同じ表を使う。 */

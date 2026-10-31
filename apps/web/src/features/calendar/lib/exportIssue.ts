@@ -2,6 +2,11 @@ import type { CalendarExportIssue } from '#/api/types'
 
 import { formatDateWithWeekday } from './format'
 
+type ExportIssueState = Pick<
+  CalendarExportIssue,
+  'status' | 'error_code' | 'acceptable' | 'recurring_schedule_id'
+>
+
 /** 確認が必要な予定の日時を「2026/11/04（水）10:00〜11:00」の形にする。繰り返しの予定は、最初の回の日付に「から毎回」を付ける。 */
 export const formatExportIssueDateTime = (issue: CalendarExportIssue) => {
   const time = `${issue.start_time.slice(0, 5)}〜${issue.end_time.slice(0, 5)}`
@@ -13,24 +18,14 @@ export const formatExportIssueDateTime = (issue: CalendarExportIssue) => {
  * 確認が必要な書き出しが、buddy でキャンセルした単発の予定かを返す。buddy の内容で書き直すと、Google カレンダーの予定を消す。
  * API の `acceptable` は、Google カレンダーで変わったか消えた単発の予定（`conflict` の `precondition_failed` か `not_found`）では、buddy でキャンセルしたときだけ false になる。
  */
-export const isCancelledSingleIssue = (
-  issue: Pick<
-    CalendarExportIssue,
-    'status' | 'error_code' | 'acceptable' | 'recurring_schedule_id'
-  >,
-) =>
+export const isCancelledSingleIssue = (issue: ExportIssueState) =>
   issue.status === 'conflict' &&
   (issue.error_code === 'precondition_failed' || issue.error_code === 'not_found') &&
   !issue.acceptable &&
   issue.recurring_schedule_id === null
 
 /** 確認が必要な書き出しの理由を、マネージャーが次にすることの分かる文にする。 */
-export const exportIssueReason = (
-  issue: Pick<
-    CalendarExportIssue,
-    'status' | 'error_code' | 'acceptable' | 'recurring_schedule_id'
-  >,
-) => {
+export const exportIssueReason = (issue: ExportIssueState) => {
   switch (issue.error_code) {
     case 'precondition_failed':
       if (issue.acceptable) {

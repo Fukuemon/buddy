@@ -9,7 +9,7 @@ const DEFAULT_START_TIME = '09:00'
 const DEFAULT_SERVICE_CODE = '訪看I2'
 
 /** createScheduleFormValues の引数。time を省くと 9 時、staffId を省くと未選択にする。 */
-export type ScheduleFormDefaults = {
+type ScheduleFormDefaults = {
   kind: ScheduleKind
   /** `YYYY-MM-DD` */
   date: string
@@ -65,7 +65,7 @@ export const toScheduleFormValues = (schedule: Schedule): ScheduleFormValues => 
 }
 
 /** 訪問の予定の終了時間を、開始時間と提供時間から求める。 */
-export const visitEndTime = (startTime: string, serviceTime: number) =>
+const visitEndTime = (startTime: string, serviceTime: number) =>
   addMinutesToTimeKey(startTime, serviceTime)
 
 /**

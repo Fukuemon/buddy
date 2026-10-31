@@ -5,7 +5,7 @@ const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'] as const
 const pad = (value: number) => String(value).padStart(2, '0')
 
 /** `YYYY-MM-DD` を「2026/11/04」の形にする。 */
-export const formatDate = (date: string) => date.replaceAll('-', '/')
+const formatDate = (date: string) => date.replaceAll('-', '/')
 
 /** `YYYY-MM-DD` を「2026/11/04（水）」の形にする。 */
 export const formatDateWithWeekday = (date: string) => {
