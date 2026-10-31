@@ -93,7 +93,7 @@ export const FACILITY_SERVICE_ACCOUNT = 'buddy-org-sample@example.iam.gserviceac
 export const SEED_PATIENT = { id: '01M3TC66FGZVK39Y7GRVZSGWS1', name: '見本 一郎' }
 
 /** ログインの状態を保存するディレクトリ。Git で追跡しない。 */
-export const AUTH_DIR = path.join(root, 'packages/e2e/.auth')
+const AUTH_DIR = path.join(root, 'packages/e2e/.auth')
 
 /** 照合に使う、ダミーの予定と実績の CSV。 */
 export const RECEIPT_TESTDATA = {
