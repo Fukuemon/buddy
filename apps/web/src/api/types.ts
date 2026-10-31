@@ -30,8 +30,11 @@ export type Staff = {
   status?: Exclude<ScheduleComponents['schemas']['StaffStatus'], 'active'>
 }
 
-/** 利用者。API の型の ID と名前だけを使う。 */
-export type Patient = Pick<ScheduleComponents['schemas']['Patient'], 'id' | 'name'>
+/** 利用者。API の型の ID と名前と、利用の終了かだけを使う。 */
+export type Patient = Pick<ScheduleComponents['schemas']['Patient'], 'id' | 'name'> & {
+  /** 利用の終了の利用者は true を持つ。利用中の利用者は持たない（ADR-0021）。 */
+  ended?: true
+}
 
 export const SCHEDULE_KINDS = ['normal', 'visit'] as const
 /** 予定の種類。API の予定の種類の名前（通常、訪問）に当たる。 */

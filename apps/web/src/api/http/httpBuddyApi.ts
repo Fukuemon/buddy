@@ -206,7 +206,7 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
       list: async (facilityId, params) => {
         const patients = await unwrap(
           client.GET('/v1/facilities/{facility_id}/patients', {
-            params: { path: { facility_id: facilityId } },
+            params: { path: { facility_id: facilityId }, query: { include_ended: true } },
           }),
         )
         return patients.map(fromApiPatient).filter((patient) => matchesName(patient.name, params))

@@ -53,7 +53,8 @@ export const fromApiStaff = (user: Schemas['Staff']): Staff => {
 export const fromApiTeam = ({ id, name }: Schemas['Unit']): Team => ({ id, name })
 
 /** API の利用者を、画面の利用者にする。 */
-export const fromApiPatient = ({ id, name }: Schemas['Patient']): Patient => ({ id, name })
+export const fromApiPatient = ({ id, name, ended_at }: Schemas['Patient']): Patient =>
+  ended_at === null ? { id, name } : { id, name, ended: true }
 
 /** API の日付と時刻は事業所の現地時刻で、事業所は日本にあるものとする。 */
 const OFFSET = '+09:00'

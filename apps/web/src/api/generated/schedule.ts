@@ -448,6 +448,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/patients/{patient_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 利用者の名前、サービス、希望、担当の職員を変える
+         * @description 利用者の名前、希望の時間帯と性別、サービスコード、担当の職員を本文の値に置き換える。部分の更新は持たない。
+         *     利用の終了の利用者も変えられ、利用の終了は変えない。
+         *     担当を別の職員に変えるときは、休職か退職の職員を 400 で拒む。今の担当のままなら、担当が休職か退職でも拒まない。
+         *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        put: operations["updatePatient"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/patients/{patient_id}/end_service": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 利用者を利用の終了にする
+         * @description 利用者を利用の終了にする（ADR-0021）。利用者のレコードは消さず、名前、サービス、担当の職員を残す。
+         *     利用の終了の利用者は、デフォルトの利用者の一覧に出ず、予定の利用者に新しく指せず、職員の退職の確認で担当に数えない。
+         *     その日（事業所の現地の日付）以降の予定か、その日以降に終わる繰り返しの予定が残るときは、書かずに 409（patient_has_schedules）で残る一覧を返す。
+         *     利用の終了の利用者を利用の終了にしても成功し、最初に利用の終了にした時刻を残す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        post: operations["endPatientService"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/patients/{patient_id}/resume_service": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 利用の終了の利用者を利用中に戻す
+         * @description 利用者を利用中に戻し（利用の再開）、担当の職員を本文の職員にする（ADR-0021）。利用の終了の前の予定は、同じ利用者の予定のまま残る。
+         *     担当の職員は必ず指定し、休職か退職の職員は 400 で拒む。利用中の利用者を戻しても成功し、担当を書き換える。
+         *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        post: operations["resumePatientService"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visit_infos/service_codes": {
         parameters: {
             query?: never;
@@ -825,7 +893,7 @@ export interface components {
         Time: string;
         Error: {
             /** @enum {string} */
-            code: "invalid_input" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "internal" | "calendar_unreadable" | "calendar_unavailable" | "calendar_not_configured" | "calendar_taken" | "calendar_already_linked" | "staff_has_calendar" | "import_running" | "import_preview_changed" | "export_not_in_review" | "export_not_acceptable" | "external_change_unappliable" | "staff_has_assignments";
+            code: "invalid_input" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "internal" | "calendar_unreadable" | "calendar_unavailable" | "calendar_not_configured" | "calendar_taken" | "calendar_already_linked" | "staff_has_calendar" | "import_running" | "import_preview_changed" | "export_not_in_review" | "export_not_acceptable" | "external_change_unappliable" | "staff_has_assignments" | "patient_has_schedules";
             /** @description 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う */
             message: string;
         };
@@ -946,7 +1014,7 @@ export interface components {
                 start_time: components["schemas"]["Time"];
                 end_time: components["schemas"]["Time"];
             }[];
-            /** @description 職員が主に担当する利用者。名前の順 */
+            /** @description 職員が主に担当する利用中の利用者。利用の終了の利用者は含めない（ADR-0021）。名前の順 */
             patients: {
                 id: components["schemas"]["ID"];
                 name: string;
@@ -989,10 +1057,42 @@ export interface components {
             service_code: string;
             assigned_staff_id: components["schemas"]["ID"];
             assigned_staff_name: string;
+            /**
+             * Format: date-time
+             * @description 利用の終了にした時刻。利用中なら null
+             */
+            ended_at: string | null;
             /** Format: date-time */
             created_at: string;
             /** Format: date-time */
             updated_at: string;
+        };
+        /** @description 利用者を利用の終了にするときに残る、その日以降の予定と繰り返しの予定。訪問の情報の利用者がその利用者の予定を含める */
+        PatientSchedules: {
+            /** @description その日以降のキャンセルしていない単発の予定。日時の順 */
+            schedules: {
+                id: components["schemas"]["ID"];
+                date: components["schemas"]["Date"];
+                start_time: components["schemas"]["Time"];
+                end_time: components["schemas"]["Time"];
+            }[];
+            /** @description その日以降に終わる繰り返しの予定。終了日の無い繰り返しを含める。最初の回の日時の順 */
+            recurring_schedules: {
+                id: components["schemas"]["ID"];
+                /** @description 最初の回の日付 */
+                date: components["schemas"]["Date"];
+                /**
+                 * Format: date
+                 * @description 終了日。終了日が無ければ null
+                 */
+                end_date: string | null;
+                start_time: components["schemas"]["Time"];
+                end_time: components["schemas"]["Time"];
+            }[];
+        };
+        EndServiceConflict: components["schemas"]["Error"] & {
+            /** @description code が patient_has_schedules のとき、残る予定と繰り返しの予定 */
+            schedules?: components["schemas"]["PatientSchedules"];
         };
         ServiceCode: {
             id: components["schemas"]["ID"];
@@ -1299,6 +1399,7 @@ export interface components {
          * @description 入力のエラー。`code` は invalid_input。`message` はエラーの箇所と理由で、入力によって変わる。
          *     予定の職員、主訪問者、同行者、利用者の担当の職員に、休職か退職の職員を新しく指したときも返す。
          *     予定と繰り返しの予定に既に割り振った職員は、同じ役割のまま保存できる。休職の職員は日付によらず、退職した職員は今日より前の予定でだけ保存できる。
+         *     予定の利用者に、利用の終了の利用者を新しく指したときも返す。既に付けた利用の終了の利用者は、利用者を変えずに、今日より前の予定でだけ保存できる。
          */
         AssignBadRequest: {
             headers: {
@@ -2337,6 +2438,8 @@ export interface operations {
                 preferred_gender?: components["schemas"]["PreferredGender"];
                 /** @description 担当の職員の名前で一致させる */
                 assigned_staff?: string;
+                /** @description true なら利用の終了の利用者を含める。省くか false なら利用中の利用者だけを返す */
+                include_ended?: boolean;
                 /** @description 省くと name の昇順 */
                 sort_field?: "name" | "created_at";
                 /** @description 省くと昇順。sort_field を省いたときはデフォルトのカラムに向きだけを当てる */
@@ -2389,6 +2492,129 @@ export interface operations {
         responses: {
             /** @description 作った利用者 */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Patient"];
+                };
+            };
+            400: components["responses"]["AssignBadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    updatePatient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: components["schemas"]["ID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    preferred_time: components["schemas"]["PreferredTime"];
+                    preferred_gender: components["schemas"]["PreferredGender"];
+                    service_code_id: components["schemas"]["ID"];
+                    assigned_staff_id: components["schemas"]["ID"];
+                };
+            };
+        };
+        responses: {
+            /** @description 変えた利用者 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Patient"];
+                };
+            };
+            400: components["responses"]["AssignBadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    endPatientService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: components["schemas"]["ID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 利用の終了にした利用者 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Patient"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description その日以降の予定か繰り返しの予定が残る（patient_has_schedules。schedules に残る一覧がある） */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "patient_has_schedules",
+                     *       "message": "その日以降の予定か繰り返しの予定が残る利用者は、利用の終了にできません。予定をキャンセルするか、繰り返しを終えてください",
+                     *       "schedules": {
+                     *         "schedules": [
+                     *           {
+                     *             "id": "01M3TC5H00QV17BC0J9V3393ZP",
+                     *             "date": "2026-11-02",
+                     *             "start_time": "09:00",
+                     *             "end_time": "10:00"
+                     *           }
+                     *         ],
+                     *         "recurring_schedules": []
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["EndServiceConflict"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    resumePatientService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patient_id: components["schemas"]["ID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    assigned_staff_id: components["schemas"]["ID"];
+                };
+            };
+        };
+        responses: {
+            /** @description 利用中に戻した利用者 */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

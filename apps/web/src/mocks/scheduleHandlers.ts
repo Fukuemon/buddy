@@ -85,7 +85,13 @@ export const createScheduleHandlers = (baseUrl: string) => {
     ),
     http.get(
       '/v1/facilities/{facility_id}/patients',
-      withAuth(({ response }) => response(200).json(mockPatients)),
+      withAuth(({ query, response }) =>
+        response(200).json(
+          query.get('include_ended') === 'true'
+            ? mockPatients
+            : mockPatients.filter((patient) => patient.ended_at === null),
+        ),
+      ),
     ),
     http.get(
       '/v1/facilities/{facility_id}/schedules',
