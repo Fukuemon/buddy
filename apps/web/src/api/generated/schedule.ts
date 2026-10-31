@@ -318,6 +318,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/users/{user_id}/remaining_assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 職員に残る予定と担当の利用者を返す
+         * @description 職員を休職か退職にする前に、その日（事業所の現地の日付）以降の予定、繰り返しの予定、担当の利用者を返す。
+         *     一覧は、休職と退職が返す一覧と同じ規則で作る。何も書かない。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        get: operations["getUserRemainingAssignments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/users/{user_id}/retire": {
         parameters: {
             query?: never;
@@ -2105,6 +2126,33 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    getUserRemainingAssignments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["ID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description その日以降に残る予定と担当の利用者 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffAssignments"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
         };
     };

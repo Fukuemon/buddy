@@ -15,8 +15,8 @@ const body = {
   team_id: 'team-b',
 }
 
-describe('PUT /v1/users/{user_id} のフェイク', () => {
-  it('本文の名前、電話番号、チームにした職員を返す', async () => {
+describe('職員を変える API と、残る予定の API のフェイク', () => {
+  it('PUT /v1/users/{user_id} は、本文の名前、電話番号、チームにした職員を返す', async () => {
     const { data, response } = await client().PUT('/v1/users/{user_id}', {
       params: { path: { user_id: 'staff-1' } },
       body,
@@ -36,6 +36,14 @@ describe('PUT /v1/users/{user_id} のフェイク', () => {
       body: { ...body, team_id: 'team-other' },
     })
     expect(response.status).toBe(400)
+  })
+
+  it('GET /v1/users/{user_id}/remaining_assignments のフェイクは、空の一覧を返す', async () => {
+    const { data, response } = await client().GET('/v1/users/{user_id}/remaining_assignments', {
+      params: { path: { user_id: 'staff-1' } },
+    })
+    expect(response.status).toBe(200)
+    expect(data).toEqual({ schedules: [], recurring_schedules: [], patients: [] })
   })
 
   it('無い職員を指すと 404 を返す', async () => {

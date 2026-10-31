@@ -76,6 +76,14 @@ export const createScheduleHandlers = (baseUrl: string) => {
       }),
     ),
     http.get(
+      '/v1/users/{user_id}/remaining_assignments',
+      withAuth(({ params, response }) =>
+        mockStaff.some((s) => s.id === params.user_id)
+          ? response(200).json({ schedules: [], recurring_schedules: [], patients: [] })
+          : response(404).json({ code: 'not_found', message: 'リソースが見つかりません' }),
+      ),
+    ),
+    http.get(
       '/v1/facilities/{facility_id}/patients',
       withAuth(({ response }) => response(200).json(mockPatients)),
     ),
