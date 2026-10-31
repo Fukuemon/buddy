@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 
 	calendarv3 "google.golang.org/api/calendar/v3"
 	"google.golang.org/api/googleapi"
@@ -107,11 +106,7 @@ var rateLimitReasons = map[string]bool{"rateLimitExceeded": true, "userRateLimit
 
 // writeError は、Calendar API の書き込みのエラーを calendar のエラーで包む。エラーの文は、カレンダー ID と予定のタイトルを含まない。
 func writeError(msg string, err error) error {
-	// 通信のエラー（*url.Error）の文は、カレンダー ID を含むリクエストの URL を持つ。
-	var uerr *url.Error
-	if errors.As(err, &uerr) {
-		err = uerr.Err
-	}
+	err = withoutURL(err)
 	kind := calendar.ErrUnavailable
 	var gerr *googleapi.Error
 	if errors.As(err, &gerr) {

@@ -64,21 +64,11 @@ type Types interface {
 	List(ctx context.Context) ([]schedule.Type, error)
 }
 
-// Schedules は、取り込んだ単発の予定を書き、外部のカレンダーの内容を当てる予定を読み書きする。
-type Schedules interface {
-	ScheduleStore
-}
-
 // Recurring は、取り込んだ繰り返しの予定と除外する日を書く。
 // AddExclusion は、同じ日付をすでに除外しているときに apperr.ErrConflict を返す。
 type Recurring interface {
 	Create(ctx context.Context, rs schedule.RecurringSchedule) error
 	AddExclusion(ctx context.Context, recurringScheduleID string, d civil.Date) error
-}
-
-// VisitInfos は、取り込んだ訪問の予定の訪問の情報を書く。実装は visit.Writer である。
-type VisitInfos interface {
-	VisitStore
 }
 
 // StaffLocker は、トランザクションが終わるまで、事業所 facilityID の職員を休職、復職、退職にさせない。
@@ -103,11 +93,12 @@ type Deps struct {
 	Patients     Patients
 	ServiceCodes ServiceCodes
 	Types        Types
-	Schedules    Schedules
-	Recurring    Recurring
+	// Schedules は、取り込んだ単発の予定を書き、外部のカレンダーの内容を当てる予定を読み書きする。
+	Schedules ScheduleStore
+	Recurring Recurring
 	// RecurringSchedules は、前の取り込みで繰り返しのまま取り込んだ予定と、その除外の日を読む。
 	RecurringSchedules kernel.Finder[schedule.RecurringDetail]
-	Visits             VisitInfos
+	Visits             VisitStore
 	// Exports は、Google カレンダーへの書き出しの待ちを読み、書き直す待ちにする。
 	Exports ExportRepository
 }
@@ -622,8 +613,7 @@ func (u *Usecase) slot(ctx context.Context, c ExternalCalendar, e entry, types m
 }
 
 func (u *Usecase) link(ctx context.Context, c ExternalCalendar, e entry, scheduleID, recurringScheduleID *string) error {
-	// 取り込んだ予定は作ったばかりで、更新の番号は 1 である。
-	synced := 1
+	synced := createdVersion
 	l := Link{
 		ID: u.ids.NewID(), FacilityID: c.FacilityID, ExternalCalendarID: c.ID, ExternalEventID: e.event.ID,
 		ETag: e.event.ETag, SyncedVersion: &synced, ScheduleID: scheduleID, RecurringScheduleID: recurringScheduleID,
@@ -701,7 +691,6 @@ func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 	if c.DisabledAt != nil {
 		return Export{}, errNotAcceptable
 	}
-	// 外部の予定は、予定の対応のカレンダーの事業所のサービスアカウントで読む
 	src, err := u.source(ctx, c.FacilityID)
 	if err != nil {
 		return Export{}, err

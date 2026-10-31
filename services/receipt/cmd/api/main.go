@@ -34,11 +34,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Fukuemon/buddy/packages/go/healthcheck"
-
 	"google.golang.org/api/calendar/v3"
 
 	"github.com/Fukuemon/buddy/packages/go/gcalauth"
+	"github.com/Fukuemon/buddy/packages/go/healthcheck"
 	"github.com/Fukuemon/buddy/packages/go/oidc"
 
 	"github.com/Fukuemon/buddy/services/receipt/internal/gcal"

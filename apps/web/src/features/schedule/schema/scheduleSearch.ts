@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { CALENDAR_VIEWS } from '../constants/calendarView'
+import { CALENDAR_VIEWS, type CalendarView } from '../constants/calendarView'
 
 /** デフォルト値。URL に書かずに済むよう、route の stripSearchParams にも渡す。 */
 export const scheduleSearchDefaults = {
@@ -8,7 +8,7 @@ export const scheduleSearchDefaults = {
   staff: [],
   cancelled: false,
 } as const satisfies {
-  view: (typeof CALENDAR_VIEWS)[number]
+  view: CalendarView
   staff: string[]
   cancelled: boolean
 }

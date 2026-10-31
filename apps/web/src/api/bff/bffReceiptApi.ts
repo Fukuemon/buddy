@@ -1,5 +1,5 @@
 import { ApiError, type ReceiptApi } from '../client'
-import { loginHref } from '../viewer'
+import { redirectToLogin } from '../viewer'
 import type { ReceiptCheckResult } from './receiptCall'
 import { checkReceiptFn } from './serverFns'
 
@@ -20,11 +20,7 @@ export const createBffReceiptApi = (
     if (input.month !== undefined) form.append('month', input.month)
     const result = await checkReceipt(form)
     if (result.ok) return result.report
-    if (result.status === 401 && typeof window !== 'undefined') {
-      window.location.assign(loginHref(window.location.pathname + window.location.search))
-      // 画面が移るまでの間に、呼び出し元がエラーの表示を出さないよう、終わらない Promise を返す
-      return new Promise<never>(() => {})
-    }
+    if (result.status === 401 && typeof window !== 'undefined') return redirectToLogin()
     throw new ApiError(result.status, result.message, result.rowErrors)
   },
 })

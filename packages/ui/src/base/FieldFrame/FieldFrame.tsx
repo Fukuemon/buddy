@@ -1,7 +1,7 @@
 import { clsx } from 'clsx'
 import type { MouseEvent, ReactNode } from 'react'
 
-export type FieldFrameProps = {
+type FieldFrameProps = {
   htmlFor: string
   label: string
   icon?: ReactNode

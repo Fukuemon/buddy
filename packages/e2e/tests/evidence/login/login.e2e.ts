@@ -11,20 +11,12 @@ import {
   UNREGISTERED_EMAIL,
 } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
-import { enterEmailAtBroker, signInAtBroker } from '../../screens/login'
+import { enterEmailAtBroker, signInAtBroker, signInAtUpstreamIdp } from '../../screens/login'
 import { brokerLogin, idpLogin } from '../../selectors/idp'
 
 /** 録画の外では、ログインせずに web の origin を開いておく。録画の中で、ログインの画面から操作する。 */
 const openWeb = async (page: Page) => {
   await page.goto(`${BASE_URL}/auth/error`)
-}
-
-/** 上流の IdP のフェイクで、email を確認済みのクレームにして入る。 */
-const signInUpstream = async (page: Page, email: string) => {
-  const idp = idpLogin(page)
-  await idp.username.fill(email.split('@')[0])
-  await idp.claims.fill(JSON.stringify({ email, email_verified: true }))
-  await idp.signIn.click()
 }
 
 const DAY = `/schedule?view=day&date=${OFFICE_A_SCHEDULE.date}`
@@ -65,7 +57,7 @@ test.describe('予定のカレンダー', () => {
             await check('1 つ目の事業所の上流の IdP（フェイク）のログインの画面に移る')
 
             await step('上流の IdP で、同じメールを確認済みにして入る')
-            await signInUpstream(page, LOGIN_EMAIL)
+            await signInAtUpstreamIdp(page, LOGIN_EMAIL)
             await expect(page.getByTestId('viewer-menu')).toContainText(LOGIN_STAFF.name)
             await expect(
               page.getByTestId(/^schedule-event-/).filter({ hasText: OFFICE_A_SCHEDULE.title }),
@@ -97,7 +89,7 @@ test.describe('予定のカレンダー', () => {
             await check('2 つ目の事業所の上流の IdP（フェイク）のログインの画面に移る')
 
             await step('上流の IdP で、同じメールを確認済みにして入る')
-            await signInUpstream(page, OFFICE_B.email)
+            await signInAtUpstreamIdp(page, OFFICE_B.email)
             await expect(page.getByTestId('viewer-menu')).toContainText(OFFICE_B.staff.name)
             const events = page.getByTestId(/^schedule-event-/)
             const officeBEvent = events.filter({ hasText: OFFICE_B.schedule.title })
@@ -193,7 +185,7 @@ test.describe('予定のカレンダー', () => {
             await expect(idpLogin(page).username).toBeVisible()
 
             await step('上流の IdP で、別のメール someone.else@example.com を確認済みにして入る')
-            await signInUpstream(page, 'someone.else@example.com')
+            await signInAtUpstreamIdp(page, 'someone.else@example.com')
             await expect(page).toHaveURL(/\/auth\/error\?reason=failed$/)
             await expect(page.getByTestId('auth-error')).toContainText('ログインできませんでした')
             await check('web のログインの失敗の画面に「ログインできませんでした」が出る')

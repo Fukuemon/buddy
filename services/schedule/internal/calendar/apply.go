@@ -26,6 +26,10 @@ var errUnappliable = errors.New("外部の予定の変更を buddy の予定に�
 // 書いた予定が増分に戻ってきたときに、予定の対応の etag を書く前に比べて、buddy と外部の両方が変わったと見誤らないためである。
 var errExportWriting = errors.New("予定を外部のカレンダーに書いている")
 
+// createdVersion は、作ったばかりの予定の更新の番号である。外部の予定から作った予定は外部の予定と同じなので、
+// 予定の対応の同じにした時点の番号にこの値を書く。
+const createdVersion = 1
+
 // ScheduleStore は、外部の予定の変更を当てる単発の予定を読み書きする。実装は schedule.Repository である。
 type ScheduleStore interface {
 	Create(ctx context.Context, s schedule.Schedule) error
@@ -235,8 +239,7 @@ func (a applier) syncOccurrence(ctx context.Context, c ExternalCalendar, parent 
 	if err := a.schedules.Create(ctx, sc); err != nil {
 		return err
 	}
-	// 作った予定は外部の回と同じなので、更新の番号は 1 で同じにしてある。
-	version, recurringEventID := 1, parent.ExternalEventID
+	version, recurringEventID := createdVersion, parent.ExternalEventID
 	if err := a.calendars.CreateLink(ctx, Link{
 		ID: a.ids.NewID(), FacilityID: rs.FacilityID, ExternalCalendarID: c.ID, ExternalEventID: ev.ID,
 		RecurringEventID: &recurringEventID, ETag: ev.ETag, SyncedVersion: &version, ScheduleID: &sc.ID,

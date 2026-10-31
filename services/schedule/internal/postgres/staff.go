@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
@@ -290,15 +289,6 @@ func (r *StaffAssignmentReader) From(ctx context.Context, facilityID, staffID st
 		out.Patients[i] = staff.AssignedPatient{ID: p.ID, Name: p.Name}
 	}
 	return out, nil
-}
-
-func slotTimes(start, end pgtype.Time) (civil.Time, civil.Time, error) {
-	s, err := parseTimeOfDay(start)
-	if err != nil {
-		return civil.Time{}, civil.Time{}, err
-	}
-	e, err := parseTimeOfDay(end)
-	return s, e, err
 }
 
 // StaffRefRepository は、ほかの機能が職員を参照するための kernel.Finder[staff.Ref] を実装する。

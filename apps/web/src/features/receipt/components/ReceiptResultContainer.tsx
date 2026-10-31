@@ -12,12 +12,14 @@ export const ReceiptResultContainer = () => {
   const result = useReceiptResult()
   if (result === null) return <ReceiptResultEmpty checkHref={CHECK_HREF} />
   const { report, month } = result
-  const [year, mm] = month?.split('-') ?? []
+  const [year, monthNumber] = month?.split('-') ?? []
   return (
     <ReceiptResultView
       report={report}
       sourceLabel={
-        month === undefined ? '予定の CSV' : `${year} 年 ${Number(mm)} 月の Google カレンダー`
+        month === undefined
+          ? '予定の CSV'
+          : `${year} 年 ${Number(monthNumber)} 月の Google カレンダー`
       }
       checkAgainHref={CHECK_HREF}
       onDownload={() =>

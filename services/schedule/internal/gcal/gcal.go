@@ -155,11 +155,7 @@ func checkAccess(page *calendarv3.Events) error {
 
 // wrap は、Calendar API の呼び出しのエラーを、calendar.ErrUnreadable か calendar.ErrUnavailable で包む。
 func wrap(msg string, err error) error {
-	// 通信のエラー（*url.Error）の文は、カレンダー ID を含むリクエストの URL を持つ。
-	var uerr *url.Error
-	if errors.As(err, &uerr) {
-		err = uerr.Err
-	}
+	err = withoutURL(err)
 	if errors.Is(err, calendar.ErrUnreadable) {
 		return fmt.Errorf("%s: %w", msg, err)
 	}
@@ -169,6 +165,15 @@ func wrap(msg string, err error) error {
 		kind = calendar.ErrUnreadable
 	}
 	return fmt.Errorf("%s: %w: %w", msg, kind, err)
+}
+
+// withoutURL は、通信のエラー（*url.Error）なら、包んだエラーを返す。*url.Error の文は、カレンダー ID を含むリクエストの URL を持つためである。
+func withoutURL(err error) error {
+	var uerr *url.Error
+	if errors.As(err, &uerr) {
+		return uerr.Err
+	}
+	return err
 }
 
 func toEvent(ev *calendarv3.Event) calendar.Event {

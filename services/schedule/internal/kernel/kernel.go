@@ -4,6 +4,7 @@ package kernel
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -64,10 +65,8 @@ func ParseSort(field, order string, allowed []string, def Sort) (Sort, error) {
 		}
 		return def, nil
 	}
-	for _, f := range allowed {
-		if f == field {
-			return Sort{Field: field, Desc: desc}, nil
-		}
+	if slices.Contains(allowed, field) {
+		return Sort{Field: field, Desc: desc}, nil
 	}
 	return Sort{}, apperr.Invalid("sort_field は %s のいずれかです", strings.Join(allowed, ", "))
 }

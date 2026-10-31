@@ -14,7 +14,7 @@ const baseFields = {
   description: z.string(),
 }
 
-export const normalScheduleFormSchema = z
+const normalScheduleFormSchema = z
   .object({
     ...baseFields,
     kind: z.literal('normal'),
@@ -26,7 +26,7 @@ export const normalScheduleFormSchema = z
     error: '終了時間は開始時間より後にしてください',
   })
 
-export const visitScheduleFormSchema = z
+const visitScheduleFormSchema = z
   .object({
     ...baseFields,
     kind: z.literal('visit'),
@@ -60,9 +60,5 @@ export const scheduleFormSchema = z.discriminatedUnion('kind', [
   visitScheduleFormSchema,
 ])
 
-/** 通常の予定のフォームの値。 */
-export type NormalScheduleFormValues = z.infer<typeof normalScheduleFormSchema>
-/** 訪問の予定のフォームの値。 */
-export type VisitScheduleFormValues = z.infer<typeof visitScheduleFormSchema>
 /** 予定のフォームの値。kind で通常と訪問を分ける。 */
 export type ScheduleFormValues = z.infer<typeof scheduleFormSchema>

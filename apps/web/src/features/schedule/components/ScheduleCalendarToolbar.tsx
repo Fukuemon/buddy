@@ -68,7 +68,6 @@ export const ScheduleCalendarToolbar = ({
       >
         <NextIcon height={24} width={24} />
       </button>
-      {/* 前後のボタンで期間が変わったことを、スクリーンリーダーに読み上げさせる */}
       <h1 aria-live="polite" className="ml-2 text-heading-md" data-testid="calendar-title">
         {formatCalendarTitle(view, date)}
       </h1>

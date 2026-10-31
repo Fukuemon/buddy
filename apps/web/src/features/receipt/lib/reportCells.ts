@@ -28,8 +28,8 @@ export const RECEIPT_COLUMNS = [
 ] as const
 
 const NO_DATA = 'データなし'
-const NG = ' ❌'
-const NOTE = ' ※'
+const MISMATCH_MARK = ' ❌'
+const NOTE_MARK = ' ※'
 
 type SideCells = { service: string; start: string; end: string; duration: string }
 
@@ -50,7 +50,7 @@ const cellsOf = (side: Side): SideCells => ({
 const rangeText = (check: RangeCheck) =>
   check.range === null ? '' : ` (${check.range.min}~${check.range.max})`
 
-const rangeMark = (check: RangeCheck) => (check.ok ? '' : NG + rangeText(check))
+const rangeMark = (check: RangeCheck) => (check.ok ? '' : MISMATCH_MARK + rangeText(check))
 
 /**
  * 照合の結果の 1 行を、表と CSV のセルの文字列にする。並びは RECEIPT_COLUMNS である。
@@ -60,45 +60,45 @@ const rangeMark = (check: RangeCheck) => (check.ok ? '' : NG + rangeText(check))
  * 片側しか無い行の、無い側のセルは「データなし」にする。
  */
 export const reportRowCells = (row: ReceiptRow): string[] => {
-  const s = row.schedule === null ? empty() : cellsOf(row.schedule)
-  const v = row.visit === null ? empty() : cellsOf(row.visit)
+  const schedule = row.schedule === null ? empty() : cellsOf(row.schedule)
+  const visit = row.visit === null ? empty() : cellsOf(row.visit)
   let addition = row.visit === null ? NO_DATA : (row.visit.additions ?? '')
-  const c = row.checks
-  if (c !== null) {
-    const both = (ok: boolean, key: keyof SideCells, mark: string) => {
+  const checks = row.checks
+  if (checks !== null) {
+    const markBoth = (ok: boolean, key: keyof SideCells, mark: string) => {
       if (ok) return
-      s[key] += mark
-      v[key] += mark
+      schedule[key] += mark
+      visit[key] += mark
     }
     if (row.category === 'mismatch') {
-      both(c.start.ok, 'start', NG)
-      both(c.duration_equal, 'duration', NG)
-      both(c.service.ok, 'service', NG)
-      s.end += rangeMark(c.schedule_elapsed)
-      v.end += rangeMark(c.visit_elapsed)
-      s.duration += rangeMark(c.schedule_duration)
-      v.duration += rangeMark(c.visit_duration)
-      if (!c.additions.ok) addition += NOTE
+      markBoth(checks.start.ok, 'start', MISMATCH_MARK)
+      markBoth(checks.duration_equal, 'duration', MISMATCH_MARK)
+      markBoth(checks.service.ok, 'service', MISMATCH_MARK)
+      schedule.end += rangeMark(checks.schedule_elapsed)
+      visit.end += rangeMark(checks.visit_elapsed)
+      schedule.duration += rangeMark(checks.schedule_duration)
+      visit.duration += rangeMark(checks.visit_duration)
+      if (!checks.additions.ok) addition += NOTE_MARK
     } else if (row.category === 'match') {
-      if (!c.duration_equal) {
-        s.duration += NOTE + rangeText(c.schedule_duration)
-        v.duration += NOTE + rangeText(c.visit_duration)
+      if (!checks.duration_equal) {
+        schedule.duration += NOTE_MARK + rangeText(checks.schedule_duration)
+        visit.duration += NOTE_MARK + rangeText(checks.visit_duration)
       }
-      both(c.end_equal, 'end', NOTE)
+      markBoth(checks.end_equal, 'end', NOTE_MARK)
     }
   }
   return [
     row.date,
     row.client,
     row.staff,
-    s.service,
-    s.start,
-    s.end,
-    s.duration,
-    v.service,
-    v.start,
-    v.end,
-    v.duration,
+    schedule.service,
+    schedule.start,
+    schedule.end,
+    schedule.duration,
+    visit.service,
+    visit.start,
+    visit.end,
+    visit.duration,
     addition,
   ]
 }

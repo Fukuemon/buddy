@@ -101,9 +101,15 @@ func RuleFromRecurrence(parent Event) (Recurrence, error) {
 		rule.EndDate = &end
 	}
 	out.Rule = rule
-	slices.SortFunc(out.ExclusionDates, func(a, b civil.Date) int { return a.Time().Compare(b.Time()) })
-	out.ExclusionDates = slices.Compact(out.ExclusionDates)
+	out.ExclusionDates = sortedUniqueDates(out.ExclusionDates)
 	return out, nil
+}
+
+// sortedUniqueDates は、dates を日付の順に並べて重なりを除いたコピーを返す。dates は変えない。
+func sortedUniqueDates(dates []civil.Date) []civil.Date {
+	out := slices.Clone(dates)
+	slices.SortFunc(out, func(a, b civil.Date) int { return a.Time().Compare(b.Time()) })
+	return slices.Compact(out)
 }
 
 // tokyoStart は、w が Asia/Tokyo の日時なら、その日付と時刻を返す。

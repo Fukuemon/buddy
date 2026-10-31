@@ -235,3 +235,12 @@ func parseTimeOfDay(t pgtype.Time) (civil.Time, error) {
 	m := t.Microseconds / microsecondsPerMinute
 	return civil.Time{Hour: int(m / 60), Minute: int(m % 60)}, nil
 }
+
+func slotTimes(start, end pgtype.Time) (civil.Time, civil.Time, error) {
+	s, err := parseTimeOfDay(start)
+	if err != nil {
+		return civil.Time{}, civil.Time{}, err
+	}
+	e, err := parseTimeOfDay(end)
+	return s, e, err
+}

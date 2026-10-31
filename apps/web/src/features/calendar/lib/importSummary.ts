@@ -15,7 +15,7 @@ export type ReviewChoice = { action: ImportAction; patientId?: string }
 export type ReviewChoices = Record<ImportReviewItem['external_event_id'], ReviewChoice>
 
 /** 取り込み方を選び終えたかを返す。patient は利用者も選んだときに選び終えたとする。 */
-export const isChoiceComplete = (choice: ReviewChoice | undefined): choice is ReviewChoice =>
+const isChoiceComplete = (choice: ReviewChoice | undefined): choice is ReviewChoice =>
   choice !== undefined && (choice.action !== 'patient' || choice.patientId !== undefined)
 
 /** 確認が必要な予定のうち、取り込み方を選び終えていない予定の数を返す。 */

@@ -20,7 +20,6 @@ const variantClassName: Record<ButtonVariant, string> = {
 }
 
 const sizeClassName: Record<ButtonSize, string> = {
-  // 見た目は 40px のまま、上下に 2px ずつ押せる領域を広げて 44px にする
   S: 'h-10 min-w-11 rounded-8 px-4 after:absolute after:inset-x-0 after:-inset-y-0.5',
   M: 'h-12 rounded-8 px-5',
   L: 'h-14 rounded-8 px-6',

@@ -60,17 +60,12 @@ func toSchedule(d schedule.Detail) openapi.Schedule {
 }
 
 func toRecurringRule(r schedule.Rule) openapi.RecurringRule {
-	var endDate *string
-	if r.EndDate != nil {
-		s := r.EndDate.String()
-		endDate = &s
-	}
 	return openapi.RecurringRule{
 		Frequency:   openapi.RecurringRuleFrequency(r.Frequency),
 		DayOfWeek:   r.DayOfWeek,
 		DayOfMonth:  r.DayOfMonth,
 		WeekOfMonth: r.WeekOfMonth,
-		EndDate:     endDate,
+		EndDate:     stringPtr(r.EndDate),
 	}
 }
 

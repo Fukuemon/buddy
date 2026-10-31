@@ -16,3 +16,12 @@ export const viewerQueryOptions = (mode: ApiMode) =>
 /** ログインの画面へ移る URL。ログインの後に returnTo へ戻る。 */
 export const loginHref = (returnTo: string) =>
   `/auth/login?returnTo=${encodeURIComponent(returnTo)}`
+
+/**
+ * 今の画面に戻るログインへ移り、終わらない Promise を返す。
+ * 画面が移るまでの間に、呼び出し元がエラーの表示を出さないためである。ブラウザでだけ呼ぶ。
+ */
+export const redirectToLogin = (): Promise<never> => {
+  window.location.assign(loginHref(window.location.pathname + window.location.search))
+  return new Promise<never>(() => {})
+}

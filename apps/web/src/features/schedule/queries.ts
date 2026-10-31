@@ -11,7 +11,7 @@ import type {
 import { useBuddyApi } from '#/api/useBuddyApi'
 
 /** TanStack Query のキー。事業所ごとに分ける。 */
-export const queryKeys = {
+const queryKeys = {
   schedules: (facilityId: FacilityId) => ['facilities', facilityId, 'schedules'] as const,
   staff: (facilityId: FacilityId) => ['facilities', facilityId, 'staff'] as const,
   teams: (facilityId: FacilityId) => ['facilities', facilityId, 'teams'] as const,

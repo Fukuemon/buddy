@@ -18,7 +18,6 @@ import (
 
 	"github.com/Fukuemon/buddy/packages/go/gcalauth"
 	"github.com/Fukuemon/buddy/packages/go/healthcheck"
-
 	"github.com/Fukuemon/buddy/packages/go/oidc"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/access"
@@ -96,7 +95,6 @@ func run() error {
 	scheduleTypes := postgres.NewScheduleTypeRepository(db)
 	calendars := postgres.NewCalendarRepository(db)
 	exports := postgres.NewCalendarExportRepository(db)
-	// 書き出しを有効にしていなければ、予定の変更を書き出しの待ちに積まない
 	var outbox schedule.Exports
 	if cfg.Calendar.ExportEnabled {
 		outbox = calendar.NewOutbox(exports, calendars, ids)

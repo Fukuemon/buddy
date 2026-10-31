@@ -190,50 +190,31 @@ export const suspendedStaffBuddyApi = (base: BuddyApi = createFakeBuddyApi()): B
   },
 })
 
+/** 全ての操作を operation にしたフェイクの API を作る。 */
+const buddyApiOf = (operation: () => Promise<never>): BuddyApi => ({
+  schedules: { list: operation, get: operation, create: operation, update: operation },
+  staff: { list: operation },
+  teams: { list: operation },
+  patients: { list: operation },
+  calendars: {
+    serviceAccount: operation,
+    list: operation,
+    check: operation,
+    link: operation,
+    unlink: operation,
+    preview: operation,
+    import: operation,
+    exportIssues: operation,
+    retryExport: operation,
+    acceptExport: operation,
+  },
+})
+
 /** 全ての操作が status の ApiError で失敗するフェイクの API を作る。 */
-export const failingBuddyApi = (status = 500): BuddyApi => {
-  const fail = async () => {
+export const failingBuddyApi = (status = 500): BuddyApi =>
+  buddyApiOf(async () => {
     throw new ApiError(status, 'API が失敗した')
-  }
-  return {
-    schedules: { list: fail, get: fail, create: fail, update: fail },
-    staff: { list: fail },
-    teams: { list: fail },
-    patients: { list: fail },
-    calendars: {
-      serviceAccount: fail,
-      list: fail,
-      check: fail,
-      link: fail,
-      unlink: fail,
-      preview: fail,
-      import: fail,
-      exportIssues: fail,
-      retryExport: fail,
-      acceptExport: fail,
-    },
-  }
-}
+  })
 
 /** 全ての操作が終わらないフェイクの API を作る。読み込み中の表示を見るために使う。 */
-export const pendingBuddyApi = (): BuddyApi => {
-  const wait = () => new Promise<never>(() => {})
-  return {
-    schedules: { list: wait, get: wait, create: wait, update: wait },
-    staff: { list: wait },
-    teams: { list: wait },
-    patients: { list: wait },
-    calendars: {
-      serviceAccount: wait,
-      list: wait,
-      check: wait,
-      link: wait,
-      unlink: wait,
-      preview: wait,
-      import: wait,
-      exportIssues: wait,
-      retryExport: wait,
-      acceptExport: wait,
-    },
-  }
-}
+export const pendingBuddyApi = (): BuddyApi => buddyApiOf(() => new Promise<never>(() => {}))

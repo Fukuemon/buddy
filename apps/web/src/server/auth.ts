@@ -48,7 +48,7 @@ export type AuthDeps = {
   wait?: (ms: number) => Promise<void>
 }
 
-export const SESSION_COOKIE = 'buddy_session'
+const SESSION_COOKIE = 'buddy_session'
 const LOGIN_COOKIE = 'buddy_login'
 const SESSION_TTL_SECONDS = 12 * 60 * 60
 const LOGIN_TTL_SECONDS = 10 * 60
@@ -298,6 +298,15 @@ const refresh = async (
     await deps.store.unlock(lockKey, token)
   }
 }
+
+/** 全てのリクエストに、accessToken の Bearer の Authorization のヘッダーを付けて送る fetch を返す。 */
+export const fetchWithAccessToken =
+  (accessToken: string): typeof globalThis.fetch =>
+  (input, init) => {
+    const authorized = new Request(input, init)
+    authorized.headers.set('Authorization', `Bearer ${accessToken}`)
+    return globalThis.fetch(authorized)
+  }
 
 /** Session から、画面に渡してよい値だけを取り出す。 */
 export const viewerOf = ({ staffId, staffName, facilityId, canManageStaff }: Session): Viewer => ({

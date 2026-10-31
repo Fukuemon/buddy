@@ -27,11 +27,6 @@ func toStaff(s staff.Summary) openapi.Staff {
 	if s.Email != "" {
 		email = &s.Email
 	}
-	var returnDate *string
-	if s.LeaveReturnDate != nil {
-		d := s.LeaveReturnDate.String()
-		returnDate = &d
-	}
 	return openapi.Staff{
 		Id:              s.ID,
 		Username:        s.Username,
@@ -43,7 +38,7 @@ func toStaff(s staff.Summary) openapi.Staff {
 		Position:        openapi.Ref{Id: s.PositionID, Name: s.PositionName},
 		Status:          openapi.StaffStatus(s.Status()),
 		LeaveStartedAt:  s.LeaveStartedAt,
-		LeaveReturnDate: returnDate,
+		LeaveReturnDate: stringPtr(s.LeaveReturnDate),
 		RetiredAt:       s.RetiredAt,
 		CreatedAt:       s.CreatedAt,
 		UpdatedAt:       s.UpdatedAt,
@@ -211,13 +206,8 @@ func toAssignments(a staff.Assignments) openapi.StaffAssignments {
 			return openapi.StaffAssignments_Schedules{Id: s.ID, Date: s.Date.String(), StartTime: s.StartTime.String(), EndTime: s.EndTime.String()}
 		}),
 		RecurringSchedules: mapSlice(a.Recurring, func(r staff.AssignedRecurring) openapi.StaffAssignments_RecurringSchedules {
-			var end *string
-			if r.EndDate != nil {
-				d := r.EndDate.String()
-				end = &d
-			}
 			return openapi.StaffAssignments_RecurringSchedules{
-				Id: r.ID, Date: r.Date.String(), EndDate: end, StartTime: r.StartTime.String(), EndTime: r.EndTime.String(),
+				Id: r.ID, Date: r.Date.String(), EndDate: stringPtr(r.EndDate), StartTime: r.StartTime.String(), EndTime: r.EndTime.String(),
 			}
 		}),
 		Patients: mapSlice(a.Patients, func(p staff.AssignedPatient) openapi.StaffAssignments_Patients {

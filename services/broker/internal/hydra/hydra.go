@@ -77,7 +77,6 @@ type AcceptConsent struct {
 // access token の JWT では ext の下に入り、oauth2.allowed_top_level_claims に挙げたものは top level にも出る。
 type Session struct {
 	AccessToken map[string]any `json:"access_token,omitempty"`
-	IDToken     map[string]any `json:"id_token,omitempty"`
 }
 
 // Rejection は、ログインと同意の reject の本文である。Error は OAuth 2.0 のエラーの値で、クライアントの redirect_uri に渡る。

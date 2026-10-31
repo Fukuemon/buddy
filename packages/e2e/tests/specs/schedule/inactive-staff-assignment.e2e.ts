@@ -1,10 +1,12 @@
 import { expect, test, type APIRequestContext } from '@playwright/test'
 
-import { LOGIN_STAFF, SCHEDULE_URL } from '../../fixtures/env'
+import { LOGIN_STAFF } from '../../fixtures/env'
+import { findSchedule } from '../../fixtures/externalCalendar'
 import { registerPatient } from '../../fixtures/patient'
 import {
   createNormalSchedule,
   createWeeklyNormalSchedule,
+  getSchedule,
   updateNormalSchedule,
 } from '../../fixtures/schedule'
 import {
@@ -89,13 +91,12 @@ test.describe('予定の作成', () => {
 
         expect(res.status()).toBe(400)
         expect(await res.json()).toMatchObject({ code: 'invalid_input', message })
-        const list = await request.get(
-          `${SCHEDULE_URL}/v1/facilities/${STAFF_FORM.facilityId}/schedules?date_from=${SCHEDULE_DATE}&date_to=${SCHEDULE_DATE}`,
-          { headers: { Authorization: `Bearer ${manager}` } },
-        )
-        expect(list.status()).toBe(200)
-        const { schedules } = (await list.json()) as { schedules: { title: string | null }[] }
-        expect(schedules.map((s) => s.title)).not.toContain(title)
+        expect(
+          await findSchedule(request, manager, STAFF_FORM.facilityId, {
+            date: SCHEDULE_DATE,
+            title,
+          }),
+        ).toBeUndefined()
       })
 
       test(`${label}を指して繰り返しの予定を作ろうとした場合、400 が返ること`, async ({
@@ -142,9 +143,7 @@ test.describe('予定の編集', () => {
 
         expect(res.status()).toBe(400)
         expect(await res.json()).toMatchObject({ code: 'invalid_input', message })
-        const saved = await request.get(`${SCHEDULE_URL}/v1/schedules/${scheduleId}`, {
-          headers: { Authorization: `Bearer ${manager}` },
-        })
+        const saved = await getSchedule(request, manager, scheduleId)
         expect(await saved.json()).toMatchObject({ staff_id: LOGIN_STAFF.id })
       })
     }

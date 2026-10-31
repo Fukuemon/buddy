@@ -123,6 +123,14 @@ func bodyTime(s string) (civil.Time, error) {
 	return t, nil
 }
 
+func stringPtr[T interface{ String() string }](v *T) *string {
+	if v == nil {
+		return nil
+	}
+	s := (*v).String()
+	return &s
+}
+
 func mapSlice[T, U any](in []T, f func(T) U) []U {
 	out := make([]U, len(in))
 	for i, v := range in {

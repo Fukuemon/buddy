@@ -75,7 +75,7 @@ const toCategory = (name: string): ScheduleCategory => {
 }
 
 /** API の日付と時刻を、+09:00 の ISO 8601 の日時にする。 */
-export const toDateTime = (date: string, time: string) => `${date}T${time}:00${OFFSET}`
+const toDateTime = (date: string, time: string) => `${date}T${time}:00${OFFSET}`
 
 /**
  * ISO 8601 の日時を、+09:00 の日付（YYYY-MM-DD）と時刻（HH:MM）に分ける。
