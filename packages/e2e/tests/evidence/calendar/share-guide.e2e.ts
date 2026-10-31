@@ -31,7 +31,8 @@ test.describe('カレンダーの連携', () => {
           async ({ page, check }) => {
             await page.goto('/schedule/link')
             await expect(page.getByTestId(`calendar-link-open-${MORI.id}`)).toBeVisible()
-            await expect(page.getByTestId(`calendar-link-remove-${MORI.id}`)).toBeHidden()
+            // ほかの spec が結び付けを残していれば、全員が未連携という前提が崩れるので、ここで落とす
+            await expect(page.getByTestId(/^calendar-link-remove-/)).toHaveCount(0)
             await expect(page.getByTestId('calendar-link-guide-toggle')).toHaveAttribute(
               'aria-expanded',
               'true',
