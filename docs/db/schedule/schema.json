@@ -2076,6 +2076,12 @@
           "type": "timestamp with time zone",
           "nullable": false,
           "default": "now()"
+        },
+        {
+          "name": "ended_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "comment": "利用者を利用の終了にした時刻。利用中なら NULL"
         }
       ],
       "indexes": [

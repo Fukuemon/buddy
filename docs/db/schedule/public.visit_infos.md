@@ -152,6 +152,7 @@ erDiagram
   text assigned_staff_id FK
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  timestamp_with_time_zone ended_at
 }
 "public.service_codes" {
   text id

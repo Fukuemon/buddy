@@ -6,17 +6,18 @@
 
 ## Columns
 
-| Name              | Type                     | Default | Nullable | Children                                    | Parents                                                                   | Comment                          |
-| ----------------- | ------------------------ | ------- | -------- | ------------------------------------------- | ------------------------------------------------------------------------- | -------------------------------- |
-| id                | text                     |         | false    | [public.visit_infos](public.visit_infos.md) |                                                                           |                                  |
-| facility_id       | text                     |         | false    | [public.visit_infos](public.visit_infos.md) | [public.facilities](public.facilities.md) [public.users](public.users.md) |                                  |
-| name              | varchar(255)             |         | false    |                                             |                                                                           |                                  |
-| preferred_time    | text                     |         | false    |                                             |                                                                           | 希望の時間帯（午前、午後）       |
-| preferred_gender  | text                     |         | false    |                                             |                                                                           | 希望の訪問者の性別（男性、女性） |
-| service_code_id   | text                     |         | false    |                                             | [public.service_codes](public.service_codes.md)                           | 受けているサービス               |
-| assigned_staff_id | text                     |         | false    |                                             | [public.users](public.users.md)                                           | 主に担当する職員                 |
-| created_at        | timestamp with time zone | now()   | false    |                                             |                                                                           |                                  |
-| updated_at        | timestamp with time zone | now()   | false    |                                             |                                                                           |                                  |
+| Name              | Type                     | Default | Nullable | Children                                    | Parents                                                                   | Comment                                       |
+| ----------------- | ------------------------ | ------- | -------- | ------------------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------- |
+| id                | text                     |         | false    | [public.visit_infos](public.visit_infos.md) |                                                                           |                                               |
+| facility_id       | text                     |         | false    | [public.visit_infos](public.visit_infos.md) | [public.facilities](public.facilities.md) [public.users](public.users.md) |                                               |
+| name              | varchar(255)             |         | false    |                                             |                                                                           |                                               |
+| preferred_time    | text                     |         | false    |                                             |                                                                           | 希望の時間帯（午前、午後）                    |
+| preferred_gender  | text                     |         | false    |                                             |                                                                           | 希望の訪問者の性別（男性、女性）              |
+| service_code_id   | text                     |         | false    |                                             | [public.service_codes](public.service_codes.md)                           | 受けているサービス                            |
+| assigned_staff_id | text                     |         | false    |                                             | [public.users](public.users.md)                                           | 主に担当する職員                              |
+| created_at        | timestamp with time zone | now()   | false    |                                             |                                                                           |                                               |
+| updated_at        | timestamp with time zone | now()   | false    |                                             |                                                                           |                                               |
+| ended_at          | timestamp with time zone |         | true     |                                             |                                                                           | 利用者を利用の終了にした時刻。利用中なら NULL |
 
 ## Viewpoints
 
@@ -82,6 +83,7 @@ erDiagram
   text assigned_staff_id FK
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  timestamp_with_time_zone ended_at
 }
 "public.visit_infos" {
   text id
