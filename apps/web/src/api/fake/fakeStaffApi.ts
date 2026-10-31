@@ -9,7 +9,7 @@ import {
 } from '#/mocks/scheduleData'
 
 import { ApiError, type BuddyApi } from '../client'
-import { fromApiStaff, fromApiTeam } from '../http/scheduleMapper'
+import { fromApiStaff } from '../http/scheduleMapper'
 import { matchesName } from '../nameSearch'
 import {
   STAFF_MANAGE,
@@ -297,7 +297,7 @@ export const createFakeStaffApi = ({
     departments: {
       list: async (facilityId) => {
         assertFacility(facilityId)
-        return mockDepartments.map(fromApiTeam)
+        return mockDepartments.map(({ id, name }) => ({ id, name }))
       },
     },
     positions: {

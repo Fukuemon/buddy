@@ -20,6 +20,8 @@ describe('StaffListContainer', () => {
     expect(rowIds()).toEqual(['staff-list-row-staff-1', 'staff-list-row-staff-3'])
     expect(screen.getByRole('columnheader', { name: 'チーム' })).toBeInTheDocument()
     expect(screen.queryByRole('columnheader', { name: '状態' })).toBeNull()
+    const row = screen.getByTestId('staff-list-row-staff-1')
+    expect(row.querySelector('.bg-team-blue')).not.toBeNull()
     expect(within(screen.getByTestId('staff-list-row-staff-1')).getByRole('link')).toHaveAttribute(
       'href',
       '/staff/staff-1',

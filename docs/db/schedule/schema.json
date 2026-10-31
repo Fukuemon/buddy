@@ -358,6 +358,12 @@
           "type": "timestamp with time zone",
           "nullable": false,
           "default": "now()"
+        },
+        {
+          "name": "color",
+          "type": "text",
+          "nullable": false,
+          "comment": "チームの色。packages/ui のチームの色のトークンの名前（team- の後ろ）。事業所の中で重なってよい"
         }
       ],
       "indexes": [
@@ -389,6 +395,26 @@
         }
       ],
       "constraints": [
+        {
+          "name": "teams_color_check",
+          "type": "CHECK",
+          "def": "CHECK ((color = ANY (ARRAY['blue'::text, 'orange'::text, 'magenta'::text, 'cyan'::text, 'yellow'::text, 'purple'::text, 'green'::text, 'lime'::text])))",
+          "table": "public.teams",
+          "referenced_table": "",
+          "columns": [
+            "color"
+          ]
+        },
+        {
+          "name": "teams_color_not_null",
+          "type": "n",
+          "def": "NOT NULL color",
+          "table": "public.teams",
+          "referenced_table": "",
+          "columns": [
+            "color"
+          ]
+        },
         {
           "name": "teams_created_at_not_null",
           "type": "n",

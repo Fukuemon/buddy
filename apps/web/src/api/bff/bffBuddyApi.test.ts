@@ -11,10 +11,12 @@ describe('createBffBuddyApi', () => {
     const api = createBffBuddyApi(async (call): Promise<BffResult> => {
       calls.push(call)
       return call.op === 'teams.list'
-        ? { ok: true, data: [{ id: 'team-a', name: 'A' }] }
+        ? { ok: true, data: [{ id: 'team-a', name: 'A', color: 'blue' }] }
         : { ok: false, status: 404, message: 'ない' }
     })
-    await expect(api.teams.list('facility-1')).resolves.toEqual([{ id: 'team-a', name: 'A' }])
+    await expect(api.teams.list('facility-1')).resolves.toEqual([
+      { id: 'team-a', name: 'A', color: 'blue' },
+    ])
     await expect(api.schedules.get('facility-1', 'x')).rejects.toEqual(new ApiError(404, 'ない'))
     expect(calls).toEqual([
       { op: 'teams.list', args: ['facility-1'] },

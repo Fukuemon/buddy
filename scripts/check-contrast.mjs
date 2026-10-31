@@ -56,6 +56,10 @@ const NON_TEXT_PAIRS = [
   ["focus-outline", "surface"],
   ["focus-outline", "surface-canvas"],
   ["focus-outline", "focus-halo"],
+  // チームの色は、名前の横の点として、白と薄い面に載る
+  ...["blue", "orange", "magenta", "cyan", "yellow", "purple", "green", "lime"].flatMap((color) =>
+    ["surface", "surface-canvas", "surface-subtle", "primary-surface"].map((bg) => [`team-${color}`, bg]),
+  ),
 ];
 
 const MAX_DEPTH = 10;
