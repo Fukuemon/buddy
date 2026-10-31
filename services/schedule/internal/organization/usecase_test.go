@@ -52,6 +52,21 @@ func TestOrganizationCreateTeam(t *testing.T) {
 	}
 }
 
+// TestOrganizationCreateTeamForbidden は、職員の管理を許されない職員がチームを作れないことを確認する。
+func TestOrganizationCreateTeamForbidden(t *testing.T) {
+	s := inmem.Seeded()
+	before := len(s.Teams)
+	uc := organization.NewUsecase(organization.Deps{
+		Facilities: inmem.Facilities{Store: s}, Teams: inmem.Teams{Store: s},
+	}, &inmem.Tx{}, &inmem.SeqIDs{}, func(context.Context) error { return apperr.ErrForbidden })
+	if _, err := uc.CreateTeam(context.Background(), facilityID, "訪問"); !errors.Is(err, apperr.ErrForbidden) {
+		t.Fatalf("err = %v, want ErrForbidden", err)
+	}
+	if len(s.Teams) != before {
+		t.Errorf("拒んだのにチームが増えた: %d", len(s.Teams))
+	}
+}
+
 // TestOrganizationCreatePositionForbidden は、職員の管理を許されない職員が役職を作れないことを確認する。
 // 役職のデフォルトの権限に職員の管理の権限を入れて、ほかの職員に配れないようにするためである（ADR-0006）。
 func TestOrganizationCreatePositionForbidden(t *testing.T) {

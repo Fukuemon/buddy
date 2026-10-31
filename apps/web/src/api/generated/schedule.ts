@@ -105,7 +105,10 @@ export interface paths {
         /** 事業所のチームを一覧する */
         get: operations["listTeams"];
         put?: never;
-        /** チームを作る */
+        /**
+         * チームを作る
+         * @description 職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
         post: operations["createTeam"];
         delete?: never;
         options?: never;
