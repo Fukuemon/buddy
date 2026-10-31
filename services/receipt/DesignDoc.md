@@ -28,6 +28,7 @@ verified_commit: 581e5d4
 持たないもの
 
 - 予定と職員のデータ。予定は職員が Google カレンダーに入れる
+- 職員の権限。照合の権限は予定の API が持ち、照合の API は照合のたびに問い合わせる
 - 結果の記号、区分の区切りの行、結果の CSV の書き出し。画面（apps/web）が JSON から作る
 - 上げた CSV と結果の保存
 - 電子カルテへの書き戻し
@@ -38,6 +39,7 @@ verified_commit: 581e5d4
 
 - `internal/normalize`、`internal/match`、`internal/judge` を、`internal/check` がつなぐ
 - access token の検証は、共有の module の `packages/go/oidc` を使う
+- 照合の権限の確認は、`internal/permission` が予定の API の `GET /v1/me` を呼んで行う
   - ADR-0007: [2 つの Go の API が共有するコードを、別の module にまとめる](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0007-go-shared-module.md)
 - タイトルの解釈と、利用者名とサービス内容の表記をそろえる処理は、予定の API と共有する `packages/go/gcaltitle` を使う
 - 組織ごとのサービスアカウントで Calendar API を呼ぶクライアントは、予定の API と共有する `packages/go/gcalauth` を使う
@@ -51,11 +53,15 @@ sequenceDiagram
   actor S as 職員
   participant W as web
   participant R as receipt
+  participant P as 予定の API
   participant G as Google Calendar API
 
   S->>W: 実績の CSV と、予定の CSV か対象の月を選ぶ
   W->>R: POST /v1/checks（multipart、Bearer の access token）
   R->>R: access token を確認する。正しくなければ 401
+  R->>P: GET /v1/me（受けた access token をそのまま付ける）
+  P-->>R: 職員と権限。401 か 403 なら 403、届かないかほかのエラーなら 502
+  R->>R: 照合の権限（receipt.check）が無ければ 403
   R->>R: 本文を読む。読めなければ 400、上限を超えれば 413
   R->>R: visits が無ければ 400
   R->>R: 予定のデータソースを選ぶ。選べなければ 400、403、500、503
@@ -257,9 +263,14 @@ API の定義の正本は [openapi.yaml](https://github.com/Fukuemon/buddy/blob/
 - `POST /v1/checks`
   - `Authorization: Bearer` の access token を求める。署名、`iss`、`aud`、`exp`、`nbf` を JWKS で確認し、`sub` の無いトークンも拒む。`/healthz` と `/readyz` のほかは、定義に無いパスにもトークンを求める。
   - 署名のアルゴリズムは RS256 と ES256 だけを受け付ける。
+  - 照合の権限（`receipt.check`）を持つ職員だけに許す。本文を読む前に、受けた access token をそのまま付けて予定の API の `GET /v1/me` を呼び、返った権限で確認する。
+    - ADR-0022: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0022-receipt-check-policy-and-non-visiting-staff.md)
+    - 照合の API は権限を保存しない。権限を外すと、その職員の次の照合から拒む。
 - エラーは `{"code","message"}` の JSON で返す。`code` ごとの意味は openapi.yaml にある。
   - 定義に無いパスかメソッド: 404 の `not_found`
+  - 照合の権限が無いか、予定の API が 401 か 403 を返した: 403 の `forbidden`。予定の API は、休職と退職の職員を 403 で拒む
   - `month` で呼ばれたが、トークンに組織がない: 403 の `forbidden`。読むカレンダーを決められないためである
+  - 予定の API に届かないか、予定の API が 401 と 403 のほかのエラーを返した: 502 の `permission_check_failed`。Google カレンダーから予定を取れないときの 502 の `schedule_source_failed` と同じく、照合の API の外の依存先の失敗なので 502 にする。503 は、照合の API の設定の不足（`calendar_not_configured`）に使う
   - 入力の CSV のエラー: 422 の `invalid_csv`。誤りごとに、理由のコード（`reason`）、CSV の種類、分かれば行と列を `errors` に入れる
     - 画面は `reason` と行と列から職員に見せる文を作り、`message` を出さない。`message` は、CSV の形の誤り（引用符の閉じ忘れなど）では Go の encoding/csv の英語の文になる
     - ファイルの全体の誤り（文字コード、空、足りないカラム）は行を持たない。CSV の形の誤りは、列を決められないので `column` を持たない

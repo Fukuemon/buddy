@@ -132,7 +132,7 @@ erDiagram
 
 ### 権限のレコード
 
-`policies` は、PRD の 8 つの権限（予定の 7 つと職員の管理）を次の `code` で持つ。  
+`policies` は、PRD の 9 つの権限（予定の 7 つ、職員の管理、照合）を次の `code` で持つ。  
 `needs_target` が true の権限は、対象の職員かチームを `user_policy_targets` に持つ。
 
 | `code` | 権限 | `needs_target` |
@@ -145,11 +145,20 @@ erDiagram
 | `schedule.all.read` | 事業所の全ての予定の閲覧 | false |
 | `schedule.all.edit` | 事業所の全ての予定の編集 | false |
 | `staff.manage` | 職員の管理 | false |
+| `receipt.check` | 照合 | false |
 
 役職のデフォルトの権限をコピーする規則、役職を変えたときにコピーし直す規則、`staff.manage` の扱いは [権限](https://github.com/Fukuemon/buddy/blob/develop/context/domain/permission.md) にある。  
 職員の権限（`schedule.user.*`）は、コピーするときに対象を決められないので、役職のデフォルトの権限にできない。
+`receipt.check` は、予定の API の判定には使わない。照合の API が、受けたトークンで `GET /v1/me` を呼び、返った権限で照合を許す。
 
 - ADR-0002: [権限を役職のデフォルトと職員ごとの上書きで持つ（PBAC）](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0002-pbac.md)
+- ADR-0022: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0022-receipt-check-policy-and-non-visiting-staff.md)
+
+照合の権限を足したマイグレーション（`000008_receipt_check_policy`）は、役職のデフォルトの権限だけを変え、今いる職員の権限を変えない。
+
+- 各事業所に、事務の役職を足す。事務の役職のデフォルトの権限は、`schedule.all.read`、`schedule.all.edit`、`receipt.check` である。既に同じ名前の役職がある事業所には足さない。
+- `staff.manage` をデフォルトに持つ役職に、`receipt.check` を足す。役職の名前は事業所ごとに変えてよいので、名前でマネージャーの役職を探せない。PRD の役職ごとの権限の表で `staff.manage` をデフォルトに持つのはマネージャーだけである。
+- 今照合を使っている職員も、`receipt.check` を足すまで照合できない（ADR-0022 の Consequences）。`staff.manage` を持つ職員が、職員ごとに足す。
 
 職員の役職は `PUT /v1/users/{user_id}/position` で変える。  
 職員の名前、電話番号、部署、チームは `PUT /v1/users/{user_id}` で変える。  
