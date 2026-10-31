@@ -64,7 +64,7 @@ export const ScheduleCalendar = ({
           const cancelled = arg.event.extendedProps.cancelled === true
           return (
             <span
-              className="truncate px-1 text-caption"
+              className="block truncate px-1 text-caption"
               data-testid={`schedule-event-${arg.event.id}`}
             >
               {cancelled && <CancelledMark />}
