@@ -52,7 +52,7 @@ describe('ScheduleFormModal', () => {
 
     await userEvent.click(screen.getByTestId('schedule-field-patient'))
     expect(screen.getByTestId('patient-select-option-patient-1')).toBeInTheDocument()
-    expect(screen.queryByTestId('patient-select-option-patient-5')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('patient-select-option-patient-ended')).not.toBeInTheDocument()
   })
 
   it('サービスコードを変えると、提供時間をそのコードの上限にする', async () => {

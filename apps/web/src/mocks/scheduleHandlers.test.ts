@@ -64,8 +64,8 @@ describe('利用者の一覧の API のフェイク', () => {
         params: { path: { facility_id: MOCK_FACILITY_ID }, query: { include_ended } },
       })
     const active = await list()
-    expect(active.data?.map((patient) => patient.id)).not.toContain('patient-5')
+    expect(active.data?.map((patient) => patient.id)).not.toContain('patient-ended')
     const all = await list(true)
-    expect(all.data?.find((patient) => patient.id === 'patient-5')?.ended_at).not.toBeNull()
+    expect(all.data?.find((patient) => patient.id === 'patient-ended')?.ended_at).not.toBeNull()
   })
 })

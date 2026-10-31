@@ -36,6 +36,19 @@ describe('CalendarImportContainer', () => {
     expect(staff).toHaveValue('staff-2')
   })
 
+  it('利用者を選ぶ選択肢に、利用の終了の利用者を出さない', async () => {
+    render(<Initial />)
+    await preview()
+    await userEvent.click(screen.getByTestId('calendar-import-review-patient-event-ambiguous'))
+    const values = within(
+      screen.getByTestId('calendar-import-review-patient-select-event-ambiguous'),
+    )
+      .getAllByRole('option')
+      .map((o) => (o as HTMLOptionElement).value)
+    expect(values).toContain('patient-1')
+    expect(values).not.toContain('patient-ended')
+  })
+
   it('プレビューの結果は、取り込み方を全て選ぶまで確定して取り込むを押せない', async () => {
     render(<Initial />)
     const result = await preview()

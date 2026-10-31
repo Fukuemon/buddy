@@ -112,7 +112,7 @@ export const mockPatients: Schemas['Patient'][] = [
   patient('patient-2', '木村 夏夫'),
   patient('patient-3', '久保 秋代'),
   patient('patient-4', '小林 冬馬'),
-  { ...patient('patient-5', '近藤 晴美'), ended_at: '2026-10-01T00:00:00Z' },
+  { ...patient('patient-ended', '近藤 晴美'), ended_at: '2026-10-01T00:00:00Z' },
 ]
 
 const pad = (value: number) => String(value).padStart(2, '0')
