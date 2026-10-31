@@ -17,7 +17,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/client.ts`）で API を呼ぶ�
 | 確認が必要な予定 | 日時、利用者名、サービス内容、理由、繰り返し | `ImportPreview.needs_review` | `ImportPreview.needs_review[]` |
 | 利用者 | 候補の利用者と、ほかの利用者 | `ImportReviewItem.candidates`、`Patient` | `needs_review[].candidates[]` と、`listPatients` の `Patient.name` |
 | 取り込み方 | 選んだ取り込み方 | `ImportDecision` | `createCalendarImport` のリクエストの `decisions[]` |
-| 理由ごとの件数、取り込まない予定 | 日時と理由 | `ImportPreview.skipped` | `ImportPreview.skipped[]` |
+| 取り込まない予定 | 件数、日時と理由 | `ImportPreview.skipped` | `ImportPreview.skipped[]` |
 | 結果の件数 | 3 つの件数 | `ImportResult` | `createCalendarImport` のレスポンスの `ImportResult` |
 | 失敗の文 | 状態ごとの文 | `ApiError.status`、`ApiError.code` | レスポンスの status と `Error.code` |
 

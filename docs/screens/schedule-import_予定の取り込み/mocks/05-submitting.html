@@ -72,20 +72,24 @@
                 </form>
                 <section class="si-result" data-testid="calendar-import-result-preview">
                   <div class="si-result__head">
-                    <h2 class="si-h2" data-m="11">プレビューの結果</h2>
+                    <div class="wf-title">
+                      <h2 class="si-h2" data-m="11">プレビューの結果</h2>
+                      <span class="wf-help">
+                      <span class="wf-btn wf-btn--icon wf-help__toggle" aria-label="ヘルプ" data-open="import-help" data-m="12" data-testid="schedule-import-help">?</span>
+                      <p class="wf-help__panel" data-panel="import-help" data-panel-dismiss data-testid="schedule-import-help-text">確認が必要な予定は、利用者を選んでから取り込みます。取り込み済みの予定は、前の取り込みで取り込んだもので、もう一度は取り込みません。</p>
+                    </span>
+                    </div>
                     <span class="wf-hint">職員 A、2026/11/01〜2026/11/30</span>
                   </div>
-                  <dl class="si-counts" data-m="12" data-testid="calendar-import-summary">
+                  <dl class="si-counts" data-m="13" data-testid="calendar-import-summary">
                     <div class="si-count" data-testid="calendar-import-count-import"><dt>取り込む</dt><dd><strong>18 件</strong><span>訪問 15 件、通常 3 件。繰り返しの予定を 1 回ずつに分けた 4 件を含む</span></dd></div>
                     <div class="si-count" data-testid="calendar-import-count-recurring"><dt>繰り返し</dt><dd><strong>3 件</strong><span>繰り返しとして 2 件、1 回ずつに分ける 1 件</span></dd></div>
-                    <div class="si-count" data-testid="calendar-import-count-needs_review"><dt>確認が必要</dt><dd><strong>2 件</strong><span>利用者を選んでから取り込む</span></dd></div>
-                    <div class="si-count" data-testid="calendar-import-count-skipped"><dt>取り込まない</dt><dd><strong>4 件</strong><span>理由ごとの件数は下にある</span></dd></div>
-                    <div class="si-count" data-testid="calendar-import-count-already_imported"><dt>取り込み済み</dt><dd><strong>0 件</strong><span>前の取り込みで取り込んだ予定。もう一度は取り込まない</span></dd></div>
+                    <div class="si-count" data-testid="calendar-import-count-needs_review"><dt>確認が必要</dt><dd><strong>2 件</strong></dd></div>
                   </dl>
                   <section class="si-section">
                     <h3 class="si-h3">確認が必要な予定</h3>
-                    <p class="wf-hint">タイトルから利用者を 1 人に決められなかった予定です。予定ごとに、取り込み方を選んでください。</p>
-                    <ul class="si-reviews" data-m="13">
+                    <p class="wf-hint">タイトルから利用者を 1 人に決められなかった予定です。</p>
+                    <ul class="si-reviews" data-m="14">
                     <li class="si-review" data-testid="calendar-import-review-{外部の予定の id}">
                       <div class="si-review__head">
                         <strong>2026/11/04（水）10:00〜11:00</strong>
@@ -94,10 +98,10 @@
                         <span class="wf-hint">毎週水曜日の繰り返し。選んだ取り込み方は全ての回に当てる</span>
                       </div>
                       <div class="si-review__choices" role="radiogroup" aria-label="2026/11/04（水）10:00〜11:00の予定の取り込み方">
-                        <span class="wf-radio is-on" data-m="14" data-testid="calendar-import-review-patient-{外部の予定の id}" data-choice="review-0" aria-disabled="true">利用者を選ぶ</span>
+                        <span class="wf-radio is-on" data-m="15" data-testid="calendar-import-review-patient-{外部の予定の id}" data-choice="review-0" aria-disabled="true">利用者を選ぶ</span>
                         <span class="wf-radio" data-testid="calendar-import-review-normal-{外部の予定の id}" data-choice="review-0" aria-disabled="true">通常の予定にする</span>
                         <span class="wf-radio" data-testid="calendar-import-review-skip-{外部の予定の id}" data-choice="review-0" aria-disabled="true">取り込まない</span>
-                        <div class="wf-input si-select si-review__patient" data-m="15" data-testid="calendar-import-review-patient-select-{外部の予定の id}" aria-disabled="true"><span class="wf-label">利用者</span><span>利用者 C（担当 職員 A）</span></div>
+                        <div class="wf-input si-select si-review__patient" data-m="16" data-testid="calendar-import-review-patient-select-{外部の予定の id}" aria-disabled="true"><span class="wf-label">利用者</span><span>利用者 C（担当 職員 A）</span></div>
                       </div>
                     </li>
                     <li class="si-review" data-testid="calendar-import-review-{外部の予定の id}">
@@ -115,13 +119,7 @@
                     </ul>
                   </section>
                   <section class="si-section">
-                    <h3 class="si-h3">取り込まない予定</h3>
-                    <ul class="si-reasons" data-m="16">
-                      <li data-testid="calendar-import-skipped-reason-all_day">終日の予定: 1 件</li>
-                      <li data-testid="calendar-import-skipped-reason-multi_day">日をまたぐ予定: 1 件</li>
-                      <li data-testid="calendar-import-skipped-reason-zero_length">長さの無い予定: 1 件</li>
-                      <li data-testid="calendar-import-skipped-reason-service_not_found">サービス内容を引けない予定: 1 件</li>
-                    </ul>
+                    <h3 class="si-h3" data-testid="calendar-import-skipped-heading">取り込まない予定（4 件）</h3>
                     <table class="wf-table si-table" data-m="17" data-testid="calendar-import-skipped">
                       <thead>
                         <tr><th>日時</th><th>理由</th></tr>
