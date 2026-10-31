@@ -15,7 +15,7 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
   for (const variant of EVIDENCE_VARIANTS) {
     const prefix = variant.label ? `${variant.label}: ` : ''
 
-    test(`${prefix}パソコンの幅で確認が必要な予定の一覧のモックを開いた場合、行ごとのボタンが無く、詳しくで続きの説明が開閉すること`, async ({
+    test(`${prefix}パソコンの幅で確認が必要な予定の一覧のモックを開いた場合、行ごとのボタンが無く、理由が 1 文で、? のヘルプが開閉すること`, async ({
       browser,
     }) => {
       await recordPrEvidence(
@@ -23,7 +23,7 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
         {
           name: 'review-mock-list-desktop',
           title:
-            '確認が必要な予定の一覧は、行全体を押せる表で行ごとのボタンを置かず、職員を折り返さず、説明の続きは「詳しく」で開く',
+            '確認が必要な予定の一覧は、行全体を押せる表で行ごとのボタンを置かず、理由は何が起きたかの 1 文にし、初めてのときだけ要る説明は ? のヘルプに入れる',
           actor: 'ログインなし',
           variant,
         },
@@ -38,20 +38,23 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
           await expect(reviewMockRowParts(row).buttons).toHaveCount(0)
           await expect(reviewMockRowParts(row).go).toHaveText('›')
           await expect(reviewMockRowParts(row).staff).toHaveCSS('white-space', 'nowrap')
-          await expect(page.getByTestId('calendar-review-more-text')).toBeHidden()
+          await expect(page.getByTestId('calendar-review-reason-export-1')).toHaveText(
+            'buddy と Google カレンダーの両方で予定が変わりました。',
+          )
+          await expect(page.getByTestId('schedule-review-help-text')).toBeHidden()
           await check(
-            '行の右端は「›」だけで、行ごとのボタンが無い。職員の名前は 1 行に収まり、説明は 1 文だけが出ている',
+            '行の右端は「›」だけで、行ごとのボタンが無い。職員の名前は 1 行に収まり、理由は何が起きたかの 1 文だけで、説明も 1 文だけが出ている',
           )
 
-          await step('「詳しく」を押す')
-          await page.getByTestId('calendar-review-more').click()
-          await expect(page.getByTestId('calendar-review-more-text')).toBeVisible()
-          await check('説明の続き（一覧に出る予定と、2 つの選択肢で起きること）が開く')
+          await step('見出しの右の ? を押す')
+          await page.getByTestId('schedule-review-help').click()
+          await expect(page.getByTestId('schedule-review-help-text')).toBeVisible()
+          await check('見出しの下に、片方だけで変わった予定は出ないことの説明が出る')
 
-          await step('もう一度「詳しく」を押す')
-          await page.getByTestId('calendar-review-more').click()
-          await expect(page.getByTestId('calendar-review-more-text')).toBeHidden()
-          await check('説明の続きが閉じる')
+          await step('Escape キーを押す')
+          await page.keyboard.press('Escape')
+          await expect(page.getByTestId('schedule-review-help-text')).toBeHidden()
+          await check('ヘルプの説明が閉じる')
         },
       )
     })
@@ -280,7 +283,7 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
       )
     })
 
-    test(`${prefix}パソコンの幅でカレンダーの連携の一覧のモックを開いた場合、結び付けていない行は結び付けるだけ、結び付けた行は…を置き、サービスアカウントの語が無いこと`, async ({
+    test(`${prefix}パソコンの幅でカレンダーの連携の一覧のモックを開いた場合、結び付けていない行は空のセルと結び付けるだけ、結び付けた行は…を置き、サービスアカウントの語が無いこと`, async ({
       browser,
     }) => {
       await recordPrEvidence(
@@ -307,12 +310,15 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
             '結び付ける',
           )
           await expect(unlinked.getByTestId('calendar-link-menu-{職員の id}')).toHaveCount(0)
+          await expect(unlinked.getByTestId('calendar-link-calendar-id-{職員の id}')).toHaveClass(
+            /wf-visually-hidden/,
+          )
           await expect(page.getByTestId('calendar-link-guide')).toContainText(
             '共有する相手のメールアドレス',
           )
           await expect(mockMain(page)).not.toContainText('サービスアカウント')
           await check(
-            '結び付けた職員 A と C の行の右端は「…」だけで、結び付けていない職員 B と D の行は「結び付ける」だけ。画面に「サービスアカウント」の語が無い',
+            '結び付けた職員 A と C の行の右端は「…」だけで、結び付けていない職員 B と D の行は、カレンダーと最後の取り込みのセルが空で「結び付ける」だけがある。画面に「サービスアカウント」の語が無い',
           )
         },
       )
