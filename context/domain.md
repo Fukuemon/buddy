@@ -88,3 +88,4 @@ status: stable
 - [事業所の分離](domain/facility.md) — 事業所をまたぐ参照の拒否
 - [権限](domain/permission.md) — 役職のデフォルトの権限と職員ごとの権限
 - [照合](domain/receipt-check.md) — 予定と実績の対の作り方と区分の決め方
+- [訪問看護の報酬](domain/visiting-nursing-fee.md) — 照合の規則のもとになる、サービスコードの読み方、提供時間の区分、早朝・夜間・深夜の加算の条件、電子カルテの実績の書き方。不変条件ではなく、報酬の決まりの説明
