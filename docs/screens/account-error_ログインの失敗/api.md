@@ -1,6 +1,7 @@
 # account-error API との対応
 
-[ログインの失敗](index.md) の項目と、web の型と OpenAPI の項目の対応。この画面は API を呼ばず、URL の search params の `reason` だけを読む。
+[ログインの失敗](index.md) の項目と、web の型と OpenAPI の項目の対応。  
+この画面は API を呼ばず、URL の search params の `reason` だけを読む。
 
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |

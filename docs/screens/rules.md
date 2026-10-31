@@ -1,6 +1,7 @@
 # 画面仕様書の規約
 
-画面仕様書のページ、API との対応、画面のモックの書き方。画面の ID の決め方は [画面仕様書の目次](index.md#画面の-id-の規則) にある。
+画面仕様書のページ、API との対応、画面のモックの書き方。  
+画面の ID の決め方は [画面仕様書の目次](index.md#画面の-id-の規則) にある。
 
 ## 配置先と名前
 
@@ -26,13 +27,16 @@ docs/screens/
 ```
 
 - コピーした後に、`mocks/screen-id.css` の名前を `mocks/<画面 ID>.css` に変え、モックの `<link>` も直す。
-- ディレクトリの名前は、画面 ID と日本語の画面の名前を `_` でつなぐ（例 `schedule-calendar_予定のカレンダー`）。URL と E2E は画面 ID だけを使うので、名前を変えるときはディレクトリの名前だけを変えてよい。
-- モックの名前は、2 桁の連番と状態の英語の名前を `-` でつなぐ。連番は、ページに並べる順にする。
+- ディレクトリの名前は、画面 ID と日本語の画面の名前を `_` でつなぐ（例 `schedule-calendar_予定のカレンダー`）。
+  - URL と E2E は画面 ID だけを使うので、名前を変えるときはディレクトリの名前だけを変えてよい。
+- モックの名前は、2 桁の連番と状態の英語の名前を `-` でつなぐ。
+  - 連番は、ページに並べる順にする。
 - ページを足したら、`zensical.toml` の `nav` と、目次の画面の一覧に足す。
 
 ## 仕様書のページ
 
-1 行目は `# <画面 ID> <画面の名前>` にし、その下に画面の用途を 1〜2 文で書く。続けて、URL、使う人、実装の表を置き、`api.md` へリンクする。
+1 行目は `# <画面 ID> <画面の名前>` にし、その下に画面の用途を 1〜2 文で書く。  
+続けて、URL、使う人、実装の表を置き、`api.md` へリンクする。
 
 セクションは次の順に置く。
 
@@ -43,21 +47,30 @@ docs/screens/
 | 全体動作 | 初期処理、複数の要素にまたがる動き、URL の search params からの復元 |
 | 未決 | PRD と実装が食い違うところと、仕様として決まっていないところ |
 
-- タブは `pymdownx.tabbed` で書き、中身を 4 つの空白で字下げする。タブの名前は状態の名前にする。
+- タブは `pymdownx.tabbed` で書き、中身を 4 つの空白で字下げする。
+  - タブの名前は状態の名前にする。
 - タブの中の最初に、その状態になる条件を 1 文で書く。
 - 状態はアンカーを持たないので、本文から状態を指すときはリンクにせず、「「<状態の名前>」の状態」と書く。
-- iframe は `<iframe class="mock" title="…" src="mocks/…">` と書く。直後には、`<a class="mock-open" href="mocks/…" target="_blank">別タブで開く</a>` を置く。高さは書かない（ドキュメントサイトが全てのページで読む `_common/embed-mock.js` が中身に合わせる）。`<details>` の中には入れない。タブの中は、タブを開いたときに `mock.js` がデバイスと番号を測り直す。
+- iframe は `<iframe class="mock" title="…" src="mocks/…">` と書く。
+  - 直後には、`<a class="mock-open" href="mocks/…" target="_blank">別タブで開く</a>` を置く。
+  - 高さは書かない。ドキュメントサイトが全てのページで読む `_common/embed-mock.js` が、中身に合わせる。
+  - `<details>` の中には入れない。タブの中は、タブを開いたときに `mock.js` がデバイスと番号を測り直す。
 - ページの中の生の HTML は、この iframe と a だけにする。
 
 ### 構成要素の表
 
 列は `番号 | 種別 | 要素名 | 仕様` にする。
 
-- 番号は、状態ごとに 1 から欠番なく振る。表の番号の集合と、モックの `data-m` の値の集合を同じにする。同じ番号を複数の要素に付けてよい（一覧の行など）。
-- 種別は、画面の上で何を指すかが分かる語にする（ボタン、リンク、テキストボックス、チェックボックス、ラジオボタン、セレクト、ファイルの選択、表、カラム、領域、ラベル、ダイアログ、覆い、メッセージ）。表の列見出しは「カラム」、行の値は「ラベル」、見出しの下の列全体は「領域」と書き分ける。
-- 要素名は、利用者が画面の上で呼ぶ名前にする。ダイアログのタイトルやページのタイトルのように文言そのものが仕様のものも、要素にする。
+- 番号は、状態ごとに 1 から欠番なく振る。
+  - 表の番号の集合と、モックの `data-m` の値の集合を同じにする。
+  - 同じ番号を複数の要素に付けてよい（一覧の行など）。
+- 種別は、画面の上で何を指すかが分かる語にする（ボタン、リンク、テキストボックス、チェックボックス、ラジオボタン、セレクト、ファイルの選択、表、カラム、領域、ラベル、ダイアログ、覆い、メッセージ）。
+  - 表の列見出しは「カラム」、行の値は「ラベル」、見出しの下の列全体は「領域」と書き分ける。
+- 要素名は、利用者が画面の上で呼ぶ名前にする。
+  - ダイアログのタイトルやページのタイトルのように文言そのものが仕様のものも、要素にする。
 - 仕様の列は、要素ごとのセクションへのリンクにする。
-- 要素は、それが見える状態の表にだけ載せる。ほかの状態でしか見えない要素を載せない。
+- 要素は、それが見える状態の表にだけ載せる。
+  - ほかの状態でしか見えない要素を載せない。
 
 ### 要素ごとのセクション
 
@@ -82,25 +95,39 @@ docs/screens/
 ```
 
 - 4 つの欄は、デフォルト値（常に活性、常に表示）でも省かない。
-- カタログの欄のリンクの先は、画面の文言とデータで要素を見せる、apps/web のコンポーネントの story にする。要素を描く apps/web のコンポーネントのうち、story があり、その story に要素が出るいちばん小さいものを選ぶ。story は、仕様書の状態に近いものを選ぶ。apps/web のどの story にも要素が出ないときだけ、packages/ui のコンポーネントの story を選ぶ。route に直に書いた要素のように、どの story にも出なければ欄ごと省く。
-  - リンクは本番のカタログ（`https://buddy-docs.emon-apps.workers.dev/storybook/`）の URL で書く。ローカルの `zensical serve` にはカタログが無く、`/storybook/` で始まるリンクはリンクのチェックがローカルのファイルとして探して失敗するためである。
+- カタログの欄のリンクの先は、画面の文言とデータで要素を見せる、apps/web のコンポーネントの story にする。
+  - 要素を描く apps/web のコンポーネントのうち、story があり、その story に要素が出るいちばん小さいものを選ぶ。
+  - story は、仕様書の状態に近いものを選ぶ。
+  - apps/web のどの story にも要素が出ないときだけ、packages/ui のコンポーネントの story を選ぶ。
+  - route に直に書いた要素のように、どの story にも出なければ欄ごと省く。
+  - リンクは本番のカタログ（`https://buddy-docs.emon-apps.workers.dev/storybook/`）の URL で書く。
+    - ローカルの `zensical serve` にはカタログが無いためである。
+    - また、リンクのチェックは、`/storybook/` で始まるリンクをローカルのファイルとして探して失敗する。
   - story の候補は、`rg -n "^  title:|^export const" -g '*.stories.tsx' apps/web/src packages/ui/src` で探す。
-  - story の ID は、Storybook の画面の URL の `path=/story/` の後ろの値である。story の `title` と export の名前から決まる。日本語は、ブラウザの URL のように `%` でエンコードせずに書く。
+  - story の ID は、Storybook の画面の URL の `path=/story/` の後ろの値である。
+    - story の `title` と export の名前から決まる。
+    - 日本語は、ブラウザの URL のように `%` でエンコードせずに書く。
     - `pnpm --filter @buddy/web storybook` で開いた URL で確認する。
   - packages/ui のコンポーネントの使い方のページ（`.mdx`）へは、`path=/docs/<title の ID>--docs` でリンクしてよい。
-  - 1 つの要素を 2 つ以上のコンポーネントが描くとき、仕様書の 2 つ以上の状態を別の story が描くときは、リンクを「、」でつなぐ。
-- インタラクションは、操作を起点に画面が変わるものだけを書く。無ければセクションごと省く。
-- 変数名、型、API の名前は書かない。それらとの対応は `api.md` に書く。
+  - 1 つの要素を 2 つ以上のコンポーネントが描くときと、仕様書の 2 つ以上の状態を別の story が描くときは、リンクを「、」でつなぐ。
+- インタラクションは、操作を起点に画面が変わるものだけを書く。
+  - 無ければセクションごと省く。
+- 変数名、型、API の名前は書かない。
+  - それらとの対応は `api.md` に書く。
 
 ## API との対応
 
-`api.md` は、仕様書の要素名ごとに、表示する値、web の型の項目（`apps/web/src/api/types.ts`）、OpenAPI の項目（操作の operationId と項目）を表にする。画面を作る人と API を変える人が読む。
+`api.md` は、仕様書の要素名ごとに、表示する値、web の型の項目（`apps/web/src/api/types.ts`）、OpenAPI の項目（操作の operationId と項目）を表にする。  
+画面を作る人と API を変える人が読む。
 
 ## 画面のモック
 
-モックは、1 つの状態を 1 枚の HTML で描く。画面の中で完結する操作（ダイアログを開く、タブを切り替える）の結果も、別の状態のモックにする。状態のモックの間は、[画面の中の操作](#画面の中の操作) の `data-go` でつなぐ。
+モックは、1 つの状態を 1 枚の HTML で描く。  
+画面の中で完結する操作（ダイアログを開く、タブを切り替える）の結果も、別の状態のモックにする。  
+状態のモックの間は、[画面の中の操作](#画面の中の操作) の `data-go` でつなぐ。
 
-例外として、幅で出し分ける開閉式の要素（幅 768px 未満だけで出すドロワーやメニュー）は、別の状態のモックにしない。各状態のモックに描き、閉じた状態で始め、[画面の中の操作](#画面の中の操作) の `data-panel` で開閉する。
+例外として、幅で出し分ける開閉式の要素（幅 768px 未満だけで出すドロワーやメニュー）は、別の状態のモックにしない。  
+各状態のモックに閉じた状態で描き、[画面の中の操作](#画面の中の操作) の `data-panel` で開閉する。
 
 ### 構造
 
@@ -117,39 +144,72 @@ docs/screens/
 </body>
 ```
 
-- body の末尾で `../../_common/mock.js`、`../../_common/interact.js` をこの順に読む。ほかの script は書かない。
+- body の末尾で `../../_common/mock.js`、`../../_common/interact.js` をこの順に読む。
+  - ほかの script は書かない。
 - head で `../../_common/mock.css`、`../../_common/tokens.css`、`../../_common/wireframe.css`、`<画面 ID>.css` をこの順に読む。
-- `body` の `data-view` は最初に見せるデバイスにする。表示の幅が 600px 未満のとき（スマートフォンで仕様書を読むとき）は、`data-view` によらずモバイルで描く。`mobile`（390px）、`tablet`（768px）、`tablet-wide`（1024px）、`desktop`（1440px）から選ぶ。値は `mock.js` の `VIEWS` にだけ書く。
+- `body` の `data-view` は最初に見せるデバイスにする。
+  - 表示の幅が 600px 未満のとき（スマートフォンで仕様書を読むとき）は、`data-view` によらずモバイルで描く。
+  - `mobile`（390px）、`tablet`（768px）、`tablet-wide`（1024px）、`desktop`（1440px）から選ぶ。
+  - 値は `mock.js` の `VIEWS` にだけ書く。
 - サイトのヘッダーとナビゲーション（`SiteHeader`、`SiteNav`）は、その画面の構成要素にするときだけ描く。
-  - ヘッダーの `wf-site-header__brand` に、メニューのボタン `wf-site-menu` とサイトの名前を置く。右端の `wf-site-header__viewer` に、アカウントのボタン `wf-site-account` と、メニュー `wf-site-viewer-menu` を置く。
+  - ヘッダーの `wf-site-header__brand` に、メニューのボタン `wf-site-menu` とサイトの名前を置く。
+  - ヘッダーの右端の `wf-site-header__viewer` に、アカウントのボタン `wf-site-account` と、メニュー `wf-site-viewer-menu` を置く。
   - アカウントのメニューは `data-panel` と `data-panel-dismiss` で開閉し、外を押すか Escape キーで閉じる。
   - ヘッダーの後ろの `wf-site-body` の先頭に、ナビゲーションの `wf-site-nav` と覆いの `wf-site-nav-overlay` を置き、最後に画面の中身の `wf-site-main` を置く。
-  - `wf-site-nav` には、機能ごとの `wf-site-nav__group` を置き、見出しの `wf-site-nav__heading` と、画面の `wf-site-nav__item` を並べる。要確認の件数の印は `wf-site-badge` にする。
-  - `wf-site-nav` は、幅 768px 以上では開いた形で描き、`data-start="rail"` を付けるとレールで描く。メニューのボタンの `data-open="site-nav"` で形を切り替える。未満ではドロワーになる。付ける `data-panel-wide` の値は、[画面の中の操作](#画面の中の操作) にある。
-  - 左の欄がある画面（予定のカレンダー）だけ、`wf-site-main` の前に、左の欄の `wf-site-drawer` と覆いの `wf-site-drawer-overlay` を置く。`wf-site-drawer` は、幅 768px 以上では開いた状態で始め、`data-open` のボタンでたたむ。未満ではドロワーになる。幅 768px 以上の `is-open` は、たたんだ状態を表す。付ける `data-panel-wide` の値は、[画面の中の操作](#画面の中の操作) にある。
+  - `wf-site-nav` には、機能ごとの `wf-site-nav__group` を置き、見出しの `wf-site-nav__heading` と、画面の `wf-site-nav__item` を並べる。
+    - 要確認の件数の印は `wf-site-badge` にする。
+  - `wf-site-nav` は、幅 768px 以上では開いた形で描き、`data-start="rail"` を付けるとレールで描く。
+    - メニューのボタンの `data-open="site-nav"` で形を切り替える。
+    - 幅 768px 未満ではドロワーになる。
+    - 付ける `data-panel-wide` の値は、[画面の中の操作](#画面の中の操作) にある。
+  - 左の欄がある画面（予定のカレンダー）だけ、`wf-site-main` の前に、左の欄の `wf-site-drawer` と覆いの `wf-site-drawer-overlay` を置く。
+    - `wf-site-drawer` は、幅 768px 以上では開いた状態で始め、`data-open` のボタンでたたむ。
+    - 幅 768px 未満ではドロワーになる。
+    - 幅 768px 以上の `is-open` は、たたんだ状態を表す。
+    - 付ける `data-panel-wide` の値は、[画面の中の操作](#画面の中の操作) にある。
 
 ### 構成番号と data-testid
 
-- 構成要素の表の要素に `data-m="<番号>"` を付ける。座標は書かない。`mock.js` が要素の左上に番号の印を重ねる。
+- 構成要素の表の要素に `data-m="<番号>"` を付ける。
+  - 座標は書かない。`mock.js` が要素の左上に番号の印を重ねる。
 - 構成番号は、その状態で見える要素にだけ付ける。
-- 幅で出し分ける開閉式の要素と、それを開いて初めて見える要素は、その状態で見える要素として扱い、同じ状態の表に載せて `data-m` を付ける。`mock.js` は見えない要素に印を置かないので、印は開いたときに出る。どの印が開くと出るかと、どの幅で出すかを、仕様書の構成のセクションかその状態の説明に、要素の名前で書く。
-- E2E が指す要素に `data-testid` を付ける。モックの `data-testid` を画面の testid の正本にする。E2E が使う testid は、どれかのモックにある値か、モックの `x-{…}` の形と同じ始まりにする（`pnpm check:screens` が確認する）。`x-{…}` の `{…}` には、職員の ID やサービスコードのように、どの値が入ってもよい。形は [E2E のテストの Test IDs](https://github.com/Fukuemon/buddy/blob/develop/context/testing/e2e.md#test-ids) にある。
-- 例外として、全ての画面に共通する状態（[目次の全ての画面に共通する状態](index.md#全ての画面に共通する状態)）はモックを持たず、testid の正本は目次のセクションである。`pnpm check:screens` は画面のディレクトリのモックだけを読むので、E2E がその testid を指すときは、点検が通るように共通の状態を描く画面のモックを足す。
+- 幅で出し分ける開閉式の要素と、それを開いて初めて見える要素は、その状態で見える要素として扱い、同じ状態の表に載せて `data-m` を付ける。
+  - `mock.js` は見えない要素に印を置かないので、印は開いたときに出る。
+  - どの印が開くと出るかと、どの幅で出すかを、仕様書の構成のセクションかその状態の説明に、要素の名前で書く。
+- E2E が指す要素に `data-testid` を付ける。
+  - モックの `data-testid` を画面の testid の正本にする。
+  - E2E が使う testid は、どれかのモックにある値か、モックの `x-{…}` の形と同じ始まりにする（`pnpm check:screens` が確認する）。
+  - `x-{…}` の `{…}` には、職員の ID やサービスコードのように、どの値が入ってもよい。
+  - 形は [E2E のテストの Test IDs](https://github.com/Fukuemon/buddy/blob/develop/context/testing/e2e.md#test-ids) にある。
+- 例外として、全ての画面に共通する状態（[目次の全ての画面に共通する状態](index.md#全ての画面に共通する状態)）はモックを持たず、testid の正本は目次のセクションである。
+  - `pnpm check:screens` は画面のディレクトリのモックだけを読む。
+  - そのため、E2E がその testid を指すときは、点検が通るように共通の状態を描く画面のモックを足す。
 - ツールバーの「data-testid」を入れると、番号の印の横に testid を出す。
 
 ### 幅と配置
 
-- 幅による切り替えは `@container screen (width < 768px)` のように `.screen` の幅で書く。viewport の寸法の `@media`、`vh` と `vw` は使わない。モックの中では、viewport の幅はデバイスの幅と一致しない。
-- スクロールする場所は作らず、画面の高さは中身に合わせる。ただし、実装が横に送る表は、モックでも横に送ってよい。
-- ダイアログ、覆い、トーストは、`.screen` の中に `position: absolute` で置く。`position: fixed` は使わない。
-- 色と角丸は `wireframe.css` の変数（`--wf-*`）で書く。`--wf-*` は、`tokens.css` の buddy の意味のトークン（`packages/ui/src/tokens/semantic.css` と同じ値）に当ててある。足りない色は、意味のトークンを `--wf-*` に当てて足す。DADS の基本のトークンと 16 進の色は、画面の CSS に直に書かない（`wireframe.css` の `:root` で角丸と書体に当てるときだけ使う）。
-- `tokens.css` は `pnpm build:tokens`（`scripts/build-static-tokens.mjs`）が作る生成物である。意味のトークンを変えたら作り直す（`pnpm check:generated` が食い違いを見つける）。
-- 画面だけの見た目は `mocks/<画面 ID>.css` に書く。2 つ以上の画面で使う見た目は `_common/wireframe.css` に移す。
+- 幅による切り替えは `@container screen (width < 768px)` のように `.screen` の幅で書く。
+  - viewport の寸法の `@media`、`vh` と `vw` は使わない。
+  - モックの中では、viewport の幅はデバイスの幅と一致しない。
+- スクロールする場所は作らず、画面の高さは中身に合わせる。
+  - ただし、実装が横に送る表は、モックでも横に送ってよい。
+- ダイアログ、覆い、トーストは、`.screen` の中に `position: absolute` で置く。
+  - `position: fixed` は使わない。
+- 色と角丸は `wireframe.css` の変数（`--wf-*`）で書く。
+  - `--wf-*` は、`tokens.css` の buddy の意味のトークン（`packages/ui/src/tokens/semantic.css` と同じ値）に当ててある。
+  - 足りない色は、意味のトークンを `--wf-*` に当てて足す。
+  - DADS の基本のトークンと 16 進の色は、画面の CSS に直に書かない（`wireframe.css` の `:root` で角丸と書体に当てるときだけ使う）。
+- `tokens.css` は `pnpm build:tokens`（`scripts/build-static-tokens.mjs`）が作る生成物である。
+  - 意味のトークンを変えたら作り直す（`pnpm check:generated` が食い違いを見つける）。
+- 画面だけの見た目は `mocks/<画面 ID>.css` に書く。
+  - 2 つ以上の画面で使う見た目は `_common/wireframe.css` に移す。
 
 ### 禁止
 
-- 外部の読み込み。HTML、CSS、JS に `http` で始まる URL を書かない。フォントはシステムのもの、アイコンはインラインの SVG にする。
-- 実在の事業所、人、連絡先。ダミーデータで描く。
+- 外部の読み込み。HTML、CSS、JS に `http` で始まる URL を書かない。
+  - フォントはシステムのもの、アイコンはインラインの SVG にする。
+- 実在の事業所、人、連絡先。
+  - ダミーデータで描く。
 - ダークモードの切り替え。
 
 ### 画面の中の操作
@@ -166,25 +226,38 @@ docs/screens/
 | `data-escape` | Escape キーで押す。見えている要素だけが動く | ダイアログとドロワーの閉じるボタン |
 
 - `data-go` の先は、同じ画面のモックならファイルの名前（`03-day.html`）、別の画面のモックなら `../../<画面のディレクトリ>/mocks/<モック>.html` と書く。
-  - 先は、インタラクションのセクションの結果に最も近い状態のモックにする。予定の詳細の閉じるボタンなら、予定のカレンダーの月の表示へ移る。
-  - デバイス、構成番号、data-testid、幅に合わせるかの選択は、URL の search params で移った先に引き継ぐ。仕様書のページの iframe の中では、iframe の中で移る。
-  - 移った先は、その状態のモックの値で描く。前のモックで変えたチェックと選択は引き継がない。
+  - 先は、インタラクションのセクションの結果に最も近い状態のモックにする。
+    - 例えば、予定の詳細の閉じるボタンなら、予定のカレンダーの月の表示へ移る。
+  - デバイス、構成番号、data-testid、幅に合わせるかの選択は、URL の search params で移った先に引き継ぐ。
+  - 仕様書のページの iframe の中では、iframe の中で移る。
+  - 移った先は、その状態のモックの値で描く。
+    - 前のモックで変えたチェックと選択は引き継がない。
   - ファイルの選択は、ファイルの選択のダイアログを開かず、ファイルを選んだ後の状態のモックへ移す。
 - 次の操作には属性を付けない。
   - API の呼び出し、保存、ダウンロード、ログアウト、ブラウザの確認のダイアログ
   - 当たる状態のモックが無い操作。期間を変える操作、文字の入力、送信中の状態から結果への移り
-- 押せる要素には `interact.js` が `tabindex="0"` を付け、Enter と Space でも動かす。背景のように、キーボードで押さなくてよい要素には `tabindex="-1"` を書く。`aria-disabled="true"` の要素は押しても動かない。
-- `interact.js` は、role の無い押せる要素に role を付ける。`data-toggle` には `checkbox`、`data-choice` には `radio`、ほかには `button` を付け、`checkbox` と `radio` の `aria-checked` を `is-on` に合わせる。role を書いた要素、`tabindex="-1"` の要素、`button` と `a` と `input` には付けない。
+- 押せる要素には `interact.js` が `tabindex="0"` を付け、Enter と Space でも動かす。
+  - 背景のように、キーボードで押さなくてよい要素には `tabindex="-1"` を書く。
+  - `aria-disabled="true"` の要素は押しても動かない。
+- `interact.js` は、role の無い押せる要素に role を付ける。
+  - `data-toggle` には `checkbox`、`data-choice` には `radio`、ほかには `button` を付ける。
+  - `checkbox` と `radio` の `aria-checked` を `is-on` に合わせる。
+  - role を書いた要素、`tabindex="-1"` の要素、`button` と `a` と `input` には付けない。
 - `interact.js` は、表示を変えた後に `mockRefresh()` を呼び、番号の印を置き直す。
-- `data-panel` に `data-panel-modal` も付けると、開いている間は panel の外の要素の印を出さない。デバイスを切り替えると、開いている panel を閉じる。
-- panel を開くと、panel の中の最初のフォーカスできる要素へフォーカスを移す。閉じると、見えている開くボタンへフォーカスを戻す。
-- 幅 768px 以上で、開閉ではなく形の切り替えになる panel には、`data-panel-wide` を付ける。サイトのナビゲーションと、予定のカレンダーの左の欄に付ける。
-  - 幅 768px 以上で `is-open` がたたんだ状態を表す panel は、値を `collapse` にする。左の欄と、`data-start="rail"` の無いナビゲーションである。`interact.js` は、幅 768px 以上では開くボタンの `aria-expanded` を `is-open` の逆にする。
+- `data-panel` に `data-panel-modal` も付けると、開いている間は panel の外の要素の印を出さない。
+- デバイスを切り替えると、開いている panel を閉じる。
+- panel を開くと、panel の中の最初のフォーカスできる要素へフォーカスを移す。
+  - 閉じると、見えている開くボタンへフォーカスを戻す。
+- 幅 768px 以上で、開閉ではなく形の切り替えになる panel には、`data-panel-wide` を付ける。
+  - 付けるのは、サイトのナビゲーションと、予定のカレンダーの左の欄である。
+  - 幅 768px 以上で `is-open` がたたんだ状態を表す panel は、値を `collapse` にする。左の欄と、`data-start="rail"` の無いナビゲーションである。
+    - `interact.js` は、幅 768px 以上では開くボタンの `aria-expanded` を `is-open` の逆にする。
   - `data-start="rail"` のナビゲーションは、値を `expand` にする。
   - どちらの値でも、幅 768px 以上ではフォーカスを開くボタンに残す。
 - 属性で書けない操作が要るときは、モックに script を書かず、`interact.js` に属性を足す。
 
-モックの印の位置は、Chromium と Firefox の今のバージョン（CSS の `zoom` を標準の形で扱うもの）で確認する。Safari での位置は確認していない。
+モックの印の位置は、Chromium と Firefox の今のバージョン（CSS の `zoom` を標準の形で扱うもの）で確認する。  
+Safari での位置は確認していない。
 
 ## 点検
 
@@ -192,7 +265,10 @@ docs/screens/
 
 - 名前と仕様書: ディレクトリとファイルの名前、仕様書の 1 行目と生の HTML、状態のタブ、iframe と別タブのリンク、構成要素の表の見出し
 - 番号: 表の番号とモックの `data-m` の一致、`data-m` の連番
-- カタログ: カタログの欄にリンクがあり、全てが本番のカタログの URL か。リンクの story の ID が、packages/ui と apps/web の story のファイルにあるか。story のファイルの meta の title を読めるか
+- カタログ: 次の 3 つ。
+  - カタログの欄にリンクがあり、全てが本番のカタログの URL か
+  - リンクの story の ID が、packages/ui と apps/web の story のファイルにあるか
+  - story のファイルの meta の title を読めるか
 - E2E: 全ての画面を見るとき、`packages/e2e/tests` の `getByTestId` の testid が、どれかのモックの `data-testid` にあるか
 - 操作: `data-go` の先のモックがあるか、`data-open` と `data-close` の名前の `data-panel` があるか、属性の値が空でないか、`data-escape` を操作の属性を持つ要素に付けたか
 - モック: 構造と読み込みの順、`data-view`、`data-testid` の形、禁止の記述と幅と配置の規則（外部の URL、`position: fixed`、viewport の単位と寸法の `@media`、ダークモード）

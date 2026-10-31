@@ -1,6 +1,8 @@
 # schedule-edit API との対応
 
-[予定の編集](index.md) の項目と、web の型と OpenAPI の項目の対応。予定は `getSchedule`（`GET /v1/schedules/{schedule_id}`）で取り、`updateSchedule`（`PUT /v1/schedules/{schedule_id}`）で直す。`updateSchedule` は、本文の `SlotRequest` で予定の全ての項目を置き換える。
+[予定の編集](index.md) の項目と、web の型と OpenAPI の項目の対応。  
+予定は `getSchedule`（`GET /v1/schedules/{schedule_id}`）で取り、`updateSchedule`（`PUT /v1/schedules/{schedule_id}`）で直す。  
+`updateSchedule` は、本文の `SlotRequest` で予定の全ての項目を置き換える。
 
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
@@ -23,6 +25,6 @@
 - 保存の前に、今の予定を `getSchedule` で読み直す。
 - 予定の種類、サービスコード、訪問の種類は、マスタ（`listScheduleTypes`、`listServiceCodes`、`listVisitCategories`）を引いて ID にする。
 - 読み直しかマスタの取得が失敗したときと、マスタに当たる値が無いときは、`updateSchedule` を呼ばずに失敗する。
-- サービスコードの一覧と提供時間の範囲は、画面が持つ定数（`apps/web/src/features/schedule/constants/scheduleLabels.ts`）で、`listServiceCodes` の範囲を使っていない。
+- サービスコードの一覧と提供時間の範囲は、画面が持つ定数（`apps/web/src/features/schedule/constants/scheduleLabels.ts`）を使う。`listServiceCodes` の範囲は使っていない。
 - 予定の一覧の取得の結果は、保存に成功したときに捨てて取り直す（`listSchedules`）。
 - `listUsers` は、休職と退職の職員も返す。この画面は、`status` を持つ職員を担当者の候補から除く。予定の職員の名前は、休職と退職の職員も含めた一覧で探す。

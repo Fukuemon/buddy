@@ -1,6 +1,8 @@
 # schedule-calendar API との対応
 
-[予定のカレンダー](index.md) の項目と、web の型と OpenAPI の項目の対応。OpenAPI の項目は、`services/schedule/openapi.yaml` の名前で書く。web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせた形で、OpenAPI と名前が違う。
+[予定のカレンダー](index.md) の項目と、web の型と OpenAPI の項目の対応。  
+OpenAPI の項目は、`services/schedule/openapi.yaml` の名前で書く。  
+web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせた形で、OpenAPI と名前が違う。
 
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
@@ -24,5 +26,5 @@
 - web のサーバーは、`ScheduleListParams` の `includeCancelled` が `true` のときだけ、`cancel` が `null` でない予定（キャンセルした予定）を残す。画面は、URL の `cancelled` が `true` のときに `includeCancelled` を渡す。`recurring_schedules`（繰り返しの予定）は使わない。
 - 訪問の予定のタイトルに使う利用者の名前は、web では `visit_info.patient_id` を利用者の一覧（`listPatients`）で名前に置き換える。OpenAPI の予定は `visit_info.patient_name` も持つが、web は使わない。
 - 予定の種類は `schedule_type` が「訪問」かどうかで決める。
-- `listUsers` は、職員の管理の画面のために休職と退職の職員も返す。web は `status` が `active` でない職員だけに `Staff.status` を写し、この画面は `status` を持つ職員とその予定を除く。
+- `listUsers` は、職員の管理の画面のために休職と退職の職員も返す。web は、`status` が `active` でない職員だけに `Staff.status` を写す。この画面は、`status` を持つ職員とその予定を除く。
 - PRD の時間外の勤務の印（`Schedule.is_over_time_work`）は、web の型に無く、画面に出していない。

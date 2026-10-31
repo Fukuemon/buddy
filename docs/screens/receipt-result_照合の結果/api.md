@@ -1,6 +1,7 @@
 # receipt-result API との対応
 
-[照合の結果](index.md) の項目と、web の型と OpenAPI の項目の対応。OpenAPI の項目は、`createCheck`（`POST /v1/checks`）のレスポンスの `Report` で書く。
+[照合の結果](index.md) の項目と、web の型と OpenAPI の項目の対応。  
+OpenAPI の項目は、`createCheck`（`POST /v1/checks`）のレスポンスの `Report` で書く。
 
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
