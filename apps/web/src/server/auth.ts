@@ -18,6 +18,7 @@ import { signValue, verifySignedValue } from './signedValue'
 /**
  * Valkey に置くセッション。トークンはブラウザに渡さない。
  * canManageStaff と canCheckReceipt は、その項目を足す前に作ったセッションに無いので、省けるようにする。
+ * canCheckReceipt が無いセッションは、照合を権限で絞る前に作ったので、絞る前と同じく照合を出す。拒むのは照合の API である。
  */
 export type Session = Omit<Viewer, 'canManageStaff' | 'canCheckReceipt'> & {
   canManageStaff?: boolean
@@ -321,5 +322,5 @@ export const viewerOf = ({
   staffName,
   facilityId,
   canManageStaff: canManageStaff ?? false,
-  canCheckReceipt: canCheckReceipt ?? false,
+  canCheckReceipt: canCheckReceipt ?? true,
 })

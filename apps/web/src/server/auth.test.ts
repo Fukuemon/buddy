@@ -8,6 +8,7 @@ import {
   readSession,
   safeReturnTo,
   startLogin,
+  viewerOf,
   type AuthDeps,
   type Session,
 } from './auth'
@@ -406,5 +407,21 @@ describe('readCookie', () => {
     expect(readCookie('a=1; buddy_session=x%2Ey; b=2', 'buddy_session')).toBe('x.y')
     expect(readCookie(null, 'buddy_session')).toBeUndefined()
     expect(readCookie('buddy_session=%E0', 'buddy_session')).toBeUndefined()
+  })
+})
+
+describe('viewerOf', () => {
+  const session: Session = { ...VIEWER, accessToken: 'at' }
+
+  it('権限の項目が無い古いセッションでは、職員の管理を出さず、照合は絞る前と同じく出す', () => {
+    expect(viewerOf(session)).toEqual({ ...VIEWER, canManageStaff: false, canCheckReceipt: true })
+  })
+
+  it('セッションの権限の値をそのまま使う', () => {
+    expect(viewerOf({ ...session, canManageStaff: true, canCheckReceipt: false })).toEqual({
+      ...VIEWER,
+      canManageStaff: true,
+      canCheckReceipt: false,
+    })
   })
 })
