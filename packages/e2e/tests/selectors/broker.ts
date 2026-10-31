@@ -7,4 +7,5 @@ import type { Page } from '@playwright/test'
 export const brokerPage = (page: Page) => ({
   heading: page.locator('h1'),
   emailLabel: page.locator('label[for="email"]'),
+  emailHint: page.locator('#email-hint'),
 })

@@ -3,6 +3,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test'
 import { BROKER_URL } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, PHONE_VIEWPORT, recordPrEvidence } from '../../fixtures/evidence'
 import { brokerPage } from '../../selectors/broker'
+import { pageBody } from '../../selectors/page'
 import { brokerLogin } from '../../selectors/idp'
 
 /** 録画の外では、ログインせずに web の origin を開いておく。録画の中で、ブローカーの画面を開く。 */
@@ -75,6 +76,35 @@ test.describe('ログイン', () => {
             expect(label).toBeGreaterThanOrEqual(4.5)
             await check(
               `「次へ」の文字とボタンは ${button}:1、ラベルとカードは ${label}:1 で、どちらも 4.5:1 以上`,
+            )
+          },
+        )
+      })
+
+      test(`${prefix}ログインの画面を開いた場合、メールアドレスを入れるとふだん使っているログインの画面が開くという補足が出ること`, async ({
+        browser,
+      }) => {
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'broker-login-hint',
+            title:
+              'ブローカーのログインの画面を開くと、メールアドレスの欄の下に「事業所に登録したメールアドレスを入れると、ふだん使っているログインの画面が開きます。」が出る',
+            actor: 'ログインなし',
+            variant,
+          },
+          openWeb,
+          async ({ page, step, check }) => {
+            await page.goto('/schedule')
+            await expect(brokerLogin(page).email).toBeVisible()
+            const hint = brokerPage(page).emailHint
+            await expect(hint).toHaveText(
+              '事業所に登録したメールアドレスを入れると、ふだん使っているログインの画面が開きます。',
+            )
+            await expect(pageBody(page)).not.toContainText('事業所のログインの画面')
+            await step('ログインせずに予定のカレンダーを開いた')
+            await check(
+              'メールアドレスの欄の下に「事業所に登録したメールアドレスを入れると、ふだん使っているログインの画面が開きます。」が出て、「事業所のログインの画面」の語は出ない',
             )
           },
         )

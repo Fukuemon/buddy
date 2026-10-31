@@ -26,3 +26,11 @@ export const receiptCategoryRowCells = (
     .filter({ hasText: date })
     .filter({ hasText: patient })
     .getByRole('cell')
+
+/** 照合の失敗の文の下の、入力の CSV の誤りの文。1 つの誤りが 1 つの項目である。項目には testid が無い。 */
+export const receiptCheckErrorItems = (page: Page) =>
+  page.getByTestId('receipt-check-error').getByRole('listitem')
+
+/** 照合の結果の「照合に使わなかった予定」の、予定ごとの項目。項目には testid が無い。 */
+export const receiptWarningItems = (page: Page) =>
+  page.getByTestId('receipt-warnings').getByRole('listitem')
