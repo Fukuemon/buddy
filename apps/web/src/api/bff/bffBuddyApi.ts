@@ -1,9 +1,9 @@
 import { ApiError, type BuddyApi } from '../client'
-import { loginHref } from '../viewer'
-import type { BffOperation, BffResult } from './bffCall'
+import { redirectToLogin } from '../viewer'
+import type { BffCall, BffOperation, BffResult } from './bffCall'
 import { callBffFn } from './serverFns'
 
-type CallBff = (call: { op: BffOperation; args: unknown[] }) => Promise<BffResult>
+type CallBff = (call: BffCall) => Promise<BffResult>
 
 /**
  * BFF の server function を呼ぶ BuddyApi を作る。トークンはサーバーのセッションにあり、ブラウザは持たない。
@@ -16,11 +16,7 @@ export const createBffBuddyApi = (callBff: CallBff = (data) => callBffFn({ data 
     async (...args: unknown[]): Promise<never> => {
       const result = await callBff({ op, args })
       if (result.ok) return result.data as never
-      if (result.status === 401 && typeof window !== 'undefined') {
-        window.location.assign(loginHref(window.location.pathname + window.location.search))
-        // 画面が移るまでの間に、呼び出し元がエラーの表示を出さないよう、終わらない Promise を返す
-        return new Promise<never>(() => {})
-      }
+      if (result.status === 401 && typeof window !== 'undefined') return redirectToLogin()
       throw new ApiError(result.status, result.message, [], result.code)
     }
   return {

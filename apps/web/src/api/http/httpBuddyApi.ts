@@ -33,7 +33,7 @@ const apiError = (error: unknown, response: Response) => {
 }
 
 /** openapi-fetch の結果から data を取り出す。失敗の状態なら ApiError を投げる。 */
-export const unwrap = async <T>(promise: Promise<Result<T>>): Promise<T> => {
+const unwrap = async <T>(promise: Promise<Result<T>>): Promise<T> => {
   const { data, error, response } = await promise
   if (!response.ok || data === undefined) throw apiError(error, response)
   return data
@@ -60,15 +60,15 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
 
   /** 回の ID が指す繰り返しの予定の回を読む。回が無ければ status が 404 の ApiError を投げる。 */
   const loadOccurrence = async (recurringId: string, date: string) => {
-    const rs = await unwrap(
+    const recurringSchedule = await unwrap(
       client.GET('/v1/schedules/recurring/{recurring_schedule_id}', {
         params: { path: { recurring_schedule_id: recurringId } },
       }),
     )
-    if (!occurs(rs, date) || rs.exclusion_dates.includes(date)) {
+    if (!occurs(recurringSchedule, date) || recurringSchedule.exclusion_dates.includes(date)) {
       throw new ApiError(404, `繰り返しの予定の ${date} の回はありません`, [], 'not_found')
     }
-    return occurrenceOf(rs, date)
+    return occurrenceOf(recurringSchedule, date)
   }
 
   const loadMasters = async () => {
@@ -95,7 +95,12 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
             },
           }),
         )
-        return [...schedules, ...recurring.flatMap((rs) => expandRecurring(rs, dateFrom, dateTo))]
+        return [
+          ...schedules,
+          ...recurring.flatMap((recurringSchedule) =>
+            expandRecurring(recurringSchedule, dateFrom, dateTo),
+          ),
+        ]
           .filter((schedule) => includeCancelled === true || schedule.cancel === null)
           .flatMap((schedule) => {
             if (schedule.cancel === null) return [fromApiSchedule(schedule)]

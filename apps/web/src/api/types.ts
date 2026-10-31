@@ -58,7 +58,7 @@ export const SCHEDULE_CATEGORIES = ['night', 'emergency', 'hospitalization'] as 
 export type ScheduleCategory = (typeof SCHEDULE_CATEGORIES)[number]
 
 /** 訪問の予定だけが持つ項目。 */
-export type VisitDetail = {
+type VisitDetail = {
   patientId: Patient['id']
   serviceCode: ServiceCode
   categories: ScheduleCategory[]

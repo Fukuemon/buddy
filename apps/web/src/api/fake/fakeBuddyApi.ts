@@ -2,7 +2,7 @@ import {
   createMockImportPreview,
   createMockImportResult,
   createMockImportedPreview,
-  exportOfIssue as exportOf,
+  exportOfIssue,
   mockExportIssues,
   mockExternalCalendars,
   mockServiceAccount,
@@ -38,7 +38,7 @@ const assertFacility = (facilityId: FacilityId) => {
 }
 
 /** フェイクの API が読めるとみなすカレンダーの ID の末尾。ほかのカレンダーは読めない（calendar_unreadable）。 */
-export const FAKE_READABLE_CALENDAR_SUFFIX = '@example.com'
+const FAKE_READABLE_CALENDAR_SUFFIX = '@example.com'
 
 /**
  * メモリの上で動く BuddyApi を作る。データは呼び出しごとに独立し、ページを読み直すと初期の状態に戻る。
@@ -62,9 +62,10 @@ export const createFakeBuddyApi = ({
   )
   const imported = new Set<string>()
 
+  const notFound = () => new ApiError(404, 'リソースが見つかりません', [], 'not_found')
   const findCalendar = (id: ExternalCalendar['id']) => {
     const calendar = calendars.get(id)
-    if (calendar === undefined) throw new ApiError(404, 'リソースが見つかりません', [], 'not_found')
+    if (calendar === undefined) throw notFound()
     return calendar
   }
   const assertReadable = (calendarId: string) => {
@@ -229,23 +230,21 @@ export const createFakeBuddyApi = ({
       retryExport: async (facilityId, exportId) => {
         assertFacility(facilityId)
         const issue = exportIssues.get(exportId)
-        if (issue === undefined)
-          throw new ApiError(404, 'リソースが見つかりません', [], 'not_found')
+        if (issue === undefined) throw notFound()
         exportIssues.delete(exportId)
-        return { ...exportOf(issue), status: 'pending', error_code: null, attempts: 0 }
+        return { ...exportOfIssue(issue), status: 'pending', error_code: null, attempts: 0 }
       },
       acceptExport: async (facilityId, exportId) => {
         assertFacility(facilityId)
         const issue = exportIssues.get(exportId)
-        if (issue === undefined)
-          throw new ApiError(404, 'リソースが見つかりません', [], 'not_found')
+        if (issue === undefined) throw notFound()
         if (!issue.acceptable)
           throw conflict(
             'export_not_acceptable',
             'この予定は、Google カレンダーの内容を buddy に当てられません。buddy の内容で書き直してください',
           )
         exportIssues.delete(exportId)
-        return { ...exportOf(issue), status: 'succeeded', error_code: null }
+        return { ...exportOfIssue(issue), status: 'succeeded', error_code: null }
       },
     },
   }

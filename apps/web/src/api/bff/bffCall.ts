@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { SCHEDULE_CATEGORIES, SCHEDULE_KINDS, SERVICE_CODES } from '../types'
 
 /** BFF が中継する BuddyApi の操作。 */
-export const BFF_OPERATIONS = [
+const BFF_OPERATIONS = [
   'schedules.list',
   'schedules.get',
   'schedules.create',
