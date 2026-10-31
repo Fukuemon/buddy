@@ -97,13 +97,13 @@ func (c *Client) Register(ctx context.Context, orgID, email string) (staff.Regis
 
 // Activate は、登録の途中の職員 id を有効にする。止めた職員なら staff.ErrIdentitySuspended を返す。
 func (c *Client) Activate(ctx context.Context, id string) error {
-	_, err := c.do(ctx, http.MethodPost, "/internal/staff/"+url.PathEscape(id)+"/activate", nil, nil)
+	_, err := c.do(ctx, http.MethodPost, staffPath(id)+"/activate", nil, nil)
 	return err
 }
 
 // Unregister は、登録の途中の職員 id を消す。いないか、登録の途中でなければ、消さずに成功とみなす。
 func (c *Client) Unregister(ctx context.Context, id string) error {
-	_, err := c.do(ctx, http.MethodDelete, "/internal/staff/"+url.PathEscape(id), nil, nil)
+	_, err := c.do(ctx, http.MethodDelete, staffPath(id), nil, nil)
 	if errors.Is(err, apperr.ErrNotFound) || errors.Is(err, apperr.ErrConflict) {
 		return nil
 	}
@@ -113,23 +113,25 @@ func (c *Client) Unregister(ctx context.Context, id string) error {
 // Suspend は、職員 id を止め（休職）、ログインのセッション、同意、refresh token を取り消させる。いなければ apperr.ErrNotFound を、
 // 退職した職員なら staff.ErrIdentityRetired を、止めたが取り消せなければ staff.ErrRevokeFailed を返す。
 func (c *Client) Suspend(ctx context.Context, id string) error {
-	_, err := c.do(ctx, http.MethodPost, "/internal/staff/"+url.PathEscape(id)+"/suspend", nil, nil)
+	_, err := c.do(ctx, http.MethodPost, staffPath(id)+"/suspend", nil, nil)
 	return err
 }
 
 // Resume は、止めた職員 id を有効に戻させる（復職）。いなければ apperr.ErrNotFound を、退職した職員なら
 // staff.ErrIdentityRetired を、止めていない職員なら apperr.ErrConflict を返す。
 func (c *Client) Resume(ctx context.Context, id string) error {
-	_, err := c.do(ctx, http.MethodPost, "/internal/staff/"+url.PathEscape(id)+"/resume", nil, nil)
+	_, err := c.do(ctx, http.MethodPost, staffPath(id)+"/resume", nil, nil)
 	return err
 }
 
 // Retire は、職員 id を退職にしてメールと上流のアカウントを消させ、ログインのセッション、同意、refresh token を取り消させる。
 // いなければ apperr.ErrNotFound を、退職にしたが取り消せなければ staff.ErrRevokeFailed を返す。
 func (c *Client) Retire(ctx context.Context, id string) error {
-	_, err := c.do(ctx, http.MethodPost, "/internal/staff/"+url.PathEscape(id)+"/retire", nil, nil)
+	_, err := c.do(ctx, http.MethodPost, staffPath(id)+"/retire", nil, nil)
 	return err
 }
+
+func staffPath(id string) string { return "/internal/staff/" + url.PathEscape(id) }
 
 // do は、内部の API を呼び、2xx の状態コードを返す。out が nil でなければ本文の JSON を読む。
 // 400 は本文の文で apperr.Invalid を、404 は apperr.ErrNotFound を包んで返す。409 は、本文の code が email_taken なら
