@@ -18,25 +18,6 @@
   gap: 12px;
 }
 
-.rc-summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin: 0;
-}
-
-.rc-summary div {
-  min-width: 120px;
-  padding: 12px;
-  border: 1px solid var(--wf-line);
-  border-radius: var(--wf-radius);
-}
-
-.rc-summary dd {
-  margin: 0;
-  font-weight: 700;
-}
-
 .rc-table-wrap {
   overflow: auto;
 }
