@@ -43,9 +43,15 @@ describe('createReceiptApi', () => {
     })
   })
 
-  it('入力の CSV の行のエラーを rowErrors で渡す', async () => {
+  it('入力の CSV の行のエラーを csvErrors で渡す', async () => {
     const errors = [
-      { source: 'visits' as const, line: 3, column: '訪問日', message: '日付を読めない' },
+      {
+        source: 'visits' as const,
+        reason: 'invalid_date' as const,
+        line: 3,
+        column: '訪問日',
+        message: '日付を読めない',
+      },
     ]
     server.use(
       receiptHttp.post('/v1/checks', ({ response }) =>
@@ -54,6 +60,6 @@ describe('createReceiptApi', () => {
     )
     await expect(
       api().check({ visits: new Blob(['']), schedules: new Blob(['']) }),
-    ).rejects.toMatchObject({ status: 422, rowErrors: errors })
+    ).rejects.toMatchObject({ status: 422, csvErrors: errors })
   })
 })

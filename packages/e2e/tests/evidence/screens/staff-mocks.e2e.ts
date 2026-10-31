@@ -44,7 +44,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
   for (const variant of EVIDENCE_VARIANTS) {
     const prefix = variant.label ? `${variant.label}: ` : ''
 
-    test(`${prefix}パソコンの幅で職員の一覧のモックを開いた場合、絞り込みと人数と行全体を押せる表が出て、行を押すと職員の詳細へ移ること`, async ({
+    test(`${prefix}パソコンの幅で職員の一覧のモックを開いた場合、有効の職員だけがチームの順に並び、状態のカラムが無く、行を押すと職員の詳細へ移ること`, async ({
       browser,
     }) => {
       await recordMock(
@@ -53,22 +53,25 @@ test.describe('職員の管理の画面仕様書のモック', () => {
         {
           name: 'staff-list-desktop',
           title:
-            '職員の一覧は、検索、部署、チーム、役職、状態の絞り込みと人数の下に、行全体を押せる表を出す',
+            '職員の一覧は、有効の職員だけを、名前、チーム、役職、部署のカラムでチームの順に並べ、チームの名前の前に色の点を置く',
           file: `${LIST}/01-list.html`,
         },
         async ({ page, step, check }) => {
-          await expect(page.getByTestId('staff-list-filter-status')).toHaveText('状態: 在籍')
+          await expect(page.getByTestId('staff-list-filter-status')).toHaveText('状態: 有効')
           await expect(page.getByTestId('staff-list-count')).toHaveText('5 人')
-          await expect(page.getByTestId('staff-list-row-{職員の id}').first()).toHaveCSS(
-            'cursor',
-            'pointer',
+          await expect(page.getByTestId('staff-list-table')).not.toContainText('状態')
+          await expect(page.getByTestId('staff-list-row-{職員の id}').first()).toContainText(
+            '東チーム',
+          )
+          await expect(page.getByTestId('staff-list-row-{職員の id}').last()).toContainText(
+            '南チーム',
           )
           await check(
-            '検索、部署、チーム、役職、状態の絞り込みと「5 人」が並び、行全体が押せる表になっている',
+            '「状態: 有効」で「5 人」が出て、状態のカラムが無く、東、西、南のチームの順に、色の点とチームの名前が並ぶ',
           )
 
           await step('林 さくら の行を押す')
-          await page.getByTestId('staff-list-row-{職員の id}').nth(3).click()
+          await page.getByTestId('staff-list-row-{職員の id}').nth(1).click()
           await expect(page).toHaveURL(/staff-detail_.+\/01-detail\.html/)
           await check('職員の詳細のモック（01-detail.html）へ移る')
         },
@@ -84,7 +87,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
         {
           name: 'staff-list-phone',
           title:
-            'スマートフォンの幅の職員の一覧は、1 行目に名前と状態の印、2 行目に部署、チーム、役職を置く',
+            'スマートフォンの幅の職員の一覧は、1 行目に名前、2 行目にチームの色の点とチーム、役職、部署を置く',
           file: `${LIST}/01-list.html`,
           phone: true,
         },
@@ -94,34 +97,67 @@ test.describe('職員の管理の画面仕様書のモック', () => {
             'flex',
           )
           await expect(pageRoot(page)).toHaveJSProperty('scrollWidth', PHONE_VIEWPORT.width)
-          await check('行が 2 行のリストになり、横にスクロールしない')
+          await check(
+            '行が 2 行のリストになり、2 行目の先頭にチームの色の点とチームの名前が出て、横にスクロールしない',
+          )
         },
       )
     })
 
-    test(`${prefix}職員の一覧のモックで状態の絞り込みを押した場合、退職の職員も出すモックへ移ること`, async ({
+    test(`${prefix}職員の一覧のモックで状態の絞り込みを押した場合、休職の職員と戻る予定の日が出るモックへ移ること`, async ({
       browser,
     }) => {
       await recordMock(
         browser,
         variant,
         {
-          name: 'staff-list-all',
-          title: '状態の絞り込みを「すべて」にすると、退職の職員も一覧に出る',
+          name: 'staff-list-on-leave',
+          title:
+            '状態の絞り込みを「休職」にすると、休職の職員だけが出て、「戻る予定の日」のカラムを足す',
           file: `${LIST}/01-list.html`,
         },
         async ({ page, step, check }) => {
           await expect(page.getByTestId('staff-list-count')).toHaveText('5 人')
           await step('状態の絞り込みを押す')
           await page.getByTestId('staff-list-filter-status').click()
-          await expect(page).toHaveURL(/02-all\.html/)
-          await expect(page.getByTestId('staff-list-filter-status')).toHaveText('状態: すべて')
-          await expect(page.getByTestId('staff-list-count')).toHaveText('6 人')
-          await expect(page.getByTestId('staff-list-status-{職員の id}').nth(3)).toHaveText(
-            '退職（2026/09/30）',
+          await expect(page).toHaveURL(/02-on-leave\.html/)
+          await expect(page.getByTestId('staff-list-filter-status')).toHaveText('状態: 休職')
+          await expect(page.getByTestId('staff-list-count')).toHaveText('2 人')
+          await expect(page.getByTestId('staff-list-leave-return-{職員の id}')).toHaveText([
+            '戻る予定の日なし',
+            '2027/04/01 に戻る予定',
+          ])
+          await check(
+            '「休職の職員」のモック（02-on-leave.html）へ移り、休職の「2 人」と、「戻る予定の日」のカラムが出る',
+          )
+        },
+      )
+    })
+
+    test(`${prefix}休職の職員のモックで状態の絞り込みを押した場合、退職の職員と退職した日が出るモックへ移ること`, async ({
+      browser,
+    }) => {
+      await recordMock(
+        browser,
+        variant,
+        {
+          name: 'staff-list-retired',
+          title:
+            '状態の絞り込みを「退職」にすると、退職の職員だけが出て、「退職した日」のカラムを足す',
+          file: `${LIST}/02-on-leave.html`,
+        },
+        async ({ page, step, check }) => {
+          await expect(page.getByTestId('staff-list-count')).toHaveText('2 人')
+          await step('状態の絞り込みを押す')
+          await page.getByTestId('staff-list-filter-status').click()
+          await expect(page).toHaveURL(/03-retired\.html/)
+          await expect(page.getByTestId('staff-list-filter-status')).toHaveText('状態: 退職')
+          await expect(page.getByTestId('staff-list-count')).toHaveText('1 人')
+          await expect(page.getByTestId('staff-list-retired-on-{職員の id}')).toHaveText(
+            '2026/09/30 に退職',
           )
           await check(
-            '「退職の職員も出す」のモック（02-all.html）へ移り、退職の職員が「6 人」の中に出る',
+            '「退職の職員」のモック（03-retired.html）へ移り、退職の「1 人」と、「退職した日」のカラムが出る',
           )
         },
       )
@@ -136,7 +172,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
         {
           name: 'staff-list-empty',
           title: '絞り込みで 0 件のときは知らせを出し、「絞り込みを外す」で一覧に戻る',
-          file: `${LIST}/03-empty.html`,
+          file: `${LIST}/04-empty.html`,
         },
         async ({ page, step, check }) => {
           await expect(page.getByTestId('staff-list-empty')).toContainText(
@@ -144,7 +180,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
           )
           await expect(page.getByTestId('staff-list-count')).toHaveText('0 人')
           await check(
-            '「絞り込みで 0 件」のモック（03-empty.html）に、0 件の知らせと「絞り込みを外す」が出る',
+            '「絞り込みで 0 件」のモック（04-empty.html）に、0 件の知らせと「絞り込みを外す」が出る',
           )
 
           await step('「絞り込みを外す」を押す')

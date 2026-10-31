@@ -9,10 +9,11 @@ web は `BuddyApi.calendars`（`apps/web/src/api/client.ts`）で API を呼ぶ�
 | --- | --- | --- | --- |
 | ナビゲーション | 「取り込み」「要確認」「連携」を出すか | `Viewer.canManageStaff` | `getMe` の `policies[].code` に `staff.manage` があるか |
 | ログインした職員 | 職員の名前 | `Viewer.staffName` | `getMe` の `username` |
-| サービスアカウントのメールアドレス | メールアドレス | `calendars.serviceAccount` の戻り値 | `getCalendarServiceAccount` の `email` |
+| 共有する相手のメールアドレス | この事業所のサービスアカウントのメールアドレス | `calendars.serviceAccount` の戻り値 | `getCalendarServiceAccount` の `email` |
 | 職員の一覧 | 職員の名前 | `Staff.name` | `listUsers` の `Staff.username` |
 | カレンダーの ID | カレンダーの ID | `ExternalCalendar.calendar_id` | `listExternalCalendars` の `items[].calendar_id` |
 | 最後の取り込み | 終わった日時、期間、失敗か | `ExternalCalendar.last_import` | `ExternalCalendar.last_import` の `finished_at`、`range_start`、`range_end`、`status` |
+| 結び付ける、行の操作 | どちらを出すか | `ExternalCalendar` が職員にあるか | `listExternalCalendars` の `items[].staff_id` に職員があるか |
 | カレンダーの ID の入力 | デフォルト値 | `Staff.email` | `listUsers` の `Staff.email` |
 | 読めるか確認する | 読めたか | `calendars.check` が成功したか | `createExternalCalendarCheck` のレスポンス |
 | ダイアログの結び付ける | 結び付けたカレンダー | `calendars.link` の戻り値 | `createExternalCalendar` のレスポンスの `ExternalCalendar` |

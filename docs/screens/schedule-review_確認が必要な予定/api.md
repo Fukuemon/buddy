@@ -14,6 +14,8 @@ web は `BuddyApi.calendars`（`apps/web/src/api/client.ts`）で API を呼ぶ�
 | 職員 | 職員の名前 | `CalendarExportIssue.staff_name` | `CalendarExportIssue` の `staff_name` |
 | 理由 | 理由ごとの文 | `CalendarExportIssue.error_code`、`status`、`acceptable`、`recurring_schedule_id` | `CalendarExport` の `error_code`（`precondition_failed`、`not_found`、`forbidden`、`rejected`、`unavailable`、`unappliable`）と `status`（`conflict`、`failed`）。`precondition_failed` は、`CalendarExportIssue` の `acceptable` と `recurring_schedule_id` でも文を分ける。単発の予定で `acceptable` が false なのは、buddy でキャンセルした予定である |
 | 最後に変わった日時 | 日時 | `CalendarExportIssue.updated_at` | `CalendarExport` の `updated_at` |
+| 予定の確認のダイアログ | どの予定を開いたか | 押した行の `CalendarExportIssue` | `listCalendarExportIssues` の `items` の 1 件。ダイアログを開くときに API は呼ばない |
+| ダイアログの予定の日時、ダイアログの職員、ダイアログの最後に変わった日時、ダイアログの理由 | 一覧の行と同じ値 | 一覧の行と同じ項目 | 一覧の行と同じ項目 |
 | Google の内容に合わせる | 出すか | `CalendarExportIssue.acceptable` | `CalendarExportIssue` の `acceptable` |
 | 予定を開く | 出すかと、移る先の予定 | `CalendarExportIssue.schedule_id` | `CalendarExport` の `schedule_id`。繰り返しの予定では `null` |
 | buddy の内容で書き直す | なし | `CalendarExportIssue.id` | `CalendarExport` の `id` |

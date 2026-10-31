@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/Fukuemon/buddy/services/receipt/internal/csvio"
+	"github.com/Fukuemon/buddy/services/receipt/internal/record"
 )
 
 func TestStaff(t *testing.T) {
@@ -124,11 +125,12 @@ func TestRowErrors(t *testing.T) {
 		name       string
 		row        csvio.Row
 		wantColumn string
+		wantReason record.Reason
 	}{
-		{"終了が開始より前", row(3, "10:00", "09:59", "30", "訪看I2"), csvio.ColEnd},
-		{"時刻の形", row(4, "9時", "10:00", "30", "訪看I2"), csvio.ColStart},
-		{"提供時間が整数でない", row(5, "09:00", "09:30", "三十", "訪看I2"), csvio.ColDuration},
-		{"サービス内容が空", row(6, "09:00", "09:30", "30", ""), csvio.ColService},
+		{"終了が開始より前", row(3, "10:00", "09:59", "30", "訪看I2"), csvio.ColEnd, record.ReasonEndBeforeStart},
+		{"時刻の形", row(4, "9時", "10:00", "30", "訪看I2"), csvio.ColStart, record.ReasonInvalidTime},
+		{"提供時間が整数でない", row(5, "09:00", "09:30", "三十", "訪看I2"), csvio.ColDuration, record.ReasonInvalidDuration},
+		{"サービス内容が空", row(6, "09:00", "09:30", "30", ""), csvio.ColService, record.ReasonEmptyValue},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -136,8 +138,8 @@ func TestRowErrors(t *testing.T) {
 			if len(recs) != 0 || len(errs) != 1 {
 				t.Fatalf("recs %d errs %v", len(recs), errs)
 			}
-			if errs[0].Column != tt.wantColumn || errs[0].Line != tt.row.Line {
-				t.Errorf("got %+v, want column %s line %d", errs[0], tt.wantColumn, tt.row.Line)
+			if errs[0].Column != tt.wantColumn || errs[0].Line != tt.row.Line || errs[0].Reason != tt.wantReason {
+				t.Errorf("got %+v, want column %s line %d reason %s", errs[0], tt.wantColumn, tt.row.Line, tt.wantReason)
 			}
 		})
 	}

@@ -107,7 +107,8 @@ export interface paths {
         put?: never;
         /**
          * チームを作る
-         * @description color を省くと、事業所のチームが使っているチームが最も少ない色を、同じ数なら TeamColor の並びの先の色を入れる。
+         * @description 職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         *     color を省くと、事業所のチームが使っているチームが最も少ない色を、同じ数なら TeamColor の並びの先の色を入れる。
          *     事業所で使われていない色があれば、その先頭になる。
          */
         post: operations["createTeam"];
