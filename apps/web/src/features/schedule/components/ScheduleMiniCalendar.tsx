@@ -97,7 +97,7 @@ export const ScheduleMiniCalendar = ({
   }
 
   return (
-    <section aria-label="日付を選ぶ" className="flex flex-col gap-1" data-testid="mini-calendar">
+    <section aria-label="日付を選ぶ" className="flex flex-col gap-2" data-testid="mini-calendar">
       <div className="flex items-center justify-between">
         <h2
           aria-live="polite"

@@ -29,23 +29,29 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** 職員の管理の権限を持つ職員。左端に、取り込みと要確認を含む 4 つのリンクを出す。 */
+/** 職員の管理の権限を持つ職員の照合の画面。ナビゲーションの予定の下に、カレンダー、取り込み、要確認、連携を並べる。 */
 export const StaffManager: Story = {}
 
-/** 職員の管理の権限を持たない職員。取り込みと要確認のリンクを出さない。 */
+/** 職員の管理の権限を持たない職員の照合の画面。予定の下はカレンダーだけになる。 */
 export const Staff: Story = {
   parameters: route({ viewer: { ...FAKE_VIEWER, canManageStaff: false } }),
 }
 
-/** 幅 768px 未満。リンクは閉じたドロワーにあり、ヘッダーの左のメニューのボタンで開く。 */
-export const Mobile: Story = { globals: MOBILE }
-
-/** 幅 768px 未満で、メニューのボタンからドロワーを開いた状態。 */
-export const MobileOpen: Story = {
-  globals: MOBILE,
-  play: async ({ canvas, userEvent }) => {
-    // Docs のページのように幅が 768px 以上で描くときは、メニューのボタンが無い
-    const opener = await canvas.findByTestId('site-nav-open').catch(() => null)
-    if (opener !== null) await userEvent.click(opener)
-  },
+/** 確認が必要な予定の画面。要確認に印が付く。 */
+export const Review: Story = {
+  parameters: route({ route: '/schedule_/review', url: '/schedule/review' }),
+  args: { current: '/schedule/review' },
 }
+
+/** 職員の管理の権限を持たない職員が、確認が必要な予定の画面を開いた状態。どの項目にも印を付けない。 */
+export const ReviewForbidden: Story = {
+  parameters: route({
+    route: '/schedule_/review',
+    url: '/schedule/review',
+    viewer: { ...FAKE_VIEWER, canManageStaff: false },
+  }),
+  args: { current: '/schedule/review' },
+}
+
+/** 幅 768px 未満。ナビゲーションはメニューのボタンで開くドロワーに入る。 */
+export const Mobile: Story = { globals: MOBILE }

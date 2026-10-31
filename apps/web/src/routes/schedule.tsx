@@ -1,6 +1,6 @@
 import { Outlet, createFileRoute, stripSearchParams } from '@tanstack/react-router'
 
-import { SiteLayoutContainer } from '#/components/site/SiteLayoutContainer'
+import { CalendarReviewBadgeContainer } from '#/features/calendar/components/CalendarReviewBadgeContainer'
 import { SchedulePageLayout } from '#/features/schedule/components/SchedulePageLayout'
 import {
   scheduleSearchDefaults,
@@ -18,9 +18,8 @@ export const Route = createFileRoute('/schedule')({
 
 function SchedulePage() {
   return (
-    <SiteLayoutContainer current="/schedule">
-      <SchedulePageLayout />
+    <SchedulePageLayout reviewBadge={<CalendarReviewBadgeContainer />}>
       <Outlet />
-    </SiteLayoutContainer>
+    </SchedulePageLayout>
   )
 }

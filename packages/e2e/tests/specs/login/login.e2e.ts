@@ -82,6 +82,7 @@ test.describe('予定のカレンダー', () => {
       await signInAtBroker(page, LOGIN_EMAIL)
       await expect(page.getByTestId('viewer-menu')).toContainText(LOGIN_STAFF.name)
 
+      await page.getByTestId('viewer-menu-open').click()
       await page.getByTestId('viewer-logout').click()
       await expect(brokerLogin(page).email).toBeVisible()
       await page.goto('/schedule')
@@ -95,6 +96,7 @@ test.describe('予定のカレンダー', () => {
       await page.goto('/schedule')
       await signInAtBroker(page, LOGIN_EMAIL)
       await expect(page.getByTestId('viewer-menu')).toContainText(LOGIN_STAFF.name)
+      await page.getByTestId('viewer-menu-open').click()
       await page.getByTestId('viewer-logout').click()
       await expect(brokerLogin(page).email).toBeVisible()
 

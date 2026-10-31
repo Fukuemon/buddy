@@ -1,29 +1,45 @@
 import { useRouteContext } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 
-import { SiteLayout } from './SiteLayout'
-import { siteNavItems } from './SiteNav'
+import { SiteLayout, type SiteLayoutProps } from './SiteLayout'
+import { siteNavGroups } from './SiteNav'
 import { ViewerMenu } from './ViewerMenu'
 
 export type SiteLayoutContainerProps = {
-  /** 今の画面のリンクの href。 */
+  /** 今の画面の href。 */
   current: string
+  /** ナビゲーションの要確認の名前の右に置く、確認が必要な予定の件数の印。 */
+  reviewBadge?: ReactNode
+  startsWithRail?: SiteLayoutProps['startsWithRail']
+  sidebar?: SiteLayoutProps['sidebar']
+  isSidebarOpen?: SiteLayoutProps['isSidebarOpen']
   children: ReactNode
 }
 
 /**
- * ログインした職員の画面の枠。ヘッダーにログインした職員を、左端か左のドロワーに画面の間を移るリンクを置く。
- * 取り込みと要確認のリンクは、職員の管理の権限を持つ職員にだけ出す。
+ * ログインした職員の画面の枠。職員の管理の権限で、ナビゲーションに並べる画面を決める。
+ * ヘッダーの右端に、ログインした職員のアカウントのボタンを置く。
  */
-export const SiteLayoutContainer = ({ current, children }: SiteLayoutContainerProps) => {
+export const SiteLayoutContainer = ({
+  current,
+  reviewBadge,
+  startsWithRail,
+  sidebar,
+  isSidebarOpen,
+  children,
+}: SiteLayoutContainerProps) => {
   const { viewer, mode } = useRouteContext({ from: '__root__' })
   return (
     <SiteLayout
-      actions={
+      account={
         viewer !== null && <ViewerMenu staffName={viewer.staffName} canLogout={mode === 'bff'} />
       }
       current={current}
-      navItems={siteNavItems(viewer?.canManageStaff ?? false)}
+      navBadges={{ review: reviewBadge }}
+      navGroups={siteNavGroups(viewer?.canManageStaff === true)}
+      isSidebarOpen={isSidebarOpen}
+      sidebar={sidebar}
+      startsWithRail={startsWithRail}
     >
       {children}
     </SiteLayout>

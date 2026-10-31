@@ -4,68 +4,98 @@ import { useId, useState, type ReactNode } from 'react'
 import MenuIcon from '#/assets/icons/menu.svg?react'
 
 import { SiteHeader } from './SiteHeader'
-import { SiteNav, type SiteNavItem } from './SiteNav'
+import { SiteNav, type SiteNavGroup } from './SiteNav'
 import { useIsDesktop } from './useIsDesktop'
 
 export type SiteLayoutProps = {
-  /** 画面の間を移るリンク。 */
-  navItems: readonly SiteNavItem[]
-  /** 今の画面のリンクの href。 */
+  /** ナビゲーションに並べる画面。 */
+  navGroups: readonly SiteNavGroup[]
+  /** 今の画面の href。 */
   current: string
-  /** ヘッダーの右端に置く要素。 */
-  actions?: ReactNode
+  /** 項目の id ごとに、ナビゲーションの名前の右に置く印。 */
+  navBadges?: Partial<Record<string, ReactNode>>
+  /** true なら、幅 768px 以上で、ナビゲーションをたたんだレールで始める。予定のカレンダーで渡す。 */
+  startsWithRail?: boolean
+  /** ヘッダーの右端に置く要素。アカウントのボタンを置く。 */
+  account?: ReactNode
+  /** 幅 768px 以上で、ナビゲーションと画面の中身の間に置く欄。予定のカレンダーの日付と絞り込みを置く。 */
+  sidebar?: ReactNode
+  /** false なら、左の欄を描いたまま隠す。たたんでも、中の入力の途中の状態と、開閉するボタンの aria-controls の参照先を残す。 */
+  isSidebarOpen?: boolean
   children: ReactNode
 }
 
 /**
- * ヘッダー、画面の間を移るリンク、画面の中身を並べる。
- * 幅 768px 以上では、リンクを左端の縦の並びに常に出す。未満では、ヘッダーの左のボタンで開くドロワーに入れ、閉じた状態で始める。
- * ドロワーを開いたまま 768px 以上になると、ドロワーを閉じる。
+ * ヘッダー、ナビゲーション、画面の中身を並べる。ヘッダーの左のメニューのボタンで、ナビゲーションを開閉する。
+ * 幅 768px 以上では、ナビゲーションを開いた形とレールで切り替える。
+ * 未満では、ナビゲーションをドロワーに入れ、閉じた状態で始める。ドロワーを開いたまま 768px 以上になると、ドロワーを閉じる。
  */
-export const SiteLayout = ({ navItems, current, actions, children }: SiteLayoutProps) => {
+export const SiteLayout = ({
+  navGroups,
+  current,
+  navBadges,
+  startsWithRail = false,
+  account,
+  sidebar,
+  isSidebarOpen = true,
+  children,
+}: SiteLayoutProps) => {
   const isDesktop = useIsDesktop()
+  const [isRail, setIsRail] = useState(startsWithRail)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
-  const drawerId = useId()
+  const navId = useId()
   if (isDesktop && isDrawerOpen) setIsDrawerOpen(false)
 
   return (
     <div className="flex h-dvh flex-col">
       <SiteHeader
+        actions={account}
         menuButton={
-          !isDesktop && (
-            <button
-              aria-controls={drawerId}
-              aria-expanded={isDrawerOpen}
-              aria-label="メニュー"
-              className="grid size-11 shrink-0 place-items-center rounded-8 hover:bg-surface-subtle focus-visible:focus-ring"
-              data-testid="site-nav-open"
-              onClick={() => setIsDrawerOpen(true)}
-              type="button"
-            >
-              <MenuIcon aria-hidden="true" height={24} width={24} />
-            </button>
-          )
+          <button
+            aria-controls={navId}
+            aria-expanded={isDesktop ? !isRail : isDrawerOpen}
+            aria-haspopup={isDesktop ? undefined : 'dialog'}
+            aria-label="メニュー"
+            className="grid size-11 shrink-0 place-items-center rounded-8 hover:bg-surface-subtle focus-visible:focus-ring"
+            data-testid="site-nav-toggle"
+            onClick={() => (isDesktop ? setIsRail((rail) => !rail) : setIsDrawerOpen(true))}
+            type="button"
+          >
+            <MenuIcon aria-hidden="true" height={24} width={24} />
+          </button>
         }
-        actions={actions}
       />
       <div className="flex min-h-0 grow">
         {isDesktop ? (
-          <div className="shrink-0 overflow-auto border-r border-border bg-surface p-2">
-            <SiteNav current={current} items={navItems} layout="rail" />
-          </div>
+          <aside
+            className={`shrink-0 overflow-auto border-r border-border bg-surface ${isRail ? 'w-20' : 'w-56'}`}
+          >
+            <SiteNav
+              badges={navBadges}
+              current={current}
+              groups={navGroups}
+              id={navId}
+              isRail={isRail}
+            />
+          </aside>
         ) : (
           <Drawer
             closeButtonTestId="site-nav-close"
-            data-testid="site-nav-drawer"
-            id={drawerId}
+            id={navId}
             isOpen={isDrawerOpen}
             onCloseRequest={() => setIsDrawerOpen(false)}
-            title="メニュー"
+            title="buddy"
           >
-            <div className="p-2">
-              <SiteNav current={current} items={navItems} layout="list" />
-            </div>
+            <SiteNav badges={navBadges} current={current} groups={navGroups} />
           </Drawer>
+        )}
+        {isDesktop && sidebar !== undefined && (
+          <aside
+            className="w-72 shrink-0 overflow-auto border-r border-border bg-surface"
+            hidden={!isSidebarOpen}
+          >
+            {sidebar}
+          </aside>
         )}
         <div
           className="flex min-h-0 min-w-0 grow flex-col overflow-auto"
