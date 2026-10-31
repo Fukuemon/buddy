@@ -1,11 +1,12 @@
 import { clsx } from 'clsx'
-import type { ReactNode } from 'react'
+import { Fragment, type ReactNode } from 'react'
 
 export type RowTableProps = {
-  /** 名前の列の見出しと、補足の値の列の見出し。状態の列の見出しは statusHeader で渡す。 */
+  /** 名前の列の見出しと、補足の値の列の見出し。 */
   primaryHeader: string
   metaHeaders: readonly string[]
-  statusHeader: string
+  /** 補足の値の右に足す列の見出し。足さないときは省く。 */
+  asideHeader?: string
   'data-testid'?: string
   children: ReactNode
 }
@@ -13,13 +14,13 @@ export type RowTableProps = {
 const headClassName = 'px-4 py-2 text-left text-caption font-normal text-text-secondary'
 
 /**
- * 行全体を押せる一覧の表。幅 768px 以上では表に、幅 768px 未満では 1 行目に名前と状態の印、
+ * 行全体を押せる一覧の表。幅 768px 以上では表に、幅 768px 未満では 1 行目に名前と足した列の値、
  * 2 行目に補足の値を「・」でつなげた 2 行のリストにする。行は RowTableRow で並べる。
  */
 export const RowTable = ({
   primaryHeader,
   metaHeaders,
-  statusHeader,
+  asideHeader,
   'data-testid': testId,
   children,
 }: RowTableProps) => (
@@ -34,9 +35,11 @@ export const RowTable = ({
             {header}
           </th>
         ))}
-        <th className={headClassName} scope="col">
-          {statusHeader}
-        </th>
+        {asideHeader !== undefined && (
+          <th className={headClassName} scope="col">
+            {asideHeader}
+          </th>
+        )}
         <th className="w-10" scope="col">
           <span className="sr-only">詳細</span>
         </th>
@@ -52,13 +55,10 @@ export type RowTableRowProps = {
   /** 行を押すと移る先。名前をリンクにし、押せる領域を行全体に広げる。 */
   href: string
   name: string
-  /** 名前の左に置く要素。頭文字の丸を置く。幅 768px 未満では出さない。 */
-  leading?: ReactNode
-  /** 名前の下に置く補足。幅 768px 未満では出さない。 */
-  subtext?: ReactNode
-  /** 補足の値と、その列の見出し。幅 768px 以上では列ごとに、未満では 2 行目に値を「・」でつなげて出す。 */
-  meta: readonly { header: string; value: string }[]
-  status: ReactNode
+  /** 補足の値と、その列の見出し。幅 768px 以上では列ごとに、未満では 2 行目に「・」でつなげて出す。 */
+  meta: readonly { header: string; value: ReactNode }[]
+  /** 足した列の値。幅 768px 未満では名前の右に出す。RowTable に asideHeader を渡したときだけ渡す。 */
+  aside?: ReactNode
   'data-testid'?: string
 }
 
@@ -68,10 +68,8 @@ const cellClassName = 'desktop:table-cell desktop:px-4 desktop:py-3 desktop:alig
 export const RowTableRow = ({
   href,
   name,
-  leading,
-  subtext,
   meta,
-  status,
+  aside,
   'data-testid': testId,
 }: RowTableRowProps) => (
   <tr
@@ -80,16 +78,10 @@ export const RowTableRow = ({
   >
     <td className={clsx('min-w-0', cellClassName)}>
       <a
-        className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 text-body font-bold whitespace-nowrap text-text outline-none after:absolute after:inset-0"
+        className="block truncate text-body font-bold whitespace-nowrap text-text outline-none after:absolute after:inset-0"
         href={href}
       >
-        <span className="row-span-2 hidden desktop:block">{leading}</span>
         {name}
-        {subtext !== undefined && (
-          <span className="hidden truncate text-caption font-normal text-text-secondary desktop:block">
-            {subtext}
-          </span>
-        )}
       </a>
     </td>
     {meta.map(({ header, value }) => (
@@ -97,9 +89,16 @@ export const RowTableRow = ({
         {value}
       </td>
     ))}
-    <td className={clsx('justify-self-end', cellClassName)}>{status}</td>
-    <td className="col-span-2 truncate text-caption text-text-secondary desktop:hidden">
-      {meta.map(({ value }) => value).join('・')}
+    {aside !== undefined && (
+      <td className={clsx('justify-self-end text-body-dense', cellClassName)}>{aside}</td>
+    )}
+    <td className="col-span-2 flex flex-wrap items-center text-caption text-text-secondary desktop:hidden">
+      {meta.map(({ header, value }, index) => (
+        <Fragment key={header}>
+          {index > 0 && <span aria-hidden>・</span>}
+          {value}
+        </Fragment>
+      ))}
     </td>
     <td aria-hidden className={clsx('hidden text-right text-text-secondary', cellClassName)}>
       ›

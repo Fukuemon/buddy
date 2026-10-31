@@ -47,3 +47,39 @@ export const Avatar = ({ name, isMuted = false, size = 'S' }: AvatarProps) => (
     {name.slice(0, 1)}
   </span>
 )
+
+/** 区別の色の、テーマの段のクラス名。Tailwind が読めるように、名前を全て書く。 */
+const DOT_COLOR_CLASS_NAMES = [
+  'bg-categorical-1',
+  'bg-categorical-2',
+  'bg-categorical-3',
+  'bg-categorical-4',
+  'bg-categorical-5',
+  'bg-categorical-6',
+  'bg-categorical-7',
+  'bg-categorical-8',
+  'bg-categorical-9',
+  'bg-categorical-10',
+] as const
+
+export type DotLabelProps = {
+  /** 区別の色の番号（0 から）。負の値は、色の付かない点にする。 */
+  colorIndex: number
+  children: ReactNode
+}
+
+/** 名前の前に小さい色の点を置く。色だけで区別させないので、点は読み上げず、名前を必ず並べる。 */
+export const DotLabel = ({ colorIndex, children }: DotLabelProps) => (
+  <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+    <span
+      aria-hidden
+      className={clsx(
+        'size-2 shrink-0 rounded-full',
+        colorIndex < 0
+          ? 'bg-text-secondary'
+          : DOT_COLOR_CLASS_NAMES[colorIndex % DOT_COLOR_CLASS_NAMES.length],
+      )}
+    />
+    {children}
+  </span>
+)

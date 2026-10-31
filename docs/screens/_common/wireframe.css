@@ -20,6 +20,10 @@
   --wf-danger-surface: var(--buddy-color-danger-surface);
   --wf-warning-surface: var(--buddy-color-warning-surface);
   --wf-overlay: var(--buddy-color-overlay);
+  /* チームの色の仮の 3 色。チームの色のトークン（#367）が決まったら置き換える */
+  --wf-team-1: var(--buddy-color-categorical-1);
+  --wf-team-2: var(--buddy-color-categorical-2);
+  --wf-team-3: var(--buddy-color-categorical-3);
   --wf-radius: var(--border-radius-8);
 
   color: var(--wf-ink);
@@ -929,6 +933,34 @@ body {
 .wf-status--muted {
   background: var(--wf-fill-strong);
   color: var(--wf-muted);
+}
+
+/* チームの名前と、その前の色の小さい点。色だけで区別せず、点は読み上げない */
+.wf-team {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.wf-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--wf-muted);
+}
+
+.wf-dot--c1 {
+  background: var(--wf-team-1);
+}
+
+.wf-dot--c2 {
+  background: var(--wf-team-2);
+}
+
+.wf-dot--c3 {
+  background: var(--wf-team-3);
 }
 
 /* ページの見出しの行。左に見出しを、右に主ボタンを置く */

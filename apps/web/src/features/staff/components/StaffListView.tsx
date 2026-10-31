@@ -4,10 +4,10 @@ import type { Department, Position, StaffRecord, Team } from '#/api/types'
 import { HelpToggle } from '#/components/site/HelpToggle'
 import { FilterSelect, ListCount, ListEmpty, ListTools } from '#/components/site/ListTools'
 import { RowTable, RowTableRow } from '#/components/site/RowTable'
-import { Avatar, StatusBadge } from '#/components/site/StatusBadge'
+import { DotLabel, StatusBadge } from '#/components/site/StatusBadge'
 
-import { STATUS_FILTER_OPTIONS, type StaffListFilter } from '../lib/filter'
-import { statusLabel, statusTone } from '../lib/format'
+import { STATUS_FILTER_OPTIONS, teamColorIndex, type StaffListFilter } from '../lib/filter'
+import { formatDate, formatDateTimeAsDate, statusLabel, statusTone } from '../lib/format'
 import { sortByName } from './StaffFormFields'
 
 /** 職員の一覧の画面の状態。ready の staff は、絞り込んだ後の職員である。 */
@@ -35,9 +35,44 @@ const unitOptions = (units: readonly { id: string; name: string }[] | undefined)
   ...(sortByName(units) ?? []).map((u) => ({ value: u.id, label: u.name })),
 ]
 
+/** 状態の絞り込みごとに、一覧に足す列の見出し。有効では足さない。 */
+const ASIDE_HEADER: Record<StaffListFilter['status'], string | undefined> = {
+  active: undefined,
+  on_leave: '戻る予定の日',
+  retired: '退職した日',
+  all: '状態',
+}
+
+/** 状態の絞り込みごとに、一覧に足す列の値。 */
+const asideOf = (staff: StaffRecord, status: StaffListFilter['status']) => {
+  if (status === 'on_leave')
+    return (
+      <span data-testid={`staff-list-leave-return-${staff.id}`}>
+        {staff.leave_return_date === null
+          ? '戻る予定の日なし'
+          : `${formatDate(staff.leave_return_date)} に戻る予定`}
+      </span>
+    )
+  if (status === 'retired')
+    return (
+      <span data-testid={`staff-list-retired-on-${staff.id}`}>
+        {staff.retired_at === null ? '退職' : `${formatDateTimeAsDate(staff.retired_at)} に退職`}
+      </span>
+    )
+  if (status === 'all')
+    return staff.status === 'active' ? (
+      <span />
+    ) : (
+      <StatusBadge data-testid={`staff-list-status-${staff.id}`} tone={statusTone(staff)}>
+        {statusLabel(staff)}
+      </StatusBadge>
+    )
+  return undefined
+}
+
 /**
  * 職員の一覧の画面の本文。タイトルとヘルプと職員を登録のボタン、名前の検索と絞り込みと人数の下に、
- * 行全体を押せる職員の表を並べる。絞り込みで 0 件なら、表の代わりに絞り込みを外すボタンを出す。
+ * 行全体を押せる職員の表を、チームの順に並べる。休職と退職の絞り込みでは、戻る予定の日と退職した日の列を足す。絞り込みで 0 件なら、表の代わりに絞り込みを外すボタンを出す。
  */
 export const StaffListView = ({
   state,
@@ -90,14 +125,6 @@ export const StaffListView = ({
             />
           </div>
           <FilterSelect
-            data-testid="staff-list-filter-department"
-            disabled={departments === undefined}
-            label="部署"
-            onChange={(departmentId) => onFilterChange({ ...filter, departmentId })}
-            options={unitOptions(departments)}
-            value={filter.departmentId}
-          />
-          <FilterSelect
             data-testid="staff-list-filter-team"
             disabled={teams === undefined}
             label="チーム"
@@ -114,8 +141,16 @@ export const StaffListView = ({
             value={filter.positionId}
           />
           <FilterSelect
+            data-testid="staff-list-filter-department"
+            disabled={departments === undefined}
+            label="部署"
+            onChange={(departmentId) => onFilterChange({ ...filter, departmentId })}
+            options={unitOptions(departments)}
+            value={filter.departmentId}
+          />
+          <FilterSelect
             data-testid="staff-list-filter-status"
-            isOn
+            isOn={filter.status !== 'active'}
             label="状態"
             onChange={(status) => onFilterChange({ ...filter, status })}
             options={STATUS_FILTER_OPTIONS}
@@ -133,29 +168,30 @@ export const StaffListView = ({
           />
         ) : (
           <RowTable
+            asideHeader={ASIDE_HEADER[filter.status]}
             data-testid="staff-list-table"
-            metaHeaders={['部署', 'チーム', '役職']}
+            metaHeaders={['チーム', '役職', '部署']}
             primaryHeader="名前"
-            statusHeader="状態"
           >
             {state.staff.map((s) => (
               <RowTableRow
+                aside={asideOf(s, filter.status)}
                 data-testid={`staff-list-row-${s.id}`}
                 href={`/staff/${s.id}`}
                 key={s.id}
-                leading={<Avatar isMuted={s.status === 'retired'} name={s.username} />}
                 meta={[
-                  { header: '部署', value: s.department.name },
-                  { header: 'チーム', value: s.team.name },
+                  {
+                    header: 'チーム',
+                    value: (
+                      <DotLabel colorIndex={teamColorIndex(teams ?? [], s.team.id)}>
+                        {s.team.name}
+                      </DotLabel>
+                    ),
+                  },
                   { header: '役職', value: s.position.name },
+                  { header: '部署', value: s.department.name },
                 ]}
                 name={s.username}
-                status={
-                  <StatusBadge data-testid={`staff-list-status-${s.id}`} tone={statusTone(s)}>
-                    {statusLabel(s)}
-                  </StatusBadge>
-                }
-                subtext={s.email ?? 'メールアドレスなし'}
               />
             ))}
           </RowTable>

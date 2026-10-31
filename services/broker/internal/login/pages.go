@@ -78,7 +78,7 @@ var pages = template.Must(template.New("").Funcs(template.FuncMap{
   <input type="hidden" name="login_challenge" value="{{.Challenge}}">
   <label for="email">メールアドレス</label>
   <input id="email" type="email" name="email" required autocomplete="email" autofocus aria-describedby="email-hint">
-  <p id="email-hint" class="hint">事業所に登録したメールアドレスを入れてください。事業所のログインの画面へ移ります。</p>
+  <p id="email-hint" class="hint">事業所に登録したメールアドレスを入れると、ふだん使っているログインの画面が開きます。</p>
   <button type="submit">次へ</button>
 </form>
 {{template "foot"}}{{end}}

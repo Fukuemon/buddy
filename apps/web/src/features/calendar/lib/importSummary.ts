@@ -97,7 +97,9 @@ export type CountBox = { key: string; label: string; count: number; note: string
 /** プレビューの結果の 5 つの件数の箱を返す。件数が 0 の箱も返す。 */
 export const previewCountBoxes = ({ counts }: ImportPreview): CountBox[] => {
   const expanded =
-    counts.expanded_occurrences > 0 ? `。回ごとにした ${counts.expanded_occurrences} 件を含む` : ''
+    counts.expanded_occurrences > 0
+      ? `。繰り返しの予定を 1 回ずつに分けた ${counts.expanded_occurrences} 件を含む`
+      : ''
   return [
     {
       key: 'import',
@@ -115,7 +117,7 @@ export const previewCountBoxes = ({ counts }: ImportPreview): CountBox[] => {
       note:
         counts.recurring === 0
           ? '取り込む繰り返しは無い'
-          : `繰り返しのまま ${counts.recurring_as_rule} 件、回ごとにする ${counts.recurring_expanded} 件`,
+          : `繰り返しとして ${counts.recurring_as_rule} 件、1 回ずつに分ける ${counts.recurring_expanded} 件`,
     },
     {
       key: 'needs_review',

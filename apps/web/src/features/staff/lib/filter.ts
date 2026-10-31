@@ -1,52 +1,64 @@
-import type { StaffRecord } from '#/api/types'
+import type { StaffRecord, Team } from '#/api/types'
 
-/** 状態の絞り込みの値。enrolled は在籍（有効と休職）、all は退職を含む全ての職員である。 */
-export type StaffStatusFilter = 'enrolled' | 'active' | 'on_leave' | 'retired' | 'all'
+/** 状態の絞り込みの値。all は、休職と退職を含む全ての職員である。 */
+export type StaffStatusFilter = 'active' | 'on_leave' | 'retired' | 'all'
 
 /** 状態の絞り込みの選択肢。並びは画面の並びである。 */
 export const STATUS_FILTER_OPTIONS: readonly { value: StaffStatusFilter; label: string }[] = [
-  { value: 'enrolled', label: '在籍' },
   { value: 'active', label: '有効' },
   { value: 'on_leave', label: '休職' },
   { value: 'retired', label: '退職' },
   { value: 'all', label: 'すべて' },
 ]
 
-/** 職員の一覧の絞り込み。部署、チーム、役職は、空なら「すべて」である。 */
+/** 職員の一覧の絞り込み。チーム、役職、部署は、空なら「すべて」である。 */
 export type StaffListFilter = {
   name: string
-  departmentId: string
   teamId: string
   positionId: string
+  departmentId: string
   status: StaffStatusFilter
 }
 
 /** 開いた直後と、絞り込みを外したときの値。 */
 export const DEFAULT_STAFF_LIST_FILTER: StaffListFilter = {
   name: '',
-  departmentId: '',
   teamId: '',
   positionId: '',
-  status: 'enrolled',
+  departmentId: '',
+  status: 'active',
 }
 
 const withoutSpaces = (value: string) => value.replace(/\s/g, '')
 
-const matchesStatus = (staff: StaffRecord, status: StaffStatusFilter) => {
-  if (status === 'all') return true
-  if (status === 'enrolled') return staff.status !== 'retired'
-  return staff.status === status
+/**
+ * 名前の一部（空白の違いは無視する）、チーム、役職、部署、状態の全てを満たす職員を返す。
+ * 並びは、teams の名前の順のチームの順にし、同じチームの中は名前の順にする。teams に無いチームの職員は最後に置く。
+ */
+export const filterStaff = (
+  staff: readonly StaffRecord[],
+  filter: StaffListFilter,
+  teams: readonly Team[] = [],
+) => {
+  const name = withoutSpaces(filter.name)
+  const teamOrder = new Map(
+    [...teams].sort((a, b) => a.name.localeCompare(b.name, 'ja')).map((t, index) => [t.id, index]),
+  )
+  const orderOf = (s: StaffRecord) => teamOrder.get(s.team.id) ?? teamOrder.size
+  return staff
+    .filter(
+      (s) =>
+        withoutSpaces(s.username).includes(name) &&
+        (filter.teamId === '' || s.team.id === filter.teamId) &&
+        (filter.positionId === '' || s.position.id === filter.positionId) &&
+        (filter.departmentId === '' || s.department.id === filter.departmentId) &&
+        (filter.status === 'all' || s.status === filter.status),
+    )
+    .sort((a, b) => orderOf(a) - orderOf(b) || a.username.localeCompare(b.username, 'ja'))
 }
 
-/** 名前の一部（空白の違いは無視する）、部署、チーム、役職、状態の全てを満たす職員を、並びを変えずに返す。 */
-export const filterStaff = (staff: readonly StaffRecord[], filter: StaffListFilter) => {
-  const name = withoutSpaces(filter.name)
-  return staff.filter(
-    (s) =>
-      withoutSpaces(s.username).includes(name) &&
-      (filter.departmentId === '' || s.department.id === filter.departmentId) &&
-      (filter.teamId === '' || s.team.id === filter.teamId) &&
-      (filter.positionId === '' || s.position.id === filter.positionId) &&
-      matchesStatus(s, filter.status),
-  )
-}
+/** チームの点の仮の色の順番。#367 のチームの色のトークンが入ったら替える。 */
+export const teamColorIndex = (teams: readonly Team[], teamId: Team['id']) =>
+  [...teams]
+    .sort((a, b) => a.name.localeCompare(b.name, 'ja'))
+    .findIndex((team) => team.id === teamId)

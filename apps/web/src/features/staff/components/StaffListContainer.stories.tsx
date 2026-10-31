@@ -55,10 +55,10 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** 開いた直後。状態の絞り込みは「在籍」で、退職の職員を出さない。 */
+/** 開いた直後。状態の絞り込みは「有効」で、休職と退職の職員を出さない。 */
 export const Default: Story = {}
 
-/** 幅 768px 未満。1 行目に名前と状態の印、2 行目に部署、チーム、役職を並べる。 */
+/** 幅 768px 未満。1 行目に名前、2 行目にチーム、役職、部署を並べる。 */
 export const Mobile: Story = { globals: { viewport: { value: 'mobile1' } } }
 
 export const Loading: Story = { parameters: route({ api: pendingBuddyApi() }) }

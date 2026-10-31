@@ -63,62 +63,56 @@
                 </div>
                 <div class="wf-list-tools">
                   <div class="wf-search" data-testid="staff-list-search"><span class="wf-label">名前で検索</span></div>
-                  <span class="wf-select" data-testid="staff-list-filter-department">部署: すべて</span>
                   <span class="wf-select" data-testid="staff-list-filter-team">チーム: すべて</span>
                   <span class="wf-select" data-testid="staff-list-filter-position">役職: すべて</span>
-                  <span class="wf-select is-on" data-testid="staff-list-filter-status" data-go="../../staff-list_職員の一覧/mocks/02-all.html">状態: 在籍</span>
+                  <span class="wf-select" data-testid="staff-list-filter-department">部署: すべて</span>
+                  <span class="wf-select" data-testid="staff-list-filter-status" data-go="../../staff-list_職員の一覧/mocks/02-on-leave.html">状態: 有効</span>
                   <span class="wf-count" data-testid="staff-list-count">5 人</span>
                 </div>
                 <table class="wf-table wf-table--rows" data-testid="staff-list-table">
                   <thead>
                     <tr>
                       <th>名前</th>
-                      <th>部署</th>
                       <th>チーム</th>
                       <th>役職</th>
-                      <th>状態</th>
+                      <th>部署</th>
                       <th><span class="wf-visually-hidden">詳細</span></th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr data-testid="staff-list-row-{職員の id}" data-go="../../staff-detail_職員の詳細/mocks/01-detail.html">
-                      <td class="wf-cell-primary"><span class="st-person"><span class="wf-site-avatar st-avatar" aria-hidden="true">青</span><span class="st-person__text"><span>青木 陽菜</span><span class="st-person__email">hina.aoki@example.com</span></span></span></td>
-                      <td class="wf-cell-meta">看護部</td>
-                      <td class="wf-cell-meta">東チーム</td>
+                      <td class="wf-cell-primary">青木 陽菜</td>
+                      <td class="wf-cell-meta"><span class="wf-team"><span class="wf-dot wf-dot--c1" aria-hidden="true"></span>東チーム</span></td>
                       <td class="wf-cell-meta">マネージャー</td>
-                      <td class="wf-cell-status"><span class="wf-status" data-testid="staff-list-status-{職員の id}">有効</span></td>
-                      <td class="wf-cell-go" aria-hidden="true">›</td>
-                    </tr>
-                    <tr data-testid="staff-list-row-{職員の id}" data-go="../../staff-detail_職員の詳細/mocks/09-on-leave.html">
-                      <td class="wf-cell-primary"><span class="st-person"><span class="wf-site-avatar st-avatar" aria-hidden="true">小</span><span class="st-person__text"><span>小野 拓海</span><span class="st-person__email">takumi.ono@example.com</span></span></span></td>
-                      <td class="wf-cell-meta">リハビリ部</td>
-                      <td class="wf-cell-meta">西チーム</td>
-                      <td class="wf-cell-meta">メンバー</td>
-                      <td class="wf-cell-status"><span class="wf-status wf-status--warning" data-testid="staff-list-status-{職員の id}">休職（2027/04/01 に戻る予定）</span></td>
-                      <td class="wf-cell-go" aria-hidden="true">›</td>
-                    </tr>
-                    <tr data-testid="staff-list-row-{職員の id}" data-go="../../staff-detail_職員の詳細/mocks/01-detail.html">
-                      <td class="wf-cell-primary"><span class="st-person"><span class="wf-site-avatar st-avatar" aria-hidden="true">佐</span><span class="st-person__text"><span>佐藤 美咲</span><span class="st-person__email">misaki.sato@example.com</span></span></span></td>
-                      <td class="wf-cell-meta">リハビリ部</td>
-                      <td class="wf-cell-meta">西チーム</td>
-                      <td class="wf-cell-meta">チームリーダー</td>
-                      <td class="wf-cell-status"><span class="wf-status" data-testid="staff-list-status-{職員の id}">有効</span></td>
-                      <td class="wf-cell-go" aria-hidden="true">›</td>
-                    </tr>
-                    <tr data-testid="staff-list-row-{職員の id}" data-go="../../staff-detail_職員の詳細/mocks/01-detail.html">
-                      <td class="wf-cell-primary"><span class="st-person"><span class="wf-site-avatar st-avatar" aria-hidden="true">林</span><span class="st-person__text"><span>林 さくら</span><span class="st-person__email">sakura.hayashi@example.com</span></span></span></td>
                       <td class="wf-cell-meta">看護部</td>
-                      <td class="wf-cell-meta">東チーム</td>
-                      <td class="wf-cell-meta">メンバー</td>
-                      <td class="wf-cell-status"><span class="wf-status" data-testid="staff-list-status-{職員の id}">有効</span></td>
                       <td class="wf-cell-go" aria-hidden="true">›</td>
                     </tr>
                     <tr data-testid="staff-list-row-{職員の id}" data-go="../../staff-detail_職員の詳細/mocks/01-detail.html">
-                      <td class="wf-cell-primary"><span class="st-person"><span class="wf-site-avatar st-avatar" aria-hidden="true">森</span><span class="st-person__text"><span>森 健太</span><span class="st-person__email">kenta.mori@example.com</span></span></span></td>
+                      <td class="wf-cell-primary">林 さくら</td>
+                      <td class="wf-cell-meta"><span class="wf-team"><span class="wf-dot wf-dot--c1" aria-hidden="true"></span>東チーム</span></td>
+                      <td class="wf-cell-meta">メンバー</td>
                       <td class="wf-cell-meta">看護部</td>
-                      <td class="wf-cell-meta">東チーム</td>
+                      <td class="wf-cell-go" aria-hidden="true">›</td>
+                    </tr>
+                    <tr data-testid="staff-list-row-{職員の id}" data-go="../../staff-detail_職員の詳細/mocks/01-detail.html">
+                      <td class="wf-cell-primary">森 健太</td>
+                      <td class="wf-cell-meta"><span class="wf-team"><span class="wf-dot wf-dot--c1" aria-hidden="true"></span>東チーム</span></td>
                       <td class="wf-cell-meta">チームリーダー</td>
-                      <td class="wf-cell-status"><span class="wf-status" data-testid="staff-list-status-{職員の id}">有効</span></td>
+                      <td class="wf-cell-meta">看護部</td>
+                      <td class="wf-cell-go" aria-hidden="true">›</td>
+                    </tr>
+                    <tr data-testid="staff-list-row-{職員の id}" data-go="../../staff-detail_職員の詳細/mocks/01-detail.html">
+                      <td class="wf-cell-primary">佐藤 美咲</td>
+                      <td class="wf-cell-meta"><span class="wf-team"><span class="wf-dot wf-dot--c2" aria-hidden="true"></span>西チーム</span></td>
+                      <td class="wf-cell-meta">チームリーダー</td>
+                      <td class="wf-cell-meta">リハビリ部</td>
+                      <td class="wf-cell-go" aria-hidden="true">›</td>
+                    </tr>
+                    <tr data-testid="staff-list-row-{職員の id}" data-go="../../staff-detail_職員の詳細/mocks/01-detail.html">
+                      <td class="wf-cell-primary">石井 翔</td>
+                      <td class="wf-cell-meta"><span class="wf-team"><span class="wf-dot wf-dot--c3" aria-hidden="true"></span>南チーム</span></td>
+                      <td class="wf-cell-meta">メンバー</td>
+                      <td class="wf-cell-meta">看護部</td>
                       <td class="wf-cell-go" aria-hidden="true">›</td>
                     </tr>
                   </tbody>

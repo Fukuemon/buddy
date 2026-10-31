@@ -68,8 +68,10 @@ describe('取り込み方の選択', () => {
 describe('件数の文', () => {
   it('プレビューの件数の箱の補足を、内訳から作る', () => {
     const [importBox, recurring] = previewCountBoxes(preview)
-    expect(importBox.note).toBe('訪問 15 件、通常 3 件。回ごとにした 4 件を含む')
-    expect(recurring.note).toBe('繰り返しのまま 2 件、回ごとにする 1 件')
+    expect(importBox.note).toBe(
+      '訪問 15 件、通常 3 件。繰り返しの予定を 1 回ずつに分けた 4 件を含む',
+    )
+    expect(recurring.note).toBe('繰り返しとして 2 件、1 回ずつに分ける 1 件')
     const [none] = previewCountBoxes(createMockImportedPreview(range))
     expect(none.note).toBe('取り込む予定は無い')
   })

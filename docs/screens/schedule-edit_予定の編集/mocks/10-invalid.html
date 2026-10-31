@@ -18,8 +18,8 @@
             <div class="wf-overlay" data-m="1" tabindex="-1" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html"></div>
             <div aria-label="予定の編集" class="wf-modal" data-testid="schedule-form-modal" role="dialog">
               <div class="wf-modal__header">
-                <span aria-label="閉じる" class="wf-btn wf-btn--icon" data-m="2" data-testid="modal-close" data-escape data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
-                <h2 class="wf-modal__title" data-m="3">予定の編集</h2>
+                <h2 class="wf-modal__title wf-dialog__title" data-m="2">予定の編集</h2>
+                <span aria-label="閉じる" class="wf-btn wf-btn--icon" data-m="3" data-testid="modal-close" data-escape data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
               </div>
               <div class="wf-modal__body">
                 <div class="wf-split" data-testid="schedule-form">
@@ -88,7 +88,8 @@
                 </div>
               </div>
               <div class="wf-modal__footer">
-                <span class="wf-btn wf-btn--primary" data-m="10" data-testid="schedule-edit-submit">保存</span>
+                <span class="wf-btn" data-m="10" data-testid="schedule-edit-cancel" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html">キャンセル</span>
+                <span class="wf-btn wf-btn--primary" data-m="11" data-testid="schedule-edit-submit">保存</span>
               </div>
             </div>
           </div>
