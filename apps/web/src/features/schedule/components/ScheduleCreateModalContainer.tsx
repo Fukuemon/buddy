@@ -88,6 +88,7 @@ export const ScheduleCreateModalContainer = () => {
       submitError={createSchedule.isError ? '予定を作成できませんでした。' : undefined}
       submitLabel="作成"
       submitTestId="schedule-create-submit"
+      cancelTestId="schedule-new-cancel"
       title="予定の作成"
     />
   )
