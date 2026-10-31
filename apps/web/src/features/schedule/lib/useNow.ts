@@ -12,14 +12,11 @@ export const useNow = () => {
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | undefined
-    // 次の分の変わり目にそろえてから、1 分ごとに進める
-    const timeout = setTimeout(
-      () => {
-        setNow(new Date())
-        interval = setInterval(() => setNow(new Date()), MINUTE_MS)
-      },
-      MINUTE_MS - (Date.now() % MINUTE_MS),
-    )
+    const untilNextMinute = MINUTE_MS - (Date.now() % MINUTE_MS)
+    const timeout = setTimeout(() => {
+      setNow(new Date())
+      interval = setInterval(() => setNow(new Date()), MINUTE_MS)
+    }, untilNextMinute)
     return () => {
       clearTimeout(timeout)
       clearInterval(interval)

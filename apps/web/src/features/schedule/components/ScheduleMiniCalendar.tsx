@@ -4,10 +4,8 @@ import PrevIcon from '#/assets/icons/arrow-left.svg?react'
 import NextIcon from '#/assets/icons/arrow-right.svg?react'
 
 import type { CalendarView } from '../constants/calendarView'
-import { getCalendarRange } from '../lib/calendarRange'
-import { fromDateKey, toDateKey } from '../lib/dateTime'
-
-const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'] as const
+import { getCalendarRange, shiftCalendarDate } from '../lib/calendarRange'
+import { WEEKDAYS, fromDateKey, toDateKey } from '../lib/dateTime'
 
 const toMonthKey = (dateKey: string) => `${dateKey.slice(0, 7)}-01`
 
@@ -27,11 +25,6 @@ const shiftDays = (dateKey: string, days: number) => {
 
 /** 矢印のキーで動かす日数。 */
 const KEY_DAYS: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }
-
-const shiftMonth = (monthKey: string, direction: 1 | -1) => {
-  const date = fromDateKey(monthKey)
-  return toDateKey(new Date(date.getFullYear(), date.getMonth() + direction, 1))
-}
 
 const formatDay = (dateKey: string) => {
   const date = fromDateKey(dateKey)
@@ -111,7 +104,7 @@ export const ScheduleMiniCalendar = ({
             aria-label="前の月"
             className="grid size-11 place-items-center rounded-8 hover:bg-surface-subtle focus-visible:focus-ring"
             data-testid="mini-calendar-prev"
-            onClick={() => setShownMonth(shiftMonth(shownMonth, -1))}
+            onClick={() => setShownMonth(shiftCalendarDate('month', shownMonth, -1))}
             type="button"
           >
             <PrevIcon height={20} width={20} />
@@ -120,7 +113,7 @@ export const ScheduleMiniCalendar = ({
             aria-label="次の月"
             className="grid size-11 place-items-center rounded-8 hover:bg-surface-subtle focus-visible:focus-ring"
             data-testid="mini-calendar-next"
-            onClick={() => setShownMonth(shiftMonth(shownMonth, 1))}
+            onClick={() => setShownMonth(shiftCalendarDate('month', shownMonth, 1))}
             type="button"
           >
             <NextIcon height={20} width={20} />

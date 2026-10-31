@@ -1,8 +1,10 @@
 import type { CalendarView } from '../constants/calendarView'
-import { fromDateKey, toDateKey, toOffsetDateTime } from './dateTime'
+import { WEEKDAYS, fromDateKey, toDateKey, toOffsetDateTime } from './dateTime'
 
 const addDays = (date: Date, days: number) =>
   new Date(date.getFullYear(), date.getMonth(), date.getDate() + days)
+
+const startOfWeek = (date: Date) => addDays(date, -date.getDay())
 
 /** 表示の種類に合わせて、基準の日付を 1 単位（日、週、月）前後に動かす。 */
 export const shiftCalendarDate = (view: CalendarView, dateKey: string, direction: 1 | -1) => {
@@ -23,7 +25,6 @@ export const shiftCalendarDate = (view: CalendarView, dateKey: string, direction
  */
 export const getCalendarRange = (view: CalendarView, dateKey: string) => {
   const date = fromDateKey(dateKey)
-  const startOfWeek = (d: Date) => addDays(d, -d.getDay())
   const [from, to] = (() => {
     switch (view) {
       case 'day':
@@ -41,8 +42,6 @@ export const getCalendarRange = (view: CalendarView, dateKey: string) => {
   return { from: toOffsetDateTime(from), to: toOffsetDateTime(to) }
 }
 
-const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'] as const
-
 /**
  * ツールバーの見出しに出す、表示の期間の文を返す。
  * 月は `2026年10月`、週は日曜から土曜を `2026年10月18日〜24日`、日は `2026年10月20日（火）` の形にする。
@@ -57,7 +56,7 @@ export const formatCalendarTitle = (view: CalendarView, dateKey: string) => {
     case 'day':
       return `${ymd(date)}（${WEEKDAYS[date.getDay()]}）`
     case 'week': {
-      const start = addDays(date, -date.getDay())
+      const start = startOfWeek(date)
       const end = addDays(start, 6)
       if (start.getFullYear() !== end.getFullYear()) return `${ymd(start)}〜${ymd(end)}`
       if (start.getMonth() !== end.getMonth())

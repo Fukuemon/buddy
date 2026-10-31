@@ -60,30 +60,28 @@ export const ScheduleCalendar = ({
         dayCellContent={(arg) => arg.dayNumberText.replace('日', '')}
         eventDisplay="block"
         eventClick={(arg) => onEventClick(arg.event.id)}
-        eventContent={(arg) => (
-          <span
-            className="truncate px-1 text-caption"
-            data-testid={`schedule-event-${arg.event.id}`}
-          >
-            {arg.event.extendedProps.cancelled === true && <CancelledMark />}
+        eventContent={(arg) => {
+          const cancelled = arg.event.extendedProps.cancelled === true
+          return (
             <span
-              className={arg.event.extendedProps.cancelled === true ? 'line-through' : undefined}
-              data-testid={
-                arg.event.extendedProps.cancelled === true
-                  ? `schedule-event-${arg.event.id}-cancelled`
-                  : undefined
-              }
+              className="truncate px-1 text-caption"
+              data-testid={`schedule-event-${arg.event.id}`}
             >
-              {arg.timeText} {arg.event.title}
+              {cancelled && <CancelledMark />}
+              <span
+                className={cancelled ? 'line-through' : undefined}
+                data-testid={cancelled ? `schedule-event-${arg.event.id}-cancelled` : undefined}
+              >
+                {arg.timeText} {arg.event.title}
+              </span>
             </span>
-          </span>
-        )}
+          )
+        }}
         events={events.map((event) => ({
           id: event.id,
           title: event.title,
           start: event.start,
           end: event.end,
-          // キャンセルした予定は面を薄くし、職員の色は枠にだけ残す
           backgroundColor: event.cancelled ? 'var(--buddy-color-surface-subtle)' : event.color,
           borderColor: event.color,
           textColor: event.cancelled

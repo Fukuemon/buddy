@@ -48,6 +48,7 @@ export const StaffFilterSidebar = ({
     })
     .filter(({ shownMembers }) => keyword === '' || shownMembers.length > 0)
   const isSelected = (staffId: Staff['id']) => isAll || selectedStaffIds.includes(staffId)
+  const current = isAll ? staffList.map((staff) => staff.id) : selectedStaffIds
 
   const commit = (ids: Staff['id'][]) => {
     // 空の配列は全員の表示を意味するため、最後の 1 人を外す操作は受け付けない。
@@ -55,14 +56,11 @@ export const StaffFilterSidebar = ({
     onChange(ids.length === staffList.length ? [] : ids)
   }
 
-  const toggleStaff = (staffId: Staff['id'], checked: boolean) => {
-    const current = isAll ? staffList.map((staff) => staff.id) : selectedStaffIds
+  const toggleStaff = (staffId: Staff['id'], checked: boolean) =>
     commit(checked ? [...current, staffId] : current.filter((id) => id !== staffId))
-  }
 
   const toggleTeam = (team: Team, checked: boolean) => {
     const memberIds = staffList.filter((staff) => staff.teamId === team.id).map((staff) => staff.id)
-    const current = isAll ? staffList.map((staff) => staff.id) : selectedStaffIds
     const next = checked
       ? [...new Set([...current, ...memberIds])]
       : current.filter((id) => !memberIds.includes(id))
