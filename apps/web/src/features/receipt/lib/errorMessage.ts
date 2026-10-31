@@ -13,13 +13,15 @@ export const checkErrorMessage = (error: unknown) => {
     case 400:
       return '入力を読めませんでした。ファイルを選び直して、もう一度照合してください。'
     case 403:
-      return 'Google カレンダーから予定を取れません。予定の CSV で照合するか、事業所の管理者に連絡してください。'
+      return '照合の権限がありません。権限が要るときは、職員の管理の権限を持つ職員に頼んでください。'
     case 413:
       return TOO_LARGE_MESSAGE
     case 422:
       return '入力の CSV に誤りがあります。次のところを直して、もう一度照合してください。'
     case 502:
-      return 'Google カレンダーから予定を取れませんでした。時間をおいて、もう一度照合してください。'
+      return error.code === 'permission_check_failed'
+        ? '照合の権限を確認できませんでした。時間をおいて、もう一度照合してください。'
+        : 'Google カレンダーから予定を取れませんでした。時間をおいて、もう一度照合してください。'
     case 503:
       return 'この事業所では、まだ Google カレンダーを使う準備ができていません。予定の CSV で照合してください。'
     default:

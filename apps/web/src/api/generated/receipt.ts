@@ -52,7 +52,8 @@ export interface paths {
         put?: never;
         /**
          * 実訪問の CSV と予定を照合する
-         * @description 予定は、ファイル `schedules` があればそれを使う。無くてフォームの値 `month` があれば、その月の予定を Google カレンダーから取る。
+         * @description 照合の権限（`receipt.check`）を持つ職員だけが呼べる。受けたトークンを付けて予定の API の `GET /v1/me` を呼び、返った権限で確認する（ADR-0022）。
+         *     予定は、ファイル `schedules` があればそれを使う。無くてフォームの値 `month` があれば、その月の予定を Google カレンダーから取る。
          *     Google カレンダーは、トークンの組織に結び付けたカレンダーだけを読む。
          *     結果は Accept によらず JSON で返す。入力の CSV は、UTF-8（BOM の有無を問わない）と CP932 を受ける。
          *     本文の上限のバイト数は、サーバーの設定 `MAX_UPLOAD_BYTES` で決まる。
@@ -74,7 +75,7 @@ export interface components {
         };
         Error: {
             /** @enum {string} */
-            code: "bad_request" | "missing_file" | "payload_too_large" | "unauthenticated" | "forbidden" | "invalid_csv" | "not_found" | "internal" | "calendar_not_configured" | "schedule_source_failed";
+            code: "bad_request" | "missing_file" | "payload_too_large" | "unauthenticated" | "forbidden" | "invalid_csv" | "not_found" | "internal" | "calendar_not_configured" | "schedule_source_failed" | "permission_check_failed";
             /** @description 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う */
             message: string;
             /** @description 入力の CSV の誤り。`invalid_csv` のときだけ持ち、1 件以上ある */
@@ -301,18 +302,12 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Google カレンダーから取るのに、トークンに組織がない（`forbidden`） */
+            /** @description 職員が照合の権限を持たないか、予定の API が職員を拒んだ。または、Google カレンダーから取るのに、トークンに組織がない（`forbidden`） */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "forbidden",
-                     *       "message": "トークンに組織がないので、month では照合できない"
-                     *     }
-                     */
                     "application/json": components["schemas"]["Error"];
                 };
             };
@@ -355,18 +350,12 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Google カレンダーから予定を取れない（`schedule_source_failed`） */
+            /** @description 予定の API で照合の権限を確認できない（`permission_check_failed`）か、Google カレンダーから予定を取れない（`schedule_source_failed`） */
             502: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "schedule_source_failed",
-                     *       "message": "Google カレンダーから予定を取れない"
-                     *     }
-                     */
                     "application/json": components["schemas"]["Error"];
                 };
             };

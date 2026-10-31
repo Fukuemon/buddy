@@ -1,6 +1,8 @@
 import { clsx } from 'clsx'
 import { useId, type ComponentType, type ReactNode, type SVGProps } from 'react'
 
+import type { Viewer } from '#/api/types'
+
 import ScheduleIcon from '#/assets/icons/calendar-month.svg?react'
 import ImportIcon from '#/assets/icons/download.svg?react'
 import ReceiptIcon from '#/assets/icons/fact-check.svg?react'
@@ -131,11 +133,17 @@ const RECEIPT_GROUP: SiteNavGroup = {
   items: [{ id: 'receipt', href: '/receipt', label: '照合', icon: ReceiptIcon }],
 }
 
-/** ナビゲーションに並べる画面。取り込み、要確認、連携は、職員の管理の権限を持つ職員にだけ出す。 */
-export const siteNavGroups = (canManageStaff: boolean): readonly SiteNavGroup[] => [
+/**
+ * ナビゲーションに並べる画面。取り込み、要確認、連携は職員の管理の権限を持つ職員にだけ、
+ * 照合は照合の権限を持つ職員にだけ出す。
+ */
+export const siteNavGroups = ({
+  canManageStaff,
+  canCheckReceipt,
+}: Pick<Viewer, 'canManageStaff' | 'canCheckReceipt'>): readonly SiteNavGroup[] => [
   {
     label: '予定',
     items: canManageStaff ? [SCHEDULE_ITEM, ...SCHEDULE_MANAGER_ITEMS] : [SCHEDULE_ITEM],
   },
-  RECEIPT_GROUP,
+  ...(canCheckReceipt ? [RECEIPT_GROUP] : []),
 ]

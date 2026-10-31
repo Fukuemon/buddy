@@ -17,10 +17,11 @@ import { signValue, verifySignedValue } from './signedValue'
 
 /**
  * Valkey に置くセッション。トークンはブラウザに渡さない。
- * canManageStaff は、この項目を足す前に作ったセッションに無いので、省けるようにする。
+ * canManageStaff と canCheckReceipt は、その項目を足す前に作ったセッションに無いので、省けるようにする。
  */
-export type Session = Omit<Viewer, 'canManageStaff'> & {
+export type Session = Omit<Viewer, 'canManageStaff' | 'canCheckReceipt'> & {
   canManageStaff?: boolean
+  canCheckReceipt?: boolean
   accessToken: string
   refreshToken?: string
   /** access token の期限の UNIX 時刻（ミリ秒）。分からなければ undefined。 */
@@ -309,9 +310,16 @@ export const fetchWithAccessToken =
   }
 
 /** Session から、画面に渡してよい値だけを取り出す。 */
-export const viewerOf = ({ staffId, staffName, facilityId, canManageStaff }: Session): Viewer => ({
+export const viewerOf = ({
+  staffId,
+  staffName,
+  facilityId,
+  canManageStaff,
+  canCheckReceipt,
+}: Session): Viewer => ({
   staffId,
   staffName,
   facilityId,
   canManageStaff: canManageStaff ?? false,
+  canCheckReceipt: canCheckReceipt ?? false,
 })

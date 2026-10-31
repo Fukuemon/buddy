@@ -944,7 +944,7 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
-        /** @description 職員に与える権限。8 つのレコードをマイグレーションが入れ、API では作らない */
+        /** @description 職員に与える権限。9 つのレコードをマイグレーションが入れ、API では作らない */
         Policy: {
             id: components["schemas"]["ID"];
             /**
