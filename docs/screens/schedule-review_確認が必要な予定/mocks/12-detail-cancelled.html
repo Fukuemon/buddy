@@ -47,15 +47,14 @@
             <div class="wf-overlay wf-site-nav-overlay" tabindex="-1" data-close="site-nav"></div>
             <div class="wf-site-main">
               <main class="wf-page">
-                <h1 class="wf-heading">確認が必要な予定</h1>
-                <div class="wf-more">
-                  <p>Google カレンダーと食い違った予定です。どちらの内容に合わせるかを選んでください。</p>
-                  <span class="wf-btn wf-btn--text wf-more__toggle" aria-expanded="false" data-open="page-more" data-testid="calendar-review-more">詳しく</span>
-                  <div class="wf-more__body" data-panel="page-more" data-testid="calendar-review-more-text">
-                    <p>Google カレンダーに書き出せなかった予定と、buddy と Google カレンダーの両方で変わった予定が出ます。片方だけで変わった予定は、変わった側に合わせるので、ここには出ません。</p>
-                    <p>buddy の内容で書き直すと、Google カレンダーの予定を buddy の内容にします。Google の内容に合わせると、buddy の予定を Google カレンダーの内容にします。</p>
-                  </div>
+                <div class="wf-title">
+                  <h1 class="wf-heading">確認が必要な予定</h1>
+                  <span class="wf-help">
+                    <span class="wf-btn wf-btn--icon wf-help__toggle" aria-label="ヘルプ" data-open="page-help" data-testid="schedule-review-help">?</span>
+                    <p class="wf-help__panel" data-panel="page-help" data-panel-dismiss data-testid="schedule-review-help-text">片方だけで変わった予定は、変わった側に合わせるので、ここには出ません。</p>
+                  </span>
                 </div>
+                <p class="wf-lead">Google カレンダーと食い違った予定です。</p>
                 <table class="wf-table wf-table--rows" data-testid="calendar-review-table">
                   <thead>
                     <tr>
@@ -70,35 +69,35 @@
                     <tr data-testid="calendar-review-row-schedule-schedule-1" data-go="05-detail.html">
                       <td class="wf-cell-primary"><span data-testid="calendar-review-datetime-export-1">2026/11/04（水）09:00〜09:29</span></td>
                       <td class="wf-cell-meta sr-cell-nowrap"><span>青木 一郎</span></td>
-                      <td class="wf-cell-meta sr-cell-reason"><span data-testid="calendar-review-reason-export-1">buddy と Google カレンダーの両方で予定が変わりました。どちらの内容に合わせるかを選んでください。</span></td>
+                      <td class="wf-cell-meta sr-cell-reason"><span data-testid="calendar-review-reason-export-1">buddy と Google カレンダーの両方で予定が変わりました。</span></td>
                       <td class="wf-cell-meta sr-cell-nowrap"><span>2026/10/22 10:00</span></td>
                       <td class="wf-cell-go" aria-hidden="true">›</td>
                     </tr>
                     <tr data-testid="calendar-review-row-schedule-schedule-5" data-go="05-detail.html">
                       <td class="wf-cell-primary"><span data-testid="calendar-review-datetime-export-2">2026/11/02（月）14:00〜16:00</span></td>
                       <td class="wf-cell-meta sr-cell-nowrap"><span>青木 一郎</span></td>
-                      <td class="wf-cell-meta sr-cell-reason"><span data-testid="calendar-review-reason-export-2">Google カレンダーに書けません。カレンダーが「予定の変更」の権限で共有されているかを、職員に確認してください。</span></td>
+                      <td class="wf-cell-meta sr-cell-reason"><span data-testid="calendar-review-reason-export-2">Google カレンダーに書けません。</span></td>
                       <td class="wf-cell-meta sr-cell-nowrap"><span>2026/10/22 08:30</span></td>
                       <td class="wf-cell-go" aria-hidden="true">›</td>
                     </tr>
                     <tr data-testid="calendar-review-row-recurring-recurring-1" data-go="05-detail.html">
                       <td class="wf-cell-primary"><span data-testid="calendar-review-datetime-export-3">2026/11/03（火）から毎回 10:00〜11:00</span></td>
                       <td class="wf-cell-meta sr-cell-nowrap"><span>石川 二葉</span></td>
-                      <td class="wf-cell-meta sr-cell-reason"><span data-testid="calendar-review-reason-export-3">Google カレンダーで予定が見つかりません。予定が消されたか、カレンダーの共有が外れていないかを、職員に確認してください。</span></td>
+                      <td class="wf-cell-meta sr-cell-reason"><span data-testid="calendar-review-reason-export-3">Google カレンダーで予定が見つかりません。</span></td>
                       <td class="wf-cell-meta sr-cell-nowrap"><span>2026/10/22 07:00</span></td>
                       <td class="wf-cell-go" aria-hidden="true">›</td>
                     </tr>
                     <tr data-testid="calendar-review-row-schedule-schedule-2" data-go="05-detail.html">
                       <td class="wf-cell-primary"><span data-testid="calendar-review-datetime-export-4">2026/11/05（木）13:00〜14:00</span></td>
                       <td class="wf-cell-meta sr-cell-nowrap"><span>青木 一郎</span></td>
-                      <td class="wf-cell-meta sr-cell-reason"><span data-testid="calendar-review-reason-export-4">Google カレンダーでの変更を、buddy の予定として取り込めません。終日の予定、タイトルの利用者が見つからない予定、繰り返しの予定そのものの変更が当たります。buddy の内容で書き直すか、Google カレンダーで直すよう職員に頼んでください。</span></td>
+                      <td class="wf-cell-meta sr-cell-reason"><span data-testid="calendar-review-reason-export-4">Google カレンダーでの変更を、buddy の予定として取り込めません。</span></td>
                       <td class="wf-cell-meta sr-cell-nowrap"><span>2026/10/22 06:00</span></td>
                       <td class="wf-cell-go" aria-hidden="true">›</td>
                     </tr>
                     <tr data-testid="calendar-review-row-schedule-schedule-4" data-go="12-detail-cancelled.html">
                       <td class="wf-cell-primary"><span data-testid="calendar-review-datetime-export-5">2026/11/06（金）15:00〜16:29</span></td>
                       <td class="wf-cell-meta sr-cell-nowrap"><span>江藤 四郎</span></td>
-                      <td class="wf-cell-meta sr-cell-reason"><span data-testid="calendar-review-reason-export-5">buddy でキャンセルした予定が、Google カレンダーで変わっていました。buddy の内容で書き直すと Google カレンダーの予定を消すので、消してよいかを職員に確認してください。</span></td>
+                      <td class="wf-cell-meta sr-cell-reason"><span data-testid="calendar-review-reason-export-5">buddy でキャンセルした予定が、Google カレンダーで変わっていました。</span></td>
                       <td class="wf-cell-meta sr-cell-nowrap"><span>2026/10/22 05:00</span></td>
                       <td class="wf-cell-go" aria-hidden="true">›</td>
                     </tr>
@@ -126,7 +125,7 @@
                       <dd>2026/10/22 05:00</dd>
                     </div>
                   </dl>
-                  <p data-m="7" data-testid="calendar-review-dialog-reason">buddy でキャンセルした予定が、Google カレンダーで変わっていました。buddy の内容で書き直すと Google カレンダーの予定を消すので、消してよいかを職員に確認してください。</p>
+                  <p data-m="7" data-testid="calendar-review-dialog-reason">buddy でキャンセルした予定が、Google カレンダーで変わっていました。書き直すと Google カレンダーの予定を消すので、消してよいかを職員に確認してください。</p>
                   <div><span class="wf-btn wf-btn--text" data-m="8" data-testid="calendar-review-open-export-5" data-go="../../schedule-detail_予定の詳細/mocks/06-cancelled.html">予定を開く</span></div>
                 </div>
                 <div class="wf-dialog__footer">

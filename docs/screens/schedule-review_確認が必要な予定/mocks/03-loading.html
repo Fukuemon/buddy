@@ -47,15 +47,14 @@
             <div class="wf-overlay wf-site-nav-overlay" tabindex="-1" data-close="site-nav"></div>
             <div class="wf-site-main">
               <main class="wf-page">
-                <h1 class="wf-heading" data-m="4">確認が必要な予定</h1>
-                <div class="wf-more">
-                  <p data-m="5">Google カレンダーと食い違った予定です。どちらの内容に合わせるかを選んでください。</p>
-                  <span class="wf-btn wf-btn--text wf-more__toggle" aria-expanded="false" data-open="page-more" data-m="6" data-testid="calendar-review-more">詳しく</span>
-                  <div class="wf-more__body" data-panel="page-more" data-testid="calendar-review-more-text">
-                    <p>Google カレンダーに書き出せなかった予定と、buddy と Google カレンダーの両方で変わった予定が出ます。片方だけで変わった予定は、変わった側に合わせるので、ここには出ません。</p>
-                    <p>buddy の内容で書き直すと、Google カレンダーの予定を buddy の内容にします。Google の内容に合わせると、buddy の予定を Google カレンダーの内容にします。</p>
-                  </div>
+                <div class="wf-title">
+                  <h1 class="wf-heading" data-m="4">確認が必要な予定</h1>
+                  <span class="wf-help">
+                    <span class="wf-btn wf-btn--icon wf-help__toggle" aria-label="ヘルプ" data-open="page-help" data-m="5" data-testid="schedule-review-help">?</span>
+                    <p class="wf-help__panel" data-panel="page-help" data-panel-dismiss data-testid="schedule-review-help-text">片方だけで変わった予定は、変わった側に合わせるので、ここには出ません。</p>
+                  </span>
                 </div>
+                <p class="wf-lead" data-m="6">Google カレンダーと食い違った予定です。</p>
                 <div class="wf-loading" role="status" data-m="7" data-testid="calendar-review-loading">読み込んでいます</div>
               </main>
             </div>
