@@ -13,7 +13,7 @@
  *   data-panel-dismiss も付けた panel は、panel と開くボタンの外を押すか、Escape キーを押すと閉じる。メニューに使う。
  *   data-panel-wide も付けた panel は、幅 768px 以上では形を切り替えるだけで、フォーカスを開くボタンに残す。
  *   値が collapse の panel は、幅 768px 以上では is-open でたたむので、開くボタンの aria-expanded を is-open の逆にする。
- *   値が expand の panel は、幅 768px 以上では is-open で広げる。
+ *   値が expand の panel は、幅 768px 以上では is-open で広げるので、aria-expanded は is-open のままにする。
  * - data-escape: Escape キーで押す。見えている要素だけを押す。
  *
  * 押せる要素には tabindex="0" を付け、Enter と Space でも押せるようにする。aria-disabled="true" の要素は押せない。
