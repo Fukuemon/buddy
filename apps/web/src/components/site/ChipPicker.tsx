@@ -1,7 +1,7 @@
 import { clsx } from 'clsx'
 import { useId, useRef, useState, type KeyboardEvent } from 'react'
 
-import { useDismiss } from './useDismiss'
+import { useDismiss } from '@buddy/ui'
 
 /** 選べるもの。 */
 export type ChipPickerOption = { id: string; name: string }

@@ -1,7 +1,7 @@
+import { InputDialog } from '@buddy/ui'
 import { useState } from 'react'
 
 import type { Position, StaffDetail } from '#/api/types'
-import { InputDialog } from '#/components/site/InputDialog'
 
 import { addedPolicyNames } from '../lib/format'
 import { sortByName } from './StaffFormFields'

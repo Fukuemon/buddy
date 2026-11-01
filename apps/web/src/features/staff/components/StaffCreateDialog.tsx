@@ -1,8 +1,7 @@
+import { HelpToggle, InputDialog } from '@buddy/ui'
 import { useEffect, useId, useRef, useState } from 'react'
 
 import type { Department, Position, StaffCreateInput, Team } from '#/api/types'
-import { HelpToggle } from '#/components/site/HelpToggle'
-import { InputDialog } from '#/components/site/InputDialog'
 
 import {
   STAFF_NAME_MAX_LENGTH,

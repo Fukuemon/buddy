@@ -1,5 +1,5 @@
+import { ConfirmDialog } from '@buddy/ui'
 import type { StaffAssignments, StaffDetail } from '#/api/types'
-import { ConfirmDialog } from '#/components/site/ConfirmDialog'
 
 import { hasNoAssignments } from '../lib/format'
 import { StaffAssignmentList } from './StaffAssignmentList'
