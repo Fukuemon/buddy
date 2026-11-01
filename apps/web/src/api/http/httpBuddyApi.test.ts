@@ -427,3 +427,105 @@ describe('createHttpBuddyApi', () => {
     )
   })
 })
+
+describe('createHttpBuddyApi の職員の管理', () => {
+  const staffDetail = (
+    id: string,
+    overrides: Partial<components['schemas']['StaffDetail']> = {},
+  ): components['schemas']['StaffDetail'] => ({
+    id,
+    username: id,
+    email: `${id}@example.com`,
+    phone_number: null,
+    facility_id: 'facility-1',
+    department: { id: 'department-1', name: '看護部' },
+    team: { id: 'team-1', name: '東チーム' },
+    position: { id: 'position-1', name: 'メンバー' },
+    status: 'active',
+    leave_started_at: null,
+    leave_return_date: null,
+    retired_at: null,
+    created_at: '2026-10-01T00:00:00Z',
+    updated_at: '2026-10-01T00:00:00Z',
+    sub: null,
+    policies: [],
+    ...overrides,
+  })
+  const assignments = {
+    schedules: [{ id: 'schedule-1', date: '2026-11-02', start_time: '09:00', end_time: '10:00' }],
+    recurring_schedules: [],
+    patients: [],
+  }
+
+  it('職員の一覧を名前の昇順で求める', async () => {
+    let query = ''
+    server.use(
+      scheduleHttp.get('/v1/facilities/{facility_id}/users', ({ request, response }) => {
+        query = new URL(request.url).search
+        return response(200).json([])
+      }),
+    )
+    await api().staff.listRecords('facility-1')
+    expect(query).toBe('?sort_field=username&sort_order=asc')
+  })
+
+  it('ほかの事業所の職員を読むと 403 の ApiError を投げる', async () => {
+    server.use(
+      scheduleHttp.get('/v1/users/{user_id}', ({ params, response }) =>
+        response(200).json(
+          staffDetail(params.user_id, {
+            facility_id: params.user_id === 'other' ? 'facility-2' : 'facility-1',
+          }),
+        ),
+      ),
+    )
+    await expect(api().staff.get('facility-1', 'staff-1')).resolves.toMatchObject({
+      id: 'staff-1',
+    })
+    await expect(api().staff.get('facility-1', 'other')).rejects.toHaveProperty('status', 403)
+  })
+
+  it('休職は戻る予定の日を送り、休職にした職員を返す', async () => {
+    let sent: unknown
+    server.use(
+      scheduleHttp.post('/v1/users/{user_id}/leave', async ({ params, request, response }) => {
+        sent = await request.json()
+        return response(200).json({
+          staff: staffDetail(params.user_id, { status: 'on_leave' }),
+          assignments,
+        })
+      }),
+    )
+    await expect(
+      api().staff.startLeave('facility-1', 'staff-1', '2027-04-01'),
+    ).resolves.toMatchObject({ id: 'staff-1', status: 'on_leave' })
+    expect(sent).toEqual({ return_date: '2027-04-01' })
+  })
+
+  it('退職は、予定が残って拒まれると残るものを返し、ほかの 409 は ApiError で投げる', async () => {
+    server.use(
+      scheduleHttp.post('/v1/users/{user_id}/retire', ({ params, response }) => {
+        if (params.user_id === 'busy')
+          return response(409).json({
+            code: 'staff_has_assignments',
+            message: '残っています',
+            assignments,
+          })
+        if (params.user_id === 'self')
+          return response(409).json({ code: 'conflict', message: '自分は退職にできません' })
+        return response(200).json({
+          staff: staffDetail(params.user_id, { status: 'retired', email: null }),
+          assignments: { schedules: [], recurring_schedules: [], patients: [] },
+        })
+      }),
+    )
+    await expect(api().staff.retire('facility-1', 'busy')).resolves.toEqual({ assignments })
+    await expect(api().staff.retire('facility-1', 'staff-1')).resolves.toMatchObject({
+      retired: { id: 'staff-1', status: 'retired' },
+    })
+    await expect(api().staff.retire('facility-1', 'self')).rejects.toMatchObject({
+      status: 409,
+      code: 'conflict',
+    })
+  })
+})
