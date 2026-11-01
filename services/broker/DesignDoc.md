@@ -258,20 +258,43 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
   autonumber
+  participant W as web（職員の詳細）
   participant A as 予定の API
-  participant K as ブローカー
   participant DB as 予定の API の DB
-  A->>A: 職員の管理の権限と、自分でないことを確認する
-  A->>DB: 事業所の行をロックし、職員を読み直す
-  A->>DB: 職員の管理の権限を持つ有効な職員と、その日以降の予定と担当の利用者を読む
-  alt 最後の有効な管理者か、退職で予定と担当が残る
-    A-->>A: 書かずに 409 を返す
-  else 休職
-    A->>K: POST /internal/staff/{id}/suspend
-    A->>DB: 休職にした時刻と戻る予定の日を書く
-  else 退職
-    A->>K: POST /internal/staff/{id}/retire
-    A->>DB: 退職にした時刻を書き、メールと電話番号を消す
+  participant K as ブローカー
+  W->>A: POST .../leave か retire
+  A->>A: 権限と、自分でないことを確認する
+  break 権限が無いか、自分
+    A-->>W: 403 か 409
+  end
+  rect rgba(128, 128, 128, 0.1)
+    Note over A,DB: 事業所の行をロックしたトランザクション
+    A->>DB: 職員を読み直す
+    A->>DB: 有効な管理者と、残る予定と担当を読む
+    DB-->>A: 有効な管理者と、残る一覧
+    break 最後の有効な管理者か、退職した職員の休職か、予定と担当が残る退職
+      A-->>W: 409
+    end
+    A->>K: POST .../suspend か retire
+    break ブローカーで退職した職員の休職
+      K-->>A: 409（retired）
+      A-->>W: 409
+    end
+    alt 職員がいない
+      K-->>A: 404
+    else 職員を止めた
+      K->>K: Hydra でログインのセッションと同意を取り消す
+      K-->>A: 204 か 502（revoke_failed）
+    end
+    A->>DB: 休職か退職を書く
+    opt 退職
+      A->>DB: メールと電話番号を消し、Google カレンダーを外す
+    end
+  end
+  alt revoke_failed を受けた
+    A-->>W: 500
+  else
+    A-->>W: 200（休職は残る一覧を返す）
   end
 ```
 
@@ -281,6 +304,47 @@ sequenceDiagram
   - ブローカーにいない職員（404）は、ログインできないので、予定の API でだけ休職か退職にする。
   - ブローカーで退職した職員を休職にしようとしたとき（`retired` の 409）は、予定の API は 409 を返す。予定の API への退職の書き込みが残っていないので、退職を送り直す。
   - 事業所の行のロックで、同じ事業所の休職と退職を 1 つずつにする。管理者どうしが同時に休職にし合っても、後の操作は最後の有効な管理者を見つけて 409 になる。ロックはブローカーを呼ぶ間も持つ。
+
+復職の流れを示す。  
+予定の API は、事業所の行をロックしたトランザクションを 2 つに分け、1 つ目で休職を外し、2 つ目でブローカーを呼ぶ。
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant W as web（職員の詳細）
+  participant A as 予定の API
+  participant DB as 予定の API の DB
+  participant K as ブローカー
+  W->>A: POST /v1/users/{user_id}/reinstate
+  rect rgba(128, 128, 128, 0.1)
+    Note over A,DB: 1 つ目のトランザクション
+    A->>DB: 事業所の行をロックし、職員を読み直す
+    break 退職した職員
+      A-->>W: 409
+    end
+    A->>DB: 休職を外してコミットする
+  end
+  rect rgba(128, 128, 128, 0.1)
+    Note over A,K: 2 つ目のトランザクション。ブローカーが戻したときは予定の API に書かない
+    A->>DB: 事業所の行をロックし、職員を読み直す
+    break 間に休職か退職にされた
+      A-->>W: 409
+    end
+    A->>K: POST /internal/staff/{id}/resume
+    alt 戻したか、職員がいない
+      K-->>A: 204 か 404
+      A-->>W: 200
+    else 退職した職員か、登録の途中の職員
+      K-->>A: 409（retired か not_suspended）
+      A->>DB: 外した休職を書き戻す
+      A-->>W: 409
+    else 届かないか 5xx
+      K-->>A: エラー
+      A-->>W: 500（休職を外したまま）
+    end
+  end
+```
+
 - 復職は、予定の API で休職を外してコミットしてから、ブローカーの職員を戻す。ログインを許す書き込みを最後にするためである。
   - ブローカーは、事業所の行をロックした 2 つ目のトランザクションの中で、職員を読み直して有効なままのときだけ呼ぶ。間に休職にし直されていれば、戻さずに 409 を返す。
   - 2 つ目のトランザクションは、ブローカーが戻したときに予定の API に書かない。ブローカーが戻した後に接続が切れても、状態は食い違わない。

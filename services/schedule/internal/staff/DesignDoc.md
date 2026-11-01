@@ -51,14 +51,7 @@ verified_commit: 4e53ca5
   - 一覧は、休職と退職と同じ `staff.Usecase` の関数で作り、同じ規則の一覧を同じ形（`StaffAssignments`）で返す。
 - 休職と退職は、`staff.Usecase` が事業所の行をロックしたトランザクションの中で、職員を読み直してから行う。
   - 自分と、事業所で職員の管理の権限を持つ最後の有効な職員は、409 で拒む。
-  - 休職は一覧を `assignments` に入れて 200 を返す。退職は一覧が空でなければ、書かずに 409（`staff_has_assignments`）で一覧を返す。
-  - ブローカーの職員を先に休職か退職にしてから、`users` を書く。ブローカーで書けなければ、予定の API にも書かない。休職と退職にし直しても成功する。
-  - ブローカーが書いた後に Hydra の取り消しに失敗したときは、`users` を書いてから 500 を返す。送り直すと取り消しをやり直す。
-  - ブローカーにいない職員は、予定の API でだけ休職か退職にする。
-- 退職は、同じトランザクションで、職員の外していない Google カレンダーを外す。
-- 復職は、事業所をロックしたトランザクションで `users` の休職を外してコミットしてから、ブローカーの職員を戻す。退職した職員は 409 で拒む。
-  - ブローカーは、事業所をロックし直した 2 つ目のトランザクションで、職員が有効なままのときだけ呼ぶ。
-- 2 か所の書き込みの順と、片方だけが残ったときの扱いは、[ID ブローカーの Design Doc の職員の登録、休職、復職、退職](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#職員の登録休職復職退職) にある。
+- 休職、退職、復職の呼び出しの順と、2 か所の書き込みの片方だけが残ったときの扱いは、[ID ブローカーの Design Doc の職員の登録、休職、復職、退職](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#職員の登録休職復職退職) の図と文にある。
 - ADR-0017: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0017-identity-boundary.md)
 - ADR-0018: [職員の停止を、戻せる休職と、戻せない退職に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0018-staff-leave-and-retirement.md)
 
