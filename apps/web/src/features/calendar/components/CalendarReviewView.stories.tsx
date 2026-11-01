@@ -32,3 +32,23 @@ export const LoadError: Story = {
     },
   },
 }
+
+/** 終了が翌日の予定の行。日時の終了の時刻に「翌」が付く。 */
+export const OvernightIssue: Story = {
+  args: {
+    state: {
+      status: 'ready',
+      issues: [
+        {
+          ...mockExportIssues[0]!,
+          id: 'export-overnight',
+          schedule_id: 'schedule-overnight',
+          date: '2026-11-13',
+          start_time: '22:00',
+          end_time: '01:00',
+          ends_next_day: true,
+        },
+      ],
+    },
+  },
+}
