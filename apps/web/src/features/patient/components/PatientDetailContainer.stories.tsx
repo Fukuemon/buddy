@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
-import type { BuddyApi } from '#/api/client'
+import { ApiError, type BuddyApi } from '#/api/client'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import { FAKE_FACILITY_ID, FAKE_VIEWER } from '#/api/fake/fixtures'
 import {
@@ -45,6 +45,24 @@ type Story = StoryObj<typeof meta>
 /** 利用中の利用者。状態の印と利用の状態を出さない。今日以降の予定は残っていない。 */
 export const Default: Story = {}
 
+/** サービスコードを 1 回目だけ読めないフェイクの API を作る。 */
+const serviceCodesOnceFailingApi = (): BuddyApi => {
+  const base = createFakeBuddyApi()
+  let failed = false
+  return {
+    ...base,
+    serviceCodes: {
+      list: async (facilityId) => {
+        if (!failed) {
+          failed = true
+          throw new ApiError(500, '読めない')
+        }
+        return base.serviceCodes.list(facilityId)
+      },
+    },
+  }
+}
+
 /** 幅 768px 未満。編集と「…」を見出しの下に置き、プロフィールの項目の名前と値を縦に積む。 */
 export const Mobile: Story = { globals: { viewport: { value: 'mobile1' } } }
 
@@ -58,6 +76,11 @@ export const WithSchedules: Story = {
 export const Ended: Story = {
   args: { patientId: 'patient-ended' },
   parameters: route('patient-ended', { api: endedWithStoppedStaffApi() }),
+}
+
+/** サービスコードを 1 回目だけ読めないとき。編集のダイアログを開くと読み直す。 */
+export const ServiceCodesOnceError: Story = {
+  parameters: route('patient-4', { api: serviceCodesOnceFailingApi() }),
 }
 
 export const Loading: Story = { parameters: route('patient-4', { api: pendingBuddyApi() }) }

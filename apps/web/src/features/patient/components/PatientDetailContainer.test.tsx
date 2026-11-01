@@ -5,7 +5,8 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './PatientDetailContainer.stories'
 
-const { Default, Ended, Forbidden, NotFound, WithSchedules } = composeStories(stories)
+const { Default, Ended, Forbidden, NotFound, ServiceCodesOnceError, WithSchedules } =
+  composeStories(stories)
 
 const openMenuItem = async (testId: string) => {
   await userEvent.click(await screen.findByTestId('patient-detail-menu'))
@@ -119,6 +120,16 @@ describe('PatientDetailContainer', () => {
     await expect.poll(() => screen.queryByTestId('patient-resume-dialog')).toBeNull()
     expect(screen.queryByTestId('patient-detail-status')).toBeNull()
     expect(screen.getByTestId('patient-detail-profile')).toHaveTextContent('上田 三奈')
+  })
+
+  it('サービスコードを読めなかった後に編集のダイアログを開くと、サービスコードを読み直して選べる', async () => {
+    render(<ServiceCodesOnceError />)
+    const profile = await screen.findByTestId('patient-detail-profile')
+    expect(profile).toHaveTextContent('訪看I2')
+    expect(profile).not.toHaveTextContent('訪看I2（20〜29 分）')
+    await userEvent.click(screen.getByTestId('patient-detail-edit'))
+    await expect.poll(() => screen.queryByTestId('patient-detail-edit-error')).toBeNull()
+    expect(screen.getByTestId('patient-detail-service-input')).toBeEnabled()
   })
 
   it('利用者が見つからなければ、開き直すよう伝え、読み直すを出さない', async () => {

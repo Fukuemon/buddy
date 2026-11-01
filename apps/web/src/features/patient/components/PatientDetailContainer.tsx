@@ -60,6 +60,9 @@ const PatientDetailContent = ({ patientId }: { patientId: Patient['id'] }) => {
     for (const mutation of [update, endService, resumeService]) mutation.reset()
     setRefusedSchedules(undefined)
     setStaffStopped(false)
+    if (next !== null) {
+      for (const options of [staff, serviceCodes]) if (options.isError) void options.refetch()
+    }
     setOpen(next)
   }
   const close = () => openDialog(null)
