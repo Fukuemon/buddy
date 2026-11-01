@@ -150,6 +150,20 @@ test.describe('重ねない表現', () => {
               '件数の箱は、取り込む、繰り返し、確認が必要の 3 つで、取り込まないの箱と 0 件の取り込み済みの箱が無い',
             )
 
+            await expect(page.getByTestId('calendar-import-count-needs_review')).not.toContainText(
+              '利用者を選んでから',
+            )
+            await step('「プレビューの結果」の右の ? を押す')
+            await page.getByTestId('schedule-import-help').click()
+            await expect(page.getByTestId('schedule-import-help-text')).toContainText(
+              '確認が必要な予定は、利用者を選んでから取り込みます。',
+            )
+            await check(
+              '確認が必要と取り込み済みの意味は、箱の補足の文ではなく ? のヘルプにだけ出る',
+            )
+            await page.getByTestId('schedule-import-help').click()
+            await expect(page.getByTestId('schedule-import-help-text')).toBeHidden()
+
             const heading = page.getByTestId('calendar-import-skipped-heading')
             await heading.scrollIntoViewIfNeeded()
             await expect(heading).toHaveText('取り込まない予定（3 件）')
