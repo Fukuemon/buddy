@@ -72,6 +72,44 @@ func TestParseClock(t *testing.T) {
 	}
 }
 
+func TestClockAddMinutes(t *testing.T) {
+	tests := []struct {
+		in      string
+		minutes int
+		want    string
+	}{
+		{"09:30", -1, "09:29"},
+		{"00:00", -1, "23:59"},
+		{"23:30", 60, "00:30"},
+		{"22:00", 1440, "22:00"},
+	}
+	for _, tt := range tests {
+		c, _ := ParseClock(tt.in)
+		if got := c.AddMinutes(tt.minutes).String(); got != tt.want {
+			t.Errorf("%s.AddMinutes(%d) = %s, want %s", tt.in, tt.minutes, got, tt.want)
+		}
+	}
+}
+
+func TestClockMinutesUntil(t *testing.T) {
+	tests := []struct {
+		start, end string
+		want       int
+	}{
+		{"09:00", "09:30", 30},
+		{"09:00", "09:00", 0},
+		{"22:00", "01:00", 180},
+		{"22:00", "00:00", 120},
+	}
+	for _, tt := range tests {
+		s, _ := ParseClock(tt.start)
+		e, _ := ParseClock(tt.end)
+		if got := s.MinutesUntil(e); got != tt.want {
+			t.Errorf("%s.MinutesUntil(%s) = %d, want %d", tt.start, tt.end, got, tt.want)
+		}
+	}
+}
+
 func TestTextRoundTrip(t *testing.T) {
 	d, _ := NewDate(2024, 4, 1)
 	b, _ := d.MarshalText()
