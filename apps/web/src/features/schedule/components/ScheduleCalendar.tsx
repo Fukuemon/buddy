@@ -6,7 +6,7 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import { useEffect, useRef } from 'react'
 
 import type { CalendarView } from '../constants/calendarView'
-import { toDateKey, toTimeKey } from '../lib/dateTime'
+import { nextDayPrefix, toDateKey, toTimeKey } from '../lib/dateTime'
 import type { ScheduleCalendarEvent } from '../lib/toCalendarEvents'
 import { CancelledMark } from './CancelledMark'
 
@@ -14,6 +14,18 @@ const FULL_CALENDAR_VIEW = {
   month: 'dayGridMonth',
   week: 'timeGridWeek',
 } as const satisfies Partial<Record<CalendarView, string>>
+
+const hourMinute = (date: Date) =>
+  `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`
+
+/**
+ * 予定に出す時刻の文を返す。翌日に終わる予定は、開始の日と翌日の両方に予定の全体の時刻を `22:00 - 翌 1:00` の形で出す。
+ * ほかの予定は、FullCalendar が作る `9:00 - 9:30` の形の文をそのまま使う。
+ */
+const eventTimeText = (start: Date | null, end: Date | null, timeText: string) =>
+  start === null || end === null || nextDayPrefix(start, end) === ''
+    ? timeText
+    : `${hourMinute(start)} - ${nextDayPrefix(start, end)}${hourMinute(end)}`
 
 export type ScheduleCalendarProps = {
   view: keyof typeof FULL_CALENDAR_VIEW
@@ -72,7 +84,7 @@ export const ScheduleCalendar = ({
                 className={cancelled ? 'line-through' : undefined}
                 data-testid={cancelled ? `schedule-event-${arg.event.id}-cancelled` : undefined}
               >
-                {arg.timeText} {arg.event.title}
+                {eventTimeText(arg.event.start, arg.event.end, arg.timeText)} {arg.event.title}
               </span>
             </span>
           )
@@ -97,8 +109,9 @@ export const ScheduleCalendar = ({
         locale={jaLocale}
         nowIndicator
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        slotMaxTime="22:00:00"
-        slotMinTime="06:00:00"
+        scrollTime="06:00:00"
+        slotMaxTime="24:00:00"
+        slotMinTime="00:00:00"
       />
     </div>
   )

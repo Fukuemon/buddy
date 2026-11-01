@@ -27,12 +27,9 @@ import { ScheduleCalendarToolbar, type StaffFilterToggle } from './ScheduleCalen
 import { StaffScheduleDayGrid } from './StaffScheduleDayGrid'
 
 /** 日の表示だけが 1 分ごとに描き直されるよう、今の時刻をここで読んで日の表に渡す。 */
-const DayGridWithNow = ({
-  date,
-  ...props
-}: Omit<ComponentProps<typeof StaffScheduleDayGrid>, 'now'> & { date: string }) => {
+const DayGridWithNow = (props: Omit<ComponentProps<typeof StaffScheduleDayGrid>, 'now'>) => {
   const now = useNow()
-  return <StaffScheduleDayGrid {...props} now={nowForDay(date, now)} />
+  return <StaffScheduleDayGrid {...props} now={nowForDay(props.date, now)} />
 }
 
 export type ScheduleCalendarContainerProps = {

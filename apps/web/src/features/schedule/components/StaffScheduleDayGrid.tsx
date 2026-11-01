@@ -1,27 +1,29 @@
 import { clsx } from 'clsx'
+import { useEffect, useRef } from 'react'
 
 import type { Staff } from '#/api/types'
 
-import { addMinutesToTimeKey, toTimeKey } from '../lib/dateTime'
+import { addMinutesToTimeKey, fromDateKey, nextDayPrefix, toTimeKey } from '../lib/dateTime'
 import type { ScheduleCalendarEvent } from '../lib/toCalendarEvents'
 import { CancelledMark } from './CancelledMark'
 
-const START_HOUR = 6
-const END_HOUR = 22
+const DAY_MINUTES = 24 * 60
+const SCROLL_HOUR = 6
 const SLOT_MINUTES = 30
 // 30 分の枠を、押せる領域の下限の 44px にする（packages/ui/DESIGN.md）
 const HOUR_HEIGHT_PX = 88
 
-const SLOT_TIMES = Array.from({ length: ((END_HOUR - START_HOUR) * 60) / SLOT_MINUTES }, (_, i) =>
-  addMinutesToTimeKey(`${String(START_HOUR).padStart(2, '0')}:00`, i * SLOT_MINUTES),
+const SLOT_TIMES = Array.from({ length: DAY_MINUTES / SLOT_MINUTES }, (_, i) =>
+  addMinutesToTimeKey('00:00', i * SLOT_MINUTES),
 )
 
-const minutesFromStart = (iso: string | Date) => {
-  const date = new Date(iso)
-  return (date.getHours() - START_HOUR) * 60 + date.getMinutes()
-}
+/** 表示する日の 0 時からの分を、0 から 24 時間の間に収めて返す。 */
+const minutesInDay = (dayStart: Date, iso: string | Date) =>
+  Math.min(Math.max((new Date(iso).getTime() - dayStart.getTime()) / 60_000, 0), DAY_MINUTES)
 
 export type StaffScheduleDayGridProps = {
+  /** 表示する日。`YYYY-MM-DD` */
+  date: string
   staffList: Staff[]
   events: ScheduleCalendarEvent[]
   /** 空いた時間の枠を押したときに呼ぶ。 */
@@ -29,12 +31,16 @@ export type StaffScheduleDayGridProps = {
   /** 時間の枠を押して予定を作れる職員か。偽の職員の列の枠は押せない。省くと全ての職員の枠を押せる。 */
   canCreateFor?: (staff: Staff) => boolean
   onEventClick: (scheduleId: string) => void
-  /** 表示している日が今日のときだけ渡す。6 時から 22 時の間なら、その時刻に横線を引く。 */
+  /** 表示している日が今日のときだけ渡す。その時刻に横線を引く。 */
   now?: Date
 }
 
-/** 1 日の予定を、職員ごとの列に並べて出す。6 時から 22 時までを 30 分の枠で区切る。 */
+/**
+ * 1 日の予定を、職員ごとの列に並べて出す。0 時から 24 時までを 30 分の枠で区切り、開いたときに 6 時の位置を出す。
+ * 前の日に始まる予定と翌日に終わる予定は、表示する日にかかる分だけを描き、表示する日にかからない予定は描かない。
+ */
 export const StaffScheduleDayGrid = ({
+  date,
   staffList,
   events,
   onSlotClick,
@@ -42,11 +48,19 @@ export const StaffScheduleDayGrid = ({
   onEventClick,
   now,
 }: StaffScheduleDayGridProps) => {
-  const nowMinutes = now === undefined ? undefined : minutesFromStart(now)
-  const showNow =
-    nowMinutes !== undefined && nowMinutes >= 0 && nowMinutes < (END_HOUR - START_HOUR) * 60
+  const scrollRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (scrollRef.current !== null) scrollRef.current.scrollTop = SCROLL_HOUR * HOUR_HEIGHT_PX
+  }, [date])
+
+  const dayStart = fromDateKey(date)
+  const nowMinutes = now === undefined ? undefined : minutesInDay(dayStart, now)
   return (
-    <div className="h-full overflow-auto bg-surface" data-testid="staff-schedule-day-grid">
+    <div
+      className="h-full overflow-auto bg-surface"
+      data-testid="staff-schedule-day-grid"
+      ref={scrollRef}
+    >
       <div
         className="grid min-w-max"
         style={{ gridTemplateColumns: `4rem repeat(${staffList.length}, minmax(10rem, 1fr))` }}
@@ -98,16 +112,22 @@ export const StaffScheduleDayGrid = ({
               ),
             )}
             {events
-              .filter((event) => event.staffId === staff.id)
+              .filter(
+                (event) =>
+                  event.staffId === staff.id &&
+                  minutesInDay(dayStart, event.end) > minutesInDay(dayStart, event.start),
+              )
               // キャンセルした予定を先に描き、重なる生きている予定を上に出す
               .sort((a, b) => Number(b.cancelled) - Number(a.cancelled))
               .map((event) => {
-                const top = (minutesFromStart(event.start) / 60) * HOUR_HEIGHT_PX
+                const startMinutes = minutesInDay(dayStart, event.start)
+                const top = (startMinutes / 60) * HOUR_HEIGHT_PX
                 const height = Math.max(
-                  ((minutesFromStart(event.end) - minutesFromStart(event.start)) / 60) *
-                    HOUR_HEIGHT_PX,
+                  ((minutesInDay(dayStart, event.end) - startMinutes) / 60) * HOUR_HEIGHT_PX,
                   20,
                 )
+                const start = new Date(event.start)
+                const end = new Date(event.end)
                 return (
                   <button
                     className={clsx(
@@ -136,14 +156,14 @@ export const StaffScheduleDayGrid = ({
                           event.cancelled ? `schedule-event-${event.id}-cancelled` : undefined
                         }
                       >
-                        {toTimeKey(new Date(event.start))}-{toTimeKey(new Date(event.end))}{' '}
-                        <span className="font-bold">{event.title}</span>
+                        {toTimeKey(start)}-{nextDayPrefix(start, end)}
+                        {toTimeKey(end)} <span className="font-bold">{event.title}</span>
                       </span>
                     </span>
                   </button>
                 )
               })}
-            {showNow && (
+            {nowMinutes !== undefined && (
               <div
                 aria-hidden
                 className="pointer-events-none absolute inset-x-0 h-0.5 bg-primary"

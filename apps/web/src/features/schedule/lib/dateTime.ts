@@ -48,6 +48,13 @@ export const diffMinutes = (startTimeKey: string, endTimeKey: string) => {
 /** 曜日の 1 文字。`Date.getDay()` の値で引く。 */
 export const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'] as const
 
-/** 開始と終了の日時を、デバイスの時間帯で `2026年10月20日（火） 09:00〜09:29` の形にする。 */
+/** 終了が開始の翌日なら `翌 `、同じ日なら空の文字列を返す。終了の時刻の前に付ける。 */
+export const nextDayPrefix = (start: Date, end: Date) =>
+  toDateKey(start) === toDateKey(end) ? '' : '翌 '
+
+/**
+ * 開始と終了の日時を、デバイスの時間帯で `2026年10月20日（火） 09:00〜09:29` の形にする。
+ * 終了が開始の翌日なら `2026年10月20日（火） 22:00〜翌 01:00` の形にする。
+ */
 export const formatDateTimeRange = (start: Date, end: Date) =>
-  `${start.getFullYear()}年${start.getMonth() + 1}月${start.getDate()}日（${WEEKDAYS[start.getDay()]}） ${toTimeKey(start)}〜${toTimeKey(end)}`
+  `${start.getFullYear()}年${start.getMonth() + 1}月${start.getDate()}日（${WEEKDAYS[start.getDay()]}） ${toTimeKey(start)}〜${nextDayPrefix(start, end)}${toTimeKey(end)}`
