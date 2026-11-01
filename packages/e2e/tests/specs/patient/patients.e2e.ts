@@ -1,7 +1,7 @@
 import { expect, test, type APIRequestContext } from '@playwright/test'
 
 import { LEADER, LEADER_STATE, LOGIN_STAFF } from '../../fixtures/env'
-import { registerPatient } from '../../fixtures/patient'
+import { endPatientService, registerPatient } from '../../fixtures/patient'
 import { issueManagerToken, STAFF_FORM } from '../../fixtures/staff'
 import { patientOptionByName } from '../../selectors/patientSelect'
 
@@ -145,6 +145,33 @@ test.describe('利用者の詳細', () => {
       await page.getByTestId('schedule-field-patient').click()
       await expect(page.getByTestId(/^patient-select-option-/).first()).toBeVisible()
       await expect(page.getByTestId(`patient-select-option-${id}`)).toHaveCount(0)
+    })
+  })
+
+  test.describe('利用の再開', () => {
+    test('利用の終了の利用者の利用を再開した場合、一覧のデフォルトの表示に戻ること', async ({
+      page,
+      request,
+    }) => {
+      const name = newPatientName('resumed')
+      const id = await registerPatientId(request, name)
+      expect(
+        (await endPatientService(request, await issueManagerToken(request), id)).status(),
+      ).toBe(200)
+
+      await page.goto(`/patients/${id}`)
+      await expect(page.getByTestId('patient-detail-status')).toContainText('利用の終了')
+      await page.getByTestId('patient-detail-menu').click()
+      await page.getByTestId('patient-detail-resume').click()
+      const dialog = page.getByTestId('patient-resume-dialog')
+      await expect(dialog.getByTestId('patient-resume-staff')).toHaveValue(LOGIN_STAFF.id)
+      await dialog.getByTestId('patient-resume-submit').click()
+      await expect(dialog).toHaveCount(0)
+      await expect(page.getByTestId('patient-detail-status')).toHaveCount(0)
+
+      await page.goto('/patients')
+      await page.getByTestId('patient-list-search').fill(name)
+      await expect(page.getByTestId(`patient-list-row-${id}`)).toBeVisible()
     })
   })
 })

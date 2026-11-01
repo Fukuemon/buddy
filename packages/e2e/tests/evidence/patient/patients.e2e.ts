@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 
 import { LEADER, LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
-import { registerPatient } from '../../fixtures/patient'
+import { endPatientService, registerPatient } from '../../fixtures/patient'
 import type { APIRequestContext } from '@playwright/test'
 import { issueManagerToken, STAFF_FORM } from '../../fixtures/staff'
 import { signInAtBroker } from '../../screens/login'
@@ -337,5 +337,81 @@ test.describe('利用者の一覧', () => {
         },
       )
     })
+
+    for (const shot of [
+      {
+        name: 'patient-resume-list',
+        patient: '見本 春男',
+        target: '利用者の一覧のデフォルトの表示',
+      },
+      {
+        name: 'patient-resume-candidate',
+        patient: '見本 夏男',
+        target: '予定の作成の利用者の候補',
+      },
+    ]) {
+      test(`${prefix}利用の終了の利用者の利用を再開した場合、${shot.target}に戻ること`, async ({
+        browser,
+        request,
+      }) => {
+        await recordPrEvidence(
+          browser,
+          {
+            name: shot.name,
+            title: `利用の終了の利用者の利用を再開すると、${shot.target}に戻る`,
+            actor: MANAGER,
+            variant,
+          },
+          async (page) => {
+            await page.goto('/patients')
+            await signInAtBroker(page, LOGIN_EMAIL)
+            const patient = await registerPatientOf(request, shot.patient)
+            const ended = await endPatientService(
+              request,
+              await issueManagerToken(request),
+              patient.id,
+            )
+            expect(ended.status()).toBe(200)
+            return patient
+          },
+          async ({ page, step, check }, patient) => {
+            await page.goto(`/patients/${patient.id}`)
+            await expect(page.getByTestId('patient-detail-status')).toContainText('利用の終了')
+            await step(
+              `利用の終了の ${patient.name} の詳細を開いている（API で利用の終了にしてある）`,
+            )
+
+            await step(
+              `「…」から「利用を再開する」を押し、担当の ${LOGIN_STAFF.name} のまま再開する`,
+            )
+            await page.getByTestId('patient-detail-menu').click()
+            await page.getByTestId('patient-detail-resume').click()
+            const dialog = page.getByTestId('patient-resume-dialog')
+            await expect(dialog.getByTestId('patient-resume-staff')).toHaveValue(LOGIN_STAFF.id)
+            await dialog.getByTestId('patient-resume-submit').click()
+            await expect(dialog).toHaveCount(0)
+            await expect(page.getByTestId('patient-detail-status')).toHaveCount(0)
+
+            if (shot.name === 'patient-resume-list') {
+              await step(`利用者の一覧へ戻り、名前の検索に「${patient.name}」を入れる`)
+              await page.getByTestId('patient-detail-back').click()
+              await page.getByTestId('patient-list-search').fill(patient.name)
+              await expect(page.getByTestId('patient-list-filter-status')).toHaveValue('active')
+              await expect(page.getByTestId(`patient-list-row-${patient.id}`)).toBeVisible()
+              await check(`状態の絞り込みが「利用中」のデフォルトの表示に、${patient.name} が戻る`)
+              return
+            }
+            await step(`予定の作成の利用者の候補を開き、「${patient.name}」で検索する`)
+            await page.goto('/schedule?view=day')
+            await page.getByTestId('schedule-create-open').click()
+            await page.getByTestId('schedule-kind-tab-visit').check()
+            await page.getByTestId('schedule-field-patient').click()
+            await page.getByTestId('patient-select-search').fill(patient.name)
+            await expect(page.getByTestId(`patient-select-option-${patient.id}`)).toBeVisible()
+            await check(`予定の作成の利用者の候補に、${patient.name} が戻る`)
+          },
+        )
+      })
+    }
   }
 })
