@@ -100,39 +100,47 @@ test.describe('利用者の一覧', () => {
       )
     })
 
-    test(`${prefix}職員の管理の権限を持たない職員が利用者の一覧と登録の URL を開いた場合、利用者の管理の画面が出ないこと`, async ({
-      browser,
-    }) => {
-      await recordPrEvidence(
+    for (const page of [
+      {
+        name: 'patient-forbidden-list',
+        url: '/patients',
+        label: '利用者の一覧',
+        hidden: 'patient-list-table',
+        result: '権限が無いことの案内が出て、利用者の一覧とナビゲーションの「利用者」が出ない',
+      },
+      {
+        name: 'patient-forbidden-new',
+        url: '/patients/new',
+        label: '利用者の登録',
+        hidden: 'patient-new-dialog',
+        result: '権限が無いことの案内が出て、登録のダイアログとナビゲーションの「利用者」が出ない',
+      },
+    ]) {
+      test(`${prefix}職員の管理の権限を持たない職員が${page.label}の URL を開いた場合、${page.label}の画面が出ないこと`, async ({
         browser,
-        {
-          name: 'patient-forbidden-list',
-          title:
-            '職員の管理の権限を持たない職員が利用者の一覧と登録の URL を開くと、利用者の管理の画面が出ない',
-          actor: `${LEADER.staff.name}（チームリーダー、職員の管理の権限なし）`,
-          variant,
-        },
-        async (page) => {
-          await page.goto('/patients')
-          await signInAtBroker(page, LEADER.email)
-        },
-        async ({ page, step, check }) => {
-          await step('利用者の一覧の URL（/patients）を開く')
-          await page.goto('/patients')
-          await expect(page.getByTestId('page-forbidden')).toBeVisible()
-          await expect(page.getByTestId('site-nav')).not.toContainText('利用者')
-          await expect(page.getByTestId('patient-list-table')).toHaveCount(0)
-          await check(
-            '権限が無いことの案内が出て、利用者の一覧とナビゲーションの「利用者」が出ない',
-          )
-
-          await step('利用者の登録の URL（/patients/new）を開く')
-          await page.goto('/patients/new')
-          await expect(page.getByTestId('page-forbidden')).toBeVisible()
-          await expect(page.getByTestId('patient-new-dialog')).toHaveCount(0)
-          await check('権限が無いことの案内が出て、登録のダイアログが出ない')
-        },
-      )
-    })
+      }) => {
+        await recordPrEvidence(
+          browser,
+          {
+            name: page.name,
+            title: `職員の管理の権限を持たない職員が${page.label}の URL を開くと、${page.label}の画面が出ない`,
+            actor: `${LEADER.staff.name}（チームリーダー、職員の管理の権限なし）`,
+            variant,
+          },
+          async (p) => {
+            await p.goto('/schedule')
+            await signInAtBroker(p, LEADER.email)
+          },
+          async ({ page: p, step, check }) => {
+            await step(`${page.label}の URL（${page.url}）を開く`)
+            await p.goto(page.url)
+            await expect(p.getByTestId('page-forbidden')).toBeVisible()
+            await expect(p.getByTestId('site-nav')).not.toContainText('利用者')
+            await expect(p.getByTestId(page.hidden)).toHaveCount(0)
+            await check(page.result)
+          },
+        )
+      })
+    }
   }
 })
