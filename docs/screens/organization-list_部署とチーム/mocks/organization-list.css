@@ -1,0 +1,69 @@
+/* 部署とチームのモックだけの見た目。状態をまたいで使う。幅による切り替えは @container screen で書く */
+
+.og-section {
+  display: grid;
+  gap: 8px;
+}
+
+.og-section__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.og-h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* 詳細の無い一覧なので、行は押せない。行の右端に編集のボタンを置く */
+.og-table tbody tr {
+  cursor: auto;
+}
+
+.og-table tbody tr:hover {
+  background: none;
+}
+
+.og-table .og-cell-action {
+  width: 1%;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* チームの色の選択肢。点と色の名前を並べ、幅 768px 以上では 4 つずつ、未満では 2 つずつ並べる */
+.og-colors {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.og-color {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--wf-line-soft);
+  border-radius: var(--wf-radius);
+}
+
+.og-color.is-on {
+  border-color: var(--wf-primary);
+}
+
+@container screen (width < 768px) {
+  .og-table tbody tr {
+    padding-right: 12px;
+  }
+
+  .og-table .og-cell-action {
+    order: 2;
+    width: auto;
+    margin-left: auto;
+  }
+
+  .og-colors {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
