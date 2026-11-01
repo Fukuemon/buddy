@@ -45,6 +45,7 @@
 | 訪問しない職員への変更を拒む | 残る予定と担当の一覧 | `updateUser` が 409 の `staff_has_assignments` |
 | 役職を変える | 「職員の管理の権限を持つ最後の有効な職員は、その権限を持たない役職に変えられません。」 | `changeUserPosition` が 409 |
 | 役職を変える | 「この操作をする権限がありません。」 | `changeUserPosition` が 403 |
+| 役職を変える | 「役職を変えられませんでした。時間をおいて、もう一度変えてください。」 | `changeUserPosition` が 403、409 のほかの失敗、API に届かない |
 | 権限の保存の一部の失敗 | 「職員の管理の権限を持つ最後の有効な職員から、その権限は外せません。」 | `removeUserPolicy` か `addUserPolicy` が 409 |
 | 権限の保存の一部の失敗 | 「対象の職員かチームが見つかりません。選び直してください。」 | `addUserPolicy` か `removeUserPolicy` が 400 |
 | 権限の保存の一部の失敗 | 「この操作をする権限がありません。」 | `addUserPolicy` か `removeUserPolicy` が 403 |
@@ -52,9 +53,15 @@
 | 権限を変える | 「権限を変えられませんでした。時間をおいて、もう一度保存してください。」 | 最初の変更で API に届かない |
 | 休職の確認 | 「自分と、職員の管理の権限を持つ最後の有効な職員は、休職にできません。」 | `startUserLeave` が 409 |
 | 休職の確認 | 「この操作をする権限がありません。」 | `startUserLeave` が 403 |
+| 休職の確認 | 「休職にできませんでした。時間をおいて、もう一度休職にしてください。」 | `startUserLeave` が 403、409 のほかの失敗、API に届かない |
+| 休職と退職の確認 | 「残る予定と担当の利用者を読み込めませんでした。閉じてから、開き直してください。」 | `getUserRemainingAssignments` が失敗、API に届かない |
+| 復職にする | 「退職した職員は変えられません。」 | `reinstateUser` が 409 |
+| 復職にする | 「この操作をする権限がありません。」 | `reinstateUser` が 403 |
+| 復職にする | 「復職にできませんでした。時間をおいて、もう一度復職にしてください。」 | `reinstateUser` が 403、409 のほかの失敗、API に届かない |
 | 退職を拒む | 残る予定と担当の一覧 | `retireUser` が 409 の `staff_has_assignments` |
 | 退職の確認 | 「自分と、職員の管理の権限を持つ最後の有効な職員は、退職にできません。」 | `retireUser` が 409 の `conflict` |
 | 退職の確認 | 「この操作をする権限がありません。」 | `retireUser` が 403 |
+| 退職の確認 | 「退職にできませんでした。時間をおいて、もう一度退職にしてください。」 | `retireUser` が 403、409 のほかの失敗、API に届かない |
 
 - 文を選ぶ処理は `apps/web/src/features/staff/lib/errorMessage.ts` にある。権限の保存の理由は `policyChangeErrorReason` が、最初の変更で API に届かないかは `apps/web/src/features/staff/queries.ts` の `useSavePolicies` が決める。
 - `staff_has_assignments` の 409 は、`apps/web/src/api` が文ではなく残る一覧の結果（`StaffUpdateResult`、`StaffRetireResult`）に変える。
