@@ -74,7 +74,7 @@ const (
 	ReasonUnreadableTitle Reason = "unreadable_title"
 	// ReasonUnreadableTime は、開始か終了の日時を読めない予定である。
 	ReasonUnreadableTime Reason = "unreadable_time"
-	// ReasonSpansDays は、日付をまたぐ予定である。
+	// ReasonSpansDays は、終了が開始の翌日より後か、24 時間以上の予定である。
 	ReasonSpansDays Reason = "spans_days"
 )
 
