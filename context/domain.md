@@ -36,7 +36,7 @@ status: stable
 | 訪問の情報 | 訪問の予定に付く、利用者、主訪問者、同行者、サービスコード、訪問の区分 | Go `visit.Info`、テーブル `visit_infos`、API `VisitInfo`、web `VisitDetail` |
 | 主訪問者 | 訪問する職員。業務の役割で、役職を問わない。予定の管理では訪問の情報の担当の職員、照合では実績の CSV の「主訪問者」のカラム | `Info.AssignedStaffID`、照合の `Key.Staff` |
 | 同行者 | 訪問に同行する職員 | `Info.CompanionID` |
-| サービスコード | レセプトのサービスの種類と、提供時間の範囲（分） | Go `visit.ServiceCode`、テーブル `service_codes`、web `SERVICE_CODES` |
+| サービスコード | レセプトのサービスの種類と、提供時間の範囲（分） | Go `visit.ServiceCode`、テーブル `service_codes`、API `ServiceCode`、web `ServiceCodeRecord` |
 | 訪問の区分 | 夜勤、緊急、入院 | Go `visit.Category`、テーブル `visit_categories`、web `ScheduleCategory` |
 | 提供時間 | 訪問でサービスを提供した時間（分） | 照合の `Record.Duration` |
 
