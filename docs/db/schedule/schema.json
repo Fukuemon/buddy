@@ -2998,6 +2998,13 @@
           "nullable": false,
           "default": "1",
           "comment": "更新の番号。回を除外するたびに 1 つ増える"
+        },
+        {
+          "name": "ends_next_day",
+          "type": "boolean",
+          "nullable": false,
+          "default": "false",
+          "comment": "終了が翌日か。全ての回が同じ値を持つ"
         }
       ],
       "indexes": [
@@ -3096,6 +3103,16 @@
           "referenced_table": "",
           "columns": [
             "end_time"
+          ]
+        },
+        {
+          "name": "recurring_schedules_ends_next_day_not_null",
+          "type": "n",
+          "def": "NOT NULL ends_next_day",
+          "table": "public.recurring_schedules",
+          "referenced_table": "",
+          "columns": [
+            "ends_next_day"
           ]
         },
         {
@@ -3204,12 +3221,13 @@
         {
           "name": "recurring_schedules_time_check",
           "type": "CHECK",
-          "def": "CHECK ((start_time \u003c end_time))",
+          "def": "CHECK (\nCASE\n    WHEN ends_next_day THEN (end_time \u003c start_time)\n    ELSE (start_time \u003c end_time)\nEND)",
           "table": "public.recurring_schedules",
           "referenced_table": "",
           "columns": [
-            "start_time",
-            "end_time"
+            "ends_next_day",
+            "end_time",
+            "start_time"
           ]
         },
         {
@@ -3514,6 +3532,13 @@
           "nullable": false,
           "default": "1",
           "comment": "更新の番号。予定を変えるかキャンセルするたびに 1 つ増える"
+        },
+        {
+          "name": "ends_next_day",
+          "type": "boolean",
+          "nullable": false,
+          "default": "false",
+          "comment": "終了が翌日か。true なら終了の時刻は開始の時刻より前で、date の翌日のその時刻に終わる"
         }
       ],
       "indexes": [
@@ -3604,6 +3629,16 @@
           ]
         },
         {
+          "name": "schedules_ends_next_day_not_null",
+          "type": "n",
+          "def": "NOT NULL ends_next_day",
+          "table": "public.schedules",
+          "referenced_table": "",
+          "columns": [
+            "ends_next_day"
+          ]
+        },
+        {
           "name": "schedules_facility_id_not_null",
           "type": "n",
           "def": "NOT NULL facility_id",
@@ -3687,12 +3722,13 @@
         {
           "name": "schedules_time_check",
           "type": "CHECK",
-          "def": "CHECK ((start_time \u003c end_time))",
+          "def": "CHECK (\nCASE\n    WHEN ends_next_day THEN (end_time \u003c start_time)\n    ELSE (start_time \u003c end_time)\nEND)",
           "table": "public.schedules",
           "referenced_table": "",
           "columns": [
-            "start_time",
-            "end_time"
+            "ends_next_day",
+            "end_time",
+            "start_time"
           ]
         },
         {
@@ -5322,9 +5358,14 @@
           "name": "version",
           "type": "integer",
           "nullable": true
+        },
+        {
+          "name": "ends_next_day",
+          "type": "boolean",
+          "nullable": true
         }
       ],
-      "def": "CREATE VIEW schedule_details AS (\n SELECT s.id,\n    s.facility_id,\n    s.schedule_type_id,\n    st.code AS schedule_type_code,\n    st.name AS schedule_type_name,\n    s.date,\n    s.start_time,\n    s.end_time,\n    s.is_over_time_work,\n    s.staff_id,\n    u.username AS staff_name,\n    s.title,\n    s.description,\n    s.recurring_schedule_id,\n    s.original_date,\n    s.visit_info_id,\n    vid.patient_id,\n    vid.patient_name,\n    vid.assigned_staff_id,\n    vid.assigned_staff_name,\n    vid.companion_id,\n    vid.companion_name,\n    vid.service_code_id,\n    vid.service_code,\n    c.id AS cancel_id,\n    c.reason AS cancel_reason,\n    s.created_at,\n    s.updated_at,\n    s.version\n   FROM ((((schedules s\n     JOIN schedule_types st ON ((st.id = s.schedule_type_id)))\n     JOIN users u ON ((u.id = s.staff_id)))\n     LEFT JOIN visit_info_details vid ON ((vid.id = s.visit_info_id)))\n     LEFT JOIN schedule_cancels c ON ((c.schedule_id = s.id)))\n)",
+      "def": "CREATE VIEW schedule_details AS (\n SELECT s.id,\n    s.facility_id,\n    s.schedule_type_id,\n    st.code AS schedule_type_code,\n    st.name AS schedule_type_name,\n    s.date,\n    s.start_time,\n    s.end_time,\n    s.is_over_time_work,\n    s.staff_id,\n    u.username AS staff_name,\n    s.title,\n    s.description,\n    s.recurring_schedule_id,\n    s.original_date,\n    s.visit_info_id,\n    vid.patient_id,\n    vid.patient_name,\n    vid.assigned_staff_id,\n    vid.assigned_staff_name,\n    vid.companion_id,\n    vid.companion_name,\n    vid.service_code_id,\n    vid.service_code,\n    c.id AS cancel_id,\n    c.reason AS cancel_reason,\n    s.created_at,\n    s.updated_at,\n    s.version,\n    s.ends_next_day\n   FROM ((((schedules s\n     JOIN schedule_types st ON ((st.id = s.schedule_type_id)))\n     JOIN users u ON ((u.id = s.staff_id)))\n     LEFT JOIN visit_info_details vid ON ((vid.id = s.visit_info_id)))\n     LEFT JOIN schedule_cancels c ON ((c.schedule_id = s.id)))\n)",
       "referenced_tables": [
         "public.schedules",
         "public.schedule_types",
@@ -5487,9 +5528,14 @@
           "name": "version",
           "type": "integer",
           "nullable": true
+        },
+        {
+          "name": "ends_next_day",
+          "type": "boolean",
+          "nullable": true
         }
       ],
-      "def": "CREATE VIEW recurring_schedule_details AS (\n SELECT rs.id,\n    rs.facility_id,\n    rs.schedule_type_id,\n    st.code AS schedule_type_code,\n    st.name AS schedule_type_name,\n    rs.date,\n    rs.start_time,\n    rs.end_time,\n    rs.is_over_time_work,\n    rs.staff_id,\n    u.username AS staff_name,\n    rs.title,\n    rs.description,\n    rs.frequency,\n    rs.day_of_week,\n    rs.day_of_month,\n    rs.week_of_month,\n    rs.end_date,\n    rs.visit_info_id,\n    vid.patient_id,\n    vid.patient_name,\n    vid.assigned_staff_id,\n    vid.assigned_staff_name,\n    vid.companion_id,\n    vid.companion_name,\n    vid.service_code_id,\n    vid.service_code,\n    rs.created_at,\n    rs.updated_at,\n    rs.version\n   FROM (((recurring_schedules rs\n     JOIN schedule_types st ON ((st.id = rs.schedule_type_id)))\n     JOIN users u ON ((u.id = rs.staff_id)))\n     LEFT JOIN visit_info_details vid ON ((vid.id = rs.visit_info_id)))\n)",
+      "def": "CREATE VIEW recurring_schedule_details AS (\n SELECT rs.id,\n    rs.facility_id,\n    rs.schedule_type_id,\n    st.code AS schedule_type_code,\n    st.name AS schedule_type_name,\n    rs.date,\n    rs.start_time,\n    rs.end_time,\n    rs.is_over_time_work,\n    rs.staff_id,\n    u.username AS staff_name,\n    rs.title,\n    rs.description,\n    rs.frequency,\n    rs.day_of_week,\n    rs.day_of_month,\n    rs.week_of_month,\n    rs.end_date,\n    rs.visit_info_id,\n    vid.patient_id,\n    vid.patient_name,\n    vid.assigned_staff_id,\n    vid.assigned_staff_name,\n    vid.companion_id,\n    vid.companion_name,\n    vid.service_code_id,\n    vid.service_code,\n    rs.created_at,\n    rs.updated_at,\n    rs.version,\n    rs.ends_next_day\n   FROM (((recurring_schedules rs\n     JOIN schedule_types st ON ((st.id = rs.schedule_type_id)))\n     JOIN users u ON ((u.id = rs.staff_id)))\n     LEFT JOIN visit_info_details vid ON ((vid.id = rs.visit_info_id)))\n)",
       "referenced_tables": [
         "public.recurring_schedules",
         "public.schedule_types",

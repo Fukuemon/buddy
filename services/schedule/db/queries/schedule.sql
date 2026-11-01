@@ -8,8 +8,8 @@ SELECT * FROM schedule_types ORDER BY name, id;
 -- is_over_time_work は開始の時刻から生成するカラムなので書かない。
 INSERT INTO schedules (
     id, facility_id, staff_id, schedule_type_id, date, start_time, end_time,
-    recurring_schedule_id, original_date, visit_info_id, title, description
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
+    recurring_schedule_id, original_date, visit_info_id, title, description, ends_next_day
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);
 
 -- name: GetScheduleDetail :one
 SELECT * FROM schedule_details WHERE id = $1;
@@ -18,7 +18,8 @@ SELECT * FROM schedule_details WHERE id = $1;
 SELECT * FROM schedule_details
 WHERE facility_id = sqlc.arg(facility_id)
   AND (sqlc.narg(schedule_type)::text IS NULL OR schedule_type_name = sqlc.narg(schedule_type))
-  AND (sqlc.narg(date_from)::date IS NULL OR date >= sqlc.narg(date_from))
+  AND (sqlc.narg(date_from)::date IS NULL
+       OR (date >= sqlc.narg(date_from)::date - 1 AND (date >= sqlc.narg(date_from) OR ends_next_day)))
   AND (sqlc.narg(date_to)::date IS NULL OR date <= sqlc.narg(date_to))
 ORDER BY
   CASE WHEN sqlc.arg(sort)::text = 'date_asc' THEN date END ASC,
@@ -36,8 +37,8 @@ ORDER BY
 INSERT INTO recurring_schedules (
     id, facility_id, staff_id, schedule_type_id, date, start_time, end_time,
     visit_info_id, title, description,
-    frequency, day_of_week, day_of_month, week_of_month, end_date
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15);
+    frequency, day_of_week, day_of_month, week_of_month, end_date, ends_next_day
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16);
 
 -- name: GetRecurringScheduleDetail :one
 SELECT * FROM recurring_schedule_details WHERE id = $1;
@@ -72,7 +73,7 @@ INSERT INTO schedule_cancels (id, schedule_id, reason) VALUES ($1, $2, $3);
 -- name: UpdateSchedule :exec
 UPDATE schedules
 SET staff_id = sqlc.arg(staff_id), schedule_type_id = sqlc.arg(schedule_type_id), date = sqlc.arg(date),
-    start_time = sqlc.arg(start_time), end_time = sqlc.arg(end_time),
+    start_time = sqlc.arg(start_time), end_time = sqlc.arg(end_time), ends_next_day = sqlc.arg(ends_next_day),
     visit_info_id = sqlc.narg(visit_info_id), title = sqlc.narg(title), description = sqlc.narg(description),
     version = version + 1
 WHERE id = sqlc.arg(id);

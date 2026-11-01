@@ -211,6 +211,8 @@ type RecurringSchedule struct {
 	UpdatedAt time.Time
 	// 更新の番号。回を除外するたびに 1 つ増える
 	Version int32
+	// 終了が翌日か。全ての回が同じ値を持つ
+	EndsNextDay bool
 }
 
 type RecurringScheduleDetail struct {
@@ -244,6 +246,7 @@ type RecurringScheduleDetail struct {
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 	Version           int32
+	EndsNextDay       bool
 }
 
 // 繰り返しの予定のうち、回にしない日
@@ -275,6 +278,8 @@ type Schedule struct {
 	UpdatedAt      time.Time
 	// 更新の番号。予定を変えるかキャンセルするたびに 1 つ増える
 	Version int32
+	// 終了が翌日か。true なら終了の時刻は開始の時刻より前で、date の翌日のその時刻に終わる
+	EndsNextDay bool
 }
 
 // 予定の取り消し
@@ -316,6 +321,7 @@ type ScheduleDetail struct {
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
 	Version             int32
+	EndsNextDay         bool
 }
 
 // 予定の種類（通常、訪問）。マイグレーションで入れる

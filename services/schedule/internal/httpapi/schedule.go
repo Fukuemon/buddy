@@ -41,6 +41,7 @@ func slotInput(r openapi.SlotRequest) (schedule.SlotInput, error) {
 		Date:        date,
 		StartTime:   start,
 		EndTime:     end,
+		EndsNextDay: r.EndsNextDay != nil && *r.EndsNextDay,
 		StaffID:     r.StaffId,
 		Title:       r.Title,
 		Description: r.Description,
@@ -128,7 +129,7 @@ func (s server) CreateSchedule(ctx context.Context, req openapi.CreateScheduleRe
 func (s server) CreateRecurringSchedule(ctx context.Context, req openapi.CreateRecurringScheduleRequestObject) (openapi.CreateRecurringScheduleResponseObject, error) {
 	b := req.Body
 	in, err := slotInput(openapi.SlotRequest{
-		ScheduleTypeId: b.ScheduleTypeId, Date: b.Date, StartTime: b.StartTime, EndTime: b.EndTime, StaffId: b.StaffId,
+		ScheduleTypeId: b.ScheduleTypeId, Date: b.Date, StartTime: b.StartTime, EndTime: b.EndTime, EndsNextDay: b.EndsNextDay, StaffId: b.StaffId,
 		Title: b.Title, Description: b.Description, VisitInfo: b.VisitInfo,
 	})
 	if err != nil {
@@ -159,7 +160,7 @@ func (s server) CreateRecurringSchedule(ctx context.Context, req openapi.CreateR
 func (s server) ChangeOccurrence(ctx context.Context, req openapi.ChangeOccurrenceRequestObject) (openapi.ChangeOccurrenceResponseObject, error) {
 	b := req.Body
 	in, err := slotInput(openapi.SlotRequest{
-		ScheduleTypeId: b.ScheduleTypeId, Date: b.Date, StartTime: b.StartTime, EndTime: b.EndTime, StaffId: b.StaffId,
+		ScheduleTypeId: b.ScheduleTypeId, Date: b.Date, StartTime: b.StartTime, EndTime: b.EndTime, EndsNextDay: b.EndsNextDay, StaffId: b.StaffId,
 		Title: b.Title, Description: b.Description, VisitInfo: b.VisitInfo,
 	})
 	if err != nil {

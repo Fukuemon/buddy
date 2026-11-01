@@ -690,6 +690,115 @@ func TestScheduleList(t *testing.T) {
 	}
 }
 
+// TestScheduleEndsNextDay は、翌日に終わる予定の印を保存して読み、期間の一覧が前の日に始まる印の付いた予定も返し、
+// 時刻の制約が印に合わない予定を拒むことを確認する（ADR-0023）。
+func TestScheduleEndsNextDay(t *testing.T) {
+	ctx := txContext(t)
+	r := NewScheduleRepository(testDB)
+	nov1 := civil.Date{Year: 2026, Month: 11, Day: 1}
+	nov2 := civil.Date{Year: 2026, Month: 11, Day: 2}
+	slot := func(d civil.Date, start, end int, next bool) schedule.Slot {
+		return schedule.Slot{
+			FacilityID: seedFacility, StaffID: seedHayashi, TypeID: seedNormalType,
+			Date: d, StartTime: civil.Time{Hour: start}, EndTime: civil.Time{Hour: end}, EndsNextDay: next,
+			Title: ptr("夜勤"),
+		}
+	}
+	overnight := schedule.Schedule{ID: "01M3TD000000000000000000F0", Slot: slot(nov1, 22, 1, true)}
+	evening := schedule.Schedule{ID: "01M3TD000000000000000000F1", Slot: slot(nov1, 20, 21, false)}
+	twoDaysBefore := schedule.Schedule{ID: "01M3TD000000000000000000F2", Slot: slot(civil.Date{Year: 2026, Month: 10, Day: 31}, 22, 1, true)}
+	for _, s := range []schedule.Schedule{overnight, evening, twoDaysBefore} {
+		if err := r.Create(ctx, s); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, err := r.Get(ctx, overnight.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.EndsNextDay || got.Date != nov1 || got.EndTime != (civil.Time{Hour: 1}) || !got.IsOverTimeWork {
+		t.Errorf("got %+v", got.Slot)
+	}
+
+	rows, err := r.ListByFacility(ctx, seedFacility, schedule.ListQuery{DateFrom: &nov2, DateTo: &nov2, Sort: kernel.Sort{Field: "date"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids := make([]string, len(rows))
+	for i, s := range rows {
+		ids[i] = s.ID
+	}
+	if !slices.Contains(ids, overnight.ID) || slices.Contains(ids, evening.ID) || slices.Contains(ids, twoDaysBefore.ID) {
+		t.Errorf("11 月 2 日の一覧 = %v, want %s を含み %s と %s を含まない", ids, overnight.ID, evening.ID, twoDaysBefore.ID)
+	}
+
+	overnight.Slot = slot(nov1, 20, 21, false)
+	if err := r.Update(ctx, overnight); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := r.Get(ctx, overnight.ID); err != nil || got.EndsNextDay {
+		t.Errorf("印を外した予定: EndsNextDay = %v, err = %v", got.EndsNextDay, err)
+	}
+
+	tests := []struct {
+		id   string
+		name string
+		slot schedule.Slot
+	}{
+		{id: "01M3TD000000000000000000G0", name: "印を付けずに終了が開始より前", slot: slot(nov1, 22, 1, false)},
+		{id: "01M3TD000000000000000000G1", name: "印を付けて終了が開始より後", slot: slot(nov1, 9, 10, true)},
+		{id: "01M3TD000000000000000000G2", name: "印を付けて開始と終了が同じ", slot: slot(nov1, 9, 9, true)},
+		{id: "01M3TD000000000000000000G3", name: "印を付けずに開始と終了が同じ", slot: slot(nov1, 9, 9, false)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := schedule.Schedule{ID: tt.id, Slot: tt.slot}
+			if err := r.Create(ctx, s); !errors.Is(err, apperr.ErrInvalidInput) {
+				t.Fatalf("err = %v, want ErrInvalidInput", err)
+			}
+		})
+	}
+}
+
+// TestRecurringScheduleEndsNextDay は、繰り返しの予定の翌日に終わる印を保存して読むことと、時刻の制約が印に合わない予定を拒むことを確認する。
+func TestRecurringScheduleEndsNextDay(t *testing.T) {
+	ctx := txContext(t)
+	r := NewRecurringScheduleRepository(testDB)
+	rs := schedule.RecurringSchedule{
+		ID: "01M3TD000000000000000000H0",
+		Slot: schedule.Slot{
+			FacilityID: seedFacility, StaffID: seedMori, TypeID: seedNormalType,
+			Date: civil.Date{Year: 2026, Month: 11, Day: 2}, StartTime: civil.Time{Hour: 22}, EndTime: civil.Time{Hour: 0},
+			EndsNextDay: true, Title: ptr("夜勤"),
+		},
+		Rule: schedule.Rule{Frequency: schedule.Weekly},
+	}
+	if err := r.Create(ctx, rs); err != nil {
+		t.Fatal(err)
+	}
+	got, err := r.Get(ctx, rs.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.EndsNextDay || got.EndTime != (civil.Time{}) {
+		t.Errorf("got %+v", got.Slot)
+	}
+	list, err := r.ListByFacility(ctx, seedFacility, schedule.ListQuery{Sort: kernel.Sort{Field: "date"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, d := range list {
+		if d.EndsNextDay != (d.ID == rs.ID) {
+			t.Errorf("%s の EndsNextDay = %v", d.ID, d.EndsNextDay)
+		}
+	}
+
+	rs.ID, rs.EndsNextDay = "01M3TD000000000000000000H1", false
+	if err := r.Create(ctx, rs); !errors.Is(err, apperr.ErrInvalidInput) {
+		t.Fatalf("印のない 22:00 から 0:00: err = %v, want ErrInvalidInput", err)
+	}
+}
+
 func TestRecurringScheduleAndExclusion(t *testing.T) {
 	ctx := txContext(t)
 	r := NewRecurringScheduleRepository(testDB)

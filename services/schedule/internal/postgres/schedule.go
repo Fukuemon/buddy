@@ -62,6 +62,7 @@ func (r *ScheduleRepository) Create(ctx context.Context, s schedule.Schedule) er
 		Date:                s.Date.Time(),
 		StartTime:           timeOfDay(s.StartTime),
 		EndTime:             timeOfDay(s.EndTime),
+		EndsNextDay:         s.EndsNextDay,
 		RecurringScheduleID: s.RecurringScheduleID,
 		OriginalDate:        nullDate(s.OriginalDate),
 		VisitInfoID:         s.VisitInfoID,
@@ -101,6 +102,7 @@ func (r *ScheduleRepository) Update(ctx context.Context, s schedule.Schedule) er
 		Date:           s.Date.Time(),
 		StartTime:      timeOfDay(s.StartTime),
 		EndTime:        timeOfDay(s.EndTime),
+		EndsNextDay:    s.EndsNextDay,
 		VisitInfoID:    s.VisitInfoID,
 		Title:          s.Title,
 		Description:    s.Description,
@@ -122,6 +124,7 @@ func (r *ScheduleRepository) Get(ctx context.Context, id string) (schedule.Detai
 }
 
 // ListByFacility は、事業所 facilityID の予定のうち、q の種類と日付の範囲（両端を含む）に合うものを q.Sort の順に返す。
+// q.DateFrom の前の日に始まり、終了が翌日の予定も返す。
 // 日付の順では、同じ日付を開始時刻、ID の順に並べる。ほかの順では、同じ値を ID の順に並べる。
 func (r *ScheduleRepository) ListByFacility(ctx context.Context, facilityID string, q schedule.ListQuery) ([]schedule.Detail, error) {
 	params := sqlcgen.ListScheduleDetailsByFacilityParams{
@@ -161,6 +164,7 @@ func (r *ScheduleRepository) scheduleDetails(ctx context.Context, rows []sqlcgen
 					Date:           civil.DateOf(s.Date),
 					StartTime:      start,
 					EndTime:        end,
+					EndsNextDay:    s.EndsNextDay,
 					VisitInfoID:    s.VisitInfoID,
 					Title:          s.Title,
 					Description:    s.Description,
@@ -220,6 +224,7 @@ func (r *RecurringScheduleRepository) Create(ctx context.Context, rs schedule.Re
 		Date:           rs.Date.Time(),
 		StartTime:      timeOfDay(rs.StartTime),
 		EndTime:        timeOfDay(rs.EndTime),
+		EndsNextDay:    rs.EndsNextDay,
 		VisitInfoID:    rs.VisitInfoID,
 		Title:          rs.Title,
 		Description:    rs.Description,
@@ -315,6 +320,7 @@ func (r *RecurringScheduleRepository) recurringDetails(ctx context.Context, rows
 					Date:           civil.DateOf(s.Date),
 					StartTime:      start,
 					EndTime:        end,
+					EndsNextDay:    s.EndsNextDay,
 					VisitInfoID:    s.VisitInfoID,
 					Title:          s.Title,
 					Description:    s.Description,

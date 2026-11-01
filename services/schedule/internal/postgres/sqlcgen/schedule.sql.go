@@ -48,8 +48,8 @@ const createRecurringSchedule = `-- name: CreateRecurringSchedule :exec
 INSERT INTO recurring_schedules (
     id, facility_id, staff_id, schedule_type_id, date, start_time, end_time,
     visit_info_id, title, description,
-    frequency, day_of_week, day_of_month, week_of_month, end_date
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+    frequency, day_of_week, day_of_month, week_of_month, end_date, ends_next_day
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 `
 
 type CreateRecurringScheduleParams struct {
@@ -68,6 +68,7 @@ type CreateRecurringScheduleParams struct {
 	DayOfMonth     *int16
 	WeekOfMonth    *int16
 	EndDate        *time.Time
+	EndsNextDay    bool
 }
 
 // is_over_time_work は開始の時刻から生成するカラムなので書かない。
@@ -88,6 +89,7 @@ func (q *Queries) CreateRecurringSchedule(ctx context.Context, arg CreateRecurri
 		arg.DayOfMonth,
 		arg.WeekOfMonth,
 		arg.EndDate,
+		arg.EndsNextDay,
 	)
 	return err
 }
@@ -95,8 +97,8 @@ func (q *Queries) CreateRecurringSchedule(ctx context.Context, arg CreateRecurri
 const createSchedule = `-- name: CreateSchedule :exec
 INSERT INTO schedules (
     id, facility_id, staff_id, schedule_type_id, date, start_time, end_time,
-    recurring_schedule_id, original_date, visit_info_id, title, description
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    recurring_schedule_id, original_date, visit_info_id, title, description, ends_next_day
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 `
 
 type CreateScheduleParams struct {
@@ -112,6 +114,7 @@ type CreateScheduleParams struct {
 	VisitInfoID         *string
 	Title               *string
 	Description         *string
+	EndsNextDay         bool
 }
 
 // is_over_time_work は開始の時刻から生成するカラムなので書かない。
@@ -129,6 +132,7 @@ func (q *Queries) CreateSchedule(ctx context.Context, arg CreateScheduleParams) 
 		arg.VisitInfoID,
 		arg.Title,
 		arg.Description,
+		arg.EndsNextDay,
 	)
 	return err
 }
@@ -149,7 +153,7 @@ func (q *Queries) CreateScheduleCancel(ctx context.Context, arg CreateScheduleCa
 }
 
 const getRecurringScheduleDetail = `-- name: GetRecurringScheduleDetail :one
-SELECT id, facility_id, schedule_type_id, schedule_type_code, schedule_type_name, date, start_time, end_time, is_over_time_work, staff_id, staff_name, title, description, frequency, day_of_week, day_of_month, week_of_month, end_date, visit_info_id, patient_id, patient_name, assigned_staff_id, assigned_staff_name, companion_id, companion_name, service_code_id, service_code, created_at, updated_at, version FROM recurring_schedule_details WHERE id = $1
+SELECT id, facility_id, schedule_type_id, schedule_type_code, schedule_type_name, date, start_time, end_time, is_over_time_work, staff_id, staff_name, title, description, frequency, day_of_week, day_of_month, week_of_month, end_date, visit_info_id, patient_id, patient_name, assigned_staff_id, assigned_staff_name, companion_id, companion_name, service_code_id, service_code, created_at, updated_at, version, ends_next_day FROM recurring_schedule_details WHERE id = $1
 `
 
 func (q *Queries) GetRecurringScheduleDetail(ctx context.Context, id string) (RecurringScheduleDetail, error) {
@@ -186,6 +190,7 @@ func (q *Queries) GetRecurringScheduleDetail(ctx context.Context, id string) (Re
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
+		&i.EndsNextDay,
 	)
 	return i, err
 }
@@ -207,7 +212,7 @@ func (q *Queries) GetReplacingScheduleID(ctx context.Context, arg GetReplacingSc
 }
 
 const getScheduleDetail = `-- name: GetScheduleDetail :one
-SELECT id, facility_id, schedule_type_id, schedule_type_code, schedule_type_name, date, start_time, end_time, is_over_time_work, staff_id, staff_name, title, description, recurring_schedule_id, original_date, visit_info_id, patient_id, patient_name, assigned_staff_id, assigned_staff_name, companion_id, companion_name, service_code_id, service_code, cancel_id, cancel_reason, created_at, updated_at, version FROM schedule_details WHERE id = $1
+SELECT id, facility_id, schedule_type_id, schedule_type_code, schedule_type_name, date, start_time, end_time, is_over_time_work, staff_id, staff_name, title, description, recurring_schedule_id, original_date, visit_info_id, patient_id, patient_name, assigned_staff_id, assigned_staff_name, companion_id, companion_name, service_code_id, service_code, cancel_id, cancel_reason, created_at, updated_at, version, ends_next_day FROM schedule_details WHERE id = $1
 `
 
 func (q *Queries) GetScheduleDetail(ctx context.Context, id string) (ScheduleDetail, error) {
@@ -243,6 +248,7 @@ func (q *Queries) GetScheduleDetail(ctx context.Context, id string) (ScheduleDet
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
+		&i.EndsNextDay,
 	)
 	return i, err
 }
@@ -265,7 +271,7 @@ func (q *Queries) GetScheduleType(ctx context.Context, id string) (ScheduleType,
 }
 
 const listRecurringScheduleDetailsByFacility = `-- name: ListRecurringScheduleDetailsByFacility :many
-SELECT id, facility_id, schedule_type_id, schedule_type_code, schedule_type_name, date, start_time, end_time, is_over_time_work, staff_id, staff_name, title, description, frequency, day_of_week, day_of_month, week_of_month, end_date, visit_info_id, patient_id, patient_name, assigned_staff_id, assigned_staff_name, companion_id, companion_name, service_code_id, service_code, created_at, updated_at, version FROM recurring_schedule_details
+SELECT id, facility_id, schedule_type_id, schedule_type_code, schedule_type_name, date, start_time, end_time, is_over_time_work, staff_id, staff_name, title, description, frequency, day_of_week, day_of_month, week_of_month, end_date, visit_info_id, patient_id, patient_name, assigned_staff_id, assigned_staff_name, companion_id, companion_name, service_code_id, service_code, created_at, updated_at, version, ends_next_day FROM recurring_schedule_details
 WHERE facility_id = $1
   AND ($2::text IS NULL OR schedule_type_name = $2)
 ORDER BY
@@ -326,6 +332,7 @@ func (q *Queries) ListRecurringScheduleDetailsByFacility(ctx context.Context, ar
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Version,
+			&i.EndsNextDay,
 		); err != nil {
 			return nil, err
 		}
@@ -365,10 +372,11 @@ func (q *Queries) ListRecurringScheduleExclusions(ctx context.Context, recurring
 }
 
 const listScheduleDetailsByFacility = `-- name: ListScheduleDetailsByFacility :many
-SELECT id, facility_id, schedule_type_id, schedule_type_code, schedule_type_name, date, start_time, end_time, is_over_time_work, staff_id, staff_name, title, description, recurring_schedule_id, original_date, visit_info_id, patient_id, patient_name, assigned_staff_id, assigned_staff_name, companion_id, companion_name, service_code_id, service_code, cancel_id, cancel_reason, created_at, updated_at, version FROM schedule_details
+SELECT id, facility_id, schedule_type_id, schedule_type_code, schedule_type_name, date, start_time, end_time, is_over_time_work, staff_id, staff_name, title, description, recurring_schedule_id, original_date, visit_info_id, patient_id, patient_name, assigned_staff_id, assigned_staff_name, companion_id, companion_name, service_code_id, service_code, cancel_id, cancel_reason, created_at, updated_at, version, ends_next_day FROM schedule_details
 WHERE facility_id = $1
   AND ($2::text IS NULL OR schedule_type_name = $2)
-  AND ($3::date IS NULL OR date >= $3)
+  AND ($3::date IS NULL
+       OR (date >= $3::date - 1 AND (date >= $3 OR ends_next_day)))
   AND ($4::date IS NULL OR date <= $4)
 ORDER BY
   CASE WHEN $5::text = 'date_asc' THEN date END ASC,
@@ -435,6 +443,7 @@ func (q *Queries) ListScheduleDetailsByFacility(ctx context.Context, arg ListSch
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Version,
+			&i.EndsNextDay,
 		); err != nil {
 			return nil, err
 		}
@@ -501,10 +510,10 @@ func (q *Queries) LockSchedule(ctx context.Context, id string) (string, error) {
 const updateSchedule = `-- name: UpdateSchedule :exec
 UPDATE schedules
 SET staff_id = $1, schedule_type_id = $2, date = $3,
-    start_time = $4, end_time = $5,
-    visit_info_id = $6, title = $7, description = $8,
+    start_time = $4, end_time = $5, ends_next_day = $6,
+    visit_info_id = $7, title = $8, description = $9,
     version = version + 1
-WHERE id = $9
+WHERE id = $10
 `
 
 type UpdateScheduleParams struct {
@@ -513,6 +522,7 @@ type UpdateScheduleParams struct {
 	Date           time.Time
 	StartTime      pgtype.Time
 	EndTime        pgtype.Time
+	EndsNextDay    bool
 	VisitInfoID    *string
 	Title          *string
 	Description    *string
@@ -526,6 +536,7 @@ func (q *Queries) UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) 
 		arg.Date,
 		arg.StartTime,
 		arg.EndTime,
+		arg.EndsNextDay,
 		arg.VisitInfoID,
 		arg.Title,
 		arg.Description,
