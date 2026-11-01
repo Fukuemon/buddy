@@ -84,7 +84,7 @@ describe('scheduleFormMapper', () => {
       startTime: '23:00',
       description: '',
       patientId: 'patient-1',
-      serviceCode: '訪看I4',
+      serviceCode: '医',
       serviceTime: 90,
       categories: ['night'],
     })
