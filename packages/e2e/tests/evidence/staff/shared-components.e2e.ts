@@ -99,10 +99,14 @@ test.describe('職員の画面の packages/ui のコンポーネント', () => {
           await expect(page.getByTestId('staff-detail-menu')).toBeVisible()
           await step('撮影の前に登録した職員の詳細を開いている')
 
-          await step('「…」から「休職にする」を押し、「キャンセル」を押す')
-          await page.getByTestId('staff-detail-menu').click()
-          await page.getByTestId('staff-detail-leave').click()
-          await page.getByTestId('staff-leave-dialog').getByTestId('staff-leave-cancel').click()
+          await step('キーボードで「…」を開いて「休職にする」を選び、「キャンセル」で閉じる')
+          await page.getByTestId('staff-detail-menu').focus()
+          await page.keyboard.press('Enter')
+          await expect(page.getByTestId('staff-detail-leave')).toBeFocused()
+          await page.keyboard.press('Enter')
+          const cancel = page.getByTestId('staff-leave-dialog').getByTestId('staff-leave-cancel')
+          await cancel.focus()
+          await page.keyboard.press('Enter')
 
           await expect(page.getByTestId('staff-leave-dialog')).toHaveCount(0)
           await expect(page.getByTestId('staff-detail-menu')).toBeFocused()
