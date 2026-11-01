@@ -277,7 +277,8 @@ SELECT e.id, e.facility_id, e.schedule_id, e.recurring_schedule_id, e.status, e.
        u.id AS staff_id, u.username AS staff_name,
        COALESCE(s.date, rs.date)::date AS date,
        COALESCE(s.start_time, rs.start_time)::time AS start_time,
-       COALESCE(s.end_time, rs.end_time)::time AS end_time
+       COALESCE(s.end_time, rs.end_time)::time AS end_time,
+       COALESCE(s.ends_next_day, rs.ends_next_day)::boolean AS ends_next_day
 FROM calendar_exports e
 LEFT JOIN schedules s ON s.id = e.schedule_id
 LEFT JOIN schedule_cancels sc ON sc.schedule_id = e.schedule_id
@@ -308,6 +309,7 @@ type ListCalendarExportIssuesRow struct {
 	Date                time.Time
 	StartTime           pgtype.Time
 	EndTime             pgtype.Time
+	EndsNextDay         bool
 }
 
 // 予定のタイトルと利用者名は読まない。
@@ -341,6 +343,7 @@ func (q *Queries) ListCalendarExportIssues(ctx context.Context, facilityID strin
 			&i.Date,
 			&i.StartTime,
 			&i.EndTime,
+			&i.EndsNextDay,
 		); err != nil {
 			return nil, err
 		}

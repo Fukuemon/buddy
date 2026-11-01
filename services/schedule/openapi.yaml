@@ -2447,13 +2447,16 @@ components:
       allOf:
         - $ref: "#/components/schemas/CalendarExport"
         - type: object
-          required: [staff_id, staff_name, date, start_time, end_time, acceptable]
+          required: [staff_id, staff_name, date, start_time, end_time, ends_next_day, acceptable]
           properties:
             staff_id: { $ref: "#/components/schemas/ID" }
             staff_name: { type: string }
             date: { $ref: "#/components/schemas/Date" }
             start_time: { $ref: "#/components/schemas/Time" }
             end_time: { $ref: "#/components/schemas/Time" }
+            ends_next_day:
+              type: boolean
+              description: date の翌日の end_time に終わる予定のとき true
             acceptable:
               type: boolean
               description: |
@@ -2524,7 +2527,7 @@ components:
         assigned_staff_name: { type: string }
     ImportReviewItem:
       type: object
-      required: [external_event_id, revision, date, start_time, end_time, service, client_name, reason, recurrence, candidates]
+      required: [external_event_id, revision, date, start_time, end_time, ends_next_day, service, client_name, reason, recurrence, candidates]
       properties:
         external_event_id:
           type: string
@@ -2538,6 +2541,9 @@ components:
             - $ref: "#/components/schemas/Date"
         start_time: { $ref: "#/components/schemas/Time" }
         end_time: { $ref: "#/components/schemas/Time" }
+        ends_next_day:
+          type: boolean
+          description: date の翌日の end_time に終わる予定のとき true。繰り返しの予定は最初の回の値
         service: { type: string, description: タイトルから読んだサービス内容 }
         client_name: { type: string, description: タイトルから読んだ利用者名 }
         reason:
@@ -2558,7 +2564,7 @@ components:
     ImportSkippedItem:
       type: object
       description: 取り込まない予定の、読めた日時と理由。タイトルは利用者名を含むので返さない
-      required: [date, start_time, end_time, all_day, reason]
+      required: [date, start_time, end_time, ends_next_day, all_day, reason]
       properties:
         date:
           type: string
@@ -2579,6 +2585,9 @@ components:
           description: 日をまたぐ予定では、翌日の時刻
           allOf:
             - $ref: "#/components/schemas/Time"
+        ends_next_day:
+          type: boolean
+          description: date の翌日の end_time に終わる予定に読み替えた予定のとき true。reason が multi_day の予定では false
         all_day: { type: boolean }
         reason:
           type: string

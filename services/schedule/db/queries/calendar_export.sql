@@ -72,7 +72,8 @@ SELECT e.*,
        u.id AS staff_id, u.username AS staff_name,
        COALESCE(s.date, rs.date)::date AS date,
        COALESCE(s.start_time, rs.start_time)::time AS start_time,
-       COALESCE(s.end_time, rs.end_time)::time AS end_time
+       COALESCE(s.end_time, rs.end_time)::time AS end_time,
+       COALESCE(s.ends_next_day, rs.ends_next_day)::boolean AS ends_next_day
 FROM calendar_exports e
 LEFT JOIN schedules s ON s.id = e.schedule_id
 LEFT JOIN schedule_cancels sc ON sc.schedule_id = e.schedule_id

@@ -53,6 +53,7 @@ describe('取り込み方の選択', () => {
           date: '2026-11-04',
           start_time: '10:00',
           end_time: '11:00',
+          ends_next_day: false,
           all_day: false,
           reason: 'staff_on_leave' as const,
         },
