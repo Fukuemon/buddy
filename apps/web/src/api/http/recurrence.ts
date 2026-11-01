@@ -25,6 +25,9 @@ export const parseOccurrenceId = (
 const dayOf = (date: string) => Date.parse(`${date}T00:00:00Z`)
 const dateOf = (time: number) => new Date(time).toISOString().slice(0, 10)
 
+/** YYYY-MM-DD の前の日の YYYY-MM-DD を返す。 */
+export const previousDate = (date: string) => dateOf(dayOf(date) - DAY_MS)
+
 /** 月曜を 1、日曜を 7 とする曜日。 */
 const isoWeekday = (time: number) => new Date(time).getUTCDay() || 7
 

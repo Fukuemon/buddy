@@ -71,6 +71,25 @@ export const createNormalSchedule = async (
     data: await normalSlot(request, token, schedule),
   })
 
+/**
+ * 予定の API で、facilityId の事業所に staffId の職員の、date の 22:00 に始まり翌日の 01:00 に終わる通常の予定を 1 件作り（createSchedule）、レスポンスを返す。
+ */
+export const createOvernightSchedule = async (
+  request: APIRequestContext,
+  token: string,
+  facilityId: string,
+  schedule: NormalSchedule,
+) =>
+  request.post(`${SCHEDULE_URL}/v1/facilities/${facilityId}/schedules`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: {
+      ...(await normalSlot(request, token, schedule)),
+      start_time: '22:00',
+      end_time: '01:00',
+      ends_next_day: true,
+    },
+  })
+
 /** 予定の API で、facilityId の事業所に staffId の職員の毎週の通常の予定を作り（createRecurringSchedule）、レスポンスを返す。 */
 export const createWeeklyNormalSchedule = async (
   request: APIRequestContext,

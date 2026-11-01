@@ -59,6 +59,19 @@ describe('fromApiSchedule', () => {
     })
   })
 
+  it('終了が翌日の印が付いた予定は、終了の日時を翌日にする', () => {
+    const schedule = fromApiSchedule(
+      apiSchedule({
+        date: '2026-10-31',
+        start_time: '22:00',
+        end_time: '01:00',
+        ends_next_day: true,
+      }),
+    )
+    expect(schedule.startsAt).toBe('2026-10-31T22:00:00+09:00')
+    expect(schedule.endsAt).toBe('2026-11-01T01:00:00+09:00')
+  })
+
   it('キャンセルした予定は、キャンセルの理由を持つ', () => {
     expect(
       fromApiSchedule(

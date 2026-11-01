@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vite-plus/test'
 import * as stories from './StaffScheduleDayGrid.stories'
 import { storyStaff } from './storyData'
 
-const { Default, WithNow } = composeStories(stories)
+const { Default, NextDayOfOvernight, WithNow } = composeStories(stories)
 
 describe('StaffScheduleDayGrid', () => {
   it('職員ごとの列に予定を置き、押すと予定の ID を渡す', async () => {
@@ -32,7 +32,28 @@ describe('StaffScheduleDayGrid', () => {
     render(<Default events={[event]} />)
     expect(screen.getByTestId('day-grid-slot-staff-1-09:00').style.height).toBe('44px')
     const button = screen.getByTestId('schedule-event-e1')
-    expect([button.style.top, button.style.height]).toEqual(['264px', '44px'])
+    expect([button.style.top, button.style.height]).toEqual(['792px', '44px'])
+  })
+
+  it('0 時から 24 時の枠を作り、開いたときに 6 時の位置までスクロールする', () => {
+    render(<Default />)
+    expect(screen.getByTestId('day-grid-slot-staff-1-00:00')).toBeInTheDocument()
+    expect(screen.getByTestId('day-grid-slot-staff-1-23:30')).toBeInTheDocument()
+    expect(screen.getByTestId('staff-schedule-day-grid').scrollTop).toBe(528)
+  })
+
+  it('翌日に終わる予定を、開始の日には 24 時まで、翌日には 0 時から終了の時刻まで描く', () => {
+    const { unmount } = render(<Default />)
+    const startDay = screen.getByTestId('schedule-event-schedule-7')
+    expect([startDay.style.top, startDay.style.height]).toEqual(['1936px', '176px'])
+    expect(startDay).toHaveTextContent('22:00-翌 01:00 夜勤')
+    unmount()
+
+    render(<NextDayOfOvernight />)
+    const nextDay = screen.getByTestId('schedule-event-schedule-7')
+    expect([nextDay.style.top, nextDay.style.height]).toEqual(['0px', '88px'])
+    expect(nextDay).toHaveTextContent('22:00-翌 01:00 夜勤')
+    expect(screen.queryByTestId('schedule-event-schedule-1')).not.toBeInTheDocument()
   })
 
   it('空いた枠を押すと、職員と時刻を渡す', async () => {
@@ -44,17 +65,13 @@ describe('StaffScheduleDayGrid', () => {
 
   it('今の時刻を渡すと、職員の列ごとにその時刻の位置に横線を引く', () => {
     render(<WithNow />)
-    // 10:15 は 6 時から 4.25 時間で、1 時間 88px の 374px。線の太さ 2px の中心を合わせる
-    expect(screen.getByTestId('day-grid-now-staff-1').style.top).toBe('373px')
+    // 10:15 は 0 時から 10.25 時間で、1 時間 88px の 902px。線の太さ 2px の中心を合わせる
+    expect(screen.getByTestId('day-grid-now-staff-1').style.top).toBe('901px')
     expect(screen.getAllByTestId(/^day-grid-now-/)).toHaveLength(storyStaff.length)
   })
 
-  it.each([
-    ['今の時刻を渡さない', undefined],
-    ['表示する時刻より前', new Date(2026, 9, 20, 5, 59)],
-    ['表示する時刻の後', new Date(2026, 9, 20, 22, 0)],
-  ])('%s とき、横線を引かない', (_, now) => {
-    render(<Default now={now} />)
+  it('今の時刻を渡さないとき、横線を引かない', () => {
+    render(<Default />)
     expect(screen.queryByTestId('day-grid-now-staff-1')).not.toBeInTheDocument()
   })
 
