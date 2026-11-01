@@ -1,3 +1,4 @@
+import { clsx } from 'clsx'
 import { useEffect, useRef, type ReactNode, type SyntheticEvent } from 'react'
 
 export type SiteDialogProps = {
@@ -8,6 +9,8 @@ export type SiteDialogProps = {
   /** 覆いを押すか Escape キーを押したときに呼ぶ。canClose が false の間は呼ばない。 */
   onClose: () => void
   canClose?: boolean
+  /** narrow は、確認のダイアログの幅にする。 */
+  width?: 'default' | 'narrow'
   children: ReactNode
   'data-testid'?: string
 }
@@ -21,6 +24,7 @@ export const SiteDialog = ({
   labelledBy,
   onClose,
   canClose = true,
+  width = 'default',
   children,
   'data-testid': testId,
 }: SiteDialogProps) => {
@@ -49,7 +53,10 @@ export const SiteDialog = ({
     <dialog
       aria-labelledby={labelledBy}
       aria-modal="true"
-      className="m-auto w-[calc(100%-2rem)] max-w-lg rounded-8 border-0 bg-surface p-0 text-text shadow-3 backdrop:bg-overlay"
+      className={clsx(
+        'm-auto w-[calc(100%-2rem)] rounded-8 border-0 bg-surface p-0 text-text shadow-3 backdrop:bg-overlay',
+        width === 'narrow' ? 'max-w-md' : 'max-w-lg',
+      )}
       data-testid={testId}
       onCancel={handleCancel}
       onClick={(event) => {

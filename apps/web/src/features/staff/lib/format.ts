@@ -55,22 +55,20 @@ export const hasNoAssignments = (assignments: StaffAssignments) =>
   assignments.recurring_schedules.length === 0 &&
   assignments.patients.length === 0
 
-/** 在籍の枠の文。休職は休職にした日と戻る予定の日を、退職は退職にした日を入れる。 */
+/** プロフィールの在籍の文。休職と退職だけに出し、状態の印が示す日付は繰り返さない。有効なら undefined を返す。 */
 export const employmentText = (
-  staff: Pick<StaffRecord, 'status' | 'leave_started_at' | 'leave_return_date' | 'retired_at'>,
+  staff: Pick<StaffRecord, 'status' | 'leave_started_at' | 'leave_return_date'>,
 ) => {
   if (staff.status === 'on_leave') {
     const since =
       staff.leave_started_at === null ? '' : `${formatDateTimeAsDate(staff.leave_started_at)} から`
     return staff.leave_return_date === null
       ? `${since}休職です。`
-      : `${since}休職です。戻る予定の日は ${formatDate(staff.leave_return_date)} です。この日に自動では戻りません。`
+      : `${since}休職です。戻る予定の日に自動では戻りません。`
   }
-  if (staff.status === 'retired') {
-    const on = staff.retired_at === null ? '' : `${formatDateTimeAsDate(staff.retired_at)} に`
-    return `${on}退職にしました。退職は戻せません。名前、所属、役職は、過去の予定と照合の結果のために残しています。`
-  }
-  return '有効です。ログインして、予定を使えます。'
+  if (staff.status === 'retired')
+    return '退職は戻せません。メールアドレスと電話番号は退職で消し、名前、所属、役職は過去の予定と照合の結果のために残しています。'
+  return undefined
 }
 
 /**
@@ -85,9 +83,10 @@ export const policyTargetText = (
   return ids.length === 0 ? 'なし' : ids.map((id) => names.get(id) ?? id).join('、')
 }
 
-/** 職員の権限のうち、役職のデフォルトの権限に無い、職員ごとに足した権限の名前。 */
+/** 職員の権限のうち、役職に決まっていない、個別に足した権限の名前。役職を読み終えるまでは空にする。 */
 export const addedPolicyNames = (staff: StaffDetail, position: Position | undefined) => {
-  const defaults = new Set(position?.policies.map((p) => p.id))
+  if (position === undefined) return []
+  const defaults = new Set(position.policies.map((p) => p.id))
   return staff.policies.filter((p) => !defaults.has(p.policy_id)).map((p) => p.name)
 }
 
@@ -96,9 +95,6 @@ export const policyTargetKind = (policy: Pick<Policy, 'code' | 'needs_target'>) 
   if (!policy.needs_target) return undefined
   return policy.code.startsWith('schedule.team.') ? 'team' : 'user'
 }
-
-/** 権限の数。権限は予定の API のマイグレーションが入れる 8 つで、事業所ごとには持たない。 */
-export const POLICY_COUNT = 8
 
 /** 状態の印の色の調子。休職は注意、退職は終わった状態である。 */
 export const statusTone = (staff: Pick<StaffRecord, 'status'>) =>

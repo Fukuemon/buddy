@@ -7,7 +7,7 @@
 | --- | --- |
 | URL | `/staff/$staffId` |
 | 使う人 | 職員の管理の権限を持つ職員（デフォルトはマネージャー） |
-| 実装 | 未実装 |
+| 実装 | `apps/web/src/routes/staff_.$staffId.tsx`、`apps/web/src/features/staff/components/StaffDetailContainer.tsx`、`apps/web/src/features/staff/components/StaffDetailView.tsx`、`apps/web/src/components/site/ActionMenu.tsx`、`apps/web/src/components/site/InputDialog.tsx`、`apps/web/src/components/site/ConfirmDialog.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
 

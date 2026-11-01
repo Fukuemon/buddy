@@ -8,6 +8,8 @@ import { SiteDialog } from './SiteDialog'
 export type InputDialogProps = {
   /** testid の接頭辞。`<接頭辞>-dialog`、`-close`、`-cancel`、`-submit` を付ける。 */
   testIdPrefix: string
+  /** 主ボタンの testid。省くと `<接頭辞>-submit` にする。 */
+  submitTestId?: string
   title: string
   /** タイトルの右に置く要素。? のヘルプを置く。 */
   titleAddon?: ReactNode
@@ -33,6 +35,7 @@ export type InputDialogProps = {
  */
 export const InputDialog = ({
   testIdPrefix,
+  submitTestId,
   title,
   titleAddon,
   submitLabel,
@@ -87,6 +90,7 @@ export const InputDialog = ({
         onCancel={close}
         onSubmit={onSubmit}
         submitLabel={submitLabel}
+        submitTestId={submitTestId}
         submitVariant={submitVariant}
         testIdPrefix={testIdPrefix}
       />
@@ -97,6 +101,7 @@ export const InputDialog = ({
 /** 入力と確認のダイアログのフッター。理由の文、「キャンセル」、主ボタンを並べる。 */
 export const DialogFooter = ({
   testIdPrefix,
+  submitTestId = `${testIdPrefix}-submit`,
   submitLabel,
   busyLabel,
   submitVariant,
@@ -109,6 +114,7 @@ export const DialogFooter = ({
 }: Pick<
   InputDialogProps,
   | 'testIdPrefix'
+  | 'submitTestId'
   | 'submitLabel'
   | 'busyLabel'
   | 'submitVariant'
@@ -141,7 +147,7 @@ export const DialogFooter = ({
       キャンセル
     </Button>
     <Button
-      data-testid={`${testIdPrefix}-submit`}
+      data-testid={submitTestId}
       disabled={!canSubmit || isSubmitting}
       form={formId}
       onClick={formId === undefined ? onSubmit : undefined}
