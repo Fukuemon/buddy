@@ -5,8 +5,9 @@ import { HelpToggle } from '#/components/site/HelpToggle'
 import { FilterSelect, ListCount, ListEmpty, ListTools } from '#/components/site/ListTools'
 import { RowTable, RowTableRow } from '#/components/site/RowTable'
 import { DotLabel, StatusBadge } from '#/components/site/StatusBadge'
+import { teamDotClassName } from '#/components/site/teamDot'
 
-import { STATUS_FILTER_OPTIONS, teamDotClassName, type StaffListFilter } from '../lib/filter'
+import { STATUS_FILTER_OPTIONS, type StaffListFilter } from '../lib/filter'
 import { formatDate, formatDateTimeAsDate, statusLabel, statusTone } from '../lib/format'
 import { sortByName } from './StaffFormFields'
 
