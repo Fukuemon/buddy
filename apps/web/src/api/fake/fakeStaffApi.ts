@@ -1,23 +1,17 @@
-import {
-  mockDepartments,
-  mockMe,
-  mockPatients,
-  mockPolicies,
-  mockPositions,
-  mockStaff,
-  mockTeams,
-} from '#/mocks/scheduleData'
+import { mockMe, mockPatients, mockPolicies, mockPositions, mockStaff } from '#/mocks/scheduleData'
 
 import { ApiError, type BuddyApi } from '../client'
 import { fromApiStaff } from '../http/scheduleMapper'
 import { matchesName } from '../nameSearch'
 import {
   STAFF_MANAGE,
+  type Department,
   type Position,
   type Schedule,
   type StaffAssignments,
   type StaffDetail,
   type StaffPolicy,
+  type Team,
 } from '../types'
 
 /** createFakeStaffApi の設定。 */
@@ -30,6 +24,9 @@ export type FakeStaffApiOptions = {
   viewerId: string
   /** 今日。この日以降の予定を残る予定にする。 */
   today: () => Date
+  /** 職員に付けられる部署とチーム。フェイクの部署とチームの操作が変えた後の値を返す。 */
+  departments: () => readonly Department[]
+  teams: () => readonly Team[]
 }
 
 const notFound = () => new ApiError(404, '職員が見つかりません', [], 'not_found')
@@ -48,7 +45,9 @@ export const createFakeStaffApi = ({
   schedules,
   viewerId,
   today,
-}: FakeStaffApiOptions): Pick<BuddyApi, 'staff' | 'departments' | 'positions' | 'policies'> => {
+  departments,
+  teams,
+}: FakeStaffApiOptions): Pick<BuddyApi, 'staff' | 'positions' | 'policies'> => {
   let sequence = 0
   const nextId = (prefix: string) => {
     sequence += 1
@@ -70,7 +69,7 @@ export const createFakeStaffApi = ({
     if (position === undefined) throw new ApiError(400, '役職が見つかりません', [], 'invalid_input')
     return position
   }
-  const refOf = (units: { id: string; name: string }[], id: string, label: string) => {
+  const refOf = (units: readonly { id: string; name: string }[], id: string, label: string) => {
     const unit = units.find((u) => u.id === id)
     if (unit === undefined) throw new ApiError(400, `${label}が見つかりません`, [], 'invalid_input')
     return { id: unit.id, name: unit.name }
@@ -171,8 +170,8 @@ export const createFakeStaffApi = ({
           email,
           phone_number: input.phone_number ?? null,
           facility_id: facilityId,
-          department: refOf(mockDepartments, input.department_id, '部署'),
-          team: refOf(mockTeams, input.team_id, 'チーム'),
+          department: refOf(departments(), input.department_id, '部署'),
+          team: refOf(teams(), input.team_id, 'チーム'),
           position: { id: position.id, name: position.name },
           status: 'active',
           leave_started_at: null,
@@ -193,8 +192,8 @@ export const createFakeStaffApi = ({
           ...staff,
           username: input.username,
           phone_number: input.phone_number ?? null,
-          department: refOf(mockDepartments, input.department_id, '部署'),
-          team: refOf(mockTeams, input.team_id, 'チーム'),
+          department: refOf(departments(), input.department_id, '部署'),
+          team: refOf(teams(), input.team_id, 'チーム'),
           policies: staff.policies.map((p) => ({
             ...p,
             target_team_ids: p.target_team_ids.map((t) => (t === oldTeam ? input.team_id : t)),
@@ -292,12 +291,6 @@ export const createFakeStaffApi = ({
             retired_at: new Date().toISOString(),
           }),
         }
-      },
-    },
-    departments: {
-      list: async (facilityId) => {
-        assertFacility(facilityId)
-        return mockDepartments.map(({ id, name }) => ({ id, name }))
       },
     },
     positions: {

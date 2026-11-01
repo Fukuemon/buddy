@@ -27,6 +27,7 @@ import type {
   StaffRetireResult,
   StaffUpdateInput,
   Team,
+  TeamInput,
 } from './types'
 
 /**
@@ -139,9 +140,21 @@ export interface BuddyApi {
   }
   teams: {
     list(facilityId: FacilityId): Promise<Team[]>
+    /** 職員の管理の権限が無ければ status が 403、同じ名前のチームがあれば 409 の ApiError を投げる。 */
+    create(facilityId: FacilityId, input: TeamInput): Promise<Team>
+    /** 職員の管理の権限が無ければ status が 403、チームが無ければ 404、ほかの同じ名前のチームがあれば 409 の ApiError を投げる。 */
+    update(facilityId: FacilityId, teamId: Team['id'], input: TeamInput): Promise<Team>
   }
   departments: {
     list(facilityId: FacilityId): Promise<Department[]>
+    /** 職員の管理の権限が無ければ status が 403、同じ名前の部署があれば 409 の ApiError を投げる。 */
+    create(facilityId: FacilityId, name: string): Promise<Department>
+    /** 職員の管理の権限が無ければ status が 403、部署が無ければ 404、ほかの同じ名前の部署があれば 409 の ApiError を投げる。 */
+    update(
+      facilityId: FacilityId,
+      departmentId: Department['id'],
+      name: string,
+    ): Promise<Department>
   }
   positions: {
     /** 役職を名前の順で返す。 */

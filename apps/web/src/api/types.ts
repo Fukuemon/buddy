@@ -22,6 +22,24 @@ export type Viewer = {
 /** チーム。API の型の ID、名前、色だけを使う。色はチームの色のトークンの名前（team- の後ろ）である。 */
 export type Team = Pick<ScheduleComponents['schemas']['Team'], 'id' | 'name' | 'color'>
 
+/** チームの色。packages/ui のチームの色のトークンの名前（team- の後ろ）である。 */
+export type TeamColor = Team['color']
+
+/** チームの色の 8 色。予定の API が色を省いたチームに選ぶ順で、画面の選択肢もこの順に並べる。 */
+export const TEAM_COLORS = [
+  'blue',
+  'orange',
+  'magenta',
+  'cyan',
+  'yellow',
+  'purple',
+  'green',
+  'lime',
+] as const satisfies readonly TeamColor[]
+
+/** チームを作るときと変えるときに送る値。 */
+export type TeamInput = Pick<Team, 'name' | 'color'>
+
 /** 職員。名前は API の username である。 */
 export type Staff = {
   id: string

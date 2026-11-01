@@ -16,6 +16,7 @@ const optionsFailingApi = (): BuddyApi => {
   return {
     ...base,
     departments: {
+      ...base.departments,
       list: async () => {
         throw new ApiError(500, '読めない')
       },
