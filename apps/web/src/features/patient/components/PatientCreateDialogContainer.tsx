@@ -37,7 +37,8 @@ const PatientCreateDialogContent = () => {
       onClose={() => navigate({ to: '/patients' })}
       onSubmit={(input) =>
         create.mutate(input, {
-          onSuccess: () => navigate({ to: '/patients' }),
+          onSuccess: (patient) =>
+            navigate({ to: '/patients/$patientId', params: { patientId: patient.id } }),
           onError: async (error) =>
             setStaffStopped(await isStaffStopped(error, input.assigned_staff_id)),
         })
@@ -54,7 +55,7 @@ const PatientCreateDialogContent = () => {
 
 /**
  * 利用者の一覧に重ねる、利用者の登録のダイアログ。職員の管理の権限が無ければ出さず、一覧が権限の無いことを示す。
- * 登録できたら、利用者の一覧に戻る。
+ * 登録できたら、登録した利用者の詳細へ移る。
  */
 export const PatientCreateDialogContainer = () => {
   const { viewer } = useRouteContext({ from: '__root__' })

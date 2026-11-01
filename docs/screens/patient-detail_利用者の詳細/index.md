@@ -7,7 +7,7 @@
 | --- | --- |
 | URL | `/patients/$patientId` |
 | 使う人 | 職員の管理の権限を持つ職員（デフォルトはマネージャー） |
-| 実装 | 未実装 |
+| 実装 | `apps/web/src/routes/patients_.$patientId.tsx`、`apps/web/src/features/patient/components/PatientDetailContainer.tsx`、`apps/web/src/features/patient/components/PatientDetailView.tsx`、`apps/web/src/features/patient/components/PatientEditDialog.tsx`、`apps/web/src/features/patient/components/PatientEndDialog.tsx`、`apps/web/src/features/patient/components/PatientResumeDialog.tsx`、`packages/ui/src/base/ActionMenu/ActionMenu.tsx`、`packages/ui/src/patterns/InputDialog.tsx`、`packages/ui/src/patterns/ConfirmDialog.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
 
@@ -860,7 +860,6 @@ BFF を通して API を呼ぶ構成で、ログインしているとき
 
 ## 未決
 
-- 利用者を 1 人読む API と、利用の終了の前に残る予定を読む API は、予定の API に無い。#353 で足す。
 - 残る予定を、その場でキャンセルする操作は無い。単発の予定は予定の詳細から 1 件ずつキャンセルする。
 - 繰り返しの予定を終える画面は、今の画面仕様書に無い。繰り返しの予定が残る利用者を利用の終了にするには、繰り返しの予定を画面で扱うときに、終える操作を決める必要がある。
 - 利用の終了の利用者の名前を消す操作は持たない。ADR-0021 のとおり、名前は過去の予定のために残す。

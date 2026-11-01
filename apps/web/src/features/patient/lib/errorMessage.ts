@@ -4,6 +4,13 @@ import { ApiError } from '#/api/client'
 export const LIST_LOAD_ERROR_MESSAGE =
   '利用者を読み込めませんでした。時間をおいて、読み直してください。'
 
+/** 利用者の詳細を読めなかったときの文。 */
+export const DETAIL_LOAD_ERROR_MESSAGE = LIST_LOAD_ERROR_MESSAGE
+
+/** 利用者の詳細の利用者が見つからなかったときの文。 */
+export const DETAIL_NOT_FOUND_MESSAGE =
+  '利用者が見つかりませんでした。利用者の一覧から開き直してください。'
+
 /** サービスと職員の選択肢を読めなかったときの文。 */
 export const OPTIONS_LOAD_ERROR_MESSAGE =
   'サービスと職員を読み込めませんでした。閉じてから、開き直してください。'
@@ -33,3 +40,28 @@ export const patientSubmitErrorMessage = (
   }
   return `${verb}できませんでした。時間をおいて、もう一度${verb}してください。`
 }
+
+/** 拒まれた理由の文。403 は権限を外されたとき、400 は担当の職員が休職か退職になったときである。ほかは届かなかったときの文にする。 */
+const operationErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof ApiError && error.status === 403) return FORBIDDEN_MESSAGE
+  if (error instanceof ApiError && error.status === 400) return STAFF_STOPPED_MESSAGE
+  return fallback
+}
+
+/** 利用の終了にできなかったときの文。予定が残るときは、文ではなく残る予定を出す。 */
+export const endServiceErrorMessage = (error: unknown) =>
+  operationErrorMessage(
+    error,
+    '利用の終了にできませんでした。時間をおいて、もう一度利用の終了にしてください。',
+  )
+
+/** 利用を再開できなかったときの文。 */
+export const resumeServiceErrorMessage = (error: unknown) =>
+  operationErrorMessage(
+    error,
+    '利用を再開できませんでした。時間をおいて、もう一度再開してください。',
+  )
+
+/** 残る予定を読めなかったときの文。 */
+export const REMAINING_LOAD_ERROR_MESSAGE =
+  '残る予定を読み込めませんでした。閉じてから、開き直してください。'
