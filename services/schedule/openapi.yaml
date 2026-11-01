@@ -454,6 +454,7 @@ paths:
         ID ブローカーにも職員を登録し、ブローカーが発行した職員の ID を sub に入れる。登録した職員は、メールでログインできる。
         ブローカーの職員は、職員を書き終えてからログインできるようにする。ブローカーに登録した後に失敗したときは、同じ本文で送り直してよい。
         職員のメールは、全ての事業所で一意である。
+        visits を省くと、訪問する職員として登録する。役職からは決めない。
       parameters: [$ref: "#/components/parameters/FacilityID"]
       requestBody:
         required: true
@@ -478,6 +479,10 @@ paths:
                 department_id: { $ref: "#/components/schemas/ID" }
                 team_id: { $ref: "#/components/schemas/ID" }
                 position_id: { $ref: "#/components/schemas/ID" }
+                visits:
+                  type: boolean
+                  default: true
+                  description: 訪問するか。false の職員は、予定のカレンダーの職員の列と、予定と担当の候補に出ない
       responses:
         "201":
           description: 作った職員
@@ -517,12 +522,14 @@ paths:
     put:
       tags: [staff]
       operationId: updateUser
-      summary: 職員の名前、電話番号、部署、チームを変える
+      summary: 職員の名前、電話番号、部署、チーム、訪問するかを変える
       description: |
-        職員の名前、電話番号、部署、チームを本文の値に置き換える。部分の更新は持たず、phone_number を省くか null にすると電話番号を消す。
+        職員の名前、電話番号、部署、チーム、訪問するかを本文の値に置き換える。部分の更新は持たず、phone_number を省くか null にすると電話番号を消す。
         部署とチームは、職員と同じ事業所のものに限る。メールは ID ブローカーが持つので変えない。
         チームを変えると、チームを対象にする職員の権限のうち、古いチームを指す対象を新しいチームに移す。ほかのチームの対象は残す。
         職員の管理の権限（staff.manage）を持つ職員だけが呼べる。休職の職員は変えられ、退職した職員は変えられない。
+        訪問する職員を訪問しない職員に変えるときは、その日以降の予定、繰り返しの予定、担当の利用者が残れば、書かずに 409（staff_has_assignments）で
+        残る一覧を返す。一覧の範囲は、退職と同じである。訪問しない職員を訪問する職員に戻すときは確認しない。
       parameters:
         - { name: user_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
       requestBody:
@@ -531,7 +538,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [username, department_id, team_id]
+              required: [username, department_id, team_id, visits]
               properties:
                 username: { type: string, minLength: 1, maxLength: 128 }
                 phone_number:
@@ -541,6 +548,9 @@ paths:
                   description: 11 桁以内の数字。先頭の + は省いてよい。省くか null なら電話番号を消す
                 department_id: { $ref: "#/components/schemas/ID" }
                 team_id: { $ref: "#/components/schemas/ID" }
+                visits:
+                  type: boolean
+                  description: 訪問するか。false の職員は、予定のカレンダーの職員の列と、予定と担当の候補に出ない
       responses:
         "200":
           description: 変えた職員と権限
@@ -552,11 +562,19 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409":
-          description: 退職した職員を変えようとした。職員は変わらない
+          description: |
+            退職した職員を変えようとした（conflict）か、その日以降の予定か担当の利用者が残る職員を訪問しない職員に変えようとした
+            （staff_has_assignments。assignments に残る一覧がある）。職員は変わらない
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/Error" }
-              example: { code: conflict, message: "退職した職員は変えられません" }
+              schema: { $ref: "#/components/schemas/RetireConflict" }
+              example:
+                code: staff_has_assignments
+                message: "予定か担当の利用者が残る職員は、訪問しない職員にできません。別の職員に割り振り直してください"
+                assignments:
+                  schedules: [{ id: 01M3TC5H00QV17BC0J9V3393ZP, date: "2026-11-02", start_time: "09:00", end_time: "10:00" }]
+                  recurring_schedules: []
+                  patients: []
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/users/{user_id}/position:
@@ -1700,8 +1718,8 @@ components:
     AssignBadRequest:
       description: |
         入力のエラー。`code` は invalid_input。`message` はエラーの箇所と理由で、入力によって変わる。
-        予定の職員、主訪問者、同行者、利用者の担当の職員に、休職か退職の職員を新しく指したときも返す。
-        予定と繰り返しの予定に既に割り振った職員は、同じ役割のまま保存できる。休職の職員は日付によらず、退職した職員は今日より前の予定でだけ保存できる。
+        予定の職員、主訪問者、同行者、利用者の担当の職員に、休職か退職の職員か、訪問しない職員を新しく指したときも返す。
+        予定と繰り返しの予定に既に割り振った職員は、同じ役割のまま保存できる。休職の職員と訪問しない職員は日付によらず、退職した職員は今日より前の予定でだけ保存できる。
         予定の利用者に、利用の終了の利用者を新しく指したときも返す。既に付けた利用の終了の利用者は、利用者を変えずに、今日より前の予定でだけ保存できる。
       content:
         application/json:
@@ -1716,6 +1734,9 @@ components:
             retired:
               summary: 退職した職員を指した
               value: { code: invalid_input, message: "退職した職員 01M3TC5TRG5200KYWTZW6ER3WN には、予定と担当を割り振れません" }
+            nonVisiting:
+              summary: 訪問しない職員を指した
+              value: { code: invalid_input, message: "訪問しない職員 01M3TC5TRG5200KYWTZW6ER3WN には、予定と担当を割り振れません" }
             endedPatient:
               summary: 利用の終了の利用者を指した
               value: { code: invalid_input, message: "利用の終了の利用者 01M3TC5TRG5200KYWTZW6ER3WN には、今日以降の予定と新しい予定を作れません" }
@@ -1900,6 +1921,7 @@ components:
         - department
         - team
         - position
+        - visits
         - status
         - leave_started_at
         - leave_return_date
@@ -1923,6 +1945,9 @@ components:
         department: { $ref: "#/components/schemas/Ref" }
         team: { $ref: "#/components/schemas/Ref" }
         position: { $ref: "#/components/schemas/Ref" }
+        visits:
+          type: boolean
+          description: 訪問するか。false の職員は、予定のカレンダーの職員の列と、予定と担当の候補に出ず、予定と担当を新しく割り振れない
         status: { $ref: "#/components/schemas/StaffStatus" }
         leave_started_at:
           type: string
@@ -1949,7 +1974,7 @@ components:
         予定のカレンダーと予定の候補に出さない
     StaffAssignments:
       type: object
-      description: 職員を休職か退職にするときに残る、その日以降の予定、繰り返しの予定、担当の利用者。職員が予定の職員、主訪問者、同行者のどれかの予定を含める
+      description: 職員を休職、退職、訪問しない職員にするときに残る、その日以降の予定、繰り返しの予定、担当の利用者。職員が予定の職員、主訪問者、同行者のどれかの予定を含める
       required: [schedules, recurring_schedules, patients]
       properties:
         schedules:
@@ -2545,12 +2570,13 @@ components:
         all_day: { type: boolean }
         reason:
           type: string
-          enum: [all_day, multi_day, unreadable_time, zero_length, unreadable_title, service_not_found, staff_on_leave]
+          enum: [all_day, multi_day, unreadable_time, zero_length, unreadable_title, service_not_found, staff_on_leave, staff_non_visiting]
           description: |
             all_day は終日、multi_day は日をまたぐ（24:00 に終わる予定を含む）、unreadable_time は日時を読めない、
             zero_length は長さが無い、unreadable_title はタイトルが空白だけか訪問のタイトルを読めない、
             service_not_found はタイトルのサービス内容がサービスコードに無い、
-            staff_on_leave はカレンダーを結び付けた職員が休職しているので作らない新しい予定
+            staff_on_leave はカレンダーを結び付けた職員が休職しているので作らない新しい予定、
+            staff_non_visiting はカレンダーを結び付けた職員が訪問しない職員なので作らない新しい予定
     ImportPreview:
       type: object
       required: [range_start, range_end, counts, needs_review, skipped]

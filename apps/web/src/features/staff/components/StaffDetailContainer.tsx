@@ -137,7 +137,13 @@ const StaffDetailContent = ({ staffId, viewerId }: { staffId: Staff['id']; viewe
           errorMessage={update.isError ? staffSubmitErrorMessage(update.error, '保存') : undefined}
           isSubmitting={update.isPending}
           onClose={close}
-          onSubmit={(input) => update.mutate(input, { onSuccess: close })}
+          onSubmit={(input) =>
+            update.mutate(input, {
+              onSuccess: (result) =>
+                'updated' in result ? close() : setRefusedAssignments(result.assignments),
+            })
+          }
+          refusedAssignments={refusedAssignments}
           staff={staff}
           teams={teams.data}
         />

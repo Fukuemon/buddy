@@ -184,6 +184,7 @@ export const createFakeStaffApi = ({
           department: refOf(departments(), input.department_id, '部署'),
           team: refOf(teams(), input.team_id, 'チーム'),
           position: { id: position.id, name: position.name },
+          visits: input.visits ?? true,
           status: 'active',
           leave_started_at: null,
           leave_return_date: null,
@@ -198,18 +199,24 @@ export const createFakeStaffApi = ({
         assertFacility(facilityId)
         const staff = find(staffId)
         assertNotRetired(staff)
+        if (staff.visits && !input.visits) {
+          const assignments = assignmentsOf(staffId)
+          if (!isEmpty(assignments)) return { assignments }
+        }
         const oldTeam = staff.team.id
-        return save({
+        const updated = save({
           ...staff,
           username: input.username,
           phone_number: input.phone_number ?? null,
           department: refOf(departments(), input.department_id, '部署'),
           team: refOf(teams(), input.team_id, 'チーム'),
+          visits: input.visits,
           policies: staff.policies.map((p) => ({
             ...p,
             target_team_ids: p.target_team_ids.map((t) => (t === oldTeam ? input.team_id : t)),
           })),
         })
+        return { updated }
       },
       changePosition: async (facilityId, staffId, positionId) => {
         assertFacility(facilityId)

@@ -22,6 +22,10 @@ const SkipServiceNotFound SkipReason = "service_not_found"
 // 前の取り込みで繰り返しのまま取り込み、今もカレンダーの職員に割り振った予定の回の置き換えは、既に割り振った予定の変更なので、これに当てない。
 const SkipStaffOnLeave SkipReason = "staff_on_leave"
 
+// SkipStaffNonVisiting は、カレンダーを結び付けた職員が訪問しない職員なので作らない、新しい予定である（ADR-0022）。
+// 休職と同じく、今もカレンダーの職員に割り振った予定の回の置き換えには当てない。
+const SkipStaffNonVisiting SkipReason = "staff_non_visiting"
+
 // Range は、取り込む予定の期間で、両端の日を含む。予定はこの期間に始まるものを取り込む。
 type Range struct {
 	Start civil.Date
@@ -199,9 +203,10 @@ type planInput struct {
 	linkedRecurring map[string]schedule.RecurringDetail
 	patients        []PatientRef
 	serviceCodes    []visit.ServiceCode
-	// staffOnLeave は、カレンダーを結び付けた職員が休職しているかである。休職なら新しい予定を作らない。
-	staffOnLeave bool
-	// staffID は、カレンダーを結び付けた職員である。休職でも、この職員に割り振った繰り返しの予定の回の置き換えは当てる。
+	// staffBlocked は、カレンダーを結び付けた職員に新しい予定を作らない理由である。職員が休職なら SkipStaffOnLeave、
+	// 訪問しない職員なら SkipStaffNonVisiting で、どちらでもなければ空である。
+	staffBlocked SkipReason
+	// staffID は、カレンダーを結び付けた職員である。休職か訪問しない職員でも、この職員に割り振った繰り返しの予定の回の置き換えは当てる。
 	staffID string
 }
 
@@ -499,8 +504,8 @@ func (b *planner) add(e entry) bool {
 		b.skip(e.cand)
 		return false
 	}
-	if b.in.staffOnLeave && !b.keepsAssignment(e) {
-		b.skipAs(e.cand, SkipStaffOnLeave)
+	if b.in.staffBlocked != "" && !b.keepsAssignment(e) {
+		b.skipAs(e.cand, b.in.staffBlocked)
 		return false
 	}
 	if e.cand.Kind == KindVisit {

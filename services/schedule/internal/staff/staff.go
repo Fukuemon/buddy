@@ -23,6 +23,8 @@ const (
 // ブローカーで職員を作る前に登録した職員では nil のことがある。PhoneNumber は、先頭に "+" を付けた数字の列である。
 // LeaveStartedAt は休職にした時刻で、休職でなければ nil である。LeaveReturnDate は戻る予定の日のメモで、その日に自動では戻さない。
 // RetiredAt は退職にした時刻で、退職していなければ nil である。退職した職員は、Email が空で、PhoneNumber が nil である（ADR-0018）。
+// NonVisiting は訪問しない職員かで、true の職員は予定のカレンダーの職員の列と、予定と担当の候補に出ず、予定と担当を新しく割り振れない（ADR-0022）。
+// ゼロ値を訪問する職員にするため、訪問するかの逆を持つ。
 type Staff struct {
 	ID              string
 	Sub             *string
@@ -33,6 +35,7 @@ type Staff struct {
 	DepartmentID    string
 	TeamID          string
 	PositionID      string
+	NonVisiting     bool
 	LeaveStartedAt  *time.Time
 	LeaveReturnDate *civil.Date
 	RetiredAt       *time.Time
@@ -70,6 +73,7 @@ type NewParams struct {
 	DepartmentID string
 	TeamID       string
 	PositionID   string
+	NonVisiting  bool
 }
 
 // New は、名前、メール、電話番号を検証して Staff を作る。メールは小文字にそろえる。電話番号は数字だけを受け付け、先頭に "+" を付ける。
@@ -89,6 +93,7 @@ func New(p NewParams) (Staff, error) {
 		DepartmentID: p.DepartmentID,
 		TeamID:       p.TeamID,
 		PositionID:   p.PositionID,
+		NonVisiting:  p.NonVisiting,
 	}
 	if p.PhoneNumber != nil {
 		phone, err := normalizePhone(*p.PhoneNumber)
@@ -100,13 +105,14 @@ func New(p NewParams) (Staff, error) {
 	return s, nil
 }
 
-// Profile は、登録した後に変えられる職員の名前、電話番号、部署、チームである。PhoneNumber が nil なら電話番号を消す。
+// Profile は、登録した後に変えられる職員の名前、電話番号、部署、チーム、訪問しない職員かである。PhoneNumber が nil なら電話番号を消す。
 // メールはブローカーが持つので含めない（ADR-0017）。
 type Profile struct {
 	Username     string
 	PhoneNumber  *string
 	DepartmentID string
 	TeamID       string
+	NonVisiting  bool
 }
 
 // NewProfile は、New と同じ規則で名前と電話番号を検証し、電話番号の先頭に "+" を付けた Profile を返す。
@@ -154,21 +160,26 @@ func normalizePhone(phone string) (string, error) {
 }
 
 // Ref は、ほかの機能が職員を参照するときに要る項目である。事業所とチームは、参照の確認と予定の権限の判定に使う。
-// Status は、予定と担当の新しい割り振りの確認に使う。
+// Status と NonVisiting は、予定と担当の新しい割り振りの確認に使う。
 type Ref struct {
-	ID         string
-	FacilityID string
-	TeamID     string
-	Status     Status
+	ID          string
+	FacilityID  string
+	TeamID      string
+	Status      Status
+	NonVisiting bool
 }
 
-// Assignable は、職員に予定と担当を新しく割り振れるかを確認する。休職と退職の職員には割り振れず、入力のエラーを返す（ADR-0018）。
+// Assignable は、職員に予定と担当を新しく割り振れるかを確認する。休職と退職の職員（ADR-0018）と、訪問しない職員（ADR-0022）には
+// 割り振れず、入力のエラーを返す。
 func (r Ref) Assignable() error {
 	switch r.Status {
 	case StatusOnLeave:
 		return apperr.Invalid("休職の職員 %s には、予定と担当を割り振れません", r.ID)
 	case StatusRetired:
 		return apperr.Invalid("退職した職員 %s には、予定と担当を割り振れません", r.ID)
+	}
+	if r.NonVisiting {
+		return apperr.Invalid("訪問しない職員 %s には、予定と担当を割り振れません", r.ID)
 	}
 	return nil
 }
@@ -291,7 +302,7 @@ type AssignedPatient struct {
 	Name string
 }
 
-// Assignments は、職員を休職か退職にするときに残る、その日以降の予定、繰り返しの予定、担当の利用者である。
+// Assignments は、職員を休職、退職、訪問しない職員にするときに残る、その日以降の予定、繰り返しの予定、担当の利用者である。
 // 予定と繰り返しの予定は、職員が予定の職員、主訪問者、同行者のどれかのものである。キャンセルした予定は含めない。
 type Assignments struct {
 	Schedules []AssignedSchedule
@@ -317,12 +328,17 @@ type CalendarDetacher interface {
 	DetachByStaff(ctx context.Context, staffID string) error
 }
 
-// AssignedError は、予定か担当の利用者が残る職員を退職にしようとしたことを示す。
+// AssignedError は、予定か担当の利用者が残る職員を、退職にするか、訪問しない職員にしようとしたことを示す。
+// NonVisiting は、訪問しない職員にしようとしたときに true である。
 type AssignedError struct {
 	Assignments Assignments
+	NonVisiting bool
 }
 
 func (e *AssignedError) Error() string {
+	if e.NonVisiting {
+		return "予定か担当の利用者が残る職員は、訪問しない職員にできません。別の職員に割り振り直してください"
+	}
 	return "予定か担当の利用者が残る職員は退職にできません。別の職員に割り振り直してください"
 }
 

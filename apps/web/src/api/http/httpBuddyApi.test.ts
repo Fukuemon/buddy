@@ -195,6 +195,7 @@ describe('createHttpBuddyApi', () => {
       department: { id: 'department-1', name: '訪問看護部' },
       team: { id: 'team-a', name: 'A' },
       position: { id: 'position-1', name: '看護師' },
+      visits: true,
       created_at: '2026-10-01T00:00:00Z',
       updated_at: '2026-10-01T00:00:00Z',
     })
@@ -218,6 +219,7 @@ describe('createHttpBuddyApi', () => {
       department: { id: 'department-1', name: '訪問看護部' },
       team: { id: 'team-a', name: 'A' },
       position: { id: 'position-1', name: '看護師' },
+      visits: true,
       created_at: '2026-10-01T00:00:00Z',
       updated_at: '2026-10-01T00:00:00Z',
     }
@@ -441,6 +443,7 @@ describe('createHttpBuddyApi の職員の管理', () => {
     department: { id: 'department-1', name: '看護部' },
     team: { id: 'team-1', name: '東チーム' },
     position: { id: 'position-1', name: 'メンバー' },
+    visits: true,
     status: 'active',
     leave_started_at: null,
     leave_return_date: null,

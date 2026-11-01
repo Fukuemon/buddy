@@ -35,6 +35,7 @@ const staff = (id: string, username: string, teamRef: Schemas['Ref']): Schemas['
   department: { id: 'department-1', name: '訪問看護部' },
   team: teamRef,
   position: { id: 'position-1', name: '看護師' },
+  visits: true,
   ...stamps,
 })
 

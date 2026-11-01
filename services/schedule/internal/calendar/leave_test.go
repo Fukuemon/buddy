@@ -396,3 +396,33 @@ func TestSyncSkipsRetiredStaffWithLinkedCalendar(t *testing.T) {
 		t.Errorf("退職した職員の予定 = %+v, want 当てない", got.Slot)
 	}
 }
+
+// 訪問しない職員のカレンダーの取り込みでは、休職と同じく新しい予定を取り込まない予定に出し、確定しても作らない（ADR-0022、#377）。
+func TestImportWithholdsNewEventsOfNonVisitingStaff(t *testing.T) {
+	setNonVisiting := func(s *inmem.Store, on bool) {
+		d := s.Staff[inmem.StaffID]
+		d.NonVisiting = on
+		s.Staff[inmem.StaffID] = d
+	}
+	e := newEnv(t, fixture())
+	setNonVisiting(e.store, true)
+
+	p, err := e.uc.Preview(e.ctx, calID, e.rng)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := skipReasons(p); got[calendar.SkipStaffNonVisiting] != 9 || got[calendar.SkipAllDay] != 1 || len(got) != 2 {
+		t.Errorf("取り込まない理由 = %v, want staff_non_visiting 9 件と all_day 1 件", got)
+	}
+	if _, err := e.uc.Import(e.ctx, calID, e.rng, nil); err != nil {
+		t.Fatal(err)
+	}
+	if len(e.store.Schedules) != 0 || len(e.store.Infos) != 0 {
+		t.Errorf("訪問しない職員に書いた: 予定 %d、訪問の情報 %d", len(e.store.Schedules), len(e.store.Infos))
+	}
+
+	setNonVisiting(e.store, false)
+	if again, err := e.uc.Preview(e.ctx, calID, e.rng); err != nil || again.Counts.Import != 6 {
+		t.Errorf("訪問する職員に戻した後の Counts = %+v, err = %v, want 6 件", again.Counts, err)
+	}
+}

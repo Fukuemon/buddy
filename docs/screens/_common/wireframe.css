@@ -206,6 +206,7 @@ body {
 }
 
 .wf-tab.is-active,
+.wf-tab.is-on,
 .wf-tab[aria-selected='true'] {
   background: var(--wf-surface);
   color: var(--wf-ink);

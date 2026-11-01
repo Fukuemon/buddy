@@ -52,14 +52,16 @@ export const canSubmitImport = (preview: ImportPreview, choices: ReviewChoices) 
   countRemaining(preview.needs_review, choices) === 0
 
 /**
- * プレビューの結果が、全て前の取り込みで取り込み済みかを返す。休職の職員の新しい予定があれば、取り込み済みでない予定が
+ * プレビューの結果が、全て前の取り込みで取り込み済みかを返す。休職の職員か訪問しない職員の新しい予定があれば、取り込み済みでない予定が
  * 残るので偽にする。
  */
 export const isAllImported = (preview: ImportPreview) =>
   preview.counts.import === 0 &&
   preview.needs_review.length === 0 &&
   preview.counts.already_imported > 0 &&
-  !preview.skipped.some((item) => item.reason === 'staff_on_leave')
+  !preview.skipped.some(
+    (item) => item.reason === 'staff_on_leave' || item.reason === 'staff_non_visiting',
+  )
 
 /** 取り込まない理由の文言。取り込まない予定の表の理由の列に出す。 */
 export const SKIP_REASON_LABEL: Record<ImportSkippedItem['reason'], string> = {
@@ -70,6 +72,7 @@ export const SKIP_REASON_LABEL: Record<ImportSkippedItem['reason'], string> = {
   unreadable_title: 'タイトルを読めない予定',
   service_not_found: 'サービス内容を引けない予定',
   staff_on_leave: '休職の職員の新しい予定',
+  staff_non_visiting: '訪問しない職員の新しい予定',
 }
 
 /** 件数の箱 1 つ。key は testid の末尾に使う。note は件数の内訳で、内訳の無い箱は空にする。 */

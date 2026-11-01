@@ -63,8 +63,8 @@ func (q *Queries) AddUserPolicyTarget(ctx context.Context, arg AddUserPolicyTarg
 }
 
 const createUser = `-- name: CreateUser :exec
-INSERT INTO users (id, sub, username, email, phone_number, facility_id, department_id, team_id, position_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+INSERT INTO users (id, sub, username, email, phone_number, facility_id, department_id, team_id, position_id, visits)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 `
 
 type CreateUserParams struct {
@@ -77,6 +77,7 @@ type CreateUserParams struct {
 	DepartmentID string
 	TeamID       string
 	PositionID   string
+	Visits       bool
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
@@ -90,6 +91,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
 		arg.DepartmentID,
 		arg.TeamID,
 		arg.PositionID,
+		arg.Visits,
 	)
 	return err
 }
@@ -163,7 +165,7 @@ const getUser = `-- name: GetUser :one
 SELECT u.id, u.sub, u.username, u.email, u.phone_number, u.facility_id,
        u.department_id, d.name AS department_name,
        u.team_id, t.name AS team_name,
-       u.position_id, p.name AS position_name,
+       u.position_id, p.name AS position_name, u.visits,
        u.leave_started_at, u.leave_return_date, u.retired_at, u.created_at, u.updated_at
 FROM users u
 JOIN departments d ON d.id = u.department_id
@@ -185,6 +187,7 @@ type GetUserRow struct {
 	TeamName        string
 	PositionID      string
 	PositionName    string
+	Visits          bool
 	LeaveStartedAt  *time.Time
 	LeaveReturnDate *time.Time
 	RetiredAt       *time.Time
@@ -208,6 +211,7 @@ func (q *Queries) GetUser(ctx context.Context, id string) (GetUserRow, error) {
 		&i.TeamName,
 		&i.PositionID,
 		&i.PositionName,
+		&i.Visits,
 		&i.LeaveStartedAt,
 		&i.LeaveReturnDate,
 		&i.RetiredAt,
@@ -229,13 +233,14 @@ func (q *Queries) GetUserIDBySub(ctx context.Context, sub *string) (string, erro
 }
 
 const getUserRef = `-- name: GetUserRef :one
-SELECT id, facility_id, team_id, leave_started_at, retired_at FROM users WHERE id = $1
+SELECT id, facility_id, team_id, visits, leave_started_at, retired_at FROM users WHERE id = $1
 `
 
 type GetUserRefRow struct {
 	ID             string
 	FacilityID     string
 	TeamID         string
+	Visits         bool
 	LeaveStartedAt *time.Time
 	RetiredAt      *time.Time
 }
@@ -248,6 +253,7 @@ func (q *Queries) GetUserRef(ctx context.Context, id string) (GetUserRefRow, err
 		&i.ID,
 		&i.FacilityID,
 		&i.TeamID,
+		&i.Visits,
 		&i.LeaveStartedAt,
 		&i.RetiredAt,
 	)
@@ -497,13 +503,14 @@ func (q *Queries) ListUserPolicyTargets(ctx context.Context, userID string) ([]L
 }
 
 const listUserRefsByFacility = `-- name: ListUserRefsByFacility :many
-SELECT id, facility_id, team_id, leave_started_at, retired_at FROM users WHERE facility_id = $1 ORDER BY id
+SELECT id, facility_id, team_id, visits, leave_started_at, retired_at FROM users WHERE facility_id = $1 ORDER BY id
 `
 
 type ListUserRefsByFacilityRow struct {
 	ID             string
 	FacilityID     string
 	TeamID         string
+	Visits         bool
 	LeaveStartedAt *time.Time
 	RetiredAt      *time.Time
 }
@@ -521,6 +528,7 @@ func (q *Queries) ListUserRefsByFacility(ctx context.Context, facilityID string)
 			&i.ID,
 			&i.FacilityID,
 			&i.TeamID,
+			&i.Visits,
 			&i.LeaveStartedAt,
 			&i.RetiredAt,
 		); err != nil {
@@ -538,7 +546,7 @@ const listUsersByFacility = `-- name: ListUsersByFacility :many
 SELECT u.id, u.sub, u.username, u.email, u.phone_number, u.facility_id,
        u.department_id, d.name AS department_name,
        u.team_id, t.name AS team_name,
-       u.position_id, p.name AS position_name,
+       u.position_id, p.name AS position_name, u.visits,
        u.leave_started_at, u.leave_return_date, u.retired_at, u.created_at, u.updated_at
 FROM users u
 JOIN departments d ON d.id = u.department_id
@@ -581,6 +589,7 @@ type ListUsersByFacilityRow struct {
 	TeamName        string
 	PositionID      string
 	PositionName    string
+	Visits          bool
 	LeaveStartedAt  *time.Time
 	LeaveReturnDate *time.Time
 	RetiredAt       *time.Time
@@ -617,6 +626,7 @@ func (q *Queries) ListUsersByFacility(ctx context.Context, arg ListUsersByFacili
 			&i.TeamName,
 			&i.PositionID,
 			&i.PositionName,
+			&i.Visits,
 			&i.LeaveStartedAt,
 			&i.LeaveReturnDate,
 			&i.RetiredAt,
@@ -732,8 +742,8 @@ func (q *Queries) UpdateUserPosition(ctx context.Context, arg UpdateUserPosition
 const updateUserProfile = `-- name: UpdateUserProfile :execrows
 UPDATE users
 SET username = $1, phone_number = $2,
-    department_id = $3, team_id = $4
-WHERE id = $5 AND retired_at IS NULL
+    department_id = $3, team_id = $4, visits = $5
+WHERE id = $6 AND retired_at IS NULL
 `
 
 type UpdateUserProfileParams struct {
@@ -741,6 +751,7 @@ type UpdateUserProfileParams struct {
 	PhoneNumber  *string
 	DepartmentID string
 	TeamID       string
+	Visits       bool
 	ID           string
 }
 
@@ -751,6 +762,7 @@ func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfilePa
 		arg.PhoneNumber,
 		arg.DepartmentID,
 		arg.TeamID,
+		arg.Visits,
 		arg.ID,
 	)
 	if err != nil {

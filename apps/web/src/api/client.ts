@@ -26,6 +26,7 @@ import type {
   StaffRecord,
   StaffRetireResult,
   StaffUpdateInput,
+  StaffUpdateResult,
   Team,
   TeamInput,
 } from './types'
@@ -92,12 +93,15 @@ export interface BuddyApi {
      * 部署、チーム、役職が無ければ 400 の ApiError を投げる。
      */
     create(facilityId: FacilityId, input: StaffCreateInput): Promise<StaffDetail>
-    /** 名前、電話番号、部署、チームを変える。退職した職員では status が 409 の ApiError を投げる。 */
+    /**
+     * 名前、電話番号、部署、チーム、訪問するかを変える。予定か担当の利用者が残る職員を訪問しない職員に変えようとしたときは、
+     * 拒まれた結果として残るものを返す。退職した職員では status が 409 の ApiError を投げる。
+     */
     update(
       facilityId: FacilityId,
       staffId: Staff['id'],
       input: StaffUpdateInput,
-    ): Promise<StaffDetail>
+    ): Promise<StaffUpdateResult>
     /**
      * 役職を変え、権限を新しい役職のデフォルトの権限に置き換える。職員の管理の権限を持つ最後の有効な職員を、
      * その権限を持たない役職に変えようとすると、status が 409 の ApiError を投げる。

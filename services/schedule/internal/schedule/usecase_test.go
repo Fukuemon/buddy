@@ -369,11 +369,18 @@ func TestSchedulesList(t *testing.T) {
 	}
 }
 
-// stop は、職員 id を休職か退職にする。
+// nonVisiting は、stop に渡して、職員を訪問しない職員にする。職員の状態ではない（ADR-0022）。
+const nonVisiting staff.Status = "non_visiting"
+
+// stop は、職員 id を休職か退職か、訪問しない職員にする。
 func stop(t *testing.T, s *inmem.Store, id string, status staff.Status) {
 	t.Helper()
 	var err error
 	switch status {
+	case nonVisiting:
+		d := s.Staff[id]
+		d.NonVisiting = true
+		s.Staff[id] = d
 	case staff.StatusOnLeave:
 		err = inmem.Staff{Store: s}.StartLeave(context.Background(), id, nil)
 	case staff.StatusRetired:
@@ -384,8 +391,8 @@ func stop(t *testing.T, s *inmem.Store, id string, status staff.Status) {
 	}
 }
 
-// 予定の作成、職員の変更、繰り返しの予定の作成と回の置き換えは、休職か退職の職員を予定の職員、主訪問者、同行者に指すと
-// 入力のエラーで拒む（#269 の検証の観点 1、3）。
+// 予定の作成、職員の変更、繰り返しの予定の作成と回の置き換えは、休職か退職の職員と訪問しない職員を予定の職員、主訪問者、同行者に指すと
+// 入力のエラーで拒む（#269 の検証の観点 1、3、ADR-0022）。
 func TestSchedulesRejectInactiveStaff(t *testing.T) {
 	slots := map[string]func() schedule.SlotInput{
 		"予定の職員": func() schedule.SlotInput {
@@ -427,7 +434,7 @@ func TestSchedulesRejectInactiveStaff(t *testing.T) {
 			return err
 		},
 	}
-	for _, status := range []staff.Status{staff.StatusOnLeave, staff.StatusRetired} {
+	for _, status := range []staff.Status{staff.StatusOnLeave, staff.StatusRetired, nonVisiting} {
 		for opName, op := range ops {
 			for slotName, slot := range slots {
 				t.Run(string(status)+"/"+opName+"/"+slotName, func(t *testing.T) {
@@ -453,9 +460,9 @@ func TestSchedulesRejectInactiveStaff(t *testing.T) {
 	}
 }
 
-// 休職か退職の職員に割り振った予定と、繰り返しの予定の回は、職員を変えずに保存できる（#269 の検証の観点 2）。
+// 休職か退職か訪問しない職員に割り振った予定と、繰り返しの予定の回は、職員を変えずに保存できる（#269 の検証の観点 2）。
 func TestSchedulesKeepInactiveStaff(t *testing.T) {
-	for _, status := range []staff.Status{staff.StatusOnLeave, staff.StatusRetired} {
+	for _, status := range []staff.Status{staff.StatusOnLeave, staff.StatusRetired, nonVisiting} {
 		t.Run(string(status), func(t *testing.T) {
 			s := inmem.Seeded()
 			uc, _ := newSchedules(s)
