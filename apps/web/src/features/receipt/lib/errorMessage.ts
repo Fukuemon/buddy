@@ -49,8 +49,6 @@ const valueProblem = (reason: ReceiptCsvError['reason']) => {
       return 'を日付として読めません。'
     case 'invalid_time':
       return 'を時刻として読めません。'
-    case 'end_before_start':
-      return 'が開始時間より前です。'
     case 'invalid_duration':
       return 'が分の数になっていません。'
     default:
@@ -110,7 +108,7 @@ export const warningReasonText = (w: ReceiptWarning) => {
     case 'unreadable_time':
       return '開始か終了の日時を読めません。'
     case 'spans_days':
-      return '日付をまたいでいます。'
+      return '2 日以上にわたるか、24 時間以上の予定です。'
     default: {
       const problem = valueProblem(w.reason)
       return w.column !== undefined && problem !== undefined

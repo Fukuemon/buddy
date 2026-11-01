@@ -95,12 +95,12 @@ export interface components {
          * @description 入力を照合に使えない理由。
          *     encoding は文字コードが UTF-8 でも CP932 でもない、empty_file はヘッダーの行も無い、missing_column は要る列が無い、
          *     malformed_row は引用符の閉じ忘れのように CSV として読めない行、empty_value は要る値が空、invalid_date は日付として読めないか暦に無い、
-         *     invalid_time は時刻として読めない、end_before_start は終了時間が開始時間より前、invalid_duration は提供時間が 0 以上の整数でない、
+         *     invalid_time は時刻として読めない、invalid_duration は提供時間が 0 以上の整数でない、
          *     unreadable_title は予定のタイトルを `【サービス内容】利用者名` の形として読めない、unreadable_time は予定の開始か終了の日時を読めない、
-         *     spans_days は日付をまたぐ予定である。unreadable_title、unreadable_time、spans_days は Warning だけが使う
+         *     spans_days は終了が開始の翌日より後か、24 時間以上の予定である。unreadable_title、unreadable_time、spans_days は Warning だけが使う
          * @enum {string}
          */
-        InputReason: "encoding" | "empty_file" | "missing_column" | "malformed_row" | "empty_value" | "invalid_date" | "invalid_time" | "end_before_start" | "invalid_duration" | "unreadable_title" | "unreadable_time" | "spans_days";
+        InputReason: "encoding" | "empty_file" | "missing_column" | "malformed_row" | "empty_value" | "invalid_date" | "invalid_time" | "invalid_duration" | "unreadable_title" | "unreadable_time" | "spans_days";
         /** @enum {string} */
         InputSource: "schedules" | "visits";
         /** @example 2024-04-01 */

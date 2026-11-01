@@ -105,7 +105,6 @@ const (
 	EmptyFile       InputReason = "empty_file"
 	EmptyValue      InputReason = "empty_value"
 	Encoding        InputReason = "encoding"
-	EndBeforeStart  InputReason = "end_before_start"
 	InvalidDate     InputReason = "invalid_date"
 	InvalidDuration InputReason = "invalid_duration"
 	InvalidTime     InputReason = "invalid_time"
@@ -124,8 +123,6 @@ func (e InputReason) Valid() bool {
 	case EmptyValue:
 		return true
 	case Encoding:
-		return true
-	case EndBeforeStart:
 		return true
 	case InvalidDate:
 		return true
@@ -217,9 +214,9 @@ type CsvError struct {
 	// Reason 入力を照合に使えない理由。
 	// encoding は文字コードが UTF-8 でも CP932 でもない、empty_file はヘッダーの行も無い、missing_column は要る列が無い、
 	// malformed_row は引用符の閉じ忘れのように CSV として読めない行、empty_value は要る値が空、invalid_date は日付として読めないか暦に無い、
-	// invalid_time は時刻として読めない、end_before_start は終了時間が開始時間より前、invalid_duration は提供時間が 0 以上の整数でない、
+	// invalid_time は時刻として読めない、invalid_duration は提供時間が 0 以上の整数でない、
 	// unreadable_title は予定のタイトルを `【サービス内容】利用者名` の形として読めない、unreadable_time は予定の開始か終了の日時を読めない、
-	// spans_days は日付をまたぐ予定である。unreadable_title、unreadable_time、spans_days は Warning だけが使う
+	// spans_days は終了が開始の翌日より後か、24 時間以上の予定である。unreadable_title、unreadable_time、spans_days は Warning だけが使う
 	Reason InputReason `json:"reason"`
 	Source InputSource `json:"source"`
 }
@@ -252,9 +249,9 @@ type HealthStatus string
 // InputReason 入力を照合に使えない理由。
 // encoding は文字コードが UTF-8 でも CP932 でもない、empty_file はヘッダーの行も無い、missing_column は要る列が無い、
 // malformed_row は引用符の閉じ忘れのように CSV として読めない行、empty_value は要る値が空、invalid_date は日付として読めないか暦に無い、
-// invalid_time は時刻として読めない、end_before_start は終了時間が開始時間より前、invalid_duration は提供時間が 0 以上の整数でない、
+// invalid_time は時刻として読めない、invalid_duration は提供時間が 0 以上の整数でない、
 // unreadable_title は予定のタイトルを `【サービス内容】利用者名` の形として読めない、unreadable_time は予定の開始か終了の日時を読めない、
-// spans_days は日付をまたぐ予定である。unreadable_title、unreadable_time、spans_days は Warning だけが使う
+// spans_days は終了が開始の翌日より後か、24 時間以上の予定である。unreadable_title、unreadable_time、spans_days は Warning だけが使う
 type InputReason string
 
 // InputSource defines model for InputSource.
@@ -354,9 +351,9 @@ type Warning struct {
 	// Reason 入力を照合に使えない理由。
 	// encoding は文字コードが UTF-8 でも CP932 でもない、empty_file はヘッダーの行も無い、missing_column は要る列が無い、
 	// malformed_row は引用符の閉じ忘れのように CSV として読めない行、empty_value は要る値が空、invalid_date は日付として読めないか暦に無い、
-	// invalid_time は時刻として読めない、end_before_start は終了時間が開始時間より前、invalid_duration は提供時間が 0 以上の整数でない、
+	// invalid_time は時刻として読めない、invalid_duration は提供時間が 0 以上の整数でない、
 	// unreadable_title は予定のタイトルを `【サービス内容】利用者名` の形として読めない、unreadable_time は予定の開始か終了の日時を読めない、
-	// spans_days は日付をまたぐ予定である。unreadable_title、unreadable_time、spans_days は Warning だけが使う
+	// spans_days は終了が開始の翌日より後か、24 時間以上の予定である。unreadable_title、unreadable_time、spans_days は Warning だけが使う
 	Reason InputReason `json:"reason"`
 
 	// Start 予定の開始の日時（RFC 3339）
