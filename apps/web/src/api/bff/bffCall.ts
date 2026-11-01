@@ -29,6 +29,14 @@ const BFF_OPERATIONS = [
   'positions.list',
   'policies.list',
   'patients.list',
+  'patients.listRecords',
+  'patients.get',
+  'patients.create',
+  'patients.update',
+  'patients.remainingSchedules',
+  'patients.endService',
+  'patients.resumeService',
+  'serviceCodes.list',
   'calendars.serviceAccount',
   'calendars.list',
   'calendars.check',
@@ -79,6 +87,13 @@ const unitName = z.string().min(1).max(255)
 const teamInput = z.object({ name: unitName, color: z.enum(TEAM_COLORS) })
 const targetIds = z.array(id).max(500).optional()
 const nameSearch = z.object({ name: z.string().max(100).optional() }).optional()
+const patientInput = z.object({
+  name: z.string().min(1).max(255),
+  preferred_time: z.enum(['午前', '午後']),
+  preferred_gender: z.enum(['男性', '女性']),
+  service_code_id: id,
+  assigned_staff_id: id,
+})
 const calendarId = z.string().min(1).max(1024)
 const date = z.iso.date()
 const importRange = z.object({ range_start: date, range_end: date })
@@ -131,6 +146,14 @@ const ARGS: Record<BffOperation, z.ZodType> = {
   'positions.list': z.tuple([id]),
   'policies.list': z.tuple([id]),
   'patients.list': z.tuple([id, nameSearch]),
+  'patients.listRecords': z.tuple([id]),
+  'patients.get': z.tuple([id, id]),
+  'patients.create': z.tuple([id, patientInput]),
+  'patients.update': z.tuple([id, id, patientInput]),
+  'patients.remainingSchedules': z.tuple([id, id]),
+  'patients.endService': z.tuple([id, id]),
+  'patients.resumeService': z.tuple([id, id, id]),
+  'serviceCodes.list': z.tuple([id]),
   'calendars.serviceAccount': z.tuple([id]),
   'calendars.list': z.tuple([id]),
   'calendars.check': z.tuple([id, calendarId]),

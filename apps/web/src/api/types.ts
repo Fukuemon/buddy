@@ -192,3 +192,14 @@ export type StaffUpdateInput = RequestBody<'updateUser'>
 export type StaffPolicyInput = RequestBody<'addUserPolicy'>
 /** 退職の結果。予定か担当の利用者が残って拒まれたときは、残るものを assignments に持つ。 */
 export type StaffRetireResult = { retired: StaffDetail } | { assignments: StaffAssignments }
+
+/** 利用者の管理の画面で出す利用者。予定の API の Patient をそのまま使う。 */
+export type PatientRecord = ScheduleSchemas['Patient']
+/** 利用者の登録と変更で送る値。予定の API の createPatient の本文をそのまま使う（updatePatient も同じ形）。 */
+export type PatientInput = RequestBody<'createPatient'>
+/** 利用者を利用の終了にするときに残る、今日以降の予定と繰り返しの予定。 */
+export type PatientSchedules = ScheduleSchemas['PatientSchedules']
+/** サービスコードと提供時間の範囲。予定の API の ServiceCode をそのまま使う。 */
+export type ServiceCodeRecord = ScheduleSchemas['ServiceCode']
+/** 利用の終了の結果。予定が残って拒まれたときは、残る予定を schedules に持つ。 */
+export type PatientEndResult = { ended: PatientRecord } | { schedules: PatientSchedules }

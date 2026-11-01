@@ -10,6 +10,10 @@ import type {
   ImportResult,
   NameSearchParams,
   Patient,
+  PatientEndResult,
+  PatientInput,
+  PatientRecord,
+  PatientSchedules,
   Policy,
   Position,
   ReceiptReport,
@@ -17,6 +21,7 @@ import type {
   Schedule,
   ScheduleInput,
   ScheduleListParams,
+  ServiceCodeRecord,
   Staff,
   StaffAssignments,
   StaffCreateInput,
@@ -164,9 +169,45 @@ export interface BuddyApi {
     /** 8 つの権限を返す。権限は事業所ごとには持たないが、ほかの操作とそろえて事業所を受ける。 */
     list(facilityId: FacilityId): Promise<Policy[]>
   }
+  /**
+   * 利用者。list のほかは利用者の管理の画面が使う。
+   * list と listRecords のほかは、職員の管理の権限が無ければ status が 403 の ApiError を、利用者が見つからなければ 404 の ApiError を投げる。
+   */
   patients: {
     /** 利用の終了の利用者も返す。過去の予定の利用者名を出すためである。予定の利用者の候補は、呼ぶ側が activePatients で絞る。 */
     list(facilityId: FacilityId, params?: NameSearchParams): Promise<Patient[]>
+    /** 利用の終了の利用者を含めた全ての利用者を、サービス、希望、担当の職員とともに、名前の順で返す。 */
+    listRecords(facilityId: FacilityId): Promise<PatientRecord[]>
+    /** 利用者を返す。ほかの事業所の利用者を指すと status が 403 の ApiError を投げる。 */
+    get(facilityId: FacilityId, patientId: Patient['id']): Promise<PatientRecord>
+    /**
+     * 利用者を登録する。サービスコードか担当の職員が無いときと、担当に休職か退職の職員を指したときは、
+     * status が 400 の ApiError を投げる。
+     */
+    create(facilityId: FacilityId, input: PatientInput): Promise<PatientRecord>
+    /**
+     * 利用者の名前、サービス、希望、担当の職員を置き換える。担当を休職か退職の職員に変えると、status が 400 の ApiError を投げる。
+     * 今の担当のままなら、担当が休職か退職でも拒まれない。
+     */
+    update(
+      facilityId: FacilityId,
+      patientId: Patient['id'],
+      input: PatientInput,
+    ): Promise<PatientRecord>
+    /** 事業所の現地の日付で今日以降に残る、予定と繰り返しの予定を返す。 */
+    remainingSchedules(facilityId: FacilityId, patientId: Patient['id']): Promise<PatientSchedules>
+    /** 利用の終了にする。予定が残れば、拒まれた結果として残る予定を返す。 */
+    endService(facilityId: FacilityId, patientId: Patient['id']): Promise<PatientEndResult>
+    /** 利用中に戻し、担当の職員を assignedStaffId にする。休職か退職の職員を指すと status が 400 の ApiError を投げる。 */
+    resumeService(
+      facilityId: FacilityId,
+      patientId: Patient['id'],
+      assignedStaffId: Staff['id'],
+    ): Promise<PatientRecord>
+  }
+  serviceCodes: {
+    /** サービスコードを、予定の API の並びで返す。サービスコードは事業所ごとには持たないが、ほかの操作とそろえて事業所を受ける。 */
+    list(facilityId: FacilityId): Promise<ServiceCodeRecord[]>
   }
   /**
    * Google カレンダーの結び付けと予定の取り込み。全ての操作は、職員の管理の権限が無ければ status が 403 の ApiError を投げる。

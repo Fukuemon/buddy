@@ -52,7 +52,17 @@ export const createBffBuddyApi = (callBff: CallBff = (data) => callBffFn({ data 
     },
     positions: { list: call('positions.list') },
     policies: { list: call('policies.list') },
-    patients: { list: call('patients.list') },
+    patients: {
+      list: call('patients.list'),
+      listRecords: call('patients.listRecords'),
+      get: call('patients.get'),
+      create: call('patients.create'),
+      update: call('patients.update'),
+      remainingSchedules: call('patients.remainingSchedules'),
+      endService: call('patients.endService'),
+      resumeService: call('patients.resumeService'),
+    },
+    serviceCodes: { list: call('serviceCodes.list') },
     calendars: {
       serviceAccount: call('calendars.serviceAccount'),
       list: call('calendars.list'),

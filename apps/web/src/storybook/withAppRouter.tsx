@@ -209,7 +209,7 @@ export const emptyBuddyApi = (base: BuddyApi = createFakeBuddyApi()): BuddyApi =
   schedules: { ...base.schedules, list: async () => [] },
   staff: { ...base.staff, list: async () => [] },
   teams: { ...base.teams, list: async () => [] },
-  patients: { ...base.patients, list: async () => [] },
+  patients: { ...base.patients, list: async () => [], listRecords: async () => [] },
   calendars: { ...base.calendars, list: async () => [], exportIssues: async () => [] },
 })
 
@@ -246,7 +246,17 @@ const buddyApiOf = (operation: () => Promise<never>): BuddyApi => ({
   departments: { list: operation, create: operation, update: operation },
   positions: { list: operation },
   policies: { list: operation },
-  patients: { list: operation },
+  patients: {
+    list: operation,
+    listRecords: operation,
+    get: operation,
+    create: operation,
+    update: operation,
+    remainingSchedules: operation,
+    endService: operation,
+    resumeService: operation,
+  },
+  serviceCodes: { list: operation },
   calendars: {
     serviceAccount: operation,
     list: operation,

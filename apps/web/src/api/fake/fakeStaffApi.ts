@@ -1,4 +1,4 @@
-import { mockMe, mockPatients, mockPolicies, mockPositions, mockStaff } from '#/mocks/scheduleData'
+import { mockMe, mockPolicies, mockPositions, mockStaff } from '#/mocks/scheduleData'
 
 import { ApiError, type BuddyApi } from '../client'
 import { fromApiStaff } from '../http/scheduleMapper'
@@ -6,6 +6,7 @@ import { matchesName } from '../nameSearch'
 import {
   STAFF_MANAGE,
   type Department,
+  type PatientRecord,
   type Position,
   type Schedule,
   type StaffAssignments,
@@ -24,6 +25,8 @@ export type FakeStaffApiOptions = {
   viewerId: string
   /** 今日。この日以降の予定を残る予定にする。 */
   today: () => Date
+  /** 担当の利用者を数える、フェイクの利用者。 */
+  patients: () => Iterable<PatientRecord>
   /** 職員に付けられる部署とチーム。フェイクの部署とチームの操作が変えた後の値を返す。 */
   departments: () => readonly Department[]
   teams: () => readonly Team[]
@@ -47,6 +50,7 @@ export const createFakeStaffApi = ({
   today,
   departments,
   teams,
+  patients,
 }: FakeStaffApiOptions): Pick<BuddyApi, 'staff' | 'positions' | 'policies'> => {
   let sequence = 0
   const nextId = (prefix: string) => {
@@ -138,7 +142,7 @@ export const createFakeStaffApi = ({
           end_time: s.endsAt.slice(11, 16),
         })),
       recurring_schedules: [],
-      patients: mockPatients
+      patients: [...patients()]
         .filter((p) => p.assigned_staff_id === staffId && p.ended_at === null)
         .map(({ id, name }) => ({ id, name }))
         .sort((a, b) => a.name.localeCompare(b.name, 'ja')),
