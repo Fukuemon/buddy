@@ -10,7 +10,7 @@
 
 ## Documentation
 
-設計書（PRD、Design Doc、ADR、画面仕様書、API と DB の仕様）は [docs](docs) にある。  
+PRD、Design Doc、ADR、画面仕様書、API と DB の仕様の設計書は、[docs](docs) にある。  
 ドキュメントサイトとして読む手順は、[CONTRIBUTING.md](CONTRIBUTING.md) の Editing Documents にある。
 
 ## Contributing
