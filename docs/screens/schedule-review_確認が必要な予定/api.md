@@ -10,7 +10,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/client.ts`）で API を呼ぶ�
 | ナビゲーション | 「取り込み」「要確認」「連携」を出すか | `Viewer.canManageStaff` | `getMe` の `policies[].code` に `staff.manage` があるか |
 | ログインした職員 | 職員の名前 | `Viewer.staffName` | `getMe` の `username` |
 | 予定の一覧 | 行と並びと、行がどの予定か | `calendars.exportIssues` の戻り値。行がどの予定かは `CalendarExportIssue.schedule_id`、`recurring_schedule_id` | `listCalendarExportIssues` の `items`。新しく変わった順。確認が必要な書き出しは予定ごとに 1 件なので、行は単発の予定の `schedule_id` か、繰り返しの予定の `recurring_schedule_id` で 1 行に決まる |
-| 予定の日時 | 日付、時刻、繰り返しか | `CalendarExportIssue.date`、`start_time`、`end_time`、`recurring_schedule_id` | `CalendarExportIssue` の `date`、`start_time`、`end_time`、`recurring_schedule_id`。繰り返しの予定の `date` は最初の回の日付 |
+| 予定の日時 | 日付、時刻、繰り返しか | `CalendarExportIssue.date`、`start_time`、`end_time`、`ends_next_day`、`recurring_schedule_id` | `CalendarExportIssue` の `date`、`start_time`、`end_time`、`ends_next_day`、`recurring_schedule_id`。繰り返しの予定の `date` は最初の回の日付 |
 | 職員 | 職員の名前 | `CalendarExportIssue.staff_name` | `CalendarExportIssue` の `staff_name` |
 | 理由 | 理由ごとの文 | `CalendarExportIssue.error_code`、`status`、`acceptable`、`recurring_schedule_id` | `CalendarExport` の `error_code`（`precondition_failed`、`not_found`、`forbidden`、`rejected`、`unavailable`、`unappliable`）と `status`（`conflict`、`failed`）。`precondition_failed` は、`CalendarExportIssue` の `acceptable` と `recurring_schedule_id` でも文を分ける。単発の予定で `acceptable` が false なのは、buddy でキャンセルした予定である |
 | 最後に変わった日時 | 日時 | `CalendarExportIssue.updated_at` | `CalendarExport` の `updated_at` |
@@ -73,7 +73,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/client.ts`）で API を呼ぶ�
     - `rejected`: Google が予定の内容を受け付けなかった
     - `unavailable`: Google に届かないか、一時的なエラーが続いた
     - `unappliable`: Google カレンダーの変更を buddy の予定に読み替えられない
-- `CalendarExportIssue` は、`CalendarExport` に、予定の職員（`staff_id`、`staff_name`）と日時（`date`、`start_time`、`end_time`）と `acceptable` を足したものである。
+- `CalendarExportIssue` は、`CalendarExport` に、予定の職員（`staff_id`、`staff_name`）と日時と `acceptable` を足したものである。日時は `date`、`start_time`、`end_time`、`ends_next_day` である。
   - `acceptable` は、Google カレンダーの内容に合わせられるかを示す。単発の予定で、buddy でキャンセルしておらず、`status` が `conflict`、`error_code` が `precondition_failed` か `not_found` のときに true になる。
 - `createCalendarExportRetry` は、書き出しを、Google カレンダーの予定の変更を比べずに buddy の今の内容で書き直す待ちにする。書き出しの処理が、次の周期で書く。Google カレンダーで消された予定は作り直す。buddy でキャンセルした単発の予定は、Google カレンダーの予定を If-Match を付けずに消す。結び付けを外したカレンダーの予定は、消さず、書き直さない。
 - `createCalendarExportAcceptance` は、予定の API が Google カレンダーの今の予定を読み、buddy の予定をその内容にして、書き出しを終える。Google カレンダーで消された予定は、buddy でキャンセルする。
