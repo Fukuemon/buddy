@@ -4,6 +4,7 @@ import { useId, type ComponentType, type ReactNode, type SVGProps } from 'react'
 import ScheduleIcon from '#/assets/icons/calendar-month.svg?react'
 import ImportIcon from '#/assets/icons/download.svg?react'
 import StaffIcon from '#/assets/icons/group.svg?react'
+import OrganizationIcon from '#/assets/icons/account-tree.svg?react'
 import ReceiptIcon from '#/assets/icons/fact-check.svg?react'
 import LinkIcon from '#/assets/icons/link.svg?react'
 import ReviewIcon from '#/assets/icons/notifications.svg?react'
@@ -132,10 +133,13 @@ const RECEIPT_GROUP: SiteNavGroup = {
   items: [{ id: 'receipt', href: '/receipt', label: '照合', icon: ReceiptIcon }],
 }
 
-/** 職員の管理の権限を持つ職員にだけ出す、職員の画面。 */
+/** 職員の管理の権限を持つ職員にだけ出す、職員と部署とチームの画面。 */
 const STAFF_GROUP: SiteNavGroup = {
   label: '職員',
-  items: [{ id: 'staff', href: '/staff', label: '職員', icon: StaffIcon }],
+  items: [
+    { id: 'staff', href: '/staff', label: '職員', icon: StaffIcon },
+    { id: 'organization', href: '/organization', label: '部署とチーム', icon: OrganizationIcon },
+  ],
 }
 
 /** ナビゲーションに並べる画面。取り込み、要確認、連携と職員は、職員の管理の権限を持つ職員にだけ出す。 */

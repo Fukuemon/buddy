@@ -19,13 +19,21 @@ afterEach(() => {
 })
 
 describe('SiteLayoutContainer', () => {
-  it('職員の管理の権限を持つ職員には、予定の下にカレンダー、取り込み、要確認、連携を、最後に職員を並べ、今の画面に印を付ける', async () => {
+  it('職員の管理の権限を持つ職員には、予定の下にカレンダー、取り込み、要確認、連携を、最後に職員と部署とチームを並べ、今の画面に印を付ける', async () => {
     stubViewport(true)
     render(<StaffManager />)
     const nav = await screen.findByTestId('site-nav')
     expect(within(nav).getByRole('list', { name: '予定' })).toBeInTheDocument()
     expect(within(nav).getByRole('list', { name: '職員' })).toBeInTheDocument()
-    expect(navLabels(nav)).toEqual(['カレンダー', '取り込み', '要確認', '連携', '照合', '職員'])
+    expect(navLabels(nav)).toEqual([
+      'カレンダー',
+      '取り込み',
+      '要確認',
+      '連携',
+      '照合',
+      '職員',
+      '部署とチーム',
+    ])
     expect(within(nav).getByRole('link', { name: '照合' })).toHaveAttribute('aria-current', 'page')
   })
 

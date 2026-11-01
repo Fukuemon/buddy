@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as HealthzRouteImport } from './routes/healthz'
+import { Route as OrganizationRouteImport } from './routes/organization'
 import { Route as ReadyzRouteImport } from './routes/readyz'
 import { Route as ScheduleRouteImport } from './routes/schedule'
 import { Route as StaffRouteImport } from './routes/staff'
@@ -36,6 +37,11 @@ const IndexRoute = IndexRouteImport.update({
 const HealthzRoute = HealthzRouteImport.update({
   id: '/healthz',
   path: '/healthz',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrganizationRoute = OrganizationRouteImport.update({
+  id: '/organization',
+  path: '/organization',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReadyzRoute = ReadyzRouteImport.update({
@@ -122,6 +128,7 @@ const ScheduleScheduleIdEditRoute = ScheduleScheduleIdEditRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/healthz': typeof HealthzRoute
+  '/organization': typeof OrganizationRoute
   '/readyz': typeof ReadyzRoute
   '/schedule': typeof ScheduleRouteWithChildren
   '/staff': typeof StaffRouteWithChildren
@@ -142,6 +149,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/healthz': typeof HealthzRoute
+  '/organization': typeof OrganizationRoute
   '/readyz': typeof ReadyzRoute
   '/schedule': typeof ScheduleRouteWithChildren
   '/staff': typeof StaffRouteWithChildren
@@ -163,6 +171,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/healthz': typeof HealthzRoute
+  '/organization': typeof OrganizationRoute
   '/readyz': typeof ReadyzRoute
   '/schedule': typeof ScheduleRouteWithChildren
   '/staff': typeof StaffRouteWithChildren
@@ -185,6 +194,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/healthz'
+    | '/organization'
     | '/readyz'
     | '/schedule'
     | '/staff'
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/healthz'
+    | '/organization'
     | '/readyz'
     | '/schedule'
     | '/staff'
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/healthz'
+    | '/organization'
     | '/readyz'
     | '/schedule'
     | '/staff'
@@ -246,6 +258,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HealthzRoute: typeof HealthzRoute
+  OrganizationRoute: typeof OrganizationRoute
   ReadyzRoute: typeof ReadyzRoute
   ScheduleRoute: typeof ScheduleRouteWithChildren
   StaffRoute: typeof StaffRouteWithChildren
@@ -274,6 +287,13 @@ declare module '@tanstack/react-router' {
       path: '/healthz'
       fullPath: '/healthz'
       preLoaderRoute: typeof HealthzRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/organization': {
+      id: '/organization'
+      path: '/organization'
+      fullPath: '/organization'
+      preLoaderRoute: typeof OrganizationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/readyz': {
@@ -420,6 +440,7 @@ const StaffRouteWithChildren = StaffRoute._addFileChildren(StaffRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HealthzRoute: HealthzRoute,
+  OrganizationRoute: OrganizationRoute,
   ReadyzRoute: ReadyzRoute,
   ScheduleRoute: ScheduleRouteWithChildren,
   StaffRoute: StaffRouteWithChildren,
@@ -436,13 +457,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
