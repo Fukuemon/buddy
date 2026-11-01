@@ -55,7 +55,7 @@ test.describe('利用者の担当の職員の補足の文', () => {
           await step('「編集」を押す')
           const dialog = await openEditDialog(page)
           await expect(
-            dialog.getByRole('combobox', { name: '担当の職員' }),
+            dialog.getByTestId('patient-detail-staff-input'),
           ).toHaveAccessibleDescription(EDIT_HINT)
           await check(`担当の職員の欄の下に「${EDIT_HINT}」が出る`)
         },
@@ -79,9 +79,9 @@ test.describe('利用者の担当の職員の補足の文', () => {
           await step(
             '利用者の登録のダイアログ（Storybook の PatientCreateDialogContainer の Default）を開いている',
           )
-          await expect(
-            page.getByRole('combobox', { name: '担当の職員' }),
-          ).toHaveAccessibleDescription(CREATE_HINT)
+          await expect(page.getByTestId('patient-new-staff')).toHaveAccessibleDescription(
+            CREATE_HINT,
+          )
           await check(`担当の職員の欄の下に「${CREATE_HINT}」が出る`)
         },
       )
