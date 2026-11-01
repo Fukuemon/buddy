@@ -111,3 +111,50 @@ export const registerStaffId = async (
   if (res.status() !== 201) throw new Error(`職員を登録できなかった: ${res.status()}`)
   return ((await res.json()) as { id: string }).id
 }
+
+/** 職員の変更（PUT /v1/users/{user_id}）で送る、名前、部署、チーム、訪問するか。 */
+export type StaffProfile = {
+  username: string
+  departmentId: string
+  teamId: string
+  visits: boolean
+}
+
+/** 予定の API の職員の変更（PUT /v1/users/{user_id}）を token の職員で呼び、レスポンスを返す。電話番号は消す。 */
+export const updateStaff = (
+  request: APIRequestContext,
+  token: string,
+  userId: string,
+  profile: StaffProfile,
+) =>
+  request.put(`${SCHEDULE_URL}/v1/users/${userId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: {
+      username: profile.username,
+      department_id: profile.departmentId,
+      team_id: profile.teamId,
+      visits: profile.visits,
+    },
+  })
+
+/**
+ * 職員 userId を、名前、部署、チームを変えずに訪問しない職員にし（ADR-0022）、レスポンスを返す。
+ * 電話番号は消す。今日以降の予定か担当の利用者が残れば、予定の API が 409 を返す。
+ */
+export const setNonVisiting = async (request: APIRequestContext, token: string, userId: string) => {
+  const res = await request.get(`${SCHEDULE_URL}/v1/users/${userId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok()) throw new Error(`職員を読めない: ${res.status()}`)
+  const staff = (await res.json()) as {
+    username: string
+    department: { id: string }
+    team: { id: string }
+  }
+  return updateStaff(request, token, userId, {
+    username: staff.username,
+    departmentId: staff.department.id,
+    teamId: staff.team.id,
+    visits: false,
+  })
+}
