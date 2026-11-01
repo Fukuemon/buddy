@@ -1,13 +1,13 @@
 # /// script
 # requires-python = ">=3.12"
 # ///
-"""Python と Go の照合の結果の CSV を、意図した違いを吸収してからセルごとに比べる。
+"""Python と Go の照合の結果の CSV を、Python の結果の意図した違いを Go の形にそろえてからセルごとに比べる。
 
 使い方:
     uv run compare.py PYTHON_CSV GO_CSV
     uv run compare.py PYTHON_CSV --golden OUT   Python の結果を Go の形にそろえて OUT に書く
 
-吸収する違いは README.md の「吸収する違い」にある。
+そろえる置き換えは README.md の「比べる前の置き換えと、ケースに含めない入力」にある。
 
 終了コード: 0 は差分なし、1 は差分あり。
 """
