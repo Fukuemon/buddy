@@ -276,6 +276,11 @@ export const createMockSchedules = (base: Date): Schemas['Schedule'][] => {
       ...visit(2, 3, '訪看I3'),
       cancel: { id: 'cancel-6', schedule_id: 'schedule-6', reason: '利用者の体調不良' },
     }),
+    schedule('schedule-7', 0, 1, ['22:00', '01:00'], {
+      title: '夜勤',
+      ends_next_day: true,
+      is_over_time_work: true,
+    }),
   ]
 }
 

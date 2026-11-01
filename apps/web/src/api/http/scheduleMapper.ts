@@ -84,6 +84,10 @@ const toCategory = (name: string): ScheduleCategory => {
 /** API の日付と時刻を、+09:00 の ISO 8601 の日時にする。 */
 const toDateTime = (date: string, time: string) => `${date}T${time}:00${OFFSET}`
 
+/** YYYY-MM-DD の翌日の YYYY-MM-DD を返す。 */
+const nextDate = (date: string) =>
+  new Date(Date.parse(`${date}T00:00:00Z`) + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+
 /**
  * ISO 8601 の日時を、+09:00 の日付（YYYY-MM-DD）と時刻（HH:MM）に分ける。
  *
@@ -97,7 +101,7 @@ export const splitDateTime = (dateTime: string) => {
 }
 
 /**
- * API の単発の予定を、画面の予定にする。
+ * API の単発の予定を、画面の予定にする。終了が翌日の印が付いた予定は、終了の日時を日付の翌日にする。
  *
  * サービスコードか訪問の区分が画面の知らない値なら Error を投げる。
  */
@@ -109,7 +113,10 @@ export const fromApiSchedule = (schedule: ApiSchedule): Schedule => {
     title: schedule.title ?? '',
     staffId: schedule.staff_id,
     startsAt: toDateTime(schedule.date, schedule.start_time),
-    endsAt: toDateTime(schedule.date, schedule.end_time),
+    endsAt: toDateTime(
+      schedule.ends_next_day ? nextDate(schedule.date) : schedule.date,
+      schedule.end_time,
+    ),
     description: schedule.description ?? '',
   }
   const visit = schedule.visit_info
