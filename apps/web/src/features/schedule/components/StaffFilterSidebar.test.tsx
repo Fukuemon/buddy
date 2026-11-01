@@ -107,3 +107,12 @@ describe('StaffFilterSidebar', () => {
     expect(screen.queryByTestId('staff-filter-only-me')).not.toBeInTheDocument()
   })
 })
+
+describe('StaffFilterSidebar のチームの見出し', () => {
+  it('チームの名前の前に、チームの色の点を置く', () => {
+    render(<AllStaff />)
+    const heading = screen.getByTestId('staff-filter-team-team-a').closest('label')
+    expect(heading?.querySelector('.bg-team-blue')).not.toBeNull()
+    expect(heading).toHaveTextContent('A チーム')
+  })
+})
