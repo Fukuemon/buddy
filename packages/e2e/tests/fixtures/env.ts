@@ -52,6 +52,13 @@ export const TEAM_MEMBER = {
   email: 'misaki.sato@example.com',
 }
 
+/** シードの、1 つ目の事業所の事務の職員。訪問しない職員で、照合の権限を持つ。 */
+export const OFFICE_CLERK = {
+  id: '01M6Q1D8E0JX4N7R2T5W8Y3B6C',
+  name: '中村 結衣',
+  email: 'yui.nakamura@example.com',
+}
+
 /** シードの職員の佐藤。Google カレンダーとの同期の spec が、佐藤にカレンダーを結び付ける。 */
 export const SATO = { ...TEAM_MEMBER, calendarId: 'misaki.sato@example.com' }
 
