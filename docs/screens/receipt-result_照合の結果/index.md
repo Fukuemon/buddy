@@ -6,7 +6,7 @@
 | 項目 | 値 |
 | --- | --- |
 | URL | `/receipt/result` |
-| 使う人 | 全ての職員 |
+| 使う人 | 照合の権限を持つ職員。デフォルトでは、マネージャーと事務の役職の職員である |
 | 実装 | `apps/web/src/routes/receipt.result.tsx`、`apps/web/src/features/receipt/components/ReceiptResultContainer.tsx`、`apps/web/src/features/receipt/components/ReceiptResultView.tsx`、`apps/web/src/features/receipt/components/ReceiptResultTable.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
@@ -80,6 +80,24 @@
     | 5 | リンク | 照合の画面へ | [照合の画面へ](#照合の画面へ) |
     | 6 | ボタン | メニュー | [メニュー](#メニュー) |
 
+=== "権限が無い"
+
+    ログインした職員が照合の権限を持たないとき。  
+    ナビゲーションに照合を出さず、今の画面の印をどの項目にも付けない。
+
+    <iframe class="mock" title="照合の結果の、権限が無い" src="mocks/04-forbidden.html"></iframe>
+    <a class="mock-open" href="mocks/04-forbidden.html" target="_blank">別タブで開く</a>
+
+    | 番号 | 種別 | 要素名 | 仕様 |
+    | --- | --- | --- | --- |
+    | 1 | 領域 | ナビゲーション | [ナビゲーション](#ナビゲーション) |
+    | 2 | ボタン | アカウント | [アカウント](#アカウント) |
+    | 3 | ボタン | ログアウト | [ログアウト](#ログアウト) |
+    | 4 | ラベル | 権限が無いことのタイトル | [権限が無いことのタイトル](#権限が無いことのタイトル) |
+    | 5 | ラベル | 権限が無いことの説明 | [権限が無いことの説明](#権限が無いことの説明) |
+    | 6 | ボタン | 予定のカレンダーへ | [予定のカレンダーへ](#予定のカレンダーへ) |
+    | 7 | ボタン | メニュー | [メニュー](#メニュー) |
+
 ## メニュー
 
 **概要**: ナビゲーションの形を切り替える。  
@@ -120,7 +138,8 @@
 幅 768px 以上では、この画面では開いた形で始める。  
 幅 768px 未満では、メニューのボタンで開いたドロワーの中に出す。  
 「取り込み」「要確認」「連携」は、職員の管理の権限を持つ職員にだけ出す（[予定のカレンダー](../schedule-calendar_予定のカレンダー/index.md#ナビゲーション)）。  
-モックは、職員の管理の権限を持たない職員の画面を描くので、「カレンダー」と「照合」だけを出す。
+見出し「照合」と「照合」は、照合の権限を持つ職員にだけ出す。  
+モックは、職員の管理の権限を持たず、照合の権限を持つ職員の画面を描くので、「カレンダー」と「照合」だけを出す。
 
 **カタログ**: [SiteNav の Staff](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-sitenav--staff)
 
@@ -348,10 +367,58 @@ PC の幅で表が画面に収まり、横に送らないときの列の幅と�
 
 1. 照合の画面を読み込む。
 
+## 権限が無いことのタイトル
+
+**概要**: この画面を開けないことを示す。
+
+**値のソース**: 「この画面を開く権限がありません」
+
+**活性条件**: 常に活性
+
+**表示条件**: ログインした職員が照合の権限を持たないとき
+
+**カタログ**: [PageForbiddenMessage の ReceiptCheck](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-pageforbiddenmessage--receipt-check)
+
+## 権限が無いことの説明
+
+**概要**: 誰が開けるかと、どうすればよいかを示す。
+
+**値のソース**: 次の文言。
+
+| 文言 |
+| --- |
+| 「照合の権限を持つ職員だけが開けます。権限が要るときは、職員の管理の権限を持つ職員に頼んでください。」 |
+
+**活性条件**: 常に活性
+
+**表示条件**: ログインした職員が照合の権限を持たないとき
+
+**カタログ**: [PageForbiddenMessage の ReceiptCheck](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-pageforbiddenmessage--receipt-check)
+
+## 予定のカレンダーへ
+
+**概要**: 予定のカレンダーへ戻る。
+
+**値のソース**: 「予定のカレンダーへ」
+
+**活性条件**: 常に活性
+
+**表示条件**: ログインした職員が照合の権限を持たないとき
+
+**カタログ**: [PageForbiddenMessage の ReceiptCheck](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-pageforbiddenmessage--receipt-check)
+
+### インタラクション
+
+#### 1. 押す
+
+1. 予定のカレンダーへ移る。
+
 ## 全体動作
 
 ### 初期処理
 
+- 照合の権限は、画面を読み込むときに予定の API の `GET /v1/me` で読んだ値で決める。権限を足すか外したときは、画面を読み込み直すまで前の値のままである。
+  - 照合を拒むのは照合の API なので、権限を外した職員が画面を開いたままでも照合できない。
 - 結果は、照合の画面が照合を終えたときにブラウザの中に置く。
 - この画面はサーバーで描画せず、ブラウザの中に置かれた結果を読む。
 - フォーカスは `body` にある。

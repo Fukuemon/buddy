@@ -288,6 +288,24 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
         )
         return departments.map(({ id, name }) => ({ id, name }))
       },
+      create: async (facilityId, name) => {
+        const department = await unwrap(
+          client.POST('/v1/facilities/{facility_id}/departments', {
+            params: { path: { facility_id: facilityId } },
+            body: { name },
+          }),
+        )
+        return { id: department.id, name: department.name }
+      },
+      update: async (_facilityId, departmentId, name) => {
+        const department = await unwrap(
+          client.PUT('/v1/departments/{department_id}', {
+            params: { path: { department_id: departmentId } },
+            body: { name },
+          }),
+        )
+        return { id: department.id, name: department.name }
+      },
     },
     positions: {
       list: (facilityId) =>
@@ -309,6 +327,24 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
         )
         return teams.map(fromApiTeam)
       },
+      create: async (facilityId, input) =>
+        fromApiTeam(
+          await unwrap(
+            client.POST('/v1/facilities/{facility_id}/teams', {
+              params: { path: { facility_id: facilityId } },
+              body: input,
+            }),
+          ),
+        ),
+      update: async (_facilityId, teamId, input) =>
+        fromApiTeam(
+          await unwrap(
+            client.PUT('/v1/teams/{team_id}', {
+              params: { path: { team_id: teamId } },
+              body: input,
+            }),
+          ),
+        ),
     },
     patients: {
       list: async (facilityId, params) => {

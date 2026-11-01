@@ -7,7 +7,7 @@ import { fetchWithAccessToken, readSession, type AuthDeps } from './auth'
 /**
  * 画面から受けた照合の入力を、照合の API に送る。form は parseReceiptForm で確認した値である。
  *
- * セッションが無ければ status が 401 の失敗を、照合の API が失敗の状態を返せばその status と行のエラーを返す。
+ * セッションが無ければ status が 401 の失敗を、照合の API が失敗の状態を返せばその status とコードと行のエラーを返す。
  * それ以外の失敗は投げる。
  */
 export const checkReceipt = async (
@@ -33,7 +33,13 @@ export const checkReceipt = async (
     return { ok: true, report: await api.check(input) }
   } catch (error) {
     if (error instanceof ApiError) {
-      return { ok: false, status: error.status, message: error.message, csvErrors: error.csvErrors }
+      return {
+        ok: false,
+        status: error.status,
+        message: error.message,
+        csvErrors: error.csvErrors,
+        code: error.code,
+      }
     }
     throw error
   }

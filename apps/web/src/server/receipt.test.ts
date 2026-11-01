@@ -92,7 +92,13 @@ describe('checkReceipt', () => {
       form({ visits: new Blob(['v']), schedules: new Blob(['s']) }),
       { auth: await setup(), receiptApiUrl: TEST_RECEIPT_URL },
     )
-    expect(failed).toEqual({ ok: false, status: 422, message: 'm', csvErrors: errors })
+    expect(failed).toEqual({
+      ok: false,
+      status: 422,
+      message: 'm',
+      csvErrors: errors,
+      code: 'invalid_csv',
+    })
   })
 
   it('セッションが無ければ 401 を返し、API を呼ばない', async () => {

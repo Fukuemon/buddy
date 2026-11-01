@@ -33,11 +33,14 @@ export const newStaff = (label: string) => {
   return { email: `e2e.${label}.${stamp}@example.com`, name: `E2E ${label} ${stamp}` }
 }
 
-/** 予定の API の職員の登録（POST /v1/facilities/{facility_id}/users）を token の職員で呼び、レスポンスを返す。 */
+/**
+ * 予定の API の職員の登録（POST /v1/facilities/{facility_id}/users）を token の職員で呼び、レスポンスを返す。
+ * 役職は、staff.positionId を省くとメンバーにする。
+ */
 export const registerStaff = (
   request: APIRequestContext,
   token: string,
-  staff: { email: string; name: string },
+  staff: { email: string; name: string; positionId?: string },
 ) =>
   request.post(`${SCHEDULE_URL}/v1/facilities/${STAFF_FORM.facilityId}/users`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -46,8 +49,20 @@ export const registerStaff = (
       email: staff.email,
       department_id: STAFF_FORM.departmentId,
       team_id: STAFF_FORM.teamId,
-      position_id: STAFF_FORM.positionId,
+      position_id: staff.positionId ?? STAFF_FORM.positionId,
     },
+  })
+
+/** 予定の API の職員に権限を足す（POST /v1/users/{user_id}/policies）。対象を指定しない権限だけを足す。 */
+export const addPolicy = (
+  request: APIRequestContext,
+  token: string,
+  userId: string,
+  policyId: string,
+) =>
+  request.post(`${SCHEDULE_URL}/v1/users/${userId}/policies`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: { policy_id: policyId },
   })
 
 /** 予定の API の職員の休職（POST /v1/users/{user_id}/leave）を token の職員で呼び、レスポンスを返す。 */

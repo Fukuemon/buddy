@@ -10,13 +10,15 @@ iBow から出した実訪問の CSV と予定（予定の CSV か Google カレ
 ## Running
 
 API の 8080 とフェイクの Issuer の 9000 は、ルートの compose の予定の API と IdP と重なる。  
-compose を起動しているときは、重なる 2 つを `docker compose stop schedule idp` で止めてから実行する。
+compose を起動しているときは、重なる 2 つを `docker compose stop schedule idp` で止めてから実行する。  
+照合は、`SCHEDULE_URL` の予定の API に同じトークンで `GET /v1/me` を呼び、照合の権限を確認する（ADR-0022）。  
+フェイクの Issuer のトークンは予定の API が受けないので、この起動の仕方では照合は 502 か 403 を返す。照合を試すときは、ルートの compose で起動する。
 
 ```sh
 # Hydra の代わりに、フェイクの Issuer を別のターミナルで起動する
 go run ./cmd/devissuer -addr 127.0.0.1:9000
 
-export OIDC_ISSUER=http://127.0.0.1:9000 OIDC_AUDIENCE=receipt
+export OIDC_ISSUER=http://127.0.0.1:9000 OIDC_AUDIENCE=receipt SCHEDULE_URL=http://127.0.0.1:8081  # 予定の API が無くても起動する
 go run ./cmd/api
 ```
 
@@ -35,6 +37,7 @@ TOKEN=$(curl -s '127.0.0.1:9000/token?sub=dev-aoki&org_id=org-sample' | jq -r .a
 - `OIDC_ISSUER`: 必須。Hydra の Issuer の URL。トークンの `iss` と一致させ、discovery の文書をここから読む
 - `OIDC_AUDIENCE`: 必須。トークンの `aud` に求める値
 - `OIDC_ORG_CLAIM`: 組織の ID を持つクレームの名前。デフォルトは `org_id`
+- `SCHEDULE_URL`: 必須。予定の API の URL。照合の前に、受けたトークンで `GET /v1/me` を呼び、照合の権限（`receipt.check`）を持つかを確認する（ADR-0022）
 - `CORS_ALLOW_ORIGINS`: CORS でレスポンスを読ませるオリジンを、カンマで区切って並べる。空なら CORS のヘッダーを返さない
 - `GOOGLE_CALENDARS_FILE`: 照合の対象のカレンダーの設定（JSON）のパス。空なら Google カレンダーを使わない
 - `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`: 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応（JSON）のパス。`GOOGLE_CALENDARS_FILE` と一緒に渡す
@@ -45,7 +48,7 @@ TOKEN=$(curl -s '127.0.0.1:9000/token?sub=dev-aoki&org_id=org-sample' | jq -r .a
 
 ```sh
 docker build -f Dockerfile -t receipt ../..
-docker run --rm -p 8080:8080 -e OIDC_ISSUER=<Issuer の URL> -e OIDC_AUDIENCE=receipt receipt
+docker run --rm -p 8080:8080 -e OIDC_ISSUER=<Issuer の URL> -e OIDC_AUDIENCE=receipt -e SCHEDULE_URL=<予定の API の URL> receipt
 ```
 
 ルートの compose の照合の API は、Google カレンダーの代わりに calendarpit を読む。  

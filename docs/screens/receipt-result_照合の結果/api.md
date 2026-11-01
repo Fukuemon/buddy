@@ -6,6 +6,7 @@ OpenAPI の項目は、`createCheck`（`POST /v1/checks`）のレスポンスの
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
 | ログインした職員 | 職員の名前 | `Viewer.staffName` | `getMe` の `username` |
+| 権限が無いこと | 照合の権限を持つか | `Viewer.canCheckReceipt` | `getMe` の `policies[].code` に `receipt.check` があるか |
 | ページのタイトル | 予定の取り方 | `ReceiptResult.month` | リクエストの `month` |
 | 照合に使わなかった予定 | 開始の日時と理由 | `ReceiptReport.warnings`（`ReceiptWarning`） | `warnings[].start`、`warnings[].reason`、`warnings[].column` |
 | 結果の表 | 対の一覧 | `ReceiptReport.rows` | `rows` |

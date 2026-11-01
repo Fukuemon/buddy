@@ -42,6 +42,7 @@ export type StoryRouteId =
   | '/staff'
   | '/staff/new'
   | '/staff_/$staffId'
+  | '/organization'
 
 /** story の parameters の appRouter に渡す値。 */
 export type AppRouterParameters = {
@@ -156,6 +157,11 @@ const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
     path: 'staff/$staffId',
     component: StaffIdRoute,
   })
+  const organization = createRoute({
+    getParentRoute: () => root,
+    path: 'organization',
+    component: at('/organization'),
+  })
 
   const router = createRouter({
     routeTree: root.addChildren([
@@ -167,6 +173,7 @@ const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
       scheduleReview,
       staff.addChildren([staffNew]),
       staffDetail,
+      organization,
     ]),
     history: createMemoryHistory({ initialEntries: [params.url] }),
     context,
@@ -235,8 +242,8 @@ const buddyApiOf = (operation: () => Promise<never>): BuddyApi => ({
     reinstate: operation,
     retire: operation,
   },
-  teams: { list: operation },
-  departments: { list: operation },
+  teams: { list: operation, create: operation, update: operation },
+  departments: { list: operation, create: operation, update: operation },
   positions: { list: operation },
   policies: { list: operation },
   patients: { list: operation },

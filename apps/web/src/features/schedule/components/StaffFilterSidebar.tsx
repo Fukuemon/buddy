@@ -2,6 +2,8 @@ import { SearchBox } from '@buddy/ui'
 import { useState } from 'react'
 
 import type { Staff, Team } from '#/api/types'
+import { DotLabel } from '#/components/site/StatusBadge'
+import { teamColorDotClassName } from '#/components/site/teamDot'
 
 import { staffColorMap } from '../lib/toCalendarEvents'
 
@@ -20,7 +22,7 @@ const normalizeName = (name: string) => name.normalize('NFKC').replace(/\s/g, ''
 
 /**
  * 予定を出す職員を、チームと職員のチェックボックスで絞り込む。
- * 職員のチェックボックスは、カレンダーの予定と同じ職員の色で出し、凡例を兼ねる。
+ * 職員のチェックボックスは、カレンダーの予定と同じ職員の色で出し、凡例を兼ねる。チームの見出しには、チームの色の点を名前の前に置く。
  * 名前の検索は一覧の表示だけを絞り、チェックの状態は変えない。
  * チームのチェックボックスは、検索で隠れた職員も含めて印を決め、まとめて外す、付ける。
  */
@@ -126,7 +128,12 @@ export const StaffFilterSidebar = ({
                 }}
                 type="checkbox"
               />
-              {team.name}
+              <DotLabel
+                dotClassName={teamColorDotClassName(team.color)}
+                dotTestId={`staff-filter-team-dot-${team.id}`}
+              >
+                {team.name}
+              </DotLabel>
             </label>
             {shownMembers.map((staff) => (
               <label

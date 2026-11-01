@@ -11,7 +11,7 @@ describe('checkErrorMessage', () => {
       '選び直して',
     )
     expect(checkErrorMessage(new ApiError(403, 'x'))).toBe(
-      'Google カレンダーから予定を取れません。予定の CSV で照合するか、事業所の管理者に連絡してください。',
+      '照合の権限がありません。権限が要るときは、職員の管理の権限を持つ職員に頼んでください。',
     )
     expect(checkErrorMessage(new ApiError(413, 'x'))).toContain('10 MB')
     expect(checkErrorMessage(new ApiError(422, 'visits の CSV に列がない'))).toBe(
@@ -19,6 +19,9 @@ describe('checkErrorMessage', () => {
     )
     expect(checkErrorMessage(new ApiError(502, 'x'))).toContain(
       'Google カレンダーから予定を取れません',
+    )
+    expect(checkErrorMessage(new ApiError(502, 'x', [], 'permission_check_failed'))).toContain(
+      '照合の権限を確認できませんでした',
     )
     expect(checkErrorMessage(new ApiError(503, 'x'))).toContain('予定の CSV で照合')
     expect(checkErrorMessage(new ApiError(500, 'x'))).toContain('時間をおいて')

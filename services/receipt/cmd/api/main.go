@@ -8,6 +8,7 @@
 //   - OIDC_ISSUER: 必須。Hydra の Issuer の URL。トークンの iss と一致させ、discovery の文書をここから読む。
 //   - OIDC_AUDIENCE: 必須。トークンの aud に求める値。
 //   - OIDC_ORG_CLAIM: 組織の ID を持つクレームの名前。デフォルトは org_id。
+//   - SCHEDULE_URL: 必須。予定の API の URL（`http://schedule:8080` の形）。照合の前に、受けたトークンで GET /v1/me を呼び、照合の権限を確認する（ADR-0022）。
 //   - CORS_ALLOW_ORIGINS: CORS でレスポンスを読ませるオリジンを、カンマで区切って並べる。空なら CORS のヘッダーを返さない。
 //   - GOOGLE_CALENDARS_FILE: 照合の対象のカレンダーの設定（JSON）のパス。空なら Google カレンダーを使わない。
 //     形は gcal.LoadCalendars にある。トークンの組織に結び付けたカレンダーだけを読む。
@@ -42,6 +43,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/receipt/internal/gcal"
 	"github.com/Fukuemon/buddy/services/receipt/internal/httpapi"
+	"github.com/Fukuemon/buddy/services/receipt/internal/permission"
 	"github.com/Fukuemon/buddy/services/receipt/internal/source"
 )
 
@@ -52,6 +54,7 @@ type config struct {
 	calendarsFile    string
 	accountsFile     string
 	calendarEndpoint string
+	scheduleURL      string
 	oidc             oidc.Config
 	allowOrigins     []string
 }
@@ -65,6 +68,10 @@ func loadConfig(getenv func(string) string) (config, error) {
 	}
 	if cfg.oidc.Audience == "" {
 		missing = append(missing, "OIDC_AUDIENCE")
+	}
+	cfg.scheduleURL = getenv("SCHEDULE_URL")
+	if cfg.scheduleURL == "" {
+		missing = append(missing, "SCHEDULE_URL")
 	}
 	if len(missing) > 0 {
 		return config{}, fmt.Errorf("環境変数 %s が必要である", strings.Join(missing, "、"))
@@ -168,6 +175,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	checker, err := permission.NewChecker(cfg.scheduleURL)
+	if err != nil {
+		return err
+	}
 
 	srv := &http.Server{
 		Addr: ":" + cfg.port,
@@ -175,6 +186,7 @@ func run() error {
 			MaxUploadBytes: cfg.maxUploadBytes,
 			Sources:        source.Selector{Calendar: reader},
 			Verifier:       verifier,
+			Permission:     checker,
 			AllowOrigins:   cfg.allowOrigins,
 		}),
 		ReadHeaderTimeout: 10 * time.Second,
