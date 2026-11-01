@@ -9,13 +9,13 @@ export type ScheduleCategoryCheckboxGroupProps = {
   onChange: (categories: ScheduleCategory[]) => void
 }
 
-/** 訪問の種類（夜勤、緊急、入院）を複数選ぶ。何も選ばなければ通常の訪問である。 */
+/** 訪問の区分（夜勤、緊急、入院）を複数選ぶ。何も選ばなければ通常の訪問である。 */
 export const ScheduleCategoryCheckboxGroup = ({
   value,
   onChange,
 }: ScheduleCategoryCheckboxGroupProps) => (
   <fieldset className="flex flex-col gap-3">
-    <legend className="mb-3 text-heading-sm">訪問の種類を選んでください</legend>
+    <legend className="mb-3 text-heading-sm">訪問の区分を選んでください</legend>
     {SCHEDULE_CATEGORIES.map((category) => {
       const checked = value.includes(category)
       return (

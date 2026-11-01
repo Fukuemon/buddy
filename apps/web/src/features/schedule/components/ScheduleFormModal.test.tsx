@@ -20,12 +20,12 @@ describe('ScheduleFormModal', () => {
       ),
     ).toBeInTheDocument()
     expect(
-      within(screen.getByTestId('schedule-field-staff')).getByText('担当者を選んでください'),
+      within(screen.getByTestId('schedule-field-staff')).getByText('主訪問者を選んでください'),
     ).toBeInTheDocument()
     expect(onSubmit).not.toHaveBeenCalled()
   })
 
-  it('利用者と担当者を選ぶと、フォームの値で onSubmit を呼ぶ', async () => {
+  it('利用者と主訪問者を選ぶと、フォームの値で onSubmit を呼ぶ', async () => {
     const onSubmit = fn()
     render(<Visit onSubmit={onSubmit} />)
 

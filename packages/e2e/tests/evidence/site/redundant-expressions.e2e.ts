@@ -204,7 +204,7 @@ test.describe('重ねない表現', () => {
           await expect(page.getByTestId('schedule-form')).not.toContainText('未選択')
           await expect(page.getByTestId('schedule-field-description')).not.toContainText('なし')
           await check(
-            '訪問では、利用者と担当者が薄い色の「選んでください」で、メモは空になり、「未選択」「なし」が出ない',
+            '訪問では、利用者と主訪問者が薄い色の「選んでください」で、メモは空になり、「未選択」「なし」が出ない',
           )
 
           await step('種類の「通常」を選ぶ')

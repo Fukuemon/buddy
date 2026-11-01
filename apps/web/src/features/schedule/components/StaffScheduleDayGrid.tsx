@@ -26,6 +26,8 @@ export type StaffScheduleDayGridProps = {
   events: ScheduleCalendarEvent[]
   /** 空いた時間の枠を押したときに呼ぶ。 */
   onSlotClick: (staffId: Staff['id'], timeKey: string) => void
+  /** 時間の枠を押して予定を作れる職員か。偽の職員の列の枠は押せない。省くと全ての職員の枠を押せる。 */
+  canCreateFor?: (staff: Staff) => boolean
   onEventClick: (scheduleId: string) => void
   /** 表示している日が今日のときだけ渡す。6 時から 22 時の間なら、その時刻に横線を引く。 */
   now?: Date
@@ -36,6 +38,7 @@ export const StaffScheduleDayGrid = ({
   staffList,
   events,
   onSlotClick,
+  canCreateFor = () => true,
   onEventClick,
   now,
 }: StaffScheduleDayGridProps) => {
@@ -75,17 +78,25 @@ export const StaffScheduleDayGrid = ({
             data-testid={`day-grid-staff-${staff.id}`}
             key={staff.id}
           >
-            {SLOT_TIMES.map((time) => (
-              <button
-                aria-label={`${staff.name} ${time} に予定を作成`}
-                className="block w-full border-b border-border hover:bg-surface-subtle focus-visible:focus-ring"
-                data-testid={`day-grid-slot-${staff.id}-${time}`}
-                key={time}
-                onClick={() => onSlotClick(staff.id, time)}
-                style={{ height: (HOUR_HEIGHT_PX * SLOT_MINUTES) / 60 }}
-                type="button"
-              />
-            ))}
+            {SLOT_TIMES.map((time) =>
+              canCreateFor(staff) ? (
+                <button
+                  aria-label={`${staff.name} ${time} に予定を作成`}
+                  className="block w-full border-b border-border hover:bg-surface-subtle focus-visible:focus-ring"
+                  data-testid={`day-grid-slot-${staff.id}-${time}`}
+                  key={time}
+                  onClick={() => onSlotClick(staff.id, time)}
+                  style={{ height: (HOUR_HEIGHT_PX * SLOT_MINUTES) / 60 }}
+                  type="button"
+                />
+              ) : (
+                <div
+                  className="border-b border-border"
+                  key={time}
+                  style={{ height: (HOUR_HEIGHT_PX * SLOT_MINUTES) / 60 }}
+                />
+              ),
+            )}
             {events
               .filter((event) => event.staffId === staff.id)
               // キャンセルした予定を先に描き、重なる生きている予定を上に出す

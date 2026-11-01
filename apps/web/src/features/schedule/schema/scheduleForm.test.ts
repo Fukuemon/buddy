@@ -1,26 +1,44 @@
 import { describe, expect, it } from 'vite-plus/test'
 
 import { createScheduleFormValues } from '../lib/scheduleFormMapper'
-import { scheduleFormSchema } from './scheduleForm'
+import { mockServiceCodes } from '#/mocks/scheduleData'
+
+import { createScheduleFormSchema } from './scheduleForm'
+
+const schema = createScheduleFormSchema(mockServiceCodes)
+const FIRST_SERVICE_CODE = mockServiceCodes[0]
 
 const messagesOf = (input: unknown) => {
-  const result = scheduleFormSchema.safeParse(input)
+  const result = schema.safeParse(input)
   return result.success
     ? {}
     : Object.fromEntries(result.error.issues.map((issue) => [issue.path.join('.'), issue.message]))
 }
 
-describe('scheduleFormSchema', () => {
-  it('訪問の予定は利用者と担当者を必須にする', () => {
-    expect(messagesOf(createScheduleFormValues({ kind: 'visit', date: '2026-10-20' }))).toEqual({
+describe('createScheduleFormSchema', () => {
+  it('訪問の予定は利用者と主訪問者を必須にする', () => {
+    expect(
+      messagesOf(
+        createScheduleFormValues({
+          kind: 'visit',
+          date: '2026-10-20',
+          serviceCode: FIRST_SERVICE_CODE,
+        }),
+      ),
+    ).toEqual({
       patientId: '利用者を選んでください',
-      staffId: '担当者を選んでください',
+      staffId: '主訪問者を選んでください',
     })
   })
 
   it('提供時間がサービスコードの範囲の外なら弾く', () => {
     const values = {
-      ...createScheduleFormValues({ kind: 'visit', date: '2026-10-20', staffId: 'staff-1' }),
+      ...createScheduleFormValues({
+        kind: 'visit',
+        date: '2026-10-20',
+        serviceCode: FIRST_SERVICE_CODE,
+        staffId: 'staff-1',
+      }),
       patientId: 'patient-1',
       serviceTime: 60,
     }
@@ -33,7 +51,12 @@ describe('scheduleFormSchema', () => {
     '%s は照合の規則と同じ 41 分から 60 分にする',
     (serviceCode) => {
       const values = {
-        ...createScheduleFormValues({ kind: 'visit', date: '2026-10-20', staffId: 'staff-1' }),
+        ...createScheduleFormValues({
+          kind: 'visit',
+          date: '2026-10-20',
+          serviceCode: FIRST_SERVICE_CODE,
+          staffId: 'staff-1',
+        }),
         patientId: 'patient-1',
         serviceCode,
       }
@@ -45,9 +68,28 @@ describe('scheduleFormSchema', () => {
     },
   )
 
+  it('予定の API の一覧に無いサービスコードは弾く', () => {
+    const values = {
+      ...createScheduleFormValues({
+        kind: 'visit',
+        date: '2026-10-20',
+        serviceCode: FIRST_SERVICE_CODE,
+        staffId: 'staff-1',
+      }),
+      patientId: 'patient-1',
+      serviceCode: '訪看I9',
+    }
+    expect(messagesOf(values)).toEqual({ serviceCode: 'サービスコードを選んでください' })
+  })
+
   it('開始に提供時間を足して日をまたぐ訪問の予定は弾く', () => {
     const values = {
-      ...createScheduleFormValues({ kind: 'visit', date: '2026-10-20', staffId: 'staff-1' }),
+      ...createScheduleFormValues({
+        kind: 'visit',
+        date: '2026-10-20',
+        serviceCode: FIRST_SERVICE_CODE,
+        staffId: 'staff-1',
+      }),
       patientId: 'patient-1',
       startTime: '23:50',
       serviceTime: 29,
@@ -78,7 +120,7 @@ describe('scheduleFormSchema', () => {
       ...createScheduleFormValues({ kind: 'normal', date: '2026-10-20', staffId: 'staff-1' }),
       title: 'カンファレンス',
     }
-    expect(scheduleFormSchema.safeParse(values).success).toBe(true)
+    expect(schema.safeParse(values).success).toBe(true)
   })
 
   it('時と分の範囲の外の時刻を弾く', () => {

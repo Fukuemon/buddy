@@ -19,6 +19,10 @@ import { signValue } from './signedValue'
 
 const SECRET = 'x'.repeat(32)
 const VIEWER = { staffId: 'staff-1', staffName: '青木 陽菜', facilityId: 'facility-1' }
+/** 予定の権限の項目を足す前に作ったセッションで、画面に渡す予定の権限。 */
+const LEGACY_SCHEDULE_POLICIES = [
+  { code: 'schedule.all.edit', targetStaffIds: [], targetTeamIds: [] },
+] as const
 
 const fakeOidc = (overrides: Partial<OidcClient> = {}): OidcClient => ({
   authorizationUrl: ({ redirectUri, state, prompt }) =>
@@ -48,7 +52,7 @@ const setup = (overrides: Partial<AuthDeps> = {}) => {
     secureCookie: false,
     fetchMe: async () => ({
       ok: true,
-      viewer: { ...VIEWER, canManageStaff: false, canCheckReceipt: false },
+      viewer: { ...VIEWER, canManageStaff: false, canCheckReceipt: false, schedulePolicies: [] },
     }),
     now: () => 1_000_000,
     wait: async () => {},
@@ -415,7 +419,12 @@ describe('viewerOf', () => {
   const session: Session = { ...VIEWER, accessToken: 'at' }
 
   it('権限の項目が無い古いセッションでは、職員の管理を出さず、照合は絞る前と同じく出す', () => {
-    expect(viewerOf(session)).toEqual({ ...VIEWER, canManageStaff: false, canCheckReceipt: true })
+    expect(viewerOf(session)).toEqual({
+      ...VIEWER,
+      canManageStaff: false,
+      canCheckReceipt: true,
+      schedulePolicies: LEGACY_SCHEDULE_POLICIES,
+    })
   })
 
   it('セッションの権限の値をそのまま使う', () => {
@@ -423,6 +432,7 @@ describe('viewerOf', () => {
       ...VIEWER,
       canManageStaff: true,
       canCheckReceipt: false,
+      schedulePolicies: LEGACY_SCHEDULE_POLICIES,
     })
   })
 })
@@ -442,13 +452,14 @@ describe('readViewer', () => {
   it('ログインの後に変えた権限を、GET /v1/me から読み直す', async () => {
     const fetchMe = vi.fn<AuthDeps['fetchMe']>(async () => ({
       ok: true,
-      viewer: { ...VIEWER, canManageStaff: true, canCheckReceipt: true },
+      viewer: { ...VIEWER, canManageStaff: true, canCheckReceipt: true, schedulePolicies: [] },
     }))
     const { deps } = setup({ fetchMe })
     expect(await readViewer(await requestWith(deps), deps)).toEqual({
       ...VIEWER,
       canManageStaff: true,
       canCheckReceipt: true,
+      schedulePolicies: [],
     })
     expect(fetchMe).toHaveBeenCalledWith('at')
   })
@@ -463,6 +474,7 @@ describe('readViewer', () => {
         ...VIEWER,
         canManageStaff: false,
         canCheckReceipt: false,
+        schedulePolicies: LEGACY_SCHEDULE_POLICIES,
       })
     }
   })

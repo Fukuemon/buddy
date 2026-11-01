@@ -30,6 +30,24 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 - PRD の時間外の勤務の印（`Schedule.is_over_time_work`）は、web の型に無く、画面に出していない。
 - 予定の一覧は、閲覧の権限で見てよい職員の予定だけを返す。自分の予定は常に返す。流れは [予定の管理の Design Doc の認証から事業所の確認までの流れ](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#認証から事業所の確認までの流れ) にある。
 
+## 権限の出し分け
+
+| 判定 | web の型の項目 | OpenAPI の項目 |
+| --- | --- | --- |
+| ログインした職員の予定の権限と対象 | `Viewer.schedulePolicies` の `code`、`targetStaffIds`、`targetTeamIds` | `getMe` の `policies` の `code`、`target_user_ids`、`target_team_ids` |
+| 職員の絞り込み、職員の列で、職員を出すか | `Staff.id`、`Staff.teamId` | `listUsers` の `Staff.id`、`Staff.team.id` |
+| 予定を作成を出すか | `Viewer.schedulePolicies` の `code` | `getMe` の `policies` の `code` |
+| 時間の枠を押せるか | `Staff.id`、`Staff.teamId` | `listUsers` の `Staff.id`、`Staff.team.id` |
+
+- 判定は、予定の API の判定（`schedule.CanRead`、`schedule.CanEdit`）と同じ規則で行う。判定の処理は `apps/web/src/features/schedule/lib/schedulePermission.ts` にある。
+  - 職員の絞り込みと職員の列は `readableStaff` で絞る。自分と、`schedule.all.*`、`target_user_ids` に職員を含む `schedule.user.*`、`target_team_ids` に職員のチームを含む `schedule.team.*` の対象の職員を残す。
+  - 予定を作成は、`code` が `.edit` で終わる権限を 1 つ以上持つとき（`canEditAnySchedule`）に出す。週の表示の空いた時間も、同じ条件で予定の作成を開く。
+  - 時間の枠は、列の職員を `canEditScheduleOf` で判定する。
+- web のサーバーは、`getMe` の `policies` のうち、予定の権限の 7 つの `code`（`SCHEDULE_POLICY_CODES`）を `Viewer.schedulePolicies` に写す。
+  - 写すのは `apps/web/src/server/runtime.ts` の `fetchMe` である。
+  - `schedulePolicies` を持たない古いセッションでは、`schedule.all.edit` を持つとして扱う（`apps/web/src/server/auth.ts` の `viewerOf`）。
+- 出し分けは表示だけに使う。予定を拒むのは、予定の API の `listSchedules` と `createSchedule` である。
+
 ## 状態と失敗の要因
 
 | 状態 | 出す文 | 要因 |
@@ -38,5 +56,6 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 読み込み中 | なし（ログインの画面へ移るまで続く） | `listSchedules` か `listUsers` が 401 |
 
 - 文は `apps/web/src/features/schedule/components/ScheduleCalendarContainer.tsx` が、status によらず 1 つの文にする。
-- 失敗は、TanStack Query のデフォルトで 3 回取り直してから出す。403 と 404 も取り直す。
+- 予定の一覧は、見てよくない職員の予定を除いて返すので、予定を見る権限が無いことの文は出さない。
+- 4xx の失敗は取り直さず、すぐに出す。ほかの失敗は、3 回まで取り直してから出す。取り直すかは `apps/web/src/integrations/tanstack-query/root-provider.tsx` の `shouldRetryQuery` が決める。
 - チームと利用者の一覧（`listTeams`、`listPatients`）の失敗は、この状態にしない。職員の絞り込みはチームを出さず、訪問の予定のタイトルは「利用者不明 訪問」になる。

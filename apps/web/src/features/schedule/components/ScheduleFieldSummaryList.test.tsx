@@ -8,7 +8,7 @@ const renderList = () =>
     <ScheduleFieldSummaryList
       activeId="staff"
       items={[
-        { id: 'staff', label: '担当者', placeholder: '選んでください' },
+        { id: 'staff', label: '主訪問者', placeholder: '選んでください' },
         { id: 'description', label: 'メモ' },
         { id: 'patient', label: '利用者', content: '見本 一郎', placeholder: '選んでください' },
       ]}
@@ -20,7 +20,7 @@ describe('ScheduleFieldSummaryList', () => {
   it('値の無い選ぶ項目は、薄い色の「選んでください」を出し、読み上げでは名前と「未入力」を読ませる', () => {
     renderList()
     const staff = screen.getByTestId('schedule-field-staff')
-    expect(staff).toHaveAccessibleName(/^担当者\s*未入力$/)
+    expect(staff).toHaveAccessibleName(/^主訪問者\s*未入力$/)
     expect(screen.getByText('選んでください', { selector: '[aria-hidden]' })).toBeVisible()
     expect(staff).not.toHaveTextContent('未選択')
   })

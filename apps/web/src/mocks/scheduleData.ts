@@ -49,7 +49,7 @@ export const mockStaff: Schemas['Staff'][] = [
   staff('staff-4', '江藤 四郎', teamB),
 ]
 
-/** ログインした職員として GET /v1/me が返す職員。職員の管理の権限と照合の権限を持つ。 */
+/** ログインした職員として GET /v1/me が返す職員。職員の管理の権限、事業所の全ての予定の編集の権限、照合の権限を持つ。 */
 export const mockMe: Schemas['StaffDetail'] = {
   ...mockStaff[0],
   sub: 'dev-aoki',
@@ -59,6 +59,14 @@ export const mockMe: Schemas['StaffDetail'] = {
       policy_id: 'policy-staff-manage',
       code: STAFF_MANAGE,
       name: '職員の管理',
+      target_user_ids: [],
+      target_team_ids: [],
+    },
+    {
+      user_policy_id: 'user-policy-3',
+      policy_id: 'policy-schedule-all-edit',
+      code: 'schedule.all.edit',
+      name: '事業所の全ての予定の編集',
       target_user_ids: [],
       target_team_ids: [],
     },

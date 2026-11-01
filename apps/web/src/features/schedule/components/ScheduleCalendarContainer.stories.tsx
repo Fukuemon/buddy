@@ -9,6 +9,7 @@ import {
 } from '#/storybook/withAppRouter'
 
 import { ScheduleCalendarContainer } from './ScheduleCalendarContainer'
+import { selfEditViewer } from './storyData'
 
 const route = (appRouter: Partial<AppRouterParameters>) => ({
   appRouter: { route: '/schedule', url: '/schedule', ...appRouter },
@@ -42,3 +43,8 @@ export const Empty: Story = { parameters: route({ api: emptyBuddyApi() }) }
 export const Loading: Story = { parameters: route({ api: pendingBuddyApi() }) }
 
 export const Failed: Story = { parameters: route({ api: failingBuddyApi() }) }
+
+/** 自分の予定だけを編集でき、A チームの予定を見られる職員。A チームの列だけを出し、「予定を作成」を出し、自分の列の枠だけを押せる。 */
+export const DaySelfEditOnly: Story = {
+  parameters: route({ url: '/schedule?view=day', viewer: selfEditViewer }),
+}

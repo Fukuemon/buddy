@@ -9,7 +9,8 @@ export type ScheduleDetailModalProps = {
   schedule: Schedule
   staff?: Staff
   patient?: Patient
-  onEdit: () => void
+  /** 編集の画面へ移る。省くと編集のボタンを出さない。編集の権限が無い予定で省く。 */
+  onEdit?: () => void
   onClose: () => void
 }
 
@@ -28,9 +29,9 @@ const SectionHeading = ({ id, children }: { id: string; children: React.ReactNod
 
 /**
  * 予定の詳細をモーダルで出す。
- * 日時を見出しにし、その下に種類と担当者を、訪問の予定では訪問の情報を、最後にメモをセクションに分けて並べる。メモが空なら、メモのセクションを出さない。
+ * 日時を見出しにし、その下に種類と主訪問者（通常の予定では予定者）を、訪問の予定では訪問の情報を、最後にメモをセクションに分けて並べる。メモが空なら、メモのセクションを出さない。
  * 見出しと値は、全てのセクションで同じ 1 列の並びにし、値の列の位置をそろえる。
- * 下端の右に「閉じる」と編集のボタンをこの順に置く。キャンセルした予定は、先頭にキャンセルの理由を出し、下端を出さない。
+ * 下端の右に「閉じる」と編集のボタンをこの順に置く。onEdit を省くと編集のボタンを出さない。キャンセルした予定は、先頭にキャンセルの理由を出し、下端を出さない。
  */
 export const ScheduleDetailModal = ({
   schedule,
@@ -57,9 +58,11 @@ export const ScheduleDetailModal = ({
                 >
                   閉じる
                 </Button>
-                <Button data-testid="schedule-detail-edit" onClick={onEdit} variant="secondary">
-                  編集
-                </Button>
+                {onEdit !== undefined && (
+                  <Button data-testid="schedule-detail-edit" onClick={onEdit} variant="secondary">
+                    編集
+                  </Button>
+                )}
               </>
             )
           : undefined
@@ -83,7 +86,7 @@ export const ScheduleDetailModal = ({
           <dl>
             <Row label="種類">{SCHEDULE_KIND_LABEL[schedule.kind]}</Row>
             {schedule.kind === 'normal' && <Row label="タイトル">{schedule.title}</Row>}
-            <Row label={schedule.kind === 'visit' ? '担当者' : '予定者'}>
+            <Row label={schedule.kind === 'visit' ? '主訪問者' : '予定者'}>
               {staff?.name ?? '職員不明'}
             </Row>
           </dl>
@@ -94,7 +97,7 @@ export const ScheduleDetailModal = ({
             <dl data-testid="schedule-detail-visit-fields">
               <Row label="利用者">{patient?.name ?? '利用者不明'}</Row>
               <Row label="サービスコード">{schedule.visit.serviceCode}</Row>
-              <Row label="訪問の種類">
+              <Row label="訪問の区分">
                 {schedule.visit.categories.length > 0
                   ? schedule.visit.categories
                       .map((category) => SCHEDULE_CATEGORY_LABEL[category])

@@ -6,9 +6,11 @@ import { fn } from 'storybook/test'
 import type { ScheduleKind } from '#/api/types'
 
 import { createScheduleFormValues } from '../lib/scheduleFormMapper'
-import { scheduleFormSchema, type ScheduleFormValues } from '../schema/scheduleForm'
+import { createScheduleFormSchema, type ScheduleFormValues } from '../schema/scheduleForm'
 import { ScheduleFormModal } from './ScheduleFormModal'
-import { STORY_DATE, storyPatients, storyStaff } from './storyData'
+import { STORY_DATE, storyPatients, storyServiceCodes, storyStaff } from './storyData'
+
+const schema = createScheduleFormSchema(storyServiceCodes)
 
 type SampleProps = {
   kind: ScheduleKind
@@ -22,14 +24,19 @@ type SampleProps = {
 
 const ScheduleFormModalSample = ({ kind, mode = 'create', ...props }: SampleProps) => {
   const form = useForm<ScheduleFormValues>({
-    defaultValues: createScheduleFormValues({ kind, date: STORY_DATE }),
-    resolver: zodResolver(scheduleFormSchema),
+    defaultValues: createScheduleFormValues({
+      kind,
+      date: STORY_DATE,
+      serviceCode: storyServiceCodes[0],
+    }),
+    resolver: zodResolver(schema),
   })
   return (
     <ScheduleFormModal
       {...props}
       form={form}
       patients={storyPatients}
+      serviceCodes={storyServiceCodes}
       staffList={storyStaff}
       submitLabel={mode === 'create' ? '作成' : '保存'}
       submitTestId={mode === 'create' ? 'schedule-create-submit' : 'schedule-edit-submit'}

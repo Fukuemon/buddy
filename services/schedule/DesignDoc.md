@@ -334,12 +334,18 @@ sequenceDiagram
 #### 読み込み
 
 - 予定、予定の一覧、職員、チーム、利用者の一覧は、TanStack Query の query で読む（`apps/web/src/features/schedule/queries.ts`）。
-- 読み込みが失敗すると、3 回まで取り直してから失敗にする。TanStack Query のデフォルトのままで、403 と 404 も取り直す。
-  - そのため、予定が見つからないときと権限が無いときも、失敗の文が出るまで数秒かかる。4xx を取り直さないかは [#383](https://github.com/Fukuemon/buddy/issues/383) で決める。
+- 読み込みが失敗すると、3 回まで取り直してから失敗にする。4xx の `ApiError` は取り直さずにすぐ失敗にする（`apps/web/src/integrations/tanstack-query/root-provider.tsx` の `shouldRetryQuery`）。
+  - 予定が見つからないとき、権限が無いとき、入力が規則に合わないときは、取り直しても結果が変わらないためである。
+  - 文の選び方は [画面仕様書の規約のエラーの見せ方](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/rules.md#エラーの見せ方) にある。
+- 画面の出し分けに使う予定の権限は、画面を読み込むたびに web のサーバーが `GET /v1/me` で読む。
+  - web のサーバーは、`policies` のうち `schedule.` で始まる権限と対象を、`Viewer` の `schedulePolicies` に入れる（`apps/web/src/server/runtime.ts`）。
+  - 画面は、職員ごとに見られるかと編集できるかを、予定の API の `schedule.CanRead` と `schedule.CanEdit` と同じ規則で決める。
+  - 判定の処理は `apps/web/src/features/schedule/lib/schedulePermission.ts` にある。
+  - `schedulePolicies` を持たない古いセッションでは、`GET /v1/me` が失敗したときに、出し分ける前と同じく全ての予定の操作を出す。拒むのは予定の API である。
 - 予定の取得（`getSchedule`）は、パスに事業所を持たない。BFF は、返った予定の `facility_id` がセッションの事業所と違えば、status が 403 の `ApiError` にする（`apps/web/src/api/http/httpBuddyApi.ts`）。
   - 予定の API のミドルウェアも、パスの `schedule_id` の事業所で 403 を返す（[認証から事業所の確認までの流れ](#認証から事業所の確認までの流れ)）。
-- 予定の詳細と予定の編集は、予定と同時に職員と利用者の一覧を読み、名前を一覧で探す。予定の詳細は一覧を待たずに予定を出し、一覧に無い職員と利用者を「職員不明」「利用者不明」と出す。予定の編集は 3 つを読み終えてからフォームを出す。
-- 予定の作成は、職員と利用者の一覧を待たずにフォームを出す。読み終えるまでと、読めなかったときは、選択肢が 0 件になる。
+- 予定の詳細と予定の編集は、予定と同時に職員と利用者の一覧を読み、名前を一覧で探す。予定の詳細は一覧を待たずに予定を出し、一覧に無い職員と利用者を「職員不明」「利用者不明」と出す。
+- 予定の作成と予定の編集は、職員、利用者、サービスコードの一覧（`listServiceCodes`）を読み終えてからフォームを出す。サービスコードの選択肢と提供時間の範囲は、`listServiceCodes` の順と値を使う。
 
 #### 予定の一覧の期間と職員の絞り込み
 
@@ -352,12 +358,12 @@ sequenceDiagram
 #### 保存
 
 - 予定の作成と予定の編集は、送る前に、BFF が予定の種類、サービスコード、訪問の区分のマスタ（`listScheduleTypes`、`listServiceCodes`、`listVisitCategories`）を読み、画面の値を ID にする。マスタを読めないか、当たる値が無ければ、予定の API を呼ばずに失敗にする。
-- 予定の作成は、画面の担当者を、予定の職員（`staff_id`）と訪問の担当（`visit_info.assigned_staff_id`）の両方に送る。
+- 予定の作成は、画面の主訪問者を、予定の職員（`staff_id`）と訪問の担当（`visit_info.assigned_staff_id`）の両方に送る。
 - 予定の編集は、保存の前に今の予定を読み直し、画面が持たない値を今の予定から引き継ぐ（`apps/web/src/api/http/scheduleMapper.ts` の `keepCurrentVisit`）。読み直せなければ失敗にする。
   - 訪問の予定どうしの保存では、同行者とタイトルを今の予定の値のまま送る。
   - 訪問の担当は、今の担当が予定の職員と同じなら新しい予定の職員にし、違えば今の担当のまま送る。
 - 繰り返しの予定の回を保存すると、BFF はその回だけを単発の予定に置き換える（`POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences`）。画面は、置き換えた予定の ID の詳細へ戻る。
-- 保存の失敗は、status によらず 1 つの文で出す。403 と 400 を分けて見せるかは [#383](https://github.com/Fukuemon/buddy/issues/383) で決める。
+- 保存の失敗は、403 と 400 をほかの失敗と分けて文を出す（`apps/web/src/features/schedule/lib/errorMessage.ts` の `scheduleSubmitErrorMessage`）。予定の API の 400 は合わない項目を返さないので、項目には示さない。
 - 保存に成功すると、事業所の予定の読み込みの結果を捨てて読み直す。
 
 ### Google カレンダーとの連携

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { SCHEDULE_CATEGORIES, SCHEDULE_KINDS, SERVICE_CODES, TEAM_COLORS } from '../types'
+import { SCHEDULE_CATEGORIES, SCHEDULE_KINDS, TEAM_COLORS } from '../types'
 
 /** BFF が中継する BuddyApi の操作。 */
 const BFF_OPERATIONS = [
@@ -70,7 +70,7 @@ const scheduleInput = z.object({
   visit: z
     .object({
       patientId: id,
-      serviceCode: z.enum(SERVICE_CODES),
+      serviceCode: z.string().min(1).max(64),
       categories: z.array(z.enum(SCHEDULE_CATEGORIES)).max(SCHEDULE_CATEGORIES.length),
     })
     .optional(),

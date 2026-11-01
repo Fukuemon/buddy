@@ -165,7 +165,7 @@ test.describe('予定の作成', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       const prefix = variant.label ? `${variant.label}: ` : ''
 
-      test(`${prefix}止めた職員がいる事業所で予定の作成の担当者の欄を開いた場合、止めた職員が候補に出ないこと`, async ({
+      test(`${prefix}止めた職員がいる事業所で予定の作成の主訪問者の欄を開いた場合、止めた職員が候補に出ないこと`, async ({
         browser,
         request,
       }) => {
@@ -176,7 +176,7 @@ test.describe('予定の作成', () => {
           {
             name: 'schedule-create-suspended-staff',
             title:
-              '止めた職員がいる事業所で予定の作成の担当者の欄を開くと、止めた職員が候補に出ない',
+              '止めた職員がいる事業所で予定の作成の主訪問者の欄を開くと、止めた職員が候補に出ない',
             actor: OFFICE_B_ACTOR,
             variant,
           },
@@ -194,7 +194,7 @@ test.describe('予定の作成', () => {
               ].join('\n'),
             )
 
-            await step('「予定を作成」を押し、項目の一覧の「担当者」を押す')
+            await step('「予定を作成」を押し、項目の一覧の「主訪問者」を押す')
             await page.getByTestId('schedule-create-open').click()
             await page.getByTestId('schedule-field-staff').click()
             await expect(page.getByTestId(`staff-select-option-${OFFICE_B.staff.id}`)).toBeVisible()
@@ -202,13 +202,13 @@ test.describe('予定の作成', () => {
               0,
             )
             await check(
-              `担当者の候補に${OFFICE_B.staff.name}だけが出て、止めた職員の${SUSPENDED_STAFF.name}は出ない`,
+              `主訪問者の候補に${OFFICE_B.staff.name}だけが出て、止めた職員の${SUSPENDED_STAFF.name}は出ない`,
             )
           },
         )
       })
 
-      test(`${prefix}URL の staffId が休職の職員を指す予定の作成の画面を開いた場合、担当者が未選択で開くこと`, async ({
+      test(`${prefix}URL の staffId が休職の職員を指す予定の作成の画面を開いた場合、主訪問者が未選択で開くこと`, async ({
         browser,
         request,
       }) => {
@@ -219,7 +219,7 @@ test.describe('予定の作成', () => {
           {
             name: 'schedule-create-on-leave-staff-url',
             title:
-              'URL の staffId が休職の職員を指す予定の作成の画面を開くと、担当者が未選択で開く',
+              'URL の staffId が休職の職員を指す予定の作成の画面を開くと、主訪問者が未選択で開く',
             actor: OFFICE_B_ACTOR,
             variant,
           },
@@ -245,7 +245,7 @@ test.describe('予定の作成', () => {
             )
             await expect(page.getByTestId('schedule-form-modal')).toBeVisible()
 
-            await step('項目の一覧の「担当者」を押す')
+            await step('項目の一覧の「主訪問者」を押す')
             await page.getByTestId('schedule-field-staff').click()
             await expect(page.getByTestId(`staff-select-option-${OFFICE_B.staff.id}`)).toBeVisible()
             await expect(page.getByTestId('schedule-field-staff')).toContainText('選んでください')
@@ -253,7 +253,7 @@ test.describe('予定の作成', () => {
               SUSPENDED_STAFF.name,
             )
             await check(
-              `担当者が「選んでください」で開き、休職の${SUSPENDED_STAFF.name}の名前は出ず、候補にも出ない`,
+              `主訪問者が「選んでください」で開き、休職の${SUSPENDED_STAFF.name}の名前は出ず、候補にも出ない`,
             )
           },
         )

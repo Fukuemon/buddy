@@ -16,6 +16,7 @@ const queryKeys = {
   staff: (facilityId: FacilityId) => ['facilities', facilityId, 'staff'] as const,
   teams: (facilityId: FacilityId) => ['facilities', facilityId, 'teams'] as const,
   patients: (facilityId: FacilityId) => ['facilities', facilityId, 'patients'] as const,
+  serviceCodes: (facilityId: FacilityId) => ['facilities', facilityId, 'service-codes'] as const,
 }
 
 /** 期間と職員で絞った、事業所の予定の一覧の query。 */
@@ -67,6 +68,13 @@ export const patientListQueryOptions = (
   queryOptions({
     queryKey: [...queryKeys.patients(facilityId), params],
     queryFn: () => api.patients.list(facilityId, params),
+  })
+
+/** 事業所のサービスコードと提供時間の範囲の一覧の query。予定の API の一覧の順に並ぶ。 */
+export const serviceCodeListQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
+  queryOptions({
+    queryKey: queryKeys.serviceCodes(facilityId),
+    queryFn: () => api.serviceCodes.list(facilityId),
   })
 
 /** 予定を作る。成功すると、事業所の予定の取得の結果を捨てて取り直す。 */
