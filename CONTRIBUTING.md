@@ -80,10 +80,12 @@ docker compose up --build --wait
 - シードの職員のメールは次のとおり。
   - 1 つ目の事業所（組織 `org-sample`）: `hina.aoki@example.com`（青木 陽菜、マネージャー）、`kenta.mori@example.com`（森 健太、チームリーダー）
     - ほかに `sakura.hayashi@example.com` と `misaki.sato@example.com` がいる
+    - `yui.nakamura@example.com`（中村 結衣、事務）は訪問しない職員である。予定のカレンダーの職員の列と、予定と担当の候補に出ない。照合の画面を開ける
   - 2 つ目の事業所（組織 `org-sample-b`）: `nagisa.ueno@example.com`（上野 渚、マネージャー）
     - ほかに、休職の職員の `takumi.ono@example.com`（小野 拓海）がいる。ログインの失敗の画面になる
   - シードは、空の DB にだけ適用される。
-    - シードを変えた後は、`docker compose down -v` で作り直す。- 照合の画面で、予定の取り方に「Google カレンダー」を、対象の月に `2026-11` を選ぶと、calendarpit の森 健太のカレンダーの予定で照合できる。
+    - シードを変えた後は、`docker compose down -v` で作り直す。
+- 照合の画面で、予定の取り方に「Google カレンダー」を、対象の月に `2026-11` を選ぶと、calendarpit の森 健太のカレンダーの予定で照合できる。
 - データを消して最初からにするときは、`docker compose down -v` でボリュームを消す。
 - 別の worktree で同時に起動するときは、`docker compose -p <名前> up --build --wait` でプロジェクトの名前を変え、表の環境変数でポートをずらす。
   - E2E は、ずらしたポートに URL の環境変数を合わせて流す。
