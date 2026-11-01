@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test'
 
+import type { ImportReviewItem } from '#/api/types'
+
 import {
   formatLastImport,
   formatRecurrence,
@@ -29,21 +31,31 @@ describe('formatLastImport', () => {
 })
 
 describe('formatReviewDateTime', () => {
+  const item: ImportReviewItem = {
+    external_event_id: 'e',
+    revision: 'r',
+    date: '2026-11-04',
+    start_time: '10:00',
+    end_time: '11:00',
+    ends_next_day: false,
+    service: '訪看I2',
+    client_name: '利用者',
+    reason: 'patient_not_found',
+    recurrence: null,
+    candidates: [],
+  }
   it('曜日と時刻の範囲を付ける', () => {
+    expect(formatReviewDateTime(item)).toBe('2026/11/04（水）10:00〜11:00')
+  })
+  it('終了が翌日の予定は、終了の時刻に「翌」を付ける', () => {
     expect(
       formatReviewDateTime({
-        external_event_id: 'e',
-        revision: 'r',
-        date: '2026-11-04',
-        start_time: '10:00',
-        end_time: '11:00',
-        service: '訪看I2',
-        client_name: '利用者',
-        reason: 'patient_not_found',
-        recurrence: null,
-        candidates: [],
+        ...item,
+        start_time: '22:00',
+        end_time: '01:00',
+        ends_next_day: true,
       }),
-    ).toBe('2026/11/04（水）10:00〜11:00')
+    ).toBe('2026/11/04（水）22:00〜翌 01:00')
   })
 })
 
@@ -59,9 +71,19 @@ describe('formatRecurrence', () => {
 })
 
 describe('formatSkippedDateTime', () => {
-  const item = { date: '2026-11-12', start_time: '17:00', end_time: '09:00', all_day: false }
+  const item = {
+    date: '2026-11-12',
+    start_time: '17:00',
+    end_time: '09:00',
+    ends_next_day: false,
+    all_day: false,
+  }
   it.each([
     [{ ...item, reason: 'multi_day' }, '2026/11/12（木）17:00〜翌 09:00'],
+    [
+      { ...item, ends_next_day: true, reason: 'service_not_found' },
+      '2026/11/12（木）17:00〜翌 09:00',
+    ],
     [
       { ...item, all_day: true, start_time: null, end_time: null, reason: 'all_day' },
       '2026/11/12（木）終日',

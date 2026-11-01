@@ -33,9 +33,9 @@ export const formatLastImport = (run: ExternalCalendar['last_import']) => {
   return `${formatDateTime(run.finished_at ?? run.started_at)}${failed}（${formatDateRange(run.range_start, run.range_end)}）`
 }
 
-/** 確認が必要な予定の日時を「2026/11/04（水）10:00〜11:00」の形にする。 */
+/** 確認が必要な予定の日時を「2026/11/04（水）10:00〜11:00」の形にする。終了が翌日の予定は「22:00〜翌 01:00」にする。 */
 export const formatReviewDateTime = (item: ImportReviewItem) =>
-  `${formatDateWithWeekday(item.date)}${formatTime(item.start_time)}〜${formatTime(item.end_time)}`
+  `${formatDateWithWeekday(item.date)}${formatTime(item.start_time)}〜${item.ends_next_day ? '翌 ' : ''}${formatTime(item.end_time)}`
 
 /** 繰り返しの規則を「毎週水曜日の繰り返し」の形にする。読めない規則は「繰り返し」にする。 */
 export const formatRecurrence = (rule: NonNullable<ImportReviewItem['recurrence']>) => {
@@ -57,6 +57,6 @@ export const formatSkippedDateTime = (item: ImportSkippedItem) => {
   if (item.start_time === null) return date
   const start = formatTime(item.start_time)
   if (item.end_time === null) return `${date}${start}〜`
-  const nextDay = item.reason === 'multi_day' ? '翌 ' : ''
+  const nextDay = item.reason === 'multi_day' || item.ends_next_day ? '翌 ' : ''
   return `${date}${start}〜${nextDay}${formatTime(item.end_time)}`
 }
