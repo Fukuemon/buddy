@@ -56,7 +56,9 @@ test.describe('部署とチーム', () => {
 
       await page.goto('/staff')
       await page.getByTestId('staff-list-search').fill(staff.name)
-      await expect(page.getByTestId(`staff-list-team-dot-${staffId}`)).toHaveClass(/bg-team-lime/)
+      await expect(
+        page.getByTestId(`staff-list-team-dot-${staffId}`).filter({ visible: true }),
+      ).toHaveClass(/bg-team-lime/)
 
       await page.goto('/schedule')
       await expect(page.getByTestId(`staff-filter-team-dot-${teamId}`)).toHaveClass(/bg-team-lime/)
