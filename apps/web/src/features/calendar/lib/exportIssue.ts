@@ -7,9 +7,13 @@ type ExportIssueState = Pick<
   'status' | 'error_code' | 'acceptable' | 'recurring_schedule_id'
 >
 
-/** 確認が必要な予定の日時を「2026/11/04（水）10:00〜11:00」の形にする。繰り返しの予定は、最初の回の日付に「から毎回」を付ける。 */
+/**
+ * 確認が必要な予定の日時を「2026/11/04（水）10:00〜11:00」の形にする。終了が翌日の予定は「22:00〜翌 01:00」にする。
+ * 繰り返しの予定は、最初の回の日付に「から毎回」を付ける。
+ */
 export const formatExportIssueDateTime = (issue: CalendarExportIssue) => {
-  const time = `${issue.start_time.slice(0, 5)}〜${issue.end_time.slice(0, 5)}`
+  const nextDay = issue.ends_next_day ? '翌 ' : ''
+  const time = `${issue.start_time.slice(0, 5)}〜${nextDay}${issue.end_time.slice(0, 5)}`
   const date = formatDateWithWeekday(issue.date)
   return issue.recurring_schedule_id === null ? `${date}${time}` : `${date}から毎回 ${time}`
 }

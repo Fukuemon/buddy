@@ -109,6 +109,8 @@ type ExportIssue struct {
 	Date      civil.Date
 	StartTime civil.Time
 	EndTime   civil.Time
+	// EndsNextDay は、Date の翌日の EndTime に終わる予定のときに true である。
+	EndsNextDay bool
 }
 
 // Acceptable は、外部のカレンダーの内容を buddy の予定に当てて、待ちを解けるかを返す。

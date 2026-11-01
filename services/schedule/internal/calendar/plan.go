@@ -90,9 +90,11 @@ type ReviewItem struct {
 	Date            civil.Date
 	StartTime       civil.Time
 	EndTime         civil.Time
-	Service         string
-	Client          string
-	Reason          ReviewReason
+	// EndsNextDay は、Date の翌日の EndTime に終わる予定のときに true である。
+	EndsNextDay bool
+	Service     string
+	Client      string
+	Reason      ReviewReason
 	// Recurrence は、繰り返しのまま取り込む予定の規則で、ほかの予定では nil である。
 	Recurrence *schedule.Rule
 	// Candidates は、タイトルの利用者名の利用者で、ReviewPatientAmbiguous のときだけ持つ。
@@ -106,8 +108,10 @@ type Skipped struct {
 	Date      *civil.Date
 	StartTime *civil.Time
 	EndTime   *civil.Time
-	AllDay    bool
-	Reason    SkipReason
+	// EndsNextDay は、終了が翌日の予定に読み替えた予定（ADR-0023）のときに true である。取り込まない理由が日をまたぐ予定では false である。
+	EndsNextDay bool
+	AllDay      bool
+	Reason      SkipReason
 }
 
 // Counts は、プレビューの件数である。予定は外部の予定の数で数え、繰り返しのまま取り込む予定は 1 件、回ごとにした予定は 1 回を 1 件に数える。
@@ -571,6 +575,7 @@ func (b *planner) review(e entry, matches []PatientRef) string {
 		Date:            e.cand.Date,
 		StartTime:       e.cand.StartTime,
 		EndTime:         e.cand.EndTime,
+		EndsNextDay:     e.cand.EndsNextDay,
 		Service:         e.cand.Service,
 		Client:          e.cand.Client,
 		Reason:          ReviewPatientNotFound,
@@ -589,12 +594,12 @@ func (b *planner) review(e entry, matches []PatientRef) string {
 }
 
 func (b *planner) skip(c Candidate) {
-	s := Skipped{Reason: c.SkipReason, AllDay: c.SkipReason == SkipAllDay}
+	s := Skipped{Reason: c.SkipReason, AllDay: c.SkipReason == SkipAllDay, EndsNextDay: c.EndsNextDay}
 	if !c.Date.IsZero() {
 		d := c.Date
 		s.Date = &d
 	}
-	if c.StartTime.Before(c.EndTime) || c.SkipReason == SkipMultiDay || c.SkipReason == SkipZeroLength || c.SkipReason == SkipServiceNotFound {
+	if c.StartTime.Before(c.EndTime) || c.EndsNextDay || c.SkipReason == SkipMultiDay || c.SkipReason == SkipZeroLength || c.SkipReason == SkipServiceNotFound {
 		st, et := c.StartTime, c.EndTime
 		s.StartTime, s.EndTime = &st, &et
 	}
