@@ -115,6 +115,7 @@ const ScheduleCreateForm = ({
  * `/schedule/new` の search params を初期値にして作成のフォームを出す。
  * 作成すると、作った予定の日のカレンダーに戻る。
  * 職員、利用者、サービスコードの一覧を読み終えるまでは読み込み中の表示を出し、読めなければフォームの代わりに失敗の文を出す。
+ * 一度読めた後の読み直しが失敗しても、読めた一覧でフォームを出したままにし、入力を消さない。
  * 職員の候補は、ログインした職員が予定を作れる職員に限る。URL の staffId が候補の外の職員を指すときは、未選択で開く。
  */
 export const ScheduleCreateModalContainer = () => {
@@ -128,14 +129,17 @@ export const ScheduleCreateModalContainer = () => {
 
   const close = () => navigate({ to: '/schedule', search: pickCalendarSearch(search) })
 
-  if (staffQuery.isPending || patientsQuery.isPending || serviceCodesQuery.isPending) {
-    return (
-      <Modal isOpen onCloseRequest={close} title="予定の作成">
-        <Loading />
-      </Modal>
-    )
-  }
-  if (staffQuery.isError || patientsQuery.isError || serviceCodesQuery.isError) {
+  const staffList = staffQuery.data
+  const patients = patientsQuery.data
+  const serviceCodes = serviceCodesQuery.data
+  if (staffList === undefined || patients === undefined || serviceCodes === undefined) {
+    if (!staffQuery.isError && !patientsQuery.isError && !serviceCodesQuery.isError) {
+      return (
+        <Modal isOpen onCloseRequest={close} title="予定の作成">
+          <Loading />
+        </Modal>
+      )
+    }
     return (
       <Modal isOpen onCloseRequest={close} title="予定の作成">
         <p className="p-5 text-danger" role="alert">
@@ -148,10 +152,10 @@ export const ScheduleCreateModalContainer = () => {
   return (
     <ScheduleCreateForm
       onClose={close}
-      patients={patientsQuery.data}
-      serviceCodes={serviceCodesQuery.data}
-      staffCandidates={editableStaff(viewer, staffQuery.data)}
-      staffList={staffQuery.data}
+      patients={patients}
+      serviceCodes={serviceCodes}
+      staffCandidates={editableStaff(viewer, staffList)}
+      staffList={staffList}
     />
   )
 }

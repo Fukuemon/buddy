@@ -26,14 +26,15 @@ export const ScheduleDetailModalContainer = ({ scheduleId }: { scheduleId: Sched
 
   const close = () => navigate({ to: '/schedule', search: calendarSearch })
 
-  if (scheduleQuery.isPending) {
+  const schedule = scheduleQuery.data
+  if (schedule === undefined && !scheduleQuery.isError) {
     return (
       <Modal isOpen onCloseRequest={close} title="予定の詳細">
         <Loading />
       </Modal>
     )
   }
-  if (scheduleQuery.isError) {
+  if (schedule === undefined) {
     return (
       <Modal isOpen onCloseRequest={close} title="予定の詳細">
         <p className="p-5 text-danger" role="alert">
@@ -43,7 +44,6 @@ export const ScheduleDetailModalContainer = ({ scheduleId }: { scheduleId: Sched
     )
   }
 
-  const schedule = scheduleQuery.data
   const staff = staffQuery.data?.find((s) => s.id === schedule.staffId)
   const canEdit = canEditScheduleOf(viewer, { id: schedule.staffId, teamId: staff?.teamId ?? '' })
   return (

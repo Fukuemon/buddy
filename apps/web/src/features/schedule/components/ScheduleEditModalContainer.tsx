@@ -89,6 +89,7 @@ const ScheduleEditForm = ({
  * 予定を 1 件取り、その値を初期値にして編集のフォームを出す。保存すると詳細に戻る。
  * ログインした職員が予定の職員の予定を編集できないときは、フォームを出さずに権限が無いことを出す。
  * 職員の候補は、ログインした職員が予定を編集できる職員に限る。
+ * 一度読めた後の読み直しが失敗しても、読めた値でフォームを出したままにし、入力を消さない。
  */
 export const ScheduleEditModalContainer = ({ scheduleId }: { scheduleId: Schedule['id'] }) => {
   const navigate = useNavigate()
@@ -99,24 +100,28 @@ export const ScheduleEditModalContainer = ({ scheduleId }: { scheduleId: Schedul
   const patientsQuery = useQuery(patientListQueryOptions(api, facilityId))
   const serviceCodesQuery = useQuery(serviceCodeListQueryOptions(api, facilityId))
 
+  const schedule = scheduleQuery.data
+  const staffList = staffQuery.data
+  const patients = patientsQuery.data
+  const serviceCodes = serviceCodesQuery.data
   if (
-    scheduleQuery.isPending ||
-    staffQuery.isPending ||
-    patientsQuery.isPending ||
-    serviceCodesQuery.isPending
+    schedule === undefined ||
+    staffList === undefined ||
+    patients === undefined ||
+    serviceCodes === undefined
   ) {
-    return (
-      <Modal isOpen title="予定の編集">
-        <Loading />
-      </Modal>
-    )
-  }
-  if (
-    scheduleQuery.isError ||
-    staffQuery.isError ||
-    patientsQuery.isError ||
-    serviceCodesQuery.isError
-  ) {
+    const failed =
+      scheduleQuery.isError ||
+      staffQuery.isError ||
+      patientsQuery.isError ||
+      serviceCodesQuery.isError
+    if (!failed) {
+      return (
+        <Modal isOpen title="予定の編集">
+          <Loading />
+        </Modal>
+      )
+    }
     return (
       <Modal
         isOpen
@@ -132,8 +137,8 @@ export const ScheduleEditModalContainer = ({ scheduleId }: { scheduleId: Schedul
     )
   }
 
-  const owner = staffQuery.data.find((staff) => staff.id === scheduleQuery.data.staffId)
-  if (!canEditScheduleOf(viewer, { id: scheduleQuery.data.staffId, teamId: owner?.teamId ?? '' })) {
+  const owner = staffList.find((staff) => staff.id === schedule.staffId)
+  if (!canEditScheduleOf(viewer, { id: schedule.staffId, teamId: owner?.teamId ?? '' })) {
     return (
       <Modal
         data-testid="schedule-edit-forbidden"
@@ -146,7 +151,7 @@ export const ScheduleEditModalContainer = ({ scheduleId }: { scheduleId: Schedul
     )
   }
 
-  if (scheduleQuery.data.cancel !== undefined) {
+  if (schedule.cancel !== undefined) {
     return (
       <Modal
         data-testid="schedule-edit-cancelled"
@@ -162,11 +167,11 @@ export const ScheduleEditModalContainer = ({ scheduleId }: { scheduleId: Schedul
   return (
     <ScheduleEditForm
       calendarSearch={calendarSearch}
-      patients={patientsQuery.data}
-      serviceCodes={serviceCodesQuery.data}
-      schedule={scheduleQuery.data}
-      staffCandidates={editableStaff(viewer, staffQuery.data)}
-      staffList={staffQuery.data}
+      patients={patients}
+      serviceCodes={serviceCodes}
+      schedule={schedule}
+      staffCandidates={editableStaff(viewer, staffList)}
+      staffList={staffList}
     />
   )
 }
