@@ -1,6 +1,6 @@
 import { expect, test, type APIRequestContext } from '@playwright/test'
 
-import { LEADER, LEADER_STATE, LOGIN_STAFF } from '../../fixtures/env'
+import { LEADER, LEADER_STATE, LOGIN_STAFF, LOGIN_STATE } from '../../fixtures/env'
 import { endPatientService, registerPatient } from '../../fixtures/patient'
 import { issueManagerToken, STAFF_FORM } from '../../fixtures/staff'
 import { patientOptionByName } from '../../selectors/patientSelect'
@@ -66,8 +66,8 @@ test.describe('利用者の一覧', () => {
       page,
       playwright,
     }) => {
-      // request のフィクスチャはリーダーのログインの状態を持ち、ブローカーでマネージャーのトークンを取れないので、状態の無いコンテキストで登録する
-      const manager = await playwright.request.newContext()
+      // issueManagerToken は Hydra のマネージャーのログインの状態を使ってトークンを取るので、リーダーの状態の request ではなくマネージャーの状態で登録する
+      const manager = await playwright.request.newContext({ storageState: LOGIN_STATE })
       const id = await registerPatientId(manager, newPatientName('hidden'))
       await manager.dispose()
 
