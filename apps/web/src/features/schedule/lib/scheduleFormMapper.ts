@@ -6,6 +6,17 @@ import { addMinutesToTimeKey, combineDateTime, diffMinutes, toDateKey, toTimeKey
 const VISIT_TITLE = '訪問'
 const DEFAULT_START_TIME = '09:00'
 
+/** 作成のフォームの初期のサービスコードの表記。 */
+const DEFAULT_SERVICE_CODE = '訪看I2'
+
+/**
+ * serviceCodes（予定の API のサービスコードの一覧）のうち、作成のフォームの初期値にするサービスコードを返す。
+ * 「訪看I2」を、全角と半角の数字の違いを問わずに探し、無ければ一覧の先頭を返す。一覧が空なら undefined を返す。
+ */
+export const defaultServiceCode = (serviceCodes: readonly ServiceCodeRecord[]) =>
+  serviceCodes.find((code) => code.code.normalize('NFKC') === DEFAULT_SERVICE_CODE) ??
+  serviceCodes[0]
+
 /** createScheduleFormValues の引数。time を省くと 9 時、staffId を省くと未選択にする。serviceCode を省くとサービスコードを未選択にする。 */
 type ScheduleFormDefaults = {
   kind: ScheduleKind
@@ -14,7 +25,7 @@ type ScheduleFormDefaults = {
   /** `HH:mm`。省くと 9 時にする。 */
   time?: string
   staffId?: Staff['id']
-  /** 訪問の予定の初期のサービスコード。予定の API のサービスコードの一覧の先頭を渡す。 */
+  /** 訪問の予定の初期のサービスコード。defaultServiceCode の値を渡す。 */
   serviceCode?: ServiceCodeRecord
 }
 

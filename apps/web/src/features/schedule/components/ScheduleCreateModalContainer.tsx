@@ -14,7 +14,11 @@ import {
   SCHEDULE_OPTIONS_LOAD_ERROR_MESSAGE,
   scheduleSubmitErrorMessage,
 } from '../lib/errorMessage'
-import { createScheduleFormValues, toScheduleInput } from '../lib/scheduleFormMapper'
+import {
+  createScheduleFormValues,
+  defaultServiceCode,
+  toScheduleInput,
+} from '../lib/scheduleFormMapper'
 import { editableStaff } from '../lib/schedulePermission'
 import {
   patientListQueryOptions,
@@ -51,7 +55,7 @@ const ScheduleCreateForm = ({
       date: search.start ?? search.date ?? toDateKey(new Date()),
       time: search.time,
       staffId: staffCandidates.some((staff) => staff.id === staffId) ? staffId : undefined,
-      serviceCode: serviceCodes[0],
+      serviceCode: defaultServiceCode(serviceCodes),
     }
   })
   const [schema] = useState(() => createScheduleFormSchema(serviceCodes))

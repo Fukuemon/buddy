@@ -8,7 +8,10 @@ import { readableStaff } from '../lib/schedulePermission'
 import { staffListQueryOptions, teamListQueryOptions } from '../queries'
 import { StaffFilterSidebar } from './StaffFilterSidebar'
 
-/** 職員とチームを取り、止めた職員と、ログインした職員が予定を見てよくない職員を除いて出し、選んだ職員を `/schedule` の search params の staff に書く。 */
+/**
+ * 職員とチームを取り、止めた職員と、ログインした職員が予定を見てよくない職員を除いて出し、選んだ職員を `/schedule` の search params の staff に書く。
+ * 予定を見てよくない職員だけのチームは、見出しも出さない。
+ */
 export const StaffFilterSidebarContainer = () => {
   const { staff } = useSearch({ from: '/schedule' })
   const navigate = useNavigate({ from: '/schedule' })
@@ -17,12 +20,19 @@ export const StaffFilterSidebarContainer = () => {
   const teamsQuery = useQuery(teamListQueryOptions(api, facilityId))
   const staffQuery = useQuery(staffListQueryOptions(api, facilityId))
 
+  const active = activeStaff(staffQuery.data ?? [])
+  const readable = readableStaff(viewer, active)
+  const teams = (teamsQuery.data ?? []).filter(
+    (team) =>
+      !active.some((s) => s.teamId === team.id) || readable.some((s) => s.teamId === team.id),
+  )
+
   return (
     <StaffFilterSidebar
       onChange={(staffIds) => navigate({ search: (prev) => ({ ...prev, staff: staffIds }) })}
       selectedStaffIds={activeStaffIds(staff, staffQuery.data)}
-      staffList={readableStaff(viewer, activeStaff(staffQuery.data ?? []))}
-      teams={teamsQuery.data ?? []}
+      staffList={readable}
+      teams={teams}
       viewerStaffId={viewer.staffId}
     />
   )
