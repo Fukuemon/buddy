@@ -141,32 +141,43 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 
 アプリの間は HTTP だけでつながり、コードで依存しない。
 
-- ブラウザと web: HTTPS でつなぐ。
-  - cookie にはセッションの ID を入れ、トークンは入れない。
-  - 画面の操作は、web のサーバーの関数（BFF）を呼ぶ。API はブラウザから直接は呼ばれない。
-  - 例外は、開発者がローカルでドキュメントサイトの API の仕様のページから、ローカルの API を試すときだけである。
-- ブラウザと Hydra とブローカー: ログインとログアウトのリダイレクトの流れは、ID ブローカーの Design Doc の [ログイン](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#ログイン) と [ログアウト](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#ログアウト) にある。
-- web と Hydra: 認可コードフローでトークンを取得し、更新する。トークンは Valkey のセッションに置く。
-  - セッションは、トークンと ID token のほかに、ログインのときに予定の API の `GET /v1/me` で引いた職員の ID、名前、事業所、職員の管理の権限と照合の権限の有無を 12 時間持つ。
-    - 画面を読み込むときは、職員の値を `GET /v1/me` で読み直して画面に渡す。名前や権限を変えたら、画面を読み込み直すと出し分けに写る。`GET /v1/me` が失敗したときは、セッションの値を渡す。
-    - リクエストを拒否するのは API なので、拒否の判定は変わった値で行われる。
-- ブローカーと Hydra: ブローカーが Hydra の admin API でログインと同意を accept か reject し、ログアウトを accept する。同意の accept で、access token の `aud`（`schedule`、`receipt`）と `org_id` を決める。
-- ブローカーと上流の IdP: 認可コードフローで ID token を取り、署名、`iss`、`aud`、`nonce` を確認する。
-- 予定の API とブローカー: 職員の登録、休職、復職、退職で、予定の API が職員の管理の権限を確認してから、ブローカーの内部の API を呼ぶ。予定の API は、Hydra の client credentials で `aud` が `broker` の access token を取って付ける。
-  - ブローカーが内部の API で受けるトークンは、[ID ブローカーの Design Doc の職員の登録、休職、復職、退職](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#職員の登録休職復職退職) にある。
-- Hydra とブローカー: Hydra は、トークンを発行するたびに `oauth2.token_hook` でブローカーを呼ぶ。トークンを出さない条件は、[ID ブローカーの Design Doc のトークンの発行の確認](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#トークンの発行の確認) にある。
-- web と予定の API、照合の API: `Authorization` に access token を Bearer で付ける。
-  - 契約の正本は [予定の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/openapi.yaml) と [照合の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/openapi.yaml) である。
-  - 契約を変えるときの互換の規則は ADR-0003 にある。
-  - ADR-0003: [git flow でマージし、アプリごとのバージョンでリリースする](../adr/0003-branch-and-release.md)
-- 照合の API と予定の API: 照合の API が、web から受けた access token をそのまま Bearer で付けて、予定の API の `GET /v1/me` を呼ぶ。予定の API が返した権限に照合（`receipt.check`）が無ければ、照合の API は 403 を返す。
-  - access token の `aud` に `schedule` と `receipt` の両方が入るので、同じトークンで 2 つの API を呼べる。
-  - ADR-0022: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../adr/0022-receipt-check-policy-and-non-visiting-staff.md)
-- 予定の API、照合の API と Hydra: Issuer の discovery と JWKS を読み、access token を検証する。検証に失敗したら 401 を返す。
-- 照合の API、予定の API と Google Calendar API: 事業所ごとのサービスアカウントになりすまして得たトークンで、そのアカウントに共有されたカレンダーの予定を読み書きする。サービスアカウントのキーは使わない。
-  - ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](../adr/0012-google-calendar-facility-service-accounts.md)
-  - 事業所は、リクエストの職員かトークンの組織から決める。リクエストを受けない書き出しと増分の取得は、結び付けたカレンダーのレコードの事業所で決める。
-- 予定の API と PostgreSQL: 予定の API だけが読み書きする。
+コンテナの組ごとの、つなぎ方とトークンは次のとおり。
+
+| 呼ぶ側 | 呼ばれる側 | つなぎ方とトークン | 詳しい文書 |
+| --- | --- | --- | --- |
+| ブラウザ | web | HTTPS でつなぐ | - |
+| ブラウザ | Hydra とブローカー | ログインとログアウトのリダイレクトの流れ | ID ブローカーの Design Doc の [ログイン](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#ログイン) と [ログアウト](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#ログアウト) |
+| web | Hydra | 認可コードフローでトークンを取得し、更新する。トークンは Valkey のセッションに置く | - |
+| ブローカー | Hydra | ブローカーが Hydra の admin API でログインと同意を accept か reject し、ログアウトを accept する。同意の accept で、access token の `aud`（`schedule`、`receipt`）と `org_id` を決める | - |
+| ブローカー | 上流の IdP | 認可コードフローで ID token を取り、署名、`iss`、`aud`、`nonce` を確認する | - |
+| 予定の API | ブローカー | 職員の登録、休職、復職、退職で、予定の API が職員の管理の権限を確認してから、ブローカーの内部の API を呼ぶ。予定の API は、Hydra の client credentials で `aud` が `broker` の access token を取って付ける | ブローカーが内部の API で受けるトークンは、[ID ブローカーの Design Doc の職員の登録、休職、復職、退職](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#職員の登録休職復職退職) にある |
+| Hydra | ブローカー | Hydra は、トークンを発行するたびに `oauth2.token_hook` でブローカーを呼ぶ | トークンを出さない条件は、[ID ブローカーの Design Doc のトークンの発行の確認](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#トークンの発行の確認) にある |
+| web | 予定の API、照合の API | `Authorization` に access token を Bearer で付ける | 契約の正本は [予定の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/openapi.yaml) と [照合の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/openapi.yaml) である |
+| 照合の API | 予定の API | 照合の API が、web から受けた access token をそのまま Bearer で付けて、予定の API の `GET /v1/me` を呼ぶ | ADR-0022: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../adr/0022-receipt-check-policy-and-non-visiting-staff.md) |
+| 予定の API、照合の API | Hydra | Issuer の discovery と JWKS を読み、access token を検証する。検証に失敗したら 401 を返す | - |
+| 照合の API、予定の API | Google Calendar API | 事業所ごとのサービスアカウントになりすまして得たトークンで、そのアカウントに共有されたカレンダーの予定を読み書きする。サービスアカウントのキーは使わない | ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](../adr/0012-google-calendar-facility-service-accounts.md) |
+| 予定の API | PostgreSQL | 予定の API だけが読み書きする | - |
+
+ブラウザと web の間の cookie には、セッションの ID を入れ、トークンは入れない。  
+画面の操作は、web のサーバーの関数（BFF）を呼ぶ。  
+API はブラウザから直接は呼ばれない。  
+例外は、開発者がローカルでドキュメントサイトの API の仕様のページから、ローカルの API を試すときだけである。
+
+web のセッションは、トークンと ID token のほかに、ログインのときに予定の API の `GET /v1/me` で引いた職員の ID、名前、事業所、職員の管理の権限と照合の権限の有無を 12 時間持つ。  
+画面を読み込むときは、職員の値を `GET /v1/me` で読み直して画面に渡す。  
+名前や権限を変えたら、画面を読み込み直すと出し分けに写る。  
+`GET /v1/me` が失敗したときは、セッションの値を渡す。  
+リクエストを拒否するのは API なので、拒否の判定は変わった値で行われる。
+
+web と予定の API、照合の API の契約を変えるときの互換の規則は ADR-0003 にある。
+
+- ADR-0003: [git flow でマージし、アプリごとのバージョンでリリースする](../adr/0003-branch-and-release.md)
+
+照合の API は、予定の API が返した権限に照合（`receipt.check`）が無ければ、403 を返す。  
+access token の `aud` に `schedule` と `receipt` の両方が入るので、同じトークンで 2 つの API を呼べる。
+
+照合の API と予定の API が Google Calendar API を呼ぶときの事業所は、リクエストの職員かトークンの組織から決める。  
+リクエストを受けない書き出しと増分の取得は、結び付けたカレンダーのレコードの事業所で決める。
 
 ### インフラとの約束
 
@@ -192,8 +203,8 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 | `OIDC_ORG_CLAIM` | 使わない | 任意 | 任意 | access token で組織の ID を持つクレームの名前。デフォルトは `org_id` |
 | `OIDC_CLIENT_ID` | 使う | 使わない | 使わない | web のクライアントの ID |
 | `OIDC_CLIENT_SECRET` | 使う | 使わない | 使わない | web のクライアントのシークレット |
-| `OIDC_AUTHORIZATION_ENDPOINT` | 任意 | 使わない | 使わない | ブラウザをリダイレクトする認可の URL。web とブラウザから届く IdP の URL が違うローカル環境だけで渡す |
-| `OIDC_END_SESSION_ENDPOINT` | 任意 | 使わない | 使わない | ログアウトでブラウザをリダイレクトする RP-Initiated Logout の URL。Hydra は discovery の `end_session_endpoint` を Issuer の URL から作るので、ブラウザが Issuer の URL に届かないときに渡す |
+| `OIDC_AUTHORIZATION_ENDPOINT` | 任意 | 使わない | 使わない | ブラウザをリダイレクトする認可の URL |
+| `OIDC_END_SESSION_ENDPOINT` | 任意 | 使わない | 使わない | ログアウトでブラウザをリダイレクトする RP-Initiated Logout の URL |
 | `SESSION_STORE_URL` | 使う | 使わない | 使わない | Valkey の接続先 |
 | `SESSION_SECRET` | 使う | 使わない | 使わない | cookie の署名の鍵。32 バイト以上 |
 | `SESSION_COOKIE_SECURE` | 任意 | 使わない | 使わない | `false` のときだけ、セッションの cookie に Secure を付けない。https でないローカル環境で使う |
@@ -204,12 +215,25 @@ buddy とインフラの約束は、コンテナのイメージ、環境変数�
 | `CORS_ALLOW_ORIGINS` | 使わない | 任意 | 任意 | CORS を許すオリジン。カンマで区切る。空なら CORS のヘッダーを返さない |
 | `MAX_UPLOAD_BYTES` | 使わない | 使わない | 任意 | 照合のリクエストの本文の上限。デフォルトは 10 MiB |
 | `GOOGLE_CALENDARS_FILE` | 使わない | 使わない | 任意 | 職員とカレンダーと組織の対応の JSON。空なら Google カレンダーから予定を取らない |
-| `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` | 使わない | 任意 | 任意 | 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応の JSON。2 つの API で同じ形。予定の API では、空なら、カレンダーを読む操作は 503 を返し、予定を Google カレンダーに書き出さない。照合の API では `GOOGLE_CALENDARS_FILE` と一緒に渡す |
-| `GOOGLE_CALENDAR_ENDPOINT` | 使わない | 任意 | 任意 | Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit に向けるときだけ渡す。`GOOGLE_APPLICATION_CREDENTIALS` を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使い、渡さなければ認証をしない。予定の API では `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` と一緒に渡す |
-| `GOOGLE_CALENDAR_EXPORT_ENABLED` | 使わない | 任意 | 使わない | `true` なら予定を Google カレンダーに書き出す。デフォルトは `false`。サービスアカウントが「予定の変更」の共有だけで書けるかを確認するまで、本番では `false` にする（ADR-0012 の承認の条件） |
+| `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` | 使わない | 任意 | 任意 | 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応の JSON。2 つの API で同じ形 |
+| `GOOGLE_CALENDAR_ENDPOINT` | 使わない | 任意 | 任意 | Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit に向けるときだけ渡す |
+| `GOOGLE_CALENDAR_EXPORT_ENABLED` | 使わない | 任意 | 使わない | `true` なら予定を Google カレンダーに書き出す。デフォルトは `false` |
 | `GOOGLE_CALENDAR_EXPORT_INTERVAL` | 使わない | 任意 | 使わない | 予定の書き出しの待ちを確認する間隔。デフォルトは 30 秒 |
 | `GOOGLE_CALENDAR_SYNC_ENABLED` | 使わない | 任意 | 使わない | `true` なら Google カレンダーの変更を buddy の予定に当てる。デフォルトは `false`。`GOOGLE_CALENDAR_EXPORT_ENABLED` を `true` にして渡す |
 | `GOOGLE_CALENDAR_SYNC_INTERVAL` | 使わない | 任意 | 使わない | Google カレンダーの変わった予定を読む間隔。デフォルトは 2 分 |
+
+`OIDC_AUTHORIZATION_ENDPOINT` は、web とブラウザから届く IdP の URL が違うローカル環境だけで渡す。  
+`OIDC_END_SESSION_ENDPOINT` は、ブラウザが Issuer の URL に届かないときに渡す。  
+Hydra は discovery の `end_session_endpoint` を Issuer の URL から作るためである。
+
+予定の API では、`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` が空なら、カレンダーを読む操作は 503 を返し、予定を Google カレンダーに書き出さない。  
+照合の API では、`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` を `GOOGLE_CALENDARS_FILE` と一緒に渡す。
+
+`GOOGLE_CALENDAR_ENDPOINT` を渡したときは、`GOOGLE_APPLICATION_CREDENTIALS` を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使う。  
+`GOOGLE_CALENDAR_ENDPOINT` を渡し、`GOOGLE_APPLICATION_CREDENTIALS` を渡さなければ、認証をしない。  
+予定の API では、`GOOGLE_CALENDAR_ENDPOINT` を `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` と一緒に渡す。
+
+サービスアカウントが「予定の変更」の共有だけで書けるかを確認するまで、本番では `GOOGLE_CALENDAR_EXPORT_ENABLED` を `false` にする（ADR-0012 の承認の条件）。
 
 - web の `VITE_API_MODE` は、イメージのビルドのときに埋め込む値で、実行のときには読まない。イメージは `bff` でビルドする。
 - 照合の API と予定の API は、Google の認証情報を Application Default Credentials（`GOOGLE_APPLICATION_CREDENTIALS` など）で読む。  

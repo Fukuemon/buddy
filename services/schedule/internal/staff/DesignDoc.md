@@ -61,16 +61,28 @@ verified_commit: 4e53ca5
 持たなければ、職員の API を呼ばずに `PageForbiddenMessage` を出す。職員の登録は何も出さず、下の職員の一覧が権限の無いことを示す。  
 この判定は表示のためだけで、変える操作は予定の API が [予定の認可](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md#予定の認可) で拒む。
 
-- 職員の一覧（`StaffListContainer`）は、`listUsers` で休職と退職を含む事業所の全ての職員を読み、`listTeams`、`listPositions`、`listDepartments` で絞り込みの選択肢を読む。
-  - 名前の検索、チーム、役職、部署、状態の絞り込みと並び順は、読んだ職員を `filterStaff` が画面で決める。絞り込むたびに API を呼ばない。
-  - `listUsers` に状態の絞り込みと名前の一部での検索が無いためである。
-- 職員の登録（`StaffCreateDialogContainer`）は、開いたときに部署、チーム、役職を読む。どれかを読めなければ、選択の欄を押せなくし、登録の失敗の文の位置に読めなかったことの文を出す。
-- 職員の詳細（`StaffDetailContainer`）は、開いたときに `getUser` で職員を読み、権限の一覧を出すために次も読む。
-  - 役職（`listPositions`）: 職員の役職に決まっている権限で、権限を役職のまとまりと個別に足したまとまりに分ける。
-  - 権限（`listPolicies`）: 権限の名前と並び。
-  - 事業所の職員とチーム（`listUsers`、`listTeams`）: 権限の対象の名前を引く。
-  - 部署（`listDepartments`）は、プロフィールの編集のダイアログを開いたときに読む。
-  - 残る予定と担当の利用者（`getUserRemainingAssignments`）は、休職と退職のダイアログを開いたときに読む。
+画面とダイアログごとの、読む時点、読むもの、読む理由は次のとおり。
+
+| 画面 | 読む時点 | 読むもの | 読む理由 |
+| --- | --- | --- | --- |
+| 職員の一覧（`StaffListContainer`） | - | 休職と退職を含む事業所の全ての職員（`listUsers`） | - |
+| 職員の一覧（`StaffListContainer`） | - | チーム、役職、部署（`listTeams`、`listPositions`、`listDepartments`） | 絞り込みの選択肢 |
+| 職員の登録（`StaffCreateDialogContainer`） | 開いたとき | 部署、チーム、役職 | - |
+| 職員の詳細（`StaffDetailContainer`） | 開いたとき | 職員（`getUser`） | - |
+| 職員の詳細（`StaffDetailContainer`） | 開いたとき | 役職（`listPositions`） | 職員の役職に決まっている権限で、権限を役職のまとまりと個別に足したまとまりに分ける |
+| 職員の詳細（`StaffDetailContainer`） | 開いたとき | 権限（`listPolicies`） | 権限の名前と並び |
+| 職員の詳細（`StaffDetailContainer`） | 開いたとき | 事業所の職員とチーム（`listUsers`、`listTeams`） | 権限の対象の名前を引く |
+| 職員の詳細（`StaffDetailContainer`） | プロフィールの編集のダイアログを開いたとき | 部署（`listDepartments`） | - |
+| 職員の詳細（`StaffDetailContainer`） | 休職と退職のダイアログを開いたとき | 残る予定と担当の利用者（`getUserRemainingAssignments`） | - |
+
+職員の一覧の名前の検索、チーム、役職、部署、状態の絞り込みと並び順は、読んだ職員を `filterStaff` が画面で決める。  
+絞り込むたびに API を呼ばない。  
+`listUsers` に状態の絞り込みと名前の一部での検索が無いためである。
+
+職員の登録は、部署、チーム、役職のどれかを読めなければ、選択の欄を押せなくし、登録の失敗の文の位置に読めなかったことの文を出す。
+
+職員の詳細が、開いたときに役職、権限、事業所の職員とチームを読むのは、権限の一覧を出すためである。
+
 - 権限の保存（`useSavePolicies`）は、開いたときの権限と比べて変更を作り、1 つずつ送る。
   - チェックを入れた権限は `addUserPolicy` で足し、外した権限は `removeUserPolicy` で外す。対象を変えた権限は、外してから新しい対象で足し直す。
   - 最初の変更が API に届かなければ、何も変えていないので、例外を投げてダイアログに保存の失敗の文を出す。
