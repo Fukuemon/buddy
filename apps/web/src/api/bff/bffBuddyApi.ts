@@ -40,8 +40,16 @@ export const createBffBuddyApi = (callBff: CallBff = (data) => callBffFn({ data 
       reinstate: call('staff.reinstate'),
       retire: call('staff.retire'),
     },
-    teams: { list: call('teams.list') },
-    departments: { list: call('departments.list') },
+    teams: {
+      list: call('teams.list'),
+      create: call('teams.create'),
+      update: call('teams.update'),
+    },
+    departments: {
+      list: call('departments.list'),
+      create: call('departments.create'),
+      update: call('departments.update'),
+    },
     positions: { list: call('positions.list') },
     policies: { list: call('policies.list') },
     patients: { list: call('patients.list') },

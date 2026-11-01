@@ -7,7 +7,7 @@
 | --- | --- |
 | URL | `/organization` |
 | 使う人 | 職員の管理の権限を持つ職員（デフォルトはマネージャー） |
-| 実装 | 未実装 |
+| 実装 | `apps/web/src/routes/organization.tsx`、`apps/web/src/features/organization/components/OrganizationListContainer.tsx`、`apps/web/src/features/organization/components/OrganizationListView.tsx`、`apps/web/src/features/organization/components/OrganizationUnitDialog.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
 

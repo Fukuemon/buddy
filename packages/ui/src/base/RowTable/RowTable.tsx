@@ -165,7 +165,9 @@ export const RowTableRow = (props: RowTableRowProps) => {
         <td className={clsx('order-2 justify-self-end', cellClassName)}>{status}</td>
       )}
       {props.action !== undefined ? (
-        <td className={clsx('order-2 text-right', cellClassName)}>{props.action}</td>
+        <td className={clsx('order-2 text-right whitespace-nowrap', cellClassName)}>
+          {props.action}
+        </td>
       ) : (
         <td
           aria-hidden

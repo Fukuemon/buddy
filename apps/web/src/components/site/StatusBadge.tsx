@@ -51,13 +51,23 @@ export const Avatar = ({ name, isMuted = false, size = 'S' }: AvatarProps) => (
 export type DotLabelProps = {
   /** 点の色のクラス名（`bg-team-blue` など）。省くと、色の付かない点にする。 */
   dotClassName?: string
+  /** 点の testid。E2E で点の色を確認するときに渡す。 */
+  dotTestId?: string
   children: ReactNode
 }
 
 /** 名前の前に小さい色の点を置く。色だけで区別させないので、点は読み上げず、名前を必ず並べる。 */
-export const DotLabel = ({ dotClassName = 'bg-text-secondary', children }: DotLabelProps) => (
+export const DotLabel = ({
+  dotClassName = 'bg-text-secondary',
+  dotTestId,
+  children,
+}: DotLabelProps) => (
   <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-    <span aria-hidden className={clsx('size-2 shrink-0 rounded-full', dotClassName)} />
+    <span
+      aria-hidden
+      className={clsx('size-2 shrink-0 rounded-full', dotClassName)}
+      data-testid={dotTestId}
+    />
     {children}
   </span>
 )

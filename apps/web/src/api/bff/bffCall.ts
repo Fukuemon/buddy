@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { SCHEDULE_CATEGORIES, SCHEDULE_KINDS, SERVICE_CODES } from '../types'
+import { SCHEDULE_CATEGORIES, SCHEDULE_KINDS, SERVICE_CODES, TEAM_COLORS } from '../types'
 
 /** BFF が中継する BuddyApi の操作。 */
 const BFF_OPERATIONS = [
@@ -21,7 +21,11 @@ const BFF_OPERATIONS = [
   'staff.reinstate',
   'staff.retire',
   'teams.list',
+  'teams.create',
+  'teams.update',
   'departments.list',
+  'departments.create',
+  'departments.update',
   'positions.list',
   'policies.list',
   'patients.list',
@@ -71,6 +75,8 @@ const staffUpdate = z.object({
   department_id: id,
   team_id: id,
 })
+const unitName = z.string().min(1).max(255)
+const teamInput = z.object({ name: unitName, color: z.enum(TEAM_COLORS) })
 const targetIds = z.array(id).max(500).optional()
 const nameSearch = z.object({ name: z.string().max(100).optional() }).optional()
 const calendarId = z.string().min(1).max(1024)
@@ -117,7 +123,11 @@ const ARGS: Record<BffOperation, z.ZodType> = {
   'staff.reinstate': z.tuple([id, id]),
   'staff.retire': z.tuple([id, id]),
   'teams.list': z.tuple([id]),
+  'teams.create': z.tuple([id, teamInput]),
+  'teams.update': z.tuple([id, id, teamInput]),
   'departments.list': z.tuple([id]),
+  'departments.create': z.tuple([id, unitName]),
+  'departments.update': z.tuple([id, id, unitName]),
   'positions.list': z.tuple([id]),
   'policies.list': z.tuple([id]),
   'patients.list': z.tuple([id, nameSearch]),

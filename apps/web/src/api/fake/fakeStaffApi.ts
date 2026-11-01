@@ -1,23 +1,17 @@
-import {
-  mockDepartments,
-  mockMe,
-  mockPatients,
-  mockPolicies,
-  mockPositions,
-  mockStaff,
-  mockTeams,
-} from '#/mocks/scheduleData'
+import { mockMe, mockPatients, mockPolicies, mockPositions, mockStaff } from '#/mocks/scheduleData'
 
 import { ApiError, type BuddyApi } from '../client'
 import { fromApiStaff } from '../http/scheduleMapper'
 import { matchesName } from '../nameSearch'
 import {
   STAFF_MANAGE,
+  type Department,
   type Position,
   type Schedule,
   type StaffAssignments,
   type StaffDetail,
   type StaffPolicy,
+  type Team,
 } from '../types'
 
 /** createFakeStaffApi の設定。 */
@@ -30,6 +24,9 @@ export type FakeStaffApiOptions = {
   viewerId: string
   /** 今日。この日以降の予定を残る予定にする。 */
   today: () => Date
+  /** 職員に付けられる部署とチーム。フェイクの部署とチームの操作が変えた後の値を返す。 */
+  departments: () => readonly Department[]
+  teams: () => readonly Team[]
 }
 
 const notFound = () => new ApiError(404, '職員が見つかりません', [], 'not_found')
@@ -48,7 +45,9 @@ export const createFakeStaffApi = ({
   schedules,
   viewerId,
   today,
-}: FakeStaffApiOptions): Pick<BuddyApi, 'staff' | 'departments' | 'positions' | 'policies'> => {
+  departments,
+  teams,
+}: FakeStaffApiOptions): Pick<BuddyApi, 'staff' | 'positions' | 'policies'> => {
   let sequence = 0
   const nextId = (prefix: string) => {
     sequence += 1
@@ -70,7 +69,7 @@ export const createFakeStaffApi = ({
     if (position === undefined) throw new ApiError(400, '役職が見つかりません', [], 'invalid_input')
     return position
   }
-  const refOf = (units: { id: string; name: string }[], id: string, label: string) => {
+  const refOf = (units: readonly { id: string; name: string }[], id: string, label: string) => {
     const unit = units.find((u) => u.id === id)
     if (unit === undefined) throw new ApiError(400, `${label}が見つかりません`, [], 'invalid_input')
     return { id: unit.id, name: unit.name }
@@ -89,6 +88,17 @@ export const createFakeStaffApi = ({
     ]),
   )
 
+  // 職員は部署とチームの ID と名前を写して持つので、読むたびに今の部署とチームの名前に替える。予定の API が名前を結合して返すのと同じにする
+  const current = (staff: StaffDetail): StaffDetail => {
+    const nameOf = (
+      units: readonly { id: string; name: string }[],
+      ref: { id: string; name: string },
+    ) => units.find((u) => u.id === ref.id)?.name ?? ref.name
+    const copy = structuredClone(staff)
+    copy.department.name = nameOf(departments(), copy.department)
+    copy.team.name = nameOf(teams(), copy.team)
+    return copy
+  }
   const find = (id: string) => {
     const staff = details.get(id)
     if (staff === undefined) throw notFound()
@@ -96,7 +106,7 @@ export const createFakeStaffApi = ({
   }
   const save = (staff: StaffDetail) => {
     details.set(staff.id, { ...staff, updated_at: new Date().toISOString() })
-    return structuredClone(details.get(staff.id) as StaffDetail)
+    return current(details.get(staff.id) as StaffDetail)
   }
   const assertNotRetired = (staff: StaffDetail) => {
     if (staff.status === 'retired') throw conflict('退職した職員は変えられません')
@@ -142,21 +152,21 @@ export const createFakeStaffApi = ({
       list: async (facilityId, params) => {
         assertFacility(facilityId)
         return [...details.values()]
-          .map(fromApiStaff)
+          .map((detail) => fromApiStaff(current(detail)))
           .filter((staff) => matchesName(staff.name, params))
       },
       listRecords: async (facilityId) => {
         assertFacility(facilityId)
         return [...details.values()]
           .map((detail) => {
-            const { sub: _, policies: __, ...record } = structuredClone(detail)
+            const { sub: _, policies: __, ...record } = current(detail)
             return record
           })
           .sort((a, b) => a.username.localeCompare(b.username, 'ja'))
       },
       get: async (facilityId, staffId) => {
         assertFacility(facilityId)
-        return structuredClone(find(staffId))
+        return current(find(staffId))
       },
       create: async (facilityId, input) => {
         assertFacility(facilityId)
@@ -171,8 +181,8 @@ export const createFakeStaffApi = ({
           email,
           phone_number: input.phone_number ?? null,
           facility_id: facilityId,
-          department: refOf(mockDepartments, input.department_id, '部署'),
-          team: refOf(mockTeams, input.team_id, 'チーム'),
+          department: refOf(departments(), input.department_id, '部署'),
+          team: refOf(teams(), input.team_id, 'チーム'),
           position: { id: position.id, name: position.name },
           status: 'active',
           leave_started_at: null,
@@ -193,8 +203,8 @@ export const createFakeStaffApi = ({
           ...staff,
           username: input.username,
           phone_number: input.phone_number ?? null,
-          department: refOf(mockDepartments, input.department_id, '部署'),
-          team: refOf(mockTeams, input.team_id, 'チーム'),
+          department: refOf(departments(), input.department_id, '部署'),
+          team: refOf(teams(), input.team_id, 'チーム'),
           policies: staff.policies.map((p) => ({
             ...p,
             target_team_ids: p.target_team_ids.map((t) => (t === oldTeam ? input.team_id : t)),
@@ -292,12 +302,6 @@ export const createFakeStaffApi = ({
             retired_at: new Date().toISOString(),
           }),
         }
-      },
-    },
-    departments: {
-      list: async (facilityId) => {
-        assertFacility(facilityId)
-        return mockDepartments.map(({ id, name }) => ({ id, name }))
       },
     },
     positions: {

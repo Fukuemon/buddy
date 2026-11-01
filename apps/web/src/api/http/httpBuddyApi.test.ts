@@ -529,3 +529,69 @@ describe('createHttpBuddyApi の職員の管理', () => {
     })
   })
 })
+
+describe('部署とチームの作成と変更', () => {
+  const now = '2026-11-01T00:00:00Z'
+  const unit = (id: string, name: string) => ({
+    id,
+    facility_id: 'facility-1',
+    name,
+    created_at: now,
+    updated_at: now,
+  })
+
+  it('部署を作り、名前を変え、返った部署の ID と名前を返す', async () => {
+    const sent: unknown[] = []
+    server.use(
+      scheduleHttp.post(
+        '/v1/facilities/{facility_id}/departments',
+        async ({ request, response }) => {
+          sent.push(await request.json())
+          return response(201).json(unit('department-9', '外来'))
+        },
+      ),
+      scheduleHttp.put('/v1/departments/{department_id}', async ({ params, request, response }) => {
+        sent.push(await request.json())
+        return response(200).json(unit(params.department_id, '訪問'))
+      }),
+    )
+    await expect(api().departments.create('facility-1', '外来')).resolves.toEqual({
+      id: 'department-9',
+      name: '外来',
+    })
+    await expect(api().departments.update('facility-1', 'department-9', '訪問')).resolves.toEqual({
+      id: 'department-9',
+      name: '訪問',
+    })
+    expect(sent).toEqual([{ name: '外来' }, { name: '訪問' }])
+  })
+
+  it('チームを名前と色で作り、変え、同じ名前の 409 は code を付けて投げる', async () => {
+    const sent: unknown[] = []
+    server.use(
+      scheduleHttp.post('/v1/facilities/{facility_id}/teams', async ({ request, response }) => {
+        sent.push(await request.json())
+        return response(201).json({ ...unit('team-9', 'C チーム'), color: 'cyan' as const })
+      }),
+      scheduleHttp.put('/v1/teams/{team_id}', async ({ params, request, response }) => {
+        if (params.team_id === 'dup')
+          return response(409).json({ code: 'conflict', message: 'すでにあります' })
+        sent.push(await request.json())
+        return response(200).json({ ...unit(params.team_id, 'D チーム'), color: 'lime' as const })
+      }),
+    )
+    await expect(
+      api().teams.create('facility-1', { name: 'C チーム', color: 'cyan' }),
+    ).resolves.toEqual({ id: 'team-9', name: 'C チーム', color: 'cyan' })
+    await expect(
+      api().teams.update('facility-1', 'team-9', { name: 'D チーム', color: 'lime' }),
+    ).resolves.toEqual({ id: 'team-9', name: 'D チーム', color: 'lime' })
+    expect(sent).toEqual([
+      { name: 'C チーム', color: 'cyan' },
+      { name: 'D チーム', color: 'lime' },
+    ])
+    await expect(
+      api().teams.update('facility-1', 'dup', { name: 'A', color: 'blue' }),
+    ).rejects.toMatchObject({ status: 409, code: 'conflict' })
+  })
+})

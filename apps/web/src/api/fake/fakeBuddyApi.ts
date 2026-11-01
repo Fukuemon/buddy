@@ -3,6 +3,7 @@ import {
   createMockImportResult,
   createMockImportedPreview,
   exportOfIssue,
+  mockDepartments,
   mockExportIssues,
   mockExternalCalendars,
   mockServiceAccount,
@@ -12,10 +13,13 @@ import { ApiError, type BuddyApi } from '../client'
 import { matchesName } from '../nameSearch'
 import type {
   CalendarExportIssue,
+  Department,
   ExternalCalendar,
   FacilityId,
   ImportPreview,
   Schedule,
+  Team,
+  TeamInput,
 } from '../types'
 import {
   FAKE_FACILITY_ID,
@@ -62,6 +66,36 @@ export const createFakeBuddyApi = ({
     mockExportIssues.map((i) => [i.id, structuredClone(i)]),
   )
   const imported = new Set<string>()
+  const departments = new Map<Department['id'], Department>(
+    mockDepartments.map(({ id, name }) => [id, { id, name }]),
+  )
+  const teams = new Map<Team['id'], Team>(fakeTeams.map((t) => [t.id, { ...t }]))
+  let unitSequence = 0
+  const byName = <T extends { name: string }>(units: Iterable<T>) =>
+    [...units].sort((a, b) => a.name.localeCompare(b.name, 'ja'))
+  // 予定の API と同じく、同じ事業所のほかの部署かチームと完全に一致する名前は 409 で拒む
+  const assertUniqueName = (
+    units: Iterable<{ id: string; name: string }>,
+    name: string,
+    selfId: string,
+    label: string,
+  ) => {
+    if ([...units].some((u) => u.id !== selfId && u.name === name)) {
+      throw new ApiError(409, `${label} ${name} はこの事業所にすでにあります`, [], 'conflict')
+    }
+  }
+  const saveTeam = (id: Team['id'], { name, color }: TeamInput) => {
+    assertUniqueName(teams.values(), name, id, 'チーム')
+    const team: Team = { id, name, color }
+    teams.set(id, team)
+    return team
+  }
+  const saveDepartment = (id: Department['id'], name: string) => {
+    assertUniqueName(departments.values(), name, id, '部署')
+    const department: Department = { id, name }
+    departments.set(id, department)
+    return department
+  }
 
   const notFound = () => new ApiError(404, 'リソースが見つかりません', [], 'not_found')
   const findCalendar = (id: ExternalCalendar['id']) => {
@@ -93,6 +127,8 @@ export const createFakeBuddyApi = ({
     schedules: () => schedules.values(),
     viewerId: FAKE_VIEWER.staffId,
     today: () => baseDate,
+    departments: () => [...departments.values()],
+    teams: () => [...teams.values()],
   })
 
   const findSchedule = (scheduleId: Schedule['id']) => {
@@ -143,7 +179,33 @@ export const createFakeBuddyApi = ({
     teams: {
       list: async (facilityId) => {
         assertFacility(facilityId)
-        return fakeTeams
+        return byName(teams.values())
+      },
+      create: async (facilityId, input) => {
+        assertFacility(facilityId)
+        unitSequence += 1
+        return saveTeam(`team-fake-${unitSequence}`, input)
+      },
+      update: async (facilityId, teamId, input) => {
+        assertFacility(facilityId)
+        if (!teams.has(teamId)) throw notFound()
+        return saveTeam(teamId, input)
+      },
+    },
+    departments: {
+      list: async (facilityId) => {
+        assertFacility(facilityId)
+        return byName(departments.values())
+      },
+      create: async (facilityId, name) => {
+        assertFacility(facilityId)
+        unitSequence += 1
+        return saveDepartment(`department-fake-${unitSequence}`, name)
+      },
+      update: async (facilityId, departmentId, name) => {
+        assertFacility(facilityId)
+        if (!departments.has(departmentId)) throw notFound()
+        return saveDepartment(departmentId, name)
       },
     },
     patients: {
