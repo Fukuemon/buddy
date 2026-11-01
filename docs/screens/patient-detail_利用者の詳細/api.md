@@ -45,11 +45,16 @@
 | --- | --- | --- |
 | 読み込みの失敗 | 「利用者が見つかりません。利用者の一覧から開き直してください。」 | `getPatient` が 404 |
 | 読み込みの失敗 | 「利用者を読み込めませんでした。時間をおいて、読み直してください。」 | `getPatient` が 404 のほかの失敗、API に届かない |
+| 利用者の編集 | 「サービスと職員を読み込めませんでした。閉じてから、開き直してください。」 | `listServiceCodes` か `listUsers` が失敗、API に届かない |
 | 利用者の編集 | 利用者の登録の登録の失敗の文の「登録」を「保存」に替えたもの | `updatePatient` の失敗。[利用者の登録の対応](../patient-new_利用者の登録/api.md#状態と失敗の要因) と同じ |
 | 利用の終了を拒む | 残る予定の一覧 | `endPatientService` が 409 の `patient_has_schedules` |
+| 利用の終了の確認 | 「残る予定を読み込めませんでした。閉じてから、開き直してください。」 | `getPatientRemainingSchedules` が失敗、API に届かない |
 | 利用の終了の確認 | 「この操作をする権限がありません。」 | `endPatientService` が 403 |
+| 利用の終了の確認 | 「利用の終了にできませんでした。時間をおいて、もう一度利用の終了にしてください。」 | `endPatientService` が 403、409 のほかの失敗、API に届かない |
 | 利用の再開 | 「選んだ担当の職員は、休職か退職になりました。別の職員を選んでください。」 | `resumePatientService` が 400 |
 | 利用の再開 | 「この操作をする権限がありません。」 | `resumePatientService` が 403 |
+| 利用の再開 | 「利用を再開できませんでした。時間をおいて、もう一度再開してください。」 | `resumePatientService` が 400、403 のほかの失敗、API に届かない |
+| 利用の再開 | 「サービスと職員を読み込めませんでした。閉じてから、開き直してください。」 | `listUsers` が失敗、API に届かない |
 
 - 文を選ぶ処理は `apps/web/src/features/patient/lib/errorMessage.ts` にある。
   - 保存は `patientSubmitErrorMessage`、利用の終了は `endServiceErrorMessage`、利用の再開は `resumeServiceErrorMessage` が選ぶ。

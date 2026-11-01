@@ -5,8 +5,15 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './PatientDetailContainer.stories'
 
-const { Default, Ended, Forbidden, NotFound, ServiceCodesOnceError, WithSchedules } =
-  composeStories(stories)
+const {
+  Default,
+  Ended,
+  EndedStaffError,
+  Forbidden,
+  NotFound,
+  ServiceCodesOnceError,
+  WithSchedules,
+} = composeStories(stories)
 
 const openMenuItem = async (testId: string) => {
   await userEvent.click(await screen.findByTestId('patient-detail-menu'))
@@ -120,6 +127,19 @@ describe('PatientDetailContainer', () => {
     await expect.poll(() => screen.queryByTestId('patient-resume-dialog')).toBeNull()
     expect(screen.queryByTestId('patient-detail-status')).toBeNull()
     expect(screen.getByTestId('patient-detail-profile')).toHaveTextContent('上田 三奈')
+  })
+
+  it('担当の職員の選択肢を読めなければ、再開のダイアログに失敗の文を出し、再開を押せない', async () => {
+    render(<EndedStaffError />)
+    await openMenuItem('patient-detail-resume')
+    const dialog = screen.getByTestId('patient-resume-dialog')
+    expect(await within(dialog).findByTestId('patient-resume-error')).toHaveTextContent(
+      'サービスと職員を読み込めませんでした。閉じてから、開き直してください。',
+    )
+    expect(within(dialog).getByTestId('patient-resume-submit')).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    )
   })
 
   it('サービスコードを読めなかった後に編集のダイアログを開くと、サービスコードを読み直して選べる', async () => {
