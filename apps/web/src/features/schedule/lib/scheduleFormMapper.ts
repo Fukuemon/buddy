@@ -1,7 +1,14 @@
 import type { Schedule, ScheduleInput, ScheduleKind, ServiceCodeRecord, Staff } from '#/api/types'
 
 import type { ScheduleFormValues } from '../schema/scheduleForm'
-import { addMinutesToTimeKey, combineDateTime, diffMinutes, toDateKey, toTimeKey } from './dateTime'
+import {
+  addDaysToDateKey,
+  addMinutesToTimeKey,
+  combineDateTime,
+  diffMinutes,
+  toDateKey,
+  toTimeKey,
+} from './dateTime'
 
 const VISIT_TITLE = '訪問'
 const DEFAULT_START_TIME = '09:00'
@@ -31,7 +38,7 @@ type ScheduleFormDefaults = {
 
 /**
  * 作成のフォームの初期値を返す。
- * 通常の予定は開始から 1 時間、訪問の予定は serviceCode の上限の提供時間にする。
+ * 通常の予定は開始から 1 時間にし、24 時を過ぎれば終了を翌日にする。訪問の予定は serviceCode の上限の提供時間にする。
  */
 export const createScheduleFormValues = ({
   kind,
@@ -50,10 +57,15 @@ export const createScheduleFormValues = ({
         serviceTime: serviceCode?.service_time_range_end ?? 0,
         categories: [],
       }
-    : { ...base, kind, title: '', endTime: addMinutesToTimeKey(time, 60) }
+    : {
+        ...base,
+        kind,
+        title: '',
+        ...endOfDuration(time, 60),
+      }
 }
 
-/** 予定を、編集のフォームの値にする。 */
+/** 予定を、編集のフォームの値にする。終了が開始の翌日の予定は、翌日の印を付ける。 */
 export const toScheduleFormValues = (schedule: Schedule): ScheduleFormValues => {
   const start = new Date(schedule.startsAt)
   const end = new Date(schedule.endsAt)
@@ -69,25 +81,47 @@ export const toScheduleFormValues = (schedule: Schedule): ScheduleFormValues => 
       kind: 'visit',
       patientId: schedule.visit.patientId,
       serviceCode: schedule.visit.serviceCode,
-      serviceTime: diffMinutes(base.startTime, toTimeKey(end)),
+      serviceTime: Math.round((end.getTime() - start.getTime()) / MS_PER_MINUTE),
       categories: schedule.visit.categories,
     }
   }
-  return { ...base, kind: 'normal', title: schedule.title, endTime: toTimeKey(end) }
+  return {
+    ...base,
+    kind: 'normal',
+    title: schedule.title,
+    endTime: toTimeKey(end),
+    endsNextDay: toDateKey(end) !== base.scheduleDate,
+  }
 }
 
-/** 訪問の予定の終了時間を、開始時間と提供時間から求める。 */
-const visitEndTime = (startTime: string, serviceTime: number) =>
-  addMinutesToTimeKey(startTime, serviceTime)
+const MS_PER_MINUTE = 60 * 1000
+const MINUTES_PER_DAY = 24 * 60
+
+/** 予定の終了の時刻と、終了が開始の翌日か。 */
+export type ScheduleEnd = { endTime: string; endsNextDay: boolean }
+
+/** 開始時間から minutes 分の後の終了を求める。開始時間と minutes の和が 24 時以上なら、終了を翌日にする。 */
+const endOfDuration = (startTime: string, minutes: number): ScheduleEnd => ({
+  endTime: addMinutesToTimeKey(startTime, minutes),
+  endsNextDay: diffMinutes('00:00', startTime) + minutes >= MINUTES_PER_DAY,
+})
 
 /**
- * 入力の途中の値から、訪問の予定の終了時間を求める。開始時間か提供時間がそろっていなければ undefined を返す。
+ * 入力の途中の値から、訪問の予定の終了を求める。開始時間か提供時間がそろっていなければ undefined を返す。
  * 欄を空にすると、開始時間は空の文字列、提供時間は NaN になる。
  */
-export const visitEndTimeOfInput = (startTime?: string, serviceTime?: number) =>
+export const visitEndOfInput = (startTime?: string, serviceTime?: number) =>
   isTimeKey(startTime) && Number.isFinite(serviceTime)
-    ? visitEndTime(startTime, serviceTime as number)
+    ? endOfDuration(startTime, serviceTime as number)
     : undefined
+
+/** 終了の時刻を、翌日なら「翌 00:30」、当日なら「00:30」の形にする。 */
+export const formatEndTime = ({ endTime, endsNextDay }: ScheduleEnd) =>
+  endsNextDay ? `翌 ${endTime}` : endTime
+
+/** 予定の日付と終了から、終了の日時を作る。 */
+const endsAtOf = (scheduleDate: string, { endTime, endsNextDay }: ScheduleEnd) =>
+  combineDateTime(endsNextDay ? addDaysToDateKey(scheduleDate, 1) : scheduleDate, endTime)
 
 const isTimeKey = (value?: string): value is string =>
   value !== undefined && /^\d{2}:\d{2}$/.test(value)
@@ -101,10 +135,7 @@ export const toScheduleInput = (values: ScheduleFormValues): ScheduleInput => {
       title: VISIT_TITLE,
       staffId: values.staffId,
       startsAt,
-      endsAt: combineDateTime(
-        values.scheduleDate,
-        visitEndTime(values.startTime, values.serviceTime),
-      ),
+      endsAt: endsAtOf(values.scheduleDate, endOfDuration(values.startTime, values.serviceTime)),
       description: values.description,
       visit: {
         patientId: values.patientId,
@@ -118,7 +149,7 @@ export const toScheduleInput = (values: ScheduleFormValues): ScheduleInput => {
     title: values.title,
     staffId: values.staffId,
     startsAt,
-    endsAt: combineDateTime(values.scheduleDate, values.endTime),
+    endsAt: endsAtOf(values.scheduleDate, values),
     description: values.description,
   }
 }

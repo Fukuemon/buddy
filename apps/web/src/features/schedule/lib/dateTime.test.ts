@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test'
 
 import {
+  addDaysToDateKey,
   addMinutesToTimeKey,
   combineDateTime,
   diffMinutes,
@@ -20,6 +21,12 @@ describe('dateTime', () => {
 
   it('2 つの時刻の差を分で返す', () => {
     expect(diffMinutes('10:30', '11:29')).toBe(59)
+  })
+
+  it('日付に日数を足し、月と年をまたぐ', () => {
+    expect(addDaysToDateKey('2026-10-20', 1)).toBe('2026-10-21')
+    expect(addDaysToDateKey('2026-10-31', 1)).toBe('2026-11-01')
+    expect(addDaysToDateKey('2026-12-31', 1)).toBe('2027-01-01')
   })
 
   it('Date を YYYY-MM-DD にする', () => {

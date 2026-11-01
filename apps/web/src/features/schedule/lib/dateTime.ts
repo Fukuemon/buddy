@@ -10,6 +10,13 @@ export const fromDateKey = (dateKey: string) => {
   return new Date(year, month - 1, day)
 }
 
+/** `YYYY-MM-DD` に日数を足した `YYYY-MM-DD` を返す。 */
+export const addDaysToDateKey = (dateKey: string, days: number) => {
+  const date = fromDateKey(dateKey)
+  date.setDate(date.getDate() + days)
+  return toDateKey(date)
+}
+
 /** 日時を、デバイスの時間帯で `HH:mm` にする。 */
 export const toTimeKey = (date: Date) => `${pad(date.getHours())}:${pad(date.getMinutes())}`
 

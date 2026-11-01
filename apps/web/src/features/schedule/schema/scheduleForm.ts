@@ -4,7 +4,7 @@ import { SCHEDULE_CATEGORIES, type ServiceCodeRecord } from '#/api/types'
 
 import { diffMinutes } from '../lib/dateTime'
 
-const MINUTES_PER_DAY = 24 * 60
+const NEXT_DAY_END_TIME_MESSAGE = '翌日に終わる予定は、終了時間を開始時間より前にしてください'
 
 const baseFields = {
   staffId: z.string().min(1, '主訪問者を選んでください'),
@@ -20,10 +20,21 @@ const normalScheduleFormSchema = z
     kind: z.literal('normal'),
     title: z.string().trim().min(1, 'タイトルを入力してください'),
     endTime: z.iso.time({ precision: -1, error: '終了時間を入力してください' }),
+    /** 終了が scheduleDate の翌日の endTime か。 */
+    endsNextDay: z.boolean(),
   })
-  .refine((values) => diffMinutes(values.startTime, values.endTime) > 0, {
-    path: ['endTime'],
-    error: '終了時間は開始時間より後にしてください',
+  .superRefine((values, ctx) => {
+    const diff = diffMinutes(values.startTime, values.endTime)
+    // 翌日に終わる予定は、終了の時刻が開始の時刻より前のときだけ 24 時間未満になる
+    if (values.endsNextDay ? diff >= 0 : diff <= 0) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['endTime'],
+        message: values.endsNextDay
+          ? NEXT_DAY_END_TIME_MESSAGE
+          : '終了時間は開始時間より後にしてください',
+      })
+    }
   })
 
 const visitScheduleFormSchema = (serviceCodes: readonly ServiceCodeRecord[]) =>
@@ -53,14 +64,6 @@ const visitScheduleFormSchema = (serviceCodes: readonly ServiceCodeRecord[]) =>
           code: 'custom',
           path: ['serviceTime'],
           message: `${values.serviceCode} の提供時間は ${min} 分から ${max} 分です`,
-        })
-      }
-      const end = diffMinutes('00:00', values.startTime) + values.serviceTime
-      if (Number.isFinite(end) && end >= MINUTES_PER_DAY) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['serviceTime'],
-          message: '終了が日をまたがないよう、開始時間か提供時間を変えてください',
         })
       }
     })

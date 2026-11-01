@@ -10,7 +10,8 @@
 | 日付 | 開始の日付 | `Schedule.startsAt` の日付 | `date` |
 | 開始時間 | 開始の時刻 | `Schedule.startsAt` の時刻 | `start_time` |
 | 終了時間 | 終了の時刻 | `Schedule.endsAt` の時刻 | `end_time` |
-| 提供時間 | 開始から終了までの分 | なし（`startsAt` と `endsAt` から求め、保存では `endsAt` に換算する） | なし（`start_time` と `end_time` から求める） |
+| 終了は翌日 | 通常の予定の終了が翌日か | `Schedule.endsAt` の日付が `startsAt` の翌日か | `ends_next_day` |
+| 提供時間 | 開始から終了までの分 | なし（`startsAt` と `endsAt` から求め、保存では `endsAt` に換算する） | なし（`start_time`、`end_time`、`ends_next_day` から求める） |
 | 提供時間 | 範囲の下限と上限、サービスコードを選んだときの値 | `ServiceCodeRecord.service_time_range_start`、`service_time_range_end` | `listServiceCodes` の `service_time_range_start`、`service_time_range_end` |
 | サービスコード | 選択肢の並びと表記 | `ServiceCodeRecord.code` | `listServiceCodes` の `code` |
 | サービスコード | 選んだコード | `VisitDetail.serviceCode` | `getSchedule` の `visit_info.service_code`。保存では `visit_info.service_code_id` |

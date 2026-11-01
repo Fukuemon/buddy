@@ -10,6 +10,8 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 | 日付 | 予定の日 | `ScheduleInput.startsAt` の日付 | `date` |
 | 開始時間 | 開始の時刻 | `ScheduleInput.startsAt` の時刻 | `start_time` |
 | 終了時間 | 終わりの時刻 | `ScheduleInput.endsAt` の時刻 | `end_time` |
+| 終了時間 | 訪問の予定の終了が翌日か | なし。開始時間と提供時間の和が 24 時以上なら、`endsAt` を翌日にする | `ends_next_day` |
+| 終了は翌日 | 通常の予定の終了が翌日か | なし。選ぶと `endsAt` を翌日にする | `ends_next_day` |
 | 提供時間 | 分 | なし。開始時間に足して `endsAt` にする | なし |
 | 提供時間 | 範囲の下限と上限、選んだときの値 | `ServiceCodeRecord.service_time_range_start`、`service_time_range_end` | `listServiceCodes` の `service_time_range_start`、`service_time_range_end` |
 | サービスコード | 選択肢の並びと表記 | `ServiceCodeRecord.code`、選んだものは `ScheduleInput.visit.serviceCode` | `listServiceCodes` の `code`、送るのは `visit_info.service_code_id` |
