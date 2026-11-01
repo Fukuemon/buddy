@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 import { LEADER, LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
@@ -124,14 +124,14 @@ test.describe('利用者の一覧', () => {
         name: 'patient-forbidden-list',
         url: '/patients',
         label: '利用者の一覧',
-        hidden: 'patient-list-table',
+        hidden: (p: Page) => p.getByTestId('patient-list-table'),
         result: '権限が無いことの案内が出て、利用者の一覧とナビゲーションの「利用者」が出ない',
       },
       {
         name: 'patient-forbidden-new',
         url: '/patients/new',
         label: '利用者の登録',
-        hidden: 'patient-new-dialog',
+        hidden: (p: Page) => p.getByTestId('patient-new-dialog'),
         result: '権限が無いことの案内が出て、登録のダイアログとナビゲーションの「利用者」が出ない',
       },
     ]) {
@@ -155,7 +155,7 @@ test.describe('利用者の一覧', () => {
             await p.goto(page.url)
             await expect(p.getByTestId('page-forbidden')).toBeVisible()
             await expect(p.getByTestId('site-nav')).not.toContainText('利用者')
-            await expect(p.getByTestId(page.hidden)).toHaveCount(0)
+            await expect(page.hidden(p)).toHaveCount(0)
             await check(page.result)
           },
         )

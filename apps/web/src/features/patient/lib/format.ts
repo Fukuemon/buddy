@@ -46,14 +46,16 @@ export const assignedStaffLabel = (
 }
 
 /**
- * 編集の担当の職員の選択肢。有効な職員を名前の順に並べ、今の担当が休職か退職なら、今の担当のまま保存できるよう
- * `小野 拓海（休職。今の担当）` の形で先頭に足す。
+ * 編集の担当の職員の選択肢。有効で訪問する職員を名前の順に並べ、今の担当が休職か退職か訪問しない職員なら、
+ * 今の担当のまま保存できるよう `小野 拓海（休職。今の担当）` の形で先頭に足す。
  */
 export const editStaffOptions = (
   patient: Pick<PatientRecord, 'assigned_staff_id' | 'assigned_staff_name'>,
   staff: readonly StaffRecord[],
 ) => {
-  const status = staffStatusText(staff.find((s) => s.id === patient.assigned_staff_id)?.status)
+  const current = staff.find((s) => s.id === patient.assigned_staff_id)
+  const status =
+    staffStatusText(current?.status) ?? (current?.visits === false ? '訪問しない' : undefined)
   return [
     ...(status === undefined
       ? []
@@ -67,10 +69,10 @@ export const editStaffOptions = (
   ]
 }
 
-/** 担当に選べる有効な職員を、名前の順に返す。 */
+/** 担当に選べる、有効で訪問する職員を、名前の順に返す。訪問しない職員は担当にできない（ADR-0022）。 */
 export const activeStaffOptions = (staff: readonly StaffRecord[]) =>
   staff
-    .filter((s) => s.status === 'active')
+    .filter((s) => s.status === 'active' && s.visits)
     .sort((a, b) => a.username.localeCompare(b.username, 'ja'))
 
 /** 残る単発の予定 1 件の、`2026/11/02 09:00〜09:29` の形の日時。 */

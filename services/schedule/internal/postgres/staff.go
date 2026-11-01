@@ -32,6 +32,7 @@ func (r *StaffRepository) Create(ctx context.Context, s staff.Staff, grants []st
 		DepartmentID: s.DepartmentID,
 		TeamID:       s.TeamID,
 		PositionID:   s.PositionID,
+		Visits:       !s.NonVisiting,
 	})
 	if err != nil {
 		return translate("create user", err)
@@ -56,7 +57,7 @@ func (r *StaffRepository) ChangePosition(ctx context.Context, id, positionID str
 func (r *StaffRepository) UpdateProfile(ctx context.Context, id string, p staff.Profile, oldTeamID string) error {
 	q := r.q(ctx)
 	n, err := q.UpdateUserProfile(ctx, sqlcgen.UpdateUserProfileParams{
-		ID: id, Username: p.Username, PhoneNumber: p.PhoneNumber, DepartmentID: p.DepartmentID, TeamID: p.TeamID,
+		ID: id, Username: p.Username, PhoneNumber: p.PhoneNumber, DepartmentID: p.DepartmentID, TeamID: p.TeamID, Visits: !p.NonVisiting,
 	})
 	if err != nil {
 		return translate("update user profile", err)
@@ -186,6 +187,7 @@ func staffSummary(u sqlcgen.ListUsersByFacilityRow) staff.Summary {
 			DepartmentID:    u.DepartmentID,
 			TeamID:          u.TeamID,
 			PositionID:      u.PositionID,
+			NonVisiting:     !u.Visits,
 			LeaveStartedAt:  u.LeaveStartedAt,
 			LeaveReturnDate: datePtr(u.LeaveReturnDate),
 			RetiredAt:       u.RetiredAt,
@@ -321,16 +323,16 @@ func NewStaffRefRepository(pool *pgxpool.Pool) *StaffRefRepository {
 	return &StaffRefRepository{conn{pool}}
 }
 
-// Get は、ID が id の職員の事業所、チーム、状態を返す。無いときは apperr.ErrNotFound を返す。
+// Get は、ID が id の職員の事業所、チーム、訪問するか、状態を返す。無いときは apperr.ErrNotFound を返す。
 func (r *StaffRefRepository) Get(ctx context.Context, id string) (staff.Ref, error) {
 	row, err := r.q(ctx).GetUserRef(ctx, id)
 	if err != nil {
 		return staff.Ref{}, translate("get user ref", err)
 	}
-	return staffRef(row.ID, row.FacilityID, row.TeamID, row.LeaveStartedAt, row.RetiredAt), nil
+	return staffRef(row.ID, row.FacilityID, row.TeamID, row.Visits, row.LeaveStartedAt, row.RetiredAt), nil
 }
 
-// ListByFacility は、事業所 facilityID の職員の事業所、チーム、状態を ID の順に返す。
+// ListByFacility は、事業所 facilityID の職員の事業所、チーム、訪問するか、状態を ID の順に返す。
 func (r *StaffRefRepository) ListByFacility(ctx context.Context, facilityID string) ([]staff.Ref, error) {
 	rows, err := r.q(ctx).ListUserRefsByFacility(ctx, facilityID)
 	if err != nil {
@@ -338,7 +340,7 @@ func (r *StaffRefRepository) ListByFacility(ctx context.Context, facilityID stri
 	}
 	out := make([]staff.Ref, len(rows))
 	for i, row := range rows {
-		out[i] = staffRef(row.ID, row.FacilityID, row.TeamID, row.LeaveStartedAt, row.RetiredAt)
+		out[i] = staffRef(row.ID, row.FacilityID, row.TeamID, row.Visits, row.LeaveStartedAt, row.RetiredAt)
 	}
 	return out, nil
 }
@@ -351,7 +353,7 @@ func (r *StaffRefRepository) LockStatuses(ctx context.Context, facilityID string
 	return translate("share facility", err)
 }
 
-func staffRef(id, facilityID, teamID string, leaveStartedAt, retiredAt *time.Time) staff.Ref {
+func staffRef(id, facilityID, teamID string, visits bool, leaveStartedAt, retiredAt *time.Time) staff.Ref {
 	st := staff.Staff{LeaveStartedAt: leaveStartedAt, RetiredAt: retiredAt}
-	return staff.Ref{ID: id, FacilityID: facilityID, TeamID: teamID, Status: st.Status()}
+	return staff.Ref{ID: id, FacilityID: facilityID, TeamID: teamID, Status: st.Status(), NonVisiting: !visits}
 }

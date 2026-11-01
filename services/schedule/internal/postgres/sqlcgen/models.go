@@ -375,6 +375,8 @@ type User struct {
 	LeaveReturnDate *time.Time
 	// 職員を退職にした時刻。退職していなければ NULL
 	RetiredAt *time.Time
+	// 訪問するか。false の職員には、予定と担当を新しく割り振れない
+	Visits bool
 }
 
 // 職員が持つ権限。職員と権限の組で一意

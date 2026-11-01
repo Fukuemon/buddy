@@ -23,6 +23,6 @@
 | --- | --- | --- | --- | --- |
 | `listServiceCodes` | `GET /v1/visit_infos/service_codes` | なし | 200。`ServiceCode` の配列 | なし |
 | `listUsers` | `GET /v1/facilities/{facility_id}/users` | なし | 200。`Staff` の配列 | なし |
-| `createPatient` | `POST /v1/facilities/{facility_id}/patients` | `name`、`service_code_id`、`preferred_time`、`preferred_gender`、`assigned_staff_id` | 201。`Patient` | 400 `invalid_input`: 入力が誤っているか、サービスコードか担当の職員が無いか、担当に休職か退職の職員を指した |
+| `createPatient` | `POST /v1/facilities/{facility_id}/patients` | `name`、`service_code_id`、`preferred_time`、`preferred_gender`、`assigned_staff_id` | 201。`Patient` | 400 `invalid_input`: 入力が誤っているか、サービスコードか担当の職員が無いか、担当に休職か退職の職員か、訪問しない職員を指した |
 
 - 3 つの理由の 400 は、どれも `code` が `invalid_input` で、`message` だけが違う。画面は、送った担当の職員を `listUsers` で読み直し、休職か退職なら担当の職員の文を、そうでなければサービスか担当の職員の文を出す。名前の誤りは、送る前に画面が止める。

@@ -4,6 +4,7 @@ import type { StaffRecord } from '#/api/types'
 import { mockStaff } from '#/mocks/scheduleData'
 
 import {
+  activeStaffOptions,
   assignedStaffLabel,
   editStaffOptions,
   endedLabel,
@@ -14,6 +15,7 @@ const staff: StaffRecord[] = [
   { ...mockStaff[0] },
   { ...mockStaff[1], status: 'on_leave' },
   { ...mockStaff[2], status: 'retired' },
+  { ...mockStaff[3], visits: false },
 ]
 
 describe('format', () => {
@@ -30,11 +32,24 @@ describe('format', () => {
     expect(of('staff-3', '上田 三奈')).toBe('上田 三奈（退職）')
   })
 
-  it('編集の担当の選択肢は、有効な職員だけを並べ、休職か退職の今の担当を先頭に足す', () => {
+  it('担当の候補は、有効で訪問する職員だけを名前の順に並べる', () => {
+    expect(activeStaffOptions(staff).map((s) => s.id)).toEqual(['staff-1'])
+  })
+
+  it('編集の担当の選択肢は、有効で訪問する職員だけを並べ、休職か退職の今の担当を先頭に足す', () => {
     expect(
       editStaffOptions({ assigned_staff_id: 'staff-3', assigned_staff_name: '上田 三奈' }, staff),
     ).toEqual([
       { id: 'staff-3', label: '上田 三奈（退職。今の担当）' },
+      { id: 'staff-1', label: '青木 一郎' },
+    ])
+  })
+
+  it('編集の担当の選択肢は、訪問しない今の担当も先頭に足す', () => {
+    expect(
+      editStaffOptions({ assigned_staff_id: 'staff-4', assigned_staff_name: '江藤 四郎' }, staff),
+    ).toEqual([
+      { id: 'staff-4', label: '江藤 四郎（訪問しない。今の担当）' },
       { id: 'staff-1', label: '青木 一郎' },
     ])
   })

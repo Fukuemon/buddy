@@ -14,6 +14,7 @@
 | チーム | 選んだチーム | `StaffCreateInput.team_id` | `createUser` の本文の `team_id` |
 | 役職 | 選択肢 | `Position`（`positions.list` の戻り値） | `listPositions` の `Position` の `id`、`name` |
 | 役職 | 選んだ役職 | `StaffCreateInput.position_id` | `createUser` の本文の `position_id` |
+| 訪問 | 選んだ選択肢。「訪問する」なら true | `StaffCreateInput.visits` | `createUser` の本文の `visits`。省くと true |
 | 登録 | 登録した職員 | `StaffDetail`（`staff.create` の戻り値） | `createUser` のレスポンスの `StaffDetail` |
 | 登録の失敗の文 | 理由ごとの文 | `ApiError.status`、`ApiError.code` | レスポンスの status と `Error.code` |
 
@@ -26,7 +27,7 @@
 | `listDepartments` | `GET /v1/facilities/{facility_id}/departments` | なし | 200。`Unit` の配列 | なし |
 | `listTeams` | `GET /v1/facilities/{facility_id}/teams` | なし | 200。`Unit` の配列 | なし |
 | `listPositions` | `GET /v1/facilities/{facility_id}/positions` | なし | 200。`Position` の配列。名前の順 | なし |
-| `createUser` | `POST /v1/facilities/{facility_id}/users` | `username`、`email`、`phone_number`、`department_id`、`team_id`、`position_id` | 201。`StaffDetail` | 400 `invalid_input`: 入力が誤っているか、部署、チーム、役職が無いかほかの事業所のもの。409 `conflict`: 同じメールの職員がいる |
+| `createUser` | `POST /v1/facilities/{facility_id}/users` | `username`、`email`、`phone_number`、`department_id`、`team_id`、`position_id`、`visits` | 201。`StaffDetail` | 400 `invalid_input`: 入力が誤っているか、部署、チーム、役職が無いかほかの事業所のもの。409 `conflict`: 同じメールの職員がいる |
 
 - `createUser` は、ID ブローカーにも職員を登録する。ブローカーに登録した後に失敗したときは、同じ本文で送り直してよい。画面は、登録の失敗の後に登録を押し直すと、同じ本文で送る。
 - 登録した職員には、役職のデフォルトの権限が付く。チームを対象にする権限は、`team_id` のチームを対象にする。

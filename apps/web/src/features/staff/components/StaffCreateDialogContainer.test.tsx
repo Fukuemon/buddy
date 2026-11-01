@@ -21,6 +21,14 @@ describe('StaffCreateDialogContainer', () => {
     expect(screen.getByTestId('staff-new-department')).toHaveDisplayValue('リハビリ部')
   })
 
+  it('訪問は「訪問する」を選んで始め、役職を変えても選び直さない', async () => {
+    render(<Default />)
+    expect(await screen.findByTestId('staff-new-visits-visits')).toBeChecked()
+    await userEvent.click(screen.getByTestId('staff-new-visits-non-visiting'))
+    await userEvent.selectOptions(screen.getByTestId('staff-new-position'), '看護師')
+    expect(screen.getByTestId('staff-new-visits-non-visiting')).toBeChecked()
+  })
+
   it('名前が空でメールアドレスの形でなければ、送らずに欄ごとの誤りを出し、直すと消す', async () => {
     render(<Default />)
     await fill(' ', 'aoki', '090-1234')

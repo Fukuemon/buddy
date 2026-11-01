@@ -262,6 +262,14 @@ const ProfileList = ({
     ['部署', staff.department.name],
     ['チーム', staff.team.name],
     [
+      '訪問',
+      <span data-testid="staff-detail-visits" key="visits">
+        {staff.visits
+          ? '訪問する'
+          : '訪問しない（予定のカレンダーの列と、予定と担当の候補に出ません）'}
+      </span>,
+    ],
+    [
       '役職',
       <span className="flex flex-wrap items-center gap-x-3" key="position">
         <span data-testid="staff-detail-position-name">{staff.position.name}</span>

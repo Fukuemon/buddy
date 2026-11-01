@@ -90,6 +90,7 @@ type fakeStaff struct {
 	lastGrant        staff.GrantInput
 	lastUserPolicyID string
 	lastProfile      staff.Profile
+	lastCreate       staff.CreateInput
 	lastStopped      string
 	lastLeave        staff.LeaveInput
 	assignments      staff.Assignments
@@ -137,11 +138,12 @@ func (f *fakeStaff) RemainingAssignments(_ context.Context, id string) (staff.As
 
 func (f *fakeStaff) UpdateProfile(_ context.Context, id string, p staff.Profile) (staff.Detail, error) {
 	f.lastProfile = p
-	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: id, Username: p.Username, PhoneNumber: p.PhoneNumber, DepartmentID: p.DepartmentID, TeamID: p.TeamID}}, Policies: []staff.PolicyGrant{}}, f.err
+	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: id, Username: p.Username, PhoneNumber: p.PhoneNumber, DepartmentID: p.DepartmentID, TeamID: p.TeamID, NonVisiting: p.NonVisiting}}, Policies: []staff.PolicyGrant{}}, f.err
 }
 
-func (f *fakeStaff) Create(context.Context, staff.CreateInput) (staff.Detail, error) {
-	return staff.Detail{Policies: []staff.PolicyGrant{}}, f.err
+func (f *fakeStaff) Create(_ context.Context, in staff.CreateInput) (staff.Detail, error) {
+	f.lastCreate = in
+	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{NonVisiting: in.NonVisiting}}, Policies: []staff.PolicyGrant{}}, f.err
 }
 
 func (f *fakeStaff) Get(context.Context, string) (staff.Detail, error) { return staff.Detail{}, nil }
@@ -720,7 +722,7 @@ func TestUpdateUser(t *testing.T) {
 	st := &fakeStaff{}
 	h := newRouter(&fakeSchedules{}, st, &fakePatients{})
 	rec, body := do(t, h, http.MethodPut, "/v1/users/"+staffID,
-		`{"username":"青木 ひな","phone_number":"09012345678","department_id":"`+depID+`","team_id":"`+teamID+`"}`)
+		`{"username":"青木 ひな","phone_number":"09012345678","department_id":"`+depID+`","team_id":"`+teamID+`","visits":true}`)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
 	}
@@ -731,18 +733,19 @@ func TestUpdateUser(t *testing.T) {
 	if body["username"] != "青木 ひな" || body["team"].(map[string]any)["id"] != teamID {
 		t.Errorf("body = %v", body)
 	}
-	if rec, _ := do(t, h, http.MethodPut, "/v1/users/"+staffID, `{"username":"青木","department_id":"`+depID+`","team_id":"`+teamID+`"}`); rec.Code != http.StatusOK || st.lastProfile.PhoneNumber != nil {
+	if rec, _ := do(t, h, http.MethodPut, "/v1/users/"+staffID, `{"username":"青木","department_id":"`+depID+`","team_id":"`+teamID+`","visits":true}`); rec.Code != http.StatusOK || st.lastProfile.PhoneNumber != nil {
 		t.Errorf("電話番号を省く: status = %d, 電話番号 = %v, want 200 で nil", rec.Code, st.lastProfile.PhoneNumber)
 	}
 	for name, b := range map[string]string{
-		"名前が無い":         `{"department_id":"` + depID + `","team_id":"` + teamID + `"}`,
-		"チームの ID の形が誤り": `{"username":"青木","department_id":"` + depID + `","team_id":"x"}`,
+		"名前が無い":         `{"department_id":"` + depID + `","team_id":"` + teamID + `","visits":true}`,
+		"チームの ID の形が誤り": `{"username":"青木","department_id":"` + depID + `","team_id":"x","visits":true}`,
+		"訪問するかが無い":      `{"username":"青木","department_id":"` + depID + `","team_id":"` + teamID + `"}`,
 	} {
 		if rec, _ := do(t, h, http.MethodPut, "/v1/users/"+staffID, b); rec.Code != http.StatusBadRequest {
 			t.Errorf("%s: status = %d", name, rec.Code)
 		}
 	}
-	valid := `{"username":"青木","department_id":"` + depID + `","team_id":"` + teamID + `"}`
+	valid := `{"username":"青木","department_id":"` + depID + `","team_id":"` + teamID + `","visits":true}`
 	for name, c := range map[string]struct {
 		err    error
 		status int
@@ -926,5 +929,46 @@ func TestRequestValidationMessages(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// 職員の変更は、訪問するかを受け取る。予定か担当の利用者が残る職員を訪問しない職員に変えようとしたときは、409 で残る一覧を返す（ADR-0022）。
+func TestUpdateUserVisits(t *testing.T) {
+	const depID, teamID = "01M3TC5HZ8A18D2TP3PTKDXJMN", "01M3TC5MX04QJ19X6XR1ZCBZRJ"
+	nonVisiting := `{"username":"青木","department_id":"` + depID + `","team_id":"` + teamID + `","visits":false}`
+	st := &fakeStaff{}
+	rec, body := do(t, newRouter(&fakeSchedules{}, st, &fakePatients{}), http.MethodPut, "/v1/users/"+staffID, nonVisiting)
+	if rec.Code != http.StatusOK || !st.lastProfile.NonVisiting || body["visits"] != false {
+		t.Fatalf("status = %d, 入力 = %+v, body = %v, want 200 で訪問しない職員", rec.Code, st.lastProfile, body)
+	}
+
+	assigned := &staff.AssignedError{NonVisiting: true, Assignments: staff.Assignments{
+		Patients: []staff.AssignedPatient{{ID: patientID, Name: "見本 花子"}},
+	}}
+	rec, body = do(t, newRouter(&fakeSchedules{}, &fakeStaff{err: assigned}, &fakePatients{}), http.MethodPut, "/v1/users/"+staffID, nonVisiting)
+	if rec.Code != http.StatusConflict || body["code"] != "staff_has_assignments" || body["message"] != assigned.Error() {
+		t.Fatalf("残る担当: status = %d, body = %v, want 409 staff_has_assignments", rec.Code, body)
+	}
+	if pats := body["assignments"].(map[string]any)["patients"].([]any); len(pats) != 1 {
+		t.Errorf("assignments = %v, want 担当の利用者 1 件", body["assignments"])
+	}
+}
+
+// 職員の登録は、visits を省くと訪問する職員として登録する（ADR-0022）。
+func TestCreateUserVisits(t *testing.T) {
+	user := `{"username":"新人","email":"new@example.com","department_id":"` + staffID + `","team_id":"` + staffID + `","position_id":"` + staffID + `"`
+	for name, c := range map[string]struct {
+		body        string
+		nonVisiting bool
+	}{
+		"省く":    {user + `}`, false},
+		"訪問する":  {user + `,"visits":true}`, false},
+		"訪問しない": {user + `,"visits":false}`, true},
+	} {
+		st := &fakeStaff{}
+		rec, body := do(t, newRouter(&fakeSchedules{}, st, &fakePatients{}), http.MethodPost, "/v1/facilities/"+facilityID+"/users", c.body)
+		if rec.Code != http.StatusCreated || st.lastCreate.NonVisiting != c.nonVisiting || body["visits"] != !c.nonVisiting {
+			t.Errorf("%s: status = %d, 入力 = %+v, body = %v", name, rec.Code, st.lastCreate, body)
+		}
 	}
 }

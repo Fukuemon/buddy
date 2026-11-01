@@ -15,7 +15,7 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 | タイトル | タイトル | `ScheduleInput.title` | `title` |
 | 利用者の一覧 | 利用者の名前 | `Patient.name`、選んだものは `ScheduleInput.visit.patientId` | `listPatients` の `name`、送るのは `visit_info.patient_id` |
 | 職員の一覧 | 職員の名前 | `Staff.name`、選んだものは `ScheduleInput.staffId` | `listUsers` の `username`、送るのは `staff_id`、`visit_info.assigned_staff_id` |
-| 職員の一覧 | 休職と退職の職員を除くか | `Staff.status` | `listUsers` の `Staff.status` |
+| 職員の一覧 | 休職と退職の職員と、訪問しない職員を除くか | `Staff.status`、`Staff.nonVisiting` | `listUsers` の `Staff.status`、`visits` |
 | 訪問の種類 | 夜勤、緊急、入院 | `ScheduleInput.visit.categories` | `visit_info.visit_category_ids` |
 | メモ | メモ | `ScheduleInput.description` | `description` |
 
@@ -32,5 +32,5 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 - 繰り返しの予定は `createRecurringSchedule` で作る。この画面は呼ばず、単発の予定だけを `createSchedule` で作る。
 - 職員の権限は、OpenAPI の `StaffDetail.policies` にある。職員の一覧を権限で絞るときに、これを使うか別の API を使うかは決まっていない。
 - 担当者は、今は `staff_id`（予定の職員）と `visit_info.assigned_staff_id`（訪問の担当）の両方に同じ職員を送る（`apps/web/src/api/http/scheduleMapper.ts`）。OpenAPI は両方を必須にしている。
-- `listUsers` は、休職と退職の職員も返す。この画面は、`status` を持つ職員を担当者の候補から除く。
-- `createSchedule` は、`staff_id` か `visit_info.assigned_staff_id` が休職か退職の職員を指すと 400 を返す。
+- `listUsers` は、休職と退職の職員も返す。この画面は、`status` を持つ職員と、`visits` が false の職員を担当者の候補から除く。
+- `createSchedule` は、`staff_id` か `visit_info.assigned_staff_id` が休職か退職の職員か、訪問しない職員を指すと 400 を返す（ADR-0022）。

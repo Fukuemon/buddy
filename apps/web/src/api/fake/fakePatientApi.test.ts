@@ -45,6 +45,21 @@ describe('createFakePatientApi', () => {
     ).resolves.toMatchObject({ name: '佐野 春香 改', assigned_staff_id: 'staff-2' })
   })
 
+  it('訪問しない職員を担当に指すと 400 で拒む', async () => {
+    const api = createFakeBuddyApi({ baseDate })
+    const clerk = await api.staff.create(FAKE_FACILITY_ID, {
+      username: '事務 太郎',
+      email: 'clerk@example.com',
+      department_id: 'department-1',
+      team_id: 'team-a',
+      position_id: 'position-clerk',
+      visits: false,
+    })
+    await expect(
+      api.patients.create(FAKE_FACILITY_ID, { ...input, assigned_staff_id: clerk.id }),
+    ).rejects.toMatchObject({ status: 400, code: 'invalid_input' })
+  })
+
   it('今日以降の予定が残る利用者の利用の終了は残る予定を返し、残らなければ利用の終了にして予定の候補から外す', async () => {
     const api = createFakeBuddyApi({ baseDate })
     const refused = await api.patients.endService(FAKE_FACILITY_ID, 'patient-1')

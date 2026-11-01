@@ -54,6 +54,8 @@ export type Staff = {
   email: string | null
   /** 休職（on_leave）か退職（retired）の職員の状態。有効な職員は持たない。 */
   status?: Exclude<ScheduleComponents['schemas']['StaffStatus'], 'active'>
+  /** 訪問しない職員は true を持つ。訪問する職員は持たない（ADR-0022）。 */
+  nonVisiting?: true
 }
 
 /** 利用者。API の型の ID と名前と、利用の終了かだけを使う。 */
@@ -176,7 +178,7 @@ export type StaffRecord = ScheduleSchemas['Staff']
 export type StaffDetail = ScheduleSchemas['StaffDetail']
 /** 職員が持つ権限 1 つと、その対象。 */
 export type StaffPolicy = StaffDetail['policies'][number]
-/** 職員を休職か退職にするときに残る、今日以降の予定、繰り返しの予定、担当の利用者。 */
+/** 職員を休職、退職、訪問しない職員にするときに残る、今日以降の予定、繰り返しの予定、担当の利用者。 */
 export type StaffAssignments = ScheduleSchemas['StaffAssignments']
 /** 部署。API の型の ID と名前だけを使う。 */
 export type Department = Pick<ScheduleSchemas['Unit'], 'id' | 'name'>
@@ -186,12 +188,14 @@ export type Position = ScheduleSchemas['Position']
 export type Policy = ScheduleSchemas['Policy']
 /** 職員の登録で送る値。予定の API の createUser の本文をそのまま使う。 */
 export type StaffCreateInput = RequestBody<'createUser'>
-/** 職員の名前、電話番号、部署、チームの変更で送る値。予定の API の updateUser の本文をそのまま使う。 */
+/** 職員の名前、電話番号、部署、チーム、訪問するかの変更で送る値。予定の API の updateUser の本文をそのまま使う。 */
 export type StaffUpdateInput = RequestBody<'updateUser'>
 /** 職員に権限を足すときに送る値。予定の API の addUserPolicy の本文をそのまま使う。 */
 export type StaffPolicyInput = RequestBody<'addUserPolicy'>
 /** 退職の結果。予定か担当の利用者が残って拒まれたときは、残るものを assignments に持つ。 */
 export type StaffRetireResult = { retired: StaffDetail } | { assignments: StaffAssignments }
+/** 職員の変更の結果。予定か担当の利用者が残る職員を訪問しない職員に変えようとして拒まれたときは、残るものを assignments に持つ。 */
+export type StaffUpdateResult = { updated: StaffDetail } | { assignments: StaffAssignments }
 
 /** 利用者の管理の画面で出す利用者。予定の API の Patient をそのまま使う。 */
 export type PatientRecord = ScheduleSchemas['Patient']

@@ -38,11 +38,14 @@ describe('createFakeStaffApi', () => {
   it('チームを変えると、古いチームを指す権限の対象を新しいチームに移す', async () => {
     const api = createFakeBuddyApi({ baseDate })
     const staff = await api.staff.get(FAKE_FACILITY_ID, 'staff-2')
-    const updated = await api.staff.update(FAKE_FACILITY_ID, 'staff-2', {
+    const result = await api.staff.update(FAKE_FACILITY_ID, 'staff-2', {
       username: staff.username,
       department_id: staff.department.id,
       team_id: 'team-b',
+      visits: true,
     })
+    if (!('updated' in result)) throw new Error('変更を拒まれた')
+    const { updated } = result
     expect(updated.team.name).toBe('B チーム')
     expect(updated.policies.find((p) => p.code === 'schedule.team.read')?.target_team_ids).toEqual([
       'team-b',

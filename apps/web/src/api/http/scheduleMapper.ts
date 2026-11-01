@@ -46,6 +46,7 @@ export const fromApiStaff = (user: Schemas['Staff']): Staff => {
     email: user.email,
   }
   if (user.status !== 'active') staff.status = user.status
+  if (!user.visits) staff.nonVisiting = true
   return staff
 }
 

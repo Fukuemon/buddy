@@ -48,7 +48,7 @@ func NewUsecase(deps Deps, tx tx.Transactor, ids kernel.IDGenerator, guard organ
 	return &Usecase{deps: deps, tx: tx, ids: ids, guard: guard}
 }
 
-// CreateInput は、職員の作成の入力である。
+// CreateInput は、職員の作成の入力である。NonVisiting は訪問しない職員かで、役職からは決めない（ADR-0022）。
 type CreateInput struct {
 	FacilityID   string
 	Username     string
@@ -57,6 +57,7 @@ type CreateInput struct {
 	DepartmentID string
 	TeamID       string
 	PositionID   string
+	NonVisiting  bool
 }
 
 // Create は、職員を作り、役職のデフォルトの権限を与える。チームを対象にする権限は、職員の所属のチームを対象にする。事業所が見つからないときは apperr.ErrNotFound を、
@@ -107,6 +108,7 @@ func (s *Usecase) Create(ctx context.Context, in CreateInput) (Detail, error) {
 		DepartmentID: dep.ID,
 		TeamID:       team.ID,
 		PositionID:   pos.ID,
+		NonVisiting:  in.NonVisiting,
 	})
 	if err != nil {
 		return Detail{}, err
@@ -248,7 +250,7 @@ func (s *Usecase) RemainingAssignments(ctx context.Context, id string) (Assignme
 }
 
 // remaining は、職員 cur の、今日（事業所の現地の日付）以降の予定、繰り返しの予定、担当の利用者を返す。
-// 休職、退職、RemainingAssignments が同じ一覧を返すよう、3 つともこれで作る。
+// 休職、退職、訪問しない職員への変更、RemainingAssignments が同じ一覧を返すよう、全てこれで作る。
 func (s *Usecase) remaining(ctx context.Context, cur Detail) (Assignments, error) {
 	return s.deps.Assignments.From(ctx, cur.FacilityID, cur.ID, civil.Today(s.deps.Now()))
 }
@@ -457,12 +459,15 @@ func (s *Usecase) ChangePosition(ctx context.Context, id, positionID string) (De
 	return changed, err
 }
 
-// UpdateProfile は、職員の名前、電話番号、部署、チームを p にし、変えた職員を返す。メールは変えない（ADR-0017）。
+// UpdateProfile は、職員の名前、電話番号、部署、チーム、訪問しない職員かを p にし、変えた職員を返す。メールは変えない（ADR-0017）。
+// 訪問する職員を訪問しない職員に変えるときは、その日以降の予定、繰り返しの予定、担当の利用者が残れば、書かずに残る一覧を持つ
+// *AssignedError を返す。一覧は退職と同じ remaining で作る（ADR-0022）。訪問しない職員を訪問する職員に戻すときは確認しない。
 // チームを変えたときは、職員の権限のうち古いチームを指す対象を新しいチームに移し、ほかのチームの対象は残す。
 // 登録と役職の変更で付けたチームの対象は所属のチームを指すが、予定の判定は保存した対象のチームだけを読むためである。
 // 職員が見つからないときは apperr.ErrNotFound を、職員の管理の権限が無いときは apperr.ErrForbidden を、
 // 退職した職員を変えようとしたときは apperr.ErrConflict を、部署かチームが見つからないか別の事業所のものであるときは入力のエラーを返す。
 // 役職を変える操作と同じく事業所をロックし、読んだ古いチームが、書くまでにほかの操作で変わらないようにする。
+// ロックは予定と担当の新しい割り振りも待たせるので、残る予定を数えてから書くまでに、訪問しない職員への割り振りが入らない。
 func (s *Usecase) UpdateProfile(ctx context.Context, id string, p Profile) (Detail, error) {
 	if err := s.guard(ctx); err != nil {
 		return Detail{}, err
@@ -493,6 +498,15 @@ func (s *Usecase) UpdateProfile(ctx context.Context, id string, p Profile) (Deta
 		p, err := NewProfile(p)
 		if err != nil {
 			return err
+		}
+		if !cur.NonVisiting && p.NonVisiting {
+			a, err := s.remaining(ctx, cur)
+			if err != nil {
+				return err
+			}
+			if !a.Empty() {
+				return &AssignedError{Assignments: a, NonVisiting: true}
+			}
 		}
 		if err := s.deps.Staff.UpdateProfile(ctx, cur.ID, p, cur.TeamID); err != nil {
 			return apperr.AsConflict(err, "退職した職員は変えられません")

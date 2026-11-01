@@ -1,7 +1,7 @@
 import { InputDialog } from '@buddy/ui'
 import { useEffect, useId, useRef, useState } from 'react'
 
-import type { Department, StaffDetail, StaffUpdateInput, Team } from '#/api/types'
+import type { Department, StaffAssignments, StaffDetail, StaffUpdateInput, Team } from '#/api/types'
 
 import {
   STAFF_NAME_MAX_LENGTH,
@@ -10,7 +10,9 @@ import {
   validatePhone,
   type StaffFormErrors,
 } from '../lib/validate'
+import { StaffAssignmentList } from './StaffAssignmentList'
 import { StaffField, StaffSelect, sortByName, staffFieldClassName } from './StaffFormFields'
+import { VisitsField } from './VisitsField'
 
 export type StaffProfileDialogProps = {
   staff: StaffDetail
@@ -20,12 +22,15 @@ export type StaffProfileDialogProps = {
   isSubmitting: boolean
   /** 保存できなかったときの文。 */
   errorMessage?: string
+  /** 訪問しない職員に変えようとして拒まれたときの、今日以降に残る予定と担当の利用者。 */
+  refusedAssignments?: StaffAssignments
   onSubmit: (input: StaffUpdateInput) => void
   onClose: () => void
 }
 
 /**
- * 職員の名前、電話番号、部署、チームを変える入力のダイアログ。メールアドレスは変えられないことを示す。
+ * 職員の名前、電話番号、部署、チーム、訪問するかを変える入力のダイアログ。メールアドレスは変えられないことを示す。
+ * 訪問しない職員に変えようとして、今日以降の予定か担当の利用者が残って拒まれたときは、残るものを訪問の欄の下に示す。
  * 保存を押すと入力を確認し、誤りがあれば送らずに欄の下に文を出す。開くと名前の欄にフォーカスを置く。
  */
 export const StaffProfileDialog = ({
@@ -34,6 +39,7 @@ export const StaffProfileDialog = ({
   teams,
   isSubmitting,
   errorMessage,
+  refusedAssignments,
   onSubmit,
   onClose,
 }: StaffProfileDialogProps) => {
@@ -43,6 +49,7 @@ export const StaffProfileDialog = ({
   const [phone, setPhone] = useState(staff.phone_number ?? '')
   const [departmentId, setDepartmentId] = useState(staff.department.id)
   const [teamId, setTeamId] = useState(staff.team.id)
+  const [visits, setVisits] = useState(staff.visits)
   const [errors, setErrors] = useState<StaffFormErrors>({})
 
   // <dialog> の showModal は最初の操作できる要素（閉じるボタン）にフォーカスを移す（HTML の dialog の focusing steps）。その後に名前の欄へ移す
@@ -57,6 +64,7 @@ export const StaffProfileDialog = ({
       phone_number: phoneNumberOf(phone),
       department_id: departmentId,
       team_id: teamId,
+      visits,
     })
   }
 
@@ -161,6 +169,10 @@ export const StaffProfileDialog = ({
             )}
           </StaffField>
         </div>
+        <VisitsField onChange={setVisits} testId="staff-detail-visits-input" value={visits} />
+        {refusedAssignments !== undefined && !visits && (
+          <StaffAssignmentList assignments={refusedAssignments} kind="non-visiting" />
+        )}
       </form>
     </InputDialog>
   )
