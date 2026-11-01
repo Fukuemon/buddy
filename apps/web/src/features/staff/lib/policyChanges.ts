@@ -53,8 +53,9 @@ const sameTargets = (a: readonly string[], b: readonly string[]) =>
   a.length === b.length && a.every((id) => b.includes(id))
 
 /**
- * 開いたときの権限と選択を比べ、送る変更を、外す変更、足す変更の順で返す。
+ * 開いたときの権限と選択を比べ、送る変更を、外す変更、足す変更、職員の管理の権限を外す変更の順で返す。
  * 対象を変えた権限は、外してから新しい対象で足し直す。対象を指定しない権限の対象は比べない。
+ * 職員の管理の権限を最後に外すのは、自分の権限を変えるとき、先に外すと API が残りの変更を拒むからである。
  */
 export const planPolicyChanges = (
   staff: StaffDetail,
@@ -63,6 +64,7 @@ export const planPolicyChanges = (
 ): PolicyChange[] => {
   const removes: PolicyChange[] = []
   const adds: PolicyChange[] = []
+  const lastRemoves: PolicyChange[] = []
   for (const policy of policies) {
     const owned = staff.policies.find((p) => p.policy_id === policy.id)
     const selected = selection[policy.code] ?? { checked: false, targets: [] }
@@ -73,7 +75,11 @@ export const planPolicyChanges = (
       kind !== undefined &&
       !sameTargets(targetsOf(owned), selected.targets)
     if (owned !== undefined && (!selected.checked || retarget))
-      removes.push({ kind: 'remove', name: policy.name, userPolicyId: owned.user_policy_id })
+      (policy.code === STAFF_MANAGE ? lastRemoves : removes).push({
+        kind: 'remove',
+        name: policy.name,
+        userPolicyId: owned.user_policy_id,
+      })
     if (selected.checked && (owned === undefined || retarget))
       adds.push({
         kind: 'add',
@@ -85,7 +91,7 @@ export const planPolicyChanges = (
         },
       })
   }
-  return [...removes, ...adds]
+  return [...removes, ...adds, ...lastRemoves]
 }
 
 /** 選択した権限のうち、対象を指定する権限の全てに、対象が 1 つ以上あるか。 */
