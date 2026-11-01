@@ -1,8 +1,8 @@
+import { InputDialog } from '@buddy/ui'
 import { useState } from 'react'
 
 import type { Policy, Position, StaffDetail } from '#/api/types'
 import { ChipPicker } from '#/components/site/ChipPicker'
-import { InputDialog } from '#/components/site/InputDialog'
 
 import { policyTargetKind } from '../lib/format'
 import {

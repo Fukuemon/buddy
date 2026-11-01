@@ -1,7 +1,7 @@
+import { ConfirmDialog } from '@buddy/ui'
 import { useId, useState } from 'react'
 
 import type { StaffAssignments, StaffDetail } from '#/api/types'
-import { ConfirmDialog } from '#/components/site/ConfirmDialog'
 
 import { StaffAssignmentList } from './StaffAssignmentList'
 import { staffFieldClassName } from './StaffFormFields'
