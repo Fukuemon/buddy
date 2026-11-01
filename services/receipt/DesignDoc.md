@@ -273,14 +273,12 @@ API の定義の正本は [openapi.yaml](https://github.com/Fukuemon/buddy/blob/
 - `POST /v1/checks`
   - `Authorization: Bearer` の access token を求める。署名、`iss`、`aud`、`exp`、`nbf` を JWKS で確認し、`sub` の無いトークンも拒む。`/healthz` と `/readyz` のほかは、定義に無いパスにもトークンを求める。
   - 署名のアルゴリズムは RS256 と ES256 だけを受け付ける。
-  - 照合の権限（`receipt.check`）を持つ職員だけに許す。本文を読む前に、受けた access token をそのまま付けて予定の API の `GET /v1/me` を呼び、返った権限で確認する。
-    - ADR-0022: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0022-receipt-check-policy-and-non-visiting-staff.md)
-    - 照合の API は権限を保存しない。権限を外すと、その職員の次の照合から拒む。
+  - 照合の権限（`receipt.check`）を持つ職員だけに許す。確認の仕方は [権限の Design Doc の照合の API の権限の確認](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md#照合の-api-の権限の確認) にある。
 - エラーは `{"code","message"}` の JSON で返す。`code` ごとの意味は openapi.yaml にある。
   - 定義に無いパスかメソッド: 404 の `not_found`
-  - 照合の権限が無いか、予定の API が 401 か 403 を返した: 403 の `forbidden`。予定の API は、休職と退職の職員を 403 で拒む
+  - 照合の権限が無いか、予定の API が 401 か 403 を返した: 403 の `forbidden`。理由は [権限の Design Doc の照合の API の権限の確認](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md#照合の-api-の権限の確認) にある
   - `month` で呼ばれたが、トークンに組織がない: 403 の `forbidden`。読むカレンダーを決められないためである
-  - 予定の API に届かないか、予定の API が 401 と 403 のほかのエラーを返した: 502 の `permission_check_failed`。Google カレンダーから予定を取れないときの 502 の `schedule_source_failed` と同じく、照合の API の外の依存先の失敗なので 502 にする。503 は、照合の API の設定の不足（`calendar_not_configured`）に使う
+  - 予定の API に届かないか、予定の API が 401 と 403 のほかのエラーを返した: 502 の `permission_check_failed`。理由は [権限の Design Doc の照合の API の権限の確認](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md#照合の-api-の権限の確認) にある
   - 入力の CSV のエラー: 422 の `invalid_csv`。誤りごとに、理由のコード（`reason`）、CSV の種類、分かれば行と列を `errors` に入れる
     - 画面は `reason` と行と列から職員に見せる文を作り、`message` を出さない。`message` は、CSV の形の誤り（引用符の閉じ忘れなど）では Go の encoding/csv の英語の文になる
     - ファイルの全体の誤り（文字コード、空、足りないカラム）は行を持たない。CSV の形の誤りは、列を決められないので `column` を持たない
