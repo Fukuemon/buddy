@@ -10,6 +10,7 @@ import {
   fillApiToken,
   fillApiVariable,
   openApiClient,
+  scrollApiResponseTo,
 } from '../../screens/apiReference'
 import { apiClient } from '../../selectors/apiReference'
 
@@ -186,7 +187,8 @@ test.describe('予定の API', () => {
               recurring_schedules: { id: string; ends_next_day: boolean }[]
             }>(page, 'GET')
             await expect(apiClient(page).dialog).toContainText('200 OK')
-            await expect(apiClient(page).dialog).toContainText(id)
+            await scrollApiResponseTo(page, id)
+            await expect(apiClient(page).response).toContainText(id)
             expect(list.recurring_schedules.find((r) => r.id === id)?.ends_next_day).toBe(true)
             await check(
               `200 が返り、recurring_schedules の ${id} が ends_next_day を true にして返る。API は回に展開せず、この印が全ての回に当たる`,
@@ -228,7 +230,8 @@ test.describe('予定の API', () => {
               'GET',
             )
             await expect(apiClient(page).dialog).toContainText('200 OK')
-            await expect(apiClient(page).dialog).toContainText(id)
+            await scrollApiResponseTo(page, id)
+            await expect(apiClient(page).response).toContainText(id)
             expect(list.schedules.find((s) => s.id === id)?.date).toBe('2026-11-01')
             await check(
               `200 が返り、schedules に date が 2026-11-01 の ${id}（22:00 から翌日の 01:00）が含まれる`,

@@ -18,6 +18,10 @@ export const apiClient = (page: Page) => {
       dialog.locator(`tr[id="${name}"]`).getByRole('combobox', { name: 'Value' }),
     addValue: page.getByText('Add value', { exact: true }),
     body: dialog.locator('.cm-content'),
+    /** レスポンスの本文。見えている行だけを描くので、画面の外の行は DOM に無い */
+    response: dialog.locator('.cm-content').last(),
+    /** レスポンスの本文の、text を含む最初の行 */
+    responseLine: (text: string) => dialog.locator('.cm-content').last().getByText(text).first(),
     send: dialog.getByRole('button', { name: /^Send/ }).first(),
   }
 }
