@@ -72,6 +72,7 @@ test.describe('部署とチーム', () => {
             await expect(dialog).toHaveCount(0)
             const row = page.getByTestId(/^organization-list-team-row-/).filter({ hasText: name })
             await expect(row).toHaveCount(1)
+            await row.scrollIntoViewIfNeeded()
             await expect(row.getByTestId(/^organization-list-team-dot-/)).toHaveClass(
               /bg-team-green/,
             )
