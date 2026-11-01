@@ -94,7 +94,7 @@ export const PatientEditDialog = ({
             setValues(next)
           }}
           serviceCodes={serviceCodes}
-          staffHint="休職と退職の職員は、新しく選べません。今の担当のままなら保存できます。"
+          staffHint="休職と退職の職員と、訪問しない職員は新しく選べず、今の担当のままなら保存できます。"
           staffOptions={staffOptions}
           testIds={{
             name: 'patient-detail-name-input',

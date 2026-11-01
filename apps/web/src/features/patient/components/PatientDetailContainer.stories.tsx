@@ -78,6 +78,26 @@ export const Ended: Story = {
   parameters: route('patient-ended', { api: endedWithStoppedStaffApi() }),
 }
 
+/** 職員の一覧で、小林 冬馬（patient-4）の担当の青木 一郎（staff-1）を訪問しない職員として返すフェイクの API を作る。 */
+const nonVisitingStaffApi = (): BuddyApi => {
+  const base = createFakeBuddyApi()
+  return {
+    ...base,
+    staff: {
+      ...base.staff,
+      listRecords: async (facilityId) =>
+        (await base.staff.listRecords(facilityId)).map((s) =>
+          s.id === 'staff-1' ? { ...s, visits: false } : s,
+        ),
+    },
+  }
+}
+
+/** 利用中の利用者。担当の職員は訪問しない職員である。 */
+export const NonVisitingStaff: Story = {
+  parameters: route('patient-4', { api: nonVisitingStaffApi() }),
+}
+
 /** サービスコードを 1 回目だけ読めないとき。編集のダイアログを開くと読み直す。 */
 export const ServiceCodesOnceError: Story = {
   parameters: route('patient-4', { api: serviceCodesOnceFailingApi() }),

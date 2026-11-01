@@ -24,7 +24,7 @@ describe('PatientCreateDialogContainer', () => {
     expect(within(service).getByRole('option', { name: '訪看I2（20〜29 分）' })).toBeInTheDocument()
     expect(screen.getByTestId('patient-new-time-morning')).not.toBeChecked()
     expect(screen.getByRole('combobox', { name: '担当の職員' })).toHaveAccessibleDescription(
-      '休職と退職の職員は選べません。',
+      '休職と退職の職員と、訪問しない職員は選べません。',
     )
   })
 

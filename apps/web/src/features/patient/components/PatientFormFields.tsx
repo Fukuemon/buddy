@@ -10,7 +10,7 @@ import {
   type PatientFormValues,
 } from '../lib/validate'
 
-/** 担当の職員の選択肢 1 つ。label は、休職か退職の今の担当では状態を添えた名前にする。 */
+/** 担当の職員の選択肢 1 つ。label は、休職か退職か訪問しない職員の今の担当では、状態を添えた名前にする。 */
 export type StaffOption = { id: string; label: string }
 
 /** 欄ごとの testid。登録と編集で、画面仕様書のモックの testid が違う。 */
