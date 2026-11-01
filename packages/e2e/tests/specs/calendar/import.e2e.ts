@@ -51,18 +51,16 @@ test.describe('予定の取り込み', () => {
         await expect(page.getByTestId('calendar-import-count-import')).toContainText('6 件')
         await expect(page.getByTestId('calendar-import-count-recurring')).toContainText('2 件')
         await expect(page.getByTestId('calendar-import-count-needs_review')).toContainText('1 件')
-        await expect(page.getByTestId('calendar-import-count-skipped')).toContainText('3 件')
-        await expect(page.getByTestId('calendar-import-skipped-reason-all_day')).toHaveText(
-          '終日の予定: 1 件',
+        // 取り込まない予定は、件数のある見出しと表にだけ出す
+        await expect(page.getByTestId('calendar-import-skipped-heading')).toHaveText(
+          '取り込まない予定（3 件）',
         )
-        await expect(page.getByTestId('calendar-import-skipped-reason-multi_day')).toHaveText(
-          '日をまたぐ予定: 1 件',
-        )
-        await expect(
-          page.getByTestId('calendar-import-skipped-reason-service_not_found'),
-        ).toHaveText('サービス内容を引けない予定: 1 件')
+        const skipped = page.getByTestId('calendar-import-skipped')
+        await expect(skipped).toContainText('終日の予定')
+        await expect(skipped).toContainText('日をまたぐ予定')
+        await expect(skipped).toContainText('サービス内容を引けない予定')
         // 取り込まない予定の一覧は、利用者名を含むタイトルを出さない
-        await expect(page.getByTestId('calendar-import-skipped')).not.toContainText('見本')
+        await expect(skipped).not.toContainText('見本')
       })
 
       await test.step('確認が必要な予定に利用者を選んで確定すると、取り込んだ件数が出る', async () => {
