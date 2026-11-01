@@ -31,9 +31,9 @@
 | --- | --- | --- | --- | --- |
 | `getPatient`（#353 で足す） | `GET /v1/patients/{patient_id}` | なし | 200。`Patient`。利用の終了の利用者も返す | 404 `not_found` |
 | `getPatientRemainingSchedules`（#353 で足す） | `GET /v1/patients/{patient_id}/remaining_schedules` | なし | 200。`PatientSchedules` | 404 `not_found` |
-| `updatePatient` | `PUT /v1/patients/{patient_id}` | `name`、`service_code_id`、`preferred_time`、`preferred_gender`、`assigned_staff_id` | 200。`Patient` | 400 `invalid_input`: 入力が誤っているか、担当を休職か退職の職員に変えた。404 `not_found` |
+| `updatePatient` | `PUT /v1/patients/{patient_id}` | `name`、`service_code_id`、`preferred_time`、`preferred_gender`、`assigned_staff_id` | 200。`Patient` | 400 `invalid_input`: 入力が誤っているか、担当を休職か退職の職員か、訪問しない職員に変えた。404 `not_found` |
 | `endPatientService` | `POST /v1/patients/{patient_id}/end_service` | なし | 200。`Patient` | 409 `patient_has_schedules`: 予定か繰り返しの予定が残る。`schedules` に一覧がある |
-| `resumePatientService` | `POST /v1/patients/{patient_id}/resume_service` | `assigned_staff_id` | 200。`Patient` | 400 `invalid_input`: 担当に休職か退職の職員を指した |
+| `resumePatientService` | `POST /v1/patients/{patient_id}/resume_service` | `assigned_staff_id` | 200。`Patient` | 400 `invalid_input`: 担当に休職か退職の職員か、訪問しない職員を指した |
 | `listServiceCodes`、`listUsers` | [利用者の登録の API との対応](../patient-new_利用者の登録/api.md) と同じ | | | |
 
 - `getPatientRemainingSchedules` は、利用の終了のダイアログを開いたときに呼ぶ。レスポンスは、`endPatientService` の 409 が返す `PatientSchedules` と同じ形で、事業所の現地の日付で今日以降のものを返す。

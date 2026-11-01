@@ -76,6 +76,7 @@
                     <dt>電話番号</dt><dd data-testid="staff-detail-phone">09000000001</dd>
                     <dt>部署</dt><dd>看護部</dd>
                     <dt>チーム</dt><dd>東チーム</dd>
+                    <dt>訪問</dt><dd data-testid="staff-detail-visits">訪問する</dd>
                     <dt>役職</dt><dd><span data-testid="staff-detail-position-name">メンバー</span><span class="wf-btn wf-btn--text" data-testid="staff-detail-position-change" data-go="05-position.html">役職を変える</span></dd>
                   </dl>
                 </section>
@@ -111,10 +112,18 @@
                       <span class="wf-hint" data-m="9">チームを変えると、今のチームを対象にしている権限は、新しいチームが対象になります。</span>
                     </div>
                   </div>
+                  <div class="wf-field">
+                    <span class="wf-label">訪問</span>
+                    <div class="wf-tabs st-visits" role="radiogroup" aria-label="訪問" data-m="10" data-testid="staff-detail-visits-input">
+                      <span class="wf-tab is-on" data-choice="visits" data-testid="staff-detail-visits-input-visits">訪問する</span>
+                      <span class="wf-tab" data-choice="visits" data-testid="staff-detail-visits-input-non-visiting">訪問しない</span>
+                    </div>
+                    <span class="wf-hint">訪問しない職員は、予定のカレンダーの列と、予定と担当の候補に出ません。</span>
+                  </div>
                 </div>
                 <div class="wf-dialog__footer">
-                  <span class="wf-btn" data-m="10" data-testid="staff-detail-edit-cancel" data-go="01-detail.html">キャンセル</span>
-                  <span class="wf-btn wf-btn--primary" data-m="11" data-testid="staff-detail-save" data-go="01-detail.html">保存</span>
+                  <span class="wf-btn" data-m="11" data-testid="staff-detail-edit-cancel" data-go="01-detail.html">キャンセル</span>
+                  <span class="wf-btn wf-btn--primary" data-m="12" data-testid="staff-detail-save" data-go="01-detail.html">保存</span>
                 </div>
               </div>
             </div>
