@@ -104,7 +104,7 @@ func TestChecksJSON(t *testing.T) {
 
 func TestChecksErrors(t *testing.T) {
 	badVisits := []byte("訪問日,利用者名,開始時間,終了時間,提供時間,サービス内容,主訪問者,加算①,加算②,加算③,加算④,加算⑤\n" +
-		"2024/04/01,利用者A,10:00,9:00,30,訪看I２,職員B,通常,,,,\n")
+		"2024/04/01,利用者A,10:00,25:00,30,訪看I２,職員B,通常,,,,\n")
 	header := "訪問日,利用者名,開始時間,終了時間,提供時間,サービス内容,主訪問者,加算①,加算②,加算③,加算④,加算⑤\n"
 	schedules := testdata(t, "schedules_utf8.csv")
 	// csvError は、レスポンスの CSV の誤りを、比べやすい形にしたものである。行と列が無ければ 0 と空にする。
@@ -130,10 +130,10 @@ func TestChecksErrors(t *testing.T) {
 		{"引用符の閉じ忘れ", map[string][]byte{FieldVisits: []byte(header + "2024/04/01,\"利用者A,10:00,10:30,30,訪看I２,職員B,通常,,,,\n"), FieldSchedules: schedules},
 			http.StatusUnprocessableEntity, openapi.InvalidCsv, []csvError{{openapi.Visits, openapi.MalformedRow, 2, ""}}},
 		{"行のエラー", map[string][]byte{FieldVisits: badVisits, FieldSchedules: schedules},
-			http.StatusUnprocessableEntity, openapi.InvalidCsv, []csvError{{openapi.Visits, openapi.EndBeforeStart, 2, "終了時間"}}},
+			http.StatusUnprocessableEntity, openapi.InvalidCsv, []csvError{{openapi.Visits, openapi.InvalidTime, 2, "終了時間"}}},
 		{"両方の CSV の誤り", map[string][]byte{FieldVisits: badVisits, FieldSchedules: nil},
 			http.StatusUnprocessableEntity, openapi.InvalidCsv, []csvError{
-				{openapi.Visits, openapi.EndBeforeStart, 2, "終了時間"},
+				{openapi.Visits, openapi.InvalidTime, 2, "終了時間"},
 				{openapi.Schedules, openapi.EmptyFile, 0, ""},
 			}},
 	}

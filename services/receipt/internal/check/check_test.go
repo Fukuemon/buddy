@@ -89,9 +89,50 @@ func TestRunCP932EqualsUTF8(t *testing.T) {
 	}
 }
 
+func TestRunOvernight(t *testing.T) {
+	visits := []byte("訪問日,利用者名,開始時間,終了時間,提供時間,サービス内容,主訪問者,加算①,加算②,加算③,加算④,加算⑤\n" +
+		"2024/04/01,利用者A,23:30,0:59,89,訪看I４,職員B,深夜,,,,\n" +
+		"2024/04/01,利用者B,22:30,23:59,89,訪看I４,職員B,深夜,,,,\n" +
+		"2024/04/01,利用者C,22:00,1:00,180,医,職員B,深夜,,,,\n")
+	schedules := []byte("訪問日,利用者名,開始時間,終了時間,提供時間,サービス内容,主訪問者\n" +
+		"2024/04/01,利用者A,23:30,01:00,90,訪看I4,職員B\n" +
+		"2024/04/01,利用者B,22:30,00:00,90,訪看I4,職員B\n")
+	rep := run(t, visits, schedules)
+
+	type row struct {
+		category                 judge.Category
+		date, client             string
+		scheduleEnd, visitEnd    string
+		scheduleElapsed, elapsed int
+	}
+	want := []row{
+		{judge.VisitOnly, "2024-04-01", "利用者C", "", "01:00", 0, 0},
+		{judge.Match, "2024-04-01", "利用者B", "23:59", "23:59", 89, 89},
+		{judge.Match, "2024-04-01", "利用者A", "00:59", "00:59", 89, 89},
+	}
+	if len(rep.Rows) != len(want) {
+		t.Fatalf("rows = %+v", rep.Rows)
+	}
+	for i, r := range rep.Rows {
+		got := row{category: r.Category, date: r.Date.String(), client: r.Client}
+		if r.Schedule != nil {
+			got.scheduleEnd = r.Schedule.End.String()
+		}
+		if r.Visit != nil {
+			got.visitEnd = r.Visit.End.String()
+		}
+		if r.Checks != nil {
+			got.scheduleElapsed, got.elapsed = *r.Checks.ScheduleElapsed.Minutes, *r.Checks.VisitElapsed.Minutes
+		}
+		if got != want[i] {
+			t.Errorf("rows[%d] = %+v, want %+v", i, got, want[i])
+		}
+	}
+}
+
 func TestRunInputErrors(t *testing.T) {
 	visits := []byte("訪問日,利用者名,開始時間,終了時間,提供時間,サービス内容,主訪問者,加算①,加算②,加算③,加算④,加算⑤\n" +
-		"2024/04/01,利用者A,10:00,9:00,30,訪看I２,職員B,通常,,,,\n")
+		"2024/04/01,利用者A,10:00,25:00,30,訪看I２,職員B,通常,,,,\n")
 	schedules := []byte("訪問日,利用者名,開始時間,終了時間,提供時間,サービス内容,主訪問者\n" +
 		"2024/04/01,利用者A,09:00,09:30,30,訪看I2,職員B\n" +
 		"2024/99/01,利用者A,09:00,09:30,30,訪看I2,職員B\n")
@@ -101,7 +142,7 @@ func TestRunInputErrors(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 	want := []record.CSVError{
-		{Source: record.SourceVisit, Reason: record.ReasonEndBeforeStart, Line: 2, Column: "終了時間"},
+		{Source: record.SourceVisit, Reason: record.ReasonInvalidTime, Line: 2, Column: "終了時間"},
 		{Source: record.SourceSchedule, Reason: record.ReasonInvalidDate, Line: 3, Column: "訪問日"},
 	}
 	if len(ie.Errors) != len(want) {

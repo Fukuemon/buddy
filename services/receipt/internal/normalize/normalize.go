@@ -20,15 +20,16 @@ func Staff(s string) string {
 
 // Schedules は、予定の行を Record にする。
 // 終了時間と提供時間から 1 分引くサービス内容（servicerule.AdjustsScheduleEnd）の行は、引いた値にする。
-// 終了時間は開始時間より後のときだけ、提供時間は 1 以上のときだけ引く。
+// 終了時間は開始時間と違うときだけ、提供時間は 1 以上のときだけ引く。
+// 翌日に終わる行も引く。翌日の 0:00 に終わる行は、終了時間を開始の日の 23:59 にする。
 func Schedules(rows []csvio.Row) ([]record.Record, []record.CSVError) {
 	recs, errs := convert(rows, record.SourceSchedule, false)
 	for i := range recs {
 		if !servicerule.AdjustsScheduleEnd(recs[i].Service) {
 			continue
 		}
-		if recs[i].End > recs[i].Start {
-			recs[i].End--
+		if recs[i].End != recs[i].Start {
+			recs[i].End = recs[i].End.AddMinutes(-1)
 		}
 		if recs[i].Duration != nil && *recs[i].Duration >= 1 {
 			d := *recs[i].Duration - 1
@@ -39,6 +40,7 @@ func Schedules(rows []csvio.Row) ([]record.Record, []record.CSVError) {
 }
 
 // Visits は、実績の行を Record にする。
+// 予定と実績のどちらも、終了時間が開始時間より前の行は、訪問日の翌日のその時刻に終わる訪問として読む（ADR-0023）。
 func Visits(rows []csvio.Row) ([]record.Record, []record.CSVError) {
 	return convert(rows, record.SourceVisit, true)
 }
@@ -95,9 +97,6 @@ func convertRow(row csvio.Row, source record.Source, withAdditions bool) (record
 	end, errEnd := civil.ParseClock(row.Get(csvio.ColEnd))
 	if errEnd != nil {
 		fail(csvio.ColEnd, record.ReasonInvalidTime, errEnd.Error())
-	}
-	if errStart == nil && errEnd == nil && end < start {
-		fail(csvio.ColEnd, record.ReasonEndBeforeStart, "終了時間が開始時間より前である。日付をまたぐ訪問は扱わない")
 	}
 	rec.Start, rec.End = start, end
 

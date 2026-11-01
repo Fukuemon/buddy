@@ -38,9 +38,9 @@ type Record struct {
 	Additions []string
 }
 
-// Elapsed は、終了時間から開始時間を引いた分を返す。
+// Elapsed は、終了時間から開始時間を引いた分を返す。終了時間が開始時間より前の行は、翌日の終了時間までの分にする（ADR-0023）。
 func (r Record) Elapsed() int {
-	return int(r.End - r.Start)
+	return r.Start.MinutesUntil(r.End)
 }
 
 // AdditionText は、Additions を ", " でつないだ文字列を返す。
@@ -68,15 +68,13 @@ const (
 	ReasonInvalidDate Reason = "invalid_date"
 	// ReasonInvalidTime は、時刻として読めない値である。
 	ReasonInvalidTime Reason = "invalid_time"
-	// ReasonEndBeforeStart は、終了時間が開始時間より前の行である。日付をまたぐ訪問は扱わない。
-	ReasonEndBeforeStart Reason = "end_before_start"
 	// ReasonInvalidDuration は、0 以上の整数でない提供時間である。
 	ReasonInvalidDuration Reason = "invalid_duration"
 	// ReasonUnreadableTitle は、タイトルを `【サービス内容】利用者名` の形として読めない予定である。
 	ReasonUnreadableTitle Reason = "unreadable_title"
 	// ReasonUnreadableTime は、開始か終了の日時を読めない予定である。
 	ReasonUnreadableTime Reason = "unreadable_time"
-	// ReasonSpansDays は、日付をまたぐ予定である。
+	// ReasonSpansDays は、終了が開始の翌日より後か、24 時間以上の予定である。
 	ReasonSpansDays Reason = "spans_days"
 )
 

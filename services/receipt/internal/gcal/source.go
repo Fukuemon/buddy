@@ -222,8 +222,8 @@ func (s monthSource) convert(ev *calendar.Event, staff string) (rec record.Recor
 	if err != nil {
 		return skip(record.ReasonUnreadableTitle, "", err.Error())
 	}
-	if start.Format(time.DateOnly) != end.Format(time.DateOnly) {
-		return skip(record.ReasonSpansDays, "", "日付をまたぐ予定は扱わない")
+	if !withinNextDay(start, end) {
+		return skip(record.ReasonSpansDays, "", "終了が開始の翌日より後か、24 時間以上の予定は扱わない")
 	}
 
 	row := csvio.NewRow(0, map[string]string{
@@ -242,4 +242,16 @@ func (s monthSource) convert(ev *calendar.Event, staff string) (rec record.Recor
 		return skip(e.Reason, e.Column, e.Column+": "+e.Message)
 	}
 	return recs[0], true, nil
+}
+
+// withinNextDay は、終了が開始と同じ日か、開始の翌日で 24 時間未満の予定かを返す（ADR-0023）。
+// 翌日に終わる予定は、終了時間が開始時間より前の行として normalize が読む。
+func withinNextDay(start, end time.Time) bool {
+	switch end.Format(time.DateOnly) {
+	case start.Format(time.DateOnly):
+		return true
+	case start.AddDate(0, 0, 1).Format(time.DateOnly):
+		return end.Sub(start) < 24*time.Hour
+	}
+	return false
 }

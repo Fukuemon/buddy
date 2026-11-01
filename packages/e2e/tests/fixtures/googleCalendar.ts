@@ -98,17 +98,20 @@ export const createGoogleCalendar = async (request: APIRequestContext, calendarI
   await ensureOk(res, 'カレンダーを作れない')
 }
 
-/** 日時を持つ予定を作る。職員が Google カレンダーで予定を足したときの代わりで、作った予定を返す。 */
+/**
+ * 日時を持つ予定を作る。職員が Google カレンダーで予定を足したときの代わりで、作った予定を返す。
+ * endDate を渡すと、その日の end に終わる予定にする。渡さなければ date の end に終わる。
+ */
 export const createGoogleEvent = async (
   request: APIRequestContext,
   calendarId: string,
-  event: { summary: string; date: string; start: string; end: string },
+  event: { summary: string; date: string; start: string; end: string; endDate?: string },
 ) => {
   const res = await request.post(eventsUrl(calendarId), {
     data: {
       summary: event.summary,
       start: { dateTime: `${event.date}T${event.start}:00+09:00` },
-      end: { dateTime: `${event.date}T${event.end}:00+09:00` },
+      end: { dateTime: `${event.endDate ?? event.date}T${event.end}:00+09:00` },
     },
   })
   await ensureOk(res, '予定を作れない')

@@ -119,7 +119,12 @@ func TestSchedulesEvents(t *testing.T) {
 						Start: &calendar.EventDateTime{DateTime: "2024-04-10T09:00:00+09:00"}, End: &calendar.EventDateTime{DateTime: "2024-04-10T09:30:00+09:00"}},
 					timed("bad-order", "】訪看I2【利用者A", "2024-04-04T09:00:00+09:00", "2024-04-04T09:30:00+09:00"),
 					timed("no-client", "【訪看I2】", "2024-04-04T10:00:00+09:00", "2024-04-04T10:30:00+09:00"),
+					// 翌日に終わる 24 時間未満の予定は、開始の日の予定にする。
 					timed("overnight", "【訪看I2】利用者A", "2024-04-04T23:30:00+09:00", "2024-04-05T00:30:00+09:00"),
+					timed("midnight", "【医】利用者A", "2024-04-06T22:00:00+09:00", "2024-04-07T00:00:00+09:00"),
+					// 2 日以上にわたる予定と、24 時間の予定は、照合に使わない。
+					timed("two-days", "【訪看I2】利用者A", "2024-04-08T22:00:00+09:00", "2024-04-10T01:00:00+09:00"),
+					timed("full-day", "【訪看I2】利用者A", "2024-04-11T09:00:00+09:00", "2024-04-12T09:00:00+09:00"),
 					// 前の月に始まり、対象の月に終わる予定は、対象の月の予定にしない。
 					timed("prev-month", "【訪看I2】利用者A", "2024-03-31T23:30:00+09:00", "2024-04-01T00:30:00+09:00"),
 				},
@@ -156,6 +161,8 @@ func TestSchedulesEvents(t *testing.T) {
 		{"2024-04-01", "利用者C", "職員B", "訪看I３", "10:00", "10:59", 59},
 		{"2024-04-03", "利用者K", "職員B", "訪看I２", "09:00", "09:29", 29},
 		{"2024-04-10", "利用者K", "職員B", "訪看I２", "09:00", "09:29", 29},
+		{"2024-04-04", "利用者A", "職員B", "訪看I２", "23:30", "00:29", 59},
+		{"2024-04-06", "利用者A", "職員B", "医", "22:00", "00:00", 120},
 		{"2024-04-01", "利用者D", "職員E", "医", "13:00", "14:00", 60},
 	}
 	if len(got) != len(want) {
@@ -173,7 +180,8 @@ func TestSchedulesEvents(t *testing.T) {
 	}{
 		{"bad-order", record.ReasonUnreadableTitle},
 		{"no-client", record.ReasonUnreadableTitle},
-		{"overnight", record.ReasonSpansDays},
+		{"two-days", record.ReasonSpansDays},
+		{"full-day", record.ReasonSpansDays},
 	}
 	if len(warns) != len(wantWarns) {
 		t.Fatalf("warnings = %+v", warns)

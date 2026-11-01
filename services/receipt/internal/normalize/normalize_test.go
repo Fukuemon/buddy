@@ -70,6 +70,8 @@ func TestSchedulesAdjustBoundary(t *testing.T) {
 		{"通常は両方を引く", "09:00", "09:30", "30", "09:29", 29},
 		{"提供時間 0 は引かない", "09:00", "09:30", "0", "09:29", 0},
 		{"開始と終了が同じなら終了を引かない", "09:00", "09:00", "30", "09:00", 29},
+		{"翌日に終わる行も引く", "22:00", "01:00", "180", "00:59", 179},
+		{"翌日の 0:00 に終わる行は開始の日の 23:59 にする", "22:00", "00:00", "120", "23:59", 119},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -92,6 +94,31 @@ func TestVisitsDoNotAdjust(t *testing.T) {
 	}
 	if recs[0].End.String() != "09:30" || *recs[0].Duration != 30 {
 		t.Errorf("実績を調整した: %s %d", recs[0].End, *recs[0].Duration)
+	}
+}
+
+func TestOvernightRows(t *testing.T) {
+	tests := []struct {
+		name        string
+		convert     func([]csvio.Row) ([]record.Record, []record.CSVError)
+		wantEnd     string
+		wantElapsed int
+	}{
+		{"実績", Visits, "01:00", 180},
+		{"予定", Schedules, "00:59", 179},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			recs, errs := tt.convert([]csvio.Row{row(2, "22:00", "01:00", "180", "訪看I2")})
+			if len(errs) > 0 {
+				t.Fatalf("終了が開始より前の行を誤りにした: %v", errs)
+			}
+			r := recs[0]
+			if r.Key.Date.String() != "2024-04-01" || r.Start.String() != "22:00" || r.End.String() != tt.wantEnd || r.Elapsed() != tt.wantElapsed {
+				t.Errorf("訪問日 %s 開始 %s 終了 %s 経過 %d, want 2024-04-01 22:00 %s %d",
+					r.Key.Date, r.Start, r.End, r.Elapsed(), tt.wantEnd, tt.wantElapsed)
+			}
+		})
 	}
 }
 
@@ -129,7 +156,6 @@ func TestRowErrors(t *testing.T) {
 		wantColumn string
 		wantReason record.Reason
 	}{
-		{"終了が開始より前", row(3, "10:00", "09:59", "30", "訪看I2"), csvio.ColEnd, record.ReasonEndBeforeStart},
 		{"時刻の形", row(4, "9時", "10:00", "30", "訪看I2"), csvio.ColStart, record.ReasonInvalidTime},
 		{"提供時間が整数でない", row(5, "09:00", "09:30", "三十", "訪看I2"), csvio.ColDuration, record.ReasonInvalidDuration},
 		{"サービス内容が空", row(6, "09:00", "09:30", "30", ""), csvio.ColService, record.ReasonEmptyValue},

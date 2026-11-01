@@ -69,7 +69,6 @@ describe('csvErrorLines', () => {
   it.each([
     ['invalid_date', '訪問日', '実績の CSV の 4 行目の「訪問日」を日付として読めません。'],
     ['invalid_time', '開始時間', '実績の CSV の 4 行目の「開始時間」を時刻として読めません。'],
-    ['end_before_start', '終了時間', '実績の CSV の 4 行目の「終了時間」が開始時間より前です。'],
     [
       'invalid_duration',
       '提供時間',
@@ -96,7 +95,9 @@ describe('warningReasonText', () => {
   })
 
   it('理由のコードから文を作り、API の文を使わない', () => {
-    expect(warningReasonText(warning({ reason: 'spans_days' }))).toBe('日付をまたいでいます。')
+    expect(warningReasonText(warning({ reason: 'spans_days' }))).toBe(
+      '2 日以上にわたるか、24 時間以上の予定です。',
+    )
     expect(warningReasonText(warning({ reason: 'unreadable_time' }))).toBe(
       '開始か終了の日時を読めません。',
     )
