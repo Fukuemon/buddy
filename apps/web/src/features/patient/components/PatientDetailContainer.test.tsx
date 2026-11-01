@@ -135,7 +135,7 @@ describe('PatientDetailContainer', () => {
   it('利用者が見つからなければ、開き直すよう伝え、読み直すを出さない', async () => {
     render(<NotFound />)
     expect(await screen.findByTestId('patient-detail-error')).toHaveTextContent(
-      '利用者が見つかりませんでした。利用者の一覧から開き直してください。',
+      '利用者が見つかりません。利用者の一覧から開き直してください。',
     )
     expect(screen.queryByTestId('patient-detail-retry')).toBeNull()
   })

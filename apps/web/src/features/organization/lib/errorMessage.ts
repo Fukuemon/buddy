@@ -22,7 +22,7 @@ export const submitErrorMessage = (error: unknown, kind: UnitKind, name: string)
     if (error.status === 409)
       return `「${name}」という名前の${label}は、すでにあります。別の名前にしてください。`
     if (error.status === 404)
-      return `この${label}は見つかりませんでした。閉じてから、開き直してください。`
+      return `この${label}が見つかりません。閉じてから、開き直してください。`
     if (error.status === 403) return 'この操作をする権限がありません。'
   }
   return '保存できませんでした。時間をおいて、もう一度保存してください。'

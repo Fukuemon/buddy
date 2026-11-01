@@ -9,7 +9,7 @@ export const DETAIL_LOAD_ERROR_MESSAGE = LIST_LOAD_ERROR_MESSAGE
 
 /** 利用者の詳細の利用者が見つからなかったときの文。 */
 export const DETAIL_NOT_FOUND_MESSAGE =
-  '利用者が見つかりませんでした。利用者の一覧から開き直してください。'
+  '利用者が見つかりません。利用者の一覧から開き直してください。'
 
 /** サービスと職員の選択肢を読めなかったときの文。 */
 export const OPTIONS_LOAD_ERROR_MESSAGE =
