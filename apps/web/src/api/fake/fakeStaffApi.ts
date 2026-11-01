@@ -88,6 +88,17 @@ export const createFakeStaffApi = ({
     ]),
   )
 
+  // 職員は部署とチームの ID と名前を写して持つので、読むたびに今の部署とチームの名前に替える。予定の API が名前を結合して返すのと同じにする
+  const current = (staff: StaffDetail): StaffDetail => {
+    const nameOf = (
+      units: readonly { id: string; name: string }[],
+      ref: { id: string; name: string },
+    ) => units.find((u) => u.id === ref.id)?.name ?? ref.name
+    const copy = structuredClone(staff)
+    copy.department.name = nameOf(departments(), copy.department)
+    copy.team.name = nameOf(teams(), copy.team)
+    return copy
+  }
   const find = (id: string) => {
     const staff = details.get(id)
     if (staff === undefined) throw notFound()
@@ -95,7 +106,7 @@ export const createFakeStaffApi = ({
   }
   const save = (staff: StaffDetail) => {
     details.set(staff.id, { ...staff, updated_at: new Date().toISOString() })
-    return structuredClone(details.get(staff.id) as StaffDetail)
+    return current(details.get(staff.id) as StaffDetail)
   }
   const assertNotRetired = (staff: StaffDetail) => {
     if (staff.status === 'retired') throw conflict('退職した職員は変えられません')
@@ -141,21 +152,21 @@ export const createFakeStaffApi = ({
       list: async (facilityId, params) => {
         assertFacility(facilityId)
         return [...details.values()]
-          .map(fromApiStaff)
+          .map((detail) => fromApiStaff(current(detail)))
           .filter((staff) => matchesName(staff.name, params))
       },
       listRecords: async (facilityId) => {
         assertFacility(facilityId)
         return [...details.values()]
           .map((detail) => {
-            const { sub: _, policies: __, ...record } = structuredClone(detail)
+            const { sub: _, policies: __, ...record } = current(detail)
             return record
           })
           .sort((a, b) => a.username.localeCompare(b.username, 'ja'))
       },
       get: async (facilityId, staffId) => {
         assertFacility(facilityId)
-        return structuredClone(find(staffId))
+        return current(find(staffId))
       },
       create: async (facilityId, input) => {
         assertFacility(facilityId)

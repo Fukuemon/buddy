@@ -74,4 +74,19 @@ describe('createFakeStaffApi', () => {
     const refused = await api.staff.retire(FAKE_FACILITY_ID, 'staff-2')
     expect(refused).toEqual({ assignments: remaining })
   })
+
+  it('部署とチームの名前を変えると、職員の一覧と詳細の部署とチームの名前も変わる', async () => {
+    const api = createFakeBuddyApi({ baseDate })
+    const [record] = await api.staff.listRecords(FAKE_FACILITY_ID)
+    if (record === undefined) throw new Error('職員がいない')
+    await api.teams.update(FAKE_FACILITY_ID, record.team.id, {
+      name: '新しいチーム',
+      color: 'lime',
+    })
+    await api.departments.update(FAKE_FACILITY_ID, record.department.id, '新しい部署')
+    const detail = await api.staff.get(FAKE_FACILITY_ID, record.id)
+    expect([detail.team.name, detail.department.name]).toEqual(['新しいチーム', '新しい部署'])
+    const records = await api.staff.listRecords(FAKE_FACILITY_ID)
+    expect(records.find((s) => s.id === record.id)?.team.name).toBe('新しいチーム')
+  })
 })
