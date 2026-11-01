@@ -30,7 +30,12 @@ export const moveStaffToTeam = async (
 ) => {
   const response = await request.put(`${SCHEDULE_URL}/v1/users/${staff.id}`, {
     headers: { Authorization: `Bearer ${token}` },
-    data: { username: staff.name, department_id: STAFF_FORM.departmentId, team_id: teamId, visits: true },
+    data: {
+      username: staff.name,
+      department_id: STAFF_FORM.departmentId,
+      team_id: teamId,
+      visits: true,
+    },
   })
   if (!response.ok()) throw new Error(`職員をチームに移せない: ${response.status()}`)
 }
