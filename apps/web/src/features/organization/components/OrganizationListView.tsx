@@ -152,7 +152,12 @@ export const OrganizationListView = ({
             name: t.name,
             label: (
               <span data-testid={`organization-list-team-name-${t.id}`}>
-                <DotLabel dotClassName={teamColorDotClassName(t.color)}>{t.name}</DotLabel>
+                <DotLabel
+                  dotClassName={teamColorDotClassName(t.color)}
+                  dotTestId={`organization-list-team-dot-${t.id}`}
+                >
+                  {t.name}
+                </DotLabel>
               </span>
             ),
             onEdit: () => onEditTeam(t),

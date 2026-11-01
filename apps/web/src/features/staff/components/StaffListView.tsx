@@ -184,7 +184,10 @@ export const StaffListView = ({
                   {
                     header: 'チーム',
                     value: (
-                      <DotLabel dotClassName={teamDotClassName(teams ?? [], s.team.id)}>
+                      <DotLabel
+                        dotClassName={teamDotClassName(teams ?? [], s.team.id)}
+                        dotTestId={`staff-list-team-dot-${s.id}`}
+                      >
                         {s.team.name}
                       </DotLabel>
                     ),

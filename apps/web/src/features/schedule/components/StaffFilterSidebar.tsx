@@ -128,7 +128,12 @@ export const StaffFilterSidebar = ({
                 }}
                 type="checkbox"
               />
-              <DotLabel dotClassName={teamColorDotClassName(team.color)}>{team.name}</DotLabel>
+              <DotLabel
+                dotClassName={teamColorDotClassName(team.color)}
+                dotTestId={`staff-filter-team-dot-${team.id}`}
+              >
+                {team.name}
+              </DotLabel>
             </label>
             {shownMembers.map((staff) => (
               <label
