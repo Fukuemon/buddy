@@ -8,7 +8,7 @@ import { patientNewStaffOptions } from '../../selectors/patientForm'
 const MANAGER = `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`
 
 /** 利用者の登録の担当の職員の選択肢。シードの 1 つ目の事業所の、有効で訪問する職員が並ぶ。 */
-const PATIENT_STAFF_OPTIONS = ['選んでください', '佐藤 美咲', '森 健太', '林 さくら', '青木 陽菜']
+const PATIENT_STAFF_OPTIONS = ['選んでください', '佐藤 美咲', '森 健太', '青木 陽菜', '林 さくら']
 
 const CLERK = `${OFFICE_CLERK.name}（事務、訪問しない職員、照合の権限あり）`
 
