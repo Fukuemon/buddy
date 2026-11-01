@@ -37,10 +37,12 @@ const nextDate = (date: string) => {
 
 /**
  * ログインして職員にカレンダーを結び付け、職員の Google カレンダー（calendarpit）に翌日に終わる予定を作る。
- * 予定の API を呼ぶトークンと、作った予定の ID を返す。
+ * 作った予定の ID と、withToken のときは予定の API を呼ぶトークンを返す。ブローカーはメールごとにログインの試行の回数を数えるので、
+ * トークンは要る観点だけで取る。
  */
 const prepareLinked =
-  (staffId: string, calendarId: string, event?: OvernightEvent) => async (page: Page) => {
+  (staffId: string, calendarId: string, event?: OvernightEvent, withToken = false) =>
+  async (page: Page) => {
     await page.goto('/schedule/link')
     await signInAtBroker(page, LOGIN_EMAIL)
     await linkStaffCalendar(page, staffId)
@@ -50,7 +52,10 @@ const prepareLinked =
           endDate: nextDate(event.date),
         })
       : undefined
-    return { token: await issueAccessToken(page.request, LOGIN_EMAIL), eventId: created?.id ?? '' }
+    return {
+      token: withToken ? await issueAccessToken(page.request, LOGIN_EMAIL) : '',
+      eventId: created?.id ?? '',
+    }
   }
 
 /** 取り込みの画面で、職員の date の 1 日をプレビューする。 */
@@ -156,12 +161,17 @@ test.describe('予定の取り込み', () => {
             actor: ACTOR,
             variant,
           },
-          prepareLinked(SATO.id, SATO.calendarId, {
-            summary: VISIT_TITLE,
-            date,
-            start: '22:00',
-            end: '01:00',
-          }),
+          prepareLinked(
+            SATO.id,
+            SATO.calendarId,
+            {
+              summary: VISIT_TITLE,
+              date,
+              start: '22:00',
+              end: '01:00',
+            },
+            true,
+          ),
           async ({ page, step, check }, { token }) => {
             try {
               await previewDay(page, SATO.id, date)
@@ -313,7 +323,7 @@ test.describe('確認が必要な予定', () => {
             actor: `${LOGIN_STAFF.name}（マネージャー）`,
             variant,
           },
-          prepareLinked(HAYASHI.id, HAYASHI.calendarId),
+          prepareLinked(HAYASHI.id, HAYASHI.calendarId, undefined, true),
           async ({ page, step, check }, { token }) => {
             const request = page.request
             try {
@@ -388,12 +398,17 @@ test.describe('確認が必要な予定', () => {
             variant,
           },
           async (page) => {
-            const prepared = await prepareLinked(SATO.id, SATO.calendarId, {
-              summary: VISIT_TITLE,
-              date,
-              start: '22:00',
-              end: '01:00',
-            })(page)
+            const prepared = await prepareLinked(
+              SATO.id,
+              SATO.calendarId,
+              {
+                summary: VISIT_TITLE,
+                date,
+                start: '22:00',
+                end: '01:00',
+              },
+              true,
+            )(page)
             await previewDay(page, SATO.id, date)
             await page.getByTestId('calendar-import-submit').click()
             await expect(page.getByTestId('calendar-import-result-counts')).toContainText('1 件')
