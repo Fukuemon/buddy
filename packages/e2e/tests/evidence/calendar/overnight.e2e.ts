@@ -491,7 +491,7 @@ test.describe('確認が必要な予定', () => {
           },
           async ({ page, step, check }) => {
             await page.goto(url)
-            const datetime = page.getByTestId('calendar-review-datetime-export-overnight')
+            const datetime = page.getByTestId('calendar-review-datetime-export-1')
             await expect(datetime).toBeVisible()
             await step(
               '確認が必要な予定の画面（Storybook の CalendarReviewView の OvernightIssue）を開いている\n行は、2026-11-13 22:00 に始まり翌日の 01:00 に終わる単発の予定である（架空のデータ）',
