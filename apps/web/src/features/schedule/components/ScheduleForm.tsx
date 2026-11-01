@@ -85,6 +85,7 @@ export const ScheduleForm = ({
         errors.scheduleDate?.message ??
         errors.startTime?.message ??
         errors.endTime?.message ??
+        errors.serviceCode?.message ??
         errors.serviceTime?.message,
     },
     ...(isVisit
