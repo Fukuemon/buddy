@@ -24,3 +24,8 @@
 .se-placeholder {
   color: var(--wf-muted);
 }
+
+/* 権限が無いことの文。危険の色にせず、本文の色で出す（apps/web の ScheduleEditModalContainer と同じ） */
+.se-message {
+  margin: 0;
+}
