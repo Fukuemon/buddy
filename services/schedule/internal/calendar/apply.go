@@ -397,7 +397,7 @@ func (a applier) slotOf(ctx context.Context, base schedule.Slot, v *visit.Detail
 	}
 	slot := schedule.Slot{
 		FacilityID: base.FacilityID, StaffID: base.StaffID, Date: c.Date, StartTime: c.StartTime, EndTime: c.EndTime,
-		Description: base.Description,
+		EndsNextDay: c.EndsNextDay, Description: base.Description,
 	}
 	if v == nil {
 		title := c.Title
@@ -522,7 +522,8 @@ func sameRecurring(rs schedule.RecurringDetail, ev Event) bool {
 		return false
 	}
 	c := Classify(ev)
-	if c.Kind == KindSkipped || c.Date != rs.Date || c.StartTime != rs.StartTime || c.EndTime != rs.EndTime {
+	if c.Kind == KindSkipped || c.Date != rs.Date || c.StartTime != rs.StartTime || c.EndTime != rs.EndTime ||
+		c.EndsNextDay != rs.EndsNextDay {
 		return false
 	}
 	if ev.Summary != RecurringBody(rs, nil).Summary {
@@ -550,7 +551,7 @@ func sameSchedule(d schedule.Detail, staffID string, ev Event) bool {
 	}
 	c := Classify(ev)
 	return c.Kind != KindSkipped && c.Date == d.Date && c.StartTime == d.StartTime && c.EndTime == d.EndTime &&
-		ev.Summary == ScheduleBody(d).Summary
+		c.EndsNextDay == d.EndsNextDay && ev.Summary == ScheduleBody(d).Summary
 }
 
 // synced は、予定の対応 l が、更新の番号 version の時点で外部の予定と同じにしたものかを返す。
