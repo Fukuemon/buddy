@@ -33,7 +33,7 @@ export const createFakePatientRecords = () =>
   )
 
 /**
- * 利用者とサービスコードの操作を、メモリの上で動かす。予定の API と同じく、担当を休職か退職の職員に新しく指す操作と、
+ * 利用者とサービスコードの操作を、メモリの上で動かす。予定の API と同じく、担当を休職か退職の職員か訪問しない職員に新しく指す操作と、
  * 無いサービスコードを指す操作は 400 で拒み、今日以降の予定が残る利用者の利用の終了は残る予定を返す。
  */
 export const createFakePatientApi = ({
@@ -60,8 +60,8 @@ export const createFakePatientApi = ({
     const assigned = (await staff()).find((s) => s.id === input.assigned_staff_id)
     if (code === undefined || assigned === undefined)
       throw invalid('サービスコードか担当の職員が見つかりません')
-    if (assigned.status !== 'active' && assigned.id !== keepStaffId)
-      throw invalid('休職か退職の職員は担当にできません')
+    if ((assigned.status !== 'active' || !assigned.visits) && assigned.id !== keepStaffId)
+      throw invalid('休職か退職の職員と、訪問しない職員は担当にできません')
     return { code, assigned }
   }
   const save = async (patient: PatientRecord) => {
@@ -161,8 +161,8 @@ export const createFakePatientApi = ({
         assertFacility(facilityId)
         const patient = find(patientId)
         const assigned = (await staff()).find((s) => s.id === assignedStaffId)
-        if (assigned === undefined || assigned.status !== 'active')
-          throw invalid('休職か退職の職員は担当にできません')
+        if (assigned === undefined || assigned.status !== 'active' || !assigned.visits)
+          throw invalid('休職か退職の職員と、訪問しない職員は担当にできません')
         return save({
           ...patient,
           ended_at: null,
