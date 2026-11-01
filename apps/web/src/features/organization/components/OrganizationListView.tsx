@@ -1,4 +1,4 @@
-import { Button, HelpToggle, Loading } from '@buddy/ui'
+import { Button, HelpToggle, Loading, RowTable, RowTableRow } from '@buddy/ui'
 import type { ReactNode } from 'react'
 
 import type { Department, Team } from '#/api/types'
@@ -55,43 +55,33 @@ const UnitSection = ({
           {emptyMessage}
         </p>
       ) : (
-        <table className="w-full border-collapse" data-testid={`${prefix}-table`}>
-          <thead className="sr-only desktop:not-sr-only desktop:table-header-group">
-            <tr className="border-b border-border">
-              <th
-                className="px-4 py-2 text-left text-caption font-normal text-text-secondary"
-                scope="col"
-              >
-                名前
-              </th>
-              <th scope="col">
-                <span className="sr-only">操作</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody className="border-t border-border desktop:border-0">
-            {rows.map((row) => (
-              <tr
-                className="border-b border-border"
-                data-testid={`${prefix}-row-${row.id}`}
-                key={row.id}
-              >
-                <td className="min-w-0 px-1 py-2 text-body desktop:px-4">{row.label}</td>
-                <td className="w-px py-2 pr-1 text-right whitespace-nowrap desktop:pr-4">
-                  <Button
-                    aria-label={`${row.name}を編集`}
-                    data-testid={`${prefix}-edit-${row.id}`}
-                    onClick={row.onEdit}
-                    size="S"
-                    variant="secondary"
-                  >
-                    編集
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <RowTable
+          data-testid={`${prefix}-table`}
+          metaHeaders={[]}
+          primaryHeader="名前"
+          trailingHeader="操作"
+        >
+          {rows.map((row) => (
+            <RowTableRow
+              action={
+                <Button
+                  aria-label={`${row.name}を編集`}
+                  data-testid={`${prefix}-edit-${row.id}`}
+                  onClick={row.onEdit}
+                  size="S"
+                  variant="secondary"
+                >
+                  編集
+                </Button>
+              }
+              data-testid={`${prefix}-row-${row.id}`}
+              key={row.id}
+              meta={[]}
+              // 列が名前だけなので、行の名前を太字にしない
+              name={<span className="font-normal">{row.label}</span>}
+            />
+          ))}
+        </RowTable>
       )}
     </section>
   )
