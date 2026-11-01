@@ -183,9 +183,7 @@ test.describe('利用者の一覧', () => {
           const renamed = `${patient.name} 改`
           await page.goto(`/patients/${patient.id}`)
           await expect(page.getByTestId('patient-detail-name')).toHaveText(patient.name)
-          await step(
-            `${patient.name} の詳細を開いている（訪看I2、午前、女性、担当は ${LOGIN_STAFF.name}）`,
-          )
+          await step(`${patient.name} の詳細を開いている（午前、女性、担当は ${LOGIN_STAFF.name}）`)
 
           await step(
             `編集で、名前を「${renamed}」に、サービスを訪看I3に、希望を午後と男性に、担当を ${LEADER.staff.name} に変えて保存する`,
@@ -193,7 +191,9 @@ test.describe('利用者の一覧', () => {
           await page.getByTestId('patient-detail-edit').click()
           const dialog = page.getByTestId('patient-detail-edit-dialog')
           await dialog.getByTestId('patient-detail-name-input').fill(renamed)
-          await dialog.getByTestId('patient-detail-service-input').selectOption({ index: 2 })
+          await dialog
+            .getByTestId('patient-detail-service-input')
+            .selectOption({ label: '訪看I3（30〜59 分）' })
           await dialog.getByTestId('patient-detail-time-input-afternoon').check()
           await dialog.getByTestId('patient-detail-gender-input-male').check()
           await dialog.getByTestId('patient-detail-staff-input').selectOption(LEADER.staff.id)

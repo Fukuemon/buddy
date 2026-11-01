@@ -96,7 +96,9 @@ test.describe('利用者の詳細', () => {
       await page.getByTestId('patient-detail-edit').click()
       const dialog = page.getByTestId('patient-detail-edit-dialog')
       await dialog.getByTestId('patient-detail-name-input').fill(`${name} 改`)
-      await dialog.getByTestId('patient-detail-service-input').selectOption({ index: 2 })
+      await dialog
+        .getByTestId('patient-detail-service-input')
+        .selectOption({ label: '訪看I3（30〜59 分）' })
       await dialog.getByTestId('patient-detail-time-input-afternoon').check()
       await dialog.getByTestId('patient-detail-gender-input-male').check()
       await dialog.getByTestId('patient-detail-staff-input').selectOption(LEADER.staff.id)
