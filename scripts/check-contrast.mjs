@@ -40,6 +40,8 @@ const TEXT_PAIRS = [
     ["text", `${state}-surface`],
   ]),
   ["text-inverse", "primary"],
+  // 確認のダイアログの確定のボタン（Button の danger）は、赤い面に白の文字を載せる
+  ["text-inverse", "danger"],
   // 区別の色は、白の文字を載せる
   ...Array.from({ length: 10 }, (_, i) => ["text-inverse", `categorical-${i + 1}`]),
 ];
