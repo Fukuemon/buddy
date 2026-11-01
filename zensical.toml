@@ -101,6 +101,7 @@ nav = [
     "adr/0020-docs-site-without-access.md",
     "adr/0021-patient-service-end.md",
     "adr/0022-receipt-check-policy-and-non-visiting-staff.md",
+    "adr/0023-overnight-schedule.md",
   ] },
 ]
 
