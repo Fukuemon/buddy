@@ -29,6 +29,6 @@ export const Submitting: Story = { args: { isSubmitting: true } }
 export const Failed: Story = {
   args: {
     errorMessage:
-      'この予定は、すでに書き直す待ちにしたか、書き出し終えています。一覧を読み直してください。',
+      'この予定は、すでに書き直しを始めたか、書き直し終えています。一覧を読み直してください。',
   },
 }

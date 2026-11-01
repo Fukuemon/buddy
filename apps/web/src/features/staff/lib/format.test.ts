@@ -23,7 +23,7 @@ describe('statusLabel', () => {
 })
 
 describe('employmentText', () => {
-  it('戻る予定の日が無い休職は、2 つ目と 3 つ目の文を省く', () => {
+  it('休職は休職にした日を書き、戻る予定の日が無ければ 2 つ目の文を省き、有効には文を出さない', () => {
     const onLeave = {
       ...active,
       status: 'on_leave',
@@ -31,8 +31,9 @@ describe('employmentText', () => {
     } as const
     expect(employmentText(onLeave)).toBe('2026/10/31 から休職です。')
     expect(employmentText({ ...onLeave, leave_return_date: '2027-04-01' })).toBe(
-      '2026/10/31 から休職です。戻る予定の日は 2027/04/01 です。この日に自動では戻りません。',
+      '2026/10/31 から休職です。戻る予定の日に自動では戻りません。',
     )
+    expect(employmentText(active)).toBeUndefined()
   })
 })
 

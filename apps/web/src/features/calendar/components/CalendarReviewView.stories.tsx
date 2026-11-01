@@ -11,9 +11,7 @@ const meta = {
   args: {
     state: { status: 'ready', issues: mockExportIssues },
     onRetry: fn(),
-    onOpenSchedule: fn(),
-    onRewrite: fn(),
-    onAccept: fn(),
+    onSelect: fn(),
   },
 } satisfies Meta<typeof CalendarReviewView>
 

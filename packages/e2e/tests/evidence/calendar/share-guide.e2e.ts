@@ -32,27 +32,30 @@ test.describe('カレンダーの連携', () => {
             await page.goto('/schedule/link')
             await expect(page.getByTestId(`calendar-link-open-${MORI.id}`)).toBeVisible()
             // ほかの spec が結び付けを残していれば、全員が未連携という前提が崩れるので、ここで落とす
-            await expect(page.getByTestId(/^calendar-link-remove-/)).toHaveCount(0)
+            await expect(page.getByTestId(/^calendar-link-menu-/)).toHaveCount(0)
+            await expect(page.getByTestId('calendar-link-service-account')).toHaveText(
+              FACILITY_SERVICE_ACCOUNT,
+            )
             await expect(page.getByTestId('calendar-link-guide-toggle')).toHaveAttribute(
               'aria-expanded',
               'true',
             )
             await expect(page.getByTestId('calendar-link-steps')).toBeVisible()
             await check(
-              `どの職員も結び付けていないので、「カレンダーの共有」の下に 3 つの共有の手順が開いた状態で出て、サービスアカウント ${FACILITY_SERVICE_ACCOUNT} とコピーのボタンが並ぶ`,
+              `どの職員も結び付けていないので、「カレンダーの共有」の「共有する相手のメールアドレス」に ${FACILITY_SERVICE_ACCOUNT} とコピーのボタンが並び、「詳しく」の下の 3 つの共有の手順が開いた状態で出る`,
             )
           },
         )
       })
 
-      test(`${prefix}結び付けた職員がいる事業所で共有の手順のボタンを押した場合、閉じていた手順が開き、もう一度押すと閉じること`, async ({
+      test(`${prefix}結び付けた職員がいる事業所で詳しくのボタンを押した場合、閉じていた手順が開き、もう一度押すと閉じること`, async ({
         browser,
       }) => {
         await recordPrEvidence(
           browser,
           {
             name: 'calendar-link-guide-toggle',
-            title: '結び付けた職員がいる事業所で、共有の手順のボタンで手順を開いて閉じる',
+            title: '結び付けた職員がいる事業所で、「詳しく」のボタンで共有の手順を開いて閉じる',
             actor: ACTOR,
             variant,
           },
@@ -66,7 +69,7 @@ test.describe('カレンダーの連携', () => {
               await page.goto('/schedule/link')
               const toggle = page.getByTestId('calendar-link-guide-toggle')
               const steps = page.getByTestId('calendar-link-steps')
-              await expect(page.getByTestId(`calendar-link-remove-${MORI.id}`)).toBeVisible()
+              await expect(page.getByTestId(`calendar-link-menu-${MORI.id}`)).toBeVisible()
               await expect(toggle).toHaveAttribute('aria-expanded', 'false')
               await expect(steps).toBeHidden()
               await expect(page.getByTestId('calendar-link-service-account')).toHaveText(
@@ -74,16 +77,16 @@ test.describe('カレンダーの連携', () => {
               )
               await expect(page.getByTestId('calendar-link-copy')).toBeVisible()
               await check(
-                `${MORI.name} にカレンダーを結び付けているので、共有の手順は閉じている。サービスアカウントとコピーのボタンは出ている`,
+                `${MORI.name} にカレンダーを結び付けているので、共有の手順は閉じている。共有する相手のメールアドレスとコピーのボタンは出ている`,
               )
 
-              await step('見出し「カレンダーの共有」の右の「共有の手順」のボタンを押す')
+              await step('メールアドレスの下の 1 文に続く「詳しく」のボタンを押す')
               await toggle.click()
               await expect(toggle).toHaveAttribute('aria-expanded', 'true')
               await expect(steps).toBeVisible()
               await check('ボタンの下に、3 つの共有の手順が開く')
 
-              await step('もう一度「共有の手順」のボタンを押す')
+              await step('もう一度「詳しく」のボタンを押す')
               await toggle.click()
               await expect(toggle).toHaveAttribute('aria-expanded', 'false')
               await expect(steps).toBeHidden()

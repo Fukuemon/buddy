@@ -50,21 +50,24 @@ export const positionErrorMessage = (error: unknown) =>
     '役職を変えられませんでした。時間をおいて、もう一度変えてください。',
   )
 
-/** 権限を足せなかったときの文。409 は、同じ権限を持っていたときである。 */
-export const addPolicyErrorMessage = (error: unknown) =>
-  operationErrorMessage(
-    error,
-    'この権限は、すでに付いています。開き直してください。',
-    '権限を足せませんでした。時間をおいて、もう一度足してください。',
-  )
+/** 権限の保存で、1 つの変更を変えられなかった理由。 */
+export const policyChangeErrorReason = (error: unknown) => {
+  if (error instanceof ApiError) {
+    if (error.status === 403) return FORBIDDEN_MESSAGE
+    if (error.status === 409)
+      return '職員の管理の権限を持つ最後の有効な職員から、その権限は外せません。'
+    if (error.status === 400) return '対象の職員かチームが見つかりません。選び直してください。'
+  }
+  return '時間をおいて、もう一度保存してください。'
+}
 
-/** 権限を外せなかったときの文。 */
-export const removePolicyErrorMessage = (error: unknown) =>
-  operationErrorMessage(
-    error,
-    '職員の管理の権限を持つ最後の有効な職員から、その権限は外せません。',
-    '権限を外せませんでした。時間をおいて、もう一度外してください。',
-  )
+/** 権限の保存で、一部の変更を変えられなかったときの文の前置き。 */
+export const POLICY_PARTIAL_ERROR_LEAD =
+  '次の権限を変えられませんでした。ほかの変更は保存しました。'
+
+/** 権限の保存で、予定の API に届かず、何も変えられなかったときの文。 */
+export const POLICY_SAVE_ERROR_MESSAGE =
+  '権限を変えられませんでした。時間をおいて、もう一度保存してください。'
 
 /** 休職にできなかったときの文。 */
 export const leaveErrorMessage = (error: unknown) =>

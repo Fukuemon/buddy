@@ -83,7 +83,7 @@ test.describe('予定のカレンダー', () => {
         )
       })
 
-      test(`${prefix}訪問の予定の詳細を開いた場合、日時の見出しと、訪問の情報のセクションとメモのセクションが出ること`, async ({
+      test(`${prefix}メモの無い訪問の予定の詳細を開いた場合、日時の見出しと訪問の情報のセクションが出て、メモの見出しが出ないこと`, async ({
         browser,
       }) => {
         await recordPrEvidence(
@@ -103,9 +103,10 @@ test.describe('予定のカレンダー', () => {
             )
             await expect(page.getByTestId('schedule-detail-visit')).toContainText('加藤 春子')
             await expect.poll(() => valueLeftCount(page)).toBe(1)
-            await expect(page.getByTestId('schedule-detail-memo')).toBeVisible()
+            await expect(page.getByTestId('schedule-detail-memo')).toHaveCount(0)
+            await expect(page.getByTestId('schedule-detail-modal')).not.toContainText('なし')
             await check(
-              '日時と曜日が見出しになり、利用者、サービスコード、訪問の種類が「訪問の情報」のセクションに、上の段と同じ列の位置でまとまり、メモが最後のセクションに出る',
+              '日時と曜日が見出しになり、利用者、サービスコード、訪問の種類が「訪問の情報」のセクションに、上の段と同じ列の位置でまとまり、メモが空なのでメモの見出しも「なし」も出ない',
             )
           },
         )

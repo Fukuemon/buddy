@@ -90,15 +90,17 @@ test.describe('予定の取り込み', () => {
               step,
               `${staff.name} は休職している。カレンダーには 2027-03-04 の予定が 1 件ある`,
             )
-            await expect(page.getByTestId('calendar-import-count-import')).toContainText('0 件')
-            await expect(page.getByTestId('calendar-import-count-skipped')).toContainText('1 件')
+            await expect(page.getByTestId('calendar-import-count-import')).toBeHidden()
+            await expect(page.getByTestId('calendar-import-skipped-heading')).toHaveText(
+              '取り込まない予定（1 件）',
+            )
             await page.getByTestId('calendar-import-skipped').scrollIntoViewIfNeeded()
-            await expect(
-              page.getByTestId('calendar-import-skipped-reason-staff_on_leave'),
-            ).toHaveText('休職の職員の新しい予定: 1 件')
+            await expect(page.getByTestId('calendar-import-skipped')).toContainText(
+              '休職の職員の新しい予定',
+            )
             await expect(page.getByTestId('calendar-import-submit')).toBeDisabled()
             await check(
-              '取り込む 0 件、取り込まない 1 件で、理由に「休職の職員の新しい予定: 1 件」が出て、「確定して取り込む」を押せない',
+              '取り込むの箱が出ず、「取り込まない予定（1 件）」の表の理由に「休職の職員の新しい予定」が出て、「確定して取り込む」を押せない',
             )
           },
         )
@@ -130,9 +132,7 @@ test.describe('予定の取り込み', () => {
               `${staff.name} は休職の間に予定を足され、カレンダーを結び付けたまま復職した`,
             )
             await expect(page.getByTestId('calendar-import-count-import')).toContainText('1 件')
-            await expect(
-              page.getByTestId('calendar-import-skipped-reason-staff_on_leave'),
-            ).toBeHidden()
+            await expect(page.getByTestId('calendar-import-skipped')).toBeHidden()
             await check('取り込む 1 件が出て、「休職の職員の新しい予定」は出ない')
 
             await step('「確定して取り込む」を押す')

@@ -8,7 +8,7 @@ buddy の予定のうち、Google カレンダーと食い違った予定を確�
 | --- | --- |
 | URL | `/schedule/review` |
 | 使う人 | 職員の管理の権限を持つ職員（デフォルトはマネージャー） |
-| 実装 | `apps/web/src/routes/schedule_.review.tsx`、`apps/web/src/features/calendar/components/CalendarReviewContainer.tsx`、`apps/web/src/features/calendar/components/CalendarReviewView.tsx`、`apps/web/src/features/calendar/components/CalendarReviewTable.tsx`、`apps/web/src/features/calendar/components/CalendarRewriteDialog.tsx`、`apps/web/src/features/calendar/components/CalendarAcceptDialog.tsx`、`apps/web/src/components/site/SiteDialog.tsx`、`apps/web/src/components/site/PageForbiddenMessage.tsx` |
+| 実装 | `apps/web/src/routes/schedule_.review.tsx`、`apps/web/src/features/calendar/components/CalendarReviewContainer.tsx`、`apps/web/src/features/calendar/components/CalendarReviewView.tsx`、`apps/web/src/features/calendar/components/CalendarReviewTable.tsx`、`apps/web/src/features/calendar/components/CalendarReviewDialog.tsx`、`apps/web/src/features/calendar/components/CalendarRewriteDialog.tsx`、`apps/web/src/features/calendar/components/CalendarAcceptDialog.tsx`、`apps/web/src/components/site/PageForbiddenMessage.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
 
@@ -474,6 +474,8 @@ buddy の予定のうち、Google カレンダーと食い違った予定を確�
 
 **表示条件**: 職員の管理の権限を持つとき。見出し「確認が必要な予定」の右に出す
 
+**カタログ**: [CalendarReviewView の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarreviewview--default)
+
 ### インタラクション
 
 #### 1. 押す
@@ -501,6 +503,8 @@ buddy の予定のうち、Google カレンダーと食い違った予定を確�
 **活性条件**: 常に活性
 
 **表示条件**: 予定の一覧を出すとき
+
+**カタログ**: [CalendarReviewView の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarreviewview--default)
 
 ### インタラクション
 
@@ -578,6 +582,8 @@ buddy の予定のうち、Google カレンダーと食い違った予定を確�
 
 **表示条件**: 一覧で予定の行を押した後
 
+**カタログ**: [CalendarReviewDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarreviewdialog--default)
+
 ## 閉じる
 
 **概要**: 何も選ばずに、予定の確認のダイアログを閉じる。
@@ -587,6 +593,8 @@ buddy の予定のうち、Google カレンダーと食い違った予定を確�
 **活性条件**: 常に活性
 
 **表示条件**: 予定の確認のダイアログを開いているとき
+
+**カタログ**: [CalendarReviewDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarreviewdialog--default)
 
 ### インタラクション
 
@@ -604,6 +612,8 @@ buddy の予定のうち、Google カレンダーと食い違った予定を確�
 
 **表示条件**: 予定の確認のダイアログを開いているとき
 
+**カタログ**: [CalendarReviewDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarreviewdialog--default)
+
 ## ダイアログの職員
 
 **概要**: 予定の職員を示す。
@@ -614,6 +624,8 @@ buddy の予定のうち、Google カレンダーと食い違った予定を確�
 
 **表示条件**: 予定の確認のダイアログを開いているとき
 
+**カタログ**: [CalendarReviewDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarreviewdialog--default)
+
 ## ダイアログの最後に変わった日時
 
 **概要**: 確認が必要な状態に最後に変わった日時を示す。
@@ -623,6 +635,8 @@ buddy の予定のうち、Google カレンダーと食い違った予定を確�
 **活性条件**: 常に活性
 
 **表示条件**: 予定の確認のダイアログを開いているとき
+
+**カタログ**: [CalendarReviewDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarreviewdialog--default)
 
 ## ダイアログの理由
 
@@ -642,6 +656,8 @@ buddy の予定のうち、Google カレンダーと食い違った予定を確�
 
 **表示条件**: 予定の確認のダイアログを開いているとき
 
+**カタログ**: [CalendarReviewDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarreviewdialog--default)
+
 ## 予定を開く
 
 **概要**: 予定の詳細を開き、buddy の内容を確認する。
@@ -651,6 +667,8 @@ buddy の予定のうち、Google カレンダーと食い違った予定を確�
 **活性条件**: 常に活性
 
 **表示条件**: 予定の確認のダイアログで、単発の予定のとき。繰り返しの予定には出さない
+
+**カタログ**: [CalendarReviewDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarreviewdialog--default)
 
 ### インタラクション
 
@@ -668,6 +686,8 @@ buddy の予定のうち、Google カレンダーと食い違った予定を確�
 
 **表示条件**: 予定の確認のダイアログで、単発の予定が buddy と Google カレンダーの両方で変わったか、Google カレンダーで予定が見つからないとき。繰り返しの予定、buddy でキャンセルした予定、書けなかった予定、buddy の予定として取り込めない予定には出さない
 
+**カタログ**: [CalendarReviewDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarreviewdialog--default)
+
 ### インタラクション
 
 #### 1. 押す
@@ -683,6 +703,8 @@ buddy の予定のうち、Google カレンダーと食い違った予定を確�
 **活性条件**: 常に活性
 
 **表示条件**: 予定の確認のダイアログを開いているとき。全ての予定に出す
+
+**カタログ**: [CalendarReviewDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarreviewdialog--default)、[CalendarReviewDialog の Cancelled](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarreviewdialog--cancelled)
 
 ### インタラクション
 
@@ -924,7 +946,7 @@ buddy の予定のうち、Google カレンダーと食い違った予定を確�
 | Google カレンダーの内容に合わせられない予定 | 「この予定は、Google カレンダーの内容に合わせられません。buddy の内容で書き直してください。」 |
 | Google カレンダーの予定を buddy の予定として取り込めない | 「Google カレンダーの予定を、buddy の予定として取り込めません。終日の予定か、タイトルの利用者が見つからない予定です。buddy の内容で書き直すか、Google カレンダーで直すよう職員に頼んでください。」 |
 | Google カレンダーを読めない | 「Google カレンダーを読めません。カレンダーの共有が外れていないかを、職員に確認してください。」 |
-| 事業所の Google カレンダーの設定が無い | 「この事業所では、まだ Google カレンダーを使う準備ができていません。buddy の管理者に設定を頼んでください。」 |
+| 事業所の Google カレンダーの設定が無い | 「この事業所では、まだ Google カレンダーを使う準備ができていません。事業所の管理者に、設定を頼んでください。」 |
 | 予定の API が権限で拒んだ | 「この操作をする権限がありません。」 |
 | そのほかの失敗 | 「Google カレンダーの内容に合わせられませんでした。時間をおいて、もう一度試してください。」 |
 

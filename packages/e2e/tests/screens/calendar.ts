@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test'
 
 /**
  * カレンダーの連携の画面で、職員の行の入力の初期値のカレンダーを、読めると確認してから結び付ける。
- * 結び付けた行にカレンダーの ID が出るまで待つ。
+ * 結び付けた行に「…」のメニューのボタンが出るまで待つ。結び付けていない行にも、読み上げだけのカレンダーの ID の欄があるためである。
  */
 export const linkStaffCalendar = async (page: Page, staffId: string) => {
   await page.goto('/schedule/link')
@@ -10,16 +10,17 @@ export const linkStaffCalendar = async (page: Page, staffId: string) => {
   await page.getByTestId('calendar-link-check').click()
   await page.getByTestId('calendar-link-check-result').filter({ hasText: '読めました。' }).waitFor()
   await page.getByTestId('calendar-link-submit').click()
-  await page.getByTestId(`calendar-link-calendar-id-${staffId}`).waitFor()
+  await page.getByTestId(`calendar-link-menu-${staffId}`).waitFor()
 }
 
-/** カレンダーの連携の画面で、職員の結び付けがあれば外す。撮った後に、ほかの spec の前提へ戻すのに使う。 */
+/** カレンダーの連携の画面で、職員の結び付けがあれば、「…」のメニューから外す。撮った後に、ほかの spec の前提へ戻すのに使う。 */
 export const unlinkStaffCalendar = async (page: Page, staffId: string) => {
   await page.goto('/schedule/link')
   await page.getByTestId(`calendar-link-row-${staffId}`).waitFor()
-  const remove = page.getByTestId(`calendar-link-remove-${staffId}`)
-  if (!(await remove.isVisible())) return
-  await remove.click()
+  const menu = page.getByTestId(`calendar-link-menu-${staffId}`)
+  if (!(await menu.isVisible())) return
+  await menu.click()
+  await page.getByTestId(`calendar-link-remove-${staffId}`).click()
   await page.getByTestId('calendar-unlink-submit').click()
-  await remove.waitFor({ state: 'hidden' })
+  await menu.waitFor({ state: 'hidden' })
 }

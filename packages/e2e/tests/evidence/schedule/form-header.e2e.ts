@@ -9,7 +9,7 @@ test.describe('予定の作成', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       const prefix = variant.label ? `${variant.label}: ` : ''
 
-      test(`${prefix}予定の作成のダイアログを開いた場合、タイトルが閉じるボタンの右隣に出て、種類のタブが右端に出ること`, async ({
+      test(`${prefix}予定の作成のダイアログを開いた場合、タイトルが左端に、閉じるボタンが右端に出て、種類のタブが閉じるボタンの左隣に出ること`, async ({
         browser,
       }) => {
         const url = storyUrl('画面-schedule-scheduleformmodal--visit')
@@ -33,7 +33,7 @@ test.describe('予定の作成', () => {
             )
             // 並びの順と位置は Modal.test.tsx と ScheduleFormModal.test.tsx で確認し、ここでは見た目を撮る
             await check(
-              'タイトルの「予定の作成」が閉じるボタンの右隣に出て、通常と訪問のタブがヘッダーの右端に出る',
+              'タイトルの「予定の作成」がヘッダーの左端に、閉じるボタン（×）が右端に出て、通常と訪問のタブが閉じるボタンの左隣に出る',
             )
           },
         )

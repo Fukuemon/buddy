@@ -2,10 +2,11 @@ import { Button, Loading } from '@buddy/ui'
 
 import type { Staff } from '#/api/types'
 
+import { NOT_CONFIGURED_MESSAGE } from '../lib/errorMessage'
 import { CalendarLinkTable, type CalendarLinkRow } from './CalendarLinkTable'
 import { CalendarShareGuide } from './CalendarShareGuide'
 
-/** カレンダーの連携の画面の状態。serviceAccount は、サービスアカウントが設定されていなければ null である。 */
+/** カレンダーの連携の画面の状態。serviceAccount は、事業所の Google カレンダーの設定（サービスアカウント）が無ければ null である。 */
 export type CalendarLinkViewState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
@@ -32,10 +33,7 @@ export const CalendarLinkView = ({
 }: CalendarLinkViewProps) => (
   <div className="flex flex-col gap-6">
     <h1 className="text-heading-md">カレンダーの連携</h1>
-    <p className="max-w-3xl text-body">
-      職員ごとに Google カレンダーを結び付けます。結び付けたカレンダーの予定は、予定の取り込みで
-      buddy に取り込めます。
-    </p>
+    <p className="max-w-3xl text-body">職員ごとに Google カレンダーを結び付けます。</p>
     {state.status === 'loading' && (
       <div data-testid="calendar-link-loading">
         <Loading description="読み込んでいます" />
@@ -58,8 +56,7 @@ export const CalendarLinkView = ({
             className="max-w-3xl border-l-4 border-warning bg-warning-surface px-3 py-2 text-body"
             data-testid="calendar-link-not-configured"
           >
-            この事業所のサービスアカウントが設定されていないので、カレンダーを結び付けられません。buddy
-            を動かしている管理者に、Google カレンダーの設定を頼んでください。
+            {NOT_CONFIGURED_MESSAGE}
           </p>
         ) : (
           <CalendarShareGuide

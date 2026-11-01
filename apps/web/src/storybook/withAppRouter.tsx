@@ -41,6 +41,7 @@ export type StoryRouteId =
   | '/schedule_/review'
   | '/staff'
   | '/staff/new'
+  | '/staff_/$staffId'
   | '/organization'
 
 /** story の parameters の appRouter に渡す値。 */
@@ -146,6 +147,16 @@ const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
     component: at('/staff/new'),
   })
 
+  // アプリの route は params の staffId を Container の props に渡すので、story の args にも同じ値を渡す
+  function StaffIdRoute() {
+    const { staffId } = useParams({ strict: false })
+    return params.route === '/staff_/$staffId' ? Story({ args: { staffId } }) : <Outlet />
+  }
+  const staffDetail = createRoute({
+    getParentRoute: () => root,
+    path: 'staff/$staffId',
+    component: StaffIdRoute,
+  })
   const organization = createRoute({
     getParentRoute: () => root,
     path: 'organization',
@@ -161,6 +172,7 @@ const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
       scheduleImport,
       scheduleReview,
       staff.addChildren([staffNew]),
+      staffDetail,
       organization,
     ]),
     history: createMemoryHistory({ initialEntries: [params.url] }),

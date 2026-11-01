@@ -89,11 +89,14 @@ test.describe('予定の取り込み', () => {
         })
         await previewRange(page, staff.id)
 
-        await expect(page.getByTestId('calendar-import-count-skipped')).toContainText('1 件')
-        await expect(page.getByTestId('calendar-import-skipped-reason-staff_on_leave')).toHaveText(
-          '休職の職員の新しい予定: 1 件',
+        await expect(page.getByTestId('calendar-import-skipped-heading')).toHaveText(
+          '取り込まない予定（1 件）',
         )
-        await expect(page.getByTestId('calendar-import-count-import')).toContainText('0 件')
+        await expect(page.getByTestId('calendar-import-skipped')).toContainText(
+          '休職の職員の新しい予定',
+        )
+        // 取り込む予定が 0 件なので、取り込むの箱は出さない
+        await expect(page.getByTestId('calendar-import-count-import')).toBeHidden()
         await expect(page.getByTestId('calendar-import-submit')).toBeDisabled()
         // 休職の職員の新しい予定が残るので、全て取り込み済みの文は出さない
         await expect(page.getByTestId('calendar-import-all-imported')).toBeHidden()
@@ -122,7 +125,7 @@ test.describe('予定の取り込み', () => {
         await previewRange(page, staff.id)
 
         await expect(page.getByTestId('calendar-import-count-import')).toContainText('1 件')
-        await expect(page.getByTestId('calendar-import-skipped-reason-staff_on_leave')).toBeHidden()
+        await expect(page.getByTestId('calendar-import-skipped')).toBeHidden()
         await page.getByTestId('calendar-import-submit').click()
         await expect(page.getByTestId('calendar-import-result-counts')).toContainText('1 件')
         expect(

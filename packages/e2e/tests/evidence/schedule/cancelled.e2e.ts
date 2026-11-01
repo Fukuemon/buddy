@@ -44,13 +44,14 @@ test.describe('予定のカレンダー', () => {
             await step('左のサイドバーの「キャンセルした予定を出す」を入れる')
             await page.getByTestId('calendar-show-cancelled').check()
             await expect(cancelled).toBeVisible()
-            await expect(cancelled).toContainText('キャンセル')
+            // 「キャンセル」は読み上げの文にだけ残し、画面には出さない
+            await expect(cancelled).toContainText('キャンセル、')
             await expect(page.getByTestId('schedule-event-schedule-6-cancelled')).toHaveCSS(
               'text-decoration-line',
               'line-through',
             )
             await check(
-              '江藤 四郎の列に、薄い灰色の面に「キャンセル」の印と取り消し線を付けた予定が出る',
+              '江藤 四郎の列に、薄い灰色の面に取り消し線を付けた予定が出て、「キャンセル」の文字は出ない',
             )
           },
         )

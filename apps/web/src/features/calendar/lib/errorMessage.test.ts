@@ -8,6 +8,7 @@ import {
   importErrorMessage,
   linkErrorMessage,
   previewErrorMessage,
+  rewriteErrorMessage,
   unlinkErrorMessage,
 } from './errorMessage'
 
@@ -15,7 +16,10 @@ const apiError = (status: number, code?: string) => new ApiError(status, '失敗
 
 describe('linkErrorMessage', () => {
   it.each([
-    [apiError(422, 'calendar_unreadable'), 'このカレンダーを読めません。'],
+    [
+      apiError(422, 'calendar_unreadable'),
+      'このカレンダーを読めません。カレンダーが、上に出ている buddy のメールアドレスに共有されているか',
+    ],
     [apiError(409, 'calendar_taken'), 'このカレンダーは、ほかの職員に結び付いています。'],
     [apiError(409, 'staff_has_calendar'), 'この職員には、ほかのカレンダーが結び付いています。'],
     [apiError(409, 'calendar_already_linked'), 'この職員にすでに結び付いています。'],
@@ -69,18 +73,31 @@ describe('importErrorMessage', () => {
   })
 })
 
+describe('rewriteErrorMessage', () => {
+  it.each([
+    [
+      apiError(409, 'export_not_in_review'),
+      'この予定は、すでに書き直しを始めたか、書き直し終えています。一覧を読み直してください。',
+    ],
+    [apiError(403, 'forbidden'), FORBIDDEN_MESSAGE],
+    [apiError(500), '書き直せませんでした。時間をおいて、もう一度書き直してください。'],
+  ])('%s を文にする', (error, expected) => {
+    expect(rewriteErrorMessage(error)).toBe(expected)
+  })
+})
+
 describe('acceptErrorMessage', () => {
   it.each([
     [
       apiError(409, 'export_not_in_review'),
-      'この予定は、すでに書き直す待ちにしたか、解いています。',
+      'この予定は、すでに書き直しを始めたか、書き直し終えています。',
     ],
     [apiError(409, 'export_not_acceptable'), 'buddy の内容で書き直してください。'],
-    [apiError(409, 'external_change_unappliable'), 'buddy の予定に読み替えられません。'],
+    [apiError(409, 'external_change_unappliable'), 'buddy の予定として取り込めません。'],
     [apiError(422, 'calendar_unreadable'), 'カレンダーの共有が外れていないか'],
     [
       apiError(503, 'calendar_not_configured'),
-      'この事業所のサービスアカウントが設定されていないので',
+      'まだ Google カレンダーを使う準備ができていません。事業所の管理者に',
     ],
     [apiError(403, 'forbidden'), FORBIDDEN_MESSAGE],
     [apiError(502, 'calendar_unavailable'), 'Google カレンダーの内容に合わせられませんでした。'],

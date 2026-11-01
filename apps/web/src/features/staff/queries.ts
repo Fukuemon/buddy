@@ -1,16 +1,17 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 
-import type { BuddyApi } from '#/api/client'
+import { ApiError, type BuddyApi } from '#/api/client'
 import type {
   FacilityId,
   Staff,
   StaffCreateInput,
   StaffDetail,
-  StaffPolicy,
-  StaffPolicyInput,
   StaffUpdateInput,
 } from '#/api/types'
 import { useBuddyApi } from '#/api/useBuddyApi'
+
+import { policyChangeErrorReason } from './lib/errorMessage'
+import type { PolicyChange } from './lib/policyChanges'
 
 /** TanStack Query のキー。事業所ごとに分ける。職員の一覧のキーは、予定の画面の職員の一覧と分ける。 */
 export const staffQueryKeys = {
@@ -137,24 +138,36 @@ export const useChangePosition = (staffId: Staff['id']) => {
   })
 }
 
-/** 職員に権限を足す mutation。 */
-export const useAddPolicy = (staffId: Staff['id']) => {
-  const { api, facilityId } = useBuddyApi()
-  const changed = useStaffChanged()
-  return useMutation({
-    mutationFn: (input: StaffPolicyInput) => api.staff.addPolicy(facilityId, staffId, input),
-    onSuccess: changed,
-  })
-}
+/** 権限の保存で変えられなかった変更と、その理由。 */
+export type PolicySaveFailure = { name: string; reason: string }
 
-/** 職員から権限を外す mutation。 */
-export const useRemovePolicy = (staffId: Staff['id']) => {
+/**
+ * 権限の変更を 1 つずつ送り、終わったら職員を読み直す mutation。変えられなかった変更は、理由とともに結果に返す。
+ * 最初の変更が予定の API に届かなければ、何も変えずに Error を投げる。
+ */
+export const useSavePolicies = (staffId: Staff['id']) => {
   const { api, facilityId } = useBuddyApi()
-  const changed = useStaffChanged()
+  const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (userPolicyId: StaffPolicy['user_policy_id']) =>
-      api.staff.removePolicy(facilityId, staffId, userPolicyId),
-    onSuccess: changed,
+    mutationFn: async (changes: readonly PolicyChange[]) => {
+      const failures: PolicySaveFailure[] = []
+      for (const [index, change] of changes.entries()) {
+        try {
+          if (change.kind === 'remove')
+            await api.staff.removePolicy(facilityId, staffId, change.userPolicyId)
+          else await api.staff.addPolicy(facilityId, staffId, change.input)
+        } catch (error) {
+          if (index === 0 && !(error instanceof ApiError)) throw error
+          failures.push({ name: change.name, reason: policyChangeErrorReason(error) })
+        }
+      }
+      return failures
+    },
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: staffQueryKeys.detail(facilityId, staffId) }),
+        queryClient.invalidateQueries({ queryKey: staffQueryKeys.records(facilityId) }),
+      ]),
   })
 }
 

@@ -58,27 +58,24 @@ test.describe('予定の取り込み', () => {
               await expect(page.getByTestId('calendar-import-count-needs_review')).toContainText(
                 '1 件',
               )
-              await expect(page.getByTestId('calendar-import-count-skipped')).toContainText('3 件')
+              await expect(page.getByTestId('calendar-import-skipped-heading')).toHaveText(
+                '取り込まない予定（3 件）',
+              )
               await check(
-                '「プレビューの結果」に、取り込む 6 件、繰り返し 2 件、確認が必要 1 件、取り込まない 3 件が出る',
+                '「プレビューの結果」に、取り込む 6 件、繰り返し 2 件、確認が必要 1 件が出て、取り込まない 3 件は表の見出しに出る',
               )
 
               await step('取り込まない予定の理由と、確認が必要な予定を見る')
               await page.getByTestId('calendar-import-skipped').scrollIntoViewIfNeeded()
-              await expect(page.getByTestId('calendar-import-skipped-reason-all_day')).toHaveText(
-                '終日の予定: 1 件',
-              )
-              await expect(page.getByTestId('calendar-import-skipped-reason-multi_day')).toHaveText(
-                '日をまたぐ予定: 1 件',
-              )
-              await expect(
-                page.getByTestId('calendar-import-skipped-reason-service_not_found'),
-              ).toHaveText('サービス内容を引けない予定: 1 件')
+              const skipped = page.getByTestId('calendar-import-skipped')
+              await expect(skipped).toContainText('終日の予定')
+              await expect(skipped).toContainText('日をまたぐ予定')
+              await expect(skipped).toContainText('サービス内容を引けない予定')
               await expect(page.getByTestId('calendar-import-result-preview')).toContainText(
                 'タイトルから読んだ利用者',
               )
               await check(
-                '取り込まない理由（終日、日をまたぐ、サービス内容を引けない）が 1 件ずつ出て、確認が必要な予定に「タイトルから読んだ利用者」が出る',
+                '取り込まない予定の表に、理由（終日、日をまたぐ、サービス内容を引けない）が 1 件ずつ出て、確認が必要な予定に「タイトルから読んだ利用者」が出る',
               )
             } finally {
               await step('（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）')

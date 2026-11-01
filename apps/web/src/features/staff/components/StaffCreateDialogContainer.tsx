@@ -35,7 +35,7 @@ const StaffCreateDialogContent = () => {
       onClose={() => navigate({ to: '/staff' })}
       onSubmit={(input) =>
         create.mutate(input, {
-          onSuccess: () => navigate({ to: '/staff' }),
+          onSuccess: (staff) => navigate({ to: '/staff/$staffId', params: { staffId: staff.id } }),
         })
       }
       positions={optionsFailed ? undefined : positions.data}
@@ -46,7 +46,7 @@ const StaffCreateDialogContent = () => {
 
 /**
  * 職員の一覧に重ねる、職員の登録のダイアログ。職員の管理の権限が無ければ出さず、一覧が権限の無いことを示す。
- * 登録できたら、職員の一覧に戻る。職員の詳細の画面を足したら、登録した職員の詳細へ移す。
+ * 登録できたら、登録した職員の詳細へ移る。
  */
 export const StaffCreateDialogContainer = () => {
   const { viewer } = useRouteContext({ from: '__root__' })
