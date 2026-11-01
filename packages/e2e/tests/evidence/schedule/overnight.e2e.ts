@@ -116,7 +116,8 @@ test.describe('予定の API', () => {
           browser,
           {
             name: 'schedule-overnight-without-flag',
-            title: 'ends_next_day を付けずに 22:00 から 1:00 の予定を作ると、400 の invalid_input が返る',
+            title:
+              'ends_next_day を付けずに 22:00 から 1:00 の予定を作ると、400 の invalid_input が返る',
             actor: `${LOGIN_STAFF.name}（マネージャー）`,
             variant,
           },
@@ -219,7 +220,9 @@ test.describe('予定の API', () => {
             const id = await createOvernight(page, token, '前の日からの夜勤')
             await check('201 が返り、2026-11-01 に始まる翌日に終わる予定ができる')
 
-            await step('「事業所の予定を一覧する」で、date_from と date_to を 2026-11-02 にして一覧を取る')
+            await step(
+              '「事業所の予定を一覧する」で、date_from と date_to を 2026-11-02 にして一覧を取る',
+            )
             await apiClient(page).dialog.press('Escape')
             await openApiClient(page, 'schedule', { tag: 'schedule', method: 'get', path: LIST })
             await fillAuthAndFacility(page, token)
