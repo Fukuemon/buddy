@@ -59,6 +59,30 @@ func TestNew(t *testing.T) {
 			s.Title = ptr("会議")
 			s.EndTime = clock(8, 59)
 		}, wantErr: true},
+		{name: "終了が翌日", typ: normalType, edit: func(s *schedule.Slot) {
+			s.Title = ptr("夜勤")
+			s.StartTime, s.EndTime, s.EndsNextDay = clock(22, 0), clock(1, 0), true
+		}, wantOvertime: true},
+		{name: "翌日の 0 時に終わる", typ: normalType, edit: func(s *schedule.Slot) {
+			s.Title = ptr("夜勤")
+			s.StartTime, s.EndTime, s.EndsNextDay = clock(22, 0), clock(0, 0), true
+		}, wantOvertime: true},
+		{name: "終了が翌日で時間外の前に始まる", typ: normalType, edit: func(s *schedule.Slot) {
+			s.Title = ptr("研修")
+			s.StartTime, s.EndTime, s.EndsNextDay = clock(9, 0), clock(8, 0), true
+		}},
+		{name: "印を付けずに終了が開始より前", typ: normalType, edit: func(s *schedule.Slot) {
+			s.Title = ptr("夜勤")
+			s.StartTime, s.EndTime = clock(22, 0), clock(1, 0)
+		}, wantErr: true},
+		{name: "印を付けて終了が開始より後", typ: normalType, edit: func(s *schedule.Slot) {
+			s.Title = ptr("会議")
+			s.EndsNextDay = true
+		}, wantErr: true},
+		{name: "印を付けて終了が開始と同じ", typ: normalType, edit: func(s *schedule.Slot) {
+			s.Title = ptr("会議")
+			s.EndTime, s.EndsNextDay = s.StartTime, true
+		}, wantErr: true},
 		{name: "空のタイトル", typ: normalType, edit: func(s *schedule.Slot) { s.Title = ptr(" ") }, wantErr: true},
 		{name: "日付がない", typ: normalType, edit: func(s *schedule.Slot) {
 			s.Title = ptr("会議")
@@ -93,7 +117,28 @@ func TestNew(t *testing.T) {
 			if got.IsOverTimeWork != tt.wantOvertime {
 				t.Errorf("IsOverTimeWork = %v, want %v", got.IsOverTimeWork, tt.wantOvertime)
 			}
+			if got.EndsNextDay != s.EndsNextDay || got.Date != s.Date {
+				t.Errorf("EndsNextDay = %v, Date = %s, want %v, %s", got.EndsNextDay, got.Date, s.EndsNextDay, s.Date)
+			}
 		})
+	}
+}
+
+func TestNewRecurringEndsNextDay(t *testing.T) {
+	rule := schedule.Rule{Frequency: schedule.Weekly}
+	slot := schedule.Slot{
+		Date: date(t, "2026-10-05"), StartTime: clock(22, 0), EndTime: clock(1, 0), Title: ptr("夜勤"),
+	}
+	if _, err := schedule.NewRecurring("ID", slot, normalType, rule); !errors.Is(err, apperr.ErrInvalidInput) {
+		t.Fatalf("印のない err = %v, want ErrInvalidInput", err)
+	}
+	slot.EndsNextDay = true
+	got, err := schedule.NewRecurring("ID", slot, normalType, rule)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.EndsNextDay || !got.Occurs(date(t, "2026-10-12")) {
+		t.Errorf("EndsNextDay = %v", got.EndsNextDay)
 	}
 }
 

@@ -46,11 +46,13 @@ func NewUsecase(deps Deps, tx tx.Transactor, ids kernel.IDGenerator) *Usecase {
 }
 
 // SlotInput は、単発と繰り返しの予定に共通の入力である。Visit は、訪問の予定のときに指定する。
+// EndsNextDay は、Date の翌日の EndTime に終わる予定のときに true にする。
 type SlotInput struct {
 	TypeID      string
 	Date        civil.Date
 	StartTime   civil.Time
 	EndTime     civil.Time
+	EndsNextDay bool
 	StaffID     string
 	Title       *string
 	Description *string
@@ -440,6 +442,7 @@ func (s *Usecase) prepareSlot(ctx context.Context, facilityID string, in SlotInp
 		Date:        in.Date,
 		StartTime:   in.StartTime,
 		EndTime:     in.EndTime,
+		EndsNextDay: in.EndsNextDay,
 		Title:       in.Title,
 		Description: in.Description,
 	}

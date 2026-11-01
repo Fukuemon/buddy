@@ -199,6 +199,61 @@ func TestSchedulesCreateRecurring(t *testing.T) {
 	}
 }
 
+func overnightSlot() schedule.SlotInput {
+	in := normalSlot()
+	in.StartTime, in.EndTime, in.EndsNextDay = civil.Time{Hour: 22}, civil.Time{Hour: 1}, true
+	return in
+}
+
+// TestSchedulesEndsNextDay は、翌日に終わる予定を、単発、繰り返し、回の置き換え、変更のそれぞれで保存し、印を返すことを確認する。
+func TestSchedulesEndsNextDay(t *testing.T) {
+	s := inmem.Seeded()
+	uc, _ := newSchedules(s)
+	ctx := editorCtx()
+
+	created, err := uc.Create(ctx, facilityID, overnightSlot())
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := uc.Get(ctx, created.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.EndsNextDay || got.Date != overnightSlot().Date || got.EndTime != (civil.Time{Hour: 1}) || !got.IsOverTimeWork {
+		t.Errorf("got %+v", got.Slot)
+	}
+
+	in := overnightSlot()
+	in.EndsNextDay = false
+	if _, err := uc.Create(ctx, facilityID, in); !errors.Is(err, apperr.ErrInvalidInput) {
+		t.Errorf("印のない 22:00 から 1:00: err = %v, want ErrInvalidInput", err)
+	}
+
+	rs, err := uc.CreateRecurring(ctx, facilityID, overnightSlot(), schedule.RuleInput{Frequency: schedule.Weekly})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !rs.EndsNextDay {
+		t.Errorf("繰り返しの予定の EndsNextDay = false")
+	}
+
+	replaced, err := uc.ChangeOccurrence(ctx, rs.ID, civil.Date{Year: 2026, Month: 10, Day: 27}, normalSlot())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if replaced.EndsNextDay {
+		t.Errorf("置き換えた予定の EndsNextDay = true")
+	}
+
+	updated, err := uc.Update(ctx, replaced.ID, overnightSlot())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !updated.EndsNextDay {
+		t.Errorf("変えた予定の EndsNextDay = false")
+	}
+}
+
 func TestSchedulesChangeOccurrence(t *testing.T) {
 	monday := civil.Date{Year: 2026, Month: 10, Day: 12}
 	tests := []struct {
