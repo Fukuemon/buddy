@@ -1,7 +1,7 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { ApiError, type BuddyApi } from '#/api/client'
-import type { FacilityId, PatientInput, Staff } from '#/api/types'
+import type { FacilityId, Patient, PatientInput, PatientRecord, Staff } from '#/api/types'
 import { useBuddyApi } from '#/api/useBuddyApi'
 
 /**
@@ -10,8 +10,12 @@ import { useBuddyApi } from '#/api/useBuddyApi'
  */
 export const patientQueryKeys = {
   records: (facilityId: FacilityId) => ['facilities', facilityId, 'patient-records'] as const,
+  detail: (facilityId: FacilityId, patientId: Patient['id']) =>
+    ['facilities', facilityId, 'patient-detail', patientId] as const,
   serviceCodes: (facilityId: FacilityId) => ['facilities', facilityId, 'service-codes'] as const,
   staffRecords: (facilityId: FacilityId) => ['facilities', facilityId, 'staff-records'] as const,
+  remaining: (facilityId: FacilityId, patientId: Patient['id']) =>
+    ['facilities', facilityId, 'patient-remaining', patientId] as const,
 }
 
 /** 利用の終了の利用者を含む、事業所の全ての利用者の query。 */
@@ -19,6 +23,17 @@ export const patientRecordsQueryOptions = (api: BuddyApi, facilityId: FacilityId
   queryOptions({
     queryKey: patientQueryKeys.records(facilityId),
     queryFn: () => api.patients.listRecords(facilityId),
+  })
+
+/** 1 人の利用者の query。 */
+export const patientDetailQueryOptions = (
+  api: BuddyApi,
+  facilityId: FacilityId,
+  patientId: Patient['id'],
+) =>
+  queryOptions({
+    queryKey: patientQueryKeys.detail(facilityId, patientId),
+    queryFn: () => api.patients.get(facilityId, patientId),
   })
 
 /** サービスコードの query。 */
@@ -35,17 +50,31 @@ export const staffRecordsQueryOptions = (api: BuddyApi, facilityId: FacilityId) 
     queryFn: () => api.staff.listRecords(facilityId),
   })
 
+/** 利用の終了の確認に出す、今日以降に残る予定の query。開くたびに読み直す。 */
+export const remainingSchedulesQueryOptions = (
+  api: BuddyApi,
+  facilityId: FacilityId,
+  patientId: Patient['id'],
+) =>
+  queryOptions({
+    queryKey: patientQueryKeys.remaining(facilityId, patientId),
+    queryFn: () => api.patients.remainingSchedules(facilityId, patientId),
+    gcTime: 0,
+  })
+
 /**
- * 利用者を変えた後に、利用者の一覧と、予定の画面の利用者の候補を読み直す。
+ * 利用者を変えた後に、返った利用者で詳細を置き換え、利用者の一覧と、予定の画面の利用者の候補を読み直す。
  */
 const usePatientChanged = () => {
   const { facilityId } = useBuddyApi()
   const queryClient = useQueryClient()
-  return () =>
-    Promise.all([
+  return (patient: PatientRecord) => {
+    queryClient.setQueryData(patientQueryKeys.detail(facilityId, patient.id), patient)
+    return Promise.all([
       queryClient.invalidateQueries({ queryKey: patientQueryKeys.records(facilityId) }),
       queryClient.invalidateQueries({ queryKey: ['facilities', facilityId, 'patients'] }),
     ])
+  }
 }
 
 /**
@@ -75,6 +104,37 @@ export const useCreatePatient = () => {
   const changed = usePatientChanged()
   return useMutation({
     mutationFn: (input: PatientInput) => api.patients.create(facilityId, input),
+    onSuccess: changed,
+  })
+}
+
+/** 利用者の名前、サービス、希望、担当の職員を変える mutation。 */
+export const useUpdatePatient = (patientId: Patient['id']) => {
+  const { api, facilityId } = useBuddyApi()
+  const changed = usePatientChanged()
+  return useMutation({
+    mutationFn: (input: PatientInput) => api.patients.update(facilityId, patientId, input),
+    onSuccess: changed,
+  })
+}
+
+/** 利用の終了にする mutation。予定が残って拒まれたときは、残る予定を結果に持つ。 */
+export const useEndService = (patientId: Patient['id']) => {
+  const { api, facilityId } = useBuddyApi()
+  const changed = usePatientChanged()
+  return useMutation({
+    mutationFn: () => api.patients.endService(facilityId, patientId),
+    onSuccess: (result) => ('ended' in result ? changed(result.ended) : undefined),
+  })
+}
+
+/** 利用を再開する mutation。引数は再開の後の担当の職員である。 */
+export const useResumeService = (patientId: Patient['id']) => {
+  const { api, facilityId } = useBuddyApi()
+  const changed = usePatientChanged()
+  return useMutation({
+    mutationFn: (assignedStaffId: Staff['id']) =>
+      api.patients.resumeService(facilityId, patientId, assignedStaffId),
     onSuccess: changed,
   })
 }
