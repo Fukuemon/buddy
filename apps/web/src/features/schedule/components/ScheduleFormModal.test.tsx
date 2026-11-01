@@ -91,9 +91,9 @@ describe('ScheduleFormModal', () => {
     await userEvent.click(screen.getByTestId('service-code-医'))
     await userEvent.clear(screen.getByTestId('schedule-form-start-time'))
     await userEvent.type(screen.getByTestId('schedule-form-start-time'), '23:00')
-    expect(screen.getByTestId('schedule-form-end-time')).toHaveTextContent('終了時間 翌日 00:30')
+    expect(screen.getByTestId('schedule-form-end-time')).toHaveTextContent('終了時間 翌 00:30')
     expect(screen.getByTestId('schedule-field-date-time')).toHaveTextContent(
-      '2026-10-20 23:00 - 翌日 00:30（90 分、医）',
+      '2026-10-20 23:00 - 翌 00:30（90 分、医）',
     )
   })
 
@@ -119,7 +119,7 @@ describe('ScheduleFormModal', () => {
       expect(screen.queryByText('終了時間は開始時間より後にしてください')).not.toBeInTheDocument(),
     )
     expect(screen.getByTestId('schedule-field-date-time')).toHaveTextContent(
-      '2026-10-20 22:00 - 翌日 01:00',
+      '2026-10-20 22:00 - 翌 01:00',
     )
     await userEvent.click(screen.getByTestId('schedule-create-submit'))
     await waitFor(() => expect(onSubmit).toHaveBeenCalledOnce())

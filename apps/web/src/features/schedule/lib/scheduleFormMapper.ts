@@ -115,9 +115,9 @@ export const visitEndOfInput = (startTime?: string, serviceTime?: number) =>
     ? endOfDuration(startTime, serviceTime as number)
     : undefined
 
-/** 終了の時刻を、翌日なら「翌日 00:30」、当日なら「00:30」の形にする。 */
+/** 終了の時刻を、翌日なら「翌 00:30」、当日なら「00:30」の形にする。 */
 export const formatEndTime = ({ endTime, endsNextDay }: ScheduleEnd) =>
-  endsNextDay ? `翌日 ${endTime}` : endTime
+  endsNextDay ? `翌 ${endTime}` : endTime
 
 /** 予定の日付と終了から、終了の日時を作る。 */
 const endsAtOf = (scheduleDate: string, { endTime, endsNextDay }: ScheduleEnd) =>
