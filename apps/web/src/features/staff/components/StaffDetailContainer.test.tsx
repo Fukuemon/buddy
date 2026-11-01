@@ -133,6 +133,16 @@ describe('StaffDetailContainer', () => {
     )
   })
 
+  it('「…」から開いた休職のダイアログをキャンセルすると、フォーカスが「…」のボタンに戻る', async () => {
+    render(<Default />)
+    await userEvent.click(await screen.findByTestId('staff-detail-menu'))
+    await userEvent.click(await screen.findByTestId('staff-detail-leave'))
+    await userEvent.click(await screen.findByTestId('staff-leave-cancel'))
+
+    expect(screen.queryByTestId('staff-leave-dialog')).toBeNull()
+    expect(screen.getByTestId('staff-detail-menu')).toHaveFocus()
+  })
+
   it('予定が残る職員は、退職のダイアログで退職にできないことを示し、退職にするを押せない', async () => {
     render(<Default />)
     await userEvent.click(await screen.findByTestId('staff-detail-menu'))
