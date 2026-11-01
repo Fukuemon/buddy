@@ -19,7 +19,7 @@ import (
 )
 
 func newHandler() http.Handler {
-	return NewHandler(slog.New(slog.NewTextHandler(io.Discard, nil)), Config{MaxUploadBytes: 1 << 20, Verifier: fakeVerifier{}})
+	return NewHandler(slog.New(slog.NewTextHandler(io.Discard, nil)), Config{MaxUploadBytes: 1 << 20, Verifier: fakeVerifier{}, Permission: fakePermission{}})
 }
 
 func testdata(t *testing.T, name string) []byte {
@@ -185,7 +185,7 @@ func TestChecksNotMultipart(t *testing.T) {
 }
 
 func TestChecksTooLarge(t *testing.T) {
-	h := NewHandler(slog.New(slog.NewTextHandler(io.Discard, nil)), Config{MaxUploadBytes: 100, Verifier: fakeVerifier{}})
+	h := NewHandler(slog.New(slog.NewTextHandler(io.Discard, nil)), Config{MaxUploadBytes: 100, Verifier: fakeVerifier{}, Permission: fakePermission{}})
 	rec := post(t, h, validFiles(t), "")
 	if rec.Code != http.StatusRequestEntityTooLarge || !strings.Contains(rec.Body.String(), string(openapi.PayloadTooLarge)) {
 		t.Errorf("status %d body %s", rec.Code, rec.Body)

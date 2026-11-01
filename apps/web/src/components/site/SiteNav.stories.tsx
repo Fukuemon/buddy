@@ -6,7 +6,7 @@ const meta = {
   title: '画面/Common/SiteNav',
   component: SiteNav,
   args: {
-    groups: siteNavGroups(true),
+    groups: siteNavGroups({ canManageStaff: true, canCheckReceipt: true }),
     current: '/schedule/review',
     badges: {
       review: (
@@ -34,7 +34,20 @@ export const Manager: Story = {}
 /** 予定のカレンダーで始める、たたんだレール。見出しを出さず、機能の間を区切り線で分ける。 */
 export const Rail: Story = { args: { current: '/schedule', isRail: true } }
 
-/** 職員の管理の権限を持たない職員が、照合の画面を開いた状態。予定の下はカレンダーだけになる。 */
+/** 職員の管理の権限を持たず、照合の権限を持つ職員（事務）が、照合の画面を開いた状態。予定の下はカレンダーだけになる。 */
 export const Staff: Story = {
-  args: { groups: siteNavGroups(false), current: '/receipt', badges: {} },
+  args: {
+    groups: siteNavGroups({ canManageStaff: false, canCheckReceipt: true }),
+    current: '/receipt',
+    badges: {},
+  },
+}
+
+/** 職員の管理の権限も照合の権限も持たない職員（チームリーダーとメンバー）。照合を出さない。 */
+export const Member: Story = {
+  args: {
+    groups: siteNavGroups({ canManageStaff: false, canCheckReceipt: false }),
+    current: '/schedule',
+    badges: {},
+  },
 }

@@ -1,5 +1,5 @@
 import type { components } from '#/api/generated/schedule'
-import { STAFF_MANAGE, type ServiceCode } from '#/api/types'
+import { RECEIPT_CHECK, STAFF_MANAGE, type ServiceCode } from '#/api/types'
 
 type Schemas = components['schemas']
 
@@ -48,7 +48,7 @@ export const mockStaff: Schemas['Staff'][] = [
   staff('staff-4', '江藤 四郎', teamB),
 ]
 
-/** ログインした職員として GET /v1/me が返す職員。職員の管理の権限を持つ。 */
+/** ログインした職員として GET /v1/me が返す職員。職員の管理の権限と照合の権限を持つ。 */
 export const mockMe: Schemas['StaffDetail'] = {
   ...mockStaff[0],
   sub: 'dev-aoki',
@@ -58,6 +58,14 @@ export const mockMe: Schemas['StaffDetail'] = {
       policy_id: 'policy-staff-manage',
       code: STAFF_MANAGE,
       name: '職員の管理',
+      target_user_ids: [],
+      target_team_ids: [],
+    },
+    {
+      user_policy_id: 'user-policy-2',
+      policy_id: 'policy-receipt-check',
+      code: RECEIPT_CHECK,
+      name: '照合',
       target_user_ids: [],
       target_team_ids: [],
     },
@@ -84,7 +92,7 @@ const policy = (id: string, code: string, name: string, needsTarget: boolean) =>
   ...stamps,
 })
 
-/** 権限。code と名前は、予定の API のマイグレーション（000001）が入れる 8 行と同じにする。 */
+/** 権限。code と名前は、予定の API のマイグレーション（000001 と 000009）が入れる 9 行と同じにする。 */
 export const mockPolicies: Schemas['Policy'][] = [
   policy('policy-self-edit', 'schedule.self.edit', '自分の予定の編集', false),
   policy('policy-user-read', 'schedule.user.read', '指定した職員の予定の閲覧', true),
@@ -94,6 +102,7 @@ export const mockPolicies: Schemas['Policy'][] = [
   policy('policy-all-read', 'schedule.all.read', '事業所の全ての予定の閲覧', false),
   policy('policy-all-edit', 'schedule.all.edit', '事業所の全ての予定の編集', false),
   policy('policy-staff-manage', STAFF_MANAGE, '職員の管理', false),
+  policy('policy-receipt-check', RECEIPT_CHECK, '照合', false),
 ]
 
 const policiesOf = (...codes: string[]) => mockPolicies.filter((p) => codes.includes(p.code))
@@ -108,6 +117,13 @@ export const mockPositions: Schemas['Position'][] = [
     ...stamps,
   },
   {
+    id: 'position-clerk',
+    facility_id: MOCK_FACILITY_ID,
+    name: '事務',
+    policies: policiesOf('schedule.all.read', 'schedule.all.edit', RECEIPT_CHECK),
+    ...stamps,
+  },
+  {
     id: 'position-manager',
     facility_id: MOCK_FACILITY_ID,
     name: 'マネージャー',
@@ -116,6 +132,7 @@ export const mockPositions: Schemas['Position'][] = [
       'schedule.all.read',
       'schedule.all.edit',
       STAFF_MANAGE,
+      RECEIPT_CHECK,
     ),
     ...stamps,
   },

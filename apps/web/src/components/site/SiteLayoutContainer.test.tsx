@@ -7,7 +7,7 @@ import { stubViewport } from '#/test/stubViewport'
 
 import * as stories from './SiteLayoutContainer.stories'
 
-const { StaffManager, Staff, Review, ReviewForbidden, Mobile } = composeStories(stories)
+const { StaffManager, Staff, Member, Review, ReviewForbidden, Mobile } = composeStories(stories)
 
 const navLabels = (nav: HTMLElement) =>
   within(nav)
@@ -41,6 +41,14 @@ describe('SiteLayoutContainer', () => {
     stubViewport(true)
     render(<Staff />)
     expect(navLabels(await screen.findByTestId('site-nav'))).toEqual(['カレンダー', '照合'])
+  })
+
+  it('照合の権限を持たない職員には、照合を並べない', async () => {
+    stubViewport(true)
+    render(<Member />)
+    const nav = await screen.findByTestId('site-nav')
+    expect(navLabels(nav)).toEqual(['カレンダー'])
+    expect(within(nav).queryByRole('list', { name: '照合' })).not.toBeInTheDocument()
   })
 
   it('予定の中の画面では、カレンダーではなくその画面の項目に印を付ける', async () => {

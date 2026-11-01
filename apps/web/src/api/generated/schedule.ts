@@ -976,7 +976,7 @@ export interface components {
          * @enum {string}
          */
         TeamColor: "blue" | "orange" | "magenta" | "cyan" | "yellow" | "purple" | "green" | "lime";
-        /** @description 職員に与える権限。8 つのレコードをマイグレーションが入れ、API では作らない */
+        /** @description 職員に与える権限。9 つのレコードをマイグレーションが入れ、API では作らない */
         Policy: {
             id: components["schemas"]["ID"];
             /**

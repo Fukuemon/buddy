@@ -25,6 +25,7 @@ export const createReceiptApi = ({ baseUrl, fetch }: HttpApiOptions): ReceiptApi
         response.status,
         error?.message ?? response.statusText,
         error?.errors ?? [],
+        error?.code,
       )
     },
   }

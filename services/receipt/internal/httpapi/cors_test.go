@@ -11,7 +11,7 @@ import (
 const originDocs = "http://localhost:8000"
 
 func newCORSHandler(origins ...string) http.Handler {
-	return NewHandler(slog.New(slog.NewTextHandler(io.Discard, nil)), Config{MaxUploadBytes: 1 << 20, Verifier: fakeVerifier{}, AllowOrigins: origins})
+	return NewHandler(slog.New(slog.NewTextHandler(io.Discard, nil)), Config{MaxUploadBytes: 1 << 20, Verifier: fakeVerifier{}, Permission: fakePermission{}, AllowOrigins: origins})
 }
 
 // TestCORSPreflight は、許した Origin の事前のリクエスト（preflight）に、トークンなしで 204 と CORS のヘッダーを返すことを確認する。

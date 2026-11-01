@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"maps"
 	"os"
 	"slices"
 	"testing"
@@ -223,7 +224,7 @@ func TestMigrateDownAndUp(t *testing.T) {
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)
 	}
-	if err := MigrateDown(cfg, 8); err != nil {
+	if err := MigrateDown(cfg, 9); err != nil {
 		t.Fatal(err)
 	}
 	pool, err := Open(ctx, cfg)
@@ -256,6 +257,139 @@ func countFacilities(t *testing.T, pool *pgxpool.Pool) int {
 	return n
 }
 
+// TestMigrateReceiptCheckPolicy は、照合の権限のマイグレーションが、今ある事業所に事務の役職を足し、
+// 職員の管理の権限をデフォルトに持つ役職と、職員の管理の権限を持つ退職していない職員に、照合の権限を足すことを確認する（ADR-0022、#376）。
+func TestMigrateReceiptCheckPolicy(t *testing.T) {
+	cfg := newDatabase(t, "migrate_receipt_check")
+	ctx := context.Background()
+	if err := MigrateUp(cfg); err != nil {
+		t.Fatal(err)
+	}
+	if err := MigrateDown(cfg, 1); err != nil {
+		t.Fatal(err)
+	}
+	pool, err := Open(ctx, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pool.Close()
+	const (
+		facility = "01M3TD00000000000000000010"
+		manager  = "01M3TD00000000000000000011"
+		member   = "01M3TD00000000000000000012"
+		dept     = "01M3TD00000000000000000013"
+		team     = "01M3TD00000000000000000014"
+		managerU = "01M3TD00000000000000000015"
+		retiredU = "01M3TD00000000000000000016"
+		memberU  = "01M3TD00000000000000000017"
+	)
+	_, err = pool.Exec(ctx, `
+		INSERT INTO facilities (id, name) VALUES ('`+facility+`', '事業所');
+		INSERT INTO positions (id, facility_id, name) VALUES
+			('`+manager+`', '`+facility+`', '管理者'), ('`+member+`', '`+facility+`', 'メンバー');
+		INSERT INTO position_policies (position_id, policy_id)
+		SELECT '`+manager+`', id FROM policies WHERE code IN ('schedule.all.read', 'staff.manage')
+		UNION ALL SELECT '`+member+`', id FROM policies WHERE code = 'schedule.self.edit';
+		INSERT INTO departments (id, facility_id, name) VALUES ('`+dept+`', '`+facility+`', '看護');
+		INSERT INTO teams (id, facility_id, name, color) VALUES ('`+team+`', '`+facility+`', 'A', 'blue');
+		INSERT INTO users (id, facility_id, username, email, department_id, team_id, position_id) VALUES
+			('`+managerU+`', '`+facility+`', '管理者', 'manager@example.com', '`+dept+`', '`+team+`', '`+manager+`'),
+			('`+memberU+`', '`+facility+`', 'メンバー', 'member@example.com', '`+dept+`', '`+team+`', '`+member+`');
+		INSERT INTO users (id, facility_id, username, email, department_id, team_id, position_id, retired_at) VALUES
+			('`+retiredU+`', '`+facility+`', '退職', NULL, '`+dept+`', '`+team+`', '`+manager+`', now());
+		INSERT INTO user_policies (id, facility_id, user_id, policy_id)
+		SELECT '01M3TD0000000000000000002' || n, '`+facility+`', u, id FROM policies,
+			(VALUES ('0', '`+managerU+`'), ('1', '`+retiredU+`')) AS v(n, u) WHERE code = 'staff.manage';`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := MigrateUp(cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	got := map[string][]string{}
+	rows, err := pool.Query(ctx, `
+		SELECT ps.name, p.code FROM positions ps
+		JOIN position_policies pp ON pp.position_id = ps.id
+		JOIN policies p ON p.id = pp.policy_id
+		WHERE ps.facility_id = $1 ORDER BY ps.name, p.code`, facility)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for rows.Next() {
+		var name, code string
+		if err := rows.Scan(&name, &code); err != nil {
+			t.Fatal(err)
+		}
+		got[name] = append(got[name], code)
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	want := map[string][]string{
+		"管理者":  {"receipt.check", "schedule.all.read", "staff.manage"},
+		"メンバー": {"schedule.self.edit"},
+		"事務":   {"receipt.check", "schedule.all.edit", "schedule.all.read"},
+	}
+	if !maps.EqualFunc(got, want, slices.Equal) {
+		t.Errorf("役職のデフォルトの権限 = %v, want %v", got, want)
+	}
+
+	var checkers []string
+	rows, err = pool.Query(ctx, `
+		SELECT up.user_id FROM user_policies up JOIN policies p ON p.id = up.policy_id
+		WHERE p.code = 'receipt.check' ORDER BY up.user_id`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			t.Fatal(err)
+		}
+		checkers = append(checkers, id)
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(checkers, []string{managerU}) {
+		t.Errorf("照合の権限を持つ職員 = %v, want 職員の管理の権限を持つ退職していない職員 %s だけ", checkers, managerU)
+	}
+
+	// 戻しても事務の役職は残り、照合の権限だけが消える。
+	if err := MigrateDown(cfg, 1); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := clerkPolicies(t, pool, facility), []string{"schedule.all.edit", "schedule.all.read"}; !slices.Equal(got, want) {
+		t.Errorf("戻した後の事務の役職のデフォルトの権限 = %v, want %v", got, want)
+	}
+
+	// 流し直すと、残した事務の役職に照合の権限が戻る。
+	if err := MigrateUp(cfg); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := clerkPolicies(t, pool, facility), []string{"receipt.check", "schedule.all.edit", "schedule.all.read"}; !slices.Equal(got, want) {
+		t.Errorf("流し直した後の事務の役職のデフォルトの権限 = %v, want %v", got, want)
+	}
+}
+
+func clerkPolicies(t *testing.T, pool *pgxpool.Pool, facility string) []string {
+	t.Helper()
+	rows, err := pool.Query(context.Background(), `
+		SELECT p.code FROM positions ps
+		JOIN position_policies pp ON pp.position_id = ps.id
+		JOIN policies p ON p.id = pp.policy_id
+		WHERE ps.facility_id = $1 AND ps.name = '事務' ORDER BY p.code`, facility)
+	if err != nil {
+		t.Fatal(err)
+	}
+	codes, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil {
+		t.Fatal(err)
+	}
+	return codes
+}
+
 // TestMigrateTeamColor は、チームの色のマイグレーションが、今あるチームに事業所ごとに名前の順で 8 色を入れ、9 個目から先頭に戻ることを確認する。
 func TestMigrateTeamColor(t *testing.T) {
 	cfg := newDatabase(t, "migrate_team_color")
@@ -263,7 +397,8 @@ func TestMigrateTeamColor(t *testing.T) {
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)
 	}
-	if err := MigrateDown(cfg, 1); err != nil {
+	// 後に続く照合の権限のマイグレーション（000009）と合わせて戻す
+	if err := MigrateDown(cfg, 2); err != nil {
 		t.Fatal(err)
 	}
 	pool, err := Open(ctx, cfg)

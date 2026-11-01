@@ -55,6 +55,7 @@ paths:
       operationId: createCheck
       summary: 実訪問の CSV と予定を照合する
       description: |
+        照合の権限（`receipt.check`）を持つ職員だけが呼べる。受けたトークンを付けて予定の API の `GET /v1/me` を呼び、返った権限で確認する（ADR-0022）。
         予定は、ファイル `schedules` があればそれを使う。無くてフォームの値 `month` があれば、その月の予定を Google カレンダーから取る。
         Google カレンダーは、トークンの組織に結び付けたカレンダーだけを読む。
         結果は Accept によらず JSON で返す。入力の CSV は、UTF-8（BOM の有無を問わない）と CP932 を受ける。
@@ -121,11 +122,17 @@ paths:
                   summary: トークンの検証に失敗した
                   value: { code: unauthenticated, message: "トークンが正しくない" }
         "403":
-          description: Google カレンダーから取るのに、トークンに組織がない（`forbidden`）
+          description: 職員が照合の権限を持たないか、予定の API が職員を拒んだ。または、Google カレンダーから取るのに、トークンに組織がない（`forbidden`）
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
-              example: { code: forbidden, message: "トークンに組織がないので、month では照合できない" }
+              examples:
+                noPermission:
+                  summary: 照合の権限がない
+                  value: { code: forbidden, message: "照合の権限がない" }
+                noOrg:
+                  summary: トークンに組織がない
+                  value: { code: forbidden, message: "トークンに組織がないので、month では照合できない" }
         "413":
           description: 本文が上限を超えている（`payload_too_large`）
           content:
@@ -166,11 +173,17 @@ paths:
               schema: { $ref: "#/components/schemas/Error" }
               example: { code: internal, message: "照合に失敗した" }
         "502":
-          description: Google カレンダーから予定を取れない（`schedule_source_failed`）
+          description: 予定の API で照合の権限を確認できない（`permission_check_failed`）か、Google カレンダーから予定を取れない（`schedule_source_failed`）
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
-              example: { code: schedule_source_failed, message: "Google カレンダーから予定を取れない" }
+              examples:
+                permission:
+                  summary: 予定の API に届かないか、予定の API がエラーを返した
+                  value: { code: permission_check_failed, message: "予定の API で照合の権限を確認できない" }
+                calendar:
+                  summary: Google カレンダーから予定を取れない
+                  value: { code: schedule_source_failed, message: "Google カレンダーから予定を取れない" }
         "503":
           description: サーバーに、トークンの組織の Google カレンダーの設定がないのに `month` で呼ばれた（`calendar_not_configured`）
           content:
@@ -213,6 +226,7 @@ components:
             - internal
             - calendar_not_configured
             - schedule_source_failed
+            - permission_check_failed
         message:
           type: string
           description: 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う
