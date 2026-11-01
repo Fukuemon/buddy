@@ -106,6 +106,39 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
+    post:
+      tags: [organization]
+      operationId: createDepartment
+      summary: 部署を作る
+      description: |
+        職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+      parameters: [$ref: "#/components/parameters/FacilityID"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 255 }
+      responses:
+        "201":
+          description: 作った部署
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Unit" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: 同じ事業所に同じ名前の部署がある
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { code: conflict, message: "部署 看護部 はこの事業所にすでにあります" }
+        "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/departments/{department_id}:
     get:
@@ -124,6 +157,41 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/InternalError" }
+    put:
+      tags: [organization]
+      operationId: updateDepartment
+      summary: 部署の名前を変える
+      description: |
+        部署の名前を本文の値に置き換える。
+        職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+      parameters:
+        - { name: department_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 255 }
+      responses:
+        "200":
+          description: 変えた部署
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Unit" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: 同じ事業所にほかの同じ名前の部署がある
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example: { code: conflict, message: "部署 看護部 はこの事業所にすでにあります" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/facilities/{facility_id}/teams:
