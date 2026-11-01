@@ -9,6 +9,9 @@ status: stable
 
 ## Glossary
 
+文書の表記は、この Glossary の「用語」の列にそろえる。  
+揺れやすい表記は `prh.yml` の規則が止める。
+
 ### 事業所と職員
 
 | 用語 | 意味 | コードの識別子 |
@@ -72,11 +75,10 @@ status: stable
 | Google の内容に合わせる | 確認が必要な単発の予定（書き出しの）を、Google カレンダーの今の内容にそろえること。Google で消された予定は buddy でキャンセルする | API `createCalendarExportAcceptance` |
 | 事業所のサービスアカウント | 事業所の職員がカレンダーを共有する相手の Google のサービスアカウント。予定の API と照合の API が同じアカウントで読み書きする | API `getCalendarServiceAccount`、`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` |
 
-### 呼び方の対応
+### 予定の管理と照合で表記が違う語
 
 - 予定の管理の利用者は、照合では `client`（カラムは「利用者名」）と呼ぶ。
 - サービスコードは、予定の管理では半角の数字（`訪看I2`）、照合では正規化の後の全角の数字（`訪看I２`）で持つ。
-- 文書の表記は、ここの「用語」の列にそろえる。揺れやすい表記は `prh.yml` の規則が止める。
 
 ## Concepts
 
