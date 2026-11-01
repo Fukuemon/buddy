@@ -24,6 +24,6 @@ export const Submitting: Story = { args: { isSubmitting: true } }
 export const Failed: Story = {
   args: {
     errorMessage:
-      'Google カレンダーの予定を、buddy の予定に読み替えられません。終日の予定か、タイトルの利用者が見つからない予定です。buddy の内容で書き直すか、Google カレンダーで直すよう職員に頼んでください。',
+      'Google カレンダーの予定を、buddy の予定として取り込めません。終日の予定か、タイトルの利用者が見つからない予定です。buddy の内容で書き直すか、Google カレンダーで直すよう職員に頼んでください。',
   },
 }

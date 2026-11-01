@@ -4,7 +4,13 @@ import { useLayoutEffect, useRef } from 'react'
 
 import type { ReceiptRow } from '#/api/types'
 
-import { RECEIPT_CATEGORIES, RECEIPT_COLUMNS, reportRowCells } from '../lib/reportCells'
+import {
+  isMissingSideCell,
+  NO_DATA,
+  RECEIPT_CATEGORIES,
+  RECEIPT_COLUMNS,
+  reportRowCells,
+} from '../lib/reportCells'
 
 export type ReceiptResultTableProps = {
   rows: readonly ReceiptRow[]
@@ -87,16 +93,20 @@ export const ReceiptResultTable = ({ rows }: ReceiptResultTableProps) => {
                 <Table.Row key={index}>
                   {reportRowCells(row).map((cell, i) => (
                     <Table.Cell key={RECEIPT_COLUMNS[i]}>
-                      <span
-                        className={clsx(
-                          'rounded-4 px-1',
-                          cell.includes('❌') && 'bg-danger-surface',
-                          !cell.includes('❌') && cell.includes('※') && 'bg-warning-surface',
-                          cell === 'データなし' && 'text-text-secondary',
-                        )}
-                      >
-                        {cell}
-                      </span>
+                      {isMissingSideCell(row, i) ? (
+                        <span className="sr-only">{NO_DATA}</span>
+                      ) : (
+                        <span
+                          className={clsx(
+                            'rounded-4 px-1',
+                            cell.includes('❌') && 'bg-danger-surface',
+                            !cell.includes('❌') && cell.includes('※') && 'bg-warning-surface',
+                            cell === NO_DATA && 'text-text-secondary',
+                          )}
+                        >
+                          {cell}
+                        </span>
+                      )}
                     </Table.Cell>
                   ))}
                 </Table.Row>

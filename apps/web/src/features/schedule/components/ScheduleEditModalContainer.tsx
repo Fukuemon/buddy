@@ -59,6 +59,7 @@ const ScheduleEditForm = ({
       submitError={updateSchedule.isError ? '予定を更新できませんでした。' : undefined}
       submitLabel="保存"
       submitTestId="schedule-edit-submit"
+      cancelTestId="schedule-edit-cancel"
       title="予定の編集"
     />
   )

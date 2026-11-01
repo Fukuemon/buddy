@@ -30,12 +30,13 @@ test.describe('確認が必要な予定', () => {
     test.afterEach(async ({ page, request }) => {
       await holdGoogleChanges(request, false)
       await page.goto('/schedule/link')
-      const remove = page.getByTestId(`calendar-link-remove-${SATO.id}`)
+      const menu = page.getByTestId(`calendar-link-menu-${SATO.id}`)
       await expect(page.getByTestId(`calendar-link-row-${SATO.id}`)).toBeVisible()
-      if (await remove.isVisible()) {
-        await remove.click()
+      if (await menu.isVisible()) {
+        await menu.click()
+        await page.getByTestId(`calendar-link-remove-${SATO.id}`).click()
         await page.getByTestId('calendar-unlink-submit').click()
-        await expect(remove).toBeHidden()
+        await expect(menu).toBeHidden()
       }
     })
 
@@ -103,13 +104,15 @@ test.describe('確認が必要な予定', () => {
           await expect(row).toBeVisible()
         }).toPass()
         await expect(row.getByTestId(/^calendar-review-reason-/)).toHaveText(
-          'buddy と Google カレンダーの両方で予定が変わりました。どちらの内容に合わせるかを選んでください。',
+          'buddy と Google カレンダーの両方で予定が変わりました。',
         )
         await holdGoogleChanges(request, false)
       })
 
       await test.step('Google の内容に合わせると、一覧から消え、buddy の予定が Google カレンダーのタイトルと日時になる', async () => {
-        await reviewRow(page, scheduleId)
+        await reviewRow(page, scheduleId).click()
+        await page
+          .getByTestId('calendar-review-dialog')
           .getByTestId(/^calendar-review-accept-/)
           .click()
         const dialog = page.getByTestId('calendar-accept-dialog')

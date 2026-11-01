@@ -39,3 +39,8 @@
 .sn-end {
   margin: 0;
 }
+
+/* 項目の一覧の、選んでいない値の placeholder。apps/web の text-text-secondary と同じ薄い色にする */
+.sn-placeholder {
+  color: var(--wf-muted);
+}

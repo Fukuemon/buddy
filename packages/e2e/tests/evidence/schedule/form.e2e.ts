@@ -89,7 +89,7 @@ test.describe('予定のカレンダー', () => {
               await dialog.dismiss()
               return message
             })
-            await step('閉じるボタンを押す')
+            await step('右上の ×（閉じる）を押す')
             await page.getByTestId('modal-close').click()
             const message = await confirmed
             expect(message).toBe('変更が破棄されますがよろしいですか？')

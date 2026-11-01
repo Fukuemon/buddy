@@ -20,11 +20,15 @@ import {
   useRetryExport,
 } from '../queries'
 import { CalendarAcceptDialog } from './CalendarAcceptDialog'
+import { CalendarReviewDialog } from './CalendarReviewDialog'
 import { CalendarReviewView, type CalendarReviewViewState } from './CalendarReviewView'
 import { CalendarRewriteDialog } from './CalendarRewriteDialog'
 
-/** 開いているダイアログの操作と予定。 */
-type DialogTarget = { action: 'rewrite' | 'accept'; issue: CalendarExportIssue }
+/**
+ * 開いているダイアログ。detail は予定の確認のダイアログで、rewrite と accept はそこから開く確認のダイアログである。
+ * 予定は、送った後に一覧を読み直しても消えないよう、開いたときの値を持つ。
+ */
+type DialogTarget = { step: 'detail' | 'rewrite' | 'accept'; issue: CalendarExportIssue }
 
 const CalendarReviewContent = () => {
   const { api, facilityId } = useBuddyApi()
@@ -41,16 +45,10 @@ const CalendarReviewContent = () => {
       ? { status: 'loading' }
       : { status: 'ready', issues: issuesQuery.data }
 
-  const close = () => {
+  const show = (step: DialogTarget['step'] | null, issue?: CalendarExportIssue) => {
     rewrite.reset()
     accept.reset()
-    setTarget(null)
-  }
-  const open = (action: DialogTarget['action']) => (exportId: CalendarExportIssue['id']) => {
-    rewrite.reset()
-    accept.reset()
-    const issue = issuesQuery.data?.find((i) => i.id === exportId)
-    setTarget(issue === undefined ? null : { action, issue })
+    setTarget(step === null || issue === undefined ? null : { step, issue })
   }
   const label =
     target === null ? '' : `${formatExportIssueDateTime(target.issue)}、${target.issue.staff_name}`
@@ -58,32 +56,44 @@ const CalendarReviewContent = () => {
   return (
     <>
       <CalendarReviewView
-        onOpenSchedule={(scheduleId) =>
-          navigate({ to: '/schedule/$scheduleId', params: { scheduleId } })
-        }
         onRetry={() =>
           queryClient.resetQueries({ queryKey: calendarQueryKeys.exportIssues(facilityId) })
         }
-        onAccept={open('accept')}
-        onRewrite={open('rewrite')}
+        onSelect={(exportId) =>
+          show(
+            'detail',
+            issuesQuery.data?.find((i) => i.id === exportId),
+          )
+        }
         state={state}
       />
-      {target?.action === 'rewrite' && (
+      {target?.step === 'detail' && (
+        <CalendarReviewDialog
+          issue={target.issue}
+          onAccept={() => show('accept', target.issue)}
+          onClose={() => show(null)}
+          onOpenSchedule={(scheduleId) =>
+            navigate({ to: '/schedule/$scheduleId', params: { scheduleId } })
+          }
+          onRewrite={() => show('rewrite', target.issue)}
+        />
+      )}
+      {target?.step === 'rewrite' && (
         <CalendarRewriteDialog
           cancelled={isCancelledSingleIssue(target.issue)}
           errorMessage={rewrite.isError ? rewriteErrorMessage(rewrite.error) : undefined}
           isSubmitting={rewrite.isPending}
-          onCancel={close}
-          onSubmit={() => rewrite.mutate(target.issue.id, { onSuccess: close })}
+          onCancel={() => show('detail', target.issue)}
+          onSubmit={() => rewrite.mutate(target.issue.id, { onSuccess: () => show(null) })}
           target={label}
         />
       )}
-      {target?.action === 'accept' && (
+      {target?.step === 'accept' && (
         <CalendarAcceptDialog
           errorMessage={accept.isError ? acceptErrorMessage(accept.error) : undefined}
           isSubmitting={accept.isPending}
-          onCancel={close}
-          onSubmit={() => accept.mutate(target.issue.id, { onSuccess: close })}
+          onCancel={() => show('detail', target.issue)}
+          onSubmit={() => accept.mutate(target.issue.id, { onSuccess: () => show(null) })}
           target={label}
         />
       )}
@@ -93,7 +103,8 @@ const CalendarReviewContent = () => {
 
 /**
  * 確認が必要な予定の画面。職員の管理の権限が無ければ、API を呼ばずに権限が無いことを示す。
- * Google カレンダーと食い違った予定を読み、buddy の内容で書き直すか、Google の内容に合わせるかを、ダイアログで確認してから行う。
+ * 行を押すと予定の確認のダイアログを開き、buddy の内容で書き直すか Google の内容に合わせるかを、確認のダイアログで確定してから行う。
+ * 確認のダイアログの「キャンセル」は、予定の確認のダイアログに戻る。
  */
 export const CalendarReviewContainer = () => {
   const { viewer } = useRouteContext({ from: '__root__' })

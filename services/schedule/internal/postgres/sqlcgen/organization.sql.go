@@ -24,6 +24,21 @@ func (q *Queries) AddPositionPolicy(ctx context.Context, arg AddPositionPolicyPa
 	return err
 }
 
+const createDepartment = `-- name: CreateDepartment :exec
+INSERT INTO departments (id, facility_id, name) VALUES ($1, $2, $3)
+`
+
+type CreateDepartmentParams struct {
+	ID         string
+	FacilityID string
+	Name       string
+}
+
+func (q *Queries) CreateDepartment(ctx context.Context, arg CreateDepartmentParams) error {
+	_, err := q.db.Exec(ctx, createDepartment, arg.ID, arg.FacilityID, arg.Name)
+	return err
+}
+
 const createPosition = `-- name: CreatePosition :exec
 INSERT INTO positions (id, facility_id, name) VALUES ($1, $2, $3)
 `
@@ -363,6 +378,23 @@ func (q *Queries) ListTeamsByFacility(ctx context.Context, facilityID string) ([
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateDepartment = `-- name: UpdateDepartment :execrows
+UPDATE departments SET name = $2, updated_at = now() WHERE id = $1
+`
+
+type UpdateDepartmentParams struct {
+	ID   string
+	Name string
+}
+
+func (q *Queries) UpdateDepartment(ctx context.Context, arg UpdateDepartmentParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateDepartment, arg.ID, arg.Name)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const updateTeam = `-- name: UpdateTeam :execrows

@@ -158,3 +158,82 @@ func TestOrganizationCreatePositionForbidden(t *testing.T) {
 		t.Errorf("拒んだのに役職が増えた: %d", len(s.Positions))
 	}
 }
+
+func TestOrganizationCreateDepartment(t *testing.T) {
+	s := inmem.Seeded()
+	uc := organization.NewUsecase(organization.Deps{
+		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s},
+	}, &inmem.Tx{}, &inmem.SeqIDs{}, func(context.Context) error { return nil })
+	ctx := context.Background()
+	got, err := uc.CreateDepartment(ctx, facilityID, "看護部")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Name != "看護部" || got.FacilityID != facilityID {
+		t.Errorf("CreateDepartment = %+v", got)
+	}
+	if _, err := uc.CreateDepartment(ctx, facilityID, "看護部"); !errors.Is(err, apperr.ErrConflict) ||
+		err.Error() != "部署 看護部 はこの事業所にすでにあります" {
+		t.Errorf("同じ名前: err = %v, want 名前の重なりの ErrConflict", err)
+	}
+	if _, err := uc.CreateDepartment(ctx, facilityID, ""); !errors.Is(err, apperr.ErrInvalidInput) {
+		t.Errorf("空の名前: err = %v, want ErrInvalidInput", err)
+	}
+	if _, err := uc.CreateDepartment(ctx, "MISSING", "外来"); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("無い事業所: err = %v, want ErrNotFound", err)
+	}
+}
+
+func TestOrganizationUpdateDepartment(t *testing.T) {
+	s := inmem.Seeded()
+	uc := organization.NewUsecase(organization.Deps{
+		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s},
+	}, &inmem.Tx{}, &inmem.SeqIDs{}, func(context.Context) error { return nil })
+	ctx := context.Background()
+	a, err := uc.CreateDepartment(ctx, facilityID, "A")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := uc.CreateDepartment(ctx, facilityID, "B"); err != nil {
+		t.Fatal(err)
+	}
+	got, err := uc.UpdateDepartment(ctx, a.ID, "看護部")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Name != "看護部" || got.FacilityID != facilityID {
+		t.Errorf("UpdateDepartment = %+v", got)
+	}
+	if _, err := uc.UpdateDepartment(ctx, a.ID, "看護部"); err != nil {
+		t.Errorf("同じ名前のまま保存する: err = %v", err)
+	}
+	if _, err := uc.UpdateDepartment(ctx, a.ID, "B"); !errors.Is(err, apperr.ErrConflict) {
+		t.Errorf("ほかの部署と同じ名前: err = %v, want ErrConflict", err)
+	}
+	if _, err := uc.UpdateDepartment(ctx, a.ID, ""); !errors.Is(err, apperr.ErrInvalidInput) {
+		t.Errorf("空の名前: err = %v, want ErrInvalidInput", err)
+	}
+	if _, err := uc.UpdateDepartment(ctx, "MISSING", "外来"); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("無い部署: err = %v, want ErrNotFound", err)
+	}
+}
+
+// TestOrganizationDepartmentForbidden は、職員の管理を許されない職員が、部署を作れず、名前を変えられないことを確認する。
+func TestOrganizationDepartmentForbidden(t *testing.T) {
+	s := inmem.Seeded()
+	s.Departments["DEP"] = organization.Department{ID: "DEP", FacilityID: facilityID, Name: "A"}
+	before := len(s.Departments)
+	uc := organization.NewUsecase(organization.Deps{
+		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s},
+	}, &inmem.Tx{}, &inmem.SeqIDs{}, func(context.Context) error { return apperr.ErrForbidden })
+	ctx := context.Background()
+	if _, err := uc.CreateDepartment(ctx, facilityID, "看護部"); !errors.Is(err, apperr.ErrForbidden) {
+		t.Errorf("作成: err = %v, want ErrForbidden", err)
+	}
+	if _, err := uc.UpdateDepartment(ctx, "DEP", "B"); !errors.Is(err, apperr.ErrForbidden) {
+		t.Errorf("名前の変更: err = %v, want ErrForbidden", err)
+	}
+	if len(s.Departments) != before || s.Departments["DEP"].Name != "A" {
+		t.Errorf("拒んだのに部署が変わった: %+v", s.Departments)
+	}
+}

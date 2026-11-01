@@ -19,3 +19,8 @@
 .se-row {
   align-items: start;
 }
+
+/* 項目の一覧の、選んでいない値の placeholder。apps/web の text-text-secondary と同じ薄い色にする */
+.se-placeholder {
+  color: var(--wf-muted);
+}

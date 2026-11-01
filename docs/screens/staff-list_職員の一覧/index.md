@@ -7,7 +7,7 @@
 | --- | --- |
 | URL | `/staff` |
 | 使う人 | 職員の管理の権限を持つ職員（デフォルトはマネージャー） |
-| 実装 | 未実装 |
+| 実装 | `apps/web/src/routes/staff.tsx`、`apps/web/src/features/staff/components/StaffListContainer.tsx`、`apps/web/src/features/staff/components/StaffListView.tsx`、`apps/web/src/components/site/RowTable.tsx`、`apps/web/src/components/site/ListTools.tsx`、`apps/web/src/components/site/PageForbiddenMessage.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
 カラム、絞り込み、並び順は、[使う場面](#使う場面) から決めた。
@@ -470,7 +470,7 @@ BFF を通して API を呼ぶ構成で、ログインしているとき
 **概要**: 職員の所属のチームを示し、同じチームの職員のまとまりを少しだけ見えるようにする。
 
 **値のソース**: 直径 8px の丸い点と、チームの名前を並べる。  
-点の色は #367 のチームの色である。モックは仮の 3 色で描く。  
+点の色は、チームに付けたチームの色で、[部署とチーム](../organization-list_部署とチーム/index.md) で選ぶ。  
 点は読み上げず、チームの名前を読み上げる。  
 色だけでチームを区別させず、点だけを出すことはしない。
 
@@ -679,4 +679,3 @@ BFF を通して API を呼ぶ構成で、ログインしているとき
 - 職員の管理の権限を持たない職員が、同じ事業所の職員の連絡先を見る画面は無い。要るかは、プロフィールの画面を作るときに決める。
 - 絞り込みの値を URL の search params に残すかは決めていない。詳細から戻ったときに絞り込みを保つ要望が出たら決める。
 - チームの順は、チームの管理の画面（#368）で決める。モックは東チーム、西チーム、南チームの順で描く。
-- チームの色の点の色は、#367 のチームの色のトークンで決める。モックの 3 色は仮である。

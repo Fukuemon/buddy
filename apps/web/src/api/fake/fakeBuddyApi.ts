@@ -19,11 +19,12 @@ import type {
 } from '../types'
 import {
   FAKE_FACILITY_ID,
+  FAKE_VIEWER,
   createFakeSchedules,
   fakePatients,
-  fakeStaff,
   fakeTeams,
 } from './fixtures'
+import { createFakeStaffApi } from './fakeStaffApi'
 
 /** createFakeBuddyApi の設定。 */
 export type FakeBuddyApiOptions = {
@@ -87,6 +88,13 @@ export const createFakeBuddyApi = ({
       ? createMockImportedPreview(range)
       : createMockImportPreview(range)
 
+  const staffApi = createFakeStaffApi({
+    assertFacility,
+    schedules: () => schedules.values(),
+    viewerId: FAKE_VIEWER.staffId,
+    today: () => baseDate,
+  })
+
   const findSchedule = (scheduleId: Schedule['id']) => {
     const schedule = schedules.get(scheduleId)
     if (schedule === undefined) throw new ApiError(404, `予定 ${scheduleId} が見つかりません`)
@@ -131,12 +139,7 @@ export const createFakeBuddyApi = ({
         return schedule
       },
     },
-    staff: {
-      list: async (facilityId, params) => {
-        assertFacility(facilityId)
-        return fakeStaff.filter((staff) => matchesName(staff.name, params))
-      },
-    },
+    ...staffApi,
     teams: {
       list: async (facilityId) => {
         assertFacility(facilityId)

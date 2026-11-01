@@ -1466,3 +1466,30 @@ func TestStaffAddGrantToUnknownStaff(t *testing.T) {
 		t.Fatalf("いない職員への権限: err = %v, want ErrInvalidInput", err)
 	}
 }
+
+// TestDepartmentCreateAndUpdate は、部署を作って名前を変え、同じ事業所のほかの部署と同じ名前と無い部署を拒むことを確認する。
+func TestDepartmentCreateAndUpdate(t *testing.T) {
+	ctx := txContext(t)
+	r := NewDepartmentRepository(testDB)
+	dep := organization.Department{ID: "01M3TD000000000000000000J0", FacilityID: seedFacility, Name: "外来"}
+	if err := r.Create(ctx, dep); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.Create(ctx, organization.Department{ID: "01M3TD000000000000000000J1", FacilityID: seedFacility, Name: "看護"}); !errors.Is(err, apperr.ErrConflict) {
+		t.Errorf("シードの部署 看護 と同じ名前で作る: err = %v, want ErrConflict", err)
+	}
+	dep.Name = "訪問"
+	if err := r.Update(ctx, dep); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := r.Get(ctx, dep.ID); err != nil || got.Name != "訪問" || got.FacilityID != seedFacility {
+		t.Errorf("変えた後の Get = %+v, %v", got, err)
+	}
+	dep.Name = "看護"
+	if err := r.Update(ctx, dep); !errors.Is(err, apperr.ErrConflict) {
+		t.Errorf("シードの部署 看護 と同じ名前に変える: err = %v, want ErrConflict", err)
+	}
+	if err := r.Update(ctx, organization.Department{ID: "01M3TD000000000000000000J2", Name: "無い"}); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("無い部署: err = %v, want ErrNotFound", err)
+	}
+}

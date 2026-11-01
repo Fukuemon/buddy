@@ -47,6 +47,13 @@ describe('ScheduleFormModal', () => {
     })
   })
 
+  it('入力を変えていなければ、キャンセルで確認を出さずに onClose を呼ぶ', async () => {
+    const onClose = fn()
+    render(<Visit onClose={onClose} />)
+    await userEvent.click(screen.getByTestId('schedule-new-cancel'))
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
   it('利用者の候補に、利用の終了の利用者を出さない', async () => {
     render(<Visit />)
 
@@ -89,14 +96,14 @@ describe('ScheduleFormModal', () => {
     expect(onKindChange).toHaveBeenCalledWith('visit')
   })
 
-  it('ヘッダーには、閉じるボタン、タイトル、種類のタブの順に並べる', () => {
+  it('ヘッダーには、タイトル、種類のタブ、閉じるボタンの順に並べる', () => {
     render(<Visit onKindChange={fn()} />)
     const close = screen.getByTestId('modal-close')
     const title = screen.getByRole('heading', { name: '予定の作成' })
     const kindTab = screen.getByTestId('schedule-kind-tab')
 
-    expect(close.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(title.compareDocumentPosition(kindTab) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(kindTab.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it('送信の失敗の文を出す', () => {

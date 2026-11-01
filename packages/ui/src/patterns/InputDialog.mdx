@@ -1,0 +1,66 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { InputDialog } from './InputDialog'
+import * as Stories from './InputDialog.stories'
+
+<Meta of={Stories} />
+
+# InputDialog
+
+入力のダイアログ。`Dialog` に、タイトルと閉じるボタン（×）のヘッダー、「キャンセル」と確定のボタンのフッターを組んだ形。
+
+## 使う場面
+
+- 理由やメールアドレスのような、短い入力を 1〜2 項目受けて送る
+
+## 使わない場面
+
+- 予定の作成と編集のような、項目の多い入力（`Modal` を使う）
+- 取り消せない操作の確認（`ConfirmDialog` を使う）
+
+## Do
+
+- 確定のボタンの文字（`submitLabel`）と送っている間の文字（`busyLabel`）は、操作の動詞にする（「保存」「保存しています」）
+- 入力が足りない間は `canSubmit` を false にし、足りない理由を入力欄の近くに出す
+- 送っている間は `isSubmitting` を渡す。どの操作でも閉じなくなる
+- 送れなかったときは `error` に文を渡す
+- 入力を form にするときは `formId` を渡し、確定のボタンをその form の送信のボタンにする
+- タイトルの補いは `titleAddon` に `HelpToggle` を渡す
+
+## Don't
+
+- 確定のボタンを 2 つ置く
+- ×、「キャンセル」、Escape キーで、入力を保存する
+
+## 状態
+
+### デフォルト
+
+<Canvas of={Stories.Default} />
+
+### 送れない
+
+<Canvas of={Stories.CannotSubmit} />
+
+### 送っている間
+
+<Canvas of={Stories.Submitting} />
+
+### エラー
+
+<Canvas of={Stories.WithError} />
+
+### タイトルのヘルプ
+
+<Canvas of={Stories.WithTitleAddon} />
+
+## キーボードの操作
+
+- 開くと、閉じるボタン（×）にフォーカスが移る
+- Tab と Shift+Tab はダイアログの中の要素に移る
+- Esc で `onClose` を呼ぶ。送っている間は呼ばない
+- 閉じると、開く前にフォーカスがあった要素へ戻る
+
+## props
+
+<ArgTypes of={InputDialog} />

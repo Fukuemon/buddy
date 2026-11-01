@@ -9,7 +9,21 @@ const BFF_OPERATIONS = [
   'schedules.create',
   'schedules.update',
   'staff.list',
+  'staff.listRecords',
+  'staff.get',
+  'staff.create',
+  'staff.update',
+  'staff.changePosition',
+  'staff.addPolicy',
+  'staff.removePolicy',
+  'staff.remainingAssignments',
+  'staff.startLeave',
+  'staff.reinstate',
+  'staff.retire',
   'teams.list',
+  'departments.list',
+  'positions.list',
+  'policies.list',
   'patients.list',
   'calendars.serviceAccount',
   'calendars.list',
@@ -49,6 +63,15 @@ const scheduleInput = z.object({
     })
     .optional(),
 })
+const staffName = z.string().min(1).max(128)
+const phoneNumber = z.string().max(16).nullable().optional()
+const staffUpdate = z.object({
+  username: staffName,
+  phone_number: phoneNumber,
+  department_id: id,
+  team_id: id,
+})
+const targetIds = z.array(id).max(500).optional()
 const nameSearch = z.object({ name: z.string().max(100).optional() }).optional()
 const calendarId = z.string().min(1).max(1024)
 const date = z.iso.date()
@@ -75,7 +98,28 @@ const ARGS: Record<BffOperation, z.ZodType> = {
   'schedules.create': z.tuple([id, scheduleInput]),
   'schedules.update': z.tuple([id, id, scheduleInput]),
   'staff.list': z.tuple([id, nameSearch]),
+  'staff.listRecords': z.tuple([id]),
+  'staff.get': z.tuple([id, id]),
+  'staff.create': z.tuple([
+    id,
+    staffUpdate.extend({ email: z.string().min(1).max(254), position_id: id }),
+  ]),
+  'staff.update': z.tuple([id, id, staffUpdate]),
+  'staff.changePosition': z.tuple([id, id, id]),
+  'staff.addPolicy': z.tuple([
+    id,
+    id,
+    z.object({ policy_id: id, target_user_ids: targetIds, target_team_ids: targetIds }),
+  ]),
+  'staff.removePolicy': z.tuple([id, id, id]),
+  'staff.remainingAssignments': z.tuple([id, id]),
+  'staff.startLeave': z.tuple([id, id, date.nullable()]),
+  'staff.reinstate': z.tuple([id, id]),
+  'staff.retire': z.tuple([id, id]),
   'teams.list': z.tuple([id]),
+  'departments.list': z.tuple([id]),
+  'positions.list': z.tuple([id]),
+  'policies.list': z.tuple([id]),
   'patients.list': z.tuple([id, nameSearch]),
   'calendars.serviceAccount': z.tuple([id]),
   'calendars.list': z.tuple([id]),

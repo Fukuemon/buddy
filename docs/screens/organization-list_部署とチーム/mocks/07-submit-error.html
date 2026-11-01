@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>organization-list 保存の失敗</title>
+    <link rel="stylesheet" href="../../_common/mock.css" />
+    <link rel="stylesheet" href="../../_common/tokens.css" />
+    <link rel="stylesheet" href="../../_common/wireframe.css" />
+    <link rel="stylesheet" href="organization-list.css" />
+  </head>
+  <body data-view="desktop">
+    <div class="stage">
+      <div class="screen">
+        <div class="screen-body">
+          <header class="wf-site-header">
+            <div class="wf-site-header__brand">
+              <span class="wf-btn wf-btn--icon wf-site-menu" aria-label="メニュー" data-open="site-nav" data-testid="site-nav-toggle"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z" fill="currentColor" /></svg></span>
+              <strong>buddy</strong>
+            </div>
+            <div class="wf-site-header__viewer" data-testid="viewer-menu">
+              <span class="wf-site-account" aria-label="アカウント（青木 陽菜）" data-open="viewer-menu" data-testid="viewer-menu-open"><span class="wf-site-avatar" aria-hidden="true">青</span><span class="wf-site-account__name">青木 陽菜</span></span>
+              <div class="wf-site-viewer-menu" data-panel="viewer-menu" data-panel-dismiss>
+                <span class="wf-text wf-text--s">青木 陽菜</span>
+                <span class="wf-btn" data-testid="viewer-logout">ログアウト</span>
+              </div>
+            </div>
+          </header>
+          <div class="wf-site-body">
+            <nav class="wf-site-nav" aria-label="画面" data-testid="site-nav" data-panel="site-nav" data-panel-wide="collapse">
+              <div class="wf-site-nav__head">
+                <strong>buddy</strong>
+                <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-escape data-close="site-nav" data-testid="site-nav-close"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
+              </div>
+              <div class="wf-site-nav__group" role="group" aria-label="予定">
+                <span class="wf-site-nav__heading" aria-hidden="true">予定</span>
+                <span class="wf-site-nav__item" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html" data-testid="site-nav-schedule"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z" fill="currentColor" /></svg><span class="wf-site-nav__label">カレンダー</span></span>
+                <span class="wf-site-nav__item" data-go="../../schedule-import_予定の取り込み/mocks/01-initial.html" data-testid="site-nav-import"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z" fill="currentColor" /></svg><span class="wf-site-nav__label">取り込み</span></span>
+                <span class="wf-site-nav__item" aria-label="要確認 3 件" data-go="../../schedule-review_確認が必要な予定/mocks/01-list.html" data-testid="site-nav-review"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M160-200v-80h80v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h80v80H160Zm320 120q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80Z" fill="currentColor" /></svg><span class="wf-site-nav__label">要確認</span><span class="wf-site-badge" data-testid="site-nav-review-count">3</span></span>
+                <span class="wf-site-nav__item" data-go="../../schedule-link_カレンダーの連携/mocks/01-list.html" data-testid="site-nav-link"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M440-280H280q-83 0-141.5-58.5T80-480q0-83 58.5-141.5T280-680h160v80H280q-50 0-85 35t-35 85q0 50 35 85t85 35h160v80ZM320-440v-80h320v80H320Zm200 160v-80h160q50 0 85-35t35-85q0-50-35-85t-85-35H520v-80h160q83 0 141.5 58.5T880-480q0 83-58.5 141.5T680-280H520Z" fill="currentColor" /></svg><span class="wf-site-nav__label">連携</span></span>
+              </div>
+              <div class="wf-site-nav__group" role="group" aria-label="照合">
+                <span class="wf-site-nav__heading" aria-hidden="true">照合</span>
+                <span class="wf-site-nav__item" data-go="../../receipt-upload_照合/mocks/01-initial.html" data-testid="site-nav-receipt"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M160-120q-33 0-56.5-23.5T80-200v-560q0-33 23.5-56.5T160-840h640q33 0 56.5 23.5T880-760v560q0 33-23.5 56.5T800-120H160Zm0-80h640v-560H160v560Zm40-80h200v-80H200v80Zm382-80 198-198-57-57-141 142-57-57-56 57 113 113Zm-382-80h200v-80H200v80Zm0-160h200v-80H200v80Z" fill="currentColor" /></svg><span class="wf-site-nav__label">照合</span></span>
+              </div>
+              <div class="wf-site-nav__group" role="group" aria-label="職員">
+                <span class="wf-site-nav__heading" aria-hidden="true">職員</span>
+                <span class="wf-site-nav__item" data-go="../../staff-list_職員の一覧/mocks/01-list.html" data-testid="site-nav-staff"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="2" /><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" fill="none" stroke="currentColor" stroke-width="2" /><circle cx="17" cy="9" r="2.5" fill="none" stroke="currentColor" stroke-width="2" /><path d="M17.5 14.2c2.4.4 4 2.4 4 5.8" fill="none" stroke="currentColor" stroke-width="2" /></svg><span class="wf-site-nav__label">職員</span></span>
+                <span class="wf-site-nav__item" aria-current="page" data-go="01-list.html" data-testid="site-nav-organization"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="2" /><rect x="3" y="16" width="6" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="2" /><rect x="15" y="16" width="6" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="2" /><path d="M12 8v4M6 16v-4h12v4" fill="none" stroke="currentColor" stroke-width="2" /></svg><span class="wf-site-nav__label">部署とチーム</span></span>
+              </div>
+            </nav>
+            <div class="wf-overlay wf-site-nav-overlay" tabindex="-1" data-close="site-nav"></div>
+                        <div class="wf-site-main">
+              <main class="wf-page">
+                <div class="wf-page-head">
+                  <div class="wf-title">
+                    <h1 class="wf-heading">部署とチーム</h1>
+                    <span class="wf-help">
+                      <span class="wf-btn wf-btn--icon wf-help__toggle" aria-label="ヘルプ" data-open="page-help" data-testid="organization-list-help">?</span>
+                      <p class="wf-help__panel" data-panel="page-help" data-panel-dismiss data-testid="organization-list-help-text">部署とチームは、職員の登録と詳細で職員に付けます。チームの色は、職員の一覧とカレンダーで、チームの名前の前の点に使います。</p>
+                    </span>
+                  </div>
+                </div>
+                <section class="og-section" aria-labelledby="organization-list-department-heading">
+                  <div class="og-section__head">
+                    <h2 class="og-h2" id="organization-list-department-heading">部署</h2>
+                    <span class="wf-btn" data-testid="organization-list-department-new" data-go="02-department-new.html">部署を作る</span>
+                  </div>
+                  <table class="wf-table wf-table--rows og-table" data-testid="organization-list-department-table">
+                    <thead>
+                      <tr>
+                        <th>名前</th>
+                        <th><span class="wf-visually-hidden">操作</span></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr data-testid="organization-list-department-row-{部署の id}">
+                        <td class="wf-cell-primary">リハビリ部</td>
+                        <td class="og-cell-action"><span class="wf-btn" aria-label="リハビリ部を編集" data-testid="organization-list-department-edit-{部署の id}" data-go="03-department-edit.html">編集</span></td>
+                      </tr>
+                      <tr data-testid="organization-list-department-row-{部署の id}">
+                        <td class="wf-cell-primary">看護部</td>
+                        <td class="og-cell-action"><span class="wf-btn" aria-label="看護部を編集" data-testid="organization-list-department-edit-{部署の id}" data-go="03-department-edit.html">編集</span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </section>
+                <section class="og-section" aria-labelledby="organization-list-team-heading">
+                  <div class="og-section__head">
+                    <h2 class="og-h2" id="organization-list-team-heading">チーム</h2>
+                    <span class="wf-btn" data-testid="organization-list-team-new" data-go="04-team-new.html">チームを作る</span>
+                  </div>
+                  <table class="wf-table wf-table--rows og-table" data-testid="organization-list-team-table">
+                    <thead>
+                      <tr>
+                        <th>名前</th>
+                        <th><span class="wf-visually-hidden">操作</span></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr data-testid="organization-list-team-row-{チームの id}">
+                        <td class="wf-cell-primary"><span class="wf-team" data-testid="organization-list-team-name-{チームの id}"><span class="wf-dot wf-dot--magenta" aria-hidden="true"></span>南チーム</span></td>
+                        <td class="og-cell-action"><span class="wf-btn" aria-label="南チームを編集" data-testid="organization-list-team-edit-{チームの id}" data-go="05-team-edit.html">編集</span></td>
+                      </tr>
+                      <tr data-testid="organization-list-team-row-{チームの id}">
+                        <td class="wf-cell-primary"><span class="wf-team" data-testid="organization-list-team-name-{チームの id}"><span class="wf-dot wf-dot--blue" aria-hidden="true"></span>東チーム</span></td>
+                        <td class="og-cell-action"><span class="wf-btn" aria-label="東チームを編集" data-testid="organization-list-team-edit-{チームの id}" data-go="05-team-edit.html">編集</span></td>
+                      </tr>
+                      <tr data-testid="organization-list-team-row-{チームの id}">
+                        <td class="wf-cell-primary"><span class="wf-team" data-testid="organization-list-team-name-{チームの id}"><span class="wf-dot wf-dot--orange" aria-hidden="true"></span>西チーム</span></td>
+                        <td class="og-cell-action"><span class="wf-btn" aria-label="西チームを編集" data-testid="organization-list-team-edit-{チームの id}" data-go="05-team-edit.html">編集</span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </section>
+              </main>
+              <div class="wf-overlay" tabindex="-1" data-m="1" data-go="01-list.html"></div>
+              <div class="wf-dialog" role="dialog" aria-modal="true" aria-labelledby="organization-list-team-dialog-title" data-testid="organization-list-team-dialog">
+                <div class="wf-dialog__header">
+                  <h2 class="wf-dialog__title" id="organization-list-team-dialog-title" data-m="2">チームを作る</h2>
+                  <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-escape data-m="3" data-testid="organization-list-team-close" data-go="01-list.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
+                </div>
+                <div class="wf-dialog__body">
+                    <div class="wf-field">
+                      <span class="wf-label" id="organization-list-team-name-label">名前</span>
+                      <div class="wf-input wf-field__input" role="textbox" aria-labelledby="organization-list-team-name-label" data-m="4" data-testid="organization-list-team-name">東チーム</div>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label" id="organization-list-team-color-label">色</span>
+                      <div class="og-colors" role="radiogroup" aria-labelledby="organization-list-team-color-label" data-m="5" data-testid="organization-list-team-color">
+                        <span class="wf-radio og-color" data-choice="team-color" data-testid="organization-list-team-color-blue"><span class="wf-dot wf-dot--blue" aria-hidden="true"></span>青</span>
+                        <span class="wf-radio og-color" data-choice="team-color" data-testid="organization-list-team-color-orange"><span class="wf-dot wf-dot--orange" aria-hidden="true"></span>オレンジ</span>
+                        <span class="wf-radio og-color" data-choice="team-color" data-testid="organization-list-team-color-magenta"><span class="wf-dot wf-dot--magenta" aria-hidden="true"></span>赤紫</span>
+                        <span class="wf-radio og-color is-on" data-choice="team-color" data-testid="organization-list-team-color-cyan"><span class="wf-dot wf-dot--cyan" aria-hidden="true"></span>青緑</span>
+                        <span class="wf-radio og-color" data-choice="team-color" data-testid="organization-list-team-color-yellow"><span class="wf-dot wf-dot--yellow" aria-hidden="true"></span>黄</span>
+                        <span class="wf-radio og-color" data-choice="team-color" data-testid="organization-list-team-color-purple"><span class="wf-dot wf-dot--purple" aria-hidden="true"></span>紫</span>
+                        <span class="wf-radio og-color" data-choice="team-color" data-testid="organization-list-team-color-green"><span class="wf-dot wf-dot--green" aria-hidden="true"></span>緑</span>
+                        <span class="wf-radio og-color" data-choice="team-color" data-testid="organization-list-team-color-lime"><span class="wf-dot wf-dot--lime" aria-hidden="true"></span>黄緑</span>
+                      </div>
+                      <span class="wf-hint">職員の一覧とカレンダーで、チームの名前の前の点に使います。</span>
+                    </div>
+                </div>
+                <div class="wf-dialog__footer">
+                  <p class="wf-alert" role="alert" data-m="8" data-testid="organization-list-team-submit-error">「東チーム」という名前のチームは、すでにあります。別の名前にしてください。</p>
+                  <span class="wf-btn" data-m="6" data-testid="organization-list-team-cancel" data-go="01-list.html">キャンセル</span>
+                  <span class="wf-btn wf-btn--primary" data-m="7" data-testid="organization-list-team-submit">作る</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="markers"></div>
+    </div>
+    <script src="../../_common/mock.js"></script>
+    <script src="../../_common/interact.js"></script>
+  </body>
+</html>

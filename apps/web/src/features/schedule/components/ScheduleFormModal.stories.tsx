@@ -33,6 +33,7 @@ const ScheduleFormModalSample = ({ kind, mode = 'create', ...props }: SampleProp
       staffList={storyStaff}
       submitLabel={mode === 'create' ? '作成' : '保存'}
       submitTestId={mode === 'create' ? 'schedule-create-submit' : 'schedule-edit-submit'}
+      cancelTestId={mode === 'create' ? 'schedule-new-cancel' : 'schedule-edit-cancel'}
       title={mode === 'create' ? '予定の作成' : '予定の編集'}
     />
   )

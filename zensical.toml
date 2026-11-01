@@ -46,6 +46,7 @@ nav = [
     { "職員の一覧" = "screens/staff-list_職員の一覧/index.md" },
     { "職員の登録" = "screens/staff-new_職員の登録/index.md" },
     { "職員の詳細" = "screens/staff-detail_職員の詳細/index.md" },
+    { "部署とチーム" = "screens/organization-list_部署とチーム/index.md" },
     { "利用者の一覧" = "screens/patient-list_利用者の一覧/index.md" },
     { "利用者の登録" = "screens/patient-new_利用者の登録/index.md" },
     { "利用者の詳細" = "screens/patient-detail_利用者の詳細/index.md" },

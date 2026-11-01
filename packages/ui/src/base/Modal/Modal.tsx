@@ -9,10 +9,13 @@ export type ModalProps = {
   onCloseRequest?: () => void
   /** ダイアログの名前。開いたときに、ここへフォーカスを移す。 */
   title?: string
-  /** ヘッダーのタイトルの右に置き、右端に寄せて出す要素。 */
+  /** ヘッダーのタイトルと右上の閉じるボタンの間に、右に寄せて出す要素。 */
   headerContent?: ReactNode
-  /** 下端に固定して出す領域。送信のボタンを置く。 */
-  stickyFooter?: ReactNode
+  /**
+   * 下端に固定して出す領域。右に「キャンセル」と送信のボタンをこの順に置く。入力の無いダイアログでは「閉じる」を置く。
+   * 関数で渡すと、閉じるボタンと同じ閉じる要求（isDirty なら破棄の確認を出す）を渡すので、「キャンセル」と「閉じる」で呼ぶ。
+   */
+  stickyFooter?: ReactNode | ((requestClose: () => void) => ReactNode)
   /** true のとき、閉じる前に変更を破棄してよいかを確認する。 */
   isDirty?: boolean
   children: ReactNode
@@ -22,7 +25,8 @@ export type ModalProps = {
 const DISCARD_CONFIRM_MESSAGE = '変更が破棄されますがよろしいですか？'
 
 /**
- * 画面の上に重ねて出すモーダルのダイアログ。`<dialog>` の showModal で開き、後ろの画面を操作できなくする。
+ * 画面の上に重ねて出すモーダルのダイアログ。ヘッダーの左にタイトル、右上に閉じるボタン（×）を置く。
+ * `<dialog>` の showModal で開き、後ろの画面を操作できなくする。
  * 開くとタイトル（タイトルがなければ閉じるボタン）にフォーカスを移し、Tab はダイアログの中だけを回る。
  * 閉じる（isOpen が false になるか、外す）と、開く前にフォーカスがあった要素へ戻す。
  * 幅 768px 未満では画面いっぱいに出す。
@@ -62,7 +66,13 @@ export const Modal = ({
       ref={dialogRef}
     >
       <div className="flex h-full max-h-[inherit] flex-col overflow-auto">
-        <div className="sticky top-0 z-10 flex items-center gap-4 border-b border-border bg-surface p-3">
+        <div className="sticky top-0 z-10 flex items-center gap-4 border-b border-border bg-surface py-3 pr-3 pl-5">
+          {title !== undefined && (
+            <h2 className="text-heading-sm outline-none" id={titleId} ref={titleRef} tabIndex={-1}>
+              {title}
+            </h2>
+          )}
+          <div className="flex min-w-0 flex-1 justify-end">{headerContent}</div>
           <button
             aria-label="閉じる"
             className="grid size-11 shrink-0 place-items-center rounded-8 hover:bg-surface-subtle focus-visible:focus-ring"
@@ -73,19 +83,11 @@ export const Modal = ({
           >
             <CloseIcon height={24} width={24} />
           </button>
-          {title !== undefined && (
-            <h2 className="text-heading-sm outline-none" id={titleId} ref={titleRef} tabIndex={-1}>
-              {title}
-            </h2>
-          )}
-          {headerContent !== undefined && (
-            <div className="flex min-w-0 flex-1 justify-end">{headerContent}</div>
-          )}
         </div>
         <div className="flex-1">{children}</div>
         {stickyFooter !== undefined && (
           <div className="sticky bottom-0 flex justify-end gap-3 border-t border-border bg-surface px-5 py-4">
-            {stickyFooter}
+            {typeof stickyFooter === 'function' ? stickyFooter(requestClose) : stickyFooter}
           </div>
         )}
       </div>

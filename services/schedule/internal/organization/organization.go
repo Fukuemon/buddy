@@ -30,6 +30,14 @@ type Department struct {
 	UpdatedAt  time.Time
 }
 
+// NewDepartment は、名前を検証して Department を作る。
+func NewDepartment(id, facilityID, name string) (Department, error) {
+	if err := kernel.RequireText("部署の名前", name, maxNameLen); err != nil {
+		return Department{}, err
+	}
+	return Department{ID: id, FacilityID: facilityID, Name: name}, nil
+}
+
 // Team は、事業所のチームである。
 type Team struct {
 	ID         string
@@ -172,10 +180,13 @@ type FacilityRepository interface {
 	GetByOrgID(ctx context.Context, orgID string) (Facility, error)
 }
 
-// DepartmentRepository は、部署を読む。見つからないときは apperr.ErrNotFound を返す。
+// DepartmentRepository は、部署を読み書きする。見つからないときは apperr.ErrNotFound を、
+// 同じ事業所に同じ名前があるときは apperr.ErrConflict を返す。Update は、部署 d.ID の名前を d の値にする。
 type DepartmentRepository interface {
 	Get(ctx context.Context, id string) (Department, error)
 	ListByFacility(ctx context.Context, facilityID string) ([]Department, error)
+	Create(ctx context.Context, d Department) error
+	Update(ctx context.Context, d Department) error
 }
 
 // TeamRepository は、チームを読み書きする。見つからないときは apperr.ErrNotFound を、

@@ -71,7 +71,11 @@ export interface paths {
         /** 事業所の部署を一覧する */
         get: operations["listDepartments"];
         put?: never;
-        post?: never;
+        /**
+         * 部署を作る
+         * @description 職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        post: operations["createDepartment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -87,7 +91,12 @@ export interface paths {
         };
         /** 部署を取得する */
         get: operations["getDepartment"];
-        put?: never;
+        /**
+         * 部署の名前を変える
+         * @description 部署の名前を本文の値に置き換える。
+         *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        put: operations["updateDepartment"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1679,6 +1688,54 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    createDepartment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                facility_id: components["parameters"]["FacilityID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description 作った部署 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Unit"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description 同じ事業所に同じ名前の部署がある */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "conflict",
+                     *       "message": "部署 看護部 はこの事業所にすでにあります"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
     getDepartment: {
         parameters: {
             query?: never;
@@ -1703,6 +1760,54 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    updateDepartment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                department_id: components["schemas"]["ID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description 変えた部署 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Unit"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description 同じ事業所にほかの同じ名前の部署がある */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "conflict",
+                     *       "message": "部署 看護部 はこの事業所にすでにあります"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };

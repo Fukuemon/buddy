@@ -77,7 +77,7 @@ describe('ScheduleCreateModalContainer', () => {
     await userEvent.click(await screen.findByTestId('schedule-field-staff'))
     await screen.findByTestId('staff-select-option-staff-1')
     await waitFor(() =>
-      expect(screen.getByTestId('schedule-field-staff')).toHaveTextContent('未選択'),
+      expect(screen.getByTestId('schedule-field-staff')).toHaveTextContent('選んでください'),
     )
     await userEvent.click(screen.getByTestId('modal-close'))
     expect(confirm).not.toHaveBeenCalled()
