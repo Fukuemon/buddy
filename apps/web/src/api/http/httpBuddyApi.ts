@@ -3,7 +3,13 @@ import createClient from 'openapi-fetch'
 import { ApiError, type BuddyApi } from '../client'
 import { matchesName } from '../nameSearch'
 import type { paths } from '../generated/schedule'
-import { expandRecurring, occurrenceOf, occurs, parseOccurrenceId } from './recurrence'
+import {
+  expandRecurring,
+  occurrenceOf,
+  occurs,
+  parseOccurrenceId,
+  previousDate,
+} from './recurrence'
 import {
   fromApiPatient,
   fromApiSchedule,
@@ -98,7 +104,11 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
         return [
           ...schedules,
           ...recurring.flatMap((recurringSchedule) =>
-            expandRecurring(recurringSchedule, dateFrom, dateTo),
+            expandRecurring(
+              recurringSchedule,
+              recurringSchedule.ends_next_day ? previousDate(dateFrom) : dateFrom,
+              dateTo,
+            ),
           ),
         ]
           .filter((schedule) => includeCancelled === true || schedule.cancel === null)

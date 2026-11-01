@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vite-plus/test'
 
-import { exportIssueReason, exportIssueReasonDetail, isCancelledSingleIssue } from './exportIssue'
+import { mockExportIssues } from '#/mocks/scheduleData'
+
+import {
+  exportIssueReason,
+  exportIssueReasonDetail,
+  formatExportIssueDateTime,
+  isCancelledSingleIssue,
+} from './exportIssue'
 
 const conflict = { status: 'conflict', acceptable: false, recurring_schedule_id: null } as const
 const failed = { status: 'failed', acceptable: false, recurring_schedule_id: null } as const
@@ -101,5 +108,30 @@ describe('isCancelledSingleIssue', () => {
     expect(isCancelledSingleIssue({ ...issue, status: 'failed', error_code: 'forbidden' })).toBe(
       false,
     )
+  })
+})
+
+describe('formatExportIssueDateTime', () => {
+  const issue = mockExportIssues[0]!
+  it('単発の予定は日付と時刻の範囲にする', () => {
+    expect(
+      formatExportIssueDateTime({
+        ...issue,
+        date: '2026-11-04',
+        start_time: '10:00',
+        end_time: '11:00',
+      }),
+    ).toBe('2026/11/04（水）10:00〜11:00')
+  })
+  it('終了が翌日の予定は、終了の時刻に「翌」を付ける', () => {
+    expect(
+      formatExportIssueDateTime({
+        ...issue,
+        date: '2026-11-04',
+        start_time: '22:00',
+        end_time: '01:00',
+        ends_next_day: true,
+      }),
+    ).toBe('2026/11/04（水）22:00〜翌 01:00')
   })
 })

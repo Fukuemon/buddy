@@ -88,6 +88,42 @@ describe('createHttpBuddyApi', () => {
     expect(list.map((s) => s.id)).toEqual(['keep'])
   })
 
+  it('前の日に始まり期間に終わる、翌日に終わる予定と繰り返しの予定の回を返す', async () => {
+    const rs: components['schemas']['RecurringSchedule'] = {
+      ...schedule('01M3TC6E9G4N8Q2R5T7V9W1X3Y', {
+        date: '2026-10-12',
+        start_time: '23:00',
+        end_time: '02:00',
+        ends_next_day: true,
+      }),
+      recurring_rule: { frequency: 'weekly' },
+      exclusion_dates: [],
+    }
+    server.use(
+      scheduleHttp.get('/v1/facilities/{facility_id}/schedules', ({ response }) =>
+        response(200).json({
+          schedules: [
+            schedule('overnight', {
+              date: '2026-10-19',
+              start_time: '22:00',
+              end_time: '01:00',
+              ends_next_day: true,
+            }),
+          ],
+          recurring_schedules: [rs],
+        }),
+      ),
+    )
+    const list = await api().schedules.list('facility-1', {
+      from: '2026-10-20T00:00:00+09:00',
+      to: '2026-10-21T00:00:00+09:00',
+    })
+    expect(list.map((s) => [s.startsAt, s.endsAt])).toEqual([
+      ['2026-10-19T22:00:00+09:00', '2026-10-20T01:00:00+09:00'],
+      ['2026-10-19T23:00:00+09:00', '2026-10-20T02:00:00+09:00'],
+    ])
+  })
+
   it('includeCancelled のときは、キャンセルした予定も理由を付けて返す', async () => {
     server.use(
       scheduleHttp.get('/v1/facilities/{facility_id}/schedules', ({ response }) =>

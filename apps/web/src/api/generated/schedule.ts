@@ -1335,6 +1335,8 @@ export interface components {
             date: components["schemas"]["Date"];
             start_time: components["schemas"]["Time"];
             end_time: components["schemas"]["Time"];
+            /** @description date の翌日の end_time に終わる予定のとき true */
+            ends_next_day: boolean;
             /**
              * @description Google カレンダーの内容で解けるか（POST /v1/calendar_exports/{calendar_export_id}/acceptances）。
              *     単発の予定で、buddy でキャンセルしておらず、error_code が precondition_failed か not_found のときに true
@@ -1398,6 +1400,8 @@ export interface components {
             date: components["schemas"]["Date"];
             start_time: components["schemas"]["Time"];
             end_time: components["schemas"]["Time"];
+            /** @description date の翌日の end_time に終わる予定のとき true。繰り返しの予定は最初の回の値 */
+            ends_next_day: boolean;
             /** @description タイトルから読んだサービス内容 */
             service: string;
             /** @description タイトルから読んだ利用者名 */
@@ -1418,6 +1422,8 @@ export interface components {
             start_time: (string & components["schemas"]["Time"]) | null;
             /** @description 日をまたぐ予定では、翌日の時刻 */
             end_time: (string & components["schemas"]["Time"]) | null;
+            /** @description date の翌日の end_time に終わる予定に読み替えた予定のとき true。reason が multi_day の予定では false */
+            ends_next_day: boolean;
             all_day: boolean;
             /**
              * @description all_day は終日、multi_day は日をまたぐ（24:00 に終わる予定を含む）、unreadable_time は日時を読めない、

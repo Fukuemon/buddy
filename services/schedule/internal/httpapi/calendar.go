@@ -80,6 +80,7 @@ func toImportReviewItem(r calendar.ReviewItem) openapi.ImportReviewItem {
 		Date:            r.Date.String(),
 		StartTime:       r.StartTime.String(),
 		EndTime:         r.EndTime.String(),
+		EndsNextDay:     r.EndsNextDay,
 		Service:         r.Service,
 		ClientName:      r.Client,
 		Reason:          openapi.ImportReviewItemReason(r.Reason),
@@ -96,11 +97,12 @@ func toImportReviewItem(r calendar.ReviewItem) openapi.ImportReviewItem {
 
 func toImportSkippedItem(s calendar.Skipped) openapi.ImportSkippedItem {
 	return openapi.ImportSkippedItem{
-		Date:      stringPtr(s.Date),
-		StartTime: stringPtr(s.StartTime),
-		EndTime:   stringPtr(s.EndTime),
-		AllDay:    s.AllDay,
-		Reason:    openapi.ImportSkippedItemReason(s.Reason),
+		Date:        stringPtr(s.Date),
+		StartTime:   stringPtr(s.StartTime),
+		EndTime:     stringPtr(s.EndTime),
+		EndsNextDay: s.EndsNextDay,
+		AllDay:      s.AllDay,
+		Reason:      openapi.ImportSkippedItemReason(s.Reason),
 	}
 }
 
@@ -236,6 +238,7 @@ func toCalendarExportIssue(i calendar.ExportIssue) openapi.CalendarExportIssue {
 		Date:                i.Date.String(),
 		StartTime:           i.StartTime.String(),
 		EndTime:             i.EndTime.String(),
+		EndsNextDay:         i.EndsNextDay,
 		Acceptable:          i.Acceptable(),
 	}
 	if e.ErrorCode != nil {

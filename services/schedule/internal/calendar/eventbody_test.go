@@ -49,6 +49,24 @@ func TestScheduleBodyVisitTitle(t *testing.T) {
 	}
 }
 
+// TestBodyEndsNextDay は、終了が翌日の予定と繰り返しの予定の終了の日時を、予定の日付の翌日から作ることを確認する（ADR-0023）。
+func TestBodyEndsNextDay(t *testing.T) {
+	title := "夜勤"
+	slot := schedule.Slot{
+		Date: civil.Date{Year: 2026, Month: 11, Day: 30}, StartTime: civil.Time{Hour: 22}, EndTime: civil.Time{Hour: 1}, EndsNextDay: true,
+		Title: &title,
+	}
+	single := calendar.ScheduleBody(schedule.Detail{Schedule: schedule.Schedule{ID: "S", Slot: slot}})
+	recurring := calendar.RecurringBody(schedule.RecurringDetail{
+		RecurringSchedule: schedule.RecurringSchedule{ID: "R", Slot: slot, Rule: schedule.Rule{Frequency: schedule.Weekly}},
+	}, nil)
+	for name, b := range map[string]calendar.EventBody{"単発": single, "繰り返し": recurring} {
+		if b.Start.DateTime != "2026-11-30T22:00:00" || b.End.DateTime != "2026-12-01T01:00:00" || b.End.TimeZone != "Asia/Tokyo" {
+			t.Errorf("%s の日時 = %+v, %+v", name, b.Start, b.End)
+		}
+	}
+}
+
 func intp(v int) *int { return &v }
 
 // TestRecurrenceOfRoundTrip は、buddy の規則を RRULE にして読み戻すと、同じ規則と除外の日になることを確認する。

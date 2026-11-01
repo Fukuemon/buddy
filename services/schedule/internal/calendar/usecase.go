@@ -592,11 +592,12 @@ func (x excluder) exclude(ctx context.Context, recurringScheduleID string, d civ
 // slot は、取り込む予定 e の枠と種類を組み立てる。訪問の予定なら訪問の情報を書く。
 func (u *Usecase) slot(ctx context.Context, c ExternalCalendar, e entry, types map[schedule.TypeCode]schedule.Type) (schedule.Slot, schedule.Type, error) {
 	slot := schedule.Slot{
-		FacilityID: c.FacilityID,
-		StaffID:    c.StaffID,
-		Date:       e.cand.Date,
-		StartTime:  e.cand.StartTime,
-		EndTime:    e.cand.EndTime,
+		FacilityID:  c.FacilityID,
+		StaffID:     c.StaffID,
+		Date:        e.cand.Date,
+		StartTime:   e.cand.StartTime,
+		EndTime:     e.cand.EndTime,
+		EndsNextDay: e.cand.EndsNextDay,
 	}
 	code := schedule.CodeNormal
 	if e.cand.Kind == KindVisit {

@@ -135,12 +135,13 @@ func (r *CalendarExportRepository) ListIssues(ctx context.Context, facilityID st
 				Status: row.Status, Revision: row.Revision, Attempts: row.Attempts, NextAttemptAt: row.NextAttemptAt,
 				Overwrite: row.Overwrite, ErrorCode: row.ErrorCode, UpdatedAt: row.UpdatedAt,
 			}),
-			Cancelled: row.Cancelled,
-			StaffID:   row.StaffID,
-			StaffName: row.StaffName,
-			Date:      civil.DateOf(row.Date),
-			StartTime: start,
-			EndTime:   end,
+			Cancelled:   row.Cancelled,
+			StaffID:     row.StaffID,
+			StaffName:   row.StaffName,
+			Date:        civil.DateOf(row.Date),
+			StartTime:   start,
+			EndTime:     end,
+			EndsNextDay: row.EndsNextDay,
 		}
 	}
 	return out, nil

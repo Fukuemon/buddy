@@ -681,3 +681,51 @@ func TestSyncUsesCalendarFacilityAccount(t *testing.T) {
 		t.Errorf("引いた事業所 = %v, want カレンダーの行の事業所", got)
 	}
 }
+
+// TestSyncOvernight は、buddy で作った終了が翌日の予定を書き出し、戻ってきた予定を buddy の変更と見誤らないことと、
+// Google カレンダーで日をまたぐ予定に変えた予定と、日をまたがない予定に戻した予定に、印を付け直して当てることを確認する（ADR-0023）。
+func TestSyncOvernight(t *testing.T) {
+	e := newSyncEnv(t)
+	title := "夜勤"
+	d, err := e.schedules.Create(e.ctx, inmem.FacilityID, schedule.SlotInput{
+		TypeID: inmem.NormalTypeID, Date: civil.Date{Year: 2026, Month: 11, Day: 4},
+		StartTime: civil.Time{Hour: 22}, EndTime: civil.Time{Hour: 1}, EndsNextDay: true, StaffID: inmem.StaffID, Title: &title,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.run(t)
+	id := eventID(t, d.ID)
+	if ev := e.srv.Event(googleCalID, id); ev.Start.DateTime != "2026-11-04T22:00:00" || ev.End.DateTime != "2026-11-05T01:00:00" {
+		t.Fatalf("書き出した日時 = %s〜%s", ev.Start.DateTime, ev.End.DateTime)
+	}
+	e.sync(t)
+	if got := e.schedule(t, d.ID); got.Version != d.Version {
+		t.Fatalf("書き出した予定を当て直した: 更新の番号 %d → %d", d.Version, got.Version)
+	}
+
+	edit := func(start, end string) {
+		t.Helper()
+		if !e.srv.Edit(googleCalID, id, func(ev *calendarv3.Event) { ev.Start.DateTime, ev.End.DateTime = start, end }) {
+			t.Fatalf("予定 %s が無い", id)
+		}
+		e.sync(t)
+	}
+	edit("2026-11-04T23:00:00", "2026-11-05T02:00:00")
+	got := e.schedule(t, d.ID)
+	if got.StartTime != (civil.Time{Hour: 23}) || got.EndTime != (civil.Time{Hour: 2}) || !got.EndsNextDay {
+		t.Errorf("翌日に終わるように変えた予定 = %+v", got.Slot)
+	}
+	edit("2026-11-04T18:00:00", "2026-11-04T20:00:00")
+	got = e.schedule(t, d.ID)
+	if got.StartTime != (civil.Time{Hour: 18}) || got.EndTime != (civil.Time{Hour: 20}) || got.EndsNextDay {
+		t.Errorf("日をまたがないように戻した予定 = %+v", got.Slot)
+	}
+	edit("2026-11-04T22:00:00", "2026-11-06T01:00:00")
+	if got := e.schedule(t, d.ID); got.EndTime != (civil.Time{Hour: 20}) {
+		t.Errorf("2 日にわたる予定を当てた: %+v", got.Slot)
+	}
+	if issues, _ := e.uc.ListExportIssues(e.ctx, inmem.FacilityID); len(issues) != 1 || issues[0].ErrorCode == nil || *issues[0].ErrorCode != calendar.ErrorUnappliable {
+		t.Errorf("2 日にわたる予定の確認が必要な予定 = %+v", issues)
+	}
+}

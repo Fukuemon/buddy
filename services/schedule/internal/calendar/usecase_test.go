@@ -687,3 +687,50 @@ func TestImportExcludesSkippedReplacement(t *testing.T) {
 		}
 	})
 }
+
+// TestImportOvernight は、翌日に終わる 24 時間未満の予定を、終了が翌日の予定として取り込み、2 日にわたる予定を取り込まないことを確認する（ADR-0023）。
+// 繰り返しの予定は親の予定の印で取り込み、親と印が違う変えた回は、その回の印を持つ置き換えにする。
+func TestImportOvernight(t *testing.T) {
+	e := newEnv(t, &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{googleCalID: {{
+		gevent("night", "【訪看I2】利用者A", "2026-11-02T22:00:00+09:00", "2026-11-03T01:00:00+09:00"),
+		gevent("midnight", "【訪看I2】利用者Z", "2026-11-03T22:00:00+09:00", "2026-11-04T00:00:00+09:00"),
+		gevent("nocode", "【謎のサービス】利用者A", "2026-11-04T23:00:00+09:00", "2026-11-05T02:00:00+09:00"),
+		gevent("twodays", "研修", "2026-11-05T09:00:00+09:00", "2026-11-06T17:00:00+09:00"),
+		// 毎週火曜の 22 時から翌 1 時の繰り返し。11-17 を、日をまたがない 20 時から 21 時に変えた。
+		grecurring(gevent("weekly", "夜勤", "2026-11-10T22:00:00+09:00", "2026-11-11T01:00:00+09:00"), "RRULE:FREQ=WEEKLY;BYDAY=TU"),
+		gexception("weekly_20261117", "weekly", "夜勤", "2026-11-17T20:00:00+09:00", "2026-11-17T21:00:00+09:00", "2026-11-17T22:00:00+09:00"),
+	}}}})
+	p, err := e.uc.Preview(e.ctx, calID, e.rng)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(p.NeedsReview) != 1 || !p.NeedsReview[0].EndsNextDay || p.NeedsReview[0].EndTime != (civil.Time{}) {
+		t.Errorf("確認が必要な予定 = %+v", p.NeedsReview)
+	}
+	if len(p.Skipped) != 2 {
+		t.Fatalf("取り込まない予定 = %+v", p.Skipped)
+	}
+	if s := p.Skipped[0]; s.Reason != calendar.SkipServiceNotFound || !s.EndsNextDay || s.StartTime == nil || *s.EndTime != (civil.Time{Hour: 2}) {
+		t.Errorf("サービス内容を引けない予定 = %+v", s)
+	}
+	if s := p.Skipped[1]; s.Reason != calendar.SkipMultiDay || s.EndsNextDay {
+		t.Errorf("2 日にわたる予定 = %+v", s)
+	}
+
+	if _, err := e.importDecided(t, e.rng, []calendar.Decision{{ExternalEventID: "midnight", Action: calendar.ActionNormal}}); err != nil {
+		t.Fatal(err)
+	}
+	nov := func(d int) civil.Date { return civil.Date{Year: 2026, Month: 11, Day: d} }
+	if s := scheduleOf(t, e, "night"); s.Date != nov(2) || s.StartTime != (civil.Time{Hour: 22}) || s.EndTime != (civil.Time{Hour: 1}) || !s.EndsNextDay {
+		t.Errorf("22 時から翌 1 時の予定 = %+v", s.Slot)
+	}
+	if s := scheduleOf(t, e, "midnight"); s.Date != nov(3) || s.EndTime != (civil.Time{}) || !s.EndsNextDay {
+		t.Errorf("翌 0 時に終わる予定 = %+v", s.Slot)
+	}
+	if rs := recurringOf(t, e, "weekly"); rs.Date != nov(10) || !rs.EndsNextDay || !slices.Equal(rs.ExclusionDates, []civil.Date{nov(17)}) {
+		t.Errorf("繰り返しの予定 = %+v, 除外の日 %v", rs.Slot, rs.ExclusionDates)
+	}
+	if s := scheduleOf(t, e, "weekly_20261117"); s.Date != nov(17) || s.StartTime != (civil.Time{Hour: 20}) || s.EndsNextDay || s.OriginalDate == nil {
+		t.Errorf("日をまたがない回の置き換え = %+v", s)
+	}
+}

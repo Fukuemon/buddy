@@ -228,7 +228,7 @@
   background: var(--wf-fill);
 }
 
-/* 週と日の表示。1 時間を 32px で描く。実装は 30 分の枠を 44px にする */
+/* 週と日の表示。0 時から 24 時を、1 時間を 32px で描く。実装は 30 分の枠を 44px にする */
 .sc-week,
 .sc-day {
   display: grid;
@@ -278,7 +278,7 @@
 
 .sc-col {
   position: relative;
-  height: 512px;
+  height: 768px;
   border-right: 1px solid var(--wf-line-soft);
   background: repeating-linear-gradient(var(--wf-line-soft) 0 1px, transparent 1px 16px);
 }

@@ -117,3 +117,20 @@ export const createGoogleEvent = async (
   await ensureOk(res, '予定を作れない')
   return (await res.json()) as GoogleEvent
 }
+
+/**
+ * 予定の開始と終了を、start と end（+09:00 の日時）に変える。職員が Google カレンダーで予定の日時を直したときの代わりで、etag が変わる。
+ * calendarpit の管理の画面で予定を直したときと同じ管理の API を使う。
+ */
+export const moveGoogleEvent = async (
+  request: APIRequestContext,
+  calendarId: string,
+  eventId: string,
+  start: string,
+  end: string,
+) => {
+  const res = await request.patch(`${eventsUrl(calendarId)}/${encodeURIComponent(eventId)}`, {
+    data: { start: { dateTime: start }, end: { dateTime: end } },
+  })
+  await ensureOk(res, '予定を直せない')
+}

@@ -39,6 +39,15 @@ describe('dateTime', () => {
     )
   })
 
+  it('終了が翌日なら、終了の時刻に「翌」を付ける', () => {
+    expect(formatDateTimeRange(new Date(2026, 9, 20, 22, 0), new Date(2026, 9, 21, 1, 0))).toBe(
+      '2026年10月20日（火） 22:00〜翌 01:00',
+    )
+    expect(formatDateTimeRange(new Date(2026, 9, 20, 22, 0), new Date(2026, 9, 21, 0, 0))).toBe(
+      '2026年10月20日（火） 22:00〜翌 00:00',
+    )
+  })
+
   it('月と日は 0 で埋めず、時刻は 0 で埋め、日曜の曜日も出す', () => {
     expect(formatDateTimeRange(new Date(2026, 0, 4, 8, 5), new Date(2026, 0, 4, 8, 50))).toBe(
       '2026年1月4日（日） 08:05〜08:50',

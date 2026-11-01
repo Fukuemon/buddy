@@ -31,7 +31,8 @@ const (
 	SkipCancelled SkipReason = "cancelled"
 	// SkipAllDay は、時刻の無い終日の予定である。
 	SkipAllDay SkipReason = "all_day"
-	// SkipMultiDay は、Asia/Tokyo で開始と終了の日付が違う予定である。24:00 に終わる予定は翌日の 0:00 に終わるので、これに当たる。
+	// SkipMultiDay は、Asia/Tokyo で、終了が開始の翌日より後の予定と、終了が翌日で長さが 24 時間以上の予定である。
+	// 終了が翌日で 24 時間未満の予定は、終了が翌日の予定に読み替えるので当たらない（ADR-0023）。
 	SkipMultiDay SkipReason = "multi_day"
 	// SkipUnreadableTime は、開始か終了の日時が無いか、RFC 3339 で読めない予定である。
 	SkipUnreadableTime SkipReason = "unreadable_time"
@@ -49,6 +50,8 @@ type Candidate struct {
 	Date      civil.Date
 	StartTime civil.Time
 	EndTime   civil.Time
+	// EndsNextDay は、Date の翌日の EndTime に終わる予定のときに true である。翌日の 0:00 に終わる予定も、EndTime を 0:00 にして true にする。
+	EndsNextDay bool
 	// Title は、KindNormal の予定のタイトルである。
 	Title string
 	// Service と Client は、KindVisit の予定のタイトルから読んだサービス内容と利用者名で、表記をそろえていない。
@@ -71,7 +74,8 @@ func normalTitle(summary string) string {
 
 // Classify は、ev を、訪問の予定、通常の予定、取り込まない予定のどれかに分ける。
 // タイトルに `【` と `】` の両方を含む予定を訪問の予定とし、照合の API と同じ規則（gcaltitle）で読む。
-// 取り消した予定、終日の予定、日をまたぐ予定、開始か終了の日時を読めない予定、分に丸めて長さが 0 以下の予定、
+// Asia/Tokyo で終了が開始の翌日で、長さが 24 時間未満の予定は、終了が翌日の予定（EndsNextDay）に読み替える（ADR-0023）。
+// 取り消した予定、終日の予定、それ以外の日をまたぐ予定、開始か終了の日時を読めない予定、分に丸めて長さが 0 以下の予定、
 // タイトルが空白だけの予定、訪問のタイトルを読めない予定は取り込まない。通常の予定のタイトルは 255 文字までに切る。
 func Classify(ev Event) Candidate {
 	if ev.Status == StatusCancelled {
@@ -99,10 +103,13 @@ func Classify(ev Event) Candidate {
 		EndTime:   clockOf(end),
 	}
 	if civil.DateOf(end) != c.Date {
-		c.Kind, c.SkipReason = KindSkipped, SkipMultiDay
-		return c
+		if !endsNextDay(start, end) {
+			c.Kind, c.SkipReason = KindSkipped, SkipMultiDay
+			return c
+		}
+		c.EndsNextDay = true
 	}
-	if !c.StartTime.Before(c.EndTime) {
+	if !c.EndsNextDay && !c.StartTime.Before(c.EndTime) {
 		c.Kind, c.SkipReason = KindSkipped, SkipZeroLength
 		return c
 	}
@@ -125,6 +132,13 @@ func Classify(ev Event) Candidate {
 
 func skipped(reason SkipReason) Candidate {
 	return Candidate{Kind: KindSkipped, SkipReason: reason}
+}
+
+// endsNextDay は、Asia/Tokyo の日時 start と end で、end が start の翌日で、長さが 24 時間未満かを返す。
+// 分に丸めると終了の時刻が開始の時刻より前にならない予定（24 時間に秒だけ足りない予定）は、24 時間とみなして false を返す。
+func endsNextDay(start, end time.Time) bool {
+	return civil.DateOf(end) == civil.DateOf(start.AddDate(0, 0, 1)) &&
+		end.Sub(start) < 24*time.Hour && clockOf(end).Before(clockOf(start))
 }
 
 func clockOf(t time.Time) civil.Time {

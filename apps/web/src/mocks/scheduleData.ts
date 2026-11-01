@@ -276,6 +276,11 @@ export const createMockSchedules = (base: Date): Schemas['Schedule'][] => {
       ...visit(2, 3, '訪看I3'),
       cancel: { id: 'cancel-6', schedule_id: 'schedule-6', reason: '利用者の体調不良' },
     }),
+    schedule('schedule-7', 0, 1, ['22:00', '01:00'], {
+      title: '夜勤',
+      ends_next_day: true,
+      is_over_time_work: true,
+    }),
   ]
 }
 
@@ -382,6 +387,7 @@ export const mockExportIssues: Schemas['CalendarExportIssue'][] = [
     date: '2026-11-04',
     start_time: '09:00',
     end_time: '09:29',
+    ends_next_day: false,
     acceptable: true,
   },
   {
@@ -397,6 +403,7 @@ export const mockExportIssues: Schemas['CalendarExportIssue'][] = [
     date: '2026-11-02',
     start_time: '14:00',
     end_time: '16:00',
+    ends_next_day: false,
     acceptable: false,
   },
   {
@@ -412,6 +419,7 @@ export const mockExportIssues: Schemas['CalendarExportIssue'][] = [
     date: '2026-11-03',
     start_time: '10:00',
     end_time: '11:00',
+    ends_next_day: false,
     acceptable: false,
   },
   {
@@ -427,6 +435,7 @@ export const mockExportIssues: Schemas['CalendarExportIssue'][] = [
     date: '2026-11-05',
     start_time: '13:00',
     end_time: '14:00',
+    ends_next_day: false,
     acceptable: false,
   },
   {
@@ -442,6 +451,7 @@ export const mockExportIssues: Schemas['CalendarExportIssue'][] = [
     date: '2026-11-06',
     start_time: '15:00',
     end_time: '16:29',
+    ends_next_day: false,
     acceptable: false,
   },
 ]
@@ -483,6 +493,7 @@ export const createMockImportPreview = (
       date: '2026-11-04',
       start_time: '10:00',
       end_time: '11:00',
+      ends_next_day: false,
       service: '訪看I2',
       client_name: '加藤 春子',
       reason: 'patient_ambiguous',
@@ -504,6 +515,7 @@ export const createMockImportPreview = (
       date: '2026-11-09',
       start_time: '14:00',
       end_time: '14:30',
+      ends_next_day: false,
       service: '訪看I3',
       client_name: '架空 太郎',
       reason: 'patient_not_found',
@@ -512,11 +524,19 @@ export const createMockImportPreview = (
     },
   ],
   skipped: [
-    { date: '2026-11-03', start_time: null, end_time: null, all_day: true, reason: 'all_day' },
+    {
+      date: '2026-11-03',
+      start_time: null,
+      end_time: null,
+      ends_next_day: false,
+      all_day: true,
+      reason: 'all_day',
+    },
     {
       date: '2026-11-12',
       start_time: '17:00',
       end_time: '09:00',
+      ends_next_day: false,
       all_day: false,
       reason: 'multi_day',
     },
@@ -524,6 +544,7 @@ export const createMockImportPreview = (
       date: '2026-11-20',
       start_time: '10:00',
       end_time: '10:30',
+      ends_next_day: false,
       all_day: false,
       reason: 'service_not_found',
     },

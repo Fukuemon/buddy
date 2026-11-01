@@ -152,9 +152,47 @@ func TestClassify(t *testing.T) {
 			},
 		},
 		{
-			name: "日をまたぐ予定",
+			name: "22 時から翌 1 時の予定は、終了が翌日の予定にする",
 			event: func() calendar.Event {
-				s, e := timed("2026-10-20T23:00:00+09:00", "2026-10-21T01:00:00+09:00")
+				s, e := timed("2026-10-20T22:00:00+09:00", "2026-10-21T01:00:00+09:00")
+				return calendar.Event{Start: s, End: e, Summary: "【訪看I2】利用者A"}
+			},
+			want: func(t *testing.T) calendar.Candidate {
+				c := visit(t, "2026-10-20", 22, 0, 1, 0, "訪看I2", "利用者A")
+				c.EndsNextDay = true
+				return c
+			},
+		},
+		{
+			name: "翌 0 時に終わる予定は、終了の時刻を 0 時にして、終了が翌日の予定にする",
+			event: func() calendar.Event {
+				s, e := timed("2026-10-20T22:00:00+09:00", "2026-10-21T00:00:00+09:00")
+				return calendar.Event{Start: s, End: e, Summary: "会議"}
+			},
+			want: func(t *testing.T) calendar.Candidate {
+				return calendar.Candidate{
+					Kind: calendar.KindNormal, Date: date(t, "2026-10-20"),
+					StartTime: clock(22, 0), EndTime: clock(0, 0), EndsNextDay: true, Title: "会議",
+				}
+			},
+		},
+		{
+			name: "UTC では同じ日でも Asia/Tokyo で翌日に終わる予定は、終了が翌日の予定にする",
+			event: func() calendar.Event {
+				s, e := timed("2026-10-20T14:30:00Z", "2026-10-20T15:30:00Z")
+				return calendar.Event{Start: s, End: e, Summary: "会議"}
+			},
+			want: func(t *testing.T) calendar.Candidate {
+				return calendar.Candidate{
+					Kind: calendar.KindNormal, Date: date(t, "2026-10-20"),
+					StartTime: clock(23, 30), EndTime: clock(0, 30), EndsNextDay: true, Title: "会議",
+				}
+			},
+		},
+		{
+			name: "2 日にわたる予定は日をまたぐ",
+			event: func() calendar.Event {
+				s, e := timed("2026-10-20T23:00:00+09:00", "2026-10-22T01:00:00+09:00")
 				return calendar.Event{Start: s, End: e, Summary: "【訪看I2】利用者A"}
 			},
 			want: func(t *testing.T) calendar.Candidate {
@@ -165,28 +203,28 @@ func TestClassify(t *testing.T) {
 			},
 		},
 		{
-			name: "24 時に終わる予定は日をまたぐ",
+			name: "翌日に終わる 24 時間の予定は日をまたぐ",
 			event: func() calendar.Event {
-				s, e := timed("2026-10-20T23:00:00+09:00", "2026-10-21T00:00:00+09:00")
+				s, e := timed("2026-10-20T00:00:00+09:00", "2026-10-21T00:00:00+09:00")
 				return calendar.Event{Start: s, End: e, Summary: "会議"}
 			},
 			want: func(t *testing.T) calendar.Candidate {
 				return calendar.Candidate{
 					Kind: calendar.KindSkipped, Date: date(t, "2026-10-20"),
-					StartTime: clock(23, 0), EndTime: clock(0, 0), SkipReason: calendar.SkipMultiDay,
+					StartTime: clock(0, 0), EndTime: clock(0, 0), SkipReason: calendar.SkipMultiDay,
 				}
 			},
 		},
 		{
-			name: "UTC では同じ日でも Asia/Tokyo で日をまたぐ予定",
+			name: "翌日に終わり、分に丸めると 24 時間になる予定は日をまたぐ",
 			event: func() calendar.Event {
-				s, e := timed("2026-10-20T14:30:00Z", "2026-10-20T15:30:00Z")
+				s, e := timed("2026-10-20T22:00:30+09:00", "2026-10-21T22:00:10+09:00")
 				return calendar.Event{Start: s, End: e, Summary: "会議"}
 			},
 			want: func(t *testing.T) calendar.Candidate {
 				return calendar.Candidate{
 					Kind: calendar.KindSkipped, Date: date(t, "2026-10-20"),
-					StartTime: clock(23, 30), EndTime: clock(0, 30), SkipReason: calendar.SkipMultiDay,
+					StartTime: clock(22, 0), EndTime: clock(22, 0), SkipReason: calendar.SkipMultiDay,
 				}
 			},
 		},

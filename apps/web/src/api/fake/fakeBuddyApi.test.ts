@@ -12,8 +12,17 @@ describe('createFakeBuddyApi', () => {
     const api = createFakeBuddyApi({ baseDate })
     const all = await api.schedules.list(FAKE_FACILITY_ID, range)
     const filtered = await api.schedules.list(FAKE_FACILITY_ID, { ...range, staffIds: ['staff-1'] })
-    expect(all.map((s) => s.id)).toEqual(['schedule-1', 'schedule-2', 'schedule-3'])
+    expect(all.map((s) => s.id)).toEqual(['schedule-1', 'schedule-2', 'schedule-3', 'schedule-7'])
     expect(filtered.map((s) => s.id)).toEqual(['schedule-1'])
+  })
+
+  it('翌日の期間に、前の日に始まり翌日に終わる予定を返す', async () => {
+    const api = createFakeBuddyApi({ baseDate })
+    const nextDay = await api.schedules.list(FAKE_FACILITY_ID, {
+      from: '2026-10-21T00:00:00+09:00',
+      to: '2026-10-22T00:00:00+09:00',
+    })
+    expect(nextDay.map((s) => s.id)).toContain('schedule-7')
   })
 
   it('キャンセルした予定は includeCancelled のときだけ返し、更新を 409 で拒む', async () => {
