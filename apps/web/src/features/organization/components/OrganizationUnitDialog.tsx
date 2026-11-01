@@ -1,4 +1,4 @@
-import { InputDialog } from '@buddy/ui'
+import { FormField, formFieldControlClassName, InputDialog } from '@buddy/ui'
 import { useEffect, useId, useRef, useState } from 'react'
 
 import { TEAM_COLORS, type TeamColor } from '#/api/types'
@@ -33,9 +33,6 @@ const TITLES: Record<UnitKind, Record<'create' | 'edit', string>> = {
   team: { create: 'チームを作る', edit: 'チームを編集' },
 }
 
-const fieldClassName =
-  'min-h-11 w-full rounded-8 bg-surface px-3 text-body ring-1 ring-border-field ring-inset focus-visible:focus-ring disabled:bg-surface-disabled disabled:text-text-disabled aria-invalid:ring-2 aria-invalid:ring-danger'
-
 /**
  * 部署かチームを作るか、変えるダイアログ。名前の欄と、チームではチームの色の 8 色のラジオボタンを置く。
  * 開くと名前の欄にフォーカスを置く。testid は `organization-list-<kind>-` を前に付ける。
@@ -51,10 +48,6 @@ export const OrganizationUnitDialog = ({
 }: OrganizationUnitDialogProps) => {
   const prefix = `organization-list-${kind}`
   const formId = useId()
-  const nameId = useId()
-  const errorId = useId()
-  const hintId = useId()
-  const colorLabelId = useId()
   const nameRef = useRef<HTMLInputElement>(null)
   const [name, setName] = useState(initial.name)
   const [color, setColor] = useState(initial.color)
@@ -97,73 +90,63 @@ export const OrganizationUnitDialog = ({
           submit()
         }}
       >
-        <div className="flex flex-col gap-1">
-          <label className="text-label" htmlFor={nameId}>
-            名前
-          </label>
-          <input
-            aria-describedby={isNameMissing ? errorId : undefined}
-            aria-invalid={isNameMissing || undefined}
-            className={fieldClassName}
-            data-testid={`${prefix}-name`}
-            disabled={isSubmitting}
-            id={nameId}
-            maxLength={NAME_MAX_LENGTH}
-            onChange={(event) => {
-              setName(event.target.value)
-              setNameMissing(false)
-            }}
-            ref={nameRef}
-            value={name}
-          />
-          {isNameMissing && (
-            <span
-              className="text-caption text-danger"
-              data-testid={`${prefix}-error-name`}
-              id={errorId}
-              role="alert"
-            >
-              {NAME_REQUIRED_MESSAGE}
-            </span>
+        <FormField
+          error={isNameMissing ? NAME_REQUIRED_MESSAGE : undefined}
+          errorTestId={`${prefix}-error-name`}
+          label="名前"
+        >
+          {(field) => (
+            <input
+              {...field}
+              className={formFieldControlClassName}
+              data-testid={`${prefix}-name`}
+              disabled={isSubmitting}
+              maxLength={NAME_MAX_LENGTH}
+              onChange={(event) => {
+                setName(event.target.value)
+                setNameMissing(false)
+              }}
+              ref={nameRef}
+              value={name}
+            />
           )}
-        </div>
+        </FormField>
         {color !== undefined && (
-          <div className="flex flex-col gap-1">
-            <span className="text-label" id={colorLabelId}>
-              色
-            </span>
-            <div
-              aria-describedby={hintId}
-              aria-labelledby={colorLabelId}
-              className="grid grid-cols-2 gap-2 desktop:grid-cols-4"
-              data-testid={`${prefix}-color`}
-              role="radiogroup"
-            >
-              {TEAM_COLORS.map((c) => (
-                <label
-                  className="flex min-h-11 items-center gap-2 rounded-8 px-3 ring-1 ring-border ring-inset has-checked:ring-2 has-checked:ring-primary has-[:focus-visible]:focus-ring"
-                  data-testid={`${prefix}-color-${c}`}
-                  key={c}
-                >
-                  <input
-                    checked={color === c}
-                    className="sr-only"
-                    disabled={isSubmitting}
-                    name={`${formId}-color`}
-                    onChange={() => setColor(c)}
-                    type="radio"
-                    value={c}
-                  />
-                  <DotLabel dotClassName={teamColorDotClassName(c)}>
-                    {TEAM_COLOR_LABELS[c]}
-                  </DotLabel>
-                </label>
-              ))}
-            </div>
-            <span className="text-caption text-text-secondary" id={hintId}>
-              職員の一覧とカレンダーで、チームの名前の前の点に使います。
-            </span>
-          </div>
+          <FormField
+            hint="職員の一覧とカレンダーで、チームの名前の前の点に使います。"
+            isGroup
+            label="色"
+          >
+            {(field) => (
+              <div
+                {...field}
+                className="grid grid-cols-2 gap-2 desktop:grid-cols-4"
+                data-testid={`${prefix}-color`}
+                role="radiogroup"
+              >
+                {TEAM_COLORS.map((c) => (
+                  <label
+                    className="flex min-h-11 items-center gap-2 rounded-8 px-3 ring-1 ring-border ring-inset has-checked:ring-2 has-checked:ring-primary has-[:focus-visible]:focus-ring"
+                    data-testid={`${prefix}-color-${c}`}
+                    key={c}
+                  >
+                    <input
+                      checked={color === c}
+                      className="sr-only"
+                      disabled={isSubmitting}
+                      name={`${formId}-color`}
+                      onChange={() => setColor(c)}
+                      type="radio"
+                      value={c}
+                    />
+                    <DotLabel dotClassName={teamColorDotClassName(c)}>
+                      {TEAM_COLOR_LABELS[c]}
+                    </DotLabel>
+                  </label>
+                ))}
+              </div>
+            )}
+          </FormField>
         )}
       </form>
     </InputDialog>
