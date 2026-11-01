@@ -92,8 +92,60 @@ erDiagram
 
 ### ログイン
 
-職員が初めてログインするときの流れを示す。  
+職員が初めてログインするときの流れを、ブローカーのログインと結び付け、web のトークンの交換の 2 つの図で示す。  
 2 回目からは、結び付けた `iss` と `sub` が上流の ID token と同じかを比べ、結び付けの手順を通らない。
+
+ブローカーのログインと結び付けでは、ブローカーがメールで職員を引き、上流の IdP の ID token で職員を確認してから、Hydra へ accept か reject を返す。
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant B as ブラウザ
+  participant H as Hydra
+  participant K as ブローカー
+  participant U as 上流の IdP
+  Note over B,H: web の /auth/login から、Hydra の認可の画面へ来る
+  B->>H: GET /oauth2/auth
+  H-->>B: ブローカーのログインの画面へリダイレクト（login_challenge）
+  B->>K: メールを入れる
+  K->>H: ログインの要求を読む（login_challenge）
+  H-->>K: ログインの要求
+  K->>K: 登録した職員のメールから事業所を引く
+  break 登録していないメール、有効でない職員、試行の上限
+    K->>H: ログインの reject
+    H-->>K: リダイレクト先
+    K-->>B: Hydra へリダイレクト（web のログインの失敗の画面になる）
+  end
+  K-->>B: 事業所の上流の IdP へリダイレクト
+  B->>U: ログイン
+  U-->>B: ブローカーへリダイレクト（認可コード）
+  B->>K: GET コールバック
+  K->>U: 認可コードを ID token と交換する
+  U-->>K: ID token
+  break メールが確認済みでないか登録と違う、結び付けたアカウントと違う
+    K->>H: ログインの reject
+    H-->>K: リダイレクト先
+    K-->>B: Hydra へリダイレクト（web のログインの失敗の画面になる）
+  end
+  K->>K: 上流の iss と sub を職員に結び付ける
+  K->>H: ログインの accept（subject は職員の ID）
+  H-->>K: リダイレクト先
+  K-->>B: Hydra へリダイレクト
+  B->>H: GET /oauth2/auth
+  H-->>B: ブローカーの同意へリダイレクト（consent_challenge）
+  B->>K: 同意
+  alt 自動で同意するクライアントで、職員が有効
+    K->>H: 同意の accept（aud、org_id）
+  else
+    K->>H: 同意の reject
+  end
+  H-->>K: リダイレクト先
+  K-->>B: Hydra へリダイレクト
+  B->>H: GET /oauth2/auth
+  H-->>B: web のコールバックへリダイレクト
+```
+
+web のトークンの交換では、web が認可コードをトークンと交換し、予定の API で職員と事業所を引いてからセッションを作る。
 
 ```mermaid
 sequenceDiagram
@@ -102,37 +154,24 @@ sequenceDiagram
   participant W as web（BFF）
   participant H as Hydra
   participant K as ブローカー
-  participant U as 上流の IdP
   participant A as 予定の API
   B->>W: GET /auth/login
   W-->>B: Hydra の認可の画面へリダイレクト
-  B->>H: GET /oauth2/auth
-  H-->>B: ブローカーのログインの画面へリダイレクト（login_challenge）
-  B->>K: メールを入れる
-  K->>K: 登録した職員のメールから事業所を引く
-  K-->>B: 事業所の上流の IdP へリダイレクト
-  B->>U: ログイン
-  U-->>B: ブローカーへリダイレクト（認可コード）
-  B->>K: GET コールバック
-  K->>U: 認可コードを ID token と交換する
-  K->>K: メールが確認済みで登録と同じなら、上流の iss と sub を職員に結び付ける
-  K->>H: ログインの accept（subject は職員の ID）
-  H-->>K: リダイレクト先
-  K-->>B: Hydra へリダイレクト
-  B->>H: GET /oauth2/auth
-  H-->>B: ブローカーの同意へリダイレクト（consent_challenge）
-  B->>K: 同意
-  K->>H: 同意の accept（aud、org_id）
-  H-->>K: リダイレクト先
-  K-->>B: Hydra へリダイレクト
-  B->>H: GET /oauth2/auth
-  H-->>B: web のコールバックへリダイレクト
+  Note over B,K: ブローカーのログインと結び付け（前の図）
   B->>W: GET /auth/callback
+  break state が合わないか、値が無い
+    W-->>B: /auth/error?reason=failed へリダイレクト
+  end
   W->>H: 認可コードをトークンと交換する
   H->>K: token_hook（職員が有効か）
-  K-->>H: 204
+  K-->>H: 204（有効でなければ 403）
+  break トークンと交換できない（ブローカーが reject したログインを含む）
+    H-->>W: エラー
+    W-->>B: /auth/error?reason=failed へリダイレクト
+  end
   H-->>W: access token、refresh token、ID token
   W->>A: GET /v1/me
+  A-->>W: 職員と事業所か、エラー
   alt 職員と事業所を引けた
     W->>W: 前のセッションを消し、セッションを作る
     W-->>B: 戻る先へリダイレクト
@@ -226,18 +265,38 @@ Hydra は、トークンを発行するたびに `oauth2.token_hook` でブロ�
 ```mermaid
 sequenceDiagram
   autonumber
+  participant W as web（職員の登録）
   participant A as 予定の API
   participant K as ブローカー
   participant DB as 予定の API の DB
+  W->>A: POST .../users
   A->>A: 職員の管理の権限と入力を確認する
+  break 事業所に組織の ID が無い
+    A-->>W: 400（ブローカーを呼ばない）
+  end
   A->>K: POST /internal/staff（組織の ID、メール）
-  K-->>A: 職員の ID と、作ったかと、登録の途中か
+  break 休職中の同じメール、ほかの事業所の同じメール、入力の誤り
+    K-->>A: 409（suspended か email_taken）か 400
+    A-->>W: 409 か 400
+  end
+  K-->>A: 201 か 200（職員の ID、登録の途中か）
   A->>DB: users.sub に職員の ID を入れて職員を書く
-  alt 書けた
+  alt 書けなかった
+    opt この呼び出しでブローカーの職員を作っていた
+      A->>DB: その ID の職員がいないことを確認する
+      A->>K: DELETE /internal/staff/{id}
+      K-->>A: 204
+    end
+    A-->>W: 409 か 500
+  else 書けた
     A->>K: POST /internal/staff/{id}/activate
-  else 書けず、この呼び出しでブローカーの職員を作っていた
-    A->>DB: その ID の職員がいないことを確認する
-    A->>K: DELETE /internal/staff/{id}
+    alt 有効にできた
+      K-->>A: 204
+      A-->>W: 201（職員）
+    else 有効にできなかった
+      K-->>A: エラー
+      A-->>W: 500
+    end
   end
 ```
 
@@ -366,11 +425,20 @@ sequenceDiagram
   participant K as ブローカー
   B->>W: POST /auth/logout
   W->>W: web のセッションを消す
+  break ID token の無いセッションか、セッションが無い
+    W-->>B: web の / へリダイレクト
+  end
   W-->>B: Hydra の end_session_endpoint へリダイレクト（id_token_hint、post_logout_redirect_uri）
   B->>H: GET /oauth2/sessions/logout
   H-->>B: ブローカーのログアウトの画面へリダイレクト（logout_challenge）
   B->>K: GET /logout
+  break logout_challenge が無い
+    K-->>B: ログアウトの失敗の画面（400）
+  end
   K->>H: ログアウトの accept
+  break accept を返せない
+    K-->>B: ログアウトの失敗の画面（502）
+  end
   H-->>K: リダイレクト先
   K-->>B: Hydra へリダイレクト
   B->>H: ログインのセッションを消す
