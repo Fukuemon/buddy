@@ -92,10 +92,11 @@ export const LinkUnreadable: Story = {
   },
 }
 
-/** 結び付けた職員の行で、外すを押した。 */
+/** 結び付けた職員の行で、行の操作のメニューの外すを押した。 */
 export const UnlinkDialog: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await canvas.findByTestId('calendar-link-menu-staff-1'))
     await userEvent.click(await canvas.findByTestId('calendar-link-remove-staff-1'))
   },
 }

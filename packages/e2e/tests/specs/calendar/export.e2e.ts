@@ -73,9 +73,14 @@ const openReviewUntilRow = async (page: Page, scheduleId: string) => {
   }).toPass()
 }
 
-/** 確認が必要な予定の一覧で、予定の行を buddy の内容で書き直す。確認のダイアログの文が notice を含むことを確認してから押す。 */
+/**
+ * 確認が必要な予定の一覧で、予定の行を押して開く予定の確認のダイアログから、buddy の内容で書き直す。
+ * 確認のダイアログの文が notice を含むことを確認してから押す。
+ */
 const rewriteRow = async (page: Page, scheduleId: string, notice: string) => {
-  await reviewRow(page, scheduleId)
+  await reviewRow(page, scheduleId).click()
+  await page
+    .getByTestId('calendar-review-dialog')
     .getByTestId(/^calendar-review-rewrite-/)
     .click()
   const dialog = page.getByTestId('calendar-rewrite-dialog')
@@ -91,15 +96,16 @@ test.describe('確認が必要な予定', () => {
     test.afterEach(async ({ page, request }) => {
       await holdGoogleChanges(request, false)
       await page.goto('/schedule/link')
-      const remove = page.getByTestId(`calendar-link-remove-${HAYASHI.id}`)
+      const menu = page.getByTestId(`calendar-link-menu-${HAYASHI.id}`)
       await expect(page.getByTestId(`calendar-link-row-${HAYASHI.id}`)).toBeVisible()
-      if (await remove.isVisible()) {
-        await remove.click()
+      if (await menu.isVisible()) {
+        await menu.click()
+        await page.getByTestId(`calendar-link-remove-${HAYASHI.id}`).click()
         await expect(page.getByTestId('calendar-unlink-dialog')).toContainText(
           '取り込んだ予定は buddy に残ります。',
         )
         await page.getByTestId('calendar-unlink-submit').click()
-        await expect(remove).toBeHidden()
+        await expect(menu).toBeHidden()
       }
     })
 
@@ -130,9 +136,7 @@ test.describe('確認が必要な予定', () => {
         await openReviewUntilRow(page, scheduleId)
         await expect(
           reviewRow(page, scheduleId).getByTestId(/^calendar-review-reason-/),
-        ).toHaveText(
-          'buddy と Google カレンダーの両方で予定が変わりました。どちらの内容に合わせるかを選んでください。',
-        )
+        ).toHaveText('buddy と Google カレンダーの両方で予定が変わりました。')
         await holdGoogleChanges(request, false)
         // 一覧は Google カレンダーのタイトルを出さない
         await expect(page.getByTestId('calendar-review-table')).not.toContainText(created)
@@ -171,9 +175,7 @@ test.describe('確認が必要な予定', () => {
         await openReviewUntilRow(page, scheduleId)
         await expect(
           reviewRow(page, scheduleId).getByTestId(/^calendar-review-reason-/),
-        ).toHaveText(
-          'Google カレンダーで予定が見つかりません。予定が消されたか、カレンダーの共有が外れていないかを、職員に確認してください。',
-        )
+        ).toHaveText('Google カレンダーで予定が見つかりません。')
         await holdGoogleChanges(request, false)
       })
 

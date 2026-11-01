@@ -1,8 +1,4 @@
-import { Button } from '@buddy/ui'
-import { useId } from 'react'
-
-import { BusyLabel } from '#/components/site/BusyLabel'
-import { SiteDialog } from '#/components/site/SiteDialog'
+import { ConfirmDialog } from '@buddy/ui'
 
 export type CalendarAcceptDialogProps = {
   /** Google カレンダーの内容に合わせる予定の日時と職員。 */
@@ -14,62 +10,40 @@ export type CalendarAcceptDialogProps = {
   onCancel: () => void
 }
 
-/** buddy の予定を Google カレンダーの内容に合わせる前に、buddy での変更が消えることを示して確認するダイアログ。 */
+/**
+ * buddy の予定を Google カレンダーの内容に合わせる前に、buddy での変更が消えることを示して確認するダイアログ。
+ * buddy での変更が消えるので、確定のボタンを赤にする。
+ */
 export const CalendarAcceptDialog = ({
   target,
   isSubmitting,
   errorMessage,
   onSubmit,
   onCancel,
-}: CalendarAcceptDialogProps) => {
-  const titleId = useId()
-  return (
-    <SiteDialog
-      canClose={!isSubmitting}
-      data-testid="calendar-accept-dialog"
-      labelledBy={titleId}
-      onClose={onCancel}
-      role="alertdialog"
-    >
-      <h2 className="text-heading-sm" id={titleId}>
-        Google カレンダーの内容に合わせますか
-      </h2>
-      <p className="text-body" data-testid="calendar-accept-target">
-        {target}
-      </p>
-      <p className="text-body">
-        buddy の予定のタイトルと日時を、Google カレンダーの今の内容にします。buddy
-        で変えたタイトルと日時は消えます。Google カレンダーで消された予定は、buddy
-        でもキャンセルします。
-      </p>
-      {errorMessage !== undefined && (
-        <p
-          className="border-l-4 border-danger bg-danger-surface px-3 py-2 text-body text-danger"
-          data-testid="calendar-accept-error"
-          role="alert"
-        >
-          {errorMessage}
-        </p>
-      )}
-      <div className="flex flex-wrap justify-end gap-3">
-        <Button
-          data-testid="calendar-accept-cancel"
-          disabled={isSubmitting}
-          onClick={onCancel}
-          size="S"
-          variant="secondary"
-        >
-          キャンセル
-        </Button>
-        <Button
-          data-testid="calendar-accept-submit"
-          disabled={isSubmitting}
-          onClick={onSubmit}
-          size="S"
-        >
-          <BusyLabel busy={isSubmitting}>合わせる</BusyLabel>
-        </Button>
-      </div>
-    </SiteDialog>
-  )
-}
+}: CalendarAcceptDialogProps) => (
+  <ConfirmDialog
+    busyLabel="合わせる"
+    canSubmit
+    error={
+      errorMessage === undefined
+        ? undefined
+        : { message: errorMessage, testId: 'calendar-accept-error', isBlock: true }
+    }
+    isSubmitting={isSubmitting}
+    onCancel={onCancel}
+    onSubmit={onSubmit}
+    submitLabel="合わせる"
+    submitVariant="danger"
+    testIdPrefix="calendar-accept"
+    title="Google カレンダーの内容に合わせますか"
+  >
+    <p className="text-body" data-testid="calendar-accept-target">
+      {target}
+    </p>
+    <p className="text-body">
+      buddy の予定のタイトルと日時を、Google カレンダーの今の内容にします。buddy
+      で変えたタイトルと日時は消えます。Google カレンダーで消された予定は、buddy
+      でもキャンセルします。
+    </p>
+  </ConfirmDialog>
+)

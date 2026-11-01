@@ -24,27 +24,47 @@ export const isCancelledSingleIssue = (issue: ExportIssueState) =>
   !issue.acceptable &&
   issue.recurring_schedule_id === null
 
-/** 確認が必要な書き出しの理由を、マネージャーが次にすることの分かる文にする。 */
+/** 確認が必要な書き出しの理由を、何が起きたかの 1 文にする。次にすることは、ダイアログのボタンと exportIssueReasonDetail が示す。 */
 export const exportIssueReason = (issue: ExportIssueState) => {
   switch (issue.error_code) {
     case 'precondition_failed':
-      if (issue.acceptable) {
-        return 'buddy と Google カレンダーの両方で予定が変わりました。どちらの内容に合わせるかを選んでください。'
-      }
+      if (issue.acceptable) return 'buddy と Google カレンダーの両方で予定が変わりました。'
       return isCancelledSingleIssue(issue)
-        ? 'buddy でキャンセルした予定が、Google カレンダーで変わっていました。buddy の内容で書き直すと Google カレンダーの予定を消すので、消してよいかを職員に確認してください。'
-        : 'buddy と Google カレンダーの両方で繰り返しの予定が変わりました。buddy の内容で書き直すか、Google カレンダーで元に戻すよう職員に頼んでください。'
+        ? 'buddy でキャンセルした予定が、Google カレンダーで変わっていました。'
+        : 'buddy と Google カレンダーの両方で繰り返しの予定が変わりました。'
     case 'not_found':
-      return 'Google カレンダーで予定が見つかりません。予定が消されたか、カレンダーの共有が外れていないかを、職員に確認してください。'
+      return 'Google カレンダーで予定が見つかりません。'
     case 'unappliable':
-      return 'Google カレンダーでの変更を、buddy の予定に読み替えられません。終日の予定、タイトルの利用者が見つからない予定、繰り返しの予定そのものの変更が当たります。buddy の内容で書き直すか、Google カレンダーで直すよう職員に頼んでください。'
+      return 'Google カレンダーでの変更を、buddy の予定として取り込めません。'
     case 'rejected':
-      return 'Google カレンダーが予定の内容を受け付けませんでした。予定を開いて内容を確認してください。'
+      return 'Google カレンダーが予定の内容を受け付けませんでした。'
     case 'forbidden':
-      return 'Google カレンダーに書けません。カレンダーが「予定の変更」の権限で共有されているかを、職員に確認してください。'
+      return 'Google カレンダーに書けません。'
     default:
       return issue.status === 'failed'
         ? 'Google カレンダーに届かず、書き出せませんでした。'
         : 'Google カレンダーに書き出せませんでした。'
+  }
+}
+
+/**
+ * 予定の確認のダイアログで理由の文に続ける、ボタンで足りないときに職員が次にすることの文。無い理由は undefined を返す。
+ * ボタンが示す操作（合わせる、書き直す、予定を開く）は繰り返さない。
+ */
+export const exportIssueReasonDetail = (issue: ExportIssueState) => {
+  switch (issue.error_code) {
+    case 'precondition_failed':
+      if (issue.acceptable) return undefined
+      return isCancelledSingleIssue(issue)
+        ? '書き直すと Google カレンダーの予定を消すので、消してよいかを職員に確認してください。'
+        : 'Google カレンダーで元に戻すときは、職員に頼んでください。'
+    case 'not_found':
+      return '予定が消されたか、カレンダーの共有が外れていないかを、職員に確認してください。'
+    case 'unappliable':
+      return '終日の予定、タイトルの利用者が見つからない予定、繰り返しの予定そのものの変更が当たります。Google カレンダーで直すときは、職員に頼んでください。'
+    case 'forbidden':
+      return 'カレンダーが「予定の変更」の権限で共有されているかを、職員に確認してください。'
+    default:
+      return undefined
   }
 }

@@ -31,6 +31,16 @@ describe('ScheduleDetailModal', () => {
     expect(onEdit).toHaveBeenCalledOnce()
   })
 
+  it('下端の閉じるは、編集の左に置き、押すと onClose を呼ぶ', async () => {
+    const onClose = fn()
+    render(<Normal onClose={onClose} />)
+    const close = screen.getByTestId('schedule-detail-close')
+    const edit = screen.getByTestId('schedule-detail-edit')
+    expect(close.compareDocumentPosition(edit) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    await userEvent.click(close)
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
   it('メモが空の予定は、メモの見出しごと出さない', () => {
     render(<Normal schedule={{ ...Normal.args.schedule!, description: '' }} />)
     expect(screen.queryByRole('region', { name: 'メモ' })).not.toBeInTheDocument()
@@ -38,11 +48,12 @@ describe('ScheduleDetailModal', () => {
     expect(screen.queryByText('なし')).not.toBeInTheDocument()
   })
 
-  it('キャンセルした予定は理由を出し、編集のボタンを出さない', () => {
+  it('キャンセルした予定は理由を出し、下端の閉じると編集のボタンを出さない', () => {
     render(<Cancelled />)
     expect(screen.getByTestId('schedule-detail-cancel')).toHaveTextContent(
       'キャンセルした予定です。理由: 利用者の体調不良',
     )
+    expect(screen.queryByTestId('schedule-detail-close')).not.toBeInTheDocument()
     expect(screen.queryByTestId('schedule-detail-edit')).not.toBeInTheDocument()
   })
 })

@@ -14,7 +14,7 @@ test.describe('カレンダーの連携', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       const prefix = variant.label ? `${variant.label}: ` : ''
 
-      test(`${prefix}事業所のサービスアカウントに共有されていないカレンダーを確認した場合、読めない文が出て結び付けられないこと`, async ({
+      test(`${prefix}事業所の buddy のメールアドレスに共有されていないカレンダーを確認した場合、読めない文が出て結び付けられないこと`, async ({
         browser,
       }) => {
         await recordPrEvidence(
@@ -22,7 +22,7 @@ test.describe('カレンダーの連携', () => {
           {
             name: 'calendar-link-unreadable',
             title:
-              '連携の画面に事業所のサービスアカウントが出て、共有されていないカレンダーは読めない文が出て結び付けられない',
+              '連携の画面に共有する相手の buddy のメールアドレスが出て、共有されていないカレンダーは読めない文が出て結び付けられない',
             actor: ACTOR,
             variant,
           },
@@ -36,7 +36,7 @@ test.describe('カレンダーの連携', () => {
               FACILITY_SERVICE_ACCOUNT,
             )
             await check(
-              `カレンダーの連携の画面に、この事業所の（架空の）サービスアカウント ${FACILITY_SERVICE_ACCOUNT} が出る`,
+              `カレンダーの連携の画面の「共有する相手のメールアドレス」に、この事業所の（架空の）buddy のメールアドレス ${FACILITY_SERVICE_ACCOUNT} が出る`,
             )
 
             await step(
@@ -49,11 +49,11 @@ test.describe('カレンダーの連携', () => {
             await step('「読めるか確認する」を押す')
             await page.getByTestId('calendar-link-check').click()
             await expect(page.getByTestId('calendar-link-check-result')).toContainText(
-              'このカレンダーを読めません。カレンダーをこの事業所の buddy のサービスアカウントに共有したか',
+              'このカレンダーを読めません。カレンダーが、上に出ている buddy のメールアドレスに共有されているか',
             )
             await expect(page.getByTestId('calendar-link-submit')).toBeDisabled()
             await check(
-              '「このカレンダーを読めません。カレンダーをこの事業所の buddy のサービスアカウントに共有したか…」が出て、「結び付ける」を押せない',
+              '「このカレンダーを読めません。カレンダーが、上に出ている buddy のメールアドレスに共有されているか…」が出て、「結び付ける」を押せない',
             )
           },
         )
@@ -98,7 +98,10 @@ test.describe('カレンダーの連携', () => {
               await expect(page.getByTestId(`calendar-link-calendar-id-${MORI.id}`)).toHaveText(
                 MORI_CALENDAR,
               )
-              await check(`一覧の ${MORI.name} の行に ${MORI_CALENDAR} が出る`)
+              await expect(page.getByTestId(`calendar-link-menu-${MORI.id}`)).toBeVisible()
+              await check(
+                `一覧の ${MORI.name} の行に ${MORI_CALENDAR} が出て、「結び付ける」が「…」のメニューに替わる`,
+              )
             } finally {
               await step('（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）')
               await unlinkStaffCalendar(page, MORI.id)
