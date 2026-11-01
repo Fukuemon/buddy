@@ -128,7 +128,7 @@ test.describe('職員の管理', () => {
               `予定のカレンダーを日の表示で開いている（撮影の前に、訪問しない ${name} を登録した）`,
             )
 
-            await step('「予定を作成」を押し、訪問の予定を選んで、項目の一覧の「担当者」を押す')
+            await step('「予定を作成」を押し、訪問の予定を選んで、項目の一覧の「主訪問者」を押す')
             await page.getByTestId('schedule-create-open').click()
             await page.getByTestId('schedule-kind-tab-visit').check()
             await page.getByTestId('schedule-field-staff').click()

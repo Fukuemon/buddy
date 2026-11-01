@@ -51,7 +51,7 @@ test.describe('予定のカレンダー', () => {
         )
       })
 
-      test(`${prefix}チームリーダーが日の表示を開いた場合、見てよくない職員の予定が出ず、自分の予定は出ること`, async ({
+      test(`${prefix}チームリーダーが日の表示を開いた場合、見てよくない職員の列が出ず、自分の予定は出ること`, async ({
         browser,
       }) => {
         await recordPrEvidence(
@@ -59,7 +59,7 @@ test.describe('予定のカレンダー', () => {
           {
             name: 'schedule-permission-leader',
             title:
-              'チーム B のリーダーには、チーム A の青木 陽菜の予定が日の表示に出ず、自分の予定は出る',
+              'チーム B のリーダーには、チーム A の青木 陽菜の列が日の表示に出ず、自分の予定は出る',
             actor: `${LEADER.staff.name}（チーム B のリーダー、チーム B の予定の閲覧の権限あり）`,
             variant,
           },
@@ -70,15 +70,14 @@ test.describe('予定のカレンダー', () => {
           async ({ page, step, check }) => {
             await page.goto(`/schedule?view=day&date=${AOKI_CONFERENCE.date}`)
             await expect(page.getByTestId('viewer-menu')).toContainText(LEADER.staff.name)
-            const aoki = page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)
-            await expect(aoki).toBeVisible()
+            await expect(page.getByTestId(`day-grid-staff-${LEADER.staff.id}`)).toBeVisible()
             await step(
               `${LEADER.staff.name} で入り、${AOKI_CONFERENCE.date} の日の表示を開いている`,
             )
 
-            await expect(aoki.getByTestId(/^schedule-event-/)).toHaveCount(0)
+            await expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toHaveCount(0)
             await check(
-              `${LOGIN_STAFF.name} の列に、マネージャーには出る 10:00 の「${AOKI_CONFERENCE.title}」が出ない`,
+              `マネージャーには出る ${LOGIN_STAFF.name} の列と、10:00 の「${AOKI_CONFERENCE.title}」が出ない`,
             )
 
             await step(`次の日（${MORI_VISIT.date}）へ移る`)

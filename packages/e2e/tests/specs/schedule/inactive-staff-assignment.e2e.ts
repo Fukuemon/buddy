@@ -65,7 +65,7 @@ const registerStopped = async (
 
 test.describe('予定の作成', () => {
   test.describe('休職と退職の職員と、訪問しない職員への割り振り', () => {
-    test('URL の staffId が休職の職員を指す予定の作成の画面を開いた場合、担当者が未選択で開くこと', async ({
+    test('URL の staffId が休職の職員を指す予定の作成の画面を開いた場合、主訪問者が未選択で開くこと', async ({
       page,
       request,
     }) => {
@@ -73,7 +73,7 @@ test.describe('予定の作成', () => {
       const stopped = await registerStopped(request, manager, leaveStaff)
 
       await page.goto(`/schedule/new?start=${SCHEDULE_DATE}&time=13:00&staffId=${stopped.id}`)
-      // 職員の一覧が届くまで担当者は値に関わらず未選択に見えるので、候補が出てから確認する
+      // 職員の一覧が届くまで主訪問者は値に関わらず未選択に見えるので、候補が出てから確認する
       await page.getByTestId('schedule-field-staff').click()
       await expect(page.getByTestId(`staff-select-option-${LOGIN_STAFF.id}`)).toBeVisible()
 

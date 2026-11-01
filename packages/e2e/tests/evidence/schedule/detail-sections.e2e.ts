@@ -73,11 +73,11 @@ test.describe('予定のカレンダー', () => {
             await step('訪問の予定を押し、予定の詳細を開く')
             await visit.click()
             await expect(page.getByTestId('schedule-detail-visit')).toContainText(SEED_PATIENT.name)
-            // 種類、担当者、利用者、サービスコード、訪問の種類の 5 つ
+            // 種類、主訪問者、利用者、サービスコード、訪問の区分の 5 つ
             await expect(scheduleDetailValues(page)).toHaveCount(5)
             await expect.poll(() => valueLeftCount(page)).toBe(1)
             await check(
-              '種類と担当者の段と、訪問の情報の段（利用者、サービスコード、訪問の種類）の値が、同じ左端の位置に 1 列で並ぶ',
+              '種類と主訪問者の段と、訪問の情報の段（利用者、サービスコード、訪問の区分）の値が、同じ左端の位置に 1 列で並ぶ',
             )
           },
         )
@@ -106,7 +106,7 @@ test.describe('予定のカレンダー', () => {
             await expect(page.getByTestId('schedule-detail-memo')).toHaveCount(0)
             await expect(page.getByTestId('schedule-detail-modal')).not.toContainText('なし')
             await check(
-              '日時と曜日が見出しになり、利用者、サービスコード、訪問の種類が「訪問の情報」のセクションに、上の段と同じ列の位置でまとまり、メモが空なのでメモの見出しも「なし」も出ない',
+              '日時と曜日が見出しになり、利用者、サービスコード、訪問の区分が「訪問の情報」のセクションに、上の段と同じ列の位置でまとまり、メモが空なのでメモの見出しも「なし」も出ない',
             )
           },
         )
