@@ -1416,10 +1416,11 @@ export interface components {
              * @description all_day は終日、multi_day は日をまたぐ（24:00 に終わる予定を含む）、unreadable_time は日時を読めない、
              *     zero_length は長さが無い、unreadable_title はタイトルが空白だけか訪問のタイトルを読めない、
              *     service_not_found はタイトルのサービス内容がサービスコードに無い、
-             *     staff_on_leave はカレンダーを結び付けた職員が休職しているので作らない新しい予定
+             *     staff_on_leave はカレンダーを結び付けた職員が休職しているので作らない新しい予定、
+             *     staff_non_visiting はカレンダーを結び付けた職員が訪問しない職員なので作らない新しい予定
              * @enum {string}
              */
-            reason: "all_day" | "multi_day" | "unreadable_time" | "zero_length" | "unreadable_title" | "service_not_found" | "staff_on_leave";
+            reason: "all_day" | "multi_day" | "unreadable_time" | "zero_length" | "unreadable_title" | "service_not_found" | "staff_on_leave" | "staff_non_visiting";
         };
         ImportPreview: {
             range_start: components["schemas"]["Date"];
