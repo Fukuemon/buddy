@@ -4,7 +4,7 @@ import type { BuddyApi, ReceiptApi } from './client'
 import { createFakeBuddyApi } from './fake/fakeBuddyApi'
 import { createFakeReceiptApi } from './fake/fakeReceiptApi'
 
-/** createBuddyApi が読む環境変数。意味は README の「API を切り替える」にある。 */
+/** createBuddyApi が読む環境変数。意味は README の Configuration にある。 */
 export type ApiEnv = {
   VITE_API_MODE?: string
 }
