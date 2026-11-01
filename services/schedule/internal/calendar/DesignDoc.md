@@ -25,7 +25,8 @@ verified_commit: 8254dde
 
 持たないもの
 
-- 予定、繰り返しの予定、職員の休職と退職の規則。[予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md) が持つ
+- 予定、繰り返しの予定の規則。[予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md) が持つ
+- 職員の休職と退職の規則。[職員の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/staff/DesignDoc.md) が持つ
 
 ## Design
 
