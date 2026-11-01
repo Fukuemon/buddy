@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode, type SyntheticEvent } from 'react'
 
-export type CalendarDialogProps = {
+export type SiteDialogProps = {
   /** alertdialog は、取り消せない操作を確認するダイアログに使う。 */
   role?: 'dialog' | 'alertdialog'
   /** ダイアログの名前になるタイトルの要素の id。 */
@@ -13,17 +13,17 @@ export type CalendarDialogProps = {
 }
 
 /**
- * カレンダーの連携の画面に重ねて出すダイアログ。`<dialog>` の showModal で開き、後ろの一覧を操作できなくする。
+ * 画面の上に重ねて出す、小さい確認と入力のダイアログ。`<dialog>` の showModal で開き、後ろの画面を操作できなくする。
  * 閉じると、開く前にフォーカスがあった要素へ戻す。幅 768px 未満では、左右に余白を残して画面の幅に合わせる。
  */
-export const CalendarDialog = ({
+export const SiteDialog = ({
   role = 'dialog',
   labelledBy,
   onClose,
   canClose = true,
   children,
   'data-testid': testId,
-}: CalendarDialogProps) => {
+}: SiteDialogProps) => {
   const ref = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {

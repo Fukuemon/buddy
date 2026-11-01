@@ -13,7 +13,7 @@ import {
   type ReviewChoice,
   type ReviewChoices,
 } from '../lib/importSummary'
-import { BusyLabel } from './BusyLabel'
+import { BusyLabel } from '#/components/site/BusyLabel'
 import { CalendarImportCounts } from './CalendarImportCounts'
 import { CalendarImportReviewItem } from './CalendarImportReviewItem'
 
