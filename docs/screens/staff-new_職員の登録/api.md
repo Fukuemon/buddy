@@ -18,6 +18,19 @@
 | 登録 | 登録した職員 | `StaffDetail`（`staff.create` の戻り値） | `createUser` のレスポンスの `StaffDetail` |
 | 登録の失敗の文 | 理由ごとの文 | `ApiError.status`、`ApiError.code` | レスポンスの status と `Error.code` |
 
+## 状態と失敗の要因
+
+| 状態 | 出す文 | 要因 |
+| --- | --- | --- |
+| 登録の失敗 | 「このメールアドレスの職員は、すでに登録されています。」 | `createUser` が 409 |
+| 登録の失敗 | 「部署、チーム、役職のどれかが見つかりません。開き直してから、選び直してください。」 | `createUser` が 400 |
+| 登録の失敗 | 「この操作をする権限がありません。」 | `createUser` が 403 |
+| 登録の失敗 | 「登録できませんでした。時間をおいて、もう一度登録してください。」 | `createUser` が 400、403、409 のほかの失敗、API に届かない |
+| 入力 | 「部署、チーム、役職を読み込めませんでした。閉じてから、開き直してください。」 | `listDepartments`、`listTeams`、`listPositions` のどれかの失敗 |
+
+- 文を選ぶ処理は `apps/web/src/features/staff/lib/errorMessage.ts` の `staffSubmitErrorMessage` と `OPTIONS_LOAD_ERROR_MESSAGE` にある。
+- `createUser` の 400 は、部署、チーム、役職が無いときのほかに入力の誤りでも返るが、web は 400 を全て部署、チーム、役職の文にする。入力の誤りは、送る前に画面が入力の誤りの文で止める。
+
 ## 操作
 
 全ての書き込みの操作は、事業所の確認の後に、ログインした職員が職員の管理の権限（`staff.manage`）を持つかを確認し、持たなければ 403（`forbidden`）を返す。
