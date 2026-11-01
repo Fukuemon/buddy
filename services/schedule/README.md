@@ -5,7 +5,7 @@ API の定義の正本は [openapi.yaml](openapi.yaml) である。
 
 ## Setup
 
-ツールは、[CONTRIBUTING.md](../../CONTRIBUTING.md) の Setup の手順で入れる。  
+ツールは、[CONTRIBUTING.md](../../CONTRIBUTING.md#setup) の Setup の手順で入れる。  
 PostgreSQL 18 とテストは Docker を使う。
 
 ## Configuration
@@ -76,18 +76,22 @@ go run ./cmd/api
 API は SIGINT か SIGTERM を受けると、処理中のリクエストを最大 30 秒待ってから止まる。
 
 `cmd/devissuer` は、`GET /token` で署名したトークンを返す。  
-シードの事業所は組織 `org-sample` に結び付いているので、シードの職員の `sub`（ブローカーの職員の ID）でトークンを作れば API を呼べる。`sub` はシード（`db/seed/seed.sql`）の `users.sub` にある。
+シードの事業所は組織 `org-sample` に結び付いているので、シードの職員の `sub` でトークンを作れば API を呼べる。  
+`sub` は、ブローカーの職員の ID で、シード（`db/seed/seed.sql`）の `users.sub` にある。
 
 ```sh
 TOKEN=$(curl -s '127.0.0.1:9000/token?sub=01M5J20JC0TFEK223R3MF68HVK&org_id=org-sample' | jq -r .access_token)
 curl -H "Authorization: Bearer $TOKEN" localhost:8080/v1/facilities/01M3TC5H00QV17BC0J9V3393ZP/schedules
 ```
 
-フェイクの Issuer は、起動のたびに署名の鍵を作り直す。Issuer を起動し直したら、API も起動し直す。
+フェイクの Issuer は、起動のたびに署名の鍵を作り直す。  
+Issuer を起動し直したら、API も起動し直す。
 
 Google カレンダーの取り込みをローカルで試すときは、Google Calendar API をローカル環境で再現する [calendarpit](https://calendarpit.dev/ja/) を起動し、API に向ける。  
-calendarpit は、ルートの `compose/calendarpit/fixture.json` の職員のカレンダーと予定を持つ。compose は同じ calendarpit を `calendarpit` として起動する。  
-calendarpit はサービスアカウントの token を出さない。`compose/calendarpit/authorize.mjs` で fixture の利用者の refresh token を取り、Application Default Credentials のファイルに書いて渡す。  
+calendarpit は、ルートの `compose/calendarpit/fixture.json` の職員のカレンダーと予定を持つ。  
+compose は、同じ calendarpit を `calendarpit` として起動する。  
+calendarpit は、サービスアカウントの token を出さない。  
+このため、`compose/calendarpit/authorize.mjs` で fixture の利用者の refresh token を取り、Application Default Credentials のファイルに書いて渡す。  
 次の手順の calendarpit の 4173 は、ルートの compose の calendarpit と重なる。  
 compose を起動しているときは、`docker compose stop calendarpit` で止めてから実行する。  
 試し終えたら、`docker compose start calendarpit` で compose の calendarpit を戻す。
@@ -105,23 +109,40 @@ export GOOGLE_CALENDAR_ENDPOINT=http://127.0.0.1:4173/calendar/v3/
 go run ./cmd/api
 ```
 
-上の手順の calendarpit は `:memory:` で動くので、起動し直すと token が消える。`authorize.mjs` を流し直し、API も起動し直す。compose の calendarpit は、予定と token を volume に残す。
+上の手順の calendarpit は `:memory:` で動くので、起動し直すと token が消える。  
+calendarpit を起動し直したら、`authorize.mjs` を流し直し、API も起動し直す。  
+compose の calendarpit は、予定と token を volume に残す。
 
 実際の Google カレンダーで試すときは、検証の事業所のサービスアカウントになりすました Application Default Credentials を使う。  
-この手順はメンテナー向けで、運営側の GCP のプロジェクトと検証の事業所のサービスアカウントを前提にする。ほかの人は、上の calendarpit で試す。  
+この手順はメンテナー向けで、運営側の GCP のプロジェクトと検証の事業所のサービスアカウントを前提にする。  
+ほかの人は、上の calendarpit で試す。  
 手順と要るロールは、[照合の API の README](../receipt/README.md#google-カレンダーから予定を取る) と同じである。  
 `GOOGLE_APPLICATION_CREDENTIALS` と `GOOGLE_CALENDAR_ENDPOINT` を設定せず、シードの組織 `org-sample` と検証の事業所のサービスアカウントの対応のファイルを渡す。  
 対応のファイルはサービスアカウントのメールアドレスを持つので、Git で追跡しない場所に置く。  
-書き出し（`GOOGLE_CALENDAR_EXPORT_ENABLED`）は、サービスアカウントが持つ検証のカレンダーでだけ有効にする。職員が共有したカレンダーに「予定の変更」の共有で書けるかは、まだ確認していない。
+書き出し（`GOOGLE_CALENDAR_EXPORT_ENABLED`）は、サービスアカウントが持つ検証のカレンダーでだけ有効にする。  
+職員が共有したカレンダーに「予定の変更」の共有で書けるかは、まだ確認していない。
 
 compose の予定の API を実際の Google カレンダーに向けるときは、Git で追跡しない上書きの compose のファイルを `-f` で重ね、次のように変える。
 
 - `GOOGLE_CALENDAR_ENDPOINT` と `GOOGLE_APPLICATION_CREDENTIALS` を空にする。
 - `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` を、検証の対応のファイルに替え、そのファイルをマウントする。
-- ローカルの Application Default Credentials のファイルを、読み取りだけでマウントする。ファイルは `gcloud` の設定のディレクトリの `application_default_credentials.json` である。
+- ローカルの Application Default Credentials のファイルを、読み取りだけでマウントする。
+  - ファイルは、`gcloud` の設定のディレクトリの `application_default_credentials.json` である。
   - マウント先は `/home/nonroot/.config/gcloud/application_default_credentials.json` にする。イメージは distroless の nonroot で動くためである。
 
-検証の事業所のアカウントそのものになりすました Application Default Credentials では、予定の API は重ねてなりすまさない。この形で、`serviceusage.services.use` を持つロールが要るかは、ロールを外して確認していない（未確認）。
+検証の事業所のアカウントそのものになりすました Application Default Credentials では、予定の API は重ねてなりすまさない。  
+この形で `serviceusage.services.use` を持つロールが要るかは、ロールを外して確認していない（未確認）。
+
+コンテナのイメージは、このディレクトリで次を実行して作る。  
+ビルドの文脈は、`packages/go` を読むため、リポジトリの直下である。
+
+```sh
+docker build -f Dockerfile -t schedule:local ../..
+```
+
+イメージは、distroless の上に `api` と `migrate` の 2 つのバイナリを持つ。  
+エントリポイントは `api` である。  
+マイグレーションは、`--entrypoint /usr/local/bin/migrate` を指定して実行する。
 
 ## マイグレーション
 
@@ -153,7 +174,7 @@ golangci-lint run
 `go test ./...` は、リポジトリの結合テストのために、testcontainers-go で PostgreSQL 18 のコンテナを起動する。  
 `-short` を付けると、コンテナを使うテストを飛ばす。  
 テストと lint は `GOWORK=off` を付けて流す。  
-理由は [CONTRIBUTING.md](../../CONTRIBUTING.md) の「Go のモジュール」にある。
+理由は [CONTRIBUTING.md](../../CONTRIBUTING.md#go-のモジュール) の「Go のモジュール」にある。
 
 テストの種類ごとに保証することと配置先は、[テスト](../../context/testing.md) にある。
 
@@ -161,7 +182,8 @@ golangci-lint run
 
 ### API の定義を変えたとき
 
-openapi.yaml を変えたら、生成し直し、生成物も同じコミットに入れる。画面の型の生成と生成物の確認は、[CONTRIBUTING.md](../../CONTRIBUTING.md) の Changing the API Definition にある。
+openapi.yaml を変えたら、生成し直し、生成物も同じコミットに入れる。  
+画面の型の生成と生成物の確認は、[CONTRIBUTING.md](../../CONTRIBUTING.md#changing-the-api-definition) の Changing the API Definition にある。
 
 ```sh
 go generate ./...
@@ -169,14 +191,20 @@ go generate ./...
 
 ハンドラは `internal/httpapi` の `server` に、生成した `openapi.StrictServerInterface` のメソッドとして書く。
 
-- 操作を足したら、生成し直すと `server` がインターフェイスを満たさなくなり、コンパイルが失敗する。メソッドを足して直す。
+- 操作を足したら、生成し直すと `server` がインターフェイスを満たさなくなり、コンパイルが失敗する。
+  - メソッドを足して直す。
 - 成功のレスポンスは、生成した `<操作>200JSONResponse` か `<操作>201JSONResponse` で返す。
-- 機能のパッケージの `Usecase` のエラーは、そのまま `error` として返す。`writeError` が、`apperr` のエラーから状態コードと `{code,message}` を決める。
-- リクエストの検証の規則（必須、長さ、ID の形、列挙）は、`openapi.yaml` の schema に書く。`openapi_validate.go` のミドルウェアが、埋め込んだ定義でパスの引数、クエリ、本文を確認し、合わなければ 400（`invalid_input`）を返す。
+- 機能のパッケージの `Usecase` のエラーは、そのまま `error` として返す。
+  - `writeError` が、`apperr` のエラーから状態コードと `{code,message}` を決める。
+- リクエストの検証の規則（必須、長さ、ID の形、列挙）は、`openapi.yaml` の schema に書く。
+  - `openapi_validate.go` のミドルウェアが、埋め込んだ定義でパスの引数、クエリ、本文を確認し、合わなければ 400（`invalid_input`）を返す。
   - 必須の文字列で空を拒むときは、`required` に加えて `minLength: 1` を書く。`required` は項目があることしか求めない。
-  - 本文は `Content-Type: application/json` で、1 MiB までを受ける。空の値のクエリ（`?date_from=` など）は、定義では確認せず、ハンドラが指定なしとして扱う。
-  - 日付と時刻は文字列で受け、ハンドラが `civil` で読むときに暦の上で正しいかを確認する。日付の範囲と事業所の確認のように、定義で表せない検証は、ハンドラと機能のパッケージに置く。
-- 認証、事業所の確認、パスの ID の形の確認は、`/v1` の全てのパスに適用する gin のミドルウェアが受け持つ。ハンドラでは繰り返さない。
+  - 本文は `Content-Type: application/json` で、1 MiB までを受ける。
+  - 空の値のクエリ（`?date_from=` など）は、定義では確認せず、ハンドラが指定なしとして扱う。
+  - 日付と時刻は文字列で受け、ハンドラが `civil` で読むときに暦の上で正しいかを確認する。
+  - 日付の範囲と事業所の確認のように、定義で表せない検証は、ハンドラと機能のパッケージに置く。
+- 認証、事業所の確認、パスの ID の形の確認は、`/v1` の全てのパスに適用する gin のミドルウェアが行う。
+  - ハンドラでは繰り返さない。
 
 ### SQL を変えたとき
 
@@ -189,18 +217,8 @@ sqlc diff
 ```
 
 `sqlc diff` が何も出さなければ、生成したコードは SQL と一致している。  
-一覧の並べ替えは、許可したカラムごとの `CASE` を `ORDER BY` に固定で書く。利用者の入力を SQL の文字列に連結しない。
-
-## コンテナのイメージ
-
-このディレクトリで次を実行する。ビルドの文脈はリポジトリの直下である（`packages/go` を読むため）。
-
-```sh
-docker build -f Dockerfile -t schedule:local ../..
-```
-
-イメージは distroless の上に `api` と `migrate` の 2 つのバイナリを持つ。エントリポイントは `api` である。  
-マイグレーションは `--entrypoint /usr/local/bin/migrate` を指定して実行する。
+一覧の並べ替えは、許可したカラムごとの `CASE` を `ORDER BY` に固定で書く。  
+利用者の入力を SQL の文字列に連結しない。
 
 ## Documentation
 
