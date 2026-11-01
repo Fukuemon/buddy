@@ -1,7 +1,7 @@
+import { InputDialog } from '@buddy/ui'
 import { useEffect, useId, useRef, useState } from 'react'
 
 import type { Department, StaffAssignments, StaffDetail, StaffUpdateInput, Team } from '#/api/types'
-import { InputDialog } from '#/components/site/InputDialog'
 
 import {
   STAFF_NAME_MAX_LENGTH,

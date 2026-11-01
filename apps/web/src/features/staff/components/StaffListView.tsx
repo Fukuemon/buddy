@@ -1,9 +1,7 @@
-import { Button, Loading, SearchBox } from '@buddy/ui'
+import { Button, HelpToggle, Loading, RowTable, RowTableRow, SearchBox } from '@buddy/ui'
 
 import type { Department, Position, StaffRecord, Team } from '#/api/types'
-import { HelpToggle } from '#/components/site/HelpToggle'
 import { FilterSelect, ListCount, ListEmpty, ListTools } from '#/components/site/ListTools'
-import { RowTable, RowTableRow } from '#/components/site/RowTable'
 import { DotLabel, StatusBadge } from '#/components/site/StatusBadge'
 import { teamDotClassName } from '#/components/site/teamDot'
 
@@ -37,7 +35,7 @@ const unitOptions = (units: readonly { id: string; name: string }[] | undefined)
 ]
 
 /** 状態の絞り込みごとに、一覧に足す列の見出し。有効では足さない。 */
-const ASIDE_HEADER: Record<StaffListFilter['status'], string | undefined> = {
+const STATUS_HEADER: Record<StaffListFilter['status'], string | undefined> = {
   active: undefined,
   on_leave: '戻る予定の日',
   retired: '退職した日',
@@ -45,7 +43,7 @@ const ASIDE_HEADER: Record<StaffListFilter['status'], string | undefined> = {
 }
 
 /** 状態の絞り込みごとに、一覧に足す列の値。 */
-const asideOf = (staff: StaffRecord, status: StaffListFilter['status']) => {
+const statusOf = (staff: StaffRecord, status: StaffListFilter['status']) => {
   if (status === 'on_leave')
     return (
       <span data-testid={`staff-list-leave-return-${staff.id}`}>
@@ -169,14 +167,14 @@ export const StaffListView = ({
           />
         ) : (
           <RowTable
-            asideHeader={ASIDE_HEADER[filter.status]}
+            statusHeader={STATUS_HEADER[filter.status]}
             data-testid="staff-list-table"
             metaHeaders={['チーム', '役職', '部署']}
             primaryHeader="名前"
           >
             {state.staff.map((s) => (
               <RowTableRow
-                aside={asideOf(s, filter.status)}
+                status={statusOf(s, filter.status)}
                 data-testid={`staff-list-row-${s.id}`}
                 href={`/staff/${s.id}`}
                 key={s.id}
