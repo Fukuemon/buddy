@@ -21,7 +21,7 @@ export const createTeam = async (
   return id
 }
 
-/** 予定の API の職員の変更（PUT /v1/users/{user_id}）を token の職員で呼び、職員をチーム teamId に移す。名前は変えない。 */
+/** 予定の API の職員の変更（PUT /v1/users/{user_id}）を token の職員で呼び、職員をチーム teamId に移す。名前は変えず、訪問する職員のままにする。 */
 export const moveStaffToTeam = async (
   request: APIRequestContext,
   token: string,
@@ -30,7 +30,7 @@ export const moveStaffToTeam = async (
 ) => {
   const response = await request.put(`${SCHEDULE_URL}/v1/users/${staff.id}`, {
     headers: { Authorization: `Bearer ${token}` },
-    data: { username: staff.name, department_id: STAFF_FORM.departmentId, team_id: teamId },
+    data: { username: staff.name, department_id: STAFF_FORM.departmentId, team_id: teamId, visits: true },
   })
   if (!response.ok()) throw new Error(`職員をチームに移せない: ${response.status()}`)
 }
