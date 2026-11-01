@@ -59,6 +59,7 @@ export const occurrenceOf = (
   date,
   start_time: recurringSchedule.start_time,
   end_time: recurringSchedule.end_time,
+  ends_next_day: recurringSchedule.ends_next_day,
   is_over_time_work: recurringSchedule.is_over_time_work,
   staff_id: recurringSchedule.staff_id,
   staff_name: recurringSchedule.staff_name,

@@ -21,6 +21,7 @@ const recurring = (
   date,
   start_time: '09:00',
   end_time: '09:30',
+  ends_next_day: false,
   is_over_time_work: false,
   staff_id: 'staff-1',
   staff_name: '',

@@ -625,7 +625,8 @@ export interface paths {
         /**
          * 事業所の予定を一覧する
          * @description 事業所の単発の予定と繰り返しの予定のうち、職員が見てよい予定を返す。見てよくない職員の予定は除く。
-         *     sort_field と sort_order は許可した値だけを受け付け、ほかの値は 400 を返す。date_from と date_to は単発の予定だけを絞る。
+         *     sort_field と sort_order は許可した値だけを受け付け、ほかの値は 400 を返す。date_from と date_to は単発の予定だけを、予定の日付（開始の日）で絞る。
+         *     date_from の前の日に始まり、date_from に終わる ends_next_day の予定も返す。
          */
         get: operations["listSchedules"];
         put?: never;
@@ -1189,8 +1190,10 @@ export interface components {
             schedule_type_id: components["schemas"]["ID"];
             date: components["schemas"]["Date"];
             start_time: components["schemas"]["Time"];
-            /** @description start_time より後 */
+            /** @description ends_next_day が false なら start_time より後、true なら start_time より前。start_time と同じ時刻にはできない */
             end_time: components["schemas"]["Time"];
+            /** @description 終了が date の翌日の end_time か。省くと false。翌日の 0:00 に終わる予定は、end_time を 00:00 にして true にする */
+            ends_next_day?: boolean;
             staff_id: components["schemas"]["ID"];
             title?: string | null;
             description?: string | null;
@@ -1221,6 +1224,8 @@ export interface components {
             date: components["schemas"]["Date"];
             start_time: components["schemas"]["Time"];
             end_time: components["schemas"]["Time"];
+            /** @description date の翌日の end_time に終わる予定のとき true */
+            ends_next_day: boolean;
             /** @description 17 時以降に始まる予定のとき true */
             is_over_time_work: boolean;
             staff_id: components["schemas"]["ID"];
@@ -1260,6 +1265,8 @@ export interface components {
             date: components["schemas"]["Date"];
             start_time: components["schemas"]["Time"];
             end_time: components["schemas"]["Time"];
+            /** @description 全ての回が、回の日付の翌日の end_time に終わるとき true */
+            ends_next_day: boolean;
             is_over_time_work: boolean;
             staff_id: components["schemas"]["ID"];
             staff_name: string;
