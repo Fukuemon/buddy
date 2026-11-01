@@ -13,6 +13,9 @@ export const apiClient = (page: Page) => {
     token: dialog.getByPlaceholder('Token'),
     /** パスの引数の行。値は、例の値を選ぶか「Add value」で足すドロップダウンである */
     variableValue: (name: string) => dialog.locator(`tr[id="${name}"]`).getByRole('button').first(),
+    /** クエリの引数の行の値の欄。打つと、その引数をリクエストに含める */
+    queryValue: (name: string) =>
+      dialog.locator(`tr[id="${name}"]`).getByRole('combobox', { name: 'Value' }),
     addValue: page.getByText('Add value', { exact: true }),
     body: dialog.locator('.cm-content'),
     send: dialog.getByRole('button', { name: /^Send/ }).first(),

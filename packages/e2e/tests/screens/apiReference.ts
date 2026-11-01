@@ -41,6 +41,14 @@ export const fillApiVariable = async (page: Page, name: string, value: string) =
   await client.variableValue(name).filter({ hasText: value }).waitFor()
 }
 
+/** クエリの引数に値を入れる。 */
+export const fillApiQuery = async (page: Page, name: string, value: string) => {
+  const field = apiClient(page).queryValue(name)
+  await field.click()
+  await page.keyboard.type(value)
+  await field.filter({ hasText: value }).waitFor()
+}
+
 /** 本文の JSON を、例から body に入れ替える。 */
 export const fillApiBody = async (page: Page, body: unknown) => {
   const client = apiClient(page)
