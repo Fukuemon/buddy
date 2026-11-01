@@ -4,6 +4,7 @@ import { LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, PHONE_VIEWPORT, recordPrEvidence } from '../../fixtures/evidence'
 import { issueManagerToken, newStaff, registerStaffId } from '../../fixtures/staff'
 import { signInAtBroker } from '../../screens/login'
+import { rowTableParts } from '../../selectors/rowTable'
 
 const MANAGER = `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`
 
@@ -41,11 +42,11 @@ test.describe('職員の画面の packages/ui のコンポーネント', () => {
         signInManager,
         async ({ page, step, check }) => {
           await page.goto('/staff')
-          const row = page.getByTestId('staff-list-table').locator('tbody tr').first()
-          await expect(row).toBeVisible()
+          const { firstRow, firstRowGo } = rowTableParts(page.getByTestId('staff-list-table'))
+          await expect(firstRow).toBeVisible()
           await step('幅 390px で職員の一覧を開いている')
 
-          await expect(row.getByText('›')).toBeVisible()
+          await expect(firstRowGo).toBeVisible()
           await expect
             .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
             .toBeLessThanOrEqual(PHONE_VIEWPORT.width)
