@@ -223,7 +223,7 @@ func TestMigrateDownAndUp(t *testing.T) {
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)
 	}
-	if err := MigrateDown(cfg, 8); err != nil {
+	if err := MigrateDown(cfg, 9); err != nil {
 		t.Fatal(err)
 	}
 	pool, err := Open(ctx, cfg)
@@ -263,7 +263,8 @@ func TestMigrateTeamColor(t *testing.T) {
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)
 	}
-	if err := MigrateDown(cfg, 1); err != nil {
+	// チームの色と、その後の職員の訪問するかのマイグレーションを戻す
+	if err := MigrateDown(cfg, 2); err != nil {
 		t.Fatal(err)
 	}
 	pool, err := Open(ctx, cfg)

@@ -175,6 +175,15 @@ func TestStaffRef(t *testing.T) {
 			t.Errorf("%s の状態 = %q, %v, want %q", id, ref.Status, err, want)
 		}
 	}
+	// 訪問しない職員は、Ref で割り振りを拒む（ADR-0022）
+	p := staff.Profile{Username: "森 健太", DepartmentID: seedDepartment, TeamID: seedTeamB, NonVisiting: true}
+	if err := staffRepo.UpdateProfile(ctx, seedMori, p, seedTeamB); err != nil {
+		t.Fatal(err)
+	}
+	got.NonVisiting = true
+	if ref, err := r.Get(ctx, seedMori); err != nil || ref != got || !errors.Is(ref.Assignable(), apperr.ErrInvalidInput) {
+		t.Errorf("訪問しない職員の Ref = %+v, %v, want NonVisiting で割り振れない", ref, err)
+	}
 	if _, err := r.Get(ctx, unknownID); !errors.Is(err, apperr.ErrNotFound) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
 	}
@@ -1145,7 +1154,7 @@ func TestStaffChangePosition(t *testing.T) {
 	}
 }
 
-// TestStaffUpdateProfile は、職員の名前、電話番号、部署、チームを書き、古いチームを指す対象を新しいチームに移し、
+// TestStaffUpdateProfile は、職員の名前、電話番号、部署、チーム、訪問しない職員かを書き、古いチームを指す対象を新しいチームに移し、
 // 新しいチームを既に対象にする権限では古いチームの対象を消すことと、退職した職員と無い職員を拒むことを確認する。
 func TestStaffUpdateProfile(t *testing.T) {
 	ctx := txContext(t)
@@ -1166,7 +1175,7 @@ func TestStaffUpdateProfile(t *testing.T) {
 		t.Fatal(err)
 	}
 	phone := "+819012345678"
-	p := staff.Profile{Username: "森 新", PhoneNumber: &phone, DepartmentID: seedDepartment, TeamID: seedTeam}
+	p := staff.Profile{Username: "森 新", PhoneNumber: &phone, DepartmentID: seedDepartment, TeamID: seedTeam, NonVisiting: true}
 	if err := r.UpdateProfile(ctx, seedMori, p, seedTeamB); err != nil {
 		t.Fatal(err)
 	}
@@ -1174,8 +1183,8 @@ func TestStaffUpdateProfile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Username != "森 新" || got.PhoneNumber == nil || *got.PhoneNumber != phone || got.TeamID != seedTeam || got.Email == "" {
-		t.Errorf("職員 = %+v, want 名前、電話番号、チームだけが変わる", got.Summary)
+	if got.Username != "森 新" || got.PhoneNumber == nil || *got.PhoneNumber != phone || got.TeamID != seedTeam || !got.NonVisiting || got.Email == "" {
+		t.Errorf("職員 = %+v, want 名前、電話番号、チーム、訪問しない職員かだけが変わる", got.Summary)
 	}
 	for _, g := range got.Policies {
 		if (g.PolicyID == seedTeamRead || g.PolicyID == seedTeamEdit) && !slices.Equal(g.TargetTeamIDs, []string{seedTeam}) {

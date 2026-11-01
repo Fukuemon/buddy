@@ -38,6 +38,7 @@ func toStaff(s staff.Summary) openapi.Staff {
 		Department:      openapi.Ref{Id: s.DepartmentID, Name: s.DepartmentName},
 		Team:            openapi.Ref{Id: s.TeamID, Name: s.TeamName},
 		Position:        openapi.Ref{Id: s.PositionID, Name: s.PositionName},
+		Visits:          !s.NonVisiting,
 		Status:          openapi.StaffStatus(s.Status()),
 		LeaveStartedAt:  s.LeaveStartedAt,
 		LeaveReturnDate: stringPtr(s.LeaveReturnDate),
@@ -58,6 +59,7 @@ func toStaffDetail(d staff.Detail) openapi.StaffDetail {
 		Department:      s.Department,
 		Team:            s.Team,
 		Position:        s.Position,
+		Visits:          s.Visits,
 		Status:          s.Status,
 		LeaveStartedAt:  s.LeaveStartedAt,
 		LeaveReturnDate: s.LeaveReturnDate,
@@ -120,6 +122,7 @@ func (s server) CreateUser(ctx context.Context, req openapi.CreateUserRequestObj
 		DepartmentID: b.DepartmentId,
 		TeamID:       b.TeamId,
 		PositionID:   b.PositionId,
+		NonVisiting:  b.Visits != nil && !*b.Visits,
 	})
 	if err != nil {
 		return nil, err
@@ -136,7 +139,8 @@ func (s server) ChangeUserPosition(ctx context.Context, req openapi.ChangeUserPo
 	return openapi.ChangeUserPosition200JSONResponse(toStaffDetail(d)), nil
 }
 
-// UpdateUser は、職員の名前、電話番号、部署、チームを変え、変えた職員を返す。
+// UpdateUser は、職員の名前、電話番号、部署、チーム、訪問するかを変え、変えた職員を返す。
+// 予定か担当の利用者が残る職員を訪問しない職員に変えようとしたときは、残る一覧を付けた 409 を返す。
 func (s server) UpdateUser(ctx context.Context, req openapi.UpdateUserRequestObject) (openapi.UpdateUserResponseObject, error) {
 	b := req.Body
 	d, err := s.u.Staff.UpdateProfile(ctx, req.UserId, staff.Profile{
@@ -144,7 +148,12 @@ func (s server) UpdateUser(ctx context.Context, req openapi.UpdateUserRequestObj
 		PhoneNumber:  b.PhoneNumber,
 		DepartmentID: b.DepartmentId,
 		TeamID:       b.TeamId,
+		NonVisiting:  !b.Visits,
 	})
+	if ae, ok := errors.AsType[*staff.AssignedError](err); ok {
+		a := toAssignments(ae.Assignments)
+		return openapi.UpdateUser409JSONResponse{Code: "staff_has_assignments", Message: ae.Error(), Assignments: &a}, nil
+	}
 	if err != nil {
 		return nil, err
 	}
