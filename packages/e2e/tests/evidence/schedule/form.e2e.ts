@@ -102,14 +102,15 @@ test.describe('予定のカレンダー', () => {
         )
       })
 
-      test(`${prefix}訪問の終了が日をまたぐ開始時間で作ろうとした場合、送る前に誤りの文が出ること`, async ({
+      test(`${prefix}訪問の予定の作成で、開始時間を 23 時、提供時間を 90 分にした場合、終了時間が翌日の 0 時 30 分と出ること`, async ({
         browser,
       }) => {
         await recordPrEvidence(
           browser,
           {
             name: 'schedule-form-overnight-visit',
-            title: '訪問の終了が日をまたぐ開始時間で作ろうとすると、送る前に誤りの文が出る',
+            title:
+              '訪問の予定の作成で、開始時間を 23 時、提供時間を 90 分にすると、終了時間が翌日の 0 時 30 分と出る',
             actor: ACTOR,
             variant,
           },
@@ -123,18 +124,66 @@ test.describe('予定のカレンダー', () => {
             await page.getByTestId('schedule-kind-tab-visit').check()
             await page.getByTestId('schedule-field-date-time').click()
 
-            await step('開始時間を 23:50、提供時間を 29 分にする')
-            await page.getByTestId('schedule-form-start-time').fill('23:50')
-            await page.getByTestId('schedule-form-service-time').fill('29')
-            await expect(page.getByTestId('schedule-field-date-time')).toContainText('23:50')
+            await step('サービスコードの「医」を選び、開始時間を 23:00、提供時間を 90 分にする')
+            await page.getByTestId('service-code-医').check()
+            await page.getByTestId('schedule-form-start-time').fill('23:00')
+            await page.getByTestId('schedule-form-service-time').fill('90')
+            await expect(page.getByTestId('schedule-form-end-time')).toHaveText('終了時間 翌 00:30')
+            await expect(page.getByTestId('schedule-field-date-time')).toContainText(
+              '23:00 - 翌 00:30（90 分、医）',
+            )
+            await check(
+              '終了時間が「終了時間 翌 00:30」と出て、訪問日時の要約も「23:00 - 翌 00:30」になる',
+            )
+          },
+        )
+      })
 
+      test(`${prefix}通常の予定の作成で、22 時から 1 時にし、翌日を選ばずに保存した場合、終了時間に誤りの文が出て保存されないこと`, async ({
+        browser,
+      }) => {
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'schedule-form-overnight-normal-without-next-day',
+            title:
+              '通常の予定の作成で、22 時から 1 時にし、翌日を選ばずに保存すると、終了時間に誤りの文が出て保存されない',
+            actor: ACTOR,
+            variant,
+          },
+          signIn,
+          async ({ page, step, check }) => {
+            await openDayView(page)
+            await step('予定のカレンダーを日の表示で開いている')
+
+            await step('「予定を作成」を押し、通常の予定のタイトルに「夜勤」と入れ、予定者を選ぶ')
+            await page.getByTestId('schedule-create-open').click()
+            await page.getByTestId('schedule-kind-tab-normal').check()
+            await page.getByTestId('schedule-field-title').click()
+            await page.getByTestId('schedule-form-title').fill('夜勤')
+            await page.getByTestId('schedule-field-staff').click()
+            await page.getByTestId(`staff-select-option-${LOGIN_STAFF.id}`).check()
+
+            await step(
+              '予定日時で、開始時間を 22:00、終了時間を 01:00 にし、「終了は翌日」を選ばない',
+            )
+            await page.getByTestId('schedule-field-date-time').click()
+            await page.getByTestId('schedule-form-start-time').fill('22:00')
+            await page.getByTestId('schedule-form-end-time').fill('01:00')
+            await expect(page.getByTestId('schedule-form-ends-next-day')).not.toBeChecked()
+
+            const creates: string[] = []
+            page.on('request', (req) => {
+              if (req.method() === 'POST' && /\/schedules$/.test(req.url())) creates.push(req.url())
+            })
             await step('「作成」を押す')
             await page.getByTestId('schedule-create-submit').click()
             await expect(page.getByTestId('schedule-form-modal')).toContainText(
-              '終了が日をまたがないよう、開始時間か提供時間を変えてください',
+              '終了時間は開始時間より後にしてください',
             )
+            expect(creates).toHaveLength(0)
             await check(
-              '「終了が日をまたがないよう、開始時間か提供時間を変えてください」が出て、フォームが残る',
+              '終了時間に「終了時間は開始時間より後にしてください」が出て、フォームが残り、作成のリクエストは送られない',
             )
           },
         )
