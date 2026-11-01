@@ -264,6 +264,7 @@
 
   .st-row {
     flex-direction: column;
+    align-items: stretch;
   }
 
   /* 権限の一覧は、1 行目に権限の名前と印、2 行目に出どころと対象を置く */
@@ -331,8 +332,10 @@
 /* 訪問の選択は、欄の幅いっぱいに 2 つの選択肢を並べる */
 .st-visits {
   display: flex;
+  justify-self: stretch;
 }
 
 .st-visits .wf-tab {
   flex: 1;
+  white-space: nowrap;
 }
