@@ -3,7 +3,6 @@ import { Button, buttonClassName } from '@buddy/ui'
 import type { ReceiptReport } from '#/api/types'
 
 import { warningReasonText } from '../lib/errorMessage'
-import { RECEIPT_CATEGORIES } from '../lib/reportCells'
 import { ReceiptResultTable } from './ReceiptResultTable'
 
 export type ReceiptResultViewProps = {
@@ -15,7 +14,7 @@ export type ReceiptResultViewProps = {
   checkAgainHref: string
 }
 
-/** 照合の結果。区分ごとの件数、CSV のダウンロード、照合に使わなかった予定、結果の表を並べる。 */
+/** 照合の結果。CSV のダウンロード、照合に使わなかった予定、結果の表を並べる。 */
 export const ReceiptResultView = ({
   report,
   sourceLabel,
@@ -37,19 +36,6 @@ export const ReceiptResultView = ({
         </Button>
       </div>
     </div>
-    <dl className="flex flex-wrap gap-3" data-testid="receipt-summary">
-      {RECEIPT_CATEGORIES.map(({ category, label }) => (
-        <div
-          key={category}
-          className="flex min-w-36 flex-col gap-1 rounded-8 bg-surface p-4 ring-1 ring-border"
-        >
-          <dt className="text-body-dense text-text-secondary">{label}</dt>
-          <dd className="text-heading-md" data-testid={`receipt-summary-${category}`}>
-            {report.summary[category]} 件
-          </dd>
-        </div>
-      ))}
-    </dl>
     {report.warnings.length > 0 && (
       <div
         className="flex flex-col gap-2 rounded-8 bg-warning-surface p-4"

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vite-plus/test'
 
 import { fakeReceiptReport } from '#/api/fake/fakeReceiptApi'
+import type { ReceiptRow } from '#/api/types'
 
-import { reportRowCells, toReceiptCsv } from './reportCells'
+import { isMissingSideCell, reportRowCells, toReceiptCsv } from './reportCells'
 
 // 期待値は services/receipt/tools/parity/report の TestWrite と同じ記号の付け方である
 const expected = [
@@ -15,6 +16,23 @@ const expected = [
 describe('reportRowCells', () => {
   it('区分ごとの記号を照合の API の元の CSV と同じに付ける', () => {
     expect(fakeReceiptReport.rows.map((row) => reportRowCells(row).join(','))).toEqual(expected)
+  })
+})
+
+describe('isMissingSideCell', () => {
+  const missingColumns = (row: ReceiptRow) =>
+    reportRowCells(row).flatMap((_, i) => (isMissingSideCell(row, i) ? [i] : []))
+
+  it('実績の無い行は、実績の側の列と加算の列を返す', () => {
+    expect(missingColumns(fakeReceiptReport.rows[1])).toEqual([7, 8, 9, 10, 11])
+  })
+
+  it('予定の無い行は、予定の側の列だけを返し、空の提供時間の列は返さない', () => {
+    expect(missingColumns(fakeReceiptReport.rows[2])).toEqual([3, 4, 5, 6])
+  })
+
+  it('両側のある行は、何も返さない', () => {
+    expect(missingColumns(fakeReceiptReport.rows[0])).toEqual([])
   })
 })
 

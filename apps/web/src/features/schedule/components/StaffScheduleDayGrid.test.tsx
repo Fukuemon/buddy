@@ -58,7 +58,7 @@ describe('StaffScheduleDayGrid', () => {
     expect(screen.queryByTestId('day-grid-now-staff-1')).not.toBeInTheDocument()
   })
 
-  it('キャンセルした予定は「キャンセル」の印と取り消し線で出す', () => {
+  it('キャンセルした予定は取り消し線で出し、「キャンセル」は読み上げにだけ残す', () => {
     const event = {
       id: 'e1',
       title: '訪問',
@@ -70,7 +70,8 @@ describe('StaffScheduleDayGrid', () => {
     }
     render(<Default events={[event]} />)
     const button = screen.getByTestId('schedule-event-e1')
-    expect(button).toHaveTextContent('キャンセル')
+    expect(button).toHaveAccessibleName(/^キャンセル、/)
+    expect(screen.getByText('キャンセル、')).toHaveClass('sr-only')
     expect(screen.getByTestId('schedule-event-e1-cancelled')).toHaveClass('line-through')
     expect(screen.getByTestId('schedule-event-e1-cancelled')).toHaveTextContent('09:00-09:30 訪問')
   })

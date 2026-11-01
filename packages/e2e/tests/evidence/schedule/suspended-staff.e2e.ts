@@ -248,12 +248,12 @@ test.describe('予定の作成', () => {
             await step('項目の一覧の「担当者」を押す')
             await page.getByTestId('schedule-field-staff').click()
             await expect(page.getByTestId(`staff-select-option-${OFFICE_B.staff.id}`)).toBeVisible()
-            await expect(page.getByTestId('schedule-field-staff')).toContainText('未選択')
+            await expect(page.getByTestId('schedule-field-staff')).toContainText('選んでください')
             await expect(page.getByTestId('schedule-field-staff')).not.toContainText(
               SUSPENDED_STAFF.name,
             )
             await check(
-              `担当者が未選択で開き、休職の${SUSPENDED_STAFF.name}の名前は出ず、候補にも出ない`,
+              `担当者が「選んでください」で開き、休職の${SUSPENDED_STAFF.name}の名前は出ず、候補にも出ない`,
             )
           },
         )

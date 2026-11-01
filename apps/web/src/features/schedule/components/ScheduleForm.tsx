@@ -17,7 +17,8 @@ import { StaffSelectList } from './StaffSelectList'
 
 type FieldId = 'title' | 'date-time' | 'patient' | 'staff' | 'category' | 'description'
 
-const UNSELECTED = '未選択'
+/** 選ぶ項目で、まだ選んでいないときに出す文。 */
+const SELECT_PLACEHOLDER = '選んでください'
 
 export type ScheduleFormProps = {
   /** 送信のボタンをフォームの外（モーダルの下端）に置くため、form 要素の id を受け取る。 */
@@ -40,9 +41,9 @@ export const ScheduleForm = ({ id, form, staffList, patients, onSubmit }: Schedu
   const errors = formState.errors as Partial<Record<string, { message?: string }>>
   const isVisit = values.kind === 'visit'
 
-  const staffName = staffList.find((staff) => staff.id === values.staffId)?.name ?? UNSELECTED
+  const staffName = staffList.find((staff) => staff.id === values.staffId)?.name
   const patientId = isVisit ? (values as { patientId?: string }).patientId : undefined
-  const patientName = patients.find((patient) => patient.id === patientId)?.name ?? UNSELECTED
+  const patientName = patients.find((patient) => patient.id === patientId)?.name
 
   const dateTimeSummary = (() => {
     if (values.kind === 'visit') {
@@ -60,7 +61,7 @@ export const ScheduleForm = ({ id, form, staffList, patients, onSubmit }: Schedu
           {
             id: 'title' as const,
             label: 'タイトル',
-            content: values.kind === 'normal' && values.title ? values.title : 'タイトル',
+            content: values.kind === 'normal' && values.title ? values.title : undefined,
             error: errors.title?.message,
           },
         ]),
@@ -80,6 +81,7 @@ export const ScheduleForm = ({ id, form, staffList, patients, onSubmit }: Schedu
             id: 'patient' as const,
             label: '利用者',
             content: patientName,
+            placeholder: SELECT_PLACEHOLDER,
             error: errors.patientId?.message,
           },
         ]
@@ -88,6 +90,7 @@ export const ScheduleForm = ({ id, form, staffList, patients, onSubmit }: Schedu
       id: 'staff',
       label: isVisit ? '担当者' : '予定者',
       content: staffName,
+      placeholder: SELECT_PLACEHOLDER,
       error: errors.staffId?.message,
     },
     ...(isVisit
@@ -104,7 +107,7 @@ export const ScheduleForm = ({ id, form, staffList, patients, onSubmit }: Schedu
           },
         ]
       : []),
-    { id: 'description', label: 'メモ', content: values.description || 'なし' },
+    { id: 'description', label: 'メモ', content: values.description || undefined },
   ]
 
   const visibleField = items.some((item) => item.id === activeField) ? activeField : 'date-time'

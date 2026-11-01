@@ -81,9 +81,11 @@ describe('CalendarImportContainer', () => {
 
     const result = await screen.findByTestId('calendar-import-result')
     expect(result).toHaveTextContent('取り込みました')
-    expect(within(result).getByTestId('calendar-import-result-counts')).toHaveTextContent(
-      '確認した 2 件のうち 1 件は利用者を選び、1 件は通常の予定にした',
+    expect(within(result).getByTestId('calendar-import-result-count-imported')).toBeInTheDocument()
+    expect(within(result).getByTestId('calendar-import-result-counts')).not.toHaveTextContent(
+      '確認した',
     )
+    expect(within(result).queryByTestId('calendar-import-result-count-already_imported')).toBeNull()
     expect(screen.queryByTestId('calendar-import-result-preview')).toBeNull()
   })
 

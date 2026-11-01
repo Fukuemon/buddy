@@ -28,7 +28,7 @@ const SectionHeading = ({ id, children }: { id: string; children: React.ReactNod
 
 /**
  * 予定の詳細をモーダルで出す。
- * 日時を見出しにし、その下に種類と担当者を、訪問の予定では訪問の情報を、最後にメモをセクションに分けて並べる。
+ * 日時を見出しにし、その下に種類と担当者を、訪問の予定では訪問の情報を、最後にメモをセクションに分けて並べる。メモが空なら、メモのセクションを出さない。
  * 見出しと値は、全てのセクションで同じ 1 列の並びにし、値の列の位置をそろえる。
  * 下端の右に「閉じる」と編集のボタンをこの順に置く。キャンセルした予定は、先頭にキャンセルの理由を出し、下端を出さない。
  */
@@ -104,10 +104,12 @@ export const ScheduleDetailModal = ({
             </dl>
           </section>
         )}
-        <section aria-labelledby={memoHeadingId} data-testid="schedule-detail-memo">
-          <SectionHeading id={memoHeadingId}>メモ</SectionHeading>
-          <p className="whitespace-pre-wrap py-2">{schedule.description || 'なし'}</p>
-        </section>
+        {schedule.description !== '' && (
+          <section aria-labelledby={memoHeadingId} data-testid="schedule-detail-memo">
+            <SectionHeading id={memoHeadingId}>メモ</SectionHeading>
+            <p className="whitespace-pre-wrap py-2">{schedule.description}</p>
+          </section>
+        )}
       </div>
     </Modal>
   )

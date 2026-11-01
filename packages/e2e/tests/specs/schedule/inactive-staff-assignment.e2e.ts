@@ -71,7 +71,7 @@ test.describe('予定の作成', () => {
       await page.getByTestId('schedule-field-staff').click()
       await expect(page.getByTestId(`staff-select-option-${LOGIN_STAFF.id}`)).toBeVisible()
 
-      await expect(page.getByTestId('schedule-field-staff')).toContainText('未選択')
+      await expect(page.getByTestId('schedule-field-staff')).toContainText('選んでください')
       await expect(page.getByTestId('schedule-field-staff')).not.toContainText(stopped.name)
     })
 

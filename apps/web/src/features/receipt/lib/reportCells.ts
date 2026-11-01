@@ -27,7 +27,7 @@ export const RECEIPT_COLUMNS = [
   '加算',
 ] as const
 
-const NO_DATA = 'データなし'
+export const NO_DATA = 'データなし'
 const MISMATCH_MARK = ' ❌'
 const NOTE_MARK = ' ※'
 
@@ -102,6 +102,18 @@ export const reportRowCells = (row: ReceiptRow): string[] => {
     addition,
   ]
 }
+
+/** 予定の側の列（サービス内容_予定から提供時間_予定まで）と、実績の側の列（サービス内容_実績から加算まで）の添字。 */
+const SCHEDULE_COLUMNS = [3, 4, 5, 6]
+const VISIT_COLUMNS = [7, 8, 9, 10, 11]
+
+/**
+ * 片側しか無い行で、無い側のセルかを返す。結果の表は、このセルを空にし、読み上げにだけ「データなし」を残す。
+ * 行の区分の見出しが片側の無いことを示すので、セルで繰り返さないためである。
+ */
+export const isMissingSideCell = (row: ReceiptRow, column: number) =>
+  (row.schedule === null && SCHEDULE_COLUMNS.includes(column)) ||
+  (row.visit === null && VISIT_COLUMNS.includes(column))
 
 /** Excel が UTF-8 と読むための BOM。整形の道具が見えない文字に置き換えないよう、符号で書く。 */
 const BOM = String.fromCharCode(0xfeff)
