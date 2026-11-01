@@ -86,7 +86,7 @@ func ScheduleBody(d schedule.Detail) EventBody {
 		Summary:     summary(d.Visit, d.Title),
 		Description: d.Description,
 		Start:       whenOf(d.Date, d.StartTime),
-		End:         whenOf(d.Date, d.EndTime),
+		End:         whenOf(endDate(d.Slot), d.EndTime),
 		Private:     map[string]string{PropScheduleID: d.ID},
 	}
 }
@@ -97,7 +97,7 @@ func RecurringBody(rs schedule.RecurringDetail, exdates []civil.Date) EventBody 
 		Summary:     summary(rs.Visit, rs.Title),
 		Description: rs.Description,
 		Start:       whenOf(rs.Date, rs.StartTime),
-		End:         whenOf(rs.Date, rs.EndTime),
+		End:         whenOf(endDate(rs.Slot), rs.EndTime),
 		Recurrence:  RecurrenceOf(rs.RecurringSchedule, exdates),
 		Private:     map[string]string{PropRecurringScheduleID: rs.ID},
 	}
@@ -112,6 +112,15 @@ func summary(v *visit.Detail, title *string) string {
 		return *title
 	}
 	return ""
+}
+
+// endDate は、予定の枠 s の終わる日を返す。終了が翌日の予定は、予定の日付の翌日に終わる（ADR-0023）。
+// 繰り返しの予定では、最初の回の終わる日である。
+func endDate(s schedule.Slot) civil.Date {
+	if s.EndsNextDay {
+		return civil.DateOf(s.Date.Time().AddDate(0, 0, 1))
+	}
+	return s.Date
 }
 
 // whenOf は、Asia/Tokyo の日付と時刻を、オフセットの無い日時とタイムゾーンの名前にする。
