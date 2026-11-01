@@ -328,7 +328,56 @@ sequenceDiagram
 ### キャンセル
 
 - 予定をキャンセルすると、`schedule_cancels` に理由とともに 1 レコードを足す。
-- キャンセルした予定は、API のレスポンスの `cancel` に理由を持つ。画面は、キャンセルした予定を予定の表示から除く。
+- キャンセルした予定は、API のレスポンスの `cancel` に理由を持つ。
+  - 予定のカレンダーは、職員が「キャンセルした予定を出す」を選んだときだけ、キャンセルした予定を出す。
+  - 予定の詳細は、キャンセルの理由を出し、編集へ進ませない。予定の編集は、キャンセルした予定のフォームを出さない。キャンセルした予定を変えると、予定の API が 409 で拒むためである。
+
+### 予定の画面の読み込みと保存
+
+予定のカレンダー、予定の詳細、予定の作成、予定の編集の画面は、次の流れで予定の API を読み書きする。  
+画面の状態と文は各画面の画面仕様書に、status と文の対応は各画面の `api.md` の「状態と失敗の要因」にある。
+
+- [予定のカレンダー](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-calendar_予定のカレンダー/index.md)
+- [予定の詳細](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-detail_予定の詳細/index.md)
+- [予定の作成](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-new_予定の作成/index.md)
+- [予定の編集](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-edit_予定の編集/index.md)
+
+#### 呼び出しと、ログインが切れたとき
+
+- 画面は、BFF の server function を通して予定の API を呼ぶ。BFF は、引数の先頭の事業所をセッションの事業所に替え、セッションの access token を付けて呼ぶ（`apps/web/src/server/bff.ts`）。
+- セッションが無ければ、BFF が 401 を返す。予定の API が 401 を返したときも、その status を返す。
+  - ブラウザは 401 を受けると、今の画面に戻るログインの画面へ移す（`apps/web/src/api/bff/bffBuddyApi.ts`）。
+  - 移すときは、呼び出しを終わらせない。そのため、移るまで、画面は読み込み中か送信中の表示のままである。
+- 予定のカレンダーとその上のモーダルは、サーバーで描画しない（`apps/web/src/routes/schedule.tsx` の `ssr: false`）。フェイクの API が予定をブラウザのメモリに持つためである。
+
+#### 読み込み
+
+- 予定、予定の一覧、職員、チーム、利用者の一覧は、TanStack Query の query で読む（`apps/web/src/features/schedule/queries.ts`）。
+- 読み込みが失敗すると、3 回まで取り直してから失敗にする。TanStack Query のデフォルトのままで、403 と 404 も取り直す。
+  - そのため、予定が見つからないときと権限が無いときも、失敗の文が出るまで数秒かかる。4xx を取り直さないかは [#383](https://github.com/Fukuemon/buddy/issues/383) で決める。
+- 予定の取得（`getSchedule`）は、パスに事業所を持たない。BFF は、返った予定の `facility_id` がセッションの事業所と違えば、status が 403 の `ApiError` にする（`apps/web/src/api/http/httpBuddyApi.ts`）。
+  - 予定の API のミドルウェアも、パスの `schedule_id` の事業所で 403 を返す（[認証から事業所の確認までの流れ](#認証から事業所の確認までの流れ)）。
+- 予定の詳細と予定の編集は、予定と同時に職員と利用者の一覧を読み、名前を一覧で探す。予定の詳細は一覧を待たずに予定を出し、一覧に無い職員と利用者を「職員不明」「利用者不明」と出す。予定の編集は 3 つを読み終えてからフォームを出す。
+- 予定の作成は、職員と利用者の一覧を待たずにフォームを出す。読み終えるまでと、読めなかったときは、選択肢が 0 件になる。
+
+#### 予定の一覧の期間と職員の絞り込み
+
+- 予定のカレンダーは、表示の期間を日時の範囲（`from`、`to`）で、職員を `staffIds` で BFF に渡す。
+- `listSchedules` は日付の範囲（`date_from`、`date_to`）だけを受けるので、BFF は `to` の前の日を `date_to` にして呼ぶ。
+- BFF は、返った繰り返しの予定を期間の回に分け、回の ID（`occurrenceId`）を持つ単発の予定として画面に渡す。除外した日の回は作らない。
+- 期間に重なるかと、職員の絞り込みは、BFF が返った予定に当てる。キャンセルした予定は、画面が `includeCancelled` を渡したときだけ残す。
+- 回の ID で予定を読むと、BFF は繰り返しの予定を読んでその回を作る。回が無いか除外した日なら、404 にする。
+
+#### 保存
+
+- 予定の作成と予定の編集は、送る前に、BFF が予定の種類、サービスコード、訪問の区分のマスタ（`listScheduleTypes`、`listServiceCodes`、`listVisitCategories`）を読み、画面の値を ID にする。マスタを読めないか、当たる値が無ければ、予定の API を呼ばずに失敗にする。
+- 予定の作成は、画面の担当者を、予定の職員（`staff_id`）と訪問の担当（`visit_info.assigned_staff_id`）の両方に送る。
+- 予定の編集は、保存の前に今の予定を読み直し、画面が持たない値を今の予定から引き継ぐ（`apps/web/src/api/http/scheduleMapper.ts` の `keepCurrentVisit`）。読み直せなければ失敗にする。
+  - 訪問の予定どうしの保存では、同行者とタイトルを今の予定の値のまま送る。
+  - 訪問の担当は、今の担当が予定の職員と同じなら新しい予定の職員にし、違えば今の担当のまま送る。
+- 繰り返しの予定の回を保存すると、BFF はその回だけを単発の予定に置き換える（`POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences`）。画面は、置き換えた予定の ID の詳細へ戻る。
+- 保存の失敗は、status によらず 1 つの文で出す。403 と 400 を分けて見せるかは [#383](https://github.com/Fukuemon/buddy/issues/383) で決める。
+- 保存に成功すると、事業所の予定の読み込みの結果を捨てて読み直す。
 
 ### Google カレンダーとの連携
 
