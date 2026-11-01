@@ -1,4 +1,4 @@
-import { Button } from '@buddy/ui'
+import { Button, HelpToggle } from '@buddy/ui'
 
 import type { ImportPreview, ImportReviewItem, Patient } from '#/api/types'
 
@@ -51,8 +51,13 @@ export const CalendarImportPreview = ({
       className="flex flex-col gap-5 border-t border-border pt-5"
       data-testid="calendar-import-result-preview"
     >
-      <div className="flex flex-wrap items-baseline gap-3">
-        <h2 className="text-heading-sm">プレビューの結果</h2>
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex items-center gap-1">
+          <h2 className="text-heading-sm">プレビューの結果</h2>
+          <HelpToggle data-testid="schedule-import-help">
+            確認が必要な予定は、利用者を選んでから取り込みます。取り込み済みの予定は、前の取り込みで取り込んだもので、もう一度は取り込みません。
+          </HelpToggle>
+        </div>
         <span className="text-caption text-text-secondary">
           {staffName}、{formatDateRange(preview.range_start, preview.range_end)}
         </span>

@@ -74,6 +74,17 @@ describe('件数の箱', () => {
     expect(recurring.note).toBe('繰り返しとして 2 件、1 回ずつに分ける 1 件')
   })
 
+  it('確認が必要と取り込み済みの箱に、補足の文を付けない', () => {
+    const boxes = previewCountBoxes({
+      ...preview,
+      counts: { ...preview.counts, needs_review: 1, already_imported: 2 },
+    })
+    const notes = boxes
+      .filter((box) => box.key === 'needs_review' || box.key === 'already_imported')
+      .map((box) => box.note)
+    expect(notes).toEqual(['', ''])
+  })
+
   it('件数が 0 の箱を作らない', () => {
     const boxes = previewCountBoxes(createMockImportedPreview(range))
     expect(boxes.map((box) => box.key)).toEqual(['already_imported'])

@@ -81,7 +81,7 @@ export const nonZeroBoxes = (boxes: readonly CountBox[]) => boxes.filter((box) =
 /**
  * プレビューの結果の件数の箱を返す。件数が 0 の箱は返さない。
  * 取り込まない予定の件数は、取り込まない予定の表の見出しに出すので、箱にしない。
- * 補足の文は、画面のほかの場所に無い内訳と、箱の名前の定義にする。
+ * 補足の文は、画面のほかの場所に無い内訳だけにする。確認が必要と取り込み済みの意味は、見出しの ? のヘルプに出す。
  */
 export const previewCountBoxes = ({ counts }: ImportPreview): CountBox[] => {
   const expanded =
@@ -101,18 +101,7 @@ export const previewCountBoxes = ({ counts }: ImportPreview): CountBox[] => {
       count: counts.recurring,
       note: `繰り返しとして ${counts.recurring_as_rule} 件、1 回ずつに分ける ${counts.recurring_expanded} 件`,
     },
-    // 確認が必要と取り込み済みの定義の文は、packages/ui の HelpToggle が入ったら ? のヘルプへ移す（#373）
-    {
-      key: 'needs_review',
-      label: '確認が必要',
-      count: counts.needs_review,
-      note: '利用者を選んでから取り込む',
-    },
-    {
-      key: 'already_imported',
-      label: '取り込み済み',
-      count: counts.already_imported,
-      note: '前の取り込みで取り込んだ予定。もう一度は取り込まない',
-    },
+    { key: 'needs_review', label: '確認が必要', count: counts.needs_review, note: '' },
+    { key: 'already_imported', label: '取り込み済み', count: counts.already_imported, note: '' },
   ])
 }
