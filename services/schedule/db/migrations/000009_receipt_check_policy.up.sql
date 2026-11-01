@@ -38,7 +38,15 @@ INSERT INTO position_policies (position_id, policy_id)
 SELECT a.id, p.id
 FROM added a
 CROSS JOIN policies p
-WHERE p.code IN ('schedule.all.read', 'schedule.all.edit', 'receipt.check');
+WHERE p.code IN ('schedule.all.read', 'schedule.all.edit');
+
+-- 照合の権限は、足した役職ではなく事務という名前の役職の全てに足す。
+-- 戻すと事務の役職が残るので、戻した後に流し直すと、上の added に入らないためである。
+INSERT INTO position_policies (position_id, policy_id)
+SELECT ps.id, '01M69C7BNKSXX7PPWX7SWZGFWK'
+FROM positions ps
+WHERE ps.name = '事務'
+ON CONFLICT (position_id, policy_id) DO NOTHING;
 
 INSERT INTO user_policies (id, facility_id, user_id, policy_id)
 SELECT pg_temp.new_ulid(), u.facility_id, u.id, '01M69C7BNKSXX7PPWX7SWZGFWK'

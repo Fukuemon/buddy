@@ -360,8 +360,22 @@ func TestMigrateReceiptCheckPolicy(t *testing.T) {
 	if err := MigrateDown(cfg, 1); err != nil {
 		t.Fatal(err)
 	}
-	var clerkPolicies []string
-	rows, err = pool.Query(ctx, `
+	if got, want := clerkPolicies(t, pool, facility), []string{"schedule.all.edit", "schedule.all.read"}; !slices.Equal(got, want) {
+		t.Errorf("戻した後の事務の役職のデフォルトの権限 = %v, want %v", got, want)
+	}
+
+	// 流し直すと、残した事務の役職に照合の権限が戻る。
+	if err := MigrateUp(cfg); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := clerkPolicies(t, pool, facility), []string{"receipt.check", "schedule.all.edit", "schedule.all.read"}; !slices.Equal(got, want) {
+		t.Errorf("流し直した後の事務の役職のデフォルトの権限 = %v, want %v", got, want)
+	}
+}
+
+func clerkPolicies(t *testing.T, pool *pgxpool.Pool, facility string) []string {
+	t.Helper()
+	rows, err := pool.Query(context.Background(), `
 		SELECT p.code FROM positions ps
 		JOIN position_policies pp ON pp.position_id = ps.id
 		JOIN policies p ON p.id = pp.policy_id
@@ -369,19 +383,11 @@ func TestMigrateReceiptCheckPolicy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for rows.Next() {
-		var code string
-		if err := rows.Scan(&code); err != nil {
-			t.Fatal(err)
-		}
-		clerkPolicies = append(clerkPolicies, code)
-	}
-	if err := rows.Err(); err != nil {
+	codes, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil {
 		t.Fatal(err)
 	}
-	if want := []string{"schedule.all.edit", "schedule.all.read"}; !slices.Equal(clerkPolicies, want) {
-		t.Errorf("戻した後の事務の役職のデフォルトの権限 = %v, want %v", clerkPolicies, want)
-	}
+	return codes
 }
 
 // TestMigrateTeamColor は、チームの色のマイグレーションが、今あるチームに事業所ごとに名前の順で 8 色を入れ、9 個目から先頭に戻ることを確認する。
