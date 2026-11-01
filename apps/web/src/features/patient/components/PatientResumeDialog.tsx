@@ -3,12 +3,23 @@ import { useState } from 'react'
 
 import type { PatientRecord, StaffRecord } from '#/api/types'
 
+/** 今の担当を再開の担当に選べない理由。選べるか、職員を読み終える前なら undefined を返す。 */
+const currentStaffNote = (name: string, staff: StaffRecord | undefined) => {
+  if (staff?.status === 'on_leave')
+    return `今の担当の ${name} は休職しています。担当の職員を選んでください。`
+  if (staff?.status === 'retired')
+    return `今の担当の ${name} は退職しています。担当の職員を選んでください。`
+  if (staff?.visits === false)
+    return `今の担当の ${name} は訪問しない職員です。担当の職員を選んでください。`
+  return undefined
+}
+
 export type PatientResumeDialogProps = {
   patient: PatientRecord
   /** 再開の担当に選べる有効な職員。読み終えるまでは undefined にする。 */
   staffOptions?: readonly StaffRecord[]
-  /** 今の担当の職員の在籍の状態。休職か退職なら、選び直す理由を出す。 */
-  currentStaffStatus?: StaffRecord['status']
+  /** 今の担当の職員。休職か退職か訪問しない職員なら、選び直す理由を出す。読み終えるまでは undefined にする。 */
+  currentStaff?: StaffRecord
   isSubmitting: boolean
   errorMessage?: string
   onSubmit: (assignedStaffId: string) => void
@@ -17,22 +28,22 @@ export type PatientResumeDialogProps = {
 
 /**
  * 利用の終了の利用者を利用中に戻す前に、担当の職員を決め直す確認のダイアログ。
- * 今の担当が有効ならその職員を選んで始め、休職か退職なら何も選ばずに始めて理由を出す。担当を選ぶまで再開を押せない。
+ * 今の担当が選択肢にあればその職員を選んで始め、休職か退職か訪問しない職員なら何も選ばずに始めて理由を出す。
+ * 選択肢を読み終える前は何も選ばない。担当を選ぶまで再開を押せない。
  */
 export const PatientResumeDialog = ({
   patient,
   staffOptions,
-  currentStaffStatus,
+  currentStaff,
   isSubmitting,
   errorMessage,
   onSubmit,
   onCancel,
 }: PatientResumeDialogProps) => {
-  const isCurrentStopped = currentStaffStatus === 'on_leave' || currentStaffStatus === 'retired'
-  const [staffId, setStaffId] = useState(isCurrentStopped ? '' : patient.assigned_staff_id)
-  const note = isCurrentStopped
-    ? `今の担当の ${patient.assigned_staff_name} は${currentStaffStatus === 'on_leave' ? '休職' : '退職'}しています。担当の職員を選んでください。`
-    : undefined
+  const [selected, setSelected] = useState<string>()
+  const isCurrentSelectable = staffOptions?.some((s) => s.id === patient.assigned_staff_id) ?? false
+  const staffId = selected ?? (isCurrentSelectable ? patient.assigned_staff_id : '')
+  const note = currentStaffNote(patient.assigned_staff_name, currentStaff)
   return (
     <ConfirmDialog
       busyLabel="再開しています"
@@ -62,7 +73,7 @@ export const PatientResumeDialog = ({
             className={formFieldControlClassName}
             data-testid="patient-resume-staff"
             disabled={isSubmitting || staffOptions === undefined}
-            onChange={(event) => setStaffId(event.target.value)}
+            onChange={(event) => setSelected(event.target.value)}
             value={staffId}
           >
             <option disabled value="">

@@ -134,7 +134,7 @@ const PatientDetailContent = ({ patientId }: { patientId: Patient['id'] }) => {
       )}
       {patient !== undefined && open === 'resume' && (
         <PatientResumeDialog
-          currentStaffStatus={currentStaff?.status}
+          currentStaff={currentStaff}
           errorMessage={
             resumeService.isError ? resumeServiceErrorMessage(resumeService.error) : undefined
           }
