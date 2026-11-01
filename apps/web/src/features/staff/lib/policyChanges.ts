@@ -17,7 +17,7 @@ export type PolicyChange =
   | { kind: 'remove'; name: string; userPolicyId: StaffPolicy['user_policy_id'] }
   | { kind: 'add'; name: string; input: StaffPolicyInput }
 
-/** 権限を、予定の 7 つの後に職員の管理を置く並びにする。 */
+/** 権限を、ほかの権限の後に職員の管理を置く並びにする。 */
 export const orderPolicies = (policies: readonly Policy[]) => [
   ...policies.filter((p) => p.code !== STAFF_MANAGE),
   ...policies.filter((p) => p.code === STAFF_MANAGE),
