@@ -10,6 +10,9 @@ export type FacilityId = string
 /** 職員の管理の権限の code。予定の API のマイグレーションが入れる値と同じにする。 */
 export const STAFF_MANAGE = 'staff.manage'
 
+/** 照合の権限の code。予定の API のマイグレーションが入れる値と同じにする（ADR-0022）。 */
+export const RECEIPT_CHECK = 'receipt.check'
+
 /** ログインした職員。 */
 export type Viewer = {
   staffId: string
@@ -17,10 +20,30 @@ export type Viewer = {
   facilityId: FacilityId
   /** 職員の管理の権限（staff.manage）を持つか。画面の出し分けだけに使い、拒むのは API である。 */
   canManageStaff: boolean
+  /** 照合の権限（receipt.check）を持つか。画面の出し分けだけに使い、拒むのは照合の API である。 */
+  canCheckReceipt: boolean
 }
 
 /** チーム。API の型の ID、名前、色だけを使う。色はチームの色のトークンの名前（team- の後ろ）である。 */
 export type Team = Pick<ScheduleComponents['schemas']['Team'], 'id' | 'name' | 'color'>
+
+/** チームの色。packages/ui のチームの色のトークンの名前（team- の後ろ）である。 */
+export type TeamColor = Team['color']
+
+/** チームの色の 8 色。予定の API が色を省いたチームに選ぶ順で、画面の選択肢もこの順に並べる。 */
+export const TEAM_COLORS = [
+  'blue',
+  'orange',
+  'magenta',
+  'cyan',
+  'yellow',
+  'purple',
+  'green',
+  'lime',
+] as const satisfies readonly TeamColor[]
+
+/** チームを作るときと変えるときに送る値。 */
+export type TeamInput = Pick<Team, 'name' | 'color'>
 
 /** 職員。名前は API の username である。 */
 export type Staff = {

@@ -112,7 +112,7 @@ func TestPositionCreateAndGet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(list) != 4 {
+	if len(list) != 5 {
 		t.Errorf("役職 = %d 件", len(list))
 	}
 }
@@ -1091,6 +1091,7 @@ func TestPolicyList(t *testing.T) {
 		organization.ScheduleAllRead:  false,
 		organization.ScheduleAllEdit:  false,
 		organization.StaffManage:      false,
+		organization.ReceiptCheck:     false,
 	}
 	if len(got) != len(want) || !maps.Equal(needsTarget, want) {
 		t.Errorf("権限 = %+v", got)

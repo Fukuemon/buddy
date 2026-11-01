@@ -11,3 +11,6 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
+
+/** 照合の権限が無い職員が、照合の画面を開いたとき。 */
+export const ReceiptCheck: Story = { args: { policyName: '照合' } }

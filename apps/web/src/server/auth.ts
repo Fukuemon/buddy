@@ -17,10 +17,12 @@ import { signValue, verifySignedValue } from './signedValue'
 
 /**
  * Valkey に置くセッション。トークンはブラウザに渡さない。
- * canManageStaff は、この項目を足す前に作ったセッションに無いので、省けるようにする。
+ * canManageStaff と canCheckReceipt は、その項目を足す前に作ったセッションに無いので、省けるようにする。
+ * canCheckReceipt が無いセッションは、照合を権限で絞る前に作ったので、絞る前と同じく照合を出す。拒むのは照合の API である。
  */
-export type Session = Omit<Viewer, 'canManageStaff'> & {
+export type Session = Omit<Viewer, 'canManageStaff' | 'canCheckReceipt'> & {
   canManageStaff?: boolean
+  canCheckReceipt?: boolean
   accessToken: string
   refreshToken?: string
   /** access token の期限の UNIX 時刻（ミリ秒）。分からなければ undefined。 */
@@ -309,9 +311,30 @@ export const fetchWithAccessToken =
   }
 
 /** Session から、画面に渡してよい値だけを取り出す。 */
-export const viewerOf = ({ staffId, staffName, facilityId, canManageStaff }: Session): Viewer => ({
+export const viewerOf = ({
+  staffId,
+  staffName,
+  facilityId,
+  canManageStaff,
+  canCheckReceipt,
+}: Session): Viewer => ({
   staffId,
   staffName,
   facilityId,
   canManageStaff: canManageStaff ?? false,
+  canCheckReceipt: canCheckReceipt ?? true,
 })
+
+/**
+ * リクエストの cookie のセッションの職員を返す。ログインしていなければ null を返す。
+ *
+ * 権限は、ログインのときにセッションへ写した値ではなく、その度に GET /v1/me で読み直す。
+ * ログインの後に職員の管理の画面で権限を変えても、ログインし直さずに画面の出し分けへ写すためである。
+ * GET /v1/me が失敗したとき、届かないときは、セッションの値を返す。拒むのは各 API である。
+ */
+export const readViewer = async (request: Request, deps: AuthDeps): Promise<Viewer | null> => {
+  const session = await readSession(request, deps)
+  if (session === undefined) return null
+  const me = await deps.fetchMe(session.accessToken).catch(() => undefined)
+  return me?.ok === true ? me.viewer : viewerOf(session)
+}

@@ -14,6 +14,7 @@ import (
 	"github.com/Fukuemon/buddy/packages/go/oidc/oidctest"
 
 	"github.com/Fukuemon/buddy/services/receipt/internal/httpapi/openapi"
+	"github.com/Fukuemon/buddy/services/receipt/internal/permission"
 )
 
 const (
@@ -21,6 +22,10 @@ const (
 	tokenSample     = "token-sample"
 	tokenNoOrg      = "token-no-org"
 	tokenNoCalendar = "token-no-calendar"
+	// tokenNoPermission は、照合の権限を持たない職員のトークンである。
+	tokenNoPermission = "token-no-permission"
+	// tokenPermissionDown は、予定の API に届かず照合の権限を確認できないトークンである。
+	tokenPermissionDown = "token-permission-down"
 )
 
 // fakeVerifier は、決まったトークンだけを受ける TokenVerifier である。
@@ -34,8 +39,23 @@ func (fakeVerifier) Verify(_ context.Context, raw string) (oidc.Identity, error)
 		return oidc.Identity{Subject: "sub-1"}, nil
 	case tokenNoCalendar:
 		return oidc.Identity{Subject: "sub-1", OrgID: "org-without-calendar"}, nil
+	case tokenNoPermission, tokenPermissionDown:
+		return oidc.Identity{Subject: "sub-2", OrgID: orgSample}, nil
 	}
 	return oidc.Identity{}, errors.New("知らないトークン")
+}
+
+// fakePermission は、tokenNoPermission と tokenPermissionDown のほかのトークンの職員に、照合を許す PermissionChecker である。
+type fakePermission struct{}
+
+func (fakePermission) RequireReceiptCheck(_ context.Context, token string) error {
+	switch token {
+	case tokenNoPermission:
+		return permission.ErrForbidden
+	case tokenPermissionDown:
+		return errors.New("予定の API に届かない")
+	}
+	return nil
 }
 
 func TestChecksUnauthenticated(t *testing.T) {
@@ -114,7 +134,7 @@ func TestChecksWithIssuer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := NewHandler(logger, Config{MaxUploadBytes: 1 << 20, Verifier: v})
+	h := NewHandler(logger, Config{MaxUploadBytes: 1 << 20, Verifier: v, Permission: fakePermission{}})
 	for _, tt := range []struct {
 		name     string
 		audience string
@@ -136,6 +156,35 @@ func TestChecksWithIssuer(t *testing.T) {
 			h.ServeHTTP(rec, req)
 			if rec.Code != tt.want {
 				t.Errorf("status %d body %s", rec.Code, rec.Body)
+			}
+		})
+	}
+}
+
+// TestChecksPermission は、照合の権限を持たない職員を 403 で拒み、権限を確認できないときに 502 を返すことを確認する（ADR-0022）。
+func TestChecksPermission(t *testing.T) {
+	tests := []struct {
+		name     string
+		token    string
+		files    map[string][]byte
+		values   map[string]string
+		want     int
+		wantCode openapi.ErrorCode
+	}{
+		{"予定の CSV で照合の権限がない", tokenNoPermission, validFiles(t), nil, http.StatusForbidden, openapi.Forbidden},
+		{"対象の月で照合の権限がない", tokenNoPermission, map[string][]byte{FieldVisits: testdata(t, "visits_utf8.csv")}, map[string]string{FieldMonth: "2026-11"}, http.StatusForbidden, openapi.Forbidden},
+		{"本文が誤っていても権限を先に確認する", tokenNoPermission, map[string][]byte{}, nil, http.StatusForbidden, openapi.Forbidden},
+		{"予定の API に届かない", tokenPermissionDown, validFiles(t), nil, http.StatusBadGateway, openapi.PermissionCheckFailed},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := postFormAs(t, newHandler(), tt.token, tt.files, tt.values)
+			if rec.Code != tt.want {
+				t.Fatalf("status %d body %s", rec.Code, rec.Body)
+			}
+			var body openapi.Error
+			if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil || body.Code != tt.wantCode {
+				t.Errorf("body = %s, err = %v", rec.Body, err)
 			}
 		})
 	}

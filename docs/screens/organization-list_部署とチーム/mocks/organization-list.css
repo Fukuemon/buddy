@@ -13,9 +13,10 @@
   gap: 8px 12px;
 }
 
+/* まとまりの見出しは、画面の見出し（16px）より 1 段小さくする */
 .og-h2 {
   margin: 0;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -26,6 +27,11 @@
 
 .og-table tbody tr:hover {
   background: none;
+}
+
+/* 列が名前だけなので、行の名前を太字にしない */
+.og-table .wf-cell-primary {
+  font-weight: 400;
 }
 
 .og-table .og-cell-action {

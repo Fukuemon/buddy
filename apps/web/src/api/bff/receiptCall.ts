@@ -14,7 +14,7 @@ const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/
 /** BFF の照合のレスポンス。ApiError は class のままでは server function を越えられないので、値にして返す。 */
 export type ReceiptCheckResult =
   | { ok: true; report: ReceiptReport }
-  | { ok: false; status: number; message: string; csvErrors: ReceiptCsvError[] }
+  | { ok: false; status: number; message: string; csvErrors: ReceiptCsvError[]; code?: string }
 
 /**
  * server function の入力の FormData を、照合の入力として確認する。

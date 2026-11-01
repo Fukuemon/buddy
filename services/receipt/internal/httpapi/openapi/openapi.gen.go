@@ -50,6 +50,7 @@ const (
 	MissingFile           ErrorCode = "missing_file"
 	NotFound              ErrorCode = "not_found"
 	PayloadTooLarge       ErrorCode = "payload_too_large"
+	PermissionCheckFailed ErrorCode = "permission_check_failed"
 	ScheduleSourceFailed  ErrorCode = "schedule_source_failed"
 	Unauthenticated       ErrorCode = "unauthenticated"
 )
@@ -72,6 +73,8 @@ func (e ErrorCode) Valid() bool {
 	case NotFound:
 		return true
 	case PayloadTooLarge:
+		return true
+	case PermissionCheckFailed:
 		return true
 	case ScheduleSourceFailed:
 		return true

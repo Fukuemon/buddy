@@ -7,7 +7,7 @@ import { stubViewport } from '#/test/stubViewport'
 
 import * as stories from './SiteLayoutContainer.stories'
 
-const { StaffManager, Staff, Review, ReviewForbidden, Mobile } = composeStories(stories)
+const { StaffManager, Staff, Member, Review, ReviewForbidden, Mobile } = composeStories(stories)
 
 const navLabels = (nav: HTMLElement) =>
   within(nav)
@@ -19,13 +19,21 @@ afterEach(() => {
 })
 
 describe('SiteLayoutContainer', () => {
-  it('職員の管理の権限を持つ職員には、予定の下にカレンダー、取り込み、要確認、連携を、最後に職員を並べ、今の画面に印を付ける', async () => {
+  it('職員の管理の権限を持つ職員には、予定の下にカレンダー、取り込み、要確認、連携を、最後に職員と部署とチームを並べ、今の画面に印を付ける', async () => {
     stubViewport(true)
     render(<StaffManager />)
     const nav = await screen.findByTestId('site-nav')
     expect(within(nav).getByRole('list', { name: '予定' })).toBeInTheDocument()
     expect(within(nav).getByRole('list', { name: '職員' })).toBeInTheDocument()
-    expect(navLabels(nav)).toEqual(['カレンダー', '取り込み', '要確認', '連携', '照合', '職員'])
+    expect(navLabels(nav)).toEqual([
+      'カレンダー',
+      '取り込み',
+      '要確認',
+      '連携',
+      '照合',
+      '職員',
+      '部署とチーム',
+    ])
     expect(within(nav).getByRole('link', { name: '照合' })).toHaveAttribute('aria-current', 'page')
   })
 
@@ -33,6 +41,14 @@ describe('SiteLayoutContainer', () => {
     stubViewport(true)
     render(<Staff />)
     expect(navLabels(await screen.findByTestId('site-nav'))).toEqual(['カレンダー', '照合'])
+  })
+
+  it('照合の権限を持たない職員には、照合を並べない', async () => {
+    stubViewport(true)
+    render(<Member />)
+    const nav = await screen.findByTestId('site-nav')
+    expect(navLabels(nav)).toEqual(['カレンダー'])
+    expect(within(nav).queryByRole('list', { name: '照合' })).not.toBeInTheDocument()
   })
 
   it('予定の中の画面では、カレンダーではなくその画面の項目に印を付ける', async () => {

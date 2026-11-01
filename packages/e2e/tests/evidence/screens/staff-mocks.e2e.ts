@@ -421,13 +421,13 @@ test.describe('職員の管理の画面仕様書のモック', () => {
             '役職「メンバー」で付く権限',
           )
           await expect(page.getByTestId('staff-policies-group-other')).toContainText('ほかの権限')
-          await expect(page.getByTestId('staff-policies-option-{権限の code}')).toHaveCount(8)
+          await expect(page.getByTestId('staff-policies-option-{権限の code}')).toHaveCount(9)
           await expect(page.getByTestId('staff-policies-target-{職員の id}')).toHaveCount(2)
           await expect(
             page.getByTestId('staff-policies-target-remove-{職員の id}').first(),
           ).toHaveAttribute('aria-label', '森 健太 を外す')
           await check(
-            '権限を変えるダイアログ（06-policies.html）に、2 つのまとまりと 8 つのチェックボックス、選んだ 2 人のチップと「＋ 職員を選ぶ」が出る',
+            '権限を変えるダイアログ（06-policies.html）に、2 つのまとまりと 9 つのチェックボックス、選んだ 2 人のチップと「＋ 職員を選ぶ」が出る',
           )
 
           await step('「指定した職員の予定の編集」にチェックを付ける')

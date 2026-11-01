@@ -17,7 +17,7 @@ export type SiteLayoutContainerProps = {
 }
 
 /**
- * ログインした職員の画面の枠。職員の管理の権限で、ナビゲーションに並べる画面を決める。
+ * ログインした職員の画面の枠。職員の管理の権限と照合の権限で、ナビゲーションに並べる画面を決める。
  * ヘッダーの右端に、ログインした職員のアカウントのボタンを置く。
  */
 export const SiteLayoutContainer = ({
@@ -36,7 +36,10 @@ export const SiteLayoutContainer = ({
       }
       current={current}
       navBadges={{ review: reviewBadge }}
-      navGroups={siteNavGroups(viewer?.canManageStaff === true)}
+      navGroups={siteNavGroups({
+        canManageStaff: viewer?.canManageStaff === true,
+        canCheckReceipt: viewer?.canCheckReceipt === true,
+      })}
       isSidebarOpen={isSidebarOpen}
       sidebar={sidebar}
       startsWithRail={startsWithRail}
