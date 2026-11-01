@@ -264,7 +264,7 @@ sequenceDiagram
   participant K as ブローカー
   W->>A: POST .../leave か retire
   A->>A: 権限と、自分でないことを確認する
-  alt 権限が無いか、自分
+  break 権限が無いか、自分
     A-->>W: 403 か 409
   end
   rect rgba(128, 128, 128, 0.1)
@@ -272,23 +272,23 @@ sequenceDiagram
     A->>DB: 職員を読み直す
     A->>DB: 有効な管理者と、残る予定と担当を読む
     DB-->>A: 有効な管理者と、残る一覧
-    alt 最後の有効な管理者か、退職した職員の休職か、予定と担当が残る退職
+    break 最後の有効な管理者か、退職した職員の休職か、予定と担当が残る退職
       A-->>W: 409
-    else 書ける
-      A->>K: POST .../suspend か retire
-      alt 職員がいない
-        K-->>A: 404
-      else ブローカーで退職した職員の休職
-        K-->>A: 409（retired）
-        A-->>W: 409
-      else 職員を止めた
-        K->>K: Hydra でログインのセッションと同意を取り消す
-        K-->>A: 204 か 502（revoke_failed）
-      end
-      A->>DB: 休職か退職を書く
-      opt 退職
-        A->>DB: メールと電話番号を消し、Google カレンダーを外す
-      end
+    end
+    A->>K: POST .../suspend か retire
+    break ブローカーで退職した職員の休職
+      K-->>A: 409（retired）
+      A-->>W: 409
+    end
+    alt 職員がいない
+      K-->>A: 404
+    else 職員を止めた
+      K->>K: Hydra でログインのセッションと同意を取り消す
+      K-->>A: 204 か 502（revoke_failed）
+    end
+    A->>DB: 休職か退職を書く
+    opt 退職
+      A->>DB: メールと電話番号を消し、Google カレンダーを外す
     end
   end
   alt revoke_failed を受けた
@@ -319,7 +319,7 @@ sequenceDiagram
   rect rgba(128, 128, 128, 0.1)
     Note over A,DB: 1 つ目のトランザクション
     A->>DB: 事業所の行をロックし、職員を読み直す
-    alt 退職した職員
+    break 退職した職員
       A-->>W: 409
     end
     A->>DB: 休職を外してコミットする
@@ -327,7 +327,7 @@ sequenceDiagram
   rect rgba(128, 128, 128, 0.1)
     Note over A,K: 2 つ目のトランザクション。ブローカーが戻したときは予定の API に書かない
     A->>DB: 事業所の行をロックし、職員を読み直す
-    alt 間に休職か退職にされた
+    break 間に休職か退職にされた
       A-->>W: 409
     end
     A->>K: POST /internal/staff/{id}/resume
