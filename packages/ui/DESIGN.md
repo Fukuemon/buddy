@@ -56,6 +56,7 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 | `warning`、`warning-surface` | 確認してほしい値。エラーではないもの |
 | `success`、`success-surface` | 完了と整合 |
 | `categorical-1` から `categorical-10` | 職員のように、意味を持たない並びの区別。番号の順に割り当て、11 個目からは 1 に戻る。`primary` と状態の色に近い青、緑、橙、赤は、6 番目より後ろに置き、選ばれている表示や状態と見分けられるようにする |
+| `team-blue`、`team-orange`、`team-magenta`、`team-cyan`、`team-yellow`、`team-purple`、`team-green`、`team-lime` | 職員と利用者の一覧と、カレンダーの職員の絞り込みの見出しで、名前の横に置く、チームの色の点。面と文字には使わない |
 
 背景を指定しない要素は `surface-canvas` の色になるので、カード、表、入力欄には `bg-surface` を付ける。
 
@@ -74,6 +75,33 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 | 片側がない欄の「データなし」 | `text-secondary` | 文字 |
 
 - 出典: [レセプトの照合の Design Doc の、画面が JSON から作る表示](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/DesignDoc.md#画面が-json-から作る表示)
+
+#### チームの色
+
+チームの色は、チームが持つ値（`blue` など）に `team-` を付けたトークンで塗る。  
+値の一覧と、色を省いて作ったチームに入る色の順は、[予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md) にある。
+
+- 点は、チームの名前か職員の名前と並べて出し、色だけでチームを伝えない。
+- 8 色は、DADS の 10 の色相から、`primary` に近い light-blue と、`danger` と紛れる red を除いた 8 つである。
+- 区別の色は 800 から 1000 の濃い段を使うので、チームの色は、同じ色相の明るい段から選ぶ。
+  - カレンダーの職員の絞り込みで、職員の色のチェックボックスとチームの点が並んでも、明るさで見分けられる。
+- 段は、`surface`、`surface-canvas`、`surface-subtle`、`primary-surface` の全てに対して、文字でないもののコントラストの 3:1 に届くもののうち、最も明るいものにした。
+- 組のコントラストは `pnpm check:contrast` が計算する。
+
+| トークン | DADS の値 | 4 つの面に対する最小のコントラスト比 | 同じ色相の区別の色 |
+| --- | --- | --- | --- |
+| `team-blue` | `blue-500` | 3.51 | `categorical-6`（`blue-800`） |
+| `team-orange` | `orange-700` | 3.47 | `categorical-8`（`orange-900`） |
+| `team-magenta` | `magenta-600` | 3.73 | `categorical-3`（`magenta-800`） |
+| `team-cyan` | `cyan-700` | 3.50 | `categorical-2`（`cyan-900`） |
+| `team-yellow` | `yellow-800` | 3.30 | `categorical-5`（`yellow-1000`） |
+| `team-purple` | `purple-500` | 3.22 | `categorical-1`（`purple-800`） |
+| `team-green` | `green-600` | 3.08 | `categorical-7`（`green-800`） |
+| `team-lime` | `lime-800` | 3.49 | `categorical-4`（`lime-900`） |
+
+- `team-lime` と `team-green`、`team-lime` と `categorical-4` は、8 色の中で色の差が最も小さい組である。
+  - lime の明るい段は 3:1 に届かないので、これ以上離せない。色を省いて作るときの順で、lime を最後に置いた。
+- 出典: [DADS の色](https://design.digital.go.jp/dads/foundations/color/)
 
 ### 文字
 
@@ -137,8 +165,13 @@ apps/web の画面だけが使う印は、`apps/web/src/assets/icons/` の SVG �
 
 | コンポーネント | 使う場面 | 使わない場面 | キーボード |
 | --- | --- | --- | --- |
-| `Button` | 操作を 1 つ実行する | 画面を移る（`Link` に `buttonClassName` を渡す） | Tab で移り、Enter と Space で押す。押せない間は `aria-disabled` にし、フォーカスは受ける |
+| `Button` | 操作を 1 つ実行する。`variant="danger"`（塗りの赤）は、確認のダイアログでデータを失う操作を確定するボタンだけに使う | 画面を移る（`Link` に `buttonClassName` を渡す） | Tab で移り、Enter と Space で押す。押せない間は `aria-disabled` にし、フォーカスは受ける |
 | `Modal` | 今の画面の上で、予定の詳細や入力を行い、閉じて元の画面に戻る | 完了の通知、ナビゲーション | 開くとタイトルにフォーカスが移る。Tab はダイアログの中だけを回る。Esc で閉じる要求を出す。閉じると、開いたボタンにフォーカスが戻る |
+| `Dialog` | 短い入力を 1 つ受けるか、少ない選択肢から操作を 1 つ選び、元の画面に戻る。入力と確認は、パターンの `InputDialog` と `ConfirmDialog` で組む | 項目の多い入力（`Modal` を使う）、完了の通知 | 開くと最初の押せる要素にフォーカスが移る。Esc と覆いで `onClose` を呼び、送っている間は呼ばない。閉じると、開く前の要素にフォーカスが戻る |
+| `RowTable` | 名前と補足の値を持つ対象を並べ、行を押して詳細へ移るか選ぶか、行ごとに操作を置く。幅 768px 未満では 2 行のリストにする | 列を見比べる表（`Table` を使う） | Tab で行の名前のリンクかボタンに移り、Enter で押す。行の操作を置いた行は、操作のボタンに移る |
+| `ActionMenu` | 一覧の行に、2 つ以上の操作を「…」のメニューで置く | 操作が 1 つだけ（`Button` を置く）、ナビゲーション | Enter と Space で開き、最初の項目にフォーカスが移る。Esc で閉じ、「…」のボタンにフォーカスが戻る。外を押すと閉じる |
+| `HelpToggle` | 見出しの右に ? を置き、見出しが何を指すかを 1〜2 文で補う | 手順の説明（`MoreText` を使う）、エラーと注意 | Enter と Space で開閉し、Esc と外を押すと閉じる。`aria-expanded` で開閉を伝える |
+| `MoreText` | 初めてのときだけ要る手順や説明を、「詳しく」で開く | 見出しの短い補い（`HelpToggle` を使う）、操作に欠かせない説明 | Enter と Space で開閉する。`aria-expanded` で開閉を伝える |
 | `Drawer` | 幅 768px 未満で、画面の枠のナビゲーションと、予定のカレンダーの左の欄（日付と絞り込み）を、左端から開閉する | 予定の詳細や入力（`Modal` を使う）、幅 768px 以上のナビゲーションと左の欄（画面の枠の中に置く） | 開くとタイトルにフォーカスが移る。Tab はドロワーの中だけを回る。Esc で閉じる要求を出す。閉じると、開いたボタンにフォーカスが戻る。開くボタンには `aria-expanded` と `aria-controls` を付ける |
 | `SegmentedControl` | 2 から 4 個の選択肢から 1 つを選び、すぐに表示を切り替える（表示の単位、予定の種類） | 選択肢が 5 個以上、送信するまで反映しない入力 | Tab で選ばれている選択肢に移り、← と → で選び直す |
 | `Table` | 同じ項目を持つ行を並べる | 項目名と値の組（`dl` を使う） | コンポーネントの操作はない。見出しのセルは `th` にする |
@@ -169,7 +202,7 @@ apps/web の画面だけが使う印は、`apps/web/src/assets/icons/` の SVG �
 | はじめに | 原則、アクセシビリティの基準 | `packages/ui/src/docs/*.mdx` |
 | トークン | 色の階調と意味のトークン（`ColorPalette`）、文字（`Typeset`）、余白、角丸、影 | `packages/ui/src/tokens/*.mdx` |
 | コンポーネント | コンポーネントごとの MDX。使う場面、使わない場面、Do と Don't、状態、キーボードの操作 | `packages/ui/src/base/<コンポーネント>/`、`packages/ui/src/case/<コンポーネント>/` |
-| パターン | コンポーネントを組み合わせた形（入力のダイアログ、絞り込みの一覧） | `packages/ui/src/patterns/`。パターンを作るときの配置先で、ディレクトリはパターンを作るときに作る |
+| パターン | コンポーネントを組み合わせた形（入力のダイアログの `InputDialog`、確認のダイアログの `ConfirmDialog`） | `packages/ui/src/patterns/` |
 | 画面 | apps/web のコンポーネントと画面の story | `apps/web/src/features/<機能>/components/`、`apps/web/src/components/` |
 
 コンポーネントの MDX の「状態」には、デフォルト、hover、フォーカス、無効、エラー、読み込みのうち、そのコンポーネントが持つものを全て story で並べる。

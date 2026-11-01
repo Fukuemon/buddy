@@ -1,0 +1,49 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { MoreText } from './MoreText'
+import * as Stories from './MoreText.stories'
+
+<Meta of={Stories} />
+
+# MoreText
+
+「詳しく」で開く補足。常に出す 1 文の下に「詳しく」のボタンを置き、押すと続きの説明を開く。
+
+## 使う場面
+
+- 初めてのときだけ要る手順や説明を、毎回は読ませない
+
+## 使わない場面
+
+- 見出しが何を指すかの短い補い（`HelpToggle` を使う）
+- エラーや注意。常に見える文で出す
+
+## Do
+
+- `summary` には、閉じていても意味が通じる 1 文を渡す
+- 手順は `ol` で番号を付けて並べる
+- 説明を見ながら操作することが多い画面では `defaultOpen` を渡す
+
+## Don't
+
+- 操作に欠かせない説明を、続きの説明に入れる
+- 続きの説明の中に、別の `MoreText` を入れる
+
+## 状態
+
+### デフォルト（閉じた状態）
+
+<Canvas of={Stories.Default} />
+
+### 開いた状態で始める
+
+<Canvas of={Stories.DefaultOpen} />
+
+## キーボードの操作
+
+- Tab で「詳しく」のボタンに移り、Enter と Space で開閉する
+- ボタンの `aria-expanded` で開閉を、`aria-controls` で続きの説明を伝える
+
+## props
+
+<ArgTypes of={MoreText} />

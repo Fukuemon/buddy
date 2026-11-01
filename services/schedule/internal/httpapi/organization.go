@@ -15,7 +15,8 @@ type OrganizationUsecase interface {
 	ListDepartments(ctx context.Context, facilityID string) ([]organization.Department, error)
 	GetTeam(ctx context.Context, id string) (organization.Team, error)
 	ListTeams(ctx context.Context, facilityID string) ([]organization.Team, error)
-	CreateTeam(ctx context.Context, facilityID, name string) (organization.Team, error)
+	CreateTeam(ctx context.Context, facilityID, name string, color organization.TeamColor) (organization.Team, error)
+	UpdateTeam(ctx context.Context, id, name string, color organization.TeamColor) (organization.Team, error)
 	GetPosition(ctx context.Context, id string) (organization.Position, error)
 	ListPositions(ctx context.Context, facilityID string) ([]organization.Position, error)
 	CreatePosition(ctx context.Context, facilityID, name string, policyIDs []string) (organization.Position, error)
@@ -27,8 +28,11 @@ func toDepartment(d organization.Department) openapi.Unit {
 	return openapi.Unit{Id: d.ID, FacilityId: d.FacilityID, Name: d.Name, CreatedAt: d.CreatedAt, UpdatedAt: d.UpdatedAt}
 }
 
-func toTeam(t organization.Team) openapi.Unit {
-	return openapi.Unit{Id: t.ID, FacilityId: t.FacilityID, Name: t.Name, CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt}
+func toTeam(t organization.Team) openapi.Team {
+	return openapi.Team{
+		Id: t.ID, FacilityId: t.FacilityID, Name: t.Name, Color: openapi.TeamColor(t.Color),
+		CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt,
+	}
 }
 
 func toPolicy(p organization.Policy) openapi.Policy {
@@ -101,11 +105,23 @@ func (s server) ListTeams(ctx context.Context, req openapi.ListTeamsRequestObjec
 }
 
 func (s server) CreateTeam(ctx context.Context, req openapi.CreateTeamRequestObject) (openapi.CreateTeamResponseObject, error) {
-	t, err := s.u.Organization.CreateTeam(ctx, req.FacilityId, req.Body.Name)
+	var color organization.TeamColor
+	if req.Body.Color != nil {
+		color = organization.TeamColor(*req.Body.Color)
+	}
+	t, err := s.u.Organization.CreateTeam(ctx, req.FacilityId, req.Body.Name, color)
 	if err != nil {
 		return nil, err
 	}
 	return openapi.CreateTeam201JSONResponse(toTeam(t)), nil
+}
+
+func (s server) UpdateTeam(ctx context.Context, req openapi.UpdateTeamRequestObject) (openapi.UpdateTeamResponseObject, error) {
+	t, err := s.u.Organization.UpdateTeam(ctx, req.TeamId, req.Body.Name, organization.TeamColor(req.Body.Color))
+	if err != nil {
+		return nil, err
+	}
+	return openapi.UpdateTeam200JSONResponse(toTeam(t)), nil
 }
 
 func (s server) GetPosition(ctx context.Context, req openapi.GetPositionRequestObject) (openapi.GetPositionResponseObject, error) {

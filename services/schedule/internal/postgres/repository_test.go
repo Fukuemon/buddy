@@ -406,7 +406,7 @@ func TestStaffUniqueness(t *testing.T) {
 	for _, q := range []string{
 		"INSERT INTO facilities (id, name) VALUES ('" + otherFacility + "', '別の事業所')",
 		"INSERT INTO departments (id, facility_id, name) VALUES ('" + otherDepartment + "', '" + otherFacility + "', '看護')",
-		"INSERT INTO teams (id, facility_id, name) VALUES ('" + otherTeam + "', '" + otherFacility + "', 'A')",
+		"INSERT INTO teams (id, facility_id, name, color) VALUES ('" + otherTeam + "', '" + otherFacility + "', 'A', 'blue')",
 		"INSERT INTO positions (id, facility_id, name) VALUES ('" + otherPosition + "', '" + otherFacility + "', 'メンバー')",
 	} {
 		if _, err := tx.Exec(ctx, q); err != nil {
@@ -988,7 +988,7 @@ func TestStaffConcurrentRemovalKeepsManager(t *testing.T) {
 		cleanup(t)
 		exec(t, `INSERT INTO facilities (id, name) VALUES ($1, $2)`, facility, facilityN)
 		exec(t, `INSERT INTO departments (id, facility_id, name) VALUES ($1, $2, '部署')`, dept, facility)
-		exec(t, `INSERT INTO teams (id, facility_id, name) VALUES ($1, $2, 'チーム')`, team, facility)
+		exec(t, `INSERT INTO teams (id, facility_id, name, color) VALUES ($1, $2, 'チーム', 'blue')`, team, facility)
 		exec(t, `INSERT INTO positions (id, facility_id, name) VALUES ($1, $3, '管理者'), ($2, $3, 'メンバー')`, managerP, memberP, facility)
 		exec(t, `INSERT INTO position_policies (position_id, policy_id) VALUES ($1, $3), ($2, $4)`, managerP, memberP, seedStaffManage, seedSelfEdit)
 		exec(t, `INSERT INTO users (id, facility_id, username, email, department_id, team_id, position_id) VALUES
@@ -1053,7 +1053,7 @@ func TestTransactorRollsBack(t *testing.T) {
 	}
 	ctx := context.Background()
 	teams := NewTeamRepository(testDB)
-	team := organization.Team{ID: "01M3TD00000000000000000070", FacilityID: seedFacility, Name: "ロールバック"}
+	team := organization.Team{ID: "01M3TD00000000000000000070", FacilityID: seedFacility, Name: "ロールバック", Color: organization.TeamColorBlue}
 	wantErr := errors.New("中断")
 	err := NewTransactor(testDB).WithinTx(ctx, func(ctx context.Context) error {
 		if err := teams.Create(ctx, team); err != nil {
@@ -1278,12 +1278,12 @@ func TestNamesAreComparedExactly(t *testing.T) {
 	ctx := txContext(t)
 	r := NewTeamRepository(testDB)
 	for i, name := range []string{"ハ", "バ", "ﾊ", "a", "Ａ"} {
-		team := organization.Team{ID: "01M3TD000000000000000000A" + string(rune('0'+i)), FacilityID: seedFacility, Name: name}
+		team := organization.Team{ID: "01M3TD000000000000000000A" + string(rune('0'+i)), FacilityID: seedFacility, Name: name, Color: organization.TeamColorBlue}
 		if err := r.Create(ctx, team); err != nil {
 			t.Fatalf("チーム %q: err = %v", name, err)
 		}
 	}
-	dup := organization.Team{ID: "01M3TD000000000000000000B0", FacilityID: seedFacility, Name: "バ"}
+	dup := organization.Team{ID: "01M3TD000000000000000000B0", FacilityID: seedFacility, Name: "バ", Color: organization.TeamColorBlue}
 	if err := r.Create(ctx, dup); !errors.Is(err, apperr.ErrConflict) {
 		t.Fatalf("同じ名前のチーム: err = %v, want ErrConflict", err)
 	}
@@ -1294,6 +1294,36 @@ func TestNamesAreComparedExactly(t *testing.T) {
 	}
 	if len(rows) != 0 {
 		t.Errorf("チーム a で絞って、チーム A の職員 %d 人を返した", len(rows))
+	}
+}
+
+// TestTeamUpdate は、チームの名前と色を変え、ほかのチームと同じ名前と 8 色にない色を拒むことを確認する。
+func TestTeamUpdate(t *testing.T) {
+	ctx := txContext(t)
+	r := NewTeamRepository(testDB)
+	team := organization.Team{ID: "01M3TD000000000000000000H0", FacilityID: seedFacility, Name: "外来", Color: organization.TeamColorCyan}
+	if err := r.Create(ctx, team); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := r.Get(ctx, team.ID); err != nil || got.Color != organization.TeamColorCyan {
+		t.Fatalf("Get = %+v, %v, want cyan", got, err)
+	}
+	team.Name, team.Color = "訪問", organization.TeamColorLime
+	if err := r.Update(ctx, team); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := r.Get(ctx, team.ID); err != nil || got.Name != "訪問" || got.Color != organization.TeamColorLime {
+		t.Errorf("変えた後の Get = %+v, %v", got, err)
+	}
+	team.Name = "A"
+	if err := r.Update(ctx, team); !errors.Is(err, apperr.ErrConflict) {
+		t.Errorf("シードのチーム A と同じ名前: err = %v, want ErrConflict", err)
+	}
+	if err := r.Update(ctx, organization.Team{ID: "01M3TD000000000000000000H1", Name: "無い", Color: organization.TeamColorBlue}); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("無いチーム: err = %v, want ErrNotFound", err)
+	}
+	if err := r.Create(ctx, organization.Team{ID: "01M3TD000000000000000000H2", FacilityID: seedFacility, Name: "赤", Color: "red"}); !errors.Is(err, apperr.ErrInvalidInput) {
+		t.Errorf("8 色にない色: err = %v, want ErrInvalidInput", err)
 	}
 }
 
@@ -1320,7 +1350,7 @@ func TestScheduleRejectsOtherFacilityStaff(t *testing.T) {
 	for _, q := range []string{
 		"INSERT INTO facilities (id, name) VALUES ('" + otherFacility + "', '別の事業所')",
 		"INSERT INTO departments (id, facility_id, name) VALUES ('" + otherDepartment + "', '" + otherFacility + "', '看護')",
-		"INSERT INTO teams (id, facility_id, name) VALUES ('" + otherTeam + "', '" + otherFacility + "', 'A')",
+		"INSERT INTO teams (id, facility_id, name, color) VALUES ('" + otherTeam + "', '" + otherFacility + "', 'A', 'blue')",
 		"INSERT INTO positions (id, facility_id, name) VALUES ('" + otherPosition + "', '" + otherFacility + "', 'メンバー')",
 		"INSERT INTO users (id, username, email, facility_id, department_id, team_id, position_id) VALUES ('" + otherStaff +
 			"', '別の職員', 'other@example.com', '" + otherFacility + "', '" + otherDepartment + "', '" + otherTeam + "', '" + otherPosition + "')",
@@ -1411,7 +1441,7 @@ func TestExternalCalendarsOneActivePerStaff(t *testing.T) {
 
 func TestTranslateRejectsNUL(t *testing.T) {
 	ctx := txContext(t)
-	team := organization.Team{ID: "01M3TD000000000000000000G0", FacilityID: seedFacility, Name: "a\x00b"}
+	team := organization.Team{ID: "01M3TD000000000000000000G0", FacilityID: seedFacility, Name: "a\x00b", Color: organization.TeamColorBlue}
 	if err := NewTeamRepository(testDB).Create(ctx, team); !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Fatalf("NUL を含む名前: err = %v, want ErrInvalidInput", err)
 	}

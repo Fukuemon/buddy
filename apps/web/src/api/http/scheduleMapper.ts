@@ -50,7 +50,7 @@ export const fromApiStaff = (user: Schemas['Staff']): Staff => {
 }
 
 /** API のチームを、画面のチームにする。 */
-export const fromApiTeam = ({ id, name }: Schemas['Unit']): Team => ({ id, name })
+export const fromApiTeam = ({ id, name, color }: Schemas['Team']): Team => ({ id, name, color })
 
 /** API の利用者を、画面の利用者にする。 */
 export const fromApiPatient = ({ id, name, ended_at }: Schemas['Patient']): Patient =>

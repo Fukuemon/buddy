@@ -40,6 +40,8 @@ const TEXT_PAIRS = [
     ["text", `${state}-surface`],
   ]),
   ["text-inverse", "primary"],
+  // 確認のダイアログの確定のボタン（Button の danger）は、赤い面に白の文字を載せる
+  ["text-inverse", "danger"],
   // 区別の色は、白の文字を載せる
   ...Array.from({ length: 10 }, (_, i) => ["text-inverse", `categorical-${i + 1}`]),
 ];
@@ -56,6 +58,10 @@ const NON_TEXT_PAIRS = [
   ["focus-outline", "surface"],
   ["focus-outline", "surface-canvas"],
   ["focus-outline", "focus-halo"],
+  // チームの色は、名前の横の点として、白と薄い面に載る
+  ...["blue", "orange", "magenta", "cyan", "yellow", "purple", "green", "lime"].flatMap((color) =>
+    ["surface", "surface-canvas", "surface-subtle", "primary-surface"].map((bg) => [`team-${color}`, bg]),
+  ),
 ];
 
 const MAX_DEPTH = 10;
