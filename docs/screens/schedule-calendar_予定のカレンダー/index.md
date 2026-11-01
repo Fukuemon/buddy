@@ -6,7 +6,7 @@
 | 項目 | 値 |
 | --- | --- |
 | URL | `/schedule`。`/` を開くと `/schedule` へリダイレクトする |
-| 使う人 | 全ての職員。表示する予定は、閲覧の権限の範囲で決まる |
+| 使う人 | 全ての職員。表示する職員と予定は、予定を見る権限の範囲で決まる |
 | 実装 | `apps/web/src/routes/schedule.tsx`、`apps/web/src/features/schedule/components/SchedulePageLayout.tsx`、`apps/web/src/features/schedule/components/ScheduleCalendarContainer.tsx`、`apps/web/src/features/schedule/components/ScheduleCancelledToggleContainer.tsx`、`apps/web/src/features/schedule/components/StaffFilterSidebarContainer.tsx`、`apps/web/src/features/schedule/components/ScheduleMiniCalendarContainer.tsx`、`apps/web/src/components/site/SiteLayoutContainer.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
@@ -39,6 +39,9 @@
 モックのモバイルの表示では、ミニカレンダーの日を押してもドロワーが閉じる。  
 左の欄を閉じるボタンと、左の欄の要素の印は、幅 768px 未満では「日付と絞り込み」のドロワーを開くと出る。  
 ナビゲーション、要確認、取り込みの印は、幅 768px 未満ではメニューのボタンでナビゲーションのドロワーを開くと出る。
+
+モックは、事業所の全ての予定を編集できる職員の画面を描く。  
+予定を見る権限と編集する権限で、職員の絞り込み、職員の列、「予定を作成」、時間の枠の出し方が変わる（[権限の確認](#権限の確認)）。
 
 === "予定がある（月の表示）"
 
@@ -204,7 +207,7 @@
 
 === "表示する職員が無い"
 
-    日の表示で、URL の `staff` の職員がどれも職員の一覧に無いとき。  
+    日の表示で、URL の `staff` の職員がどれも職員の一覧に無いか、ログインした職員が予定を見られない職員だけのとき。  
     時刻の列だけの日の表示を出し、職員の絞り込みのチェックボックスは全て外れる。
 
     <iframe class="mock" title="予定のカレンダーの、表示する職員が無い" src="mocks/05-no-staff.html"></iframe>
@@ -644,7 +647,8 @@
 
 **表示条件**: チームの取得が成功したとき。  
 チームの下の職員は、職員の取得が成功した後に出る。  
-閲覧の権限の外の職員を出すかは未決（[未決](#未決)）
+チームの下には、ログインした職員が予定を見られる職員だけを出す。  
+所属する職員の予定を 1 人も見られないチームは、見出しも出さない。職員がいないチームは出し、印は付かない
 
 **カタログ**: [StaffFilterSidebar の AllStaff](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-stafffiltersidebar--all-staff)
 
@@ -669,9 +673,10 @@
 
 **表示条件**: 職員の取得が成功し、職員がチームに属するとき。  
 休職と退職の職員と、訪問しない職員は出さない。  
-閲覧の権限の外の職員を出すかは未決（[未決](#未決)）
+ログインした職員が予定を見られない職員も出さない（[権限の確認](#権限の確認)）
 
-**カタログ**: [StaffFilterSidebar の AllStaff](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-stafffiltersidebar--all-staff)、[StaffFilterSidebarContainer の WithSuspendedStaff](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-stafffiltersidebarcontainer--with-suspended-staff)
+**カタログ**: [StaffFilterSidebar の AllStaff](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-stafffiltersidebar--all-staff)、[StaffFilterSidebarContainer の WithSuspendedStaff](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-stafffiltersidebarcontainer--with-suspended-staff)。  
+予定を見られる職員だけを出す形は [StaffFilterSidebarContainer の ReadableOnly](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-stafffiltersidebarcontainer--readable-only)
 
 ### インタラクション
 
@@ -905,12 +910,13 @@ URL の `view` の値を選んだ状態で出す。
 
 **値のソース**: 「予定を作成」
 
-**活性条件**: 常に活性。  
-権限による出し分けは未決
+**活性条件**: 常に活性
 
-**表示条件**: 常に表示
+**表示条件**: ログインした職員が、誰かの予定を編集できるとき。  
+自分の予定だけを編集できる職員にも出す。  
+予定を見る権限だけを持つ職員と、予定の権限を持たない職員には出さない
 
-**カタログ**: [ScheduleCalendarToolbar の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecalendartoolbar--default)
+**カタログ**: [ScheduleCalendarToolbar の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecalendartoolbar--default)、[ScheduleCalendarToolbar の WithoutCreate](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecalendartoolbar--without-create)
 
 ### インタラクション
 
@@ -961,7 +967,7 @@ URL の `view` の値を選んだ状態で出す。
 - 繰り返しの予定は、表示の期間の回に分けて置く。
   - 除外した日（1 回だけ置き換えた日を含む）の回は置かない。
   - 回を押すと、その回の詳細を開く。その回を編集すると、その回だけを単発の予定に置き換える。
-- 閲覧の権限による出し分けは、[権限の確認](#権限の確認) にある。
+- 予定を見る権限による出し分けは、[権限の確認](#権限の確認) にある。
 
 **カタログ**: [ScheduleCalendar の Month](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecalendar--month)、[StaffScheduleDayGrid の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-staffscheduledaygrid--default)
 
@@ -995,7 +1001,8 @@ URL の `view` の値を選んだ状態で出す。
 
 **値のソース**: 30 分の時間の枠の、予定の無いところ。
 
-**活性条件**: 常に活性
+**活性条件**: [予定を作成](#予定を作成) を出す職員のとき。  
+出さない職員が押しても、何も起きない
 
 **表示条件**: 表示の単位が週で、予定と職員の取得が成功したとき
 
@@ -1029,10 +1036,10 @@ URL の `view` の値を選んだ状態で出す。
 
 **活性条件**: 常に活性
 
-**表示条件**: URL の `staff` が空なら全ての職員、空でなければ `staff` に含まれる職員の分を、職員の一覧の順に出す。  
-休職と退職の職員と、訪問しない職員の列は、`staff` に含まれていても出さない
+**表示条件**: URL の `staff` が空なら、ログインした職員が予定を見られる全ての職員、空でなければ `staff` に含まれる職員の分を、職員の一覧の順に出す。  
+休職と退職の職員と、訪問しない職員と、ログインした職員が予定を見られない職員の列は、`staff` に含まれていても出さない
 
-**カタログ**: [StaffScheduleDayGrid の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-staffscheduledaygrid--default)
+**カタログ**: [StaffScheduleDayGrid の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-staffscheduledaygrid--default)、[ScheduleCalendarContainer の DaySelfEditOnly](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecalendarcontainer--day-self-edit-only)
 
 ## 職員の予定の列
 
@@ -1053,12 +1060,12 @@ URL の `view` の値を選んだ状態で出す。
 **値のソース**: 30 分の枠。  
 読み上げの名前は「<職員の名前> <時刻> に予定を作成」。
 
-**活性条件**: 常に活性。  
-編集の権限が自分の予定だけの職員が、ほかの職員の列の枠を押せるかは未決
+**活性条件**: ログインした職員が、その列の職員の予定を編集できるとき。  
+ほかの列の枠はボタンにせず、押しても何も起きない。読み上げの名前も持たない
 
 **表示条件**: 表示の単位が日で、予定と職員の取得が成功したとき
 
-**カタログ**: [StaffScheduleDayGrid の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-staffscheduledaygrid--default)
+**カタログ**: [StaffScheduleDayGrid の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-staffscheduledaygrid--default)、[ScheduleCalendarContainer の DaySelfEditOnly](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecalendarcontainer--day-self-edit-only)
 
 ### インタラクション
 
@@ -1093,7 +1100,8 @@ URL の `view` の値を選んだ状態で出す。
 **活性条件**: 常に活性
 
 **表示条件**: 予定か職員を読み終えていないとき。  
-読めなかったときは、何度か読み直してから [読み込みの失敗の文](#読み込みの失敗の文) に替わるので、その間もこの表示が続く
+つながらないときは、何度か読み直してから [読み込みの失敗の文](#読み込みの失敗の文) に替わるので、その間もこの表示が続く。  
+ほかの事業所のカレンダーを開こうとしたときのように、読み直しても変わらない失敗では、読み直さずにすぐ替わる
 
 **カタログ**: [ScheduleCalendarContainer の Loading](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecalendarcontainer--loading)
 
@@ -1119,7 +1127,7 @@ URL の `view` の値を選んだ状態で出す。
 - 予定、職員、チーム、利用者の一覧を読む。
   - 読み終える前は、ツールバーの全ての操作、ミニカレンダー、「キャンセルした予定を出す」、名前の検索、絞り込んでいるときの「全員を表示」を受け付ける。カレンダーを出していないので、予定、空いた日、空いた時間、時間の枠は押せない。
   - 読み終えた後は、全ての操作を受け付ける。
-  - 読めなかったときは、何度か読み直してから「読み込みの失敗」の状態を出す。
+  - つながらないときは、何度か読み直してから「読み込みの失敗」の状態を出す。読み直しても変わらない失敗では、すぐに出す。
   - ログインが切れていたら、今の画面に戻るログインの画面へ移る。
   - 読む順と失敗の扱いは、[予定の管理の Design Doc の予定の画面の読み込みと保存](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#予定の画面の読み込みと保存) にある。
 - 職員の一覧は、休職と退職の職員と、訪問しない職員も含めて読む。休職と退職の職員と、訪問しない職員は、職員の絞り込み、職員の列、予定から除き、残りの職員の並びは変えない。
@@ -1158,33 +1166,25 @@ URL の `view` の値を選んだ状態で出す。
 
 ### 権限の確認
 
-- 自分の予定は、閲覧の権限によらず出す。職員の絞り込みで自分を外すと、自分の予定も出さない。
-- ほかの職員の予定は、事業所の全ての予定の閲覧、指定した職員の予定の閲覧、指定したチームの職員の予定の閲覧のどれかで対象のときだけ出す。権限の名前は、PRD の役職ごとの権限にある 7 つの権限を指す。編集の権限は同じ範囲の閲覧を含む。
-- 閲覧の権限が無い職員の予定は出さず、案内の文も出さない。
-- 職員の絞り込みには、閲覧の権限によらず、事業所の職員を出す（休職と退職の職員と、訪問しない職員を除く）。
-- 「予定を作成」と時間の枠は、編集の権限によらず出し、押せる。
+画面は、ログインした職員の予定の権限から、職員ごとに予定を見られるか、編集できるかを決める。  
+規則は [画面仕様書の規約の権限の出し分け](../rules.md#権限の出し分け) にある。  
+権限の名前は、PRD の役職ごとの権限にある 7 つの権限を指す。
+
+- 予定を見られる職員は、自分と、次のどれかで対象の職員である。編集の権限は、同じ範囲の閲覧を含む。
+  - 事業所の全ての予定の閲覧
+  - 指定した職員の予定の閲覧
+  - 指定したチームの職員の予定の閲覧
+- 職員の絞り込み、職員の列、予定には、予定を見られる職員だけを出す（休職と退職の職員と、訪問しない職員は、見られても除く）。見られない職員の予定は出さず、案内の文も出さない。
+- 自分の予定は、権限によらず出す。職員の絞り込みで自分を外すと、自分の予定も出さない。
+- [予定を作成](#予定を作成) は、自分の予定の編集を含む、編集の権限を 1 つ以上持つ職員にだけ出す。
+- 日の表示の [時間の枠](#時間の枠) は、ログインした職員が予定を編集できる職員の列でだけ押せる。ほかの列の枠は、押しても何も起きない。
+- 週の表示の [空いた時間](#空いた時間) は、「予定を作成」を出さない職員には、押しても何も起きない。月の表示の [空いた日](#空いた日) は、権限によらず日の表示へ移る。
 - ナビゲーションの「取り込み」「要確認」「連携」は職員の管理の権限を持つ職員に、「照合」は照合の権限を持つ職員にだけ出す（[ナビゲーション](#ナビゲーション)）。
 
 ## 未決
 
 ### 決まっていないこと
 
-- 編集の権限が自分の予定だけの職員に、「予定を作成」と、ほかの職員の列の時間の枠を出すか。
-  - 今の動き: 編集の権限によらず出し、押せる。
-  - 決める人: 開発者
-  - 期限: #383
-- 職員の絞り込みに、閲覧の権限の外の職員を出すか。
-  - 今の動き: 事業所の全ての職員を出す（休職と退職の職員と、訪問しない職員を除く）。
-  - 決める人: 開発者
-  - 期限: #383
-- 予定か職員を読めなかったときに、権限が無いことを示す文を、ほかの失敗と分けて出すか。
-  - 今の動き: どれも「予定を取得できませんでした。」を出す。
-  - 決める人: 開発者
-  - 期限: #383
-- 権限が無いときと見つからないときに、読み直さずにすぐ文を出すか。
-  - 今の動き: 何度か読み直してから出す。
-  - 決める人: 開発者
-  - 期限: #383
 - 週と日の表示は 6 時から 22 時だけを出す。夜勤のようにその外の時刻にかかる予定を、どう見せるか。
   - 今の動き: 時刻の軸を 6 時から 22 時だけにし、その外にかかる予定の見せ方を決めていない。
   - 決める人: 開発者が、事業所の責任者に確認して決める
@@ -1192,10 +1192,6 @@ URL の `view` の値を選んだ状態で出す。
 
 ### PRD と実装の食い違い
 
-- PRD は、初めて開いたときに、見る権限がある職員の全部を出すとしている。画面は、事業所の全ての職員を出す。
-  - 決める人: 開発者
-  - 期限: #383
 - PRD の時間外の勤務の印を、カレンダーに出していない。
   - 決める人: 開発者が、事業所の責任者に確認して決める
   - 期限: 時間外の勤務を画面で扱うとき
-
