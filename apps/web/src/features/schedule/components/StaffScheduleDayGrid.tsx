@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react'
 
 import type { Staff } from '#/api/types'
 
-import { addMinutesToTimeKey, fromDateKey, nextDayPrefix, toTimeKey } from '../lib/dateTime'
+import { addMinutesToTimeKey, nextDayPrefix, toDateKey, toTimeKey } from '../lib/dateTime'
 import type { ScheduleCalendarEvent } from '../lib/toCalendarEvents'
 import { CancelledMark } from './CancelledMark'
 
@@ -17,9 +17,17 @@ const SLOT_TIMES = Array.from({ length: DAY_MINUTES / SLOT_MINUTES }, (_, i) =>
   addMinutesToTimeKey('00:00', i * SLOT_MINUTES),
 )
 
-/** 表示する日の 0 時からの分を、0 から 24 時間の間に収めて返す。 */
-const minutesInDay = (dayStart: Date, iso: string | Date) =>
-  Math.min(Math.max((new Date(iso).getTime() - dayStart.getTime()) / 60_000, 0), DAY_MINUTES)
+/**
+ * 日時の、表示する日（`YYYY-MM-DD`）の枠の上での位置を、0 時からの分で返す。
+ * 前の日なら 0、翌日以降なら 24 時間にする。夏時間で経過の分と時計の時刻がずれないよう、時計の時と分で数える。
+ */
+const minutesInDay = (date: string, value: string | Date) => {
+  const local = new Date(value)
+  const dateKey = toDateKey(local)
+  if (dateKey < date) return 0
+  if (dateKey > date) return DAY_MINUTES
+  return local.getHours() * 60 + local.getMinutes()
+}
 
 export type StaffScheduleDayGridProps = {
   /** 表示する日。`YYYY-MM-DD` */
@@ -53,8 +61,7 @@ export const StaffScheduleDayGrid = ({
     if (scrollRef.current !== null) scrollRef.current.scrollTop = SCROLL_HOUR * HOUR_HEIGHT_PX
   }, [date])
 
-  const dayStart = fromDateKey(date)
-  const nowMinutes = now === undefined ? undefined : minutesInDay(dayStart, now)
+  const nowMinutes = now === undefined ? undefined : minutesInDay(date, now)
   return (
     <div
       className="h-full overflow-auto bg-surface"
@@ -115,15 +122,15 @@ export const StaffScheduleDayGrid = ({
               .filter(
                 (event) =>
                   event.staffId === staff.id &&
-                  minutesInDay(dayStart, event.end) > minutesInDay(dayStart, event.start),
+                  minutesInDay(date, event.end) > minutesInDay(date, event.start),
               )
               // キャンセルした予定を先に描き、重なる生きている予定を上に出す
               .sort((a, b) => Number(b.cancelled) - Number(a.cancelled))
               .map((event) => {
-                const startMinutes = minutesInDay(dayStart, event.start)
+                const startMinutes = minutesInDay(date, event.start)
                 const top = (startMinutes / 60) * HOUR_HEIGHT_PX
                 const height = Math.max(
-                  ((minutesInDay(dayStart, event.end) - startMinutes) / 60) * HOUR_HEIGHT_PX,
+                  ((minutesInDay(date, event.end) - startMinutes) / 60) * HOUR_HEIGHT_PX,
                   20,
                 )
                 const start = new Date(event.start)
