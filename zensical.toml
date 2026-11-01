@@ -128,3 +128,7 @@ slugify.kwds.case = "lower"
 # 画面仕様書の状態をタブで切り替える
 [project.markdown_extensions.pymdownx.tabbed]
 alternate_style = true
+
+# 2 文字字下げの入れ子の箇条書きを入れ子として読む。Python-Markdown は入れ子に 4 文字を求めるが、文書は 2 文字で書く
+[project.markdown_extensions.mdx_truly_sane_lists]
+nested_indent = 2
