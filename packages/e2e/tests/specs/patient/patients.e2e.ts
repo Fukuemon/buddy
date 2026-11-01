@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 import { LEADER_STATE, LOGIN_STAFF } from '../../fixtures/env'
+import { patientOptionByName } from '../../selectors/patientSelect'
 
 /** 走らせるたびに違う利用者の名前にする。 */
 const newPatientName = (label: string) => `E2E ${label} ${Date.now()}`
@@ -35,9 +36,7 @@ test.describe('利用者の一覧', () => {
       await page.getByTestId('schedule-kind-tab-visit').check()
       await page.getByTestId('schedule-field-patient').click()
       await page.getByTestId('patient-select-search').fill(name)
-      await expect(
-        page.getByTestId(/^patient-select-option-/).filter({ hasText: name }),
-      ).toHaveCount(1)
+      await expect(patientOptionByName(page, name)).toBeVisible()
     })
   })
 
