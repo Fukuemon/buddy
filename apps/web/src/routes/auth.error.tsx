@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { AuthErrorMessage } from '#/components/site/AuthErrorMessage'
 
 const searchSchema = z.object({
-  reason: z.enum(['failed', 'forbidden']).catch('failed'),
+  reason: z.enum(['failed', 'forbidden', 'too_many_attempts']).catch('failed'),
 })
 
 export const Route = createFileRoute('/auth/error')({

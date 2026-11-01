@@ -149,12 +149,13 @@ export const startLogin = async (request: Request, deps: AuthDeps): Promise<Resp
  * GET /auth/callback。認可コードをトークンと交換し、職員を引いてセッションを作り、戻る先へリダイレクトする。
  *
  * state が cookie と合わない、ログインの途中の値が無い、トークンを取れない、のいずれかで /auth/error?reason=failed へ、
+ * ブローカーが試行の回数の上限で拒んだ（error が temporarily_unavailable）ら /auth/error?reason=too_many_attempts へ、
  * 職員が事業所に登録されていなければ /auth/error?reason=forbidden へリダイレクトする。
  */
 export const finishLogin = async (request: Request, deps: AuthDeps): Promise<Response> => {
   const url = new URL(request.url)
   const clearLogin = cookie(deps, LOGIN_COOKIE, '', 0)
-  const fail = (reason: 'failed' | 'forbidden', cause: string) => {
+  const fail = (reason: 'failed' | 'forbidden' | 'too_many_attempts', cause: string) => {
     console.warn(JSON.stringify({ msg: 'login failed', reason, cause }))
     return redirect(`/auth/error?reason=${reason}`, [clearLogin])
   }
@@ -166,6 +167,9 @@ export const finishLogin = async (request: Request, deps: AuthDeps): Promise<Res
   if (state === null || state !== cookieState) return fail('failed', 'state mismatch')
   const tx = await deps.store.take<LoginTransaction>(loginKey(state))
   if (tx === undefined) return fail('failed', 'login transaction not found')
+  // ブローカーの TooManyAttempts の reject。ほかの reject は、トークンと交換できずに failed になる
+  if (url.searchParams.get('error') === 'temporarily_unavailable')
+    return fail('too_many_attempts', 'broker: too many attempts')
   let tokens: Tokens
   try {
     tokens = await deps.oidc.exchangeCode(url, {

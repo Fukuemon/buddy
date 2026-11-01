@@ -199,11 +199,11 @@ func (h handler) submitEmail(w http.ResponseWriter, r *http.Request) {
 	}
 	email := strings.ToLower(strings.TrimSpace(r.PostFormValue("email")))
 	if !h.Limiter.Allow(clientAddr(r, h.ClientIPHeader)) {
-		h.reject(w, r, challenge, "送信元の IP アドレスの試行の回数の上限を超えた", nil)
+		h.rejectAs(w, r, challenge, hydra.TooManyAttempts, "送信元の IP アドレスの試行の回数の上限を超えた", nil)
 		return
 	}
 	if !h.EmailLimiter.Allow(email) {
-		h.reject(w, r, challenge, "メールの試行の回数の上限を超えた", nil)
+		h.rejectAs(w, r, challenge, hydra.TooManyAttempts, "メールの試行の回数の上限を超えた", nil)
 		return
 	}
 	found, err := h.Staff.FindByEmail(ctx, email)
@@ -363,8 +363,13 @@ func (h handler) accept(w http.ResponseWriter, r *http.Request, challenge, staff
 // reject は、ログインを拒んで web へ返す。web はログインの失敗の画面を出す。
 // 理由はログにだけ書き、登録されていないメールと照合できなかった職員を、画面で区別できないようにする。
 func (h handler) reject(w http.ResponseWriter, r *http.Request, challenge, reason string, cause error) {
+	h.rejectAs(w, r, challenge, hydra.AccessDenied, reason, cause)
+}
+
+// rejectAs は、ログインを body で拒んで web へ返す。body の Error が web に渡り、web が出す文を分ける。
+func (h handler) rejectAs(w http.ResponseWriter, r *http.Request, challenge string, body hydra.Rejection, reason string, cause error) {
 	h.Logger.WarnContext(r.Context(), "ログインを拒む", "reason", reason, "error", cause)
-	to, err := h.Hydra.RejectLogin(r.Context(), challenge, hydra.AccessDenied)
+	to, err := h.Hydra.RejectLogin(r.Context(), challenge, body)
 	h.redirect(w, r, to, err)
 }
 

@@ -77,6 +77,7 @@ type fakeHydra struct {
 	accepted    *hydra.AcceptLogin
 	consented   *hydra.AcceptConsent
 	rejected    bool
+	rejection   hydra.Rejection
 	rejectedCon bool
 	logoutErr   error
 	loggedOut   string
@@ -91,8 +92,9 @@ func (f *fakeHydra) AcceptLogin(_ context.Context, _ string, b hydra.AcceptLogin
 	return "http://hydra/login-accepted", nil
 }
 
-func (f *fakeHydra) RejectLogin(context.Context, string, hydra.Rejection) (string, error) {
+func (f *fakeHydra) RejectLogin(_ context.Context, _ string, b hydra.Rejection) (string, error) {
 	f.rejected = true
+	f.rejection = b
 	return "http://hydra/login-rejected", nil
 }
 
@@ -315,6 +317,9 @@ func TestSubmitEmailRejects(t *testing.T) {
 			if got := location(t, rec); got != "http://hydra/login-rejected" {
 				t.Errorf("Location = %q, want reject", got)
 			}
+			if e.hydra.rejection != hydra.AccessDenied {
+				t.Errorf("rejection = %+v, want 上限と分けない reject", e.hydra.rejection)
+			}
 			if len(e.upstream.orgs) != 0 || len(rec.Result().Cookies()) != 0 {
 				t.Errorf("上流の IdP へリダイレクトした: orgs = %v", e.upstream.orgs)
 			}
@@ -330,8 +335,8 @@ func TestSubmitEmailRateLimit(t *testing.T) {
 			t.Errorf("%d 回目のリダイレクト先 = %v, want %s", i+1, to, want)
 		}
 	}
-	if !e.hydra.rejected {
-		t.Error("上限を超えた試行を拒んでいない")
+	if e.hydra.rejection != hydra.TooManyAttempts {
+		t.Errorf("rejection = %+v, want 上限を超えたことを分けた reject", e.hydra.rejection)
 	}
 }
 
@@ -393,6 +398,9 @@ func TestSubmitEmailRateLimitPerEmail(t *testing.T) {
 		if err != nil || to.Host != want {
 			t.Errorf("%d 回目のリダイレクト先 = %v, want %s", i+1, to, want)
 		}
+	}
+	if e.hydra.rejection != hydra.TooManyAttempts {
+		t.Errorf("rejection = %+v, want 上限を超えたことを分けた reject", e.hydra.rejection)
 	}
 	if to, _ := url.Parse(location(t, e.submit("ueno@example.com"))); to.Host != "org-b.example.com" {
 		t.Errorf("別のメールまで止めた: %v", to)
