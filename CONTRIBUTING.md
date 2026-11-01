@@ -80,9 +80,12 @@ docker compose up --build --wait
 - シードの職員のメールは次のとおり。
   - 1 つ目の事業所（組織 `org-sample`）: `hina.aoki@example.com`（青木 陽菜、マネージャー）、`kenta.mori@example.com`（森 健太、チームリーダー）
     - ほかに `sakura.hayashi@example.com` と `misaki.sato@example.com` がいる
-    - `yui.nakamura@example.com`（中村 結衣、事務）は訪問しない職員である。予定のカレンダーの職員の列と、予定と担当の候補に出ない。照合の画面を開ける
+    - `yui.nakamura@example.com`（中村 結衣、事務）は訪問しない職員である
+      - 予定のカレンダーの職員の列と、予定と担当の候補に出ない。
+      - 照合の画面を開ける。
   - 2 つ目の事業所（組織 `org-sample-b`）: `nagisa.ueno@example.com`（上野 渚、マネージャー）
-    - ほかに、休職の職員の `takumi.ono@example.com`（小野 拓海）がいる。ログインの失敗の画面になる
+    - ほかに、休職の職員の `takumi.ono@example.com`（小野 拓海）がいる
+      - ログインすると、ログインの失敗の画面になる。
   - シードは、空の DB にだけ適用される。
     - シードを変えた後は、`docker compose down -v` で作り直す。
 - 照合の画面で、予定の取り方に「Google カレンダー」を、対象の月に `2026-11` を選ぶと、calendarpit の森 健太のカレンダーの予定で照合できる。
@@ -113,7 +116,8 @@ curl -H "Authorization: Bearer $TOKEN" -F visits=@services/receipt/testdata/visi
 公開したドキュメントサイトからは呼べない。
 
 1. `docker compose up --build --wait schedule receipt` で API を立てる。
-2. `uv run zensical serve` で、ドキュメントサイトを `http://localhost:8000` で開く。`127.0.0.1` で開くと CORS で失敗する。
+2. `uv run zensical serve` で、ドキュメントサイトを `http://localhost:8000` で開く。
+   - `127.0.0.1` で開くと、CORS で失敗する。
 3. 「API の仕様」のページで操作を選び、「Test Request」を押す。
 4. `$TOKEN` の値を「Bearer Token」の欄に貼り、「Send」を押す。
 
@@ -129,13 +133,16 @@ pnpm e2e
 
 - 書いたら `pnpm --filter @buddy/e2e check` を流す。
 - 環境変数と、テストのデータの扱いは [E2E のテスト](context/testing/e2e.md) にある。
-- エビデンスの動画を撮る spec は、`pnpm e2e` では流れない。撮るコマンドは [エビデンス](context/testing/evidence.md) の Capture Environment にある。
-- 失敗したテストの trace は `packages/e2e/test-results/` に残る。`pnpm --filter @buddy/e2e exec playwright show-trace <trace.zip>` で開く。
+- エビデンスの動画を撮る spec は、`pnpm e2e` では流れない。
+  - 撮るコマンドは [エビデンス](context/testing/evidence.md) の Capture Environment にある。
+- 失敗したテストの trace は `packages/e2e/test-results/` に残る。
+  - `pnpm --filter @buddy/e2e exec playwright show-trace <trace.zip>` で開く。
   - trace.zip は、`packages/e2e` からの相対パス（Playwright が出す `test-results/...`）で渡す。
 
 ## Docs Site
 
-pull request ではプレビューを出さない。develop に入ると本番に出る。  
+pull request では、ドキュメントサイトのプレビューを出さない。  
+変更が develop に入ると、本番のドキュメントサイトに出る。  
 ADR-0019: [ドキュメントサイトのプレビューをやめ、トークンの組のコントラストを pnpm check:contrast で確認する](docs/adr/0019-docs-site-publish-and-contrast-check.md)
 
 - マージする前に公開した形で見るときは、ルートでサイトを組み立て、静的なファイルとして配信して開く。
@@ -145,12 +152,14 @@ ADR-0019: [ドキュメントサイトのプレビューをやめ、トークン
   uv run python -m http.server 8002 --bind 127.0.0.1 -d apps/docs-site/public   # http://127.0.0.1:8002 で開く
   ```
 
-- ER 図だけを見るときは、`erd/` を作って配信する。テーブルを変えたときは、先に `pnpm generate:db-docs` を流す。
+- ER 図だけを見るときは、`erd/` を作って配信する。
 
   ```sh
   pnpm build:erd
   uv run python -m http.server 8001 --bind 127.0.0.1 -d erd   # http://127.0.0.1:8001 で開く
   ```
+
+  - テーブルを変えたときは、先に `pnpm generate:db-docs` を流す。
 
 - デプロイの構成と Cloudflare のセットアップは、[apps/docs-site/README.md](apps/docs-site/README.md) にある。
 
@@ -161,11 +170,13 @@ uv run zensical serve   # http://localhost:8000 で読みながら直す
 uv run zensical build   # 出力の最後が "No issues found" になることを確認する
 ```
 
-- `zensical build` の "Warning" が残ったままマージしない。リンクの先のページか見出しのアンカーがないと出る。
+- `zensical build` の "Warning" が残ったままマージしない。
+  - "Warning" は、リンクの先のページか見出しのアンカーがないと出る。
 - ページを足したら、`zensical.toml` の `nav` に足す。
 - 機能ごとの Design Doc の配置先、サイトへの載せ方、リンクの書き方は、[コードと文書の規約](context/conventions.md#documents) にある。
 - 画面仕様書かモックを直したときと、story の `title` か export の名前を変えたときは、`pnpm check:screens` を流す。
-  - 1 つの画面だけを見るときは `node scripts/check-screens.mjs docs/screens/<ディレクトリ>` を流す。この形では、E2E の testid の照合は流れない。
+  - 1 つの画面だけを見るときは `node scripts/check-screens.mjs docs/screens/<ディレクトリ>` を流す。
+    - ディレクトリを指定すると、E2E の testid の照合は流れない。
   - モックの `data-testid` を実装に合わせるときは、実装の testid を `rg -n 'data-testid' apps/web/src` で集める。
 
 文書のチェックは次の 3 つ。
@@ -176,10 +187,12 @@ node .claude/hooks/docs/hooks/check-history.mjs
 node .claude/hooks/docs/hooks/check-links.mjs
 ```
 
-- textlint に指摘された語は言い換え、`--fix` は使わない。
+- textlint に指摘された語は言い換える。
+- textlint の `--fix` は使わない。
 - プロジェクトの用語と見出しの語が指摘されたときは、言い換えずに、`.textlintrc.json` の `allows` に足すかをメンテナーと決める。
 
-`verified_commit` の後に実装が変わった文書は、`node .claude/hooks/docs/hooks/list-drift.mjs` で一覧する。実装と読み比べてから `verified_commit` を進める。
+`verified_commit` の後に実装が変わった文書は、`node .claude/hooks/docs/hooks/list-drift.mjs` で一覧する。  
+実装と読み比べてから `verified_commit` を進める。
 
 ## Editing the Design System
 
@@ -243,8 +256,10 @@ pull request では、CI（[ci.yml](.github/workflows/ci.yml)）が通るまで�
 ブランチは、`main`、`develop`、issue ごとの作業用のブランチにする。  
 ADR-0003: [git flow でマージし、アプリごとのバージョンでリリースする](docs/adr/0003-branch-and-release.md)
 
-- `main` はリリース済みの状態を指す。`develop` は次のリリースに向けて変更を集める。
-- `develop` の状態を検証環境に、`main` の状態を本番環境に反映する。環境ごとの用途は [基盤と運用](context/operations.md#environments) にある。
+- `main` はリリース済みの状態を指す。
+- `develop` は、次のリリースに向けて変更を集める。
+- `develop` の状態を検証環境に、`main` の状態を本番環境に反映する。
+  - 環境ごとの用途は [基盤と運用](context/operations.md#environments) にある。
   - 検証環境で確認する前の変更と、外部の人が試す変更は、ローカルの compose で確認する。
   - 検証環境と本番環境は、外部の人は開けない。
 - 作業用のブランチは `develop` から切る。
@@ -254,7 +269,8 @@ ADR-0003: [git flow でマージし、アプリごとのバージョンでリリ
   - タグは `<ディレクトリ>/vX.Y.Z`（`apps/web/v1.0.0`、`services/schedule/v1.0.0` など）の形にする。
   - バージョンはセマンティック バージョニングに従う。
 - リリース後の緊急の修正は、`main` から `hotfix/<issue 番号>` を切り、`main` と `develop` の両方へマージする。
-- 保護するブランチは `main`、`develop` である。直接はコミットせず、pull request を通してマージする。
+- 保護するブランチは `main` と `develop` である。
+  - 直接はコミットせず、pull request を通してマージする。
 
 ```mermaid
 gitGraph
@@ -301,7 +317,8 @@ gitGraph
   - 対象と格納先は [エビデンス](context/testing/evidence.md) に、撮り方と本文への入れ方はスキル attach-evidence にある。
 - レビューの指摘に対応してから、[Merging and Cleanup](#merging-and-cleanup) の手順でマージする。
   - Codex のボットは、pull request を開いたときにレビューする。
-    - もう一度頼むときは、直したコミットを示す返信の末尾に `@codex review` と書く。`@codex review` だけのコメントを作らない。
+    - もう一度頼むときは、直したコミットを示す返信の末尾に `@codex review` と書く。
+      - `@codex review` だけのコメントを作らない。
   - Codex が使用量の上限に達したときは、頼み直さずに、読み取りだけのサブエージェントでレビューする。
   - サブエージェントのレビューの結果は、1 つのコメントにまとめ、指摘ごとに重要度を付ける。
     - 重要度は、must（マージの前に直す誤り）、imo（直すとよい提案）、nits（表記の小さな直し）、ask（書き手への問い）の 4 つにする。
@@ -324,4 +341,5 @@ gitGraph
 7. 作業用の worktree を `wt remove <ブランチ>` で消す。
    - ブランチが残ったときは、手順 5 で `MERGED` を確認していれば、`wt remove -D <ブランチ>` で消してよい。
 
-`hotfix/<issue 番号>` の pull request は `main` へマージするので、`Closes` を書いても issue が閉じない。`Closes` は、`develop` へマージする側の pull request に書く。
+`hotfix/<issue 番号>` の pull request は `main` へマージするので、`Closes` を書いても issue が閉じない。  
+`Closes` は、`develop` へマージする側の pull request に書く。
