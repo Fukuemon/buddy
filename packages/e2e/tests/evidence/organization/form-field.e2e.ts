@@ -51,11 +51,10 @@ test.describe('部署とチームの入力の欄', () => {
           await page.getByTestId('organization-list-department-new').click()
           const dialog = page.getByTestId('organization-list-department-dialog')
           await dialog.getByTestId('organization-list-department-submit').click()
-          await expect(dialog.getByTestId('organization-list-department-error-name')).toBeVisible()
-          await expect(dialog.getByTestId('organization-list-department-name')).toHaveAttribute(
-            'aria-invalid',
-            'true',
-          )
+          // 誤りの文の testid は画面仕様書のモックにチームの分しか無いので、欄に結び付いた説明の文で確認する
+          const name = dialog.getByTestId('organization-list-department-name')
+          await expect(name).toHaveAccessibleDescription('名前を入れてください')
+          await expect(name).toHaveAttribute('aria-invalid', 'true')
           await check('名前の欄の下に誤りの文が出て、名前の欄の枠が赤く太くなる')
         },
       )
