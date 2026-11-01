@@ -30,7 +30,11 @@ func TestLookupBoundaries(t *testing.T) {
 		{"訪看I５２超", 41, 60},
 		{"予防看I５・２超", 41, 60},
 		{"予訪看I５・２超", 41, 60},
+		{"予防訪看I５・２超", 41, 60},
 		{"予防訪看I５２超", 41, 60},
+		{"訪看I２・夜", 20, 29},
+		{"訪看I３・深", 30, 59},
+		{"予訪看I５・２超・夜", 41, 60},
 		{"基本療養費", 30, 90},
 		{"医", 30, 90},
 		{"難病等複数回訪問加算(２回)", 30, 90},
@@ -63,7 +67,7 @@ func TestLookupBoundaries(t *testing.T) {
 }
 
 func TestLookupUnknown(t *testing.T) {
-	for _, s := range []string{"", "訪看I１", "予防訪看I５・２超", "訪看I2", "精神科訪看"} {
+	for _, s := range []string{"", "訪看I１", "訪看I１・夜", "訪看I2", "訪看I２・早", "精神科訪看"} {
 		if _, ok := Lookup(s); ok {
 			t.Errorf("%q に範囲がある", s)
 		}
@@ -81,6 +85,7 @@ func TestAdjustsScheduleEnd(t *testing.T) {
 		"訪看I２", "予防看I２", "予訪看I２", "予防訪看I２",
 		"訪看I３", "予防看I３", "予訪看I３", "予防訪看I３",
 		"訪看I４", "予防看I４", "予訪看I４", "予防訪看I４",
+		"訪看I２・夜", "予訪看I３・深",
 	}
 	for _, s := range adjusted {
 		if !AdjustsScheduleEnd(s) {
@@ -101,6 +106,9 @@ func TestServiceMatches(t *testing.T) {
 	}{
 		{"訪看I２", "訪看I２", true},
 		{"訪看I２", "訪看I３", false},
+		{"訪看I２", "訪看I２・夜", true},
+		{"訪看I２・深", "訪看I２", true},
+		{"訪看I２", "訪看I３・夜", false},
 		{"医", "基本療養費(I)", true},
 		{"医", "難病等複数回訪問加算(２回)", true},
 		{"医", "訪看I２", false},
@@ -110,6 +118,21 @@ func TestServiceMatches(t *testing.T) {
 	for _, tt := range tests {
 		if got := ServiceMatches(tt.schedule, tt.visit); got != tt.want {
 			t.Errorf("ServiceMatches(%q, %q) = %v, want %v", tt.schedule, tt.visit, got, tt.want)
+		}
+	}
+}
+
+func TestBase(t *testing.T) {
+	tests := []struct{ in, want string }{
+		{"訪看I２・夜", "訪看I２"},
+		{"予訪看I３・深", "予訪看I３"},
+		{"訪看I５・２超・夜", "訪看I５・２超"},
+		{"訪看I５・２超", "訪看I５・２超"},
+		{"夜・訪看I２", "夜・訪看I２"},
+	}
+	for _, tt := range tests {
+		if got := Base(tt.in); got != tt.want {
+			t.Errorf("Base(%q) = %q, want %q", tt.in, got, tt.want)
 		}
 	}
 }

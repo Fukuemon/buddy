@@ -2,6 +2,7 @@
 package inmem
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"slices"
@@ -137,9 +138,35 @@ type Teams struct{ *Store }
 // Get は、チームを返す。
 func (s Teams) Get(_ context.Context, id string) (organization.Team, error) { return get(s.Teams, id) }
 
-// ListByFacility は、常に空を返す。
-func (s Teams) ListByFacility(context.Context, string) ([]organization.Team, error) {
-	return nil, nil
+// ListByFacility は、事業所 facilityID のチームを名前、ID の順に返す。
+func (s Teams) ListByFacility(_ context.Context, facilityID string) ([]organization.Team, error) {
+	var out []organization.Team
+	for _, t := range s.Teams {
+		if t.FacilityID == facilityID {
+			out = append(out, t)
+		}
+	}
+	slices.SortFunc(out, func(a, b organization.Team) int {
+		return cmp.Or(cmp.Compare(a.Name, b.Name), cmp.Compare(a.ID, b.ID))
+	})
+	return out, nil
+}
+
+// Update は、チーム t.ID の名前と色を t の値にする。チームが無ければ apperr.ErrNotFound を、
+// 同じ事業所にほかの名前が完全に一致するチームがあれば apperr.ErrConflict を返す。
+func (s Teams) Update(_ context.Context, t organization.Team) error {
+	cur, ok := s.Teams[t.ID]
+	if !ok {
+		return apperr.ErrNotFound
+	}
+	for _, other := range s.Teams {
+		if other.ID != t.ID && other.FacilityID == cur.FacilityID && other.Name == t.Name {
+			return apperr.ErrConflict
+		}
+	}
+	cur.Name, cur.Color = t.Name, t.Color
+	s.Teams[t.ID] = cur
+	return nil
 }
 
 // Create は、チームを保存する。同じ事業所に名前が完全に一致するチームがあれば apperr.ErrConflict を返す。

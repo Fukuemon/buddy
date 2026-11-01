@@ -8,7 +8,7 @@ import { fillApiToken, openApiClient } from '../../screens/apiReference'
 import { signInAtBroker } from '../../screens/login'
 import { apiClient } from '../../selectors/apiReference'
 
-/** 照合の権限（receipt.check）。予定の API のマイグレーション（000008）が入れる。 */
+/** 照合の権限（receipt.check）。予定の API のマイグレーション（000009）が入れる。 */
 const RECEIPT_CHECK_POLICY = '01M69C7BNKSXX7PPWX7SWZGFWK'
 
 /** 予定の API のシードの、1 つ目の事業所の事務の役職。デフォルトの権限に照合の権限を持つ。 */

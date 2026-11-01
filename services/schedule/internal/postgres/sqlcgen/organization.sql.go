@@ -40,17 +40,23 @@ func (q *Queries) CreatePosition(ctx context.Context, arg CreatePositionParams) 
 }
 
 const createTeam = `-- name: CreateTeam :exec
-INSERT INTO teams (id, facility_id, name) VALUES ($1, $2, $3)
+INSERT INTO teams (id, facility_id, name, color) VALUES ($1, $2, $3, $4)
 `
 
 type CreateTeamParams struct {
 	ID         string
 	FacilityID string
 	Name       string
+	Color      string
 }
 
 func (q *Queries) CreateTeam(ctx context.Context, arg CreateTeamParams) error {
-	_, err := q.db.Exec(ctx, createTeam, arg.ID, arg.FacilityID, arg.Name)
+	_, err := q.db.Exec(ctx, createTeam,
+		arg.ID,
+		arg.FacilityID,
+		arg.Name,
+		arg.Color,
+	)
 	return err
 }
 
@@ -143,7 +149,7 @@ func (q *Queries) GetPosition(ctx context.Context, id string) (Position, error) 
 }
 
 const getTeam = `-- name: GetTeam :one
-SELECT id, facility_id, name, created_at, updated_at FROM teams WHERE id = $1
+SELECT id, facility_id, name, created_at, updated_at, color FROM teams WHERE id = $1
 `
 
 func (q *Queries) GetTeam(ctx context.Context, id string) (Team, error) {
@@ -155,6 +161,7 @@ func (q *Queries) GetTeam(ctx context.Context, id string) (Team, error) {
 		&i.Name,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Color,
 	)
 	return i, err
 }
@@ -328,7 +335,7 @@ func (q *Queries) ListPositionsByFacility(ctx context.Context, facilityID string
 }
 
 const listTeamsByFacility = `-- name: ListTeamsByFacility :many
-SELECT id, facility_id, name, created_at, updated_at FROM teams WHERE facility_id = $1 ORDER BY name, id
+SELECT id, facility_id, name, created_at, updated_at, color FROM teams WHERE facility_id = $1 ORDER BY name, id
 `
 
 func (q *Queries) ListTeamsByFacility(ctx context.Context, facilityID string) ([]Team, error) {
@@ -346,6 +353,7 @@ func (q *Queries) ListTeamsByFacility(ctx context.Context, facilityID string) ([
 			&i.Name,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Color,
 		); err != nil {
 			return nil, err
 		}
@@ -355,4 +363,22 @@ func (q *Queries) ListTeamsByFacility(ctx context.Context, facilityID string) ([
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateTeam = `-- name: UpdateTeam :execrows
+UPDATE teams SET name = $2, color = $3, updated_at = now() WHERE id = $1
+`
+
+type UpdateTeamParams struct {
+	ID    string
+	Name  string
+	Color string
+}
+
+func (q *Queries) UpdateTeam(ctx context.Context, arg UpdateTeamParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateTeam, arg.ID, arg.Name, arg.Color)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
