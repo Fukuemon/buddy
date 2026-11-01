@@ -28,3 +28,19 @@
 - サービスコードの一覧と提供時間の範囲は、画面が持つ定数（`apps/web/src/features/schedule/constants/scheduleLabels.ts`）を使う。`listServiceCodes` の範囲は使っていない。
 - 予定の一覧の取得の結果は、保存に成功したときに捨てて取り直す（`listSchedules`）。
 - `listUsers` は、休職と退職の職員も返す。この画面は、`status` を持つ職員と、`visits` が false の職員を担当者の候補から除く。予定の職員の名前は、休職と退職の職員と、訪問しない職員も含めた一覧で探す。
+- 予定の取得は、予定の詳細と同じく、web のサーバーが `facility_id` の違いを 403 にし、繰り返しの予定の回を `getRecurringSchedule` で読む（[予定の詳細の API との対応](../schedule-detail_予定の詳細/api.md)）。
+- 繰り返しの予定の回を保存すると、`updateSchedule` の代わりに `changeOccurrence` でその回を単発の予定に置き換える。パスは `POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences` である。
+- キャンセルした予定は、`updateSchedule` が 409 で拒む。画面はキャンセルした予定のフォームを出さないので、保存まで進まない。
+
+## 状態と失敗の要因
+
+| 状態 | 出す文 | 要因 |
+| --- | --- | --- |
+| 読み込みの失敗 | 「予定を取得できませんでした。」 | `getSchedule`、`getRecurringSchedule`、`listUsers`、`listPatients` のどれかが失敗（400、403、404、500）。予定の `facility_id` がログインした職員の事業所と違う（web のサーバーが 403 にする）。API に届かない |
+| 読み込み中 | なし（ログインの画面へ移るまで続く） | 読み込みの操作が 401 |
+| 保存の失敗 | 「予定を更新できませんでした。」 | `updateSchedule` か `changeOccurrence` が失敗（400、403、404、409、500）。保存の前の `getSchedule` の読み直しか、マスタ（`listScheduleTypes`、`listServiceCodes`、`listVisitCategories`）の取得が失敗。選んだ値に当たるマスタが無い。API に届かない |
+| 送信中 | なし（ログインの画面へ移るまで続く） | 保存の操作が 401 |
+
+- 読み込みの失敗の文は `apps/web/src/features/schedule/components/ScheduleEditModalContainer.tsx` が、status によらず 1 つの文にする。保存の失敗の文も、同じファイルが status によらず 1 つの文にする。
+- 400 の `invalid_input` には、休職か退職の職員か、訪問しない職員を新しく割り振ったとき（ADR-0022）と、利用の終了の利用者を新しく指したときを含む。
+- 読み込みの失敗は、TanStack Query のデフォルトで 3 回取り直してから出す。404 と 403 も取り直す。

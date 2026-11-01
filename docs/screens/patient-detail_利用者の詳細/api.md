@@ -34,6 +34,22 @@
 | `resumePatientService` | `POST /v1/patients/{patient_id}/resume_service` | `assigned_staff_id` | 200。`Patient` | 400 `invalid_input`: 担当に休職か退職の職員か、訪問しない職員を指した |
 | `listServiceCodes`、`listUsers` | [利用者の登録の API との対応](../patient-new_利用者の登録/api.md) と同じ | | | |
 
+- `listServiceCodes` と `listUsers` は、画面を開いたときに `getPatient` と一緒に呼ぶ。「読み込み中」の状態は `getPatient` だけを待つ。どちらかが失敗していれば、ダイアログを開くときに呼び直す。
 - `getPatientRemainingSchedules` は、利用の終了のダイアログを開いたときに呼ぶ。レスポンスは、`endPatientService` の 409 が返す `PatientSchedules` と同じ形で、事業所の現地の日付で今日以降のものを返す。
 - `updatePatient` は部分の更新を持たないので、画面は変えない項目も今の値で送る。担当の職員を変えなければ、今の担当が休職か退職でも拒まれない。
 - `resumePatientService` は、利用中の利用者に送っても成功し、担当を書き換える。画面は、利用の終了の利用者のときだけ利用を再開するを出す。
+
+## 状態と失敗の要因
+
+| 状態 | 出す文 | 要因 |
+| --- | --- | --- |
+| 読み込みの失敗 | 「利用者が見つかりませんでした。利用者の一覧から開き直してください。」 | `getPatient` が 404 |
+| 読み込みの失敗 | 「利用者を読み込めませんでした。時間をおいて、読み直してください。」 | `getPatient` が 404 のほかの失敗、API に届かない |
+| 利用者の編集 | 利用者の登録の登録の失敗の文の「登録」を「保存」に替えたもの | `updatePatient` の失敗。[利用者の登録の対応](../patient-new_利用者の登録/api.md#状態と失敗の要因) と同じ |
+| 利用の終了を拒む | 残る予定の一覧 | `endPatientService` が 409 の `patient_has_schedules` |
+| 利用の終了の確認 | 「この操作をする権限がありません。」 | `endPatientService` が 403 |
+| 利用の再開 | 「選んだ担当の職員は、休職か退職になりました。別の職員を選んでください。」 | `resumePatientService` が 400 |
+| 利用の再開 | 「この操作をする権限がありません。」 | `resumePatientService` が 403 |
+
+- 文を選ぶ処理は `apps/web/src/features/patient/lib/errorMessage.ts` にある。
+  - 保存は `patientSubmitErrorMessage`、利用の終了は `endServiceErrorMessage`、利用の再開は `resumeServiceErrorMessage` が選ぶ。

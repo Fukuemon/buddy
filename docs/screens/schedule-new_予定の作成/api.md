@@ -34,3 +34,13 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 - 担当者は、今は `staff_id`（予定の職員）と `visit_info.assigned_staff_id`（訪問の担当）の両方に同じ職員を送る（`apps/web/src/api/http/scheduleMapper.ts`）。OpenAPI は両方を必須にしている。
 - `listUsers` は、休職と退職の職員も返す。この画面は、`status` を持つ職員と、`visits` が false の職員を担当者の候補から除く。
 - `createSchedule` は、`staff_id` か `visit_info.assigned_staff_id` が休職か退職の職員か、訪問しない職員を指すと 400 を返す（ADR-0022）。
+
+## 状態と失敗の要因
+
+| 状態 | 出す文 | 要因 |
+| --- | --- | --- |
+| 作成の失敗 | 「予定を作成できませんでした。」 | `createSchedule` が失敗（400、403、500）。400 は、休職か退職の職員か、訪問しない職員を担当者にしたときと、利用の終了の利用者を指したときを含む。マスタ（`listScheduleTypes`、`listServiceCodes`、`listVisitCategories`）の取得が失敗。選んだ値に当たるマスタが無い。API に届かない |
+| 送信中 | なし（ログインの画面へ移るまで続く） | `createSchedule` か、マスタの取得が 401 |
+| 選択肢が無い | なし | `listUsers` か `listPatients` が失敗したか、終わっていない。読み込みの失敗の文は出さない |
+
+- 作成の失敗の文は `apps/web/src/features/schedule/components/ScheduleCreateModalContainer.tsx` が、status によらず 1 つの文にする。

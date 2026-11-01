@@ -20,6 +20,29 @@ web は `BuddyApi.calendars`（`apps/web/src/api/client.ts`）で API を呼ぶ�
 | ダイアログの外す | なし | `calendars.unlink` | `removeExternalCalendar` |
 | 確認の結果 | 状態ごとの文 | `ApiError.status`、`ApiError.code` | レスポンスの status と `Error.code` |
 
+## 状態と失敗の要因
+
+| 状態 | 出す文 | 要因 |
+| --- | --- | --- |
+| 権限が無い | 「この画面を開く権限がありません」 | `getMe` の `policies[].code` に `staff.manage` が無い。web は、ほかの操作を呼ばない |
+| 準備ができていない | 「この事業所では、まだ Google カレンダーを使う準備ができていません。事業所の管理者に、設定を頼んでください。」 | `getCalendarServiceAccount` が 503 `calendar_not_configured` |
+| 読み込みの失敗 | 「この操作をする権限がありません。」 | `listUsers`、`listExternalCalendars`、`getCalendarServiceAccount` のどれかが 403 |
+| 読み込みの失敗 | 「職員とカレンダーを読み込めませんでした。時間をおいて、読み直してください。」 | `listUsers`、`listExternalCalendars` のどちらかが 403 以外の失敗か、`getCalendarServiceAccount` が 403 と 503 `calendar_not_configured` 以外の失敗。API に届かないときを含む |
+| 読めない | 「この操作をする権限がありません。」 | `createExternalCalendarCheck` か `createExternalCalendar` が 403 |
+| 読めない | 「このカレンダーを読めません。カレンダーが、上に出ている buddy のメールアドレスに共有されているかと、カレンダーの ID が合っているかを確認してください。」 | 422 `calendar_unreadable` |
+| 読めない | 「このカレンダーは、ほかの職員に結び付いています。」 | `createExternalCalendar` が 409 `calendar_taken` |
+| 読めない | 「この職員には、ほかのカレンダーが結び付いています。一覧を読み直してください。」 | `createExternalCalendar` が 409 `staff_has_calendar` |
+| 読めない | 「このカレンダーは、この職員にすでに結び付いています。一覧を読み直してください。」 | `createExternalCalendar` が 409 `calendar_already_linked` |
+| 読めない | 「Google カレンダーに届きませんでした。時間をおいて、もう一度確認してください。」 | 502 `calendar_unavailable` |
+| 読めない | 「確認できませんでした。時間をおいて、もう一度確認してください。」 | ほかの失敗（400 `invalid_input`、503 `calendar_not_configured`、API に届かないときを含む） |
+| 外すダイアログ | 「この操作をする権限がありません。」 | `removeExternalCalendar` が 403 |
+| 外すダイアログ | 「外せませんでした。時間をおいて、もう一度外してください。」 | `removeExternalCalendar` が 403 以外の失敗（404 `not_found` を含む） |
+
+- 文を選ぶ処理は、`apps/web/src/features/calendar/lib/errorMessage.ts` にある。
+  - `loadErrorMessage`、`linkErrorMessage`、`unlinkErrorMessage` が文を選ぶ。
+- 準備ができていないことは、`apps/web/src/features/calendar/queries.ts` の `serviceAccountQueryOptions` が決める。
+  - `getCalendarServiceAccount` の 503 `calendar_not_configured` を、メールアドレスが無いこと（`null`）にする。
+
 ## 操作
 
 全ての操作は、事業所の確認の後に、ログインした職員が職員の管理の権限（`staff.manage`）を持つかを確認し、持たなければ 403（`forbidden`）を返す。

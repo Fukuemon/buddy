@@ -1,7 +1,7 @@
 ---
 type: feature-design
 title: 職員の管理
-description: 予定の API での職員の登録、休職、復職、退職の手順と、休職と退職の前の残る一覧、職員の管理で返す 409 のエラー
+description: 予定の API での職員の登録、休職、復職、退職の手順と、休職と退職の前の残る一覧、職員の管理の画面の読み込みと権限の保存、職員の管理で返す 409 のエラー
 status: stable
 governs: services/schedule/internal/staff
 verified_commit: 4e53ca5
@@ -21,6 +21,7 @@ verified_commit: 4e53ca5
 
 - 職員の登録、休職、復職、退職の手順
 - 休職と退職を確定する前の残る一覧
+- 職員の管理の画面が職員と選択肢を読む時点と、権限の保存の送り方
 
 持たないもの
 
@@ -60,6 +61,29 @@ verified_commit: 4e53ca5
 - 2 か所の書き込みの順と、片方だけが残ったときの扱いは、[ID ブローカーの Design Doc の職員の登録、休職、復職、退職](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#職員の登録休職復職退職) にある。
 - ADR-0017: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0017-identity-boundary.md)
 - ADR-0018: [職員の停止を、戻せる休職と、戻せない退職に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0018-staff-leave-and-retirement.md)
+
+### 職員の管理の画面の読み込みと保存
+
+職員の一覧、職員の登録、職員の詳細の画面は、ログインした職員が職員の管理の権限（`staff.manage`）を持つかを、ルートの context の `Viewer.canManageStaff` で判定する。  
+持たなければ、職員の API を呼ばずに `PageForbiddenMessage` を出す。職員の登録は何も出さず、下の職員の一覧が権限の無いことを示す。  
+この判定は表示のためだけで、変える操作は予定の API が [予定の認可](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md#予定の認可) で拒む。
+
+- 職員の一覧（`StaffListContainer`）は、`listUsers` で休職と退職を含む事業所の全ての職員を読み、`listTeams`、`listPositions`、`listDepartments` で絞り込みの選択肢を読む。
+  - 名前の検索、チーム、役職、部署、状態の絞り込みと並び順は、読んだ職員を `filterStaff` が画面で決める。絞り込むたびに API を呼ばない。
+  - `listUsers` に状態の絞り込みと名前の一部での検索が無いためである。
+- 職員の登録（`StaffCreateDialogContainer`）は、開いたときに部署、チーム、役職を読む。どれかを読めなければ、選択の欄を押せなくし、登録の失敗の文の位置に読めなかったことの文を出す。
+- 職員の詳細（`StaffDetailContainer`）は、開いたときに `getUser` で職員を読み、権限の一覧を出すために次も読む。
+  - 役職（`listPositions`）: 職員の役職に決まっている権限で、権限を役職のまとまりと個別に足したまとまりに分ける。
+  - 権限（`listPolicies`）: 権限の名前と並び。
+  - 事業所の職員とチーム（`listUsers`、`listTeams`）: 権限の対象の名前を引く。
+  - 部署（`listDepartments`）は、プロフィールの編集のダイアログを開いたときに読む。
+  - 残る予定と担当の利用者（`getUserRemainingAssignments`）は、休職と退職のダイアログを開いたときに読む。
+- 権限の保存（`useSavePolicies`）は、開いたときの権限と比べて変更を作り、1 つずつ送る。
+  - チェックを入れた権限は `addUserPolicy` で足し、外した権限は `removeUserPolicy` で外す。対象を変えた権限は、外してから新しい対象で足し直す。
+  - 最初の変更が API に届かなければ、何も変えていないので、例外を投げてダイアログに保存の失敗の文を出す。
+  - 2 つ目からの失敗は、変えられた分を戻さず、変えられなかった変更と理由を返す。
+  - 終わったら、成否によらず職員の詳細と一覧を読み直す。
+  - 権限をまとめて置き換える API が無いので、一部だけが変わることがある。
 
 ## Interface
 

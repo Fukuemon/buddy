@@ -27,5 +27,5 @@
 | `listUsers` | `GET /v1/facilities/{facility_id}/users` | なし | 200。`Staff` の配列。休職と退職の職員を含む | 403 `forbidden`: ほかの事業所 |
 
 - `listPatients` は、職員の管理の権限を持たない職員も呼べる。この画面を職員の管理の権限を持つ職員に限るのは、画面の判定である。
-- 名前の検索と絞り込みは画面で行うので、`listPatients` の `name` と `assigned_staff` は使わない。
+- 名前の検索と絞り込みは画面で行うので、`listPatients` の `name` と `assigned_staff` は使わない。画面に無い希望の時間帯と希望する担当の性別の絞り込み（`preferred_time`、`preferred_gender`）も使わない。
 - web の `patients.listRecords` は、利用の終了の利用者を含めて、サービス、希望、担当の職員とともに返す。予定の画面の利用者の候補が使う `patients.list` は、ID と名前と利用の終了かだけを返す。

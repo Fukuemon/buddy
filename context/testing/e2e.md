@@ -36,6 +36,8 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
   - 形は、小文字の英語と `-` で、`<画面か部品>-<要素>` にする（例: `receipt-check-submit`）。
   - 一覧の行のように同じ要素が並ぶものは、末尾に ID を付ける（例: `staff-filter-staff-{職員の id}`）。
   - 区分のように API の値を末尾に付けるときは、値の `_` をそのまま残す（例: `receipt-summary-schedule_only`）。
+- ブローカーが出すログインの画面（`account-login`）は web の画面ではないので、`data-testid` を持たない。
+  - E2E は、メールアドレスの入力欄をラベルの「メールアドレス」で、次へをロールの button と名前の「次へ」で指す（`packages/e2e/tests/selectors/idp.ts`）。
 - 画面 ID の形は、`docs/screens/index.md` の「画面の ID の規則」にある。
 - `packages/ui` のコンポーネントに渡した `data-testid` が中のどの要素に付くかは、コンポーネントごとに違う。付く先は、コンポーネントのドキュメントコメントを読んで確認する。
   - 例: `SegmentedControl` は組に付け、選択肢の radio には `<data-testid>-<id>` を付ける。
