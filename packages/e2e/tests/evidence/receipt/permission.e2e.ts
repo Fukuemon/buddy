@@ -37,7 +37,7 @@ const checkWithCsv = async (page: Page, step: (text: string) => Promise<void>) =
   await page.getByTestId('receipt-visits-file').setInputFiles(RECEIPT_TESTDATA.visits)
   await page.getByTestId('receipt-check-submit').click()
   await expect(page).toHaveURL(/\/receipt\/result$/)
-  await expect(page.getByTestId('receipt-summary-mismatch')).toHaveText('3 件')
+  await expect(page.getByTestId('receipt-category-mismatch')).toHaveText('不整合データ（3 件）')
 }
 
 test.describe('照合の権限', () => {
