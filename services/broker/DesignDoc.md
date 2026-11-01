@@ -262,38 +262,39 @@ sequenceDiagram
   participant A as 予定の API
   participant DB as 予定の API の DB
   participant K as ブローカー
-  participant H as Hydra の admin API
-  W->>A: POST /v1/users/{user_id}/leave か retire
-  A->>A: 職員の管理の権限と、自分でないことを確認する
+  W->>A: POST .../leave か retire
+  A->>A: 権限と、自分でないことを確認する
   alt 権限が無いか、自分
     A-->>W: 403 か 409
   end
   rect rgba(128, 128, 128, 0.1)
-    Note over A,DB: 事業所の行をロックしたトランザクション。ブローカーを呼ぶ間もロックを持つ
-    A->>DB: 事業所の行をロックし、職員を読み直す
-    A->>DB: 職員の管理の権限を持つ有効な職員と、その日以降の予定と担当の利用者を読む
+    Note over A,DB: 事業所の行をロックしたトランザクション
+    A->>DB: 職員を読み直す
+    A->>DB: 有効な管理者と、残る予定と担当を読む
     DB-->>A: 有効な管理者と、残る一覧
-    alt 最後の有効な管理者、退職した職員の休職、退職で予定と担当が残る
-      A-->>W: 409（退職で残れば staff_has_assignments と残る一覧）
+    alt 最後の有効な管理者か、退職した職員の休職か、予定と担当が残る退職
+      A-->>W: 409
     else 書ける
-      A->>K: POST /internal/staff/{id}/suspend か retire
+      A->>K: POST .../suspend か retire
       alt 職員がいない
         K-->>A: 404
-      else ブローカーで退職した職員を休職にする
+      else ブローカーで退職した職員の休職
         K-->>A: 409（retired）
         A-->>W: 409
       else 職員を止めた
-        K->>H: ログインのセッションと同意を取り消す
-        H-->>K: 結果
-        K-->>A: 204。取り消せなければ 502（revoke_failed）
+        K->>K: Hydra でログインのセッションと同意を取り消す
+        K-->>A: 204 か 502（revoke_failed）
       end
-      A->>DB: 休職か退職を書く。退職はメールと電話番号を消し、Google カレンダーを外す
+      A->>DB: 休職か退職を書く
+      opt 退職
+        A->>DB: メールと電話番号を消し、Google カレンダーを外す
+      end
     end
   end
   alt revoke_failed を受けた
     A-->>W: 500
   else
-    A-->>W: 200（休職は残る一覧を assignments に入れる）
+    A-->>W: 200（休職は残る一覧を返す）
   end
 ```
 
