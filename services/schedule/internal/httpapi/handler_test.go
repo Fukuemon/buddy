@@ -449,6 +449,35 @@ func TestCreateSchedule(t *testing.T) {
 	}
 }
 
+func TestCreateScheduleEndsNextDay(t *testing.T) {
+	overnight := strings.NewReplacer(`"09:00"`, `"22:00"`, `"10:00"`, `"01:00"`).Replace(validSlotBody)
+	tests := []struct {
+		name string
+		body string
+		want bool
+	}{
+		{name: "印を付ける", body: strings.Replace(overnight, `"title"`, `"ends_next_day":true,"title"`, 1), want: true},
+		{name: "印を省く", body: overnight},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &fakeSchedules{detail: schedule.Detail{Schedule: schedule.Schedule{ID: scheduleID, Slot: schedule.Slot{
+				Date: civil.Date{Year: 2026, Month: 11, Day: 1}, StartTime: civil.Time{Hour: 22}, EndTime: civil.Time{Hour: 1}, EndsNextDay: tt.want,
+			}}}}
+			rec, body := do(t, newRouter(s, nil, nil), http.MethodPost, "/v1/facilities/"+facilityID+"/schedules", tt.body)
+			if rec.Code != http.StatusCreated {
+				t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
+			}
+			if s.lastSlot.EndsNextDay != tt.want || s.lastSlot.EndTime != (civil.Time{Hour: 1}) {
+				t.Errorf("slot = %+v", s.lastSlot)
+			}
+			if body["ends_next_day"] != tt.want || body["date"] != "2026-11-01" || body["end_time"] != "01:00" {
+				t.Errorf("ends_next_day = %v, date = %v, end_time = %v", body["ends_next_day"], body["date"], body["end_time"])
+			}
+		})
+	}
+}
+
 func TestHealth(t *testing.T) {
 	routerWithReady := func(err error) http.Handler {
 		return httpapi.NewRouter(httpapi.Usecases{Auth: fakeAuth{}}, httpapi.RouterConfig{
