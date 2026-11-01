@@ -33,6 +33,19 @@
 | `createTeam` | `POST /v1/facilities/{facility_id}/teams` | `name`、`color` | 201。`Team` | 400 `invalid_input`: 名前が空か 255 文字を超える。403 `forbidden`: 職員の管理の権限が無いか、ほかの事業所。409 `conflict`: 同じ名前のチームがある |
 | `updateTeam` | `PUT /v1/teams/{team_id}` | `name`、`color` | 200。`Team` | 400 `invalid_input`: 名前が空か 255 文字を超える。403 `forbidden`: 職員の管理の権限が無いか、ほかの事業所。404 `not_found`: チームが無い。409 `conflict`: ほかの同じ名前のチームがある |
 
-- 画面は、`createTeam` の `color` を省かず、[色の初期値](index.md#色の初期値) で選んだ色か、職員が選び直した色を送る。
+- 画面は、`createTeam` の `color` を省かず、読んだチームの色から [色](index.md#色) の作成の初期値の規則で決めた色か、職員が選び直した色を送る。
 - `updateTeam` は部分の更新を持たないので、名前だけを変えるときも今の色を送る。
 - 部署の名前の重なりは、`departments` のテーブルの一意の制約（`departments_facility_name_key`）で判定し、`createDepartment` と `updateDepartment` が 409 を返す。
+
+## 状態と失敗の要因
+
+| 状態 | 出す文 | 要因 |
+| --- | --- | --- |
+| 読み込みの失敗 | 「部署とチームを読み込めませんでした。時間をおいて、読み直してください。」 | `listDepartments` か `listTeams` の失敗 |
+| 保存の失敗 | 「「東チーム」という名前のチームは、すでにあります。別の名前にしてください。」 | `createTeam`、`updateTeam` が 409 |
+| 保存の失敗 | 「「看護部」という名前の部署は、すでにあります。別の名前にしてください。」 | `createDepartment`、`updateDepartment` が 409 |
+| 保存の失敗 | 「この部署は見つかりませんでした。閉じてから、開き直してください。」か、「この部署」を「このチーム」にした文 | `updateDepartment`、`updateTeam` が 404 |
+| 保存の失敗 | 「この操作をする権限がありません。」 | 4 つの書き込みの操作が 403 |
+| 保存の失敗 | 「保存できませんでした。時間をおいて、もう一度保存してください。」 | 409、404、403 のほかの失敗、API に届かない |
+
+- 文を選ぶ処理は `apps/web/src/features/organization/lib/errorMessage.ts` の `submitErrorMessage` にある。

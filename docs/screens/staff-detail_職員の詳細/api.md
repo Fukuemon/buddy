@@ -32,6 +32,33 @@
 | 休職にする、退職にする | 出すか | `Viewer.staffId` | `getMe` の `id` と `StaffDetail.id` が違うか |
 | 読み込みの失敗の文 | 見つからないか | `ApiError.status` | `getUser` の 404 |
 
+## 状態と失敗の要因
+
+| 状態 | 出す文 | 要因 |
+| --- | --- | --- |
+| 読み込みの失敗 | 「職員が見つかりませんでした。職員の一覧から開き直してください。」 | `getUser` が 404 |
+| 読み込みの失敗 | 「職員を読み込めませんでした。時間をおいて、読み直してください。」 | `getUser` が 404 のほかの失敗、API に届かない |
+| プロフィールの編集 | 「退職した職員は変えられません。」 | `updateUser` が 409 の `conflict` |
+| プロフィールの編集 | 「部署、チーム、役職のどれかが見つかりません。開き直してから、選び直してください。」 | `updateUser` が 400 |
+| プロフィールの編集 | 「この操作をする権限がありません。」 | `updateUser` が 403 |
+| プロフィールの編集 | 「保存できませんでした。時間をおいて、もう一度保存してください。」 | `updateUser` が 400、403、409 のほかの失敗、API に届かない |
+| 訪問しない職員への変更を拒む | 残る予定と担当の一覧 | `updateUser` が 409 の `staff_has_assignments` |
+| 役職を変える | 「職員の管理の権限を持つ最後の有効な職員は、その権限を持たない役職に変えられません。」 | `changeUserPosition` が 409 |
+| 役職を変える | 「この操作をする権限がありません。」 | `changeUserPosition` が 403 |
+| 権限の保存の一部の失敗 | 「職員の管理の権限を持つ最後の有効な職員から、その権限は外せません。」 | `removeUserPolicy` か `addUserPolicy` が 409 |
+| 権限の保存の一部の失敗 | 「対象の職員かチームが見つかりません。選び直してください。」 | `addUserPolicy` か `removeUserPolicy` が 400 |
+| 権限の保存の一部の失敗 | 「この操作をする権限がありません。」 | `addUserPolicy` か `removeUserPolicy` が 403 |
+| 権限の保存の一部の失敗 | 「時間をおいて、もう一度保存してください。」 | 2 つ目からの変更で、400、403、409 のほかの失敗、API に届かない |
+| 権限を変える | 「権限を変えられませんでした。時間をおいて、もう一度保存してください。」 | 最初の変更で API に届かない |
+| 休職の確認 | 「自分と、職員の管理の権限を持つ最後の有効な職員は、休職にできません。」 | `startUserLeave` が 409 |
+| 休職の確認 | 「この操作をする権限がありません。」 | `startUserLeave` が 403 |
+| 退職を拒む | 残る予定と担当の一覧 | `retireUser` が 409 の `staff_has_assignments` |
+| 退職の確認 | 「自分と、職員の管理の権限を持つ最後の有効な職員は、退職にできません。」 | `retireUser` が 409 の `conflict` |
+| 退職の確認 | 「この操作をする権限がありません。」 | `retireUser` が 403 |
+
+- 文を選ぶ処理は `apps/web/src/features/staff/lib/errorMessage.ts` にある。権限の保存の理由は `policyChangeErrorReason` が、最初の変更で API に届かないかは `apps/web/src/features/staff/queries.ts` の `useSavePolicies` が決める。
+- `staff_has_assignments` の 409 は、`apps/web/src/api` が文ではなく残る一覧の結果（`StaffUpdateResult`、`StaffRetireResult`）に変える。
+
 ## 操作
 
 全ての書き込みの操作と `getUserRemainingAssignments` は、事業所の確認の後に、ログインした職員が職員の管理の権限（`staff.manage`）を持つかを確認し、持たなければ 403（`forbidden`）を返す。
@@ -54,5 +81,6 @@
 
 - `getUserRemainingAssignments` は、休職と退職の確認のダイアログを開いたときに呼ぶ。レスポンスは、`startUserLeave` と `retireUser` が返す `StaffAssignments` と同じ形で、事業所の現地の日付で今日以降のものを返す。
 - `startUserLeave` も、休職にした後に `StaffStatusChange.assignments` を返す。画面は、ダイアログを開いたときに読んだ一覧を出し、この値は使わない。
+- `startUserLeave` は、休職の職員に送り直すと、戻る予定の日だけを書き換える。画面は休職の職員に休職にするを出さないので、この使い方をしない。
 - `updateUser` は、チームを変えると、チームを対象にする権限のうち古いチームを指す対象を新しいチームに移す。画面は、返った `StaffDetail.policies` で権限の一覧を出し直す。
 - `updateUser` は、訪問する職員を訪問しない職員に変えるときだけ、退職と同じ範囲で今日以降の予定と担当の利用者を数え、残れば書かずに 409 を返す。訪問しない職員を訪問する職員に戻すときは数えない（ADR-0022）。

@@ -1,7 +1,7 @@
 ---
 type: feature-design
 title: レセプトの照合
-description: 照合の API のパッケージの構成、予定のデータソース、入力の CSV のカラム、正規化、予定と実績の対の作り方、判定の規則、サービスごとの許容範囲、結果の JSON と画面の表示、元の実装との違い
+description: 照合の API のパッケージの構成、予定のデータソース、入力の CSV のカラム、正規化、予定と実績の対の作り方、判定の規則、サービスごとの許容範囲、結果の JSON と画面の表示、画面の照合の流れ、元の実装との違い
 status: draft
 governs: services/receipt
 verified_commit: 1c32c88
@@ -269,6 +269,27 @@ API は、判定の結果だけを JSON で返す。記号と CSV は返さな�
 - 結果の CSV では、区分ごとに、区分の名前と `---` を並べた区切りの行を区分の行の前に置く。行の無い区分にも置く。
 - 結果の CSV は、画面が同じ表示を書き出す。
 - 不一致の印は、元のツールに合わせて「 ❌」にする。
+
+### 画面の照合の流れ
+
+照合の画面（`/receipt`）と結果の画面（`/receipt/result`）は、次の順に照合の API を呼び、結果を渡す。  
+画面の状態と文は、[照合の画面仕様書](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/receipt-upload_照合/index.md) と [照合の結果の画面仕様書](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/receipt-result_照合の結果/index.md) にある。
+
+- 照合の権限は、画面を読み込むときに予定の API の `GET /v1/me` で読んだ値（`policies[].code` に `receipt.check` があるか）で出し分ける。
+  - 権限を足すか外したときは、画面を読み込み直すまで前の値のままである。
+  - 画面の出し分けだけで、照合を拒むのは照合の API である。権限を外された職員が画面を開いたままでも、照合の API が 403 を返す。
+- 2 つの画面は、サーバーで描画しない。
+  - 照合の画面は、対象の月のデフォルトを、職員のデバイスの日付の前の月で決めるためである。
+  - 結果の画面は、結果がブラウザの query の cache にだけあるためである。
+- ファイルの合計の上限は、照合の API の `MAX_UPLOAD_BYTES` のデフォルト（10 MiB）から、multipart の境界と見出しの分の 64 KiB を引いた値にする。
+  - 照合の API の上限は multipart の本文の全体に掛かるためである。
+  - 画面は、上限を超えたら送らずに止める。BFF の server function も、同じ上限で入力を確認する。
+- 照合するを押すと、画面は BFF の server function（`checkReceiptFn`）に、実績の CSV と、対象の月か予定の CSV を送る。BFF は、セッションの access token を付けて `POST /v1/checks` を呼ぶ。
+  - セッションが無ければ、BFF が 401 を返す。照合の API が 401 を返したときも、その status を返す。ブラウザは、照合の画面に戻るログインへ移す。入力は残らない。
+  - 照合の API のほかの失敗は、status、`Error.code`、入力の CSV の誤りを値にして画面へ返す。画面が、それらから職員に見せる文を選ぶ。status と文の対応は、照合の画面の [API との対応の状態と失敗の要因](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/receipt-upload_照合/api.md#状態と失敗の要因) にある。
+- 照合が終わったら、結果を、対象の月と照合した日時と一緒に query の cache に置き、結果の画面へ移る。
+  - 結果は照合の API から取り直せないので、cache から消さない。画面を読み直すと消える。
+  - 結果を保存しないのは、PRD の Non-Goals の「照合の結果の保存」に従うためである。
 
 ## Interface
 

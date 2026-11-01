@@ -8,6 +8,16 @@
 | ページのタイトル | 理由ごとのタイトル | search params の `reason`（`AuthErrorReason`） | なし |
 | 説明の文 | 理由ごとの文 | search params の `reason`（`AuthErrorReason`） | なし |
 
-- `reason` は、web のサーバー（`apps/web/src/server/auth.ts` の `finishLogin`）がリダイレクト先の URL に付ける。
-- `forbidden` は、ログインの後に `getMe`（`GET /v1/me`）が 403 を返したときに付ける。`getMe` がほかの失敗を返したときは `failed` を付ける。
-- `AuthErrorReason` の型は `apps/web/src/components/site/AuthErrorMessage.tsx` にある。
+## 状態と失敗の要因
+
+web のサーバーは、ログインの後の戻り（`/auth/callback`）で失敗すると、`reason` を付けてこの画面へリダイレクトする。
+
+| 状態 | 出す文 | 要因 |
+| --- | --- | --- |
+| ログインの途中の失敗 | 「時間をおいて、もう一度ログインしてください。」 | `state` が cookie と合わないか、ログインの途中の値が無い |
+| ログインの途中の失敗 | 「時間をおいて、もう一度ログインしてください。」 | Hydra で認可コードをトークンと交換できない。ブローカーがログインを reject で返したとき（登録していないメール、休職と退職の職員、上流のメールの違い）を含む |
+| ログインの途中の失敗 | 「時間をおいて、もう一度ログインしてください。」 | `getMe` が 403 以外の失敗のステータスを返す |
+| 事業所に登録されていない | 「事業所の管理者に、メールアドレスの登録を頼んでください。」 | `getMe` が 403 |
+
+- `reason` は、`apps/web/src/server/auth.ts` の `finishLogin` が、リダイレクト先の URL に付ける。
+- `AuthErrorReason` の型と、理由ごとの文は `apps/web/src/components/site/AuthErrorMessage.tsx` にある。
