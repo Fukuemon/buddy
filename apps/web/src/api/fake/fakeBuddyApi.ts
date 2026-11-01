@@ -10,7 +10,6 @@ import {
 } from '#/mocks/scheduleData'
 
 import { ApiError, type BuddyApi } from '../client'
-import { matchesName } from '../nameSearch'
 import type {
   CalendarExportIssue,
   Department,
@@ -21,13 +20,8 @@ import type {
   Team,
   TeamInput,
 } from '../types'
-import {
-  FAKE_FACILITY_ID,
-  FAKE_VIEWER,
-  createFakeSchedules,
-  fakePatients,
-  fakeTeams,
-} from './fixtures'
+import { FAKE_FACILITY_ID, FAKE_VIEWER, createFakeSchedules, fakeTeams } from './fixtures'
+import { createFakePatientApi, createFakePatientRecords } from './fakePatientApi'
 import { createFakeStaffApi } from './fakeStaffApi'
 
 /** createFakeBuddyApi の設定。 */
@@ -122,6 +116,7 @@ export const createFakeBuddyApi = ({
       ? createMockImportedPreview(range)
       : createMockImportPreview(range)
 
+  const patientRecords = createFakePatientRecords()
   const staffApi = createFakeStaffApi({
     assertFacility,
     schedules: () => schedules.values(),
@@ -129,6 +124,14 @@ export const createFakeBuddyApi = ({
     today: () => baseDate,
     departments: () => [...departments.values()],
     teams: () => [...teams.values()],
+    patients: () => patientRecords.values(),
+  })
+  const patientApi = createFakePatientApi({
+    assertFacility,
+    patients: patientRecords,
+    staff: () => staffApi.staff.listRecords(FAKE_FACILITY_ID),
+    schedules: () => schedules.values(),
+    today: () => baseDate,
   })
 
   const findSchedule = (scheduleId: Schedule['id']) => {
@@ -208,12 +211,7 @@ export const createFakeBuddyApi = ({
         return saveDepartment(departmentId, name)
       },
     },
-    patients: {
-      list: async (facilityId, params) => {
-        assertFacility(facilityId)
-        return fakePatients.filter((patient) => matchesName(patient.name, params))
-      },
-    },
+    ...patientApi,
     calendars: {
       serviceAccount: async (facilityId) => {
         assertFacility(facilityId)

@@ -355,6 +355,69 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
         )
         return patients.map(fromApiPatient).filter((patient) => matchesName(patient.name, params))
       },
+      listRecords: (facilityId) =>
+        unwrap(
+          client.GET('/v1/facilities/{facility_id}/patients', {
+            params: {
+              path: { facility_id: facilityId },
+              query: { include_ended: true, sort_field: 'name', sort_order: 'asc' },
+            },
+          }),
+        ),
+      get: async (facilityId, patientId) => {
+        const patient = await unwrap(
+          client.GET('/v1/patients/{patient_id}', {
+            params: { path: { patient_id: patientId } },
+          }),
+        )
+        if (patient.facility_id !== facilityId) {
+          throw new ApiError(403, `事業所 ${facilityId} の操作は許可されていません`)
+        }
+        return patient
+      },
+      create: (facilityId, input) =>
+        unwrap(
+          client.POST('/v1/facilities/{facility_id}/patients', {
+            params: { path: { facility_id: facilityId } },
+            body: input,
+          }),
+        ),
+      update: (_facilityId, patientId, input) =>
+        unwrap(
+          client.PUT('/v1/patients/{patient_id}', {
+            params: { path: { patient_id: patientId } },
+            body: input,
+          }),
+        ),
+      remainingSchedules: (_facilityId, patientId) =>
+        unwrap(
+          client.GET('/v1/patients/{patient_id}/remaining_schedules', {
+            params: { path: { patient_id: patientId } },
+          }),
+        ),
+      endService: async (_facilityId, patientId) => {
+        const { data, error, response } = await client.POST(
+          '/v1/patients/{patient_id}/end_service',
+          {
+            params: { path: { patient_id: patientId } },
+          },
+        )
+        if (response.ok && data !== undefined) return { ended: data }
+        if (error !== undefined && 'schedules' in error && error.schedules !== undefined) {
+          return { schedules: error.schedules }
+        }
+        throw apiError(error, response)
+      },
+      resumeService: (_facilityId, patientId, assignedStaffId) =>
+        unwrap(
+          client.POST('/v1/patients/{patient_id}/resume_service', {
+            params: { path: { patient_id: patientId } },
+            body: { assigned_staff_id: assignedStaffId },
+          }),
+        ),
+    },
+    serviceCodes: {
+      list: () => unwrap(client.GET('/v1/visit_infos/service_codes')),
     },
     calendars: {
       serviceAccount: async (facilityId) => {

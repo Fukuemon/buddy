@@ -15,6 +15,8 @@ export { Dialog, DialogBody, DialogFooter, DialogHeader } from './base/Dialog/Di
 export type { DialogFooterProps, DialogHeaderProps, DialogProps } from './base/Dialog/Dialog'
 export { Drawer } from './base/Drawer/Drawer'
 export type { DrawerProps } from './base/Drawer/Drawer'
+export { FormField, formFieldControlClassName } from './base/FormField/FormField'
+export type { FormFieldControlProps, FormFieldProps } from './base/FormField/FormField'
 export { HelpToggle } from './base/HelpToggle/HelpToggle'
 export type { HelpToggleProps } from './base/HelpToggle/HelpToggle'
 export { Loading } from './base/Loading/Loading'

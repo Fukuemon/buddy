@@ -1,0 +1,62 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { FormField } from './FormField'
+import * as Stories from './FormField.stories'
+
+<Meta of={Stories} />
+
+# FormField
+
+入力の欄の見出し、欄、補足の文、誤りの文を縦に並べる枠。見出しと補足と誤りの文を、欄に結び付ける。
+
+## 使う場面
+
+- 入力のダイアログの中で、1 行の入力、選択、ラジオボタンの組に見出しを付ける
+
+## 使わない場面
+
+- 日付と時刻の入力（`DatePicker`、`TimePicker` を使う）
+- 複数行の文の入力（`TextareaField` を使う）
+- 一覧の絞り込み。見える見出しを置かない
+
+## Do
+
+- input と select には `formFieldControlClassName` を付ける
+- ラジオボタンの組は `isGroup` にし、渡す属性を `role="radiogroup"` の要素に付ける
+- 入力の時点で守る制約は、`hint` で常に出す
+
+## Don't
+
+- 誤りの文を `hint` に書く。誤りは `error` で渡す
+- 見出しを省く
+
+## 状態
+
+### デフォルト
+
+<Canvas of={Stories.Default} />
+
+### 補足の文
+
+<Canvas of={Stories.WithHint} />
+
+### エラー
+
+<Canvas of={Stories.Invalid} />
+
+### 無効
+
+<Canvas of={Stories.Disabled} />
+
+### ラジオボタンの組
+
+<Canvas of={Stories.Group} />
+
+## キーボードの操作
+
+- Tab で欄に移る。欄の操作はブラウザの入力欄に従う
+- 誤りの文は `role="alert"` で、出たときに読み上げる
+
+## props
+
+<ArgTypes of={FormField} />

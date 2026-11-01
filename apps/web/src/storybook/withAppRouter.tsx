@@ -43,6 +43,8 @@ export type StoryRouteId =
   | '/staff/new'
   | '/staff_/$staffId'
   | '/organization'
+  | '/patients'
+  | '/patients/new'
 
 /** story の parameters の appRouter に渡す値。 */
 export type AppRouterParameters = {
@@ -163,6 +165,17 @@ const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
     component: at('/organization'),
   })
 
+  const patients = createRoute({
+    getParentRoute: () => root,
+    path: 'patients',
+    component: at('/patients'),
+  })
+  const patientsNew = createRoute({
+    getParentRoute: () => patients,
+    path: 'new',
+    component: at('/patients/new'),
+  })
+
   const router = createRouter({
     routeTree: root.addChildren([
       schedule.addChildren([scheduleNew, scheduleDetail, scheduleEdit]),
@@ -174,6 +187,7 @@ const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
       staff.addChildren([staffNew]),
       staffDetail,
       organization,
+      patients.addChildren([patientsNew]),
     ]),
     history: createMemoryHistory({ initialEntries: [params.url] }),
     context,
@@ -209,7 +223,7 @@ export const emptyBuddyApi = (base: BuddyApi = createFakeBuddyApi()): BuddyApi =
   schedules: { ...base.schedules, list: async () => [] },
   staff: { ...base.staff, list: async () => [] },
   teams: { ...base.teams, list: async () => [] },
-  patients: { ...base.patients, list: async () => [] },
+  patients: { ...base.patients, list: async () => [], listRecords: async () => [] },
   calendars: { ...base.calendars, list: async () => [], exportIssues: async () => [] },
 })
 
@@ -246,7 +260,17 @@ const buddyApiOf = (operation: () => Promise<never>): BuddyApi => ({
   departments: { list: operation, create: operation, update: operation },
   positions: { list: operation },
   policies: { list: operation },
-  patients: { list: operation },
+  patients: {
+    list: operation,
+    listRecords: operation,
+    get: operation,
+    create: operation,
+    update: operation,
+    remainingSchedules: operation,
+    endService: operation,
+    resumeService: operation,
+  },
+  serviceCodes: { list: operation },
   calendars: {
     serviceAccount: operation,
     list: operation,

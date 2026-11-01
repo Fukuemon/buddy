@@ -533,6 +533,110 @@ describe('createHttpBuddyApi の職員の管理', () => {
   })
 })
 
+describe('createHttpBuddyApi の利用者の管理', () => {
+  const patient = (
+    id: string,
+    overrides: Partial<components['schemas']['Patient']> = {},
+  ): components['schemas']['Patient'] => ({
+    id,
+    facility_id: 'facility-1',
+    name: id,
+    preferred_time: '午前',
+    preferred_gender: '女性',
+    service_code_id: 'code-i2',
+    service_code: '訪看I2',
+    assigned_staff_id: 'staff-1',
+    assigned_staff_name: '青木 一郎',
+    ended_at: null,
+    created_at: '2026-10-01T00:00:00Z',
+    updated_at: '2026-10-01T00:00:00Z',
+    ...overrides,
+  })
+  const remaining = {
+    schedules: [{ id: 'schedule-1', date: '2026-11-02', start_time: '09:00', end_time: '09:29' }],
+    recurring_schedules: [],
+  }
+
+  it('利用者の一覧を、利用の終了の利用者を含めて名前の昇順で求める', async () => {
+    let query = ''
+    server.use(
+      scheduleHttp.get('/v1/facilities/{facility_id}/patients', ({ request, response }) => {
+        query = new URL(request.url).search
+        return response(200).json([])
+      }),
+    )
+    await api().patients.listRecords('facility-1')
+    expect(query).toBe('?include_ended=true&sort_field=name&sort_order=asc')
+  })
+
+  it('ほかの事業所の利用者を読むと 403 の ApiError を投げる', async () => {
+    server.use(
+      scheduleHttp.get('/v1/patients/{patient_id}', ({ params, response }) =>
+        response(200).json(
+          patient(params.patient_id, {
+            facility_id: params.patient_id === 'other' ? 'facility-2' : 'facility-1',
+          }),
+        ),
+      ),
+    )
+    await expect(api().patients.get('facility-1', 'patient-1')).resolves.toMatchObject({
+      id: 'patient-1',
+    })
+    await expect(api().patients.get('facility-1', 'other')).rejects.toHaveProperty('status', 403)
+  })
+
+  it('利用の終了は、予定が残って拒まれると残る予定を返し、ほかの失敗は ApiError で投げる', async () => {
+    server.use(
+      scheduleHttp.post('/v1/patients/{patient_id}/end_service', ({ params, response }) => {
+        if (params.patient_id === 'busy')
+          return response(409).json({
+            code: 'patient_has_schedules',
+            message: '残っています',
+            schedules: remaining,
+          })
+        if (params.patient_id === 'missing')
+          return response(404).json({ code: 'not_found', message: 'リソースが見つかりません' })
+        return response(200).json(patient(params.patient_id, { ended_at: '2026-10-31T15:00:00Z' }))
+      }),
+    )
+    await expect(api().patients.endService('facility-1', 'busy')).resolves.toEqual({
+      schedules: remaining,
+    })
+    await expect(api().patients.endService('facility-1', 'patient-1')).resolves.toMatchObject({
+      ended: { id: 'patient-1', ended_at: '2026-10-31T15:00:00Z' },
+    })
+    await expect(api().patients.endService('facility-1', 'missing')).rejects.toMatchObject({
+      status: 404,
+      code: 'not_found',
+    })
+  })
+
+  it('利用の再開は担当の職員を送り、担当に休職の職員を指した 400 は code を付けて投げる', async () => {
+    const sent: unknown[] = []
+    server.use(
+      scheduleHttp.post(
+        '/v1/patients/{patient_id}/resume_service',
+        async ({ params, request, response }) => {
+          const body = await request.json()
+          sent.push(body)
+          if (body.assigned_staff_id === 'on-leave')
+            return response(400).json(invalid('休職か退職の職員は担当にできません'))
+          return response(200).json(
+            patient(params.patient_id, { assigned_staff_id: body.assigned_staff_id }),
+          )
+        },
+      ),
+    )
+    await expect(
+      api().patients.resumeService('facility-1', 'patient-1', 'staff-2'),
+    ).resolves.toMatchObject({ assigned_staff_id: 'staff-2', ended_at: null })
+    await expect(
+      api().patients.resumeService('facility-1', 'patient-1', 'on-leave'),
+    ).rejects.toMatchObject({ status: 400, code: 'invalid_input' })
+    expect(sent).toEqual([{ assigned_staff_id: 'staff-2' }, { assigned_staff_id: 'on-leave' }])
+  })
+})
+
 describe('部署とチームの作成と変更', () => {
   const now = '2026-11-01T00:00:00Z'
   const unit = (id: string, name: string) => ({

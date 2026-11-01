@@ -7,6 +7,7 @@ import ScheduleIcon from '#/assets/icons/calendar-month.svg?react'
 import ImportIcon from '#/assets/icons/download.svg?react'
 import StaffIcon from '#/assets/icons/group.svg?react'
 import OrganizationIcon from '#/assets/icons/account-tree.svg?react'
+import PatientIcon from '#/assets/icons/patient.svg?react'
 import ReceiptIcon from '#/assets/icons/fact-check.svg?react'
 import LinkIcon from '#/assets/icons/link.svg?react'
 import ReviewIcon from '#/assets/icons/notifications.svg?react'
@@ -130,6 +131,12 @@ const SCHEDULE_MANAGER_ITEMS: readonly SiteNavItem[] = [
   { id: 'link', href: '/schedule/link', label: '連携', icon: LinkIcon },
 ]
 
+/** 職員の管理の権限を持つ職員にだけ出す、利用者の画面。 */
+const PATIENT_GROUP: SiteNavGroup = {
+  label: '利用者',
+  items: [{ id: 'patient', href: '/patients', label: '利用者', icon: PatientIcon }],
+}
+
 const RECEIPT_GROUP: SiteNavGroup = {
   label: '照合',
   items: [{ id: 'receipt', href: '/receipt', label: '照合', icon: ReceiptIcon }],
@@ -145,7 +152,7 @@ const STAFF_GROUP: SiteNavGroup = {
 }
 
 /**
- * ナビゲーションに並べる画面。取り込み、要確認、連携と職員は職員の管理の権限を持つ職員にだけ、
+ * ナビゲーションに並べる画面。取り込み、要確認、連携と職員と利用者は職員の管理の権限を持つ職員にだけ、
  * 照合は照合の権限を持つ職員にだけ出す。
  */
 export const siteNavGroups = ({
@@ -157,5 +164,5 @@ export const siteNavGroups = ({
     items: canManageStaff ? [SCHEDULE_ITEM, ...SCHEDULE_MANAGER_ITEMS] : [SCHEDULE_ITEM],
   },
   ...(canCheckReceipt ? [RECEIPT_GROUP] : []),
-  ...(canManageStaff ? [STAFF_GROUP] : []),
+  ...(canManageStaff ? [STAFF_GROUP, PATIENT_GROUP] : []),
 ]
