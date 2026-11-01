@@ -43,6 +43,8 @@ export type StoryRouteId =
   | '/staff/new'
   | '/staff_/$staffId'
   | '/organization'
+  | '/patients'
+  | '/patients/new'
 
 /** story の parameters の appRouter に渡す値。 */
 export type AppRouterParameters = {
@@ -163,6 +165,17 @@ const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
     component: at('/organization'),
   })
 
+  const patients = createRoute({
+    getParentRoute: () => root,
+    path: 'patients',
+    component: at('/patients'),
+  })
+  const patientsNew = createRoute({
+    getParentRoute: () => patients,
+    path: 'new',
+    component: at('/patients/new'),
+  })
+
   const router = createRouter({
     routeTree: root.addChildren([
       schedule.addChildren([scheduleNew, scheduleDetail, scheduleEdit]),
@@ -174,6 +187,7 @@ const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
       staff.addChildren([staffNew]),
       staffDetail,
       organization,
+      patients.addChildren([patientsNew]),
     ]),
     history: createMemoryHistory({ initialEntries: [params.url] }),
     context,

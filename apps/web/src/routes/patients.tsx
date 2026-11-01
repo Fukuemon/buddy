@@ -1,0 +1,23 @@
+import { Outlet, createFileRoute } from '@tanstack/react-router'
+
+import { SiteLayoutContainer } from '#/components/site/SiteLayoutContainer'
+import { CalendarReviewBadgeContainer } from '#/features/calendar/components/CalendarReviewBadgeContainer'
+import { PatientListContainer } from '#/features/patient/components/PatientListContainer'
+
+export const Route = createFileRoute('/patients')({
+  // フェイクの API はデータをブラウザのメモリに持つため、サーバーで描画しない
+  ssr: false,
+  head: () => ({ meta: [{ title: '利用者 | buddy' }] }),
+  component: PatientsPage,
+})
+
+function PatientsPage() {
+  return (
+    <SiteLayoutContainer current="/patients" reviewBadge={<CalendarReviewBadgeContainer />}>
+      <main className="min-w-0 p-4 desktop:p-6">
+        <PatientListContainer />
+      </main>
+      <Outlet />
+    </SiteLayoutContainer>
+  )
+}

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as HealthzRouteImport } from './routes/healthz'
 import { Route as OrganizationRouteImport } from './routes/organization'
+import { Route as PatientsRouteImport } from './routes/patients'
 import { Route as ReadyzRouteImport } from './routes/readyz'
 import { Route as ScheduleRouteImport } from './routes/schedule'
 import { Route as StaffRouteImport } from './routes/staff'
@@ -19,6 +20,7 @@ import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthErrorRouteImport } from './routes/auth.error'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AuthLogoutRouteImport } from './routes/auth.logout'
+import { Route as PatientsNewRouteImport } from './routes/patients.new'
 import { Route as ReceiptIndexRouteImport } from './routes/receipt.index'
 import { Route as ReceiptResultRouteImport } from './routes/receipt.result'
 import { Route as ScheduleNewRouteImport } from './routes/schedule.new'
@@ -43,6 +45,11 @@ const HealthzRoute = HealthzRouteImport.update({
 const OrganizationRoute = OrganizationRouteImport.update({
   id: '/organization',
   path: '/organization',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PatientsRoute = PatientsRouteImport.update({
+  id: '/patients',
+  path: '/patients',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReadyzRoute = ReadyzRouteImport.update({
@@ -79,6 +86,11 @@ const AuthLogoutRoute = AuthLogoutRouteImport.update({
   id: '/auth/logout',
   path: '/auth/logout',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PatientsNewRoute = PatientsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => PatientsRoute,
 } as any)
 const ReceiptIndexRoute = ReceiptIndexRouteImport.update({
   id: '/receipt/',
@@ -135,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/healthz': typeof HealthzRoute
   '/organization': typeof OrganizationRoute
+  '/patients': typeof PatientsRouteWithChildren
   '/readyz': typeof ReadyzRoute
   '/schedule': typeof ScheduleRouteWithChildren
   '/staff': typeof StaffRouteWithChildren
@@ -142,6 +155,7 @@ export interface FileRoutesByFullPath {
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/logout': typeof AuthLogoutRoute
+  '/patients/new': typeof PatientsNewRoute
   '/receipt/result': typeof ReceiptResultRoute
   '/schedule/new': typeof ScheduleNewRoute
   '/schedule/import': typeof ScheduleImportRoute
@@ -157,6 +171,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/healthz': typeof HealthzRoute
   '/organization': typeof OrganizationRoute
+  '/patients': typeof PatientsRouteWithChildren
   '/readyz': typeof ReadyzRoute
   '/schedule': typeof ScheduleRouteWithChildren
   '/staff': typeof StaffRouteWithChildren
@@ -164,6 +179,7 @@ export interface FileRoutesByTo {
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/logout': typeof AuthLogoutRoute
+  '/patients/new': typeof PatientsNewRoute
   '/receipt/result': typeof ReceiptResultRoute
   '/schedule/new': typeof ScheduleNewRoute
   '/schedule/import': typeof ScheduleImportRoute
@@ -180,6 +196,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/healthz': typeof HealthzRoute
   '/organization': typeof OrganizationRoute
+  '/patients': typeof PatientsRouteWithChildren
   '/readyz': typeof ReadyzRoute
   '/schedule': typeof ScheduleRouteWithChildren
   '/staff': typeof StaffRouteWithChildren
@@ -187,6 +204,7 @@ export interface FileRoutesById {
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/logout': typeof AuthLogoutRoute
+  '/patients/new': typeof PatientsNewRoute
   '/receipt/result': typeof ReceiptResultRoute
   '/schedule/new': typeof ScheduleNewRoute
   '/schedule_/import': typeof ScheduleImportRoute
@@ -204,6 +222,7 @@ export interface FileRouteTypes {
     | '/'
     | '/healthz'
     | '/organization'
+    | '/patients'
     | '/readyz'
     | '/schedule'
     | '/staff'
@@ -211,6 +230,7 @@ export interface FileRouteTypes {
     | '/auth/error'
     | '/auth/login'
     | '/auth/logout'
+    | '/patients/new'
     | '/receipt/result'
     | '/schedule/new'
     | '/schedule/import'
@@ -226,6 +246,7 @@ export interface FileRouteTypes {
     | '/'
     | '/healthz'
     | '/organization'
+    | '/patients'
     | '/readyz'
     | '/schedule'
     | '/staff'
@@ -233,6 +254,7 @@ export interface FileRouteTypes {
     | '/auth/error'
     | '/auth/login'
     | '/auth/logout'
+    | '/patients/new'
     | '/receipt/result'
     | '/schedule/new'
     | '/schedule/import'
@@ -248,6 +270,7 @@ export interface FileRouteTypes {
     | '/'
     | '/healthz'
     | '/organization'
+    | '/patients'
     | '/readyz'
     | '/schedule'
     | '/staff'
@@ -255,6 +278,7 @@ export interface FileRouteTypes {
     | '/auth/error'
     | '/auth/login'
     | '/auth/logout'
+    | '/patients/new'
     | '/receipt/result'
     | '/schedule/new'
     | '/schedule_/import'
@@ -271,6 +295,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HealthzRoute: typeof HealthzRoute
   OrganizationRoute: typeof OrganizationRoute
+  PatientsRoute: typeof PatientsRouteWithChildren
   ReadyzRoute: typeof ReadyzRoute
   ScheduleRoute: typeof ScheduleRouteWithChildren
   StaffRoute: typeof StaffRouteWithChildren
@@ -307,6 +332,13 @@ declare module '@tanstack/react-router' {
       path: '/organization'
       fullPath: '/organization'
       preLoaderRoute: typeof OrganizationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/patients': {
+      id: '/patients'
+      path: '/patients'
+      fullPath: '/patients'
+      preLoaderRoute: typeof PatientsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/readyz': {
@@ -357,6 +389,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/logout'
       preLoaderRoute: typeof AuthLogoutRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/patients/new': {
+      id: '/patients/new'
+      path: '/new'
+      fullPath: '/patients/new'
+      preLoaderRoute: typeof PatientsNewRouteImport
+      parentRoute: typeof PatientsRoute
     }
     '/receipt/': {
       id: '/receipt/'
@@ -431,6 +470,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface PatientsRouteChildren {
+  PatientsNewRoute: typeof PatientsNewRoute
+}
+
+const PatientsRouteChildren: PatientsRouteChildren = {
+  PatientsNewRoute: PatientsNewRoute,
+}
+
+const PatientsRouteWithChildren = PatientsRoute._addFileChildren(
+  PatientsRouteChildren,
+)
+
 interface ScheduleRouteChildren {
   ScheduleNewRoute: typeof ScheduleNewRoute
   ScheduleScheduleIdEditRoute: typeof ScheduleScheduleIdEditRoute
@@ -461,6 +512,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HealthzRoute: HealthzRoute,
   OrganizationRoute: OrganizationRoute,
+  PatientsRoute: PatientsRouteWithChildren,
   ReadyzRoute: ReadyzRoute,
   ScheduleRoute: ScheduleRouteWithChildren,
   StaffRoute: StaffRouteWithChildren,
