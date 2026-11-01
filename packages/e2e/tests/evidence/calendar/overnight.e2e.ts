@@ -192,6 +192,8 @@ test.describe('予定の取り込み', () => {
                 .getByTestId(/^schedule-event-/)
                 .filter({ hasText: SEED_PATIENT.name })
               await expect(event).toBeVisible()
+              await step('（撮影のため、日の表示を 22 時の位置までスクロールする）')
+              await event.scrollIntoViewIfNeeded()
               await check(`${date} の ${SATO.name} の列に、${SEED_PATIENT.name} の訪問の予定が出る`)
 
               await step('予定を開く')
