@@ -1,8 +1,8 @@
 import { Button } from '@buddy/ui'
 import { useId } from 'react'
 
-import { BusyLabel } from './BusyLabel'
-import { CalendarDialog } from './CalendarDialog'
+import { BusyLabel } from '#/components/site/BusyLabel'
+import { SiteDialog } from '#/components/site/SiteDialog'
 
 export type CalendarAcceptDialogProps = {
   /** Google カレンダーの内容に合わせる予定の日時と職員。 */
@@ -24,7 +24,7 @@ export const CalendarAcceptDialog = ({
 }: CalendarAcceptDialogProps) => {
   const titleId = useId()
   return (
-    <CalendarDialog
+    <SiteDialog
       canClose={!isSubmitting}
       data-testid="calendar-accept-dialog"
       labelledBy={titleId}
@@ -70,6 +70,6 @@ export const CalendarAcceptDialog = ({
           <BusyLabel busy={isSubmitting}>合わせる</BusyLabel>
         </Button>
       </div>
-    </CalendarDialog>
+    </SiteDialog>
   )
 }

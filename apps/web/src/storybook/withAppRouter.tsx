@@ -39,6 +39,8 @@ export type StoryRouteId =
   | '/schedule_/link'
   | '/schedule_/import'
   | '/schedule_/review'
+  | '/staff'
+  | '/staff/new'
 
 /** story の parameters の appRouter に渡す値。 */
 export type AppRouterParameters = {
@@ -132,6 +134,17 @@ const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
     component: at('/schedule_/review'),
   })
 
+  const staff = createRoute({
+    getParentRoute: () => root,
+    path: 'staff',
+    component: at('/staff'),
+  })
+  const staffNew = createRoute({
+    getParentRoute: () => staff,
+    path: 'new',
+    component: at('/staff/new'),
+  })
+
   const router = createRouter({
     routeTree: root.addChildren([
       schedule.addChildren([scheduleNew, scheduleDetail, scheduleEdit]),
@@ -140,6 +153,7 @@ const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
       scheduleLink,
       scheduleImport,
       scheduleReview,
+      staff.addChildren([staffNew]),
     ]),
     history: createMemoryHistory({ initialEntries: [params.url] }),
     context,
@@ -183,6 +197,7 @@ export const emptyBuddyApi = (base: BuddyApi = createFakeBuddyApi()): BuddyApi =
 export const suspendedStaffBuddyApi = (base: BuddyApi = createFakeBuddyApi()): BuddyApi => ({
   ...base,
   staff: {
+    ...base.staff,
     list: async (...args) =>
       (await base.staff.list(...args)).map((staff) =>
         staff.id === 'staff-2' ? { ...staff, status: 'on_leave' } : staff,
@@ -193,8 +208,24 @@ export const suspendedStaffBuddyApi = (base: BuddyApi = createFakeBuddyApi()): B
 /** 全ての操作を operation にしたフェイクの API を作る。 */
 const buddyApiOf = (operation: () => Promise<never>): BuddyApi => ({
   schedules: { list: operation, get: operation, create: operation, update: operation },
-  staff: { list: operation },
+  staff: {
+    list: operation,
+    listRecords: operation,
+    get: operation,
+    create: operation,
+    update: operation,
+    changePosition: operation,
+    addPolicy: operation,
+    removePolicy: operation,
+    remainingAssignments: operation,
+    startLeave: operation,
+    reinstate: operation,
+    retire: operation,
+  },
   teams: { list: operation },
+  departments: { list: operation },
+  positions: { list: operation },
+  policies: { list: operation },
   patients: { list: operation },
   calendars: {
     serviceAccount: operation,

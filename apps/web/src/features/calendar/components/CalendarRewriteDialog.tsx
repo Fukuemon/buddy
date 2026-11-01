@@ -1,8 +1,8 @@
 import { Button } from '@buddy/ui'
 import { useId } from 'react'
 
-import { BusyLabel } from './BusyLabel'
-import { CalendarDialog } from './CalendarDialog'
+import { BusyLabel } from '#/components/site/BusyLabel'
+import { SiteDialog } from '#/components/site/SiteDialog'
 
 export type CalendarRewriteDialogProps = {
   /** 書き直す予定の日時と職員。 */
@@ -27,7 +27,7 @@ export const CalendarRewriteDialog = ({
 }: CalendarRewriteDialogProps) => {
   const titleId = useId()
   return (
-    <CalendarDialog
+    <SiteDialog
       canClose={!isSubmitting}
       data-testid="calendar-rewrite-dialog"
       labelledBy={titleId}
@@ -73,6 +73,6 @@ export const CalendarRewriteDialog = ({
           <BusyLabel busy={isSubmitting}>書き直す</BusyLabel>
         </Button>
       </div>
-    </CalendarDialog>
+    </SiteDialog>
   )
 }

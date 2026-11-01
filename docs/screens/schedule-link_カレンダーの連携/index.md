@@ -7,7 +7,7 @@
 | --- | --- |
 | URL | `/schedule/link` |
 | 使う人 | 職員の管理の権限を持つ職員（デフォルトはマネージャー） |
-| 実装 | `apps/web/src/routes/schedule_.link.tsx`、`apps/web/src/features/calendar/components/CalendarLinkContainer.tsx`、`apps/web/src/features/calendar/components/CalendarLinkView.tsx`、`apps/web/src/features/calendar/components/CalendarShareGuide.tsx`、`apps/web/src/features/calendar/components/CalendarLinkTable.tsx`、`apps/web/src/features/calendar/components/CalendarLinkDialog.tsx`、`apps/web/src/features/calendar/components/CalendarUnlinkDialog.tsx`、`apps/web/src/features/calendar/components/CalendarDialog.tsx`、`apps/web/src/components/site/PageForbiddenMessage.tsx` |
+| 実装 | `apps/web/src/routes/schedule_.link.tsx`、`apps/web/src/features/calendar/components/CalendarLinkContainer.tsx`、`apps/web/src/features/calendar/components/CalendarLinkView.tsx`、`apps/web/src/features/calendar/components/CalendarShareGuide.tsx`、`apps/web/src/features/calendar/components/CalendarLinkTable.tsx`、`apps/web/src/features/calendar/components/CalendarLinkDialog.tsx`、`apps/web/src/features/calendar/components/CalendarUnlinkDialog.tsx`、`apps/web/src/components/site/SiteDialog.tsx`、`apps/web/src/components/site/PageForbiddenMessage.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
 
