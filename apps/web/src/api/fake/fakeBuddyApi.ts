@@ -20,12 +20,7 @@ import type {
   Team,
   TeamInput,
 } from '../types'
-import {
-  FAKE_FACILITY_ID,
-  FAKE_VIEWER,
-  createFakeSchedules,
-  fakeTeams,
-} from './fixtures'
+import { FAKE_FACILITY_ID, FAKE_VIEWER, createFakeSchedules, fakeTeams } from './fixtures'
 import { createFakePatientApi, createFakePatientRecords } from './fakePatientApi'
 import { createFakeStaffApi } from './fakeStaffApi'
 

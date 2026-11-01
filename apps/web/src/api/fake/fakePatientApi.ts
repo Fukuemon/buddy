@@ -153,7 +153,9 @@ export const createFakePatientApi = ({
         const remaining = remainingOf(patientId)
         if (remaining.schedules.length + remaining.recurring_schedules.length > 0)
           return { schedules: remaining }
-        return { ended: await save({ ...patient, ended_at: patient.ended_at ?? new Date().toISOString() }) }
+        return {
+          ended: await save({ ...patient, ended_at: patient.ended_at ?? new Date().toISOString() }),
+        }
       },
       resumeService: async (facilityId, patientId, assignedStaffId) => {
         assertFacility(facilityId)

@@ -392,9 +392,12 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
           }),
         ),
       endService: async (_facilityId, patientId) => {
-        const { data, error, response } = await client.POST('/v1/patients/{patient_id}/end_service', {
-          params: { path: { patient_id: patientId } },
-        })
+        const { data, error, response } = await client.POST(
+          '/v1/patients/{patient_id}/end_service',
+          {
+            params: { path: { patient_id: patientId } },
+          },
+        )
         if (response.ok && data !== undefined) return { ended: data }
         if (error !== undefined && 'schedules' in error && error.schedules !== undefined) {
           return { schedules: error.schedules }

@@ -593,9 +593,7 @@ describe('createHttpBuddyApi の利用者の管理', () => {
           })
         if (params.patient_id === 'missing')
           return response(404).json({ code: 'not_found', message: 'リソースが見つかりません' })
-        return response(200).json(
-          patient(params.patient_id, { ended_at: '2026-10-31T15:00:00Z' }),
-        )
+        return response(200).json(patient(params.patient_id, { ended_at: '2026-10-31T15:00:00Z' }))
       }),
     )
     await expect(api().patients.endService('facility-1', 'busy')).resolves.toEqual({
