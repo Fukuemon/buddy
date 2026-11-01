@@ -1,4 +1,4 @@
-import { InputDialog } from '@buddy/ui'
+import { FormField, formFieldControlClassName, InputDialog } from '@buddy/ui'
 import { useEffect, useId, useRef, useState } from 'react'
 
 import type { Department, StaffAssignments, StaffDetail, StaffUpdateInput, Team } from '#/api/types'
@@ -11,7 +11,7 @@ import {
   type StaffFormErrors,
 } from '../lib/validate'
 import { StaffAssignmentList } from './StaffAssignmentList'
-import { StaffField, StaffSelect, sortByName, staffFieldClassName } from './StaffFormFields'
+import { StaffSelect, sortByName } from './StaffFormFields'
 import { VisitsField } from './VisitsField'
 
 export type StaffProfileDialogProps = {
@@ -95,11 +95,11 @@ export const StaffProfileDialog = ({
           submit()
         }}
       >
-        <StaffField error={errors.name} errorTestId="staff-detail-error-name" label="名前">
+        <FormField error={errors.name} errorTestId="staff-detail-error-name" label="名前">
           {(field) => (
             <input
               {...field}
-              className={staffFieldClassName}
+              className={formFieldControlClassName}
               data-testid="staff-detail-name-input"
               disabled={isSubmitting}
               maxLength={STAFF_NAME_MAX_LENGTH}
@@ -111,7 +111,7 @@ export const StaffProfileDialog = ({
               value={name}
             />
           )}
-        </StaffField>
+        </FormField>
         <div className="flex flex-col gap-1">
           <span className="text-label">メールアドレス</span>
           <span className="text-body break-all" data-testid="staff-detail-email-readonly">
@@ -119,7 +119,7 @@ export const StaffProfileDialog = ({
           </span>
           <span className="text-caption text-text-secondary">メールアドレスは変えられません。</span>
         </div>
-        <StaffField
+        <FormField
           error={errors.phone}
           errorTestId="staff-detail-error-phone"
           label="電話番号（任意）"
@@ -127,7 +127,7 @@ export const StaffProfileDialog = ({
           {(field) => (
             <input
               {...field}
-              className={staffFieldClassName}
+              className={formFieldControlClassName}
               data-testid="staff-detail-phone-input"
               disabled={isSubmitting}
               inputMode="tel"
@@ -139,9 +139,9 @@ export const StaffProfileDialog = ({
               value={phone}
             />
           )}
-        </StaffField>
+        </FormField>
         <div className="flex flex-col gap-4 desktop:flex-row">
-          <StaffField label="部署">
+          <FormField label="部署">
             {(field) => (
               <StaffSelect
                 {...field}
@@ -152,8 +152,8 @@ export const StaffProfileDialog = ({
                 value={departmentId}
               />
             )}
-          </StaffField>
-          <StaffField
+          </FormField>
+          <FormField
             hint="チームを変えると、今のチームを対象にしている権限は、新しいチームが対象になります。"
             label="チーム"
           >
@@ -167,7 +167,7 @@ export const StaffProfileDialog = ({
                 value={teamId}
               />
             )}
-          </StaffField>
+          </FormField>
         </div>
         <VisitsField onChange={setVisits} testId="staff-detail-visits-input" value={visits} />
         {refusedAssignments !== undefined && !visits && (

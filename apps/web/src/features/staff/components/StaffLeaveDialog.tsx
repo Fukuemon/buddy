@@ -1,10 +1,9 @@
-import { ConfirmDialog } from '@buddy/ui'
-import { useId, useState } from 'react'
+import { ConfirmDialog, FormField, formFieldControlClassName } from '@buddy/ui'
+import { useState } from 'react'
 
 import type { StaffAssignments, StaffDetail } from '#/api/types'
 
 import { StaffAssignmentList } from './StaffAssignmentList'
-import { staffFieldClassName } from './StaffFormFields'
 
 export type StaffLeaveDialogProps = {
   staff: StaffDetail
@@ -32,7 +31,6 @@ export const StaffLeaveDialog = ({
   onSubmit,
   onCancel,
 }: StaffLeaveDialogProps) => {
-  const dateId = useId()
   const [returnDate, setReturnDate] = useState('')
   return (
     <ConfirmDialog
@@ -54,24 +52,22 @@ export const StaffLeaveDialog = ({
         {`休職の間、${staff.username} はログインできず、予定のカレンダーと、予定と利用者の担当の候補に出ません。復職にすると、元どおりログインできます。`}
       </p>
       <StaffAssignmentList assignments={assignments} errorMessage={assignmentsError} kind="leave" />
-      <div className="flex flex-col gap-1">
-        <label className="text-label" htmlFor={dateId}>
-          戻る予定の日（任意）
-        </label>
-        <input
-          aria-describedby={`${dateId}-hint`}
-          className={staffFieldClassName}
-          data-testid="staff-leave-return-date"
-          disabled={isSubmitting}
-          id={dateId}
-          onChange={(event) => setReturnDate(event.target.value)}
-          type="date"
-          value={returnDate}
-        />
-        <span className="text-caption text-text-secondary" id={`${dateId}-hint`}>
-          メモとして残します。この日に自動では戻りません。
-        </span>
-      </div>
+      <FormField
+        hint="メモとして残します。この日に自動では戻りません。"
+        label="戻る予定の日（任意）"
+      >
+        {(field) => (
+          <input
+            {...field}
+            className={formFieldControlClassName}
+            data-testid="staff-leave-return-date"
+            disabled={isSubmitting}
+            onChange={(event) => setReturnDate(event.target.value)}
+            type="date"
+            value={returnDate}
+          />
+        )}
+      </FormField>
     </ConfirmDialog>
   )
 }
