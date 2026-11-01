@@ -741,17 +741,18 @@ func TestScheduleEndsNextDay(t *testing.T) {
 	}
 
 	tests := []struct {
+		id   string
 		name string
 		slot schedule.Slot
 	}{
-		{name: "印を付けずに終了が開始より前", slot: slot(nov1, 22, 1, false)},
-		{name: "印を付けて終了が開始より後", slot: slot(nov1, 9, 10, true)},
-		{name: "印を付けて開始と終了が同じ", slot: slot(nov1, 9, 9, true)},
-		{name: "印を付けずに開始と終了が同じ", slot: slot(nov1, 9, 9, false)},
+		{id: "01M3TD000000000000000000G0", name: "印を付けずに終了が開始より前", slot: slot(nov1, 22, 1, false)},
+		{id: "01M3TD000000000000000000G1", name: "印を付けて終了が開始より後", slot: slot(nov1, 9, 10, true)},
+		{id: "01M3TD000000000000000000G2", name: "印を付けて開始と終了が同じ", slot: slot(nov1, 9, 9, true)},
+		{id: "01M3TD000000000000000000G3", name: "印を付けずに開始と終了が同じ", slot: slot(nov1, 9, 9, false)},
 	}
-	for i, tt := range tests {
+	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := schedule.Schedule{ID: "01M3TD000000000000000000G" + string(rune('0'+i)), Slot: tt.slot}
+			s := schedule.Schedule{ID: tt.id, Slot: tt.slot}
 			if err := r.Create(ctx, s); !errors.Is(err, apperr.ErrInvalidInput) {
 				t.Fatalf("err = %v, want ErrInvalidInput", err)
 			}
