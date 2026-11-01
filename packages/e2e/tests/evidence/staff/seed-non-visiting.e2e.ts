@@ -3,9 +3,12 @@ import { expect, test, type Page } from '@playwright/test'
 import { LOGIN_EMAIL, LOGIN_STAFF, OFFICE_CLERK } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { signInAtBroker } from '../../screens/login'
-import { patientNewStaffOption } from '../../selectors/patientForm'
+import { patientNewStaffOptions } from '../../selectors/patientForm'
 
 const MANAGER = `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`
+
+/** 利用者の登録の担当の職員の選択肢。シードの 1 つ目の事業所の、有効で訪問する職員が並ぶ。 */
+const PATIENT_STAFF_OPTIONS = ['選んでください', '佐藤 美咲', '森 健太', '林 さくら', '青木 陽菜']
 
 const CLERK = `${OFFICE_CLERK.name}（事務、訪問しない職員、照合の権限あり）`
 
@@ -172,9 +175,11 @@ test.describe('職員の管理', () => {
             await step('「利用者を登録」を押し、担当の職員の選択肢を見る')
             await page.getByTestId('patient-list-new').click()
             await expect(page.getByTestId('patient-new-staff')).toBeEnabled()
-            await expect(patientNewStaffOption(page, LOGIN_STAFF.name)).toHaveCount(1)
-            await expect(patientNewStaffOption(page, OFFICE_CLERK.name)).toHaveCount(0)
-            await check(`担当の職員の候補に${LOGIN_STAFF.name}は出て、${OFFICE_CLERK.name}は出ない`)
+            await expect(patientNewStaffOptions(page)).toHaveText(PATIENT_STAFF_OPTIONS)
+            await expect(patientNewStaffOptions(page, OFFICE_CLERK.name)).toHaveCount(0)
+            await check(
+              `担当の職員の選択肢は「${PATIENT_STAFF_OPTIONS.join('」「')}」で、${OFFICE_CLERK.name}は出ない`,
+            )
           },
         )
       })
