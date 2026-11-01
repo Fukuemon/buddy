@@ -121,12 +121,21 @@ erDiagram
   - ブローカーは職員のメールを全ての事業所で一意にするので、ほかの事業所と重なるメールの登録はブローカーが拒む。
   - 予定の API は、メールを小文字にそろえてから保存し、比べる。そろえ忘れた書き込みは CHECK が拒む。
 - `users.username` は表示名で、一意にしない。
-- 休職と退職の状態は、次の 3 つのカラムで持つ。どれも、その状態でなければ NULL である。
-  - `users.leave_started_at`: 職員を休職にした時刻
-  - `users.leave_return_date`: 戻る予定の日のメモ
-  - `users.retired_at`: 退職にした時刻
-  - 休職と退職にし直しても、最初の時刻を残す。
-  - 退職した職員は、`email` と `phone_number` が NULL で、休職の 2 つのカラムも NULL である。CHECK がこの組み合わせを確認する。
+
+休職と退職の状態は、`users.leave_started_at`、`users.leave_return_date`、`users.retired_at` の 3 つのカラムで持つ。  
+どれも、その状態でなければ NULL である。  
+職員の状態ごとの、3 つのカラムと `email`、`phone_number` の値は次のとおり。
+
+| 状態 | `leave_started_at` | `leave_return_date` | `retired_at` | `email` | `phone_number` |
+| --- | --- | --- | --- | --- | --- |
+| 有効 | NULL | NULL | NULL | 値を持つ | 値か NULL |
+| 休職 | 職員を休職にした時刻 | 戻る予定の日のメモか NULL | NULL | 値を持つ | 値か NULL |
+| 退職 | NULL | NULL | 退職にした時刻 | NULL | NULL |
+
+休職と退職にし直しても、最初の時刻を残す。  
+退職した職員は、`email` と `phone_number` が NULL で、休職の 2 つのカラムも NULL である。  
+CHECK がこの組み合わせを確認する。
+
 - 予定の種類の規則（通常はタイトルが必須、訪問は訪問の情報が必須）は、`schedule_types.code`（`normal`、`visit`）で読む。`name` は表示と一覧の絞り込みに使う。
 - `is_over_time_work` は、開始の時刻から DB が生成するカラムである。書き込みには含めない。
 - 外部キーのカラムには、引く向きに使うものにインデックスを置く。行を消さない固定のマスタ（権限、サービスコード、訪問の区分、予定の種類）を指すカラムには置かない。
@@ -211,13 +220,20 @@ sequenceDiagram
 - `/v1` の全ての API は、`Authorization: Bearer` の access token を求める。
 - 署名のアルゴリズムは RS256 と ES256 だけを受け付ける。JWKS は、起動のときに discovery の文書から場所を読み、1 時間ごとに取り直す。知らない `kid` のトークンが来たときも取り直すが、間隔は 1 分以上あける。
 - トークンが無いときは `WWW-Authenticate: Bearer` を、検証に失敗したときは `WWW-Authenticate: Bearer error="invalid_token"` を付けて、401 を返す。
-- ミドルウェアは、パスの引数ごとに、指すリソースの事業所を職員の事業所と比べる。
-  - `facility_id` は、値をそのまま職員の事業所と比べる。
-  - 次の引数は、リソースを読んでその事業所と比べる。
-    - 組織、職員、利用者: `department_id`、`team_id`、`position_id`、`user_id`、`patient_id`
-    - 予定とカレンダー: `schedule_id`、`recurring_schedule_id`、`external_calendar_id`、`calendar_export_id`
-  - `policy_id` は、事業所に属さないので確認しない。`user_policy_id` は、同じパスの `user_id` で事業所を確認し、`staff.Usecase` が職員の権限かを確認する。
-  - この一覧に無い引数を持つパスは、事業所を確認できないので 500 を返す。
+
+ミドルウェアは、パスの引数ごとに、指すリソースの事業所を職員の事業所と比べる。  
+パスの引数ごとの、事業所の確認の仕方は次のとおり。
+
+| 引数 | 指すもの | 事業所の確認の仕方 |
+| --- | --- | --- |
+| `facility_id` | 事業所 | 値をそのまま職員の事業所と比べる |
+| `department_id`、`team_id`、`position_id`、`user_id`、`patient_id` | 組織、職員、利用者 | リソースを読んでその事業所と比べる |
+| `schedule_id`、`recurring_schedule_id`、`external_calendar_id`、`calendar_export_id` | 予定とカレンダー | リソースを読んでその事業所と比べる |
+| `policy_id` | 権限 | 事業所に属さないので確認しない |
+| `user_policy_id` | 職員の権限 | 同じパスの `user_id` で事業所を確認し、`staff.Usecase` が職員の権限かを確認する |
+
+表に無い引数を持つパスは、事業所を確認できないので 500 を返す。
+
 - パスの ID が ULID でないときと、リソースが見つからないときは、ミドルウェアは通す。ULID でない ID は次のミドルウェアが 400 を返し、見つからないリソースはハンドラが 404 を返す。
 - `/v1` のリクエストは、次の順に確認する。先に失敗した段のレスポンスを返すので、トークンの 401 と事業所の 403 は、パスの ID と定義の 400 より先に返る。
   1. Origin を許すか（403）。`CORS_ALLOW_ORIGINS` を設定したときだけ適用する。規則は [Interface](#interface) の CORS にある
@@ -376,23 +392,29 @@ sequenceDiagram
 - 事業所に属さないマスタは `/v1/policies`、`/v1/schedule_types`、`/v1/visit_infos/service_codes`、`/v1/visit_infos/visit_categories` で読む。
 - 一覧の並べ替えは、許可したカラムの名前だけを受け、それ以外は 400 を返す。
 - `GET /v1/me` は、トークンの職員と権限を返す。画面は、ログインの後にこれを呼んで事業所を決める。
-- エラーは `{"code","message"}` の JSON で返す。
-  - 400 の `invalid_input`: クエリを読めない、パスの ID が ULID でない、リクエストが `openapi.yaml` の定義に合わない、本文の値が規則に合わない、本文が指す参照が見つからないか別の事業所のもの
-    - 休職か退職の職員か、訪問しない職員に、予定か担当を新しく割り振ったときも返す
-    - 利用の終了の利用者を、予定の利用者に新しく指したときも返す
-  - 401 の `unauthenticated`: トークンが無いか、検証に失敗した
-  - 403 の `forbidden`: 職員を特定できない、職員が休職か退職している、事業所が違う、権限で許されない
-  - 404 の `not_found`: パスで指したリソースが無い
-  - 409 の `conflict`: 一意の値が重なる、キャンセル済みの予定を変えるかキャンセルする、繰り返しの回をすでに置き換えた
-  - 409 の `conflict`（職員）、`staff_has_assignments`: 職員の管理で拒む原因。[職員の管理の Design Doc の Interface](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/staff/DesignDoc.md#interface) にある
-  - 409 の `patient_has_schedules`: 利用の終了にする利用者に、その日以降の予定か繰り返しの予定が残る。本文の `schedules` に残る一覧を持つ
-  - 409 の `calendar_taken`、`calendar_already_linked`、`staff_has_calendar`: カレンダーを結び付けられない原因
-  - 409 の `import_running`、`import_preview_changed`: 取り込みを確定できない原因
-  - 409 の `export_not_in_review`、`export_not_acceptable`、`external_change_unappliable`: 確認が必要な書き出しを解けない原因
-  - 422 の `calendar_unreadable`: Google カレンダーが無いか、事業所のサービスアカウントに共有されていない
-  - 500 の `internal`: サーバーのエラー。ブローカーに届かないときも含む
-  - 502 の `calendar_unavailable`: Google に届かないか、Google がエラーを返した
-  - 503 の `calendar_not_configured`: 事業所のサービスアカウントが設定されていない
+
+エラーは `{"code","message"}` の JSON で返す。  
+エラーの status と `code` ごとの、返すときの条件は次のとおり。
+
+| status | `code` | 返すときの条件 | 詳しい文書 |
+| --- | --- | --- | --- |
+| 400 | `invalid_input` | クエリを読めない、パスの ID が ULID でない、リクエストが `openapi.yaml` の定義に合わない、本文の値が規則に合わない、本文が指す参照が見つからないか別の事業所のもの | - |
+| 400 | `invalid_input` | 休職か退職の職員か、訪問しない職員に、予定か担当を新しく割り振った | [休職と退職の職員と、訪問しない職員への割り振り](#休職と退職の職員と訪問しない職員への割り振り) |
+| 400 | `invalid_input` | 利用の終了の利用者を、予定の利用者に新しく指した | [利用の終了の利用者への予定](#利用の終了の利用者への予定) |
+| 401 | `unauthenticated` | トークンが無いか、検証に失敗した | [認証から事業所の確認までの流れ](#認証から事業所の確認までの流れ) |
+| 403 | `forbidden` | 職員を特定できない、職員が休職か退職している、事業所が違う、権限で許されない | [認証から事業所の確認までの流れ](#認証から事業所の確認までの流れ) |
+| 404 | `not_found` | パスで指したリソースが無い | - |
+| 409 | `conflict` | 一意の値が重なる、キャンセル済みの予定を変えるかキャンセルする、繰り返しの回をすでに置き換えた | - |
+| 409 | `conflict`（職員）、`staff_has_assignments` | 職員の管理で拒む原因 | [職員の管理の Design Doc の Interface](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/staff/DesignDoc.md#interface) |
+| 409 | `patient_has_schedules` | 利用の終了にする利用者に、その日以降の予定か繰り返しの予定が残る。本文の `schedules` に残る一覧を持つ | [利用者の変更、利用の終了、利用の再開](#利用者の変更利用の終了利用の再開) |
+| 409 | `calendar_taken`、`calendar_already_linked`、`staff_has_calendar` | カレンダーを結び付けられない原因 | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/calendar/DesignDoc.md) |
+| 409 | `import_running`、`import_preview_changed` | 取り込みを確定できない原因 | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/calendar/DesignDoc.md) |
+| 409 | `export_not_in_review`、`export_not_acceptable`、`external_change_unappliable` | 確認が必要な書き出しを解けない原因 | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/calendar/DesignDoc.md) |
+| 422 | `calendar_unreadable` | Google カレンダーが無いか、事業所のサービスアカウントに共有されていない | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/calendar/DesignDoc.md) |
+| 500 | `internal` | サーバーのエラー。ブローカーに届かないときも含む | - |
+| 502 | `calendar_unavailable` | Google に届かないか、Google がエラーを返した | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/calendar/DesignDoc.md) |
+| 503 | `calendar_not_configured` | 事業所のサービスアカウントが設定されていない | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/calendar/DesignDoc.md) |
+
 - CORS は、`CORS_ALLOW_ORIGINS` に並べた Origin だけに許す。空なら CORS のヘッダーを返さない。
   - 許す Origin の事前のリクエストには、トークンを求めずに 204 を返す。許すメソッドは GET、POST、PUT、DELETE、OPTIONS、ヘッダーは `Content-Type` と `Authorization` にする。
   - 許さない Origin のリクエストは、本文を持たない 403 で止める。Origin がリクエストの Host と同じリクエストは、CORS のリクエストとして扱わずに通す。
