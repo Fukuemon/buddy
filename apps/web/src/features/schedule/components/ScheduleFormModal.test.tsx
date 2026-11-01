@@ -86,6 +86,51 @@ describe('ScheduleFormModal', () => {
     expect(screen.getByTestId('schedule-form-end-time')).toHaveTextContent('終了時間 -')
   })
 
+  it('訪問の予定の開始時間と提供時間の和が 24 時以上なら、終了時間を翌日と出す', async () => {
+    render(<Visit />)
+    await userEvent.click(screen.getByTestId('service-code-医'))
+    await userEvent.clear(screen.getByTestId('schedule-form-start-time'))
+    await userEvent.type(screen.getByTestId('schedule-form-start-time'), '23:00')
+    expect(screen.getByTestId('schedule-form-end-time')).toHaveTextContent('終了時間 翌日 00:30')
+    expect(screen.getByTestId('schedule-field-date-time')).toHaveTextContent(
+      '2026-10-20 23:00 - 翌日 00:30（90 分、医）',
+    )
+  })
+
+  it('通常の予定の 22:00 から 1:00 は、翌日を選ばなければ送らず、選ぶと翌日の印を付けて送る', async () => {
+    const onSubmit = fn()
+    render(<Normal onSubmit={onSubmit} />)
+    await userEvent.click(screen.getByTestId('schedule-field-title'))
+    await userEvent.type(screen.getByTestId('schedule-form-title'), '夜勤')
+    await userEvent.click(screen.getByTestId('schedule-field-staff'))
+    await userEvent.click(screen.getByTestId('staff-select-option-staff-3'))
+    await userEvent.click(screen.getByTestId('schedule-field-date-time'))
+    await userEvent.clear(screen.getByTestId('schedule-form-start-time'))
+    await userEvent.type(screen.getByTestId('schedule-form-start-time'), '22:00')
+    await userEvent.clear(screen.getByTestId('schedule-form-end-time'))
+    await userEvent.type(screen.getByTestId('schedule-form-end-time'), '01:00')
+    await userEvent.click(screen.getByTestId('schedule-create-submit'))
+
+    expect(await screen.findAllByText('終了時間は開始時間より後にしてください')).not.toHaveLength(0)
+    expect(onSubmit).not.toHaveBeenCalled()
+
+    await userEvent.click(screen.getByTestId('schedule-form-ends-next-day'))
+    await waitFor(() =>
+      expect(screen.queryByText('終了時間は開始時間より後にしてください')).not.toBeInTheDocument(),
+    )
+    expect(screen.getByTestId('schedule-field-date-time')).toHaveTextContent(
+      '2026-10-20 22:00 - 翌日 01:00',
+    )
+    await userEvent.click(screen.getByTestId('schedule-create-submit'))
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledOnce())
+    expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({
+      kind: 'normal',
+      startTime: '22:00',
+      endTime: '01:00',
+      endsNextDay: true,
+    })
+  })
+
   it('通常の予定はタイトルの項目を出し、訪問のタブを押すと onKindChange を呼ぶ', async () => {
     const onKindChange = fn()
     render(<Normal onKindChange={onKindChange} />)
