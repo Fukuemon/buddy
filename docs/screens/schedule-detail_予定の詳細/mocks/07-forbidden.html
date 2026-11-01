@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>schedule-detail 見る権限が無い</title>
+    <link rel="stylesheet" href="../../_common/mock.css" />
+    <link rel="stylesheet" href="../../_common/tokens.css" />
+    <link rel="stylesheet" href="../../_common/wireframe.css" />
+    <link rel="stylesheet" href="schedule-detail.css" />
+  </head>
+  <body data-view="desktop">
+    <div class="stage">
+      <div class="screen">
+        <div class="screen-body">
+          <div class="wf-modal-stage">
+            <div aria-hidden="true" class="wf-bg-calendar"></div>
+            <div class="wf-overlay" data-m="1" tabindex="-1" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html"></div>
+            <!-- 実装は、失敗のダイアログに schedule-detail-modal を付けていない -->
+            <div aria-label="予定の詳細" class="wf-modal" data-m="2" role="dialog">
+              <div class="wf-modal__header">
+                <h2 class="wf-modal__title wf-dialog__title" data-m="3">予定の詳細</h2>
+                <span aria-label="閉じる" class="wf-btn wf-btn--icon" data-m="4" data-testid="modal-close" data-escape data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html">×</span>
+              </div>
+              <div class="wf-modal__body">
+                <p class="wf-alert" data-m="5" role="alert">この予定を見る権限がありません。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="markers"></div>
+    </div>
+    <script src="../../_common/mock.js"></script>
+    <script src="../../_common/interact.js"></script>
+  </body>
+</html>
