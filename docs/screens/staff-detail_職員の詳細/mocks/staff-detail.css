@@ -317,6 +317,12 @@
     width: 100%;
   }
 
+  /* 操作のボタンは左に寄るので、「…」のメニューはボタンの左端にそろえて右へ開く */
+  .st-hero__actions .wf-menu {
+    right: auto;
+    left: 0;
+  }
+
   .st-dl {
     grid-template-columns: 1fr;
     gap: 2px;
@@ -328,14 +334,17 @@
 
   .st-row {
     flex-direction: column;
+    align-items: stretch;
   }
 }
 
 /* 訪問の選択は、欄の幅いっぱいに 2 つの選択肢を並べる */
 .st-visits {
   display: flex;
+  justify-self: stretch;
 }
 
 .st-visits .wf-tab {
   flex: 1;
+  white-space: nowrap;
 }

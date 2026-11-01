@@ -9,5 +9,6 @@ INSERT INTO staff (id, org_id, email, status) VALUES
     ('01M5J20JC1DAXJCPMP36TYGJ0A', 'org-sample', 'kenta.mori@example.com', 'active'),
     ('01M5J20JC21Z5PZ92E3CD6HN03', 'org-sample', 'sakura.hayashi@example.com', 'active'),
     ('01M5J20JC3D23NW9Y5WBXB8STK', 'org-sample', 'misaki.sato@example.com', 'active'),
+    ('01M5J20JC6M3P8V1X4Z7B2D5FG', 'org-sample', 'yui.nakamura@example.com', 'active'),
     ('01M5J20JC4QZ0XQJD9RR1P5Z63', 'org-sample-b', 'nagisa.ueno@example.com', 'active'),
     ('01M5J20JC5R7WQ2N8K4TB6XHDE', 'org-sample-b', 'takumi.ono@example.com', 'suspended');

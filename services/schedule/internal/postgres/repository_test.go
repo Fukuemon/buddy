@@ -457,11 +457,11 @@ func TestStaffList(t *testing.T) {
 		want []string
 	}{
 		{name: "名前の昇順", q: staff.ListQuery{Sort: kernel.Sort{Field: "username"}},
-			want: []string{"佐藤 美咲", "林 さくら", "森 健太", "青木 陽菜"}},
+			want: []string{"中村 結衣", "佐藤 美咲", "林 さくら", "森 健太", "青木 陽菜"}},
 		{name: "名前の降順", q: staff.ListQuery{Sort: kernel.Sort{Field: "username", Desc: true}},
-			want: []string{"青木 陽菜", "森 健太", "林 さくら", "佐藤 美咲"}},
+			want: []string{"青木 陽菜", "森 健太", "林 さくら", "佐藤 美咲", "中村 結衣"}},
 		{name: "チームで絞る", q: staff.ListQuery{Team: ptr("A"), Sort: kernel.Sort{Field: "username"}},
-			want: []string{"林 さくら", "青木 陽菜"}},
+			want: []string{"中村 結衣", "林 さくら", "青木 陽菜"}},
 		{name: "役職で絞る", q: staff.ListQuery{Position: ptr("リーダー"), Sort: kernel.Sort{Field: "username"}},
 			want: []string{"森 健太"}},
 		{name: "部署で絞る", q: staff.ListQuery{Department: ptr("リハビリ"), Sort: kernel.Sort{Field: "username"}},
