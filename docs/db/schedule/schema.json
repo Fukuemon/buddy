@@ -1050,6 +1050,13 @@
           "type": "timestamp with time zone",
           "nullable": true,
           "comment": "職員を退職にした時刻。退職していなければ NULL"
+        },
+        {
+          "name": "visits",
+          "type": "boolean",
+          "nullable": false,
+          "default": "true",
+          "comment": "訪問するか。false の職員には、予定と担当を新しく割り振れない"
         }
       ],
       "indexes": [
@@ -1248,6 +1255,16 @@
           "referenced_table": "",
           "columns": [
             "username"
+          ]
+        },
+        {
+          "name": "users_visits_not_null",
+          "type": "n",
+          "def": "NOT NULL visits",
+          "table": "public.users",
+          "referenced_table": "",
+          "columns": [
+            "visits"
           ]
         },
         {
