@@ -84,7 +84,10 @@ export const ScheduleCalendar = ({
                 className={cancelled ? 'line-through' : undefined}
                 data-testid={cancelled ? `schedule-event-${arg.event.id}-cancelled` : undefined}
               >
-                {eventTimeText(arg.event.start, arg.event.end, arg.timeText)} {arg.event.title}
+                {arg.view.type === FULL_CALENDAR_VIEW.week
+                  ? eventTimeText(arg.event.start, arg.event.end, arg.timeText)
+                  : arg.timeText}{' '}
+                {arg.event.title}
               </span>
             </span>
           )
