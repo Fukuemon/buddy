@@ -55,6 +55,7 @@ describe('callBff', () => {
                 id: 'team-a',
                 facility_id: 'facility-1',
                 name: 'A',
+                color: 'blue',
                 created_at: '2026-10-01T00:00:00Z',
                 updated_at: '2026-10-01T00:00:00Z',
               },
@@ -67,7 +68,7 @@ describe('callBff', () => {
       { op: 'teams.list', args: ['facility-other'] },
       await setup(),
     )
-    expect(result).toEqual({ ok: true, data: [{ id: 'team-a', name: 'A' }] })
+    expect(result).toEqual({ ok: true, data: [{ id: 'team-a', name: 'A', color: 'blue' }] })
   })
 
   it('API の失敗は status と文を値で返す', async () => {

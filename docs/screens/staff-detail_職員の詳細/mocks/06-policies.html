@@ -57,7 +57,6 @@
                   <div class="st-hero__text">
                     <div class="st-hero__name">
                       <h1 class="wf-heading" data-testid="staff-detail-name">林 さくら</h1>
-                      <span class="wf-status" data-testid="staff-detail-status">有効</span>
                     </div>
                     <span class="st-muted" data-testid="staff-detail-email">sakura.hayashi@example.com</span>
                   </div>
@@ -77,66 +76,20 @@
                     <h2 class="st-h2">権限</h2>
                     <span class="wf-btn" data-testid="staff-detail-policies-change" data-go="06-policies.html">権限を変える</span>
                   </div>
-                  <table class="wf-table st-policy-table" data-testid="staff-policy-table">
-                    <thead>
-                      <tr>
-                        <th>権限</th>
-                        <th>付いているか</th>
-                        <th>付いた理由</th>
-                        <th>対象</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr data-testid="staff-policy-row-{権限の code}">
-                        <td>自分の予定の編集</td>
-                        <td><span class="st-mark st-mark--on">✓ 付いている</span></td>
-                        <td><span class="st-origin">役職で付く</span></td>
-                        <td class="st-empty"><span class="st-muted">—</span></td>
-                      </tr>
-                      <tr data-testid="staff-policy-row-{権限の code}">
-                        <td>指定した職員の予定の閲覧</td>
-                        <td><span class="st-mark st-mark--on">✓ 付いている</span></td>
-                        <td><span class="st-origin">個別に足した</span></td>
-                        <td>森 健太、佐藤 美咲</td>
-                      </tr>
-                      <tr data-testid="staff-policy-row-{権限の code}">
-                        <td>指定した職員の予定の編集</td>
-                        <td><span class="st-mark st-mark--off">— 付いていない</span></td>
-                        <td class="st-empty"></td>
-                        <td class="st-empty"><span class="st-muted">—</span></td>
-                      </tr>
-                      <tr data-testid="staff-policy-row-{権限の code}">
-                        <td>指定したチームの職員の予定の閲覧</td>
-                        <td><span class="st-mark st-mark--off">— 付いていない</span></td>
-                        <td class="st-empty"></td>
-                        <td class="st-empty"><span class="st-muted">—</span></td>
-                      </tr>
-                      <tr data-testid="staff-policy-row-{権限の code}">
-                        <td>指定したチームの職員の予定の編集</td>
-                        <td><span class="st-mark st-mark--off">— 付いていない</span></td>
-                        <td class="st-empty"></td>
-                        <td class="st-empty"><span class="st-muted">—</span></td>
-                      </tr>
-                      <tr data-testid="staff-policy-row-{権限の code}">
-                        <td>事業所の全ての予定の閲覧</td>
-                        <td><span class="st-mark st-mark--off">— 付いていない</span></td>
-                        <td class="st-empty"></td>
-                        <td class="st-empty"><span class="st-muted">—</span></td>
-                      </tr>
-                      <tr data-testid="staff-policy-row-{権限の code}">
-                        <td>事業所の全ての予定の編集</td>
-                        <td><span class="st-mark st-mark--off">— 付いていない</span></td>
-                        <td class="st-empty"></td>
-                        <td class="st-empty"><span class="st-muted">—</span></td>
-                      </tr>
-                      <tr data-testid="staff-policy-row-{権限の code}">
-                        <td>職員の管理</td>
-                        <td><span class="st-mark st-mark--off">— 付いていない</span></td>
-                        <td class="st-empty"></td>
-                        <td class="st-empty"><span class="st-muted">—</span></td>
-                      </tr>
-                    </tbody>
-                  </table>
+                  <div class="st-policy-groups" data-testid="staff-policy-list">
+                    <section class="st-policy-group" aria-labelledby="policy-group-position" data-testid="staff-policy-group-position">
+                      <h3 class="st-policy-group__title" id="policy-group-position">役職「メンバー」で付く権限</h3>
+                      <ul class="st-policy-items">
+                        <li class="st-policy-item" data-testid="staff-policy-row-{権限の code}">自分の予定の編集</li>
+                      </ul>
+                    </section>
+                    <section class="st-policy-group" aria-labelledby="policy-group-individual" data-testid="staff-policy-group-individual">
+                      <h3 class="st-policy-group__title" id="policy-group-individual">個別に足した権限</h3>
+                      <ul class="st-policy-items">
+                        <li class="st-policy-item" data-testid="staff-policy-row-{権限の code}">指定した職員の予定の閲覧<span class="st-policy-item__targets" data-testid="staff-policy-targets-{権限の code}">森 健太、佐藤 美咲</span></li>
+                      </ul>
+                    </section>
+                  </div>
                 </section>
               </main>
               <div class="wf-overlay" tabindex="-1" data-m="1" data-go="02-policies.html"></div>
@@ -146,62 +99,40 @@
                   <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-escape data-m="3" data-testid="staff-policies-close" data-go="02-policies.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
                 </div>
                 <div class="wf-dialog__body">
-                  <ul class="st-policy-options" data-testid="staff-policies-options">
-                    <li class="st-policy-option">
-                      <div class="st-policy-option__head">
-                        <span class="wf-check is-on" data-toggle data-m="4" data-testid="staff-policies-option-{権限の code}">自分の予定の編集</span>
-                        <span class="st-origin" data-m="5">役職で付く</span>
-                      </div>
-                    </li>
-                    <li class="st-policy-option">
-                      <div class="st-policy-option__head">
-                        <span class="wf-check is-on" data-toggle data-testid="staff-policies-option-{権限の code}">指定した職員の予定の閲覧</span>
-                        <span class="st-origin">個別に足した</span>
-                      </div>
-                      <div class="st-targets" data-m="6" data-testid="staff-policies-targets">
-                        <span class="wf-label">対象の職員</span>
-                        <div class="wf-chips">
-                          <span class="wf-chip" data-toggle data-testid="staff-policies-target-{職員の id}">青木 陽菜</span>
-                          <span class="wf-chip is-on" data-toggle data-testid="staff-policies-target-{職員の id}">佐藤 美咲</span>
-                          <span class="wf-chip is-on" data-toggle data-testid="staff-policies-target-{職員の id}">森 健太</span>
-                        </div>
-                      </div>
-                    </li>
-                    <li class="st-policy-option">
-                      <div class="st-policy-option__head">
-                        <span class="wf-check" data-toggle data-testid="staff-policies-option-{権限の code}">指定した職員の予定の編集</span>
-                      </div>
-                    </li>
-                    <li class="st-policy-option">
-                      <div class="st-policy-option__head">
-                        <span class="wf-check" data-toggle data-testid="staff-policies-option-{権限の code}">指定したチームの職員の予定の閲覧</span>
-                      </div>
-                    </li>
-                    <li class="st-policy-option">
-                      <div class="st-policy-option__head">
-                        <span class="wf-check" data-toggle data-testid="staff-policies-option-{権限の code}">指定したチームの職員の予定の編集</span>
-                      </div>
-                    </li>
-                    <li class="st-policy-option">
-                      <div class="st-policy-option__head">
-                        <span class="wf-check" data-toggle data-testid="staff-policies-option-{権限の code}">事業所の全ての予定の閲覧</span>
-                      </div>
-                    </li>
-                    <li class="st-policy-option">
-                      <div class="st-policy-option__head">
-                        <span class="wf-check" data-toggle data-testid="staff-policies-option-{権限の code}">事業所の全ての予定の編集</span>
-                      </div>
-                    </li>
-                    <li class="st-policy-option">
-                      <div class="st-policy-option__head">
-                        <span class="wf-check" data-toggle data-testid="staff-policies-option-{権限の code}">職員の管理</span>
-                      </div>
-                    </li>
-                  </ul>
+                  <div class="st-policy-fieldsets" data-testid="staff-policies-options">
+                    <fieldset class="st-policy-fieldset" data-testid="staff-policies-group-position">
+                      <legend class="st-policy-group__title" data-m="5">役職「メンバー」で付く権限</legend>
+                      <ul class="st-policy-options">
+                        <li class="st-policy-option"><span class="wf-check is-on" data-toggle data-m="4" data-testid="staff-policies-option-{権限の code}">自分の予定の編集</span></li>
+                      </ul>
+                    </fieldset>
+                    <fieldset class="st-policy-fieldset" data-testid="staff-policies-group-other">
+                      <legend class="st-policy-group__title">ほかの権限</legend>
+                      <ul class="st-policy-options">
+                        <li class="st-policy-option">
+                          <span class="wf-check is-on" data-toggle data-testid="staff-policies-option-{権限の code}">指定した職員の予定の閲覧</span>
+                          <div class="st-targets" data-m="6" data-testid="staff-policies-targets">
+                            <span class="wf-label" id="policies-targets-label">対象の職員</span>
+                            <div class="wf-chips" role="list" aria-labelledby="policies-targets-label">
+                              <span class="st-target" role="listitem" data-testid="staff-policies-target-{職員の id}">森 健太<span class="wf-btn wf-btn--icon st-target__remove" role="button" aria-label="森 健太 を外す" data-m="7" data-testid="staff-policies-target-remove-{職員の id}"><svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span></span>
+                              <span class="st-target" role="listitem" data-testid="staff-policies-target-{職員の id}">佐藤 美咲<span class="wf-btn wf-btn--icon st-target__remove" role="button" aria-label="佐藤 美咲 を外す" data-testid="staff-policies-target-remove-{職員の id}"><svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span></span>
+                              <span class="wf-select st-target-add" role="combobox" aria-expanded="false" aria-label="対象の職員を選ぶ" data-m="8" data-testid="staff-policies-target-add" data-go="16-policies-target.html">＋ 職員を選ぶ</span>
+                            </div>
+                          </div>
+                        </li>
+                        <li class="st-policy-option"><span class="wf-check" data-toggle data-testid="staff-policies-option-{権限の code}">指定した職員の予定の編集</span></li>
+                        <li class="st-policy-option"><span class="wf-check" data-toggle data-testid="staff-policies-option-{権限の code}">指定したチームの職員の予定の閲覧</span></li>
+                        <li class="st-policy-option"><span class="wf-check" data-toggle data-testid="staff-policies-option-{権限の code}">指定したチームの職員の予定の編集</span></li>
+                        <li class="st-policy-option"><span class="wf-check" data-toggle data-testid="staff-policies-option-{権限の code}">事業所の全ての予定の閲覧</span></li>
+                        <li class="st-policy-option"><span class="wf-check" data-toggle data-testid="staff-policies-option-{権限の code}">事業所の全ての予定の編集</span></li>
+                        <li class="st-policy-option"><span class="wf-check" data-toggle data-testid="staff-policies-option-{権限の code}">職員の管理</span></li>
+                      </ul>
+                    </fieldset>
+                  </div>
                 </div>
                 <div class="wf-dialog__footer">
-                  <span class="wf-btn" data-m="7" data-testid="staff-policies-cancel" data-go="02-policies.html">キャンセル</span>
-                  <span class="wf-btn wf-btn--primary" data-m="8" data-testid="staff-policies-submit" data-go="02-policies.html">保存</span>
+                  <span class="wf-btn" data-m="9" data-testid="staff-policies-cancel" data-go="02-policies.html">キャンセル</span>
+                  <span class="wf-btn wf-btn--primary" data-m="10" data-testid="staff-policies-submit" data-go="02-policies.html">保存</span>
                 </div>
               </div>
             </div>

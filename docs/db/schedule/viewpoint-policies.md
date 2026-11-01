@@ -8,7 +8,7 @@
 
 | Name                                                        | Columns | Comment                                                | Type       |
 | ----------------------------------------------------------- | ------- | ------------------------------------------------------ | ---------- |
-| [public.teams](public.teams.md)                             | 5       | 事業所のチーム                                         | BASE TABLE |
+| [public.teams](public.teams.md)                             | 6       | 事業所のチーム                                         | BASE TABLE |
 | [public.positions](public.positions.md)                     | 5       | 事業所の役職。職員を登録するときに写す既定の権限を持つ | BASE TABLE |
 | [public.policies](public.policies.md)                       | 6       | 権限。マイグレーションで入れ、API では作らない         | BASE TABLE |
 | [public.position_policies](public.position_policies.md)     | 2       | 役職の既定の権限                                       | BASE TABLE |
@@ -37,6 +37,7 @@ erDiagram
   varchar_255_ name
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  text color
 }
 "public.positions" {
   text id

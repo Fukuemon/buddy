@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"slices"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
@@ -222,7 +223,7 @@ func TestMigrateDownAndUp(t *testing.T) {
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)
 	}
-	if err := MigrateDown(cfg, 7); err != nil {
+	if err := MigrateDown(cfg, 8); err != nil {
 		t.Fatal(err)
 	}
 	pool, err := Open(ctx, cfg)
@@ -253,4 +254,60 @@ func countFacilities(t *testing.T, pool *pgxpool.Pool) int {
 		t.Fatal(err)
 	}
 	return n
+}
+
+// TestMigrateTeamColor は、チームの色のマイグレーションが、今あるチームに事業所ごとに名前の順で 8 色を入れ、9 個目から先頭に戻ることを確認する。
+func TestMigrateTeamColor(t *testing.T) {
+	cfg := newDatabase(t, "migrate_team_color")
+	ctx := context.Background()
+	if err := MigrateUp(cfg); err != nil {
+		t.Fatal(err)
+	}
+	if err := MigrateDown(cfg, 1); err != nil {
+		t.Fatal(err)
+	}
+	pool, err := Open(ctx, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pool.Close()
+	const f1, f2 = "01M3TE00000000000000000001", "01M3TE00000000000000000002"
+	stmts := []string{
+		"INSERT INTO facilities (id, name) VALUES ('" + f1 + "', '事業所 1'), ('" + f2 + "', '事業所 2')",
+		"INSERT INTO teams (id, facility_id, name) VALUES ('01M3TE000000000000000000Z1', '" + f2 + "', 'あ')",
+	}
+	// 事業所 1 の 9 個のチームを、名前の順と違う ID の順で入れる
+	for i, name := range []string{"I", "H", "G", "F", "E", "D", "C", "B", "A"} {
+		stmts = append(stmts, "INSERT INTO teams (id, facility_id, name) VALUES ('01M3TE000000000000000000A"+string(rune('0'+i))+"', '"+f1+"', '"+name+"')")
+	}
+	for _, s := range stmts {
+		if _, err := pool.Exec(ctx, s); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := MigrateUp(cfg); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := pool.Query(ctx, "SELECT facility_id, name, color FROM teams ORDER BY facility_id, name")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for rows.Next() {
+		var fid, name, color string
+		if err := rows.Scan(&fid, &name, &color); err != nil {
+			t.Fatal(err)
+		}
+		got = append(got, fid[len(fid)-1:]+":"+name+"="+color)
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{
+		"1:A=blue", "1:B=orange", "1:C=magenta", "1:D=cyan", "1:E=yellow", "1:F=purple", "1:G=green", "1:H=lime", "1:I=blue",
+		"2:あ=blue",
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("teams = %v, want %v", got, want)
+	}
 }

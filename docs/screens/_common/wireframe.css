@@ -20,6 +20,15 @@
   --wf-danger-surface: var(--buddy-color-danger-surface);
   --wf-warning-surface: var(--buddy-color-warning-surface);
   --wf-overlay: var(--buddy-color-overlay);
+  /* チームの色。チームが持つ値（blue など）で塗る */
+  --wf-team-blue: var(--buddy-color-team-blue);
+  --wf-team-orange: var(--buddy-color-team-orange);
+  --wf-team-magenta: var(--buddy-color-team-magenta);
+  --wf-team-cyan: var(--buddy-color-team-cyan);
+  --wf-team-yellow: var(--buddy-color-team-yellow);
+  --wf-team-purple: var(--buddy-color-team-purple);
+  --wf-team-green: var(--buddy-color-team-green);
+  --wf-team-lime: var(--buddy-color-team-lime);
   --wf-radius: var(--border-radius-8);
 
   color: var(--wf-ink);
@@ -929,6 +938,54 @@ body {
 .wf-status--muted {
   background: var(--wf-fill-strong);
   color: var(--wf-muted);
+}
+
+/* チームの名前と、その前の色の小さい点。色だけで区別せず、点は読み上げない */
+.wf-team {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.wf-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--wf-muted);
+}
+
+.wf-dot--blue {
+  background: var(--wf-team-blue);
+}
+
+.wf-dot--orange {
+  background: var(--wf-team-orange);
+}
+
+.wf-dot--magenta {
+  background: var(--wf-team-magenta);
+}
+
+.wf-dot--cyan {
+  background: var(--wf-team-cyan);
+}
+
+.wf-dot--yellow {
+  background: var(--wf-team-yellow);
+}
+
+.wf-dot--purple {
+  background: var(--wf-team-purple);
+}
+
+.wf-dot--green {
+  background: var(--wf-team-green);
+}
+
+.wf-dot--lime {
+  background: var(--wf-team-lime);
 }
 
 /* ページの見出しの行。左に見出しを、右に主ボタンを置く */
