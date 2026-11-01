@@ -224,7 +224,7 @@ func TestMigrateDownAndUp(t *testing.T) {
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)
 	}
-	if err := MigrateDown(cfg, 10); err != nil {
+	if err := MigrateDown(cfg, 11); err != nil {
 		t.Fatal(err)
 	}
 	pool, err := Open(ctx, cfg)
@@ -265,8 +265,8 @@ func TestMigrateReceiptCheckPolicy(t *testing.T) {
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)
 	}
-	// 後に続く職員の訪問するかのマイグレーション（000010）と合わせて戻す
-	if err := MigrateDown(cfg, 2); err != nil {
+	// 後に続く職員の訪問するか（000010）と終了が翌日の予定（000011）のマイグレーションと合わせて戻す
+	if err := MigrateDown(cfg, 3); err != nil {
 		t.Fatal(err)
 	}
 	pool, err := Open(ctx, cfg)
@@ -358,7 +358,7 @@ func TestMigrateReceiptCheckPolicy(t *testing.T) {
 	}
 
 	// 戻しても事務の役職は残り、照合の権限だけが消える。
-	if err := MigrateDown(cfg, 2); err != nil {
+	if err := MigrateDown(cfg, 3); err != nil {
 		t.Fatal(err)
 	}
 	if got, want := clerkPolicies(t, pool, facility), []string{"schedule.all.edit", "schedule.all.read"}; !slices.Equal(got, want) {
@@ -398,8 +398,8 @@ func TestMigrateTeamColor(t *testing.T) {
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)
 	}
-	// 後に続く照合の権限（000009）と職員の訪問するか（000010）のマイグレーションと合わせて戻す
-	if err := MigrateDown(cfg, 3); err != nil {
+	// 後に続く照合の権限（000009）、職員の訪問するか（000010）、終了が翌日の予定（000011）のマイグレーションと合わせて戻す
+	if err := MigrateDown(cfg, 4); err != nil {
 		t.Fatal(err)
 	}
 	pool, err := Open(ctx, cfg)

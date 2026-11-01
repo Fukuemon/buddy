@@ -9,8 +9,8 @@
 | Name                                                          | Columns | Comment                                                                         | Type       |
 | ------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------- | ---------- |
 | [public.users](public.users.md)                               | 15      | 職員                                                                            | BASE TABLE |
-| [public.recurring_schedules](public.recurring_schedules.md)   | 19      | 繰り返しの予定と、その規則                                                      | BASE TABLE |
-| [public.schedules](public.schedules.md)                       | 16      | 予定                                                                            | BASE TABLE |
+| [public.recurring_schedules](public.recurring_schedules.md)   | 20      | 繰り返しの予定と、その規則                                                      | BASE TABLE |
+| [public.schedules](public.schedules.md)                       | 17      | 予定                                                                            | BASE TABLE |
 | [public.external_calendars](public.external_calendars.md)     | 8       | 取り込む外部のカレンダーと、その持ち主の職員。外していないものは職員ごとに 1 つ | BASE TABLE |
 | [public.calendar_sync_states](public.calendar_sync_states.md) | 10      | 外部のカレンダーごとの同期の状態                                                | BASE TABLE |
 | [public.external_event_links](public.external_event_links.md) | 11      | 外部の予定と、buddy の単発か繰り返しの予定の対応                                | BASE TABLE |
@@ -72,6 +72,7 @@ erDiagram
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
   integer version
+  boolean ends_next_day
 }
 "public.schedules" {
   text id
@@ -90,6 +91,7 @@ erDiagram
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
   integer version
+  boolean ends_next_day
 }
 "public.external_calendars" {
   text id
