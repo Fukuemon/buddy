@@ -6,6 +6,7 @@ import {
   logout,
   readCookie,
   readSession,
+  readViewer,
   safeReturnTo,
   startLogin,
   viewerOf,
@@ -423,5 +424,53 @@ describe('viewerOf', () => {
       canManageStaff: true,
       canCheckReceipt: false,
     })
+  })
+})
+
+describe('readViewer', () => {
+  const requestWith = async (deps: AuthDeps) => {
+    await deps.store.set(
+      'session:id-1',
+      { ...VIEWER, accessToken: 'at', canCheckReceipt: false },
+      60,
+    )
+    return new Request('http://web.test/', {
+      headers: { Cookie: `buddy_session=${encodeURIComponent(signValue('id-1', SECRET))}` },
+    })
+  }
+
+  it('ログインの後に変えた権限を、GET /v1/me から読み直す', async () => {
+    const fetchMe = vi.fn<AuthDeps['fetchMe']>(async () => ({
+      ok: true,
+      viewer: { ...VIEWER, canManageStaff: true, canCheckReceipt: true },
+    }))
+    const { deps } = setup({ fetchMe })
+    expect(await readViewer(await requestWith(deps), deps)).toEqual({
+      ...VIEWER,
+      canManageStaff: true,
+      canCheckReceipt: true,
+    })
+    expect(fetchMe).toHaveBeenCalledWith('at')
+  })
+
+  it('GET /v1/me が失敗したとき、届かないときは、セッションの値を返す', async () => {
+    for (const fetchMe of [
+      async () => ({ ok: false, reason: 'failed' }) as const,
+      async () => Promise.reject(new Error('connect ECONNREFUSED')),
+    ]) {
+      const { deps } = setup({ fetchMe })
+      expect(await readViewer(await requestWith(deps), deps)).toEqual({
+        ...VIEWER,
+        canManageStaff: false,
+        canCheckReceipt: false,
+      })
+    }
+  })
+
+  it('ログインしていなければ null を返し、GET /v1/me を呼ばない', async () => {
+    const fetchMe = vi.fn<AuthDeps['fetchMe']>()
+    const { deps } = setup({ fetchMe })
+    expect(await readViewer(new Request('http://web.test/'), deps)).toBeNull()
+    expect(fetchMe).not.toHaveBeenCalled()
   })
 })

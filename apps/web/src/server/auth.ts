@@ -324,3 +324,17 @@ export const viewerOf = ({
   canManageStaff: canManageStaff ?? false,
   canCheckReceipt: canCheckReceipt ?? true,
 })
+
+/**
+ * リクエストの cookie のセッションの職員を返す。ログインしていなければ null を返す。
+ *
+ * 権限は、ログインのときにセッションへ写した値ではなく、その度に GET /v1/me で読み直す。
+ * ログインの後に職員の管理の画面で権限を変えても、ログインし直さずに画面の出し分けへ写すためである。
+ * GET /v1/me が失敗したとき、届かないときは、セッションの値を返す。拒むのは各 API である。
+ */
+export const readViewer = async (request: Request, deps: AuthDeps): Promise<Viewer | null> => {
+  const session = await readSession(request, deps)
+  if (session === undefined) return null
+  const me = await deps.fetchMe(session.accessToken).catch(() => undefined)
+  return me?.ok === true ? me.viewer : viewerOf(session)
+}
