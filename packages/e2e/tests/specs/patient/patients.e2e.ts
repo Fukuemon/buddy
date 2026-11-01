@@ -3,6 +3,7 @@ import { expect, test, type APIRequestContext } from '@playwright/test'
 import { LEADER, LEADER_STATE, LOGIN_STAFF } from '../../fixtures/env'
 import { registerPatient } from '../../fixtures/patient'
 import { issueManagerToken, STAFF_FORM } from '../../fixtures/staff'
+import { patientOptionByName } from '../../selectors/patientSelect'
 
 /** 走らせるたびに違う利用者の名前にする。 */
 const newPatientName = (label: string) => `E2E ${label} ${Date.now()}`
@@ -54,9 +55,7 @@ test.describe('利用者の一覧', () => {
       await page.getByTestId('schedule-kind-tab-visit').check()
       await page.getByTestId('schedule-field-patient').click()
       await page.getByTestId('patient-select-search').fill(name)
-      await expect(
-        page.getByTestId(/^patient-select-option-/).filter({ hasText: name }),
-      ).toHaveCount(1)
+      await expect(patientOptionByName(page, name)).toBeVisible()
     })
   })
 
@@ -65,9 +64,12 @@ test.describe('利用者の一覧', () => {
 
     test('職員の管理の権限を持たない職員が利用者の画面の URL を開いた場合、利用者の管理の画面が出ないこと', async ({
       page,
-      request,
+      playwright,
     }) => {
-      const id = await registerPatientId(request, newPatientName('hidden'))
+      // request のフィクスチャはリーダーのログインの状態を持ち、ブローカーでマネージャーのトークンを取れないので、状態の無いコンテキストで登録する
+      const manager = await playwright.request.newContext()
+      const id = await registerPatientId(manager, newPatientName('hidden'))
+      await manager.dispose()
 
       for (const url of ['/patients', '/patients/new', `/patients/${id}`]) {
         await page.goto(url)
