@@ -133,6 +133,25 @@ describe('StaffDetailContainer', () => {
     )
   })
 
+  it('予定が残る職員を訪問しない職員にしようとすると、ダイアログを閉じずに残る予定を示し、訪問するに戻すと保存できる', async () => {
+    render(<Default />)
+    expect(await screen.findByTestId('staff-detail-visits')).toHaveTextContent('訪問する')
+    await userEvent.click(screen.getByTestId('staff-detail-edit'))
+    const dialog = screen.getByTestId('staff-detail-edit-dialog')
+    await within(dialog).findByTestId('staff-detail-department-input')
+    await userEvent.click(within(dialog).getByTestId('staff-detail-visits-input-non-visiting'))
+    await userEvent.click(within(dialog).getByTestId('staff-detail-save'))
+
+    expect(await within(dialog).findByTestId('staff-non-visiting-assignments')).toHaveTextContent(
+      '訪問しない職員にしてください',
+    )
+    await userEvent.click(within(dialog).getByTestId('staff-detail-visits-input-visits'))
+    expect(within(dialog).queryByTestId('staff-non-visiting-assignments')).toBeNull()
+    await userEvent.click(within(dialog).getByTestId('staff-detail-save'))
+    await expect.poll(() => screen.queryByTestId('staff-detail-edit-dialog')).toBeNull()
+    expect(screen.getByTestId('staff-detail-visits')).toHaveTextContent('訪問する')
+  })
+
   it('予定が残る職員は、退職のダイアログで退職にできないことを示し、退職にするを押せない', async () => {
     render(<Default />)
     await userEvent.click(await screen.findByTestId('staff-detail-menu'))

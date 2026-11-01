@@ -15,6 +15,7 @@ const body = {
   phone_number: '09012345678',
   department_id: 'department-1',
   team_id: 'team-b',
+  visits: true,
 }
 
 describe('職員を変える API と、残る予定の API のフェイク', () => {

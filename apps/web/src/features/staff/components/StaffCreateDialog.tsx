@@ -13,6 +13,7 @@ import {
   type StaffFormErrors,
 } from '../lib/validate'
 import { StaffField, StaffSelect, sortByName, staffFieldClassName } from './StaffFormFields'
+import { VisitsField } from './VisitsField'
 
 export type StaffCreateDialogProps = {
   /** 選択肢。読み終えるまでは undefined にする。 */
@@ -28,7 +29,8 @@ export type StaffCreateDialogProps = {
 
 /**
  * 職員を登録するダイアログ。登録を押すと入力を確認し、誤りがあれば送らずに欄の下に文を出す。
- * 部署、チーム、役職は、名前の順の最初のものを選んで始める。開くと名前の欄にフォーカスを置く。
+ * 部署、チーム、役職は、名前の順の最初のものを選んで始める。訪問するかは「訪問する」で始め、役職からは決めない（ADR-0022）。
+ * 開くと名前の欄にフォーカスを置く。
  */
 export const StaffCreateDialog = ({
   departments,
@@ -47,6 +49,7 @@ export const StaffCreateDialog = ({
   const [departmentId, setDepartmentId] = useState('')
   const [teamId, setTeamId] = useState('')
   const [positionId, setPositionId] = useState('')
+  const [visits, setVisits] = useState(true)
   const [errors, setErrors] = useState<StaffFormErrors>({})
 
   const departmentOptions = sortByName(departments)
@@ -74,6 +77,7 @@ export const StaffCreateDialog = ({
       department_id: selectedDepartment,
       team_id: selectedTeam,
       position_id: selectedPosition,
+      visits,
     })
   }
 
@@ -205,6 +209,7 @@ export const StaffCreateDialog = ({
             )}
           </StaffField>
         </div>
+        <VisitsField onChange={setVisits} testId="staff-new-visits" value={visits} />
       </form>
     </InputDialog>
   )

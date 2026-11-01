@@ -118,13 +118,13 @@ export const useCreateStaff = () => {
   })
 }
 
-/** 職員の名前、電話番号、部署、チームを変える mutation。 */
+/** 職員の名前、電話番号、部署、チーム、訪問するかを変える mutation。予定か担当の利用者が残って拒まれたときは、残るものを結果に持つ。 */
 export const useUpdateStaff = (staffId: Staff['id']) => {
   const { api, facilityId } = useBuddyApi()
   const changed = useStaffChanged()
   return useMutation({
     mutationFn: (input: StaffUpdateInput) => api.staff.update(facilityId, staffId, input),
-    onSuccess: changed,
+    onSuccess: (result) => ('updated' in result ? changed(result.updated) : undefined),
   })
 }
 

@@ -70,6 +70,7 @@ const staffUpdate = z.object({
   phone_number: phoneNumber,
   department_id: id,
   team_id: id,
+  visits: z.boolean(),
 })
 const targetIds = z.array(id).max(500).optional()
 const nameSearch = z.object({ name: z.string().max(100).optional() }).optional()
@@ -102,7 +103,11 @@ const ARGS: Record<BffOperation, z.ZodType> = {
   'staff.get': z.tuple([id, id]),
   'staff.create': z.tuple([
     id,
-    staffUpdate.extend({ email: z.string().min(1).max(254), position_id: id }),
+    staffUpdate.extend({
+      email: z.string().min(1).max(254),
+      position_id: id,
+      visits: z.boolean().optional(),
+    }),
   ]),
   'staff.update': z.tuple([id, id, staffUpdate]),
   'staff.changePosition': z.tuple([id, id, id]),

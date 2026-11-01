@@ -58,7 +58,7 @@ export const createScheduleHandlers = (baseUrl: string) => {
         const found = mockStaff.find((s) => s.id === params.user_id)
         if (found === undefined)
           return response(404).json({ code: 'not_found', message: 'リソースが見つかりません' })
-        const { username, phone_number, department_id, team_id } = await request.json()
+        const { username, phone_number, department_id, team_id, visits } = await request.json()
         const team = mockTeams.find((t) => t.id === team_id)
         if (department_id !== found.department.id || team === undefined)
           return response(400).json({
@@ -70,6 +70,7 @@ export const createScheduleHandlers = (baseUrl: string) => {
           username,
           phone_number: phone_number == null ? null : `+${phone_number.replace(/^\+/, '')}`,
           team: { id: team.id, name: team.name },
+          visits,
           sub: null,
           policies: [],
         })

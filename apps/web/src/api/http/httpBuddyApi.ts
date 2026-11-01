@@ -216,13 +216,17 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
             body: input,
           }),
         ),
-      update: (_facilityId, staffId, input) =>
-        unwrap(
-          client.PUT('/v1/users/{user_id}', {
-            params: { path: { user_id: staffId } },
-            body: input,
-          }),
-        ),
+      update: async (_facilityId, staffId, input) => {
+        const { data, error, response } = await client.PUT('/v1/users/{user_id}', {
+          params: { path: { user_id: staffId } },
+          body: input,
+        })
+        if (response.ok && data !== undefined) return { updated: data }
+        if (error !== undefined && 'assignments' in error && error.assignments !== undefined) {
+          return { assignments: error.assignments }
+        }
+        throw apiError(error, response)
+      },
       changePosition: (_facilityId, staffId, positionId) =>
         unwrap(
           client.PUT('/v1/users/{user_id}/position', {

@@ -237,6 +237,7 @@ export interface paths {
          *     ID ブローカーにも職員を登録し、ブローカーが発行した職員の ID を sub に入れる。登録した職員は、メールでログインできる。
          *     ブローカーの職員は、職員を書き終えてからログインできるようにする。ブローカーに登録した後に失敗したときは、同じ本文で送り直してよい。
          *     職員のメールは、全ての事業所で一意である。
+         *     visits を省くと、訪問する職員として登録する。役職からは決めない。
          */
         post: operations["createUser"];
         delete?: never;
@@ -255,11 +256,13 @@ export interface paths {
         /** 職員を取得する */
         get: operations["getUser"];
         /**
-         * 職員の名前、電話番号、部署、チームを変える
-         * @description 職員の名前、電話番号、部署、チームを本文の値に置き換える。部分の更新は持たず、phone_number を省くか null にすると電話番号を消す。
+         * 職員の名前、電話番号、部署、チーム、訪問するかを変える
+         * @description 職員の名前、電話番号、部署、チーム、訪問するかを本文の値に置き換える。部分の更新は持たず、phone_number を省くか null にすると電話番号を消す。
          *     部署とチームは、職員と同じ事業所のものに限る。メールは ID ブローカーが持つので変えない。
          *     チームを変えると、チームを対象にする職員の権限のうち、古いチームを指す対象を新しいチームに移す。ほかのチームの対象は残す。
          *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。休職の職員は変えられ、退職した職員は変えられない。
+         *     訪問する職員を訪問しない職員に変えるときは、その日以降の予定、繰り返しの予定、担当の利用者が残れば、書かずに 409（staff_has_assignments）で
+         *     残る一覧を返す。一覧の範囲は、退職と同じである。訪問しない職員を訪問する職員に戻すときは確認しない。
          */
         put: operations["updateUser"];
         post?: never;
@@ -1023,6 +1026,8 @@ export interface components {
             department: components["schemas"]["Ref"];
             team: components["schemas"]["Ref"];
             position: components["schemas"]["Ref"];
+            /** @description 訪問するか。false の職員は、予定のカレンダーの職員の列と、予定と担当の候補に出ず、予定と担当を新しく割り振れない */
+            visits: boolean;
             status: components["schemas"]["StaffStatus"];
             /**
              * Format: date-time
@@ -1050,7 +1055,7 @@ export interface components {
          * @enum {string}
          */
         StaffStatus: "active" | "on_leave" | "retired";
-        /** @description 職員を休職か退職にするときに残る、その日以降の予定、繰り返しの予定、担当の利用者。職員が予定の職員、主訪問者、同行者のどれかの予定を含める */
+        /** @description 職員を休職、退職、訪問しない職員にするときに残る、その日以降の予定、繰り返しの予定、担当の利用者。職員が予定の職員、主訪問者、同行者のどれかの予定を含める */
         StaffAssignments: {
             /** @description その日以降のキャンセルしていない単発の予定。日時の順 */
             schedules: {
@@ -2180,6 +2185,11 @@ export interface operations {
                     department_id: components["schemas"]["ID"];
                     team_id: components["schemas"]["ID"];
                     position_id: components["schemas"]["ID"];
+                    /**
+                     * @description 訪問するか。false の職員は、予定のカレンダーの職員の列と、予定と担当の候補に出ない
+                     * @default true
+                     */
+                    visits?: boolean;
                 };
             };
         };
@@ -2259,6 +2269,8 @@ export interface operations {
                     phone_number?: string | null;
                     department_id: components["schemas"]["ID"];
                     team_id: components["schemas"]["ID"];
+                    /** @description 訪問するか。false の職員は、予定のカレンダーの職員の列と、予定と担当の候補に出ない */
+                    visits: boolean;
                 };
             };
         };
@@ -2276,7 +2288,10 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description 退職した職員を変えようとした。職員は変わらない */
+            /**
+             * @description 退職した職員を変えようとした（conflict）か、その日以降の予定か担当の利用者が残る職員を訪問しない職員に変えようとした
+             *     （staff_has_assignments。assignments に残る一覧がある）。職員は変わらない
+             */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -2284,11 +2299,23 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "code": "conflict",
-                     *       "message": "退職した職員は変えられません"
+                     *       "code": "staff_has_assignments",
+                     *       "message": "予定か担当の利用者が残る職員は、訪問しない職員にできません。別の職員に割り振り直してください",
+                     *       "assignments": {
+                     *         "schedules": [
+                     *           {
+                     *             "id": "01M3TC5H00QV17BC0J9V3393ZP",
+                     *             "date": "2026-11-02",
+                     *             "start_time": "09:00",
+                     *             "end_time": "10:00"
+                     *           }
+                     *         ],
+                     *         "recurring_schedules": [],
+                     *         "patients": []
+                     *       }
                      *     }
                      */
-                    "application/json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["RetireConflict"];
                 };
             };
             500: components["responses"]["InternalError"];
