@@ -117,6 +117,22 @@ export const updateNormalSchedule = async (
     data: await normalSlot(request, token, schedule),
   })
 
+/** 予定の API で、facilityId の事業所の、date に始まる単発の予定のタイトルを token の職員で一覧する（listSchedules）。 */
+export const listScheduleTitles = async (
+  request: APIRequestContext,
+  token: string,
+  facilityId: string,
+  date: string,
+) => {
+  const res = await request.get(`${SCHEDULE_URL}/v1/facilities/${facilityId}/schedules`, {
+    headers: { Authorization: `Bearer ${token}` },
+    params: { date_from: date, date_to: date },
+  })
+  if (!res.ok()) throw new Error(`予定の一覧が ${res.status()} を返した`)
+  const { schedules } = (await res.json()) as { schedules: { title: string | null }[] }
+  return schedules.map((schedule) => schedule.title)
+}
+
 /** 予定の API の予定の取得（GET /v1/schedules/{schedule_id}）を token の職員で呼び、レスポンスを返す。 */
 export const getSchedule = (request: APIRequestContext, token: string, scheduleId: string) =>
   request.get(`${SCHEDULE_URL}/v1/schedules/${scheduleId}`, {
