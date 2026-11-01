@@ -8,20 +8,29 @@ import { STAFF_FORM } from '../../fixtures/staff'
 import { signInAtBroker } from '../../screens/login'
 import { calendarTimeLabel } from '../../selectors/scheduleCalendar'
 
-/** 夜勤の予定の開始の日（火曜）。予定は 22:00 に始まり、翌日の 01:00 に終わる。 */
-const START_DATE = '2026-11-10'
-const NEXT_DATE = '2026-11-11'
+/**
+ * 夜勤の予定の開始の日（火曜）と翌日。予定は 22:00 に始まり、翌日の 01:00 に終わる。
+ * test ごとに週を分け、ほかの test で作った夜勤と重ならないようにする。
+ */
+const WEEK = { start: '2026-11-10', next: '2026-11-11' }
+const NEXT_DAY = { start: '2026-11-17', next: '2026-11-18' }
+const DETAIL = { start: '2026-11-24', next: '2026-11-25' }
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー）`
 
 /** ログインし、青木 陽菜の夜勤の予定を作って、予定の ID を返す。 */
-const signInWithOvernight = async (page: Page, request: APIRequestContext, title: string) => {
+const signInWithOvernight = async (
+  page: Page,
+  request: APIRequestContext,
+  title: string,
+  date: string,
+) => {
   await page.goto('/schedule')
   await signInAtBroker(page, LOGIN_EMAIL)
   const token = await issueAccessToken(request, LOGIN_EMAIL)
   const res = await createOvernightSchedule(request, token, STAFF_FORM.facilityId, {
     staffId: LOGIN_STAFF.id,
     title,
-    date: START_DATE,
+    date,
   })
   expect(res.status()).toBe(201)
   return ((await res.json()) as { id: string }).id
@@ -49,7 +58,7 @@ test.describe('予定のカレンダー', () => {
             await signInAtBroker(page, LOGIN_EMAIL)
           },
           async ({ page, step, check }) => {
-            await page.goto(`/schedule?view=week&date=${START_DATE}`)
+            await page.goto(`/schedule?view=week&date=${WEEK.start}`)
             await expect(calendarTimeLabel(page, '06:00:00')).toBeInViewport()
             await step('予定のカレンダーを週の表示で開く')
             await expect(calendarTimeLabel(page, '00:00:00')).not.toBeInViewport()
@@ -82,9 +91,9 @@ test.describe('予定のカレンダー', () => {
             actor: ACTOR,
             variant,
           },
-          (page) => signInWithOvernight(page, request, '夜勤（週の表示）'),
+          (page) => signInWithOvernight(page, request, '夜勤（週の表示）', WEEK.start),
           async ({ page, step, check }, id) => {
-            await page.goto(`/schedule?view=week&date=${START_DATE}`)
+            await page.goto(`/schedule?view=week&date=${WEEK.start}`)
             await expect(calendarTimeLabel(page, '06:00:00')).toBeInViewport()
             await step(
               '11月10日（火）の 22:00 から翌日の 01:00 までの「夜勤（週の表示）」がある週を、週の表示で開く',
@@ -120,12 +129,12 @@ test.describe('予定のカレンダー', () => {
             actor: ACTOR,
             variant,
           },
-          (page) => signInWithOvernight(page, request, '夜勤（日の表示）'),
+          (page) => signInWithOvernight(page, request, '夜勤（日の表示）', NEXT_DAY.start),
           async ({ page, step, check }, id) => {
-            await page.goto(`/schedule?view=day&date=${NEXT_DATE}&staff=${LOGIN_STAFF.id}`)
+            await page.goto(`/schedule?view=day&date=${NEXT_DAY.next}&staff=${LOGIN_STAFF.id}`)
             await expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible()
             await step(
-              '11月10日（火）の 22:00 から翌日の 01:00 までの「夜勤（日の表示）」の翌日の 11月11日（水）を、日の表示で開く',
+              '11月17日（火）の 22:00 から翌日の 01:00 までの「夜勤（日の表示）」の翌日の 11月18日（水）を、日の表示で開く',
             )
 
             await step('カレンダーを上へ送り、0 時から 1 時を出す')
@@ -152,23 +161,23 @@ test.describe('予定のカレンダー', () => {
             actor: ACTOR,
             variant,
           },
-          (page) => signInWithOvernight(page, request, '夜勤（詳細）'),
+          (page) => signInWithOvernight(page, request, '夜勤（詳細）', DETAIL.start),
           async ({ page, step, check }, id) => {
-            await page.goto(`/schedule?view=week&date=${START_DATE}`)
+            await page.goto(`/schedule?view=week&date=${DETAIL.start}`)
             await expect(calendarTimeLabel(page, '06:00:00')).toBeInViewport()
             const nextDaySegment = page.getByTestId(`schedule-event-${id}`).last()
             await nextDaySegment.scrollIntoViewIfNeeded()
             await expect(nextDaySegment).toBeInViewport()
             await step(
-              '週の表示で、11月11日（水）の 0 時から 1 時に描かれた「夜勤（詳細）」を出している',
+              '週の表示で、11月25日（水）の 0 時から 1 時に描かれた「夜勤（詳細）」を出している',
             )
 
-            await step('11月11日（水）の 0 時から 1 時の「夜勤（詳細）」を押す')
+            await step('11月25日（水）の 0 時から 1 時の「夜勤（詳細）」を押す')
             await nextDaySegment.click()
             await expect(page.getByTestId('schedule-detail-datetime')).toHaveText(
-              '2026年11月10日（火） 22:00〜翌 01:00',
+              '2026年11月24日（火） 22:00〜翌 01:00',
             )
-            await check('予定の詳細が開き、日時が「2026年11月10日（火） 22:00〜翌 01:00」と出る')
+            await check('予定の詳細が開き、日時が「2026年11月24日（火） 22:00〜翌 01:00」と出る')
           },
         )
       })
