@@ -148,7 +148,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 - ブラウザと Hydra とブローカー: ログインとログアウトのリダイレクトの流れは、ID ブローカーの Design Doc の [ログイン](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#ログイン) と [ログアウト](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#ログアウト) にある。
 - web と Hydra: 認可コードフローでトークンを取得し、更新する。トークンは Valkey のセッションに置く。
   - セッションは、トークンと ID token のほかに、ログインのときに予定の API の `GET /v1/me` で引いた職員の ID、名前、事業所、職員の管理の権限と照合の権限の有無を 12 時間持つ。
-    - セッションの職員の値は、refresh では読み直さない。名前や権限を変えても、画面の出し分けはログインし直すまで前の値のままである。
+    - 画面を読み込むときは、職員の値を `GET /v1/me` で読み直して画面に渡す。名前や権限を変えたら、画面を読み込み直すと出し分けに写る。`GET /v1/me` が失敗したときは、セッションの値を渡す。
     - リクエストを拒否するのは API なので、拒否の判定は変わった値で行われる。
 - ブローカーと Hydra: ブローカーが Hydra の admin API でログインと同意を accept か reject し、ログアウトを accept する。同意の accept で、access token の `aud`（`schedule`、`receipt`）と `org_id` を決める。
 - ブローカーと上流の IdP: 認可コードフローで ID token を取り、署名、`iss`、`aud`、`nonce` を確認する。
