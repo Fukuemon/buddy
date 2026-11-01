@@ -872,6 +872,8 @@ func TestRequestConstraints(t *testing.T) {
 	}{
 		{"チームの名前が空", "/v1/facilities/" + facilityID + "/teams", `{"name":""}`, "name"},
 		{"チームの色が 8 色にない", "/v1/facilities/" + facilityID + "/teams", `{"name":"A","color":"red"}`, "color"},
+		{"部署の名前が空", "/v1/facilities/" + facilityID + "/departments", `{"name":""}`, "name"},
+		{"部署の名前が長すぎる", "/v1/facilities/" + facilityID + "/departments", `{"name":"` + strings.Repeat("あ", 256) + `"}`, "name"},
 		{"キャンセルの理由が空", "/v1/schedules/" + scheduleID + "/cancel", `{"reason":""}`, "reason"},
 		{"キャンセルの理由が長すぎる", "/v1/schedules/" + scheduleID + "/cancel", `{"reason":"` + strings.Repeat("あ", 256) + `"}`, "reason"},
 		{"電話番号が長すぎる", "/v1/facilities/" + facilityID + "/users", user + `,"phone_number":"+0900000000000"}`, "phone_number"},
@@ -907,6 +909,7 @@ func TestRequestValidationMessages(t *testing.T) {
 		{"本文が JSON でない", http.MethodPost, list, `{bad`, []string{bodyErrorPrefixForTest}},
 		{"変えるチームの色が 8 色にない", http.MethodPut, "/v1/teams/" + staffID, `{"name":"A","color":"red"}`, []string{"color"}},
 		{"変えるチームの色が無い", http.MethodPut, "/v1/teams/" + staffID, `{"name":"A"}`, []string{"color"}},
+		{"変える部署の名前が空", http.MethodPut, "/v1/departments/" + staffID, `{"name":""}`, []string{"name"}},
 		{"本文が大きすぎる", http.MethodPost, "/v1/schedules/" + scheduleID + "/cancel",
 			`{"reason":"` + strings.Repeat("a", 1<<20) + `"}`, []string{"バイトまでです"}},
 	}

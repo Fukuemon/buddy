@@ -132,6 +132,35 @@ func (s Departments) ListByFacility(_ context.Context, facilityID string) ([]org
 	return out, nil
 }
 
+// Create は、部署を保存する。同じ事業所に名前が完全に一致する部署があれば apperr.ErrConflict を返す。
+// DB の一意の制約と同じく、完全に一致する名前だけを重なりとみなす。
+func (s Departments) Create(_ context.Context, d organization.Department) error {
+	for _, cur := range s.Departments {
+		if cur.FacilityID == d.FacilityID && cur.Name == d.Name {
+			return apperr.ErrConflict
+		}
+	}
+	s.Departments[d.ID] = d
+	return nil
+}
+
+// Update は、部署 d.ID の名前を d の値にする。部署が無ければ apperr.ErrNotFound を、
+// 同じ事業所にほかの名前が完全に一致する部署があれば apperr.ErrConflict を返す。
+func (s Departments) Update(_ context.Context, d organization.Department) error {
+	cur, ok := s.Departments[d.ID]
+	if !ok {
+		return apperr.ErrNotFound
+	}
+	for _, other := range s.Departments {
+		if other.ID != d.ID && other.FacilityID == cur.FacilityID && other.Name == d.Name {
+			return apperr.ErrConflict
+		}
+	}
+	cur.Name = d.Name
+	s.Departments[d.ID] = cur
+	return nil
+}
+
 // Teams は、organization.TeamRepository のメモリ上の実装である。
 type Teams struct{ *Store }
 

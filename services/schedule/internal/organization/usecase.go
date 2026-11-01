@@ -54,6 +54,45 @@ func (o *Usecase) ListDepartments(ctx context.Context, facilityID string) ([]Dep
 	return o.deps.Departments.ListByFacility(ctx, facilityID)
 }
 
+// CreateDepartment は、事業所に部署を作り、保存した部署を返す。職員の管理の権限が無いときは apperr.ErrForbidden を、
+// 名前が不正なときは入力のエラーを、同じ事業所に同じ名前の部署があるときは apperr.ErrConflict を返す。
+func (o *Usecase) CreateDepartment(ctx context.Context, facilityID, name string) (Department, error) {
+	if err := o.guard(ctx); err != nil {
+		return Department{}, err
+	}
+	if _, err := o.deps.Facilities.Get(ctx, facilityID); err != nil {
+		return Department{}, err
+	}
+	d, err := NewDepartment(o.ids.NewID(), facilityID, name)
+	if err != nil {
+		return Department{}, err
+	}
+	if err := o.deps.Departments.Create(ctx, d); err != nil {
+		return Department{}, apperr.AsConflict(err, "部署 %s はこの事業所にすでにあります", d.Name)
+	}
+	return o.deps.Departments.Get(ctx, d.ID)
+}
+
+// UpdateDepartment は、部署 id の名前を変え、変えた部署を返す。職員の管理の権限が無いときは apperr.ErrForbidden を、
+// 名前が不正なときは入力のエラーを、同じ事業所にほかの同じ名前の部署があるときは apperr.ErrConflict を返す。
+func (o *Usecase) UpdateDepartment(ctx context.Context, id, name string) (Department, error) {
+	if err := o.guard(ctx); err != nil {
+		return Department{}, err
+	}
+	cur, err := o.deps.Departments.Get(ctx, id)
+	if err != nil {
+		return Department{}, err
+	}
+	d, err := NewDepartment(cur.ID, cur.FacilityID, name)
+	if err != nil {
+		return Department{}, err
+	}
+	if err := o.deps.Departments.Update(ctx, d); err != nil {
+		return Department{}, apperr.AsConflict(err, "部署 %s はこの事業所にすでにあります", d.Name)
+	}
+	return o.deps.Departments.Get(ctx, d.ID)
+}
+
 // GetTeam は、チームを返す。
 func (o *Usecase) GetTeam(ctx context.Context, id string) (Team, error) {
 	return o.deps.Teams.Get(ctx, id)

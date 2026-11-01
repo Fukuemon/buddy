@@ -69,6 +69,18 @@ func (r *DepartmentRepository) ListByFacility(ctx context.Context, facilityID st
 	return out, nil
 }
 
+// Create は、部署を書く。同じ事業所に同じ名前があるときは apperr.ErrConflict を、事業所が無いときは apperr.ErrInvalidInput のエラーを返す。
+func (r *DepartmentRepository) Create(ctx context.Context, d organization.Department) error {
+	err := r.q(ctx).CreateDepartment(ctx, sqlcgen.CreateDepartmentParams{ID: d.ID, FacilityID: d.FacilityID, Name: d.Name})
+	return translate("create department", err)
+}
+
+// Update は、部署 d.ID の名前を d の値にする。部署が無いときは apperr.ErrNotFound を、同じ事業所にほかの同じ名前の部署があるときは apperr.ErrConflict を返す。
+func (r *DepartmentRepository) Update(ctx context.Context, d organization.Department) error {
+	n, err := r.q(ctx).UpdateDepartment(ctx, sqlcgen.UpdateDepartmentParams{ID: d.ID, Name: d.Name})
+	return touched("update department", n, err)
+}
+
 // TeamRepository は、organization.TeamRepository を実装する。
 type TeamRepository struct{ conn }
 

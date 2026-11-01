@@ -10,6 +10,12 @@ SELECT * FROM departments WHERE id = $1;
 -- name: ListDepartmentsByFacility :many
 SELECT * FROM departments WHERE facility_id = $1 ORDER BY name, id;
 
+-- name: CreateDepartment :exec
+INSERT INTO departments (id, facility_id, name) VALUES ($1, $2, $3);
+
+-- name: UpdateDepartment :execrows
+UPDATE departments SET name = $2, updated_at = now() WHERE id = $1;
+
 -- name: GetTeam :one
 SELECT * FROM teams WHERE id = $1;
 

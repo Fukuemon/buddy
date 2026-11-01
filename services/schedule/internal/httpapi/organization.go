@@ -13,6 +13,8 @@ type OrganizationUsecase interface {
 	GetFacility(ctx context.Context, id string) (organization.Facility, error)
 	GetDepartment(ctx context.Context, id string) (organization.Department, error)
 	ListDepartments(ctx context.Context, facilityID string) ([]organization.Department, error)
+	CreateDepartment(ctx context.Context, facilityID, name string) (organization.Department, error)
+	UpdateDepartment(ctx context.Context, id, name string) (organization.Department, error)
 	GetTeam(ctx context.Context, id string) (organization.Team, error)
 	ListTeams(ctx context.Context, facilityID string) ([]organization.Team, error)
 	CreateTeam(ctx context.Context, facilityID, name string, color organization.TeamColor) (organization.Team, error)
@@ -86,6 +88,22 @@ func (s server) ListDepartments(ctx context.Context, req openapi.ListDepartments
 		return nil, err
 	}
 	return openapi.ListDepartments200JSONResponse(mapSlice(ds, toDepartment)), nil
+}
+
+func (s server) CreateDepartment(ctx context.Context, req openapi.CreateDepartmentRequestObject) (openapi.CreateDepartmentResponseObject, error) {
+	d, err := s.u.Organization.CreateDepartment(ctx, req.FacilityId, req.Body.Name)
+	if err != nil {
+		return nil, err
+	}
+	return openapi.CreateDepartment201JSONResponse(toDepartment(d)), nil
+}
+
+func (s server) UpdateDepartment(ctx context.Context, req openapi.UpdateDepartmentRequestObject) (openapi.UpdateDepartmentResponseObject, error) {
+	d, err := s.u.Organization.UpdateDepartment(ctx, req.DepartmentId, req.Body.Name)
+	if err != nil {
+		return nil, err
+	}
+	return openapi.UpdateDepartment200JSONResponse(toDepartment(d)), nil
 }
 
 func (s server) GetTeam(ctx context.Context, req openapi.GetTeamRequestObject) (openapi.GetTeamResponseObject, error) {
