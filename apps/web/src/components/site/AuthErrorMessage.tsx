@@ -23,7 +23,7 @@ const messages: Record<AuthErrorReason, { title: string; body: string }> = {
   },
   too_many_attempts: {
     title: 'しばらくログインできません',
-    body: '続けて何度もログインを試したため、受け付けを止めています。1 分ほどおいてから、もう一度ログインしてください。',
+    body: '続けて何度もログインを試したため、受け付けを止めています。30 秒ほどおいてから、もう一度ログインしてください。',
   },
 }
 
