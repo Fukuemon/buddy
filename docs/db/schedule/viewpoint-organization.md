@@ -12,7 +12,7 @@
 | [public.departments](public.departments.md) | 5       | 事業所の部署                                           | BASE TABLE |
 | [public.teams](public.teams.md)             | 6       | 事業所のチーム                                         | BASE TABLE |
 | [public.positions](public.positions.md)     | 5       | 事業所の役職。職員を登録するときに写す既定の権限を持つ | BASE TABLE |
-| [public.users](public.users.md)             | 14      | 職員                                                   | BASE TABLE |
+| [public.users](public.users.md)             | 15      | 職員                                                   | BASE TABLE |
 
 ## Relations
 
@@ -72,6 +72,7 @@ erDiagram
   timestamp_with_time_zone leave_started_at
   date leave_return_date
   timestamp_with_time_zone retired_at
+  boolean visits
 }
 ```
 

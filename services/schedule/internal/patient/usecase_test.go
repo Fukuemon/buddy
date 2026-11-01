@@ -32,13 +32,22 @@ func allow(context.Context) error { return nil }
 
 func deny(context.Context) error { return apperr.ErrForbidden }
 
+// nonVisiting は、stopStaff に渡して、職員を訪問しない職員にする。職員の状態ではない（ADR-0022）。
+const nonVisiting staff.Status = "non_visiting"
+
+// stopStaff は、職員 id を休職か退職か、訪問しない職員にする。
 func stopStaff(t *testing.T, s *inmem.Store, id string, status staff.Status) {
 	t.Helper()
 	st := inmem.Staff{Store: s}
 	var err error
-	if status == staff.StatusRetired {
+	switch status {
+	case nonVisiting:
+		d := s.Staff[id]
+		d.NonVisiting = true
+		s.Staff[id] = d
+	case staff.StatusRetired:
 		err = st.Retire(context.Background(), id)
-	} else {
+	default:
 		err = st.StartLeave(context.Background(), id, nil)
 	}
 	if err != nil {
@@ -84,7 +93,7 @@ func TestPatientUpdate(t *testing.T) {
 // 担当を休職か退職の職員に変えると入力のエラーで拒む。今の担当のままなら、担当が休職か退職でも変えられる（#346 の検証の観点 2）。
 func TestPatientUpdateAssignedStaff(t *testing.T) {
 	ctx := context.Background()
-	for _, status := range []staff.Status{staff.StatusOnLeave, staff.StatusRetired} {
+	for _, status := range []staff.Status{staff.StatusOnLeave, staff.StatusRetired, nonVisiting} {
 		t.Run(string(status), func(t *testing.T) {
 			s := inmem.Seeded()
 			pa := s.Patients[inmem.PatientID]
@@ -92,7 +101,7 @@ func TestPatientUpdateAssignedStaff(t *testing.T) {
 			s.Patients[inmem.PatientID] = pa
 			stopStaff(t, s, inmem.CompanionID, status)
 			if _, err := newUsecase(s, allow).Update(ctx, inmem.PatientID, updateInput(inmem.CompanionID)); !errors.Is(err, apperr.ErrInvalidInput) {
-				t.Fatalf("休職か退職の職員に変える: err = %v, want ErrInvalidInput", err)
+				t.Fatalf("休職か退職か訪問しない職員に変える: err = %v, want ErrInvalidInput", err)
 			}
 			if s.Patients[inmem.PatientID].AssignedStaffID != inmem.StaffID {
 				t.Errorf("拒んだのに担当が変わった")
@@ -290,6 +299,12 @@ func TestPatientCreateRejectsInactiveStaff(t *testing.T) {
 	for name, stop := range map[string]func(st inmem.Staff) error{
 		"休職": func(st inmem.Staff) error { return st.StartLeave(ctx, inmem.StaffID, nil) },
 		"退職": func(st inmem.Staff) error { return st.Retire(ctx, inmem.StaffID) },
+		"訪問しない": func(st inmem.Staff) error {
+			d := st.Staff[inmem.StaffID]
+			d.NonVisiting = true
+			st.Staff[inmem.StaffID] = d
+			return nil
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			s := inmem.Seeded()

@@ -1,6 +1,6 @@
 -- name: CreateUser :exec
-INSERT INTO users (id, sub, username, email, phone_number, facility_id, department_id, team_id, position_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
+INSERT INTO users (id, sub, username, email, phone_number, facility_id, department_id, team_id, position_id, visits)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);
 
 -- name: AddUserPolicy :execrows
 -- 事業所は職員のレコードからコピーする。職員が無ければ書かない。
@@ -16,7 +16,7 @@ UPDATE users SET position_id = sqlc.arg(position_id) WHERE id = sqlc.arg(id);
 -- 退職した職員は書かない。メールはブローカーが持つので変えない。
 UPDATE users
 SET username = sqlc.arg(username), phone_number = sqlc.narg(phone_number),
-    department_id = sqlc.arg(department_id), team_id = sqlc.arg(team_id)
+    department_id = sqlc.arg(department_id), team_id = sqlc.arg(team_id), visits = sqlc.arg(visits)
 WHERE id = sqlc.arg(id) AND retired_at IS NULL;
 
 -- name: DeleteUserTeamTargetsCovered :exec
@@ -58,7 +58,7 @@ WHERE up.id = sqlc.arg(user_policy_id);
 SELECT u.id, u.sub, u.username, u.email, u.phone_number, u.facility_id,
        u.department_id, d.name AS department_name,
        u.team_id, t.name AS team_name,
-       u.position_id, p.name AS position_name,
+       u.position_id, p.name AS position_name, u.visits,
        u.leave_started_at, u.leave_return_date, u.retired_at, u.created_at, u.updated_at
 FROM users u
 JOIN departments d ON d.id = u.department_id
@@ -70,7 +70,7 @@ WHERE u.id = $1;
 SELECT u.id, u.sub, u.username, u.email, u.phone_number, u.facility_id,
        u.department_id, d.name AS department_name,
        u.team_id, t.name AS team_name,
-       u.position_id, p.name AS position_name,
+       u.position_id, p.name AS position_name, u.visits,
        u.leave_started_at, u.leave_return_date, u.retired_at, u.created_at, u.updated_at
 FROM users u
 JOIN departments d ON d.id = u.department_id
@@ -165,10 +165,10 @@ SELECT id, name FROM patients WHERE facility_id = $1 AND assigned_staff_id = $2 
 
 -- name: GetUserRef :one
 -- ほかの機能が職員を参照するときに要るカラムだけを読む。
-SELECT id, facility_id, team_id, leave_started_at, retired_at FROM users WHERE id = $1;
+SELECT id, facility_id, team_id, visits, leave_started_at, retired_at FROM users WHERE id = $1;
 
 -- name: ListUserRefsByFacility :many
-SELECT id, facility_id, team_id, leave_started_at, retired_at FROM users WHERE facility_id = $1 ORDER BY id;
+SELECT id, facility_id, team_id, visits, leave_started_at, retired_at FROM users WHERE facility_id = $1 ORDER BY id;
 
 -- name: ShareFacility :one
 -- 予定と担当の新しい割り振りが、職員の状態を確認してから書き終えるまでの間、LockFacility を待たせる。

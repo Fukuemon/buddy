@@ -6,8 +6,8 @@ import type { StaffAssignments } from '#/api/types'
 import { formatRemainingRecurring, formatRemainingSchedule, hasNoAssignments } from '../lib/format'
 
 export type StaffAssignmentListProps = {
-  /** 休職と退職で、見出しの文と testid の接頭辞（`staff-leave`、`staff-retire`）を変える。 */
-  kind: 'leave' | 'retire'
+  /** 休職、退職、訪問しない職員への変更で、見出しの文と testid の接頭辞（`staff-leave`、`staff-retire`、`staff-non-visiting`）を変える。 */
+  kind: 'leave' | 'retire' | 'non-visiting'
   /** 読み終えるまでは undefined にする。 */
   assignments?: StaffAssignments
   /** 読めなかったときの文。 */
@@ -19,6 +19,8 @@ const LEAD: Record<StaffAssignmentListProps['kind'], string> = {
     '今日以降の予定と担当の利用者が残っています。休職の間は誰も行かないので、必要なら別の職員に割り振り直してください。',
   retire:
     '今日以降の予定と担当の利用者が残っています。別の職員に割り振り直してから、退職にしてください。',
+  'non-visiting':
+    '今日以降の予定と担当の利用者が残っています。別の職員に割り振り直してから、訪問しない職員にしてください。',
 }
 
 const Group = ({ label, children }: { label: string; children: ReactNode }) => (
@@ -29,7 +31,7 @@ const Group = ({ label, children }: { label: string; children: ReactNode }) => (
 )
 
 /**
- * 休職か退職にする職員に、今日以降に残る予定、繰り返しの予定、担当の利用者を示す。
+ * 休職か退職か訪問しない職員にする職員に、今日以降に残る予定、繰り返しの予定、担当の利用者を示す。
  * 予定は予定の詳細へのリンクにする。件数が 0 のまとまりは省き、3 つとも 0 件なら残っていないことを示す。
  */
 export const StaffAssignmentList = ({

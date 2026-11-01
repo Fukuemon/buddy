@@ -327,3 +327,12 @@
     display: none;
   }
 }
+
+/* 訪問の選択は、欄の幅いっぱいに 2 つの選択肢を並べる */
+.st-visits {
+  display: flex;
+}
+
+.st-visits .wf-tab {
+  flex: 1;
+}

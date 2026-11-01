@@ -289,7 +289,7 @@ func (s Staff) ChangePosition(_ context.Context, id, positionID string, grants [
 	return nil
 }
 
-// UpdateProfile は、職員の名前、電話番号、部署、チームを p にし、Grants と職員の Policies のうち oldTeamID を指す対象を
+// UpdateProfile は、職員の名前、電話番号、部署、チーム、訪問しない職員かを p にし、Grants と職員の Policies のうち oldTeamID を指す対象を
 // p.TeamID に移す。同じ権限が p.TeamID を既に対象にしていれば、oldTeamID の対象を消す。退職した職員なら apperr.ErrConflict を返す。
 func (s Staff) UpdateProfile(_ context.Context, id string, p staff.Profile, oldTeamID string) error {
 	d, ok := s.Staff[id]
@@ -299,7 +299,7 @@ func (s Staff) UpdateProfile(_ context.Context, id string, p staff.Profile, oldT
 	case d.RetiredAt != nil:
 		return apperr.ErrConflict
 	}
-	d.Username, d.PhoneNumber, d.DepartmentID, d.TeamID = p.Username, p.PhoneNumber, p.DepartmentID, p.TeamID
+	d.Username, d.PhoneNumber, d.DepartmentID, d.TeamID, d.NonVisiting = p.Username, p.PhoneNumber, p.DepartmentID, p.TeamID, p.NonVisiting
 	if oldTeamID != p.TeamID {
 		for i, g := range d.Policies {
 			if slices.Contains(g.TargetTeamIDs, oldTeamID) {
@@ -506,14 +506,14 @@ func (s StaffAssignments) From(_ context.Context, facilityID, staffID string, fr
 // StaffRefs は、kernel.Finder[staff.Ref] と、予定が使う職員の一覧のメモリ上の実装である。
 type StaffRefs struct{ *Store }
 
-// Get は、職員の事業所、チーム、状態を返す。
+// Get は、職員の事業所、チーム、訪問するか、状態を返す。
 func (s StaffRefs) Get(_ context.Context, id string) (staff.Ref, error) {
 	d, err := get(s.Staff, id)
 	return ref(d), err
 }
 
 func ref(d staff.Detail) staff.Ref {
-	return staff.Ref{ID: d.ID, FacilityID: d.FacilityID, TeamID: d.TeamID, Status: d.Status()}
+	return staff.Ref{ID: d.ID, FacilityID: d.FacilityID, TeamID: d.TeamID, Status: d.Status(), NonVisiting: d.NonVisiting}
 }
 
 // LockStatuses は、事業所があるかだけを確認する。メモリ上の実装はロックを取らない。

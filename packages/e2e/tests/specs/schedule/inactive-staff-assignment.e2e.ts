@@ -15,6 +15,7 @@ import {
   newStaff,
   registerStaff,
   retireStaff,
+  setNonVisiting,
   STAFF_FORM,
 } from '../../fixtures/staff'
 
@@ -24,7 +25,7 @@ const SCHEDULE_DATE = '2026-10-20'
 /** 今日より後の予定の日。 */
 const FUTURE_DATE = '2030-01-07'
 
-/** 休職か退職にする操作。 */
+/** 休職か退職か、訪問しない職員（ADR-0022）にする操作。 */
 const STOPS = [
   {
     label: '休職の職員',
@@ -36,6 +37,11 @@ const STOPS = [
     stop: retireStaff,
     message: /^退職した職員 .+ には、予定と担当を割り振れません$/,
   },
+  {
+    label: '訪問しない職員',
+    stop: setNonVisiting,
+    message: /^訪問しない職員 .+ には、予定と担当を割り振れません$/,
+  },
 ] as const
 
 /** 職員を 1 人登録し、ID と名前を返す。 */
@@ -46,7 +52,7 @@ const register = async (request: APIRequestContext, token: string, label: string
   return { id: ((await registered.json()) as { id: string }).id, name: staff.name }
 }
 
-/** 職員を 1 人登録して stop で休職か退職にし、ID と名前を返す。 */
+/** 職員を 1 人登録して stop で休職か退職か、訪問しない職員にし、ID と名前を返す。 */
 const registerStopped = async (
   request: APIRequestContext,
   token: string,
@@ -58,7 +64,7 @@ const registerStopped = async (
 }
 
 test.describe('予定の作成', () => {
-  test.describe('休職と退職の職員への割り振り', () => {
+  test.describe('休職と退職の職員と、訪問しない職員への割り振り', () => {
     test('URL の staffId が休職の職員を指す予定の作成の画面を開いた場合、担当者が未選択で開くこと', async ({
       page,
       request,
@@ -119,7 +125,7 @@ test.describe('予定の作成', () => {
 })
 
 test.describe('予定の編集', () => {
-  test.describe('休職と退職の職員への割り振り', () => {
+  test.describe('休職と退職の職員と、訪問しない職員への割り振り', () => {
     for (const { label, stop, message } of STOPS) {
       test(`予定の職員を${label}に変えようとした場合、400 が返り予定の職員が変わらないこと`, async ({
         request,
@@ -186,7 +192,7 @@ test.describe('予定の編集', () => {
 })
 
 test.describe('利用者の登録', () => {
-  test.describe('休職と退職の職員への割り振り', () => {
+  test.describe('休職と退職の職員と、訪問しない職員への割り振り', () => {
     for (const { label, stop, message } of STOPS) {
       test(`担当を${label}にして利用者を登録しようとした場合、400 が返ること`, async ({
         request,

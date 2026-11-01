@@ -973,3 +973,86 @@ func TestStaffManageForbidden(t *testing.T) {
 		t.Errorf("Create: err = %v", err)
 	}
 }
+
+// 訪問する職員を訪問しない職員に変えるときは、退職と同じ範囲で残る予定と担当の利用者を数え、残れば書かずに一覧を返す。
+// 訪問しない職員を訪問する職員に戻すときは確認しない（ADR-0022、#377）。
+func TestStaffUpdateProfileNonVisiting(t *testing.T) {
+	ctx := context.Background()
+	profile := func(s *inmem.Store, nonVisiting bool) staff.Profile {
+		s.Departments["DEP"] = organization.Department{ID: "DEP", FacilityID: facilityID}
+		s.Teams["TEAM"] = organization.Team{ID: "TEAM", FacilityID: facilityID}
+		return staff.Profile{Username: "青木 陽菜", DepartmentID: "DEP", TeamID: "TEAM", NonVisiting: nonVisiting}
+	}
+
+	t.Run("残る予定があれば拒む", func(t *testing.T) {
+		s, ids := stopFixture()
+		_, err := stopUsecase(s, ids, allow).UpdateProfile(ctx, staffID, profile(s, true))
+		ae, ok := errors.AsType[*staff.AssignedError](err)
+		if !ok || !ae.NonVisiting || len(ae.Assignments.Recurring) != 1 || !errors.Is(err, apperr.ErrConflict) {
+			t.Fatalf("err = %v, want 繰り返しの予定を持つ訪問しない職員への変更の AssignedError", err)
+		}
+		if s.Staff[staffID].NonVisiting {
+			t.Error("拒んだのに訪問しない職員にした")
+		}
+	})
+	t.Run("担当の利用者が残れば拒む", func(t *testing.T) {
+		s, ids := stopFixture()
+		clearAssignments(s)
+		p := s.Patients[inmem.PatientID]
+		p.AssignedStaffID = staffID
+		s.Patients[inmem.PatientID] = p
+		_, err := stopUsecase(s, ids, allow).UpdateProfile(ctx, staffID, profile(s, true))
+		if ae, ok := errors.AsType[*staff.AssignedError](err); !ok || len(ae.Assignments.Patients) != 1 {
+			t.Fatalf("err = %v, want 担当の利用者を持つ AssignedError", err)
+		}
+	})
+	t.Run("過去の予定だけなら変えられる", func(t *testing.T) {
+		s, ids := stopFixture()
+		clearAssignments(s)
+		s.Schedules["PAST"] = schedule.Detail{Schedule: schedule.Schedule{ID: "PAST", Slot: schedule.Slot{
+			FacilityID: facilityID, StaffID: staffID, Date: civil.Date{Year: 2026, Month: 10, Day: 22}}}}
+		got, err := stopUsecase(s, ids, allow).UpdateProfile(ctx, staffID, profile(s, true))
+		if err != nil || !got.NonVisiting {
+			t.Fatalf("err = %v, 職員 = %+v, want 訪問しない職員", err, got.Staff)
+		}
+		if s.Schedules["PAST"].StaffID != staffID {
+			t.Error("過去の予定の職員を変えた")
+		}
+	})
+	t.Run("訪問する職員には確認なしで戻せる", func(t *testing.T) {
+		s, ids := stopFixture()
+		d := s.Staff[staffID]
+		d.NonVisiting = true
+		s.Staff[staffID] = d
+		got, err := stopUsecase(s, ids, allow).UpdateProfile(ctx, staffID, profile(s, false))
+		if err != nil || got.NonVisiting {
+			t.Fatalf("err = %v, 職員 = %+v, want 残る予定があっても訪問する職員に戻す", err, got.Staff)
+		}
+	})
+	t.Run("訪問しない職員のまま名前を変えるときは数えない", func(t *testing.T) {
+		s, ids := stopFixture()
+		d := s.Staff[staffID]
+		d.NonVisiting = true
+		s.Staff[staffID] = d
+		p := profile(s, true)
+		p.Username = "青木 ひな"
+		if _, err := stopUsecase(s, ids, allow).UpdateProfile(ctx, staffID, p); err != nil {
+			t.Fatalf("err = %v, want 成功", err)
+		}
+	})
+}
+
+// 職員の登録は、訪問しない職員を受け取る。役職からは決めない（ADR-0022）。
+func TestStaffCreateNonVisiting(t *testing.T) {
+	s := inmem.Seeded()
+	s.Departments["DEP"] = organization.Department{ID: "DEP", FacilityID: facilityID}
+	s.Teams["TEAM"] = organization.Team{ID: "TEAM", FacilityID: facilityID}
+	s.Positions["POS"] = organization.Position{ID: "POS", FacilityID: facilityID}
+	got, err := newUsecase(s, allow).Create(context.Background(), staff.CreateInput{
+		FacilityID: facilityID, Username: "事務 太郎", Email: "jimu@example.com",
+		DepartmentID: "DEP", TeamID: "TEAM", PositionID: "POS", NonVisiting: true,
+	})
+	if err != nil || !got.NonVisiting || !s.Staff[got.ID].NonVisiting {
+		t.Fatalf("err = %v, 職員 = %+v, want 訪問しない職員", err, got.Staff)
+	}
+}
