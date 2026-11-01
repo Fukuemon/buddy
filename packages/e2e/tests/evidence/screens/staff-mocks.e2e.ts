@@ -163,7 +163,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
       )
     })
 
-    test(`${prefix}職員の一覧で絞り込みに合う職員がいない場合、0 件の知らせが出て、絞り込みを外すで一覧へ戻ること`, async ({
+    test(`${prefix}職員の一覧で絞り込みに合う職員がいない場合、職員が無いことの文が出て、絞り込みを外すで一覧へ戻ること`, async ({
       browser,
     }) => {
       await recordMock(
@@ -180,7 +180,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
           )
           await expect(page.getByTestId('staff-list-count')).toHaveText('0 人')
           await check(
-            '「絞り込みで 0 件」のモック（04-empty.html）に、0 件の知らせと「絞り込みを外す」が出る',
+            '「絞り込みで 0 件」のモック（04-empty.html）に、職員が無いことの文と「絞り込みを外す」が出る',
           )
 
           await step('「絞り込みを外す」を押す')
