@@ -1,8 +1,11 @@
 import { clsx } from 'clsx'
 import type { ComponentPropsWithoutRef, MouseEvent } from 'react'
 
-/** ボタンの見た目の種類。destructive は削除の操作に使う。 */
-export type ButtonVariant = 'primary' | 'secondary' | 'destructive'
+/**
+ * ボタンの見た目の種類。danger は、確認のダイアログでデータを失う操作を確定するボタンで、赤い面にする。
+ * destructive は、確認のダイアログを開く前の削除のボタンで、赤い文字にする。
+ */
+export type ButtonVariant = 'primary' | 'secondary' | 'destructive' | 'danger'
 /** ボタンの高さ。S は 40px（押せる領域は 44px）、M は 48px、L は 56px。 */
 export type ButtonSize = 'S' | 'M' | 'L'
 
@@ -17,6 +20,7 @@ const variantClassName: Record<ButtonVariant, string> = {
   primary: 'bg-primary text-text-inverse',
   secondary: 'bg-surface text-primary ring-1 ring-border-field ring-inset',
   destructive: 'bg-surface text-danger ring-1 ring-border-field ring-inset',
+  danger: 'bg-danger text-text-inverse',
 }
 
 const sizeClassName: Record<ButtonSize, string> = {
