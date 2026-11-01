@@ -8,8 +8,9 @@ status: stable
 # 基盤と運用
 
 基盤の構成、デプロイの手順、監視のツールは、インフラのリポジトリ（非公開）が持つ。  
-buddy はデプロイ先を知らない。  
-インフラとの約束は、[buddy Design Doc のインフラとの約束](../docs/design/DesignDoc.md#インフラとの約束)（イメージ、環境変数、ヘルスチェック、マイグレーション）だけである。
+buddy のコードと設定は、特定のデプロイ先を前提にしない。  
+インフラのリポジトリが buddy に依存するのは、コンテナのイメージ、環境変数、ヘルスチェック、マイグレーションだけである。  
+4 つの要件は、[buddy Design Doc のインフラとの約束](../docs/design/DesignDoc.md#インフラとの約束) にある。
 
 ## Environments
 
@@ -24,14 +25,17 @@ buddy はデプロイ先を知らない。
 
 ## Deployment Conditions
 
-- デプロイする単位は、アプリごとのイメージである。リリースは、`main` のコミットに付けたアプリごとのタグで指す。
+- デプロイする単位は、アプリごとのイメージである。
+- リリースは、`main` のコミットに付けたアプリごとのタグで指す。
 - マージする前に、変えたアプリのテストとチェック、`pnpm check:generated` が通っている（[テスト](testing.md)）。
-- API と画面を一緒に変えたときは、API を先にデプロイする。画面は、デプロイ済みの API が持つ項目だけを使う。
-- マイグレーションの適用のしかたと、ヘルスチェックの約束は、[buddy Design Doc のインフラとの約束](../docs/design/DesignDoc.md#インフラとの約束) にある。
+- API と画面を一緒に変えたときは、API を先にデプロイする。
+  - 画面は、デプロイ済みの API が持つ項目だけを使う。
+- マイグレーションの適用のしかたと、ヘルスチェックの要件は、[buddy Design Doc のインフラとの約束](../docs/design/DesignDoc.md#インフラとの約束) にある。
 
 ## Health and Monitoring
 
-- 正常かは `GET /readyz` で判断する。返す条件は Design Doc の Interfaces にある。
+- 正常かは `GET /readyz` で判断する。
+  - 返す条件は Design Doc の Interfaces にある。
 - ログは JSON で書く。
   - 予定の API は標準出力、照合の API と web は標準エラーに書く。
   - トークン、cookie、DB の接続の設定、利用者の名前、CSV の中身をログに出さない。
@@ -48,8 +52,8 @@ buddy はデプロイ先を知らない。
 
 - シークレットは、`OIDC_CLIENT_SECRET`、`SESSION_SECRET`、`DB_PASSWORD`、Google の Workload Identity Federation の外部アカウントの設定である。
   - ブローカーでは、上流の IdP の client secret のファイル（`UPSTREAM_IDP_CLIENT_SECRETS_FILE`）と、token_hook のヘッダーの値（`TOKEN_HOOK_KEY`）もシークレットである。
-  - Google のサービスアカウントのキーは作らず、どこにも置かない。
-  - API は、Application Default Credentials で認証し、事業所のサービスアカウントになりすます。
+- Google のサービスアカウントのキーは作らず、どこにも置かない。
+  - API は、Application Default Credentials で認証し、事業所のサービスアカウントの権限を借用する。
   - ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](../docs/adr/0012-google-calendar-facility-service-accounts.md)
 - 組織とサービスアカウントの対応のファイル（`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`）は、buddy のリポジトリに置かない。
   - シークレットではないが、サービスアカウントのメールアドレスを持つためである。
