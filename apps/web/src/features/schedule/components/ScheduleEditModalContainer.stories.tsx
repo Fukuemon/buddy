@@ -9,6 +9,7 @@ import {
 } from '#/storybook/withAppRouter'
 
 import { ScheduleEditModalContainer } from './ScheduleEditModalContainer'
+import { selfEditViewer } from './storyData'
 
 const route = (appRouter: Partial<AppRouterParameters>) => ({
   appRouter: {
@@ -45,8 +46,15 @@ export const Failed: Story = { parameters: route({ api: failingBuddyApi() }) }
 
 /**
  * 止めた職員（石川 二葉）に割り振った訪問の予定。
- * 担当者の要約に名前を出したまま、候補には止めた職員を出さない。
+ * 主訪問者の要約に名前を出したまま、候補には止めた職員を出さない。
  */
 export const SuspendedStaff: Story = {
   parameters: route({ url: '/schedule/schedule-2/edit', api: suspendedStaffBuddyApi() }),
 }
+
+/** 編集の権限の外の予定（石川 二葉の予定）の編集を URL で開いた。フォームを出さない。 */
+export const Forbidden: Story = {
+  parameters: route({ url: '/schedule/schedule-2/edit', viewer: selfEditViewer }),
+}
+
+export const NotFound: Story = { parameters: route({ url: '/schedule/missing/edit' }) }

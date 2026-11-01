@@ -1,21 +1,23 @@
 import { Controller, useWatch, type UseFormReturn } from 'react-hook-form'
 
+import type { ServiceCodeRecord } from '#/api/types'
 import { DatePicker, NumberPicker, TimePicker } from '@buddy/ui'
 
-import { SERVICE_CODE_DURATION } from '../constants/scheduleLabels'
 import { visitEndTimeOfInput } from '../lib/scheduleFormMapper'
 import type { ScheduleFormValues } from '../schema/scheduleForm'
 import { ServiceCodeRadioGroup } from './ServiceCodeRadioGroup'
 
 export type ScheduleDateTimeEditProps = {
   form: UseFormReturn<ScheduleFormValues>
+  /** 予定の API のサービスコードの一覧。この順に選択肢を並べる。 */
+  serviceCodes: readonly ServiceCodeRecord[]
 }
 
 /**
  * 予定の日付と時間の入力。訪問の予定では、終了時間を開始時間と提供時間から求めて出し、
  * サービスコードを選ぶと提供時間をそのコードの上限にする。
  */
-export const ScheduleDateTimeEdit = ({ form }: ScheduleDateTimeEditProps) => {
+export const ScheduleDateTimeEdit = ({ form, serviceCodes }: ScheduleDateTimeEditProps) => {
   const { control, setValue } = form
   const kind = useWatch({ control, name: 'kind' })
   const startTime = useWatch({ control, name: 'startTime' })
@@ -73,9 +75,10 @@ export const ScheduleDateTimeEdit = ({ form }: ScheduleDateTimeEditProps) => {
           render={({ field }) => (
             <ServiceCodeRadioGroup
               onChange={(code) => {
-                field.onChange(code)
-                setValue('serviceTime', SERVICE_CODE_DURATION[code].max, { shouldValidate: true })
+                field.onChange(code.code)
+                setValue('serviceTime', code.service_time_range_end, { shouldValidate: true })
               }}
+              serviceCodes={serviceCodes}
               value={field.value}
             />
           )}

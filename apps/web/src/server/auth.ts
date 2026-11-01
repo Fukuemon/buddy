@@ -19,10 +19,12 @@ import { signValue, verifySignedValue } from './signedValue'
  * Valkey に置くセッション。トークンはブラウザに渡さない。
  * canManageStaff と canCheckReceipt は、その項目を足す前に作ったセッションに無いので、省けるようにする。
  * canCheckReceipt が無いセッションは、照合を権限で絞る前に作ったので、絞る前と同じく照合を出す。拒むのは照合の API である。
+ * schedulePolicies が無いセッションも、予定を権限で出し分ける前に作ったので、出し分ける前と同じく全ての予定の操作を出す。
  */
-export type Session = Omit<Viewer, 'canManageStaff' | 'canCheckReceipt'> & {
+export type Session = Omit<Viewer, 'canManageStaff' | 'canCheckReceipt' | 'schedulePolicies'> & {
   canManageStaff?: boolean
   canCheckReceipt?: boolean
+  schedulePolicies?: Viewer['schedulePolicies']
   accessToken: string
   refreshToken?: string
   /** access token の期限の UNIX 時刻（ミリ秒）。分からなければ undefined。 */
@@ -317,12 +319,16 @@ export const viewerOf = ({
   facilityId,
   canManageStaff,
   canCheckReceipt,
+  schedulePolicies,
 }: Session): Viewer => ({
   staffId,
   staffName,
   facilityId,
   canManageStaff: canManageStaff ?? false,
   canCheckReceipt: canCheckReceipt ?? true,
+  schedulePolicies: schedulePolicies ?? [
+    { code: 'schedule.all.edit', targetStaffIds: [], targetTeamIds: [] },
+  ],
 })
 
 /**

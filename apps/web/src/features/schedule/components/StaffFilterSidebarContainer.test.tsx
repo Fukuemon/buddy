@@ -5,10 +5,23 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './StaffFilterSidebarContainer.stories'
 
-const { WithCalendar, WithSuspendedStaff, WithSuspendedStaffSelected, WithSuspendedStaffWeek } =
-  composeStories(stories)
+const {
+  ReadableOnly,
+  WithCalendar,
+  WithSuspendedStaff,
+  WithSuspendedStaffSelected,
+  WithSuspendedStaffWeek,
+} = composeStories(stories)
 
 describe('StaffFilterSidebarContainer', () => {
+  it('予定を見る権限の無い職員を、絞り込みの候補に出さない', async () => {
+    render(<ReadableOnly />)
+    expect(await screen.findByTestId('staff-filter-staff-staff-1')).toBeInTheDocument()
+    expect(screen.getByTestId('staff-filter-staff-staff-2')).toBeInTheDocument()
+    expect(screen.queryByTestId('staff-filter-staff-staff-3')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('staff-filter-staff-staff-4')).not.toBeInTheDocument()
+  })
+
   it('止めた職員を、絞り込みの候補と日の表の列に出さず、その予定も出さない', async () => {
     render(<WithSuspendedStaff />)
     expect(await screen.findByTestId('day-grid-staff-staff-1')).toBeInTheDocument()

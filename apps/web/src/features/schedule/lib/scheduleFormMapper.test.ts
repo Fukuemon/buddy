@@ -8,9 +8,17 @@ import {
   toScheduleInput,
 } from './scheduleFormMapper'
 
+import { mockServiceCodes } from '#/mocks/scheduleData'
+
 describe('scheduleFormMapper', () => {
-  it('訪問の初期値はデフォルトのサービスコードの上限を提供時間にする', () => {
-    expect(createScheduleFormValues({ kind: 'visit', date: '2026-10-20' })).toMatchObject({
+  it('訪問の初期値は、渡したサービスコードの上限を提供時間にする', () => {
+    expect(
+      createScheduleFormValues({
+        kind: 'visit',
+        date: '2026-10-20',
+        serviceCode: mockServiceCodes[0],
+      }),
+    ).toMatchObject({
       kind: 'visit',
       startTime: '09:00',
       serviceCode: '訪看I2',

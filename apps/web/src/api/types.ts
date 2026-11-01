@@ -22,6 +22,29 @@ export type Viewer = {
   canManageStaff: boolean
   /** 照合の権限（receipt.check）を持つか。画面の出し分けだけに使い、拒むのは照合の API である。 */
   canCheckReceipt: boolean
+  /** 予定の権限（schedule.*）と対象。画面の出し分けだけに使い、拒むのは予定の API である。 */
+  schedulePolicies: readonly SchedulePolicy[]
+}
+
+/** 予定の権限の code。予定の API のマイグレーションが入れる値と同じにする。 */
+export const SCHEDULE_POLICY_CODES = [
+  'schedule.self.edit',
+  'schedule.user.read',
+  'schedule.user.edit',
+  'schedule.team.read',
+  'schedule.team.edit',
+  'schedule.all.read',
+  'schedule.all.edit',
+] as const
+
+/** 予定の権限の code。 */
+export type SchedulePolicyCode = (typeof SCHEDULE_POLICY_CODES)[number]
+
+/** ログインした職員の予定の権限 1 つ。対象は、職員とチームを対象にする権限だけが持つ。 */
+export type SchedulePolicy = {
+  code: SchedulePolicyCode
+  targetStaffIds: readonly string[]
+  targetTeamIds: readonly string[]
 }
 
 /** チーム。API の型の ID、名前、色だけを使う。色はチームの色のトークンの名前（team- の後ろ）である。 */
@@ -68,21 +91,8 @@ export const SCHEDULE_KINDS = ['normal', 'visit'] as const
 /** 予定の種類。API の予定の種類の名前（通常、訪問）に当たる。 */
 export type ScheduleKind = (typeof SCHEDULE_KINDS)[number]
 
-export const SERVICE_CODES = [
-  '訪看I2',
-  '訪看I3',
-  '訪看I4',
-  '訪看I5',
-  '訪看I5・2超',
-  '予防看I2',
-  '予防看I3',
-  '予防看I4',
-  '予防看I5',
-  '予防看I5・2超',
-  '医',
-] as const
-/** 訪問のサービスコード。表記は予定の API のマイグレーションが入れる値と同じにする。 */
-export type ServiceCode = (typeof SERVICE_CODES)[number]
+/** 訪問のサービスコードの表記。予定の API のサービスコードの一覧（listServiceCodes）の code を、そのまま使う。 */
+export type ServiceCode = string
 
 export const SCHEDULE_CATEGORIES = ['night', 'emergency', 'hospitalization'] as const
 /** 訪問の区分。API の訪問の区分の名前（夜勤、緊急、入院）に当たる。 */

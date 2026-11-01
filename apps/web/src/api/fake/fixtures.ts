@@ -7,7 +7,13 @@ import {
   mockTeams,
 } from '#/mocks/scheduleData'
 
-import { fromApiPatient, fromApiSchedule, fromApiStaff, fromApiTeam } from '../http/scheduleMapper'
+import {
+  fromApiPatient,
+  fromApiSchedule,
+  fromApiSchedulePolicies,
+  fromApiStaff,
+  fromApiTeam,
+} from '../http/scheduleMapper'
 import {
   RECEIPT_CHECK,
   STAFF_MANAGE,
@@ -32,6 +38,7 @@ export const FAKE_VIEWER: Viewer = {
   facilityId: mockMe.facility_id,
   canManageStaff: mockMe.policies.some((p) => p.code === STAFF_MANAGE),
   canCheckReceipt: mockMe.policies.some((p) => p.code === RECEIPT_CHECK),
+  schedulePolicies: fromApiSchedulePolicies(mockMe.policies),
 }
 
 export const fakeTeams: Team[] = mockTeams.map(fromApiTeam)

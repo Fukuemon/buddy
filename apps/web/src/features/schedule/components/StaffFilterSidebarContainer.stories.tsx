@@ -10,6 +10,7 @@ import {
 
 import { ScheduleCalendarContainer } from './ScheduleCalendarContainer'
 import { StaffFilterSidebarContainer } from './StaffFilterSidebarContainer'
+import { selfEditViewer } from './storyData'
 
 const route = (appRouter: Partial<AppRouterParameters>) => ({
   appRouter: { route: '/schedule', url: '/schedule', ...appRouter },
@@ -88,4 +89,10 @@ export const WithSuspendedStaffWeek: Story = {
     ...route({ url: '/schedule?view=week', api: suspendedStaffBuddyApi() }),
     layout: 'fullscreen',
   },
+}
+
+/** A チームの予定だけを見られる職員。絞り込みに A チームの職員だけを出す。 */
+export const ReadableOnly: Story = {
+  decorators: narrow,
+  parameters: route({ viewer: selfEditViewer }),
 }

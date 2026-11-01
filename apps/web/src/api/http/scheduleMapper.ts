@@ -1,12 +1,13 @@
 import type { components } from '../generated/schedule'
 import {
   SCHEDULE_CATEGORIES,
-  SERVICE_CODES,
+  SCHEDULE_POLICY_CODES,
   type Schedule,
+  type SchedulePolicy,
+  type SchedulePolicyCode,
   type ScheduleCategory,
   type ScheduleInput,
   type ScheduleKind,
-  type ServiceCode,
   type Patient,
   type Staff,
   type Team,
@@ -50,6 +51,19 @@ export const fromApiStaff = (user: Schemas['Staff']): Staff => {
   return staff
 }
 
+/** 職員の権限のうち、予定の権限だけを画面の予定の権限にする。画面の知らない code は捨てる。 */
+export const fromApiSchedulePolicies = (
+  policies: Schemas['StaffDetail']['policies'],
+): SchedulePolicy[] =>
+  policies.flatMap(({ code, target_user_ids, target_team_ids }) =>
+    isSchedulePolicyCode(code)
+      ? [{ code, targetStaffIds: target_user_ids, targetTeamIds: target_team_ids }]
+      : [],
+  )
+
+const isSchedulePolicyCode = (code: string): code is SchedulePolicyCode =>
+  (SCHEDULE_POLICY_CODES as readonly string[]).includes(code)
+
 /** API のチームを、画面のチームにする。 */
 export const fromApiTeam = ({ id, name, color }: Schemas['Team']): Team => ({ id, name, color })
 
@@ -60,15 +74,6 @@ export const fromApiPatient = ({ id, name, ended_at }: Schemas['Patient']): Pati
 /** API の日付と時刻は事業所の現地時刻で、事業所は日本にあるものとする。 */
 const OFFSET = '+09:00'
 const OFFSET_MS = 9 * 60 * 60 * 1000
-
-/** 全角と半角の数字の表記の違いを吸収して比べる。古いシードは全角（訪看I２）で入っている。 */
-const sameServiceCode = (a: string, b: string) => a.normalize('NFKC') === b.normalize('NFKC')
-
-const toServiceCode = (code: string): ServiceCode => {
-  const found = SERVICE_CODES.find((c) => sameServiceCode(c, code))
-  if (found === undefined) throw new Error(`画面が知らないサービスコード ${code} を受けた`)
-  return found
-}
 
 const toCategory = (name: string): ScheduleCategory => {
   const found = SCHEDULE_CATEGORIES.find((category) => CATEGORY_TO_API[category] === name)
@@ -111,7 +116,7 @@ export const fromApiSchedule = (schedule: ApiSchedule): Schedule => {
   if (visit !== null) {
     result.visit = {
       patientId: visit.patient_id,
-      serviceCode: toServiceCode(visit.service_code),
+      serviceCode: visit.service_code,
       categories: visit.visit_categories.map((c) => toCategory(c.name)),
     }
   }
@@ -160,7 +165,7 @@ export const toSlotRequest = (input: ScheduleInput, masters: ScheduleMasters): A
             companion_id: null,
             service_code_id: idOf(
               masters.serviceCodes,
-              (c) => sameServiceCode(c.code, visit.serviceCode),
+              (c) => c.code === visit.serviceCode,
               `サービスコード ${visit.serviceCode}`,
             ),
             visit_category_ids: visit.categories.map((category) =>

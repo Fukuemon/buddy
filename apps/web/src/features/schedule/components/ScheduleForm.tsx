@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Controller, useWatch, type UseFormReturn } from 'react-hook-form'
 
-import type { Patient, Staff } from '#/api/types'
+import type { Patient, ServiceCodeRecord, Staff } from '#/api/types'
 import { TextareaField } from '@buddy/ui'
 
 import { SCHEDULE_CATEGORY_LABEL } from '../constants/scheduleLabels'
@@ -25,7 +25,11 @@ export type ScheduleFormProps = {
   id: string
   form: UseFormReturn<ScheduleFormValues>
   staffList: Staff[]
+  /** 職員の候補。省くと staffList の全員を候補にする。どちらでも、止めた職員は候補に出さない。 */
+  staffCandidates?: Staff[]
   patients: Patient[]
+  /** 予定の API のサービスコードの一覧。訪問の予定のサービスコードの選択肢にする。 */
+  serviceCodes: readonly ServiceCodeRecord[]
   onSubmit: (values: ScheduleFormValues) => void | Promise<void>
 }
 
@@ -34,7 +38,15 @@ export type ScheduleFormProps = {
  * 通常と訪問の切り替えは持たず、form の kind の値に従う。
  * 職員の候補には止めた職員を出さない。今の値が止めた職員なら、要約に名前を出したまま値を変えない。
  */
-export const ScheduleForm = ({ id, form, staffList, patients, onSubmit }: ScheduleFormProps) => {
+export const ScheduleForm = ({
+  id,
+  form,
+  staffList,
+  staffCandidates = staffList,
+  patients,
+  serviceCodes,
+  onSubmit,
+}: ScheduleFormProps) => {
   const [activeField, setActiveField] = useState<FieldId>('date-time')
   const { control, formState, handleSubmit } = form
   const values = useWatch({ control }) as Partial<ScheduleFormValues>
@@ -88,7 +100,7 @@ export const ScheduleForm = ({ id, form, staffList, patients, onSubmit }: Schedu
       : []),
     {
       id: 'staff',
-      label: isVisit ? '担当者' : '予定者',
+      label: isVisit ? '主訪問者' : '予定者',
       content: staffName,
       placeholder: SELECT_PLACEHOLDER,
       error: errors.staffId?.message,
@@ -97,7 +109,7 @@ export const ScheduleForm = ({ id, form, staffList, patients, onSubmit }: Schedu
       ? [
           {
             id: 'category' as const,
-            label: '訪問の種類',
+            label: '訪問の区分',
             content:
               values.kind === 'visit' &&
               values.categories !== undefined &&
@@ -130,7 +142,9 @@ export const ScheduleForm = ({ id, form, staffList, patients, onSubmit }: Schedu
             name="title"
           />
         )}
-        {visibleField === 'date-time' && <ScheduleDateTimeEdit form={form} />}
+        {visibleField === 'date-time' && (
+          <ScheduleDateTimeEdit form={form} serviceCodes={serviceCodes} />
+        )}
         {visibleField === 'patient' && (
           <Controller
             control={control}
@@ -150,8 +164,9 @@ export const ScheduleForm = ({ id, form, staffList, patients, onSubmit }: Schedu
             name="staffId"
             render={({ field }) => (
               <StaffSelectList
+                heading={isVisit ? '主訪問者を選んでください' : '予定者を選んでください'}
                 onChange={field.onChange}
-                staffList={activeStaff(staffList)}
+                staffList={activeStaff(staffCandidates)}
                 value={field.value}
               />
             )}

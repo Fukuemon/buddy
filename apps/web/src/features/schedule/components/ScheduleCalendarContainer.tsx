@@ -7,6 +7,7 @@ import { Loading } from '@buddy/ui'
 
 import { activeStaff, activeStaffIds, excludeInactiveStaffSchedules } from '../lib/activeStaff'
 import { getCalendarRange, shiftCalendarDate } from '../lib/calendarRange'
+import { canEditAnySchedule, canEditScheduleOf, readableStaff } from '../lib/schedulePermission'
 import { toDateKey } from '../lib/dateTime'
 import { nowForDay, useNow } from '../lib/useNow'
 import { toCalendarEvents } from '../lib/toCalendarEvents'
@@ -34,13 +35,17 @@ export type ScheduleCalendarContainerProps = {
   staffFilterToggle?: StaffFilterToggle
 }
 
-/** `/schedule` の search params を読み、予定を取ってカレンダーに出す。 */
+/**
+ * `/schedule` の search params を読み、予定を取ってカレンダーに出す。
+ * 職員の列は、ログインした職員が予定を見てよい職員に限る。「予定を作成」は誰かの予定を編集できる職員にだけ出し、
+ * 時間の枠は、予定を編集できる職員の列でだけ押せる。
+ */
 export const ScheduleCalendarContainer = ({
   staffFilterToggle,
 }: ScheduleCalendarContainerProps) => {
   const search = useSearch({ from: '/schedule' })
   const navigate = useNavigate({ from: '/schedule' })
-  const { api, facilityId } = useBuddyApi()
+  const { api, facilityId, viewer } = useBuddyApi()
 
   const [today] = useState(() => toDateKey(new Date()))
   const date = search.date ?? today
@@ -74,7 +79,8 @@ export const ScheduleCalendarContainer = ({
     })
 
   const allStaff = staffQuery.data ?? []
-  const staffList = activeStaff(allStaff)
+  const staffList = readableStaff(viewer, activeStaff(allStaff))
+  const canCreate = canEditAnySchedule(viewer)
   const visibleStaff =
     selectedStaffIds.length === 0
       ? staffList
@@ -92,7 +98,7 @@ export const ScheduleCalendarContainer = ({
           date={date}
           onNext={() => updateSearch({ date: shiftCalendarDate(search.view, date, 1) })}
           onPrev={() => updateSearch({ date: shiftCalendarDate(search.view, date, -1) })}
-          onCreate={() => openCreate(date)}
+          onCreate={canCreate ? () => openCreate(date) : undefined}
           onToday={() => updateSearch({ date: undefined })}
           onViewChange={(view) => updateSearch({ view })}
           staffFilterToggle={staffFilterToggle}
@@ -111,6 +117,7 @@ export const ScheduleCalendarContainer = ({
             date={date}
             events={events}
             onEventClick={openDetail}
+            canCreateFor={(staff) => canEditScheduleOf(viewer, staff)}
             onSlotClick={(staffId, time) => openCreate(date, time, staffId)}
             staffList={visibleStaff}
           />
@@ -121,7 +128,9 @@ export const ScheduleCalendarContainer = ({
             onDateClick={(dateKey, time) =>
               time === undefined
                 ? updateSearch({ view: 'day', date: dateKey })
-                : openCreate(dateKey, time)
+                : canCreate
+                  ? openCreate(dateKey, time)
+                  : undefined
             }
             onEventClick={openDetail}
             view={search.view}

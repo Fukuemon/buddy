@@ -1,14 +1,12 @@
-import type { Schedule, ScheduleInput, ScheduleKind, Staff } from '#/api/types'
+import type { Schedule, ScheduleInput, ScheduleKind, ServiceCodeRecord, Staff } from '#/api/types'
 
-import { SERVICE_CODE_DURATION } from '../constants/scheduleLabels'
 import type { ScheduleFormValues } from '../schema/scheduleForm'
 import { addMinutesToTimeKey, combineDateTime, diffMinutes, toDateKey, toTimeKey } from './dateTime'
 
 const VISIT_TITLE = '訪問'
 const DEFAULT_START_TIME = '09:00'
-const DEFAULT_SERVICE_CODE = '訪看I2'
 
-/** createScheduleFormValues の引数。time を省くと 9 時、staffId を省くと未選択にする。 */
+/** createScheduleFormValues の引数。time を省くと 9 時、staffId を省くと未選択にする。serviceCode を省くとサービスコードを未選択にする。 */
 type ScheduleFormDefaults = {
   kind: ScheduleKind
   /** `YYYY-MM-DD` */
@@ -16,17 +14,20 @@ type ScheduleFormDefaults = {
   /** `HH:mm`。省くと 9 時にする。 */
   time?: string
   staffId?: Staff['id']
+  /** 訪問の予定の初期のサービスコード。予定の API のサービスコードの一覧の先頭を渡す。 */
+  serviceCode?: ServiceCodeRecord
 }
 
 /**
  * 作成のフォームの初期値を返す。
- * 通常の予定は開始から 1 時間、訪問の予定はデフォルトのサービスコードの上限の提供時間にする。
+ * 通常の予定は開始から 1 時間、訪問の予定は serviceCode の上限の提供時間にする。
  */
 export const createScheduleFormValues = ({
   kind,
   date,
   time = DEFAULT_START_TIME,
   staffId = '',
+  serviceCode,
 }: ScheduleFormDefaults): ScheduleFormValues => {
   const base = { staffId, scheduleDate: date, startTime: time, description: '' }
   return kind === 'visit'
@@ -34,8 +35,8 @@ export const createScheduleFormValues = ({
         ...base,
         kind,
         patientId: '',
-        serviceCode: DEFAULT_SERVICE_CODE,
-        serviceTime: SERVICE_CODE_DURATION[DEFAULT_SERVICE_CODE].max,
+        serviceCode: serviceCode?.code ?? '',
+        serviceTime: serviceCode?.service_time_range_end ?? 0,
         categories: [],
       }
     : { ...base, kind, title: '', endTime: addMinutesToTimeKey(time, 60) }

@@ -3,9 +3,12 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
 
+import { mockServiceCodes } from '#/mocks/scheduleData'
+
 import * as stories from './ScheduleCreateModalContainer.stories'
 
-const { FromOnLeaveStaffSlot, FromSlot, Visit, WithSuspendedStaff } = composeStories(stories)
+const { FromOnLeaveStaffSlot, FromSlot, SelfEditOnly, Visit, WithSuspendedStaff } =
+  composeStories(stories)
 
 describe('ScheduleCreateModalContainer', () => {
   afterEach(() => {
@@ -61,7 +64,24 @@ describe('ScheduleCreateModalContainer', () => {
     expect(confirm).not.toHaveBeenCalled()
   })
 
-  it('止めた職員がいる事業所では、担当者の候補に止めた職員を出さない', async () => {
+  it('自分の予定だけを編集できる職員には、主訪問者の候補に自分だけを出す', async () => {
+    render(<SelfEditOnly />)
+
+    await userEvent.click(await screen.findByTestId('schedule-field-staff'))
+    expect(screen.getByTestId('staff-select-option-staff-1')).toBeInTheDocument()
+    expect(screen.queryByTestId('staff-select-option-staff-2')).not.toBeInTheDocument()
+  })
+
+  it('サービスコードを、予定の API の一覧の順に並べる', async () => {
+    render(<Visit />)
+
+    const codes = (await screen.findAllByRole('radio', { name: /^(訪看|予防看|医)/ })).map(
+      (radio) => radio.getAttribute('value'),
+    )
+    expect(codes).toEqual(mockServiceCodes.map((code) => code.code))
+  })
+
+  it('止めた職員がいる事業所では、主訪問者の候補に止めた職員を出さない', async () => {
     render(<WithSuspendedStaff />)
 
     await userEvent.click(await screen.findByTestId('schedule-field-staff'))
@@ -69,11 +89,11 @@ describe('ScheduleCreateModalContainer', () => {
     expect(screen.queryByTestId('staff-select-option-staff-2')).not.toBeInTheDocument()
   })
 
-  it('URL の staffId が休職の職員を指すときは、担当者を未選択で開く', async () => {
+  it('URL の staffId が休職の職員を指すときは、主訪問者を未選択で開く', async () => {
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
     render(<FromOnLeaveStaffSlot />)
 
-    // 職員の一覧を取り終えるまで、担当者は値に関わらず未選択に見えるので、候補が出てから確認する
+    // 職員の一覧を取り終えるまで、主訪問者は値に関わらず未選択に見えるので、候補が出てから確認する
     await userEvent.click(await screen.findByTestId('schedule-field-staff'))
     await screen.findByTestId('staff-select-option-staff-1')
     await waitFor(() =>

@@ -1,6 +1,7 @@
 import createClient from 'openapi-fetch'
 
 import type { paths } from '#/api/generated/schedule'
+import { fromApiSchedulePolicies } from '#/api/http/scheduleMapper'
 import { RECEIPT_CHECK, STAFF_MANAGE } from '#/api/types'
 
 import type { AuthDeps, MeResult } from './auth'
@@ -60,6 +61,7 @@ export const fetchMe = async (scheduleApiUrl: string, accessToken: string): Prom
         facilityId: data.facility_id,
         canManageStaff: data.policies.some((p) => p.code === STAFF_MANAGE),
         canCheckReceipt: data.policies.some((p) => p.code === RECEIPT_CHECK),
+        schedulePolicies: fromApiSchedulePolicies(data.policies),
       },
     }
   }
