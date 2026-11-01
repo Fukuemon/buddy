@@ -145,6 +145,7 @@ describe('toSlotRequest', () => {
       date: '2026-10-20',
       start_time: '15:00',
       end_time: '16:00',
+      ends_next_day: false,
       staff_id: 'staff-2',
       title: '研修',
       description: null,
@@ -177,10 +178,33 @@ describe('toSlotRequest', () => {
     })
   })
 
-  it('日付をまたぐ予定と、マスタにない値は Error を投げる', () => {
+  it('終了が開始の翌日の予定は、開始の日付と終了の時刻に、翌日の印を付ける', () => {
+    expect(
+      toSlotRequest(
+        { ...normal, startsAt: '2026-10-20T22:00:00+09:00', endsAt: '2026-10-21T01:00:00+09:00' },
+        masters,
+      ),
+    ).toMatchObject({
+      date: '2026-10-20',
+      start_time: '22:00',
+      end_time: '01:00',
+      ends_next_day: true,
+    })
+    expect(
+      toSlotRequest(
+        { ...normal, startsAt: '2026-10-20T23:00:00+09:00', endsAt: '2026-10-21T00:00:00+09:00' },
+        masters,
+      ),
+    ).toMatchObject({ end_time: '00:00', ends_next_day: true })
+  })
+
+  it('長さが 0 以下か 24 時間以上の予定と、マスタにない値は Error を投げる', () => {
     expect(() =>
-      toSlotRequest({ ...normal, endsAt: '2026-10-21T01:00:00+09:00' }, masters),
-    ).toThrow('日付をまたぐ')
+      toSlotRequest({ ...normal, endsAt: '2026-10-21T15:00:00+09:00' }, masters),
+    ).toThrow('24 時間未満')
+    expect(() =>
+      toSlotRequest({ ...normal, endsAt: '2026-10-20T15:00:00+09:00' }, masters),
+    ).toThrow('24 時間未満')
     expect(() =>
       toSlotRequest(
         {

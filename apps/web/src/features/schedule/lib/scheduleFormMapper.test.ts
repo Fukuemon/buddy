@@ -8,6 +8,7 @@ import {
   defaultServiceCode,
   toScheduleFormValues,
   toScheduleInput,
+  visitEndOfInput,
 } from './scheduleFormMapper'
 
 const serviceCode = (id: string, code: string) => ({
@@ -70,6 +71,79 @@ describe('scheduleFormMapper', () => {
       description: '',
       visit: { patientId: 'patient-1', serviceCode: '訪看I3', categories: ['night'] },
     })
+  })
+
+  it('訪問の予定の 23:00 と提供時間 90 分は、翌日の 0:30 に終わる', () => {
+    expect(visitEndOfInput('23:00', 90)).toEqual({ endTime: '00:30', endsNextDay: true })
+    expect(visitEndOfInput('23:00', 60)).toEqual({ endTime: '00:00', endsNextDay: true })
+    expect(visitEndOfInput('22:59', 60)).toEqual({ endTime: '23:59', endsNextDay: false })
+    const input = toScheduleInput({
+      kind: 'visit',
+      staffId: 'staff-1',
+      scheduleDate: '2026-10-31',
+      startTime: '23:00',
+      description: '',
+      patientId: 'patient-1',
+      serviceCode: '訪看I4',
+      serviceTime: 90,
+      categories: ['night'],
+    })
+    expect(input).toMatchObject({
+      startsAt: '2026-10-31T23:00:00+09:00',
+      endsAt: '2026-11-01T00:30:00+09:00',
+    })
+  })
+
+  it('翌日を選んだ通常の予定は、終了の日時を翌日にする', () => {
+    const input = toScheduleInput({
+      kind: 'normal',
+      title: '夜勤',
+      staffId: 'staff-1',
+      scheduleDate: '2026-10-20',
+      startTime: '22:00',
+      endTime: '01:00',
+      endsNextDay: true,
+      description: '',
+    })
+    expect(input).toMatchObject({
+      startsAt: '2026-10-20T22:00:00+09:00',
+      endsAt: '2026-10-21T01:00:00+09:00',
+    })
+  })
+
+  it('通常の予定の作成の初期値は、開始から 1 時間後が 24 時を過ぎれば翌日にする', () => {
+    expect(
+      createScheduleFormValues({ kind: 'normal', date: '2026-10-20', time: '23:30' }),
+    ).toMatchObject({ endTime: '00:30', endsNextDay: true })
+    expect(createScheduleFormValues({ kind: 'normal', date: '2026-10-20' })).toMatchObject({
+      endTime: '10:00',
+      endsNextDay: false,
+    })
+  })
+
+  it('日をまたぐ予定をフォームの値にすると、翌日の選択と終了時間と提供時間を保存した値で出す', () => {
+    const base = {
+      id: 'x',
+      facilityId: 'f',
+      staffId: 'staff-1',
+      startsAt: '2026-10-20T22:00:00+09:00',
+      endsAt: '2026-10-21T01:00:00+09:00',
+      description: '',
+    }
+    expect(toScheduleFormValues({ ...base, kind: 'normal', title: '夜勤' })).toMatchObject({
+      scheduleDate: '2026-10-20',
+      startTime: '22:00',
+      endTime: '01:00',
+      endsNextDay: true,
+    })
+    expect(
+      toScheduleFormValues({
+        ...base,
+        kind: 'visit',
+        title: '訪問',
+        visit: { patientId: 'patient-1', serviceCode: '訪看I4', categories: [] },
+      }),
+    ).toMatchObject({ scheduleDate: '2026-10-20', startTime: '22:00', serviceTime: 180 })
   })
 
   it('予定をフォームの値にし、送る値に戻すと元の予定と同じになる', () => {

@@ -3,7 +3,7 @@ import { Controller, useWatch, type UseFormReturn } from 'react-hook-form'
 import type { ServiceCodeRecord } from '#/api/types'
 import { DatePicker, NumberPicker, TimePicker } from '@buddy/ui'
 
-import { visitEndTimeOfInput } from '../lib/scheduleFormMapper'
+import { formatEndTime, visitEndOfInput } from '../lib/scheduleFormMapper'
 import type { ScheduleFormValues } from '../schema/scheduleForm'
 import { ServiceCodeRadioGroup } from './ServiceCodeRadioGroup'
 
@@ -23,6 +23,7 @@ export const ScheduleDateTimeEdit = ({ form, serviceCodes }: ScheduleDateTimeEdi
   const startTime = useWatch({ control, name: 'startTime' })
   const serviceTime = useWatch({ control, name: 'serviceTime' }) as number | undefined
   const isVisit = kind === 'visit'
+  const visitEnd = visitEndOfInput(startTime, serviceTime)
 
   return (
     <div className="flex flex-col gap-6">
@@ -56,7 +57,7 @@ export const ScheduleDateTimeEdit = ({ form, serviceCodes }: ScheduleDateTimeEdi
         </div>
         {isVisit ? (
           <p className="text-caption text-text-secondary" data-testid="schedule-form-end-time">
-            終了時間 {visitEndTimeOfInput(startTime, serviceTime) ?? '-'}
+            終了時間 {visitEnd === undefined ? '-' : formatEndTime(visitEnd)}
           </p>
         ) : (
           <TimePicker

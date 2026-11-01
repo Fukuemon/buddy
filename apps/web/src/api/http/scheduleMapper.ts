@@ -74,6 +74,7 @@ export const fromApiPatient = ({ id, name, ended_at }: Schemas['Patient']): Pati
 /** API の日付と時刻は事業所の現地時刻で、事業所は日本にあるものとする。 */
 const OFFSET = '+09:00'
 const OFFSET_MS = 9 * 60 * 60 * 1000
+const DAY_MS = 24 * 60 * 60 * 1000
 
 const toCategory = (name: string): ScheduleCategory => {
   const found = SCHEDULE_CATEGORIES.find((category) => CATEGORY_TO_API[category] === name)
@@ -133,14 +134,16 @@ const idOf = <T extends { id: string }>(items: T[], match: (item: T) => boolean,
 /**
  * 画面の予定の入力を、API の単発の予定の作成の本文にする。
  *
- * 開始と終了の日付が違う、マスタに当たる値がない、のいずれかで Error を投げる。
+ * 終了が開始の翌日なら ends_next_day を付ける。
+ * 長さが 0 以下か 24 時間以上、マスタに当たる値がない、のいずれかで Error を投げる。
  * 訪問の予定の担当は予定の職員にし、同行者は付けない。
  */
 export const toSlotRequest = (input: ScheduleInput, masters: ScheduleMasters): ApiSlotRequest => {
   const start = splitDateTime(input.startsAt)
   const end = splitDateTime(input.endsAt)
-  if (start.date !== end.date) {
-    throw new Error('予定の API は日付をまたぐ予定を受けない')
+  const length = Date.parse(input.endsAt) - Date.parse(input.startsAt)
+  if (length <= 0 || length >= DAY_MS) {
+    throw new Error('予定の API は、長さが 0 より長く 24 時間未満の予定だけを受ける')
   }
   const typeName = KIND_TO_API[input.kind]
   const visit = input.kind === 'visit' ? input.visit : undefined
@@ -153,6 +156,7 @@ export const toSlotRequest = (input: ScheduleInput, masters: ScheduleMasters): A
     date: start.date,
     start_time: start.time,
     end_time: end.time,
+    ends_next_day: start.date !== end.date,
     staff_id: input.staffId,
     title: input.title === '' ? null : input.title,
     description: input.description === '' ? null : input.description,
