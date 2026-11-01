@@ -28,6 +28,27 @@ web は `BuddyApi.calendars`（`apps/web/src/api/client.ts`）で API を呼ぶ�
 | ダイアログの合わせる | 合わせて終えた書き出し | `calendars.acceptExport` の戻り値 | `createCalendarExportAcceptance` のレスポンスの `CalendarExport` |
 | 合わせるの失敗の文 | 理由ごとの文 | `ApiError.status`、`ApiError.code` | レスポンスの status と `Error.code` |
 
+## 状態と失敗の要因
+
+| 状態 | 出す文 | 要因 |
+| --- | --- | --- |
+| 権限が無い | 「この画面を開く権限がありません」 | `getMe` の `policies[].code` に `staff.manage` が無い。web は、ほかの操作を呼ばない |
+| 読み込みの失敗 | 「この操作をする権限がありません。」 | `listCalendarExportIssues` が 403 |
+| 読み込みの失敗 | 「確認が必要な予定を読み込めませんでした。時間をおいて、読み直してください。」 | `listCalendarExportIssues` が 403 以外の失敗。API に届かないときを含む |
+| 書き直しの失敗 | 「この操作をする権限がありません。」 | `createCalendarExportRetry` が 403 |
+| 書き直しの失敗 | 「この予定は、すでに書き直しを始めたか、書き直し終えています。一覧を読み直してください。」 | `createCalendarExportRetry` が 409 `export_not_in_review` か 404 `not_found` |
+| 書き直しの失敗 | 「書き直せませんでした。時間をおいて、もう一度書き直してください。」 | `createCalendarExportRetry` のほかの失敗。API に届かないときを含む |
+| 合わせるの失敗 | 「この操作をする権限がありません。」 | `createCalendarExportAcceptance` が 403 |
+| 合わせるの失敗 | 「この予定は、すでに書き直しを始めたか、書き直し終えています。一覧を読み直してください。」 | `createCalendarExportAcceptance` が 409 `export_not_in_review` か 404 `not_found` |
+| 合わせるの失敗 | 「この予定は、Google カレンダーの内容に合わせられません。buddy の内容で書き直してください。」 | `createCalendarExportAcceptance` が 409 `export_not_acceptable` |
+| 合わせるの失敗 | 「Google カレンダーの予定を、buddy の予定として取り込めません。終日の予定か、タイトルの利用者が見つからない予定です。buddy の内容で書き直すか、Google カレンダーで直すよう職員に頼んでください。」 | `createCalendarExportAcceptance` が 409 `external_change_unappliable` |
+| 合わせるの失敗 | 「Google カレンダーを読めません。カレンダーの共有が外れていないかを、職員に確認してください。」 | `createCalendarExportAcceptance` が 422 `calendar_unreadable` |
+| 合わせるの失敗 | 「この事業所では、まだ Google カレンダーを使う準備ができていません。事業所の管理者に、設定を頼んでください。」 | `createCalendarExportAcceptance` が 503 `calendar_not_configured` |
+| 合わせるの失敗 | 「Google カレンダーの内容に合わせられませんでした。時間をおいて、もう一度試してください。」 | `createCalendarExportAcceptance` のほかの失敗（502 `calendar_unavailable`、API に届かないときを含む） |
+
+- 文を選ぶ処理は、`apps/web/src/features/calendar/lib/errorMessage.ts` にある。
+  - `loadErrorMessage`、`rewriteErrorMessage`、`acceptErrorMessage` が文を選ぶ。
+
 ## 操作
 
 全ての操作は、事業所の確認の後に、ログインした職員が職員の管理の権限（`staff.manage`）を持つかを確認し、持たなければ 403（`forbidden`）を返す。

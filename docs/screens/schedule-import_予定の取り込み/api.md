@@ -19,7 +19,32 @@ web は `BuddyApi.calendars`（`apps/web/src/api/client.ts`）で API を呼ぶ�
 | 取り込み方 | 選んだ取り込み方 | `ImportDecision` | `createCalendarImport` のリクエストの `decisions[]` |
 | 取り込まない予定 | 件数、日時と理由 | `ImportPreview.skipped` | `ImportPreview.skipped[]` |
 | 結果の件数 | 3 つの件数 | `ImportResult` | `createCalendarImport` のレスポンスの `ImportResult` |
-| 失敗の文 | 状態ごとの文 | `ApiError.status`、`ApiError.code` | レスポンスの status と `Error.code` |
+| プレビューの失敗の文、取り込みの失敗の文 | 状態ごとの文 | `ApiError.status`、`ApiError.code` | レスポンスの status と `Error.code` |
+
+## 状態と失敗の要因
+
+| 状態 | 出す文 | 要因 |
+| --- | --- | --- |
+| 権限が無い | 「この画面を開く権限がありません」 | `getMe` の `policies[].code` に `staff.manage` が無い。web は、ほかの操作を呼ばない |
+| 読み込みの失敗 | 「この操作をする権限がありません。」 | `listExternalCalendars` か `listUsers` が 403 |
+| 読み込みの失敗 | 「結び付けたカレンダーを読み込めませんでした。時間をおいて、読み直してください。」 | `listExternalCalendars` か `listUsers` が 403 以外の失敗。API に届かないときを含む |
+| プレビューの失敗 | 「この操作をする権限がありません。」 | `createCalendarImportPreview` が 403 |
+| プレビューの失敗 | 「Google カレンダーから予定を読めませんでした。時間をおいて、もう一度プレビューしてください。」 | `createCalendarImportPreview` が 502 `calendar_unavailable` |
+| プレビューの失敗 | 「職員 A の Google カレンダーを読めません。カレンダーの共有が外れていないかを、職員に確認してください。」 | `createCalendarImportPreview` が 422 `calendar_unreadable` |
+| プレビューの失敗 | 「この事業所では、まだ Google カレンダーを使う準備ができていません。事業所の管理者に、設定を頼んでください。」 | `createCalendarImportPreview` が 503 `calendar_not_configured` |
+| プレビューの失敗 | 「この職員のカレンダーの結び付けが外れています。画面を読み直してください。」 | `createCalendarImportPreview` が 404 `not_found`。カレンダーを外したか、職員が退職した |
+| プレビューの失敗 | 「プレビューできませんでした。時間をおいて、もう一度プレビューしてください。」 | `createCalendarImportPreview` のほかの失敗（400 `invalid_input`、API に届かないときを含む） |
+| 取り込みの失敗 | 「この操作をする権限がありません。」 | `createCalendarImport` が 403 |
+| 取り込みの失敗 | 「プレビューの後に、Google カレンダーの予定か職員の休職が変わりました。もう一度プレビューしてから取り込んでください。予定は 1 件も取り込んでいません。」 | `createCalendarImport` が 409 `import_preview_changed`。確認が必要な予定の集合か版が違うか、職員の休職と訪問しない職員かが読み替えたときと違う |
+| 取り込みの失敗 | 「この職員の取り込みが、ほかの画面で進んでいます。終わってから、もう一度プレビューしてください。予定は 1 件も取り込んでいません。」 | `createCalendarImport` が 409 `import_running` |
+| 取り込みの失敗 | 「選んだ利用者が見つかりません。利用者を選び直してください。予定は 1 件も取り込んでいません。」 | `createCalendarImport` が 400 `invalid_input`。web は期間と取り込み方の値を確認してから送るので、残るのは選んだ利用者が事業所にいないときである |
+| 取り込みの失敗 | 「この職員のカレンダーの結び付けが外れています。画面を読み直してください。予定は 1 件も取り込んでいません。」 | `createCalendarImport` が 404 `not_found` |
+| 取り込みの失敗 | 「利用者の一覧を読み込めませんでした。時間をおいて、もう一度プレビューしてください。」 | 確認が必要な予定があり、`listPatients` が失敗した |
+| 取り込みの失敗 | 「取り込めませんでした。時間をおいて、もう一度取り込んでください。予定は 1 件も取り込んでいません。」 | `createCalendarImport` のほかの失敗（422、502、503、API に届かないときを含む） |
+
+- 文を選ぶ処理は、`apps/web/src/features/calendar/lib/errorMessage.ts` にある。
+  - `loadErrorMessage`、`previewErrorMessage`、`importErrorMessage` が文を選ぶ。
+  - 利用者の一覧の失敗の文は、`PATIENTS_ERROR_MESSAGE` である。
 
 ## 操作
 
