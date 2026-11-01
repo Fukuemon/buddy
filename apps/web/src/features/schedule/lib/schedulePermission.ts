@@ -57,3 +57,19 @@ export const readableStaff = <T extends ScheduleOwner>(
 /** ログインした職員が、誰かの予定を作れるか。予定の作成のボタンを出すかに使う。 */
 export const canEditAnySchedule = (viewer: ScheduleViewer) =>
   viewer.schedulePolicies.some((policy) => policy.code.endsWith('.edit'))
+
+/**
+ * URL の staffIds から、ログインした職員が予定を見てよくない職員を除く。
+ * 見えない職員が選んだままになると、絞り込みの「全員」と「一部」の判定が崩れるためである。職員の一覧を取り終える前は、そのまま返す。
+ */
+export const readableStaffIds = (
+  viewer: ScheduleViewer,
+  staffIds: Staff['id'][],
+  staffList: readonly ScheduleOwner[] | undefined,
+) => {
+  if (staffList === undefined) return staffIds
+  return staffIds.filter((id) => {
+    const owner = staffList.find((staff) => staff.id === id)
+    return owner !== undefined && canReadScheduleOf(viewer, owner)
+  })
+}

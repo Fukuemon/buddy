@@ -7,7 +7,12 @@ import { Loading } from '@buddy/ui'
 
 import { activeStaff, activeStaffIds, excludeInactiveStaffSchedules } from '../lib/activeStaff'
 import { getCalendarRange, shiftCalendarDate } from '../lib/calendarRange'
-import { canEditAnySchedule, canEditScheduleOf, readableStaff } from '../lib/schedulePermission'
+import {
+  canEditAnySchedule,
+  canEditScheduleOf,
+  readableStaff,
+  readableStaffIds,
+} from '../lib/schedulePermission'
 import { toDateKey } from '../lib/dateTime'
 import { nowForDay, useNow } from '../lib/useNow'
 import { toCalendarEvents } from '../lib/toCalendarEvents'
@@ -52,7 +57,11 @@ export const ScheduleCalendarContainer = ({
   const range = getCalendarRange(search.view, date)
 
   const staffQuery = useQuery(staffListQueryOptions(api, facilityId))
-  const selectedStaffIds = activeStaffIds(search.staff, staffQuery.data)
+  const selectedStaffIds = readableStaffIds(
+    viewer,
+    activeStaffIds(search.staff, staffQuery.data),
+    staffQuery.data,
+  )
   const schedulesQuery = useQuery(
     scheduleListQueryOptions(api, facilityId, {
       ...range,

@@ -8,6 +8,7 @@ import {
   canReadScheduleOf,
   editableStaff,
   readableStaff,
+  readableStaffIds,
 } from './schedulePermission'
 
 const policy = (
@@ -81,5 +82,15 @@ describe('canEditAnySchedule', () => {
   it('編集の権限を 1 つでも持てば true、閲覧の権限だけなら false を返す', () => {
     expect(canEditAnySchedule(viewerWith(policy('schedule.all.read')))).toBe(false)
     expect(canEditAnySchedule(viewerWith(policy('schedule.self.edit')))).toBe(true)
+  })
+})
+
+describe('readableStaffIds', () => {
+  it('URL の職員から見てよくない職員と一覧に無い職員を除き、一覧を取る前はそのまま返す', () => {
+    const viewer = viewerWith(policy('schedule.team.read', { targetTeamIds: ['team-a'] }))
+    expect(
+      readableStaffIds(viewer, ['staff-3', 'staff-2', 'staff-9'], [self, teammate, other]),
+    ).toEqual(['staff-2'])
+    expect(readableStaffIds(viewer, ['staff-3'], undefined)).toEqual(['staff-3'])
   })
 })
