@@ -83,6 +83,13 @@ status: stable
   - `VITE_API_MODE` で、ブラウザのメモリで動くフェイク（`fake/`）と、BFF の server function を呼ぶ実装（`bff/`）を切り替える。
   - `http/` は、サーバーから API を呼ぶ実装で、`src/server/` から使う。
 - サーバーだけで動く web の処理は `src/server/` に置く。
+- web の権限の確認は、段ごとに次の場所に置く。拒む判断は API が持ち、web の確認は画面の出し分けだけにする。
+  - ADR-0025: [web の画面の権限の確認を、route の beforeLoad と PermissionGuard で宣言し、1 つの関数で評価する](../docs/adr/0025-web-permission-checks.md)
+  - 認証は `routes/__root.tsx` の `beforeLoad` に置く。
+  - 画面の段は、各 route の `beforeLoad` で `requirePermission` を呼んで宣言する。権限の要らない画面も `requirePermission('none')` と宣言する。
+  - 画面の中のボタンとダイアログは `PermissionGuard` で出し分け、Container に権限の三項演算子を書かない。
+  - 権限のキー、`hasPermission`、`requirePermission` は `src/api/permissions.ts` に、`PermissionGuard` は `src/components/` に置く。
+  - 予定の 7 つの権限による予定ごとの判定は、機能のコードに置く。
 - `packages/ui` へ移すのは、業務の名前を持たず、2 つ以上の画面で同じ形で使うコンポーネントだけにする。
   - 移すときは、Base か Case かを [DESIGN.md](../packages/ui/DESIGN.md) の基準で決める。
 - デザインシステムの文書は `packages/ui/DESIGN.md` にある。
