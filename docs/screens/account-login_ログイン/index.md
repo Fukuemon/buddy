@@ -7,7 +7,7 @@ web の画面ではなく、buddy のログインを受け持つサービスが�
 | --- | --- |
 | URL | ブローカーの `/login`。web の `/auth/login` から Hydra を通って、`login_challenge` を付けてリダイレクトされる |
 | 使う人 | ログインを試す全ての職員。ログインしていなくても開ける |
-| 実装 | ID ブローカー（`services/broker`）の `services/broker/internal/login/pages.go`、`services/broker/internal/login/login.go` |
+| 実装 | 画面のソースは `apps/broker/src/pages.tsx`。ID ブローカー（`services/broker`）が、生成したテンプレートを `services/broker/internal/login/pages.go` で埋め込み、`services/broker/internal/login/login.go` で出す |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。  
 ログインとログアウトの流れは、[ID ブローカーの Design Doc のログイン](../../design/services/broker.md#ログイン) と [ID ブローカーの Design Doc のログアウト](../../design/services/broker.md#ログアウト) にある。
@@ -135,8 +135,9 @@ web のヘッダーの名前と同じ主の色で出す。
 1. メールアドレスが登録した有効な職員のものなら、その職員の事業所の、ふだん使っているログインの画面へ移る。
 2. 登録していないメールアドレスと、休職と退職の職員のメールアドレスでは、ふだん使っているログインの画面へ移らず、[ログインの失敗](../account-error_ログインの失敗/index.md) の画面へ移る。
    - 事業所を示さないよう、ログインの途中の失敗と同じ文言を出す。
-3. 同じメールアドレスか同じ送信元から続けて押し、試行の回数の上限を超えたときは、メールアドレスによらず、[ログインの失敗](../account-error_ログインの失敗/index.md) の画面へ移る。
+3. 同じメールアドレスで続けて押し、試行の回数の上限を超えたときは、メールアドレスが登録されているかによらず、[ログインの失敗](../account-error_ログインの失敗/index.md) の画面へ移る。
    - 画面は「試行の回数の上限を超えた」の状態にし、時間をおいてから試すよう伝える文を出す。
+4. 同じ送信元から続けて開くか押し、試行の回数の上限を超えたときは、この画面を「ログインの失敗」の状態にする。
 
 ## 説明の文
 

@@ -1,0 +1,61 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { StatusBadge } from './StatusBadge'
+import * as Stories from './StatusBadge.stories'
+
+<Meta of={Stories} />
+
+# StatusBadge
+
+一覧と詳細で、職員や利用者の状態を文字で示す印。同じファイルに、名前の先頭の 1 文字を入れた丸（`Avatar`）と、名前の前に色の点を置く `DotLabel` を置く。
+
+## 使う場面
+
+- 一覧の行と詳細の見出しで、有効、休職、退職のような状態を示す
+- `Avatar` は、職員と利用者の詳細の見出しで、名前の前に置く
+- `DotLabel` は、チームの名前や職員の名前の前に、チームの色の点を置く
+
+## 使わない場面
+
+- 操作の結果の通知
+- 押して状態を変える（`Button` か `SegmentedControl` を使う）
+
+## Do
+
+- 状態の名前を文字で書く。注意してほしい状態は `tone="warning"`、終わった状態は `tone="muted"` にする
+- `DotLabel` には、必ず名前を並べる
+
+## Don't
+
+- 色だけで状態を伝える
+- `DotLabel` の点だけを出す
+
+## 状態
+
+### デフォルト
+
+<Canvas of={Stories.Default} />
+
+### 注意
+
+<Canvas of={Stories.Warning} />
+
+### 終わった状態
+
+<Canvas of={Stories.Muted} />
+
+### Avatar
+
+<Canvas of={Stories.WithAvatar} />
+
+### DotLabel
+
+<Canvas of={Stories.WithDotLabel} />
+
+## キーボードの操作
+
+- 操作はない。`Avatar` と `DotLabel` の点は読み上げない
+
+## props
+
+<ArgTypes of={StatusBadge} />

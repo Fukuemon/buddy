@@ -55,6 +55,12 @@ const NON_TEXT_PAIRS = [
   ["primary", "surface"],
   ["primary", "surface-canvas"],
   ["danger", "surface"],
+  ["danger", "primary-surface"],
+  // 入力の欄にマウスを乗せたときの枠
+  ["border-field-hover", "surface"],
+  ["border-field-hover", "primary-surface"],
+  ["danger-hover", "surface"],
+  ["danger-hover", "primary-surface"],
   ["focus-outline", "surface"],
   ["focus-outline", "surface-canvas"],
   ["focus-outline", "focus-halo"],

@@ -1,7 +1,9 @@
 import { composeStories } from '@storybook/react-vite'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vite-plus/test'
+import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
+
+import { stubViewport } from '#/test/stubViewport'
 
 import * as stories from './StaffFilterSidebarContainer.stories'
 
@@ -12,6 +14,10 @@ const {
   WithSuspendedStaffSelected,
   WithSuspendedStaffWeek,
 } = composeStories(stories)
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 describe('StaffFilterSidebarContainer', () => {
   it('予定を見る権限の無い職員と、その職員だけのチームを、絞り込みに出さない', async () => {
@@ -58,6 +64,7 @@ describe('StaffFilterSidebarContainer', () => {
   })
 
   it('週の表示でも、止めた職員の予定を出さない', async () => {
+    stubViewport(true)
     render(<WithSuspendedStaffWeek />)
     expect(await screen.findByTestId('schedule-event-schedule-1')).toBeInTheDocument()
     expect(screen.queryByTestId('schedule-event-schedule-2')).not.toBeInTheDocument()

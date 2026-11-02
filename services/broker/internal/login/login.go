@@ -90,7 +90,8 @@ type Config struct {
 	Staff    Staff
 	Hydra    Hydra
 	Upstream Upstream
-	// Limiter は、ログインの画面でメールを送る試行を、送信元の IP アドレスごとに数える。
+	// Limiter は、ログインの画面を開く試行（GET /login）とメールを送る試行（POST /login）を、送信元の IP アドレスごとに数える。
+	// IPv6 は /64 ごとに数える。
 	Limiter *Limiter
 	// EmailLimiter は、ログインの画面でメールを送る試行を、入れたメールごとに数える。
 	EmailLimiter *Limiter
@@ -104,6 +105,9 @@ type Config struct {
 	// SecureCookie が true なら、ログインの途中の cookie に Secure を付ける。
 	SecureCookie bool
 }
+
+// maxFormLen は、POST /login の本文を読む上限（バイト）である。login_challenge と MaxEmailLen のメールが入る長さにする。
+const maxFormLen = 4 << 10
 
 // cookieName は、上流の IdP へリダイレクトしている間の値を置く cookie である。
 const cookieName = "broker_login"
@@ -162,6 +166,9 @@ func NewHandler(cfg Config) (http.Handler, error) {
 
 func (h handler) showLogin(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	if !h.allowClient(w, r) {
+		return
+	}
 	challenge := r.URL.Query().Get("login_challenge")
 	if challenge == "" {
 		h.fail(w, r, http.StatusBadRequest, "login_challenge がない", nil)
@@ -187,19 +194,32 @@ func (h handler) showLogin(w http.ResponseWriter, r *http.Request) {
 
 func (h handler) submitEmail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	if !h.allowClient(w, r) {
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, maxFormLen)
+	if err := r.ParseForm(); err != nil {
+		code := http.StatusBadRequest
+		if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
+			code = http.StatusRequestEntityTooLarge
+		}
+		h.fail(w, r, code, "本文を読めない", err)
+		return
+	}
 	challenge := r.PostFormValue("login_challenge")
 	if challenge == "" {
 		h.fail(w, r, http.StatusBadRequest, "login_challenge がない", nil)
 		return
 	}
+	// 形の違うメールは職員にいないので、Hydra に問い合わせず、メールごとの上限でも数えない
+	email := NormalizeEmail(r.PostFormValue("email"))
+	if !ValidEmail(email) {
+		h.fail(w, r, http.StatusBadRequest, "メールの形が正しくない", nil)
+		return
+	}
 	// 使い終えたか、Hydra の知らない login_challenge では、職員を引かない
 	if _, err := h.Hydra.LoginRequest(ctx, challenge); err != nil {
 		h.fail(w, r, http.StatusBadRequest, "ログインの要求を読めない", err)
-		return
-	}
-	email := strings.ToLower(strings.TrimSpace(r.PostFormValue("email")))
-	if !h.Limiter.Allow(clientAddr(r, h.ClientIPHeader)) {
-		h.rejectAs(w, r, challenge, hydra.TooManyAttempts, "送信元の IP アドレスの試行の回数の上限を超えた", nil)
 		return
 	}
 	if !h.EmailLimiter.Allow(email) {
@@ -282,7 +302,7 @@ func (h handler) match(ctx context.Context, m StaffMember, id upstream.Identity)
 	if !id.EmailVerified {
 		return "上流のメールが確認済みでない"
 	}
-	if strings.ToLower(strings.TrimSpace(id.Email)) != m.Email {
+	if NormalizeEmail(id.Email) != m.Email {
 		return "上流のメールが登録のメールと違う"
 	}
 	err := h.Staff.Link(ctx, m.ID, got)
@@ -388,7 +408,7 @@ func (h handler) fail(w http.ResponseWriter, r *http.Request, code int, reason s
 
 // failLogout は、Hydra へ返せないログアウトの失敗で、ログアウトの失敗の画面を出す。
 func (h handler) failLogout(w http.ResponseWriter, r *http.Request, code int, reason string, err error) {
-	h.failPage(w, r, code, "logoutFailure", "ログアウトの失敗の画面を出す", reason, err)
+	h.failPage(w, r, code, "logout-failure", "ログアウトの失敗の画面を出す", reason, err)
 }
 
 // failPage は、失敗を code が 5xx なら Error、ほかは Warn でログに書き、page の画面を code で出す。
@@ -433,7 +453,18 @@ func readPending(r *http.Request) (pending, error) {
 	return p, nil
 }
 
-// clientAddr は、試行を数える送信元の IP アドレスである。
+// allowClient は、ログインの画面の試行を送信元の IP アドレスごとに 1 回数え、上限を超えていれば、Hydra を呼ばずに
+// ログインの失敗の画面を 429 で出して false を返す。Hydra の admin API の呼び出しを、送信元ごとの上限より増やさないためである。
+func (h handler) allowClient(w http.ResponseWriter, r *http.Request) bool {
+	if h.Limiter.Allow(clientAddr(r, h.ClientIPHeader)) {
+		return true
+	}
+	h.fail(w, r, http.StatusTooManyRequests, "送信元の IP アドレスの試行の回数の上限を超えた", nil)
+	return false
+}
+
+// clientAddr は、試行を数える送信元のキーである。IPv4 はアドレス、IPv6 はアドレスを含む /64 のプレフィックスにする。
+// IPv6 の /64 は 1 つの回線に割り当てられるので、その中でアドレスを替えても同じ送信元として数える。
 //
 // header が空なら、接続の相手のアドレスを使う。プロキシの後ろでは、プロキシのアドレスになる。
 // header が空でなければ、リバースプロキシが付けたそのヘッダーの、最後の値を使う。X-Forwarded-For のように値を足していく
@@ -442,12 +473,23 @@ func clientAddr(r *http.Request, header string) string {
 	if values := r.Header.Values(header); header != "" && len(values) > 0 {
 		last := values[len(values)-1]
 		if ip, err := netip.ParseAddr(strings.TrimSpace(last[strings.LastIndex(last, ",")+1:])); err == nil {
-			return ip.String()
+			return clientKey(ip)
 		}
 	}
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		return r.RemoteAddr
+		host = r.RemoteAddr
+	}
+	if ip, err := netip.ParseAddr(host); err == nil {
+		return clientKey(ip)
 	}
 	return host
+}
+
+func clientKey(ip netip.Addr) string {
+	ip = ip.Unmap().WithZone("")
+	if ip.Is4() {
+		return ip.String()
+	}
+	return netip.PrefixFrom(ip, 64).Masked().String()
 }

@@ -1,9 +1,8 @@
-import { Button, HelpToggle, Loading, RowTable, RowTableRow } from '@buddy/ui'
+import { Button, DotLabel, HelpToggle, Loading, RowTable, RowTableRow } from '@buddy/ui'
 import type { ReactNode } from 'react'
 
 import type { Department, Team } from '#/api/types'
-import { DotLabel } from '#/components/site/StatusBadge'
-import { teamColorDotClassName } from '#/components/site/teamDot'
+import { teamColorDotClassName } from '#/components/teamColor'
 
 /** 部署とチームの画面の状態。ready の部署とチームは、名前の順に並べたものである。 */
 export type OrganizationListViewState =
