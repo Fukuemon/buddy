@@ -65,7 +65,8 @@ flowchart TB
 
 #### パッケージの構成
 
-ブローカーは機能が 1 つで、ハンドラが薄いので、機能ごとのパッケージを作らず、役割ごとに `internal/` の直下に置く。
+ブローカーは機能が 1 つで、ハンドラの処理が少ない。  
+そのため、パッケージは機能ごとに分けず、役割ごとに `internal/` の直下に置く。
 
 | パッケージ | 責務 |
 | --- | --- |
@@ -77,6 +78,8 @@ flowchart TB
 | `upstream` | 上流の IdP の RP の処理 |
 | `config` | 環境変数からの設定の読み込み |
 | `httpapi` | ヘルスチェックと、2 つのポートで受けるハンドラの組み立てと、panic のときの 500 |
+
+各パッケージが import するパッケージを、矢印で示す。
 
 ```mermaid
 flowchart LR
@@ -95,7 +98,8 @@ flowchart LR
   postgres --> staff
 ```
 
-- 状態の確認と書き込みは、`postgres` の条件付きの 1 文の UPDATE で原子的に行う。`staff` は状態の移り方を持たない。
+- 状態の確認と書き込みは、`postgres` の条件付きの 1 文の UPDATE で原子的に行う。
+  - `staff` は状態の移り方を持たない。
 - 依存の向きの規則は [コードベースの構造](https://github.com/Fukuemon/buddy/blob/develop/context/codebase.md#dependency-rules) にある。
 
 ### 職員の身元のテーブル

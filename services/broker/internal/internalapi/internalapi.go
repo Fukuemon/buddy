@@ -341,7 +341,7 @@ type errorBody struct {
 	Message string `json:"message"`
 }
 
-// storeErrors は、Store が返す番兵のエラーの、応答の状態コードと文である。応答の code は、番兵のエラーの Code にする。
+// storeErrors は、Store が返す番兵のエラーごとに、応答の状態コードと文を決める。応答の code は、番兵のエラーの Code にする。
 var storeErrors = map[*staff.Error]struct {
 	status  int
 	message string
