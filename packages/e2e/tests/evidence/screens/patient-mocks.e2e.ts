@@ -139,7 +139,8 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
         variant,
         {
           name: 'patient-list-empty',
-          title: '絞り込みに合う利用者がいないと 利用者が無いことの文が出て、絞り込みを外すで一覧へ戻る',
+          title:
+            '絞り込みに合う利用者がいないと 利用者が無いことの文が出て、絞り込みを外すで一覧へ戻る',
           file: `${LIST}/03-empty.html`,
         },
         async ({ page, step, check }) => {

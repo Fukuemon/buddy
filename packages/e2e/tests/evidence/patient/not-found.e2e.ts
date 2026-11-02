@@ -18,7 +18,8 @@ test.describe('利用者の詳細', () => {
         browser,
         {
           name: 'patient-detail-not-found',
-          title: '無い利用者の ID で利用者の詳細を開くと、利用者が見つからないことと開き直す先が出る',
+          title:
+            '無い利用者の ID で利用者の詳細を開くと、利用者が見つからないことと開き直す先が出る',
           actor: `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`,
           variant,
         },
