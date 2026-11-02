@@ -5,7 +5,7 @@
 
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
-| ナビゲーション | 「取り込み」「要確認」「連携」と、見出し「職員」のまとまりを出すか | `Viewer.canManageStaff` | `getMe` の `policies[].code` に `staff.manage` があるか |
+| ナビゲーション | 「取り込み」「要確認」「連携」と、見出し「職員」のまとまりを出すか | `Viewer.policyCodes` に `staff.manage` があるか（`hasPermission`） | `getMe` の `policies[].code` に `staff.manage` があるか |
 | アカウント | 職員の名前 | `Viewer.staffName` | `getMe` の `username` |
 | チーム、役職、部署の絞り込み | 選択肢 | `Team`、`Position`、`Department`（`teams.list`、`positions.list`、`departments.list` の戻り値） | `listTeams`、`listPositions`、`listDepartments` の `name` |
 | 職員の一覧 | 職員の並び | `StaffRecord[]`（`staff.listRecords` の戻り値）を、画面でチームの順に並べ直す | `listUsers`（`sort_field=username`、`sort_order=asc`） |
