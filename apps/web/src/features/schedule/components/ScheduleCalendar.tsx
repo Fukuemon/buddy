@@ -19,7 +19,7 @@ const FULL_CALENDAR_VIEW = {
 
 /**
  * 週の表示の列の見出しを「11/1(日)」の 1 行で出す、カレンダーの枠の幅の下限。
- * 最も長い「12/31(水)」が 84px、時間の目盛りが 46px なので、7 列で 634px になり、余裕を足す。
+ * 最も長い「12/31(水)」が 84px、時間の目盛りが 46px なので、7 列と時間の目盛りで 634px になる。これに余裕を足した。
  */
 const WIDE_DAY_HEADER_MIN_WIDTH_PX = 680
 
@@ -56,7 +56,7 @@ export const ScheduleCalendar = ({
   const containerRef = useRef<HTMLDivElement>(null)
   const calendarRef = useRef<FullCalendar>(null)
   const isDesktop = useIsDesktop()
-  // 幅を測れない間（jsdom と描く前）は、1 行の見出しにする
+  // 枠の幅を測れない間（jsdom と描く前）は、枠の幅では 2 行に切り替えない
   const [containerWidth, setContainerWidth] = useState<number | null>(null)
   // 幅 768px 以上でも、左の欄を開くとカレンダーの枠が狭くなり、1 行の見出しが列に入り切らないので、枠の幅でも判定する
   const twoLineDayHeader =
