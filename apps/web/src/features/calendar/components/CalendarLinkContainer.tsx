@@ -3,6 +3,7 @@ import { useNavigate, useRouteContext } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import type { Staff } from '#/api/types'
+import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
 import { PageForbiddenMessage } from '#/components/site/PageForbiddenMessage'
 
@@ -13,7 +14,6 @@ import {
   unlinkErrorMessage,
 } from '../lib/errorMessage'
 import {
-  calendarQueryKeys,
   externalCalendarListQueryOptions,
   serviceAccountQueryOptions,
   staffListQueryOptions,
@@ -61,9 +61,9 @@ const CalendarLinkContent = () => {
   const retry = () =>
     Promise.all(
       [
-        calendarQueryKeys.staff(facilityId),
-        calendarQueryKeys.calendars(facilityId),
-        calendarQueryKeys.serviceAccount(facilityId),
+        queryKeys.staff.list(facilityId),
+        queryKeys.calendars.list(facilityId),
+        queryKeys.calendars.serviceAccount(facilityId),
       ].map((queryKey) => queryClient.resetQueries({ queryKey })),
     )
 
