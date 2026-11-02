@@ -20,7 +20,9 @@ OpenAPI の項目は、`createCheck`（`POST /v1/checks`）のレスポンスの
   - 開始時間の一致は `checks.start.ok`、サービス内容の対応は `checks.service.ok`
   - 提供時間の一致は `checks.duration_equal`、終了時間の一致は `checks.end_equal`
   - 終了時間の許容範囲は `checks.schedule_elapsed` と `checks.visit_elapsed` で決める
-  - 提供時間の許容範囲は `checks.schedule_duration` と `checks.visit_duration` で決める。4 つとも `ok`、`minutes`、`range` を持つ
+  - 提供時間の許容範囲は `checks.schedule_duration` と `checks.visit_duration` で決める
+  - 許容範囲の 4 つの項目は、どれも `ok`、`minutes`、`range` を持つ
   - 加算は `checks.additions.ok`
-- 照合に使わなかった予定の理由の文は、`apps/web/src/features/receipt/lib/errorMessage.ts` の `warningReasonText` が `reason` と `column` から作る。`warnings[].message` は画面に出さない。
+- 照合に使わなかった予定の理由の文は、`apps/web/src/features/receipt/lib/errorMessage.ts` の `warningReasonText` が `reason` と `column` から作る。
+  - `warnings[].message` は画面に出さない。
 - 印と CSV は、`apps/web/src/features/receipt/lib/reportCells.ts` が、照合の API の `tools/parity/report` と同じ付け方で作る。
