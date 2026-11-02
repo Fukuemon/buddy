@@ -12,8 +12,9 @@ const OPEN_STORY = '画面-common-sitenav--manager'
 
 /** #526 で、レールでは短い名前を出し、読み上げる名前に正式な名前を続けた。改修前と比べて撮るので、両方の名前を持つ */
 const EXPECTED = {
-  before: { railName: '部署とチーム' },
-  after: { railName: '所属（部署とチーム）' },
+  before: { railName: /^部署とチーム$/ },
+  // Chrome は、読み上げにだけ置く sr-only の前に空白を入れて名前を作る
+  after: { railName: /^所属 ?（部署とチーム）$/ },
 }
 
 /**
