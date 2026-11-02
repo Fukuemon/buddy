@@ -45,10 +45,9 @@ verified_commit: 4e53ca5
 - ADR-0010: [予定の API の機能のパッケージで、手順を usecase、規則を関数、リポジトリを集約の単位に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0010-schedule-api-usecase-boundaries.md)
 - ADR-0026: [予定の API の機能のパッケージを internal/features/ に置き、usecase のメソッドを操作ごとのファイルに分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0026-schedule-api-features-directory.md)
 
-| ディレクトリ | 置くもの |
-| --- | --- |
-| `internal/features/` | 機能のパッケージ（`organization`、`staff`、`patient`、`visit`、`schedule`、`calendar`） |
-| `internal/` の直下 | アダプタ（`httpapi`、`postgres`、`gcal`、`broker`、`ulid`）、共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）、`access`、`principal`、`config`、テストの `inmem` |
+- `internal/features/` には、機能のパッケージ（`organization`、`staff`、`patient`、`visit`、`schedule`、`calendar`）を置く。
+- `internal/` の直下には、アダプタ（`httpapi`、`postgres`、`gcal`、`broker`、`ulid`）と共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）を置く。
+  - `access`、`principal`、`config`、テストの `inmem` も、`internal/` の直下に置く。
 
 `kernel` は、ADR-0010 の「`apperr` と同じ段の小さなパッケージ」に当たる。  
 `kernel.Finder[T]` は、ID で 1 件を読むメソッドを 1 つだけ持つインターフェイスである。  
