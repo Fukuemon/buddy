@@ -26,5 +26,6 @@
 | ログアウトの失敗 | 「時間をおいて、もう一度 buddy を開いてログアウトしてください。」 | `GET /logout` で `logout_challenge` が無い（400）か、Hydra へログアウトの accept を返せない（502） |
 
 - ブローカーがログインを reject で返したときは、この画面の状態でなく、web の [ログインの失敗](../account-error_ログインの失敗/index.md) を出す。
-  - reject で返したときには、登録していないメール、有効でない職員、上流のメールの違い、試行の上限が当たる。
+  - reject で返す主な理由は、登録していないメール、休職と退職の職員、上流のメールの違いである。
+  - 試行の回数の上限を超えたときは、`temporarily_unavailable` の reject で返す。ログインの失敗の画面は、ほかの理由と分けた文を出す。
 - 失敗の画面を出す処理は、`services/broker/internal/login/login.go` の `fail` と `failLogout` にある。
