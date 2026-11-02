@@ -86,7 +86,8 @@ status: stable
 マージする前に、変えたアプリの `test` と `check`（Go は `go test ./...`、`go vet ./...`、`golangci-lint run`）を流す。  
 Go のテストと lint の流し方（`GOWORK=off`、`packages/go` を変えたとき）は、[CONTRIBUTING.md の Go のモジュール](../CONTRIBUTING.md#go-のモジュール) にある。
 
-pull request と develop への push では、CI（[ci.yml](../.github/workflows/ci.yml)）が、変えた場所によらず全てのジョブを流す。
+pull request と develop への push では、CI（[ci.yml](../.github/workflows/ci.yml)）が全てのジョブを流す。  
+文書だけを変えた pull request では、`e2e` と `go` のジョブを飛ばす。飛ばす条件は [CONTRIBUTING.md の CI](../CONTRIBUTING.md#ci) にある。
 
 リリースの前に通すテストの一覧は未定である。[エビデンス](testing/evidence.md) の取り決めと同じ時期に決める。
 
