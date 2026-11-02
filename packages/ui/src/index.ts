@@ -36,6 +36,8 @@ export { NumberPicker } from './base/NumberPicker/NumberPicker'
 export type { NumberPickerProps } from './base/NumberPicker/NumberPicker'
 export { RowTable, RowTableRow } from './base/RowTable/RowTable'
 export type { RowTableMeta, RowTableProps, RowTableRowProps } from './base/RowTable/RowTable'
+export { Select } from './base/Select/Select'
+export type { SelectProps } from './base/Select/Select'
 export { SegmentedControl } from './base/SegmentedControl/SegmentedControl'
 export type {
   SegmentedControlOption,
