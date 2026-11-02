@@ -5,7 +5,7 @@ import type { Patient, ServiceCodeRecord, Staff } from '#/api/types'
 import { TextareaField } from '@buddy/ui'
 
 import { SCHEDULE_CATEGORY_LABEL } from '../constants/scheduleLabels'
-import { activePatients } from '../lib/activePatients'
+import { activePatients } from '#/api/activePatients'
 import { activeStaff } from '../lib/activeStaff'
 import { formatEndTime, visitEndOfInput } from '../lib/scheduleFormMapper'
 import type { ScheduleFormValues } from '../schema/scheduleForm'
