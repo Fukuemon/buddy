@@ -1,11 +1,10 @@
-import { Drawer } from '@buddy/ui'
+import { Drawer, useIsDesktop } from '@buddy/ui'
 import { useId, useState, type ReactNode } from 'react'
 
 import MenuIcon from '#/assets/icons/menu.svg?react'
 
 import { SiteHeader } from './SiteHeader'
 import { SiteNav, type SiteNavGroup } from './SiteNav'
-import { useIsDesktop } from './useIsDesktop'
 
 export type SiteLayoutProps = {
   /** ナビゲーションに並べる画面。 */

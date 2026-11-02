@@ -105,6 +105,54 @@ test.describe('予定のカレンダー', () => {
           },
         )
       })
+
+      test(`${variant.label ? `${variant.label}: ` : ''}幅 768px と 767px で予定のカレンダーを開いた場合、768px では左の欄とレールが出て、767px ではドロワーに切り替わること`, async ({
+        browser,
+      }) => {
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'schedule-sidebar-breakpoint',
+            title: '幅 768px では左の欄とレール、767px ではドロワーで、幅を戻すと左の欄に戻る',
+            actor: `${LOGIN_STAFF.name}（マネージャー）`,
+            variant,
+            viewport: { width: 768, height: 800 },
+          },
+          async (page) => {
+            await page.goto('/schedule')
+            await signInAtBroker(page, LOGIN_EMAIL)
+          },
+          async ({ page, step, check }) => {
+            await page.goto('/schedule')
+            const drawer = page.getByTestId('site-sidebar-drawer')
+            await expect(page.getByTestId('mini-calendar')).toBeVisible()
+            await expect(drawer).toBeHidden()
+            await expect(page.getByTestId('site-nav')).toBeVisible()
+            await check(
+              '幅 768px では、左の欄にミニカレンダーと職員の絞り込みが出て、ナビゲーションがレールで出る',
+            )
+
+            await step('表示の幅を 767px にする')
+            await page.setViewportSize({ width: 767, height: 800 })
+            await expect(page.getByTestId('mini-calendar')).toBeHidden()
+            await expect(page.getByTestId('site-nav')).toBeHidden()
+            await check('左の欄とナビゲーションが消える')
+
+            await step('ツールバーの「日付と絞り込み」のボタンを押す')
+            await page.getByTestId('site-sidebar-open').click()
+            await expect(drawer).toBeVisible()
+            await expect(drawer.getByTestId('mini-calendar')).toBeVisible()
+            await check('日付と絞り込みが、左端からドロワーで開く')
+
+            await step('Escape キーで閉じ、表示の幅を 768px に戻す')
+            await page.keyboard.press('Escape')
+            await expect(drawer).toBeHidden()
+            await page.setViewportSize({ width: 768, height: 800 })
+            await expect(page.getByTestId('mini-calendar')).toBeVisible()
+            await check('左の欄にミニカレンダーと職員の絞り込みが戻る')
+          },
+        )
+      })
     }
   })
 })

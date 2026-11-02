@@ -7,7 +7,7 @@
 | --- | --- |
 | URL | `/auth/error`。search params の `reason` で理由を受ける |
 | 使う人 | ログインを試した全ての職員。ログインしていなくても開ける |
-| 実装 | `apps/web/src/routes/auth.error.tsx`、`apps/web/src/components/site/AuthErrorMessage.tsx` |
+| 実装 | `apps/web/src/routes/auth.error.tsx`、`apps/web/src/components/page/AuthErrorMessage.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。  
 どの失敗でこの画面を開くかは、[ID ブローカーの Design Doc のログイン](../../design/services/broker.md#ログイン) にある。

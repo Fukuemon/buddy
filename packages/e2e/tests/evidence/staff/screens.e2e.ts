@@ -318,6 +318,61 @@ test.describe('職員の管理', () => {
       )
     })
 
+    test(`${prefix}権限を変えるで職員の名前を入れてキーボードで足し、× で外した場合、チップが増えて減り、フォーカスが足す欄に戻ること`, async ({
+      browser,
+    }) => {
+      await recordPrEvidence(
+        browser,
+        {
+          name: 'staff-policy-target-keyboard',
+          title:
+            '権限を変えるで、職員の名前で絞った候補を ↓ と Enter で足し、× で外し、Escape で候補だけを閉じる',
+          actor: MANAGER,
+          variant,
+        },
+        prepareStaff('chip'),
+        async ({ page, step, check }, { id }) => {
+          await page.goto(`/staff/${id}`)
+          await page.getByTestId('staff-detail-tab-policies').click()
+          await page.getByTestId('staff-detail-policies-change').click()
+          const dialog = page.getByTestId('staff-policies-dialog')
+          await dialog.getByTestId('staff-policies-option-schedule.user.read').check()
+          const add = dialog.getByTestId('staff-policies-target-add')
+          await expect(add).toBeVisible()
+          await step('「権限を変える」で、「指定した職員の予定の閲覧」に入れている')
+
+          await step(`「＋ 職員を選ぶ」に「${LEADER.staff.name}」と入れ、↓ で候補に移る`)
+          await add.fill(LEADER.staff.name)
+          await page.keyboard.press('ArrowDown')
+          await expect(
+            dialog.getByTestId(`staff-policies-target-option-${LEADER.staff.id}`),
+          ).toBeFocused()
+          await check(`候補が「${LEADER.staff.name}」に絞られ、その候補にフォーカスの表示が出る`)
+
+          await step('Enter で足す')
+          await page.keyboard.press('Enter')
+          const chip = dialog.getByTestId(`staff-policies-target-${LEADER.staff.id}`)
+          await expect(chip).toBeVisible()
+          await expect(add).toBeFocused()
+          await check('選んだ職員がチップで並び、フォーカスが足す欄に戻る')
+
+          await step('チップの × を押して外す')
+          await dialog.getByTestId(`staff-policies-target-remove-${LEADER.staff.id}`).click()
+          await expect(chip).toHaveCount(0)
+          await expect(add).toBeFocused()
+          await check('チップが消え、フォーカスが足す欄に戻る')
+
+          await step('もう一度候補を開き、Escape キーを押す')
+          await add.click()
+          await expect(dialog.getByTestId('staff-policies-target-options')).toBeVisible()
+          await page.keyboard.press('Escape')
+          await expect(dialog.getByTestId('staff-policies-target-options')).toHaveCount(0)
+          await expect(dialog).toBeVisible()
+          await check('候補だけが閉じ、権限を変えるのダイアログは開いたままである')
+        },
+      )
+    })
+
     test(`${prefix}職員を休職にした場合、今日以降の予定が出て、状態が休職になること`, async ({
       browser,
     }) => {

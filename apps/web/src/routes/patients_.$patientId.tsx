@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { SiteLayoutContainer } from '#/components/site/SiteLayoutContainer'
+import { SiteLayoutContainer } from '#/components/layout/SiteLayoutContainer'
 import { CalendarReviewBadgeContainer } from '#/features/calendar/components/CalendarReviewBadgeContainer'
 import { PatientDetailContainer } from '#/features/patient/components/PatientDetailContainer'
 
