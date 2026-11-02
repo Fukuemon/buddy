@@ -1,4 +1,4 @@
-import { Button, formFieldControlClassName } from '@buddy/ui'
+import { Button, formFieldControlClassName, Select } from '@buddy/ui'
 import { useId, type FormEvent } from 'react'
 
 import type { Staff } from '#/api/types'
@@ -66,8 +66,7 @@ export const CalendarImportForm = ({
             <label className="text-label" htmlFor={staffFieldId}>
               職員
             </label>
-            <select
-              className={formFieldControlClassName}
+            <Select
               data-testid="calendar-import-staff"
               disabled={isLocked}
               id={staffFieldId}
@@ -79,7 +78,7 @@ export const CalendarImportForm = ({
                   {staff.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           <div className="flex flex-col gap-3">
             <label className="text-label" htmlFor={startId}>

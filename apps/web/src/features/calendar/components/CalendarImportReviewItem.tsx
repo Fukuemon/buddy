@@ -1,4 +1,4 @@
-import { formFieldControlClassName } from '@buddy/ui'
+import { formFieldControlClassName, Select } from '@buddy/ui'
 import { useId, useState } from 'react'
 
 import type { ImportReviewItem, Patient } from '#/api/types'
@@ -106,8 +106,7 @@ export const CalendarImportReviewItem = ({
               type="search"
               value={filter}
             />
-            <select
-              className={formFieldControlClassName}
+            <Select
               data-testid={`calendar-import-review-patient-select-${id}`}
               disabled={disabled}
               id={patientFieldId}
@@ -130,7 +129,7 @@ export const CalendarImportReviewItem = ({
                   {p.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         )}
       </fieldset>
