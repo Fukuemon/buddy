@@ -206,7 +206,17 @@ pnpm build:tokens     # 画面のモックとドキュメントサイトが読�
 ```
 
 - 組を足すときと外すときは、`scripts/check-contrast.mjs` の冒頭の `TEXT_PAIRS` と `NON_TEXT_PAIRS` を直す。
-- `scripts/check-contrast.mjs` と `scripts/build-static-tokens.mjs` は、agent-harness のパッケージ design-system のテンプレートを写したものである。
+
+画面（`apps/web/src`）と `packages/ui/src` のコンポーネントのコードを変えたら、DESIGN.md の「画面を作るときの原則」に反する書き方がないかを確認する。  
+pre-commit のフックと CI も同じチェックを流す。
+
+```sh
+pnpm check:design   # 色の値、DADS の変数の名前、14px より小さい文字、focus-ring 以外のフォーカスの表示、余白の任意値
+```
+
+- ロゴのように値が外で決まる行だけは、同じ行のコメントに `design-system-allow` と理由を書いて外す。
+- 次の 3 つは、agent-harness のパッケージ design-system のテンプレートを写したものである。
+  - `scripts/check-contrast.mjs`、`scripts/build-static-tokens.mjs`、`scripts/check-raw-values.mjs`
   - パッケージを上げたら、スキル setup-design-system の手順で差分を見て取り込む。
 
 ## Changing the API Definition

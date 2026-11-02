@@ -286,6 +286,38 @@ test.describe('職員の管理', () => {
       )
     })
 
+    test(`${prefix}権限を変えるで職員の候補に Tab で移った場合、候補にフォーカスの表示が出ること`, async ({
+      browser,
+    }) => {
+      await recordPrEvidence(
+        browser,
+        {
+          name: 'staff-policy-target-focus',
+          title:
+            '権限を変えるで職員の候補に Tab で移ると、候補に focus-ring のフォーカスの表示が出る',
+          actor: MANAGER,
+          variant,
+        },
+        prepareStaff('focus'),
+        async ({ page, step, check }, { id }) => {
+          await page.goto(`/staff/${id}`)
+          await page.getByTestId('staff-detail-tab-policies').click()
+          await page.getByTestId('staff-detail-policies-change').click()
+          const dialog = page.getByTestId('staff-policies-dialog')
+          await dialog.getByTestId('staff-policies-option-schedule.user.read').check()
+          await step('「権限を変える」で、「指定した職員の予定の閲覧」に入れている')
+
+          await step('「＋ 職員を選ぶ」を押して候補を開き、Tab で最初の候補に移る')
+          await dialog.getByTestId('staff-policies-target-add').click()
+          await expect(dialog.getByTestId('staff-policies-target-options')).toBeVisible()
+          await page.keyboard.press('Tab')
+          const first = dialog.getByTestId(/^staff-policies-target-option-/).first()
+          await expect(first).toBeFocused()
+          await check('最初の候補にフォーカスの表示が出る')
+        },
+      )
+    })
+
     test(`${prefix}職員を休職にした場合、今日以降の予定が出て、状態が休職になること`, async ({
       browser,
     }) => {
