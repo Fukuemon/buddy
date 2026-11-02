@@ -1,7 +1,9 @@
 package httpapi_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"log/slog"
@@ -74,5 +76,37 @@ func TestInternalRoutes(t *testing.T) {
 		if rec.Code != http.StatusTeapot {
 			t.Errorf("%s の code = %d, want 内部の API のハンドラ", path, rec.Code)
 		}
+	}
+}
+
+func TestPanicReturnsInternal(t *testing.T) {
+	boom := http.HandlerFunc(func(http.ResponseWriter, *http.Request) { panic("内部の API で panic した") })
+	for _, tt := range []struct {
+		name string
+		cfg  httpapi.Config
+		path string
+	}{
+		{"内部の API", httpapi.Config{Internal: boom}, "/internal/staff"},
+		{"ログインの画面", httpapi.Config{Login: boom}, "/login"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			var logs bytes.Buffer
+			tt.cfg.Logger = slog.New(slog.NewJSONHandler(&logs, nil))
+			rec := httptest.NewRecorder()
+			httpapi.NewHandler(tt.cfg).ServeHTTP(rec, httptest.NewRequest(http.MethodPost, tt.path, nil))
+			if rec.Code != http.StatusInternalServerError {
+				t.Fatalf("code = %d, want 500", rec.Code)
+			}
+			if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
+				t.Errorf("Content-Type = %q", ct)
+			}
+			var body struct{ Code, Message string }
+			if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil || body.Code != "internal" || body.Message == "" {
+				t.Errorf("本文 = %s (%v)", rec.Body, err)
+			}
+			if !strings.Contains(logs.String(), `"level":"ERROR"`) || !strings.Contains(logs.String(), "内部の API で panic した") {
+				t.Errorf("panic の値がエラーのログに無い: %s", logs.String())
+			}
+		})
 	}
 }
