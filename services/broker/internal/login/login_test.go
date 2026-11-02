@@ -71,8 +71,10 @@ func (f *fakeStaff) Link(_ context.Context, staffID string, a login.UpstreamAcco
 
 // fakeHydra は、受けた accept と reject を残し、ブラウザのリダイレクト先に結果の種類を入れて返す。
 type fakeHydra struct {
-	login       hydra.LoginRequest
-	loginErr    error
+	login    hydra.LoginRequest
+	loginErr error
+	// loginReads は、LoginRequest を呼んだ回数である。
+	loginReads  int
 	consent     hydra.ConsentRequest
 	accepted    *hydra.AcceptLogin
 	consented   *hydra.AcceptConsent
@@ -84,6 +86,7 @@ type fakeHydra struct {
 }
 
 func (f *fakeHydra) LoginRequest(context.Context, string) (hydra.LoginRequest, error) {
+	f.loginReads++
 	return f.login, f.loginErr
 }
 
@@ -327,16 +330,97 @@ func TestSubmitEmailRejects(t *testing.T) {
 	}
 }
 
+// TestSubmitEmailRateLimit は、送信元の IP アドレスの上限を超えた試行に、Hydra を呼ばずにログインの失敗の画面を出すことを確認する。
+// ログインの画面を開く GET /login も、同じ上限で数える。
 func TestSubmitEmailRateLimit(t *testing.T) {
-	e := newEnv(2)
-	for i, want := range []string{"org-a.example.com", "org-a.example.com", "hydra"} {
-		to, err := url.Parse(location(t, e.submit("aoki@example.com")))
-		if err != nil || to.Host != want {
-			t.Errorf("%d 回目のリダイレクト先 = %v, want %s", i+1, to, want)
+	e := newEnv(3)
+	if rec := e.do(httptest.NewRequest(http.MethodGet, "/login?login_challenge=ch", nil)); rec.Code != http.StatusOK {
+		t.Fatalf("GET /login の code = %d, want 200", rec.Code)
+	}
+	for i := range 2 {
+		if to, err := url.Parse(location(t, e.submit("aoki@example.com"))); err != nil || to.Host != "org-a.example.com" {
+			t.Errorf("%d 回目のリダイレクト先 = %v, want 上流の IdP", i+1, to)
 		}
 	}
-	if e.hydra.rejection != hydra.TooManyAttempts {
-		t.Errorf("rejection = %+v, want 上限を超えたことを分けた reject", e.hydra.rejection)
+	reads := e.hydra.loginReads
+	for _, req := range []*http.Request{submitRequest("aoki@example.com"), httptest.NewRequest(http.MethodGet, "/login?login_challenge=ch", nil)} {
+		rec := e.do(req)
+		if rec.Code != http.StatusTooManyRequests || !strings.Contains(rec.Body.String(), "ログインできませんでした") {
+			t.Errorf("%s の code = %d, want 429 のログインの失敗の画面", req.Method, rec.Code)
+		}
+	}
+	if e.hydra.loginReads != reads || e.hydra.rejected || e.staff.finds != 2 {
+		t.Errorf("上限を超えた後に Hydra か職員を呼んだ: LoginRequest = %d 回, rejected = %v, finds = %d",
+			e.hydra.loginReads-reads, e.hydra.rejected, e.staff.finds)
+	}
+}
+
+// TestSubmitEmailBodyTooLarge は、上限を超えた本文の POST /login に、Hydra を呼ばずにログインの失敗の画面を出すことを確認する。
+func TestSubmitEmailBodyTooLarge(t *testing.T) {
+	e := newEnv(10)
+	rec := e.submit(strings.Repeat("a", 8<<10) + "@example.com")
+	if rec.Code != http.StatusRequestEntityTooLarge || !strings.Contains(rec.Body.String(), "ログインできませんでした") {
+		t.Errorf("code = %d, want 413 のログインの失敗の画面", rec.Code)
+	}
+	if e.hydra.loginReads != 0 || e.hydra.rejected || e.staff.finds != 0 {
+		t.Errorf("Hydra か職員を呼んだ: LoginRequest = %d 回, finds = %d", e.hydra.loginReads, e.staff.finds)
+	}
+	// 読めない本文の送信も、送信元の IP アドレスの上限で数える
+	e = newEnv(1)
+	e.submit(strings.Repeat("a", 8<<10))
+	if rec := e.submit("aoki@example.com"); rec.Code != http.StatusTooManyRequests {
+		t.Errorf("上限を超えた本文の後の code = %d, want 429", rec.Code)
+	}
+}
+
+// TestSubmitEmailInvalidEmail は、職員のメールの形でないメールに、メールごとの上限で数えずにログインの失敗の画面を出すことを確認する。
+func TestSubmitEmailInvalidEmail(t *testing.T) {
+	long := strings.Repeat("a", login.MaxEmailLen-len("@example.com")+1) + "@example.com"
+	for _, tt := range []struct{ name, email string }{
+		{"321 文字", long},
+		{"@ が無い", "aoki.example.com"},
+		{"@ の前が空", "@example.com"},
+		{"空", ""},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			emails := login.NewLimiter(time.Hour, 10)
+			e := newEnvWith(10, func(c *login.Config) { c.EmailLimiter = emails })
+			rec := e.submit(tt.email)
+			if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "ログインできませんでした") {
+				t.Errorf("code = %d, want 400 のログインの失敗の画面", rec.Code)
+			}
+			if n := login.LimiterKeys(emails); n != 0 {
+				t.Errorf("メールごとの上限のキーが %d 個ある, want 0", n)
+			}
+			if e.hydra.loginReads != 0 || e.hydra.rejected || e.staff.finds != 0 {
+				t.Errorf("Hydra か職員を呼んだ: LoginRequest = %d 回, finds = %d", e.hydra.loginReads, e.staff.finds)
+			}
+		})
+	}
+	// 320 文字のメールは形が正しく、職員を引く
+	e := newEnv(10)
+	location(t, e.submit(long[1:]))
+	if e.staff.finds != 1 {
+		t.Errorf("320 文字のメールで職員を引かない: finds = %d", e.staff.finds)
+	}
+}
+
+// TestSubmitEmailIPv6Prefix は、送信元の IPv6 アドレスを /64 ごとに数えることを確認する。
+func TestSubmitEmailIPv6Prefix(t *testing.T) {
+	e := newEnv(1)
+	send := func(addr string) int {
+		req := submitRequest("aoki@example.com")
+		req.RemoteAddr = addr
+		return e.do(req).Code
+	}
+	if got := send("[2001:db8:1:2::1]:1234"); got != http.StatusSeeOther {
+		t.Errorf("1 回目の code = %d, want 303", got)
+	}
+	if got := send("[2001:db8:1:2:ffff::9]:1234"); got != http.StatusTooManyRequests {
+		t.Errorf("同じ /64 の別のアドレスの code = %d, want 429", got)
+	}
+	if got := send("[2001:db8:1:3::1]:1234"); got != http.StatusSeeOther {
+		t.Errorf("別の /64 の code = %d, want 303", got)
 	}
 }
 
@@ -411,24 +495,20 @@ func TestSubmitEmailRateLimitPerEmail(t *testing.T) {
 // 最後の値はリバースプロキシが足したもので、ブラウザが先頭に書いた値では数え分けない。
 func TestSubmitEmailClientIPHeader(t *testing.T) {
 	e := newEnvWith(1, func(c *login.Config) { c.ClientIPHeader = "X-Forwarded-For" })
-	send := func(xff string) string {
+	send := func(xff string) int {
 		req := submitRequest("aoki@example.com")
 		req.RemoteAddr = "10.0.0.1:1234"
 		req.Header.Set("X-Forwarded-For", xff)
-		to, err := url.Parse(location(t, e.do(req)))
-		if err != nil {
-			t.Fatal(err)
-		}
-		return to.Host
+		return e.do(req).Code
 	}
-	if got := send("198.51.100.1"); got != "org-a.example.com" {
-		t.Errorf("1 人目のリダイレクト先 = %s", got)
+	if got := send("198.51.100.1"); got != http.StatusSeeOther {
+		t.Errorf("1 人目の code = %d, want 303", got)
 	}
-	if got := send("198.51.100.2"); got != "org-a.example.com" {
-		t.Errorf("プロキシのアドレスで数え、別の送信元を止めた: %s", got)
+	if got := send("198.51.100.2"); got != http.StatusSeeOther {
+		t.Errorf("プロキシのアドレスで数え、別の送信元を止めた: code = %d", got)
 	}
-	if got := send("203.0.113.9, 198.51.100.1"); got != "hydra" {
-		t.Errorf("ブラウザが書いた先頭の値で数え分けた: %s", got)
+	if got := send("203.0.113.9, 198.51.100.1"); got != http.StatusTooManyRequests {
+		t.Errorf("ブラウザが書いた先頭の値で数え分けた: code = %d", got)
 	}
 }
 
