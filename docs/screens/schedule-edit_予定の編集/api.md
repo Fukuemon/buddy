@@ -24,28 +24,43 @@
 | メモ | メモ | `Schedule.description` | `description` |
 | タイトル | 通常の予定のタイトル | `Schedule.title` | `title` |
 
-- 保存の本文は、画面の値に、画面が持たない今の予定の値を足して作る（`apps/web/src/api/http/scheduleMapper.ts` の `keepCurrentVisit`）。
-  - 訪問の予定どうしの保存では、同行者（`visit_info.companion_id`）とタイトル（`title`）を今の予定の値のまま送る。
-  - 主訪問者は `staff_id`（予定の職員）に送る。訪問の担当（`visit_info.assigned_staff_id`）は、今の担当が予定の職員と同じなら同じ職員を送り、違えば今の担当のまま送る。
+- 保存の本文は、画面の値に、画面が持たない今の予定の値を足して作る。
+  - 処理は `apps/web/src/api/http/scheduleMapper.ts` の `keepCurrentVisit` にある。
+  - 訪問の予定どうしの保存では、同行者の `visit_info.companion_id` とタイトルの `title` を今の予定の値のまま送る。
+  - 主訪問者は、予定の職員の `staff_id` に送る。
+  - 訪問の担当の `visit_info.assigned_staff_id` は、今の担当が予定の職員と同じなら同じ職員を送り、違えば今の担当のまま送る。
 - 保存の前に、今の予定を `getSchedule` で読み直す。
-- サービスコードの選択肢は、`listServiceCodes` の順に並べ、`code` をそのまま出す。提供時間の範囲の検証は、選んだ `code` の `service_time_range_start` と `service_time_range_end` で行う。検証は `apps/web/src/features/schedule/schema/scheduleForm.ts` にある。
-- 予定の種類、サービスコード、訪問の区分は、マスタ（`listScheduleTypes`、`listServiceCodes`、`listVisitCategories`）を引いて ID にする。サービスコードは、`listServiceCodes` の `code` と同じ表記で比べる。
+- サービスコードの選択肢は、`listServiceCodes` の順に並べ、`code` をそのまま出す。
+  - 提供時間の範囲の検証は、選んだ `code` の `service_time_range_start` と `service_time_range_end` で行う。
+    - 検証は `apps/web/src/features/schedule/schema/scheduleForm.ts` にある。
+- 予定の種類、サービスコード、訪問の区分は、マスタを引いて ID にする。
+  - マスタは `listScheduleTypes`、`listServiceCodes`、`listVisitCategories` で取る。
+  - サービスコードは、`listServiceCodes` の `code` と同じ表記で比べる。
 - 読み直しかマスタの取得が失敗したときと、マスタに当たる値が無いときは、`updateSchedule` を呼ばずに失敗する。
-- 予定の一覧の取得の結果は、保存に成功したときに捨てて取り直す（`listSchedules`）。
-- `listUsers` は、休職と退職の職員も返す。この画面は、`status` を持つ職員と、`visits` が false の職員を主訪問者と予定者の候補から除く。予定の職員の名前は、休職と退職の職員と、訪問しない職員も含めた一覧で探す。
-- 予定の取得は、予定の詳細と同じく、web のサーバーが `facility_id` の違いを 403 にし、繰り返しの予定の回を `getRecurringSchedule` で読む（[予定の詳細の API との対応](../schedule-detail_予定の詳細/api.md)）。
-- 繰り返しの予定の回を保存すると、`updateSchedule` の代わりに `changeOccurrence` でその回を単発の予定に置き換える。パスは `POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences` である。
-- キャンセルした予定は、`updateSchedule` が 409 で拒む。画面はキャンセルした予定のフォームを出さないので、保存まで進まない。
+- 予定の一覧の取得の結果は、保存に成功したときに捨てて、`listSchedules` で取り直す。
+- `listUsers` は、休職と退職の職員も返す。
+  - この画面は、`status` を持つ職員と、`visits` が false の職員を主訪問者と予定者の候補から除く。
+  - 予定の職員の名前は、休職と退職の職員と、訪問しない職員も含めた一覧で探す。
+- 予定の取得は、予定の詳細と同じく、web のサーバーが `facility_id` の違いを 403 にし、繰り返しの予定の回を `getRecurringSchedule` で読む。
+  - 予定の詳細の取得は、[予定の詳細の API との対応](../schedule-detail_予定の詳細/api.md) にある。
+- 繰り返しの予定の回を保存すると、`updateSchedule` の代わりに `changeOccurrence` でその回を単発の予定に置き換える。
+  - パスは `POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences` である。
+- キャンセルした予定は、`updateSchedule` が 409 で拒む。
+  - 画面はキャンセルした予定のフォームを出さないので、保存まで進まない。
 
 ## 権限の判定
 
 - 予定の権限は、画面を読み込むたびに web のサーバーが `getMe`（`GET /v1/me`）で読む。
   - `policies` のうち `schedule.` で始まる `code` と、`target_user_ids`、`target_team_ids` を `Viewer.schedulePolicies` に入れる。
   - 処理は `apps/web/src/server/runtime.ts` にある。
-- 判定の処理は `apps/web/src/features/schedule/lib/schedulePermission.ts` にある。規則は、予定の API の判定（`schedule.CanEdit`）と同じである。拒むのは予定の API である。
+- 判定の処理は `apps/web/src/features/schedule/lib/schedulePermission.ts` にある。
+  - 規則は、予定の API の判定（`schedule.CanEdit`）と同じである。
+  - 拒むのは予定の API である。
   - `schedule.self.edit` は自分を、`schedule.all.edit` は全ての職員を対象にする。
   - `schedule.user.edit` は `target_user_ids` の職員を、`schedule.team.edit` は `target_team_ids` のチームの職員を対象にする。
-- 「権限が無い」の状態は、予定の `staff_id` の職員について `canEditScheduleOf` が false のときに出す。チームは、`listUsers` の予定の職員の今のチームで判定する（`apps/web/src/features/schedule/components/ScheduleEditModalContainer.tsx`）。
+- 「権限が無い」の状態は、予定の `staff_id` の職員について `canEditScheduleOf` が false のときに出す。
+  - チームは、`listUsers` の予定の職員の今のチームで判定する。
+  - 処理は `apps/web/src/features/schedule/components/ScheduleEditModalContainer.tsx` にある。
 - 主訪問者と予定者の候補は、`editableStaff` で、予定を編集できる職員に絞る。
 
 ## 状態と失敗の要因
@@ -62,7 +77,11 @@
 | 保存の失敗 | 「予定を更新できませんでした。」 | `updateSchedule` か `changeOccurrence` が 400、401、403 以外で失敗（404、409、500）。保存の前の `getSchedule` の読み直しか、マスタ（`listScheduleTypes`、`listServiceCodes`、`listVisitCategories`）の取得が失敗。選んだ値に当たるマスタが無い。API に届かない |
 | 送信中 | なし（ログインの画面へ移るまで続く） | 保存の操作が 401 |
 
-- 読み込みの失敗の文は、`apps/web/src/features/schedule/lib/errorMessage.ts` の `scheduleLoadErrorMessage` が、予定の取得の status で選ぶ。一覧の取得の失敗は `SCHEDULE_LOAD_ERROR_MESSAGE` にする。
-- 保存の失敗の文は、同じファイルの `scheduleSubmitErrorMessage` が status で選ぶ。権限が無いことの文は `SCHEDULE_EDIT_FORBIDDEN_MESSAGE` である。
-- 400 の `invalid_input` には、休職か退職の職員か、訪問しない職員を新しく割り振ったとき（ADR-0022）と、利用の終了の利用者を新しく指したときを含む。
-- 読み込みは、4xx なら取り直さずにすぐ失敗にし、ほかの失敗は取り直してから失敗にする。処理は `apps/web/src/integrations/tanstack-query/root-provider.tsx` の `shouldRetryQuery` にある。
+- 読み込みの失敗の文は、`apps/web/src/features/schedule/lib/errorMessage.ts` の `scheduleLoadErrorMessage` が、予定の取得の status で選ぶ。
+  - 一覧の取得の失敗は `SCHEDULE_LOAD_ERROR_MESSAGE` にする。
+- 保存の失敗の文は、同じ `errorMessage.ts` の `scheduleSubmitErrorMessage` が status で選ぶ。
+- 権限が無いことの文は、同じ `errorMessage.ts` の `SCHEDULE_EDIT_FORBIDDEN_MESSAGE` にある。
+- 400 の `invalid_input` には、休職か退職の職員か、訪問しない職員を新しく割り振ったときと、利用の終了の利用者を新しく指したときを含む。
+  - ADR-0022: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../../adr/0022-receipt-check-policy-and-non-visiting-staff.md)
+- 読み込みは、4xx なら取り直さずにすぐ失敗にし、ほかの失敗は取り直してから失敗にする。
+  - 処理は `apps/web/src/integrations/tanstack-query/root-provider.tsx` の `shouldRetryQuery` にある。
