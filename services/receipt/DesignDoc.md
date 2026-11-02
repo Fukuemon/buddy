@@ -355,7 +355,7 @@ CSV の形の誤りは、列を決められないので `column` を持たない
 - CORS は、`CORS_ALLOW_ORIGINS` に並べた Origin だけに許す。空なら CORS のヘッダーを返さない。
   - 許す Origin の事前のリクエスト（OPTIONS で `Access-Control-Request-Method` を持つ）には、トークンを求めずに 204 を返す。許すメソッドは GET、POST、OPTIONS、ヘッダーは `Authorization` と `Content-Type` にする。
   - 許さない Origin のリクエストは、CORS のヘッダーを付けずに通す。ブラウザは、ヘッダーの無いレスポンスを画面に読ませない。
-- 照合に固有の環境変数は [README.md](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/README.md) にあり、全体で共通の環境変数は [buddy Design Doc のインフラとの約束](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md#インフラとの約束) にある。
+- 照合に固有の環境変数は [README.md](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/README.md) にあり、全体で共通の環境変数は [buddy Design Doc のデプロイの要件](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md#デプロイの要件) にある。
 
 ## Verification
 

@@ -171,10 +171,10 @@ Application Default Credentials が検証の事業所のサービスアカウン
 予定のタイトルは `【サービス内容】利用者名` の形にする。  
 照合の対象にする予定の規則は [DesignDoc.md](DesignDoc.md) にある。
 
-デプロイした環境の認証は、[全体の Design Doc のインフラとの約束](../../docs/design/DesignDoc.md#インフラとの約束) にある。
+デプロイした環境の認証は、[全体の Design Doc のデプロイの要件](../../docs/design/DesignDoc.md#デプロイの要件) にある。
 
 ## Documentation
 
 - [DesignDoc.md](DesignDoc.md): パッケージの構成、入力の CSV、判定の規則、元の実装との違い
 - [tools/parity/README.md](tools/parity/README.md): 元の Python の実装と結果を比べる手順
-- [全体の Design Doc](../../docs/design/DesignDoc.md): 画面と 2 つの API の責務、インフラとの約束
+- [全体の Design Doc](../../docs/design/DesignDoc.md): 画面と 2 つの API の責務、デプロイの要件

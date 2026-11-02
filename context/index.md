@@ -23,7 +23,7 @@
 
 ## Design Doc
 
-- [buddy Design Doc](../docs/design/DesignDoc.md) — web と予定の API と照合の API の責務と依存、業務の区切りとコンテナの対応、コンテナの間の契約、インフラとの約束（draft）
+- [buddy Design Doc](../docs/design/DesignDoc.md) — web と予定の API と照合の API の責務と依存、業務の領域とコンテナの対応、コンテナの間の通信、デプロイの要件（draft）
 - [E2E のテストのコードの設計](../packages/e2e/DesignDoc.md) — buddy の E2E のテストのコードの、層の依存の向き、配置先の決め方、エビデンスの spec の流れ、禁止する書き方、失敗の読み方、テストの関数と待ちの組み立て。図で示す（draft）
 - [buddy のデザインシステム](../packages/ui/DESIGN.md) — packages/ui のトークンとコンポーネントの使い方。画面を作るときの原則、色と文字のトークン、コンポーネントの選び方、DADS の指針から外れるところ、Storybook のカタログの組み方
 - [レセプトの照合](../services/receipt/DesignDoc.md) — 照合の API のパッケージの構成、予定のデータソース、入力の CSV のカラム、正規化、予定と実績の対の作り方、判定の規則、サービスごとの許容範囲、結果の JSON と画面の表示、元の実装との違い（draft）

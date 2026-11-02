@@ -28,7 +28,7 @@ verified_commit: c0514f20
 
 - 役職のデフォルトの権限をコピーする規則と、権限ごとにできる操作。[権限](https://github.com/Fukuemon/buddy/blob/develop/context/domain/permission.md) が持つ
 - access token の検証から事業所の確認までのミドルウェア。[予定の管理の Design Doc の認証から事業所の確認までの流れ](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#認証から事業所の確認までの流れ) にある
-- 画面の出し分け。web は、画面を読み込むたびに `GET /v1/me` で職員の権限を読み直して画面に渡す。[buddy Design Doc のコンテナの間の契約](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md#コンテナの間の契約) の web と Hydra にある
+- 画面の出し分け。web は、画面を読み込むたびに `GET /v1/me` で職員の権限を読み直して画面に渡す。[buddy Design Doc のコンテナの間の通信](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md#コンテナの間の通信) の web と Hydra にある
   - 照合の画面と照合の結果の画面での扱いは、[照合](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/receipt-upload_照合/index.md) と [照合の結果](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/receipt-result_照合の結果/index.md) の画面仕様書にある
 
 ## Design

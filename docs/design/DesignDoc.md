@@ -1,7 +1,7 @@
 ---
 type: design-doc
 title: buddy Design Doc
-description: web と予定の API と照合の API と ID ブローカーの責務と依存、業務の区切りとコンテナの対応、コンテナの間の契約、インフラとの約束
+description: web と予定の API と照合の API と ID ブローカーの責務と依存、業務の領域とコンテナの対応、コンテナの間の通信、デプロイの要件
 status: draft
 ---
 
@@ -26,7 +26,7 @@ buddy は、訪問看護の事業所の職員が使う、予定の管理とレ�
 ### Non-Goals
 
 - どのコンテナをどの種類の基盤で実行するかと、クラスタの構成。
-  - インフラのリポジトリ（非公開）が持ち、buddy は [インフラとの約束](#インフラとの約束) だけを守る。
+  - インフラのリポジトリ（非公開）が持ち、buddy は [デプロイの要件](#デプロイの要件) だけを満たす。
 
 ## Assumptions and Constraints
 
@@ -81,13 +81,13 @@ flowchart TB
   style buddy fill:none,stroke:#0b4884,stroke-dasharray:5 5
 ```
 
-矢印ごとの約束と、図に描いていない 4 つの流れ（Hydra の JWKS、Hydra の admin API、ブローカーの内部の API、token_hook）は、[コンテナの間の契約](#コンテナの間の契約) にある。
+矢印ごとのつなぎ方とトークンと、図に描いていない 4 つの流れ（Hydra の JWKS、Hydra の admin API、ブローカーの内部の API、token_hook）は、[コンテナの間の通信](#コンテナの間の通信) にある。
 
-### 業務の区切りとコンテナ
+### 業務の領域とコンテナ
 
-PRD の 3 つの業務の区切りは、次のコンテナが持つ。
+PRD の 3 つの業務の領域は、次のコンテナが持つ。
 
-| 業務の区切り | 持つもの | コンテナ |
+| 業務の領域 | 持つもの | コンテナ |
 | --- | --- | --- |
 | 事業所と職員 | 事業所、部署、チーム、役職、権限、職員、利用者 | 予定の API |
 | 予定 | 単発の予定、繰り返しの予定、キャンセル、訪問の情報 | 予定の API |
@@ -95,7 +95,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 
 - 事業所と職員と予定は、同じ PostgreSQL のデータベースを使い、予定の API の中でパッケージを分ける。
   - パッケージの構成は [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md) にある。
-- 用語と、区切りごとの呼び方の違いは [業務の知識](https://github.com/Fukuemon/buddy/blob/develop/context/domain.md) にある。
+- 用語と、業務の領域ごとの呼び方の違いは [業務の知識](https://github.com/Fukuemon/buddy/blob/develop/context/domain.md) にある。
 
 ## Components
 
@@ -137,7 +137,7 @@ PRD の 3 つの業務の区切りは、次のコンテナが持つ。
 
 ## Interfaces
 
-### コンテナの間の契約
+### コンテナの間の通信
 
 アプリの間は HTTP だけでつながり、コードで依存しない。
 
@@ -179,9 +179,9 @@ access token の `aud` に `schedule` と `receipt` の両方が入るので、�
 照合の API と予定の API が Google Calendar API を呼ぶときの事業所は、リクエストの職員かトークンの組織から決める。  
 リクエストを受けない書き出しと増分の取得は、結び付けたカレンダーのレコードの事業所で決める。
 
-### インフラとの約束
+### デプロイの要件
 
-buddy とインフラの約束は、コンテナのイメージ、環境変数、ヘルスチェック、マイグレーションのコマンドの 4 つである。  
+buddy がデプロイのために満たす要件は、コンテナのイメージ、環境変数、ヘルスチェック、マイグレーションのコマンドの 4 つである。  
 インフラのリポジトリは、この 4 つだけに依存し、buddy の中の構成に依存しない。
 
 #### コンテナのイメージ

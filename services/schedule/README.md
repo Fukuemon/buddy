@@ -224,5 +224,5 @@ sqlc diff
 
 - [DesignDoc.md](DesignDoc.md): コードの構成、テーブルの構成、認証から事業所の確認までの流れ、繰り返しの予定
 - [コードベースの構造](../../context/codebase.md): パッケージの間の依存してよい向き
-- [全体の Design Doc](../../docs/design/DesignDoc.md): 画面と 2 つの API の責務、インフラとの約束
+- [全体の Design Doc](../../docs/design/DesignDoc.md): 画面と 2 つの API の責務、デプロイの要件
 - [ADR-0002](../../docs/adr/0002-pbac.md): 権限を役職のデフォルトと職員ごとの上書きで持つ判断
