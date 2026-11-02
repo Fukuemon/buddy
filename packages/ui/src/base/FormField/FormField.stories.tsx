@@ -40,6 +40,15 @@ export const Invalid: Story = {
   args: { error: '名前を入れてください', errorTestId: 'form-field-error' },
 }
 
+export const WithHintAndError: Story = {
+  args: {
+    label: 'メールアドレス',
+    hint: 'ログインに使うメールアドレスです。',
+    error: 'メールアドレスの形で入れてください',
+    errorTestId: 'form-field-error',
+  },
+}
+
 export const Disabled: Story = {
   args: {
     children: (field) => (

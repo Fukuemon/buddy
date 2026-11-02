@@ -6,7 +6,7 @@ import { endPatientService, registerPatient } from '../../fixtures/patient'
 import { issueManagerToken, STAFF_FORM } from '../../fixtures/staff'
 import { signInAtBroker } from '../../screens/login'
 
-/** 利用の終了にする利用者の名前。 */
+/** 利用を終了する利用者の名前。 */
 const ENDED_PATIENT = '終了 花子'
 
 test.describe('予定のカレンダー', () => {

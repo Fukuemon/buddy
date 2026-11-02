@@ -80,7 +80,7 @@ const staffFailingApi = (): BuddyApi => {
 /** 幅 768px 未満。編集と「…」を見出しの下に置き、プロフィールの項目の名前と値を縦に積む。 */
 export const Mobile: Story = { globals: { viewport: { value: 'mobile1' } } }
 
-/** 今日の予定が残る利用者。利用の終了にしようとすると、残る予定を出して拒む。 */
+/** 今日の予定が残る利用者。利用を終了しようとすると、残る予定を出して拒む。 */
 export const WithSchedules: Story = {
   args: { patientId: 'patient-1' },
   parameters: route('patient-1'),

@@ -55,7 +55,7 @@ export const ReceiptCheckForm = ({
       data-testid="receipt-check-form"
       noValidate
     >
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         <span className="text-label">予定の取り方</span>
         <SegmentedControl
           label="予定の取り方"
@@ -66,7 +66,7 @@ export const ReceiptCheckForm = ({
         />
       </div>
       {source === 'calendar' ? (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           <label className="text-label" htmlFor={monthId}>
             対象の月
           </label>
