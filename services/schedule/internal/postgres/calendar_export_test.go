@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
-	"github.com/Fukuemon/buddy/services/schedule/internal/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
-	"github.com/Fukuemon/buddy/services/schedule/internal/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 )
 
 func TestCalendarExportRepository(t *testing.T) {

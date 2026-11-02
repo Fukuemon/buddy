@@ -10,7 +10,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/broker"
-	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 )
 
 type call struct {

@@ -118,7 +118,7 @@ verified_commit: c0514f20
 - Google カレンダーとの連携の全ての操作も、`staff.manage` で判定する。
   - 対象は、サービスアカウントのメールアドレスの取得、カレンダーの一覧、読めるかの確認、結び付け、外す、取り込みのプレビューと確定である。
   - 確認が必要な予定の一覧、buddy の内容で書き直す、Google の内容に合わせるも対象にする。
-  - 詳しくは [Google カレンダーとの連携の Design Doc の連携の操作の権限](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/calendar/DesignDoc.md#連携の操作の権限) にある。
+  - 詳しくは [Google カレンダーとの連携の Design Doc の連携の操作の権限](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#連携の操作の権限) にある。
 
 ### 照合の API の権限の確認
 

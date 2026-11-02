@@ -7,8 +7,8 @@ import (
 	"slices"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
-	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
-	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 )
 
 // Identity は、署名と有効期限を検証した access token の主張である。Subject はブローカーの職員の ID である。

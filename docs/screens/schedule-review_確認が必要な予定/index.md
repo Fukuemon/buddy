@@ -1131,7 +1131,7 @@ buddy での変更が消えるので、データを失う操作の赤い色に�
   - buddy の内容で書き直しても、外したカレンダーの予定は消さず、書き直さない。一覧から消すだけである。
   - キャンセルしていない予定は、職員が別のカレンダーを結び付け直していれば、そのカレンダーに buddy の内容で作る。
   - 一覧と書き直すダイアログは、結び付けを外したかを示さない。
-- 書き出しと同期の処理の流れは、[Google カレンダーとの連携の Design Doc の Google カレンダーへの書き出し](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/calendar/DesignDoc.md#google-カレンダーへの書き出し) と [Google カレンダーとの同期](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/calendar/DesignDoc.md#google-カレンダーとの同期) にある。
+- 書き出しと同期の処理の流れは、[Google カレンダーとの連携の Design Doc の Google カレンダーへの書き出し](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#google-カレンダーへの書き出し) と [Google カレンダーとの同期](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#google-カレンダーとの同期) にある。
 
 ### 権限の確認
 

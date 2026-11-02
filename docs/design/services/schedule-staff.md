@@ -1,1 +1,1 @@
-../../../services/schedule/internal/staff/DesignDoc.md
+../../../services/schedule/internal/features/staff/DesignDoc.md

@@ -9,7 +9,7 @@ import (
 	"github.com/Fukuemon/buddy/packages/go/gcalauth"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
-	"github.com/Fukuemon/buddy/services/schedule/internal/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 )
 
 // OrgOf は、事業所 facilityID の、ID ブローカーの組織の ID を返す。結び付けていなければ空を返す。
