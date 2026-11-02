@@ -29,7 +29,8 @@
 | 入力 | 「部署、チーム、役職を読み込めませんでした。閉じてから、開き直してください。」 | `listDepartments`、`listTeams`、`listPositions` のどれかの失敗 |
 
 - 文を選ぶ処理は `apps/web/src/features/staff/lib/errorMessage.ts` の `staffSubmitErrorMessage` と `OPTIONS_LOAD_ERROR_MESSAGE` にある。
-- `createUser` の 400 は、部署、チーム、役職が無いときのほかに入力の誤りでも返るが、web は 400 を全て部署、チーム、役職の文にする。入力の誤りは、送る前に画面が入力の誤りの文で止める。
+- `createUser` の 400 は、部署、チーム、役職が無いときのほかに入力の誤りでも返るが、web は 400 を全て部署、チーム、役職の文にする。
+  - 入力の誤りは、送る前に画面が入力の誤りの文で止める。
 
 ## 操作
 
@@ -42,5 +43,8 @@
 | `listPositions` | `GET /v1/facilities/{facility_id}/positions` | なし | 200。`Position` の配列。名前の順 | なし |
 | `createUser` | `POST /v1/facilities/{facility_id}/users` | `username`、`email`、`phone_number`、`department_id`、`team_id`、`position_id`、`visits` | 201。`StaffDetail` | 400 `invalid_input`: 入力が誤っているか、部署、チーム、役職が無いかほかの事業所のもの。409 `conflict`: 同じメールの職員がいる |
 
-- `createUser` は、ID ブローカーにも職員を登録する。ブローカーに登録した後に失敗したときは、同じ本文で送り直してよい。画面は、登録の失敗の後に登録を押し直すと、同じ本文で送る。
-- 登録した職員には、役職のデフォルトの権限が付く。チームを対象にする権限は、`team_id` のチームを対象にする。
+- `createUser` は、ID ブローカーにも職員を登録する。
+  - ブローカーに登録した後に失敗したときは、同じ本文で送り直してよい。
+  - 画面は、登録の失敗の後に登録を押し直すと、同じ本文で送る。
+- 登録した職員には、役職のデフォルトの権限が付く。
+  - チームを対象にする権限は、`team_id` のチームを対象にする。
