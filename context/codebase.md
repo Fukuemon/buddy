@@ -63,12 +63,12 @@ status: stable
   - 正規化と判定はサービスの規則（`servicerule`）を、データソースは Google カレンダー（`gcal`）を使う。
   - 照合の権限の確認（`permission`）は、HTTP と同じ段に置き、`httpapi` から使う。
 - 2 つの Go の API の次の規則は、golangci-lint の depguard が止める。設定は各 API の `.golangci.yml` にある。
-  - 予定の API の機能のパッケージの間の順と、機能のパッケージから `principal`、アダプタ、`access`、`config` への import
-  - 予定の API の共通のパッケージから、共通のパッケージ以外への import
+  - 予定の API の機能のパッケージの間の順と、機能のパッケージから `principal`（`schedule` と `calendar` を除く）、アダプタ、`access`、`config` への import
+  - 予定の API の共通のパッケージから、標準ライブラリと共通のパッケージ以外（外のモジュールを含む）への import
   - 予定の API の `httpapi` と `config` から `postgres` への import と、テストのファイル以外から `inmem` への import
   - 照合の API の段の順
-  - depguard は、テストのファイルを対象の外にする。
-  - 循環する import は、depguard より先に Go のコンパイラが止める。
+- depguard は、テストのファイルを対象の外にする。
+- 循環する import は、depguard より先に Go のコンパイラが止める。
 - 次の規則は lint で確認せず、レビューで確認する。
   - 機能のパッケージが、ほかの機能のリポジトリのインターフェイスを import しないこと
   - ID ブローカーの依存の向き
