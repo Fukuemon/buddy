@@ -1,6 +1,6 @@
 import { createCsrfMiddleware, createMiddleware, createStart } from '@tanstack/react-start'
 
-import { MAX_SERVER_FN_BODY_BYTES } from './api/bff/receiptCall'
+import { MAX_SERVER_FN_BODY_BYTES } from '#/api/BuddyApi'
 import { exceedsBodyLimit } from './server/bodyLimit'
 import { isSameHostOrigin } from './server/sameOrigin'
 

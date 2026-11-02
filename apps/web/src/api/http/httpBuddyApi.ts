@@ -1,6 +1,6 @@
 import createClient from 'openapi-fetch'
 
-import { ApiError, type BuddyApi } from '../client'
+import { ApiError, type BuddyApi } from '../BuddyApi'
 import { matchesName } from '../nameSearch'
 import type { paths } from '../generated/schedule'
 import {

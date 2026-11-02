@@ -4,6 +4,7 @@ import type { ScheduleInput } from '../types'
 import {
   type ApiSchedule,
   type ScheduleMasters,
+  fromApiMe,
   fromApiSchedule,
   splitDateTime,
   toSlotRequest,
@@ -228,5 +229,61 @@ describe('toSlotRequest', () => {
         masters,
       ),
     ).toThrow('医')
+  })
+})
+
+describe('fromApiMe', () => {
+  const ref = { id: 'ref-1', name: '名前' }
+  const policy = (code: string, targetUserIds: string[] = []) => ({
+    user_policy_id: `up-${code}`,
+    policy_id: `p-${code}`,
+    code,
+    name: code,
+    target_user_ids: targetUserIds,
+    target_team_ids: [],
+  })
+  const me = (policies: ReturnType<typeof policy>[]) => ({
+    id: 'staff-1',
+    username: '青木 陽菜',
+    email: null,
+    phone_number: null,
+    facility_id: 'facility-1',
+    department: ref,
+    team: ref,
+    position: ref,
+    visits: true,
+    status: 'active' as const,
+    leave_started_at: null,
+    leave_return_date: null,
+    retired_at: null,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+    sub: null,
+    policies,
+  })
+
+  it('権限のコードから、職員の管理と照合の可否と、予定の権限を作る', () => {
+    expect(
+      fromApiMe(
+        me([policy('staff.manage'), policy('schedule.user.read', ['staff-2']), policy('x.y')]),
+      ),
+    ).toEqual({
+      staffId: 'staff-1',
+      staffName: '青木 陽菜',
+      facilityId: 'facility-1',
+      canManageStaff: true,
+      canCheckReceipt: false,
+      schedulePolicies: [
+        { code: 'schedule.user.read', targetStaffIds: ['staff-2'], targetTeamIds: [] },
+      ],
+    })
+  })
+
+  it('権限が無ければ、全ての出し分けを閉じる', () => {
+    expect(fromApiMe(me([]))).toMatchObject({
+      canManageStaff: false,
+      canCheckReceipt: false,
+      schedulePolicies: [],
+    })
   })
 })

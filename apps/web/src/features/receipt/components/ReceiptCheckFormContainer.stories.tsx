@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, within } from 'storybook/test'
 
-import { ApiError } from '#/api/client'
+import { ApiError } from '#/api/BuddyApi'
 import { withAppRouter, type AppRouterParameters } from '#/storybook/withAppRouter'
 
 import { ReceiptCheckFormContainer } from './ReceiptCheckFormContainer'

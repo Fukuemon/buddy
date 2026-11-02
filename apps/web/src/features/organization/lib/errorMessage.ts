@@ -1,4 +1,4 @@
-import { ApiError } from '#/api/client'
+import { ApiError } from '#/api/BuddyApi'
 
 /** 部署かチームを読めなかったときの文。 */
 export const LOAD_ERROR_MESSAGE =

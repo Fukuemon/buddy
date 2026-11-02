@@ -1,4 +1,4 @@
-import { ApiError, type ReceiptApi } from '../client'
+import { ApiError, type ReceiptApi } from '../BuddyApi'
 import { redirectToLogin } from '../viewer'
 import type { ReceiptCheckResult } from './receiptCall'
 import { checkReceiptFn } from './serverFns'
