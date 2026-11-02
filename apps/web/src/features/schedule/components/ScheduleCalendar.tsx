@@ -3,10 +3,12 @@ import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import FullCalendar from '@fullcalendar/react'
 import timeGridPlugin from '@fullcalendar/timegrid'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+
+import { useIsDesktop } from '#/components/site/useIsDesktop'
 
 import type { CalendarView } from '../constants/calendarView'
-import { nextDayPrefix, toDateKey, toTimeKey } from '../lib/dateTime'
+import { nextDayPrefix, toDateKey, toTimeKey, WEEKDAYS } from '../lib/dateTime'
 import type { ScheduleCalendarEvent } from '../lib/toCalendarEvents'
 import { CancelledMark } from './CancelledMark'
 
@@ -14,6 +16,12 @@ const FULL_CALENDAR_VIEW = {
   month: 'dayGridMonth',
   week: 'timeGridWeek',
 } as const satisfies Partial<Record<CalendarView, string>>
+
+/**
+ * 週の表示の列の見出しを「11/1(日)」の 1 行で出す、カレンダーの枠の幅の下限。
+ * 最も長い「12/31(水)」が 84px、時間の目盛りが 46px なので、7 列と時間の目盛りで 634px になる。これに余裕を足した。
+ */
+const WIDE_DAY_HEADER_MIN_WIDTH_PX = 680
 
 const hourMinute = (date: Date) =>
   `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`
@@ -47,12 +55,21 @@ export const ScheduleCalendar = ({
 }: ScheduleCalendarProps) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const calendarRef = useRef<FullCalendar>(null)
+  const isDesktop = useIsDesktop()
+  // 枠の幅を測れない間（jsdom と描く前）は、枠の幅では 2 行に切り替えない
+  const [containerWidth, setContainerWidth] = useState<number | null>(null)
+  // 幅 768px 以上でも、左の欄を開くとカレンダーの枠が狭くなり、1 行の見出しが列に入り切らないので、枠の幅でも判定する
+  const twoLineDayHeader =
+    !isDesktop || (containerWidth !== null && containerWidth < WIDE_DAY_HEADER_MIN_WIDTH_PX)
 
   // FullCalendar は画面の幅の変化でしか描き直さないので、サイドバーの開閉で枠の幅が変わったときにも描き直させる
   useEffect(() => {
     const container = containerRef.current
     if (container === null || typeof ResizeObserver === 'undefined') return
-    const observer = new ResizeObserver(() => calendarRef.current?.getApi().updateSize())
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry !== undefined) setContainerWidth(entry.contentRect.width)
+      calendarRef.current?.getApi().updateSize()
+    })
     observer.observe(container)
     return () => observer.disconnect()
   }, [])
@@ -70,6 +87,18 @@ export const ScheduleCalendar = ({
           onDateClick(toDateKey(arg.date), arg.allDay ? undefined : toTimeKey(arg.date))
         }
         dayCellContent={(arg) => arg.dayNumberText.replace('日', '')}
+        dayHeaderContent={(arg) =>
+          // 月の表示の見出しは曜日だけなので、狭い幅でも FullCalendar の書式のままにする
+          arg.view.type === FULL_CALENDAR_VIEW.week && twoLineDayHeader ? (
+            <span className="flex flex-col items-center">
+              <span>{WEEKDAYS[arg.dow]}</span>
+              <span>{arg.date.getDate()}</span>
+            </span>
+          ) : (
+            // 文字列を返すと、FullCalendar は React で描いた 2 行の見出しを残したまま描き直さないので、要素で返す
+            <span>{arg.text}</span>
+          )
+        }
         eventDisplay="block"
         eventClick={(arg) => onEventClick(arg.event.id)}
         eventContent={(arg) => {
