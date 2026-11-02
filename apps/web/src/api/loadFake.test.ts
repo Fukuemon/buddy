@@ -12,7 +12,10 @@ describe('createDeferredFakeApis', () => {
 
   it('作った後の呼び出しは、同じメモリのデータに対して行う', async () => {
     const { api } = createDeferredFakeApis()
-    const created = await api.teams.create(FAKE_FACILITY_ID, { name: '新しいチーム', color: 'lime' })
+    const created = await api.teams.create(FAKE_FACILITY_ID, {
+      name: '新しいチーム',
+      color: 'lime',
+    })
     const teams = await api.teams.list(FAKE_FACILITY_ID)
     expect(teams.map((team) => team.id)).toContain(created.id)
   })

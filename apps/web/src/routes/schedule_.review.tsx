@@ -13,7 +13,9 @@ export const Route = createFileRoute('/schedule_/review')({
   // 権限が無ければ、Container が権限が無いことを示すので、API を呼ばない
   loader: ({ context: { api, queryClient, viewer } }) =>
     viewer?.canManageStaff
-      ? awaitOnServer([queryClient.prefetchQuery(exportIssueListQueryOptions(api, viewer.facilityId))])
+      ? awaitOnServer([
+          queryClient.prefetchQuery(exportIssueListQueryOptions(api, viewer.facilityId)),
+        ])
       : undefined,
   head: () => ({ meta: [{ title: '確認が必要な予定 | buddy' }] }),
   component: CalendarReviewPage,
