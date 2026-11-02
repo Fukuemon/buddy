@@ -5,7 +5,7 @@ import FullCalendar from '@fullcalendar/react'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import { useEffect, useRef, useState } from 'react'
 
-import { useIsDesktop } from '#/components/site/useIsDesktop'
+import { useIsDesktop } from '@buddy/ui'
 
 import type { CalendarView } from '../constants/calendarView'
 import { nextDayPrefix, toDateKey, toTimeKey, WEEKDAYS } from '../lib/dateTime'
