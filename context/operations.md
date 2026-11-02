@@ -10,7 +10,7 @@ status: stable
 基盤の構成、デプロイの手順、監視のツールは、インフラのリポジトリ（非公開）が持つ。  
 buddy のコードと設定は、特定のデプロイ先を前提にしない。  
 インフラのリポジトリが buddy に依存するのは、コンテナのイメージ、環境変数、ヘルスチェック、マイグレーションだけである。  
-4 つの要件は、[buddy Design Doc のインフラとの約束](../docs/design/DesignDoc.md#インフラとの約束) にある。
+4 つの要件は、[buddy Design Doc のデプロイの要件](../docs/design/DesignDoc.md#デプロイの要件) にある。
 
 ## Environments
 
@@ -30,7 +30,7 @@ buddy のコードと設定は、特定のデプロイ先を前提にしない�
 - マージする前に、変えたアプリのテストとチェック、`pnpm check:generated` が通っている（[テスト](testing.md)）。
 - API と画面を一緒に変えたときは、API を先にデプロイする。
   - 画面は、デプロイ済みの API が持つ項目だけを使う。
-- マイグレーションの適用のしかたと、ヘルスチェックの要件は、[buddy Design Doc のインフラとの約束](../docs/design/DesignDoc.md#インフラとの約束) にある。
+- マイグレーションの適用のしかたと、ヘルスチェックの要件は、[buddy Design Doc のデプロイの要件](../docs/design/DesignDoc.md#デプロイの要件) にある。
 
 ## Health and Monitoring
 
