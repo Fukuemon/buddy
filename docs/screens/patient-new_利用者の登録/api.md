@@ -25,7 +25,8 @@
 | `listUsers` | `GET /v1/facilities/{facility_id}/users` | なし | 200。`Staff` の配列 | なし |
 | `createPatient` | `POST /v1/facilities/{facility_id}/patients` | `name`、`service_code_id`、`preferred_time`、`preferred_gender`、`assigned_staff_id` | 201。`Patient` | 400 `invalid_input`: 入力が誤っているか、サービスコードか担当の職員が無いか、担当に休職か退職の職員か、訪問しない職員を指した |
 
-- 3 つの理由の 400 は、どれも `code` が `invalid_input` で、`message` だけが違う。名前の誤りは、送る前に画面が止める。
+- 3 つの理由の 400 は、どれも `code` が `invalid_input` で、`message` だけが違う。
+  - 名前の誤りは、送る前に画面が止める。
 
 ## 状態と失敗の要因
 
@@ -37,4 +38,5 @@
 | 登録の失敗 | 「この操作をする権限がありません。」 | `createPatient` が 403 |
 | 登録の失敗 | 「登録できませんでした。時間をおいて、もう一度登録してください。」 | `createPatient` が 400 と 403 のほかの失敗、API に届かない |
 
-- 文を選ぶ処理は `apps/web/src/features/patient/lib/errorMessage.ts` の `patientSubmitErrorMessage` にある。担当の職員を読み直す処理は `apps/web/src/features/patient/queries.ts` の `useIsStaffStopped` にある。
+- 文を選ぶ処理は `apps/web/src/features/patient/lib/errorMessage.ts` の `patientSubmitErrorMessage` にある。
+- 担当の職員を読み直す処理は `apps/web/src/features/patient/queries.ts` の `useIsStaffStopped` にある。
