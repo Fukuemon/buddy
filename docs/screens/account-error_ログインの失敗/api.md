@@ -21,4 +21,4 @@ web のサーバーは、ログインの後の戻り（`/auth/callback`）で失
 | 事業所に登録されていない | 「事業所の管理者に、メールアドレスの登録を頼んでください。」 | `getMe` が 403 |
 
 - `reason` は、`apps/web/src/server/auth.ts` の `finishLogin` が、リダイレクト先の URL に付ける。
-- `AuthErrorReason` の型と、理由ごとの文は `apps/web/src/components/site/AuthErrorMessage.tsx` にある。
+- `AuthErrorReason` の型と、理由ごとの文は `apps/web/src/components/page/AuthErrorMessage.tsx` にある。

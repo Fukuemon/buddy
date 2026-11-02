@@ -1,9 +1,8 @@
-import { ActionMenu, Button, Loading, type ActionMenuItem } from '@buddy/ui'
+import { ActionMenu, type ActionMenuItem, Avatar, Button, Loading, StatusBadge } from '@buddy/ui'
 import { clsx } from 'clsx'
 import { useId, useState, type ReactNode } from 'react'
 
 import type { Policy, Position, StaffDetail } from '#/api/types'
-import { Avatar, StatusBadge } from '#/components/site/StatusBadge'
 
 import {
   employmentText,

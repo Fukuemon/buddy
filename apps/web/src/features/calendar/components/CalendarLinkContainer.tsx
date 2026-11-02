@@ -5,7 +5,7 @@ import { useState } from 'react'
 import type { Staff } from '#/api/types'
 import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
-import { PageForbiddenMessage } from '#/components/site/PageForbiddenMessage'
+import { PageForbiddenMessage } from '#/components/page/PageForbiddenMessage'
 
 import {
   LINK_LOAD_ERROR_MESSAGE,

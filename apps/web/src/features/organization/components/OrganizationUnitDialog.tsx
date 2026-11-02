@@ -1,12 +1,10 @@
-import { FormField, formFieldControlClassName, InputDialog } from '@buddy/ui'
+import { DotLabel, FormField, formFieldControlClassName, InputDialog } from '@buddy/ui'
 import { useEffect, useId, useRef, useState } from 'react'
 
 import { TEAM_COLORS, type TeamColor } from '#/api/types'
-import { DotLabel } from '#/components/site/StatusBadge'
-import { teamColorDotClassName } from '#/components/site/teamDot'
+import { TEAM_COLOR_LABELS, teamColorDotClassName } from '#/components/teamColor'
 
 import { NAME_REQUIRED_MESSAGE, type UnitKind } from '../lib/errorMessage'
-import { TEAM_COLOR_LABELS } from '../lib/teamColor'
 
 /** 部署とチームの名前の上限の文字数。予定の API の上限と同じにする。 */
 const NAME_MAX_LENGTH = 255

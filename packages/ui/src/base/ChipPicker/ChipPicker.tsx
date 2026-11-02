@@ -1,7 +1,7 @@
 import { clsx } from 'clsx'
 import { useId, useRef, useState, type KeyboardEvent } from 'react'
 
-import { useDismiss } from '@buddy/ui'
+import { useDismiss } from '../../hooks/useDismiss'
 
 /** 選べるもの。 */
 export type ChipPickerOption = { id: string; name: string }
@@ -120,7 +120,7 @@ export const ChipPicker = ({
       </ul>
       <div className="relative self-start" ref={anchorRef}>
         <input
-          aria-controls={listId}
+          aria-controls={isOpen ? listId : undefined}
           aria-label={addAriaLabel}
           className={clsx(
             'min-h-11 w-48 rounded-8 bg-surface px-3 text-body-dense ring-inset placeholder:text-text-secondary focus-visible:focus-ring disabled:bg-surface-disabled',
