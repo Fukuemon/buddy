@@ -1,11 +1,25 @@
-import { composeStories } from '@storybook/react-vite'
+import { composeStories, composeStory } from '@storybook/react-vite'
+import type { QueryClient } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vite-plus/test'
 
+import { FAKE_VIEWER } from '#/api/fake/fixtures'
+import { queryKeys } from '#/api/queryKeys'
+
 import * as stories from './StaffCreateDialogContainer.stories'
 
 const { Default, OptionsError } = composeStories(stories)
+
+/** 描く前の query の cache を受け取る Default の story を作る。 */
+const seeded = (seed: (queryClient: QueryClient) => void) =>
+  composeStory(
+    {
+      ...stories.Default,
+      parameters: { appRouter: { ...stories.default.parameters.appRouter, seed } },
+    },
+    stories.default,
+  )
 
 const fill = async (name: string, email: string, phone = '') => {
   await userEvent.type(await screen.findByTestId('staff-new-name'), name)
@@ -59,6 +73,24 @@ describe('StaffCreateDialogContainer', () => {
     await fill('新井 五月', 'satsuki.arai@example.com', '09012345678')
     await userEvent.click(screen.getByTestId('staff-new-submit'))
     await expect.poll(() => screen.queryByTestId('staff-new-dialog')).toBeNull()
+  })
+
+  it('登録できたら、職員の管理の一覧と、予定の画面の名前で絞った職員の一覧を invalidate する', async () => {
+    const { facilityId } = FAKE_VIEWER
+    const keys = [
+      queryKeys.staff.records(facilityId),
+      queryKeys.staff.list(facilityId, { name: '新井' }),
+    ]
+    let client: QueryClient | undefined
+    const Story = seeded((queryClient) => {
+      client = queryClient
+      for (const key of keys) queryClient.setQueryData(key, [])
+    })
+    render(<Story />)
+    await fill('新井 五月', 'satsuki.arai@example.com')
+    await userEvent.click(screen.getByTestId('staff-new-submit'))
+    await expect.poll(() => screen.queryByTestId('staff-new-dialog')).toBeNull()
+    for (const key of keys) expect(client?.getQueryState(key)?.isInvalidated).toBe(true)
   })
 
   it('選択肢を読めなければ、登録を押せず、開き直すよう伝える', async () => {
