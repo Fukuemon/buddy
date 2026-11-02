@@ -44,7 +44,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/client.ts`）で API を呼ぶ�
 | 合わせるの失敗 | 「Google カレンダーの予定を、buddy の予定として取り込めません。終日の予定か、タイトルの利用者が見つからない予定です。buddy の内容で書き直すか、Google カレンダーで直すよう職員に頼んでください。」 | `createCalendarExportAcceptance` が 409 `external_change_unappliable` |
 | 合わせるの失敗 | 「Google カレンダーを読めません。カレンダーの共有が外れていないかを、職員に確認してください。」 | `createCalendarExportAcceptance` が 422 `calendar_unreadable` |
 | 合わせるの失敗 | 「この事業所では、まだ Google カレンダーを使う準備ができていません。事業所の管理者に、設定を頼んでください。」 | `createCalendarExportAcceptance` が 503 `calendar_not_configured` |
-| 合わせるの失敗 | 「Google カレンダーの内容に合わせられませんでした。時間をおいて、もう一度試してください。」 | `createCalendarExportAcceptance` のほかの失敗（502 `calendar_unavailable`、API に届かないときを含む） |
+| 合わせるの失敗 | 「Google カレンダーの内容に合わせられませんでした。時間をおいて、もう一度試してください。」 | `createCalendarExportAcceptance` のほかの失敗。502 `calendar_unavailable`、API に届かないときを含む |
 
 - 文を選ぶ処理は、`apps/web/src/features/calendar/lib/errorMessage.ts` にある。
   - `loadErrorMessage`、`rewriteErrorMessage`、`acceptErrorMessage` が文を選ぶ。
@@ -59,21 +59,31 @@ web は `BuddyApi.calendars`（`apps/web/src/api/client.ts`）で API を呼ぶ�
 | `createCalendarExportRetry` | `POST /v1/calendar_exports/{calendar_export_id}/retries` | なし | 202。`CalendarExport` | 404 `not_found`: 書き出しが無い。409 `export_not_in_review`: 確認が必要な書き出しでない。すでに書き直す待ちにしたか、書き終えた |
 | `createCalendarExportAcceptance` | `POST /v1/calendar_exports/{calendar_export_id}/acceptances` | なし | 200。`status` が `succeeded` の `CalendarExport` | 404 `not_found`。409 `export_not_in_review`、`export_not_acceptable`（`acceptable` が false）、`external_change_unappliable`（Google の予定を読み替えられない）。422 `calendar_unreadable`、502 `calendar_unavailable`、503 `calendar_not_configured` |
 
-- `listCalendarExportIssues` は、書き出しのうち `status` が `conflict` か `failed` のものを返す。予定のタイトル、利用者名、カレンダーの ID は返さない。
-- `CalendarExport` は、`id`、`schedule_id`、`recurring_schedule_id`、`status`、`error_code`、`attempts`、`updated_at` を持つ。`schedule_id` と `recurring_schedule_id` は、どちらか一方だけに値がある。
+- `listCalendarExportIssues` は、書き出しのうち `status` が `conflict` か `failed` のものを返す。
+  - 予定のタイトル、利用者名、カレンダーの ID は返さない。
+- `CalendarExport` は、`id`、`schedule_id`、`recurring_schedule_id`、`status`、`error_code`、`attempts`、`updated_at` を持つ。
+  - `schedule_id` と `recurring_schedule_id` は、どちらか一方だけに値がある。
   - `status` は次のどれか。
     - `pending`: 書く待ち
     - `succeeded`: 書き終えた
     - `conflict`: buddy と Google カレンダーの両方で予定が変わったか、Google カレンダーで予定が消えていたか、Google カレンダーの変更を buddy に読み替えられないので、止めた
     - `failed`: 書く権限が無いか、再送の上限まで書けなかった
   - `error_code` は、最後に書けなかった理由で、次のどれか。
-    - `precondition_failed`: buddy と Google カレンダーの両方で予定が変わった（消された予定を除く書き出しの 412 を含む）
-    - `not_found`: Google カレンダーで予定が消された（消された予定への書き出しの 412 を含む）か、予定かカレンダーが見つからない（404）
+    - `precondition_failed`: buddy と Google カレンダーの両方で予定が変わった
+      - 消された予定を除く書き出しの 412 を含む。
+    - `not_found`: Google カレンダーで予定が消されたか、予定かカレンダーが見つからない（404）
+      - Google カレンダーで予定が消されたときには、消された予定への書き出しの 412 を含む。
     - `forbidden`: サービスアカウントがカレンダーに書けない
     - `rejected`: Google が予定の内容を受け付けなかった
     - `unavailable`: Google に届かないか、一時的なエラーが続いた
     - `unappliable`: Google カレンダーの変更を buddy の予定に読み替えられない
-- `CalendarExportIssue` は、`CalendarExport` に、予定の職員（`staff_id`、`staff_name`）と日時と `acceptable` を足したものである。日時は `date`、`start_time`、`end_time`、`ends_next_day` である。
+- `CalendarExportIssue` は、`CalendarExport` に、予定の職員（`staff_id`、`staff_name`）と日時と `acceptable` を足した項目を持つ。
+  - 日時は `date`、`start_time`、`end_time`、`ends_next_day` で表す。
   - `acceptable` は、Google カレンダーの内容に合わせられるかを示す。単発の予定で、buddy でキャンセルしておらず、`status` が `conflict`、`error_code` が `precondition_failed` か `not_found` のときに true になる。
-- `createCalendarExportRetry` は、書き出しを、Google カレンダーの予定の変更を比べずに buddy の今の内容で書き直す待ちにする。書き出しの処理が、次の周期で書く。Google カレンダーで消された予定は作り直す。buddy でキャンセルした単発の予定は、Google カレンダーの予定を If-Match を付けずに消す。結び付けを外したカレンダーの予定は、消さず、書き直さない。
-- `createCalendarExportAcceptance` は、予定の API が Google カレンダーの今の予定を読み、buddy の予定をその内容にして、書き出しを終える。Google カレンダーで消された予定は、buddy でキャンセルする。
+- `createCalendarExportRetry` は、書き出しを、Google カレンダーの予定の変更を比べずに buddy の今の内容で書き直す待ちにする。
+  - 書き出しの処理が、次の周期で書く。
+  - Google カレンダーで消された予定は作り直す。
+  - buddy でキャンセルした単発の予定は、Google カレンダーの予定を If-Match を付けずに消す。
+  - 結び付けを外したカレンダーの予定は、消さず、書き直さない。
+- `createCalendarExportAcceptance` は、予定の API が Google カレンダーの今の予定を読み、buddy の予定をその内容にして、書き出しを終える。
+  - Google カレンダーで消された予定は、buddy でキャンセルする。
