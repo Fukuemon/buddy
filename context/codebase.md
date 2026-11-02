@@ -63,6 +63,7 @@ status: stable
   - 判定はサービスの規則（`servicerule`）を、データソースは Google カレンダー（`gcal`）を使う。
 - `services/broker` の職員の型、状態、規則、番兵のエラーは `staff` に置き、`login`、`internalapi`、`postgres` が読む。
   - `staff`、`hydra`、`upstream`、`config` は、ブローカーのほかの内部のパッケージを import しない。
+    - テストのファイルは除く。外部のテストのパッケージが、テストする自分のパッケージを import するためである。
   - `postgres` は `login` と `internalapi` を import しない。
   - `login` と `internalapi` は、互いと `postgres` を import しない。DB はそれぞれが定義したインターフェイスで受ける。
   - `services/broker/.golangci.yml` の depguard が、この 3 つを止める。
