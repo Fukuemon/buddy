@@ -156,7 +156,7 @@ export const ChipPicker = ({
                 {candidates.map((option, index) => (
                   <li key={option.id}>
                     <button
-                      className="block min-h-11 w-full px-4 text-left text-body whitespace-nowrap hover:bg-surface-subtle focus-visible:bg-surface-subtle focus-visible:outline-none"
+                      className="block min-h-11 w-full px-4 text-left text-body whitespace-nowrap hover:bg-surface-subtle focus-visible:focus-ring"
                       data-testid={`${testIdPrefix}-option-${option.id}`}
                       onClick={() => add(option.id)}
                       onKeyDown={(event) => onListKeyDown(event, index)}
