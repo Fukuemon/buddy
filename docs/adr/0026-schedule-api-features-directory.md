@@ -1,4 +1,4 @@
-# ADR-0025: 予定の API の機能のパッケージを internal/features/ に置き、usecase のメソッドを操作ごとのファイルに分ける
+# ADR-0026: 予定の API の機能のパッケージを internal/features/ に置き、usecase のメソッドを操作ごとのファイルに分ける
 
 ## Status
 

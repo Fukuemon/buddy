@@ -17,9 +17,9 @@
 
 規則と手順を、機能ごとのパッケージ（`organization`、`staff`、`patient`、`visit`、`schedule`）にまとめる。各パッケージは、エンティティ、値の検証、リポジトリのインターフェイス、操作（`Service`）を持つ。DB と HTTP のアダプタ（`mysql`、`httpapi`）は、生成物が 1 つのパッケージなので、機能に分けずに 1 つずつ置く。
 
-機能のパッケージを `internal/` の直下に置く判断は、ADR-0025 で置き換えた。
+機能のパッケージを `internal/` の直下に置く判断は、ADR-0026 で置き換えた。
 
-- ADR-0025: [予定の API の機能のパッケージを internal/features/ に置き、usecase のメソッドを操作ごとのファイルに分ける](0025-schedule-api-features-directory.md)
+- ADR-0026: [予定の API の機能のパッケージを internal/features/ に置き、usecase のメソッドを操作ごとのファイルに分ける](0026-schedule-api-features-directory.md)
 
 操作を `Service` と呼ぶ判断は、ADR-0010 で置き換えた。
 
