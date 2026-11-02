@@ -17,7 +17,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { extname, join, relative, resolve, sep } from "node:path";
 
 // 画面とコンポーネントのコードの置き場
-const TARGETS = ["./apps/web/src", "./packages/ui/src"];
+const TARGETS = ["./apps/web/src", "./apps/broker/src", "./packages/ui/src"];
 // トークンの段のファイルのように、値と基本の段の名前を持ってよい置き場
 const EXCLUDES = ["./packages/ui/src/tokens", "./apps/web/src/api/generated"];
 // 基本の段の変数の名前の接頭辞

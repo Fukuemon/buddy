@@ -7,7 +7,7 @@ web の画面ではなく、buddy のログインを受け持つサービスが�
 | --- | --- |
 | URL | ブローカーの `/login`。web の `/auth/login` から Hydra を通って、`login_challenge` を付けてリダイレクトされる |
 | 使う人 | ログインを試す全ての職員。ログインしていなくても開ける |
-| 実装 | ID ブローカー（`services/broker`）の `services/broker/internal/login/pages.go`、`services/broker/internal/login/login.go` |
+| 実装 | 画面のソースは `apps/broker/src/pages.tsx`。ID ブローカー（`services/broker`）が、生成したテンプレートを `services/broker/internal/login/pages.go` で埋め込み、`services/broker/internal/login/login.go` で出す |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。  
 ログインとログアウトの流れは、[ID ブローカーの Design Doc のログイン](../../design/services/broker.md#ログイン) と [ID ブローカーの Design Doc のログアウト](../../design/services/broker.md#ログアウト) にある。

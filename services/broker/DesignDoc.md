@@ -300,11 +300,16 @@ cookie は署名しない。
 - ほかのサイトから `POST /login` が送られたとき（403）
 - Hydra へ accept か reject を返せないとき（502）
 
-ブローカーの画面の色と書体は、web と同じ packages/ui のトークンの値にする。  
-画面の背景の中央に白いカードを置き、上端にロゴを出す。
+ブローカーの画面のソースは `apps/broker`（`@buddy/broker`）にあり、web と同じ `packages/ui` のコンポーネントとトークンで書く。  
+画面の背景の中央に白いカード（`AuthCard`）を置き、上端にロゴを出す。web のログインの失敗の画面も、同じカードを使う。  
+ログインの失敗の文言は `apps/broker` の定数（`loginFailedMessage`）にあり、ブローカーの画面と web の画面が同じ定数を読む。
 
-ブローカーは web のビルドを読まないので、画面が使うトークンだけを `scripts/build-broker-tokens.mjs` が値に解いて `internal/login/tokens.css` に書き、画面に埋め込む。  
-`pnpm check:generated` が、トークンとの食い違いを見つける。  
+- ADR-0027: [ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0027-broker-login-pages-source.md)
+
+`apps/broker` の `pnpm generate` が、画面を React で静的な HTML に書き出し、`packages/ui` の `theme.css` を読む Tailwind で CSS を生成する。  
+書き出したテンプレートと CSS は `internal/login/pages/` に置いてコミットし、ブローカーは `go:embed` で読む。ブローカーのビルドに Node.js は要らない。  
+テンプレートの `{{css}}` に CSS を、ログインの画面の `{{.Challenge}}` に `login_challenge` を、ブローカーが `html/template` で埋める。  
+`pnpm check:generated` が、画面のソースと `packages/ui` との食い違いを見つける。  
 書体は Noto Sans JP を名指すだけで、ブローカーは書体のファイルを配らない。  
 入っていない端末では、ブラウザの sans-serif で出る。
 
