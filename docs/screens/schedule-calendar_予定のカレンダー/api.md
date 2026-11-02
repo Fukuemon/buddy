@@ -21,14 +21,29 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 職員の列 | 職員の名前 | `Staff.name` | `listUsers` の `Staff.username` |
 | 職員の予定の列 | 職員 | `Staff.id` | `listUsers` の `Staff.id` |
 
-- 予定の一覧の取得は、`listSchedules`（`GET /v1/facilities/{facility_id}/schedules`）に当たる。web の画面は、期間を `ScheduleListParams` の `from`、`to` の日時で、職員を `staffIds` で渡す。OpenAPI は `date_from`、`date_to` の日付だけを受け、職員で絞る引数を持たない。
-- web のサーバー（BFF、`apps/web/src/api/http/httpBuddyApi.ts`）は、`from` と `to` を `date_from`、`date_to` の日付に直して `listSchedules` を呼ぶ。`to` は含まないので、`date_to` は `to` の前の日にする。期間に重なるかと職員の絞り込みは、レスポンスを受けた後に web のサーバーが行う。
-- web のサーバーは、`ScheduleListParams` の `includeCancelled` が `true` のときだけ、`cancel` が `null` でない予定（キャンセルした予定）を残す。画面は、URL の `cancelled` が `true` のときに `includeCancelled` を渡す。`recurring_schedules`（繰り返しの予定）は、web のサーバーが期間の回に分け、回の ID（`occurrenceId`）を持つ単発の予定にする。流れは [予定の管理の Design Doc の予定の画面の読み込みと保存](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#予定の画面の読み込みと保存) にある。
-- 訪問の予定のタイトルに使う利用者の名前は、web では `visit_info.patient_id` を利用者の一覧（`listPatients`）で名前に置き換える。OpenAPI の予定は `visit_info.patient_name` も持つが、web は使わない。
+- 予定の一覧の取得は、`listSchedules`（`GET /v1/facilities/{facility_id}/schedules`）に当たる。
+  - web の画面は、期間を `ScheduleListParams` の `from`、`to` の日時で、職員を `staffIds` で渡す。
+  - OpenAPI は `date_from`、`date_to` の日付だけを受け、職員で絞る引数を持たない。
+- web のサーバー（BFF、`apps/web/src/api/http/httpBuddyApi.ts`）は、`from` と `to` を `date_from`、`date_to` の日付に直して `listSchedules` を呼ぶ。
+  - `to` は含まないので、`date_to` は `to` の前の日にする。
+  - 期間に重なるかと職員の絞り込みは、レスポンスを受けた後に web のサーバーが行う。
+- web のサーバーは、`ScheduleListParams` の `includeCancelled` が `true` のときだけ、`cancel` が `null` でない予定を残す。
+  - `cancel` が `null` でない予定は、キャンセルした予定である。
+  - 画面は、URL の `cancelled` が `true` のときに `includeCancelled` を渡す。
+- 繰り返しの予定の `recurring_schedules` は、web のサーバーが期間の回に分け、回の ID（`occurrenceId`）を持つ単発の予定にする。
+  - 流れは [予定の管理の Design Doc の予定の画面の読み込みと保存](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#予定の画面の読み込みと保存) にある。
+- 訪問の予定のタイトルに使う利用者の名前は、web では `visit_info.patient_id` を利用者の一覧の `listPatients` で名前に置き換える。
+  - OpenAPI の予定は `visit_info.patient_name` も持つが、web は使わない。
 - 予定の種類は `schedule_type` が「訪問」かどうかで決める。
-- `listUsers` は、職員の管理の画面のために休職と退職の職員も返す。web は、`status` が `active` でない職員だけに `Staff.status` を写す。この画面は、`status` を持つ職員とその予定を除く。`visits` が false の職員には `Staff.nonVisiting` を写し、同じく職員とその予定を除く（ADR-0022）。
-- PRD の時間外の勤務の印（`Schedule.is_over_time_work`）は、web の型に無く、画面に出していない。
-- 予定の一覧は、閲覧の権限で見てよい職員の予定だけを返す。自分の予定は常に返す。流れは [予定の管理の Design Doc の認証から事業所の確認までの流れ](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#認証から事業所の確認までの流れ) にある。
+- `listUsers` は、職員の管理の画面のために休職と退職の職員も返す。
+  - web は、`status` が `active` でない職員だけに `Staff.status` を写す。
+  - この画面は、`status` を持つ職員とその予定を除く。
+  - `visits` が false の職員には `Staff.nonVisiting` を写し、同じく職員とその予定を除く。
+  - ADR-0022: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../../adr/0022-receipt-check-policy-and-non-visiting-staff.md)
+- PRD の時間外の勤務の印の `Schedule.is_over_time_work` は、web の型に無く、画面に出していない。
+- 予定の一覧は、閲覧の権限で見てよい職員の予定だけを返す。
+  - 自分の予定は常に返す。
+  - 流れは [予定の管理の Design Doc の認証から事業所の確認までの流れ](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#認証から事業所の確認までの流れ) にある。
 
 ## 権限の出し分け
 
@@ -39,14 +54,20 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 予定を作成を出すか | `Viewer.schedulePolicies` の `code` | `getMe` の `policies` の `code` |
 | 時間の枠を押せるか | `Staff.id`、`Staff.teamId` | `listUsers` の `Staff.id`、`Staff.team.id` |
 
-- 判定は、予定の API の判定（`schedule.CanRead`、`schedule.CanEdit`）と同じ規則で行う。判定の処理は `apps/web/src/features/schedule/lib/schedulePermission.ts` にある。
-  - 職員の絞り込みと職員の列は `readableStaff` で絞る。自分と、`schedule.all.*`、`target_user_ids` に職員を含む `schedule.user.*`、`target_team_ids` に職員のチームを含む `schedule.team.*` の対象の職員を残す。
-  - 予定を作成は、`code` が `.edit` で終わる権限を 1 つ以上持つとき（`canEditAnySchedule`）に出す。週の表示の空いた時間も、同じ条件で予定の作成を開く。
+- 判定は、予定の API の判定（`schedule.CanRead`、`schedule.CanEdit`）と同じ規則で行う。
+  - 判定の処理は `apps/web/src/features/schedule/lib/schedulePermission.ts` にある。
+  - 職員の絞り込みと職員の列は `readableStaff` で絞る。
+    - 自分と、`schedule.all.*`、`target_user_ids` に職員を含む `schedule.user.*`、`target_team_ids` に職員のチームを含む `schedule.team.*` の対象の職員を残す。
+  - 予定を作成は、`code` が `.edit` で終わる権限を 1 つ以上持つときに出す。
+    - この判定は `canEditAnySchedule` が行う。
+    - 週の表示の空いた時間も、同じ条件で予定の作成を開く。
   - 時間の枠は、列の職員を `canEditScheduleOf` で判定する。
 - web のサーバーは、`getMe` の `policies` のうち、予定の権限の 7 つの `code`（`SCHEDULE_POLICY_CODES`）を `Viewer.schedulePolicies` に写す。
   - 写すのは `apps/web/src/server/runtime.ts` の `fetchMe` である。
-  - `schedulePolicies` を持たない古いセッションでは、`schedule.all.edit` を持つとして扱う（`apps/web/src/server/auth.ts` の `viewerOf`）。
-- 出し分けは表示だけに使う。予定を拒むのは、予定の API の `listSchedules` と `createSchedule` である。
+  - `schedulePolicies` を持たない古いセッションでは、`schedule.all.edit` を持つとして扱う。
+    - この扱いは、`apps/web/src/server/auth.ts` の `viewerOf` が決める。
+- 出し分けは表示だけに使う。
+  - 予定を拒むのは、予定の API の `listSchedules` と `createSchedule` である。
 
 ## 状態と失敗の要因
 
@@ -57,5 +78,8 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 
 - 文は `apps/web/src/features/schedule/components/ScheduleCalendarContainer.tsx` が、status によらず 1 つの文にする。
 - 予定の一覧は、見てよくない職員の予定を除いて返すので、予定を見る権限が無いことの文は出さない。
-- 4xx の失敗は取り直さず、すぐに出す。ほかの失敗は、3 回まで取り直してから出す。取り直すかは `apps/web/src/integrations/tanstack-query/root-provider.tsx` の `shouldRetryQuery` が決める。
-- チームと利用者の一覧（`listTeams`、`listPatients`）の失敗は、この状態にしない。職員の絞り込みはチームを出さず、訪問の予定のタイトルは「利用者不明 訪問」になる。
+- 4xx の失敗は取り直さず、すぐに出す。
+  - ほかの失敗は、3 回まで取り直してから出す。
+  - 取り直すかは `apps/web/src/integrations/tanstack-query/root-provider.tsx` の `shouldRetryQuery` が決める。
+- チームと利用者の一覧（`listTeams`、`listPatients`）の失敗は、この状態にしない。
+  - 職員の絞り込みはチームを出さず、訪問の予定のタイトルは「利用者不明 訪問」になる。
