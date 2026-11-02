@@ -107,6 +107,8 @@ nav = [
     "adr/0022-receipt-check-policy-and-non-visiting-staff.md",
     "adr/0023-overnight-schedule.md",
     "adr/0024-e2e-functions-without-page-object.md",
+    "adr/0025-web-permission-checks.md",
+    "adr/0026-schedule-api-features-directory.md",
   ] },
 ]
 

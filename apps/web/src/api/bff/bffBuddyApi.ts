@@ -1,6 +1,6 @@
 import { ApiError, type BuddyApi } from '../client'
 import { redirectToLogin } from '../viewer'
-import type { BffCall, BffOperation, BffResult } from './bffCall'
+import type { BffCall, BffMethod, BffOperation, BffResult } from './bffCall'
 import { callBffFn } from './serverFns'
 
 type CallBff = (call: BffCall) => Promise<BffResult>
@@ -11,14 +11,16 @@ type CallBff = (call: BffCall) => Promise<BffResult>
  * 失敗は status つきの ApiError で投げる。ブラウザで 401 を受けたら、今の画面に戻るログインへ移る。
  */
 export const createBffBuddyApi = (callBff: CallBff = (data) => callBffFn({ data })): BuddyApi => {
-  const call =
-    (op: BffOperation) =>
-    async (...args: unknown[]): Promise<never> => {
+  // 返す型を操作の名前から引くので、対応を別の操作の名前に書き換えると型のエラーになる
+  const call = <Op extends BffOperation>(op: Op): BffMethod<Op> => {
+    const method = async (...args: unknown[]): Promise<unknown> => {
       const result = await callBff({ op, args })
-      if (result.ok) return result.data as never
+      if (result.ok) return result.data
       if (result.status === 401 && typeof window !== 'undefined') return redirectToLogin()
       throw new ApiError(result.status, result.message, [], result.code)
     }
+    return method as BffMethod<Op>
+  }
   return {
     schedules: {
       list: call('schedules.list'),

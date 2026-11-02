@@ -65,7 +65,7 @@ export const CalendarImportForm = ({
         onSubmit={handleSubmit}
       >
         <div className="grid gap-4 desktop:grid-cols-[16rem_11rem_11rem] desktop:items-start">
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-3">
             <label className="text-label" htmlFor={staffFieldId}>
               職員
             </label>
@@ -84,7 +84,7 @@ export const CalendarImportForm = ({
               ))}
             </select>
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-3">
             <label className="text-label" htmlFor={startId}>
               期間の開始日
             </label>
@@ -107,7 +107,7 @@ export const CalendarImportForm = ({
               </span>
             )}
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-3">
             <label className="text-label" htmlFor={endId}>
               期間の終了日
             </label>

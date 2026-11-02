@@ -200,7 +200,7 @@ export interface BuddyApi {
     ): Promise<PatientRecord>
     /** 事業所の現地の日付で今日以降に残る、予定と繰り返しの予定を返す。 */
     remainingSchedules(facilityId: FacilityId, patientId: Patient['id']): Promise<PatientSchedules>
-    /** 利用の終了にする。予定が残れば、拒まれた結果として残る予定を返す。 */
+    /** 利用を終了する。予定が残れば、拒まれた結果として残る予定を返す。 */
     endService(facilityId: FacilityId, patientId: Patient['id']): Promise<PatientEndResult>
     /** 利用中に戻し、担当の職員を assignedStaffId にする。休職か退職の職員を指すと status が 400 の ApiError を投げる。 */
     resumeService(

@@ -13,7 +13,7 @@ export const CsvFileField = ({ label, description, onChange, ...rest }: CsvFileF
   const id = useId()
   const descriptionId = `${id}-description`
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
       <label className="text-label" htmlFor={id}>
         {label}
       </label>
