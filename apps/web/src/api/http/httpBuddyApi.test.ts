@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import { scheduleHttp, server, TEST_SCHEDULE_URL } from '#/test/server'
 
-import { ApiError } from '../client'
+import { ApiError } from '../BuddyApi'
 import type { components } from '../generated/schedule'
 import { createHttpBuddyApi } from './httpBuddyApi'
 

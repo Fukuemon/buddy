@@ -12,7 +12,7 @@ import {
 import type { Decorator, StoryContext } from '@storybook/react-vite'
 import { useState } from 'react'
 
-import { ApiError, type BuddyApi, type ReceiptApi } from '#/api/client'
+import { ApiError, type BuddyApi, type ReceiptApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import { FAKE_VIEWER } from '#/api/fake/fixtures'
 import { createFakeReceiptApi } from '#/api/fake/fakeReceiptApi'
@@ -26,7 +26,7 @@ import {
   scheduleSearchDefaults,
   scheduleSearchSchema,
 } from '#/features/schedule/schema/scheduleSearch'
-import type { AppRouterContext } from '#/integrations/tanstack-query/root-provider'
+import type { AppRouterContext } from '#/appContext'
 
 /** story を置く route。アプリの route の ID と同じにし、Container の useSearch と useNavigate が働くようにする。 */
 export type StoryRouteId =

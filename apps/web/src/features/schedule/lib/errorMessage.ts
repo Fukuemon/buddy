@@ -1,4 +1,4 @@
-import { ApiError } from '#/api/client'
+import { ApiError } from '#/api/BuddyApi'
 
 /** 予定が見つからなかったときの文。 */
 export const SCHEDULE_NOT_FOUND_MESSAGE = '予定が見つかりません。'

@@ -59,6 +59,15 @@ export type ReceiptCheckInput =
   | { visits: Blob; schedules: Blob; month?: undefined }
   | { visits: Blob; month: string; schedules?: undefined }
 
+/**
+ * 照合の入力のファイルの合計の上限のバイト数。照合の API の MAX_UPLOAD_BYTES のデフォルト（10 MiB）は multipart の本文の全体に
+ * 掛かるので、境界と見出しの分の 64 KiB を引く。
+ */
+export const MAX_RECEIPT_UPLOAD_BYTES = 10 * 1024 * 1024 - 64 * 1024
+
+/** server function の本文の上限のバイト数。本文を読む前に、src/start.ts がこれより大きいリクエストを拒む。 */
+export const MAX_SERVER_FN_BODY_BYTES = 10 * 1024 * 1024
+
 /** 照合の API の操作。 */
 export interface ReceiptApi {
   /** 実訪問の CSV と予定を照合する。失敗は ApiError で投げ、入力の CSV の行のエラーは status が 422 になる。 */

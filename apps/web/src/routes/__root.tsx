@@ -16,7 +16,7 @@ import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
 import appCss from '../styles.css?url'
 
-import type { AppRouterContext } from '../integrations/tanstack-query/root-provider'
+import type { AppRouterContext } from '#/appContext'
 
 export const Route = createRootRouteWithContext<AppRouterContext>()({
   // /auth/ の下はログインの前と失敗の画面なので、職員を求めない

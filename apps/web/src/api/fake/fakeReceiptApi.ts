@@ -1,4 +1,4 @@
-import type { ReceiptApi } from '../client'
+import type { ReceiptApi } from '../BuddyApi'
 import type { ReceiptReport } from '../types'
 
 const range = (min: number, max: number) => ({ min, max })

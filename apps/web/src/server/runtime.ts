@@ -1,10 +1,6 @@
-import createClient from 'openapi-fetch'
+import { fetchMe } from '#/api/http/meApi'
 
-import type { paths } from '#/api/generated/schedule'
-import { fromApiSchedulePolicies } from '#/api/http/scheduleMapper'
-import { RECEIPT_CHECK, STAFF_MANAGE } from '#/api/types'
-
-import type { AuthDeps, MeResult } from './auth'
+import type { AuthDeps } from './auth'
 import { loadServerConfig, type ServerConfig } from './config'
 import { createOidcClient, type OidcClient } from './oidc'
 import { createValkeySessionStore, type SessionStore } from './sessionStore'
@@ -44,28 +40,6 @@ const getOidc = (config: ServerConfig) => {
     })
   }
   return oidc
-}
-
-/** access token で予定の API の GET /v1/me を呼ぶ。 */
-export const fetchMe = async (scheduleApiUrl: string, accessToken: string): Promise<MeResult> => {
-  const api = createClient<paths>({ baseUrl: scheduleApiUrl })
-  const { data, response } = await api.GET('/v1/me', {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
-  if (data !== undefined) {
-    return {
-      ok: true,
-      viewer: {
-        staffId: data.id,
-        staffName: data.username,
-        facilityId: data.facility_id,
-        canManageStaff: data.policies.some((p) => p.code === STAFF_MANAGE),
-        canCheckReceipt: data.policies.some((p) => p.code === RECEIPT_CHECK),
-        schedulePolicies: fromApiSchedulePolicies(data.policies),
-      },
-    }
-  }
-  return { ok: false, reason: response.status === 403 ? 'forbidden' : 'failed' }
 }
 
 /** 認証の処理に渡す依存を返す。 */

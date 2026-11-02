@@ -129,7 +129,7 @@ BFF の照合の server function（`checkReceiptFn`）が、照合の API のク
 - 3 つの画面は、職員の管理の権限を持つ職員だけが使う。
   - ほかの職員には、ヘッダーに「取り込み」と「要確認」を出さない。
   - ほかの職員が URL を開くと、「この画面を開く権限がありません」（`PageForbiddenMessage`）を出す。
-- 画面は、予定の API の Google カレンダーの操作を `BuddyApi`（`src/api/client.ts`）の `calendars` で呼ぶ。
+- 画面は、予定の API の Google カレンダーの操作を `BuddyApi`（`src/api/BuddyApi.ts`）の `calendars` で呼ぶ。
   - 結び付けたカレンダー、取り込みのプレビューと結果、書き出しの型は、予定の API の型をそのまま使う（`src/api/types.ts`）。
 - フェイクの API（`fake`）は、ID の末尾が `@example.com` のカレンダーだけを読めるものとして扱う（`src/api/fake/fakeBuddyApi.ts`）。
 

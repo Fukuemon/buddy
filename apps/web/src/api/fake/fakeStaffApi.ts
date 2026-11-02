@@ -1,6 +1,6 @@
 import { mockMe, mockPolicies, mockPositions, mockStaff } from '#/mocks/scheduleData'
 
-import { ApiError, type BuddyApi } from '../client'
+import { ApiError, type BuddyApi } from '../BuddyApi'
 import { fromApiStaff } from '../http/scheduleMapper'
 import { matchesName } from '../nameSearch'
 import {

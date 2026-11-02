@@ -52,7 +52,7 @@
 
 - 予定の権限は、画面を読み込むたびに web のサーバーが `getMe`（`GET /v1/me`）で読む。
   - `policies` のうち `schedule.` で始まる `code` と、`target_user_ids`、`target_team_ids` を `Viewer.schedulePolicies` に入れる。
-  - 処理は `apps/web/src/server/runtime.ts` にある。
+  - 処理は `apps/web/src/api/http/scheduleMapper.ts` の `fromApiMe` にある。
 - 判定の処理は `apps/web/src/features/schedule/lib/schedulePermission.ts` にある。
   - 規則は、予定の API の判定（`schedule.CanEdit`）と同じである。
   - 拒むのは予定の API である。
@@ -84,4 +84,4 @@
 - 400 の `invalid_input` には、休職か退職の職員か、訪問しない職員を新しく割り振ったときと、利用の終了の利用者を新しく指したときを含む。
   - ADR-0022: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../../adr/0022-receipt-check-policy-and-non-visiting-staff.md)
 - 読み込みは、4xx なら取り直さずにすぐ失敗にし、ほかの失敗は取り直してから失敗にする。
-  - 処理は `apps/web/src/integrations/tanstack-query/root-provider.tsx` の `shouldRetryQuery` にある。
+  - 処理は `apps/web/src/appContext.ts` の `shouldRetryQuery` にある。

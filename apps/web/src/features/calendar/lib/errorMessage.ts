@@ -1,4 +1,4 @@
-import { ApiError } from '#/api/client'
+import { ApiError } from '#/api/BuddyApi'
 
 /** 画面を開いた後に権限を外された職員が操作したときの文。 */
 export const FORBIDDEN_MESSAGE = 'この操作をする権限がありません。'

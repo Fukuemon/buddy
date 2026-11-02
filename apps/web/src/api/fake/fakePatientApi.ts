@@ -1,6 +1,6 @@
 import { mockPatients, mockServiceCodes } from '#/mocks/scheduleData'
 
-import { ApiError, type BuddyApi } from '../client'
+import { ApiError, type BuddyApi } from '../BuddyApi'
 import { fromApiPatient } from '../http/scheduleMapper'
 import { matchesName } from '../nameSearch'
 import type { PatientInput, PatientRecord, PatientSchedules, Schedule, StaffRecord } from '../types'

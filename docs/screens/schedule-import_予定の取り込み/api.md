@@ -2,7 +2,7 @@
 
 [予定の取り込み](index.md) の項目と、web の型と OpenAPI の項目の対応。  
 画面を作る人と API を変える人が読む。  
-web は `BuddyApi.calendars`（`apps/web/src/api/client.ts`）で API を呼ぶ。  
+web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼ぶ。  
 型は、OpenAPI の型をそのまま使う（`apps/web/src/api/types.ts` の `ImportPreview`、`ImportDecision`、`ImportResult`）。  
 結び付けの操作は、[カレンダーの連携の API との対応](../schedule-link_カレンダーの連携/api.md) にある。
 

@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vite-plus/test'
 
-import { ApiError } from '../client'
+import { ApiError } from '../BuddyApi'
 import { createBffBuddyApi } from './bffBuddyApi'
 import type { BffCall, BffResult } from './bffCall'
 

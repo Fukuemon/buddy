@@ -2,9 +2,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useRouteContext } from '@tanstack/react-router'
 import { useState } from 'react'
 
+import { ApiError, MAX_RECEIPT_UPLOAD_BYTES, type ReceiptCheckInput } from '#/api/BuddyApi'
 import { queryKeys } from '#/api/queryKeys'
-import { MAX_RECEIPT_UPLOAD_BYTES } from '#/api/bff/receiptCall'
-import { ApiError, type ReceiptCheckInput } from '#/api/client'
 
 import { TOO_LARGE_MESSAGE, checkErrorMessage, csvErrorLines } from '../lib/errorMessage'
 import { isMonth, previousMonth } from '../lib/month'

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test'
 
-import { ApiError } from '#/api/client'
+import { ApiError } from '#/api/BuddyApi'
 import type { ReceiptCsvError, ReceiptWarning } from '#/api/types'
 
 import { checkErrorMessage, csvErrorLines, warningReasonText } from './errorMessage'

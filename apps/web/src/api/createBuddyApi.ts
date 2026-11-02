@@ -1,6 +1,6 @@
 import { createBffBuddyApi } from './bff/bffBuddyApi'
 import { createBffReceiptApi } from './bff/bffReceiptApi'
-import type { BuddyApi, ReceiptApi } from './client'
+import type { BuddyApi, ReceiptApi } from './BuddyApi'
 import { createDeferredFakeApis } from './loadFake'
 
 /** createBuddyApi が読む環境変数。意味は README の Configuration にある。 */

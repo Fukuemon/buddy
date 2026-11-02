@@ -1,4 +1,4 @@
-import type { BuddyApi, ReceiptApi } from './client'
+import type { BuddyApi, ReceiptApi } from './BuddyApi'
 
 /**
  * fake の実装とダミーデータを読み込む。bff のビルドで呼ぶと Error で失敗する。
