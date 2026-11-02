@@ -21,13 +21,16 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
   - OpenAPI の `getSchedule` はパスに事業所を持たない。
   - web のサーバー（BFF、`apps/web/src/api/http/httpBuddyApi.ts`）は、レスポンスの `facility_id` がログインした職員の事業所と違えば、status が 403 の `ApiError` にする。
 - 職員と利用者の一覧は、`BuddyApi.staff.list` と `BuddyApi.patients.list` で取る。
-  - OpenAPI の予定は `staff_name` と `visit_info.patient_name` も持つ。web はこれを使わず、一覧で名前を引く。
+  - OpenAPI の予定は `staff_name` と `visit_info.patient_name` も持つ。
+  - web は `staff_name` と `visit_info.patient_name` を使わず、一覧で名前を引く。
 - `getSchedule` はキャンセルした予定も返す。
   - web は `cancel` があれば、キャンセルの理由を出し、編集のボタンを出さない。
 - 予定のキャンセルは `cancelSchedule`（`POST /v1/schedules/{schedule_id}/cancel`）で行う。
   - この画面は呼ばない。
 - 画面に出していない同行者、時間外の勤務の印は、`Schedule` の `visit_info.companion_name`、`is_over_time_work` に当たる。
-- 繰り返しの予定の回は、回の ID（`occurrenceId`）で開く。web のサーバーは、`getRecurringSchedule`（`GET /v1/schedules/recurring/{recurring_schedule_id}`）で繰り返しの予定を取り、その回を単発の予定の形にする。回が無いか除外した日なら、status が 404 の `ApiError` にする。
+- 繰り返しの予定の回は、回の ID（`occurrenceId`）で開く。
+  - web のサーバーは、`getRecurringSchedule`（`GET /v1/schedules/recurring/{recurring_schedule_id}`）で繰り返しの予定を取り、その回を単発の予定の形にする。
+  - 回が無いか除外した日なら、web のサーバーは status が 404 の `ApiError` にする。
 
 ## 編集のボタンの出し分け
 
@@ -37,7 +40,8 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 | 予定の職員 | `Schedule.staffId` | `staff_id` |
 | 予定の職員のチーム | `Schedule.staffId` を、職員の一覧（`Staff.teamId`）で引く | `staff_id` を、`listUsers` の `Staff.team.id` で引く |
 
-- 判定は、予定の API の判定（`schedule.CanEdit`）と同じ規則で行う。判定の処理は `apps/web/src/features/schedule/lib/schedulePermission.ts` の `canEditScheduleOf` にある。
+- 判定は、予定の API の判定（`schedule.CanEdit`）と同じ規則で行う。
+  - 判定の処理は `apps/web/src/features/schedule/lib/schedulePermission.ts` の `canEditScheduleOf` にある。
   - `schedule.self.edit`: 予定の職員がログインした職員のときに編集できる。
   - `schedule.all.edit`: 全ての予定を編集できる。
   - `schedule.user.edit`: `target_user_ids` に予定の職員を含むときに編集できる。
@@ -45,8 +49,10 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
   - 職員の一覧を読み終えるまでは、予定の職員のチームを空にして判定するので、`schedule.team.edit` では編集できないとする。
 - web のサーバーは、`getMe` の `policies` のうち、予定の権限の 7 つの `code`（`SCHEDULE_POLICY_CODES`）を `Viewer.schedulePolicies` に写す。
   - 写すのは `apps/web/src/server/runtime.ts` の `fetchMe` である。
-  - `schedulePolicies` を持たない古いセッションでは、`schedule.all.edit` を持つとして扱う（`apps/web/src/server/auth.ts` の `viewerOf`）。
-- 出し分けは表示だけに使う。編集を拒むのは、予定の API の `updateSchedule` である。
+  - `schedulePolicies` を持たない古いセッションでは、`schedule.all.edit` を持つとして扱う。
+    - この扱いは、`apps/web/src/server/auth.ts` の `viewerOf` が決める。
+- 出し分けは表示だけに使う。
+  - 編集を拒むのは、予定の API の `updateSchedule` である。
 
 ## 状態と失敗の要因
 
@@ -58,4 +64,6 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 | 読み込み中 | なし（ログインの画面へ移るまで続く） | 予定の API か web のサーバーが 401 |
 
 - 文は `apps/web/src/features/schedule/lib/errorMessage.ts` の `scheduleLoadErrorMessage` が、`ApiError.status` で選ぶ。
-- 4xx の失敗は取り直さず、すぐに出す。ほかの失敗は、3 回まで取り直してから出す。取り直すかは `apps/web/src/integrations/tanstack-query/root-provider.tsx` の `shouldRetryQuery` が決める。
+- 4xx の失敗は取り直さず、すぐに出す。
+  - ほかの失敗は、3 回まで取り直してから出す。
+  - 取り直すかは `apps/web/src/integrations/tanstack-query/root-provider.tsx` の `shouldRetryQuery` が決める。
