@@ -188,7 +188,8 @@ sequenceDiagram
 web は、`/auth/login` で state、nonce、PKCE の code verifier、戻る先を Valkey に 10 分置き、署名した state だけを cookie に入れる。  
 `/auth/callback` は、state が合わないか、値が無いか、トークンと交換できなければ `reason=failed` へリダイレクトする。  
 ブローカーが reject したログインは、トークンと交換できずに `reason=failed` になる。  
-ブローカーが試行の上限で reject したログインでは、`/auth/callback` の `error` が `temporarily_unavailable` になり、web はトークンと交換せずに `reason=too_many_attempts` へリダイレクトする。  
+ブローカーが試行の上限で reject したログインでは、`/auth/callback` の `error` が `temporarily_unavailable` になる。  
+web は、トークンと交換せずに `reason=too_many_attempts` へリダイレクトする。  
 図の token_hook は、[トークンの発行の確認](#トークンの発行の確認) にある。
 
 #### ログインを拒む条件
