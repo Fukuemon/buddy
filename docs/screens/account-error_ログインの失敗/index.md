@@ -7,7 +7,7 @@
 | --- | --- |
 | URL | `/auth/error`。search params の `reason` で理由を受ける |
 | 使う人 | ログインを試した全ての職員。ログインしていなくても開ける |
-| 実装 | `apps/web/src/routes/auth.error.tsx`、`apps/web/src/components/site/AuthErrorMessage.tsx` |
+| 実装 | `apps/web/src/routes/auth.error.tsx`、`apps/web/src/components/page/AuthErrorMessage.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。  
 どの失敗でこの画面を開くかは、[ID ブローカーの Design Doc のログイン](../../design/services/broker.md#ログイン) にある。
@@ -35,7 +35,7 @@
 
 === "試行の回数の上限を超えた"
 
-    同じメールアドレスか同じ送信元から、続けてログインを試し、ID ブローカーが受け付けを止めたとき（URL の `reason` が `too_many_attempts` のとき）。
+    同じメールアドレスで、続けてログインを試し、ID ブローカーが受け付けを止めたとき（URL の `reason` が `too_many_attempts` のとき）。
 
     <iframe class="mock" title="ログインの失敗の、試行の回数の上限を超えた" src="mocks/03-too-many-attempts.html"></iframe>
     <a class="mock-open" href="mocks/03-too-many-attempts.html" target="_blank">別タブで開く</a>

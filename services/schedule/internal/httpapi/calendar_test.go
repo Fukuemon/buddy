@@ -10,10 +10,10 @@ import (
 	"testing"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
-	"github.com/Fukuemon/buddy/services/schedule/internal/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi"
-	"github.com/Fukuemon/buddy/services/schedule/internal/schedule"
 )
 
 const calendarID = "01M3TD000000000000000000C0"

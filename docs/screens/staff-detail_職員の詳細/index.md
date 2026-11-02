@@ -1157,7 +1157,7 @@ ADR-0022: [照合を照合の権限で許し、事務の役職を足し、訪問
 #### 1. 押す
 
 1. 開いたときの権限と比べ、チェックを入れた権限を足し、チェックを外した権限を外す。
-  - 送り方は [職員の管理の Design Doc の職員の管理の画面の読み込みと保存](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/staff/DesignDoc.md#職員の管理の画面の読み込みと保存) にある。
+  - 送り方は [職員の管理の Design Doc の職員の管理の画面の読み込みと保存](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/staff/DesignDoc.md#職員の管理の画面の読み込みと保存) にある。
 2. 全てを変えられたら、ダイアログを閉じ、職員を読み直して権限の一覧を出し直す。
 3. 一部を変えられなかったら、変えられた分は戻さずに残す。
   - 職員を読み直し、ダイアログを閉じずに、選択を読み直した権限に合わせ、「権限の保存の一部の失敗」の状態にする。
@@ -1484,7 +1484,7 @@ ADR-0022: [照合を照合の権限で許し、事務の役職を足し、訪問
   - 職員の状態に合わせて、「プロフィール」「休職の職員」「退職した職員」のどれかの状態にする。
   - 権限をまとまりに分けるために、職員の役職を読み、役職に決まっている権限を得る。
   - 権限の対象の名前を出すために、事業所の職員とチームも読む。
-- 読む順と、ダイアログを開いたときに読むものは、[職員の管理の Design Doc の職員の管理の画面の読み込みと保存](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/staff/DesignDoc.md#職員の管理の画面の読み込みと保存) にある。
+- 読む順と、ダイアログを開いたときに読むものは、[職員の管理の Design Doc の職員の管理の画面の読み込みと保存](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/staff/DesignDoc.md#職員の管理の画面の読み込みと保存) にある。
 - URL の search params は読まない。
 - タブは、開くたびに「プロフィール」で始める。
 

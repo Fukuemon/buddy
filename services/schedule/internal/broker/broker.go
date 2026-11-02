@@ -18,7 +18,7 @@ import (
 	"golang.org/x/oauth2/clientcredentials"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
-	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 )
 
 // requestTimeout は、トークンの取得と内部の API の 1 回の呼び出しを待つ上限である。

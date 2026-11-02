@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi/openapi"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
-	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
 )
 
 // StaffUsecase は、職員のハンドラが使う操作である。

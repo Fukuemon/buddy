@@ -7,7 +7,7 @@
 | --- | --- |
 | URL | `/schedule`。`/` を開くと `/schedule` へリダイレクトする |
 | 使う人 | 全ての職員。表示する職員と予定は、予定を見る権限の範囲で決まる |
-| 実装 | `apps/web/src/routes/schedule.tsx`、`apps/web/src/features/schedule/components/SchedulePageLayout.tsx`、`apps/web/src/features/schedule/components/ScheduleCalendarContainer.tsx`、`apps/web/src/features/schedule/components/ScheduleCancelledToggleContainer.tsx`、`apps/web/src/features/schedule/components/StaffFilterSidebarContainer.tsx`、`apps/web/src/features/schedule/components/ScheduleMiniCalendarContainer.tsx`、`apps/web/src/components/site/SiteLayoutContainer.tsx` |
+| 実装 | `apps/web/src/routes/schedule.tsx`、`apps/web/src/features/schedule/components/SchedulePageLayout.tsx`、`apps/web/src/features/schedule/components/ScheduleCalendarContainer.tsx`、`apps/web/src/features/schedule/components/ScheduleCancelledToggleContainer.tsx`、`apps/web/src/features/schedule/components/StaffFilterSidebarContainer.tsx`、`apps/web/src/features/schedule/components/ScheduleMiniCalendarContainer.tsx`、`apps/web/src/components/layout/SiteLayoutContainer.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
 

@@ -72,7 +72,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 - `skipped[]` とレスポンスのほかの項目に、予定のタイトルと本文を入れない。
   - タイトルは利用者名を含むためである。
   - `needs_review[]` の `client_name` と `service` は、確認のためにタイトルから読んだ値だけを返す。
-- `skipped[]` の `reason` は、`services/schedule/internal/calendar` の `SkipReason` の値を返す。
+- `skipped[]` の `reason` は、`services/schedule/internal/features/calendar` の `SkipReason` の値を返す。
   - 取り消した予定（`cancelled`）は返さない。取り消した回は、繰り返しの除外する日にするか、回ごとにするときに除くためである。
   - タイトルが空白だけの予定は `unreadable_title` にする。
 

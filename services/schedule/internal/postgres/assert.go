@@ -1,13 +1,13 @@
 package postgres
 
 import (
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
-	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
-	"github.com/Fukuemon/buddy/services/schedule/internal/patient"
-	"github.com/Fukuemon/buddy/services/schedule/internal/schedule"
-	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
-	"github.com/Fukuemon/buddy/services/schedule/internal/visit"
 )
 
 var (

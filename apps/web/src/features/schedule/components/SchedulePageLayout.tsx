@@ -1,8 +1,7 @@
-import { Drawer } from '@buddy/ui'
+import { Drawer, useIsDesktop } from '@buddy/ui'
 import { useId, useState, type ReactNode } from 'react'
 
-import { SiteLayoutContainer } from '#/components/site/SiteLayoutContainer'
-import { useIsDesktop } from '#/components/site/useIsDesktop'
+import { SiteLayoutContainer } from '#/components/layout/SiteLayoutContainer'
 
 import { ScheduleCalendarContainer } from './ScheduleCalendarContainer'
 import { ScheduleCancelledToggleContainer } from './ScheduleCancelledToggleContainer'

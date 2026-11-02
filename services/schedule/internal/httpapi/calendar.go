@@ -3,7 +3,7 @@ package httpapi
 import (
 	"context"
 
-	"github.com/Fukuemon/buddy/services/schedule/internal/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi/openapi"
 )
 

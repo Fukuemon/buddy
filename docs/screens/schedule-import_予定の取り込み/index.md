@@ -7,7 +7,7 @@
 | --- | --- |
 | URL | `/schedule/import` |
 | 使う人 | 職員の管理の権限を持つ職員。デフォルトはマネージャー |
-| 実装 | `apps/web/src/routes/schedule_.import.tsx`、`apps/web/src/features/calendar/components/CalendarImportContainer.tsx`、`apps/web/src/features/calendar/components/CalendarImportView.tsx`、`apps/web/src/features/calendar/components/CalendarImportForm.tsx`、`apps/web/src/features/calendar/components/CalendarImportPreview.tsx`、`apps/web/src/features/calendar/components/CalendarImportReviewItem.tsx`、`apps/web/src/features/calendar/components/CalendarImportCounts.tsx`、`apps/web/src/features/calendar/components/CalendarImportDone.tsx`、`apps/web/src/components/site/PageForbiddenMessage.tsx` |
+| 実装 | `apps/web/src/routes/schedule_.import.tsx`、`apps/web/src/features/calendar/components/CalendarImportContainer.tsx`、`apps/web/src/features/calendar/components/CalendarImportView.tsx`、`apps/web/src/features/calendar/components/CalendarImportForm.tsx`、`apps/web/src/features/calendar/components/CalendarImportPreview.tsx`、`apps/web/src/features/calendar/components/CalendarImportReviewItem.tsx`、`apps/web/src/features/calendar/components/CalendarImportCounts.tsx`、`apps/web/src/features/calendar/components/CalendarImportDone.tsx`、`apps/web/src/components/page/PageForbiddenMessage.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
 
@@ -933,7 +933,7 @@
 
 1. 「取り込み中」の状態にし、職員、期間、確認が必要な予定ごとの取り込み方で予定を取り込む。
   - 予定は全て取り込むか、1 件も取り込まないかのどちらかになる。
-  - 確定の処理の流れは、[Google カレンダーとの連携の Design Doc の Google カレンダーの取り込み](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/calendar/DesignDoc.md#google-カレンダーの取り込み) にある。
+  - 確定の処理の流れは、[Google カレンダーとの連携の Design Doc の Google カレンダーの取り込み](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#google-カレンダーの取り込み) にある。
 2. 成功したら、「取り込みの結果」の状態にする。
 3. 失敗したら、「取り込みの失敗」の状態にし、[取り込みの失敗の文](#取り込みの失敗の文) を出す。
   - プレビューの結果と選んだ取り込み方は残す。
@@ -1192,7 +1192,7 @@
 - 確定して取り込むを押してから取り込み終えるまでの間に、職員が休職か復職になったか、訪問するかが変わったときは、「取り込みの失敗」の状態にし、予定は 1 件も取り込まない。
   - 職員が退職したときは、カレンダーの結び付けが外れたことを、取り込みの失敗の文に出す。
 - 同じ職員の取り込みがほかの画面で進んでいる間は、取り込めない。
-- 処理の流れは、[Google カレンダーとの連携の Design Doc の Google カレンダーの取り込み](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/calendar/DesignDoc.md#google-カレンダーの取り込み) にある。
+- 処理の流れは、[Google カレンダーとの連携の Design Doc の Google カレンダーの取り込み](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#google-カレンダーの取り込み) にある。
 
 ### 変えた後の表示
 

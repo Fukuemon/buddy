@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { RENDER_DATA_ON_SERVER } from '#/api/createBuddyApi'
 import { awaitOnServer } from '#/api/prefetch'
-import { SiteLayoutContainer } from '#/components/site/SiteLayoutContainer'
+import { SiteLayoutContainer } from '#/components/layout/SiteLayoutContainer'
 import { CalendarReviewBadgeContainer } from '#/features/calendar/components/CalendarReviewBadgeContainer'
 import { CalendarReviewContainer } from '#/features/calendar/components/CalendarReviewContainer'
 import { exportIssueListQueryOptions } from '#/features/calendar/queries'

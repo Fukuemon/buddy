@@ -9,8 +9,8 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 
 import { loginHref, viewerQueryOptions } from '#/api/viewer'
-import { PageErrorMessage } from '#/components/site/PageErrorMessage'
-import { SiteHeader } from '#/components/site/SiteHeader'
+import { PageErrorMessage } from '#/components/page/PageErrorMessage'
+import { SiteHeader } from '#/components/layout/SiteHeader'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 

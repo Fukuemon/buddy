@@ -7,7 +7,7 @@
 | --- | --- |
 | URL | `/staff` |
 | 使う人 | 職員の管理の権限を持つ職員。デフォルトはマネージャー |
-| 実装 | `apps/web/src/routes/staff.tsx`、`apps/web/src/features/staff/components/StaffListContainer.tsx`、`apps/web/src/features/staff/components/StaffListView.tsx`、`packages/ui/src/base/RowTable/RowTable.tsx`、`apps/web/src/components/site/ListTools.tsx`、`apps/web/src/components/site/PageForbiddenMessage.tsx` |
+| 実装 | `apps/web/src/routes/staff.tsx`、`apps/web/src/features/staff/components/StaffListContainer.tsx`、`apps/web/src/features/staff/components/StaffListView.tsx`、`packages/ui/src/base/RowTable/RowTable.tsx`、`packages/ui/src/case/ListTools/ListTools.tsx`、`apps/web/src/components/page/PageForbiddenMessage.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。  
 カラム、絞り込み、並び順は、[使う場面](#使う場面) から決めた。
@@ -717,7 +717,7 @@
 
 名前の検索と、チーム、役職、部署、状態の絞り込みは、開いたときに読んだ全ての職員の中で絞り込む。  
 絞り込むたびに「読み込み中」の状態にはしない。  
-読む職員と絞り込み方は、[職員の管理の Design Doc の職員の管理の画面の読み込みと保存](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/staff/DesignDoc.md#職員の管理の画面の読み込みと保存) にある。  
+読む職員と絞り込み方は、[職員の管理の Design Doc の職員の管理の画面の読み込みと保存](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/staff/DesignDoc.md#職員の管理の画面の読み込みと保存) にある。  
 絞り込みの値は、詳細から一覧へ戻ると、開いた直後の値に戻る。
 
 ### 権限の確認

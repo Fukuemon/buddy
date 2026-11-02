@@ -12,7 +12,7 @@ import (
 	calendarv3 "google.golang.org/api/calendar/v3"
 	"google.golang.org/api/googleapi"
 
-	"github.com/Fukuemon/buddy/services/schedule/internal/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 )
 
 // Reader は、Google Calendar API で予定を読む calendar.EventSource である。

@@ -7,9 +7,9 @@ site_dir = "site"
 # docs/design/ のシンボリックリンクの先を、プレビューでたどって再読み込みする
 watch = [
   "services/schedule/DesignDoc.md",
-  "services/schedule/internal/calendar/DesignDoc.md",
+  "services/schedule/internal/features/calendar/DesignDoc.md",
   "services/schedule/internal/access/DesignDoc.md",
-  "services/schedule/internal/staff/DesignDoc.md",
+  "services/schedule/internal/features/staff/DesignDoc.md",
   "services/receipt/DesignDoc.md",
   "services/broker/DesignDoc.md",
   "packages/ui/DESIGN.md",

@@ -8,7 +8,7 @@ buddy の予定のうち、Google カレンダーと食い違った予定を確�
 | --- | --- |
 | URL | `/schedule/review` |
 | 使う人 | 職員の管理の権限を持つ職員。デフォルトはマネージャー |
-| 実装 | `apps/web/src/routes/schedule_.review.tsx`、`apps/web/src/features/calendar/components/CalendarReviewContainer.tsx`、`apps/web/src/features/calendar/components/CalendarReviewView.tsx`、`apps/web/src/features/calendar/components/CalendarReviewTable.tsx`、`apps/web/src/features/calendar/components/CalendarReviewDialog.tsx`、`apps/web/src/features/calendar/components/CalendarRewriteDialog.tsx`、`apps/web/src/features/calendar/components/CalendarAcceptDialog.tsx`、`apps/web/src/components/site/PageForbiddenMessage.tsx` |
+| 実装 | `apps/web/src/routes/schedule_.review.tsx`、`apps/web/src/features/calendar/components/CalendarReviewContainer.tsx`、`apps/web/src/features/calendar/components/CalendarReviewView.tsx`、`apps/web/src/features/calendar/components/CalendarReviewTable.tsx`、`apps/web/src/features/calendar/components/CalendarReviewDialog.tsx`、`apps/web/src/features/calendar/components/CalendarRewriteDialog.tsx`、`apps/web/src/features/calendar/components/CalendarAcceptDialog.tsx`、`apps/web/src/components/page/PageForbiddenMessage.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
 
@@ -1131,7 +1131,7 @@ buddy での変更が消えるので、データを失う操作の赤い色に�
   - buddy の内容で書き直しても、外したカレンダーの予定は消さず、書き直さない。一覧から消すだけである。
   - キャンセルしていない予定は、職員が別のカレンダーを結び付け直していれば、そのカレンダーに buddy の内容で作る。
   - 一覧と書き直すダイアログは、結び付けを外したかを示さない。
-- 書き出しと同期の処理の流れは、[Google カレンダーとの連携の Design Doc の Google カレンダーへの書き出し](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/calendar/DesignDoc.md#google-カレンダーへの書き出し) と [Google カレンダーとの同期](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/calendar/DesignDoc.md#google-カレンダーとの同期) にある。
+- 書き出しと同期の処理の流れは、[Google カレンダーとの連携の Design Doc の Google カレンダーへの書き出し](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#google-カレンダーへの書き出し) と [Google カレンダーとの同期](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#google-カレンダーとの同期) にある。
 
 ### 権限の確認
 
