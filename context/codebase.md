@@ -80,10 +80,11 @@ status: stable
 - web の機能のコードは `src/features/<機能>/` に置き、中を `components/`、`lib/`、`schema/`、`constants/`、`queries.ts` に分ける。
   - 画面のコンポーネントは、表示だけを持つ Presentational（`<名前>.tsx`）と、query と router を読んで渡す Container（`<名前>Container.tsx`）を同じディレクトリに並べる。
   - テストと story は対象の隣に置く（コロケーション）。
-- web の route のファイル（`src/routes/`）は、URL と Container を結び、search params の検証と SSR の有無だけを持つ。
+- web の route のファイル（`src/routes/`）は、URL と Container を結び、search params の検証、SSR の有無、loader の prefetch だけを持つ。
   - 画面のコードは `features/<機能>/` に置く。URL の階層と機能の境界が一致しないためである。
     - たとえば `/schedule/import`、`/schedule/link`、`/schedule/review` の画面は、calendar の機能にある。
-  - データを読む画面の route は、`ssr` に `RENDER_DATA_ON_SERVER` を渡し、loader で Container の query を prefetch する。bff ではサーバーで描画し、fake ではブラウザでだけ描画する。
+  - データを読む画面の route は、`ssr` に `RENDER_DATA_ON_SERVER` を渡し、loader で Container の query を prefetch する。
+      - bff ではサーバーで描画し、fake ではブラウザでだけ描画する。
   - デバイスの日付や時間帯で描く画面の route は `ssr: false` にし、理由を注釈に書く。
   - route のファイルは `src/routes/` に flat に並べる。
     - 1 つの URL の階層の下が 10 ファイルを超えたら、その階層をディレクトリに分ける。
