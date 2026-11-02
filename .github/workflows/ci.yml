@@ -28,7 +28,7 @@ jobs:
     outputs:
       docs-only: ${{ steps.diff.outputs.docs-only }}
     steps:
-      # pull request では、base の先端と head を合わせた merge commit を取る。1 つ目の親が base の先端なので、2 つ分の履歴で差分が取れる
+      # pull request では、base の先端と head を合わせた merge commit を取る。1 つ目の親が base の先端なので、merge commit とその親の 2 つのコミットを取れば差分が取れる。
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: github.event_name == 'pull_request'
         with:
