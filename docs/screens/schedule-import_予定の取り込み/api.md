@@ -13,7 +13,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/client.ts`）で API を呼ぶ�
 | 職員 | 結び付けた職員の名前 | `ExternalCalendar.staff_id` と `Staff.name` | `listExternalCalendars` の `items[].staff_id` と、`listUsers` の `Staff.username` |
 | 期間の開始日、期間の終了日 | 日付 | `ImportRange.range_start`、`range_end` | リクエストの `range_start`、`range_end` |
 | プレビューの結果のタイトル | 職員と期間 | `ImportPreview.range_start`、`range_end` | `createCalendarImportPreview` のレスポンスの `range_start`、`range_end` |
-| 件数 | 5 つの件数と内訳 | `ImportPreview.counts` | `ImportPreview.counts` |
+| 件数 | 5 つの件数と内訳。件数の箱は 4 つで、取り込まない件数（`skipped`）は取り込まない予定の見出しに出す | `ImportPreview.counts` | `ImportPreview.counts` |
 | 確認が必要な予定 | 日時、利用者名、サービス内容、理由、繰り返し | `ImportPreview.needs_review` | `ImportPreview.needs_review[]` |
 | 利用者 | 候補の利用者と、ほかの利用者 | `ImportReviewItem.candidates`、`Patient` | `needs_review[].candidates[]` と、`listPatients` の `Patient.name` |
 | 取り込み方 | 選んだ取り込み方 | `ImportDecision` | `createCalendarImport` のリクエストの `decisions[]` |
@@ -35,7 +35,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/client.ts`）で API を呼ぶ�
 | プレビューの失敗 | 「この職員のカレンダーの結び付けが外れています。画面を読み直してください。」 | `createCalendarImportPreview` が 404 `not_found`。カレンダーを外したか、職員が退職した |
 | プレビューの失敗 | 「プレビューできませんでした。時間をおいて、もう一度プレビューしてください。」 | `createCalendarImportPreview` のほかの失敗。400 `invalid_input`、API に届かないときを含む |
 | 取り込みの失敗 | 「この操作をする権限がありません。」 | `createCalendarImport` が 403 |
-| 取り込みの失敗 | 「プレビューの後に、Google カレンダーの予定か職員の休職が変わりました。もう一度プレビューしてから取り込んでください。予定は 1 件も取り込んでいません。」 | `createCalendarImport` が 409 `import_preview_changed`。確認が必要な予定の集合か版が違うか、職員の休職と訪問しない職員かが読み替えたときと違う |
+| 取り込みの失敗 | 「プレビューの後に、Google カレンダーの予定か職員の休職が変わりました。もう一度プレビューしてから取り込んでください。予定は 1 件も取り込んでいません。」 | `createCalendarImport` が 409 `import_preview_changed`。確認が必要な予定の集合か版が、プレビューのときと違うか、職員の休職と訪問しない職員かの判定が、読み替えたときと違う |
 | 取り込みの失敗 | 「この職員の取り込みが、ほかの画面で進んでいます。終わってから、もう一度プレビューしてください。予定は 1 件も取り込んでいません。」 | `createCalendarImport` が 409 `import_running` |
 | 取り込みの失敗 | 「選んだ利用者が見つかりません。利用者を選び直してください。予定は 1 件も取り込んでいません。」 | `createCalendarImport` が 400 `invalid_input`。web は期間と取り込み方の値を確認してから送るので、残るのは選んだ利用者が事業所にいないときである |
 | 取り込みの失敗 | 「この職員のカレンダーの結び付けが外れています。画面を読み直してください。予定は 1 件も取り込んでいません。」 | `createCalendarImport` が 404 `not_found` |
