@@ -21,9 +21,11 @@ describe('FilterSelect', () => {
   it('値を選んだ絞り込みを太字にし、44px 以上の高さで押せる', () => {
     render(<Filtered />)
     const select = screen.getByRole('combobox', { name: '部署' })
-    expect(select).toHaveClass('font-bold')
+    expect(getComputedStyle(select).fontWeight).toBe('700')
     expect(select.getBoundingClientRect().height).toBeGreaterThanOrEqual(44)
-    expect(screen.getByRole('combobox', { name: '役職' })).not.toHaveClass('font-bold')
+    expect(getComputedStyle(screen.getByRole('combobox', { name: '役職' })).fontWeight).not.toBe(
+      '700',
+    )
   })
 })
 

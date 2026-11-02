@@ -1,7 +1,7 @@
-import { clsx } from 'clsx'
 import type { ReactNode } from 'react'
 
 import { Button } from '../../base/Button/Button'
+import { Select } from '../../base/Select/Select'
 
 export type FilterSelectProps<T extends string> = {
   /** 選択肢の前に付ける名前。「部署: すべて」のように出す。 */
@@ -26,14 +26,13 @@ export const FilterSelect = <T extends string>({
   onChange,
   'data-testid': testId,
 }: FilterSelectProps<T>) => (
-  <select
+  <Select
     aria-label={label}
-    className={clsx(
-      'h-10 min-h-11 rounded-8 bg-surface px-3 text-body-dense ring-inset focus-visible:focus-ring disabled:bg-surface-disabled disabled:text-text-disabled',
-      isOn ? 'font-bold ring-2 ring-text' : 'ring-1 ring-border-field',
-    )}
     data-testid={testId}
     disabled={disabled}
+    isDense
+    isEmphasized={isOn}
+    isWide={false}
     onChange={(event) => {
       const selected = options.find((option) => option.value === event.target.value)
       if (selected !== undefined) onChange(selected.value)
@@ -45,7 +44,7 @@ export const FilterSelect = <T extends string>({
         {`${label}: ${option.label}`}
       </option>
     ))}
-  </select>
+  </Select>
 )
 
 /** 一覧の上の、名前の検索、絞り込み、件数を折り返して並べる行。件数は右端に置く。 */
