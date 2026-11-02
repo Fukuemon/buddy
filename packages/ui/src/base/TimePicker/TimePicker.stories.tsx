@@ -38,3 +38,16 @@ export const Default: Story = {}
 export const WithError: Story = { args: { error: '開始時間を入力してください' } }
 
 export const Disabled: Story = { args: { disabled: true } }
+
+export const Hover: Story = { parameters: { pseudo: { hover: true } } }
+
+export const WithErrorHover: Story = { ...WithError, parameters: { pseudo: { hover: true } } }
+
+export const Focus: Story = { parameters: { pseudo: { focusVisible: true } } }
+
+export const WithErrorFocus: Story = {
+  ...WithError,
+  parameters: { pseudo: { focusVisible: true } },
+}
+
+export const DisabledHover: Story = { ...Disabled, parameters: { pseudo: { hover: true } } }
