@@ -117,8 +117,11 @@ status: stable
   - クエリは `db/queries`、マイグレーションは `db/migrations`、シードは `db/seed` に置く。
 - `services/schedule` に機能を足すときは、`internal/features/<機能>/` にパッケージを作る。
   - `Usecase` 型、`Deps`、`NewUsecase`、複数の操作が使う非公開の補助は `usecase.go` に置く。
-  - 公開の操作は、操作の名前のファイル（`cancel.go`、`retire.go` など）に 1 つずつ置き、1 つの操作だけが使う補助とテストも、その名前のファイルに置く。
-  - 操作が 2 つ以下の機能と、全部の操作が Get、List、Create、Update で 1 つが 20 行に収まる機能（`organization`、`visit`）は、`usecase.go` の 1 つにする。
+    - 複数の操作をまとめて確認するテストは `usecase_test.go` に置く。
+  - 公開の操作は、操作の名前のファイル（`cancel.go`、`retire.go` など）に 1 つずつ置く。
+    - 1 つの操作だけが使う補助は、その操作のファイルに置く。
+    - 1 つの操作だけを確認するテストは、`<操作>_test.go` に置く。
+  - 操作が 2 つ以下の機能（`visit`）と、全部の操作が Get、List、Create、Update で 1 つの操作が 20 行に収まる機能（`organization`）は、`usecase.go` の 1 つのファイルにまとめる。
 - 新しい Go の API で機能が 2 つ以上あるときは、機能のパッケージを `internal/features/<機能>/` に置く。
   - 機能が 1 つの API（照合の API、ID ブローカー）は、`features/` を作らない。
 - `services/receipt` に照合の段を足すときは、段ごとに `internal/` の下にパッケージを作り、`check` でつなぐ。
