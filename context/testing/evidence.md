@@ -12,20 +12,24 @@ status: draft
 
 ## Evidence Scope
 
-- 機能の追加と改修の pull request には、確認したことのエビデンスの動画を付ける。画面の変更に限らず、API だけの変更にも付ける。
+- 機能の追加と改修の pull request には、確認したことのエビデンスの動画を付ける。
+  - 画面の変更に限らず、API だけの変更にも付ける。
 - 文書、スキル、設定だけの変更には付けない。
   - 振る舞いが変わりうる設定の変更には付ける。例は、依存のライブラリの更新である。
 - 不具合の再現と改修前の動きは、issue に付けてよい。
 
 ## Storage and Visibility
 
-- エビデンスはリポジトリにコミットせず、pull request の本文の「検証とエビデンス」の表に直接入れる。入れた動画は、本文の中で再生できる。
+- エビデンスはリポジトリにコミットせず、pull request の本文の「検証とエビデンス」の表に直接入れる。
+  - 入れた動画は、本文の中で再生できる。
   - コメントには付けない。観点の条件と期待結果とエビデンスを、本文の 1 つの表で読み合わせるためである。
   - 例外は、スキル attach-evidence がコメントを使うとする、撮り直したときの知らせと、本文が上限を超えたときだけにする。
 - Google Drive には置かない。
-- 入れる前の元のファイルは、`.ai-out/evidence/<入れる先>/` に一時的に置く。`.ai-out/` は Git で追跡しない。本文に入れ終えたら消す。
+- 入れる前の元のファイルは、`.ai-out/evidence/<入れる先>/` に一時的に置く。
+  - `.ai-out/` は Git で追跡しない。本文に入れ終えたら消す。
   - `<入れる先>` は、issue なら `issue-<番号>`、pull request なら `pr-<番号>` にする。
-  - 最初に撮ったときの入れる先を使い続ける。pull request を作る前に撮ったなら、作った後も `issue-<番号>` を使う。改修前と改修後が別のフォルダに分かれないためである。
+  - 最初に撮ったときの入れる先を使い続ける。改修前と改修後が別のフォルダに分かれないためである。
+    - pull request を作る前に撮ったなら、作った後も `issue-<番号>` を使う。
   - `<入れる先>` は、撮る人が環境変数 `EVIDENCE_FOR` で渡す。kit は、`issue-<番号>` か `pr-<番号>` の形でなければ撮らずに失敗する。
   - 配置先と名前は、kit の `recordPrEvidence` が `EVIDENCE_FOR` と `name` から決める。ファイル名は、スキル capture-browser-evidence の規則ではなく kit の形にする。
     - ファイルは `<入れる先>/<name>.mp4` と `<入れる先>/<name>/` に出る。`<name>` は、spec の `recordPrEvidence` に渡した `name` である。
@@ -34,15 +38,19 @@ status: draft
 - 本文に入れたファイルは、リポジトリを見られる人が開ける。リポジトリを public にすると、見られる人が誰にでも広がる。
   - 写すのは、ローカルのシード、テストデータ、仮の名前だけにする。実在の利用者、職員、事業所のデータは、検証環境で撮るときも写さない。
   - ログインの値とトークンを、画面と字幕に写さない。
-- 本文への添付は、pull request と issue ごとにエビデンスを見る形である。要求をまたぐエビデンスの一覧と、改修前と改修後を並べた比較の画面は持たない。それらを見る自前の閲覧の環境も作らない。
+- エビデンスは、pull request と issue ごとに本文で見る。
+  - 要求をまたぐエビデンスの一覧と、改修前と改修後を並べた比較の画面は持たない。
+  - エビデンスを見るための自前の閲覧の環境も作らない。
 
 ## Capture Tools
 
-- エビデンスは、Playwright の spec で撮る。spec は、薄い層の `packages/e2e/tests/fixtures/evidence.ts` の `recordPrEvidence` を呼ぶ。
+- エビデンスは、Playwright の spec で撮る。
+  - spec は、薄い層の `packages/e2e/tests/fixtures/evidence.ts` の `recordPrEvidence` を呼ぶ。
   - 録画の設計は [agent-harness の e2e の Design Doc](https://github.com/Fukuemon/agent-harness/blob/5560ae1e031686f5821ecac0d7c12d8fb6ea3499/packages/e2e/DesignDoc.md) にある。
   - kit は字幕とカーソルを重ね、H.264 の mp4 を書き出す。変換しない。
   - agent-browser では、エビデンスを撮らない。spec を書く前に、画面の操作の位置を確認するのには使ってよい。
-- 配置先は `packages/e2e/tests/evidence/<機能>/<振る舞い>.e2e.ts` にする。`<機能>` と `<振る舞い>` は、E2E の spec と同じ名前の付け方（スキル write-e2e-test の「名前」）にする。
+- 配置先は `packages/e2e/tests/evidence/<機能>/<振る舞い>.e2e.ts` にする。
+  - `<機能>` と `<振る舞い>` は、E2E の spec と同じ名前の付け方（スキル write-e2e-test の「名前」）にする。
   - 1 つの test が 1 つの観点を撮る。テストの名前は、E2E と同じ「{条件}の場合、{期待}であること」にする。
   - `recordPrEvidence` の `name` は、観点が分かる英小文字、数字、ハイフンにする。本文に入れる動画のファイル名になる。
   - 本文の表の「確認の方法」には、pull request のテンプレートのとおり、spec のファイル名と `name` を書く（`` `<spec のファイル名>` の `<name>` ``）。
@@ -54,7 +62,8 @@ status: draft
     - 検証環境の値が決まるまで、kit を直に呼び、配置先とアプリの値を spec に書く。
     - テンプレートは、`tsconfig.json` と ESLint の対象の外に置いてある。
 - viewport は、`recordPrEvidence` のデフォルトの `DESKTOP_VIEWPORT`（1280x800）にする。
-- CI の E2E は、エビデンスの spec を流さない。project の分け方は [E2E のテスト](e2e.md) の Running Tests にある。
+- CI の E2E は、エビデンスの spec を流さない。
+  - project の分け方は [E2E のテスト](e2e.md) の Running Tests にある。
 - kit 以外で撮った WebM を入れるときだけ、次で H.264 の mp4 に変換する。`yuv420p` は幅か高さが奇数だと失敗するので、`scale` で偶数にそろえる。
 
   ```sh
@@ -63,14 +72,13 @@ status: draft
 
 ## Capture Environment
 
-撮る画面は、変更の種類で次のように選ぶ。
+撮るときに開く画面は、変更の種類で選ぶ。
 
-| 変更 | 開くもの |
-| --- | --- |
-| 手動検証のシナリオがある | 検証環境か、ローカルの compose の画面 |
-| 画面の操作から API までを通す、API だけ | ローカルの compose の画面。API だけの変更は、その API を呼ぶ画面の操作で撮る |
-| 画面の UI と見た目 | Storybook の story |
-| 画面仕様書とモック | 画面仕様書のモック |
+- 手動検証のシナリオがある変更は、検証環境か、ローカルの compose の画面を開く。
+- 画面の操作から API までを通す変更と、API だけの変更は、ローカルの compose の画面を開く。
+  - API だけの変更は、その API を呼ぶ画面の操作で撮る。
+- 画面の UI と見た目の変更は、Storybook の story を開く。
+- 画面仕様書とモックの変更は、画面仕様書のモックを開く。
 
 ### 撮るコマンド
 
@@ -124,12 +132,17 @@ docker compose -p buddy-evidence down -v
 
 ### Storybook、モック、スマートフォンの幅、API の参照のページ
 
-- Storybook の story は、`pnpm --filter @buddy/web storybook` で起動し、`storyUrl(<story の ID>)` を開いて撮る。Storybook の枠を外した `iframe.html` の URL である。
-- 画面仕様書のモックは、`mockUrl(<docs/screens/ からの相対パス>)` で、リポジトリのファイルを `file://` のまま開いて撮る。ドキュメントサイトを起動しなくてよい。
-- ログインしない story とモックでも、`prepare` で同じ URL を開く。kit は `prepare` が開いた画面から sessionStorage を読むので、何も開かないと失敗する。
-- スマートフォンの幅は、`recordPrEvidence` の `viewport` に `PHONE_VIEWPORT`（390x844）を渡して撮る。幅だけをそろえ、タッチの操作は再現しない。幅は本文の撮った条件に書く。
+- Storybook の story は、`pnpm --filter @buddy/web storybook` で起動し、`storyUrl(<story の ID>)` を開いて撮る。
+  - `storyUrl` が返すのは、Storybook の枠を外した `iframe.html` の URL である。
+- 画面仕様書のモックは、`mockUrl(<docs/screens/ からの相対パス>)` で、リポジトリのファイルを `file://` のまま開いて撮る。
+  - ドキュメントサイトを起動しなくてよい。
+- ログインしない story とモックでも、`prepare` で同じ URL を開く。
+  - kit は `prepare` が開いた画面から sessionStorage を読むので、何も開かないと失敗する。
+- スマートフォンの幅は、`recordPrEvidence` の `viewport` に `PHONE_VIEWPORT`（390x844）を渡して撮る。
+  - 幅だけをそろえ、タッチの操作は再現しない。
+  - 幅は本文の撮った条件に書く。
 - API だけの変更のうち、画面から確認できない操作は、API の参照のページ（Scalar）の「Test Request」から送って撮る。
-  - `prepare` に `packages/e2e/tests/fixtures/apiReference.ts` の `prepareApiReference` を渡し、録画の中で `routeApiReference` を張ってからページを開く。
+  - `prepare` に `packages/e2e/tests/fixtures/apiReference.ts` の `prepareApiReference` を渡し、録画の中で `routeApiReference` を呼んでからページを開く。
   - ページはドキュメントサイトを起動せずに `docs/api/` のファイルから開く。リクエストは、撮る compose の API へ送り直す。
   - トークンは認証の欄に伏せ字のまま入れる。字幕には職員の名前だけを出し、トークンの値を出さない。
 
@@ -138,17 +151,22 @@ docker compose -p buddy-evidence down -v
 - `recordPrEvidence` の `prepare` で、`packages/e2e/tests/screens/login.ts` の `signInAtBroker` を使って compose のブローカーにログインする。
   - メールは `packages/e2e/tests/fixtures/env.ts` の `LOGIN_EMAIL`（青木 陽菜、マネージャー）か `LEADER.email`（森 健太、チームリーダー）にする。
   - `setup` の project が保存したログインの状態は使わない。`recordEvidence` は新しいコンテキストで録画するためである。
-- テストデータは、シードの職員と利用者を使い、足りないものは `prepare` で作る。作り方は E2E の spec と同じく、画面の操作か calendarpit の管理の API にする。
+- テストデータは、シードの職員と利用者を使い、足りないものは `prepare` で作る。
+  - 作り方は E2E の spec と同じく、画面の操作か calendarpit の管理の API にする。
   - 録画の中では、観点の操作だけを行う。
   - 撮った後にデータを消さない。撮り終えたら `down -v` で compose ごと消す。
 - 認証コードを求められる環境（検証環境）のログインの手順は、検証環境ができてから決める。
 
 ## Attachment
 
-ファイルは、gh の `--attach` で pull request と issue の本文に入れる。`--attach` は gh の 2.99 以降にある。  
-先に `gh pr create --help` に `--attach` があるかを確認し、無ければ `mise which gh` のパスの gh を使う。  
-上げられるファイルの大きさの上限は、GitHub の文書の [Attaching files](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/attaching-files) で確認する。超えるときは、観点を分けて短く撮り直す。  
-上げるには、gh でログインしたアカウントが、pull request か issue の本文を編集できる権限（リポジトリへの書き込みか、自分が作った pull request と issue）を持つ。  
+ファイルは、gh の `--attach` で pull request と issue の本文に入れる。  
+`--attach` は gh の 2.99 以降にある。  
+先に `gh pr create --help` に `--attach` があるかを確認し、無ければ `mise which gh` のパスの gh を使う。
+
+上げるには、gh でログインしたアカウントが、pull request か issue の本文を編集できる権限（リポジトリへの書き込みか、自分が作った pull request と issue）を持つ。
+
+上げられるファイルの大きさの上限は、GitHub の文書の [Attaching files](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/attaching-files) で確認する。  
+超えるときは、観点を分けて短く撮り直す。  
 本文の文字数の上限は、GitHub の文書の [Repository limits](https://docs.github.com/en/repositories/creating-and-managing-repositories/repository-limits) の Text limits で確認する。
 
 ### 表の形

@@ -47,7 +47,8 @@ status: stable
 | web の画面から見た API（`BuddyApi`） | `src/api/fake/` のフェイク | compose の本物 |
 | web のサーバーから見た 2 つの API | MSW の handler（`apps/web/src/mocks/`、`src/test/server.ts`） | compose の本物 |
 
-- テストのデータは、ダミーデータだけを使う。実在の事業所、人、連絡先を入れず、メールは `example.com` にする。
+- テストのデータは、ダミーデータだけを使う。
+  - 実在の事業所、人、連絡先を入れず、メールは `example.com` にする。
 - 予定の API のシードは `services/schedule/db/seed/seed.sql` にあり、結合テストと compose が同じシードを適用する。
   - 全ての環境で同じマスタは、シードではなくマイグレーションが入れる。
 - 照合の入力の CSV は `services/receipt/testdata/` に、互換のテストのケースは `testdata/parity/<ケース>/` に置く。

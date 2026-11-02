@@ -11,9 +11,11 @@ status: stable
 
 - web のコンポーネントの名前は、BCD Design の「ドメイン、場面、基本の語」の順に並べる（例 `StaffFilterSidebar`、`ServiceCodeRadioGroup`）。
   - Base と Case か Domain かは、名前の接頭辞ではなく配置先（`packages/ui` か `features/<機能>/components/`）で表す。
-- Container は Presentational の名前に `Container` を付ける。対になる Presentational が無い Container（モーダルを開いて閉じるだけのものなど）は、使うコンポーネントの名前に `Container` を付けない別の名前にしてよい。
+- Container は Presentational の名前に `Container` を付ける。
+  - 対になる Presentational が無い Container（モーダルを開いて閉じるだけのものなど）は、使うコンポーネントの名前に `Container` を付けない別の名前にしてよい。
 - query の hook は `use<動詞><対象>`、query options は `<対象>QueryOptions` と名付け、機能の `queries.ts` に置く。
-- web の API の実装のファイルは、種類を接頭辞にする（`fakeBuddyApi.ts`、`httpBuddyApi.ts`、`bffBuddyApi.ts`）。照合の API の HTTP の実装（`http/receiptApi.ts`）だけは接頭辞を持たない。
+- web の API の実装のファイルは、種類を接頭辞にする（`fakeBuddyApi.ts`、`httpBuddyApi.ts`、`bffBuddyApi.ts`）。
+  - 照合の API の HTTP の実装（`http/receiptApi.ts`）だけは接頭辞を持たない。
 - web の import は `#/` のエイリアスで書く。tsconfig の `@/` は使わない。
 - Go のテストのためのフェイクは、`<パッケージ>test` のパッケージに置く（`oidctest`、`gcaltest`）。
 - API の operationId は、lowerCamel の「動詞と名詞」にする。動詞は `get`、`list`、`create`、`update`、`cancel`、`change`、`add`、`remove` から選ぶ。
@@ -41,8 +43,10 @@ status: stable
 - Go は、ドキュメントコメントの有無を revive（`exported`、`package-comments`）で確認する。
   - 対象は `services/receipt`、`services/schedule`、`services/broker`、`packages/go` である。
   - 生成物（`// Code generated ... DO NOT EDIT.` のファイル）とテストは、revive が対象にしない。
-- TypeScript は、ドキュメントコメントの有無を、ルートの `vite.config.ts` の `lint` で確認する。確認するのは web、ui、e2e の check である。
-  - 対象は export する関数、クラス、型である。名前が `Props` で終わる型は除く。Props の型は、コンポーネントのドキュメントコメントが説明するからである。
+- TypeScript は、ドキュメントコメントの有無を、ルートの `vite.config.ts` の `lint` で確認する。
+  - 確認するのは web、ui、e2e の check である。
+  - 対象は export する関数、クラス、型である。
+    - 名前が `Props` で終わる型は除く。Props の型は、コンポーネントのドキュメントコメントが説明するためである。
   - 呼び出しで包んで作る関数（`createServerFn(...)`、`memo(...)`）と、クラスのメソッドは確認しない。
 - Go のドキュメントコメントは、`// Package <名前> は、…。`、`// <名前> は、…。` の形で書く。
 - 外部の制約を書く実装のコメントには、出典の URL を添える。
@@ -59,6 +63,9 @@ buddy だけの規則は次のとおり。
   - サイトには、`docs/design/services/` か `docs/design/packages/` のファイル単位のシンボリックリンクで載せる。リンク先は `zensical.toml` の `watch` にも並べる。
 - 機能ごとの Design Doc と ADR から `docs/`、`apps/`、`services/` の文書へのリンクは、GitHub の `develop` の URL で書く。
   - 相対リンクは、GitHub とサイトで指す先が変わり、どちらかで切れる。
+- 見出しには比喩と擬人化を使わず、セクションが扱う物と操作の名詞で書く。
+  - 例: 「インフラとの約束」は「デプロイの要件」、「コンテナの間の契約」は「コンテナの間の通信」と書く。
+  - 見出しの語は、アンカーとリンクの文に写り、ほかの文書に広がるためである。
 - 見出しのアンカーは、日本語のまま残す（`zensical.toml` の toc の slugify）。
   - 見出しを変えるときは、ほかの文書からのリンクを探して直す。
 - 画面仕様書の画面 ID の規則は [画面仕様書の目次](../docs/screens/index.md) の「画面の ID の規則」に、ページのセクションの規則は [画面仕様書の規約](../docs/screens/rules.md) の「仕様書のページ」にある。

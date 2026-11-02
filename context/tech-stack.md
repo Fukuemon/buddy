@@ -44,7 +44,8 @@ status: stable
 | ローカル環境の全体の起動 | Docker Compose（PostgreSQL、Valkey、Ory Hydra、mock-oauth2-server、calendarpit） | `compose.yml` のイメージのタグ |
 | 実行のイメージ | distroless（API、ブローカー）、`node:24-slim`（web） | `services/*/Dockerfile` |
 
-- 録画に要る `ffmpeg` と `ffprobe` は、どこでも固定していない。各自が入れる。
+録画に要る `ffmpeg` と `ffprobe` は、どこでもバージョンを固定していない。  
+各自が入れる。
 
 ## Upgrade Checks
 

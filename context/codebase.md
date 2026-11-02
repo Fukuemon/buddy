@@ -9,11 +9,12 @@ status: stable
 
 ## Module Boundaries
 
-実行の単位の責務と、その間の約束は [buddy Design Doc](../docs/design/DesignDoc.md) にある。
+実行の単位の責務と、実行の単位の間の通信は [buddy Design Doc](../docs/design/DesignDoc.md) にある。
 
 - 画面と BFF（web）とドキュメントサイトは `apps/`、Go の API は `services/`、共有のコードは `packages/` に置く。
   - ADR-0013: [2 つの API を services/ に置き、画面と API をトップのディレクトリで分ける](../docs/adr/0013-services-directory.md)
-- API のディレクトリは機能の名前（`schedule`、`receipt`）にする。コンテナ、サービス、`aud`、テーブル定義書の出力先の名前も、ディレクトリと同じにする。
+- API のディレクトリは機能の名前（`schedule`、`receipt`）にする。
+  - コンテナ、サービス、`aud`、テーブル定義書の出力先の名前も、ディレクトリと同じにする。
   - ADR-0014: [2 つの API のサービスの名前とトークンの aud を、ディレクトリの名前にそろえる](../docs/adr/0014-service-names.md)
 - web と 2 つの API は、HTTP だけでつながる。
   - web と API の間の型は、各 API の `openapi.yaml` から生成し、手で書かない。
@@ -31,12 +32,15 @@ status: stable
 
 ## Dependency Rules
 
-- web と 2 つの API は、コードで依存しない。Go の API 同士の import と、web から Go のコードの参照は無い。
+- web と 2 つの API は、コードで依存しない。
+  - Go の API 同士の import と、web から Go のコードの参照は無い。
   - 2 つの Go の API が共有するコードは、別の module の `packages/go` にだけ置き、`go.mod` の `replace` で読む。
   - ADR-0007: [2 つの Go の API が共有するコードを、別の module にまとめる](../docs/adr/0007-go-shared-module.md)
   - `packages/go` は `services/` を import しない。
-- web は `@buddy/ui` に依存してよい。`packages/ui` から `apps/` へは依存しない。
-- web の `features/<機能>/` の間は import しない。2 つの機能が使うものは、`components/site/`（サイト共通のコンポーネント）か `@buddy/ui` に置く。
+- web は `@buddy/ui` に依存してよい。
+  - `packages/ui` から `apps/` へは依存しない。
+- web の `features/<機能>/` の間は import しない。
+  - 2 つの機能が使うものは、`components/site/`（サイト共通のコンポーネント）か `@buddy/ui` に置く。
 - `services/schedule` の依存は、アダプタ（`httpapi`、`postgres`）、`access`、機能のパッケージ、共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）の 1 方向に限る。
   - 共通のパッケージは、標準ライブラリと、共通のパッケージの間（`kernel` から `apperr`）だけに依存する。
   - 機能のパッケージの間は、`organization`、`staff`、`visit`、`patient`、`schedule`、`calendar` の順にだけ import する。
@@ -45,8 +49,9 @@ status: stable
     - ほかの機能のリポジトリのインターフェイスは import しない。
     - トランザクションは `tx.Transactor` で受ける。
     - アダプタを import しない。
-    - `access` は機能のパッケージではないので、この規則の対象の外にする。
-  - `config` は DB のアダプタを import しない。`cmd` が `config` の値をアダプタの設定にコピーする。
+    - `access` は機能のパッケージではないので、機能のパッケージの依存の規則の対象の外にする。
+  - `config` は DB のアダプタを import しない。
+    - `cmd` が `config` の値をアダプタの設定にコピーする。
   - `postgres`、`oidc`、`ulid`、`gcal` は機能のパッケージのインターフェイスを実装する。
     - `httpapi` から `postgres` と `oidc` を import するのは、テストのファイルだけにする。
     - `httpapi` は、パスの ID の形の確認に `ulid` を使う。
@@ -70,7 +75,8 @@ status: stable
 ## Placement Rules
 
 - web の機能のコードは `src/features/<機能>/` に置き、中を `components/`、`lib/`、`schema/`、`constants/`、`queries.ts` に分ける。
-  - 画面のコンポーネントは、表示だけを持つ Presentational（`<名前>.tsx`）と、query と router を読んで渡す Container（`<名前>Container.tsx`）を同じディレクトリに並べる。route のファイルは Container を呼ぶ。
+  - 画面のコンポーネントは、表示だけを持つ Presentational（`<名前>.tsx`）と、query と router を読んで渡す Container（`<名前>Container.tsx`）を同じディレクトリに並べる。
+    - route のファイルは Container を呼ぶ。
   - テストと story は対象の隣に置く（コロケーション）。
 - web の API の呼び出しは `src/api/` に置く。
   - 生成した型は `generated/` に置く。
