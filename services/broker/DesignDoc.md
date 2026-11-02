@@ -63,6 +63,41 @@ flowchart TB
 - access token は JWT で、期限は 5 分である。`org_id` は `oauth2.allowed_top_level_claims` で JWT の top level に出す。
 - Hydra の web のクライアントは `skip_consent` を持ち、許す audience は `schedule` と `receipt` である。
 
+#### パッケージの構成
+
+ブローカーは機能が 1 つで、ハンドラが薄いので、機能ごとのパッケージを作らず、役割ごとに `internal/` の直下に置く。
+
+| パッケージ | 責務 |
+| --- | --- |
+| `staff` | 職員の型、状態、規則（ログインを許すか、メールのそろえ方と形、セッションの長さ）、番兵のエラーとその code |
+| `login` | ログイン、同意、ログアウトの画面と、送信元とメールごとの試行の上限 |
+| `internalapi` | 内部の API と token_hook。`staff` の番兵のエラーを、状態コードと code に 1 か所で対応させる |
+| `postgres` | 職員と上流のアカウントの読み書き。`login` と `internalapi` が定義したインターフェイスを満たす |
+| `hydra` | Hydra の admin API の呼び出し |
+| `upstream` | 上流の IdP の RP の処理 |
+| `config` | 環境変数からの設定の読み込み |
+| `httpapi` | ヘルスチェックと、2 つのポートで受けるハンドラの組み立てと、panic のときの 500 |
+
+```mermaid
+flowchart LR
+  cmd["cmd/broker"]
+  httpapi
+  login
+  internalapi
+  postgres
+  staff
+  hydra
+  upstream
+  config
+  cmd --> httpapi & login & internalapi & postgres & hydra & upstream & config
+  login --> staff & hydra & upstream
+  internalapi --> staff
+  postgres --> staff
+```
+
+- 状態の確認と書き込みは、`postgres` の条件付きの 1 文の UPDATE で原子的に行う。`staff` は状態の移り方を持たない。
+- 依存の向きの規則は [コードベースの構造](https://github.com/Fukuemon/buddy/blob/develop/context/codebase.md#dependency-rules) にある。
+
 ### 職員の身元のテーブル
 
 ブローカーの DB のテーブルを示す。  
@@ -222,7 +257,7 @@ web は、トークンと交換せずに `reason=too_many_attempts` へリダイ
    - `login_challenge` が無ければ、ログインの失敗の画面を 400 で出す。
 3. メールが職員のメールの形（`@` の前後が空でなく、320 バイト以下）かを確認する。
    - 形が違えば、メールごとの上限で数えずに、ログインの失敗の画面を 400 で出す。
-   - 形の確認には、内部の API の職員の登録と同じ関数（`login.ValidEmail`）を使う。
+   - 形の確認には、内部の API の職員の登録と同じ関数（`staff.ValidEmail`）を使う。
 4. Hydra の admin API で `login_challenge` のログインの要求を読む。
    - 読めなければ、職員を引かずにログインの失敗の画面を出す。
 5. メールごとの試行の上限を確認する。

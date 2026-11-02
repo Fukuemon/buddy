@@ -61,7 +61,12 @@ status: stable
   - `inmem` を import するのは、テストのファイルだけにする。
 - `services/receipt` の依存は、`record` と `civil` を末端にして、読み込み、正規化、対の作成、判定、つなぐ段（`check`）、データソース、HTTP の順の 1 方向に限る。
   - 判定はサービスの規則（`servicerule`）を、データソースは Google カレンダー（`gcal`）を使う。
-- 依存の向きを確認する lint は入れていない。レビューで確認する。
+- `services/broker` の職員の型、状態、規則、番兵のエラーは `staff` に置き、`login`、`internalapi`、`postgres` が読む。
+  - `staff`、`hydra`、`upstream`、`config` は、ブローカーのほかの内部のパッケージを import しない。
+  - `postgres` は `login` と `internalapi` を import しない。
+  - `login` と `internalapi` は、互いと `postgres` を import しない。DB はそれぞれが定義したインターフェイスで受ける。
+  - `services/broker/.golangci.yml` の depguard が、この 3 つを止める。
+- `services/broker` のほかに、依存の向きを確認する lint は入れていない。レビューで確認する。
   - E2E の層の向きだけは、kit の ESLint の規則（`@fukuemon/e2e-kit/eslint`）が止める。
 
 ## State Ownership
