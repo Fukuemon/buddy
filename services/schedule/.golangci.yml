@@ -169,34 +169,21 @@ linters:
               desc: 機能のパッケージはアダプタと access と config を import しない
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/config
               desc: 機能のパッケージはアダプタと access と config を import しない
+        # 共通のパッケージは、外の依存も止めるために allow の strict で書く。
         shared:
+          list-mode: strict
           files:
             - "**/internal/apperr/**"
             - "**/internal/tx/**"
             - "**/internal/kernel/**"
             - "**/internal/civil/**"
             - "!$test"
-          deny:
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features
-              desc: 共通のパッケージは標準ライブラリと共通のパッケージだけに依存する
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/principal
-              desc: 共通のパッケージは標準ライブラリと共通のパッケージだけに依存する
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/httpapi
-              desc: 共通のパッケージは標準ライブラリと共通のパッケージだけに依存する
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/postgres
-              desc: 共通のパッケージは標準ライブラリと共通のパッケージだけに依存する
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/gcal
-              desc: 共通のパッケージは標準ライブラリと共通のパッケージだけに依存する
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/broker
-              desc: 共通のパッケージは標準ライブラリと共通のパッケージだけに依存する
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/ulid
-              desc: 共通のパッケージは標準ライブラリと共通のパッケージだけに依存する
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/access
-              desc: 共通のパッケージは標準ライブラリと共通のパッケージだけに依存する
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/config
-              desc: 共通のパッケージは標準ライブラリと共通のパッケージだけに依存する
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/inmem
-              desc: 共通のパッケージは標準ライブラリと共通のパッケージだけに依存する
+          allow:
+            - $gostd
+            - github.com/Fukuemon/buddy/services/schedule/internal/apperr
+            - github.com/Fukuemon/buddy/services/schedule/internal/tx
+            - github.com/Fukuemon/buddy/services/schedule/internal/kernel
+            - github.com/Fukuemon/buddy/services/schedule/internal/civil
         httpapi:
           files:
             - "**/internal/httpapi/**"
