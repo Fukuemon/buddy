@@ -650,6 +650,7 @@ body {
     padding: 6px 0;
     border-radius: var(--wf-radius);
     font-size: 12px;
+    white-space: nowrap;
   }
 
   .wf-site-nav:is([data-start='rail']:not(.is-open), :not([data-start='rail']).is-open) .wf-site-badge {
