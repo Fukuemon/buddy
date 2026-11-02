@@ -18,6 +18,11 @@ export type SiteNavItem = {
   id: string
   href: string
   label: string
+  /**
+   * レールでだけ出す、5 文字以内の短い名前。label が 6 文字以上で、レールの幅に収まらない項目にだけ付ける。
+   * 読み上げる名前は、見える短い名前の後に、括弧で正式な名前を続けたものになる。
+   */
+  railLabel?: string
   icon: ComponentType<SVGProps<SVGSVGElement>>
 }
 
@@ -99,7 +104,15 @@ export const SiteNav = ({ groups, current, isRail = false, badges = {}, id }: Si
                       href={item.href}
                     >
                       <Icon aria-hidden="true" className="shrink-0" height={24} width={24} />
-                      <span className={isRail ? 'whitespace-nowrap' : 'grow'}>{item.label}</span>
+                      {isRail && item.railLabel !== undefined ? (
+                        <>
+                          <span className="whitespace-nowrap">{item.railLabel}</span>
+                          {/* 見える名前を読み上げる名前の先頭に残し、音声で操作する人が見える名前で指せるようにする（WCAG 2.5.3） */}
+                          <span className="sr-only">（{item.label}）</span>
+                        </>
+                      ) : (
+                        <span className={isRail ? 'whitespace-nowrap' : 'grow'}>{item.label}</span>
+                      )}
                       {badge !== undefined && (
                         <span className={clsx(isRail && 'absolute top-0.5 right-3.5')}>
                           {badge}
@@ -147,7 +160,14 @@ const STAFF_GROUP: SiteNavGroup = {
   label: '職員',
   items: [
     { id: 'staff', href: '/staff', label: '職員', icon: StaffIcon },
-    { id: 'organization', href: '/organization', label: '部署とチーム', icon: OrganizationIcon },
+    {
+      id: 'organization',
+      href: '/organization',
+      label: '部署とチーム',
+      // 業務の語の定義で、部署とチームは職員の「所属」である。「組織」は ID ブローカーの組織を指すので使わない
+      railLabel: '所属',
+      icon: OrganizationIcon,
+    },
   ],
 }
 
