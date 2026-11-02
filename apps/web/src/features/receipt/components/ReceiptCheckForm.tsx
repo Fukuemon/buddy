@@ -1,5 +1,5 @@
-import { Button, SegmentedControl } from '@buddy/ui'
-import { useId, type FormEvent } from 'react'
+import { Button, MonthPicker, SegmentedControl } from '@buddy/ui'
+import type { FormEvent } from 'react'
 
 import { CsvFileField } from './CsvFileField'
 
@@ -43,7 +43,6 @@ export const ReceiptCheckForm = ({
   errorMessage,
   errorLines = [],
 }: ReceiptCheckFormProps) => {
-  const monthId = useId()
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
     if (canSubmit && !isSubmitting) onSubmit()
@@ -66,22 +65,13 @@ export const ReceiptCheckForm = ({
         />
       </div>
       {source === 'calendar' ? (
-        <div className="flex flex-col gap-3">
-          <label className="text-label" htmlFor={monthId}>
-            対象の月
-          </label>
-          <input
-            id={monthId}
-            type="month"
-            value={month}
-            onChange={(event) => onMonthChange(event.target.value)}
-            className="min-h-11 w-56 rounded-8 bg-surface px-3 text-body ring-1 ring-border-field ring-inset focus-visible:focus-ring"
-            data-testid="receipt-month"
-          />
-          <span className="text-caption text-text-secondary">
-            その月の 1 日から月末までの予定を、職員の Google カレンダーから取ります。
-          </span>
-        </div>
+        <MonthPicker
+          label="対象の月"
+          hint="その月の 1 日から月末までの予定を、職員の Google カレンダーから取ります。"
+          value={month}
+          onChange={(event) => onMonthChange(event.target.value)}
+          data-testid="receipt-month"
+        />
       ) : (
         <CsvFileField
           label="予定の CSV"
