@@ -104,7 +104,7 @@ export const PatientCreateDialog = ({
             setValues(next)
           }}
           serviceCodes={serviceCodes}
-          staffHint="休職と退職の職員は選べません。"
+          staffHint="休職と退職の職員と、訪問しない職員は選べません。"
           staffOptions={staffOptions}
           testIds={{
             name: 'patient-new-name',

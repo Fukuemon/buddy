@@ -10,6 +10,7 @@ const {
   Ended,
   EndedStaffError,
   Forbidden,
+  NonVisitingStaff,
   NotFound,
   ServiceCodesOnceError,
   WithSchedules,
@@ -106,6 +107,26 @@ describe('PatientDetailContainer', () => {
     const staff = screen.getByTestId('patient-detail-staff-input')
     expect(staff).toHaveDisplayValue('石川 二葉（休職。今の担当）')
     expect(within(staff).getAllByRole('option')[1]).toHaveTextContent('石川 二葉（休職。今の担当）')
+  })
+
+  it('今の担当が訪問しない職員なら、補足の文で新しく選べないことを示し、担当を変えずに保存できる', async () => {
+    render(<NonVisitingStaff />)
+    await userEvent.click(await screen.findByTestId('patient-detail-edit'))
+    const dialog = screen.getByTestId('patient-detail-edit-dialog')
+    const staff = within(dialog).getByTestId('patient-detail-staff-input')
+    expect(
+      await within(staff).findByRole('option', { name: '青木 一郎（訪問しない。今の担当）' }),
+    ).toBeInTheDocument()
+    expect(staff).toHaveDisplayValue('青木 一郎（訪問しない。今の担当）')
+    expect(
+      within(dialog).getByRole('combobox', { name: '担当の職員' }),
+    ).toHaveAccessibleDescription(
+      '休職と退職の職員と、訪問しない職員は新しく選べず、今の担当のままなら保存できます。',
+    )
+    await userEvent.click(within(dialog).getByTestId('patient-detail-save'))
+
+    await expect.poll(() => screen.queryByTestId('patient-detail-edit-dialog')).toBeNull()
+    expect(screen.getByTestId('patient-detail-profile')).toHaveTextContent('青木 一郎')
   })
 
   it('利用の終了の利用者は、休職の担当に状態を添え、再開では担当を選び直すまで再開を押せない', async () => {

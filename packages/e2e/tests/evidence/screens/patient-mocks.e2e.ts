@@ -363,7 +363,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
           await page.getByTestId('patient-detail-edit').click()
           await expect(page).toHaveURL(/03-edit\.html/)
           await expect(page.getByTestId('patient-detail-edit-dialog')).toContainText(
-            '休職と退職の職員は、新しく選べません。今の担当のままなら保存できます。',
+            '休職と退職の職員と、訪問しない職員は新しく選べず、今の担当のままなら保存できます。',
           )
           await check(
             '利用者の編集のダイアログ（03-edit.html）に、名前、サービス、希望、担当の職員の欄と、担当の職員の注意が出る',
