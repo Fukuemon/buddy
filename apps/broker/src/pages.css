@@ -1,0 +1,8 @@
+/*
+ * ID ブローカーの画面の CSS。web と同じく、packages/ui の theme.css を読む Tailwind で生成する。
+ * ID ブローカーは書体のファイルを配らないので、fonts.css は読まない。文字は、DADS の --font-family-sans の並びのうち、端末にある書体で出る。
+ */
+@import 'tailwindcss';
+@import '@buddy/ui/theme.css';
+
+@source './';

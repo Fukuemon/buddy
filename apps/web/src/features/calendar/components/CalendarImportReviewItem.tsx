@@ -1,3 +1,4 @@
+import { formFieldControlClassName } from '@buddy/ui'
 import { useId, useState } from 'react'
 
 import type { ImportReviewItem, Patient } from '#/api/types'
@@ -24,9 +25,6 @@ const reasonLabel = (item: ImportReviewItem) =>
   item.reason === 'patient_ambiguous'
     ? `同じ名前の利用者が ${item.candidates.length} 人いる`
     : '利用者が見つからない'
-
-const fieldClassName =
-  'min-h-11 w-full rounded-8 bg-surface px-3 text-body ring-1 ring-border-field ring-inset focus-visible:focus-ring disabled:bg-surface-disabled disabled:text-text-disabled'
 
 /**
  * タイトルから利用者を 1 人に決められなかった予定 1 件と、その取り込み方の選択。
@@ -101,7 +99,7 @@ export const CalendarImportReviewItem = ({
             </label>
             <input
               aria-label="利用者を名前で絞り込む"
-              className={fieldClassName}
+              className={formFieldControlClassName}
               disabled={disabled}
               onChange={(event) => setFilter(event.target.value)}
               placeholder="名前で絞り込む"
@@ -109,7 +107,7 @@ export const CalendarImportReviewItem = ({
               value={filter}
             />
             <select
-              className={fieldClassName}
+              className={formFieldControlClassName}
               data-testid={`calendar-import-review-patient-select-${id}`}
               disabled={disabled}
               id={patientFieldId}

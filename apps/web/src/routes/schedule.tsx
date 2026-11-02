@@ -12,7 +12,7 @@ export const Route = createFileRoute('/schedule')({
   beforeLoad: requirePermission('none'),
   validateSearch: scheduleSearchSchema,
   search: { middlewares: [stripSearchParams(scheduleSearchDefaults)] },
-  // フェイクの API は予定をブラウザのメモリに持つため、サーバーで描画しない。bff ではサーバーで描画できるので見直す。
+  // 表示する日のデフォルトを職員のデバイスの日付で決め、FullCalendar がデバイスの時間帯で描くため、サーバーで描画しない
   ssr: false,
   head: () => ({ meta: [{ title: '予定 | buddy' }] }),
   component: SchedulePage,

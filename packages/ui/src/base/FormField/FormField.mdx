@@ -36,6 +36,16 @@ import * as Stories from './FormField.stories'
 
 <Canvas of={Stories.Default} />
 
+### hover
+
+枠を黒にする。
+
+<Canvas of={Stories.Hover} />
+
+### フォーカス
+
+<Canvas of={Stories.Focus} />
+
 ### 補足の文
 
 <Canvas of={Stories.WithHint} />
@@ -44,6 +54,18 @@ import * as Stories from './FormField.stories'
 
 <Canvas of={Stories.Invalid} />
 
+### エラーで hover
+
+誤りの枠を濃い赤にする。
+
+<Canvas of={Stories.InvalidHover} />
+
+### エラーでフォーカス
+
+誤りのない欄と同じ `focus-ring` を出す。
+
+<Canvas of={Stories.InvalidFocus} />
+
 ### 補足の文と誤りの文
 
 <Canvas of={Stories.WithHintAndError} />
@@ -51,6 +73,12 @@ import * as Stories from './FormField.stories'
 ### 無効
 
 <Canvas of={Stories.Disabled} />
+
+### 無効で hover
+
+枠の色を変えない。
+
+<Canvas of={Stories.DisabledHover} />
 
 ### ラジオボタンの組
 

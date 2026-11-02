@@ -13,6 +13,9 @@ status: stable
 
 - 画面と BFF（web）とドキュメントサイトは `apps/`、Go の API は `services/`、共有のコードは `packages/` に置く。
   - ADR-0013: [2 つの API を services/ に置き、画面と API をトップのディレクトリで分ける](../docs/adr/0013-services-directory.md)
+- ID ブローカーのログインの画面のソースは `apps/broker`（`@buddy/broker`）に置く。
+  - `apps/broker` はコンテナを持たず、生成したテンプレートと CSS を `services/broker/internal/login/pages/` に書き出す。ID ブローカーはそれを埋め込んで配信する。
+  - ADR-0027: [ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する](../docs/adr/0027-broker-login-pages-source.md)
 - API のディレクトリは機能の名前（`schedule`、`receipt`）にする。
   - コンテナ、サービス、`aud`、テーブル定義書の出力先の名前も、ディレクトリと同じにする。
   - ADR-0014: [2 つの API のサービスの名前とトークンの aud を、ディレクトリの名前にそろえる](../docs/adr/0014-service-names.md)
@@ -42,6 +45,7 @@ status: stable
   - `packages/go` は `services/` を import しない。
 - web は `@buddy/ui` に依存してよい。
   - `packages/ui` から `apps/` へは依存しない。
+- web は `@buddy/broker` の `AuthCard` と `loginFailedMessage` だけに依存してよい。`apps/broker` は `@buddy/ui` に依存し、web には依存しない。
 - web の `features/<機能>/` の間は import しない。
   - 2 つの機能が使うものは、`src/components/` か `@buddy/ui` に置く。
 - `services/schedule` の依存は、アダプタ（`httpapi`、`postgres`）、`access`、機能のパッケージ、共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）の 1 方向に限る。
@@ -59,10 +63,20 @@ status: stable
     - `httpapi` から `postgres` と `oidc` を import するのは、テストのファイルだけにする。
     - `httpapi` は、パスの ID の形の確認に `ulid` を使う。
   - `inmem` を import するのは、テストのファイルだけにする。
-- `services/receipt` の依存は、`record` と `civil` を末端にして、読み込み、正規化、対の作成、判定、つなぐ段（`check`）、データソース、HTTP の順の 1 方向に限る。
-  - 判定はサービスの規則（`servicerule`）を、データソースは Google カレンダー（`gcal`）を使う。
-- 依存の向きを確認する lint は入れていない。レビューで確認する。
-  - E2E の層の向きだけは、kit の ESLint の規則（`@fukuemon/e2e-kit/eslint`）が止める。
+- `services/receipt` の依存は、`record`、`civil`、`servicerule` を末端にして、読み込み（`csvio`）、正規化、対の作成、判定、つなぐ段（`check`）、データソース、HTTP の順の 1 方向に限る。
+  - 正規化と判定はサービスの規則（`servicerule`）を、データソースは Google カレンダー（`gcal`）を使う。
+  - 照合の権限の確認（`permission`）は、HTTP と同じ段に置き、`httpapi` から使う。
+- 2 つの Go の API の次の規則は、golangci-lint の depguard が止める。設定は各 API の `.golangci.yml` にある。
+  - 予定の API の機能のパッケージの間の順と、機能のパッケージから `principal`（`schedule` と `calendar` を除く）、アダプタ、`access`、`config` への import
+  - 予定の API の共通のパッケージから、標準ライブラリと共通のパッケージ以外（外のモジュールを含む）への import
+  - 予定の API の `httpapi` と `config` から `postgres` への import と、テストのファイル以外から `inmem` への import
+  - 照合の API の段の順
+- depguard は、テストのファイルを対象の外にする。
+- 循環する import は、depguard より先に Go のコンパイラが止める。
+- 次の規則は lint で確認せず、レビューで確認する。
+  - 機能のパッケージが、ほかの機能のリポジトリのインターフェイスを import しないこと
+  - ID ブローカーの依存の向き
+- E2E の層の向きは、kit の ESLint の規則（`@fukuemon/e2e-kit/eslint`）が止める。
 
 ## State Ownership
 
@@ -80,9 +94,12 @@ status: stable
 - web の機能のコードは `src/features/<機能>/` に置き、中を `components/`、`lib/`、`schema/`、`constants/`、`queries.ts` に分ける。
   - 画面のコンポーネントは、表示だけを持つ Presentational（`<名前>.tsx`）と、query と router を読んで渡す Container（`<名前>Container.tsx`）を同じディレクトリに並べる。
   - テストと story は対象の隣に置く（コロケーション）。
-- web の route のファイル（`src/routes/`）は、URL と Container を結び、search params の検証と SSR の有無だけを持つ。
+- web の route のファイル（`src/routes/`）は、URL と Container を結び、search params の検証、SSR の有無、loader の prefetch だけを持つ。
   - 画面のコードは `features/<機能>/` に置く。URL の階層と機能の境界が一致しないためである。
     - たとえば `/schedule/import`、`/schedule/link`、`/schedule/review` の画面は、calendar の機能にある。
+  - データを読む画面の route は、`ssr` に `RENDER_DATA_ON_SERVER` を渡し、loader で Container の query を prefetch する。
+      - bff ではサーバーで描画し、fake ではブラウザでだけ描画する。
+  - デバイスの日付や時間帯で描く画面の route は `ssr: false` にし、理由を注釈に書く。
   - route のファイルは `src/routes/` に flat に並べる。
     - 1 つの URL の階層の下が 10 ファイルを超えたら、その階層をディレクトリに分ける。
     - ディレクトリは URL の階層で分け、機能の境界では分けない。
@@ -93,6 +110,7 @@ status: stable
   - 生成した型は `generated/` に置く。
   - `VITE_API_MODE` で、ブラウザのメモリで動くフェイク（`fake/`）と、BFF の server function を呼ぶ実装（`bff/`）を切り替える。
     - 画面のコードは、story とテストのデータを除き、切り替える実装（`fake/`、`bff/`、`http/`）を直接 import しない。
+    - フェイクは `loadFake.ts` の `import()` で読み、bff のビルドに、フェイクの実装とダミーデータを入れない。
   - `http/` は、サーバーから API を呼ぶ実装で、`src/server/` から使う。
     - `GET /v1/me` の呼び出し（`meApi.ts`）と、ログインした職員への変換（`scheduleMapper.ts`）もここに置く。
 - サーバーだけで動く web の処理は `src/server/` に置く。
@@ -126,7 +144,9 @@ status: stable
   - 権限のキー、`hasPermission`、`requirePermission` は `src/api/permissions.ts` に、`PermissionGuard` は `src/components/` に置く。
   - 予定の 7 つの権限による予定ごとの判定は、機能のコードに置く。
 - デザインシステムの文書は `packages/ui/DESIGN.md` にある。
-  - 画面とコンポーネントのコード（`apps/web/src`、`packages/ui/src`）を書く前に読む。
+  - 画面とコンポーネントのコード（`apps/web/src`、`apps/broker/src`、`packages/ui/src`）を書く前に読む。
+- ID ブローカーの画面は `apps/broker/src/pages.tsx` に書き、`pnpm --filter @buddy/broker generate` で生成し直して、生成物を同じコミットに入れる。
+  - 画面の HTML と CSS を `services/broker` に手で書かない。
 - `services/schedule` のハンドラは `internal/httpapi` に、生成したインターフェイスのメソッドとして書く。
   - クエリは `db/queries`、マイグレーションは `db/migrations`、シードは `db/seed` に置く。
 - `services/schedule` に機能を足すときは、`internal/features/<機能>/` にパッケージを作る。

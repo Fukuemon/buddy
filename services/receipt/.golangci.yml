@@ -3,9 +3,133 @@ linters:
   default: standard
   enable:
     - bodyclose
+    - depguard
     - errorlint
     - revive
   settings:
+    # 依存の向きの規則は context/codebase.md の Dependency Rules にある。テストのファイルは対象の外にする。
+    depguard:
+      rules:
+        leaves:
+          files:
+            - "**/internal/record/**"
+            - "**/internal/civil/**"
+            - "**/internal/servicerule/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/csvio
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/normalize
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/match
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/judge
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/check
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/source
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/gcal
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/httpapi
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/permission
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+        stage-csvio:
+          files:
+            - "**/internal/csvio/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/normalize
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/match
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/judge
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/check
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/source
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/gcal
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/httpapi
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/permission
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+        stage-normalize:
+          files:
+            - "**/internal/normalize/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/match
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/judge
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/check
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/source
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/gcal
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/httpapi
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/permission
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+        stage-match:
+          files:
+            - "**/internal/match/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/judge
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/check
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/source
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/gcal
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/httpapi
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/permission
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+        stage-judge:
+          files:
+            - "**/internal/judge/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/check
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/source
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/gcal
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/httpapi
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/permission
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+        stage-check:
+          files:
+            - "**/internal/check/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/source
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/gcal
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/httpapi
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/permission
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+        stage-source-gcal:
+          files:
+            - "**/internal/source/**"
+            - "**/internal/gcal/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/httpapi
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/receipt/internal/permission
+              desc: 照合の API は record、civil、servicerule を末端に、読み込み、正規化、対の作成、判定、check、データソース、HTTP の順にだけ import する
     revive:
       rules:
         - name: exported

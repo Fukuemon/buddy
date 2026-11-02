@@ -3,6 +3,9 @@
 @import '@buddy/ui/theme.css';
 @import './styles/fullcalendar.css';
 
+/* @buddy/broker の AuthCard のクラスを生成させる */
+@source '../../broker/src';
+
 @layer base {
   html,
   body {
