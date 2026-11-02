@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useRouteContext } from '@tanstack/react-router'
 import { useState } from 'react'
 
+import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
 import { PageForbiddenMessage } from '#/components/site/PageForbiddenMessage'
 
@@ -10,7 +11,6 @@ import { DEFAULT_STAFF_LIST_FILTER, filterStaff } from '../lib/filter'
 import {
   departmentsQueryOptions,
   positionsQueryOptions,
-  staffQueryKeys,
   staffRecordsQueryOptions,
   teamsQueryOptions,
 } from '../queries'
@@ -37,7 +37,7 @@ const StaffListContent = () => {
       onCreate={() => navigate({ to: '/staff/new' })}
       onFilterChange={setFilter}
       onFilterClear={() => setFilter(DEFAULT_STAFF_LIST_FILTER)}
-      onRetry={() => queryClient.resetQueries({ queryKey: staffQueryKeys.records(facilityId) })}
+      onRetry={() => queryClient.resetQueries({ queryKey: queryKeys.staff.records(facilityId) })}
       positions={positions.data}
       state={state}
       teams={teams.data}

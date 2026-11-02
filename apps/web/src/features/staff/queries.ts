@@ -1,6 +1,6 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 
-import { ApiError, type BuddyApi } from '#/api/client'
+import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import type {
   FacilityId,
   Staff,
@@ -8,36 +8,23 @@ import type {
   StaffDetail,
   StaffUpdateInput,
 } from '#/api/types'
+import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
 
 import { policyChangeErrorReason } from './lib/errorMessage'
 import type { PolicyChange } from './lib/policyChanges'
 
-/** TanStack Query のキー。事業所ごとに分ける。職員の一覧のキーは、予定の画面の職員の一覧と分ける。 */
-export const staffQueryKeys = {
-  records: (facilityId: FacilityId) => ['facilities', facilityId, 'staff-records'] as const,
-  detail: (facilityId: FacilityId, staffId: Staff['id']) =>
-    ['facilities', facilityId, 'staff-detail', staffId] as const,
-  staff: (facilityId: FacilityId) => ['facilities', facilityId, 'staff', {}] as const,
-  departments: (facilityId: FacilityId) => ['facilities', facilityId, 'departments'] as const,
-  teams: (facilityId: FacilityId) => ['facilities', facilityId, 'teams'] as const,
-  positions: (facilityId: FacilityId) => ['facilities', facilityId, 'positions'] as const,
-  policies: (facilityId: FacilityId) => ['facilities', facilityId, 'policies'] as const,
-  assignments: (facilityId: FacilityId, staffId: Staff['id']) =>
-    ['facilities', facilityId, 'staff-assignments', staffId] as const,
-}
-
 /** 休職と退職の職員を含む、事業所の全ての職員の query。 */
 export const staffRecordsQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
-    queryKey: staffQueryKeys.records(facilityId),
+    queryKey: queryKeys.staff.records(facilityId),
     queryFn: () => api.staff.listRecords(facilityId),
   })
 
 /** 権限の対象の名前を引く、事業所の全ての職員の query。予定の画面の職員の一覧とキャッシュを共有する。 */
 export const staffListQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
-    queryKey: staffQueryKeys.staff(facilityId),
+    queryKey: queryKeys.staff.list(facilityId),
     queryFn: () => api.staff.list(facilityId),
   })
 
@@ -48,35 +35,35 @@ export const staffDetailQueryOptions = (
   staffId: Staff['id'],
 ) =>
   queryOptions({
-    queryKey: staffQueryKeys.detail(facilityId, staffId),
+    queryKey: queryKeys.staff.detail(facilityId, staffId),
     queryFn: () => api.staff.get(facilityId, staffId),
   })
 
 /** 部署の query。 */
 export const departmentsQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
-    queryKey: staffQueryKeys.departments(facilityId),
+    queryKey: queryKeys.departments(facilityId),
     queryFn: () => api.departments.list(facilityId),
   })
 
 /** チームの query。 */
 export const teamsQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
-    queryKey: staffQueryKeys.teams(facilityId),
+    queryKey: queryKeys.teams(facilityId),
     queryFn: () => api.teams.list(facilityId),
   })
 
 /** 役職と、そのデフォルトの権限の query。 */
 export const positionsQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
-    queryKey: staffQueryKeys.positions(facilityId),
+    queryKey: queryKeys.positions(facilityId),
     queryFn: () => api.positions.list(facilityId),
   })
 
 /** 8 つの権限の query。 */
 export const policiesQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
-    queryKey: staffQueryKeys.policies(facilityId),
+    queryKey: queryKeys.policies(facilityId),
     queryFn: () => api.policies.list(facilityId),
   })
 
@@ -87,7 +74,7 @@ export const assignmentsQueryOptions = (
   staffId: Staff['id'],
 ) =>
   queryOptions({
-    queryKey: staffQueryKeys.assignments(facilityId, staffId),
+    queryKey: queryKeys.staff.assignments(facilityId, staffId),
     queryFn: () => api.staff.remainingAssignments(facilityId, staffId),
     gcTime: 0,
   })
@@ -100,10 +87,10 @@ const useStaffChanged = () => {
   const { facilityId } = useBuddyApi()
   const queryClient = useQueryClient()
   return (staff: StaffDetail) => {
-    queryClient.setQueryData(staffQueryKeys.detail(facilityId, staff.id), staff)
+    queryClient.setQueryData(queryKeys.staff.detail(facilityId, staff.id), staff)
     return Promise.all([
-      queryClient.invalidateQueries({ queryKey: staffQueryKeys.records(facilityId) }),
-      queryClient.invalidateQueries({ queryKey: ['facilities', facilityId, 'staff'] }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.staff.records(facilityId) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.staff.all(facilityId) }),
     ])
   }
 }
@@ -165,8 +152,8 @@ export const useSavePolicies = (staffId: Staff['id']) => {
     },
     onSettled: () =>
       Promise.all([
-        queryClient.invalidateQueries({ queryKey: staffQueryKeys.detail(facilityId, staffId) }),
-        queryClient.invalidateQueries({ queryKey: staffQueryKeys.records(facilityId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.staff.detail(facilityId, staffId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.staff.records(facilityId) }),
       ]),
   })
 }

@@ -2,8 +2,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouteContext } from '@tanstack/react-router'
 import { useState } from 'react'
 
-import { ApiError } from '#/api/client'
+import { ApiError } from '#/api/BuddyApi'
 import type { Patient, PatientSchedules } from '#/api/types'
+import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
 import { PageForbiddenMessage } from '#/components/site/PageForbiddenMessage'
 
@@ -19,7 +20,6 @@ import {
 import { activeStaffOptions, editStaffOptions } from '../lib/format'
 import {
   patientDetailQueryOptions,
-  patientQueryKeys,
   remainingSchedulesQueryOptions,
   serviceCodesQueryOptions,
   staffRecordsQueryOptions,
@@ -86,7 +86,7 @@ const PatientDetailContent = ({ patientId }: { patientId: Patient['id'] }) => {
         onEnd={() => openDialog('end')}
         onResume={() => openDialog('resume')}
         onRetry={() =>
-          queryClient.resetQueries({ queryKey: patientQueryKeys.detail(facilityId, patientId) })
+          queryClient.resetQueries({ queryKey: queryKeys.patients.detail(facilityId, patientId) })
         }
         serviceCodes={serviceCodes.data}
         staff={staff.data}

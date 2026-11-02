@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vite-plus/test'
 
-import { ApiError } from '../client'
+import { ApiError } from '../BuddyApi'
 import { createBffBuddyApi } from './bffBuddyApi'
 import type { BffCall, BffResult } from './bffCall'
 
@@ -22,5 +22,23 @@ describe('createBffBuddyApi', () => {
       { op: 'teams.list', args: ['facility-1'] },
       { op: 'schedules.get', args: ['facility-1', 'x'] },
     ])
+  })
+
+  it('全てのメソッドが、グループとメソッドの名前と同じ操作を BFF に渡す', async () => {
+    const ops: string[] = []
+    const api = createBffBuddyApi(async (call): Promise<BffResult> => {
+      ops.push(call.op)
+      return { ok: true, data: null }
+    })
+    const expected: string[] = []
+    for (const [group, methods] of Object.entries(api)) {
+      for (const [name, method] of Object.entries(
+        methods as Record<string, () => Promise<unknown>>,
+      )) {
+        expected.push(`${group}.${name}`)
+        await method()
+      }
+    }
+    expect(ops).toEqual(expected)
   })
 })

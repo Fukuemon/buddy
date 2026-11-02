@@ -77,7 +77,7 @@ const PatientDetailBody = ({
   const ended = endedLabel(patient)
   const menuItems: ActionMenuItem[] =
     ended === undefined
-      ? [{ label: '利用の終了にする', onSelect: onEnd, 'data-testid': 'patient-detail-end' }]
+      ? [{ label: '利用を終了する', onSelect: onEnd, 'data-testid': 'patient-detail-end' }]
       : [{ label: '利用を再開する', onSelect: onResume, 'data-testid': 'patient-detail-resume' }]
   const code = serviceCodes?.find((c) => c.id === patient.service_code_id)
   const rows: [string, ReactNode][] = [

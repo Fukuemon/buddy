@@ -1,6 +1,6 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 
-import type { BuddyApi } from '#/api/client'
+import type { BuddyApi } from '#/api/BuddyApi'
 import type {
   FacilityId,
   NameSearchParams,
@@ -8,16 +8,8 @@ import type {
   ScheduleInput,
   ScheduleListParams,
 } from '#/api/types'
+import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
-
-/** TanStack Query のキー。事業所ごとに分ける。 */
-const queryKeys = {
-  schedules: (facilityId: FacilityId) => ['facilities', facilityId, 'schedules'] as const,
-  staff: (facilityId: FacilityId) => ['facilities', facilityId, 'staff'] as const,
-  teams: (facilityId: FacilityId) => ['facilities', facilityId, 'teams'] as const,
-  patients: (facilityId: FacilityId) => ['facilities', facilityId, 'patients'] as const,
-  serviceCodes: (facilityId: FacilityId) => ['facilities', facilityId, 'service-codes'] as const,
-}
 
 /** 期間と職員で絞った、事業所の予定の一覧の query。 */
 export const scheduleListQueryOptions = (
@@ -26,7 +18,7 @@ export const scheduleListQueryOptions = (
   params: ScheduleListParams,
 ) =>
   queryOptions({
-    queryKey: [...queryKeys.schedules(facilityId), 'list', params],
+    queryKey: queryKeys.schedules.list(facilityId, params),
     queryFn: () => api.schedules.list(facilityId, params),
   })
 
@@ -37,7 +29,7 @@ export const scheduleQueryOptions = (
   scheduleId: Schedule['id'],
 ) =>
   queryOptions({
-    queryKey: [...queryKeys.schedules(facilityId), 'detail', scheduleId],
+    queryKey: queryKeys.schedules.detail(facilityId, scheduleId),
     queryFn: () => api.schedules.get(facilityId, scheduleId),
   })
 
@@ -48,7 +40,7 @@ export const staffListQueryOptions = (
   params: NameSearchParams = {},
 ) =>
   queryOptions({
-    queryKey: [...queryKeys.staff(facilityId), params],
+    queryKey: queryKeys.staff.list(facilityId, params),
     queryFn: () => api.staff.list(facilityId, params),
   })
 
@@ -66,7 +58,7 @@ export const patientListQueryOptions = (
   params: NameSearchParams = {},
 ) =>
   queryOptions({
-    queryKey: [...queryKeys.patients(facilityId), params],
+    queryKey: queryKeys.patients.list(facilityId, params),
     queryFn: () => api.patients.list(facilityId, params),
   })
 
@@ -83,7 +75,8 @@ export const useCreateSchedule = () => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: ScheduleInput) => api.schedules.create(facilityId, input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.schedules(facilityId) }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all(facilityId) }),
   })
 }
 
@@ -100,7 +93,7 @@ export const useUpdateSchedule = (scheduleId: Schedule['id']) => {
           queryKey: scheduleQueryOptions(api, facilityId, scheduleId).queryKey,
         })
       }
-      return queryClient.invalidateQueries({ queryKey: queryKeys.schedules(facilityId) })
+      return queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all(facilityId) })
     },
   })
 }

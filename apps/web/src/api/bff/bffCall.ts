@@ -1,56 +1,12 @@
 import { z } from 'zod'
 
+import type { BuddyApi } from '../BuddyApi'
 import { SCHEDULE_CATEGORIES, SCHEDULE_KINDS, TEAM_COLORS } from '../types'
 
-/** BFF が中継する BuddyApi の操作。 */
-const BFF_OPERATIONS = [
-  'schedules.list',
-  'schedules.get',
-  'schedules.create',
-  'schedules.update',
-  'staff.list',
-  'staff.listRecords',
-  'staff.get',
-  'staff.create',
-  'staff.update',
-  'staff.changePosition',
-  'staff.addPolicy',
-  'staff.removePolicy',
-  'staff.remainingAssignments',
-  'staff.startLeave',
-  'staff.reinstate',
-  'staff.retire',
-  'teams.list',
-  'teams.create',
-  'teams.update',
-  'departments.list',
-  'departments.create',
-  'departments.update',
-  'positions.list',
-  'policies.list',
-  'patients.list',
-  'patients.listRecords',
-  'patients.get',
-  'patients.create',
-  'patients.update',
-  'patients.remainingSchedules',
-  'patients.endService',
-  'patients.resumeService',
-  'serviceCodes.list',
-  'calendars.serviceAccount',
-  'calendars.list',
-  'calendars.check',
-  'calendars.link',
-  'calendars.unlink',
-  'calendars.preview',
-  'calendars.import',
-  'calendars.exportIssues',
-  'calendars.retryExport',
-  'calendars.acceptExport',
-] as const
-
-/** BFF が中継する操作の名前。 */
-export type BffOperation = (typeof BFF_OPERATIONS)[number]
+/** BuddyApi の操作の名前。`<グループ>.<メソッド>` の形にする。 */
+type BuddyOperation = {
+  [G in keyof BuddyApi]: `${G}.${keyof BuddyApi[G] & string}`
+}[keyof BuddyApi]
 
 /** 画面から BFF への呼び出し。args は BuddyApi の操作の引数で、先頭は事業所である。 */
 export type BffCall = { op: BffOperation; args: unknown[] }
@@ -106,7 +62,7 @@ const decision = z.object({
 })
 
 /** 操作ごとの引数の形。先頭は事業所で、BFF がセッションの事業所に替える。 */
-const ARGS: Record<BffOperation, z.ZodType> = {
+const ARGS = {
   'schedules.list': z.tuple([
     id,
     z.object({
@@ -173,13 +129,28 @@ const ARGS: Record<BffOperation, z.ZodType> = {
   'calendars.exportIssues': z.tuple([id]),
   'calendars.retryExport': z.tuple([id, id]),
   'calendars.acceptExport': z.tuple([id, id]),
-}
+} satisfies Partial<Record<BuddyOperation, z.ZodType>>
+
+/** BFF が中継する操作の名前。ARGS に引数の形を書いた操作だけを中継する。 */
+export type BffOperation = keyof typeof ARGS
+
+/** 操作の名前が指す BuddyApi のメソッドの型。 */
+export type BffMethod<Op extends BffOperation> = Op extends `${infer G}.${infer M}`
+  ? G extends keyof BuddyApi
+    ? M extends keyof BuddyApi[G]
+      ? BuddyApi[G][M]
+      : never
+    : never
+  : never
+
+const BFF_OPERATIONS = Object.keys(ARGS) as BffOperation[]
 
 /** call の引数を操作の形で読む。合えば知らないキーを除いた引数を、合わなければ理由を返す。 */
 export const parseBffArgs = (
   call: BffCall,
 ): { ok: true; args: unknown[] } | { ok: false; message: string } => {
-  const result = ARGS[call.op].safeParse(call.args)
+  const schema: z.ZodType = ARGS[call.op]
+  const result = schema.safeParse(call.args)
   return result.success
     ? { ok: true, args: result.data as unknown[] }
     : { ok: false, message: z.prettifyError(result.error) }

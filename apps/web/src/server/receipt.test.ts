@@ -2,7 +2,8 @@
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vite-plus/test'
 
-import { MAX_RECEIPT_UPLOAD_BYTES, parseReceiptForm } from '#/api/bff/receiptCall'
+import { MAX_RECEIPT_UPLOAD_BYTES } from '#/api/BuddyApi'
+import { parseReceiptForm } from '#/api/bff/receiptCall'
 import { fakeReceiptReport } from '#/api/fake/fakeReceiptApi'
 import { receiptHttp, server, TEST_RECEIPT_URL } from '#/test/server'
 

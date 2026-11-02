@@ -70,12 +70,12 @@ describe('PatientDetailContainer', () => {
     expect(screen.getByTestId('patient-detail-edit-dialog')).toBeInTheDocument()
   })
 
-  it('残る予定が無ければ利用の終了にでき、利用の終了の状態の印と利用の状態を出す', async () => {
+  it('残る予定が無ければ利用を終了でき、利用の終了の状態の印と利用の状態を出す', async () => {
     render(<Default />)
     await openMenuItem('patient-detail-end')
     const dialog = screen.getByTestId('patient-end-dialog')
     expect(await within(dialog).findByText('今日以降の予定は残っていません。')).toBeInTheDocument()
-    expect(dialog).toHaveTextContent('小林 冬馬 を利用の終了にしますか')
+    expect(dialog).toHaveTextContent('小林 冬馬 の利用を終了しますか')
     await userEvent.click(within(dialog).getByTestId('patient-end-submit'))
 
     await expect.poll(() => screen.queryByTestId('patient-end-dialog')).toBeNull()
@@ -85,7 +85,7 @@ describe('PatientDetailContainer', () => {
     )
   })
 
-  it('今日以降の予定が残る利用者は、残る予定を予定の詳細へのリンクで出し、利用の終了にするを押せない', async () => {
+  it('今日以降の予定が残る利用者は、残る予定を予定の詳細へのリンクで出し、利用を終了するを押せない', async () => {
     render(<WithSchedules />)
     await openMenuItem('patient-detail-end')
     const dialog = screen.getByTestId('patient-end-dialog')
@@ -93,7 +93,7 @@ describe('PatientDetailContainer', () => {
       'href',
       '/schedule/schedule-1',
     )
-    expect(dialog).toHaveTextContent('加藤 春子 を利用の終了にできません')
+    expect(dialog).toHaveTextContent('加藤 春子 の利用を終了できません')
     expect(within(dialog).getByTestId('patient-end-submit')).toHaveAttribute(
       'aria-disabled',
       'true',

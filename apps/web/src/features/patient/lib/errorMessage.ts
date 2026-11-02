@@ -1,4 +1,4 @@
-import { ApiError } from '#/api/client'
+import { ApiError } from '#/api/BuddyApi'
 
 /** 利用者の一覧を読めなかったときの文。 */
 export const LIST_LOAD_ERROR_MESSAGE =
@@ -48,11 +48,11 @@ const operationErrorMessage = (error: unknown, fallback: string) => {
   return fallback
 }
 
-/** 利用の終了にできなかったときの文。予定が残るときは、文ではなく残る予定を出す。 */
+/** 利用を終了できなかったときの文。予定が残るときは、文ではなく残る予定を出す。 */
 export const endServiceErrorMessage = (error: unknown) =>
   operationErrorMessage(
     error,
-    '利用の終了にできませんでした。時間をおいて、もう一度利用の終了にしてください。',
+    '利用を終了できませんでした。時間をおいて、もう一度終了してください。',
   )
 
 /** 利用を再開できなかったときの文。 */

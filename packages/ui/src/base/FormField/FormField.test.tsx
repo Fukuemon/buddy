@@ -4,7 +4,10 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './FormField.stories'
 
-const { Default, WithHint, Invalid, Group } = composeStories(stories)
+const { Default, WithHint, Invalid, WithHintAndError, Group } = composeStories(stories)
+
+// focus-ring は欄の外に 2px 空けて 4px の線を引くので、欄の外へ 6px 広がる
+const FOCUS_RING_SPREAD = 6
 
 describe('FormField', () => {
   it('見出しを欄に結び付け、誤りが無ければ aria-invalid を付けない', () => {
@@ -35,6 +38,15 @@ describe('FormField', () => {
     expect(group).toHaveAttribute('aria-invalid', 'true')
     expect(group).toHaveAccessibleDescription('希望の時間帯を選んでください')
     expect(screen.getAllByRole('radio')).toHaveLength(2)
+  })
+
+  it('見出しと補足の文と誤りの文を、フォーカスの表示の広がりより欄から離す', () => {
+    render(<WithHintAndError />)
+    const field = screen.getByRole('textbox', { name: 'メールアドレス' }).getBoundingClientRect()
+    const label = screen.getByText('メールアドレス', { selector: 'label' }).getBoundingClientRect()
+    const hint = screen.getByText('ログインに使うメールアドレスです。').getBoundingClientRect()
+    expect(field.top - label.bottom).toBeGreaterThan(FOCUS_RING_SPREAD)
+    expect(hint.top - field.bottom).toBeGreaterThan(FOCUS_RING_SPREAD)
   })
 
   it('欄は 44 px 以上の高さで描く', () => {

@@ -56,7 +56,7 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 
 - 予定の権限は、画面を読み込むたびに web のサーバーが `getMe`（`GET /v1/me`）で読む。
   - `policies` のうち `schedule.` で始まる `code` と、`target_user_ids`、`target_team_ids` を `Viewer.schedulePolicies` に入れる。
-  - 処理は `apps/web/src/server/runtime.ts` にある。
+  - 処理は `apps/web/src/api/http/scheduleMapper.ts` の `fromApiMe` にある。
 - 主訪問者と予定者の候補は、`Viewer.schedulePolicies` から、職員ごとに予定を作れるかを決めて絞る。
   - 処理は `apps/web/src/features/schedule/lib/schedulePermission.ts` の `editableStaff` にある。
   - `schedule.self.edit` は自分を、`schedule.all.edit` は全ての職員を対象にする。
@@ -80,4 +80,4 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 - 作成の失敗の文は、`apps/web/src/features/schedule/lib/errorMessage.ts` の `scheduleSubmitErrorMessage` が status で選ぶ。
 - 読み込みの失敗の文は、同じ `errorMessage.ts` の `SCHEDULE_OPTIONS_LOAD_ERROR_MESSAGE` にある。
 - 一覧の取得は、4xx なら取り直さずにすぐ失敗にし、ほかの失敗は取り直してから失敗にする。
-  - 処理は `apps/web/src/integrations/tanstack-query/root-provider.tsx` の `shouldRetryQuery` にある。
+  - 処理は `apps/web/src/appContext.ts` の `shouldRetryQuery` にある。

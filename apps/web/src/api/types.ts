@@ -211,7 +211,7 @@ export type StaffUpdateResult = { updated: StaffDetail } | { assignments: StaffA
 export type PatientRecord = ScheduleSchemas['Patient']
 /** 利用者の登録と変更で送る値。予定の API の createPatient の本文をそのまま使う（updatePatient も同じ形）。 */
 export type PatientInput = RequestBody<'createPatient'>
-/** 利用者を利用の終了にするときに残る、今日以降の予定と繰り返しの予定。 */
+/** 利用者の利用を終了するときに残る、今日以降の予定と繰り返しの予定。 */
 export type PatientSchedules = ScheduleSchemas['PatientSchedules']
 /** サービスコードと提供時間の範囲。予定の API の ServiceCode をそのまま使う。 */
 export type ServiceCodeRecord = ScheduleSchemas['ServiceCode']

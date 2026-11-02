@@ -56,7 +56,7 @@ const RemainingList = ({
       data-testid={testId}
     >
       <p>
-        今日以降の予定が残っています。予定をキャンセルするか、繰り返しを終えてから、利用の終了にしてください。
+        今日以降の予定が残っています。予定をキャンセルするか、繰り返しを終えてから、利用を終了してください。
       </p>
       {schedules.schedules.length > 0 && (
         <Group label={`予定（${schedules.schedules.length} 件）`}>
@@ -87,8 +87,8 @@ const RemainingList = ({
 }
 
 /**
- * 利用者を利用の終了にする前に、変わることと戻せることと、今日以降に残る予定を示す確認のダイアログ。
- * 残る予定が無いと読み終えたときだけ、利用の終了にするを押せる。残る予定があれば、利用の終了にできないことをタイトルで示す。
+ * 利用者の利用を終了する前に、変わることと戻せることと、今日以降に残る予定を示す確認のダイアログ。
+ * 残る予定が無いと読み終えたときだけ、利用を終了するを押せる。残る予定があれば、利用を終了できないことをタイトルで示す。
  * 利用の終了は利用の再開で戻せるので、確定のボタンを危険な操作の色にしない。
  */
 export const PatientEndDialog = ({
@@ -103,7 +103,7 @@ export const PatientEndDialog = ({
   const refused = schedules !== undefined && !hasNoSchedules(schedules)
   return (
     <ConfirmDialog
-      busyLabel="利用の終了にしています"
+      busyLabel="利用を終了しています"
       canSubmit={schedules !== undefined && !refused}
       error={
         errorMessage === undefined
@@ -113,16 +113,14 @@ export const PatientEndDialog = ({
       isSubmitting={isSubmitting}
       onCancel={onCancel}
       onSubmit={onSubmit}
-      submitLabel="利用の終了にする"
+      submitLabel="利用を終了する"
       testIdPrefix="patient-end"
       title={
-        refused
-          ? `${patient.name} を利用の終了にできません`
-          : `${patient.name} を利用の終了にしますか`
+        refused ? `${patient.name} の利用を終了できません` : `${patient.name} の利用を終了しますか`
       }
     >
       <p className="text-body">
-        {`利用の終了にすると、${patient.name} は予定の利用者の候補と、利用者の一覧に、ふだんは出なくなります。過去の予定は残り、利用を再開すると同じ利用者として戻せます。`}
+        {`利用を終了すると、${patient.name} は予定の利用者の候補と、利用者の一覧に、ふだんは出なくなります。過去の予定は残り、利用を再開すると同じ利用者として戻せます。`}
       </p>
       <RemainingList errorMessage={schedulesError} schedules={schedules} />
     </ConfirmDialog>
