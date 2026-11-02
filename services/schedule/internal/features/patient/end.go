@@ -1,0 +1,38 @@
+package patient
+
+import (
+	"context"
+)
+
+// End は、利用者を利用の終了にし、利用の終了にした利用者を返す。利用の終了の利用者を利用の終了にしても成功し、最初に利用の終了にした時刻を残す。
+// その日以降の予定か、その日以降に終わる繰り返しの予定が残れば、書かずに残る一覧を持つ *ScheduledError を返す（ADR-0021）。
+// 利用者が見つからないときは apperr.ErrNotFound を、職員の管理の権限が無いときは apperr.ErrForbidden を返す。
+//
+// 事業所をロックしてから残る予定を数えるので、予定の作成（事業所の共有のロックを取る）と行き違わない。
+func (p *Usecase) End(ctx context.Context, id string) (Detail, error) {
+	if err := p.guard(ctx); err != nil {
+		return Detail{}, err
+	}
+	var ended Detail
+	err := p.tx.WithinTx(ctx, func(ctx context.Context) error {
+		cur, err := p.locked(ctx, id)
+		if err != nil {
+			return err
+		}
+		if !cur.Ended() {
+			rem, err := p.remaining(ctx, cur)
+			if err != nil {
+				return err
+			}
+			if !rem.Empty() {
+				return &ScheduledError{Remaining: rem}
+			}
+		}
+		if err := p.deps.Patients.End(ctx, cur.ID); err != nil {
+			return err
+		}
+		ended, err = p.deps.Patients.Get(ctx, cur.ID)
+		return err
+	})
+	return ended, err
+}
