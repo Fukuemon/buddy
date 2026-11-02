@@ -11,7 +11,8 @@ verified_commit: 4e53ca5
 
 ## Overview
 
-予定の API は、事業所の職員を登録し、休職、復職、退職にする。職員の身元はブローカーが持つので、どの操作もブローカーと予定の API の 2 か所に書く。  
+予定の API は、事業所の職員を登録し、休職、復職、退職にする。  
+職員の身元はブローカーが持つので、どの操作もブローカーと予定の API の 2 か所に書く。  
 この文書は予定の API の側の手順を書き、休職と退職の規則のような業務の規則は [職員とログイン](https://github.com/Fukuemon/buddy/blob/develop/context/domain/staff-login.md) が持つ。  
 予定の API の全体の設計は [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md) に、全体の中での責務と依存は [buddy Design Doc](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md) にある。
 
@@ -44,10 +45,11 @@ verified_commit: 4e53ca5
   2. 事業所の組織の ID とメールで、ブローカーに登録の途中の職員を登録させる。事業所に組織の ID が無ければ、ブローカーを呼ばずに 400 を返す。
   3. 返った職員の ID を `users.sub` に入れて書く。
   4. 書けたら、ブローカーの職員を有効にする。
-- 同じメールの職員がブローカーで休職していれば、409 を返す。ほかの事業所に同じメールの職員がいれば、事業所を示さない 409（「メール … の職員は登録できません」）を返す。
+- 同じメールの職員がブローカーで休職していれば、409 を返す。
+- ほかの事業所に同じメールの職員がいれば、事業所を示さない 409（「メール … の職員は登録できません」）を返す。
 - ブローカーが入力を 400 で拒めば、ブローカーの文を付けて 400 を返す。
 - 予定の API に書けなかったときは、この呼び出しでブローカーの職員を作っていて、その ID の職員がまだいなければ、ブローカーの職員を消して戻す。
-- 休職と退職を確定する前の残る一覧は、`GET /v1/users/{user_id}/remaining_assignments` で返す。何も書かない。
+- 休職と退職を確定する前の残る一覧は、`GET /v1/users/{user_id}/remaining_assignments` で返し、何も書かない。
   - 一覧は、休職と退職と同じ `staff.Usecase` の関数で作り、同じ規則の一覧を同じ形（`StaffAssignments`）で返す。
 - 休職と退職は、`staff.Usecase` が事業所の行をロックしたトランザクションの中で、職員を読み直してから行う。
   - 自分と、事業所で職員の管理の権限を持つ最後の有効な職員は、409 で拒む。
@@ -58,7 +60,8 @@ verified_commit: 4e53ca5
 ### 職員の管理の画面の読み込みと保存
 
 職員の一覧、職員の登録、職員の詳細の画面は、ログインした職員が職員の管理の権限（`staff.manage`）を持つかを、ルートの context の `Viewer.canManageStaff` で判定する。  
-持たなければ、職員の API を呼ばずに `PageForbiddenMessage` を出す。職員の登録は何も出さず、下の職員の一覧が権限の無いことを示す。  
+持たなければ、職員の API を呼ばずに `PageForbiddenMessage` を出す。  
+職員の登録は何も出さず、下の職員の一覧が権限の無いことを示す。  
 この判定は表示のためだけで、変える操作は予定の API が [予定の認可](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md#予定の認可) で拒む。
 
 画面とダイアログごとの、読む時点、読むもの、読む理由は次のとおり。
@@ -92,7 +95,8 @@ verified_commit: 4e53ca5
 
 ## Interface
 
-- パスの定義の正本は [予定の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/openapi.yaml) である。エラーの JSON の形と、ほかのエラーのコードは [予定の管理の Design Doc の Interface](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#interface) にある。
+- パスの定義の正本は [予定の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/openapi.yaml) である。
+- エラーの JSON の形と、ほかのエラーのコードは [予定の管理の Design Doc の Interface](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#interface) にある。
 - 職員の管理は、次の 409 を返す。
   - 409 の `conflict`（職員）: 同じメールの職員がブローカーで休職しているかほかの事業所にいる、自分か最後の有効な管理者を休職か退職にする、退職した職員を休職か復職にするか、名前、電話番号、部署、チームを変える
     - 最後の有効な管理者から `staff.manage` を外すか、`staff.manage` を持たない役職に変えたときも返す
