@@ -30,8 +30,7 @@ const MaxAuthAge = 12 * time.Hour
 const TokenHookKeyHeader = "Token-Hook-Key"
 
 const (
-	maxBodyLen  = 1 << 16
-	maxEmailLen = 320
+	maxBodyLen = 1 << 16
 	// maxHookBodyLen は、token_hook の本文を読む上限である。本文は Hydra のセッションで、クレームの数で大きくなる。
 	maxHookBodyLen = 1 << 20
 )
@@ -177,8 +176,8 @@ func (h handler) register(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, r, http.StatusBadRequest, "invalid", "本文を読めません", err)
 		return
 	}
-	email := strings.ToLower(strings.TrimSpace(in.Email))
-	if local, host, ok := strings.Cut(email, "@"); !ok || local == "" || host == "" || len(email) > maxEmailLen {
+	email := login.NormalizeEmail(in.Email)
+	if !login.ValidEmail(email) {
 		h.writeError(w, r, http.StatusBadRequest, "invalid", "メールの形式が正しくありません", nil)
 		return
 	}

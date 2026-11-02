@@ -1,0 +1,53 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { FilterSelect } from './ListTools'
+import * as Stories from './ListTools.stories'
+
+<Meta of={Stories} />
+
+# ListTools
+
+一覧の上に、名前の検索、絞り込み、件数を折り返して並べる行。同じファイルに、絞り込みのセレクト（`FilterSelect`）、件数（`ListCount`）、絞り込みで 0 件のときの知らせ（`ListEmpty`）を置く。
+
+## 使う場面
+
+- 職員や利用者の一覧を、検索と絞り込みで狭める
+- `ListEmpty` は、絞り込みで 0 件になったときに、表の代わりに出す
+
+## 使わない場面
+
+- 送信するまで反映しない入力のセレクト（`FormField` を使う）
+- 表示の単位のような、2 から 4 個の切り替え（`SegmentedControl` を使う）
+
+## Do
+
+- `ListCount` は `ListTools` の最後に置き、右端に寄せる
+- `FilterSelect` の「すべて」に当たる選択肢は、値を空にする
+
+## Don't
+
+- 絞り込みの状態を、枠の太さだけで伝える。選んだ名前を「部署: 看護部」の形で出す
+
+## 状態
+
+### デフォルト
+
+<Canvas of={Stories.Default} />
+
+### 絞り込んだ状態と無効
+
+<Canvas of={Stories.Filtered} />
+
+### 0 件
+
+<Canvas of={Stories.Empty} />
+
+## キーボードの操作
+
+- Tab で検索欄、絞り込み、絞り込みを外すボタンに移る
+- 絞り込みはブラウザのセレクトの操作に従う
+- 件数の変化は `aria-live` で読み上げる
+
+## props
+
+<ArgTypes of={FilterSelect} />

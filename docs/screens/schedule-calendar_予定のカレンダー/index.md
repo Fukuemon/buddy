@@ -7,7 +7,7 @@
 | --- | --- |
 | URL | `/schedule`。`/` を開くと `/schedule` へリダイレクトする |
 | 使う人 | 全ての職員。表示する職員と予定は、予定を見る権限の範囲で決まる |
-| 実装 | `apps/web/src/routes/schedule.tsx`、`apps/web/src/features/schedule/components/SchedulePageLayout.tsx`、`apps/web/src/features/schedule/components/ScheduleCalendarContainer.tsx`、`apps/web/src/features/schedule/components/ScheduleCancelledToggleContainer.tsx`、`apps/web/src/features/schedule/components/StaffFilterSidebarContainer.tsx`、`apps/web/src/features/schedule/components/ScheduleMiniCalendarContainer.tsx`、`apps/web/src/components/site/SiteLayoutContainer.tsx` |
+| 実装 | `apps/web/src/routes/schedule.tsx`、`apps/web/src/features/schedule/components/SchedulePageLayout.tsx`、`apps/web/src/features/schedule/components/ScheduleCalendarContainer.tsx`、`apps/web/src/features/schedule/components/ScheduleCancelledToggleContainer.tsx`、`apps/web/src/features/schedule/components/StaffFilterSidebarContainer.tsx`、`apps/web/src/features/schedule/components/ScheduleMiniCalendarContainer.tsx`、`apps/web/src/components/layout/SiteLayoutContainer.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
 
@@ -971,6 +971,11 @@ URL の `view` の値を選んだ状態で出す。
 - 今日の日付の枠は、月と週の表示で色を変える。
 - 週の表示では、今の時刻の位置に横の線を引く。
   - 線は [今の時刻の線](#今の時刻の線) にある。
+- 週の表示の列の見出しは、「11/1(日)」の形にする。
+  - 幅 768px 未満のときと、カレンダーの枠の幅が 680px 未満のときは、曜日と日の 2 行（「日」「1」）にする。
+    - 7 列の 1 列に「11/1(日)」が入り切らないためである。
+    - 幅 768px 以上でも、左の欄を開くと、カレンダーの枠の幅が 680px 未満になることがある。
+  - 月の表示の列の見出しは、幅によらず曜日だけにする。
 
 **活性条件**: 常に活性
 

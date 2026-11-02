@@ -1,9 +1,8 @@
-import { SearchBox } from '@buddy/ui'
+import { DotLabel, SearchBox } from '@buddy/ui'
 import { useState } from 'react'
 
 import type { Staff, Team } from '#/api/types'
-import { DotLabel } from '#/components/site/StatusBadge'
-import { teamColorDotClassName } from '#/components/site/teamDot'
+import { teamColorDotClassName } from '#/components/teamColor'
 
 import { staffColorMap } from '../lib/toCalendarEvents'
 
@@ -17,7 +16,7 @@ export type StaffFilterSidebarProps = {
   viewerStaffId?: Staff['id']
 }
 
-/** 名前の照合のために、全角と半角をそろえ、空白を除く。「青木一郎」でも「青木 一郎」に当てる。 */
+/** 名前の照合のために、全角と半角をそろえ、空白を除く。「山田花子」でも「山田 花子」に当てる。 */
 const normalizeName = (name: string) => name.normalize('NFKC').replace(/\s/g, '')
 
 /**
