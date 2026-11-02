@@ -45,7 +45,7 @@ const featurePatterns = [
   },
 ]
 
-// no-restricted-imports の設定は override ごとに置き換わるので、中の側にも fake と http 以外の規則を書く。
+// no-restricted-imports の設定は override ごとに置き換わるので、テストと story の override にも fake と http 以外の規則を書く。
 const screenOverrides = (dir: string, patterns: object[]) => [
   {
     files: [`${WEB_SRC}/${dir}/**`],
