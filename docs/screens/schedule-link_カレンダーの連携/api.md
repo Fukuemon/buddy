@@ -34,9 +34,9 @@ web は `BuddyApi.calendars`（`apps/web/src/api/client.ts`）で API を呼ぶ�
 | 読めない | 「この職員には、ほかのカレンダーが結び付いています。一覧を読み直してください。」 | `createExternalCalendar` が 409 `staff_has_calendar` |
 | 読めない | 「このカレンダーは、この職員にすでに結び付いています。一覧を読み直してください。」 | `createExternalCalendar` が 409 `calendar_already_linked` |
 | 読めない | 「Google カレンダーに届きませんでした。時間をおいて、もう一度確認してください。」 | 502 `calendar_unavailable` |
-| 読めない | 「確認できませんでした。時間をおいて、もう一度確認してください。」 | ほかの失敗（400 `invalid_input`、503 `calendar_not_configured`、API に届かないときを含む） |
+| 読めない | 「確認できませんでした。時間をおいて、もう一度確認してください。」 | ほかの失敗。400 `invalid_input`、503 `calendar_not_configured`、API に届かないときを含む |
 | 外すダイアログ | 「この操作をする権限がありません。」 | `removeExternalCalendar` が 403 |
-| 外すダイアログ | 「外せませんでした。時間をおいて、もう一度外してください。」 | `removeExternalCalendar` が 403 以外の失敗（404 `not_found` を含む） |
+| 外すダイアログ | 「外せませんでした。時間をおいて、もう一度外してください。」 | `removeExternalCalendar` が 403 以外の失敗。404 `not_found` を含む |
 
 - 文を選ぶ処理は、`apps/web/src/features/calendar/lib/errorMessage.ts` にある。
   - `loadErrorMessage`、`linkErrorMessage`、`unlinkErrorMessage` が文を選ぶ。
@@ -55,13 +55,18 @@ web は `BuddyApi.calendars`（`apps/web/src/api/client.ts`）で API を呼ぶ�
 | `createExternalCalendar` | `POST /v1/facilities/{facility_id}/external_calendars` | `staff_id`、`calendar_id` | 201。`ExternalCalendar` | 400 `invalid_input`: 職員が無いか、ほかの事業所の職員。409 `staff_has_calendar`、`calendar_taken`、`calendar_already_linked`。422、502、503 は `createExternalCalendarCheck` と同じ |
 | `removeExternalCalendar` | `DELETE /v1/external_calendars/{external_calendar_id}` | なし | 204 | 404 `not_found`: カレンダーが無いか、外した |
 
-- パスの `external_calendar_id` は、buddy の `external_calendars.id` である。本文とレスポンスの `calendar_id` は Google のカレンダーの ID で、テーブルの `external_calendars.external_calendar_id` に当たる。
-- `ExternalCalendar` は、`id`、`facility_id`、`staff_id`、`provider`（`google` だけ）、`calendar_id`、`created_at`、`updated_at`、`last_import` を持つ。
+- パスの `external_calendar_id` は、buddy の `external_calendars.id` を指す。
+- 本文とレスポンスの `calendar_id` は Google のカレンダーの ID で、テーブルの `external_calendars.external_calendar_id` に当たる。
+- `ExternalCalendar` は、`id`、`facility_id`、`staff_id`、`provider`、`calendar_id`、`created_at`、`updated_at`、`last_import` を持つ。
+  - `provider` は `google` だけを取る。
   - `last_import` は、そのカレンダーの `import_runs` のうち、`started_at` が最も新しいレコードである。取り込んだことが無ければ `null` にする。
   - `last_import` の項目は、`id`、`range_start`、`range_end`、`status`、`imported_count`、`skipped_count`、`started_at`、`finished_at`。`status` は `running`、`succeeded`、`failed` のどれか。
 - 409 の code は、テーブルの一意の制約に当たる原因を分ける。
   - `staff_has_calendar`: 職員に外していないカレンダーがある（部分の一意の index `external_calendars_staff_key`）
   - `calendar_taken`: カレンダーがほかの職員に結び付いている。外したカレンダーも含む（`external_calendars_external_key`）
   - `calendar_already_linked`: カレンダーがその職員にすでに結び付いている
-- `createExternalCalendarCheck` と `createExternalCalendar` は、Google Calendar API で予定の一覧を 1 件だけ読み、読めるかを確認する。レスポンスとエラーの文に、Google のレスポンスの本文とカレンダーの ID を入れない。
-- `removeExternalCalendar` は、`external_calendars` のレコードを消さずに `disabled_at` を入れる。取り込んだ予定と Google カレンダーの予定の対応（`external_event_links`）と取り込みの記録は残るので、同じカレンダーを結び付け直して同じ期間を取り込んでも、予定は重ならない。同じ職員に結び付け直すと、外したレコードの `disabled_at` を空に戻す。
+- `createExternalCalendarCheck` と `createExternalCalendar` は、Google Calendar API で予定の一覧を 1 件だけ読み、読めるかを確認する。
+  - レスポンスとエラーの文に、Google のレスポンスの本文とカレンダーの ID を入れない。
+- `removeExternalCalendar` は、`external_calendars` のレコードを消さずに `disabled_at` を入れる。
+  - 取り込んだ予定と Google カレンダーの予定の対応（`external_event_links`）と取り込みの記録は残るので、同じカレンダーを結び付け直して同じ期間を取り込んでも、予定は重ならない。
+  - 同じ職員に結び付け直すと、外したレコードの `disabled_at` を空に戻す。
