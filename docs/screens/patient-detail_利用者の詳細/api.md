@@ -23,7 +23,8 @@
 
 ## 操作
 
-`getPatientRemainingSchedules` と全ての書き込みの操作は、事業所の確認の後に、ログインした職員が職員の管理の権限（`staff.manage`）を持つかを確認し、持たなければ 403（`forbidden`）を返す。
+`getPatientRemainingSchedules` と全ての書き込みの操作は、事業所の確認の後に、ログインした職員が職員の管理の権限（`staff.manage`）を持つかを確認する。  
+持たなければ 403（`forbidden`）を返す。
 
 | operationId | メソッドとパス | リクエスト | 成功のレスポンス | エラー |
 | --- | --- | --- | --- | --- |
@@ -34,10 +35,15 @@
 | `resumePatientService` | `POST /v1/patients/{patient_id}/resume_service` | `assigned_staff_id` | 200。`Patient` | 400 `invalid_input`: 担当に休職か退職の職員か、訪問しない職員を指した |
 | `listServiceCodes`、`listUsers` | [利用者の登録の API との対応](../patient-new_利用者の登録/api.md) と同じ | | | |
 
-- `listServiceCodes` と `listUsers` は、画面を開いたときに `getPatient` と一緒に呼ぶ。「読み込み中」の状態は `getPatient` だけを待つ。どちらかが失敗していれば、ダイアログを開くときに呼び直す。
-- `getPatientRemainingSchedules` は、利用の終了のダイアログを開いたときに呼ぶ。レスポンスは、`endPatientService` の 409 が返す `PatientSchedules` と同じ形で、事業所の現地の日付で今日以降のものを返す。
-- `updatePatient` は部分の更新を持たないので、画面は変えない項目も今の値で送る。担当の職員を変えなければ、今の担当が休職か退職でも拒まれない。
-- `resumePatientService` は、利用中の利用者に送っても成功し、担当を書き換える。画面は、利用の終了の利用者のときだけ利用を再開するを出す。
+- `listServiceCodes` と `listUsers` は、画面を開いたときに `getPatient` と一緒に呼ぶ。
+  - 「読み込み中」の状態は `getPatient` だけを待つ。
+  - どちらかが失敗していれば、ダイアログを開くときに呼び直す。
+- `getPatientRemainingSchedules` は、利用の終了のダイアログを開いたときに呼ぶ。
+  - レスポンスは、`endPatientService` の 409 が返す `PatientSchedules` と同じ形で、事業所の現地の日付で今日以降のものを返す。
+- `updatePatient` は部分の更新を持たないので、画面は変えない項目も今の値で送る。
+  - 担当の職員を変えなければ、今の担当が休職か退職でも拒まれない。
+- `resumePatientService` は、利用中の利用者に送っても成功し、担当を書き換える。
+  - 画面は、利用の終了の利用者のときだけ利用を再開するを出す。
 
 ## 状態と失敗の要因
 
