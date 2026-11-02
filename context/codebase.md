@@ -43,7 +43,12 @@ status: stable
 - web は `@buddy/ui` に依存してよい。
   - `packages/ui` から `apps/` へは依存しない。
 - web の `features/<機能>/` の間は import しない。
-  - 2 つの機能が使うものは、`src/components/` か `@buddy/ui` に置く。
+  - 2 つの機能が使うものは、`src/components/`、`src/api/`、`@buddy/ui` に置く。
+    - 業務の名前を持つ表示のものは `src/components/` に、API のデータを絞るだけの関数（`activePatients`）は `src/api/` に置く。
+  - `src/components/` は `features/` を import しない。
+- web の画面のコード（`features/`、`src/components/`）は、`src/server/` を import しない。
+- web の画面のコードは、`api/fake/` と `api/http/` を import せず、`useBuddyApi` で受ける。
+  - テスト、story、story のデータ（`storyData.ts`）だけは、`api/fake/` と `api/http/` を import してよい。
 - `services/schedule` の依存は、アダプタ（`httpapi`、`postgres`）、`access`、機能のパッケージ、共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）の 1 方向に限る。
   - 共通のパッケージは、標準ライブラリと、共通のパッケージの間（`kernel` から `apperr`）だけに依存する。
   - 機能のパッケージの間は、`organization`、`staff`、`visit`、`patient`、`schedule`、`calendar` の順にだけ import する。
@@ -61,8 +66,14 @@ status: stable
   - `inmem` を import するのは、テストのファイルだけにする。
 - `services/receipt` の依存は、`record` と `civil` を末端にして、読み込み、正規化、対の作成、判定、つなぐ段（`check`）、データソース、HTTP の順の 1 方向に限る。
   - 判定はサービスの規則（`servicerule`）を、データソースは Google カレンダー（`gcal`）を使う。
-- 依存の向きを確認する lint は入れていない。レビューで確認する。
-  - E2E の層の向きだけは、kit の ESLint の規則（`@fukuemon/e2e-kit/eslint`）が止める。
+- 依存の向きの規則のうち、lint で止めるものは次の 2 つ。ほかはレビューで確認する。
+  - web の画面のコードの 4 つの規則（機能の間、`src/components/` から機能、`src/server/`、`api/fake/` と `api/http/`）は、Oxlint の `no-restricted-imports` が止める。
+    - 設定はルートの `vite.config.ts` の `lint.overrides` にあり、`features/` の下のディレクトリから機能ごとの override を作る。機能を足したときに設定を直さなくてよい。
+    - import の文字列を正規表現で照合するので、`#/` と相対のパスの両方を止める。
+    - ESLint のプラグイン（eslint-plugin-boundaries）を足さずに、Oxlint の組み込みの規則で書けたので、依存を増やしていない。
+    - 出典: [Apply configuration by file pattern](https://oxc.rs/docs/guide/usage/linter/config.html#apply-configuration-by-file-pattern)、[no-restricted-imports](https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-restricted-imports.html#patterns)
+  - E2E の層の向きは、kit の ESLint の規則（`@fukuemon/e2e-kit/eslint`）が止める。
+  - web の `src/routes/` は lint の対象の外にする。`auth.*.ts` と `readyz.ts` はサーバーで動く route で、`src/server/` を使う。
 
 ## State Ownership
 
