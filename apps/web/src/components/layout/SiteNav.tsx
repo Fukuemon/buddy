@@ -105,11 +105,11 @@ export const SiteNav = ({ groups, current, isRail = false, badges = {}, id }: Si
                     >
                       <Icon aria-hidden="true" className="shrink-0" height={24} width={24} />
                       {isRail && item.railLabel !== undefined ? (
-                        <>
-                          <span className="whitespace-nowrap">{item.railLabel}</span>
+                        <span className="whitespace-nowrap">
+                          {item.railLabel}
                           {/* 見える名前を読み上げる名前の先頭に残し、音声で操作する人が見える名前で指せるようにする（WCAG 2.5.3） */}
                           <span className="sr-only">（{item.label}）</span>
-                        </>
+                        </span>
                       ) : (
                         <span className={isRail ? 'whitespace-nowrap' : 'grow'}>{item.label}</span>
                       )}
