@@ -68,18 +68,28 @@ status: stable
     - `httpapi` から `postgres` と `oidc` を import するのは、テストのファイルだけにする。
     - `httpapi` は、パスの ID の形の確認に `ulid` を使う。
   - `inmem` を import するのは、テストのファイルだけにする。
-- `services/receipt` の依存は、`record` と `civil` を末端にして、読み込み、正規化、対の作成、判定、つなぐ段（`check`）、データソース、HTTP の順の 1 方向に限る。
-  - 判定はサービスの規則（`servicerule`）を、データソースは Google カレンダー（`gcal`）を使う。
-- 依存の向きの規則のうち、lint で止めるものは次の 2 つ。ほかはレビューで確認する。
-  - web の画面のコードの 4 つの規則（機能の間、`src/components/` から機能、`src/server/`、`api/fake/` と `api/http/`）は、Oxlint の `no-restricted-imports` が止める。
-    - 設定はルートの `vite.config.ts` の `lint.overrides` にあり、`features/` の下のディレクトリから機能ごとの override を作る。
-      - 機能を足したときに、設定を直さなくてよい。
-    - import の文字列を正規表現で照合するので、`#/` と相対のパスの両方を止める。
-    - Oxlint の組み込みの規則で書けるので、依存を増やす ESLint のプラグイン（eslint-plugin-boundaries）は使わない。
-    - 出典: [Apply configuration by file pattern](https://oxc.rs/docs/guide/usage/linter/config.html#apply-configuration-by-file-pattern)、[no-restricted-imports](https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-restricted-imports.html#patterns)
-  - E2E の層の向きは、kit の ESLint の規則（`@fukuemon/e2e-kit/eslint`）が止める。
+- `services/receipt` の依存は、`record`、`civil`、`servicerule` を末端にして、読み込み（`csvio`）、正規化、対の作成、判定、つなぐ段（`check`）、データソース、HTTP の順の 1 方向に限る。
+  - 正規化と判定はサービスの規則（`servicerule`）を、データソースは Google カレンダー（`gcal`）を使う。
+  - 照合の権限の確認（`permission`）は、HTTP と同じ段に置き、`httpapi` から使う。
+- 2 つの Go の API の次の規則は、golangci-lint の depguard が止める。設定は各 API の `.golangci.yml` にある。
+  - 予定の API の機能のパッケージの間の順と、機能のパッケージから `principal`（`schedule` と `calendar` を除く）、アダプタ、`access`、`config` への import
+  - 予定の API の共通のパッケージから、標準ライブラリと共通のパッケージ以外（外のモジュールを含む）への import
+  - 予定の API の `httpapi` と `config` から `postgres` への import と、テストのファイル以外から `inmem` への import
+  - 照合の API の段の順
+- depguard は、テストのファイルを対象の外にする。
+- 循環する import は、depguard より先に Go のコンパイラが止める。
+- web の画面のコードの 4 つの規則（機能の間、`src/components/` から機能、`src/server/`、`api/fake/` と `api/http/`）は、Oxlint の `no-restricted-imports` が止める。
+  - 設定はルートの `vite.config.ts` の `lint.overrides` にあり、`features/` の下のディレクトリから機能ごとの override を作る。
+    - 機能を足したときに、設定を直さなくてよい。
+  - import の文字列を正規表現で照合するので、`#/` と相対のパスの両方を止める。
+  - Oxlint の組み込みの規則で書けるので、依存を増やす ESLint のプラグイン（eslint-plugin-boundaries）は使わない。
+  - 出典: [Apply configuration by file pattern](https://oxc.rs/docs/guide/usage/linter/config.html#apply-configuration-by-file-pattern)、[no-restricted-imports](https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-restricted-imports.html#patterns)
 - web の `src/routes/` には、`no-restricted-imports` の 4 つの規則を当てない。
   - `auth.*.ts` と `readyz.ts` はサーバーで動く route で、`src/server/` を使う。
+- 次の規則は lint で確認せず、レビューで確認する。
+  - 機能のパッケージが、ほかの機能のリポジトリのインターフェイスを import しないこと
+  - ID ブローカーの依存の向き
+- E2E の層の向きは、kit の ESLint の規則（`@fukuemon/e2e-kit/eslint`）が止める。
 
 ## State Ownership
 
