@@ -3,6 +3,7 @@ import { useNavigate, useRouteContext } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import type { ImportRange, Staff } from '#/api/types'
+import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
 import { PageForbiddenMessage } from '#/components/page/PageForbiddenMessage'
 
@@ -16,7 +17,6 @@ import {
 import { isImportRangeReady, nextMonthRange, validateImportRange } from '../lib/importRange'
 import { toDecisions, type ReviewChoices } from '../lib/importSummary'
 import {
-  calendarQueryKeys,
   externalCalendarListQueryOptions,
   patientListQueryOptions,
   staffListQueryOptions,
@@ -82,8 +82,8 @@ const CalendarImportContent = ({ staffId, onStaffChange }: CalendarImportContain
   }
   const retry = () =>
     Promise.all(
-      [calendarQueryKeys.calendars(facilityId), calendarQueryKeys.staff(facilityId)].map(
-        (queryKey) => queryClient.resetQueries({ queryKey }),
+      [queryKeys.calendars.list(facilityId), queryKeys.staff.list(facilityId)].map((queryKey) =>
+        queryClient.resetQueries({ queryKey }),
       ),
     )
 

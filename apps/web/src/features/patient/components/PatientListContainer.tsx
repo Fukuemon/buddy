@@ -2,12 +2,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useRouteContext } from '@tanstack/react-router'
 import { useState } from 'react'
 
+import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
 import { PageForbiddenMessage } from '#/components/page/PageForbiddenMessage'
 
 import { LIST_LOAD_ERROR_MESSAGE } from '../lib/errorMessage'
 import { DEFAULT_PATIENT_LIST_FILTER, assignedStaffOptions, filterPatients } from '../lib/filter'
-import { patientQueryKeys, patientRecordsQueryOptions, staffRecordsQueryOptions } from '../queries'
+import { patientRecordsQueryOptions, staffRecordsQueryOptions } from '../queries'
 import { PatientListView, type PatientListViewState } from './PatientListView'
 
 const PatientListContent = () => {
@@ -32,8 +33,8 @@ const PatientListContent = () => {
       onFilterClear={() => setFilter(DEFAULT_PATIENT_LIST_FILTER)}
       onRetry={() =>
         Promise.all([
-          queryClient.resetQueries({ queryKey: patientQueryKeys.records(facilityId) }),
-          queryClient.resetQueries({ queryKey: patientQueryKeys.staffRecords(facilityId) }),
+          queryClient.resetQueries({ queryKey: queryKeys.patients.records(facilityId) }),
+          queryClient.resetQueries({ queryKey: queryKeys.staff.records(facilityId) }),
         ])
       }
       staff={staff.data}

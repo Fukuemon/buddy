@@ -69,7 +69,7 @@ status: stable
 | ログインのセッションとトークン | Valkey | web の BFF。ブラウザには署名した cookie でセッションの ID だけを渡す |
 | 照合の入力の CSV と結果 | 保存しない | 照合の API は 1 回のリクエストで返し、web は query の cache にだけ置く。画面を読み直すと消える |
 | 画面の表示の条件（表示の単位、日付、絞り込みの職員） | URL の search params | web の route。zod で検証し、デフォルト値は URL に書かない |
-| API から取ったデータ | TanStack Query の cache | web。query の key は機能ごとの `queries.ts` に置き、変更したら invalidate する |
+| API から取ったデータ | TanStack Query の cache | web。query の key は `api/queryKeys.ts` に、queryOptions と mutation は機能ごとの `queries.ts` に置く。変更したら、機能をまたぐ invalidate も `queryKeys` から key を作る |
 | フェイクの API のデータ | ブラウザのメモリ | `VITE_API_MODE=fake` の web。読み直すと消える |
 
 ## Placement Rules
@@ -99,6 +99,13 @@ status: stable
     - `layout/` は画面の枠（ヘッダー、ナビゲーション）、`page/` はページの本文に置く定型のもの（リード文、エラーと権限が無いときの文）を置く。
     - ディレクトリは、同じ役割のものが 3 つ以上あるときだけ作る。1〜2 個で作ると、後から入るものでディレクトリの意味がずれる。
     - 役割のまとまりが無いものは、`src/components/` の直下に置く（チームの色の `teamColor.ts`）。
+- web の権限の確認は、段ごとに次の場所に置く。拒む判断は API が持ち、web の確認は画面の出し分けだけにする。
+  - ADR-0025: [web の画面の権限の確認を、route の beforeLoad と PermissionGuard で宣言し、1 つの関数で評価する](../docs/adr/0025-web-permission-checks.md)
+  - 認証は `routes/__root.tsx` の `beforeLoad` に置く。
+  - 画面の段は、各 route の `beforeLoad` で `requirePermission` を呼んで宣言する。権限の要らない画面も `requirePermission('none')` と宣言する。
+  - 画面の中のボタンとダイアログは `PermissionGuard` で出し分け、Container に権限の三項演算子を書かない。
+  - 権限のキー、`hasPermission`、`requirePermission` は `src/api/permissions.ts` に、`PermissionGuard` は `src/components/` に置く。
+  - 予定の 7 つの権限による予定ごとの判定は、機能のコードに置く。
 - デザインシステムの文書は `packages/ui/DESIGN.md` にある。
   - 画面とコンポーネントのコード（`apps/web/src`、`packages/ui/src`）を書く前に読む。
 - `services/schedule` のハンドラは `internal/httpapi` に、生成したインターフェイスのメソッドとして書く。

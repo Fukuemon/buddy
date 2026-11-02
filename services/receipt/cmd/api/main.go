@@ -190,7 +190,12 @@ func run() error {
 			AllowOrigins:   cfg.allowOrigins,
 		}),
 		ReadHeaderTimeout: 10 * time.Second,
-		ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelError),
+		ReadTimeout:       30 * time.Second,
+		// WriteTimeout は本文を読む時間（ReadTimeout まで）も含むので、本文を読むのに 30 秒近くかかっても照合の時間が残るよう、ReadTimeout より長くする。
+		// 切れても照合の処理は止まらず、レスポンスを書けずに接続が切れるだけである。
+		WriteTimeout: 60 * time.Second,
+		IdleTimeout:  60 * time.Second,
+		ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
 	}
 
 	errCh := make(chan error, 1)
