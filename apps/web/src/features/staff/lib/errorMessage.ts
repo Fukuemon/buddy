@@ -8,8 +8,7 @@ export const LIST_LOAD_ERROR_MESSAGE =
 export const DETAIL_LOAD_ERROR_MESSAGE = LIST_LOAD_ERROR_MESSAGE
 
 /** 職員の詳細の職員が見つからなかったときの文。 */
-export const DETAIL_NOT_FOUND_MESSAGE =
-  '職員が見つかりませんでした。職員の一覧から開き直してください。'
+export const DETAIL_NOT_FOUND_MESSAGE = '職員が見つかりません。職員の一覧から開き直してください。'
 
 /** 部署、チーム、役職の選択肢を読めなかったときの文。 */
 export const OPTIONS_LOAD_ERROR_MESSAGE =

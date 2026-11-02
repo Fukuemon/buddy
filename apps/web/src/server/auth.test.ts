@@ -164,6 +164,23 @@ describe('ログイン', () => {
     expect([...store.values.keys()].some((k) => k.startsWith('session:'))).toBe(false)
   })
 
+  it('ブローカーが試行の回数の上限で拒んだら、トークンを取らずに too_many_attempts へリダイレクトする', async () => {
+    const exchangeCode = vi.fn<OidcClient['exchangeCode']>()
+    const { store, deps } = setup({ oidc: fakeOidc({ exchangeCode }) })
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const start = await startLogin(new Request('http://web.test/auth/login'), deps)
+    const state = new URL(start.headers.get('Location') ?? '').searchParams.get('state')
+    const res = await finishLogin(
+      new Request(`http://web.test/auth/callback?error=temporarily_unavailable&state=${state}`, {
+        headers: { Cookie: cookiesOf(start) },
+      }),
+      deps,
+    )
+    expect(res.headers.get('Location')).toBe('/auth/error?reason=too_many_attempts')
+    expect(exchangeCode).not.toHaveBeenCalled()
+    expect([...store.values.keys()].some((k) => k.startsWith('login:'))).toBe(false)
+  })
+
   it('トークンを取れなければ failed へリダイレクトする', async () => {
     const { deps } = setup({
       oidc: fakeOidc({

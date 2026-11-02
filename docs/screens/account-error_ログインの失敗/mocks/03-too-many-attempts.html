@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>account-error 試行の回数の上限を超えた</title>
+    <link rel="stylesheet" href="../../_common/mock.css" />
+    <link rel="stylesheet" href="../../_common/tokens.css" />
+    <link rel="stylesheet" href="../../_common/wireframe.css" />
+    <link rel="stylesheet" href="account-error.css" />
+  </head>
+  <body data-view="desktop">
+    <div class="stage">
+      <div class="screen">
+        <div class="screen-body">
+          <main class="ae-page">
+            <section class="ae-card" data-testid="auth-error">
+              <p aria-hidden="true" class="ae-logo" data-m="1">buddy</p>
+              <h1 class="ae-title" data-m="2">しばらくログインできません</h1>
+              <p class="ae-message" data-m="3">続けて何度もログインを試したため、受け付けを止めています。30 秒ほどおいてから、もう一度ログインしてください。</p>
+              <span class="wf-btn wf-btn--primary ae-login" data-m="4" data-testid="auth-error-login" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html">もう一度ログインする</span>
+            </section>
+          </main>
+        </div>
+      </div>
+      <div class="markers"></div>
+    </div>
+    <script src="../../_common/mock.js"></script>
+    <script src="../../_common/interact.js"></script>
+  </body>
+</html>

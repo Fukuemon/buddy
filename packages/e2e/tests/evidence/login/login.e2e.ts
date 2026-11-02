@@ -21,6 +21,9 @@ const openWeb = async (page: Page) => {
 
 const DAY = `/schedule?view=day&date=${OFFICE_A_SCHEDULE.date}`
 
+/** 試行の回数の上限を使い切るメール。ほかの test の UNREGISTERED_EMAIL の上限を使わないよう分ける。 */
+const LIMITED_EMAIL = 'limited@example.com'
+
 /** 録画の外で、予定のカレンダーを開いてログインしておく。 */
 const signIn = async (page: Page) => {
   await page.goto(DAY)
@@ -131,6 +134,46 @@ test.describe('予定のカレンダー', () => {
             await page.goto(DAY)
             await expect(brokerLogin(page).email).toBeVisible()
             await check('予定のカレンダーは開かず、ブローカーのメールの入力の画面に移る')
+          },
+        )
+      })
+
+      test(`${prefix}同じメールで試行の回数の上限を超えてログインを試した場合、時間をおいてから試すよう伝える文が出ること`, async ({
+        browser,
+      }) => {
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'login-too-many-attempts',
+            title:
+              '同じメールで試行の回数の上限を超えてログインを試すと、ログインの失敗の画面に時間をおいてから試すよう伝える文が出る',
+            actor: 'ログインなし',
+            variant,
+          },
+          async (page) => {
+            await openWeb(page)
+            // ブローカーは、入れたメールごとに続けて 10 回まで受け付ける。録画の外で 10 回を使い切る
+            for (let i = 0; i < 10; i++) {
+              await page.goto(DAY)
+              await enterEmailAtBroker(page, LIMITED_EMAIL)
+              await expect(page).toHaveURL(/\/auth\/error\?reason=failed$/)
+            }
+          },
+          async ({ page, step, check }) => {
+            await page.goto(DAY)
+            await step(
+              `録画の前に、登録していないメール ${LIMITED_EMAIL} で 10 回続けて試した。11 回目を入れて「次へ」を押す`,
+            )
+            await enterEmailAtBroker(page, LIMITED_EMAIL)
+            await expect(page).toHaveURL(/\/auth\/error\?reason=too_many_attempts$/)
+            const card = page.getByTestId('auth-error')
+            await expect(card).toContainText('しばらくログインできません')
+            await expect(card).toContainText(
+              '続けて何度もログインを試したため、受け付けを止めています。30 秒ほどおいてから、もう一度ログインしてください。',
+            )
+            await check(
+              'ログインの失敗の画面に「しばらくログインできません」と、30 秒ほどおいてから試すよう伝える文が出る',
+            )
           },
         )
       })

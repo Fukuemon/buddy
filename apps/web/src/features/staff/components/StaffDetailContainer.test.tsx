@@ -210,7 +210,7 @@ describe('StaffDetailContainer', () => {
   it('見つからない職員は読み直すを出さず、権限が無ければ権限が無いことを示す', async () => {
     const { unmount } = render(<NotFound />)
     expect(await screen.findByTestId('staff-detail-error')).toHaveTextContent(
-      '職員が見つかりませんでした。職員の一覧から開き直してください。',
+      '職員が見つかりません。職員の一覧から開き直してください。',
     )
     expect(screen.queryByTestId('staff-detail-retry')).toBeNull()
     unmount()

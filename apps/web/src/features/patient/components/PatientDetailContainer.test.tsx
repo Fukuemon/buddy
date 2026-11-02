@@ -5,8 +5,15 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './PatientDetailContainer.stories'
 
-const { Default, Ended, Forbidden, NotFound, ServiceCodesOnceError, WithSchedules } =
-  composeStories(stories)
+const {
+  Default,
+  Ended,
+  EndedStaffError,
+  Forbidden,
+  NotFound,
+  ServiceCodesOnceError,
+  WithSchedules,
+} = composeStories(stories)
 
 const openMenuItem = async (testId: string) => {
   await userEvent.click(await screen.findByTestId('patient-detail-menu'))
@@ -122,6 +129,19 @@ describe('PatientDetailContainer', () => {
     expect(screen.getByTestId('patient-detail-profile')).toHaveTextContent('上田 三奈')
   })
 
+  it('担当の職員の選択肢を読めなければ、再開のダイアログに失敗の文を出し、再開を押せない', async () => {
+    render(<EndedStaffError />)
+    await openMenuItem('patient-detail-resume')
+    const dialog = screen.getByTestId('patient-resume-dialog')
+    expect(await within(dialog).findByTestId('patient-resume-error')).toHaveTextContent(
+      'サービスと職員を読み込めませんでした。閉じてから、開き直してください。',
+    )
+    expect(within(dialog).getByTestId('patient-resume-submit')).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    )
+  })
+
   it('サービスコードを読めなかった後に編集のダイアログを開くと、サービスコードを読み直して選べる', async () => {
     render(<ServiceCodesOnceError />)
     const profile = await screen.findByTestId('patient-detail-profile')
@@ -135,7 +155,7 @@ describe('PatientDetailContainer', () => {
   it('利用者が見つからなければ、開き直すよう伝え、読み直すを出さない', async () => {
     render(<NotFound />)
     expect(await screen.findByTestId('patient-detail-error')).toHaveTextContent(
-      '利用者が見つかりませんでした。利用者の一覧から開き直してください。',
+      '利用者が見つかりません。利用者の一覧から開き直してください。',
     )
     expect(screen.queryByTestId('patient-detail-retry')).toBeNull()
   })

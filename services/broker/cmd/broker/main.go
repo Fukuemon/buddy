@@ -42,6 +42,7 @@ const readyTimeout = 2 * time.Second
 
 // ログインの画面でメールを送る試行は、送信元の IP アドレスごとに loginBurst 回まで続けられ、loginEvery ごとに 1 回ずつ戻る。
 // 入れたメールごとには emailBurst 回まで続けられ、emailEvery ごとに 1 回ずつ戻る。
+// 上限を超えた職員に web が出す「30 秒ほどおいてから」の文（apps/web の AuthErrorMessage）は、長い方の emailEvery に合わせている。
 const (
 	loginBurst = 20
 	loginEvery = 10 * time.Second

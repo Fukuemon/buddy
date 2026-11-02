@@ -131,7 +131,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
       )
     })
 
-    test(`${prefix}利用者の一覧で絞り込みに合う利用者がいない場合、0 件の知らせが出て、絞り込みを外すで一覧へ戻ること`, async ({
+    test(`${prefix}利用者の一覧で絞り込みに合う利用者がいない場合、利用者が無いことの文が出て、絞り込みを外すで一覧へ戻ること`, async ({
       browser,
     }) => {
       await recordMock(
@@ -139,14 +139,15 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
         variant,
         {
           name: 'patient-list-empty',
-          title: '絞り込みに合う利用者がいないと 0 件の知らせが出て、絞り込みを外すで一覧へ戻る',
+          title:
+            '絞り込みに合う利用者がいないと 利用者が無いことの文が出て、絞り込みを外すで一覧へ戻る',
           file: `${LIST}/03-empty.html`,
         },
         async ({ page, step, check }) => {
           await expect(page.getByTestId('patient-list-empty')).toContainText(
             '条件に合う利用者はいません。',
           )
-          await check('名前の検索の「山田」に合う利用者がいないので、0 件の知らせが出る')
+          await check('名前の検索の「山田」に合う利用者がいないので、利用者が無いことの文が出る')
 
           await step('「絞り込みを外す」を押す')
           await page.getByTestId('patient-list-filter-clear').click()
