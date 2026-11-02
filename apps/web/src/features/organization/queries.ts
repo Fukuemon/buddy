@@ -2,25 +2,20 @@ import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query
 
 import type { BuddyApi } from '#/api/BuddyApi'
 import type { Department, FacilityId, Team, TeamInput } from '#/api/types'
+import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
-
-/** TanStack Query のキー。職員の画面と予定の画面の部署とチームと、同じキャッシュを使う。 */
-export const organizationQueryKeys = {
-  departments: (facilityId: FacilityId) => ['facilities', facilityId, 'departments'] as const,
-  teams: (facilityId: FacilityId) => ['facilities', facilityId, 'teams'] as const,
-}
 
 /** 事業所の部署の query。 */
 export const departmentsQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
-    queryKey: organizationQueryKeys.departments(facilityId),
+    queryKey: queryKeys.departments(facilityId),
     queryFn: () => api.departments.list(facilityId),
   })
 
 /** 事業所のチームの query。 */
 export const teamsQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
-    queryKey: organizationQueryKeys.teams(facilityId),
+    queryKey: queryKeys.teams(facilityId),
     queryFn: () => api.teams.list(facilityId),
   })
 
@@ -33,9 +28,13 @@ const useOrganizationChanged = () => {
   const queryClient = useQueryClient()
   return () =>
     Promise.all(
-      ['departments', 'teams', 'staff', 'staff-records', 'staff-detail'].map((key) =>
-        queryClient.invalidateQueries({ queryKey: ['facilities', facilityId, key] }),
-      ),
+      [
+        queryKeys.departments(facilityId),
+        queryKeys.teams(facilityId),
+        queryKeys.staff.all(facilityId),
+        queryKeys.staff.records(facilityId),
+        queryKeys.staff.details(facilityId),
+      ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
     )
 }
 

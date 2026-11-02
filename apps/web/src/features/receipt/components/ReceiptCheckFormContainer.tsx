@@ -3,10 +3,11 @@ import { useNavigate, useRouteContext } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { ApiError, MAX_RECEIPT_UPLOAD_BYTES, type ReceiptCheckInput } from '#/api/BuddyApi'
+import { queryKeys } from '#/api/queryKeys'
 
 import { TOO_LARGE_MESSAGE, checkErrorMessage, csvErrorLines } from '../lib/errorMessage'
 import { isMonth, previousMonth } from '../lib/month'
-import { receiptResultKey, type ReceiptResult } from '../queries'
+import type { ReceiptResult } from '../queries'
 import { ReceiptCheckForm, type ScheduleSource } from './ReceiptCheckForm'
 
 /** 照合の入力を持ち、照合の API に送り、結果の画面へ移る。入力を変えたら、前の失敗の文を消す。 */
@@ -27,7 +28,7 @@ export const ReceiptCheckFormContainer = () => {
         month: input.month,
         checkedAt: new Date().toISOString(),
       }
-      queryClient.setQueryData(receiptResultKey, result)
+      queryClient.setQueryData(queryKeys.receiptResult(), result)
       await navigate({ to: '/receipt/result' })
     },
   })

@@ -4,6 +4,7 @@ import { useState } from 'react'
 
 import { ApiError } from '#/api/BuddyApi'
 import type { Staff, StaffAssignments } from '#/api/types'
+import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
 import { PageForbiddenMessage } from '#/components/site/PageForbiddenMessage'
 
@@ -27,7 +28,6 @@ import {
   positionsQueryOptions,
   staffDetailQueryOptions,
   staffListQueryOptions,
-  staffQueryKeys,
   teamsQueryOptions,
   useChangePosition,
   useReinstate,
@@ -121,7 +121,7 @@ const StaffDetailContent = ({ staffId, viewerId }: { staffId: Staff['id']; viewe
         onReinstate={() => reinstate.mutate()}
         onRetire={() => openDialog('retire')}
         onRetry={() =>
-          queryClient.resetQueries({ queryKey: staffQueryKeys.detail(facilityId, staffId) })
+          queryClient.resetQueries({ queryKey: queryKeys.staff.detail(facilityId, staffId) })
         }
         policies={orderedPolicies}
         position={position}
