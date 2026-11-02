@@ -1,4 +1,4 @@
-import { BusyLabel, Button, HelpToggle, InputDialog } from '@buddy/ui'
+import { BusyLabel, Button, formFieldControlClassName, HelpToggle, InputDialog } from '@buddy/ui'
 import { useId } from 'react'
 
 /** 読めるかの確認の状態。failed は、確認か結び付けが失敗したときである。 */
@@ -19,9 +19,6 @@ export type CalendarLinkDialogProps = {
   onSubmit: () => void
   onClose: () => void
 }
-
-const inputClassName =
-  'min-h-11 w-full rounded-8 px-3 text-body ring-1 ring-border-field ring-inset focus-visible:focus-ring disabled:bg-surface-disabled disabled:text-text-disabled'
 
 /**
  * 1 人の職員に Google カレンダーを結び付けるダイアログ。読めると確認したカレンダーだけを結び付けられる。
@@ -70,7 +67,7 @@ export const CalendarLinkDialog = ({
         </div>
         <input
           autoComplete="off"
-          className={inputClassName}
+          className={formFieldControlClassName}
           data-testid="calendar-link-input"
           disabled={isSubmitting}
           id={inputId}

@@ -63,6 +63,16 @@ export const Disabled: Story = {
   },
 }
 
+export const Hover: Story = { parameters: { pseudo: { hover: true } } }
+
+export const InvalidHover: Story = { ...Invalid, parameters: { pseudo: { hover: true } } }
+
+export const Focus: Story = { parameters: { pseudo: { focusVisible: true } } }
+
+export const InvalidFocus: Story = { ...Invalid, parameters: { pseudo: { focusVisible: true } } }
+
+export const DisabledHover: Story = { ...Disabled, parameters: { pseudo: { hover: true } } }
+
 export const Group: Story = {
   args: {
     label: '希望の時間帯',

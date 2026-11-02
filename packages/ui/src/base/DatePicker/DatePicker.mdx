@@ -33,13 +33,41 @@ import * as Stories from './DatePicker.stories'
 
 <Canvas of={Stories.Default} />
 
+### hover
+
+枠を黒にする。
+
+<Canvas of={Stories.Hover} />
+
+### フォーカス
+
+<Canvas of={Stories.Focus} />
+
 ### エラー
 
 <Canvas of={Stories.WithError} />
 
+### エラーで hover
+
+誤りの枠を濃い赤にする。
+
+<Canvas of={Stories.WithErrorHover} />
+
+### エラーでフォーカス
+
+誤りのない欄と同じ `focus-ring` を出す。
+
+<Canvas of={Stories.WithErrorFocus} />
+
 ### 無効
 
 <Canvas of={Stories.Disabled} />
+
+### 無効で hover
+
+枠の色を変えない。
+
+<Canvas of={Stories.DisabledHover} />
 
 ## キーボードの操作
 
