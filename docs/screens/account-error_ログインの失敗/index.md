@@ -35,7 +35,7 @@
 
 === "試行の回数の上限を超えた"
 
-    同じメールアドレスか同じ送信元から、続けてログインを試し、ID ブローカーが受け付けを止めたとき（URL の `reason` が `too_many_attempts` のとき）。
+    同じメールアドレスで、続けてログインを試し、ID ブローカーが受け付けを止めたとき（URL の `reason` が `too_many_attempts` のとき）。
 
     <iframe class="mock" title="ログインの失敗の、試行の回数の上限を超えた" src="mocks/03-too-many-attempts.html"></iframe>
     <a class="mock-open" href="mocks/03-too-many-attempts.html" target="_blank">別タブで開く</a>
