@@ -14,3 +14,5 @@ type Story = StoryObj<typeof meta>
 export const Failed: Story = {}
 
 export const Forbidden: Story = { args: { reason: 'forbidden' } }
+
+export const TooManyAttempts: Story = { args: { reason: 'too_many_attempts' } }

@@ -63,6 +63,20 @@ const serviceCodesOnceFailingApi = (): BuddyApi => {
   }
 }
 
+/** 職員を読めないフェイクの API を作る。 */
+const staffFailingApi = (): BuddyApi => {
+  const base = createFakeBuddyApi()
+  return {
+    ...base,
+    staff: {
+      ...base.staff,
+      listRecords: async () => {
+        throw new ApiError(500, '読めない')
+      },
+    },
+  }
+}
+
 /** 幅 768px 未満。編集と「…」を見出しの下に置き、プロフィールの項目の名前と値を縦に積む。 */
 export const Mobile: Story = { globals: { viewport: { value: 'mobile1' } } }
 
@@ -96,6 +110,12 @@ const nonVisitingStaffApi = (): BuddyApi => {
 /** 利用中の利用者。担当の職員は訪問しない職員である。 */
 export const NonVisitingStaff: Story = {
   parameters: route('patient-4', { api: nonVisitingStaffApi() }),
+}
+
+/** 利用の終了の利用者で、担当の職員の選択肢を読めないとき。再開のダイアログに失敗の文を出す。 */
+export const EndedStaffError: Story = {
+  args: { patientId: 'patient-ended' },
+  parameters: route('patient-ended', { api: staffFailingApi() }),
 }
 
 /** サービスコードを 1 回目だけ読めないとき。編集のダイアログを開くと読み直す。 */

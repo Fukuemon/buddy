@@ -1,8 +1,11 @@
 import { clsx } from 'clsx'
 import { buttonClassName } from '@buddy/ui'
 
-/** ログインできなかった理由。failed はログインの途中の失敗、forbidden は事業所に登録されていない職員である。 */
-export type AuthErrorReason = 'failed' | 'forbidden'
+/**
+ * ログインできなかった理由。failed はログインの途中の失敗、forbidden は事業所に登録されていない職員、
+ * too_many_attempts はログインの試行の回数の上限を超えたときである。
+ */
+export type AuthErrorReason = 'failed' | 'forbidden' | 'too_many_attempts'
 
 export type AuthErrorMessageProps = {
   reason: AuthErrorReason
@@ -17,6 +20,10 @@ const messages: Record<AuthErrorReason, { title: string; body: string }> = {
   forbidden: {
     title: 'この事業所に登録されていません',
     body: '事業所の管理者に、メールアドレスの登録を頼んでください。',
+  },
+  too_many_attempts: {
+    title: 'しばらくログインできません',
+    body: '続けて何度もログインを試したため、受け付けを止めています。30 秒ほどおいてから、もう一度ログインしてください。',
   },
 }
 

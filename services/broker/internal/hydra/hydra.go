@@ -88,6 +88,11 @@ type Rejection struct {
 // AccessDenied は、職員にトークンを出さないときの reject である。理由はクライアントに伝えない。
 var AccessDenied = Rejection{Error: "access_denied", ErrorDescription: "ログインできませんでした"}
 
+// TooManyAttempts は、ログインの試行の回数の上限を超えたときの reject である。
+// クライアントが「時間をおいてから試す」と伝えられるよう、AccessDenied と分けて OAuth 2.0 の temporarily_unavailable にする。
+// メールの有無を引く前に返すので、登録の有無は伝わらない。
+var TooManyAttempts = Rejection{Error: "temporarily_unavailable", ErrorDescription: "ログインの試行の回数の上限を超えました"}
+
 // LoginRequest は、login_challenge の要求を読む。
 func (c *Client) LoginRequest(ctx context.Context, challenge string) (LoginRequest, error) {
 	var out LoginRequest

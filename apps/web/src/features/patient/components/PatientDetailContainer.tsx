@@ -139,7 +139,11 @@ const PatientDetailContent = ({ patientId }: { patientId: Patient['id'] }) => {
         <PatientResumeDialog
           currentStaff={currentStaff}
           errorMessage={
-            resumeService.isError ? resumeServiceErrorMessage(resumeService.error) : undefined
+            staff.isError
+              ? OPTIONS_LOAD_ERROR_MESSAGE
+              : resumeService.isError
+                ? resumeServiceErrorMessage(resumeService.error)
+                : undefined
           }
           isSubmitting={resumeService.isPending}
           onCancel={close}
