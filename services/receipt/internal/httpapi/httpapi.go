@@ -76,7 +76,8 @@ func NewHandler(logger *slog.Logger, cfg Config) http.Handler {
 		Middlewares: []openapi.MiddlewareFunc{s.limitBody},
 	})
 	// 生成物の Middlewares は操作ごとのハンドラーだけを包むので、定義にないパスの 404 にもトークンを求めるよう mux 全体を包む。
-	return s.logRequests(s.cors(s.authenticate(mux)))
+	// panic の 500 もアクセスログに出すよう、回復はログの内側に置く。
+	return s.logRequests(s.recoverPanic(s.cors(s.authenticate(mux))))
 }
 
 // GetHealthz は、{"status":"ok"} を返す。
@@ -230,4 +231,43 @@ func (s *server) logRequests(next http.Handler) http.Handler {
 			"duration_ms", time.Since(start).Milliseconds(),
 		)
 	})
+}
+
+// recoverPanic は、next の panic を回復し、panic の値とパスをエラーのログに書いて、500 の openapi.Error を返す。
+// http.ErrAbortHandler は、net/http が接続を切る合図なので、回復せずにもう一度 panic する。
+// レスポンスを書き始めた後の panic では、ステータスを書き直せないので、ログだけを書く。
+func (s *server) recoverPanic(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rec := &wroteRecorder{ResponseWriter: w}
+		defer func() {
+			p := recover()
+			if p == nil {
+				return
+			}
+			if err, ok := p.(error); ok && errors.Is(err, http.ErrAbortHandler) {
+				panic(p)
+			}
+			s.logger.ErrorContext(r.Context(), "panic", "recovered", p, "path", r.URL.Path)
+			if !rec.wrote {
+				s.writeJSON(w, http.StatusInternalServerError, errorBody(openapi.Internal, "照合に失敗した"))
+			}
+		}()
+		next.ServeHTTP(rec, r)
+	})
+}
+
+// wroteRecorder は、レスポンスのステータスを書いたかを覚える。
+type wroteRecorder struct {
+	http.ResponseWriter
+	wrote bool
+}
+
+func (r *wroteRecorder) WriteHeader(status int) {
+	r.wrote = true
+	r.ResponseWriter.WriteHeader(status)
+}
+
+func (r *wroteRecorder) Write(b []byte) (int, error) {
+	r.wrote = true
+	return r.ResponseWriter.Write(b)
 }
