@@ -19,12 +19,8 @@ import (
 
 	"github.com/Fukuemon/buddy/packages/go/oidc"
 
-	"github.com/Fukuemon/buddy/services/broker/internal/login"
+	"github.com/Fukuemon/buddy/services/broker/internal/staff"
 )
-
-// MaxAuthAge は、上流の IdP でログインしてから、トークンを発行してよい長さである。Hydra のログインのセッションと、
-// web のセッションの長さと同じにする。上流で止めたアカウントは、この長さを過ぎた次の上流のログインで拒まれる。
-const MaxAuthAge = 12 * time.Hour
 
 // TokenHookKeyHeader は、Hydra が token_hook を呼ぶときに、token_hook の鍵を入れるヘッダーである。
 const TokenHookKeyHeader = "Token-Hook-Key"
@@ -35,39 +31,27 @@ const (
 	maxHookBodyLen = 1 << 20
 )
 
-var (
-	// ErrSuspended は、登録か有効化しようとした職員が止められていることを示す。
-	ErrSuspended = errors.New("職員が止められている")
-	// ErrEmailTaken は、登録しようとしたメールの職員が、ほかの事業所にいることを示す。
-	ErrEmailTaken = errors.New("同じメールの職員がほかの事業所にいる")
-	// ErrNotPending は、登録の途中でない職員を消そうとしたことを示す。
-	ErrNotPending = errors.New("職員が登録の途中でない")
-	// ErrRetired は、退職した職員を有効にするか、止めるか、戻そうとしたことを示す。
-	ErrRetired = errors.New("職員が退職している")
-	// ErrNotSuspended は、止めていない職員（登録の途中の職員）を戻そうとしたことを示す。
-	ErrNotSuspended = errors.New("職員が止められていない")
-)
-
 // Store は、ブローカーの職員を読み書きする。
 type Store interface {
-	// Get は、ID が id の職員を返す。いなければ login.ErrNotFound を返す。
-	Get(ctx context.Context, id string) (login.StaffMember, error)
+	// Get は、ID が id の職員を返す。いなければ staff.ErrNotFound を返す。
+	Get(ctx context.Context, id string) (staff.Member, error)
 	// Register は、m のメールの職員がいなければ m を書き、書いた職員と true を返す。メールは全ての事業所で一意である。
-	// 同じ事業所に同じメールの職員がいれば、書かずにその職員と false を、ほかの事業所にいれば ErrEmailTaken を返す。
-	Register(ctx context.Context, m login.StaffMember) (login.StaffMember, bool, error)
-	// Activate は、登録の途中の職員 id を有効にする。有効な職員を有効にしても成功する。いなければ login.ErrNotFound を、
-	// 止めた職員なら ErrSuspended を、退職した職員なら ErrRetired を返す。
+	// 同じ事業所に同じメールの職員がいれば、書かずにその職員と false を返す。その職員が止められていれば staff.ErrSuspended を、
+	// ほかの事業所にいれば staff.ErrEmailTaken を返す。
+	Register(ctx context.Context, m staff.Member) (staff.Member, bool, error)
+	// Activate は、登録の途中の職員 id を有効にする。有効な職員を有効にしても成功する。いなければ staff.ErrNotFound を、
+	// 止めた職員なら staff.ErrSuspended を、退職した職員なら staff.ErrRetired を返す。
 	Activate(ctx context.Context, id string) error
-	// Delete は、登録の途中の職員 id を消す。いなければ login.ErrNotFound を、登録の途中でなければ ErrNotPending を返す。
+	// Delete は、登録の途中の職員 id を消す。いなければ staff.ErrNotFound を、登録の途中でなければ staff.ErrNotPending を返す。
 	Delete(ctx context.Context, id string) error
-	// Suspend は、職員 id を止める。止めた職員を止めても成功する。いなければ login.ErrNotFound を、
-	// 退職した職員なら ErrRetired を返す。
+	// Suspend は、職員 id を止める。止めた職員を止めても成功する。いなければ staff.ErrNotFound を、
+	// 退職した職員なら staff.ErrRetired を返す。
 	Suspend(ctx context.Context, id string) error
 	// Resume は、止めた職員 id を有効に戻す。上流のアカウントの結び付けは残す。有効な職員を戻しても成功する。
-	// いなければ login.ErrNotFound を、退職した職員なら ErrRetired を、登録の途中の職員なら ErrNotSuspended を返す。
+	// いなければ staff.ErrNotFound を、退職した職員なら staff.ErrRetired を、登録の途中の職員なら staff.ErrNotSuspended を返す。
 	Resume(ctx context.Context, id string) error
 	// Retire は、職員 id を退職にし、メールと上流のアカウントを消す。退職した職員を退職にしても成功する。
-	// いなければ login.ErrNotFound を返す。
+	// いなければ staff.ErrNotFound を返す。
 	Retire(ctx context.Context, id string) error
 }
 
@@ -112,7 +96,7 @@ type handler struct {
 //   - POST /internal/staff/{id}/suspend: 職員を止め（休職）、Hydra のログインのセッションと同意を取り消す
 //   - POST /internal/staff/{id}/resume: 止めた職員を有効に戻す（復職）
 //   - POST /internal/staff/{id}/retire: 職員を退職にしてメールと上流のアカウントを消し、Hydra のログインのセッションと同意を取り消す
-//   - POST /internal/token-hook: Hydra の oauth2.token_hook。有効でない職員と、上流のログインから MaxAuthAge を過ぎたトークンを拒む
+//   - POST /internal/token-hook: Hydra の oauth2.token_hook。有効でない職員と、上流のログインから staff.SessionMaxAge を過ぎたトークンを拒む
 //
 // /internal/staff の下は、cfg.Verifier が検証した access token が無ければ 401 を、cfg.Clients に無いクライアントか
 // 組織の ID を持つトークン（職員のトークン）なら 403 を返す。
@@ -176,8 +160,8 @@ func (h handler) register(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, r, http.StatusBadRequest, "invalid", "本文を読めません", err)
 		return
 	}
-	email := login.NormalizeEmail(in.Email)
-	if !login.ValidEmail(email) {
+	email := staff.NormalizeEmail(in.Email)
+	if !staff.ValidEmail(email) {
 		h.writeError(w, r, http.StatusBadRequest, "invalid", "メールの形式が正しくありません", nil)
 		return
 	}
@@ -185,19 +169,11 @@ func (h handler) register(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, r, http.StatusBadRequest, "invalid", "組織の上流の IdP の設定がありません", nil)
 		return
 	}
-	m, created, err := h.Staff.Register(r.Context(), login.StaffMember{
-		ID: h.NewID(), OrgID: in.OrgID, Email: email, Status: login.StatusPending,
+	m, created, err := h.Staff.Register(r.Context(), staff.Member{
+		ID: h.NewID(), OrgID: in.OrgID, Email: email, Status: staff.StatusPending,
 	})
-	if errors.Is(err, ErrEmailTaken) {
-		h.writeError(w, r, http.StatusConflict, "email_taken", "同じメールの職員がほかの事業所にいます", err)
-		return
-	}
 	if err != nil {
-		h.writeError(w, r, http.StatusInternalServerError, "internal", "職員を登録できません", err)
-		return
-	}
-	if m.Status == login.StatusSuspended {
-		h.writeError(w, r, http.StatusConflict, "suspended", "同じメールの職員が止められています", ErrSuspended)
+		h.writeStoreError(w, r, err, "職員を登録できません")
 		return
 	}
 	code := http.StatusOK
@@ -210,34 +186,22 @@ func (h handler) register(w http.ResponseWriter, r *http.Request) {
 
 func (h handler) activate(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	switch err := h.Staff.Activate(r.Context(), id); {
-	case errors.Is(err, login.ErrNotFound):
-		h.writeError(w, r, http.StatusNotFound, "not_found", "職員がいません", nil)
-	case errors.Is(err, ErrSuspended):
-		h.writeError(w, r, http.StatusConflict, "suspended", "職員が止められています", err)
-	case errors.Is(err, ErrRetired):
-		h.writeError(w, r, http.StatusConflict, "retired", "職員は退職しています", err)
-	case err != nil:
-		h.writeError(w, r, http.StatusInternalServerError, "internal", "職員を有効にできません", err)
-	default:
-		h.Logger.InfoContext(r.Context(), "職員を有効にした", "staff_id", id)
-		w.WriteHeader(http.StatusNoContent)
+	if err := h.Staff.Activate(r.Context(), id); err != nil {
+		h.writeStoreError(w, r, err, "職員を有効にできません")
+		return
 	}
+	h.Logger.InfoContext(r.Context(), "職員を有効にした", "staff_id", id)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h handler) delete(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	switch err := h.Staff.Delete(r.Context(), id); {
-	case errors.Is(err, login.ErrNotFound):
-		h.writeError(w, r, http.StatusNotFound, "not_found", "職員がいません", nil)
-	case errors.Is(err, ErrNotPending):
-		h.writeError(w, r, http.StatusConflict, "not_pending", "登録の途中でない職員は消せません", err)
-	case err != nil:
-		h.writeError(w, r, http.StatusInternalServerError, "internal", "職員を消せません", err)
-	default:
-		h.Logger.InfoContext(r.Context(), "職員を消した", "staff_id", id)
-		w.WriteHeader(http.StatusNoContent)
+	if err := h.Staff.Delete(r.Context(), id); err != nil {
+		h.writeStoreError(w, r, err, "職員を消せません")
+		return
 	}
+	h.Logger.InfoContext(r.Context(), "職員を消した", "staff_id", id)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // suspend は、職員を止めてから、Hydra のログインのセッションと同意を取り消す。取り消しに失敗したら、code が
@@ -246,15 +210,8 @@ func (h handler) delete(w http.ResponseWriter, r *http.Request) {
 func (h handler) suspend(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := r.PathValue("id")
-	switch err := h.Staff.Suspend(ctx, id); {
-	case errors.Is(err, login.ErrNotFound):
-		h.writeError(w, r, http.StatusNotFound, "not_found", "職員がいません", nil)
-		return
-	case errors.Is(err, ErrRetired):
-		h.writeError(w, r, http.StatusConflict, "retired", "職員は退職しています", err)
-		return
-	case err != nil:
-		h.writeError(w, r, http.StatusInternalServerError, "internal", "職員を止められません", err)
+	if err := h.Staff.Suspend(ctx, id); err != nil {
+		h.writeStoreError(w, r, err, "職員を止められません")
 		return
 	}
 	h.Logger.InfoContext(ctx, "職員を止めた", "staff_id", id)
@@ -264,19 +221,12 @@ func (h handler) suspend(w http.ResponseWriter, r *http.Request) {
 // resume は、止めた職員を有効に戻す。上流のアカウントの結び付けは残すので、職員は同じ上流のアカウントでログインできる。
 func (h handler) resume(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	switch err := h.Staff.Resume(r.Context(), id); {
-	case errors.Is(err, login.ErrNotFound):
-		h.writeError(w, r, http.StatusNotFound, "not_found", "職員がいません", nil)
-	case errors.Is(err, ErrRetired):
-		h.writeError(w, r, http.StatusConflict, "retired", "職員は退職しています", err)
-	case errors.Is(err, ErrNotSuspended):
-		h.writeError(w, r, http.StatusConflict, "not_suspended", "止めていない職員は戻せません", err)
-	case err != nil:
-		h.writeError(w, r, http.StatusInternalServerError, "internal", "職員を戻せません", err)
-	default:
-		h.Logger.InfoContext(r.Context(), "職員を戻した", "staff_id", id)
-		w.WriteHeader(http.StatusNoContent)
+	if err := h.Staff.Resume(r.Context(), id); err != nil {
+		h.writeStoreError(w, r, err, "職員を戻せません")
+		return
 	}
+	h.Logger.InfoContext(r.Context(), "職員を戻した", "staff_id", id)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // retire は、職員を退職にしてメールと上流のアカウントを消してから、Hydra のログインのセッションと同意を取り消す。
@@ -284,12 +234,8 @@ func (h handler) resume(w http.ResponseWriter, r *http.Request) {
 func (h handler) retire(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := r.PathValue("id")
-	switch err := h.Staff.Retire(ctx, id); {
-	case errors.Is(err, login.ErrNotFound):
-		h.writeError(w, r, http.StatusNotFound, "not_found", "職員がいません", nil)
-		return
-	case err != nil:
-		h.writeError(w, r, http.StatusInternalServerError, "internal", "職員を退職にできません", err)
+	if err := h.Staff.Retire(ctx, id); err != nil {
+		h.writeStoreError(w, r, err, "職員を退職にできません")
 		return
 	}
 	h.Logger.InfoContext(ctx, "職員を退職にした", "staff_id", id)
@@ -366,7 +312,7 @@ func (h handler) tokenHook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	m, err := h.Staff.Get(ctx, sub)
-	if errors.Is(err, login.ErrNotFound) {
+	if errors.Is(err, staff.ErrNotFound) {
 		deny("職員がいない", nil)
 		return
 	}
@@ -374,7 +320,7 @@ func (h handler) tokenHook(w http.ResponseWriter, r *http.Request) {
 		h.writeError(w, r, http.StatusInternalServerError, "internal", "職員を引けません", err)
 		return
 	}
-	if m.Status != login.StatusActive {
+	if !m.CanLogin() {
 		deny("職員が有効でない", errors.New(m.Status))
 		return
 	}
@@ -383,7 +329,7 @@ func (h handler) tokenHook(w http.ResponseWriter, r *http.Request) {
 		deny("ログインの時刻が無い", nil)
 		return
 	}
-	if h.Now().Sub(auth) > MaxAuthAge {
+	if h.Now().Sub(auth) > staff.SessionMaxAge {
 		deny("上流でのログインから時間が経ちすぎた", nil)
 		return
 	}
@@ -393,6 +339,30 @@ func (h handler) tokenHook(w http.ResponseWriter, r *http.Request) {
 type errorBody struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
+}
+
+// storeErrors は、Store が返す番兵のエラーの、応答の状態コードと文である。応答の code は、番兵のエラーの Code にする。
+var storeErrors = map[*staff.Error]struct {
+	status  int
+	message string
+}{
+	staff.ErrNotFound:     {http.StatusNotFound, "職員がいません"},
+	staff.ErrSuspended:    {http.StatusConflict, "職員が止められています"},
+	staff.ErrRetired:      {http.StatusConflict, "職員は退職しています"},
+	staff.ErrNotPending:   {http.StatusConflict, "登録の途中でない職員は消せません"},
+	staff.ErrNotSuspended: {http.StatusConflict, "止めていない職員は戻せません"},
+	staff.ErrEmailTaken:   {http.StatusConflict, "同じメールの職員がほかの事業所にいます"},
+}
+
+// writeStoreError は、Store が返した err を応答にする。storeErrors に無いエラーは、文を internalMsg にした internal の 500 にする。
+func (h handler) writeStoreError(w http.ResponseWriter, r *http.Request, err error, internalMsg string) {
+	if se, ok := errors.AsType[*staff.Error](err); ok {
+		if e, ok := storeErrors[se]; ok {
+			h.writeError(w, r, e.status, se.Code, e.message, err)
+			return
+		}
+	}
+	h.writeError(w, r, http.StatusInternalServerError, "internal", internalMsg, err)
 }
 
 func (h handler) writeError(w http.ResponseWriter, r *http.Request, code int, kind, msg string, err error) {

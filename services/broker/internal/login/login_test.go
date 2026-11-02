@@ -14,6 +14,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/broker/internal/hydra"
 	"github.com/Fukuemon/buddy/services/broker/internal/login"
+	"github.com/Fukuemon/buddy/services/broker/internal/staff"
 	"github.com/Fukuemon/buddy/services/broker/internal/upstream"
 )
 
@@ -24,16 +25,16 @@ const (
 )
 
 type fakeStaff struct {
-	members map[string]login.StaffMember
-	links   []login.UpstreamAccount
+	members map[string]staff.Member
+	links   []staff.UpstreamAccount
 	finds   int
 	// beforeLink が nil でなければ、Link の前に呼ぶ。同時のログインが先に結び付けた場面を作る
-	beforeLink func(f *fakeStaff, staffID string, a login.UpstreamAccount)
+	beforeLink func(f *fakeStaff, staffID string, a staff.UpstreamAccount)
 }
 
-func (f *fakeStaff) FindByEmail(_ context.Context, email string) ([]login.StaffMember, error) {
+func (f *fakeStaff) FindByEmail(_ context.Context, email string) ([]staff.Member, error) {
 	f.finds++
-	var out []login.StaffMember
+	var out []staff.Member
 	for _, m := range f.members {
 		if m.Email == email {
 			out = append(out, m)
@@ -42,24 +43,24 @@ func (f *fakeStaff) FindByEmail(_ context.Context, email string) ([]login.StaffM
 	return out, nil
 }
 
-func (f *fakeStaff) Get(_ context.Context, id string) (login.StaffMember, error) {
+func (f *fakeStaff) Get(_ context.Context, id string) (staff.Member, error) {
 	m, ok := f.members[id]
 	if !ok {
-		return login.StaffMember{}, login.ErrNotFound
+		return staff.Member{}, staff.ErrNotFound
 	}
 	return m, nil
 }
 
-func (f *fakeStaff) Link(_ context.Context, staffID string, a login.UpstreamAccount) error {
+func (f *fakeStaff) Link(_ context.Context, staffID string, a staff.UpstreamAccount) error {
 	if f.beforeLink != nil {
 		f.beforeLink(f, staffID, a)
 	}
-	if f.members[staffID].Upstream != (login.UpstreamAccount{}) {
-		return login.ErrConflict
+	if f.members[staffID].Upstream != (staff.UpstreamAccount{}) {
+		return staff.ErrConflict
 	}
 	for _, m := range f.members {
 		if m.Upstream == a {
-			return login.ErrConflict
+			return staff.ErrConflict
 		}
 	}
 	m := f.members[staffID]
@@ -160,9 +161,9 @@ func newEnv(limit int) *env {
 // newEnvWith は、送信元の IP アドレスごとの上限を limit にし、設定を edit で替えた env を作る。
 func newEnvWith(limit int, edit func(*login.Config)) *env {
 	e := &env{
-		staff: &fakeStaff{members: map[string]login.StaffMember{
-			aokiID: {ID: aokiID, OrgID: "org-a", Email: "aoki@example.com", Status: login.StatusActive},
-			uenoID: {ID: uenoID, OrgID: "org-b", Email: "ueno@example.com", Status: login.StatusActive},
+		staff: &fakeStaff{members: map[string]staff.Member{
+			aokiID: {ID: aokiID, OrgID: "org-a", Email: "aoki@example.com", Status: staff.StatusActive},
+			uenoID: {ID: uenoID, OrgID: "org-b", Email: "ueno@example.com", Status: staff.StatusActive},
 		}},
 		hydra: &fakeHydra{},
 		upstream: &fakeUpstream{identity: upstream.Identity{
@@ -254,10 +255,10 @@ func TestShowLoginSkip(t *testing.T) {
 		status string
 		want   string
 	}{
-		{"有効な職員", login.StatusActive, "http://hydra/login-accepted"},
-		{"止めた職員", login.StatusSuspended, "http://hydra/login-rejected"},
-		{"退職した職員", login.StatusRetired, "http://hydra/login-rejected"},
-		{"登録の途中の職員", login.StatusPending, "http://hydra/login-rejected"},
+		{"有効な職員", staff.StatusActive, "http://hydra/login-accepted"},
+		{"止めた職員", staff.StatusSuspended, "http://hydra/login-rejected"},
+		{"退職した職員", staff.StatusRetired, "http://hydra/login-rejected"},
+		{"登録の途中の職員", staff.StatusPending, "http://hydra/login-rejected"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			e := newEnv(10)
@@ -298,16 +299,16 @@ func TestSubmitEmailRejects(t *testing.T) {
 		{"登録していないメール", "nobody@example.com", nil},
 		{"止めた職員", "aoki@example.com", func(s *fakeStaff) {
 			m := s.members[aokiID]
-			m.Status = login.StatusSuspended
+			m.Status = staff.StatusSuspended
 			s.members[aokiID] = m
 		}},
 		{"登録の途中の職員", "aoki@example.com", func(s *fakeStaff) {
 			m := s.members[aokiID]
-			m.Status = login.StatusPending
+			m.Status = staff.StatusPending
 			s.members[aokiID] = m
 		}},
 		{"2 つの事業所に同じメール", "aoki@example.com", func(s *fakeStaff) {
-			s.members[uenoID] = login.StaffMember{ID: uenoID, OrgID: "org-b", Email: "aoki@example.com", Status: login.StatusActive}
+			s.members[uenoID] = staff.Member{ID: uenoID, OrgID: "org-b", Email: "aoki@example.com", Status: staff.StatusActive}
 		}},
 	}
 	for _, tt := range tests {
@@ -375,7 +376,7 @@ func TestSubmitEmailBodyTooLarge(t *testing.T) {
 
 // TestSubmitEmailInvalidEmail は、職員のメールの形でないメールに、メールごとの上限で数えずにログインの失敗の画面を出すことを確認する。
 func TestSubmitEmailInvalidEmail(t *testing.T) {
-	long := strings.Repeat("a", login.MaxEmailLen-len("@example.com")+1) + "@example.com"
+	long := strings.Repeat("a", staff.MaxEmailLen-len("@example.com")+1) + "@example.com"
 	for _, tt := range []struct{ name, email string }{
 		{"321 文字", long},
 		{"@ が無い", "aoki.example.com"},
@@ -548,16 +549,16 @@ func TestCallback(t *testing.T) {
 	tests := []struct {
 		name     string
 		identity upstream.Identity
-		linked   login.UpstreamAccount
+		linked   staff.UpstreamAccount
 		code     string
 		accepted bool
-		linkedTo []login.UpstreamAccount
+		linkedTo []staff.UpstreamAccount
 	}{
 		{
 			name:     "初回のログインで、確認済みのメールが登録と同じなら結び付ける",
 			identity: upstream.Identity{Issuer: issuerA, Subject: "u-aoki", Email: "Aoki@example.com", EmailVerified: true},
 			code:     "code-1", accepted: true,
-			linkedTo: []login.UpstreamAccount{{Issuer: issuerA, Subject: "u-aoki"}},
+			linkedTo: []staff.UpstreamAccount{{Issuer: issuerA, Subject: "u-aoki"}},
 		},
 		{
 			name:     "上流のメールが登録と違う",
@@ -572,13 +573,13 @@ func TestCallback(t *testing.T) {
 		{
 			name:     "結び付け済みなら iss と sub で照合し、メールを見ない",
 			identity: upstream.Identity{Issuer: issuerA, Subject: "u-aoki", Email: "renamed@example.com"},
-			linked:   login.UpstreamAccount{Issuer: issuerA, Subject: "u-aoki"},
+			linked:   staff.UpstreamAccount{Issuer: issuerA, Subject: "u-aoki"},
 			code:     "code-1", accepted: true,
 		},
 		{
 			name:     "結び付けた上流のアカウントと違う",
 			identity: upstream.Identity{Issuer: issuerA, Subject: "u-other", Email: "aoki@example.com", EmailVerified: true},
-			linked:   login.UpstreamAccount{Issuer: issuerA, Subject: "u-aoki"},
+			linked:   staff.UpstreamAccount{Issuer: issuerA, Subject: "u-aoki"},
 			code:     "code-1",
 		},
 		{
@@ -600,7 +601,7 @@ func TestCallback(t *testing.T) {
 			aoki.Upstream = tt.linked
 			e.staff.members[aokiID] = aoki
 			ueno := e.staff.members[uenoID]
-			ueno.Upstream = login.UpstreamAccount{Issuer: issuerA, Subject: "u-ueno"}
+			ueno.Upstream = staff.UpstreamAccount{Issuer: issuerA, Subject: "u-ueno"}
 			e.staff.members[uenoID] = ueno
 
 			rec := e.callback(t, e.submit("aoki@example.com"), tt.code)
@@ -663,15 +664,15 @@ func TestCallbackBadRequest(t *testing.T) {
 func TestCallbackConcurrentFirstLogin(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
-		linked  login.UpstreamAccount
+		linked  staff.UpstreamAccount
 		wantLoc string
 	}{
-		{"先のログインが同じアカウントを結び付けた", login.UpstreamAccount{Issuer: issuerA, Subject: "u-aoki"}, "http://hydra/login-accepted"},
-		{"先のログインが別のアカウントを結び付けた", login.UpstreamAccount{Issuer: issuerA, Subject: "u-other"}, "http://hydra/login-rejected"},
+		{"先のログインが同じアカウントを結び付けた", staff.UpstreamAccount{Issuer: issuerA, Subject: "u-aoki"}, "http://hydra/login-accepted"},
+		{"先のログインが別のアカウントを結び付けた", staff.UpstreamAccount{Issuer: issuerA, Subject: "u-other"}, "http://hydra/login-rejected"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			e := newEnv(10)
-			e.staff.beforeLink = func(f *fakeStaff, staffID string, _ login.UpstreamAccount) {
+			e.staff.beforeLink = func(f *fakeStaff, staffID string, _ staff.UpstreamAccount) {
 				m := f.members[staffID]
 				m.Upstream = tt.linked
 				f.members[staffID] = m
@@ -728,7 +729,7 @@ func TestConsent(t *testing.T) {
 	}
 
 	m := e.staff.members[uenoID]
-	m.Status = login.StatusSuspended
+	m.Status = staff.StatusSuspended
 	e.staff.members[uenoID] = m
 	if got := location(t, e.do(httptest.NewRequest(http.MethodGet, "/consent?consent_challenge=ch", nil))); got != "http://hydra/consent-rejected" {
 		t.Errorf("止めた職員の Location = %q, want reject", got)
