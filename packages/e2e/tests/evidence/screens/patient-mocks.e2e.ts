@@ -321,7 +321,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
       )
     })
 
-    test(`${prefix}利用者の詳細のモックで「…」を押した場合、利用の終了にするのメニューが開き、Escape で閉じること`, async ({
+    test(`${prefix}利用者の詳細のモックで「…」を押した場合、利用を終了するのメニューが開き、Escape で閉じること`, async ({
       browser,
     }) => {
       await recordMock(
@@ -329,15 +329,15 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
         variant,
         {
           name: 'patient-detail-menu',
-          title: '「…」を押すと利用の終了にするのメニューが開き、Escape で閉じる',
+          title: '「…」を押すと利用を終了するのメニューが開き、Escape で閉じる',
           file: `${DETAIL}/01-detail.html`,
         },
         async ({ page, step, check }) => {
           await step('「…」を押す')
           await page.getByTestId('patient-detail-menu').click()
           await expect(page).toHaveURL(/02-menu\.html/)
-          await expect(page.getByTestId('patient-detail-end')).toHaveText('利用の終了にする')
-          await check('「…」のメニュー（02-menu.html）に、利用の終了にするが出る')
+          await expect(page.getByTestId('patient-detail-end')).toHaveText('利用を終了する')
+          await check('「…」のメニュー（02-menu.html）に、利用を終了するが出る')
 
           await step('Escape キーを押す')
           await page.keyboard.press('Escape')
@@ -377,7 +377,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
       )
     })
 
-    test(`${prefix}残る予定が無い利用者を利用の終了にした場合、利用の終了の利用者になること`, async ({
+    test(`${prefix}残る予定が無い利用者の利用を終了した場合、利用の終了の利用者になること`, async ({
       browser,
     }) => {
       await recordMock(
@@ -385,7 +385,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
         variant,
         {
           name: 'patient-detail-end',
-          title: '残る予定が無ければ、確認のダイアログで利用の終了にでき、利用の終了の利用者になる',
+          title: '残る予定が無ければ、確認のダイアログで利用を終了でき、利用の終了の利用者になる',
           file: `${DETAIL}/04-end.html`,
         },
         async ({ page, step, check }) => {
@@ -396,7 +396,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
             '利用の終了の確認（04-end.html）に、戻せることと「今日以降の予定は残っていません。」が出る',
           )
 
-          await step('「利用の終了にする」を押す')
+          await step('「利用を終了する」を押す')
           await page.getByTestId('patient-end-submit').click()
           await expect(page).toHaveURL(/06-ended\.html/)
           await check('利用の終了の利用者（06-ended.html）へ移る')
@@ -404,7 +404,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
       )
     })
 
-    test(`${prefix}予定が残る利用者を利用の終了にしようとした場合、残る予定が出て、利用の終了にするが押せないこと`, async ({
+    test(`${prefix}予定が残る利用者の利用を終了しようとした場合、残る予定が出て、利用を終了するが押せないこと`, async ({
       browser,
     }) => {
       await recordMock(
@@ -412,11 +412,11 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
         variant,
         {
           name: 'patient-detail-end-refused',
-          title: '予定が残る利用者では、残る予定と繰り返しの予定が出て、利用の終了にするが押せない',
+          title: '予定が残る利用者では、残る予定と繰り返しの予定が出て、利用を終了するが押せない',
           file: `${DETAIL}/02-menu.html`,
         },
         async ({ page, step, check }) => {
-          await step('「…」のメニューの「利用の終了にする」を押す')
+          await step('「…」のメニューの「利用を終了する」を押す')
           await page.getByTestId('patient-detail-end').click()
           await expect(page).toHaveURL(/05-end-refused\.html/)
           await expect(page.getByTestId('patient-end-schedule-{予定の id}')).toHaveCount(2)
@@ -428,7 +428,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
             'true',
           )
           await check(
-            '利用の終了を拒む（05-end-refused.html）に、予定 2 件と繰り返しの予定 1 件が出て、「利用の終了にする」が押せない',
+            '利用の終了を拒む（05-end-refused.html）に、予定 2 件と繰り返しの予定 1 件が出て、「利用を終了する」が押せない',
           )
         },
       )
