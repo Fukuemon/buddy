@@ -77,10 +77,13 @@ status: stable
 - web の機能のコードは `src/features/<機能>/` に置き、中を `components/`、`lib/`、`schema/`、`constants/`、`queries.ts` に分ける。
   - 画面のコンポーネントは、表示だけを持つ Presentational（`<名前>.tsx`）と、query と router を読んで渡す Container（`<名前>Container.tsx`）を同じディレクトリに並べる。
     - route のファイルは Container を呼ぶ。
+    - データを読む画面の route は、`ssr` に `RENDER_DATA_ON_SERVER` を渡し、loader で Container の query を prefetch する。bff ではサーバーで描画し、fake ではブラウザでだけ描画する。
+    - デバイスの日付や時間帯で描く画面の route は `ssr: false` にし、理由を注釈に書く。
   - テストと story は対象の隣に置く（コロケーション）。
 - web の API の呼び出しは `src/api/` に置く。
   - 生成した型は `generated/` に置く。
   - `VITE_API_MODE` で、ブラウザのメモリで動くフェイク（`fake/`）と、BFF の server function を呼ぶ実装（`bff/`）を切り替える。
+    - フェイクは `loadFake.ts` の `import()` で読み、bff のビルドに、フェイクの実装とダミーデータを入れない。
   - `http/` は、サーバーから API を呼ぶ実装で、`src/server/` から使う。
 - サーバーだけで動く web の処理は `src/server/` に置く。
 - `packages/ui` へ移すのは、業務の名前を持たず、2 つ以上の画面で同じ形で使うコンポーネントだけにする。
