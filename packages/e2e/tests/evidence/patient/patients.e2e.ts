@@ -215,7 +215,7 @@ test.describe('利用者の一覧', () => {
       )
     })
 
-    test(`${prefix}利用者を利用の終了にした場合、利用者の一覧のデフォルトの表示に出ないこと`, async ({
+    test(`${prefix}利用者の利用を終了した場合、利用者の一覧のデフォルトの表示に出ないこと`, async ({
       browser,
       request,
     }) => {
@@ -223,7 +223,7 @@ test.describe('利用者の一覧', () => {
         browser,
         {
           name: 'patient-end-list',
-          title: '利用者を利用の終了にすると、利用者の一覧のデフォルトの表示に出ない',
+          title: '利用者の利用を終了すると、利用者の一覧のデフォルトの表示に出ない',
           actor: MANAGER,
           variant,
         },
@@ -237,16 +237,16 @@ test.describe('利用者の一覧', () => {
           await expect(page.getByTestId('patient-detail-name')).toHaveText(patient.name)
           await step(`${patient.name} の詳細を開いている`)
 
-          await step('「…」から「利用の終了にする」を押す')
+          await step('「…」から「利用を終了する」を押す')
           await page.getByTestId('patient-detail-menu').click()
           await page.getByTestId('patient-detail-end').click()
           const dialog = page.getByTestId('patient-end-dialog')
           await expect(dialog.getByTestId('patient-end-schedules')).toHaveText(
             '今日以降の予定は残っていません。',
           )
-          await check('残る予定が無いことを示し、利用の終了にするを押せる')
+          await check('残る予定が無いことを示し、利用を終了するを押せる')
 
-          await step('ダイアログの「利用の終了にする」を押す')
+          await step('ダイアログの「利用を終了する」を押す')
           await dialog.getByTestId('patient-end-submit').click()
           await expect(page.getByTestId('patient-detail-status')).toContainText('利用の終了')
 
@@ -259,7 +259,7 @@ test.describe('利用者の一覧', () => {
       )
     })
 
-    test(`${prefix}利用者を利用の終了にした場合、予定の作成の利用者の候補に出ないこと`, async ({
+    test(`${prefix}利用者の利用を終了した場合、予定の作成の利用者の候補に出ないこと`, async ({
       browser,
       request,
     }) => {
@@ -267,7 +267,7 @@ test.describe('利用者の一覧', () => {
         browser,
         {
           name: 'patient-end-candidate',
-          title: '利用者を利用の終了にすると、予定の作成の利用者の候補に出ない',
+          title: '利用者の利用を終了すると、予定の作成の利用者の候補に出ない',
           actor: MANAGER,
           variant,
         },
@@ -285,7 +285,7 @@ test.describe('利用者の一覧', () => {
           await expect(page.getByTestId(`patient-select-option-${patient.id}`)).toBeVisible()
           await step(`利用中の ${patient.name} は、予定の作成の利用者の候補に出ている`)
 
-          await step(`${patient.name} の詳細で、「…」から利用の終了にする`)
+          await step(`${patient.name} の詳細で、「…」から利用を終了する`)
           await page.goto(`/patients/${patient.id}`)
           await page.getByTestId('patient-detail-menu').click()
           await page.getByTestId('patient-detail-end').click()

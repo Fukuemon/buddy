@@ -118,7 +118,7 @@ export const useUpdatePatient = (patientId: Patient['id']) => {
   })
 }
 
-/** 利用の終了にする mutation。予定が残って拒まれたときは、残る予定を結果に持つ。 */
+/** 利用を終了する mutation。予定が残って拒まれたときは、残る予定を結果に持つ。 */
 export const useEndService = (patientId: Patient['id']) => {
   const { api, facilityId } = useBuddyApi()
   const changed = usePatientChanged()
