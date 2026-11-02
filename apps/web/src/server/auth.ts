@@ -181,15 +181,14 @@ export const viewerOf = ({
   staffId,
   staffName,
   facilityId,
-  canManageStaff,
-  canCheckReceipt,
+  policyCodes,
   schedulePolicies,
 }: Session): Viewer => ({
   staffId,
   staffName,
   facilityId,
-  canManageStaff,
-  canCheckReceipt,
+  // policyCodes を足す前に作ったセッションには無い。GET /v1/me が失敗したときは、権限を持たないとみなす
+  policyCodes: policyCodes ?? [],
   schedulePolicies,
 })
 

@@ -1,5 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
+import { requirePermission } from '#/api/permissions'
+import { STAFF_MANAGE } from '#/api/types'
 import { SiteLayoutContainer } from '#/components/layout/SiteLayoutContainer'
 import { CalendarReviewBadgeContainer } from '#/features/calendar/components/CalendarReviewBadgeContainer'
 import { CalendarImportContainer } from '#/features/calendar/components/CalendarImportContainer'
@@ -7,6 +9,7 @@ import { calendarImportSearchSchema } from '#/features/calendar/schema/calendarI
 
 // `/schedule` の子にすると予定のカレンダーの上に重なるので、名前の `_` で入れ子から外す
 export const Route = createFileRoute('/schedule_/import')({
+  beforeLoad: requirePermission(STAFF_MANAGE),
   validateSearch: calendarImportSearchSchema,
   // 期間のデフォルト値を、職員のデバイスの日付で決めるため、サーバーで描画しない
   ssr: false,

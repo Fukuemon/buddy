@@ -262,7 +262,7 @@ describe('fromApiMe', () => {
     policies,
   })
 
-  it('権限のコードから、職員の管理と照合の可否と、予定の権限を作る', () => {
+  it('権限のコードをそのまま写し、予定の権限を対象とともに作る', () => {
     expect(
       fromApiMe(
         me([policy('staff.manage'), policy('schedule.user.read', ['staff-2']), policy('x.y')]),
@@ -271,18 +271,16 @@ describe('fromApiMe', () => {
       staffId: 'staff-1',
       staffName: '青木 陽菜',
       facilityId: 'facility-1',
-      canManageStaff: true,
-      canCheckReceipt: false,
+      policyCodes: ['staff.manage', 'schedule.user.read', 'x.y'],
       schedulePolicies: [
         { code: 'schedule.user.read', targetStaffIds: ['staff-2'], targetTeamIds: [] },
       ],
     })
   })
 
-  it('権限が無ければ、全ての出し分けを閉じる', () => {
+  it('権限が無ければ、権限のコードの一覧を空にする', () => {
     expect(fromApiMe(me([]))).toMatchObject({
-      canManageStaff: false,
-      canCheckReceipt: false,
+      policyCodes: [],
       schedulePolicies: [],
     })
   })

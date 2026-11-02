@@ -1,10 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useRouteContext } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
-import { PageForbiddenMessage } from '#/components/page/PageForbiddenMessage'
 
 import { LIST_LOAD_ERROR_MESSAGE } from '../lib/errorMessage'
 import { DEFAULT_STAFF_LIST_FILTER, filterStaff } from '../lib/filter'
@@ -46,10 +45,9 @@ const StaffListContent = () => {
 }
 
 /**
- * 職員の一覧の画面。職員の管理の権限が無ければ、API を呼ばずに権限が無いことを示す。
+ * 職員の一覧の画面。
  * 全ての職員と絞り込みの選択肢を読み、名前の検索と絞り込みは画面で行う。
  */
 export const StaffListContainer = () => {
-  const { viewer } = useRouteContext({ from: '__root__' })
-  return viewer?.canManageStaff ? <StaffListContent /> : <PageForbiddenMessage />
+  return <StaffListContent />
 }

@@ -18,10 +18,11 @@ export type Viewer = {
   staffId: string
   staffName: string
   facilityId: FacilityId
-  /** 職員の管理の権限（staff.manage）を持つか。画面の出し分けだけに使い、拒むのは API である。 */
-  canManageStaff: boolean
-  /** 照合の権限（receipt.check）を持つか。画面の出し分けだけに使い、拒むのは照合の API である。 */
-  canCheckReceipt: boolean
+  /**
+   * 職員が持つ権限の code の一覧。予定の API の code をそのまま写す。
+   * 画面の出し分けだけに使い、hasPermission で読む。拒むのは API である（ADR-0025）。
+   */
+  policyCodes: readonly string[]
   /** 予定の権限（schedule.*）と対象。画面の出し分けだけに使い、拒むのは予定の API である。 */
   schedulePolicies: readonly SchedulePolicy[]
 }

@@ -1,12 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useRouteContext } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { ApiError } from '#/api/BuddyApi'
 import type { Staff, StaffAssignments } from '#/api/types'
 import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
-import { PageForbiddenMessage } from '#/components/page/PageForbiddenMessage'
 
 import {
   ASSIGNMENTS_LOAD_ERROR_MESSAGE,
@@ -210,14 +208,10 @@ const StaffDetailContent = ({ staffId, viewerId }: { staffId: Staff['id']; viewe
 }
 
 /**
- * 職員の詳細の画面。職員の管理の権限が無ければ、API を呼ばずに権限が無いことを示す。
+ * 職員の詳細の画面。
  * 職員、役職、権限と、権限の対象の名前を引く職員とチームを読み、プロフィール、役職、権限、在籍を変える。
  */
 export const StaffDetailContainer = ({ staffId }: { staffId: Staff['id'] }) => {
-  const { viewer } = useRouteContext({ from: '__root__' })
-  return viewer?.canManageStaff ? (
-    <StaffDetailContent staffId={staffId} viewerId={viewer.staffId} />
-  ) : (
-    <PageForbiddenMessage />
-  )
+  const { viewer } = useBuddyApi()
+  return <StaffDetailContent staffId={staffId} viewerId={viewer.staffId} />
 }

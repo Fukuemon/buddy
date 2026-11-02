@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './CalendarReviewContainer.stories'
 
-const { AcceptFailed, Default, Empty, Forbidden, LoadError } = composeStories(stories)
+const { AcceptFailed, Default, Empty, LoadError } = composeStories(stories)
 
 /**
  * 一覧の行を押し、予定の確認のダイアログを開く。
@@ -145,11 +145,5 @@ describe('CalendarReviewContainer', () => {
       '確認が必要な予定を読み込めませんでした。',
     )
     expect(screen.getByTestId('calendar-review-retry')).toBeInTheDocument()
-  })
-
-  it('職員の管理の権限が無ければ、一覧を出さない', async () => {
-    render(<Forbidden />)
-    expect(await screen.findByTestId('page-forbidden')).toBeInTheDocument()
-    expect(screen.queryByTestId('calendar-review-table')).toBeNull()
   })
 })

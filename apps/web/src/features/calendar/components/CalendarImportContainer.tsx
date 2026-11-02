@@ -1,11 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useRouteContext } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import type { ImportRange, Staff } from '#/api/types'
 import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
-import { PageForbiddenMessage } from '#/components/page/PageForbiddenMessage'
 
 import {
   IMPORT_LOAD_ERROR_MESSAGE,
@@ -168,10 +167,9 @@ const CalendarImportContent = ({ staffId, onStaffChange }: CalendarImportContain
 }
 
 /**
- * 予定の取り込みの画面。職員の管理の権限が無ければ、API を呼ばずに権限が無いことを示す。
+ * 予定の取り込みの画面。
  * 結び付けたカレンダーと職員を読み、選んだ職員と期間でプレビューし、確認が必要な予定の取り込み方を選んで確定する。
  */
 export const CalendarImportContainer = (props: CalendarImportContainerProps) => {
-  const { viewer } = useRouteContext({ from: '__root__' })
-  return viewer?.canManageStaff ? <CalendarImportContent {...props} /> : <PageForbiddenMessage />
+  return <CalendarImportContent {...props} />
 }

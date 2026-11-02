@@ -1,12 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useRouteContext } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { ApiError } from '#/api/BuddyApi'
 import type { Patient, PatientSchedules } from '#/api/types'
 import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
-import { PageForbiddenMessage } from '#/components/page/PageForbiddenMessage'
 
 import {
   DETAIL_LOAD_ERROR_MESSAGE,
@@ -159,14 +157,9 @@ const PatientDetailContent = ({ patientId }: { patientId: Patient['id'] }) => {
 }
 
 /**
- * 利用者の詳細の画面。職員の管理の権限が無ければ、API を呼ばずに権限が無いことを示す。
+ * 利用者の詳細の画面。
  * 利用者と、担当の職員の状態を出す職員とサービスコードを読み、利用者の編集、利用の終了、利用の再開をダイアログで行う。
  */
 export const PatientDetailContainer = ({ patientId }: { patientId: Patient['id'] }) => {
-  const { viewer } = useRouteContext({ from: '__root__' })
-  return viewer?.canManageStaff ? (
-    <PatientDetailContent patientId={patientId} />
-  ) : (
-    <PageForbiddenMessage />
-  )
+  return <PatientDetailContent patientId={patientId} />
 }

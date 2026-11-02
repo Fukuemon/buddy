@@ -1,7 +1,8 @@
 import { clsx } from 'clsx'
 import { useId, type ComponentType, type ReactNode, type SVGProps } from 'react'
 
-import type { Viewer } from '#/api/types'
+import { hasPermission } from '#/api/permissions'
+import { RECEIPT_CHECK, STAFF_MANAGE, type Viewer } from '#/api/types'
 
 import ScheduleIcon from '#/assets/icons/calendar-month.svg?react'
 import ImportIcon from '#/assets/icons/download.svg?react'
@@ -155,14 +156,14 @@ const STAFF_GROUP: SiteNavGroup = {
  * ナビゲーションに並べる画面。取り込み、要確認、連携と職員と利用者は職員の管理の権限を持つ職員にだけ、
  * 照合は照合の権限を持つ職員にだけ出す。
  */
-export const siteNavGroups = ({
-  canManageStaff,
-  canCheckReceipt,
-}: Pick<Viewer, 'canManageStaff' | 'canCheckReceipt'>): readonly SiteNavGroup[] => [
-  {
-    label: '予定',
-    items: canManageStaff ? [SCHEDULE_ITEM, ...SCHEDULE_MANAGER_ITEMS] : [SCHEDULE_ITEM],
-  },
-  ...(canCheckReceipt ? [RECEIPT_GROUP] : []),
-  ...(canManageStaff ? [STAFF_GROUP, PATIENT_GROUP] : []),
-]
+export const siteNavGroups = (viewer: Viewer | null): readonly SiteNavGroup[] => {
+  const managesStaff = hasPermission(viewer, STAFF_MANAGE)
+  return [
+    {
+      label: '予定',
+      items: managesStaff ? [SCHEDULE_ITEM, ...SCHEDULE_MANAGER_ITEMS] : [SCHEDULE_ITEM],
+    },
+    ...(hasPermission(viewer, RECEIPT_CHECK) ? [RECEIPT_GROUP] : []),
+    ...(managesStaff ? [STAFF_GROUP, PATIENT_GROUP] : []),
+  ]
+}

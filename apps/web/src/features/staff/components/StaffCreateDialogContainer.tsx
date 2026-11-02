@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate, useRouteContext } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 
+import { STAFF_MANAGE } from '#/api/types'
 import { useBuddyApi } from '#/api/useBuddyApi'
+import { PermissionGuard } from '#/components/PermissionGuard'
 
 import { OPTIONS_LOAD_ERROR_MESSAGE, staffSubmitErrorMessage } from '../lib/errorMessage'
 import {
@@ -49,6 +51,9 @@ const StaffCreateDialogContent = () => {
  * 登録できたら、登録した職員の詳細へ移る。
  */
 export const StaffCreateDialogContainer = () => {
-  const { viewer } = useRouteContext({ from: '__root__' })
-  return viewer?.canManageStaff ? <StaffCreateDialogContent /> : null
+  return (
+    <PermissionGuard permission={STAFF_MANAGE}>
+      <StaffCreateDialogContent />
+    </PermissionGuard>
+  )
 }

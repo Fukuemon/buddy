@@ -3,7 +3,6 @@ import { fn, userEvent, within } from 'storybook/test'
 
 import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
-import { FAKE_VIEWER } from '#/api/fake/fixtures'
 import {
   emptyBuddyApi,
   failingBuddyApi,
@@ -63,11 +62,6 @@ export const Loading: Story = { parameters: route({ api: pendingBuddyApi() }) }
 export const LoadError: Story = { parameters: route({ api: failingBuddyApi() }) }
 
 export const NoCalendar: Story = { parameters: route({ api: emptyBuddyApi() }) }
-
-/** 職員の管理の権限を持たない職員。API を呼ばない（全ての API が失敗しても、権限が無いことだけを示す）。 */
-export const Forbidden: Story = {
-  parameters: route({ api: failingBuddyApi(), viewer: { ...FAKE_VIEWER, canManageStaff: false } }),
-}
 
 export const Previewing: Story = {
   parameters: route({ api: calendarsApi({ preview: () => new Promise(() => {}) }) }),

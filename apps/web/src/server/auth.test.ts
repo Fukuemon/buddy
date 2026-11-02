@@ -20,8 +20,7 @@ const VIEWER = {
   staffId: 'staff-1',
   staffName: '青木 陽菜',
   facilityId: 'facility-1',
-  canManageStaff: false,
-  canCheckReceipt: false,
+  policyCodes: [],
   schedulePolicies: [],
 }
 
@@ -53,7 +52,7 @@ const setup = (overrides: Partial<AuthDeps> = {}) => {
     secureCookie: false,
     fetchMe: async () => ({
       ok: true,
-      viewer: { ...VIEWER, canManageStaff: false, canCheckReceipt: false, schedulePolicies: [] },
+      viewer: { ...VIEWER, policyCodes: [], schedulePolicies: [] },
     }),
     now: () => 1_000_000,
     wait: async () => {},
@@ -255,13 +254,19 @@ describe('viewerOf', () => {
   it('セッションから、トークンを除いて職員と権限の値をそのまま返す', () => {
     const session: Session = {
       ...VIEWER,
-      canManageStaff: true,
+      policyCodes: ['staff.manage'],
       accessToken: 'at',
       refreshToken: 'rt',
       expiresAt: 1,
       idToken: 'id',
     }
-    expect(viewerOf(session)).toEqual({ ...VIEWER, canManageStaff: true })
+    expect(viewerOf(session)).toEqual({ ...VIEWER, policyCodes: ['staff.manage'] })
+  })
+
+  it('権限の code の一覧を持たない前の形のセッションでは、権限を持たない職員を返す', () => {
+    const { policyCodes: _, ...legacy } = VIEWER
+    const session = { ...legacy, accessToken: 'at' } as unknown as Session
+    expect(viewerOf(session)).toEqual({ ...VIEWER, policyCodes: [] })
   })
 })
 
@@ -276,13 +281,12 @@ describe('readViewer', () => {
   it('ログインの後に変えた権限を、GET /v1/me から読み直す', async () => {
     const fetchMe = vi.fn<AuthDeps['fetchMe']>(async () => ({
       ok: true,
-      viewer: { ...VIEWER, canManageStaff: true, canCheckReceipt: true, schedulePolicies: [] },
+      viewer: { ...VIEWER, policyCodes: ['staff.manage', 'receipt.check'], schedulePolicies: [] },
     }))
     const { deps } = setup({ fetchMe })
     expect(await readViewer(await requestWith(deps), deps)).toEqual({
       ...VIEWER,
-      canManageStaff: true,
-      canCheckReceipt: true,
+      policyCodes: ['staff.manage', 'receipt.check'],
       schedulePolicies: [],
     })
     expect(fetchMe).toHaveBeenCalledWith('at')

@@ -1,12 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
+import { FAKE_VIEWER } from '#/api/fake/fixtures'
+
 import { SiteNav, siteNavGroups } from './SiteNav'
 
 const meta = {
   title: '画面/Common/SiteNav',
   component: SiteNav,
   args: {
-    groups: siteNavGroups({ canManageStaff: true, canCheckReceipt: true }),
+    groups: siteNavGroups({ ...FAKE_VIEWER, policyCodes: ['staff.manage', 'receipt.check'] }),
     current: '/schedule/review',
     badges: {
       review: (
@@ -37,7 +39,7 @@ export const Rail: Story = { args: { current: '/schedule', isRail: true } }
 /** 職員の管理の権限を持たず、照合の権限を持つ職員（事務）が、照合の画面を開いた状態。予定の下はカレンダーだけになる。 */
 export const Staff: Story = {
   args: {
-    groups: siteNavGroups({ canManageStaff: false, canCheckReceipt: true }),
+    groups: siteNavGroups({ ...FAKE_VIEWER, policyCodes: ['receipt.check'] }),
     current: '/receipt',
     badges: {},
   },
@@ -46,7 +48,7 @@ export const Staff: Story = {
 /** 職員の管理の権限も照合の権限も持たない職員（チームリーダーとメンバー）。照合を出さない。 */
 export const Member: Story = {
   args: {
-    groups: siteNavGroups({ canManageStaff: false, canCheckReceipt: false }),
+    groups: siteNavGroups({ ...FAKE_VIEWER, policyCodes: [] }),
     current: '/schedule',
     badges: {},
   },

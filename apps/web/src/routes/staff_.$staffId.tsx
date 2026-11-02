@@ -1,11 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
 
+import { requirePermission } from '#/api/permissions'
+import { STAFF_MANAGE } from '#/api/types'
 import { SiteLayoutContainer } from '#/components/layout/SiteLayoutContainer'
 import { CalendarReviewBadgeContainer } from '#/features/calendar/components/CalendarReviewBadgeContainer'
 import { StaffDetailContainer } from '#/features/staff/components/StaffDetailContainer'
 
 // `/staff` の子にすると職員の一覧の上に重なるので、名前の `_` で入れ子から外す
 export const Route = createFileRoute('/staff_/$staffId')({
+  beforeLoad: requirePermission(STAFF_MANAGE),
   // フェイクの API はデータをブラウザのメモリに持つため、サーバーで描画しない
   ssr: false,
   head: () => ({ meta: [{ title: '職員の詳細 | buddy' }] }),

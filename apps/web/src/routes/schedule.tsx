@@ -1,5 +1,6 @@
 import { Outlet, createFileRoute, stripSearchParams } from '@tanstack/react-router'
 
+import { requirePermission } from '#/api/permissions'
 import { CalendarReviewBadgeContainer } from '#/features/calendar/components/CalendarReviewBadgeContainer'
 import { SchedulePageLayout } from '#/features/schedule/components/SchedulePageLayout'
 import {
@@ -8,6 +9,7 @@ import {
 } from '#/features/schedule/schema/scheduleSearch'
 
 export const Route = createFileRoute('/schedule')({
+  beforeLoad: requirePermission('none'),
   validateSearch: scheduleSearchSchema,
   search: { middlewares: [stripSearchParams(scheduleSearchDefaults)] },
   // フェイクの API は予定をブラウザのメモリに持つため、サーバーで描画しない。bff ではサーバーで描画できるので見直す。

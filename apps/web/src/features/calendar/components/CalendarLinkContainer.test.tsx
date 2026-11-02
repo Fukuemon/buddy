@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './CalendarLinkContainer.stories'
 
-const { Default, Forbidden, LoadError, NotConfigured } = composeStories(stories)
+const { Default, LoadError, NotConfigured } = composeStories(stories)
 
 const openLinkDialog = async (staffId: string) => {
   await userEvent.click(await screen.findByTestId(`calendar-link-open-${staffId}`))
@@ -125,15 +125,5 @@ describe('CalendarLinkContainer', () => {
       '職員とカレンダーを読み込めませんでした。時間をおいて、読み直してください。',
     )
     expect(screen.getByTestId('calendar-link-retry')).toBeInTheDocument()
-  })
-
-  it('職員の管理の権限が無ければ、API を呼ばずに権限が無いことを示す', async () => {
-    render(<Forbidden />)
-    expect(await screen.findByTestId('page-forbidden')).toHaveTextContent(
-      'この画面を開く権限がありません',
-    )
-    expect(screen.getByTestId('page-forbidden-back')).toHaveAttribute('href', '/schedule')
-    expect(screen.queryByTestId('calendar-link-error')).toBeNull()
-    expect(screen.queryByTestId('calendar-link-loading')).toBeNull()
   })
 })

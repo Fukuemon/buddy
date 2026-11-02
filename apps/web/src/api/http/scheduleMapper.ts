@@ -1,7 +1,5 @@
 import type { components } from '../generated/schedule'
 import {
-  RECEIPT_CHECK,
-  STAFF_MANAGE,
   SCHEDULE_CATEGORIES,
   SCHEDULE_POLICY_CODES,
   type Schedule,
@@ -72,8 +70,7 @@ export const fromApiMe = (me: Schemas['StaffDetail']): Viewer => ({
   staffId: me.id,
   staffName: me.username,
   facilityId: me.facility_id,
-  canManageStaff: me.policies.some((p) => p.code === STAFF_MANAGE),
-  canCheckReceipt: me.policies.some((p) => p.code === RECEIPT_CHECK),
+  policyCodes: me.policies.map((p) => p.code),
   schedulePolicies: fromApiSchedulePolicies(me.policies),
 })
 

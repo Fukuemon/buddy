@@ -1,6 +1,8 @@
 import { useRouteContext } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 
+import { useViewer } from '#/api/viewer'
+
 import { SiteLayout, type SiteLayoutProps } from './SiteLayout'
 import { siteNavGroups } from './SiteNav'
 import { ViewerMenu } from './ViewerMenu'
@@ -28,7 +30,8 @@ export const SiteLayoutContainer = ({
   isSidebarOpen,
   children,
 }: SiteLayoutContainerProps) => {
-  const { viewer, mode } = useRouteContext({ from: '__root__' })
+  const { mode } = useRouteContext({ from: '__root__' })
+  const viewer = useViewer()
   return (
     <SiteLayout
       account={
@@ -36,10 +39,7 @@ export const SiteLayoutContainer = ({
       }
       current={current}
       navBadges={{ review: reviewBadge }}
-      navGroups={siteNavGroups({
-        canManageStaff: viewer?.canManageStaff === true,
-        canCheckReceipt: viewer?.canCheckReceipt === true,
-      })}
+      navGroups={siteNavGroups(viewer)}
       isSidebarOpen={isSidebarOpen}
       sidebar={sidebar}
       startsWithRail={startsWithRail}
