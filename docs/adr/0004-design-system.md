@@ -138,6 +138,7 @@ apps/web は packages/ui に依存するので、依存の向きを変えずに 
   - pull request ごとのプレビューについて、この判断は [ADR-0019](0019-docs-site-publish-and-contrast-check.md) で置き換えた。
   - Cloudflare Access で許可した人だけが開けるようにすることについて、この判断は [ADR-0020](0020-docs-site-without-access.md) で置き換えた。
 - Access で絞っても、カタログに載せるのはコンポーネントとダミーデータだけにする。許可した人の範囲は変わりうるためである。
+  - Access で絞ることは [ADR-0020](0020-docs-site-without-access.md) で置き換えた。カタログに載せるものをコンポーネントとダミーデータに限る規則は、ADR-0020 でも残した。
 
 ## Considered Options
 
@@ -198,5 +199,7 @@ apps/web は packages/ui に依存するので、依存の向きを変えずに 
 - コンポーネントを移すときに、Tailwind のデフォルトのユーティリティ（`text-sm`、`rounded-xl` など）を使う箇所を全て書き換える必要がある。
 - DADS のバージョンを上げるたびに、`tokens.css` の名前と値の差分を確認する必要がある。
 - カタログを Access で許可した人に見せるため、Cloudflare のアカウント、API トークン、Access の許可の設定を保つ必要がある。カタログの Worker の名前を変えると、新しい Worker は Access なしで出る。
+  - Access の許可の設定を保つことは、[ADR-0020](0020-docs-site-without-access.md) で Access を外したので要らなくなった。
 - pull request のプレビューのため、書き込みの権限を持つ人は Cloudflare のトークンを読める。トークンの範囲をこの Worker に絞り、漏れたときに書き換えられるものを、このサイトの中身と設定に限る。
+  - pull request のプレビューは [ADR-0019](0019-docs-site-publish-and-contrast-check.md) でやめ、トークンを develop に限った environment に置いた。
 - story のデータを作る人が、ダミーデータに限る規則を守る必要がある。

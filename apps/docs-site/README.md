@@ -91,4 +91,4 @@ pnpm site:build
 - 静的なファイルの配置先は、`wrangler.config.ts` にある。
   - `cf` の 1.0.0-beta は、静的なファイルのビルドに wrangler を使うためである。
 - `cf` は beta なので、バージョンを固定している。
-  - 上げるときは、`deploy:dry-run` が通ることを確認し、develop に入った後の本番の公開と保護の確認を見る。
+  - 上げるときは、`deploy:dry-run` が通ることを確認し、develop に入った後の本番の公開と、ログインなしで開けるかの確認を見る。
