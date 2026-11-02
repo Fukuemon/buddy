@@ -18,6 +18,13 @@ const focusByTab = async (page: Page, field: Locator) => {
   await expect(field).toBeFocused()
 }
 
+/** 字幕の帯に隠れないように story の中身を下へずらし、zoom の倍率で拡大する。撮影のための操作なので、前に字幕で断る。 */
+const shiftStory = async (page: Page, zoom = 1) => {
+  await page.addStyleTag({
+    content: `#storybook-root { padding-top: ${Math.round(72 / zoom)}px; zoom: ${zoom}; }`,
+  })
+}
+
 /** 上の要素の下端から、下の要素の上端までの px。 */
 const spaceBetween = async (upper: Locator, lower: Locator): Promise<number> => {
   const a = await upper.boundingBox()
@@ -52,13 +59,15 @@ test.describe('入力の欄', () => {
             await step(
               'FormField の補足の文と誤りの文がある欄（Storybook の FormField の WithHintAndError）を開いている',
             )
+            // 拡大すると位置の値も拡大されるので、拡大の前に測る
+            const space = await spaceBetween(fieldLabel(pageBody(page), 'メールアドレス'), input)
+            await step('(撮影のため、字幕に隠れないように下へずらし、2 倍に拡大する)')
+            await shiftStory(page, 2)
 
             await step('欄の 1 つ前に戻り、Tab キーで「メールアドレス」の欄に移る')
             await focusByTab(page, input)
-            const label = fieldLabel(pageBody(page), 'メールアドレス')
-            const space = await spaceBetween(label, input)
             await check(
-              `フォーカスの表示（欄の外へ 6px）と「メールアドレス」の文字の間に余白があり、重ならない（撮影のため、見出しと欄の間の ${space}px を出す）`,
+              `フォーカスの表示と「メールアドレス」の文字の間に余白があり、重ならない（撮影のため、見出しと欄の間の ${space}px を出す。フォーカスの表示は欄の外へ 6px 広がる）`,
             )
           },
         )
@@ -88,11 +97,14 @@ test.describe('入力の欄', () => {
             await step(
               'FormField の補足の文と誤りの文がある欄（Storybook の FormField の WithHintAndError）を開いている',
             )
+            // 拡大すると位置の値も拡大されるので、拡大の前に測る
+            const hint = fieldNote(pageBody(page), 'ログインに使うメールアドレスです。')
+            const space = await spaceBetween(input, hint)
+            await step('(撮影のため、字幕に隠れないように下へずらし、2 倍に拡大する)')
+            await shiftStory(page, 2)
 
             await step('欄の 1 つ前に戻り、Tab キーで「メールアドレス」の欄に移る')
             await focusByTab(page, input)
-            const hint = fieldNote(pageBody(page), 'ログインに使うメールアドレスです。')
-            const space = await spaceBetween(input, hint)
             await check(
               `フォーカスの表示が、下の補足の文「ログインに使うメールアドレスです。」と誤りの文に重ならない（撮影のため、欄と補足の文の間の ${space}px を出す）`,
             )
@@ -120,6 +132,8 @@ test.describe('入力の欄', () => {
             const month = page.getByTestId('receipt-month')
             await expect(month).toBeVisible()
             await step('照合の条件の欄（Storybook の ReceiptCheckForm の Calendar）を開いている')
+            await step('(撮影のため、字幕に隠れないように下へずらす)')
+            await shiftStory(page)
 
             await step('Tab キーで「対象の月」の欄に移る')
             await focusByTab(page, month)
@@ -136,12 +150,14 @@ test.describe('入力の欄', () => {
               `フォーカスの表示が、上の「実績の CSV」と下の補足の文に重ならない（撮影のため、見出しと欄の間の ${fileSpace}px を出す）`,
             )
 
+            await step('職員の一覧（Storybook の StaffListContainer の Default）を開く')
             await page.goto(STAFF_LIST_URL)
             const team = page.getByTestId('staff-list-filter-team')
             await expect(team).toBeEnabled()
-            await step(
-              '職員の一覧（Storybook の StaffListContainer の Default）を開き、Tab キーで「チーム」の絞り込みに移る',
-            )
+            await step('(撮影のため、字幕に隠れないように下へずらす)')
+            await shiftStory(page)
+
+            await step('Tab キーで「チーム」の絞り込みに移る')
             await focusByTab(page, team)
             await check('フォーカスの表示が、隣の絞り込みと件数の文字に重ならない')
           },
