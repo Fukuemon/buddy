@@ -1,8 +1,9 @@
 import { useId, type ReactNode } from 'react'
 
-/** FormField の中に置く input と select のクラス名。誤りがあると枠を強め、無効では面と文字を無効の色にする。 */
-export const formFieldControlClassName =
-  'min-h-11 w-full rounded-8 bg-surface px-3 text-body ring-1 ring-border-field ring-inset focus-visible:focus-ring disabled:bg-surface-disabled disabled:text-text-disabled aria-invalid:ring-2 aria-invalid:ring-danger'
+import { fieldControlClassName } from '../FieldFrame/fieldClassName'
+
+/** FormField の中に置く input と select のクラス名。状態ごとの枠と面は fieldControlClassName に従う。 */
+export const formFieldControlClassName = `min-h-11 w-full px-3 text-body ${fieldControlClassName}`
 
 /** FormField が children に渡す、欄に付ける属性。 */
 export type FormFieldControlProps = {

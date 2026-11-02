@@ -6,7 +6,7 @@ import { CalendarLinkContainer } from '#/features/calendar/components/CalendarLi
 
 // `/schedule` の子にすると予定のカレンダーの上に重なるので、名前の `_` で入れ子から外す
 export const Route = createFileRoute('/schedule_/link')({
-  // フェイクの API はデータをブラウザのメモリに持つため、サーバーで描画しない
+  // 最後の取り込みの日時を職員のデバイスの時間帯で出すため、サーバーで描画しない
   ssr: false,
   head: () => ({ meta: [{ title: 'カレンダーの連携 | buddy' }] }),
   component: CalendarLinkPage,

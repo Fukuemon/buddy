@@ -1,6 +1,7 @@
 import { clsx } from 'clsx'
 import type { ComponentPropsWithoutRef, KeyboardEvent } from 'react'
 
+import { fieldBoxClassName } from '../../base/FieldFrame/fieldClassName'
 import { SearchIcon } from '../../icons/SearchIcon'
 
 export type SearchBoxProps = Omit<
@@ -34,8 +35,8 @@ export const SearchBox = ({
   return (
     <label
       className={clsx(
-        'grid grid-cols-[24px_minmax(0,1fr)] items-center gap-x-2 rounded-8 bg-surface px-4 py-3 text-body-dense ring-1 ring-border-field ring-inset',
-        'has-[:focus-visible]:focus-ring',
+        'grid grid-cols-[24px_minmax(0,1fr)] items-center gap-x-2 px-4 py-3 text-body-dense',
+        fieldBoxClassName,
         isWide && 'w-full',
       )}
     >
@@ -44,7 +45,7 @@ export const SearchBox = ({
       </span>
       <input
         {...props}
-        className="min-w-0 bg-transparent outline-none placeholder:text-text-secondary"
+        className="min-w-0 bg-transparent outline-none placeholder:text-text-secondary disabled:text-text-disabled"
         onChange={(event) => onSearch(event.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
