@@ -255,7 +255,8 @@ pull request では、CI（[ci.yml](.github/workflows/ci.yml)）が通るまで�
 - pull request の変更が文書だけのときは、`e2e` と `go` のジョブを飛ばす。
   - 文書だけの変更は、`docs/` の下のファイルと、リポジトリの中の `*.md` だけを変えた変更である。
   - 飛ばしたジョブは、`gh pr checks` で `skipping` と表示され、`--watch` の終了コードを 1 にしない。
-  - `typescript`、`generated`、`db-docs` のジョブは飛ばさない。`typescript` のジョブは、`pnpm check:screens` で画面仕様書とモックを確認する。
+  - `typescript`、`generated`、`db-docs` のジョブは飛ばさない。
+    - `docs/screens/` の画面仕様書とモックは、文書だけの変更でも `typescript` のジョブの `pnpm check:screens` が確認する。
   - develop への push では、全てのジョブを流す。
 
 - pull request と issue のタイトルと本文の形は、[issue-pr-body.yml](.github/workflows/issue-pr-body.yml) が確認する。
