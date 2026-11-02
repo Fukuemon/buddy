@@ -33,7 +33,7 @@ const borderOf = (field: Locator) =>
     return { color: style.borderTopColor, width: style.borderTopWidth }
   })
 
-/** テーマの色のトークン（`--color-*`）を、ブラウザが計算した rgb の文字列にする。 */
+/** 意味の色のトークン（`--buddy-color-*`）を、ブラウザが計算した rgb の文字列にする。 */
 const tokenColor = (page: Page, token: string) =>
   page.evaluate((name) => {
     const probe = document.createElement('span')
@@ -70,8 +70,8 @@ test.describe('入力の欄', () => {
             await step('照合の条件の欄（Storybook の ReceiptCheckForm の Calendar）を開いている')
             await step('(撮影のため、字幕に隠れないように下へずらし、2 倍に拡大する)')
             await shiftStory(page, 2)
-            const field = await tokenColor(page, '--color-border-field')
-            const hover = await tokenColor(page, '--color-border-field-hover')
+            const field = await tokenColor(page, '--buddy-color-border-field')
+            const hover = await tokenColor(page, '--buddy-color-border-field-hover')
             await expect.poll(() => borderOf(month)).toEqual({ color: field, width: '1px' })
 
             await step('「対象の月」の欄にマウスを乗せる')
@@ -141,8 +141,8 @@ test.describe('入力の欄', () => {
             )
             await step('(撮影のため、字幕に隠れないように下へずらし、2 倍に拡大する)')
             await shiftStory(page, 2)
-            const field = await tokenColor(page, '--color-border-field')
-            const hover = await tokenColor(page, '--color-border-field-hover')
+            const field = await tokenColor(page, '--buddy-color-border-field')
+            const hover = await tokenColor(page, '--buddy-color-border-field-hover')
             const radius = await file.evaluate((element) => getComputedStyle(element).borderRadius)
             await expect.poll(() => borderOf(file)).toEqual({ color: field, width: '1px' })
             await check(
