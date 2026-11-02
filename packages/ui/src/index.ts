@@ -9,6 +9,8 @@ export type {
   ButtonStyleOptions,
   ButtonVariant,
 } from './base/Button/Button'
+export { ChipPicker } from './base/ChipPicker/ChipPicker'
+export type { ChipPickerOption, ChipPickerProps } from './base/ChipPicker/ChipPicker'
 export { DatePicker } from './base/DatePicker/DatePicker'
 export type { DatePickerProps } from './base/DatePicker/DatePicker'
 export { Dialog, DialogBody, DialogFooter, DialogHeader } from './base/Dialog/Dialog'
@@ -34,12 +36,16 @@ export type {
   SegmentedControlOption,
   SegmentedControlProps,
 } from './base/SegmentedControl/SegmentedControl'
+export { Avatar, DotLabel, StatusBadge } from './base/StatusBadge/StatusBadge'
+export type { AvatarProps, DotLabelProps, StatusBadgeProps } from './base/StatusBadge/StatusBadge'
 export { Table } from './base/Table/Table'
 export type { TableCellProps, TableProps } from './base/Table/Table'
 export { TextareaField } from './base/TextareaField/TextareaField'
 export type { TextareaFieldProps } from './base/TextareaField/TextareaField'
 export { TimePicker } from './base/TimePicker/TimePicker'
 export type { TimePickerProps } from './base/TimePicker/TimePicker'
+export { FilterSelect, ListCount, ListEmpty, ListTools } from './case/ListTools/ListTools'
+export type { FilterSelectProps, ListEmptyProps } from './case/ListTools/ListTools'
 export { SearchBox } from './case/SearchBox/SearchBox'
 export type { SearchBoxProps } from './case/SearchBox/SearchBox'
 export { ConfirmDialog } from './patterns/ConfirmDialog'
@@ -47,3 +53,4 @@ export type { ConfirmDialogProps } from './patterns/ConfirmDialog'
 export { InputDialog } from './patterns/InputDialog'
 export type { InputDialogProps } from './patterns/InputDialog'
 export { useDismiss } from './hooks/useDismiss'
+export { useIsDesktop } from './hooks/useIsDesktop'

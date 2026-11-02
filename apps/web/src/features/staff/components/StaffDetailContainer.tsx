@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { ApiError } from '#/api/client'
 import type { Staff, StaffAssignments } from '#/api/types'
 import { useBuddyApi } from '#/api/useBuddyApi'
-import { PageForbiddenMessage } from '#/components/site/PageForbiddenMessage'
+import { PageForbiddenMessage } from '#/components/page/PageForbiddenMessage'
 
 import {
   ASSIGNMENTS_LOAD_ERROR_MESSAGE,

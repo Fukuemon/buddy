@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 
-/** packages/ui の theme.css の `--breakpoint-desktop` と同じ幅。Tailwind の `desktop:` が当たる範囲である。 */
+/** tokens/theme.css の `--breakpoint-desktop` と同じ幅。Tailwind の `desktop:` が当たる範囲である。 */
 const DESKTOP_MEDIA_QUERY = '(min-width: 48rem)'
 
 const subscribe = (onChange: () => void) => {

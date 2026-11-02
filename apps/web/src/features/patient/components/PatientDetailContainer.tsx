@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { ApiError } from '#/api/client'
 import type { Patient, PatientSchedules } from '#/api/types'
 import { useBuddyApi } from '#/api/useBuddyApi'
-import { PageForbiddenMessage } from '#/components/site/PageForbiddenMessage'
+import { PageForbiddenMessage } from '#/components/page/PageForbiddenMessage'
 
 import {
   DETAIL_LOAD_ERROR_MESSAGE,

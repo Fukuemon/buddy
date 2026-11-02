@@ -1,9 +1,20 @@
-import { Button, HelpToggle, Loading, RowTable, RowTableRow, SearchBox } from '@buddy/ui'
+import {
+  Button,
+  DotLabel,
+  FilterSelect,
+  HelpToggle,
+  ListCount,
+  ListEmpty,
+  ListTools,
+  Loading,
+  RowTable,
+  RowTableRow,
+  SearchBox,
+  StatusBadge,
+} from '@buddy/ui'
 
 import type { Department, Position, StaffRecord, Team } from '#/api/types'
-import { FilterSelect, ListCount, ListEmpty, ListTools } from '#/components/site/ListTools'
-import { DotLabel, StatusBadge } from '#/components/site/StatusBadge'
-import { teamDotClassName } from '#/components/site/teamDot'
+import { teamDotClassName } from '#/components/teamColor'
 
 import { STATUS_FILTER_OPTIONS, type StaffListFilter } from '../lib/filter'
 import { formatDate, formatDateTimeAsDate, statusLabel, statusTone } from '../lib/format'

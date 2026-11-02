@@ -1,6 +1,7 @@
-import { Button } from '@buddy/ui'
 import { clsx } from 'clsx'
 import type { ReactNode } from 'react'
+
+import { Button } from '../../base/Button/Button'
 
 export type FilterSelectProps<T extends string> = {
   /** 選択肢の前に付ける名前。「部署: すべて」のように出す。 */

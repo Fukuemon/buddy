@@ -1,9 +1,8 @@
-import { SearchBox } from '@buddy/ui'
+import { DotLabel, SearchBox } from '@buddy/ui'
 import { useState } from 'react'
 
 import type { Staff, Team } from '#/api/types'
-import { DotLabel } from '#/components/site/StatusBadge'
-import { teamColorDotClassName } from '#/components/site/teamDot'
+import { teamColorDotClassName } from '#/components/teamColor'
 
 import { staffColorMap } from '../lib/toCalendarEvents'
 

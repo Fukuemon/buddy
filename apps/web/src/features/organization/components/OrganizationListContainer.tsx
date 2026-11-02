@@ -4,10 +4,10 @@ import { useState } from 'react'
 
 import type { Department, Team } from '#/api/types'
 import { useBuddyApi } from '#/api/useBuddyApi'
-import { PageForbiddenMessage } from '#/components/site/PageForbiddenMessage'
+import { PageForbiddenMessage } from '#/components/page/PageForbiddenMessage'
+import { nextTeamColor } from '#/components/teamColor'
 
 import { LOAD_ERROR_MESSAGE, submitErrorMessage } from '../lib/errorMessage'
-import { nextTeamColor } from '../lib/teamColor'
 import {
   departmentsQueryOptions,
   organizationQueryKeys,
