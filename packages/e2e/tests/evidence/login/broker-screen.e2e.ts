@@ -140,6 +140,38 @@ test.describe('ログイン', () => {
         )
       })
 
+      test(`${prefix}メールアドレスの欄にフォーカスを当てた場合、web の focus-ring と同じフォーカスの表示が出ること`, async ({
+        browser,
+      }) => {
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'broker-login-focus',
+            title:
+              'ブローカーのログインの画面でメールアドレスの欄にフォーカスを当てると、packages/ui の focus-ring と同じ 4px の線と 2px の間隔のフォーカスの表示が出る',
+            actor: 'ログインなし',
+            variant,
+          },
+          openWeb,
+          async ({ page, step, check }) => {
+            await page.goto('/schedule')
+            const email = brokerLogin(page).email
+            await expect(email).toBeVisible()
+            await step('ログインせずに予定のカレンダーを開いた')
+
+            await step('メールアドレスの欄を押す')
+            await email.click()
+            await expect(email).toBeFocused()
+            const outline = await email.evaluate((element) => {
+              const style = getComputedStyle(element)
+              return `${style.outlineStyle} ${style.outlineWidth}、間隔 ${style.outlineOffset}`
+            })
+            expect(outline).toBe('solid 4px、間隔 2px')
+            await check(`メールアドレスの欄に、${outline} のフォーカスの線が出る`)
+          },
+        )
+      })
+
       test(`${prefix}ブローカーがログインの結果を返せない場合、ログインの失敗の画面が同じカードの形で出ること`, async ({
         browser,
       }) => {

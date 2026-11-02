@@ -408,7 +408,7 @@ func (h handler) fail(w http.ResponseWriter, r *http.Request, code int, reason s
 
 // failLogout は、Hydra へ返せないログアウトの失敗で、ログアウトの失敗の画面を出す。
 func (h handler) failLogout(w http.ResponseWriter, r *http.Request, code int, reason string, err error) {
-	h.failPage(w, r, code, "logoutFailure", "ログアウトの失敗の画面を出す", reason, err)
+	h.failPage(w, r, code, "logout-failure", "ログアウトの失敗の画面を出す", reason, err)
 }
 
 // failPage は、失敗を code が 5xx なら Error、ほかは Warn でログに書き、page の画面を code で出す。

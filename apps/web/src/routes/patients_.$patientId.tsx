@@ -1,13 +1,28 @@
 import { createFileRoute } from '@tanstack/react-router'
 
+import { RENDER_DATA_ON_SERVER } from '#/api/createBuddyApi'
+import { awaitOnServer } from '#/api/prefetch'
 import { SiteLayoutContainer } from '#/components/layout/SiteLayoutContainer'
 import { CalendarReviewBadgeContainer } from '#/features/calendar/components/CalendarReviewBadgeContainer'
 import { PatientDetailContainer } from '#/features/patient/components/PatientDetailContainer'
+import {
+  patientDetailQueryOptions,
+  serviceCodesQueryOptions,
+  staffRecordsQueryOptions,
+} from '#/features/patient/queries'
 
 // `/patients` の子にすると利用者の一覧の上に重なるので、名前の `_` で入れ子から外す
 export const Route = createFileRoute('/patients_/$patientId')({
-  // フェイクの API はデータをブラウザのメモリに持つため、サーバーで描画しない
-  ssr: false,
+  ssr: RENDER_DATA_ON_SERVER,
+  // 権限が無ければ、Container が権限が無いことを示すので、API を呼ばない
+  loader: ({ context: { api, queryClient, viewer }, params: { patientId } }) =>
+    viewer?.canManageStaff
+      ? awaitOnServer([
+          queryClient.prefetchQuery(patientDetailQueryOptions(api, viewer.facilityId, patientId)),
+          queryClient.prefetchQuery(staffRecordsQueryOptions(api, viewer.facilityId)),
+          queryClient.prefetchQuery(serviceCodesQueryOptions(api, viewer.facilityId)),
+        ])
+      : undefined,
   head: () => ({ meta: [{ title: '利用者の詳細 | buddy' }] }),
   component: PatientDetailPage,
 })
