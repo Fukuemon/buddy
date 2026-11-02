@@ -9,8 +9,8 @@ import (
 
 // Range は、許容する分の範囲である。両端を含む。
 type Range struct {
-	Min int `json:"min"`
-	Max int `json:"max"`
+	Min int
+	Max int
 }
 
 // Contains は、minutes が範囲に入るかを返す。

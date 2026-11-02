@@ -54,18 +54,18 @@ func (s CSVSchedules) Schedules(_ context.Context) ([]record.Record, []record.Wa
 
 // Summary は、区分ごとの行の数である。
 type Summary struct {
-	Mismatch     int `json:"mismatch"`
-	ScheduleOnly int `json:"schedule_only"`
-	VisitOnly    int `json:"visit_only"`
-	Match        int `json:"match"`
+	Mismatch     int
+	ScheduleOnly int
+	VisitOnly    int
+	Match        int
 }
 
 // Report は、照合の結果である。Rows は judge.All の順に並ぶ。
 type Report struct {
-	Summary Summary        `json:"summary"`
-	Rows    []judge.Result `json:"rows"`
+	Summary Summary
+	Rows    []judge.Result
 	// Warnings は、予定のデータソースが照合に使わなかった予定である。無ければ空の配列である。
-	Warnings []record.Warning `json:"warnings"`
+	Warnings []record.Warning
 }
 
 // Run は、実績の CSV の visits と、schedules の予定を照合する。
