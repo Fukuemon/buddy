@@ -84,8 +84,12 @@ BFF の変換は、API の権限のコードをそのまま写す。
   - TanStack Query は、古くなった query を、ウィンドウにフォーカスが戻ったときに裏で取り直す。デフォルトで有効である。
   - 出典: [Window Focus Refetching - TanStack Query](https://tanstack.com/query/latest/docs/framework/react/guides/window-focus-refetching)
 
-ほかの職員が権限を変えてから最大 5 分は、古い権限で出し分ける。  
-その間に権限を外された操作をしても、API が拒む。
+`staleTime` は、データを古いとみなすまでの時間で、過ぎたときに取り直すタイマーではない。  
+出典: [Important Defaults - TanStack Query](https://tanstack.com/query/latest/docs/framework/react/guides/important-defaults)
+
+ほかの職員が権限を変えた後は、5 分が過ぎてから、次にウィンドウにフォーカスが戻るか画面を移るまで、古い権限で出し分ける。  
+決まった間隔での取り直しは足さない。  
+権限を変える頻度は低く、同じ画面をフォーカスしたまま使い続ける間に権限を外された操作をしても、API が拒むためである。
 
 ## Considered Options
 
@@ -120,4 +124,4 @@ PBAC では画面に要る権限が変わりやすいので、レイアウトで
 ### Negative
 
 - 全ての route の宣言を確認するテストを保つ必要がある。
-- ほかの職員が権限を変えてから最大 5 分は、古い権限で画面を出し分ける。
+- ほかの職員が権限を変えた後は、5 分が過ぎてから、次にウィンドウにフォーカスが戻るか画面を移るまで、古い権限で画面を出し分ける。
