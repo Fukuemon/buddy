@@ -19,6 +19,32 @@ permissions:
   contents: read
 
 jobs:
+  # pull request の変更が文書（docs/ の下のファイルと *.md）だけかを判定し、e2e と go のジョブを飛ばすかを渡す。
+  # ワークフローの全体を on.pull_request.paths で止めないのは、止めたワークフローのチェックが報告されず、待ちのまま残るためである。
+  # develop への push では判定せず、全てのジョブを流す。
+  changes:
+    runs-on: ${{ fromJSON(vars.RUNS_ON || '"ubuntu-latest"') }}
+    timeout-minutes: 5
+    outputs:
+      docs-only: ${{ steps.diff.outputs.docs-only }}
+    steps:
+      # pull request では、base の先端と head を合わせた merge commit を取る。1 つ目の親が base の先端なので、2 つ分の履歴で差分が取れる
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: github.event_name == 'pull_request'
+        with:
+          fetch-depth: 2
+      - id: diff
+        if: github.event_name == 'pull_request'
+        run: |
+          files=$(git diff --name-only HEAD^1 HEAD)
+          echo "$files"
+          # 差分が空のときは、文書だけの変更とみなさず、全てのジョブを流す
+          if [ -n "$files" ] && ! echo "$files" | grep -qvE '^docs/|\.md$'; then
+            echo "docs-only=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs-only=false" >> "$GITHUB_OUTPUT"
+          fi
+
   typescript:
     runs-on: ${{ fromJSON(vars.RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 15
@@ -41,6 +67,8 @@ jobs:
       - run: pnpm -r --filter '!@buddy/e2e' test
 
   go:
+    needs: changes
+    if: needs.changes.outputs.docs-only != 'true'
     runs-on: ${{ fromJSON(vars.RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 15
     strategy:
@@ -128,6 +156,8 @@ jobs:
           fi
 
   e2e:
+    needs: changes
+    if: needs.changes.outputs.docs-only != 'true'
     runs-on: ${{ fromJSON(vars.RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 30
     # self-hosted runner の機械では、ローカル環境の compose が動いていることがある。
