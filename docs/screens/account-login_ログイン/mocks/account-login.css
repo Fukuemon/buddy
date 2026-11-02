@@ -1,4 +1,4 @@
-/* ブローカーのログインの画面のモックだけの見た目（services/broker/internal/login/pages.go と同じ配置） */
+/* ブローカーのログインの画面のモックだけの見た目（apps/broker/src/pages.tsx と AuthCard.tsx と同じ配置） */
 
 /* 画面の背景の中央に、白いカードを置く */
 .al-page {
@@ -44,12 +44,12 @@
 
 .al-field-label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   font-weight: 700;
 }
 
 .al-hint {
-  margin: 8px 0 0;
+  margin: 12px 0 0;
   color: var(--wf-muted);
   font-size: 14px;
 }

@@ -17,7 +17,7 @@ status: stable
 | 2 つの API とブローカーのランタイム | Go | `mise.toml`、`services/*/go.mod`、`packages/go/go.mod`、`services/*/Dockerfile` |
 | ビルド、開発サーバー、整形、lint、Vitest | Vite+（`vp`） | `pnpm-workspace.yaml` の catalog |
 | 型のチェック | TypeScript | 各パッケージの `package.json` |
-| 画面 | TanStack Start、Router、Query、React、Tailwind CSS | `apps/web/package.json` |
+| 画面 | TanStack Start、Router、Query、React、Tailwind CSS | `apps/web/package.json`、`apps/broker/package.json`（ID ブローカーの画面の生成） |
 | デザインシステムのトークン | `@digital-go-jp/design-tokens` | `packages/ui/package.json` |
 | コンポーネントのカタログ | Storybook | `apps/web/package.json`、`packages/ui/package.json` |
 | E2E とブラウザのテスト | Playwright | `packages/e2e/package.json`、`packages/ui/package.json`（同じバージョンにする） |

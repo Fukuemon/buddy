@@ -236,8 +236,11 @@ func TestShowLogin(t *testing.T) {
 	if rec.Code != http.StatusOK || !strings.Contains(body, `name="email"`) || !strings.Contains(body, `value="ch&#34;"`) {
 		t.Errorf("code = %d, body = %s", rec.Code, body)
 	}
-	if !strings.Contains(body, "--buddy-color-primary: #") {
-		t.Errorf("トークンの値が無い: %s", body)
+	// 画面の CSS は、apps/broker が packages/ui のトークンと focus-ring から生成したものである
+	for _, want := range []string{"--buddy-color-primary:", "--color-primitive-blue-900:#", "focus-ring:focus-visible{outline:4px solid"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("画面の CSS に %q が無い", want)
+		}
 	}
 	if got := rec.Header().Get("Content-Security-Policy"); got != "frame-ancestors 'none'" {
 		t.Errorf("Content-Security-Policy = %q, want frame-ancestors 'none'", got)
