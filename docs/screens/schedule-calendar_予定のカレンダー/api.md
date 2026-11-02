@@ -63,9 +63,7 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
     - 週の表示の空いた時間も、同じ条件で予定の作成を開く。
   - 時間の枠は、列の職員を `canEditScheduleOf` で判定する。
 - web のサーバーは、`getMe` の `policies` のうち、予定の権限の 7 つの `code`（`SCHEDULE_POLICY_CODES`）を `Viewer.schedulePolicies` に写す。
-  - 写すのは `apps/web/src/server/runtime.ts` の `fetchMe` である。
-  - `schedulePolicies` を持たない古いセッションでは、`schedule.all.edit` を持つとして扱う。
-    - この扱いは、`apps/web/src/server/auth.ts` の `viewerOf` が決める。
+  - 写すのは `apps/web/src/api/http/scheduleMapper.ts` の `fromApiMe` である。
 - 出し分けは表示だけに使う。
   - 予定を拒むのは、予定の API の `listSchedules` と `createSchedule` である。
 

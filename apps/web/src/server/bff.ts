@@ -2,7 +2,8 @@ import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import { parseBffArgs, type BffCall, type BffData, type BffResult } from '#/api/bff/bffCall'
 import { createHttpBuddyApi } from '#/api/http/httpBuddyApi'
 
-import { fetchWithAccessToken, readSession, type AuthDeps } from './auth'
+import { fetchWithAccessToken, type AuthDeps } from './auth'
+import { readSession } from './session'
 
 /**
  * 画面からの BuddyApi の呼び出しを、セッションの access token を付けて予定の API に送る。

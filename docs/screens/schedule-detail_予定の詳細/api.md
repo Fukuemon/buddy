@@ -48,9 +48,7 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
   - `schedule.team.edit`: `target_team_ids` に予定の職員のチームを含むときに編集できる。
   - 職員の一覧を読み終えるまでは、予定の職員のチームを空にして判定するので、`schedule.team.edit` では編集できないとする。
 - web のサーバーは、`getMe` の `policies` のうち、予定の権限の 7 つの `code`（`SCHEDULE_POLICY_CODES`）を `Viewer.schedulePolicies` に写す。
-  - 写すのは `apps/web/src/server/runtime.ts` の `fetchMe` である。
-  - `schedulePolicies` を持たない古いセッションでは、`schedule.all.edit` を持つとして扱う。
-    - この扱いは、`apps/web/src/server/auth.ts` の `viewerOf` が決める。
+  - 写すのは `apps/web/src/api/http/scheduleMapper.ts` の `fromApiMe` である。
 - 出し分けは表示だけに使う。
   - 編集を拒むのは、予定の API の `updateSchedule` である。
 

@@ -52,7 +52,7 @@
 
 - 予定の権限は、画面を読み込むたびに web のサーバーが `getMe`（`GET /v1/me`）で読む。
   - `policies` のうち `schedule.` で始まる `code` と、`target_user_ids`、`target_team_ids` を `Viewer.schedulePolicies` に入れる。
-  - 処理は `apps/web/src/server/runtime.ts` にある。
+  - 処理は `apps/web/src/api/http/scheduleMapper.ts` の `fromApiMe` にある。
 - 判定の処理は `apps/web/src/features/schedule/lib/schedulePermission.ts` にある。
   - 規則は、予定の API の判定（`schedule.CanEdit`）と同じである。
   - 拒むのは予定の API である。

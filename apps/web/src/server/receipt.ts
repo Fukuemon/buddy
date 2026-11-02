@@ -2,7 +2,8 @@ import { ApiError, type ReceiptCheckInput } from '#/api/BuddyApi'
 import type { ReceiptCheckResult } from '#/api/bff/receiptCall'
 import { createReceiptApi } from '#/api/http/receiptApi'
 
-import { fetchWithAccessToken, readSession, type AuthDeps } from './auth'
+import { fetchWithAccessToken, type AuthDeps } from './auth'
+import { readSession } from './session'
 
 /**
  * 画面から受けた照合の入力を、照合の API に送る。form は parseReceiptForm で確認した値である。
