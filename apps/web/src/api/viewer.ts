@@ -2,14 +2,17 @@ import { queryOptions } from '@tanstack/react-query'
 
 import { getViewerFn } from './bff/serverFns'
 import type { ApiMode } from './createBuddyApi'
-import { FAKE_VIEWER } from './fake/fixtures'
+import { loadFake } from './loadFake'
 import type { Viewer } from './types'
 
-/** ログインした職員を取る query。ログインしていなければ null になる。ログアウトは画面を読み直すので、取り直さない。 */
+/**
+ * ログインした職員を取る query。ログインしていなければ null になる。ログアウトは画面を読み直すので、取り直さない。
+ * fake のダミーの職員は、bff のビルドに入れないために、読むときに読み込む。
+ */
 export const viewerQueryOptions = (mode: ApiMode) =>
   queryOptions<Viewer | null>({
     queryKey: ['viewer'],
-    queryFn: () => (mode === 'fake' ? FAKE_VIEWER : getViewerFn()),
+    queryFn: async () => (mode === 'fake' ? (await loadFake()).FAKE_VIEWER : getViewerFn()),
     staleTime: Number.POSITIVE_INFINITY,
   })
 
