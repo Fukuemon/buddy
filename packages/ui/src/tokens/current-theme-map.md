@@ -16,13 +16,13 @@ apps/web の `src/styles.css` の `@theme` と、コンポーネントのクラ�
 | `text-default` `#09090b` | 本文の文字 | `text` | solid-gray-900 `#1a1a1a` | ほぼ同じ |
 | `gray-1000` `#09090b` | 選ばれているタブの文字 | `text` | solid-gray-900 `#1a1a1a` | ほぼ同じ |
 | `text-secondary` `#71737f` | 補足の文字、表の見出し、項目のラベル | `text-secondary` | solid-gray-600 `#666666` | 小。少し濃くなる |
-| `gray-500` `#71737f` | プレースホルダー、時計のアイコン、ボタンの読み込みの輪、色のない職員の予定 | `text-secondary`。予定は `categorical-*` | solid-gray-600 `#666666` | 小 |
+| `gray-500` `#71737f` | プレースホルダー、時計のアイコン、ボタンのスピナー、色のない職員の予定 | `text-secondary`。予定は `categorical-*` | solid-gray-600 `#666666` | 小 |
 | `gray-400` `#bcbdc1` | 選ばれていないタブの文字 | `text-secondary` | solid-gray-600 `#666666` | 大。白の上で 1.88:1 から 5.74:1 になる |
 | `gray-400` `#bcbdc1` | 無効のボタンと入力欄の文字、無効の文字のボタン | `text-disabled` | solid-gray-420 `#949494` | 小。少し濃くなる |
 | `text-critical` `#c11111` | 削除のボタンの文字 | `danger` | red-900 `#ce0000` | 小。少し明るい赤になる |
 | `incorrect-main` `#c11111` | エラーの文、入力欄のエラーの枠、カレンダーの現在時刻の線 | `danger` | red-900 `#ce0000` | 小 |
 | `incorrect-bg` `#fff2f2` | 使っていない | `danger-surface` | red-50 `#fdeeee` | 変化なし |
-| `action-main` `#4d89c0` | 主のボタンの面、副のボタンの文字、選ばれている選択肢の枠、ロゴ、読み込みの輪と文、文字のボタン | `primary` | key-800（light-blue-800）`#0066be` | 小。同じ色相のまま少し濃くなる |
+| `action-main` `#4d89c0` | 主のボタンの面、副のボタンの文字、選ばれている選択肢の枠、ロゴ、スピナーと読み込みの文、文字のボタン | `primary` | key-800（light-blue-800）`#0066be` | 小。同じ色相のまま少し濃くなる |
 | `action-main` `#4d89c0` | ボタンと検索欄のフォーカスの枠、入力中の欄の枠 | `focus-ring` のユーティリティ | 黒と yellow-300 `#ffd43d` | 大。青の 1 重の枠から、黄と黒の 2 重の枠になる |
 | `action-bg` `#edf3ff` | 選ばれている選択肢の面、入力中の欄の面、カレンダーの今日の面 | `primary-surface` | key-50（light-blue-50）`#f0f9ff` | ほぼ同じ |
 | `correct-main` `#00ad64`、`correct-bg` `#e6fdf0` | 使っていない | `success`、`success-surface` | green-800 `#197a4b`、green-50 `#e6f5ec` | 変化なし |
@@ -31,7 +31,7 @@ apps/web の `src/styles.css` の `@theme` と、コンポーネントのクラ�
 | `gray-0` `#fff`、`text-white`、FullCalendar の `textColor: '#fff'` | 色の面の上の文字 | `text-inverse` | white `#ffffff` | 変化なし |
 | `gray-10` `#f5f6f7` | タブの溝、押せる行と格子の hover | `surface-subtle` | solid-gray-50 `#f2f2f2` | ほぼ同じ |
 | `gray-100` `#f0f1f2` | 行と帯の区切りの線、タブの溝の枠 | `border` | solid-gray-100 `#e6e6e6` | 小。少し濃くなる |
-| `gray-100` `#f0f1f2` | 無効のボタンの面、読み込みの輪の背景 | `surface-disabled` | solid-gray-100 `#e6e6e6` | 小 |
+| `gray-100` `#f0f1f2` | 無効のボタンの面、スピナーの背景 | `surface-disabled` | solid-gray-100 `#e6e6e6` | 小 |
 | `gray-200` `#e9e9eb` | 入力欄、副のボタン、選択肢、日付の欄の枠 | `border-field` | solid-gray-600 `#666666` | 大。白の上で 1.21:1 の薄い枠が、5.74:1 の濃い枠になる |
 | `gray-200` `#e9e9eb` | カレンダーと日の格子の線 | `border` | solid-gray-100 `#e6e6e6` | ほぼ同じ |
 | `bg-black/56` | ダイアログの後ろの幕 | `overlay` | opacity-gray-500 `rgba(0,0,0,0.5)` | ほぼ同じ |
@@ -71,7 +71,7 @@ apps/web の `src/styles.css` の `@theme` と、コンポーネントのクラ�
 | `rounded-md`（6px） | 日の格子の予定 | `rounded-4` | 小 |
 | `rounded-3xl`（24px）と `rounded-t-3xl`、`rounded-b-3xl` | 幅の広い画面のダイアログと、その上下の帯 | `rounded-8` | 大 |
 | `rounded-t-xl`（12px） | 幅の狭い画面のダイアログの上端 | `rounded-8` | 小 |
-| `rounded-full` | 読み込みの輪 | `rounded-full` | 変化なし |
+| `rounded-full` | スピナー | `rounded-full` | 変化なし |
 
 ## 影
 

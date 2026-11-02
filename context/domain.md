@@ -75,6 +75,12 @@ status: stable
 | Google の内容に合わせる | 確認が必要な単発の予定（書き出しの）を、Google カレンダーの今の内容にそろえること。Google で消された予定は buddy でキャンセルする | API `createCalendarExportAcceptance` |
 | 事業所のサービスアカウント | 事業所の職員がカレンダーを共有する相手の Google のサービスアカウント。予定の API と照合の API が同じアカウントで読み書きする | API `getCalendarServiceAccount`、`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` |
 
+### 画面
+
+| 用語 | 意味 | コードの識別子 |
+| --- | --- | --- |
+| 画面の枠 | ログインした職員の画面の外枠。ヘッダーとナビゲーションを含み、中に各画面を置く | web `SiteLayout`、`SiteLayoutContainer` |
+
 ### 予定の管理と照合で表記が違う語
 
 - 予定の管理の利用者は、照合では `client`（カラムは「利用者名」）と呼ぶ。
