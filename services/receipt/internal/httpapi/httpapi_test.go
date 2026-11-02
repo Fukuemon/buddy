@@ -14,7 +14,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Fukuemon/buddy/services/receipt/internal/check"
 	"github.com/Fukuemon/buddy/services/receipt/internal/httpapi/openapi"
 )
 
@@ -91,11 +90,11 @@ func TestChecksJSON(t *testing.T) {
 			if ct := rec.Header().Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
 				t.Errorf("Content-Type = %s", ct)
 			}
-			var rep check.Report
+			var rep openapi.Report
 			if err := json.Unmarshal(rec.Body.Bytes(), &rep); err != nil {
 				t.Fatal(err)
 			}
-			if want := (check.Summary{Mismatch: 3, ScheduleOnly: 1, VisitOnly: 1, Match: 3}); rep.Summary != want {
+			if want := (openapi.Summary{Mismatch: 3, ScheduleOnly: 1, VisitOnly: 1, Match: 3}); rep.Summary != want {
 				t.Errorf("Summary = %+v", rep.Summary)
 			}
 		})
