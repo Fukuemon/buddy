@@ -85,9 +85,11 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 | `text-inverse` | `primary` と `categorical-*` の面の上の文字 |
 | `border` | 行と帯の区切り、格子の線。押せるものの境界には使わない |
 | `border-field` | 入力欄、副のボタン、選択肢の枠。押せるものと入力できるものの境界 |
+| `border-field-hover` | マウスを乗せた入力欄の枠 |
 | `primary` | 主のボタンの面、副のボタンの文字、選ばれている選択肢の枠、リンク |
 | `primary-surface` | 選ばれている選択肢の面、入力中の欄の面、カレンダーの今日 |
 | `danger`、`danger-surface` | エラーの文と枠、取り消せない操作のボタン |
+| `danger-hover` | マウスを乗せた、誤りのある入力欄の枠 |
 | `warning`、`warning-surface` | 確認してほしい値。エラーではないもの |
 | `success`、`success-surface` | 完了と整合 |
 | `categorical-1` から `categorical-10` | 職員のように、意味を持たない並びの区別。番号の順に割り当て、11 個目からは 1 に戻る。`primary` と状態の色に近い青、緑、橙、赤は、6 番目より後ろに置き、選ばれている表示や状態と見分けられるようにする |
@@ -216,9 +218,11 @@ apps/web の画面だけが使うアイコンは、`apps/web/src/assets/icons/` 
 | `Table` | 同じ項目を持つ行を並べる | 項目名と値の組（`dl` を使う） | コンポーネントの操作はない。見出しのセルは `th` にする |
 | `Loading` | 画面全体かダイアログの中身を待つ | ボタンを押した後の待ち（`Button` の `isLoading` を使う）、画面の一部の待ち | 操作はない。`aria-live` で待ちを伝える |
 | `DatePicker`、`TimePicker` | 日付と時刻を 1 つ入力する | 生年月日のように遠い日付 | ブラウザの入力欄の操作に従う |
+| `MonthPicker` | 照合の対象の月のように、日を問わず月を 1 つ入力する | 日まで決める入力（`DatePicker`） | ブラウザの入力欄の操作に従う |
 | `NumberPicker` | 分のような、単位の決まった数を入力する | 電話番号や番号のように、計算しない数字 | ブラウザの入力欄の操作に従う |
 | `FormField` | 入力のダイアログの 1 行の入力、選択、ラジオボタンの組に、見出し、補足の文、誤りの文を付ける | 日付と時刻（`DatePicker`、`TimePicker`）、複数行の文（`TextareaField`）、一覧の絞り込み | Tab で欄に移る。誤りの文は `role="alert"` で読み上げる |
 | `TextareaField` | 複数行の文を入力する | 1 行で足りる名前やタイトル | Tab で移る。改行は Enter |
+| `FileField` | 端末に置いたファイルを 1 つ選んで送る（照合の実績の CSV） | 文や値の入力（`FormField`、`TextareaField`） | Tab で移り、Enter と Space でファイルを選ぶ画面を開く |
 | `ChipPicker` | 多い候補から少しを選ぶ（職員の権限の対象の職員）。選んだものだけをチップで並べ、名前で絞った候補から 1 つずつ足す | 1 つだけを選ぶ（`FormField` のセレクト）、候補が数個で全てを見比べる（チェックボックスの組） | Tab で × と足す欄に移る。足す欄で ↓ を押すと候補に移り、↑ と ↓ で移り、Enter で足す。Esc と外を押すと候補を閉じ、Esc は外側のダイアログを閉じない。× で外すと、次の × か足す欄にフォーカスが移る |
 | `StatusBadge` | 職員や利用者の状態（有効、休職、退職）を文字の印で示す。名前の先頭の 1 文字の丸（`Avatar`）と、名前の前の色の点（`DotLabel`）も同じファイルに置く | 操作の結果の通知、押して状態を変える操作 | 操作はない。`Avatar` と `DotLabel` の点は読み上げない |
 | `ListTools` | 一覧の上に、検索、絞り込みのセレクト（`FilterSelect`）、件数（`ListCount`）を並べる。絞り込みで 0 件のときは、表の代わりに `ListEmpty` を出す | 送信するまで反映しない入力のセレクト（`FormField` を使う）、2 から 4 個の表示の切り替え（`SegmentedControl` を使う） | Tab で検索欄、絞り込み、絞り込みを外すボタンに移る。件数の変化は `aria-live` で読み上げる |
@@ -228,12 +232,33 @@ apps/web の画面だけが使うアイコンは、`apps/web/src/assets/icons/` 
 
 - 出典: [DADS のコンポーネント](https://design.digital.go.jp/dads/components/)
 
+### 入力の欄の状態
+
+入力の欄の枠と面は、状態ごとに次のようにする。
+見た目は DADS のインプットテキストに合わせる。
+
+| 状態 | 枠 | 面と文字 |
+| --- | --- | --- |
+| デフォルト | 1px の `border-field` | `surface` |
+| hover | 1px の `border-field-hover`（黒） | 変えない |
+| フォーカス | 枠はそのままにし、外に `focus-ring` を出す | 変えない |
+| エラー | 2px の `danger` | 変えない |
+| エラーで hover | 2px の `danger-hover`（濃い赤） | 変えない |
+| 無効 | 1px の `border-field`。マウスを乗せても変えない | `surface-disabled` と `text-disabled` |
+
+- 枠は `border` で引き、`ring` で引かない。`focus-ring` の黄色の縁は `box-shadow` なので、`ring` の枠と同じ要素に付けると、片方がもう片方を上書きする。
+- input、select、textarea には `fieldControlClassName`（`FormField` の中では `formFieldControlClassName`）を付ける。
+- 中に input を置く枠（`SearchBox` の枠、`DatePicker` の label）には `fieldBoxClassName` を付け、中の input の状態を `:has` で読む。
+- 確認: 全ての入力のコンポーネントの hover、無効、エラーの枠は、コンポーネントのテスト（`pnpm --filter @buddy/ui test` の `fieldStates.test.tsx`）が確認する。
+- 出典: [DADS のインプットテキストの CSS](https://github.com/digital-go-jp/design-system-example-components-html/blob/caa50d731cf515cfa5eae0093121f11ac5299235/src/components/input-text/input-text.css)
+
 ### DADS の指針との違い
 
 | 対象 | DADS の指針 | buddy の使い方 | 理由 |
 | --- | --- | --- | --- |
 | `Modal` | モーダルのダイアログをフォームに使わない | 予定の作成と編集をダイアログで行う | カレンダーの上で予定を作り、閉じてカレンダーに戻る流れを画面仕様が決めている |
 | `DatePicker`、`TimePicker` | 年、月、日を 3 つの入力欄に分ける。`input type="date"` を避ける | ブラウザの `type="date"` と `type="time"` を使う | 予定の日付は近い日を選ぶことが多く、ブラウザのカレンダーから選ぶ方が手数が少ない |
+| 入力の欄のエラー | 誤りの枠を 1px の赤にする | 誤りの枠を 2px にする | 1px にすると、デフォルトの枠との違いが色だけになる。太さの違いがあれば、色を見分けにくい人も誤りの欄を見つけられる |
 | `ChipPicker` | 複数の選択には、チェックボックスの組を使う。チップで選ぶコンポーネントは無い | 名前で絞った候補から足し、選んだものだけをチップで並べる | 職員の権限の対象のように候補が数十人になり、チェックボックスで全てを並べると、選んだものを読み取れなくなる |
 | `Loading` | 回転する表示は画面全体の待ちだけに使う | ダイアログの中身の待ちにも使う | ダイアログを開いている間はほかを操作できず、画面全体の待ちと同じになる |
 
