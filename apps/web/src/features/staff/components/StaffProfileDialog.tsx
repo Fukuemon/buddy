@@ -112,7 +112,7 @@ export const StaffProfileDialog = ({
             />
           )}
         </FormField>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-3">
           <span className="text-label">メールアドレス</span>
           <span className="text-body break-all" data-testid="staff-detail-email-readonly">
             {staff.email}

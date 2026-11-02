@@ -95,7 +95,7 @@ export const CalendarImportReviewItem = ({
           </label>
         ))}
         {choice?.action === 'patient' && (
-          <div className="ml-7 flex flex-col gap-1">
+          <div className="ml-7 flex flex-col gap-3">
             <label className="text-label" htmlFor={patientFieldId}>
               利用者
             </label>

@@ -20,7 +20,7 @@ export type VisitsFieldProps = {
  * 役職からは決めないので、事務の職員を登録するときは「訪問しない」を選ぶ。
  */
 export const VisitsField = ({ value, onChange, testId }: VisitsFieldProps) => (
-  <div className="flex flex-col gap-1">
+  <div className="flex flex-col gap-3">
     <span aria-hidden className="text-label">
       訪問
     </span>
