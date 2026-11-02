@@ -30,5 +30,7 @@
 | `listTeams` | `GET /v1/facilities/{facility_id}/teams` | なし | 200。チームの配列 | 403 `forbidden`: ほかの事業所 |
 | `listPositions` | `GET /v1/facilities/{facility_id}/positions` | なし | 200。`Position` の配列 | 403 `forbidden`: ほかの事業所 |
 
-- `listUsers` は、職員の管理の権限を持たない職員も呼べる。この画面を職員の管理の権限を持つ職員に限るのは、画面の判定である。
-- `listUsers` の `username`、`department`、`team`、`position` の絞り込みは使わない。状態の絞り込みが API に無く、名前の一部での検索もできないため、全ての職員を読んで画面で絞り込む。
+- `listUsers` は、職員の管理の権限を持たない職員も呼べる。
+  - この画面を職員の管理の権限を持つ職員に限るのは、画面の判定である。
+- `listUsers` の `username`、`department`、`team`、`position` の絞り込みは使わない。
+  - 状態の絞り込みが API に無く、名前の一部での検索もできないため、全ての職員を読んで画面で絞り込む。
