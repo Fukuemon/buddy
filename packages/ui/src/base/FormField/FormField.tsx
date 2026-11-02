@@ -47,7 +47,7 @@ export const FormField = ({
     .filter(Boolean)
     .join(' ')
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-1">
+    <div className="flex min-w-0 flex-1 flex-col gap-3">
       {isGroup ? (
         <span className="text-label" id={labelId}>
           {label}
