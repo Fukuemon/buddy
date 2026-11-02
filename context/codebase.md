@@ -24,8 +24,11 @@ status: stable
   - 業務の名前（予定、照合など）を持つ Domain のコンポーネントは、`apps/web` の `features/<機能>/components/` に置く。
   - ADR-0004: [デザインシステムのトークンとコンポーネントの配置先](../docs/adr/0004-design-system.md)
 - `services/schedule` では、規則と手順を機能ごとのパッケージ（`organization`、`staff`、`patient`、`visit`、`schedule`、`calendar`）に置く。
+  - 機能のパッケージは `internal/features/` に置く。
   - DB と HTTP のアダプタ（`postgres`、`httpapi`）は 1 つずつ置く。
+    - アダプタ、共通のパッケージ、`access`、`principal`、`config` は `internal/` の直下に置く。
   - ADR-0005: [予定の API の規則と手順を機能ごとのパッケージにまとめる](../docs/adr/0005-schedule-api-packages.md)
+  - ADR-0026: [予定の API の機能のパッケージを internal/features/ に置き、usecase のメソッドを操作ごとのファイルに分ける](../docs/adr/0026-schedule-api-features-directory.md)
   - 機能のパッケージの中は、手順（`Usecase`）、規則の関数、集約の単位のリポジトリに分ける。
   - ADR-0010: [予定の API の機能のパッケージで、手順を usecase、規則を関数、リポジトリを集約の単位に分ける](../docs/adr/0010-schedule-api-usecase-boundaries.md)
 - `services/receipt` では、照合の段（読み込み、正規化、対の作成、判定）ごとにパッケージを分ける。
@@ -89,5 +92,8 @@ status: stable
   - 画面とコンポーネントのコード（`apps/web/src`、`packages/ui/src`）を書く前に読む。
 - `services/schedule` のハンドラは `internal/httpapi` に、生成したインターフェイスのメソッドとして書く。
   - クエリは `db/queries`、マイグレーションは `db/migrations`、シードは `db/seed` に置く。
+- `services/schedule` に機能を足すときは、`internal/features/<機能>/` にパッケージを作る。
+- 新しい Go の API で機能が 2 つ以上あるときは、機能のパッケージを `internal/features/<機能>/` に置く。
+  - 機能が 1 つの API（照合の API、ID ブローカー）は、`features/` を作らない。
 - `services/receipt` に照合の段を足すときは、段ごとに `internal/` の下にパッケージを作り、`check` でつなぐ。
 - E2E のコードの配置先は、[E2E のテストのコードの設計](../packages/e2e/DesignDoc.md) の判断の流れに従う。

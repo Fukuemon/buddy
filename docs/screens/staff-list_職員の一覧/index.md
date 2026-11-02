@@ -717,7 +717,7 @@
 
 名前の検索と、チーム、役職、部署、状態の絞り込みは、開いたときに読んだ全ての職員の中で絞り込む。  
 絞り込むたびに「読み込み中」の状態にはしない。  
-読む職員と絞り込み方は、[職員の管理の Design Doc の職員の管理の画面の読み込みと保存](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/staff/DesignDoc.md#職員の管理の画面の読み込みと保存) にある。  
+読む職員と絞り込み方は、[職員の管理の Design Doc の職員の管理の画面の読み込みと保存](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/staff/DesignDoc.md#職員の管理の画面の読み込みと保存) にある。  
 絞り込みの値は、詳細から一覧へ戻ると、開いた直後の値に戻る。
 
 ### 権限の確認

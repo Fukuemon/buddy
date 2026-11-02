@@ -6,8 +6,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres/sqlcgen"
-	"github.com/Fukuemon/buddy/services/schedule/internal/schedule"
 )
 
 // ScheduleTypeRepository は、schedule.TypeRepository を実装する。

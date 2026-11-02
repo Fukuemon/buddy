@@ -8,9 +8,9 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
-	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres/sqlcgen"
-	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
 )
 
 // StaffRepository は、staff.Repository を実装する。

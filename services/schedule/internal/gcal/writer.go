@@ -9,7 +9,7 @@ import (
 	calendarv3 "google.golang.org/api/calendar/v3"
 	"google.golang.org/api/googleapi"
 
-	"github.com/Fukuemon/buddy/services/schedule/internal/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 )
 
 // Writer は、Google Calendar API で予定を書く calendar.EventWriter である。

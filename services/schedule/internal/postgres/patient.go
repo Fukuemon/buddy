@@ -7,7 +7,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
-	"github.com/Fukuemon/buddy/services/schedule/internal/patient"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres/sqlcgen"
 )
 

@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi/openapi"
-	"github.com/Fukuemon/buddy/services/schedule/internal/schedule"
-	"github.com/Fukuemon/buddy/services/schedule/internal/visit"
 )
 
 // ScheduleUsecase は、予定のハンドラが使う操作である。

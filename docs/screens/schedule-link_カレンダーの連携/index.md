@@ -799,7 +799,7 @@ ADR-0012: [Google カレンダーのサービスアカウントを事業所ご�
 #### 1. 押す
 
 1. buddy が、入れたカレンダーを読めるかを確認する。
-  - 確認の仕方は、[Google カレンダーとの連携の Design Doc のカレンダーの結び付け](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/calendar/DesignDoc.md#カレンダーの結び付け) にある。
+  - 確認の仕方は、[Google カレンダーとの連携の Design Doc のカレンダーの結び付け](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#カレンダーの結び付け) にある。
 2. 読めたら「読めた」の状態にする。
 3. 読めなかったら「読めない」の状態にする。
 
