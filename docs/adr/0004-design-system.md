@@ -77,7 +77,7 @@ packages/ui には Base と Case だけを置き、Domain のコンポーネン�
 | DatePicker、TimePicker、NumberPicker、TextareaField | Base | 同じ名前 | `src/base/<名前>/` |
 | FieldFrame | Base。コンポーネントの中だけで使う | 同じ名前。export しない | `src/base/FieldFrame/` |
 | SearchBox | Case（Search が場面） | `SearchBox` | `src/case/SearchBox/` |
-| SiteHeader | Domain（buddy の画面の帯） | apps/web に残す | `apps/web/src/components/site/` |
+| SiteHeader | Domain（buddy の画面の帯） | apps/web に残す | `apps/web/src/components/layout/` |
 | Schedule で始まるコンポーネント、職員と利用者の選択の一覧 | Domain | apps/web に残す | `apps/web/src/features/schedule/components/` |
 
 - TextTab は、表示の単位と予定の種類の、値を 1 つ選ぶ操作に使っており、切り替える領域（tabpanel）を持たない。DADS のタブは同じ主題の内容を観点で切り替えるコンポーネントなので、ラジオボタンの役割を持つ `SegmentedControl` に名前と役割を替える。タブのコンポーネントは、切り替える領域を持つ画面ができるまで作らない。

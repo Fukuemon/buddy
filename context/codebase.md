@@ -21,7 +21,7 @@ status: stable
 - 業務の規則と認可は API が持つ。
   - web は、画面の表示の規則（照合の印と CSV の書き出しを含む）だけを持ち、拒否の判断を API に任せる。
 - `packages/ui` は、BCD Design の Base と Case のコンポーネントとトークンだけを持つ。
-  - 業務の名前（予定、照合など）を持つ Domain のコンポーネントは、`apps/web` の `features/<機能>/components/` に置く。
+  - 業務の名前（予定、照合など）を持つ Domain のコンポーネントは、`apps/web` に置く。配置先は [Placement Rules](#placement-rules) の表で決める。
   - ADR-0004: [デザインシステムのトークンとコンポーネントの配置先](../docs/adr/0004-design-system.md)
 - `services/schedule` では、規則と手順を機能ごとのパッケージ（`organization`、`staff`、`patient`、`visit`、`schedule`、`calendar`）に置く。
   - DB と HTTP のアダプタ（`postgres`、`httpapi`）は 1 つずつ置く。
@@ -40,7 +40,7 @@ status: stable
 - web は `@buddy/ui` に依存してよい。
   - `packages/ui` から `apps/` へは依存しない。
 - web の `features/<機能>/` の間は import しない。
-  - 2 つの機能が使うものは、`components/site/`（サイト共通のコンポーネント）か `@buddy/ui` に置く。
+  - 2 つの機能が使うものは、`src/components/` か `@buddy/ui` に置く。
 - `services/schedule` の依存は、アダプタ（`httpapi`、`postgres`）、`access`、機能のパッケージ、共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）の 1 方向に限る。
   - 共通のパッケージは、標準ライブラリと、共通のパッケージの間（`kernel` から `apperr`）だけに依存する。
   - 機能のパッケージの間は、`organization`、`staff`、`visit`、`patient`、`schedule`、`calendar` の順にだけ import する。
@@ -83,8 +83,22 @@ status: stable
   - `VITE_API_MODE` で、ブラウザのメモリで動くフェイク（`fake/`）と、BFF の server function を呼ぶ実装（`bff/`）を切り替える。
   - `http/` は、サーバーから API を呼ぶ実装で、`src/server/` から使う。
 - サーバーだけで動く web の処理は `src/server/` に置く。
-- `packages/ui` へ移すのは、業務の名前を持たず、2 つ以上の画面で同じ形で使うコンポーネントだけにする。
-  - 移すときは、Base か Case かを [DESIGN.md](../packages/ui/DESIGN.md) の基準で決める。
+- web のコンポーネントの配置先は、業務の名前を持つか、引数とキーボードの操作が汎用の形か、使う機能の数で決める。
+
+  | 業務の名前 | 引数とキーボードの操作 | 使う機能の数 | 配置先 |
+  | --- | --- | --- | --- |
+  | 持たない | 汎用の形 | 問わない | `@buddy/ui` |
+  | 持たない | 使う画面に合わせた形 | 2 つ以上 | `apps/web/src/components/` |
+  | 持つ | 問わない | 2 つ以上 | `apps/web/src/components/` |
+  | 持つか、使う画面に合わせた形 | 問わない | 1 つ | `apps/web/src/features/<機能>/components/` |
+
+  - 汎用の形のものは、今は 1 つの機能だけが使っていても `@buddy/ui` に置く。
+    - 後から使う機能が増えたときに、移さずに済む。
+  - `@buddy/ui` に置くときは、Base か Case かを [DESIGN.md](../packages/ui/DESIGN.md) の基準で決める。
+  - `src/components/` の中は、役割でディレクトリを分ける。
+    - `layout/` は画面の枠（ヘッダー、ナビゲーション）、`page/` はページの本文に置く定型のもの（リード文、エラーと権限が無いときの文）を置く。
+    - ディレクトリは、同じ役割のものが 3 つ以上あるときだけ作る。1〜2 個で作ると、後から入るものでディレクトリの意味がずれる。
+    - 役割のまとまりが無いものは、`src/components/` の直下に置く（チームの色の `teamColor.ts`）。
 - デザインシステムの文書は `packages/ui/DESIGN.md` にある。
   - 画面とコンポーネントのコード（`apps/web/src`、`packages/ui/src`）を書く前に読む。
 - `services/schedule` のハンドラは `internal/httpapi` に、生成したインターフェイスのメソッドとして書く。

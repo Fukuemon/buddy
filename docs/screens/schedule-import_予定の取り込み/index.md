@@ -7,7 +7,7 @@
 | --- | --- |
 | URL | `/schedule/import` |
 | 使う人 | 職員の管理の権限を持つ職員。デフォルトはマネージャー |
-| 実装 | `apps/web/src/routes/schedule_.import.tsx`、`apps/web/src/features/calendar/components/CalendarImportContainer.tsx`、`apps/web/src/features/calendar/components/CalendarImportView.tsx`、`apps/web/src/features/calendar/components/CalendarImportForm.tsx`、`apps/web/src/features/calendar/components/CalendarImportPreview.tsx`、`apps/web/src/features/calendar/components/CalendarImportReviewItem.tsx`、`apps/web/src/features/calendar/components/CalendarImportCounts.tsx`、`apps/web/src/features/calendar/components/CalendarImportDone.tsx`、`apps/web/src/components/site/PageForbiddenMessage.tsx` |
+| 実装 | `apps/web/src/routes/schedule_.import.tsx`、`apps/web/src/features/calendar/components/CalendarImportContainer.tsx`、`apps/web/src/features/calendar/components/CalendarImportView.tsx`、`apps/web/src/features/calendar/components/CalendarImportForm.tsx`、`apps/web/src/features/calendar/components/CalendarImportPreview.tsx`、`apps/web/src/features/calendar/components/CalendarImportReviewItem.tsx`、`apps/web/src/features/calendar/components/CalendarImportCounts.tsx`、`apps/web/src/features/calendar/components/CalendarImportDone.tsx`、`apps/web/src/components/page/PageForbiddenMessage.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
 

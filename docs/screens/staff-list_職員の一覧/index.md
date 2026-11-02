@@ -7,7 +7,7 @@
 | --- | --- |
 | URL | `/staff` |
 | 使う人 | 職員の管理の権限を持つ職員。デフォルトはマネージャー |
-| 実装 | `apps/web/src/routes/staff.tsx`、`apps/web/src/features/staff/components/StaffListContainer.tsx`、`apps/web/src/features/staff/components/StaffListView.tsx`、`packages/ui/src/base/RowTable/RowTable.tsx`、`apps/web/src/components/site/ListTools.tsx`、`apps/web/src/components/site/PageForbiddenMessage.tsx` |
+| 実装 | `apps/web/src/routes/staff.tsx`、`apps/web/src/features/staff/components/StaffListContainer.tsx`、`apps/web/src/features/staff/components/StaffListView.tsx`、`packages/ui/src/base/RowTable/RowTable.tsx`、`packages/ui/src/case/ListTools/ListTools.tsx`、`apps/web/src/components/page/PageForbiddenMessage.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。  
 カラム、絞り込み、並び順は、[使う場面](#使う場面) から決めた。
