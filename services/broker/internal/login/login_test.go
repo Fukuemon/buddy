@@ -403,6 +403,38 @@ func TestSubmitEmailInvalidEmail(t *testing.T) {
 	if e.staff.finds != 1 {
 		t.Errorf("320 文字のメールで職員を引かない: finds = %d", e.staff.finds)
 	}
+	// 形の違うメールの送信も、送信元の IP アドレスの上限で数える
+	e = newEnv(1)
+	e.submit("")
+	if rec := e.submit("aoki@example.com"); rec.Code != http.StatusTooManyRequests {
+		t.Errorf("形の違うメールの後の code = %d, want 429", rec.Code)
+	}
+}
+
+// TestClientAddr は、送信元のキーを、IPv4 はアドレス、IPv6 は /64 のプレフィックスにそろえることを確認する。
+func TestClientAddr(t *testing.T) {
+	for _, tt := range []struct {
+		name, remote, header, value, want string
+	}{
+		{"IPv4", "198.51.100.1:1234", "", "", "198.51.100.1"},
+		{"IPv4 を埋めた IPv6", "[::ffff:198.51.100.1]:1234", "", "", "198.51.100.1"},
+		{"IPv6", "[2001:db8:1:2:3:4:5:6]:1234", "", "", "2001:db8:1:2::/64"},
+		{"zone 付きの IPv6", "[fe80::1%eth0]:1234", "", "", "fe80::/64"},
+		{"ヘッダーの IPv6", "10.0.0.1:1234", "X-Forwarded-For", "203.0.113.9, 2001:db8:1:2::9", "2001:db8:1:2::/64"},
+		{"ヘッダーが IP でない", "10.0.0.1:1234", "X-Forwarded-For", "unknown", "10.0.0.1"},
+		{"接続の相手が IP でない", "pipe", "", "", "pipe"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/login", nil)
+			req.RemoteAddr = tt.remote
+			if tt.header != "" {
+				req.Header.Set(tt.header, tt.value)
+			}
+			if got := login.ClientAddr(req, tt.header); got != tt.want {
+				t.Errorf("clientAddr = %q, want %q", got, tt.want)
+			}
+		})
+	}
 }
 
 // TestSubmitEmailIPv6Prefix は、送信元の IPv6 アドレスを /64 ごとに数えることを確認する。

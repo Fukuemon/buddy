@@ -1,6 +1,9 @@
 package login
 
-import "time"
+import (
+	"net/http"
+	"time"
+)
 
 // SetLimiterClock は、テストで l の今の時刻を now に替える。
 func SetLimiterClock(l *Limiter, now func() time.Time) { l.now = now }
@@ -11,3 +14,6 @@ func LimiterKeys(l *Limiter) int {
 	defer l.mu.Unlock()
 	return len(l.clients)
 }
+
+// ClientAddr は、テストで clientAddr を呼ぶ。
+func ClientAddr(r *http.Request, header string) string { return clientAddr(r, header) }
