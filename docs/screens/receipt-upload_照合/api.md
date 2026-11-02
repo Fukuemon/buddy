@@ -31,9 +31,12 @@ OpenAPI の項目は、`createCheck`（`POST /v1/checks`）の本文とレスポ
 | 照合の失敗 | 「照合の権限を確認できませんでした。時間をおいて、もう一度照合してください。」 | `createCheck` が 502 の `permission_check_failed` |
 | 照合の失敗 | 「照合できませんでした。時間をおいて、もう一度照合してください。」 | `createCheck` が 500 の `internal` かそのほかの status、照合の API に届かない |
 
-- 文は、`apps/web/src/features/receipt/lib/errorMessage.ts` の `checkErrorMessage` が status で選ぶ。502 は、`ApiError.code`（`Error.code`）で、照合の権限を確認できない文と Google カレンダーの失敗の文を分ける。
-- 403 の `forbidden` は、画面を開いた後に照合の権限を外されたときのほかに、`month` で照合し、access token に組織が無いときにも返る。どちらも同じ文を出す。
-- 入力の CSV の誤りの文は、同じファイルの `csvErrorLines` が `reason` と `line` と `column` から作る。`Error.message` と `errors[].message` は画面に出さない。
+- 文は、`apps/web/src/features/receipt/lib/errorMessage.ts` の `checkErrorMessage` が status で選ぶ。
+  - 502 は、`ApiError.code`（`Error.code`）で、照合の権限を確認できない文と Google カレンダーの失敗の文を分ける。
+- 403 の `forbidden` は、画面を開いた後に照合の権限を外されたときのほかに、`month` で照合し、access token に組織が無いときにも返る。
+  - どちらも同じ文を出す。
+- 入力の CSV の誤りの文は、同じファイルの `csvErrorLines` が `reason` と `line` と `column` から作る。
+  - `Error.message` と `errors[].message` は画面に出さない。
   - ファイルの名前は、`source` が `schedules` なら「予定の CSV」、`visits` なら「実績の CSV」にする。
   - `missing_column` は、CSV ごとに 1 つの文にまとめ、ほかの誤りより先に並べる。
 - ファイルの合計の上限は `MAX_RECEIPT_UPLOAD_BYTES`（`apps/web/src/api/bff/receiptCall.ts`）である。
