@@ -36,7 +36,8 @@ jobs:
       - id: diff
         if: github.event_name == 'pull_request'
         run: |
-          files=$(git diff --name-only HEAD^1 HEAD)
+          # -z を付けないと、日本語を含むパスが引用符と 8 進数のエスケープで出て、^docs/ に当たらない
+          files=$(git diff --name-only -z HEAD^1 HEAD | tr '\0' '\n')
           echo "$files"
           # 差分が空のときは、文書だけの変更とみなさず、全てのジョブを流す
           if [ -n "$files" ] && ! echo "$files" | grep -qvE '^docs/|\.md$'; then
