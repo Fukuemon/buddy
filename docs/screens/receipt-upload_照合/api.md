@@ -39,7 +39,7 @@ OpenAPI の項目は、`createCheck`（`POST /v1/checks`）の本文とレスポ
   - `Error.message` と `errors[].message` は画面に出さない。
   - ファイルの名前は、`source` が `schedules` なら「予定の CSV」、`visits` なら「実績の CSV」にする。
   - `missing_column` は、CSV ごとに 1 つの文にまとめ、ほかの誤りより先に並べる。
-- ファイルの合計の上限は `MAX_RECEIPT_UPLOAD_BYTES`（`apps/web/src/api/bff/receiptCall.ts`）である。
+- ファイルの合計の上限は `MAX_RECEIPT_UPLOAD_BYTES`（`apps/web/src/api/BuddyApi.ts`）である。
   - 照合の API の `MAX_UPLOAD_BYTES` のデフォルト（10 MiB）から 64 KiB を引く。
   - BFF の server function も、`parseReceiptForm` で同じ上限を確認する。
 - 401 は、セッションが無いときに BFF の `checkReceipt`（`apps/web/src/server/receipt.ts`）が返す。
