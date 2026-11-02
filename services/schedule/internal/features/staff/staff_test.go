@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
@@ -67,5 +68,36 @@ func TestParseSort(t *testing.T) {
 	}
 	if _, err := staff.ParseSort("username;DROP TABLE users", "asc"); !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Fatalf("err = %v, want ErrInvalidInput", err)
+	}
+}
+
+func TestStatusTransitions(t *testing.T) {
+	now := time.Date(2026, 11, 1, 9, 0, 0, 0, time.UTC)
+	checks := []struct {
+		name  string
+		check func(staff.Staff) error
+	}{
+		{name: "休職", check: staff.Staff.Leavable},
+		{name: "復職", check: staff.Staff.Reinstatable},
+		{name: "情報の変更", check: staff.Staff.ProfileEditable},
+	}
+	states := []struct {
+		name    string
+		staff   staff.Staff
+		wantErr bool
+	}{
+		{name: "有効", staff: staff.Staff{ID: "S1"}},
+		{name: "休職", staff: staff.Staff{ID: "S1", LeaveStartedAt: &now}},
+		{name: "退職", staff: staff.Staff{ID: "S1", RetiredAt: &now}, wantErr: true},
+	}
+	for _, c := range checks {
+		for _, s := range states {
+			t.Run(c.name+"/"+s.name, func(t *testing.T) {
+				err := c.check(s.staff)
+				if s.wantErr != errors.Is(err, apperr.ErrConflict) || (!s.wantErr && err != nil) {
+					t.Errorf("err = %v, wantErr %v", err, s.wantErr)
+				}
+			})
+		}
 	}
 }
