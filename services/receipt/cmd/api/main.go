@@ -190,7 +190,12 @@ func run() error {
 			AllowOrigins:   cfg.allowOrigins,
 		}),
 		ReadHeaderTimeout: 10 * time.Second,
-		ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelError),
+		ReadTimeout:       30 * time.Second,
+		// WriteTimeout は本文を読む時間（ReadTimeout まで）も含む。Google カレンダーは職員のカレンダーを 1 つずつ順に読むので、
+		// 予定の API の 30 秒に、カレンダーの数に比例する読む時間の分を足す。
+		WriteTimeout: 60 * time.Second,
+		IdleTimeout:  60 * time.Second,
+		ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
 	}
 
 	errCh := make(chan error, 1)
