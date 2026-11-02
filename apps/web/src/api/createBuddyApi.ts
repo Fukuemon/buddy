@@ -1,6 +1,6 @@
 import { createBffBuddyApi } from './bff/bffBuddyApi'
 import { createBffReceiptApi } from './bff/bffReceiptApi'
-import type { BuddyApi, ReceiptApi } from './client'
+import type { BuddyApi, ReceiptApi } from './BuddyApi'
 import { createFakeBuddyApi } from './fake/fakeBuddyApi'
 import { createFakeReceiptApi } from './fake/fakeReceiptApi'
 

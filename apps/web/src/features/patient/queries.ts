@@ -1,6 +1,6 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 
-import { ApiError, type BuddyApi } from '#/api/client'
+import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import type { FacilityId, Patient, PatientInput, PatientRecord, Staff } from '#/api/types'
 import { useBuddyApi } from '#/api/useBuddyApi'
 

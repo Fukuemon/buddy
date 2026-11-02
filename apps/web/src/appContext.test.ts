@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vite-plus/test'
 
-import { ApiError } from '#/api/client'
+import { ApiError } from '#/api/BuddyApi'
 
-import { shouldRetryQuery } from './root-provider'
+import { shouldRetryQuery } from './appContext'
 
 describe('shouldRetryQuery', () => {
   it('4xx は取り直さない', () => {

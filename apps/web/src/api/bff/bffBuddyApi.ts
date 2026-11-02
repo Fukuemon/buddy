@@ -1,4 +1,4 @@
-import { ApiError, type BuddyApi } from '../client'
+import { ApiError, type BuddyApi } from '../BuddyApi'
 import { redirectToLogin } from '../viewer'
 import type { BffCall, BffMethod, BffOperation, BffResult } from './bffCall'
 import { callBffFn } from './serverFns'

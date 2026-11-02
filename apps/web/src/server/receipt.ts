@@ -1,4 +1,4 @@
-import { ApiError, type ReceiptCheckInput } from '#/api/client'
+import { ApiError, type ReceiptCheckInput } from '#/api/BuddyApi'
 import type { ReceiptCheckResult } from '#/api/bff/receiptCall'
 import { createReceiptApi } from '#/api/http/receiptApi'
 

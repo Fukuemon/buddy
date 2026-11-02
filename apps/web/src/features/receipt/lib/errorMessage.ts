@@ -1,4 +1,4 @@
-import { ApiError } from '#/api/client'
+import { ApiError } from '#/api/BuddyApi'
 import type { ReceiptCsvError, ReceiptWarning } from '#/api/types'
 
 const RETRY = '照合できませんでした。時間をおいて、もう一度照合してください。'

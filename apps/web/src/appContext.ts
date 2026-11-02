@@ -1,6 +1,6 @@
 import { QueryClient } from '@tanstack/react-query'
 
-import { ApiError, type BuddyApi, type ReceiptApi } from '#/api/client'
+import { ApiError, type BuddyApi, type ReceiptApi } from '#/api/BuddyApi'
 import { createBuddyApi, type ApiMode } from '#/api/createBuddyApi'
 
 /** route の loader と部品が共有する値。ログインした職員は、root の route の beforeLoad が足す。 */

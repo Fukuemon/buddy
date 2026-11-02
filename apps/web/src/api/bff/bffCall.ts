@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import type { BuddyApi } from '../client'
+import type { BuddyApi } from '../BuddyApi'
 import { SCHEDULE_CATEGORIES, SCHEDULE_KINDS, TEAM_COLORS } from '../types'
 
 /** BuddyApi の操作の名前。`<グループ>.<メソッド>` の形にする。 */

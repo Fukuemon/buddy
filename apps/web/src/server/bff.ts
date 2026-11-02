@@ -1,4 +1,4 @@
-import { ApiError, type BuddyApi } from '#/api/client'
+import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import { parseBffArgs, type BffCall, type BffData, type BffResult } from '#/api/bff/bffCall'
 import { createHttpBuddyApi } from '#/api/http/httpBuddyApi'
 

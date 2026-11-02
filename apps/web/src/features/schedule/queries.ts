@@ -1,6 +1,6 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 
-import type { BuddyApi } from '#/api/client'
+import type { BuddyApi } from '#/api/BuddyApi'
 import type {
   FacilityId,
   NameSearchParams,

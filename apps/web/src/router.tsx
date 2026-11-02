@@ -2,7 +2,7 @@ import { createRouter as createTanStackRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
 
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query'
-import { getContext } from './integrations/tanstack-query/root-provider'
+import { getContext } from './appContext'
 
 /** router を作る。サーバーではリクエストごとに呼ばれ、リクエストの間で query の cache を共有しない。 */
 export function getRouter() {

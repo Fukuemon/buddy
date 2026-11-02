@@ -80,4 +80,4 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 - 作成の失敗の文は、`apps/web/src/features/schedule/lib/errorMessage.ts` の `scheduleSubmitErrorMessage` が status で選ぶ。
 - 読み込みの失敗の文は、同じ `errorMessage.ts` の `SCHEDULE_OPTIONS_LOAD_ERROR_MESSAGE` にある。
 - 一覧の取得は、4xx なら取り直さずにすぐ失敗にし、ほかの失敗は取り直してから失敗にする。
-  - 処理は `apps/web/src/integrations/tanstack-query/root-provider.tsx` の `shouldRetryQuery` にある。
+  - 処理は `apps/web/src/appContext.ts` の `shouldRetryQuery` にある。

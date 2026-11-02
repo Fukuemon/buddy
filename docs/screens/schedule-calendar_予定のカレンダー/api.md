@@ -80,6 +80,6 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 - 予定の一覧は、見てよくない職員の予定を除いて返すので、予定を見る権限が無いことの文は出さない。
 - 4xx の失敗は取り直さず、すぐに出す。
   - ほかの失敗は、3 回まで取り直してから出す。
-  - 取り直すかは `apps/web/src/integrations/tanstack-query/root-provider.tsx` の `shouldRetryQuery` が決める。
+  - 取り直すかは `apps/web/src/appContext.ts` の `shouldRetryQuery` が決める。
 - チームと利用者の一覧（`listTeams`、`listPatients`）の失敗は、この状態にしない。
   - 職員の絞り込みはチームを出さず、訪問の予定のタイトルは「利用者不明 訪問」になる。
