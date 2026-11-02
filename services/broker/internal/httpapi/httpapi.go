@@ -105,3 +105,8 @@ func (r *wroteRecorder) Write(b []byte) (int, error) {
 	r.wrote = true
 	return r.ResponseWriter.Write(b)
 }
+
+// Unwrap は、http.ResponseController が元の ResponseWriter の Flush などを呼べるよう、包んだ ResponseWriter を返す。
+func (r *wroteRecorder) Unwrap() http.ResponseWriter {
+	return r.ResponseWriter
+}

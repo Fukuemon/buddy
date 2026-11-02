@@ -80,7 +80,7 @@ func TestInternalRoutes(t *testing.T) {
 }
 
 func TestPanicReturnsInternal(t *testing.T) {
-	boom := http.HandlerFunc(func(http.ResponseWriter, *http.Request) { panic("内部の API で panic した") })
+	boom := http.HandlerFunc(func(http.ResponseWriter, *http.Request) { panic("ハンドラで panic した") })
 	for _, tt := range []struct {
 		name string
 		cfg  httpapi.Config
@@ -104,8 +104,11 @@ func TestPanicReturnsInternal(t *testing.T) {
 			if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil || body.Code != "internal" || body.Message == "" {
 				t.Errorf("本文 = %s (%v)", rec.Body, err)
 			}
-			if !strings.Contains(logs.String(), `"level":"ERROR"`) || !strings.Contains(logs.String(), "内部の API で panic した") {
+			if !strings.Contains(logs.String(), `"level":"ERROR"`) || !strings.Contains(logs.String(), "ハンドラで panic した") {
 				t.Errorf("panic の値がエラーのログに無い: %s", logs.String())
+			}
+			if !strings.Contains(logs.String(), `"path":"`+tt.path+`"`) {
+				t.Errorf("パスがエラーのログに無い: %s", logs.String())
 			}
 		})
 	}

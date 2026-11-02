@@ -219,6 +219,11 @@ func (r *statusRecorder) WriteHeader(status int) {
 	r.ResponseWriter.WriteHeader(status)
 }
 
+// Unwrap は、http.ResponseController が元の ResponseWriter の Flush などを呼べるよう、包んだ ResponseWriter を返す。
+func (r *statusRecorder) Unwrap() http.ResponseWriter {
+	return r.ResponseWriter
+}
+
 func (s *server) logRequests(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -270,4 +275,9 @@ func (r *wroteRecorder) WriteHeader(status int) {
 func (r *wroteRecorder) Write(b []byte) (int, error) {
 	r.wrote = true
 	return r.ResponseWriter.Write(b)
+}
+
+// Unwrap は、http.ResponseController が元の ResponseWriter の Flush などを呼べるよう、包んだ ResponseWriter を返す。
+func (r *wroteRecorder) Unwrap() http.ResponseWriter {
+	return r.ResponseWriter
 }

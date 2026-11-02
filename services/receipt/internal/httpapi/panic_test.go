@@ -42,6 +42,9 @@ func TestPanicReturnsInternal(t *testing.T) {
 	if !strings.Contains(logs.String(), `"level":"ERROR"`) || !strings.Contains(logs.String(), "permission の確認で panic した") {
 		t.Errorf("panic の値がエラーのログに無い: %s", logs.String())
 	}
+	if !strings.Contains(logs.String(), `"path":"/v1/checks"`) {
+		t.Errorf("パスがエラーのログに無い: %s", logs.String())
+	}
 	if !strings.Contains(logs.String(), `"status":500`) {
 		t.Errorf("アクセスログに 500 が無い: %s", logs.String())
 	}
