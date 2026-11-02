@@ -63,7 +63,8 @@
 | 退職の確認 | 「この操作をする権限がありません。」 | `retireUser` が 403 |
 | 退職の確認 | 「退職にできませんでした。時間をおいて、もう一度退職にしてください。」 | `retireUser` が 403、409 のほかの失敗、API に届かない |
 
-- 文を選ぶ処理は `apps/web/src/features/staff/lib/errorMessage.ts` にある。権限の保存の理由は `policyChangeErrorReason` が、最初の変更で API に届かないかは `apps/web/src/features/staff/queries.ts` の `useSavePolicies` が決める。
+- 文を選ぶ処理は `apps/web/src/features/staff/lib/errorMessage.ts` にある。
+  - 権限の保存の理由は `policyChangeErrorReason` が、最初の変更で API に届かないかは `apps/web/src/features/staff/queries.ts` の `useSavePolicies` が決める。
 - `staff_has_assignments` の 409 は、`apps/web/src/api` が文ではなく残る一覧の結果（`StaffUpdateResult`、`StaffRetireResult`）に変える。
 
 ## 操作
@@ -86,8 +87,14 @@
 | `listPolicies` | `GET /v1/policies` | なし | 200。`Policy` の配列 | なし |
 | `listDepartments`、`listTeams`、`listUsers` | [職員の登録の API との対応](../staff-new_職員の登録/api.md) と同じ | | | |
 
-- `getUserRemainingAssignments` は、休職と退職の確認のダイアログを開いたときに呼ぶ。レスポンスは、`startUserLeave` と `retireUser` が返す `StaffAssignments` と同じ形で、事業所の現地の日付で今日以降のものを返す。
-- `startUserLeave` も、休職にした後に `StaffStatusChange.assignments` を返す。画面は、ダイアログを開いたときに読んだ一覧を出し、この値は使わない。
-- `startUserLeave` は、休職の職員に送り直すと、戻る予定の日だけを書き換える。画面は休職の職員に休職にするを出さないので、この使い方をしない。
-- `updateUser` は、チームを変えると、チームを対象にする権限のうち古いチームを指す対象を新しいチームに移す。画面は、返った `StaffDetail.policies` で権限の一覧を出し直す。
-- `updateUser` は、訪問する職員を訪問しない職員に変えるときだけ、退職と同じ範囲で今日以降の予定と担当の利用者を数え、残れば書かずに 409 を返す。訪問しない職員を訪問する職員に戻すときは数えない（ADR-0022）。
+- `getUserRemainingAssignments` は、休職と退職の確認のダイアログを開いたときに呼ぶ。
+  - レスポンスは、`startUserLeave` と `retireUser` が返す `StaffAssignments` と同じ形で、事業所の現地の日付で今日以降のものを返す。
+- `startUserLeave` も、休職にした後に `StaffStatusChange.assignments` を返す。
+  - 画面は、ダイアログを開いたときに読んだ一覧を出し、この値は使わない。
+- `startUserLeave` は、休職の職員に送り直すと、戻る予定の日だけを書き換える。
+  - 画面は休職の職員に休職にするを出さないので、この使い方をしない。
+- `updateUser` は、チームを変えると、チームを対象にする権限のうち古いチームを指す対象を新しいチームに移す。
+  - 画面は、返った `StaffDetail.policies` で権限の一覧を出し直す。
+- `updateUser` は、訪問する職員を訪問しない職員に変えるときだけ、退職と同じ範囲で今日以降の予定と担当の利用者を数え、残れば書かずに 409 を返す。
+  - 訪問しない職員を訪問する職員に戻すときは数えない。
+  - ADR-0022: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../../adr/0022-receipt-check-policy-and-non-visiting-staff.md)
