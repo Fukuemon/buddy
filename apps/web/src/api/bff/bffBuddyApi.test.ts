@@ -32,7 +32,9 @@ describe('createBffBuddyApi', () => {
     })
     const expected: string[] = []
     for (const [group, methods] of Object.entries(api)) {
-      for (const [name, method] of Object.entries(methods as Record<string, () => Promise<unknown>>)) {
+      for (const [name, method] of Object.entries(
+        methods as Record<string, () => Promise<unknown>>,
+      )) {
         expected.push(`${group}.${name}`)
         await method()
       }
