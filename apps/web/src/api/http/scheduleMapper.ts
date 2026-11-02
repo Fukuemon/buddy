@@ -1,5 +1,7 @@
 import type { components } from '../generated/schedule'
 import {
+  RECEIPT_CHECK,
+  STAFF_MANAGE,
   SCHEDULE_CATEGORIES,
   SCHEDULE_POLICY_CODES,
   type Schedule,
@@ -11,6 +13,7 @@ import {
   type Patient,
   type Staff,
   type Team,
+  type Viewer,
 } from '../types'
 
 type Schemas = components['schemas']
@@ -63,6 +66,16 @@ export const fromApiSchedulePolicies = (
 
 const isSchedulePolicyCode = (code: string): code is SchedulePolicyCode =>
   (SCHEDULE_POLICY_CODES as readonly string[]).includes(code)
+
+/** GET /v1/me の職員を、画面の出し分けに使うログインした職員にする。 */
+export const fromApiMe = (me: Schemas['StaffDetail']): Viewer => ({
+  staffId: me.id,
+  staffName: me.username,
+  facilityId: me.facility_id,
+  canManageStaff: me.policies.some((p) => p.code === STAFF_MANAGE),
+  canCheckReceipt: me.policies.some((p) => p.code === RECEIPT_CHECK),
+  schedulePolicies: fromApiSchedulePolicies(me.policies),
+})
 
 /** API のチームを、画面のチームにする。 */
 export const fromApiTeam = ({ id, name, color }: Schemas['Team']): Team => ({ id, name, color })

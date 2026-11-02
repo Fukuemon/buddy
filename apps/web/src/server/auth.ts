@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto'
 
+import type { MeResult } from '#/api/http/meApi'
 import type { Viewer } from '#/api/types'
 
 import {
@@ -34,9 +35,6 @@ export type Session = Omit<Viewer, 'canManageStaff' | 'canCheckReceipt' | 'sched
 }
 
 type LoginTransaction = { codeVerifier: string; nonce: string; returnTo: string }
-
-/** GET /v1/me の結果。forbidden は、事業所に登録されていない職員である。 */
-export type MeResult = { ok: true; viewer: Viewer } | { ok: false; reason: 'forbidden' | 'failed' }
 
 /** ログイン、ログアウト、セッションの処理が使う依存。 */
 export type AuthDeps = {
