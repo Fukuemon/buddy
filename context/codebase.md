@@ -13,6 +13,9 @@ status: stable
 
 - 画面と BFF（web）とドキュメントサイトは `apps/`、Go の API は `services/`、共有のコードは `packages/` に置く。
   - ADR-0013: [2 つの API を services/ に置き、画面と API をトップのディレクトリで分ける](../docs/adr/0013-services-directory.md)
+- ID ブローカーのログインの画面のソースは `apps/broker`（`@buddy/broker`）に置く。
+  - `apps/broker` はコンテナを持たず、生成したテンプレートと CSS を `services/broker/internal/login/pages/` に書き出す。ID ブローカーはそれを埋め込んで配信する。
+  - ADR-0027: [ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する](../docs/adr/0027-broker-login-pages-source.md)
 - API のディレクトリは機能の名前（`schedule`、`receipt`）にする。
   - コンテナ、サービス、`aud`、テーブル定義書の出力先の名前も、ディレクトリと同じにする。
   - ADR-0014: [2 つの API のサービスの名前とトークンの aud を、ディレクトリの名前にそろえる](../docs/adr/0014-service-names.md)
@@ -42,6 +45,7 @@ status: stable
   - `packages/go` は `services/` を import しない。
 - web は `@buddy/ui` に依存してよい。
   - `packages/ui` から `apps/` へは依存しない。
+- web は `@buddy/broker` の `AuthCard` と `loginFailedMessage` だけに依存してよい。`apps/broker` は `@buddy/ui` に依存し、web には依存しない。
 - web の `features/<機能>/` の間は import しない。
   - 2 つの機能が使うものは、`src/components/` か `@buddy/ui` に置く。
 - `services/schedule` の依存は、アダプタ（`httpapi`、`postgres`）、`access`、機能のパッケージ、共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）の 1 方向に限る。
@@ -126,7 +130,9 @@ status: stable
   - 権限のキー、`hasPermission`、`requirePermission` は `src/api/permissions.ts` に、`PermissionGuard` は `src/components/` に置く。
   - 予定の 7 つの権限による予定ごとの判定は、機能のコードに置く。
 - デザインシステムの文書は `packages/ui/DESIGN.md` にある。
-  - 画面とコンポーネントのコード（`apps/web/src`、`packages/ui/src`）を書く前に読む。
+  - 画面とコンポーネントのコード（`apps/web/src`、`apps/broker/src`、`packages/ui/src`）を書く前に読む。
+- ID ブローカーの画面は `apps/broker/src/pages.tsx` に書き、`pnpm --filter @buddy/broker generate` で生成し直して、生成物を同じコミットに入れる。
+  - 画面の HTML と CSS を `services/broker` に手で書かない。
 - `services/schedule` のハンドラは `internal/httpapi` に、生成したインターフェイスのメソッドとして書く。
   - クエリは `db/queries`、マイグレーションは `db/migrations`、シードは `db/seed` に置く。
 - `services/schedule` に機能を足すときは、`internal/features/<機能>/` にパッケージを作る。
