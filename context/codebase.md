@@ -76,13 +76,29 @@ status: stable
 
 - web の機能のコードは `src/features/<機能>/` に置き、中を `components/`、`lib/`、`schema/`、`constants/`、`queries.ts` に分ける。
   - 画面のコンポーネントは、表示だけを持つ Presentational（`<名前>.tsx`）と、query と router を読んで渡す Container（`<名前>Container.tsx`）を同じディレクトリに並べる。
-    - route のファイルは Container を呼ぶ。
   - テストと story は対象の隣に置く（コロケーション）。
+- web の route のファイル（`src/routes/`）は、URL と Container を結び、search params の検証と SSR の有無だけを持つ。
+  - 画面のコードは `features/<機能>/` に置く。URL の階層と機能の境界が一致しないためである。
+    - たとえば `/schedule/import`、`/schedule/link`、`/schedule/review` の画面は、calendar の機能にある。
+  - route のファイルは `src/routes/` に flat に並べる。
+    - 1 つの URL の階層の下が 10 ファイルを超えたら、その階層をディレクトリに分ける。
+    - ディレクトリは URL の階層で分け、機能の境界では分けない。
+- route の context（QueryClient と API の実装）は `src/appContext.ts` で作る。
 - web の API の呼び出しは `src/api/` に置く。
+  - 画面が使う API の操作の interface（`BuddyApi`、`ReceiptApi`）と `ApiError` は `BuddyApi.ts` に置く。
+    - 画面とサーバーの両方が使う値（照合の入力の上限のバイト数など）も、ここに置く。
   - 生成した型は `generated/` に置く。
   - `VITE_API_MODE` で、ブラウザのメモリで動くフェイク（`fake/`）と、BFF の server function を呼ぶ実装（`bff/`）を切り替える。
+    - 画面のコードは、story とテストのデータを除き、切り替える実装（`fake/`、`bff/`、`http/`）を直接 import しない。
   - `http/` は、サーバーから API を呼ぶ実装で、`src/server/` から使う。
+    - `GET /v1/me` の呼び出し（`meApi.ts`）と、ログインした職員への変換（`scheduleMapper.ts`）もここに置く。
 - サーバーだけで動く web の処理は `src/server/` に置く。
+  - `runtime.ts` は、プロセスで 1 つの依存（設定、セッションの保存先、OIDC のクライアント）と MSW の起動だけを持つ。
+  - `auth.ts` はログインとログアウト、`session.ts` はセッションの読み取りと更新を持つ。
+- web のダミーデータの正本と MSW のハンドラは `src/mocks/` に置く。
+  - ADR-0008: [web の画面の型を API の型と分けて持ち、ダミーデータを API の形で 1 か所に置く](../docs/adr/0008-web-view-types.md)
+- ライブラリの開発用のコンポーネント（TanStack Query の devtools など）は `src/integrations/` に置く。
+- Storybook の decorator は `src/storybook/`、テストの setup と MSW のサーバーは `src/test/` に置く。
 - web のコンポーネントの配置先は、業務の名前を持つか、引数とキーボードの操作が汎用の形か、使う機能の数で決める。
 
   | 業務の名前 | 引数とキーボードの操作 | 使う機能の数 | 配置先 |

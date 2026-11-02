@@ -1,6 +1,6 @@
 import { useRouteContext } from '@tanstack/react-router'
 
-import type { BuddyApi } from './client'
+import type { BuddyApi } from './BuddyApi'
 import type { FacilityId, Viewer } from './types'
 
 /**

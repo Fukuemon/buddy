@@ -2,7 +2,7 @@
 
 [確認が必要な予定](index.md) の項目と、web の型と OpenAPI の項目の対応。  
 画面を作る人と API を変える人が読む。  
-web は `BuddyApi.calendars`（`apps/web/src/api/client.ts`）で API を呼ぶ。  
+web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼ぶ。  
 型は、OpenAPI の型をそのまま使う（`apps/web/src/api/types.ts` の `CalendarExport`、`CalendarExportIssue`）。
 
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |

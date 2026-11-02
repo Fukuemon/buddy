@@ -63,9 +63,7 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
     - 週の表示の空いた時間も、同じ条件で予定の作成を開く。
   - 時間の枠は、列の職員を `canEditScheduleOf` で判定する。
 - web のサーバーは、`getMe` の `policies` のうち、予定の権限の 7 つの `code`（`SCHEDULE_POLICY_CODES`）を `Viewer.schedulePolicies` に写す。
-  - 写すのは `apps/web/src/server/runtime.ts` の `fetchMe` である。
-  - `schedulePolicies` を持たない古いセッションでは、`schedule.all.edit` を持つとして扱う。
-    - この扱いは、`apps/web/src/server/auth.ts` の `viewerOf` が決める。
+  - 写すのは `apps/web/src/api/http/scheduleMapper.ts` の `fromApiMe` である。
 - 出し分けは表示だけに使う。
   - 予定を拒むのは、予定の API の `listSchedules` と `createSchedule` である。
 
@@ -80,6 +78,6 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 - 予定の一覧は、見てよくない職員の予定を除いて返すので、予定を見る権限が無いことの文は出さない。
 - 4xx の失敗は取り直さず、すぐに出す。
   - ほかの失敗は、3 回まで取り直してから出す。
-  - 取り直すかは `apps/web/src/integrations/tanstack-query/root-provider.tsx` の `shouldRetryQuery` が決める。
+  - 取り直すかは `apps/web/src/appContext.ts` の `shouldRetryQuery` が決める。
 - チームと利用者の一覧（`listTeams`、`listPatients`）の失敗は、この状態にしない。
   - 職員の絞り込みはチームを出さず、訪問の予定のタイトルは「利用者不明 訪問」になる。

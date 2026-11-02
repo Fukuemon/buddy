@@ -1,4 +1,4 @@
-import { ApiError } from '#/api/client'
+import { ApiError } from '#/api/BuddyApi'
 
 /** 職員の一覧を読めなかったときの文。 */
 export const LIST_LOAD_ERROR_MESSAGE =

@@ -9,7 +9,7 @@ import {
   mockServiceAccount,
 } from '#/mocks/scheduleData'
 
-import { ApiError, type BuddyApi } from '../client'
+import { ApiError, type BuddyApi } from '../BuddyApi'
 import type {
   CalendarExportIssue,
   Department,

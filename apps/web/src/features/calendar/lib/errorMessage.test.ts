@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test'
 
-import { ApiError } from '#/api/client'
+import { ApiError } from '#/api/BuddyApi'
 
 import {
   FORBIDDEN_MESSAGE,
