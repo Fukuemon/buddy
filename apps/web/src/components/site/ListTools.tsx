@@ -49,7 +49,7 @@ export const FilterSelect = <T extends string>({
 
 /** 一覧の上の、名前の検索、絞り込み、件数を折り返して並べる行。件数は右端に置く。 */
 export const ListTools = ({ children }: { children: ReactNode }) => (
-  <div className="flex flex-wrap items-center gap-x-3 gap-y-2">{children}</div>
+  <div className="flex flex-wrap items-center gap-3">{children}</div>
 )
 
 /** 絞り込みの後の件数。ListTools の右端に置く。 */

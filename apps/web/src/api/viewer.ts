@@ -3,6 +3,7 @@ import { queryOptions } from '@tanstack/react-query'
 import { getViewerFn } from './bff/serverFns'
 import type { ApiMode } from './createBuddyApi'
 import { loadFake } from './loadFake'
+import { queryKeys } from './queryKeys'
 import type { Viewer } from './types'
 
 /**
@@ -11,7 +12,7 @@ import type { Viewer } from './types'
  */
 export const viewerQueryOptions = (mode: ApiMode) =>
   queryOptions<Viewer | null>({
-    queryKey: ['viewer'],
+    queryKey: queryKeys.viewer(),
     queryFn: async () => (mode === 'fake' ? (await loadFake()).FAKE_VIEWER : getViewerFn()),
     staleTime: Number.POSITIVE_INFINITY,
   })

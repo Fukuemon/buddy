@@ -2,26 +2,13 @@ import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query
 
 import { ApiError, type BuddyApi } from '#/api/client'
 import type { FacilityId, Patient, PatientInput, PatientRecord, Staff } from '#/api/types'
+import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
-
-/**
- * TanStack Query のキー。事業所ごとに分ける。利用者の一覧のキーは、予定の画面の利用者の候補と分ける。
- * 職員の一覧のキーは、職員の管理の画面と同じにし、キャッシュを共有する。
- */
-export const patientQueryKeys = {
-  records: (facilityId: FacilityId) => ['facilities', facilityId, 'patient-records'] as const,
-  detail: (facilityId: FacilityId, patientId: Patient['id']) =>
-    ['facilities', facilityId, 'patient-detail', patientId] as const,
-  serviceCodes: (facilityId: FacilityId) => ['facilities', facilityId, 'service-codes'] as const,
-  staffRecords: (facilityId: FacilityId) => ['facilities', facilityId, 'staff-records'] as const,
-  remaining: (facilityId: FacilityId, patientId: Patient['id']) =>
-    ['facilities', facilityId, 'patient-remaining', patientId] as const,
-}
 
 /** 利用の終了の利用者を含む、事業所の全ての利用者の query。 */
 export const patientRecordsQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
-    queryKey: patientQueryKeys.records(facilityId),
+    queryKey: queryKeys.patients.records(facilityId),
     queryFn: () => api.patients.listRecords(facilityId),
   })
 
@@ -32,21 +19,21 @@ export const patientDetailQueryOptions = (
   patientId: Patient['id'],
 ) =>
   queryOptions({
-    queryKey: patientQueryKeys.detail(facilityId, patientId),
+    queryKey: queryKeys.patients.detail(facilityId, patientId),
     queryFn: () => api.patients.get(facilityId, patientId),
   })
 
 /** サービスコードの query。 */
 export const serviceCodesQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
-    queryKey: patientQueryKeys.serviceCodes(facilityId),
+    queryKey: queryKeys.serviceCodes(facilityId),
     queryFn: () => api.serviceCodes.list(facilityId),
   })
 
 /** 担当の職員の在籍の状態を引き、担当の候補を出す、休職と退職を含む事業所の全ての職員の query。 */
 export const staffRecordsQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
-    queryKey: patientQueryKeys.staffRecords(facilityId),
+    queryKey: queryKeys.staff.records(facilityId),
     queryFn: () => api.staff.listRecords(facilityId),
   })
 
@@ -57,7 +44,7 @@ export const remainingSchedulesQueryOptions = (
   patientId: Patient['id'],
 ) =>
   queryOptions({
-    queryKey: patientQueryKeys.remaining(facilityId, patientId),
+    queryKey: queryKeys.patients.remaining(facilityId, patientId),
     queryFn: () => api.patients.remainingSchedules(facilityId, patientId),
     gcTime: 0,
   })
@@ -69,10 +56,10 @@ const usePatientChanged = () => {
   const { facilityId } = useBuddyApi()
   const queryClient = useQueryClient()
   return (patient: PatientRecord) => {
-    queryClient.setQueryData(patientQueryKeys.detail(facilityId, patient.id), patient)
+    queryClient.setQueryData(queryKeys.patients.detail(facilityId, patient.id), patient)
     return Promise.all([
-      queryClient.invalidateQueries({ queryKey: patientQueryKeys.records(facilityId) }),
-      queryClient.invalidateQueries({ queryKey: ['facilities', facilityId, 'patients'] }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.patients.records(facilityId) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.patients.all(facilityId) }),
     ])
   }
 }
@@ -118,7 +105,7 @@ export const useUpdatePatient = (patientId: Patient['id']) => {
   })
 }
 
-/** 利用の終了にする mutation。予定が残って拒まれたときは、残る予定を結果に持つ。 */
+/** 利用を終了する mutation。予定が残って拒まれたときは、残る予定を結果に持つ。 */
 export const useEndService = (patientId: Patient['id']) => {
   const { api, facilityId } = useBuddyApi()
   const changed = usePatientChanged()

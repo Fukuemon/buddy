@@ -3,6 +3,7 @@ import { useRouteContext } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import type { Department, Team } from '#/api/types'
+import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
 import { PageForbiddenMessage } from '#/components/site/PageForbiddenMessage'
 
@@ -10,7 +11,6 @@ import { LOAD_ERROR_MESSAGE, submitErrorMessage } from '../lib/errorMessage'
 import { nextTeamColor } from '../lib/teamColor'
 import {
   departmentsQueryOptions,
-  organizationQueryKeys,
   teamsQueryOptions,
   useSaveDepartment,
   useSaveTeam,
@@ -76,8 +76,8 @@ const OrganizationListContent = () => {
         onEditTeam={(target) => open({ kind: 'team', target, defaultColor: target.color })}
         onRetry={() =>
           Promise.all([
-            queryClient.resetQueries({ queryKey: organizationQueryKeys.departments(facilityId) }),
-            queryClient.resetQueries({ queryKey: organizationQueryKeys.teams(facilityId) }),
+            queryClient.resetQueries({ queryKey: queryKeys.departments(facilityId) }),
+            queryClient.resetQueries({ queryKey: queryKeys.teams(facilityId) }),
           ])
         }
         state={state}

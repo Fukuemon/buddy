@@ -52,13 +52,13 @@ export const CalendarLinkDialog = ({
       testIdPrefix="calendar-link"
       title="カレンダーを結び付ける"
     >
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-3">
         <span className="text-caption text-text-secondary">職員</span>
         <span className="text-body" data-testid="calendar-link-staff">
           {staffName}
         </span>
       </div>
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-3">
         <div className="relative flex items-center gap-1">
           <label className="text-label" htmlFor={inputId}>
             カレンダーの ID

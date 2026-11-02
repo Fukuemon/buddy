@@ -117,7 +117,7 @@ test.describe('利用者の詳細', () => {
   })
 
   test.describe('利用の終了', () => {
-    test('利用者を利用の終了にした場合、一覧のデフォルトの表示と予定の作成の利用者の候補に出ないこと', async ({
+    test('利用者の利用を終了した場合、一覧のデフォルトの表示と予定の作成の利用者の候補に出ないこと', async ({
       page,
       request,
     }) => {
@@ -128,7 +128,7 @@ test.describe('利用者の詳細', () => {
       await page.getByTestId('patient-detail-menu').click()
       await page.getByTestId('patient-detail-end').click()
       const dialog = page.getByTestId('patient-end-dialog')
-      await expect(dialog).toContainText(`${name} を利用の終了にしますか`)
+      await expect(dialog).toContainText(`${name} の利用を終了しますか`)
       await expect(dialog.getByTestId('patient-end-schedules')).toHaveText(
         '今日以降の予定は残っていません。',
       )

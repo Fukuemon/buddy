@@ -3,6 +3,7 @@ import { useNavigate, useRouteContext } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import type { CalendarExportIssue } from '#/api/types'
+import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
 import { PageForbiddenMessage } from '#/components/site/PageForbiddenMessage'
 
@@ -13,12 +14,7 @@ import {
   rewriteErrorMessage,
 } from '../lib/errorMessage'
 import { formatExportIssueDateTime, isCancelledSingleIssue } from '../lib/exportIssue'
-import {
-  calendarQueryKeys,
-  exportIssueListQueryOptions,
-  useAcceptExport,
-  useRetryExport,
-} from '../queries'
+import { exportIssueListQueryOptions, useAcceptExport, useRetryExport } from '../queries'
 import { CalendarAcceptDialog } from './CalendarAcceptDialog'
 import { CalendarReviewDialog } from './CalendarReviewDialog'
 import { CalendarReviewView, type CalendarReviewViewState } from './CalendarReviewView'
@@ -57,7 +53,7 @@ const CalendarReviewContent = () => {
     <>
       <CalendarReviewView
         onRetry={() =>
-          queryClient.resetQueries({ queryKey: calendarQueryKeys.exportIssues(facilityId) })
+          queryClient.resetQueries({ queryKey: queryKeys.calendars.exportIssues(facilityId) })
         }
         onSelect={(exportId) =>
           show(
