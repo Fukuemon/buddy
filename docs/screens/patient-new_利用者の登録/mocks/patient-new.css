@@ -110,7 +110,7 @@
   gap: 8px 20px;
 }
 
-/* 利用の終了にする前に残る予定 */
+/* 利用を終了する前に残る予定 */
 .pt-warning {
   display: grid;
   gap: 6px;
