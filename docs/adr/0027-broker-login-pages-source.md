@@ -28,10 +28,10 @@ ID ブローカーは、ログインの画面、ログインの失敗の画面�
   - `login_challenge` のような実行のときの値は、`{{.Challenge}}` のようなテンプレートの式として書き出し、ID ブローカーが埋める。
 - 生成物は `services/broker/internal/login/` に置いてコミットし、ID ブローカーは `go:embed` で読む。`pnpm check:generated` が、生成し直した結果との差分を確認する。
   - 理由: 今の `tokens.css` と同じく、ID ブローカーのビルドとコンテナのイメージに Node.js を要しない。
-- 認証の確定（Hydra の admin API の呼び出し）と画面の配信は、ADR-0016 のとおり ID ブローカーに残す。`apps/broker` は実行のときに動くコードを持たない。
+- 認証の確定（Hydra の admin API の呼び出し）と画面の配信は、ADR-0016 のとおり ID ブローカーに残す。ID ブローカーが動くときには、`apps/broker` のコードは動かない。
 - `apps/broker` はコンテナを持たないので、ADR-0014 のコンテナとサービスの名前の規則の対象の外にする。
   - ADR-0014: [2 つの API のサービスの名前とトークンの aud を、ディレクトリの名前にそろえる](0014-service-names.md)
-- ログインの失敗の文言と、ロゴと理由を出すカードのコンポーネントは `apps/broker` に置き、web は `@buddy/broker` から読む。
+- ロゴと理由を出すカードのコンポーネントと、ログインの失敗（web の `failed`）の文言は `apps/broker` に置き、web は `@buddy/broker` から読む。web だけが出す理由（事業所に登録されていない、試行の回数の上限を超えた）の文言は web に残し、カードに渡す。
   - 理由: 文言とカードは buddy に固有なので、ADR-0004 の規則で `packages/ui` の Case にできない。web とブローカーのどちらかに置くなら、ID ブローカーが出す画面のソースの側に置き、web が読む向きにする。web の側に置くと、`apps/broker` のビルドが web のコードを読むことになる。
 
 ## Verification
@@ -39,7 +39,7 @@ ID ブローカーは、ログインの画面、ログインの失敗の画面�
 `packages/ui` の `Button` と `FormField` と、カードにする `section` の要素で、今のログインの画面を組み、`renderToStaticMarkup` で書き出せるかを試した。カードのコンポーネントは `packages/ui` に無いので、Tailwind のユーティリティで書いた。
 
 - Vite の SSR で読み込み、`renderToStaticMarkup` で HTML を書き出せた。ブラウザの API に触れるコードは無かった。
-- `FormField` の `useId` は `_R_b_` のような決まった id を出し、ラベルと欄、補足の文と欄を `for` と `aria-describedby` で結び付けたまま書き出せた。
+- `FormField` の `useId` は描画のたびに同じ id を出し、ラベルと欄、補足の文と欄を `for` と `aria-describedby` で結び付けたまま書き出せた。
 - 隠しの欄の `value="{{.Challenge}}"` は、そのまま書き出された。Go の `html/template` で読み、`a"b<c` を渡すと、`value="a&#34;b&lt;c"` とエスケープして埋めた。
 - `@tailwindcss/vite` で `theme.css` を読んで生成した CSS は、`focus-visible:focus-ring` の規則と DADS の基本のトークンを含み、圧縮の前で 45,015 バイトだった。`theme.css` が `packages/ui` の全てのソースを読むので、画面が使わないクラスの規則も含む。
 
