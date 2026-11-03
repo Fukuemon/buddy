@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test'
 
-import { fakeReceiptReport } from '#/api/fake/fakeReceiptApi'
+import { mockReceiptReport } from '#/mocks/receiptData'
 import type { ReceiptRow } from '#/api/types'
 
 import { isMissingSideCell, reportRowCells, toReceiptCsv } from './reportCells'
@@ -15,7 +15,7 @@ const expected = [
 
 describe('reportRowCells', () => {
   it('区分ごとの記号を照合の API の元の CSV と同じに付ける', () => {
-    expect(fakeReceiptReport.rows.map((row) => reportRowCells(row).join(','))).toEqual(expected)
+    expect(mockReceiptReport.rows.map((row) => reportRowCells(row).join(','))).toEqual(expected)
   })
 })
 
@@ -24,21 +24,21 @@ describe('isMissingSideCell', () => {
     reportRowCells(row).flatMap((_, i) => (isMissingSideCell(row, i) ? [i] : []))
 
   it('実績の無い行は、実績の側の列と加算の列を返す', () => {
-    expect(missingColumns(fakeReceiptReport.rows[1])).toEqual([7, 8, 9, 10, 11])
+    expect(missingColumns(mockReceiptReport.rows[1])).toEqual([7, 8, 9, 10, 11])
   })
 
   it('予定の無い行は、予定の側の列だけを返し、空の提供時間の列は返さない', () => {
-    expect(missingColumns(fakeReceiptReport.rows[2])).toEqual([3, 4, 5, 6])
+    expect(missingColumns(mockReceiptReport.rows[2])).toEqual([3, 4, 5, 6])
   })
 
   it('両側のある行は、何も返さない', () => {
-    expect(missingColumns(fakeReceiptReport.rows[0])).toEqual([])
+    expect(missingColumns(mockReceiptReport.rows[0])).toEqual([])
   })
 })
 
 describe('toReceiptCsv', () => {
   it('BOM、見出し、区分の区切りの行、CRLF で書く', () => {
-    const csv = toReceiptCsv(fakeReceiptReport)
+    const csv = toReceiptCsv(mockReceiptReport)
     expect(csv.charCodeAt(0)).toBe(0xfeff)
     expect(csv.slice(1).startsWith('訪問日,利用者名,主訪問者,')).toBe(true)
     const lines = csv.slice(1).split('\r\n')
@@ -57,13 +57,13 @@ describe('toReceiptCsv', () => {
   })
 
   it('Go の encoding/csv と同じく、区切り、引用符、改行を含む値と空白で始まる値を引用する', () => {
-    const [mismatch, scheduleOnly] = fakeReceiptReport.rows
+    const [mismatch, scheduleOnly] = mockReceiptReport.rows
     const rows = [
       { ...scheduleOnly, client: '加藤, "春子"' },
       { ...scheduleOnly, client: '改行\nあり' },
       { ...mismatch, visit: { ...mismatch.visit!, additions: '' } },
     ]
-    const csv = toReceiptCsv({ ...fakeReceiptReport, rows })
+    const csv = toReceiptCsv({ ...mockReceiptReport, rows })
     expect(csv).toContain('"加藤, ""春子"""')
     expect(csv).toContain('"改行\nあり"')
     expect(csv).toContain('," ※"\r\n')
@@ -71,7 +71,7 @@ describe('toReceiptCsv', () => {
 })
 
 describe('reportRowCells のフェイクの結果に無い入力', () => {
-  const mismatch = fakeReceiptReport.rows[0]
+  const mismatch = mockReceiptReport.rows[0]
   const checks = mismatch.checks!
 
   it('範囲を持たないサービス内容は ❌ だけを付ける', () => {

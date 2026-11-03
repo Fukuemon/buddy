@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
 
-import { fakeReceiptReport } from '#/api/fake/fakeReceiptApi'
+import { mockReceiptReport } from '#/mocks/receiptData'
 
 import { ReceiptResultView } from './ReceiptResultView'
 
@@ -9,7 +9,7 @@ const meta = {
   title: '画面/Receipt/ReceiptResultView',
   component: ReceiptResultView,
   args: {
-    report: fakeReceiptReport,
+    report: mockReceiptReport,
     sourceLabel: '2024 年 4 月の Google カレンダー',
     onDownload: fn(),
     checkAgainHref: '/receipt',
@@ -22,7 +22,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {}
 
 export const WithoutWarnings: Story = {
-  args: { report: { ...fakeReceiptReport, warnings: [] }, sourceLabel: '予定の CSV' },
+  args: { report: { ...mockReceiptReport, warnings: [] }, sourceLabel: '予定の CSV' },
 }
 
 export const Empty: Story = {

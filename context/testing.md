@@ -60,7 +60,7 @@ status: stable
   - API を呼ばないことを確認するときは、その API の全てのリクエストに 500 を返す handler（`http.all`）で上書きし、結果が変わらないことを見る。
   - handler は `openapi-msw` で各 API の `openapi.yaml` から生成した型を使い、レスポンスが API の定義からずれると型のチェックで失敗する。
 - web の story は、ダミーデータだけを使い、本物の API を呼ばない。
-  - データは、schedule が `features/schedule/components/storyData.ts`、receipt がフェイクの API の `fakeReceiptReport` である。
+  - データは、schedule が `features/schedule/components/storyData.ts`、receipt が `src/mocks/receiptData.ts` の `mockReceiptReport` である。
   - Container の story は、`apps/web/src/storybook/withAppRouter.tsx` の decorator の中で描く。decorator は、アプリと同じ ID の route と、フェイクの `BuddyApi`（`src/api/fake/`）を用意する。
   - 空、失敗、読み込み中は、`withAppRouter.tsx` のフェイクの API の変種で作る。
   - 1 つの story だけで使うレスポンス（照合の行のエラーなど）は、その story の中でフェイクの API を作ってよい。
