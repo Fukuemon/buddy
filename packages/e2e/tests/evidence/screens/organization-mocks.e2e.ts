@@ -27,7 +27,7 @@ type Steps = Parameters<Parameters<typeof recordPrEvidence>[3]>[0]
 async function recordMock(
   browser: Browser,
   variant: (typeof EVIDENCE_VARIANTS)[number],
-  o: { name: string; title: string; file: string; phone?: boolean },
+  o: { name: string; title: string; file: string; isPhone?: boolean },
   body: (steps: Steps & { page: Page }) => Promise<void>,
 ) {
   await recordPrEvidence(
@@ -37,7 +37,7 @@ async function recordMock(
       title: o.title,
       actor: 'ログインなし',
       variant,
-      ...(o.phone ? { viewport: PHONE_VIEWPORT } : {}),
+      ...(o.isPhone ? { viewport: PHONE_VIEWPORT } : {}),
     },
     async (page) => {
       await page.goto(mockUrl(o.file))
@@ -98,7 +98,7 @@ test.describe('部署とチームの画面仕様書のモック', () => {
           name: 'organization-list-phone',
           title: 'スマートフォンの幅では、どの行も名前と「編集」を 1 行に並べる',
           file: `${MOCKS}/01-list.html`,
-          phone: true,
+          isPhone: true,
         },
         async ({ page, check }) => {
           const row = page.getByTestId('organization-list-team-row-{チームの id}').first()

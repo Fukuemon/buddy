@@ -20,10 +20,10 @@ export const VIEWER_STALE_TIME_MS = 5 * 60 * 1000
  * ログアウトは画面を読み直すので、ログアウトでは取り直さない。
  * 職員を読む関数は route の context から受け取る。このモジュールを読む画面のコードに、BFF の server function を入れないためである。
  */
-export const viewerQueryOptions = (fetchViewer: () => Promise<Viewer | null>) =>
+export const viewerQueryOptions = (getViewer: () => Promise<Viewer | null>) =>
   queryOptions<Viewer | null>({
     queryKey: queryKeys.viewer(),
-    queryFn: fetchViewer,
+    queryFn: getViewer,
     staleTime: VIEWER_STALE_TIME_MS,
   })
 
@@ -32,8 +32,8 @@ export const viewerQueryOptions = (fetchViewer: () => Promise<Viewer | null>) =>
  * 古くなった後にウィンドウにフォーカスが戻ると取り直し、権限の出し分けが変わる。
  */
 export const useViewer = (): Viewer | null => {
-  const { fetchViewer, viewer } = useRouteContext({ from: '__root__' })
-  return useQuery({ ...viewerQueryOptions(fetchViewer), initialData: viewer }).data
+  const { getViewer, viewer } = useRouteContext({ from: '__root__' })
+  return useQuery({ ...viewerQueryOptions(getViewer), initialData: viewer }).data
 }
 
 /** ログインの画面へ移る URL。ログインの後に returnTo へ戻る。 */

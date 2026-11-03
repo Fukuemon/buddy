@@ -75,7 +75,7 @@ const CalendarReviewContent = () => {
       )}
       {target?.step === 'rewrite' && (
         <CalendarRewriteDialog
-          cancelled={isCancelledSingleIssue(target.issue)}
+          isCancelled={isCancelledSingleIssue(target.issue)}
           errorMessage={rewrite.isError ? rewriteErrorMessage(rewrite.error) : undefined}
           isSubmitting={rewrite.isPending}
           onCancel={() => show('detail', target.issue)}

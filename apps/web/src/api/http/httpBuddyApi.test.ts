@@ -201,8 +201,8 @@ describe('createHttpBuddyApi', () => {
     server.use(
       ...masters([{ id: 'type-normal', name: '通常' }]),
       scheduleHttp.post('/v1/facilities/{facility_id}/schedules', async ({ request, response }) => {
-        const sent = await request.json()
-        return sent.schedule_type_id === 'type-normal' && sent.date === '2026-10-20'
+        const sentBodies = await request.json()
+        return sentBodies.schedule_type_id === 'type-normal' && sentBodies.date === '2026-10-20'
           ? response(201).json(schedule('created', { start_time: '15:00', end_time: '16:00' }))
           : response(400).json(invalid('種類か日付が違う'))
       }),
@@ -340,8 +340,8 @@ describe('createHttpBuddyApi', () => {
         response(200).json(schedule('target')),
       ),
       scheduleHttp.put('/v1/schedules/{schedule_id}', async ({ request, response }) => {
-        const sent = await request.json()
-        return sent.schedule_type_id === 'type-normal' && sent.title === '研修'
+        const sentBodies = await request.json()
+        return sentBodies.schedule_type_id === 'type-normal' && sentBodies.title === '研修'
           ? response(200).json(schedule('target', { title: '研修' }))
           : response(400).json(invalid('種類かタイトルが違う'))
       }),
@@ -385,10 +385,10 @@ describe('createHttpBuddyApi', () => {
         if (params.schedule_id === 'cancelled') {
           return response(409).json({ code: 'conflict', message: 'キャンセル済み' })
         }
-        const sent = await request.json()
-        return sent.title === null &&
-          sent.visit_info?.companion_id === 'staff-3' &&
-          sent.visit_info.assigned_staff_id === 'staff-9'
+        const sentBodies = await request.json()
+        return sentBodies.title === null &&
+          sentBodies.visit_info?.companion_id === 'staff-3' &&
+          sentBodies.visit_info.assigned_staff_id === 'staff-9'
           ? response(200).json(visit)
           : response(400).json(invalid('同行者、タイトル、別の担当を引き継いでいない'))
       }),
@@ -526,10 +526,10 @@ describe('createHttpBuddyApi の職員の管理', () => {
   })
 
   it('休職は戻る予定の日を送り、休職にした職員を返す', async () => {
-    let sent: unknown
+    let sentBodies: unknown
     server.use(
       scheduleHttp.post('/v1/users/{user_id}/leave', async ({ params, request, response }) => {
-        sent = await request.json()
+        sentBodies = await request.json()
         return response(200).json({
           staff: staffDetail(params.user_id, { status: 'on_leave' }),
           assignments,
@@ -539,7 +539,7 @@ describe('createHttpBuddyApi の職員の管理', () => {
     await expect(
       api().staff.startLeave('facility-1', 'staff-1', '2027-04-01'),
     ).resolves.toMatchObject({ id: 'staff-1', status: 'on_leave' })
-    expect(sent).toEqual({ return_date: '2027-04-01' })
+    expect(sentBodies).toEqual({ return_date: '2027-04-01' })
   })
 
   it('退職は、予定が残って拒まれると残るものを返し、ほかの 409 は ApiError で投げる', async () => {
@@ -649,13 +649,13 @@ describe('createHttpBuddyApi の利用者の管理', () => {
   })
 
   it('利用の再開は担当の職員を送り、担当に休職の職員を指した 400 は code を付けて投げる', async () => {
-    const sent: unknown[] = []
+    const sentBodies: unknown[] = []
     server.use(
       scheduleHttp.post(
         '/v1/patients/{patient_id}/resume_service',
         async ({ params, request, response }) => {
           const body = await request.json()
-          sent.push(body)
+          sentBodies.push(body)
           if (body.assigned_staff_id === 'on-leave')
             return response(400).json(invalid('休職か退職の職員は担当にできません'))
           return response(200).json(
@@ -670,7 +670,10 @@ describe('createHttpBuddyApi の利用者の管理', () => {
     await expect(
       api().patients.resumeService('facility-1', 'patient-1', 'on-leave'),
     ).rejects.toMatchObject({ status: 400, code: 'invalid_input' })
-    expect(sent).toEqual([{ assigned_staff_id: 'staff-2' }, { assigned_staff_id: 'on-leave' }])
+    expect(sentBodies).toEqual([
+      { assigned_staff_id: 'staff-2' },
+      { assigned_staff_id: 'on-leave' },
+    ])
   })
 })
 
@@ -685,17 +688,17 @@ describe('部署とチームの作成と変更', () => {
   })
 
   it('部署を作り、名前を変え、返った部署の ID と名前を返す', async () => {
-    const sent: unknown[] = []
+    const sentBodies: unknown[] = []
     server.use(
       scheduleHttp.post(
         '/v1/facilities/{facility_id}/departments',
         async ({ request, response }) => {
-          sent.push(await request.json())
+          sentBodies.push(await request.json())
           return response(201).json(unit('department-9', '外来'))
         },
       ),
       scheduleHttp.put('/v1/departments/{department_id}', async ({ params, request, response }) => {
-        sent.push(await request.json())
+        sentBodies.push(await request.json())
         return response(200).json(unit(params.department_id, '訪問'))
       }),
     )
@@ -707,20 +710,20 @@ describe('部署とチームの作成と変更', () => {
       id: 'department-9',
       name: '訪問',
     })
-    expect(sent).toEqual([{ name: '外来' }, { name: '訪問' }])
+    expect(sentBodies).toEqual([{ name: '外来' }, { name: '訪問' }])
   })
 
   it('チームを名前と色で作り、変え、同じ名前の 409 は code を付けて投げる', async () => {
-    const sent: unknown[] = []
+    const sentBodies: unknown[] = []
     server.use(
       scheduleHttp.post('/v1/facilities/{facility_id}/teams', async ({ request, response }) => {
-        sent.push(await request.json())
+        sentBodies.push(await request.json())
         return response(201).json({ ...unit('team-9', 'C チーム'), color: 'cyan' as const })
       }),
       scheduleHttp.put('/v1/teams/{team_id}', async ({ params, request, response }) => {
         if (params.team_id === 'dup')
           return response(409).json({ code: 'conflict', message: 'すでにあります' })
-        sent.push(await request.json())
+        sentBodies.push(await request.json())
         return response(200).json({ ...unit(params.team_id, 'D チーム'), color: 'lime' as const })
       }),
     )
@@ -730,7 +733,7 @@ describe('部署とチームの作成と変更', () => {
     await expect(
       api().teams.update('facility-1', 'team-9', { name: 'D チーム', color: 'lime' }),
     ).resolves.toEqual({ id: 'team-9', name: 'D チーム', color: 'lime' })
-    expect(sent).toEqual([
+    expect(sentBodies).toEqual([
       { name: 'C チーム', color: 'cyan' },
       { name: 'D チーム', color: 'lime' },
     ])

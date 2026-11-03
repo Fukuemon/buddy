@@ -87,7 +87,7 @@ const PatientDetailContent = ({ patientId }: { patientId: Patient['id'] }) => {
           queryClient.resetQueries({ queryKey: queryKeys.patients.detail(facilityId, patientId) })
         }
         serviceCodes={serviceCodes.data}
-        staff={staff.data}
+        staffList={staff.data}
         state={state}
       />
       {patient !== undefined && open === 'edit' && (

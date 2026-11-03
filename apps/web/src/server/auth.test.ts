@@ -49,8 +49,8 @@ const setup = (overrides: Partial<AuthDeps> = {}) => {
     store,
     oidc: fakeOidc(),
     secret: SECRET,
-    secureCookie: false,
-    fetchMe: async () => ({
+    usesSecureCookie: false,
+    getMe: async () => ({
       ok: true,
       viewer: { ...VIEWER, policyCodes: [], schedulePolicies: [] },
     }),
@@ -120,8 +120,8 @@ describe('ログイン', () => {
     expect(await promptOf('')).toBeNull()
   })
 
-  it('secureCookie なら cookie に Secure を付ける', async () => {
-    const { deps } = setup({ secureCookie: true })
+  it('usesSecureCookie なら cookie に Secure を付ける', async () => {
+    const { deps } = setup({ usesSecureCookie: true })
     const start = await startLogin(new Request('http://web.test/auth/login'), deps)
     expect(start.headers.getSetCookie()[0]).toContain('Secure')
   })
@@ -158,7 +158,7 @@ describe('ログイン', () => {
   })
 
   it('事業所に登録されていない職員は forbidden へリダイレクトし、セッションを作らない', async () => {
-    const { store, deps } = setup({ fetchMe: async () => ({ ok: false, reason: 'forbidden' }) })
+    const { store, deps } = setup({ getMe: async () => ({ ok: false, reason: 'forbidden' }) })
     const res = await login(deps)
     expect(res.headers.get('Location')).toBe('/auth/error?reason=forbidden')
     expect([...store.values.keys()].some((k) => k.startsWith('session:'))).toBe(false)
@@ -279,33 +279,33 @@ describe('readViewer', () => {
   }
 
   it('ログインの後に変えた権限を、GET /v1/me から読み直す', async () => {
-    const fetchMe = vi.fn<AuthDeps['fetchMe']>(async () => ({
+    const getMe = vi.fn<AuthDeps['getMe']>(async () => ({
       ok: true,
       viewer: { ...VIEWER, policyCodes: ['staff.manage', 'receipt.check'], schedulePolicies: [] },
     }))
-    const { deps } = setup({ fetchMe })
+    const { deps } = setup({ getMe })
     expect(await readViewer(await requestWith(deps), deps)).toEqual({
       ...VIEWER,
       policyCodes: ['staff.manage', 'receipt.check'],
       schedulePolicies: [],
     })
-    expect(fetchMe).toHaveBeenCalledWith('at')
+    expect(getMe).toHaveBeenCalledWith('at')
   })
 
   it('GET /v1/me が失敗したとき、届かないときは、セッションの値を返す', async () => {
-    for (const fetchMe of [
+    for (const getMe of [
       async () => ({ ok: false, reason: 'failed' }) as const,
       async () => Promise.reject(new Error('connect ECONNREFUSED')),
     ]) {
-      const { deps } = setup({ fetchMe })
+      const { deps } = setup({ getMe })
       expect(await readViewer(await requestWith(deps), deps)).toEqual(VIEWER)
     }
   })
 
   it('ログインしていなければ null を返し、GET /v1/me を呼ばない', async () => {
-    const fetchMe = vi.fn<AuthDeps['fetchMe']>()
-    const { deps } = setup({ fetchMe })
+    const getMe = vi.fn<AuthDeps['getMe']>()
+    const { deps } = setup({ getMe })
     expect(await readViewer(new Request('http://web.test/'), deps)).toBeNull()
-    expect(fetchMe).not.toHaveBeenCalled()
+    expect(getMe).not.toHaveBeenCalled()
   })
 })

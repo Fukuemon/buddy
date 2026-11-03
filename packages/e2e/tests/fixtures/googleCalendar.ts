@@ -82,8 +82,8 @@ export const deleteGoogleEvent = async (
 }
 
 /** 中継の gcalhold が、Google の変更を予定の API に渡すかを変える。 */
-export const holdGoogleChanges = async (request: APIRequestContext, hold: boolean) => {
-  const res = await request.post(`${GCALHOLD_URL}/hold`, { data: { hold } })
+export const holdGoogleChanges = async (request: APIRequestContext, isHolding: boolean) => {
+  const res = await request.post(`${GCALHOLD_URL}/hold`, { data: { hold: isHolding } })
   await ensureOk(res, '変更を止められない')
 }
 

@@ -16,8 +16,8 @@ export type ChipPickerProps = {
   emptyLabel: string
   /** 候補の全て。選んでいないものを名前の順に候補に並べる。 */
   options: readonly ChipPickerOption[]
-  selected: readonly string[]
-  onChange: (selected: string[]) => void
+  selectedIds: readonly string[]
+  onChange: (selectedIds: string[]) => void
   disabled?: boolean
   /** testid の接頭辞。チップに `<接頭辞>-<id>`、× に `-remove-<id>`、足す欄に `-add`、候補に `-option-<id>` を付ける。 */
   testIdPrefix: string
@@ -34,7 +34,7 @@ export const ChipPicker = ({
   addAriaLabel,
   emptyLabel,
   options,
-  selected,
+  selectedIds,
   onChange,
   disabled = false,
   testIdPrefix,
@@ -55,16 +55,16 @@ export const ChipPicker = ({
 
   const nameOf = (id: string) => options.find((o) => o.id === id)?.name ?? id
   const candidates = options
-    .filter((o) => !selected.includes(o.id) && o.name.includes(query.trim()))
+    .filter((o) => !selectedIds.includes(o.id) && o.name.includes(query.trim()))
     .sort((a, b) => a.name.localeCompare(b.name, 'ja'))
 
   const add = (id: string) => {
-    onChange([...selected, id])
+    onChange([...selectedIds, id])
     close()
     inputRef.current?.focus()
   }
   const remove = (id: string, index: number) => {
-    onChange(selected.filter((s) => s !== id))
+    onChange(selectedIds.filter((s) => s !== id))
     const next = chipsRef.current?.querySelectorAll<HTMLButtonElement>('[data-remove]')[index + 1]
     if (next !== undefined) next.focus()
     else inputRef.current?.focus()
@@ -90,7 +90,7 @@ export const ChipPicker = ({
         {label}
       </span>
       <ul aria-labelledby={labelId} className="flex flex-wrap items-center gap-2" ref={chipsRef}>
-        {selected.map((id, index) => (
+        {selectedIds.map((id, index) => (
           <li
             className="flex min-h-11 items-center gap-1 rounded-8 pl-3 text-body-dense font-bold ring-2 ring-text ring-inset"
             data-testid={`${testIdPrefix}-${id}`}

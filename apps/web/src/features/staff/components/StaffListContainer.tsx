@@ -28,7 +28,7 @@ const StaffListContent = () => {
     ? { status: 'loading' }
     : records.isError
       ? { status: 'error', message: LIST_LOAD_ERROR_MESSAGE }
-      : { status: 'ready', staff: filterStaff(records.data, filter, teams.data) }
+      : { status: 'ready', staffList: filterStaff(records.data, filter, teams.data) }
   return (
     <StaffListView
       departments={departments.data}

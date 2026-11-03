@@ -65,7 +65,7 @@ export type AppRouterParameters = {
 /** decorator が受ける story。route の params を args に足して描けるよう、args を受ける形にする。 */
 type StoryFn = (update?: { args?: Record<string, unknown> }) => React.ReactNode
 
-const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
+const createStoryRouter = (Story: StoryFn, params: AppRouterParameters) => {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   params.seed?.(queryClient)
   const context: AppRouterContext = {
@@ -73,7 +73,7 @@ const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
     api: params.api ?? createFakeBuddyApi(),
     receiptApi: params.receiptApi ?? createFakeReceiptApi(),
     mode: 'fake',
-    fetchViewer: async () => params.viewer ?? FAKE_VIEWER,
+    getViewer: async () => params.viewer ?? FAKE_VIEWER,
   }
   // story を置く route の外では何も描かない。story の操作で別の route へ移ると、画面は空になる
   const at = (id: StoryRouteId) => () => (params.route === id ? Story() : <Outlet />)
@@ -208,7 +208,7 @@ const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
 }
 
 const AppRouterStory = ({ Story, params }: { Story: StoryFn; params: AppRouterParameters }) => {
-  const [{ router, queryClient }] = useState(() => buildRouter(Story, params))
+  const [{ router, queryClient }] = useState(() => createStoryRouter(Story, params))
   return (
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />

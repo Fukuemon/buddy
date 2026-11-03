@@ -36,7 +36,7 @@ const PatientListContent = () => {
           queryClient.resetQueries({ queryKey: queryKeys.staff.records(facilityId) }),
         ])
       }
-      staff={staff.data}
+      staffList={staff.data}
       staffOptions={records.data === undefined ? [] : assignedStaffOptions(records.data)}
       state={state}
     />

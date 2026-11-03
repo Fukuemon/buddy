@@ -1,4 +1,4 @@
-import { mockMe, mockPolicies, mockPositions, mockStaff } from '#/mocks/scheduleData'
+import { mockMe, mockPolicies, mockPositions, mockStaffList } from '#/mocks/scheduleData'
 
 import { ApiError, type BuddyApi } from '../BuddyApi'
 import { fromApiStaff } from '../http/scheduleMapper'
@@ -80,7 +80,7 @@ export const createFakeStaffApi = ({
   }
 
   const details = new Map<string, StaffDetail>(
-    mockStaff.map((staff) => [
+    mockStaffList.map((staff) => [
       staff.id,
       staff.id === mockMe.id
         ? structuredClone(mockMe)

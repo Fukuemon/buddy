@@ -11,7 +11,7 @@ export type AppRouterContext = {
   receiptApi: ReceiptApi
   mode: ApiMode
   /** ログインした職員を読む。ログインしていなければ null を返す。Viewer の query の queryFn になる。 */
-  fetchViewer: () => Promise<Viewer | null>
+  getViewer: () => Promise<Viewer | null>
 }
 
 /** 取得を取り直す回数の上限。TanStack Query の既定と同じにする。 */

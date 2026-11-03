@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
 
-import { fakeStaff } from '#/api/fake/fixtures'
+import { fakeStaffList } from '#/api/fake/fixtures'
 
 import { CalendarImportForm } from './CalendarImportForm'
 
@@ -9,7 +9,7 @@ const meta = {
   title: '画面/Calendar/CalendarImportForm',
   component: CalendarImportForm,
   args: {
-    staffOptions: fakeStaff.slice(0, 2),
+    staffOptions: fakeStaffList.slice(0, 2),
     staffId: 'staff-1',
     onStaffChange: fn(),
     start: '2026-11-01',

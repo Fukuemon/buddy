@@ -38,9 +38,9 @@ const staffStatusText = (status: StaffRecord['status'] | undefined) =>
  */
 export const assignedStaffLabel = (
   patient: Pick<PatientRecord, 'assigned_staff_id' | 'assigned_staff_name'>,
-  staff: readonly StaffRecord[] | undefined,
+  staffList: readonly StaffRecord[] | undefined,
 ) => {
-  const status = staffStatusText(staff?.find((s) => s.id === patient.assigned_staff_id)?.status)
+  const status = staffStatusText(staffList?.find((s) => s.id === patient.assigned_staff_id)?.status)
   return status === undefined
     ? patient.assigned_staff_name
     : `${patient.assigned_staff_name}（${status}）`
@@ -52,9 +52,9 @@ export const assignedStaffLabel = (
  */
 export const editStaffOptions = (
   patient: Pick<PatientRecord, 'assigned_staff_id' | 'assigned_staff_name'>,
-  staff: readonly StaffRecord[],
+  staffList: readonly StaffRecord[],
 ) => {
-  const current = staff.find((s) => s.id === patient.assigned_staff_id)
+  const current = staffList.find((s) => s.id === patient.assigned_staff_id)
   const status =
     staffStatusText(current?.status) ?? (current?.visits === false ? '訪問しない' : undefined)
   return [
@@ -66,7 +66,7 @@ export const editStaffOptions = (
             label: `${patient.assigned_staff_name}（${status}。今の担当）`,
           },
         ]),
-    ...activeStaffOptions(staff).map((s) => ({ id: s.id, label: s.username })),
+    ...activeStaffOptions(staffList).map((s) => ({ id: s.id, label: s.username })),
   ]
 }
 

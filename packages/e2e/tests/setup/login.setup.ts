@@ -9,7 +9,7 @@ import {
   LOGIN_STAFF,
   LOGIN_STATE,
 } from '../fixtures/env'
-import { TIMEOUTS } from '../fixtures/timeouts'
+import { TIMEOUT_MS } from '../fixtures/timeouts'
 import { signInAtBroker } from '../screens/login'
 
 /** /schedule を開き、ヘッダーに staffName が出れば、その職員でログインしているとみなす。 */
@@ -19,7 +19,7 @@ const isLoggedInAs = (staffName: string) => async (page: Page) => {
   return page
     .getByTestId('viewer-menu')
     .filter({ hasText: staffName })
-    .waitFor({ timeout: TIMEOUTS.expect })
+    .waitFor({ timeout: TIMEOUT_MS.expect })
     .then(() => true)
     .catch(() => false)
 }

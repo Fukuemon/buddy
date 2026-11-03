@@ -59,7 +59,7 @@ export const ReceiptResultTable = ({ rows }: ReceiptResultTableProps) => {
       data-testid="receipt-result-table"
       ref={ref}
     >
-      <Table stickyColumn>
+      <Table hasStickyColumn>
         <Table.Header>
           <Table.Row>
             {RECEIPT_COLUMNS.map((column) => (
@@ -74,7 +74,7 @@ export const ReceiptResultTable = ({ rows }: ReceiptResultTableProps) => {
           return (
             <tbody key={category}>
               <tr className="border-b border-border" data-testid={`receipt-category-${category}`}>
-                {/* Table の stickyColumn が先頭のセルに当てる bg-surface より強くするため、! を付ける */}
+                {/* Table の hasStickyColumn が先頭のセルに当てる bg-surface より強くするため、! を付ける */}
                 <th
                   className="!bg-surface-subtle px-5 py-2 text-left text-label"
                   colSpan={RECEIPT_COLUMNS.length}

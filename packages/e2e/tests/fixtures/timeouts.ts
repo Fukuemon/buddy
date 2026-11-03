@@ -1,5 +1,5 @@
 /** 待つ時間（ミリ秒）。内側から expect < 操作 < 外部の読み込み < テストの全体の順に長くする。 */
-export const TIMEOUTS = {
+export const TIMEOUT_MS = {
   expect: 5_000,
   action: 10_000,
   navigation: 15_000,
@@ -14,7 +14,7 @@ export const TIMEOUTS = {
 }
 
 /** 止めた職員がログインの画面へ戻るまで開き直す toPass に渡す。 */
-export const SUSPENSION_WAIT = { timeout: TIMEOUTS.suspension }
+export const SUSPENSION_WAIT = { timeout: TIMEOUT_MS.suspension }
 
 /** 止めた職員がログインの画面へ戻るのを待つ spec の describe.configure に渡す。待つ間とログインの手順を足す。 */
-export const SUSPENSION_TEST = { timeout: TIMEOUTS.suspension + TIMEOUTS.test }
+export const SUSPENSION_TEST = { timeout: TIMEOUT_MS.suspension + TIMEOUT_MS.test }

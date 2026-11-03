@@ -43,7 +43,7 @@ const staff = (id: string, username: string, teamRef: Schemas['Ref']): Schemas['
 const teamA = { id: 'team-a', name: 'A チーム' }
 const teamB = { id: 'team-b', name: 'B チーム' }
 
-export const mockStaff: Schemas['Staff'][] = [
+export const mockStaffList: Schemas['Staff'][] = [
   staff('staff-1', '青木 一郎', teamA),
   staff('staff-2', '石川 二葉', teamA),
   staff('staff-3', '上田 三奈', teamB),
@@ -52,7 +52,7 @@ export const mockStaff: Schemas['Staff'][] = [
 
 /** ログインした職員として GET /v1/me が返す職員。職員の管理の権限、事業所の全ての予定の編集の権限、照合の権限を持つ。 */
 export const mockMe: Schemas['StaffDetail'] = {
-  ...mockStaff[0],
+  ...mockStaffList[0],
   sub: 'dev-aoki',
   policies: [
     {
@@ -229,8 +229,8 @@ export const createMockSchedules = (base: Date): Schemas['Schedule'][] => {
     end_time: times[1],
     ends_next_day: false,
     is_over_time_work: false,
-    staff_id: mockStaff[staffIndex].id,
-    staff_name: mockStaff[staffIndex].username,
+    staff_id: mockStaffList[staffIndex].id,
+    staff_name: mockStaffList[staffIndex].username,
     title: null,
     description: null,
     recurring_schedule_id: null,
@@ -254,8 +254,8 @@ export const createMockSchedules = (base: Date): Schemas['Schedule'][] => {
         id: `visit-${patientIndex}`,
         patient_id: mockPatients[patientIndex].id,
         patient_name: mockPatients[patientIndex].name,
-        assigned_staff_id: mockStaff[staffIndex].id,
-        assigned_staff_name: mockStaff[staffIndex].username,
+        assigned_staff_id: mockStaffList[staffIndex].id,
+        assigned_staff_name: mockStaffList[staffIndex].username,
         companion_id: null,
         companion_name: null,
         service_code_id: serviceCode.id,
@@ -307,7 +307,7 @@ export const scheduleFromRequest = (
     ends_next_day: body.ends_next_day ?? false,
     is_over_time_work: body.start_time >= '17:00',
     staff_id: body.staff_id,
-    staff_name: nameOf(mockStaff, body.staff_id, (s) => s.username),
+    staff_name: nameOf(mockStaffList, body.staff_id, (s) => s.username),
     title: body.title ?? null,
     description: body.description ?? null,
     recurring_schedule_id: null,
@@ -317,10 +317,10 @@ export const scheduleFromRequest = (
           patient_id: visit.patient_id,
           patient_name: nameOf(mockPatients, visit.patient_id, (p) => p.name),
           assigned_staff_id: visit.assigned_staff_id,
-          assigned_staff_name: nameOf(mockStaff, visit.assigned_staff_id, (s) => s.username),
+          assigned_staff_name: nameOf(mockStaffList, visit.assigned_staff_id, (s) => s.username),
           companion_id: visit.companion_id ?? null,
           companion_name: visit.companion_id
-            ? nameOf(mockStaff, visit.companion_id, (s) => s.username)
+            ? nameOf(mockStaffList, visit.companion_id, (s) => s.username)
             : null,
           service_code_id: visit.service_code_id,
           service_code: nameOf(mockServiceCodes, visit.service_code_id, (c) => c.code),

@@ -17,8 +17,8 @@ export const stubViewport = (isDesktop: boolean) => {
     removeEventListener: (_type: 'change', listener: () => void) => listeners.delete(listener),
   }))
   return {
-    resize: (nextIsDesktop: boolean) => {
-      matches = nextIsDesktop
+    resize: (isNextDesktop: boolean) => {
+      matches = isNextDesktop
       act(() => {
         for (const listener of listeners) listener()
       })

@@ -22,9 +22,9 @@ type LoginTransaction = { codeVerifier: string; nonce: string; returnTo: string 
 /** ログイン、ログアウト、セッションの処理が使う依存。 */
 export type AuthDeps = SessionDeps & {
   /** cookie に Secure を付けるか。 */
-  secureCookie: boolean
+  usesSecureCookie: boolean
   /** access token の職員を予定の API の GET /v1/me で引く。 */
-  fetchMe: (accessToken: string) => Promise<MeResult>
+  getMe: (accessToken: string) => Promise<MeResult>
 }
 
 const LOGIN_COOKIE = 'buddy_login'
@@ -32,7 +32,7 @@ const LOGIN_TTL_SECONDS = 10 * 60
 const loginKey = (state: string) => `login:${state}`
 
 const cookie = (deps: AuthDeps, name: string, value: string, maxAge: number) => {
-  const secure = deps.secureCookie ? '; Secure' : ''
+  const secure = deps.usesSecureCookie ? '; Secure' : ''
   return `${name}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`
 }
 
@@ -129,7 +129,7 @@ export const finishLogin = async (request: Request, deps: AuthDeps): Promise<Res
       `token exchange: ${error instanceof Error ? error.message : String(error)}`,
     )
   }
-  const me = await deps.fetchMe(tokens.accessToken)
+  const me = await deps.getMe(tokens.accessToken)
   if (!me.ok) return fail(me.reason, 'GET /v1/me')
   const previous = sessionIdOf(request, deps.secret)
   if (previous !== undefined) await deps.store.delete(sessionKey(previous))
@@ -202,6 +202,6 @@ export const viewerOf = ({
 export const readViewer = async (request: Request, deps: AuthDeps): Promise<Viewer | null> => {
   const session = await readSession(request, deps)
   if (session === undefined) return null
-  const me = await deps.fetchMe(session.accessToken).catch(() => undefined)
+  const me = await deps.getMe(session.accessToken).catch(() => undefined)
   return me?.ok === true ? me.viewer : viewerOf(session)
 }

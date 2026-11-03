@@ -31,7 +31,7 @@ export const Route = createRootRouteWithContext<AppRouterContext>()({
   // /auth/ の下はログインの前と失敗の画面なので、職員を求めない
   beforeLoad: async ({ context, location }) => {
     if (location.pathname.startsWith('/auth/')) return { viewer: null }
-    const viewer = await context.queryClient.fetchQuery(viewerQueryOptions(context.fetchViewer))
+    const viewer = await context.queryClient.fetchQuery(viewerQueryOptions(context.getViewer))
     if (viewer === null) throw redirect({ href: loginHref(location.href), reloadDocument: true })
     return { viewer }
   },

@@ -32,7 +32,7 @@ export type PatientListViewProps = {
   /** 担当の職員の絞り込みの選択肢。読んだ利用者の担当の職員である。 */
   staffOptions: readonly { id: string; name: string }[]
   /** 担当の職員の休職と退職を出すための職員。読み終えるまでは undefined にする。 */
-  staff?: readonly StaffRecord[]
+  staffList?: readonly StaffRecord[]
   onRetry: () => void
   onCreate: () => void
 }
@@ -76,7 +76,7 @@ export const PatientListView = ({
   onFilterChange,
   onFilterClear,
   staffOptions,
-  staff,
+  staffList,
   onRetry,
   onCreate,
 }: PatientListViewProps) => (
@@ -160,7 +160,7 @@ export const PatientListView = ({
                 href={`/patients/${p.id}`}
                 key={p.id}
                 meta={[
-                  { header: '担当の職員', value: assignedStaffLabel(p, staff) },
+                  { header: '担当の職員', value: assignedStaffLabel(p, staffList) },
                   { header: 'サービス', value: p.service_code },
                   { header: '希望の時間帯', value: p.preferred_time },
                   { header: '希望する担当の性別', value: p.preferred_gender },

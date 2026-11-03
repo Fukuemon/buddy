@@ -1,4 +1,4 @@
-import { fetchMe } from '#/api/http/meApi'
+import { getMe } from '#/api/http/meApi'
 
 import type { AuthDeps } from './auth'
 import { loadServerConfig, type ServerConfig } from './config'
@@ -49,7 +49,7 @@ export const getAuthDeps = async (): Promise<AuthDeps> => {
     store,
     oidc: await getOidc(config),
     secret: config.sessionSecret,
-    secureCookie: config.secureCookie,
-    fetchMe: (accessToken) => fetchMe(config.scheduleApiUrl, accessToken),
+    usesSecureCookie: config.usesSecureCookie,
+    getMe: (accessToken) => getMe(config.scheduleApiUrl, accessToken),
   }
 }

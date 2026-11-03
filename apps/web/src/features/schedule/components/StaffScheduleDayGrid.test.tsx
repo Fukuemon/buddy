@@ -27,7 +27,7 @@ describe('StaffScheduleDayGrid', () => {
       start: '2026-10-20T09:00:00+09:00',
       end: '2026-10-20T09:30:00+09:00',
       color: 'red',
-      cancelled: false,
+      isCancelled: false,
     }
     render(<Default events={[event]} />)
     expect(screen.getByTestId('day-grid-slot-staff-1-09:00').style.height).toBe('44px')
@@ -83,7 +83,7 @@ describe('StaffScheduleDayGrid', () => {
       start: '2026-10-20T09:00:00+09:00',
       end: '2026-10-20T09:30:00+09:00',
       color: 'red',
-      cancelled: true,
+      isCancelled: true,
     }
     render(<Default events={[event]} />)
     const button = screen.getByTestId('schedule-event-e1')

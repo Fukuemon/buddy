@@ -15,7 +15,7 @@ import {
   mockPatients,
   mockScheduleTypes,
   mockServiceCodes,
-  mockStaff,
+  mockStaffList,
   mockTeams,
   mockVisitCategories,
   scheduleFromRequest,
@@ -50,12 +50,12 @@ export const createScheduleHandlers = (baseUrl: string) => {
     ),
     http.get(
       '/v1/facilities/{facility_id}/users',
-      withAuth(({ response }) => response(200).json(mockStaff)),
+      withAuth(({ response }) => response(200).json(mockStaffList)),
     ),
     http.put(
       '/v1/users/{user_id}',
       withAuth(async ({ params, request, response }) => {
-        const found = mockStaff.find((s) => s.id === params.user_id)
+        const found = mockStaffList.find((s) => s.id === params.user_id)
         if (found === undefined)
           return response(404).json({ code: 'not_found', message: 'リソースが見つかりません' })
         const { username, phone_number, department_id, team_id, visits } = await request.json()
@@ -79,7 +79,7 @@ export const createScheduleHandlers = (baseUrl: string) => {
     http.get(
       '/v1/users/{user_id}/remaining_assignments',
       withAuth(({ params, response }) =>
-        mockStaff.some((s) => s.id === params.user_id)
+        mockStaffList.some((s) => s.id === params.user_id)
           ? response(200).json({ schedules: [], recurring_schedules: [], patients: [] })
           : response(404).json({ code: 'not_found', message: 'リソースが見つかりません' }),
       ),

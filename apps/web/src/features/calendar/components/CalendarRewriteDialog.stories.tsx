@@ -21,7 +21,7 @@ export const Default: Story = {}
 
 /** buddy でキャンセルした単発の予定。書き直すと Google カレンダーの予定を消す。 */
 export const Cancelled: Story = {
-  args: { target: '2026/11/06（金）15:00〜16:29、江藤 四郎', cancelled: true },
+  args: { target: '2026/11/06（金）15:00〜16:29、江藤 四郎', isCancelled: true },
 }
 
 export const Submitting: Story = { args: { isSubmitting: true } }

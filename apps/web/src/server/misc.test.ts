@@ -92,10 +92,12 @@ describe('parseBffArgs', () => {
   })
 })
 
-describe('secureCookie', () => {
+describe('usesSecureCookie', () => {
   it('デフォルトで Secure を付け、SESSION_COOKIE_SECURE=false のときだけ外す', () => {
-    expect(loadServerConfig(env).secureCookie).toBe(true)
-    expect(loadServerConfig({ ...env, SESSION_COOKIE_SECURE: 'false' }).secureCookie).toBe(false)
+    expect(loadServerConfig(env).usesSecureCookie).toBe(true)
+    expect(loadServerConfig({ ...env, SESSION_COOKIE_SECURE: 'false' }).usesSecureCookie).toBe(
+      false,
+    )
   })
 })
 

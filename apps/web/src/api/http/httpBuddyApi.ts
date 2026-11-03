@@ -65,7 +65,7 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
   const client = createClient<paths>({ baseUrl, fetch })
 
   /** 回の ID が指す繰り返しの予定の回を読む。回が無ければ status が 404 の ApiError を投げる。 */
-  const loadOccurrence = async (recurringId: string, date: string) => {
+  const getOccurrence = async (recurringId: string, date: string) => {
     const recurringSchedule = await unwrap(
       client.GET('/v1/schedules/recurring/{recurring_schedule_id}', {
         params: { path: { recurring_schedule_id: recurringId } },
@@ -77,7 +77,7 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
     return occurrenceOf(recurringSchedule, date)
   }
 
-  const loadMasters = async () => {
+  const listMasters = async () => {
     const [scheduleTypes, serviceCodes, visitCategories] = await Promise.all([
       unwrap(client.GET('/v1/schedule_types')),
       unwrap(client.GET('/v1/visit_infos/service_codes')),
@@ -134,7 +134,7 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
         const occurrence = parseOccurrenceId(scheduleId)
         const schedule =
           occurrence !== undefined
-            ? await loadOccurrence(occurrence.recurringId, occurrence.date)
+            ? await getOccurrence(occurrence.recurringId, occurrence.date)
             : await unwrap(
                 client.GET('/v1/schedules/{schedule_id}', {
                   params: { path: { schedule_id: scheduleId } },
@@ -146,7 +146,7 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
         return fromApiSchedule(schedule)
       },
       create: async (facilityId, input) => {
-        const body = toSlotRequest(input, await loadMasters())
+        const body = toSlotRequest(input, await listMasters())
         const created = await unwrap(
           client.POST('/v1/facilities/{facility_id}/schedules', {
             params: { path: { facility_id: facilityId } },
@@ -159,8 +159,8 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
         const occurrence = parseOccurrenceId(scheduleId)
         if (occurrence !== undefined) {
           const [current, masters] = await Promise.all([
-            loadOccurrence(occurrence.recurringId, occurrence.date),
-            loadMasters(),
+            getOccurrence(occurrence.recurringId, occurrence.date),
+            listMasters(),
           ])
           const replaced = await unwrap(
             client.POST('/v1/schedules/recurring/{recurring_schedule_id}/occurrences', {
@@ -179,7 +179,7 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
               params: { path: { schedule_id: scheduleId } },
             }),
           ),
-          loadMasters(),
+          listMasters(),
         ])
         const body = keepCurrentVisit(toSlotRequest(input, masters), current)
         const updated = await unwrap(

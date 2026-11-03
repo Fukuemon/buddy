@@ -102,16 +102,16 @@ export const ScheduleCalendar = ({
         eventDisplay="block"
         eventClick={(arg) => onEventClick(arg.event.id)}
         eventContent={(arg) => {
-          const cancelled = arg.event.extendedProps.cancelled === true
+          const isCancelled = arg.event.extendedProps.isCancelled === true
           return (
             <span
               className="block truncate px-1 text-caption"
               data-testid={`schedule-event-${arg.event.id}`}
             >
-              {cancelled && <CancelledMark />}
+              {isCancelled && <CancelledMark />}
               <span
-                className={cancelled ? 'line-through' : undefined}
-                data-testid={cancelled ? `schedule-event-${arg.event.id}-cancelled` : undefined}
+                className={isCancelled ? 'line-through' : undefined}
+                data-testid={isCancelled ? `schedule-event-${arg.event.id}-cancelled` : undefined}
               >
                 {arg.view.type === FULL_CALENDAR_VIEW.week
                   ? eventTimeText(arg.event.start, arg.event.end, arg.timeText)
@@ -126,12 +126,12 @@ export const ScheduleCalendar = ({
           title: event.title,
           start: event.start,
           end: event.end,
-          backgroundColor: event.cancelled ? 'var(--buddy-color-surface-subtle)' : event.color,
+          backgroundColor: event.isCancelled ? 'var(--buddy-color-surface-subtle)' : event.color,
           borderColor: event.color,
-          textColor: event.cancelled
+          textColor: event.isCancelled
             ? 'var(--buddy-color-text-secondary)'
             : 'var(--buddy-color-text-inverse)',
-          extendedProps: { cancelled: event.cancelled },
+          extendedProps: { isCancelled: event.isCancelled },
         }))}
         headerToolbar={false}
         height="100%"

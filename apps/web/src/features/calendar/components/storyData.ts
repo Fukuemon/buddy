@@ -1,4 +1,4 @@
-import { fakePatients, fakeStaff } from '#/api/fake/fixtures'
+import { fakePatients, fakeStaffList } from '#/api/fake/fixtures'
 import type { ImportDecision, ImportPreview, ImportResult } from '#/api/types'
 import {
   createMockImportPreview,
@@ -11,7 +11,7 @@ import {
 import type { CalendarLinkRow } from './CalendarLinkTable'
 
 /** 職員の一覧の行。青木 一郎と石川 二葉にカレンダーを結び付けてある。 */
-export const storyLinkRows: CalendarLinkRow[] = fakeStaff.map((staff) => ({
+export const storyLinkRows: CalendarLinkRow[] = fakeStaffList.map((staff) => ({
   staff,
   calendar: mockExternalCalendars.find((calendar) => calendar.staff_id === staff.id),
 }))

@@ -6,11 +6,11 @@ type ScheduleOwner = Pick<Staff, 'id' | 'teamId'>
 /** 判定に使う、ログインした職員の値。 */
 type ScheduleViewer = Pick<Viewer, 'staffId' | 'schedulePolicies'>
 
-const allows = (
+const isAllowed = (
   policy: SchedulePolicy,
   viewer: ScheduleViewer,
   owner: ScheduleOwner,
-  edit: boolean,
+  isEditing: boolean,
 ) => {
   switch (policy.code) {
     case 'schedule.self.edit':
@@ -18,15 +18,15 @@ const allows = (
     case 'schedule.all.edit':
       return true
     case 'schedule.all.read':
-      return !edit
+      return !isEditing
     case 'schedule.user.edit':
       return policy.targetStaffIds.includes(owner.id)
     case 'schedule.user.read':
-      return !edit && policy.targetStaffIds.includes(owner.id)
+      return !isEditing && policy.targetStaffIds.includes(owner.id)
     case 'schedule.team.edit':
       return policy.targetTeamIds.includes(owner.teamId)
     case 'schedule.team.read':
-      return !edit && policy.targetTeamIds.includes(owner.teamId)
+      return !isEditing && policy.targetTeamIds.includes(owner.teamId)
   }
 }
 
@@ -35,12 +35,12 @@ const allows = (
  * 画面の出し分けだけに使い、拒むのは予定の API である。
  */
 export const canEditScheduleOf = (viewer: ScheduleViewer, owner: ScheduleOwner) =>
-  viewer.schedulePolicies.some((policy) => allows(policy, viewer, owner, true))
+  viewer.schedulePolicies.some((policy) => isAllowed(policy, viewer, owner, true))
 
 /** ログインした職員が、owner の予定を見てよいか。自分の予定は権限によらず見てよい（schedule.CanRead と同じ）。 */
 export const canReadScheduleOf = (viewer: ScheduleViewer, owner: ScheduleOwner) =>
   owner.id === viewer.staffId ||
-  viewer.schedulePolicies.some((policy) => allows(policy, viewer, owner, false))
+  viewer.schedulePolicies.some((policy) => isAllowed(policy, viewer, owner, false))
 
 /** staffList のうち、ログインした職員が予定を作り、変えてよい職員だけを返す。 */
 export const editableStaff = <T extends ScheduleOwner>(

@@ -48,13 +48,13 @@ export const Default: Story = {}
 /** サービスコードを 1 回目だけ読めないフェイクの API を作る。 */
 const serviceCodesOnceFailingApi = (): BuddyApi => {
   const base = createFakeBuddyApi()
-  let failed = false
+  let hasFailed = false
   return {
     ...base,
     serviceCodes: {
       list: async (facilityId) => {
-        if (!failed) {
-          failed = true
+        if (!hasFailed) {
+          hasFailed = true
           throw new ApiError(500, '読めない')
         }
         return base.serviceCodes.list(facilityId)
