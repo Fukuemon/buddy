@@ -1,4 +1,4 @@
-import { ConfirmDialog, FormField, formFieldControlClassName } from '@buddy/ui'
+import { ConfirmDialog, FormField, Select } from '@buddy/ui'
 import { useState } from 'react'
 
 import type { PatientRecord, StaffRecord } from '#/api/types'
@@ -68,9 +68,8 @@ export const PatientResumeDialog = ({
         label="担当の職員"
       >
         {(field) => (
-          <select
+          <Select
             {...field}
-            className={formFieldControlClassName}
             data-testid="patient-resume-staff"
             disabled={isSubmitting || staffOptions === undefined}
             onChange={(event) => setSelected(event.target.value)}
@@ -84,7 +83,7 @@ export const PatientResumeDialog = ({
                 {s.username}
               </option>
             ))}
-          </select>
+          </Select>
         )}
       </FormField>
     </ConfirmDialog>

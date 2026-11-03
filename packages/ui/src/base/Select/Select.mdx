@@ -1,0 +1,86 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { Select } from './Select'
+import * as Stories from './Select.stories'
+
+<Meta of={Stories} />
+
+# Select
+
+決まった選択肢から 1 つを選ぶ欄。ブラウザの `select` を使い、標準の矢印を消して、欄の右から 12px の位置に矢印の印を置く。
+右の余白を矢印の分だけ広げ、長い選択肢の文字が矢印に重ならないようにする。
+
+## 使う場面
+
+- 担当の職員、部署、チームのように、決まった選択肢から 1 つを選ぶ
+- 一覧の絞り込み（`ListTools` の `FilterSelect` が `isDense` と `isEmphasized` で使う）
+
+## 使わない場面
+
+- 2 から 4 個の選択肢から選び、すぐに表示を切り替える（`SegmentedControl` を使う）
+- 多い候補から少しを選ぶ（`ChipPicker` を使う）
+
+## Do
+
+- `FormField` の中に置き、`children` に渡される属性をそのまま渡す
+- 選んでいない状態を許すときは、先頭に「選んでください」の選択肢を置く
+
+## Don't
+
+- `select` を直に書く。矢印の位置と状態の見た目がそろわなくなる
+
+## 状態
+
+### デフォルト
+
+<Canvas of={Stories.Default} />
+
+### 長い選択肢
+
+<Canvas of={Stories.LongOption} />
+
+### hover
+
+枠を黒にする。
+
+<Canvas of={Stories.Hover} />
+
+### フォーカス
+
+<Canvas of={Stories.Focus} />
+
+### エラー
+
+<Canvas of={Stories.WithError} />
+
+### エラーで hover
+
+誤りの枠を濃い赤にする。
+
+<Canvas of={Stories.WithErrorHover} />
+
+### エラーでフォーカス
+
+誤りのない欄と同じ `focus-ring` を出す。
+
+<Canvas of={Stories.WithErrorFocus} />
+
+### 無効
+
+<Canvas of={Stories.Disabled} />
+
+### 無効で hover
+
+枠の色を変えない。
+
+<Canvas of={Stories.DisabledHover} />
+
+## キーボードの操作
+
+- Tab で欄に移る
+- ブラウザの `select` の操作に従う。上下の矢印キーで選び直す
+- エラーがあると `aria-invalid` を付け、`aria-describedby` でエラーの文を指す
+
+## props
+
+<ArgTypes of={Select} />

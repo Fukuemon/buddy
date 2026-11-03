@@ -9,6 +9,7 @@ import * as datePickerStories from '../DatePicker/DatePicker.stories'
 import * as fileFieldStories from '../FileField/FileField.stories'
 import * as formFieldStories from '../FormField/FormField.stories'
 import * as monthPickerStories from '../MonthPicker/MonthPicker.stories'
+import * as selectStories from '../Select/Select.stories'
 import * as numberPickerStories from '../NumberPicker/NumberPicker.stories'
 import * as textareaFieldStories from '../TextareaField/TextareaField.stories'
 import * as timePickerStories from '../TimePicker/TimePicker.stories'
@@ -38,6 +39,7 @@ const fields: {
   { name: 'NumberPicker', label: '提供時間（分）', ...pick(composeStories(numberPickerStories)) },
   { name: 'TextareaField', label: 'メモ', ...pick(composeStories(textareaFieldStories)) },
   { name: 'MonthPicker', label: '対象の月', ...pick(composeStories(monthPickerStories)) },
+  { name: 'Select', label: '担当の職員', ...pick(composeStories(selectStories)) },
   { name: 'FileField', label: '実績の CSV', ...pick(composeStories(fileFieldStories)) },
   {
     name: 'SearchBox',

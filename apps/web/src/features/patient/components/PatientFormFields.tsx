@@ -1,4 +1,4 @@
-import { FormField, formFieldControlClassName, type FormFieldControlProps } from '@buddy/ui'
+import { FormField, formFieldControlClassName, Select, type FormFieldControlProps } from '@buddy/ui'
 import { useId, type ReactNode, type Ref } from 'react'
 
 import type { PatientInput, ServiceCodeRecord } from '#/api/types'
@@ -87,7 +87,7 @@ const RadioRow = <T extends string>({
   )
 }
 
-const Select = ({
+const ChoiceSelect = ({
   field,
   testId,
   value,
@@ -102,9 +102,8 @@ const Select = ({
   disabled: boolean
   children: ReactNode
 }) => (
-  <select
+  <Select
     {...field}
-    className={formFieldControlClassName}
     data-testid={testId}
     disabled={disabled}
     onChange={(event) => onChange(event.target.value)}
@@ -114,7 +113,7 @@ const Select = ({
       選んでください
     </option>
     {children}
-  </select>
+  </Select>
 )
 
 /**
@@ -156,7 +155,7 @@ export const PatientFormFields = ({
         label="サービス"
       >
         {(field) => (
-          <Select
+          <ChoiceSelect
             disabled={disabled || serviceCodes === undefined}
             field={field}
             onChange={(value) => set('serviceCodeId', value)}
@@ -168,7 +167,7 @@ export const PatientFormFields = ({
                 {serviceCodeLabel(code)}
               </option>
             ))}
-          </Select>
+          </ChoiceSelect>
         )}
       </FormField>
       <div className="flex flex-col gap-4 desktop:flex-row">
@@ -214,7 +213,7 @@ export const PatientFormFields = ({
         label="担当の職員"
       >
         {(field) => (
-          <Select
+          <ChoiceSelect
             disabled={disabled || staffOptions === undefined}
             field={field}
             onChange={(value) => set('assignedStaffId', value)}
@@ -226,7 +225,7 @@ export const PatientFormFields = ({
                 {option.label}
               </option>
             ))}
-          </Select>
+          </ChoiceSelect>
         )}
       </FormField>
     </>
