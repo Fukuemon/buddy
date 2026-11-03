@@ -1,11 +1,11 @@
 import {
-  STAFF_MANAGE,
   type Policy,
   type Position,
   type StaffDetail,
   type StaffPolicy,
   type StaffPolicyInput,
 } from '#/api/types'
+import { STAFF_MANAGE } from '#/api/permissions'
 
 import { policyTargetKind } from './format'
 

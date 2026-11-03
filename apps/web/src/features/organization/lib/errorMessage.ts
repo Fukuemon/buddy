@@ -1,4 +1,5 @@
 import { ApiError } from '#/api/BuddyApi'
+import { FORBIDDEN_MESSAGE } from '#/api/forbiddenMessage'
 
 /** 部署かチームを読めなかったときの文。 */
 export const LOAD_ERROR_MESSAGE =
@@ -23,7 +24,7 @@ export const submitErrorMessage = (error: unknown, kind: UnitKind, name: string)
       return `「${name}」という名前の${label}は、すでにあります。別の名前にしてください。`
     if (error.status === 404)
       return `この${label}が見つかりません。閉じてから、開き直してください。`
-    if (error.status === 403) return 'この操作をする権限がありません。'
+    if (error.status === 403) return FORBIDDEN_MESSAGE
   }
   return '保存できませんでした。時間をおいて、もう一度保存してください。'
 }

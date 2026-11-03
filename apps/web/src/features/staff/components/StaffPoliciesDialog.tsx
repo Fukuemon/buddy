@@ -18,7 +18,7 @@ export type PolicyTargetOption = { id: string; name: string }
 
 export type StaffPoliciesDialogProps = {
   staff: StaffDetail
-  /** 8 つの権限を、権限の一覧と同じ並びで渡す。 */
+  /** 全ての権限を、権限の一覧と同じ並びで渡す。 */
   policies: readonly Policy[]
   /** 職員の今の役職。付いた理由を出すのに使う。 */
   position?: Position
@@ -34,7 +34,7 @@ export type StaffPoliciesDialogProps = {
 }
 
 /**
- * 8 つの権限のうち、職員に付けるものと、その対象を選ぶ入力のダイアログ。付いている権限にチェックを入れて始め、
+ * 全ての権限のうち、職員に付けるものと、その対象を選ぶ入力のダイアログ。付いている権限にチェックを入れて始め、
  * 役職で付く権限とほかの権限のまとまりに分けて並べる。対象を指定する権限にチェックを入れると、その下に選んだ対象のチップと、
  * 名前で探して足す欄を出す。開いたときから変え、対象を指定する権限の全てに対象を選ぶと保存できる。
  * 職員を読み直すと、選択を読み直した権限に合わせる。

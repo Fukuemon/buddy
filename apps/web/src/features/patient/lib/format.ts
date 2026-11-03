@@ -1,3 +1,4 @@
+import { isActiveStaffRecord } from '#/api/activeStaff'
 import type { PatientRecord, PatientSchedules, ServiceCodeRecord, StaffRecord } from '#/api/types'
 
 /** 事業所の現地のタイムゾーン。予定の API の日付と同じく、事業所は日本にあるものとする。 */
@@ -71,9 +72,7 @@ export const editStaffOptions = (
 
 /** 担当に選べる、有効で訪問する職員を、名前の順に返す。訪問しない職員は担当にできない（ADR-0022）。 */
 export const activeStaffOptions = (staff: readonly StaffRecord[]) =>
-  staff
-    .filter((s) => s.status === 'active' && s.visits)
-    .sort((a, b) => a.username.localeCompare(b.username, 'ja'))
+  staff.filter(isActiveStaffRecord).sort((a, b) => a.username.localeCompare(b.username, 'ja'))
 
 /** 残る単発の予定 1 件の、`2026/11/02 09:00〜09:29` の形の日時。 */
 export const formatRemainingSchedule = (schedule: PatientSchedules['schedules'][number]) =>

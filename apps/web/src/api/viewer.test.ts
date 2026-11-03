@@ -2,7 +2,8 @@ import { QueryClient } from '@tanstack/react-query'
 import { describe, expect, it, vi } from 'vite-plus/test'
 
 import { queryKeys } from './queryKeys'
-import { STAFF_MANAGE, type Viewer } from './types'
+import type { Viewer } from './types'
+import { STAFF_MANAGE } from './permissions'
 import { watchViewerPermissions } from './viewer'
 
 const viewerWith = (policyCodes: readonly string[]): Viewer => ({

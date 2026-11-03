@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { requirePermission } from '#/api/permissions'
-import { STAFF_MANAGE } from '#/api/types'
+import { requirePermission, STAFF_MANAGE } from '#/api/permissions'
 import { RENDER_DATA_ON_SERVER } from '#/api/createBuddyApi'
 import { awaitOnServer } from '#/api/prefetch'
 import { StaffDetailContainer } from '#/features/staff/components/StaffDetailContainer'

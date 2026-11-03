@@ -24,7 +24,7 @@ export type StaffDetailViewProps = {
   onRetry: () => void
   /** ログインした職員の詳細か。自分は休職と退職にできないので、「…」のメニューを出さない。 */
   isSelf: boolean
-  /** 8 つの権限を、権限の一覧の並びで渡す。読み終えるまでは undefined にする。 */
+  /** 全ての権限を、権限の一覧の並びで渡す。読み終えるまでは undefined にする。 */
   policies?: readonly Policy[]
   /** 職員の今の役職。付いた理由を出すのに使う。 */
   position?: Position

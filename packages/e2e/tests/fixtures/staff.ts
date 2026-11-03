@@ -173,3 +173,28 @@ export const setNonVisiting = async (request: APIRequestContext, token: string, 
     visits: false,
   })
 }
+
+/** 職員の管理の権限の code。予定の API の権限の一覧の code と同じにする。 */
+export const STAFF_MANAGE_CODE = 'staff.manage'
+
+/** 予定の API の権限の一覧（GET /v1/policies）から、code の権限の ID を返す。無ければ Error を投げる。 */
+export const policyIdOf = async (request: APIRequestContext, token: string, code: string) => {
+  const res = await request.get(`${SCHEDULE_URL}/v1/policies`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  const policies = (await res.json()) as { id: string; code: string }[]
+  const policy = policies.find((p) => p.code === code)
+  if (policy === undefined) throw new Error(`権限 ${code} が無い`)
+  return policy.id
+}
+
+/** 予定の API の職員から権限を外す（DELETE /v1/users/{user_id}/policies/{user_policy_id}）。レスポンスを返す。 */
+export const removePolicy = (
+  request: APIRequestContext,
+  token: string,
+  userId: string,
+  userPolicyId: string,
+) =>
+  request.delete(`${SCHEDULE_URL}/v1/users/${userId}/policies/${userPolicyId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })

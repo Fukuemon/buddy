@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vite-plus/test'
 
 import { FAKE_VIEWER } from '#/api/fake/fixtures'
-import { RECEIPT_CHECK, STAFF_MANAGE } from '#/api/types'
+import { RECEIPT_CHECK, STAFF_MANAGE } from '#/api/permissions'
 
 import { SiteNav, siteNavGroups, siteNavHrefOf } from './SiteNav'
 

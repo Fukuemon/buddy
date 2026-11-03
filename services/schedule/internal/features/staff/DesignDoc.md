@@ -72,7 +72,7 @@ verified_commit: 4e53ca5
 | --- | --- | --- | --- |
 | 職員の一覧（`StaffListContainer`） | route の loader（サーバーで描くときは待つ） | 休職と退職を含む事業所の全ての職員（`listUsers`） | - |
 | 職員の一覧（`StaffListContainer`） | route の loader（サーバーで描くときは待つ） | チーム、役職、部署（`listTeams`、`listPositions`、`listDepartments`） | 絞り込みの選択肢 |
-| 職員の登録（`StaffCreateDialogContainer`） | 開いたとき | 部署、チーム、役職 | - |
+| 職員の登録（`StaffCreateDialogContainer`） | 親の職員の一覧の route の loader（登録の route は loader を持たず、一覧が読んだ値を使う） | 部署、チーム、役職 | - |
 | 職員の詳細（`StaffDetailContainer`） | route の loader（サーバーで描くときは待つ） | 職員（`getUser`） | - |
 | 職員の詳細（`StaffDetailContainer`） | route の loader（サーバーで描くときは待つ） | 役職（`listPositions`） | 職員の役職に決まっている権限で、権限を役職のまとまりと個別に足したまとまりに分ける |
 | 職員の詳細（`StaffDetailContainer`） | route の loader（サーバーで描くときは待つ） | 権限（`listPolicies`） | 権限の名前と並び |
@@ -86,7 +86,7 @@ verified_commit: 4e53ca5
 
 職員の登録は、部署、チーム、役職のどれかを読めなければ、選択の欄を押せなくし、登録の失敗の文の位置に読めなかったことの文を出す。
 
-職員の詳細が、開いたときに役職、権限、事業所の職員とチームを読むのは、権限の一覧を出すためである。
+職員の詳細の route の loader が役職、権限、事業所の職員とチームを読むのは、権限の一覧を出すためである。
 
 - 権限の保存（`useSavePolicies`）は、開いたときの権限と比べて変更を作り、1 つずつ送る。
   - チェックを入れた権限は `addUserPolicy` で足し、外した権限は `removeUserPolicy` で外す。対象を変えた権限は、外してから新しい対象で足し直す。

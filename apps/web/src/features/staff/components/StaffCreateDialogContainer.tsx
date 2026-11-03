@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 
-import { STAFF_MANAGE } from '#/api/types'
+import { STAFF_MANAGE } from '#/api/permissions'
 import { useBuddyApi } from '#/api/useBuddyApi'
 import { PermissionGuard } from '#/components/PermissionGuard'
 

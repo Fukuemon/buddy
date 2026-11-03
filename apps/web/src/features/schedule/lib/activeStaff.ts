@@ -1,7 +1,7 @@
+import { isActiveStaff } from '#/api/activeStaff'
 import type { Schedule, Staff } from '#/api/types'
 
-/** 予定のカレンダーの列と絞り込み、予定の候補に出さない職員か。休職と退職の職員と、訪問しない職員（ADR-0022）である。 */
-const hidden = (staff: Staff) => staff.status !== undefined || staff.nonVisiting === true
+const hidden = (staff: Staff) => !isActiveStaff(staff)
 
 /**
  * 予定のカレンダーの職員の列と絞り込み、予定のフォームの職員の候補に出す職員。休職と退職の職員と、訪問しない職員を除き、

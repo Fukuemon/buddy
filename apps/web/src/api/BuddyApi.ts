@@ -179,7 +179,7 @@ export interface BuddyApi {
     list(facilityId: FacilityId): Promise<Position[]>
   }
   policies: {
-    /** 8 つの権限を返す。権限は事業所ごとには持たないが、ほかの操作とそろえて事業所を受ける。 */
+    /** 全ての権限を返す。権限は事業所ごとには持たないが、ほかの操作とそろえて事業所を受ける。 */
     list(facilityId: FacilityId): Promise<Policy[]>
   }
   /**

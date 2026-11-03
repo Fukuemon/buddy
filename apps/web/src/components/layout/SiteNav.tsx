@@ -1,8 +1,8 @@
 import { clsx } from 'clsx'
 import { useId, type ComponentType, type ReactNode, type SVGProps } from 'react'
 
-import { hasPermission } from '#/api/permissions'
-import { RECEIPT_CHECK, STAFF_MANAGE, type Viewer } from '#/api/types'
+import { hasPermission, RECEIPT_CHECK, STAFF_MANAGE } from '#/api/permissions'
+import type { Viewer } from '#/api/types'
 
 import ScheduleIcon from '#/assets/icons/calendar-month.svg?react'
 import ImportIcon from '#/assets/icons/download.svg?react'

@@ -61,7 +61,7 @@ export const positionsQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
     queryFn: () => api.positions.list(facilityId),
   })
 
-/** 職員に付けられる 8 つの権限を読む query。権限は事業所ごとに変わらない。 */
+/** 職員に付けられる全ての権限を読む query。権限は事業所ごとに変わらない。 */
 export const policiesQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
     queryKey: queryKeys.policies(facilityId),

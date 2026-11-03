@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { requirePermission } from '#/api/permissions'
-import { STAFF_MANAGE } from '#/api/types'
+import { requirePermission, STAFF_MANAGE } from '#/api/permissions'
 import { StaffCreateDialogContainer } from '#/features/staff/components/StaffCreateDialogContainer'
 
 export const Route = createFileRoute('/staff/new')({
