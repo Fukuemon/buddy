@@ -52,6 +52,8 @@ ADR-0029 の、常駐の処理の型、パッケージのドキュメントコ�
   - 出典: [Build constraints](https://pkg.go.dev/cmd/go#hdr-Build_constraints)
 - テストのファイルは、確認する対象のファイルの名前に `_test` を付ける。観点の名前のテストは ADR-0029 のまま保ち、観点に名前が付かないテストは `usecase_test.go` から `app_test.go` に移す。
 - 手順の型を `Usecase` から `App` に改める。呼ぶ側の `httpapi` のインターフェース（`CalendarUsecase` など）と束（`Usecases`）も、`CalendarApp` と `Apps` に改める。
+  - 手順の型を `App` とし、組み立てを `app.go` の `App`、`Deps`、`NewApp` に置く判断は ADR-0031 で置き換えた。
+    - ADR-0031: [Go の API の操作を、使う依存だけを持つ操作ごとの型にし、機能のパッケージの App をやめる](0031-go-operation-types.md)
 - CQRS は、書き込みと読み取りを動詞で区別するところまでにする。読み取りの DB と、その同期は足さない。
   - 出典: [Fowler: CQRS](https://martinfowler.com/bliki/CQRS.html)
 - ドメインイベントは足さない。Google カレンダーへの書き出し（予定の変更と同じトランザクションで積む書き出しの待ち）が、ドメインイベントにする将来の候補になる。
@@ -70,6 +72,8 @@ ADR-0029 の、常駐の処理の型、パッケージのドキュメントコ�
 - 役割が 1 つのパッケージは、役割の語を付けず、パッケージの名前のファイルの 1 つにする（照合の API の `record`、`normalize`、`match`、`judge`、ID ブローカーの `hydra`）。
   - 役割の語は、1 つのパッケージに複数の役割があるときに、役割を分けるために付ける。
 - アダプタのパッケージ（`httpapi`、`login`、`internalapi`、`postgres`）は、`Config` と `NewHandler` の組み立てを、パッケージの名前のファイルに置く。`app.go` と `App` は、手順の型を持つ機能のパッケージにだけ使う。
+  - この判断のうち `app.go` と `App` の部分は ADR-0031 で置き換えた。
+    - ADR-0031: [Go の API の操作を、使う依存だけを持つ操作ごとの型にし、機能のパッケージの App をやめる](0031-go-operation-types.md)
   - 予定の API の `httpapi` の `router.go` も、`httpapi.go` に改める。
 - アダプタのパッケージの中でも、ハンドラは `<機能>_handler.go`、使う側で定義したインターフェースは `<相手>_port.go` に置く。
 - 照合の API の `check` は、ファイルを 3 つに分ける。
