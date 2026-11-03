@@ -1,5 +1,5 @@
 import { FormField, formFieldControlClassName, HelpToggle, InputDialog } from '@buddy/ui'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 
 import type { Department, Position, StaffCreateInput, Team } from '#/api/types'
 
@@ -58,9 +58,6 @@ export const StaffCreateDialog = ({
   const selectedTeam = teamId || teamOptions?.[0]?.id || ''
   const selectedPosition = positionId || positionOptions?.[0]?.id || ''
 
-  // <dialog> の showModal は、最初の操作できる要素（ヘルプのボタン）にフォーカスを移す（HTML の dialog の focusing steps）。その後に名前の欄へ移す
-  useEffect(() => nameRef.current?.focus(), [])
-
   const submit = () => {
     const next: StaffFormErrors = {
       name: validateName(name),
@@ -82,6 +79,7 @@ export const StaffCreateDialog = ({
 
   return (
     <InputDialog
+      initialFocusRef={nameRef}
       busyLabel="登録しています"
       canSubmit={departments !== undefined && teams !== undefined && positions !== undefined}
       error={

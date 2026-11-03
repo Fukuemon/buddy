@@ -2,14 +2,14 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
 import { fn } from 'storybook/test'
 
+import { createModalDocsParameters } from '../../../.storybook/sharedPreview'
 import { Button } from '../Button/Button'
 import { Modal } from './Modal'
 
 const meta = {
   title: 'コンポーネント/Base/Modal',
   component: Modal,
-  // showModal は文書の全体を操作できなくするので、Docs のページでは story ごとに iframe で描く
-  parameters: { docs: { story: { inline: false, iframeHeight: 480 } } },
+  parameters: createModalDocsParameters(),
   args: {
     isOpen: true,
     title: '予定の詳細',

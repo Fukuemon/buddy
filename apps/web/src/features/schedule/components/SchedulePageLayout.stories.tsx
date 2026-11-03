@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { createModalDocsParameters } from '@buddy/ui/storybook-preview'
 
 import { withAppRouter, type AppRouterParameters } from '#/storybook/withAppRouter'
 
@@ -19,11 +20,10 @@ const meta = {
       </div>
     ),
   ],
-  // showModal は文書の全体を操作できなくするので、Docs のページでは story ごとに iframe で描く
   parameters: {
     ...route({}),
+    ...createModalDocsParameters(778),
     layout: 'fullscreen',
-    docs: { story: { inline: false, iframeHeight: 778 } },
   },
 } satisfies Meta<typeof SchedulePageLayout>
 

@@ -17,17 +17,13 @@ import {
 export const Route = createFileRoute('/staff')({
   beforeLoad: requirePermission(STAFF_MANAGE),
   ssr: RENDER_DATA_ON_SERVER,
-  // 権限が無ければ beforeLoad が止めるので、loader は権限を持つ職員でだけ動く。
-  // viewer の型は null を含むが、root の beforeLoad がログインしていない職員をログインへ移すので、ここでは null にならない
   loader: ({ context: { api, queryClient, viewer } }) =>
-    viewer === null
-      ? undefined
-      : awaitOnServer([
-          queryClient.prefetchQuery(staffRecordsQueryOptions(api, viewer.facilityId)),
-          queryClient.prefetchQuery(departmentsQueryOptions(api, viewer.facilityId)),
-          queryClient.prefetchQuery(teamsQueryOptions(api, viewer.facilityId)),
-          queryClient.prefetchQuery(positionsQueryOptions(api, viewer.facilityId)),
-        ]),
+    awaitOnServer([
+      queryClient.prefetchQuery(staffRecordsQueryOptions(api, viewer.facilityId)),
+      queryClient.prefetchQuery(departmentsQueryOptions(api, viewer.facilityId)),
+      queryClient.prefetchQuery(teamsQueryOptions(api, viewer.facilityId)),
+      queryClient.prefetchQuery(positionsQueryOptions(api, viewer.facilityId)),
+    ]),
   head: () => ({ meta: [{ title: '職員 | buddy' }] }),
   component: StaffPage,
 })

@@ -1,5 +1,5 @@
 import { DotLabel, FormField, formFieldControlClassName, InputDialog } from '@buddy/ui'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 
 import { TEAM_COLORS, type TeamColor } from '#/api/types'
 import { TEAM_COLOR_LABELS, teamColorDotClassName } from '#/components/teamColor'
@@ -51,9 +51,6 @@ export const OrganizationUnitDialog = ({
   const [color, setColor] = useState(initial.color)
   const [isNameMissing, setNameMissing] = useState(false)
 
-  // <dialog> の showModal は、最初の操作できる要素（閉じるボタン）にフォーカスを移す。その後に名前の欄へ移す
-  useEffect(() => nameRef.current?.focus(), [])
-
   const submit = () => {
     const trimmed = name.trim()
     if (trimmed === '') {
@@ -65,6 +62,7 @@ export const OrganizationUnitDialog = ({
 
   return (
     <InputDialog
+      initialFocusRef={nameRef}
       busyLabel={mode === 'create' ? '作っています' : '保存しています'}
       canSubmit
       error={

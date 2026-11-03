@@ -43,21 +43,35 @@ export const deniedPermissionOf = (error: unknown): ScreenPermission | undefined
   return isScreenPermission(permission) ? permission : undefined
 }
 
-/** requirePermission が返す beforeLoad。宣言した権限を、route の宣言のテストが読む。 */
-export type PermissionCheck = ((options: { context: { viewer: Viewer | null } }) => void) & {
+/**
+ * requirePermission が返す beforeLoad。宣言した権限を、route の宣言のテストが読む。
+ * Result は beforeLoad の戻り値で、TanStack Router が loader と子の route の context に足す。
+ */
+export type PermissionCheck<Result = void> = ((options: {
+  context: { viewer: Viewer | null }
+}) => Result) & {
   readonly permission: Permission
 }
 
+/** 権限を確認した後の context。権限を持つ職員はログインしているので、viewer は null にならない。 */
+export type PermittedContext = { viewer: Viewer }
+
 /**
  * route の beforeLoad に置き、その画面に要る権限を宣言する。
- * 権限が無ければ PermissionDeniedError を投げ、その route と子の route の loader を動かさない。
- * viewer は、root の route の beforeLoad が context に入れた値を読む。
+ * 権限が無いか、ログインしていなければ PermissionDeniedError を投げ、その route と子の route の loader を動かさない。
+ * 権限を持てば、root の route の beforeLoad が context に入れた viewer を、null を外した型で返す。
+ * 'none' は確認をせず、何も返さない。
  */
-export const requirePermission = (permission: Permission): PermissionCheck =>
-  Object.assign(
-    ({ context }: { context: { viewer: Viewer | null } }) => {
-      if (permission !== 'none' && !hasPermission(context.viewer, permission))
-        throw new PermissionDeniedError(permission)
-    },
-    { permission },
-  )
+export function requirePermission(permission: ScreenPermission): PermissionCheck<PermittedContext>
+export function requirePermission(permission: 'none'): PermissionCheck
+export function requirePermission(
+  permission: Permission,
+): PermissionCheck<PermittedContext | undefined> {
+  const check = ({ context: { viewer } }: { context: { viewer: Viewer | null } }) => {
+    if (permission === 'none') return undefined
+    if (viewer === null || !hasPermission(viewer, permission))
+      throw new PermissionDeniedError(permission)
+    return { viewer }
+  }
+  return Object.assign(check, { permission })
+}

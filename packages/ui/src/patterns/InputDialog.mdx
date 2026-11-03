@@ -56,7 +56,7 @@ import * as Stories from './InputDialog.stories'
 
 ## キーボードの操作
 
-- 開くと、閉じるボタン（×）にフォーカスが移る
+- 開くと、`initialFocusRef` の欄にフォーカスが移る。渡さなければ、ヘッダーの最初のボタンに移る
 - Tab と Shift+Tab はダイアログの中の要素に移る
 - Esc で `onClose` を呼ぶ。送っている間は呼ばない
 - 閉じると、開く前にフォーカスがあった要素へ戻る

@@ -1,6 +1,12 @@
 import { useId, type ReactNode } from 'react'
 
-import { Dialog, DialogBody, DialogFooter, DialogHeader } from '../base/Dialog/Dialog'
+import {
+  Dialog,
+  DialogBody,
+  DialogFooter,
+  DialogHeader,
+  type DialogProps,
+} from '../base/Dialog/Dialog'
 import { SubmitButtons, type DialogSubmitProps } from './DialogSubmit'
 
 export type InputDialogProps = DialogSubmitProps & {
@@ -13,6 +19,8 @@ export type InputDialogProps = DialogSubmitProps & {
   formId?: string
   /** formId を渡さないときに、確定のボタンで呼ぶ。 */
   onSubmit?: () => void
+  /** 開いたときにフォーカスを移す欄。Dialog の initialFocusRef に渡す。 */
+  initialFocusRef?: DialogProps['initialFocusRef']
   /** ×、「キャンセル」、覆い、Escape キーで呼ぶ。送っている間は呼ばない。 */
   onClose: () => void
   children: ReactNode
@@ -30,6 +38,7 @@ export const InputDialog = ({
   formId,
   onSubmit,
   onClose,
+  initialFocusRef,
   error,
   children,
   ...submitProps
@@ -41,6 +50,7 @@ export const InputDialog = ({
   return (
     <Dialog
       canClose={!submitProps.isSubmitting}
+      initialFocusRef={initialFocusRef}
       data-testid={`${submitProps.testIdPrefix}-dialog`}
       labelledBy={titleId}
       onClose={onClose}

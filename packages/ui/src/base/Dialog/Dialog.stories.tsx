@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
 
+import { createModalDocsParameters } from '../../../.storybook/sharedPreview'
 import { BusyLabel } from '../Button/BusyLabel'
 import { Button } from '../Button/Button'
 import { Dialog, DialogBody, DialogFooter, DialogHeader } from './Dialog'
@@ -20,8 +21,7 @@ const ReasonField = () => (
 const meta = {
   title: 'コンポーネント/Base/Dialog',
   component: Dialog,
-  // showModal は文書の全体を操作できなくするので、Docs のページでは story ごとに iframe で描く
-  parameters: { docs: { story: { inline: false, iframeHeight: 480 } } },
+  parameters: createModalDocsParameters(),
   args: {
     labelledBy: TITLE_ID,
     onClose: fn(),

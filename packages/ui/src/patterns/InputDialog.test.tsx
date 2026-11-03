@@ -1,5 +1,6 @@
 import { composeStories } from '@storybook/react-vite'
 import { render, screen } from '@testing-library/react'
+import { useRef } from 'react'
 import { fn } from 'storybook/test'
 import { describe, expect, it } from 'vite-plus/test'
 import { userEvent } from 'vite-plus/test/browser/context'
@@ -32,6 +33,19 @@ describe('InputDialog', () => {
   it('開くと、閉じるボタンにフォーカスを移す', () => {
     render(<Default />)
     expect(screen.getByRole('button', { name: '閉じる' })).toHaveFocus()
+  })
+
+  it('initialFocusRef を渡すと、開いたときにその欄にフォーカスを移す', () => {
+    const WithInitialFocus = () => {
+      const nameRef = useRef<HTMLInputElement>(null)
+      return (
+        <Default initialFocusRef={nameRef}>
+          <input aria-label="名前" ref={nameRef} />
+        </Default>
+      )
+    }
+    render(<WithInitialFocus />)
+    expect(screen.getByRole('textbox', { name: '名前' })).toHaveFocus()
   })
 
   it('closeTestId を渡すと、閉じるボタンにその testid を付ける', () => {

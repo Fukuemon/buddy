@@ -1,5 +1,5 @@
 import { InputDialog } from '@buddy/ui'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 
 import type { PatientInput, ServiceCodeRecord } from '#/api/types'
 
@@ -58,9 +58,6 @@ export const PatientCreateDialog = ({
   const [values, setValues] = useState(EMPTY)
   const [errors, setErrors] = useState<PatientFormErrors>({})
 
-  // <dialog> の showModal は、最初の操作できる要素（閉じるボタン）にフォーカスを移す（HTML の dialog の focusing steps）。その後に名前の欄へ移す
-  useEffect(() => nameRef.current?.focus(), [])
-
   const submit = () => {
     const result = validatePatientForm(values)
     if ('errors' in result) {
@@ -72,6 +69,7 @@ export const PatientCreateDialog = ({
 
   return (
     <InputDialog
+      initialFocusRef={nameRef}
       busyLabel="登録しています"
       canSubmit={serviceCodes !== undefined && staffOptions !== undefined}
       error={

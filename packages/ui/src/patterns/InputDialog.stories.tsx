@@ -1,14 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
 
+import { createModalDocsParameters } from '../../.storybook/sharedPreview'
 import { HelpToggle } from '../base/HelpToggle/HelpToggle'
 import { InputDialog } from './InputDialog'
 
 const meta = {
   title: 'パターン/InputDialog',
   component: InputDialog,
-  // showModal は文書の全体を操作できなくするので、Docs のページでは story ごとに iframe で描く
-  parameters: { docs: { story: { inline: false, iframeHeight: 480 } } },
+  parameters: createModalDocsParameters(),
   args: {
     title: '予定の理由を直す',
     testIdPrefix: 'reason',

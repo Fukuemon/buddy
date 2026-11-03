@@ -6,7 +6,6 @@ import { SiteLayoutContainer } from '#/components/layout/SiteLayoutContainer'
 import { CalendarReviewBadgeContainer } from '#/features/calendar/components/CalendarReviewBadgeContainer'
 import { CalendarLinkContainer } from '#/features/calendar/components/CalendarLinkContainer'
 
-// `/schedule` の子にすると予定のカレンダーの上に重なるので、名前の `_` で入れ子から外す
 export const Route = createFileRoute('/schedule_/link')({
   beforeLoad: requirePermission(STAFF_MANAGE),
   // 最後の取り込みの日時を職員のデバイスの時間帯で出すため、サーバーで描画しない
