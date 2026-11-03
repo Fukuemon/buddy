@@ -54,7 +54,7 @@ verified_commit: 4e53ca5
 機能のパッケージは、ほかの機能のエンティティをこの形で受ける。  
 同じ形のインターフェースを機能ごとに書かずに済ませるためである。
 
-`access` は機能のパッケージではないので、型の名前を `Service` のままにし、`Usecase` への改名と「1〜2 のメソッド」の規則の対象から外す。
+`access` は機能のパッケージではないので、型の名前を `Service` のままにし、`App` の名前と「1〜2 のメソッド」の規則の対象から外す。
 
 ### テーブルの構成
 
@@ -235,7 +235,7 @@ CHECK が 8 つ以外を拒み、API は 400 を返す。
 sequenceDiagram
   participant W as web
   participant M as 認証のミドルウェア
-  participant U as schedule.Usecase
+  participant U as schedule.App
   participant DB as PostgreSQL
 
   W->>M: GET /v1/facilities/{facility_id}/schedules（Bearer）
@@ -288,7 +288,7 @@ sequenceDiagram
 | `department_id`、`team_id`、`position_id`、`user_id`、`patient_id` | 組織、職員、利用者 | リソースを読んでその事業所と比べる |
 | `schedule_id`、`recurring_schedule_id`、`external_calendar_id`、`calendar_export_id` | 予定とカレンダー | リソースを読んでその事業所と比べる |
 | `policy_id` | 権限 | 事業所に属さないので確認しない |
-| `user_policy_id` | 職員の権限 | 同じパスの `user_id` で事業所を確認し、`staff.Usecase` が職員の権限かを確認する |
+| `user_policy_id` | 職員の権限 | 同じパスの `user_id` で事業所を確認し、`staff.App` が職員の権限かを確認する |
 
 表に無い引数を持つパスは、事業所を確認できないので 500 を返す。
 
@@ -308,7 +308,7 @@ sequenceDiagram
 ### 利用者の変更、利用の終了、利用の再開
 
 利用者の変更は `PUT /v1/patients/{patient_id}`、利用の終了と利用の再開は `POST /v1/patients/{patient_id}/` の下の `end_service` と `resume_service` で行う。  
-どれも、`patient.Usecase` が職員の管理の権限を確認してから行う。  
+どれも、`patient.App` が職員の管理の権限を確認してから行う。  
 利用の終了の規則は [利用者](https://github.com/Fukuemon/buddy/blob/develop/context/domain/patient.md) にある。
 
 利用者の変更は、名前、希望、サービスコード、担当の職員を本文の値に置き換え、部分の更新は持たない。  
@@ -332,10 +332,10 @@ sequenceDiagram
 
 利用の終了を確定する前の残る一覧は、`GET /v1/patients/{patient_id}/remaining_schedules` で返す。  
 何も書かない。  
-一覧は、利用の終了と同じ `patient.Usecase` の関数で作り、同じ規則の一覧を同じ形（`PatientSchedules`）で返す。
+一覧は、利用の終了と同じ `patient.App` の関数で作り、同じ規則の一覧を同じ形（`PatientSchedules`）で返す。
 
 利用者を 1 人読むのは `GET /v1/patients/{patient_id}` で、利用の終了の利用者も `ended_at` と一緒に返す。  
-2 つの読み取りも、`patient.Usecase` が職員の管理の権限を確認してから行う。  
+2 つの読み取りも、`patient.App` が職員の管理の権限を確認してから行う。  
 ほかの事業所の利用者は、職員と同じく、ミドルウェアがパスの `patient_id` の事業所で 403 にする。
 
 利用の終了の利用者は、`patients.ended_at` に利用の終了にした時刻を持つ。  
@@ -401,7 +401,7 @@ Google カレンダーの取り込みの確定、同期の予定ごとのトラ�
 予定の作成、予定の変更、繰り返しの予定の作成、繰り返しの回の置き換えは、利用の終了の利用者を予定の利用者に新しく指すと 400 で拒む。
 
 - 確認は、訪問の情報を書く `visit.Writer` が行う。`visit.Input.KeptPatientID` は、利用の終了のまま保存してよい利用者である。
-  - `schedule.Usecase` は、保存した後の日付が今日より前の予定でだけ、元の予定か繰り返しの予定の利用者を `KeptPatientID` に入れる。退職した職員と同じく、利用の終了の利用者に今日以降の予定を残さないためである。
+  - `schedule.App` は、保存した後の日付が今日より前の予定でだけ、元の予定か繰り返しの予定の利用者を `KeptPatientID` に入れる。退職した職員と同じく、利用の終了の利用者に今日以降の予定を残さないためである。
   - Google カレンダーとの同期が予定を外部の内容に合わせるときも、外部の予定の日付が今日より前なら、元の訪問の情報の利用者を `KeptPatientID` に入れる。
   - 同期がタイトルの同じ予定で前の訪問の情報を使うときも、外部の予定の日付が今日以降なら、利用者が利用中のときだけ当てる。利用の終了の利用者なら、当てられない変更にする。
   - 取り込みと同期がタイトルの利用者名で利用者を探すときは、利用中の利用者だけから探す。利用の終了の利用者の名前の予定は、利用者を 1 人に決められない予定として扱う。

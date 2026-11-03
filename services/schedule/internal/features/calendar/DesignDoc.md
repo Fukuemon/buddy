@@ -54,7 +54,7 @@ verified_commit: 8254dde
 ### 連携の操作の権限
 
 結び付け、取り込み、確認が必要な予定の操作は、全て職員の管理の権限（`staff.manage`）を求める。  
-`calendar.Usecase` は、操作の始めに `principal.RequireStaffManage` で確認し、持たない職員を 403（`forbidden`）で拒む。
+`calendar.App` は、操作の始めに `principal.RequireStaffManage` で確認し、持たない職員を 403（`forbidden`）で拒む。
 
 - web は、`getMe` の権限で職員の管理の権限が無いと分かれば、カレンダーの連携、予定の取り込み、確認が必要な予定の画面で連携の API を呼ばず、権限が無いことを出す。画面の判定は表示のためだけで、拒むのは予定の API である。
 - 画面を開いた後に権限を外された職員の操作は、予定の API が 403 で拒む。web は、どの操作の 403 も「この操作をする権限がありません。」にする（`apps/web/src/features/calendar/lib/errorMessage.ts`）。
@@ -256,7 +256,7 @@ sequenceDiagram
 書き出しは、`GOOGLE_CALENDAR_EXPORT_ENABLED` が `true` のときだけ動く。  
 `false` のときは待ちを積まず、書き出しの処理も動かさない。
 
-予定の操作（`schedule.Usecase`）は、予定を書くのと同じトランザクションで `Outbox` に待ちを積む。  
+予定の操作（`schedule.App`）は、予定を書くのと同じトランザクションで `Outbox` に待ちを積む。  
 積むのは、予定の職員に外していないカレンダーがあるときと、予定の対応のカレンダーを外していないとき（職員を替えて、前のカレンダーの予定を消すとき）だけである。  
 取り込みで書いた予定は積まない。  
 カレンダーを結び付ける前に作った予定は書き出さない。  
