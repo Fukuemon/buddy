@@ -41,7 +41,7 @@ type CSVSchedules struct {
 
 // Schedules は、Data を予定の CSV として読む。警告は返さない。
 func (s CSVSchedules) Schedules(_ context.Context) ([]record.Record, []record.Warning, error) {
-	rows, err := csvio.ReadTable(s.Data, record.SourceSchedule, csvio.ScheduleColumns())
+	rows, err := csvio.ReadTable(s.Data, record.InputSchedule, csvio.ScheduleColumns())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -122,7 +122,7 @@ func Run(ctx context.Context, visits []byte, schedules ScheduleSource) (Report, 
 }
 
 func readVisits(data []byte) ([]record.Record, error) {
-	rows, err := csvio.ReadTable(data, record.SourceVisit, csvio.VisitColumns())
+	rows, err := csvio.ReadTable(data, record.InputVisit, csvio.VisitColumns())
 	if err != nil {
 		return nil, err
 	}

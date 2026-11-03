@@ -142,15 +142,15 @@ func TestRunInputErrors(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 	want := []record.CSVError{
-		{Source: record.SourceVisit, Reason: record.ReasonInvalidTime, Line: 2, Column: "終了時間"},
-		{Source: record.SourceSchedule, Reason: record.ReasonInvalidDate, Line: 3, Column: "訪問日"},
+		{Input: record.InputVisit, Reason: record.ReasonInvalidTime, Line: 2, Column: "終了時間"},
+		{Input: record.InputSchedule, Reason: record.ReasonInvalidDate, Line: 3, Column: "訪問日"},
 	}
 	if len(ie.Errors) != len(want) {
 		t.Fatalf("rows = %+v", ie.Errors)
 	}
 	for i, w := range want {
 		g := ie.Errors[i]
-		if g.Source != w.Source || g.Reason != w.Reason || g.Line != w.Line || g.Column != w.Column {
+		if g.Input != w.Input || g.Reason != w.Reason || g.Line != w.Line || g.Column != w.Column {
 			t.Errorf("rows[%d] = %+v, want %+v", i, g, w)
 		}
 	}

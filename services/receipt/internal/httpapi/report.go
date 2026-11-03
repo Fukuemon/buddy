@@ -85,7 +85,7 @@ func csvErrors(errs []record.CSVError) []openapi.CsvError {
 	out := make([]openapi.CsvError, 0, len(errs))
 	for _, r := range errs {
 		e := openapi.CsvError{
-			Source:  openapi.InputSource(r.Source),
+			Source:  openapi.InputSource(r.Input),
 			Reason:  openapi.InputReason(r.Reason),
 			Column:  optional(r.Column),
 			Message: r.Message,

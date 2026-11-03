@@ -8,13 +8,13 @@ import (
 	"github.com/Fukuemon/buddy/services/receipt/internal/civil"
 )
 
-// Source は、行がどちらの入力から来たかを表す。
-type Source string
+// Input は、行がどちらの入力から来たかを表す。
+type Input string
 
 // 入力の種類。
 const (
-	SourceSchedule Source = "schedules"
-	SourceVisit    Source = "visits"
+	InputSchedule Input = "schedules"
+	InputVisit    Input = "visits"
 )
 
 // Key は、予定と実績を突き合わせるキーである。
@@ -80,7 +80,7 @@ const (
 
 // CSVError は、入力の CSV の誤りの 1 件である。
 type CSVError struct {
-	Source Source
+	Input  Input
 	Reason Reason
 	// Line は、入力の CSV の行番号（ヘッダーが 1 行目）である。ファイルの全体の誤りでは 0 にする。
 	Line int

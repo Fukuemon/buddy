@@ -50,8 +50,8 @@ status: stable
 | --- | --- | --- |
 | 照合の担当 | 月末に予定と実績を比べ、食い違いを直す職員。役職とは別の、業務の役割 | なし（照合の画面は全ての職員が開ける） |
 | 照合 | 予定と実績を対にし、不整合、予定のみ、実績のみ、整合の 4 つの区分に分けること | 照合の API `check.Run`、API `createCheck`、`Report` |
-| 実績 | 電子カルテ（iBow）から書き出した訪問の記録の CSV の行 | `record.SourceVisit`、`csvio.VisitColumns` |
-| 予定（照合の） | 予定の CSV の行か、Google カレンダーの予定 | `record.SourceSchedule`、`check.ScheduleSource` |
+| 実績 | 電子カルテ（iBow）から書き出した訪問の記録の CSV の行 | `record.InputVisit`、`csvio.VisitColumns` |
+| 予定（照合の） | 予定の CSV の行か、Google カレンダーの予定 | `record.InputSchedule`、`check.ScheduleSource` |
 | 対のキー | 訪問日、利用者名、主訪問者 | `record.Key` |
 | 区分 | 照合の結果の分類。不整合、予定のみ、実績のみ、整合 | `judge.Category`（`mismatch`、`schedule_only`、`visit_only`、`match`）、web `RECEIPT_CATEGORIES` |
 | サービス内容 | 照合で比べるサービスの表記（`訪看I２` など） | `Record.Service`、`servicerule.Lookup` |
