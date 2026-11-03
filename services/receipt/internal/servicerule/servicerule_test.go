@@ -58,7 +58,7 @@ func TestLookupBoundaries(t *testing.T) {
 		}
 		for _, c := range cases {
 			t.Run(fmt.Sprintf("%s/%d", tt.service, c.minutes), func(t *testing.T) {
-				if got := r.Has(c.minutes); got != c.want {
+				if got := r.Contains(c.minutes); got != c.want {
 					t.Errorf("Contains(%d) = %v, want %v（範囲 %s）", c.minutes, got, c.want, r)
 				}
 			})
@@ -80,7 +80,7 @@ func TestRangeString(t *testing.T) {
 	}
 }
 
-func TestAdjustsScheduleEnd(t *testing.T) {
+func TestHasScheduleEndAdjustment(t *testing.T) {
 	adjusted := []string{
 		"訪看I２", "予防看I２", "予訪看I２", "予防訪看I２",
 		"訪看I３", "予防看I３", "予訪看I３", "予防訪看I３",
@@ -99,7 +99,7 @@ func TestAdjustsScheduleEnd(t *testing.T) {
 	}
 }
 
-func TestServiceMatches(t *testing.T) {
+func TestIsMatchingService(t *testing.T) {
 	tests := []struct {
 		schedule, visit string
 		want            bool
@@ -117,7 +117,7 @@ func TestServiceMatches(t *testing.T) {
 	}
 	for _, tt := range tests {
 		if got := IsMatchingService(tt.schedule, tt.visit); got != tt.want {
-			t.Errorf("ServiceMatches(%q, %q) = %v, want %v", tt.schedule, tt.visit, got, tt.want)
+			t.Errorf("IsMatchingService(%q, %q) = %v, want %v", tt.schedule, tt.visit, got, tt.want)
 		}
 	}
 }

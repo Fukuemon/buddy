@@ -55,8 +55,8 @@ func isAllowed(p principal.Principal, staffID, teamID string, editing bool) bool
 	return false
 }
 
-// allow は、p が職員 st の予定を見てよいか（editing なら編集してよいか）を確認し、許されないときは apperr.ErrForbidden を返す。
-func allow(p principal.Principal, st staff.Ref, editing bool) error {
+// requireAllowed は、p が職員 st の予定を見てよいか（editing なら編集してよいか）を確認し、許されないときは apperr.ErrForbidden を返す。
+func requireAllowed(p principal.Principal, st staff.Ref, editing bool) error {
 	if editing && !CanEdit(p, st.ID, st.TeamID) {
 		return fmt.Errorf("%w: この職員の予定を編集する権限がありません", apperr.ErrForbidden)
 	}

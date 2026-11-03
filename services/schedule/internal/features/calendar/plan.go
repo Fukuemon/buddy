@@ -58,8 +58,8 @@ func (r Range) widened() Range {
 	return Range{Start: civil.DateOf(r.Start.Time().AddDate(0, 0, -movedMargin)), End: civil.DateOf(r.End.Time().AddDate(0, 0, movedMargin))}
 }
 
-// Has は、d が期間の中の日かを返す。
-func (r Range) Has(d civil.Date) bool { return !d.Before(r.Start) && !d.After(r.End) }
+// Contains は、d が期間の中の日かを返す。
+func (r Range) Contains(d civil.Date) bool { return !d.Before(r.Start) && !d.After(r.End) }
 
 func midnight(d civil.Date) time.Time {
 	return time.Date(d.Year, d.Month, d.Day, 0, 0, 0, 0, tokyo)
@@ -195,7 +195,7 @@ type plan struct {
 	counts       Counts
 }
 
-// planInput は、buildPlan の入力である。
+// planInput は、newPlan の入力である。
 type planInput struct {
 	rng    Range
 	events []Event
@@ -351,7 +351,7 @@ func (b *planner) addSingle(ev Event) {
 		return
 	}
 	c := Classify(ev)
-	if !c.Date.IsZero() && !b.in.rng.Has(c.Date) {
+	if !c.Date.IsZero() && !b.in.rng.Contains(c.Date) {
 		return
 	}
 	if b.isLinked(ev.ID) {
@@ -380,7 +380,7 @@ func (b *planner) addParent(ev Event) {
 				continue
 			}
 			ic := Classify(inst)
-			if !ic.Date.IsZero() && !b.in.rng.Has(ic.Date) {
+			if !ic.Date.IsZero() && !b.in.rng.Contains(ic.Date) {
 				continue
 			}
 			if b.isLinked(inst.ID) {
@@ -428,7 +428,7 @@ func (b *planner) addException(ev Event) {
 		return
 	}
 	c := Classify(ev)
-	if original, ok := originalDate(ev); (c.Date.IsZero() || !b.in.rng.Has(c.Date)) && (!ok || !b.in.rng.Has(original)) {
+	if original, ok := originalDate(ev); (c.Date.IsZero() || !b.in.rng.Contains(c.Date)) && (!ok || !b.in.rng.Contains(original)) {
 		return
 	}
 	if b.isLinked(ev.ID) {
@@ -467,13 +467,13 @@ func (b *planner) replacementTarget(ev Event) (replacement, bool) {
 		parent := b.parents[ev.RecurringEventID]
 		pc := Classify(parent)
 		rs := schedule.RecurringSchedule{Slot: schedule.Slot{Date: pc.Date}, Rule: rec.Rule}
-		if !rs.IsOccurring(date) || slices.Contains(rec.ExclusionDates, date) {
+		if !rs.HasOccurrenceOn(date) || slices.Contains(rec.ExclusionDates, date) {
 			return replacement{}, false
 		}
 		return replacement{parentEventID: ev.RecurringEventID, date: date}, true
 	}
 	rs, ok := b.in.linkedRecurring[ev.RecurringEventID]
-	if !ok || !rs.IsOccurring(date) || slices.Contains(rs.ExclusionDates, date) {
+	if !ok || !rs.HasOccurrenceOn(date) || slices.Contains(rs.ExclusionDates, date) {
 		return replacement{}, false
 	}
 	return replacement{recurringScheduleID: rs.ID, date: date}, true
@@ -722,7 +722,7 @@ func (p *plan) applyDecisions(decisions []Decision, patients []PatientRef) (int,
 
 var errReviewChanged = apperr.ConflictCode(CodeReviewChanged, "プレビューの後に、外部のカレンダーの確認が必要な予定が変わりました。もう一度プレビューしてください")
 
-// withMovedExceptions は、events に、around のうち元の日付が期間の中にある例外の回で、events に無いものを足す。
+// withMovedExceptions は、events に、aroundEvents のうち元の日付が期間の中にある例外の回で、events に無いものを足す。
 func withMovedExceptions(events, aroundEvents []Event, rng Range) []Event {
 	seen := make(map[string]bool, len(events))
 	for _, ev := range events {
@@ -732,7 +732,7 @@ func withMovedExceptions(events, aroundEvents []Event, rng Range) []Event {
 		if ev.RecurringEventID == "" || seen[ev.ID] {
 			continue
 		}
-		if d, ok := originalDate(ev); ok && rng.Has(d) {
+		if d, ok := originalDate(ev); ok && rng.Contains(d) {
 			events = append(events, ev)
 			seen[ev.ID] = true
 		}

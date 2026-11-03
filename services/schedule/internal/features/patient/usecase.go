@@ -60,9 +60,9 @@ func NewUsecase(deps Deps, tx tx.Transactor, ids kernel.IDGenerator, guard organ
 	return &Usecase{deps: deps, tx: tx, ids: ids, guard: guard}
 }
 
-// assignable は、職員 staffID が事業所 facilityID にいて、担当を新しく割り振れるかを確認する。
+// requireAssignable は、職員 staffID が事業所 facilityID にいて、担当を新しく割り振れるかを確認する。
 // 見つからないか別の事業所の職員か、休職か退職の職員なら入力のエラーを返す。
-func (p *Usecase) assignable(ctx context.Context, staffID, facilityID string) error {
+func (p *Usecase) requireAssignable(ctx context.Context, staffID, facilityID string) error {
 	st, err := p.deps.Staff.Get(ctx, staffID)
 	if err != nil {
 		return apperr.Reference("職員", staffID, err)

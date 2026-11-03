@@ -198,7 +198,7 @@ func (a applier) syncOccurrence(ctx context.Context, c ExternalCalendar, parent 
 		return err
 	}
 	date, ok := originalDate(ev)
-	occurs := ok && rs.IsOccurring(date)
+	occurs := ok && rs.HasOccurrenceOn(date)
 	excluded := occurs && slices.Contains(rs.ExclusionDates, date)
 	if ev.Status == StatusCancelled {
 		if !occurs {
@@ -341,7 +341,7 @@ func (a applier) applySchedule(ctx context.Context, d schedule.Detail, ev Event)
 	keep := d.Visit != nil && isSameVisit(d.Visit, ev)
 	switch {
 	case keep:
-		if err := a.keepable(ctx, d.FacilityID, d.Visit.PatientID, slot.Date); err != nil {
+		if err := a.requireKeepable(ctx, d.FacilityID, d.Visit.PatientID, slot.Date); err != nil {
 			return 0, err
 		}
 		slot.VisitInfoID = d.VisitInfoID
@@ -461,9 +461,9 @@ func (a applier) serviceCodeID(ctx context.Context, service string) (string, err
 	return "", errUnappliable
 }
 
-// keepable は、利用者 patientID の訪問の情報を、date の予定に付けたまま保存できるかを確認する。
+// requireKeepable は、利用者 patientID の訪問の情報を、date の予定に付けたまま保存できるかを確認する。
 // 利用の終了の利用者は、今日より前の予定でだけ保存でき、今日以降なら errUnappliable を返す（ADR-0021）。
-func (a applier) keepable(ctx context.Context, facilityID, patientID string, date civil.Date) error {
+func (a applier) requireKeepable(ctx context.Context, facilityID, patientID string, date civil.Date) error {
 	if date.Before(civil.Today(a.now())) {
 		return nil
 	}

@@ -19,7 +19,7 @@ func staff(s string) string {
 }
 
 // Schedules は、予定の行を Record にする。
-// 終了時間と提供時間から 1 分引くサービス内容（servicerule.AdjustsScheduleEnd）の行は、引いた値にする。
+// 終了時間と提供時間から 1 分引くサービス内容（servicerule.HasScheduleEndAdjustment）の行は、引いた値にする。
 // 終了時間は開始時間と違うときだけ、提供時間は 1 以上のときだけ引く。
 // 翌日に終わる行も引く。翌日の 0:00 に終わる行は、終了時間を開始の日の 23:59 にする。
 func Schedules(rows []csvio.Row) ([]record.Record, []record.CSVError) {

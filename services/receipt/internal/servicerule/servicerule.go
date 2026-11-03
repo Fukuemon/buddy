@@ -13,8 +13,8 @@ type Range struct {
 	Max int
 }
 
-// Has は、minutes が範囲に入るかを返す。
-func (r Range) Has(minutes int) bool {
+// Contains は、minutes が範囲に入るかを返す。
+func (r Range) Contains(minutes int) bool {
 	return r.Min <= minutes && minutes <= r.Max
 }
 

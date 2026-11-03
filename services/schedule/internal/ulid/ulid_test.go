@@ -6,7 +6,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
 
-func TestValid(t *testing.T) {
+func TestIsValid(t *testing.T) {
 	tests := []struct {
 		id   string
 		want bool

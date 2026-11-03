@@ -48,25 +48,25 @@ func (s Sort) Key() string {
 	return s.Field + "_asc"
 }
 
-// ParseSort は、allowed にあるカラムと、向き "asc" か "desc" だけを受け付け、ほかは apperr.ValidationError を返す。
+// ParseSort は、allowedFields にあるカラムと、向き "asc" か "desc" だけを受け付け、ほかは apperr.ValidationError を返す。
 // field が空なら def を返し、order が空なら昇順とする。
 func ParseSort(field, order string, allowedFields []string, def Sort) (Sort, error) {
-	desc := false
+	descending := false
 	switch order {
 	case "", "asc":
 	case "desc":
-		desc = true
+		descending = true
 	default:
 		return Sort{}, apperr.Invalid("sort_order は asc か desc です")
 	}
 	if field == "" {
 		if order != "" {
-			def.Descending = desc
+			def.Descending = descending
 		}
 		return def, nil
 	}
 	if slices.Contains(allowedFields, field) {
-		return Sort{Field: field, Descending: desc}, nil
+		return Sort{Field: field, Descending: descending}, nil
 	}
 	return Sort{}, apperr.Invalid("sort_field は %s のいずれかです", strings.Join(allowedFields, ", "))
 }

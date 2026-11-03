@@ -55,7 +55,7 @@ func TestSortKey(t *testing.T) {
 	}
 }
 
-func TestRequireText(t *testing.T) {
+func TestValidateText(t *testing.T) {
 	tests := []struct {
 		name    string
 		value   string

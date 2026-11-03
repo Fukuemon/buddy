@@ -102,13 +102,13 @@ func TestRecurrenceOfRoundTrip(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !rs.IsOccurring(first) {
+			if !rs.HasOccurrenceOn(first) {
 				t.Fatal("最初の日付が回に当たらない")
 			}
 			for d := first; d.Before(civil.Date{Year: 2027, Month: 6, Day: 1}); d = civil.DateOf(d.Time().AddDate(0, 0, 1)) {
 				back := schedule.RecurringSchedule{Slot: rs.Slot, Rule: got.Rule}
-				if rs.IsOccurring(d) != back.IsOccurring(d) {
-					t.Fatalf("%s の回が食い違う: 元 %v、読み戻し %v", d, rs.IsOccurring(d), back.IsOccurring(d))
+				if rs.HasOccurrenceOn(d) != back.HasOccurrenceOn(d) {
+					t.Fatalf("%s の回が食い違う: 元 %v、読み戻し %v", d, rs.HasOccurrenceOn(d), back.HasOccurrenceOn(d))
 				}
 			}
 			want := []civil.Date{exdates[1], exdates[0]}

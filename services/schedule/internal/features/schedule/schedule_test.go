@@ -137,7 +137,7 @@ func TestNewRecurringEndsNextDay(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !got.EndsNextDay || !got.IsOccurring(date(t, "2026-10-12")) {
+	if !got.EndsNextDay || !got.HasOccurrenceOn(date(t, "2026-10-12")) {
 		t.Errorf("EndsNextDay = %v", got.EndsNextDay)
 	}
 }
@@ -175,7 +175,7 @@ func TestNewRule(t *testing.T) {
 	}
 }
 
-func TestRecurringOccurs(t *testing.T) {
+func TestRecurringHasOccurrenceOn(t *testing.T) {
 	start := "2026-10-05"
 	if w := date(t, start).Weekday(); w != time.Monday {
 		t.Fatalf("%s は %s", start, w)
@@ -217,7 +217,7 @@ func TestRecurringOccurs(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if got := rs.IsOccurring(date(t, tt.day)); got != tt.want {
+			if got := rs.HasOccurrenceOn(date(t, tt.day)); got != tt.want {
 				t.Errorf("Occurs(%s) = %v, want %v", tt.day, got, tt.want)
 			}
 		})

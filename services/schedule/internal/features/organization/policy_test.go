@@ -6,7 +6,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 )
 
-func TestPolicyCodeTargetsTeam(t *testing.T) {
+func TestPolicyCodeIsTeamTarget(t *testing.T) {
 	for code, want := range map[organization.PolicyCode]bool{
 		organization.ScheduleTeamRead: true,
 		organization.ScheduleTeamEdit: true,

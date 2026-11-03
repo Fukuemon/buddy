@@ -27,7 +27,7 @@ func (u *Usecase) Link(ctx context.Context, facilityID, staffID, calendarID stri
 	if err := apperr.SameFacility("職員", st.ID, st.FacilityID, facilityID); err != nil {
 		return ExternalCalendar{}, err
 	}
-	if err := linkable(st); err != nil {
+	if err := requireLinkable(st); err != nil {
 		return ExternalCalendar{}, err
 	}
 	if err := src.Check(ctx, calendarID); err != nil {
@@ -41,7 +41,7 @@ func (u *Usecase) Link(ctx context.Context, facilityID, staffID, calendarID stri
 		}
 		if st, err := u.deps.Staff.Get(ctx, st.ID); err != nil {
 			return err
-		} else if err := linkable(st); err != nil {
+		} else if err := requireLinkable(st); err != nil {
 			return err
 		}
 		cur, err := u.deps.Calendars.FindByCalendarID(ctx, ProviderGoogle, calendarID)
@@ -69,8 +69,8 @@ func (u *Usecase) Link(ctx context.Context, facilityID, staffID, calendarID stri
 	return linked, err
 }
 
-// linkable は、職員 st にカレンダーを結び付けられるかを確認する。退職した職員には結び付けられない（ADR-0018）。
-func linkable(st staff.Ref) error {
+// requireLinkable は、職員 st にカレンダーを結び付けられるかを確認する。退職した職員には結び付けられない（ADR-0018）。
+func requireLinkable(st staff.Ref) error {
 	if st.Status == staff.StatusRetired {
 		return apperr.Invalid("退職した職員には、カレンダーを結び付けられません")
 	}

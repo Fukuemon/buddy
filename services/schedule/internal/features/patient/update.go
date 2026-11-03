@@ -41,7 +41,7 @@ func (p *Usecase) Update(ctx context.Context, id string, in UpdateInput) (Detail
 			return err
 		}
 		if in.AssignedStaffID != cur.AssignedStaffID {
-			if err := p.assignable(ctx, in.AssignedStaffID, cur.FacilityID); err != nil {
+			if err := p.requireAssignable(ctx, in.AssignedStaffID, cur.FacilityID); err != nil {
 				return err
 			}
 		}

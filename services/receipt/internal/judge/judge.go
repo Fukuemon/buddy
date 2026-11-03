@@ -54,9 +54,9 @@ func timeBandOf(start civil.Clock) (addition string, ok bool) {
 	return "", false
 }
 
-// hasValidAdditions は、実績の加算が、予定の開始時間に対して規則に合うかを返す。
+// isValidAdditions は、実績の加算が、予定の開始時間に対して規則に合うかを返す。
 // 「通常」か、開始時間の時間帯の加算の 1 つだけのときに合う。緊急時の訪問の加算を含むときと、2 つ以上並ぶときは合わない。
-func hasValidAdditions(scheduleStart civil.Clock, additions []string) bool {
+func isValidAdditions(scheduleStart civil.Clock, additions []string) bool {
 	if len(additions) != 1 {
 		return false
 	}
@@ -187,7 +187,7 @@ func judgePair(p match.Pair) Result {
 	return r
 }
 
-func side(rec record.Record, forVisit bool) *Side {
+func side(rec record.Record, describesVisit bool) *Side {
 	s := &Side{
 		Line:     rec.Line,
 		Start:    rec.Start,
@@ -195,7 +195,7 @@ func side(rec record.Record, forVisit bool) *Side {
 		Duration: rec.Duration,
 		Service:  rec.Service,
 	}
-	if forVisit {
+	if describesVisit {
 		a := rec.AdditionText()
 		s.Additions = &a
 	}
@@ -210,7 +210,7 @@ func check(s, v record.Record) Checks {
 		VisitElapsed:     inRange(v.Service, new(v.Elapsed())),
 		ScheduleDuration: inRange(s.Service, s.Duration),
 		VisitDuration:    inRange(v.Service, v.Duration),
-		Additions:        Check{OK: hasValidAdditions(s.Start, v.Additions)},
+		Additions:        Check{OK: isValidAdditions(s.Start, v.Additions)},
 		DurationEqual:    s.Duration != nil && v.Duration != nil && *s.Duration == *v.Duration,
 		EndEqual:         s.End == v.End,
 	}
@@ -223,6 +223,6 @@ func inRange(service string, minutes *int) RangeCheck {
 		return c
 	}
 	c.Range = &r
-	c.OK = minutes != nil && r.Has(*minutes)
+	c.OK = minutes != nil && r.Contains(*minutes)
 	return c
 }

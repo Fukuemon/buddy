@@ -142,7 +142,7 @@ func NewHandler(cfg Config) (http.Handler, error) {
 
 func (h handler) showLogin(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	if !h.requireClient(w, r) {
+	if !h.admitClient(w, r) {
 		return
 	}
 	challenge := r.URL.Query().Get("login_challenge")
@@ -170,7 +170,7 @@ func (h handler) showLogin(w http.ResponseWriter, r *http.Request) {
 
 func (h handler) submitEmail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	if !h.requireClient(w, r) {
+	if !h.admitClient(w, r) {
 		return
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, maxFormLen)
@@ -429,9 +429,9 @@ func readPending(r *http.Request) (pending, error) {
 	return p, nil
 }
 
-// requireClient は、ログインの画面の試行を送信元の IP アドレスごとに 1 回数え、上限を超えていれば、Hydra を呼ばずに
+// admitClient は、ログインの画面の試行を送信元の IP アドレスごとに 1 回数え、上限を超えていれば、Hydra を呼ばずに
 // ログインの失敗の画面を 429 で出して false を返す。Hydra の admin API の呼び出しを、送信元ごとの上限より増やさないためである。
-func (h handler) requireClient(w http.ResponseWriter, r *http.Request) bool {
+func (h handler) admitClient(w http.ResponseWriter, r *http.Request) bool {
 	if h.Limiter.Allow(clientAddr(r, h.ClientIPHeader)) {
 		return true
 	}

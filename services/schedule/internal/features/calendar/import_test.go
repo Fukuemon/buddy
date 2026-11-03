@@ -171,7 +171,7 @@ func TestImportReviewedRecurring(t *testing.T) {
 			t.Fatal(err)
 		}
 		if got := reviewIDs(p.ReviewItems); !slices.Equal(got, []string{"series"}) || p.ReviewItems[0].Recurrence == nil {
-			t.Fatalf("NeedsReview = %+v", p.ReviewItems)
+			t.Fatalf("ReviewItems = %+v", p.ReviewItems)
 		}
 		res, err := e.importDecided(t, e.rng, []calendar.Decision{{ExternalEventID: "series", Action: calendar.ActionPatient, PatientID: "PB1"}})
 		if err != nil {

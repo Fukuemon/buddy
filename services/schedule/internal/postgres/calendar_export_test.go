@@ -153,7 +153,7 @@ func TestScheduleVersion(t *testing.T) {
 		t.Fatal(err)
 	}
 	day := rs.Date
-	for !rs.IsOccurring(day) {
+	for !rs.HasOccurrenceOn(day) {
 		day = civil.DateOf(day.Time().AddDate(0, 0, 1))
 	}
 	if err := recurring.AddExclusion(ctx, seedRecurring, day); err != nil {

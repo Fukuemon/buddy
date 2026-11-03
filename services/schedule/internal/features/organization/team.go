@@ -51,7 +51,7 @@ func ParseTeamColor(s string) (TeamColor, error) {
 	return "", apperr.Invalid("チームの色 %q は選べる色にありません", s)
 }
 
-// NextTeamColor は、事業所のチームが使っている色 used から、新しいチームの色を選ぶ。
+// NextTeamColor は、事業所のチームが使っている色 usedColors から、新しいチームの色を選ぶ。
 // 使っているチームが最も少ない色を、同じ数なら TeamColors の順の先の色を返す。8 色が使われていなければ、使われていない色の先頭になる。
 func NextTeamColor(usedColors []TeamColor) TeamColor {
 	counts := make(map[TeamColor]int, len(usedColors))
