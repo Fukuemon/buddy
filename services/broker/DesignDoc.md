@@ -77,7 +77,7 @@ flowchart TB
 | `hydra` | Hydra の admin API の呼び出し |
 | `upstream` | 上流の IdP の RP の処理 |
 | `config` | 環境変数からの設定の読み込み |
-| `httpapi` | ヘルスチェックと、2 つのポートで受けるハンドラの組み立てと、panic のときの 500 |
+| `httpapi` | ヘルスチェックと、2 つのポートで受けるハンドラの組み立てと、panic のときの 500。画面のパスは `login.Paths` から、500 の本文は `internalapi` の形で書く |
 
 各パッケージが import するパッケージを、矢印で示す。
 
@@ -93,6 +93,7 @@ flowchart LR
   upstream
   config
   cmd --> httpapi & login & internalapi & postgres & hydra & upstream & config
+  httpapi --> login & internalapi
   login --> staff & hydra & upstream
   internalapi --> staff
   postgres --> staff

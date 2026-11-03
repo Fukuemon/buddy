@@ -102,6 +102,9 @@ type handler struct {
 	Config
 }
 
+// Paths は、NewHandler のハンドラが受けるパスである。/login/ は、/login/callback を受けるためにある。
+var Paths = []string{"/login", "/login/", "/consent", "/logout"}
+
 // NewHandler は、次の画面を持つ http.Handler を返す。
 //   - GET /login: Hydra の login_challenge を受け、メールの入力の画面を出す
 //   - POST /login: メールから職員を引き、その事業所の上流の IdP へリダイレクトする
@@ -110,6 +113,7 @@ type handler struct {
 //   - GET /logout: Hydra の logout_challenge を受け、画面を出さずに accept する
 //
 // ほかのサイトから送られた POST は、Sec-Fetch-Site か Origin で見分けて 403 で拒む。cfg.PublicURL が URL として読めなければエラーを返す。
+// 呼ぶ側は、Paths のパスをこのハンドラに渡す。
 func NewHandler(cfg Config) (http.Handler, error) {
 	h := handler{cfg}
 	mux := http.NewServeMux()
