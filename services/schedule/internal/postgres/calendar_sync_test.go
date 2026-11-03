@@ -180,7 +180,7 @@ func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
 	}, ids)
 	source := gcal.NewReader(gcaltest.Start(t, srv))
 	tx := NewTransactor(testDB)
-	uc := calendar.NewUsecase(calendar.Deps{
+	uc := calendar.NewApp(calendar.Deps{
 		Calendars: calendars, Accounts: sameAccount{source},
 		Staff: staffRefs, Patients: patients, ServiceCodes: masters, Types: types,
 		Schedules: schedules, Recurring: recurring, RecurringSchedules: recurring, Visits: visits,
@@ -272,7 +272,7 @@ func TestCalendarSyncKeepsEndedPatientOnlyInPast(t *testing.T) {
 	}, ids)
 	source := gcal.NewReader(gcaltest.Start(t, srv))
 	tx := NewTransactor(testDB)
-	uc := calendar.NewUsecase(calendar.Deps{
+	uc := calendar.NewApp(calendar.Deps{
 		Calendars: calendars, Accounts: sameAccount{source},
 		Staff: staffRefs, Patients: patients, ServiceCodes: masters, Types: types,
 		Schedules: schedules, Recurring: recurring, RecurringSchedules: recurring, Visits: visits,

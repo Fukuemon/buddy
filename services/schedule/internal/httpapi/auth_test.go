@@ -127,7 +127,7 @@ func TestUnauthenticated(t *testing.T) {
 				t.Errorf("body = %s", rec.Body)
 			}
 			if s.listCalls != 0 {
-				t.Error("usecase が呼ばれた")
+				t.Error("App が呼ばれた")
 			}
 		})
 	}
@@ -162,7 +162,7 @@ func TestForbidden(t *testing.T) {
 				t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
 			}
 			if s.listCalls != 0 || s.lastSlot.StaffID != "" {
-				t.Error("usecase が呼ばれた")
+				t.Error("App が呼ばれた")
 			}
 		})
 	}

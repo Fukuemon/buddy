@@ -23,7 +23,7 @@ type LeaveInput struct {
 // ブローカーで止めたままロールバックするので、送り直すとブローカーの停止をやり直してから書く。止めたままの間も、職員はログインできない。
 // ブローカーが止めた後に Hydra の取り消しに失敗したときも、ここで休職を書いてからエラーを返し、送り直しで取り消しをやり直させる。
 // ブローカーの職員の ID が無いか、ブローカーにいない職員はログインできないので、ここでだけ休職にする。
-func (s *Usecase) Leave(ctx context.Context, id string, in LeaveInput) (StatusChange, error) {
+func (s *App) Leave(ctx context.Context, id string, in LeaveInput) (StatusChange, error) {
 	var out StatusChange
 	var revokeErr error
 	err := s.stop(ctx, id, func(ctx context.Context, cur Detail) error {

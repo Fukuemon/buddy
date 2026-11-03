@@ -43,14 +43,14 @@ func editorCtx() context.Context {
 	}})
 }
 
-// today は、newSchedules の Usecase の今日（2026-10-21）である。
+// today は、newSchedules の App の今日（2026-10-21）である。
 var today = civil.Date{Year: 2026, Month: 10, Day: 21}
 
-func newSchedules(s *inmem.Store) (*schedule.Usecase, *inmem.Tx) {
+func newSchedules(s *inmem.Store) (*schedule.App, *inmem.Tx) {
 	return newSchedulesWithRefs(s, inmem.StaffRefs{Store: s})
 }
 
-func newSchedulesWithRefs(s *inmem.Store, refs schedule.StaffRefs) (*schedule.Usecase, *inmem.Tx) {
+func newSchedulesWithRefs(s *inmem.Store, refs schedule.StaffRefs) (*schedule.App, *inmem.Tx) {
 	tx := &inmem.Tx{}
 	ids := &inmem.SeqIDs{}
 	visits := visit.NewWriter(visit.WriterDeps{
@@ -59,7 +59,7 @@ func newSchedulesWithRefs(s *inmem.Store, refs schedule.StaffRefs) (*schedule.Us
 		Infos:    inmem.VisitInfos{Store: s},
 		Masters:  inmem.VisitMasters{Store: s},
 	}, ids)
-	return schedule.NewUsecase(schedule.Deps{
+	return schedule.NewApp(schedule.Deps{
 		Facilities: inmem.Facilities{Store: s},
 		Staff:      refs,
 		Visits:     visits,
@@ -190,23 +190,23 @@ func TestSchedulesRejectInactiveStaff(t *testing.T) {
 		"同行者": func() schedule.SlotInput { return visitSlot(validVisit()) },
 	}
 	// 操作は、休職か退職にする stopCompanion を、職員を指す前に呼ぶ。
-	ops := map[string]func(uc *schedule.Usecase, ctx context.Context, in schedule.SlotInput, stopCompanion func()) error{
-		"予定の作成": func(uc *schedule.Usecase, ctx context.Context, in schedule.SlotInput, stopCompanion func()) error {
+	ops := map[string]func(uc *schedule.App, ctx context.Context, in schedule.SlotInput, stopCompanion func()) error{
+		"予定の作成": func(uc *schedule.App, ctx context.Context, in schedule.SlotInput, stopCompanion func()) error {
 			stopCompanion()
 			_, err := uc.Create(ctx, facilityID, in)
 			return err
 		},
-		"繰り返しの予定の作成": func(uc *schedule.Usecase, ctx context.Context, in schedule.SlotInput, stopCompanion func()) error {
+		"繰り返しの予定の作成": func(uc *schedule.App, ctx context.Context, in schedule.SlotInput, stopCompanion func()) error {
 			stopCompanion()
 			_, err := uc.CreateRecurring(ctx, facilityID, in, schedule.RuleInput{Frequency: schedule.Weekly, DayOfWeek: ptr(1)})
 			return err
 		},
-		"回の置き換え": func(uc *schedule.Usecase, ctx context.Context, in schedule.SlotInput, stopCompanion func()) error {
+		"回の置き換え": func(uc *schedule.App, ctx context.Context, in schedule.SlotInput, stopCompanion func()) error {
 			stopCompanion()
 			_, err := uc.ChangeOccurrence(ctx, recurringID, civil.Date{Year: 2026, Month: 10, Day: 12}, in)
 			return err
 		},
-		"予定の変更": func(uc *schedule.Usecase, ctx context.Context, in schedule.SlotInput, stopCompanion func()) error {
+		"予定の変更": func(uc *schedule.App, ctx context.Context, in schedule.SlotInput, stopCompanion func()) error {
 			created, err := uc.Create(ctx, facilityID, normalSlot())
 			if err != nil {
 				return err
@@ -283,28 +283,28 @@ func TestSchedulesKeepRulesForInactiveStaff(t *testing.T) {
 	tests := []struct {
 		name    string
 		status  staff.Status
-		change  func(uc *schedule.Usecase, ctx context.Context, createdID string) error
+		change  func(uc *schedule.App, ctx context.Context, createdID string) error
 		wantErr bool
 	}{
-		{name: "休職の職員の予定を今日に動かす", status: staff.StatusOnLeave, change: func(uc *schedule.Usecase, ctx context.Context, id string) error {
+		{name: "休職の職員の予定を今日に動かす", status: staff.StatusOnLeave, change: func(uc *schedule.App, ctx context.Context, id string) error {
 			in := visitSlot(validVisit())
 			in.Date = today
 			_, err := uc.Update(ctx, id, in)
 			return err
 		}},
-		{name: "退職した職員の予定を今日に動かす", status: staff.StatusRetired, wantErr: true, change: func(uc *schedule.Usecase, ctx context.Context, id string) error {
+		{name: "退職した職員の予定を今日に動かす", status: staff.StatusRetired, wantErr: true, change: func(uc *schedule.App, ctx context.Context, id string) error {
 			in := visitSlot(validVisit())
 			in.Date = today
 			_, err := uc.Update(ctx, id, in)
 			return err
 		}},
-		{name: "退職した職員の繰り返しの回を今日の予定に置き換える", status: staff.StatusRetired, wantErr: true, change: func(uc *schedule.Usecase, ctx context.Context, _ string) error {
+		{name: "退職した職員の繰り返しの回を今日の予定に置き換える", status: staff.StatusRetired, wantErr: true, change: func(uc *schedule.App, ctx context.Context, _ string) error {
 			in := normalSlot()
 			in.Date = today
 			_, err := uc.ChangeOccurrence(ctx, recurringID, civil.Date{Year: 2026, Month: 10, Day: 12}, in)
 			return err
 		}},
-		{name: "休職の同行者を主訪問者に移す", status: staff.StatusOnLeave, wantErr: true, change: func(uc *schedule.Usecase, ctx context.Context, id string) error {
+		{name: "休職の同行者を主訪問者に移す", status: staff.StatusOnLeave, wantErr: true, change: func(uc *schedule.App, ctx context.Context, id string) error {
 			v := validVisit()
 			v.AssignedStaffID, v.CompanionID = companionID, ptr(staffID)
 			_, err := uc.Update(ctx, id, visitSlot(v))
@@ -335,18 +335,18 @@ func TestSchedulesEndedPatient(t *testing.T) {
 	const activePatientID = "ACTIVEPATIENT"
 	tests := []struct {
 		name    string
-		change  func(uc *schedule.Usecase, ctx context.Context, createdID string) error
+		change  func(uc *schedule.App, ctx context.Context, createdID string) error
 		wantErr bool
 	}{
-		{name: "利用の終了の利用者に予定を作る", wantErr: true, change: func(uc *schedule.Usecase, ctx context.Context, _ string) error {
+		{name: "利用の終了の利用者に予定を作る", wantErr: true, change: func(uc *schedule.App, ctx context.Context, _ string) error {
 			_, err := uc.Create(ctx, facilityID, visitSlot(validVisit()))
 			return err
 		}},
-		{name: "利用の終了の利用者に繰り返しの予定を作る", wantErr: true, change: func(uc *schedule.Usecase, ctx context.Context, _ string) error {
+		{name: "利用の終了の利用者に繰り返しの予定を作る", wantErr: true, change: func(uc *schedule.App, ctx context.Context, _ string) error {
 			_, err := uc.CreateRecurring(ctx, facilityID, visitSlot(validVisit()), schedule.RuleInput{Frequency: schedule.Weekly})
 			return err
 		}},
-		{name: "予定の利用者を利用の終了の利用者に変える", wantErr: true, change: func(uc *schedule.Usecase, ctx context.Context, _ string) error {
+		{name: "予定の利用者を利用の終了の利用者に変える", wantErr: true, change: func(uc *schedule.App, ctx context.Context, _ string) error {
 			v := validVisit()
 			v.PatientID = activePatientID
 			other, err := uc.Create(ctx, facilityID, visitSlot(v))
@@ -356,19 +356,19 @@ func TestSchedulesEndedPatient(t *testing.T) {
 			_, err = uc.Update(ctx, other.ID, visitSlot(validVisit()))
 			return err
 		}},
-		{name: "利用者を変えずに過去の予定の時刻を変える", change: func(uc *schedule.Usecase, ctx context.Context, id string) error {
+		{name: "利用者を変えずに過去の予定の時刻を変える", change: func(uc *schedule.App, ctx context.Context, id string) error {
 			in := visitSlot(validVisit())
 			in.StartTime, in.EndTime = civil.Time{Hour: 10}, civil.Time{Hour: 11}
 			_, err := uc.Update(ctx, id, in)
 			return err
 		}},
-		{name: "利用者を変えずに過去の予定を今日に動かす", wantErr: true, change: func(uc *schedule.Usecase, ctx context.Context, id string) error {
+		{name: "利用者を変えずに過去の予定を今日に動かす", wantErr: true, change: func(uc *schedule.App, ctx context.Context, id string) error {
 			in := visitSlot(validVisit())
 			in.Date = today
 			_, err := uc.Update(ctx, id, in)
 			return err
 		}},
-		{name: "過去の予定の利用者を利用中の利用者に変える", change: func(uc *schedule.Usecase, ctx context.Context, id string) error {
+		{name: "過去の予定の利用者を利用中の利用者に変える", change: func(uc *schedule.App, ctx context.Context, id string) error {
 			v := validVisit()
 			v.PatientID = activePatientID
 			_, err := uc.Update(ctx, id, visitSlot(v))

@@ -8,7 +8,7 @@ import (
 
 // Cancel は、単発の予定をキャンセルする。予定が見つからないときは apperr.ErrNotFound を、
 // キャンセル済みのときは apperr.ErrConflict を返す。
-func (s *Usecase) Cancel(ctx context.Context, scheduleID, reason string) (Cancel, error) {
+func (s *App) Cancel(ctx context.Context, scheduleID, reason string) (Cancel, error) {
 	c, err := NewCancel(s.ids.NewID(), scheduleID, reason)
 	if err != nil {
 		return Cancel{}, err

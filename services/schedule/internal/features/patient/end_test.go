@@ -38,7 +38,7 @@ func TestPatientEndRejectsRemainingSchedules(t *testing.T) {
 		ID: "REC", Slot: schedule.Slot{FacilityID: inmem.FacilityID, StaffID: inmem.StaffID, Date: civil.Date{Year: 2026, Month: 9, Day: 1}, VisitInfoID: &recInfo},
 		Rule: schedule.Rule{Frequency: schedule.Weekly},
 	}}
-	uc := newUsecase(s, allow)
+	uc := newApp(s, allow)
 	read, err := uc.RemainingSchedules(ctx, inmem.PatientID)
 	if err != nil {
 		t.Fatal(err)
@@ -74,7 +74,7 @@ func TestPatientEndRejectsRemainingSchedules(t *testing.T) {
 func TestPatientEndAndList(t *testing.T) {
 	ctx := context.Background()
 	s := inmem.Seeded()
-	uc := newUsecase(s, allow)
+	uc := newApp(s, allow)
 	first, err := uc.End(ctx, inmem.PatientID)
 	if err != nil {
 		t.Fatal(err)

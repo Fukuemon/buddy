@@ -16,7 +16,7 @@ import (
 //
 // 2 か所の書き込みは Leave と同じく、事業所をロックしたトランザクションの中で、ブローカーの職員を先に退職にしてからここで書く。
 // ブローカーは退職でメールと上流のアカウントを消すので、ここで書けずにロールバックしても、職員はログインできない。送り直すと書く。
-func (s *Usecase) Retire(ctx context.Context, id string) (StatusChange, error) {
+func (s *App) Retire(ctx context.Context, id string) (StatusChange, error) {
 	var out StatusChange
 	var revokeErr error
 	err := s.stop(ctx, id, func(ctx context.Context, cur Detail) error {

@@ -32,7 +32,7 @@ type FacilityLocker interface {
 	LockFacility(ctx context.Context, facilityID string) error
 }
 
-// Deps は、Usecase が使うリポジトリと、ほかの機能のデータを読む小さなインターフェースである。
+// Deps は、App が使うリポジトリと、ほかの機能のデータを読む小さなインターフェースである。
 type Deps struct {
 	Facilities   kernel.Finder[organization.Facility]
 	Staff        StaffRefs
@@ -44,25 +44,25 @@ type Deps struct {
 	Now func() time.Time
 }
 
-// Usecase は、利用者の操作である。利用者の登録、変更、利用の終了、利用の再開は、guard が許すときだけ行う（ADR-0006、ADR-0021）。
-type Usecase struct {
+// App は、利用者の操作である。利用者の登録、変更、利用の終了、利用の再開は、guard が許すときだけ行う（ADR-0006、ADR-0021）。
+type App struct {
 	deps  Deps
 	tx    tx.Transactor
 	ids   kernel.IDGenerator
 	guard organization.Guard
 }
 
-// NewUsecase は Usecase を作る。
-func NewUsecase(deps Deps, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) *Usecase {
+// NewApp は App を作る。
+func NewApp(deps Deps, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) *App {
 	if deps.Now == nil {
 		deps.Now = time.Now
 	}
-	return &Usecase{deps: deps, tx: tx, ids: ids, guard: guard}
+	return &App{deps: deps, tx: tx, ids: ids, guard: guard}
 }
 
 // requireAssignable は、職員 staffID が事業所 facilityID にいて、担当を新しく割り振れるかを確認する。
 // 見つからないか別の事業所の職員か、休職か退職の職員なら入力のエラーを返す。
-func (p *Usecase) requireAssignable(ctx context.Context, staffID, facilityID string) error {
+func (p *App) requireAssignable(ctx context.Context, staffID, facilityID string) error {
 	st, err := p.deps.Staff.Get(ctx, staffID)
 	if err != nil {
 		return apperr.Reference("職員", staffID, err)
@@ -75,13 +75,13 @@ func (p *Usecase) requireAssignable(ctx context.Context, staffID, facilityID str
 
 // remaining は、利用者 cur の、今日（事業所の現地の日付）以降の予定と、今日以降に終わる繰り返しの予定を返す。
 // 利用の終了と RemainingSchedules が同じ一覧を返すよう、2 つともこれで作る。
-func (p *Usecase) remaining(ctx context.Context, cur Detail) (Remaining, error) {
+func (p *App) remaining(ctx context.Context, cur Detail) (Remaining, error) {
 	return p.deps.Schedules.From(ctx, cur.FacilityID, cur.ID, civil.Today(p.deps.Now()))
 }
 
 // locked は、トランザクションの中で利用者 id の事業所をロックし、ロックの後に読み直した利用者を返す。
 // 利用の終了と再開を、職員の退職の担当の確認と、予定と担当の新しい割り振りと 1 つずつにする。
-func (p *Usecase) locked(ctx context.Context, id string) (Detail, error) {
+func (p *App) locked(ctx context.Context, id string) (Detail, error) {
 	cur, err := p.deps.Patients.Get(ctx, id)
 	if err != nil {
 		return Detail{}, err

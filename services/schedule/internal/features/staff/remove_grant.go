@@ -11,7 +11,7 @@ import (
 // 職員か、職員のその権限が見つからないときは apperr.ErrNotFound を返す。事業所で職員の管理の権限を持つ最後の有効な職員から、
 // その権限を外そうとしたときは apperr.ErrConflict を返し、何も書かない。
 // 休職と退職と同じく事業所をロックするので、2 人の権限を同時に外しても、権限を持つ有効な職員は残る。
-func (s *Usecase) RemoveGrant(ctx context.Context, id, userPolicyID string) (Detail, error) {
+func (s *App) RemoveGrant(ctx context.Context, id, userPolicyID string) (Detail, error) {
 	if err := s.guard(ctx); err != nil {
 		return Detail{}, err
 	}

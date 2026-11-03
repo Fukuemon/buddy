@@ -19,7 +19,7 @@ func TestOrganizationDepartmentForbidden(t *testing.T) {
 	s := inmem.Seeded()
 	s.Departments["DEP"] = organization.Department{ID: "DEP", FacilityID: facilityID, Name: "A"}
 	before := len(s.Departments)
-	uc := organization.NewUsecase(organization.Deps{
+	uc := organization.NewApp(organization.Deps{
 		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s},
 	}, &inmem.Tx{}, &inmem.SeqIDs{}, func(context.Context) error { return apperr.ErrForbidden })
 	ctx := context.Background()

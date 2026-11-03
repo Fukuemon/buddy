@@ -21,7 +21,7 @@ func TestPatientUpdate(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		got, err := newUsecase(s, allow).Update(ctx, inmem.PatientID, updateInput(inmem.CompanionID))
+		got, err := newApp(s, allow).Update(ctx, inmem.PatientID, updateInput(inmem.CompanionID))
 		if err != nil {
 			t.Fatalf("ended = %v: %v", ended, err)
 		}
@@ -50,20 +50,20 @@ func TestPatientUpdateAssignedStaff(t *testing.T) {
 			pa.AssignedStaffID = inmem.StaffID
 			s.Patients[inmem.PatientID] = pa
 			stopStaff(t, s, inmem.CompanionID, status)
-			if _, err := newUsecase(s, allow).Update(ctx, inmem.PatientID, updateInput(inmem.CompanionID)); !errors.Is(err, apperr.ErrInvalidInput) {
+			if _, err := newApp(s, allow).Update(ctx, inmem.PatientID, updateInput(inmem.CompanionID)); !errors.Is(err, apperr.ErrInvalidInput) {
 				t.Fatalf("休職か退職か訪問しない職員に変える: err = %v, want ErrInvalidInput", err)
 			}
 			if s.Patients[inmem.PatientID].AssignedStaffID != inmem.StaffID {
 				t.Errorf("拒んだのに担当が変わった")
 			}
 			stopStaff(t, s, inmem.StaffID, status)
-			if _, err := newUsecase(s, allow).Update(ctx, inmem.PatientID, updateInput(inmem.StaffID)); err != nil {
+			if _, err := newApp(s, allow).Update(ctx, inmem.PatientID, updateInput(inmem.StaffID)); err != nil {
 				t.Fatalf("今の担当のまま: err = %v", err)
 			}
 		})
 	}
 	s := inmem.Seeded()
-	if _, err := newUsecase(s, allow).Update(ctx, inmem.PatientID, updateInput(inmem.OtherStaffID)); !errors.Is(err, apperr.ErrInvalidInput) {
+	if _, err := newApp(s, allow).Update(ctx, inmem.PatientID, updateInput(inmem.OtherStaffID)); !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Errorf("別の事業所の職員: err = %v, want ErrInvalidInput", err)
 	}
 }

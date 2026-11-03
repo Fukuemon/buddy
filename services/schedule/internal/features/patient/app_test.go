@@ -14,11 +14,11 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 )
 
-// today は、newUsecase の Usecase の今日（2026-10-31）である。
+// today は、newApp の App の今日（2026-10-31）である。
 var today = civil.Date{Year: 2026, Month: 10, Day: 31}
 
-func newUsecase(s *inmem.Store, guard organization.Guard) *patient.Usecase {
-	return patient.NewUsecase(patient.Deps{
+func newApp(s *inmem.Store, guard organization.Guard) *patient.App {
+	return patient.NewApp(patient.Deps{
 		Facilities: inmem.Facilities{Store: s}, Staff: inmem.StaffRefs{Store: s}, ServiceCodes: inmem.VisitMasters{Store: s}, Patients: inmem.Patients{Store: s},
 		Schedules: inmem.PatientSchedules{Store: s}, Locks: inmem.Staff{Store: s},
 		Now: func() time.Time { return today.Time().Add(9 * time.Hour) },
@@ -63,7 +63,7 @@ func TestPatientGuard(t *testing.T) {
 	ctx := context.Background()
 	s := inmem.Seeded()
 	before := s.Patients[inmem.PatientID]
-	uc := newUsecase(s, deny)
+	uc := newApp(s, deny)
 	if _, err := uc.Update(ctx, inmem.PatientID, updateInput(inmem.StaffID)); !errors.Is(err, apperr.ErrForbidden) {
 		t.Errorf("変更: err = %v, want ErrForbidden", err)
 	}

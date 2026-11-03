@@ -64,7 +64,7 @@ type VisitStore interface {
 //   - buddy の予定の更新の番号が予定の対応と同じなら、外部だけが変わったので、外部の内容を buddy に当てる。
 //   - 両方が変わったか、外部の変更を buddy の予定に読み替えられないときは、書き出しの待ちを確認が必要な待ちにする。
 //
-// 確認が必要な待ちは、buddy の内容で書き直す（Usecase.RetryExport）か、外部の内容を当てる（Usecase.AcceptExport）と解ける。
+// 確認が必要な待ちは、buddy の内容で書き直す（App.RetryExport）か、外部の内容を当てる（App.AcceptExport）と解ける。
 type applier struct {
 	calendars    Repository
 	exports      ExportRepository
@@ -79,7 +79,7 @@ type applier struct {
 }
 
 // applyEvent は、カレンダー c の外部の予定 ev の変更を buddy の予定に当てる。トランザクションの中で呼ぶ。
-// buddy の予定と対応の無い予定は当てない。新しく作られた予定は、取り込み（Usecase.Import）で buddy に移す。
+// buddy の予定と対応の無い予定は当てない。新しく作られた予定は、取り込み（App.Import）で buddy に移す。
 // 予定を書いている書き出しの処理があれば errExportWriting を返す。
 func (a applier) applyEvent(ctx context.Context, c ExternalCalendar, ev Event) error {
 	l, err := a.calendars.LinkByEvent(ctx, c.ID, ev.ID)

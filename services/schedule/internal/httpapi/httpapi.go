@@ -1,3 +1,5 @@
+// Package httpapi は、API の HTTP のハンドラを持つ。エンドポイントとリクエストとレスポンスの型は openapi.yaml が正本で、
+// httpapi は openapi パッケージに生成したインターフェースを実装する。
 package httpapi
 
 import (
@@ -15,15 +17,15 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
 
-// Usecases は、ルーターがハンドラに渡す操作である。
-type Usecases struct {
-	Organization OrganizationUsecase
-	Staff        StaffUsecase
-	Patients     PatientUsecase
-	VisitMasters VisitMasterUsecase
-	Schedules    ScheduleUsecase
-	Calendars    CalendarUsecase
-	Auth         AuthUsecase
+// Apps は、ルーターがハンドラに渡す操作である。
+type Apps struct {
+	Organization OrganizationApp
+	Staff        StaffApp
+	Patients     PatientApp
+	VisitMasters VisitMasterApp
+	Schedules    ScheduleApp
+	Calendars    CalendarApp
+	Auth         AuthApp
 }
 
 // RouterConfig は、ルーターの設定である。AllowOrigins が空なら CORS のヘッダーを返さない。
@@ -38,7 +40,7 @@ type RouterConfig struct {
 // server は、openapi.yaml から生成した openapi.StrictServerInterface を実装する。
 // 操作が返したエラーは、そのまま返して writeError に状態コードを決めさせる。
 type server struct {
-	u     Usecases
+	u     Apps
 	ready func(context.Context) error
 	log   *slog.Logger
 }
@@ -47,7 +49,7 @@ var _ openapi.StrictServerInterface = server{}
 
 // NewRouter は、openapi.yaml の GET /healthz、GET /readyz と /v1 の API を持つルーターを作る。/v1 は全て、Bearer のトークンと、
 // パスが指す事業所が職員の事業所と一致することを求める。/healthz と /readyz は認証を求めない。
-func NewRouter(u Usecases, cfg RouterConfig) *gin.Engine {
+func NewRouter(u Apps, cfg RouterConfig) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	// 生成した strict handler は *gin.Context を context として操作に渡すので、リクエストの取り消しと値をリクエストの context から引かせる

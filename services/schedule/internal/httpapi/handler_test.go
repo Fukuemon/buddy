@@ -205,7 +205,7 @@ func (f *fakePatients) List(_ context.Context, _ string, q patient.ListQuery) ([
 }
 
 func newRouter(s *fakeSchedules, st *fakeStaff, p *fakePatients) http.Handler {
-	return httpapi.NewRouter(httpapi.Usecases{Schedules: s, Staff: st, Patients: p, Auth: fakeAuth{}}, httpapi.RouterConfig{
+	return httpapi.NewRouter(httpapi.Apps{Schedules: s, Staff: st, Patients: p, Auth: fakeAuth{}}, httpapi.RouterConfig{
 		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
 		Verifier: testVerifier,
 	})
@@ -264,7 +264,7 @@ func TestListSchedulesRejectsUnsafeSort(t *testing.T) {
 				t.Errorf("body = %v", body)
 			}
 			if s.listCalls != 0 {
-				t.Error("usecase が呼ばれた")
+				t.Error("App が呼ばれた")
 			}
 		})
 	}
@@ -312,7 +312,7 @@ func TestListUsersAndPatientsRejectUnsafeSort(t *testing.T) {
 		}
 	}
 	if st.listCalls != 0 || p.listCalls != 0 {
-		t.Error("usecase が呼ばれた")
+		t.Error("App が呼ばれた")
 	}
 	rec, _ := do(t, h, http.MethodGet, "/v1/facilities/"+facilityID+"/users?sort_field=username&sort_order=asc", "")
 	if rec.Code != http.StatusOK || st.lastQuery.Sort != (kernel.Sort{Field: "username"}) {
@@ -480,7 +480,7 @@ func TestCreateScheduleEndsNextDay(t *testing.T) {
 
 func TestHealth(t *testing.T) {
 	routerWithReady := func(err error) http.Handler {
-		return httpapi.NewRouter(httpapi.Usecases{Auth: fakeAuth{}}, httpapi.RouterConfig{
+		return httpapi.NewRouter(httpapi.Apps{Auth: fakeAuth{}}, httpapi.RouterConfig{
 			Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
 			Verifier: testVerifier,
 			Ready:    func(context.Context) error { return err },
@@ -632,7 +632,7 @@ func TestListPatientsIncludeEnded(t *testing.T) {
 
 const patientBody = `{"name":"見本 花子","preferred_time":"午後","preferred_gender":"女性","service_code_id":"` + typeID + `","assigned_staff_id":"` + staffID + `"}`
 
-// 利用者の変更は、本文の値を usecase に渡し、変えた利用者を返す。入力のエラーは 400、権限が無ければ 403 を返す（#346 の検証の観点 1、2、5）。
+// 利用者の変更は、本文の値を App に渡し、変えた利用者を返す。入力のエラーは 400、権限が無ければ 403 を返す（#346 の検証の観点 1、2、5）。
 func TestUpdatePatient(t *testing.T) {
 	p := &fakePatients{}
 	rec, body := do(t, newRouter(nil, &fakeStaff{}, p), http.MethodPut, "/v1/patients/"+patientID, patientBody)
@@ -711,7 +711,7 @@ func TestGetPatientRemainingSchedules(t *testing.T) {
 	}
 }
 
-// 利用の再開は、本文の担当の職員を usecase に渡す。担当の職員を省くと 400 を返す（ADR-0021）。
+// 利用の再開は、本文の担当の職員を App に渡す。担当の職員を省くと 400 を返す（ADR-0021）。
 func TestResumePatientService(t *testing.T) {
 	p := &fakePatients{}
 	rec, body := do(t, newRouter(nil, &fakeStaff{}, p), http.MethodPost, "/v1/patients/"+patientID+"/resume_service", `{"assigned_staff_id":"`+staffID+`"}`)
@@ -721,7 +721,7 @@ func TestResumePatientService(t *testing.T) {
 	p = &fakePatients{}
 	rec, _ = do(t, newRouter(nil, &fakeStaff{}, p), http.MethodPost, "/v1/patients/"+patientID+"/resume_service", `{}`)
 	if rec.Code != http.StatusBadRequest || p.lastID != "" {
-		t.Errorf("担当なし: status = %d, usecase = %q, want 400 で usecase を呼ばない", rec.Code, p.lastID)
+		t.Errorf("担当なし: status = %d, App = %q, want 400 で App を呼ばない", rec.Code, p.lastID)
 	}
 }
 
@@ -834,19 +834,19 @@ func TestRemoveUserPolicy(t *testing.T) {
 	}
 }
 
-// TestUsecaseReceivesPrincipal は、操作が権限を判定できるよう、認証のミドルウェアが特定した職員を ctx で渡すことを確認する。
-func TestUsecaseReceivesPrincipal(t *testing.T) {
+// TestAppReceivesPrincipal は、操作が権限を判定できるよう、認証のミドルウェアが特定した職員を ctx で渡すことを確認する。
+func TestAppReceivesPrincipal(t *testing.T) {
 	s := &fakeSchedules{}
 	do(t, newRouter(s, &fakeStaff{}, &fakePatients{}), http.MethodGet, "/v1/schedules/"+scheduleID, "")
 	if s.lastCtx == nil {
-		t.Fatal("usecase が呼ばれなかった")
+		t.Fatal("App が呼ばれなかった")
 	}
 	if p, ok := principal.From(s.lastCtx); !ok || p.Staff.ID != staffID {
-		t.Fatalf("usecase の ctx の職員 = %+v, %v", p, ok)
+		t.Fatalf("App の ctx の職員 = %+v, %v", p, ok)
 	}
 }
 
-func TestUsecaseReceivesRequestCancellation(t *testing.T) {
+func TestAppReceivesRequestCancellation(t *testing.T) {
 	s := &fakeSchedules{}
 	h := newRouter(s, &fakeStaff{}, &fakePatients{})
 	ctx, cancel := context.WithCancel(context.Background())
@@ -855,17 +855,17 @@ func TestUsecaseReceivesRequestCancellation(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+token(t, testOrgID))
 	serve(h, req)
 	if s.lastCtx == nil {
-		t.Fatal("usecase が呼ばれなかった")
+		t.Fatal("App が呼ばれなかった")
 	}
 	if !errors.Is(s.lastCtx.Err(), context.Canceled) {
-		t.Fatalf("usecase の context がリクエストの取り消しを受けない: %v", s.lastCtx.Err())
+		t.Fatalf("App の context がリクエストの取り消しを受けない: %v", s.lastCtx.Err())
 	}
 }
 
 // TestCORSPreflight は、許した origin からのプリフライトのリクエストに、API が使う全てのメソッドを許すことを確認する。
 func TestCORSPreflight(t *testing.T) {
 	const origin = "http://localhost:3000"
-	h := httpapi.NewRouter(httpapi.Usecases{Auth: fakeAuth{}}, httpapi.RouterConfig{
+	h := httpapi.NewRouter(httpapi.Apps{Auth: fakeAuth{}}, httpapi.RouterConfig{
 		Logger:       slog.New(slog.NewTextHandler(io.Discard, nil)),
 		Verifier:     testVerifier,
 		AllowOrigins: []string{origin},

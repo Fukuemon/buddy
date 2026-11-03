@@ -15,7 +15,7 @@ func TestStaffRemoveGrant(t *testing.T) {
 	d := s.Staff[staffID]
 	d.Policies = []staff.PolicyGrant{{UserPolicyID: "UP1", PolicyID: "SELF"}}
 	s.Staff[staffID] = d
-	uc := newUsecase(s, allow)
+	uc := newApp(s, allow)
 	if _, err := uc.RemoveGrant(ctx, staffID, "UP1"); err != nil {
 		t.Fatal(err)
 	}

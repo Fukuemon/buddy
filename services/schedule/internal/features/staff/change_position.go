@@ -13,7 +13,7 @@ import (
 // 役職が見つからないか別の事業所のものであるときは入力のエラーを返す。事業所で職員の管理の権限を持つ最後の有効な職員の役職を、
 // その権限を持たない役職に変えようとしたときは apperr.ErrConflict を返し、何も書かない。
 // 休職と退職と同じく事業所をロックするので、同時に役職を変えても、権限を持つ有効な職員は残る。
-func (s *Usecase) ChangePosition(ctx context.Context, id, positionID string) (Detail, error) {
+func (s *App) ChangePosition(ctx context.Context, id, positionID string) (Detail, error) {
 	if err := s.guard(ctx); err != nil {
 		return Detail{}, err
 	}

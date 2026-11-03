@@ -191,7 +191,7 @@ func TestCalendarImportInOneTransaction(t *testing.T) {
 	schedules := NewScheduleRepository(testDB)
 	recurring := NewRecurringScheduleRepository(testDB)
 	ids := ulid.Generator{}
-	uc := calendar.NewUsecase(calendar.Deps{
+	uc := calendar.NewApp(calendar.Deps{
 		Calendars: calendars, Accounts: sameAccount{gcal.NewReader(gcaltest.Start(t, srv))},
 		Staff: staffRefs, Patients: patients, ServiceCodes: masters, Types: NewScheduleTypeRepository(testDB),
 		Schedules: schedules, Recurring: recurring, RecurringSchedules: recurring,

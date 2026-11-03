@@ -9,7 +9,7 @@ import (
 // 利用者が見つからないときは apperr.ErrNotFound を、職員の管理の権限が無いときは apperr.ErrForbidden を返す。
 //
 // 事業所をロックしてから残る予定を数えるので、予定の作成（事業所の共有のロックを取る）と行き違わない。
-func (p *Usecase) End(ctx context.Context, id string) (Detail, error) {
+func (p *App) End(ctx context.Context, id string) (Detail, error) {
 	if err := p.guard(ctx); err != nil {
 		return Detail{}, err
 	}

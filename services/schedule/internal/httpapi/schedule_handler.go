@@ -9,19 +9,6 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi/openapi"
 )
 
-// ScheduleUsecase は、予定のハンドラが使う操作である。
-type ScheduleUsecase interface {
-	ListTypes(ctx context.Context) ([]schedule.Type, error)
-	Get(ctx context.Context, id string) (schedule.Detail, error)
-	GetRecurring(ctx context.Context, id string) (schedule.RecurringDetail, error)
-	List(ctx context.Context, facilityID string, q schedule.ListQuery) (schedule.List, error)
-	Create(ctx context.Context, facilityID string, in schedule.SlotInput) (schedule.Detail, error)
-	CreateRecurring(ctx context.Context, facilityID string, in schedule.SlotInput, rule schedule.RuleInput) (schedule.RecurringDetail, error)
-	ChangeOccurrence(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in schedule.SlotInput) (schedule.Detail, error)
-	Cancel(ctx context.Context, scheduleID, reason string) (schedule.Cancel, error)
-	Update(ctx context.Context, scheduleID string, in schedule.SlotInput) (schedule.Detail, error)
-}
-
 // slotInput は、検証した本文の予定の枠を schedule.SlotInput に変える。日付と時刻の形が誤っていれば 400 になるエラーを返す。
 func slotInput(r openapi.SlotRequest) (schedule.SlotInput, error) {
 	date, err := bodyDate(r.Date)

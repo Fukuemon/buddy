@@ -22,7 +22,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
 
-// syncEnv は、書き出しの環境に、Google カレンダーの変更を当てる同期の処理と、確認が必要な予定を解く Usecase を足す。
+// syncEnv は、書き出しの環境に、Google カレンダーの変更を当てる同期の処理と、確認が必要な予定を解く App を足す。
 type syncEnv struct {
 	exportEnv
 	syncer *calendar.Syncer
@@ -36,7 +36,7 @@ func newSyncEnv(t *testing.T) syncEnv {
 	s := e.store
 	ids := ulid.Generator{}
 	source := gcal.NewReader(gcaltest.Start(t, e.srv))
-	e.uc = calendar.NewUsecase(calendar.Deps{
+	e.uc = calendar.NewApp(calendar.Deps{
 		Calendars: inmem.Calendars{Store: s}, Accounts: oneAccount(source, nil), Exports: inmem.Exports{Store: s}, Staff: inmem.StaffRefs{Store: s},
 		Schedules: inmem.Schedules{Store: s}, Types: inmem.ScheduleTypes{Store: s},
 	}, &inmem.Tx{}, ids, principal.RequireStaffManage)

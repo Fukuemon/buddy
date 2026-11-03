@@ -18,7 +18,7 @@ func TestPatientCreateGuard(t *testing.T) {
 		ServiceCodeID: inmem.CodeID, AssignedStaffID: inmem.StaffID,
 	}
 	s := inmem.Seeded()
-	got, err := newUsecase(s, func(context.Context) error { return nil }).Create(ctx, in)
+	got, err := newApp(s, func(context.Context) error { return nil }).Create(ctx, in)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,7 +28,7 @@ func TestPatientCreateGuard(t *testing.T) {
 
 	s = inmem.Seeded()
 	deny := func(context.Context) error { return apperr.ErrForbidden }
-	if _, err := newUsecase(s, deny).Create(ctx, in); !errors.Is(err, apperr.ErrForbidden) {
+	if _, err := newApp(s, deny).Create(ctx, in); !errors.Is(err, apperr.ErrForbidden) {
 		t.Fatalf("err = %v, want ErrForbidden", err)
 	}
 	if len(s.Patients) != 2 {
@@ -60,7 +60,7 @@ func TestPatientCreateRejectsInactiveStaff(t *testing.T) {
 				t.Fatal(err)
 			}
 			before := len(s.Patients)
-			if _, err := newUsecase(s, allow).Create(ctx, in); !errors.Is(err, apperr.ErrInvalidInput) {
+			if _, err := newApp(s, allow).Create(ctx, in); !errors.Is(err, apperr.ErrInvalidInput) {
 				t.Fatalf("err = %v, want ErrInvalidInput", err)
 			}
 			if len(s.Patients) != before {

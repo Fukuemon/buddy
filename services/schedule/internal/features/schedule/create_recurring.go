@@ -5,7 +5,7 @@ import (
 )
 
 // CreateRecurring は、事業所に繰り返しの予定を作る。エラーは Create と同じである。
-func (s *Usecase) CreateRecurring(ctx context.Context, facilityID string, in SlotInput, rule RuleInput) (RecurringDetail, error) {
+func (s *App) CreateRecurring(ctx context.Context, facilityID string, in SlotInput, rule RuleInput) (RecurringDetail, error) {
 	if _, err := s.deps.Facilities.Get(ctx, facilityID); err != nil {
 		return RecurringDetail{}, err
 	}

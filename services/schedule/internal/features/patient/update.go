@@ -21,7 +21,7 @@ type UpdateInput struct {
 // 担当を別の職員に変えるときは、休職か退職の職員を入力のエラーで拒む。今の担当のままなら、休職か退職でも拒まない。
 // 予定の既に割り振った職員と同じく、担当の職員の休職と退職が、担当を変えない変更を止めないようにする（ADR-0018）。
 // 担当は、事業所の共有のロックの後に読み直した利用者と比べる。ロックの前に読んだ担当と比べると、同時の再開が書いた担当を見落とし、退職した職員を確認せずに担当へ戻すためである。
-func (p *Usecase) Update(ctx context.Context, id string, in UpdateInput) (Detail, error) {
+func (p *App) Update(ctx context.Context, id string, in UpdateInput) (Detail, error) {
 	if err := p.guard(ctx); err != nil {
 		return Detail{}, err
 	}

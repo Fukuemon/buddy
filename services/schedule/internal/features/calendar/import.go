@@ -27,7 +27,7 @@ type ImportResult struct {
 // 同じカレンダーの取り込みが進んでいるときは apperr.ErrConflict を返し、何も書かない。
 // 読み替えた後に職員が退職し、カレンダーが外れたときは apperr.ErrNotFound を返し、何も書かない。
 // ほかのエラーは Preview と同じである。
-func (u *Usecase) Import(ctx context.Context, id string, rng Range, decisions []Decision) (ImportResult, error) {
+func (u *App) Import(ctx context.Context, id string, rng Range, decisions []Decision) (ImportResult, error) {
 	if err := u.guard(ctx); err != nil {
 		return ImportResult{}, err
 	}
@@ -73,7 +73,7 @@ func (u *Usecase) Import(ctx context.Context, id string, rng Range, decisions []
 	return res, nil
 }
 
-func (u *Usecase) importPlan(ctx context.Context, src EventSource, c ExternalCalendar, rng Range, decisions []Decision, run ImportRun) (ImportResult, error) {
+func (u *App) importPlan(ctx context.Context, src EventSource, c ExternalCalendar, rng Range, decisions []Decision, run ImportRun) (ImportResult, error) {
 	blocked, err := u.staffBlocked(ctx, c)
 	if err != nil {
 		return ImportResult{}, err
@@ -110,7 +110,7 @@ func (u *Usecase) importPlan(ctx context.Context, src EventSource, c ExternalCal
 // もう片方のコミットを待ってから読む。取り込んだ予定が残れば退職を拒み、退職が先ならここでカレンダーが外れている。
 // 訪問しない職員への変更も事業所の行に排他のロックを取るので、この取り込みと行き違わない。
 // カレンダーが外れていれば apperr.ErrNotFound を、休職か訪問しない職員かが変わっていれば apperr.ErrConflict を返す。
-func (u *Usecase) recheck(ctx context.Context, c ExternalCalendar, blocked SkipReason) error {
+func (u *App) recheck(ctx context.Context, c ExternalCalendar, blocked SkipReason) error {
 	if err := u.deps.Staff.LockStatuses(ctx, c.FacilityID); err != nil {
 		return err
 	}
@@ -130,7 +130,7 @@ func (u *Usecase) recheck(ctx context.Context, c ExternalCalendar, blocked SkipR
 var errStaffStatusChanged = apperr.ConflictCode(CodeReviewChanged, "プレビューの後に、職員が休職か復職になったか、訪問するかが変わりました。もう一度プレビューしてください")
 
 // write は、p の予定と除外する日と予定の対応を書く。トランザクションの中で呼ぶ。
-func (u *Usecase) write(ctx context.Context, c ExternalCalendar, p plan) error {
+func (u *App) write(ctx context.Context, c ExternalCalendar, p plan) error {
 	types, err := u.deps.Types.List(ctx)
 	if err != nil {
 		return err
@@ -228,7 +228,7 @@ func (x excluder) exclude(ctx context.Context, recurringScheduleID string, d civ
 }
 
 // slot は、取り込む予定 e の枠と種類を組み立てる。訪問の予定なら訪問の情報を書く。
-func (u *Usecase) slot(ctx context.Context, c ExternalCalendar, e entry, types map[schedule.TypeCode]schedule.Type) (schedule.Slot, schedule.Type, error) {
+func (u *App) slot(ctx context.Context, c ExternalCalendar, e entry, types map[schedule.TypeCode]schedule.Type) (schedule.Slot, schedule.Type, error) {
 	slot := schedule.Slot{
 		FacilityID:  c.FacilityID,
 		StaffID:     c.StaffID,
@@ -258,7 +258,7 @@ func (u *Usecase) slot(ctx context.Context, c ExternalCalendar, e entry, types m
 	return slot, typ, nil
 }
 
-func (u *Usecase) link(ctx context.Context, c ExternalCalendar, e entry, scheduleID, recurringScheduleID *string) error {
+func (u *App) link(ctx context.Context, c ExternalCalendar, e entry, scheduleID, recurringScheduleID *string) error {
 	synced := createdVersion
 	l := Link{
 		ID: u.ids.NewID(), FacilityID: c.FacilityID, ExternalCalendarID: c.ID, ExternalEventID: e.event.ID,

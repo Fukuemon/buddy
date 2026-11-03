@@ -11,7 +11,7 @@ import (
 // 元の回は繰り返しの予定から除外し、作った単発の予定を返す。
 // 繰り返しの予定が見つからないときは apperr.ErrNotFound を、originalDate が回に当たらないときは入力のエラーを、
 // その回をすでに置き換えたときは apperr.ErrConflict を返す。
-func (s *Usecase) ChangeOccurrence(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in SlotInput) (Detail, error) {
+func (s *App) ChangeOccurrence(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in SlotInput) (Detail, error) {
 	rs, err := s.deps.Recurring.Get(ctx, recurringScheduleID)
 	if err != nil {
 		return Detail{}, err

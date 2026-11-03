@@ -16,7 +16,7 @@ func TestPatientResume(t *testing.T) {
 	for _, status := range []staff.Status{staff.StatusOnLeave, staff.StatusRetired} {
 		t.Run(string(status), func(t *testing.T) {
 			s := inmem.Seeded()
-			uc := newUsecase(s, allow)
+			uc := newApp(s, allow)
 			if _, err := uc.End(ctx, inmem.PatientID); err != nil {
 				t.Fatal(err)
 			}

@@ -30,7 +30,7 @@ const otherGoogleCalID = "companion@example.com"
 type exportEnv struct {
 	env
 	srv       *gcaltest.Server
-	schedules *schedule.Usecase
+	schedules *schedule.App
 	exporter  *calendar.Exporter
 	// writers は、書き出しの処理が書く手段を引いた事業所の、引いた順の一覧である。
 	writers *[]string
@@ -58,8 +58,8 @@ func newExportEnv(t *testing.T) exportEnv {
 		},
 	}})
 	exports := inmem.Exports{Store: s}
-	e.uc = calendar.NewUsecase(calendar.Deps{Calendars: inmem.Calendars{Store: s}, Exports: exports}, &inmem.Tx{}, ids, principal.RequireStaffManage)
-	sched := schedule.NewUsecase(schedule.Deps{
+	e.uc = calendar.NewApp(calendar.Deps{Calendars: inmem.Calendars{Store: s}, Exports: exports}, &inmem.Tx{}, ids, principal.RequireStaffManage)
+	sched := schedule.NewApp(schedule.Deps{
 		Facilities: inmem.Facilities{Store: s}, Staff: inmem.StaffRefs{Store: s}, Visits: nil,
 		Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, Types: inmem.ScheduleTypes{Store: s},
 		Exports: calendar.NewOutbox(exports, inmem.Calendars{Store: s}, ids),

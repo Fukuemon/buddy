@@ -7,7 +7,7 @@ import (
 )
 
 // List は、事業所の予定のうち、見てよい職員の予定を返す。事業所が見つからないときは apperr.ErrNotFound を返す。
-func (s *Usecase) List(ctx context.Context, facilityID string, q ListQuery) (List, error) {
+func (s *App) List(ctx context.Context, facilityID string, q ListQuery) (List, error) {
 	if err := q.Validate(); err != nil {
 		return List{}, err
 	}
@@ -37,7 +37,7 @@ func (s *Usecase) List(ctx context.Context, facilityID string, q ListQuery) (Lis
 }
 
 // readableStaff は、事業所の職員のうち、p が予定を見てよい職員かを返す関数を返す。
-func (s *Usecase) readableStaff(ctx context.Context, p principal.Principal, facilityID string) (func(staffID string) bool, error) {
+func (s *App) readableStaff(ctx context.Context, p principal.Principal, facilityID string) (func(staffID string) bool, error) {
 	if CanReadAll(p) {
 		return func(string) bool { return true }, nil
 	}

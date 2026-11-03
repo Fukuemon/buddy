@@ -30,7 +30,7 @@ func TestEveryV1RouteIsInSpec(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r := NewRouter(Usecases{}, RouterConfig{Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	r := NewRouter(Apps{}, RouterConfig{Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
 	for _, route := range r.Routes() {
 		if !strings.HasPrefix(route.Path, "/v1/") {
 			continue
@@ -49,7 +49,7 @@ func TestEveryV1RouteIsInSpec(t *testing.T) {
 }
 
 func TestEveryPathParamHasResource(t *testing.T) {
-	r := NewRouter(Usecases{}, RouterConfig{Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	r := NewRouter(Apps{}, RouterConfig{Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
 	for _, route := range r.Routes() {
 		for _, seg := range strings.Split(route.Path, "/") {
 			if name, ok := strings.CutPrefix(seg, ":"); ok {
