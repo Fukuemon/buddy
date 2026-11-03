@@ -1,22 +1,22 @@
 import { describe, expect, it } from 'vite-plus/test'
 
-import { FAKE_FACILITY_ID } from './fake/fixtures'
+import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
 import { createDeferredFakeApis } from './loadFake'
 
 describe('createDeferredFakeApis', () => {
   it('メソッドを呼ぶと、fake の実装を読み込んで結果を返す', async () => {
     const { api } = createDeferredFakeApis()
-    const staff = await api.staff.list(FAKE_FACILITY_ID)
+    const staff = await api.staff.list(MOCK_FACILITY_ID)
     expect(staff.length).toBeGreaterThan(0)
   })
 
   it('作った後の呼び出しは、同じメモリのデータに対して行う', async () => {
     const { api } = createDeferredFakeApis()
-    const created = await api.teams.create(FAKE_FACILITY_ID, {
+    const created = await api.teams.create(MOCK_FACILITY_ID, {
       name: '新しいチーム',
       color: 'lime',
     })
-    const teams = await api.teams.list(FAKE_FACILITY_ID)
+    const teams = await api.teams.list(MOCK_FACILITY_ID)
     expect(teams.map((team) => team.id)).toContain(created.id)
   })
 

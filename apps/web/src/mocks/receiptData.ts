@@ -2,7 +2,7 @@ import type { components } from '#/api/generated/receipt'
 
 const range = (min: number, max: number) => ({ min, max })
 
-/** 照合の API のフェイク（MSW の handler と画面の型のフェイク）が返す結果。4 つの区分と、記号の付く判定を 1 行ずつ持つ。 */
+/** 照合の API の MSW の handler と、src/api/fake/ の ReceiptApi が返す結果。4 つの区分と、記号の付く判定を 1 行ずつ持つ。 */
 export const mockReceiptReport: components['schemas']['Report'] = {
   summary: { mismatch: 1, schedule_only: 1, visit_only: 1, match: 1 },
   rows: [

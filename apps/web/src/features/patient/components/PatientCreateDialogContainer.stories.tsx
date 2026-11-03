@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 
 import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
-import { FAKE_FACILITY_ID } from '#/api/fake/fixtures'
+import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
 import { withAppRouter, type AppRouterParameters } from '#/storybook/withAppRouter'
 
 import { PatientCreateDialogContainer } from './PatientCreateDialogContainer'
@@ -32,7 +32,7 @@ const staffStoppedApi = (): BuddyApi => {
     patients: {
       ...base.patients,
       create: async (facilityId, input) => {
-        await base.staff.startLeave(FAKE_FACILITY_ID, input.assigned_staff_id, null)
+        await base.staff.startLeave(MOCK_FACILITY_ID, input.assigned_staff_id, null)
         return base.patients.create(facilityId, input)
       },
     },

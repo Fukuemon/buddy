@@ -20,7 +20,8 @@ import type {
   Team,
   TeamInput,
 } from '../types'
-import { FAKE_FACILITY_ID, FAKE_VIEWER, createFakeSchedules, fakeTeams } from './fixtures'
+import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
+import { FAKE_VIEWER, createFakeSchedules, fakeTeams } from './fixtures'
 import { createFakePatientApi, createFakePatientRecords } from './fakePatientApi'
 import { createFakeStaffApi } from './fakeStaffApi'
 
@@ -31,7 +32,7 @@ export type FakeBuddyApiOptions = {
 }
 
 const assertFacility = (facilityId: FacilityId) => {
-  if (facilityId !== FAKE_FACILITY_ID) {
+  if (facilityId !== MOCK_FACILITY_ID) {
     throw new ApiError(403, `事業所 ${facilityId} の操作は許可されていません`)
   }
 }
@@ -42,7 +43,7 @@ const FAKE_READABLE_CALENDAR_SUFFIX = '@example.com'
 /**
  * メモリの上で動く BuddyApi を作る。データは呼び出しごとに独立し、ページを読み直すと初期の状態に戻る。
  *
- * FAKE_FACILITY_ID 以外の事業所を指すと、status が 403 の ApiError を投げる。
+ * MOCK_FACILITY_ID 以外の事業所を指すと、status が 403 の ApiError を投げる。
  * カレンダーの取り込みは、同じカレンダーの同じ期間を 2 回目にプレビューすると、全て取り込み済みの結果を返す。
  */
 export const createFakeBuddyApi = ({
@@ -129,7 +130,7 @@ export const createFakeBuddyApi = ({
   const patientApi = createFakePatientApi({
     assertFacility,
     patients: patientRecords,
-    staff: () => staffApi.staff.listRecords(FAKE_FACILITY_ID),
+    staff: () => staffApi.staff.listRecords(MOCK_FACILITY_ID),
     schedules: () => schedules.values(),
     today: () => baseDate,
   })

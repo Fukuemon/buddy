@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 
 import type { BuddyApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
-import { FAKE_FACILITY_ID } from '#/api/fake/fixtures'
+import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
 import {
   emptyBuddyApi,
   failingBuddyApi,
@@ -20,14 +20,14 @@ const route = (appRouter: Partial<AppRouterParameters>) => ({
 /** 石川 二葉（staff-2）を休職にし、木村 夏夫（patient-2）の担当にしたフェイクの API を作る。 */
 export const onLeaveStaffApi = (): BuddyApi => {
   const base = createFakeBuddyApi()
-  void base.patients.update(FAKE_FACILITY_ID, 'patient-2', {
+  void base.patients.update(MOCK_FACILITY_ID, 'patient-2', {
     name: '木村 夏夫',
     preferred_time: '午後',
     preferred_gender: '男性',
     service_code_id: 'code-i3',
     assigned_staff_id: 'staff-2',
   })
-  void base.staff.startLeave(FAKE_FACILITY_ID, 'staff-2', null)
+  void base.staff.startLeave(MOCK_FACILITY_ID, 'staff-2', null)
   return base
 }
 

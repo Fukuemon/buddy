@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 
 import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
-import { FAKE_FACILITY_ID } from '#/api/fake/fixtures'
+import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
 import {
   failingBuddyApi,
   pendingBuddyApi,
@@ -20,14 +20,14 @@ const route = (patientId: string, appRouter: Partial<AppRouterParameters> = {}) 
 export const endedWithStoppedStaffApi = (): BuddyApi => {
   const base = createFakeBuddyApi()
   void base.patients
-    .update(FAKE_FACILITY_ID, 'patient-ended', {
+    .update(MOCK_FACILITY_ID, 'patient-ended', {
       name: '近藤 晴美',
       preferred_time: '午前',
       preferred_gender: '女性',
       service_code_id: 'code-i2',
       assigned_staff_id: 'staff-2',
     })
-    .then(() => base.staff.startLeave(FAKE_FACILITY_ID, 'staff-2', null))
+    .then(() => base.staff.startLeave(MOCK_FACILITY_ID, 'staff-2', null))
   return base
 }
 
