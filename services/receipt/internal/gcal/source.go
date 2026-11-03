@@ -214,7 +214,8 @@ func (s monthSource) convert(ev *calendar.Event, staff string) (rec record.Recor
 	if err != nil {
 		return skip(record.ReasonUnreadableTime, "", "終了の日時を読めない")
 	}
-	start, end = start.In(tokyo), end.In(tokyo)
+	// 開始時間と終了時間は分までを使う。提供時間も秒を切り捨てた時刻の差にして、開始時間と終了時間の差に合わせる
+	start, end = start.In(tokyo).Truncate(time.Minute), end.In(tokyo).Truncate(time.Minute)
 	if start.Before(s.start) || !start.Before(s.end) {
 		return record.Record{}, false, nil
 	}
@@ -231,7 +232,7 @@ func (s monthSource) convert(ev *calendar.Event, staff string) (rec record.Recor
 		csvio.ColClient:   client,
 		csvio.ColStart:    start.Format("15:04"),
 		csvio.ColEnd:      end.Format("15:04"),
-		csvio.ColDuration: strconv.FormatFloat(end.Sub(start).Minutes(), 'f', -1, 64),
+		csvio.ColDuration: strconv.Itoa(int(end.Sub(start) / time.Minute)),
 		csvio.ColService:  service,
 		csvio.ColStaff:    staff,
 	})
