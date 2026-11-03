@@ -1,4 +1,5 @@
 import { ApiError } from '#/api/BuddyApi'
+import { FORBIDDEN_MESSAGE } from '#/api/forbiddenMessage'
 
 /** 職員の一覧を読めなかったときの文。 */
 export const LIST_LOAD_ERROR_MESSAGE =
@@ -13,9 +14,6 @@ export const DETAIL_NOT_FOUND_MESSAGE = '職員が見つかりません。職員
 /** 部署、チーム、役職の選択肢を読めなかったときの文。 */
 export const OPTIONS_LOAD_ERROR_MESSAGE =
   '部署、チーム、役職を読み込めませんでした。閉じてから、開き直してください。'
-
-/** 操作の途中で職員の管理の権限を外されたときの文。 */
-export const FORBIDDEN_MESSAGE = 'この操作をする権限がありません。'
 
 /**
  * 職員の登録と、基本の情報の保存を拒まれたときの文。verb は「登録」か「保存」で、届かなかったときの文に入る。

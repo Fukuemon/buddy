@@ -1,7 +1,5 @@
 import { ApiError } from '#/api/BuddyApi'
-
-/** 画面を開いた後に権限を外された職員が操作したときの文。 */
-export const FORBIDDEN_MESSAGE = 'この操作をする権限がありません。'
+import { FORBIDDEN_MESSAGE } from '#/api/forbiddenMessage'
 
 /** 事業所の Google カレンダーの設定（サービスアカウント）が無いときの文。 */
 export const NOT_CONFIGURED_MESSAGE =

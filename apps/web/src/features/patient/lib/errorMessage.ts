@@ -1,4 +1,5 @@
 import { ApiError } from '#/api/BuddyApi'
+import { FORBIDDEN_MESSAGE } from '#/api/forbiddenMessage'
 
 /** 利用者の一覧を読めなかったときの文。 */
 export const LIST_LOAD_ERROR_MESSAGE =
@@ -14,9 +15,6 @@ export const DETAIL_NOT_FOUND_MESSAGE =
 /** サービスと職員の選択肢を読めなかったときの文。 */
 export const OPTIONS_LOAD_ERROR_MESSAGE =
   'サービスと職員を読み込めませんでした。閉じてから、開き直してください。'
-
-/** 操作の途中で職員の管理の権限を外されたときの文。 */
-export const FORBIDDEN_MESSAGE = 'この操作をする権限がありません。'
 
 /** 選んだ担当の職員が、ダイアログを開いた後に休職か退職になったときの文。 */
 export const STAFF_STOPPED_MESSAGE =
