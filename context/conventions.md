@@ -77,6 +77,8 @@ API の操作を呼ぶ関数とリポジトリのメソッドは、operationId �
 
 - Go の判定の関数とメソッドは、`Is`、`Has`、`Can` で始める（`IsVisitTitle`、`CanEdit`）。
   - 標準のライブラリの `time.Time.IsZero`、`os.FileInfo.IsDir`、`strings.HasPrefix` に合わせる。
+  - 状態を変えてから結果を返す関数（`Limiter.Allow`）は、判定の関数ではないので対象の外である。
+  - 標準のライブラリの型と同じ名前と意味のメソッド（`civil` の `Before`、`After`、範囲の `Contains`）は、その名前に合わせる。
 - Go の真偽値の変数とフィールドは、状態の形容詞か過去分詞（`Ended`、`Pending`）か、三人称単数の動詞の句（`EndsNextDay`）にし、`Is` を付けない。
   - DB のカラムと API の項目と対になるフィールドは、その名前に合わせる（`IsOverTimeWork`、`NeedsTarget`）。
   - `ok` の慣用の名前は、この規則の対象の外である。
