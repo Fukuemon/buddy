@@ -18,53 +18,25 @@ import (
 	"net/url"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/Fukuemon/buddy/services/broker/internal/hydra"
+	"github.com/Fukuemon/buddy/services/broker/internal/staff"
 	"github.com/Fukuemon/buddy/services/broker/internal/upstream"
 )
 
-// rememberFor は、Hydra がログインのセッションを保つ秒数である。上流でのログインから 12 時間でトークンを拒むのと同じ長さにする。
-const rememberFor = 12 * 60 * 60
-
-// 職員の状態。有効な職員にだけトークンを出す。登録の途中の職員は、予定の API が職員を書き終えると有効になる。
-// 止めた職員（StatusSuspended）は休職で、復職で有効に戻る。退職した職員（StatusRetired）はメールと上流のアカウントを持たず、戻らない。
-const (
-	StatusPending   = "pending"
-	StatusActive    = "active"
-	StatusSuspended = "suspended"
-	StatusRetired   = "retired"
-)
-
-// UpstreamAccount は、職員に結び付けた上流の IdP のアカウントである。結び付けていなければ値は空である。
-type UpstreamAccount struct {
-	Issuer  string
-	Subject string
-}
-
-// StaffMember は、ブローカーが身元を持つ職員である。退職した職員の Email は空である。
-type StaffMember struct {
-	ID       string
-	OrgID    string
-	Email    string
-	Status   string
-	Upstream UpstreamAccount
-}
-
-var (
-	// ErrNotFound は、職員がいないことを示す。
-	ErrNotFound = errors.New("職員がいない")
-	// ErrConflict は、職員が既に上流のアカウントを持つか、上流のアカウントが別の職員に結び付いていることを示す。
-	ErrConflict = errors.New("上流のアカウントを結び付けられない")
-)
+// rememberFor は、Hydra がログインのセッションを保つ秒数である。上流でのログインからトークンを拒むまでの長さと同じにする。
+const rememberFor = int(staff.SessionMaxAge / time.Second)
 
 // Staff は、職員を読み、上流のアカウントを結び付ける。
 type Staff interface {
-	// FindByEmail は、email（小文字にそろえた値）の職員を全ての事業所から返す。いなければ空を返す。
-	FindByEmail(ctx context.Context, email string) ([]StaffMember, error)
-	// Get は、ID が id の職員を返す。いなければ ErrNotFound を返す。
-	Get(ctx context.Context, id string) (StaffMember, error)
-	// Link は、有効な職員 staffID に上流のアカウントを結び付ける。結び付けられないときと、職員が有効でないときは ErrConflict を返す。
-	Link(ctx context.Context, staffID string, a UpstreamAccount) error
+	// FindByEmail は、email（staff.NormalizeEmail でそろえた値）の職員を全ての事業所から返す。いなければ空を返す。
+	FindByEmail(ctx context.Context, email string) ([]staff.Member, error)
+	// Get は、ID が id の職員を返す。いなければ staff.ErrNotFound を返す。
+	Get(ctx context.Context, id string) (staff.Member, error)
+	// Link は、有効な職員 staffID に上流のアカウントを結び付ける。結び付けられないときと、職員が有効でないときは
+	// staff.ErrConflict を返す。
+	Link(ctx context.Context, staffID string, a staff.UpstreamAccount) error
 }
 
 // Hydra は、Hydra の admin API のログインと同意とログアウトの呼び出しである。約束は hydra.Client と同じである。
@@ -106,7 +78,7 @@ type Config struct {
 	SecureCookie bool
 }
 
-// maxFormLen は、POST /login の本文を読む上限（バイト）である。login_challenge と MaxEmailLen のメールが入る長さにする。
+// maxFormLen は、POST /login の本文を読む上限（バイト）である。login_challenge と staff.MaxEmailLen のメールが入る長さにする。
 const maxFormLen = 4 << 10
 
 // cookieName は、上流の IdP へリダイレクトしている間の値を置く cookie である。
@@ -185,7 +157,7 @@ func (h handler) showLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	// Hydra がログインのセッションを保っているときも、有効でない職員には出さない
 	m, err := h.Staff.Get(ctx, req.Subject)
-	if err != nil || m.Status != StatusActive {
+	if err != nil || !m.CanLogin() {
 		h.reject(w, r, challenge, "Hydra が保つセッションの職員が有効でない", err)
 		return
 	}
@@ -212,8 +184,8 @@ func (h handler) submitEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// 形の違うメールは職員にいないので、Hydra に問い合わせず、メールごとの上限でも数えない
-	email := NormalizeEmail(r.PostFormValue("email"))
-	if !ValidEmail(email) {
+	email := staff.NormalizeEmail(r.PostFormValue("email"))
+	if !staff.ValidEmail(email) {
 		h.fail(w, r, http.StatusBadRequest, "メールの形が正しくない", nil)
 		return
 	}
@@ -232,7 +204,7 @@ func (h handler) submitEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// 同じメールの職員が 2 つの事業所にいると、どちらの上流の IdP へリダイレクトするかを決められない
-	if len(found) != 1 || found[0].Status != StatusActive {
+	if len(found) != 1 || !found[0].CanLogin() {
 		h.reject(w, r, challenge, "メールに当たる有効な職員が 1 人でない", nil)
 		return
 	}
@@ -288,12 +260,12 @@ func (h handler) callback(w http.ResponseWriter, r *http.Request) {
 
 // match は、上流の IdP の主張 id が職員 m のものかを確認し、違えば理由を返す。
 // 結び付け済みの職員は iss と sub で照合する。まだの職員は、確認済みのメールが登録と同じときだけ結び付ける。
-func (h handler) match(ctx context.Context, m StaffMember, id upstream.Identity) string {
-	if m.Status != StatusActive {
+func (h handler) match(ctx context.Context, m staff.Member, id upstream.Identity) string {
+	if !m.CanLogin() {
 		return "職員が有効でない"
 	}
-	got := UpstreamAccount{Issuer: id.Issuer, Subject: id.Subject}
-	if m.Upstream != (UpstreamAccount{}) {
+	got := staff.UpstreamAccount{Issuer: id.Issuer, Subject: id.Subject}
+	if m.Upstream != (staff.UpstreamAccount{}) {
 		if m.Upstream != got {
 			return "結び付けた上流のアカウントと違う"
 		}
@@ -302,14 +274,14 @@ func (h handler) match(ctx context.Context, m StaffMember, id upstream.Identity)
 	if !id.EmailVerified {
 		return "上流のメールが確認済みでない"
 	}
-	if NormalizeEmail(id.Email) != m.Email {
+	if staff.NormalizeEmail(id.Email) != m.Email {
 		return "上流のメールが登録のメールと違う"
 	}
 	err := h.Staff.Link(ctx, m.ID, got)
-	if errors.Is(err, ErrConflict) {
-		// 同じ上流のアカウントで同時に初めてログインすると、先に結び付けたログインのほかは ErrConflict になる。
+	if errors.Is(err, staff.ErrConflict) {
+		// 同じ上流のアカウントで同時に初めてログインすると、先に結び付けたログインのほかは staff.ErrConflict になる。
 		// 読み直して、この職員に同じアカウントが結び付いていれば受け入れる
-		if cur, err := h.Staff.Get(ctx, m.ID); err == nil && cur.Status == StatusActive && cur.Upstream == got {
+		if cur, err := h.Staff.Get(ctx, m.ID); err == nil && cur.CanLogin() && cur.Upstream == got {
 			return ""
 		}
 		return "上流のアカウントを結び付けられない"
@@ -342,7 +314,7 @@ func (h handler) consent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	m, err := h.Staff.Get(ctx, req.Subject)
-	if err != nil || m.Status != StatusActive {
+	if err != nil || !m.CanLogin() {
 		h.Logger.WarnContext(ctx, "同意を拒む", "reason", "職員が有効でない", "staff_id", req.Subject, "error", err)
 		to, err := h.Hydra.RejectConsent(ctx, challenge, hydra.AccessDenied)
 		h.redirect(w, r, to, err)

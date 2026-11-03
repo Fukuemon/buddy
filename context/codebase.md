@@ -47,7 +47,12 @@ status: stable
   - `packages/ui` から `apps/` へは依存しない。
 - web は `@buddy/broker` の `AuthCard` と `loginFailedMessage` だけに依存してよい。`apps/broker` は `@buddy/ui` に依存し、web には依存しない。
 - web の `features/<機能>/` の間は import しない。
-  - 2 つの機能が使うものは、`src/components/` か `@buddy/ui` に置く。
+  - 2 つの機能が使うものは、`src/components/`、`src/api/`、`@buddy/ui` に置く。
+    - API のデータを絞るだけの関数（`activePatients`）は `src/api/` に置く。
+  - `src/components/` は `features/` を import しない。
+- web の画面のコード（`features/`、`src/components/`）は、`src/server/` を import しない。
+- web の画面のコードは、`api/fake/` と `api/http/` を import せず、API のクライアントを `useBuddyApi` から受け取る。
+  - テスト、story、story のデータ（`storyData.ts`）だけは、`api/fake/` と `api/http/` を import してよい。
 - `services/schedule` の依存は、アダプタ（`httpapi`、`postgres`）、`access`、機能のパッケージ、共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）の 1 方向に限る。
   - 共通のパッケージは、標準ライブラリと、共通のパッケージの間（`kernel` から `apperr`）だけに依存する。
   - 機能のパッケージの間は、`organization`、`staff`、`visit`、`patient`、`schedule`、`calendar` の順にだけ import する。
@@ -63,10 +68,33 @@ status: stable
     - `httpapi` から `postgres` と `oidc` を import するのは、テストのファイルだけにする。
     - `httpapi` は、パスの ID の形の確認に `ulid` を使う。
   - `inmem` を import するのは、テストのファイルだけにする。
-- `services/receipt` の依存は、`record` と `civil` を末端にして、読み込み、正規化、対の作成、判定、つなぐ段（`check`）、データソース、HTTP の順の 1 方向に限る。
-  - 判定はサービスの規則（`servicerule`）を、データソースは Google カレンダー（`gcal`）を使う。
-- 依存の向きを確認する lint は入れていない。レビューで確認する。
-  - E2E の層の向きだけは、kit の ESLint の規則（`@fukuemon/e2e-kit/eslint`）が止める。
+- `services/receipt` の依存は、`record`、`civil`、`servicerule` を末端にして、読み込み（`csvio`）、正規化、対の作成、判定、つなぐ段（`check`）、データソース、HTTP の順の 1 方向に限る。
+  - 正規化と判定はサービスの規則（`servicerule`）を、データソースは Google カレンダー（`gcal`）を使う。
+  - 照合の権限の確認（`permission`）は、HTTP と同じ段に置き、`httpapi` から使う。
+- `services/broker` の職員の型、状態、規則、番兵のエラーは `staff` に置き、`login`、`internalapi`、`postgres` が読む。
+  - `staff`、`hydra`、`upstream`、`config` は、ブローカーのほかの内部のパッケージを import しない。
+  - `postgres` は `login` と `internalapi` を import しない。
+  - `login` と `internalapi` は、互いと `postgres` を import しない。DB はそれぞれが定義したインターフェイスで受ける。
+- 2 つの Go の API と ID ブローカーの次の規則は、golangci-lint の depguard が止める。設定は各サービスの `.golangci.yml` にある。
+  - 予定の API の機能のパッケージの間の順と、機能のパッケージから `principal`（`schedule` と `calendar` を除く）、アダプタ、`access`、`config` への import
+  - 予定の API の共通のパッケージから、標準ライブラリと共通のパッケージ以外（外のモジュールを含む）への import
+  - 予定の API の `httpapi` と `config` から `postgres` への import と、テストのファイル以外から `inmem` への import
+  - 照合の API の段の順
+  - ID ブローカーの `staff`、`postgres`、`login`、`internalapi` の向き
+- depguard は、テストのファイルを対象の外にする。
+  - ID ブローカーでは、外部のテストのパッケージ（`hydra_test` など）が、テストする自分のパッケージを import するためである。
+- 循環する import は、depguard より先に Go のコンパイラが止める。
+- web の画面のコードの 4 つの規則（機能の間、`src/components/` から機能、`src/server/`、`api/fake/` と `api/http/`）は、Oxlint の `no-restricted-imports` が止める。
+  - 設定はルートの `vite.config.ts` の `lint.overrides` にあり、`features/` の下のディレクトリから機能ごとの override を作る。
+    - 機能を足したときに、設定を直さなくてよい。
+  - import の文字列を正規表現で照合するので、`#/` と相対のパスの両方を止める。
+  - Oxlint の組み込みの規則で書けるので、依存を増やす ESLint のプラグイン（eslint-plugin-boundaries）は使わない。
+  - 出典: [Apply configuration by file pattern](https://oxc.rs/docs/guide/usage/linter/config.html#apply-configuration-by-file-pattern)、[no-restricted-imports](https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-restricted-imports.html#patterns)
+- web の `src/routes/` には、`no-restricted-imports` の 4 つの規則を当てない。
+  - `auth.*.ts` と `readyz.ts` はサーバーで動く route で、`src/server/` を使う。
+- 次の規則は lint で確認せず、レビューで確認する。
+  - 機能のパッケージが、ほかの機能のリポジトリのインターフェイスを import しないこと
+- E2E の層の向きは、kit の ESLint の規則（`@fukuemon/e2e-kit/eslint`）が止める。
 
 ## State Ownership
 
@@ -140,6 +168,12 @@ status: stable
 - `services/schedule` のハンドラは `internal/httpapi` に、生成したインターフェイスのメソッドとして書く。
   - クエリは `db/queries`、マイグレーションは `db/migrations`、シードは `db/seed` に置く。
 - `services/schedule` に機能を足すときは、`internal/features/<機能>/` にパッケージを作る。
+  - `Usecase` 型、`Deps`、`NewUsecase`、複数の操作が使う非公開の補助は `usecase.go` に置く。
+    - 複数の操作をまとめて確認するテストは `usecase_test.go` に置く。
+  - 公開の操作は、操作の名前のファイル（`cancel.go`、`retire.go` など）に 1 つずつ置く。
+    - 1 つの操作だけが使う補助は、その操作のファイルに置く。
+    - 1 つの操作だけを確認するテストは、`<操作>_test.go` に置く。
+  - 操作が 2 つ以下の機能（`visit`）と、全部の操作が Get、List、Create、Update で 1 つの操作が 20 行に収まる機能（`organization`）は、`usecase.go` の 1 つのファイルにまとめる。
 - 新しい Go の API で機能が 2 つ以上あるときは、機能のパッケージを `internal/features/<機能>/` に置く。
   - 機能が 1 つの API（照合の API、ID ブローカー）は、`features/` を作らない。
 - `services/receipt` に照合の段を足すときは、段ごとに `internal/` の下にパッケージを作り、`check` でつなぐ。
