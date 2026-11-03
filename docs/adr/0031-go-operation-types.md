@@ -42,7 +42,7 @@ ADR-0030 の、ファイルの名前の役割の語、操作のファイルの�
 ## Decision
 
 機能のパッケージの操作を、使う依存だけをフィールドに持つ操作ごとの型にし、`App` と `Deps` をやめる。  
-全ての依存を知るのは、組み立ての場所（予定の API の `cmd/api`）だけにする。  
+全ての依存を知るのは、実行単位ごとの組み立ての場所（`cmd/<実行単位>/main.go`。今は予定の API の `cmd/api` だけ）にする。  
 処理の中身は変えず、依存の受け取り方を、メソッドの受け手から操作の型のフィールドに変える。
 
 操作の型の形は、次のとおり。
@@ -75,6 +75,7 @@ func (o Leave) Do(ctx context.Context, id string, in LeaveInput) (StatusChange, 
   - `Run` は、常駐の処理（`calendar` の `Exporter.Run`）と照合の API の `check.Run` が使う。
 - 複数の操作が使う補助は、使う依存を引数で受けるパッケージの関数にし、`<まとまり>_app.go` に置いたままにする。
   - 例は、`func locked(ctx context.Context, staff Repository, id string) (Detail, error)`。
+  - 既に自分の依存をフィールドに持つ補助の型（`calendar` の `applier`）は、型のまま残し、使う操作の型と常駐の処理がフィールドに持つ。
 - 操作の型の doc コメントには、今の `App` のメソッドの doc コメントの契約を移す。
 
 操作の型を束ねる型は、機能のパッケージに置かない。  
@@ -97,6 +98,26 @@ func (o Leave) Do(ctx context.Context, id string, in LeaveInput) (StatusChange, 
   - 型の名前は、今のハンドラのメソッドの名前（`submitEmail`、`register`）にし、今のハンドラのファイル（`login_handler.go`、`staff_handler.go`）に置く。
   - 複数のハンドラが使う補助（`login` の `accept`、`fail`、`setCookie`、`internalapi` の `revoke`、`writeError`）は、使う依存を引数で受ける関数にする。
   - 組み立ての場所は、パッケージの名前のファイルの `NewHandler` にし、`Config` を受けてハンドラの型を作る。
+
+## Verification
+
+この形が、予定の API に控えている 2 つの変更の後も成り立つかを、今のコードで確認した。
+
+#593 は、Google カレンダーの書き出しと同期を、予定の API のプロセスから Worker の実行単位に分ける。
+
+- 操作の型と常駐の処理は機能のパッケージに置き、`httpapi` に依存しないので、API と Worker の 2 つの `cmd` から同じ型を作れる。
+- Worker の組み立ては、使う型だけを作る。
+  - `App` のままだと、Worker が `calendar` の 1 つの処理を使うにも `calendar.Deps` の全体を作る。
+  - `staff` のように ID ブローカーの依存を持つ機能の `App` を、Worker が作らずに済む。#593 の「Worker の設定は DB と Google カレンダーに必要なものに限る」に合う。
+- 1 回だけ処理して終わる実行は、今の `Exporter.ExportDue` と `Syncer.SyncDue` で足りる。繰り返す `Run` は、常駐の実行単位だけが呼ぶ。
+- 2 つの `cmd` で、リポジトリと `tx` の作り方が重なる。重なりは 1 行ずつの `postgres.New...` なので、共通の組み立てのパッケージは足さない。
+
+#594 は、Google カレンダーを予定の正本にする期間に、buddy の予定を参照のモデルにし、予定の API からの書き込みを止める。
+
+- 読み取りの操作（`schedule` の `Get`、`List`）と書き込みの操作（`Create`、`Cancel`）は別の型なので、読み取りの操作の依存だけを参照のモデルのリーダーに替えられる。書き込みの操作の型は変わらない。
+- 正本の状態で書き込みを止める確認は、書き込みの操作の型にだけ依存を足す。`App` のままだと、`Deps` に足した依存に全ての操作が触れる。
+- 同期の「変更を取る」と「取った変更を当てる規則」を分けるときは、`Syncer` が当てる規則の型（今の `applier`）をフィールドで受け、正本の状態ごとの規則を組み立ての場所で選べる。
+- 参照のモデルのテーブル、リーダーのインターフェースの配置先、読み取りの DB を足すかは、#594 の ADR で決める。ADR-0030 の「読み取りの DB は足さない」を変えるときも、その ADR で置き換える。
 
 ## Considered Options
 
