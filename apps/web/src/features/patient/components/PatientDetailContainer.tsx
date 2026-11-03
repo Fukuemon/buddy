@@ -39,7 +39,7 @@ const PatientDetailContent = ({ patientId }: { patientId: Patient['id'] }) => {
   const queryClient = useQueryClient()
   const [open, setOpen] = useState<Open>(null)
   const [refusedSchedules, setRefusedSchedules] = useState<PatientSchedules>()
-  const [staffStopped, setStaffStopped] = useState(false)
+  const [hasStoppedStaff, setHasStoppedStaff] = useState(false)
 
   const detail = useQuery(patientDetailQueryOptions(api, facilityId, patientId))
   const staff = useQuery(staffRecordsQueryOptions(api, facilityId))
@@ -57,7 +57,7 @@ const PatientDetailContent = ({ patientId }: { patientId: Patient['id'] }) => {
   const openDialog = (next: Open) => {
     for (const mutation of [update, endService, resumeService]) mutation.reset()
     setRefusedSchedules(undefined)
-    setStaffStopped(false)
+    setHasStoppedStaff(false)
     if (next !== null) {
       for (const options of [staff, serviceCodes]) if (options.isError) void options.refetch()
     }
@@ -96,7 +96,7 @@ const PatientDetailContent = ({ patientId }: { patientId: Patient['id'] }) => {
             optionsFailed
               ? OPTIONS_LOAD_ERROR_MESSAGE
               : update.isError
-                ? patientSubmitErrorMessage(update.error, '保存', staffStopped)
+                ? patientSubmitErrorMessage(update.error, '保存', hasStoppedStaff)
                 : undefined
           }
           isSubmitting={update.isPending}
@@ -105,7 +105,7 @@ const PatientDetailContent = ({ patientId }: { patientId: Patient['id'] }) => {
             update.mutate(input, {
               onSuccess: close,
               onError: async (error) =>
-                setStaffStopped(await isStaffStopped(error, input.assigned_staff_id)),
+                setHasStoppedStaff(await isStaffStopped(error, input.assigned_staff_id)),
             })
           }
           patient={patient}
