@@ -89,6 +89,8 @@ API の操作を呼ぶ関数とリポジトリのメソッドは、operationId �
 
 - 一覧の変数とフィールドは複数形にし、`List` を付けない。
   - 単数と複数が同じ形の語（`staff`）だけは、`<語>List` にする（`staffList`）。
+  - Go の関数の中で、返す一覧を集めるローカルの変数は、慣用の名前の `out` にしてよい。
+  - 外部の API と JSON の項目に合わせるフィールド（Hydra の `GrantScope`、Google カレンダーの `Recurrence`）は、その名前に合わせる。
 - 数の値は、名前の末尾に単位を付ける（`LeaseSeconds`、`startMinutes`、`DAY_MS`、`HOUR_HEIGHT_PX`、`ImportedCount`）。
   - Go の `time.Duration` は、型が単位を持つので、単位を付けない（`SyncInterval`）。
 - Go の略語は、全て大文字か全て小文字にする（`orgID`、`HydraAdminURL`、`WriteJSON`）。
