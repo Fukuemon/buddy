@@ -31,13 +31,19 @@ ADR-0026 は、操作を `usecase.go` の 1 つにまとめる例外を決めた
 機能のパッケージの中の、操作でないファイルとテストの配置先を、次のとおりにする。
 
 - 集約の型と、その集約のリポジトリのインターフェースは、集約の名前のファイルに置く（`schedule.go`、`recurring.go`、`export.go`、`staff.go`）。
+  - この判断は ADR-0030 で置き換えた。
+    - ADR-0030: [Go の 3 つの API で、パッケージをフラットに保ち、ファイルの名前の末尾の語で役割を表す](0030-go-file-names-by-role.md)
   - 機能の名前と同じ集約が無い `calendar` は、結び付けたカレンダーの型とリポジトリを `calendar.go` に置く。操作の `Link` は `link.go` に置く。
   - `organization` は、`facility.go`、`department.go`、`team.go`、`position.go`、`policy.go` に分ける。`visit` は、`info.go` と `master.go` に分ける。
 - パッケージのドキュメントコメントと、複数の集約が使う定数は、機能の名前のファイル（`organization.go`、`visit.go`）に置く。
 - ほかの機能と外部のシステムを読み書きするインターフェースは、使う型のファイルに置く。`Usecase` が使うものは `usecase.go`、`applier` が使うものは `apply.go` に置く。
+  - この判断は ADR-0030 で置き換えた。
+    - ADR-0030: [Go の 3 つの API で、パッケージをフラットに保ち、ファイルの名前の末尾の語で役割を表す](0030-go-file-names-by-role.md)
   - `patient` の `ScheduleReader`、`staff` の `AssignmentReader`、`CalendarDetacher`、`Identities` は、集約のファイルから `usecase.go` に移す。
 - 常駐の処理と、`Usecase` 以外で操作を持つ型は、同じ機能のパッケージに、型の名前のファイル（`exporter.go`、`syncer.go`、`visit` の `writer.go`）で置く。これらの型と操作は、同じ集約のリポジトリと規則を使うためである。
   - 外部のシステムの手段の型が多く、`Usecase` と常駐の処理が共有する `calendar` は、`EventSource`、`EventWriter`、`SourceFor`、`WriterFor`、`Accounts` を `event.go` にまとめる。
+    - この判断は ADR-0030 で置き換えた。
+      - ADR-0030: [Go の 3 つの API で、パッケージをフラットに保ち、ファイルの名前の末尾の語で役割を表す](0030-go-file-names-by-role.md)
 - 複数の操作を 1 つの観点でまとめて確認するテストは、観点の名前のファイル（`calendar` の `accounts_test.go`、`schedule` の `authorization_test.go`）に置く。観点に名前が付かないものだけを `usecase_test.go` に置く。
 - その型を確認するテストは、型の名前のファイル（`exporter_test.go`、`syncer_test.go`）に置く。
 

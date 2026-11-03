@@ -40,7 +40,7 @@ status: stable
     - 機能のパッケージ: `features/`（`organization`、`staff`、`visit`、`patient`、`schedule`、`calendar`）
   - OIDC の ID トークンの検証は、`packages/go/oidc` を使う。
   - ADR-0026: [予定の API の機能のパッケージを internal/features/ に置き、usecase のメソッドを操作ごとのファイルに分ける](../docs/adr/0026-schedule-api-features-directory.md)
-  - 機能のパッケージの中は、手順（`Usecase`）、規則の関数、集約の単位のリポジトリに分ける。
+  - 機能のパッケージの中は、手順（`App`）、規則の関数、集約の単位のリポジトリに分ける。
   - ADR-0010: [予定の API の機能のパッケージで、手順を usecase、規則を関数、リポジトリを集約の単位に分ける](../docs/adr/0010-schedule-api-usecase-boundaries.md)
 - `services/receipt` では、照合の段（読み込み、正規化、対の作成、判定）ごとにパッケージを分ける。
 
@@ -186,21 +186,27 @@ status: stable
 - `services/schedule` のハンドラは `internal/httpapi` に、生成したインターフェースのメソッドとして書く。
   - クエリは `db/queries`、マイグレーションは `db/migrations`、シードは `db/seed` に置く。
 - `services/schedule` に機能を足すときは、`internal/features/<機能>/` にパッケージを作る。
-  - `Usecase` 型、`Deps`、`NewUsecase`、複数の操作が使う非公開の補助は `usecase.go` に置く。
-  - 複数の操作を 1 つの観点でまとめて確認するテストは、観点の名前のファイル（`calendar` の `accounts_test.go`、`schedule` の `authorization_test.go`）に置く。
-    - 観点に名前が付かないものは `usecase_test.go` に置く。
-  - 公開の操作は、操作の名前のファイル（`cancel.go`、`retire.go` など）に 1 つずつ置く。
+- Go の 3 つの API のパッケージはフラットに保ち、ファイルの名前の末尾に付ける役割の語で、そのファイルが持つものの役割を表す。
+  - 操作（書き込みと読み取り）は、メソッドの名前を snake_case にした `<動詞>_<対象>.go`（`cancel.go`、`retire.go`、`list_departments.go`）に 1 つずつ置く。
+    - 対象がパッケージの集約のときは、メソッドの名前と同じく対象を省く。
+    - 書き込みか読み取りかは、[コードと文書の規約](conventions.md#関数とメソッドの動詞) の動詞で表す。
     - 1 つの操作だけが使う補助は、その操作のファイルに置く。
-    - 1 つの操作だけを確認するテストは、`<操作>_test.go` に置く。
-  - 集約の型とそのリポジトリのインターフェースは、集約の名前のファイル（`schedule.go`、`recurring.go`、`export.go`、`staff.go`）に置く。
-    - 機能の名前と同じ集約が無い `calendar` は、結び付けたカレンダーの型とリポジトリを `calendar.go` に置く。
-  - ほかの機能と外部のシステムを読み書きするインターフェースは、使う型のファイル（`Usecase` なら `usecase.go`、`calendar` の `applier` なら `apply.go`）に置く。
-  - パッケージのドキュメントコメントと、複数の集約が使う定数は、機能の名前のファイル（`organization.go`、`visit.go`）に置く。
-  - 常駐の処理と、`Usecase` 以外で操作を持つ型は、同じ機能のパッケージに、型の名前のファイル（`exporter.go`、`syncer.go`、`visit` の `writer.go`）で置く。
-    - 外部のシステムの手段の型が多く、`Usecase` と常駐の処理が共有する `calendar` は、まとめて `event.go` に置く。
-  - その型を確認するテストは、型の名前のファイル（`exporter_test.go`、`syncer_test.go`）に置く。
-  - ADR-0029: [予定の API の機能のパッケージの中で、操作でないファイルとテストの配置先と、ほかの機能を書くインターフェースの大きさを決める](../docs/adr/0029-schedule-api-feature-package-layout.md)
-  - 操作の数と大きさによらず、全ての機能で、公開の操作を操作の名前のファイルに置く。`usecase.go` に操作をまとめない。
+    - 操作の数と大きさによらず、全ての機能で、公開の操作を操作のファイルに分ける。
+  - 集約、エンティティ、値オブジェクト、読み取りのモデルは `<集約>.go` に置く。
+  - リポジトリのインターフェースは `<集約>_repository.go`（`staff_repository.go`）に置く。
+  - 集約をまたぐ規則（ドメインサービス）は `<規則>_service.go`（`assignable_service.go`）に置く。
+  - 機能のパッケージの組み立て（`App`、`Deps`、`NewApp`）は `app.go` に、複数の操作が使う補助は `<まとまり>_app.go`（`status_change_app.go`）に置く。
+  - ほかの機能と外部のシステムのインターフェースは、使う側のパッケージの `<相手>_port.go`（`identity_port.go`）に置く。
+  - HTTP のハンドラは `<機能>_handler.go`（`staff_handler.go`）に置く。
+  - 役割の語（`repository`、`service`、`app`、`port`、`handler`）は GOOS と GOARCH の値に当たらないので、末尾に付けてもビルドの条件にならない。
+  - 役割が 1 つのパッケージ（照合の API の段、ID ブローカーの `hydra`）は、役割の語を付けず、パッケージの名前のファイルの 1 つにする。
+  - アダプタのパッケージ（`httpapi`、`login`、`internalapi`、`postgres`）は、`Config` と `NewHandler` の組み立てをパッケージの名前のファイルに置く。`app.go` は、手順の型 `App` を持つ機能のパッケージにだけ使う。
+  - パッケージのドキュメントコメントと、複数の集約が使う定数は、パッケージの名前のファイル（`organization.go`、`visit.go`）に置く。
+  - 常駐の処理と、`App` 以外で操作を持つ型は、同じ機能のパッケージに、型の名前のファイル（`exporter.go`、`syncer.go`、`visit` の `writer.go`）で置く。
+  - テストは、確認する対象のファイルの名前に `_test` を付けたファイルに置く。
+    - 複数の操作を 1 つの観点でまとめて確認するテストは、観点の名前のファイル（`calendar` の `accounts_test.go`、`schedule` の `authorization_test.go`）に置く。
+    - 観点に名前が付かないものは `app_test.go` に置く。
+  - ADR-0030: [Go の 3 つの API で、パッケージをフラットに保ち、ファイルの名前の末尾の語で役割を表す](../docs/adr/0030-go-file-names-by-role.md)
 - 新しい Go の API で機能が 2 つ以上あるときは、機能のパッケージを `internal/features/<機能>/` に置く。
   - 機能が 1 つの API（照合の API、ID ブローカー）は、`features/` を作らない。
 - `services/receipt` に照合の段を足すときは、段ごとに `internal/` の下にパッケージを作り、`check` でつなぐ。
