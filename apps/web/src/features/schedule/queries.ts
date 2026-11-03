@@ -11,7 +11,10 @@ import type {
 import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
 
-/** 期間と職員で絞った、事業所の予定の一覧の query。 */
+/**
+ * 事業所の予定を、params の期間（from を含み、to を含まない）と職員で絞って読む query。
+ * staffIds が空なら全ての職員の予定を読み、includeCancelled が true のときだけキャンセルした予定も読む。
+ */
 export const scheduleListQueryOptions = (
   api: BuddyApi,
   facilityId: FacilityId,
@@ -22,7 +25,7 @@ export const scheduleListQueryOptions = (
     queryFn: () => api.schedules.list(facilityId, params),
   })
 
-/** 予定 1 件の query。 */
+/** 予定を読む query。予定が無ければ status が 404 の ApiError を error に持つ。 */
 export const scheduleQueryOptions = (
   api: BuddyApi,
   facilityId: FacilityId,
@@ -33,7 +36,7 @@ export const scheduleQueryOptions = (
     queryFn: () => api.schedules.get(facilityId, scheduleId),
   })
 
-/** 名前で絞った、事業所の職員の一覧の query。 */
+/** 事業所の職員を、params の名前の部分一致で絞って読む query。名前が空か未指定なら全ての職員を読む。 */
 export const staffListQueryOptions = (
   api: BuddyApi,
   facilityId: FacilityId,
@@ -51,7 +54,7 @@ export const teamListQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
     queryFn: () => api.teams.list(facilityId),
   })
 
-/** 名前で絞った、事業所の利用者の一覧の query。 */
+/** 事業所の利用者を、params の名前の部分一致で絞って読む query。名前が空か未指定なら全ての利用者を読み、利用の終了の利用者も含む。 */
 export const patientListQueryOptions = (
   api: BuddyApi,
   facilityId: FacilityId,

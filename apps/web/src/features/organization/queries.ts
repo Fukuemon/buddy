@@ -5,24 +5,20 @@ import type { Department, FacilityId, Team, TeamInput } from '#/api/types'
 import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
 
-/** 事業所の部署の query。 */
+/** 事業所の全ての部署を読む query。部署とチームの mutation が成功すると読み直す。 */
 export const departmentsQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
     queryKey: queryKeys.departments(facilityId),
     queryFn: () => api.departments.list(facilityId),
   })
 
-/** 事業所のチームの query。 */
+/** 事業所の全てのチームを、色とともに読む query。部署とチームの mutation が成功すると読み直す。 */
 export const teamsQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
     queryKey: queryKeys.teams(facilityId),
     queryFn: () => api.teams.list(facilityId),
   })
 
-/**
- * 部署かチームを変えた後に、部署とチームを読み直す。
- * 職員の画面と予定の画面の職員も、部署とチームの名前を持つので読み直す。
- */
 const useOrganizationChanged = () => {
   const { facilityId } = useBuddyApi()
   const queryClient = useQueryClient()
@@ -38,7 +34,11 @@ const useOrganizationChanged = () => {
     )
 }
 
-/** 部署を作るか、名前を変える mutation。departmentId が無ければ作る。 */
+/**
+ * 部署を作るか、名前を変える mutation。departmentId が無ければ作る。
+ * 成功すると、部署とチームと、部署とチームの名前を持つ職員の一覧と詳細の query を読み直す。
+ * 同じ名前の部署があれば status が 409 の、部署が見つからなければ 404 の ApiError を error に持つ。
+ */
 export const useSaveDepartment = () => {
   const { api, facilityId } = useBuddyApi()
   const changed = useOrganizationChanged()
@@ -51,7 +51,11 @@ export const useSaveDepartment = () => {
   })
 }
 
-/** チームを作るか、名前と色を変える mutation。teamId が無ければ作る。 */
+/**
+ * チームを作るか、名前と色を変える mutation。teamId が無ければ作る。
+ * 成功すると、部署とチームと、部署とチームの名前を持つ職員の一覧と詳細の query を読み直す。
+ * 同じ名前のチームがあれば status が 409 の、チームが見つからなければ 404 の ApiError を error に持つ。
+ */
 export const useSaveTeam = () => {
   const { api, facilityId } = useBuddyApi()
   const changed = useOrganizationChanged()

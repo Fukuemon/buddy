@@ -103,12 +103,12 @@ func get[T any](m map[string]T, id string) (T, error) {
 // Facilities は、organization.FacilityRepository のメモリ上の実装である。
 type Facilities struct{ *Store }
 
-// Get は、事業所を返す。
+// Get は、organization.FacilityRepository の Get を実装する。
 func (s Facilities) Get(_ context.Context, id string) (organization.Facility, error) {
 	return get(s.Facilities, id)
 }
 
-// GetByOrgID は、組織に結び付けた事業所を返す。
+// GetByOrgID は、organization.FacilityRepository の GetByOrgID を実装する。
 func (s Facilities) GetByOrgID(_ context.Context, orgID string) (organization.Facility, error) {
 	return get(s.Facilities, s.FacilityByOrg[orgID])
 }
@@ -116,12 +116,12 @@ func (s Facilities) GetByOrgID(_ context.Context, orgID string) (organization.Fa
 // Departments は、organization.DepartmentRepository のメモリ上の実装である。
 type Departments struct{ *Store }
 
-// Get は、部署を返す。
+// Get は、organization.DepartmentRepository の Get を実装する。
 func (s Departments) Get(_ context.Context, id string) (organization.Department, error) {
 	return get(s.Departments, id)
 }
 
-// ListByFacility は、事業所の部署を返す。
+// ListByFacility は、organization.DepartmentRepository の ListByFacility を実装する。
 func (s Departments) ListByFacility(_ context.Context, facilityID string) ([]organization.Department, error) {
 	var out []organization.Department
 	for _, d := range s.Departments {
@@ -164,7 +164,7 @@ func (s Departments) Update(_ context.Context, d organization.Department) error 
 // Teams は、organization.TeamRepository のメモリ上の実装である。
 type Teams struct{ *Store }
 
-// Get は、チームを返す。
+// Get は、organization.TeamRepository の Get を実装する。
 func (s Teams) Get(_ context.Context, id string) (organization.Team, error) { return get(s.Teams, id) }
 
 // ListByFacility は、事業所 facilityID のチームを名前、ID の順に返す。
@@ -213,7 +213,7 @@ func (s Teams) Create(_ context.Context, t organization.Team) error {
 // Positions は、organization.PositionRepository のメモリ上の実装である。
 type Positions struct{ *Store }
 
-// Get は、役職を返す。
+// Get は、organization.PositionRepository の Get を実装する。
 func (s Positions) Get(_ context.Context, id string) (organization.Position, error) {
 	return get(s.Positions, id)
 }
@@ -238,7 +238,7 @@ func (s Positions) Create(_ context.Context, p organization.Position) error {
 // Policies は、organization.PolicyRepository のメモリ上の実装である。
 type Policies struct{ *Store }
 
-// Get は、権限を返す。
+// Get は、organization.PolicyRepository の Get を実装する。
 func (s Policies) Get(_ context.Context, id string) (organization.Policy, error) {
 	return get(s.Policies, id)
 }
@@ -246,7 +246,7 @@ func (s Policies) Get(_ context.Context, id string) (organization.Policy, error)
 // List は、常に空を返す。
 func (s Policies) List(context.Context) ([]organization.Policy, error) { return nil, nil }
 
-// ListByIDs は、ids のうち見つかった権限を返す。
+// ListByIDs は、organization.PolicyRepository の ListByIDs を実装する。
 func (s Policies) ListByIDs(_ context.Context, ids []string) ([]organization.Policy, error) {
 	var out []organization.Policy
 	for _, id := range ids {
@@ -368,10 +368,10 @@ func (s Staff) RemoveGrant(_ context.Context, id, userPolicyID string) error {
 	return apperr.ErrNotFound
 }
 
-// Get は、職員を返す。
+// Get は、staff.Repository の Get を実装する。
 func (s Staff) Get(_ context.Context, id string) (staff.Detail, error) { return get(s.Staff, id) }
 
-// ListByFacility は、事業所の職員を返す。
+// ListByFacility は、staff.Repository の ListByFacility を実装する。
 func (s Staff) ListByFacility(_ context.Context, facilityID string, _ staff.ListQuery) ([]staff.Summary, error) {
 	var out []staff.Summary
 	for _, d := range s.Staff {
@@ -506,7 +506,7 @@ func (s StaffAssignments) From(_ context.Context, facilityID, staffID string, fr
 // StaffRefs は、kernel.Finder[staff.Ref] と、予定が使う職員の一覧のメモリ上の実装である。
 type StaffRefs struct{ *Store }
 
-// Get は、職員の事業所、チーム、訪問するか、状態を返す。
+// Get は、kernel.Finder[staff.Ref] の Get を実装する。
 func (s StaffRefs) Get(_ context.Context, id string) (staff.Ref, error) {
 	d, err := get(s.Staff, id)
 	return ref(d), err
@@ -522,7 +522,7 @@ func (s StaffRefs) LockStatuses(_ context.Context, facilityID string) error {
 	return err
 }
 
-// ListByFacility は、事業所の職員の事業所、チーム、状態を返す。
+// ListByFacility は、schedule.StaffRefs の ListByFacility を実装する。
 func (s StaffRefs) ListByFacility(_ context.Context, facilityID string) ([]staff.Ref, error) {
 	var out []staff.Ref
 	for _, d := range s.Staff {
@@ -536,13 +536,13 @@ func (s StaffRefs) ListByFacility(_ context.Context, facilityID string) ([]staff
 // Patients は、patient.Repository のメモリ上の実装である。
 type Patients struct{ *Store }
 
-// Create は、利用者を保存する。
+// Create は、patient.Repository の Create を実装する。
 func (s Patients) Create(_ context.Context, p patient.Patient) error {
 	s.Patients[p.ID] = patient.Detail{Patient: p}
 	return nil
 }
 
-// Get は、利用者を返す。
+// Get は、patient.Repository の Get を実装する。
 func (s Patients) Get(_ context.Context, id string) (patient.Detail, error) {
 	return get(s.Patients, id)
 }
@@ -573,7 +573,7 @@ func (s Patients) End(_ context.Context, id string) error {
 	return nil
 }
 
-// Resume は、利用者を利用中に戻し、担当の職員を assignedStaffID にする。
+// Resume は、patient.Repository の Resume を実装する。
 func (s Patients) Resume(_ context.Context, id, assignedStaffID string) error {
 	d, ok := s.Patients[id]
 	if !ok {
@@ -623,13 +623,13 @@ func (s PatientSchedules) From(_ context.Context, facilityID, patientID string, 
 // VisitInfos は、visit.InfoRepository のメモリ上の実装である。
 type VisitInfos struct{ *Store }
 
-// Create は、訪問の情報を保存する。
+// Create は、visit.InfoRepository の Create を実装する。
 func (s VisitInfos) Create(_ context.Context, i visit.Info) error {
 	s.Infos[i.ID] = i
 	return nil
 }
 
-// DeleteIfUnused は、どの予定と繰り返しの予定も指していない訪問の情報を消す。
+// DeleteIfUnused は、visit.InfoRepository の DeleteIfUnused を実装する。
 func (s VisitInfos) DeleteIfUnused(_ context.Context, id string) error {
 	for _, d := range s.Schedules {
 		if d.VisitInfoID != nil && *d.VisitInfoID == id {
@@ -648,7 +648,7 @@ func (s VisitInfos) DeleteIfUnused(_ context.Context, id string) error {
 // VisitMasters は、visit.MasterRepository のメモリ上の実装である。
 type VisitMasters struct{ *Store }
 
-// GetServiceCode は、サービスコードを返す。
+// GetServiceCode は、visit.MasterRepository の GetServiceCode を実装する。
 func (s VisitMasters) GetServiceCode(_ context.Context, id string) (visit.ServiceCode, error) {
 	return get(s.Codes, id)
 }
@@ -666,7 +666,7 @@ func (s VisitMasters) ListServiceCodes(context.Context) ([]visit.ServiceCode, er
 // ListCategories は、常に空を返す。
 func (s VisitMasters) ListCategories(context.Context) ([]visit.Category, error) { return nil, nil }
 
-// ListCategoriesByIDs は、ids のうち見つかった訪問の区分を返す。
+// ListCategoriesByIDs は、visit.MasterRepository の ListCategoriesByIDs を実装する。
 func (s VisitMasters) ListCategoriesByIDs(_ context.Context, ids []string) ([]visit.Category, error) {
 	var out []visit.Category
 	for _, id := range ids {
@@ -680,7 +680,7 @@ func (s VisitMasters) ListCategoriesByIDs(_ context.Context, ids []string) ([]vi
 // ScheduleTypes は、schedule.TypeRepository のメモリ上の実装である。
 type ScheduleTypes struct{ *Store }
 
-// Get は、予定の種類を返す。
+// Get は、schedule.TypeRepository の Get を実装する。
 func (s ScheduleTypes) Get(_ context.Context, id string) (schedule.Type, error) {
 	return get(s.Types, id)
 }
@@ -698,7 +698,7 @@ func (s ScheduleTypes) List(context.Context) ([]schedule.Type, error) {
 // Schedules は、schedule.Repository のメモリ上の実装である。
 type Schedules struct{ *Store }
 
-// Create は、単発の予定を保存する。
+// Create は、schedule.Repository の Create を実装する。
 func (s Schedules) Create(_ context.Context, sc schedule.Schedule) error {
 	s.Schedules[sc.ID] = schedule.Detail{Schedule: sc, TypeName: s.Types[sc.TypeID].Name, Version: 1}
 	return nil
@@ -731,7 +731,7 @@ func (s Schedules) Get(_ context.Context, id string) (schedule.Detail, error) {
 	return d, err
 }
 
-// ListByFacility は、事業所の単発の予定を返す。
+// ListByFacility は、schedule.Repository の ListByFacility を実装する。
 func (s Schedules) ListByFacility(_ context.Context, facilityID string, _ schedule.ListQuery) ([]schedule.Detail, error) {
 	var out []schedule.Detail
 	for _, d := range s.Schedules {
@@ -767,7 +767,7 @@ func (s Schedules) ReplacementOf(ctx context.Context, recurringScheduleID string
 // RecurringSchedules は、schedule.RecurringRepository のメモリ上の実装である。
 type RecurringSchedules struct{ *Store }
 
-// Create は、繰り返しの予定を保存する。
+// Create は、schedule.RecurringRepository の Create を実装する。
 func (s RecurringSchedules) Create(_ context.Context, rs schedule.RecurringSchedule) error {
 	s.Recurring[rs.ID] = schedule.RecurringDetail{RecurringSchedule: rs, TypeName: s.Types[rs.TypeID].Name, Version: 1}
 	return nil
@@ -799,7 +799,7 @@ func (s *Store) visit(id *string) *visit.Detail {
 	}
 }
 
-// ListByFacility は、事業所の繰り返しの予定を返す。
+// ListByFacility は、schedule.RecurringRepository の ListByFacility を実装する。
 func (s RecurringSchedules) ListByFacility(_ context.Context, facilityID string, _ schedule.ListQuery) ([]schedule.RecurringDetail, error) {
 	var out []schedule.RecurringDetail
 	for _, d := range s.Recurring {
@@ -837,7 +837,7 @@ func (s Calendars) GetForUpdate(ctx context.Context, id string) (calendar.Extern
 	return s.Get(ctx, id)
 }
 
-// FindByCalendarID は、provider と calendarID のカレンダーを返す。
+// FindByCalendarID は、calendar.Repository の FindByCalendarID を実装する。
 func (s Calendars) FindByCalendarID(_ context.Context, provider, calendarID string) (calendar.ExternalCalendar, error) {
 	for _, c := range s.Calendars {
 		if c.Provider == provider && c.CalendarID == calendarID {
@@ -896,7 +896,7 @@ func (s Calendars) Enable(_ context.Context, id string) error {
 	return nil
 }
 
-// Disable は、カレンダーを外す。
+// Disable は、calendar.Repository の Disable を実装する。
 func (s Calendars) Disable(_ context.Context, id string) error {
 	c := s.Calendars[id]
 	if c.DisabledAt == nil {
@@ -907,7 +907,7 @@ func (s Calendars) Disable(_ context.Context, id string) error {
 	return nil
 }
 
-// DetachByStaff は、職員の外していないカレンダーを外す。
+// DetachByStaff は、staff.CalendarDetacher の DetachByStaff を実装する。
 func (s Calendars) DetachByStaff(ctx context.Context, staffID string) error {
 	for id, c := range s.Calendars {
 		if c.StaffID == staffID {
@@ -919,7 +919,7 @@ func (s Calendars) DetachByStaff(ctx context.Context, staffID string) error {
 	return nil
 }
 
-// RunningSince は、since より後に始めた running の取り込みがあるかを返す。
+// RunningSince は、calendar.Repository の RunningSince を実装する。
 func (s Calendars) RunningSince(_ context.Context, externalCalendarID string, since time.Time) (bool, error) {
 	for _, r := range s.Runs {
 		if r.ExternalCalendarID == externalCalendarID && r.Status == calendar.RunRunning && r.StartedAt.After(since) {
@@ -929,14 +929,14 @@ func (s Calendars) RunningSince(_ context.Context, externalCalendarID string, si
 	return false, nil
 }
 
-// CreateRun は、始めた時刻を今にして取り込みの記録を保存する。
+// CreateRun は、calendar.Repository の CreateRun を実装する。
 func (s Calendars) CreateRun(_ context.Context, r calendar.ImportRun) error {
 	r.StartedAt = time.Now()
 	s.Runs[r.ID] = r
 	return nil
 }
 
-// FinishRun は、取り込みの記録の状態と件数を書き、終わった時刻を今にする。
+// FinishRun は、calendar.Repository の FinishRun を実装する。
 func (s Calendars) FinishRun(_ context.Context, r calendar.ImportRun) (calendar.ImportRun, error) {
 	cur, err := get(s.Runs, r.ID)
 	if err != nil {
@@ -948,7 +948,7 @@ func (s Calendars) FinishRun(_ context.Context, r calendar.ImportRun) (calendar.
 	return cur, nil
 }
 
-// ListLinks は、カレンダーの予定の対応を返す。
+// ListLinks は、calendar.Repository の ListLinks を実装する。
 func (s Calendars) ListLinks(_ context.Context, externalCalendarID string) ([]calendar.Link, error) {
 	var out []calendar.Link
 	for _, l := range s.Links {
@@ -970,7 +970,7 @@ func (s Calendars) CreateLink(_ context.Context, l calendar.Link) error {
 	return nil
 }
 
-// ActiveByStaff は、職員に結び付けた外していないカレンダーを返す。
+// ActiveByStaff は、calendar.Repository の ActiveByStaff を実装する。
 func (s Calendars) ActiveByStaff(_ context.Context, staffID string) (calendar.ExternalCalendar, error) {
 	for _, c := range s.Calendars {
 		if c.StaffID == staffID && c.DisabledAt == nil {
@@ -980,17 +980,17 @@ func (s Calendars) ActiveByStaff(_ context.Context, staffID string) (calendar.Ex
 	return calendar.ExternalCalendar{}, apperr.ErrNotFound
 }
 
-// LinkBySchedule は、単発の予定の対応を返す。
+// LinkBySchedule は、calendar.Repository の LinkBySchedule を実装する。
 func (s Calendars) LinkBySchedule(_ context.Context, scheduleID string) (calendar.Link, error) {
 	return s.linkBy(func(l calendar.Link) *string { return l.ScheduleID }, scheduleID)
 }
 
-// LinkByRecurringSchedule は、繰り返しの予定の対応を返す。
+// LinkByRecurringSchedule は、calendar.Repository の LinkByRecurringSchedule を実装する。
 func (s Calendars) LinkByRecurringSchedule(_ context.Context, recurringScheduleID string) (calendar.Link, error) {
 	return s.linkBy(func(l calendar.Link) *string { return l.RecurringScheduleID }, recurringScheduleID)
 }
 
-// LinkByEvent は、カレンダーの外部の予定の対応を返す。
+// LinkByEvent は、calendar.Repository の LinkByEvent を実装する。
 func (s Calendars) LinkByEvent(_ context.Context, externalCalendarID, eventID string) (calendar.Link, error) {
 	for _, l := range s.Links {
 		if l.ExternalCalendarID == externalCalendarID && l.ExternalEventID == eventID {
@@ -1009,7 +1009,7 @@ func (s Calendars) linkBy(target func(calendar.Link) *string, id string) (calend
 	return calendar.Link{}, apperr.ErrNotFound
 }
 
-// UpdateLink は、予定の対応の etag と更新の番号を書く。
+// UpdateLink は、calendar.Repository の UpdateLink を実装する。
 func (s Calendars) UpdateLink(_ context.Context, id, etag string, version int) error {
 	l, err := get(s.Links, id)
 	if err != nil {
@@ -1020,7 +1020,7 @@ func (s Calendars) UpdateLink(_ context.Context, id, etag string, version int) e
 	return nil
 }
 
-// DeleteLink は、予定の対応を消す。
+// DeleteLink は、calendar.Repository の DeleteLink を実装する。
 func (s Calendars) DeleteLink(_ context.Context, id string) error {
 	delete(s.Links, id)
 	return nil
@@ -1039,7 +1039,7 @@ func (s Exports) open(t calendar.Target) (calendar.Export, bool) {
 	return calendar.Export{}, false
 }
 
-// Enqueue は、t の終わっていない待ちを積み直すか、待ちを足す。
+// Enqueue は、calendar.ExportRepository の Enqueue を実装する。
 func (s Exports) Enqueue(_ context.Context, id string, t calendar.Target) error {
 	e, ok := s.open(t)
 	if !ok {
@@ -1096,7 +1096,7 @@ func (s Exports) Finish(_ context.Context, e calendar.Export, r calendar.ExportR
 	return nil
 }
 
-// Get は、待ちを返す。
+// Get は、calendar.ExportRepository の Get を実装する。
 func (s Exports) Get(_ context.Context, id string) (calendar.Export, error) {
 	return get(s.Exports, id)
 }
@@ -1124,7 +1124,7 @@ func (s Exports) ListIssues(_ context.Context, facilityID string) ([]calendar.Ex
 	return out, nil
 }
 
-// Retry は、確認が必要な待ちを、buddy の内容で書き直す pending の待ちにする。
+// Retry は、calendar.ExportRepository の Retry を実装する。
 func (s Exports) Retry(_ context.Context, id string) error {
 	e, err := get(s.Exports, id)
 	if err != nil {
@@ -1138,7 +1138,7 @@ func (s Exports) Retry(_ context.Context, id string) error {
 	return nil
 }
 
-// Open は、t の終わっていない待ちを返す。
+// Open は、calendar.ExportRepository の Open を実装する。
 func (s Exports) Open(_ context.Context, t calendar.Target) (calendar.Export, error) {
 	if e, ok := s.open(t); ok {
 		return e, nil
@@ -1146,7 +1146,7 @@ func (s Exports) Open(_ context.Context, t calendar.Target) (calendar.Export, er
 	return calendar.Export{}, apperr.ErrNotFound
 }
 
-// Hold は、t の終わっていない待ちを確認が必要な待ちにするか、確認が必要な待ちを足す。
+// Hold は、calendar.ExportRepository の Hold を実装する。
 func (s Exports) Hold(_ context.Context, id string, t calendar.Target, code calendar.ExportErrorCode) error {
 	e, ok := s.open(t)
 	if !ok {
@@ -1158,7 +1158,7 @@ func (s Exports) Hold(_ context.Context, id string, t calendar.Target, code cale
 	return nil
 }
 
-// Resolve は、確認が必要な待ちを終えた待ちにする。
+// Resolve は、calendar.ExportRepository の Resolve を実装する。
 func (s Exports) Resolve(_ context.Context, id string, revision int) error {
 	e, err := get(s.Exports, id)
 	if err != nil {
@@ -1192,7 +1192,7 @@ func (s Syncs) Claim(_ context.Context, max int, _ time.Duration) ([]calendar.Sy
 	return out[:min(max, len(out))], nil
 }
 
-// Finish は、同期した結果を書く。
+// Finish は、calendar.SyncRepository の Finish を実装する。
 func (s Syncs) Finish(_ context.Context, st calendar.SyncState, r calendar.SyncResult) error {
 	s.SyncResults[st.Calendar.ID] = r
 	return nil
