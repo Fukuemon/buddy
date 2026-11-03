@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vite-plus/test'
 
 import type { StaffRecord } from '#/api/types'
-import { mockPatients, mockStaff } from '#/mocks/scheduleData'
+import { mockPatients, mockStaffList } from '#/mocks/scheduleData'
 
 import { PatientResumeDialog } from './PatientResumeDialog'
 
@@ -11,8 +11,8 @@ const patient = {
   assigned_staff_id: 'staff-2',
   assigned_staff_name: '石川 二葉',
 }
-const onLeave: StaffRecord = { ...mockStaff[1], status: 'on_leave' }
-const active = [mockStaff[0], mockStaff[2]]
+const onLeave: StaffRecord = { ...mockStaffList[1], status: 'on_leave' }
+const active = [mockStaffList[0], mockStaffList[2]]
 
 const dialog = (props: Partial<Parameters<typeof PatientResumeDialog>[0]>) => (
   <PatientResumeDialog
@@ -40,8 +40,8 @@ describe('PatientResumeDialog', () => {
   it('今の担当が選択肢にあれば、その職員を選んで始める', () => {
     render(
       dialog({
-        staffOptions: [...active, mockStaff[1]],
-        currentStaff: mockStaff[1],
+        staffOptions: [...active, mockStaffList[1]],
+        currentStaff: mockStaffList[1],
       }),
     )
     expect(screen.getByTestId('patient-resume-staff')).toHaveValue('staff-2')

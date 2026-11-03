@@ -2,7 +2,7 @@ import {
   createMockSchedules,
   mockMe,
   mockPatients,
-  mockStaff,
+  mockStaffList,
   mockTeams,
 } from '#/mocks/scheduleData'
 
@@ -29,7 +29,7 @@ export const FAKE_VIEWER: Viewer = {
 
 export const fakeTeams: Team[] = mockTeams.map(fromApiTeam)
 
-export const fakeStaff: Staff[] = mockStaff.map(fromApiStaff)
+export const fakeStaffList: Staff[] = mockStaffList.map(fromApiStaff)
 
 export const fakePatients: Patient[] = mockPatients.map(fromApiPatient)
 

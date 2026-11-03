@@ -20,11 +20,11 @@ import { STATUS_FILTER_OPTIONS, type StaffListFilter } from '../lib/filter'
 import { formatDate, formatDateTimeAsDate, statusLabel, statusTone } from '../lib/format'
 import { sortByName } from './StaffFormFields'
 
-/** 職員の一覧の画面の状態。ready の staff は、絞り込んだ後の職員である。 */
+/** 職員の一覧の画面の状態。ready の staffList は、絞り込んだ後の職員である。 */
 export type StaffListViewState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
-  | { status: 'ready'; staff: readonly StaffRecord[] }
+  | { status: 'ready'; staffList: readonly StaffRecord[] }
 
 export type StaffListViewProps = {
   state: StaffListViewState
@@ -166,9 +166,9 @@ export const StaffListView = ({
             options={STATUS_FILTER_OPTIONS}
             value={filter.status}
           />
-          <ListCount data-testid="staff-list-count">{state.staff.length} 人</ListCount>
+          <ListCount data-testid="staff-list-count">{state.staffList.length} 人</ListCount>
         </ListTools>
-        {state.staff.length === 0 ? (
+        {state.staffList.length === 0 ? (
           <ListEmpty
             clearLabel="絞り込みを外す"
             clearTestId="staff-list-filter-clear"
@@ -183,7 +183,7 @@ export const StaffListView = ({
             metaHeaders={['チーム', '役職', '部署']}
             primaryHeader="名前"
           >
-            {state.staff.map((s) => (
+            {state.staffList.map((s) => (
               <RowTableRow
                 status={statusOf(s, filter.status)}
                 data-testid={`staff-list-row-${s.id}`}

@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 import { BASE_URL, LOGIN_STATE, TIMEZONE_ID } from './tests/fixtures/env'
-import { TIMEOUTS } from './tests/fixtures/timeouts'
+import { TIMEOUT_MS } from './tests/fixtures/timeouts'
 
 /**
  * ルートの compose で立てた全体に向けて流す。先に `docker compose up --build --wait` で起動しておく。
@@ -14,8 +14,8 @@ export default defineConfig({
   workers: 1,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  timeout: TIMEOUTS.test,
-  expect: { timeout: TIMEOUTS.expect },
+  timeout: TIMEOUT_MS.test,
+  expect: { timeout: TIMEOUT_MS.expect },
   reporter: process.env.CI
     ? [['list'], ['junit', { outputFile: 'test-results/junit.xml' }]]
     : 'list',
@@ -24,8 +24,8 @@ export default defineConfig({
     baseURL: BASE_URL,
     // 予定の API と calendarpit は Asia/Tokyo の時刻で予定を持つ。CI の UTC で画面の時刻がずれないよう、事業所の時間帯にそろえる
     timezoneId: TIMEZONE_ID,
-    actionTimeout: TIMEOUTS.action,
-    navigationTimeout: TIMEOUTS.navigation,
+    actionTimeout: TIMEOUT_MS.action,
+    navigationTimeout: TIMEOUT_MS.navigation,
     trace: 'retain-on-failure',
   },
   projects: [
@@ -37,6 +37,6 @@ export default defineConfig({
       use: { storageState: LOGIN_STATE },
     },
     // 録画は recordEvidence が新しいコンテキストで撮り、prepare の中でログインするので、setup に依らない
-    { name: 'evidence', testMatch: /tests\/evidence\/.*\.e2e\.ts/, timeout: TIMEOUTS.evidence },
+    { name: 'evidence', testMatch: /tests\/evidence\/.*\.e2e\.ts/, timeout: TIMEOUT_MS.evidence },
   ],
 })

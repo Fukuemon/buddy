@@ -30,15 +30,15 @@ describe('createBffBuddyApi', () => {
       ops.push(call.op)
       return { ok: true, data: null }
     })
-    const expected: string[] = []
+    const expectedOps: string[] = []
     for (const [group, methods] of Object.entries(api)) {
       for (const [name, method] of Object.entries(
         methods as Record<string, () => Promise<unknown>>,
       )) {
-        expected.push(`${group}.${name}`)
+        expectedOps.push(`${group}.${name}`)
         await method()
       }
     }
-    expect(ops).toEqual(expected)
+    expect(ops).toEqual(expectedOps)
   })
 })

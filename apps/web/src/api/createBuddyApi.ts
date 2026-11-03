@@ -23,7 +23,7 @@ export const RENDER_DATA_ON_SERVER = import.meta.env.VITE_API_MODE === 'bff'
 
 /**
  * VITE_API_MODE が bff なら BFF を通す BuddyApi と ReceiptApi を、fake か未指定ならフェイクを作る。
- * ログインした職員を読む fetchViewer も、同じモードで作る。
+ * ログインした職員を読む getViewer も、同じモードで作る。
  * フェイクの実装とダミーの職員は、初めて呼んだときに読み込む。
  *
  * VITE_API_MODE がほかの値のときは Error を投げる。
@@ -34,21 +34,21 @@ export const createBuddyApi = (
   api: BuddyApi
   receiptApi: ReceiptApi
   mode: ApiMode
-  fetchViewer: () => Promise<Viewer | null>
+  getViewer: () => Promise<Viewer | null>
 } => {
   const mode = env.VITE_API_MODE || 'fake'
   if (mode === 'fake')
     return {
       ...createDeferredFakeApis(),
       mode,
-      fetchViewer: async () => (await loadFake()).FAKE_VIEWER,
+      getViewer: async () => (await loadFake()).FAKE_VIEWER,
     }
   if (mode === 'bff')
     return {
       api: createBffBuddyApi(),
       receiptApi: createBffReceiptApi(),
       mode,
-      fetchViewer: () => getViewerFn(),
+      getViewer: () => getViewerFn(),
     }
   throw new Error(`VITE_API_MODE は fake か bff にする: ${mode}`)
 }

@@ -22,17 +22,17 @@ export const STAFF_STOPPED_MESSAGE =
 
 /**
  * 利用者の登録と保存を拒まれたときの文。verb は「登録」か「保存」で、届かなかったときの文に入る。
- * 400 は、予定の API の message では理由を分けられないので、送った担当の職員を読み直した staffStopped で分ける。
+ * 400 は、予定の API の message では理由を分けられないので、送った担当の職員を読み直した hasStoppedStaff で分ける。
  */
 export const patientSubmitErrorMessage = (
   error: unknown,
   verb: '登録' | '保存',
-  staffStopped: boolean,
+  hasStoppedStaff: boolean,
 ) => {
   if (error instanceof ApiError) {
     if (error.status === 403) return FORBIDDEN_MESSAGE
     if (error.status === 400)
-      return staffStopped
+      return hasStoppedStaff
         ? STAFF_STOPPED_MESSAGE
         : 'サービスか担当の職員が見つかりません。開き直してから、選び直してください。'
   }

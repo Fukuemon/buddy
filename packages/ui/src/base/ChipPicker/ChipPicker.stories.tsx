@@ -17,20 +17,20 @@ const meta = {
       { id: 's2', name: '石川 花子' },
       { id: 's3', name: '上田 次郎' },
     ],
-    selected: ['s1'],
+    selectedIds: ['s1'],
     onChange: fn(),
     testIdPrefix: 'staff-picker',
   },
   render: function Render(args) {
-    const [selected, setSelected] = useState(args.selected)
+    const [selectedIds, setSelectedIds] = useState(args.selectedIds)
     return (
       <ChipPicker
         {...args}
         onChange={(next) => {
           args.onChange(next)
-          setSelected(next)
+          setSelectedIds(next)
         }}
-        selected={selected}
+        selectedIds={selectedIds}
       />
     )
   },
@@ -41,8 +41,8 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 
-export const Empty: Story = { args: { selected: [] } }
+export const Empty: Story = { args: { selectedIds: [] } }
 
-export const AllSelected: Story = { args: { selected: ['s1', 's2', 's3'] } }
+export const AllSelected: Story = { args: { selectedIds: ['s1', 's2', 's3'] } }
 
 export const Disabled: Story = { args: { disabled: true } }

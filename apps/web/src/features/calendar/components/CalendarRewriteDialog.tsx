@@ -4,7 +4,7 @@ export type CalendarRewriteDialogProps = {
   /** 書き直す予定の日時と職員。 */
   target: string
   /** buddy でキャンセルした単発の予定か。書き直すと Google カレンダーの予定を消すので、注意の文を替える。 */
-  cancelled?: boolean
+  isCancelled?: boolean
   isSubmitting: boolean
   /** 書き直しを始められなかったときの文。 */
   errorMessage?: string
@@ -18,7 +18,7 @@ export type CalendarRewriteDialogProps = {
  */
 export const CalendarRewriteDialog = ({
   target,
-  cancelled = false,
+  isCancelled = false,
   isSubmitting,
   errorMessage,
   onSubmit,
@@ -44,7 +44,7 @@ export const CalendarRewriteDialog = ({
       {target}
     </p>
     <p className="text-body" data-testid="calendar-rewrite-notice">
-      {cancelled
+      {isCancelled
         ? 'buddy でキャンセルした予定なので、Google カレンダーの予定を消します。Google カレンダーで直したタイトルと日時も消えます。'
         : 'Google カレンダーの予定のタイトルと日時を buddy の内容にします。Google カレンダーで直したタイトルと日時は消えます。消された予定は作り直します。'}
     </p>

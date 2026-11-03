@@ -4,18 +4,18 @@ import type { ReactNode } from 'react'
 export type TableProps = {
   children: ReactNode
   /** true のとき、横に送っても先頭の列を固定する。 */
-  stickyColumn?: boolean
+  hasStickyColumn?: boolean
 }
 
 /**
  * 同じ項目を持つ行を並べる表。Table.Header、Table.Body、Table.Row、Table.HeaderCell、Table.Cell で組む。
  * 表の役割を保つため、table の要素の display は変えない。
  */
-export const Table = ({ children, stickyColumn = false }: TableProps) => (
+export const Table = ({ children, hasStickyColumn = false }: TableProps) => (
   <table
     className={clsx(
       'w-full border-collapse',
-      stickyColumn &&
+      hasStickyColumn &&
         '[&_tr>:first-child]:sticky [&_tr>:first-child]:left-0 [&_tr>:first-child]:bg-surface',
     )}
   >

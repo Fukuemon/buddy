@@ -26,7 +26,7 @@ const ensureHayashiLinked = async (page: Page) => {
  * 林の予定を buddy で作って Google カレンダーに書き出し、Google カレンダーと buddy の両方で変えて、確認が必要な予定に出す。
  * 職員が Google カレンダーで直す代わりに、calendarpit の管理の API で 1 時間遅らせる。buddy が先に読まないよう、その間は中継に変更を渡させない。
  */
-const makeConflict = async (page: Page) => {
+const createConflict = async (page: Page) => {
   const request = page.request
   const stamp = Date.now()
   const created = `会議 ${stamp}`
@@ -78,7 +78,7 @@ const prepareReview = async (page: Page) => {
   await expect(page.getByTestId('calendar-review-loading')).toBeHidden()
   if ((await scheduleRows(page).count()) > 0) return
   await ensureHayashiLinked(page)
-  await makeConflict(page)
+  await createConflict(page)
 }
 
 test.describe('画面の共通の形', () => {

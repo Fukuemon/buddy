@@ -5,14 +5,14 @@ export const toDateKey = (date: Date) =>
   `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 
 /** `YYYY-MM-DD` を、デバイスの時間帯の 0 時の Date にする。 */
-export const fromDateKey = (dateKey: string) => {
+export const parseDateKey = (dateKey: string) => {
   const [year, month, day] = dateKey.split('-').map(Number) as [number, number, number]
   return new Date(year, month - 1, day)
 }
 
 /** `YYYY-MM-DD` に日数を足した `YYYY-MM-DD` を返す。 */
 export const addDaysToDateKey = (dateKey: string, days: number) => {
-  const date = fromDateKey(dateKey)
+  const date = parseDateKey(dateKey)
   date.setDate(date.getDate() + days)
   return toDateKey(date)
 }
@@ -31,7 +31,7 @@ export const toOffsetDateTime = (date: Date) => {
 /** `YYYY-MM-DD` と `HH:mm` を、デバイスの時間帯のオフセットつきの ISO 8601 にする。 */
 export const combineDateTime = (dateKey: string, timeKey: string) => {
   const [hours, minutes] = timeKey.split(':').map(Number) as [number, number]
-  const date = fromDateKey(dateKey)
+  const date = parseDateKey(dateKey)
   date.setHours(hours, minutes, 0, 0)
   return toOffsetDateTime(date)
 }

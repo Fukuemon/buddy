@@ -5,13 +5,13 @@ import NextIcon from '#/assets/icons/arrow-right.svg?react'
 
 import type { CalendarView } from '../constants/calendarView'
 import { getCalendarRange, shiftCalendarDate } from '../lib/calendarRange'
-import { WEEKDAYS, fromDateKey, toDateKey } from '../lib/dateTime'
+import { WEEKDAYS, parseDateKey, toDateKey } from '../lib/dateTime'
 
 const toMonthKey = (dateKey: string) => `${dateKey.slice(0, 7)}-01`
 
 /** 月の 1 日を含む週の日曜から、6 週分の `YYYY-MM-DD` を返す。 */
 const monthGridDays = (monthKey: string) => {
-  const first = fromDateKey(monthKey)
+  const first = parseDateKey(monthKey)
   const start = new Date(first.getFullYear(), first.getMonth(), 1 - first.getDay())
   return Array.from({ length: 42 }, (_, index) =>
     toDateKey(new Date(start.getFullYear(), start.getMonth(), start.getDate() + index)),
@@ -19,7 +19,7 @@ const monthGridDays = (monthKey: string) => {
 }
 
 const shiftDays = (dateKey: string, days: number) => {
-  const date = fromDateKey(dateKey)
+  const date = parseDateKey(dateKey)
   return toDateKey(new Date(date.getFullYear(), date.getMonth(), date.getDate() + days))
 }
 
@@ -27,7 +27,7 @@ const shiftDays = (dateKey: string, days: number) => {
 const KEY_DAYS: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }
 
 const formatDay = (dateKey: string) => {
-  const date = fromDateKey(dateKey)
+  const date = parseDateKey(dateKey)
   return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`
 }
 
@@ -75,7 +75,7 @@ export const ScheduleMiniCalendar = ({
     view !== 'month' && dateKey >= range.from.slice(0, 10) && dateKey < range.to.slice(0, 10)
   const days = monthGridDays(shownMonth)
   const weeks = Array.from({ length: 6 }, (_, index) => days.slice(index * 7, index * 7 + 7))
-  const monthDate = fromDateKey(shownMonth)
+  const monthDate = parseDateKey(shownMonth)
   // 動かした日が表に無いとき（前後のボタンで月を変えた後）は、月の 1 日で止まる
   const tabbableDay = days.includes(focusedDay) ? focusedDay : shownMonth
 
@@ -166,7 +166,7 @@ export const ScheduleMiniCalendar = ({
                               : 'text-text',
                         )}
                       >
-                        {fromDateKey(dateKey).getDate()}
+                        {parseDateKey(dateKey).getDate()}
                       </span>
                     </button>
                   </td>

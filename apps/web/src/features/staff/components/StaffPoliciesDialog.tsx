@@ -126,7 +126,7 @@ export const StaffPoliciesDialog = ({
                             label={kind === 'team' ? '対象のチーム' : '対象の職員'}
                             onChange={(targets) => update(policy.code, { targets })}
                             options={kind === 'team' ? teamOptions : staffOptions}
-                            selected={selected.targets}
+                            selectedIds={selected.targets}
                             testIdPrefix="staff-policies-target"
                           />
                         </div>

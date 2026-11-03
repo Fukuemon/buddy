@@ -125,7 +125,7 @@ export const StaffScheduleDayGrid = ({
                   minutesInDay(date, event.end) > minutesInDay(date, event.start),
               )
               // キャンセルした予定を先に描き、重なる生きている予定を上に出す
-              .sort((a, b) => Number(b.cancelled) - Number(a.cancelled))
+              .sort((a, b) => Number(b.isCancelled) - Number(a.isCancelled))
               .map((event) => {
                 const startMinutes = minutesInDay(date, event.start)
                 const top = (startMinutes / 60) * HOUR_HEIGHT_PX
@@ -141,7 +141,7 @@ export const StaffScheduleDayGrid = ({
                       'absolute overflow-hidden rounded-4 px-1.5 py-0.5 text-left text-caption focus-visible:focus-ring',
                       // キャンセルした予定は面を薄くし、職員の色は左の線にだけ残す。
                       // 同じ時刻に入れ直した予定を隠さず、空いた枠も押せるよう、左の半分にだけ置く
-                      event.cancelled
+                      event.isCancelled
                         ? 'right-1/2 left-1 border-l-4 bg-surface-subtle text-text-secondary'
                         : 'inset-x-1 text-text-inverse',
                     )}
@@ -149,18 +149,18 @@ export const StaffScheduleDayGrid = ({
                     key={event.id}
                     onClick={() => onEventClick(event.id)}
                     style={
-                      event.cancelled
+                      event.isCancelled
                         ? { top, height, borderColor: event.color }
                         : { top, height, backgroundColor: event.color }
                     }
                     type="button"
                   >
                     <span className="block truncate">
-                      {event.cancelled && <CancelledMark />}
+                      {event.isCancelled && <CancelledMark />}
                       <span
-                        className={event.cancelled ? 'line-through' : undefined}
+                        className={event.isCancelled ? 'line-through' : undefined}
                         data-testid={
-                          event.cancelled ? `schedule-event-${event.id}-cancelled` : undefined
+                          event.isCancelled ? `schedule-event-${event.id}-cancelled` : undefined
                         }
                       >
                         {toTimeKey(start)}-{nextDayPrefix(start, end)}

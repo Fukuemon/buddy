@@ -1,5 +1,5 @@
 import type { CalendarView } from '../constants/calendarView'
-import { WEEKDAYS, fromDateKey, toDateKey, toOffsetDateTime } from './dateTime'
+import { WEEKDAYS, parseDateKey, toDateKey, toOffsetDateTime } from './dateTime'
 
 const addDays = (date: Date, days: number) =>
   new Date(date.getFullYear(), date.getMonth(), date.getDate() + days)
@@ -8,7 +8,7 @@ const startOfWeek = (date: Date) => addDays(date, -date.getDay())
 
 /** 表示の種類に合わせて、基準の日付を 1 単位（日、週、月）前後に動かす。 */
 export const shiftCalendarDate = (view: CalendarView, dateKey: string, direction: 1 | -1) => {
-  const date = fromDateKey(dateKey)
+  const date = parseDateKey(dateKey)
   switch (view) {
     case 'day':
       return toDateKey(addDays(date, direction))
@@ -24,7 +24,7 @@ export const shiftCalendarDate = (view: CalendarView, dateKey: string, direction
  * 月の表示は、前後の月の日も並ぶため、月の初日を含む週の日曜から 6 週分を返す。
  */
 export const getCalendarRange = (view: CalendarView, dateKey: string) => {
-  const date = fromDateKey(dateKey)
+  const date = parseDateKey(dateKey)
   const [from, to] = (() => {
     switch (view) {
       case 'day':
@@ -48,7 +48,7 @@ export const getCalendarRange = (view: CalendarView, dateKey: string) => {
  * 週が月や年をまたぐときは、終わりの日にも月か年を付ける。
  */
 export const formatCalendarTitle = (view: CalendarView, dateKey: string) => {
-  const date = fromDateKey(dateKey)
+  const date = parseDateKey(dateKey)
   const ymd = (d: Date) => `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`
   switch (view) {
     case 'month':

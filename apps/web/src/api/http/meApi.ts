@@ -8,7 +8,7 @@ import { fromApiMe } from './scheduleMapper'
 export type MeResult = { ok: true; viewer: Viewer } | { ok: false; reason: 'forbidden' | 'failed' }
 
 /** access token で予定の API の GET /v1/me を呼び、ログインした職員を返す。通信の失敗では投げる。 */
-export const fetchMe = async (scheduleApiUrl: string, accessToken: string): Promise<MeResult> => {
+export const getMe = async (scheduleApiUrl: string, accessToken: string): Promise<MeResult> => {
   const api = createClient<paths>({ baseUrl: scheduleApiUrl })
   const { data, response } = await api.GET('/v1/me', {
     headers: { Authorization: `Bearer ${accessToken}` },

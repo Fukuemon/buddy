@@ -23,7 +23,7 @@ const PatientCreateDialogContent = () => {
   const staff = useQuery(staffRecordsQueryOptions(api, facilityId))
   const create = useCreatePatient()
   const isStaffStopped = useIsStaffStopped()
-  const [staffStopped, setStaffStopped] = useState(false)
+  const [hasStoppedStaff, setHasStoppedStaff] = useState(false)
   const optionsFailed = serviceCodes.isError || staff.isError
 
   return (
@@ -32,7 +32,7 @@ const PatientCreateDialogContent = () => {
         optionsFailed
           ? OPTIONS_LOAD_ERROR_MESSAGE
           : create.isError
-            ? patientSubmitErrorMessage(create.error, '登録', staffStopped)
+            ? patientSubmitErrorMessage(create.error, '登録', hasStoppedStaff)
             : undefined
       }
       isSubmitting={create.isPending}
@@ -42,7 +42,7 @@ const PatientCreateDialogContent = () => {
           onSuccess: (patient) =>
             navigate({ to: '/patients/$patientId', params: { patientId: patient.id } }),
           onError: async (error) =>
-            setStaffStopped(await isStaffStopped(error, input.assigned_staff_id)),
+            setHasStoppedStaff(await isStaffStopped(error, input.assigned_staff_id)),
         })
       }
       serviceCodes={optionsFailed ? undefined : serviceCodes.data}

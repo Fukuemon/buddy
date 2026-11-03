@@ -10,15 +10,15 @@ import { signInAtBroker } from '../../screens/login'
 type ListedStaff = { id: string; username: string; status: string; leave_started_at: string | null }
 
 /** 予定の API の職員の一覧を、email の職員のトークンで取る。録画に映らない API の結果を字幕に出すのに使う。 */
-const fetchStaff = async (request: APIRequestContext, email: string, facilityId: string) => {
+const listOfficeStaff = async (request: APIRequestContext, email: string, facilityId: string) => {
   const res = await listStaff(request, await issueAccessToken(request, email), facilityId)
   expect(res.status()).toBe(200)
   return (await res.json()) as ListedStaff[]
 }
 
 /** 字幕に出す、API の職員の一覧の 1 行。休職の職員には休職にした時刻を添える。 */
-const describeStaff = (list: ListedStaff[]) =>
-  list
+const describeStaff = (staffList: ListedStaff[]) =>
+  staffList
     .map((staff) =>
       staff.leave_started_at === null
         ? staff.username
@@ -37,7 +37,7 @@ test.describe('予定のカレンダー', () => {
         browser,
         request,
       }) => {
-        const staff = await fetchStaff(request, OFFICE_B.email, OFFICE_B.facilityId)
+        const staff = await listOfficeStaff(request, OFFICE_B.email, OFFICE_B.facilityId)
         expect(staff.find(({ id }) => id === SUSPENDED_STAFF.id)?.status).toBe('on_leave')
         await recordPrEvidence(
           browser,
@@ -76,7 +76,7 @@ test.describe('予定のカレンダー', () => {
         browser,
         request,
       }) => {
-        const staff = await fetchStaff(request, OFFICE_B.email, OFFICE_B.facilityId)
+        const staff = await listOfficeStaff(request, OFFICE_B.email, OFFICE_B.facilityId)
         expect(staff.find(({ id }) => id === SUSPENDED_STAFF.id)?.status).toBe('on_leave')
         await recordPrEvidence(
           browser,
@@ -118,7 +118,7 @@ test.describe('予定のカレンダー', () => {
         browser,
         request,
       }) => {
-        const staff = await fetchStaff(request, LOGIN_EMAIL, STAFF_FORM.facilityId)
+        const staff = await listOfficeStaff(request, LOGIN_EMAIL, STAFF_FORM.facilityId)
         expect(staff.every(({ status }) => status === 'active')).toBe(true)
         await recordPrEvidence(
           browser,
@@ -169,7 +169,7 @@ test.describe('予定の作成', () => {
         browser,
         request,
       }) => {
-        const staff = await fetchStaff(request, OFFICE_B.email, OFFICE_B.facilityId)
+        const staff = await listOfficeStaff(request, OFFICE_B.email, OFFICE_B.facilityId)
         expect(staff.find(({ id }) => id === SUSPENDED_STAFF.id)?.status).toBe('on_leave')
         await recordPrEvidence(
           browser,
@@ -212,7 +212,7 @@ test.describe('予定の作成', () => {
         browser,
         request,
       }) => {
-        const staff = await fetchStaff(request, OFFICE_B.email, OFFICE_B.facilityId)
+        const staff = await listOfficeStaff(request, OFFICE_B.email, OFFICE_B.facilityId)
         expect(staff.find(({ id }) => id === SUSPENDED_STAFF.id)?.status).toBe('on_leave')
         await recordPrEvidence(
           browser,
@@ -271,7 +271,7 @@ test.describe('予定の編集', () => {
         browser,
         request,
       }) => {
-        const staff = await fetchStaff(request, OFFICE_B.email, OFFICE_B.facilityId)
+        const staff = await listOfficeStaff(request, OFFICE_B.email, OFFICE_B.facilityId)
         expect(staff.find(({ id }) => id === SUSPENDED_STAFF.id)?.status).toBe('on_leave')
         await recordPrEvidence(
           browser,

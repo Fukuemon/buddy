@@ -2,7 +2,7 @@ import {
   FAKE_VIEWER,
   createFakeSchedules,
   fakePatients,
-  fakeStaff,
+  fakeStaffList,
   fakeTeams,
 } from '#/api/fake/fixtures'
 import type { Viewer } from '#/api/types'
@@ -14,7 +14,7 @@ import { toCalendarEvents } from '../lib/toCalendarEvents'
 export const STORY_DATE = '2026-10-20'
 
 export const storySchedules = createFakeSchedules(new Date(2026, 9, 20))
-export const storyStaff = fakeStaff
+export const storyStaff = fakeStaffList
 export const storyTeams = fakeTeams
 export const storyPatients = fakePatients
 /** 予定の API のサービスコードの一覧。予定の API のマイグレーションと同じ表記と並びである。 */

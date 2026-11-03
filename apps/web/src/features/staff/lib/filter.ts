@@ -36,7 +36,7 @@ const withoutSpaces = (value: string) => value.replace(/\s/g, '')
  * 並びは、teams の名前の順のチームの順にし、同じチームの中は名前の順にする。teams に無いチームの職員は最後に置く。
  */
 export const filterStaff = (
-  staff: readonly StaffRecord[],
+  staffList: readonly StaffRecord[],
   filter: StaffListFilter,
   teams: readonly Team[] = [],
 ) => {
@@ -45,7 +45,7 @@ export const filterStaff = (
     [...teams].sort((a, b) => a.name.localeCompare(b.name, 'ja')).map((t, index) => [t.id, index]),
   )
   const orderOf = (s: StaffRecord) => teamOrder.get(s.team.id) ?? teamOrder.size
-  return staff
+  return staffList
     .filter(
       (s) =>
         withoutSpaces(s.username).includes(name) &&

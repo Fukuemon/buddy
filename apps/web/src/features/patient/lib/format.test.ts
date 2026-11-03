@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test'
 
 import type { StaffRecord } from '#/api/types'
-import { mockStaff } from '#/mocks/scheduleData'
+import { mockStaffList } from '#/mocks/scheduleData'
 
 import {
   activeStaffOptions,
@@ -11,11 +11,11 @@ import {
   formatRemainingRecurring,
 } from './format'
 
-const staff: StaffRecord[] = [
-  { ...mockStaff[0] },
-  { ...mockStaff[1], status: 'on_leave' },
-  { ...mockStaff[2], status: 'retired' },
-  { ...mockStaff[3], visits: false },
+const staffList: StaffRecord[] = [
+  { ...mockStaffList[0] },
+  { ...mockStaffList[1], status: 'on_leave' },
+  { ...mockStaffList[2], status: 'retired' },
+  { ...mockStaffList[3], visits: false },
 ]
 
 describe('format', () => {
@@ -26,19 +26,22 @@ describe('format', () => {
 
   it('担当の職員が休職か退職なら、名前の後ろに状態を括弧で付ける', () => {
     const of = (id: string, name: string) =>
-      assignedStaffLabel({ assigned_staff_id: id, assigned_staff_name: name }, staff)
+      assignedStaffLabel({ assigned_staff_id: id, assigned_staff_name: name }, staffList)
     expect(of('staff-1', '青木 一郎')).toBe('青木 一郎')
     expect(of('staff-2', '石川 二葉')).toBe('石川 二葉（休職）')
     expect(of('staff-3', '上田 三奈')).toBe('上田 三奈（退職）')
   })
 
   it('担当の候補は、有効で訪問する職員だけを名前の順に並べる', () => {
-    expect(activeStaffOptions(staff).map((s) => s.id)).toEqual(['staff-1'])
+    expect(activeStaffOptions(staffList).map((s) => s.id)).toEqual(['staff-1'])
   })
 
   it('編集の担当の選択肢は、有効で訪問する職員だけを並べ、休職か退職の今の担当を先頭に足す', () => {
     expect(
-      editStaffOptions({ assigned_staff_id: 'staff-3', assigned_staff_name: '上田 三奈' }, staff),
+      editStaffOptions(
+        { assigned_staff_id: 'staff-3', assigned_staff_name: '上田 三奈' },
+        staffList,
+      ),
     ).toEqual([
       { id: 'staff-3', label: '上田 三奈（退職。今の担当）' },
       { id: 'staff-1', label: '青木 一郎' },
@@ -47,7 +50,10 @@ describe('format', () => {
 
   it('編集の担当の選択肢は、訪問しない今の担当も先頭に足す', () => {
     expect(
-      editStaffOptions({ assigned_staff_id: 'staff-4', assigned_staff_name: '江藤 四郎' }, staff),
+      editStaffOptions(
+        { assigned_staff_id: 'staff-4', assigned_staff_name: '江藤 四郎' },
+        staffList,
+      ),
     ).toEqual([
       { id: 'staff-4', label: '江藤 四郎（訪問しない。今の担当）' },
       { id: 'staff-1', label: '青木 一郎' },

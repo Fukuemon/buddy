@@ -26,9 +26,9 @@ const setup = async () => {
   const auth: AuthDeps = {
     store,
     secret: SECRET,
-    secureCookie: false,
+    usesSecureCookie: false,
     oidc: {} as AuthDeps['oidc'],
-    fetchMe: async () => ({ ok: false, reason: 'failed' }),
+    getMe: async () => ({ ok: false, reason: 'failed' }),
   }
   return { auth, scheduleApiUrl: TEST_SCHEDULE_URL }
 }

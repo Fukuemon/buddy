@@ -17,7 +17,7 @@ export type PatientDetailViewProps = {
   /** サービスの時間の範囲を出すためのサービスコード。読み終えるまでは undefined にし、コードだけを出す。 */
   serviceCodes?: readonly ServiceCodeRecord[]
   /** 担当の職員の休職と退職を出すための職員。読み終えるまでは undefined にする。 */
-  staff?: readonly StaffRecord[]
+  staffList?: readonly StaffRecord[]
   onEdit: () => void
   onEnd: () => void
   onResume: () => void
@@ -68,7 +68,7 @@ export const PatientDetailView = (props: PatientDetailViewProps) => {
 const PatientDetailBody = ({
   patient,
   serviceCodes,
-  staff,
+  staffList,
   onEdit,
   onEnd,
   onResume,
@@ -83,7 +83,7 @@ const PatientDetailBody = ({
     ['サービス', code === undefined ? patient.service_code : serviceCodeLabel(code)],
     ['希望の時間帯', patient.preferred_time],
     ['希望する担当の性別', patient.preferred_gender],
-    ['担当の職員', assignedStaffLabel(patient, staff)],
+    ['担当の職員', assignedStaffLabel(patient, staffList)],
     ...(ended === undefined
       ? []
       : ([

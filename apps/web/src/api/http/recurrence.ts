@@ -85,7 +85,7 @@ export const expandRecurring = (
   to: string,
 ): Schemas['Schedule'][] => {
   const excluded = new Set(recurringSchedule.exclusion_dates)
-  const out: Schemas['Schedule'][] = []
+  const occurrences: Schemas['Schedule'][] = []
   for (
     let time = dayOf(from > recurringSchedule.date ? from : recurringSchedule.date);
     time <= dayOf(to);
@@ -93,7 +93,7 @@ export const expandRecurring = (
   ) {
     const date = dateOf(time)
     if (!excluded.has(date) && occurs(recurringSchedule, date))
-      out.push(occurrenceOf(recurringSchedule, date))
+      occurrences.push(occurrenceOf(recurringSchedule, date))
   }
-  return out
+  return occurrences
 }
