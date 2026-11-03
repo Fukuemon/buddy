@@ -10,7 +10,7 @@ func (s *Usecase) Get(ctx context.Context, id string) (Detail, error) {
 	if err != nil {
 		return Detail{}, err
 	}
-	if err := s.authorize(ctx, d.StaffID, false); err != nil {
+	if err := s.requireScheduleAccess(ctx, d.StaffID, false); err != nil {
 		return Detail{}, err
 	}
 	return d, nil

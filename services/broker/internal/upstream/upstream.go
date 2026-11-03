@@ -49,11 +49,11 @@ type entry struct {
 //
 // エラーの文には、client secret の値を出さない。
 func Load(idpsPath, secretsPath string) (IdPs, error) {
-	var list []entry
-	if err := decode(idpsPath, &list); err != nil {
+	var entries []entry
+	if err := decode(idpsPath, &entries); err != nil {
 		return nil, fmt.Errorf("上流の IdP の設定 %s を読めない: %w", idpsPath, err)
 	}
-	if len(list) == 0 {
+	if len(entries) == 0 {
 		return nil, fmt.Errorf("上流の IdP の設定 %s が空である", idpsPath)
 	}
 	var secrets map[string]string
@@ -61,8 +61,8 @@ func Load(idpsPath, secretsPath string) (IdPs, error) {
 		// 構文のエラーの文は、ファイルの文字を引くことがあるので、元のエラーを包まない
 		return nil, fmt.Errorf("上流の IdP の client secret のファイル %s を読めない", secretsPath)
 	}
-	out := make(IdPs, len(list))
-	for i, e := range list {
+	out := make(IdPs, len(entries))
+	for i, e := range entries {
 		org, issuer, clientID := strings.TrimSpace(e.OrgID), strings.TrimSpace(e.Issuer), strings.TrimSpace(e.ClientID)
 		switch {
 		case org == "":

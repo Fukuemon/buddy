@@ -161,7 +161,7 @@ func (h handler) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	email := staff.NormalizeEmail(in.Email)
-	if !staff.ValidEmail(email) {
+	if !staff.IsValidEmail(email) {
 		h.writeError(w, r, http.StatusBadRequest, "invalid", "メールの形式が正しくありません", nil)
 		return
 	}

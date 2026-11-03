@@ -102,7 +102,7 @@ func LoadDB(getenv func(string) string) (DB, error) {
 	return c.DB, err
 }
 
-func load(getenv func(string) string, api bool) (Config, error) {
+func load(getenv func(string) string, includesAPI bool) (Config, error) {
 	get := func(key, def string) string {
 		if v := getenv(key); v != "" {
 			return v
@@ -132,24 +132,24 @@ func load(getenv func(string) string, api bool) (Config, error) {
 		},
 	}
 	required := []string{"DB_USER", "DB_PASSWORD", "DB_NAME"}
-	if api {
+	if includesAPI {
 		required = append(required, "OIDC_ISSUER", "OIDC_AUDIENCE", "BROKER_URL", "BROKER_TOKEN_URL", "BROKER_CLIENT_SECRET")
 	}
-	var missing []string
+	var missingNames []string
 	for _, key := range required {
 		if getenv(key) == "" {
-			missing = append(missing, key)
+			missingNames = append(missingNames, key)
 		}
 	}
-	if len(missing) > 0 {
-		return Config{}, fmt.Errorf("環境変数 %s が必要です", strings.Join(missing, ", "))
+	if len(missingNames) > 0 {
+		return Config{}, fmt.Errorf("環境変数 %s が必要です", strings.Join(missingNames, ", "))
 	}
 	for _, p := range []string{c.Port, c.DB.Port} {
 		if n, err := strconv.Atoi(p); err != nil || n < 1 || n > 65535 {
 			return Config{}, fmt.Errorf("ポート %q は 1 から 65535 の数です", p)
 		}
 	}
-	if api {
+	if includesAPI {
 		for _, v := range []struct{ key, value string }{
 			{"OIDC_ISSUER", c.OIDC.Issuer},
 			{"BROKER_URL", c.Broker.URL},

@@ -36,7 +36,7 @@ func TestStaffLeave(t *testing.T) {
 		t.Fatalf("職員 = %+v, ブローカー = %+v, want 両方で休職にし、戻る予定の日を持つ", got.Staff.Staff, ids.Members)
 	}
 	a := got.Assignments
-	if len(a.Schedules) != 1 || a.Schedules[0].ID != "TODAY" || len(a.Recurring) != 1 || a.Recurring[0].ID != inmem.RecurringID ||
+	if len(a.Schedules) != 1 || a.Schedules[0].ID != "TODAY" || len(a.RecurringSchedules) != 1 || a.RecurringSchedules[0].ID != inmem.RecurringID ||
 		len(a.Patients) != 1 || a.Patients[0].Name != "山田 花子" {
 		t.Errorf("残る一覧 = %+v, want 当日の予定（事業所の現地の日付）と繰り返しの予定と担当の利用者", a)
 	}

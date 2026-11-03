@@ -35,7 +35,7 @@ func (p *Usecase) Create(ctx context.Context, in CreateInput) (Detail, error) {
 		if err := p.deps.Staff.LockStatuses(ctx, in.FacilityID); err != nil {
 			return err
 		}
-		if err := p.assignable(ctx, in.AssignedStaffID, in.FacilityID); err != nil {
+		if err := p.requireAssignable(ctx, in.AssignedStaffID, in.FacilityID); err != nil {
 			return err
 		}
 		pa, err := New(Patient{

@@ -83,8 +83,8 @@ func current(ctx context.Context) (principal.Principal, error) {
 	return p, nil
 }
 
-// authorize は、ctx の職員が、職員 staffID の予定を見てよいか（edit なら編集してよいか）を確認する。
-func (s *Usecase) authorize(ctx context.Context, staffID string, edit bool) error {
+// requireScheduleAccess は、ctx の職員が、職員 staffID の予定を見てよいか（editing なら編集してよいか）を確認する。
+func (s *Usecase) requireScheduleAccess(ctx context.Context, staffID string, editing bool) error {
 	p, err := current(ctx)
 	if err != nil {
 		return err
@@ -93,7 +93,7 @@ func (s *Usecase) authorize(ctx context.Context, staffID string, edit bool) erro
 	if err != nil {
 		return err
 	}
-	return allow(p, st, edit)
+	return requireAllowed(p, st, editing)
 }
 
 // occurrence は、単発の予定が置き換える繰り返しの予定の回である。
@@ -105,7 +105,7 @@ type occurrence struct {
 }
 
 // createSchedule は、単発の予定を作る。replaces は、繰り返しの予定の回を置き換えるときだけ指定する。
-// 回を置き換えるときは、繰り返しの予定に割り振った職員を、休職か退職でも同じ役割のまま保存できる（assignable）。
+// 回を置き換えるときは、繰り返しの予定に割り振った職員を、休職か退職でも同じ役割のまま保存できる（requireAssignable）。
 func (s *Usecase) createSchedule(ctx context.Context, facilityID string, in SlotInput, replaces *occurrence) (Detail, error) {
 	var kept assignment
 	if replaces != nil {
@@ -169,14 +169,14 @@ func assignedOf(staffID string, v *visit.Detail) assignment {
 	return a
 }
 
-// assignable は、date の予定に職員 st を割り振れるかを確認する。keptID は、同じ役割に既に割り振った職員である。
+// requireAssignable は、date の予定に職員 st を割り振れるかを確認する。keptID は、同じ役割に既に割り振った職員である。
 // 既に割り振った職員は、休職でも割り振ったまま保存できる。退職した職員は、今日 today より前の予定でだけ保存できる。
 // 退職した職員に、誰も行かない今日以降の予定を残さないためである（ADR-0018）。
-func assignable(st staff.Ref, keptID string, date, today civil.Date) error {
+func requireAssignable(st staff.Ref, keptID string, date, today civil.Date) error {
 	if keptID != "" && st.ID == keptID && (st.Status != staff.StatusRetired || date.Before(today)) {
 		return nil
 	}
-	return st.Assignable()
+	return st.RequireAssignable()
 }
 
 // prepareSlot は、予定の種類と職員と、職員の予定を編集する権限を確認し、訪問の情報があれば保存して、予定の属性を組み立てる。
@@ -204,10 +204,10 @@ func (s *Usecase) prepareSlot(ctx context.Context, facilityID string, in SlotInp
 	if err != nil {
 		return Slot{}, Type{}, err
 	}
-	if err := allow(p, st, true); err != nil {
+	if err := requireAllowed(p, st, true); err != nil {
 		return Slot{}, Type{}, err
 	}
-	if err := assignable(st, kept.staffID, in.Date, today); err != nil {
+	if err := requireAssignable(st, kept.staffID, in.Date, today); err != nil {
 		return Slot{}, Type{}, err
 	}
 	slot := Slot{
@@ -243,7 +243,7 @@ func (s *Usecase) prepareSlot(ctx context.Context, facilityID string, in SlotInp
 			if err != nil {
 				return Slot{}, Type{}, err
 			}
-			if err := assignable(ref, keptID, in.Date, today); err != nil {
+			if err := requireAssignable(ref, keptID, in.Date, today); err != nil {
 				return Slot{}, Type{}, err
 			}
 		}

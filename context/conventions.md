@@ -77,6 +77,9 @@ API の操作を呼ぶ関数とリポジトリのメソッドは、operationId �
 
 - Go の判定の関数とメソッドは、`Is`、`Has`、`Can` で始める（`IsVisitTitle`、`CanEdit`）。
   - 標準のライブラリの `time.Time.IsZero`、`os.FileInfo.IsDir`、`strings.HasPrefix` に合わせる。
+  - 状態を変えてから結果を返す関数（`Limiter.Allow`）は、判定の関数ではないので対象の外である。
+  - 標準のライブラリの型のメソッドと同じ意味のメソッドは、`Is` を付けず、標準のライブラリと同じ名前にする。
+    - `civil` の `Date.Before`、`Date.After`、`Time.Before` と、`calendar` と `servicerule` の `Range.Contains` が当たる。
 - Go の真偽値の変数とフィールドは、状態の形容詞か過去分詞（`Ended`、`Pending`）か、三人称単数の動詞の句（`EndsNextDay`）にし、`Is` を付けない。
   - DB のカラムと API の項目と対になるフィールドは、その名前に合わせる（`IsOverTimeWork`、`NeedsTarget`）。
   - `ok` の慣用の名前は、この規則の対象の外である。
@@ -89,6 +92,8 @@ API の操作を呼ぶ関数とリポジトリのメソッドは、operationId �
 
 - 一覧の変数とフィールドは複数形にし、`List` を付けない。
   - 単数と複数が同じ形の語（`staff`）だけは、`<語>List` にする（`staffList`）。
+  - Go の関数の中で、返す一覧を集めるローカルの変数は、慣用の名前の `out` にしてよい。
+  - 外部の API と JSON の項目に合わせるフィールド（Hydra の `GrantScope`、Google カレンダーの `Recurrence`）は、その名前に合わせる。
 - 数の値は、名前の末尾に単位を付ける（`LeaseSeconds`、`startMinutes`、`DAY_MS`、`HOUR_HEIGHT_PX`、`ImportedCount`）。
   - Go の `time.Duration` は、型が単位を持つので、単位を付けない（`SyncInterval`）。
 - Go の略語は、全て大文字か全て小文字にする（`orgID`、`HydraAdminURL`、`WriteJSON`）。

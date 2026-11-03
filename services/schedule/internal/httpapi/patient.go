@@ -50,14 +50,14 @@ func (s server) ListPatients(ctx context.Context, req openapi.ListPatientsReques
 	}
 	if v := value(p.PreferredTime); v != "" {
 		t := patient.PreferredTime(v)
-		if !t.Valid() {
+		if !t.IsValid() {
 			return nil, invalidRequest("preferred_time は 午前 か 午後 です")
 		}
 		q.PreferredTime = &t
 	}
 	if v := value(p.PreferredGender); v != "" {
 		g := patient.PreferredGender(v)
-		if !g.Valid() {
+		if !g.IsValid() {
 			return nil, invalidRequest("preferred_gender は 男性 か 女性 です")
 		}
 		q.PreferredGender = &g
@@ -146,7 +146,7 @@ func toPatientSchedules(r patient.Remaining) openapi.PatientSchedules {
 		Schedules: mapSlice(r.Schedules, func(s patient.RemainingSchedule) openapi.PatientSchedules_Schedules {
 			return openapi.PatientSchedules_Schedules{Id: s.ID, Date: s.Date.String(), StartTime: s.StartTime.String(), EndTime: s.EndTime.String()}
 		}),
-		RecurringSchedules: mapSlice(r.Recurring, func(r patient.RemainingRecurring) openapi.PatientSchedules_RecurringSchedules {
+		RecurringSchedules: mapSlice(r.RecurringSchedules, func(r patient.RemainingRecurring) openapi.PatientSchedules_RecurringSchedules {
 			return openapi.PatientSchedules_RecurringSchedules{
 				Id: r.ID, Date: r.Date.String(), EndDate: stringPtr(r.EndDate), StartTime: r.StartTime.String(), EndTime: r.EndTime.String(),
 			}

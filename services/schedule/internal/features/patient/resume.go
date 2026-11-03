@@ -18,7 +18,7 @@ func (p *Usecase) Resume(ctx context.Context, id, assignedStaffID string) (Detai
 		if err != nil {
 			return err
 		}
-		if err := p.assignable(ctx, assignedStaffID, cur.FacilityID); err != nil {
+		if err := p.requireAssignable(ctx, assignedStaffID, cur.FacilityID); err != nil {
 			return err
 		}
 		if err := p.deps.Patients.Resume(ctx, cur.ID, assignedStaffID); err != nil {

@@ -16,10 +16,10 @@ func (s *Usecase) ChangeOccurrence(ctx context.Context, recurringScheduleID stri
 	if err != nil {
 		return Detail{}, err
 	}
-	if err := s.authorize(ctx, rs.StaffID, true); err != nil {
+	if err := s.requireScheduleAccess(ctx, rs.StaffID, true); err != nil {
 		return Detail{}, err
 	}
-	if !rs.Occurs(originalDate) {
+	if !rs.HasOccurrenceOn(originalDate) {
 		return Detail{}, apperr.Invalid("%s は繰り返しの予定の回に当たりません", originalDate)
 	}
 	var created Detail

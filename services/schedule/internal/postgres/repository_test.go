@@ -181,7 +181,7 @@ func TestStaffRef(t *testing.T) {
 		t.Fatal(err)
 	}
 	got.NonVisiting = true
-	if ref, err := r.Get(ctx, seedMori); err != nil || ref != got || !errors.Is(ref.Assignable(), apperr.ErrInvalidInput) {
+	if ref, err := r.Get(ctx, seedMori); err != nil || ref != got || !errors.Is(ref.RequireAssignable(), apperr.ErrInvalidInput) {
 		t.Errorf("訪問しない職員の Ref = %+v, %v, want NonVisiting で割り振れない", ref, err)
 	}
 	if _, err := r.Get(ctx, unknownID); !errors.Is(err, apperr.ErrNotFound) {
@@ -229,7 +229,7 @@ func TestStaffLeave(t *testing.T) {
 	if again, _ := r.Get(ctx, seedAoki); !again.LeaveStartedAt.Equal(first) || again.LeaveReturnDate != nil {
 		t.Errorf("休職にし直した職員 = %+v, want 最初の時刻 %v のまま、戻る予定の日を消す", again.Staff, first)
 	}
-	list, err := r.ListByFacility(ctx, seedFacility, staff.ListQuery{Sort: kernel.Sort{Field: "updated_at", Desc: true}})
+	list, err := r.ListByFacility(ctx, seedFacility, staff.ListQuery{Sort: kernel.Sort{Field: "updated_at", Descending: true}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -321,8 +321,8 @@ func TestStaffAssignments(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got.Schedules) != 0 || len(got.Recurring) != 1 || got.Recurring[0].ID != seedRecurring || got.Recurring[0].EndDate != nil ||
-		got.Recurring[0].StartTime != (civil.Time{Hour: 17, Minute: 30}) || len(got.Patients) != 0 {
+	if len(got.Schedules) != 0 || len(got.RecurringSchedules) != 1 || got.RecurringSchedules[0].ID != seedRecurring || got.RecurringSchedules[0].EndDate != nil ||
+		got.RecurringSchedules[0].StartTime != (civil.Time{Hour: 17, Minute: 30}) || len(got.Patients) != 0 {
 		t.Errorf("青木 = %+v, want 前日の予定を除き、終了日の無い繰り返し", got)
 	}
 	got, err = a.From(ctx, seedFacility, seedMori, from)
@@ -458,7 +458,7 @@ func TestStaffList(t *testing.T) {
 	}{
 		{name: "名前の昇順", q: staff.ListQuery{Sort: kernel.Sort{Field: "username"}},
 			want: []string{"中村 結衣", "佐藤 美咲", "林 さくら", "森 健太", "青木 陽菜"}},
-		{name: "名前の降順", q: staff.ListQuery{Sort: kernel.Sort{Field: "username", Desc: true}},
+		{name: "名前の降順", q: staff.ListQuery{Sort: kernel.Sort{Field: "username", Descending: true}},
 			want: []string{"青木 陽菜", "森 健太", "林 さくら", "佐藤 美咲", "中村 結衣"}},
 		{name: "チームで絞る", q: staff.ListQuery{Team: ptr("A"), Sort: kernel.Sort{Field: "username"}},
 			want: []string{"中村 結衣", "林 さくら", "青木 陽菜"}},
@@ -518,7 +518,7 @@ func TestPatientUpdateEndResume(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, err := r.Get(ctx, seedPatient)
-	if err != nil || got.Name != "見本 一子" || got.PreferredTime != patient.Afternoon || got.AssignedStaffName != "林 さくら" || got.Ended() {
+	if err != nil || got.Name != "見本 一子" || got.PreferredTime != patient.Afternoon || got.AssignedStaffName != "林 さくら" || got.IsEnded() {
 		t.Fatalf("変えた利用者 = %+v, %v", got, err)
 	}
 	if err := r.Update(ctx, patient.Patient{ID: unknownID, Name: "x", PreferredTime: patient.Morning, PreferredGender: patient.Male,
@@ -554,7 +554,7 @@ func TestPatientUpdateEndResume(t *testing.T) {
 	if err := r.Resume(ctx, seedPatient, seedAoki); err != nil {
 		t.Fatal(err)
 	}
-	if got, err := r.Get(ctx, seedPatient); err != nil || got.Ended() || got.AssignedStaffID != seedAoki {
+	if got, err := r.Get(ctx, seedPatient); err != nil || got.IsEnded() || got.AssignedStaffID != seedAoki {
 		t.Errorf("再開した利用者 = %+v, %v, want 利用中で担当が青木", got, err)
 	}
 	if err := r.Resume(ctx, unknownID, seedAoki); !errors.Is(err, apperr.ErrNotFound) {
@@ -572,16 +572,16 @@ func TestPatientSchedules(t *testing.T) {
 	from := civil.Date{Year: 2026, Month: 10, Day: 21}
 	got, err := rd.From(ctx, seedFacility, seedPatient, from)
 	if err != nil || len(got.Schedules) != 1 || got.Schedules[0].ID != seedVisitSchedule || got.Schedules[0].StartTime != (civil.Time{Hour: 9, Minute: 30}) ||
-		len(got.Recurring) != 0 {
+		len(got.RecurringSchedules) != 0 {
 		t.Errorf("当日から = %+v, %v, want 訪問の予定 1 件", got, err)
 	}
-	if got, err := rd.From(ctx, seedFacility, seedPatient, civil.Date{Year: 2026, Month: 10, Day: 22}); err != nil || !got.Empty() {
+	if got, err := rd.From(ctx, seedFacility, seedPatient, civil.Date{Year: 2026, Month: 10, Day: 22}); err != nil || !got.IsEmpty() {
 		t.Errorf("翌日から = %+v, %v, want なし", got, err)
 	}
 	if err := NewScheduleRepository(testDB).CreateCancel(ctx, schedule.Cancel{ID: "01M3TD00000000000000000033", ScheduleID: seedVisitSchedule, Reason: "中止"}); err != nil {
 		t.Fatal(err)
 	}
-	if got, err := rd.From(ctx, seedFacility, seedPatient, from); err != nil || !got.Empty() {
+	if got, err := rd.From(ctx, seedFacility, seedPatient, from); err != nil || !got.IsEmpty() {
 		t.Errorf("キャンセルの後 = %+v, %v, want なし", got, err)
 	}
 }
@@ -664,7 +664,7 @@ func TestScheduleList(t *testing.T) {
 	}{
 		{name: "日付と開始の時刻の昇順", q: schedule.ListQuery{Sort: kernel.Sort{Field: "date"}},
 			want: []string{late.ID, seedConference, seedVisitSchedule}},
-		{name: "日付と開始の時刻の降順", q: schedule.ListQuery{Sort: kernel.Sort{Field: "date", Desc: true}},
+		{name: "日付と開始の時刻の降順", q: schedule.ListQuery{Sort: kernel.Sort{Field: "date", Descending: true}},
 			want: []string{seedVisitSchedule, seedConference, late.ID}},
 		{name: "開始の時刻の昇順", q: schedule.ListQuery{Sort: kernel.Sort{Field: "start_time"}},
 			want: []string{late.ID, seedVisitSchedule, seedConference}},

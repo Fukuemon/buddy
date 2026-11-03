@@ -24,11 +24,11 @@ func TestPatientResume(t *testing.T) {
 			if _, err := uc.Resume(ctx, inmem.PatientID, inmem.StaffID); !errors.Is(err, apperr.ErrInvalidInput) {
 				t.Fatalf("err = %v, want ErrInvalidInput", err)
 			}
-			if !s.Patients[inmem.PatientID].Ended() {
+			if !s.Patients[inmem.PatientID].IsEnded() {
 				t.Error("拒んだのに利用中に戻った")
 			}
 			got, err := uc.Resume(ctx, inmem.PatientID, inmem.CompanionID)
-			if err != nil || got.Ended() || got.AssignedStaffID != inmem.CompanionID {
+			if err != nil || got.IsEnded() || got.AssignedStaffID != inmem.CompanionID {
 				t.Fatalf("有効な職員で再開: got = %+v, err = %v", got.Patient, err)
 			}
 		})

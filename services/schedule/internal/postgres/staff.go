@@ -291,9 +291,9 @@ func (r *StaffAssignmentReader) From(ctx context.Context, facilityID, staffID st
 		return staff.Assignments{}, translate("list staff assigned patients", err)
 	}
 	out := staff.Assignments{
-		Schedules: make([]staff.AssignedSchedule, len(scheds)),
-		Recurring: make([]staff.AssignedRecurring, len(recs)),
-		Patients:  make([]staff.AssignedPatient, len(pats)),
+		Schedules:          make([]staff.AssignedSchedule, len(scheds)),
+		RecurringSchedules: make([]staff.AssignedRecurring, len(recs)),
+		Patients:           make([]staff.AssignedPatient, len(pats)),
 	}
 	for i, s := range scheds {
 		start, end, err := slotTimes(s.StartTime, s.EndTime)
@@ -307,7 +307,7 @@ func (r *StaffAssignmentReader) From(ctx context.Context, facilityID, staffID st
 		if err != nil {
 			return staff.Assignments{}, err
 		}
-		out.Recurring[i] = staff.AssignedRecurring{ID: s.ID, Date: civil.DateOf(s.Date), EndDate: datePtr(s.EndDate), StartTime: start, EndTime: end}
+		out.RecurringSchedules[i] = staff.AssignedRecurring{ID: s.ID, Date: civil.DateOf(s.Date), EndDate: datePtr(s.EndDate), StartTime: start, EndTime: end}
 	}
 	for i, p := range pats {
 		out.Patients[i] = staff.AssignedPatient{ID: p.ID, Name: p.Name}

@@ -31,13 +31,13 @@ type Rule struct {
 // NewRule は、頻度ごとに使える項目の組み合わせと値の範囲を検証して Rule を作る。
 // 毎週は DayOfWeek だけを、毎月は DayOfMonth だけか、WeekOfMonth と DayOfWeek の組を受け付ける。
 func NewRule(r Rule) (Rule, error) {
-	if err := checkRange("曜日", r.DayOfWeek, 1, 7); err != nil {
+	if err := validateRange("曜日", r.DayOfWeek, 1, 7); err != nil {
 		return Rule{}, err
 	}
-	if err := checkRange("日", r.DayOfMonth, 1, 31); err != nil {
+	if err := validateRange("日", r.DayOfMonth, 1, 31); err != nil {
 		return Rule{}, err
 	}
-	if err := checkRange("週", r.WeekOfMonth, 1, 5); err != nil {
+	if err := validateRange("週", r.WeekOfMonth, 1, 5); err != nil {
 		return Rule{}, err
 	}
 	switch r.Frequency {
@@ -58,7 +58,7 @@ func NewRule(r Rule) (Rule, error) {
 	return r, nil
 }
 
-func checkRange(label string, v *int, lo, hi int) error {
+func validateRange(label string, v *int, lo, hi int) error {
 	if v != nil && (*v < lo || *v > hi) {
 		return apperr.Invalid("%sは%dから%dの値です", label, lo, hi)
 	}
@@ -91,15 +91,15 @@ func NewRecurring(id string, s Slot, typ Type, rule Rule) (RecurringSchedule, er
 		return RecurringSchedule{}, apperr.Invalid("繰り返しの終了日は最初の日付以降にします")
 	}
 	rs := RecurringSchedule{ID: id, Slot: slot, Rule: rule}
-	if !rs.Occurs(slot.Date) {
+	if !rs.HasOccurrenceOn(slot.Date) {
 		return RecurringSchedule{}, apperr.Invalid("最初の日付 %s が繰り返しの規則の回に当たりません", slot.Date)
 	}
 	return rs, nil
 }
 
-// Occurs は、d が繰り返しの回に当たるかを返す。除外した日付は考えない。
+// HasOccurrenceOn は、d が繰り返しの回に当たるかを返す。除外した日付は考えない。
 // 毎月の DayOfMonth がない月（例は 31 日と 2 月）には回がない。
-func (rs RecurringSchedule) Occurs(d civil.Date) bool {
+func (rs RecurringSchedule) HasOccurrenceOn(d civil.Date) bool {
 	if d.Before(rs.Date) {
 		return false
 	}

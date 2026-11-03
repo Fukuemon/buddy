@@ -31,18 +31,18 @@ func TestPreview(t *testing.T) {
 	if p.Counts != want {
 		t.Errorf("Counts = %+v, want %+v", p.Counts, want)
 	}
-	if got := reviewIDs(p.NeedsReview); !slices.Equal(got, []string{"ambiguous", "missing"}) {
+	if got := reviewIDs(p.ReviewItems); !slices.Equal(got, []string{"ambiguous", "missing"}) {
 		t.Errorf("NeedsReview = %v", got)
 	}
-	amb := p.NeedsReview[0]
+	amb := p.ReviewItems[0]
 	if amb.Reason != calendar.ReviewPatientAmbiguous || len(amb.Candidates) != 2 || amb.Client != "利用者B" || amb.Service != "訪看I2" {
 		t.Errorf("ambiguous = %+v", amb)
 	}
-	if p.NeedsReview[1].Reason != calendar.ReviewPatientNotFound || len(p.NeedsReview[1].Candidates) != 0 {
-		t.Errorf("missing = %+v", p.NeedsReview[1])
+	if p.ReviewItems[1].Reason != calendar.ReviewPatientNotFound || len(p.ReviewItems[1].Candidates) != 0 {
+		t.Errorf("missing = %+v", p.ReviewItems[1])
 	}
 	var reasons []calendar.SkipReason
-	for _, s := range p.Skipped {
+	for _, s := range p.SkippedItems {
 		reasons = append(reasons, s.Reason)
 	}
 	if !slices.Equal(reasons, []calendar.SkipReason{calendar.SkipAllDay, calendar.SkipServiceNotFound}) {

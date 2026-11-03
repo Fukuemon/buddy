@@ -96,7 +96,7 @@ func (u *Usecase) importPlan(ctx context.Context, src EventSource, c ExternalCal
 		}
 		run.Status = RunSucceeded
 		run.ImportedCount = len(p.entries)
-		run.SkippedCount = len(p.skipped) + chosenSkip
+		run.SkippedCount = len(p.skippedItems) + chosenSkip
 		finished, err := u.deps.Calendars.FinishRun(ctx, run)
 		res = ImportResult{Run: finished, AlreadyImported: p.counts.AlreadyImported}
 		return err

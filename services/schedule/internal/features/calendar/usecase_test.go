@@ -153,7 +153,7 @@ func (e env) importDecided(t *testing.T, rng calendar.Range, ds []calendar.Decis
 	t.Helper()
 	if p, err := e.uc.Preview(e.ctx, calID, rng); err == nil {
 		rev := map[string]string{}
-		for _, r := range p.NeedsReview {
+		for _, r := range p.ReviewItems {
 			rev[r.ExternalEventID] = r.Revision
 		}
 		for i := range ds {

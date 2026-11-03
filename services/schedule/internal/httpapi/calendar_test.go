@@ -160,13 +160,13 @@ func TestPreviewCalendarImport(t *testing.T) {
 	day := 2
 	f := &fakeCalendars{preview: calendar.Preview{
 		Counts: calendar.Counts{Import: 1, ImportVisit: 1, NeedsReview: 1, Skipped: 1},
-		NeedsReview: []calendar.ReviewItem{{
+		ReviewItems: []calendar.ReviewItem{{
 			ExternalEventID: "weekly", Date: d, StartTime: civil.Time{Hour: 10}, EndTime: civil.Time{Hour: 10, Minute: 30},
 			Service: "訪看I2", Client: "利用者B", Reason: calendar.ReviewPatientAmbiguous,
 			Recurrence: &schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: &day},
 			Candidates: []calendar.PatientRef{{ID: "PB1", Name: "利用者B", AssignedStaffName: "職員A"}},
 		}},
-		Skipped: []calendar.Skipped{{Date: &d, AllDay: true, Reason: calendar.SkipAllDay}},
+		SkippedItems: []calendar.Skipped{{Date: &d, AllDay: true, Reason: calendar.SkipAllDay}},
 	}}
 	rec, body := do(t, newCalendarRouter(f), http.MethodPost, "/v1/external_calendars/"+calendarID+"/import_previews",
 		`{"range_start":"2026-11-01","range_end":"2026-11-30"}`)

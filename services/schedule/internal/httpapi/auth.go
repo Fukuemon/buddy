@@ -76,10 +76,10 @@ func (m authMiddleware) authenticate(c *gin.Context) {
 	c.Next()
 }
 
-// checkFacility は、パスの ID が指すリソースの事業所が、職員の事業所と違うときに 403 を返す。
-// ID の形が誤っているときとリソースが見つからないときは、requireULIDParams とハンドラが 400 と 404 を返すよう、そのまま通す。
+// requireFacility は、パスの ID が指すリソースの事業所が、職員の事業所と違うときに 403 を返す。
+// ID の形が誤っているときとリソースが見つからないときは、validateULIDParams とハンドラが 400 と 404 を返すよう、そのまま通す。
 // pathResources にない引数を持つ経路は、確認できないので 500 を返す。
-func (m authMiddleware) checkFacility(c *gin.Context) {
+func (m authMiddleware) requireFacility(c *gin.Context) {
 	p, ok := principal.From(c.Request.Context())
 	if !ok {
 		writeError(c, m.log, errors.New("認証のミドルウェアより前に事業所を確認しました"))
@@ -91,7 +91,7 @@ func (m authMiddleware) checkFacility(c *gin.Context) {
 			writeError(c, m.log, errors.New("事業所を確認できないパスの引数 "+param.Key+" です"))
 			return
 		}
-		if r.global || !ulid.Valid(param.Value) {
+		if r.global || !ulid.IsValid(param.Value) {
 			continue
 		}
 		facilityID, err := m.uc.FacilityOf(c.Request.Context(), r.resource, param.Value)

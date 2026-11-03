@@ -80,7 +80,7 @@ func TestRangeString(t *testing.T) {
 	}
 }
 
-func TestAdjustsScheduleEnd(t *testing.T) {
+func TestHasScheduleEndAdjustment(t *testing.T) {
 	adjusted := []string{
 		"訪看I２", "予防看I２", "予訪看I２", "予防訪看I２",
 		"訪看I３", "予防看I３", "予訪看I３", "予防訪看I３",
@@ -88,18 +88,18 @@ func TestAdjustsScheduleEnd(t *testing.T) {
 		"訪看I２・夜", "予訪看I３・深",
 	}
 	for _, s := range adjusted {
-		if !AdjustsScheduleEnd(s) {
+		if !HasScheduleEndAdjustment(s) {
 			t.Errorf("%s を調整しない", s)
 		}
 	}
 	for _, s := range []string{"訪看I５", "訪看I５・２超", "医", "基本療養費", "難病等複数回訪問加算(２回)"} {
-		if AdjustsScheduleEnd(s) {
+		if HasScheduleEndAdjustment(s) {
 			t.Errorf("%s を調整する", s)
 		}
 	}
 }
 
-func TestServiceMatches(t *testing.T) {
+func TestIsMatchingService(t *testing.T) {
 	tests := []struct {
 		schedule, visit string
 		want            bool
@@ -116,8 +116,8 @@ func TestServiceMatches(t *testing.T) {
 		{"基本療養費(I)", "医", false},
 	}
 	for _, tt := range tests {
-		if got := ServiceMatches(tt.schedule, tt.visit); got != tt.want {
-			t.Errorf("ServiceMatches(%q, %q) = %v, want %v", tt.schedule, tt.visit, got, tt.want)
+		if got := IsMatchingService(tt.schedule, tt.visit); got != tt.want {
+			t.Errorf("IsMatchingService(%q, %q) = %v, want %v", tt.schedule, tt.visit, got, tt.want)
 		}
 	}
 }

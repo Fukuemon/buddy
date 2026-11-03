@@ -102,7 +102,7 @@ func run(getenv func(string) string) error {
 		ClientIPHeader:     cfg.ClientIPHeader,
 		PublicURL:          cfg.PublicURL,
 		AutoConsentClients: cfg.AutoConsentClients,
-		SecureCookie:       strings.HasPrefix(cfg.PublicURL, "https:"),
+		UsesSecureCookie:   strings.HasPrefix(cfg.PublicURL, "https:"),
 	})
 	if err != nil {
 		return err

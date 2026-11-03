@@ -30,7 +30,7 @@ func TestPatientUpdate(t *testing.T) {
 			ServiceCodeID: inmem.CodeID, AssignedStaffID: inmem.CompanionID,
 		}
 		saved := s.Patients[inmem.PatientID].Patient
-		if saved.Ended() != ended {
+		if saved.IsEnded() != ended {
 			t.Errorf("ended = %v: 利用の終了が変わった: %+v", ended, saved)
 		}
 		saved.EndedAt = nil

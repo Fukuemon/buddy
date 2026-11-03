@@ -22,8 +22,8 @@ const (
 	Afternoon PreferredTime = "午後"
 )
 
-// Valid は、t が定義された値かを返す。
-func (t PreferredTime) Valid() bool { return t == Morning || t == Afternoon }
+// IsValid は、t が定義された値かを返す。
+func (t PreferredTime) IsValid() bool { return t == Morning || t == Afternoon }
 
 // PreferredGender は、利用者が希望する訪問者の性別である。
 type PreferredGender string
@@ -34,8 +34,8 @@ const (
 	Female PreferredGender = "女性"
 )
 
-// Valid は、g が定義された値かを返す。
-func (g PreferredGender) Valid() bool { return g == Male || g == Female }
+// IsValid は、g が定義された値かを返す。
+func (g PreferredGender) IsValid() bool { return g == Male || g == Female }
 
 // Patient は、利用者である。AssignedStaffID は担当の職員、ServiceCodeID はデフォルトのサービスコードである。
 // EndedAt は利用の終了にした時刻で、利用中なら nil である（ADR-0021）。
@@ -50,18 +50,18 @@ type Patient struct {
 	EndedAt         *time.Time
 }
 
-// Ended は、利用者が利用の終了かを返す。
-func (p Patient) Ended() bool { return p.EndedAt != nil }
+// IsEnded は、利用者が利用の終了かを返す。
+func (p Patient) IsEnded() bool { return p.EndedAt != nil }
 
 // New は、名前と希望の値を検証して Patient を作る。
 func New(p Patient) (Patient, error) {
-	if err := kernel.RequireText("利用者の名前", p.Name, maxNameLen); err != nil {
+	if err := kernel.ValidateText("利用者の名前", p.Name, maxNameLen); err != nil {
 		return Patient{}, err
 	}
-	if !p.PreferredTime.Valid() {
+	if !p.PreferredTime.IsValid() {
 		return Patient{}, apperr.Invalid("希望の時間帯は %s か %s です", Morning, Afternoon)
 	}
-	if !p.PreferredGender.Valid() {
+	if !p.PreferredGender.IsValid() {
 		return Patient{}, apperr.Invalid("希望の性別は %s か %s です", Male, Female)
 	}
 	return p, nil
@@ -129,12 +129,12 @@ type RemainingRecurring struct {
 // Remaining は、利用者を利用の終了にするときに残る、その日以降の予定と繰り返しの予定である。
 // 訪問の情報の利用者がその利用者の予定で、キャンセルした予定は含めない。
 type Remaining struct {
-	Schedules []RemainingSchedule
-	Recurring []RemainingRecurring
+	Schedules          []RemainingSchedule
+	RecurringSchedules []RemainingRecurring
 }
 
-// Empty は、残る予定が無いかを返す。
-func (r Remaining) Empty() bool { return len(r.Schedules) == 0 && len(r.Recurring) == 0 }
+// IsEmpty は、残る予定が無いかを返す。
+func (r Remaining) IsEmpty() bool { return len(r.Schedules) == 0 && len(r.RecurringSchedules) == 0 }
 
 // ScheduledError は、その日以降の予定が残る利用者を利用の終了にしようとしたことを示す。
 type ScheduledError struct {
@@ -160,6 +160,6 @@ func VisitFinder(r Getter) visit.PatientFinder {
 		if err != nil {
 			return visit.PatientRef{}, err
 		}
-		return visit.PatientRef{ID: p.ID, FacilityID: p.FacilityID, Ended: p.Ended()}, nil
+		return visit.PatientRef{ID: p.ID, FacilityID: p.FacilityID, Ended: p.IsEnded()}, nil
 	}
 }

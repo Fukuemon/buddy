@@ -169,7 +169,7 @@ func (s monthSource) Schedules(ctx context.Context) ([]record.Record, []record.W
 					staff = evs.Summary
 				}
 				for _, ev := range evs.Items {
-					rec, ok, problem := s.convert(ev, staff)
+					rec, ok, problem := s.toRecord(ev, staff)
 					if problem != nil {
 						problem.CalendarID, problem.EventID, problem.Start = cal.ID, ev.Id, ev.Start.DateTime
 						warns = append(warns, *problem)
@@ -194,9 +194,9 @@ func (s monthSource) Schedules(ctx context.Context) ([]record.Record, []record.W
 	return recs, warns, nil
 }
 
-// convert は、予定を Record にする。照合に使わない予定では ok が false になる。
+// toRecord は、予定を Record にする。照合に使わない予定では ok が false になる。
 // 解釈できずに除いた予定では、problem に理由を返す。problem のカレンダーと予定と開始の日時は、呼ぶ側が埋める。
-func (s monthSource) convert(ev *calendar.Event, staff string) (rec record.Record, ok bool, problem *record.Warning) {
+func (s monthSource) toRecord(ev *calendar.Event, staff string) (rec record.Record, ok bool, problem *record.Warning) {
 	skip := func(reason record.Reason, column, message string) (record.Record, bool, *record.Warning) {
 		return record.Record{}, false, &record.Warning{Reason: reason, Column: column, Message: message}
 	}
@@ -223,7 +223,7 @@ func (s monthSource) convert(ev *calendar.Event, staff string) (rec record.Recor
 	if err != nil {
 		return skip(record.ReasonUnreadableTitle, "", err.Error())
 	}
-	if !withinNextDay(start, end) {
+	if !isWithinNextDay(start, end) {
 		return skip(record.ReasonSpansDays, "", "終了が開始の翌日より後か、24 時間以上の予定は扱わない")
 	}
 
@@ -245,9 +245,9 @@ func (s monthSource) convert(ev *calendar.Event, staff string) (rec record.Recor
 	return recs[0], true, nil
 }
 
-// withinNextDay は、終了が開始と同じ日か、開始の翌日で 24 時間未満の予定かを返す（ADR-0023）。
+// isWithinNextDay は、終了が開始と同じ日か、開始の翌日で 24 時間未満の予定かを返す（ADR-0023）。
 // 翌日に終わる予定は、終了時間が開始時間より前の行として normalize が読む。
-func withinNextDay(start, end time.Time) bool {
+func isWithinNextDay(start, end time.Time) bool {
 	switch end.Format(time.DateOnly) {
 	case start.Format(time.DateOnly):
 		return true

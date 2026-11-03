@@ -49,16 +49,16 @@ func LoadAccounts(path string) (Accounts, error) {
 	defer func() { _ = f.Close() }()
 	dec := json.NewDecoder(f)
 	dec.DisallowUnknownFields()
-	var list []account
-	if err := dec.Decode(&list); err != nil {
+	var accounts []account
+	if err := dec.Decode(&accounts); err != nil {
 		return nil, fmt.Errorf("サービスアカウントの設定 %s を読めない: %w", path, err)
 	}
-	if len(list) == 0 {
+	if len(accounts) == 0 {
 		return nil, fmt.Errorf("サービスアカウントの設定 %s が空である", path)
 	}
-	out := make(Accounts, len(list))
-	used := make(map[string]bool, len(list))
-	for i, a := range list {
+	out := make(Accounts, len(accounts))
+	used := make(map[string]bool, len(accounts))
+	for i, a := range accounts {
 		org, email := strings.TrimSpace(a.OrgID), strings.TrimSpace(a.ServiceAccount)
 		switch {
 		case org == "":

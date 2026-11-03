@@ -62,9 +62,9 @@ func Lookup(service string) (r Range, ok bool) {
 	return Range{}, false
 }
 
-// AdjustsScheduleEnd は、予定の終了時間と提供時間から 1 分引くサービス内容かを返す。
+// HasScheduleEndAdjustment は、予定の終了時間と提供時間から 1 分引くサービス内容かを返す。
 // Base で「・夜」と「・深」を外してから判定する。
-func AdjustsScheduleEnd(service string) bool {
+func HasScheduleEndAdjustment(service string) bool {
 	switch base(service) {
 	case "訪看I２", "予防看I２", "予訪看I２", "予防訪看I２",
 		"訪看I３", "予防看I３", "予訪看I３", "予防訪看I３",
@@ -74,10 +74,10 @@ func AdjustsScheduleEnd(service string) bool {
 	return false
 }
 
-// ServiceMatches は、予定と実績のサービス内容が対応するかを返す。
+// IsMatchingService は、予定と実績のサービス内容が対応するかを返す。
 // 両側を Base で「・夜」と「・深」を外してから比べる。「・夜」「・深」と実績の加算の対応は確認しない。
 // 予定の `医` は、実績の `基本療養費` か `難病等複数回訪問` を含むサービス内容に対応する。
-func ServiceMatches(schedule, visit string) bool {
+func IsMatchingService(schedule, visit string) bool {
 	if base(schedule) == base(visit) {
 		return true
 	}

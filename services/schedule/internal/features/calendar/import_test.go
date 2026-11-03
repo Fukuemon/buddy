@@ -170,8 +170,8 @@ func TestImportReviewedRecurring(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got := reviewIDs(p.NeedsReview); !slices.Equal(got, []string{"series"}) || p.NeedsReview[0].Recurrence == nil {
-			t.Fatalf("NeedsReview = %+v", p.NeedsReview)
+		if got := reviewIDs(p.ReviewItems); !slices.Equal(got, []string{"series"}) || p.ReviewItems[0].Recurrence == nil {
+			t.Fatalf("ReviewItems = %+v", p.ReviewItems)
 		}
 		res, err := e.importDecided(t, e.rng, []calendar.Decision{{ExternalEventID: "series", Action: calendar.ActionPatient, PatientID: "PB1"}})
 		if err != nil {
@@ -208,7 +208,7 @@ func TestImportReviewedRecurring(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if p.Counts.RecurringAsRule != 0 || p.Counts.NeedsReview != 1 || p.NeedsReview[0].Recurrence != nil || p.Counts.AlreadyImported != 1 {
+		if p.Counts.RecurringAsRule != 0 || p.Counts.NeedsReview != 1 || p.ReviewItems[0].Recurrence != nil || p.Counts.AlreadyImported != 1 {
 			t.Errorf("2 回目のプレビューの件数 = %+v", p.Counts)
 		}
 		res, err = e.importDecided(t, e.rng, []calendar.Decision{{ExternalEventID: "series", Action: calendar.ActionPatient, PatientID: "PB1"}})
@@ -341,16 +341,16 @@ func TestImportOvernight(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(p.NeedsReview) != 1 || !p.NeedsReview[0].EndsNextDay || p.NeedsReview[0].EndTime != (civil.Time{}) {
-		t.Errorf("確認が必要な予定 = %+v", p.NeedsReview)
+	if len(p.ReviewItems) != 1 || !p.ReviewItems[0].EndsNextDay || p.ReviewItems[0].EndTime != (civil.Time{}) {
+		t.Errorf("確認が必要な予定 = %+v", p.ReviewItems)
 	}
-	if len(p.Skipped) != 2 {
-		t.Fatalf("取り込まない予定 = %+v", p.Skipped)
+	if len(p.SkippedItems) != 2 {
+		t.Fatalf("取り込まない予定 = %+v", p.SkippedItems)
 	}
-	if s := p.Skipped[0]; s.Reason != calendar.SkipServiceNotFound || !s.EndsNextDay || s.StartTime == nil || *s.EndTime != (civil.Time{Hour: 2}) {
+	if s := p.SkippedItems[0]; s.Reason != calendar.SkipServiceNotFound || !s.EndsNextDay || s.StartTime == nil || *s.EndTime != (civil.Time{Hour: 2}) {
 		t.Errorf("サービス内容を引けない予定 = %+v", s)
 	}
-	if s := p.Skipped[1]; s.Reason != calendar.SkipMultiDay || s.EndsNextDay {
+	if s := p.SkippedItems[1]; s.Reason != calendar.SkipMultiDay || s.EndsNextDay {
 		t.Errorf("2 日にわたる予定 = %+v", s)
 	}
 

@@ -147,8 +147,8 @@ func (r *PatientScheduleReader) From(ctx context.Context, facilityID, patientID 
 		return patient.Remaining{}, translate("list patient recurring schedules", err)
 	}
 	out := patient.Remaining{
-		Schedules: make([]patient.RemainingSchedule, len(scheds)),
-		Recurring: make([]patient.RemainingRecurring, len(recs)),
+		Schedules:          make([]patient.RemainingSchedule, len(scheds)),
+		RecurringSchedules: make([]patient.RemainingRecurring, len(recs)),
 	}
 	for i, s := range scheds {
 		start, end, err := slotTimes(s.StartTime, s.EndTime)
@@ -162,7 +162,7 @@ func (r *PatientScheduleReader) From(ctx context.Context, facilityID, patientID 
 		if err != nil {
 			return patient.Remaining{}, err
 		}
-		out.Recurring[i] = patient.RemainingRecurring{ID: s.ID, Date: civil.DateOf(s.Date), EndDate: datePtr(s.EndDate), StartTime: start, EndTime: end}
+		out.RecurringSchedules[i] = patient.RemainingRecurring{ID: s.ID, Date: civil.DateOf(s.Date), EndDate: datePtr(s.EndDate), StartTime: start, EndTime: end}
 	}
 	return out, nil
 }

@@ -63,7 +63,7 @@ func TestNew(t *testing.T) {
 
 func TestParseSort(t *testing.T) {
 	got, err := staff.ParseSort("", "")
-	if err != nil || got != (kernel.Sort{Field: "updated_at", Desc: true}) {
+	if err != nil || got != (kernel.Sort{Field: "updated_at", Descending: true}) {
 		t.Fatalf("got %+v, %v", got, err)
 	}
 	if _, err := staff.ParseSort("username;DROP TABLE users", "asc"); !errors.Is(err, apperr.ErrInvalidInput) {
@@ -77,9 +77,9 @@ func TestStatusTransitions(t *testing.T) {
 		name  string
 		check func(staff.Staff) error
 	}{
-		{name: "休職", check: staff.Staff.Leavable},
-		{name: "復職", check: staff.Staff.Reinstatable},
-		{name: "情報の変更", check: staff.Staff.ProfileEditable},
+		{name: "休職", check: staff.Staff.RequireLeavable},
+		{name: "復職", check: staff.Staff.RequireReinstatable},
+		{name: "情報の変更", check: staff.Staff.RequireProfileEditable},
 	}
 	states := []struct {
 		name    string

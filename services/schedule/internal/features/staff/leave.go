@@ -27,7 +27,7 @@ func (s *Usecase) Leave(ctx context.Context, id string, in LeaveInput) (StatusCh
 	var out StatusChange
 	var revokeErr error
 	err := s.stop(ctx, id, func(ctx context.Context, cur Detail) error {
-		if err := cur.Leavable(); err != nil {
+		if err := cur.RequireLeavable(); err != nil {
 			return err
 		}
 		a, err := s.remaining(ctx, cur)

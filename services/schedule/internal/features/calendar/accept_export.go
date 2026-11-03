@@ -26,10 +26,10 @@ func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 	if err != nil {
 		return Export{}, err
 	}
-	if !e.InReview() {
+	if !e.IsInReview() {
 		return Export{}, errNotInReview
 	}
-	if !e.Acceptable() {
+	if !e.IsAcceptable() {
 		return Export{}, errNotAcceptable
 	}
 	// buddy でキャンセルした予定は、外部の内容に戻せない。
@@ -84,9 +84,9 @@ func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
 			return err
 		}
 		switch {
-		case !cur.InReview():
+		case !cur.IsInReview():
 			return errNotInReview
-		case !cur.Acceptable() || locked.Cancel != nil:
+		case !cur.IsAcceptable() || locked.Cancel != nil:
 			return errNotAcceptable
 		}
 		callCtx, cancel := context.WithTimeout(ctx, acceptCallTimeout)

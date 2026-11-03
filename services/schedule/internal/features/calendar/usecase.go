@@ -119,13 +119,13 @@ func (u *Usecase) source(ctx context.Context, facilityID string) (EventSource, e
 	return u.deps.Accounts.Source(ctx, facilityID)
 }
 
-func (u *Usecase) checkSource(ctx context.Context, facilityID, calendarID string) (EventSource, string, error) {
+func (u *Usecase) requireSource(ctx context.Context, facilityID, calendarID string) (EventSource, string, error) {
 	src, err := u.source(ctx, facilityID)
 	if err != nil {
 		return nil, "", err
 	}
 	calendarID = strings.TrimSpace(calendarID)
-	if err := kernel.RequireText("カレンダーの ID", calendarID, maxCalendarIDLen); err != nil {
+	if err := kernel.ValidateText("カレンダーの ID", calendarID, maxCalendarIDLen); err != nil {
 		return nil, "", err
 	}
 	return src, calendarID, nil
@@ -219,7 +219,7 @@ func (u *Usecase) plan(ctx context.Context, src EventSource, c ExternalCalendar,
 	if in.serviceCodes, err = u.deps.ServiceCodes.ListServiceCodes(ctx); err != nil {
 		return plan{}, nil, err
 	}
-	return buildPlan(in), in.patients, nil
+	return newPlan(in), in.patients, nil
 }
 
 var (

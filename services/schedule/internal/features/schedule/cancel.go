@@ -19,7 +19,7 @@ func (s *Usecase) Cancel(ctx context.Context, scheduleID, reason string) (Cancel
 		if err != nil {
 			return err
 		}
-		if err := s.authorize(ctx, cur.StaffID, true); err != nil {
+		if err := s.requireScheduleAccess(ctx, cur.StaffID, true); err != nil {
 			return err
 		}
 		if err := apperr.AsConflict(s.deps.Schedules.CreateCancel(ctx, c), "この予定はすでにキャンセルされています"); err != nil {

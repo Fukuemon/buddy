@@ -13,12 +13,12 @@ import (
 // CanRead は、p が、チーム teamID に属する職員 staffID の予定を見てよいかを返す。
 // 自分の予定は、権限によらず見てよい。編集の権限は、同じ範囲の閲覧を含む。
 func CanRead(p principal.Principal, staffID, teamID string) bool {
-	return staffID == p.Staff.ID || allows(p, staffID, teamID, false)
+	return staffID == p.Staff.ID || isAllowed(p, staffID, teamID, false)
 }
 
 // CanEdit は、p が、チーム teamID に属する職員 staffID の予定を作り、変え、キャンセルしてよいかを返す。
 func CanEdit(p principal.Principal, staffID, teamID string) bool {
-	return allows(p, staffID, teamID, true)
+	return isAllowed(p, staffID, teamID, true)
 }
 
 // CanReadAll は、p が事業所の全ての職員の予定を見てよいかを返す。
@@ -28,8 +28,8 @@ func CanReadAll(p principal.Principal) bool {
 	})
 }
 
-// allows は、職員の権限（user_policies）だけを見て判定する。役職は見ない。
-func allows(p principal.Principal, staffID, teamID string, edit bool) bool {
+// isAllowed は、職員の権限（user_policies）だけを見て判定する。役職は見ない。
+func isAllowed(p principal.Principal, staffID, teamID string, editing bool) bool {
 	for _, g := range p.Staff.Policies {
 		var ok bool
 		switch g.PolicyCode {
@@ -38,15 +38,15 @@ func allows(p principal.Principal, staffID, teamID string, edit bool) bool {
 		case organization.ScheduleAllEdit:
 			ok = true
 		case organization.ScheduleAllRead:
-			ok = !edit
+			ok = !editing
 		case organization.ScheduleUserEdit:
 			ok = slices.Contains(g.TargetUserIDs, staffID)
 		case organization.ScheduleUserRead:
-			ok = !edit && slices.Contains(g.TargetUserIDs, staffID)
+			ok = !editing && slices.Contains(g.TargetUserIDs, staffID)
 		case organization.ScheduleTeamEdit:
 			ok = slices.Contains(g.TargetTeamIDs, teamID)
 		case organization.ScheduleTeamRead:
-			ok = !edit && slices.Contains(g.TargetTeamIDs, teamID)
+			ok = !editing && slices.Contains(g.TargetTeamIDs, teamID)
 		}
 		if ok {
 			return true
@@ -55,12 +55,12 @@ func allows(p principal.Principal, staffID, teamID string, edit bool) bool {
 	return false
 }
 
-// allow は、p が職員 st の予定を見てよいか（edit なら編集してよいか）を確認し、許されないときは apperr.ErrForbidden を返す。
-func allow(p principal.Principal, st staff.Ref, edit bool) error {
-	if edit && !CanEdit(p, st.ID, st.TeamID) {
+// requireAllowed は、p が職員 st の予定を見てよいか（editing なら編集してよいか）を確認し、許されないときは apperr.ErrForbidden を返す。
+func requireAllowed(p principal.Principal, st staff.Ref, editing bool) error {
+	if editing && !CanEdit(p, st.ID, st.TeamID) {
 		return fmt.Errorf("%w: この職員の予定を編集する権限がありません", apperr.ErrForbidden)
 	}
-	if !edit && !CanRead(p, st.ID, st.TeamID) {
+	if !editing && !CanRead(p, st.ID, st.TeamID) {
 		return fmt.Errorf("%w: この職員の予定を見る権限がありません", apperr.ErrForbidden)
 	}
 	return nil
