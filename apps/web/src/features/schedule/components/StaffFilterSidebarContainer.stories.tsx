@@ -26,7 +26,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** 予定の画面で職員の絞り込みを置く、SiteLayout の左のサイドバーの幅（w-72）にそろえる。 */
+/** 予定の画面で職員の絞り込みを描く、SiteLayout の sidebar の aside の幅（w-72）にそろえる。 */
 const narrow: NonNullable<Story['decorators']> = [
   (Story) => (
     <div className="w-72">

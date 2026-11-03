@@ -6,7 +6,7 @@ const ACTOR = 'ログインなし（Storybook の story）'
 
 const STORY_URL = storyUrl('画面-schedule-stafffiltersidebarcontainer--all-staff')
 
-/** SiteLayout の左のサイドバーの幅（w-72）の px。 */
+/** SiteLayout の sidebar を描く aside の幅（w-72）の px。 */
 const SIDEBAR_WIDTH_PX = 288
 
 /** 字幕の帯に隠れないように、story の中身を下へずらす。撮影のための操作なので、前に字幕で断る。 */

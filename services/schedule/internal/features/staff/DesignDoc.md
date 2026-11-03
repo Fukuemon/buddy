@@ -62,8 +62,9 @@ verified_commit: 4e53ca5
 職員の一覧、職員の登録、職員の詳細の route は、`beforeLoad` の `requirePermission` で職員の管理の権限（`staff.manage`）を宣言する。  
 権限を持たなければ、loader と職員の API を呼ばずに、root の route のエラーの表示が画面の枠の中に `PageForbiddenMessage` を出す。  
 職員の登録の route は職員の一覧の route の子なので、権限が無ければ親の職員の一覧の route で止まる。  
-この判定は表示のためだけで、変える操作は予定の API が [予定の認可](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md#予定の認可) で拒む。  
-ADR-0025: [web の画面の権限の確認を、route の beforeLoad と PermissionGuard で宣言し、1 つの関数で評価する](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0025-web-permission-checks.md)
+この判定は表示のためだけで、変える操作は予定の API が [予定の認可](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md#予定の認可) で拒む。
+
+- ADR-0025: [web の画面の権限の確認を、route の beforeLoad と PermissionGuard で宣言し、1 つの関数で評価する](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0025-web-permission-checks.md)
 
 画面とダイアログごとの、読む時点、読むもの、読む理由は次のとおり。
 
@@ -72,10 +73,10 @@ ADR-0025: [web の画面の権限の確認を、route の beforeLoad と Permiss
 | 職員の一覧（`StaffListContainer`） | route の loader（サーバーで描くときは待つ） | 休職と退職を含む事業所の全ての職員（`listUsers`） | - |
 | 職員の一覧（`StaffListContainer`） | route の loader（サーバーで描くときは待つ） | チーム、役職、部署（`listTeams`、`listPositions`、`listDepartments`） | 絞り込みの選択肢 |
 | 職員の登録（`StaffCreateDialogContainer`） | 開いたとき | 部署、チーム、役職 | - |
-| 職員の詳細（`StaffDetailContainer`） | 開いたとき | 職員（`getUser`） | - |
-| 職員の詳細（`StaffDetailContainer`） | 開いたとき | 役職（`listPositions`） | 職員の役職に決まっている権限で、権限を役職のまとまりと個別に足したまとまりに分ける |
-| 職員の詳細（`StaffDetailContainer`） | 開いたとき | 権限（`listPolicies`） | 権限の名前と並び |
-| 職員の詳細（`StaffDetailContainer`） | 開いたとき | 事業所の職員とチーム（`listUsers`、`listTeams`） | 権限の対象の名前を引く |
+| 職員の詳細（`StaffDetailContainer`） | route の loader（サーバーで描くときは待つ） | 職員（`getUser`） | - |
+| 職員の詳細（`StaffDetailContainer`） | route の loader（サーバーで描くときは待つ） | 役職（`listPositions`） | 職員の役職に決まっている権限で、権限を役職のまとまりと個別に足したまとまりに分ける |
+| 職員の詳細（`StaffDetailContainer`） | route の loader（サーバーで描くときは待つ） | 権限（`listPolicies`） | 権限の名前と並び |
+| 職員の詳細（`StaffDetailContainer`） | route の loader（サーバーで描くときは待つ） | 事業所の職員とチーム（`listUsers`、`listTeams`） | 権限の対象の名前を引く |
 | 職員の詳細（`StaffDetailContainer`） | プロフィールの編集のダイアログを開いたとき | 部署（`listDepartments`） | - |
 | 職員の詳細（`StaffDetailContainer`） | 休職と退職のダイアログを開いたとき | 残る予定と担当の利用者（`getUserRemainingAssignments`） | - |
 
