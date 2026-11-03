@@ -152,7 +152,7 @@ status: stable
 - サーバーだけで動く web の処理は `src/server/` に置く。
   - `runtime.ts` は、プロセスで 1 つの依存（設定、セッションの保存先、OIDC のクライアント）と MSW の起動だけを持つ。
   - `auth.ts` はログインとログアウト、`session.ts` はセッションの読み取りと更新を持つ。
-- web のダミーデータの正本と MSW のハンドラは `src/mocks/` に置く。
+- web のダミーデータの正本と MSW の handler は `src/mocks/` に置く。
   - ADR-0008: [web の画面の型を API の型と分けて持ち、ダミーデータを API の形で 1 か所に置く](../docs/adr/0008-web-view-types.md)
 - ライブラリの開発用のコンポーネント（TanStack Query の devtools など）は `src/integrations/` に置く。
 - Storybook の decorator は `src/storybook/`、テストの setup と MSW のサーバーは `src/test/` に置く。

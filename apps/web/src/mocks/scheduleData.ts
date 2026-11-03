@@ -4,7 +4,7 @@ import { RECEIPT_CHECK, STAFF_MANAGE } from '#/api/permissions'
 
 type Schemas = components['schemas']
 
-/** 予定の API のフェイクが返す、ダミーの事業所。 */
+/** 予定の API の MSW の handler と、src/api/fake/ の BuddyApi が使う、ダミーの事業所。 */
 export const MOCK_FACILITY_ID = 'facility-demo'
 
 const STAMP = '2026-10-01T00:00:00Z'

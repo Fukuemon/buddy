@@ -347,6 +347,9 @@ rules:
   - expected: フェイク
     pattern: 偽物
     prh: テストのための偽の実装はフェイクと呼ぶ。コードの名前 fake に合わせる
+  - expected: MSW の handler
+    pattern: MSW のハンドラ
+    prh: web の src/mocks/ は MSW の handler と呼ぶ（context/domain.md の用語集）
   - expected: プレビュー
     pattern: 下見
     prh: 取り込む前の確認はプレビューと呼ぶ。コードの名前 import_preview と画面の文言に合わせる

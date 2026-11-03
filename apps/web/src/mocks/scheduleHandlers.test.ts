@@ -18,7 +18,7 @@ const body = {
   visits: true,
 }
 
-describe('職員を変える API と、残る予定の API のフェイク', () => {
+describe('職員を変える API と、残る予定の API の MSW の handler', () => {
   it('PUT /v1/users/{user_id} は、本文の名前、電話番号、チームにした職員を返す', async () => {
     const { data, response } = await client().PUT('/v1/users/{user_id}', {
       params: { path: { user_id: 'staff-1' } },
@@ -41,7 +41,7 @@ describe('職員を変える API と、残る予定の API のフェイク', () 
     expect(response.status).toBe(400)
   })
 
-  it('GET /v1/users/{user_id}/remaining_assignments のフェイクは、空の一覧を返す', async () => {
+  it('GET /v1/users/{user_id}/remaining_assignments の MSW の handler は、空の一覧を返す', async () => {
     const { data, response } = await client().GET('/v1/users/{user_id}/remaining_assignments', {
       params: { path: { user_id: 'staff-1' } },
     })
@@ -58,7 +58,7 @@ describe('職員を変える API と、残る予定の API のフェイク', () 
   })
 })
 
-describe('利用者の一覧の API のフェイク', () => {
+describe('利用者の一覧の API の MSW の handler', () => {
   it('デフォルトは利用中の利用者だけを返し、include_ended=true なら利用の終了の利用者も返す', async () => {
     const list = (include_ended?: boolean) =>
       client().GET('/v1/facilities/{facility_id}/patients', {
@@ -71,7 +71,7 @@ describe('利用者の一覧の API のフェイク', () => {
   })
 })
 
-describe('利用者を 1 人読む API と、残る予定の API のフェイク', () => {
+describe('利用者を 1 人読む API と、残る予定の API の MSW の handler', () => {
   it('GET /v1/patients/{patient_id} は、利用の終了の利用者も、利用の終了の日時と一緒に返す', async () => {
     const { data, response } = await client().GET('/v1/patients/{patient_id}', {
       params: { path: { patient_id: 'patient-ended' } },
@@ -80,7 +80,7 @@ describe('利用者を 1 人読む API と、残る予定の API のフェイク
     expect(data?.ended_at).not.toBeNull()
   })
 
-  it('GET /v1/patients/{patient_id}/remaining_schedules のフェイクは、空の一覧を返す', async () => {
+  it('GET /v1/patients/{patient_id}/remaining_schedules の MSW の handler は、空の一覧を返す', async () => {
     const { data, response } = await client().GET('/v1/patients/{patient_id}/remaining_schedules', {
       params: { path: { patient_id: 'patient-ended' } },
     })

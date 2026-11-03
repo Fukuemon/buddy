@@ -27,7 +27,7 @@ status: stable
 | 予定の API とブローカーの結合テストの PostgreSQL のコンテナ | testcontainers-go | `services/schedule/go.mod`、`services/broker/go.mod` |
 | API のサーバーの生成 | oapi-codegen（`go tool`） | 各 `go.mod` の `tool` |
 | 画面の API の型の生成 | openapi-typescript | `apps/web/package.json` |
-| web のサーバーから見た API のフェイク（テストと `dev:msw`） | MSW、openapi-msw | `apps/web/package.json` |
+| web のサーバーから見た API を受ける MSW の handler（テストと `dev:msw`） | MSW、openapi-msw | `apps/web/package.json` |
 | OpenAPI の定義の lint | Redocly CLI | `package.json`、規則は `redocly.yaml` |
 | API の仕様のページ | Scalar（jsDelivr から読む） | `docs/api/reference.js` の import の URL |
 | SQL からの Go の生成 | sqlc | `mise.toml` |
