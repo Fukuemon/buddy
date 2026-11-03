@@ -30,33 +30,6 @@ var errExportWriting = errors.New("予定を外部のカレンダーに書いて
 // 予定の対応の同じにした時点の番号にこの値を書く。
 const createdVersion = 1
 
-// ScheduleStore は、外部の予定の変更を当てる単発の予定を読み書きする。実装は schedule.Repository である。
-type ScheduleStore interface {
-	Create(ctx context.Context, s schedule.Schedule) error
-	Get(ctx context.Context, id string) (schedule.Detail, error)
-	// GetForUpdate は、トランザクションの終わりまで予定の行に排他のロックを取り、ロックを取った後の値を返す。
-	GetForUpdate(ctx context.Context, id string) (schedule.Detail, error)
-	Update(ctx context.Context, s schedule.Schedule) error
-	CreateCancel(ctx context.Context, c schedule.Cancel) error
-	// ReplacementOf は、繰り返しの予定 recurringScheduleID の d の回を置き換えた単発の予定を返す。無いときは apperr.ErrNotFound を返す。
-	ReplacementOf(ctx context.Context, recurringScheduleID string, d civil.Date) (schedule.Detail, error)
-}
-
-// RecurringStore は、外部の繰り返しの予定の回の変更を当てる繰り返しの予定を読み書きする。
-// AddExclusion は、繰り返しの予定の更新の番号を 1 つ増やす。
-type RecurringStore interface {
-	Get(ctx context.Context, id string) (schedule.RecurringDetail, error)
-	// GetForUpdate は、トランザクションの終わりまで繰り返しの予定の行に排他のロックを取り、ロックを取った後の値を返す。
-	GetForUpdate(ctx context.Context, id string) (schedule.RecurringDetail, error)
-	AddExclusion(ctx context.Context, recurringScheduleID string, d civil.Date) error
-}
-
-// VisitStore は、外部の予定のタイトルから決めた訪問の情報を書く。実装は visit.Writer である。
-type VisitStore interface {
-	Create(ctx context.Context, facilityID string, in visit.Input) (string, error)
-	DeleteIfUnused(ctx context.Context, id string) error
-}
-
 // applier は、外部のカレンダーの予定の変更を、予定の対応の etag と更新の番号で比べ、buddy の予定に当てる。ADR-0009 の段階 3 の規則である。
 //   - 外部の予定の etag が予定の対応と同じなら、何もしない。buddy が書いた変更が増分に戻ってきたときもこれに当たる。
 //   - 外部の予定の内容が buddy の予定と同じなら、予定の対応を今の etag と更新の番号にする。buddy に比べない項目（説明）の
