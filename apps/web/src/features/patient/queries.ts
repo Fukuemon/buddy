@@ -5,14 +5,14 @@ import type { FacilityId, Patient, PatientInput, PatientRecord, Staff } from '#/
 import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
 
-/** 利用の終了の利用者を含む、事業所の全ての利用者の query。 */
+/** 事業所の全ての利用者を、利用の終了の利用者も含め、サービス、希望、担当の職員とともに名前の順で読む query。利用者の管理の画面の一覧に使う。 */
 export const patientRecordsQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
     queryKey: queryKeys.patients.records(facilityId),
     queryFn: () => api.patients.listRecords(facilityId),
   })
 
-/** 1 人の利用者の query。 */
+/** 利用者を読む query。ほかの事業所の利用者を指すと status が 403 の、見つからなければ 404 の ApiError を error に持つ。 */
 export const patientDetailQueryOptions = (
   api: BuddyApi,
   facilityId: FacilityId,
@@ -23,7 +23,7 @@ export const patientDetailQueryOptions = (
     queryFn: () => api.patients.get(facilityId, patientId),
   })
 
-/** サービスコードの query。 */
+/** サービスコードを、予定の API の並びで読む query。サービスコードは事業所ごとに変わらない。 */
 export const serviceCodesQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
     queryKey: queryKeys.serviceCodes(facilityId),
@@ -49,9 +49,6 @@ export const remainingSchedulesQueryOptions = (
     gcTime: 0,
   })
 
-/**
- * 利用者を変えた後に、返った利用者で詳細を置き換え、利用者の一覧と、予定の画面の利用者の候補を読み直す。
- */
 const usePatientChanged = () => {
   const { facilityId } = useBuddyApi()
   const queryClient = useQueryClient()
@@ -85,7 +82,11 @@ export const useIsStaffStopped = () => {
   }
 }
 
-/** 利用者を登録する mutation。 */
+/**
+ * 利用者を登録する mutation。
+ * 成功すると、返った利用者で利用者の詳細の query を置き換え、利用者の管理の一覧と、予定の画面の利用者の候補を読み直す。
+ * サービスコードか担当の職員が無いときと、担当に休職か退職の職員を指したときは、status が 400 の ApiError を error に持つ。
+ */
 export const useCreatePatient = () => {
   const { api, facilityId } = useBuddyApi()
   const changed = usePatientChanged()
@@ -95,7 +96,11 @@ export const useCreatePatient = () => {
   })
 }
 
-/** 利用者の名前、サービス、希望、担当の職員を変える mutation。 */
+/**
+ * 利用者の名前、サービス、希望、担当の職員を置き換える mutation。
+ * 成功すると、返った利用者で利用者の詳細の query を置き換え、利用者の管理の一覧と、予定の画面の利用者の候補を読み直す。
+ * 担当を休職か退職の職員に変えると、status が 400 の ApiError を error に持つ。今の担当のままなら拒まれない。
+ */
 export const useUpdatePatient = (patientId: Patient['id']) => {
   const { api, facilityId } = useBuddyApi()
   const changed = usePatientChanged()
@@ -105,7 +110,10 @@ export const useUpdatePatient = (patientId: Patient['id']) => {
   })
 }
 
-/** 利用を終了する mutation。予定が残って拒まれたときは、残る予定を結果に持つ。 */
+/**
+ * 利用を終了する mutation。予定が残って拒まれたときは、残る予定を結果に持つ。
+ * 終了できたときは、成功すると、返った利用者で利用者の詳細の query を置き換え、利用者の管理の一覧と、予定の画面の利用者の候補を読み直す。
+ */
 export const useEndService = (patientId: Patient['id']) => {
   const { api, facilityId } = useBuddyApi()
   const changed = usePatientChanged()
@@ -115,7 +123,10 @@ export const useEndService = (patientId: Patient['id']) => {
   })
 }
 
-/** 利用を再開する mutation。引数は再開の後の担当の職員である。 */
+/**
+ * 利用を再開する mutation。引数は再開の後の担当の職員である。
+ * 成功すると、返った利用者で利用者の詳細の query を置き換え、利用者の管理の一覧と、予定の画面の利用者の候補を読み直す。 休職か退職の職員を指すと、status が 400 の ApiError を error に持つ。
+ */
 export const useResumeService = (patientId: Patient['id']) => {
   const { api, facilityId } = useBuddyApi()
   const changed = usePatientChanged()

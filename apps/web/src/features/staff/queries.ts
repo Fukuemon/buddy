@@ -15,7 +15,7 @@ import { useRefreshViewer } from '#/api/viewer'
 import { policyChangeErrorReason } from './lib/errorMessage'
 import type { PolicyChange } from './lib/policyChanges'
 
-/** 休職と退職の職員を含む、事業所の全ての職員の query。 */
+/** 事業所の全ての職員を、休職と退職の職員も含め、部署、チーム、役職、在籍の状態とともに名前の順で読む query。職員の管理の画面の一覧に使う。 */
 export const staffRecordsQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
     queryKey: queryKeys.staff.records(facilityId),
@@ -29,7 +29,7 @@ export const staffListQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
     queryFn: () => api.staff.list(facilityId),
   })
 
-/** 1 人の職員と権限の query。 */
+/** 職員と、その職員の権限を読む query。ほかの事業所の職員を指すと、status が 403 の ApiError を error に持つ。 */
 export const staffDetailQueryOptions = (
   api: BuddyApi,
   facilityId: FacilityId,
@@ -40,28 +40,28 @@ export const staffDetailQueryOptions = (
     queryFn: () => api.staff.get(facilityId, staffId),
   })
 
-/** 部署の query。 */
+/** 事業所の全ての部署を読む query。部署とチームの mutation が成功すると読み直す。 */
 export const departmentsQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
     queryKey: queryKeys.departments(facilityId),
     queryFn: () => api.departments.list(facilityId),
   })
 
-/** チームの query。 */
+/** 事業所の全てのチームを、色とともに読む query。部署とチームの mutation が成功すると読み直す。 */
 export const teamsQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
     queryKey: queryKeys.teams(facilityId),
     queryFn: () => api.teams.list(facilityId),
   })
 
-/** 役職と、そのデフォルトの権限の query。 */
+/** 役職を、そのデフォルトの権限とともに名前の順で読む query。 */
 export const positionsQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
     queryKey: queryKeys.positions(facilityId),
     queryFn: () => api.positions.list(facilityId),
   })
 
-/** 8 つの権限の query。 */
+/** 職員に付けられる 8 つの権限を読む query。権限は事業所ごとに変わらない。 */
 export const policiesQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
     queryKey: queryKeys.policies(facilityId),
@@ -80,10 +80,6 @@ export const assignmentsQueryOptions = (
     gcTime: 0,
   })
 
-/**
- * 職員を変えた後に、返った職員で詳細を置き換え、職員の一覧を読み直す。
- * 予定の画面の職員の一覧も、名前と在籍の状態が変わるので読み直す。
- */
 const useStaffChanged = () => {
   const { facilityId } = useBuddyApi()
   const queryClient = useQueryClient()
@@ -96,7 +92,11 @@ const useStaffChanged = () => {
   }
 }
 
-/** 職員を登録する mutation。 */
+/**
+ * 職員を登録し、役職のデフォルトの権限を付ける mutation。
+ * 成功すると、返った職員で職員の詳細の query を置き換え、職員の管理の一覧と、予定の画面の職員の一覧を読み直す。
+ * 失敗は BuddyApi の staff.create の ApiError（メールアドレスの重複は 409）を error に持つ。
+ */
 export const useCreateStaff = () => {
   const { api, facilityId } = useBuddyApi()
   const changed = useStaffChanged()
@@ -106,7 +106,10 @@ export const useCreateStaff = () => {
   })
 }
 
-/** 職員の名前、電話番号、部署、チーム、訪問するかを変える mutation。予定か担当の利用者が残って拒まれたときは、残るものを結果に持つ。 */
+/**
+ * 職員の名前、電話番号、部署、チーム、訪問するかを変える mutation。予定か担当の利用者が残って拒まれたときは、残るものを結果に持つ。
+ * 変えられたときは、成功すると、返った職員で職員の詳細の query を置き換え、職員の管理の一覧と、予定の画面の職員の一覧を読み直す。 ログインした職員の情報も読み直す。
+ */
 export const useUpdateStaff = (staffId: Staff['id']) => {
   const { api, facilityId } = useBuddyApi()
   const changed = useStaffChanged()
@@ -118,7 +121,11 @@ export const useUpdateStaff = (staffId: Staff['id']) => {
   })
 }
 
-/** 職員の役職を変える mutation。 */
+/**
+ * 職員の役職を変え、権限を新しい役職のデフォルトの権限に置き換える mutation。
+ * 成功すると、返った職員で職員の詳細の query を置き換え、職員の管理の一覧と、予定の画面の職員の一覧を読み直す。 ログインした職員の権限も読み直す。
+ * 職員の管理の権限を持つ最後の有効な職員から、その権限を外す役職には変えられず、status が 409 の ApiError を error に持つ。
+ */
 export const useChangePosition = (staffId: Staff['id']) => {
   const { api, facilityId } = useBuddyApi()
   const changed = useStaffChanged()
@@ -164,7 +171,11 @@ export const useSavePolicies = (staffId: Staff['id']) => {
   })
 }
 
-/** 職員を休職にする mutation。引数は戻る予定の日（YYYY-MM-DD）で、無ければ null である。 */
+/**
+ * 職員を休職にする mutation。引数は戻る予定の日（YYYY-MM-DD）で、無ければ null である。
+ * 成功すると、返った職員で職員の詳細の query を置き換え、職員の管理の一覧と、予定の画面の職員の一覧を読み直す。
+ * 自分、職員の管理の権限を持つ最後の有効な職員、退職した職員では、status が 409 の ApiError を error に持つ。
+ */
 export const useStartLeave = (staffId: Staff['id']) => {
   const { api, facilityId } = useBuddyApi()
   const changed = useStaffChanged()
@@ -175,7 +186,10 @@ export const useStartLeave = (staffId: Staff['id']) => {
   })
 }
 
-/** 休職の職員を復職にする mutation。 */
+/**
+ * 休職の職員を復職にする mutation。
+ * 成功すると、返った職員で職員の詳細の query を置き換え、職員の管理の一覧と、予定の画面の職員の一覧を読み直す。 退職した職員では、status が 409 の ApiError を error に持つ。
+ */
 export const useReinstate = (staffId: Staff['id']) => {
   const { api, facilityId } = useBuddyApi()
   const changed = useStaffChanged()
@@ -185,7 +199,10 @@ export const useReinstate = (staffId: Staff['id']) => {
   })
 }
 
-/** 職員を退職にする mutation。予定か担当の利用者が残って拒まれたときは、残るものを結果に持つ。 */
+/**
+ * 職員を退職にする mutation。予定か担当の利用者が残って拒まれたときは、残るものを結果に持つ。
+ * 退職にできたときは、成功すると、返った職員で職員の詳細の query を置き換え、職員の管理の一覧と、予定の画面の職員の一覧を読み直す。
+ */
 export const useRetire = (staffId: Staff['id']) => {
   const { api, facilityId } = useBuddyApi()
   const changed = useStaffChanged()

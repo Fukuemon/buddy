@@ -12,7 +12,7 @@ import type {
 import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
 
-/** 事業所の、外していないカレンダーの一覧の query。 */
+/** 事業所の、外していないカレンダーを、最後の取り込みとともに読む query。外したカレンダーは含めない。 */
 export const externalCalendarListQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
     queryKey: queryKeys.calendars.list(facilityId),
@@ -33,7 +33,7 @@ export const serviceAccountQueryOptions = (api: BuddyApi, facilityId: FacilityId
     },
   })
 
-/** 事業所の確認が必要な書き出しの query。 */
+/** Google カレンダーで予定が変わっていたか消えていたか、書けなかった書き出しを、新しく変わった順に読む query。 */
 export const exportIssueListQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
     queryKey: queryKeys.calendars.exportIssues(facilityId),
@@ -66,7 +66,7 @@ export const useAcceptExport = () => {
   })
 }
 
-/** 事業所の全ての職員の query。 */
+/** 事業所の全ての職員を読む query。カレンダーを結び付ける職員の選択肢に使う。予定の画面の職員の一覧とキャッシュを共有する。 */
 export const staffListQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
     queryKey: queryKeys.staff.list(facilityId),
@@ -80,7 +80,10 @@ export const patientListQueryOptions = (api: BuddyApi, facilityId: FacilityId) =
     queryFn: () => api.patients.list(facilityId),
   })
 
-/** カレンダーを読めるかを確認する mutation。 */
+/**
+ * カレンダーを読めるかを確認する mutation。読めれば何も返さず、cache は変えない。
+ * 読めなければ code が calendar_unreadable、届かなければ calendar_unavailable の ApiError を error に持つ。
+ */
 export const useCheckCalendar = () => {
   const { api, facilityId } = useBuddyApi()
   return useMutation({
