@@ -80,13 +80,13 @@ const (
 
 // CSVError は、入力の CSV の誤りの 1 件である。
 type CSVError struct {
-	Source Source `json:"source"`
-	Reason Reason `json:"reason"`
+	Source Source
+	Reason Reason
 	// Line は、入力の CSV の行番号（ヘッダーが 1 行目）である。ファイルの全体の誤りでは 0 にする。
-	Line int `json:"line,omitempty"`
+	Line int
 	// Column は、誤りのある列の名前である。列を決められない誤りでは空にする。
-	Column  string `json:"column,omitempty"`
-	Message string `json:"message"`
+	Column  string
+	Message string
 }
 
 // InputError は、入力のファイルを照合に使えないことを表す。Errors は 1 件以上ある。
@@ -102,12 +102,12 @@ func (e *InputError) Error() string {
 // Warning は、予定のデータソースが解釈できず、照合に使わなかった予定の 1 件である。
 // 利用者名を含むので、予定のタイトルは持たない。
 type Warning struct {
-	CalendarID string `json:"calendar_id"`
-	EventID    string `json:"event_id"`
+	CalendarID string
+	EventID    string
 	// Start は、予定の開始の日時（RFC 3339）である。
-	Start  string `json:"start"`
-	Reason Reason `json:"reason"`
+	Start  string
+	Reason Reason
 	// Column は、Reason が列の値の誤りのときの列の名前である。
-	Column  string `json:"column,omitempty"`
-	Message string `json:"message"`
+	Column  string
+	Message string
 }

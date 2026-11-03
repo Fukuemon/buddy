@@ -109,18 +109,3 @@ func TestClockMinutesUntil(t *testing.T) {
 		}
 	}
 }
-
-func TestTextRoundTrip(t *testing.T) {
-	d, _ := NewDate(2024, 4, 1)
-	b, _ := d.MarshalText()
-	var d2 Date
-	if err := d2.UnmarshalText(b); err != nil || d2 != d {
-		t.Errorf("Date: %v %v", d2, err)
-	}
-	c := Clock(8*60 + 45)
-	b, _ = c.MarshalText()
-	var c2 Clock
-	if err := c2.UnmarshalText(b); err != nil || c2 != c {
-		t.Errorf("Clock: %v %v", c2, err)
-	}
-}

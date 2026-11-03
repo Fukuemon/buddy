@@ -69,31 +69,31 @@ func additionsMatch(scheduleStart civil.Clock, additions []string) bool {
 
 // Check は、1 つの項目の判定である。
 type Check struct {
-	OK bool `json:"ok"`
+	OK bool
 }
 
 // RangeCheck は、分の値が許容範囲に入るかの判定である。
 type RangeCheck struct {
-	OK bool `json:"ok"`
+	OK bool
 	// Minutes は判定した分である。提供時間が空なら nil である。
-	Minutes *int `json:"minutes"`
+	Minutes *int
 	// Range は許容範囲である。範囲を持たないサービス内容なら nil である。
-	Range *servicerule.Range `json:"range"`
+	Range *servicerule.Range
 }
 
 // Checks は、予定と実績の対の、項目ごとの判定である。
 type Checks struct {
-	Start   Check `json:"start"`
-	Service Check `json:"service"`
+	Start   Check
+	Service Check
 	// ScheduleElapsed と VisitElapsed は、終了時間から開始時間を引いた分の判定である。
-	ScheduleElapsed  RangeCheck `json:"schedule_elapsed"`
-	VisitElapsed     RangeCheck `json:"visit_elapsed"`
-	ScheduleDuration RangeCheck `json:"schedule_duration"`
-	VisitDuration    RangeCheck `json:"visit_duration"`
-	Additions        Check      `json:"additions"`
+	ScheduleElapsed  RangeCheck
+	VisitElapsed     RangeCheck
+	ScheduleDuration RangeCheck
+	VisitDuration    RangeCheck
+	Additions        Check
 	// DurationEqual と EndEqual は、両側の値が同じかである。区分には影響せず、注記にだけ使う。
-	DurationEqual bool `json:"duration_equal"`
-	EndEqual      bool `json:"end_equal"`
+	DurationEqual bool
+	EndEqual      bool
 }
 
 // Consistent は、区分を決める項目がすべて整合するかを返す。
@@ -106,25 +106,25 @@ func (c Checks) Consistent() bool {
 
 // Side は、結果の行の片側の値である。
 type Side struct {
-	Line     int         `json:"line"`
-	Start    civil.Clock `json:"start"`
-	End      civil.Clock `json:"end"`
-	Duration *int        `json:"duration"`
-	Service  string      `json:"service"`
+	Line     int
+	Start    civil.Clock
+	End      civil.Clock
+	Duration *int
+	Service  string
 	// Additions は実績の加算を ", " でつないだものである。予定の側では省く。
-	Additions *string `json:"additions,omitempty"`
+	Additions *string
 }
 
 // Result は、照合の結果の 1 行である。
 type Result struct {
-	Category Category   `json:"category"`
-	Date     civil.Date `json:"date"`
-	Client   string     `json:"client"`
-	Staff    string     `json:"staff"`
-	Schedule *Side      `json:"schedule"`
-	Visit    *Side      `json:"visit"`
+	Category Category
+	Date     civil.Date
+	Client   string
+	Staff    string
+	Schedule *Side
+	Visit    *Side
 	// Checks は、予定と実績の両方があるときだけ持つ。
-	Checks *Checks `json:"checks"`
+	Checks *Checks
 }
 
 // All は、対ごとに判定し、Categories の区分の順、訪問日、開始時間、利用者名、主訪問者の順に並べて返す。

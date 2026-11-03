@@ -63,21 +63,6 @@ func (d Date) Compare(e Date) int {
 	}
 }
 
-// MarshalText は、String と同じ形を返す。
-func (d Date) MarshalText() ([]byte, error) {
-	return []byte(d.String()), nil
-}
-
-// UnmarshalText は、ParseDate で読む。
-func (d *Date) UnmarshalText(b []byte) error {
-	v, err := ParseDate(string(b))
-	if err != nil {
-		return err
-	}
-	*d = v
-	return nil
-}
-
 // Clock は、1 日の中の時刻を 0 時からの分で表す。日付をまたぐ値は持たない。
 type Clock int
 
@@ -111,19 +96,4 @@ func (c Clock) MinutesUntil(end Clock) int {
 // String は、`08:45` の形で返す。
 func (c Clock) String() string {
 	return fmt.Sprintf("%02d:%02d", int(c)/60, int(c)%60)
-}
-
-// MarshalText は、String と同じ形を返す。
-func (c Clock) MarshalText() ([]byte, error) {
-	return []byte(c.String()), nil
-}
-
-// UnmarshalText は、ParseClock で読む。
-func (c *Clock) UnmarshalText(b []byte) error {
-	v, err := ParseClock(string(b))
-	if err != nil {
-		return err
-	}
-	*c = v
-	return nil
 }
