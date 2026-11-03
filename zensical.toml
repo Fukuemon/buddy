@@ -112,6 +112,7 @@ nav = [
     "adr/0027-broker-login-pages-source.md",
     "adr/0028-web-site-frame-in-root-route.md",
     "adr/0029-schedule-api-feature-package-layout.md",
+    "adr/0030-go-file-names-by-role.md",
   ] },
 ]
 

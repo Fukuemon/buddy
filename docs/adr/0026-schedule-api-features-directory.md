@@ -36,6 +36,8 @@
 - `principal`: `features/` の外に置く。`principal` はリポジトリと usecase を持たず、`access` と `httpapi` が認証の後に作る、リクエストの文脈である。`features/` に置くと、機能の一覧に機能でないパッケージが並ぶ。
   - 依存は今のまま、`principal` が `organization` と `staff` に依存し、`schedule`、`calendar`、`access`、`httpapi`、`cmd` が `principal` に依存する向きにする。
 - usecase のファイル: `Usecase` 型、`Deps`、`NewUsecase` は機能ごとに 1 つのまま `usecase.go` に置き、公開のメソッドを操作の名前のファイル（`cancel.go`、`retire.go` など）に移す。テストも操作ごとのファイルに分ける。
+  - この判断は ADR-0030 で置き換えた。
+    - ADR-0030: [Go の 3 つの API で、パッケージをフラットに保ち、ファイルの名前の末尾の語で役割を表す](0030-go-file-names-by-role.md)
   - 複数の操作が使う非公開の補助の関数は `usecase.go` に残し、1 つの操作だけが使う補助の関数はその操作のファイルに移す。
   - Go は、同じパッケージの型のメソッドを、パッケージの中のどのファイルにも置ける。呼ぶ側の `httpapi` と `cmd/api` は変わらない。
     - The Go Programming Language Specification: [Method declarations](https://go.dev/ref/spec#Method_declarations)
