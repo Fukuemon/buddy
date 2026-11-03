@@ -1,4 +1,4 @@
-import { Button } from '@buddy/ui'
+import { Button, formFieldControlClassName } from '@buddy/ui'
 import { useId, type FormEvent } from 'react'
 
 import type { Staff } from '#/api/types'
@@ -26,9 +26,6 @@ export type CalendarImportFormProps = {
   /** プレビューの失敗の文。 */
   errorMessage?: string
 }
-
-const fieldClassName =
-  'min-h-11 w-full rounded-8 bg-surface px-3 text-body ring-1 ring-border-field ring-inset focus-visible:focus-ring disabled:bg-surface-disabled disabled:text-text-disabled'
 
 /** 予定を取り込む職員と期間の入力。幅 768px 以上では、職員と期間を横に並べる。 */
 export const CalendarImportForm = ({
@@ -70,7 +67,7 @@ export const CalendarImportForm = ({
               職員
             </label>
             <select
-              className={fieldClassName}
+              className={formFieldControlClassName}
               data-testid="calendar-import-staff"
               disabled={isLocked}
               id={staffFieldId}
@@ -93,7 +90,7 @@ export const CalendarImportForm = ({
                 rangeErrors.start === undefined ? hintId : `${startErrorId} ${hintId}`
               }
               aria-invalid={rangeErrors.start !== undefined || undefined}
-              className={fieldClassName}
+              className={formFieldControlClassName}
               data-testid="calendar-import-start"
               disabled={isLocked}
               id={startId}
@@ -114,7 +111,7 @@ export const CalendarImportForm = ({
             <input
               aria-describedby={rangeErrors.end === undefined ? undefined : endErrorId}
               aria-invalid={rangeErrors.end !== undefined || undefined}
-              className={fieldClassName}
+              className={formFieldControlClassName}
               data-testid="calendar-import-end"
               disabled={isLocked}
               id={endId}

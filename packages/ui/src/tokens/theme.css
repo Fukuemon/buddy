@@ -22,10 +22,12 @@
   --color-text-inverse: var(--buddy-color-text-inverse);
   --color-border: var(--buddy-color-border);
   --color-border-field: var(--buddy-color-border-field);
+  --color-border-field-hover: var(--buddy-color-border-field-hover);
   --color-primary: var(--buddy-color-primary);
   --color-primary-surface: var(--buddy-color-primary-surface);
   --color-danger: var(--buddy-color-danger);
   --color-danger-surface: var(--buddy-color-danger-surface);
+  --color-danger-hover: var(--buddy-color-danger-hover);
   --color-warning: var(--buddy-color-warning);
   --color-warning-surface: var(--buddy-color-warning-surface);
   --color-success: var(--buddy-color-success);

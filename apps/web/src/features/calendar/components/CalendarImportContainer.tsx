@@ -5,7 +5,7 @@ import { useState } from 'react'
 import type { ImportRange, Staff } from '#/api/types'
 import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
-import { PageForbiddenMessage } from '#/components/site/PageForbiddenMessage'
+import { PageForbiddenMessage } from '#/components/page/PageForbiddenMessage'
 
 import {
   IMPORT_LOAD_ERROR_MESSAGE,
@@ -27,7 +27,7 @@ import { CalendarImportDone } from './CalendarImportDone'
 import { CalendarImportForm } from './CalendarImportForm'
 import { CalendarImportPreview } from './CalendarImportPreview'
 import { CalendarImportView, type CalendarImportViewState } from './CalendarImportView'
-import { activePatients } from '#/features/schedule/lib/activePatients'
+import { activePatients } from '#/api/activePatients'
 
 export type CalendarImportContainerProps = {
   /** search params の staff。カレンダーが結び付いていない職員なら、名前の順で最初の職員を選ぶ。 */

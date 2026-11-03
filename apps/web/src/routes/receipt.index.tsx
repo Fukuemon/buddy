@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { PageLead } from '#/components/site/PageLead'
-import { SiteLayoutContainer } from '#/components/site/SiteLayoutContainer'
+import { PageLead } from '#/components/page/PageLead'
+import { SiteLayoutContainer } from '#/components/layout/SiteLayoutContainer'
 import { CalendarReviewBadgeContainer } from '#/features/calendar/components/CalendarReviewBadgeContainer'
 import { ReceiptCategoryGuide } from '#/features/receipt/components/ReceiptCategoryGuide'
 import { ReceiptCheckFormContainer } from '#/features/receipt/components/ReceiptCheckFormContainer'

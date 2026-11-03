@@ -1,8 +1,7 @@
-import { ActionMenu, Button, Loading, type ActionMenuItem } from '@buddy/ui'
+import { ActionMenu, type ActionMenuItem, Avatar, Button, Loading, StatusBadge } from '@buddy/ui'
 import type { ReactNode } from 'react'
 
 import type { PatientRecord, ServiceCodeRecord, StaffRecord } from '#/api/types'
-import { Avatar, StatusBadge } from '#/components/site/StatusBadge'
 
 import { assignedStaffLabel, endedLabel, serviceCodeLabel } from '../lib/format'
 

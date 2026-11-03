@@ -13,6 +13,9 @@ status: stable
 
 - 画面と BFF（web）とドキュメントサイトは `apps/`、Go の API は `services/`、共有のコードは `packages/` に置く。
   - ADR-0013: [2 つの API を services/ に置き、画面と API をトップのディレクトリで分ける](../docs/adr/0013-services-directory.md)
+- ID ブローカーのログインの画面のソースは `apps/broker`（`@buddy/broker`）に置く。
+  - `apps/broker` はコンテナを持たず、生成したテンプレートと CSS を `services/broker/internal/login/pages/` に書き出す。ID ブローカーはそれを埋め込んで配信する。
+  - ADR-0027: [ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する](../docs/adr/0027-broker-login-pages-source.md)
 - API のディレクトリは機能の名前（`schedule`、`receipt`）にする。
   - コンテナ、サービス、`aud`、テーブル定義書の出力先の名前も、ディレクトリと同じにする。
   - ADR-0014: [2 つの API のサービスの名前とトークンの aud を、ディレクトリの名前にそろえる](../docs/adr/0014-service-names.md)
@@ -21,7 +24,7 @@ status: stable
 - 業務の規則と認可は API が持つ。
   - web は、画面の表示の規則（照合の印と CSV の書き出しを含む）だけを持ち、拒否の判断を API に任せる。
 - `packages/ui` は、BCD Design の Base と Case のコンポーネントとトークンだけを持つ。
-  - 業務の名前（予定、照合など）を持つ Domain のコンポーネントは、`apps/web` の `features/<機能>/components/` に置く。
+  - 業務の名前（予定、照合など）を持つ Domain のコンポーネントは、`apps/web` に置く。配置先は [Placement Rules](#placement-rules) の表で決める。
   - ADR-0004: [デザインシステムのトークンとコンポーネントの配置先](../docs/adr/0004-design-system.md)
 - `services/schedule` では、規則と手順を機能ごとのパッケージ（`organization`、`staff`、`patient`、`visit`、`schedule`、`calendar`）に置く。
   - DB と HTTP のアダプタ（`postgres`、`httpapi`）は 1 つずつ置く。
@@ -42,8 +45,14 @@ status: stable
   - `packages/go` は `services/` を import しない。
 - web は `@buddy/ui` に依存してよい。
   - `packages/ui` から `apps/` へは依存しない。
+- web は `@buddy/broker` の `AuthCard` と `loginFailedMessage` だけに依存してよい。`apps/broker` は `@buddy/ui` に依存し、web には依存しない。
 - web の `features/<機能>/` の間は import しない。
-  - 2 つの機能が使うものは、`components/site/`（サイト共通のコンポーネント）か `@buddy/ui` に置く。
+  - 2 つの機能が使うものは、`src/components/`、`src/api/`、`@buddy/ui` に置く。
+    - API のデータを絞るだけの関数（`activePatients`）は `src/api/` に置く。
+  - `src/components/` は `features/` を import しない。
+- web の画面のコード（`features/`、`src/components/`）は、`src/server/` を import しない。
+- web の画面のコードは、`api/fake/` と `api/http/` を import せず、API のクライアントを `useBuddyApi` から受け取る。
+  - テスト、story、story のデータ（`storyData.ts`）だけは、`api/fake/` と `api/http/` を import してよい。
 - `services/schedule` の依存は、アダプタ（`httpapi`、`postgres`）、`access`、機能のパッケージ、共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）の 1 方向に限る。
   - 共通のパッケージは、標準ライブラリと、共通のパッケージの間（`kernel` から `apperr`）だけに依存する。
   - 機能のパッケージの間は、`organization`、`staff`、`visit`、`patient`、`schedule`、`calendar` の順にだけ import する。
@@ -59,10 +68,28 @@ status: stable
     - `httpapi` から `postgres` と `oidc` を import するのは、テストのファイルだけにする。
     - `httpapi` は、パスの ID の形の確認に `ulid` を使う。
   - `inmem` を import するのは、テストのファイルだけにする。
-- `services/receipt` の依存は、`record` と `civil` を末端にして、読み込み、正規化、対の作成、判定、つなぐ段（`check`）、データソース、HTTP の順の 1 方向に限る。
-  - 判定はサービスの規則（`servicerule`）を、データソースは Google カレンダー（`gcal`）を使う。
-- 依存の向きを確認する lint は入れていない。レビューで確認する。
-  - E2E の層の向きだけは、kit の ESLint の規則（`@fukuemon/e2e-kit/eslint`）が止める。
+- `services/receipt` の依存は、`record`、`civil`、`servicerule` を末端にして、読み込み（`csvio`）、正規化、対の作成、判定、つなぐ段（`check`）、データソース、HTTP の順の 1 方向に限る。
+  - 正規化と判定はサービスの規則（`servicerule`）を、データソースは Google カレンダー（`gcal`）を使う。
+  - 照合の権限の確認（`permission`）は、HTTP と同じ段に置き、`httpapi` から使う。
+- 2 つの Go の API の次の規則は、golangci-lint の depguard が止める。設定は各 API の `.golangci.yml` にある。
+  - 予定の API の機能のパッケージの間の順と、機能のパッケージから `principal`（`schedule` と `calendar` を除く）、アダプタ、`access`、`config` への import
+  - 予定の API の共通のパッケージから、標準ライブラリと共通のパッケージ以外（外のモジュールを含む）への import
+  - 予定の API の `httpapi` と `config` から `postgres` への import と、テストのファイル以外から `inmem` への import
+  - 照合の API の段の順
+- depguard は、テストのファイルを対象の外にする。
+- 循環する import は、depguard より先に Go のコンパイラが止める。
+- web の画面のコードの 4 つの規則（機能の間、`src/components/` から機能、`src/server/`、`api/fake/` と `api/http/`）は、Oxlint の `no-restricted-imports` が止める。
+  - 設定はルートの `vite.config.ts` の `lint.overrides` にあり、`features/` の下のディレクトリから機能ごとの override を作る。
+    - 機能を足したときに、設定を直さなくてよい。
+  - import の文字列を正規表現で照合するので、`#/` と相対のパスの両方を止める。
+  - Oxlint の組み込みの規則で書けるので、依存を増やす ESLint のプラグイン（eslint-plugin-boundaries）は使わない。
+  - 出典: [Apply configuration by file pattern](https://oxc.rs/docs/guide/usage/linter/config.html#apply-configuration-by-file-pattern)、[no-restricted-imports](https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-restricted-imports.html#patterns)
+- web の `src/routes/` には、`no-restricted-imports` の 4 つの規則を当てない。
+  - `auth.*.ts` と `readyz.ts` はサーバーで動く route で、`src/server/` を使う。
+- 次の規則は lint で確認せず、レビューで確認する。
+  - 機能のパッケージが、ほかの機能のリポジトリのインターフェイスを import しないこと
+  - ID ブローカーの依存の向き
+- E2E の層の向きは、kit の ESLint の規則（`@fukuemon/e2e-kit/eslint`）が止める。
 
 ## State Ownership
 
@@ -80,9 +107,12 @@ status: stable
 - web の機能のコードは `src/features/<機能>/` に置き、中を `components/`、`lib/`、`schema/`、`constants/`、`queries.ts` に分ける。
   - 画面のコンポーネントは、表示だけを持つ Presentational（`<名前>.tsx`）と、query と router を読んで渡す Container（`<名前>Container.tsx`）を同じディレクトリに並べる。
   - テストと story は対象の隣に置く（コロケーション）。
-- web の route のファイル（`src/routes/`）は、URL と Container を結び、search params の検証と SSR の有無だけを持つ。
+- web の route のファイル（`src/routes/`）は、URL と Container を結び、search params の検証、SSR の有無、loader の prefetch だけを持つ。
   - 画面のコードは `features/<機能>/` に置く。URL の階層と機能の境界が一致しないためである。
     - たとえば `/schedule/import`、`/schedule/link`、`/schedule/review` の画面は、calendar の機能にある。
+  - データを読む画面の route は、`ssr` に `RENDER_DATA_ON_SERVER` を渡し、loader で Container の query を prefetch する。
+      - bff ではサーバーで描画し、fake ではブラウザでだけ描画する。
+  - デバイスの日付や時間帯で描く画面の route は `ssr: false` にし、理由を注釈に書く。
   - route のファイルは `src/routes/` に flat に並べる。
     - 1 つの URL の階層の下が 10 ファイルを超えたら、その階層をディレクトリに分ける。
     - ディレクトリは URL の階層で分け、機能の境界では分けない。
@@ -93,6 +123,7 @@ status: stable
   - 生成した型は `generated/` に置く。
   - `VITE_API_MODE` で、ブラウザのメモリで動くフェイク（`fake/`）と、BFF の server function を呼ぶ実装（`bff/`）を切り替える。
     - 画面のコードは、story とテストのデータを除き、切り替える実装（`fake/`、`bff/`、`http/`）を直接 import しない。
+    - フェイクは `loadFake.ts` の `import()` で読み、bff のビルドに、フェイクの実装とダミーデータを入れない。
   - `http/` は、サーバーから API を呼ぶ実装で、`src/server/` から使う。
     - `GET /v1/me` の呼び出し（`meApi.ts`）と、ログインした職員への変換（`scheduleMapper.ts`）もここに置く。
 - サーバーだけで動く web の処理は `src/server/` に置く。
@@ -102,6 +133,22 @@ status: stable
   - ADR-0008: [web の画面の型を API の型と分けて持ち、ダミーデータを API の形で 1 か所に置く](../docs/adr/0008-web-view-types.md)
 - ライブラリの開発用のコンポーネント（TanStack Query の devtools など）は `src/integrations/` に置く。
 - Storybook の decorator は `src/storybook/`、テストの setup と MSW のサーバーは `src/test/` に置く。
+- web のコンポーネントの配置先は、業務の名前を持つか、引数とキーボードの操作が汎用の形か、使う機能の数で決める。
+
+  | 業務の名前 | 引数とキーボードの操作 | 使う機能の数 | 配置先 |
+  | --- | --- | --- | --- |
+  | 持たない | 汎用の形 | 問わない | `@buddy/ui` |
+  | 持たない | 使う画面に合わせた形 | 2 つ以上 | `apps/web/src/components/` |
+  | 持つ | 問わない | 2 つ以上 | `apps/web/src/components/` |
+  | 持つか、使う画面に合わせた形 | 問わない | 1 つ | `apps/web/src/features/<機能>/components/` |
+
+  - 汎用の形のものは、今は 1 つの機能だけが使っていても `@buddy/ui` に置く。
+    - 後から使う機能が増えたときに、移さずに済む。
+  - `@buddy/ui` に置くときは、Base か Case かを [DESIGN.md](../packages/ui/DESIGN.md) の基準で決める。
+  - `src/components/` の中は、役割でディレクトリを分ける。
+    - `layout/` は画面の枠（ヘッダー、ナビゲーション）、`page/` はページの本文に置く定型のもの（リード文、エラーと権限が無いときの文）を置く。
+    - ディレクトリは、同じ役割のものが 3 つ以上あるときだけ作る。1〜2 個で作ると、後から入るものでディレクトリの意味がずれる。
+    - 役割のまとまりが無いものは、`src/components/` の直下に置く（チームの色の `teamColor.ts`）。
 - web の権限の確認は、段ごとに次の場所に置く。拒む判断は API が持ち、web の確認は画面の出し分けだけにする。
   - ADR-0025: [web の画面の権限の確認を、route の beforeLoad と PermissionGuard で宣言し、1 つの関数で評価する](../docs/adr/0025-web-permission-checks.md)
   - 認証は `routes/__root.tsx` の `beforeLoad` に置く。
@@ -109,16 +156,19 @@ status: stable
   - 画面の中のボタンとダイアログは `PermissionGuard` で出し分け、Container に権限の三項演算子を書かない。
   - 権限のキー、`hasPermission`、`requirePermission` は `src/api/permissions.ts` に、`PermissionGuard` は `src/components/` に置く。
   - 予定の 7 つの権限による予定ごとの判定は、機能のコードに置く。
-- `packages/ui` へ移すのは、業務の名前を持たず、2 つ以上の画面で同じ形で使うコンポーネントだけにする。
-  - 移すときは、Base か Case かを [DESIGN.md](../packages/ui/DESIGN.md) の基準で決める。
 - デザインシステムの文書は `packages/ui/DESIGN.md` にある。
-  - 画面とコンポーネントのコード（`apps/web/src`、`packages/ui/src`）を書く前に読む。
+  - 画面とコンポーネントのコード（`apps/web/src`、`apps/broker/src`、`packages/ui/src`）を書く前に読む。
+- ID ブローカーの画面は `apps/broker/src/pages.tsx` に書き、`pnpm --filter @buddy/broker generate` で生成し直して、生成物を同じコミットに入れる。
+  - 画面の HTML と CSS を `services/broker` に手で書かない。
 - `services/schedule` のハンドラは `internal/httpapi` に、生成したインターフェイスのメソッドとして書く。
   - クエリは `db/queries`、マイグレーションは `db/migrations`、シードは `db/seed` に置く。
 - `services/schedule` に機能を足すときは、`internal/features/<機能>/` にパッケージを作る。
   - `Usecase` 型、`Deps`、`NewUsecase`、複数の操作が使う非公開の補助は `usecase.go` に置く。
-  - 公開の操作は、操作の名前のファイル（`cancel.go`、`retire.go` など）に 1 つずつ置き、1 つの操作だけが使う補助とテストも、その名前のファイルに置く。
-  - 操作が 2 つ以下の機能と、全部の操作が Get、List、Create、Update で 1 つが 20 行に収まる機能（`organization`、`visit`）は、`usecase.go` の 1 つにする。
+    - 複数の操作をまとめて確認するテストは `usecase_test.go` に置く。
+  - 公開の操作は、操作の名前のファイル（`cancel.go`、`retire.go` など）に 1 つずつ置く。
+    - 1 つの操作だけが使う補助は、その操作のファイルに置く。
+    - 1 つの操作だけを確認するテストは、`<操作>_test.go` に置く。
+  - 操作が 2 つ以下の機能（`visit`）と、全部の操作が Get、List、Create、Update で 1 つの操作が 20 行に収まる機能（`organization`）は、`usecase.go` の 1 つのファイルにまとめる。
 - 新しい Go の API で機能が 2 つ以上あるときは、機能のパッケージを `internal/features/<機能>/` に置く。
   - 機能が 1 つの API（照合の API、ID ブローカー）は、`features/` を作らない。
 - `services/receipt` に照合の段を足すときは、段ごとに `internal/` の下にパッケージを作り、`check` でつなぐ。

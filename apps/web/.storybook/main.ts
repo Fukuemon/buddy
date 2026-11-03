@@ -7,7 +7,8 @@ const config: StorybookConfig = {
     '../../../packages/ui/src/**/*.stories.@(ts|tsx)',
     '../src/**/*.stories.@(ts|tsx)',
   ],
-  addons: ['@storybook/addon-docs', '@storybook/addon-a11y'],
+  // pseudo-states は、状態の story で hover の見た目をマウスを乗せずに出す
+  addons: ['@storybook/addon-docs', '@storybook/addon-a11y', 'storybook-addon-pseudo-states'],
   framework: '@storybook/react-vite',
   core: {
     builder: {

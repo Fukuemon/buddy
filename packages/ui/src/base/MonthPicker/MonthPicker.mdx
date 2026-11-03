@@ -1,0 +1,80 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { MonthPicker } from './MonthPicker'
+import * as Stories from './MonthPicker.stories'
+
+<Meta of={Stories} />
+
+# MonthPicker
+
+年と月を 1 つ入力する欄。ブラウザの `input type="month"` を使い、値は `YYYY-MM` の文字列。見出し、補足の文、誤りの文は `FormField` で並べる。
+
+## 使う場面
+
+- 照合の対象の月のように、日を問わず月を 1 つ選ぶ
+
+## 使わない場面
+
+- 日まで決める入力（`DatePicker` を使う）
+- 期間の始まりと終わり（`DatePicker` を 2 つ並べる）
+
+## Do
+
+- `label` に項目の名前を渡す
+- 選んだ月が何に使われるかを `hint` に書く
+
+## Don't
+
+- ラベルを空にする
+
+## 状態
+
+### デフォルト
+
+<Canvas of={Stories.Default} />
+
+### hover
+
+枠を黒にする。
+
+<Canvas of={Stories.Hover} />
+
+### フォーカス
+
+<Canvas of={Stories.Focus} />
+
+### エラー
+
+<Canvas of={Stories.WithError} />
+
+### エラーで hover
+
+誤りの枠を濃い赤にする。
+
+<Canvas of={Stories.WithErrorHover} />
+
+### エラーでフォーカス
+
+誤りのない欄と同じ `focus-ring` を出す。
+
+<Canvas of={Stories.WithErrorFocus} />
+
+### 無効
+
+<Canvas of={Stories.Disabled} />
+
+### 無効で hover
+
+枠の色を変えない。
+
+<Canvas of={Stories.DisabledHover} />
+
+## キーボードの操作
+
+- Tab で欄に移る
+- ブラウザの月の入力欄の操作に従う
+- エラーがあると `aria-invalid` を付け、`aria-describedby` でエラーの文を指す
+
+## props
+
+<ArgTypes of={MonthPicker} />

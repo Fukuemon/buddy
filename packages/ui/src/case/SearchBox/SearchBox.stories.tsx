@@ -22,3 +22,11 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {}
 
 export const WithValue: Story = { args: { defaultValue: '青木' } }
+
+export const Disabled: Story = { args: { disabled: true } }
+
+export const Hover: Story = { parameters: { pseudo: { hover: true } } }
+
+export const Focus: Story = { parameters: { pseudo: { focusVisible: true } } }
+
+export const DisabledHover: Story = { ...Disabled, parameters: { pseudo: { hover: true } } }

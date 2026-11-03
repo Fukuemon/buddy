@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 
-import { AuthErrorMessage } from '#/components/site/AuthErrorMessage'
+import { AuthErrorMessage } from '#/components/page/AuthErrorMessage'
 
 const searchSchema = z.object({
   reason: z.enum(['failed', 'forbidden', 'too_many_attempts']).catch('failed'),

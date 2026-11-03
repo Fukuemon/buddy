@@ -1,6 +1,8 @@
 import { clsx } from 'clsx'
 import type { MouseEvent, ReactNode } from 'react'
 
+import { fieldBoxClassName } from './fieldClassName'
+
 type FieldFrameProps = {
   htmlFor: string
   label: string
@@ -28,9 +30,9 @@ export const FieldFrame = ({
   <div className={clsx('font-normal', isWide ? 'w-full' : 'w-80')}>
     <label
       className={clsx(
-        'relative flex h-14 cursor-pointer flex-col justify-center rounded-8 bg-surface px-4 ring-1 ring-border-field transition duration-100 ring-inset',
-        'focus-within:bg-primary-surface has-[:focus-visible]:focus-ring',
-        error !== undefined && 'ring-2 ring-danger',
+        'relative flex h-14 cursor-pointer flex-col justify-center px-4 transition duration-100 has-[:disabled]:cursor-default',
+        fieldBoxClassName,
+        'focus-within:bg-primary-surface',
       )}
       htmlFor={htmlFor}
     >

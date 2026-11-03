@@ -4,6 +4,7 @@ linters:
   default: standard
   enable:
     - bodyclose
+    - depguard
     - errorlint
     - gosec
     - misspell
@@ -13,6 +14,198 @@ linters:
     - unparam
     - revive
   settings:
+    # 依存の向きの規則は context/codebase.md の Dependency Rules にある。テストのファイルは対象の外にする。
+    depguard:
+      rules:
+        features-organization:
+          files:
+            - "**/internal/features/organization/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/staff
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/visit
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/patient
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/schedule
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendar
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/principal
+              desc: principal を使うのは schedule と calendar だけにする
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/httpapi
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/postgres
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/gcal
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/broker
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/ulid
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/access
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/config
+              desc: 機能のパッケージはアダプタと access と config を import しない
+        features-staff:
+          files:
+            - "**/internal/features/staff/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/visit
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/patient
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/schedule
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendar
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/principal
+              desc: principal を使うのは schedule と calendar だけにする
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/httpapi
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/postgres
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/gcal
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/broker
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/ulid
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/access
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/config
+              desc: 機能のパッケージはアダプタと access と config を import しない
+        features-visit:
+          files:
+            - "**/internal/features/visit/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/patient
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/schedule
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendar
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/principal
+              desc: principal を使うのは schedule と calendar だけにする
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/httpapi
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/postgres
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/gcal
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/broker
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/ulid
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/access
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/config
+              desc: 機能のパッケージはアダプタと access と config を import しない
+        features-patient:
+          files:
+            - "**/internal/features/patient/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/schedule
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendar
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/principal
+              desc: principal を使うのは schedule と calendar だけにする
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/httpapi
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/postgres
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/gcal
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/broker
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/ulid
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/access
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/config
+              desc: 機能のパッケージはアダプタと access と config を import しない
+        features-schedule:
+          files:
+            - "**/internal/features/schedule/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendar
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/httpapi
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/postgres
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/gcal
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/broker
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/ulid
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/access
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/config
+              desc: 機能のパッケージはアダプタと access と config を import しない
+        features-calendar:
+          files:
+            - "**/internal/features/calendar/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/httpapi
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/postgres
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/gcal
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/broker
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/ulid
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/access
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/config
+              desc: 機能のパッケージはアダプタと access と config を import しない
+        # 共通のパッケージは、外の依存も止めるために allow の strict で書く。
+        shared:
+          list-mode: strict
+          files:
+            - "**/internal/apperr/**"
+            - "**/internal/tx/**"
+            - "**/internal/kernel/**"
+            - "**/internal/civil/**"
+            - "!$test"
+          allow:
+            - $gostd
+            - github.com/Fukuemon/buddy/services/schedule/internal/apperr
+            - github.com/Fukuemon/buddy/services/schedule/internal/tx
+            - github.com/Fukuemon/buddy/services/schedule/internal/kernel
+            - github.com/Fukuemon/buddy/services/schedule/internal/civil
+        httpapi:
+          files:
+            - "**/internal/httpapi/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/postgres
+              desc: httpapi から postgres を import するのはテストのファイルだけにする
+        config:
+          files:
+            - "**/internal/config/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/postgres
+              desc: config は DB のアダプタを import しない。cmd が値をアダプタの設定にコピーする
+        inmem:
+          files:
+            - "$all"
+            - "!**/internal/inmem/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/inmem
+              desc: inmem を import するのはテストのファイルだけにする
     revive:
       rules:
         - name: exported
