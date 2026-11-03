@@ -8,9 +8,6 @@ import {
 import { useRouteContext, useRouter } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
-import { getViewerFn } from './bff/serverFns'
-import type { ApiMode } from './createBuddyApi'
-import { loadFake } from './loadFake'
 import { queryKeys } from './queryKeys'
 import type { Viewer } from './types'
 
@@ -21,12 +18,12 @@ export const VIEWER_STALE_TIME_MS = 5 * 60 * 1000
  * ログインした職員を取る query。ログインしていなければ null になる。
  * 古くなった後は、ウィンドウにフォーカスが戻ったときと、画面を移ったときに取り直す。
  * ログアウトは画面を読み直すので、ログアウトでは取り直さない。
- * fake のダミーの職員は、bff のビルドに入れないために、読むときに読み込む。
+ * 職員を読む関数は route の context から受け取る。このモジュールを読む画面のコードに、BFF の server function を入れないためである。
  */
-export const viewerQueryOptions = (mode: ApiMode) =>
+export const viewerQueryOptions = (fetchViewer: () => Promise<Viewer | null>) =>
   queryOptions<Viewer | null>({
     queryKey: queryKeys.viewer(),
-    queryFn: async () => (mode === 'fake' ? (await loadFake()).FAKE_VIEWER : getViewerFn()),
+    queryFn: fetchViewer,
     staleTime: VIEWER_STALE_TIME_MS,
   })
 
@@ -35,8 +32,8 @@ export const viewerQueryOptions = (mode: ApiMode) =>
  * 古くなった後にウィンドウにフォーカスが戻ると取り直し、権限の出し分けが変わる。
  */
 export const useViewer = (): Viewer | null => {
-  const { mode, viewer } = useRouteContext({ from: '__root__' })
-  return useQuery({ ...viewerQueryOptions(mode), initialData: viewer }).data
+  const { fetchViewer, viewer } = useRouteContext({ from: '__root__' })
+  return useQuery({ ...viewerQueryOptions(fetchViewer), initialData: viewer }).data
 }
 
 /** ログインの画面へ移る URL。ログインの後に returnTo へ戻る。 */
