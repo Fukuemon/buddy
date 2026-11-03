@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 
 import { ApiError } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
-import { FAKE_VIEWER } from '#/api/fake/fixtures'
 import {
   emptyBuddyApi,
   failingBuddyApi,
@@ -34,14 +33,6 @@ export const Empty: Story = { parameters: route({ api: emptyBuddyApi() }) }
 export const Loading: Story = { parameters: route({ api: pendingBuddyApi() }) }
 
 export const LoadError: Story = { parameters: route({ api: failingBuddyApi() }) }
-
-/** 職員の管理の権限を持たない職員。API を呼ばない。 */
-export const Forbidden: Story = {
-  parameters: route({
-    api: failingBuddyApi(),
-    viewer: { ...FAKE_VIEWER, canManageStaff: false },
-  }),
-}
 
 const unappliable = createFakeBuddyApi()
 

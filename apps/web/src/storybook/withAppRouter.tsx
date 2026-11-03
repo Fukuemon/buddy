@@ -73,6 +73,7 @@ const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
     api: params.api ?? createFakeBuddyApi(),
     receiptApi: params.receiptApi ?? createFakeReceiptApi(),
     mode: 'fake',
+    fetchViewer: async () => params.viewer ?? FAKE_VIEWER,
   }
   // story を置く route の外では何も描かない。story の操作で別の route へ移ると、画面は空になる
   const at = (id: StoryRouteId) => () => (params.route === id ? Story() : <Outlet />)

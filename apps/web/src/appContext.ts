@@ -2,6 +2,7 @@ import { QueryClient } from '@tanstack/react-query'
 
 import { ApiError, type BuddyApi, type ReceiptApi } from '#/api/BuddyApi'
 import { createBuddyApi, type ApiMode } from '#/api/createBuddyApi'
+import type { Viewer } from '#/api/types'
 
 /** route の loader と部品が共有する値。ログインした職員は、root の route の beforeLoad が足す。 */
 export type AppRouterContext = {
@@ -9,6 +10,8 @@ export type AppRouterContext = {
   api: BuddyApi
   receiptApi: ReceiptApi
   mode: ApiMode
+  /** ログインした職員を読む。ログインしていなければ null を返す。Viewer の query の queryFn になる。 */
+  fetchViewer: () => Promise<Viewer | null>
 }
 
 /** 取得を取り直す回数の上限。TanStack Query の既定と同じにする。 */

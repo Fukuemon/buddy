@@ -9,7 +9,6 @@ const {
   Default,
   Ended,
   EndedStaffError,
-  Forbidden,
   NonVisitingStaff,
   NotFound,
   ServiceCodesOnceError,
@@ -179,11 +178,5 @@ describe('PatientDetailContainer', () => {
       '利用者が見つかりません。利用者の一覧から開き直してください。',
     )
     expect(screen.queryByTestId('patient-detail-retry')).toBeNull()
-  })
-
-  it('職員の管理の権限が無ければ、利用者を出さずに権限が無いことを示す', async () => {
-    render(<Forbidden />)
-    expect(await screen.findByTestId('page-forbidden')).toBeInTheDocument()
-    expect(screen.queryByTestId('patient-detail-name')).toBeNull()
   })
 })

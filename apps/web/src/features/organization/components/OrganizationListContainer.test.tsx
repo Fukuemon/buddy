@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './OrganizationListContainer.stories'
 
-const { Default, Empty, LoadError, Forbidden } = composeStories(stories)
+const { Default, Empty, LoadError } = composeStories(stories)
 
 const rowTexts = (testId: string) =>
   within(screen.getByTestId(testId))
@@ -122,11 +122,5 @@ describe('OrganizationListContainer', () => {
       '部署とチームを読み込めませんでした。時間をおいて、読み直してください。',
     )
     expect(screen.getByTestId('organization-list-retry')).toBeInTheDocument()
-  })
-
-  it('職員の管理の権限が無ければ、部署とチームを出さずに権限が無いことを示す', async () => {
-    render(<Forbidden />)
-    expect(await screen.findByTestId('page-forbidden')).toBeInTheDocument()
-    expect(screen.queryByText('部署とチーム')).toBeNull()
   })
 })

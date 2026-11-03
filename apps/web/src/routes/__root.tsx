@@ -3,14 +3,19 @@ import {
   Scripts,
   createRootRouteWithContext,
   redirect,
+  type ErrorComponentProps,
   useRouterState,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 
-import { loginHref, viewerQueryOptions } from '#/api/viewer'
-import { PageErrorMessage } from '#/components/page/PageErrorMessage'
+import { SCREEN_PERMISSION_NAMES, deniedPermissionOf } from '#/api/permissions'
+import { loginHref, useRecheckPermissionsOnViewerChange, viewerQueryOptions } from '#/api/viewer'
 import { SiteHeader } from '#/components/layout/SiteHeader'
+import { SiteLayoutContainer } from '#/components/layout/SiteLayoutContainer'
+import { PageErrorMessage } from '#/components/page/PageErrorMessage'
+import { PageForbiddenMessage } from '#/components/page/PageForbiddenMessage'
+import { CalendarReviewBadgeContainer } from '#/features/calendar/components/CalendarReviewBadgeContainer'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
@@ -22,7 +27,7 @@ export const Route = createRootRouteWithContext<AppRouterContext>()({
   // /auth/ の下はログインの前と失敗の画面なので、職員を求めない
   beforeLoad: async ({ context, location }) => {
     if (location.pathname.startsWith('/auth/')) return { viewer: null }
-    const viewer = await context.queryClient.ensureQueryData(viewerQueryOptions(context.mode))
+    const viewer = await context.queryClient.fetchQuery(viewerQueryOptions(context.fetchViewer))
     if (viewer === null) throw redirect({ href: loginHref(location.href), reloadDocument: true })
     return { viewer }
   },
@@ -51,6 +56,7 @@ export const Route = createRootRouteWithContext<AppRouterContext>()({
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  useRecheckPermissionsOnViewerChange()
   return (
     <html lang="ja">
       <head>
@@ -76,8 +82,19 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   )
 }
 
-function RootError() {
+function RootError({ error }: ErrorComponentProps) {
   const href = useRouterState({ select: (state) => state.location.href })
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const denied = deniedPermissionOf(error)
+  // 権限が無いときは、URL を変えずに画面の枠の中で示す（ADR-0025）
+  if (denied !== undefined)
+    return (
+      <SiteLayoutContainer current={pathname} reviewBadge={<CalendarReviewBadgeContainer />}>
+        <main className="min-w-0 p-4 desktop:p-6">
+          <PageForbiddenMessage policyName={SCREEN_PERMISSION_NAMES[denied]} />
+        </main>
+      </SiteLayoutContainer>
+    )
   return (
     <div className="flex h-dvh flex-col">
       <SiteHeader />

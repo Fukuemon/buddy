@@ -1,8 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
 
+import { requirePermission } from '#/api/permissions'
+import { STAFF_MANAGE } from '#/api/types'
 import { StaffCreateDialogContainer } from '#/features/staff/components/StaffCreateDialogContainer'
 
 export const Route = createFileRoute('/staff/new')({
+  beforeLoad: requirePermission(STAFF_MANAGE),
   head: () => ({ meta: [{ title: '職員の登録 | buddy' }] }),
   component: StaffCreateDialogContainer,
 })

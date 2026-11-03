@@ -3,12 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import { FAKE_VIEWER } from '#/api/fake/fixtures'
-import {
-  failingBuddyApi,
-  pendingBuddyApi,
-  withAppRouter,
-  type AppRouterParameters,
-} from '#/storybook/withAppRouter'
+import { pendingBuddyApi, withAppRouter, type AppRouterParameters } from '#/storybook/withAppRouter'
 
 import { StaffDetailContainer } from './StaffDetailContainer'
 
@@ -111,13 +106,5 @@ export const NotFound: Story = {
         },
       },
     },
-  }),
-}
-
-/** 職員の管理の権限を持たない職員。API を呼ばずに、権限が無いことだけを示す。 */
-export const Forbidden: Story = {
-  parameters: route('staff-2', {
-    api: failingBuddyApi(),
-    viewer: { ...FAKE_VIEWER, canManageStaff: false },
   }),
 }

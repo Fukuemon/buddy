@@ -1,12 +1,15 @@
-import { composeStories } from '@storybook/react-vite'
+import { composeStories, composeStory } from '@storybook/react-vite'
+import type { QueryClient } from '@tanstack/react-query'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vite-plus/test'
 
+import { FAKE_VIEWER } from '#/api/fake/fixtures'
+import { queryKeys } from '#/api/queryKeys'
+
 import * as stories from './StaffDetailContainer.stories'
 
-const { Default, Forbidden, NoAssignments, NotFound, OnLeave, Retired, Self } =
-  composeStories(stories)
+const { Default, NoAssignments, NotFound, OnLeave, Retired, Self } = composeStories(stories)
 
 const openPolicies = async () => {
   await userEvent.click(await screen.findByTestId('staff-detail-tab-policies'))
@@ -97,6 +100,41 @@ describe('StaffDetailContainer', () => {
     )
     expect(within(dialog).getByTestId('staff-policies-option-staff.manage')).toBeChecked()
     expect(within(dialog).getByTestId('staff-policies-option-schedule.all.read')).toBeChecked()
+  })
+
+  it('役職と権限を変えると、ログインした職員の Viewer を invalidate する', async () => {
+    let client: QueryClient | undefined
+    const Story = composeStory(
+      {
+        ...stories.Default,
+        parameters: {
+          appRouter: {
+            ...stories.default.parameters.appRouter,
+            seed: (queryClient: QueryClient) => {
+              client = queryClient
+            },
+          },
+        },
+      },
+      stories.default,
+    )
+    const viewerInvalidated = () => client?.getQueryState(queryKeys.viewer())?.isInvalidated
+    render(<Story />)
+    client?.setQueryData(queryKeys.viewer(), FAKE_VIEWER)
+    await userEvent.click(await screen.findByTestId('staff-detail-position-change'))
+    const dialog = screen.getByTestId('staff-position-dialog')
+    await userEvent.click(
+      await within(dialog).findByTestId('staff-position-option-position-manager'),
+    )
+    await userEvent.click(within(dialog).getByTestId('staff-position-submit'))
+    await expect.poll(viewerInvalidated).toBe(true)
+
+    client?.setQueryData(queryKeys.viewer(), FAKE_VIEWER)
+    expect(viewerInvalidated()).toBe(false)
+    const policies = await openPolicies()
+    await userEvent.click(within(policies).getByTestId('staff-policies-option-staff.manage'))
+    await userEvent.click(within(policies).getByTestId('staff-policies-submit'))
+    await expect.poll(viewerInvalidated).toBe(true)
   })
 
   it('役職を変えると、個別に足した権限が消えることを示してから、権限を新しい役職のものに置き換える', async () => {
@@ -207,15 +245,11 @@ describe('StaffDetailContainer', () => {
     expect(screen.queryByTestId('staff-detail-menu')).toBeNull()
   })
 
-  it('見つからない職員は読み直すを出さず、権限が無ければ権限が無いことを示す', async () => {
-    const { unmount } = render(<NotFound />)
+  it('見つからない職員は読み直すを出さない', async () => {
+    render(<NotFound />)
     expect(await screen.findByTestId('staff-detail-error')).toHaveTextContent(
       '職員が見つかりません。職員の一覧から開き直してください。',
     )
     expect(screen.queryByTestId('staff-detail-retry')).toBeNull()
-    unmount()
-
-    render(<Forbidden />)
-    expect(await screen.findByTestId('page-forbidden')).toBeInTheDocument()
   })
 })

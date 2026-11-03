@@ -7,7 +7,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
-| ナビゲーション | 「取り込み」「要確認」「連携」を出すか | `Viewer.canManageStaff` | `getMe` の `policies[].code` に `staff.manage` があるか |
+| ナビゲーション | 「取り込み」「要確認」「連携」を出すか | `Viewer.policyCodes` に `staff.manage` があるか（`hasPermission`） | `getMe` の `policies[].code` に `staff.manage` があるか |
 | ログインした職員 | 職員の名前 | `Viewer.staffName` | `getMe` の `username` |
 | 共有する相手のメールアドレス | この事業所のサービスアカウントのメールアドレス | `calendars.serviceAccount` の戻り値 | `getCalendarServiceAccount` の `email` |
 | 職員の一覧 | 職員の名前 | `Staff.name` | `listUsers` の `Staff.username` |

@@ -1,11 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useRouteContext } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import type { Staff } from '#/api/types'
 import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
-import { PageForbiddenMessage } from '#/components/page/PageForbiddenMessage'
 
 import {
   LINK_LOAD_ERROR_MESSAGE,
@@ -145,10 +144,9 @@ const CalendarLinkContent = () => {
 }
 
 /**
- * カレンダーの連携の画面。職員の管理の権限が無ければ、API を呼ばずに権限が無いことを示す。
+ * カレンダーの連携の画面。
  * 職員、結び付けたカレンダー、サービスアカウントを読み、結び付けると外すをダイアログで行う。
  */
 export const CalendarLinkContainer = () => {
-  const { viewer } = useRouteContext({ from: '__root__' })
-  return viewer?.canManageStaff ? <CalendarLinkContent /> : <PageForbiddenMessage />
+  return <CalendarLinkContent />
 }

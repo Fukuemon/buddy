@@ -1,7 +1,9 @@
 import { createBffBuddyApi } from './bff/bffBuddyApi'
 import { createBffReceiptApi } from './bff/bffReceiptApi'
+import { getViewerFn } from './bff/serverFns'
 import type { BuddyApi, ReceiptApi } from './BuddyApi'
-import { createDeferredFakeApis } from './loadFake'
+import { createDeferredFakeApis, loadFake } from './loadFake'
+import type { Viewer } from './types'
 
 /** createBuddyApi が読む環境変数。意味は README の Configuration にある。 */
 export type ApiEnv = {
@@ -21,15 +23,32 @@ export const RENDER_DATA_ON_SERVER = import.meta.env.VITE_API_MODE === 'bff'
 
 /**
  * VITE_API_MODE が bff なら BFF を通す BuddyApi と ReceiptApi を、fake か未指定ならフェイクを作る。
- * フェイクの実装は、初めて呼んだときに読み込む。
+ * ログインした職員を読む fetchViewer も、同じモードで作る。
+ * フェイクの実装とダミーの職員は、初めて呼んだときに読み込む。
  *
  * VITE_API_MODE がほかの値のときは Error を投げる。
  */
 export const createBuddyApi = (
   env: ApiEnv,
-): { api: BuddyApi; receiptApi: ReceiptApi; mode: ApiMode } => {
+): {
+  api: BuddyApi
+  receiptApi: ReceiptApi
+  mode: ApiMode
+  fetchViewer: () => Promise<Viewer | null>
+} => {
   const mode = env.VITE_API_MODE || 'fake'
-  if (mode === 'fake') return { ...createDeferredFakeApis(), mode }
-  if (mode === 'bff') return { api: createBffBuddyApi(), receiptApi: createBffReceiptApi(), mode }
+  if (mode === 'fake')
+    return {
+      ...createDeferredFakeApis(),
+      mode,
+      fetchViewer: async () => (await loadFake()).FAKE_VIEWER,
+    }
+  if (mode === 'bff')
+    return {
+      api: createBffBuddyApi(),
+      receiptApi: createBffReceiptApi(),
+      mode,
+      fetchViewer: () => getViewerFn(),
+    }
   throw new Error(`VITE_API_MODE は fake か bff にする: ${mode}`)
 }

@@ -10,6 +10,7 @@ import type {
 } from '#/api/types'
 import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
+import { useRefreshViewer } from '#/api/viewer'
 
 import { policyChangeErrorReason } from './lib/errorMessage'
 import type { PolicyChange } from './lib/policyChanges'
@@ -109,9 +110,11 @@ export const useCreateStaff = () => {
 export const useUpdateStaff = (staffId: Staff['id']) => {
   const { api, facilityId } = useBuddyApi()
   const changed = useStaffChanged()
+  const refreshViewer = useRefreshViewer()
   return useMutation({
     mutationFn: (input: StaffUpdateInput) => api.staff.update(facilityId, staffId, input),
-    onSuccess: (result) => ('updated' in result ? changed(result.updated) : undefined),
+    onSuccess: (result) =>
+      'updated' in result ? Promise.all([changed(result.updated), refreshViewer()]) : undefined,
   })
 }
 
@@ -119,9 +122,10 @@ export const useUpdateStaff = (staffId: Staff['id']) => {
 export const useChangePosition = (staffId: Staff['id']) => {
   const { api, facilityId } = useBuddyApi()
   const changed = useStaffChanged()
+  const refreshViewer = useRefreshViewer()
   return useMutation({
     mutationFn: (positionId: string) => api.staff.changePosition(facilityId, staffId, positionId),
-    onSuccess: changed,
+    onSuccess: (staff) => Promise.all([changed(staff), refreshViewer()]),
   })
 }
 
@@ -135,6 +139,7 @@ export type PolicySaveFailure = { name: string; reason: string }
 export const useSavePolicies = (staffId: Staff['id']) => {
   const { api, facilityId } = useBuddyApi()
   const queryClient = useQueryClient()
+  const refreshViewer = useRefreshViewer()
   return useMutation({
     mutationFn: async (changes: readonly PolicyChange[]) => {
       const failures: PolicySaveFailure[] = []
@@ -154,6 +159,7 @@ export const useSavePolicies = (staffId: Staff['id']) => {
       Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.staff.detail(facilityId, staffId) }),
         queryClient.invalidateQueries({ queryKey: queryKeys.staff.records(facilityId) }),
+        refreshViewer(),
       ]),
   })
 }

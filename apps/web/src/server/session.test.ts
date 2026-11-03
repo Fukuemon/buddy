@@ -11,8 +11,7 @@ const VIEWER = {
   staffId: 'staff-1',
   staffName: '青木 陽菜',
   facilityId: 'facility-1',
-  canManageStaff: false,
-  canCheckReceipt: false,
+  policyCodes: [],
   schedulePolicies: [],
 }
 

@@ -7,7 +7,7 @@ OpenAPI の項目は、`createCheck`（`POST /v1/checks`）の本文とレスポ
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
 | ログインした職員 | 職員の名前 | `Viewer.staffName` | `getMe` の `username` |
-| 権限が無いこと | 照合の権限を持つか | `Viewer.canCheckReceipt` | `getMe` の `policies[].code` に `receipt.check` があるか |
+| 権限が無いこと | 照合の権限を持つか | `Viewer.policyCodes` に `receipt.check` があるか（`hasPermission`） | `getMe` の `policies[].code` に `receipt.check` があるか |
 | 予定の取り方 | Google カレンダーか予定の CSV | `ScheduleSource`（`calendar`、`csv`）。画面の中だけの値 | `month` と `schedules` のどちらを送るか |
 | 対象の月 | `YYYY-MM` の月 | `ReceiptCheckInput.month` | 本文の `month` |
 | 予定の CSV | ファイル | `ReceiptCheckInput.schedules` | 本文の `schedules` |

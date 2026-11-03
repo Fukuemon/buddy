@@ -1,11 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useRouteContext } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import type { CalendarExportIssue } from '#/api/types'
 import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
-import { PageForbiddenMessage } from '#/components/page/PageForbiddenMessage'
 
 import {
   REVIEW_LOAD_ERROR_MESSAGE,
@@ -98,11 +97,10 @@ const CalendarReviewContent = () => {
 }
 
 /**
- * 確認が必要な予定の画面。職員の管理の権限が無ければ、API を呼ばずに権限が無いことを示す。
+ * 確認が必要な予定の画面。
  * 行を押すと予定の確認のダイアログを開き、buddy の内容で書き直すか Google の内容に合わせるかを、確認のダイアログで確定してから行う。
  * 確認のダイアログの「キャンセル」は、予定の確認のダイアログに戻る。
  */
 export const CalendarReviewContainer = () => {
-  const { viewer } = useRouteContext({ from: '__root__' })
-  return viewer?.canManageStaff ? <CalendarReviewContent /> : <PageForbiddenMessage />
+  return <CalendarReviewContent />
 }

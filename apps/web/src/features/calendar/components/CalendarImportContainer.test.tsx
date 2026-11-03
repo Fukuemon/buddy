@@ -5,8 +5,7 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './CalendarImportContainer.stories'
 
-const { Initial, WithStaff, Forbidden, NoCalendar, PreviewError, SubmitError } =
-  composeStories(stories)
+const { Initial, WithStaff, NoCalendar, PreviewError, SubmitError } = composeStories(stories)
 
 const submit = () => screen.getByTestId('calendar-import-submit')
 
@@ -139,11 +138,5 @@ describe('CalendarImportContainer', () => {
     render(<NoCalendar />)
     expect(await screen.findByTestId('calendar-import-no-calendar')).toBeInTheDocument()
     expect(screen.queryByTestId('calendar-import-form')).toBeNull()
-  })
-
-  it('職員の管理の権限が無ければ、権限が無いことを示す', async () => {
-    render(<Forbidden />)
-    expect(await screen.findByTestId('page-forbidden')).toBeInTheDocument()
-    expect(screen.queryByTestId('calendar-import-load-error')).toBeNull()
   })
 })

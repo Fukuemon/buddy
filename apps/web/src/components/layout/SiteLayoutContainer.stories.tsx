@@ -34,7 +34,7 @@ export const StaffManager: Story = {}
 
 /** 職員の管理の権限を持たず、照合の権限を持つ職員（事務）の照合の画面。予定の下はカレンダーだけになる。 */
 export const Staff: Story = {
-  parameters: route({ viewer: { ...FAKE_VIEWER, canManageStaff: false } }),
+  parameters: route({ viewer: { ...FAKE_VIEWER, policyCodes: ['receipt.check'] } }),
 }
 
 /** 職員の管理の権限も照合の権限も持たない職員（チームリーダーとメンバー）のカレンダー。照合を出さない。 */
@@ -42,7 +42,7 @@ export const Member: Story = {
   parameters: route({
     route: '/schedule',
     url: '/schedule',
-    viewer: { ...FAKE_VIEWER, canManageStaff: false, canCheckReceipt: false },
+    viewer: { ...FAKE_VIEWER, policyCodes: [] },
   }),
   args: { current: '/schedule' },
 }
@@ -58,7 +58,7 @@ export const ReviewForbidden: Story = {
   parameters: route({
     route: '/schedule_/review',
     url: '/schedule/review',
-    viewer: { ...FAKE_VIEWER, canManageStaff: false },
+    viewer: { ...FAKE_VIEWER, policyCodes: ['receipt.check'] },
   }),
   args: { current: '/schedule/review' },
 }

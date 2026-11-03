@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './StaffListContainer.stories'
 
-const { Default, Forbidden, LoadError } = composeStories(stories)
+const { Default, LoadError } = composeStories(stories)
 
 const rowIds = () =>
   within(screen.getByTestId('staff-list-table'))
@@ -78,11 +78,5 @@ describe('StaffListContainer', () => {
       '職員を読み込めませんでした。時間をおいて、読み直してください。',
     )
     expect(screen.getByTestId('staff-list-retry')).toBeInTheDocument()
-  })
-
-  it('職員の管理の権限が無ければ、一覧と登録のボタンを出さずに権限が無いことを示す', async () => {
-    render(<Forbidden />)
-    expect(await screen.findByTestId('page-forbidden')).toBeInTheDocument()
-    expect(screen.queryByTestId('staff-list-new')).toBeNull()
   })
 })

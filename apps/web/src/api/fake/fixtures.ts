@@ -15,8 +15,6 @@ import {
   fromApiTeam,
 } from '../http/scheduleMapper'
 import {
-  RECEIPT_CHECK,
-  STAFF_MANAGE,
   type FacilityId,
   type Patient,
   type Schedule,
@@ -36,8 +34,7 @@ export const FAKE_VIEWER: Viewer = {
   staffId: mockMe.id,
   staffName: mockMe.username,
   facilityId: mockMe.facility_id,
-  canManageStaff: mockMe.policies.some((p) => p.code === STAFF_MANAGE),
-  canCheckReceipt: mockMe.policies.some((p) => p.code === RECEIPT_CHECK),
+  policyCodes: mockMe.policies.map((p) => p.code),
   schedulePolicies: fromApiSchedulePolicies(mockMe.policies),
 }
 
