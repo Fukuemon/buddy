@@ -7,12 +7,6 @@ import type {
 /** 事業所の ID。API の `/v1/facilities/{facility_id}` に入る。 */
 export type FacilityId = string
 
-/** 職員の管理の権限の code。予定の API のマイグレーションが入れる値と同じにする。 */
-export const STAFF_MANAGE = 'staff.manage'
-
-/** 照合の権限の code。予定の API のマイグレーションが入れる値と同じにする（ADR-0022）。 */
-export const RECEIPT_CHECK = 'receipt.check'
-
 /** ログインした職員。 */
 export type Viewer = {
   staffId: string

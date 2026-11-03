@@ -4,7 +4,6 @@ import { ApiError, type BuddyApi } from '../BuddyApi'
 import { fromApiStaff } from '../http/scheduleMapper'
 import { matchesName } from '../nameSearch'
 import {
-  STAFF_MANAGE,
   type Department,
   type PatientRecord,
   type Position,
@@ -14,6 +13,7 @@ import {
   type StaffPolicy,
   type Team,
 } from '../types'
+import { STAFF_MANAGE } from '../permissions'
 
 /** createFakeStaffApi の設定。 */
 export type FakeStaffApiOptions = {

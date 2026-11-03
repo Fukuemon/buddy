@@ -1,5 +1,6 @@
 import type { components } from '#/api/generated/schedule'
-import { RECEIPT_CHECK, STAFF_MANAGE, type ServiceCode } from '#/api/types'
+import { type ServiceCode } from '#/api/types'
+import { RECEIPT_CHECK, STAFF_MANAGE } from '#/api/permissions'
 
 type Schemas = components['schemas']
 

@@ -1,4 +1,10 @@
-import { RECEIPT_CHECK, STAFF_MANAGE, type Viewer } from './types'
+import type { Viewer } from './types'
+
+/** 職員の管理の権限の code。予定の API のマイグレーションが入れる値と同じにする。 */
+export const STAFF_MANAGE = 'staff.manage'
+
+/** 照合の権限の code。予定の API のマイグレーションが入れる値と同じにする（ADR-0022）。 */
+export const RECEIPT_CHECK = 'receipt.check'
 
 /** 画面を開けるかと、画面の中のボタンとダイアログを出すかに使う権限。値は予定の API の権限の code と同じにする。 */
 export type ScreenPermission = typeof STAFF_MANAGE | typeof RECEIPT_CHECK

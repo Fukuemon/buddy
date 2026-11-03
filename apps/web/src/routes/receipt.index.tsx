@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { requirePermission } from '#/api/permissions'
-import { RECEIPT_CHECK } from '#/api/types'
+import { RECEIPT_CHECK } from '#/api/permissions'
 import { ReceiptCheckPage } from '#/features/receipt/components/ReceiptCheckPage'
 
 export const Route = createFileRoute('/receipt/')({
