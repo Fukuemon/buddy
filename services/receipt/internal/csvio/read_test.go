@@ -27,7 +27,7 @@ func TestDecode(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Decode(tt.in)
+			got, err := decode(tt.in)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -39,7 +39,7 @@ func TestDecode(t *testing.T) {
 }
 
 func TestDecodeInvalid(t *testing.T) {
-	_, err := Decode([]byte{0x81, 0x20, 0xFF})
+	_, err := decode([]byte{0x81, 0x20, 0xFF})
 	if !errors.Is(err, ErrEncoding) {
 		t.Fatalf("err = %v", err)
 	}

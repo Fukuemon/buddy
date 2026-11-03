@@ -13,8 +13,8 @@ import (
 	"github.com/Fukuemon/buddy/services/receipt/internal/servicerule"
 )
 
-// Staff は、主訪問者の全角スペースを半角にする。
-func Staff(s string) string {
+// staff は、主訪問者の全角スペースを半角にする。
+func staff(s string) string {
 	return strings.ReplaceAll(s, "　", " ")
 }
 
@@ -76,7 +76,7 @@ func convertRow(row csvio.Row, input record.Input, withAdditions bool) (record.R
 	rec.Key = record.Key{
 		Date:   date,
 		Client: gcaltitle.NormalizeClient(row.Get(csvio.ColClient)),
-		Staff:  Staff(row.Get(csvio.ColStaff)),
+		Staff:  staff(row.Get(csvio.ColStaff)),
 	}
 	if rec.Key.Client == "" {
 		fail(csvio.ColClient, record.ReasonEmptyValue, "空である")

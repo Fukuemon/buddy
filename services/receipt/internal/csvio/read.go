@@ -62,9 +62,9 @@ func NewRow(line int, values map[string]string) Row {
 // ErrEncoding は、Decode が UTF-8 としても CP932 としても読めないバイト列を受けたことを表す。
 var ErrEncoding = errors.New("文字コードが UTF-8 でも CP932 でもない")
 
-// Decode は、UTF-8（BOM の有無を問わない）か CP932 のバイト列を UTF-8 の文字列にする。
+// decode は、UTF-8（BOM の有無を問わない）か CP932 のバイト列を UTF-8 の文字列にする。
 // どちらとしても読めなければ ErrEncoding を返す。
-func Decode(data []byte) (string, error) {
+func decode(data []byte) (string, error) {
 	if b, ok := bytes.CutPrefix(data, []byte(utf8BOM)); ok {
 		if !utf8.Valid(b) {
 			return "", ErrEncoding
@@ -86,7 +86,7 @@ func Decode(data []byte) (string, error) {
 // 文字コードを読めないとき、空のとき、CSV として読めない行があるときも *record.InputError を返す。
 // columns の値がすべて空の行は読み飛ばす。
 func ReadTable(data []byte, input record.Input, columns []string) ([]Row, error) {
-	text, err := Decode(data)
+	text, err := decode(data)
 	if err != nil {
 		return nil, fileError(input, record.ReasonEncoding, err.Error())
 	}

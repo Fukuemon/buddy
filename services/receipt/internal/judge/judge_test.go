@@ -33,7 +33,7 @@ func build(t *testing.T, s spec) *record.Record {
 }
 
 func TestJudge(t *testing.T) {
-	normal := []string{RequiredAddition}
+	normal := []string{requiredAddition}
 	baseS := spec{"09:00", "09:29", new(29), "訪看I２", nil}
 	baseV := spec{"09:00", "09:29", new(29), "訪看I２", normal}
 	tests := []struct {
@@ -116,7 +116,7 @@ func TestJudge(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := Judge(match.Pair{Schedule: build(t, tt.s), Visit: build(t, tt.v)})
+			r := judgePair(match.Pair{Schedule: build(t, tt.s), Visit: build(t, tt.v)})
 			if r.Category != tt.want {
 				t.Errorf("Category = %s, want %s（%+v）", r.Category, tt.want, *r.Checks)
 			}
@@ -137,10 +137,10 @@ func expect(t *testing.T, ok bool, what string) {
 func TestJudgeOneSided(t *testing.T) {
 	s := build(t, spec{"09:00", "09:29", new(29), "訪看I２", nil})
 	v := build(t, spec{"09:00", "09:29", new(29), "訪看I２", []string{"通常"}})
-	if r := Judge(match.Pair{Schedule: s}); r.Category != ScheduleOnly || r.Checks != nil || r.Visit != nil {
+	if r := judgePair(match.Pair{Schedule: s}); r.Category != ScheduleOnly || r.Checks != nil || r.Visit != nil {
 		t.Errorf("予定のみ: %+v", r)
 	}
-	if r := Judge(match.Pair{Visit: v}); r.Category != VisitOnly || r.Checks != nil || r.Schedule != nil {
+	if r := judgePair(match.Pair{Visit: v}); r.Category != VisitOnly || r.Checks != nil || r.Schedule != nil {
 		t.Errorf("実績のみ: %+v", r)
 	}
 }
@@ -190,7 +190,7 @@ func TestJudgeTimeBandAdditions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s := build(t, spec{tt.start, tt.start, new(29), "訪看I２", nil})
 			v := build(t, spec{tt.start, tt.start, new(29), "訪看I２", tt.additions})
-			r := Judge(match.Pair{Schedule: s, Visit: v})
+			r := judgePair(match.Pair{Schedule: s, Visit: v})
 			if r.Checks.Additions.OK != tt.want {
 				t.Errorf("Additions.OK = %v, want %v", r.Checks.Additions.OK, tt.want)
 			}
@@ -223,7 +223,7 @@ func TestJudgeNightService(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := Judge(match.Pair{Schedule: build(t, tt.s), Visit: build(t, tt.v)})
+			r := judgePair(match.Pair{Schedule: build(t, tt.s), Visit: build(t, tt.v)})
 			c := *r.Checks
 			if r.Category != tt.wantCategory {
 				t.Errorf("Category = %s, want %s（%+v）", r.Category, tt.wantCategory, c)

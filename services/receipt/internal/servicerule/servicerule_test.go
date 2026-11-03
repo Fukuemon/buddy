@@ -131,7 +131,7 @@ func TestBase(t *testing.T) {
 		{"夜・訪看I２", "夜・訪看I２"},
 	}
 	for _, tt := range tests {
-		if got := Base(tt.in); got != tt.want {
+		if got := base(tt.in); got != tt.want {
 			t.Errorf("Base(%q) = %q, want %q", tt.in, got, tt.want)
 		}
 	}
