@@ -10,7 +10,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 
 import { SCREEN_PERMISSION_NAMES, deniedPermissionOf } from '#/api/permissions'
-import { loginHref, viewerQueryOptions } from '#/api/viewer'
+import { loginHref, useRecheckPermissionsOnViewerChange, viewerQueryOptions } from '#/api/viewer'
 import { SiteHeader } from '#/components/layout/SiteHeader'
 import { SiteLayoutContainer } from '#/components/layout/SiteLayoutContainer'
 import { PageErrorMessage } from '#/components/page/PageErrorMessage'
@@ -56,6 +56,7 @@ export const Route = createRootRouteWithContext<AppRouterContext>()({
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  useRecheckPermissionsOnViewerChange()
   return (
     <html lang="ja">
       <head>
