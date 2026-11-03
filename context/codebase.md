@@ -47,7 +47,12 @@ status: stable
   - `packages/ui` から `apps/` へは依存しない。
 - web は `@buddy/broker` の `AuthCard` と `loginFailedMessage` だけに依存してよい。`apps/broker` は `@buddy/ui` に依存し、web には依存しない。
 - web の `features/<機能>/` の間は import しない。
-  - 2 つの機能が使うものは、`src/components/` か `@buddy/ui` に置く。
+  - 2 つの機能が使うものは、`src/components/`、`src/api/`、`@buddy/ui` に置く。
+    - API のデータを絞るだけの関数（`activePatients`）は `src/api/` に置く。
+  - `src/components/` は `features/` を import しない。
+- web の画面のコード（`features/`、`src/components/`）は、`src/server/` を import しない。
+- web の画面のコードは、`api/fake/` と `api/http/` を import せず、API のクライアントを `useBuddyApi` から受け取る。
+  - テスト、story、story のデータ（`storyData.ts`）だけは、`api/fake/` と `api/http/` を import してよい。
 - `services/schedule` の依存は、アダプタ（`httpapi`、`postgres`）、`access`、機能のパッケージ、共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）の 1 方向に限る。
   - 共通のパッケージは、標準ライブラリと、共通のパッケージの間（`kernel` から `apperr`）だけに依存する。
   - 機能のパッケージの間は、`organization`、`staff`、`visit`、`patient`、`schedule`、`calendar` の順にだけ import する。
@@ -73,6 +78,14 @@ status: stable
   - 照合の API の段の順
 - depguard は、テストのファイルを対象の外にする。
 - 循環する import は、depguard より先に Go のコンパイラが止める。
+- web の画面のコードの 4 つの規則（機能の間、`src/components/` から機能、`src/server/`、`api/fake/` と `api/http/`）は、Oxlint の `no-restricted-imports` が止める。
+  - 設定はルートの `vite.config.ts` の `lint.overrides` にあり、`features/` の下のディレクトリから機能ごとの override を作る。
+    - 機能を足したときに、設定を直さなくてよい。
+  - import の文字列を正規表現で照合するので、`#/` と相対のパスの両方を止める。
+  - Oxlint の組み込みの規則で書けるので、依存を増やす ESLint のプラグイン（eslint-plugin-boundaries）は使わない。
+  - 出典: [Apply configuration by file pattern](https://oxc.rs/docs/guide/usage/linter/config.html#apply-configuration-by-file-pattern)、[no-restricted-imports](https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-restricted-imports.html#patterns)
+- web の `src/routes/` には、`no-restricted-imports` の 4 つの規則を当てない。
+  - `auth.*.ts` と `readyz.ts` はサーバーで動く route で、`src/server/` を使う。
 - 次の規則は lint で確認せず、レビューで確認する。
   - 機能のパッケージが、ほかの機能のリポジトリのインターフェイスを import しないこと
   - ID ブローカーの依存の向き
