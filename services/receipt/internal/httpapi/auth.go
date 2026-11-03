@@ -10,11 +10,6 @@ import (
 	"github.com/Fukuemon/buddy/services/receipt/internal/httpapi/openapi"
 )
 
-// TokenVerifier は、Authorization ヘッダーの Bearer のトークンを検証する。検証に失敗したときはエラーを返す。
-type TokenVerifier interface {
-	Verify(ctx context.Context, raw string) (oidc.Identity, error)
-}
-
 // publicPaths は、openapi.yaml で `security: []` にした、トークンを求めないパスである。
 var publicPaths = map[string]bool{"/healthz": true, "/readyz": true}
 
