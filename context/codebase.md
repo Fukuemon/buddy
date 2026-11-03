@@ -197,6 +197,9 @@ status: stable
   - 集約をまたぐ規則（ドメインサービス）は `<規則>_service.go`（`assignable_service.go`）に置く。
   - 機能のパッケージの組み立て（`App`、`Deps`、`NewApp`）は `app.go` に、複数の操作が使う補助は `<まとまり>_app.go`（`status_change_app.go`）に置く。
   - ほかの機能と外部のシステムのインターフェースは、使う側のパッケージの `<相手>_port.go`（`identity_port.go`）に置く。
+    - `<相手>` は、ほかの機能の名前（`staff_port.go`、`schedule_port.go`）か、外部のシステムの名前（`google_calendar_port.go`、`identity_port.go`）にする。
+    - 1 つの相手のインターフェースは、1 つのファイルにまとめる。
+    - 複数の機能のデータをまとめて読むインターフェースは、読むものの名前（`staff` の `assignment_port.go`）にする。
   - HTTP のハンドラは `<機能>_handler.go`（`staff_handler.go`）に置く。
   - 役割の語（`repository`、`service`、`app`、`port`、`handler`）は GOOS と GOARCH の値に当たらないので、末尾に付けてもビルドの条件にならない。
   - 役割が 1 つのパッケージ（照合の API の段、ID ブローカーの `hydra`）は、役割の語を付けず、パッケージの名前のファイルの 1 つにする。
