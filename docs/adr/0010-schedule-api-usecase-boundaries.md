@@ -40,6 +40,8 @@
 - ほかの機能のデータ: 使う側で、1〜2 のメソッドの小さなインターフェイスを定義して受ける。例えば `schedule` は、職員の ID、事業所、チームだけを返すインターフェイスで職員を受ける。`Repositories` の束はやめ、`NewUsecase` は使うインターフェイスだけを受ける。
   - Go は、インターフェイスを、値を実装する側ではなく使う側に置くことを勧める。
     - 出典: [Go Code Review Comments の Interfaces](https://go.dev/wiki/CodeReviewComments#interfaces)
+  - ほかの機能の集約を 1 つのトランザクションで書くかロックするときの大きさは、ADR-0029 で置き換えた。
+    - ADR-0029: [予定の API の機能のパッケージの中で、操作でないファイルとテストの配置先と、ほかの機能を書くインターフェイスの大きさを決める](0029-schedule-api-feature-package-layout.md)
 - 共通のパッケージ: `domain` を分け、共通のエラーと検証のエラーを `apperr`、`Transactor` を `tx` に置く。`IDGenerator` と並べ替えは、使う機能のパッケージに移すか、`apperr` と同じ段の小さなパッケージに置く。
 - 職員の表現: `auth` を `principal`（職員と権限の一覧）に改める。予定に固有の判定は `principal` から `schedule` に移す。認証と、パスが指すリソースの事業所の確認は、今のまま `access` に置く。
 - 設定: `config` は DB の接続の値を自分の型で持ち、DB のアダプタを import しない。`cmd/api` がアダプタに渡す。
