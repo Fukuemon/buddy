@@ -130,13 +130,12 @@ func (r *Reader) Month(orgID string, month Month) (check.ScheduleSource, bool) {
 		return nil, false
 	}
 	start := time.Date(month.Year, month.Month, 1, 0, 0, 0, 0, tokyo)
-	svc, err := r.services.Service(orgID)
-	return monthSource{svc: svc, svcErr: err, calendars: cals, start: start, end: start.AddDate(0, 1, 0)}, true
+	return monthSource{services: r.services, orgID: orgID, calendars: cals, start: start, end: start.AddDate(0, 1, 0)}, true
 }
 
 type monthSource struct {
-	svc        *calendar.Service
-	svcErr     error
+	services   Services
+	orgID      string
 	calendars  []Calendar
 	start, end time.Time
 }
@@ -147,8 +146,9 @@ type monthSource struct {
 // 組織のサービスアカウントの設定が無いときと、Calendar API の呼び出しに失敗したときは、*check.SourceError を返す。
 // エラーの文は、カレンダー ID（職員のメールアドレスのことがある）を含まない。
 func (s monthSource) Schedules(ctx context.Context) ([]record.Record, []record.Warning, error) {
-	if s.svcErr != nil {
-		return nil, nil, &check.SourceError{Message: "組織のサービスアカウントで Calendar API を呼べない", Err: s.svcErr}
+	svc, err := s.services.Service(s.orgID)
+	if err != nil {
+		return nil, nil, &check.SourceError{Message: "組織のサービスアカウントで Calendar API を呼べない", Err: err}
 	}
 	var (
 		recs  []record.Record
@@ -156,7 +156,7 @@ func (s monthSource) Schedules(ctx context.Context) ([]record.Record, []record.W
 	)
 	for i, cal := range s.calendars {
 		staff := cal.StaffName
-		err := s.svc.Events.List(cal.ID).
+		err := svc.Events.List(cal.ID).
 			TimeMin(s.start.Format(time.RFC3339)).
 			TimeMax(s.end.Format(time.RFC3339)).
 			TimeZone(TimeZone).
