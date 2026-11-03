@@ -36,17 +36,17 @@ func NewUsecase(deps Deps, tx tx.Transactor, ids kernel.IDGenerator, guard Guard
 	return &Usecase{deps: deps, tx: tx, ids: ids, guard: guard}
 }
 
-// GetFacility は、事業所を返す。
+// GetFacility は、事業所 id を返す。見つからないときは apperr.ErrNotFound を返す。
 func (o *Usecase) GetFacility(ctx context.Context, id string) (Facility, error) {
 	return o.deps.Facilities.Get(ctx, id)
 }
 
-// GetDepartment は、部署を返す。
+// GetDepartment は、部署 id を返す。見つからないときは apperr.ErrNotFound を返す。
 func (o *Usecase) GetDepartment(ctx context.Context, id string) (Department, error) {
 	return o.deps.Departments.Get(ctx, id)
 }
 
-// ListDepartments は、事業所の部署を返す。
+// ListDepartments は、事業所 facilityID の全ての部署を返す。事業所が見つからないときは apperr.ErrNotFound を返す。
 func (o *Usecase) ListDepartments(ctx context.Context, facilityID string) ([]Department, error) {
 	if _, err := o.deps.Facilities.Get(ctx, facilityID); err != nil {
 		return nil, err
@@ -93,12 +93,12 @@ func (o *Usecase) UpdateDepartment(ctx context.Context, id, name string) (Depart
 	return o.deps.Departments.Get(ctx, d.ID)
 }
 
-// GetTeam は、チームを返す。
+// GetTeam は、チーム id を返す。見つからないときは apperr.ErrNotFound を返す。
 func (o *Usecase) GetTeam(ctx context.Context, id string) (Team, error) {
 	return o.deps.Teams.Get(ctx, id)
 }
 
-// ListTeams は、事業所のチームを返す。
+// ListTeams は、事業所 facilityID の全てのチームを返す。事業所が見つからないときは apperr.ErrNotFound を返す。
 func (o *Usecase) ListTeams(ctx context.Context, facilityID string) ([]Team, error) {
 	if _, err := o.deps.Facilities.Get(ctx, facilityID); err != nil {
 		return nil, err
@@ -157,12 +157,13 @@ func (o *Usecase) UpdateTeam(ctx context.Context, id, name string, color TeamCol
 	return o.deps.Teams.Get(ctx, t.ID)
 }
 
-// GetPosition は、役職とデフォルトの権限を返す。
+// GetPosition は、役職 id を、デフォルトの権限とともに返す。見つからないときは apperr.ErrNotFound を返す。
 func (o *Usecase) GetPosition(ctx context.Context, id string) (Position, error) {
 	return o.deps.Positions.Get(ctx, id)
 }
 
-// ListPositions は、事業所の役職を返す。
+// ListPositions は、事業所 facilityID の全ての役職を、デフォルトの権限とともに返す。
+// 事業所が見つからないときは apperr.ErrNotFound を返す。
 func (o *Usecase) ListPositions(ctx context.Context, facilityID string) ([]Position, error) {
 	if _, err := o.deps.Facilities.Get(ctx, facilityID); err != nil {
 		return nil, err
@@ -207,12 +208,12 @@ func (o *Usecase) CreatePosition(ctx context.Context, facilityID, name string, p
 	return created, err
 }
 
-// GetPolicy は、権限を返す。
+// GetPolicy は、権限 id を返す。見つからないときは apperr.ErrNotFound を返す。
 func (o *Usecase) GetPolicy(ctx context.Context, id string) (Policy, error) {
 	return o.deps.Policies.Get(ctx, id)
 }
 
-// ListPolicies は、すべての権限を返す。
+// ListPolicies は、全ての権限を返す。権限は事業所ごとに持たないので、事業所を受けない。
 func (o *Usecase) ListPolicies(ctx context.Context) ([]Policy, error) {
 	return o.deps.Policies.List(ctx)
 }
