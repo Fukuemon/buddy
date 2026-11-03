@@ -19,7 +19,7 @@ status: stable
 - web の import は、同じ機能か同じディレクトリの中では相対のパスで書き、それをまたぐときは `#/` のエイリアスで書く。
   - tsconfig の `@/` は使わない。
 - Go のテストのためのフェイクは、`<パッケージ>test` のパッケージに置く（`oidctest`、`gcaltest`）。
-- API の operationId は、lowerCamel の「動詞と名詞」にする。動詞は `get`、`list`、`create`、`update`、`cancel`、`change`、`add`、`remove` から選ぶ。
+- API の operationId は、lowerCamel の「動詞と名詞」にする。動詞は `get`、`list`、`create`、`update`、`cancel`、`change`、`add`、`remove`、`start`、`end`、`resume`、`retire`、`reinstate` から選ぶ。
   - `add` と `remove` は、職員に権限を足す、外すのように、リソースの結び付きを足して外す操作に使う（`addUserPolicy`、`removeUserPolicy`）。
 - API のパスは `/v1` の下の複数形の snake_case にする。
   - 事業所に属する一覧と作成は `/v1/facilities/{facility_id}/<リソース>`、1 件は `/v1/<リソース>/{<リソース>_id}` に置く。
@@ -39,8 +39,9 @@ status: stable
 
 ### 関数とメソッドの動詞
 
-Go と TypeScript の関数とメソッドは、最初の語を次の動詞から選ぶ。  
-API の操作を呼ぶ関数とリポジトリのメソッドは、operationId と同じ動詞（`get`、`list`、`create`、`update`、`cancel`、`change`、`add`、`remove`）にする。
+Go と TypeScript の関数とメソッドは、次の操作には表の動詞を使う。  
+真偽値を返す関数は「真偽値」のセクションの規則に従う。  
+API の操作を呼ぶ関数とリポジトリのメソッドは、operationId と同じ動詞にする。
 
 | 操作 | 動詞 | 例 |
 | --- | --- | --- |
@@ -53,8 +54,9 @@ API の操作を呼ぶ関数とリポジトリのメソッドは、operationId �
 | API の型を画面の型に変える | `fromApi<型>`（TypeScript） | `fromApiStaff` |
 | 文字列を値に変える | `parse` | `ParseDate`、`parseOccurrenceId` |
 | 値を画面に出す文字列に変える | `format` | `formatDateTime` |
-| 入力の値を確認し、誤りを返す | `validate` | `validateEmail`、`validatePatientForm` |
-| 権限と前提を確認し、満たさなければ失敗にする | Go は `require`、TypeScript は `assert` | `RequireStaffManage`、`assertFacility` |
+| リクエストとフォームの値の形と範囲を確認し、誤りを返す | `validate` | `validateEmail`、`validatePatientForm` |
+| 職員の権限を確認し、無ければ失敗にする | `require` | `RequireStaffManage`、`requirePermission` |
+| 保存された状態と設定の前提（事業所、職員の状態、アカウント）を確認し、満たさなければ失敗にする | Go は `require`、TypeScript は `assert` | `requireAccounts`、`assertFacility` |
 | 入力から一部の値か判定を取り出す | `<取り出すもの>Of` | `timeBandOf`、`statusOf` |
 | 画面のイベントを受ける | props は `on<イベント>`、コンポーネントの中の関数は `handle<イベント>` | `onSubmit`、`handleSubmit` |
 
