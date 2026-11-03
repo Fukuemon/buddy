@@ -1,13 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
 
+import { createModalDocsParameters } from '../../.storybook/sharedPreview'
 import { ConfirmDialog } from './ConfirmDialog'
 
 const meta = {
   title: 'パターン/ConfirmDialog',
   component: ConfirmDialog,
-  // showModal は文書の全体を操作できなくするので、Docs のページでは story ごとに iframe で描く
-  parameters: { docs: { story: { inline: false, iframeHeight: 480 } } },
+  parameters: createModalDocsParameters(),
   args: {
     title: 'カレンダーを外しますか',
     testIdPrefix: 'calendar-remove',

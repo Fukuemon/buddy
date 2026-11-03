@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
 import { fn } from 'storybook/test'
 
+import { createModalDocsParameters } from '../../../.storybook/sharedPreview'
 import { Button } from '../Button/Button'
 import { Drawer } from './Drawer'
 
@@ -10,8 +11,7 @@ const DRAWER_ID = 'drawer-story'
 const meta = {
   title: 'コンポーネント/Base/Drawer',
   component: Drawer,
-  // showModal は文書の全体を操作できなくするので、Docs のページでは story ごとに iframe で描く
-  parameters: { docs: { story: { inline: false, iframeHeight: 480 } } },
+  parameters: createModalDocsParameters(),
   args: {
     id: DRAWER_ID,
     isOpen: true,

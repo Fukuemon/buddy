@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { createModalDocsParameters } from '@buddy/ui/storybook-preview'
 import { fn } from 'storybook/test'
 
 import { mockExportIssues } from '#/mocks/scheduleData'
@@ -8,8 +9,7 @@ import { CalendarReviewDialog } from './CalendarReviewDialog'
 const meta = {
   title: '画面/Calendar/CalendarReviewDialog',
   component: CalendarReviewDialog,
-  // showModal は文書の全体を操作できなくするので、Docs のページでは story ごとに iframe で描く
-  parameters: { docs: { story: { inline: false, iframeHeight: 480 } } },
+  parameters: createModalDocsParameters(),
   args: {
     issue: mockExportIssues[0],
     onOpenSchedule: fn(),
