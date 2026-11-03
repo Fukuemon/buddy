@@ -18,7 +18,7 @@ type GrantInput struct {
 // チームを対象にする権限ならチームを 1 つ以上指定する。対象を指定しない権限には、対象を指定できない。
 // 職員が見つからないときは apperr.ErrNotFound を、権限、対象が合わないか別の事業所のものであるときは入力のエラーを、
 // 同じ権限が既にあるときは apperr.ErrConflict を返す。
-func (s *Usecase) AddGrant(ctx context.Context, id string, in GrantInput) (Detail, error) {
+func (s *App) AddGrant(ctx context.Context, id string, in GrantInput) (Detail, error) {
 	if err := s.guard(ctx); err != nil {
 		return Detail{}, err
 	}
@@ -47,7 +47,7 @@ func (s *Usecase) AddGrant(ctx context.Context, id string, in GrantInput) (Detai
 }
 
 // targets は、権限 p の対象を確認し、同じ事業所 facilityID の職員かチームの対象を作る。
-func (s *Usecase) targets(ctx context.Context, p organization.Policy, facilityID string, in GrantInput) ([]Target, error) {
+func (s *App) targets(ctx context.Context, p organization.Policy, facilityID string, in GrantInput) ([]Target, error) {
 	users, teams := in.TargetUserIDs, in.TargetTeamIDs
 	switch {
 	case !p.NeedsTarget:

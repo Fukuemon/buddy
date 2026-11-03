@@ -106,11 +106,11 @@ func run() error {
 		Masters:  visitMasters,
 	}, ids)
 
-	router := httpapi.NewRouter(httpapi.Usecases{
-		Organization: organization.NewUsecase(organization.Deps{
+	router := httpapi.NewRouter(httpapi.Apps{
+		Organization: organization.NewApp(organization.Deps{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions, Policies: policies,
 		}, tx, ids, principal.RequireStaffManage),
-		Staff: staff.NewUsecase(staff.Deps{
+		Staff: staff.NewApp(staff.Deps{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions, Policies: policies, Staff: staffRepo,
 			Identities:  broker.New(broker.Config(cfg.Broker), nil),
 			Assignments: postgres.NewStaffAssignmentReader(db), Calendars: calendars,
@@ -119,17 +119,17 @@ func run() error {
 				return p.Staff.ID, ok
 			},
 		}, tx, ids, principal.RequireStaffManage),
-		Patients: patient.NewUsecase(patient.Deps{
+		Patients: patient.NewApp(patient.Deps{
 			Facilities: facilities, Staff: staffRefs, ServiceCodes: visitMasters, Patients: patients,
 			Schedules: postgres.NewPatientScheduleReader(db), Locks: staffRepo,
 		}, tx, ids, principal.RequireStaffManage),
-		VisitMasters: visit.NewUsecase(visitMasters),
-		Schedules: schedule.NewUsecase(schedule.Deps{
+		VisitMasters: visit.NewApp(visitMasters),
+		Schedules: schedule.NewApp(schedule.Deps{
 			Facilities: facilities, Staff: staffRefs, Visits: visitInfos,
 			Schedules: schedules, Recurring: recurring, Types: scheduleTypes,
 			Exports: outbox,
 		}, tx, ids),
-		Calendars: calendar.NewUsecase(calendar.Deps{
+		Calendars: calendar.NewApp(calendar.Deps{
 			Calendars: calendars, Accounts: calendarAccounts(accounts),
 			Staff: staffRefs, Patients: patients, ServiceCodes: visitMasters, Types: scheduleTypes,
 			Schedules: schedules, Recurring: recurring, RecurringSchedules: recurring, Visits: visitInfos,

@@ -28,7 +28,7 @@ func TestStaffLeave(t *testing.T) {
 	p.AssignedStaffID, p.Name = staffID, "山田 花子"
 	s.Patients[inmem.PatientID] = p
 
-	got, err := stopUsecase(s, ids, allow).Leave(ctx, staffID, staff.LeaveInput{ReturnDate: &returnDate})
+	got, err := stopApp(s, ids, allow).Leave(ctx, staffID, staff.LeaveInput{ReturnDate: &returnDate})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,7 +42,7 @@ func TestStaffLeave(t *testing.T) {
 	}
 
 	first := *got.Staff.LeaveStartedAt
-	again, err := stopUsecase(s, ids, allow).Leave(ctx, staffID, staff.LeaveInput{})
+	again, err := stopApp(s, ids, allow).Leave(ctx, staffID, staff.LeaveInput{})
 	if err != nil || !again.Staff.LeaveStartedAt.Equal(first) || again.Staff.LeaveReturnDate != nil {
 		t.Errorf("休職にし直し = %+v, %v, want 最初の時刻 %v のまま、戻る予定の日だけを消す", again.Staff.Staff, err, first)
 	}
@@ -52,7 +52,7 @@ func TestStaffLeaveRejects(t *testing.T) {
 	ctx := context.Background()
 	t.Run("職員の管理の権限が無ければ ErrForbidden で書かない", func(t *testing.T) {
 		s, ids := stopFixture()
-		if _, err := stopUsecase(s, ids, deny).Leave(ctx, staffID, staff.LeaveInput{}); !errors.Is(err, apperr.ErrForbidden) ||
+		if _, err := stopApp(s, ids, deny).Leave(ctx, staffID, staff.LeaveInput{}); !errors.Is(err, apperr.ErrForbidden) ||
 			ids.Members["broker-1"].Suspended || s.Staff[staffID].LeaveStartedAt != nil {
 			t.Errorf("err = %v, want ErrForbidden で休職にしない", err)
 		}
@@ -60,14 +60,14 @@ func TestStaffLeaveRejects(t *testing.T) {
 	t.Run("ブローカーで止められなければ、予定の API にも書かない", func(t *testing.T) {
 		s, ids := stopFixture()
 		ids.Err = errors.New("broker down")
-		if _, err := stopUsecase(s, ids, allow).Leave(ctx, staffID, staff.LeaveInput{}); err == nil || s.Staff[staffID].LeaveStartedAt != nil {
+		if _, err := stopApp(s, ids, allow).Leave(ctx, staffID, staff.LeaveInput{}); err == nil || s.Staff[staffID].LeaveStartedAt != nil {
 			t.Errorf("err = %v, LeaveStartedAt = %v, want エラーで予定の API にも書かない", err, s.Staff[staffID].LeaveStartedAt)
 		}
 	})
 	t.Run("取り消しに失敗すれば、両方で休職にしてからエラー", func(t *testing.T) {
 		s, ids := stopFixture()
 		ids.RevokeErr = errors.New("hydra down")
-		if _, err := stopUsecase(s, ids, allow).Leave(ctx, staffID, staff.LeaveInput{}); err == nil ||
+		if _, err := stopApp(s, ids, allow).Leave(ctx, staffID, staff.LeaveInput{}); err == nil ||
 			s.Staff[staffID].LeaveStartedAt == nil || !ids.Members["broker-1"].Suspended {
 			t.Errorf("err = %v, LeaveStartedAt = %v, want 両方で休職にしてからエラー", err, s.Staff[staffID].LeaveStartedAt)
 		}
@@ -75,7 +75,7 @@ func TestStaffLeaveRejects(t *testing.T) {
 	t.Run("ブローカーにいない職員は、予定の API でだけ休職にする", func(t *testing.T) {
 		s, ids := stopFixture()
 		delete(ids.Members, "broker-1")
-		if got, err := stopUsecase(s, ids, allow).Leave(ctx, staffID, staff.LeaveInput{}); err != nil || got.Staff.Status() != staff.StatusOnLeave {
+		if got, err := stopApp(s, ids, allow).Leave(ctx, staffID, staff.LeaveInput{}); err != nil || got.Staff.Status() != staff.StatusOnLeave {
 			t.Errorf("職員 = %+v, err = %v, want 予定の API でだけ休職にする", got.Staff.Staff, err)
 		}
 	})
@@ -84,13 +84,13 @@ func TestStaffLeaveRejects(t *testing.T) {
 		d := s.Staff[staffID]
 		d.RetiredAt = ptr(time.Now())
 		s.Staff[staffID] = d
-		if _, err := stopUsecase(s, ids, allow).Leave(ctx, staffID, staff.LeaveInput{}); !errors.Is(err, apperr.ErrConflict) || ids.Members["broker-1"].Suspended {
+		if _, err := stopApp(s, ids, allow).Leave(ctx, staffID, staff.LeaveInput{}); !errors.Is(err, apperr.ErrConflict) || ids.Members["broker-1"].Suspended {
 			t.Errorf("err = %v, want ErrConflict でブローカーを止めない", err)
 		}
 	})
 	t.Run("いない職員は ErrNotFound", func(t *testing.T) {
 		s, ids := stopFixture()
-		if _, err := stopUsecase(s, ids, allow).Leave(ctx, "NONE", staff.LeaveInput{}); !errors.Is(err, apperr.ErrNotFound) {
+		if _, err := stopApp(s, ids, allow).Leave(ctx, "NONE", staff.LeaveInput{}); !errors.Is(err, apperr.ErrNotFound) {
 			t.Errorf("err = %v, want ErrNotFound", err)
 		}
 	})

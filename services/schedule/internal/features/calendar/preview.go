@@ -5,7 +5,7 @@ import "context"
 // Preview は、カレンダー id の期間 rng の予定を読み、取り込むとどうなるかを返す。予定は書かない。
 // 職員が休職か訪問しない職員なら、新しい予定を SkipStaffOnLeave か SkipStaffNonVisiting の取り込まない予定にする。
 // カレンダーが無いか外したとき、職員が退職したときは apperr.ErrNotFound を、読めないときは ErrUnreadable か ErrUnavailable か ErrNotConfigured を返す。
-func (u *Usecase) Preview(ctx context.Context, id string, rng Range) (Preview, error) {
+func (u *App) Preview(ctx context.Context, id string, rng Range) (Preview, error) {
 	if err := u.guard(ctx); err != nil {
 		return Preview{}, err
 	}

@@ -19,7 +19,7 @@ import (
 // ブローカーが退職か、止めていない職員と答えたときは、外した休職を書き戻して apperr.ErrConflict を返す。
 // ブローカーに届かなかったときは、外した休職を残してエラーを返す。その間、職員はブローカーで止めたままなのでログインできない。
 // 送り直すと、ブローカーの職員を戻し直す。
-func (s *Usecase) Reinstate(ctx context.Context, id string) (Detail, error) {
+func (s *App) Reinstate(ctx context.Context, id string) (Detail, error) {
 	if err := s.guard(ctx); err != nil {
 		return Detail{}, err
 	}

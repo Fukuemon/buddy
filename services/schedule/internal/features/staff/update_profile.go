@@ -15,7 +15,7 @@ import (
 // 退職した職員を変えようとしたときは apperr.ErrConflict を、部署かチームが見つからないか別の事業所のものであるときは入力のエラーを返す。
 // 役職を変える操作と同じく事業所をロックし、読んだ古いチームが、書くまでにほかの操作で変わらないようにする。
 // ロックは予定と担当の新しい割り振りも待たせるので、残る予定を数えてから書くまでに、訪問しない職員への割り振りが入らない。
-func (s *Usecase) UpdateProfile(ctx context.Context, id string, p Profile) (Detail, error) {
+func (s *App) UpdateProfile(ctx context.Context, id string, p Profile) (Detail, error) {
 	if err := s.guard(ctx); err != nil {
 		return Detail{}, err
 	}

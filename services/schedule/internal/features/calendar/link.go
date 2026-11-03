@@ -12,7 +12,7 @@ import (
 // 外した同じカレンダーが同じ職員にあれば、結び付け直す。
 // 職員が見つからないか、別の事業所の職員か、退職した職員のときは入力のエラーを、職員にほかのカレンダーがあるか、
 // カレンダーがほかの職員に結び付いているか、すでに結び付いているときは apperr.ErrConflict を返す。
-func (u *Usecase) Link(ctx context.Context, facilityID, staffID, calendarID string) (ExternalCalendar, error) {
+func (u *App) Link(ctx context.Context, facilityID, staffID, calendarID string) (ExternalCalendar, error) {
 	if err := u.guard(ctx); err != nil {
 		return ExternalCalendar{}, err
 	}

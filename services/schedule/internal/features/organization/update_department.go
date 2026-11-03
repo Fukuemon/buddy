@@ -8,7 +8,7 @@ import (
 
 // UpdateDepartment は、部署 id の名前を変え、変えた部署を返す。職員の管理の権限が無いときは apperr.ErrForbidden を、
 // 名前が不正なときは入力のエラーを、同じ事業所にほかの同じ名前の部署があるときは apperr.ErrConflict を返す。
-func (o *Usecase) UpdateDepartment(ctx context.Context, id, name string) (Department, error) {
+func (o *App) UpdateDepartment(ctx context.Context, id, name string) (Department, error) {
 	if err := o.guard(ctx); err != nil {
 		return Department{}, err
 	}

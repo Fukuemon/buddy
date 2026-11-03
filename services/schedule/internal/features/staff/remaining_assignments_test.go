@@ -20,11 +20,11 @@ func TestStaffRemainingAssignments(t *testing.T) {
 	s.Schedules["TODAY"] = schedule.Detail{Schedule: schedule.Schedule{ID: "TODAY", Slot: schedule.Slot{
 		FacilityID: facilityID, StaffID: staffID, Date: civil.Date{Year: 2026, Month: 10, Day: 23}}}}
 
-	got, err := stopUsecase(s, ids, allow).RemainingAssignments(ctx, staffID)
+	got, err := stopApp(s, ids, allow).RemainingAssignments(ctx, staffID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	left, err := stopUsecase(s, ids, allow).Leave(ctx, staffID, staff.LeaveInput{})
+	left, err := stopApp(s, ids, allow).Leave(ctx, staffID, staff.LeaveInput{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,16 +34,16 @@ func TestStaffRemainingAssignments(t *testing.T) {
 	}
 
 	s, ids = stopFixture()
-	if _, err := stopUsecase(s, ids, allow).RemainingAssignments(ctx, staffID); err != nil {
+	if _, err := stopApp(s, ids, allow).RemainingAssignments(ctx, staffID); err != nil {
 		t.Fatal(err)
 	}
 	if s.Staff[staffID].Status() != staff.StatusActive || ids.Members["broker-1"].Suspended {
 		t.Errorf("職員 = %+v, ブローカー = %+v, want 何も書かない", s.Staff[staffID].Staff, ids.Members)
 	}
-	if _, err := stopUsecase(s, ids, deny).RemainingAssignments(ctx, staffID); !errors.Is(err, apperr.ErrForbidden) {
+	if _, err := stopApp(s, ids, deny).RemainingAssignments(ctx, staffID); !errors.Is(err, apperr.ErrForbidden) {
 		t.Errorf("職員の管理の権限が無い: err = %v, want ErrForbidden", err)
 	}
-	if _, err := stopUsecase(s, ids, allow).RemainingAssignments(ctx, "MISSING"); !errors.Is(err, apperr.ErrNotFound) {
+	if _, err := stopApp(s, ids, allow).RemainingAssignments(ctx, "MISSING"); !errors.Is(err, apperr.ErrNotFound) {
 		t.Errorf("無い職員: err = %v, want ErrNotFound", err)
 	}
 }

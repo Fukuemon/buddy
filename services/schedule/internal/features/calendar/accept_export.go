@@ -18,7 +18,7 @@ const acceptCallTimeout = 20 * time.Second
 // 待ちが見つからないときは apperr.ErrNotFound を、確認が必要な待ちでないとき、外部の内容を当てられない待ちのとき、
 // 予定の対応のカレンダーを外したとき（退職を含む）、
 // 外部の予定を buddy の予定に読み替えられないときは apperr.ErrConflict を返す。外部のカレンダーを読めないときは Preview と同じである。
-func (u *Usecase) AcceptExport(ctx context.Context, id string) (Export, error) {
+func (u *App) AcceptExport(ctx context.Context, id string) (Export, error) {
 	if err := u.guard(ctx); err != nil {
 		return Export{}, err
 	}

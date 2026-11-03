@@ -1117,7 +1117,7 @@ func TestStaffConcurrentRemovalKeepsManager(t *testing.T) {
 	}
 	t.Cleanup(func() { cleanup(t) })
 
-	uc := staff.NewUsecase(staff.Deps{
+	uc := staff.NewApp(staff.Deps{
 		Facilities: NewFacilityRepository(testDB), Departments: NewDepartmentRepository(testDB), Teams: NewTeamRepository(testDB),
 		Positions: NewPositionRepository(testDB), Policies: NewPolicyRepository(testDB), Staff: NewStaffRepository(testDB),
 	}, NewTransactor(testDB), ulid.Generator{}, func(context.Context) error { return nil })

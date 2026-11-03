@@ -75,7 +75,7 @@ type StaffRefs interface {
 	StaffLocker
 }
 
-// Deps は、Usecase が使うリポジトリと、ほかの機能のデータを読み書きする小さなインターフェースである。
+// Deps は、App が使うリポジトリと、ほかの機能のデータを読み書きする小さなインターフェースである。
 type Deps struct {
 	Calendars Repository
 	// Accounts は、事業所のサービスアカウントで外部のカレンダーを読む。設定が無ければ nil で、読む操作は ErrNotConfigured を返す。
@@ -94,8 +94,8 @@ type Deps struct {
 	Exports ExportRepository
 }
 
-// Usecase は、外部のカレンダーの結び付けと、予定の取り込みと、確認が必要な書き出しの操作である。全ての操作は、guard が許すときだけ行う（ADR-0006）。
-type Usecase struct {
+// App は、外部のカレンダーの結び付けと、予定の取り込みと、確認が必要な書き出しの操作である。全ての操作は、guard が許すときだけ行う（ADR-0006）。
+type App struct {
 	deps  Deps
 	tx    tx.Transactor
 	ids   kernel.IDGenerator
@@ -103,23 +103,23 @@ type Usecase struct {
 	apply applier
 }
 
-// NewUsecase は Usecase を作る。
-func NewUsecase(deps Deps, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) *Usecase {
-	return &Usecase{deps: deps, tx: tx, ids: ids, guard: guard, apply: applier{
+// NewApp は App を作る。
+func NewApp(deps Deps, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) *App {
+	return &App{deps: deps, tx: tx, ids: ids, guard: guard, apply: applier{
 		calendars: deps.Calendars, exports: deps.Exports, schedules: deps.Schedules, types: deps.Types,
 		patients: deps.Patients, serviceCodes: deps.ServiceCodes, visits: deps.Visits, ids: ids, now: time.Now,
 	}}
 }
 
 // source は、事業所 facilityID のサービスアカウントで外部のカレンダーを読む EventSource を返す。設定が無ければ ErrNotConfigured を返す。
-func (u *Usecase) source(ctx context.Context, facilityID string) (EventSource, error) {
+func (u *App) source(ctx context.Context, facilityID string) (EventSource, error) {
 	if u.deps.Accounts == nil {
 		return nil, ErrNotConfigured
 	}
 	return u.deps.Accounts.Source(ctx, facilityID)
 }
 
-func (u *Usecase) requireSource(ctx context.Context, facilityID, calendarID string) (EventSource, string, error) {
+func (u *App) requireSource(ctx context.Context, facilityID, calendarID string) (EventSource, string, error) {
 	src, err := u.source(ctx, facilityID)
 	if err != nil {
 		return nil, "", err
@@ -132,7 +132,7 @@ func (u *Usecase) requireSource(ctx context.Context, facilityID, calendarID stri
 }
 
 // active は、外していないカレンダーを返す。無いか外したときは apperr.ErrNotFound を返す。
-func (u *Usecase) active(ctx context.Context, id string) (ExternalCalendar, error) {
+func (u *App) active(ctx context.Context, id string) (ExternalCalendar, error) {
 	c, err := u.deps.Calendars.Get(ctx, id)
 	if err != nil {
 		return ExternalCalendar{}, err
@@ -146,7 +146,7 @@ func (u *Usecase) active(ctx context.Context, id string) (ExternalCalendar, erro
 // staffBlocked は、カレンダー c を結び付けた職員に新しい予定を作らない理由を返す。休職なら SkipStaffOnLeave を、
 // 訪問しない職員なら SkipStaffNonVisiting を、どちらでもなければ空を返す。退職した職員は、カレンダーを外したものとみなし、
 // apperr.ErrNotFound を返す。退職はカレンダーを外すが、外す前に退職にした職員のカレンダーが残っていても取り込まないためである。
-func (u *Usecase) staffBlocked(ctx context.Context, c ExternalCalendar) (SkipReason, error) {
+func (u *App) staffBlocked(ctx context.Context, c ExternalCalendar) (SkipReason, error) {
 	st, err := u.deps.Staff.Get(ctx, c.StaffID)
 	if err != nil {
 		return "", err
@@ -164,7 +164,7 @@ func (u *Usecase) staffBlocked(ctx context.Context, c ExternalCalendar) (SkipRea
 
 // plan は、カレンダー c の期間 rng の予定を src で読み、読み替えた plan と、事業所の利用者を返す。
 // blocked は、カレンダーを結び付けた職員に新しい予定を作らない理由で、空でなければ新しい予定をその理由の取り込まない予定にする。
-func (u *Usecase) plan(ctx context.Context, src EventSource, c ExternalCalendar, rng Range, blocked SkipReason) (plan, []PatientRef, error) {
+func (u *App) plan(ctx context.Context, src EventSource, c ExternalCalendar, rng Range, blocked SkipReason) (plan, []PatientRef, error) {
 	events, err := src.Events(ctx, c.CalendarID, rng.TimeMin(), rng.TimeMax())
 	if err != nil {
 		return plan{}, nil, err

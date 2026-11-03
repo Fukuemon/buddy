@@ -12,7 +12,7 @@ import (
 
 func TestOrganizationCreateTeam(t *testing.T) {
 	s := inmem.Seeded()
-	uc := organization.NewUsecase(organization.Deps{
+	uc := organization.NewApp(organization.Deps{
 		Facilities: inmem.Facilities{Store: s}, Teams: inmem.Teams{Store: s},
 	}, &inmem.Tx{}, &inmem.SeqIDs{}, func(context.Context) error { return nil })
 	ctx := context.Background()
@@ -37,7 +37,7 @@ func TestOrganizationCreateTeam(t *testing.T) {
 func TestOrganizationCreateTeamDefaultColor(t *testing.T) {
 	s := inmem.Seeded()
 	s.Teams["OTHER"] = organization.Team{ID: "OTHER", FacilityID: "OTHERFACILITY", Name: "B", Color: organization.TeamColorOrange}
-	uc := organization.NewUsecase(organization.Deps{
+	uc := organization.NewApp(organization.Deps{
 		Facilities: inmem.Facilities{Store: s}, Teams: inmem.Teams{Store: s},
 	}, &inmem.Tx{}, &inmem.SeqIDs{}, func(context.Context) error { return nil })
 	ctx := context.Background()
@@ -57,7 +57,7 @@ func TestOrganizationCreateTeamDefaultColor(t *testing.T) {
 func TestOrganizationCreateTeamForbidden(t *testing.T) {
 	s := inmem.Seeded()
 	before := len(s.Teams)
-	uc := organization.NewUsecase(organization.Deps{
+	uc := organization.NewApp(organization.Deps{
 		Facilities: inmem.Facilities{Store: s}, Teams: inmem.Teams{Store: s},
 	}, &inmem.Tx{}, &inmem.SeqIDs{}, func(context.Context) error { return apperr.ErrForbidden })
 	if _, err := uc.CreateTeam(context.Background(), facilityID, "訪問", ""); !errors.Is(err, apperr.ErrForbidden) {

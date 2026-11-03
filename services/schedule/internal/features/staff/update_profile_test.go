@@ -40,7 +40,7 @@ func TestStaffUpdateProfile(t *testing.T) {
 	phone := "090-1234"
 	in := staff.Profile{Username: "青木 ひな", DepartmentID: depID, TeamID: newTeam}
 
-	got, err := newUsecase(setup(), allow).UpdateProfile(ctx, staffID, in)
+	got, err := newApp(setup(), allow).UpdateProfile(ctx, staffID, in)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +56,7 @@ func TestStaffUpdateProfile(t *testing.T) {
 
 	withPhone := in
 	withPhone.PhoneNumber = &phone
-	if _, err := newUsecase(setup(), allow).UpdateProfile(ctx, staffID, withPhone); !errors.Is(err, apperr.ErrInvalidInput) {
+	if _, err := newApp(setup(), allow).UpdateProfile(ctx, staffID, withPhone); !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Errorf("数字でない電話番号: err = %v, want ErrInvalidInput", err)
 	}
 	for name, p := range map[string]staff.Profile{
@@ -65,11 +65,11 @@ func TestStaffUpdateProfile(t *testing.T) {
 		"無いチーム":      {Username: "青木", DepartmentID: depID, TeamID: "MISSING"},
 		"名前が空":       {DepartmentID: depID, TeamID: newTeam},
 	} {
-		if _, err := newUsecase(setup(), allow).UpdateProfile(ctx, staffID, p); !errors.Is(err, apperr.ErrInvalidInput) {
+		if _, err := newApp(setup(), allow).UpdateProfile(ctx, staffID, p); !errors.Is(err, apperr.ErrInvalidInput) {
 			t.Errorf("%s: err = %v, want ErrInvalidInput", name, err)
 		}
 	}
-	if _, err := newUsecase(setup(), allow).UpdateProfile(ctx, "MISSING", in); !errors.Is(err, apperr.ErrNotFound) {
+	if _, err := newApp(setup(), allow).UpdateProfile(ctx, "MISSING", in); !errors.Is(err, apperr.ErrNotFound) {
 		t.Errorf("無い職員: err = %v, want ErrNotFound", err)
 	}
 	s := setup()
@@ -77,10 +77,10 @@ func TestStaffUpdateProfile(t *testing.T) {
 	at := time.Now()
 	d.RetiredAt = &at
 	s.Staff[staffID] = d
-	if _, err := newUsecase(s, allow).UpdateProfile(ctx, staffID, in); !errors.Is(err, apperr.ErrConflict) {
+	if _, err := newApp(s, allow).UpdateProfile(ctx, staffID, in); !errors.Is(err, apperr.ErrConflict) {
 		t.Errorf("退職した職員: err = %v, want ErrConflict", err)
 	}
-	if _, err := newUsecase(setup(), deny).UpdateProfile(ctx, staffID, in); !errors.Is(err, apperr.ErrForbidden) {
+	if _, err := newApp(setup(), deny).UpdateProfile(ctx, staffID, in); !errors.Is(err, apperr.ErrForbidden) {
 		t.Errorf("職員の管理の権限が無い: err = %v, want ErrForbidden", err)
 	}
 }
@@ -97,7 +97,7 @@ func TestStaffUpdateProfileNonVisiting(t *testing.T) {
 
 	t.Run("残る予定があれば拒む", func(t *testing.T) {
 		s, ids := stopFixture()
-		_, err := stopUsecase(s, ids, allow).UpdateProfile(ctx, staffID, profile(s, true))
+		_, err := stopApp(s, ids, allow).UpdateProfile(ctx, staffID, profile(s, true))
 		ae, ok := errors.AsType[*staff.AssignedError](err)
 		if !ok || !ae.NonVisiting || len(ae.Assignments.RecurringSchedules) != 1 || !errors.Is(err, apperr.ErrConflict) {
 			t.Fatalf("err = %v, want 繰り返しの予定を持つ訪問しない職員への変更の AssignedError", err)
@@ -112,7 +112,7 @@ func TestStaffUpdateProfileNonVisiting(t *testing.T) {
 		p := s.Patients[inmem.PatientID]
 		p.AssignedStaffID = staffID
 		s.Patients[inmem.PatientID] = p
-		_, err := stopUsecase(s, ids, allow).UpdateProfile(ctx, staffID, profile(s, true))
+		_, err := stopApp(s, ids, allow).UpdateProfile(ctx, staffID, profile(s, true))
 		if ae, ok := errors.AsType[*staff.AssignedError](err); !ok || len(ae.Assignments.Patients) != 1 {
 			t.Fatalf("err = %v, want 担当の利用者を持つ AssignedError", err)
 		}
@@ -122,7 +122,7 @@ func TestStaffUpdateProfileNonVisiting(t *testing.T) {
 		clearAssignments(s)
 		s.Schedules["PAST"] = schedule.Detail{Schedule: schedule.Schedule{ID: "PAST", Slot: schedule.Slot{
 			FacilityID: facilityID, StaffID: staffID, Date: civil.Date{Year: 2026, Month: 10, Day: 22}}}}
-		got, err := stopUsecase(s, ids, allow).UpdateProfile(ctx, staffID, profile(s, true))
+		got, err := stopApp(s, ids, allow).UpdateProfile(ctx, staffID, profile(s, true))
 		if err != nil || !got.NonVisiting {
 			t.Fatalf("err = %v, 職員 = %+v, want 訪問しない職員", err, got.Staff)
 		}
@@ -135,7 +135,7 @@ func TestStaffUpdateProfileNonVisiting(t *testing.T) {
 		d := s.Staff[staffID]
 		d.NonVisiting = true
 		s.Staff[staffID] = d
-		got, err := stopUsecase(s, ids, allow).UpdateProfile(ctx, staffID, profile(s, false))
+		got, err := stopApp(s, ids, allow).UpdateProfile(ctx, staffID, profile(s, false))
 		if err != nil || got.NonVisiting {
 			t.Fatalf("err = %v, 職員 = %+v, want 残る予定があっても訪問する職員に戻す", err, got.Staff)
 		}
@@ -147,7 +147,7 @@ func TestStaffUpdateProfileNonVisiting(t *testing.T) {
 		s.Staff[staffID] = d
 		p := profile(s, true)
 		p.Username = "青木 ひな"
-		if _, err := stopUsecase(s, ids, allow).UpdateProfile(ctx, staffID, p); err != nil {
+		if _, err := stopApp(s, ids, allow).UpdateProfile(ctx, staffID, p); err != nil {
 			t.Fatalf("err = %v, want 成功", err)
 		}
 	})

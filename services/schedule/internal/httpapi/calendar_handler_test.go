@@ -79,7 +79,7 @@ func (f *fakeCalendars) AcceptExport(_ context.Context, id string) (calendar.Exp
 }
 
 func newCalendarRouter(c *fakeCalendars) http.Handler {
-	return httpapi.NewRouter(httpapi.Usecases{Calendars: c, Auth: fakeAuth{}}, httpapi.RouterConfig{
+	return httpapi.NewRouter(httpapi.Apps{Calendars: c, Auth: fakeAuth{}}, httpapi.RouterConfig{
 		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
 		Verifier: testVerifier,
 	})

@@ -23,8 +23,8 @@ func allow(context.Context) error { return nil }
 
 func deny(context.Context) error { return apperr.ErrForbidden }
 
-func newUsecase(s *inmem.Store, guard organization.Guard) *staff.Usecase {
-	return staff.NewUsecase(staff.Deps{
+func newApp(s *inmem.Store, guard organization.Guard) *staff.App {
+	return staff.NewApp(staff.Deps{
 		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
 		Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
 		Identities: inmem.NewIdentities(),
@@ -48,8 +48,8 @@ func stopFixture() (*inmem.Store, *inmem.Identities) {
 	return s, ids
 }
 
-func stopUsecase(s *inmem.Store, ids *inmem.Identities, guard organization.Guard) *staff.Usecase {
-	return staff.NewUsecase(staff.Deps{
+func stopApp(s *inmem.Store, ids *inmem.Identities, guard organization.Guard) *staff.App {
+	return staff.NewApp(staff.Deps{
 		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
 		Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
 		Identities: ids, Assignments: inmem.StaffAssignments{Store: s}, Calendars: inmem.Calendars{Store: s},
@@ -80,14 +80,14 @@ func clearAssignments(s *inmem.Store) { delete(s.Recurring, inmem.RecurringID) }
 // 自分自身か、職員の管理の権限を持つ最後の有効な職員を休職か退職にしようとしたとき、409 が返る（#268 の検証の観点 6）。
 func TestStaffStopRejectsSelfAndLastManager(t *testing.T) {
 	ctx := context.Background()
-	stops := map[string]func(*staff.Usecase, string) error{
-		"休職": func(u *staff.Usecase, id string) error { _, err := u.Leave(ctx, id, staff.LeaveInput{}); return err },
-		"退職": func(u *staff.Usecase, id string) error { _, err := u.Retire(ctx, id); return err },
+	stops := map[string]func(*staff.App, string) error{
+		"休職": func(u *staff.App, id string) error { _, err := u.Leave(ctx, id, staff.LeaveInput{}); return err },
+		"退職": func(u *staff.App, id string) error { _, err := u.Retire(ctx, id); return err },
 	}
 	for name, stop := range stops {
 		t.Run(name+"で自分は ErrConflict", func(t *testing.T) {
 			s, ids := stopFixture()
-			if err := stop(stopUsecase(s, ids, allow), companionID); !errors.Is(err, apperr.ErrConflict) || s.Staff[companionID].Status() != staff.StatusActive {
+			if err := stop(stopApp(s, ids, allow), companionID); !errors.Is(err, apperr.ErrConflict) || s.Staff[companionID].Status() != staff.StatusActive {
 				t.Errorf("err = %v, want ErrConflict で書かない", err)
 			}
 		})
@@ -101,7 +101,7 @@ func TestStaffStopRejectsSelfAndLastManager(t *testing.T) {
 			c := s.Staff[companionID]
 			c.LeaveStartedAt = ptr(time.Now())
 			s.Staff[companionID] = c
-			if err := stop(stopUsecase(s, ids, allow), staffID); !errors.Is(err, apperr.ErrConflict) ||
+			if err := stop(stopApp(s, ids, allow), staffID); !errors.Is(err, apperr.ErrConflict) ||
 				s.Staff[staffID].Status() != staff.StatusActive || ids.Members["broker-1"].Suspended || ids.Members["broker-1"].Retired {
 				t.Errorf("err = %v, want ErrConflict で両方に書かない", err)
 			}
@@ -112,7 +112,7 @@ func TestStaffStopRejectsSelfAndLastManager(t *testing.T) {
 			d := s.Staff[staffID]
 			d.Policies = []staff.PolicyGrant{{UserPolicyID: "UP-A", PolicyCode: organization.StaffManage}}
 			s.Staff[staffID] = d
-			if err := stop(stopUsecase(s, ids, allow), staffID); err != nil {
+			if err := stop(stopApp(s, ids, allow), staffID); err != nil {
 				t.Errorf("err = %v, want 成功", err)
 			}
 		})
@@ -155,7 +155,7 @@ func TestStaffKeepsLastManager(t *testing.T) {
 		}}
 		return s
 	}
-	uc := func(s *inmem.Store) *staff.Usecase { return stopUsecase(s, inmem.NewIdentities(), allow) }
+	uc := func(s *inmem.Store) *staff.App { return stopApp(s, inmem.NewIdentities(), allow) }
 	managers := func(t *testing.T, s *inmem.Store) []string {
 		t.Helper()
 		m, err := inmem.Staff{Store: s}.ActiveManagers(ctx, facilityID)
@@ -230,7 +230,7 @@ func TestStaffKeepsLastManager(t *testing.T) {
 // TestStaffManageForbidden は、職員の管理を許されない職員には、職員の登録と、権限と役職を変える操作が apperr.ErrForbidden を返すことを確認する。
 func TestStaffManageForbidden(t *testing.T) {
 	ctx := context.Background()
-	uc := newUsecase(grantStore(), deny)
+	uc := newApp(grantStore(), deny)
 	if _, err := uc.AddGrant(ctx, staffID, staff.GrantInput{PolicyID: "SELF"}); !errors.Is(err, apperr.ErrForbidden) {
 		t.Errorf("AddGrant: err = %v", err)
 	}

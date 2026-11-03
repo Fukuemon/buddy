@@ -12,7 +12,7 @@ import (
 
 func TestOrganizationUpdateDepartment(t *testing.T) {
 	s := inmem.Seeded()
-	uc := organization.NewUsecase(organization.Deps{
+	uc := organization.NewApp(organization.Deps{
 		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s},
 	}, &inmem.Tx{}, &inmem.SeqIDs{}, func(context.Context) error { return nil })
 	ctx := context.Background()

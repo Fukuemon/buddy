@@ -1,7 +1,6 @@
 package httpapi
 
 import (
-	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -14,17 +13,6 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
-
-// TokenVerifier は、Authorization ヘッダーの Bearer のトークンを検証する。検証に失敗したときはエラーを返す。
-type TokenVerifier interface {
-	Verify(ctx context.Context, raw string) (principal.Identity, error)
-}
-
-// AuthUsecase は、認証のミドルウェアが使う操作である。
-type AuthUsecase interface {
-	Authenticate(ctx context.Context, id principal.Identity) (principal.Principal, error)
-	FacilityOf(ctx context.Context, r access.Resource, id string) (string, error)
-}
 
 // pathResources は、/v1 のパスの引数の名前と、その ID が指すリソースである。
 // global は、ミドルウェアが事業所を確認しない引数である。事業所に属さないリソースか、同じパスのほかの引数で事業所を確認するリソースに付ける。
@@ -43,13 +31,13 @@ var pathResources = map[string]struct {
 	"calendar_export_id":    {resource: access.ResourceCalendarExport},
 	"patient_id":            {resource: access.ResourcePatient},
 	"policy_id":             {global: true},
-	// 職員の権限の ID は、同じパスの user_id で事業所を確認し、staff.Usecase が職員の権限かを確認する。
+	// 職員の権限の ID は、同じパスの user_id で事業所を確認し、staff.App が職員の権限かを確認する。
 	"user_policy_id": {global: true},
 }
 
 type authMiddleware struct {
 	verifier TokenVerifier
-	uc       AuthUsecase
+	uc       AuthApp
 	log      *slog.Logger
 }
 

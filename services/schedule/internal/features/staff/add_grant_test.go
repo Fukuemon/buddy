@@ -32,7 +32,7 @@ func TestStaffAddGrant(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := grantStore()
-			_, err := newUsecase(s, allow).AddGrant(ctx, staffID, tt.in)
+			_, err := newApp(s, allow).AddGrant(ctx, staffID, tt.in)
 			if tt.wantErr != nil {
 				if !errors.Is(err, tt.wantErr) {
 					t.Fatalf("err = %v, want %v", err, tt.wantErr)
@@ -50,7 +50,7 @@ func TestStaffAddGrant(t *testing.T) {
 	}
 
 	s := grantStore()
-	uc := newUsecase(s, allow)
+	uc := newApp(s, allow)
 	if _, err := uc.AddGrant(ctx, staffID, staff.GrantInput{PolicyID: "SELF"}); err != nil {
 		t.Fatal(err)
 	}

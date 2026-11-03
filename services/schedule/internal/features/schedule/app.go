@@ -15,7 +15,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
-// Deps は、Usecase が使うリポジトリと、ほかの機能のデータを読む小さなインターフェースである。
+// Deps は、App が使うリポジトリと、ほかの機能のデータを読む小さなインターフェースである。
 type Deps struct {
 	Facilities kernel.Finder[organization.Facility]
 	Staff      StaffRefs
@@ -29,20 +29,20 @@ type Deps struct {
 	Now func() time.Time
 }
 
-// Usecase は、予定の操作である。操作は、ctx の職員（principal.Principal）の権限で判定する。
+// App は、予定の操作である。操作は、ctx の職員（principal.Principal）の権限で判定する。
 // 見てよくない予定は一覧から除き、1 件を指す操作には apperr.ErrForbidden を返す。ctx に職員がいなければ apperr.ErrForbidden を返す。
-type Usecase struct {
+type App struct {
 	deps Deps
 	tx   tx.Transactor
 	ids  kernel.IDGenerator
 }
 
-// NewUsecase は Usecase を作る。
-func NewUsecase(deps Deps, tx tx.Transactor, ids kernel.IDGenerator) *Usecase {
+// NewApp は App を作る。
+func NewApp(deps Deps, tx tx.Transactor, ids kernel.IDGenerator) *App {
 	if deps.Now == nil {
 		deps.Now = time.Now
 	}
-	return &Usecase{deps: deps, tx: tx, ids: ids}
+	return &App{deps: deps, tx: tx, ids: ids}
 }
 
 // SlotInput は、単発と繰り返しの予定に共通の入力である。Visit は、訪問の予定のときに指定する。
@@ -84,7 +84,7 @@ func current(ctx context.Context) (principal.Principal, error) {
 }
 
 // requireScheduleAccess は、ctx の職員が、職員 staffID の予定を見てよいか（editing なら編集してよいか）を確認する。
-func (s *Usecase) requireScheduleAccess(ctx context.Context, staffID string, editing bool) error {
+func (s *App) requireScheduleAccess(ctx context.Context, staffID string, editing bool) error {
 	p, err := current(ctx)
 	if err != nil {
 		return err
@@ -106,7 +106,7 @@ type occurrence struct {
 
 // createSchedule は、単発の予定を作る。replaces は、繰り返しの予定の回を置き換えるときだけ指定する。
 // 回を置き換えるときは、繰り返しの予定に割り振った職員を、休職か退職でも同じ役割のまま保存できる（requireAssignable）。
-func (s *Usecase) createSchedule(ctx context.Context, facilityID string, in SlotInput, replaces *occurrence) (Detail, error) {
+func (s *App) createSchedule(ctx context.Context, facilityID string, in SlotInput, replaces *occurrence) (Detail, error) {
 	var kept assignment
 	if replaces != nil {
 		kept = replaces.kept
@@ -133,7 +133,7 @@ func (s *Usecase) createSchedule(ctx context.Context, facilityID string, in Slot
 }
 
 // scheduleChanged は、単発の予定 id の変更を書き出しの待ちに積む。トランザクションの中で呼ぶ。
-func (s *Usecase) scheduleChanged(ctx context.Context, slot Slot, id string) error {
+func (s *App) scheduleChanged(ctx context.Context, slot Slot, id string) error {
 	if s.deps.Exports == nil {
 		return nil
 	}
@@ -141,7 +141,7 @@ func (s *Usecase) scheduleChanged(ctx context.Context, slot Slot, id string) err
 }
 
 // recurringChanged は、繰り返しの予定 id の変更を書き出しの待ちに積む。トランザクションの中で呼ぶ。
-func (s *Usecase) recurringChanged(ctx context.Context, slot Slot, id string) error {
+func (s *App) recurringChanged(ctx context.Context, slot Slot, id string) error {
 	if s.deps.Exports == nil {
 		return nil
 	}
@@ -184,7 +184,7 @@ func requireAssignable(st staff.Ref, keptID string, date, today civil.Date) erro
 // 利用の終了の利用者は、kept の利用者のまま、今日より前の予定でだけ保存できる（ADR-0021）。退職した職員と同じく、利用の終了の利用者に今日以降の予定を残さない。
 // 職員の状態を確認する前に、事業所の職員の休職と退職をトランザクションの終わりまで待たせ、確認した後に状態が変わらないようにする。
 // 訪問の情報を保存するので、トランザクションの中で呼ぶ。
-func (s *Usecase) prepareSlot(ctx context.Context, facilityID string, in SlotInput, kept assignment) (Slot, Type, error) {
+func (s *App) prepareSlot(ctx context.Context, facilityID string, in SlotInput, kept assignment) (Slot, Type, error) {
 	typ, err := s.deps.Types.Get(ctx, in.TypeID)
 	if err != nil {
 		return Slot{}, Type{}, apperr.Reference("予定の種類", in.TypeID, err)

@@ -29,7 +29,7 @@ func TestStaffRetire(t *testing.T) {
 	s.Calendars["CAL"] = calendar.ExternalCalendar{ID: "CAL", FacilityID: facilityID, StaffID: staffID, Provider: calendar.ProviderGoogle, CalendarID: "staff@example.com"}
 	s.Links["LINK"] = calendar.Link{ID: "LINK", FacilityID: facilityID, ExternalCalendarID: "CAL", ExternalEventID: "EV", ScheduleID: ptr("PAST")}
 
-	got, err := stopUsecase(s, ids, allow).Retire(ctx, staffID)
+	got, err := stopApp(s, ids, allow).Retire(ctx, staffID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,7 +51,7 @@ func TestStaffRetire(t *testing.T) {
 		t.Errorf("残る一覧 = %+v, want 空（過去の予定は数えない）", got.Assignments)
 	}
 	first := *st.RetiredAt
-	again, err := stopUsecase(s, ids, allow).Retire(ctx, staffID)
+	again, err := stopApp(s, ids, allow).Retire(ctx, staffID)
 	if err != nil || !again.Staff.RetiredAt.Equal(first) {
 		t.Errorf("退職にし直し = %v, %v, want 最初の時刻 %v のまま成功", again.Staff.RetiredAt, err, first)
 	}
@@ -60,7 +60,7 @@ func TestStaffRetire(t *testing.T) {
 		s, ids := stopFixture()
 		clearAssignments(s)
 		ids.RevokeErr = errors.New("hydra down")
-		if _, err := stopUsecase(s, ids, allow).Retire(ctx, staffID); err == nil || s.Staff[staffID].Status() != staff.StatusRetired || !ids.Members["broker-1"].Retired {
+		if _, err := stopApp(s, ids, allow).Retire(ctx, staffID); err == nil || s.Staff[staffID].Status() != staff.StatusRetired || !ids.Members["broker-1"].Retired {
 			t.Errorf("err = %v, want 両方で退職にしてからエラー", err)
 		}
 	})
@@ -68,7 +68,7 @@ func TestStaffRetire(t *testing.T) {
 		s, ids := stopFixture()
 		clearAssignments(s)
 		delete(ids.Members, "broker-1")
-		if got, err := stopUsecase(s, ids, allow).Retire(ctx, staffID); err != nil || got.Staff.Status() != staff.StatusRetired {
+		if got, err := stopApp(s, ids, allow).Retire(ctx, staffID); err != nil || got.Staff.Status() != staff.StatusRetired {
 			t.Errorf("err = %v, want 予定の API でだけ退職にする", err)
 		}
 	})
@@ -105,7 +105,7 @@ func TestStaffRetireRejectsAssignments(t *testing.T) {
 			s, ids := stopFixture()
 			tt.edit(s)
 			s.Calendars["CAL"] = calendar.ExternalCalendar{ID: "CAL", FacilityID: facilityID, StaffID: staffID}
-			_, err := stopUsecase(s, ids, allow).Retire(ctx, staffID)
+			_, err := stopApp(s, ids, allow).Retire(ctx, staffID)
 			if s.Calendars["CAL"].DisabledAt != nil {
 				t.Error("退職を拒んだのにカレンダーを外した")
 			}
@@ -126,7 +126,7 @@ func TestStaffRetireRejectsAssignments(t *testing.T) {
 		p.AssignedStaffID = staffID
 		p.EndedAt = ptr(time.Now())
 		s.Patients[inmem.PatientID] = p
-		got, err := stopUsecase(s, ids, allow).Retire(ctx, staffID)
+		got, err := stopApp(s, ids, allow).Retire(ctx, staffID)
 		if err != nil || got.Staff.Status() != staff.StatusRetired {
 			t.Errorf("err = %v, want 退職できる", err)
 		}
@@ -137,7 +137,7 @@ func TestStaffRetireRejectsAssignments(t *testing.T) {
 		s.Schedules["CANCELLED"] = schedule.Detail{Schedule: schedule.Schedule{ID: "CANCELLED", Slot: schedule.Slot{
 			FacilityID: facilityID, StaffID: staffID, Date: civil.Date{Year: 2026, Month: 11, Day: 1}}}}
 		s.Cancels["CANCELLED"] = schedule.Cancel{ScheduleID: "CANCELLED"}
-		if _, err := stopUsecase(s, ids, allow).Retire(ctx, staffID); err != nil {
+		if _, err := stopApp(s, ids, allow).Retire(ctx, staffID); err != nil {
 			t.Errorf("err = %v, want 成功", err)
 		}
 	})

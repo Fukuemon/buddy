@@ -20,7 +20,7 @@ type CreateInput struct {
 // サービスコードか担当の職員が見つからないか、職員が別の事業所に属するときは入力のエラーを返す。
 // 担当の職員が休職か退職のときも入力のエラーを返す（ADR-0018）。職員の管理の権限が無いときは apperr.ErrForbidden を返す。
 // 予定の作成と同じく、担当の職員の状態を確認する前に、事業所の職員の休職と退職をトランザクションの終わりまで待たせる。
-func (p *Usecase) Create(ctx context.Context, in CreateInput) (Detail, error) {
+func (p *App) Create(ctx context.Context, in CreateInput) (Detail, error) {
 	if err := p.guard(ctx); err != nil {
 		return Detail{}, err
 	}

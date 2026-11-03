@@ -7,12 +7,6 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi/openapi"
 )
 
-// VisitMasterUsecase は、訪問の情報のマスタのハンドラが使う操作である。
-type VisitMasterUsecase interface {
-	ListServiceCodes(ctx context.Context) ([]visit.ServiceCode, error)
-	ListCategories(ctx context.Context) ([]visit.Category, error)
-}
-
 func toServiceCode(s visit.ServiceCode) openapi.ServiceCode {
 	return openapi.ServiceCode{Id: s.ID, Code: s.Code, ServiceTimeRangeStart: s.StartMinutes, ServiceTimeRangeEnd: s.EndMinutes}
 }

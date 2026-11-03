@@ -8,7 +8,7 @@ import (
 
 // UpdateTeam は、チーム id の名前と色を変え、変えたチームを返す。職員の管理の権限が無いときは apperr.ErrForbidden を、
 // 名前か色が不正なときは入力のエラーを、同じ事業所にほかの同じ名前のチームがあるときは apperr.ErrConflict を返す。
-func (o *Usecase) UpdateTeam(ctx context.Context, id, name string, color TeamColor) (Team, error) {
+func (o *App) UpdateTeam(ctx context.Context, id, name string, color TeamColor) (Team, error) {
 	if err := o.guard(ctx); err != nil {
 		return Team{}, err
 	}

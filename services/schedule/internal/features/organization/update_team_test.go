@@ -12,7 +12,7 @@ import (
 
 func TestOrganizationUpdateTeam(t *testing.T) {
 	s := inmem.Seeded()
-	uc := organization.NewUsecase(organization.Deps{
+	uc := organization.NewApp(organization.Deps{
 		Facilities: inmem.Facilities{Store: s}, Teams: inmem.Teams{Store: s},
 	}, &inmem.Tx{}, &inmem.SeqIDs{}, func(context.Context) error { return nil })
 	ctx := context.Background()
@@ -48,7 +48,7 @@ func TestOrganizationUpdateTeam(t *testing.T) {
 func TestOrganizationUpdateTeamForbidden(t *testing.T) {
 	s := inmem.Seeded()
 	s.Teams["TEAM"] = organization.Team{ID: "TEAM", FacilityID: facilityID, Name: "A", Color: organization.TeamColorBlue}
-	uc := organization.NewUsecase(organization.Deps{
+	uc := organization.NewApp(organization.Deps{
 		Facilities: inmem.Facilities{Store: s}, Teams: inmem.Teams{Store: s},
 	}, &inmem.Tx{}, &inmem.SeqIDs{}, func(context.Context) error { return apperr.ErrForbidden })
 	if _, err := uc.UpdateTeam(context.Background(), "TEAM", "B", organization.TeamColorLime); !errors.Is(err, apperr.ErrForbidden) {

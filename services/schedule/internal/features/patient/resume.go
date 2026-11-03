@@ -8,7 +8,7 @@ import (
 // 利用者が見つからないときは apperr.ErrNotFound を、職員の管理の権限が無いときは apperr.ErrForbidden を、
 // 職員が見つからないか、別の事業所の職員か、休職か退職の職員のときは入力のエラーを返す（ADR-0021）。
 // 利用の終了の間に担当の職員が退職することがあるので、再開では担当を必ず決め直す。
-func (p *Usecase) Resume(ctx context.Context, id, assignedStaffID string) (Detail, error) {
+func (p *App) Resume(ctx context.Context, id, assignedStaffID string) (Detail, error) {
 	if err := p.guard(ctx); err != nil {
 		return Detail{}, err
 	}

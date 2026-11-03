@@ -4,7 +4,7 @@ import "context"
 
 // Check は、事業所 facilityID のサービスアカウントで calendarID のカレンダーを読めるかを確認する。
 // 読めないときは ErrUnreadable か ErrUnavailable を包んだエラーを返す。
-func (u *Usecase) Check(ctx context.Context, facilityID, calendarID string) error {
+func (u *App) Check(ctx context.Context, facilityID, calendarID string) error {
 	if err := u.guard(ctx); err != nil {
 		return err
 	}

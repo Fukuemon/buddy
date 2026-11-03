@@ -30,7 +30,7 @@ type CreateInput struct {
 // ブローカーの登録は同じメールで送り直しても 1 人にまとまるので、失敗した登録は送り直してよい。ここで書けず、ブローカーの職員を
 // この呼び出しで作っていて、その ID の職員がまだいなければ、ブローカーの職員を消して戻す。
 // 前の登録が書いた後に有効にできなかったときは、送り直すと、書いた職員を有効にしてから返す。
-func (s *Usecase) Create(ctx context.Context, in CreateInput) (Detail, error) {
+func (s *App) Create(ctx context.Context, in CreateInput) (Detail, error) {
 	if err := s.guard(ctx); err != nil {
 		return Detail{}, err
 	}
@@ -112,7 +112,7 @@ func (s *Usecase) Create(ctx context.Context, in CreateInput) (Detail, error) {
 
 // written は、前の登録がブローカーの職員 sub で職員を書き、有効にできずに終わっていれば、書いた職員を返す。
 // 書いた職員がいなければ、書けなかったエラー err を返す。
-func (s *Usecase) written(ctx context.Context, sub string, err error) (Detail, error) {
+func (s *App) written(ctx context.Context, sub string, err error) (Detail, error) {
 	id, ferr := s.deps.Staff.FindIDBySub(ctx, sub)
 	if errors.Is(ferr, apperr.ErrNotFound) {
 		return Detail{}, err
@@ -126,7 +126,7 @@ func (s *Usecase) written(ctx context.Context, sub string, err error) (Detail, e
 // unregister は、予定の API に書けなかった登録のブローカーの職員 sub を消す。同じメールの登録を同時に受け、
 // ほかの登録が同じ sub で職員を書いていれば、消さない。ブローカーは登録の途中の職員だけを消すので、ほかの登録が
 // 有効にした職員は残る。
-func (s *Usecase) unregister(ctx context.Context, sub string) error {
+func (s *App) unregister(ctx context.Context, sub string) error {
 	if _, err := s.deps.Staff.FindIDBySub(ctx, sub); !errors.Is(err, apperr.ErrNotFound) {
 		return err
 	}

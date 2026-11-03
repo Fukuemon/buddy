@@ -26,8 +26,8 @@ func TestStaffCreate(t *testing.T) {
 		return s
 	}
 	ids := inmem.NewIdentities()
-	newUC := func(s *inmem.Store) *staff.Usecase {
-		return staff.NewUsecase(staff.Deps{
+	newUC := func(s *inmem.Store) *staff.App {
+		return staff.NewApp(staff.Deps{
 			Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
 			Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
 			Identities: ids,
@@ -82,8 +82,8 @@ func TestStaffCreateWithBroker(t *testing.T) {
 		s.Positions[posID] = organization.Position{ID: posID, FacilityID: facilityID}
 		return s
 	}
-	newUC := func(s *inmem.Store, ids *inmem.Identities, guard organization.Guard) *staff.Usecase {
-		return staff.NewUsecase(staff.Deps{
+	newUC := func(s *inmem.Store, ids *inmem.Identities, guard organization.Guard) *staff.App {
+		return staff.NewApp(staff.Deps{
 			Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
 			Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
 			Identities: ids,
@@ -223,7 +223,7 @@ func TestStaffCreateNonVisiting(t *testing.T) {
 	s.Departments["DEP"] = organization.Department{ID: "DEP", FacilityID: facilityID}
 	s.Teams["TEAM"] = organization.Team{ID: "TEAM", FacilityID: facilityID}
 	s.Positions["POS"] = organization.Position{ID: "POS", FacilityID: facilityID}
-	got, err := newUsecase(s, allow).Create(context.Background(), staff.CreateInput{
+	got, err := newApp(s, allow).Create(context.Background(), staff.CreateInput{
 		FacilityID: facilityID, Username: "事務 太郎", Email: "jimu@example.com",
 		DepartmentID: "DEP", TeamID: "TEAM", PositionID: "POS", NonVisiting: true,
 	})

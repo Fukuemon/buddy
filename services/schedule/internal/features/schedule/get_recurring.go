@@ -5,7 +5,7 @@ import (
 )
 
 // GetRecurring は、繰り返しの予定を返す。
-func (s *Usecase) GetRecurring(ctx context.Context, id string) (RecurringDetail, error) {
+func (s *App) GetRecurring(ctx context.Context, id string) (RecurringDetail, error) {
 	d, err := s.deps.Recurring.Get(ctx, id)
 	if err != nil {
 		return RecurringDetail{}, err

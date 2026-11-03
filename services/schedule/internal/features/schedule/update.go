@@ -9,7 +9,7 @@ import (
 // Update は、単発の予定の枠を in の内容に置き換える。訪問の情報は in の内容で作り直し、前の訪問の情報は消す。
 // 予定が見つからないときは apperr.ErrNotFound を、キャンセル済みのときは apperr.ErrConflict を、
 // 参照が見つからないか別の事業所のものであるときは入力のエラーを返す。
-func (s *Usecase) Update(ctx context.Context, scheduleID string, in SlotInput) (Detail, error) {
+func (s *App) Update(ctx context.Context, scheduleID string, in SlotInput) (Detail, error) {
 	var updated Detail
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
 		cur, err := s.deps.Schedules.GetForUpdate(ctx, scheduleID)

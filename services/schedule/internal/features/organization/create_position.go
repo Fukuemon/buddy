@@ -8,7 +8,7 @@ import (
 
 // CreatePosition は、事業所に役職を作り、保存した役職を返す。policyIDs に見つからない権限があると入力のエラーを、職員の管理の権限が無いときは apperr.ErrForbidden を、
 // 同じ事業所に同じ名前の役職があるときは apperr.ErrConflict を返す。
-func (o *Usecase) CreatePosition(ctx context.Context, facilityID, name string, policyIDs []string) (Position, error) {
+func (o *App) CreatePosition(ctx context.Context, facilityID, name string, policyIDs []string) (Position, error) {
 	if err := o.guard(ctx); err != nil {
 		return Position{}, err
 	}
@@ -27,7 +27,7 @@ func (o *Usecase) CreatePosition(ctx context.Context, facilityID, name string, p
 }
 
 // requirePolicies は、ids の全ての権限を返す。見つからない権限が 1 つでもあれば、その ID を書いた入力のエラーを返す。
-func (o *Usecase) requirePolicies(ctx context.Context, ids []string) ([]Policy, error) {
+func (o *App) requirePolicies(ctx context.Context, ids []string) ([]Policy, error) {
 	policies, err := o.deps.Policies.ListByIDs(ctx, ids)
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func (o *Usecase) requirePolicies(ctx context.Context, ids []string) ([]Policy, 
 }
 
 // savePosition は、1 つのトランザクションで役職 p を保存して読み直す。同じ事業所に同じ名前の役職があるときは apperr.ErrConflict を返す。
-func (o *Usecase) savePosition(ctx context.Context, p Position) (Position, error) {
+func (o *App) savePosition(ctx context.Context, p Position) (Position, error) {
 	var created Position
 	err := o.tx.WithinTx(ctx, func(ctx context.Context) error {
 		if err := o.deps.Positions.Create(ctx, p); err != nil {

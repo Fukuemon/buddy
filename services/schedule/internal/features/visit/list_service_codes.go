@@ -5,6 +5,6 @@ import (
 )
 
 // ListServiceCodes は、すべてのサービスコードを返す。
-func (v *Usecase) ListServiceCodes(ctx context.Context) ([]ServiceCode, error) {
+func (v *App) ListServiceCodes(ctx context.Context) ([]ServiceCode, error) {
 	return v.masters.ListServiceCodes(ctx)
 }
