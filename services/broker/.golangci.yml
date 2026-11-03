@@ -34,7 +34,7 @@ linters:
             - "**/internal/internalapi/*.go"
           deny:
             - pkg: github.com/Fukuemon/buddy/services/broker/internal/postgres
-              desc: ハンドラは DB のアダプタを import せず、インターフェイスで受ける
+              desc: ハンドラは DB のアダプタを import せず、インターフェースで受ける
         login:
           files:
             - "**/internal/login/*.go"

@@ -30,7 +30,7 @@ type PatientRef struct {
 // patient が visit に依存するので、visit は patient を import せずに関数で受け取る。
 type PatientFinder func(ctx context.Context, id string) (PatientRef, error)
 
-// WriterDeps は、Writer が使うリポジトリと、ほかの機能のデータを読むインターフェイスである。
+// WriterDeps は、Writer が使うリポジトリと、ほかの機能のデータを読むインターフェースである。
 type WriterDeps struct {
 	Staff    kernel.Finder[staff.Ref]
 	Patients PatientFinder

@@ -1,4 +1,4 @@
-// Package kernel は、機能のパッケージが共有する値の検証、一覧の並べ替え、ID の発行と 1 件の読み出しのインターフェイスを持つ。
+// Package kernel は、機能のパッケージが共有する値の検証、一覧の並べ替え、ID の発行と 1 件の読み出しのインターフェースを持つ。
 // 標準ライブラリと apperr にだけ依存する。
 package kernel
 
@@ -17,7 +17,7 @@ type IDGenerator interface {
 }
 
 // Finder は、ID が id の 1 件を読む。見つからないときは apperr.ErrNotFound を返す。
-// 機能のパッケージは、ほかの機能のリポジトリのインターフェイスの代わりに、要る型の Finder だけを受ける。
+// 機能のパッケージは、ほかの機能のリポジトリのインターフェースの代わりに、要る型の Finder だけを受ける。
 type Finder[T any] interface {
 	Get(ctx context.Context, id string) (T, error)
 }

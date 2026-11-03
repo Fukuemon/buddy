@@ -1,5 +1,3 @@
-// Package calendar は、外部のカレンダー（Google カレンダー）の予定を、buddy の予定の候補に読み替える規則を持つ。
-// 利用者とサービスコードをマスタで引くことと、予定を保存することは、この規則を使う手順が行う。
 package calendar
 
 import (

@@ -65,17 +65,17 @@ status: stable
   - 共通のパッケージは、標準ライブラリと、共通のパッケージの間（`kernel` から `apperr`）だけに依存する。
   - 機能のパッケージの間は、`organization`、`staff`、`visit`、`patient`、`schedule`、`calendar` の順にだけ import する。
   - `principal` は `organization` と `staff` に依存し、`schedule`、`calendar`、`access`、`httpapi`、`cmd` から使う。
-  - 機能のパッケージは、自分の集約のリポジトリのインターフェイスと、使う側で定義したインターフェイスだけに依存する。
+  - 機能のパッケージは、自分の集約のリポジトリのインターフェースと、使う側で定義したインターフェースだけに依存する。
     - ほかの機能のデータを読むだけなら、`kernel.Finder` か 1〜2 のメソッドにする。
-    - ほかの機能の集約を 1 つのトランザクションで書くかロックするなら（`calendar` の `applier`、`schedule` の `StaffRefs`）、使うメソッドだけを並べた 1 つのインターフェイスにする。
-      - ADR-0029: [予定の API の機能のパッケージの中で、操作でないファイルとテストの配置先と、ほかの機能を書くインターフェイスの大きさを決める](../docs/adr/0029-schedule-api-feature-package-layout.md)
-    - ほかの機能のリポジトリのインターフェイスは import しない。
+    - ほかの機能の集約を 1 つのトランザクションで書くかロックするなら（`calendar` の `applier`、`schedule` の `StaffRefs`）、使うメソッドだけを並べた 1 つのインターフェースにする。
+      - ADR-0029: [予定の API の機能のパッケージの中で、操作でないファイルとテストの配置先と、ほかの機能を書くインターフェースの大きさを決める](../docs/adr/0029-schedule-api-feature-package-layout.md)
+    - ほかの機能のリポジトリのインターフェースは import しない。
     - トランザクションは `tx.Transactor` で受ける。
     - アダプタを import しない。
     - `access` は機能のパッケージではないので、機能のパッケージの依存の規則の対象の外にする。
   - `config` は DB のアダプタを import しない。
     - `cmd` が `config` の値をアダプタの設定にコピーする。
-  - `postgres`、`ulid`、`gcal`、`broker` は、機能のパッケージと `access` のインターフェイスを実装する。
+  - `postgres`、`ulid`、`gcal`、`broker` は、機能のパッケージと `access` のインターフェースを実装する。
   - `packages/go/oidc` の ID トークンの検証は、`cmd` が `httpapi` の `TokenVerifier` に包んで渡す。
     - `httpapi` から `postgres` と `packages/go/oidc` を import するのは、テストのファイルだけにする。
     - `httpapi` は、パスの ID の形の確認に `ulid` を使う。
@@ -86,7 +86,7 @@ status: stable
 - `services/broker` の職員の型、状態、規則、番兵のエラーは `staff` に置き、`login`、`internalapi`、`postgres` が読む。
   - `staff`、`hydra`、`upstream`、`config` は、ブローカーのほかの内部のパッケージを import しない。
   - `postgres` は `login` と `internalapi` を import しない。
-  - `login` と `internalapi` は、互いと `postgres` を import しない。DB はそれぞれが定義したインターフェイスで受ける。
+  - `login` と `internalapi` は、互いと `postgres` を import しない。DB はそれぞれが定義したインターフェースで受ける。
 - 2 つの Go の API と ID ブローカーの次の規則は、golangci-lint の depguard が止める。設定は各サービスの `.golangci.yml` にある。
   - 予定の API の機能のパッケージの間の順と、機能のパッケージから `principal`（`schedule` と `calendar` を除く）、アダプタ、`access`、`config` への import
   - 予定の API の共通のパッケージから、標準ライブラリと共通のパッケージ以外（外のモジュールを含む）への import
@@ -105,8 +105,8 @@ status: stable
 - web の `src/routes/` には、`no-restricted-imports` の 4 つの規則を当てない。
   - `auth.*.ts` と `readyz.ts` はサーバーで動く route で、`src/server/` を使う。
 - 次の規則は lint で確認せず、レビューで確認する。
-  - 機能のパッケージが、ほかの機能のリポジトリのインターフェイスを import しないこと
-  - ほかの機能の集約を書くインターフェイスが、1 つのトランザクションの中で使うメソッドだけを並べていること
+  - 機能のパッケージが、ほかの機能のリポジトリのインターフェースを import しないこと
+  - ほかの機能の集約を書くインターフェースが、1 つのトランザクションの中で使うメソッドだけを並べていること
 - E2E の層の向きは、kit の ESLint の規則（`@fukuemon/e2e-kit/eslint`）が止める。
 
 ## State Ownership
@@ -183,7 +183,7 @@ status: stable
   - 画面とコンポーネントのコード（`apps/web/src`、`apps/broker/src`、`packages/ui/src`）を書く前に読む。
 - ID ブローカーの画面は `apps/broker/src/pages.tsx` に書き、`pnpm --filter @buddy/broker generate` で生成し直して、生成物を同じコミットに入れる。
   - 画面の HTML と CSS を `services/broker` に手で書かない。
-- `services/schedule` のハンドラは `internal/httpapi` に、生成したインターフェイスのメソッドとして書く。
+- `services/schedule` のハンドラは `internal/httpapi` に、生成したインターフェースのメソッドとして書く。
   - クエリは `db/queries`、マイグレーションは `db/migrations`、シードは `db/seed` に置く。
 - `services/schedule` に機能を足すときは、`internal/features/<機能>/` にパッケージを作る。
   - `Usecase` 型、`Deps`、`NewUsecase`、複数の操作が使う非公開の補助は `usecase.go` に置く。
@@ -192,14 +192,14 @@ status: stable
   - 公開の操作は、操作の名前のファイル（`cancel.go`、`retire.go` など）に 1 つずつ置く。
     - 1 つの操作だけが使う補助は、その操作のファイルに置く。
     - 1 つの操作だけを確認するテストは、`<操作>_test.go` に置く。
-  - 集約の型とそのリポジトリのインターフェイスは、集約の名前のファイル（`schedule.go`、`recurring.go`、`export.go`、`staff.go`）に置く。
+  - 集約の型とそのリポジトリのインターフェースは、集約の名前のファイル（`schedule.go`、`recurring.go`、`export.go`、`staff.go`）に置く。
     - 機能の名前と同じ集約が無い `calendar` は、結び付けたカレンダーの型とリポジトリを `calendar.go` に置く。
-  - ほかの機能と外部のシステムを読み書きするインターフェイスは、使う型のファイル（`Usecase` なら `usecase.go`、`calendar` の `applier` なら `apply.go`）に置く。
+  - ほかの機能と外部のシステムを読み書きするインターフェースは、使う型のファイル（`Usecase` なら `usecase.go`、`calendar` の `applier` なら `apply.go`）に置く。
   - パッケージのドキュメントコメントと、複数の集約が使う定数は、機能の名前のファイル（`organization.go`、`visit.go`）に置く。
   - 常駐の処理と、`Usecase` 以外で操作を持つ型は、同じ機能のパッケージに、型の名前のファイル（`exporter.go`、`syncer.go`、`visit` の `writer.go`）で置く。
     - 外部のシステムの手段の型が多く、`Usecase` と常駐の処理が共有する `calendar` は、まとめて `event.go` に置く。
   - その型を確認するテストは、型の名前のファイル（`exporter_test.go`、`syncer_test.go`）に置く。
-  - ADR-0029: [予定の API の機能のパッケージの中で、操作でないファイルとテストの配置先と、ほかの機能を書くインターフェイスの大きさを決める](../docs/adr/0029-schedule-api-feature-package-layout.md)
+  - ADR-0029: [予定の API の機能のパッケージの中で、操作でないファイルとテストの配置先と、ほかの機能を書くインターフェースの大きさを決める](../docs/adr/0029-schedule-api-feature-package-layout.md)
   - 操作の数と大きさによらず、全ての機能で、公開の操作を操作の名前のファイルに置く。`usecase.go` に操作をまとめない。
 - 新しい Go の API で機能が 2 つ以上あるときは、機能のパッケージを `internal/features/<機能>/` に置く。
   - 機能が 1 つの API（照合の API、ID ブローカー）は、`features/` を作らない。
