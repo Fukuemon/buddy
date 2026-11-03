@@ -259,6 +259,13 @@ pnpm check:generated
 pull request では、CI（[ci.yml](.github/workflows/ci.yml)）が通るまでマージしない。  
 変更ごとにローカルで流すテストは、[テスト](context/testing.md#required-tests) の Required Tests にある。
 
+- pull request の変更が文書だけのときは、`e2e` と `go` のジョブを飛ばす。
+  - 文書だけの変更は、`docs/` の下のファイルと、リポジトリの中の `*.md` だけを変えた変更である。
+  - 飛ばしたジョブは、`gh pr checks` で `skipping` と表示され、`--watch` の終了コードを 1 にしない。
+  - `typescript`、`generated`、`db-docs` のジョブは飛ばさない。
+    - `docs/screens/` の画面仕様書とモックは、文書だけの変更でも `typescript` のジョブの `pnpm check:screens` が確認する。
+  - develop への push では、全てのジョブを流す。
+
 - pull request と issue のタイトルと本文の形は、[issue-pr-body.yml](.github/workflows/issue-pr-body.yml) が確認する。
 - E2E が CI だけで失敗したときは、ワークフローの実行の画面から artifact の `e2e-test-results` を落とし、中の trace を [E2E Tests](#e2e-tests) の手順で開く。
 - ジョブを流すランナーの切り替えは、[基盤と運用](context/operations.md#ci-runners) にある。
