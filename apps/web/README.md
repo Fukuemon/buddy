@@ -32,7 +32,7 @@ pnpm --filter @buddy/web dev
 BFF の処理をローカルの開発サーバーで確認するときは、`dev:msw` で起動する。  
 `dev:msw` のログインは、compose の上流の IdP のフェイク（`idp`）を Issuer として直に使い、Hydra とブローカーを通さない。  
 セッションは、compose の Valkey に置く。  
-2 つの API へのリクエストは、MSW のフェイクの handler（`src/mocks/`）が受ける。  
+2 つの API へのリクエストは、MSW の handler（`src/mocks/`）が受ける。  
 Go の API と PostgreSQL は立てない。  
 設定は `.env.msw` にある。
 
@@ -41,7 +41,7 @@ docker compose up -d --wait idp valkey
 pnpm --filter @buddy/web dev:msw
 ```
 
-フェイクの handler は決まった予定を返し、作った予定と置き換えた予定を残さない。  
+MSW の handler は決まった予定を返し、作った予定と置き換えた予定を残さない。  
 本番のビルドには MSW を含めない（`src/server/runtime.ts`）。
 
 Storybook は、次で開く。
@@ -118,7 +118,7 @@ BFF の照合の server function（`checkReceiptFn`）が、照合の API のク
   - 行の区切りだけは、Excel で開くために CRLF にした。Go は LF を使う。
 - ファイルの合計の上限は、照合の API の `MAX_UPLOAD_BYTES` のデフォルト値（10 MiB）から multipart の分の 64 KiB を引いた値にする。
   - `src/start.ts` は、server function の本文を読む前に、10 MiB を超えるものと長さの分からないものを 413 で拒む。
-- フェイクの API（`fake`）の照合は、入力によらず `src/api/fake/fakeReceiptApi.ts` の結果を返す。
+- フェイクの API（`fake`）の照合は、入力によらず `src/mocks/receiptData.ts` の `mockReceiptReport` を返す。
 
 ## Google カレンダーの画面
 
