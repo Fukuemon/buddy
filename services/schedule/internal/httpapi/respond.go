@@ -1,5 +1,5 @@
 // Package httpapi は、API の HTTP のハンドラを持つ。エンドポイントとリクエストとレスポンスの型は openapi.yaml が正本で、
-// httpapi は openapi パッケージに生成したインターフェイスを実装する。
+// httpapi は openapi パッケージに生成したインターフェースを実装する。
 package httpapi
 
 import (

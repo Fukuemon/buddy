@@ -1,4 +1,4 @@
-// Package tx は、usecase がトランザクションの境界を決めるためのインターフェイスを持つ。実装は DB のアダプタにある。
+// Package tx は、usecase がトランザクションの境界を決めるためのインターフェースを持つ。実装は DB のアダプタにある。
 package tx
 
 import "context"

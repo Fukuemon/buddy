@@ -344,6 +344,9 @@ rules:
         to: "| セクション | 書くこと |"
       - from: 節目と未決事項
         to: 節目と未決事項
+  - expected: インターフェース
+    pattern: インターフェイス
+    prh: interface はインターフェースと書く
   - expected: フェイク
     pattern: 偽物
     prh: テストのための偽の実装はフェイクと呼ぶ。コードの名前 fake に合わせる

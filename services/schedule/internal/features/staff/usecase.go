@@ -12,7 +12,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
-// Deps は、Usecase が使うリポジトリと、事業所の中の組織を読む小さなインターフェイスである。
+// Deps は、Usecase が使うリポジトリと、事業所の中の組織を読む小さなインターフェースである。
 type Deps struct {
 	Facilities  kernel.Finder[organization.Facility]
 	Departments kernel.Finder[organization.Department]

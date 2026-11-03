@@ -191,7 +191,7 @@ go generate ./...
 
 ハンドラは `internal/httpapi` の `server` に、生成した `openapi.StrictServerInterface` のメソッドとして書く。
 
-- 操作を足したら、生成し直すと `server` がインターフェイスを満たさなくなり、コンパイルが失敗する。
+- 操作を足したら、生成し直すと `server` がインターフェースを満たさなくなり、コンパイルが失敗する。
   - メソッドを足して直す。
 - 成功のレスポンスは、生成した `<操作>200JSONResponse` か `<操作>201JSONResponse` で返す。
 - 機能のパッケージの `Usecase` のエラーは、そのまま `error` として返す。

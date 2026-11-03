@@ -27,7 +27,7 @@ type Staff interface {
 	Get(ctx context.Context, id string) (staff.Detail, error)
 }
 
-// Deps は、Service が使う、ほかの機能のデータを読む小さなインターフェイスである。
+// Deps は、Service が使う、ほかの機能のデータを読む小さなインターフェースである。
 type Deps struct {
 	Facilities  Facilities
 	Departments kernel.Finder[organization.Department]

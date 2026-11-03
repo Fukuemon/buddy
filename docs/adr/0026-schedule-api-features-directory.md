@@ -41,7 +41,7 @@
     - The Go Programming Language Specification: [Method declarations](https://go.dev/ref/spec#Method_declarations)
   - 操作が 2 つ以下の機能と、全部の操作が Get、List、Create、Update で 1 つが 20 行に収まる機能は、`usecase.go` の 1 つにする。今は `organization` と `visit` が当たる。
     - この例外は、ADR-0029 でやめた。
-      - ADR-0029: [予定の API の機能のパッケージの中で、操作でないファイルとテストの配置先と、ほかの機能を書くインターフェイスの大きさを決める](0029-schedule-api-feature-package-layout.md)
+      - ADR-0029: [予定の API の機能のパッケージの中で、操作でないファイルとテストの配置先と、ほかの機能を書くインターフェースの大きさを決める](0029-schedule-api-feature-package-layout.md)
 - 新しい API: 機能が 2 つ以上あるときは、`internal/features/<機能>/` に置く。機能が 1 つの API は、`features/` を作らない。
   - 照合の API は、照合の 1 つの機能を段に分けた構成なので、`features/` を作らない。
   - ID ブローカーは、職員のアカウントの 1 つの機能なので、`features/` を作らない。

@@ -115,7 +115,7 @@ sequenceDiagram
 ```
 
 予定のデータソースは、予定の CSV を読む `CSVSchedules` と、Google カレンダーを読む `internal/gcal` の 2 つである。  
-2 つは、同じインターフェイス（`ScheduleSource`）で差し替える。  
+2 つは、同じインターフェース（`ScheduleSource`）で差し替える。  
 Google カレンダーの予定も、予定の CSV と同じ正規化と照合を通す。
 
 ### 予定のデータソース: Google カレンダー

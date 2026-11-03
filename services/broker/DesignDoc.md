@@ -73,7 +73,7 @@ flowchart TB
 | `staff` | 職員の型、状態、規則（ログインを許すか、メールのそろえ方と形、セッションの長さ）、番兵のエラーとその code |
 | `login` | ログイン、同意、ログアウトの画面と、送信元とメールごとの試行の上限 |
 | `internalapi` | 内部の API と token_hook。`staff` の番兵のエラーを、状態コードと code に 1 か所で対応させる |
-| `postgres` | 職員と上流のアカウントの読み書き。`login` と `internalapi` が定義したインターフェイスを満たす |
+| `postgres` | 職員と上流のアカウントの読み書き。`login` と `internalapi` が定義したインターフェースを満たす |
 | `hydra` | Hydra の admin API の呼び出し |
 | `upstream` | 上流の IdP の RP の処理 |
 | `config` | 環境変数からの設定の読み込み |

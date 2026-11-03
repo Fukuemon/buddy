@@ -75,7 +75,7 @@ type StaffRefs interface {
 	StaffLocker
 }
 
-// Deps は、Usecase が使うリポジトリと、ほかの機能のデータを読み書きする小さなインターフェイスである。
+// Deps は、Usecase が使うリポジトリと、ほかの機能のデータを読み書きする小さなインターフェースである。
 type Deps struct {
 	Calendars Repository
 	// Accounts は、事業所のサービスアカウントで外部のカレンダーを読む。設定が無ければ nil で、読む操作は ErrNotConfigured を返す。
