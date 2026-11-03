@@ -107,3 +107,20 @@ type EventSource interface {
 	// 予定かカレンダーが見つからないときは、ErrUnreadable と ErrEventNotFound を包んだエラーを返す。
 	Event(ctx context.Context, calendarID, eventID string) (Event, error)
 }
+
+// SourceFor は、事業所 facilityID の外部のカレンダーを読む EventSource を返す。
+type SourceFor func(ctx context.Context, facilityID string) (EventSource, error)
+
+// WriterFor は、事業所 facilityID の外部のカレンダーに書く EventWriter を返す。
+type WriterFor func(ctx context.Context, facilityID string) (EventWriter, error)
+
+// Accounts は、事業所ごとのサービスアカウントで外部のカレンダーを読み書きする手段である（ADR-0012）。
+// 事業所にサービスアカウントの設定が無ければ、どのメソッドも ErrNotConfigured を返す。
+type Accounts interface {
+	// ServiceAccount は、事業所 facilityID の職員がカレンダーを共有する相手のメールアドレスを返す。
+	ServiceAccount(ctx context.Context, facilityID string) (string, error)
+	// Source は、事業所 facilityID のサービスアカウントで外部のカレンダーを読む EventSource を返す。
+	Source(ctx context.Context, facilityID string) (EventSource, error)
+	// Writer は、事業所 facilityID のサービスアカウントで外部のカレンダーに書く EventWriter を返す。
+	Writer(ctx context.Context, facilityID string) (EventWriter, error)
+}

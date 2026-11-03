@@ -2,107 +2,85 @@ package calendar
 
 import (
 	"context"
-	"time"
+	"errors"
 
-	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 )
 
-// ProviderGoogle は、Google カレンダーの ExternalCalendar.Provider である。
-const ProviderGoogle = "google"
-
-// ExternalCalendar は、職員に結び付けた外部のカレンダーである。外したカレンダーは DisabledAt を持つ。
-type ExternalCalendar struct {
-	ID         string
-	FacilityID string
-	StaffID    string
-	Provider   string
-	// CalendarID は、外部のカレンダーの ID である。Google カレンダーでは、職員のメールアドレスのことがある。
-	CalendarID string
-	DisabledAt *time.Time
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	// LastImport は、最も新しく始めた取り込みで、取り込んだことが無ければ nil である。一覧のときだけ持つ。
-	LastImport *ImportRun
+// Link は、事業所の職員 staffID に、calendarID のカレンダーを結び付ける。事業所のサービスアカウントで読めるかを確認してから書く。
+// 外した同じカレンダーが同じ職員にあれば、結び付け直す。
+// 職員が見つからないか、別の事業所の職員か、退職した職員のときは入力のエラーを、職員にほかのカレンダーがあるか、
+// カレンダーがほかの職員に結び付いているか、すでに結び付いているときは apperr.ErrConflict を返す。
+func (u *Usecase) Link(ctx context.Context, facilityID, staffID, calendarID string) (ExternalCalendar, error) {
+	if err := u.guard(ctx); err != nil {
+		return ExternalCalendar{}, err
+	}
+	src, calendarID, err := u.checkSource(ctx, facilityID, calendarID)
+	if err != nil {
+		return ExternalCalendar{}, err
+	}
+	st, err := u.deps.Staff.Get(ctx, staffID)
+	if err != nil {
+		return ExternalCalendar{}, apperr.Reference("職員", staffID, err)
+	}
+	if err := apperr.SameFacility("職員", st.ID, st.FacilityID, facilityID); err != nil {
+		return ExternalCalendar{}, err
+	}
+	if err := linkable(st); err != nil {
+		return ExternalCalendar{}, err
+	}
+	if err := src.Check(ctx, calendarID); err != nil {
+		return ExternalCalendar{}, err
+	}
+	var linked ExternalCalendar
+	err = u.tx.WithinTx(ctx, func(ctx context.Context) error {
+		// 退職はカレンダーを外すので、確認した後に退職した職員へ結び付けないよう、ロックしてから読み直す
+		if err := u.deps.Staff.LockStatuses(ctx, facilityID); err != nil {
+			return err
+		}
+		if st, err := u.deps.Staff.Get(ctx, st.ID); err != nil {
+			return err
+		} else if err := linkable(st); err != nil {
+			return err
+		}
+		cur, err := u.deps.Calendars.FindByCalendarID(ctx, ProviderGoogle, calendarID)
+		switch {
+		case errors.Is(err, apperr.ErrNotFound):
+			c := ExternalCalendar{ID: u.ids.NewID(), FacilityID: facilityID, StaffID: st.ID, Provider: ProviderGoogle, CalendarID: calendarID}
+			if err := u.deps.Calendars.Create(ctx, c); err != nil {
+				return staffTaken(err)
+			}
+			cur.ID = c.ID
+		case err != nil:
+			return err
+		case cur.StaffID != st.ID:
+			return apperr.ConflictCode(CodeCalendarTaken, "このカレンダーは、ほかの職員に結び付いています")
+		case cur.DisabledAt == nil:
+			return apperr.ConflictCode(CodeCalendarLinked, "このカレンダーは、この職員にすでに結び付いています")
+		default:
+			if err := u.deps.Calendars.Enable(ctx, cur.ID); err != nil {
+				return staffTaken(err)
+			}
+		}
+		linked, err = u.deps.Calendars.Get(ctx, cur.ID)
+		return err
+	})
+	return linked, err
 }
 
-// RunStatus は、取り込みの状態である。
-type RunStatus string
-
-// RunStatus の値。
-const (
-	RunRunning   RunStatus = "running"
-	RunSucceeded RunStatus = "succeeded"
-	RunFailed    RunStatus = "failed"
-)
-
-// ImportRun は、1 回の取り込みの記録である。
-type ImportRun struct {
-	ID                 string
-	FacilityID         string
-	ExternalCalendarID string
-	RequestedBy        string
-	RangeStart         civil.Date
-	RangeEnd           civil.Date
-	Status             RunStatus
-	ImportedCount      int
-	SkippedCount       int
-	StartedAt          time.Time
-	FinishedAt         *time.Time
+// linkable は、職員 st にカレンダーを結び付けられるかを確認する。退職した職員には結び付けられない（ADR-0018）。
+func linkable(st staff.Ref) error {
+	if st.Status == staff.StatusRetired {
+		return apperr.Invalid("退職した職員には、カレンダーを結び付けられません")
+	}
+	return nil
 }
 
-// Link は、取り込んだ外部の予定と、buddy の単発か繰り返しの予定の対応である。ScheduleID と RecurringScheduleID のどちらか 1 つを持つ。
-type Link struct {
-	ID                 string
-	FacilityID         string
-	ExternalCalendarID string
-	ExternalEventID    string
-	RecurringEventID   *string
-	ETag               string
-	// SyncedVersion は、最後に外部の予定と同じにした時点の、buddy の予定の更新の番号である。更新の番号を持つ前に書いた対応では nil である。
-	SyncedVersion       *int
-	ScheduleID          *string
-	RecurringScheduleID *string
-}
-
-// Repository は、外部のカレンダーと、その取り込みの記録と予定の対応を読み書きする。見つからないときは apperr.ErrNotFound を返す。
-type Repository interface {
-	// Get は、外したカレンダーも返す。
-	Get(ctx context.Context, id string) (ExternalCalendar, error)
-	// GetForUpdate は、トランザクションの終わりまでカレンダーの行に排他のロックを取り、Get と同じ値を返す。トランザクションの中で呼ぶ。
-	GetForUpdate(ctx context.Context, id string) (ExternalCalendar, error)
-	// FindByCalendarID は、provider と calendarID のカレンダーを、外したものも含めて返す。
-	FindByCalendarID(ctx context.Context, provider, calendarID string) (ExternalCalendar, error)
-	// ListByFacility は、事業所の外していないカレンダーを、最後の取り込みを付けて作った順に返す。
-	ListByFacility(ctx context.Context, facilityID string) ([]ExternalCalendar, error)
-	// Create は、職員に外していないカレンダーがあるときと、同じ外部のカレンダーがあるときに apperr.ErrConflict を返す。
-	Create(ctx context.Context, c ExternalCalendar) error
-	// Enable は、外したカレンダーを結び付け直す。職員に外していないカレンダーがあるときは apperr.ErrConflict を返す。
-	Enable(ctx context.Context, id string) error
-	// Disable は、カレンダーを外す。外したカレンダーでは何もしない。
-	Disable(ctx context.Context, id string) error
-
-	// RunningSince は、カレンダーの取り込みのうち、since より後に始めた running のものがあるかを返す。
-	RunningSince(ctx context.Context, externalCalendarID string, since time.Time) (bool, error)
-	// CreateRun は、取り込みの記録を足す。StartedAt は DB が決める。
-	CreateRun(ctx context.Context, r ImportRun) error
-	// FinishRun は、取り込みの記録の状態と件数を r の値にし、終わった時刻を入れて、記録を返す。
-	FinishRun(ctx context.Context, r ImportRun) (ImportRun, error)
-
-	// ListLinks は、カレンダーの予定の対応を返す。
-	ListLinks(ctx context.Context, externalCalendarID string) ([]Link, error)
-	// CreateLink は、同じ外部の予定の対応があるときに apperr.ErrConflict を返す。
-	CreateLink(ctx context.Context, l Link) error
-
-	// ActiveByStaff は、職員 staffID に結び付けた外していないカレンダーを返す。
-	ActiveByStaff(ctx context.Context, staffID string) (ExternalCalendar, error)
-	// LinkBySchedule は、単発の予定 scheduleID の予定の対応を返す。
-	LinkBySchedule(ctx context.Context, scheduleID string) (Link, error)
-	// LinkByRecurringSchedule は、繰り返しの予定 recurringScheduleID の予定の対応を返す。
-	LinkByRecurringSchedule(ctx context.Context, recurringScheduleID string) (Link, error)
-	// LinkByEvent は、カレンダー externalCalendarID の外部の予定 eventID の予定の対応を返す。
-	LinkByEvent(ctx context.Context, externalCalendarID, eventID string) (Link, error)
-	// UpdateLink は、予定の対応 id の etag と、同じにした時点の更新の番号を書く。
-	UpdateLink(ctx context.Context, id, etag string, syncedVersion int) error
-	// DeleteLink は、予定の対応 id を消す。無くてもエラーにしない。
-	DeleteLink(ctx context.Context, id string) error
+// staffTaken は、カレンダーを書くエラーが衝突なら、職員にほかのカレンダーがあることを表すエラーにする。
+func staffTaken(err error) error {
+	if errors.Is(err, apperr.ErrConflict) {
+		return apperr.ConflictCode(CodeStaffHasCalendar, "この職員には、ほかのカレンダーが結び付いています")
+	}
+	return err
 }
