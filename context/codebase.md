@@ -111,8 +111,9 @@ status: stable
 
 - web の機能のコードは `src/features/<機能>/` に置き、中を `components/`、`lib/`、`schema/`、`constants/`、`queries.ts` に分ける。
   - 画面のコンポーネントは、表示だけを持つ Presentational（`<名前>.tsx`）と、query と router を読んで渡す Container（`<名前>Container.tsx`）を同じディレクトリに並べる。
+  - Container を並べて 1 つの画面にするだけのコンポーネントは、`<名前>Page`（`ReceiptCheckPage`）か `<名前>PageLayout`（`SchedulePageLayout`）と名付ける。query と router を読まない。
   - テストと story は対象の隣に置く（コロケーション）。
-- web の route のファイル（`src/routes/`）は、URL と Container を結び、search params の検証、SSR の有無、loader の prefetch だけを持つ。
+- web の route のファイル（`src/routes/`）は、URL と Container か機能の画面のコンポーネントを結び、search params の検証、SSR の有無、loader の prefetch だけを持つ。
   - 画面の枠（ヘッダー、ナビゲーション、照合待ちのバッジ、余白を付けた `main`）は、`routes/__root.tsx` の component が包む。route のファイルは枠を描かない。
     - 左の欄を持つ画面（予定の画面）は、route の `staticData` の `ownsSiteLayout` を true にし、機能の Layout が `SiteLayoutContainer` を使う。
     - ADR-0028: [web の画面の枠を root の route の component で包み、左の欄を持つ画面だけを staticData で外す](../docs/adr/0028-web-site-frame-in-root-route.md)

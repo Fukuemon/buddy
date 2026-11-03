@@ -10,7 +10,7 @@ web の画面の枠は、ヘッダー、ナビゲーション、照合待ちの�
 
 - 枠は `SiteLayoutContainer`（`src/components/layout/`）が描き、照合待ちのバッジは calendar の機能の `CalendarReviewBadgeContainer` が描く。
   - `src/components/` は `features/` を import できないので、バッジは呼ぶ側が `reviewBadge` の props で渡す。
-- 枠を、画面の route のファイル 11 個と、`__root.tsx` の権限が無いときの表示が、それぞれ組み立てていた。
+- 枠を、画面の route のファイル 10 個と、`__root.tsx` の権限が無いときの表示が、それぞれ組み立てていた。
   - `receipt.index.tsx` と `receipt.result.tsx` だけ、余白が `p-6` で、ほかの `p-4 desktop:p-6` と違った。
 - route のファイルの責務は、URL と Container の結び付け、search params の検証、SSR の有無、loader の prefetch に限る。枠を置く場所は決めていなかった。
 - 予定の画面（`/schedule` とその子）は、左の欄（ミニカレンダー、職員の絞り込み）を持つ別の枠（`SchedulePageLayout`）を使う。
@@ -36,7 +36,7 @@ web の画面の枠は、ヘッダー、ナビゲーション、照合待ちの�
 | 選択肢 | 強み | 弱み |
 | --- | --- | --- |
 | **採用:** `__root.tsx` の component で包み、予定の画面だけを `staticData` で外す | 枠とバッジが root の 1 か所になる。route の ID が変わらない | `__root.tsx` が、枠を出さない URL（`/auth/` の下）を知る。予定の画面の枠は機能に残る |
-| URL に出ないレイアウトの route（`_app.tsx`）で包み、画面の route をその子にする | 枠を出す画面と出さない画面を、ファイルの配置先で分けられる | 全ての画面の route のファイル名と ID が変わり、機能のコードの `useSearch({ from })` と `useNavigate({ from })` の 16 か所と、route の ID を読むテストを書き換える。予定の画面の左の欄は、この選択肢でも別の扱いが要る |
+| URL に出ないレイアウトの route（`_app.tsx`）で包み、画面の route をその子にする | 枠を出す画面と出さない画面を、ファイルの配置先で分けられる | 全ての画面の route のファイル名と ID が変わり、機能のコードの `useSearch({ from })` と `useNavigate({ from })` の 14 か所と、route の ID を読むテストを書き換える。予定の画面の左の欄は、この選択肢でも別の扱いが要る |
 | route のファイルごとに枠を組み立てる（今まで） | route のファイルを読めば、画面の全体が分かる | 同じ組み立てが 12 か所にあり、余白がずれた。バッジを全ての route が渡す |
 
 - ADR-0025 は、権限でレイアウトの route をまとめる形を採らなかった。枠だけのレイアウトは権限と関係しないので、その判断の対象の外である。
@@ -52,4 +52,5 @@ web の画面の枠は、ヘッダー、ナビゲーション、照合待ちの�
 ### Negative
 
 - 左の欄を持つ画面を足すときは、`ownsSiteLayout` を付け、機能の Layout で `SiteLayoutContainer` を使う。枠の組み立てが 2 か所（root と機能の Layout）に分かれる。
+- どの route にも合わない URL の Not Found の表示は、root の `Outlet` が描くので、枠の中に出る。
 - ナビゲーションに出ない URL の画面を足すと、`siteNavHrefOf` は pathname をそのまま返し、ナビゲーションのどの項目も今の画面にならない。
