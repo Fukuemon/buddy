@@ -23,7 +23,7 @@ func baseEnv() map[string]string {
 		"UPSTREAM_IDP_CLIENT_SECRETS_FILE": "/secrets/upstream-idp-client-secrets.json",
 		"PUBLIC_URL":                       "https://login.example.com",
 		"HYDRA_ISSUER":                     "http://hydra:4444",
-		"TOKEN_HOOK_KEY":                   "hook-key",
+		"TOKEN_HOOK_KEY":                   "hook-key-0123456789abcdef0123456789",
 	}
 }
 
@@ -37,6 +37,8 @@ func TestLoad(t *testing.T) {
 	m["AUTO_CONSENT_CLIENTS"] = "web, admin,"
 	m["INTERNAL_PORT"] = "9090"
 	m["INTERNAL_API_CLIENTS"] = "schedule, receipt"
+	// シークレットのファイルの末尾の改行は除く
+	m["TOKEN_HOOK_KEY"] = "hook-key-0123456789abcdef0123456789\n"
 	c, err := config.Load(env(m))
 	if err != nil {
 		t.Fatal(err)
@@ -56,7 +58,7 @@ func TestLoad(t *testing.T) {
 		HydraIssuer:               "http://hydra:4444",
 		InternalAPIAudience:       "broker",
 		InternalAPIClients:        []string{"schedule", "receipt"},
-		TokenHookKey:              "hook-key",
+		TokenHookKey:              "hook-key-0123456789abcdef0123456789",
 	}
 	if !reflect.DeepEqual(c, want) {
 		t.Errorf("got %+v, want %+v", c, want)
@@ -103,6 +105,7 @@ func TestLoadErrors(t *testing.T) {
 		{"PUBLIC_URL が URL でない", map[string]string{"PUBLIC_URL": "/login"}, "PUBLIC_URL"},
 		{"UPSTREAM_IDP_BROWSER_ORIGIN が URL でない", map[string]string{"UPSTREAM_IDP_BROWSER_ORIGIN": "localhost:9000"}, "UPSTREAM_IDP_BROWSER_ORIGIN"},
 		{"LOG_LEVEL が不正", map[string]string{"LOG_LEVEL": "verbose"}, "LOG_LEVEL"},
+		{"TOKEN_HOOK_KEY が 31 バイト", map[string]string{"TOKEN_HOOK_KEY": "0123456789012345678901234567890"}, "TOKEN_HOOK_KEY"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

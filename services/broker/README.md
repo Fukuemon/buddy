@@ -52,7 +52,7 @@ Ory Hydra の login and consent app として動くサービス。
 - `INTERNAL_API_CLIENTS`: 内部の API を呼んでよいクライアントの ID を、カンマで区切った値。
   - デフォルトは `schedule`。
   - ブローカーは、access token の `sub` と、token_hook が通す client credentials の要求の `client_id` を、この値と照合する。
-- `TOKEN_HOOK_KEY`: Hydra が `oauth2.token_hook` を呼ぶときに、ヘッダー `Token-Hook-Key` に入れる値。
+- `TOKEN_HOOK_KEY`: Hydra が `oauth2.token_hook` を呼ぶときに、ヘッダー `Token-Hook-Key` に入れる値。前後の空白を除いて 32 バイト以上にする。
   - 必須。
   - シークレットとして渡し、Hydra の `oauth2.token_hook.auth` と同じ値にする。
 
