@@ -83,8 +83,8 @@ func current(ctx context.Context) (principal.Principal, error) {
 	return p, nil
 }
 
-// authorize は、ctx の職員が、職員 staffID の予定を見てよいか（editing なら編集してよいか）を確認する。
-func (s *Usecase) authorize(ctx context.Context, staffID string, editing bool) error {
+// requireScheduleAccess は、ctx の職員が、職員 staffID の予定を見てよいか（editing なら編集してよいか）を確認する。
+func (s *Usecase) requireScheduleAccess(ctx context.Context, staffID string, editing bool) error {
 	p, err := current(ctx)
 	if err != nil {
 		return err

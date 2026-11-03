@@ -10,7 +10,7 @@ func (s *Usecase) GetRecurring(ctx context.Context, id string) (RecurringDetail,
 	if err != nil {
 		return RecurringDetail{}, err
 	}
-	if err := s.authorize(ctx, d.StaffID, false); err != nil {
+	if err := s.requireScheduleAccess(ctx, d.StaffID, false); err != nil {
 		return RecurringDetail{}, err
 	}
 	return d, nil

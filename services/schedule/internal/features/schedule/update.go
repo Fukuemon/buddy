@@ -16,7 +16,7 @@ func (s *Usecase) Update(ctx context.Context, scheduleID string, in SlotInput) (
 		if err != nil {
 			return err
 		}
-		if err := s.authorize(ctx, cur.StaffID, true); err != nil {
+		if err := s.requireScheduleAccess(ctx, cur.StaffID, true); err != nil {
 			return err
 		}
 		if cur.Cancel != nil {
