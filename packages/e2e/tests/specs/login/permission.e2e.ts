@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 import { LEADER_STATE } from '../../fixtures/env'
+import { pageHeading } from '../../selectors/page'
 
 /** 画面が BFF に送った操作の名前を集める。BFF の server function は、操作の名前を本文に入れて送る。 */
 const collectOperations = (page: Page) => {
@@ -21,7 +22,7 @@ test.describe('画面の権限', () => {
       await expect(page.getByTestId('page-forbidden')).toHaveCount(0)
 
       await page.goto('/schedule/import')
-      await expect(page.getByTestId('calendar-import-staff')).toBeVisible()
+      await expect(pageHeading(page, '予定の取り込み')).toBeVisible()
       await expect(page.getByTestId('page-forbidden')).toHaveCount(0)
 
       await page.goto('/receipt')
@@ -54,7 +55,7 @@ test.describe('画面の権限', () => {
       await expect(page.getByTestId('page-forbidden')).toContainText(
         '職員の管理の権限を持つ職員だけが開けます',
       )
-      await expect(page.getByTestId('calendar-import-staff')).toHaveCount(0)
+      await expect(pageHeading(page, '予定の取り込み')).toHaveCount(0)
     })
 
     test('照合の権限を持たない職員が照合の画面を開いた場合、照合の権限が無い表示を出すこと', async ({

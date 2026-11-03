@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 import { LEADER, LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
+import { pageHeading } from '../../selectors/page'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { signInAtBroker } from '../../screens/login'
 
@@ -85,7 +86,7 @@ test.describe('画面の権限', () => {
             '職員の管理の権限を持つ職員だけが開けます',
           )
           await expect(page).toHaveURL(/\/schedule\/import$/)
-          await expect(page.getByTestId('calendar-import-staff')).toHaveCount(0)
+          await expect(pageHeading(page, '予定の取り込み')).toHaveCount(0)
           await check('取り込みの入力を出さず、職員の管理の権限が要ることが出る')
         },
       )
@@ -120,7 +121,7 @@ test.describe('画面の権限', () => {
 
           await step('ナビゲーションの「取り込み」を押す')
           await page.getByTestId('site-nav-import').click()
-          await expect(page.getByTestId('calendar-import-staff')).toBeVisible()
+          await expect(pageHeading(page, '予定の取り込み')).toBeVisible()
           await expect(page.getByTestId('page-forbidden')).toHaveCount(0)
           await check('予定の取り込みの入力が出る')
 
