@@ -65,13 +65,21 @@ API の操作を呼ぶ関数とリポジトリのメソッドは、operationId �
 - E2E のテストのコードの関数（`prepare`、`expect`）の名前は、スキル write-e2e-test に従う。
 - 照合（`check`）のように業務の語が動詞を兼ねるときは、業務の語を使う。
   - 入力の値の確認に `check` を使わないのは、照合と間違えないためである。
+- Go の、フィールドを返すメソッド（getter）には `Get` を付けない（`Status()`、`URL()`）。
+- Go のリポジトリのメソッドと、API を呼ぶ関数は、DB と HTTP の呼び出しでも `Get` と `List` で始める。
+  - Google Go Style は `Get` を避け、リモートの呼び出しには `Fetch` を勧める。
+  - buddy では、sqlc の生成物（`GetAuthor`、`ListAuthors`）と operationId の動詞にそろえ、ハンドラからリポジトリと SQL まで同じ動詞で追えるようにするため、`Get` と `List` にする。
+  - 出典: [Google Go Style Decisions の Getters](https://google.github.io/styleguide/go/decisions#getters)
+  - 出典: [Effective Go の Getters](https://go.dev/doc/effective_go#Getters)
+  - 出典: [sqlc の Getting started with PostgreSQL](https://docs.sqlc.dev/en/latest/tutorials/getting-started-postgresql.html)
 
 ### 真偽値
 
-- Go の真偽値は、状態の形容詞か過去分詞（`Ended`、`Pending`、`Valid`）か、三人称単数の動詞の句（`EndsNextDay`、`Contains`）にし、`Is` を付けない。
-  - 権限の判定は `Can` で始める（`CanEdit`）。
+- Go の判定の関数とメソッドは、`Is`、`Has`、`Can` で始める（`IsVisitTitle`、`CanEdit`）。
+  - 標準のライブラリの `time.Time.IsZero`、`os.FileInfo.IsDir`、`strings.HasPrefix` に合わせる。
+- Go の真偽値の変数とフィールドは、状態の形容詞か過去分詞（`Ended`、`Pending`）か、三人称単数の動詞の句（`EndsNextDay`）にし、`Is` を付けない。
   - DB のカラムと API の項目と対になるフィールドは、その名前に合わせる（`IsOverTimeWork`、`NeedsTarget`）。
-  - 標準のライブラリのインターフェースに合わせるメソッド（`Is`、`IsZero`）と、`ok` の慣用の名前は、この規則の対象の外である。
+  - `ok` の慣用の名前は、この規則の対象の外である。
 - TypeScript の真偽値は、`is`、`has`、`can`、`needs` で始めるか、三人称単数の動詞の句（`endsNextDay`、`opensDialog`）にする。
   - `is` は状態、`can` は操作できるか、`has` は持っているかに使う。
   - DOM と ARIA の属性と同じ名前の props（`disabled`、`checked`、`expanded`、`defaultOpen`）と、API の項目（`ends_next_day`）は、その名前に合わせる。
