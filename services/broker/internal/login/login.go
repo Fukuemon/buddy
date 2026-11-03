@@ -148,7 +148,7 @@ func (h handler) showLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	req, err := h.Hydra.LoginRequest(ctx, challenge)
 	if err != nil {
-		h.fail(w, r, http.StatusBadGateway, "ログインの要求を読めない", err)
+		h.fail(w, r, http.StatusBadRequest, "ログインの要求を読めない", err)
 		return
 	}
 	if !req.Skip {
@@ -303,7 +303,7 @@ func (h handler) consent(w http.ResponseWriter, r *http.Request) {
 	}
 	req, err := h.Hydra.ConsentRequest(ctx, challenge)
 	if err != nil {
-		h.fail(w, r, http.StatusBadGateway, "同意の要求を読めない", err)
+		h.fail(w, r, http.StatusBadRequest, "同意の要求を読めない", err)
 		return
 	}
 	// 同意の画面を持たないので、画面を出さずに accept してよいと決めたクライアントのほかは拒む

@@ -330,7 +330,9 @@ cookie は署名しない。
 この画面には、もう一度ログインするリンクが無い。  
 画面を出すのは次のとき。
 
-- `login_challenge` か `consent_challenge` が無いか、Hydra の admin API で読めないとき
+- `login_challenge` か `consent_challenge` が無いか、Hydra の admin API で読めないとき（400）
+  - 読めないときは、`GET /login`、`POST /login`、同意のどれでも 400 にする。
+  - 使い終えたか期限の切れた challenge を、challenge が無いときと同じに扱うためである。
 - コールバックの値が、このブラウザで始めたログインのものと確認できないとき
 - 上流の IdP の discovery の文書を読めず、リダイレクト先を作れないとき（502）
 - `POST /login` で、メールから職員を DB で引けないとき（500）

@@ -77,6 +77,7 @@ type fakeHydra struct {
 	// loginReads は、LoginRequest を呼んだ回数である。
 	loginReads  int
 	consent     hydra.ConsentRequest
+	consentErr  error
 	accepted    *hydra.AcceptLogin
 	consented   *hydra.AcceptConsent
 	rejected    bool
@@ -103,7 +104,7 @@ func (f *fakeHydra) RejectLogin(_ context.Context, _ string, b hydra.Rejection) 
 }
 
 func (f *fakeHydra) ConsentRequest(context.Context, string) (hydra.ConsentRequest, error) {
-	return f.consent, nil
+	return f.consent, f.consentErr
 }
 
 func (f *fakeHydra) AcceptConsent(_ context.Context, _ string, b hydra.AcceptConsent) (string, error) {
@@ -248,6 +249,22 @@ func TestShowLogin(t *testing.T) {
 	}
 	if rec := e.do(httptest.NewRequest(http.MethodGet, "/login", nil)); rec.Code != http.StatusBadRequest {
 		t.Errorf("login_challenge の無い code = %d, want 400", rec.Code)
+	}
+}
+
+// TestUnreadableChallenge は、Hydra の admin API で読めない challenge に、GET と POST の /login と同意で同じ 400 の失敗の画面を出すことを確認する。
+func TestUnreadableChallenge(t *testing.T) {
+	e := newEnv(10)
+	e.hydra.loginErr = errors.New("hydra: 404 Not Found")
+	e.hydra.consentErr = errors.New("hydra: 404 Not Found")
+	for name, rec := range map[string]*httptest.ResponseRecorder{
+		"GET /login":   e.do(httptest.NewRequest(http.MethodGet, "/login?login_challenge=used", nil)),
+		"POST /login":  e.submit("hina.aoki@example.com"),
+		"GET /consent": e.do(httptest.NewRequest(http.MethodGet, "/consent?consent_challenge=used", nil)),
+	} {
+		if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "ログインできませんでした") {
+			t.Errorf("%s: code = %d, want 400 のログインの失敗の画面", name, rec.Code)
+		}
 	}
 }
 
