@@ -2,8 +2,6 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { requirePermission } from '#/api/permissions'
 import { STAFF_MANAGE } from '#/api/types'
-import { SiteLayoutContainer } from '#/components/layout/SiteLayoutContainer'
-import { CalendarReviewBadgeContainer } from '#/features/calendar/components/CalendarReviewBadgeContainer'
 import { CalendarLinkContainer } from '#/features/calendar/components/CalendarLinkContainer'
 
 export const Route = createFileRoute('/schedule_/link')({
@@ -15,11 +13,5 @@ export const Route = createFileRoute('/schedule_/link')({
 })
 
 function CalendarLinkPage() {
-  return (
-    <SiteLayoutContainer current="/schedule/link" reviewBadge={<CalendarReviewBadgeContainer />}>
-      <main className="min-w-0 p-4 desktop:p-6">
-        <CalendarLinkContainer />
-      </main>
-    </SiteLayoutContainer>
-  )
+  return <CalendarLinkContainer />
 }

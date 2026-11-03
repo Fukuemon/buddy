@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vite-plus/test'
 import { FAKE_VIEWER } from '#/api/fake/fixtures'
 import { RECEIPT_CHECK, STAFF_MANAGE } from '#/api/types'
 
-import { SiteNav, siteNavGroups } from './SiteNav'
+import { SiteNav, siteNavGroups, siteNavHrefOf } from './SiteNav'
 
 const MANAGER_GROUPS = siteNavGroups({ ...FAKE_VIEWER, policyCodes: [STAFF_MANAGE, RECEIPT_CHECK] })
 
@@ -32,5 +32,26 @@ describe('SiteNav', () => {
     const link = screen.getByTestId('site-nav-organization')
     expect(link.textContent).toBe('部署とチーム')
     expect(link).toHaveAccessibleName('部署とチーム')
+  })
+})
+
+describe('siteNavHrefOf', () => {
+  it.each([
+    ['/patients/patient-1', '/patients'],
+    ['/staff/new', '/staff'],
+    ['/schedule/review', '/schedule/review'],
+    ['/schedule/new', '/schedule'],
+    ['/receipt/result', '/receipt'],
+    ['/organization', '/organization'],
+  ])('%s は、いちばん長く一致するナビゲーションの href の %s になる', (pathname, expected) => {
+    expect(siteNavHrefOf(pathname)).toBe(expected)
+  })
+
+  it('ナビゲーションの href の下に無い pathname は、そのまま返す', () => {
+    expect(siteNavHrefOf('/unknown')).toBe('/unknown')
+  })
+
+  it('href と途中まで同じ別の語の pathname は、その href を選ばない', () => {
+    expect(siteNavHrefOf('/staffing')).toBe('/staffing')
   })
 })

@@ -4,8 +4,6 @@ import { requirePermission } from '#/api/permissions'
 import { STAFF_MANAGE } from '#/api/types'
 import { RENDER_DATA_ON_SERVER } from '#/api/createBuddyApi'
 import { awaitOnServer } from '#/api/prefetch'
-import { SiteLayoutContainer } from '#/components/layout/SiteLayoutContainer'
-import { CalendarReviewBadgeContainer } from '#/features/calendar/components/CalendarReviewBadgeContainer'
 import { StaffListContainer } from '#/features/staff/components/StaffListContainer'
 import {
   departmentsQueryOptions,
@@ -30,11 +28,9 @@ export const Route = createFileRoute('/staff')({
 
 function StaffPage() {
   return (
-    <SiteLayoutContainer current="/staff" reviewBadge={<CalendarReviewBadgeContainer />}>
-      <main className="min-w-0 p-4 desktop:p-6">
-        <StaffListContainer />
-      </main>
+    <>
+      <StaffListContainer />
       <Outlet />
-    </SiteLayoutContainer>
+    </>
   )
 }

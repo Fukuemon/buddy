@@ -4,8 +4,6 @@ import { requirePermission } from '#/api/permissions'
 import { STAFF_MANAGE } from '#/api/types'
 import { RENDER_DATA_ON_SERVER } from '#/api/createBuddyApi'
 import { awaitOnServer } from '#/api/prefetch'
-import { SiteLayoutContainer } from '#/components/layout/SiteLayoutContainer'
-import { CalendarReviewBadgeContainer } from '#/features/calendar/components/CalendarReviewBadgeContainer'
 import { OrganizationListContainer } from '#/features/organization/components/OrganizationListContainer'
 import { departmentsQueryOptions, teamsQueryOptions } from '#/features/organization/queries'
 
@@ -22,11 +20,5 @@ export const Route = createFileRoute('/organization')({
 })
 
 function OrganizationPage() {
-  return (
-    <SiteLayoutContainer current="/organization" reviewBadge={<CalendarReviewBadgeContainer />}>
-      <main className="min-w-0 p-4 desktop:p-6">
-        <OrganizationListContainer />
-      </main>
-    </SiteLayoutContainer>
-  )
+  return <OrganizationListContainer />
 }

@@ -4,8 +4,6 @@ import { requirePermission } from '#/api/permissions'
 import { STAFF_MANAGE } from '#/api/types'
 import { RENDER_DATA_ON_SERVER } from '#/api/createBuddyApi'
 import { awaitOnServer } from '#/api/prefetch'
-import { SiteLayoutContainer } from '#/components/layout/SiteLayoutContainer'
-import { CalendarReviewBadgeContainer } from '#/features/calendar/components/CalendarReviewBadgeContainer'
 import { PatientListContainer } from '#/features/patient/components/PatientListContainer'
 import { patientRecordsQueryOptions, staffRecordsQueryOptions } from '#/features/patient/queries'
 
@@ -23,11 +21,9 @@ export const Route = createFileRoute('/patients')({
 
 function PatientsPage() {
   return (
-    <SiteLayoutContainer current="/patients" reviewBadge={<CalendarReviewBadgeContainer />}>
-      <main className="min-w-0 p-4 desktop:p-6">
-        <PatientListContainer />
-      </main>
+    <>
+      <PatientListContainer />
       <Outlet />
-    </SiteLayoutContainer>
+    </>
   )
 }
