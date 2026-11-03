@@ -7,7 +7,6 @@ import { CalendarReviewBadgeContainer } from '#/features/calendar/components/Cal
 import { CalendarImportContainer } from '#/features/calendar/components/CalendarImportContainer'
 import { calendarImportSearchSchema } from '#/features/calendar/schema/calendarImportSearch'
 
-// `/schedule` の子にすると予定のカレンダーの上に重なるので、名前の `_` で入れ子から外す
 export const Route = createFileRoute('/schedule_/import')({
   beforeLoad: requirePermission(STAFF_MANAGE),
   validateSearch: calendarImportSearchSchema,
