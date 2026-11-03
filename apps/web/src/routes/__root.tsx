@@ -60,7 +60,7 @@ export const Route = createRootRouteWithContext<AppRouterContext>()({
   errorComponent: RootError,
 })
 
-function RootDocument({ children }: { children: React.ReactNode }) {
+function RootDocument({ children }: { children: ReactNode }) {
   useRecheckPermissionsOnViewerChange()
   return (
     <html lang="ja">
@@ -104,9 +104,10 @@ function SiteFrame({ pathname, children }: { pathname: string; children: ReactNo
 
 /**
  * 画面の route を SiteFrame で包む。`/auth/` の下と、staticData の ownsSiteLayout が true の route とその子は包まない。
+ * pathname は描いている matches から読み、遷移の途中でも、枠の出し分けと中身の route をそろえる。
  */
 function RootLayout() {
-  const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const pathname = useMatches({ select: (matches) => matches.at(-1)?.pathname ?? '/' })
   const ownsSiteLayout = useMatches({
     select: (matches) => matches.some((match) => match.staticData.ownsSiteLayout === true),
   })

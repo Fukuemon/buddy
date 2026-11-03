@@ -197,7 +197,7 @@ const ALL_NAV_ITEMS: readonly SiteNavItem[] = [
 ]
 
 /**
- * pathname の画面を、ナビゲーションのどの項目の href の下にあるかで返す。いちばん長く一致する href を選ぶ。
+ * pathname の画面が下にある、ナビゲーションの項目の href を返す。いちばん長く一致する href を選ぶ。
  * `/patients/<ID>` は `/patients`、`/schedule/review` は `/schedule/review` になる。どの href の下にもなければ pathname を返す。
  * 権限で出していない項目も選ぶので、SiteNav は出している項目だけと比べて aria-current を付ける。
  */
