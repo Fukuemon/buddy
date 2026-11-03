@@ -25,8 +25,8 @@ func (s *Usecase) UpdateProfile(ctx context.Context, id string, p Profile) (Deta
 		if err != nil {
 			return err
 		}
-		if cur.Status() == StatusRetired {
-			return apperr.Conflict("退職した職員は変えられません")
+		if err := cur.ProfileEditable(); err != nil {
+			return err
 		}
 		dep, err := s.deps.Departments.Get(ctx, p.DepartmentID)
 		if err != nil {

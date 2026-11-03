@@ -63,6 +63,31 @@ func (s Staff) Status() Status {
 	}
 }
 
+// Leavable は、職員を休職にできるかを確認する。退職した職員は休職にできず、競合のエラーを返す（ADR-0018）。
+func (s Staff) Leavable() error {
+	if s.Status() == StatusRetired {
+		return apperr.Conflict("退職した職員は休職にできません")
+	}
+	return nil
+}
+
+// Reinstatable は、職員を復職できるかを確認する。退職した職員は復職できず、競合のエラーを返す（ADR-0018）。
+func (s Staff) Reinstatable() error {
+	if s.Status() == StatusRetired {
+		return apperr.Conflict("退職した職員は復職できません")
+	}
+	return nil
+}
+
+// ProfileEditable は、職員の名前、電話番号、部署、チーム、訪問しない職員かを変えられるかを確認する。
+// 退職した職員は変えられず、競合のエラーを返す（ADR-0018）。
+func (s Staff) ProfileEditable() error {
+	if s.Status() == StatusRetired {
+		return apperr.Conflict("退職した職員は変えられません")
+	}
+	return nil
+}
+
 // NewParams は、New に渡す職員の属性である。
 type NewParams struct {
 	ID           string

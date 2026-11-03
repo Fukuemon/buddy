@@ -30,8 +30,8 @@ func (s *Usecase) Reinstate(ctx context.Context, id string) (Detail, error) {
 		if err != nil {
 			return err
 		}
-		if before.Status() == StatusRetired {
-			return apperr.Conflict("退職した職員は復職できません")
+		if err := before.Reinstatable(); err != nil {
+			return err
 		}
 		return s.deps.Staff.EndLeave(ctx, before.ID)
 	})
