@@ -63,19 +63,19 @@ type config struct {
 func loadConfig(getenv func(string) string) (config, error) {
 	cfg := config{port: "8080", maxUploadBytes: 10 << 20, logLevel: slog.LevelInfo}
 	cfg.oidc = oidc.Config{Issuer: getenv("OIDC_ISSUER"), Audience: getenv("OIDC_AUDIENCE"), OrgClaim: getenv("OIDC_ORG_CLAIM")}
-	var missing []string
+	var missingNames []string
 	if cfg.oidc.Issuer == "" {
-		missing = append(missing, "OIDC_ISSUER")
+		missingNames = append(missingNames, "OIDC_ISSUER")
 	}
 	if cfg.oidc.Audience == "" {
-		missing = append(missing, "OIDC_AUDIENCE")
+		missingNames = append(missingNames, "OIDC_AUDIENCE")
 	}
 	cfg.scheduleURL = getenv("SCHEDULE_URL")
 	if cfg.scheduleURL == "" {
-		missing = append(missing, "SCHEDULE_URL")
+		missingNames = append(missingNames, "SCHEDULE_URL")
 	}
-	if len(missing) > 0 {
-		return config{}, fmt.Errorf("環境変数 %s が必要である", strings.Join(missing, "、"))
+	if len(missingNames) > 0 {
+		return config{}, fmt.Errorf("環境変数 %s が必要である", strings.Join(missingNames, "、"))
 	}
 	if cfg.oidc.OrgClaim == "" {
 		cfg.oidc.OrgClaim = "org_id"

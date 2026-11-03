@@ -83,8 +83,8 @@ func current(ctx context.Context) (principal.Principal, error) {
 	return p, nil
 }
 
-// authorize は、ctx の職員が、職員 staffID の予定を見てよいか（edit なら編集してよいか）を確認する。
-func (s *Usecase) authorize(ctx context.Context, staffID string, edit bool) error {
+// authorize は、ctx の職員が、職員 staffID の予定を見てよいか（editing なら編集してよいか）を確認する。
+func (s *Usecase) authorize(ctx context.Context, staffID string, editing bool) error {
 	p, err := current(ctx)
 	if err != nil {
 		return err
@@ -93,7 +93,7 @@ func (s *Usecase) authorize(ctx context.Context, staffID string, edit bool) erro
 	if err != nil {
 		return err
 	}
-	return allow(p, st, edit)
+	return allow(p, st, editing)
 }
 
 // occurrence は、単発の予定が置き換える繰り返しの予定の回である。
@@ -176,7 +176,7 @@ func assignable(st staff.Ref, keptID string, date, today civil.Date) error {
 	if keptID != "" && st.ID == keptID && (st.Status != staff.StatusRetired || date.Before(today)) {
 		return nil
 	}
-	return st.Assignable()
+	return st.RequireAssignable()
 }
 
 // prepareSlot は、予定の種類と職員と、職員の予定を編集する権限を確認し、訪問の情報があれば保存して、予定の属性を組み立てる。

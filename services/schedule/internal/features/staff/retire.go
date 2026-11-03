@@ -24,7 +24,7 @@ func (s *Usecase) Retire(ctx context.Context, id string) (StatusChange, error) {
 		if err != nil {
 			return err
 		}
-		if !a.Empty() {
+		if !a.IsEmpty() {
 			return &AssignedError{Assignments: a}
 		}
 		if cur.Sub != nil {

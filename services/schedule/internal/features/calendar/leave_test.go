@@ -44,7 +44,7 @@ func retire(t *testing.T, s *inmem.Store) {
 
 func skipReasons(p calendar.Preview) map[calendar.SkipReason]int {
 	out := map[calendar.SkipReason]int{}
-	for _, s := range p.Skipped {
+	for _, s := range p.SkippedItems {
 		out[s.Reason]++
 	}
 	return out
@@ -60,14 +60,14 @@ func TestPreviewWithholdsNewEventsOfStaffOnLeave(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p.Counts.Import != 0 || p.Counts.NeedsReview != 0 || p.Counts.Recurring != 0 || len(p.NeedsReview) != 0 {
+	if p.Counts.Import != 0 || p.Counts.NeedsReview != 0 || p.Counts.Recurring != 0 || len(p.ReviewItems) != 0 {
 		t.Errorf("Counts = %+v, want 取り込む予定と確認が必要な予定なし", p.Counts)
 	}
 	// visit、ambiguous、missing、meeting、nocode、weekly、weekly の 11-16 の置き換え、biweekly の 2 回。終日の予定は終日のまま
 	if got := skipReasons(p); got[calendar.SkipStaffOnLeave] != 9 || got[calendar.SkipAllDay] != 1 || len(got) != 2 {
 		t.Errorf("取り込まない理由 = %v, want staff_on_leave 9 件と all_day 1 件", got)
 	}
-	for _, s := range p.Skipped {
+	for _, s := range p.SkippedItems {
 		if s.Reason == calendar.SkipStaffOnLeave && (s.Date == nil || s.StartTime == nil || s.EndTime == nil) {
 			t.Errorf("休職の取り込まない予定 = %+v, want 日時を持つ", s)
 		}

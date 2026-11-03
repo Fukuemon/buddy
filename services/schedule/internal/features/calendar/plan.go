@@ -58,8 +58,8 @@ func (r Range) widened() Range {
 	return Range{Start: civil.DateOf(r.Start.Time().AddDate(0, 0, -movedMargin)), End: civil.DateOf(r.End.Time().AddDate(0, 0, movedMargin))}
 }
 
-// Contains は、d が期間の中の日かを返す。
-func (r Range) Contains(d civil.Date) bool { return !d.Before(r.Start) && !d.After(r.End) }
+// Has は、d が期間の中の日かを返す。
+func (r Range) Has(d civil.Date) bool { return !d.Before(r.Start) && !d.After(r.End) }
 
 func midnight(d civil.Date) time.Time {
 	return time.Date(d.Year, d.Month, d.Day, 0, 0, 0, 0, tokyo)
@@ -133,10 +133,10 @@ type Counts struct {
 
 // Preview は、取り込みのプレビューである。
 type Preview struct {
-	Range       Range
-	Counts      Counts
-	NeedsReview []ReviewItem
-	Skipped     []Skipped
+	Range        Range
+	Counts       Counts
+	ReviewItems  []ReviewItem
+	SkippedItems []Skipped
 }
 
 // Action は、確認が必要な予定の取り込み方である。
@@ -188,11 +188,11 @@ type replacement struct {
 
 // plan は、外部の予定を読み替えた、取り込みで書く予定と、除外する日と、プレビューの内容である。
 type plan struct {
-	entries    []entry
-	exclusions []replacement
-	review     []ReviewItem
-	skipped    []Skipped
-	counts     Counts
+	entries      []entry
+	exclusions   []replacement
+	reviewItems  []ReviewItem
+	skippedItems []Skipped
+	counts       Counts
 }
 
 // planInput は、buildPlan の入力である。
@@ -269,9 +269,9 @@ func parentsToExpand(events []Event, links map[string]Link) []string {
 	return ids
 }
 
-// buildPlan は、外部の予定を buddy の予定に読み替え、取り込みで書く予定とプレビューの内容を作る。
+// newPlan は、外部の予定を buddy の予定に読み替え、取り込みで書く予定とプレビューの内容を作る。
 // 読み替えの規則は、画面仕様書の予定の取り込みの「予定の読み替え」にある。
-func buildPlan(in planInput) plan {
+func newPlan(in planInput) plan {
 	b := planner{
 		in: in, reviewIndex: map[string]int{}, parents: map[string]Event{}, ruleParents: map[string]*Recurrence{},
 		expandedParents: map[string]bool{}, instanceIDs: map[string]bool{}, countedParents: map[string]bool{},
@@ -314,11 +314,11 @@ func (b *planner) setRevisions() {
 			parts[e.reviewKey] = append(parts[e.reviewKey], e.event.ID+"\x00"+e.event.ETag)
 		}
 	}
-	for i := range b.p.review {
-		ps := parts[b.p.review[i].ExternalEventID]
+	for i := range b.p.reviewItems {
+		ps := parts[b.p.reviewItems[i].ExternalEventID]
 		slices.Sort(ps)
 		sum := sha256.Sum256([]byte(strings.Join(ps, "\x01")))
-		b.p.review[i].Revision = hex.EncodeToString(sum[:8])
+		b.p.reviewItems[i].Revision = hex.EncodeToString(sum[:8])
 	}
 }
 
@@ -338,7 +338,7 @@ type planner struct {
 	countedParents map[string]bool
 }
 
-func (b *planner) linked(id string) bool {
+func (b *planner) isLinked(id string) bool {
 	if _, ok := b.in.links[id]; ok {
 		b.p.counts.AlreadyImported++
 		return true
@@ -351,17 +351,17 @@ func (b *planner) addSingle(ev Event) {
 		return
 	}
 	c := Classify(ev)
-	if !c.Date.IsZero() && !b.in.rng.Contains(c.Date) {
+	if !c.Date.IsZero() && !b.in.rng.Has(c.Date) {
 		return
 	}
-	if b.linked(ev.ID) {
+	if b.isLinked(ev.ID) {
 		return
 	}
 	b.add(entry{event: ev, cand: c})
 }
 
 func (b *planner) addParent(ev Event) {
-	if ev.Status == StatusCancelled || b.linked(ev.ID) {
+	if ev.Status == StatusCancelled || b.isLinked(ev.ID) {
 		return
 	}
 	mode, c, rec := modeOf(ev, b.in.links)
@@ -380,10 +380,10 @@ func (b *planner) addParent(ev Event) {
 				continue
 			}
 			ic := Classify(inst)
-			if !ic.Date.IsZero() && !b.in.rng.Contains(ic.Date) {
+			if !ic.Date.IsZero() && !b.in.rng.Has(ic.Date) {
 				continue
 			}
-			if b.linked(inst.ID) {
+			if b.isLinked(inst.ID) {
 				continue
 			}
 			if b.add(entry{event: inst, parentID: ev.ID, cand: ic, expanded: true}) {
@@ -413,7 +413,7 @@ func (b *planner) countExpanded(parentID string) {
 // 親が無いか取り込まないときは、変えた回を単発の予定にし、取り消した回は何もしない。
 func (b *planner) addException(ev Event) {
 	if b.expandedParents[ev.RecurringEventID] {
-		if ev.Status != StatusCancelled && !b.instanceIDs[ev.ID] && !b.linked(ev.ID) {
+		if ev.Status != StatusCancelled && !b.instanceIDs[ev.ID] && !b.isLinked(ev.ID) {
 			if b.add(entry{event: ev, parentID: ev.RecurringEventID, cand: Classify(ev), expanded: true}) {
 				b.countExpanded(ev.RecurringEventID)
 			}
@@ -428,14 +428,14 @@ func (b *planner) addException(ev Event) {
 		return
 	}
 	c := Classify(ev)
-	if original, ok := originalDate(ev); (c.Date.IsZero() || !b.in.rng.Contains(c.Date)) && (!ok || !b.in.rng.Contains(original)) {
+	if original, ok := originalDate(ev); (c.Date.IsZero() || !b.in.rng.Has(c.Date)) && (!ok || !b.in.rng.Has(original)) {
 		return
 	}
-	if b.linked(ev.ID) {
+	if b.isLinked(ev.ID) {
 		return
 	}
 	if !ok {
-		if b.excludedBefore(ev) {
+		if b.isExcludedBefore(ev) {
 			// 前の取り込みか buddy で、その回をすでに除外か置き換えにした。
 			b.p.counts.AlreadyImported++
 			return
@@ -467,20 +467,20 @@ func (b *planner) replacementTarget(ev Event) (replacement, bool) {
 		parent := b.parents[ev.RecurringEventID]
 		pc := Classify(parent)
 		rs := schedule.RecurringSchedule{Slot: schedule.Slot{Date: pc.Date}, Rule: rec.Rule}
-		if !rs.Occurs(date) || slices.Contains(rec.ExclusionDates, date) {
+		if !rs.IsOccurring(date) || slices.Contains(rec.ExclusionDates, date) {
 			return replacement{}, false
 		}
 		return replacement{parentEventID: ev.RecurringEventID, date: date}, true
 	}
 	rs, ok := b.in.linkedRecurring[ev.RecurringEventID]
-	if !ok || !rs.Occurs(date) || slices.Contains(rs.ExclusionDates, date) {
+	if !ok || !rs.IsOccurring(date) || slices.Contains(rs.ExclusionDates, date) {
 		return replacement{}, false
 	}
 	return replacement{recurringScheduleID: rs.ID, date: date}, true
 }
 
-// excludedBefore は、例外の回 ev の親が前の取り込みの繰り返しの予定で、その元の日付をすでに除外しているかを返す。
-func (b *planner) excludedBefore(ev Event) bool {
+// isExcludedBefore は、例外の回 ev の親が前の取り込みの繰り返しの予定で、その元の日付をすでに除外しているかを返す。
+func (b *planner) isExcludedBefore(ev Event) bool {
 	date, ok := originalDate(ev)
 	if !ok {
 		return false
@@ -508,7 +508,7 @@ func (b *planner) add(e entry) bool {
 		b.skip(e.cand)
 		return false
 	}
-	if b.in.staffBlocked != "" && !b.keepsAssignment(e) {
+	if b.in.staffBlocked != "" && !b.isAssignmentKept(e) {
 		b.skipAs(e.cand, b.in.staffBlocked)
 		return false
 	}
@@ -547,9 +547,9 @@ func (b *planner) add(e entry) bool {
 	return true
 }
 
-// keepsAssignment は、e が、前の取り込みで繰り返しのまま取り込み、今もカレンダーの職員に割り振った予定の回の置き換えかを返す。
+// isAssignmentKept は、e が、前の取り込みで繰り返しのまま取り込み、今もカレンダーの職員に割り振った予定の回の置き換えかを返す。
 // 既に割り振った予定の変更なので、職員が休職でも当てる。繰り返しの予定をほかの職員に割り振り直していれば、新しい予定とみなす。
-func (b *planner) keepsAssignment(e entry) bool {
+func (b *planner) isAssignmentKept(e entry) bool {
 	if e.replaces == nil || e.replaces.recurringScheduleID == "" {
 		return false
 	}
@@ -587,8 +587,8 @@ func (b *planner) review(e entry, matches []PatientRef) string {
 		rule := e.rule.Rule
 		item.Recurrence = &rule
 	}
-	b.reviewIndex[key] = len(b.p.review)
-	b.p.review = append(b.p.review, item)
+	b.reviewIndex[key] = len(b.p.reviewItems)
+	b.p.reviewItems = append(b.p.reviewItems, item)
 	b.p.counts.NeedsReview++
 	return key
 }
@@ -603,7 +603,7 @@ func (b *planner) skip(c Candidate) {
 		st, et := c.StartTime, c.EndTime
 		s.StartTime, s.EndTime = &st, &et
 	}
-	b.p.skipped = append(b.p.skipped, s)
+	b.p.skippedItems = append(b.p.skippedItems, s)
 	b.p.counts.Skipped++
 }
 
@@ -626,10 +626,10 @@ func (b *planner) matchPatients(client string) []PatientRef {
 
 // sortOutputs は、確認が必要な予定を日時の順に、取り込まない予定を日時の順（日時の無い予定は最後）に並べる。
 func (b *planner) sortOutputs() {
-	slices.SortStableFunc(b.p.review, func(x, y ReviewItem) int {
+	slices.SortStableFunc(b.p.reviewItems, func(x, y ReviewItem) int {
 		return compareSlot(&x.Date, &x.StartTime, &y.Date, &y.StartTime)
 	})
-	slices.SortStableFunc(b.p.skipped, func(x, y Skipped) int {
+	slices.SortStableFunc(b.p.skippedItems, func(x, y Skipped) int {
 		return compareSlot(x.Date, x.StartTime, y.Date, y.StartTime)
 	})
 }
@@ -685,10 +685,10 @@ func (p *plan) applyDecisions(decisions []Decision, patients []PatientRef) (int,
 		}
 		byKey[d.ExternalEventID] = d
 	}
-	if len(byKey) != len(p.review) {
+	if len(byKey) != len(p.reviewItems) {
 		return 0, errReviewChanged
 	}
-	for _, r := range p.review {
+	for _, r := range p.reviewItems {
 		if d, ok := byKey[r.ExternalEventID]; !ok || d.Revision != r.Revision {
 			return 0, errReviewChanged
 		}
@@ -723,16 +723,16 @@ func (p *plan) applyDecisions(decisions []Decision, patients []PatientRef) (int,
 var errReviewChanged = apperr.ConflictCode(CodeReviewChanged, "プレビューの後に、外部のカレンダーの確認が必要な予定が変わりました。もう一度プレビューしてください")
 
 // withMovedExceptions は、events に、around のうち元の日付が期間の中にある例外の回で、events に無いものを足す。
-func withMovedExceptions(events, around []Event, rng Range) []Event {
+func withMovedExceptions(events, aroundEvents []Event, rng Range) []Event {
 	seen := make(map[string]bool, len(events))
 	for _, ev := range events {
 		seen[ev.ID] = true
 	}
-	for _, ev := range around {
+	for _, ev := range aroundEvents {
 		if ev.RecurringEventID == "" || seen[ev.ID] {
 			continue
 		}
-		if d, ok := originalDate(ev); ok && rng.Contains(d) {
+		if d, ok := originalDate(ev); ok && rng.Has(d) {
 			events = append(events, ev)
 			seen[ev.ID] = true
 		}

@@ -63,25 +63,25 @@ func (s Staff) Status() Status {
 	}
 }
 
-// Leavable は、職員を休職にできるかを確認する。退職した職員は休職にできず、競合のエラーを返す（ADR-0018）。
-func (s Staff) Leavable() error {
+// RequireLeavable は、職員を休職にできるかを確認する。退職した職員は休職にできず、競合のエラーを返す（ADR-0018）。
+func (s Staff) RequireLeavable() error {
 	if s.Status() == StatusRetired {
 		return apperr.Conflict("退職した職員は休職にできません")
 	}
 	return nil
 }
 
-// Reinstatable は、職員を復職できるかを確認する。退職した職員は復職できず、競合のエラーを返す（ADR-0018）。
-func (s Staff) Reinstatable() error {
+// RequireReinstatable は、職員を復職できるかを確認する。退職した職員は復職できず、競合のエラーを返す（ADR-0018）。
+func (s Staff) RequireReinstatable() error {
 	if s.Status() == StatusRetired {
 		return apperr.Conflict("退職した職員は復職できません")
 	}
 	return nil
 }
 
-// ProfileEditable は、職員の名前、電話番号、部署、チーム、訪問しない職員かを変えられるかを確認する。
+// RequireProfileEditable は、職員の名前、電話番号、部署、チーム、訪問しない職員かを変えられるかを確認する。
 // 退職した職員は変えられず、競合のエラーを返す（ADR-0018）。
-func (s Staff) ProfileEditable() error {
+func (s Staff) RequireProfileEditable() error {
 	if s.Status() == StatusRetired {
 		return apperr.Conflict("退職した職員は変えられません")
 	}
@@ -104,7 +104,7 @@ type NewParams struct {
 // New は、名前、メール、電話番号を検証して Staff を作る。メールは小文字にそろえる。電話番号は数字だけを受け付け、先頭に "+" を付ける。
 func New(p NewParams) (Staff, error) {
 	p.Email = NormalizeEmail(p.Email)
-	if err := kernel.RequireText("職員の名前", p.Username, maxUsernameLen); err != nil {
+	if err := kernel.ValidateText("職員の名前", p.Username, maxUsernameLen); err != nil {
 		return Staff{}, err
 	}
 	if err := validateEmail(p.Email); err != nil {
@@ -142,7 +142,7 @@ type Profile struct {
 
 // NewProfile は、New と同じ規則で名前と電話番号を検証し、電話番号の先頭に "+" を付けた Profile を返す。
 func NewProfile(p Profile) (Profile, error) {
-	if err := kernel.RequireText("職員の名前", p.Username, maxUsernameLen); err != nil {
+	if err := kernel.ValidateText("職員の名前", p.Username, maxUsernameLen); err != nil {
 		return Profile{}, err
 	}
 	if p.PhoneNumber != nil {
@@ -161,7 +161,7 @@ func NormalizeEmail(email string) string {
 }
 
 func validateEmail(email string) error {
-	if err := kernel.RequireText("メール", email, maxEmailLen); err != nil {
+	if err := kernel.ValidateText("メール", email, maxEmailLen); err != nil {
 		return err
 	}
 	local, host, ok := strings.Cut(email, "@")
@@ -194,9 +194,9 @@ type Ref struct {
 	NonVisiting bool
 }
 
-// Assignable は、職員に予定と担当を新しく割り振れるかを確認する。休職と退職の職員（ADR-0018）と、訪問しない職員（ADR-0022）には
+// RequireAssignable は、職員に予定と担当を新しく割り振れるかを確認する。休職と退職の職員（ADR-0018）と、訪問しない職員（ADR-0022）には
 // 割り振れず、入力のエラーを返す。
-func (r Ref) Assignable() error {
+func (r Ref) RequireAssignable() error {
 	switch r.Status {
 	case StatusOnLeave:
 		return apperr.Invalid("休職の職員 %s には、予定と担当を割り振れません", r.ID)
@@ -254,7 +254,7 @@ type Detail struct {
 func ParseSort(field, order string) (kernel.Sort, error) {
 	return kernel.ParseSort(field, order,
 		[]string{"username", "created_at", "updated_at"},
-		kernel.Sort{Field: "updated_at", Desc: true})
+		kernel.Sort{Field: "updated_at", Descending: true})
 }
 
 // ListQuery は、職員の一覧の絞り込みと並べ替えである。nil の絞り込みは使わない。
@@ -330,14 +330,14 @@ type AssignedPatient struct {
 // Assignments は、職員を休職、退職、訪問しない職員にするときに残る、その日以降の予定、繰り返しの予定、担当の利用者である。
 // 予定と繰り返しの予定は、職員が予定の職員、主訪問者、同行者のどれかのものである。キャンセルした予定は含めない。
 type Assignments struct {
-	Schedules []AssignedSchedule
-	Recurring []AssignedRecurring
-	Patients  []AssignedPatient
+	Schedules          []AssignedSchedule
+	RecurringSchedules []AssignedRecurring
+	Patients           []AssignedPatient
 }
 
-// Empty は、残る予定と担当の利用者が無いかを返す。
-func (a Assignments) Empty() bool {
-	return len(a.Schedules) == 0 && len(a.Recurring) == 0 && len(a.Patients) == 0
+// IsEmpty は、残る予定と担当の利用者が無いかを返す。
+func (a Assignments) IsEmpty() bool {
+	return len(a.Schedules) == 0 && len(a.RecurringSchedules) == 0 && len(a.Patients) == 0
 }
 
 // AssignedError は、予定か担当の利用者が残る職員を、退職にするか、訪問しない職員にしようとしたことを示す。

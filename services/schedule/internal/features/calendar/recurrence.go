@@ -80,7 +80,7 @@ func RuleFromRecurrence(parent Event) (Recurrence, error) {
 		return Recurrence{}, expansion("%v", err)
 	}
 	rs := schedule.RecurringSchedule{Slot: schedule.Slot{Date: first}, Rule: rule}
-	if !rs.Occurs(first) {
+	if !rs.IsOccurring(first) {
 		return Recurrence{}, expansion("最初の日付 %s が規則の回に当たらない", first)
 	}
 	switch {
@@ -228,7 +228,7 @@ func untilDate(until string, start civil.Time) (civil.Date, error) {
 func lastOccurrence(rs schedule.RecurringSchedule, count int) (civil.Date, bool) {
 	d := rs.Date
 	for range maxCountDays {
-		if rs.Occurs(d) {
+		if rs.IsOccurring(d) {
 			count--
 			if count == 0 {
 				return d, true

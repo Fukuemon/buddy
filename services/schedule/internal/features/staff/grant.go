@@ -11,7 +11,7 @@ func DefaultGrants(pos organization.Position, teamID string, ids kernel.IDGenera
 	grants := make([]Grant, 0, len(pos.Policies))
 	for _, p := range pos.Policies {
 		g := Grant{ID: ids.NewID(), PolicyID: p.ID}
-		if p.Code.TargetsTeam() {
+		if p.Code.IsTeamTarget() {
 			g.Targets = []Target{{ID: ids.NewID(), TeamID: teamID}}
 		}
 		grants = append(grants, g)

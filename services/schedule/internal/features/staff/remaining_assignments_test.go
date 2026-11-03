@@ -28,8 +28,8 @@ func TestStaffRemainingAssignments(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got.Schedules) != 1 || got.Schedules[0].ID != "TODAY" || len(got.Recurring) != 1 ||
-		len(got.Schedules) != len(left.Assignments.Schedules) || len(got.Recurring) != len(left.Assignments.Recurring) {
+	if len(got.Schedules) != 1 || got.Schedules[0].ID != "TODAY" || len(got.RecurringSchedules) != 1 ||
+		len(got.Schedules) != len(left.Assignments.Schedules) || len(got.RecurringSchedules) != len(left.Assignments.RecurringSchedules) {
 		t.Errorf("一覧 = %+v, 休職の一覧 = %+v, want 同じ当日以降の一覧", got, left.Assignments)
 	}
 

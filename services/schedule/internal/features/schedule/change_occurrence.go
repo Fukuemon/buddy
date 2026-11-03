@@ -19,7 +19,7 @@ func (s *Usecase) ChangeOccurrence(ctx context.Context, recurringScheduleID stri
 	if err := s.authorize(ctx, rs.StaffID, true); err != nil {
 		return Detail{}, err
 	}
-	if !rs.Occurs(originalDate) {
+	if !rs.IsOccurring(originalDate) {
 		return Detail{}, apperr.Invalid("%s は繰り返しの予定の回に当たりません", originalDate)
 	}
 	var created Detail

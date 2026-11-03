@@ -54,9 +54,9 @@ func timeBandOf(start civil.Clock) (addition string, ok bool) {
 	return "", false
 }
 
-// additionsMatch は、実績の加算が、予定の開始時間に対して規則に合うかを返す。
+// hasValidAdditions は、実績の加算が、予定の開始時間に対して規則に合うかを返す。
 // 「通常」か、開始時間の時間帯の加算の 1 つだけのときに合う。緊急時の訪問の加算を含むときと、2 つ以上並ぶときは合わない。
-func additionsMatch(scheduleStart civil.Clock, additions []string) bool {
+func hasValidAdditions(scheduleStart civil.Clock, additions []string) bool {
 	if len(additions) != 1 {
 		return false
 	}
@@ -96,8 +96,8 @@ type Checks struct {
 	EndEqual      bool
 }
 
-// Consistent は、区分を決める項目がすべて整合するかを返す。
-func (c Checks) Consistent() bool {
+// IsConsistent は、区分を決める項目がすべて整合するかを返す。
+func (c Checks) IsConsistent() bool {
 	return c.Start.OK && c.Service.OK &&
 		c.ScheduleElapsed.OK && c.VisitElapsed.OK &&
 		c.ScheduleDuration.OK && c.VisitDuration.OK &&
@@ -180,14 +180,14 @@ func judgePair(p match.Pair) Result {
 		c := check(*p.Schedule, *p.Visit)
 		r.Checks = &c
 		r.Category = Mismatch
-		if c.Consistent() {
+		if c.IsConsistent() {
 			r.Category = Match
 		}
 	}
 	return r
 }
 
-func side(rec record.Record, visit bool) *Side {
+func side(rec record.Record, forVisit bool) *Side {
 	s := &Side{
 		Line:     rec.Line,
 		Start:    rec.Start,
@@ -195,7 +195,7 @@ func side(rec record.Record, visit bool) *Side {
 		Duration: rec.Duration,
 		Service:  rec.Service,
 	}
-	if visit {
+	if forVisit {
 		a := rec.AdditionText()
 		s.Additions = &a
 	}
@@ -205,12 +205,12 @@ func side(rec record.Record, visit bool) *Side {
 func check(s, v record.Record) Checks {
 	return Checks{
 		Start:            Check{OK: s.Start == v.Start},
-		Service:          Check{OK: servicerule.ServiceMatches(s.Service, v.Service)},
+		Service:          Check{OK: servicerule.IsMatchingService(s.Service, v.Service)},
 		ScheduleElapsed:  inRange(s.Service, new(s.Elapsed())),
 		VisitElapsed:     inRange(v.Service, new(v.Elapsed())),
 		ScheduleDuration: inRange(s.Service, s.Duration),
 		VisitDuration:    inRange(v.Service, v.Duration),
-		Additions:        Check{OK: additionsMatch(s.Start, v.Additions)},
+		Additions:        Check{OK: hasValidAdditions(s.Start, v.Additions)},
 		DurationEqual:    s.Duration != nil && v.Duration != nil && *s.Duration == *v.Duration,
 		EndEqual:         s.End == v.End,
 	}
@@ -223,6 +223,6 @@ func inRange(service string, minutes *int) RangeCheck {
 		return c
 	}
 	c.Range = &r
-	c.OK = minutes != nil && r.Contains(*minutes)
+	c.OK = minutes != nil && r.Has(*minutes)
 	return c
 }

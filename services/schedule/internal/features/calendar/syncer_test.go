@@ -164,7 +164,7 @@ func TestSyncHoldsChangeMadeOnBothSides(t *testing.T) {
 
 	e.sync(t)
 	x := e.export(t, d.ID)
-	if x.Status != calendar.ExportConflict || *x.ErrorCode != calendar.ErrorPreconditionFailed || !x.Acceptable() {
+	if x.Status != calendar.ExportConflict || *x.ErrorCode != calendar.ErrorPreconditionFailed || !x.IsAcceptable() {
 		t.Fatalf("待ち = %+v", x)
 	}
 	if got := e.schedule(t, d.ID); *got.Title != "buddy で変更" || got.StartTime != (civil.Time{Hour: 13}) {
@@ -303,7 +303,7 @@ func TestSyncHoldsUnappliableChangeAndResolvesWhenFixed(t *testing.T) {
 	})
 	e.sync(t)
 	x := e.export(t, d.ID)
-	if x.Status != calendar.ExportConflict || *x.ErrorCode != calendar.ErrorUnappliable || x.Acceptable() {
+	if x.Status != calendar.ExportConflict || *x.ErrorCode != calendar.ErrorUnappliable || x.IsAcceptable() {
 		t.Fatalf("待ち = %+v", x)
 	}
 	var ce *apperr.ConflictError
@@ -447,7 +447,7 @@ func TestSyncHoldsOccurrenceReplacedOnBothSides(t *testing.T) {
 	e.sync(t)
 
 	x := e.export(t, rs.ID)
-	if x.Status != calendar.ExportConflict || *x.ErrorCode != calendar.ErrorPreconditionFailed || x.Acceptable() {
+	if x.Status != calendar.ExportConflict || *x.ErrorCode != calendar.ErrorPreconditionFailed || x.IsAcceptable() {
 		t.Fatalf("繰り返しの予定の待ち = %+v", x)
 	}
 }
@@ -503,7 +503,7 @@ func TestSyncAcceptRejectsScheduleCancelledInBuddy(t *testing.T) {
 	e.sync(t)
 
 	issues, err := e.uc.ListExportIssues(e.ctx, inmem.FacilityID)
-	if err != nil || len(issues) != 1 || issues[0].Acceptable() {
+	if err != nil || len(issues) != 1 || issues[0].IsAcceptable() {
 		t.Fatalf("キャンセルした予定の確認が必要な書き出し = %+v, %v", issues, err)
 	}
 	var ce *apperr.ConflictError

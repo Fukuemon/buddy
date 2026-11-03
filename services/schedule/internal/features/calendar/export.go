@@ -70,19 +70,19 @@ type Export struct {
 	UpdatedAt   time.Time
 }
 
-// InReview は、待ちの状態が、確認が必要な状態（conflict か failed）かを返す。
-func (e Export) InReview() bool {
+// IsInReview は、待ちの状態が、確認が必要な状態（conflict か failed）かを返す。
+func (e Export) IsInReview() bool {
 	return e.Status == ExportConflict || e.Status == ExportFailed
 }
 
-// Writing は、書き出しの処理が、時刻 now に待ちを取って外部のカレンダーに書いているかを返す。
-func (e Export) Writing(now time.Time) bool {
+// IsWriting は、書き出しの処理が、時刻 now に待ちを取って外部のカレンダーに書いているかを返す。
+func (e Export) IsWriting(now time.Time) bool {
 	return e.Status == ExportPending && e.LockedUntil != nil && e.LockedUntil.After(now)
 }
 
-// Acceptable は、外部のカレンダーの内容を buddy の予定に当てて、待ちを解けるかを返す。
+// IsAcceptable は、外部のカレンダーの内容を buddy の予定に当てて、待ちを解けるかを返す。
 // 単発の予定で、外部のカレンダーで予定が変わっていたか消えていた待ちだけが当たる。
-func (e Export) Acceptable() bool {
+func (e Export) IsAcceptable() bool {
 	if e.ScheduleID == "" || e.Status != ExportConflict || e.ErrorCode == nil {
 		return false
 	}
@@ -113,10 +113,10 @@ type ExportIssue struct {
 	EndsNextDay bool
 }
 
-// Acceptable は、外部のカレンダーの内容を buddy の予定に当てて、待ちを解けるかを返す。
+// IsAcceptable は、外部のカレンダーの内容を buddy の予定に当てて、待ちを解けるかを返す。
 // buddy でキャンセルした予定は、外部の内容に戻せないので当たらない。
-func (i ExportIssue) Acceptable() bool {
-	return i.Export.Acceptable() && !i.Cancelled
+func (i ExportIssue) IsAcceptable() bool {
+	return i.Export.IsAcceptable() && !i.Cancelled
 }
 
 // ExportRepository は、書き出しの待ちを読み書きする。見つからないときは apperr.ErrNotFound を返す。

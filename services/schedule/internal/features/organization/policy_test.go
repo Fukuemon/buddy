@@ -14,7 +14,7 @@ func TestPolicyCodeTargetsTeam(t *testing.T) {
 		organization.ScheduleAllEdit:  false,
 		organization.ScheduleSelfEdit: false,
 	} {
-		if got := code.TargetsTeam(); got != want {
+		if got := code.IsTeamTarget(); got != want {
 			t.Errorf("%s.TargetsTeam() = %v", code, got)
 		}
 	}

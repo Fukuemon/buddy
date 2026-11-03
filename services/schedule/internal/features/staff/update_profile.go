@@ -25,7 +25,7 @@ func (s *Usecase) UpdateProfile(ctx context.Context, id string, p Profile) (Deta
 		if err != nil {
 			return err
 		}
-		if err := cur.ProfileEditable(); err != nil {
+		if err := cur.RequireProfileEditable(); err != nil {
 			return err
 		}
 		dep, err := s.deps.Departments.Get(ctx, p.DepartmentID)
@@ -51,7 +51,7 @@ func (s *Usecase) UpdateProfile(ctx context.Context, id string, p Profile) (Deta
 			if err != nil {
 				return err
 			}
-			if !a.Empty() {
+			if !a.IsEmpty() {
 				return &AssignedError{Assignments: a, NonVisiting: true}
 			}
 		}

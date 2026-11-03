@@ -279,7 +279,7 @@ func TestListSchedules(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
 	}
-	if s.lastQuery.Sort != (kernel.Sort{Field: "start_time", Desc: true}) ||
+	if s.lastQuery.Sort != (kernel.Sort{Field: "start_time", Descending: true}) ||
 		s.lastQuery.TypeName == nil || *s.lastQuery.TypeName != schedule.Visit ||
 		s.lastQuery.DateFrom == nil || s.lastQuery.DateTo != nil {
 		t.Errorf("query = %+v", s.lastQuery)
@@ -589,7 +589,7 @@ func TestRetireUser(t *testing.T) {
 	}
 
 	assigned := &staff.AssignedError{Assignments: staff.Assignments{
-		Recurring: []staff.AssignedRecurring{{ID: "01M3TC5H00QV17BC0J9V3393ZP", Date: civil.Date{Year: 2026, Month: 10, Day: 5},
+		RecurringSchedules: []staff.AssignedRecurring{{ID: "01M3TC5H00QV17BC0J9V3393ZP", Date: civil.Date{Year: 2026, Month: 10, Day: 5},
 			StartTime: civil.Time{Hour: 13}, EndTime: civil.Time{Hour: 14}}},
 	}}
 	rec, body = do(t, newRouter(&fakeSchedules{}, &fakeStaff{err: assigned}, &fakePatients{}), http.MethodPost, "/v1/users/"+staffID+"/retire", "")
@@ -693,8 +693,8 @@ func TestGetPatient(t *testing.T) {
 // 利用者に残る予定は、利用の終了の 409 の schedules と同じ形で返る。権限が無ければ 403 を返す（#353 の検証の観点 2、3）。
 func TestGetPatientRemainingSchedules(t *testing.T) {
 	rem := patient.Remaining{
-		Schedules: []patient.RemainingSchedule{{ID: scheduleID, Date: civil.Date{Year: 2026, Month: 11, Day: 2}, StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10}}},
-		Recurring: []patient.RemainingRecurring{{ID: patientID, Date: civil.Date{Year: 2026, Month: 9, Day: 1}, StartTime: civil.Time{Hour: 13}, EndTime: civil.Time{Hour: 14}}},
+		Schedules:          []patient.RemainingSchedule{{ID: scheduleID, Date: civil.Date{Year: 2026, Month: 11, Day: 2}, StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10}}},
+		RecurringSchedules: []patient.RemainingRecurring{{ID: patientID, Date: civil.Date{Year: 2026, Month: 9, Day: 1}, StartTime: civil.Time{Hour: 13}, EndTime: civil.Time{Hour: 14}}},
 	}
 	p := &fakePatients{remaining: rem}
 	rec, body := do(t, newRouter(nil, &fakeStaff{}, p), http.MethodGet, "/v1/patients/"+patientID+"/remaining_schedules", "")

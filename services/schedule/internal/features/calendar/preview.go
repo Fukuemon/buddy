@@ -25,5 +25,5 @@ func (u *Usecase) Preview(ctx context.Context, id string, rng Range) (Preview, e
 	if err != nil {
 		return Preview{}, err
 	}
-	return Preview{Range: rng, Counts: p.counts, NeedsReview: p.review, Skipped: p.skipped}, nil
+	return Preview{Range: rng, Counts: p.counts, ReviewItems: p.reviewItems, SkippedItems: p.skippedItems}, nil
 }

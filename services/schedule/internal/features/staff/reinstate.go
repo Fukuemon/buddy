@@ -30,7 +30,7 @@ func (s *Usecase) Reinstate(ctx context.Context, id string) (Detail, error) {
 		if err != nil {
 			return err
 		}
-		if err := before.Reinstatable(); err != nil {
+		if err := before.RequireReinstatable(); err != nil {
 			return err
 		}
 		return s.deps.Staff.EndLeave(ctx, before.ID)

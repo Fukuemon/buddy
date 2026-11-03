@@ -73,7 +73,7 @@ func NewRouter(u Usecases, cfg RouterConfig) *gin.Engine {
 		// 定義はビルドのときに埋め込むので、読めないのはビルドのエラーである
 		panic(err)
 	}
-	r.Use(v1Only(am.authenticate), v1Only(am.checkFacility), v1Only(requireULIDParams), v1Only(validateRequest))
+	r.Use(v1Only(am.authenticate), v1Only(am.requireFacility), v1Only(validateULIDParams), v1Only(validateRequest))
 
 	handlerError := func(c *gin.Context, err error) { writeError(c, cfg.Logger, err) }
 	strict := openapi.NewStrictHandlerWithOptions(server{u: u, ready: cfg.Ready, log: cfg.Logger}, nil,
@@ -126,10 +126,10 @@ func rejectMalformedQuery(c *gin.Context) {
 	c.Next()
 }
 
-// requireULIDParams は、パスの引数が ULID でないときに 400 を返す。/v1 のパスの引数は全て ID である。
-func requireULIDParams(c *gin.Context) {
+// validateULIDParams は、パスの引数が ULID でないときに 400 を返す。/v1 のパスの引数は全て ID である。
+func validateULIDParams(c *gin.Context) {
 	for _, p := range c.Params {
-		if !ulid.Valid(p.Value) {
+		if !ulid.IsValid(p.Value) {
 			badRequest(c, p.Key+" は ULID です")
 			return
 		}

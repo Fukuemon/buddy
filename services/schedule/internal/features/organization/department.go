@@ -18,7 +18,7 @@ type Department struct {
 
 // NewDepartment は、名前を検証して Department を作る。
 func NewDepartment(id, facilityID, name string) (Department, error) {
-	if err := kernel.RequireText("部署の名前", name, maxNameLen); err != nil {
+	if err := kernel.ValidateText("部署の名前", name, maxNameLen); err != nil {
 		return Department{}, err
 	}
 	return Department{ID: id, FacilityID: facilityID, Name: name}, nil

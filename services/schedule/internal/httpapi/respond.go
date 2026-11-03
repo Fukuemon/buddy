@@ -131,9 +131,9 @@ func stringPtr[T interface{ String() string }](v *T) *string {
 	return &s
 }
 
-func mapSlice[T, U any](in []T, f func(T) U) []U {
-	out := make([]U, len(in))
-	for i, v := range in {
+func mapSlice[T, U any](values []T, f func(T) U) []U {
+	out := make([]U, len(values))
+	for i, v := range values {
 		out[i] = f(v)
 	}
 	return out

@@ -52,10 +52,10 @@ func TestPatientEndRejectsRemainingSchedules(t *testing.T) {
 	if !reflect.DeepEqual(read, se.Remaining) {
 		t.Errorf("RemainingSchedules = %+v, want 利用の終了の一覧 %+v", read, se.Remaining)
 	}
-	if len(se.Remaining.Schedules) != 1 || se.Remaining.Schedules[0].ID != "TODAY" || len(se.Remaining.Recurring) != 1 || se.Remaining.Recurring[0].ID != "REC" {
+	if len(se.Remaining.Schedules) != 1 || se.Remaining.Schedules[0].ID != "TODAY" || len(se.Remaining.RecurringSchedules) != 1 || se.Remaining.RecurringSchedules[0].ID != "REC" {
 		t.Errorf("remaining = %+v, want 今日の予定と繰り返しの予定", se.Remaining)
 	}
-	if s.Patients[inmem.PatientID].Ended() {
+	if s.Patients[inmem.PatientID].IsEnded() {
 		t.Error("拒んだのに利用の終了になった")
 	}
 
@@ -65,7 +65,7 @@ func TestPatientEndRejectsRemainingSchedules(t *testing.T) {
 	s.Recurring["REC"] = rs
 	s.Cancels["TODAY"] = schedule.Cancel{ID: "C2", ScheduleID: "TODAY"}
 	got, err := uc.End(ctx, inmem.PatientID)
-	if err != nil || !got.Ended() {
+	if err != nil || !got.IsEnded() {
 		t.Fatalf("予定をキャンセルし、繰り返しを終えた後: got = %+v, err = %v", got.Patient, err)
 	}
 }
@@ -88,7 +88,7 @@ func TestPatientEndAndList(t *testing.T) {
 		t.Errorf("デフォルトの一覧 = %+v, err = %v, want 空", listed, err)
 	}
 	listed, err = uc.List(ctx, inmem.FacilityID, patient.ListQuery{IncludeEnded: true})
-	if err != nil || len(listed) != 1 || !listed[0].Ended() {
+	if err != nil || len(listed) != 1 || !listed[0].IsEnded() {
 		t.Errorf("include_ended の一覧 = %+v, err = %v, want 利用の終了の利用者 1 人", listed, err)
 	}
 	if _, err := uc.End(ctx, "MISSING"); !errors.Is(err, apperr.ErrNotFound) {

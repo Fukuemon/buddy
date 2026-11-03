@@ -53,9 +53,9 @@ func ParseTeamColor(s string) (TeamColor, error) {
 
 // NextTeamColor は、事業所のチームが使っている色 used から、新しいチームの色を選ぶ。
 // 使っているチームが最も少ない色を、同じ数なら TeamColors の順の先の色を返す。8 色が使われていなければ、使われていない色の先頭になる。
-func NextTeamColor(used []TeamColor) TeamColor {
-	counts := make(map[TeamColor]int, len(used))
-	for _, c := range used {
+func NextTeamColor(usedColors []TeamColor) TeamColor {
+	counts := make(map[TeamColor]int, len(usedColors))
+	for _, c := range usedColors {
 		counts[c]++
 	}
 	colors := TeamColors()
@@ -70,7 +70,7 @@ func NextTeamColor(used []TeamColor) TeamColor {
 
 // NewTeam は、名前と色を検証して Team を作る。
 func NewTeam(id, facilityID, name string, color TeamColor) (Team, error) {
-	if err := kernel.RequireText("チームの名前", name, maxNameLen); err != nil {
+	if err := kernel.ValidateText("チームの名前", name, maxNameLen); err != nil {
 		return Team{}, err
 	}
 	if _, err := ParseTeamColor(string(color)); err != nil {

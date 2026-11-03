@@ -23,9 +23,9 @@ func staff(s string) string {
 // 終了時間は開始時間と違うときだけ、提供時間は 1 以上のときだけ引く。
 // 翌日に終わる行も引く。翌日の 0:00 に終わる行は、終了時間を開始の日の 23:59 にする。
 func Schedules(rows []csvio.Row) ([]record.Record, []record.CSVError) {
-	recs, errs := convert(rows, record.InputSchedule, false)
+	recs, errs := toRecords(rows, record.InputSchedule, false)
 	for i := range recs {
-		if !servicerule.AdjustsScheduleEnd(recs[i].Service) {
+		if !servicerule.HasScheduleEndAdjustment(recs[i].Service) {
 			continue
 		}
 		if recs[i].End != recs[i].Start {
@@ -42,16 +42,16 @@ func Schedules(rows []csvio.Row) ([]record.Record, []record.CSVError) {
 // Visits は、実績の行を Record にする。
 // 予定と実績のどちらも、終了時間が開始時間より前の行は、訪問日の翌日のその時刻に終わる訪問として読む（ADR-0023）。
 func Visits(rows []csvio.Row) ([]record.Record, []record.CSVError) {
-	return convert(rows, record.InputVisit, true)
+	return toRecords(rows, record.InputVisit, true)
 }
 
-func convert(rows []csvio.Row, input record.Input, withAdditions bool) ([]record.Record, []record.CSVError) {
+func toRecords(rows []csvio.Row, input record.Input, readsAdditions bool) ([]record.Record, []record.CSVError) {
 	var (
 		recs []record.Record
 		errs []record.CSVError
 	)
 	for _, row := range rows {
-		rec, rowErrs := convertRow(row, input, withAdditions)
+		rec, rowErrs := toRecord(row, input, readsAdditions)
 		if len(rowErrs) > 0 {
 			errs = append(errs, rowErrs...)
 			continue
@@ -61,7 +61,7 @@ func convert(rows []csvio.Row, input record.Input, withAdditions bool) ([]record
 	return recs, errs
 }
 
-func convertRow(row csvio.Row, input record.Input, withAdditions bool) (record.Record, []record.CSVError) {
+func toRecord(row csvio.Row, input record.Input, readsAdditions bool) (record.Record, []record.CSVError) {
 	var errs []record.CSVError
 	fail := func(column string, reason record.Reason, message string) {
 		errs = append(errs, record.CSVError{Input: input, Reason: reason, Line: row.Line, Column: column, Message: message})
@@ -108,7 +108,7 @@ func convertRow(row csvio.Row, input record.Input, withAdditions bool) (record.R
 		rec.Duration = &d
 	}
 
-	if withAdditions {
+	if readsAdditions {
 		rec.Additions = []string{}
 		for _, c := range csvio.AdditionColumns() {
 			if v := row.Get(c); v != "" {

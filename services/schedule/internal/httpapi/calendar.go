@@ -68,8 +68,8 @@ func toImportPreview(p calendar.Preview) openapi.ImportPreview {
 			Skipped:             c.Skipped,
 			AlreadyImported:     c.AlreadyImported,
 		},
-		NeedsReview: mapSlice(p.NeedsReview, toImportReviewItem),
-		Skipped:     mapSlice(p.Skipped, toImportSkippedItem),
+		NeedsReview: mapSlice(p.ReviewItems, toImportReviewItem),
+		Skipped:     mapSlice(p.SkippedItems, toImportSkippedItem),
 	}
 }
 
@@ -239,7 +239,7 @@ func toCalendarExportIssue(i calendar.ExportIssue) openapi.CalendarExportIssue {
 		StartTime:           i.StartTime.String(),
 		EndTime:             i.EndTime.String(),
 		EndsNextDay:         i.EndsNextDay,
-		Acceptable:          i.Acceptable(),
+		Acceptable:          i.IsAcceptable(),
 	}
 	if e.ErrorCode != nil {
 		c := openapi.CalendarExportIssueErrorCode(*e.ErrorCode)

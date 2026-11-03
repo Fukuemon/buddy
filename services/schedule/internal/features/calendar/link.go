@@ -16,7 +16,7 @@ func (u *Usecase) Link(ctx context.Context, facilityID, staffID, calendarID stri
 	if err := u.guard(ctx); err != nil {
 		return ExternalCalendar{}, err
 	}
-	src, calendarID, err := u.checkSource(ctx, facilityID, calendarID)
+	src, calendarID, err := u.requireSource(ctx, facilityID, calendarID)
 	if err != nil {
 		return ExternalCalendar{}, err
 	}

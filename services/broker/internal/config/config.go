@@ -87,7 +87,7 @@ func LoadDB(getenv func(string) string) (DB, error) {
 // minTokenHookKeyLen は、TOKEN_HOOK_KEY の最小のバイト数である。推測されない長さの乱数を求める。
 const minTokenHookKeyLen = 32
 
-func load(getenv func(string) string, broker bool) (Config, error) {
+func load(getenv func(string) string, includesBroker bool) (Config, error) {
 	get := func(key, def string) string {
 		if v := strings.TrimSpace(getenv(key)); v != "" {
 			return v
@@ -117,24 +117,24 @@ func load(getenv func(string) string, broker bool) (Config, error) {
 	c.AutoConsentClients = list(get("AUTO_CONSENT_CLIENTS", "web"))
 	c.InternalAPIClients = list(get("INTERNAL_API_CLIENTS", "schedule"))
 	required := []string{"DB_USER", "DB_PASSWORD", "DB_NAME"}
-	if broker {
+	if includesBroker {
 		required = append(required, "HYDRA_ADMIN_URL", "HYDRA_ISSUER", "UPSTREAM_IDPS_FILE", "UPSTREAM_IDP_CLIENT_SECRETS_FILE", "PUBLIC_URL", "TOKEN_HOOK_KEY")
 	}
-	var missing []string
+	var missingNames []string
 	for _, key := range required {
 		if get(key, "") == "" {
-			missing = append(missing, key)
+			missingNames = append(missingNames, key)
 		}
 	}
-	if len(missing) > 0 {
-		return Config{}, fmt.Errorf("環境変数 %s が必要である", strings.Join(missing, "、"))
+	if len(missingNames) > 0 {
+		return Config{}, fmt.Errorf("環境変数 %s が必要である", strings.Join(missingNames, "、"))
 	}
 	for _, p := range []string{c.Port, c.InternalPort, c.DB.Port} {
 		if n, err := strconv.Atoi(p); err != nil || n < 1 || n > 65535 {
 			return Config{}, fmt.Errorf("ポート %q は 1 から 65535 の数にする", p)
 		}
 	}
-	if broker {
+	if includesBroker {
 		if c.Port == c.InternalPort {
 			return Config{}, fmt.Errorf("INTERNAL_PORT %q は PORT と違う値にする", c.InternalPort)
 		}

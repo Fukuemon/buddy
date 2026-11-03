@@ -65,11 +65,11 @@ func newSlot(s Slot, typ Type) (Slot, error) {
 	if s.Date.IsZero() {
 		return Slot{}, apperr.Invalid("日付は必須です")
 	}
-	if err := checkTimes(s.StartTime, s.EndTime, s.EndsNextDay); err != nil {
+	if err := validateTimes(s.StartTime, s.EndTime, s.EndsNextDay); err != nil {
 		return Slot{}, err
 	}
 	if s.Title != nil {
-		if err := kernel.RequireText("タイトル", *s.Title, maxTitleLen); err != nil {
+		if err := kernel.ValidateText("タイトル", *s.Title, maxTitleLen); err != nil {
 			return Slot{}, err
 		}
 	}
@@ -91,9 +91,9 @@ func newSlot(s Slot, typ Type) (Slot, error) {
 	return s, nil
 }
 
-// checkTimes は、終了が翌日でない予定は終了の時刻が開始の時刻より後であることを、翌日の予定は前であることを確認する。
+// validateTimes は、終了が翌日でない予定は終了の時刻が開始の時刻より後であることを、翌日の予定は前であることを確認する。
 // 開始と終了の時刻が同じ予定は、24 時間になるので、どちらでも入力のエラーにする。
-func checkTimes(start, end civil.Time, endsNextDay bool) error {
+func validateTimes(start, end civil.Time, endsNextDay bool) error {
 	switch {
 	case start == end:
 		return apperr.Invalid("開始と終了の時刻を同じにはできません")
@@ -132,7 +132,7 @@ type Cancel struct {
 
 // NewCancel は、理由を検証して Cancel を作る。
 func NewCancel(id, scheduleID, reason string) (Cancel, error) {
-	if err := kernel.RequireText("キャンセルの理由", reason, maxReasonLen); err != nil {
+	if err := kernel.ValidateText("キャンセルの理由", reason, maxReasonLen); err != nil {
 		return Cancel{}, err
 	}
 	return Cancel{ID: id, ScheduleID: scheduleID, Reason: reason}, nil

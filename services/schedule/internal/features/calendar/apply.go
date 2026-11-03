@@ -119,10 +119,10 @@ func (a applier) syncSchedule(ctx context.Context, c ExternalCalendar, l Link, e
 	if err != nil {
 		return err
 	}
-	if sameSchedule(d, c.StaffID, ev) {
+	if isSameSchedule(d, c.StaffID, ev) {
 		return a.sameContent(ctx, l, d.Version, ev, open)
 	}
-	if !synced(l, d.Version) {
+	if !isSynced(l, d.Version) {
 		code := ErrorPreconditionFailed
 		if ev.Status == StatusCancelled {
 			code = ErrorNotFound
@@ -150,7 +150,7 @@ func (a applier) acceptSchedule(ctx context.Context, c ExternalCalendar, l Link,
 		return err
 	}
 	version := d.Version
-	if !sameSchedule(d, c.StaffID, ev) {
+	if !isSameSchedule(d, c.StaffID, ev) {
 		if version, err = a.applySchedule(ctx, d, ev); err != nil {
 			return err
 		}
@@ -170,14 +170,14 @@ func (a applier) syncRecurring(ctx context.Context, l Link, ev Event) error {
 	if err != nil {
 		return err
 	}
-	if sameRecurring(rs, ev) {
+	if isSameRecurring(rs, ev) {
 		return a.sameContent(ctx, l, rs.Version, ev, open)
 	}
 	code := ErrorUnappliable
 	switch {
 	case ev.Status == StatusCancelled:
 		code = ErrorNotFound
-	case !synced(l, rs.Version):
+	case !isSynced(l, rs.Version):
 		code = ErrorPreconditionFailed
 	}
 	return a.exports.Hold(ctx, a.ids.NewID(), t, code)
@@ -198,14 +198,14 @@ func (a applier) syncOccurrence(ctx context.Context, c ExternalCalendar, parent 
 		return err
 	}
 	date, ok := originalDate(ev)
-	occurs := ok && rs.Occurs(date)
+	occurs := ok && rs.IsOccurring(date)
 	excluded := occurs && slices.Contains(rs.ExclusionDates, date)
 	if ev.Status == StatusCancelled {
 		if !occurs {
 			return nil
 		}
 		if excluded {
-			if synced(parent, rs.Version) {
+			if isSynced(parent, rs.Version) {
 				return nil
 			}
 			replaced, err := a.replaced(ctx, rs.ID, date)
@@ -254,7 +254,7 @@ func (a applier) syncOccurrence(ctx context.Context, c ExternalCalendar, parent 
 // 違えば、比べない項目（説明、繰り返しの除外の日）に書き出していない buddy の変更があるので、番号は進めず、
 // 確認が必要な待ちを書き直す待ちにして、buddy の変更を書き出させる。
 func (a applier) sameContent(ctx context.Context, l Link, version int, ev Event, open *Export) error {
-	if synced(l, version) || l.SyncedVersion == nil {
+	if isSynced(l, version) || l.SyncedVersion == nil {
 		if err := a.calendars.UpdateLink(ctx, l.ID, ev.ETag, version); err != nil {
 			return err
 		}
@@ -263,7 +263,7 @@ func (a applier) sameContent(ctx context.Context, l Link, version int, ev Event,
 	if err := a.calendars.UpdateLink(ctx, l.ID, ev.ETag, *l.SyncedVersion); err != nil {
 		return err
 	}
-	if open != nil && open.InReview() {
+	if open != nil && open.IsInReview() {
 		return a.exports.Retry(ctx, open.ID)
 	}
 	return nil
@@ -272,7 +272,7 @@ func (a applier) sameContent(ctx context.Context, l Link, version int, ev Event,
 // syncedParent は、外部の回を当てる前の繰り返しの予定の更新の番号 before が予定の対応と同じなら、予定の対応を今の更新の番号にする。
 // 外部の回を当てて増えた番号を、buddy の変更と見誤らないためである。
 func (a applier) syncedParent(ctx context.Context, parent Link, before int) error {
-	if !synced(parent, before) {
+	if !isSynced(parent, before) {
 		return nil
 	}
 	rs, err := a.recurring.Get(ctx, *parent.RecurringScheduleID)
@@ -300,7 +300,7 @@ func (a applier) open(ctx context.Context, t Target) (*Export, error) {
 	if err != nil {
 		return nil, err
 	}
-	if e.Writing(a.now()) {
+	if e.IsWriting(a.now()) {
 		return nil, errExportWriting
 	}
 	return &e, nil
@@ -308,7 +308,7 @@ func (a applier) open(ctx context.Context, t Target) (*Export, error) {
 
 // resolve は、外部と buddy の予定が同じになったので、確認が必要な待ち open を終える。
 func (a applier) resolve(ctx context.Context, open *Export) error {
-	if open == nil || !open.InReview() {
+	if open == nil || !open.IsInReview() {
 		return nil
 	}
 	return a.exports.Resolve(ctx, open.ID, open.Revision)
@@ -338,7 +338,7 @@ func (a applier) applySchedule(ctx context.Context, d schedule.Detail, ev Event)
 	if err != nil {
 		return 0, err
 	}
-	keep := d.Visit != nil && sameVisit(d.Visit, ev)
+	keep := d.Visit != nil && isSameVisit(d.Visit, ev)
 	switch {
 	case keep:
 		if err := a.keepable(ctx, d.FacilityID, d.Visit.PatientID, slot.Date); err != nil {
@@ -442,8 +442,8 @@ func (a applier) createVisit(ctx context.Context, facilityID string, v *visit.De
 	return &id, nil
 }
 
-// sameVisit は、外部の予定 ev のタイトルが、訪問の情報 v のサービス内容と利用者名と同じかを返す。
-func sameVisit(v *visit.Detail, ev Event) bool {
+// isSameVisit は、外部の予定 ev のタイトルが、訪問の情報 v のサービス内容と利用者名と同じかを返す。
+func isSameVisit(v *visit.Detail, ev Event) bool {
 	c := Classify(ev)
 	return serviceKey(c.Service) == serviceKey(v.ServiceCode) && gcaltitle.NormalizeClient(c.Client) == gcaltitle.NormalizeClient(v.PatientName)
 }
@@ -484,16 +484,16 @@ func (a applier) patientID(ctx context.Context, facilityID, client string) (stri
 		return "", err
 	}
 	key := gcaltitle.NormalizeClient(client)
-	var found []string
+	var foundIDs []string
 	for _, p := range pats {
 		if gcaltitle.NormalizeClient(p.Name) == key {
-			found = append(found, p.ID)
+			foundIDs = append(foundIDs, p.ID)
 		}
 	}
-	if len(found) != 1 {
+	if len(foundIDs) != 1 {
 		return "", errUnappliable
 	}
-	return found[0], nil
+	return foundIDs[0], nil
 }
 
 func (a applier) typeOf(ctx context.Context, id string) (schedule.Type, error) {
@@ -514,10 +514,10 @@ func (a applier) version(ctx context.Context, id string) (int, error) {
 	return d.Version, err
 }
 
-// sameRecurring は、外部の繰り返しの予定 ev が、繰り返しの予定 rs を書き出した内容と同じかを返す。
+// isSameRecurring は、外部の繰り返しの予定 ev が、繰り返しの予定 rs を書き出した内容と同じかを返す。
 // RRULE は、両方を RecurrenceOf で同じ形にしてから比べる。EXDATE は比べない。外部で取り消した回は、親の EXDATE ではなく
 // 例外の回で来るので、buddy の除外の日と親の EXDATE は一致しないためである。回の変更は syncOccurrence が当てる。
-func sameRecurring(rs schedule.RecurringDetail, ev Event) bool {
+func isSameRecurring(rs schedule.RecurringDetail, ev Event) bool {
 	if ev.Status == StatusCancelled {
 		return false
 	}
@@ -537,9 +537,9 @@ func sameRecurring(rs schedule.RecurringDetail, ev Event) bool {
 	return slices.Equal(got, RecurrenceOf(rs.RecurringSchedule, nil))
 }
 
-// sameSchedule は、職員 staffID のカレンダーの外部の予定 ev が、単発の予定 d を書き出した内容と同じかを返す。
+// isSameSchedule は、職員 staffID のカレンダーの外部の予定 ev が、単発の予定 d を書き出した内容と同じかを返す。
 // buddy で職員を替えた予定は、前の職員のカレンダーの予定と同じとみなさない。説明は比べない。
-func sameSchedule(d schedule.Detail, staffID string, ev Event) bool {
+func isSameSchedule(d schedule.Detail, staffID string, ev Event) bool {
 	if d.StaffID != staffID {
 		return false
 	}
@@ -554,8 +554,8 @@ func sameSchedule(d schedule.Detail, staffID string, ev Event) bool {
 		c.EndsNextDay == d.EndsNextDay && ev.Summary == ScheduleBody(d).Summary
 }
 
-// synced は、予定の対応 l が、更新の番号 version の時点で外部の予定と同じにしたものかを返す。
-func synced(l Link, version int) bool {
+// isSynced は、予定の対応 l が、更新の番号 version の時点で外部の予定と同じにしたものかを返す。
+func isSynced(l Link, version int) bool {
 	return l.SyncedVersion != nil && *l.SyncedVersion == version
 }
 

@@ -103,7 +103,7 @@ func Classify(ev Event) Candidate {
 		EndTime:   clockOf(end),
 	}
 	if civil.DateOf(end) != c.Date {
-		if !endsNextDay(start, end) {
+		if !isEndingNextDay(start, end) {
 			c.Kind, c.SkipReason = KindSkipped, SkipMultiDay
 			return c
 		}
@@ -134,9 +134,9 @@ func skipped(reason SkipReason) Candidate {
 	return Candidate{Kind: KindSkipped, SkipReason: reason}
 }
 
-// endsNextDay は、Asia/Tokyo の日時 start と end で、end が start の翌日で、長さが 24 時間未満かを返す。
+// isEndingNextDay は、Asia/Tokyo の日時 start と end で、end が start の翌日で、長さが 24 時間未満かを返す。
 // 分に丸めると終了の時刻が開始の時刻より前にならない予定（24 時間に秒だけ足りない予定）は、24 時間とみなして false を返す。
-func endsNextDay(start, end time.Time) bool {
+func isEndingNextDay(start, end time.Time) bool {
 	return civil.DateOf(end) == civil.DateOf(start.AddDate(0, 0, 1)) &&
 		end.Sub(start) < 24*time.Hour && clockOf(end).Before(clockOf(start))
 }

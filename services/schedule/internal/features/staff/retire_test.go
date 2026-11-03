@@ -47,7 +47,7 @@ func TestStaffRetire(t *testing.T) {
 	if m := ids.Members["broker-1"]; !m.Retired || m.Email != "" {
 		t.Errorf("ブローカー = %+v, want 退職でメールを消す", m)
 	}
-	if !got.Assignments.Empty() {
+	if !got.Assignments.IsEmpty() {
 		t.Errorf("残る一覧 = %+v, want 空（過去の予定は数えない）", got.Assignments)
 	}
 	first := *st.RetiredAt
@@ -110,7 +110,7 @@ func TestStaffRetireRejectsAssignments(t *testing.T) {
 				t.Error("退職を拒んだのにカレンダーを外した")
 			}
 			ae, ok := errors.AsType[*staff.AssignedError](err)
-			if !ok || ae.Assignments.Empty() || !errors.Is(err, apperr.ErrConflict) {
+			if !ok || ae.Assignments.IsEmpty() || !errors.Is(err, apperr.ErrConflict) {
 				t.Fatalf("err = %v, want 残る一覧を持つ AssignedError", err)
 			}
 			if s.Staff[staffID].Status() != staff.StatusActive || ids.Members["broker-1"].Retired || s.Staff[staffID].Email == "" {

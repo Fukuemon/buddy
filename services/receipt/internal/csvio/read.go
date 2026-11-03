@@ -103,16 +103,16 @@ func ReadTable(data []byte, input record.Input, columns []string) ([]Row, error)
 	for i, h := range header {
 		index[strings.TrimSpace(h)] = i
 	}
-	var missing []record.CSVError
+	var missingErrors []record.CSVError
 	for _, c := range columns {
 		if _, ok := index[c]; !ok {
-			missing = append(missing, record.CSVError{
+			missingErrors = append(missingErrors, record.CSVError{
 				Input: input, Reason: record.ReasonMissingColumn, Column: c, Message: "列がない",
 			})
 		}
 	}
-	if len(missing) > 0 {
-		return nil, &record.InputError{Message: fmt.Sprintf("%s の CSV に列がない", input), Errors: missing}
+	if len(missingErrors) > 0 {
+		return nil, &record.InputError{Message: fmt.Sprintf("%s の CSV に列がない", input), Errors: missingErrors}
 	}
 
 	var rows []Row

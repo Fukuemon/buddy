@@ -240,7 +240,7 @@ func toAssignments(a staff.Assignments) openapi.StaffAssignments {
 		Schedules: mapSlice(a.Schedules, func(s staff.AssignedSchedule) openapi.StaffAssignments_Schedules {
 			return openapi.StaffAssignments_Schedules{Id: s.ID, Date: s.Date.String(), StartTime: s.StartTime.String(), EndTime: s.EndTime.String()}
 		}),
-		RecurringSchedules: mapSlice(a.Recurring, func(r staff.AssignedRecurring) openapi.StaffAssignments_RecurringSchedules {
+		RecurringSchedules: mapSlice(a.RecurringSchedules, func(r staff.AssignedRecurring) openapi.StaffAssignments_RecurringSchedules {
 			return openapi.StaffAssignments_RecurringSchedules{
 				Id: r.ID, Date: r.Date.String(), EndDate: stringPtr(r.EndDate), StartTime: r.StartTime.String(), EndTime: r.EndTime.String(),
 			}

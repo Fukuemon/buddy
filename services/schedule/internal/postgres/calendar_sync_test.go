@@ -111,7 +111,7 @@ func TestCalendarExportHoldAndResolve(t *testing.T) {
 		t.Fatal(err)
 	}
 	e, err := r.Get(ctx, exportID)
-	if err != nil || e.Status != calendar.ExportConflict || *e.ErrorCode != calendar.ErrorPreconditionFailed || e.LockedUntil != nil || !e.Acceptable() {
+	if err != nil || e.Status != calendar.ExportConflict || *e.ErrorCode != calendar.ErrorPreconditionFailed || e.LockedUntil != nil || !e.IsAcceptable() {
 		t.Fatalf("確認が必要な待ち = %+v, %v", e, err)
 	}
 	if _, err := r.Get(ctx, holdID); !errors.Is(err, apperr.ErrNotFound) {
@@ -138,7 +138,7 @@ func TestCalendarExportHoldAndResolve(t *testing.T) {
 		t.Fatal(err)
 	}
 	e, err = r.Open(ctx, recurring)
-	if err != nil || e.ID != newID || e.Status != calendar.ExportConflict || *e.ErrorCode != calendar.ErrorUnappliable || e.Acceptable() {
+	if err != nil || e.ID != newID || e.Status != calendar.ExportConflict || *e.ErrorCode != calendar.ErrorUnappliable || e.IsAcceptable() {
 		t.Errorf("足した確認が必要な待ち = %+v, %v", e, err)
 	}
 }

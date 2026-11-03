@@ -55,7 +55,7 @@ func (s *Usecase) targets(ctx context.Context, p organization.Policy, facilityID
 			return nil, apperr.Invalid("権限 %s は対象を指定できません", p.ID)
 		}
 		return nil, nil
-	case p.Code.TargetsTeam():
+	case p.Code.IsTeamTarget():
 		if len(teams) == 0 || len(users) > 0 {
 			return nil, apperr.Invalid("権限 %s にはチームの対象だけを 1 つ以上指定します", p.ID)
 		}

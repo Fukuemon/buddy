@@ -137,7 +137,7 @@ func TestNewRecurringEndsNextDay(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !got.EndsNextDay || !got.Occurs(date(t, "2026-10-12")) {
+	if !got.EndsNextDay || !got.IsOccurring(date(t, "2026-10-12")) {
 		t.Errorf("EndsNextDay = %v", got.EndsNextDay)
 	}
 }
@@ -217,7 +217,7 @@ func TestRecurringOccurs(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if got := rs.Occurs(date(t, tt.day)); got != tt.want {
+			if got := rs.IsOccurring(date(t, tt.day)); got != tt.want {
 				t.Errorf("Occurs(%s) = %v, want %v", tt.day, got, tt.want)
 			}
 		})

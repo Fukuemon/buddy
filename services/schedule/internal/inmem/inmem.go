@@ -490,15 +490,15 @@ func (s StaffAssignments) From(_ context.Context, facilityID, staffID string, fr
 		if d.FacilityID != facilityID || (d.Rule.EndDate != nil && d.Rule.EndDate.Before(from)) || !assigned(d.Slot, d.VisitInfoID) {
 			continue
 		}
-		out.Recurring = append(out.Recurring, staff.AssignedRecurring{ID: id, Date: d.Date, EndDate: d.Rule.EndDate, StartTime: d.StartTime, EndTime: d.EndTime})
+		out.RecurringSchedules = append(out.RecurringSchedules, staff.AssignedRecurring{ID: id, Date: d.Date, EndDate: d.Rule.EndDate, StartTime: d.StartTime, EndTime: d.EndTime})
 	}
 	for id, p := range s.Patients {
-		if p.FacilityID == facilityID && p.AssignedStaffID == staffID && !p.Ended() {
+		if p.FacilityID == facilityID && p.AssignedStaffID == staffID && !p.IsEnded() {
 			out.Patients = append(out.Patients, staff.AssignedPatient{ID: id, Name: p.Name})
 		}
 	}
 	slices.SortFunc(out.Schedules, func(a, b staff.AssignedSchedule) int { return strings.Compare(a.ID, b.ID) })
-	slices.SortFunc(out.Recurring, func(a, b staff.AssignedRecurring) int { return strings.Compare(a.ID, b.ID) })
+	slices.SortFunc(out.RecurringSchedules, func(a, b staff.AssignedRecurring) int { return strings.Compare(a.ID, b.ID) })
 	slices.SortFunc(out.Patients, func(a, b staff.AssignedPatient) int { return strings.Compare(a.ID, b.ID) })
 	return out, nil
 }
@@ -588,7 +588,7 @@ func (s Patients) Resume(_ context.Context, id, assignedStaffID string) error {
 func (s Patients) ListByFacility(_ context.Context, facilityID string, q patient.ListQuery) ([]patient.Detail, error) {
 	var out []patient.Detail
 	for _, p := range s.Patients {
-		if p.FacilityID == facilityID && (q.IncludeEnded || !p.Ended()) {
+		if p.FacilityID == facilityID && (q.IncludeEnded || !p.IsEnded()) {
 			out = append(out, p)
 		}
 	}
@@ -613,10 +613,10 @@ func (s PatientSchedules) From(_ context.Context, facilityID, patientID string, 
 		if d.FacilityID != facilityID || (d.Rule.EndDate != nil && d.Rule.EndDate.Before(from)) || !visits(d.VisitInfoID) {
 			continue
 		}
-		out.Recurring = append(out.Recurring, patient.RemainingRecurring{ID: id, Date: d.Date, EndDate: d.Rule.EndDate, StartTime: d.StartTime, EndTime: d.EndTime})
+		out.RecurringSchedules = append(out.RecurringSchedules, patient.RemainingRecurring{ID: id, Date: d.Date, EndDate: d.Rule.EndDate, StartTime: d.StartTime, EndTime: d.EndTime})
 	}
 	slices.SortFunc(out.Schedules, func(a, b patient.RemainingSchedule) int { return strings.Compare(a.ID, b.ID) })
-	slices.SortFunc(out.Recurring, func(a, b patient.RemainingRecurring) int { return strings.Compare(a.ID, b.ID) })
+	slices.SortFunc(out.RecurringSchedules, func(a, b patient.RemainingRecurring) int { return strings.Compare(a.ID, b.ID) })
 	return out, nil
 }
 
@@ -866,8 +866,8 @@ func (s Calendars) ListByFacility(_ context.Context, facilityID string) ([]calen
 	return out, nil
 }
 
-// activeOf は、職員に外していないカレンダーがあるかを返す。
-func (s Calendars) activeOf(staffID, exceptID string) bool {
+// hasActiveCalendar は、職員に外していないカレンダーがあるかを返す。
+func (s Calendars) hasActiveCalendar(staffID, exceptID string) bool {
 	for _, c := range s.Calendars {
 		if c.StaffID == staffID && c.DisabledAt == nil && c.ID != exceptID {
 			return true
@@ -878,7 +878,7 @@ func (s Calendars) activeOf(staffID, exceptID string) bool {
 
 // Create は、カレンダーを保存する。職員に外していないカレンダーがあるか、同じカレンダーがあるときは apperr.ErrConflict を返す。
 func (s Calendars) Create(ctx context.Context, c calendar.ExternalCalendar) error {
-	if _, err := s.FindByCalendarID(ctx, c.Provider, c.CalendarID); err == nil || s.activeOf(c.StaffID, "") {
+	if _, err := s.FindByCalendarID(ctx, c.Provider, c.CalendarID); err == nil || s.hasActiveCalendar(c.StaffID, "") {
 		return apperr.ErrConflict
 	}
 	s.Calendars[c.ID] = c
@@ -888,7 +888,7 @@ func (s Calendars) Create(ctx context.Context, c calendar.ExternalCalendar) erro
 // Enable は、外したカレンダーを結び付け直す。職員に外していないカレンダーがあるときは apperr.ErrConflict を返す。
 func (s Calendars) Enable(_ context.Context, id string) error {
 	c := s.Calendars[id]
-	if s.activeOf(c.StaffID, id) {
+	if s.hasActiveCalendar(c.StaffID, id) {
 		return apperr.ErrConflict
 	}
 	c.DisabledAt = nil
@@ -1164,7 +1164,7 @@ func (s Exports) Resolve(_ context.Context, id string, revision int) error {
 	if err != nil {
 		return err
 	}
-	if !e.InReview() || e.Revision != revision {
+	if !e.IsInReview() || e.Revision != revision {
 		return apperr.ErrConflict
 	}
 	e.Status, e.ErrorCode, e.Overwrite = calendar.ExportSucceeded, nil, false

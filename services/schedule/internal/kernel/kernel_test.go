@@ -19,7 +19,7 @@ func TestParseSort(t *testing.T) {
 		wantErr bool
 	}{
 		{name: "デフォルト", want: def},
-		{name: "デフォルトのカラムで降順", order: "desc", want: kernel.Sort{Field: "date", Desc: true}},
+		{name: "デフォルトのカラムで降順", order: "desc", want: kernel.Sort{Field: "date", Descending: true}},
 		{name: "許可したカラムで昇順", field: "start_time", order: "asc", want: kernel.Sort{Field: "start_time"}},
 		{name: "許可したカラムで向きを省略", field: "start_time", want: kernel.Sort{Field: "start_time"}},
 		{name: "SQL を混ぜたカラム", field: "start_time;DROP", wantErr: true},
@@ -50,7 +50,7 @@ func TestSortKey(t *testing.T) {
 	if got := (kernel.Sort{Field: "date"}).Key(); got != "date_asc" {
 		t.Errorf("got %q", got)
 	}
-	if got := (kernel.Sort{Field: "date", Desc: true}).Key(); got != "date_desc" {
+	if got := (kernel.Sort{Field: "date", Descending: true}).Key(); got != "date_desc" {
 		t.Errorf("got %q", got)
 	}
 }
@@ -68,7 +68,7 @@ func TestRequireText(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := kernel.RequireText("名前", tt.value, 3)
+			err := kernel.ValidateText("名前", tt.value, 3)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("err = %v, wantErr %v", err, tt.wantErr)
 			}

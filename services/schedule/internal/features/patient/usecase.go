@@ -70,7 +70,7 @@ func (p *Usecase) assignable(ctx context.Context, staffID, facilityID string) er
 	if err := apperr.SameFacility("職員", st.ID, st.FacilityID, facilityID); err != nil {
 		return err
 	}
-	return st.Assignable()
+	return st.RequireAssignable()
 }
 
 // remaining は、利用者 cur の、今日（事業所の現地の日付）以降の予定と、今日以降に終わる繰り返しの予定を返す。

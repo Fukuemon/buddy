@@ -19,12 +19,12 @@ func (p *Usecase) End(ctx context.Context, id string) (Detail, error) {
 		if err != nil {
 			return err
 		}
-		if !cur.Ended() {
+		if !cur.IsEnded() {
 			rem, err := p.remaining(ctx, cur)
 			if err != nil {
 				return err
 			}
-			if !rem.Empty() {
+			if !rem.IsEmpty() {
 				return &ScheduledError{Remaining: rem}
 			}
 		}

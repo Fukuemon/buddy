@@ -58,7 +58,7 @@ func TestLookupBoundaries(t *testing.T) {
 		}
 		for _, c := range cases {
 			t.Run(fmt.Sprintf("%s/%d", tt.service, c.minutes), func(t *testing.T) {
-				if got := r.Contains(c.minutes); got != c.want {
+				if got := r.Has(c.minutes); got != c.want {
 					t.Errorf("Contains(%d) = %v, want %v（範囲 %s）", c.minutes, got, c.want, r)
 				}
 			})
@@ -88,12 +88,12 @@ func TestAdjustsScheduleEnd(t *testing.T) {
 		"訪看I２・夜", "予訪看I３・深",
 	}
 	for _, s := range adjusted {
-		if !AdjustsScheduleEnd(s) {
+		if !HasScheduleEndAdjustment(s) {
 			t.Errorf("%s を調整しない", s)
 		}
 	}
 	for _, s := range []string{"訪看I５", "訪看I５・２超", "医", "基本療養費", "難病等複数回訪問加算(２回)"} {
-		if AdjustsScheduleEnd(s) {
+		if HasScheduleEndAdjustment(s) {
 			t.Errorf("%s を調整する", s)
 		}
 	}
@@ -116,7 +116,7 @@ func TestServiceMatches(t *testing.T) {
 		{"基本療養費(I)", "医", false},
 	}
 	for _, tt := range tests {
-		if got := ServiceMatches(tt.schedule, tt.visit); got != tt.want {
+		if got := IsMatchingService(tt.schedule, tt.visit); got != tt.want {
 			t.Errorf("ServiceMatches(%q, %q) = %v, want %v", tt.schedule, tt.visit, got, tt.want)
 		}
 	}

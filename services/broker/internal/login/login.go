@@ -74,8 +74,8 @@ type Config struct {
 	PublicURL string
 	// AutoConsentClients は、同意の画面を出さずに accept するクライアントの ID である。ほかのクライアントの同意は reject する。
 	AutoConsentClients []string
-	// SecureCookie が true なら、ログインの途中の cookie に Secure を付ける。
-	SecureCookie bool
+	// UsesSecureCookie が true なら、ログインの途中の cookie に Secure を付ける。
+	UsesSecureCookie bool
 }
 
 // maxFormLen は、POST /login の本文を読む上限（バイト）である。login_challenge と staff.MaxEmailLen のメールが入る長さにする。
@@ -142,7 +142,7 @@ func NewHandler(cfg Config) (http.Handler, error) {
 
 func (h handler) showLogin(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	if !h.allowClient(w, r) {
+	if !h.requireClient(w, r) {
 		return
 	}
 	challenge := r.URL.Query().Get("login_challenge")
@@ -170,7 +170,7 @@ func (h handler) showLogin(w http.ResponseWriter, r *http.Request) {
 
 func (h handler) submitEmail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	if !h.allowClient(w, r) {
+	if !h.requireClient(w, r) {
 		return
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, maxFormLen)
@@ -189,7 +189,7 @@ func (h handler) submitEmail(w http.ResponseWriter, r *http.Request) {
 	}
 	// 形の違うメールは職員にいないので、Hydra に問い合わせず、メールごとの上限でも数えない
 	email := staff.NormalizeEmail(r.PostFormValue("email"))
-	if !staff.ValidEmail(email) {
+	if !staff.IsValidEmail(email) {
 		h.fail(w, r, http.StatusBadRequest, "メールの形が正しくない", nil)
 		return
 	}
@@ -404,7 +404,7 @@ func (h handler) setCookie(w http.ResponseWriter, value string, maxAge int) {
 		Path:     "/login",
 		MaxAge:   maxAge,
 		HttpOnly: true,
-		Secure:   h.SecureCookie,
+		Secure:   h.UsesSecureCookie,
 		// 上流の IdP からのコールバックは、ほかのサイトからの GET の遷移なので、Strict では cookie が届かない
 		SameSite: http.SameSiteLaxMode,
 	})
@@ -429,9 +429,9 @@ func readPending(r *http.Request) (pending, error) {
 	return p, nil
 }
 
-// allowClient は、ログインの画面の試行を送信元の IP アドレスごとに 1 回数え、上限を超えていれば、Hydra を呼ばずに
+// requireClient は、ログインの画面の試行を送信元の IP アドレスごとに 1 回数え、上限を超えていれば、Hydra を呼ばずに
 // ログインの失敗の画面を 429 で出して false を返す。Hydra の admin API の呼び出しを、送信元ごとの上限より増やさないためである。
-func (h handler) allowClient(w http.ResponseWriter, r *http.Request) bool {
+func (h handler) requireClient(w http.ResponseWriter, r *http.Request) bool {
 	if h.Limiter.Allow(clientAddr(r, h.ClientIPHeader)) {
 		return true
 	}

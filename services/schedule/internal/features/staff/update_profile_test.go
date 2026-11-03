@@ -99,7 +99,7 @@ func TestStaffUpdateProfileNonVisiting(t *testing.T) {
 		s, ids := stopFixture()
 		_, err := stopUsecase(s, ids, allow).UpdateProfile(ctx, staffID, profile(s, true))
 		ae, ok := errors.AsType[*staff.AssignedError](err)
-		if !ok || !ae.NonVisiting || len(ae.Assignments.Recurring) != 1 || !errors.Is(err, apperr.ErrConflict) {
+		if !ok || !ae.NonVisiting || len(ae.Assignments.RecurringSchedules) != 1 || !errors.Is(err, apperr.ErrConflict) {
 			t.Fatalf("err = %v, want 繰り返しの予定を持つ訪問しない職員への変更の AssignedError", err)
 		}
 		if s.Staff[staffID].NonVisiting {
