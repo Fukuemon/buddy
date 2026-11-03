@@ -39,10 +39,18 @@ ADR-0030 は、機能のパッケージの組み立てを `App` 型にし、操�
 
 ADR-0030 の、ファイルの名前の役割の語、操作のファイルの名前、`<まとまり>_app.go`、`app_test.go` の規則は保つ。
 
+予定の API の構成は、Google カレンダーの書き出しと同期を Worker に分ける変更（#593）と、Google カレンダーを予定の正本にする変更（#594）を見越して、次の 4 点で直すと決めている。  
+この ADR は、4 点を直した後の構成を前提にする。
+
+- `calendar` を、結び付け（`calendar`）、取り込み（`calendarimport`）、同期（`calendarsync`）、書き出し（`calendarexport`）の 4 つの機能に分ける（#611）。
+- 予定の書き込みのモデル（`schedule`）と、画面と照合が読む読み取りのモデル（`scheduleview`）を分ける（#612）。
+- 正本のモードを `organization` の事業所の状態にし、事業所の行のロックを `organization` に移す（#612、#615）。
+- 組み立てを `internal/assemble` に移し、`cmd/api` と `cmd/calendar-worker` が共有する（#614）。
+
 ## Decision
 
 機能のパッケージの操作を、使う依存だけをフィールドに持つ操作ごとの型にし、`App` と `Deps` をやめる。  
-全ての依存を知るのは、実行単位ごとの組み立ての場所（`cmd/<実行単位>/main.go`。今は予定の API の `cmd/api` だけ）にする。  
+全ての依存を知るのは、組み立ての場所（`internal/assemble`。移すまでは `cmd/api`）だけにする。  
 処理の中身は変えず、依存の受け取り方を、メソッドの受け手から操作の型のフィールドに変える。
 
 操作の型の形は、次のとおり。
@@ -101,23 +109,33 @@ func (o Leave) Do(ctx context.Context, id string, in LeaveInput) (StatusChange, 
 
 ## Verification
 
-この形が、予定の API に控えている 2 つの変更の後も成り立つかを、今のコードで確認した。
+Context の 4 点を直した後の構成で、操作ごとの型が成り立つかを、今のコードの操作ごとの依存で確認した。
 
-#593 は、Google カレンダーの書き出しと同期を、予定の API のプロセスから Worker の実行単位に分ける。
+`calendar` を 4 つの機能に分けるときは、操作の型のファイルを移すだけで済む。
 
-- 操作の型と常駐の処理は機能のパッケージに置き、`httpapi` に依存しないので、API と Worker の 2 つの `cmd` から同じ型を作れる。
-- Worker の組み立ては、使う型だけを作る。
-  - `App` のままだと、Worker が `calendar` の 1 つの処理を使うにも `calendar.Deps` の全体を作る。
-  - `staff` のように ID ブローカーの依存を持つ機能の `App` を、Worker が作らずに済む。#593 の「Worker の設定は DB と Google カレンダーに必要なものに限る」に合う。
-- 1 回だけ処理して終わる実行は、今の `Exporter.ExportDue` と `Syncer.SyncDue` で足りる。繰り返す `Run` は、常駐の実行単位だけが呼ぶ。
-- 2 つの `cmd` で、リポジトリと `tx` の作り方が重なる。重なりは 1 行ずつの `postgres.New...` なので、共通の組み立てのパッケージは足さない。
+- 今の `calendar.App` の 10 の操作は、`Deps` の一部だけを使う。例は、`RetryExport` と `ListExportIssues` が `Exports` だけ、`ServiceAccount` が `Accounts` だけを使う。
+- 操作の型は自分の依存だけを持つので、`retry_export.go` を `calendarexport` に、`import.go` と `preview.go` を `calendarimport` に移せる。`App` のままだと、`Deps` を 4 つに分け直す。
+- 4 つのパッケージが使う補助（`source`、`requireSource`、`active`）は、依存を引数で受ける関数なので、`calendar` から公開して使える。`App` のメソッドのままだと、ほかのパッケージから呼べない。
+- `AcceptExport` は、適用の規則の型 `applier` を使う。書き出しの確認の解決（`calendarexport`）が同期の適用の規則（`calendarsync`）を使う向きになる。#611 の ADR で、2 つのパッケージの間の向きを決める。
 
-#594 は、Google カレンダーを予定の正本にする期間に、buddy の予定を参照のモデルにし、予定の API からの書き込みを止める。
+予定の書き込みと読み取りのモデルを分けるときも、操作の型のファイルを移すだけで済む。
 
-- 読み取りの操作（`schedule` の `Get`、`List`）と書き込みの操作（`Create`、`Cancel`）は別の型なので、読み取りの操作の依存だけを参照のモデルのリーダーに替えられる。書き込みの操作の型は変わらない。
-- 正本の状態で書き込みを止める確認は、書き込みの操作の型にだけ依存を足す。`App` のままだと、`Deps` に足した依存に全ての操作が触れる。
-- 同期の「変更を取る」と「取った変更を当てる規則」を分けるときは、`Syncer` が当てる規則の型（今の `applier`）をフィールドで受け、正本の状態ごとの規則を組み立ての場所で選べる。
-- 参照のモデルのテーブル、リーダーのインターフェースの配置先、読み取りの DB を足すかは、#594 の ADR で決める。ADR-0030 の「読み取りの DB は足さない」を変えるときも、その ADR で置き換える。
+- `schedule` の読み取りの操作（`Get`、`GetRecurring`、`List`、`ListTypes`）は、書き込みの操作と別の型なので、`scheduleview` に移せる。書き込みの操作の型は変わらない。
+- 読み取りと書き込みの両方が使う権限の確認（`requireScheduleAccess`）は、職員のリーダーを引数で受ける関数にするので、`schedule` から公開して `scheduleview` が使える。
+- `httpapi` の `ScheduleApp` は関数のフィールドの struct なので、`schedule` と `scheduleview` の 2 つのパッケージの操作を 1 つの束に入れられる。ハンドラは呼び先のパッケージを知らない。
+
+正本のモードと事業所のロックを `organization` に置くときは、書き込みの操作の型にだけ依存を足す。
+
+- 予定を書く操作は、事業所を共有のロックで読むリポジトリと、モードの規則の関数を使う。読み取りの操作の型は変わらない。`App` のままだと、`Deps` に足した依存に全ての操作が触れる。
+- `staff` の `locked` のような、事業所をロックする補助は、ロックのリポジトリを引数で受ける関数にする。移す先が `organization` になっても、補助の引数の型を替えるだけで済む。
+
+組み立てを `internal/assemble` に移し、API と Worker が共有するときも成り立つ。
+
+- 操作の型と常駐の処理は `httpapi` に依存しないので、`assemble` は API の束と、Worker の `Exporter` と `Syncer` を同じリポジトリから作れる。
+- Worker は使う型だけを作る。`staff` のように ID ブローカーの依存を持つ機能を作らずに済み、#593 の「Worker の設定は DB と Google カレンダーに必要なものに限る」に合う。
+- `assemble` の関数は、操作ごとではなく `httpapi` の `<機能>App` ごとに 1 つ置く（`staffApp(repos) httpapi.StaffApp`）。操作を足すと、その関数の 1 行が増える。このため、機能のパッケージに束ねる型を足さない。
+- 1 回だけ処理して終わる Worker の実行は、今の `Exporter.ExportDue` と `Syncer.SyncDue` で足りる。
+- `calendarsync` の適用の規則（`ProjectionApplier` と `ReconcileApplier`）は、`Syncer` がフィールドで受け、`assemble` が渡す。正本のモードごとの規則を、`Syncer` を変えずに足せる。
 
 ## Considered Options
 
