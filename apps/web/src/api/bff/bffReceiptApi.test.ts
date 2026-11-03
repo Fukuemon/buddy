@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vite-plus/test'
 
-import { fakeReceiptReport } from '../fake/fakeReceiptApi'
+import { mockReceiptReport } from '#/mocks/receiptData'
 import { createBffReceiptApi } from './bffReceiptApi'
 
 describe('createBffReceiptApi', () => {
@@ -14,11 +14,11 @@ describe('createBffReceiptApi', () => {
     const api = createBffReceiptApi(async (form) => {
       forms.push(form)
       return ok
-        ? { ok: true, report: fakeReceiptReport }
+        ? { ok: true, report: mockReceiptReport }
         : { ok: false, status: 422, message: 'm', csvErrors }
     })
     await expect(api.check({ visits: new Blob(['v']), month: '2024-04' })).resolves.toEqual(
-      fakeReceiptReport,
+      mockReceiptReport,
     )
     expect(forms[0].get('month')).toBe('2024-04')
     expect(forms[0].has('schedules')).toBe(false)

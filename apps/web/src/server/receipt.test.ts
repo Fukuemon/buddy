@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import { MAX_RECEIPT_UPLOAD_BYTES } from '#/api/BuddyApi'
 import { parseReceiptForm } from '#/api/bff/receiptCall'
-import { fakeReceiptReport } from '#/api/fake/fakeReceiptApi'
+import { mockReceiptReport } from '#/mocks/receiptData'
 import { receiptHttp, server, TEST_RECEIPT_URL } from '#/test/server'
 
 import type { AuthDeps } from './auth'
@@ -67,7 +67,7 @@ describe('checkReceipt', () => {
         const sent = await request.formData()
         return request.headers.get('Authorization') === 'Bearer access-1' &&
           sent.get('month') === '2024-04'
-          ? response(200).json(fakeReceiptReport)
+          ? response(200).json(mockReceiptReport)
           : response(400).json({ code: 'bad_request', message: 'token か月が違う' })
       }),
     )
@@ -76,7 +76,7 @@ describe('checkReceipt', () => {
       form({ visits: new Blob(['v']), month: '2024-04' }),
       { auth: await setup(), receiptApiUrl: TEST_RECEIPT_URL },
     )
-    expect(result).toEqual({ ok: true, report: fakeReceiptReport })
+    expect(result).toEqual({ ok: true, report: mockReceiptReport })
   })
 
   it('入力の CSV の誤りを csvErrors で返す', async () => {
