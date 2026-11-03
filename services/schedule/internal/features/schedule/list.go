@@ -57,3 +57,9 @@ func filter[T any](items []T, keep func(T) bool) []T {
 	}
 	return out
 }
+
+// List は、事業所の単発の予定と繰り返しの予定である。
+type List struct {
+	Schedules          []Detail
+	RecurringSchedules []RecurringDetail
+}
