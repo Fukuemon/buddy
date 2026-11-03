@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { requirePermission } from '#/api/permissions'
-import { STAFF_MANAGE } from '#/api/permissions'
+import { requirePermission, STAFF_MANAGE } from '#/api/permissions'
 import { CalendarImportContainer } from '#/features/calendar/components/CalendarImportContainer'
 import { calendarImportSearchSchema } from '#/features/calendar/schema/calendarImportSearch'
 

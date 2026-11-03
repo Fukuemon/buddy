@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { requirePermission } from '#/api/permissions'
-import { RECEIPT_CHECK } from '#/api/permissions'
+import { requirePermission, RECEIPT_CHECK } from '#/api/permissions'
 import { ReceiptResultContainer } from '#/features/receipt/components/ReceiptResultContainer'
 
 export const Route = createFileRoute('/receipt/result')({
