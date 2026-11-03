@@ -30,7 +30,7 @@ func Categories() []Category {
 // requiredAddition は、時間帯を問わずに整合とする加算の値である。加算①〜加算⑤のうちこの値の 1 つだけが入っているときに整合とする。
 const requiredAddition = "通常"
 
-// 時間帯の加算の値。加算①〜加算⑤のうちこの値の 1 つだけが入り、予定の開始時間が TimeBandOf の時間帯に入るときに整合とする。
+// 時間帯の加算の値。加算①〜加算⑤のうちこの値の 1 つだけが入り、予定の開始時間が timeBandOf の時間帯に入るときに整合とする。
 // AdditionLateNight は、電子カルテの実績で確認していない値で、名前は推測である。
 const (
 	AdditionEarlyMorning = "早朝"

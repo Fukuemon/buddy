@@ -26,10 +26,10 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** 職員の絞り込みの幅（StaffFilterLayout の w-80）にそろえる。 */
+/** 予定の画面で職員の絞り込みを置く、SiteLayout の左のサイドバーの幅（w-72）にそろえる。 */
 const narrow: NonNullable<Story['decorators']> = [
   (Story) => (
-    <div className="w-80">
+    <div className="w-72">
       <Story />
     </div>
   ),
