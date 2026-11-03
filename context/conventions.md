@@ -43,22 +43,26 @@ Go と TypeScript の関数とメソッドは、次の操作には表の動詞�
 真偽値を返す関数は「真偽値」のセクションの規則に従う。  
 API の操作を呼ぶ関数とリポジトリのメソッドは、operationId と同じ動詞にする。
 
-| 操作 | 動詞 | 例 |
-| --- | --- | --- |
-| ID で 1 件を取る | `get` | `GetFacility`、`getSchedule` |
-| 一覧を取る | `list` | `ListDepartments`、`listRecords` |
-| ID 以外の値で探し、見つからないことがある | `find` | `FindByEmail`、`findCalendar` |
-| 設定とファイルを起動のときに読む | `load` | `LoadAccounts`、`loadServerConfig` |
-| 値を作る | Go は `New`、TypeScript は `create` | `NewHandler`、`createHttpBuddyApi` |
-| 同じものを別の型に変える | `to<変換先>` | `toEventBody`、`toDateKey` |
-| API の型を画面の型に変える | `fromApi<型>`（TypeScript） | `fromApiStaff` |
-| 文字列を値に変える | `parse` | `ParseDate`、`parseOccurrenceId` |
-| 値を画面に出す文字列に変える | `format` | `formatDateTime` |
-| リクエストとフォームの値の形と範囲を確認し、誤りを返す | `validate` | `validateEmail`、`validatePatientForm` |
-| 職員の権限を確認し、無ければ失敗にする | `require` | `RequireStaffManage`、`requirePermission` |
-| 保存された状態と設定の前提（事業所、職員の状態、アカウント）を確認し、満たさなければ失敗にする | Go は `require`、TypeScript は `assert` | `requireAccounts`、`assertFacility` |
-| 入力から一部の値か判定を取り出す | `<取り出すもの>Of` | `timeBandOf`、`statusOf` |
-| 画面のイベントを受ける | props は `on<イベント>`、コンポーネントの中の関数は `handle<イベント>` | `onSubmit`、`handleSubmit` |
+| 操作 | 動詞 | 例 | 書き込みか読み取りか |
+| --- | --- | --- | --- |
+| 保存された状態を変える | operationId の動詞（`create`、`update`、`cancel`、`change`、`add`、`remove`、`start`、`end`、`resume`、`retire`、`reinstate`） | `CreateTeam`、`Retire` | 書き込み |
+| ID で 1 件を取る | `get` | `GetFacility`、`getSchedule` | 読み取り |
+| 一覧を取る | `list` | `ListDepartments`、`listRecords` | 読み取り |
+| ID 以外の値で探し、見つからないことがある | `find` | `FindByEmail`、`findCalendar` | 読み取り |
+| 設定とファイルを起動のときに読む | `load` | `LoadAccounts`、`loadServerConfig` | 読み取り |
+| 値を作る | Go は `New`、TypeScript は `create` | `NewHandler`、`createHttpBuddyApi` | 状態を読み書きしない |
+| 同じものを別の型に変える | `to<変換先>` | `toEventBody`、`toDateKey` | 状態を読み書きしない |
+| API の型を画面の型に変える | `fromApi<型>`（TypeScript） | `fromApiStaff` | 状態を読み書きしない |
+| 文字列を値に変える | `parse` | `ParseDate`、`parseOccurrenceId` | 状態を読み書きしない |
+| 値を画面に出す文字列に変える | `format` | `formatDateTime` | 状態を読み書きしない |
+| リクエストとフォームの値の形と範囲を確認し、誤りを返す | `validate` | `validateEmail`、`validatePatientForm` | 状態を読み書きしない |
+| 職員の権限を確認し、無ければ失敗にする | `require` | `RequireStaffManage`、`requirePermission` | 読み取り |
+| 保存された状態と設定の前提（事業所、職員の状態、アカウント）を確認し、満たさなければ失敗にする | Go は `require`、TypeScript は `assert` | `requireAccounts`、`assertFacility` | 読み取り |
+| 入力から一部の値か判定を取り出す | `<取り出すもの>Of` | `timeBandOf`、`statusOf` | 状態を読み書きしない |
+| 画面のイベントを受ける | props は `on<イベント>`、コンポーネントの中の関数は `handle<イベント>` | `onSubmit`、`handleSubmit` | 状態を読み書きしない |
+
+- 書き込みと読み取りは、動詞だけで区別する。読み取りの DB と、その同期は持たない。
+  - ADR-0030: [Go の 3 つの API で、パッケージをフラットに保ち、ファイルの名前の末尾の語で役割を表す](../docs/adr/0030-go-file-names-by-role.md)
 
 - `fetch`、`build`、`make`、`convert` は使わない。HTTP で取るときも `get` と `list` にする。
   - Fetch API の `fetch` を包む関数（`fetchWithAccessToken`）は、包む関数の名前を残す。
