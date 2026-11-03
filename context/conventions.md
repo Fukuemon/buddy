@@ -66,7 +66,7 @@ API の操作を呼ぶ関数とリポジトリのメソッドは、operationId �
 - 照合（`check`）のように業務の語が動詞を兼ねるときは、業務の語を使う。
   - 入力の値の確認に `check` を使わないのは、照合と間違えないためである。
 - Go の、フィールドを返すメソッド（getter）には `Get` を付けない（`Status()`、`URL()`）。
-- Go のリポジトリのメソッドと API を呼ぶ関数は、DB と HTTP を呼ぶときも、表の動詞を使う。
+- Go のリポジトリのメソッドと API を呼ぶ関数のうち、値を取るものは、DB と HTTP を呼ぶときも表の動詞を使う。
   - ID で 1 件を取るものは `Get`、一覧を取るものは `List`、ID 以外の値で探して見つからないことがあるものは `Find`（`FindByEmail`）で始める。
   - Google Go Style は `Get` を避け、リモートの呼び出しには `Fetch` を勧める。
   - buddy は `Fetch` を使わない。sqlc の生成物（`GetAuthor`、`ListAuthors`）と operationId の動詞にそろえ、ハンドラからリポジトリと SQL まで同じ動詞で追えるようにするためである。
