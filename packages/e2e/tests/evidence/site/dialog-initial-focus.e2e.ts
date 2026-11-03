@@ -29,48 +29,48 @@ test.describe('入力のダイアログ', () => {
           const opens = [
             {
               url: '/patients',
-              open: 'patient-list-new',
-              dialog: 'patient-new-dialog',
-              name: 'patient-new-name',
+              open: page.getByTestId('patient-list-new'),
+              dialog: page.getByTestId('patient-new-dialog'),
+              name: page.getByTestId('patient-new-name'),
               label: '利用者の登録',
             },
             {
               url: `/patients/${SEED_PATIENT.id}`,
-              open: 'patient-detail-edit',
-              dialog: 'patient-detail-edit-dialog',
-              name: 'patient-detail-name-input',
+              open: page.getByTestId('patient-detail-edit'),
+              dialog: page.getByTestId('patient-detail-edit-dialog'),
+              name: page.getByTestId('patient-detail-name-input'),
               label: '利用者の変更',
             },
             {
               url: '/staff',
-              open: 'staff-list-new',
-              dialog: 'staff-new-dialog',
-              name: 'staff-new-name',
+              open: page.getByTestId('staff-list-new'),
+              dialog: page.getByTestId('staff-new-dialog'),
+              name: page.getByTestId('staff-new-name'),
               label: '職員の登録',
             },
             {
               url: `/staff/${LOGIN_STAFF.id}`,
-              open: 'staff-detail-edit',
-              dialog: 'staff-detail-edit-dialog',
-              name: 'staff-detail-name-input',
+              open: page.getByTestId('staff-detail-edit'),
+              dialog: page.getByTestId('staff-detail-edit-dialog'),
+              name: page.getByTestId('staff-detail-name-input'),
               label: '職員の情報',
             },
             {
               url: '/organization',
-              open: 'organization-list-department-new',
-              dialog: 'organization-list-department-dialog',
-              name: 'organization-list-department-name',
+              open: page.getByTestId('organization-list-department-new'),
+              dialog: page.getByTestId('organization-list-department-dialog'),
+              name: page.getByTestId('organization-list-department-name'),
               label: '部署の作成',
             },
           ]
           for (const { url, open, dialog, name, label } of opens) {
             await page.goto(url)
             await step(`${label}のダイアログを開く`)
-            await page.getByTestId(open).click()
-            await expect(page.getByTestId(name)).toBeFocused()
+            await open.click()
+            await expect(name).toBeFocused()
             await check(`${label}のダイアログで、名前の欄にフォーカスがある`)
             await page.keyboard.press('Escape')
-            await expect(page.getByTestId(dialog)).toBeHidden()
+            await expect(dialog).toBeHidden()
           }
         },
       )
