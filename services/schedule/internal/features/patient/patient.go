@@ -136,12 +136,6 @@ type Remaining struct {
 // Empty は、残る予定が無いかを返す。
 func (r Remaining) Empty() bool { return len(r.Schedules) == 0 && len(r.Recurring) == 0 }
 
-// ScheduleReader は、予定のデータから、利用者に残る予定を読む。
-type ScheduleReader interface {
-	// From は、事業所 facilityID の利用者 patientID の、from 以降の予定と、from 以降に終わる繰り返しの予定を返す。
-	From(ctx context.Context, facilityID, patientID string, from civil.Date) (Remaining, error)
-}
-
 // ScheduledError は、その日以降の予定が残る利用者を利用の終了にしようとしたことを示す。
 type ScheduledError struct {
 	Remaining Remaining

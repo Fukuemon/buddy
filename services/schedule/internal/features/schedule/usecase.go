@@ -251,3 +251,26 @@ func (s *Usecase) prepareSlot(ctx context.Context, facilityID string, in SlotInp
 	}
 	return slot, typ, nil
 }
+
+// StaffRefs は、予定の職員を参照する。Get は、職員が見つからないときに apperr.ErrNotFound を返す。
+// LockStatuses は、トランザクションが終わるまで、事業所 facilityID の職員を休職、復職、退職にさせない。
+// 職員の状態を確認してから予定を書き終えるまでの間に、職員が休職か退職になるのを防ぐ。
+type StaffRefs interface {
+	Get(ctx context.Context, id string) (staff.Ref, error)
+	ListByFacility(ctx context.Context, facilityID string) ([]staff.Ref, error)
+	LockStatuses(ctx context.Context, facilityID string) error
+}
+
+// VisitInfos は、訪問の予定に付く訪問の情報を書く。実装は visit.Writer である。
+type VisitInfos interface {
+	Create(ctx context.Context, facilityID string, in visit.Input) (string, error)
+	DeleteIfUnused(ctx context.Context, id string) error
+}
+
+// Exports は、予定の変更を、外部のカレンダーへの書き出しの待ちに積む。実装は calendar.Outbox である。
+// 予定の職員が外部のカレンダーを結び付けておらず、予定に外部の予定の対応も無ければ、積まずに nil を返す。
+// 予定の変更と同じトランザクションの中で呼ぶ。
+type Exports interface {
+	ScheduleChanged(ctx context.Context, facilityID, staffID, scheduleID string) error
+	RecurringChanged(ctx context.Context, facilityID, staffID, recurringScheduleID string) error
+}
