@@ -194,13 +194,13 @@ status: stable
     - 1 つの操作だけを確認するテストは、`<操作>_test.go` に置く。
   - 集約の型とそのリポジトリのインターフェイスは、集約の名前のファイル（`schedule.go`、`recurring.go`、`export.go`、`staff.go`）に置く。
     - 機能の名前と同じ集約が無い `calendar` は、結び付けたカレンダーの型とリポジトリを `calendar.go` に置く。
-    - `usecase.go` の 1 つにまとめた機能（`organization`、`visit`）は、全ての集約の型とリポジトリを機能の名前のファイルに置く。
   - ほかの機能と外部のシステムを読み書きするインターフェイスは、使う型のファイル（`Usecase` なら `usecase.go`、`calendar` の `applier` なら `apply.go`）に置く。
-  - 常駐の処理は、同じ機能のパッケージに、型の名前のファイル（`exporter.go`、`syncer.go`）で置く。
+  - パッケージのドキュメントコメントと、複数の集約が使う定数は、機能の名前のファイル（`organization.go`、`visit.go`）に置く。
+  - 常駐の処理と、`Usecase` 以外で操作を持つ型は、同じ機能のパッケージに、型の名前のファイル（`exporter.go`、`syncer.go`、`visit` の `writer.go`）で置く。
     - 外部のシステムの手段の型が多く、`Usecase` と常駐の処理が共有する `calendar` は、まとめて `event.go` に置く。
-  - 常駐の処理を確認するテストは、型の名前のファイル（`exporter_test.go`、`syncer_test.go`）に置く。
+  - その型を確認するテストは、型の名前のファイル（`exporter_test.go`、`syncer_test.go`）に置く。
   - ADR-0029: [予定の API の機能のパッケージの中で、操作でないファイルとテストの配置先と、ほかの機能を書くインターフェイスの大きさを決める](../docs/adr/0029-schedule-api-feature-package-layout.md)
-  - 操作が 2 つ以下の機能（`visit`）と、全部の操作が Get、List、Create、Update で 1 つの操作が 20 行に収まる機能（`organization`）は、`usecase.go` の 1 つのファイルにまとめる。
+  - 操作の数と大きさによらず、全ての機能で、公開の操作を操作の名前のファイルに置く。`usecase.go` に操作をまとめない。
 - 新しい Go の API で機能が 2 つ以上あるときは、機能のパッケージを `internal/features/<機能>/` に置く。
   - 機能が 1 つの API（照合の API、ID ブローカー）は、`features/` を作らない。
 - `services/receipt` に照合の段を足すときは、段ごとに `internal/` の下にパッケージを作り、`check` でつなぐ。
