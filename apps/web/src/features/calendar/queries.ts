@@ -82,7 +82,8 @@ export const patientListQueryOptions = (api: BuddyApi, facilityId: FacilityId) =
 
 /**
  * カレンダーを読めるかを確認する mutation。読めれば何も返さず、cache は変えない。
- * 読めなければ code が calendar_unreadable、届かなければ calendar_unavailable の ApiError を error に持つ。
+ * 読めなければ code が calendar_unreadable、届かなければ calendar_unavailable、
+ * サービスアカウントの設定が無ければ calendar_not_configured の ApiError を error に持つ。
  */
 export const useCheckCalendar = () => {
   const { api, facilityId } = useBuddyApi()

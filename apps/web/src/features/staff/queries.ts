@@ -95,7 +95,7 @@ const useStaffChanged = () => {
 /**
  * 職員を登録し、役職のデフォルトの権限を付ける mutation。
  * 成功すると、返った職員で職員の詳細の query を置き換え、職員の管理の一覧と、予定の画面の職員の一覧を読み直す。
- * 失敗は BuddyApi の staff.create の ApiError（メールアドレスの重複は 409）を error に持つ。
+ * 同じメールアドレスの職員がいれば status が 409 の、部署、チーム、役職が無ければ 400 の ApiError を error に持つ。
  */
 export const useCreateStaff = () => {
   const { api, facilityId } = useBuddyApi()
@@ -108,7 +108,8 @@ export const useCreateStaff = () => {
 
 /**
  * 職員の名前、電話番号、部署、チーム、訪問するかを変える mutation。予定か担当の利用者が残って拒まれたときは、残るものを結果に持つ。
- * 変えられたときは、成功すると、返った職員で職員の詳細の query を置き換え、職員の管理の一覧と、予定の画面の職員の一覧を読み直す。 ログインした職員の情報も読み直す。
+ * 変えられたときは、返った職員で職員の詳細の query を置き換え、職員の管理の一覧と、予定の画面の職員の一覧を読み直す。ログインした職員の情報（viewer）も読み直す。
+ * 退職した職員では、status が 409 の ApiError を error に持つ。
  */
 export const useUpdateStaff = (staffId: Staff['id']) => {
   const { api, facilityId } = useBuddyApi()
@@ -123,7 +124,7 @@ export const useUpdateStaff = (staffId: Staff['id']) => {
 
 /**
  * 職員の役職を変え、権限を新しい役職のデフォルトの権限に置き換える mutation。
- * 成功すると、返った職員で職員の詳細の query を置き換え、職員の管理の一覧と、予定の画面の職員の一覧を読み直す。 ログインした職員の権限も読み直す。
+ * 成功すると、返った職員で職員の詳細の query を置き換え、職員の管理の一覧と、予定の画面の職員の一覧を読み直す。ログインした職員の情報（viewer）も読み直す。
  * 職員の管理の権限を持つ最後の有効な職員から、その権限を外す役職には変えられず、status が 409 の ApiError を error に持つ。
  */
 export const useChangePosition = (staffId: Staff['id']) => {
@@ -188,7 +189,8 @@ export const useStartLeave = (staffId: Staff['id']) => {
 
 /**
  * 休職の職員を復職にする mutation。
- * 成功すると、返った職員で職員の詳細の query を置き換え、職員の管理の一覧と、予定の画面の職員の一覧を読み直す。 退職した職員では、status が 409 の ApiError を error に持つ。
+ * 成功すると、返った職員で職員の詳細の query を置き換え、職員の管理の一覧と、予定の画面の職員の一覧を読み直す。
+ * 退職した職員では、status が 409 の ApiError を error に持つ。
  */
 export const useReinstate = (staffId: Staff['id']) => {
   const { api, facilityId } = useBuddyApi()
@@ -201,7 +203,8 @@ export const useReinstate = (staffId: Staff['id']) => {
 
 /**
  * 職員を退職にする mutation。予定か担当の利用者が残って拒まれたときは、残るものを結果に持つ。
- * 退職にできたときは、成功すると、返った職員で職員の詳細の query を置き換え、職員の管理の一覧と、予定の画面の職員の一覧を読み直す。
+ * 退職にできたときは、返った職員で職員の詳細の query を置き換え、職員の管理の一覧と、予定の画面の職員の一覧を読み直す。
+ * 自分か、職員の管理の権限を持つ最後の有効な職員では、status が 409 の ApiError を error に持つ。
  */
 export const useRetire = (staffId: Staff['id']) => {
   const { api, facilityId } = useBuddyApi()

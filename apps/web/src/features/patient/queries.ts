@@ -125,7 +125,8 @@ export const useEndService = (patientId: Patient['id']) => {
 
 /**
  * 利用を再開する mutation。引数は再開の後の担当の職員である。
- * 成功すると、返った利用者で利用者の詳細の query を置き換え、利用者の管理の一覧と、予定の画面の利用者の候補を読み直す。 休職か退職の職員を指すと、status が 400 の ApiError を error に持つ。
+ * 成功すると、返った利用者で利用者の詳細の query を置き換え、利用者の管理の一覧と、予定の画面の利用者の候補を読み直す。
+ * 休職か退職の職員を指すと、status が 400 の ApiError を error に持つ。
  */
 export const useResumeService = (patientId: Patient['id']) => {
   const { api, facilityId } = useBuddyApi()
