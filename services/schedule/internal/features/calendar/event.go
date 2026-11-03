@@ -124,3 +124,15 @@ type Accounts interface {
 	// Writer は、事業所 facilityID のサービスアカウントで外部のカレンダーに書く EventWriter を返す。
 	Writer(ctx context.Context, facilityID string) (EventWriter, error)
 }
+
+// EventWriter は、外部のカレンダーに予定を書く。エラーは、ErrEventChanged、ErrEventGone、ErrEventNotFound、ErrEventExists、
+// ErrEventRejected、ErrUnwritable、ErrUnavailable のいずれかを包む。
+type EventWriter interface {
+	// Insert は、ID が eventID の予定を作り、etag を返す。
+	Insert(ctx context.Context, calendarID, eventID string, b EventBody) (string, error)
+	// Update は、予定 eventID を b の内容にし、消されていれば戻して、新しい etag を返す。
+	// etag が空でなければ If-Match に付け、外部で予定が変わっていれば ErrEventChanged を、消されていれば ErrEventGone を返す。
+	Update(ctx context.Context, calendarID, eventID, etag string, b EventBody) (string, error)
+	// Delete は、予定 eventID を消す。etag は Update と同じである。
+	Delete(ctx context.Context, calendarID, eventID, etag string) error
+}

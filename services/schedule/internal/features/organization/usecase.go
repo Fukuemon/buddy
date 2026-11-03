@@ -116,7 +116,7 @@ func (o *Usecase) CreateTeam(ctx context.Context, facilityID, name string, color
 	if _, err := o.deps.Facilities.Get(ctx, facilityID); err != nil {
 		return Team{}, err
 	}
-	color, err := o.teamColorOr(ctx, facilityID, color)
+	color, err := o.teamColorOf(ctx, facilityID, color)
 	if err != nil {
 		return Team{}, err
 	}
@@ -130,8 +130,8 @@ func (o *Usecase) CreateTeam(ctx context.Context, facilityID, name string, color
 	return o.deps.Teams.Get(ctx, t.ID)
 }
 
-// teamColorOr は、color が空でなければそのまま返し、空なら事業所 facilityID のチームが使っていない色を NextTeamColor で選ぶ。
-func (o *Usecase) teamColorOr(ctx context.Context, facilityID string, color TeamColor) (TeamColor, error) {
+// teamColorOf は、color が空でなければそのまま返し、空なら事業所 facilityID のチームが使っていない色を NextTeamColor で選ぶ。
+func (o *Usecase) teamColorOf(ctx context.Context, facilityID string, color TeamColor) (TeamColor, error) {
 	if color != "" {
 		return color, nil
 	}
@@ -189,7 +189,7 @@ func (o *Usecase) CreatePosition(ctx context.Context, facilityID, name string, p
 	if _, err := o.deps.Facilities.Get(ctx, facilityID); err != nil {
 		return Position{}, err
 	}
-	policies, err := o.listAllPolicies(ctx, policyIDs)
+	policies, err := o.requirePolicies(ctx, policyIDs)
 	if err != nil {
 		return Position{}, err
 	}
@@ -200,8 +200,8 @@ func (o *Usecase) CreatePosition(ctx context.Context, facilityID, name string, p
 	return o.savePosition(ctx, p)
 }
 
-// listAllPolicies は、ids の全ての権限を返す。見つからない権限が 1 つでもあれば、その ID を書いた入力のエラーを返す。
-func (o *Usecase) listAllPolicies(ctx context.Context, ids []string) ([]Policy, error) {
+// requirePolicies は、ids の全ての権限を返す。見つからない権限が 1 つでもあれば、その ID を書いた入力のエラーを返す。
+func (o *Usecase) requirePolicies(ctx context.Context, ids []string) ([]Policy, error) {
 	policies, err := o.deps.Policies.ListByIDs(ctx, ids)
 	if err != nil {
 		return nil, err
