@@ -1,20 +1,15 @@
-import { expect, test, type APIRequestContext } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
-import { LEADER, SCHEDULE_URL, TEAM_MEMBER } from '../../fixtures/env'
+import { LEADER, TEAM_MEMBER } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
-import { addPolicy, issueManagerToken } from '../../fixtures/staff'
+import {
+  STAFF_MANAGE_CODE,
+  addPolicy,
+  issueManagerToken,
+  policyIdOf,
+  removePolicy,
+} from '../../fixtures/staff'
 import { signInAtBroker } from '../../screens/login'
-
-/** 予定の API の権限の一覧から、職員の管理の権限（staff.manage）の ID を引く。 */
-const staffManagePolicyId = async (request: APIRequestContext, token: string) => {
-  const res = await request.get(`${SCHEDULE_URL}/v1/policies`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-  const policies = (await res.json()) as { id: string; code: string }[]
-  const policy = policies.find((p) => p.code === 'staff.manage')
-  if (policy === undefined) throw new Error('職員の管理の権限が無い')
-  return policy.id
-}
 
 test.describe('職員の詳細', () => {
   test.describe('操作の途中で権限を外されたとき', () => {
@@ -38,18 +33,15 @@ test.describe('職員の詳細', () => {
           },
           async (page) => {
             token = await issueManagerToken(request)
-            const added = await addPolicy(
-              request,
-              token,
-              LEADER.staff.id,
-              await staffManagePolicyId(request, token),
-            )
+            const policyId = await policyIdOf(request, token, STAFF_MANAGE_CODE)
+            const added = await addPolicy(request, token, LEADER.staff.id, policyId)
             expect(added.ok()).toBe(true)
             const detail = (await added.json()) as {
               policies: { code: string; user_policy_id: string | null }[]
             }
-            userPolicyId =
-              detail.policies.find((p) => p.code === 'staff.manage')?.user_policy_id ?? ''
+            const granted = detail.policies.find((p) => p.code === STAFF_MANAGE_CODE)
+            if (!granted?.user_policy_id) throw new Error('足した職員の管理の権限の ID が無い')
+            userPolicyId = granted.user_policy_id
             await page.goto('/staff')
             await signInAtBroker(page, LEADER.email)
           },
@@ -58,20 +50,16 @@ test.describe('職員の詳細', () => {
             await expect(page.getByTestId('staff-detail-name')).toBeVisible()
             await step('職員の詳細を開き、「編集」を押す')
             await page.getByTestId('staff-detail-edit').click()
-            await expect(page.getByTestId('staff-detail-edit-dialog')).toBeVisible()
+            const dialog = page.getByTestId('staff-detail-edit-dialog')
+            await expect(dialog).toBeVisible()
 
             await step('（撮影のため）マネージャーが API で、この職員の職員の管理の権限を外す')
-            const removed = await request.delete(
-              `${SCHEDULE_URL}/v1/users/${LEADER.staff.id}/policies/${userPolicyId}`,
-              { headers: { Authorization: `Bearer ${token}` } },
-            )
+            const removed = await removePolicy(request, token, LEADER.staff.id, userPolicyId)
             expect(removed.ok()).toBe(true)
 
             await step('「保存」を押す')
-            await page.getByTestId('staff-detail-save').click()
-            await expect(page.getByTestId('staff-detail-edit-dialog')).toContainText(
-              'この操作をする権限がありません。',
-            )
+            await dialog.getByTestId('staff-detail-save').click()
+            await expect(dialog).toContainText('この操作をする権限がありません。')
             await check('「この操作をする権限がありません。」が出る')
           },
         )
