@@ -1,7 +1,6 @@
 package organization
 
 import (
-	"context"
 	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
@@ -35,12 +34,4 @@ func NewPosition(id, facilityID, name string, policies []Policy) (Position, erro
 		seen[p.ID] = true
 	}
 	return Position{ID: id, FacilityID: facilityID, Name: name, Policies: policies}, nil
-}
-
-// PositionRepository は、役職とデフォルトの権限を読み書きする。見つからないときは apperr.ErrNotFound を、
-// 同じ事業所に同じ名前があるときは apperr.ErrConflict を返す。
-type PositionRepository interface {
-	Get(ctx context.Context, id string) (Position, error)
-	ListByFacility(ctx context.Context, facilityID string) ([]Position, error)
-	Create(ctx context.Context, p Position) error
 }
