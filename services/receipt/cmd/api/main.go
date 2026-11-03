@@ -2,7 +2,7 @@
 //
 // 環境変数:
 //
-//   - PORT: 待ち受けるポート。デフォルトは 8080。
+//   - PORT: 待ち受けるポート。1 から 65535 の数にする。デフォルトは 8080。
 //   - MAX_UPLOAD_BYTES: POST /v1/checks の本文の上限のバイト数。デフォルトは 10485760（10 MiB）。
 //   - LOG_LEVEL: debug、info、warn、error のいずれか。デフォルトは info。
 //   - OIDC_ISSUER: 必須。Hydra の Issuer の URL。トークンの iss と一致させ、discovery の文書をここから読む。
@@ -27,6 +27,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -79,8 +80,11 @@ func loadConfig(getenv func(string) string) (config, error) {
 	if cfg.oidc.OrgClaim == "" {
 		cfg.oidc.OrgClaim = "org_id"
 	}
-	if v := getenv("PORT"); v != "" {
+	if v := strings.TrimSpace(getenv("PORT")); v != "" {
 		cfg.port = v
+	}
+	if n, err := strconv.Atoi(cfg.port); err != nil || n < 1 || n > 65535 {
+		return config{}, fmt.Errorf("ポート %q は 1 から 65535 の数にする", cfg.port)
 	}
 	if v := getenv("MAX_UPLOAD_BYTES"); v != "" {
 		n, err := strconv.ParseInt(v, 10, 64)
@@ -99,9 +103,9 @@ func loadConfig(getenv func(string) string) (config, error) {
 			cfg.allowOrigins = append(cfg.allowOrigins, o)
 		}
 	}
-	cfg.calendarsFile = getenv("GOOGLE_CALENDARS_FILE")
-	cfg.accountsFile = getenv("GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE")
-	cfg.calendarEndpoint = getenv("GOOGLE_CALENDAR_ENDPOINT")
+	cfg.calendarsFile = strings.TrimSpace(getenv("GOOGLE_CALENDARS_FILE"))
+	cfg.accountsFile = strings.TrimSpace(getenv("GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE"))
+	cfg.calendarEndpoint = strings.TrimSpace(getenv("GOOGLE_CALENDAR_ENDPOINT"))
 	if cfg.calendarEndpoint != "" && cfg.calendarsFile == "" {
 		return config{}, errors.New("GOOGLE_CALENDAR_ENDPOINT は GOOGLE_CALENDARS_FILE と一緒に渡す")
 	}
@@ -181,7 +185,7 @@ func run() error {
 	}
 
 	srv := &http.Server{
-		Addr: ":" + cfg.port,
+		Addr: net.JoinHostPort("", cfg.port),
 		Handler: httpapi.NewHandler(logger, httpapi.Config{
 			MaxUploadBytes: cfg.maxUploadBytes,
 			Sources:        source.Selector{Calendar: reader},

@@ -181,7 +181,7 @@ func (h handler) register(w http.ResponseWriter, r *http.Request) {
 		code = http.StatusCreated
 		h.Logger.InfoContext(r.Context(), "職員を登録した", "staff_id", m.ID, "org_id", m.OrgID)
 	}
-	writeJSON(h.Logger, w, code, staffBody{ID: m.ID, OrgID: m.OrgID, Email: m.Email, Status: m.Status})
+	WriteJSON(h.Logger, w, code, staffBody{ID: m.ID, OrgID: m.OrgID, Email: m.Email, Status: m.Status})
 }
 
 func (h handler) activate(w http.ResponseWriter, r *http.Request) {
@@ -336,7 +336,8 @@ func (h handler) tokenHook(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-type errorBody struct {
+// ErrorBody は、内部の API の失敗の応答の本文である。httpapi が panic のときに返す 500 も、同じ形にする。
+type ErrorBody struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }
@@ -371,10 +372,11 @@ func (h handler) writeError(w http.ResponseWriter, r *http.Request, code int, ki
 		level = slog.LevelError
 	}
 	h.Logger.Log(r.Context(), level, "内部の API がエラーを返す", "status", code, "reason", msg, "error", err)
-	writeJSON(h.Logger, w, code, errorBody{Code: kind, Message: msg})
+	WriteJSON(h.Logger, w, code, ErrorBody{Code: kind, Message: msg})
 }
 
-func writeJSON(logger *slog.Logger, w http.ResponseWriter, code int, body any) {
+// WriteJSON は、body を JSON にして code で書く。書けなければ logger にエラーを書く。
+func WriteJSON(logger *slog.Logger, w http.ResponseWriter, code int, body any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	if err := json.NewEncoder(w).Encode(body); err != nil {

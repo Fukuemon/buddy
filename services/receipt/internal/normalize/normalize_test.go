@@ -14,7 +14,7 @@ func TestStaff(t *testing.T) {
 		{"職員 B", "職員 B"},
 	}
 	for _, tt := range tests {
-		if got := Staff(tt.in); got != tt.want {
+		if got := staff(tt.in); got != tt.want {
 			t.Errorf("Staff(%q) = %q, want %q", tt.in, got, tt.want)
 		}
 	}

@@ -73,7 +73,7 @@ type Config struct {
 //   - HYDRA_ISSUER: Hydra のトークンの iss。内部の API が access token を検証する discovery の文書をここから読む
 //   - INTERNAL_API_AUDIENCE: 内部の API が access token の aud に求める値。デフォルトは broker
 //   - INTERNAL_API_CLIENTS: 内部の API を呼んでよいクライアントの ID をカンマで区切った値。デフォルトは schedule
-//   - TOKEN_HOOK_KEY: Hydra が oauth2.token_hook を呼ぶときにヘッダーに入れる値
+//   - TOKEN_HOOK_KEY: Hydra が oauth2.token_hook を呼ぶときにヘッダーに入れる値。前後の空白を除いて 32 バイト以上にする
 func Load(getenv func(string) string) (Config, error) {
 	return load(getenv, true)
 }
@@ -83,6 +83,9 @@ func LoadDB(getenv func(string) string) (DB, error) {
 	c, err := load(getenv, false)
 	return c.DB, err
 }
+
+// minTokenHookKeyLen は、TOKEN_HOOK_KEY の最小のバイト数である。推測されない長さの乱数を求める。
+const minTokenHookKeyLen = 32
 
 func load(getenv func(string) string, broker bool) (Config, error) {
 	get := func(key, def string) string {
@@ -109,7 +112,7 @@ func load(getenv func(string) string, broker bool) (Config, error) {
 		ClientIPHeader:            get("CLIENT_IP_HEADER", ""),
 		HydraIssuer:               get("HYDRA_ISSUER", ""),
 		InternalAPIAudience:       get("INTERNAL_API_AUDIENCE", "broker"),
-		TokenHookKey:              getenv("TOKEN_HOOK_KEY"),
+		TokenHookKey:              get("TOKEN_HOOK_KEY", ""),
 	}
 	c.AutoConsentClients = list(get("AUTO_CONSENT_CLIENTS", "web"))
 	c.InternalAPIClients = list(get("INTERNAL_API_CLIENTS", "schedule"))
@@ -134,6 +137,10 @@ func load(getenv func(string) string, broker bool) (Config, error) {
 	if broker {
 		if c.Port == c.InternalPort {
 			return Config{}, fmt.Errorf("INTERNAL_PORT %q は PORT と違う値にする", c.InternalPort)
+		}
+		// 値はシークレットなので、エラーの文に入れない
+		if len(c.TokenHookKey) < minTokenHookKeyLen {
+			return Config{}, fmt.Errorf("TOKEN_HOOK_KEY は %d バイト以上にする", minTokenHookKeyLen)
 		}
 		for _, v := range []struct{ key, value string }{
 			{"HYDRA_ADMIN_URL", c.HydraAdminURL},

@@ -77,7 +77,7 @@ flowchart TB
 | `hydra` | Hydra の admin API の呼び出し |
 | `upstream` | 上流の IdP の RP の処理 |
 | `config` | 環境変数からの設定の読み込み |
-| `httpapi` | ヘルスチェックと、2 つのポートで受けるハンドラの組み立てと、panic のときの 500 |
+| `httpapi` | ヘルスチェックと、2 つのポートで受けるハンドラの組み立てと、panic のときの 500。画面のパスは `login.Paths` から、500 の本文は `internalapi` の形で書く |
 
 各パッケージが import するパッケージを、矢印で示す。
 
@@ -93,6 +93,7 @@ flowchart LR
   upstream
   config
   cmd --> httpapi & login & internalapi & postgres & hydra & upstream & config
+  httpapi --> login & internalapi
   login --> staff & hydra & upstream
   internalapi --> staff
   postgres --> staff
@@ -330,7 +331,9 @@ cookie は署名しない。
 この画面には、もう一度ログインするリンクが無い。  
 画面を出すのは次のとき。
 
-- `login_challenge` か `consent_challenge` が無いか、Hydra の admin API で読めないとき
+- `login_challenge` か `consent_challenge` が無いか、Hydra の admin API で読めないとき（400）
+  - 読めないときは、`GET /login`、`POST /login`、同意のどれでも 400 にする。
+  - 使い終えたか期限の切れた challenge を、challenge が無いときと同じに扱うためである。
 - コールバックの値が、このブラウザで始めたログインのものと確認できないとき
 - 上流の IdP の discovery の文書を読めず、リダイレクト先を作れないとき（502）
 - `POST /login` で、メールから職員を DB で引けないとき（500）

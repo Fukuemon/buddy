@@ -27,7 +27,7 @@ func TestDecode(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Decode(tt.in)
+			got, err := decode(tt.in)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -39,7 +39,7 @@ func TestDecode(t *testing.T) {
 }
 
 func TestDecodeInvalid(t *testing.T) {
-	_, err := Decode([]byte{0x81, 0x20, 0xFF})
+	_, err := decode([]byte{0x81, 0x20, 0xFF})
 	if !errors.Is(err, ErrEncoding) {
 		t.Fatalf("err = %v", err)
 	}
@@ -71,14 +71,14 @@ func TestReadTableFileErrors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := ReadTable(tt.data, record.SourceSchedule, ScheduleColumns())
+			_, err := ReadTable(tt.data, record.InputSchedule, ScheduleColumns())
 			got := inputErrors(t, err)
 			if len(got) != len(tt.want) {
 				t.Fatalf("errors = %+v", got)
 			}
 			for i, w := range tt.want {
 				g := got[i]
-				if g.Source != record.SourceSchedule || g.Reason != w.Reason || g.Line != w.Line || g.Column != w.Column || g.Message == "" {
+				if g.Input != record.InputSchedule || g.Reason != w.Reason || g.Line != w.Line || g.Column != w.Column || g.Message == "" {
 					t.Errorf("errors[%d] = %+v, want %+v", i, g, w)
 				}
 			}
@@ -88,7 +88,7 @@ func TestReadTableFileErrors(t *testing.T) {
 
 func TestReadTable(t *testing.T) {
 	data := "訪問日, 利用者名 ,余分\n2024/04/01,利用者A,x\n,,\n2024/04/02\n"
-	rows, err := ReadTable([]byte(data), record.SourceVisit, []string{ColDate, ColClient})
+	rows, err := ReadTable([]byte(data), record.InputVisit, []string{ColDate, ColClient})
 	if err != nil {
 		t.Fatal(err)
 	}

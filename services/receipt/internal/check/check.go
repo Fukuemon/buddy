@@ -41,15 +41,8 @@ type CSVSchedules struct {
 
 // Schedules は、Data を予定の CSV として読む。警告は返さない。
 func (s CSVSchedules) Schedules(_ context.Context) ([]record.Record, []record.Warning, error) {
-	rows, err := csvio.ReadTable(s.Data, record.SourceSchedule, csvio.ScheduleColumns())
-	if err != nil {
-		return nil, nil, err
-	}
-	recs, rowErrs := normalize.Schedules(rows)
-	if len(rowErrs) > 0 {
-		return nil, nil, &record.InputError{Message: "予定の CSV に誤りがある", Errors: rowErrs}
-	}
-	return recs, nil, nil
+	recs, err := readCSV(s.Data, record.InputSchedule, csvio.ScheduleColumns(), normalize.Schedules, "予定の CSV に誤りがある")
+	return recs, nil, err
 }
 
 // Summary は、区分ごとの行の数である。
@@ -73,22 +66,26 @@ type Report struct {
 // 予定のデータソースのそのほかのエラー（*SourceError など）は、そのまま返す。
 func Run(ctx context.Context, visits []byte, schedules ScheduleSource) (Report, error) {
 	var inputErrs []*record.InputError
-
-	visitRecs, err := readVisits(visits)
-	if err != nil {
-		var ie *record.InputError
-		if !errors.As(err, &ie) {
-			return Report{}, err
+	// collect は、入力のエラーを inputErrs に集め、そのほかのエラーを返す。
+	collect := func(err error) error {
+		if err == nil {
+			return nil
+		}
+		ie, ok := errors.AsType[*record.InputError](err)
+		if !ok {
+			return err
 		}
 		inputErrs = append(inputErrs, ie)
+		return nil
+	}
+
+	visitRecs, err := readCSV(visits, record.InputVisit, csvio.VisitColumns(), normalize.Visits, "実績の CSV に誤りがある")
+	if err := collect(err); err != nil {
+		return Report{}, err
 	}
 	scheduleRecs, warnings, err := schedules.Schedules(ctx)
-	if err != nil {
-		var ie *record.InputError
-		if !errors.As(err, &ie) {
-			return Report{}, err
-		}
-		inputErrs = append(inputErrs, ie)
+	if err := collect(err); err != nil {
+		return Report{}, err
 	}
 	if len(inputErrs) > 0 {
 		merged := &record.InputError{}
@@ -121,14 +118,22 @@ func Run(ctx context.Context, visits []byte, schedules ScheduleSource) (Report, 
 	return rep, nil
 }
 
-func readVisits(data []byte) ([]record.Record, error) {
-	rows, err := csvio.ReadTable(data, record.SourceVisit, csvio.VisitColumns())
+// readCSV は、data を input の CSV として columns の列で読み、normalizeRows で正規化する。
+// 読めないときと正規化できない行があるときは、*record.InputError を返す。行の誤りの Message は message にする。
+func readCSV(
+	data []byte,
+	input record.Input,
+	columns []string,
+	normalizeRows func([]csvio.Row) ([]record.Record, []record.CSVError),
+	message string,
+) ([]record.Record, error) {
+	rows, err := csvio.ReadTable(data, input, columns)
 	if err != nil {
 		return nil, err
 	}
-	recs, rowErrs := normalize.Visits(rows)
+	recs, rowErrs := normalizeRows(rows)
 	if len(rowErrs) > 0 {
-		return nil, &record.InputError{Message: "実績の CSV に誤りがある", Errors: rowErrs}
+		return nil, &record.InputError{Message: message, Errors: rowErrs}
 	}
 	return recs, nil
 }
