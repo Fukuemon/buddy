@@ -14,7 +14,7 @@ export type DialogProps = {
   canClose?: boolean
   /**
    * 開いたときにフォーカスを移す要素。入力のダイアログで、最初に入れる欄を渡す。
-   * 省くと、showModal が最初の操作できる要素（閉じるボタン）にフォーカスを移す。
+   * 省くと、showModal がダイアログの中の最初の操作できる要素にフォーカスを移す。
    * 出典: https://html.spec.whatwg.org/multipage/interactive-elements.html#dialog-focusing-steps
    */
   initialFocusRef?: RefObject<HTMLElement | null>
