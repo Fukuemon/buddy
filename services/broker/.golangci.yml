@@ -51,6 +51,13 @@ linters:
       rules:
         - name: exported
         - name: package-comments
+        - name: var-naming
+  exclusions:
+    rules:
+      # IdP は Identity Provider の略の書き方である。revive は Id を ID の略語と読む。
+      # 出典: https://csrc.nist.gov/glossary/term/identity_provider
+      - linters: [revive]
+        text: "var-naming: .*IDP"
 formatters:
   enable:
     - gofmt

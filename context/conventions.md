@@ -19,7 +19,7 @@ status: stable
 - web の import は、同じ機能か同じディレクトリの中では相対のパスで書き、それをまたぐときは `#/` のエイリアスで書く。
   - tsconfig の `@/` は使わない。
 - Go のテストのためのフェイクは、`<パッケージ>test` のパッケージに置く（`oidctest`、`gcaltest`）。
-- API の operationId は、lowerCamel の「動詞と名詞」にする。動詞は `get`、`list`、`create`、`update`、`cancel`、`change`、`add`、`remove` から選ぶ。
+- API の operationId は、lowerCamel の「動詞と名詞」にする。動詞は `get`、`list`、`create`、`update`、`cancel`、`change`、`add`、`remove`、`start`、`end`、`resume`、`retire`、`reinstate` から選ぶ。
   - `add` と `remove` は、職員に権限を足す、外すのように、リソースの結び付きを足して外す操作に使う（`addUserPolicy`、`removeUserPolicy`）。
 - API のパスは `/v1` の下の複数形の snake_case にする。
   - 事業所に属する一覧と作成は `/v1/facilities/{facility_id}/<リソース>`、1 件は `/v1/<リソース>/{<リソース>_id}` に置く。
@@ -35,9 +35,71 @@ status: stable
   - 外部の ID（Google カレンダーの ID、組織の `org_id`、IdP の `sub`）は、ULID の規則の対象の外である。
 - 真偽のカラムは、`is_`、`has_`、`needs_` で始めるか、true のときの動作を動詞で書く（`is_over_time_work`、`needs_target`、`overwrite`）。
 - 業務の用語の表記は [業務の知識](domain.md) の用語にそろえる。
+- Go と TypeScript で同じ業務のものを表す型は、同じ名前にする（`Staff`、`Patient`、`Schedule`）。
+
+### 関数とメソッドの動詞
+
+Go と TypeScript の関数とメソッドは、次の操作には表の動詞を使う。  
+真偽値を返す関数は「真偽値」のセクションの規則に従う。  
+API の操作を呼ぶ関数とリポジトリのメソッドは、operationId と同じ動詞にする。
+
+| 操作 | 動詞 | 例 |
+| --- | --- | --- |
+| ID で 1 件を取る | `get` | `GetFacility`、`getSchedule` |
+| 一覧を取る | `list` | `ListDepartments`、`listRecords` |
+| ID 以外の値で探し、見つからないことがある | `find` | `FindByEmail`、`findCalendar` |
+| 設定とファイルを起動のときに読む | `load` | `LoadAccounts`、`loadServerConfig` |
+| 値を作る | Go は `New`、TypeScript は `create` | `NewHandler`、`createHttpBuddyApi` |
+| 同じものを別の型に変える | `to<変換先>` | `toEventBody`、`toDateKey` |
+| API の型を画面の型に変える | `fromApi<型>`（TypeScript） | `fromApiStaff` |
+| 文字列を値に変える | `parse` | `ParseDate`、`parseOccurrenceId` |
+| 値を画面に出す文字列に変える | `format` | `formatDateTime` |
+| リクエストとフォームの値の形と範囲を確認し、誤りを返す | `validate` | `validateEmail`、`validatePatientForm` |
+| 職員の権限を確認し、無ければ失敗にする | `require` | `RequireStaffManage`、`requirePermission` |
+| 保存された状態と設定の前提（事業所、職員の状態、アカウント）を確認し、満たさなければ失敗にする | Go は `require`、TypeScript は `assert` | `requireAccounts`、`assertFacility` |
+| 入力から一部の値か判定を取り出す | `<取り出すもの>Of` | `timeBandOf`、`statusOf` |
+| 画面のイベントを受ける | props は `on<イベント>`、コンポーネントの中の関数は `handle<イベント>` | `onSubmit`、`handleSubmit` |
+
+- `fetch`、`build`、`make`、`convert` は使わない。HTTP で取るときも `get` と `list` にする。
+  - Fetch API の `fetch` を包む関数（`fetchWithAccessToken`）は、包む関数の名前を残す。
+- E2E のテストのコードの関数（`prepare`、`expect`）の名前は、スキル write-e2e-test に従う。
+- 照合（`check`）のように業務の語が動詞を兼ねるときは、業務の語を使う。
+  - 入力の値の確認に `check` を使わないのは、照合と間違えないためである。
+- Go の、フィールドを返すメソッド（getter）には `Get` を付けない（`Status()`、`URL()`）。
+- Go のリポジトリのメソッドと、API を呼ぶ関数は、DB と HTTP の呼び出しでも `Get` と `List` で始める。
+  - Google Go Style は `Get` を避け、リモートの呼び出しには `Fetch` を勧める。
+  - buddy では、sqlc の生成物（`GetAuthor`、`ListAuthors`）と operationId の動詞にそろえ、ハンドラからリポジトリと SQL まで同じ動詞で追えるようにするため、`Get` と `List` にする。
+  - 出典: [Google Go Style Decisions の Getters](https://google.github.io/styleguide/go/decisions#getters)
+  - 出典: [Effective Go の Getters](https://go.dev/doc/effective_go#Getters)
+  - 出典: [sqlc の Getting started with PostgreSQL](https://docs.sqlc.dev/en/latest/tutorials/getting-started-postgresql.html)
+
+### 真偽値
+
+- Go の判定の関数とメソッドは、`Is`、`Has`、`Can` で始める（`IsVisitTitle`、`CanEdit`）。
+  - 標準のライブラリの `time.Time.IsZero`、`os.FileInfo.IsDir`、`strings.HasPrefix` に合わせる。
+- Go の真偽値の変数とフィールドは、状態の形容詞か過去分詞（`Ended`、`Pending`）か、三人称単数の動詞の句（`EndsNextDay`）にし、`Is` を付けない。
+  - DB のカラムと API の項目と対になるフィールドは、その名前に合わせる（`IsOverTimeWork`、`NeedsTarget`）。
+  - `ok` の慣用の名前は、この規則の対象の外である。
+- TypeScript の真偽値は、`is`、`has`、`can`、`needs` で始めるか、三人称単数の動詞の句（`endsNextDay`、`opensDialog`）にする。
+  - `is` は状態、`can` は操作できるか、`has` は持っているかに使う。
+  - DOM と ARIA の属性と同じ名前の props（`disabled`、`checked`、`expanded`、`defaultOpen`）と、API の項目（`ends_next_day`）は、その名前に合わせる。
+  - 結果の型の `ok` は、この規則の対象の外である。
+
+### 一覧、単位、略語
+
+- 一覧の変数とフィールドは複数形にし、`List` を付けない。
+  - 単数と複数が同じ形の語（`staff`）だけは、`<語>List` にする（`staffList`）。
+- 数の値は、名前の末尾に単位を付ける（`LeaseSeconds`、`startMinutes`、`DAY_MS`、`HOUR_HEIGHT_PX`、`ImportedCount`）。
+  - Go の `time.Duration` は、型が単位を持つので、単位を付けない（`SyncInterval`）。
+- Go の略語は、全て大文字か全て小文字にする（`orgID`、`HydraAdminURL`、`WriteJSON`）。
+  - revive の `var-naming` で確認する。IdP は Identity Provider の略の書き方のまま残す。
+- TypeScript の略語は、先頭だけを大文字にする（`facilityId`、`baseUrl`、`BuddyApi`）。
+  - 定数の UPPER_SNAKE_CASE は全て大文字にする（`FAKE_FACILITY_ID`）。
+  - 外部のライブラリの名前（Playwright の `toHaveURL`、`baseURL`）は、そのまま使う。
 
 ## Comments
 
+実装のコメントは最小限にして理由を名前、型、関数の分け方で表し、godoc と JSDoc は export するもの全てに契約（何を受け、何を返し、何を変え、どのエラーを返すか）を書く。  
 コメントの書き方は、スキル write-comments に従う。  
 言語は日本語の常体にする。
 
