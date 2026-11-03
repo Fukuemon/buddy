@@ -191,6 +191,8 @@ linters:
           deny:
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/postgres
               desc: httpapi から postgres を import するのはテストのファイルだけにする
+            - pkg: github.com/Fukuemon/buddy/packages/go/oidc
+              desc: httpapi から oidc を import するのはテストのファイルだけにする
         config:
           files:
             - "**/internal/config/**"
