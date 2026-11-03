@@ -1,6 +1,6 @@
 // Package calendar は、職員が結び付けた外部のカレンダー（Google カレンダー）と buddy の予定を、取り込み、書き出し、同期でつなぐ。
 // 結び付けたカレンダーと予定の対応と、外部の予定と buddy の予定を互いに読み替える規則を持つ。
-// 取り込みと同期は外部の予定を buddy の予定に当て、書き出し（Outbox と Exporter）は buddy の予定の変更を外部のカレンダーに書く。
+// 取り込みと同期は外部の予定から buddy の予定を作るか変え、書き出し（Outbox と Exporter）は buddy の予定の変更を外部のカレンダーに書く。
 package calendar
 
 import (
