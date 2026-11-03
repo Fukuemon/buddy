@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { useRef, type ReactNode } from 'react'
+import { useRef, type ReactNode, type RefObject } from 'react'
 
 import { useModalDialog } from '../ModalDialog/useModalDialog'
 
@@ -12,6 +12,12 @@ export type DialogProps = {
   onClose: () => void
   /** false の間は、覆いと Escape キーで閉じない。送っている間に渡す。 */
   canClose?: boolean
+  /**
+   * 開いたときにフォーカスを移す要素。入力のダイアログで、最初に入れる欄を渡す。
+   * 省くと、showModal が最初の操作できる要素（閉じるボタン）にフォーカスを移す。
+   * 出典: https://html.spec.whatwg.org/multipage/interactive-elements.html#dialog-focusing-steps
+   */
+  initialFocusRef?: RefObject<HTMLElement | null>
   /** narrow は、確認のダイアログの幅にする。 */
   width?: 'default' | 'narrow'
   children: ReactNode
@@ -20,7 +26,7 @@ export type DialogProps = {
 
 /**
  * 画面の上に重ねて出す、小さい確認と入力のダイアログ。`<dialog>` の showModal で開き、後ろの画面を操作できなくする。
- * 中身は DialogHeader、DialogBody、DialogFooter で組む。
+ * 中身は DialogHeader、DialogBody、DialogFooter で組む。開くと initialFocusRef の要素にフォーカスを移す。
  * 閉じる（外す）と、開く前にフォーカスがあった要素へ戻す。幅 768px 未満では、左右に余白を残して画面の幅に合わせる。
  */
 export const Dialog = ({
@@ -28,6 +34,7 @@ export const Dialog = ({
   labelledBy,
   onClose,
   canClose = true,
+  initialFocusRef,
   width = 'default',
   children,
   'data-testid': testId,
@@ -40,7 +47,7 @@ export const Dialog = ({
     onCloseRequest: () => {
       if (canClose) onClose()
     },
-    getInitialFocus: () => null,
+    getInitialFocus: () => initialFocusRef?.current ?? null,
     titleRef,
   })
 

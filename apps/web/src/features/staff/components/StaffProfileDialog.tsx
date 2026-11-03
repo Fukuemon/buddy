@@ -1,5 +1,5 @@
 import { FormField, formFieldControlClassName, InputDialog } from '@buddy/ui'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 
 import type { Department, StaffAssignments, StaffDetail, StaffUpdateInput, Team } from '#/api/types'
 
@@ -52,9 +52,6 @@ export const StaffProfileDialog = ({
   const [visits, setVisits] = useState(staff.visits)
   const [errors, setErrors] = useState<StaffFormErrors>({})
 
-  // <dialog> の showModal は最初の操作できる要素（閉じるボタン）にフォーカスを移す（HTML の dialog の focusing steps）。その後に名前の欄へ移す
-  useEffect(() => nameRef.current?.focus(), [])
-
   const submit = () => {
     const next: StaffFormErrors = { name: validateName(name), phone: validatePhone(phone) }
     setErrors(next)
@@ -70,6 +67,7 @@ export const StaffProfileDialog = ({
 
   return (
     <InputDialog
+      initialFocusRef={nameRef}
       busyLabel="保存しています"
       canSubmit={departments !== undefined && teams !== undefined}
       error={
