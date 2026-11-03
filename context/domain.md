@@ -82,6 +82,13 @@ status: stable
 | --- | --- | --- |
 | 画面の枠 | ログインした職員の画面の外枠。ヘッダーとナビゲーションを含み、中に各画面を置く | web `SiteLayout`、`SiteLayoutContainer` |
 
+### テストと開発の置き換え
+
+| 用語 | 意味 | コードの識別子 |
+| --- | --- | --- |
+| フェイク | 本物の代わりに動き、作った値を残す置き換え。web では、画面から見た API をブラウザのメモリで動かすものだけを指す | web `src/api/fake/`（`createFakeBuddyApi`）、Go `internal/inmem`、`<パッケージ>test`、compose の IdP と calendarpit |
+| MSW の handler | web のサーバーから 2 つの API への HTTP を受け、決まった応答を返す置き換え。値を残さない。web ではフェイクと呼ばない | web `src/mocks/`（`createScheduleHandlers`、`createReceiptHandlers`） |
+
 ### 予定の管理と照合で表記が違う語
 
 - 予定の管理の利用者は、照合では `client`（カラムは「利用者名」）と呼ぶ。

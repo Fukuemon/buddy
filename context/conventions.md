@@ -94,7 +94,7 @@ API の操作を呼ぶ関数とリポジトリのメソッドは、operationId �
 - Go の略語は、全て大文字か全て小文字にする（`orgID`、`HydraAdminURL`、`WriteJSON`）。
   - revive の `var-naming` で確認する。IdP は Identity Provider の略の書き方のまま残す。
 - TypeScript の略語は、先頭だけを大文字にする（`facilityId`、`baseUrl`、`BuddyApi`）。
-  - 定数の UPPER_SNAKE_CASE は全て大文字にする（`FAKE_FACILITY_ID`）。
+  - 定数の UPPER_SNAKE_CASE は全て大文字にする（`MOCK_FACILITY_ID`）。
   - 外部のライブラリの名前（Playwright の `toHaveURL`、`baseURL`）は、そのまま使う。
 
 ## Comments
