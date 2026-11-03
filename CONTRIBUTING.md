@@ -264,7 +264,14 @@ pull request では、CI（[ci.yml](.github/workflows/ci.yml)）が通るまで�
   - 飛ばしたジョブは、`gh pr checks` で `skipping` と表示され、`--watch` の終了コードを 1 にしない。
   - `typescript`、`generated`、`db-docs` のジョブは飛ばさない。
     - `docs/screens/` の画面仕様書とモックは、文書だけの変更でも `typescript` のジョブの `pnpm check:screens` が確認する。
-  - develop への push では、全てのジョブを流す。
+- develop への push では、`e2e` のジョブを流さず、ほかのジョブを流す。
+  - push の CI は、2 つの pull request を組み合わせたときにだけ起きる失敗を見つけるために流す。
+    - `typescript`、`go`、`generated` は、型、テスト、生成物の食い違いを見つける。
+    - `db-docs` は、マイグレーションを組み合わせたときのテーブル定義書のずれを見つける。
+  - `e2e` は 7 分ほどかかる。組み合わせの失敗は、`typescript` と `generated` が先に見つける。
+    - 組み合わせで画面の import が解決できなくなったときは、`e2e` も失敗した。ただし、同じ失敗を `typescript` も見つけていた。
+  - develop の `e2e` は、`schedule` で毎日 12:00（JST）に流す。
+  - 全てのジョブを手で流すときは、`gh workflow run ci.yml --ref develop` を流す。
 
 - pull request と issue のタイトルと本文の形は、[issue-pr-body.yml](.github/workflows/issue-pr-body.yml) が確認する。
 - E2E が CI だけで失敗したときは、ワークフローの実行の画面から artifact の `e2e-test-results` を落とし、中の trace を [E2E Tests](#e2e-tests) の手順で開く。
