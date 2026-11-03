@@ -17,11 +17,11 @@ const framePosition = async (page: Page) => {
 }
 
 test.describe('画面の枠', () => {
-  test.describe('root の route の枠', () => {
+  test.describe('画面をまたいだ枠の位置と出し分け', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       const prefix = variant.label ? `${variant.label}: ` : ''
 
-      test(`${prefix}職員の管理の権限を持つ職員が予定、職員、利用者、組織、照合の画面を順に開いた場合、ヘッダーとナビと照合待ちのバッジが同じ位置に出ること`, async ({
+      test(`${prefix}職員の管理の権限を持つ職員が予定、職員、利用者、組織、照合の画面を順に開いた場合、予定の画面に枠が出て、ほかの 4 つの画面でヘッダーとナビの要確認の項目が同じ位置に出ること`, async ({
         browser,
       }) => {
         await recordPrEvidence(
