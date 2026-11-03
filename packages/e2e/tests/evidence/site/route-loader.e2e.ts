@@ -50,8 +50,11 @@ test.describe('画面のデータの読み込み', () => {
           await step('部署とチームの画面を開く')
           await page.goto('/organization')
           await expect(pageHeading(page, '部署とチーム')).toBeVisible()
-          await expect(page.getByTestId('organization-list-loading')).toBeHidden()
-          await expect(page.getByTestId('organization-list-error')).toBeHidden()
+          await expect(
+            page
+              .getByTestId('organization-list-department-table')
+              .or(page.getByTestId('organization-list-department-empty')),
+          ).toBeVisible()
           await check('部署とチームの一覧が出る')
 
           await step('確認が必要な予定の画面を開く')

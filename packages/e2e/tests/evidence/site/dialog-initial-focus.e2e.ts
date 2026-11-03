@@ -10,7 +10,7 @@ test.describe('入力のダイアログ', () => {
   for (const variant of EVIDENCE_VARIANTS) {
     const prefix = variant.label ? `${variant.label}: ` : ''
 
-    test(`${prefix}利用者、職員、部署とチームの入力のダイアログを開いた場合、名前の欄にフォーカスがあること`, async ({
+    test(`${prefix}利用者の登録と変更、職員の登録と情報、部署の作成のダイアログを開いた場合、名前の欄にフォーカスがあること`, async ({
       browser,
     }) => {
       await recordPrEvidence(

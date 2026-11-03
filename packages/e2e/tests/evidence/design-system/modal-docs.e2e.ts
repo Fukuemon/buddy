@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 import { EVIDENCE_VARIANTS, recordPrEvidence, STORYBOOK_URL } from '../../fixtures/evidence'
-import { docsOpenDialogs, docsStoryFrames } from '../../selectors/storybookDocs'
+import { docsCodeToggle, docsOpenDialogs, docsStoryFrames } from '../../selectors/storybookDocs'
 
 const ACTOR = 'ログインなし（Storybook の Docs のページ）'
 
@@ -25,7 +25,7 @@ test.describe('モーダルの Docs のページ', () => {
         browser,
         {
           name: 'modal-docs-iframe',
-          title: 'モーダルの Docs のページで、story が iframe に描かれ、ページをスクロールできる',
+          title: 'モーダルの Docs のページで、story が iframe に描かれ、ページのボタンを押せる',
           actor: ACTOR,
           variant,
         },
@@ -39,14 +39,15 @@ test.describe('モーダルの Docs のページ', () => {
             const storyFrames = docsStoryFrames(page)
             await expect(storyFrames.first()).toBeVisible()
             const frameCount = await storyFrames.count()
-            expect(frameCount).toBeGreaterThan(0)
             await expect(docsOpenDialogs(page)).toHaveCount(0)
             await check(`${label} の story が、iframe の中に ${frameCount} 個描かれる`)
 
-            await step('ページを下へスクロールする')
-            await page.mouse.wheel(0, 800)
-            await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
-            await check('ページのほかの部分を、ダイアログに遮られずにスクロールできる')
+            await step('最初の story の「Show code」を押す')
+            const codeToggle = docsCodeToggle(page)
+            await codeToggle.scrollIntoViewIfNeeded()
+            await codeToggle.click()
+            await expect(codeToggle).toHaveText('Hide code')
+            await check('ページのほかの部分のボタンを、ダイアログに遮られずに押せる')
           }
         },
       )
