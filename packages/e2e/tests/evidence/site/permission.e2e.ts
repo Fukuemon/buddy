@@ -123,7 +123,7 @@ test.describe('画面の権限', () => {
           await page.getByTestId('site-nav-import').click()
           await expect(pageHeading(page, '予定の取り込み')).toBeVisible()
           await expect(page.getByTestId('page-forbidden')).toHaveCount(0)
-          await check('予定の取り込みの入力が出る')
+          await check('予定の取り込みの画面が出る')
 
           await step('ナビゲーションの「照合」を押す')
           await page.getByTestId('site-nav-receipt').click()
