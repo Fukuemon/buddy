@@ -9,18 +9,11 @@ import { CalendarReviewBadgeContainer } from '#/features/calendar/components/Cal
 import { CalendarReviewContainer } from '#/features/calendar/components/CalendarReviewContainer'
 import { exportIssueListQueryOptions } from '#/features/calendar/queries'
 
-// `/schedule` の子にすると予定のカレンダーの上に重なるので、名前の `_` で入れ子から外す
 export const Route = createFileRoute('/schedule_/review')({
   beforeLoad: requirePermission(STAFF_MANAGE),
   ssr: RENDER_DATA_ON_SERVER,
-  // 権限が無ければ beforeLoad が止めるので、loader は権限を持つ職員でだけ動く。
-  // viewer の型は null を含むが、root の beforeLoad がログインしていない職員をログインへ移すので、ここでは null にならない
   loader: ({ context: { api, queryClient, viewer } }) =>
-    viewer === null
-      ? undefined
-      : awaitOnServer([
-          queryClient.prefetchQuery(exportIssueListQueryOptions(api, viewer.facilityId)),
-        ]),
+    awaitOnServer([queryClient.prefetchQuery(exportIssueListQueryOptions(api, viewer.facilityId))]),
   head: () => ({ meta: [{ title: '確認が必要な予定 | buddy' }] }),
   component: CalendarReviewPage,
 })

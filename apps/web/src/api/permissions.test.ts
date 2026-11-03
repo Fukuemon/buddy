@@ -28,9 +28,15 @@ describe('hasPermission', () => {
 })
 
 describe('requirePermission', () => {
-  it('権限を持てば、何も投げない', () => {
-    const check = requirePermission('staff.manage')
-    expect(() => check({ context: { viewer: viewerWith(['staff.manage']) } })).not.toThrow()
+  it('権限を持てば、viewer を context に返す', () => {
+    const viewer = viewerWith(['staff.manage'])
+    expect(requirePermission('staff.manage')({ context: { viewer } })).toEqual({ viewer })
+  })
+
+  it('ログインしていなければ、PermissionDeniedError を投げる', () => {
+    expect(() => requirePermission('staff.manage')({ context: { viewer: null } })).toThrow(
+      PermissionDeniedError,
+    )
   })
 
   it('権限が無ければ、足りない権限を持つ PermissionDeniedError を投げる', () => {
@@ -40,8 +46,8 @@ describe('requirePermission', () => {
     )
   })
 
-  it("'none' は、権限の一覧が空でも投げない", () => {
-    expect(() => requirePermission('none')({ context: { viewer: viewerWith([]) } })).not.toThrow()
+  it("'none' は、権限の一覧が空でも投げず、何も返さない", () => {
+    expect(requirePermission('none')({ context: { viewer: viewerWith([]) } })).toBeUndefined()
   })
 
   it('宣言した権限を、route の宣言のテストが読めるように持つ', () => {
