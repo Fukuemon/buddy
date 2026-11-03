@@ -187,3 +187,24 @@ export const siteNavGroups = (viewer: Viewer | null): readonly SiteNavGroup[] =>
     ...(managesStaff ? [STAFF_GROUP, PATIENT_GROUP] : []),
   ]
 }
+
+const ALL_NAV_ITEMS: readonly SiteNavItem[] = [
+  SCHEDULE_ITEM,
+  ...SCHEDULE_MANAGER_ITEMS,
+  ...RECEIPT_GROUP.items,
+  ...STAFF_GROUP.items,
+  ...PATIENT_GROUP.items,
+]
+
+/**
+ * pathname の画面を、ナビゲーションのどの項目の href の下にあるかで返す。いちばん長く一致する href を選ぶ。
+ * `/patients/<ID>` は `/patients`、`/schedule/review` は `/schedule/review` になる。どの href の下にもなければ pathname を返す。
+ * 権限で出していない項目も選ぶので、SiteNav は出している項目だけと比べて aria-current を付ける。
+ */
+export const siteNavHrefOf = (pathname: string): string =>
+  ALL_NAV_ITEMS.map((item) => item.href)
+    .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
+    .reduce<string | undefined>(
+      (longest, href) => (longest === undefined || href.length > longest.length ? href : longest),
+      undefined,
+    ) ?? pathname

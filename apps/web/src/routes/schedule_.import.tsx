@@ -2,8 +2,6 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { requirePermission } from '#/api/permissions'
 import { STAFF_MANAGE } from '#/api/types'
-import { SiteLayoutContainer } from '#/components/layout/SiteLayoutContainer'
-import { CalendarReviewBadgeContainer } from '#/features/calendar/components/CalendarReviewBadgeContainer'
 import { CalendarImportContainer } from '#/features/calendar/components/CalendarImportContainer'
 import { calendarImportSearchSchema } from '#/features/calendar/schema/calendarImportSearch'
 
@@ -20,13 +18,9 @@ function CalendarImportPage() {
   const { staff } = Route.useSearch()
   const navigate = Route.useNavigate()
   return (
-    <SiteLayoutContainer current="/schedule/import" reviewBadge={<CalendarReviewBadgeContainer />}>
-      <main className="min-w-0 p-4 desktop:p-6">
-        <CalendarImportContainer
-          onStaffChange={(staffId) => navigate({ search: { staff: staffId }, replace: true })}
-          staffId={staff}
-        />
-      </main>
-    </SiteLayoutContainer>
+    <CalendarImportContainer
+      onStaffChange={(staffId) => navigate({ search: { staff: staffId }, replace: true })}
+      staffId={staff}
+    />
   )
 }

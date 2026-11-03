@@ -9,9 +9,10 @@ import { routeTree } from './routeTree.gen'
 // route の ID は、router を作るときに決まる。route を読むだけなので、context の中身は使わない
 const { routesById } = createRouter({ routeTree, context: {} as AppRouterContext })
 
-/** 画面を持つ route。ログインの前と失敗の画面（/auth/ の下）は、職員を求めないので外す。 */
+/** 画面を持つ route。root の route（画面の枠）と、ログインの前と失敗の画面（/auth/ の下）は、職員を求めないので外す。 */
 const screenRoutes = Object.values(routesById as unknown as Record<string, AnyRoute>).filter(
-  (route) => route.options.component !== undefined && !route.id.startsWith('/auth/'),
+  (route) =>
+    route.options.component !== undefined && !route.isRoot && !route.id.startsWith('/auth/'),
 )
 
 const declaredPermission = (route: AnyRoute): Permission | undefined =>

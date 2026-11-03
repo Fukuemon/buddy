@@ -15,6 +15,7 @@ export const Route = createFileRoute('/schedule')({
   // 表示する日のデフォルトを職員のデバイスの日付で決め、FullCalendar がデバイスの時間帯で描くため、サーバーで描画しない
   ssr: false,
   head: () => ({ meta: [{ title: '予定 | buddy' }] }),
+  staticData: { ownsSiteLayout: true },
   component: SchedulePage,
 })
 
