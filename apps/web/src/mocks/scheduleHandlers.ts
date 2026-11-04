@@ -10,6 +10,7 @@ import {
   exportOfIssue,
   mockExportIssues,
   mockExternalCalendars,
+  mockFacility,
   mockMe,
   mockServiceAccount,
   mockPatients,
@@ -31,6 +32,10 @@ export const createScheduleHandlers = (baseUrl: string) => {
     http.get(
       '/v1/me',
       withAuth(({ response }) => response(200).json(mockMe)),
+    ),
+    http.get(
+      '/v1/facilities/{facility_id}',
+      withAuth(({ response }) => response(200).json(mockFacility)),
     ),
     http.get(
       '/v1/schedule_types',
@@ -114,7 +119,12 @@ export const createScheduleHandlers = (baseUrl: string) => {
     http.get(
       '/v1/facilities/{facility_id}/schedules',
       withAuth(({ response }) =>
-        response(200).json({ schedules: createMockSchedules(new Date()), recurring_schedules: [] }),
+        response(200).json({
+          schedules: createMockSchedules(new Date()),
+          recurring_schedules: [],
+          source_mode: mockFacility.source_mode,
+          calendar_syncs: [],
+        }),
       ),
     ),
     http.get(

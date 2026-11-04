@@ -232,7 +232,14 @@ export const withAppRouter: Decorator = (Story, context: StoryContext) => (
 /** 一覧と 1 件の取得を、空の結果にしたフェイクの API を作る。 */
 export const emptyBuddyApi = (base: BuddyApi = createFakeBuddyApi()): BuddyApi => ({
   ...base,
-  schedules: { ...base.schedules, list: async () => [] },
+  schedules: {
+    ...base.schedules,
+    list: async (...args) => ({
+      ...(await base.schedules.list(...args)),
+      schedules: [],
+      needsReview: [],
+    }),
+  },
   staff: { ...base.staff, list: async () => [] },
   teams: { ...base.teams, list: async () => [] },
   patients: { ...base.patients, list: async () => [], listRecords: async () => [] },
@@ -253,6 +260,7 @@ export const suspendedStaffBuddyApi = (base: BuddyApi = createFakeBuddyApi()): B
 
 /** 全ての操作を operation にしたフェイクの API を作る。 */
 const buddyApiOf = (operation: () => Promise<never>): BuddyApi => ({
+  facilities: { get: operation },
   schedules: { list: operation, get: operation, create: operation, update: operation },
   staff: {
     list: operation,

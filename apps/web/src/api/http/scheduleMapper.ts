@@ -1,6 +1,7 @@
 import type { components } from '../generated/schedule'
 import {
   SCHEDULE_CATEGORIES,
+  type Facility,
   SCHEDULE_POLICY_CODES,
   type Schedule,
   type SchedulePolicy,
@@ -139,8 +140,17 @@ export const fromApiSchedule = (schedule: ApiSchedule): Schedule => {
     }
   }
   if (schedule.cancel !== null) result.cancel = { reason: schedule.cancel.reason }
+  if (schedule.source === 'google_calendar') result.fromGoogleCalendar = true
+  if (schedule.review_reason !== null) result.reviewReason = schedule.review_reason
   return result
 }
+
+/** API の事業所を、画面の事業所にする。 */
+export const fromApiFacility = ({ id, name, source_mode }: Schemas['Facility']): Facility => ({
+  id,
+  name,
+  sourceMode: source_mode,
+})
 
 const idOf = <T extends { id: string }>(items: T[], match: (item: T) => boolean, what: string) => {
   const found = items.find(match)

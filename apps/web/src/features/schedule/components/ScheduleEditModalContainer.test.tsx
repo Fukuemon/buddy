@@ -7,7 +7,7 @@ import type { AppRouterParameters } from '#/storybook/withAppRouter'
 
 import * as stories from './ScheduleEditModalContainer.stories'
 
-const { Cancelled, Forbidden, NotFound, SuspendedStaff } = composeStories(stories)
+const { Cancelled, Forbidden, GooglePrimary, NotFound, SuspendedStaff } = composeStories(stories)
 
 describe('ScheduleEditModalContainer', () => {
   afterEach(() => {
@@ -54,5 +54,13 @@ describe('ScheduleEditModalContainer', () => {
 
     await waitFor(() => expect(update).toHaveBeenCalledOnce())
     expect(update.mock.calls[0]?.[2]).toMatchObject({ staffId: 'staff-2' })
+  })
+
+  it('google_primary の事業所では、フォームの代わりに Google カレンダーで変更する案内を出す', async () => {
+    render(<GooglePrimary />)
+    expect(await screen.findByTestId('schedule-edit-google-primary')).toHaveTextContent(
+      'この事業所の予定は Google カレンダーで管理しています。',
+    )
+    expect(screen.queryByTestId('schedule-edit-submit')).not.toBeInTheDocument()
   })
 })

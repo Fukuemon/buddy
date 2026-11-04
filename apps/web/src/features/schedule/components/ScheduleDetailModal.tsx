@@ -2,7 +2,11 @@ import type { Patient, Schedule, Staff } from '#/api/types'
 import { Button, Modal } from '@buddy/ui'
 import { useId } from 'react'
 
-import { SCHEDULE_CATEGORY_LABEL, SCHEDULE_KIND_LABEL } from '../constants/scheduleLabels'
+import {
+  SCHEDULE_CATEGORY_LABEL,
+  SCHEDULE_KIND_LABEL,
+  SCHEDULE_REVIEW_REASON_LABEL,
+} from '../constants/scheduleLabels'
 import { formatDateTimeRange } from '../lib/dateTime'
 
 export type ScheduleDetailModalProps = {
@@ -32,6 +36,7 @@ const SectionHeading = ({ id, children }: { id: string; children: React.ReactNod
  * 日時を見出しにし、その下に種類と主訪問者（通常の予定では予定者）を、訪問の予定では訪問の情報を、最後にメモをセクションに分けて並べる。メモが空なら、メモのセクションを出さない。
  * 見出しと値は、全てのセクションで同じ 1 列の並びにし、値の列の位置をそろえる。
  * 下端の右に「閉じる」と編集のボタンをこの順に置く。onEdit を省くと編集のボタンを出さない。キャンセルした予定は、先頭にキャンセルの理由を出し、下端を出さない。
+ * Google カレンダーの予定（fromGoogleCalendar）は、先頭に Google カレンダーで変更する案内を出し、確認が必要な予定なら理由も出す。編集のボタンは呼ぶ側が省く。
  */
 export const ScheduleDetailModal = ({
   schedule,
@@ -70,6 +75,24 @@ export const ScheduleDetailModal = ({
       title="予定の詳細"
     >
       <div className="flex flex-col gap-6 px-5 py-4">
+        {schedule.fromGoogleCalendar === true && (
+          <p
+            className="rounded-8 border border-border px-4 py-3"
+            data-testid="schedule-detail-google-calendar"
+          >
+            この予定は Google カレンダーで変更してください。
+          </p>
+        )}
+        {schedule.reviewReason !== undefined && (
+          <p
+            className="rounded-8 bg-warning-surface px-4 py-3 text-warning"
+            data-testid="schedule-detail-review-reason"
+          >
+            <span className="font-bold">確認が必要な予定です。</span>
+            {SCHEDULE_REVIEW_REASON_LABEL[schedule.reviewReason]}。Google
+            カレンダーでタイトルか繰り返しの規則を直してください。
+          </p>
+        )}
         {schedule.cancel !== undefined && (
           <p
             className="rounded-8 bg-warning-surface px-4 py-3 text-warning"

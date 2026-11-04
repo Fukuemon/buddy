@@ -6,6 +6,7 @@ import type { Staff } from '#/api/types'
 import { addMinutesToTimeKey, nextDayPrefix, toDateKey, toTimeKey } from '../lib/dateTime'
 import type { ScheduleCalendarEvent } from '../lib/toCalendarEvents'
 import { CancelledMark } from './CancelledMark'
+import { NeedsReviewMark } from './NeedsReviewMark'
 
 const DAY_MINUTES = 24 * 60
 const SCROLL_HOUR = 6
@@ -157,6 +158,7 @@ export const StaffScheduleDayGrid = ({
                   >
                     <span className="block truncate">
                       {event.isCancelled && <CancelledMark />}
+                      {event.needsReview && <NeedsReviewMark scheduleId={event.id} />}
                       <span
                         className={event.isCancelled ? 'line-through' : undefined}
                         data-testid={

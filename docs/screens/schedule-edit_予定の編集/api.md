@@ -23,7 +23,12 @@
 | 訪問の区分 | 夜勤、緊急、入院 | `VisitDetail.categories` | `getSchedule` の `visit_info.visit_categories[].name`。保存では `visit_info.visit_category_ids` |
 | メモ | メモ | `Schedule.description` | `description` |
 | タイトル | 通常の予定のタイトル | `Schedule.title` | `title` |
+| Google カレンダーで管理していることの文 | 事業所が予定を Google カレンダーで管理しているか | `Facility.sourceMode` | `getFacility` の `Facility.source_mode` |
 
+- 事業所は `getFacility`（`GET /v1/facilities/{facility_id}`）で読み、web の `BuddyApi.facilities.get` が `Facility` にする。
+  - `source_mode` が `buddy_primary` と分かるか、`getFacility` が失敗したときだけ、`getSchedule` を呼ぶ。Google カレンダーの予定（Projection）には `getSchedule` が無く、404 になるためである。
+  - `source_mode` が `google_primary` なら、フォームの代わりに `SCHEDULE_GOOGLE_PRIMARY_MESSAGE` を出す。文は `apps/web/src/features/schedule/lib/errorMessage.ts` にある。
+  - 処理は `apps/web/src/features/schedule/components/ScheduleEditModalContainer.tsx` にある。
 - 保存の本文は、画面の値に、画面が持たない今の予定の値を足して作る。
   - 処理は `apps/web/src/api/http/scheduleMapper.ts` の `keepCurrentVisit` にある。
   - 訪問の予定どうしの保存では、同行者の `visit_info.companion_id` とタイトルの `title` を今の予定の値のまま送る。
@@ -71,6 +76,7 @@
 | 読み込みの失敗 | 「予定が見つかりません。」 | `getSchedule` か `getRecurringSchedule` が 404 |
 | 読み込みの失敗 | 「この予定を見る権限がありません。」 | `getSchedule` か `getRecurringSchedule` が 403。予定の `facility_id` がログインした職員の事業所と違う（web のサーバーが 403 にする） |
 | 読み込みの失敗 | 「予定を取得できませんでした。」 | `getSchedule` か `getRecurringSchedule` が 401、403、404 以外で失敗。`listUsers`、`listPatients`、`listServiceCodes` のどれかが 401 以外で失敗。API に届かない |
+| Google カレンダーで管理している | 「この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください。」 | API の失敗ではない。`getFacility` の `source_mode` が `google_primary` |
 | 権限が無い | 「この予定を編集する権限がありません。」 | API の失敗ではない。`getMe` の `policies` で、予定の職員の予定を編集できない |
 | 保存の失敗 | 「この操作をする権限がありません。」 | `updateSchedule` か `changeOccurrence` が 403 |
 | 保存の失敗 | 「入力の内容では予定を更新できません。内容を直してください。」 | `updateSchedule` か `changeOccurrence` が 400 |

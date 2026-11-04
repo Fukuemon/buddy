@@ -12,8 +12,13 @@ describe('createFakeBuddyApi', () => {
     const api = createFakeBuddyApi({ baseDate })
     const all = await api.schedules.list(MOCK_FACILITY_ID, range)
     const filtered = await api.schedules.list(MOCK_FACILITY_ID, { ...range, staffIds: ['staff-1'] })
-    expect(all.map((s) => s.id)).toEqual(['schedule-1', 'schedule-2', 'schedule-3', 'schedule-7'])
-    expect(filtered.map((s) => s.id)).toEqual(['schedule-1'])
+    expect(all.schedules.map((s) => s.id)).toEqual([
+      'schedule-1',
+      'schedule-2',
+      'schedule-3',
+      'schedule-7',
+    ])
+    expect(filtered.schedules.map((s) => s.id)).toEqual(['schedule-1'])
   })
 
   it('翌日の期間に、前の日に始まり翌日に終わる予定を返す', async () => {
@@ -22,7 +27,7 @@ describe('createFakeBuddyApi', () => {
       from: '2026-10-21T00:00:00+09:00',
       to: '2026-10-22T00:00:00+09:00',
     })
-    expect(nextDay.map((s) => s.id)).toContain('schedule-7')
+    expect(nextDay.schedules.map((s) => s.id)).toContain('schedule-7')
   })
 
   it('キャンセルした予定は includeCancelled のときだけ返し、更新を 409 で拒む', async () => {
@@ -31,7 +36,7 @@ describe('createFakeBuddyApi', () => {
       ...range,
       includeCancelled: true,
     })
-    expect(withCancelled.find((s) => s.id === 'schedule-6')?.cancel).toEqual({
+    expect(withCancelled.schedules.find((s) => s.id === 'schedule-6')?.cancel).toEqual({
       reason: '利用者の体調不良',
     })
     const cancelled = await api.schedules.get(MOCK_FACILITY_ID, 'schedule-6')
@@ -62,5 +67,37 @@ describe('createFakeBuddyApi', () => {
       'status',
       404,
     )
+  })
+
+  it('buddy_primary の事業所は、同期の状況と確認が必要な予定を返さない', async () => {
+    const api = createFakeBuddyApi({ baseDate })
+    await expect(api.facilities.get(MOCK_FACILITY_ID)).resolves.toMatchObject({
+      sourceMode: 'buddy_primary',
+    })
+    const list = await api.schedules.list(MOCK_FACILITY_ID, range)
+    expect(list).toMatchObject({ sourceMode: 'buddy_primary', calendarSyncs: [], needsReview: [] })
+  })
+
+  it('google_primary の事業所は、Google カレンダーの予定と同期の状況を返し、予定の取得と書き込みを拒む', async () => {
+    const api = createFakeBuddyApi({ baseDate, sourceMode: 'google_primary' })
+    await expect(api.facilities.get(MOCK_FACILITY_ID)).resolves.toMatchObject({
+      sourceMode: 'google_primary',
+    })
+    const list = await api.schedules.list(MOCK_FACILITY_ID, range)
+    expect(list.schedules.every((s) => s.fromGoogleCalendar === true)).toBe(true)
+    expect(list.needsReview.map((s) => s.reviewReason)).toEqual([
+      'patient_not_found',
+      'service_code_not_found',
+      'recurrence_unsupported',
+    ])
+    expect(list.calendarSyncs.map((s) => s.last_status)).toEqual(['succeeded', 'failed', 'never'])
+    const [first] = list.schedules
+    await expect(api.schedules.get(MOCK_FACILITY_ID, first.id)).rejects.toMatchObject({
+      status: 404,
+    })
+    await expect(api.schedules.update(MOCK_FACILITY_ID, first.id, first)).rejects.toMatchObject({
+      status: 409,
+      code: 'google_primary',
+    })
   })
 })

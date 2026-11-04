@@ -22,6 +22,7 @@ export const createBffBuddyApi = (callBff: CallBff = (data) => callBffFn({ data 
     return method as BffMethod<Op>
   }
   return {
+    facilities: { get: call('facilities.get') },
     schedules: {
       list: call('schedules.list'),
       get: call('schedules.get'),

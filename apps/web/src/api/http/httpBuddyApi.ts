@@ -11,6 +11,7 @@ import {
   previousDate,
 } from './recurrence'
 import {
+  fromApiFacility,
   fromApiPatient,
   fromApiSchedule,
   fromApiStaff,
@@ -55,6 +56,7 @@ const expectOk = async (promise: Promise<Result<unknown>>): Promise<void> => {
  * 予定の API を openapi-fetch で呼ぶ BuddyApi を作る。トークンは付けない。
  *
  * schedules.list は、繰り返しの予定を期間の回に分け、occurrenceId の ID を持つ単発の予定として返す。
+ * 確認が必要な予定（needsReview）は期間で絞らず、職員の絞り込みだけを当てる。同期の状況も職員で絞る。
  * キャンセルした予定は、includeCancelled が true のときだけ cancel 付きで返す。
  * キャンセルした予定は画面で変換できなければ飛ばし、一覧の全体を失敗にしない。
  * schedules.get と schedules.update は、回の ID を受けると、繰り返しの予定のその回を読み、その回を置き換える。
@@ -87,13 +89,28 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
   }
 
   return {
+    facilities: {
+      get: async (facilityId) =>
+        fromApiFacility(
+          await unwrap(
+            client.GET('/v1/facilities/{facility_id}', {
+              params: { path: { facility_id: facilityId } },
+            }),
+          ),
+        ),
+    },
     schedules: {
       list: async (facilityId, { from, to, staffIds, includeCancelled }) => {
         const fromTime = Date.parse(from)
         const toTime = Date.parse(to)
         const dateFrom = splitDateTime(from).date
         const dateTo = splitDateTime(new Date(toTime - 1).toISOString()).date
-        const { schedules, recurring_schedules: recurring } = await unwrap(
+        const {
+          schedules,
+          recurring_schedules: recurring,
+          source_mode: sourceMode,
+          calendar_syncs: calendarSyncs,
+        } = await unwrap(
           client.GET('/v1/facilities/{facility_id}/schedules', {
             params: {
               path: { facility_id: facilityId },
@@ -101,7 +118,9 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
             },
           }),
         )
-        return [
+        const isSelectedStaff = (staffId: string) =>
+          staffIds === undefined || staffIds.length === 0 || staffIds.includes(staffId)
+        const all = [
           ...schedules,
           ...recurring.flatMap((recurringSchedule) =>
             expandRecurring(
@@ -121,14 +140,17 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
               return []
             }
           })
-          .filter(
+          .filter((schedule) => isSelectedStaff(schedule.staffId))
+        return {
+          schedules: all.filter(
             (schedule) =>
-              Date.parse(schedule.endsAt) > fromTime &&
-              Date.parse(schedule.startsAt) < toTime &&
-              (staffIds === undefined ||
-                staffIds.length === 0 ||
-                staffIds.includes(schedule.staffId)),
-          )
+              Date.parse(schedule.endsAt) > fromTime && Date.parse(schedule.startsAt) < toTime,
+          ),
+          // 繰り返しの規則を写せない予定は最初の回の日時で返り、期間の外のことがあるので、期間で絞らない
+          needsReview: all.filter((schedule) => schedule.reviewReason !== undefined),
+          sourceMode,
+          calendarSyncs: calendarSyncs.filter((sync) => isSelectedStaff(sync.staff_id)),
+        }
       },
       get: async (facilityId, scheduleId) => {
         const occurrence = parseOccurrenceId(scheduleId)

@@ -236,6 +236,8 @@ export const createMockSchedules = (base: Date): Schemas['Schedule'][] => {
     recurring_schedule_id: null,
     visit_info: null,
     cancel: null,
+    source: 'buddy',
+    review_reason: null,
     ...stamps,
     ...detail,
   })
@@ -285,6 +287,109 @@ export const createMockSchedules = (base: Date): Schemas['Schedule'][] => {
   ]
 }
 
+/** ダミーの事業所。予定の正本は buddy（buddy_primary）である。 */
+export const mockFacility: Schemas['Facility'] = {
+  id: MOCK_FACILITY_ID,
+  name: 'buddy 訪問看護ステーション',
+  source_mode: 'buddy_primary',
+  ...stamps,
+}
+
+/**
+ * google_primary の事業所で、同期が写した Google カレンダーの予定（Projection）のダミーを作る。
+ * createMockSchedules のキャンセルしていない予定を Google カレンダーの予定にし、確認が必要な予定を 3 件足す。
+ * 繰り返しの規則を写せない予定（recurrence_unsupported）は、基準日の 40 日前を最初の回にした 1 件にし、表示の期間の外に置く。
+ */
+export const createMockProjectionSchedules = (base: Date): Schemas['Schedule'][] => {
+  const fromGoogle = (schedule: Schemas['Schedule']): Schemas['Schedule'] => ({
+    ...schedule,
+    id: `gcal-${schedule.id}`,
+    recurring_schedule_id: null,
+    visit_info:
+      schedule.visit_info === null
+        ? null
+        : { ...schedule.visit_info, id: `gcal-${schedule.visit_info.id}` },
+    source: 'google_calendar',
+  })
+  const needsReview = (
+    id: string,
+    days: number,
+    staffIndex: number,
+    times: [string, string],
+    title: string,
+    reason: Schemas['ScheduleReviewReason'],
+  ): Schemas['Schedule'] => ({
+    ...fromGoogle(createMockSchedules(base)[0]),
+    id,
+    schedule_type_id: 'type-normal',
+    schedule_type: '通常',
+    date: dayAfter(base, days),
+    start_time: times[0],
+    end_time: times[1],
+    staff_id: mockStaffList[staffIndex].id,
+    staff_name: mockStaffList[staffIndex].username,
+    title,
+    visit_info: null,
+    review_reason: reason,
+  })
+  return [
+    ...createMockSchedules(base)
+      .filter((schedule) => schedule.cancel === null)
+      .map(fromGoogle),
+    needsReview('gcal-review-1', 0, 1, ['15:00', '15:29'], '佐藤 花子 訪看I2', 'patient_not_found'),
+    needsReview(
+      'gcal-review-2',
+      1,
+      0,
+      ['10:00', '10:59'],
+      '加藤 春子 訪問',
+      'service_code_not_found',
+    ),
+    needsReview(
+      'gcal-review-3',
+      -40,
+      2,
+      ['09:00', '09:59'],
+      '定例の訪問',
+      'recurrence_unsupported',
+    ),
+  ]
+}
+
+/**
+ * google_primary の事業所の、カレンダーの同期の状況のダミーを作る。
+ * 青木 一郎は 1 分前に同期でき、石川 二葉は 30 分前から同期に失敗し、上田 三奈はまだ同期していない。
+ */
+export const createMockCalendarSyncs = (now: Date): Schemas['CalendarSyncStatus'][] => {
+  const minutesAgo = (minutes: number) => new Date(now.getTime() - minutes * 60_000).toISOString()
+  return [
+    {
+      external_calendar_id: 'calendar-1',
+      staff_id: 'staff-1',
+      staff_name: '青木 一郎',
+      last_status: 'succeeded',
+      last_succeeded_at: minutesAgo(1),
+      last_error: null,
+    },
+    {
+      external_calendar_id: 'calendar-2',
+      staff_id: 'staff-2',
+      staff_name: '石川 二葉',
+      last_status: 'failed',
+      last_succeeded_at: minutesAgo(30),
+      last_error: 'unavailable',
+    },
+    {
+      external_calendar_id: 'calendar-3',
+      staff_id: 'staff-3',
+      staff_name: '上田 三奈',
+      last_status: 'never',
+      last_succeeded_at: null,
+      last_error: null,
+    },
+  ]
+}
+
 const nameOf = <T extends { id: string }>(rows: T[], id: string, name: (row: T) => string) => {
   const row = rows.find((r) => r.id === id)
   return row ? name(row) : ''
@@ -330,6 +435,8 @@ export const scheduleFromRequest = (
         }
       : null,
     cancel: null,
+    source: 'buddy',
+    review_reason: null,
     ...stamps,
   }
 }

@@ -63,6 +63,7 @@ const decision = z.object({
 
 /** 操作ごとの引数の形。先頭は事業所で、BFF がセッションの事業所に替える。 */
 const ARGS = {
+  'facilities.get': z.tuple([id]),
   'schedules.list': z.tuple([
     id,
     z.object({

@@ -71,6 +71,8 @@ export const occurrenceOf = (
   recurring_schedule_id: recurringSchedule.id,
   visit_info: recurringSchedule.visit_info,
   cancel: null,
+  source: 'buddy',
+  review_reason: null,
   created_at: recurringSchedule.created_at,
   updated_at: recurringSchedule.updated_at,
 })

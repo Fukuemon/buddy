@@ -25,6 +25,13 @@ export const scheduleListQueryOptions = (
     queryFn: () => api.schedules.list(facilityId, params),
   })
 
+/** 事業所を読む query。予定の正本（sourceMode）で、予定を作る操作と編集の操作を出すかを決める。 */
+export const facilityQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
+  queryOptions({
+    queryKey: queryKeys.facilityDetail(facilityId),
+    queryFn: () => api.facilities.get(facilityId),
+  })
+
 /** 予定を読む query。予定が無ければ status が 404 の ApiError を error に持つ。 */
 export const scheduleQueryOptions = (
   api: BuddyApi,

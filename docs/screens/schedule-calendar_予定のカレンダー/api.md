@@ -20,6 +20,15 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 予定 | キャンセルした予定の印と取り消し線 | `Schedule.cancel` | `listSchedules` の `Schedule.cancel` |
 | 職員の列 | 職員の名前 | `Staff.name` | `listUsers` の `Staff.username` |
 | 職員の予定の列 | 職員 | `Staff.id` | `listUsers` の `Staff.id` |
+| 予定を作成、空いた時間、時間の枠、Google カレンダーの案内 | 事業所が予定を Google カレンダーで管理しているか | `ScheduleList.sourceMode`。読み直している間は `Facility.sourceMode` | `listSchedules` の `source_mode`、`getFacility` の `Facility.source_mode` |
+| 同期の警告、同期の警告の行 | 職員の名前 | `CalendarSyncStatus.staff_name` | `listSchedules` の `calendar_syncs[].staff_name` |
+| 同期の警告、同期の警告の行 | 状態と、最後に同期できた時刻 | `CalendarSyncStatus.last_status`、`CalendarSyncStatus.last_succeeded_at` | `listSchedules` の `calendar_syncs[].last_status`、`last_succeeded_at` |
+| 同期の警告の行 | 行の区別 | `CalendarSyncStatus.external_calendar_id` | `listSchedules` の `calendar_syncs[].external_calendar_id` |
+| 確認が必要な予定の通知、通知の予定 | 確認が必要な予定 | `ScheduleList.needsReview` | `listSchedules` の `schedules` と `recurring_schedules` のうち、`review_reason` が `null` でない予定 |
+| 通知の予定 | 日時 | `Schedule.startsAt`、`Schedule.endsAt` | `listSchedules` の `Schedule.date`、`start_time`、`end_time` |
+| 通知の予定 | 職員の名前 | `Schedule.staffId` を、職員の一覧（`Staff.name`）で引く | `Schedule.staff_id` を、`listUsers` の `Staff.username` で引く |
+| 通知の予定、要確認の印 | 理由 | `Schedule.reviewReason` | `listSchedules` の `Schedule.review_reason` |
+| 予定 | Google カレンダーの予定か | `Schedule.fromGoogleCalendar` | `listSchedules` の `Schedule.source` が `google_calendar` |
 
 - 予定の一覧の取得は、`listSchedules`（`GET /v1/facilities/{facility_id}/schedules`）に当たる。
   - web の画面は、期間を `ScheduleListParams` の `from`、`to` の日時で、職員を `staffIds` で渡す。
@@ -44,6 +53,29 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 - 予定の一覧は、閲覧の権限で見てよい職員の予定だけを返す。
   - 自分の予定は常に返す。
   - 流れは [予定の管理の Design Doc の認証から事業所の確認までの流れ](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#認証から事業所の確認までの流れ) にある。
+
+## Google カレンダーで予定を管理する事業所
+
+- `source_mode` が `google_primary` の事業所では、`listSchedules` は、同期が写した Google カレンダーの予定（Projection）を返す。
+  - 予定の `source` は `google_calendar` になり、web のサーバーは `Schedule.fromGoogleCalendar` を `true` にする。
+  - Google カレンダーの繰り返しの予定は、API が期間の回に分けて単発の予定で返し、`recurring_schedules` は空である。
+  - buddy の繰り返しの規則に写せない予定は、最初の回の日時の 1 件で、`review_reason` が `recurrence_unsupported` になる。
+  - `recurrence_unsupported` のほかの `review_reason` を持つ予定は、`visit_info` が `null` の通常の予定で、`title` に Google カレンダーのタイトルが入る。
+  - 流れは [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md) にある。
+- web のサーバーは、`listSchedules` のレスポンスを `ScheduleList` にする。
+  - `schedules` は、期間に重なり、職員の絞り込みに当たる予定である。
+  - `needsReview` は、`review_reason` を持つ予定を、期間で絞らず、職員の絞り込みだけで絞ったものである。
+  - `calendarSyncs` は、`calendar_syncs` を `staff_id` で職員の絞り込みに当てたものである。
+  - 処理は `apps/web/src/api/http/httpBuddyApi.ts` の `schedules.list` にある。
+- `calendar_syncs` は、ログインした職員が見てよい職員に結び付けた、外していないカレンダーの分を返す。
+  - `buddy_primary` の事業所では空である。
+  - 最新でないとみなす時間は画面が決め、`apps/web/src/features/schedule/lib/calendarSync.ts` の `CALENDAR_SYNC_STALE_MS`（10 分）にある。
+  - 状態は `calendarSyncProblemsOf` が、`last_status` が `failed`、`last_succeeded_at` が `null`、`last_succeeded_at` が 10 分より前の順に当てる。
+- 理由の文は、`apps/web/src/features/schedule/constants/scheduleLabels.ts` の `SCHEDULE_REVIEW_REASON_LABEL` で決める。
+- 事業所は `getFacility`（`GET /v1/facilities/{facility_id}`）で読み、web の `BuddyApi.facilities.get` が `Facility` にする。
+  - 画面は、`ScheduleList.sourceMode` があればそれを、無ければ `Facility.sourceMode` を使う。日付を移って一覧を読み直す間に、「予定を作成」が出たり消えたりしないためである。
+  - どちらも無い間は、予定を作る操作を出さない。
+- `createSchedule` は、`google_primary` の事業所では 409 の `google_primary` で拒む。
 
 ## 権限の出し分け
 
@@ -79,5 +111,7 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 - 4xx の失敗は取り直さず、すぐに出す。
   - ほかの失敗は、3 回まで取り直してから出す。
   - 取り直すかは `apps/web/src/appContext.ts` の `shouldRetryQuery` が決める。
+- 事業所（`getFacility`）の失敗も、この状態にしない。
+  - 予定の一覧を読めれば、その `source_mode` で予定を作る操作と通知を出し分ける。
 - チームと利用者の一覧（`listTeams`、`listPatients`）の失敗は、この状態にしない。
   - 職員の絞り込みはチームを出さず、訪問の予定のタイトルは「利用者不明 訪問」になる。

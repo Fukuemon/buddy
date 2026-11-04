@@ -11,6 +11,8 @@ export type ScheduleCalendarEvent = {
   color: string
   /** キャンセルした予定。面を薄くし、取り消し線と「キャンセル」の印で出す。 */
   isCancelled: boolean
+  /** 確認が必要な Google カレンダーの予定。「要確認」の印を付けて出す。 */
+  needsReview: boolean
 }
 
 const CATEGORICAL_COLOR_COUNT = 10
@@ -46,5 +48,6 @@ export const toCalendarEvents = (
     end: schedule.endsAt,
     color: colorByStaff.get(schedule.staffId) ?? 'var(--buddy-color-text-secondary)',
     isCancelled: schedule.cancel !== undefined,
+    needsReview: schedule.reviewReason !== undefined,
   }))
 }

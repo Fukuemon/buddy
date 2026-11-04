@@ -18,6 +18,7 @@
   --wf-primary-surface: var(--buddy-color-primary-surface);
   --wf-danger: var(--buddy-color-danger);
   --wf-danger-surface: var(--buddy-color-danger-surface);
+  --wf-warning: var(--buddy-color-warning);
   --wf-warning-surface: var(--buddy-color-warning-surface);
   --wf-overlay: var(--buddy-color-overlay);
   /* チームの色。チームが持つ値（blue など）で塗る */

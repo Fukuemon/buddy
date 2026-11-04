@@ -5,6 +5,7 @@ import {
   addMinutesToTimeKey,
   combineDateTime,
   diffMinutes,
+  formatDateTime,
   formatDateTimeRange,
   toDateKey,
 } from './dateTime'
@@ -37,6 +38,10 @@ describe('dateTime', () => {
     expect(formatDateTimeRange(new Date(2026, 9, 20, 9, 0), new Date(2026, 9, 20, 9, 29))).toBe(
       '2026年10月20日（火） 09:00〜09:29',
     )
+  })
+
+  it('日時を、日付、曜日、時刻の形にする', () => {
+    expect(formatDateTime(new Date(2026, 9, 20, 9, 5))).toBe('2026年10月20日（火） 09:05')
   })
 
   it('終了が翌日なら、終了の時刻に「翌」を付ける', () => {

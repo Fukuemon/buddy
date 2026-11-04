@@ -7,7 +7,7 @@ import { mockServiceCodes } from '#/mocks/scheduleData'
 
 import * as stories from './ScheduleCreateModalContainer.stories'
 
-const { FromOnLeaveStaffSlot, FromSlot, SelfEditOnly, Visit, WithSuspendedStaff } =
+const { FromOnLeaveStaffSlot, FromSlot, GooglePrimary, SelfEditOnly, Visit, WithSuspendedStaff } =
   composeStories(stories)
 
 describe('ScheduleCreateModalContainer', () => {
@@ -109,5 +109,13 @@ describe('ScheduleCreateModalContainer', () => {
     await waitFor(() =>
       expect(screen.getByTestId('schedule-field-staff')).toHaveTextContent('石川 二葉'),
     )
+  })
+
+  it('google_primary の事業所では、フォームの代わりに Google カレンダーで作る案内を出す', async () => {
+    render(<GooglePrimary />)
+    expect(await screen.findByTestId('schedule-new-google-primary')).toHaveTextContent(
+      'この事業所の予定は Google カレンダーで管理しています。',
+    )
+    expect(screen.queryByTestId('schedule-create-submit')).not.toBeInTheDocument()
   })
 })

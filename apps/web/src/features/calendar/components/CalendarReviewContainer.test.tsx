@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './CalendarReviewContainer.stories'
 
-const { AcceptFailed, Default, Empty, LoadError } = composeStories(stories)
+const { AcceptFailed, Default, Empty, GooglePrimary, LoadError } = composeStories(stories)
 
 /**
  * 一覧の行を押し、予定の確認のダイアログを開く。
@@ -37,7 +37,7 @@ describe('CalendarReviewContainer', () => {
   })
 
   it('行を押すと、予定と理由と、その予定で選べる操作をダイアログに出す', async () => {
-    render(<Default />)
+    render(<GooglePrimary />)
     const dialog = await openRow('calendar-review-row-schedule-schedule-1')
     expect(within(dialog).getByTestId('calendar-review-dialog-datetime')).toHaveTextContent(
       '2026/11/04（水）09:00〜09:29',
@@ -61,6 +61,13 @@ describe('CalendarReviewContainer', () => {
     )
   })
 
+  it('buddy_primary の事業所では、合わせられる予定にも Google の内容に合わせるを出さない', async () => {
+    render(<Default />)
+    const dialog = await openRow('calendar-review-row-schedule-schedule-1')
+    expect(within(dialog).queryByTestId('calendar-review-accept-export-1')).toBeNull()
+    expect(within(dialog).getByTestId('calendar-review-rewrite-export-1')).toBeInTheDocument()
+  })
+
   it('繰り返しの予定には、予定を開くを出さない', async () => {
     render(<Default />)
     const dialog = await openRow('calendar-review-row-recurring-recurring-1')
@@ -68,7 +75,7 @@ describe('CalendarReviewContainer', () => {
   })
 
   it('確認してから Google の内容に合わせると、一覧から消える', async () => {
-    render(<Default />)
+    render(<GooglePrimary />)
     const detail = await openRow('calendar-review-row-schedule-schedule-1')
     await userEvent.click(within(detail).getByTestId('calendar-review-accept-export-1'))
     const dialog = screen.getByTestId('calendar-accept-dialog')

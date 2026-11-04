@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
+import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import {
   failingBuddyApi,
   pendingBuddyApi,
@@ -58,3 +59,11 @@ export const Forbidden: Story = {
 }
 
 export const NotFound: Story = { parameters: route({ url: '/schedule/missing/edit' }) }
+
+/** Google カレンダーを予定の正本にする事業所で URL から開いた。フォームの代わりに、Google カレンダーで変更する案内を出す。 */
+export const GooglePrimary: Story = {
+  parameters: route({
+    url: '/schedule/gcal-schedule-1/edit',
+    api: createFakeBuddyApi({ sourceMode: 'google_primary' }),
+  }),
+}

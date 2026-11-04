@@ -65,3 +65,7 @@ export const nextDayPrefix = (start: Date, end: Date) =>
  */
 export const formatDateTimeRange = (start: Date, end: Date) =>
   `${start.getFullYear()}年${start.getMonth() + 1}月${start.getDate()}日（${WEEKDAYS[start.getDay()]}） ${toTimeKey(start)}〜${nextDayPrefix(start, end)}${toTimeKey(end)}`
+
+/** 日時を、デバイスの時間帯で `2026年10月20日（火） 09:00` の形にする。 */
+export const formatDateTime = (date: Date) =>
+  `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日（${WEEKDAYS[date.getDay()]}） ${toTimeKey(date)}`

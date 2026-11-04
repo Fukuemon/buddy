@@ -124,9 +124,10 @@ buddy の予定のうち、Google カレンダーと食い違った予定を確�
 
 === "予定の確認"
 
-    一覧の行を押したとき。  
+    予定を Google カレンダーで管理する事業所で、一覧の行を押したとき。  
     モックは、1 行目の、buddy と Google カレンダーの両方で変わった単発の予定を描く。  
-    ほかの行は、理由と、出す操作だけが違う。
+    ほかの行は、理由と、出す操作だけが違う。  
+    予定を buddy で管理する事業所では、「予定を buddy で管理する事業所の予定の確認」の状態になる。
 
     <iframe class="mock" title="確認が必要な予定の、予定の確認" src="mocks/05-detail.html"></iframe>
     <a class="mock-open" href="mocks/05-detail.html" target="_blank">別タブで開く</a>
@@ -306,6 +307,28 @@ buddy の予定のうち、Google カレンダーと食い違った予定を確�
     | 5 | ラベル | 権限が無いことの説明 | [権限が無いことの説明](#権限が無いことの説明) |
     | 6 | ボタン | 予定のカレンダーへ | [予定のカレンダーへ](#予定のカレンダーへ) |
     | 7 | ボタン | メニュー | [メニュー](#メニュー) |
+
+=== "予定を buddy で管理する事業所の予定の確認"
+
+    予定を buddy で管理する事業所で、一覧の行を押したとき。  
+    この事業所では Google カレンダーの内容に合わせられないので、Google の内容に合わせるを出さない。  
+    事業所がどちらで予定を管理するかが分かるまでも、この状態と同じく出さない。  
+    モックは、「予定の確認」の状態と同じ、1 行目の予定を描く。
+
+    <iframe class="mock" title="確認が必要な予定の、予定を buddy で管理する事業所の予定の確認" src="mocks/15-detail-buddy-primary.html"></iframe>
+    <a class="mock-open" href="mocks/15-detail-buddy-primary.html" target="_blank">別タブで開く</a>
+
+    | 番号 | 種別 | 要素名 | 仕様 |
+    | --- | --- | --- | --- |
+    | 1 | 覆い | 覆い | [覆い](#覆い) |
+    | 2 | ダイアログ | 予定の確認のダイアログ | [予定の確認のダイアログ](#予定の確認のダイアログ) |
+    | 3 | ボタン | 閉じる | [閉じる](#閉じる) |
+    | 4 | ラベル | ダイアログの予定の日時 | [ダイアログの予定の日時](#ダイアログの予定の日時) |
+    | 5 | ラベル | ダイアログの職員 | [ダイアログの職員](#ダイアログの職員) |
+    | 6 | ラベル | ダイアログの最後に変わった日時 | [ダイアログの最後に変わった日時](#ダイアログの最後に変わった日時) |
+    | 7 | ラベル | ダイアログの理由 | [ダイアログの理由](#ダイアログの理由) |
+    | 8 | ボタン | 予定を開く | [予定を開く](#予定を開く) |
+    | 9 | ボタン | buddy の内容で書き直す | [buddy の内容で書き直す](#buddy-の内容で書き直す) |
 
 ## メニュー
 
@@ -753,10 +776,13 @@ Google カレンダーで職員が変えた予定は、数分のうちに buddy 
 
 **活性条件**: 常に活性
 
-**表示条件**: 予定の確認のダイアログで、単発の予定が buddy と Google カレンダーの両方で変わったか、Google カレンダーで予定が見つからないとき。  
-繰り返しの予定、buddy でキャンセルした予定、書けなかった予定、buddy の予定として取り込めない予定には出さない
+**表示条件**: 事業所が予定を Google カレンダーで管理していて、予定の確認のダイアログで、単発の予定が buddy と Google カレンダーの両方で変わったか、Google カレンダーで予定が見つからないとき。  
+繰り返しの予定、buddy でキャンセルした予定、書けなかった予定、buddy の予定として取り込めない予定には出さない。  
+予定を buddy で管理する事業所では、どの予定にも出さず、合わせるダイアログも開けない。  
+その事業所では、Google カレンダーの内容に合わせる操作を受け付けないためである。  
+事業所がどちらで予定を管理するかが分かるまでも出さない
 
-**カタログ**: [CalendarReviewDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarreviewdialog--default)
+**カタログ**: [CalendarReviewDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarreviewdialog--default)、[CalendarReviewContainer の GooglePrimary](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarreviewcontainer--google-primary)、[CalendarReviewContainer の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarreviewcontainer--default)
 
 ### インタラクション
 
@@ -1122,6 +1148,8 @@ buddy での変更が消えるので、データを失う操作の赤い色に�
 - 権限があれば、確認が必要な予定を読み終えるまで、「読み込み中」の状態にする。
   - 1 件以上あれば「一覧」、1 件も無ければ「空」の状態にする。
   - 読めなかったときは、「読み込みの失敗」の状態にする。
+- 同時に事業所を読み、予定を Google カレンダーで管理する事業所のときだけ、予定の確認のダイアログに [Google の内容に合わせる](#google-の内容に合わせる) を出す。
+  - 事業所を読み終える前と、読めなかったときは出さない。
 - URL の search params は読まない。
 
 ### 変えた後の表示
