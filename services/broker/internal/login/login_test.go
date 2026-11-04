@@ -2,6 +2,7 @@ package login_test
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -28,6 +29,8 @@ type fakeStaff struct {
 	members map[string]staff.Member
 	links   []staff.UpstreamAccount
 	finds   int
+	// gets は、Get を呼んだ回数である。
+	gets int
 	// beforeLink が nil でなければ、Link の前に呼ぶ。同時のログインが先に結び付けた場面を作る
 	beforeLink func(f *fakeStaff, staffID string, a staff.UpstreamAccount)
 }
@@ -44,6 +47,7 @@ func (f *fakeStaff) FindByEmail(_ context.Context, email string) ([]staff.Member
 }
 
 func (f *fakeStaff) Get(_ context.Context, id string) (staff.Member, error) {
+	f.gets++
 	m, ok := f.members[id]
 	if !ok {
 		return staff.Member{}, staff.ErrNotFound
@@ -75,12 +79,18 @@ type fakeHydra struct {
 	login    hydra.LoginRequest
 	loginErr error
 	// loginReads は、LoginRequest を呼んだ回数である。
-	loginReads  int
-	consent     hydra.ConsentRequest
-	consentErr  error
-	accepted    *hydra.AcceptLogin
-	consented   *hydra.AcceptConsent
-	rejected    bool
+	loginReads int
+	consent    hydra.ConsentRequest
+	consentErr error
+	// consentReads は、ConsentRequest を呼んだ回数である。
+	consentReads int
+	// logouts は、AcceptLogout を呼んだ回数である。
+	logouts   int
+	accepted  *hydra.AcceptLogin
+	consented *hydra.AcceptConsent
+	rejected  bool
+	// rejects は、RejectLogin を呼んだ回数である。
+	rejects     int
 	rejection   hydra.Rejection
 	rejectedCon bool
 	logoutErr   error
@@ -99,11 +109,13 @@ func (f *fakeHydra) AcceptLogin(_ context.Context, _ string, b hydra.AcceptLogin
 
 func (f *fakeHydra) RejectLogin(_ context.Context, _ string, b hydra.Rejection) (string, error) {
 	f.rejected = true
+	f.rejects++
 	f.rejection = b
 	return "http://hydra/login-rejected", nil
 }
 
 func (f *fakeHydra) ConsentRequest(context.Context, string) (hydra.ConsentRequest, error) {
+	f.consentReads++
 	return f.consent, f.consentErr
 }
 
@@ -118,6 +130,7 @@ func (f *fakeHydra) RejectConsent(context.Context, string, hydra.Rejection) (str
 }
 
 func (f *fakeHydra) AcceptLogout(_ context.Context, challenge string) (string, error) {
+	f.logouts++
 	if f.logoutErr != nil {
 		return "", f.logoutErr
 	}
@@ -782,6 +795,69 @@ func TestLogout(t *testing.T) {
 	e.hydra.logoutErr = errors.New("hydra down")
 	if rec := e.do(httptest.NewRequest(http.MethodGet, "/logout?logout_challenge=ch", nil)); rec.Code != http.StatusBadGateway || !strings.Contains(rec.Body.String(), "ログアウトできませんでした") {
 		t.Errorf("Hydra の失敗の code = %d, body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+// TestCallbackConsentLogoutRateLimit は、上流の IdP のコールバックと同意とログアウトの画面も、ログインの画面と同じ
+// 送信元の IP アドレスごとの上限で数え、超えた試行に Hydra と職員を呼ばずに失敗の画面を 429 で出すことを確認する。
+// ブローカーは cookie broker_login に署名しないので、送る側が cookie とクエリの state を合わせて書ける。
+func TestCallbackConsentLogoutRateLimit(t *testing.T) {
+	forged := func(target string) *http.Request {
+		req := httptest.NewRequest(http.MethodGet, target, nil)
+		raw := `{"challenge":"x","staff_id":"x","attempt":{"state":"s"}}`
+		req.AddCookie(&http.Cookie{Name: "broker_login", Value: base64.RawURLEncoding.EncodeToString([]byte(raw))})
+		return req
+	}
+	tests := []struct {
+		name  string
+		req   func() *http.Request
+		page  string
+		calls func(e *env) int
+	}{
+		{
+			name:  "上流の IdP のエラーのコールバック",
+			req:   func() *http.Request { return forged("/login/callback?state=s&error=a") },
+			page:  "ログインできませんでした",
+			calls: func(e *env) int { return e.hydra.rejects + e.staff.gets },
+		},
+		{
+			name:  "DB にない職員のコールバック",
+			req:   func() *http.Request { return forged("/login/callback?state=s&code=code-1") },
+			page:  "ログインできませんでした",
+			calls: func(e *env) int { return e.hydra.rejects + e.staff.gets },
+		},
+		{
+			name:  "同意",
+			req:   func() *http.Request { return httptest.NewRequest(http.MethodGet, "/consent?consent_challenge=x", nil) },
+			page:  "ログインできませんでした",
+			calls: func(e *env) int { return e.hydra.consentReads },
+		},
+		{
+			name:  "ログアウト",
+			req:   func() *http.Request { return httptest.NewRequest(http.MethodGet, "/logout?logout_challenge=x", nil) },
+			page:  "ログアウトできませんでした",
+			calls: func(e *env) int { return e.hydra.logouts },
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := newEnv(2)
+			e.hydra.consentErr = errors.New("not found")
+			for range 2 {
+				e.do(tt.req())
+			}
+			before := tt.calls(e)
+			if before == 0 {
+				t.Fatal("上限の中の試行で Hydra を呼んでいない")
+			}
+			rec := e.do(tt.req())
+			if rec.Code != http.StatusTooManyRequests || !strings.Contains(rec.Body.String(), tt.page) {
+				t.Errorf("code = %d, want 429 の失敗の画面", rec.Code)
+			}
+			if got := tt.calls(e); got != before {
+				t.Errorf("上限を超えた後に Hydra か職員を呼んだ: %d 回 → %d 回", before, got)
+			}
+		})
 	}
 }
 

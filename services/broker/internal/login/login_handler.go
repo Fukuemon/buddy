@@ -25,7 +25,7 @@ type showLogin struct {
 
 func (h showLogin) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	if !admitClient(h.logger, h.limiter, h.clientIPHeader, w, r) {
+	if !admitClient(h.logger, h.limiter, h.clientIPHeader, fail, w, r) {
 		return
 	}
 	challenge := r.URL.Query().Get("login_challenge")
@@ -65,7 +65,7 @@ type submitEmail struct {
 
 func (h submitEmail) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	if !admitClient(h.logger, h.limiter, h.clientIPHeader, w, r) {
+	if !admitClient(h.logger, h.limiter, h.clientIPHeader, fail, w, r) {
 		return
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, maxFormLen)
@@ -129,12 +129,17 @@ type callback struct {
 	staff            Staff
 	hydra            Hydra
 	upstream         Upstream
+	limiter          *Limiter
+	clientIPHeader   string
 	usesSecureCookie bool
 }
 
 func (h callback) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	setCookie(h.usesSecureCookie, w, "", -1)
+	if !admitClient(h.logger, h.limiter, h.clientIPHeader, fail, w, r) {
+		return
+	}
 	p, err := readPending(r)
 	if err != nil {
 		fail(h.logger, w, r, http.StatusBadRequest, "ログインの途中の値がない", err)

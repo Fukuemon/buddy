@@ -32,7 +32,8 @@ type Config struct {
 	Staff    Staff
 	Hydra    Hydra
 	Upstream Upstream
-	// Limiter は、ログインの画面を開く試行（GET /login）とメールを送る試行（POST /login）を、送信元の IP アドレスごとに数える。
+	// Limiter は、ログインの画面を開く試行（GET /login）、メールを送る試行（POST /login）、上流の IdP のコールバック
+	// （GET /login/callback）、同意（GET /consent）、ログアウト（GET /logout）を、送信元の IP アドレスごとに 1 つの上限で数える。
 	// IPv6 は /64 ごとに数える。
 	Limiter *Limiter
 	// EmailLimiter は、ログインの画面でメールを送る試行を、入れたメールごとに数える。
@@ -90,10 +91,14 @@ func NewHandler(cfg Config) (http.Handler, error) {
 		emailLimiter: cfg.EmailLimiter, clientIPHeader: cfg.ClientIPHeader, usesSecureCookie: cfg.UsesSecureCookie,
 	})
 	mux.Handle("GET /login/callback", callback{
-		logger: cfg.Logger, staff: cfg.Staff, hydra: cfg.Hydra, upstream: cfg.Upstream, usesSecureCookie: cfg.UsesSecureCookie,
+		logger: cfg.Logger, staff: cfg.Staff, hydra: cfg.Hydra, upstream: cfg.Upstream, limiter: cfg.Limiter,
+		clientIPHeader: cfg.ClientIPHeader, usesSecureCookie: cfg.UsesSecureCookie,
 	})
-	mux.Handle("GET /consent", consent{logger: cfg.Logger, staff: cfg.Staff, hydra: cfg.Hydra, autoConsentClients: cfg.AutoConsentClients})
-	mux.Handle("GET /logout", logout{logger: cfg.Logger, hydra: cfg.Hydra})
+	mux.Handle("GET /consent", consent{
+		logger: cfg.Logger, staff: cfg.Staff, hydra: cfg.Hydra, limiter: cfg.Limiter, clientIPHeader: cfg.ClientIPHeader,
+		autoConsentClients: cfg.AutoConsentClients,
+	})
+	mux.Handle("GET /logout", logout{logger: cfg.Logger, hydra: cfg.Hydra, limiter: cfg.Limiter, clientIPHeader: cfg.ClientIPHeader})
 
 	// プロキシの後ろで Host がブラウザの開いた origin と違っても、PublicURL の origin からの POST は受ける
 	cop := http.NewCrossOriginProtection()
@@ -139,6 +144,9 @@ func redirect(logger *slog.Logger, w http.ResponseWriter, r *http.Request, to st
 	}
 	http.Redirect(w, r, to, http.StatusSeeOther)
 }
+
+// failFunc は、fail と failLogout の型である。
+type failFunc func(logger *slog.Logger, w http.ResponseWriter, r *http.Request, code int, reason string, err error)
 
 // fail は、Hydra へ返せない失敗で、ログインの失敗の画面を出す。
 func fail(logger *slog.Logger, w http.ResponseWriter, r *http.Request, code int, reason string, err error) {
@@ -192,13 +200,14 @@ func readPending(r *http.Request) (pending, error) {
 	return p, nil
 }
 
-// admitClient は、ログインの画面の試行を送信元の IP アドレスごとに 1 回数え、上限を超えていれば、Hydra を呼ばずに
-// ログインの失敗の画面を 429 で出して false を返す。Hydra の admin API の呼び出しを、送信元ごとの上限より増やさないためである。
-func admitClient(logger *slog.Logger, limiter *Limiter, clientIPHeader string, w http.ResponseWriter, r *http.Request) bool {
+// admitClient は、画面の試行を送信元の IP アドレスごとに 1 回数え、上限を超えていれば、Hydra と DB を呼ばずに
+// failPage（fail か failLogout）の失敗の画面を 429 で出して false を返す。
+// Hydra の admin API の呼び出しを、送信元ごとの上限より増やさないためである。
+func admitClient(logger *slog.Logger, limiter *Limiter, clientIPHeader string, failPage failFunc, w http.ResponseWriter, r *http.Request) bool {
 	if limiter.Allow(clientAddr(r, clientIPHeader)) {
 		return true
 	}
-	fail(logger, w, r, http.StatusTooManyRequests, "送信元の IP アドレスの試行の回数の上限を超えた", nil)
+	failPage(logger, w, r, http.StatusTooManyRequests, "送信元の IP アドレスの試行の回数の上限を超えた", nil)
 	return false
 }
 
