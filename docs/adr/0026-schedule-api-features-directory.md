@@ -33,6 +33,8 @@
 - 配置: 機能のパッケージを `internal/features/<機能>/` に置く。アダプタ、共通のパッケージ、`access`、`config`、`principal`、`inmem` は `internal/` の直下に残す。パッケージの名前は変えない。
   - Go の module の配置の指針は、サーバーのコードを `internal/` に置くことだけを勧め、その下の分け方を決めていない。
     - Organizing a Go module: [Server project](https://go.dev/doc/modules/layout#server-project)
+  - この判断のうち、サービスコードを `visit` に置く部分は ADR-0034 で置き換えた。サービスコードは機能のパッケージ `servicecode` に置く。
+    - ADR-0034: [サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける](0034-service-code-rules.md)
 - `principal`: `features/` の外に置く。`principal` はリポジトリと usecase を持たず、`access` と `httpapi` が認証の後に作る、リクエストの文脈である。`features/` に置くと、機能の一覧に機能でないパッケージが並ぶ。
   - 依存は今のまま、`principal` が `organization` と `staff` に依存し、`schedule`、`calendar`、`access`、`httpapi`、`cmd` が `principal` に依存する向きにする。
 - usecase のファイル: `Usecase` 型、`Deps`、`NewUsecase` は機能ごとに 1 つのまま `usecase.go` に置き、公開のメソッドを操作の名前のファイル（`cancel.go`、`retire.go` など）に移す。テストも操作ごとのファイルに分ける。

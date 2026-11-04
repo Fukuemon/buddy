@@ -9,7 +9,10 @@ status: stable
 
 照合の規則のうち、サービス内容ごとの許容範囲、加算、予定から 1 分を引く処理は、訪問看護の報酬の決まりと、電子カルテの実績の書き方に基づく。  
 この文書は、照合の規則を読む人と直す人が要る報酬の知識だけを持つ。  
-照合の規則そのものは [レセプトの照合の Design Doc](../../services/receipt/DesignDoc.md) に、対と区分の不変条件は [照合](receipt-check.md) にある。
+照合の規則そのものは [レセプトの照合の Design Doc](../../services/receipt/DesignDoc.md) に、対と区分の不変条件は [照合](receipt-check.md) にある。  
+改定でサービスコードの表記か提供時間の区分が変わったときは、`packages/go/servicecode` の表を直す。照合の API と予定の API のシードは、この表に合わせる。
+
+- ADR-0034: [サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける](../../docs/adr/0034-service-code-rules.md)
 
 単位数と割合は、改定で変わるので書かない。  
 公的な資料は、2026-11-01 に令和 6 年度の版を確認した。
