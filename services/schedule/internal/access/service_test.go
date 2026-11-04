@@ -3,14 +3,17 @@ package access_test
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/access"
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
 )
@@ -46,13 +49,22 @@ func newAuth(s *inmem.Store) *access.Service {
 	return access.NewService(access.Deps{
 		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s}, Positions: inmem.Positions{Store: s},
 		Staff: inmem.Staff{Store: s}, StaffRefs: inmem.StaffRefs{Store: s}, Patients: inmem.Patients{Store: s}, Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s},
+		Calendars: inmem.Calendars{Store: s}, Exports: inmem.Exports{Store: s},
 	})
 }
 
 func TestAuthenticateFindsStaffBySub(t *testing.T) {
-	p, err := newAuth(authStore()).Authenticate(context.Background(), principal.Identity{Subject: sub, OrgID: orgID})
+	s := authStore()
+	d := s.Staff[staffID]
+	d.TeamID = "TEAM"
+	d.Policies = []staff.PolicyGrant{{PolicyCode: organization.ScheduleTeamEdit, TargetTeamIDs: []string{"TEAM"}}}
+	s.Staff[staffID] = d
+	p, err := newAuth(s).Authenticate(context.Background(), principal.Identity{Subject: sub, OrgID: orgID})
 	if err != nil || p.Staff.ID != staffID {
 		t.Fatalf("principal = %+v, err = %v, want %s", p, err, staffID)
+	}
+	if p.Staff.FacilityID != facilityID || p.Staff.TeamID != "TEAM" || !reflect.DeepEqual(p.Staff.Policies, d.Policies) {
+		t.Errorf("principal = %+v, want 事業所 %s、チーム TEAM、権限 %+v", p, facilityID, d.Policies)
 	}
 }
 
@@ -100,6 +112,8 @@ func TestFacilityOf(t *testing.T) {
 	s.Teams["TEAM"] = organization.Team{ID: "TEAM", FacilityID: facilityID}
 	s.Positions["POS"] = organization.Position{ID: "POS", FacilityID: otherFacilityID}
 	s.Schedules["SCH"] = scheduleview.Detail{Schedule: schedule.Schedule{ID: "SCH", Slot: schedule.Slot{FacilityID: otherFacilityID}}}
+	s.Calendars["CAL"] = calendar.ExternalCalendar{ID: "CAL", FacilityID: otherFacilityID}
+	s.Exports["EXP"] = calendar.Export{ID: "EXP", Target: calendar.Target{FacilityID: otherFacilityID}}
 	a := newAuth(s)
 	tests := []struct {
 		r    access.Resource
@@ -114,6 +128,8 @@ func TestFacilityOf(t *testing.T) {
 		{r: access.ResourceSchedule, id: "SCH", want: otherFacilityID},
 		{r: access.ResourceRecurringSchedule, id: recurringID, want: facilityID},
 		{r: access.ResourcePatient, id: inmem.OtherPatientID, want: otherFacilityID},
+		{r: access.ResourceExternalCalendar, id: "CAL", want: otherFacilityID},
+		{r: access.ResourceCalendarExport, id: "EXP", want: otherFacilityID},
 	}
 	for _, tt := range tests {
 		got, err := a.FacilityOf(context.Background(), tt.r, tt.id)
