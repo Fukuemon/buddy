@@ -78,8 +78,16 @@ func (f *fakeCalendars) AcceptExport(_ context.Context, id string) (calendar.Exp
 	return calendar.Export{ID: id, Target: calendar.Target{ScheduleID: scheduleID}, Status: calendar.ExportSucceeded}, f.err
 }
 
+// app は、f のメソッド値を CalendarApp に入れる。
+func (f *fakeCalendars) app() httpapi.CalendarApp {
+	return httpapi.CalendarApp{
+		ServiceAccount: f.ServiceAccount, List: f.List, Check: f.Check, Link: f.Link, Unlink: f.Unlink, Preview: f.Preview,
+		Import: f.Import, ListExportIssues: f.ListExportIssues, RetryExport: f.RetryExport, AcceptExport: f.AcceptExport,
+	}
+}
+
 func newCalendarRouter(c *fakeCalendars) http.Handler {
-	return httpapi.NewRouter(httpapi.Apps{Calendars: c, Auth: fakeAuth{}}, httpapi.RouterConfig{
+	return httpapi.NewRouter(httpapi.Apps{Calendars: c.app(), Auth: fakeAuth{}}, httpapi.RouterConfig{
 		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
 		Verifier: testVerifier,
 	})

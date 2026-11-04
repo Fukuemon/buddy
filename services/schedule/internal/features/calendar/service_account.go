@@ -1,14 +1,29 @@
 package calendar
 
-import "context"
+import (
+	"context"
 
-// ServiceAccount は、事業所 facilityID の職員がカレンダーを共有する相手のメールアドレスを返す。設定が無ければ ErrNotConfigured を返す。
-func (u *App) ServiceAccount(ctx context.Context, facilityID string) (string, error) {
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+)
+
+// ServiceAccount は、事業所 facilityID の職員がカレンダーを共有する相手のメールアドレスを返す。
+type ServiceAccount struct {
+	accounts Accounts
+	guard    organization.Guard
+}
+
+// NewServiceAccount は ServiceAccount を作る。
+func NewServiceAccount(accounts Accounts, guard organization.Guard) ServiceAccount {
+	return ServiceAccount{accounts: accounts, guard: guard}
+}
+
+// Do は、事業所 facilityID の職員がカレンダーを共有する相手のメールアドレスを返す。設定が無ければ ErrNotConfigured を返す。
+func (u ServiceAccount) Do(ctx context.Context, facilityID string) (string, error) {
 	if err := u.guard(ctx); err != nil {
 		return "", err
 	}
-	if u.deps.Accounts == nil {
+	if u.accounts == nil {
 		return "", ErrNotConfigured
 	}
-	return u.deps.Accounts.ServiceAccount(ctx, facilityID)
+	return u.accounts.ServiceAccount(ctx, facilityID)
 }

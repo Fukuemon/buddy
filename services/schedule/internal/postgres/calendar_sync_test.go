@@ -180,16 +180,13 @@ func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
 	}, ids)
 	source := gcal.NewReader(gcaltest.Start(t, srv))
 	tx := NewTransactor(testDB)
-	uc := calendar.NewApp(calendar.Deps{
-		Calendars: calendars, Accounts: sameAccount{source},
-		Staff: staffRefs, Patients: patients, ServiceCodes: masters, Types: types,
-		Schedules: schedules, Recurring: recurring, RecurringSchedules: recurring, Visits: visits,
-	}, tx, ids, principal.RequireStaffManage)
+	importCalendar := calendar.NewImport(calendars, sameAccount{source}, staffRefs, patients, recurring, masters,
+		types, recurring, schedules, visits, tx, ids, principal.RequireStaffManage)
 	rng, err := calendar.NewRange(civil.Date{Year: 2026, Month: 11, Day: 1}, civil.Date{Year: 2026, Month: 11, Day: 30})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := uc.Import(ctx, calID, rng, nil); err != nil {
+	if _, err := importCalendar.Do(ctx, calID, rng, nil); err != nil {
 		t.Fatal(err)
 	}
 	syncer := calendar.NewSyncer(calendar.SyncerDeps{
@@ -272,16 +269,13 @@ func TestCalendarSyncKeepsEndedPatientOnlyInPast(t *testing.T) {
 	}, ids)
 	source := gcal.NewReader(gcaltest.Start(t, srv))
 	tx := NewTransactor(testDB)
-	uc := calendar.NewApp(calendar.Deps{
-		Calendars: calendars, Accounts: sameAccount{source},
-		Staff: staffRefs, Patients: patients, ServiceCodes: masters, Types: types,
-		Schedules: schedules, Recurring: recurring, RecurringSchedules: recurring, Visits: visits,
-	}, tx, ids, principal.RequireStaffManage)
+	importCalendar := calendar.NewImport(calendars, sameAccount{source}, staffRefs, patients, recurring, masters,
+		types, recurring, schedules, visits, tx, ids, principal.RequireStaffManage)
 	rng, err := calendar.NewRange(civil.Date{Year: 2026, Month: 10, Day: 1}, civil.Date{Year: 2026, Month: 10, Day: 31})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := uc.Import(ctx, calID, rng, nil); err != nil {
+	if _, err := importCalendar.Do(ctx, calID, rng, nil); err != nil {
 		t.Fatal(err)
 	}
 	syncer := calendar.NewSyncer(calendar.SyncerDeps{

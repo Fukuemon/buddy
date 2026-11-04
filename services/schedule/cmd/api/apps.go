@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
@@ -126,5 +127,36 @@ func scheduleApp(
 		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, staffRefs, schedules, types, visits, nil, exports, tx, ids).Do,
 		Cancel:           schedule.NewCancel(schedules, staffRefs, exports, tx, ids).Do,
 		Update:           schedule.NewUpdate(schedules, staffRefs, types, visits, nil, exports, tx).Do,
+	}
+}
+
+// calendarApp は、calendar の操作の型を作り、CalendarApp に入れる。accounts が nil なら、外部のカレンダーを読む操作は ErrNotConfigured を返す。
+func calendarApp(
+	calendars calendar.Repository,
+	accounts calendar.Accounts,
+	staffRefs calendar.StaffRefs,
+	patients calendar.Patients,
+	serviceCodes calendar.ServiceCodes,
+	types calendar.Types,
+	schedules calendar.ScheduleStore,
+	recurring calendar.Recurring,
+	recurringSchedules kernel.Finder[schedule.RecurringDetail],
+	visits calendar.VisitStore,
+	exports calendar.ExportRepository,
+	tx tx.Transactor,
+	ids kernel.IDGenerator,
+	guard organization.Guard,
+) httpapi.CalendarApp {
+	return httpapi.CalendarApp{
+		ServiceAccount:   calendar.NewServiceAccount(accounts, guard).Do,
+		List:             calendar.NewList(calendars, guard).Do,
+		Check:            calendar.NewCheck(accounts, guard).Do,
+		Link:             calendar.NewLink(accounts, staffRefs, calendars, tx, ids, guard).Do,
+		Unlink:           calendar.NewUnlink(calendars, guard).Do,
+		Preview:          calendar.NewPreview(calendars, accounts, staffRefs, patients, recurringSchedules, serviceCodes, guard).Do,
+		Import:           calendar.NewImport(calendars, accounts, staffRefs, patients, recurringSchedules, serviceCodes, types, recurring, schedules, visits, tx, ids, guard).Do,
+		ListExportIssues: calendar.NewListExportIssues(exports, guard).Do,
+		RetryExport:      calendar.NewRetryExport(exports, guard).Do,
+		AcceptExport:     calendar.NewAcceptExport(exports, schedules, calendars, accounts, staffRefs, types, patients, serviceCodes, visits, tx, ids, guard).Do,
 	}
 }

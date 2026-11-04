@@ -67,7 +67,7 @@ func newExportEnv(t *testing.T) exportEnv {
 		},
 	}})
 	exports := inmem.Exports{Store: s}
-	e.uc = calendar.NewApp(calendar.Deps{Calendars: inmem.Calendars{Store: s}, Exports: exports}, &inmem.Tx{}, ids, principal.RequireStaffManage)
+	e.uc = build(deps{Calendars: inmem.Calendars{Store: s}, Exports: exports}, &inmem.Tx{}, ids, principal.RequireStaffManage)
 	facilities, refs, schedules, recurring, types := inmem.Facilities{Store: s}, inmem.StaffRefs{Store: s}, inmem.Schedules{Store: s}, inmem.RecurringSchedules{Store: s}, inmem.ScheduleTypes{Store: s}
 	outbox, tx := calendar.NewOutbox(exports, inmem.Calendars{Store: s}, ids), &inmem.Tx{}
 	sched := scheduleOps{

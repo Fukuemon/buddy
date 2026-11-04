@@ -36,7 +36,7 @@ func newSyncEnv(t *testing.T) syncEnv {
 	s := e.store
 	ids := ulid.Generator{}
 	source := gcal.NewReader(gcaltest.Start(t, e.srv))
-	e.uc = calendar.NewApp(calendar.Deps{
+	e.uc = build(deps{
 		Calendars: inmem.Calendars{Store: s}, Accounts: oneAccount(source, nil), Exports: inmem.Exports{Store: s}, Staff: inmem.StaffRefs{Store: s},
 		Schedules: inmem.Schedules{Store: s}, Types: inmem.ScheduleTypes{Store: s},
 	}, &inmem.Tx{}, ids, principal.RequireStaffManage)

@@ -7,9 +7,12 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
+	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
 // staleRunAfter を過ぎても running の取り込みは、止まった取り込みとみなし、次の取り込みを止めない。
@@ -22,12 +25,34 @@ type ImportResult struct {
 }
 
 // Import は、カレンダー id の期間 rng の予定を読み直し、プレビューと同じ規則で読み替えて、1 つのトランザクションで書く。
+type Import struct {
+	calendars          Repository
+	accounts           Accounts
+	staff              StaffRefs
+	patients           Patients
+	recurringSchedules kernel.Finder[schedule.RecurringDetail]
+	serviceCodes       ServiceCodes
+	types              Types
+	recurring          Recurring
+	schedules          ScheduleStore
+	visits             VisitStore
+	tx                 tx.Transactor
+	ids                kernel.IDGenerator
+	guard              organization.Guard
+}
+
+// NewImport は Import を作る。
+func NewImport(calendars Repository, accounts Accounts, staff StaffRefs, patients Patients, recurringSchedules kernel.Finder[schedule.RecurringDetail], serviceCodes ServiceCodes, types Types, recurring Recurring, schedules ScheduleStore, visits VisitStore, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) Import {
+	return Import{calendars: calendars, accounts: accounts, staff: staff, patients: patients, recurringSchedules: recurringSchedules, serviceCodes: serviceCodes, types: types, recurring: recurring, schedules: schedules, visits: visits, tx: tx, ids: ids, guard: guard}
+}
+
+// Do は、カレンダー id の期間 rng の予定を読み直し、プレビューと同じ規則で読み替えて、1 つのトランザクションで書く。
 // 確認が必要な予定には decisions の取り込み方を当てる。職員が休職していれば、新しい予定は書かない。
 // 確認が必要な予定の集合が decisions と違うとき、読み替えた後に職員が休職か復職になったとき、
 // 同じカレンダーの取り込みが進んでいるときは apperr.ErrConflict を返し、何も書かない。
 // 読み替えた後に職員が退職し、カレンダーが外れたときは apperr.ErrNotFound を返し、何も書かない。
 // ほかのエラーは Preview と同じである。
-func (u *App) Import(ctx context.Context, id string, rng Range, decisions []Decision) (ImportResult, error) {
+func (u Import) Do(ctx context.Context, id string, rng Range, decisions []Decision) (ImportResult, error) {
 	if err := u.guard(ctx); err != nil {
 		return ImportResult{}, err
 	}
@@ -35,11 +60,11 @@ func (u *App) Import(ctx context.Context, id string, rng Range, decisions []Deci
 	if !ok {
 		return ImportResult{}, fmt.Errorf("%w: 職員を特定できません", apperr.ErrForbidden)
 	}
-	c, err := u.active(ctx, id)
+	c, err := active(ctx, u.calendars, id)
 	if err != nil {
 		return ImportResult{}, err
 	}
-	src, err := u.source(ctx, c.FacilityID)
+	src, err := source(ctx, u.accounts, c.FacilityID)
 	if err != nil {
 		return ImportResult{}, err
 	}
@@ -48,17 +73,17 @@ func (u *App) Import(ctx context.Context, id string, rng Range, decisions []Deci
 		RangeStart: rng.Start, RangeEnd: rng.End, Status: RunRunning,
 	}
 	err = u.tx.WithinTx(ctx, func(ctx context.Context) error {
-		if _, err := u.deps.Calendars.GetForUpdate(ctx, c.ID); err != nil {
+		if _, err := u.calendars.GetForUpdate(ctx, c.ID); err != nil {
 			return err
 		}
-		running, err := u.deps.Calendars.RunningSince(ctx, c.ID, time.Now().Add(-staleRunAfter))
+		running, err := u.calendars.RunningSince(ctx, c.ID, time.Now().Add(-staleRunAfter))
 		if err != nil {
 			return err
 		}
 		if running {
 			return apperr.ConflictCode(CodeImportRunning, "このカレンダーの取り込みが進んでいます。終わってから、もう一度プレビューしてください")
 		}
-		return u.deps.Calendars.CreateRun(ctx, run)
+		return u.calendars.CreateRun(ctx, run)
 	})
 	if err != nil {
 		return ImportResult{}, err
@@ -67,18 +92,18 @@ func (u *App) Import(ctx context.Context, id string, rng Range, decisions []Deci
 	if err != nil {
 		run.Status = RunFailed
 		// 取り込みのエラーを返すので、記録の更新のエラーは返さない。止まった記録は staleRunAfter の後に次の取り込みを止めなくなる。
-		_, _ = u.deps.Calendars.FinishRun(context.WithoutCancel(ctx), run)
+		_, _ = u.calendars.FinishRun(context.WithoutCancel(ctx), run)
 		return ImportResult{}, err
 	}
 	return res, nil
 }
 
-func (u *App) importPlan(ctx context.Context, src EventSource, c ExternalCalendar, rng Range, decisions []Decision, run ImportRun) (ImportResult, error) {
-	blocked, err := u.staffBlocked(ctx, c)
+func (u Import) importPlan(ctx context.Context, src EventSource, c ExternalCalendar, rng Range, decisions []Decision, run ImportRun) (ImportResult, error) {
+	blocked, err := staffBlocked(ctx, u.staff, c)
 	if err != nil {
 		return ImportResult{}, err
 	}
-	p, patients, err := u.plan(ctx, src, c, rng, blocked)
+	p, patients, err := planEvents(ctx, u.calendars, u.patients, u.recurringSchedules, u.serviceCodes, src, c, rng, blocked)
 	if err != nil {
 		return ImportResult{}, err
 	}
@@ -97,7 +122,7 @@ func (u *App) importPlan(ctx context.Context, src EventSource, c ExternalCalenda
 		run.Status = RunSucceeded
 		run.ImportedCount = len(p.entries)
 		run.SkippedCount = len(p.skippedItems) + chosenSkip
-		finished, err := u.deps.Calendars.FinishRun(ctx, run)
+		finished, err := u.calendars.FinishRun(ctx, run)
 		res = ImportResult{Run: finished, AlreadyImported: p.counts.AlreadyImported}
 		return err
 	})
@@ -110,14 +135,14 @@ func (u *App) importPlan(ctx context.Context, src EventSource, c ExternalCalenda
 // もう片方のコミットを待ってから読む。取り込んだ予定が残れば退職を拒み、退職が先ならここでカレンダーが外れている。
 // 訪問しない職員への変更も事業所の行に排他のロックを取るので、この取り込みと行き違わない。
 // カレンダーが外れていれば apperr.ErrNotFound を、休職か訪問しない職員かが変わっていれば apperr.ErrConflict を返す。
-func (u *App) recheck(ctx context.Context, c ExternalCalendar, blocked SkipReason) error {
-	if err := u.deps.Staff.LockStatuses(ctx, c.FacilityID); err != nil {
+func (u Import) recheck(ctx context.Context, c ExternalCalendar, blocked SkipReason) error {
+	if err := u.staff.LockStatuses(ctx, c.FacilityID); err != nil {
 		return err
 	}
-	if _, err := u.active(ctx, c.ID); err != nil {
+	if _, err := active(ctx, u.calendars, c.ID); err != nil {
 		return err
 	}
-	now, err := u.staffBlocked(ctx, c)
+	now, err := staffBlocked(ctx, u.staff, c)
 	if err != nil {
 		return err
 	}
@@ -130,8 +155,8 @@ func (u *App) recheck(ctx context.Context, c ExternalCalendar, blocked SkipReaso
 var errStaffStatusChanged = apperr.ConflictCode(CodeReviewChanged, "プレビューの後に、職員が休職か復職になったか、訪問するかが変わりました。もう一度プレビューしてください")
 
 // write は、p の予定と除外する日と予定の対応を書く。トランザクションの中で呼ぶ。
-func (u *App) write(ctx context.Context, c ExternalCalendar, p plan) error {
-	types, err := u.deps.Types.List(ctx)
+func (u Import) write(ctx context.Context, c ExternalCalendar, p plan) error {
+	types, err := u.types.List(ctx)
 	if err != nil {
 		return err
 	}
@@ -140,7 +165,7 @@ func (u *App) write(ctx context.Context, c ExternalCalendar, p plan) error {
 		byCode[t.Code] = t
 	}
 	created := map[string]string{}
-	ex := excluder{recurring: u.deps.Recurring, done: map[replacement]bool{}}
+	ex := excluder{recurring: u.recurring, done: map[replacement]bool{}}
 	for _, e := range p.entries {
 		if e.rule == nil {
 			continue
@@ -153,7 +178,7 @@ func (u *App) write(ctx context.Context, c ExternalCalendar, p plan) error {
 		if err != nil {
 			return err
 		}
-		if err := u.deps.Recurring.Create(ctx, rs); err != nil {
+		if err := u.recurring.Create(ctx, rs); err != nil {
 			return err
 		}
 		for _, d := range e.rule.ExclusionDates {
@@ -201,7 +226,7 @@ func (u *App) write(ctx context.Context, c ExternalCalendar, p plan) error {
 				sc.RecurringScheduleID, sc.OriginalDate = &id, &d
 			}
 		}
-		if err := u.deps.Schedules.Create(ctx, sc); err != nil {
+		if err := u.schedules.Create(ctx, sc); err != nil {
 			return err
 		}
 		if err := u.link(ctx, c, e, &sc.ID, nil); err != nil {
@@ -228,7 +253,7 @@ func (x excluder) exclude(ctx context.Context, recurringScheduleID string, d civ
 }
 
 // slot は、取り込む予定 e の枠と種類を組み立てる。訪問の予定なら訪問の情報を書く。
-func (u *App) slot(ctx context.Context, c ExternalCalendar, e entry, types map[schedule.TypeCode]schedule.Type) (schedule.Slot, schedule.Type, error) {
+func (u Import) slot(ctx context.Context, c ExternalCalendar, e entry, types map[schedule.TypeCode]schedule.Type) (schedule.Slot, schedule.Type, error) {
 	slot := schedule.Slot{
 		FacilityID:  c.FacilityID,
 		StaffID:     c.StaffID,
@@ -240,7 +265,7 @@ func (u *App) slot(ctx context.Context, c ExternalCalendar, e entry, types map[s
 	code := schedule.CodeNormal
 	if e.cand.Kind == KindVisit {
 		code = schedule.CodeVisit
-		id, err := u.deps.Visits.Create(ctx, c.FacilityID, visit.Input{
+		id, err := u.visits.Create(ctx, c.FacilityID, visit.Input{
 			PatientID: e.patientID, AssignedStaffID: c.StaffID, ServiceCodeID: e.serviceCodeID,
 		})
 		if err != nil {
@@ -258,7 +283,7 @@ func (u *App) slot(ctx context.Context, c ExternalCalendar, e entry, types map[s
 	return slot, typ, nil
 }
 
-func (u *App) link(ctx context.Context, c ExternalCalendar, e entry, scheduleID, recurringScheduleID *string) error {
+func (u Import) link(ctx context.Context, c ExternalCalendar, e entry, scheduleID, recurringScheduleID *string) error {
 	synced := createdVersion
 	l := EventLink{
 		ID: u.ids.NewID(), FacilityID: c.FacilityID, ExternalCalendarID: c.ID, ExternalEventID: e.event.ID,
@@ -268,5 +293,5 @@ func (u *App) link(ctx context.Context, c ExternalCalendar, e entry, scheduleID,
 		parent := e.parentID
 		l.RecurringEventID = &parent
 	}
-	return u.deps.Calendars.CreateLink(ctx, l)
+	return u.calendars.CreateLink(ctx, l)
 }

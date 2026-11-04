@@ -11,15 +11,15 @@ import (
 const maxCalendarIDLen = 1024
 
 // source は、事業所 facilityID のサービスアカウントで外部のカレンダーを読む EventSource を返す。設定が無ければ ErrNotConfigured を返す。
-func (u *App) source(ctx context.Context, facilityID string) (EventSource, error) {
-	if u.deps.Accounts == nil {
+func source(ctx context.Context, accounts Accounts, facilityID string) (EventSource, error) {
+	if accounts == nil {
 		return nil, ErrNotConfigured
 	}
-	return u.deps.Accounts.Source(ctx, facilityID)
+	return accounts.Source(ctx, facilityID)
 }
 
-func (u *App) requireSource(ctx context.Context, facilityID, calendarID string) (EventSource, string, error) {
-	src, err := u.source(ctx, facilityID)
+func requireSource(ctx context.Context, accounts Accounts, facilityID, calendarID string) (EventSource, string, error) {
+	src, err := source(ctx, accounts, facilityID)
 	if err != nil {
 		return nil, "", err
 	}

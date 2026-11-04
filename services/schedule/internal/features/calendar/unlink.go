@@ -1,14 +1,29 @@
 package calendar
 
-import "context"
+import (
+	"context"
 
-// Unlink は、カレンダーを外す。取り込んだ予定と外部の予定の対応は残す。カレンダーが無いか外したときは apperr.ErrNotFound を返す。
-func (u *App) Unlink(ctx context.Context, id string) error {
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+)
+
+// Unlink は、カレンダーを外す。
+type Unlink struct {
+	calendars Repository
+	guard     organization.Guard
+}
+
+// NewUnlink は Unlink を作る。
+func NewUnlink(calendars Repository, guard organization.Guard) Unlink {
+	return Unlink{calendars: calendars, guard: guard}
+}
+
+// Do は、カレンダーを外す。取り込んだ予定と外部の予定の対応は残す。カレンダーが無いか外したときは apperr.ErrNotFound を返す。
+func (u Unlink) Do(ctx context.Context, id string) error {
 	if err := u.guard(ctx); err != nil {
 		return err
 	}
-	if _, err := u.active(ctx, id); err != nil {
+	if _, err := active(ctx, u.calendars, id); err != nil {
 		return err
 	}
-	return u.deps.Calendars.Disable(ctx, id)
+	return u.calendars.Disable(ctx, id)
 }

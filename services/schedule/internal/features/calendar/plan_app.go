@@ -13,8 +13,8 @@ import (
 // staffBlocked は、カレンダー c を結び付けた職員に新しい予定を作らない理由を返す。休職なら SkipStaffOnLeave を、
 // 訪問しない職員なら SkipStaffNonVisiting を、どちらでもなければ空を返す。退職した職員は、カレンダーを外したものとみなし、
 // apperr.ErrNotFound を返す。退職はカレンダーを外すが、外す前に退職にした職員のカレンダーが残っていても取り込まないためである。
-func (u *App) staffBlocked(ctx context.Context, c ExternalCalendar) (SkipReason, error) {
-	st, err := u.deps.Staff.Get(ctx, c.StaffID)
+func staffBlocked(ctx context.Context, staffRefs StaffRefs, c ExternalCalendar) (SkipReason, error) {
+	st, err := staffRefs.Get(ctx, c.StaffID)
 	if err != nil {
 		return "", err
 	}
@@ -29,9 +29,9 @@ func (u *App) staffBlocked(ctx context.Context, c ExternalCalendar) (SkipReason,
 	return "", nil
 }
 
-// plan は、カレンダー c の期間 rng の予定を src で読み、読み替えた plan と、事業所の利用者を返す。
+// planEvents は、カレンダー c の期間 rng の予定を src で読み、読み替えた plan と、事業所の利用者を返す。
 // blocked は、カレンダーを結び付けた職員に新しい予定を作らない理由で、空でなければ新しい予定をその理由の取り込まない予定にする。
-func (u *App) plan(ctx context.Context, src EventSource, c ExternalCalendar, rng Range, blocked SkipReason) (plan, []PatientRef, error) {
+func planEvents(ctx context.Context, calendars Repository, patients Patients, recurringSchedules kernel.Finder[schedule.RecurringDetail], serviceCodes ServiceCodes, src EventSource, c ExternalCalendar, rng Range, blocked SkipReason) (plan, []PatientRef, error) {
 	events, err := src.Events(ctx, c.CalendarID, rng.TimeMin(), rng.TimeMax())
 	if err != nil {
 		return plan{}, nil, err
@@ -43,7 +43,7 @@ func (u *App) plan(ctx context.Context, src EventSource, c ExternalCalendar, rng
 		return plan{}, nil, err
 	}
 	events = withMovedExceptions(events, around, rng)
-	links, err := u.deps.Calendars.ListLinks(ctx, c.ID)
+	links, err := calendars.ListLinks(ctx, c.ID)
 	if err != nil {
 		return plan{}, nil, err
 	}
@@ -69,13 +69,13 @@ func (u *App) plan(ctx context.Context, src EventSource, c ExternalCalendar, rng
 		if _, done := in.linkedRecurring[ev.RecurringEventID]; done {
 			continue
 		}
-		rs, err := u.deps.RecurringSchedules.Get(ctx, *l.RecurringScheduleID)
+		rs, err := recurringSchedules.Get(ctx, *l.RecurringScheduleID)
 		if err != nil {
 			return plan{}, nil, err
 		}
 		in.linkedRecurring[ev.RecurringEventID] = rs
 	}
-	pats, err := u.deps.Patients.ListByFacility(ctx, c.FacilityID, patient.ListQuery{Sort: kernel.Sort{Field: "name"}})
+	pats, err := patients.ListByFacility(ctx, c.FacilityID, patient.ListQuery{Sort: kernel.Sort{Field: "name"}})
 	if err != nil {
 		return plan{}, nil, err
 	}
@@ -83,7 +83,7 @@ func (u *App) plan(ctx context.Context, src EventSource, c ExternalCalendar, rng
 	for i, p := range pats {
 		in.patients[i] = PatientRef{ID: p.ID, Name: p.Name, AssignedStaffName: p.AssignedStaffName}
 	}
-	if in.serviceCodes, err = u.deps.ServiceCodes.ListServiceCodes(ctx); err != nil {
+	if in.serviceCodes, err = serviceCodes.ListServiceCodes(ctx); err != nil {
 		return plan{}, nil, err
 	}
 	return newPlan(in), in.patients, nil
