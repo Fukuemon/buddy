@@ -29,6 +29,8 @@ import (
 const (
 	seedFacility       = "01M3TC5H00QV17BC0J9V3393ZP"
 	seedGoogleFacility = "01MA0GP0000000000000000FAC"
+	seedOkada          = "01MA0GP0000000000000000STF"
+	seedOkadaCalendar  = "01MA0GP0000000000000000GCA"
 	seedDepartment     = "01M3TC5HZ8A18D2TP3PTKDXJMN"
 	seedTeam           = "01M3TC5KXRSEVXQZ2MTJK9FS45"
 	seedLeader         = "01M3TC5PVG7W2H1H20W0T1ZVEJ"

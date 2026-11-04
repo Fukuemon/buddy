@@ -114,6 +114,7 @@ erDiagram
   users ||--o{ patients : "主に担当する"
   users ||--o{ external_calendars : "外部のカレンダー"
   external_calendars ||--o| calendar_sync_states : "同期の状態"
+  external_calendars ||--o{ calendar_event_projections : "予定の写し"
   external_calendars ||--o{ external_event_links : "外部の予定"
   schedules |o--o| external_event_links : "対応する"
   recurring_schedules |o--o| external_event_links : "対応する"
@@ -435,7 +436,7 @@ Google カレンダーの手動の取り込みの確定も、同じ規則で拒�
 割り振りどうしは、共有のロックなので互いを待たない。
 
 Google カレンダーの取り込みの確定、同期の予定ごとのトランザクション、カレンダーの結び付けも、職員の状態かカレンダーを外したかを読む前に、同じ共有のロックを取る。  
-そのため、退職がカレンダーを外した後に、退職した職員へ予定を取り込むことと、同期で外部の変更を当てることは無い。  
+そのため、退職がカレンダーを外した後に、退職した職員へ予定を取り込むことと、同期で外部の変更を参照のモデル（Projection）に写すことは無い。  
 取り込みと同期での休職の職員の扱いは、[Google カレンダーの取り込み](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#google-カレンダーの取り込み) と [Google カレンダーとの同期](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#google-カレンダーとの同期) にある。
 
 - ADR-0018: [職員の停止を、戻せる休職と、戻せない退職に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0018-staff-leave-and-retirement.md)
@@ -446,9 +447,9 @@ Google カレンダーの取り込みの確定、同期の予定ごとのトラ�
 
 - 確認は、訪問の情報を書く `visit.Writer` が行う。`visit.Input.KeptPatientID` は、利用の終了のまま保存してよい利用者である。
   - `schedule` の操作は、保存した後の日付が今日より前の予定でだけ、元の予定か繰り返しの予定の利用者を `KeptPatientID` に入れる。退職した職員と同じく、利用の終了の利用者に今日以降の予定を残さないためである。
-  - Google カレンダーとの同期が予定を外部の内容に合わせるときも、外部の予定の日付が今日より前なら、元の訪問の情報の利用者を `KeptPatientID` に入れる。
-  - 同期がタイトルの同じ予定で前の訪問の情報を使うときも、外部の予定の日付が今日以降なら、利用者が利用中のときだけ当てる。利用の終了の利用者なら、当てられない変更にする。
-  - 取り込みと同期がタイトルの利用者名で利用者を探すときは、利用中の利用者だけから探す。利用の終了の利用者の名前の予定は、利用者を 1 人に決められない予定として扱う。
+  - 「Google の内容に合わせる」（`AcceptExport`）が予定を外部の内容に合わせるときも、外部の予定の日付が今日より前なら、元の訪問の情報の利用者を `KeptPatientID` に入れる。
+  - 「Google の内容に合わせる」がタイトルの同じ予定で前の訪問の情報を使うときも、外部の予定の日付が今日以降なら、利用者が利用中のときだけ当てる。利用の終了の利用者なら、当てられない変更にする。
+  - 取り込みと「Google の内容に合わせる」がタイトルの利用者名で利用者を探すときは、利用中の利用者だけから探す。利用の終了の利用者の名前の予定は、利用者を 1 人に決められない予定として扱う。
 - 利用者の状態は、予定の作成と同じ共有のロックを取った後に読む（[利用者の変更、利用の終了、利用の再開](#利用者の変更利用の終了利用の再開)）。
 
 ### キャンセル

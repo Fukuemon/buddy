@@ -15,7 +15,8 @@ SELECT count(*) FILTER (WHERE s.next_sync_at <= now())::int AS overdue_count,
        COALESCE(EXTRACT(EPOCH FROM now() - min(COALESCE(s.last_synced_at, s.created_at))), 0)::float8 AS oldest_success_age_seconds
 FROM calendar_sync_states s
 JOIN external_calendars c ON c.id = s.external_calendar_id
-WHERE c.disabled_at IS NULL
+JOIN facilities f ON f.id = c.facility_id
+WHERE c.disabled_at IS NULL AND f.source_mode = ANY($1::text[])
 `
 
 type CalendarSyncBacklogRow struct {
@@ -23,10 +24,11 @@ type CalendarSyncBacklogRow struct {
 	OldestSuccessAgeSeconds float64
 }
 
-// 外していないカレンダーのうち、読む時刻を過ぎたものの数と、最も古い最後の成功からの秒数を返す。
+// 外していないカレンダーのうち、事業所の正本のモードが modes にあるカレンダーの、読む時刻を過ぎたものの数と、
+// 最も古い最後の成功からの秒数を返す。
 // 1 回も成功していないカレンダーは、同期の状態の行を足した時刻から数える。カレンダーが無ければ秒数は 0 である。
-func (q *Queries) CalendarSyncBacklog(ctx context.Context) (CalendarSyncBacklogRow, error) {
-	row := q.db.QueryRow(ctx, calendarSyncBacklog)
+func (q *Queries) CalendarSyncBacklog(ctx context.Context, modes []string) (CalendarSyncBacklogRow, error) {
+	row := q.db.QueryRow(ctx, calendarSyncBacklog, modes)
 	var i CalendarSyncBacklogRow
 	err := row.Scan(&i.OverdueCount, &i.OldestSuccessAgeSeconds)
 	return i, err
@@ -39,9 +41,10 @@ FROM external_calendars c
 WHERE c.id = s.external_calendar_id AND s.external_calendar_id IN (
     SELECT s2.external_calendar_id FROM calendar_sync_states s2
     JOIN external_calendars c2 ON c2.id = s2.external_calendar_id
-    WHERE c2.disabled_at IS NULL AND s2.next_sync_at <= now() AND (s2.locked_until IS NULL OR s2.locked_until <= now())
+    JOIN facilities f ON f.id = c2.facility_id
+    WHERE c2.disabled_at IS NULL AND f.source_mode = ANY($2::text[]) AND s2.next_sync_at <= now() AND (s2.locked_until IS NULL OR s2.locked_until <= now())
     ORDER BY s2.next_sync_at, s2.external_calendar_id
-    LIMIT $2
+    LIMIT $3
     FOR UPDATE OF s2 SKIP LOCKED
 )
 RETURNING s.external_calendar_id AS id, s.sync_token, s.last_status, s.last_error, s.locked_until,
@@ -50,6 +53,7 @@ RETURNING s.external_calendar_id AS id, s.sync_token, s.last_status, s.last_erro
 
 type ClaimCalendarSyncsParams struct {
 	LeaseSeconds float64
+	Modes        []string
 	MaxCount     int32
 }
 
@@ -66,8 +70,9 @@ type ClaimCalendarSyncsRow struct {
 }
 
 // 複数の処理が同時に取っても同じカレンダーを渡さないよう、行をロックできたものだけを取る。外したカレンダーは取らない。
+// 事業所の正本のモードが modes に無いカレンダーは取らない（ADR-0035）。
 func (q *Queries) ClaimCalendarSyncs(ctx context.Context, arg ClaimCalendarSyncsParams) ([]ClaimCalendarSyncsRow, error) {
-	rows, err := q.db.Query(ctx, claimCalendarSyncs, arg.LeaseSeconds, arg.MaxCount)
+	rows, err := q.db.Query(ctx, claimCalendarSyncs, arg.LeaseSeconds, arg.Modes, arg.MaxCount)
 	if err != nil {
 		return nil, err
 	}

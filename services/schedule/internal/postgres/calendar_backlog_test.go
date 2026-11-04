@@ -55,7 +55,7 @@ func TestCalendarSyncBacklog(t *testing.T) {
 	tx := ctx.Value(txKey{}).(pgx.Tx)
 	calendars := NewCalendarRepository(testDB)
 	r := NewCalendarSyncRepository(testDB)
-	if b, err := r.Backlog(ctx); err != nil || b.OverdueCount != 0 || b.OldestSuccessAge != 0 {
+	if b, err := r.Backlog(ctx, buddyPrimary); err != nil || b.OverdueCount != 0 || b.OldestSuccessAge != 0 {
 		t.Fatalf("カレンダーが無いときの Backlog = %+v, %v", b, err)
 	}
 
@@ -68,7 +68,7 @@ func TestCalendarSyncBacklog(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	claimed, err := r.Claim(ctx, 10, time.Minute)
+	claimed, err := r.Claim(ctx, 10, time.Minute, buddyPrimary)
 	if err != nil || len(claimed) != 2 {
 		t.Fatalf("Claim = %+v, %v", claimed, err)
 	}
@@ -86,7 +86,7 @@ func TestCalendarSyncBacklog(t *testing.T) {
 	if _, err := tx.Exec(ctx, "UPDATE calendar_sync_states SET created_at = now() - interval '30 minutes' WHERE external_calendar_id = $1", neverID); err != nil {
 		t.Fatal(err)
 	}
-	b, err := r.Backlog(ctx)
+	b, err := r.Backlog(ctx, buddyPrimary)
 	if err != nil || b.OverdueCount != 1 || !within(b.OldestSuccessAge, 2*time.Hour) {
 		t.Errorf("Backlog = %+v, %v", b, err)
 	}
@@ -94,7 +94,7 @@ func TestCalendarSyncBacklog(t *testing.T) {
 	if err := calendars.Disable(ctx, syncedID); err != nil {
 		t.Fatal(err)
 	}
-	b, err = r.Backlog(ctx)
+	b, err = r.Backlog(ctx, buddyPrimary)
 	if err != nil || b.OverdueCount != 1 || !within(b.OldestSuccessAge, 30*time.Minute) {
 		t.Errorf("外した後の Backlog = %+v, %v", b, err)
 	}
@@ -113,7 +113,7 @@ func TestCalendarSyncHeldKeepsLastSuccess(t *testing.T) {
 	}
 	claim := func() calendarsync.SyncState {
 		t.Helper()
-		claimed, err := r.Claim(ctx, 10, time.Minute)
+		claimed, err := r.Claim(ctx, 10, time.Minute, buddyPrimary)
 		if err != nil || len(claimed) != 1 {
 			t.Fatalf("Claim = %+v, %v", claimed, err)
 		}
@@ -129,7 +129,7 @@ func TestCalendarSyncHeldKeepsLastSuccess(t *testing.T) {
 	if err := r.Finish(ctx, claim(), calendarsync.SyncResult{Status: calendarsync.SyncSucceeded}); err != nil {
 		t.Fatal(err)
 	}
-	b, err := r.Backlog(ctx)
+	b, err := r.Backlog(ctx, buddyPrimary)
 	if err != nil || !within(b.OldestSuccessAge, 2*time.Hour) {
 		t.Errorf("見送った後の Backlog = %+v, %v, want 最後の成功から 2 時間", b, err)
 	}

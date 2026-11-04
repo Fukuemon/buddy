@@ -1,11 +1,7 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
 import { findSchedule, listExternalCalendars, previewImport } from '../../fixtures/externalCalendar'
-import {
-  createGoogleCalendar,
-  createGoogleEvent,
-  shiftGoogleEvent,
-} from '../../fixtures/googleCalendar'
+import { createGoogleCalendar, createGoogleEvent } from '../../fixtures/googleCalendar'
 import {
   issueManagerToken,
   leaveStaff,
@@ -52,7 +48,7 @@ const previewRange = async (page: Page, staffId: string) => {
 
 test.describe('予定の取り込み', () => {
   test.describe('休職と退職の職員', () => {
-    test('休職の職員のカレンダーをプレビューした場合、新しい予定は取り込まない予定に出て、取り込んだ予定の変更は同期で当たり、復職すると取り込めること', async ({
+    test('休職の職員のカレンダーをプレビューした場合、新しい予定は取り込まない予定に出て、復職すると取り込めること', async ({
       page,
       request,
     }) => {
@@ -61,17 +57,14 @@ test.describe('予定の取り込み', () => {
       const before = `E2E 休職の前 ${stamp}`
       const during = `E2E 休職の間 ${stamp}`
       const manager = await issueManagerToken(request)
-      let beforeEventId = ''
 
       await test.step('休職の前に足した予定を取り込む', async () => {
-        beforeEventId = (
-          await createGoogleEvent(request, staff.calendarId, {
-            summary: before,
-            date: '2027-03-03',
-            start: '10:00',
-            end: '11:00',
-          })
-        ).id
+        await createGoogleEvent(request, staff.calendarId, {
+          summary: before,
+          date: '2027-03-03',
+          start: '10:00',
+          end: '11:00',
+        })
         await linkCalendar(page, staff.id, staff.calendarId)
         await previewRange(page, staff.id)
         await expect(page.getByTestId('calendar-import-count-import')).toContainText('1 件')
@@ -102,16 +95,7 @@ test.describe('予定の取り込み', () => {
         await expect(page.getByTestId('calendar-import-all-imported')).toBeHidden()
       })
 
-      await test.step('休職の前に取り込んだ予定を Google カレンダーで遅らせると、同期で buddy の予定も遅れる', async () => {
-        await shiftGoogleEvent(request, staff.calendarId, beforeEventId)
-        // 予定の API が数秒ごとに Google の変更を読むので、当たるまで読み直す
-        await expect(async () => {
-          const moved = await findSchedule(request, manager, STAFF_FORM.facilityId, {
-            date: '2027-03-03',
-            title: before,
-          })
-          expect(moved?.start_time).toBe('11:00')
-        }).toPass()
+      await test.step('休職の間に足した予定は、プレビューした後も buddy の予定に無い', async () => {
         expect(
           await findSchedule(request, manager, STAFF_FORM.facilityId, {
             date: '2027-03-04',

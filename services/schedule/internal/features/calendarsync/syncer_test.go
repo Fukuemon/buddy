@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -60,7 +61,8 @@ func gcancelled(id, parent, original string) *calendarv3.Event {
 }
 
 // syncEnv は、予定の操作と、書き出しの処理と、Google カレンダーの変更を当てる同期の処理と、確認が必要な予定を解く操作と、
-// フェイクの Calendar API を、同じ Store の上で動かす。
+// フェイクの Calendar API を、同じ Store の上で動かす。同期の処理は、testAppliers の Applier で当てる。
+// 事業所 inmem.FacilityID は buddy_primary で、同期は ReconcileApplier で buddy の予定に当てる。
 type syncEnv struct {
 	store     *inmem.Store
 	ctx       context.Context
@@ -158,17 +160,37 @@ func newSyncEnv(t *testing.T) syncEnv {
 	}
 }
 
-// newSyncer は、Store s の上で、source で読み、職員の休職、復職、退職を locks で待たせる同期の処理を作る。
+// discardLog は、テストの同期の処理が書くログを捨てる。
+var discardLog = slog.New(slog.NewTextHandler(io.Discard, nil))
+
+// testAppliers は、Store s の上で、google_primary の事業所の変更を ProjectionApplier で Projection に写し、buddy_primary の事業所の変更を
+// ReconcileApplier で buddy の予定に当てる Applier である。組み立て（assemble）は buddy_primary の Applier を渡さず、buddy_primary の
+// 事業所のカレンダーを読まない（ADR-0035）。ReconcileApplier は、使わなくなった後も規則を残すので、このテストで確認し続ける。
+func testAppliers(s *inmem.Store) calendarsync.Appliers {
+	return calendarsync.Appliers{
+		organization.SourceGooglePrimary: calendarsync.NewProjectionApplier(inmem.Projections{Store: s}, discardLog),
+		organization.SourceBuddyPrimary: calendarsync.NewReconcileApplier(calendarsync.ReconcileDeps{
+			Calendars: inmem.Calendars{Store: s}, Exports: inmem.Exports{Store: s},
+			Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, Types: inmem.ScheduleTypes{Store: s},
+		}, ulid.Generator{}),
+	}
+}
+
+// syncerDeps は、Store s の上で、source で読み、職員の休職、復職、退職とモードの切り替えを locks で待たせる同期の処理の依存である。
 // 読む手段を引いた事業所を sources に足す。
-func newSyncer(s *inmem.Store, source calendar.EventSource, sources *[]string, locks calendar.FacilityLock) *calendarsync.Syncer {
-	return calendarsync.NewSyncer(calendarsync.SyncerDeps{
-		Syncs: inmem.Syncs{Store: s}, Calendars: inmem.Calendars{Store: s}, Staff: inmem.StaffRefs{Store: s}, Locks: locks, Exports: inmem.Exports{Store: s},
+func syncerDeps(s *inmem.Store, source calendar.EventSource, sources *[]string, locks calendarsync.FacilityLock) calendarsync.SyncerDeps {
+	return calendarsync.SyncerDeps{
+		Syncs: inmem.Syncs{Store: s}, Calendars: inmem.Calendars{Store: s}, Staff: inmem.StaffRefs{Store: s}, Locks: locks,
 		Sources: func(_ context.Context, facilityID string) (calendar.EventSource, error) {
 			*sources = append(*sources, facilityID)
 			return source, nil
 		},
-		Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, Types: inmem.ScheduleTypes{Store: s},
-	}, &inmem.Tx{}, ulid.Generator{}, time.Minute, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	}
+}
+
+// newSyncer は、syncerDeps の依存と testAppliers の Applier で同期の処理を作る。
+func newSyncer(s *inmem.Store, source calendar.EventSource, sources *[]string, locks calendarsync.FacilityLock) *calendarsync.Syncer {
+	return calendarsync.NewSyncer(syncerDeps(s, source, sources, locks), testAppliers(s), &inmem.Tx{}, time.Minute, discardLog)
 }
 
 func (e syncEnv) create(t *testing.T, title string) schedule.Schedule {
@@ -1010,5 +1032,110 @@ func TestSyncDefersOccurrenceWhileOverwriteChosen(t *testing.T) {
 	got, _ := inmem.RecurringSchedules{Store: e.store}.Get(t.Context(), rs.ID)
 	if len(got.ExclusionDates) != 1 || got.ExclusionDates[0] != (civil.Date{Year: 2026, Month: 11, Day: 9}) {
 		t.Errorf("書き直しの後の除外した日 = %v, want 取り消した 11-09", got.ExclusionDates)
+	}
+}
+
+// expiringSource は、トークンを付けた読み出しに 410（calendar.ErrSyncTokenExpired）を返し、トークンの無い読み出しに
+// fails の順にエラーを返す EventSource である。fails を返し終えた後は、予定の無い全件と、次のトークン fresh を返す。
+// 受けたトークンを、受けた順に tokens に足す。
+type expiringSource struct {
+	calendar.EventSource
+	fails  []error
+	tokens []string
+}
+
+func (s *expiringSource) Changes(_ context.Context, _, syncToken string) (calendar.Changes, error) {
+	s.tokens = append(s.tokens, syncToken)
+	if syncToken != "" {
+		return calendar.Changes{}, calendar.ErrSyncTokenExpired
+	}
+	if len(s.fails) > 0 {
+		err := s.fails[0]
+		s.fails = s.fails[1:]
+		return calendar.Changes{}, err
+	}
+	return calendar.Changes{NextSyncToken: "fresh"}, nil
+}
+
+// TestSyncRereadsAllAfterRereadFailsOnExpiredToken は、トークンが切れた（410）後の全件の読み直しが失敗したとき、
+// 切れたトークンを残さずに失敗（unavailable）を書き、次の同期でトークンを付けずに全件を読み直すことを確認する。
+func TestSyncRereadsAllAfterRereadFailsOnExpiredToken(t *testing.T) {
+	e := newSyncEnv(t)
+	setSourceMode(e.store, organization.SourceGooglePrimary)
+	e.store.SyncResults[calID] = calendarsync.SyncResult{SyncToken: "expired", Status: calendarsync.SyncSucceeded, Synced: true}
+	src := &expiringSource{fails: []error{calendar.ErrUnavailable}}
+	syncer := newSyncer(e.store, src, &[]string{}, inmem.Facilities{Store: e.store})
+
+	if _, err := syncer.SyncDue(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	r := e.store.SyncResults[calID]
+	if r.Status != calendarsync.SyncFailed || r.ErrorCode == nil || *r.ErrorCode != calendarsync.SyncUnavailable || r.SyncToken != "" || r.Synced {
+		t.Fatalf("読み直しに失敗した同期の結果 = %+v, want トークンを空にした unavailable", r)
+	}
+	if _, err := syncer.SyncDue(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	if r := e.store.SyncResults[calID]; r.Status != calendarsync.SyncSucceeded || r.SyncToken != "fresh" || !r.Synced {
+		t.Errorf("次の同期の結果 = %+v, want 全件を読み直して成功", r)
+	}
+	if want := []string{"expired", "", ""}; !slices.Equal(src.tokens, want) {
+		t.Errorf("読んだときのトークン = %q, want %q", src.tokens, want)
+	}
+}
+
+// TestSyncKeepsStateWhenCalendarDetachedMidSync は、予定を当てる前にカレンダーが外れたとき、同期の状態のトークンと結果を
+// 前のまま書き、最後の成功の時刻を進めない（Synced が false）ことを確認する。外したカレンダーは次から取らない。
+func TestSyncKeepsStateWhenCalendarDetachedMidSync(t *testing.T) {
+	e := newSyncEnv(t)
+	setSourceMode(e.store, organization.SourceGooglePrimary)
+	e.sync(t)
+	before := e.store.SyncResults[calID]
+	if before.Status != calendarsync.SyncSucceeded || before.SyncToken == "" {
+		t.Fatalf("最初の同期の結果 = %+v", before)
+	}
+	e.srv.Put(googleCalID, gevent("added", "Google で足した予定", "2026-11-06T10:00:00+09:00", "2026-11-06T11:00:00+09:00"))
+
+	syncer := newSyncer(e.store, gcal.NewReader(gcaltest.Start(t, e.srv)), &[]string{},
+		lockHook{Facilities: inmem.Facilities{Store: e.store}, run: func() { retire(t, e.store) }})
+	if _, err := syncer.SyncDue(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	r := e.store.SyncResults[calID]
+	if r.SyncToken != before.SyncToken || r.Status != before.Status || r.ErrorCode != nil || r.Synced {
+		t.Errorf("外れた後の同期の結果 = %+v, want 前のまま %+v で Synced が false", r, before)
+	}
+	if n, err := e.syncer.SyncDue(t.Context()); err != nil || n != 0 {
+		t.Errorf("外した後の同期 = %d 件, %v, want 取らない", n, err)
+	}
+}
+
+// TestSyncFailsWithoutAccount は、事業所に Google カレンダーを読む設定が無いとき、Google を読まずに失敗（unavailable）を書き、
+// トークンを残すことを確認する。設定を足した後に、増分の取得から続けられる。
+func TestSyncFailsWithoutAccount(t *testing.T) {
+	for name, sources := range map[string]calendar.SourceFor{
+		"設定が無いエラー": func(context.Context, string) (calendar.EventSource, error) { return nil, calendar.ErrNotConfigured },
+		"読む手段が無い":  func(context.Context, string) (calendar.EventSource, error) { return nil, nil },
+	} {
+		t.Run(name, func(t *testing.T) {
+			e := newSyncEnv(t)
+			setSourceMode(e.store, organization.SourceGooglePrimary)
+			e.store.SyncResults[calID] = calendarsync.SyncResult{SyncToken: "kept", Status: calendarsync.SyncSucceeded, Synced: true}
+			s := e.store
+			syncer := calendarsync.NewSyncer(calendarsync.SyncerDeps{
+				Syncs: inmem.Syncs{Store: s}, Calendars: inmem.Calendars{Store: s}, Staff: inmem.StaffRefs{Store: s},
+				Locks: inmem.Facilities{Store: s}, Sources: sources,
+			}, testAppliers(s), &inmem.Tx{}, time.Minute, discardLog)
+			if _, err := syncer.SyncDue(t.Context()); err != nil {
+				t.Fatal(err)
+			}
+			r := s.SyncResults[calID]
+			if r.Status != calendarsync.SyncFailed || r.ErrorCode == nil || *r.ErrorCode != calendarsync.SyncUnavailable || r.SyncToken != "kept" || r.Synced {
+				t.Errorf("同期の結果 = %+v, want トークンを残した unavailable", r)
+			}
+			if q := e.srv.Queries(); len(q) != 0 {
+				t.Errorf("Google を読んだ: %v", q)
+			}
+		})
 	}
 }

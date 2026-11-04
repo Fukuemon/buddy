@@ -10,6 +10,43 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+// Google カレンダーを予定の正本にする事業所の、Google カレンダーの予定の写し（Projection）。1 つの予定を 1 行にする
+type CalendarEventProjection struct {
+	ExternalCalendarID string
+	// Google の予定の ID
+	ExternalEventID string
+	// 写した時点のカレンダーの事業所
+	FacilityID string
+	// 写した時点のカレンダーの職員
+	StaffID string
+	// 繰り返しの予定の例外の回のとき、親の予定の ID
+	RecurringEventID *string
+	// 例外の回が元の規則で始まるはずだった日時。終日の予定は original_start_date に持つ
+	OriginalStartAt   *time.Time
+	OriginalStartDate *time.Time
+	// confirmed、cancelled。cancelled は繰り返しの予定の取り消した回で、取り消した単発の予定と親の予定は行を消す
+	Status string
+	// Google の予定のタイトル。利用者名を含むが、表示と照合に要るので持つ。取り消した回は空
+	Title string
+	// 開始の日時。終日の予定は start_date に持つ。取り消した回はどちらも NULL
+	StartAt   *time.Time
+	StartDate *time.Time
+	// 終了の日時。終日の予定は end_date（Google と同じく、終わる日の翌日）に持つ
+	EndAt   *time.Time
+	EndDate *time.Time
+	// Google の予定の開始のタイムゾーン（IANA）。繰り返しの規則はこの暦で数える
+	TimeZone *string
+	// 繰り返しの親の予定の RRULE、EXDATE、RDATE の行
+	Recurrence []string
+	Etag       string
+	// Google で予定を最後に変えた時刻
+	GoogleUpdatedAt *time.Time
+	// Asia/Tokyo で予定が終わる日。繰り返しは最後の回、取り消した回は元の開始の日。終わりの無い繰り返しと、最後の回を決められない繰り返しは NULL。保持する期間より前に終わった行を消すのに使う
+	LastEndDate *time.Time
+	// 同期が行を書いた時刻
+	ProjectedAt time.Time
+}
+
 // 予定を外部のカレンダーに書き出す待ち。予定の変更と同じトランザクションで積む
 type CalendarExport struct {
 	ID                  string

@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	calendarv3 "google.golang.org/api/calendar/v3"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
@@ -25,6 +26,20 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
+
+// 同期の状態のリポジトリが取る、事業所の正本のモード。
+var (
+	buddyPrimary  = []organization.SourceMode{organization.SourceBuddyPrimary}
+	googlePrimary = []organization.SourceMode{organization.SourceGooglePrimary}
+)
+
+// reconcileSyncer は、buddy_primary の事業所の外部の変更を ReconcileApplier で buddy の予定に当てる同期の処理を作る。
+// 組み立て（assemble）は buddy_primary の Applier を渡さず、buddy_primary の事業所のカレンダーを読まない（ADR-0035）。
+// ReconcileApplier は、使わなくなった後も規則を残すので、表の制約に合う形で当てられるかを確認し続ける。
+func reconcileSyncer(deps calendarsync.SyncerDeps, rd calendarsync.ReconcileDeps, tx *Transactor, ids ulid.Generator) *calendarsync.Syncer {
+	return calendarsync.NewSyncer(deps, calendarsync.Appliers{organization.SourceBuddyPrimary: calendarsync.NewReconcileApplier(rd, ids)},
+		tx, 0, slog.New(slog.NewTextHandler(io.Discard, nil)))
+}
 
 func TestCalendarSyncRepository(t *testing.T) {
 	ctx := txContext(t)
@@ -46,7 +61,7 @@ func TestCalendarSyncRepository(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	claimed, err := r.Claim(ctx, 10, time.Minute)
+	claimed, err := r.Claim(ctx, 10, time.Minute, buddyPrimary)
 	if err != nil || len(claimed) != 1 {
 		t.Fatalf("Claim = %+v, %v", claimed, err)
 	}
@@ -55,7 +70,7 @@ func TestCalendarSyncRepository(t *testing.T) {
 		st.SyncToken != "" || st.LastStatus != calendarsync.SyncNever || st.LockedUntil.IsZero() {
 		t.Fatalf("取ったカレンダー = %+v", st)
 	}
-	if again, err := r.Claim(ctx, 10, time.Minute); err != nil || len(again) != 0 {
+	if again, err := r.Claim(ctx, 10, time.Minute, buddyPrimary); err != nil || len(again) != 0 {
 		t.Errorf("lease の間に取った: %+v, %v", again, err)
 	}
 
@@ -68,7 +83,7 @@ func TestCalendarSyncRepository(t *testing.T) {
 	if err := r.Finish(ctx, st, calendarsync.SyncResult{SyncToken: "t1", Status: calendarsync.SyncSucceeded}); err != nil {
 		t.Fatal(err)
 	}
-	claimed, err = r.Claim(ctx, 10, time.Minute)
+	claimed, err = r.Claim(ctx, 10, time.Minute, buddyPrimary)
 	if err != nil || len(claimed) != 1 || claimed[0].SyncToken != "t1" || claimed[0].LastStatus != calendarsync.SyncSucceeded {
 		t.Fatalf("同期した後の Claim = %+v, %v", claimed, err)
 	}
@@ -77,7 +92,7 @@ func TestCalendarSyncRepository(t *testing.T) {
 	if err := r.Finish(ctx, claimed[0], calendarsync.SyncResult{SyncToken: "t1", Status: calendarsync.SyncFailed, ErrorCode: &code, After: time.Hour}); err != nil {
 		t.Fatal(err)
 	}
-	if again, err := r.Claim(ctx, 10, time.Minute); err != nil || len(again) != 0 {
+	if again, err := r.Claim(ctx, 10, time.Minute, buddyPrimary); err != nil || len(again) != 0 {
 		t.Errorf("読む時刻の前に取った: %+v, %v", again, err)
 	}
 }
@@ -191,10 +206,13 @@ func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
 	if _, err := importCalendar.Do(ctx, calID, rng, nil); err != nil {
 		t.Fatal(err)
 	}
-	syncer := calendarsync.NewSyncer(calendarsync.SyncerDeps{
-		Syncs: NewCalendarSyncRepository(testDB), Calendars: calendars, Staff: NewStaffRefRepository(testDB), Locks: NewFacilityRepository(testDB), Exports: NewCalendarExportRepository(testDB), Sources: func(context.Context, string) (calendar.EventSource, error) { return source, nil },
+	syncer := reconcileSyncer(calendarsync.SyncerDeps{
+		Syncs: NewCalendarSyncRepository(testDB), Calendars: calendars, Staff: NewStaffRefRepository(testDB), Locks: NewFacilityRepository(testDB),
+		Sources: func(context.Context, string) (calendar.EventSource, error) { return source, nil },
+	}, calendarsync.ReconcileDeps{
+		Calendars: calendars, Exports: NewCalendarExportRepository(testDB),
 		Schedules: schedules, Recurring: recurring, Types: types, Patients: patients, ServiceCodes: masters, Visits: visits,
-	}, tx, ids, 0, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	}, tx, ids)
 	sync := func() {
 		t.Helper()
 		if _, err := syncer.SyncDue(ctx); err != nil {
@@ -310,10 +328,13 @@ func TestCalendarSyncKeepsEndedPatientOnlyInPast(t *testing.T) {
 	if _, err := importCalendar.Do(ctx, calID, rng, nil); err != nil {
 		t.Fatal(err)
 	}
-	syncer := calendarsync.NewSyncer(calendarsync.SyncerDeps{
-		Syncs: NewCalendarSyncRepository(testDB), Calendars: calendars, Staff: staffRefs, Locks: NewFacilityRepository(testDB), Exports: NewCalendarExportRepository(testDB), Sources: func(context.Context, string) (calendar.EventSource, error) { return source, nil },
+	syncer := reconcileSyncer(calendarsync.SyncerDeps{
+		Syncs: NewCalendarSyncRepository(testDB), Calendars: calendars, Staff: staffRefs, Locks: NewFacilityRepository(testDB),
+		Sources: func(context.Context, string) (calendar.EventSource, error) { return source, nil },
+	}, calendarsync.ReconcileDeps{
+		Calendars: calendars, Exports: NewCalendarExportRepository(testDB),
 		Schedules: schedules, Recurring: recurring, Types: types, Patients: patients, ServiceCodes: masters, Visits: visits,
-	}, tx, ids, 0, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	}, tx, ids)
 	sync := func() {
 		t.Helper()
 		if _, err := syncer.SyncDue(ctx); err != nil {
@@ -353,5 +374,63 @@ func TestCalendarSyncKeepsEndedPatientOnlyInPast(t *testing.T) {
 	sync()
 	if d := get(); d.Date != (civil.Date{Year: 2026, Month: 10, Day: 5}) {
 		t.Errorf("利用の終了の利用者の予定を今日以降へ動かした: %+v", d.Slot)
+	}
+}
+
+// TestCalendarSyncForgetsTokenToReadAll は、空のトークンで同期の結果を書くと、トークンを消し、次の Claim がトークンを空で返す
+// （全ての予定を読み直す）ことと、失敗の結果が最後の成功の時刻を進めないことを確認する。
+// トークンが切れた（410）後の全件の読み直しが失敗したときに当たる。
+func TestCalendarSyncForgetsTokenToReadAll(t *testing.T) {
+	ctx := txContext(t)
+	tx := ctx.Value(txKey{}).(pgx.Tx)
+	// 同期は、Google カレンダーを正本にする事業所のカレンダーを読む（ADR-0035）
+	if _, err := tx.Exec(ctx, "UPDATE facilities SET source_mode = 'google_primary' WHERE id = $1", seedFacility); err != nil {
+		t.Fatal(err)
+	}
+	const calID = "01M3TD000000000000000000C7"
+	if err := NewCalendarRepository(testDB).Create(ctx, calendar.ExternalCalendar{
+		ID: calID, FacilityID: seedFacility, StaffID: seedMori, Provider: calendar.ProviderGoogle, CalendarID: "mori@example.com",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	r := NewCalendarSyncRepository(testDB)
+	claim := func() calendarsync.SyncState {
+		t.Helper()
+		if _, err := tx.Exec(ctx, "UPDATE calendar_sync_states SET next_sync_at = now() WHERE external_calendar_id = $1", calID); err != nil {
+			t.Fatal(err)
+		}
+		claimed, err := r.Claim(ctx, 10, time.Minute, googlePrimary)
+		if err != nil {
+			t.Fatal(err)
+		}
+		i := slices.IndexFunc(claimed, func(s calendarsync.SyncState) bool { return s.Calendar.ID == calID })
+		if i < 0 {
+			t.Fatalf("Claim = %+v, want %s を取る", claimed, calID)
+		}
+		return claimed[i]
+	}
+
+	if err := r.Finish(ctx, claim(), calendarsync.SyncResult{SyncToken: "t1", Status: calendarsync.SyncSucceeded, Synced: true}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.Exec(ctx, "UPDATE calendar_sync_states SET last_synced_at = now() - interval '2 hours' WHERE external_calendar_id = $1", calID); err != nil {
+		t.Fatal(err)
+	}
+	code := calendarsync.SyncUnavailable
+	if err := r.Finish(ctx, claim(), calendarsync.SyncResult{Status: calendarsync.SyncFailed, ErrorCode: &code}); err != nil {
+		t.Fatal(err)
+	}
+	st := claim()
+	if st.SyncToken != "" || st.LastStatus != calendarsync.SyncFailed || st.LastError == nil || *st.LastError != calendarsync.SyncUnavailable {
+		t.Errorf("トークンを消した後の Claim = %+v, want 空のトークンと unavailable", st)
+	}
+	var tokenIsNull, keptSuccess bool
+	if err := tx.QueryRow(ctx,
+		"SELECT sync_token IS NULL, last_synced_at < now() - interval '1 hour' FROM calendar_sync_states WHERE external_calendar_id = $1", calID,
+	).Scan(&tokenIsNull, &keptSuccess); err != nil {
+		t.Fatal(err)
+	}
+	if !tokenIsNull || !keptSuccess {
+		t.Errorf("同期の状態: sync_token IS NULL = %v, 最後の成功を進めていない = %v", tokenIsNull, keptSuccess)
 	}
 }

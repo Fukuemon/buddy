@@ -1,12 +1,7 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
 import { HAYASHI } from '../../fixtures/env'
-import {
-  deleteGoogleEvent,
-  findGoogleEvent,
-  holdGoogleChanges,
-  shiftGoogleEvent,
-} from '../../fixtures/googleCalendar'
+import { deleteGoogleEvent, findGoogleEvent, shiftGoogleEvent } from '../../fixtures/googleCalendar'
 import { SCHEDULE_DETAIL_URL, scheduleIdFromUrl } from '../../fixtures/schedule'
 
 const findEvent = (request: APIRequestContext, summary: string) =>
@@ -92,9 +87,8 @@ const rewriteRow = async (page: Page, scheduleId: string, notice: string) => {
 
 test.describe('確認が必要な予定', () => {
   test.describe('Google カレンダーへの書き出し', () => {
-    // 途中で落ちても、後の spec が Google の変更を受け取れ、次のテストとやり直しで林にもう一度結び付けられるようにする
-    test.afterEach(async ({ page, request }) => {
-      await holdGoogleChanges(request, false)
+    // 途中で落ちても、次のテストとやり直しで林にもう一度結び付けられるようにする
+    test.afterEach(async ({ page }) => {
       await page.goto('/schedule/link')
       const menu = page.getByTestId(`calendar-link-menu-${HAYASHI.id}`)
       await expect(page.getByTestId(`calendar-link-row-${HAYASHI.id}`)).toBeVisible()
@@ -128,8 +122,6 @@ test.describe('確認が必要な予定', () => {
       })
 
       await test.step('職員が Google カレンダーで予定を直した後に buddy で変えると、確認が必要な予定に出る', async () => {
-        // 予定の API が Google の変更を先に読んで buddy に当てないよう、中継に変更を渡させない
-        await holdGoogleChanges(request, true)
         await shiftGoogleEvent(request, HAYASHI.calendarId, eventId)
         scheduleId = await renameHayashiSchedule(page, created, changed)
 
@@ -137,7 +129,6 @@ test.describe('確認が必要な予定', () => {
         await expect(
           reviewRow(page, scheduleId).getByTestId(/^calendar-review-reason-/),
         ).toHaveText('buddy と Google カレンダーの両方で予定が変わりました。')
-        await holdGoogleChanges(request, false)
         // 一覧は Google カレンダーのタイトルを出さない
         await expect(page.getByTestId('calendar-review-table')).not.toContainText(created)
         await expect(page.getByTestId('calendar-review-table')).not.toContainText(changed)
@@ -167,8 +158,6 @@ test.describe('確認が必要な予定', () => {
       })
 
       await test.step('職員が Google カレンダーで予定を消した後に buddy で変えると、確認が必要な予定に見つからないと出る', async () => {
-        // 予定の API が Google の削除を先に読んで buddy の予定をキャンセルしないよう、中継に変更を渡させない
-        await holdGoogleChanges(request, true)
         await deleteGoogleEvent(request, HAYASHI.calendarId, eventId)
         scheduleId = await renameHayashiSchedule(page, created, changed)
 
@@ -176,7 +165,6 @@ test.describe('確認が必要な予定', () => {
         await expect(
           reviewRow(page, scheduleId).getByTestId(/^calendar-review-reason-/),
         ).toHaveText('Google カレンダーで予定が見つかりません。')
-        await holdGoogleChanges(request, false)
       })
 
       await test.step('buddy の内容で書き直すと、一覧から消え、Google カレンダーに buddy のタイトルで予定が戻る', async () => {

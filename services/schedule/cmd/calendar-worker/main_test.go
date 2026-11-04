@@ -117,11 +117,15 @@ const (
 	seedAoki       = "01M3TC5TRG5200KYWTZW6ER3WN"
 	seedConference = "01M3TC6BBRBQM0QK0S43P56AFH"
 	aokiCalendar   = "aoki@example.com"
-	exportID       = "01M3TD000000000000000000X0"
-	calendarID     = "01M3TD000000000000000000C0"
+	// okadaCalendar と okadaCalendarID は、シードの google_primary の事業所の岡田に結び付けたカレンダーである。
+	okadaCalendar   = "aoi.okada@example.com"
+	okadaCalendarID = "01MA0GP0000000000000000GCA"
+	exportID        = "01M3TD000000000000000000X0"
+	calendarID      = "01M3TD000000000000000000C0"
 )
 
 // TestRunOnce は、export --once と sync --once が、取れるものを処理して 0 で終わることを確認する。
+// sync --once は、google_primary の事業所のカレンダーの予定を Projection に写し、buddy_primary の事業所のカレンダーを読まない（ADR-0035）。
 func TestRunOnce(t *testing.T) {
 	if testing.Short() {
 		t.Skip("PostgreSQL を使うテストは -short では動かさない")
@@ -136,11 +140,14 @@ func TestRunOnce(t *testing.T) {
 	if err := postgres.NewCalendarExportRepository(pool).Enqueue(ctx, exportID, calendar.Target{FacilityID: seedFacility, ScheduleID: seedConference}); err != nil {
 		t.Fatal(err)
 	}
-	srv := &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{aokiCalendar: {}}}
+	srv := &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{aokiCalendar: {}, okadaCalendar: {{{
+		Id: "visit", Status: "confirmed", Summary: "【訪看I2】見本 一郎", Etag: `"visit"`,
+		Start: &calendarv3.EventDateTime{DateTime: "2099-11-04T10:00:00+09:00"}, End: &calendarv3.EventDateTime{DateTime: "2099-11-04T10:30:00+09:00"},
+	}}}}}
 	ts := httptest.NewServer(srv.Handler())
 	t.Cleanup(ts.Close)
 	accounts := filepath.Join(t.TempDir(), "accounts.json")
-	if err := os.WriteFile(accounts, []byte(`[{"org_id": "org-sample", "service_account": "buddy@example.iam.gserviceaccount.com"}]`), 0o600); err != nil {
+	if err := os.WriteFile(accounts, []byte(`[{"org_id": "org-sample", "service_account": "buddy@example.iam.gserviceaccount.com"}, {"org_id": "org-sample-c", "service_account": "buddy-c@example.iam.gserviceaccount.com"}]`), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "")
@@ -168,11 +175,27 @@ func TestRunOnce(t *testing.T) {
 	if code := run(ctx, []string{"sync", "--once"}, getenv, io.Discard, io.Discard); code != 0 {
 		t.Fatalf("sync --once = %d, want 0", code)
 	}
-	if err := pool.QueryRow(ctx, "SELECT last_status FROM calendar_sync_states WHERE external_calendar_id = $1", calendarID).Scan(&status); err != nil {
+	syncStatus := func(id string) string {
+		t.Helper()
+		var s string
+		if err := pool.QueryRow(ctx, "SELECT last_status FROM calendar_sync_states WHERE external_calendar_id = $1", id).Scan(&s); err != nil {
+			t.Fatal(err)
+		}
+		return s
+	}
+	if got := syncStatus(okadaCalendarID); got != "succeeded" {
+		t.Errorf("google_primary のカレンダーの同期した後の状態 = %s", got)
+	}
+	if got := syncStatus(calendarID); got != "never" {
+		t.Errorf("buddy_primary のカレンダーの同期の状態 = %s, want 読まずに never", got)
+	}
+	var projected int
+	if err := pool.QueryRow(ctx, "SELECT count(*) FROM calendar_event_projections WHERE external_calendar_id = $1 AND external_event_id = 'visit'",
+		okadaCalendarID).Scan(&projected); err != nil {
 		t.Fatal(err)
 	}
-	if status != "succeeded" {
-		t.Errorf("同期した後の状態 = %s", status)
+	if projected != 1 {
+		t.Errorf("Projection に写した予定の行 = %d, want 1", projected)
 	}
 }
 

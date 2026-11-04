@@ -6,22 +6,22 @@
 
 ## Columns
 
-| Name                 | Type                     | Default | Nullable | Children                                                                                                                                                                | Parents                         | Comment                                                               |
-| -------------------- | ------------------------ | ------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | --------------------------------------------------------------------- |
-| id                   | text                     |         | false    | [public.calendar_sync_states](public.calendar_sync_states.md) [public.external_event_links](public.external_event_links.md) [public.import_runs](public.import_runs.md) |                                 |                                                                       |
-| facility_id          | text                     |         | false    | [public.calendar_sync_states](public.calendar_sync_states.md) [public.external_event_links](public.external_event_links.md) [public.import_runs](public.import_runs.md) | [public.users](public.users.md) |                                                                       |
-| staff_id             | text                     |         | false    |                                                                                                                                                                         | [public.users](public.users.md) |                                                                       |
-| provider             | text                     |         | false    |                                                                                                                                                                         |                                 | google                                                                |
-| external_calendar_id | varchar(1024)            |         | false    |                                                                                                                                                                         |                                 | 外部のカレンダーの ID。サービスアカウントに共有されたもの             |
-| disabled_at          | timestamp with time zone |         | true     |                                                                                                                                                                         |                                 | 外した時刻。外しても行と外部の予定との対応は残す。NULL なら使っている |
-| created_at           | timestamp with time zone | now()   | false    |                                                                                                                                                                         |                                 |                                                                       |
-| updated_at           | timestamp with time zone | now()   | false    |                                                                                                                                                                         |                                 |                                                                       |
+| Name                 | Type                     | Default | Nullable | Children                                                                                                                                                                                                                                          | Parents                         | Comment                                                               |
+| -------------------- | ------------------------ | ------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | --------------------------------------------------------------------- |
+| id                   | text                     |         | false    | [public.calendar_sync_states](public.calendar_sync_states.md) [public.external_event_links](public.external_event_links.md) [public.import_runs](public.import_runs.md) [public.calendar_event_projections](public.calendar_event_projections.md) |                                 |                                                                       |
+| facility_id          | text                     |         | false    | [public.calendar_sync_states](public.calendar_sync_states.md) [public.external_event_links](public.external_event_links.md) [public.import_runs](public.import_runs.md) [public.calendar_event_projections](public.calendar_event_projections.md) | [public.users](public.users.md) |                                                                       |
+| staff_id             | text                     |         | false    |                                                                                                                                                                                                                                                   | [public.users](public.users.md) |                                                                       |
+| provider             | text                     |         | false    |                                                                                                                                                                                                                                                   |                                 | google                                                                |
+| external_calendar_id | varchar(1024)            |         | false    |                                                                                                                                                                                                                                                   |                                 | 外部のカレンダーの ID。サービスアカウントに共有されたもの             |
+| disabled_at          | timestamp with time zone |         | true     |                                                                                                                                                                                                                                                   |                                 | 外した時刻。外しても行と外部の予定との対応は残す。NULL なら使っている |
+| created_at           | timestamp with time zone | now()   | false    |                                                                                                                                                                                                                                                   |                                 |                                                                       |
+| updated_at           | timestamp with time zone | now()   | false    |                                                                                                                                                                                                                                                   |                                 |                                                                       |
 
 ## Viewpoints
 
-| Name                                                               | Definition                                                                                                                                                |
-| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [外部のカレンダーの取り込みと書き出し](viewpoint-calendar-sync.md) | 職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち。書き出しは、予定の正本のモードが buddy_primary の事業所に限る |
+| Name                                                               | Definition                                                                                                                                                                                                                                                                     |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [外部のカレンダーの取り込みと書き出し](viewpoint-calendar-sync.md) | 職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち、Google カレンダーの予定の写し（Projection）。書き出しは、予定の正本のモードが buddy_primary の事業所に限る。同期は google_primary の事業所のカレンダーだけを読み、予定の写しに書く |
 
 ## Constraints
 
@@ -65,6 +65,7 @@ erDiagram
 "public.calendar_sync_states" }o--|| "public.external_calendars" : "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
 "public.external_event_links" }o--|| "public.external_calendars" : "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
 "public.import_runs" }o--|| "public.external_calendars" : "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
+"public.calendar_event_projections" }o--|| "public.external_calendars" : "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
 "public.external_calendars" }o--|| "public.users" : "FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id) ON DELETE CASCADE"
 
 "public.external_calendars" {
@@ -117,6 +118,27 @@ erDiagram
   timestamp_with_time_zone finished_at
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+}
+"public.calendar_event_projections" {
+  text external_calendar_id FK
+  varchar_1024_ external_event_id
+  text facility_id FK
+  text staff_id FK
+  varchar_1024_ recurring_event_id
+  timestamp_with_time_zone original_start_at
+  date original_start_date
+  text status
+  text title
+  timestamp_with_time_zone start_at
+  date start_date
+  timestamp_with_time_zone end_at
+  date end_date
+  text time_zone
+  text__ recurrence
+  text etag
+  timestamp_with_time_zone google_updated_at
+  date last_end_date
+  timestamp_with_time_zone projected_at
 }
 "public.users" {
   text id

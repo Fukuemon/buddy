@@ -1,14 +1,17 @@
 package calendarsync
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"log/slog"
+	"maps"
+	"slices"
 	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
-	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
@@ -26,49 +29,57 @@ const (
 	syncPollTick = 5 * time.Second
 )
 
+// CalendarReader は、Syncer が、予定を当てる前に結び付けたカレンダーを読み直す。見つからないときは apperr.ErrNotFound を返す。
+type CalendarReader interface {
+	// Get は、外したカレンダーも返す。
+	Get(ctx context.Context, id string) (calendar.ExternalCalendar, error)
+}
+
 // SyncerDeps は、Syncer が使うリポジトリと、外部のカレンダーを読む EventSource を事業所ごとに返す Sources である。
 type SyncerDeps struct {
 	Syncs     SyncRepository
-	Calendars Calendars
+	Calendars CalendarReader
 	// Staff は、カレンダーの職員が退職したかを読む。
 	Staff calendar.StaffRefs
-	// Locks は、予定を当てる前に事業所の職員の休職、復職、退職を待たせる。退職がカレンダーを外した後に、当てないためである。
-	Locks        calendar.FacilityLock
-	Exports      ExportRepository
-	Sources      calendar.SourceFor
-	Schedules    calendar.ScheduleStore
-	Recurring    calendar.RecurringStore
-	Types        calendar.Types
-	Patients     calendar.Patients
-	ServiceCodes calendar.ServiceCodes
-	Visits       calendar.VisitStore
+	// Locks は、予定を当てる前に事業所の行を共有のロックで読み、正本のモードを読む。読んだ後に、職員の休職、復職、退職と、
+	// モードの切り替えを待たせる。退職がカレンダーを外した後と、モードを切り替えた後に、当てないためである。
+	Locks   FacilityLock
+	Sources calendar.SourceFor
 }
 
-// Applier は、外部のカレンダーの 1 つの予定の変更を、buddy の予定に当てる規則である。
+// Applier は、外部のカレンダーの予定の変更を当てる規則である。
 type Applier interface {
-	// Apply は、カレンダー c の外部の予定 ev の変更を buddy の予定に当てる。Syncer が 1 つの予定ごとに開くトランザクションの中で呼ぶ。
+	// Apply は、カレンダー c の外部の予定 ev の変更を当てる。Syncer が 1 つの予定ごとに開くトランザクションの中で呼ぶ。
 	// 予定を書いている書き出しの処理があれば、当てずに errExportWriting を返し、Syncer はカレンダーを後で読み直す。
 	Apply(ctx context.Context, c calendar.ExternalCalendar, ev calendar.Event) error
+	// Settle は、カレンダー c の読んだ予定を全て当てた後に、Syncer が開くトランザクションの中で呼ぶ。full は、トークンを付けずに
+	// 全ての予定を読んだか（最初の同期と、トークンが切れた 410 の後）で、eventIDs は、読んだ予定の ID である。
+	Settle(ctx context.Context, c calendar.ExternalCalendar, full bool, eventIDs []string) error
 }
 
-// Syncer は、職員が結び付けた外部のカレンダーの変わった予定を、増分の取得（syncToken）で読み、buddy の予定に当てる処理である。
-// ADR-0009 の段階 3 に当たる。当て方の規則は Applier にある。
-// トークンが切れていれば（410）、全ての予定を読み直す。予定の対応の etag と比べるので、読み直しても同じ変更を 2 回は当てない。
+// Appliers は、事業所の正本のモードごとの Applier である。組み立て（assemble）が決めて Syncer に渡す（ADR-0032）。
+// Applier の無いモードの事業所のカレンダーは、同期で読まない。
+type Appliers map[organization.SourceMode]Applier
+
+// errModeChanged は、同期の途中で事業所の正本のモードが変わり、そのモードの Applier が無いので、残りの予定を当てないことを表す。
+var errModeChanged = errors.New("同期の途中で事業所の正本のモードが変わった")
+
+// Syncer は、職員が結び付けた外部のカレンダーの変わった予定を、増分の取得（syncToken）で読み、事業所の正本のモードの Applier で
+// 当てる処理である。Applier の無いモードの事業所のカレンダーは取らない（ADR-0035）。
+// トークンが切れていれば（410）、全ての予定を読み直す。
 type Syncer struct {
 	deps     SyncerDeps
 	tx       tx.Transactor
-	apply    Applier
+	appliers Appliers
+	modes    []organization.SourceMode
 	interval time.Duration
 	log      *slog.Logger
 }
 
-// NewSyncer は、カレンダーを interval ごとに読む Syncer を作る。
-func NewSyncer(deps SyncerDeps, tx tx.Transactor, ids kernel.IDGenerator, interval time.Duration, log *slog.Logger) *Syncer {
+// NewSyncer は、カレンダーを interval ごとに読み、appliers の Applier で当てる Syncer を作る。
+func NewSyncer(deps SyncerDeps, appliers Appliers, tx tx.Transactor, interval time.Duration, log *slog.Logger) *Syncer {
 	return &Syncer{
-		deps: deps, tx: tx, interval: interval, log: log,
-		apply: newReconcileApplier(
-			deps.Calendars, deps.Exports, deps.Schedules, deps.Recurring, deps.Types, deps.Patients, deps.ServiceCodes, deps.Visits, ids,
-		),
+		deps: deps, tx: tx, appliers: appliers, modes: slices.SortedFunc(maps.Keys(appliers), cmp.Compare), interval: interval, log: log,
 	}
 }
 
@@ -95,11 +106,12 @@ func (s *Syncer) Run(ctx context.Context) {
 	}
 }
 
-// SyncDue は、読む時刻を過ぎたカレンダーを取って同期し、取ったカレンダーの数を返す。1 つのカレンダーを同期できなくても、残りを同期する。
+// SyncDue は、Applier のあるモードの事業所の、読む時刻を過ぎたカレンダーを取って同期し、取ったカレンダーの数を返す。
+// 1 つのカレンダーを同期できなくても、残りを同期する。
 // 取った後は、結果ごとの数の要約（calendar sync batch）と、同期の滞留（calendar sync backlog）をログに書く。
 func (s *Syncer) SyncDue(ctx context.Context) (int, error) {
 	start := time.Now()
-	states, err := s.deps.Syncs.Claim(ctx, syncBatch, syncLease)
+	states, err := s.deps.Syncs.Claim(ctx, syncBatch, syncLease, s.modes)
 	if err != nil {
 		return 0, err
 	}
@@ -132,7 +144,7 @@ type outcome int
 const (
 	outcomeSynced outcome = iota
 	outcomeFailed
-	// outcomeHeld は、当てずに置いたことを表す。書き出しを待って読み直すときと、途中でカレンダーが外れたときである。
+	// outcomeHeld は、当てずに置いたことを表す。書き出しを待って読み直すときと、途中でカレンダーが外れたかモードが変わったときである。
 	outcomeHeld
 	// outcomeRequeued は、止める合図で、前の状態のまま返したことを表す。
 	outcomeRequeued
@@ -151,12 +163,13 @@ func (o outcome) count(b *calendar.Batch) {
 	}
 }
 
-// logBacklog は、読む時刻を過ぎたカレンダーの数と、最も古い最後の成功からの時間をログに書く。止める合図の後は数えない。
+// logBacklog は、Applier のあるモードの事業所の、読む時刻を過ぎたカレンダーの数と、最も古い最後の成功からの時間をログに書く。
+// 止める合図の後は数えない。
 func (s *Syncer) logBacklog(ctx context.Context) {
 	if ctx.Err() != nil {
 		return
 	}
-	bl, err := s.deps.Syncs.Backlog(ctx)
+	bl, err := s.deps.Syncs.Backlog(ctx, s.modes)
 	if err != nil {
 		s.log.WarnContext(ctx, "calendar sync backlog", slog.Any("error", err))
 		return
@@ -165,10 +178,10 @@ func (s *Syncer) logBacklog(ctx context.Context) {
 		slog.Int("overdue_count", bl.OverdueCount), slog.Int64("oldest_success_age_seconds", int64(bl.OldestSuccessAge.Seconds())))
 }
 
-// sync は、カレンダー st の変わった予定を読み、1 つずつトランザクションで当てる。
+// sync は、カレンダー st の変わった予定を読み、1 つずつトランザクションで当て、最後に Applier の Settle を呼ぶ。
 // 当てられなかった予定があれば、トークンを進めずに返し、次に同じ予定から読み直す。
 func (s *Syncer) sync(ctx context.Context, st SyncState) (SyncResult, outcome) {
-	attrs := []any{slog.String("external_calendar_id", st.Calendar.ID)}
+	attrs := []any{slog.String("facility_id", st.Calendar.FacilityID), slog.String("external_calendar_id", st.Calendar.ID)}
 	token := st.SyncToken
 	src, err := s.deps.Sources(ctx, st.Calendar.FacilityID)
 	if err == nil && src == nil {
@@ -193,51 +206,78 @@ func (s *Syncer) sync(ctx context.Context, st SyncState) (SyncResult, outcome) {
 		}
 		return SyncResult{SyncToken: token, Status: SyncFailed, ErrorCode: &code, After: s.interval}, outcomeFailed
 	}
-	for _, ev := range ch.Events {
+	eventIDs := make([]string, len(ch.Events))
+	for i, ev := range ch.Events {
+		eventIDs[i] = ev.ID
 		err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
-			if err := s.stillLinked(ctx, st.Calendar); err != nil {
+			a, err := s.applierFor(ctx, st.Calendar)
+			if err != nil {
 				return err
 			}
-			return s.apply.Apply(ctx, st.Calendar, ev)
+			return a.Apply(ctx, st.Calendar, ev)
 		})
-		if errors.Is(err, errCalendarUnlinked) {
-			// 外したカレンダーは次から取らないので、トークンと状態は前のまま返す
-			return SyncResult{SyncToken: st.SyncToken, Status: st.LastStatus, ErrorCode: st.LastError, After: s.interval}, outcomeHeld
-		}
-		if errors.Is(err, errExportWriting) {
-			return SyncResult{SyncToken: token, Status: st.LastStatus, ErrorCode: st.LastError, After: syncRetryAfter}, outcomeHeld
-		}
-		if err != nil {
-			s.log.ErrorContext(ctx, "calendar sync failed", append(attrs, slog.String("event_id", ev.ID), slog.Any("error", err))...)
-			code := SyncApplyFailed
-			return SyncResult{SyncToken: token, Status: SyncFailed, ErrorCode: &code, After: s.interval}, outcomeFailed
+		if r, o, done := s.stopped(ctx, st, token, err, append(attrs, slog.String("event_id", ev.ID))); done {
+			return r, o
 		}
 	}
+	err = s.tx.WithinTx(ctx, func(ctx context.Context) error {
+		a, err := s.applierFor(ctx, st.Calendar)
+		if err != nil {
+			return err
+		}
+		return a.Settle(ctx, st.Calendar, token == "", eventIDs)
+	})
+	if r, o, done := s.stopped(ctx, st, token, err, attrs); done {
+		return r, o
+	}
 	return SyncResult{SyncToken: ch.NextSyncToken, Status: SyncSucceeded, Synced: true, After: s.interval}, outcomeSynced
+}
+
+// stopped は、カレンダー st の予定を当てるトランザクションのエラー err から、同期を止めて返す結果を決める。
+// err が nil なら、done を false にして続けさせる。token は、この回で読んだときのトークンである。
+func (s *Syncer) stopped(ctx context.Context, st SyncState, token string, err error, attrs []any) (SyncResult, outcome, bool) {
+	switch {
+	case err == nil:
+		return SyncResult{}, 0, false
+	case errors.Is(err, errCalendarUnlinked), errors.Is(err, errModeChanged):
+		// 外したカレンダーと、Applier の無いモードの事業所のカレンダーは次から取らないので、トークンと状態は前のまま返す
+		return SyncResult{SyncToken: st.SyncToken, Status: st.LastStatus, ErrorCode: st.LastError, After: s.interval}, outcomeHeld, true
+	case errors.Is(err, errExportWriting):
+		return SyncResult{SyncToken: token, Status: st.LastStatus, ErrorCode: st.LastError, After: syncRetryAfter}, outcomeHeld, true
+	}
+	s.log.ErrorContext(ctx, "calendar sync failed", append(attrs, slog.Any("error", err))...)
+	code := SyncApplyFailed
+	return SyncResult{SyncToken: token, Status: SyncFailed, ErrorCode: &code, After: s.interval}, outcomeFailed, true
 }
 
 // errCalendarUnlinked は、同期の途中でカレンダーが外れたので、残りの予定を当てないことを表す。
 var errCalendarUnlinked = errors.New("同期の途中でカレンダーが外れた")
 
-// stillLinked は、事業所の職員の休職、復職、退職をトランザクションの終わりまで待たせてから、カレンダー c を外していないかを
-// 読み直す。外していれば errCalendarUnlinked を返す。退職は同じ事業所の行に排他のロックを取ってカレンダーを外すので、
-// カレンダーを取った後に職員が退職しても、退職した職員の予定に外部の変更を当てない。トランザクションの中で呼ぶ。
-func (s *Syncer) stillLinked(ctx context.Context, c calendar.ExternalCalendar) error {
-	if err := s.deps.Locks.Share(ctx, c.FacilityID); err != nil {
-		return err
+// applierFor は、事業所の行を共有のロックで読み、カレンダー c を外していないかを読み直して、事業所の正本のモードの Applier を返す。
+// 外していれば errCalendarUnlinked を、モードの Applier が無ければ errModeChanged を返す。トランザクションの中で呼ぶ。
+// ロックは、トランザクションが終わるまで職員の休職、復職、退職とモードの切り替えを待たせる。退職とモードの切り替えは同じ事業所の行に
+// 排他のロックを取るので、カレンダーを取った後に職員が退職しても、モードを buddy_primary に切り替えても、外部の変更を当てない。
+func (s *Syncer) applierFor(ctx context.Context, c calendar.ExternalCalendar) (Applier, error) {
+	f, err := s.deps.Locks.GetForShare(ctx, c.FacilityID)
+	if err != nil {
+		return nil, err
 	}
 	cur, err := s.deps.Calendars.Get(ctx, c.ID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if cur.DisabledAt != nil {
-		return errCalendarUnlinked
+		return nil, errCalendarUnlinked
 	}
 	// カレンダーを外すようにする前の版の退職では、カレンダーが外れていないことがある
 	if st, err := s.deps.Staff.Get(ctx, c.StaffID); err != nil {
-		return err
+		return nil, err
 	} else if st.Status == staff.StatusRetired {
-		return errCalendarUnlinked
+		return nil, errCalendarUnlinked
 	}
-	return nil
+	a, ok := s.appliers[f.SourceMode]
+	if !ok {
+		return nil, errModeChanged
+	}
+	return a, nil
 }

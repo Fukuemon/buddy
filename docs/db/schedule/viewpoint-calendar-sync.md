@@ -2,21 +2,22 @@
 
 ## Description
 
-職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち。書き出しは、予定の正本のモードが buddy_primary の事業所に限る
+職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち、Google カレンダーの予定の写し（Projection）。書き出しは、予定の正本のモードが buddy_primary の事業所に限る。同期は google_primary の事業所のカレンダーだけを読み、予定の写しに書く
 
 ## Tables
 
-| Name                                                          | Columns | Comment                                                                         | Type       |
-| ------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------- | ---------- |
-| [public.facilities](public.facilities.md)                     | 7       | 訪問看護の事業所                                                                | BASE TABLE |
-| [public.users](public.users.md)                               | 15      | 職員                                                                            | BASE TABLE |
-| [public.recurring_schedules](public.recurring_schedules.md)   | 20      | 繰り返しの予定と、その規則                                                      | BASE TABLE |
-| [public.schedules](public.schedules.md)                       | 17      | 予定                                                                            | BASE TABLE |
-| [public.external_calendars](public.external_calendars.md)     | 8       | 取り込む外部のカレンダーと、その持ち主の職員。外していないものは職員ごとに 1 つ | BASE TABLE |
-| [public.calendar_sync_states](public.calendar_sync_states.md) | 10      | 外部のカレンダーごとの同期の状態                                                | BASE TABLE |
-| [public.external_event_links](public.external_event_links.md) | 11      | 外部の予定と、buddy の単発か繰り返しの予定の対応                                | BASE TABLE |
-| [public.import_runs](public.import_runs.md)                   | 14      | 外部のカレンダーからの取り込みの 1 回ごとの記録                                 | BASE TABLE |
-| [public.calendar_exports](public.calendar_exports.md)         | 14      | 予定を外部のカレンダーに書き出す待ち。予定の変更と同じトランザクションで積む    | BASE TABLE |
+| Name                                                                      | Columns | Comment                                                                                                           | Type       |
+| ------------------------------------------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------- | ---------- |
+| [public.facilities](public.facilities.md)                                 | 7       | 訪問看護の事業所                                                                                                  | BASE TABLE |
+| [public.users](public.users.md)                                           | 15      | 職員                                                                                                              | BASE TABLE |
+| [public.recurring_schedules](public.recurring_schedules.md)               | 20      | 繰り返しの予定と、その規則                                                                                        | BASE TABLE |
+| [public.schedules](public.schedules.md)                                   | 17      | 予定                                                                                                              | BASE TABLE |
+| [public.external_calendars](public.external_calendars.md)                 | 8       | 取り込む外部のカレンダーと、その持ち主の職員。外していないものは職員ごとに 1 つ                                   | BASE TABLE |
+| [public.calendar_sync_states](public.calendar_sync_states.md)             | 10      | 外部のカレンダーごとの同期の状態                                                                                  | BASE TABLE |
+| [public.external_event_links](public.external_event_links.md)             | 11      | 外部の予定と、buddy の単発か繰り返しの予定の対応                                                                  | BASE TABLE |
+| [public.import_runs](public.import_runs.md)                               | 14      | 外部のカレンダーからの取り込みの 1 回ごとの記録                                                                   | BASE TABLE |
+| [public.calendar_exports](public.calendar_exports.md)                     | 14      | 予定を外部のカレンダーに書き出す待ち。予定の変更と同じトランザクションで積む                                      | BASE TABLE |
+| [public.calendar_event_projections](public.calendar_event_projections.md) | 19      | Google カレンダーを予定の正本にする事業所の、Google カレンダーの予定の写し（Projection）。1 つの予定を 1 行にする | BASE TABLE |
 
 ## Relations
 
@@ -39,6 +40,8 @@ erDiagram
 "public.calendar_exports" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
 "public.calendar_exports" }o--|| "public.recurring_schedules" : "FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id) ON DELETE CASCADE"
 "public.calendar_exports" }o--|| "public.schedules" : "FOREIGN KEY (facility_id, schedule_id) REFERENCES schedules(facility_id, id) ON DELETE CASCADE"
+"public.calendar_event_projections" }o--|| "public.users" : "FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id) ON DELETE CASCADE"
+"public.calendar_event_projections" }o--|| "public.external_calendars" : "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
 
 "public.facilities" {
   text id
@@ -173,6 +176,27 @@ erDiagram
   timestamp_with_time_zone finished_at
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+}
+"public.calendar_event_projections" {
+  text external_calendar_id
+  varchar_1024_ external_event_id
+  text facility_id
+  text staff_id
+  varchar_1024_ recurring_event_id
+  timestamp_with_time_zone original_start_at
+  date original_start_date
+  text status
+  text title
+  timestamp_with_time_zone start_at
+  date start_date
+  timestamp_with_time_zone end_at
+  date end_date
+  text time_zone
+  text__ recurrence
+  text etag
+  timestamp_with_time_zone google_updated_at
+  date last_end_date
+  timestamp_with_time_zone projected_at
 }
 ```
 

@@ -188,6 +188,7 @@ func toEvent(ev *calendarv3.Event) calendar.Event {
 		RecurringEventID: ev.RecurringEventId,
 		OriginalStart:    toWhen(ev.OriginalStartTime),
 		ETag:             ev.Etag,
+		Updated:          ev.Updated,
 	}
 }
 

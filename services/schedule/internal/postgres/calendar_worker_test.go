@@ -18,6 +18,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
@@ -166,15 +167,15 @@ func TestCalendarSyncRetakesExpiredLease(t *testing.T) {
 	calID := linkMoriCalendar(t, pool)
 	first, second := NewCalendarSyncRepository(pool), NewCalendarSyncRepository(pool)
 
-	claimed, err := first.Claim(ctx, 5, time.Minute)
+	claimed, err := first.Claim(ctx, 5, time.Minute, buddyPrimary)
 	if err != nil || len(claimed) != 1 || claimed[0].Calendar.ID != calID {
 		t.Fatalf("Claim = %+v, %v", claimed, err)
 	}
-	if again, err := second.Claim(ctx, 5, time.Minute); err != nil || len(again) != 0 {
+	if again, err := second.Claim(ctx, 5, time.Minute, buddyPrimary); err != nil || len(again) != 0 {
 		t.Fatalf("リースの間に別の処理が取った: %+v, %v", again, err)
 	}
 	expireLeases(t, pool)
-	retaken, err := second.Claim(ctx, 5, time.Minute)
+	retaken, err := second.Claim(ctx, 5, time.Minute, buddyPrimary)
 	if err != nil || len(retaken) != 1 || retaken[0].Calendar.ID != calID {
 		t.Fatalf("リースが切れた後の Claim = %+v, %v", retaken, err)
 	}
@@ -338,7 +339,7 @@ func TestCalendarSyncersInParallelClaimOnce(t *testing.T) {
 		}
 	}
 	// 同期の状態の行を先に作り、2 つの処理が同じ行を取り合うようにする
-	if _, err := NewCalendarSyncRepository(pool).Claim(ctx, 0, time.Minute); err != nil {
+	if _, err := NewCalendarSyncRepository(pool).Claim(ctx, 0, time.Minute, buddyPrimary); err != nil {
 		t.Fatal(err)
 	}
 	var mu sync.Mutex
@@ -350,7 +351,7 @@ func TestCalendarSyncersInParallelClaimOnce(t *testing.T) {
 		wg.Go(func() {
 			<-start
 			for {
-				states, err := r.Claim(ctx, 1, time.Minute)
+				states, err := r.Claim(ctx, 1, time.Minute, buddyPrimary)
 				if err != nil {
 					t.Error(err)
 					return
@@ -410,20 +411,24 @@ func TestCalendarExportFinishesAfterShutdown(t *testing.T) {
 
 // TestCalendarSyncFinishesAfterShutdown は、停止の合図（ctx の取り消し）の後も、取ったカレンダーの結果を前の状態のまま書き、
 // リースを残さずに返すことを確認する。次に起動した処理が、リースが切れるのを待たずに取り直せる。
+// 同期が読むのは google_primary の事業所のカレンダーなので、シードの岡田のカレンダーを使う。
 func TestCalendarSyncFinishesAfterShutdown(t *testing.T) {
 	pool := workerDB(t, "worker_sync_shutdown")
-	calID := linkMoriCalendar(t, pool)
+	calID := seedOkadaCalendar
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 	syncer := calendarsync.NewSyncer(calendarsync.SyncerDeps{
 		Syncs: NewCalendarSyncRepository(pool), Calendars: NewCalendarRepository(pool), Staff: NewStaffRefRepository(pool),
-		Locks: NewFacilityRepository(pool), Exports: NewCalendarExportRepository(pool),
+		Locks: NewFacilityRepository(pool),
 		// 外部のカレンダーを読もうとしている間に、停止の合図を受ける
 		Sources: func(ctx context.Context, _ string) (calendar.EventSource, error) {
 			cancel()
 			return nil, ctx.Err()
 		},
-	}, NewTransactor(pool), ulid.Generator{}, time.Hour, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	}, calendarsync.Appliers{
+		organization.SourceGooglePrimary: calendarsync.NewProjectionApplier(NewCalendarProjectionRepository(pool), log),
+	}, NewTransactor(pool), time.Hour, log)
 	if n, err := syncer.SyncDue(ctx); err != nil || n != 1 {
 		t.Fatalf("SyncDue = %d, %v", n, err)
 	}
@@ -438,7 +443,7 @@ func TestCalendarSyncFinishesAfterShutdown(t *testing.T) {
 	if status != string(calendarsync.SyncNever) || locked {
 		t.Errorf("止めた後の同期の状態: last_status = %s, locked = %v", status, locked)
 	}
-	if again, err := NewCalendarSyncRepository(pool).Claim(context.Background(), 5, time.Minute); err != nil || len(again) != 1 {
+	if again, err := NewCalendarSyncRepository(pool).Claim(context.Background(), 5, time.Minute, googlePrimary); err != nil || len(again) != 1 {
 		t.Errorf("止めた後に次の処理が取れない: %+v, %v", again, err)
 	}
 }

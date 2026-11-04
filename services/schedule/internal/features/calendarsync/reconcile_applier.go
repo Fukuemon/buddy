@@ -49,7 +49,25 @@ type reconcileApplier struct {
 	now          func() time.Time
 }
 
-// newReconcileApplier は、今の時刻を time.Now で読む reconcileApplier を作る。Syncer と AcceptExport は、この関数で作る。
+// ReconcileDeps は、reconcileApplier が読み書きするリポジトリである。
+type ReconcileDeps struct {
+	Calendars    Calendars
+	Exports      ExportRepository
+	Schedules    calendar.ScheduleStore
+	Recurring    calendar.RecurringStore
+	Types        calendar.Types
+	Patients     calendar.Patients
+	ServiceCodes calendar.ServiceCodes
+	Visits       calendar.VisitStore
+}
+
+// NewReconcileApplier は、外部の予定の変更を予定の対応と比べて buddy の予定に当てる Applier（reconcileApplier）を作る。
+// ADR-0035 で、どのモードの事業所の同期にも使わないことにした。緊急の編集の要求で使い道を決めるまで、規則とテストを残す。
+func NewReconcileApplier(d ReconcileDeps, ids kernel.IDGenerator) Applier {
+	return newReconcileApplier(d.Calendars, d.Exports, d.Schedules, d.Recurring, d.Types, d.Patients, d.ServiceCodes, d.Visits, ids)
+}
+
+// newReconcileApplier は、今の時刻を time.Now で読む reconcileApplier を作る。NewReconcileApplier と AcceptExport は、この関数で作る。
 func newReconcileApplier(
 	calendars Calendars, exports ExportRepository, schedules calendar.ScheduleStore, recurring calendar.RecurringStore,
 	types calendar.Types, patients calendar.Patients, serviceCodes calendar.ServiceCodes, visits calendar.VisitStore, ids kernel.IDGenerator,
@@ -86,6 +104,11 @@ func (a reconcileApplier) Apply(ctx context.Context, c calendar.ExternalCalendar
 		return err
 	}
 	return a.syncOccurrence(ctx, c, parent, ev)
+}
+
+// Settle は、Applier の Settle を実装する。予定ごとに当て終えているので、何もしない。
+func (a reconcileApplier) Settle(context.Context, calendar.ExternalCalendar, bool, []string) error {
+	return nil
 }
 
 // syncSchedule は、カレンダー c の単発の予定に対応する外部の予定 ev の変更を当てる。

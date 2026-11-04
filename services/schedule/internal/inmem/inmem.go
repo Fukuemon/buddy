@@ -5,6 +5,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -66,6 +67,8 @@ type Store struct {
 	Exports       map[string]calendar.Export
 	// SyncResults は、カレンダーの ID ごとの、最後に同期した結果である。
 	SyncResults map[string]calendarsync.SyncResult
+	// Projections は、ProjectionKey ごとの、Google カレンダーの予定の写しである。
+	Projections map[ProjectionKey]scheduleview.Projection
 }
 
 // NewStore は、空の Store を作る。
@@ -92,6 +95,7 @@ func NewStore() *Store {
 		Links:         map[string]calendar.EventLink{},
 		Exports:       map[string]calendar.Export{},
 		SyncResults:   map[string]calendarsync.SyncResult{},
+		Projections:   map[ProjectionKey]scheduleview.Projection{},
 	}
 }
 
@@ -1220,14 +1224,15 @@ func (s Exports) Backlog(_ context.Context) (calendarexport.Backlog, error) {
 	return b, nil
 }
 
-// Syncs は、calendarsync.SyncRepository のメモリ上の実装である。読む時刻と lease を持たず、取るたびに外していない全てのカレンダーを返す。
+// Syncs は、calendarsync.SyncRepository のメモリ上の実装である。読む時刻と lease を持たず、取るたびに、事業所の正本のモードが
+// modes にある外していない全てのカレンダーを返す。
 type Syncs struct{ *Store }
 
-// Claim は、外していないカレンダーを ID の順に max 件まで、最後に同期した結果のトークンを付けて返す。
-func (s Syncs) Claim(_ context.Context, max int, _ time.Duration) ([]calendarsync.SyncState, error) {
+// Claim は、事業所の正本のモードが modes にある外していないカレンダーを ID の順に max 件まで、最後に同期した結果のトークンを付けて返す。
+func (s Syncs) Claim(_ context.Context, max int, _ time.Duration, modes []organization.SourceMode) ([]calendarsync.SyncState, error) {
 	var out []calendarsync.SyncState
 	for _, c := range s.Calendars {
-		if c.DisabledAt != nil {
+		if !s.synced(c, modes) {
 			continue
 		}
 		st := calendarsync.SyncState{Calendar: c, LastStatus: calendarsync.SyncNever}
@@ -1247,15 +1252,57 @@ func (s Syncs) Finish(_ context.Context, st calendarsync.SyncState, r calendarsy
 }
 
 // Backlog は、calendarsync.SyncRepository の Backlog を実装する。メモリ上の実装は読む時刻と成功の時刻を持たないので、
-// 外していない全てのカレンダーを読む時刻を過ぎたものとして数え、最後の成功からの時間は 0 を返す。
-func (s Syncs) Backlog(_ context.Context) (calendarsync.SyncBacklog, error) {
+// 事業所の正本のモードが modes にある外していない全てのカレンダーを読む時刻を過ぎたものとして数え、最後の成功からの時間は 0 を返す。
+func (s Syncs) Backlog(_ context.Context, modes []organization.SourceMode) (calendarsync.SyncBacklog, error) {
 	var b calendarsync.SyncBacklog
 	for _, c := range s.Calendars {
-		if c.DisabledAt == nil {
+		if s.synced(c, modes) {
 			b.OverdueCount++
 		}
 	}
 	return b, nil
+}
+
+// synced は、カレンダー c を外しておらず、c の事業所の正本のモードが modes にあるかを返す。
+func (s Syncs) synced(c calendar.ExternalCalendar, modes []organization.SourceMode) bool {
+	return c.DisabledAt == nil && slices.Contains(modes, s.Facilities[c.FacilityID].SourceMode)
+}
+
+// ProjectionKey は、Projections の行のキーで、結び付けたカレンダーの ID と Google の予定の ID の組である。
+type ProjectionKey struct{ ExternalCalendarID, EventID string }
+
+// Projections は、calendarsync.Projections のメモリ上の実装である。
+type Projections struct{ *Store }
+
+// Put は、calendarsync.Projections の Put を実装する。写した時刻は今の時刻にする。
+func (s Projections) Put(_ context.Context, p scheduleview.Projection) error {
+	p.ProjectedAt = time.Now()
+	s.Projections[ProjectionKey{p.ExternalCalendarID, p.EventID}] = p
+	return nil
+}
+
+// Delete は、calendarsync.Projections の Delete を実装する。
+func (s Projections) Delete(_ context.Context, externalCalendarID, eventID string) error {
+	maps.DeleteFunc(s.Projections, func(k ProjectionKey, p scheduleview.Projection) bool {
+		return k.ExternalCalendarID == externalCalendarID && (k.EventID == eventID || p.RecurringEventID == eventID)
+	})
+	return nil
+}
+
+// DeleteExcept は、calendarsync.Projections の DeleteExcept を実装する。
+func (s Projections) DeleteExcept(_ context.Context, externalCalendarID string, eventIDs []string) error {
+	maps.DeleteFunc(s.Projections, func(k ProjectionKey, _ scheduleview.Projection) bool {
+		return k.ExternalCalendarID == externalCalendarID && !slices.Contains(eventIDs, k.EventID)
+	})
+	return nil
+}
+
+// DeleteEndedBefore は、calendarsync.Projections の DeleteEndedBefore を実装する。
+func (s Projections) DeleteEndedBefore(_ context.Context, externalCalendarID string, before civil.Date) error {
+	maps.DeleteFunc(s.Projections, func(k ProjectionKey, p scheduleview.Projection) bool {
+		return k.ExternalCalendarID == externalCalendarID && p.LastEndDate != nil && p.LastEndDate.Before(before)
+	})
+	return nil
 }
 
 // Identity は、Identities が持つブローカーの職員である。Pending は登録の途中で、Activate で外れる。

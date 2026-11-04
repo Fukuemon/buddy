@@ -12,7 +12,7 @@ import {
   SEED_PATIENT,
 } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence, storyUrl } from '../../fixtures/evidence'
-import { createGoogleEvent, findGoogleEvent, moveGoogleEvent } from '../../fixtures/googleCalendar'
+import { createGoogleEvent, findGoogleEvent } from '../../fixtures/googleCalendar'
 import { detailDateTimeText } from '../../fixtures/schedule'
 import { STAFF_FORM } from '../../fixtures/staff'
 import { linkStaffCalendar, unlinkStaffCalendar } from '../../screens/calendar'
@@ -308,7 +308,7 @@ test.describe('予定の取り込み', () => {
 })
 
 test.describe('確認が必要な予定', () => {
-  test.describe('翌日に終わる予定の書き出しと同期', () => {
+  test.describe('翌日に終わる予定の書き出し', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       const prefix = variant.label ? `${variant.label}: ` : ''
 
@@ -382,92 +382,6 @@ test.describe('確認が必要な予定', () => {
             } finally {
               await step('（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）')
               await unlinkStaffCalendar(page, HAYASHI.id)
-            }
-          },
-        )
-      })
-
-      test(`${prefix}取り込んだ予定を Google カレンダーで 23 時から翌日の 2 時に変えた場合、buddy の予定も 23 時から翌日の 2 時になること`, async ({
-        browser,
-      }) => {
-        const date = '2026-12-05'
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'calendar-sync-overnight',
-            title: `取り込んだ ${date} 22:00〜翌 01:00 の予定を Google カレンダーで 23:00〜翌 02:00 に変えると、buddy の予定も 23:00〜翌 02:00 になる`,
-            actor: ACTOR,
-            variant,
-          },
-          async (page) => {
-            const prepared = await prepareLinked(
-              SATO.id,
-              SATO.calendarId,
-              {
-                summary: VISIT_TITLE,
-                date,
-                start: '22:00',
-                end: '01:00',
-              },
-              true,
-            )(page)
-            await previewDay(page, SATO.id, date)
-            await page.getByTestId('calendar-import-submit').click()
-            await expect(page.getByTestId('calendar-import-result-counts')).toContainText('1 件')
-            const saved = await findSchedule(page.request, prepared.token, date, SEED_PATIENT.name)
-            return { ...prepared, scheduleId: saved?.id ?? '' }
-          },
-          async ({ page, step, check }, { token, eventId, scheduleId }) => {
-            const request = page.request
-            try {
-              await page.goto(`/schedule/${scheduleId}`)
-              await expect(page.getByTestId('schedule-detail-datetime')).toContainText(
-                '22:00〜01:00',
-              )
-              await step(
-                `${SATO.name} の Google カレンダーから取り込んだ ${SEED_PATIENT.name} の ${date} 22:00〜翌 01:00 の予定を開いている`,
-              )
-
-              await step(
-                '（撮影のため、職員が Google カレンダーで予定を直す代わりに、calendarpit の管理の API で 23:00〜翌日 02:00 に変える）',
-              )
-              await moveGoogleEvent(
-                request,
-                SATO.calendarId,
-                eventId,
-                `${date}T23:00:00+09:00`,
-                `${nextDate(date)}T02:00:00+09:00`,
-              )
-              await page.goto(
-                `${CALENDARPIT_URL}/?calendar=${encodeURIComponent(SATO.calendarId)}&date=${date}`,
-              )
-              await expect(calendarpitEvent(page, VISIT_TITLE)).toBeVisible()
-              await check(
-                `calendarpit の ${SATO.calendarId} の予定が ${date} 23:00〜${nextDate(date)} 02:00 になる`,
-              )
-
-              await step('buddy で同じ予定を開き直す（buddy は数秒ごとに Google の変更を読む）')
-              await expect
-                .poll(
-                  async () =>
-                    (await findSchedule(request, token, date, SEED_PATIENT.name))?.start_time,
-                )
-                .toBe('23:00')
-              await page.goto(`/schedule/${scheduleId}`)
-              await expect(page.getByTestId('schedule-detail-datetime')).toContainText(
-                '23:00〜02:00',
-              )
-              const synced = await findSchedule(request, token, date, SEED_PATIENT.name)
-              expect(synced?.end_time).toBe('02:00')
-              expect(synced?.ends_next_day).toBe(true)
-              await check(
-                `buddy の予定が ${date} の 23:00〜02:00 になる。予定の API の取得でも end_time は 02:00、ends_next_day は true（翌日の表示は #411、#412 で直す）`,
-              )
-            } finally {
-              await step(
-                '（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す。取り込んだ予定は残る）',
-              )
-              await unlinkStaffCalendar(page, SATO.id)
             }
           },
         )

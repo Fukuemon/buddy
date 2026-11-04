@@ -51,6 +51,8 @@ ADR-0036: [Google カレンダーの書き出しと同期を、予定の API と
 - 同じ役割の Worker を 2 つ以上動かしてもよい。待ちとカレンダーは、リースで 1 つの Worker だけが取る。
 - 止めるときは停止の合図（SIGTERM）を送る。Worker は新しく取るのをやめ、取ったものの結果を書いてから終わる。
 - 異常終了で結果を書けなかった待ちとカレンダーは、リースが切れた後に取り直される。復旧のために DB を直す必要はない。
+- 同期の Worker は、Google カレンダーを予定の正本にする事業所（`google_primary`）のカレンダーだけを取る。buddy を正本にする事業所（`buddy_primary`）のカレンダーは読まない。
+  - ADR-0035: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](../docs/adr/0035-google-calendar-source-modes.md)
 - 処理の回数、成功と失敗、滞留は、Worker のログ（`component` が `calendar-export` か `calendar-sync`）から見る。メトリクスは、インフラの側でこのログから作る。
 
 ### Worker のログ
@@ -69,7 +71,7 @@ Worker は、待ちかカレンダーを取って処理する 1 回（バッチ�
   - 一時的なエラーで後から書き直す待ちも、失敗に数える。
 - `held_count`: 書かずに置いた待ちか、当てずに置いたカレンダーの数
   - 書き出しでは、Google カレンダーで変わっていて確認が必要にした待ち（`conflict`）を数える。
-  - 同期では、書き出しの処理を待って読み直すカレンダーと、同期の途中で外れたカレンダーを数える。
+  - 同期では、書き出しの処理を待って読み直すカレンダーと、同期の途中で外れたカレンダーと、同期の途中で事業所の正本のモードが変わったカレンダーを数える。
 - `requeued_count`: 停止の合図で結果を書かずに、取り直せるように戻した数
 - `duration_ms`: 取ってから全ての結果を書くまでのミリ秒
 
@@ -84,14 +86,15 @@ Worker は、待ちかカレンダーを取って処理する 1 回（バッチ�
 
 同期の滞留の `msg` は `calendar sync backlog` で、項目は次のとおり。
 
-- `overdue_count`: 外していないカレンダーのうち、次に読む時刻を過ぎたものの数
-- `oldest_success_age_seconds`: 外していないカレンダーのうち、最後の成功が最も古いものの、最後の成功からの秒数
+- `overdue_count`: 同期が読む事業所（`google_primary`）の外していないカレンダーのうち、次に読む時刻を過ぎたものの数
+- `oldest_success_age_seconds`: 同期が読む事業所の外していないカレンダーのうち、最後の成功が最も古いものの、最後の成功からの秒数
   - 1 回も成功していないカレンダーは、同期を始めた時刻から数える。
   - カレンダーが無ければ 0 になる。
 
 予定のタイトル、利用者名、カレンダーの ID のメールは、どのログにも書かない。  
 1 つの待ちやカレンダーの失敗は、要約とは別に、`calendar export failed` と `calendar sync failed` の行に書く。  
-失敗の行には、待ちの ID（`export_id`）か、buddy のカレンダーの ID（`external_calendar_id`）を付ける。
+失敗の行には、待ちの ID（`export_id`）か、事業所の ID（`facility_id`）と buddy のカレンダーの ID（`external_calendar_id`）を付ける。  
+日時を読めずに参照のモデル（Projection）に写さなかった予定は、`calendar projection skipped` の行に、事業所、カレンダー、Google の予定の ID（`event_id`）を付けて書く。
 
 ## Rollback
 

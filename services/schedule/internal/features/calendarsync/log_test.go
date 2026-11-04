@@ -13,7 +13,6 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
-	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
 
 // loggingSyncer は、e の Store の上で、Debug から JSON のログを logs に書く同期の処理を作る。
@@ -23,10 +22,9 @@ func loggingSyncer(t *testing.T, e syncEnv, logs *bytes.Buffer) *calendarsync.Sy
 	s := e.store
 	return calendarsync.NewSyncer(calendarsync.SyncerDeps{
 		Syncs: inmem.Syncs{Store: s}, Calendars: inmem.Calendars{Store: s}, Staff: inmem.StaffRefs{Store: s},
-		Locks: inmem.Facilities{Store: s}, Exports: inmem.Exports{Store: s},
-		Sources:   func(context.Context, string) (calendar.EventSource, error) { return source, nil },
-		Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, Types: inmem.ScheduleTypes{Store: s},
-	}, &inmem.Tx{}, ulid.Generator{}, time.Minute, slog.New(slog.NewJSONHandler(logs, &slog.HandlerOptions{Level: slog.LevelDebug})))
+		Locks:   inmem.Facilities{Store: s},
+		Sources: func(context.Context, string) (calendar.EventSource, error) { return source, nil },
+	}, testAppliers(s), &inmem.Tx{}, time.Minute, slog.New(slog.NewJSONHandler(logs, &slog.HandlerOptions{Level: slog.LevelDebug})))
 }
 
 // loggedLine は、ログ logs のうち msg の最後の行を返す。行が無ければテストを止める。

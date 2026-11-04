@@ -145,8 +145,8 @@ INSERT INTO schedules (id, facility_id, staff_id, schedule_type_id, date, start_
     ('01M5J5EE096G64C9R6091DBQ0B', '01M5J5EE00QGG4M6GGZQ9AT9GW', '01M5J5EE04P946KC3JAE2P1JQ4', '01M3TC68E05E1N46YCCBT6ZQB2',
      '2026-10-20', '13:00:00', '14:00:00', NULL, NULL, NULL, '第二ステーションの定例', NULL);
 
--- 3 つ目の事業所。Google カレンダーを予定の正本にする（google_primary）。予定の API から予定を書けないことを確認するのに使う。
--- 職員にカレンダーは結び付けない。結び付けと Google カレンダーの予定は、確認するテストが作る。
+-- 3 つ目の事業所。Google カレンダーを予定の正本にする（google_primary）。予定の API から予定を書けないことと、
+-- 同期が Google カレンダーの予定を参照のモデル（Projection）に写すことを確認するのに使う。
 INSERT INTO facilities (id, name, org_id, source_mode) VALUES
     ('01MA0GP0000000000000000FAC', 'サンプル第三訪問看護ステーション', 'org-sample-c', 'google_primary');
 
@@ -169,6 +169,11 @@ INSERT INTO position_policies (position_id, policy_id) VALUES
 INSERT INTO users (id, sub, username, email, phone_number, facility_id, department_id, team_id, position_id) VALUES
     ('01MA0GP0000000000000000STF', '01MA0GP0000000000000000SB1', '岡田 葵', 'aoi.okada@example.com', NULL,
      '01MA0GP0000000000000000FAC', '01MA0GP0000000000000000DEP', '01MA0GP0000000000000000TEM', '01MA0GP0000000000000000P05');
+
+-- 岡田に calendarpit の Google カレンダー aoi.okada@example.com を結び付ける。同期の Worker は、起動するとこのカレンダーを読む。
+-- 予定は calendarpit の fixture に置かず、確認するテストが作る。
+INSERT INTO external_calendars (id, facility_id, staff_id, provider, external_calendar_id) VALUES
+    ('01MA0GP0000000000000000GCA', '01MA0GP0000000000000000FAC', '01MA0GP0000000000000000STF', 'google', 'aoi.okada@example.com');
 
 INSERT INTO user_policies (id, facility_id, user_id, policy_id) VALUES
     ('01MA0GP000000000000000GP01', '01MA0GP0000000000000000FAC', '01MA0GP0000000000000000STF', '01M5E1S42TTS7QZK05YGS0GYR8'),
