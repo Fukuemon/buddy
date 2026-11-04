@@ -25,7 +25,7 @@ func allow(context.Context) error { return nil }
 
 func deny(context.Context) error { return apperr.ErrForbidden }
 
-func newApp(s *inmem.Store, guard organization.Guard) app {
+func newApp(s *inmem.Store, guard kernel.Guard) app {
 	return build(deps{
 		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
 		Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
@@ -50,7 +50,7 @@ func stopFixture() (*inmem.Store, *inmem.Identities) {
 	return s, ids
 }
 
-func stopApp(s *inmem.Store, ids *inmem.Identities, guard organization.Guard) app {
+func stopApp(s *inmem.Store, ids *inmem.Identities, guard kernel.Guard) app {
 	return build(deps{
 		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
 		Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
@@ -281,7 +281,7 @@ type app struct {
 }
 
 // build は、d の依存で staff の全ての操作の型を作る。
-func build(d deps, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) app {
+func build(d deps, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) app {
 	return app{
 		Create:               staff.NewCreate(d.Facilities, d.Departments, d.Teams, d.Positions, d.Identities, d.Staff, tx, ids, guard).Do,
 		Get:                  staff.NewGet(d.Staff).Do,

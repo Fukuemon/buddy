@@ -12,11 +12,11 @@ type CreateTeam struct {
 	facilities FacilityRepository
 	teams      TeamRepository
 	ids        kernel.IDGenerator
-	guard      Guard
+	guard      kernel.Guard
 }
 
 // NewCreateTeam は CreateTeam を作る。
-func NewCreateTeam(facilities FacilityRepository, teams TeamRepository, ids kernel.IDGenerator, guard Guard) CreateTeam {
+func NewCreateTeam(facilities FacilityRepository, teams TeamRepository, ids kernel.IDGenerator, guard kernel.Guard) CreateTeam {
 	return CreateTeam{facilities: facilities, teams: teams, ids: ids, guard: guard}
 }
 

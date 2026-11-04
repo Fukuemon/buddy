@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
@@ -78,7 +77,7 @@ type app struct {
 }
 
 // build は、d の依存で calendar の全ての操作の型を作る。
-func build(d deps, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) *app {
+func build(d deps, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) *app {
 	return &app{
 		ServiceAccount: calendar.NewServiceAccount(d.Accounts, guard).Do,
 		List:           calendar.NewList(d.Calendars, guard).Do,

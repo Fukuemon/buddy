@@ -6,6 +6,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
@@ -100,7 +101,7 @@ func prepareSlot(ctx context.Context, types TypeRepository, staff StaffRefs, vis
 	if err != nil {
 		return Slot{}, Type{}, apperr.Reference("職員", in.StaffID, err)
 	}
-	if err := apperr.SameFacility("職員", st.ID, st.FacilityID, facilityID); err != nil {
+	if err := organization.RequireSameFacility("職員", st.ID, st.FacilityID, facilityID); err != nil {
 		return Slot{}, Type{}, err
 	}
 	p, err := Current(ctx)

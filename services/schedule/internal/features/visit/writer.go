@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/servicecode"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
@@ -48,7 +49,7 @@ func (w Writer) Create(ctx context.Context, facilityID string, in Input) (string
 	if err != nil {
 		return "", apperr.Reference("利用者", in.PatientID, err)
 	}
-	if err := apperr.SameFacility("利用者", pa.ID, pa.FacilityID, facilityID); err != nil {
+	if err := organization.RequireSameFacility("利用者", pa.ID, pa.FacilityID, facilityID); err != nil {
 		return "", err
 	}
 	if pa.IsEnded() && pa.ID != in.KeptPatientID {
@@ -64,7 +65,7 @@ func (w Writer) Create(ctx context.Context, facilityID string, in Input) (string
 		if err != nil {
 			return "", apperr.Reference("職員", id, err)
 		}
-		if err := apperr.SameFacility("職員", st.ID, st.FacilityID, facilityID); err != nil {
+		if err := organization.RequireSameFacility("職員", st.ID, st.FacilityID, facilityID); err != nil {
 			return "", err
 		}
 	}

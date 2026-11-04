@@ -8,10 +8,10 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
 
 // today は、newApp の操作の今日（2026-10-31）である。
@@ -28,7 +28,7 @@ type app struct {
 	List               func(ctx context.Context, facilityID string, q patient.ListQuery) ([]patient.Detail, error)
 }
 
-func newApp(s *inmem.Store, guard organization.Guard) app {
+func newApp(s *inmem.Store, guard kernel.Guard) app {
 	facilities, staffRefs, codes, patients := inmem.Facilities{Store: s}, inmem.StaffRefs{Store: s}, inmem.ServiceCodes{Store: s}, inmem.Patients{Store: s}
 	schedules, locks := inmem.PatientSchedules{Store: s}, facilities
 	now := func() time.Time { return today.Time().Add(9 * time.Hour) }

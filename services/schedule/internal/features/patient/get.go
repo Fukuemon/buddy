@@ -3,17 +3,17 @@ package patient
 import (
 	"context"
 
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
 
 // Get は、利用者を返す。
 type Get struct {
 	patients Repository
-	guard    organization.Guard
+	guard    kernel.Guard
 }
 
 // NewGet は Get を作る。
-func NewGet(patients Repository, guard organization.Guard) Get {
+func NewGet(patients Repository, guard kernel.Guard) Get {
 	return Get{patients: patients, guard: guard}
 }
 

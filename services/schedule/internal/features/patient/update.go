@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
@@ -24,11 +24,11 @@ type Update struct {
 	staff        StaffRefs
 	locks        FacilityLock
 	tx           tx.Transactor
-	guard        organization.Guard
+	guard        kernel.Guard
 }
 
 // NewUpdate は Update を作る。
-func NewUpdate(serviceCodes ServiceCodes, patients Repository, staff StaffRefs, locks FacilityLock, tx tx.Transactor, guard organization.Guard) Update {
+func NewUpdate(serviceCodes ServiceCodes, patients Repository, staff StaffRefs, locks FacilityLock, tx tx.Transactor, guard kernel.Guard) Update {
 	return Update{serviceCodes: serviceCodes, patients: patients, staff: staff, locks: locks, tx: tx, guard: guard}
 }
 

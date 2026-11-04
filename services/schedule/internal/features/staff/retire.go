@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
@@ -21,12 +21,12 @@ type Retire struct {
 	identities  Identities
 	calendars   CalendarDetacher
 	tx          tx.Transactor
-	guard       organization.Guard
+	guard       kernel.Guard
 }
 
 // NewRetire は Retire を作る。self は、ctx のリクエストを送った職員の ID を返し、職員が自分を休職か退職にするのを拒むのに使う。nil なら拒まない。
 // now は、残る予定を数え始める日を決める時刻である。nil なら time.Now を使う。
-func NewRetire(self func(ctx context.Context) (string, bool), staff Repository, locks FacilityLock, assignments AssignmentReader, now func() time.Time, identities Identities, calendars CalendarDetacher, tx tx.Transactor, guard organization.Guard) Retire {
+func NewRetire(self func(ctx context.Context) (string, bool), staff Repository, locks FacilityLock, assignments AssignmentReader, now func() time.Time, identities Identities, calendars CalendarDetacher, tx tx.Transactor, guard kernel.Guard) Retire {
 	if now == nil {
 		now = time.Now
 	}

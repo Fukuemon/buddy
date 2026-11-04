@@ -19,11 +19,11 @@ type Link struct {
 	calendars Repository
 	tx        tx.Transactor
 	ids       kernel.IDGenerator
-	guard     organization.Guard
+	guard     kernel.Guard
 }
 
 // NewLink は Link を作る。
-func NewLink(accounts Accounts, staff StaffRefs, locks FacilityLock, calendars Repository, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) Link {
+func NewLink(accounts Accounts, staff StaffRefs, locks FacilityLock, calendars Repository, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) Link {
 	return Link{accounts: accounts, staff: staff, locks: locks, calendars: calendars, tx: tx, ids: ids, guard: guard}
 }
 
@@ -43,7 +43,7 @@ func (u Link) Do(ctx context.Context, facilityID, staffID, calendarID string) (E
 	if err != nil {
 		return ExternalCalendar{}, apperr.Reference("職員", staffID, err)
 	}
-	if err := apperr.SameFacility("職員", st.ID, st.FacilityID, facilityID); err != nil {
+	if err := organization.RequireSameFacility("職員", st.ID, st.FacilityID, facilityID); err != nil {
 		return ExternalCalendar{}, err
 	}
 	if err := requireLinkable(st); err != nil {

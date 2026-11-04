@@ -23,11 +23,11 @@ type AddGrant struct {
 	teams    kernel.Finder[organization.Team]
 	tx       tx.Transactor
 	ids      kernel.IDGenerator
-	guard    organization.Guard
+	guard    kernel.Guard
 }
 
 // NewAddGrant は AddGrant を作る。
-func NewAddGrant(staff Repository, policies kernel.Finder[organization.Policy], teams kernel.Finder[organization.Team], tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) AddGrant {
+func NewAddGrant(staff Repository, policies kernel.Finder[organization.Policy], teams kernel.Finder[organization.Team], tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) AddGrant {
 	return AddGrant{staff: staff, policies: policies, teams: teams, tx: tx, ids: ids, guard: guard}
 }
 
@@ -89,7 +89,7 @@ func (s AddGrant) targets(ctx context.Context, p organization.Policy, facilityID
 		if err != nil {
 			return nil, apperr.Reference("職員", uid, err)
 		}
-		if err := apperr.SameFacility("職員", st.ID, st.FacilityID, facilityID); err != nil {
+		if err := organization.RequireSameFacility("職員", st.ID, st.FacilityID, facilityID); err != nil {
 			return nil, err
 		}
 		if seen[uid] {
@@ -103,7 +103,7 @@ func (s AddGrant) targets(ctx context.Context, p organization.Policy, facilityID
 		if err != nil {
 			return nil, apperr.Reference("チーム", tid, err)
 		}
-		if err := apperr.SameFacility("チーム", t.ID, t.FacilityID, facilityID); err != nil {
+		if err := organization.RequireSameFacility("チーム", t.ID, t.FacilityID, facilityID); err != nil {
 			return nil, err
 		}
 		if seen[tid] {

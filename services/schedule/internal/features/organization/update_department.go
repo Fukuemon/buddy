@@ -4,16 +4,17 @@ import (
 	"context"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
 
 // UpdateDepartment は、部署 id の名前を変え、変えた部署を返す。
 type UpdateDepartment struct {
 	departments DepartmentRepository
-	guard       Guard
+	guard       kernel.Guard
 }
 
 // NewUpdateDepartment は UpdateDepartment を作る。
-func NewUpdateDepartment(departments DepartmentRepository, guard Guard) UpdateDepartment {
+func NewUpdateDepartment(departments DepartmentRepository, guard kernel.Guard) UpdateDepartment {
 	return UpdateDepartment{departments: departments, guard: guard}
 }
 

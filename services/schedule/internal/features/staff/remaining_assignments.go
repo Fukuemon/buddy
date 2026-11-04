@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
 
 // RemainingAssignments は、職員の、今日（事業所の現地の日付）以降の予定、繰り返しの予定、担当の利用者を返す。
@@ -12,11 +12,11 @@ type RemainingAssignments struct {
 	staff       Repository
 	assignments AssignmentReader
 	now         func() time.Time
-	guard       organization.Guard
+	guard       kernel.Guard
 }
 
 // NewRemainingAssignments は RemainingAssignments を作る。now は、残る予定を数え始める日を決める時刻である。nil なら time.Now を使う。
-func NewRemainingAssignments(staff Repository, assignments AssignmentReader, now func() time.Time, guard organization.Guard) RemainingAssignments {
+func NewRemainingAssignments(staff Repository, assignments AssignmentReader, now func() time.Time, guard kernel.Guard) RemainingAssignments {
 	if now == nil {
 		now = time.Now
 	}

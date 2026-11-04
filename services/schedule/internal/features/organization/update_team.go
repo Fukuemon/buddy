@@ -4,16 +4,17 @@ import (
 	"context"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
 
 // UpdateTeam は、チーム id の名前と色を変え、変えたチームを返す。
 type UpdateTeam struct {
 	teams TeamRepository
-	guard Guard
+	guard kernel.Guard
 }
 
 // NewUpdateTeam は UpdateTeam を作る。
-func NewUpdateTeam(teams TeamRepository, guard Guard) UpdateTeam {
+func NewUpdateTeam(teams TeamRepository, guard kernel.Guard) UpdateTeam {
 	return UpdateTeam{teams: teams, guard: guard}
 }
 

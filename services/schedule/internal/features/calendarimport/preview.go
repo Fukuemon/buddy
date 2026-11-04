@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
@@ -18,11 +17,11 @@ type Preview struct {
 	recurringSchedules kernel.Finder[scheduleview.RecurringDetail]
 	serviceCodes       calendar.ServiceCodes
 	cutovers           CutoverRepository
-	guard              organization.Guard
+	guard              kernel.Guard
 }
 
 // NewPreview は Preview を作る。
-func NewPreview(calendars Calendars, accounts calendar.Accounts, staff calendar.StaffRefs, patients calendar.Patients, recurringSchedules kernel.Finder[scheduleview.RecurringDetail], serviceCodes calendar.ServiceCodes, cutovers CutoverRepository, guard organization.Guard) Preview {
+func NewPreview(calendars Calendars, accounts calendar.Accounts, staff calendar.StaffRefs, patients calendar.Patients, recurringSchedules kernel.Finder[scheduleview.RecurringDetail], serviceCodes calendar.ServiceCodes, cutovers CutoverRepository, guard kernel.Guard) Preview {
 	return Preview{calendars: calendars, accounts: accounts, staff: staff, patients: patients, recurringSchedules: recurringSchedules, serviceCodes: serviceCodes, cutovers: cutovers, guard: guard}
 }
 

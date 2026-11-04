@@ -3,17 +3,17 @@ package calendar
 import (
 	"context"
 
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
 
 // ServiceAccount は、事業所 facilityID の職員がカレンダーを共有する相手のメールアドレスを返す。
 type ServiceAccount struct {
 	accounts Accounts
-	guard    organization.Guard
+	guard    kernel.Guard
 }
 
 // NewServiceAccount は ServiceAccount を作る。
-func NewServiceAccount(accounts Accounts, guard organization.Guard) ServiceAccount {
+func NewServiceAccount(accounts Accounts, guard kernel.Guard) ServiceAccount {
 	return ServiceAccount{accounts: accounts, guard: guard}
 }
 

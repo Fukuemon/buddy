@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
@@ -16,11 +16,11 @@ type Reinstate struct {
 	locks      FacilityLock
 	identities Identities
 	tx         tx.Transactor
-	guard      organization.Guard
+	guard      kernel.Guard
 }
 
 // NewReinstate は Reinstate を作る。
-func NewReinstate(staff Repository, locks FacilityLock, identities Identities, tx tx.Transactor, guard organization.Guard) Reinstate {
+func NewReinstate(staff Repository, locks FacilityLock, identities Identities, tx tx.Transactor, guard kernel.Guard) Reinstate {
 	return Reinstate{staff: staff, locks: locks, identities: identities, tx: tx, guard: guard}
 }
 

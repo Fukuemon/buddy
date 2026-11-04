@@ -28,11 +28,11 @@ type Create struct {
 	patients     Repository
 	tx           tx.Transactor
 	ids          kernel.IDGenerator
-	guard        organization.Guard
+	guard        kernel.Guard
 }
 
 // NewCreate は Create を作る。
-func NewCreate(facilities kernel.Finder[organization.Facility], serviceCodes ServiceCodes, staff StaffRefs, locks FacilityLock, patients Repository, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) Create {
+func NewCreate(facilities kernel.Finder[organization.Facility], serviceCodes ServiceCodes, staff StaffRefs, locks FacilityLock, patients Repository, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) Create {
 	return Create{facilities: facilities, serviceCodes: serviceCodes, staff: staff, locks: locks, patients: patients, tx: tx, ids: ids, guard: guard}
 }
 

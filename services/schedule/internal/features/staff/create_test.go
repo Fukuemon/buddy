@@ -9,6 +9,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
 
 func TestStaffCreate(t *testing.T) {
@@ -82,7 +83,7 @@ func TestStaffCreateWithBroker(t *testing.T) {
 		s.Positions[posID] = organization.Position{ID: posID, FacilityID: facilityID}
 		return s
 	}
-	newUC := func(s *inmem.Store, ids *inmem.Identities, guard organization.Guard) app {
+	newUC := func(s *inmem.Store, ids *inmem.Identities, guard kernel.Guard) app {
 		return build(deps{
 			Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
 			Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},

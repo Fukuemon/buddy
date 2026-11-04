@@ -3,17 +3,17 @@ package calendar
 import (
 	"context"
 
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
 
 // Check は、事業所 facilityID のサービスアカウントで calendarID のカレンダーを読めるかを確認する。
 type Check struct {
 	accounts Accounts
-	guard    organization.Guard
+	guard    kernel.Guard
 }
 
 // NewCheck は Check を作る。
-func NewCheck(accounts Accounts, guard organization.Guard) Check {
+func NewCheck(accounts Accounts, guard kernel.Guard) Check {
 	return Check{accounts: accounts, guard: guard}
 }
 

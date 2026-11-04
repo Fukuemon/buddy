@@ -3,17 +3,17 @@ package calendar
 import (
 	"context"
 
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
 
 // Unlink は、カレンダーを外す。
 type Unlink struct {
 	calendars Repository
-	guard     organization.Guard
+	guard     kernel.Guard
 }
 
 // NewUnlink は Unlink を作る。
-func NewUnlink(calendars Repository, guard organization.Guard) Unlink {
+func NewUnlink(calendars Repository, guard kernel.Guard) Unlink {
 	return Unlink{calendars: calendars, guard: guard}
 }
 

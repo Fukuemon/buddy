@@ -1,4 +1,4 @@
-// Package kernel は、機能のパッケージが共有する値の検証、一覧の並べ替え、ID の発行と 1 件の読み出しのインターフェースを持つ。
+// Package kernel は、機能のパッケージが共有する値の検証、一覧の並べ替え、ID の発行と 1 件の読み出しのインターフェース、権限の確認の型を持つ。
 // 標準ライブラリと apperr にだけ依存する。
 package kernel
 
@@ -21,6 +21,10 @@ type IDGenerator interface {
 type Finder[T any] interface {
 	Get(ctx context.Context, id string) (T, error)
 }
+
+// Guard は、ctx の職員が職員の管理（StaffManage）を許されているかを確認し、許されないときは apperr.ErrForbidden を返す。
+// principal が organization と staff に依存するので、機能のパッケージは principal の判定を import せずに受け取る（ADR-0006）。
+type Guard func(ctx context.Context) error
 
 // ValidateText は、value が空白だけか maxLen 文字を超えるときに apperr.ValidationError を返す。
 // label は、エラーの文で項目を指す名前である。

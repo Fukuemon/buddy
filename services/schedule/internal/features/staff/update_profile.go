@@ -19,11 +19,11 @@ type UpdateProfile struct {
 	assignments AssignmentReader
 	now         func() time.Time
 	tx          tx.Transactor
-	guard       organization.Guard
+	guard       kernel.Guard
 }
 
 // NewUpdateProfile は UpdateProfile を作る。now は、残る予定を数え始める日を決める時刻である。nil なら time.Now を使う。
-func NewUpdateProfile(staff Repository, locks FacilityLock, departments kernel.Finder[organization.Department], teams kernel.Finder[organization.Team], assignments AssignmentReader, now func() time.Time, tx tx.Transactor, guard organization.Guard) UpdateProfile {
+func NewUpdateProfile(staff Repository, locks FacilityLock, departments kernel.Finder[organization.Department], teams kernel.Finder[organization.Team], assignments AssignmentReader, now func() time.Time, tx tx.Transactor, guard kernel.Guard) UpdateProfile {
 	if now == nil {
 		now = time.Now
 	}
@@ -56,14 +56,14 @@ func (s UpdateProfile) Do(ctx context.Context, id string, p Profile) (Detail, er
 		if err != nil {
 			return apperr.Reference("部署", p.DepartmentID, err)
 		}
-		if err := apperr.SameFacility("部署", dep.ID, dep.FacilityID, cur.FacilityID); err != nil {
+		if err := organization.RequireSameFacility("部署", dep.ID, dep.FacilityID, cur.FacilityID); err != nil {
 			return err
 		}
 		team, err := s.teams.Get(ctx, p.TeamID)
 		if err != nil {
 			return apperr.Reference("チーム", p.TeamID, err)
 		}
-		if err := apperr.SameFacility("チーム", team.ID, team.FacilityID, cur.FacilityID); err != nil {
+		if err := organization.RequireSameFacility("チーム", team.ID, team.FacilityID, cur.FacilityID); err != nil {
 			return err
 		}
 		p, err := NewProfile(p)

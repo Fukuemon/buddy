@@ -17,11 +17,11 @@ type ChangePosition struct {
 	positions kernel.Finder[organization.Position]
 	tx        tx.Transactor
 	ids       kernel.IDGenerator
-	guard     organization.Guard
+	guard     kernel.Guard
 }
 
 // NewChangePosition は ChangePosition を作る。
-func NewChangePosition(staff Repository, locks FacilityLock, positions kernel.Finder[organization.Position], tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) ChangePosition {
+func NewChangePosition(staff Repository, locks FacilityLock, positions kernel.Finder[organization.Position], tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) ChangePosition {
 	return ChangePosition{staff: staff, locks: locks, positions: positions, tx: tx, ids: ids, guard: guard}
 }
 
@@ -45,7 +45,7 @@ func (s ChangePosition) Do(ctx context.Context, id, positionID string) (Detail, 
 		if err != nil {
 			return apperr.Reference("役職", positionID, err)
 		}
-		if err := apperr.SameFacility("役職", pos.ID, pos.FacilityID, cur.FacilityID); err != nil {
+		if err := organization.RequireSameFacility("役職", pos.ID, pos.FacilityID, cur.FacilityID); err != nil {
 			return err
 		}
 		if !slices.ContainsFunc(pos.Policies, func(p organization.Policy) bool { return p.Code == organization.StaffManage }) {

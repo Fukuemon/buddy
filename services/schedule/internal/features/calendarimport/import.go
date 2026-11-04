@@ -8,7 +8,6 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
@@ -42,11 +41,11 @@ type Import struct {
 	cutovers           CutoverRepository
 	tx                 tx.Transactor
 	ids                kernel.IDGenerator
-	guard              organization.Guard
+	guard              kernel.Guard
 }
 
 // NewImport は Import を作る。
-func NewImport(calendars Calendars, accounts calendar.Accounts, staff calendar.StaffRefs, locks FacilityLock, patients calendar.Patients, recurringSchedules kernel.Finder[scheduleview.RecurringDetail], serviceCodes calendar.ServiceCodes, types calendar.Types, recurring Recurring, schedules calendar.ScheduleStore, visits calendar.VisitStore, cutovers CutoverRepository, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) Import {
+func NewImport(calendars Calendars, accounts calendar.Accounts, staff calendar.StaffRefs, locks FacilityLock, patients calendar.Patients, recurringSchedules kernel.Finder[scheduleview.RecurringDetail], serviceCodes calendar.ServiceCodes, types calendar.Types, recurring Recurring, schedules calendar.ScheduleStore, visits calendar.VisitStore, cutovers CutoverRepository, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) Import {
 	return Import{calendars: calendars, accounts: accounts, staff: staff, locks: locks, patients: patients, recurringSchedules: recurringSchedules, serviceCodes: serviceCodes, types: types, recurring: recurring, schedules: schedules, visits: visits, cutovers: cutovers, tx: tx, ids: ids, guard: guard}
 }
 
