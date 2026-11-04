@@ -80,7 +80,8 @@ var ranges = map[string]Range{
 }
 
 // TimeClass は、Normalize でそろえたサービス内容 service の提供時間の区分（`I２`、`I５・２超` など）を返す。
-// 訪問看護（`訪看`）と介護予防（`予防看` とその別の表記）のサービス内容で、範囲の表にあるものだけが区分を持つ。ほかは ok が false である。
+// 訪問看護（`訪看`）と介護予防（`予防看` とその別の表記）のサービス内容で、範囲の表にあるものだけが区分を持つ。
+// 範囲の表にあっても、医療保険の項目（`医`、`基本療養費`、`難病等複数回訪問加算(２回)`）は区分を持たない。区分を持たなければ ok は false である。
 // Base で「・夜」と「・深」を外してから判定する。
 func TimeClass(service string) (class string, ok bool) {
 	s := Canonical(Base(service))
