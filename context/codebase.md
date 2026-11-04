@@ -53,6 +53,9 @@ status: stable
   - 2 つの Go の API が共有するコードは、別の module の `packages/go` にだけ置き、`go.mod` の `replace` で読む。
   - ADR-0007: [2 つの Go の API が共有するコードを、別の module にまとめる](../docs/adr/0007-go-shared-module.md)
   - `packages/go` は `services/` を import しない。
+  - サービスコードの表記と提供時間の範囲は、`packages/go/servicecode` に置く。照合の API と予定の API は、この表を写さない。
+    - 照合だけの規則（予定の終了時間の調整、予定と実績のサービス内容の対応）は、照合の API の `servicerule` に置く。
+    - ADR-0034: [サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける](../docs/adr/0034-service-code-rules.md)
 - web は `@buddy/ui` に依存してよい。
   - `packages/ui` から `apps/` へは依存しない。
 - web は `@buddy/broker` の `AuthCard` と `loginFailedMessage` だけに依存してよい。`apps/broker` は `@buddy/ui` に依存し、web には依存しない。
@@ -65,7 +68,8 @@ status: stable
   - テスト、story、story のデータ（`storyData.ts`）だけは、`api/fake/` と `api/http/` を import してよい。
 - `services/schedule` の依存は、アダプタ（`httpapi`、`postgres`）、`access`、機能のパッケージ、共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）の 1 方向に限る。
   - 共通のパッケージは、標準ライブラリと、共通のパッケージの間（`kernel` から `apperr`）だけに依存する。
-  - 機能のパッケージの間は、`organization`、`staff`、`visit`、`patient`、`schedule`、`calendar` の順にだけ import する。
+  - 機能のパッケージの間は、`organization`、`staff`、`servicecode`、`patient`、`visit`、`schedule`、`calendar` の順にだけ import する。
+    - サービスコードは `servicecode` に、訪問の区分は `visit` に置く。`visit` は利用者を `patient` から受ける。
     - `calendarimport`、`calendarsync`、`calendarexport` は `calendar` まで import してよく、3 つの間では import しない。
     - ADR-0032: [予定の API の calendar を、結び付け、取り込み、同期、書き出しの 4 つの機能に分ける](../docs/adr/0032-schedule-api-calendar-split.md)
   - `principal` は `organization` と `staff` に依存し、`schedule`、`calendar`、`access`、`httpapi`、`cmd` から使う。

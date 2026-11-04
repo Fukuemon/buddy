@@ -115,6 +115,7 @@ nav = [
     "adr/0030-go-file-names-by-role.md",
     "adr/0031-go-operation-types.md",
     "adr/0032-schedule-api-calendar-split.md",
+    "adr/0034-service-code-rules.md",
   ] },
 ]
 
