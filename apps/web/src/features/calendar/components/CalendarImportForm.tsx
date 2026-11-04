@@ -3,6 +3,7 @@ import { useId, type FormEvent } from 'react'
 
 import type { Staff } from '#/api/types'
 
+import { formatDateRange } from '../lib/format'
 import type { ImportRangeErrors } from '../lib/importRange'
 
 export type CalendarImportFormProps = {
@@ -25,9 +26,17 @@ export type CalendarImportFormProps = {
   onPreview: () => void
   /** プレビューの失敗の文。 */
   errorMessage?: string
+  /**
+   * 予定の正本の切り替えの取り込みの期間の最初の日（`YYYY-MM-DD`）。渡すと、期間の入力を出さず、この日から先の全ての予定を読む
+   * ことを示す。切り替えの間の取り込みの期間は、API が決めた期間だけである。
+   */
+  cutoverRangeStart?: string
 }
 
-/** 予定を取り込む職員と期間の入力。幅 768px 以上では、職員と期間を横に並べる。 */
+/**
+ * 予定を取り込む職員と期間の入力。幅 768px 以上では、職員と期間を横に並べる。
+ * 予定の正本の切り替えの間は、期間の入力の代わりに、切り替えの期間を示す。
+ */
 export const CalendarImportForm = ({
   staffOptions,
   staffId,
@@ -42,6 +51,7 @@ export const CalendarImportForm = ({
   isPreviewing,
   onPreview,
   errorMessage,
+  cutoverRangeStart,
 }: CalendarImportFormProps) => {
   const staffFieldId = useId()
   const startId = useId()
@@ -80,53 +90,66 @@ export const CalendarImportForm = ({
               ))}
             </Select>
           </div>
-          <div className="flex flex-col gap-3">
-            <label className="text-label" htmlFor={startId}>
-              期間の開始日
-            </label>
-            <input
-              aria-describedby={
-                rangeErrors.start === undefined ? hintId : `${startErrorId} ${hintId}`
-              }
-              aria-invalid={rangeErrors.start !== undefined || undefined}
-              className={formFieldControlClassName}
-              data-testid="calendar-import-start"
-              disabled={isLocked}
-              id={startId}
-              onChange={(event) => onStartChange(event.target.value)}
-              type="date"
-              value={start}
-            />
-            {rangeErrors.start !== undefined && (
-              <span className="text-caption text-danger" id={startErrorId} role="alert">
-                {rangeErrors.start}
+          {cutoverRangeStart !== undefined ? (
+            <div className="flex flex-col gap-3 desktop:col-span-2">
+              <span className="text-label">期間</span>
+              <span className="text-body" data-testid="calendar-import-cutover-range">
+                {formatDateRange(cutoverRangeStart, null)}（切り替えの月の初日から先の全て）
               </span>
-            )}
-          </div>
-          <div className="flex flex-col gap-3">
-            <label className="text-label" htmlFor={endId}>
-              期間の終了日
-            </label>
-            <input
-              aria-describedby={rangeErrors.end === undefined ? undefined : endErrorId}
-              aria-invalid={rangeErrors.end !== undefined || undefined}
-              className={formFieldControlClassName}
-              data-testid="calendar-import-end"
-              disabled={isLocked}
-              id={endId}
-              onChange={(event) => onEndChange(event.target.value)}
-              type="date"
-              value={end}
-            />
-            {rangeErrors.end !== undefined && (
-              <span className="text-caption text-danger" id={endErrorId} role="alert">
-                {rangeErrors.end}
-              </span>
-            )}
-          </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-col gap-3">
+                <label className="text-label" htmlFor={startId}>
+                  期間の開始日
+                </label>
+                <input
+                  aria-describedby={
+                    rangeErrors.start === undefined ? hintId : `${startErrorId} ${hintId}`
+                  }
+                  aria-invalid={rangeErrors.start !== undefined || undefined}
+                  className={formFieldControlClassName}
+                  data-testid="calendar-import-start"
+                  disabled={isLocked}
+                  id={startId}
+                  onChange={(event) => onStartChange(event.target.value)}
+                  type="date"
+                  value={start}
+                />
+                {rangeErrors.start !== undefined && (
+                  <span className="text-caption text-danger" id={startErrorId} role="alert">
+                    {rangeErrors.start}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-col gap-3">
+                <label className="text-label" htmlFor={endId}>
+                  期間の終了日
+                </label>
+                <input
+                  aria-describedby={rangeErrors.end === undefined ? undefined : endErrorId}
+                  aria-invalid={rangeErrors.end !== undefined || undefined}
+                  className={formFieldControlClassName}
+                  data-testid="calendar-import-end"
+                  disabled={isLocked}
+                  id={endId}
+                  onChange={(event) => onEndChange(event.target.value)}
+                  type="date"
+                  value={end}
+                />
+                {rangeErrors.end !== undefined && (
+                  <span className="text-caption text-danger" id={endErrorId} role="alert">
+                    {rangeErrors.end}
+                  </span>
+                )}
+              </div>
+            </>
+          )}
         </div>
         <span className="text-caption text-text-secondary" id={hintId}>
-          開始日から終了日までに始まる予定を、職員の Google カレンダーから読みます。
+          {cutoverRangeStart !== undefined
+            ? '切り替えの月の初日から先に始まる全ての予定を、職員の Google カレンダーから読みます。繰り返しの予定は、規則のまま取り込みます。'
+            : '開始日から終了日までに始まる予定を、職員の Google カレンダーから読みます。'}
         </span>
         <div>
           <Button

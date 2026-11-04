@@ -1,12 +1,15 @@
 import type { ImportRange } from '#/api/types'
 
+/** 期間を選んで取り込むときの、終わりのある期間。予定の正本の切り替えの間の、終わりの無い期間を含めない。 */
+export type BoundedImportRange = ImportRange & { range_end: string }
+
 const pad = (value: number) => String(value).padStart(2, '0')
 
 const toDateKey = (date: Date) =>
   `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 
 /** 今日の次の月の 1 日から月末までの期間を返す。取り込みの期間のデフォルト値に使う。 */
-export const nextMonthRange = (today: Date): ImportRange => ({
+export const nextMonthRange = (today: Date): BoundedImportRange => ({
   range_start: toDateKey(new Date(today.getFullYear(), today.getMonth() + 1, 1)),
   range_end: toDateKey(new Date(today.getFullYear(), today.getMonth() + 2, 0)),
 })

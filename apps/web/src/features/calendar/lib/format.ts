@@ -14,9 +14,9 @@ export const formatDateWithWeekday = (date: string) => {
   return `${formatDate(date)}（${WEEKDAYS[weekday]}）`
 }
 
-/** 期間を「2026/11/01〜2026/11/30」の形にする。 */
-export const formatDateRange = (start: string, end: string) =>
-  `${formatDate(start)}〜${formatDate(end)}`
+/** 期間を「2026/11/01〜2026/11/30」の形にする。終わりの無い期間（切り替えの取り込み）は「2026/11/01〜」にする。 */
+export const formatDateRange = (start: string, end: string | null | undefined) =>
+  `${formatDate(start)}〜${end == null ? '' : formatDate(end)}`
 
 const formatTime = (time: string) => time.slice(0, 5)
 

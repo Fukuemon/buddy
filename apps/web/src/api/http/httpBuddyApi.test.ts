@@ -64,7 +64,11 @@ const schedule = (
 })
 
 /** buddy_primary の事業所の一覧の応答の、予定のほかの項目。 */
-const BUDDY_PRIMARY_LIST = { source_mode: 'buddy_primary' as const, calendar_syncs: [] }
+const BUDDY_PRIMARY_LIST = {
+  source_mode: 'buddy_primary' as const,
+  calendar_syncs: [],
+  cutover: null,
+}
 
 describe('createHttpBuddyApi', () => {
   it('期間を日付にして予定を取り、キャンセル、期間の外、ほかの職員の予定を除く', async () => {
@@ -124,6 +128,7 @@ describe('createHttpBuddyApi', () => {
           recurring_schedules: [],
           source_mode: 'google_primary',
           calendar_syncs: [sync('staff-1'), sync('staff-2')],
+          cutover: { started_at: '2026-10-05T00:00:00Z', range_start: '2026-10-01' },
         }),
       ),
     )
@@ -142,6 +147,7 @@ describe('createHttpBuddyApi', () => {
       ['recurrence', 'recurrence_unsupported'],
     ])
     expect(list.calendarSyncs.map((s) => s.staff_id)).toEqual(['staff-1'])
+    expect(list.cutover).toEqual({ started_at: '2026-10-05T00:00:00Z', range_start: '2026-10-01' })
   })
 
   it('事業所を読み、予定の正本を返す', async () => {

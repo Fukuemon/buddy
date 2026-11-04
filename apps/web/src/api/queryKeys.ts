@@ -84,5 +84,7 @@ export const queryKeys = {
       [...facility(facilityId), 'calendar-service-account'] as const,
     exportIssues: (facilityId: FacilityId) =>
       [...facility(facilityId), 'calendar-export-issues'] as const,
+    /** 予定の正本の切り替えの状況。取り込みの画面と切り替えの画面で cache を共有する。 */
+    cutover: (facilityId: FacilityId) => [...facility(facilityId), 'calendar-cutover'] as const,
   },
 }

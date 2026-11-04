@@ -5,7 +5,8 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './CalendarImportContainer.stories'
 
-const { Initial, WithStaff, NoCalendar, PreviewError, SubmitError } = composeStories(stories)
+const { Cutover, Initial, WithStaff, NoCalendar, PreviewError, SubmitError } =
+  composeStories(stories)
 
 const submit = () => screen.getByTestId('calendar-import-submit')
 
@@ -138,5 +139,25 @@ describe('CalendarImportContainer', () => {
     render(<NoCalendar />)
     expect(await screen.findByTestId('calendar-import-no-calendar')).toBeInTheDocument()
     expect(screen.queryByTestId('calendar-import-form')).toBeNull()
+  })
+
+  it('予定の正本の切り替えの間は、切り替えの期間で取り込み、規則を写せない繰り返しは取り込まないだけを選べる', async () => {
+    render(<Cutover />)
+    expect(await screen.findByTestId('calendar-import-cutover-range')).toHaveTextContent(
+      '2026/11/01〜',
+    )
+    expect(screen.queryByTestId('calendar-import-start')).toBeNull()
+    const result = await preview()
+    expect(within(result).getByTestId('calendar-import-count-overwrite')).toHaveTextContent('1 件')
+    const unsupported = screen.getByTestId('calendar-import-review-event-biweekly')
+    expect(unsupported).toHaveTextContent('繰り返しの規則を buddy に写せない')
+    expect(
+      within(unsupported).queryByTestId('calendar-import-review-patient-event-biweekly'),
+    ).toBeNull()
+    await resolveAll()
+    await userEvent.click(screen.getByTestId('calendar-import-review-skip-event-biweekly'))
+    await userEvent.click(submit())
+    expect(await screen.findByTestId('calendar-import-back-to-cutover')).toBeInTheDocument()
+    expect(screen.queryByTestId('calendar-import-open-calendar')).toBeNull()
   })
 })

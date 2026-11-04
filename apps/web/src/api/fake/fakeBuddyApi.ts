@@ -1,4 +1,5 @@
 import {
+  createMockCutoverPreview,
   createMockImportPreview,
   createMockImportResult,
   createMockImportedPreview,
@@ -10,10 +11,15 @@ import {
   mockExternalCalendars,
   mockFacility,
   mockServiceAccount,
+  mockStaffList,
 } from '#/mocks/scheduleData'
 
 import { ApiError, type BuddyApi } from '../BuddyApi'
 import type {
+  CalendarSyncStatus,
+  CalendarCutover,
+  CalendarCutoverCalendar,
+  CalendarCutoverUnmet,
   CalendarExportIssue,
   Department,
   ExternalCalendar,
@@ -39,6 +45,11 @@ export type FakeBuddyApiOptions = {
    * 同期の状況と確認が必要な予定を返し、予定の 1 件の取得を 404 で、作成と更新を 409（google_primary）で拒む。
    */
   sourceMode?: SourceMode
+  /**
+   * google_primary の事業所のカレンダーの同期の状況。デフォルトは createMockCalendarSyncs（青木 一郎だけが同期できている）。
+   * 予定の正本の切り替えは、全てのカレンダーの同期が成功していると始められる。
+   */
+  calendarSyncs?: CalendarSyncStatus[]
 }
 
 const assertFacility = (facilityId: FacilityId) => {
@@ -59,18 +70,27 @@ const FAKE_READABLE_CALENDAR_SUFFIX = '@example.com'
 export const createFakeBuddyApi = ({
   baseDate = new Date(),
   sourceMode = 'buddy_primary',
+  calendarSyncs: syncs,
 }: FakeBuddyApiOptions = {}): BuddyApi => {
   const isGooglePrimary = sourceMode === 'google_primary'
+  // 切り替えを完了すると buddy_primary に移る
+  let mode = sourceMode
+  let cutover: CalendarCutover | null = null
+  let cutoverSequence = 0
+  const cutoverRuns = new Map<
+    ExternalCalendar['id'],
+    NonNullable<ExternalCalendar['last_import']>
+  >()
   const schedules = new Map<Schedule['id'], Schedule>(
     (isGooglePrimary
       ? createMockProjectionSchedules(baseDate).map(fromApiSchedule)
       : createFakeSchedules(baseDate)
     ).map((schedule) => [schedule.id, schedule]),
   )
-  const calendarSyncs = isGooglePrimary ? createMockCalendarSyncs(baseDate) : []
+  const calendarSyncs = isGooglePrimary ? (syncs ?? createMockCalendarSyncs(baseDate)) : []
   // 本物の API と同じく、google_primary の事業所では予定の作成と更新を 409 で拒む
   const assertBuddyPrimary = () => {
-    if (isGooglePrimary) {
+    if (mode === 'google_primary') {
       throw new ApiError(
         409,
         'この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください',
@@ -136,13 +156,52 @@ export const createFakeBuddyApi = ({
     }
   }
   const conflict = (code: string, message: string) => new ApiError(409, message, [], code)
+  // 本物の API と同じく、切り替えの間は、切り替えの range_start から終わりの無い期間だけを受ける
+  const assertCutoverRange = (range: { range_start: string; range_end?: string | null }) => {
+    const open =
+      cutover !== null && (range.range_start !== cutover.range_start || range.range_end != null)
+    if (open || (cutover === null && range.range_end == null)) {
+      throw new ApiError(400, '取り込みの期間が正しくありません', [], 'invalid_input')
+    }
+  }
+  const cutoverCalendars = (): CalendarCutoverCalendar[] =>
+    [...calendars.values()].map((calendar) => {
+      const sync = calendarSyncs.find((s) => s.external_calendar_id === calendar.id)
+      const staffName = mockStaffList.find((s) => s.id === calendar.staff_id)?.username ?? ''
+      return {
+        external_calendar_id: calendar.id,
+        staff_id: calendar.staff_id,
+        staff_name: sync?.staff_name ?? staffName,
+        last_status: sync?.last_status ?? 'succeeded',
+        last_succeeded_at: sync?.last_succeeded_at ?? baseDate.toISOString(),
+        last_error: sync?.last_error ?? null,
+        last_import: cutover === null ? null : (cutoverRuns.get(calendar.id) ?? null),
+      }
+    })
+  const findOpenCutover = (cutoverId: CalendarCutover['id']) => {
+    if (cutover === null || cutover.id !== cutoverId)
+      throw conflict('cutover_not_open', 'この切り替えは、すでに完了したか、やめています')
+    return cutover
+  }
+  const finishCutover = (status: CalendarCutover['status']) => {
+    const done: CalendarCutover = {
+      ...findOpenCutover(cutover?.id ?? ''),
+      status,
+      finished_at: new Date().toISOString(),
+    }
+    cutover = null
+    cutoverRuns.clear()
+    return done
+  }
   const previewOf = (
     id: ExternalCalendar['id'],
-    range: { range_start: string; range_end: string },
+    range: { range_start: string; range_end?: string | null },
   ) =>
-    imported.has(`${id}:${range.range_start}:${range.range_end}`)
+    imported.has(`${id}:${range.range_start}:${range.range_end ?? ''}`)
       ? createMockImportedPreview(range)
-      : createMockImportPreview(range)
+      : cutover !== null
+        ? createMockCutoverPreview(range.range_start)
+        : createMockImportPreview(range)
 
   const patientRecords = createFakePatientRecords()
   const staffApi = createFakeStaffApi({
@@ -172,7 +231,7 @@ export const createFakeBuddyApi = ({
     facilities: {
       get: async (facilityId) => {
         assertFacility(facilityId)
-        return { id: mockFacility.id, name: mockFacility.name, sourceMode }
+        return { id: mockFacility.id, name: mockFacility.name, sourceMode: mode }
       },
     },
     schedules: {
@@ -193,8 +252,15 @@ export const createFakeBuddyApi = ({
               Date.parse(schedule.endsAt) > fromTime && Date.parse(schedule.startsAt) < toTime,
           ),
           needsReview: all.filter((schedule) => schedule.reviewReason !== undefined),
-          sourceMode,
-          calendarSyncs: calendarSyncs.filter((sync) => isSelectedStaff(sync.staff_id)),
+          sourceMode: mode,
+          calendarSyncs:
+            mode === 'google_primary'
+              ? calendarSyncs.filter((sync) => isSelectedStaff(sync.staff_id))
+              : [],
+          cutover:
+            cutover === null
+              ? null
+              : { started_at: cutover.started_at, range_start: cutover.range_start },
         }
       },
       get: async (facilityId, scheduleId) => {
@@ -308,11 +374,15 @@ export const createFakeBuddyApi = ({
       preview: async (facilityId, externalCalendarId, range) => {
         assertFacility(facilityId)
         findCalendar(externalCalendarId)
+        assertCutoverRange(range)
         return previewOf(externalCalendarId, range)
       },
       import: async (facilityId, externalCalendarId, { decisions, ...range }) => {
         assertFacility(facilityId)
         const calendar = findCalendar(externalCalendarId)
+        // 本物の API と同じく、google_primary の事業所では、切り替えの間だけ取り込める
+        if (mode === 'google_primary' && cutover === null) assertBuddyPrimary()
+        assertCutoverRange(range)
         const preview: ImportPreview = previewOf(externalCalendarId, range)
         const revisions = new Map(
           preview.needs_review.map((r) => [r.external_event_id, r.revision]),
@@ -327,9 +397,10 @@ export const createFakeBuddyApi = ({
           )
         }
         const result = createMockImportResult(externalCalendarId, preview, decisions)
-        imported.add(`${externalCalendarId}:${range.range_start}:${range.range_end}`)
+        imported.add(`${externalCalendarId}:${range.range_start}:${range.range_end ?? ''}`)
         const { already_imported_count: _, external_calendar_id: __, ...run } = result
         calendars.set(calendar.id, { ...calendar, last_import: run })
+        if (cutover !== null) cutoverRuns.set(calendar.id, run)
         return result
       },
       exportIssues: async (facilityId) => {
@@ -354,6 +425,64 @@ export const createFakeBuddyApi = ({
           )
         exportIssues.delete(exportId)
         return { ...exportOfIssue(issue), status: 'succeeded', error_code: null }
+      },
+      cutoverStatus: async (facilityId) => {
+        assertFacility(facilityId)
+        return { cutover, calendars: cutoverCalendars() }
+      },
+      startCutover: async (facilityId) => {
+        assertFacility(facilityId)
+        if (mode !== 'google_primary')
+          throw conflict(
+            'cutover_not_google_primary',
+            'この事業所の予定の正本は、すでに buddy です',
+          )
+        if (cutover !== null)
+          throw conflict('cutover_open', 'この事業所では、切り替えをすでに始めています')
+        const notSynced = cutoverCalendars().filter((c) => c.last_status !== 'succeeded')
+        if (notSynced.length > 0)
+          throw conflict(
+            'cutover_sync_not_ready',
+            `最後の同期が成功していないカレンダーがあります（${notSynced.map((c) => c.staff_name).join('、')}）。同期が成功してから始めてください`,
+          )
+        cutoverSequence += 1
+        cutover = {
+          id: `cutover-${cutoverSequence}`,
+          facility_id: facilityId,
+          status: 'open',
+          range_start: `${baseDate.getFullYear()}-${String(baseDate.getMonth() + 1).padStart(2, '0')}-01`,
+          started_by: FAKE_VIEWER.staffId,
+          started_at: new Date().toISOString(),
+          finished_at: null,
+        }
+        return cutover
+      },
+      completeCutover: async (facilityId, cutoverId) => {
+        assertFacility(facilityId)
+        findOpenCutover(cutoverId)
+        // 本物の API と同じく、この切り替えで取り込んでいないカレンダーがあれば完了を拒む
+        const unmet = cutoverCalendars()
+          .filter((c) => c.last_import === null)
+          .map((c): CalendarCutoverUnmet => ({
+            external_calendar_id: c.external_calendar_id,
+            staff_id: c.staff_id,
+            staff_name: c.staff_name,
+            reason: 'not_imported',
+            external_event_id: null,
+            date: null,
+            start_time: null,
+            end_time: null,
+            ends_next_day: false,
+            review_reason: null,
+          }))
+        if (unmet.length > 0) return { unmet }
+        mode = 'buddy_primary'
+        return { completed: finishCutover('completed') }
+      },
+      cancelCutover: async (facilityId, cutoverId) => {
+        assertFacility(facilityId)
+        findOpenCutover(cutoverId)
+        return finishCutover('canceled')
       },
     },
   }

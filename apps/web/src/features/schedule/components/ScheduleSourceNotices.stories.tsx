@@ -32,3 +32,12 @@ export const GuideOnly: Story = {
 export const BuddyPrimary: Story = {
   args: { sourceMode: 'buddy_primary', calendarSyncs: [], needsReview: [] },
 }
+
+/** 予定の正本を buddy に切り替えている。切り替え中であることと、Google カレンダーで予定を変えないよう頼む文を出す。 */
+export const Cutover: Story = {
+  args: {
+    calendarSyncs: storyCalendarSyncs.slice(0, 1),
+    needsReview: [],
+    cutover: { started_at: '2026-10-05T00:00:00Z', range_start: '2026-10-01' },
+  },
+}

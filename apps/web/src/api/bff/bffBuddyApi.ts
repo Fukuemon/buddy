@@ -77,6 +77,10 @@ export const createBffBuddyApi = (callBff: CallBff = (data) => callBffFn({ data 
       exportIssues: call('calendars.exportIssues'),
       retryExport: call('calendars.retryExport'),
       acceptExport: call('calendars.acceptExport'),
+      cutoverStatus: call('calendars.cutoverStatus'),
+      startCutover: call('calendars.startCutover'),
+      completeCutover: call('calendars.completeCutover'),
+      cancelCutover: call('calendars.cancelCutover'),
     },
   }
 }

@@ -5,6 +5,7 @@ import { FORBIDDEN_MESSAGE } from '#/api/forbiddenMessage'
 
 import {
   acceptErrorMessage,
+  cutoverErrorMessage,
   importErrorMessage,
   linkErrorMessage,
   previewErrorMessage,
@@ -107,5 +108,27 @@ describe('acceptErrorMessage', () => {
     [apiError(502, 'calendar_unavailable'), 'Google カレンダーの内容に合わせられませんでした。'],
   ])('%s を文にする', (error, expected) => {
     expect(acceptErrorMessage(error)).toContain(expected)
+  })
+})
+
+describe('cutoverErrorMessage', () => {
+  it.each([
+    [apiError(409, 'cutover_open'), 'ほかの画面で切り替えを始めています。'],
+    [apiError(409, 'cutover_not_google_primary'), '予定の正本は、すでに buddy です。'],
+    [
+      new ApiError(
+        409,
+        '最後の同期が成功していないカレンダーがあります（青木 一郎）',
+        [],
+        'cutover_sync_not_ready',
+      ),
+      '（青木 一郎）',
+    ],
+    [apiError(409, 'cutover_not_open'), 'ほかの画面で完了したか、やめています。'],
+    [apiError(502, 'calendar_unavailable'), 'もう一度完了してください。'],
+    [apiError(403, 'forbidden'), FORBIDDEN_MESSAGE],
+    [apiError(500), '操作できませんでした。'],
+  ])('%s を文にする', (error, expected) => {
+    expect(cutoverErrorMessage(error)).toContain(expected)
   })
 })

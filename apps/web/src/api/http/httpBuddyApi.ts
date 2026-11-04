@@ -110,6 +110,7 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
           recurring_schedules: recurring,
           source_mode: sourceMode,
           calendar_syncs: calendarSyncs,
+          cutover,
         } = await unwrap(
           client.GET('/v1/facilities/{facility_id}/schedules', {
             params: {
@@ -150,6 +151,7 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
           needsReview: all.filter((schedule) => schedule.reviewReason !== undefined),
           sourceMode,
           calendarSyncs: calendarSyncs.filter((sync) => isSelectedStaff(sync.staff_id)),
+          cutover,
         }
       },
       get: async (facilityId, scheduleId) => {
@@ -521,6 +523,35 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
         unwrap(
           client.POST('/v1/calendar_exports/{calendar_export_id}/acceptances', {
             params: { path: { calendar_export_id: exportId } },
+          }),
+        ),
+      cutoverStatus: (facilityId) =>
+        unwrap(
+          client.GET('/v1/facilities/{facility_id}/calendar_cutover_status', {
+            params: { path: { facility_id: facilityId } },
+          }),
+        ),
+      startCutover: (facilityId) =>
+        unwrap(
+          client.POST('/v1/facilities/{facility_id}/calendar_cutovers', {
+            params: { path: { facility_id: facilityId } },
+          }),
+        ),
+      completeCutover: async (_facilityId, cutoverId) => {
+        const { data, error, response } = await client.POST(
+          '/v1/calendar_cutovers/{calendar_cutover_id}/completions',
+          { params: { path: { calendar_cutover_id: cutoverId } } },
+        )
+        if (response.ok && data !== undefined) return { completed: data }
+        if (error !== undefined && 'items' in error && error.items !== undefined) {
+          return { unmet: error.items }
+        }
+        throw apiError(error, response)
+      },
+      cancelCutover: (_facilityId, cutoverId) =>
+        unwrap(
+          client.POST('/v1/calendar_cutovers/{calendar_cutover_id}/cancel', {
+            params: { path: { calendar_cutover_id: cutoverId } },
           }),
         ),
     },

@@ -8,13 +8,22 @@ import { CalendarImportCounts } from './CalendarImportCounts'
 export type CalendarImportDoneProps = {
   result: ImportResult
   onOpenCalendar: () => void
+  /**
+   * 予定の正本の切り替えの取り込みのときに渡す。渡すと、予定のカレンダーへのボタンの代わりに、切り替えの状況へのボタンを出す。
+   * 切り替えの間は、予定のカレンダーが Google カレンダーの写しを出し、取り込んだ予定を出さないためである。
+   */
+  onBackToCutover?: () => void
 }
 
 /**
  * 取り込みの結果。見出しと、取り込んだ、取り込まなかった、取り込み済みの件数と、予定のカレンダーへのボタンを並べる。
  * 件数が 0 の箱は出さない。
  */
-export const CalendarImportDone = ({ result, onOpenCalendar }: CalendarImportDoneProps) => (
+export const CalendarImportDone = ({
+  result,
+  onOpenCalendar,
+  onBackToCutover,
+}: CalendarImportDoneProps) => (
   <section
     className="flex flex-col items-start gap-5 border-t border-border pt-5"
     data-testid="calendar-import-result"
@@ -36,8 +45,14 @@ export const CalendarImportDone = ({ result, onOpenCalendar }: CalendarImportDon
         data-testid="calendar-import-result-counts"
       />
     </div>
-    <Button data-testid="calendar-import-open-calendar" onClick={onOpenCalendar} size="S">
-      予定のカレンダーで見る
-    </Button>
+    {onBackToCutover !== undefined ? (
+      <Button data-testid="calendar-import-back-to-cutover" onClick={onBackToCutover} size="S">
+        切り替えの状況に戻る
+      </Button>
+    ) : (
+      <Button data-testid="calendar-import-open-calendar" onClick={onOpenCalendar} size="S">
+        予定のカレンダーで見る
+      </Button>
+    )}
   </section>
 )

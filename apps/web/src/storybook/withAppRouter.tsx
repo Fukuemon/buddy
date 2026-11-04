@@ -37,6 +37,7 @@ export type StoryRouteId =
   | '/receipt/'
   | '/receipt/result'
   | '/schedule_/link'
+  | '/schedule_/link_/cutover'
   | '/schedule_/import'
   | '/schedule_/review'
   | '/staff'
@@ -128,6 +129,11 @@ const createStoryRouter = (Story: StoryFn, params: AppRouterParameters) => {
     path: 'schedule/link',
     component: at('/schedule_/link'),
   })
+  const scheduleCutover = createRoute({
+    getParentRoute: () => root,
+    path: 'schedule/link/cutover',
+    component: at('/schedule_/link_/cutover'),
+  })
   const scheduleImport = createRoute({
     getParentRoute: () => root,
     path: 'schedule/import',
@@ -193,6 +199,7 @@ const createStoryRouter = (Story: StoryFn, params: AppRouterParameters) => {
       receipt,
       receiptResult,
       scheduleLink,
+      scheduleCutover,
       scheduleImport,
       scheduleReview,
       staff.addChildren([staffNew]),
@@ -302,6 +309,10 @@ const buddyApiOf = (operation: () => Promise<never>): BuddyApi => ({
     exportIssues: operation,
     retryExport: operation,
     acceptExport: operation,
+    cutoverStatus: operation,
+    startCutover: operation,
+    completeCutover: operation,
+    cancelCutover: operation,
   },
 })
 

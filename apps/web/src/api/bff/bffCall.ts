@@ -53,7 +53,7 @@ const patientInput = z.object({
 })
 const calendarId = z.string().min(1).max(1024)
 const date = z.iso.date()
-const importRange = z.object({ range_start: date, range_end: date })
+const importRange = z.object({ range_start: date, range_end: date.nullable().optional() })
 const decision = z.object({
   external_event_id: z.string().min(1).max(1024),
   revision: z.string().min(1).max(64),
@@ -130,6 +130,10 @@ const ARGS = {
   'calendars.exportIssues': z.tuple([id]),
   'calendars.retryExport': z.tuple([id, id]),
   'calendars.acceptExport': z.tuple([id, id]),
+  'calendars.cutoverStatus': z.tuple([id]),
+  'calendars.startCutover': z.tuple([id]),
+  'calendars.completeCutover': z.tuple([id, id]),
+  'calendars.cancelCutover': z.tuple([id, id]),
 } satisfies Partial<Record<BuddyOperation, z.ZodType>>
 
 /** BFF が中継する操作の名前。ARGS に引数の形を書いた操作だけを中継する。 */

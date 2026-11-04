@@ -124,6 +124,7 @@ export const createScheduleHandlers = (baseUrl: string) => {
           recurring_schedules: [],
           source_mode: mockFacility.source_mode,
           calendar_syncs: [],
+          cutover: null,
         }),
       ),
     ),
