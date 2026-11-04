@@ -80,26 +80,6 @@ func LoadCalendars(path string) ([]Calendar, error) {
 	return cals, nil
 }
 
-// Month は、照合の対象の月である。
-type Month struct {
-	Year  int
-	Month time.Month
-}
-
-// ParseMonth は、`2024-04` の形を読む。
-func ParseMonth(s string) (Month, error) {
-	t, err := time.Parse("2006-01", s)
-	if err != nil || len(s) != len("2006-01") {
-		return Month{}, fmt.Errorf("対象の月の形が違う。YYYY-MM にする: %q", s)
-	}
-	return Month{Year: t.Year(), Month: t.Month()}, nil
-}
-
-// String は、`2024-04` の形で返す。
-func (m Month) String() string {
-	return fmt.Sprintf("%04d-%02d", m.Year, int(m.Month))
-}
-
 // Services は、組織 orgID のサービスアカウントで Calendar API を呼ぶ calendar.Service を返す。実装は gcalauth.Clients である。
 type Services interface {
 	Service(orgID string) (*calendar.Service, error)
@@ -117,9 +97,9 @@ func NewReader(services Services, calendars []Calendar) *Reader {
 	return &Reader{services: services, calendars: calendars}
 }
 
-// Month は、組織 orgID のカレンダーから、month の 1 日 00:00 から月末 24:00（Asia/Tokyo）に始まる予定を、
+// Month は、組織 orgID のカレンダーから、year 年 month 月の 1 日 00:00 から月末 24:00（Asia/Tokyo）に始まる予定を、
 // 組織 orgID のサービスアカウントで返す check.ScheduleSource である。orgID のカレンダーが無ければ false を返す。
-func (r *Reader) Month(orgID string, month Month) (check.ScheduleSource, bool) {
+func (r *Reader) Month(orgID string, year int, month time.Month) (check.ScheduleSource, bool) {
 	var cals []Calendar
 	for _, c := range r.calendars {
 		if c.OrgID == orgID {
@@ -129,7 +109,7 @@ func (r *Reader) Month(orgID string, month Month) (check.ScheduleSource, bool) {
 	if len(cals) == 0 {
 		return nil, false
 	}
-	start := time.Date(month.Year, month.Month, 1, 0, 0, 0, 0, tokyo)
+	start := time.Date(year, month, 1, 0, 0, 0, 0, tokyo)
 	return monthSource{services: r.services, orgID: orgID, calendars: cals, start: start, end: start.AddDate(0, 1, 0)}, true
 }
 

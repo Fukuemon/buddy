@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/option"
@@ -14,6 +15,7 @@ import (
 	"github.com/Fukuemon/buddy/services/receipt/internal/gcal"
 	"github.com/Fukuemon/buddy/services/receipt/internal/gcal/gcaltest"
 	"github.com/Fukuemon/buddy/services/receipt/internal/record"
+	"github.com/Fukuemon/buddy/services/receipt/internal/source"
 )
 
 func timed(id, summary, start, end string) *calendar.Event {
@@ -24,9 +26,9 @@ func timed(id, summary, start, end string) *calendar.Event {
 	}
 }
 
-func april(t *testing.T) gcal.Month {
+func april(t *testing.T) source.Month {
 	t.Helper()
-	m, err := gcal.ParseMonth("2024-04")
+	m, err := source.ParseMonth("2024-04")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,9 +37,9 @@ func april(t *testing.T) gcal.Month {
 
 const org = "org-sample"
 
-func mustMonth(t *testing.T, r *gcal.Reader, m gcal.Month) check.ScheduleSource {
+func mustMonth(t *testing.T, r *gcal.Reader, m source.Month) check.ScheduleSource {
 	t.Helper()
-	src, ok := r.Month(org, m)
+	src, ok := r.Month(org, m.Year, m.Month)
 	if !ok {
 		t.Fatalf("組織 %s のカレンダーがない", org)
 	}
@@ -46,7 +48,7 @@ func mustMonth(t *testing.T, r *gcal.Reader, m gcal.Month) check.ScheduleSource 
 
 func TestMonthOtherOrg(t *testing.T) {
 	r := gcal.NewReader(gcaltest.Same{}, []gcal.Calendar{{ID: "staff-a@example.com", OrgID: org}})
-	if _, ok := r.Month("org-other", april(t)); ok {
+	if _, ok := r.Month("org-other", 2024, time.April); ok {
 		t.Error("別の組織のカレンダーを読む")
 	}
 }
@@ -83,7 +85,7 @@ func TestSchedulesMonthEnd(t *testing.T) {
 	} {
 		srv := gcaltest.NewServer(map[string]gcaltest.Calendar{"staff-a@example.com": {}})
 		r := gcal.NewReader(gcaltest.Same{Svc: gcaltest.Start(t, srv)}, []gcal.Calendar{{ID: "staff-a@example.com", OrgID: org, StaffName: "職員B"}})
-		m, err := gcal.ParseMonth(tt.month)
+		m, err := source.ParseMonth(tt.month)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -217,17 +219,6 @@ func TestSchedulesSourceError(t *testing.T) {
 	}
 }
 
-func TestParseMonth(t *testing.T) {
-	if m, err := gcal.ParseMonth("2024-04"); err != nil || m.String() != "2024-04" {
-		t.Errorf("= %v, %v", m, err)
-	}
-	for _, bad := range []string{"", "2024-4", "2024/04", "2024-13", "2024-04-01", "202404"} {
-		if _, err := gcal.ParseMonth(bad); err == nil {
-			t.Errorf("%q でエラーにならない", bad)
-		}
-	}
-}
-
 func TestLoadCalendars(t *testing.T) {
 	write := func(t *testing.T, body string) string {
 		t.Helper()
@@ -275,7 +266,7 @@ func TestMonthUsesOrgService(t *testing.T) {
 		{ID: "staff-a@example.com", OrgID: "org-a"},
 		{ID: "staff-b@example.com", OrgID: "org-b"},
 	})
-	src, ok := r.Month("org-a", april(t))
+	src, ok := r.Month("org-a", 2024, time.April)
 	if !ok {
 		t.Fatal("org-a のカレンダーが無い")
 	}
