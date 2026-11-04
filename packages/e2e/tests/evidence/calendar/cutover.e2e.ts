@@ -16,28 +16,34 @@ const CUTOVER_URL = '/schedule/link/cutover'
 const todayInTokyo = () => new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10)
 
 /**
- * 録画の外の準備。石田でログインし、Google カレンダーに予定を 1 件作り、切り替えの前の画面を開く。
+ * 録画の外の準備。石田でログインし、Google カレンダーの今日の start から end に予定を 1 件作り、切り替えの前の画面を開く。
  * 前の撮影が切り替えを残していれば、やめてから始める。
  */
-const prepare = (summary: string) => async (page: Page) => {
+const prepare = (summary: string, start: string, end: string) => async (page: Page) => {
   await page.goto('/schedule')
   await signInAtBroker(page, ISHIDA.email)
   const event = await createGoogleEvent(page.request, ISHIDA.calendarId, {
     summary,
     date: todayInTokyo(),
-    start: '10:00',
-    end: '11:00',
+    start,
+    end,
   })
   await page.goto(CUTOVER_URL)
-  const start = page.getByTestId('calendar-cutover-start')
+  const startButton = page.getByTestId('calendar-cutover-start')
   const cancel = page.getByTestId('calendar-cutover-cancel')
-  await start.or(cancel).waitFor()
+  await startButton.or(cancel).waitFor()
   if (await cancel.isVisible()) {
     await cancel.click()
     await page.getByTestId('calendar-cutover-cancel-confirm-submit').click()
   }
-  await start.waitFor()
+  await startButton.waitFor()
   return event
+}
+
+/** 録画の画面で、切り替えの前の画面を開き、始めるのボタンが出るまで待つ。 */
+const openCutover = async (page: Page) => {
+  await page.goto(CUTOVER_URL)
+  await page.getByTestId('calendar-cutover-start').waitFor()
 }
 
 /** 切り替えの画面から石田の取り込みの画面を開き、プレビューして確定し、切り替えの状況に戻る。 */
@@ -78,10 +84,11 @@ test.describe('予定の正本の切り替え', () => {
           actor: ACTOR,
           variant,
         },
-        prepare(title),
+        prepare(title, '13:00', '14:00'),
         async ({ page, step, check }) => {
+          await openCutover(page)
           await step(
-            '予定の正本の切り替えの画面を開いている。Google カレンダーには、今日の 10:00〜11:00 に予定がある',
+            '予定の正本の切り替えの画面を開いている。Google カレンダーには、今日の 13:00〜14:00 に予定がある',
           )
           await check(
             '切り替えの前の画面に、手順と、Google カレンダーを変えない案内と、カレンダーの同期が出る',
@@ -105,6 +112,7 @@ test.describe('予定の正本の切り替え', () => {
             .getByTestId(/^schedule-event-/)
             .filter({ hasText: title })
           await expect(event).toBeVisible()
+          await event.scrollIntoViewIfNeeded()
           await expect(page.getByTestId('schedule-calendar-google-primary')).toHaveCount(0)
           await check(
             `取り込んだ「${title}」が buddy の予定として出て、Google カレンダーで管理する案内が消える`,
@@ -130,10 +138,11 @@ test.describe('予定の正本の切り替え', () => {
           actor: ACTOR,
           variant,
         },
-        prepare(title),
+        prepare(title, '15:00', '16:00'),
         async ({ page, step, check }, event) => {
+          await openCutover(page)
           await step(
-            '予定の正本の切り替えの画面を開いている。Google カレンダーには、今日の 10:00〜11:00 に予定がある',
+            '予定の正本の切り替えの画面を開いている。Google カレンダーには、今日の 15:00〜16:00 に予定がある',
           )
           await step('「切り替えを始める」を押す')
           await page.getByTestId('calendar-cutover-start').click()
@@ -152,7 +161,7 @@ test.describe('予定の正本の切り替え', () => {
           await expect(changed).toContainText('取り込んだ後に Google で変わった')
           await expect(page.getByTestId('calendar-cutover-open')).toBeVisible()
           await check(
-            '完了できず、「完了できません」の一覧に、Google で変わった今日の 11:00〜12:00 の予定が出る。切り替え中のまま',
+            '完了できず、「完了できません」の一覧に、Google で変わった今日の 16:00〜17:00 の予定が出る。切り替え中のまま',
           )
           await importIshida(page, step)
           await step('「完了する」を押す（取り込み直しの後の同期が終わるまで押し直す）')
@@ -175,8 +184,9 @@ test.describe('予定の正本の切り替え', () => {
           actor: ACTOR,
           variant,
         },
-        prepare(title),
+        prepare(title, '10:00', '11:00'),
         async ({ page, step, check }) => {
+          await openCutover(page)
           await step(
             '予定の正本の切り替えの画面を開いている。Google カレンダーには、今日の 10:00〜11:00 に予定がある',
           )
