@@ -24,6 +24,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/broker"
 	"github.com/Fukuemon/buddy/services/schedule/internal/config"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
@@ -95,7 +96,7 @@ func run() error {
 	exports := postgres.NewCalendarExportRepository(db)
 	var outbox schedule.Exports
 	if cfg.Calendar.ExportEnabled {
-		outbox = calendar.NewOutbox(exports, calendars, ids)
+		outbox = calendarexport.NewOutbox(exports, calendars, ids)
 	}
 	visitInfos := visit.NewWriter(visit.WriterDeps{
 		Staff:    staffRefs,
@@ -146,7 +147,7 @@ func run() error {
 	// 書き出しと同期の処理は、止まる合図の後、取った待ちとカレンダーの結果を書いてから止まる。DB を閉じる前に止めて待つ。
 	exporterDone, syncerDone := make(chan struct{}), make(chan struct{})
 	if accounts != nil && cfg.Calendar.ExportEnabled {
-		exporter := calendar.NewExporter(calendar.ExporterDeps{
+		exporter := calendarexport.NewExporter(calendarexport.ExporterDeps{
 			Exports: exports, Calendars: calendars, Writers: accounts.Writer, Schedules: schedules, Recurring: recurring,
 		}, ids, log)
 		go func() {

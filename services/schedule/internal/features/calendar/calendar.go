@@ -1,6 +1,6 @@
 // Package calendar は、職員が結び付けた外部のカレンダー（Google カレンダー）と buddy の予定を、取り込み、書き出し、同期でつなぐ。
 // 結び付けたカレンダーと予定の対応と、外部の予定と buddy の予定を互いに読み替える規則を持つ。
-// 取り込みと同期は外部の予定から buddy の予定を作るか変え、書き出し（Outbox と Exporter）は buddy の予定の変更を外部のカレンダーに書く。
+// 取り込みと同期は外部の予定から buddy の予定を作るか変え、書き出し（calendarexport）は buddy の予定の変更を外部のカレンダーに書く。
 package calendar
 
 import (
@@ -89,7 +89,9 @@ const (
 )
 
 var (
-	errNotInReview   = apperr.ConflictCode(CodeExportNotInReview, "この予定は、確認が必要な書き出しではありません")
-	errNotAcceptable = apperr.ConflictCode(CodeExportNotAcceptable,
+	// ErrExportNotInReview は、書き直すか外部の内容を当てようとした書き出しの待ちが、確認が必要な状態（conflict か failed）でないことを表す。
+	// コードは CodeExportNotInReview である。
+	ErrExportNotInReview = apperr.ConflictCode(CodeExportNotInReview, "この予定は、確認が必要な書き出しではありません")
+	errNotAcceptable     = apperr.ConflictCode(CodeExportNotAcceptable,
 		"この予定は、Google カレンダーの内容を buddy に当てられません。buddy の内容で書き直してください")
 )

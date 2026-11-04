@@ -1026,7 +1026,7 @@ func (s Calendars) DeleteLink(_ context.Context, id string) error {
 	return nil
 }
 
-// Exports は、calendar.ExportRepository のメモリ上の実装である。時刻は time.Now で比べる。
+// Exports は、calendar.ExportRepository と calendarexport.ExportRepository のメモリ上の実装である。時刻は time.Now で比べる。
 type Exports struct{ *Store }
 
 // open は、t の終わっていない待ちを返す。
@@ -1039,7 +1039,7 @@ func (s Exports) open(t calendar.Target) (calendar.Export, bool) {
 	return calendar.Export{}, false
 }
 
-// Enqueue は、calendar.ExportRepository の Enqueue を実装する。
+// Enqueue は、calendar.ExportRepository と calendarexport.ExportRepository の Enqueue を実装する。
 func (s Exports) Enqueue(_ context.Context, id string, t calendar.Target) error {
 	e, ok := s.open(t)
 	if !ok {
@@ -1096,7 +1096,7 @@ func (s Exports) Finish(_ context.Context, e calendar.Export, r calendar.ExportR
 	return nil
 }
 
-// Get は、calendar.ExportRepository の Get を実装する。
+// Get は、calendar.ExportRepository と calendarexport.ExportRepository の Get を実装する。
 func (s Exports) Get(_ context.Context, id string) (calendar.Export, error) {
 	return get(s.Exports, id)
 }
@@ -1124,7 +1124,7 @@ func (s Exports) ListIssues(_ context.Context, facilityID string) ([]calendar.Ex
 	return out, nil
 }
 
-// Retry は、calendar.ExportRepository の Retry を実装する。
+// Retry は、calendar.ExportRepository と calendarexport.ExportRepository の Retry を実装する。
 func (s Exports) Retry(_ context.Context, id string) error {
 	e, err := get(s.Exports, id)
 	if err != nil {

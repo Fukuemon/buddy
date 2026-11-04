@@ -14,13 +14,141 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
+
+const otherGoogleCalID = "companion@example.com"
+
+// exportEnv は、予定の操作と、書き出しの処理と、フェイクの Calendar API を同じ Store の上で動かす。
+type exportEnv struct {
+	env
+	srv       *gcaltest.Server
+	schedules scheduleOps
+	exporter  *calendarexport.Exporter
+	// writers は、書き出しの処理が書く手段を引いた事業所の、引いた順の一覧である。
+	writers *[]string
+}
+
+// scheduleOps は、書き出しのテストが呼ぶ schedule の操作の Do である。
+type scheduleOps struct {
+	Create           func(ctx context.Context, facilityID string, in schedule.SlotInput) (schedule.Detail, error)
+	CreateRecurring  func(ctx context.Context, facilityID string, in schedule.SlotInput, rule schedule.RuleInput) (schedule.RecurringDetail, error)
+	ChangeOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in schedule.SlotInput) (schedule.Detail, error)
+	Cancel           func(ctx context.Context, scheduleID, reason string) (schedule.Cancellation, error)
+	Update           func(ctx context.Context, scheduleID string, in schedule.SlotInput) (schedule.Detail, error)
+}
+
+// writerOf は、事業所によらず w で書く calendar.WriterFor を返し、引かれた事業所を used に足す。
+func writerOf(w calendar.EventWriter, used *[]string) calendar.WriterFor {
+	return func(_ context.Context, facilityID string) (calendar.EventWriter, error) {
+		*used = append(*used, facilityID)
+		return w, nil
+	}
+}
+
+func newExportEnv(t *testing.T) exportEnv {
+	t.Helper()
+	srv := &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{googleCalID: {}, otherGoogleCalID: {}}}
+	e := newEnv(t, nil)
+	s := e.store
+	// 外部の予定の ID を予定の ID から決めるので、予定の ID は ULID にする。
+	ids := ulid.Generator{}
+	e.ctx = principal.With(context.Background(), principal.Principal{Staff: staff.Detail{
+		Summary: staff.Summary{Staff: staff.Staff{ID: inmem.StaffID, FacilityID: inmem.FacilityID}},
+		Policies: []staff.PolicyGrant{
+			{PolicyCode: organization.StaffManage}, {PolicyCode: organization.ScheduleAllEdit},
+		},
+	}})
+	exports := inmem.Exports{Store: s}
+	e.uc = build(deps{Calendars: inmem.Calendars{Store: s}, Exports: exports}, &inmem.Tx{}, ids, principal.RequireStaffManage)
+	facilities, refs, schedules, recurring, types := inmem.Facilities{Store: s}, inmem.StaffRefs{Store: s}, inmem.Schedules{Store: s}, inmem.RecurringSchedules{Store: s}, inmem.ScheduleTypes{Store: s}
+	outbox, tx := calendarexport.NewOutbox(exports, inmem.Calendars{Store: s}, ids), &inmem.Tx{}
+	sched := scheduleOps{
+		Create:           schedule.NewCreate(facilities, schedules, types, refs, nil, nil, outbox, tx, ids).Do,
+		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, nil, nil, recurring, outbox, tx, ids).Do,
+		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, refs, schedules, types, nil, nil, outbox, tx, ids).Do,
+		Cancel:           schedule.NewCancel(schedules, refs, outbox, tx, ids).Do,
+		Update:           schedule.NewUpdate(schedules, refs, types, nil, nil, outbox, tx).Do,
+	}
+	writers := &[]string{}
+	exporter := calendarexport.NewExporter(calendarexport.ExporterDeps{
+		Exports: exports, Calendars: inmem.Calendars{Store: s}, Writers: writerOf(gcal.NewWriter(gcaltest.Start(t, srv)), writers),
+		Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s},
+	}, ids, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	return exportEnv{env: e, srv: srv, schedules: sched, exporter: exporter, writers: writers}
+}
+
+func (e exportEnv) create(t *testing.T, title string) schedule.Detail {
+	t.Helper()
+	d, err := e.schedules.Create(e.ctx, inmem.FacilityID, schedule.SlotInput{
+		TypeID: inmem.NormalTypeID, Date: civil.Date{Year: 2026, Month: 11, Day: 4},
+		StartTime: civil.Time{Hour: 10}, EndTime: civil.Time{Hour: 11}, StaffID: inmem.StaffID, Title: &title,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return d
+}
+
+func (e exportEnv) update(t *testing.T, id, title string, staffID string) {
+	t.Helper()
+	_, err := e.schedules.Update(e.ctx, id, schedule.SlotInput{
+		TypeID: inmem.NormalTypeID, Date: civil.Date{Year: 2026, Month: 11, Day: 5},
+		StartTime: civil.Time{Hour: 13}, EndTime: civil.Time{Hour: 14}, StaffID: staffID, Title: &title,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func (e exportEnv) run(t *testing.T) int {
+	t.Helper()
+	n, err := e.exporter.ExportDue(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return n
+}
+
+// export は、予定 id の最後の書き出しの待ちを返す。
+func (e exportEnv) export(t *testing.T, id string) calendar.Export {
+	t.Helper()
+	var last calendar.Export
+	for _, x := range e.store.Exports {
+		if (x.ScheduleID == id || x.RecurringScheduleID == id) && (last.ID == "" || x.ID > last.ID) {
+			last = x
+		}
+	}
+	if last.ID == "" {
+		t.Fatalf("予定 %s の書き出しの待ちが無い", id)
+	}
+	return last
+}
+
+// due は、書き直しを待つ待ちの書く時刻を今にする。
+func (e exportEnv) due() {
+	for id, x := range e.store.Exports {
+		x.NextAttemptAt = time.Now().Add(-time.Second)
+		e.store.Exports[id] = x
+	}
+}
+
+func eventID(t *testing.T, id string) string {
+	t.Helper()
+	ev, err := calendar.EventIDOf(id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return ev
+}
 
 // syncEnv は、書き出しの環境に、Google カレンダーの変更を当てる同期の処理と、確認が必要な予定を解く App を足す。
 type syncEnv struct {
@@ -418,7 +546,7 @@ func TestSyncAppliesOccurrenceChanges(t *testing.T) {
 	if err := (inmem.RecurringSchedules{Store: e.store}).AddExclusion(t.Context(), rs.ID, civil.Date{Year: 2026, Month: 11, Day: 23}); err != nil {
 		t.Fatal(err)
 	}
-	if err := calendar.NewOutbox(inmem.Exports{Store: e.store}, inmem.Calendars{Store: e.store}, ulid.Generator{}).
+	if err := calendarexport.NewOutbox(inmem.Exports{Store: e.store}, inmem.Calendars{Store: e.store}, ulid.Generator{}).
 		RecurringChanged(t.Context(), inmem.FacilityID, inmem.StaffID, rs.ID); err != nil {
 		t.Fatal(err)
 	}

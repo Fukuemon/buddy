@@ -10,6 +10,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
@@ -256,7 +257,10 @@ type deps struct {
 	Recurring          calendar.Recurring
 	RecurringSchedules kernel.Finder[schedule.RecurringDetail]
 	Visits             calendar.VisitStore
-	Exports            calendar.ExportRepository
+	Exports            interface {
+		calendar.ExportRepository
+		calendarexport.ExportRepository
+	}
 }
 
 // app は、テストが呼ぶ calendar の操作の Do である。
@@ -284,8 +288,8 @@ func build(d deps, tx tx.Transactor, ids kernel.IDGenerator, guard organization.
 		Preview:        calendar.NewPreview(d.Calendars, d.Accounts, d.Staff, d.Patients, d.RecurringSchedules, d.ServiceCodes, guard).Do,
 		Import: calendar.NewImport(d.Calendars, d.Accounts, d.Staff, d.Patients, d.RecurringSchedules, d.ServiceCodes,
 			d.Types, d.Recurring, d.Schedules, d.Visits, tx, ids, guard).Do,
-		ListExportIssues: calendar.NewListExportIssues(d.Exports, guard).Do,
-		RetryExport:      calendar.NewRetryExport(d.Exports, guard).Do,
+		ListExportIssues: calendarexport.NewListExportIssues(d.Exports, guard).Do,
+		RetryExport:      calendarexport.NewRetryExport(d.Exports, guard).Do,
 		AcceptExport: calendar.NewAcceptExport(d.Exports, d.Schedules, d.Calendars, d.Accounts, d.Staff,
 			d.Types, d.Patients, d.ServiceCodes, d.Visits, tx, ids, guard).Do,
 	}

@@ -264,7 +264,7 @@ func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !slices.ContainsFunc(issues, func(i calendar.ExportIssue) bool {
-		return i.Target.ScheduleID == d.ID && i.ErrorCode != nil && *i.ErrorCode == calendar.ErrorUnappliable
+		return i.ScheduleID == d.ID && i.ErrorCode != nil && *i.ErrorCode == calendar.ErrorUnappliable
 	}) {
 		t.Errorf("確認が必要な待ち = %+v, want 予定 %s の unappliable", issues, d.ID)
 	}
