@@ -10,6 +10,8 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
+	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
 const (
@@ -23,8 +25,8 @@ func allow(context.Context) error { return nil }
 
 func deny(context.Context) error { return apperr.ErrForbidden }
 
-func newApp(s *inmem.Store, guard organization.Guard) *staff.App {
-	return staff.NewApp(staff.Deps{
+func newApp(s *inmem.Store, guard organization.Guard) app {
+	return build(deps{
 		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
 		Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
 		Identities: inmem.NewIdentities(),
@@ -48,8 +50,8 @@ func stopFixture() (*inmem.Store, *inmem.Identities) {
 	return s, ids
 }
 
-func stopApp(s *inmem.Store, ids *inmem.Identities, guard organization.Guard) *staff.App {
-	return staff.NewApp(staff.Deps{
+func stopApp(s *inmem.Store, ids *inmem.Identities, guard organization.Guard) app {
+	return build(deps{
 		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
 		Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
 		Identities: ids, Assignments: inmem.StaffAssignments{Store: s}, Calendars: inmem.Calendars{Store: s},
@@ -80,9 +82,9 @@ func clearAssignments(s *inmem.Store) { delete(s.Recurring, inmem.RecurringID) }
 // 自分自身か、職員の管理の権限を持つ最後の有効な職員を休職か退職にしようとしたとき、409 が返る（#268 の検証の観点 6）。
 func TestStaffStopRejectsSelfAndLastManager(t *testing.T) {
 	ctx := context.Background()
-	stops := map[string]func(*staff.App, string) error{
-		"休職": func(u *staff.App, id string) error { _, err := u.Leave(ctx, id, staff.LeaveInput{}); return err },
-		"退職": func(u *staff.App, id string) error { _, err := u.Retire(ctx, id); return err },
+	stops := map[string]func(app, string) error{
+		"休職": func(u app, id string) error { _, err := u.Leave(ctx, id, staff.LeaveInput{}); return err },
+		"退職": func(u app, id string) error { _, err := u.Retire(ctx, id); return err },
 	}
 	for name, stop := range stops {
 		t.Run(name+"で自分は ErrConflict", func(t *testing.T) {
@@ -155,7 +157,7 @@ func TestStaffKeepsLastManager(t *testing.T) {
 		}}
 		return s
 	}
-	uc := func(s *inmem.Store) *staff.App { return stopApp(s, inmem.NewIdentities(), allow) }
+	uc := func(s *inmem.Store) app { return stopApp(s, inmem.NewIdentities(), allow) }
 	managers := func(t *testing.T, s *inmem.Store) []string {
 		t.Helper()
 		m, err := inmem.Staff{Store: s}.ActiveManagers(ctx, facilityID)
@@ -242,5 +244,52 @@ func TestStaffManageForbidden(t *testing.T) {
 	}
 	if _, err := uc.Create(ctx, staff.CreateInput{FacilityID: facilityID, Username: "新人", Email: "new@example.com"}); !errors.Is(err, apperr.ErrForbidden) {
 		t.Errorf("Create: err = %v", err)
+	}
+}
+
+// deps は、テストが staff の操作の型に渡す依存である。テストが使わない依存は nil のままにする。
+type deps struct {
+	Facilities  kernel.Finder[organization.Facility]
+	Departments kernel.Finder[organization.Department]
+	Teams       kernel.Finder[organization.Team]
+	Positions   kernel.Finder[organization.Position]
+	Policies    kernel.Finder[organization.Policy]
+	Staff       staff.Repository
+	Identities  staff.Identities
+	Assignments staff.AssignmentReader
+	Calendars   staff.CalendarDetacher
+	Self        func(ctx context.Context) (string, bool)
+	Now         func() time.Time
+}
+
+// app は、テストが呼ぶ staff の操作の Do である。
+type app struct {
+	Create               func(ctx context.Context, in staff.CreateInput) (staff.Detail, error)
+	Get                  func(ctx context.Context, id string) (staff.Detail, error)
+	List                 func(ctx context.Context, facilityID string, q staff.ListQuery) ([]staff.Summary, error)
+	ChangePosition       func(ctx context.Context, id, positionID string) (staff.Detail, error)
+	UpdateProfile        func(ctx context.Context, id string, p staff.Profile) (staff.Detail, error)
+	AddGrant             func(ctx context.Context, id string, in staff.GrantInput) (staff.Detail, error)
+	RemoveGrant          func(ctx context.Context, id, userPolicyID string) (staff.Detail, error)
+	Leave                func(ctx context.Context, id string, in staff.LeaveInput) (staff.StatusChange, error)
+	Reinstate            func(ctx context.Context, id string) (staff.Detail, error)
+	Retire               func(ctx context.Context, id string) (staff.StatusChange, error)
+	RemainingAssignments func(ctx context.Context, id string) (staff.Assignments, error)
+}
+
+// build は、d の依存で staff の全ての操作の型を作る。
+func build(d deps, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) app {
+	return app{
+		Create:               staff.NewCreate(d.Facilities, d.Departments, d.Teams, d.Positions, d.Identities, d.Staff, tx, ids, guard).Do,
+		Get:                  staff.NewGet(d.Staff).Do,
+		List:                 staff.NewList(d.Facilities, d.Staff).Do,
+		ChangePosition:       staff.NewChangePosition(d.Staff, d.Positions, tx, ids, guard).Do,
+		UpdateProfile:        staff.NewUpdateProfile(d.Staff, d.Departments, d.Teams, d.Assignments, d.Now, tx, guard).Do,
+		AddGrant:             staff.NewAddGrant(d.Staff, d.Policies, d.Teams, tx, ids, guard).Do,
+		RemoveGrant:          staff.NewRemoveGrant(d.Staff, tx, guard).Do,
+		Leave:                staff.NewLeave(d.Self, d.Staff, d.Assignments, d.Now, d.Identities, tx, guard).Do,
+		Reinstate:            staff.NewReinstate(d.Staff, d.Identities, tx, guard).Do,
+		Retire:               staff.NewRetire(d.Self, d.Staff, d.Assignments, d.Now, d.Identities, d.Calendars, tx, guard).Do,
+		RemainingAssignments: staff.NewRemainingAssignments(d.Staff, d.Assignments, d.Now, guard).Do,
 	}
 }

@@ -37,7 +37,7 @@ verified_commit: 4e53ca5
 
 職員の登録は `POST /v1/facilities/{facility_id}/users` で行う。  
 休職、復職、退職は、`POST /v1/users/{user_id}/` の下の `leave`、`reinstate`、`retire` で行う。  
-どれも、`staff.App` が職員の管理の権限を確認してから行う。  
+どれも、`staff` の操作が職員の管理の権限を確認してから行う。  
 休職と退職の規則は [職員とログイン](https://github.com/Fukuemon/buddy/blob/develop/context/domain/staff-login.md) にある。
 
 - 登録は、次の順に行う。
@@ -50,8 +50,8 @@ verified_commit: 4e53ca5
 - ブローカーが入力を 400 で拒めば、ブローカーの文を付けて 400 を返す。
 - 予定の API に書けなかったときは、この呼び出しでブローカーの職員を作っていて、その ID の職員がまだいなければ、ブローカーの職員を消して戻す。
 - 休職と退職を確定する前の残る一覧は、`GET /v1/users/{user_id}/remaining_assignments` で返し、何も書かない。
-  - 一覧は、休職と退職と同じ `staff.App` の関数で作り、同じ規則の一覧を同じ形（`StaffAssignments`）で返す。
-- 休職と退職は、`staff.App` が事業所の行をロックしたトランザクションの中で、職員を読み直してから行う。
+  - 一覧は、休職と退職と同じ `staff` の関数（`remaining`）で作り、同じ規則の一覧を同じ形（`StaffAssignments`）で返す。
+- 休職と退職は、`staff` の操作が事業所の行をロックしたトランザクションの中で、職員を読み直してから行う。
   - 自分と、事業所で職員の管理の権限を持つ最後の有効な職員は、409 で拒む。
 - 休職、退職、復職の呼び出しの順と、2 か所の書き込みの片方だけが残ったときの扱いは、[ID ブローカーの Design Doc の職員の登録、休職、復職、退職](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#職員の登録休職復職退職) の図と文にある。
 - ADR-0017: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0017-identity-boundary.md)

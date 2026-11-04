@@ -26,7 +26,6 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi"
@@ -107,15 +106,13 @@ func run() error {
 
 	router := httpapi.NewRouter(httpapi.Apps{
 		Organization: organizationApp(facilities, departments, teams, positions, policies, tx, ids, principal.RequireStaffManage),
-		Staff: staff.NewApp(staff.Deps{
-			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions, Policies: policies, Staff: staffRepo,
-			Identities:  broker.New(broker.Config(cfg.Broker), nil),
-			Assignments: postgres.NewStaffAssignmentReader(db), Calendars: calendars,
-			Self: func(ctx context.Context) (string, bool) {
+		Staff: staffApp(facilities, departments, teams, positions, policies, staffRepo,
+			broker.New(broker.Config(cfg.Broker), nil), postgres.NewStaffAssignmentReader(db), calendars,
+			func(ctx context.Context) (string, bool) {
 				p, ok := principal.From(ctx)
 				return p.Staff.ID, ok
 			},
-		}, tx, ids, principal.RequireStaffManage),
+			tx, ids, principal.RequireStaffManage),
 		Patients:     patientApp(facilities, staffRefs, visitMasters, patients, postgres.NewPatientScheduleReader(db), staffRepo, tx, ids, principal.RequireStaffManage),
 		VisitMasters: visitMasterApp(visitMasters),
 		Schedules: schedule.NewApp(schedule.Deps{

@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
+
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
@@ -66,5 +69,36 @@ func patientApp(
 		Resume:             patient.NewResume(patients, locks, staffRefs, tx, guard).Do,
 		Get:                patient.NewGet(patients, guard).Do,
 		List:               patient.NewList(facilities, patients).Do,
+	}
+}
+
+// staffApp は、staff の操作の型を作り、StaffApp に入れる。self は、ctx のリクエストを送った職員の ID を返す。
+func staffApp(
+	facilities kernel.Finder[organization.Facility],
+	departments kernel.Finder[organization.Department],
+	teams kernel.Finder[organization.Team],
+	positions kernel.Finder[organization.Position],
+	policies kernel.Finder[organization.Policy],
+	staffRepo staff.Repository,
+	identities staff.Identities,
+	assignments staff.AssignmentReader,
+	calendars staff.CalendarDetacher,
+	self func(ctx context.Context) (string, bool),
+	tx tx.Transactor,
+	ids kernel.IDGenerator,
+	guard organization.Guard,
+) httpapi.StaffApp {
+	return httpapi.StaffApp{
+		Create:               staff.NewCreate(facilities, departments, teams, positions, identities, staffRepo, tx, ids, guard).Do,
+		Get:                  staff.NewGet(staffRepo).Do,
+		List:                 staff.NewList(facilities, staffRepo).Do,
+		ChangePosition:       staff.NewChangePosition(staffRepo, positions, tx, ids, guard).Do,
+		UpdateProfile:        staff.NewUpdateProfile(staffRepo, departments, teams, assignments, nil, tx, guard).Do,
+		AddGrant:             staff.NewAddGrant(staffRepo, policies, teams, tx, ids, guard).Do,
+		RemoveGrant:          staff.NewRemoveGrant(staffRepo, tx, guard).Do,
+		Leave:                staff.NewLeave(self, staffRepo, assignments, nil, identities, tx, guard).Do,
+		Reinstate:            staff.NewReinstate(staffRepo, identities, tx, guard).Do,
+		Retire:               staff.NewRetire(self, staffRepo, assignments, nil, identities, calendars, tx, guard).Do,
+		RemainingAssignments: staff.NewRemainingAssignments(staffRepo, assignments, nil, guard).Do,
 	}
 }

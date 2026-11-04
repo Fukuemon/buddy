@@ -27,8 +27,8 @@ func TestStaffChangePosition(t *testing.T) {
 		s.Positions[otherPosID] = organization.Position{ID: otherPosID, FacilityID: otherFacilityID}
 		return s
 	}
-	newUC := func(s *inmem.Store) *staff.App {
-		return staff.NewApp(staff.Deps{
+	newUC := func(s *inmem.Store) app {
+		return build(deps{
 			Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
 			Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
 		}, &inmem.Tx{}, &inmem.SeqIDs{}, allow)

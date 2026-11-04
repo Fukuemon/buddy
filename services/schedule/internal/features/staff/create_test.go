@@ -26,8 +26,8 @@ func TestStaffCreate(t *testing.T) {
 		return s
 	}
 	ids := inmem.NewIdentities()
-	newUC := func(s *inmem.Store) *staff.App {
-		return staff.NewApp(staff.Deps{
+	newUC := func(s *inmem.Store) app {
+		return build(deps{
 			Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
 			Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
 			Identities: ids,
@@ -82,8 +82,8 @@ func TestStaffCreateWithBroker(t *testing.T) {
 		s.Positions[posID] = organization.Position{ID: posID, FacilityID: facilityID}
 		return s
 	}
-	newUC := func(s *inmem.Store, ids *inmem.Identities, guard organization.Guard) *staff.App {
-		return staff.NewApp(staff.Deps{
+	newUC := func(s *inmem.Store, ids *inmem.Identities, guard organization.Guard) app {
+		return build(deps{
 			Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s},
 			Positions: inmem.Positions{Store: s}, Policies: inmem.Policies{Store: s}, Staff: inmem.Staff{Store: s},
 			Identities: ids,
