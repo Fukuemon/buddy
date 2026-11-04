@@ -37,7 +37,7 @@
 | --- | --- |
 | 表記をそろえる処理（`Ⅰ` と `1` を `I` に、`･` を `・` に、半角の数字を全角に） | `gcaltitle.NormalizeService` |
 | 別の表記を、サービスコード表の表記にそろえる処理（`予防訪看` と `予訪看`、`I５２超`） | `servicerule` の case と `calendar` の `serviceAliases` |
-| サービス内容ごとの提供時間の範囲の表と、`・夜` と `・深` を外して表を引く処理 | `servicerule.Lookup` |
+| サービス内容ごとの提供時間の範囲の表と、表を引く前の処理（`基本療養費` か `難病等複数回訪問` を含むサービス内容をその語の行に寄せ、`・夜` と `・深` を外す） | `servicerule.Lookup` |
 
 `servicecode` が持たないものは、次のとおり。
 
@@ -57,7 +57,7 @@
 
 予定の API の `postgres` のテストで、マイグレーションを当てた DB の `service_codes` の全ての行を読み、次の 2 つを確認する。
 
-- `code` を `servicecode` で引くと、範囲が見つかる。
+- `code` の表記をそろえてから `servicecode` で引くと、範囲が見つかる。シードの `code` は半角の数字（`訪看I2`）で、表はそろえた後の全角の数字（`訪看I２`）で引くためである。
 - 見つかった範囲が、行の `service_time_range_start` と `service_time_range_end` と同じである。
 
 `servicecode` の表を直してシードを直し忘れると、予定の API のテストが失敗する。  
@@ -92,5 +92,5 @@
 ### Negative
 
 - `packages/go/servicecode` を変えると、照合の API と予定の API の両方のテストを流す。
-- 予定の API の `httpapi`、`postgres`、`inmem`、組み立ての場所で、`visit` のサービスコードを使う箇所を `servicecode` に直す。
+- 予定の API の `calendar`、`httpapi`、`postgres`、`inmem`、組み立ての場所で、`visit` のサービスコードを使う箇所を `servicecode` に直す。
 - 予定の API の機能のパッケージが 1 つ増え、依存の順の規則を直す。
