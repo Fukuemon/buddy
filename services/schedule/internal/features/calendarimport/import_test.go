@@ -12,6 +12,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/servicecode"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
@@ -397,4 +398,44 @@ func TestImportServiceAliases(t *testing.T) {
 			t.Errorf("%s のサービスコード = %s, want %s", id, got, want)
 		}
 	}
+}
+
+// Google カレンダーを予定の正本にする事業所では、手動の取り込みを 409 で拒み、取り込みの記録、予定、予定の対応を書かない（ADR-0035）。
+// 読み替えた後に、書くトランザクションの前にモードが変わったときも、同じく拒む。
+func TestImportRejectsGooglePrimary(t *testing.T) {
+	toGooglePrimary := func(s *inmem.Store) {
+		f := s.Facilities[inmem.FacilityID]
+		f.SourceMode = organization.SourceGooglePrimary
+		s.Facilities[inmem.FacilityID] = f
+	}
+	requireRejected := func(t *testing.T, e env, err error, runs int) {
+		t.Helper()
+		seeded := inmem.Seeded()
+		var ce *apperr.ConflictError
+		if !errors.As(err, &ce) || ce.Code != schedule.CodeGooglePrimary {
+			t.Fatalf("err = %v, want code %s の ErrConflict", err, schedule.CodeGooglePrimary)
+		}
+		if len(e.store.Runs) != runs || len(e.store.Schedules) != len(seeded.Schedules) || len(e.store.Recurring) != len(seeded.Recurring) || len(e.store.Links) != 0 {
+			t.Errorf("取り込みの記録 %d、予定 %d、繰り返し %d、対応 %d, want 記録 %d 件で、予定と対応は書かない",
+				len(e.store.Runs), len(e.store.Schedules), len(e.store.Recurring), len(e.store.Links), runs)
+		}
+	}
+
+	t.Run("取り込みの前から google_primary", func(t *testing.T) {
+		e := newEnv(t, fixture())
+		toGooglePrimary(e.store)
+		_, err := e.uc.Import(e.ctx, calID, e.rng, nil)
+		requireRejected(t, e, err, 0)
+	})
+	t.Run("読み替えた後に google_primary", func(t *testing.T) {
+		srv := &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{googleCalID: {{
+			gevent("meeting", "会議", "2026-11-05T13:00:00+09:00", "2026-11-05T14:00:00+09:00"),
+		}}}}
+		e := newEnv(t, srv)
+		uc := withLocks(e, gcal.NewReader(gcaltest.Start(t, srv)),
+			lockHook{Facilities: inmem.Facilities{Store: e.store}, run: func() { toGooglePrimary(e.store) }, calls: new(int)})
+		_, err := uc.Import(e.ctx, calID, e.rng, nil)
+		// 取り込みの記録は、書けなかった取り込みとして残る
+		requireRejected(t, e, err, 1)
+	})
 }

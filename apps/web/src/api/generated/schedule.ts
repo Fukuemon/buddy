@@ -917,6 +917,7 @@ export interface paths {
          * 確認が必要な書き出しを Google カレンダーの内容で解く
          * @description 確認が必要な書き出しの予定を、Google カレンダーの今の内容にそろえ、書き出しを終える。buddy で変えた日時とタイトルは消える。
          *     Google カレンダーで消された予定（予定が cancelled で返るときと、予定が 404 か 410 で、カレンダーは読めるとき）は、buddy でキャンセルする。
+         *     buddy を予定の正本にする事業所（buddy_primary）では、Google カレンダーの内容を当てず、export_not_acceptable で拒む（ADR-0035）。
          *     acceptable が true の書き出しだけを解ける。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         post: operations["createCalendarExportAcceptance"];
@@ -942,7 +943,7 @@ export interface components {
         Time: string;
         Error: {
             /** @enum {string} */
-            code: "invalid_input" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "internal" | "calendar_unreadable" | "calendar_unavailable" | "calendar_not_configured" | "calendar_taken" | "calendar_already_linked" | "staff_has_calendar" | "import_running" | "import_preview_changed" | "export_not_in_review" | "export_not_acceptable" | "external_change_unappliable" | "staff_has_assignments" | "patient_has_schedules";
+            code: "invalid_input" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "internal" | "calendar_unreadable" | "calendar_unavailable" | "calendar_not_configured" | "calendar_taken" | "calendar_already_linked" | "staff_has_calendar" | "import_running" | "import_preview_changed" | "export_not_in_review" | "export_not_acceptable" | "external_change_unappliable" | "google_primary" | "staff_has_assignments" | "patient_has_schedules";
             /** @description 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う */
             message: string;
         };
@@ -1319,10 +1320,11 @@ export interface components {
              *     not_found は Google カレンダーで予定が消されたか、予定かカレンダーが見つからない（410、404、消された予定への 412）、
              *     forbidden はサービスアカウントがカレンダーに書けない、rejected は Google が予定の内容を受け付けなかった（400）、
              *     unavailable は Google に届かないか一時的なエラーが続いた、unappliable は Google カレンダーの変更を buddy の予定に読み替えられない
-             *     （終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更）
+             *     （終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更）。
+             *     not_buddy_primary は事業所が buddy を予定の正本にしていないので、書かずに保留にした（ADR-0035）
              * @enum {string|null}
              */
-            error_code: "precondition_failed" | "not_found" | "forbidden" | "rejected" | "unavailable" | "unappliable" | null;
+            error_code: "precondition_failed" | "not_found" | "forbidden" | "rejected" | "unavailable" | "unappliable" | "not_buddy_primary" | null;
             /** @description 書こうとした回数 */
             attempts: number;
             /** Format: date-time */
@@ -1567,6 +1569,21 @@ export interface components {
                  * @example {
                  *       "code": "calendar_unavailable",
                  *       "message": "外部のカレンダーから予定を読めませんでした"
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description 事業所が Google カレンダーを予定の正本にしている（google_primary）ので、予定を書けない（ADR-0035） */
+        GooglePrimary: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "code": "google_primary",
+                 *       "message": "この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください"
                  *     }
                  */
                 "application/json": components["schemas"]["Error"];
@@ -3067,6 +3084,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["GooglePrimary"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -3100,6 +3118,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["GooglePrimary"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -3158,18 +3177,12 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description キャンセル済み */
+            /** @description キャンセル済み（conflict）か、事業所が Google カレンダーを予定の正本にしている（google_primary） */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "conflict",
-                     *       "message": "キャンセル済みの予定は変えられません"
-                     *     }
-                     */
                     "application/json": components["schemas"]["Error"];
                 };
             };
@@ -3206,18 +3219,12 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description キャンセル済み */
+            /** @description キャンセル済み（conflict）か、事業所が Google カレンダーを予定の正本にしている（google_primary） */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "conflict",
-                     *       "message": "この予定はすでにキャンセルされています"
-                     *     }
-                     */
                     "application/json": components["schemas"]["Error"];
                 };
             };
@@ -3285,18 +3292,12 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description その回はすでに置き換えた */
+            /** @description その回はすでに置き換えた（conflict）か、事業所が Google カレンダーを予定の正本にしている（google_primary） */
             409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "conflict",
-                     *       "message": "2026-10-12 の回はすでに置き換えられています"
-                     *     }
-                     */
                     "application/json": components["schemas"]["Error"];
                 };
             };
@@ -3540,7 +3541,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description プレビューの後に確認が必要な予定か職員の休職が変わった（import_preview_changed）か、同じカレンダーの取り込みが進んでいる（import_running）。何も書いていない */
+            /** @description プレビューの後に確認が必要な予定か職員の休職が変わった（import_preview_changed）か、同じカレンダーの取り込みが進んでいる（import_running）か、事業所が Google カレンダーを予定の正本にしている（google_primary）。何も書いていない */
             409: {
                 headers: {
                     [name: string]: unknown;

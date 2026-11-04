@@ -122,7 +122,7 @@ func withSource(e env, source calendar.EventSource) *app {
 }
 
 // withLocks は、withSource と同じ App を、事業所を locks でロックするようにして作る。
-func withLocks(e env, source calendar.EventSource, locks calendar.FacilityLock) *app {
+func withLocks(e env, source calendar.EventSource, locks calendarimport.FacilityLock) *app {
 	return newApp(e, oneAccount(source, nil), locks)
 }
 
@@ -131,7 +131,7 @@ func withAccounts(e env, acc calendar.Accounts) *app {
 	return newApp(e, acc, inmem.Facilities{Store: e.store})
 }
 
-func newApp(e env, acc calendar.Accounts, locks calendar.FacilityLock) *app {
+func newApp(e env, acc calendar.Accounts, locks calendarimport.FacilityLock) *app {
 	s := e.store
 	ids := &inmem.SeqIDs{}
 	return build(deps{
@@ -254,7 +254,7 @@ type deps struct {
 	}
 	Accounts           calendar.Accounts
 	Staff              calendar.StaffRefs
-	Locks              calendar.FacilityLock
+	Locks              calendarimport.FacilityLock
 	Patients           calendar.Patients
 	ServiceCodes       calendar.ServiceCodes
 	Types              calendar.Types

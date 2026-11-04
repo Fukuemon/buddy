@@ -609,11 +609,11 @@ sequenceDiagram
 ### ローカル環境
 
 compose は、開発用の IdP（mock-oauth2-server）を、上流の IdP のフェイクとして置く。  
-mock-oauth2-server はパスの最初の部分を issuer にするので、1 つのコンテナで 2 つの事業所の IdP（`/office-a`、`/office-b`）を立てる。
+mock-oauth2-server はパスの最初の部分を issuer にするので、1 つのコンテナで 3 つの事業所の IdP（`/office-a`、`/office-b`、`/office-c`）を立てる。
 
 - compose は、E2E がトークンなしの呼び出しを試せるよう、内部のポートを `127.0.0.1` の 8101 に公開する。
 - 上流の IdP ごとの違い（署名の方式、Google の `hd`）は、フェイクで確認せず、ブローカーの単体テストで確認する。
-- ブローカーと予定の API のシードは、同じ職員の ID を持つ。2 つの事業所（`org-sample`、`org-sample-b`）の職員がいる。
+- ブローカーと予定の API のシードは、同じ職員の ID を持つ。3 つの事業所（`org-sample`、`org-sample-b`、`org-sample-c`）の職員がいる。
   - `org-sample-b` には、両方で休職にした職員もいる。E2E は、この職員のログインが拒まれることを確認する。
 
 ## Interface

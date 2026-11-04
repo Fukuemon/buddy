@@ -31,7 +31,7 @@ type Import struct {
 	calendars          Calendars
 	accounts           calendar.Accounts
 	staff              calendar.StaffRefs
-	locks              calendar.FacilityLock
+	locks              FacilityLock
 	patients           calendar.Patients
 	recurringSchedules kernel.Finder[scheduleview.RecurringDetail]
 	serviceCodes       calendar.ServiceCodes
@@ -45,14 +45,15 @@ type Import struct {
 }
 
 // NewImport は Import を作る。
-func NewImport(calendars Calendars, accounts calendar.Accounts, staff calendar.StaffRefs, locks calendar.FacilityLock, patients calendar.Patients, recurringSchedules kernel.Finder[scheduleview.RecurringDetail], serviceCodes calendar.ServiceCodes, types calendar.Types, recurring Recurring, schedules calendar.ScheduleStore, visits calendar.VisitStore, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) Import {
+func NewImport(calendars Calendars, accounts calendar.Accounts, staff calendar.StaffRefs, locks FacilityLock, patients calendar.Patients, recurringSchedules kernel.Finder[scheduleview.RecurringDetail], serviceCodes calendar.ServiceCodes, types calendar.Types, recurring Recurring, schedules calendar.ScheduleStore, visits calendar.VisitStore, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) Import {
 	return Import{calendars: calendars, accounts: accounts, staff: staff, locks: locks, patients: patients, recurringSchedules: recurringSchedules, serviceCodes: serviceCodes, types: types, recurring: recurring, schedules: schedules, visits: visits, tx: tx, ids: ids, guard: guard}
 }
 
 // Do は、カレンダー id の期間 rng の予定を読み直し、プレビューと同じ規則で読み替えて、1 つのトランザクションで書く。
 // 確認が必要な予定には decisions の取り込み方を当てる。職員が休職していれば、新しい予定は書かない。
 // 確認が必要な予定の集合が decisions と違うとき、読み替えた後に職員が休職か復職になったとき、
-// 同じカレンダーの取り込みが進んでいるときは apperr.ErrConflict を返し、何も書かない。
+// 同じカレンダーの取り込みが進んでいるとき、事業所が buddy を予定の正本にしていないとき（code は schedule.CodeGooglePrimary）は
+// apperr.ErrConflict を返し、何も書かない。
 // 読み替えた後に職員が退職し、カレンダーが外れたときは apperr.ErrNotFound を返し、何も書かない。
 // ほかのエラーは Preview と同じである。
 func (u Import) Do(ctx context.Context, id string, rng Range, decisions []Decision) (ImportResult, error) {
@@ -76,6 +77,10 @@ func (u Import) Do(ctx context.Context, id string, rng Range, decisions []Decisi
 		RangeStart: rng.Start, RangeEnd: rng.End, Status: calendar.RunRunning,
 	}
 	err = u.tx.WithinTx(ctx, func(ctx context.Context) error {
+		// Google カレンダーを読む前に、予定を書けない事業所の取り込みを、取り込みの記録を作らずに拒む。
+		if err := requireWritable(ctx, u.locks, c.FacilityID); err != nil {
+			return err
+		}
 		if _, err := u.calendars.GetForUpdate(ctx, c.ID); err != nil {
 			return err
 		}
@@ -132,14 +137,16 @@ func (u Import) importPlan(ctx context.Context, src calendar.EventSource, c cale
 	return res, err
 }
 
-// recheck は、取り込みを書くトランザクションの始めに、事業所の職員の休職、復職、退職を終わりまで待たせてから、
-// カレンダーを外していないことと、職員の休職と訪問しない職員かが読み替えたときの blocked と同じことを確認する。
+// recheck は、取り込みを書くトランザクションの始めに、事業所の職員の休職、復職、退職と正本のモードの切り替えを終わりまで待たせてから、
+// 事業所が予定を書けるモードであることと、カレンダーを外していないことと、職員の休職と訪問しない職員かが
+// 読み替えたときの blocked と同じことを確認する。
 // 退職は事業所の同じ行に排他のロックを取り、残る予定を数えてカレンダーを外すので、退職とこの取り込みのどちらかが、
 // もう片方のコミットを待ってから読む。取り込んだ予定が残れば退職を拒み、退職が先ならここでカレンダーが外れている。
 // 訪問しない職員への変更も事業所の行に排他のロックを取るので、この取り込みと行き違わない。
-// カレンダーが外れていれば apperr.ErrNotFound を、休職か訪問しない職員かが変わっていれば apperr.ErrConflict を返す。
+// カレンダーが外れていれば apperr.ErrNotFound を、休職か訪問しない職員かが変わっていたときと、予定を書けないモードのときは
+// apperr.ErrConflict を返す。
 func (u Import) recheck(ctx context.Context, c calendar.ExternalCalendar, blocked calendar.SkipReason) error {
-	if err := u.locks.Share(ctx, c.FacilityID); err != nil {
+	if err := requireWritable(ctx, u.locks, c.FacilityID); err != nil {
 		return err
 	}
 	if _, err := calendar.Active(ctx, u.calendars, c.ID); err != nil {
@@ -297,4 +304,14 @@ func (u Import) link(ctx context.Context, c calendar.ExternalCalendar, e entry, 
 		l.RecurringEventID = &parent
 	}
 	return u.calendars.CreateLink(ctx, l)
+}
+
+// requireWritable は、事業所 facilityID の行を共有のロックで読み、予定を書けるモードかを確認する（schedule.RequireWritable）。
+// トランザクションの中で呼ぶ。事業所が無いときは apperr.ErrNotFound を返す。
+func requireWritable(ctx context.Context, locks FacilityLock, facilityID string) error {
+	f, err := locks.GetForShare(ctx, facilityID)
+	if err != nil {
+		return err
+	}
+	return schedule.RequireWritable(f)
 }

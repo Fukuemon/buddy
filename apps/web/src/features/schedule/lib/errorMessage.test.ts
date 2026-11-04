@@ -31,4 +31,13 @@ describe('scheduleSubmitErrorMessage', () => {
       '予定を作成できませんでした。',
     )
   })
+
+  it('Google カレンダーを予定の正本にする事業所で拒まれたときは、Google カレンダーで作るよう示す', () => {
+    const error = new ApiError(409, 'conflict', [], 'google_primary')
+    for (const verb of ['作成', '更新'] as const) {
+      expect(scheduleSubmitErrorMessage(error, verb)).toBe(
+        'この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください。',
+      )
+    }
+  })
 })

@@ -93,7 +93,7 @@ func (q *Queries) GetDepartment(ctx context.Context, id string) (Department, err
 }
 
 const getFacility = `-- name: GetFacility :one
-SELECT id, name, org_id, time_zone, created_at, updated_at FROM facilities WHERE id = $1
+SELECT id, name, org_id, time_zone, created_at, updated_at, source_mode FROM facilities WHERE id = $1
 `
 
 func (q *Queries) GetFacility(ctx context.Context, id string) (Facility, error) {
@@ -106,12 +106,13 @@ func (q *Queries) GetFacility(ctx context.Context, id string) (Facility, error) 
 		&i.TimeZone,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SourceMode,
 	)
 	return i, err
 }
 
 const getFacilityByOrgID = `-- name: GetFacilityByOrgID :one
-SELECT id, name, org_id, time_zone, created_at, updated_at FROM facilities WHERE org_id = $1
+SELECT id, name, org_id, time_zone, created_at, updated_at, source_mode FROM facilities WHERE org_id = $1
 `
 
 func (q *Queries) GetFacilityByOrgID(ctx context.Context, orgID *string) (Facility, error) {
@@ -124,6 +125,27 @@ func (q *Queries) GetFacilityByOrgID(ctx context.Context, orgID *string) (Facili
 		&i.TimeZone,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SourceMode,
+	)
+	return i, err
+}
+
+const getFacilityForShare = `-- name: GetFacilityForShare :one
+SELECT id, name, org_id, time_zone, created_at, updated_at, source_mode FROM facilities WHERE id = $1 FOR SHARE
+`
+
+// ShareFacility と同じ共有のロックを取り、事業所の行を返す。予定を書く操作が、ロックの中で正本のモードを読む。
+func (q *Queries) GetFacilityForShare(ctx context.Context, id string) (Facility, error) {
+	row := q.db.QueryRow(ctx, getFacilityForShare, id)
+	var i Facility
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.OrgID,
+		&i.TimeZone,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.SourceMode,
 	)
 	return i, err
 }

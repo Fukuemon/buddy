@@ -8,7 +8,7 @@
 
 | Name                                                                        | Columns | Comment                                                      | Type       |
 | --------------------------------------------------------------------------- | ------- | ------------------------------------------------------------ | ---------- |
-| [public.facilities](public.facilities.md)                                   | 6       | 訪問看護の事業所                                             | BASE TABLE |
+| [public.facilities](public.facilities.md)                                   | 7       | 訪問看護の事業所                                             | BASE TABLE |
 | [public.users](public.users.md)                                             | 15      | 職員                                                         | BASE TABLE |
 | [public.service_codes](public.service_codes.md)                             | 6       | サービスコード。マイグレーションで入れる                     | BASE TABLE |
 | [public.visit_categories](public.visit_categories.md)                       | 4       | 訪問の区分（夜勤、緊急、入院）。マイグレーションで入れる     | BASE TABLE |
@@ -55,6 +55,7 @@ erDiagram
   text time_zone
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  text source_mode
 }
 "public.users" {
   text id

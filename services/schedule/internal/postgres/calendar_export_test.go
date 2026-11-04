@@ -15,9 +15,12 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
+	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
 
@@ -234,7 +237,7 @@ func TestCalendarExportWritesStoredSchedules(t *testing.T) {
 	}
 	exports := NewCalendarExportRepository(testDB)
 	ids := ulid.Generator{}
-	outbox := calendarexport.NewOutbox(exports, calendars, ids)
+	outbox := calendarexport.NewOutbox(NewFacilityRepository(testDB), exports, calendars, ids)
 	if err := outbox.ScheduleChanged(ctx, seedFacility, seedMori, seedVisitSchedule); err != nil {
 		t.Fatal(err)
 	}
@@ -243,7 +246,8 @@ func TestCalendarExportWritesStoredSchedules(t *testing.T) {
 	}
 	writer := gcal.NewWriter(gcaltest.Start(t, srv))
 	exporter := calendarexport.NewExporter(calendarexport.ExporterDeps{
-		Exports: exports, Calendars: calendars,
+		Facilities: NewFacilityRepository(testDB),
+		Exports:    exports, Calendars: calendars,
 		Writers:   func(context.Context, string) (calendar.EventWriter, error) { return writer, nil },
 		Schedules: NewScheduleRepository(testDB), Recurring: NewRecurringScheduleRepository(testDB),
 	}, ids, slog.New(slog.NewTextHandler(io.Discard, nil)))
@@ -272,4 +276,67 @@ func TestCalendarExportWritesStoredSchedules(t *testing.T) {
 		weekly.Start.DateTime != "2026-10-05T17:30:00" {
 		t.Errorf("繰り返しの予定 = %q, %v, %v", weekly.Summary, weekly.Recurrence, weekly.Start.DateTime)
 	}
+}
+
+// TestScheduleWritesEnqueueExports は、シードの事業所で、予定を書く 5 つの操作が DB に書き、
+// 予定の職員がカレンダーを結び付けていれば、書き出しの待ちを積むことを確認する。
+func TestScheduleWritesEnqueueExports(t *testing.T) {
+	base := txContext(t)
+	ctx := principal.With(base, principal.Principal{Staff: staff.Detail{
+		Summary:  staff.Summary{Staff: staff.Staff{ID: seedMori, FacilityID: seedFacility}},
+		Policies: []staff.PolicyGrant{{PolicyCode: organization.ScheduleAllEdit}},
+	}})
+	calendars := NewCalendarRepository(testDB)
+	if err := calendars.Create(ctx, calendar.ExternalCalendar{ID: "01M3TD000000000000000000C9", FacilityID: seedFacility, StaffID: seedMori, Provider: calendar.ProviderGoogle, CalendarID: "mori@example.com"}); err != nil {
+		t.Fatal(err)
+	}
+	exports := NewCalendarExportRepository(testDB)
+	ids := ulid.Generator{}
+	outbox := calendarexport.NewOutbox(NewFacilityRepository(testDB), exports, calendars, ids)
+	facilities, schedules, recurring := NewFacilityRepository(testDB), NewScheduleRepository(testDB), NewRecurringScheduleRepository(testDB)
+	types, refs, txr := NewScheduleTypeRepository(testDB), NewStaffRefRepository(testDB), NewTransactor(testDB)
+	requireQueued := func(t *testing.T, target calendar.Target) {
+		t.Helper()
+		if e, err := exports.Open(ctx, target); err != nil || e.Status != calendar.ExportPending {
+			t.Errorf("%+v の書き出しの待ち = %+v, %v, want pending", target, e, err)
+		}
+	}
+	slot := func(title string, d civil.Date) schedule.SlotInput {
+		return schedule.SlotInput{TypeID: seedNormalType, Date: d, StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10}, StaffID: seedMori, Title: &title}
+	}
+
+	created, err := schedule.NewCreate(facilities, schedules, types, refs, facilities, nil, nil, outbox, txr, ids).
+		Do(ctx, seedFacility, slot("カンファレンス", civil.Date{Year: 2099, Month: 1, Day: 5}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	requireQueued(t, calendar.Target{FacilityID: seedFacility, ScheduleID: created.ID})
+	if _, err := schedule.NewUpdate(schedules, refs, facilities, types, nil, nil, outbox, txr).
+		Do(ctx, created.ID, slot("カンファレンス（変更）", civil.Date{Year: 2099, Month: 1, Day: 6})); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := schedule.NewCancel(schedules, refs, facilities, outbox, txr, ids).Do(ctx, created.ID, "中止"); err != nil {
+		t.Fatal(err)
+	}
+	if d, err := schedules.Get(ctx, created.ID); err != nil || d.Cancel == nil || d.Date != (civil.Date{Year: 2099, Month: 1, Day: 6}) {
+		t.Errorf("変えてキャンセルした予定 = %+v, %v", d, err)
+	}
+	requireQueued(t, calendar.Target{FacilityID: seedFacility, ScheduleID: created.ID})
+
+	rs, err := schedule.NewCreateRecurring(facilities, types, refs, facilities, nil, nil, recurring, outbox, txr, ids).
+		Do(ctx, seedFacility, slot("定例", civil.Date{Year: 2099, Month: 1, Day: 5}), schedule.RuleInput{Frequency: schedule.Weekly})
+	if err != nil {
+		t.Fatal(err)
+	}
+	requireQueued(t, calendar.Target{FacilityID: seedFacility, RecurringScheduleID: rs.ID})
+	occ, err := schedule.NewChangeOccurrence(recurring, refs, facilities, schedules, types, nil, nil, outbox, txr, ids).
+		Do(ctx, rs.ID, civil.Date{Year: 2099, Month: 1, Day: 12}, slot("定例（振替）", civil.Date{Year: 2099, Month: 1, Day: 13}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if occ.RecurringScheduleID == nil || *occ.RecurringScheduleID != rs.ID {
+		t.Errorf("置き換えた回 = %+v", occ)
+	}
+	requireQueued(t, calendar.Target{FacilityID: seedFacility, ScheduleID: occ.ID})
+	requireQueued(t, calendar.Target{FacilityID: seedFacility, RecurringScheduleID: rs.ID})
 }

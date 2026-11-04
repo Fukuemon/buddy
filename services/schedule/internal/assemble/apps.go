@@ -52,7 +52,7 @@ func NewHandler(r Repositories, cfg HandlerConfig) http.Handler {
 func newApps(r Repositories, accounts *gcal.Accounts, cfg config.API) httpapi.Apps {
 	var outbox schedule.Exports
 	if cfg.Calendar.ExportEnabled {
-		outbox = calendarexport.NewOutbox(r.exports, r.calendars, r.ids)
+		outbox = calendarexport.NewOutbox(r.facilities, r.exports, r.calendars, r.ids)
 	}
 	visitInfos := r.visitWriter()
 	return httpapi.Apps{
@@ -206,7 +206,7 @@ func scheduleApp(
 		Create:           schedule.NewCreate(facilities, schedules, types, staffRefs, locks, visits, nil, exports, tx, ids).Do,
 		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, staffRefs, locks, visits, nil, recurring, exports, tx, ids).Do,
 		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, staffRefs, locks, schedules, types, visits, nil, exports, tx, ids).Do,
-		Cancel:           schedule.NewCancel(schedules, staffRefs, exports, tx, ids).Do,
+		Cancel:           schedule.NewCancel(schedules, staffRefs, locks, exports, tx, ids).Do,
 		Update:           schedule.NewUpdate(schedules, staffRefs, locks, types, visits, nil, exports, tx).Do,
 	}
 }
@@ -220,7 +220,11 @@ func calendarApp(
 	},
 	accounts calendar.Accounts,
 	staffRefs calendar.StaffRefs,
-	locks calendar.FacilityLock,
+	locks interface {
+		calendar.FacilityLock
+		calendarimport.FacilityLock
+		calendarsync.FacilityLock
+	},
 	patients calendar.Patients,
 	serviceCodes calendar.ServiceCodes,
 	types calendar.Types,

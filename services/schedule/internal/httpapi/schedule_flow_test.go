@@ -47,8 +47,13 @@ func (a flowAuth) FacilityOf(ctx context.Context, r access.Resource, id string) 
 
 // flowRouter は、メモリ上のリポジトリの上に、本物の schedule と scheduleview の操作を組み立てたルーターを返す。
 func flowRouter() http.Handler {
+	return flowRouterWith(organization.SourceBuddyPrimary)
+}
+
+// flowRouterWith は、事業所の正本のモードを mode にした flowRouter を返す。
+func flowRouterWith(mode organization.SourceMode) http.Handler {
 	s := inmem.NewStore()
-	s.Facilities[facilityID] = organization.Facility{ID: facilityID, OrgID: testOrgID}
+	s.Facilities[facilityID] = organization.Facility{ID: facilityID, OrgID: testOrgID, SourceMode: mode}
 	for _, id := range []string{staffID, flowCompanionID} {
 		s.Staff[id] = staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: id, FacilityID: facilityID}}}
 	}
@@ -76,7 +81,7 @@ func flowRouter() http.Handler {
 		Create:           schedule.NewCreate(facilities, schedules, types, refs, facilities, visits, nil, nil, tx, ids).Do,
 		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, facilities, visits, nil, recurring, nil, tx, ids).Do,
 		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, refs, facilities, schedules, types, visits, nil, nil, tx, ids).Do,
-		Cancel:           schedule.NewCancel(schedules, refs, nil, tx, ids).Do,
+		Cancel:           schedule.NewCancel(schedules, refs, facilities, nil, tx, ids).Do,
 		Update:           schedule.NewUpdate(schedules, refs, facilities, types, visits, nil, nil, tx).Do,
 	}
 	auth := flowAuth{svc: access.NewService(access.Deps{Schedules: schedules, Recurring: recurring})}
@@ -197,5 +202,22 @@ func TestScheduleWritesRespondWithStoredSchedule(t *testing.T) {
 	parent := request(t, h, http.MethodGet, "/v1/schedules/recurring/"+rsID, "", http.StatusOK)
 	if got := parent["exclusion_dates"]; !reflect.DeepEqual(got, []any{"2099-01-12"}) {
 		t.Errorf("置き換えた後の繰り返しの予定の exclusion_dates = %v", got)
+	}
+}
+
+// TestScheduleWritesRejectGooglePrimary は、Google カレンダーを予定の正本にする事業所で、予定の作成と繰り返しの予定の作成が
+// 409 と code の google_primary を返すことを確認する（ADR-0035）。
+func TestScheduleWritesRejectGooglePrimary(t *testing.T) {
+	h := flowRouterWith(organization.SourceGooglePrimary)
+	body := `{"schedule_type_id":"` + typeID + `","date":"2099-01-05","start_time":"09:00","end_time":"10:00","staff_id":"` + staffID + `","title":"カンファレンス"}`
+	for _, target := range []string{"/v1/facilities/" + facilityID + "/schedules", "/v1/facilities/" + facilityID + "/schedules/recurring"} {
+		b := body
+		if target != "/v1/facilities/"+facilityID+"/schedules" {
+			b = b[:len(b)-1] + `,"recurring_rule":{"frequency":"weekly"}}`
+		}
+		got := request(t, h, http.MethodPost, target, b, http.StatusConflict)
+		if got["code"] != schedule.CodeGooglePrimary {
+			t.Errorf("%s の code = %v, want %s", target, got["code"], schedule.CodeGooglePrimary)
+		}
 	}
 }

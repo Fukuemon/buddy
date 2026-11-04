@@ -109,17 +109,18 @@ func newExportEnv(t *testing.T) exportEnv {
 		RetryExport:      calendarexport.NewRetryExport(exports, principal.RequireStaffManage).Do,
 	}
 	facilities, refs, schedules, recurring, types := inmem.Facilities{Store: s}, inmem.StaffRefs{Store: s}, inmem.Schedules{Store: s}, inmem.RecurringSchedules{Store: s}, inmem.ScheduleTypes{Store: s}
-	outbox, tx := calendarexport.NewOutbox(exports, inmem.Calendars{Store: s}, ids), &inmem.Tx{}
+	outbox, tx := calendarexport.NewOutbox(inmem.Facilities{Store: s}, exports, inmem.Calendars{Store: s}, ids), &inmem.Tx{}
 	sched := scheduleOps{
 		Create:           schedule.NewCreate(facilities, schedules, types, refs, facilities, nil, nil, outbox, tx, ids).Do,
 		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, facilities, nil, nil, recurring, outbox, tx, ids).Do,
 		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, refs, facilities, schedules, types, nil, nil, outbox, tx, ids).Do,
-		Cancel:           schedule.NewCancel(schedules, refs, outbox, tx, ids).Do,
+		Cancel:           schedule.NewCancel(schedules, refs, facilities, outbox, tx, ids).Do,
 		Update:           schedule.NewUpdate(schedules, refs, facilities, types, nil, nil, outbox, tx).Do,
 	}
 	writers, logs := &[]string{}, &bytes.Buffer{}
 	exporter := calendarexport.NewExporter(calendarexport.ExporterDeps{
-		Exports: exports, Calendars: inmem.Calendars{Store: s}, Writers: writerOf(gcal.NewWriter(gcaltest.Start(t, srv)), writers),
+		Facilities: inmem.Facilities{Store: s},
+		Exports:    exports, Calendars: inmem.Calendars{Store: s}, Writers: writerOf(gcal.NewWriter(gcaltest.Start(t, srv)), writers),
 		Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s},
 	}, ids, slog.New(slog.NewJSONHandler(logs, &slog.HandlerOptions{Level: slog.LevelDebug})))
 	return exportEnv{store: s, ctx: ctx, uc: uc, srv: srv, schedules: sched, exporter: exporter, writers: writers, logs: logs}
@@ -810,4 +811,32 @@ func TestExportLogsRequeuedOnShutdown(t *testing.T) {
 		t.Error("止めた後に滞留を数えた")
 	}
 	wantCounts(t, e.logged(t, "calendar export batch")[0], map[string]float64{"claimed_count": 1, "requeued_count": 1, "succeeded_count": 0})
+}
+
+// 取った待ちの事業所が buddy を予定の正本にしていなければ、書かずに確認が必要な待ち（conflict、not_buddy_primary）にして保留にする。
+// 保留にした待ちは、要約の held_count に数え、書いていない待ちの滞留（pending）には数えない（ADR-0035）。
+func TestExportHoldsNotBuddyPrimary(t *testing.T) {
+	e := newExportEnv(t)
+	d := e.create(t, "カンファレンス")
+	setSourceMode(e.store, organization.SourceGooglePrimary)
+	e.logs.Reset()
+	if n := e.run(t); n != 1 {
+		t.Fatalf("取った待ち = %d", n)
+	}
+	if ev := e.srv.Event(googleCalID, eventID(t, d.ID)); ev != nil {
+		t.Errorf("google_primary の事業所の予定を書いた: %+v", ev)
+	}
+	x := e.export(t, d.ID)
+	if x.Status != calendar.ExportConflict || x.ErrorCode == nil || *x.ErrorCode != calendar.ErrorNotBuddyPrimary || x.IsAcceptable() {
+		t.Errorf("保留にした待ち = %+v", x)
+	}
+	wantCounts(t, e.logged(t, "calendar export batch")[0], map[string]float64{"claimed_count": 1, "held_count": 1, "succeeded_count": 0, "failed_count": 0})
+	// 保留にした待ちは、次のバッチで取らない
+	if n := e.run(t); n != 0 {
+		t.Errorf("保留にした待ちを取り直した: %d", n)
+	}
+	wantCounts(t, e.logged(t, "calendar export backlog")[0], map[string]float64{"pending_count": 0})
+	if issues, err := e.uc.ListExportIssues(e.ctx, inmem.FacilityID); err != nil || len(issues) != 1 {
+		t.Errorf("確認が必要な予定 = %+v, %v", issues, err)
+	}
 }

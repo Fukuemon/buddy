@@ -14,7 +14,7 @@ name: schedule
 viewpoints:
   - id: organization
     name: 事業所と組織
-    desc: 事業所と、その中の部署、チーム、役職、職員
+    desc: 事業所と、その中の部署、チーム、役職、職員。事業所は予定の正本のモードを持つ
     tables:
       - facilities
       - departments
@@ -71,7 +71,7 @@ viewpoints:
       - recurring_schedule_details
   - id: calendar-sync
     name: 外部のカレンダーの取り込みと書き出し
-    desc: 職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち
+    desc: 職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち。書き出しは、予定の正本のモードが buddy_primary の事業所に限る
     tables:
       - external_calendars
       - calendar_sync_states
@@ -81,6 +81,7 @@ viewpoints:
       - schedules
       - recurring_schedules
       - users
+      - facilities
 lint:
   requireViewpoints:
     enabled: true

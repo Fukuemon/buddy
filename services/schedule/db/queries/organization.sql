@@ -14,6 +14,10 @@ SELECT id FROM facilities WHERE id = $1 FOR UPDATE;
 -- 割り振りどうしは待たせない。
 SELECT id FROM facilities WHERE id = $1 FOR SHARE;
 
+-- name: GetFacilityForShare :one
+-- ShareFacility と同じ共有のロックを取り、事業所の行を返す。予定を書く操作が、ロックの中で正本のモードを読む。
+SELECT * FROM facilities WHERE id = $1 FOR SHARE;
+
 -- name: GetDepartment :one
 SELECT * FROM departments WHERE id = $1;
 

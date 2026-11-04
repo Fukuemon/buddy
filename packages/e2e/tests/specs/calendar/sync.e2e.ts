@@ -40,7 +40,7 @@ test.describe('確認が必要な予定', () => {
       }
     })
 
-    test('Google カレンダーで直した予定が buddy に出て、両方で変わった予定は Google の内容に合わせられること', async ({
+    test('Google カレンダーで直した予定が buddy に出て、両方で変わった予定は Google の内容に合わせられず、確認が必要なまま残ること', async ({
       page,
       request,
     }) => {
@@ -109,7 +109,8 @@ test.describe('確認が必要な予定', () => {
         await holdGoogleChanges(request, false)
       })
 
-      await test.step('Google の内容に合わせると、一覧から消え、buddy の予定が Google カレンダーのタイトルと日時になる', async () => {
+      // シードの事業所は buddy を予定の正本にする（buddy_primary）ので、Google の内容を buddy の予定に当てない（ADR-0035）
+      await test.step('Google の内容に合わせようとすると拒まれ、一覧に残り、buddy の予定は buddy で変えたタイトルのままになる', async () => {
         await reviewRow(page, scheduleId).click()
         await page
           .getByTestId('calendar-review-dialog')
@@ -118,16 +119,14 @@ test.describe('確認が必要な予定', () => {
         const dialog = page.getByTestId('calendar-accept-dialog')
         await expect(dialog).toContainText('buddy で変えたタイトルと日時は消えます。')
         await page.getByTestId('calendar-accept-submit').click()
-        await expect(dialog).toBeHidden()
-        await expect(reviewRow(page, scheduleId)).toHaveCount(0)
-
-        const google = await findEvent(request, created)
-        expect(google?.id).toBe(eventId)
-        await openSchedule(page, created)
-        await expect(page.getByTestId('schedule-detail-datetime')).toHaveText(
-          detailDateTime(google),
+        await expect(dialog.getByTestId('calendar-accept-error')).toHaveText(
+          'この予定は、Google カレンダーの内容に合わせられません。buddy の内容で書き直してください。',
         )
-        await expect(page.getByTestId('schedule-detail-modal')).not.toContainText(changed)
+        await page.goto('/schedule/review')
+        await expect(reviewRow(page, scheduleId)).toBeVisible()
+
+        await openSchedule(page, changed)
+        await expect(page.getByTestId('schedule-detail-modal')).toContainText(changed)
       })
     })
   })

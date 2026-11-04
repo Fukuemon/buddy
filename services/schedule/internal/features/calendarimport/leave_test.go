@@ -13,6 +13,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
@@ -137,18 +138,20 @@ func TestImportAppliesLinkedChangesWhileStaffOnLeave(t *testing.T) {
 	}
 }
 
-// lockHook は、Share の前に run を呼ぶ FacilityLock である。ロックを待つ間に、ほかのトランザクションが職員を書いて
-// コミットしたことを表す。
+// lockHook は、2 回目の GetForShare（取り込みを書くトランザクションの始め）の前に run を呼ぶ FacilityLock である。
+// ロックを待つ間に、ほかのトランザクションが職員を書いてコミットしたことを表す。1 回目は、取り込みの記録を作る前の確認である。
 type lockHook struct {
 	inmem.Facilities
-	run func()
+	run   func()
+	calls *int
 }
 
-func (h lockHook) Share(ctx context.Context, facilityID string) error {
-	if h.run != nil {
+func (h lockHook) GetForShare(ctx context.Context, facilityID string) (organization.Facility, error) {
+	*h.calls++
+	if h.run != nil && *h.calls == 2 {
 		h.run()
 	}
-	return h.Facilities.Share(ctx, facilityID)
+	return h.Facilities.GetForShare(ctx, facilityID)
 }
 
 // 取り込みの読み替えの後に、職員が休職か退職になったとき、確定は何も書かない。退職と取り込みが同時に動いても、
@@ -169,7 +172,7 @@ func TestImportRejectsWhenStaffStoppedAfterPlan(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			e := newEnv(t, srv)
 			uc := withLocks(e, gcal.NewReader(gcaltest.Start(t, srv)),
-				lockHook{Facilities: inmem.Facilities{Store: e.store}, run: func() { tt.stop(t, e.store) }})
+				lockHook{Facilities: inmem.Facilities{Store: e.store}, run: func() { tt.stop(t, e.store) }, calls: new(int)})
 			_, err := uc.Import(e.ctx, calID, e.rng, nil)
 			if !errors.Is(err, tt.want) {
 				t.Fatalf("err = %v, want %v", err, tt.want)

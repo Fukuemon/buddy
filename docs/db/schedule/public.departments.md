@@ -16,9 +16,9 @@
 
 ## Viewpoints
 
-| Name                                      | Definition                                 |
-| ----------------------------------------- | ------------------------------------------ |
-| [事業所と組織](viewpoint-organization.md) | 事業所と、その中の部署、チーム、役職、職員 |
+| Name                                      | Definition                                                                   |
+| ----------------------------------------- | ---------------------------------------------------------------------------- |
+| [事業所と組織](viewpoint-organization.md) | 事業所と、その中の部署、チーム、役職、職員。事業所は予定の正本のモードを持つ |
 
 ## Constraints
 
@@ -88,6 +88,7 @@ erDiagram
   text time_zone
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  text source_mode
 }
 ```
 

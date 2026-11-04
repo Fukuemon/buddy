@@ -24,12 +24,19 @@ export const scheduleLoadErrorMessage = (error: unknown) => {
   return SCHEDULE_LOAD_ERROR_MESSAGE
 }
 
+/** 事業所が Google カレンダーを予定の正本にしていて、予定を書けないときの文（409 の google_primary）。 */
+export const SCHEDULE_GOOGLE_PRIMARY_MESSAGE =
+  'この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください。'
+
 /**
  * 予定の作成と保存を拒まれたときの文。verb は「作成」か「更新」である。
  * 400 は、入力が予定の規則に合わないときである。API は合わない項目を返さないので、項目には示さない。
+ * 409 の google_primary は、Google カレンダーを予定の正本にする事業所で予定を書こうとしたときである。
  */
 export const scheduleSubmitErrorMessage = (error: unknown, verb: '作成' | '更新') => {
   if (error instanceof ApiError && error.status === 403) return FORBIDDEN_MESSAGE
+  if (error instanceof ApiError && error.code === 'google_primary')
+    return SCHEDULE_GOOGLE_PRIMARY_MESSAGE
   if (error instanceof ApiError && error.status === 400)
     return `入力の内容では予定を${verb}できません。内容を直してください。`
   return `予定を${verb}できませんでした。`

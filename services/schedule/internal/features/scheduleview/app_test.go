@@ -147,7 +147,7 @@ func newSchedules(s *inmem.Store) *app {
 		Create:           schedule.NewCreate(facilities, schedules, types, refs, facilities, visits, now, nil, tx, ids).Do,
 		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, facilities, visits, now, recurring, nil, tx, ids).Do,
 		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, refs, facilities, schedules, types, visits, now, nil, tx, ids).Do,
-		Cancel:           schedule.NewCancel(schedules, refs, nil, tx, ids).Do,
+		Cancel:           schedule.NewCancel(schedules, refs, facilities, nil, tx, ids).Do,
 		Update:           schedule.NewUpdate(schedules, refs, facilities, types, visits, now, nil, tx).Do,
 	}
 }

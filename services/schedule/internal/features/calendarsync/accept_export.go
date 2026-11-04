@@ -16,6 +16,11 @@ import (
 // acceptCallTimeout は、Google の内容に合わせる操作が、予定の行をロックしたまま外部のカレンダーを読む時間の上限である。
 const acceptCallTimeout = 20 * time.Second
 
+// errBuddyPrimary は、buddy を予定の正本にする事業所では、外部のカレンダーの内容を buddy の予定に当てないことを表す（ADR-0035）。
+// コードは calendar.CodeExportNotAcceptable で、buddy の内容で書き直す（RetryExport）よう促す。
+var errBuddyPrimary = apperr.ConflictCode(calendar.CodeExportNotAcceptable,
+	"この事業所の予定は buddy で管理しているので、Google カレンダーの内容を buddy に当てられません。buddy の内容で書き直してください")
+
 // errNotAcceptable は、外部のカレンダーの内容を当てられない書き出しの待ちであることを表す。コードは calendar.CodeExportNotAcceptable である。
 var errNotAcceptable = apperr.ConflictCode(calendar.CodeExportNotAcceptable,
 	"この予定は、Google カレンダーの内容を buddy に当てられません。buddy の内容で書き直してください")
@@ -27,7 +32,7 @@ type AcceptExport struct {
 	calendars Calendars
 	accounts  calendar.Accounts
 	staff     calendar.StaffRefs
-	locks     calendar.FacilityLock
+	locks     FacilityLock
 	tx        tx.Transactor
 	ids       kernel.IDGenerator
 	guard     organization.Guard
@@ -37,7 +42,7 @@ type AcceptExport struct {
 // NewAcceptExport は AcceptExport を作る。types、patients、serviceCodes、visits は、外部のカレンダーの今の内容を予定に当てる規則（reconcileApplier）が使う。
 // 単発の予定だけを当てるので、繰り返しの予定のリポジトリは渡さない。
 func NewAcceptExport(
-	exports ExportRepository, schedules calendar.ScheduleStore, calendars Calendars, accounts calendar.Accounts, staff calendar.StaffRefs, locks calendar.FacilityLock,
+	exports ExportRepository, schedules calendar.ScheduleStore, calendars Calendars, accounts calendar.Accounts, staff calendar.StaffRefs, locks FacilityLock,
 	types calendar.Types, patients calendar.Patients, serviceCodes calendar.ServiceCodes, visits calendar.VisitStore,
 	tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard,
 ) AcceptExport {
@@ -50,6 +55,7 @@ func NewAcceptExport(
 // Do は、確認が必要な書き出し id の予定を、buddy での変更によらず外部のカレンダーの今の内容にし、待ちを終えて返す。
 // 外部のカレンダーで消された予定は、キャンセルする。予定の職員が、外部の予定のカレンダーの職員と違えば、書き出しの待ちを積み直し、
 // 今の職員のカレンダーへ移させる。
+// 事業所が buddy を予定の正本にしているとき（ADR-0035）は、code が calendar.CodeExportNotAcceptable の apperr.ErrConflict を返す。
 // 待ちが見つからないときは apperr.ErrNotFound を、確認が必要な待ちでないとき、外部の内容を当てられない待ちのとき、
 // 予定の対応のカレンダーを外したとき（退職を含む）、
 // 外部の予定を buddy の予定に読み替えられないときは apperr.ErrConflict を返す。外部のカレンダーを読めないときは Preview と同じである。
@@ -100,8 +106,11 @@ func (u AcceptExport) Do(ctx context.Context, id string) (calendar.Export, error
 		}
 		// 退職はカレンダーを外すので、職員の休職、復職、退職を待たせてからカレンダーを読み直す。外したカレンダーの内容を当てると、
 		// 退職した職員の予定を今日以降へ動かせるためである。予定の変更と同じく、予定の行のロックの後に取る。
-		if err := u.locks.Share(ctx, c.FacilityID); err != nil {
+		// 正本のモードも同じロックの中で読み、読んだ後にモードが変わらないようにする。
+		if f, err := u.locks.GetForShare(ctx, c.FacilityID); err != nil {
 			return err
+		} else if f.IsBuddyPrimary() {
+			return errBuddyPrimary
 		}
 		if now, err := u.calendars.Get(ctx, c.ID); err != nil {
 			return err

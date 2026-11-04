@@ -51,8 +51,19 @@ func (r *FacilityRepository) Share(ctx context.Context, facilityID string) error
 	return translate("share facility", err)
 }
 
+// GetForShare は、Share と同じ共有のロックを事業所 facilityID の行に取り、事業所を返す。呼び出し側がトランザクションの中で呼ぶ。
+// 予定を書く操作が、ロックの中で正本のモードを読む。モードの切り替えは同じ行に排他のロックを取るので、読んだ後にモードが変わらない。
+// 事業所が無いときは apperr.ErrNotFound を返す。
+func (r *FacilityRepository) GetForShare(ctx context.Context, facilityID string) (organization.Facility, error) {
+	f, err := r.q(ctx).GetFacilityForShare(ctx, facilityID)
+	if err != nil {
+		return organization.Facility{}, translate("get facility for share", err)
+	}
+	return toFacility(f), nil
+}
+
 func toFacility(f sqlcgen.Facility) organization.Facility {
-	return organization.Facility{ID: f.ID, Name: f.Name, OrgID: deref(f.OrgID), CreatedAt: f.CreatedAt, UpdatedAt: f.UpdatedAt}
+	return organization.Facility{ID: f.ID, Name: f.Name, OrgID: deref(f.OrgID), SourceMode: organization.SourceMode(f.SourceMode), CreatedAt: f.CreatedAt, UpdatedAt: f.UpdatedAt}
 }
 
 // DepartmentRepository は、organization.DepartmentRepository を実装する。

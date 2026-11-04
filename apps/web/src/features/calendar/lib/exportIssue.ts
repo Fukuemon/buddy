@@ -44,6 +44,8 @@ export const exportIssueReason = (issue: ExportIssueState) => {
       return 'Google カレンダーが予定の内容を受け付けませんでした。'
     case 'forbidden':
       return 'Google カレンダーに書けません。'
+    case 'not_buddy_primary':
+      return 'この事業所の予定は Google カレンダーで管理しているので、書き出していません。'
     default:
       return issue.status === 'failed'
         ? 'Google カレンダーに届かず、書き出せませんでした。'

@@ -43,9 +43,14 @@ status: stable
 - 回の置き換えで作った予定は、元の繰り返しの予定を指し、変更しても指したままである。
 - 事業所の予定の正本は、事業所の正本のモードで決まり、1 つの事業所に正本は 1 つだけである。
   - `google_primary` の事業所は Google カレンダーが正本で、予定の API から予定を作れず、変えられず、キャンセルできない。
+    - 予定の API は、予定の作成、変更、キャンセル、繰り返しの予定の作成、回の置き換え、手動の取り込みを 409（code は `google_primary`）で拒む。
   - `google_primary` の事業所で予定を作れるのは、事業所に `open` の切り替えがあるときの、切り替えの取り込みだけである。
+  - Google カレンダーへ書き出すのは、`buddy_primary` の事業所の予定だけである。
+    - `buddy_primary` でない事業所の書き出しの待ちは、書かずに確認が必要な待ちにして保留にする。
+  - 新しい事業所のデフォルトのモードは `google_primary` である。
   - 1 つの事業所に、`open` の切り替えは 1 つまでである。
   - `buddy_primary` の事業所は buddy が正本で、Google カレンダーでの変更を予定に取り込まない。
+    - 確認が必要な書き出しを Google の内容に合わせる操作（`createCalendarExportAcceptance`）は、409（code は `export_not_acceptable`）で拒む。
   - ADR-0035: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](../../docs/adr/0035-google-calendar-source-modes.md)
 
 ## Prohibitions

@@ -129,6 +129,10 @@ sequenceDiagram
   api->>db: 予定の対応、利用者、サービスコードを読む
   api-->>web: 件数、確認が必要な予定、取り込まない予定
   web->>api: 確定（期間、取り込み方）
+  api->>db: 事業所の行に共有のロックを取り、正本のモードを読む
+  break 事業所が buddy_primary でない
+    api-->>web: 409（google_primary）
+  end
   api->>db: カレンダーのレコードをロックし、取り込みの記録を running で書く
   break 10 分以内に始めた running の記録がある
     api-->>web: 409（import_running）
@@ -138,7 +142,10 @@ sequenceDiagram
   break 確認が必要な予定が、送られた取り込み方と違う
     api-->>web: 409（import_preview_changed）
   end
-  api->>db: 事業所の行に共有のロックを取り、カレンダーと職員を読み直す
+  api->>db: 事業所の行に共有のロックを取り、正本のモード、カレンダー、職員を読み直す
+  break 事業所が buddy_primary でなくなった
+    api-->>web: 409（google_primary）
+  end
   break カレンダーが外れた
     api-->>web: 404
   end
@@ -161,6 +168,15 @@ web は、プレビューの結果と選んだ取り込み方を画面の中だ�
 同じカレンダーの取り込みは、1 つずつ行う。  
 確定の始めにカレンダーのレコードに排他のロックを取り、10 分以内に始めた `running` の記録があれば 409 を返す。  
 止まった取り込みが次の取り込みを止め続けないよう、10 分より前の `running` は数えない。
+
+取り込みの確定は、予定の正本のモードが `buddy_primary` の事業所でだけ書く。  
+確定は、取り込みの記録を作るトランザクションの始めと、予定を書くトランザクションの始めの 2 回、事業所の行を共有のロックで読み、`schedule.RequireWritable` でモードを確認する。  
+1 回目は、Google を読む前に、取り込みの記録を作らずに拒む。  
+2 回目は、読み替えている間にモードが変わったときに、記録を `failed` にして何も書かない。  
+`google_primary` の事業所では 409（`google_primary`）を返す。  
+プレビューは書かないので、モードによらず動く。
+
+- ADR-0035: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0035-google-calendar-source-modes.md)
 
 取り込んだ Google の予定は、`external_event_links` の対応を持つ。  
 対応のある予定は取り込み済みに数え、もう一度は書かない。
@@ -288,6 +304,8 @@ sequenceDiagram
 予定の操作（`schedule` の `Create` など）は、予定を書くのと同じトランザクションで `calendarexport` の `Outbox` に待ちを積む。  
 待ちを Google に書くのは、`calendarexport` の `Exporter` である。  
 積むのは、予定の職員に外していないカレンダーがあるときと、予定の対応のカレンダーを外していないとき（職員を替えて、前のカレンダーの予定を消すとき）だけである。  
+積むのは、予定の正本のモードが `buddy_primary` の事業所の予定だけである。  
+予定の操作は `google_primary` の事業所で予定を書かないので、`Outbox` のモードの確認は、予定の操作のほかから呼ばれたときの守りになる。  
 取り込みで書いた予定は積まない。  
 カレンダーを結び付ける前に作った予定は書き出さない。  
 結び付けた後にその予定を変えると書く。
@@ -302,6 +320,11 @@ sequenceDiagram
 - 結果は、取ったときの回数（`attempts`）と比べて書き、期限が切れた後にほかの Worker が取り直した待ちを変えない。
   - 外部の API はトランザクションの外で呼ぶ。
 - 止める合図で書けなかった待ちは、書こうとした回数に数えずに返す。
+- 取った待ちの事業所が `buddy_primary` でなければ、Google に書かずに `conflict`（`not_buddy_primary`）にして保留にする。
+  - 保留にした待ちは、要約のログの `held_count` に数え、書いていない待ちの滞留（`pending` だけを数える）には数えない。
+  - 確認が必要な予定の一覧に出る。「buddy の内容で書き直す」を選んでも、事業所が `buddy_primary` になるまでは、また保留にする。
+
+- ADR-0035: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0035-google-calendar-source-modes.md)
 
 予定の更新の番号（`version`）は、単発の予定の変更とキャンセル、繰り返しの予定の回の除外のたびに 1 つ増える。  
 書いた後に、予定の対応（`external_event_links`）に Google の etag と更新の番号（`synced_version`）を書く。  
@@ -518,6 +541,13 @@ Google で新しく作った予定は、取り込みで buddy に移す。
 「buddy の内容で書き直す」（`createCalendarExportRetry`）は、書き出しと同じく `If-Match` を付けずに書き直す。
 
 「Google の内容に合わせる」（`createCalendarExportAcceptance`）は、`calendarsync` の `AcceptExport` が、同期と同じ当てる規則で行う。  
+予定の正本のモードが `buddy_primary` の事業所では、Google の内容を当てずに 409（`export_not_acceptable`）を返す。  
+`buddy_primary` の事業所は buddy が正本で、Google カレンダーでの変更を予定に取り込まないためである。  
+マネージャーは、buddy の内容で書き直す。  
+モードは、予定の行をロックした後に、事業所の行を共有のロックで読んで確認する。
+
+- ADR-0035: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0035-google-calendar-source-modes.md)
+
 単発の予定で、理由が `precondition_failed` か `not_found` の待ちだけに使える。  
 buddy でキャンセルした予定には使えない（`acceptable` が false）。  
 Google の今の予定を `events.get` で読み、buddy の予定に当てて、待ちを終える（`succeeded`）。  

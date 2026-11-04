@@ -2,20 +2,20 @@
 
 ## Viewpoints
 
-| Name                                                               | Description                                                                                |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| [事業所と組織](viewpoint-organization.md)                          | 事業所と、その中の部署、チーム、役職、職員                                                 |
-| [職員と権限](viewpoint-policies.md)                                | 職員が持つ権限と、その対象。職員を登録するとき、役職のデフォルトの権限をコピーする         |
-| [利用者](viewpoint-patients.md)                                    | 利用者と、受けているサービスと、主に担当する職員                                           |
-| [予定と訪問](viewpoint-schedules.md)                               | 予定と、訪問のときの訪問の情報と区分、予定の取り消し                                       |
-| [繰り返しの予定](viewpoint-recurring.md)                           | 繰り返しの予定と規則、回にしない日。繰り返しの 1 回を置き換えた予定は schedules に入る     |
-| [外部のカレンダーの取り込みと書き出し](viewpoint-calendar-sync.md) | 職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち |
+| Name                                                               | Description                                                                                                                                               |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [事業所と組織](viewpoint-organization.md)                          | 事業所と、その中の部署、チーム、役職、職員。事業所は予定の正本のモードを持つ                                                                              |
+| [職員と権限](viewpoint-policies.md)                                | 職員が持つ権限と、その対象。職員を登録するとき、役職のデフォルトの権限をコピーする                                                                        |
+| [利用者](viewpoint-patients.md)                                    | 利用者と、受けているサービスと、主に担当する職員                                                                                                          |
+| [予定と訪問](viewpoint-schedules.md)                               | 予定と、訪問のときの訪問の情報と区分、予定の取り消し                                                                                                      |
+| [繰り返しの予定](viewpoint-recurring.md)                           | 繰り返しの予定と規則、回にしない日。繰り返しの 1 回を置き換えた予定は schedules に入る                                                                    |
+| [外部のカレンダーの取り込みと書き出し](viewpoint-calendar-sync.md) | 職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち。書き出しは、予定の正本のモードが buddy_primary の事業所に限る |
 
 ## Tables
 
 | Name                                                                            | Columns | Comment                                                                         | Type       |
 | ------------------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------- | ---------- |
-| [public.facilities](public.facilities.md)                                       | 6       | 訪問看護の事業所                                                                | BASE TABLE |
+| [public.facilities](public.facilities.md)                                       | 7       | 訪問看護の事業所                                                                | BASE TABLE |
 | [public.departments](public.departments.md)                                     | 5       | 事業所の部署                                                                    | BASE TABLE |
 | [public.teams](public.teams.md)                                                 | 6       | 事業所のチーム                                                                  | BASE TABLE |
 | [public.positions](public.positions.md)                                         | 5       | 事業所の役職。職員を登録するときに写す既定の権限を持つ                          | BASE TABLE |
@@ -106,6 +106,7 @@ erDiagram
   text time_zone
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  text source_mode
 }
 "public.departments" {
   text id

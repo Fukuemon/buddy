@@ -10,6 +10,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
@@ -39,7 +40,7 @@ func retire(t *testing.T, s *inmem.Store) {
 	}
 }
 
-// lockHook は、Share の前に run を呼ぶ FacilityLock である。ロックを待つ間に、ほかのトランザクションが職員を書いて
+// lockHook は、Share か GetForShare の前に run を呼ぶ FacilityLock である。ロックを待つ間に、ほかのトランザクションが職員を書いて
 // コミットしたことを表す。
 type lockHook struct {
 	inmem.Facilities
@@ -51,6 +52,13 @@ func (h lockHook) Share(ctx context.Context, facilityID string) error {
 		h.run()
 	}
 	return h.Facilities.Share(ctx, facilityID)
+}
+
+func (h lockHook) GetForShare(ctx context.Context, facilityID string) (organization.Facility, error) {
+	if h.run != nil {
+		h.run()
+	}
+	return h.Facilities.GetForShare(ctx, facilityID)
 }
 
 // 休職の職員の、既に取り込んだか書き出した予定を Google カレンダーで変えたとき、同期は今と同じく buddy の予定に当てる
@@ -118,7 +126,7 @@ func TestAcceptExportRejectsDetachedCalendar(t *testing.T) {
 	t.Run("退職の後", func(t *testing.T) {
 		e, scheduleID, exportID := setup(t)
 		retire(t, e.store)
-		_, err := e.uc.AcceptExport(e.ctx, exportID)
+		_, err := e.accept(exportID)
 		check(t, e, scheduleID, err)
 	})
 	t.Run("予定の行をロックした後に退職", func(t *testing.T) {
@@ -127,6 +135,7 @@ func TestAcceptExportRejectsDetachedCalendar(t *testing.T) {
 		uc := calendarsync.NewAcceptExport(inmem.Exports{Store: s}, inmem.Schedules{Store: s}, inmem.Calendars{Store: s},
 			oneAccount{gcal.NewReader(gcaltest.Start(t, e.srv))}, inmem.StaffRefs{Store: s}, lockHook{Facilities: inmem.Facilities{Store: s}, run: func() { retire(t, s) }},
 			inmem.ScheduleTypes{Store: s}, nil, nil, nil, &inmem.Tx{}, &inmem.SeqIDs{}, principal.RequireStaffManage)
+		setSourceMode(s, organization.SourceGooglePrimary)
 		_, err := uc.Do(e.ctx, exportID)
 		check(t, e, scheduleID, err)
 	})
@@ -150,7 +159,7 @@ func TestAcceptExportRejectsScheduleOfRetiredStaff(t *testing.T) {
 	c.RetiredAt = &now
 	e.store.Staff[inmem.CompanionID] = c
 
-	_, err := e.uc.AcceptExport(e.ctx, x.ID)
+	_, err := e.accept(x.ID)
 	var ce *apperr.ConflictError
 	if !errors.As(err, &ce) || ce.Code != calendar.CodeExportNotAcceptable {
 		t.Fatalf("err = %v, want %s", err, calendar.CodeExportNotAcceptable)

@@ -64,6 +64,10 @@ describe('importErrorMessage', () => {
       'プレビューの後に、Google カレンダーの予定か職員の休職が変わりました。',
     ],
     [apiError(409, 'import_running'), 'この職員の取り込みが、ほかの画面で進んでいます。'],
+    [
+      apiError(409, 'google_primary'),
+      'この事業所の予定は Google カレンダーで管理しているので、buddy に取り込めません。',
+    ],
     [apiError(400, 'invalid_input'), '選んだ利用者が見つかりません。'],
     [apiError(403, 'forbidden'), FORBIDDEN_MESSAGE],
     [apiError(404, 'not_found'), 'この職員のカレンダーの結び付けが外れています。'],

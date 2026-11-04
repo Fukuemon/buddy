@@ -1,8 +1,9 @@
 -- 開発とテストに使うダミーデータ。実在の事業所、人、連絡先を入れない。
 -- 予定の種類、サービスコード、訪問の区分、権限は、全ての環境で同じ値なので初期のマイグレーションが入れる。
 
-INSERT INTO facilities (id, name, org_id) VALUES
-    ('01M3TC5H00QV17BC0J9V3393ZP', 'サンプル訪問看護ステーション', 'org-sample');
+-- 予定の正本のモードは、シードの 2 つの事業所を buddy_primary（buddy が正本）にし、今の動作で確認する（ADR-0035）。
+INSERT INTO facilities (id, name, org_id, source_mode) VALUES
+    ('01M3TC5H00QV17BC0J9V3393ZP', 'サンプル訪問看護ステーション', 'org-sample', 'buddy_primary');
 
 INSERT INTO departments (id, facility_id, name) VALUES
     ('01M3TC5HZ8A18D2TP3PTKDXJMN', '01M3TC5H00QV17BC0J9V3393ZP', '看護'),
@@ -99,8 +100,8 @@ INSERT INTO recurring_schedules (id, facility_id, staff_id, schedule_type_id, da
      '2026-10-05', '17:30:00', '18:00:00', NULL, '週次の申し送り', NULL, 'weekly', 1, NULL, NULL, NULL);
 
 -- 2 つ目の事業所。ログインした職員に、自分の事業所の予定だけが出ることを確認するのに使う。
-INSERT INTO facilities (id, name, org_id) VALUES
-    ('01M5J5EE00QGG4M6GGZQ9AT9GW', 'サンプル第二訪問看護ステーション', 'org-sample-b');
+INSERT INTO facilities (id, name, org_id, source_mode) VALUES
+    ('01M5J5EE00QGG4M6GGZQ9AT9GW', 'サンプル第二訪問看護ステーション', 'org-sample-b', 'buddy_primary');
 
 INSERT INTO departments (id, facility_id, name) VALUES
     ('01M5J5EE01FKS73VPW3SR5W06C', '01M5J5EE00QGG4M6GGZQ9AT9GW', '看護');
@@ -143,3 +144,35 @@ INSERT INTO schedules (id, facility_id, staff_id, schedule_type_id, date, start_
                        recurring_schedule_id, original_date, visit_info_id, title, description) VALUES
     ('01M5J5EE096G64C9R6091DBQ0B', '01M5J5EE00QGG4M6GGZQ9AT9GW', '01M5J5EE04P946KC3JAE2P1JQ4', '01M3TC68E05E1N46YCCBT6ZQB2',
      '2026-10-20', '13:00:00', '14:00:00', NULL, NULL, NULL, '第二ステーションの定例', NULL);
+
+-- 3 つ目の事業所。Google カレンダーを予定の正本にする（google_primary）。予定の API から予定を書けないことを確認するのに使う。
+-- 職員にカレンダーは結び付けない。結び付けと Google カレンダーの予定は、確認するテストが作る。
+INSERT INTO facilities (id, name, org_id, source_mode) VALUES
+    ('01MA0GP0000000000000000FAC', 'サンプル第三訪問看護ステーション', 'org-sample-c', 'google_primary');
+
+INSERT INTO departments (id, facility_id, name) VALUES
+    ('01MA0GP0000000000000000DEP', '01MA0GP0000000000000000FAC', '看護');
+
+INSERT INTO teams (id, facility_id, name, color) VALUES
+    ('01MA0GP0000000000000000TEM', '01MA0GP0000000000000000FAC', 'A', 'blue');
+
+INSERT INTO positions (id, facility_id, name) VALUES
+    ('01MA0GP0000000000000000P05', '01MA0GP0000000000000000FAC', '管理者');
+
+INSERT INTO position_policies (position_id, policy_id) VALUES
+    ('01MA0GP0000000000000000P05', '01M5E1S42TTS7QZK05YGS0GYR8'),
+    ('01MA0GP0000000000000000P05', '01M5E1S42TTS7QZK05YGS0GYRD'),
+    ('01MA0GP0000000000000000P05', '01M5E1S42TTS7QZK05YGS0GYRE'),
+    ('01MA0GP0000000000000000P05', '01M5E5GP6Q8BQYNWN66QHJF60J'),
+    ('01MA0GP0000000000000000P05', '01M69C7BNKSXX7PPWX7SWZGFWK');
+
+INSERT INTO users (id, sub, username, email, phone_number, facility_id, department_id, team_id, position_id) VALUES
+    ('01MA0GP0000000000000000STF', '01MA0GP0000000000000000SB1', '岡田 葵', 'aoi.okada@example.com', NULL,
+     '01MA0GP0000000000000000FAC', '01MA0GP0000000000000000DEP', '01MA0GP0000000000000000TEM', '01MA0GP0000000000000000P05');
+
+INSERT INTO user_policies (id, facility_id, user_id, policy_id) VALUES
+    ('01MA0GP000000000000000GP01', '01MA0GP0000000000000000FAC', '01MA0GP0000000000000000STF', '01M5E1S42TTS7QZK05YGS0GYR8'),
+    ('01MA0GP000000000000000GP02', '01MA0GP0000000000000000FAC', '01MA0GP0000000000000000STF', '01M5E1S42TTS7QZK05YGS0GYRD'),
+    ('01MA0GP000000000000000GP03', '01MA0GP0000000000000000FAC', '01MA0GP0000000000000000STF', '01M5E1S42TTS7QZK05YGS0GYRE'),
+    ('01MA0GP000000000000000GP04', '01MA0GP0000000000000000FAC', '01MA0GP0000000000000000STF', '01M5E5GP6Q8BQYNWN66QHJF60J'),
+    ('01MA0GP000000000000000GP05', '01MA0GP0000000000000000FAC', '01MA0GP0000000000000000STF', '01M69C7BNKSXX7PPWX7SWZGFWK');
