@@ -3,7 +3,6 @@ package schedule_test
 import (
 	"context"
 	"errors"
-	"slices"
 	"testing"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
@@ -50,81 +49,59 @@ func viewerCtx(grants ...staff.PolicyGrant) context.Context {
 	}})
 }
 
-// TestSchedulesAuthorization は、7 つの権限ごとに、ほかの職員の予定の閲覧と編集、自分の予定の編集の許可と拒否を確認する。
-// 見てよくない予定は一覧から除き、1 件を指す操作は apperr.ErrForbidden を返す。
+// checkAllowed は、want なら err が無いことを、want でなければ err が apperr.ErrForbidden であることを確認する。
+func checkAllowed(t *testing.T, op string, err error, want bool) {
+	t.Helper()
+	if want && err != nil {
+		t.Errorf("%s: err = %v, want 許可", op, err)
+	}
+	if !want && !errors.Is(err, apperr.ErrForbidden) {
+		t.Errorf("%s: err = %v, want ErrForbidden", op, err)
+	}
+}
+
+// TestSchedulesAuthorization は、7 つの権限ごとに、ほかの職員の予定の編集と、自分の予定の編集の許可と拒否を確認する。
+// 閲覧の許可と拒否は、scheduleview の TestSchedulesReadAuthorization が確認する。
 func TestSchedulesAuthorization(t *testing.T) {
 	tests := []struct {
 		name      string
 		grants    []staff.PolicyGrant
-		readOther bool
 		editOther bool
 		editSelf  bool
 	}{
-		{"権限なし", nil, false, false, false},
-		{"自分の予定の編集", []staff.PolicyGrant{{PolicyCode: organization.ScheduleSelfEdit}}, false, false, true},
-		{"指定した職員の閲覧", []staff.PolicyGrant{{PolicyCode: organization.ScheduleUserRead, TargetUserIDs: []string{staffID}}}, true, false, false},
-		{"指定した職員の編集", []staff.PolicyGrant{{PolicyCode: organization.ScheduleUserEdit, TargetUserIDs: []string{staffID}}}, true, true, false},
-		{"指定したチームの閲覧", []staff.PolicyGrant{{PolicyCode: organization.ScheduleTeamRead, TargetTeamIDs: []string{targetTeam}}}, true, false, false},
-		{"指定したチームの編集", []staff.PolicyGrant{{PolicyCode: organization.ScheduleTeamEdit, TargetTeamIDs: []string{targetTeam}}}, true, true, false},
-		{"全ての閲覧", []staff.PolicyGrant{{PolicyCode: organization.ScheduleAllRead}}, true, false, false},
-		{"全ての編集", []staff.PolicyGrant{{PolicyCode: organization.ScheduleAllEdit}}, true, true, true},
-		{"所属のチームだけの編集", []staff.PolicyGrant{{PolicyCode: organization.ScheduleTeamEdit, TargetTeamIDs: []string{viewerTeam}}}, false, false, true},
+		{"権限なし", nil, false, false},
+		{"自分の予定の編集", []staff.PolicyGrant{{PolicyCode: organization.ScheduleSelfEdit}}, false, true},
+		{"指定した職員の閲覧", []staff.PolicyGrant{{PolicyCode: organization.ScheduleUserRead, TargetUserIDs: []string{staffID}}}, false, false},
+		{"指定した職員の編集", []staff.PolicyGrant{{PolicyCode: organization.ScheduleUserEdit, TargetUserIDs: []string{staffID}}}, true, false},
+		{"指定したチームの閲覧", []staff.PolicyGrant{{PolicyCode: organization.ScheduleTeamRead, TargetTeamIDs: []string{targetTeam}}}, false, false},
+		{"指定したチームの編集", []staff.PolicyGrant{{PolicyCode: organization.ScheduleTeamEdit, TargetTeamIDs: []string{targetTeam}}}, true, false},
+		{"全ての閲覧", []staff.PolicyGrant{{PolicyCode: organization.ScheduleAllRead}}, false, false},
+		{"全ての編集", []staff.PolicyGrant{{PolicyCode: organization.ScheduleAllEdit}}, true, true},
+		{"所属のチームだけの編集", []staff.PolicyGrant{{PolicyCode: organization.ScheduleTeamEdit, TargetTeamIDs: []string{viewerTeam}}}, false, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := viewerCtx(tt.grants...)
-			check := func(op string, err error, want bool) {
-				t.Helper()
-				if want && err != nil {
-					t.Errorf("%s: err = %v, want 許可", op, err)
-				}
-				if !want && !errors.Is(err, apperr.ErrForbidden) {
-					t.Errorf("%s: err = %v, want ErrForbidden", op, err)
-				}
-			}
-
 			uc, _ := newSchedules(authzStore())
-			_, err := uc.Get(ctx, targetScheduleID)
-			check("Get", err, tt.readOther)
-			_, err = uc.GetRecurring(ctx, targetRecurringID)
-			check("GetRecurring", err, tt.readOther)
-			if _, err := uc.Get(ctx, ownScheduleID); err != nil {
-				t.Errorf("自分の予定の Get: err = %v, want 権限によらず許可", err)
-			}
-
-			list, err := uc.List(ctx, facilityID, schedule.ListQuery{})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if got := containsSchedule(list.Schedules, targetScheduleID); got != tt.readOther {
-				t.Errorf("一覧にほかの職員の予定がある = %v, want %v", got, tt.readOther)
-			}
-			if !containsSchedule(list.Schedules, ownScheduleID) {
-				t.Error("一覧に自分の予定がない")
-			}
-			if got := slices.ContainsFunc(list.RecurringSchedules, func(d schedule.RecurringDetail) bool { return d.ID == targetRecurringID }); got != tt.readOther {
-				t.Errorf("一覧にほかの職員の繰り返しの予定がある = %v, want %v", got, tt.readOther)
-			}
-
 			other := normalSlot()
 			own := normalSlot()
 			own.StaffID = viewerID
-			_, err = uc.Create(ctx, facilityID, other)
-			check("ほかの職員の予定の Create", err, tt.editOther)
+			_, err := uc.Create(ctx, facilityID, other)
+			checkAllowed(t, "ほかの職員の予定の Create", err, tt.editOther)
 			_, err = uc.CreateRecurring(ctx, facilityID, other, schedule.RuleInput{Frequency: schedule.Weekly, DayOfWeek: ptr(2)})
-			check("ほかの職員の予定の CreateRecurring", err, tt.editOther)
+			checkAllowed(t, "ほかの職員の予定の CreateRecurring", err, tt.editOther)
 			_, err = uc.Create(ctx, facilityID, own)
-			check("自分の予定の Create", err, tt.editSelf)
+			checkAllowed(t, "自分の予定の Create", err, tt.editSelf)
 
 			uc, _ = newSchedules(authzStore())
 			_, err = uc.Update(ctx, targetScheduleID, other)
-			check("ほかの職員の予定の Update", err, tt.editOther)
+			checkAllowed(t, "ほかの職員の予定の Update", err, tt.editOther)
 			_, err = uc.Update(ctx, ownScheduleID, own)
-			check("自分の予定の Update", err, tt.editSelf)
+			checkAllowed(t, "自分の予定の Update", err, tt.editSelf)
 			_, err = uc.ChangeOccurrence(ctx, targetRecurringID, civil.Date{Year: 2026, Month: 10, Day: 27}, other)
-			check("ほかの職員の予定の ChangeOccurrence", err, tt.editOther)
+			checkAllowed(t, "ほかの職員の予定の ChangeOccurrence", err, tt.editOther)
 			_, err = uc.Cancel(ctx, targetScheduleID, "体調不良")
-			check("ほかの職員の予定の Cancel", err, tt.editOther)
+			checkAllowed(t, "ほかの職員の予定の Cancel", err, tt.editOther)
 		})
 	}
 }
@@ -135,18 +112,4 @@ func TestSchedulesUpdateToOtherStaff(t *testing.T) {
 	if _, err := uc.Update(viewerCtx(staff.PolicyGrant{PolicyCode: organization.ScheduleSelfEdit}), ownScheduleID, normalSlot()); !errors.Is(err, apperr.ErrForbidden) {
 		t.Fatalf("err = %v, want ErrForbidden", err)
 	}
-}
-
-func TestSchedulesWithoutPrincipal(t *testing.T) {
-	uc, _ := newSchedules(authzStore())
-	if _, err := uc.Get(context.Background(), ownScheduleID); !errors.Is(err, apperr.ErrForbidden) {
-		t.Errorf("Get: err = %v, want ErrForbidden", err)
-	}
-	if _, err := uc.List(context.Background(), facilityID, schedule.ListQuery{}); !errors.Is(err, apperr.ErrForbidden) {
-		t.Errorf("List: err = %v, want ErrForbidden", err)
-	}
-}
-
-func containsSchedule(ds []schedule.Detail, id string) bool {
-	return slices.ContainsFunc(ds, func(d schedule.Detail) bool { return d.ID == id })
 }

@@ -77,7 +77,7 @@ status: stable
     - ADR-0033: [予定の書き込みのモデルと読み取りのモデルを分け、正本のモードを事業所の状態にする](../docs/adr/0033-schedule-write-read-models-and-source-mode.md)
     - `calendarimport`、`calendarsync`、`calendarexport` は `calendar` まで import してよく、3 つの間では import しない。
     - ADR-0032: [予定の API の calendar を、結び付け、取り込み、同期、書き出しの 4 つの機能に分ける](../docs/adr/0032-schedule-api-calendar-split.md)
-  - `principal` は `organization` と `staff` に依存し、`schedule`、`calendarimport`、`access`、`httpapi`、`cmd` から使う。
+  - `principal` は `organization` と `staff` に依存し、`schedule`、`scheduleview`、`calendarimport`、`access`、`httpapi`、`cmd` から使う。
   - 機能のパッケージは、自分の集約のリポジトリのインターフェースと、使う側で定義したインターフェースだけに依存する。
     - ほかの機能のデータを読むだけなら、`kernel.Finder` か 1〜2 のメソッドにする。
     - ほかの機能の集約を 1 つのトランザクションで書くかロックするなら（`calendarsync` の `reconcileApplier`、`schedule` の `StaffRefs`）、使うメソッドだけを並べた 1 つのインターフェースにする。
@@ -101,7 +101,7 @@ status: stable
   - `postgres` は `login` と `internalapi` を import しない。
   - `login` と `internalapi` は、互いと `postgres` を import しない。DB はそれぞれが定義したインターフェースで受ける。
 - 2 つの Go の API と ID ブローカーの次の規則は、golangci-lint の depguard が止める。設定は各サービスの `.golangci.yml` にある。
-  - 予定の API の機能のパッケージの間の順と、機能のパッケージから `principal`（`schedule` と `calendarimport` を除く）、アダプタ、`access`、`config` への import
+  - 予定の API の機能のパッケージの間の順と、機能のパッケージから `principal`（`schedule`、`scheduleview`、`calendarimport` を除く）、アダプタ、`access`、`config` への import
   - 予定の API の共通のパッケージから、標準ライブラリと共通のパッケージ以外（外のモジュールを含む）への import
   - 予定の API の `httpapi` と `config` から `postgres` への import、`httpapi` から `packages/go/oidc` への import、テストのファイル以外から `inmem` への import
   - 照合の API の段の順

@@ -55,8 +55,9 @@ func isAllowed(p principal.Principal, staffID, teamID string, editing bool) bool
 	return false
 }
 
-// requireAllowed は、p が職員 st の予定を見てよいか（editing なら編集してよいか）を確認し、許されないときは apperr.ErrForbidden を返す。
-func requireAllowed(p principal.Principal, st staff.Ref, editing bool) error {
+// RequireAllowed は、p が職員 st の予定を見てよいか（editing なら編集してよいか）を確認し、許されないときは apperr.ErrForbidden を返す。
+// 閲覧は CanRead、編集は CanEdit で判定する。
+func RequireAllowed(p principal.Principal, st staff.Ref, editing bool) error {
 	if editing && !CanEdit(p, st.ID, st.TeamID) {
 		return fmt.Errorf("%w: この職員の予定を編集する権限がありません", apperr.ErrForbidden)
 	}
@@ -66,8 +67,9 @@ func requireAllowed(p principal.Principal, st staff.Ref, editing bool) error {
 	return nil
 }
 
-// readable は、事業所の職員 members のうち、p が予定を見てよい職員かを返す関数を返す。
-func readable(p principal.Principal, members []staff.Ref) func(staffID string) bool {
+// Readable は、事業所の職員 members のうち、p が予定を見てよい職員かを返す関数を返す。
+// p 自身は members に無くても見てよい。members に無いほかの職員は、権限によらず見てよくない。
+func Readable(p principal.Principal, members []staff.Ref) func(staffID string) bool {
 	ok := map[string]bool{p.Staff.ID: true}
 	for _, m := range members {
 		if CanRead(p, m.ID, m.TeamID) {

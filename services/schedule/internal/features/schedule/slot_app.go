@@ -106,11 +106,11 @@ func prepareSlot(ctx context.Context, types TypeRepository, staff StaffRefs, vis
 	if err := apperr.SameFacility("職員", st.ID, st.FacilityID, facilityID); err != nil {
 		return Slot{}, Type{}, err
 	}
-	p, err := current(ctx)
+	p, err := Current(ctx)
 	if err != nil {
 		return Slot{}, Type{}, err
 	}
-	if err := requireAllowed(p, st, true); err != nil {
+	if err := RequireAllowed(p, st, true); err != nil {
 		return Slot{}, Type{}, err
 	}
 	if err := requireAssignable(st, kept.staffID, in.Date, today); err != nil {
