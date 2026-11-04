@@ -11,6 +11,8 @@ import type {
 import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
 
+import { CALENDAR_SYNC_REFRESH_MS } from './lib/calendarSync'
+
 /**
  * 事業所の予定を、params の期間（from を含み、to を含まない）と職員で絞って読む query。
  * staffIds が空なら全ての職員の予定を読み、includeCancelled が true のときだけキャンセルした予定も読む。
@@ -23,6 +25,8 @@ export const scheduleListQueryOptions = (
   queryOptions({
     queryKey: queryKeys.schedules.list(facilityId, params),
     queryFn: () => api.schedules.list(facilityId, params),
+    refetchInterval: (query) =>
+      query.state.data?.sourceMode === 'google_primary' ? CALENDAR_SYNC_REFRESH_MS : false,
   })
 
 /** 事業所を読む query。予定の正本（sourceMode）で、予定を作る操作と編集の操作を出すかを決める。 */

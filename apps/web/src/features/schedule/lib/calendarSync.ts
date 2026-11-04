@@ -7,6 +7,12 @@ import type { CalendarSyncStatus } from '#/api/types'
  */
 export const CALENDAR_SYNC_STALE_MS = 10 * 60 * 1000
 
+/**
+ * Google カレンダーを正本にする事業所の予定の一覧を読み直す間隔。同期の Worker の既定の間隔（2 分）と同じにする。
+ * 読み直さないと、画面を開いた後に同期が続けて成功していても、最後に同期できた時刻が古いまま残り、警告が出る。
+ */
+export const CALENDAR_SYNC_REFRESH_MS = 2 * 60 * 1000
+
 /** 最新でない可能性があるカレンダーの状態。failed は最後の同期の失敗、stale は 10 分以上の未同期、never は同期したことが無い。 */
 export type CalendarSyncProblem = 'failed' | 'stale' | 'never'
 
