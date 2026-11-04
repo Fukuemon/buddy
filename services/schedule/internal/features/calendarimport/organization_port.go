@@ -14,3 +14,13 @@ type FacilityLock interface {
 	// カレンダーが外れることが無い。事業所が無いときは apperr.ErrNotFound を返す。
 	GetForShare(ctx context.Context, facilityID string) (organization.Facility, error)
 }
+
+// FacilityModes は、切り替えの操作が、事業所の行を排他のロックで取り、正本のモードを変える。実装は postgres.FacilityRepository である。
+// 1 つのトランザクションの中で使う（ADR-0029）。
+type FacilityModes interface {
+	// GetForUpdate は、トランザクションが終わるまで事業所 facilityID の行に排他のロックを取り、事業所を返す。
+	// 予定を書く操作と取り込みは同じ行を共有のロックで読むので、ロックを取った後に予定を書けない。事業所が無いときは apperr.ErrNotFound を返す。
+	GetForUpdate(ctx context.Context, facilityID string) (organization.Facility, error)
+	// ChangeSourceMode は、事業所 facilityID の正本のモードを mode にする。
+	ChangeSourceMode(ctx context.Context, facilityID string, mode organization.SourceMode) error
+}

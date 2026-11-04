@@ -45,12 +45,15 @@ type ImportRun struct {
 	ExternalCalendarID string
 	RequestedBy        string
 	RangeStart         civil.Date
-	RangeEnd           civil.Date
-	Status             RunStatus
-	ImportedCount      int
-	SkippedCount       int
-	StartedAt          time.Time
-	FinishedAt         *time.Time
+	// RangeEnd は、期間の最後の日で、その日を含む。切り替えの取り込みでは、期間が終わりを持たないので零の値である。
+	RangeEnd civil.Date
+	// CutoverID は、切り替えの取り込みのときの切り替えで、ほかの取り込みでは nil である（ADR-0035）。
+	CutoverID     *string
+	Status        RunStatus
+	ImportedCount int
+	SkippedCount  int
+	StartedAt     time.Time
+	FinishedAt    *time.Time
 }
 
 // EventLink は、取り込んだ外部の予定と、buddy の単発か繰り返しの予定の対応である。ScheduleID と RecurringScheduleID のどちらか 1 つを持つ。
@@ -65,6 +68,8 @@ type EventLink struct {
 	SyncedVersion       *int
 	ScheduleID          *string
 	RecurringScheduleID *string
+	// CutoverID は、切り替えの取り込みで作った対応のときの切り替えで、ほかの対応では nil である。切り替えをやめると、対応と予定を消す。
+	CutoverID *string
 }
 
 // CreatedVersion は、作ったばかりの buddy の予定の更新の番号である。外部の予定から予定を作った取り込みと同期は、

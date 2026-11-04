@@ -117,3 +117,10 @@ func toRecurringSchedule(d scheduleview.RecurringDetail) openapi.RecurringSchedu
 		UpdatedAt:      d.UpdatedAt,
 	}
 }
+
+func toOpenCalendarCutover(c *scheduleview.OpenCutover) *openapi.OpenCalendarCutover {
+	if c == nil {
+		return nil
+	}
+	return &openapi.OpenCalendarCutover{StartedAt: c.StartedAt, RangeStart: c.RangeStart.String()}
+}

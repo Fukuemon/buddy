@@ -62,6 +62,21 @@ func (r *FacilityRepository) GetForShare(ctx context.Context, facilityID string)
 	return toFacility(f), nil
 }
 
+// GetForUpdate は、Lock と同じ排他のロックを事業所 facilityID の行に取り、事業所を返す。呼び出し側がトランザクションの中で呼ぶ。
+// 切り替えの操作が、ロックの中で正本のモードを読んで変える。事業所が無いときは apperr.ErrNotFound を返す。
+func (r *FacilityRepository) GetForUpdate(ctx context.Context, facilityID string) (organization.Facility, error) {
+	f, err := r.q(ctx).GetFacilityForUpdate(ctx, facilityID)
+	if err != nil {
+		return organization.Facility{}, translate("get facility for update", err)
+	}
+	return toFacility(f), nil
+}
+
+// ChangeSourceMode は、事業所 facilityID の正本のモードを mode にする。呼び出し側が GetForUpdate のロックの中で呼ぶ。
+func (r *FacilityRepository) ChangeSourceMode(ctx context.Context, facilityID string, mode organization.SourceMode) error {
+	return translate("update facility source mode", r.q(ctx).UpdateFacilitySourceMode(ctx, sqlcgen.UpdateFacilitySourceModeParams{ID: facilityID, SourceMode: string(mode)}))
+}
+
 func toFacility(f sqlcgen.Facility) organization.Facility {
 	return organization.Facility{ID: f.ID, Name: f.Name, OrgID: deref(f.OrgID), SourceMode: organization.SourceMode(f.SourceMode), CreatedAt: f.CreatedAt, UpdatedAt: f.UpdatedAt}
 }

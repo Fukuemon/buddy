@@ -103,4 +103,6 @@ type Listing struct {
 	RecurringSchedules []RecurringDetail
 	SourceMode         organization.SourceMode
 	CalendarSyncs      []CalendarSync
+	// Cutover は、google_primary の事業所の open の切り替えで、無ければ nil である。画面は「切り替え中」を出す（ADR-0035）。
+	Cutover *OpenCutover
 }

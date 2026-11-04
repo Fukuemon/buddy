@@ -150,7 +150,7 @@ func (q *Queries) FinishCalendarSync(ctx context.Context, arg FinishCalendarSync
 }
 
 const getExternalEventLinkByEvent = `-- name: GetExternalEventLinkByEvent :one
-SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version FROM external_event_links WHERE external_calendar_id = $1 AND external_event_id = $2
+SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version, cutover_id FROM external_event_links WHERE external_calendar_id = $1 AND external_event_id = $2
 `
 
 type GetExternalEventLinkByEventParams struct {
@@ -173,6 +173,7 @@ func (q *Queries) GetExternalEventLinkByEvent(ctx context.Context, arg GetExtern
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SyncedVersion,
+		&i.CutoverID,
 	)
 	return i, err
 }

@@ -69,12 +69,14 @@ func newApps(r Repositories, accounts *gcal.Accounts, cfg config.API) httpapi.Ap
 		VisitCategories: httpapi.VisitCategoryApp{List: visit.NewListCategories(r.visitCategories).Do},
 		Schedules: scheduleApp(r.facilities, r.staffRefs, r.facilities, visitInfos, r.schedules, r.recurring, r.scheduleTypes,
 			scheduleview.ProjectionDeps{
-				Projections: r.projections, Syncs: r.projections, Rules: calendar.ProjectionRules{},
+				Projections: r.projections, Syncs: r.projections, Cutovers: r.projections, Rules: calendar.ProjectionRules{},
 				Patients: r.patients, ServiceCodes: r.serviceCodes, Types: r.scheduleTypes,
 			},
 			outbox, r.tx, r.ids),
 		Calendars: calendarApp(r.calendars, calendarAccounts(accounts), r.staffRefs, r.facilities, r.patients, r.serviceCodes, r.scheduleTypes,
-			r.schedules, r.recurring, r.recurring, visitInfos, r.exports, r.tx, r.ids, principal.RequireStaffManage),
+			r.schedules, r.recurring, r.recurring, visitInfos, r.exports,
+			cutoverDeps{cutovers: r.cutovers, syncs: r.projections, projections: r.projections, facilities: r.facilities},
+			r.tx, r.ids, principal.RequireStaffManage),
 		Auth: access.NewService(access.Deps{Facilities: r.facilities, Staff: r.staff, Resources: accessResources(r)}),
 	}
 }
@@ -85,7 +87,7 @@ func accessResources(r Repositories) map[access.Resource]access.FacilityReader {
 		access.ResourceDepartment: r.departments, access.ResourceTeam: r.teams, access.ResourcePosition: r.positions,
 		access.ResourceStaff: r.staffRefs, access.ResourcePatient: r.patients,
 		access.ResourceSchedule: r.schedules, access.ResourceRecurringSchedule: r.recurring,
-		access.ResourceExternalCalendar: r.calendars, access.ResourceCalendarExport: r.exports,
+		access.ResourceExternalCalendar: r.calendars, access.ResourceCalendarExport: r.exports, access.ResourceCalendarCutover: r.cutovers,
 	}
 }
 
@@ -248,20 +250,34 @@ func calendarApp(
 		calendarsync.ExportRepository
 		calendarexport.ExportRepository
 	},
+	cut cutoverDeps,
 	tx tx.Transactor,
 	ids kernel.IDGenerator,
 	guard organization.Guard,
 ) httpapi.CalendarApp {
 	return httpapi.CalendarApp{
-		ServiceAccount:   calendar.NewServiceAccount(accounts, guard).Do,
-		List:             calendar.NewList(calendars, guard).Do,
-		Check:            calendar.NewCheck(accounts, guard).Do,
-		Link:             calendar.NewLink(accounts, staffRefs, locks, calendars, tx, ids, guard).Do,
-		Unlink:           calendar.NewUnlink(calendars, guard).Do,
-		Preview:          calendarimport.NewPreview(calendars, accounts, staffRefs, patients, recurringSchedules, serviceCodes, guard).Do,
-		Import:           calendarimport.NewImport(calendars, accounts, staffRefs, locks, patients, recurringSchedules, serviceCodes, types, recurring, schedules, visits, tx, ids, guard).Do,
+		ServiceAccount: calendar.NewServiceAccount(accounts, guard).Do,
+		List:           calendar.NewList(calendars, guard).Do,
+		Check:          calendar.NewCheck(accounts, guard).Do,
+		Link:           calendar.NewLink(accounts, staffRefs, locks, calendars, tx, ids, guard).Do,
+		Unlink:         calendar.NewUnlink(calendars, guard).Do,
+		Preview:        calendarimport.NewPreview(calendars, accounts, staffRefs, patients, recurringSchedules, serviceCodes, cut.cutovers, guard).Do,
+		Import:         calendarimport.NewImport(calendars, accounts, staffRefs, locks, patients, recurringSchedules, serviceCodes, types, recurring, schedules, visits, cut.cutovers, tx, ids, guard).Do,
+		GetCutover:     calendarimport.NewGetCutover(cut.syncs, cut.cutovers, guard).Do,
+		StartCutover:   calendarimport.NewStartCutover(cut.facilities, cut.syncs, cut.cutovers, tx, ids, nil, guard).Do,
+		CompleteCutover: calendarimport.NewCompleteCutover(calendars, accounts, staffRefs, patients, recurringSchedules, serviceCodes,
+			cut.facilities, cut.syncs, cut.cutovers, cut.projections, tx, guard).Do,
+		CancelCutover:    calendarimport.NewCancelCutover(cut.facilities, cut.cutovers, tx, guard).Do,
 		ListExportIssues: calendarexport.NewListExportIssues(exports, guard).Do,
 		RetryExport:      calendarexport.NewRetryExport(exports, guard).Do,
 		AcceptExport:     calendarsync.NewAcceptExport(exports, schedules, calendars, accounts, staffRefs, locks, types, patients, serviceCodes, visits, tx, ids, guard).Do,
 	}
+}
+
+// cutoverDeps は、calendarimport の切り替えの操作が使う依存である。
+type cutoverDeps struct {
+	cutovers    calendarimport.CutoverRepository
+	syncs       scheduleview.CalendarSyncs
+	projections calendarimport.Projections
+	facilities  calendarimport.FacilityModes
 }

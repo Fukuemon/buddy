@@ -20,6 +20,8 @@ type Calendars interface {
 	CreateRun(ctx context.Context, r calendar.ImportRun) error
 	// FinishRun は、取り込みの記録の状態と件数を r の値にし、終わった時刻を入れて、記録を返す。
 	FinishRun(ctx context.Context, r calendar.ImportRun) (calendar.ImportRun, error)
+	// ListByFacility は、事業所の外していないカレンダーを、最後の取り込みを付けて作った順に返す。
+	ListByFacility(ctx context.Context, facilityID string) ([]calendar.ExternalCalendar, error)
 	// ListLinks は、カレンダーの予定の対応を返す。
 	ListLinks(ctx context.Context, externalCalendarID string) ([]calendar.EventLink, error)
 	// CreateLink は、同じ外部の予定の対応があるときに apperr.ErrConflict を返す。

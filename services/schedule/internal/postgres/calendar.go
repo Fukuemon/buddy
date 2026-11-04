@@ -50,7 +50,8 @@ func toImportRun(r sqlcgen.ImportRun) calendar.ImportRun {
 		ExternalCalendarID: r.ExternalCalendarID,
 		RequestedBy:        r.RequestedBy,
 		RangeStart:         civil.DateOf(r.RangeStart),
-		RangeEnd:           civil.DateOf(r.RangeEnd),
+		RangeEnd:           dateOrZero(r.RangeEnd),
+		CutoverID:          r.CutoverID,
 		Status:             calendar.RunStatus(r.Status),
 		ImportedCount:      int(r.ImportedCount),
 		SkippedCount:       int(r.SkippedCount),
@@ -150,8 +151,9 @@ func (r *CalendarRepository) CreateRun(ctx context.Context, run calendar.ImportR
 		ExternalCalendarID: run.ExternalCalendarID,
 		RequestedBy:        run.RequestedBy,
 		RangeStart:         run.RangeStart.Time(),
-		RangeEnd:           run.RangeEnd.Time(),
+		RangeEnd:           nullDate(nonZeroDate(run.RangeEnd)),
 		Status:             string(run.Status),
+		CutoverID:          run.CutoverID,
 	})
 	return translate("create import run", err)
 }
@@ -201,6 +203,7 @@ func toLink(l sqlcgen.ExternalEventLink) calendar.EventLink {
 		ETag:                l.Etag,
 		ScheduleID:          l.ScheduleID,
 		RecurringScheduleID: l.RecurringScheduleID,
+		CutoverID:           l.CutoverID,
 	}
 	if l.SyncedVersion != nil {
 		out.SyncedVersion = ptr(int(*l.SyncedVersion))
@@ -286,6 +289,23 @@ func (r *CalendarRepository) CreateLink(ctx context.Context, l calendar.EventLin
 		Etag:                l.ETag,
 		ScheduleID:          l.ScheduleID,
 		RecurringScheduleID: l.RecurringScheduleID,
+		CutoverID:           l.CutoverID,
 	})
 	return translate("create external event link", err)
+}
+
+// dateOrZero は、NULL を許すカラムの日付を返す。NULL なら零の値を返す。
+func dateOrZero(t *time.Time) civil.Date {
+	if t == nil {
+		return civil.Date{}
+	}
+	return civil.DateOf(*t)
+}
+
+// nonZeroDate は、d が零の値なら nil を、ほかは d を指すポインタを返す。
+func nonZeroDate(d civil.Date) *civil.Date {
+	if d.IsZero() {
+		return nil
+	}
+	return &d
 }

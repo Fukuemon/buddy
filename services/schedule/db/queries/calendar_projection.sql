@@ -57,3 +57,7 @@ JOIN users u ON u.id = c.staff_id AND u.facility_id = c.facility_id
 LEFT JOIN calendar_sync_states s ON s.external_calendar_id = c.id
 WHERE c.facility_id = sqlc.arg(facility_id) AND c.disabled_at IS NULL
 ORDER BY c.id;
+
+-- name: DeleteCalendarEventProjectionsByFacility :exec
+-- 事業所の全ての行を消す。切り替えを完了して、事業所を buddy_primary にするときに使う。
+DELETE FROM calendar_event_projections WHERE facility_id = sqlc.arg(facility_id);

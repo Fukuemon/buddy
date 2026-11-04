@@ -138,6 +138,7 @@ func newApp(e env, acc calendar.Accounts, locks calendarimport.FacilityLock) *ap
 		Calendars: inmem.Calendars{Store: s}, Accounts: acc,
 		Staff: inmem.StaffRefs{Store: s}, Locks: locks, Patients: inmem.Patients{Store: s}, ServiceCodes: inmem.ServiceCodes{Store: s},
 		Types: inmem.ScheduleTypes{Store: s}, Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, RecurringSchedules: inmem.RecurringSchedules{Store: s},
+		Modes: inmem.Facilities{Store: s}, Syncs: inmem.Projections{Store: s}, Cutovers: inmem.Cutovers{Store: s}, Projections: inmem.Projections{Store: s},
 		Visits: visit.NewWriter(visit.WriterDeps{
 			Staff:    inmem.StaffRefs{Store: s},
 			Patients: inmem.Patients{Store: s},
@@ -262,14 +263,22 @@ type deps struct {
 	Recurring          calendarimport.Recurring
 	RecurringSchedules kernel.Finder[scheduleview.RecurringDetail]
 	Visits             calendar.VisitStore
+	Modes              calendarimport.FacilityModes
+	Syncs              scheduleview.CalendarSyncs
+	Cutovers           calendarimport.CutoverRepository
+	Projections        calendarimport.Projections
 }
 
 // app は、テストが呼ぶ操作の Do である。取り込みの前後でカレンダーを外すテストのために、calendar の ServiceAccount と Unlink も持つ。
 type app struct {
-	ServiceAccount func(ctx context.Context, facilityID string) (string, error)
-	Unlink         func(ctx context.Context, id string) error
-	Preview        func(ctx context.Context, id string, rng calendarimport.Range) (calendarimport.ImportPreview, error)
-	Import         func(ctx context.Context, id string, rng calendarimport.Range, decisions []calendarimport.Decision) (calendarimport.ImportResult, error)
+	ServiceAccount  func(ctx context.Context, facilityID string) (string, error)
+	Unlink          func(ctx context.Context, id string) error
+	Preview         func(ctx context.Context, id string, rng calendarimport.Range) (calendarimport.ImportPreview, error)
+	Import          func(ctx context.Context, id string, rng calendarimport.Range, decisions []calendarimport.Decision) (calendarimport.ImportResult, error)
+	StartCutover    func(ctx context.Context, facilityID string) (calendarimport.Cutover, error)
+	GetCutover      func(ctx context.Context, facilityID string) (calendarimport.CutoverState, error)
+	CompleteCutover func(ctx context.Context, id string) (calendarimport.Cutover, error)
+	CancelCutover   func(ctx context.Context, id string) (calendarimport.Cutover, error)
 }
 
 // build は、d の依存で app の操作の型を作る。
@@ -277,8 +286,16 @@ func build(d deps, tx tx.Transactor, ids kernel.IDGenerator, guard organization.
 	return &app{
 		ServiceAccount: calendar.NewServiceAccount(d.Accounts, guard).Do,
 		Unlink:         calendar.NewUnlink(d.Calendars, guard).Do,
-		Preview:        calendarimport.NewPreview(d.Calendars, d.Accounts, d.Staff, d.Patients, d.RecurringSchedules, d.ServiceCodes, guard).Do,
+		Preview:        calendarimport.NewPreview(d.Calendars, d.Accounts, d.Staff, d.Patients, d.RecurringSchedules, d.ServiceCodes, d.Cutovers, guard).Do,
 		Import: calendarimport.NewImport(d.Calendars, d.Accounts, d.Staff, d.Locks, d.Patients, d.RecurringSchedules, d.ServiceCodes,
-			d.Types, d.Recurring, d.Schedules, d.Visits, tx, ids, guard).Do,
+			d.Types, d.Recurring, d.Schedules, d.Visits, d.Cutovers, tx, ids, guard).Do,
+		StartCutover: calendarimport.NewStartCutover(d.Modes, d.Syncs, d.Cutovers, tx, ids, cutoverNow, guard).Do,
+		GetCutover:   calendarimport.NewGetCutover(d.Syncs, d.Cutovers, guard).Do,
+		CompleteCutover: calendarimport.NewCompleteCutover(d.Calendars, d.Accounts, d.Staff, d.Patients, d.RecurringSchedules, d.ServiceCodes,
+			d.Modes, d.Syncs, d.Cutovers, d.Projections, tx, guard).Do,
+		CancelCutover: calendarimport.NewCancelCutover(d.Modes, d.Cutovers, tx, guard).Do,
 	}
 }
+
+// cutoverNow は、切り替えを始める時刻である。取り込みの期間は、この月の初日の 2026-11-01 から先の全てになる。
+func cutoverNow() time.Time { return time.Date(2026, 11, 5, 9, 0, 0, 0, calendar.Tokyo) }

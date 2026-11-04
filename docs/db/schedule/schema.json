@@ -4575,6 +4575,12 @@
           "type": "integer",
           "nullable": true,
           "comment": "最後に外部の予定と同じにした時点の、buddy の予定の更新の番号。この列を足す前の行は NULL"
+        },
+        {
+          "name": "cutover_id",
+          "type": "text",
+          "nullable": true,
+          "comment": "切り替えの取り込みで作った対応のとき、その切り替え。切り替えをやめると、この対応と予定を消す"
         }
       ],
       "indexes": [
@@ -4636,6 +4642,15 @@
           "columns": [
             "facility_id",
             "recurring_schedule_id"
+          ]
+        },
+        {
+          "name": "external_event_links_cutover_idx",
+          "def": "CREATE INDEX external_event_links_cutover_idx ON public.external_event_links USING btree (facility_id, cutover_id) WHERE (cutover_id IS NOT NULL)",
+          "table": "public.external_event_links",
+          "columns": [
+            "facility_id",
+            "cutover_id"
           ]
         }
       ],
@@ -4826,6 +4841,21 @@
           "columns": [
             "recurring_schedule_id"
           ]
+        },
+        {
+          "name": "external_event_links_cutover_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, cutover_id) REFERENCES calendar_cutovers(facility_id, id)",
+          "table": "public.external_event_links",
+          "referenced_table": "public.calendar_cutovers",
+          "columns": [
+            "facility_id",
+            "cutover_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
         }
       ],
       "triggers": [
@@ -4870,8 +4900,8 @@
         {
           "name": "range_end",
           "type": "date",
-          "nullable": false,
-          "comment": "取り込む期間の最後の日。この日を含む"
+          "nullable": true,
+          "comment": "取り込む期間の最後の日。この日を含む。切り替えの取り込みでは NULL（終わりを持たない）"
         },
         {
           "name": "status",
@@ -4919,6 +4949,12 @@
           "type": "timestamp with time zone",
           "nullable": false,
           "default": "now()"
+        },
+        {
+          "name": "cutover_id",
+          "type": "text",
+          "nullable": true,
+          "comment": "切り替えの取り込みのとき、その切り替え"
         }
       ],
       "indexes": [
@@ -4947,6 +4983,15 @@
           "columns": [
             "facility_id",
             "requested_by"
+          ]
+        },
+        {
+          "name": "import_runs_cutover_idx",
+          "def": "CREATE INDEX import_runs_cutover_idx ON public.import_runs USING btree (facility_id, cutover_id) WHERE (cutover_id IS NOT NULL)",
+          "table": "public.import_runs",
+          "columns": [
+            "facility_id",
+            "cutover_id"
           ]
         }
       ],
@@ -5034,6 +5079,17 @@
           ]
         },
         {
+          "name": "import_runs_open_range_check",
+          "type": "CHECK",
+          "def": "CHECK (((range_end IS NOT NULL) OR (cutover_id IS NOT NULL)))",
+          "table": "public.import_runs",
+          "referenced_table": "",
+          "columns": [
+            "range_end",
+            "cutover_id"
+          ]
+        },
+        {
           "name": "import_runs_range_check",
           "type": "CHECK",
           "def": "CHECK ((range_start \u003c= range_end))",
@@ -5041,16 +5097,6 @@
           "referenced_table": "",
           "columns": [
             "range_start",
-            "range_end"
-          ]
-        },
-        {
-          "name": "import_runs_range_end_not_null",
-          "type": "n",
-          "def": "NOT NULL range_end",
-          "table": "public.import_runs",
-          "referenced_table": "",
-          "columns": [
             "range_end"
           ]
         },
@@ -5161,6 +5207,21 @@
           "table": "public.import_runs",
           "referenced_table": "",
           "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "import_runs_cutover_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, cutover_id) REFERENCES calendar_cutovers(facility_id, id)",
+          "table": "public.import_runs",
+          "referenced_table": "public.calendar_cutovers",
+          "columns": [
+            "facility_id",
+            "cutover_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
             "id"
           ]
         }
@@ -6283,6 +6344,444 @@
           ]
         }
       ]
+    },
+    {
+      "name": "public.calendar_cutovers",
+      "type": "BASE TABLE",
+      "comment": "事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（切り替え）。事業所ごとに open は 1 つまで",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "facility_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "comment": "open、completed、canceled。completed で事業所を buddy_primary にし、canceled は google_primary のまま"
+        },
+        {
+          "name": "range_start",
+          "type": "date",
+          "nullable": false,
+          "comment": "取り込みの期間の最初の日。切り替えを始めた月の初日。期間は終わりを持たない"
+        },
+        {
+          "name": "started_by",
+          "type": "text",
+          "nullable": false,
+          "comment": "切り替えを始めた職員"
+        },
+        {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        },
+        {
+          "name": "finished_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "comment": "完了したかやめた時刻。open なら NULL"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "calendar_cutovers_pkey",
+          "def": "CREATE UNIQUE INDEX calendar_cutovers_pkey ON public.calendar_cutovers USING btree (id)",
+          "table": "public.calendar_cutovers",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_facility_id_key",
+          "def": "CREATE UNIQUE INDEX calendar_cutovers_facility_id_key ON public.calendar_cutovers USING btree (facility_id, id)",
+          "table": "public.calendar_cutovers",
+          "columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_open_key",
+          "def": "CREATE UNIQUE INDEX calendar_cutovers_open_key ON public.calendar_cutovers USING btree (facility_id) WHERE (status = 'open'::text)",
+          "table": "public.calendar_cutovers",
+          "columns": [
+            "facility_id"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_started_by_idx",
+          "def": "CREATE INDEX calendar_cutovers_started_by_idx ON public.calendar_cutovers USING btree (facility_id, started_by)",
+          "table": "public.calendar_cutovers",
+          "columns": [
+            "facility_id",
+            "started_by"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "calendar_cutovers_created_at_not_null",
+          "type": "n",
+          "def": "NOT NULL created_at",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "created_at"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_facility_id_not_null",
+          "type": "n",
+          "def": "NOT NULL facility_id",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "facility_id"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_finished_check",
+          "type": "CHECK",
+          "def": "CHECK (((status = 'open'::text) = (finished_at IS NULL)))",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "status",
+            "finished_at"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_id_check",
+          "type": "CHECK",
+          "def": "CHECK ((id ~ '^[0-7][0-9A-HJKMNP-TV-Z]{25}$'::text))",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_range_start_check",
+          "type": "CHECK",
+          "def": "CHECK ((EXTRACT(day FROM range_start) = (1)::numeric))",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "range_start"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_range_start_not_null",
+          "type": "n",
+          "def": "NOT NULL range_start",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "range_start"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_started_at_not_null",
+          "type": "n",
+          "def": "NOT NULL started_at",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "started_at"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_started_by_not_null",
+          "type": "n",
+          "def": "NOT NULL started_by",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "started_by"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_status_check",
+          "type": "CHECK",
+          "def": "CHECK ((status = ANY (ARRAY['open'::text, 'completed'::text, 'canceled'::text])))",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "status"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_status_not_null",
+          "type": "n",
+          "def": "NOT NULL status",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "status"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_updated_at_not_null",
+          "type": "n",
+          "def": "NOT NULL updated_at",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "updated_at"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_facility_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id) REFERENCES facilities(id)",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "public.facilities",
+          "columns": [
+            "facility_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_started_by_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, started_by) REFERENCES users(facility_id, id)",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "public.users",
+          "columns": [
+            "facility_id",
+            "started_by"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_facility_id_key",
+          "type": "UNIQUE",
+          "def": "UNIQUE (facility_id, id)",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "facility_id",
+            "id"
+          ]
+        }
+      ],
+      "triggers": [
+        {
+          "name": "calendar_cutovers_set_updated_at",
+          "def": "CREATE TRIGGER calendar_cutovers_set_updated_at BEFORE UPDATE ON public.calendar_cutovers FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+        }
+      ]
+    },
+    {
+      "name": "public.calendar_cutover_skips",
+      "type": "BASE TABLE",
+      "comment": "切り替えの取り込みで、確認が必要な予定に取り込まないを選んだ記録",
+      "columns": [
+        {
+          "name": "cutover_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "facility_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "external_calendar_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "external_event_id",
+          "type": "varchar(1024)",
+          "nullable": false,
+          "comment": "取り込み方を選んだ Google の予定の ID。繰り返しの予定とその回では、親の予定の ID"
+        },
+        {
+          "name": "revision",
+          "type": "varchar(64)",
+          "nullable": false,
+          "comment": "取り込み方を選んだときの、確認が必要な予定のバージョン。Google で予定が変わると変わり、記録は当たらなくなる"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "calendar_cutover_skips_pkey",
+          "def": "CREATE UNIQUE INDEX calendar_cutover_skips_pkey ON public.calendar_cutover_skips USING btree (cutover_id, external_calendar_id, external_event_id)",
+          "table": "public.calendar_cutover_skips",
+          "columns": [
+            "cutover_id",
+            "external_calendar_id",
+            "external_event_id"
+          ]
+        },
+        {
+          "name": "calendar_cutover_skips_calendar_idx",
+          "def": "CREATE INDEX calendar_cutover_skips_calendar_idx ON public.calendar_cutover_skips USING btree (facility_id, external_calendar_id)",
+          "table": "public.calendar_cutover_skips",
+          "columns": [
+            "facility_id",
+            "external_calendar_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "calendar_cutover_skips_created_at_not_null",
+          "type": "n",
+          "def": "NOT NULL created_at",
+          "table": "public.calendar_cutover_skips",
+          "referenced_table": "",
+          "columns": [
+            "created_at"
+          ]
+        },
+        {
+          "name": "calendar_cutover_skips_cutover_id_not_null",
+          "type": "n",
+          "def": "NOT NULL cutover_id",
+          "table": "public.calendar_cutover_skips",
+          "referenced_table": "",
+          "columns": [
+            "cutover_id"
+          ]
+        },
+        {
+          "name": "calendar_cutover_skips_external_calendar_id_not_null",
+          "type": "n",
+          "def": "NOT NULL external_calendar_id",
+          "table": "public.calendar_cutover_skips",
+          "referenced_table": "",
+          "columns": [
+            "external_calendar_id"
+          ]
+        },
+        {
+          "name": "calendar_cutover_skips_external_event_id_not_null",
+          "type": "n",
+          "def": "NOT NULL external_event_id",
+          "table": "public.calendar_cutover_skips",
+          "referenced_table": "",
+          "columns": [
+            "external_event_id"
+          ]
+        },
+        {
+          "name": "calendar_cutover_skips_facility_id_not_null",
+          "type": "n",
+          "def": "NOT NULL facility_id",
+          "table": "public.calendar_cutover_skips",
+          "referenced_table": "",
+          "columns": [
+            "facility_id"
+          ]
+        },
+        {
+          "name": "calendar_cutover_skips_revision_not_null",
+          "type": "n",
+          "def": "NOT NULL revision",
+          "table": "public.calendar_cutover_skips",
+          "referenced_table": "",
+          "columns": [
+            "revision"
+          ]
+        },
+        {
+          "name": "calendar_cutover_skips_calendar_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE",
+          "table": "public.calendar_cutover_skips",
+          "referenced_table": "public.external_calendars",
+          "columns": [
+            "facility_id",
+            "external_calendar_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_cutover_skips_cutover_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, cutover_id) REFERENCES calendar_cutovers(facility_id, id) ON DELETE CASCADE",
+          "table": "public.calendar_cutover_skips",
+          "referenced_table": "public.calendar_cutovers",
+          "columns": [
+            "facility_id",
+            "cutover_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_cutover_skips_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (cutover_id, external_calendar_id, external_event_id)",
+          "table": "public.calendar_cutover_skips",
+          "referenced_table": "",
+          "columns": [
+            "cutover_id",
+            "external_calendar_id",
+            "external_event_id"
+          ]
+        }
+      ]
     }
   ],
   "relations": [
@@ -6836,6 +7335,21 @@
       "def": "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
     },
     {
+      "table": "public.external_event_links",
+      "columns": [
+        "facility_id",
+        "cutover_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.calendar_cutovers",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, cutover_id) REFERENCES calendar_cutovers(facility_id, id)"
+    },
+    {
       "table": "public.import_runs",
       "columns": [
         "facility_id",
@@ -6864,6 +7378,21 @@
       ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.import_runs",
+      "columns": [
+        "facility_id",
+        "cutover_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.calendar_cutovers",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, cutover_id) REFERENCES calendar_cutovers(facility_id, id)"
     },
     {
       "table": "public.calendar_exports",
@@ -6937,6 +7466,64 @@
       ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.calendar_cutovers",
+      "columns": [
+        "facility_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.facilities",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+    },
+    {
+      "table": "public.calendar_cutovers",
+      "columns": [
+        "facility_id",
+        "started_by"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.users",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, started_by) REFERENCES users(facility_id, id)"
+    },
+    {
+      "table": "public.calendar_cutover_skips",
+      "columns": [
+        "facility_id",
+        "external_calendar_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.external_calendars",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.calendar_cutover_skips",
+      "columns": [
+        "facility_id",
+        "cutover_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.calendar_cutovers",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, cutover_id) REFERENCES calendar_cutovers(facility_id, id) ON DELETE CASCADE"
     }
   ],
   "functions": [
@@ -7037,13 +7624,15 @@
     {
       "id": "calendar-sync",
       "name": "外部のカレンダーの取り込みと書き出し",
-      "desc": "職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち、Google カレンダーの予定の写し（Projection）。書き出しは、予定の正本のモードが buddy_primary の事業所に限る。同期は google_primary の事業所のカレンダーだけを読み、予定の写しに書く",
+      "desc": "職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち、Google カレンダーの予定の写し（Projection）。書き出しは、予定の正本のモードが buddy_primary の事業所に限る。同期は google_primary の事業所のカレンダーだけを読み、予定の写しに書く。切り替えは、google_primary の事業所の予定を取り込み、完了で事業所を buddy_primary にする",
       "tables": [
         "public.external_calendars",
         "public.calendar_sync_states",
         "public.calendar_event_projections",
         "public.external_event_links",
         "public.import_runs",
+        "public.calendar_cutovers",
+        "public.calendar_cutover_skips",
         "public.calendar_exports",
         "public.schedules",
         "public.recurring_schedules",

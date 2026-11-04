@@ -50,6 +50,7 @@ const (
 	ResourceExternalCalendar
 	ResourceCalendarExport
 	ResourcePatient
+	ResourceCalendarCutover
 )
 
 // Service は、検証したトークンから職員を特定する操作である。

@@ -29,10 +29,14 @@ const SkipStaffOnLeave calendar.SkipReason = "staff_on_leave"
 const SkipStaffNonVisiting calendar.SkipReason = "staff_non_visiting"
 
 // Range は、取り込む予定の期間で、両端の日を含む。予定はこの期間に始まるものを取り込む。
+// End が零の値の期間は終わりを持たず、Start から先の全てである。切り替えの取り込みだけが使う（ADR-0035）。
 type Range struct {
 	Start civil.Date
 	End   civil.Date
 }
+
+// HasEnd は、期間が終わりを持つかを返す。
+func (r Range) HasEnd() bool { return !r.End.IsZero() }
 
 // NewRange は、開始が終了より後でなく、期間が 1 年を超えないことを検証して Range を作る。
 func NewRange(start, end civil.Date) (Range, error) {
@@ -48,20 +52,32 @@ func NewRange(start, end civil.Date) (Range, error) {
 // TimeMin は、期間の開始日の始まりの Asia/Tokyo の時刻である。
 func (r Range) TimeMin() time.Time { return midnight(r.Start) }
 
-// TimeMax は、期間の終了日の翌日の始まりの Asia/Tokyo の時刻である。
-func (r Range) TimeMax() time.Time { return midnight(civil.DateOf(r.End.Time().AddDate(0, 0, 1))) }
+// TimeMax は、期間の終了日の翌日の始まりの Asia/Tokyo の時刻である。終わりを持たない期間では零の時刻である。
+func (r Range) TimeMax() time.Time {
+	if !r.HasEnd() {
+		return time.Time{}
+	}
+	return midnight(civil.DateOf(r.End.Time().AddDate(0, 0, 1)))
+}
 
 // movedMargin は、期間の中の回を動かした先として探す、期間の前後の日数である。
 // Google は、変えた回を、元の日時ではなく今の日時で期間に絞るためである。
 const movedMargin = 31
 
 // widened は、期間の前後を movedMargin の日だけ広げた期間である。期間の中の回を外へ動かした例外の回を読むのに使う。
+// 終わりを持たない期間は、前だけを広げる。
 func (r Range) widened() Range {
-	return Range{Start: civil.DateOf(r.Start.Time().AddDate(0, 0, -movedMargin)), End: civil.DateOf(r.End.Time().AddDate(0, 0, movedMargin))}
+	w := Range{Start: civil.DateOf(r.Start.Time().AddDate(0, 0, -movedMargin))}
+	if r.HasEnd() {
+		w.End = civil.DateOf(r.End.Time().AddDate(0, 0, movedMargin))
+	}
+	return w
 }
 
 // Contains は、d が期間の中の日かを返す。
-func (r Range) Contains(d civil.Date) bool { return !d.Before(r.Start) && !d.After(r.End) }
+func (r Range) Contains(d civil.Date) bool {
+	return !d.Before(r.Start) && (!r.HasEnd() || !d.After(r.End))
+}
 
 func midnight(d civil.Date) time.Time {
 	return time.Date(d.Year, d.Month, d.Day, 0, 0, 0, 0, calendar.Tokyo)
@@ -83,6 +99,9 @@ const (
 	ReviewPatientNotFound ReviewReason = "patient_not_found"
 	// ReviewPatientAmbiguous は、タイトルの利用者名の利用者が 2 人以上いる予定である。
 	ReviewPatientAmbiguous ReviewReason = "patient_ambiguous"
+	// ReviewRecurrenceUnsupported は、buddy の繰り返しの規則に写せない繰り返しの予定である。切り替えの取り込みだけが返し、
+	// 回に展開しない。取り込み方は取り込まないだけを選べる（ADR-0035）。
+	ReviewRecurrenceUnsupported ReviewReason = "recurrence_unsupported"
 )
 
 // ReviewItem は、取り込む前に取り込み方を選ぶ予定である。繰り返しの予定とその回は、1 つの ReviewItem にまとめる。
@@ -131,6 +150,9 @@ type Counts struct {
 	NeedsReview       int
 	Skipped           int
 	AlreadyImported   int
+	// Overwrite は、切り替えの取り込みで、取り込んだ後に Google で変わったか消えた予定の数である。取り込み直すと、
+	// buddy の写しを消し、Google の今の内容で取り込み直す。ほかの取り込みでは 0 である。
+	Overwrite int
 }
 
 // ImportPreview は、取り込みのプレビューである。
@@ -178,6 +200,8 @@ type entry struct {
 	serviceCodeID string
 	// reviewKey は、確認が必要な予定の ReviewItem.ExternalEventID で、ほかの予定では空である。
 	reviewKey string
+	// unsupported は、切り替えの取り込みで、buddy の繰り返しの規則に写せない繰り返しの親の予定である。取り込まない以外を選べない。
+	unsupported bool
 }
 
 // replacement は、繰り返しの予定の回である。parentEventID はこの取り込みで作る繰り返しの予定の親を、
@@ -195,6 +219,10 @@ type plan struct {
 	reviewItems  []ReviewItem
 	skippedItems []Skipped
 	counts       Counts
+	// cutover は、切り替えの取り込みの plan かである。
+	cutover bool
+	// overwrite は、切り替えの取り込みで、Google で変わったか消えたので消して取り込み直す予定の対応である。
+	overwrite []calendar.EventLink
 }
 
 // planInput は、newPlan の入力である。
@@ -214,6 +242,9 @@ type planInput struct {
 	staffBlocked calendar.SkipReason
 	// staffID は、カレンダーを結び付けた職員である。休職か訪問しない職員でも、この職員に割り振った繰り返しの予定の回の置き換えは当てる。
 	staffID string
+	// cutover は、切り替えの取り込みかである。切り替えの取り込みは、繰り返しの予定を回に展開せず、写せない繰り返しの予定を
+	// 確認が必要な予定にし、規則のまま取り込まない親の予定の回を取り込まない（ADR-0035）。
+	cutover bool
 }
 
 // parentMode は、繰り返しの親の予定の取り込み方である。
@@ -278,6 +309,7 @@ func newPlan(in planInput) plan {
 		in: in, reviewIndex: map[string]int{}, parents: map[string]calendar.Event{}, ruleParents: map[string]*calendar.Recurrence{},
 		expandedParents: map[string]bool{}, instanceIDs: map[string]bool{}, countedParents: map[string]bool{},
 	}
+	b.p.cutover = in.cutover
 	b.serviceIDs = make(map[string]string, len(in.serviceCodes))
 	for _, sc := range in.serviceCodes {
 		b.serviceIDs[calendar.ServiceKey(sc.Code)] = sc.ID
@@ -374,6 +406,10 @@ func (b *planner) addParent(ev calendar.Event) {
 		b.ruleParents[ev.ID] = rec
 		b.add(entry{event: ev, cand: c, rule: rec})
 	case parentExpanded:
+		if b.in.cutover {
+			b.add(entry{event: ev, cand: c, unsupported: true})
+			return
+		}
 		b.expandedParents[ev.ID] = true
 		imported := false
 		for _, inst := range b.in.instances[ev.ID] {
@@ -423,6 +459,9 @@ func (b *planner) addException(ev calendar.Event) {
 		return
 	}
 	target, ok := b.replacementTarget(ev)
+	if !ok && b.isSeriesDropped(ev.RecurringEventID) {
+		return
+	}
 	if ev.Status == calendar.StatusCancelled {
 		if ok {
 			b.p.exclusions = append(b.p.exclusions, target)
@@ -456,6 +495,22 @@ func (b *planner) addException(ev calendar.Event) {
 	if len(b.p.entries) == before {
 		b.p.exclusions = append(b.p.exclusions, target)
 	}
+}
+
+// isSeriesDropped は、切り替えの取り込みで、親の予定 parentID を期間で読めたのに、規則のまま取り込まないかを返す。
+// 親が取り込まない予定か写せない繰り返しの予定なら、その回も取り込まない。繰り返しの一部だけを単発の予定にして移さないためである。
+// 前の取り込みで結び付けた親と、期間で読めなかった親の回は、ほかの取り込みと同じく扱う。
+func (b *planner) isSeriesDropped(parentID string) bool {
+	if !b.in.cutover {
+		return false
+	}
+	if _, read := b.parents[parentID]; !read {
+		return false
+	}
+	if _, linked := b.in.links[parentID]; linked {
+		return false
+	}
+	return b.ruleParents[parentID] == nil
 }
 
 // replacementTarget は、例外の回 ev が置き換える、繰り返しのまま取り込む予定の回を返す。
@@ -508,6 +563,11 @@ func (b *planner) add(e entry) bool {
 			return false
 		}
 		e.serviceCodeID = id
+	}
+	switch {
+	case e.unsupported:
+		e.reviewKey = b.review(e, nil)
+	case e.cand.Kind == calendar.KindVisit:
 		matches := b.matchPatients(e.cand.Client)
 		if len(matches) == 1 {
 			e.patientID = matches[0].ID
@@ -569,7 +629,10 @@ func (b *planner) review(e entry, matches []PatientRef) string {
 		Client:          e.cand.Client,
 		Reason:          ReviewPatientNotFound,
 	}
-	if len(matches) > 1 {
+	switch {
+	case e.unsupported:
+		item.Reason = ReviewRecurrenceUnsupported
+	case len(matches) > 1:
 		item.Reason, item.Candidates = ReviewPatientAmbiguous, matches
 	}
 	if e.rule != nil {
@@ -669,14 +732,27 @@ func (p *plan) applyDecisions(decisions []Decision, patients []PatientRef) (int,
 	if len(byKey) != len(p.reviewItems) {
 		return 0, errReviewChanged
 	}
+	// skippedSeries は、切り替えの取り込みで、取り込まないを選んだ繰り返しの親の予定である。その回も取り込まない。
+	skippedSeries := map[string]bool{}
 	for _, r := range p.reviewItems {
-		if d, ok := byKey[r.ExternalEventID]; !ok || d.Revision != r.Revision {
+		d, ok := byKey[r.ExternalEventID]
+		if !ok || d.Revision != r.Revision {
 			return 0, errReviewChanged
+		}
+		if r.Reason == ReviewRecurrenceUnsupported && d.Action != ActionSkip {
+			return 0, apperr.Invalid("繰り返しの規則を buddy に写せない予定 %s は、取り込まないだけを選べます", r.ExternalEventID)
+		}
+		if p.cutover && d.Action == ActionSkip {
+			skippedSeries[r.ExternalEventID] = true
 		}
 	}
 	skipped := 0
 	kept := p.entries[:0]
 	for _, e := range p.entries {
+		if e.replaces != nil && skippedSeries[e.replaces.parentEventID] {
+			skipped++
+			continue
+		}
 		if e.reviewKey == "" {
 			kept = append(kept, e)
 			continue
@@ -698,6 +774,7 @@ func (p *plan) applyDecisions(decisions []Decision, patients []PatientRef) (int,
 		kept = append(kept, e)
 	}
 	p.entries = kept
+	p.exclusions = slices.DeleteFunc(p.exclusions, func(x replacement) bool { return skippedSeries[x.parentEventID] })
 	return skipped, nil
 }
 

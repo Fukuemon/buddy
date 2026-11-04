@@ -29,6 +29,7 @@ var pathResources = map[string]struct {
 	"recurring_schedule_id": {resource: access.ResourceRecurringSchedule},
 	"external_calendar_id":  {resource: access.ResourceExternalCalendar},
 	"calendar_export_id":    {resource: access.ResourceCalendarExport},
+	"calendar_cutover_id":   {resource: access.ResourceCalendarCutover},
 	"patient_id":            {resource: access.ResourcePatient},
 	"policy_id":             {global: true},
 	// 職員の権限の ID は、同じパスの user_id で事業所を確認し、staff の RemoveGrant が職員の権限かを確認する。

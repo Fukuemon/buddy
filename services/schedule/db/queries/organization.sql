@@ -81,3 +81,11 @@ SELECT facility_id FROM teams WHERE id = $1;
 -- name: GetPositionFacilityID :one
 -- access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
 SELECT facility_id FROM positions WHERE id = $1;
+
+-- name: GetFacilityForUpdate :one
+-- LockFacility と同じ排他のロックを取り、事業所の行を返す。正本のモードを変える操作（切り替えの完了）が、ロックの中でモードを読む。
+-- 予定を書く操作は GetFacilityForShare で同じ行を読むので、モードを変えるまでの間に、前のモードで予定を書けない。
+SELECT * FROM facilities WHERE id = $1 FOR UPDATE;
+
+-- name: UpdateFacilitySourceMode :exec
+UPDATE facilities SET source_mode = $2 WHERE id = $1;

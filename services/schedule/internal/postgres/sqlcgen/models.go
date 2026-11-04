@@ -10,6 +10,35 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+// 事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（切り替え）。事業所ごとに open は 1 つまで
+type CalendarCutover struct {
+	ID         string
+	FacilityID string
+	// open、completed、canceled。completed で事業所を buddy_primary にし、canceled は google_primary のまま
+	Status string
+	// 取り込みの期間の最初の日。切り替えを始めた月の初日。期間は終わりを持たない
+	RangeStart time.Time
+	// 切り替えを始めた職員
+	StartedBy string
+	StartedAt time.Time
+	// 完了したかやめた時刻。open なら NULL
+	FinishedAt *time.Time
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+}
+
+// 切り替えの取り込みで、確認が必要な予定に取り込まないを選んだ記録
+type CalendarCutoverSkip struct {
+	CutoverID          string
+	FacilityID         string
+	ExternalCalendarID string
+	// 取り込み方を選んだ Google の予定の ID。繰り返しの予定とその回では、親の予定の ID
+	ExternalEventID string
+	// 取り込み方を選んだときの、確認が必要な予定のバージョン。Google で予定が変わると変わり、記録は当たらなくなる
+	Revision  string
+	CreatedAt time.Time
+}
+
 // Google カレンダーを予定の正本にする事業所の、Google カレンダーの予定の写し（Projection）。1 つの予定を 1 行にする
 type CalendarEventProjection struct {
 	ExternalCalendarID string
@@ -132,6 +161,8 @@ type ExternalEventLink struct {
 	UpdatedAt           time.Time
 	// 最後に外部の予定と同じにした時点の、buddy の予定の更新の番号。この列を足す前の行は NULL
 	SyncedVersion *int32
+	// 切り替えの取り込みで作った対応のとき、その切り替え。切り替えをやめると、この対応と予定を消す
+	CutoverID *string
 }
 
 // 訪問看護の事業所
@@ -158,8 +189,8 @@ type ImportRun struct {
 	RequestedBy string
 	// 取り込む期間の最初の日
 	RangeStart time.Time
-	// 取り込む期間の最後の日。この日を含む
-	RangeEnd time.Time
+	// 取り込む期間の最後の日。この日を含む。切り替えの取り込みでは NULL（終わりを持たない）
+	RangeEnd *time.Time
 	// running、succeeded、failed
 	Status        string
 	ImportedCount int32
@@ -170,6 +201,8 @@ type ImportRun struct {
 	FinishedAt   *time.Time
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
+	// 切り替えの取り込みのとき、その切り替え
+	CutoverID *string
 }
 
 // 利用者

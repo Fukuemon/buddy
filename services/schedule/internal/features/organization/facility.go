@@ -2,6 +2,8 @@ package organization
 
 import (
 	"time"
+
+	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 )
 
 // SourceMode は、事業所の予定の正本のモードである（ADR-0035）。
@@ -29,4 +31,17 @@ type Facility struct {
 // IsBuddyPrimary は、事業所が buddy を予定の正本にしているかを返す。
 func (f Facility) IsBuddyPrimary() bool {
 	return f.SourceMode == SourceBuddyPrimary
+}
+
+// CodeSourceModeTransition は、事業所の正本のモードを移せないことを表す 409 の code である。
+const CodeSourceModeTransition = "source_mode_transition"
+
+// RequireSourceModeTransition は、事業所の正本のモードを from から to に移せるかを確認する。
+// 移せるのは google_primary から buddy_primary の 1 つだけで、ほかの組み合わせは code が CodeSourceModeTransition の
+// apperr.ErrConflict を返す（ADR-0035）。
+func RequireSourceModeTransition(from, to SourceMode) error {
+	if from == SourceGooglePrimary && to == SourceBuddyPrimary {
+		return nil
+	}
+	return apperr.ConflictCode(CodeSourceModeTransition, "事業所の予定の正本を %s から %s に移せません", from, to)
 }

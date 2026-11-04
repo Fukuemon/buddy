@@ -36,8 +36,11 @@ func (q *Queries) CreateExternalCalendar(ctx context.Context, arg CreateExternal
 
 const createExternalEventLink = `-- name: CreateExternalEventLink :exec
 INSERT INTO external_event_links (
-    id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, synced_version, schedule_id, recurring_schedule_id
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, synced_version, schedule_id, recurring_schedule_id, cutover_id
+) VALUES (
+    $1, $2, $3, $4, $5, $6,
+    $7, $8, $9, $10
+)
 `
 
 type CreateExternalEventLinkParams struct {
@@ -50,6 +53,7 @@ type CreateExternalEventLinkParams struct {
 	SyncedVersion       *int32
 	ScheduleID          *string
 	RecurringScheduleID *string
+	CutoverID           *string
 }
 
 func (q *Queries) CreateExternalEventLink(ctx context.Context, arg CreateExternalEventLinkParams) error {
@@ -63,13 +67,17 @@ func (q *Queries) CreateExternalEventLink(ctx context.Context, arg CreateExterna
 		arg.SyncedVersion,
 		arg.ScheduleID,
 		arg.RecurringScheduleID,
+		arg.CutoverID,
 	)
 	return err
 }
 
 const createImportRun = `-- name: CreateImportRun :exec
-INSERT INTO import_runs (id, facility_id, external_calendar_id, requested_by, range_start, range_end, status)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO import_runs (id, facility_id, external_calendar_id, requested_by, range_start, range_end, status, cutover_id)
+VALUES (
+    $1, $2, $3, $4, $5, $6,
+    $7, $8
+)
 `
 
 type CreateImportRunParams struct {
@@ -78,10 +86,12 @@ type CreateImportRunParams struct {
 	ExternalCalendarID string
 	RequestedBy        string
 	RangeStart         time.Time
-	RangeEnd           time.Time
+	RangeEnd           *time.Time
 	Status             string
+	CutoverID          *string
 }
 
+// range_end は、切り替えの取り込み（cutover_id がある）では NULL にする。
 func (q *Queries) CreateImportRun(ctx context.Context, arg CreateImportRunParams) error {
 	_, err := q.db.Exec(ctx, createImportRun,
 		arg.ID,
@@ -91,6 +101,7 @@ func (q *Queries) CreateImportRun(ctx context.Context, arg CreateImportRunParams
 		arg.RangeStart,
 		arg.RangeEnd,
 		arg.Status,
+		arg.CutoverID,
 	)
 	return err
 }
@@ -179,7 +190,7 @@ const finishImportRun = `-- name: FinishImportRun :one
 UPDATE import_runs
 SET status = $2, imported_count = $3, skipped_count = $4, finished_at = now()
 WHERE id = $1
-RETURNING id, facility_id, external_calendar_id, requested_by, range_start, range_end, status, imported_count, skipped_count, error, started_at, finished_at, created_at, updated_at
+RETURNING id, facility_id, external_calendar_id, requested_by, range_start, range_end, status, imported_count, skipped_count, error, started_at, finished_at, created_at, updated_at, cutover_id
 `
 
 type FinishImportRunParams struct {
@@ -212,6 +223,7 @@ func (q *Queries) FinishImportRun(ctx context.Context, arg FinishImportRunParams
 		&i.FinishedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.CutoverID,
 	)
 	return i, err
 }
@@ -269,7 +281,7 @@ func (q *Queries) GetExternalCalendarFacilityID(ctx context.Context, id string) 
 }
 
 const getExternalEventLinkByRecurringSchedule = `-- name: GetExternalEventLinkByRecurringSchedule :one
-SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version FROM external_event_links WHERE recurring_schedule_id = $1
+SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version, cutover_id FROM external_event_links WHERE recurring_schedule_id = $1
 `
 
 func (q *Queries) GetExternalEventLinkByRecurringSchedule(ctx context.Context, recurringScheduleID *string) (ExternalEventLink, error) {
@@ -287,12 +299,13 @@ func (q *Queries) GetExternalEventLinkByRecurringSchedule(ctx context.Context, r
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SyncedVersion,
+		&i.CutoverID,
 	)
 	return i, err
 }
 
 const getExternalEventLinkBySchedule = `-- name: GetExternalEventLinkBySchedule :one
-SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version FROM external_event_links WHERE schedule_id = $1
+SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version, cutover_id FROM external_event_links WHERE schedule_id = $1
 `
 
 func (q *Queries) GetExternalEventLinkBySchedule(ctx context.Context, scheduleID *string) (ExternalEventLink, error) {
@@ -310,6 +323,7 @@ func (q *Queries) GetExternalEventLinkBySchedule(ctx context.Context, scheduleID
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SyncedVersion,
+		&i.CutoverID,
 	)
 	return i, err
 }
@@ -348,7 +362,7 @@ func (q *Queries) ListExternalCalendarsByFacility(ctx context.Context, facilityI
 }
 
 const listExternalEventLinks = `-- name: ListExternalEventLinks :many
-SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version FROM external_event_links WHERE external_calendar_id = $1 ORDER BY id
+SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version, cutover_id FROM external_event_links WHERE external_calendar_id = $1 ORDER BY id
 `
 
 func (q *Queries) ListExternalEventLinks(ctx context.Context, externalCalendarID string) ([]ExternalEventLink, error) {
@@ -372,6 +386,7 @@ func (q *Queries) ListExternalEventLinks(ctx context.Context, externalCalendarID
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.SyncedVersion,
+			&i.CutoverID,
 		); err != nil {
 			return nil, err
 		}
@@ -384,7 +399,7 @@ func (q *Queries) ListExternalEventLinks(ctx context.Context, externalCalendarID
 }
 
 const listLatestImportRunsByFacility = `-- name: ListLatestImportRunsByFacility :many
-SELECT DISTINCT ON (external_calendar_id) id, facility_id, external_calendar_id, requested_by, range_start, range_end, status, imported_count, skipped_count, error, started_at, finished_at, created_at, updated_at FROM import_runs
+SELECT DISTINCT ON (external_calendar_id) id, facility_id, external_calendar_id, requested_by, range_start, range_end, status, imported_count, skipped_count, error, started_at, finished_at, created_at, updated_at, cutover_id FROM import_runs
 WHERE facility_id = $1
 ORDER BY external_calendar_id, started_at DESC, id DESC
 `
@@ -414,6 +429,7 @@ func (q *Queries) ListLatestImportRunsByFacility(ctx context.Context, facilityID
 			&i.FinishedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.CutoverID,
 		); err != nil {
 			return nil, err
 		}

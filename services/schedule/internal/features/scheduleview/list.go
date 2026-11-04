@@ -18,8 +18,10 @@ import (
 
 // ProjectionDeps は、List が、google_primary の事業所の予定を Projection から読むのに使う依存である。
 type ProjectionDeps struct {
-	Projections  Projections
-	Syncs        CalendarSyncs
+	Projections Projections
+	Syncs       CalendarSyncs
+	// Cutovers は、open の切り替えを読む。nil なら、切り替えを読まない。
+	Cutovers     Cutovers
 	Rules        EventRules
 	Patients     Patients
 	ServiceCodes ServiceCodes
@@ -121,11 +123,18 @@ func (s List) listProjected(ctx context.Context, f organization.Facility, q List
 	if err != nil {
 		return Listing{}, err
 	}
+	var cutover *OpenCutover
+	if s.projected.Cutovers != nil {
+		if cutover, err = s.projected.Cutovers.FindOpenCutover(ctx, f.ID); err != nil {
+			return Listing{}, err
+		}
+	}
 	return Listing{
 		Schedules:          details,
 		RecurringSchedules: []RecurringDetail{},
 		SourceMode:         f.SourceMode,
 		CalendarSyncs:      filter(syncs, func(c CalendarSync) bool { return readable(c.StaffID) }),
+		Cutover:            cutover,
 	}, nil
 }
 

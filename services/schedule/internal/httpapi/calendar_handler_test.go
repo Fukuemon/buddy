@@ -8,12 +8,14 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi"
 )
 
@@ -26,6 +28,8 @@ type fakeCalendars struct {
 	lastDecisions []calendarimport.Decision
 	preview       calendarimport.ImportPreview
 	lastFacility  string
+	// incomplete は、CompleteCutover が返す満たさない一覧で、nil でなければ IncompleteError を返す。
+	incomplete []calendarimport.Unmet
 }
 
 func (f *fakeCalendars) ServiceAccount(_ context.Context, facilityID string) (string, error) {
@@ -84,6 +88,7 @@ func (f *fakeCalendars) app() httpapi.CalendarApp {
 	return httpapi.CalendarApp{
 		ServiceAccount: f.ServiceAccount, List: f.List, Check: f.Check, Link: f.Link, Unlink: f.Unlink, Preview: f.Preview,
 		Import: f.Import, ListExportIssues: f.ListExportIssues, RetryExport: f.RetryExport, AcceptExport: f.AcceptExport,
+		GetCutover: f.GetCutover, StartCutover: f.StartCutover, CompleteCutover: f.CompleteCutover, CancelCutover: f.CancelCutover,
 	}
 }
 
@@ -242,5 +247,123 @@ func TestCalendarExportIssues(t *testing.T) {
 	rec, body = do(t, newCalendarRouter(&fakeCalendars{}), http.MethodPost, "/v1/calendar_exports/"+calendarID+"/acceptances", "")
 	if rec.Code != http.StatusOK || body["status"] != "succeeded" {
 		t.Errorf("Google の内容で解く: status = %d, body = %v", rec.Code, body)
+	}
+}
+
+const cutoverID = "01M3TD000000000000000000CT"
+
+func testCutover(status calendarimport.CutoverStatus) calendarimport.Cutover {
+	return calendarimport.Cutover{
+		ID: cutoverID, FacilityID: facilityID, Status: status, RangeStart: civil.Date{Year: 2026, Month: 11, Day: 1},
+		StartedBy: staffID, StartedAt: time.Date(2026, 11, 5, 0, 0, 0, 0, time.UTC),
+	}
+}
+
+func (f *fakeCalendars) GetCutover(_ context.Context, facilityID string) (calendarimport.CutoverState, error) {
+	f.lastFacility = facilityID
+	c := testCutover(calendarimport.CutoverOpen)
+	at := time.Date(2026, 11, 5, 1, 0, 0, 0, time.UTC)
+	return calendarimport.CutoverState{Cutover: &c, Calendars: []calendarimport.CutoverCalendar{{
+		Sync:       scheduleview.CalendarSync{ExternalCalendarID: calendarID, StaffID: staffID, StaffName: "職員A", LastStatus: scheduleview.SyncSucceeded, LastSucceededAt: &at},
+		LastImport: &calendar.ImportRun{ID: calendarID, RangeStart: c.RangeStart, Status: calendar.RunSucceeded, CutoverID: &c.ID, StartedAt: at},
+	}}}, f.err
+}
+
+func (f *fakeCalendars) StartCutover(_ context.Context, facilityID string) (calendarimport.Cutover, error) {
+	f.lastFacility = facilityID
+	return testCutover(calendarimport.CutoverOpen), f.err
+}
+
+func (f *fakeCalendars) CompleteCutover(context.Context, string) (calendarimport.Cutover, error) {
+	if f.incomplete != nil {
+		return calendarimport.Cutover{}, &calendarimport.IncompleteError{Items: f.incomplete}
+	}
+	return testCutover(calendarimport.CutoverCompleted), f.err
+}
+
+func (f *fakeCalendars) CancelCutover(context.Context, string) (calendarimport.Cutover, error) {
+	return testCutover(calendarimport.CutoverCanceled), f.err
+}
+
+// TestCalendarCutover は、切り替えの 4 つの操作のレスポンスと、完了の確認を満たさないときの 409 の一覧を確認する。
+func TestCalendarCutover(t *testing.T) {
+	f := &fakeCalendars{}
+	rec, body := do(t, newCalendarRouter(f), http.MethodGet, "/v1/facilities/"+facilityID+"/calendar_cutover_status", "")
+	if rec.Code != http.StatusOK || f.lastFacility != facilityID {
+		t.Fatalf("状況: status = %d, body = %s", rec.Code, rec.Body)
+	}
+	if c := body["cutover"].(map[string]any); c["status"] != "open" || c["range_start"] != "2026-11-01" || c["finished_at"] != nil {
+		t.Errorf("cutover = %v", c)
+	}
+	cal := body["calendars"].([]any)[0].(map[string]any)
+	if cal["staff_name"] != "職員A" || cal["last_status"] != "succeeded" || cal["last_import"].(map[string]any)["range_end"] != nil {
+		t.Errorf("calendars = %v", cal)
+	}
+
+	rec, body = do(t, newCalendarRouter(f), http.MethodPost, "/v1/facilities/"+facilityID+"/calendar_cutovers", "")
+	if rec.Code != http.StatusCreated || body["id"] != cutoverID {
+		t.Errorf("始める: status = %d, body = %s", rec.Code, rec.Body)
+	}
+	rec, body = do(t, newCalendarRouter(f), http.MethodPost, "/v1/calendar_cutovers/"+cutoverID+"/completions", "")
+	if rec.Code != http.StatusOK || body["status"] != "completed" {
+		t.Errorf("完了: status = %d, body = %s", rec.Code, rec.Body)
+	}
+	rec, body = do(t, newCalendarRouter(f), http.MethodPost, "/v1/calendar_cutovers/"+cutoverID+"/cancel", "")
+	if rec.Code != http.StatusOK || body["status"] != "canceled" {
+		t.Errorf("やめる: status = %d, body = %s", rec.Code, rec.Body)
+	}
+
+	d, st, et := civil.Date{Year: 2026, Month: 11, Day: 10}, civil.Time{Hour: 10}, civil.Time{Hour: 10, Minute: 30}
+	f = &fakeCalendars{incomplete: []calendarimport.Unmet{
+		{ExternalCalendarID: calendarID, StaffID: staffID, StaffName: "職員A", Reason: calendarimport.UnmetSyncStale},
+		{ExternalCalendarID: calendarID, StaffID: staffID, StaffName: "職員A", Reason: calendarimport.UnmetChanged, ExternalEventID: "e1", Date: &d, StartTime: &st, EndTime: &et},
+		{ExternalCalendarID: calendarID, StaffID: staffID, StaffName: "職員A", Reason: calendarimport.UnmetNeedsReview, ExternalEventID: "e2", ReviewReason: calendarimport.ReviewRecurrenceUnsupported},
+	}}
+	rec, body = do(t, newCalendarRouter(f), http.MethodPost, "/v1/calendar_cutovers/"+cutoverID+"/completions", "")
+	if rec.Code != http.StatusConflict || body["code"] != "cutover_incomplete" {
+		t.Fatalf("完了の確認を満たさない: status = %d, body = %s", rec.Code, rec.Body)
+	}
+	items := body["items"].([]any)
+	stale, changed, review := items[0].(map[string]any), items[1].(map[string]any), items[2].(map[string]any)
+	if stale["reason"] != "sync_stale" || stale["external_event_id"] != nil || stale["date"] != nil {
+		t.Errorf("同期が古い = %v", stale)
+	}
+	if changed["reason"] != "changed" || changed["date"] != "2026-11-10" || changed["start_time"] != "10:00" || changed["review_reason"] != nil {
+		t.Errorf("変わった予定 = %v", changed)
+	}
+	if review["review_reason"] != "recurrence_unsupported" {
+		t.Errorf("写せない繰り返し = %v", review)
+	}
+
+	for _, tt := range []struct {
+		name, target string
+		err          error
+		want         string
+	}{
+		{"始める: open の切り替えがある", "/v1/facilities/" + facilityID + "/calendar_cutovers", apperr.ConflictCode(calendarimport.CodeCutoverOpen, "始めています"), "cutover_open"},
+		{"完了: open でない", "/v1/calendar_cutovers/" + cutoverID + "/completions", apperr.ConflictCode(calendarimport.CodeCutoverNotOpen, "終えています"), "cutover_not_open"},
+		{"やめる: open でない", "/v1/calendar_cutovers/" + cutoverID + "/cancel", apperr.ConflictCode(calendarimport.CodeCutoverNotOpen, "終えています"), "cutover_not_open"},
+	} {
+		rec, body := do(t, newCalendarRouter(&fakeCalendars{err: tt.err}), http.MethodPost, tt.target, "")
+		if rec.Code != http.StatusConflict || body["code"] != tt.want {
+			t.Errorf("%s: status = %d, body = %s", tt.name, rec.Code, rec.Body)
+		}
+	}
+}
+
+// TestCalendarImportOpenRange は、range_end を省くか null にした取り込みが、終わりを持たない期間（切り替えの取り込み）を操作に渡し、
+// レスポンスの range_end を null で返すことを確認する。
+func TestCalendarImportOpenRange(t *testing.T) {
+	for _, body := range []string{`{"range_start":"2026-11-01"}`, `{"range_start":"2026-11-01","range_end":null}`} {
+		f := &fakeCalendars{}
+		rec, got := do(t, newCalendarRouter(f), http.MethodPost, "/v1/external_calendars/"+calendarID+"/import_previews", body)
+		if rec.Code != http.StatusOK || f.lastRange.HasEnd() || got["range_end"] != nil {
+			t.Errorf("%s: status = %d, range = %+v, body = %v", body, rec.Code, f.lastRange, got)
+		}
+	}
+	f := &fakeCalendars{}
+	rec, got := do(t, newCalendarRouter(f), http.MethodPost, "/v1/external_calendars/"+calendarID+"/imports", `{"range_start":"2026-11-01","decisions":[]}`)
+	if rec.Code != http.StatusCreated || f.lastRange.HasEnd() || got["range_end"] != nil {
+		t.Errorf("確定: status = %d, range = %+v, body = %v", rec.Code, f.lastRange, got)
 	}
 }
