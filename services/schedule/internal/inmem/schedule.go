@@ -9,7 +9,6 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 )
 
 // ScheduleTypes は、schedule.TypeRepository のメモリ上の実装である。
@@ -127,32 +126,6 @@ func (s RecurringSchedules) Get(_ context.Context, id string) (scheduleview.Recu
 	d, err := get(s.Recurring, id)
 	d.Visit = s.visit(d.VisitInfoID)
 	return d, err
-}
-
-// info は、ID が id の訪問の情報を返す。id が nil か、訪問の情報が無ければ nil を返す。
-func (s *Store) info(id *string) *visit.Info {
-	if id == nil {
-		return nil
-	}
-	i, ok := s.Infos[*id]
-	if !ok {
-		return nil
-	}
-	return &i
-}
-
-// visit は、ID が id の訪問の情報を返す。id が nil か、訪問の情報が無ければ nil を返す。
-func (s *Store) visit(id *string) *visit.Detail {
-	if id == nil {
-		return nil
-	}
-	i, ok := s.Infos[*id]
-	if !ok {
-		return nil
-	}
-	return &visit.Detail{
-		ID: i.ID, PatientID: i.PatientID, AssignedStaffID: i.AssignedStaffID, CompanionID: i.CompanionID, ServiceCodeID: i.ServiceCodeID,
-	}
 }
 
 // ListByFacility は、scheduleview.RecurringSchedules の ListByFacility を実装する。

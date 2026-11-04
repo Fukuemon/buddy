@@ -47,3 +47,29 @@ func (s VisitCategories) ListByIDs(_ context.Context, ids []string) ([]visit.Cat
 	}
 	return out, nil
 }
+
+// info は、ID が id の訪問の情報を返す。id が nil か、訪問の情報が無ければ nil を返す。
+func (s *Store) info(id *string) *visit.Info {
+	if id == nil {
+		return nil
+	}
+	i, ok := s.Infos[*id]
+	if !ok {
+		return nil
+	}
+	return &i
+}
+
+// visit は、ID が id の訪問の情報を返す。id が nil か、訪問の情報が無ければ nil を返す。
+func (s *Store) visit(id *string) *visit.Detail {
+	if id == nil {
+		return nil
+	}
+	i, ok := s.Infos[*id]
+	if !ok {
+		return nil
+	}
+	return &visit.Detail{
+		ID: i.ID, PatientID: i.PatientID, AssignedStaffID: i.AssignedStaffID, CompanionID: i.CompanionID, ServiceCodeID: i.ServiceCodeID,
+	}
+}
