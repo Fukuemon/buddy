@@ -47,7 +47,7 @@ func (p Create) Do(ctx context.Context, in CreateInput) (Detail, error) {
 	if _, err := p.facilities.Get(ctx, in.FacilityID); err != nil {
 		return Detail{}, err
 	}
-	if _, err := p.serviceCodes.GetServiceCode(ctx, in.ServiceCodeID); err != nil {
+	if _, err := p.serviceCodes.Get(ctx, in.ServiceCodeID); err != nil {
 		return Detail{}, apperr.Reference("サービスコード", in.ServiceCodeID, err)
 	}
 	var created Detail

@@ -29,7 +29,7 @@ type app struct {
 }
 
 func newApp(s *inmem.Store, guard organization.Guard) app {
-	facilities, staffRefs, codes, patients := inmem.Facilities{Store: s}, inmem.StaffRefs{Store: s}, inmem.VisitMasters{Store: s}, inmem.Patients{Store: s}
+	facilities, staffRefs, codes, patients := inmem.Facilities{Store: s}, inmem.StaffRefs{Store: s}, inmem.ServiceCodes{Store: s}, inmem.Patients{Store: s}
 	schedules, locks := inmem.PatientSchedules{Store: s}, facilities
 	now := func() time.Time { return today.Time().Add(9 * time.Hour) }
 	tx, ids := &inmem.Tx{}, &inmem.SeqIDs{}

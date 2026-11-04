@@ -48,7 +48,7 @@ verified_commit: 4e53ca5
 - ADR-0033: [予定の書き込みのモデルと読み取りのモデルを分け、正本のモードを事業所の状態にする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0033-schedule-write-read-models-and-source-mode.md)
 
 - `internal/features/` には、次の機能のパッケージを置く。
-  - `organization`、`staff`、`patient`、`visit`、`schedule`、`scheduleview`
+  - `organization`、`staff`、`servicecode`、`patient`、`visit`、`schedule`、`scheduleview`
   - Google カレンダーとの連携: `calendar`、`calendarimport`、`calendarsync`、`calendarexport`
 - `internal/` の直下には、アダプタ（`httpapi`、`postgres`、`gcal`、`broker`、`ulid`）と共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）を置く。
   - `access`、`principal`、`config`、`assemble`、テストの `inmem` も、`internal/` の直下に置く。

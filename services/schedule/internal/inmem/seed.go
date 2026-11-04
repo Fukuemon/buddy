@@ -6,6 +6,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/servicecode"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 )
@@ -39,7 +40,7 @@ func Seeded() *Store {
 	}
 	s.Patients[PatientID] = patient.Detail{Patient: patient.Patient{ID: PatientID, FacilityID: FacilityID}}
 	s.Patients[OtherPatientID] = patient.Detail{Patient: patient.Patient{ID: OtherPatientID, FacilityID: OtherFacilityID}}
-	s.Codes[CodeID] = visit.ServiceCode{ID: CodeID}
+	s.Codes[CodeID] = servicecode.ServiceCode{ID: CodeID}
 	s.Categories[CategoryID] = visit.Category{ID: CategoryID}
 	s.Types[NormalTypeID] = schedule.Type{ID: NormalTypeID, Code: schedule.CodeNormal, Name: schedule.Normal}
 	s.Types[VisitTypeID] = schedule.Type{ID: VisitTypeID, Code: schedule.CodeVisit, Name: schedule.Visit}
@@ -49,4 +50,10 @@ func Seeded() *Store {
 		Rule: schedule.Rule{Frequency: schedule.Weekly},
 	}}
 	return s
+}
+
+// PutVisitInfo は、職員 StaffID が事業所 FacilityID の利用者 patientID を訪問する訪問の情報 id を s に入れる。
+// visit を import しないテストが、訪問の予定の前提を作るために使う。
+func (s *Store) PutVisitInfo(id, patientID string) {
+	s.Infos[id] = visit.Info{ID: id, FacilityID: FacilityID, PatientID: patientID, AssignedStaffID: StaffID}
 }

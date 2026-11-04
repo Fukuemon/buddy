@@ -16,7 +16,6 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/config"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres"
@@ -44,7 +43,8 @@ type Repositories struct {
 	patients         *postgres.PatientRepository
 	patientSchedules *postgres.PatientScheduleReader
 	visitInfos       *postgres.VisitInfoRepository
-	visitMasters     *postgres.VisitMasterRepository
+	serviceCodes     *postgres.ServiceCodeRepository
+	visitCategories  *postgres.VisitCategoryRepository
 	schedules        *postgres.ScheduleRepository
 	recurring        *postgres.RecurringScheduleRepository
 	scheduleTypes    *postgres.ScheduleTypeRepository
@@ -69,7 +69,8 @@ func NewRepositories(db *pgxpool.Pool) Repositories {
 		patients:         postgres.NewPatientRepository(db),
 		patientSchedules: postgres.NewPatientScheduleReader(db),
 		visitInfos:       postgres.NewVisitInfoRepository(db),
-		visitMasters:     postgres.NewVisitMasterRepository(db),
+		serviceCodes:     postgres.NewServiceCodeRepository(db),
+		visitCategories:  postgres.NewVisitCategoryRepository(db),
 		schedules:        postgres.NewScheduleRepository(db),
 		recurring:        postgres.NewRecurringScheduleRepository(db),
 		scheduleTypes:    postgres.NewScheduleTypeRepository(db),
@@ -81,10 +82,11 @@ func NewRepositories(db *pgxpool.Pool) Repositories {
 
 func (r Repositories) visitWriter() visit.Writer {
 	return visit.NewWriter(visit.WriterDeps{
-		Staff:    r.staffRefs,
-		Patients: patient.VisitFinder(r.patients),
-		Infos:    r.visitInfos,
-		Masters:  r.visitMasters,
+		Staff:        r.staffRefs,
+		Patients:     r.patients,
+		Infos:        r.visitInfos,
+		ServiceCodes: r.serviceCodes,
+		Categories:   r.visitCategories,
 	}, r.ids)
 }
 
@@ -129,6 +131,6 @@ func NewSyncer(r Repositories, accounts *gcal.Accounts, interval time.Duration, 
 	return calendarsync.NewSyncer(calendarsync.SyncerDeps{
 		Syncs: r.calendarSyncs, Calendars: r.calendars, Staff: r.staffRefs, Locks: r.facilities, Exports: r.exports,
 		Sources:   accounts.Source,
-		Schedules: r.schedules, Recurring: r.recurring, Types: r.scheduleTypes, Patients: r.patients, ServiceCodes: r.visitMasters, Visits: r.visitWriter(),
+		Schedules: r.schedules, Recurring: r.recurring, Types: r.scheduleTypes, Patients: r.patients, ServiceCodes: r.serviceCodes, Visits: r.visitWriter(),
 	}, r.tx, r.ids, interval, log)
 }

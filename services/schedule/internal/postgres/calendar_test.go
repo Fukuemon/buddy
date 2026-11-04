@@ -13,7 +13,6 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
@@ -187,15 +186,15 @@ func TestCalendarImportInOneTransaction(t *testing.T) {
 		t.Fatal(err)
 	}
 	patients := NewPatientRepository(testDB)
-	masters := NewVisitMasterRepository(testDB)
+	masters := NewServiceCodeRepository(testDB)
 	staffRefs := NewStaffRefRepository(testDB)
 	schedules := NewScheduleRepository(testDB)
 	recurring := NewRecurringScheduleRepository(testDB)
 	ids := ulid.Generator{}
 	visits := visit.NewWriter(visit.WriterDeps{
 		Staff:    staffRefs,
-		Patients: patient.VisitFinder(patients),
-		Infos:    NewVisitInfoRepository(testDB), Masters: masters,
+		Patients: patients,
+		Infos:    NewVisitInfoRepository(testDB), ServiceCodes: masters, Categories: NewVisitCategoryRepository(testDB),
 	}, ids)
 	importCalendar := calendarimport.NewImport(calendars, sameAccount{gcal.NewReader(gcaltest.Start(t, srv))}, staffRefs, NewFacilityRepository(testDB), patients, recurring, masters,
 		NewScheduleTypeRepository(testDB), recurring, schedules, visits, NewTransactor(testDB), ids, principal.RequireStaffManage)

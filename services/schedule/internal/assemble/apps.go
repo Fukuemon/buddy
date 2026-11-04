@@ -18,6 +18,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/servicecode"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
@@ -63,10 +64,11 @@ func newApps(r Repositories, accounts *gcal.Accounts, cfg config.API) httpapi.Ap
 				return p.Staff.ID, ok
 			},
 			r.tx, r.ids, principal.RequireStaffManage),
-		Patients:     patientApp(r.facilities, r.staffRefs, r.visitMasters, r.patients, r.patientSchedules, r.facilities, r.tx, r.ids, principal.RequireStaffManage),
-		VisitMasters: visitMasterApp(r.visitMasters),
-		Schedules:    scheduleApp(r.facilities, r.staffRefs, r.facilities, visitInfos, r.schedules, r.recurring, r.scheduleTypes, outbox, r.tx, r.ids),
-		Calendars: calendarApp(r.calendars, calendarAccounts(accounts), r.staffRefs, r.facilities, r.patients, r.visitMasters, r.scheduleTypes,
+		Patients:        patientApp(r.facilities, r.staffRefs, r.serviceCodes, r.patients, r.patientSchedules, r.facilities, r.tx, r.ids, principal.RequireStaffManage),
+		ServiceCodes:    httpapi.ServiceCodeApp{List: servicecode.NewList(r.serviceCodes).Do},
+		VisitCategories: httpapi.VisitCategoryApp{List: visit.NewListCategories(r.visitCategories).Do},
+		Schedules:       scheduleApp(r.facilities, r.staffRefs, r.facilities, visitInfos, r.schedules, r.recurring, r.scheduleTypes, outbox, r.tx, r.ids),
+		Calendars: calendarApp(r.calendars, calendarAccounts(accounts), r.staffRefs, r.facilities, r.patients, r.serviceCodes, r.scheduleTypes,
 			r.schedules, r.recurring, r.recurring, visitInfos, r.exports, r.tx, r.ids, principal.RequireStaffManage),
 		Auth: access.NewService(access.Deps{
 			Facilities: r.facilities, Departments: r.departments, Teams: r.teams, Positions: r.positions,
@@ -119,14 +121,6 @@ func organizationApp(
 		CreatePosition:   organization.NewCreatePosition(facilities, policies, positions, tx, ids, guard).Do,
 		GetPolicy:        organization.NewGetPolicy(policies).Do,
 		ListPolicies:     organization.NewListPolicies(policies).Do,
-	}
-}
-
-// visitMasterApp は、visit のマスタの操作の型を作り、VisitMasterApp に入れる。
-func visitMasterApp(masters visit.MasterRepository) httpapi.VisitMasterApp {
-	return httpapi.VisitMasterApp{
-		ListServiceCodes: visit.NewListServiceCodes(masters).Do,
-		ListCategories:   visit.NewListCategories(masters).Do,
 	}
 }
 

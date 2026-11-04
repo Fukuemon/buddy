@@ -42,7 +42,7 @@ func (p Update) Do(ctx context.Context, id string, in UpdateInput) (Detail, erro
 	if err := p.guard(ctx); err != nil {
 		return Detail{}, err
 	}
-	if _, err := p.serviceCodes.GetServiceCode(ctx, in.ServiceCodeID); err != nil {
+	if _, err := p.serviceCodes.Get(ctx, in.ServiceCodeID); err != nil {
 		return Detail{}, apperr.Reference("サービスコード", in.ServiceCodeID, err)
 	}
 	var updated Detail

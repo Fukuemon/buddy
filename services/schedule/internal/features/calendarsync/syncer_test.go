@@ -20,8 +20,8 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/servicecode"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
@@ -113,7 +113,7 @@ func newSyncEnv(t *testing.T) syncEnv {
 	t.Helper()
 	srv := &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{googleCalID: {}, otherGoogleCalID: {}}}
 	s := inmem.Seeded()
-	s.Codes[codeI2] = visit.ServiceCode{ID: codeI2, Code: "訪看I2"}
+	s.Codes[codeI2] = servicecode.ServiceCode{ID: codeI2, Code: "訪看I2"}
 	for id, name := range map[string]string{"PA": "利用者A", "PB1": "利用者B", "PB2": "利用者 B"} {
 		s.Patients[id] = patient.Detail{Patient: patient.Patient{ID: id, FacilityID: inmem.FacilityID, Name: name}}
 	}

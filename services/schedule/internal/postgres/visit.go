@@ -17,12 +17,12 @@ func NewVisitInfoRepository(pool *pgxpool.Pool) *VisitInfoRepository {
 	return &VisitInfoRepository{conn{pool}}
 }
 
-// VisitMasterRepository は、visit.MasterRepository を実装する。
-type VisitMasterRepository struct{ conn }
+// VisitCategoryRepository は、visit.CategoryRepository を実装する。
+type VisitCategoryRepository struct{ conn }
 
-// NewVisitMasterRepository は VisitMasterRepository を作る。
-func NewVisitMasterRepository(pool *pgxpool.Pool) *VisitMasterRepository {
-	return &VisitMasterRepository{conn{pool}}
+// NewVisitCategoryRepository は VisitCategoryRepository を作る。
+func NewVisitCategoryRepository(pool *pgxpool.Pool) *VisitCategoryRepository {
+	return &VisitCategoryRepository{conn{pool}}
 }
 
 // Create は、訪問の情報と区分を続けて書く。途中で失敗したときに残さないよう、呼び出し側がトランザクションの中で呼ぶ。
@@ -54,30 +54,8 @@ func (r *VisitInfoRepository) DeleteIfUnused(ctx context.Context, id string) err
 	return translate("delete visit info", r.q(ctx).DeleteUnusedVisitInfo(ctx, id))
 }
 
-// GetServiceCode は、ID が id のサービスコードを返す。無いときは apperr.ErrNotFound を返す。
-func (r *VisitMasterRepository) GetServiceCode(ctx context.Context, id string) (visit.ServiceCode, error) {
-	c, err := r.q(ctx).GetServiceCode(ctx, id)
-	if err != nil {
-		return visit.ServiceCode{}, translate("get service code", err)
-	}
-	return serviceCode(c), nil
-}
-
-// ListServiceCodes は、すべてのサービスコードをコード、ID の順に返す。
-func (r *VisitMasterRepository) ListServiceCodes(ctx context.Context) ([]visit.ServiceCode, error) {
-	rows, err := r.q(ctx).ListServiceCodes(ctx)
-	if err != nil {
-		return nil, translate("list service codes", err)
-	}
-	out := make([]visit.ServiceCode, len(rows))
-	for i, c := range rows {
-		out[i] = serviceCode(c)
-	}
-	return out, nil
-}
-
-// ListCategories は、すべての訪問の区分を名前、ID の順に返す。
-func (r *VisitMasterRepository) ListCategories(ctx context.Context) ([]visit.Category, error) {
+// List は、すべての訪問の区分を名前、ID の順に返す。
+func (r *VisitCategoryRepository) List(ctx context.Context) ([]visit.Category, error) {
 	rows, err := r.q(ctx).ListVisitCategories(ctx)
 	if err != nil {
 		return nil, translate("list visit categories", err)
@@ -85,8 +63,8 @@ func (r *VisitMasterRepository) ListCategories(ctx context.Context) ([]visit.Cat
 	return categories(rows), nil
 }
 
-// ListCategoriesByIDs は、ids のうち見つかった区分だけを名前、ID の順に返す。ids が空のときは問い合わせずに空のスライスを返す。
-func (r *VisitMasterRepository) ListCategoriesByIDs(ctx context.Context, ids []string) ([]visit.Category, error) {
+// ListByIDs は、ids のうち見つかった区分だけを名前、ID の順に返す。ids が空のときは問い合わせずに空のスライスを返す。
+func (r *VisitCategoryRepository) ListByIDs(ctx context.Context, ids []string) ([]visit.Category, error) {
 	if len(ids) == 0 {
 		return []visit.Category{}, nil
 	}
@@ -95,13 +73,6 @@ func (r *VisitMasterRepository) ListCategoriesByIDs(ctx context.Context, ids []s
 		return nil, translate("list visit categories by ids", err)
 	}
 	return categories(rows), nil
-}
-
-func serviceCode(c sqlcgen.ServiceCode) visit.ServiceCode {
-	return visit.ServiceCode{
-		ID: c.ID, Code: c.Code,
-		StartMinutes: int(c.ServiceTimeRangeStart), EndMinutes: int(c.ServiceTimeRangeEnd),
-	}
 }
 
 func categories(rows []sqlcgen.VisitCategory) []visit.Category {

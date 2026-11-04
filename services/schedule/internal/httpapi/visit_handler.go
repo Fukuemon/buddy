@@ -7,24 +7,12 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi/openapi"
 )
 
-func toServiceCode(s visit.ServiceCode) openapi.ServiceCode {
-	return openapi.ServiceCode{Id: s.ID, Code: s.Code, ServiceTimeRangeStart: s.StartMinutes, ServiceTimeRangeEnd: s.EndMinutes}
-}
-
 func toVisitCategory(c visit.Category) openapi.VisitCategory {
 	return openapi.VisitCategory{Id: c.ID, Name: c.Name}
 }
 
-func (s server) ListServiceCodes(ctx context.Context, _ openapi.ListServiceCodesRequestObject) (openapi.ListServiceCodesResponseObject, error) {
-	cs, err := s.u.VisitMasters.ListServiceCodes(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return openapi.ListServiceCodes200JSONResponse(mapSlice(cs, toServiceCode)), nil
-}
-
 func (s server) ListVisitCategories(ctx context.Context, _ openapi.ListVisitCategoriesRequestObject) (openapi.ListVisitCategoriesResponseObject, error) {
-	cs, err := s.u.VisitMasters.ListCategories(ctx)
+	cs, err := s.u.VisitCategories.List(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -84,7 +84,7 @@ func planEvents(ctx context.Context, calendars Calendars, patients calendar.Pati
 	for i, p := range pats {
 		in.patients[i] = PatientRef{ID: p.ID, Name: p.Name, AssignedStaffName: p.AssignedStaffName}
 	}
-	if in.serviceCodes, err = serviceCodes.ListServiceCodes(ctx); err != nil {
+	if in.serviceCodes, err = serviceCodes.List(ctx); err != nil {
 		return plan{}, nil, err
 	}
 	return newPlan(in), in.patients, nil

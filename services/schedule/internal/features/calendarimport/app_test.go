@@ -14,6 +14,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/servicecode"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
@@ -97,7 +98,7 @@ type env struct {
 func newEnv(t *testing.T, srv *gcaltest.Server) env {
 	t.Helper()
 	s := inmem.Seeded()
-	s.Codes[codeI2] = visit.ServiceCode{ID: codeI2, Code: "訪看I2"}
+	s.Codes[codeI2] = servicecode.ServiceCode{ID: codeI2, Code: "訪看I2"}
 	for id, name := range map[string]string{"PA": "利用者A", "PB1": "利用者B", "PB2": "利用者 B"} {
 		s.Patients[id] = patient.Detail{Patient: patient.Patient{ID: id, FacilityID: inmem.FacilityID, Name: name}}
 	}
@@ -135,12 +136,12 @@ func newApp(e env, acc calendar.Accounts, locks calendar.FacilityLock) *app {
 	ids := &inmem.SeqIDs{}
 	return build(deps{
 		Calendars: inmem.Calendars{Store: s}, Accounts: acc,
-		Staff: inmem.StaffRefs{Store: s}, Locks: locks, Patients: inmem.Patients{Store: s}, ServiceCodes: inmem.VisitMasters{Store: s},
+		Staff: inmem.StaffRefs{Store: s}, Locks: locks, Patients: inmem.Patients{Store: s}, ServiceCodes: inmem.ServiceCodes{Store: s},
 		Types: inmem.ScheduleTypes{Store: s}, Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, RecurringSchedules: inmem.RecurringSchedules{Store: s},
 		Visits: visit.NewWriter(visit.WriterDeps{
 			Staff:    inmem.StaffRefs{Store: s},
-			Patients: patient.VisitFinder(inmem.Patients{Store: s}),
-			Infos:    inmem.VisitInfos{Store: s}, Masters: inmem.VisitMasters{Store: s},
+			Patients: inmem.Patients{Store: s},
+			Infos:    inmem.VisitInfos{Store: s}, ServiceCodes: inmem.ServiceCodes{Store: s}, Categories: inmem.VisitCategories{Store: s},
 		}, ids),
 	}, &inmem.Tx{}, ids, principal.RequireStaffManage)
 }

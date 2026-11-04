@@ -5,6 +5,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/servicecode"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
@@ -28,7 +29,8 @@ var (
 	_ schedule.FacilityLock             = (*FacilityRepository)(nil)
 	_ calendar.FacilityLock             = (*FacilityRepository)(nil)
 	_ visit.InfoRepository              = (*VisitInfoRepository)(nil)
-	_ visit.MasterRepository            = (*VisitMasterRepository)(nil)
+	_ visit.CategoryRepository          = (*VisitCategoryRepository)(nil)
+	_ servicecode.Repository            = (*ServiceCodeRepository)(nil)
 	_ schedule.Repository               = (*ScheduleRepository)(nil)
 	_ schedule.RecurringRepository      = (*RecurringScheduleRepository)(nil)
 	_ schedule.TypeRepository           = (*ScheduleTypeRepository)(nil)

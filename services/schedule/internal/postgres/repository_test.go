@@ -599,7 +599,7 @@ func TestVisitInfoCreate(t *testing.T) {
 	if len(cats[info.ID]) != 2 {
 		t.Errorf("categories = %+v", cats)
 	}
-	found, err := NewVisitMasterRepository(testDB).ListCategoriesByIDs(ctx, []string{seedNight, unknownID})
+	found, err := NewVisitCategoryRepository(testDB).ListByIDs(ctx, []string{seedNight, unknownID})
 	if err != nil {
 		t.Fatal(err)
 	}
