@@ -400,7 +400,7 @@ func TestExportUpdatesImportedEvent(t *testing.T) {
 	// 取り込みで書いた対応と同じ形にし、作った待ちは片付ける
 	clear(e.store.Exports)
 	one := 1
-	e.store.Links["L"] = calendar.Link{ID: "L", FacilityID: inmem.FacilityID, ExternalCalendarID: calID, ExternalEventID: "imported", ETag: `"imported"`, SyncedVersion: &one, ScheduleID: &d.ID}
+	e.store.Links["L"] = calendar.EventLink{ID: "L", FacilityID: inmem.FacilityID, ExternalCalendarID: calID, ExternalEventID: "imported", ETag: `"imported"`, SyncedVersion: &one, ScheduleID: &d.ID}
 
 	e.update(t, d.ID, "会議（変更）", inmem.StaffID)
 	e.run(t)
@@ -644,8 +644,8 @@ func TestExportRecurringKeepsImportedExceptions(t *testing.T) {
 	e.srv.Calendars[googleCalID] = [][]*calendarv3.Event{{parent,
 		gexception("weekly_20261109", "weekly", "定例", "2026-11-09T14:00:00+09:00", "2026-11-09T15:00:00+09:00", "2026-11-09T09:00:00+09:00")}}
 	parentEventID, sid := "weekly", replacementID
-	e.store.Links["LP"] = calendar.Link{ID: "LP", FacilityID: inmem.FacilityID, ExternalCalendarID: calID, ExternalEventID: "weekly", ETag: `"weekly"`, RecurringScheduleID: &rid}
-	e.store.Links["LX"] = calendar.Link{ID: "LX", FacilityID: inmem.FacilityID, ExternalCalendarID: calID, ExternalEventID: "weekly_20261109", RecurringEventID: &parentEventID, ETag: `"weekly_20261109"`, ScheduleID: &sid}
+	e.store.Links["LP"] = calendar.EventLink{ID: "LP", FacilityID: inmem.FacilityID, ExternalCalendarID: calID, ExternalEventID: "weekly", ETag: `"weekly"`, RecurringScheduleID: &rid}
+	e.store.Links["LX"] = calendar.EventLink{ID: "LX", FacilityID: inmem.FacilityID, ExternalCalendarID: calID, ExternalEventID: "weekly_20261109", RecurringEventID: &parentEventID, ETag: `"weekly_20261109"`, ScheduleID: &sid}
 	if err := (inmem.Exports{Store: e.store}).Enqueue(t.Context(), "X1", calendar.Target{FacilityID: inmem.FacilityID, RecurringScheduleID: rsID}); err != nil {
 		t.Fatal(err)
 	}

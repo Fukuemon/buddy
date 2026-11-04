@@ -36,8 +36,8 @@ type ExportCalendars interface {
 	// ActiveByStaff は、職員 staffID に結び付けた外していないカレンダーを返す。無いときは apperr.ErrNotFound を返す。
 	ActiveByStaff(ctx context.Context, staffID string) (ExternalCalendar, error)
 	// LinkBySchedule は、単発の予定 scheduleID の予定の対応を返す。無いときは apperr.ErrNotFound を返す。
-	LinkBySchedule(ctx context.Context, scheduleID string) (Link, error)
+	LinkBySchedule(ctx context.Context, scheduleID string) (EventLink, error)
 	// LinkByRecurringSchedule は、繰り返しの予定 recurringScheduleID の予定の対応を返す。無いときは apperr.ErrNotFound を返す。
-	LinkByRecurringSchedule(ctx context.Context, recurringScheduleID string) (Link, error)
+	LinkByRecurringSchedule(ctx context.Context, recurringScheduleID string) (EventLink, error)
 	Get(ctx context.Context, id string) (ExternalCalendar, error)
 }

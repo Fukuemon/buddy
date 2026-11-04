@@ -42,7 +42,7 @@ func retire(t *testing.T, s *inmem.Store) {
 	}
 }
 
-func skipReasons(p calendar.Preview) map[calendar.SkipReason]int {
+func skipReasons(p calendar.ImportPreview) map[calendar.SkipReason]int {
 	out := map[calendar.SkipReason]int{}
 	for _, s := range p.SkippedItems {
 		out[s.Reason]++

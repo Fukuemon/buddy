@@ -52,8 +52,8 @@ type ImportRun struct {
 	FinishedAt         *time.Time
 }
 
-// Link は、取り込んだ外部の予定と、buddy の単発か繰り返しの予定の対応である。ScheduleID と RecurringScheduleID のどちらか 1 つを持つ。
-type Link struct {
+// EventLink は、取り込んだ外部の予定と、buddy の単発か繰り返しの予定の対応である。ScheduleID と RecurringScheduleID のどちらか 1 つを持つ。
+type EventLink struct {
 	ID                 string
 	FacilityID         string
 	ExternalCalendarID string

@@ -86,7 +86,7 @@ func TestCalendarRepository(t *testing.T) {
 		t.Fatalf("ListByFacility = %+v", list)
 	}
 
-	link := calendar.Link{
+	link := calendar.EventLink{
 		ID: linkID, FacilityID: seedFacility, ExternalCalendarID: calID, ExternalEventID: "ev1",
 		ETag: `"1"`, RecurringScheduleID: ptr(seedRecurring),
 	}
@@ -216,7 +216,7 @@ func TestCalendarImportInOneTransaction(t *testing.T) {
 	if err != nil || len(links) != 5 {
 		t.Fatalf("ListLinks = %d 件, %v", len(links), err)
 	}
-	byEvent := map[string]calendar.Link{}
+	byEvent := map[string]calendar.EventLink{}
 	for _, l := range links {
 		byEvent[l.ExternalEventID] = l
 	}

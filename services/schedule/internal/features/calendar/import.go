@@ -260,7 +260,7 @@ func (u *App) slot(ctx context.Context, c ExternalCalendar, e entry, types map[s
 
 func (u *App) link(ctx context.Context, c ExternalCalendar, e entry, scheduleID, recurringScheduleID *string) error {
 	synced := createdVersion
-	l := Link{
+	l := EventLink{
 		ID: u.ids.NewID(), FacilityID: c.FacilityID, ExternalCalendarID: c.ID, ExternalEventID: e.event.ID,
 		ETag: e.event.ETag, SyncedVersion: &synced, ScheduleID: scheduleID, RecurringScheduleID: recurringScheduleID,
 	}

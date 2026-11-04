@@ -23,7 +23,7 @@ type fakeCalendars struct {
 	err           error
 	lastRange     calendar.Range
 	lastDecisions []calendar.Decision
-	preview       calendar.Preview
+	preview       calendar.ImportPreview
 	lastFacility  string
 }
 
@@ -47,7 +47,7 @@ func (f *fakeCalendars) Link(_ context.Context, facilityID, staffID, calendarID 
 
 func (f *fakeCalendars) Unlink(context.Context, string) error { return f.err }
 
-func (f *fakeCalendars) Preview(_ context.Context, _ string, rng calendar.Range) (calendar.Preview, error) {
+func (f *fakeCalendars) Preview(_ context.Context, _ string, rng calendar.Range) (calendar.ImportPreview, error) {
 	f.lastRange = rng
 	p := f.preview
 	p.Range = rng
@@ -158,7 +158,7 @@ func TestCalendarAccountOfFacility(t *testing.T) {
 func TestPreviewCalendarImport(t *testing.T) {
 	d := civil.Date{Year: 2026, Month: 11, Day: 3}
 	day := 2
-	f := &fakeCalendars{preview: calendar.Preview{
+	f := &fakeCalendars{preview: calendar.ImportPreview{
 		Counts: calendar.Counts{Import: 1, ImportVisit: 1, NeedsReview: 1, Skipped: 1},
 		ReviewItems: []calendar.ReviewItem{{
 			ExternalEventID: "weekly", Date: d, StartTime: civil.Time{Hour: 10}, EndTime: civil.Time{Hour: 10, Minute: 30},

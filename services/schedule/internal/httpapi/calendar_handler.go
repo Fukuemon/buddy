@@ -37,7 +37,7 @@ func toExternalCalendar(c calendar.ExternalCalendar) openapi.ExternalCalendar {
 	return out
 }
 
-func toImportPreview(p calendar.Preview) openapi.ImportPreview {
+func toImportPreview(p calendar.ImportPreview) openapi.ImportPreview {
 	c := p.Counts
 	return openapi.ImportPreview{
 		RangeStart: p.Range.Start.String(),

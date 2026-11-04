@@ -131,8 +131,8 @@ type Counts struct {
 	AlreadyImported   int
 }
 
-// Preview は、取り込みのプレビューである。
-type Preview struct {
+// ImportPreview は、取り込みのプレビューである。
+type ImportPreview struct {
 	Range        Range
 	Counts       Counts
 	ReviewItems  []ReviewItem
@@ -202,7 +202,7 @@ type planInput struct {
 	// instances は、回ごとにする繰り返しの親の予定の ID ごとの、期間の回である。
 	instances map[string][]Event
 	// links は、前の取り込みの予定の対応を、外部の予定の ID で引く。
-	links map[string]Link
+	links map[string]EventLink
 	// linkedRecurring は、前の取り込みで繰り返しのまま取り込んだ予定を、親の予定の ID で引く。
 	linkedRecurring map[string]schedule.RecurringDetail
 	patients        []PatientRef
@@ -239,7 +239,7 @@ func classifyParent(ev Event) (parentMode, Candidate, *Recurrence) {
 // modeOf は、親の予定の取り込み方を、前の取り込みの予定の対応に合わせて決める。
 // 親に対応が無く、親の回か例外の回に対応があれば、前の取り込みで親を繰り返しにしていないので、回ごとにする。
 // 規則に写せる形に変わっていても規則ごと作ると、前に取り込んだ回と重なるためである。
-func modeOf(ev Event, links map[string]Link) (parentMode, Candidate, *Recurrence) {
+func modeOf(ev Event, links map[string]EventLink) (parentMode, Candidate, *Recurrence) {
 	mode, c, rec := classifyParent(ev)
 	if mode != parentRule {
 		return mode, c, rec
@@ -253,7 +253,7 @@ func modeOf(ev Event, links map[string]Link) (parentMode, Candidate, *Recurrence
 }
 
 // parentsToExpand は、events のうち、回ごとにする繰り返しの親の予定の ID を返す。前の取り込みで結び付けた親は除く。
-func parentsToExpand(events []Event, links map[string]Link) []string {
+func parentsToExpand(events []Event, links map[string]EventLink) []string {
 	var ids []string
 	for _, ev := range events {
 		if len(ev.Recurrence) == 0 || ev.Status == StatusCancelled {

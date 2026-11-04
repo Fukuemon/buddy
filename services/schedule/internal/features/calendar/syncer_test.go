@@ -77,7 +77,7 @@ func (e syncEnv) schedule(t *testing.T, id string) schedule.Detail {
 	return d
 }
 
-func (e syncEnv) link(t *testing.T, scheduleID string) calendar.Link {
+func (e syncEnv) link(t *testing.T, scheduleID string) calendar.EventLink {
 	t.Helper()
 	l, err := inmem.Calendars{Store: e.store}.LinkBySchedule(t.Context(), scheduleID)
 	if err != nil {

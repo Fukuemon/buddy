@@ -48,7 +48,7 @@ func (u *App) plan(ctx context.Context, src EventSource, c ExternalCalendar, rng
 		return plan{}, nil, err
 	}
 	in := planInput{
-		rng: rng, events: events, links: make(map[string]Link, len(links)), instances: map[string][]Event{},
+		rng: rng, events: events, links: make(map[string]EventLink, len(links)), instances: map[string][]Event{},
 		linkedRecurring: map[string]schedule.RecurringDetail{}, staffBlocked: blocked, staffID: c.StaffID,
 	}
 	for _, l := range links {

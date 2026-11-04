@@ -124,7 +124,7 @@ func (u *App) AcceptExport(ctx context.Context, id string) (Export, error) {
 
 // externalEvent は、予定の対応 l の外部の予定を読む。予定が見つからず、カレンダーは読めるときは、予定が消されたとみなし、
 // 取り消した予定を返す。Google は、消した予定に 404 を返すことがあるためである。
-func externalEvent(ctx context.Context, src EventSource, c ExternalCalendar, l Link) (Event, error) {
+func externalEvent(ctx context.Context, src EventSource, c ExternalCalendar, l EventLink) (Event, error) {
 	ev, err := src.Event(ctx, c.CalendarID, l.ExternalEventID)
 	if !errors.Is(err, ErrEventNotFound) {
 		return ev, err
