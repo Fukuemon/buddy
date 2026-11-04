@@ -54,8 +54,8 @@ status: stable
 | 予定（照合の） | 予定の CSV の行か、Google カレンダーの予定 | `record.InputSchedule`、`check.ScheduleSource` |
 | 対のキー | 訪問日、利用者名、主訪問者 | `record.Key` |
 | 区分 | 照合の結果の分類。不整合、予定のみ、実績のみ、整合 | `judge.Category`（`mismatch`、`schedule_only`、`visit_only`、`match`）、web `RECEIPT_CATEGORIES` |
-| サービス内容 | 照合で比べるサービスの表記（`訪看I２` など） | `Record.Service`、`servicerule.Lookup` |
-| 許容範囲 | サービス内容ごとに許す分の範囲。両端を含む | `servicerule.Range` |
+| サービス内容 | 照合で比べるサービスの表記（`訪看I２` など） | `Record.Service`、`servicecode.Lookup` |
+| 許容範囲 | サービス内容ごとに許す分の範囲。両端を含む | `servicecode.Range` |
 | 加算 | 実績の加算①から加算⑤ | `Record.Additions` |
 | 注意の印 | 「 ※」。整合の行で値は違うが両方が許容範囲に入る値と、不整合の行で規則に合わない加算に付ける | `Checks.DurationEqual`、`EndEqual`、`Additions` |
 | 対象の月 | Google カレンダーから予定を取る月 | `source.Request.Month`、API `month` |

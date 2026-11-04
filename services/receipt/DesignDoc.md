@@ -44,9 +44,9 @@ verified_commit: dcf8e78
 | --- | --- | --- |
 | 末端 | `record` | 正規化した後の訪問の 1 行と、入力の行のエラーと、照合に使わなかった予定の警告 |
 | 末端 | `civil` | 時差を持たない日付と、1 日の中の時刻 |
-| 末端 | `servicerule` | サービス内容ごとの、訪問の時間の許容範囲 |
+| 末端 | `servicerule` | 照合だけが使うサービス内容の規則（予定の終了時間の調整、予定と実績のサービス内容の対応） |
 | 読み込み | `csvio` | UTF-8 か CP932 の入力の CSV を読み、要る列を持つ行にする |
-| 正規化 | `normalize` | CSV の行を、予定と実績で比べられる `record.Record` にする |
+| 正規化 | `normalize` | データソースが詰めた `record.Fields` を、予定と実績で比べられる `record.Record` にする |
 | 対の作成 | `match` | 予定と実績の行を、同じキーを持つ行どうしで対にする |
 | 判定 | `judge` | 対にした予定と実績が整合するかを判定し、4 つの区分に分ける |
 | つなぐ段 | `check` | 実績の CSV と予定のデータソースから、照合の結果を作る |
@@ -60,7 +60,9 @@ verified_commit: dcf8e78
   - レスポンスの形は `openapi.yaml` だけで決め、`httpapi` が詰め替える。
 - access token の検証は、共有の module の `packages/go/oidc` を使う
   - ADR-0007: [2 つの Go の API が共有するコードを、別の module にまとめる](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0007-go-shared-module.md)
-- タイトルの解釈と、利用者名とサービス内容の表記をそろえる処理は、予定の API と共有する `packages/go/gcaltitle` を使う
+- タイトルの解釈と利用者名の表記をそろえる処理は、予定の API と共有する `packages/go/gcaltitle` を使う
+- サービス内容の表記をそろえる処理と、サービス内容ごとの許容範囲の表は、予定の API と共有する `packages/go/servicecode` を使う
+  - ADR-0034: [サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0034-service-code-rules.md)
 - 組織ごとのサービスアカウントで Calendar API を呼ぶクライアントは、予定の API と共有する `packages/go/gcalauth` を使う
 
 ### 処理の流れ

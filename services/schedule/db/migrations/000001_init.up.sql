@@ -469,7 +469,7 @@ LEFT JOIN visit_info_details vid ON vid.id = rs.visit_info_id;
 
 -- 事業所に属さず、全ての環境で同じ値のマスタを入れる。シードを当てない本番でも予定を作れるようにする。
 -- サービスコードの表記は、API の値をそのまま比べる web（apps/web/src/api/types.ts の SERVICE_CODES）に合わせる。
--- 提供時間の範囲は、receipt-api の servicerule と照合の Design Doc に合わせる。
+-- 提供時間の範囲は、packages/go/servicecode の表に合わせる。postgres の TestServiceCodesMatchServicecode が一致を確認する。
 
 INSERT INTO schedule_types (id, code, name) VALUES
     ('01M3TC68E05E1N46YCCBT6ZQB2', 'normal', '通常'),

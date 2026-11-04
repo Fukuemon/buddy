@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/Fukuemon/buddy/packages/go/gcaltitle"
+	"github.com/Fukuemon/buddy/packages/go/servicecode"
 
 	"github.com/Fukuemon/buddy/services/receipt/internal/civil"
 	"github.com/Fukuemon/buddy/services/receipt/internal/record"
@@ -84,7 +85,7 @@ func toRecord(row record.Fields, input record.Input, readsAdditions bool) (recor
 		fail(record.ColumnStaff, record.ReasonEmptyValue, "空である")
 	}
 
-	rec.Service = gcaltitle.NormalizeService(row.Service)
+	rec.Service = servicecode.Normalize(row.Service)
 	if strings.TrimSpace(rec.Service) == "" {
 		fail(record.ColumnService, record.ReasonEmptyValue, "空である")
 	}

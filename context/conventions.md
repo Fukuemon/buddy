@@ -83,7 +83,7 @@ API の操作を呼ぶ関数とリポジトリのメソッドは、operationId �
   - 標準のライブラリの `time.Time.IsZero`、`os.FileInfo.IsDir`、`strings.HasPrefix` に合わせる。
   - 状態を変えてから結果を返す関数（`Limiter.Allow`）は、判定の関数ではないので対象の外である。
   - 標準のライブラリの型のメソッドと同じ意味のメソッドは、`Is` を付けず、標準のライブラリと同じ名前にする。
-    - `civil` の `Date.Before`、`Date.After`、`Time.Before` と、`calendar` と `servicerule` の `Range.Contains` が当たる。
+    - `civil` の `Date.Before`、`Date.After`、`Time.Before` と、`calendar` と `servicecode` の `Range.Contains` が当たる。
 - Go の真偽値の変数とフィールドは、状態の形容詞か過去分詞（`Ended`、`Pending`）か、三人称単数の動詞の句（`EndsNextDay`）にし、`Is` を付けない。
   - DB のカラムと API の項目と対になるフィールドは、その名前に合わせる（`IsOverTimeWork`、`NeedsTarget`）。
   - `ok` の慣用の名前は、この規則の対象の外である。
