@@ -11,7 +11,7 @@ info:
     - エラーは Error の形で返す。`code` は invalid_input、unauthenticated、forbidden、not_found、conflict、internal と、
       外部のカレンダーの操作の calendar_unreadable、calendar_unavailable、calendar_not_configured と、
       409 の原因を分ける calendar_taken、calendar_already_linked、staff_has_calendar、import_running、import_preview_changed、export_not_in_review、
-      export_not_acceptable、external_change_unappliable のいずれかである。
+      export_not_acceptable、external_change_unappliable、google_primary のいずれかである。
     - `/v1` は全て、Hydra が発行した access token（JWT）を `Authorization: Bearer` で求める。
       トークンがないか検証に失敗したときは 401 を、トークンの組織と職員の事業所が、パスの指す事業所と違うときは 403 を返す。
     - 読めないクエリ（例は `;` を含むもの）は 400 を返す。
@@ -1158,6 +1158,7 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/GooglePrimary" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/facilities/{facility_id}/schedules/recurring:
@@ -1187,6 +1188,7 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/GooglePrimary" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/schedules/{schedule_id}:
@@ -1231,11 +1233,17 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409":
-          description: キャンセル済み
+          description: キャンセル済み（conflict）か、事業所が Google カレンダーを予定の正本にしている（google_primary）
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
-              example: { code: conflict, message: "キャンセル済みの予定は変えられません" }
+              examples:
+                cancelled:
+                  summary: キャンセル済み
+                  value: { code: conflict, message: "キャンセル済みの予定は変えられません" }
+                googlePrimary:
+                  summary: 事業所が Google カレンダーを予定の正本にしている
+                  value: { code: google_primary, message: "この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/schedules/{schedule_id}/cancel:
@@ -1264,11 +1272,17 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409":
-          description: キャンセル済み
+          description: キャンセル済み（conflict）か、事業所が Google カレンダーを予定の正本にしている（google_primary）
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
-              example: { code: conflict, message: "この予定はすでにキャンセルされています" }
+              examples:
+                cancelled:
+                  summary: キャンセル済み
+                  value: { code: conflict, message: "この予定はすでにキャンセルされています" }
+                googlePrimary:
+                  summary: 事業所が Google カレンダーを予定の正本にしている
+                  value: { code: google_primary, message: "この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/schedules/recurring/{recurring_schedule_id}:
@@ -1323,11 +1337,17 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409":
-          description: その回はすでに置き換えた
+          description: その回はすでに置き換えた（conflict）か、事業所が Google カレンダーを予定の正本にしている（google_primary）
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
-              example: { code: conflict, message: "2026-10-12 の回はすでに置き換えられています" }
+              examples:
+                replaced:
+                  summary: その回はすでに置き換えた
+                  value: { code: conflict, message: "2026-10-12 の回はすでに置き換えられています" }
+                googlePrimary:
+                  summary: 事業所が Google カレンダーを予定の正本にしている
+                  value: { code: google_primary, message: "この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/facilities/{facility_id}/calendar_service_account:
@@ -1540,7 +1560,7 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409":
-          description: プレビューの後に確認が必要な予定か職員の休職が変わった（import_preview_changed）か、同じカレンダーの取り込みが進んでいる（import_running）。何も書いていない
+          description: プレビューの後に確認が必要な予定か職員の休職が変わった（import_preview_changed）か、同じカレンダーの取り込みが進んでいる（import_running）か、事業所が Google カレンダーを予定の正本にしている（google_primary）。何も書いていない
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
@@ -1551,6 +1571,9 @@ paths:
                 running:
                   summary: 同じカレンダーの取り込みが進んでいる
                   value: { code: import_running, message: "このカレンダーの取り込みが進んでいます。終わってから、もう一度プレビューしてください" }
+                googlePrimary:
+                  summary: 事業所が Google カレンダーを予定の正本にしている
+                  value: { code: google_primary, message: "この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください" }
         "422": { $ref: "#/components/responses/CalendarUnreadable" }
         "500": { $ref: "#/components/responses/InternalError" }
         "502": { $ref: "#/components/responses/CalendarUnavailable" }
@@ -1621,6 +1644,7 @@ paths:
       description: |
         確認が必要な書き出しの予定を、Google カレンダーの今の内容にそろえ、書き出しを終える。buddy で変えた日時とタイトルは消える。
         Google カレンダーで消された予定（予定が cancelled で返るときと、予定が 404 か 410 で、カレンダーは読めるとき）は、buddy でキャンセルする。
+        buddy を予定の正本にする事業所（buddy_primary）では、Google カレンダーの内容を当てず、export_not_acceptable で拒む（ADR-0035）。
         acceptable が true の書き出しだけを解ける。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
       parameters: [$ref: "#/components/parameters/CalendarExportID"]
       responses:
@@ -1647,6 +1671,9 @@ paths:
                 notAcceptable:
                   summary: Google カレンダーの内容で解けない
                   value: { code: export_not_acceptable, message: "この予定は、Google カレンダーの内容を buddy に当てられません。buddy の内容で書き直してください" }
+                buddyPrimary:
+                  summary: 事業所が buddy を予定の正本にしている
+                  value: { code: export_not_acceptable, message: "この事業所の予定は buddy で管理しているので、Google カレンダーの内容を buddy に当てられません。buddy の内容で書き直してください" }
                 unappliable:
                   summary: Google カレンダーの予定を読み替えられない
                   value: { code: external_change_unappliable, message: "Google カレンダーの予定を、buddy の予定に読み替えられません。buddy の内容で書き直してください" }
@@ -1787,6 +1814,12 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
           example: { code: calendar_unavailable, message: "外部のカレンダーから予定を読めませんでした" }
+    GooglePrimary:
+      description: 事業所が Google カレンダーを予定の正本にしている（google_primary）ので、予定を書けない（ADR-0035）
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { code: google_primary, message: "この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください" }
     CalendarNotConfigured:
       description: この事業所の Google のサービスアカウントが設定されていない。`code` は calendar_not_configured
       content:
@@ -1838,6 +1871,7 @@ components:
             - export_not_in_review
             - export_not_acceptable
             - external_change_unappliable
+            - google_primary
             - staff_has_assignments
             - patient_has_schedules
         message:
@@ -2428,7 +2462,7 @@ components:
             Google カレンダーの変更を buddy に当てずに止めた、failed は書く権限が無いか、再送の上限まで書けなかった
         error_code:
           type: string
-          enum: [precondition_failed, not_found, forbidden, rejected, unavailable, unappliable]
+          enum: [precondition_failed, not_found, forbidden, rejected, unavailable, unappliable, not_buddy_primary]
           nullable: true
           x-omitempty: false
           description: |
@@ -2436,7 +2470,8 @@ components:
             not_found は Google カレンダーで予定が消されたか、予定かカレンダーが見つからない（410、404、消された予定への 412）、
             forbidden はサービスアカウントがカレンダーに書けない、rejected は Google が予定の内容を受け付けなかった（400）、
             unavailable は Google に届かないか一時的なエラーが続いた、unappliable は Google カレンダーの変更を buddy の予定に読み替えられない
-            （終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更）
+            （終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更）。
+            not_buddy_primary は事業所が buddy を予定の正本にしていないので、書かずに保留にした（ADR-0035）
         attempts:
           type: integer
           minimum: 0

@@ -28,7 +28,7 @@ type CalendarExport struct {
 	LockedUntil *time.Time
 	// 外部の予定の etag を比べずに、buddy の内容で書き直すか
 	Overwrite bool
-	// 最後に書けなかった理由。外部の予定の題名とカレンダーの ID を含めない。unappliable は、外部の変更を buddy の予定に読み替えられなかったこと
+	// 最後に書けなかった理由。外部の予定の題名とカレンダーの ID を含めない。unappliable は、外部の変更を buddy の予定に読み替えられなかったこと。not_buddy_primary は、事業所が buddy を正本にしていないので書かなかったこと
 	ErrorCode  *string
 	FinishedAt *time.Time
 	CreatedAt  time.Time
@@ -108,6 +108,8 @@ type Facility struct {
 	TimeZone  string
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	// 予定の正本のモード。google_primary は Google カレンダーが正本で予定の API から予定を書けない。buddy_primary は buddy が正本で Google カレンダーへ書き出す
+	SourceMode string
 }
 
 // 外部のカレンダーからの取り込みの 1 回ごとの記録

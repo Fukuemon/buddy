@@ -44,6 +44,9 @@ describe('exportIssueReason', () => {
     expect(exportIssueReason({ ...conflict, error_code: 'unappliable' })).toBe(
       'Google カレンダーでの変更を、buddy の予定として取り込めません。',
     )
+    expect(exportIssueReason({ ...conflict, error_code: 'not_buddy_primary' })).toBe(
+      'この事業所の予定は Google カレンダーで管理しているので、書き出していません。',
+    )
     expect(exportIssueReason({ ...failed, error_code: 'forbidden' })).toBe(
       'Google カレンダーに書けません。',
     )

@@ -36,12 +36,15 @@ func NewChangeOccurrence(recurring RecurringRepository, staff StaffRefs, locks F
 // Do は、繰り返しの予定の originalDate の回を、in の内容の単発の予定に置き換える。
 // 元の回は繰り返しの予定から除外し、作った単発の予定を返す。繰り返しの予定の行は、トランザクションの最初にロックして読む。
 // 繰り返しの予定が見つからないときは apperr.ErrNotFound を、originalDate が回に当たらないときは入力のエラーを、
-// その回をすでに置き換えたときは apperr.ErrConflict を返す。
+// その回をすでに置き換えたときと、事業所が buddy を予定の正本にしていないとき（code は CodeGooglePrimary）は apperr.ErrConflict を返す。
 func (s ChangeOccurrence) Do(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in SlotInput) (Schedule, error) {
 	var created Schedule
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
 		rs, err := s.recurring.GetForUpdate(ctx, recurringScheduleID)
 		if err != nil {
+			return err
+		}
+		if err := lockWritable(ctx, s.locks, rs.FacilityID); err != nil {
 			return err
 		}
 		if err := RequireScheduleAccess(ctx, s.staff, rs.StaffID, true); err != nil {
@@ -53,7 +56,7 @@ func (s ChangeOccurrence) Do(ctx context.Context, recurringScheduleID string, or
 		if err := s.recurring.AddExclusion(ctx, rs.ID, originalDate); err != nil {
 			return apperr.AsConflict(err, "%s の回はすでに置き換えられています", originalDate)
 		}
-		created, err = createSchedule(ctx, s.schedules, s.ids, s.types, s.staff, s.locks, s.visits, s.now, s.exports, rs.FacilityID, in, &occurrence{recurringScheduleID: rs.ID, originalDate: originalDate, kept: assignedOf(rs.StaffID, rs.Visit)})
+		created, err = createSchedule(ctx, s.schedules, s.ids, s.types, s.staff, s.visits, s.now, s.exports, rs.FacilityID, in, &occurrence{recurringScheduleID: rs.ID, originalDate: originalDate, kept: assignedOf(rs.StaffID, rs.Visit)})
 		if err != nil {
 			return err
 		}

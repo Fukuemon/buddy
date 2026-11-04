@@ -67,7 +67,7 @@ docker compose up --build --wait
 | broker（ログインの画面） | `http://localhost:8100` | `BROKER_PORT` |
 | broker（内部の API） | `http://localhost:8101` | `BROKER_INTERNAL_PORT` |
 | hydra（public API と admin API） | `http://localhost:4444`、`http://localhost:4445` | `HYDRA_PUBLIC_PORT`、`HYDRA_ADMIN_PORT` |
-| idp（上流の IdP のフェイク。事業所ごとに `/office-a`、`/office-b`） | `http://localhost:9000` | `IDP_PORT` |
+| idp（上流の IdP のフェイク。事業所ごとに `/office-a`、`/office-b`、`/office-c`） | `http://localhost:9000` | `IDP_PORT` |
 | postgres | `localhost:15432` | `POSTGRES_PORT` |
 | valkey | `localhost:6379` | `VALKEY_PORT` |
 | calendarpit（Google Calendar API のフェイク） | `http://localhost:4173` | `CALENDARPIT_PORT` |
@@ -87,6 +87,10 @@ docker compose up --build --wait
   - 2 つ目の事業所（組織 `org-sample-b`）: `nagisa.ueno@example.com`（上野 渚、マネージャー）
     - ほかに、休職の職員の `takumi.ono@example.com`（小野 拓海）がいる
       - ログインすると、ログインの失敗の画面になる。
+  - 1 つ目と 2 つ目の事業所は、buddy を予定の正本にする（`buddy_primary`）。
+  - 3 つ目の事業所（組織 `org-sample-c`）: `aoi.okada@example.com`（岡田 葵、マネージャー）
+    - Google カレンダーを予定の正本にする（`google_primary`）。予定の API は、予定の作成、変更、キャンセルと取り込みを 409 で拒む。
+    - 職員にカレンダーは結び付けていない。
   - シードは、空の DB にだけ適用される。
     - シードを変えた後は、`docker compose down -v` で作り直す。
 - 照合の画面で、予定の取り方に「Google カレンダー」を、対象の月に `2026-11` を選ぶと、calendarpit の森 健太のカレンダーの予定で照合できる。

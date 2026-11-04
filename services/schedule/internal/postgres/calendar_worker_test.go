@@ -87,7 +87,8 @@ func newWorkerExporter(t *testing.T, pool *pgxpool.Pool, srv *gcaltest.Server, e
 	t.Helper()
 	writer := gcal.NewWriter(gcaltest.Start(t, srv))
 	return calendarexport.NewExporter(calendarexport.ExporterDeps{
-		Exports: exports, Calendars: calendars,
+		Facilities: NewFacilityRepository(pool),
+		Exports:    exports, Calendars: calendars,
 		Writers:   func(context.Context, string) (calendar.EventWriter, error) { return writer, nil },
 		Schedules: NewScheduleRepository(pool), Recurring: NewRecurringScheduleRepository(pool),
 	}, ulid.Generator{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
@@ -386,7 +387,8 @@ func TestCalendarExportFinishesAfterShutdown(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	exporter := calendarexport.NewExporter(calendarexport.ExporterDeps{
-		Exports: NewCalendarExportRepository(pool), Calendars: NewCalendarRepository(pool),
+		Facilities: NewFacilityRepository(pool),
+		Exports:    NewCalendarExportRepository(pool), Calendars: NewCalendarRepository(pool),
 		// 外部のカレンダーに書こうとしている間に、停止の合図を受ける
 		Writers: func(ctx context.Context, _ string) (calendar.EventWriter, error) {
 			cancel()

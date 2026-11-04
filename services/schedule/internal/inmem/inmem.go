@@ -129,6 +129,11 @@ func (s Facilities) Share(_ context.Context, facilityID string) error {
 	return err
 }
 
+// GetForShare は、事業所を返す。メモリ上の実装はロックを取らない。
+func (s Facilities) GetForShare(_ context.Context, facilityID string) (organization.Facility, error) {
+	return get(s.Facilities, facilityID)
+}
+
 // Departments は、organization.DepartmentRepository のメモリ上の実装である。
 type Departments struct{ *Store }
 

@@ -43,12 +43,12 @@ type occurrence struct {
 
 // createSchedule は、単発の予定を作り、書いた予定を返す。replaces は、繰り返しの予定の回を置き換えるときだけ指定する。
 // 回を置き換えるときは、繰り返しの予定に割り振った職員を、休職か退職でも同じ役割のまま保存できる（requireAssignable）。
-func createSchedule(ctx context.Context, schedules Repository, ids kernel.IDGenerator, types TypeRepository, staff StaffRefs, locks FacilityLock, visits VisitInfos, now func() time.Time, exports Exports, facilityID string, in SlotInput, replaces *occurrence) (Schedule, error) {
+func createSchedule(ctx context.Context, schedules Repository, ids kernel.IDGenerator, types TypeRepository, staff StaffRefs, visits VisitInfos, now func() time.Time, exports Exports, facilityID string, in SlotInput, replaces *occurrence) (Schedule, error) {
 	var kept assignment
 	if replaces != nil {
 		kept = replaces.kept
 	}
-	slot, typ, err := prepareSlot(ctx, types, staff, locks, visits, now, facilityID, in, kept)
+	slot, typ, err := prepareSlot(ctx, types, staff, visits, now, facilityID, in, kept)
 	if err != nil {
 		return Schedule{}, err
 	}
@@ -88,15 +88,12 @@ func recurringChanged(ctx context.Context, exports Exports, slot Slot, id string
 // prepareSlot は、予定の種類と職員と、職員の予定を編集する権限を確認し、訪問の情報があれば保存して、予定の属性を組み立てる。
 // 予定の職員、主訪問者、同行者のうち、kept の同じ役割の職員と違う職員が休職か退職なら、入力のエラーを返す。kept は、予定に既に割り振った職員と利用者である。
 // 利用の終了の利用者は、kept の利用者のまま、今日より前の予定でだけ保存できる（ADR-0021）。退職した職員と同じく、利用の終了の利用者に今日以降の予定を残さない。
-// 職員の状態を確認する前に、事業所の職員の休職と退職をトランザクションの終わりまで待たせ、確認した後に状態が変わらないようにする。
+// 呼び出し側は、先に lockWritable で事業所の行を共有のロックで読み、確認した後に職員の状態が変わらないようにしておく。
 // 訪問の情報を保存するので、トランザクションの中で呼ぶ。
-func prepareSlot(ctx context.Context, types TypeRepository, staff StaffRefs, locks FacilityLock, visits VisitInfos, now func() time.Time, facilityID string, in SlotInput, kept assignment) (Slot, Type, error) {
+func prepareSlot(ctx context.Context, types TypeRepository, staff StaffRefs, visits VisitInfos, now func() time.Time, facilityID string, in SlotInput, kept assignment) (Slot, Type, error) {
 	typ, err := types.Get(ctx, in.TypeID)
 	if err != nil {
 		return Slot{}, Type{}, apperr.Reference("予定の種類", in.TypeID, err)
-	}
-	if err := locks.Share(ctx, facilityID); err != nil {
-		return Slot{}, Type{}, err
 	}
 	today := civil.Today(now())
 	st, err := staff.Get(ctx, in.StaffID)
@@ -156,4 +153,15 @@ func prepareSlot(ctx context.Context, types TypeRepository, staff StaffRefs, loc
 		slot.VisitInfoID = &id
 	}
 	return slot, typ, nil
+}
+
+// lockWritable は、事業所 facilityID の行を共有のロックで読み、予定を書けるモードかを確認する（RequireWritable）。
+// ロックはトランザクションが終わるまで、職員の休職、復職、退職と、モードの切り替えを待たせる。
+// 予定を書く操作が、職員の状態を読む前に、トランザクションの中で呼ぶ。事業所が無いときは apperr.ErrNotFound を返す。
+func lockWritable(ctx context.Context, locks FacilityLock, facilityID string) error {
+	f, err := locks.GetForShare(ctx, facilityID)
+	if err != nil {
+		return err
+	}
+	return RequireWritable(f)
 }

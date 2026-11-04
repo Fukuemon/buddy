@@ -43,7 +43,10 @@ func (s CreateRecurring) Do(ctx context.Context, facilityID string, in SlotInput
 	}
 	var created RecurringSchedule
 	err = s.tx.WithinTx(ctx, func(ctx context.Context) error {
-		slot, typ, err := prepareSlot(ctx, s.types, s.staff, s.locks, s.visits, s.now, facilityID, in, assignment{})
+		if err := lockWritable(ctx, s.locks, facilityID); err != nil {
+			return err
+		}
+		slot, typ, err := prepareSlot(ctx, s.types, s.staff, s.visits, s.now, facilityID, in, assignment{})
 		if err != nil {
 			return err
 		}

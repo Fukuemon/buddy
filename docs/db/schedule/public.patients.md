@@ -102,6 +102,7 @@ erDiagram
   text time_zone
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  text source_mode
 }
 "public.users" {
   text id

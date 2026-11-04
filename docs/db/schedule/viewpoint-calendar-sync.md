@@ -2,12 +2,13 @@
 
 ## Description
 
-職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち
+職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち。書き出しは、予定の正本のモードが buddy_primary の事業所に限る
 
 ## Tables
 
 | Name                                                          | Columns | Comment                                                                         | Type       |
 | ------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------- | ---------- |
+| [public.facilities](public.facilities.md)                     | 7       | 訪問看護の事業所                                                                | BASE TABLE |
 | [public.users](public.users.md)                               | 15      | 職員                                                                            | BASE TABLE |
 | [public.recurring_schedules](public.recurring_schedules.md)   | 20      | 繰り返しの予定と、その規則                                                      | BASE TABLE |
 | [public.schedules](public.schedules.md)                       | 17      | 予定                                                                            | BASE TABLE |
@@ -22,7 +23,10 @@
 ```mermaid
 erDiagram
 
+"public.users" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+"public.recurring_schedules" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
 "public.recurring_schedules" }o--|| "public.users" : "FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id)"
+"public.schedules" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
 "public.schedules" }o--|| "public.users" : "FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id)"
 "public.schedules" }o--|| "public.recurring_schedules" : "FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id)"
 "public.external_calendars" }o--|| "public.users" : "FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id) ON DELETE CASCADE"
@@ -32,9 +36,19 @@ erDiagram
 "public.external_event_links" }o--|| "public.external_calendars" : "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
 "public.import_runs" }o--|| "public.users" : "FOREIGN KEY (facility_id, requested_by) REFERENCES users(facility_id, id)"
 "public.import_runs" }o--|| "public.external_calendars" : "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
+"public.calendar_exports" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
 "public.calendar_exports" }o--|| "public.recurring_schedules" : "FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id) ON DELETE CASCADE"
 "public.calendar_exports" }o--|| "public.schedules" : "FOREIGN KEY (facility_id, schedule_id) REFERENCES schedules(facility_id, id) ON DELETE CASCADE"
 
+"public.facilities" {
+  text id
+  varchar_255_ name
+  varchar_255_ org_id
+  text time_zone
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
+  text source_mode
+}
 "public.users" {
   text id
   text facility_id

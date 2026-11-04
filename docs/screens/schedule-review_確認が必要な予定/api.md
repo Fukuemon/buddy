@@ -40,7 +40,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 書き直しの失敗 | 「書き直せませんでした。時間をおいて、もう一度書き直してください。」 | `createCalendarExportRetry` のほかの失敗。API に届かないときを含む |
 | 合わせるの失敗 | 「この操作をする権限がありません。」 | `createCalendarExportAcceptance` が 403 |
 | 合わせるの失敗 | 「この予定は、すでに書き直しを始めたか、書き直し終えています。一覧を読み直してください。」 | `createCalendarExportAcceptance` が 409 `export_not_in_review` か 404 `not_found` |
-| 合わせるの失敗 | 「この予定は、Google カレンダーの内容に合わせられません。buddy の内容で書き直してください。」 | `createCalendarExportAcceptance` が 409 `export_not_acceptable` |
+| 合わせるの失敗 | 「この予定は、Google カレンダーの内容に合わせられません。buddy の内容で書き直してください。」 | `createCalendarExportAcceptance` が 409 `export_not_acceptable`。事業所が buddy を予定の正本にしているときも、この code で拒む |
 | 合わせるの失敗 | 「Google カレンダーの予定を、buddy の予定として取り込めません。終日の予定か、タイトルの利用者が見つからない予定です。buddy の内容で書き直すか、Google カレンダーで直すよう職員に頼んでください。」 | `createCalendarExportAcceptance` が 409 `external_change_unappliable` |
 | 合わせるの失敗 | 「Google カレンダーを読めません。カレンダーの共有が外れていないかを、職員に確認してください。」 | `createCalendarExportAcceptance` が 422 `calendar_unreadable` |
 | 合わせるの失敗 | 「この事業所では、まだ Google カレンダーを使う準備ができていません。事業所の管理者に、設定を頼んでください。」 | `createCalendarExportAcceptance` が 503 `calendar_not_configured` |

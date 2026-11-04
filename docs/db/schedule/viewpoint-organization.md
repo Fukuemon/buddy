@@ -2,13 +2,13 @@
 
 ## Description
 
-事業所と、その中の部署、チーム、役職、職員
+事業所と、その中の部署、チーム、役職、職員。事業所は予定の正本のモードを持つ
 
 ## Tables
 
 | Name                                        | Columns | Comment                                                | Type       |
 | ------------------------------------------- | ------- | ------------------------------------------------------ | ---------- |
-| [public.facilities](public.facilities.md)   | 6       | 訪問看護の事業所                                       | BASE TABLE |
+| [public.facilities](public.facilities.md)   | 7       | 訪問看護の事業所                                       | BASE TABLE |
 | [public.departments](public.departments.md) | 5       | 事業所の部署                                           | BASE TABLE |
 | [public.teams](public.teams.md)             | 6       | 事業所のチーム                                         | BASE TABLE |
 | [public.positions](public.positions.md)     | 5       | 事業所の役職。職員を登録するときに写す既定の権限を持つ | BASE TABLE |
@@ -34,6 +34,7 @@ erDiagram
   text time_zone
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  text source_mode
 }
 "public.departments" {
   text id

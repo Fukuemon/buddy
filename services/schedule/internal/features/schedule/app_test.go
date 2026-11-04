@@ -408,9 +408,9 @@ func (r lockOrder) Get(ctx context.Context, id string) (staff.Ref, error) {
 	return r.StaffRefs.Get(ctx, id)
 }
 
-func (r lockOrder) Share(ctx context.Context, facilityID string) error {
-	*r.calls = append(*r.calls, "Share")
-	return r.Facilities.Share(ctx, facilityID)
+func (r lockOrder) GetForShare(ctx context.Context, facilityID string) (organization.Facility, error) {
+	*r.calls = append(*r.calls, "GetForShare")
+	return r.Facilities.GetForShare(ctx, facilityID)
 }
 
 // 職員の状態を読む前に、事業所の職員の休職と退職を待たせるロックを取る。
@@ -422,8 +422,8 @@ func TestSchedulesShareFacilityBeforeReadingStaff(t *testing.T) {
 	if _, err := uc.Create(editorCtx(), facilityID, visitSlot(validVisit())); err != nil {
 		t.Fatal(err)
 	}
-	if len(calls) == 0 || calls[0] != "Share" || slices.Index(calls[1:], "Share") >= 0 {
-		t.Errorf("呼び出しの順 = %v, want Share を最初に 1 回", calls)
+	if len(calls) == 0 || calls[0] != "GetForShare" || slices.Index(calls[1:], "GetForShare") >= 0 {
+		t.Errorf("呼び出しの順 = %v, want GetForShare を最初に 1 回", calls)
 	}
 }
 
@@ -457,7 +457,7 @@ func build(d deps, tx tx.Transactor, ids kernel.IDGenerator) *app {
 		Create:           schedule.NewCreate(d.Facilities, d.Schedules, d.Types, d.Staff, d.Locks, d.Visits, d.Now, d.Exports, tx, ids).Do,
 		CreateRecurring:  schedule.NewCreateRecurring(d.Facilities, d.Types, d.Staff, d.Locks, d.Visits, d.Now, d.Recurring, d.Exports, tx, ids).Do,
 		ChangeOccurrence: schedule.NewChangeOccurrence(d.Recurring, d.Staff, d.Locks, d.Schedules, d.Types, d.Visits, d.Now, d.Exports, tx, ids).Do,
-		Cancel:           schedule.NewCancel(d.Schedules, d.Staff, d.Exports, tx, ids).Do,
+		Cancel:           schedule.NewCancel(d.Schedules, d.Staff, d.Locks, d.Exports, tx, ids).Do,
 		Update:           schedule.NewUpdate(d.Schedules, d.Staff, d.Locks, d.Types, d.Visits, d.Now, d.Exports, tx).Do,
 	}
 }

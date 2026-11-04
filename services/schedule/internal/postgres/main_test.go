@@ -242,7 +242,7 @@ func TestMigrateDownAndUp(t *testing.T) {
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)
 	}
-	if err := MigrateDown(cfg, 11); err != nil {
+	if err := MigrateDown(cfg, 12); err != nil {
 		t.Fatal(err)
 	}
 	pool, err := Open(ctx, cfg)
@@ -283,8 +283,8 @@ func TestMigrateReceiptCheckPolicy(t *testing.T) {
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)
 	}
-	// 後に続く職員の訪問するか（000010）と終了が翌日の予定（000011）のマイグレーションと合わせて戻す
-	if err := MigrateDown(cfg, 3); err != nil {
+	// 後に続く職員の訪問するか（000010）、終了が翌日の予定（000011）、事業所の正本のモード（000012）のマイグレーションと合わせて戻す
+	if err := MigrateDown(cfg, 4); err != nil {
 		t.Fatal(err)
 	}
 	pool, err := Open(ctx, cfg)
@@ -376,7 +376,7 @@ func TestMigrateReceiptCheckPolicy(t *testing.T) {
 	}
 
 	// 戻しても事務の役職は残り、照合の権限だけが消える。
-	if err := MigrateDown(cfg, 3); err != nil {
+	if err := MigrateDown(cfg, 4); err != nil {
 		t.Fatal(err)
 	}
 	if got, want := clerkPolicies(t, pool, facility), []string{"schedule.all.edit", "schedule.all.read"}; !slices.Equal(got, want) {
@@ -416,8 +416,8 @@ func TestMigrateTeamColor(t *testing.T) {
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)
 	}
-	// 後に続く照合の権限（000009）、職員の訪問するか（000010）、終了が翌日の予定（000011）のマイグレーションと合わせて戻す
-	if err := MigrateDown(cfg, 4); err != nil {
+	// 後に続く照合の権限（000009）、職員の訪問するか（000010）、終了が翌日の予定（000011）、事業所の正本のモード（000012）のマイグレーションと合わせて戻す
+	if err := MigrateDown(cfg, 5); err != nil {
 		t.Fatal(err)
 	}
 	pool, err := Open(ctx, cfg)
@@ -463,5 +463,45 @@ func TestMigrateTeamColor(t *testing.T) {
 	}
 	if !slices.Equal(got, want) {
 		t.Errorf("teams = %v, want %v", got, want)
+	}
+}
+
+// TestMigrateFacilitySourceMode は、正本のモードのマイグレーションが、今ある事業所を buddy_primary にし、
+// 後から足す事業所のデフォルトを google_primary にし、2 つの値のほかを拒むことを確認する（ADR-0035）。
+func TestMigrateFacilitySourceMode(t *testing.T) {
+	cfg := newDatabase(t, "migrate_facility_source_mode")
+	ctx := context.Background()
+	if err := MigrateUp(cfg); err != nil {
+		t.Fatal(err)
+	}
+	if err := MigrateDown(cfg, 1); err != nil {
+		t.Fatal(err)
+	}
+	pool, err := Open(ctx, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pool.Close()
+	const existing, added = "01M3TE00000000000000000011", "01M3TE00000000000000000012"
+	if _, err := pool.Exec(ctx, "INSERT INTO facilities (id, name) VALUES ($1, '今ある事業所')", existing); err != nil {
+		t.Fatal(err)
+	}
+	if err := MigrateUp(cfg); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, "INSERT INTO facilities (id, name) VALUES ($1, '足した事業所')", added); err != nil {
+		t.Fatal(err)
+	}
+	for id, want := range map[string]string{existing: "buddy_primary", added: "google_primary"} {
+		var got string
+		if err := pool.QueryRow(ctx, "SELECT source_mode FROM facilities WHERE id = $1", id).Scan(&got); err != nil {
+			t.Fatal(err)
+		}
+		if got != want {
+			t.Errorf("事業所 %s の source_mode = %s, want %s", id, got, want)
+		}
+	}
+	if _, err := pool.Exec(ctx, "UPDATE facilities SET source_mode = 'migrating' WHERE id = $1", added); err == nil {
+		t.Error("2 つの値のほかのモードを入れられた")
 	}
 }

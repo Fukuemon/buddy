@@ -1,4 +1,5 @@
 [
   { "org_id": "org-sample", "issuer": "http://localhost:9000/office-a", "client_id": "buddy-broker" },
-  { "org_id": "org-sample-b", "issuer": "http://localhost:9000/office-b", "client_id": "buddy-broker" }
+  { "org_id": "org-sample-b", "issuer": "http://localhost:9000/office-b", "client_id": "buddy-broker" },
+  { "org_id": "org-sample-c", "issuer": "http://localhost:9000/office-c", "client_id": "buddy-broker" }
 ]

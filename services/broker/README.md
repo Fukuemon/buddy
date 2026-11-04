@@ -66,7 +66,8 @@ Ory Hydra の login and consent app として動くサービス。
 - 上流の IdP の client secret が無いか、上流の IdP の設定に無い組織の client secret がある。
 
 2 つの例のファイルの値は、開発用のダミーである。  
-例のファイルの issuer は、compose の上流の IdP のフェイク（mock-oauth2-server）の 2 つの事業所（`/office-a`、`/office-b`）を、ローカルから届く `localhost:9000` で指す。  
+例のファイルの issuer は、compose の上流の IdP のフェイク（mock-oauth2-server）の 3 つの事業所を、ローカルから届く `localhost:9000` で指す。  
+事業所のパスは `/office-a`、`/office-b`、`/office-c` である。  
 compose のブローカーは、コンテナの間の名前 `idp` で指す `compose/broker/` のファイルを読む。
 
 ## Running

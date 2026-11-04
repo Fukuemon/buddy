@@ -122,7 +122,7 @@ func NewCalendarAccounts(ctx context.Context, cfg config.Calendar, r Repositorie
 // cmd/calendar-worker が、書き出しを有効にした設定（config.Calendar の ExportEnabled）のときだけ作って動かす。
 func NewExporter(r Repositories, accounts *gcal.Accounts, log *slog.Logger) *calendarexport.Exporter {
 	return calendarexport.NewExporter(calendarexport.ExporterDeps{
-		Exports: r.exports, Calendars: r.calendars, Writers: accounts.Writer, Schedules: r.schedules, Recurring: r.recurring,
+		Facilities: r.facilities, Exports: r.exports, Calendars: r.calendars, Writers: accounts.Writer, Schedules: r.schedules, Recurring: r.recurring,
 	}, r.ids, log)
 }
 

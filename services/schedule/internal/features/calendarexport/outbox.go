@@ -6,22 +6,25 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
 
 // Outbox は、schedule.Exports を実装し、予定の変更を書き出しの待ちに積む。
-// 積むのは、予定の職員が外していないカレンダーを結び付けているときと、予定の対応のカレンダーを外していないとき（職員が替わり、
-// 前のカレンダーの予定を消すとき）だけである。
+// 積むのは、事業所が buddy を予定の正本にしていて（buddy_primary）、予定の職員が外していないカレンダーを結び付けているときと、
+// 予定の対応のカレンダーを外していないとき（職員が替わり、前のカレンダーの予定を消すとき）だけである。
 type Outbox struct {
-	exports   ExportRepository
-	calendars ExportCalendars
-	ids       kernel.IDGenerator
+	facilities kernel.Finder[organization.Facility]
+	exports    ExportRepository
+	calendars  ExportCalendars
+	ids        kernel.IDGenerator
 }
 
-// NewOutbox は Outbox を作る。
-func NewOutbox(exports ExportRepository, calendars ExportCalendars, ids kernel.IDGenerator) *Outbox {
-	return &Outbox{exports: exports, calendars: calendars, ids: ids}
+// NewOutbox は Outbox を作る。facilities は、事業所の正本のモードを読む。
+func NewOutbox(facilities kernel.Finder[organization.Facility], exports ExportRepository, calendars ExportCalendars, ids kernel.IDGenerator) *Outbox {
+	return &Outbox{facilities: facilities, exports: exports, calendars: calendars, ids: ids}
 }
 
 // ScheduleChanged は、単発の予定 scheduleID の変更を積む。
@@ -39,6 +42,11 @@ func (o *Outbox) RecurringChanged(ctx context.Context, facilityID, staffID, recu
 }
 
 func (o *Outbox) enqueue(ctx context.Context, staffID string, t calendar.Target, linkOf func(context.Context) (calendar.EventLink, error)) error {
+	// google_primary の事業所は Google カレンダーが正本なので、buddy から書き出さない（ADR-0035）。
+	f, err := o.facilities.Get(ctx, t.FacilityID)
+	if err != nil || !f.IsBuddyPrimary() {
+		return err
+	}
 	ok, err := o.writable(ctx, staffID, linkOf)
 	if err != nil || !ok {
 		return err

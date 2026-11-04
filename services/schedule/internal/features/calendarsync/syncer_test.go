@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -135,17 +136,18 @@ func newSyncEnv(t *testing.T) syncEnv {
 		AcceptExport: calendarsync.NewAcceptExport(exports, schedules, calendars, oneAccount{source}, refs, facilities,
 			types, nil, nil, nil, tx, ids, principal.RequireStaffManage).Do,
 	}
-	outbox := calendarexport.NewOutbox(exports, calendars, ids)
+	outbox := calendarexport.NewOutbox(inmem.Facilities{Store: s}, exports, calendars, ids)
 	sched := scheduleOps{
 		Create:           schedule.NewCreate(facilities, schedules, types, refs, facilities, nil, nil, outbox, tx, ids).Do,
 		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, facilities, nil, nil, recurring, outbox, tx, ids).Do,
 		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, refs, facilities, schedules, types, nil, nil, outbox, tx, ids).Do,
-		Cancel:           schedule.NewCancel(schedules, refs, outbox, tx, ids).Do,
+		Cancel:           schedule.NewCancel(schedules, refs, facilities, outbox, tx, ids).Do,
 		Update:           schedule.NewUpdate(schedules, refs, facilities, types, nil, nil, outbox, tx).Do,
 	}
 	writer := gcal.NewWriter(gcaltest.Start(t, srv))
 	exporter := calendarexport.NewExporter(calendarexport.ExporterDeps{
-		Exports: exports, Calendars: calendars,
+		Facilities: inmem.Facilities{Store: s},
+		Exports:    exports, Calendars: calendars,
 		Writers:   func(context.Context, string) (calendar.EventWriter, error) { return writer, nil },
 		Schedules: schedules, Recurring: recurring,
 	}, ids, slog.New(slog.NewTextHandler(io.Discard, nil)))
@@ -239,6 +241,21 @@ func (e syncEnv) sync(t *testing.T) {
 	if _, err := e.syncer.SyncDue(t.Context()); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// accept は、事業所を google_primary にして、確認が必要な待ち id を Google の内容で解き、事業所を buddy_primary に戻す。
+// AcceptExport は buddy_primary の事業所で拒む（ADR-0035）。Google の内容を当てる規則は消さずに残すので、呼ぶ間だけモードを変えて確認する。
+func (e syncEnv) accept(id string) (calendar.Export, error) {
+	defer setSourceMode(e.store, organization.SourceBuddyPrimary)
+	setSourceMode(e.store, organization.SourceGooglePrimary)
+	return e.uc.AcceptExport(e.ctx, id)
+}
+
+// setSourceMode は、事業所 inmem.FacilityID の正本のモードを m にする。
+func setSourceMode(s *inmem.Store, m organization.SourceMode) {
+	f := s.Facilities[inmem.FacilityID]
+	f.SourceMode = m
+	s.Facilities[inmem.FacilityID] = f
 }
 
 func (e syncEnv) schedule(t *testing.T, id string) scheduleview.Detail {
@@ -352,7 +369,7 @@ func TestSyncHoldsChangeMadeOnBothSides(t *testing.T) {
 		t.Errorf("Google の予定 = %+v", ev)
 	}
 
-	got, err := e.uc.AcceptExport(e.ctx, x.ID)
+	got, err := e.accept(x.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -367,7 +384,7 @@ func TestSyncHoldsChangeMadeOnBothSides(t *testing.T) {
 		t.Errorf("予定の対応 = %+v", l)
 	}
 	var ce *apperr.ConflictError
-	if _, err := e.uc.AcceptExport(e.ctx, x.ID); !errors.As(err, &ce) || ce.Code != calendar.CodeExportNotInReview {
+	if _, err := e.accept(x.ID); !errors.As(err, &ce) || ce.Code != calendar.CodeExportNotInReview {
 		t.Errorf("解いた待ちをもう一度解くエラー = %v", err)
 	}
 }
@@ -430,7 +447,7 @@ func TestSyncHoldsScheduleDeletedInGoogleAndChangedInBuddy(t *testing.T) {
 	if e.schedule(t, d.ID).Cancel != nil {
 		t.Fatal("両方で変わった予定をキャンセルした")
 	}
-	if _, err := e.uc.AcceptExport(e.ctx, x.ID); err != nil {
+	if _, err := e.accept(x.ID); err != nil {
 		t.Fatal(err)
 	}
 	if e.schedule(t, d.ID).Cancel == nil {
@@ -480,7 +497,7 @@ func TestSyncHoldsUnappliableChangeAndResolvesWhenFixed(t *testing.T) {
 		t.Fatalf("待ち = %+v", x)
 	}
 	var ce *apperr.ConflictError
-	if _, err := e.uc.AcceptExport(e.ctx, x.ID); !errors.As(err, &ce) || ce.Code != calendar.CodeExportNotAcceptable {
+	if _, err := e.accept(x.ID); !errors.As(err, &ce) || ce.Code != calendar.CodeExportNotAcceptable {
 		t.Errorf("読み替えられない変更を Google の内容で解くエラー = %v", err)
 	}
 
@@ -591,7 +608,7 @@ func TestSyncAppliesOccurrenceChanges(t *testing.T) {
 	if err := (inmem.RecurringSchedules{Store: e.store}).AddExclusion(t.Context(), rs.ID, civil.Date{Year: 2026, Month: 11, Day: 23}); err != nil {
 		t.Fatal(err)
 	}
-	if err := calendarexport.NewOutbox(inmem.Exports{Store: e.store}, inmem.Calendars{Store: e.store}, ulid.Generator{}).
+	if err := calendarexport.NewOutbox(inmem.Facilities{Store: e.store}, inmem.Exports{Store: e.store}, inmem.Calendars{Store: e.store}, ulid.Generator{}).
 		RecurringChanged(t.Context(), inmem.FacilityID, inmem.StaffID, rs.ID); err != nil {
 		t.Fatal(err)
 	}
@@ -681,7 +698,7 @@ func TestSyncAcceptRejectsScheduleCancelledInBuddy(t *testing.T) {
 		t.Fatalf("キャンセルした予定の確認が必要な書き出し = %+v, %v", issues, err)
 	}
 	var ce *apperr.ConflictError
-	if _, err := e.uc.AcceptExport(e.ctx, issues[0].ID); !errors.As(err, &ce) || ce.Code != calendar.CodeExportNotAcceptable {
+	if _, err := e.accept(issues[0].ID); !errors.As(err, &ce) || ce.Code != calendar.CodeExportNotAcceptable {
 		t.Errorf("キャンセルした予定を Google の内容に合わせるエラー = %v", err)
 	}
 }
@@ -696,7 +713,7 @@ func TestSyncAcceptCancelsWhenGoogleReturnsNotFound(t *testing.T) {
 	e.store.Exports[x.ID] = x
 	e.srv.Calendars[googleCalID] = [][]*calendarv3.Event{{}}
 
-	if _, err := e.uc.AcceptExport(e.ctx, x.ID); err != nil {
+	if _, err := e.accept(x.ID); err != nil {
 		t.Fatal(err)
 	}
 	if e.schedule(t, d.ID).Cancel == nil {
@@ -719,7 +736,7 @@ func TestSyncAcceptMovesEventWhenStaffChanged(t *testing.T) {
 		t.Fatalf("職員を替えた予定の待ち = %+v", x)
 	}
 
-	if _, err := e.uc.AcceptExport(e.ctx, x.ID); err != nil {
+	if _, err := e.accept(x.ID); err != nil {
 		t.Fatal(err)
 	}
 	if got := e.schedule(t, d.ID); got.StaffID != inmem.CompanionID || got.StartTime != (civil.Time{Hour: 11}) {
@@ -902,5 +919,29 @@ func TestSyncOvernight(t *testing.T) {
 	}
 	if issues, _ := e.uc.ListExportIssues(e.ctx, inmem.FacilityID); len(issues) != 1 || issues[0].ErrorCode == nil || *issues[0].ErrorCode != calendar.ErrorUnappliable {
 		t.Errorf("2 日にわたる予定の確認が必要な予定 = %+v", issues)
+	}
+}
+
+// buddy を予定の正本にする事業所では、確認が必要な待ちを Google の内容で解く操作を拒み、予定と待ちを変えない（ADR-0035）。
+// マネージャーは buddy の内容で書き直す（RetryExport）。
+func TestAcceptExportRejectsBuddyPrimary(t *testing.T) {
+	e := newSyncEnv(t)
+	d := e.created(t)
+	code := calendar.ErrorNotFound
+	x := e.export(t, d.ID)
+	x.ID, x.Status, x.ErrorCode, x.Revision = "NOTFOUND", calendar.ExportConflict, &code, 1
+	e.store.Exports[x.ID] = x
+	e.srv.Calendars[googleCalID] = [][]*calendarv3.Event{{}}
+
+	var ce *apperr.ConflictError
+	_, err := e.uc.AcceptExport(e.ctx, x.ID)
+	if !errors.As(err, &ce) || ce.Code != calendar.CodeExportNotAcceptable || !strings.Contains(ce.Message, "buddy で管理") {
+		t.Fatalf("err = %v, want buddy_primary の %s", err, calendar.CodeExportNotAcceptable)
+	}
+	if e.schedule(t, d.ID).Cancel != nil {
+		t.Error("buddy_primary の事業所の予定を、Google の内容でキャンセルした")
+	}
+	if got := e.store.Exports[x.ID]; got.Status != calendar.ExportConflict || got.Revision != 1 {
+		t.Errorf("待ち = %+v, want 確認が必要なまま", got)
 	}
 }

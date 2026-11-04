@@ -161,6 +161,12 @@ erDiagram
 NULL を許し、値があれば一意にする。  
 認証のミドルウェアは、トークンの組織のクレームでこのカラムを探す。
 
+`facilities.source_mode` は、予定の正本のモード（`google_primary` か `buddy_primary`）を持つ。  
+マイグレーションで足したときに今ある事業所を `buddy_primary` にし、後から足す事業所のデフォルトを `google_primary` にする。  
+値による書き込みの制限は [事業所の正本のモードと予定の書き込み](#事業所の正本のモードと予定の書き込み) にある。
+
+- ADR-0035: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0035-google-calendar-source-modes.md)
+
 `teams.color` は、チームの色を持つ。  
 値と選び方は [チームの色](#チームの色) にある。
 
@@ -396,6 +402,22 @@ sequenceDiagram
 `httpapi` は、書いたトランザクションを終えた後に、`scheduleview` の `Get` か `GetRecurring` で予定を読み直し、レスポンスを作る。  
 書き込みと読み出しは別のトランザクションになる。
 
+### 事業所の正本のモードと予定の書き込み
+
+予定の API から予定を書けるのは、予定の正本のモードが `buddy_primary` の事業所だけである。  
+予定の作成、変更、キャンセル、繰り返しの予定の作成、回の置き換えの 5 つの操作は、トランザクションの中で事業所の行を共有のロックで読む（`schedule.FacilityLock` の `GetForShare`）。  
+読んだ事業所のモードは、`schedule.RequireWritable` で確認する。  
+`google_primary` の事業所では、何も書かずに 409（`google_primary`）を返す。  
+Google カレンダーの手動の取り込みの確定も、同じ規則で拒む（[Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#google-カレンダーの取り込み)）。
+
+ロックは、事業所が決まった時点で最初に取る。  
+予定の作成と繰り返しの予定の作成は、パスの事業所の行のロックから始める。  
+予定の変更、キャンセル、回の置き換えは、予定か繰り返しの予定の行を排他のロックで読んでから、その事業所の行を共有のロックで読む。  
+予定の行から事業所が決まるので、予定の行、事業所の行の順にする。  
+モードを切り替える切り替えの完了は、ADR-0035 のとおり事業所の行に排他のロックを取るので、確認した後に書き終えるまでモードは変わらない。
+
+- ADR-0033: [予定の書き込みのモデルと読み取りのモデルを分け、正本のモードを事業所の状態にする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0033-schedule-write-read-models-and-source-mode.md)
+
 ### 休職と退職の職員と、訪問しない職員への割り振り
 
 予定の作成、予定の変更、繰り返しの予定の作成、繰り返しの回の置き換え、利用者の登録が、休職と退職の職員と、訪問しない職員への新しい割り振りを 400 で拒む規則は、[職員とログイン](https://github.com/Fukuemon/buddy/blob/develop/context/domain/staff-login.md) にある。
@@ -405,7 +427,7 @@ sequenceDiagram
   - 退職した職員は、保存した後の日付が今日（事業所の現地の日付）より前の予定でだけ、割り振ったまま保存できる。
     - 退職は今日以降の予定が残ると拒むので、退職した職員の予定を今日以降に動かすと、誰も行かない予定が残るためである。
 
-職員の状態を読む前に、`schedule.FacilityLock` の `Share`（`postgres.FacilityRepository`）で事業所の行に共有のロックを取る。  
+職員の状態を読む前に、`schedule.FacilityLock` の `GetForShare`（`postgres.FacilityRepository`）で事業所の行に共有のロックを取る。  
 休職、復職、退職は、同じ行に排他のロックを取ってから職員を読み直す（[職員の管理の Design Doc の職員の登録、休職、復職、退職](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/staff/DesignDoc.md#職員の登録休職復職退職)）。  
 そのため、割り振りと退職のどちらかが、もう片方のコミットを待ってから読む。  
 退職の残る予定の確認の後に、退職した職員へ予定ができることは無い。  
@@ -522,6 +544,7 @@ Google カレンダーの取り込みの確定、同期の予定ごとのトラ�
 | 409 | `calendar_taken`、`calendar_already_linked`、`staff_has_calendar` | カレンダーを結び付けられない原因 | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md) |
 | 409 | `import_running`、`import_preview_changed` | 取り込みを確定できない原因 | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md) |
 | 409 | `export_not_in_review`、`export_not_acceptable`、`external_change_unappliable` | 確認が必要な書き出しを解けない原因 | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md) |
+| 409 | `google_primary` | Google カレンダーを予定の正本にする事業所で、予定を書くか取り込もうとした | [事業所の正本のモードと予定の書き込み](#事業所の正本のモードと予定の書き込み) |
 | 422 | `calendar_unreadable` | Google カレンダーが無いか、事業所のサービスアカウントに共有されていない | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md) |
 | 500 | `internal` | サーバーのエラー。ブローカーに届かないときも含む | - |
 | 502 | `calendar_unavailable` | Google に届かないか、Google がエラーを返した | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md) |

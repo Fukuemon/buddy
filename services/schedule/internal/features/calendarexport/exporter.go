@@ -10,6 +10,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
@@ -29,17 +30,20 @@ const (
 )
 
 // ExporterDeps は、Exporter が使うリポジトリと、外部のカレンダーに書く EventWriter を事業所ごとに返す Writers である。
+// Facilities は、待ちの事業所の正本のモードを読む。
 type ExporterDeps struct {
-	Exports   ExportRepository
-	Calendars ExporterCalendars
-	Writers   calendar.WriterFor
-	Schedules kernel.Finder[scheduleview.Detail]
-	Recurring kernel.Finder[scheduleview.RecurringDetail]
+	Facilities kernel.Finder[organization.Facility]
+	Exports    ExportRepository
+	Calendars  ExporterCalendars
+	Writers    calendar.WriterFor
+	Schedules  kernel.Finder[scheduleview.Detail]
+	Recurring  kernel.Finder[scheduleview.RecurringDetail]
 }
 
 // Exporter は、書き出しの待ちを、予定の職員が結び付けた外部のカレンダーに書く処理である。ADR-0009 の段階 2 に当たる。
 // 待ちは予定の変更と同じトランザクションで積まれ（Outbox）、Exporter はトランザクションの外で外部のカレンダーを呼ぶ。
 // 外部のカレンダーで変わった予定は buddy に当てず、確認が必要な待ち（conflict）にする。
+// 事業所が buddy を予定の正本にしていない（buddy_primary でない）待ちは、書かずに確認が必要な待ち（conflict）にして保留にする。
 type Exporter struct {
 	deps ExporterDeps
 	ids  kernel.IDGenerator
@@ -137,6 +141,8 @@ func resultOf(e calendar.Export, err error) calendar.ExportResult {
 	switch {
 	case err == nil:
 		return calendar.ExportResult{Status: calendar.ExportSucceeded}
+	case errors.Is(err, errNotBuddyPrimary):
+		return calendar.ExportResult{Status: calendar.ExportConflict, ErrorCode: code(calendar.ErrorNotBuddyPrimary)}
 	case errors.Is(err, calendar.ErrEventChanged):
 		return calendar.ExportResult{Status: calendar.ExportConflict, ErrorCode: code(calendar.ErrorPreconditionFailed)}
 	case errors.Is(err, calendar.ErrEventGone), errors.Is(err, calendar.ErrEventNotFound):
@@ -152,7 +158,18 @@ func resultOf(e calendar.Export, err error) calendar.ExportResult {
 	}
 }
 
+// errNotBuddyPrimary は、待ちの事業所が buddy を予定の正本にしていないので、書かなかったことを表す。
+var errNotBuddyPrimary = errors.New("事業所が buddy を予定の正本にしていない")
+
 func (x *Exporter) export(ctx context.Context, e calendar.Export) error {
+	// Outbox は buddy_primary でない事業所の待ちを積まないが、積んだ後にモードが変わったときと、ほかの経路で積まれたときに書かない。
+	f, err := x.deps.Facilities.Get(ctx, e.FacilityID)
+	if err != nil {
+		return err
+	}
+	if !f.IsBuddyPrimary() {
+		return errNotBuddyPrimary
+	}
 	if e.ScheduleID != "" {
 		return x.exportSchedule(ctx, e)
 	}

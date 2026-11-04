@@ -30,7 +30,8 @@ func NewUpdate(schedules Repository, staff StaffRefs, locks FacilityLock, types 
 }
 
 // Do は、単発の予定の枠を in の内容に置き換え、書いた予定を返す。訪問の情報は in の内容で作り直し、前の訪問の情報は消す。
-// 予定が見つからないときは apperr.ErrNotFound を、キャンセル済みのときは apperr.ErrConflict を、
+// 予定が見つからないときは apperr.ErrNotFound を、キャンセル済みのときは apperr.ErrConflict を、事業所が buddy を予定の正本にしていないときは
+// code が CodeGooglePrimary の apperr.ErrConflict を、
 // 参照が見つからないか別の事業所のものであるときは入力のエラーを返す。
 func (s Update) Do(ctx context.Context, scheduleID string, in SlotInput) (Schedule, error) {
 	var updated Schedule
@@ -39,13 +40,17 @@ func (s Update) Do(ctx context.Context, scheduleID string, in SlotInput) (Schedu
 		if err != nil {
 			return err
 		}
+		// 予定の行のロックの後に事業所の行を共有のロックで読む。予定の行から事業所が決まるので、ほかの予定の操作と同じ順にする。
+		if err := lockWritable(ctx, s.locks, cur.FacilityID); err != nil {
+			return err
+		}
 		if err := RequireScheduleAccess(ctx, s.staff, cur.StaffID, true); err != nil {
 			return err
 		}
 		if cur.Cancelled {
 			return apperr.Conflict("キャンセル済みの予定は変えられません")
 		}
-		slot, typ, err := prepareSlot(ctx, s.types, s.staff, s.locks, s.visits, s.now, cur.FacilityID, in, assignedOf(cur.StaffID, cur.Visit))
+		slot, typ, err := prepareSlot(ctx, s.types, s.staff, s.visits, s.now, cur.FacilityID, in, assignedOf(cur.StaffID, cur.Visit))
 		if err != nil {
 			return err
 		}

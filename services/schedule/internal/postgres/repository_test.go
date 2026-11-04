@@ -27,34 +27,35 @@ import (
 
 // seed.sql の ID。
 const (
-	seedFacility      = "01M3TC5H00QV17BC0J9V3393ZP"
-	seedDepartment    = "01M3TC5HZ8A18D2TP3PTKDXJMN"
-	seedTeam          = "01M3TC5KXRSEVXQZ2MTJK9FS45"
-	seedLeader        = "01M3TC5PVG7W2H1H20W0T1ZVEJ"
-	seedMember        = "01M3TC5QTRHSXHE7C68HPN6MBH"
-	seedTeamB         = "01M3TC5MX04QJ19X6XR1ZCBZRJ"
-	seedViewPolicy    = "01M5E1S42TTS7QZK05YGS0GYRD"
-	seedEditPolicy    = "01M5E1S42TTS7QZK05YGS0GYRE"
-	seedSelfEdit      = "01M5E1S42TTS7QZK05YGS0GYR8"
-	seedTeamRead      = "01M5E1S42TTS7QZK05YGS0GYRB"
-	seedTeamEdit      = "01M5E1S42TTS7QZK05YGS0GYRC"
-	seedUserRead      = "01M5E1S42TTS7QZK05YGS0GYR9"
-	seedStaffManage   = "01M5E5GP6Q8BQYNWN66QHJF60J"
-	seedAoki          = "01M3TC5TRG5200KYWTZW6ER3WN"
-	seedMori          = "01M3TC5VQR3MKFF9AA4BVKF44Z"
-	seedHayashi       = "01M3TC5WQ08KWBZX85WAZ1C4N7"
-	seedMoriSub       = "01M5J20JC1DAXJCPMP36TYGJ0A"
-	seedHayashiSub    = "01M5J20JC21Z5PZ92E3CD6HN03"
-	seedPatient       = "01M3TC66FGZVK39Y7GRVZSGWS1"
-	seedServiceCode   = "01M3TC60M0XC173N54CJQRKFVR"
-	seedEmergency     = "01M3TC64H0JJHBDMJQPGBX9FM7"
-	seedNight         = "01M3TC63HR6H7CP0CVRZGED7BB"
-	seedNormalType    = "01M3TC68E05E1N46YCCBT6ZQB2"
-	seedVisitType     = "01M3TC69D8KB2938F3GS7WBVT5"
-	seedConference    = "01M3TC6BBRBQM0QK0S43P56AFH"
-	seedVisitSchedule = "01M3TC6CB064BZXJVJBCC4ZSY5"
-	seedRecurring     = "01M3TC6E9G4N8Q2R5T7V9W1X3Y"
-	unknownID         = "01M3TCZZZZZZZZZZZZZZZZZZZZ"
+	seedFacility       = "01M3TC5H00QV17BC0J9V3393ZP"
+	seedGoogleFacility = "01MA0GP0000000000000000FAC"
+	seedDepartment     = "01M3TC5HZ8A18D2TP3PTKDXJMN"
+	seedTeam           = "01M3TC5KXRSEVXQZ2MTJK9FS45"
+	seedLeader         = "01M3TC5PVG7W2H1H20W0T1ZVEJ"
+	seedMember         = "01M3TC5QTRHSXHE7C68HPN6MBH"
+	seedTeamB          = "01M3TC5MX04QJ19X6XR1ZCBZRJ"
+	seedViewPolicy     = "01M5E1S42TTS7QZK05YGS0GYRD"
+	seedEditPolicy     = "01M5E1S42TTS7QZK05YGS0GYRE"
+	seedSelfEdit       = "01M5E1S42TTS7QZK05YGS0GYR8"
+	seedTeamRead       = "01M5E1S42TTS7QZK05YGS0GYRB"
+	seedTeamEdit       = "01M5E1S42TTS7QZK05YGS0GYRC"
+	seedUserRead       = "01M5E1S42TTS7QZK05YGS0GYR9"
+	seedStaffManage    = "01M5E5GP6Q8BQYNWN66QHJF60J"
+	seedAoki           = "01M3TC5TRG5200KYWTZW6ER3WN"
+	seedMori           = "01M3TC5VQR3MKFF9AA4BVKF44Z"
+	seedHayashi        = "01M3TC5WQ08KWBZX85WAZ1C4N7"
+	seedMoriSub        = "01M5J20JC1DAXJCPMP36TYGJ0A"
+	seedHayashiSub     = "01M5J20JC21Z5PZ92E3CD6HN03"
+	seedPatient        = "01M3TC66FGZVK39Y7GRVZSGWS1"
+	seedServiceCode    = "01M3TC60M0XC173N54CJQRKFVR"
+	seedEmergency      = "01M3TC64H0JJHBDMJQPGBX9FM7"
+	seedNight          = "01M3TC63HR6H7CP0CVRZGED7BB"
+	seedNormalType     = "01M3TC68E05E1N46YCCBT6ZQB2"
+	seedVisitType      = "01M3TC69D8KB2938F3GS7WBVT5"
+	seedConference     = "01M3TC6BBRBQM0QK0S43P56AFH"
+	seedVisitSchedule  = "01M3TC6CB064BZXJVJBCC4ZSY5"
+	seedRecurring      = "01M3TC6E9G4N8Q2R5T7V9W1X3Y"
+	unknownID          = "01M3TCZZZZZZZZZZZZZZZZZZZZ"
 )
 
 func TestFacilityGet(t *testing.T) {
@@ -68,6 +69,21 @@ func TestFacilityGet(t *testing.T) {
 		t.Errorf("got %+v", f)
 	}
 	if _, err := r.Get(ctx, unknownID); !errors.Is(err, apperr.ErrNotFound) {
+		t.Fatalf("err = %v, want ErrNotFound", err)
+	}
+}
+
+// TestFacilityGetForShare は、共有のロックを取って読んだ事業所が、シードの正本のモードを持つことを確認する。
+func TestFacilityGetForShare(t *testing.T) {
+	ctx := txContext(t)
+	r := NewFacilityRepository(testDB)
+	for id, want := range map[string]organization.SourceMode{seedFacility: organization.SourceBuddyPrimary, seedGoogleFacility: organization.SourceGooglePrimary} {
+		f, err := r.GetForShare(ctx, id)
+		if err != nil || f.ID != id || f.SourceMode != want {
+			t.Errorf("GetForShare(%s) = %+v, %v, want %s", id, f, err, want)
+		}
+	}
+	if _, err := r.GetForShare(ctx, unknownID); !errors.Is(err, apperr.ErrNotFound) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
 	}
 }
@@ -1234,7 +1250,7 @@ func TestStaffConcurrentRetireAndScheduleCreate(t *testing.T) {
 	setup := func(t *testing.T) {
 		t.Helper()
 		cleanup(t)
-		exec(t, `INSERT INTO facilities (id, name) VALUES ($1, '退職と予定の事業所')`, facility)
+		exec(t, `INSERT INTO facilities (id, name, source_mode) VALUES ($1, '退職と予定の事業所', 'buddy_primary')`, facility)
 		exec(t, `INSERT INTO departments (id, facility_id, name) VALUES ($1, $2, '部署')`, dept, facility)
 		exec(t, `INSERT INTO teams (id, facility_id, name, color) VALUES ($1, $2, 'チーム', 'blue')`, team, facility)
 		exec(t, `INSERT INTO positions (id, facility_id, name) VALUES ($1, $2, 'メンバー')`, position, facility)

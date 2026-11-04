@@ -237,7 +237,7 @@ func TestCalendarExportWritesStoredSchedules(t *testing.T) {
 	}
 	exports := NewCalendarExportRepository(testDB)
 	ids := ulid.Generator{}
-	outbox := calendarexport.NewOutbox(exports, calendars, ids)
+	outbox := calendarexport.NewOutbox(NewFacilityRepository(testDB), exports, calendars, ids)
 	if err := outbox.ScheduleChanged(ctx, seedFacility, seedMori, seedVisitSchedule); err != nil {
 		t.Fatal(err)
 	}
@@ -246,7 +246,8 @@ func TestCalendarExportWritesStoredSchedules(t *testing.T) {
 	}
 	writer := gcal.NewWriter(gcaltest.Start(t, srv))
 	exporter := calendarexport.NewExporter(calendarexport.ExporterDeps{
-		Exports: exports, Calendars: calendars,
+		Facilities: NewFacilityRepository(testDB),
+		Exports:    exports, Calendars: calendars,
 		Writers:   func(context.Context, string) (calendar.EventWriter, error) { return writer, nil },
 		Schedules: NewScheduleRepository(testDB), Recurring: NewRecurringScheduleRepository(testDB),
 	}, ids, slog.New(slog.NewTextHandler(io.Discard, nil)))
@@ -291,7 +292,7 @@ func TestScheduleWritesEnqueueExports(t *testing.T) {
 	}
 	exports := NewCalendarExportRepository(testDB)
 	ids := ulid.Generator{}
-	outbox := calendarexport.NewOutbox(exports, calendars, ids)
+	outbox := calendarexport.NewOutbox(NewFacilityRepository(testDB), exports, calendars, ids)
 	facilities, schedules, recurring := NewFacilityRepository(testDB), NewScheduleRepository(testDB), NewRecurringScheduleRepository(testDB)
 	types, refs, txr := NewScheduleTypeRepository(testDB), NewStaffRefRepository(testDB), NewTransactor(testDB)
 	requireQueued := func(t *testing.T, target calendar.Target) {
@@ -314,7 +315,7 @@ func TestScheduleWritesEnqueueExports(t *testing.T) {
 		Do(ctx, created.ID, slot("カンファレンス（変更）", civil.Date{Year: 2099, Month: 1, Day: 6})); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := schedule.NewCancel(schedules, refs, outbox, txr, ids).Do(ctx, created.ID, "中止"); err != nil {
+	if _, err := schedule.NewCancel(schedules, refs, facilities, outbox, txr, ids).Do(ctx, created.ID, "中止"); err != nil {
 		t.Fatal(err)
 	}
 	if d, err := schedules.Get(ctx, created.ID); err != nil || d.Cancel == nil || d.Date != (civil.Date{Year: 2099, Month: 1, Day: 6}) {
