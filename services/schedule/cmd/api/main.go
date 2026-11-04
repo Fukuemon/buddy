@@ -115,11 +115,7 @@ func run() error {
 			tx, ids, principal.RequireStaffManage),
 		Patients:     patientApp(facilities, staffRefs, visitMasters, patients, postgres.NewPatientScheduleReader(db), staffRepo, tx, ids, principal.RequireStaffManage),
 		VisitMasters: visitMasterApp(visitMasters),
-		Schedules: schedule.NewApp(schedule.Deps{
-			Facilities: facilities, Staff: staffRefs, Visits: visitInfos,
-			Schedules: schedules, Recurring: recurring, Types: scheduleTypes,
-			Exports: outbox,
-		}, tx, ids),
+		Schedules:    scheduleApp(facilities, staffRefs, visitInfos, schedules, recurring, scheduleTypes, outbox, tx, ids),
 		Calendars: calendar.NewApp(calendar.Deps{
 			Calendars: calendars, Accounts: calendarAccounts(accounts),
 			Staff: staffRefs, Patients: patients, ServiceCodes: visitMasters, Types: scheduleTypes,

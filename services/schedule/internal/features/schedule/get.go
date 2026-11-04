@@ -5,12 +5,23 @@ import (
 )
 
 // Get は、単発の予定を返す。
-func (s *App) Get(ctx context.Context, id string) (Detail, error) {
-	d, err := s.deps.Schedules.Get(ctx, id)
+type Get struct {
+	schedules Repository
+	staff     StaffRefs
+}
+
+// NewGet は Get を作る。
+func NewGet(schedules Repository, staff StaffRefs) Get {
+	return Get{schedules: schedules, staff: staff}
+}
+
+// Do は、単発の予定を返す。
+func (s Get) Do(ctx context.Context, id string) (Detail, error) {
+	d, err := s.schedules.Get(ctx, id)
 	if err != nil {
 		return Detail{}, err
 	}
-	if err := s.requireScheduleAccess(ctx, d.StaffID, false); err != nil {
+	if err := requireScheduleAccess(ctx, s.staff, d.StaffID, false); err != nil {
 		return Detail{}, err
 	}
 	return d, nil

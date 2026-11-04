@@ -55,7 +55,7 @@ type Store struct {
 	Types         map[string]schedule.Type
 	Schedules     map[string]schedule.Detail
 	Recurring     map[string]schedule.RecurringDetail
-	Cancels       map[string]schedule.Cancel
+	Cancels       map[string]schedule.Cancellation
 	Calendars     map[string]calendar.ExternalCalendar
 	Runs          map[string]calendar.ImportRun
 	Links         map[string]calendar.Link
@@ -82,7 +82,7 @@ func NewStore() *Store {
 		Types:         map[string]schedule.Type{},
 		Schedules:     map[string]schedule.Detail{},
 		Recurring:     map[string]schedule.RecurringDetail{},
-		Cancels:       map[string]schedule.Cancel{},
+		Cancels:       map[string]schedule.Cancellation{},
 		Calendars:     map[string]calendar.ExternalCalendar{},
 		Runs:          map[string]calendar.ImportRun{},
 		Links:         map[string]calendar.Link{},
@@ -743,7 +743,7 @@ func (s Schedules) ListByFacility(_ context.Context, facilityID string, _ schedu
 }
 
 // CreateCancel は、キャンセルを保存する。キャンセル済みなら apperr.ErrConflict を返す。
-func (s Schedules) CreateCancel(_ context.Context, c schedule.Cancel) error {
+func (s Schedules) CreateCancel(_ context.Context, c schedule.Cancellation) error {
 	if _, ok := s.Cancels[c.ScheduleID]; ok {
 		return apperr.ErrConflict
 	}

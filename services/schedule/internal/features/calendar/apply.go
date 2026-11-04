@@ -294,7 +294,7 @@ func (a applier) applySchedule(ctx context.Context, d schedule.Detail, ev Event)
 		if d.Cancel != nil {
 			return d.Version, nil
 		}
-		c, err := schedule.NewCancel(a.ids.NewID(), d.ID, cancelledInGoogle)
+		c, err := schedule.NewCancellation(a.ids.NewID(), d.ID, cancelledInGoogle)
 		if err != nil {
 			return 0, err
 		}

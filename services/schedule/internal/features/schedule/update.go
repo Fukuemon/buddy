@@ -2,27 +2,49 @@ package schedule
 
 import (
 	"context"
+	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
-// Update は、単発の予定の枠を in の内容に置き換える。訪問の情報は in の内容で作り直し、前の訪問の情報は消す。
+// Update は、単発の予定の枠を in の内容に置き換える。
+type Update struct {
+	schedules Repository
+	staff     StaffRefs
+	types     TypeRepository
+	visits    VisitInfos
+	now       func() time.Time
+	exports   Exports
+	tx        tx.Transactor
+}
+
+// NewUpdate は Update を作る。exports は、予定の変更を外部のカレンダーへの書き出しの待ちに積む。nil なら積まない。
+// now は、退職した職員を割り振ったまま保存できる予定の日付を決める時刻である。nil なら time.Now を使う。
+func NewUpdate(schedules Repository, staff StaffRefs, types TypeRepository, visits VisitInfos, now func() time.Time, exports Exports, tx tx.Transactor) Update {
+	if now == nil {
+		now = time.Now
+	}
+	return Update{schedules: schedules, staff: staff, types: types, visits: visits, now: now, exports: exports, tx: tx}
+}
+
+// Do は、単発の予定の枠を in の内容に置き換える。訪問の情報は in の内容で作り直し、前の訪問の情報は消す。
 // 予定が見つからないときは apperr.ErrNotFound を、キャンセル済みのときは apperr.ErrConflict を、
 // 参照が見つからないか別の事業所のものであるときは入力のエラーを返す。
-func (s *App) Update(ctx context.Context, scheduleID string, in SlotInput) (Detail, error) {
+func (s Update) Do(ctx context.Context, scheduleID string, in SlotInput) (Detail, error) {
 	var updated Detail
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
-		cur, err := s.deps.Schedules.GetForUpdate(ctx, scheduleID)
+		cur, err := s.schedules.GetForUpdate(ctx, scheduleID)
 		if err != nil {
 			return err
 		}
-		if err := s.requireScheduleAccess(ctx, cur.StaffID, true); err != nil {
+		if err := requireScheduleAccess(ctx, s.staff, cur.StaffID, true); err != nil {
 			return err
 		}
 		if cur.Cancel != nil {
 			return apperr.Conflict("キャンセル済みの予定は変えられません")
 		}
-		slot, typ, err := s.prepareSlot(ctx, cur.FacilityID, in, assignedOf(cur.StaffID, cur.Visit))
+		slot, typ, err := prepareSlot(ctx, s.types, s.staff, s.visits, s.now, cur.FacilityID, in, assignedOf(cur.StaffID, cur.Visit))
 		if err != nil {
 			return err
 		}
@@ -30,19 +52,19 @@ func (s *App) Update(ctx context.Context, scheduleID string, in SlotInput) (Deta
 		if err != nil {
 			return err
 		}
-		if err := s.deps.Schedules.Update(ctx, sc); err != nil {
+		if err := s.schedules.Update(ctx, sc); err != nil {
 			return err
 		}
 		if cur.VisitInfoID != nil {
-			if err := s.deps.Visits.DeleteIfUnused(ctx, *cur.VisitInfoID); err != nil {
+			if err := s.visits.DeleteIfUnused(ctx, *cur.VisitInfoID); err != nil {
 				return err
 			}
 		}
 		// 職員が替わったときも、前の職員のカレンダーの予定は対応から消せるので、新しい職員で積む。
-		if err := s.scheduleChanged(ctx, sc.Slot, sc.ID); err != nil {
+		if err := scheduleChanged(ctx, s.exports, sc.Slot, sc.ID); err != nil {
 			return err
 		}
-		updated, err = s.deps.Schedules.Get(ctx, cur.ID)
+		updated, err = s.schedules.Get(ctx, cur.ID)
 		return err
 	})
 	return updated, err

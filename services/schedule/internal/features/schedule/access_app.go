@@ -18,12 +18,12 @@ func current(ctx context.Context) (principal.Principal, error) {
 }
 
 // requireScheduleAccess は、ctx の職員が、職員 staffID の予定を見てよいか（editing なら編集してよいか）を確認する。
-func (s *App) requireScheduleAccess(ctx context.Context, staffID string, editing bool) error {
+func requireScheduleAccess(ctx context.Context, staff StaffRefs, staffID string, editing bool) error {
 	p, err := current(ctx)
 	if err != nil {
 		return err
 	}
-	st, err := s.deps.Staff.Get(ctx, staffID)
+	st, err := staff.Get(ctx, staffID)
 	if err != nil {
 		return err
 	}

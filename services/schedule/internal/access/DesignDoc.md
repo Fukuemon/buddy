@@ -95,7 +95,7 @@ verified_commit: c0514f20
 
 ### 予定の認可
 
-予定の操作は、`schedule.App` が、ミドルウェアが context に入れた職員（`principal.Principal`）の `user_policies` で判定する。  
+予定の操作は、`schedule` の操作の型が、ミドルウェアが context に入れた職員（`principal.Principal`）の `user_policies` で判定する。  
 編集の権限は、同じ範囲の閲覧を含む。  
 自分の予定は、権限によらず見てよい。
 

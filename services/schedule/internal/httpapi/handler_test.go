@@ -55,10 +55,10 @@ func (f *fakeSchedules) GetRecurring(context.Context, string) (schedule.Recurrin
 	return schedule.RecurringDetail{}, f.err
 }
 
-func (f *fakeSchedules) List(_ context.Context, _ string, q schedule.ListQuery) (schedule.List, error) {
+func (f *fakeSchedules) List(_ context.Context, _ string, q schedule.ListQuery) (schedule.Listing, error) {
 	f.listCalls++
 	f.lastQuery = q
-	return schedule.List{Schedules: []schedule.Detail{f.detail}, RecurringSchedules: []schedule.RecurringDetail{}}, f.err
+	return schedule.Listing{Schedules: []schedule.Detail{f.detail}, RecurringSchedules: []schedule.RecurringDetail{}}, f.err
 }
 
 func (f *fakeSchedules) Create(_ context.Context, _ string, in schedule.SlotInput) (schedule.Detail, error) {
@@ -74,8 +74,8 @@ func (f *fakeSchedules) ChangeOccurrence(context.Context, string, civil.Date, sc
 	return f.detail, f.err
 }
 
-func (f *fakeSchedules) Cancel(context.Context, string, string) (schedule.Cancel, error) {
-	return schedule.Cancel{}, f.err
+func (f *fakeSchedules) Cancel(context.Context, string, string) (schedule.Cancellation, error) {
+	return schedule.Cancellation{}, f.err
 }
 
 func (f *fakeSchedules) Update(_ context.Context, _ string, in schedule.SlotInput) (schedule.Detail, error) {
@@ -204,6 +204,14 @@ func (f *fakePatients) List(_ context.Context, _ string, q patient.ListQuery) ([
 	return []patient.Detail{}, nil
 }
 
+// app は、f のメソッド値を ScheduleApp に入れる。
+func (f *fakeSchedules) app() httpapi.ScheduleApp {
+	return httpapi.ScheduleApp{
+		ListTypes: f.ListTypes, Get: f.Get, GetRecurring: f.GetRecurring, List: f.List, Create: f.Create,
+		CreateRecurring: f.CreateRecurring, ChangeOccurrence: f.ChangeOccurrence, Cancel: f.Cancel, Update: f.Update,
+	}
+}
+
 // app は、f のメソッド値を StaffApp に入れる。
 func (f *fakeStaff) app() httpapi.StaffApp {
 	return httpapi.StaffApp{
@@ -222,7 +230,7 @@ func (f *fakePatients) app() httpapi.PatientApp {
 }
 
 func newRouter(s *fakeSchedules, st *fakeStaff, p *fakePatients) http.Handler {
-	return httpapi.NewRouter(httpapi.Apps{Schedules: s, Staff: st.app(), Patients: p.app(), Auth: fakeAuth{}}, httpapi.RouterConfig{
+	return httpapi.NewRouter(httpapi.Apps{Schedules: s.app(), Staff: st.app(), Patients: p.app(), Auth: fakeAuth{}}, httpapi.RouterConfig{
 		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
 		Verifier: testVerifier,
 	})

@@ -26,7 +26,7 @@ type ScheduleStore interface {
 	// GetForUpdate は、トランザクションの終わりまで予定の行に排他のロックを取り、ロックを取った後の値を返す。
 	GetForUpdate(ctx context.Context, id string) (schedule.Detail, error)
 	Update(ctx context.Context, s schedule.Schedule) error
-	CreateCancel(ctx context.Context, c schedule.Cancel) error
+	CreateCancel(ctx context.Context, c schedule.Cancellation) error
 	// ReplacementOf は、繰り返しの予定 recurringScheduleID の d の回を置き換えた単発の予定を返す。無いときは apperr.ErrNotFound を返す。
 	ReplacementOf(ctx context.Context, recurringScheduleID string, d civil.Date) (schedule.Detail, error)
 }

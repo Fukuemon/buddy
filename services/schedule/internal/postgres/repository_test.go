@@ -341,7 +341,7 @@ func TestStaffAssignments(t *testing.T) {
 		t.Errorf("林 = %+v, want 同行者の訪問の予定と担当の利用者", got)
 	}
 
-	if err := NewScheduleRepository(testDB).CreateCancel(ctx, schedule.Cancel{ID: "01M3TD00000000000000000032", ScheduleID: seedVisitSchedule, Reason: "中止"}); err != nil {
+	if err := NewScheduleRepository(testDB).CreateCancel(ctx, schedule.Cancellation{ID: "01M3TD00000000000000000032", ScheduleID: seedVisitSchedule, Reason: "中止"}); err != nil {
 		t.Fatal(err)
 	}
 	if got, err := a.From(ctx, seedFacility, seedMori, from); err != nil || len(got.Schedules) != 0 {
@@ -578,7 +578,7 @@ func TestPatientSchedules(t *testing.T) {
 	if got, err := rd.From(ctx, seedFacility, seedPatient, civil.Date{Year: 2026, Month: 10, Day: 22}); err != nil || !got.IsEmpty() {
 		t.Errorf("翌日から = %+v, %v, want なし", got, err)
 	}
-	if err := NewScheduleRepository(testDB).CreateCancel(ctx, schedule.Cancel{ID: "01M3TD00000000000000000033", ScheduleID: seedVisitSchedule, Reason: "中止"}); err != nil {
+	if err := NewScheduleRepository(testDB).CreateCancel(ctx, schedule.Cancellation{ID: "01M3TD00000000000000000033", ScheduleID: seedVisitSchedule, Reason: "中止"}); err != nil {
 		t.Fatal(err)
 	}
 	if got, err := rd.From(ctx, seedFacility, seedPatient, from); err != nil || !got.IsEmpty() {
@@ -849,7 +849,7 @@ func TestRecurringScheduleAndExclusion(t *testing.T) {
 func TestScheduleCancel(t *testing.T) {
 	ctx := txContext(t)
 	r := NewScheduleRepository(testDB)
-	c := schedule.Cancel{ID: "01M3TD00000000000000000060", ScheduleID: seedConference, Reason: "体調不良"}
+	c := schedule.Cancellation{ID: "01M3TD00000000000000000060", ScheduleID: seedConference, Reason: "体調不良"}
 	if err := r.CreateCancel(ctx, c); err != nil {
 		t.Fatal(err)
 	}
@@ -988,7 +988,7 @@ func TestScheduleGetForUpdateBlocksCancel(t *testing.T) {
 	done := make(chan error, 1)
 	go func() {
 		done <- r.CreateCancel(context.WithValue(bg, txKey{}, canceler),
-			schedule.Cancel{ID: "01M3TD00000000000000000070", ScheduleID: seedConference, Reason: "体調不良"})
+			schedule.Cancellation{ID: "01M3TD00000000000000000070", ScheduleID: seedConference, Reason: "体調不良"})
 	}()
 	select {
 	case err := <-done:
