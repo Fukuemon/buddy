@@ -37,11 +37,11 @@ func TestSchedulesUpdate(t *testing.T) {
 			s := inmem.Seeded()
 			uc, tx := newSchedules(s)
 			ctx := editorCtx()
-			create := func() (schedule.Detail, error) {
+			create := func() (schedule.Schedule, error) {
 				return uc.ChangeOccurrence(ctx, recurringID, civil.Date{Year: 2026, Month: 10, Day: 12}, visitSlot(validVisit()))
 			}
 			if tt.single {
-				create = func() (schedule.Detail, error) { return uc.Create(ctx, facilityID, visitSlot(validVisit())) }
+				create = func() (schedule.Schedule, error) { return uc.Create(ctx, facilityID, visitSlot(validVisit())) }
 			}
 			created, err := create()
 			if err != nil {
@@ -77,7 +77,7 @@ func TestSchedulesUpdate(t *testing.T) {
 				t.Errorf("トランザクションの回数 = %d", tx.Calls-calls)
 			}
 			if got.ID != created.ID || got.TypeID != tt.in().TypeID {
-				t.Errorf("got %+v", got.Schedule)
+				t.Errorf("got %+v", got)
 			}
 			if tt.single != (got.RecurringScheduleID == nil) || (!tt.single && *got.RecurringScheduleID != recurringID) {
 				t.Errorf("RecurringScheduleID = %v", got.RecurringScheduleID)

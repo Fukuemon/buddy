@@ -18,6 +18,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
@@ -36,9 +37,9 @@ type fakeSchedules struct {
 	lastCtx   context.Context
 	err       error
 	listCalls int
-	lastQuery schedule.ListQuery
+	lastQuery scheduleview.ListQuery
 	lastSlot  schedule.SlotInput
-	detail    schedule.Detail
+	detail    scheduleview.Detail
 }
 
 func (f *fakeSchedules) ListTypes(ctx context.Context) ([]schedule.Type, error) {
@@ -46,41 +47,41 @@ func (f *fakeSchedules) ListTypes(ctx context.Context) ([]schedule.Type, error) 
 	return nil, f.err
 }
 
-func (f *fakeSchedules) Get(ctx context.Context, _ string) (schedule.Detail, error) {
+func (f *fakeSchedules) Get(ctx context.Context, _ string) (scheduleview.Detail, error) {
 	f.lastCtx = ctx
 	return f.detail, f.err
 }
 
-func (f *fakeSchedules) GetRecurring(context.Context, string) (schedule.RecurringDetail, error) {
-	return schedule.RecurringDetail{}, f.err
+func (f *fakeSchedules) GetRecurring(context.Context, string) (scheduleview.RecurringDetail, error) {
+	return scheduleview.RecurringDetail{}, f.err
 }
 
-func (f *fakeSchedules) List(_ context.Context, _ string, q schedule.ListQuery) (schedule.Listing, error) {
+func (f *fakeSchedules) List(_ context.Context, _ string, q scheduleview.ListQuery) (scheduleview.Listing, error) {
 	f.listCalls++
 	f.lastQuery = q
-	return schedule.Listing{Schedules: []schedule.Detail{f.detail}, RecurringSchedules: []schedule.RecurringDetail{}}, f.err
+	return scheduleview.Listing{Schedules: []scheduleview.Detail{f.detail}, RecurringSchedules: []scheduleview.RecurringDetail{}}, f.err
 }
 
-func (f *fakeSchedules) Create(_ context.Context, _ string, in schedule.SlotInput) (schedule.Detail, error) {
+func (f *fakeSchedules) Create(_ context.Context, _ string, in schedule.SlotInput) (schedule.Schedule, error) {
 	f.lastSlot = in
-	return f.detail, f.err
+	return f.detail.Schedule, f.err
 }
 
-func (f *fakeSchedules) CreateRecurring(context.Context, string, schedule.SlotInput, schedule.RuleInput) (schedule.RecurringDetail, error) {
-	return schedule.RecurringDetail{}, f.err
+func (f *fakeSchedules) CreateRecurring(context.Context, string, schedule.SlotInput, schedule.RuleInput) (schedule.RecurringSchedule, error) {
+	return schedule.RecurringSchedule{}, f.err
 }
 
-func (f *fakeSchedules) ChangeOccurrence(context.Context, string, civil.Date, schedule.SlotInput) (schedule.Detail, error) {
-	return f.detail, f.err
+func (f *fakeSchedules) ChangeOccurrence(context.Context, string, civil.Date, schedule.SlotInput) (schedule.Schedule, error) {
+	return f.detail.Schedule, f.err
 }
 
 func (f *fakeSchedules) Cancel(context.Context, string, string) (schedule.Cancellation, error) {
 	return schedule.Cancellation{}, f.err
 }
 
-func (f *fakeSchedules) Update(_ context.Context, _ string, in schedule.SlotInput) (schedule.Detail, error) {
+func (f *fakeSchedules) Update(_ context.Context, _ string, in schedule.SlotInput) (schedule.Schedule, error) {
 	f.lastSlot = in
-	return f.detail, f.err
+	return f.detail.Schedule, f.err
 }
 
 type fakeStaff struct {
@@ -296,7 +297,7 @@ func TestListSchedulesRejectsUnsafeSort(t *testing.T) {
 }
 
 func TestListSchedules(t *testing.T) {
-	s := &fakeSchedules{detail: schedule.Detail{Schedule: schedule.Schedule{ID: scheduleID, Slot: schedule.Slot{
+	s := &fakeSchedules{detail: scheduleview.Detail{Schedule: schedule.Schedule{ID: scheduleID, Slot: schedule.Slot{
 		Date: civil.Date{Year: 2026, Month: 10, Day: 20}, StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10},
 	}}}}
 	rec, body := do(t, newRouter(s, nil, nil), http.MethodGet,
@@ -409,7 +410,7 @@ const validSlotBody = `{"schedule_type_id":"` + typeID + `","date":"2026-10-20",
 	`"staff_id":"` + staffID + `","title":"会議"}`
 
 func TestUpdateSchedule(t *testing.T) {
-	s := &fakeSchedules{detail: schedule.Detail{Schedule: schedule.Schedule{ID: scheduleID}}}
+	s := &fakeSchedules{detail: scheduleview.Detail{Schedule: schedule.Schedule{ID: scheduleID}}}
 	rec, body := do(t, newRouter(s, nil, nil), http.MethodPut, "/v1/schedules/"+scheduleID, validSlotBody)
 	if rec.Code != http.StatusOK || body["id"] != scheduleID {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
@@ -486,7 +487,7 @@ func TestCreateScheduleEndsNextDay(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &fakeSchedules{detail: schedule.Detail{Schedule: schedule.Schedule{ID: scheduleID, Slot: schedule.Slot{
+			s := &fakeSchedules{detail: scheduleview.Detail{Schedule: schedule.Schedule{ID: scheduleID, Slot: schedule.Slot{
 				Date: civil.Date{Year: 2026, Month: 11, Day: 1}, StartTime: civil.Time{Hour: 22}, EndTime: civil.Time{Hour: 1}, EndsNextDay: tt.want,
 			}}}}
 			rec, body := do(t, newRouter(s, nil, nil), http.MethodPost, "/v1/facilities/"+facilityID+"/schedules", tt.body)

@@ -78,7 +78,7 @@ func TestSchedulesCreate(t *testing.T) {
 				t.Errorf("トランザクションの回数 = %d", tx.Calls)
 			}
 			if got.FacilityID != facilityID || got.StaffID != staffID {
-				t.Errorf("got %+v", got.Schedule)
+				t.Errorf("got %+v", got)
 			}
 			if !got.IsOverTimeWork {
 				t.Error("17 時 30 分に始まる予定が時間外にならない")

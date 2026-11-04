@@ -31,13 +31,13 @@ func NewCreate(facilities kernel.Finder[organization.Facility], schedules Reposi
 	return Create{facilities: facilities, schedules: schedules, types: types, staff: staff, visits: visits, now: now, exports: exports, tx: tx, ids: ids}
 }
 
-// Do は、事業所に単発の予定を作る。訪問の情報があれば同じトランザクションで保存する。
+// Do は、事業所に単発の予定を作り、書いた予定を返す。訪問の情報があれば同じトランザクションで保存する。
 // 事業所が見つからないときは apperr.ErrNotFound を、参照が見つからないか別の事業所のものであるときは入力のエラーを返す。
-func (s Create) Do(ctx context.Context, facilityID string, in SlotInput) (Detail, error) {
+func (s Create) Do(ctx context.Context, facilityID string, in SlotInput) (Schedule, error) {
 	if _, err := s.facilities.Get(ctx, facilityID); err != nil {
-		return Detail{}, err
+		return Schedule{}, err
 	}
-	var created Detail
+	var created Schedule
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
 		var err error
 		created, err = createSchedule(ctx, s.schedules, s.ids, s.types, s.staff, s.visits, s.now, s.exports, facilityID, in, nil)

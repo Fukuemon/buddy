@@ -8,7 +8,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 )
 
@@ -42,7 +42,7 @@ func TestSchedulesReadAuthorization(t *testing.T) {
 				t.Errorf("自分の予定の Get: err = %v, want 権限によらず許可", err)
 			}
 
-			list, err := uc.List(ctx, facilityID, schedule.ListQuery{})
+			list, err := uc.List(ctx, facilityID, scheduleview.ListQuery{})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -52,7 +52,7 @@ func TestSchedulesReadAuthorization(t *testing.T) {
 			if !containsSchedule(list.Schedules, ownScheduleID) {
 				t.Error("一覧に自分の予定がない")
 			}
-			if got := slices.ContainsFunc(list.RecurringSchedules, func(d schedule.RecurringDetail) bool { return d.ID == targetRecurringID }); got != tt.readOther {
+			if got := slices.ContainsFunc(list.RecurringSchedules, func(d scheduleview.RecurringDetail) bool { return d.ID == targetRecurringID }); got != tt.readOther {
 				t.Errorf("一覧にほかの職員の繰り返しの予定がある = %v, want %v", got, tt.readOther)
 			}
 		})
@@ -68,7 +68,7 @@ func TestSchedulesReadOtherFacilityStaff(t *testing.T) {
 	s.Schedules[otherScheduleID] = d
 	uc := newSchedules(s)
 	ctx := viewerCtx(staff.PolicyGrant{PolicyCode: organization.ScheduleUserRead, TargetUserIDs: []string{staffID, otherStaffID}})
-	list, err := uc.List(ctx, facilityID, schedule.ListQuery{})
+	list, err := uc.List(ctx, facilityID, scheduleview.ListQuery{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,11 +99,11 @@ func TestSchedulesWithoutPrincipal(t *testing.T) {
 	if _, err := uc.GetRecurring(context.Background(), targetRecurringID); !errors.Is(err, apperr.ErrForbidden) {
 		t.Errorf("GetRecurring: err = %v, want ErrForbidden", err)
 	}
-	if _, err := uc.List(context.Background(), facilityID, schedule.ListQuery{}); !errors.Is(err, apperr.ErrForbidden) {
+	if _, err := uc.List(context.Background(), facilityID, scheduleview.ListQuery{}); !errors.Is(err, apperr.ErrForbidden) {
 		t.Errorf("List: err = %v, want ErrForbidden", err)
 	}
 }
 
-func containsSchedule(ds []schedule.Detail, id string) bool {
-	return slices.ContainsFunc(ds, func(d schedule.Detail) bool { return d.ID == id })
+func containsSchedule(ds []scheduleview.Detail, id string) bool {
+	return slices.ContainsFunc(ds, func(d scheduleview.Detail) bool { return d.ID == id })
 }

@@ -41,32 +41,32 @@ type occurrence struct {
 	kept                assignment
 }
 
-// createSchedule は、単発の予定を作る。replaces は、繰り返しの予定の回を置き換えるときだけ指定する。
+// createSchedule は、単発の予定を作り、書いた予定を返す。replaces は、繰り返しの予定の回を置き換えるときだけ指定する。
 // 回を置き換えるときは、繰り返しの予定に割り振った職員を、休職か退職でも同じ役割のまま保存できる（requireAssignable）。
-func createSchedule(ctx context.Context, schedules Repository, ids kernel.IDGenerator, types TypeRepository, staff StaffRefs, visits VisitInfos, now func() time.Time, exports Exports, facilityID string, in SlotInput, replaces *occurrence) (Detail, error) {
+func createSchedule(ctx context.Context, schedules Repository, ids kernel.IDGenerator, types TypeRepository, staff StaffRefs, visits VisitInfos, now func() time.Time, exports Exports, facilityID string, in SlotInput, replaces *occurrence) (Schedule, error) {
 	var kept assignment
 	if replaces != nil {
 		kept = replaces.kept
 	}
 	slot, typ, err := prepareSlot(ctx, types, staff, visits, now, facilityID, in, kept)
 	if err != nil {
-		return Detail{}, err
+		return Schedule{}, err
 	}
 	sc, err := New(ids.NewID(), slot, typ)
 	if err != nil {
-		return Detail{}, err
+		return Schedule{}, err
 	}
 	if replaces != nil {
 		sc.RecurringScheduleID = &replaces.recurringScheduleID
 		sc.OriginalDate = &replaces.originalDate
 	}
 	if err := schedules.Create(ctx, sc); err != nil {
-		return Detail{}, err
+		return Schedule{}, err
 	}
 	if err := scheduleChanged(ctx, exports, sc.Slot, sc.ID); err != nil {
-		return Detail{}, err
+		return Schedule{}, err
 	}
-	return schedules.Get(ctx, sc.ID)
+	return sc, nil
 }
 
 // scheduleChanged は、単発の予定 id の変更を書き出しの待ちに積む。トランザクションの中で呼ぶ。

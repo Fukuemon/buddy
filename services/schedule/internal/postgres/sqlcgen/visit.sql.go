@@ -202,3 +202,27 @@ func (q *Queries) ListVisitInfoCategories(ctx context.Context, visitInfoIds []st
 	}
 	return items, nil
 }
+
+const listVisitInfoCategoryIDs = `-- name: ListVisitInfoCategoryIDs :many
+SELECT visit_category_id FROM visit_info_visit_categories WHERE visit_info_id = $1 ORDER BY visit_category_id
+`
+
+func (q *Queries) ListVisitInfoCategoryIDs(ctx context.Context, visitInfoID string) ([]string, error) {
+	rows, err := q.db.Query(ctx, listVisitInfoCategoryIDs, visitInfoID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var visit_category_id string
+		if err := rows.Scan(&visit_category_id); err != nil {
+			return nil, err
+		}
+		items = append(items, visit_category_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

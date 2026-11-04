@@ -13,6 +13,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
@@ -89,7 +90,7 @@ func (a reconcileApplier) Apply(ctx context.Context, c calendar.ExternalCalendar
 
 // syncSchedule は、カレンダー c の単発の予定に対応する外部の予定 ev の変更を当てる。
 func (a reconcileApplier) syncSchedule(ctx context.Context, c calendar.ExternalCalendar, l calendar.EventLink, ev calendar.Event) error {
-	d, err := a.schedules.GetForUpdate(ctx, *l.ScheduleID)
+	d, err := a.lockedSchedule(ctx, *l.ScheduleID)
 	if err != nil {
 		return err
 	}
@@ -124,7 +125,7 @@ func (a reconcileApplier) syncSchedule(ctx context.Context, c calendar.ExternalC
 // acceptSchedule は、カレンダー c の予定の対応 l の単発の予定を、buddy での変更によらず外部の予定 ev の内容にする。
 // トランザクションの中で呼ぶ。外部の変更を読み替えられないときは errUnappliable を返す。
 func (a reconcileApplier) acceptSchedule(ctx context.Context, c calendar.ExternalCalendar, l calendar.EventLink, ev calendar.Event) error {
-	d, err := a.schedules.GetForUpdate(ctx, *l.ScheduleID)
+	d, err := a.lockedSchedule(ctx, *l.ScheduleID)
 	if err != nil {
 		return err
 	}
@@ -140,7 +141,7 @@ func (a reconcileApplier) acceptSchedule(ctx context.Context, c calendar.Externa
 // syncRecurring は、繰り返しの予定に対応する外部の繰り返しの予定 ev の変更を確認する。
 // 繰り返しの予定そのもの（規則、時刻、タイトル）の外部での変更と削除は buddy に当てず、確認が必要な待ちにする。
 func (a reconcileApplier) syncRecurring(ctx context.Context, l calendar.EventLink, ev calendar.Event) error {
-	rs, err := a.recurring.GetForUpdate(ctx, *l.RecurringScheduleID)
+	rs, err := a.lockedRecurring(ctx, *l.RecurringScheduleID)
 	if err != nil {
 		return err
 	}
@@ -168,7 +169,7 @@ func (a reconcileApplier) syncRecurring(ctx context.Context, l calendar.EventLin
 // 置き換え、親の予定の EXDATE をまだ書き出していないときだけ、確認が必要な待ちにする。書き出した後なら、親の EXDATE が
 // 戻ってきたものとみなす。
 func (a reconcileApplier) syncOccurrence(ctx context.Context, c calendar.ExternalCalendar, parent calendar.EventLink, ev calendar.Event) error {
-	rs, err := a.recurring.GetForUpdate(ctx, *parent.RecurringScheduleID)
+	rs, err := a.lockedRecurring(ctx, *parent.RecurringScheduleID)
 	if err != nil {
 		return err
 	}
@@ -267,7 +268,7 @@ func (a reconcileApplier) replaced(ctx context.Context, recurringScheduleID stri
 	if errors.Is(err, apperr.ErrNotFound) {
 		return false, nil
 	}
-	return err == nil && r.Cancel == nil, err
+	return err == nil && !r.Cancelled, err
 }
 
 // open は、t の終わっていない書き出しの待ちを返し、無ければ nil を返す。待ちを書いている処理があれば errExportWriting を返す。
@@ -295,7 +296,7 @@ func (a reconcileApplier) resolve(ctx context.Context, open *calendar.Export) er
 
 // applySchedule は、単発の予定 d を外部の予定 ev の内容にし、更新の後の更新の番号を返す。
 // 消された予定はキャンセルする。読み替えられないときは errUnappliable を返す。
-func (a reconcileApplier) applySchedule(ctx context.Context, d schedule.Detail, ev calendar.Event) (int, error) {
+func (a reconcileApplier) applySchedule(ctx context.Context, d scheduleview.Detail, ev calendar.Event) (int, error) {
 	if ev.Status == calendar.StatusCancelled {
 		if d.Cancel != nil {
 			return d.Version, nil
@@ -488,6 +489,23 @@ func (a reconcileApplier) typeOf(ctx context.Context, id string) (schedule.Type,
 	return schedule.Type{}, apperr.ErrNotFound
 }
 
+// lockedSchedule は、トランザクションの終わりまで単発の予定 id の行に排他のロックを取り、ロックを取った後の予定を名前を付けて返す。
+// 外部の予定と比べるタイトルと、書き直す訪問の情報に、利用者とサービス内容の名前が要るためである。
+func (a reconcileApplier) lockedSchedule(ctx context.Context, id string) (scheduleview.Detail, error) {
+	if _, err := a.schedules.GetForUpdate(ctx, id); err != nil {
+		return scheduleview.Detail{}, err
+	}
+	return a.schedules.Get(ctx, id)
+}
+
+// lockedRecurring は、トランザクションの終わりまで繰り返しの予定 id の行に排他のロックを取り、ロックを取った後の予定を名前を付けて返す。
+func (a reconcileApplier) lockedRecurring(ctx context.Context, id string) (scheduleview.RecurringDetail, error) {
+	if _, err := a.recurring.GetForUpdate(ctx, id); err != nil {
+		return scheduleview.RecurringDetail{}, err
+	}
+	return a.recurring.Get(ctx, id)
+}
+
 func (a reconcileApplier) version(ctx context.Context, id string) (int, error) {
 	d, err := a.schedules.Get(ctx, id)
 	return d.Version, err
@@ -496,7 +514,7 @@ func (a reconcileApplier) version(ctx context.Context, id string) (int, error) {
 // isSameRecurring は、外部の繰り返しの予定 ev が、繰り返しの予定 rs を書き出した内容と同じかを返す。
 // RRULE は、両方を RecurrenceOf で同じ形にしてから比べる。EXDATE は比べない。外部で取り消した回は、親の EXDATE ではなく
 // 例外の回で来るので、buddy の除外の日と親の EXDATE は一致しないためである。回の変更は syncOccurrence が当てる。
-func isSameRecurring(rs schedule.RecurringDetail, ev calendar.Event) bool {
+func isSameRecurring(rs scheduleview.RecurringDetail, ev calendar.Event) bool {
 	if ev.Status == calendar.StatusCancelled {
 		return false
 	}
@@ -518,7 +536,7 @@ func isSameRecurring(rs schedule.RecurringDetail, ev calendar.Event) bool {
 
 // isSameSchedule は、職員 staffID のカレンダーの外部の予定 ev が、単発の予定 d を書き出した内容と同じかを返す。
 // buddy で職員を替えた予定は、前の職員のカレンダーの予定と同じとみなさない。説明は比べない。
-func isSameSchedule(d schedule.Detail, staffID string, ev calendar.Event) bool {
+func isSameSchedule(d scheduleview.Detail, staffID string, ev calendar.Event) bool {
 	if d.StaffID != staffID {
 		return false
 	}

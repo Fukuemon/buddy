@@ -9,6 +9,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 )
@@ -20,9 +21,9 @@ func TestStaffLeave(t *testing.T) {
 	returnDate := civil.Date{Year: 2027, Month: 4, Day: 1}
 
 	s, ids := stopFixture()
-	s.Schedules["PAST"] = schedule.Detail{Schedule: schedule.Schedule{ID: "PAST", Slot: schedule.Slot{
+	s.Schedules["PAST"] = scheduleview.Detail{Schedule: schedule.Schedule{ID: "PAST", Slot: schedule.Slot{
 		FacilityID: facilityID, StaffID: staffID, Date: civil.Date{Year: 2026, Month: 10, Day: 22}}}}
-	s.Schedules["TODAY"] = schedule.Detail{Schedule: schedule.Schedule{ID: "TODAY", Slot: schedule.Slot{
+	s.Schedules["TODAY"] = scheduleview.Detail{Schedule: schedule.Schedule{ID: "TODAY", Slot: schedule.Slot{
 		FacilityID: facilityID, StaffID: staffID, Date: civil.Date{Year: 2026, Month: 10, Day: 23}}}}
 	p := s.Patients[inmem.PatientID]
 	p.AssignedStaffID, p.Name = staffID, "山田 花子"

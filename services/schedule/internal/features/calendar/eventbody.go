@@ -13,6 +13,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 )
 
@@ -68,7 +69,7 @@ func EventIDOf(id string) (string, error) {
 }
 
 // ScheduleBody は、単発の予定 d を外部の予定の内容にする。
-func ScheduleBody(d schedule.Detail) EventBody {
+func ScheduleBody(d scheduleview.Detail) EventBody {
 	return EventBody{
 		Summary:     summary(d.Visit, d.Title),
 		Description: d.Description,
@@ -79,7 +80,7 @@ func ScheduleBody(d schedule.Detail) EventBody {
 }
 
 // RecurringBody は、繰り返しの予定 rs を、exdates の日を除いた外部の繰り返しの予定の内容にする。
-func RecurringBody(rs schedule.RecurringDetail, exdates []civil.Date) EventBody {
+func RecurringBody(rs scheduleview.RecurringDetail, exdates []civil.Date) EventBody {
 	return EventBody{
 		Summary:     summary(rs.Visit, rs.Title),
 		Description: rs.Description,

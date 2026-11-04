@@ -11,6 +11,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 )
@@ -120,7 +121,7 @@ func TestStaffUpdateProfileNonVisiting(t *testing.T) {
 	t.Run("過去の予定だけなら変えられる", func(t *testing.T) {
 		s, ids := stopFixture()
 		clearAssignments(s)
-		s.Schedules["PAST"] = schedule.Detail{Schedule: schedule.Schedule{ID: "PAST", Slot: schedule.Slot{
+		s.Schedules["PAST"] = scheduleview.Detail{Schedule: schedule.Schedule{ID: "PAST", Slot: schedule.Slot{
 			FacilityID: facilityID, StaffID: staffID, Date: civil.Date{Year: 2026, Month: 10, Day: 22}}}}
 		got, err := stopApp(s, ids, allow).UpdateProfile(ctx, staffID, profile(s, true))
 		if err != nil || !got.NonVisiting {

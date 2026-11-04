@@ -3,6 +3,7 @@ package httpapi
 import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi/openapi"
 )
@@ -33,7 +34,7 @@ func toCancel(c schedule.Cancellation) openapi.Cancel {
 	return openapi.Cancel{Id: c.ID, ScheduleId: c.ScheduleID, Reason: c.Reason}
 }
 
-func toSchedule(d schedule.Detail) openapi.Schedule {
+func toSchedule(d scheduleview.Detail) openapi.Schedule {
 	r := openapi.Schedule{
 		Id:                  d.ID,
 		FacilityId:          d.FacilityID,
@@ -70,7 +71,7 @@ func toRecurringRule(r schedule.Rule) openapi.RecurringRule {
 	}
 }
 
-func toRecurringSchedule(d schedule.RecurringDetail) openapi.RecurringSchedule {
+func toRecurringSchedule(d scheduleview.RecurringDetail) openapi.RecurringSchedule {
 	var exclusions []string
 	if d.ExclusionDates != nil {
 		exclusions = mapSlice(d.ExclusionDates, civil.Date.String)

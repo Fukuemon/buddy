@@ -279,13 +279,3 @@ func TestNewCancel(t *testing.T) {
 		t.Fatalf("err = %v, want ErrInvalidInput", err)
 	}
 }
-
-func TestListQueryValidate(t *testing.T) {
-	from, to := date(t, "2026-10-20"), date(t, "2026-10-19")
-	if err := (schedule.ListQuery{DateFrom: &from, DateTo: &to}).Validate(); !errors.Is(err, apperr.ErrInvalidInput) {
-		t.Fatalf("err = %v, want ErrInvalidInput", err)
-	}
-	if err := (schedule.ListQuery{DateFrom: &to, DateTo: &from}).Validate(); err != nil {
-		t.Fatal(err)
-	}
-}

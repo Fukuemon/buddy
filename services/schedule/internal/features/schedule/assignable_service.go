@@ -15,7 +15,7 @@ type assignment struct {
 }
 
 // assignedOf は、予定の職員 staffID と訪問の情報 v から、予定に割り振った職員と利用者を返す。
-func assignedOf(staffID string, v *visit.Detail) assignment {
+func assignedOf(staffID string, v *visit.Info) assignment {
 	a := assignment{staffID: staffID}
 	if v != nil {
 		a.assignedStaffID = v.AssignedStaffID

@@ -10,6 +10,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
 )
@@ -98,7 +99,7 @@ func TestFacilityOf(t *testing.T) {
 	s.Departments["DEP"] = organization.Department{ID: "DEP", FacilityID: otherFacilityID}
 	s.Teams["TEAM"] = organization.Team{ID: "TEAM", FacilityID: facilityID}
 	s.Positions["POS"] = organization.Position{ID: "POS", FacilityID: otherFacilityID}
-	s.Schedules["SCH"] = schedule.Detail{Schedule: schedule.Schedule{ID: "SCH", Slot: schedule.Slot{FacilityID: otherFacilityID}}}
+	s.Schedules["SCH"] = scheduleview.Detail{Schedule: schedule.Schedule{ID: "SCH", Slot: schedule.Slot{FacilityID: otherFacilityID}}}
 	a := newAuth(s)
 	tests := []struct {
 		r    access.Resource

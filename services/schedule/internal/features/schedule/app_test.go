@@ -14,6 +14,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
@@ -220,7 +221,7 @@ func TestSchedulesRejectInactiveStaff(t *testing.T) {
 				t.Run(string(status)+"/"+opName+"/"+slotName, func(t *testing.T) {
 					s := inmem.Seeded()
 					uc, _ := newSchedules(s)
-					var before map[string]schedule.Detail
+					var before map[string]scheduleview.Detail
 					err := op(uc, editorCtx(), slot(), func() {
 						stop(t, s, companionID, status)
 						before = maps.Clone(s.Schedules)
@@ -228,7 +229,7 @@ func TestSchedulesRejectInactiveStaff(t *testing.T) {
 					if !errors.Is(err, apperr.ErrInvalidInput) || !strings.Contains(err.Error(), companionID) {
 						t.Fatalf("err = %v, want 職員 %s の ErrInvalidInput", err, companionID)
 					}
-					if !maps.EqualFunc(s.Schedules, before, func(a, b schedule.Detail) bool { return a.Schedule == b.Schedule }) {
+					if !maps.EqualFunc(s.Schedules, before, func(a, b scheduleview.Detail) bool { return a.Schedule == b.Schedule }) {
 						t.Error("拒んだのに予定が変わった")
 					}
 					if _, ok := s.Recurring[recurringID]; !ok || len(s.Recurring) != 1 {
@@ -260,7 +261,7 @@ func TestSchedulesKeepInactiveStaff(t *testing.T) {
 				t.Fatalf("職員を変えずに保存: err = %v", err)
 			}
 			if got.StartTime != in.StartTime || got.StaffID != staffID {
-				t.Errorf("got %+v", got.Schedule)
+				t.Errorf("got %+v", got)
 			}
 			// 繰り返しの予定の職員のまま、回の時刻だけを変える
 			if _, err := uc.ChangeOccurrence(ctx, recurringID, civil.Date{Year: 2026, Month: 10, Day: 12}, normalSlot()); err != nil {
@@ -438,11 +439,11 @@ type deps struct {
 // app は、テストが呼ぶ schedule の操作の Do である。
 type app struct {
 	ListTypes        func(ctx context.Context) ([]schedule.Type, error)
-	Create           func(ctx context.Context, facilityID string, in schedule.SlotInput) (schedule.Detail, error)
-	CreateRecurring  func(ctx context.Context, facilityID string, in schedule.SlotInput, rule schedule.RuleInput) (schedule.RecurringDetail, error)
-	ChangeOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in schedule.SlotInput) (schedule.Detail, error)
+	Create           func(ctx context.Context, facilityID string, in schedule.SlotInput) (schedule.Schedule, error)
+	CreateRecurring  func(ctx context.Context, facilityID string, in schedule.SlotInput, rule schedule.RuleInput) (schedule.RecurringSchedule, error)
+	ChangeOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in schedule.SlotInput) (schedule.Schedule, error)
 	Cancel           func(ctx context.Context, scheduleID, reason string) (schedule.Cancellation, error)
-	Update           func(ctx context.Context, scheduleID string, in schedule.SlotInput) (schedule.Detail, error)
+	Update           func(ctx context.Context, scheduleID string, in schedule.SlotInput) (schedule.Schedule, error)
 }
 
 // build は、d の依存で schedule の全ての操作の型を作る。

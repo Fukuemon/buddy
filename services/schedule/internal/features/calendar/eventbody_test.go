@@ -8,6 +8,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 )
 
@@ -31,7 +32,7 @@ func TestEventIDOf(t *testing.T) {
 }
 
 func TestScheduleBodyVisitTitle(t *testing.T) {
-	d := schedule.Detail{
+	d := scheduleview.Detail{
 		Schedule: schedule.Schedule{ID: "S", Slot: schedule.Slot{
 			Date: civil.Date{Year: 2026, Month: 11, Day: 4}, StartTime: civil.Time{Hour: 9, Minute: 30}, EndTime: civil.Time{Hour: 10},
 		}},
@@ -56,8 +57,8 @@ func TestBodyEndsNextDay(t *testing.T) {
 		Date: civil.Date{Year: 2026, Month: 11, Day: 30}, StartTime: civil.Time{Hour: 22}, EndTime: civil.Time{Hour: 1}, EndsNextDay: true,
 		Title: &title,
 	}
-	single := calendar.ScheduleBody(schedule.Detail{Schedule: schedule.Schedule{ID: "S", Slot: slot}})
-	recurring := calendar.RecurringBody(schedule.RecurringDetail{
+	single := calendar.ScheduleBody(scheduleview.Detail{Schedule: schedule.Schedule{ID: "S", Slot: slot}})
+	recurring := calendar.RecurringBody(scheduleview.RecurringDetail{
 		RecurringSchedule: schedule.RecurringSchedule{ID: "R", Slot: slot, Rule: schedule.Rule{Frequency: schedule.Weekly}},
 	}, nil)
 	for name, b := range map[string]calendar.EventBody{"単発": single, "繰り返し": recurring} {

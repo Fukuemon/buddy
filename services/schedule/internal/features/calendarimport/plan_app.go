@@ -6,7 +6,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
@@ -32,7 +32,7 @@ func staffBlocked(ctx context.Context, staffRefs calendar.StaffRefs, c calendar.
 
 // planEvents は、カレンダー c の期間 rng の予定を src で読み、読み替えた plan と、事業所の利用者を返す。
 // blocked は、カレンダーを結び付けた職員に新しい予定を作らない理由で、空でなければ新しい予定をその理由の取り込まない予定にする。
-func planEvents(ctx context.Context, calendars Calendars, patients calendar.Patients, recurringSchedules kernel.Finder[schedule.RecurringDetail], serviceCodes calendar.ServiceCodes, src calendar.EventSource, c calendar.ExternalCalendar, rng Range, blocked calendar.SkipReason) (plan, []PatientRef, error) {
+func planEvents(ctx context.Context, calendars Calendars, patients calendar.Patients, recurringSchedules kernel.Finder[scheduleview.RecurringDetail], serviceCodes calendar.ServiceCodes, src calendar.EventSource, c calendar.ExternalCalendar, rng Range, blocked calendar.SkipReason) (plan, []PatientRef, error) {
 	events, err := src.Events(ctx, c.CalendarID, rng.TimeMin(), rng.TimeMax())
 	if err != nil {
 		return plan{}, nil, err
@@ -50,7 +50,7 @@ func planEvents(ctx context.Context, calendars Calendars, patients calendar.Pati
 	}
 	in := planInput{
 		rng: rng, events: events, links: make(map[string]calendar.EventLink, len(links)), instances: map[string][]calendar.Event{},
-		linkedRecurring: map[string]schedule.RecurringDetail{}, staffBlocked: blocked, staffID: c.StaffID,
+		linkedRecurring: map[string]scheduleview.RecurringDetail{}, staffBlocked: blocked, staffID: c.StaffID,
 	}
 	for _, l := range links {
 		in.links[l.ExternalEventID] = l

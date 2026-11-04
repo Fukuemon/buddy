@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"maps"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -16,6 +17,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
@@ -631,6 +633,19 @@ func TestScheduleGet(t *testing.T) {
 	if got.Title != nil || got.Description == nil || got.Cancel != nil {
 		t.Errorf("Title = %v, Description = %v, Cancel = %v", got.Title, got.Description, got.Cancel)
 	}
+	// 書き込みのモデルは、名前を結合せず、同じ予定と訪問の情報の ID を返す
+	stored, err := r.GetForUpdate(ctx, seedVisitSchedule)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(stored.Schedule, got.Schedule) || stored.Cancelled || stored.Version != got.Version {
+		t.Errorf("GetForUpdate = %+v, want %+v", stored, got.Schedule)
+	}
+	if sv := stored.Visit; sv == nil || sv.ID != v.ID || sv.FacilityID != seedFacility || sv.PatientID != v.PatientID ||
+		sv.AssignedStaffID != v.AssignedStaffID || sv.CompanionID == nil || *sv.CompanionID != *v.CompanionID ||
+		sv.ServiceCodeID != v.ServiceCodeID || !slices.Equal(sv.CategoryIDs, []string{v.Categories[0].ID}) {
+		t.Errorf("GetForUpdate の Visit = %+v, want %+v", sv, v)
+	}
 
 	normal, err := r.Get(ctx, seedConference)
 	if err != nil {
@@ -659,18 +674,18 @@ func TestScheduleList(t *testing.T) {
 	day := civil.Date{Year: 2026, Month: 10, Day: 20}
 	tests := []struct {
 		name string
-		q    schedule.ListQuery
+		q    scheduleview.ListQuery
 		want []string
 	}{
-		{name: "日付と開始の時刻の昇順", q: schedule.ListQuery{Sort: kernel.Sort{Field: "date"}},
+		{name: "日付と開始の時刻の昇順", q: scheduleview.ListQuery{Sort: kernel.Sort{Field: "date"}},
 			want: []string{late.ID, seedConference, seedVisitSchedule}},
-		{name: "日付と開始の時刻の降順", q: schedule.ListQuery{Sort: kernel.Sort{Field: "date", Descending: true}},
+		{name: "日付と開始の時刻の降順", q: scheduleview.ListQuery{Sort: kernel.Sort{Field: "date", Descending: true}},
 			want: []string{seedVisitSchedule, seedConference, late.ID}},
-		{name: "開始の時刻の昇順", q: schedule.ListQuery{Sort: kernel.Sort{Field: "start_time"}},
+		{name: "開始の時刻の昇順", q: scheduleview.ListQuery{Sort: kernel.Sort{Field: "start_time"}},
 			want: []string{late.ID, seedVisitSchedule, seedConference}},
-		{name: "種類で絞る", q: schedule.ListQuery{TypeName: &visitName, Sort: kernel.Sort{Field: "date"}},
+		{name: "種類で絞る", q: scheduleview.ListQuery{TypeName: &visitName, Sort: kernel.Sort{Field: "date"}},
 			want: []string{seedVisitSchedule}},
-		{name: "日付で絞る", q: schedule.ListQuery{DateFrom: &day, DateTo: &day, Sort: kernel.Sort{Field: "date"}},
+		{name: "日付で絞る", q: scheduleview.ListQuery{DateFrom: &day, DateTo: &day, Sort: kernel.Sort{Field: "date"}},
 			want: []string{late.ID, seedConference}},
 	}
 	for _, tt := range tests {
@@ -720,7 +735,7 @@ func TestScheduleEndsNextDay(t *testing.T) {
 		t.Errorf("got %+v", got.Slot)
 	}
 
-	rows, err := r.ListByFacility(ctx, seedFacility, schedule.ListQuery{DateFrom: &nov2, DateTo: &nov2, Sort: kernel.Sort{Field: "date"}})
+	rows, err := r.ListByFacility(ctx, seedFacility, scheduleview.ListQuery{DateFrom: &nov2, DateTo: &nov2, Sort: kernel.Sort{Field: "date"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -783,7 +798,7 @@ func TestRecurringScheduleEndsNextDay(t *testing.T) {
 	if !got.EndsNextDay || got.EndTime != (civil.Time{}) {
 		t.Errorf("got %+v", got.Slot)
 	}
-	list, err := r.ListByFacility(ctx, seedFacility, schedule.ListQuery{Sort: kernel.Sort{Field: "date"}})
+	list, err := r.ListByFacility(ctx, seedFacility, scheduleview.ListQuery{Sort: kernel.Sort{Field: "date"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -833,8 +848,12 @@ func TestRecurringScheduleAndExclusion(t *testing.T) {
 	if len(got.ExclusionDates) != 1 || got.ExclusionDates[0] != day {
 		t.Errorf("ExclusionDates = %v", got.ExclusionDates)
 	}
+	if stored, err := r.GetForUpdate(ctx, rs.ID); err != nil || !reflect.DeepEqual(stored.RecurringSchedule, got.RecurringSchedule) ||
+		stored.Version != got.Version || stored.Visit != nil {
+		t.Errorf("GetForUpdate = %+v, %v, want %+v", stored, err, got.RecurringSchedule)
+	}
 
-	list, err := r.ListByFacility(ctx, seedFacility, schedule.ListQuery{Sort: kernel.Sort{Field: "date"}})
+	list, err := r.ListByFacility(ctx, seedFacility, scheduleview.ListQuery{Sort: kernel.Sort{Field: "date"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -863,6 +882,9 @@ func TestScheduleCancel(t *testing.T) {
 	}
 	if got.Cancel == nil || got.Cancel.Reason != "体調不良" {
 		t.Errorf("Cancel = %+v", got.Cancel)
+	}
+	if stored, err := r.GetForUpdate(ctx, seedConference); err != nil || !stored.Cancelled || stored.Version != got.Version || stored.Visit != nil {
+		t.Errorf("キャンセルした後の GetForUpdate = %+v, %v, want キャンセル済みで更新の番号 %d", stored, err, got.Version)
 	}
 }
 

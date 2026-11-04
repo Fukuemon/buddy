@@ -18,7 +18,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
@@ -329,7 +329,7 @@ func TestCalendarSyncKeepsEndedPatientOnlyInPast(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	get := func() schedule.Detail {
+	get := func() scheduleview.Detail {
 		t.Helper()
 		d, err := schedules.Get(ctx, *link.ScheduleID)
 		if err != nil {

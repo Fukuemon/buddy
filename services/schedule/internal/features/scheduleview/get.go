@@ -18,13 +18,13 @@ func NewGet(schedules Schedules, staff StaffRefs) Get {
 }
 
 // Do は、単発の予定を返す。
-func (s Get) Do(ctx context.Context, id string) (schedule.Detail, error) {
+func (s Get) Do(ctx context.Context, id string) (Detail, error) {
 	d, err := s.schedules.Get(ctx, id)
 	if err != nil {
-		return schedule.Detail{}, err
+		return Detail{}, err
 	}
 	if err := schedule.RequireScheduleAccess(ctx, s.staff, d.StaffID, false); err != nil {
-		return schedule.Detail{}, err
+		return Detail{}, err
 	}
 	return d, nil
 }
