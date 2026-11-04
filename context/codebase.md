@@ -100,6 +100,9 @@ status: stable
   - 全ての機能のパッケージとアダプタを import してよいのは、`assemble` だけにする。
     - `assemble` を import するのは `cmd` だけにする。
     - `cmd/api` と `cmd/calendar-worker` は、機能のパッケージ、アダプタ、`access`、`principal` を import しない。`assemble` が作った値で、`cmd/api` はサーバーを、`cmd/calendar-worker` は書き出しか同期の処理を起動する。
+    - プロセスの寿命（設定の読み込み、シグナル、DB とサーバーの開始と停止）は `cmd` が持つ。`assemble` は依存のグラフを作る部分だけを持つ。
+      - `assemble` のファイルは、API と Worker が共有するもの（`assemble.go`）、API だけが使うもの（`api.go`）、Worker だけが使うもの（`worker.go`）に分ける。
+    - 照合の API と ID ブローカーには、`assemble` に当たるパッケージを作らない。組み立てを共有する別の実行の単位が無いためである。組み立ては `main` のパッケージの中で、責務ごとのファイルに分ける。
     - ADR-0031: [Go の API の操作を、使う依存だけを持つ操作ごとの型にし、機能のパッケージの App をやめる](../docs/adr/0031-go-operation-types.md)
 - `services/receipt` の依存は、`record`、`civil`、`servicerule` を末端にして、読み込み（`csvio`）、正規化、対の作成、判定、つなぐ段（`check`）、データソース、HTTP の順の 1 方向に限る。
   - 正規化と判定はサービスの規則（`servicerule` と `packages/go/servicecode`）を、データソースは Google カレンダー（`gcal`）を使う。
