@@ -105,43 +105,13 @@ ON CONFLICT ON CONSTRAINT staff_email_key DO NOTHING`, m.ID, m.OrgID, m.Email, m
 // Activate は、登録の途中の職員 id を有効にする。有効な職員を有効にしても成功する。いなければ staff.ErrNotFound を、
 // 止めた職員なら staff.ErrSuspended を、退職した職員なら staff.ErrRetired を返す。
 func (s *StaffStore) Activate(ctx context.Context, id string) error {
-	tag, err := s.pool.Exec(ctx, `UPDATE staff SET status = $2 WHERE id = $1 AND status IN ($3, $2)`,
-		id, staff.StatusActive, staff.StatusPending)
-	if err != nil {
-		return fmt.Errorf("activate staff: %w", err)
-	}
-	if tag.RowsAffected() == 1 {
-		return nil
-	}
-	m, err := s.Get(ctx, id)
-	if err != nil {
-		return err
-	}
-	if m.Status == staff.StatusRetired {
-		return staff.ErrRetired
-	}
-	return staff.ErrSuspended
+	return s.transition(ctx, id, staff.Activation(), "activate staff")
 }
 
 // Resume は、止めた職員 id を有効に戻す。上流のアカウントの結び付けはそのまま残す。有効な職員を戻しても成功する。
 // いなければ staff.ErrNotFound を、退職した職員なら staff.ErrRetired を、登録の途中の職員なら staff.ErrNotSuspended を返す。
 func (s *StaffStore) Resume(ctx context.Context, id string) error {
-	tag, err := s.pool.Exec(ctx, `UPDATE staff SET status = $2 WHERE id = $1 AND status IN ($3, $2)`,
-		id, staff.StatusActive, staff.StatusSuspended)
-	if err != nil {
-		return fmt.Errorf("resume staff: %w", err)
-	}
-	if tag.RowsAffected() == 1 {
-		return nil
-	}
-	m, err := s.Get(ctx, id)
-	if err != nil {
-		return err
-	}
-	if m.Status == staff.StatusRetired {
-		return staff.ErrRetired
-	}
-	return staff.ErrNotSuspended
+	return s.transition(ctx, id, staff.Resumption(), "resume staff")
 }
 
 // Retire は、職員 id を退職にし、メールと上流のアカウントを消す。同じメールと上流のアカウントで、新しい職員を登録し直せる。
@@ -182,16 +152,22 @@ AND NOT EXISTS (SELECT 1 FROM upstream_accounts u WHERE u.staff_id = s.id)`, id,
 // Suspend は、職員 id を止める。止めた職員を止めても成功する。いなければ staff.ErrNotFound を、
 // 退職した職員なら staff.ErrRetired を返す。
 func (s *StaffStore) Suspend(ctx context.Context, id string) error {
-	tag, err := s.pool.Exec(ctx, `UPDATE staff SET status = $2 WHERE id = $1 AND status <> $3`,
-		id, staff.StatusSuspended, staff.StatusRetired)
+	return s.transition(ctx, id, staff.Suspension(), "suspend staff")
+}
+
+// transition は、状態が t.From のいずれかの職員 id を t.To にする。状態の条件と更新を 1 文で行うので、同時の遷移と競合しない。
+// 遷移しなかったときは、職員がいなければ staff.ErrNotFound を、いれば t.Refuse のエラーを返す。op は DB のエラーに付ける操作の名前である。
+func (s *StaffStore) transition(ctx context.Context, id string, t staff.Transition, op string) error {
+	tag, err := s.pool.Exec(ctx, `UPDATE staff SET status = $2 WHERE id = $1 AND status = ANY($3)`, id, t.To, t.From)
 	if err != nil {
-		return fmt.Errorf("suspend staff: %w", err)
+		return fmt.Errorf("%s: %w", op, err)
 	}
 	if tag.RowsAffected() == 1 {
 		return nil
 	}
-	if _, err := s.Get(ctx, id); err != nil {
+	m, err := s.Get(ctx, id)
+	if err != nil {
 		return err
 	}
-	return staff.ErrRetired
+	return t.Refuse(m.Status)
 }

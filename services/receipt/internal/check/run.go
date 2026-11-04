@@ -75,14 +75,18 @@ func readCSV(
 	data []byte,
 	input record.Input,
 	columns []string,
-	normalizeRows func([]csvio.Row) ([]record.Record, []record.CSVError),
+	normalizeRows func([]record.Fields) ([]record.Record, []record.CSVError),
 	message string,
 ) ([]record.Record, error) {
 	rows, err := csvio.ReadTable(data, input, columns)
 	if err != nil {
 		return nil, err
 	}
-	recs, rowErrs := normalizeRows(rows)
+	fields := make([]record.Fields, len(rows))
+	for i, r := range rows {
+		fields[i] = r.Fields()
+	}
+	recs, rowErrs := normalizeRows(fields)
 	if len(rowErrs) > 0 {
 		return nil, &record.InputError{Message: message, Errors: rowErrs}
 	}

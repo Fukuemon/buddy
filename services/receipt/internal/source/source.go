@@ -59,7 +59,7 @@ func (s Selector) Select(req Request) (check.ScheduleSource, error) {
 	if req.Month == "" {
 		return nil, ErrNoSchedules
 	}
-	month, err := gcal.ParseMonth(req.Month)
+	month, err := ParseMonth(req.Month)
 	if err != nil {
 		return nil, &InvalidMonthError{Err: err}
 	}
@@ -69,7 +69,7 @@ func (s Selector) Select(req Request) (check.ScheduleSource, error) {
 	if s.Calendar == nil {
 		return nil, fmt.Errorf("対象の月 %s: %w", month, ErrCalendarNotConfigured)
 	}
-	src, ok := s.Calendar.Month(req.OrgID, month)
+	src, ok := s.Calendar.Month(req.OrgID, month.Year, month.Month)
 	if !ok {
 		return nil, fmt.Errorf("組織 %s: %w", req.OrgID, ErrCalendarNotConfigured)
 	}

@@ -1,6 +1,7 @@
 package judge
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/Fukuemon/buddy/services/receipt/internal/civil"
@@ -233,5 +234,40 @@ func TestJudgeNightService(t *testing.T) {
 				t.Errorf("VisitDuration = %+v", c.VisitDuration)
 			}
 		})
+	}
+}
+
+// TestIsConsistentSeesAllChecks は、Checks の判定の項目（Check と RangeCheck）の 1 つだけが整合しないとき、
+// IsConsistent が false を返すことを確認する。項目を足して IsConsistent に足し忘れると失敗する。
+// 区分に影響しない bool の項目は notes に挙げる。
+func TestIsConsistentSeesAllChecks(t *testing.T) {
+	notes := map[string]bool{"DurationEqual": true, "EndEqual": true}
+	typ := reflect.TypeFor[Checks]()
+	allOK := func() reflect.Value {
+		v := reflect.New(typ).Elem()
+		for i := range typ.NumField() {
+			if f := v.Field(i); f.Kind() == reflect.Struct {
+				f.FieldByName("OK").SetBool(true)
+			}
+		}
+		return v
+	}
+	if !allOK().Interface().(Checks).IsConsistent() {
+		t.Fatal("全ての項目が整合するのに IsConsistent が false を返す")
+	}
+	for i := range typ.NumField() {
+		field := typ.Field(i)
+		switch field.Type {
+		case reflect.TypeFor[Check](), reflect.TypeFor[RangeCheck]():
+			v := allOK()
+			v.Field(i).FieldByName("OK").SetBool(false)
+			if v.Interface().(Checks).IsConsistent() {
+				t.Errorf("%s だけが整合しないのに IsConsistent が true を返す", field.Name)
+			}
+		default:
+			if !notes[field.Name] {
+				t.Errorf("%s の型 %s を、判定の項目か注記の項目かに分けていない", field.Name, field.Type)
+			}
+		}
 	}
 }

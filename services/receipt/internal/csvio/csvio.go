@@ -17,15 +17,15 @@ import (
 
 const utf8BOM = "\xEF\xBB\xBF"
 
-// 入力の列の名前。
+// 入力の列の名前。正規化の誤りの列の名前と合うよう、予定と実績の項目の名前にそろえる。
 const (
-	ColDate     = "訪問日"
-	ColClient   = "利用者名"
-	ColStart    = "開始時間"
-	ColEnd      = "終了時間"
-	ColDuration = "提供時間"
-	ColService  = "サービス内容"
-	ColStaff    = "主訪問者"
+	ColDate     = record.ColumnDate
+	ColClient   = record.ColumnClient
+	ColStart    = record.ColumnStart
+	ColEnd      = record.ColumnEnd
+	ColDuration = record.ColumnDuration
+	ColService  = record.ColumnService
+	ColStaff    = record.ColumnStaff
 )
 
 // AdditionColumns は、実績の CSV の加算の列を、つなぐ順に返す。
@@ -54,9 +54,22 @@ func (r Row) Get(column string) string {
 	return r.values[column]
 }
 
-// NewRow は、line 行目の列の値から Row を作る。
-func NewRow(line int, values map[string]string) Row {
-	return Row{Line: line, values: values}
+// Fields は、行の列の値を、正規化する前の値にする。加算は AdditionColumns の順に詰め、読んでいない列は空にする。
+func (r Row) Fields() record.Fields {
+	f := record.Fields{
+		Line:     r.Line,
+		Date:     r.Get(ColDate),
+		Client:   r.Get(ColClient),
+		Start:    r.Get(ColStart),
+		End:      r.Get(ColEnd),
+		Duration: r.Get(ColDuration),
+		Service:  r.Get(ColService),
+		Staff:    r.Get(ColStaff),
+	}
+	for _, c := range AdditionColumns() {
+		f.Additions = append(f.Additions, r.Get(c))
+	}
+	return f
 }
 
 // ErrEncoding は、Decode が UTF-8 としても CP932 としても読めないバイト列を受けたことを表す。

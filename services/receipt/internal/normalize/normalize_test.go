@@ -3,7 +3,6 @@ package normalize
 import (
 	"testing"
 
-	"github.com/Fukuemon/buddy/services/receipt/internal/csvio"
 	"github.com/Fukuemon/buddy/services/receipt/internal/record"
 )
 
@@ -20,16 +19,17 @@ func TestStaff(t *testing.T) {
 	}
 }
 
-func row(line int, start, end, duration, service string) csvio.Row {
-	return csvio.NewRow(line, map[string]string{
-		csvio.ColDate:     "2024/04/01",
-		csvio.ColClient:   "利用者A",
-		csvio.ColStaff:    "職員B",
-		csvio.ColStart:    start,
-		csvio.ColEnd:      end,
-		csvio.ColDuration: duration,
-		csvio.ColService:  service,
-	})
+func row(line int, start, end, duration, service string) record.Fields {
+	return record.Fields{
+		Line:     line,
+		Date:     "2024/04/01",
+		Client:   "利用者A",
+		Staff:    "職員B",
+		Start:    start,
+		End:      end,
+		Duration: duration,
+		Service:  service,
+	}
 }
 
 func TestSchedulesAdjust(t *testing.T) {
@@ -49,7 +49,7 @@ func TestSchedulesAdjust(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.service, func(t *testing.T) {
-			recs, errs := Schedules([]csvio.Row{row(2, "09:00", "09:30", "30", tt.service)})
+			recs, errs := Schedules([]record.Fields{row(2, "09:00", "09:30", "30", tt.service)})
 			if len(errs) > 0 {
 				t.Fatal(errs)
 			}
@@ -75,7 +75,7 @@ func TestSchedulesAdjustBoundary(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			recs, errs := Schedules([]csvio.Row{row(2, tt.start, tt.end, tt.duration, "訪看I2")})
+			recs, errs := Schedules([]record.Fields{row(2, tt.start, tt.end, tt.duration, "訪看I2")})
 			if len(errs) > 0 {
 				t.Fatal(errs)
 			}
@@ -88,7 +88,7 @@ func TestSchedulesAdjustBoundary(t *testing.T) {
 }
 
 func TestVisitsDoNotAdjust(t *testing.T) {
-	recs, errs := Visits([]csvio.Row{row(2, "9:00", "9:30", "30", "訪看I2")})
+	recs, errs := Visits([]record.Fields{row(2, "9:00", "9:30", "30", "訪看I2")})
 	if len(errs) > 0 {
 		t.Fatal(errs)
 	}
@@ -100,7 +100,7 @@ func TestVisitsDoNotAdjust(t *testing.T) {
 func TestOvernightRows(t *testing.T) {
 	tests := []struct {
 		name        string
-		convert     func([]csvio.Row) ([]record.Record, []record.CSVError)
+		convert     func([]record.Fields) ([]record.Record, []record.CSVError)
 		wantEnd     string
 		wantElapsed int
 	}{
@@ -109,7 +109,7 @@ func TestOvernightRows(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			recs, errs := tt.convert([]csvio.Row{row(2, "22:00", "01:00", "180", "訪看I2")})
+			recs, errs := tt.convert([]record.Fields{row(2, "22:00", "01:00", "180", "訪看I2")})
 			if len(errs) > 0 {
 				t.Fatalf("終了が開始より前の行を誤りにした: %v", errs)
 			}
@@ -123,7 +123,7 @@ func TestOvernightRows(t *testing.T) {
 }
 
 func TestEmptyDurationIsNil(t *testing.T) {
-	recs, errs := Schedules([]csvio.Row{row(2, "09:00", "09:30", "", "訪看I2")})
+	recs, errs := Schedules([]record.Fields{row(2, "09:00", "09:30", "", "訪看I2")})
 	if len(errs) > 0 {
 		t.Fatal(errs)
 	}
@@ -134,13 +134,8 @@ func TestEmptyDurationIsNil(t *testing.T) {
 
 func TestVisitsAdditions(t *testing.T) {
 	r := row(2, "9:00", "9:30", "30", "訪看I2")
-	values := map[string]string{}
-	for _, c := range csvio.VisitColumns() {
-		values[c] = r.Get(c)
-	}
-	values["加算①"] = "通常"
-	values["加算③"] = "特別管理加算"
-	recs, errs := Visits([]csvio.Row{csvio.NewRow(2, values)})
+	r.Additions = []string{"通常", "", "特別管理加算", "", ""}
+	recs, errs := Visits([]record.Fields{r})
 	if len(errs) > 0 {
 		t.Fatal(errs)
 	}
@@ -152,17 +147,17 @@ func TestVisitsAdditions(t *testing.T) {
 func TestRowErrors(t *testing.T) {
 	tests := []struct {
 		name       string
-		row        csvio.Row
+		row        record.Fields
 		wantColumn string
 		wantReason record.Reason
 	}{
-		{"時刻の形", row(4, "9時", "10:00", "30", "訪看I2"), csvio.ColStart, record.ReasonInvalidTime},
-		{"提供時間が整数でない", row(5, "09:00", "09:30", "三十", "訪看I2"), csvio.ColDuration, record.ReasonInvalidDuration},
-		{"サービス内容が空", row(6, "09:00", "09:30", "30", ""), csvio.ColService, record.ReasonEmptyValue},
+		{"時刻の形", row(4, "9時", "10:00", "30", "訪看I2"), record.ColumnStart, record.ReasonInvalidTime},
+		{"提供時間が整数でない", row(5, "09:00", "09:30", "三十", "訪看I2"), record.ColumnDuration, record.ReasonInvalidDuration},
+		{"サービス内容が空", row(6, "09:00", "09:30", "30", ""), record.ColumnService, record.ReasonEmptyValue},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			recs, errs := Visits([]csvio.Row{tt.row})
+			recs, errs := Visits([]record.Fields{tt.row})
 			if len(recs) != 0 || len(errs) != 1 {
 				t.Fatalf("recs %d errs %v", len(recs), errs)
 			}

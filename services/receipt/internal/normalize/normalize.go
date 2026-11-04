@@ -1,4 +1,4 @@
-// Package normalize は、CSV の行を、予定と実績で比べられる Record にする。
+// Package normalize は、データソースが詰めた正規化の前の値（record.Fields）を、予定と実績で比べられる Record にする。
 package normalize
 
 import (
@@ -8,7 +8,6 @@ import (
 	"github.com/Fukuemon/buddy/packages/go/gcaltitle"
 
 	"github.com/Fukuemon/buddy/services/receipt/internal/civil"
-	"github.com/Fukuemon/buddy/services/receipt/internal/csvio"
 	"github.com/Fukuemon/buddy/services/receipt/internal/record"
 	"github.com/Fukuemon/buddy/services/receipt/internal/servicerule"
 )
@@ -18,11 +17,11 @@ func staff(s string) string {
 	return strings.ReplaceAll(s, "　", " ")
 }
 
-// Schedules は、予定の行を Record にする。
+// Schedules は、予定の行の値を Record にする。誤りのある行は Record にせず、項目ごとの record.CSVError で返す。
 // 終了時間と提供時間から 1 分引くサービス内容（servicerule.HasScheduleEndAdjustment）の行は、引いた値にする。
 // 終了時間は開始時間と違うときだけ、提供時間は 1 以上のときだけ引く。
 // 翌日に終わる行も引く。翌日の 0:00 に終わる行は、終了時間を開始の日の 23:59 にする。
-func Schedules(rows []csvio.Row) ([]record.Record, []record.CSVError) {
+func Schedules(rows []record.Fields) ([]record.Record, []record.CSVError) {
 	recs, errs := toRecords(rows, record.InputSchedule, false)
 	for i := range recs {
 		if !servicerule.HasScheduleEndAdjustment(recs[i].Service) {
@@ -39,13 +38,13 @@ func Schedules(rows []csvio.Row) ([]record.Record, []record.CSVError) {
 	return recs, errs
 }
 
-// Visits は、実績の行を Record にする。
+// Visits は、実績の行の値を Record にする。加算は空でない値だけを残す。誤りのある行は Record にせず、項目ごとの record.CSVError で返す。
 // 予定と実績のどちらも、終了時間が開始時間より前の行は、訪問日の翌日のその時刻に終わる訪問として読む（ADR-0023）。
-func Visits(rows []csvio.Row) ([]record.Record, []record.CSVError) {
+func Visits(rows []record.Fields) ([]record.Record, []record.CSVError) {
 	return toRecords(rows, record.InputVisit, true)
 }
 
-func toRecords(rows []csvio.Row, input record.Input, readsAdditions bool) ([]record.Record, []record.CSVError) {
+func toRecords(rows []record.Fields, input record.Input, readsAdditions bool) ([]record.Record, []record.CSVError) {
 	var (
 		recs []record.Record
 		errs []record.CSVError
@@ -61,7 +60,7 @@ func toRecords(rows []csvio.Row, input record.Input, readsAdditions bool) ([]rec
 	return recs, errs
 }
 
-func toRecord(row csvio.Row, input record.Input, readsAdditions bool) (record.Record, []record.CSVError) {
+func toRecord(row record.Fields, input record.Input, readsAdditions bool) (record.Record, []record.CSVError) {
 	var errs []record.CSVError
 	fail := func(column string, reason record.Reason, message string) {
 		errs = append(errs, record.CSVError{Input: input, Reason: reason, Line: row.Line, Column: column, Message: message})
@@ -69,49 +68,49 @@ func toRecord(row csvio.Row, input record.Input, readsAdditions bool) (record.Re
 
 	rec := record.Record{Line: row.Line}
 
-	date, err := civil.ParseDate(row.Get(csvio.ColDate))
+	date, err := civil.ParseDate(row.Date)
 	if err != nil {
-		fail(csvio.ColDate, record.ReasonInvalidDate, err.Error())
+		fail(record.ColumnDate, record.ReasonInvalidDate, err.Error())
 	}
 	rec.Key = record.Key{
 		Date:   date,
-		Client: gcaltitle.NormalizeClient(row.Get(csvio.ColClient)),
-		Staff:  staff(row.Get(csvio.ColStaff)),
+		Client: gcaltitle.NormalizeClient(row.Client),
+		Staff:  staff(row.Staff),
 	}
 	if rec.Key.Client == "" {
-		fail(csvio.ColClient, record.ReasonEmptyValue, "空である")
+		fail(record.ColumnClient, record.ReasonEmptyValue, "空である")
 	}
 	if strings.TrimSpace(rec.Key.Staff) == "" {
-		fail(csvio.ColStaff, record.ReasonEmptyValue, "空である")
+		fail(record.ColumnStaff, record.ReasonEmptyValue, "空である")
 	}
 
-	rec.Service = gcaltitle.NormalizeService(row.Get(csvio.ColService))
+	rec.Service = gcaltitle.NormalizeService(row.Service)
 	if strings.TrimSpace(rec.Service) == "" {
-		fail(csvio.ColService, record.ReasonEmptyValue, "空である")
+		fail(record.ColumnService, record.ReasonEmptyValue, "空である")
 	}
 
-	start, errStart := civil.ParseClock(row.Get(csvio.ColStart))
+	start, errStart := civil.ParseClock(row.Start)
 	if errStart != nil {
-		fail(csvio.ColStart, record.ReasonInvalidTime, errStart.Error())
+		fail(record.ColumnStart, record.ReasonInvalidTime, errStart.Error())
 	}
-	end, errEnd := civil.ParseClock(row.Get(csvio.ColEnd))
+	end, errEnd := civil.ParseClock(row.End)
 	if errEnd != nil {
-		fail(csvio.ColEnd, record.ReasonInvalidTime, errEnd.Error())
+		fail(record.ColumnEnd, record.ReasonInvalidTime, errEnd.Error())
 	}
 	rec.Start, rec.End = start, end
 
-	if v := strings.TrimSpace(row.Get(csvio.ColDuration)); v != "" {
+	if v := strings.TrimSpace(row.Duration); v != "" {
 		d, err := strconv.Atoi(v)
 		if err != nil || d < 0 {
-			fail(csvio.ColDuration, record.ReasonInvalidDuration, "0 以上の整数でない: "+strconv.Quote(v))
+			fail(record.ColumnDuration, record.ReasonInvalidDuration, "0 以上の整数でない: "+strconv.Quote(v))
 		}
 		rec.Duration = &d
 	}
 
 	if readsAdditions {
 		rec.Additions = []string{}
-		for _, c := range csvio.AdditionColumns() {
-			if v := row.Get(c); v != "" {
+		for _, v := range row.Additions {
+			if v != "" {
 				rec.Additions = append(rec.Additions, v)
 			}
 		}
