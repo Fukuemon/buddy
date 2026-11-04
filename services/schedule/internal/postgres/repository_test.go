@@ -1524,7 +1524,7 @@ func TestGrantAllowsReadingTarget(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if schedule.CanRead(principal.Principal{Staff: principal.FromDetail(before)}, hayashi.ID, hayashi.TeamID) {
+	if schedule.CanRead(principal.Principal{Staff: principal.StaffOf(before)}, hayashi.ID, hayashi.TeamID) {
 		t.Fatal("森は、権限を足す前から林の予定を見られた")
 	}
 	g := staff.Grant{ID: "01M3TD00000000000000000050", PolicyID: seedUserRead,
@@ -1536,7 +1536,7 @@ func TestGrantAllowsReadingTarget(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := principal.Principal{Staff: principal.FromDetail(after)}
+	p := principal.Principal{Staff: principal.StaffOf(after)}
 	if !schedule.CanRead(p, hayashi.ID, hayashi.TeamID) || schedule.CanEdit(p, hayashi.ID, hayashi.TeamID) {
 		t.Errorf("森の権限 = %+v, want 林の予定の閲覧だけ", after.Policies)
 	}

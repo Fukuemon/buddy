@@ -70,15 +70,17 @@ func newApps(r Repositories, accounts *gcal.Accounts, cfg config.API) httpapi.Ap
 		Schedules:       scheduleApp(r.facilities, r.staffRefs, r.facilities, visitInfos, r.schedules, r.recurring, r.scheduleTypes, outbox, r.tx, r.ids),
 		Calendars: calendarApp(r.calendars, calendarAccounts(accounts), r.staffRefs, r.facilities, r.patients, r.serviceCodes, r.scheduleTypes,
 			r.schedules, r.recurring, r.recurring, visitInfos, r.exports, r.tx, r.ids, principal.RequireStaffManage),
-		Auth: access.NewService(access.Deps{
-			Facilities: r.facilities, Staff: r.staff,
-			Resources: map[access.Resource]access.FacilityReader{
-				access.ResourceDepartment: r.departments, access.ResourceTeam: r.teams, access.ResourcePosition: r.positions,
-				access.ResourceStaff: r.staffRefs, access.ResourcePatient: r.patients,
-				access.ResourceSchedule: r.schedules, access.ResourceRecurringSchedule: r.recurring,
-				access.ResourceExternalCalendar: r.calendars, access.ResourceCalendarExport: r.exports,
-			},
-		}),
+		Auth: access.NewService(access.Deps{Facilities: r.facilities, Staff: r.staff, Resources: accessResources(r)}),
+	}
+}
+
+// accessResources は、access.ResourceFacility を除くリソースの種類ごとに、事業所の ID を読むリポジトリを返す。
+func accessResources(r Repositories) map[access.Resource]access.FacilityReader {
+	return map[access.Resource]access.FacilityReader{
+		access.ResourceDepartment: r.departments, access.ResourceTeam: r.teams, access.ResourcePosition: r.positions,
+		access.ResourceStaff: r.staffRefs, access.ResourcePatient: r.patients,
+		access.ResourceSchedule: r.schedules, access.ResourceRecurringSchedule: r.recurring,
+		access.ResourceExternalCalendar: r.calendars, access.ResourceCalendarExport: r.exports,
 	}
 }
 

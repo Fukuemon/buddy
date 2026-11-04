@@ -9,10 +9,10 @@ import (
 )
 
 type facilityReader interface {
-	FacilityOf(ctx context.Context, id string) (string, error)
+	GetFacilityID(ctx context.Context, id string) (string, error)
 }
 
-func TestFacilityOfMatchesGet(t *testing.T) {
+func TestGetFacilityIDMatchesGet(t *testing.T) {
 	ctx := context.Background()
 	facilityOfGet := func(get func() (string, error)) string {
 		t.Helper()
@@ -59,15 +59,15 @@ func TestFacilityOfMatchesGet(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.reader.FacilityOf(ctx, tt.id)
+			got, err := tt.reader.GetFacilityID(ctx, tt.id)
 			if err != nil || got != tt.want || got != seedFacility {
-				t.Errorf("FacilityOf(%s) = %q, %v, want %q", tt.id, got, err, tt.want)
+				t.Errorf("GetFacilityID(%s) = %q, %v, want %q", tt.id, got, err, tt.want)
 			}
 		})
 	}
 }
 
-func TestFacilityOfNotFound(t *testing.T) {
+func TestGetFacilityIDNotFound(t *testing.T) {
 	readers := map[string]facilityReader{
 		"部署": NewDepartmentRepository(testDB), "チーム": NewTeamRepository(testDB), "役職": NewPositionRepository(testDB),
 		"職員": NewStaffRefRepository(testDB), "利用者": NewPatientRepository(testDB), "予定": NewScheduleRepository(testDB),
@@ -76,7 +76,7 @@ func TestFacilityOfNotFound(t *testing.T) {
 	}
 	for name, r := range readers {
 		t.Run(name, func(t *testing.T) {
-			if _, err := r.FacilityOf(context.Background(), "01M3TD0000000000000000NONE"); !errors.Is(err, apperr.ErrNotFound) {
+			if _, err := r.GetFacilityID(context.Background(), "01M3TD0000000000000000NONE"); !errors.Is(err, apperr.ErrNotFound) {
 				t.Errorf("err = %v, want ErrNotFound", err)
 			}
 		})

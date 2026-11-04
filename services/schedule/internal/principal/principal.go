@@ -34,13 +34,13 @@ type Staff struct {
 	Policies   []staff.PolicyGrant
 }
 
-// FromDetail は、職員の詳細 d から、認可に要る項目を写した Staff を返す。
-func FromDetail(d staff.Detail) Staff {
+// StaffOf は、職員の詳細 d から、認可に要る項目を写した Staff を返す。
+func StaffOf(d staff.Detail) Staff {
 	return Staff{ID: d.ID, FacilityID: d.FacilityID, TeamID: d.TeamID, Status: d.Status(), Policies: d.Policies}
 }
 
-// Active は、職員が休職も退職もしていないかを返す。
-func (s Staff) Active() bool {
+// IsActive は、職員が休職も退職もしていないかを返す。
+func (s Staff) IsActive() bool {
 	return s.Status == staff.StatusActive
 }
 

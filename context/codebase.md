@@ -87,8 +87,8 @@ status: stable
     - トランザクションは `tx.Transactor` で受ける。
     - アダプタを import しない。
     - `access` は機能のパッケージではないので、機能のパッケージの依存の規則の対象の外にする。
-    - `access` は機能のパッケージを import しない。
-      - パスの ID が指すリソースの事業所は、各リポジトリの `FacilityOf` で事業所の ID だけを読む。
+    - `access` は機能のパッケージを直接 import しない。`principal` を通した `organization` と `staff` への依存は除く。
+      - パスの ID が指すリソースの事業所は、各リポジトリの `GetFacilityID` で事業所の ID だけを読む。
       - 職員は、認可に要る項目だけを持つ `principal.Staff` で読む。
   - `config` は DB のアダプタを import しない。
     - `assemble` と `cmd/migrate` が `config` の値をアダプタの設定にコピーする。

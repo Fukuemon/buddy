@@ -24,7 +24,7 @@ type Staff interface {
 
 // FacilityReader は、ID が id のリソースが属する事業所の ID を読む。見つからないときは apperr.ErrNotFound を返す。
 type FacilityReader interface {
-	FacilityOf(ctx context.Context, id string) (string, error)
+	GetFacilityID(ctx context.Context, id string) (string, error)
 }
 
 // Deps は、Service が使う、ほかの機能のデータを読む小さなインターフェースである。
@@ -90,7 +90,7 @@ func (a *Service) Authenticate(ctx context.Context, id principal.Identity) (prin
 	if s.FacilityID != facilityID {
 		return principal.Principal{}, fmt.Errorf("%w: 職員の事業所が組織の事業所と違います", apperr.ErrForbidden)
 	}
-	if !s.Active() {
+	if !s.IsActive() {
 		return principal.Principal{}, fmt.Errorf("%w: 職員は休職か退職しています", apperr.ErrForbidden)
 	}
 	return principal.Principal{Staff: s}, nil
@@ -106,5 +106,5 @@ func (a *Service) FacilityOf(ctx context.Context, r Resource, id string) (string
 	if !ok {
 		return "", fmt.Errorf("事業所を求められないリソースの種類 %d です", r)
 	}
-	return reader.FacilityOf(ctx, id)
+	return reader.GetFacilityID(ctx, id)
 }
