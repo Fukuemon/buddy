@@ -137,18 +137,18 @@ func TestImportAppliesLinkedChangesWhileStaffOnLeave(t *testing.T) {
 	}
 }
 
-// lockHook は、LockStatuses の前に run を呼ぶ StaffRefs である。ロックを待つ間に、ほかのトランザクションが職員を書いて
+// lockHook は、Share の前に run を呼ぶ FacilityLock である。ロックを待つ間に、ほかのトランザクションが職員を書いて
 // コミットしたことを表す。
 type lockHook struct {
-	inmem.StaffRefs
+	inmem.Facilities
 	run func()
 }
 
-func (h lockHook) LockStatuses(ctx context.Context, facilityID string) error {
+func (h lockHook) Share(ctx context.Context, facilityID string) error {
 	if h.run != nil {
 		h.run()
 	}
-	return h.StaffRefs.LockStatuses(ctx, facilityID)
+	return h.Facilities.Share(ctx, facilityID)
 }
 
 // 取り込みの読み替えの後に、職員が休職か退職になったとき、確定は何も書かない。退職と取り込みが同時に動いても、
@@ -168,8 +168,8 @@ func TestImportRejectsWhenStaffStoppedAfterPlan(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := newEnv(t, srv)
-			uc := withStaff(e, gcal.NewReader(gcaltest.Start(t, srv)),
-				lockHook{StaffRefs: inmem.StaffRefs{Store: e.store}, run: func() { tt.stop(t, e.store) }})
+			uc := withLocks(e, gcal.NewReader(gcaltest.Start(t, srv)),
+				lockHook{Facilities: inmem.Facilities{Store: e.store}, run: func() { tt.stop(t, e.store) }})
 			_, err := uc.Import(e.ctx, calID, e.rng, nil)
 			if !errors.Is(err, tt.want) {
 				t.Fatalf("err = %v, want %v", err, tt.want)

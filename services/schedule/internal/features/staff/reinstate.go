@@ -13,14 +13,15 @@ import (
 // Reinstate は、休職の職員を有効に戻し（復職）、戻した職員を返す。
 type Reinstate struct {
 	staff      Repository
+	locks      FacilityLock
 	identities Identities
 	tx         tx.Transactor
 	guard      organization.Guard
 }
 
 // NewReinstate は Reinstate を作る。
-func NewReinstate(staff Repository, identities Identities, tx tx.Transactor, guard organization.Guard) Reinstate {
-	return Reinstate{staff: staff, identities: identities, tx: tx, guard: guard}
+func NewReinstate(staff Repository, locks FacilityLock, identities Identities, tx tx.Transactor, guard organization.Guard) Reinstate {
+	return Reinstate{staff: staff, locks: locks, identities: identities, tx: tx, guard: guard}
 }
 
 // Do は、休職の職員を有効に戻し（復職）、戻した職員を返す。有効な職員を戻しても成功する。職員が見つからないときは
@@ -41,7 +42,7 @@ func (s Reinstate) Do(ctx context.Context, id string) (Detail, error) {
 	var before Detail
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
 		var err error
-		before, err = locked(ctx, s.staff, id)
+		before, err = locked(ctx, s.staff, s.locks, id)
 		if err != nil {
 			return err
 		}
@@ -55,7 +56,7 @@ func (s Reinstate) Do(ctx context.Context, id string) (Detail, error) {
 	}
 	var brokerErr error
 	err = s.tx.WithinTx(ctx, func(ctx context.Context) error {
-		cur, err := locked(ctx, s.staff, id)
+		cur, err := locked(ctx, s.staff, s.locks, id)
 		if err != nil {
 			return err
 		}

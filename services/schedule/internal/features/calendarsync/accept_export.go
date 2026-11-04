@@ -27,6 +27,7 @@ type AcceptExport struct {
 	calendars Calendars
 	accounts  calendar.Accounts
 	staff     calendar.StaffRefs
+	locks     calendar.FacilityLock
 	tx        tx.Transactor
 	ids       kernel.IDGenerator
 	guard     organization.Guard
@@ -36,12 +37,12 @@ type AcceptExport struct {
 // NewAcceptExport は AcceptExport を作る。types、patients、serviceCodes、visits は、外部のカレンダーの今の内容を予定に当てる規則（reconcileApplier）が使う。
 // 単発の予定だけを当てるので、繰り返しの予定のリポジトリは渡さない。
 func NewAcceptExport(
-	exports ExportRepository, schedules calendar.ScheduleStore, calendars Calendars, accounts calendar.Accounts, staff calendar.StaffRefs,
+	exports ExportRepository, schedules calendar.ScheduleStore, calendars Calendars, accounts calendar.Accounts, staff calendar.StaffRefs, locks calendar.FacilityLock,
 	types calendar.Types, patients calendar.Patients, serviceCodes calendar.ServiceCodes, visits calendar.VisitStore,
 	tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard,
 ) AcceptExport {
 	return AcceptExport{
-		exports: exports, schedules: schedules, calendars: calendars, accounts: accounts, staff: staff, tx: tx, ids: ids, guard: guard,
+		exports: exports, schedules: schedules, calendars: calendars, accounts: accounts, staff: staff, locks: locks, tx: tx, ids: ids, guard: guard,
 		apply: newReconcileApplier(calendars, exports, schedules, nil, types, patients, serviceCodes, visits, ids),
 	}
 }
@@ -99,7 +100,7 @@ func (u AcceptExport) Do(ctx context.Context, id string) (calendar.Export, error
 		}
 		// 退職はカレンダーを外すので、職員の休職、復職、退職を待たせてからカレンダーを読み直す。外したカレンダーの内容を当てると、
 		// 退職した職員の予定を今日以降へ動かせるためである。予定の変更と同じく、予定の行のロックの後に取る。
-		if err := u.staff.LockStatuses(ctx, c.FacilityID); err != nil {
+		if err := u.locks.Share(ctx, c.FacilityID); err != nil {
 			return err
 		}
 		if now, err := u.calendars.Get(ctx, c.ID); err != nil {

@@ -14,6 +14,7 @@ import (
 type ChangeOccurrence struct {
 	recurring RecurringRepository
 	staff     StaffRefs
+	locks     FacilityLock
 	schedules Repository
 	types     TypeRepository
 	visits    VisitInfos
@@ -25,11 +26,11 @@ type ChangeOccurrence struct {
 
 // NewChangeOccurrence は ChangeOccurrence を作る。exports は、予定の変更を外部のカレンダーへの書き出しの待ちに積む。nil なら積まない。
 // now は、退職した職員を割り振ったまま保存できる予定の日付を決める時刻である。nil なら time.Now を使う。
-func NewChangeOccurrence(recurring RecurringRepository, staff StaffRefs, schedules Repository, types TypeRepository, visits VisitInfos, now func() time.Time, exports Exports, tx tx.Transactor, ids kernel.IDGenerator) ChangeOccurrence {
+func NewChangeOccurrence(recurring RecurringRepository, staff StaffRefs, locks FacilityLock, schedules Repository, types TypeRepository, visits VisitInfos, now func() time.Time, exports Exports, tx tx.Transactor, ids kernel.IDGenerator) ChangeOccurrence {
 	if now == nil {
 		now = time.Now
 	}
-	return ChangeOccurrence{recurring: recurring, staff: staff, schedules: schedules, types: types, visits: visits, now: now, exports: exports, tx: tx, ids: ids}
+	return ChangeOccurrence{recurring: recurring, staff: staff, locks: locks, schedules: schedules, types: types, visits: visits, now: now, exports: exports, tx: tx, ids: ids}
 }
 
 // Do は、繰り返しの予定の originalDate の回を、in の内容の単発の予定に置き換える。
@@ -52,7 +53,7 @@ func (s ChangeOccurrence) Do(ctx context.Context, recurringScheduleID string, or
 		if err := s.recurring.AddExclusion(ctx, rs.ID, originalDate); err != nil {
 			return apperr.AsConflict(err, "%s の回はすでに置き換えられています", originalDate)
 		}
-		created, err = createSchedule(ctx, s.schedules, s.ids, s.types, s.staff, s.visits, s.now, s.exports, rs.FacilityID, in, &occurrence{recurringScheduleID: rs.ID, originalDate: originalDate, kept: assignedOf(rs.StaffID, rs.Visit)})
+		created, err = createSchedule(ctx, s.schedules, s.ids, s.types, s.staff, s.locks, s.visits, s.now, s.exports, rs.FacilityID, in, &occurrence{recurringScheduleID: rs.ID, originalDate: originalDate, kept: assignedOf(rs.StaffID, rs.Visit)})
 		if err != nil {
 			return err
 		}

@@ -12,6 +12,7 @@ import (
 type Update struct {
 	schedules Repository
 	staff     StaffRefs
+	locks     FacilityLock
 	types     TypeRepository
 	visits    VisitInfos
 	now       func() time.Time
@@ -21,11 +22,11 @@ type Update struct {
 
 // NewUpdate は Update を作る。exports は、予定の変更を外部のカレンダーへの書き出しの待ちに積む。nil なら積まない。
 // now は、退職した職員を割り振ったまま保存できる予定の日付を決める時刻である。nil なら time.Now を使う。
-func NewUpdate(schedules Repository, staff StaffRefs, types TypeRepository, visits VisitInfos, now func() time.Time, exports Exports, tx tx.Transactor) Update {
+func NewUpdate(schedules Repository, staff StaffRefs, locks FacilityLock, types TypeRepository, visits VisitInfos, now func() time.Time, exports Exports, tx tx.Transactor) Update {
 	if now == nil {
 		now = time.Now
 	}
-	return Update{schedules: schedules, staff: staff, types: types, visits: visits, now: now, exports: exports, tx: tx}
+	return Update{schedules: schedules, staff: staff, locks: locks, types: types, visits: visits, now: now, exports: exports, tx: tx}
 }
 
 // Do は、単発の予定の枠を in の内容に置き換え、書いた予定を返す。訪問の情報は in の内容で作り直し、前の訪問の情報は消す。
@@ -44,7 +45,7 @@ func (s Update) Do(ctx context.Context, scheduleID string, in SlotInput) (Schedu
 		if cur.Cancelled {
 			return apperr.Conflict("キャンセル済みの予定は変えられません")
 		}
-		slot, typ, err := prepareSlot(ctx, s.types, s.staff, s.visits, s.now, cur.FacilityID, in, assignedOf(cur.StaffID, cur.Visit))
+		slot, typ, err := prepareSlot(ctx, s.types, s.staff, s.locks, s.visits, s.now, cur.FacilityID, in, assignedOf(cur.StaffID, cur.Visit))
 		if err != nil {
 			return err
 		}

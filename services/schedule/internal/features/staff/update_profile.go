@@ -13,6 +13,7 @@ import (
 // UpdateProfile は、職員の名前、電話番号、部署、チーム、訪問しない職員かを p にし、変えた職員を返す。
 type UpdateProfile struct {
 	staff       Repository
+	locks       FacilityLock
 	departments kernel.Finder[organization.Department]
 	teams       kernel.Finder[organization.Team]
 	assignments AssignmentReader
@@ -22,11 +23,11 @@ type UpdateProfile struct {
 }
 
 // NewUpdateProfile は UpdateProfile を作る。now は、残る予定を数え始める日を決める時刻である。nil なら time.Now を使う。
-func NewUpdateProfile(staff Repository, departments kernel.Finder[organization.Department], teams kernel.Finder[organization.Team], assignments AssignmentReader, now func() time.Time, tx tx.Transactor, guard organization.Guard) UpdateProfile {
+func NewUpdateProfile(staff Repository, locks FacilityLock, departments kernel.Finder[organization.Department], teams kernel.Finder[organization.Team], assignments AssignmentReader, now func() time.Time, tx tx.Transactor, guard organization.Guard) UpdateProfile {
 	if now == nil {
 		now = time.Now
 	}
-	return UpdateProfile{staff: staff, departments: departments, teams: teams, assignments: assignments, now: now, tx: tx, guard: guard}
+	return UpdateProfile{staff: staff, locks: locks, departments: departments, teams: teams, assignments: assignments, now: now, tx: tx, guard: guard}
 }
 
 // Do は、職員の名前、電話番号、部署、チーム、訪問しない職員かを p にし、変えた職員を返す。メールは変えない（ADR-0017）。
@@ -44,7 +45,7 @@ func (s UpdateProfile) Do(ctx context.Context, id string, p Profile) (Detail, er
 	}
 	var changed Detail
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
-		cur, err := locked(ctx, s.staff, id)
+		cur, err := locked(ctx, s.staff, s.locks, id)
 		if err != nil {
 			return err
 		}

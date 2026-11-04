@@ -10,14 +10,14 @@ import (
 // Resume は、利用者を利用中に戻し（利用の再開）、担当の職員を assignedStaffID にして、戻した利用者を返す。
 type Resume struct {
 	patients Repository
-	locks    FacilityLocker
+	locks    FacilityLock
 	staff    StaffRefs
 	tx       tx.Transactor
 	guard    organization.Guard
 }
 
 // NewResume は Resume を作る。
-func NewResume(patients Repository, locks FacilityLocker, staff StaffRefs, tx tx.Transactor, guard organization.Guard) Resume {
+func NewResume(patients Repository, locks FacilityLock, staff StaffRefs, tx tx.Transactor, guard organization.Guard) Resume {
 	return Resume{patients: patients, locks: locks, staff: staff, tx: tx, guard: guard}
 }
 

@@ -9,7 +9,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres/sqlcgen"
 )
 
-// FacilityRepository は、organization.FacilityRepository を実装する。
+// FacilityRepository は、organization.FacilityRepository と、事業所の行をロックする機能のパッケージの FacilityLock を実装する。
 type FacilityRepository struct{ conn }
 
 // NewFacilityRepository は FacilityRepository を作る。
@@ -33,6 +33,22 @@ func (r *FacilityRepository) GetByOrgID(ctx context.Context, orgID string) (orga
 		return organization.Facility{}, translate("get facility by org", err)
 	}
 	return toFacility(f), nil
+}
+
+// Lock は、事業所 facilityID の行に排他のロックを取る。呼び出し側がトランザクションの中で呼ぶ。
+// 職員の休職、退職、役職とチームを変える操作、権限を外す操作、利用者の利用の終了と再開が取る。
+// 事業所が無いときは apperr.ErrNotFound を返す。
+func (r *FacilityRepository) Lock(ctx context.Context, facilityID string) error {
+	_, err := r.q(ctx).LockFacility(ctx, facilityID)
+	return translate("lock facility", err)
+}
+
+// Share は、事業所 facilityID の行に共有のロックを取る。呼び出し側がトランザクションの中で呼ぶ。
+// 予定と担当の新しい割り振りが取る。Lock とは互いにトランザクションが終わるまで待ち、Share どうしは待たない。
+// 事業所が無いときは apperr.ErrNotFound を返す。
+func (r *FacilityRepository) Share(ctx context.Context, facilityID string) error {
+	_, err := r.q(ctx).ShareFacility(ctx, facilityID)
+	return translate("share facility", err)
 }
 
 func toFacility(f sqlcgen.Facility) organization.Facility {

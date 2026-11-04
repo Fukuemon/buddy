@@ -30,9 +30,10 @@ const (
 type SyncerDeps struct {
 	Syncs     SyncRepository
 	Calendars Calendars
-	// Staff は、予定を当てる前に事業所の職員の休職、復職、退職を待たせ、カレンダーの職員が退職したかを読む。
-	// 退職がカレンダーを外した後に、当てないためである。
-	Staff        calendar.StaffRefs
+	// Staff は、カレンダーの職員が退職したかを読む。
+	Staff calendar.StaffRefs
+	// Locks は、予定を当てる前に事業所の職員の休職、復職、退職を待たせる。退職がカレンダーを外した後に、当てないためである。
+	Locks        calendar.FacilityLock
 	Exports      ExportRepository
 	Sources      calendar.SourceFor
 	Schedules    calendar.ScheduleStore
@@ -175,7 +176,7 @@ var errCalendarUnlinked = errors.New("同期の途中でカレンダーが外れ
 // 読み直す。外していれば errCalendarUnlinked を返す。退職は同じ事業所の行に排他のロックを取ってカレンダーを外すので、
 // カレンダーを取った後に職員が退職しても、退職した職員の予定に外部の変更を当てない。トランザクションの中で呼ぶ。
 func (s *Syncer) stillLinked(ctx context.Context, c calendar.ExternalCalendar) error {
-	if err := s.deps.Staff.LockStatuses(ctx, c.FacilityID); err != nil {
+	if err := s.deps.Locks.Share(ctx, c.FacilityID); err != nil {
 		return err
 	}
 	cur, err := s.deps.Calendars.Get(ctx, c.ID)

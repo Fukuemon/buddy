@@ -261,12 +261,6 @@ func TestStaffLeave(t *testing.T) {
 			t.Errorf("いない職員の %s の err = %v, want ErrNotFound", name, err)
 		}
 	}
-	if err := r.LockFacility(ctx, seedFacility); err != nil {
-		t.Errorf("LockFacility の err = %v", err)
-	}
-	if err := r.LockFacility(ctx, unknownID); !errors.Is(err, apperr.ErrNotFound) {
-		t.Errorf("いない事業所の LockFacility の err = %v, want ErrNotFound", err)
-	}
 }
 
 // 退職した職員は、名前を残してメールと電話番号を消し、同じメールで新しい職員を登録できる（#268 の検証の観点 4、5）。
@@ -1025,15 +1019,14 @@ func TestScheduleGetForUpdateBlocksCancel(t *testing.T) {
 	}
 }
 
-// 予定と担当の新しい割り振りの LockStatuses と、休職と退職の LockFacility は、互いをトランザクションの終わりまで待たせる。
+// 予定と担当の新しい割り振りの Share と、休職と退職の Lock は、互いをトランザクションの終わりまで待たせる。
 // 割り振りどうしは待たせない。退職の残る予定の確認と、予定の作成が行き違わないことを確認する（#269）。
-func TestStaffLockStatusesAndLockFacilityWaitForEachOther(t *testing.T) {
+func TestFacilityShareAndLockWaitForEachOther(t *testing.T) {
 	if testDB == nil {
 		t.Skip("PostgreSQL を使うテストは -short では動かさない")
 	}
 	bg := context.Background()
-	refs := NewStaffRefRepository(testDB)
-	staffRepo := NewStaffRepository(testDB)
+	facilities := NewFacilityRepository(testDB)
 	begin := func(t *testing.T) context.Context {
 		t.Helper()
 		tx, err := testDB.Begin(bg)
@@ -1069,25 +1062,28 @@ func TestStaffLockStatusesAndLockFacilityWaitForEachOther(t *testing.T) {
 		}
 		rollback(t, waiter)
 	}
-	lockStatuses := func(ctx context.Context) error { return refs.LockStatuses(ctx, seedFacility) }
-	lockFacility := func(ctx context.Context) error { return staffRepo.LockFacility(ctx, seedFacility) }
+	share := func(ctx context.Context) error { return facilities.Share(ctx, seedFacility) }
+	lock := func(ctx context.Context) error { return facilities.Lock(ctx, seedFacility) }
 
-	t.Run("割り振りの間は、休職と退職が待つ", func(t *testing.T) { waits(t, lockStatuses, lockFacility) })
-	t.Run("休職と退職の間は、割り振りが待つ", func(t *testing.T) { waits(t, lockFacility, lockStatuses) })
+	t.Run("割り振りの間は、休職と退職が待つ", func(t *testing.T) { waits(t, share, lock) })
+	t.Run("休職と退職の間は、割り振りが待つ", func(t *testing.T) { waits(t, lock, share) })
 	t.Run("割り振りどうしは待たない", func(t *testing.T) {
 		a, b := begin(t), begin(t)
-		if err := lockStatuses(a); err != nil {
+		if err := share(a); err != nil {
 			t.Fatal(err)
 		}
 		// 待つと、上限の時間で失敗する
 		b, cancel := context.WithTimeout(b, 5*time.Second)
 		defer cancel()
-		if err := lockStatuses(b); err != nil {
+		if err := share(b); err != nil {
 			t.Fatal(err)
 		}
 	})
-	if err := refs.LockStatuses(begin(t), unknownID); !errors.Is(err, apperr.ErrNotFound) {
-		t.Errorf("いない事業所の LockStatuses の err = %v, want ErrNotFound", err)
+	if err := facilities.Share(begin(t), unknownID); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("いない事業所の Share の err = %v, want ErrNotFound", err)
+	}
+	if err := facilities.Lock(begin(t), unknownID); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("いない事業所の Lock の err = %v, want ErrNotFound", err)
 	}
 }
 
@@ -1140,8 +1136,8 @@ func TestStaffConcurrentRemovalKeepsManager(t *testing.T) {
 	t.Cleanup(func() { cleanup(t) })
 
 	allow := func(context.Context) error { return nil }
-	removeGrant := staff.NewRemoveGrant(NewStaffRepository(testDB), NewTransactor(testDB), allow)
-	changePosition := staff.NewChangePosition(NewStaffRepository(testDB), NewPositionRepository(testDB), NewTransactor(testDB), ulid.Generator{}, allow)
+	removeGrant := staff.NewRemoveGrant(NewStaffRepository(testDB), NewFacilityRepository(testDB), NewTransactor(testDB), allow)
+	changePosition := staff.NewChangePosition(NewStaffRepository(testDB), NewFacilityRepository(testDB), NewPositionRepository(testDB), NewTransactor(testDB), ulid.Generator{}, allow)
 	// race は、first と second を同時に始め、片方だけが成功して片方が ErrConflict になり、権限を持つ有効な職員が 1 人残ることを確認する。
 	race := func(t *testing.T, first, second func(ctx context.Context) error) {
 		t.Helper()
@@ -1184,6 +1180,123 @@ func TestStaffConcurrentRemovalKeepsManager(t *testing.T) {
 	t.Run("権限を外す操作と役職を変える操作が同時でも 1 人に権限が残る", func(t *testing.T) {
 		race(t, removeA, func(ctx context.Context) error { _, err := changePosition.Do(ctx, b, memberP); return err })
 	})
+}
+
+// slowStaffRefs は、職員の状態を読んでから 100 ミリ秒待つ StaffRefRepository である。予定の作成が職員の状態を確認してから
+// 予定を書くまでの間を広げる。
+type slowStaffRefs struct{ *StaffRefRepository }
+
+func (r slowStaffRefs) Get(ctx context.Context, id string) (staff.Ref, error) {
+	ref, err := r.StaffRefRepository.Get(ctx, id)
+	time.Sleep(100 * time.Millisecond)
+	return ref, err
+}
+
+// slowAssignments は、50 ミリ秒待ってから残る予定を読む StaffAssignmentReader である。ロックが無ければ、退職が残る予定を
+// 読むのは、予定の作成が職員の状態を確認した後で、予定を書く前になる。
+type slowAssignments struct{ *StaffAssignmentReader }
+
+func (r slowAssignments) From(ctx context.Context, facilityID, staffID string, from civil.Date) (staff.Assignments, error) {
+	time.Sleep(50 * time.Millisecond)
+	return r.StaffAssignmentReader.From(ctx, facilityID, staffID, from)
+}
+
+// 職員を退職にする操作と、その職員に予定を作る操作を同時に送ったとき、どちらか一方が先に終わり、
+// 退職した職員に今日以降の予定が作られない（#615 の検証の観点 1）。
+func TestStaffConcurrentRetireAndScheduleCreate(t *testing.T) {
+	if testDB == nil {
+		t.Skip("PostgreSQL を使うテストは -short では動かさない")
+	}
+	bg := context.Background()
+	const (
+		facility = "01M3TD0000000000000000QF01"
+		dept     = "01M3TD0000000000000000QD01"
+		team     = "01M3TD0000000000000000QT01"
+		position = "01M3TD0000000000000000QP01"
+		target   = "01M3TD0000000000000000QS01"
+		rounds   = 10
+	)
+	exec := func(t *testing.T, sql string, args ...any) {
+		t.Helper()
+		if _, err := testDB.Exec(bg, sql, args...); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cleanup := func(t *testing.T) {
+		exec(t, `DELETE FROM schedules WHERE facility_id = $1`, facility)
+		exec(t, `DELETE FROM users WHERE facility_id = $1`, facility)
+		exec(t, `DELETE FROM positions WHERE facility_id = $1`, facility)
+		exec(t, `DELETE FROM teams WHERE facility_id = $1`, facility)
+		exec(t, `DELETE FROM departments WHERE facility_id = $1`, facility)
+		exec(t, `DELETE FROM facilities WHERE id = $1`, facility)
+	}
+	// setup は、予定の無い有効な職員 target の事業所をコミットして作る。
+	setup := func(t *testing.T) {
+		t.Helper()
+		cleanup(t)
+		exec(t, `INSERT INTO facilities (id, name) VALUES ($1, '退職と予定の事業所')`, facility)
+		exec(t, `INSERT INTO departments (id, facility_id, name) VALUES ($1, $2, '部署')`, dept, facility)
+		exec(t, `INSERT INTO teams (id, facility_id, name, color) VALUES ($1, $2, 'チーム', 'blue')`, team, facility)
+		exec(t, `INSERT INTO positions (id, facility_id, name) VALUES ($1, $2, 'メンバー')`, position, facility)
+		exec(t, `INSERT INTO users (id, facility_id, username, email, department_id, team_id, position_id)
+			VALUES ($1, $2, '退職 予定', 'retire-race@example.com', $3, $4, $5)`, target, facility, dept, team, position)
+	}
+	t.Cleanup(func() { cleanup(t) })
+
+	txr := NewTransactor(testDB)
+	retire := staff.NewRetire(nil, NewStaffRepository(testDB), NewFacilityRepository(testDB), slowAssignments{NewStaffAssignmentReader(testDB)}, nil, nil,
+		NewCalendarRepository(testDB), txr, func(context.Context) error { return nil })
+	create := schedule.NewCreate(NewFacilityRepository(testDB), NewScheduleRepository(testDB), NewScheduleTypeRepository(testDB),
+		slowStaffRefs{NewStaffRefRepository(testDB)}, NewFacilityRepository(testDB), nil, nil, nil, txr, ulid.Generator{})
+	editor := principal.With(bg, principal.Principal{Staff: staff.Detail{
+		Summary:  staff.Summary{Staff: staff.Staff{ID: "EDITOR", FacilityID: facility}},
+		Policies: []staff.PolicyGrant{{PolicyCode: organization.ScheduleAllEdit}},
+	}})
+	today := civil.Today(time.Now())
+	title := "退職と同時の予定"
+	in := schedule.SlotInput{
+		TypeID: seedNormalType, Date: today, StaffID: target, Title: &title,
+		StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10},
+	}
+
+	for range rounds {
+		setup(t)
+		start := make(chan struct{})
+		retireErr, createErr := make(chan error, 1), make(chan error, 1)
+		go func() {
+			<-start
+			_, err := retire.Do(bg, target)
+			retireErr <- err
+		}()
+		go func() {
+			<-start
+			_, err := create.Do(editor, facility, in)
+			createErr <- err
+		}()
+		close(start)
+		rErr, cErr := <-retireErr, <-createErr
+
+		var assigned *staff.AssignedError
+		switch {
+		case rErr == nil && errors.Is(cErr, apperr.ErrInvalidInput) && strings.Contains(cErr.Error(), "退職した職員"):
+			// 退職が先に終わり、予定の作成が退職した職員を拒んだ
+		case errors.As(rErr, &assigned) && cErr == nil:
+			// 予定の作成が先に終わり、退職が残る予定で拒まれた
+		default:
+			t.Fatalf("退職の err = %v, 予定の作成の err = %v, want どちらか一方だけが成功する", rErr, cErr)
+		}
+		got, err := NewStaffRepository(testDB).Get(bg, target)
+		if err != nil {
+			t.Fatal(err)
+		}
+		a, err := NewStaffAssignmentReader(testDB).From(bg, facility, target, today)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got.RetiredAt != nil && !a.IsEmpty() {
+			t.Fatalf("退職した職員に今日以降の予定が残る: %+v", a)
+		}
+	}
 }
 
 func TestTransactorRollsBack(t *testing.T) {

@@ -325,7 +325,7 @@ sequenceDiagram
 担当を別の職員に変えるときは、予定の作成と同じく、事業所の行に共有のロックを取ってから職員の状態を読む。
 
 利用の終了と利用の再開は、事業所の行に排他のロックを取ってから利用者を読み直す。  
-このロックは、職員の休職と退職と同じロック（`patient.FacilityLocker`、`postgres.StaffRepository`）である。  
+このロックは、職員の休職と退職と同じロック（`patient.FacilityLock` の `Lock`、`postgres.FacilityRepository`）である。  
 利用の終了は、ロックの後にその日以降の予定を数える。  
 予定の作成は共有のロックを取ってから利用者を読むので、数えた後に、利用の終了の利用者へ予定ができることは無い。  
 残る予定があれば、書かずに 409（`patient_has_schedules`）で残る一覧を返す。  
@@ -399,7 +399,7 @@ sequenceDiagram
   - 退職した職員は、保存した後の日付が今日（事業所の現地の日付）より前の予定でだけ、割り振ったまま保存できる。
     - 退職は今日以降の予定が残ると拒むので、退職した職員の予定を今日以降に動かすと、誰も行かない予定が残るためである。
 
-職員の状態を読む前に、`schedule.StaffRefs.LockStatuses`（`postgres.StaffRefRepository`）で事業所の行に共有のロックを取る。  
+職員の状態を読む前に、`schedule.FacilityLock` の `Share`（`postgres.FacilityRepository`）で事業所の行に共有のロックを取る。  
 休職、復職、退職は、同じ行に排他のロックを取ってから職員を読み直す（[職員の管理の Design Doc の職員の登録、休職、復職、退職](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/staff/DesignDoc.md#職員の登録休職復職退職)）。  
 そのため、割り振りと退職のどちらかが、もう片方のコミットを待ってから読む。  
 退職の残る予定の確認の後に、退職した職員へ予定ができることは無い。  

@@ -132,16 +132,16 @@ func newSyncEnv(t *testing.T) syncEnv {
 	uc := syncOps{
 		ListExportIssues: calendarexport.NewListExportIssues(exports, principal.RequireStaffManage).Do,
 		RetryExport:      calendarexport.NewRetryExport(exports, principal.RequireStaffManage).Do,
-		AcceptExport: calendarsync.NewAcceptExport(exports, schedules, calendars, oneAccount{source}, refs,
+		AcceptExport: calendarsync.NewAcceptExport(exports, schedules, calendars, oneAccount{source}, refs, facilities,
 			types, nil, nil, nil, tx, ids, principal.RequireStaffManage).Do,
 	}
 	outbox := calendarexport.NewOutbox(exports, calendars, ids)
 	sched := scheduleOps{
-		Create:           schedule.NewCreate(facilities, schedules, types, refs, nil, nil, outbox, tx, ids).Do,
-		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, nil, nil, recurring, outbox, tx, ids).Do,
-		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, refs, schedules, types, nil, nil, outbox, tx, ids).Do,
+		Create:           schedule.NewCreate(facilities, schedules, types, refs, facilities, nil, nil, outbox, tx, ids).Do,
+		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, facilities, nil, nil, recurring, outbox, tx, ids).Do,
+		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, refs, facilities, schedules, types, nil, nil, outbox, tx, ids).Do,
 		Cancel:           schedule.NewCancel(schedules, refs, outbox, tx, ids).Do,
-		Update:           schedule.NewUpdate(schedules, refs, types, nil, nil, outbox, tx).Do,
+		Update:           schedule.NewUpdate(schedules, refs, facilities, types, nil, nil, outbox, tx).Do,
 	}
 	writer := gcal.NewWriter(gcaltest.Start(t, srv))
 	exporter := calendarexport.NewExporter(calendarexport.ExporterDeps{
@@ -152,15 +152,15 @@ func newSyncEnv(t *testing.T) syncEnv {
 	sources := &[]string{}
 	return syncEnv{
 		store: s, ctx: ctx, uc: uc, srv: srv, schedules: sched, exporter: exporter,
-		syncer: newSyncer(s, source, sources, refs), sources: sources,
+		syncer: newSyncer(s, source, sources, facilities), sources: sources,
 	}
 }
 
-// newSyncer は、Store s の上で、source で読み、職員の休職、復職、退職を st で待たせて職員を st で読む同期の処理を作る。
+// newSyncer は、Store s の上で、source で読み、職員の休職、復職、退職を locks で待たせる同期の処理を作る。
 // 読む手段を引いた事業所を sources に足す。
-func newSyncer(s *inmem.Store, source calendar.EventSource, sources *[]string, st calendar.StaffRefs) *calendarsync.Syncer {
+func newSyncer(s *inmem.Store, source calendar.EventSource, sources *[]string, locks calendar.FacilityLock) *calendarsync.Syncer {
 	return calendarsync.NewSyncer(calendarsync.SyncerDeps{
-		Syncs: inmem.Syncs{Store: s}, Calendars: inmem.Calendars{Store: s}, Staff: st, Exports: inmem.Exports{Store: s},
+		Syncs: inmem.Syncs{Store: s}, Calendars: inmem.Calendars{Store: s}, Staff: inmem.StaffRefs{Store: s}, Locks: locks, Exports: inmem.Exports{Store: s},
 		Sources: func(_ context.Context, facilityID string) (calendar.EventSource, error) {
 			*sources = append(*sources, facilityID)
 			return source, nil

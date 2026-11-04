@@ -250,13 +250,6 @@ func (r *StaffRepository) Retire(ctx context.Context, id string) error {
 	return nil
 }
 
-// LockFacility は、事業所 facilityID の行に排他のロックを取る。呼び出し側がトランザクションの中で呼ぶ。
-// 事業所が無いときは apperr.ErrNotFound を返す。
-func (r *StaffRepository) LockFacility(ctx context.Context, facilityID string) error {
-	_, err := r.q(ctx).LockFacility(ctx, facilityID)
-	return translate("lock facility", err)
-}
-
 // ActiveManagers は、事業所 facilityID で職員の管理の権限を持つ、休職でも退職でもない職員の ID を ID の順に返す。
 func (r *StaffRepository) ActiveManagers(ctx context.Context, facilityID string) ([]string, error) {
 	ids, err := r.q(ctx).ListActiveStaffManagers(ctx, facilityID)
@@ -343,14 +336,6 @@ func (r *StaffRefRepository) ListByFacility(ctx context.Context, facilityID stri
 		out[i] = staffRef(row.ID, row.FacilityID, row.TeamID, row.Visits, row.LeaveStartedAt, row.RetiredAt)
 	}
 	return out, nil
-}
-
-// LockStatuses は、事業所 facilityID の行に共有のロックを取る。呼び出し側がトランザクションの中で呼ぶ。
-// 職員の休職、復職、退職は事業所の行に排他のロックを取るので、トランザクションが終わるまで待つ。
-// 事業所が無いときは apperr.ErrNotFound を返す。
-func (r *StaffRefRepository) LockStatuses(ctx context.Context, facilityID string) error {
-	_, err := r.q(ctx).ShareFacility(ctx, facilityID)
-	return translate("share facility", err)
 }
 
 func staffRef(id, facilityID, teamID string, visits bool, leaveStartedAt, retiredAt *time.Time) staff.Ref {

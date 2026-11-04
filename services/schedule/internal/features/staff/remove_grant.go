@@ -11,13 +11,14 @@ import (
 // RemoveGrant は、職員の権限 userPolicyID と、その対象を外す。
 type RemoveGrant struct {
 	staff Repository
+	locks FacilityLock
 	tx    tx.Transactor
 	guard organization.Guard
 }
 
 // NewRemoveGrant は RemoveGrant を作る。
-func NewRemoveGrant(staff Repository, tx tx.Transactor, guard organization.Guard) RemoveGrant {
-	return RemoveGrant{staff: staff, tx: tx, guard: guard}
+func NewRemoveGrant(staff Repository, locks FacilityLock, tx tx.Transactor, guard organization.Guard) RemoveGrant {
+	return RemoveGrant{staff: staff, locks: locks, tx: tx, guard: guard}
 }
 
 // Do は、職員の権限 userPolicyID と、その対象を外す。
@@ -31,7 +32,7 @@ func (s RemoveGrant) Do(ctx context.Context, id, userPolicyID string) (Detail, e
 	}
 	var changed Detail
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
-		cur, err := locked(ctx, s.staff, id)
+		cur, err := locked(ctx, s.staff, s.locks, id)
 		if err != nil {
 			return err
 		}

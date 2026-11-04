@@ -249,7 +249,10 @@ func TestStaffManageForbidden(t *testing.T) {
 
 // deps は、テストが staff の操作の型に渡す依存である。テストが使わない依存は nil のままにする。
 type deps struct {
-	Facilities  kernel.Finder[organization.Facility]
+	Facilities interface {
+		kernel.Finder[organization.Facility]
+		staff.FacilityLock
+	}
 	Departments kernel.Finder[organization.Department]
 	Teams       kernel.Finder[organization.Team]
 	Positions   kernel.Finder[organization.Position]
@@ -283,13 +286,13 @@ func build(d deps, tx tx.Transactor, ids kernel.IDGenerator, guard organization.
 		Create:               staff.NewCreate(d.Facilities, d.Departments, d.Teams, d.Positions, d.Identities, d.Staff, tx, ids, guard).Do,
 		Get:                  staff.NewGet(d.Staff).Do,
 		List:                 staff.NewList(d.Facilities, d.Staff).Do,
-		ChangePosition:       staff.NewChangePosition(d.Staff, d.Positions, tx, ids, guard).Do,
-		UpdateProfile:        staff.NewUpdateProfile(d.Staff, d.Departments, d.Teams, d.Assignments, d.Now, tx, guard).Do,
+		ChangePosition:       staff.NewChangePosition(d.Staff, d.Facilities, d.Positions, tx, ids, guard).Do,
+		UpdateProfile:        staff.NewUpdateProfile(d.Staff, d.Facilities, d.Departments, d.Teams, d.Assignments, d.Now, tx, guard).Do,
 		AddGrant:             staff.NewAddGrant(d.Staff, d.Policies, d.Teams, tx, ids, guard).Do,
-		RemoveGrant:          staff.NewRemoveGrant(d.Staff, tx, guard).Do,
-		Leave:                staff.NewLeave(d.Self, d.Staff, d.Assignments, d.Now, d.Identities, tx, guard).Do,
-		Reinstate:            staff.NewReinstate(d.Staff, d.Identities, tx, guard).Do,
-		Retire:               staff.NewRetire(d.Self, d.Staff, d.Assignments, d.Now, d.Identities, d.Calendars, tx, guard).Do,
+		RemoveGrant:          staff.NewRemoveGrant(d.Staff, d.Facilities, tx, guard).Do,
+		Leave:                staff.NewLeave(d.Self, d.Staff, d.Facilities, d.Assignments, d.Now, d.Identities, tx, guard).Do,
+		Reinstate:            staff.NewReinstate(d.Staff, d.Facilities, d.Identities, tx, guard).Do,
+		Retire:               staff.NewRetire(d.Self, d.Staff, d.Facilities, d.Assignments, d.Now, d.Identities, d.Calendars, tx, guard).Do,
 		RemainingAssignments: staff.NewRemainingAssignments(d.Staff, d.Assignments, d.Now, guard).Do,
 	}
 }

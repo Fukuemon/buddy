@@ -117,25 +117,25 @@ func newEnv(t *testing.T, srv *gcaltest.Server) env {
 
 // withSource は、e の Store の上で、自分の事業所のサービスアカウントの source で予定を読む App を作る。
 func withSource(e env, source calendar.EventSource) *app {
-	return withStaff(e, source, inmem.StaffRefs{Store: e.store})
+	return withLocks(e, source, inmem.Facilities{Store: e.store})
 }
 
-// withStaff は、withSource と同じ App を、職員を st で読むようにして作る。
-func withStaff(e env, source calendar.EventSource, st calendar.StaffRefs) *app {
-	return newApp(e, oneAccount(source, nil), st)
+// withLocks は、withSource と同じ App を、事業所を locks でロックするようにして作る。
+func withLocks(e env, source calendar.EventSource, locks calendar.FacilityLock) *app {
+	return newApp(e, oneAccount(source, nil), locks)
 }
 
 // withAccounts は、e の Store の上で、事業所ごとのサービスアカウント acc で予定を読む App を作る。
 func withAccounts(e env, acc calendar.Accounts) *app {
-	return newApp(e, acc, inmem.StaffRefs{Store: e.store})
+	return newApp(e, acc, inmem.Facilities{Store: e.store})
 }
 
-func newApp(e env, acc calendar.Accounts, st calendar.StaffRefs) *app {
+func newApp(e env, acc calendar.Accounts, locks calendar.FacilityLock) *app {
 	s := e.store
 	ids := &inmem.SeqIDs{}
 	return build(deps{
 		Calendars: inmem.Calendars{Store: s}, Accounts: acc,
-		Staff: st, Patients: inmem.Patients{Store: s}, ServiceCodes: inmem.VisitMasters{Store: s},
+		Staff: inmem.StaffRefs{Store: s}, Locks: locks, Patients: inmem.Patients{Store: s}, ServiceCodes: inmem.VisitMasters{Store: s},
 		Types: inmem.ScheduleTypes{Store: s}, Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, RecurringSchedules: inmem.RecurringSchedules{Store: s},
 		Visits: visit.NewWriter(visit.WriterDeps{
 			Staff:    inmem.StaffRefs{Store: s},
@@ -253,6 +253,7 @@ type deps struct {
 	}
 	Accounts           calendar.Accounts
 	Staff              calendar.StaffRefs
+	Locks              calendar.FacilityLock
 	Patients           calendar.Patients
 	ServiceCodes       calendar.ServiceCodes
 	Types              calendar.Types
@@ -276,7 +277,7 @@ func build(d deps, tx tx.Transactor, ids kernel.IDGenerator, guard organization.
 		ServiceAccount: calendar.NewServiceAccount(d.Accounts, guard).Do,
 		Unlink:         calendar.NewUnlink(d.Calendars, guard).Do,
 		Preview:        calendarimport.NewPreview(d.Calendars, d.Accounts, d.Staff, d.Patients, d.RecurringSchedules, d.ServiceCodes, guard).Do,
-		Import: calendarimport.NewImport(d.Calendars, d.Accounts, d.Staff, d.Patients, d.RecurringSchedules, d.ServiceCodes,
+		Import: calendarimport.NewImport(d.Calendars, d.Accounts, d.Staff, d.Locks, d.Patients, d.RecurringSchedules, d.ServiceCodes,
 			d.Types, d.Recurring, d.Schedules, d.Visits, tx, ids, guard).Do,
 	}
 }

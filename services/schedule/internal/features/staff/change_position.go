@@ -13,6 +13,7 @@ import (
 // ChangePosition は、職員の役職を positionID にし、職員の権限を新しい役職のデフォルトの権限からコピーし直す。
 type ChangePosition struct {
 	staff     Repository
+	locks     FacilityLock
 	positions kernel.Finder[organization.Position]
 	tx        tx.Transactor
 	ids       kernel.IDGenerator
@@ -20,8 +21,8 @@ type ChangePosition struct {
 }
 
 // NewChangePosition は ChangePosition を作る。
-func NewChangePosition(staff Repository, positions kernel.Finder[organization.Position], tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) ChangePosition {
-	return ChangePosition{staff: staff, positions: positions, tx: tx, ids: ids, guard: guard}
+func NewChangePosition(staff Repository, locks FacilityLock, positions kernel.Finder[organization.Position], tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) ChangePosition {
+	return ChangePosition{staff: staff, locks: locks, positions: positions, tx: tx, ids: ids, guard: guard}
 }
 
 // Do は、職員の役職を positionID にし、職員の権限を新しい役職のデフォルトの権限からコピーし直す。
@@ -36,7 +37,7 @@ func (s ChangePosition) Do(ctx context.Context, id, positionID string) (Detail, 
 	}
 	var changed Detail
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
-		cur, err := locked(ctx, s.staff, id)
+		cur, err := locked(ctx, s.staff, s.locks, id)
 		if err != nil {
 			return err
 		}

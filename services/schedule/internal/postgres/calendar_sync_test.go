@@ -183,7 +183,7 @@ func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
 	}, ids)
 	source := gcal.NewReader(gcaltest.Start(t, srv))
 	tx := NewTransactor(testDB)
-	importCalendar := calendarimport.NewImport(calendars, sameAccount{source}, staffRefs, patients, recurring, masters,
+	importCalendar := calendarimport.NewImport(calendars, sameAccount{source}, staffRefs, NewFacilityRepository(testDB), patients, recurring, masters,
 		types, recurring, schedules, visits, tx, ids, principal.RequireStaffManage)
 	rng, err := calendarimport.NewRange(civil.Date{Year: 2026, Month: 11, Day: 1}, civil.Date{Year: 2026, Month: 11, Day: 30})
 	if err != nil {
@@ -193,7 +193,7 @@ func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
 		t.Fatal(err)
 	}
 	syncer := calendarsync.NewSyncer(calendarsync.SyncerDeps{
-		Syncs: NewCalendarSyncRepository(testDB), Calendars: calendars, Staff: NewStaffRefRepository(testDB), Exports: NewCalendarExportRepository(testDB), Sources: func(context.Context, string) (calendar.EventSource, error) { return source, nil },
+		Syncs: NewCalendarSyncRepository(testDB), Calendars: calendars, Staff: NewStaffRefRepository(testDB), Locks: NewFacilityRepository(testDB), Exports: NewCalendarExportRepository(testDB), Sources: func(context.Context, string) (calendar.EventSource, error) { return source, nil },
 		Schedules: schedules, Recurring: recurring, Types: types, Patients: patients, ServiceCodes: masters, Visits: visits,
 	}, tx, ids, 0, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	sync := func() {
@@ -302,7 +302,7 @@ func TestCalendarSyncKeepsEndedPatientOnlyInPast(t *testing.T) {
 	}, ids)
 	source := gcal.NewReader(gcaltest.Start(t, srv))
 	tx := NewTransactor(testDB)
-	importCalendar := calendarimport.NewImport(calendars, sameAccount{source}, staffRefs, patients, recurring, masters,
+	importCalendar := calendarimport.NewImport(calendars, sameAccount{source}, staffRefs, NewFacilityRepository(testDB), patients, recurring, masters,
 		types, recurring, schedules, visits, tx, ids, principal.RequireStaffManage)
 	rng, err := calendarimport.NewRange(civil.Date{Year: 2026, Month: 10, Day: 1}, civil.Date{Year: 2026, Month: 10, Day: 31})
 	if err != nil {
@@ -312,7 +312,7 @@ func TestCalendarSyncKeepsEndedPatientOnlyInPast(t *testing.T) {
 		t.Fatal(err)
 	}
 	syncer := calendarsync.NewSyncer(calendarsync.SyncerDeps{
-		Syncs: NewCalendarSyncRepository(testDB), Calendars: calendars, Staff: staffRefs, Exports: NewCalendarExportRepository(testDB), Sources: func(context.Context, string) (calendar.EventSource, error) { return source, nil },
+		Syncs: NewCalendarSyncRepository(testDB), Calendars: calendars, Staff: staffRefs, Locks: NewFacilityRepository(testDB), Exports: NewCalendarExportRepository(testDB), Sources: func(context.Context, string) (calendar.EventSource, error) { return source, nil },
 		Schedules: schedules, Recurring: recurring, Types: types, Patients: patients, ServiceCodes: masters, Visits: visits,
 	}, tx, ids, 0, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	sync := func() {

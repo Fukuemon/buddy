@@ -62,14 +62,14 @@ func patientApp(
 	serviceCodes patient.ServiceCodes,
 	patients patient.Repository,
 	schedules patient.ScheduleReader,
-	locks patient.FacilityLocker,
+	locks patient.FacilityLock,
 	tx tx.Transactor,
 	ids kernel.IDGenerator,
 	guard organization.Guard,
 ) httpapi.PatientApp {
 	return httpapi.PatientApp{
-		Create:             patient.NewCreate(facilities, serviceCodes, staffRefs, patients, tx, ids, guard).Do,
-		Update:             patient.NewUpdate(serviceCodes, patients, staffRefs, tx, guard).Do,
+		Create:             patient.NewCreate(facilities, serviceCodes, staffRefs, locks, patients, tx, ids, guard).Do,
+		Update:             patient.NewUpdate(serviceCodes, patients, staffRefs, locks, tx, guard).Do,
 		End:                patient.NewEnd(patients, locks, schedules, nil, tx, guard).Do,
 		RemainingSchedules: patient.NewRemainingSchedules(patients, schedules, nil, guard).Do,
 		Resume:             patient.NewResume(patients, locks, staffRefs, tx, guard).Do,
@@ -86,6 +86,7 @@ func staffApp(
 	positions kernel.Finder[organization.Position],
 	policies kernel.Finder[organization.Policy],
 	staffRepo staff.Repository,
+	locks staff.FacilityLock,
 	identities staff.Identities,
 	assignments staff.AssignmentReader,
 	calendars staff.CalendarDetacher,
@@ -98,13 +99,13 @@ func staffApp(
 		Create:               staff.NewCreate(facilities, departments, teams, positions, identities, staffRepo, tx, ids, guard).Do,
 		Get:                  staff.NewGet(staffRepo).Do,
 		List:                 staff.NewList(facilities, staffRepo).Do,
-		ChangePosition:       staff.NewChangePosition(staffRepo, positions, tx, ids, guard).Do,
-		UpdateProfile:        staff.NewUpdateProfile(staffRepo, departments, teams, assignments, nil, tx, guard).Do,
+		ChangePosition:       staff.NewChangePosition(staffRepo, locks, positions, tx, ids, guard).Do,
+		UpdateProfile:        staff.NewUpdateProfile(staffRepo, locks, departments, teams, assignments, nil, tx, guard).Do,
 		AddGrant:             staff.NewAddGrant(staffRepo, policies, teams, tx, ids, guard).Do,
-		RemoveGrant:          staff.NewRemoveGrant(staffRepo, tx, guard).Do,
-		Leave:                staff.NewLeave(self, staffRepo, assignments, nil, identities, tx, guard).Do,
-		Reinstate:            staff.NewReinstate(staffRepo, identities, tx, guard).Do,
-		Retire:               staff.NewRetire(self, staffRepo, assignments, nil, identities, calendars, tx, guard).Do,
+		RemoveGrant:          staff.NewRemoveGrant(staffRepo, locks, tx, guard).Do,
+		Leave:                staff.NewLeave(self, staffRepo, locks, assignments, nil, identities, tx, guard).Do,
+		Reinstate:            staff.NewReinstate(staffRepo, locks, identities, tx, guard).Do,
+		Retire:               staff.NewRetire(self, staffRepo, locks, assignments, nil, identities, calendars, tx, guard).Do,
 		RemainingAssignments: staff.NewRemainingAssignments(staffRepo, assignments, nil, guard).Do,
 	}
 }
@@ -113,6 +114,7 @@ func staffApp(
 func scheduleApp(
 	facilities kernel.Finder[organization.Facility],
 	staffRefs schedule.StaffRefs,
+	locks schedule.FacilityLock,
 	visits schedule.VisitInfos,
 	schedules interface {
 		schedule.Repository
@@ -132,11 +134,11 @@ func scheduleApp(
 		Get:              scheduleview.NewGet(schedules, staffRefs).Do,
 		GetRecurring:     scheduleview.NewGetRecurring(recurring, staffRefs).Do,
 		List:             scheduleview.NewList(facilities, schedules, recurring, staffRefs).Do,
-		Create:           schedule.NewCreate(facilities, schedules, types, staffRefs, visits, nil, exports, tx, ids).Do,
-		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, staffRefs, visits, nil, recurring, exports, tx, ids).Do,
-		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, staffRefs, schedules, types, visits, nil, exports, tx, ids).Do,
+		Create:           schedule.NewCreate(facilities, schedules, types, staffRefs, locks, visits, nil, exports, tx, ids).Do,
+		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, staffRefs, locks, visits, nil, recurring, exports, tx, ids).Do,
+		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, staffRefs, locks, schedules, types, visits, nil, exports, tx, ids).Do,
 		Cancel:           schedule.NewCancel(schedules, staffRefs, exports, tx, ids).Do,
-		Update:           schedule.NewUpdate(schedules, staffRefs, types, visits, nil, exports, tx).Do,
+		Update:           schedule.NewUpdate(schedules, staffRefs, locks, types, visits, nil, exports, tx).Do,
 	}
 }
 
@@ -149,6 +151,7 @@ func calendarApp(
 	},
 	accounts calendar.Accounts,
 	staffRefs calendar.StaffRefs,
+	locks calendar.FacilityLock,
 	patients calendar.Patients,
 	serviceCodes calendar.ServiceCodes,
 	types calendar.Types,
@@ -168,12 +171,12 @@ func calendarApp(
 		ServiceAccount:   calendar.NewServiceAccount(accounts, guard).Do,
 		List:             calendar.NewList(calendars, guard).Do,
 		Check:            calendar.NewCheck(accounts, guard).Do,
-		Link:             calendar.NewLink(accounts, staffRefs, calendars, tx, ids, guard).Do,
+		Link:             calendar.NewLink(accounts, staffRefs, locks, calendars, tx, ids, guard).Do,
 		Unlink:           calendar.NewUnlink(calendars, guard).Do,
 		Preview:          calendarimport.NewPreview(calendars, accounts, staffRefs, patients, recurringSchedules, serviceCodes, guard).Do,
-		Import:           calendarimport.NewImport(calendars, accounts, staffRefs, patients, recurringSchedules, serviceCodes, types, recurring, schedules, visits, tx, ids, guard).Do,
+		Import:           calendarimport.NewImport(calendars, accounts, staffRefs, locks, patients, recurringSchedules, serviceCodes, types, recurring, schedules, visits, tx, ids, guard).Do,
 		ListExportIssues: calendarexport.NewListExportIssues(exports, guard).Do,
 		RetryExport:      calendarexport.NewRetryExport(exports, guard).Do,
-		AcceptExport:     calendarsync.NewAcceptExport(exports, schedules, calendars, accounts, staffRefs, types, patients, serviceCodes, visits, tx, ids, guard).Do,
+		AcceptExport:     calendarsync.NewAcceptExport(exports, schedules, calendars, accounts, staffRefs, locks, types, patients, serviceCodes, visits, tx, ids, guard).Do,
 	}
 }

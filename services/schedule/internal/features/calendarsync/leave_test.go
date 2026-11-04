@@ -39,18 +39,18 @@ func retire(t *testing.T, s *inmem.Store) {
 	}
 }
 
-// lockHook は、LockStatuses の前に run を呼ぶ StaffRefs である。ロックを待つ間に、ほかのトランザクションが職員を書いて
+// lockHook は、Share の前に run を呼ぶ FacilityLock である。ロックを待つ間に、ほかのトランザクションが職員を書いて
 // コミットしたことを表す。
 type lockHook struct {
-	inmem.StaffRefs
+	inmem.Facilities
 	run func()
 }
 
-func (h lockHook) LockStatuses(ctx context.Context, facilityID string) error {
+func (h lockHook) Share(ctx context.Context, facilityID string) error {
 	if h.run != nil {
 		h.run()
 	}
-	return h.StaffRefs.LockStatuses(ctx, facilityID)
+	return h.Facilities.Share(ctx, facilityID)
 }
 
 // 休職の職員の、既に取り込んだか書き出した予定を Google カレンダーで変えたとき、同期は今と同じく buddy の予定に当てる
@@ -75,7 +75,7 @@ func TestSyncStopsWhenCalendarDetachedDuringSync(t *testing.T) {
 	e.shift(t, eventID(t, d.ID))
 
 	syncer := newSyncer(e.store, gcal.NewReader(gcaltest.Start(t, e.srv)), &[]string{},
-		lockHook{StaffRefs: inmem.StaffRefs{Store: e.store}, run: func() { retire(t, e.store) }})
+		lockHook{Facilities: inmem.Facilities{Store: e.store}, run: func() { retire(t, e.store) }})
 	if _, err := syncer.SyncDue(t.Context()); err != nil {
 		t.Fatal(err)
 	}
@@ -125,7 +125,7 @@ func TestAcceptExportRejectsDetachedCalendar(t *testing.T) {
 		e, scheduleID, exportID := setup(t)
 		s := e.store
 		uc := calendarsync.NewAcceptExport(inmem.Exports{Store: s}, inmem.Schedules{Store: s}, inmem.Calendars{Store: s},
-			oneAccount{gcal.NewReader(gcaltest.Start(t, e.srv))}, lockHook{StaffRefs: inmem.StaffRefs{Store: s}, run: func() { retire(t, s) }},
+			oneAccount{gcal.NewReader(gcaltest.Start(t, e.srv))}, inmem.StaffRefs{Store: s}, lockHook{Facilities: inmem.Facilities{Store: s}, run: func() { retire(t, s) }},
 			inmem.ScheduleTypes{Store: s}, nil, nil, nil, &inmem.Tx{}, &inmem.SeqIDs{}, principal.RequireStaffManage)
 		_, err := uc.Do(e.ctx, exportID)
 		check(t, e, scheduleID, err)
