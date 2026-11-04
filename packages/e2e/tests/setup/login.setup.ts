@@ -3,6 +3,8 @@ import { type Page, test as setup } from '@playwright/test'
 import { ensureSavedLogin } from '@fukuemon/e2e-kit/auth'
 import {
   BASE_URL,
+  ISHIDA,
+  ISHIDA_STATE,
   LEADER,
   LEADER_STATE,
   LOGIN_EMAIL,
@@ -45,6 +47,13 @@ const ACCOUNTS = [
     path: OKADA_STATE,
     email: OKADA.email,
     staffName: OKADA.staff.name,
+  },
+  {
+    title:
+      'compose のブローカーに予定の正本の切り替えを確認する事業所の職員でログインした状態を保存する',
+    path: ISHIDA_STATE,
+    email: ISHIDA.email,
+    staffName: ISHIDA.staff.name,
   },
 ]
 
