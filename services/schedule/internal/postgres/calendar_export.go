@@ -41,6 +41,7 @@ func toExport(e sqlcgen.CalendarExport) calendar.Export {
 		Overwrite:     e.Overwrite,
 		NextAttemptAt: e.NextAttemptAt,
 		LockedUntil:   e.LockedUntil,
+		CreatedAt:     e.CreatedAt,
 		UpdatedAt:     e.UpdatedAt,
 	}
 	if e.ErrorCode != nil {
@@ -138,7 +139,7 @@ func (r *CalendarExportRepository) ListIssues(ctx context.Context, facilityID st
 			Export: toExport(sqlcgen.CalendarExport{
 				ID: row.ID, FacilityID: row.FacilityID, ScheduleID: row.ScheduleID, RecurringScheduleID: row.RecurringScheduleID,
 				Status: row.Status, Revision: row.Revision, Attempts: row.Attempts, NextAttemptAt: row.NextAttemptAt,
-				Overwrite: row.Overwrite, ErrorCode: row.ErrorCode, UpdatedAt: row.UpdatedAt,
+				Overwrite: row.Overwrite, ErrorCode: row.ErrorCode, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
 			}),
 			Cancelled:   row.Cancelled,
 			StaffID:     row.StaffID,
@@ -208,4 +209,13 @@ func (r *CalendarExportRepository) Resolve(ctx context.Context, id string, revis
 		return apperr.ErrConflict
 	}
 	return nil
+}
+
+// Backlog は、書いていない待ちの数と、最も古い待ちを足してからの時間を返す。
+func (r *CalendarExportRepository) Backlog(ctx context.Context) (calendarexport.Backlog, error) {
+	row, err := r.q(ctx).CalendarExportBacklog(ctx)
+	if err != nil {
+		return calendarexport.Backlog{}, translate("calendar export backlog", err)
+	}
+	return calendarexport.Backlog{PendingCount: int(row.PendingCount), OldestAge: secondsOf(row.OldestAgeSeconds)}, nil
 }

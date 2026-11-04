@@ -46,4 +46,7 @@ type SyncResult struct {
 	Status    SyncStatus
 	ErrorCode *SyncErrorCode
 	After     time.Duration
+	// Synced は、この回で変わった予定を最後まで読んで当てたかである。true のときだけ、最後の成功の時刻を進める。
+	// 書き出しを待って見送った回と外したカレンダーの回は、Status に前の状態を返すが、Synced は false にする。
+	Synced bool
 }

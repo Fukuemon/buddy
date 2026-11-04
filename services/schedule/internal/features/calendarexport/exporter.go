@@ -68,11 +68,18 @@ func (x *Exporter) Run(ctx context.Context, interval time.Duration) {
 }
 
 // ExportDue は、書く時刻を過ぎた待ちを取って書き、取った待ちの数を返す。1 つの待ちが書けなくても、残りの待ちを書く。
+// 取った後は、結果ごとの数の要約（calendar export batch）と、書いていない待ちの滞留（calendar export backlog）をログに書く。
 func (x *Exporter) ExportDue(ctx context.Context) (int, error) {
+	start := time.Now()
 	jobs, err := x.deps.Exports.Claim(ctx, exportBatch, exportLease)
 	if err != nil {
 		return 0, err
 	}
+	b := calendar.Batch{Claimed: len(jobs)}
+	defer func() {
+		b.Log(ctx, x.log, "calendar export batch", time.Since(start))
+		x.logBacklog(ctx)
+	}()
 	var finishErr error
 	for _, e := range jobs {
 		callCtx, cancel := context.WithTimeout(ctx, exportCallTimeout)
@@ -83,6 +90,7 @@ func (x *Exporter) ExportDue(ctx context.Context) (int, error) {
 		if err != nil && ctx.Err() != nil {
 			r = calendar.ExportResult{Status: calendar.ExportPending, Released: true}
 		}
+		count(&b, r, err)
 		if err != nil && !r.Released {
 			x.log.WarnContext(ctx, "calendar export failed",
 				slog.String("export_id", e.ID), slog.String("status", string(r.Status)), slog.Int("attempts", e.Attempts), slog.Any("error", err))
@@ -93,6 +101,34 @@ func (x *Exporter) ExportDue(ctx context.Context) (int, error) {
 		}
 	}
 	return len(jobs), finishErr
+}
+
+// count は、待ちを書いたエラー err と次の状態 r を、バッチの結果ごとの数 b に足す。一時的なエラーで書き直す待ちは、失敗に数える。
+func count(b *calendar.Batch, r calendar.ExportResult, err error) {
+	switch {
+	case r.Released:
+		b.Requeued++
+	case err == nil:
+		b.Succeeded++
+	case r.Status == calendar.ExportConflict:
+		b.Held++
+	default:
+		b.Failed++
+	}
+}
+
+// logBacklog は、書いていない待ちの数と、最も古い待ちを足してからの時間をログに書く。止める合図の後は数えない。
+func (x *Exporter) logBacklog(ctx context.Context) {
+	if ctx.Err() != nil {
+		return
+	}
+	bl, err := x.deps.Exports.Backlog(ctx)
+	if err != nil {
+		x.log.WarnContext(ctx, "calendar export backlog", slog.Any("error", err))
+		return
+	}
+	x.log.InfoContext(ctx, "calendar export backlog",
+		slog.Int("pending_count", bl.PendingCount), slog.Int64("oldest_pending_age_seconds", int64(bl.OldestAge.Seconds())))
 }
 
 // resultOf は、待ち e を書いたエラー err を、待ちの次の状態にする。

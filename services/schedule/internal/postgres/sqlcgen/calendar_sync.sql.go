@@ -10,6 +10,28 @@ import (
 	"time"
 )
 
+const calendarSyncBacklog = `-- name: CalendarSyncBacklog :one
+SELECT count(*) FILTER (WHERE s.next_sync_at <= now())::int AS overdue_count,
+       COALESCE(EXTRACT(EPOCH FROM now() - min(COALESCE(s.last_synced_at, s.created_at))), 0)::float8 AS oldest_success_age_seconds
+FROM calendar_sync_states s
+JOIN external_calendars c ON c.id = s.external_calendar_id
+WHERE c.disabled_at IS NULL
+`
+
+type CalendarSyncBacklogRow struct {
+	OverdueCount            int32
+	OldestSuccessAgeSeconds float64
+}
+
+// 外していないカレンダーのうち、読む時刻を過ぎたものの数と、最も古い最後の成功からの秒数を返す。
+// 1 回も成功していないカレンダーは、同期の状態の行を足した時刻から数える。カレンダーが無ければ秒数は 0 である。
+func (q *Queries) CalendarSyncBacklog(ctx context.Context) (CalendarSyncBacklogRow, error) {
+	row := q.db.QueryRow(ctx, calendarSyncBacklog)
+	var i CalendarSyncBacklogRow
+	err := row.Scan(&i.OverdueCount, &i.OldestSuccessAgeSeconds)
+	return i, err
+}
+
 const claimCalendarSyncs = `-- name: ClaimCalendarSyncs :many
 UPDATE calendar_sync_states s
 SET locked_until = now() + make_interval(secs => $1::float8)
@@ -90,15 +112,16 @@ func (q *Queries) EnsureCalendarSyncStates(ctx context.Context) error {
 const finishCalendarSync = `-- name: FinishCalendarSync :execrows
 UPDATE calendar_sync_states
 SET sync_token = $1, last_status = $2, last_error = $3,
-    last_synced_at = CASE WHEN $2::text = 'succeeded' THEN now() ELSE last_synced_at END,
-    next_sync_at = now() + make_interval(secs => $4::float8), locked_until = NULL
-WHERE external_calendar_id = $5 AND locked_until = $6
+    last_synced_at = CASE WHEN $4::bool THEN now() ELSE last_synced_at END,
+    next_sync_at = now() + make_interval(secs => $5::float8), locked_until = NULL
+WHERE external_calendar_id = $6 AND locked_until = $7
 `
 
 type FinishCalendarSyncParams struct {
 	SyncToken          *string
 	LastStatus         string
 	LastError          *string
+	Synced             bool
 	AfterSeconds       float64
 	ExternalCalendarID string
 	LockedUntil        *time.Time
@@ -110,6 +133,7 @@ func (q *Queries) FinishCalendarSync(ctx context.Context, arg FinishCalendarSync
 		arg.SyncToken,
 		arg.LastStatus,
 		arg.LastError,
+		arg.Synced,
 		arg.AfterSeconds,
 		arg.ExternalCalendarID,
 		arg.LockedUntil,

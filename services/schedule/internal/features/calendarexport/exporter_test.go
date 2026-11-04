@@ -1,9 +1,10 @@
 package calendarexport_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
-	"io"
 	"log/slog"
 	"net/http"
 	"testing"
@@ -62,6 +63,8 @@ type exportEnv struct {
 	exporter  *calendarexport.Exporter
 	// writers は、書き出しの処理が書く手段を引いた事業所の、引いた順の一覧である。
 	writers *[]string
+	// logs は、書き出しの処理が Debug から書いた JSON のログである。
+	logs *bytes.Buffer
 }
 
 // exportOps は、書き出しのテストが呼ぶ calendarexport の操作の Do である。
@@ -114,12 +117,12 @@ func newExportEnv(t *testing.T) exportEnv {
 		Cancel:           schedule.NewCancel(schedules, refs, outbox, tx, ids).Do,
 		Update:           schedule.NewUpdate(schedules, refs, facilities, types, nil, nil, outbox, tx).Do,
 	}
-	writers := &[]string{}
+	writers, logs := &[]string{}, &bytes.Buffer{}
 	exporter := calendarexport.NewExporter(calendarexport.ExporterDeps{
 		Exports: exports, Calendars: inmem.Calendars{Store: s}, Writers: writerOf(gcal.NewWriter(gcaltest.Start(t, srv)), writers),
 		Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s},
-	}, ids, slog.New(slog.NewTextHandler(io.Discard, nil)))
-	return exportEnv{store: s, ctx: ctx, uc: uc, srv: srv, schedules: sched, exporter: exporter, writers: writers}
+	}, ids, slog.New(slog.NewJSONHandler(logs, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	return exportEnv{store: s, ctx: ctx, uc: uc, srv: srv, schedules: sched, exporter: exporter, writers: writers, logs: logs}
 }
 
 func (e exportEnv) create(t *testing.T, title string) schedule.Schedule {
@@ -719,4 +722,92 @@ func TestExportUsesCalendarFacilityAccount(t *testing.T) {
 	}
 	e.run(t)
 	want("消す")
+}
+
+// logged は、ログのうち msg の行を、書いた順に返す。行が無ければテストを止める。
+func (e exportEnv) logged(t *testing.T, msg string) []map[string]any {
+	t.Helper()
+	var out []map[string]any
+	dec := json.NewDecoder(bytes.NewReader(e.logs.Bytes()))
+	for dec.More() {
+		var line map[string]any
+		if err := dec.Decode(&line); err != nil {
+			t.Fatal(err)
+		}
+		if line["msg"] == msg {
+			out = append(out, line)
+		}
+	}
+	if len(out) == 0 {
+		t.Fatalf("%q のログが無い:\n%s", msg, e.logs)
+	}
+	e.logs.Reset()
+	return out
+}
+
+// wantCounts は、ログの行 line の数の項目が want と同じかを確認する。
+func wantCounts(t *testing.T, line map[string]any, want map[string]float64) {
+	t.Helper()
+	for k, v := range want {
+		if line[k] != v {
+			t.Errorf("%s の %s = %v, want %v", line["msg"], k, line[k], v)
+		}
+	}
+}
+
+func TestExportLogsBatchAndBacklog(t *testing.T) {
+	e := newExportEnv(t)
+	d1 := e.create(t, "カンファレンス")
+	e.run(t)
+	e.logs.Reset()
+
+	// 1 つは Google カレンダーで変わっていて確認が必要になり、1 つは書ける
+	e.srv.Edit(googleCalID, eventID(t, d1.ID), func(ev *calendarv3.Event) { ev.Start.DateTime = "2026-11-04T15:00:00" })
+	e.update(t, d1.ID, "buddy で変更", inmem.StaffID)
+	e.create(t, "研修")
+	e.run(t)
+	batch := e.logged(t, "calendar export batch")[0]
+	wantCounts(t, batch, map[string]float64{"claimed_count": 2, "succeeded_count": 1, "held_count": 1, "failed_count": 0, "requeued_count": 0})
+	if batch["level"] != "INFO" {
+		t.Errorf("要約の水準 = %v", batch["level"])
+	}
+	if ms, ok := batch["duration_ms"].(float64); !ok || ms < 0 {
+		t.Errorf("duration_ms = %v", batch["duration_ms"])
+	}
+
+	// 一時的なエラーは失敗に数え、書き直す待ちは滞留に残る
+	e.srv.Failures = []int{http.StatusServiceUnavailable}
+	e.create(t, "面談")
+	e.run(t)
+	wantCounts(t, e.logged(t, "calendar export batch")[0], map[string]float64{"claimed_count": 1, "failed_count": 1})
+	for id, x := range e.store.Exports {
+		if x.Status == calendar.ExportPending {
+			x.CreatedAt = time.Now().Add(-90 * time.Second)
+			e.store.Exports[id] = x
+		}
+	}
+	// 取るものが無いバッチの要約は Debug で書き、滞留は書く
+	e.run(t)
+	if b := e.logged(t, "calendar export batch")[0]; b["level"] != "DEBUG" || b["claimed_count"] != float64(0) {
+		t.Errorf("取るものが無い要約 = %v", b)
+	}
+	e.run(t)
+	// 確認が必要な待ち（d1）は数えない
+	backlog := e.logged(t, "calendar export backlog")[0]
+	wantCounts(t, backlog, map[string]float64{"pending_count": 1})
+	if age, _ := backlog["oldest_pending_age_seconds"].(float64); age < 90 || age > 120 {
+		t.Errorf("oldest_pending_age_seconds = %v", backlog["oldest_pending_age_seconds"])
+	}
+}
+
+func TestExportLogsRequeuedOnShutdown(t *testing.T) {
+	e := newExportEnv(t)
+	e.create(t, "カンファレンス")
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	_, _ = e.exporter.ExportDue(ctx)
+	if bytes.Contains(e.logs.Bytes(), []byte("calendar export backlog")) {
+		t.Error("止めた後に滞留を数えた")
+	}
+	wantCounts(t, e.logged(t, "calendar export batch")[0], map[string]float64{"claimed_count": 1, "requeued_count": 1, "succeeded_count": 0})
 }

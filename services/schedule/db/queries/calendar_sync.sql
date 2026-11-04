@@ -25,9 +25,18 @@ RETURNING s.external_calendar_id AS id, s.sync_token, s.last_status, s.last_erro
 -- 取ったときの locked_until と比べ、lease が切れた後にほかの処理が取り直したカレンダーを変えない。
 UPDATE calendar_sync_states
 SET sync_token = sqlc.narg(sync_token), last_status = sqlc.arg(last_status), last_error = sqlc.narg(last_error),
-    last_synced_at = CASE WHEN sqlc.arg(last_status)::text = 'succeeded' THEN now() ELSE last_synced_at END,
+    last_synced_at = CASE WHEN sqlc.arg(synced)::bool THEN now() ELSE last_synced_at END,
     next_sync_at = now() + make_interval(secs => sqlc.arg(after_seconds)::float8), locked_until = NULL
 WHERE external_calendar_id = sqlc.arg(external_calendar_id) AND locked_until = sqlc.arg(locked_until);
 
 -- name: GetExternalEventLinkByEvent :one
 SELECT * FROM external_event_links WHERE external_calendar_id = $1 AND external_event_id = $2;
+
+-- name: CalendarSyncBacklog :one
+-- 外していないカレンダーのうち、読む時刻を過ぎたものの数と、最も古い最後の成功からの秒数を返す。
+-- 1 回も成功していないカレンダーは、同期の状態の行を足した時刻から数える。カレンダーが無ければ秒数は 0 である。
+SELECT count(*) FILTER (WHERE s.next_sync_at <= now())::int AS overdue_count,
+       COALESCE(EXTRACT(EPOCH FROM now() - min(COALESCE(s.last_synced_at, s.created_at))), 0)::float8 AS oldest_success_age_seconds
+FROM calendar_sync_states s
+JOIN external_calendars c ON c.id = s.external_calendar_id
+WHERE c.disabled_at IS NULL;
