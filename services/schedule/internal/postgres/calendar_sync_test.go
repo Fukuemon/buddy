@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	calendarv3 "google.golang.org/api/calendar/v3"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
@@ -353,5 +354,63 @@ func TestCalendarSyncKeepsEndedPatientOnlyInPast(t *testing.T) {
 	sync()
 	if d := get(); d.Date != (civil.Date{Year: 2026, Month: 10, Day: 5}) {
 		t.Errorf("利用の終了の利用者の予定を今日以降へ動かした: %+v", d.Slot)
+	}
+}
+
+// TestCalendarSyncForgetsTokenToReadAll は、空のトークンで同期の結果を書くと、トークンを消し、次の Claim がトークンを空で返す
+// （全ての予定を読み直す）ことと、失敗の結果が最後の成功の時刻を進めないことを確認する。
+// トークンが切れた（410）後の全件の読み直しが失敗したときに当たる。
+func TestCalendarSyncForgetsTokenToReadAll(t *testing.T) {
+	ctx := txContext(t)
+	tx := ctx.Value(txKey{}).(pgx.Tx)
+	// 同期は、Google カレンダーを正本にする事業所のカレンダーを読む（ADR-0035）
+	if _, err := tx.Exec(ctx, "UPDATE facilities SET source_mode = 'google_primary' WHERE id = $1", seedFacility); err != nil {
+		t.Fatal(err)
+	}
+	const calID = "01M3TD000000000000000000C7"
+	if err := NewCalendarRepository(testDB).Create(ctx, calendar.ExternalCalendar{
+		ID: calID, FacilityID: seedFacility, StaffID: seedMori, Provider: calendar.ProviderGoogle, CalendarID: "mori@example.com",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	r := NewCalendarSyncRepository(testDB)
+	claim := func() calendarsync.SyncState {
+		t.Helper()
+		if _, err := tx.Exec(ctx, "UPDATE calendar_sync_states SET next_sync_at = now() WHERE external_calendar_id = $1", calID); err != nil {
+			t.Fatal(err)
+		}
+		claimed, err := r.Claim(ctx, 10, time.Minute)
+		if err != nil {
+			t.Fatal(err)
+		}
+		i := slices.IndexFunc(claimed, func(s calendarsync.SyncState) bool { return s.Calendar.ID == calID })
+		if i < 0 {
+			t.Fatalf("Claim = %+v, want %s を取る", claimed, calID)
+		}
+		return claimed[i]
+	}
+
+	if err := r.Finish(ctx, claim(), calendarsync.SyncResult{SyncToken: "t1", Status: calendarsync.SyncSucceeded, Synced: true}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.Exec(ctx, "UPDATE calendar_sync_states SET last_synced_at = now() - interval '2 hours' WHERE external_calendar_id = $1", calID); err != nil {
+		t.Fatal(err)
+	}
+	code := calendarsync.SyncUnavailable
+	if err := r.Finish(ctx, claim(), calendarsync.SyncResult{Status: calendarsync.SyncFailed, ErrorCode: &code}); err != nil {
+		t.Fatal(err)
+	}
+	st := claim()
+	if st.SyncToken != "" || st.LastStatus != calendarsync.SyncFailed || st.LastError == nil || *st.LastError != calendarsync.SyncUnavailable {
+		t.Errorf("トークンを消した後の Claim = %+v, want 空のトークンと unavailable", st)
+	}
+	var tokenIsNull, keptSuccess bool
+	if err := tx.QueryRow(ctx,
+		"SELECT sync_token IS NULL, last_synced_at < now() - interval '1 hour' FROM calendar_sync_states WHERE external_calendar_id = $1", calID,
+	).Scan(&tokenIsNull, &keptSuccess); err != nil {
+		t.Fatal(err)
+	}
+	if !tokenIsNull || !keptSuccess {
+		t.Errorf("同期の状態: sync_token IS NULL = %v, 最後の成功を進めていない = %v", tokenIsNull, keptSuccess)
 	}
 }
