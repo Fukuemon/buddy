@@ -25,7 +25,7 @@ RETURNING s.external_calendar_id AS id, s.sync_token, s.last_status, s.last_erro
 -- 取ったときの locked_until と比べ、lease が切れた後にほかの処理が取り直したカレンダーを変えない。
 UPDATE calendar_sync_states
 SET sync_token = sqlc.narg(sync_token), last_status = sqlc.arg(last_status), last_error = sqlc.narg(last_error),
-    last_synced_at = CASE WHEN sqlc.arg(last_status)::text = 'succeeded' THEN now() ELSE last_synced_at END,
+    last_synced_at = CASE WHEN sqlc.arg(synced)::bool THEN now() ELSE last_synced_at END,
     next_sync_at = now() + make_interval(secs => sqlc.arg(after_seconds)::float8), locked_until = NULL
 WHERE external_calendar_id = sqlc.arg(external_calendar_id) AND locked_until = sqlc.arg(locked_until);
 

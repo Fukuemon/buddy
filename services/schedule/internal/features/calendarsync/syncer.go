@@ -213,7 +213,7 @@ func (s *Syncer) sync(ctx context.Context, st SyncState) (SyncResult, outcome) {
 			return SyncResult{SyncToken: token, Status: SyncFailed, ErrorCode: &code, After: s.interval}, outcomeFailed
 		}
 	}
-	return SyncResult{SyncToken: ch.NextSyncToken, Status: SyncSucceeded, After: s.interval}, outcomeSynced
+	return SyncResult{SyncToken: ch.NextSyncToken, Status: SyncSucceeded, Synced: true, After: s.interval}, outcomeSynced
 }
 
 // errCalendarUnlinked は、同期の途中でカレンダーが外れたので、残りの予定を当てないことを表す。

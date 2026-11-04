@@ -112,15 +112,16 @@ func (q *Queries) EnsureCalendarSyncStates(ctx context.Context) error {
 const finishCalendarSync = `-- name: FinishCalendarSync :execrows
 UPDATE calendar_sync_states
 SET sync_token = $1, last_status = $2, last_error = $3,
-    last_synced_at = CASE WHEN $2::text = 'succeeded' THEN now() ELSE last_synced_at END,
-    next_sync_at = now() + make_interval(secs => $4::float8), locked_until = NULL
-WHERE external_calendar_id = $5 AND locked_until = $6
+    last_synced_at = CASE WHEN $4::bool THEN now() ELSE last_synced_at END,
+    next_sync_at = now() + make_interval(secs => $5::float8), locked_until = NULL
+WHERE external_calendar_id = $6 AND locked_until = $7
 `
 
 type FinishCalendarSyncParams struct {
 	SyncToken          *string
 	LastStatus         string
 	LastError          *string
+	Synced             bool
 	AfterSeconds       float64
 	ExternalCalendarID string
 	LockedUntil        *time.Time
@@ -132,6 +133,7 @@ func (q *Queries) FinishCalendarSync(ctx context.Context, arg FinishCalendarSync
 		arg.SyncToken,
 		arg.LastStatus,
 		arg.LastError,
+		arg.Synced,
 		arg.AfterSeconds,
 		arg.ExternalCalendarID,
 		arg.LockedUntil,

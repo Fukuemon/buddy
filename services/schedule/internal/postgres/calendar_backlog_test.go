@@ -99,3 +99,38 @@ func TestCalendarSyncBacklog(t *testing.T) {
 		t.Errorf("外した後の Backlog = %+v, %v", b, err)
 	}
 }
+
+// TestCalendarSyncHeldKeepsLastSuccess は、書き出しを待って同期を見送った回が、前の成功の状態を返しても、
+// 最後の成功の時刻を進めないことを確認する。進めると、滞留の最後の成功からの時間が見送るたびに 0 に戻る。
+func TestCalendarSyncHeldKeepsLastSuccess(t *testing.T) {
+	ctx := txContext(t)
+	tx := ctx.Value(txKey{}).(pgx.Tx)
+	calendars := NewCalendarRepository(testDB)
+	r := NewCalendarSyncRepository(testDB)
+	const calID = "01M3TD000000000000000000B5"
+	if err := calendars.Create(ctx, calendar.ExternalCalendar{ID: calID, FacilityID: seedFacility, StaffID: seedMori, Provider: calendar.ProviderGoogle, CalendarID: "mori@example.com"}); err != nil {
+		t.Fatal(err)
+	}
+	claim := func() calendarsync.SyncState {
+		t.Helper()
+		claimed, err := r.Claim(ctx, 10, time.Minute)
+		if err != nil || len(claimed) != 1 {
+			t.Fatalf("Claim = %+v, %v", claimed, err)
+		}
+		return claimed[0]
+	}
+	if err := r.Finish(ctx, claim(), calendarsync.SyncResult{Status: calendarsync.SyncSucceeded, Synced: true}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.Exec(ctx, "UPDATE calendar_sync_states SET last_synced_at = now() - interval '2 hours', next_sync_at = now() WHERE external_calendar_id = $1", calID); err != nil {
+		t.Fatal(err)
+	}
+	// 書き出しを待って見送った回は、前の状態（succeeded）を返す
+	if err := r.Finish(ctx, claim(), calendarsync.SyncResult{Status: calendarsync.SyncSucceeded}); err != nil {
+		t.Fatal(err)
+	}
+	b, err := r.Backlog(ctx)
+	if err != nil || !within(b.OldestSuccessAge, 2*time.Hour) {
+		t.Errorf("見送った後の Backlog = %+v, %v, want 最後の成功から 2 時間", b, err)
+	}
+}

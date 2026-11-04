@@ -64,7 +64,7 @@ func (r *CalendarSyncRepository) Finish(ctx context.Context, s calendarsync.Sync
 		code = ptr(string(*res.ErrorCode))
 	}
 	_, err := r.q(ctx).FinishCalendarSync(ctx, sqlcgen.FinishCalendarSyncParams{
-		SyncToken: token, LastStatus: string(res.Status), LastError: code, AfterSeconds: res.After.Seconds(),
+		SyncToken: token, LastStatus: string(res.Status), LastError: code, Synced: res.Synced, AfterSeconds: res.After.Seconds(),
 		ExternalCalendarID: s.Calendar.ID, LockedUntil: &s.LockedUntil,
 	})
 	return translate("finish calendar sync", err)
