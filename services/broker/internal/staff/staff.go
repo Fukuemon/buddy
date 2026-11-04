@@ -24,6 +24,7 @@ const (
 
 // Transition は、職員の状態の遷移である。From のいずれかの状態の職員だけを To にする。
 // To の状態の職員も From に含め、同じ遷移を送り直しても成功させる。
+// 値は Activation、Resumption、Suspension で作る。ほかの方法で作った値の Refuse は panic する。
 type Transition struct {
 	To   string
 	From []string
