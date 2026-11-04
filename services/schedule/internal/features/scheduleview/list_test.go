@@ -5,9 +5,11 @@ import (
 	"reflect"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
@@ -84,4 +86,44 @@ func scheduleIDs(ds []scheduleview.Detail) []string {
 	}
 	slices.Sort(ids)
 	return ids
+}
+
+// TestSchedulesListBuddyPrimaryIgnoresProjections は、buddy を正本にする事業所（buddy_primary）の一覧が、
+// 結び付けたカレンダーに Projection の行があっても、buddy の予定のテーブルの予定だけを返すことを確認する。
+func TestSchedulesListBuddyPrimaryIgnoresProjections(t *testing.T) {
+	s := inmem.Seeded()
+	uc := newSchedules(s)
+	ctx := editorCtx()
+	single, err := uc.Create(ctx, facilityID, normalSlot())
+	if err != nil {
+		t.Fatal(err)
+	}
+	const calendarID = "CALENDAR"
+	s.Calendars[calendarID] = calendar.ExternalCalendar{ID: calendarID, FacilityID: facilityID, StaffID: staffID, Provider: calendar.ProviderGoogle}
+	at := time.Date(2026, 10, 20, 9, 0, 0, 0, calendar.Tokyo)
+	end := at.Add(time.Hour)
+	s.Projections[inmem.ProjectionKey{ExternalCalendarID: calendarID, EventID: "event-1"}] = scheduleview.Projection{
+		ExternalCalendarID: calendarID, EventID: "event-1", FacilityID: facilityID, StaffID: staffID,
+		Status: scheduleview.ProjectionConfirmed, Title: "Google の予定", Start: scheduleview.ProjectionTime{At: &at}, End: scheduleview.ProjectionTime{At: &end},
+	}
+	from, to := civil.Date{Year: 2026, Month: 10, Day: 1}, civil.Date{Year: 2026, Month: 10, Day: 31}
+	for _, q := range []scheduleview.ListQuery{{}, {DateFrom: &from, DateTo: &to}} {
+		list, err := uc.List(ctx, facilityID, q)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if ids := scheduleIDs(list.Schedules); !slices.Equal(ids, []string{single.ID}) {
+			t.Errorf("%+v: 単発の予定 = %v, want [%s]", q, ids, single.ID)
+		}
+		if len(list.RecurringSchedules) != 1 || list.RecurringSchedules[0].ID != recurringID {
+			t.Errorf("%+v: 繰り返しの予定 = %+v, want [%s]", q, list.RecurringSchedules, recurringID)
+		}
+		got, err := uc.Get(ctx, single.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(list.Schedules[0], got) {
+			t.Errorf("%+v: 一覧の予定 = %+v, Get = %+v", q, list.Schedules[0], got)
+		}
+	}
 }
