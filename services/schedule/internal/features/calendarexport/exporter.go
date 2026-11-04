@@ -31,7 +31,7 @@ const (
 // ExporterDeps は、Exporter が使うリポジトリと、外部のカレンダーに書く EventWriter を事業所ごとに返す Writers である。
 type ExporterDeps struct {
 	Exports   ExportRepository
-	Calendars calendar.Repository
+	Calendars ExporterCalendars
 	Writers   calendar.WriterFor
 	Schedules kernel.Finder[schedule.Detail]
 	Recurring kernel.Finder[schedule.RecurringDetail]

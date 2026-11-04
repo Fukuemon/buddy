@@ -1,4 +1,4 @@
-package calendar_test
+package calendarimport_test
 
 import (
 	"errors"
@@ -11,6 +11,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
@@ -78,7 +79,7 @@ func TestImportAppliesLaterExceptionsToLinkedRecurring(t *testing.T) {
 		gcancelled("weekly_20261207", "weekly", "2026-12-07T09:00:00+09:00"),
 		gexception("weekly_20261214", "weekly", "【訪看I2】利用者A", "2026-12-14T11:00:00+09:00", "2026-12-14T11:30:00+09:00", "2026-12-14T09:00:00+09:00"),
 	}}
-	dec, err := calendar.NewRange(civil.Date{Year: 2026, Month: 12, Day: 1}, civil.Date{Year: 2026, Month: 12, Day: 31})
+	dec, err := calendarimport.NewRange(civil.Date{Year: 2026, Month: 12, Day: 1}, civil.Date{Year: 2026, Month: 12, Day: 31})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,19 +102,19 @@ func TestImportAppliesLaterExceptionsToLinkedRecurring(t *testing.T) {
 func TestImportRejects(t *testing.T) {
 	tests := []struct {
 		name      string
-		decisions []calendar.Decision
+		decisions []calendarimport.Decision
 		running   bool
 		want      error
 	}{
 		{name: "確認が必要な予定の取り込み方が足りない", decisions: decisions()[:1], want: apperr.ErrConflict},
 		{name: "確認が必要な予定でない予定の取り込み方を送った",
-			decisions: append(decisions(), calendar.Decision{ExternalEventID: "visit", Action: calendar.ActionSkip}), want: apperr.ErrConflict},
+			decisions: append(decisions(), calendarimport.Decision{ExternalEventID: "visit", Action: calendarimport.ActionSkip}), want: apperr.ErrConflict},
 		{name: "選んだ利用者がいない",
-			decisions: []calendar.Decision{{ExternalEventID: "ambiguous", Action: calendar.ActionPatient, PatientID: inmem.OtherPatientID}, decisions()[1]},
+			decisions: []calendarimport.Decision{{ExternalEventID: "ambiguous", Action: calendarimport.ActionPatient, PatientID: inmem.OtherPatientID}, decisions()[1]},
 			want:      apperr.ErrInvalidInput},
 		{name: "取り込みが進んでいる", decisions: decisions(), running: true, want: apperr.ErrConflict},
 		{name: "プレビューの後に確認が必要な予定が変わった（バージョンが違う）",
-			decisions: []calendar.Decision{{ExternalEventID: "ambiguous", Action: calendar.ActionPatient, PatientID: "PB2", Revision: "stale"}, decisions()[1]},
+			decisions: []calendarimport.Decision{{ExternalEventID: "ambiguous", Action: calendarimport.ActionPatient, PatientID: "PB2", Revision: "stale"}, decisions()[1]},
 			want:      apperr.ErrConflict},
 	}
 	for _, tt := range tests {
@@ -173,7 +174,7 @@ func TestImportReviewedRecurring(t *testing.T) {
 		if got := reviewIDs(p.ReviewItems); !slices.Equal(got, []string{"series"}) || p.ReviewItems[0].Recurrence == nil {
 			t.Fatalf("ReviewItems = %+v", p.ReviewItems)
 		}
-		res, err := e.importDecided(t, e.rng, []calendar.Decision{{ExternalEventID: "series", Action: calendar.ActionPatient, PatientID: "PB1"}})
+		res, err := e.importDecided(t, e.rng, []calendarimport.Decision{{ExternalEventID: "series", Action: calendarimport.ActionPatient, PatientID: "PB1"}})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -192,7 +193,7 @@ func TestImportReviewedRecurring(t *testing.T) {
 
 	t.Run("親を取り込まないと選んだ後に親を取り込むと、回ごとにして前に取り込んだ回と重ねない", func(t *testing.T) {
 		e := newEnv(t, reviewSeries())
-		res, err := e.importDecided(t, e.rng, []calendar.Decision{{ExternalEventID: "series", Action: calendar.ActionSkip}})
+		res, err := e.importDecided(t, e.rng, []calendarimport.Decision{{ExternalEventID: "series", Action: calendarimport.ActionSkip}})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -211,7 +212,7 @@ func TestImportReviewedRecurring(t *testing.T) {
 		if p.Counts.RecurringAsRule != 0 || p.Counts.NeedsReview != 1 || p.ReviewItems[0].Recurrence != nil || p.Counts.AlreadyImported != 1 {
 			t.Errorf("2 回目のプレビューの件数 = %+v", p.Counts)
 		}
-		res, err = e.importDecided(t, e.rng, []calendar.Decision{{ExternalEventID: "series", Action: calendar.ActionPatient, PatientID: "PB1"}})
+		res, err = e.importDecided(t, e.rng, []calendarimport.Decision{{ExternalEventID: "series", Action: calendarimport.ActionPatient, PatientID: "PB1"}})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -316,7 +317,7 @@ func TestImportExcludesSkippedReplacement(t *testing.T) {
 	})
 	t.Run("取り込まないを選んだ置き換え", func(t *testing.T) {
 		e := newEnv(t, series("【訪看I2】利用者Z"))
-		if _, err := e.importDecided(t, e.rng, []calendar.Decision{{ExternalEventID: "weekly_1109", Action: calendar.ActionSkip}}); err != nil {
+		if _, err := e.importDecided(t, e.rng, []calendarimport.Decision{{ExternalEventID: "weekly_1109", Action: calendarimport.ActionSkip}}); err != nil {
 			t.Fatal(err)
 		}
 		if rs := recurringOf(t, e, "weekly"); !slices.Contains(rs.ExclusionDates, nov9) {
@@ -347,14 +348,14 @@ func TestImportOvernight(t *testing.T) {
 	if len(p.SkippedItems) != 2 {
 		t.Fatalf("取り込まない予定 = %+v", p.SkippedItems)
 	}
-	if s := p.SkippedItems[0]; s.Reason != calendar.SkipServiceNotFound || !s.EndsNextDay || s.StartTime == nil || *s.EndTime != (civil.Time{Hour: 2}) {
+	if s := p.SkippedItems[0]; s.Reason != calendarimport.SkipServiceNotFound || !s.EndsNextDay || s.StartTime == nil || *s.EndTime != (civil.Time{Hour: 2}) {
 		t.Errorf("サービス内容を引けない予定 = %+v", s)
 	}
 	if s := p.SkippedItems[1]; s.Reason != calendar.SkipMultiDay || s.EndsNextDay {
 		t.Errorf("2 日にわたる予定 = %+v", s)
 	}
 
-	if _, err := e.importDecided(t, e.rng, []calendar.Decision{{ExternalEventID: "midnight", Action: calendar.ActionNormal}}); err != nil {
+	if _, err := e.importDecided(t, e.rng, []calendarimport.Decision{{ExternalEventID: "midnight", Action: calendarimport.ActionNormal}}); err != nil {
 		t.Fatal(err)
 	}
 	nov := func(d int) civil.Date { return civil.Date{Year: 2026, Month: 11, Day: d} }

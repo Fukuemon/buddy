@@ -14,6 +14,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
@@ -182,9 +183,9 @@ func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
 	}, ids)
 	source := gcal.NewReader(gcaltest.Start(t, srv))
 	tx := NewTransactor(testDB)
-	importCalendar := calendar.NewImport(calendars, sameAccount{source}, staffRefs, patients, recurring, masters,
+	importCalendar := calendarimport.NewImport(calendars, sameAccount{source}, staffRefs, patients, recurring, masters,
 		types, recurring, schedules, visits, tx, ids, principal.RequireStaffManage)
-	rng, err := calendar.NewRange(civil.Date{Year: 2026, Month: 11, Day: 1}, civil.Date{Year: 2026, Month: 11, Day: 30})
+	rng, err := calendarimport.NewRange(civil.Date{Year: 2026, Month: 11, Day: 1}, civil.Date{Year: 2026, Month: 11, Day: 30})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -301,9 +302,9 @@ func TestCalendarSyncKeepsEndedPatientOnlyInPast(t *testing.T) {
 	}, ids)
 	source := gcal.NewReader(gcaltest.Start(t, srv))
 	tx := NewTransactor(testDB)
-	importCalendar := calendar.NewImport(calendars, sameAccount{source}, staffRefs, patients, recurring, masters,
+	importCalendar := calendarimport.NewImport(calendars, sameAccount{source}, staffRefs, patients, recurring, masters,
 		types, recurring, schedules, visits, tx, ids, principal.RequireStaffManage)
-	rng, err := calendar.NewRange(civil.Date{Year: 2026, Month: 10, Day: 1}, civil.Date{Year: 2026, Month: 10, Day: 31})
+	rng, err := calendarimport.NewRange(civil.Date{Year: 2026, Month: 10, Day: 1}, civil.Date{Year: 2026, Month: 10, Day: 31})
 	if err != nil {
 		t.Fatal(err)
 	}

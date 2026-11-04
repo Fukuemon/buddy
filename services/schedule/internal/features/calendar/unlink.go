@@ -22,7 +22,7 @@ func (u Unlink) Do(ctx context.Context, id string) error {
 	if err := u.guard(ctx); err != nil {
 		return err
 	}
-	if _, err := active(ctx, u.calendars, id); err != nil {
+	if _, err := Active(ctx, u.calendars, id); err != nil {
 		return err
 	}
 	return u.calendars.Disable(ctx, id)

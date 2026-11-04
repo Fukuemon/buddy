@@ -12,6 +12,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi"
 )
@@ -21,9 +22,9 @@ const calendarID = "01M3TD000000000000000000C0"
 // fakeCalendars は、受け取った引数を記録し、err があればそれを返す。
 type fakeCalendars struct {
 	err           error
-	lastRange     calendar.Range
-	lastDecisions []calendar.Decision
-	preview       calendar.ImportPreview
+	lastRange     calendarimport.Range
+	lastDecisions []calendarimport.Decision
+	preview       calendarimport.ImportPreview
 	lastFacility  string
 }
 
@@ -47,16 +48,16 @@ func (f *fakeCalendars) Link(_ context.Context, facilityID, staffID, calendarID 
 
 func (f *fakeCalendars) Unlink(context.Context, string) error { return f.err }
 
-func (f *fakeCalendars) Preview(_ context.Context, _ string, rng calendar.Range) (calendar.ImportPreview, error) {
+func (f *fakeCalendars) Preview(_ context.Context, _ string, rng calendarimport.Range) (calendarimport.ImportPreview, error) {
 	f.lastRange = rng
 	p := f.preview
 	p.Range = rng
 	return p, f.err
 }
 
-func (f *fakeCalendars) Import(_ context.Context, _ string, rng calendar.Range, decisions []calendar.Decision) (calendar.ImportResult, error) {
+func (f *fakeCalendars) Import(_ context.Context, _ string, rng calendarimport.Range, decisions []calendarimport.Decision) (calendarimport.ImportResult, error) {
 	f.lastRange, f.lastDecisions = rng, decisions
-	return calendar.ImportResult{Run: calendar.ImportRun{ID: calendarID, ExternalCalendarID: calendarID, RangeStart: rng.Start, RangeEnd: rng.End, Status: calendar.RunSucceeded, ImportedCount: 2}, AlreadyImported: 1}, f.err
+	return calendarimport.ImportResult{Run: calendar.ImportRun{ID: calendarID, ExternalCalendarID: calendarID, RangeStart: rng.Start, RangeEnd: rng.End, Status: calendar.RunSucceeded, ImportedCount: 2}, AlreadyImported: 1}, f.err
 }
 
 func (f *fakeCalendars) ListExportIssues(context.Context, string) ([]calendar.ExportIssue, error) {
@@ -115,7 +116,7 @@ func TestCalendarErrorStatus(t *testing.T) {
 			wantCode: http.StatusForbidden, wantBody: "forbidden"},
 		{name: "外したカレンダー", err: apperr.ErrNotFound, method: http.MethodDelete, target: "/v1/external_calendars/" + calendarID,
 			wantCode: http.StatusNotFound, wantBody: "not_found"},
-		{name: "取り込みが進んでいる", err: apperr.ConflictCode(calendar.CodeImportRunning, "進んでいます"), method: http.MethodPost,
+		{name: "取り込みが進んでいる", err: apperr.ConflictCode(calendarimport.CodeImportRunning, "進んでいます"), method: http.MethodPost,
 			target: "/v1/external_calendars/" + calendarID + "/imports", body: `{"range_start":"2026-11-01","range_end":"2026-11-30","decisions":[]}`,
 			wantCode: http.StatusConflict, wantBody: "import_running"},
 		{name: "確認が必要な書き出しでない", err: apperr.ConflictCode(calendar.CodeExportNotInReview, "確認が必要な書き出しではありません"), method: http.MethodPost,
@@ -166,15 +167,15 @@ func TestCalendarAccountOfFacility(t *testing.T) {
 func TestPreviewCalendarImport(t *testing.T) {
 	d := civil.Date{Year: 2026, Month: 11, Day: 3}
 	day := 2
-	f := &fakeCalendars{preview: calendar.ImportPreview{
-		Counts: calendar.Counts{Import: 1, ImportVisit: 1, NeedsReview: 1, Skipped: 1},
-		ReviewItems: []calendar.ReviewItem{{
+	f := &fakeCalendars{preview: calendarimport.ImportPreview{
+		Counts: calendarimport.Counts{Import: 1, ImportVisit: 1, NeedsReview: 1, Skipped: 1},
+		ReviewItems: []calendarimport.ReviewItem{{
 			ExternalEventID: "weekly", Date: d, StartTime: civil.Time{Hour: 10}, EndTime: civil.Time{Hour: 10, Minute: 30},
-			Service: "訪看I2", Client: "利用者B", Reason: calendar.ReviewPatientAmbiguous,
+			Service: "訪看I2", Client: "利用者B", Reason: calendarimport.ReviewPatientAmbiguous,
 			Recurrence: &schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: &day},
-			Candidates: []calendar.PatientRef{{ID: "PB1", Name: "利用者B", AssignedStaffName: "職員A"}},
+			Candidates: []calendarimport.PatientRef{{ID: "PB1", Name: "利用者B", AssignedStaffName: "職員A"}},
 		}},
-		SkippedItems: []calendar.Skipped{{Date: &d, AllDay: true, Reason: calendar.SkipAllDay}},
+		SkippedItems: []calendarimport.Skipped{{Date: &d, AllDay: true, Reason: calendar.SkipAllDay}},
 	}}
 	rec, body := do(t, newCalendarRouter(f), http.MethodPost, "/v1/external_calendars/"+calendarID+"/import_previews",
 		`{"range_start":"2026-11-01","range_end":"2026-11-30"}`)
@@ -203,9 +204,9 @@ func TestCreateCalendarImport(t *testing.T) {
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
 	}
-	want := []calendar.Decision{
-		{ExternalEventID: "e1", Action: calendar.ActionPatient, PatientID: "01M3TC66FGZVK39Y7GRVZSGWS1", Revision: "r1"},
-		{ExternalEventID: "e2", Action: calendar.ActionSkip, Revision: "r2"},
+	want := []calendarimport.Decision{
+		{ExternalEventID: "e1", Action: calendarimport.ActionPatient, PatientID: "01M3TC66FGZVK39Y7GRVZSGWS1", Revision: "r1"},
+		{ExternalEventID: "e2", Action: calendarimport.ActionSkip, Revision: "r2"},
 	}
 	if fmt.Sprint(f.lastDecisions) != fmt.Sprint(want) {
 		t.Errorf("decisions = %+v", f.lastDecisions)

@@ -35,3 +35,16 @@ type ExportCalendars interface {
 	LinkByRecurringSchedule(ctx context.Context, recurringScheduleID string) (calendar.EventLink, error)
 	Get(ctx context.Context, id string) (calendar.ExternalCalendar, error)
 }
+
+// ExporterCalendars は、Exporter が、職員のカレンダーを読み、書いた外部の予定と buddy の予定の対応を読み書きする。
+type ExporterCalendars interface {
+	ExportCalendars
+	// ListLinks は、カレンダーの予定の対応を返す。
+	ListLinks(ctx context.Context, externalCalendarID string) ([]calendar.EventLink, error)
+	// CreateLink は、同じ外部の予定の対応があるときに apperr.ErrConflict を返す。
+	CreateLink(ctx context.Context, l calendar.EventLink) error
+	// UpdateLink は、予定の対応 id の etag と、同じにした時点の更新の番号を書く。
+	UpdateLink(ctx context.Context, id, etag string, syncedVersion int) error
+	// DeleteLink は、予定の対応 id を消す。無くてもエラーにしない。
+	DeleteLink(ctx context.Context, id string) error
+}

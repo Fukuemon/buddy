@@ -12,13 +12,6 @@ type Types interface {
 	List(ctx context.Context) ([]schedule.Type, error)
 }
 
-// Recurring は、取り込んだ繰り返しの予定と除外する日を書く。
-// AddExclusion は、同じ日付をすでに除外しているときに apperr.ErrConflict を返す。
-type Recurring interface {
-	Create(ctx context.Context, rs schedule.RecurringSchedule) error
-	AddExclusion(ctx context.Context, recurringScheduleID string, d civil.Date) error
-}
-
 // ScheduleStore は、外部の予定の変更を当てる単発の予定を読み書きする。実装は schedule.Repository である。
 type ScheduleStore interface {
 	Create(ctx context.Context, s schedule.Schedule) error

@@ -3,7 +3,11 @@ type: feature-design
 title: Google カレンダーとの連携
 description: 事業所のサービスアカウントでの Calendar API の呼び出し、Google カレンダーの取り込み、書き出し、同期、ローカル環境と E2E の Google カレンダー
 status: stable
-governs: services/schedule/internal/features/calendar
+governs:
+  - services/schedule/internal/features/calendar
+  - services/schedule/internal/features/calendarimport
+  - services/schedule/internal/features/calendarsync
+  - services/schedule/internal/features/calendarexport
 verified_commit: 8254dde
 ---
 
@@ -30,6 +34,30 @@ verified_commit: 8254dde
 
 ## Design
 
+### 結び付け、取り込み、同期、書き出しを 4 つのパッケージに置く
+
+連携のコードは、次の 4 つの機能のパッケージに分かれる。
+
+- `calendar`: 3 つの機能が共有する記録と規則と、結び付けの操作
+  - 結び付けたカレンダー（`ExternalCalendar`）、予定の対応（`EventLink`）、取り込みの記録（`ImportRun`）、書き出しの待ちの記録（`Export`、`Target`）
+  - Google の口（`EventSource`、`EventWriter`、`Accounts`）と、外部の予定と buddy の予定を読み替える規則（`classify.go`、`recurrence.go`、`eventbody.go`）
+  - 結び付けの操作（`ServiceAccount`、`List`、`Check`、`Link`、`Unlink`）
+- `calendarimport`: 期間を決めた手動の取り込み（`Preview`、`Import`、`plan.go`）
+- `calendarsync`: 変わった予定の取得（`Syncer`）、取った変更を当てる規則（`Applier` と、その実装の `reconcileApplier`）、確認が必要な待ちを Google の内容で解く操作（`AcceptExport`）
+- `calendarexport`: 書き出しの待ちを積む `Outbox`、待ちを Google に書く `Exporter`、確認が必要な待ちの一覧と書き直し（`ListExportIssues`、`RetryExport`）
+
+`calendarimport`、`calendarsync`、`calendarexport` は `calendar` だけを import し、互いには import しない。  
+取り込みと同期が共有する読み替えの規則と、書き出しと同期が共有する待ちの記録を、`calendar` に置くためである。
+
+- ADR-0032: [予定の API の calendar を、結び付け、取り込み、同期、書き出しの 4 つの機能に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0032-schedule-api-calendar-split.md)
+
+カレンダーと予定の対応を読み書きするインターフェースは、使う側のパッケージが、使うメソッドだけを並べて持つ。
+
+- `calendar` の `Repository` は、結び付けの操作が使う、結び付けたカレンダーの読み書きだけを持つ。
+- `calendarimport` の `Calendars` は、取り込みの記録（`RunningSince`、`CreateRun`、`FinishRun`）と、予定の対応の読み取りと作成（`ListLinks`、`CreateLink`）を持つ。
+- `calendarsync` の `Calendars` と、`calendarexport` の `ExportCalendars` と `ExporterCalendars` は、同期と書き出しが使う予定の対応の読み書きを持つ。
+- postgres の `CalendarRepository` は 1 つで、全てのインターフェースを満たす。
+
 ### Google カレンダーは事業所のサービスアカウントで読み書きする
 
 予定の API は、Google Calendar API を、事業所ごとのサービスアカウントになりすました token で呼ぶ。  
@@ -54,7 +82,7 @@ verified_commit: 8254dde
 ### 連携の操作の権限
 
 結び付け、取り込み、確認が必要な予定の操作は、全て職員の管理の権限（`staff.manage`）を求める。  
-`calendar` の操作は、始めに `principal.RequireStaffManage` で確認し、持たない職員を 403（`forbidden`）で拒む。
+連携の 4 つのパッケージの操作は、始めに `principal.RequireStaffManage` で確認し、持たない職員を 403（`forbidden`）で拒む。
 
 - web は、`getMe` の権限で職員の管理の権限が無いと分かれば、カレンダーの連携、予定の取り込み、確認が必要な予定の画面で連携の API を呼ばず、権限が無いことを出す。画面の判定は表示のためだけで、拒むのは予定の API である。
 - 画面を開いた後に権限を外された職員の操作は、予定の API が 403 で拒む。web は、どの操作の 403 も「この操作をする権限がありません。」にする（`apps/web/src/features/calendar/lib/errorMessage.ts`）。
@@ -80,6 +108,7 @@ verified_commit: 8254dde
 ### Google カレンダーの取り込み
 
 職員の管理の権限を持つ職員が、職員に Google カレンダーを結び付け、期間を選んでプレビューし、確定して予定に取り込む（ADR-0009 の段階 1）。  
+プレビューは `calendarimport` の `Preview` が、確定は `Import` が行う。  
 画面の動きと、職員から見た取り込みの結果は、画面仕様書の [予定の取り込み](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-import_予定の取り込み/index.md) と [カレンダーの連携](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-link_カレンダーの連携/index.md) にある。
 
 - ADR-0009: [Google カレンダーとの連携を、buddy をマスターにする段階の同期にし、サービスアカウントとカレンダーの共有で認証する](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0009-google-calendar-sync.md)
@@ -256,7 +285,8 @@ sequenceDiagram
 書き出しは、`GOOGLE_CALENDAR_EXPORT_ENABLED` が `true` のときだけ動く。  
 `false` のときは待ちを積まず、書き出しの処理も動かさない。
 
-予定の操作（`schedule` の `Create` など）は、予定を書くのと同じトランザクションで `Outbox` に待ちを積む。  
+予定の操作（`schedule` の `Create` など）は、予定を書くのと同じトランザクションで `calendarexport` の `Outbox` に待ちを積む。  
+待ちを Google に書くのは、`calendarexport` の `Exporter` である。  
 積むのは、予定の職員に外していないカレンダーがあるときと、予定の対応のカレンダーを外していないとき（職員を替えて、前のカレンダーの予定を消すとき）だけである。  
 取り込みで書いた予定は積まない。  
 カレンダーを結び付ける前に作った予定は書き出さない。  
@@ -396,7 +426,8 @@ sequenceDiagram
 書き出し（`GOOGLE_CALENDAR_EXPORT_ENABLED`）を有効にしないと有効にできない。  
 buddy の変更を書き出さずに Google の変更だけを当てると、buddy で変えた予定が全て両側の変更になるためである。
 
-同期の処理は、書き出しと同じく API のプロセスのゴルーチンで動く。
+同期の処理は、`calendarsync` の `Syncer` が変わった予定を読み、`reconcileApplier` が 1 つの予定ずつ当てる。  
+書き出しと同じく API のプロセスのゴルーチンで動く。
 
 - 読む時刻（`next_sync_at`）を過ぎたカレンダーがあるかを 5 秒（間隔がそれより短ければ間隔）ごとに確認する。
   - 読み終えたカレンダーの読む時刻は、`GOOGLE_CALENDAR_SYNC_INTERVAL` の後である。
@@ -486,7 +517,8 @@ Google で新しく作った予定は、取り込みで buddy に移す。
 
 「buddy の内容で書き直す」（`createCalendarExportRetry`）は、書き出しと同じく `If-Match` を付けずに書き直す。
 
-「Google の内容に合わせる」（`createCalendarExportAcceptance`）は、単発の予定で、理由が `precondition_failed` か `not_found` の待ちだけに使える。  
+「Google の内容に合わせる」（`createCalendarExportAcceptance`）は、`calendarsync` の `AcceptExport` が、同期と同じ当てる規則で行う。  
+単発の予定で、理由が `precondition_failed` か `not_found` の待ちだけに使える。  
 buddy でキャンセルした予定には使えない（`acceptable` が false）。  
 Google の今の予定を `events.get` で読み、buddy の予定に当てて、待ちを終える（`succeeded`）。  
 読み替えられなければ 409（`external_change_unappliable`）を返す。

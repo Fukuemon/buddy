@@ -10,7 +10,8 @@ import (
 // TimeZone は、予定の日付と時刻を決めるタイムゾーンである。照合の API と同じにする。
 const TimeZone = "Asia/Tokyo"
 
-var tokyo = mustLoadLocation(TimeZone)
+// Tokyo は、TimeZone の場所である。外部の予定の日時を、予定の日付と時刻に直すときに使う。
+var Tokyo = mustLoadLocation(TimeZone)
 
 func mustLoadLocation(name string) *time.Location {
 	loc, err := time.LoadLocation(name)

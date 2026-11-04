@@ -1,4 +1,4 @@
-package calendar
+package calendarimport
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
@@ -20,29 +21,29 @@ const staleRunAfter = 10 * time.Minute
 
 // ImportResult は、取り込みの記録と、前の取り込みで取り込んでいて今回は書かなかった予定の数である。
 type ImportResult struct {
-	Run             ImportRun
+	Run             calendar.ImportRun
 	AlreadyImported int
 }
 
 // Import は、カレンダー id の期間 rng の予定を読み直し、プレビューと同じ規則で読み替えて、1 つのトランザクションで書く。
 type Import struct {
-	calendars          Repository
-	accounts           Accounts
-	staff              StaffRefs
-	patients           Patients
+	calendars          Calendars
+	accounts           calendar.Accounts
+	staff              calendar.StaffRefs
+	patients           calendar.Patients
 	recurringSchedules kernel.Finder[schedule.RecurringDetail]
-	serviceCodes       ServiceCodes
-	types              Types
+	serviceCodes       calendar.ServiceCodes
+	types              calendar.Types
 	recurring          Recurring
-	schedules          ScheduleStore
-	visits             VisitStore
+	schedules          calendar.ScheduleStore
+	visits             calendar.VisitStore
 	tx                 tx.Transactor
 	ids                kernel.IDGenerator
 	guard              organization.Guard
 }
 
 // NewImport は Import を作る。
-func NewImport(calendars Repository, accounts Accounts, staff StaffRefs, patients Patients, recurringSchedules kernel.Finder[schedule.RecurringDetail], serviceCodes ServiceCodes, types Types, recurring Recurring, schedules ScheduleStore, visits VisitStore, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) Import {
+func NewImport(calendars Calendars, accounts calendar.Accounts, staff calendar.StaffRefs, patients calendar.Patients, recurringSchedules kernel.Finder[schedule.RecurringDetail], serviceCodes calendar.ServiceCodes, types calendar.Types, recurring Recurring, schedules calendar.ScheduleStore, visits calendar.VisitStore, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) Import {
 	return Import{calendars: calendars, accounts: accounts, staff: staff, patients: patients, recurringSchedules: recurringSchedules, serviceCodes: serviceCodes, types: types, recurring: recurring, schedules: schedules, visits: visits, tx: tx, ids: ids, guard: guard}
 }
 
@@ -60,17 +61,17 @@ func (u Import) Do(ctx context.Context, id string, rng Range, decisions []Decisi
 	if !ok {
 		return ImportResult{}, fmt.Errorf("%w: 職員を特定できません", apperr.ErrForbidden)
 	}
-	c, err := active(ctx, u.calendars, id)
+	c, err := calendar.Active(ctx, u.calendars, id)
 	if err != nil {
 		return ImportResult{}, err
 	}
-	src, err := Source(ctx, u.accounts, c.FacilityID)
+	src, err := calendar.Source(ctx, u.accounts, c.FacilityID)
 	if err != nil {
 		return ImportResult{}, err
 	}
-	run := ImportRun{
+	run := calendar.ImportRun{
 		ID: u.ids.NewID(), FacilityID: c.FacilityID, ExternalCalendarID: c.ID, RequestedBy: p.Staff.ID,
-		RangeStart: rng.Start, RangeEnd: rng.End, Status: RunRunning,
+		RangeStart: rng.Start, RangeEnd: rng.End, Status: calendar.RunRunning,
 	}
 	err = u.tx.WithinTx(ctx, func(ctx context.Context) error {
 		if _, err := u.calendars.GetForUpdate(ctx, c.ID); err != nil {
@@ -90,7 +91,7 @@ func (u Import) Do(ctx context.Context, id string, rng Range, decisions []Decisi
 	}
 	res, err := u.importPlan(ctx, src, c, rng, decisions, run)
 	if err != nil {
-		run.Status = RunFailed
+		run.Status = calendar.RunFailed
 		// 取り込みのエラーを返すので、記録の更新のエラーは返さない。止まった記録は staleRunAfter の後に次の取り込みを止めなくなる。
 		_, _ = u.calendars.FinishRun(context.WithoutCancel(ctx), run)
 		return ImportResult{}, err
@@ -98,7 +99,7 @@ func (u Import) Do(ctx context.Context, id string, rng Range, decisions []Decisi
 	return res, nil
 }
 
-func (u Import) importPlan(ctx context.Context, src EventSource, c ExternalCalendar, rng Range, decisions []Decision, run ImportRun) (ImportResult, error) {
+func (u Import) importPlan(ctx context.Context, src calendar.EventSource, c calendar.ExternalCalendar, rng Range, decisions []Decision, run calendar.ImportRun) (ImportResult, error) {
 	blocked, err := staffBlocked(ctx, u.staff, c)
 	if err != nil {
 		return ImportResult{}, err
@@ -119,7 +120,7 @@ func (u Import) importPlan(ctx context.Context, src EventSource, c ExternalCalen
 		if err := u.write(ctx, c, p); err != nil {
 			return err
 		}
-		run.Status = RunSucceeded
+		run.Status = calendar.RunSucceeded
 		run.ImportedCount = len(p.entries)
 		run.SkippedCount = len(p.skippedItems) + chosenSkip
 		finished, err := u.calendars.FinishRun(ctx, run)
@@ -135,11 +136,11 @@ func (u Import) importPlan(ctx context.Context, src EventSource, c ExternalCalen
 // もう片方のコミットを待ってから読む。取り込んだ予定が残れば退職を拒み、退職が先ならここでカレンダーが外れている。
 // 訪問しない職員への変更も事業所の行に排他のロックを取るので、この取り込みと行き違わない。
 // カレンダーが外れていれば apperr.ErrNotFound を、休職か訪問しない職員かが変わっていれば apperr.ErrConflict を返す。
-func (u Import) recheck(ctx context.Context, c ExternalCalendar, blocked SkipReason) error {
+func (u Import) recheck(ctx context.Context, c calendar.ExternalCalendar, blocked calendar.SkipReason) error {
 	if err := u.staff.LockStatuses(ctx, c.FacilityID); err != nil {
 		return err
 	}
-	if _, err := active(ctx, u.calendars, c.ID); err != nil {
+	if _, err := calendar.Active(ctx, u.calendars, c.ID); err != nil {
 		return err
 	}
 	now, err := staffBlocked(ctx, u.staff, c)
@@ -155,7 +156,7 @@ func (u Import) recheck(ctx context.Context, c ExternalCalendar, blocked SkipRea
 var errStaffStatusChanged = apperr.ConflictCode(CodeReviewChanged, "プレビューの後に、職員が休職か復職になったか、訪問するかが変わりました。もう一度プレビューしてください")
 
 // write は、p の予定と除外する日と予定の対応を書く。トランザクションの中で呼ぶ。
-func (u Import) write(ctx context.Context, c ExternalCalendar, p plan) error {
+func (u Import) write(ctx context.Context, c calendar.ExternalCalendar, p plan) error {
 	types, err := u.types.List(ctx)
 	if err != nil {
 		return err
@@ -253,7 +254,7 @@ func (x excluder) exclude(ctx context.Context, recurringScheduleID string, d civ
 }
 
 // slot は、取り込む予定 e の枠と種類を組み立てる。訪問の予定なら訪問の情報を書く。
-func (u Import) slot(ctx context.Context, c ExternalCalendar, e entry, types map[schedule.TypeCode]schedule.Type) (schedule.Slot, schedule.Type, error) {
+func (u Import) slot(ctx context.Context, c calendar.ExternalCalendar, e entry, types map[schedule.TypeCode]schedule.Type) (schedule.Slot, schedule.Type, error) {
 	slot := schedule.Slot{
 		FacilityID:  c.FacilityID,
 		StaffID:     c.StaffID,
@@ -263,7 +264,7 @@ func (u Import) slot(ctx context.Context, c ExternalCalendar, e entry, types map
 		EndsNextDay: e.cand.EndsNextDay,
 	}
 	code := schedule.CodeNormal
-	if e.cand.Kind == KindVisit {
+	if e.cand.Kind == calendar.KindVisit {
 		code = schedule.CodeVisit
 		id, err := u.visits.Create(ctx, c.FacilityID, visit.Input{
 			PatientID: e.patientID, AssignedStaffID: c.StaffID, ServiceCodeID: e.serviceCodeID,
@@ -283,9 +284,9 @@ func (u Import) slot(ctx context.Context, c ExternalCalendar, e entry, types map
 	return slot, typ, nil
 }
 
-func (u Import) link(ctx context.Context, c ExternalCalendar, e entry, scheduleID, recurringScheduleID *string) error {
-	synced := CreatedVersion
-	l := EventLink{
+func (u Import) link(ctx context.Context, c calendar.ExternalCalendar, e entry, scheduleID, recurringScheduleID *string) error {
+	synced := calendar.CreatedVersion
+	l := calendar.EventLink{
 		ID: u.ids.NewID(), FacilityID: c.FacilityID, ExternalCalendarID: c.ID, ExternalEventID: e.event.ID,
 		ETag: e.event.ETag, SyncedVersion: &synced, ScheduleID: scheduleID, RecurringScheduleID: recurringScheduleID,
 	}
