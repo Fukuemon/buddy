@@ -936,3 +936,38 @@ func TestSyncKeepsOverwriteChosenBeforeSync(t *testing.T) {
 		t.Error("書き直すと選んだ予定をキャンセルした")
 	}
 }
+
+// TestSyncDefersOccurrenceWhileOverwriteChosen は、マネージャーが繰り返しの予定を buddy の内容で書き直すと選んだ後に、
+// Google で回が取り消されても、同期がその回の変更を捨てず、書き直しが終わった後に当てることを確認する。
+// 回は親とは別の Google の予定で、親を書き直しても戻らないためである。
+func TestSyncDefersOccurrenceWhileOverwriteChosen(t *testing.T) {
+	e := newSyncEnv(t)
+	rs := e.recurring(t)
+	parent := eventID(t, rs.ID)
+	// 職員が Google カレンダーで、buddy に写せない形に繰り返しを変えたので、確認が必要な待ちになる
+	e.srv.Edit(googleCalID, parent, func(ev *calendarv3.Event) {
+		ev.Recurrence = []string{"RRULE:FREQ=WEEKLY;BYDAY=TU;UNTIL=20261231T145959Z"}
+	})
+	e.sync(t)
+	x := e.export(t, rs.ID)
+	if x.Status != calendar.ExportConflict {
+		t.Fatalf("待ち = %+v", x)
+	}
+	if _, err := e.uc.RetryExport(e.ctx, x.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	// 書き直しの前に、職員が Google カレンダーで 11-09 の回を取り消した
+	e.srv.Put(googleCalID, gcancelled(parent+"_20261109T000000Z", parent, "2026-11-09T09:00:00+09:00"))
+	e.sync(t)
+	if x := e.export(t, rs.ID); x.Status != calendar.ExportPending || !x.Overwrite {
+		t.Fatalf("同期の後の待ち = %+v, want 書き直しのまま", x)
+	}
+
+	e.run(t)
+	e.sync(t)
+	got, _ := inmem.RecurringSchedules{Store: e.store}.Get(t.Context(), rs.ID)
+	if len(got.ExclusionDates) != 1 || got.ExclusionDates[0] != (civil.Date{Year: 2026, Month: 11, Day: 9}) {
+		t.Errorf("書き直しの後の除外した日 = %v, want 取り消した 11-09", got.ExclusionDates)
+	}
+}

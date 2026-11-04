@@ -184,8 +184,9 @@ func (a reconcileApplier) syncOccurrence(ctx context.Context, c calendar.Externa
 	if err != nil {
 		return err
 	}
+	// 回は親とは別の Google の予定で、親を書き直しても戻らない。捨てずに、書き直しが終わった後に読み直す
 	if isOverwriteChosen(open) {
-		return nil
+		return errExportWriting
 	}
 	date, ok := calendar.OriginalDate(ev)
 	occurs := ok && rs.HasOccurrenceOn(date)
@@ -297,7 +298,8 @@ func (a reconcileApplier) open(ctx context.Context, t calendar.Target) (*calenda
 }
 
 // isOverwriteChosen は、マネージャーが buddy の内容で書き直すと選び、まだ書いていない待ちかを返す。
-// その予定には Google の変更を当てず、保留にも戻さない。書き直しの後に読んだ Google の変更で、選んだ書き直しを打ち消さないためである。
+// 単発の予定と繰り返しの予定の親には Google の変更を当てず、保留にも戻さない。書き直しの後に読んだ Google の変更で、選んだ書き直しを打ち消さないためである。
+// 繰り返しの回の変更は、書き直しが終わるまで読み直しを待つ。
 func isOverwriteChosen(open *calendar.Export) bool {
 	return open != nil && open.Overwrite && open.Status == calendar.ExportPending
 }
