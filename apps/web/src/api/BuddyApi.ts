@@ -1,4 +1,7 @@
 import type {
+  CalendarCutover,
+  CalendarCutoverCompletion,
+  CalendarCutoverState,
   CalendarExport,
   CalendarExportIssue,
   Department,
@@ -251,7 +254,10 @@ export interface BuddyApi {
     ): Promise<ExternalCalendar>
     /** カレンダーを外す。取り込んだ予定は残る。 */
     unlink(facilityId: FacilityId, externalCalendarId: ExternalCalendar['id']): Promise<void>
-    /** 期間の予定を読み、取り込むとどうなるかを返す。予定は書かない。 */
+    /**
+     * 期間の予定を読み、取り込むとどうなるかを返す。予定は書かない。
+     * 予定の正本の切り替えの間は、期間を切り替えの range_start から終わりの無い期間（range_end が null）にする。
+     */
     preview(
       facilityId: FacilityId,
       externalCalendarId: ExternalCalendar['id'],
@@ -275,5 +281,25 @@ export interface BuddyApi {
      * acceptable が false の書き出しでは、code が export_not_acceptable の ApiError を投げる。
      */
     acceptExport(facilityId: FacilityId, exportId: CalendarExport['id']): Promise<CalendarExport>
+    /** 予定の正本の切り替えの状況を返す。open の切り替えが無ければ cutover は null で、カレンダーの last_import は null である。 */
+    cutoverStatus(facilityId: FacilityId): Promise<CalendarCutoverState>
+    /**
+     * 予定の正本の切り替えを始める。始められない原因は、status が 409 の ApiError の code
+     *（cutover_open、cutover_not_google_primary、cutover_sync_not_ready）にある。
+     */
+    startCutover(facilityId: FacilityId): Promise<CalendarCutover>
+    /**
+     * 切り替えを完了し、事業所の予定の正本を buddy にする。完了の確認を満たさなければ、拒まれた結果として満たさないカレンダーと予定を返す。
+     * 切り替えが open でなければ、code が cutover_not_open の ApiError を投げる。
+     */
+    completeCutover(
+      facilityId: FacilityId,
+      cutoverId: CalendarCutover['id'],
+    ): Promise<CalendarCutoverCompletion>
+    /** 切り替えをやめ、この切り替えで取り込んだ予定を消す。切り替えが open でなければ、code が cutover_not_open の ApiError を投げる。 */
+    cancelCutover(
+      facilityId: FacilityId,
+      cutoverId: CalendarCutover['id'],
+    ): Promise<CalendarCutover>
   }
 }

@@ -21,6 +21,207 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
+// Defines values for CalendarCutoverStatus.
+const (
+	Canceled  CalendarCutoverStatus = "canceled"
+	Completed CalendarCutoverStatus = "completed"
+	Open      CalendarCutoverStatus = "open"
+)
+
+// Valid indicates whether the value is a known member of the CalendarCutoverStatus enum.
+func (e CalendarCutoverStatus) Valid() bool {
+	switch e {
+	case Canceled:
+		return true
+	case Completed:
+		return true
+	case Open:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CalendarCutoverCalendarLastError.
+const (
+	CalendarCutoverCalendarLastErrorApply       CalendarCutoverCalendarLastError = "apply"
+	CalendarCutoverCalendarLastErrorUnavailable CalendarCutoverCalendarLastError = "unavailable"
+	CalendarCutoverCalendarLastErrorUnreadable  CalendarCutoverCalendarLastError = "unreadable"
+)
+
+// Valid indicates whether the value is a known member of the CalendarCutoverCalendarLastError enum.
+func (e CalendarCutoverCalendarLastError) Valid() bool {
+	switch e {
+	case CalendarCutoverCalendarLastErrorApply:
+		return true
+	case CalendarCutoverCalendarLastErrorUnavailable:
+		return true
+	case CalendarCutoverCalendarLastErrorUnreadable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CalendarCutoverCalendarLastStatus.
+const (
+	CalendarCutoverCalendarLastStatusFailed    CalendarCutoverCalendarLastStatus = "failed"
+	CalendarCutoverCalendarLastStatusNever     CalendarCutoverCalendarLastStatus = "never"
+	CalendarCutoverCalendarLastStatusSucceeded CalendarCutoverCalendarLastStatus = "succeeded"
+)
+
+// Valid indicates whether the value is a known member of the CalendarCutoverCalendarLastStatus enum.
+func (e CalendarCutoverCalendarLastStatus) Valid() bool {
+	switch e {
+	case CalendarCutoverCalendarLastStatusFailed:
+		return true
+	case CalendarCutoverCalendarLastStatusNever:
+		return true
+	case CalendarCutoverCalendarLastStatusSucceeded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CalendarCutoverIncompleteCode.
+const (
+	CalendarCutoverIncompleteCodeCalendarAlreadyLinked     CalendarCutoverIncompleteCode = "calendar_already_linked"
+	CalendarCutoverIncompleteCodeCalendarNotConfigured     CalendarCutoverIncompleteCode = "calendar_not_configured"
+	CalendarCutoverIncompleteCodeCalendarTaken             CalendarCutoverIncompleteCode = "calendar_taken"
+	CalendarCutoverIncompleteCodeCalendarUnavailable       CalendarCutoverIncompleteCode = "calendar_unavailable"
+	CalendarCutoverIncompleteCodeCalendarUnreadable        CalendarCutoverIncompleteCode = "calendar_unreadable"
+	CalendarCutoverIncompleteCodeConflict                  CalendarCutoverIncompleteCode = "conflict"
+	CalendarCutoverIncompleteCodeCutoverIncomplete         CalendarCutoverIncompleteCode = "cutover_incomplete"
+	CalendarCutoverIncompleteCodeCutoverNotGooglePrimary   CalendarCutoverIncompleteCode = "cutover_not_google_primary"
+	CalendarCutoverIncompleteCodeCutoverNotOpen            CalendarCutoverIncompleteCode = "cutover_not_open"
+	CalendarCutoverIncompleteCodeCutoverOpen               CalendarCutoverIncompleteCode = "cutover_open"
+	CalendarCutoverIncompleteCodeCutoverSyncNotReady       CalendarCutoverIncompleteCode = "cutover_sync_not_ready"
+	CalendarCutoverIncompleteCodeExportNotAcceptable       CalendarCutoverIncompleteCode = "export_not_acceptable"
+	CalendarCutoverIncompleteCodeExportNotInReview         CalendarCutoverIncompleteCode = "export_not_in_review"
+	CalendarCutoverIncompleteCodeExternalChangeUnappliable CalendarCutoverIncompleteCode = "external_change_unappliable"
+	CalendarCutoverIncompleteCodeForbidden                 CalendarCutoverIncompleteCode = "forbidden"
+	CalendarCutoverIncompleteCodeGooglePrimary             CalendarCutoverIncompleteCode = "google_primary"
+	CalendarCutoverIncompleteCodeImportPreviewChanged      CalendarCutoverIncompleteCode = "import_preview_changed"
+	CalendarCutoverIncompleteCodeImportRunning             CalendarCutoverIncompleteCode = "import_running"
+	CalendarCutoverIncompleteCodeInternal                  CalendarCutoverIncompleteCode = "internal"
+	CalendarCutoverIncompleteCodeInvalidInput              CalendarCutoverIncompleteCode = "invalid_input"
+	CalendarCutoverIncompleteCodeNotFound                  CalendarCutoverIncompleteCode = "not_found"
+	CalendarCutoverIncompleteCodePatientHasSchedules       CalendarCutoverIncompleteCode = "patient_has_schedules"
+	CalendarCutoverIncompleteCodeStaffHasAssignments       CalendarCutoverIncompleteCode = "staff_has_assignments"
+	CalendarCutoverIncompleteCodeStaffHasCalendar          CalendarCutoverIncompleteCode = "staff_has_calendar"
+	CalendarCutoverIncompleteCodeUnauthenticated           CalendarCutoverIncompleteCode = "unauthenticated"
+)
+
+// Valid indicates whether the value is a known member of the CalendarCutoverIncompleteCode enum.
+func (e CalendarCutoverIncompleteCode) Valid() bool {
+	switch e {
+	case CalendarCutoverIncompleteCodeCalendarAlreadyLinked:
+		return true
+	case CalendarCutoverIncompleteCodeCalendarNotConfigured:
+		return true
+	case CalendarCutoverIncompleteCodeCalendarTaken:
+		return true
+	case CalendarCutoverIncompleteCodeCalendarUnavailable:
+		return true
+	case CalendarCutoverIncompleteCodeCalendarUnreadable:
+		return true
+	case CalendarCutoverIncompleteCodeConflict:
+		return true
+	case CalendarCutoverIncompleteCodeCutoverIncomplete:
+		return true
+	case CalendarCutoverIncompleteCodeCutoverNotGooglePrimary:
+		return true
+	case CalendarCutoverIncompleteCodeCutoverNotOpen:
+		return true
+	case CalendarCutoverIncompleteCodeCutoverOpen:
+		return true
+	case CalendarCutoverIncompleteCodeCutoverSyncNotReady:
+		return true
+	case CalendarCutoverIncompleteCodeExportNotAcceptable:
+		return true
+	case CalendarCutoverIncompleteCodeExportNotInReview:
+		return true
+	case CalendarCutoverIncompleteCodeExternalChangeUnappliable:
+		return true
+	case CalendarCutoverIncompleteCodeForbidden:
+		return true
+	case CalendarCutoverIncompleteCodeGooglePrimary:
+		return true
+	case CalendarCutoverIncompleteCodeImportPreviewChanged:
+		return true
+	case CalendarCutoverIncompleteCodeImportRunning:
+		return true
+	case CalendarCutoverIncompleteCodeInternal:
+		return true
+	case CalendarCutoverIncompleteCodeInvalidInput:
+		return true
+	case CalendarCutoverIncompleteCodeNotFound:
+		return true
+	case CalendarCutoverIncompleteCodePatientHasSchedules:
+		return true
+	case CalendarCutoverIncompleteCodeStaffHasAssignments:
+		return true
+	case CalendarCutoverIncompleteCodeStaffHasCalendar:
+		return true
+	case CalendarCutoverIncompleteCodeUnauthenticated:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CalendarCutoverUnmetReason.
+const (
+	Changed          CalendarCutoverUnmetReason = "changed"
+	Deleted          CalendarCutoverUnmetReason = "deleted"
+	EventNotImported CalendarCutoverUnmetReason = "event_not_imported"
+	NeedsReview      CalendarCutoverUnmetReason = "needs_review"
+	NotImported      CalendarCutoverUnmetReason = "not_imported"
+	SyncStale        CalendarCutoverUnmetReason = "sync_stale"
+)
+
+// Valid indicates whether the value is a known member of the CalendarCutoverUnmetReason enum.
+func (e CalendarCutoverUnmetReason) Valid() bool {
+	switch e {
+	case Changed:
+		return true
+	case Deleted:
+		return true
+	case EventNotImported:
+		return true
+	case NeedsReview:
+		return true
+	case NotImported:
+		return true
+	case SyncStale:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CalendarCutoverUnmetReviewReason.
+const (
+	CalendarCutoverUnmetReviewReasonPatientAmbiguous      CalendarCutoverUnmetReviewReason = "patient_ambiguous"
+	CalendarCutoverUnmetReviewReasonPatientNotFound       CalendarCutoverUnmetReviewReason = "patient_not_found"
+	CalendarCutoverUnmetReviewReasonRecurrenceUnsupported CalendarCutoverUnmetReviewReason = "recurrence_unsupported"
+)
+
+// Valid indicates whether the value is a known member of the CalendarCutoverUnmetReviewReason enum.
+func (e CalendarCutoverUnmetReviewReason) Valid() bool {
+	switch e {
+	case CalendarCutoverUnmetReviewReasonPatientAmbiguous:
+		return true
+	case CalendarCutoverUnmetReviewReasonPatientNotFound:
+		return true
+	case CalendarCutoverUnmetReviewReasonRecurrenceUnsupported:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CalendarExportErrorCode.
 const (
 	CalendarExportErrorCodeForbidden          CalendarExportErrorCode = "forbidden"
@@ -185,6 +386,11 @@ const (
 	EndServiceConflictCodeCalendarUnavailable       EndServiceConflictCode = "calendar_unavailable"
 	EndServiceConflictCodeCalendarUnreadable        EndServiceConflictCode = "calendar_unreadable"
 	EndServiceConflictCodeConflict                  EndServiceConflictCode = "conflict"
+	EndServiceConflictCodeCutoverIncomplete         EndServiceConflictCode = "cutover_incomplete"
+	EndServiceConflictCodeCutoverNotGooglePrimary   EndServiceConflictCode = "cutover_not_google_primary"
+	EndServiceConflictCodeCutoverNotOpen            EndServiceConflictCode = "cutover_not_open"
+	EndServiceConflictCodeCutoverOpen               EndServiceConflictCode = "cutover_open"
+	EndServiceConflictCodeCutoverSyncNotReady       EndServiceConflictCode = "cutover_sync_not_ready"
 	EndServiceConflictCodeExportNotAcceptable       EndServiceConflictCode = "export_not_acceptable"
 	EndServiceConflictCodeExportNotInReview         EndServiceConflictCode = "export_not_in_review"
 	EndServiceConflictCodeExternalChangeUnappliable EndServiceConflictCode = "external_change_unappliable"
@@ -215,6 +421,16 @@ func (e EndServiceConflictCode) Valid() bool {
 	case EndServiceConflictCodeCalendarUnreadable:
 		return true
 	case EndServiceConflictCodeConflict:
+		return true
+	case EndServiceConflictCodeCutoverIncomplete:
+		return true
+	case EndServiceConflictCodeCutoverNotGooglePrimary:
+		return true
+	case EndServiceConflictCodeCutoverNotOpen:
+		return true
+	case EndServiceConflictCodeCutoverOpen:
+		return true
+	case EndServiceConflictCodeCutoverSyncNotReady:
 		return true
 	case EndServiceConflictCodeExportNotAcceptable:
 		return true
@@ -257,6 +473,11 @@ const (
 	ErrorCodeCalendarUnavailable       ErrorCode = "calendar_unavailable"
 	ErrorCodeCalendarUnreadable        ErrorCode = "calendar_unreadable"
 	ErrorCodeConflict                  ErrorCode = "conflict"
+	ErrorCodeCutoverIncomplete         ErrorCode = "cutover_incomplete"
+	ErrorCodeCutoverNotGooglePrimary   ErrorCode = "cutover_not_google_primary"
+	ErrorCodeCutoverNotOpen            ErrorCode = "cutover_not_open"
+	ErrorCodeCutoverOpen               ErrorCode = "cutover_open"
+	ErrorCodeCutoverSyncNotReady       ErrorCode = "cutover_sync_not_ready"
 	ErrorCodeExportNotAcceptable       ErrorCode = "export_not_acceptable"
 	ErrorCodeExportNotInReview         ErrorCode = "export_not_in_review"
 	ErrorCodeExternalChangeUnappliable ErrorCode = "external_change_unappliable"
@@ -287,6 +508,16 @@ func (e ErrorCode) Valid() bool {
 	case ErrorCodeCalendarUnreadable:
 		return true
 	case ErrorCodeConflict:
+		return true
+	case ErrorCodeCutoverIncomplete:
+		return true
+	case ErrorCodeCutoverNotGooglePrimary:
+		return true
+	case ErrorCodeCutoverNotOpen:
+		return true
+	case ErrorCodeCutoverOpen:
+		return true
+	case ErrorCodeCutoverSyncNotReady:
 		return true
 	case ErrorCodeExportNotAcceptable:
 		return true
@@ -398,8 +629,9 @@ func (e ImportResultStatus) Valid() bool {
 
 // Defines values for ImportReviewItemReason.
 const (
-	ImportReviewItemReasonPatientAmbiguous ImportReviewItemReason = "patient_ambiguous"
-	ImportReviewItemReasonPatientNotFound  ImportReviewItemReason = "patient_not_found"
+	ImportReviewItemReasonPatientAmbiguous      ImportReviewItemReason = "patient_ambiguous"
+	ImportReviewItemReasonPatientNotFound       ImportReviewItemReason = "patient_not_found"
+	ImportReviewItemReasonRecurrenceUnsupported ImportReviewItemReason = "recurrence_unsupported"
 )
 
 // Valid indicates whether the value is a known member of the ImportReviewItemReason enum.
@@ -408,6 +640,8 @@ func (e ImportReviewItemReason) Valid() bool {
 	case ImportReviewItemReasonPatientAmbiguous:
 		return true
 	case ImportReviewItemReasonPatientNotFound:
+		return true
+	case ImportReviewItemReasonRecurrenceUnsupported:
 		return true
 	default:
 		return false
@@ -533,6 +767,11 @@ const (
 	RetireConflictCodeCalendarUnavailable       RetireConflictCode = "calendar_unavailable"
 	RetireConflictCodeCalendarUnreadable        RetireConflictCode = "calendar_unreadable"
 	RetireConflictCodeConflict                  RetireConflictCode = "conflict"
+	RetireConflictCodeCutoverIncomplete         RetireConflictCode = "cutover_incomplete"
+	RetireConflictCodeCutoverNotGooglePrimary   RetireConflictCode = "cutover_not_google_primary"
+	RetireConflictCodeCutoverNotOpen            RetireConflictCode = "cutover_not_open"
+	RetireConflictCodeCutoverOpen               RetireConflictCode = "cutover_open"
+	RetireConflictCodeCutoverSyncNotReady       RetireConflictCode = "cutover_sync_not_ready"
 	RetireConflictCodeExportNotAcceptable       RetireConflictCode = "export_not_acceptable"
 	RetireConflictCodeExportNotInReview         RetireConflictCode = "export_not_in_review"
 	RetireConflictCodeExternalChangeUnappliable RetireConflictCode = "external_change_unappliable"
@@ -563,6 +802,16 @@ func (e RetireConflictCode) Valid() bool {
 	case RetireConflictCodeCalendarUnreadable:
 		return true
 	case RetireConflictCodeConflict:
+		return true
+	case RetireConflictCodeCutoverIncomplete:
+		return true
+	case RetireConflictCodeCutoverNotGooglePrimary:
+		return true
+	case RetireConflictCodeCutoverNotOpen:
+		return true
+	case RetireConflictCodeCutoverOpen:
+		return true
+	case RetireConflictCodeCutoverSyncNotReady:
 		return true
 	case RetireConflictCodeExportNotAcceptable:
 		return true
@@ -882,6 +1131,127 @@ func (e ListUsersParamsSortOrder) Valid() bool {
 	}
 }
 
+// CalendarCutover 事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（ADR-0035）
+type CalendarCutover struct {
+	// FacilityId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	FacilityId ID `json:"facility_id"`
+
+	// FinishedAt 完了したかやめた時刻。open なら null
+	FinishedAt *time.Time `json:"finished_at"`
+
+	// Id Example: 01M3TC5H00QV17BC0J9V3393ZP
+	Id ID `json:"id"`
+
+	// RangeStart 取り込みの期間の最初の日。切り替えを始めた月の初日で、期間は終わりを持たない
+	RangeStart Date      `json:"range_start"`
+	StartedAt  time.Time `json:"started_at"`
+
+	// StartedBy Example: 01M3TC5H00QV17BC0J9V3393ZP
+	StartedBy ID `json:"started_by"`
+
+	// Status open は切り替え中、completed は完了して事業所を buddy_primary にした、canceled はやめた
+	Status CalendarCutoverStatus `json:"status"`
+}
+
+// CalendarCutoverStatus open は切り替え中、completed は完了して事業所を buddy_primary にした、canceled はやめた
+type CalendarCutoverStatus string
+
+// CalendarCutoverCalendar 切り替えの状況のうち、結び付けたカレンダー 1 つの同期の状況と、この切り替えで最後に成功した取り込み
+type CalendarCutoverCalendar struct {
+	// ExternalCalendarId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	ExternalCalendarId ID `json:"external_calendar_id"`
+
+	// LastError 最後の同期の失敗の理由。最後の同期が成功したか、まだ同期していなければ null。
+	// unreadable はカレンダーが無いかサービスアカウントに共有されていない、unavailable は Google カレンダーに届かないかエラーが返った、
+	// apply は読んだ予定を写せなかったことを表す
+	LastError *CalendarCutoverCalendarLastError `json:"last_error"`
+
+	// LastImport この切り替えで最後に成功した取り込み。取り込んでいないか、open の切り替えが無ければ null
+	LastImport *ImportRun `json:"last_import"`
+
+	// LastStatus 最後の同期の結果。never はまだ同期していない
+	LastStatus CalendarCutoverCalendarLastStatus `json:"last_status"`
+
+	// LastSucceededAt 変わった予定を最後まで読んで写した、最後の同期の時刻。成功したことが無ければ null
+	LastSucceededAt *time.Time `json:"last_succeeded_at"`
+
+	// StaffId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	StaffId   ID     `json:"staff_id"`
+	StaffName string `json:"staff_name"`
+}
+
+// CalendarCutoverCalendarLastError 最後の同期の失敗の理由。最後の同期が成功したか、まだ同期していなければ null。
+// unreadable はカレンダーが無いかサービスアカウントに共有されていない、unavailable は Google カレンダーに届かないかエラーが返った、
+// apply は読んだ予定を写せなかったことを表す
+type CalendarCutoverCalendarLastError string
+
+// CalendarCutoverCalendarLastStatus 最後の同期の結果。never はまだ同期していない
+type CalendarCutoverCalendarLastStatus string
+
+// CalendarCutoverIncomplete defines model for CalendarCutoverIncomplete.
+type CalendarCutoverIncomplete struct {
+	Code CalendarCutoverIncompleteCode `json:"code"`
+
+	// Items code が cutover_incomplete のとき、満たさないカレンダーと予定。カレンダーの順に、カレンダーの中は日時の順（日時の無い予定は最後）
+	Items *[]CalendarCutoverUnmet `json:"items,omitempty"`
+
+	// Message 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う
+	Message string `json:"message"`
+}
+
+// CalendarCutoverIncompleteCode defines model for CalendarCutoverIncomplete.Code.
+type CalendarCutoverIncompleteCode string
+
+// CalendarCutoverState defines model for CalendarCutoverState.
+type CalendarCutoverState struct {
+	// Calendars 事業所の外していない全てのカレンダー
+	Calendars []CalendarCutoverCalendar `json:"calendars"`
+
+	// Cutover open の切り替え。無ければ null
+	Cutover *CalendarCutover `json:"cutover"`
+}
+
+// CalendarCutoverUnmet 切り替えの完了の確認を満たさないカレンダーか予定。予定のタイトルは利用者名を含むので返さない
+type CalendarCutoverUnmet struct {
+	// Date 予定の日付。読めなかった予定と、Google で消えた予定では null
+	Date    *Date `json:"date"`
+	EndTime *Time `json:"end_time"`
+
+	// EndsNextDay date の翌日の end_time に終わる予定のとき true
+	EndsNextDay bool `json:"ends_next_day"`
+
+	// ExternalCalendarId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	ExternalCalendarId ID `json:"external_calendar_id"`
+
+	// ExternalEventId Google の予定の ID。カレンダーの理由と、取り消した回では null
+	ExternalEventId *string `json:"external_event_id"`
+
+	// Reason not_imported はカレンダーをこの切り替えで取り込んでいない、sync_stale は最後の取り込みの後に同期が成功していない。
+	// event_not_imported は取り込んでいない Google の予定（取り込んだ後に作った予定、取り消した回を含む）、
+	// needs_review は確認が必要な予定の取り込み方を決めていないか決めた後に変わった（規則に写せない繰り返しを含む）、
+	// changed は取り込んだ後に Google で変わった、deleted は取り込んだ後に Google で消えた予定である。
+	// not_imported と sync_stale は、予定の項目を持たない
+	Reason CalendarCutoverUnmetReason `json:"reason"`
+
+	// ReviewReason needs_review のときの確認が必要な理由。ほかの理由では null
+	ReviewReason *CalendarCutoverUnmetReviewReason `json:"review_reason"`
+
+	// StaffId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	StaffId   ID     `json:"staff_id"`
+	StaffName string `json:"staff_name"`
+	StartTime *Time  `json:"start_time"`
+}
+
+// CalendarCutoverUnmetReason not_imported はカレンダーをこの切り替えで取り込んでいない、sync_stale は最後の取り込みの後に同期が成功していない。
+// event_not_imported は取り込んでいない Google の予定（取り込んだ後に作った予定、取り消した回を含む）、
+// needs_review は確認が必要な予定の取り込み方を決めていないか決めた後に変わった（規則に写せない繰り返しを含む）、
+// changed は取り込んだ後に Google で変わった、deleted は取り込んだ後に Google で消えた予定である。
+// not_imported と sync_stale は、予定の項目を持たない
+type CalendarCutoverUnmetReason string
+
+// CalendarCutoverUnmetReviewReason needs_review のときの確認が必要な理由。ほかの理由では null
+type CalendarCutoverUnmetReviewReason string
+
 // CalendarExport 1 つの予定を Google カレンダーに書き出す待ち。書くときは、書く時点の予定の内容を書く
 type CalendarExport struct {
 	// Attempts 書こうとした回数
@@ -1122,6 +1492,9 @@ type ImportCounts struct {
 	// NeedsReview 取り込み方を選ぶ予定の数
 	NeedsReview int `json:"needs_review"`
 
+	// Overwrite 切り替えの取り込みで、取り込んだ後に Google で変わったか消えた予定の数。確定すると buddy の写しを消し、Google の今の内容で取り込み直す。ほかの取り込みでは 0
+	Overwrite int `json:"overwrite"`
+
 	// Recurring 取り込む繰り返しの予定の数
 	Recurring int `json:"recurring"`
 
@@ -1137,7 +1510,8 @@ type ImportCounts struct {
 
 // ImportDecision defines model for ImportDecision.
 type ImportDecision struct {
-	// Action patient は選んだ利用者の訪問の予定に、normal は外部の予定のタイトルを buddy の予定のタイトルにした通常の予定にし、skip は取り込まない
+	// Action patient は選んだ利用者の訪問の予定に、normal は外部の予定のタイトルを buddy の予定のタイトルにした通常の予定にし、skip は取り込まない。
+	// reason が recurrence_unsupported の予定は skip だけを受ける
 	Action          ImportDecisionAction `json:"action"`
 	ExternalEventId string               `json:"external_event_id"`
 
@@ -1148,7 +1522,8 @@ type ImportDecision struct {
 	Revision string `json:"revision"`
 }
 
-// ImportDecisionAction patient は選んだ利用者の訪問の予定に、normal は外部の予定のタイトルを buddy の予定のタイトルにした通常の予定にし、skip は取り込まない
+// ImportDecisionAction patient は選んだ利用者の訪問の予定に、normal は外部の予定のタイトルを buddy の予定のタイトルにした通常の予定にし、skip は取り込まない。
+// reason が recurrence_unsupported の予定は skip だけを受ける
 type ImportDecisionAction string
 
 // ImportPreview defines model for ImportPreview.
@@ -1158,17 +1533,20 @@ type ImportPreview struct {
 
 	// NeedsReview 取り込み方を選ぶ予定。日時の順
 	NeedsReview []ImportReviewItem `json:"needs_review"`
-	RangeEnd    Date               `json:"range_end"`
-	RangeStart  Date               `json:"range_start"`
+
+	// RangeEnd 切り替えの取り込みでは、期間が終わりを持たないので null
+	RangeEnd   *Date `json:"range_end"`
+	RangeStart Date  `json:"range_start"`
 
 	// Skipped 取り込まない予定。日時の順で、日時の無い予定は最後
 	Skipped []ImportSkippedItem `json:"skipped"`
 }
 
-// ImportRange defines model for ImportRange.
+// ImportRange 事業所に open の予定の正本の切り替えがあるときは、range_start を切り替えの range_start にし、range_end を省くか null にする（ADR-0035）。
+// ほかの期間は 400 になる。open の切り替えが無いときは、range_end を省けない。
 type ImportRange struct {
-	// RangeEnd 期間の最後の日。この日を含む。range_start 以降で、range_start から 1 年未満の日
-	RangeEnd Date `json:"range_end"`
+	// RangeEnd 期間の最後の日。この日を含む。range_start 以降で、range_start から 1 年未満の日。切り替えの取り込みでは null
+	RangeEnd *Date `json:"range_end,omitempty"`
 
 	// RangeStart 期間の最初の日。この日から range_end までに始まる予定を取り込む
 	RangeStart Date `json:"range_start"`
@@ -1187,9 +1565,9 @@ type ImportResult struct {
 	Id            ID  `json:"id"`
 	ImportedCount int `json:"imported_count"`
 
-	// RangeEnd この日を含む
-	RangeEnd   Date `json:"range_end"`
-	RangeStart Date `json:"range_start"`
+	// RangeEnd この日を含む。切り替えの取り込みでは、期間が終わりを持たないので null
+	RangeEnd   *Date `json:"range_end"`
+	RangeStart Date  `json:"range_start"`
 
 	// SkippedCount 取り込まない予定と、取り込まないを選んだ予定の数
 	SkippedCount int                `json:"skipped_count"`
@@ -1220,7 +1598,8 @@ type ImportReviewItem struct {
 	// ExternalEventId 取り込み方を送るときの Google の予定の ID。繰り返しの予定とその回では、親の予定の ID
 	ExternalEventId string `json:"external_event_id"`
 
-	// Reason patient_not_found は利用者がいない、patient_ambiguous は同じ名前の利用者が 2 人以上いる
+	// Reason patient_not_found は利用者がいない、patient_ambiguous は同じ名前の利用者が 2 人以上いる。
+	// recurrence_unsupported は buddy の繰り返しの規則に写せない繰り返しの予定で、切り替えの取り込みだけが返し、回に展開しない。取り込み方は skip だけを選べる
 	Reason ImportReviewItemReason `json:"reason"`
 
 	// Recurrence 繰り返しのまま取り込む予定の規則。ほかの予定では null
@@ -1236,7 +1615,8 @@ type ImportReviewItem struct {
 	StartTime Time `json:"start_time"`
 }
 
-// ImportReviewItemReason patient_not_found は利用者がいない、patient_ambiguous は同じ名前の利用者が 2 人以上いる
+// ImportReviewItemReason patient_not_found は利用者がいない、patient_ambiguous は同じ名前の利用者が 2 人以上いる。
+// recurrence_unsupported は buddy の繰り返しの規則に写せない繰り返しの予定で、切り替えの取り込みだけが返し、回に展開しない。取り込み方は skip だけを選べる
 type ImportReviewItemReason string
 
 // ImportRun defines model for ImportRun.
@@ -1247,9 +1627,9 @@ type ImportRun struct {
 	Id            ID  `json:"id"`
 	ImportedCount int `json:"imported_count"`
 
-	// RangeEnd この日を含む
-	RangeEnd   Date `json:"range_end"`
-	RangeStart Date `json:"range_start"`
+	// RangeEnd この日を含む。切り替えの取り込みでは、期間が終わりを持たないので null
+	RangeEnd   *Date `json:"range_end"`
+	RangeStart Date  `json:"range_start"`
 
 	// SkippedCount 取り込まない予定と、取り込まないを選んだ予定の数
 	SkippedCount int             `json:"skipped_count"`
@@ -1286,6 +1666,13 @@ type ImportSkippedItem struct {
 // staff_on_leave はカレンダーを結び付けた職員が休職しているので作らない新しい予定、
 // staff_non_visiting はカレンダーを結び付けた職員が訪問しない職員なので作らない新しい予定
 type ImportSkippedItemReason string
+
+// OpenCalendarCutover 予定の正本を buddy に切り替えている間の、open の切り替え
+type OpenCalendarCutover struct {
+	// RangeStart 取り込みの期間の最初の日
+	RangeStart Date      `json:"range_start"`
+	StartedAt  time.Time `json:"started_at"`
+}
 
 // Patient defines model for Patient.
 type Patient struct {
@@ -1842,6 +2229,9 @@ type VisitInfoRequest struct {
 	VisitCategoryIds *[]ID `json:"visit_category_ids,omitempty"`
 }
 
+// CalendarCutoverID Example: 01M3TC5H00QV17BC0J9V3393ZP
+type CalendarCutoverID = ID
+
 // CalendarExportID Example: 01M3TC5H00QV17BC0J9V3393ZP
 type CalendarExportID = ID
 
@@ -1900,8 +2290,8 @@ type CreateCalendarImportJSONBody struct {
 	// Decisions プレビューの needs_review の全ての予定の取り込み方
 	Decisions []ImportDecision `json:"decisions"`
 
-	// RangeEnd 期間の最後の日。この日を含む。range_start 以降で、range_start から 1 年未満の日
-	RangeEnd Date `json:"range_end"`
+	// RangeEnd 期間の最後の日。この日を含む。range_start 以降で、range_start から 1 年未満の日。切り替えの取り込みでは null
+	RangeEnd *Date `json:"range_end,omitempty"`
 
 	// RangeStart 期間の最初の日。この日から range_end までに始まる予定を取り込む
 	RangeStart Date `json:"range_start"`
@@ -2026,7 +2416,10 @@ type ListSchedulesParamsSortOrder string
 type ListSchedules200JSONResponseBody struct {
 	// CalendarSyncs google_primary の事業所で、職員が見てよい職員に結び付けた、外していないカレンダーの同期の状況。buddy_primary の事業所では空である。
 	// 最新でないとみなす時間は画面が決める。
-	CalendarSyncs      []CalendarSyncStatus `json:"calendar_syncs"`
+	CalendarSyncs []CalendarSyncStatus `json:"calendar_syncs"`
+
+	// Cutover google_primary の事業所で、予定の正本を buddy に切り替えている間の open の切り替え。無ければ null（ADR-0035）
+	Cutover            *OpenCalendarCutover `json:"cutover"`
 	RecurringSchedules []RecurringSchedule  `json:"recurring_schedules"`
 	Schedules          []Schedule           `json:"schedules"`
 
@@ -2286,6 +2679,12 @@ type ServerInterface interface {
 	// GetReadyz リクエストを受けられるかを返す
 	// (GET /readyz)
 	GetReadyz(c *gin.Context)
+	// CancelCalendarCutover 予定の正本の切り替えをやめる
+	// (POST /v1/calendar_cutovers/{calendar_cutover_id}/cancel)
+	CancelCalendarCutover(c *gin.Context, calendarCutoverId CalendarCutoverID)
+	// CreateCalendarCutoverCompletion 予定の正本の切り替えを完了する
+	// (POST /v1/calendar_cutovers/{calendar_cutover_id}/completions)
+	CreateCalendarCutoverCompletion(c *gin.Context, calendarCutoverId CalendarCutoverID)
 	// CreateCalendarExportAcceptance 確認が必要な書き出しを Google カレンダーの内容で解く
 	// (POST /v1/calendar_exports/{calendar_export_id}/acceptances)
 	CreateCalendarExportAcceptance(c *gin.Context, calendarExportId CalendarExportID)
@@ -2310,6 +2709,12 @@ type ServerInterface interface {
 	// GetFacility 事業所を取得する
 	// (GET /v1/facilities/{facility_id})
 	GetFacility(c *gin.Context, facilityId FacilityID)
+	// GetCalendarCutoverStatus 予定の正本の切り替えの状況を取得する
+	// (GET /v1/facilities/{facility_id}/calendar_cutover_status)
+	GetCalendarCutoverStatus(c *gin.Context, facilityId FacilityID)
+	// StartCalendarCutover 予定の正本の切り替えを始める
+	// (POST /v1/facilities/{facility_id}/calendar_cutovers)
+	StartCalendarCutover(c *gin.Context, facilityId FacilityID)
 	// ListCalendarExportIssues 確認が必要な書き出しを一覧する
 	// (GET /v1/facilities/{facility_id}/calendar_export_issues)
 	ListCalendarExportIssues(c *gin.Context, facilityId FacilityID)
@@ -2483,6 +2888,56 @@ func (siw *ServerInterfaceWrapper) GetReadyz(c *gin.Context) {
 	}
 
 	siw.Handler.GetReadyz(c)
+}
+
+// CancelCalendarCutover operation middleware
+func (siw *ServerInterfaceWrapper) CancelCalendarCutover(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "calendar_cutover_id" -------------
+	var calendarCutoverId CalendarCutoverID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "calendar_cutover_id", c.Param("calendar_cutover_id"), &calendarCutoverId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter calendar_cutover_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CancelCalendarCutover(c, calendarCutoverId)
+}
+
+// CreateCalendarCutoverCompletion operation middleware
+func (siw *ServerInterfaceWrapper) CreateCalendarCutoverCompletion(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "calendar_cutover_id" -------------
+	var calendarCutoverId CalendarCutoverID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "calendar_cutover_id", c.Param("calendar_cutover_id"), &calendarCutoverId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter calendar_cutover_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateCalendarCutoverCompletion(c, calendarCutoverId)
 }
 
 // CreateCalendarExportAcceptance operation middleware
@@ -2683,6 +3138,56 @@ func (siw *ServerInterfaceWrapper) GetFacility(c *gin.Context) {
 	}
 
 	siw.Handler.GetFacility(c, facilityId)
+}
+
+// GetCalendarCutoverStatus operation middleware
+func (siw *ServerInterfaceWrapper) GetCalendarCutoverStatus(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "facility_id" -------------
+	var facilityId FacilityID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "facility_id", c.Param("facility_id"), &facilityId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter facility_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetCalendarCutoverStatus(c, facilityId)
+}
+
+// StartCalendarCutover operation middleware
+func (siw *ServerInterfaceWrapper) StartCalendarCutover(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "facility_id" -------------
+	var facilityId FacilityID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "facility_id", c.Param("facility_id"), &facilityId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter facility_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.StartCalendarCutover(c, facilityId)
 }
 
 // ListCalendarExportIssues operation middleware
@@ -4020,6 +4525,10 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id/calendar_export_issues", wrapper.ListCalendarExportIssues)
 	router.POST(options.BaseURL+"/v1/calendar_exports/:calendar_export_id/retries", wrapper.CreateCalendarExportRetry)
 	router.POST(options.BaseURL+"/v1/calendar_exports/:calendar_export_id/acceptances", wrapper.CreateCalendarExportAcceptance)
+	router.GET(options.BaseURL+"/v1/facilities/:facility_id/calendar_cutover_status", wrapper.GetCalendarCutoverStatus)
+	router.POST(options.BaseURL+"/v1/facilities/:facility_id/calendar_cutovers", wrapper.StartCalendarCutover)
+	router.POST(options.BaseURL+"/v1/calendar_cutovers/:calendar_cutover_id/completions", wrapper.CreateCalendarCutoverCompletion)
+	router.POST(options.BaseURL+"/v1/calendar_cutovers/:calendar_cutover_id/cancel", wrapper.CancelCalendarCutover)
 }
 
 type AssignBadRequestJSONResponse Error
@@ -4094,6 +4603,270 @@ func (response GetReadyz200JSONResponse) VisitGetReadyzResponse(w http.ResponseW
 type GetReadyz503JSONResponse Health
 
 func (response GetReadyz503JSONResponse) VisitGetReadyzResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelCalendarCutoverRequestObject struct {
+	CalendarCutoverId CalendarCutoverID `json:"calendar_cutover_id"`
+}
+
+type CancelCalendarCutoverResponseObject interface {
+	VisitCancelCalendarCutoverResponse(w http.ResponseWriter) error
+}
+
+type CancelCalendarCutover200JSONResponse CalendarCutover
+
+func (response CancelCalendarCutover200JSONResponse) VisitCancelCalendarCutoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelCalendarCutover400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CancelCalendarCutover400JSONResponse) VisitCancelCalendarCutoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelCalendarCutover401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CancelCalendarCutover401JSONResponse) VisitCancelCalendarCutoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelCalendarCutover403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CancelCalendarCutover403JSONResponse) VisitCancelCalendarCutoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelCalendarCutover404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CancelCalendarCutover404JSONResponse) VisitCancelCalendarCutoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelCalendarCutover409JSONResponse Error
+
+func (response CancelCalendarCutover409JSONResponse) VisitCancelCalendarCutoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelCalendarCutover500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response CancelCalendarCutover500JSONResponse) VisitCancelCalendarCutoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarCutoverCompletionRequestObject struct {
+	CalendarCutoverId CalendarCutoverID `json:"calendar_cutover_id"`
+}
+
+type CreateCalendarCutoverCompletionResponseObject interface {
+	VisitCreateCalendarCutoverCompletionResponse(w http.ResponseWriter) error
+}
+
+type CreateCalendarCutoverCompletion200JSONResponse CalendarCutover
+
+func (response CreateCalendarCutoverCompletion200JSONResponse) VisitCreateCalendarCutoverCompletionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarCutoverCompletion400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateCalendarCutoverCompletion400JSONResponse) VisitCreateCalendarCutoverCompletionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarCutoverCompletion401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateCalendarCutoverCompletion401JSONResponse) VisitCreateCalendarCutoverCompletionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarCutoverCompletion403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateCalendarCutoverCompletion403JSONResponse) VisitCreateCalendarCutoverCompletionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarCutoverCompletion404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateCalendarCutoverCompletion404JSONResponse) VisitCreateCalendarCutoverCompletionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarCutoverCompletion409JSONResponse CalendarCutoverIncomplete
+
+func (response CreateCalendarCutoverCompletion409JSONResponse) VisitCreateCalendarCutoverCompletionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarCutoverCompletion422JSONResponse struct{ CalendarUnreadableJSONResponse }
+
+func (response CreateCalendarCutoverCompletion422JSONResponse) VisitCreateCalendarCutoverCompletionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarCutoverCompletion500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response CreateCalendarCutoverCompletion500JSONResponse) VisitCreateCalendarCutoverCompletionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarCutoverCompletion502JSONResponse struct {
+	CalendarUnavailableJSONResponse
+}
+
+func (response CreateCalendarCutoverCompletion502JSONResponse) VisitCreateCalendarCutoverCompletionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(502)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarCutoverCompletion503JSONResponse struct {
+	CalendarNotConfiguredJSONResponse
+}
+
+func (response CreateCalendarCutoverCompletion503JSONResponse) VisitCreateCalendarCutoverCompletionResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -5045,6 +5818,196 @@ func (response GetFacility404JSONResponse) VisitGetFacilityResponse(w http.Respo
 type GetFacility500JSONResponse struct{ InternalErrorJSONResponse }
 
 func (response GetFacility500JSONResponse) VisitGetFacilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCalendarCutoverStatusRequestObject struct {
+	FacilityId FacilityID `json:"facility_id"`
+}
+
+type GetCalendarCutoverStatusResponseObject interface {
+	VisitGetCalendarCutoverStatusResponse(w http.ResponseWriter) error
+}
+
+type GetCalendarCutoverStatus200JSONResponse CalendarCutoverState
+
+func (response GetCalendarCutoverStatus200JSONResponse) VisitGetCalendarCutoverStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCalendarCutoverStatus400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetCalendarCutoverStatus400JSONResponse) VisitGetCalendarCutoverStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCalendarCutoverStatus401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetCalendarCutoverStatus401JSONResponse) VisitGetCalendarCutoverStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCalendarCutoverStatus403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetCalendarCutoverStatus403JSONResponse) VisitGetCalendarCutoverStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCalendarCutoverStatus500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response GetCalendarCutoverStatus500JSONResponse) VisitGetCalendarCutoverStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartCalendarCutoverRequestObject struct {
+	FacilityId FacilityID `json:"facility_id"`
+}
+
+type StartCalendarCutoverResponseObject interface {
+	VisitStartCalendarCutoverResponse(w http.ResponseWriter) error
+}
+
+type StartCalendarCutover201JSONResponse CalendarCutover
+
+func (response StartCalendarCutover201JSONResponse) VisitStartCalendarCutoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartCalendarCutover400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response StartCalendarCutover400JSONResponse) VisitStartCalendarCutoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartCalendarCutover401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response StartCalendarCutover401JSONResponse) VisitStartCalendarCutoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartCalendarCutover403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response StartCalendarCutover403JSONResponse) VisitStartCalendarCutoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartCalendarCutover404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response StartCalendarCutover404JSONResponse) VisitStartCalendarCutoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartCalendarCutover409JSONResponse Error
+
+func (response StartCalendarCutover409JSONResponse) VisitStartCalendarCutoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartCalendarCutover500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response StartCalendarCutover500JSONResponse) VisitStartCalendarCutoverResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -9616,6 +10579,12 @@ type StrictServerInterface interface {
 	// GetReadyz リクエストを受けられるかを返す
 	// (GET /readyz)
 	GetReadyz(ctx context.Context, request GetReadyzRequestObject) (GetReadyzResponseObject, error)
+	// CancelCalendarCutover 予定の正本の切り替えをやめる
+	// (POST /v1/calendar_cutovers/{calendar_cutover_id}/cancel)
+	CancelCalendarCutover(ctx context.Context, request CancelCalendarCutoverRequestObject) (CancelCalendarCutoverResponseObject, error)
+	// CreateCalendarCutoverCompletion 予定の正本の切り替えを完了する
+	// (POST /v1/calendar_cutovers/{calendar_cutover_id}/completions)
+	CreateCalendarCutoverCompletion(ctx context.Context, request CreateCalendarCutoverCompletionRequestObject) (CreateCalendarCutoverCompletionResponseObject, error)
 	// CreateCalendarExportAcceptance 確認が必要な書き出しを Google カレンダーの内容で解く
 	// (POST /v1/calendar_exports/{calendar_export_id}/acceptances)
 	CreateCalendarExportAcceptance(ctx context.Context, request CreateCalendarExportAcceptanceRequestObject) (CreateCalendarExportAcceptanceResponseObject, error)
@@ -9640,6 +10609,12 @@ type StrictServerInterface interface {
 	// GetFacility 事業所を取得する
 	// (GET /v1/facilities/{facility_id})
 	GetFacility(ctx context.Context, request GetFacilityRequestObject) (GetFacilityResponseObject, error)
+	// GetCalendarCutoverStatus 予定の正本の切り替えの状況を取得する
+	// (GET /v1/facilities/{facility_id}/calendar_cutover_status)
+	GetCalendarCutoverStatus(ctx context.Context, request GetCalendarCutoverStatusRequestObject) (GetCalendarCutoverStatusResponseObject, error)
+	// StartCalendarCutover 予定の正本の切り替えを始める
+	// (POST /v1/facilities/{facility_id}/calendar_cutovers)
+	StartCalendarCutover(ctx context.Context, request StartCalendarCutoverRequestObject) (StartCalendarCutoverResponseObject, error)
 	// ListCalendarExportIssues 確認が必要な書き出しを一覧する
 	// (GET /v1/facilities/{facility_id}/calendar_export_issues)
 	ListCalendarExportIssues(ctx context.Context, request ListCalendarExportIssuesRequestObject) (ListCalendarExportIssuesResponseObject, error)
@@ -9885,6 +10860,58 @@ func (sh *strictHandler) GetReadyz(ctx *gin.Context) {
 	}
 }
 
+// CancelCalendarCutover operation middleware
+func (sh *strictHandler) CancelCalendarCutover(ctx *gin.Context, calendarCutoverId CalendarCutoverID) {
+	var request CancelCalendarCutoverRequestObject
+
+	request.CalendarCutoverId = calendarCutoverId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelCalendarCutover(ctx, request.(CancelCalendarCutoverRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelCalendarCutover")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CancelCalendarCutoverResponseObject); ok {
+		if err := validResponse.VisitCancelCalendarCutoverResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateCalendarCutoverCompletion operation middleware
+func (sh *strictHandler) CreateCalendarCutoverCompletion(ctx *gin.Context, calendarCutoverId CalendarCutoverID) {
+	var request CreateCalendarCutoverCompletionRequestObject
+
+	request.CalendarCutoverId = calendarCutoverId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateCalendarCutoverCompletion(ctx, request.(CreateCalendarCutoverCompletionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateCalendarCutoverCompletion")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CreateCalendarCutoverCompletionResponseObject); ok {
+		if err := validResponse.VisitCreateCalendarCutoverCompletionResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // CreateCalendarExportAcceptance operation middleware
 func (sh *strictHandler) CreateCalendarExportAcceptance(ctx *gin.Context, calendarExportId CalendarExportID) {
 	var request CreateCalendarExportAcceptanceRequestObject
@@ -10107,6 +11134,58 @@ func (sh *strictHandler) GetFacility(ctx *gin.Context, facilityId FacilityID) {
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(GetFacilityResponseObject); ok {
 		if err := validResponse.VisitGetFacilityResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCalendarCutoverStatus operation middleware
+func (sh *strictHandler) GetCalendarCutoverStatus(ctx *gin.Context, facilityId FacilityID) {
+	var request GetCalendarCutoverStatusRequestObject
+
+	request.FacilityId = facilityId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCalendarCutoverStatus(ctx, request.(GetCalendarCutoverStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCalendarCutoverStatus")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetCalendarCutoverStatusResponseObject); ok {
+		if err := validResponse.VisitGetCalendarCutoverStatusResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StartCalendarCutover operation middleware
+func (sh *strictHandler) StartCalendarCutover(ctx *gin.Context, facilityId FacilityID) {
+	var request StartCalendarCutoverRequestObject
+
+	request.FacilityId = facilityId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.StartCalendarCutover(ctx, request.(StartCalendarCutoverRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StartCalendarCutover")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(StartCalendarCutoverResponseObject); ok {
+		if err := validResponse.VisitStartCalendarCutoverResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {
@@ -11442,300 +12521,339 @@ func (sh *strictHandler) ListVisitCategories(ctx *gin.Context) {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"7L17cxNXngD6Vbp09497d0Us80g2vnWrlkAmYXaSYYEkNRNyHSE1oI3c8ujBhOFSpW7zkG05gIlxDCYG",
+	"AligIIWQh8EGPkxbkv0XX+HW+Z336dOtliw/IN7amuBW93n8zvm9X2ciiczQcMYyrXwuMnAmMhzPxofM",
+	"vJmFv/bF06aVjGf3FfKZU2b2wH70MGVFBiLD8fzJSDRixYfMyEAkQd4bTOAXB1PJSDSSNf9RSGXNZGQg",
+	"ny2Y0UgucdIciqMh/i1rHo8MRP6PPj55H/4113dgf+Ts2Sib+v2vhzPZfPuZTXivBxO//3XezFrxNF0A",
+	"njpp5hLZ1HA+lUFrOFZIJk8brl1r3L22OlJx7ZrrVN2RH92RJ+5I0R1Zcu2acWC/W3Q+yGROpE3D7w3D",
+	"teddu+7aD137XCSq26FJ1jPItrr2Pf4pnkilU/nTvmA9Tl7owVyHzEQhm01ZJw4nTprJQtr0nTRL3xzM",
+	"kVd7MH3bWXs5Vyab/2s2aWa9N6Y1a7v2JdeuNL+7uHrrglt0cui6Hk+Z6aThOpPw+znXnnPtimtPoDsx",
+	"ctEdmXKdB+5I1R0p0Rv0wB255drVxuUr8Not177iOpON51dd+77rjNM79I+CmT0tbBJNloGliXsyrcJQ",
+	"ZODzSDyXiERhxZEvopH86WH4Jo/OInIW7Sxr5oYzVs4EqrA3l0udsN6LJw+Z/yiYuTx6lshYedOCf8aH",
+	"h9OpRBxtvO9/c2j3ZyLm1/Gh4TT+/FgmeRr9N1cYGopnT0cGIs3ZH5vXLiJ0Kt517fLK/UuN0YuwyZLr",
+	"XGLIcSqeLph4siRaYMo6FU+nkoMpa7iQj0QjQ2YuFz+Bfmn96iw/u+DateaM0ygtunZ99dp4Y36cP3FK",
+	"rjPWeFF27aprT7v2C9eegTM0raSZPBjPp8hu+CobpQetbxGus9Hxk5XiedeZbJYvwkBzHS00YEwj1v/R",
+	"riP79hw59MGenbHYf//tsyN//+zt9w/t+uxjA1Zdd4v28uJYc/re8uK91ZkJ164tPys1atfRLbv2E6zm",
+	"HHniTC4/n3WdMmz0hutchb1aGevTVC6VR8csbXWl8rAxdQlGQLBfsX9vXL3d9Sa1o4XbHtvP+Hl0xZ3J",
+	"xujPrjPWLNc9m8lYfzHjp0x5I8tLV1bs3127tsYtKOP0fPFZM4+pjrj41WIRJkWrXeP6vUP1eAtnw5LK",
+	"97PZTBZ/IFPIxvl7jbEbQOYqQOaW3KLzJdrZl4Zr1w1pc+gnsjv4lX9j11q1i83RomtXWpcvtL59jDhs",
+	"0aajVxHm2z+49v3G3VFEXJxxt+gctehO6UUp2ssLi/jiIvwu2o3L5ZXbZfJvhvd2jUCGfWhX0bfkuoxT",
+	"uLNfx92i7YtdBGkvsTMmzMBxVl5+69oz0korrac/uc4Y/DIt4H61OX0H0U52UPYP7NDxqTYul137u8bz",
+	"p+gduwbH+GL55c3Go+9AHJnAQFFxx67oF27XgQR9R4DrjLr2dbdoa26vXcf0ilDfUZFkzWNe5l2GcDYC",
+	"3KvsGHwJcghoYlDB2q+49lzQgBhywvjo/tgltFd85N3sLHI2GnlD+WjSPJ6yUhi3xTW6Iw9dB/DVeQpi",
+	"TdnIDJtWfDj11un4UBqE6tr11osHa1k3SD9oKEOUsuyyNLJ9jhGwAQPGNlI5w8rkjYxlGpnjRv6kacTT",
+	"6cw/zST+PWd8fjSSjOfNo5Ho0UguH8/mB/OpIfxnImvG82ZyMJ4/GvkCQIDkzAP71e1fQRunwn/Z+OQv",
+	"VAvoeJeC5AoUkg+FjwCgoEyPQY/OYHLl4SPXsbuYlw9i1xrP77h2ufnoB4xrru24zpgAVzKKkTOHUolM",
+	"OmMZORPpmPlM1khZBl7ia80+IoKy+nEmvy9jHU+dKBBmHg6dBagzJc/K5AcTfCxJaPRTOsmZFlcqj4Dy",
+	"lJXjiKwdzK59FUjbePPeIwBTzRBV3F/RMkauoivu3EHLc+7D8hCe01VNgehwH/AP3T35nPwAIED5Eyt+",
+	"Kp5Kx4+lzbXBuCAMFArA9rjrjDKRmiIQgS5gHkhmawczg2m18XgMTYshBeID+63Mr60zSeWAOR9winuV",
+	"YJk148legJKNI5MK7Q0VgFZ0vIaRxvnHzdlRpBXfebbycAL2dR+oyy10fexzvbjI6qzl1rnbDMbeax54",
+	"t6tkxZ67/WqpxI/L2B3bZbj2uLE7ttsQj+zV0qjvqTGwIrNNJnsslUyaVldndZx9LZ0Q7LR5dQIpiHZ9",
+	"pfK4cakub6R31IOJuq3Rp1Q2mhDvNmWPZRDaZoQDKJNvpVOprKLrcIGI1fSFZuXB6sxl156nuxJmkcDM",
+	"IXI2SlDuYDaFWWUXAD4BIwwOkyG8UBbvE5UO64x+qhdyvlW73bp8gd5+fBBIag3x6fLz2WbpMmJcd0eb",
+	"N35ZFwwSD8dvJc4kE96bj35ozv5I5UTYkDP+aqkkQw2hgl3DTJcR2uaNBRDQCUbt3X9oRyy2a8+rpVG0",
+	"jQMWNpDihXZzcCkygkK6MMJfxhAVRIRya+ZZ69s5Ku/2iOTL8/mLMWSpZ6ORjzP5P2UKVneCBmKvx+Fr",
+	"adNIMnwOJ/cUNIhx174LbK+3UgRB83mum8kT67CVr/hsNPKJFS/kT2ayqX+ZyQ71JiIJqnJ5CSavo7tr",
+	"15p3Z1cqS4iw333cnJr2tbgUYBmmlUcTmiosxSF9ZWQQ1YdSuZzHCqcM4CupBy1i5eEEbKTceHl+5b7N",
+	"tINenKFmdZgSa6EnH6Z3zSfNeJK4nT777LMde4Wfveb0Q3/aZ7z9zp4Y6HiJk/F02rROmEiY0K+K2NSN",
+	"L98z41kz+6XvItU3DRPt//85ytShfOYr0zoa+VKyo3ss5hy+Oj+adz86zkAppjPpS+eROGpQZ1S1UbqI",
+	"TD43XiK7hDOOeMC9R8h+U/lutfyzQjijkeFsZtjM5lMYK0SPTwhvRzSC1PvcSVB4vftp1MpgOMAwHXed",
+	"cyD0zRGrQdFBOr+BTscZNaxCGpHe45nsEBoLNOwdSK+ORCPoNyydYn+MDOlo5OsdmaFU3hwazp+ODByP",
+	"p3Pm2Wgk7BayceuEOQh6PPognk7/9Xhk4PPgT/ejC3n2C4/+eekassa9WHLtl+jsZudWr4FkNVtslG6i",
+	"f0zfc4uOfEaTyJaCATNbAnPTTfQacD86Qr31qwOa5hhYf22A6EPKwtHa2RloIajcTf7NsdPhoJTLx/OF",
+	"nPeMyRHWxS0tLzxyizYaKm3mTTBLCFfhPr/mziS+t5TvG1QwmEPfx62Emcafs6sTiTJ3FZo5Eo2wadC/",
+	"ySc6/5Xo1fs8Am4+2b9JdihfCAlQEqTlu88nzBz7XzORF7Urgu/0z/CXjH5x+LSVOIxXdzZ6RkHZdDyX",
+	"H0wNIb93+JEPwPuHCpbmDmMpVbqi9jy6wGDfa5YuN8aw1DMn3faiw/8kavA5kR2Qi6IMjPWtK6Bn/ERp",
+	"gA+6E8hq0V05XhEo3qPxoq20plpr7LfmExsk0AuujdwArV8vu/YTZiJWSLDRb4CAVGtcLjdn54QRKkyL",
+	"7BSemgt0wKJ3PfxBE8btuTUIfBpsRqwZlFQWwsHmNAAewBiLdvNZESjQFDlhlSVVCPvS6fXI8Q3Gcu9P",
+	"iHCAI6E54+A3Xy2V2J9YNWd6DwYh5mJsO2HQiYDzE2vIBDwltyOezcZPR87yB+y6eI8CYSOcggxVqrHn",
+	"gnl74+41QZ9DAGycr8Cfqq2py63RP727i0YSXProjAqRsTXoo0XtorM+qE3XHxWgHYL64tP2iigy5lM2",
+	"VSM2J2ey3U0fZzedSWyu89J17oIMWgXOSNxFjctowMblqusUsXoLtp8pJtLLlykZz5trFki4GIm9c0VH",
+	"MPiPY68g8yWKZsX55m8lgMmc4MGqtznGYIHMtJLgKAm/qSOpIbypbufLDVrm1/nBZPy09+gRfNGtbb0s",
+	"g7hVM+gCkRhC5a1xfqxA/Ay0AC5QHctk0mYcTEfaEK1QshX70jxlWnnymY8pmCsGOLTMS0SpxwIdJ+Yo",
+	"cJTAYG5834NzzJpxolDLa7QylOdSoU01A2lZoa/YULRzp60EEsRg53XKM2uKlI0ZKeW9ZYGjSu6FoxYG",
+	"r7pMv/kNFeavlkryu7fwzGBdFBBJC3aK+GDltY9almkmc4NZ81TK/CdaBTVyMxX9IXd4C9ttXnuKiNLj",
+	"Z4DD90UZiz6cI/DArilY2KulEncDX5hBJgf4SgoeUFeYOInkYA2IyLY5fObFudyinTS53N/mSx2Vcahj",
+	"XDmpiiHfByE0pbZ663zrRk3RjY5agrogDhaJRvhQ6B3PxUC4IZwQ4jYYHBAhB9vTKBnRCH590BdF5FOn",
+	"ApVd8x4/QeOi49qLQKpr3BXJEZjubhjHqg2KBj36LD50LHWikMG6DURXmlbCHCxYucIw2W23JDaXjx8/",
+	"HprO4bdxMOIZH5V0AzmEIlj4hNiyLUrrZ1RQR72jmHdLOxLYn8qZ1FsTJM3gQGjvxaIaCLOW+1qLqmBH",
+	"n2hcfObaM40X50HBceDhJR52WrTxk+aM03Ke8oHtWuPC+UbtKbXHX/KILfE8QFkjAsMHV0GnqjDC2Jz6",
+	"KYIsn1ZqCN3kGNs7snGfMEGEBevbILZzegZlihR3DxC5hmHQcNZMZKwkxKEMHo+niFGB2cwqvsCqLS/c",
+	"RiTXnqf7Lyt0FQgY9pPNMeCvztxFsOOARqFZxu7+nYaXD1CENYJdOXR6cT6sWNOfxr3OTMFyP8ocJ7v7",
+	"Y27R3h3bjQ7Zu3p7gayVrpD5xzBPD3Lu+1y2K4yhZ010oU15s3bZe7kal6ZRtNTid8qZovXHYnRpgjtb",
+	"HlF1mC8vFNFNvg7cUvTh/HadBFwX7YIFPgPPYF7HNPamUeOVKJRVkXRtv6SWvVGALGZFr5ZKrV8dkDSJ",
+	"jYuJC7LCIMWvNZamGPzY+z4xfzdB90CaMlsk9injW6Za2uqS645sJdhVR8BJPHNwtuM49m355c3W1Azb",
+	"mmxmlviwBhkRsxX4luiiphcmEo3IcRrCaZHPpf11zdFCW421aQrhDXD7Ncqa/lyLjhziVWl+M7m8eK1b",
+	"6b13y21MfNeaeSYuVAuUHizZx/Y8bFrJlHUCdANgRpSd2blCImGaSTPJfptACp1dIqbljHU8nUrkQ9Jc",
+	"geTfp/kZ41RyZU8QVogo0Xx0B8vjmEwftTogKFWSyqEMVLQ59yL8mUQ5SHErjQsTq8juWFteGINfX9Cl",
+	"SbRURksMy0g0wmAHxnUMKDCWp9I+Qm9hOBnvzP+gs8arKTj6NCBmpReEgigXOqTFtBekDuRyBbNzUxj+",
+	"WGNWjScS5nCeBlLpVXjv8WOmZ8+vzP8ABrNx10YxEQf/eviI0Xeqv09Jb8v1nfEmvJ3tI3NbCTNHyb6K",
+	"oUC26R2bd51H7sgPaCXOojvCyPwYC97mIAabsF6MGjdEEYZpNFUwlMAV85pKqGmrvUFLthq11wQ23Oqz",
+	"jhpQ+90qaOSnqnSojQiXOITvxKu5ynIvdoHclFzaxKJfoWkWjo9EUzPIcdWZAxVMWMSaKeLzgf3+GOef",
+	"mMmixbzUH2tB/IWR2+j5SBVJvSOj6GXQi0CjqdAo2/FIlEaZwMHGjx//L/L3W4nMENJ04l//xbRO5E9G",
+	"BvpjO3eD6sMeaGirxgfoTSsM9E55/VIena170yU42kwac6VXzfj0NMiixlQzzzui+W6OhmG+QKYj8oIo",
+	"i4rOBSB4PFJSZ4AUuWRXgZxYS9CqHB7NRw3ZFbQOuOfEVnYU5FiQx8Eyj6xkTI8UbHWEZ5Pr5kyu3K64",
+	"9ozEwqXoW1lahjnay8T0QP0ELu+Jtn693Px+1i06yLiaBaD7ntY5Ya3wuiJsBEgYeFX0XX2wiaCX85hB",
+	"smAkAFHwzgNUSZCBd0csOEW+iATLdT6tLkJWess41mbIEk9cB2kJyfUiFYq68HpDw6tS1FjqBZKsrITI",
+	"vm4rVvqa2PYToUQ6Tl3ozPtW8rCZPZVKmPuoeLxmfzxdZS78UCQ9+TD70subueiG3x08Gc8xeTone/Rr",
+	"44LYo08r9HOOs5hbxRtODHYU59VcIm/0n6j5ixYBQQ0RonT1aQc+eR3+KTXsl3z8K9MSH8TTaNzTg+mU",
+	"9ZXJ8QYBkb6DVgQug8FswbKwAkUeDBOrLnccEGEdrSBlcc+C8FgQvUSHIowwKJs8PHHmfHFxSM0fQrdF",
+	"cANIZx9hgQCDNI6K/ImW4Rmb/gheE/QGAEb5ShmIh45oSTqLTvVGSjxDPBJymJCkOPvjykMk8608/LH5",
+	"3TeIMF+7uFIpIucSS96VhTBmoRJTdBulC42fL0NQJw1AnV+5XXbtC23VU6Jk0hXriIdaL8Q/NiQEKRNk",
+	"2rNRIaUwfHRfx3GcHcl7vYw2a84WXcdhabosFDIwtuxWID/uIsYEBOJTKVK0gxIsjAba29sZ9+6NgcQT",
+	"rkjZOVt7NCKzfOHqSIuItgmQ47VhNPe4i+sYFk7+inGmkE2Yg0OEowSNdBhe/Qi92TPIE0lJXIU/cHXg",
+	"/NCMp/MnvcDkgjaLav1KEd7bhrKSMXTTYqWYK6Sk2sOHsdj/fNr/znv7Yn9+99Ndu97d9feDmE8gGhYZ",
+	"iPy/n8d2vPPF57Ed7+7d8eGf//ujjw/uOPLpjr9/cWbnnrP/pjtfjOD7MgVL5/dbXvytOfWT5J8RbAHo",
+	"l3n435LXtYGrEgjIX+RpT/3G8uJviMgji8C3QA5kxwq8g2MvyMt2lUxEM+89zkvC8VkYgFfNgKx+OQJF",
+	"CWG5JW6uvXPz6+E4qjYzmElQ17wGhnhBhhSTqgRveMBATCUh1sAJejvbjuziPIe0u6ItbL/Y0d6JpGQh",
+	"tEyH2vRq8XpjYUG5QGHnOZXKpfKhpqE1LjqbRooY8d4cTxjPKvK1/tbRFEiy+mc2pcuGUUMZ5SsqH1P7",
+	"KB7u4JiTcLXotO48gz9nQNKqcCco0audSRL4JEQT1pYXx0RLt7i41o1fcEYjC3RRl27XjVhbyDCHQRDk",
+	"naKfpTEM8NkUg/HcYLagM/KzV/xRNYiqdbgMSjvCrkOmETOinTvMxLmvUsPDWqLID+yF5KsOM67KcDEt",
+	"UpBWpRU+dFO8Brrz0gLPE+pF9xn18gMRA7UcF17cbyZSOVL0RHUQ0WIoiisTK2nIgIaoAkZQQXvxECQU",
+	"QI9hYYAmRGoV6IOQdaEK8huUZ3joaxVjMgKJHM9HTxoYKTargKlBH2FmSMnOZDRatg5iPVxnXHZIYoiA",
+	"JYAcOfpMK41rA2g7tbRTPXnNfnF8xqLdRXSMoU03yxcZCaVRgzntvdAzDawDjUyDyfmqO3KP+DTU8EKD",
+	"DiyQbbaQGskydhbckXlIlMSJ9CWkSu2OvftqqaS3ZEB2dhUiacZlj8bb7aDsZ6kUQucYLKIUWfzx7CDn",
+	"tarpiYqi7fVSIraulX8XHerWQnkrYRM3iGoMUx7Im0O6jA2cj2ZaybWnJwaLCHZdyDgs+2UcYuvK2iLI",
+	"5ZTLMG7gznmPfCAkZCkwl6izQzuMV6Q/NeWiyymF/ECj9Kb68iD/y38IjRKYaFQ1aGaOJ6hLTcOjhjMe",
+	"/yksGaIW5atjSD9TLsE2xoqZXoIAgUI6bTCRQ44NA/bBJD+W7mrsjsUMRmV4qrA2ffCcd93iGq4IjMqj",
+	"8fUOuaRkX/Ap4WRfUltl+h6L/USRUgL4aOHOeRXqOLO732g8/aU5+xAykXQJxFqBORR69jj72S/dmUMA",
+	"70g4IvDMIW8pKif3ggukziTfk1MMxKcADDFzhXR3dkpvZI8iCQ4C4nZlH5hnivPy4hiI5HUaN+ZNygpp",
+	"Q+jOfx/Oceiz9S+0viAPQ9MYwq1kClnLNGYOUpTy8gQBI5OAi44nw4FUzW49eBaWbhOP2T66AG16ZBrP",
+	"QiyRanUWUWRGd5n57MUsP52JbJ2y+XzUWf94ma0TThV+9Y3i3eCMO/+8OY3QVrQFTlczfDPrfBZXcW22",
+	"MhokdP+h8nlEmxqkzwnSXey6oPuVxfATT04PvOyHNXbZ2GksP3u2vHhveWEMF1si+pqPksaTImrK/tsn",
+	"kMlhhoEsCjQ/EggzTQ0T1cbjqdVr46yyrOT2wcfn0R1BBH/qozuuIRtKc3r01fBYzIreHyqkdegc3ixE",
+	"gC/YyDrIyg12fPnrnrCeCnbH+aAJJM+Y+fgJIqxAffFxVbHUnGNleaHY+n3StauAj2OsGK9XqyVJlkow",
+	"NqAw+7cO33I4RqMjKi6GhWFjpW/tlO7DNNtovR1Ga9JtyqxLyE8Tbm5UZL4BclNBY7lSKv1sfJ0er+TV",
+	"xkzaM8leK8G//rq0rwjra82tSF4E+qtolOrMntxd3SLFY8oDb0IFE+r8u/7qOYuLU26fCsQOSwN5LQid",
+	"2NSRyEGqOMyxWGqeL9yb8hPxdJqKfP4B/B2i1UaXjVDUU0BgAOeca18WOSjy0VAJFgeARrZE0Qk5n1DQ",
+	"CmU5WjC/DxXS+RSa21CFBFihVo72k0zJFTBw+THQ5W1x/LoC0VdLpZ27B2Ix3VbkvFcesUf3Tqv+yBXJ",
+	"IUD6X2Y2M5gGmzL4R6Z+h1tLbT/KaHka+y1iQbn14Flr5jkVPMeZO0Vxk3jmJtxVFs7lsWteoQFSYflD",
+	"13kC/0Zmc7booxaO4MlYg2nUskRfMUMJ7afpCGXaloEXUcUoDQIYyfVV27/wOa2Mhf1qJHsu/Lw+zR8e",
+	"tp1dks8pbYlG2HWCqBfpUkSiEeHk1d/z4M3zHA8LjKJgZQ/EPfuFdG1m+YFOk3QYCANCmv86bFohqk56",
+	"Kk3qi0nSm4ZtfD4l3XwMrBtXXrE7wcIbU8WZeTtjo9AnSmGhEIdrJgc7ixZUPvMNiusmEg8aW+nzJ9S2",
+	"J8QjzPIh8AtQom2NBTvXM0DVF1rDWfO4mc2aycETCAjZtsZC+v4H+HVpiDC6HxuAmtIosaJx8X4aK7yw",
+	"qbGlRIVU9quBoXfN8pNIVIME+hsu3M3OYis9Vt12eOh7RfzvjhQa0KFVXfiYQVa3ooC9HRazQ3RoS4pF",
+	"aFB4RjB2VnGSB0vI1DaN8ytCwESm5sj5xq3Hip0RDyg8qclyn42NNApr8OR453RWKGWpXLT0WyrePpav",
+	"sbylK3RlY2Oo11KudeKvQ22+QBt9Ulvxmu9M2mX7tLQwNLlT10AHuWtrMZeJBZUYZPwEJR0SqS6eTi5b",
+	"zSdJntbt9JTA6Oz+rEcC/CYcS7dnoQwpZifpaIOWQmbSqYRG0WaN+JYXvsER36RURtF5l9TKghxuqpk5",
+	"k+7I90irc35Cz5ES9DuNiyo3zt9DuFW09x48QNyOoqrjIWz6UlUrDyegqwrNbcLrsWsrj75rlO41Hl2W",
+	"k8fJtt/Km/Ght5Dmo5PnNiUbA4eq5OPZE7qSqoi6kKLuyFxYf7Hy+LbU+3DEBpjfwn0sgetAWXB6UFob",
+	"RW/EHCKTEC4s7aNDoSOTY23t1p4fswnSMEIbtRZ0oDSL8UxDTtdTAKWr7PBwFNFdMBa3vv29WZyPRCON",
+	"e0/QP3SGAFlwFz5uTJQao8i7j/7xoqz9WPb5eZDjn6b5Fc72N5Lx04OZ44PoCfdnIgtbxsqflN+BRwaz",
+	"XrlFG30l/lJRhqu1fj0n4JfYblLAOUS8SOVM4q/gejTYfmrNG7Ng5DvHondImVE6mPoF6zdZIz5dVMho",
+	"jpFKtCz7JW3peAMVRUNF4mYVJR6Gqjbr36wWH8NPJXjnoWs/gOjTutCNT2iSwwRebaiXCEwSIIydE7v6",
+	"BU9Fv6+kRD0XPpZf4QD09RnLZBtF+x34a/pe88YsDqDFU7/Ti2WIwmOPvV7d2sSPI2w3rcRpEZkwJqDt",
+	"4/uuxSbpmktntmftsFLIEF+ljqZ4Gtj3hvKvryIhvXam9xpAG2cHq2oP6yrTOA9OXdp4QdpX3E6kC8hr",
+	"PugXTqbWv6q2ntdce6J56QapBYdIk+3J0EF0jhbpnyPgDBljtt8nrmzdWHwqNwjp9gh6g//MZL/Se+y4",
+	"PE0TlzqIXBGqaOCR26TgkpePnB42P44PeQfosOzJJlXXikawmyEM5nQuBEUj4I0YTFnHM+EpAHTqP4A+",
+	"CfA6UKoVIolcPRXlUefhKN7r6F95hnpxRKSVwOK5tl6c70wyPGQe99LtNQrTvgnj+gXkU9ke1o0RS32E",
+	"HuwwOoS9wpcBlWO0VUWCKsewVvjMGOhXNiaAk7KKQmHrMsL7IVBC1ZjlXZO6JzT8WXWhy/0xaOFp2gKe",
+	"eEqQSCtY41ixKfrrqJ/PxFc2CMNuNpnT97qq4sZyS0VUf8dozjjM2qxmJrRf/MaVBrZrrMKBItgoiwV1",
+	"acQb1ItfC5UnojY2CElqCARwQsAh/LV3ewGIJ2RR+7fI8DZL6LxrzSZKOVBXJMAzj6OA0AkWHeqbr3tS",
+	"eou2F4x1Q67lZMgNiOdZ2UVGpwJq4dMuKAezGURNUxkLlHGxZUfAQfIFY/F6VCiRfl0grZ5KnPRVptZT",
+	"FRLG46Ww6KQ9KNizZSTJrcyftuVXrfzqV7lakmuJhMNwXyWwnYm1WiobvgA1c9UK1aHbtjRQm2xsTFKJ",
+	"lCdyw7WvK7YPWuhnniUUHLV0CTYVQ5tJ49eJAcXOqg5v3nnJm2QjRtyJARK9CiOsgbPqKRqBhhSyKeFW",
+	"DqqVcNVoSNItP0QcpK4zk+9R1zwMuC5Og2MHXi2VODIgFuJMwoqqatUYZVUGje6sEoecpl4F7ixzXzh+",
+	"gWHoly0kB7VLGNIfJiUFAtC1PEiUGNauhnYmm3SkpXo+99ASD9zrylnpiijVlXuADMsvz6/eKsGxzZDy",
+	"2eSs8AyRaAR/pAcoLcOaNP3Lj3bt/6SHDaxAyiZRQ3AuRDwWZ/33LAwyzAgBDkzfoX1XrT3mdCZ/CBm9",
+	"c/m1hSgo2qdQEWRnLBbrMPRkTTH+EjsHAwbY+mmTcS4FGK5Tcp0xJCIVbcFlrXlldAL1YBEe2xWccUlC",
+	"IxHdqhMfG+vJ3UZhphFaZSNQdUbUltZRqOCtoCfs1ZhPtD1QXT6OM2nE6KuYPhpky1WGd5rWBhtjsu1W",
+	"khZv2Z49IS7ZmuRViiedi60aGbWNTMpAqEVaXt8ysMmwGtZddDyaoG/1eiIGSq/ytiG246niIdBtT+1g",
+	"T18mLxlH++2RP80cjmfzQyQcO9jFcRx9YA7FU2kdfyvS/AqW/CCaEthq8PebGfEMaQ6DWTNfyFo+YYM0",
+	"WwT896VFqe7b9D3a3eKOXKqjunLxYWN8Cu8bfcV6IBcdOuC82OGdDNKjaES8LTmSXxvi5UzS1agR6/Iq",
+	"e1K1f/hkxjIHrcLQMTPb+a3h0V3/EXs3Rv8v1LxCvFGIW50FN0MbsNHVqmATdqHttLGWlgckd7Otd4K0",
+	"OkH03owPhdx1N064Qs7M+tp5gGNo/MpUjsXB1YhJUymDhblJ3Wm9Kjd9rdYokR45GgdKcWblh1mk7aBW",
+	"Otc17ziTvHD26M8oB6dcZy0HNTxdJ1EyAEQZLZMuuWpyESgsORzhdjKQCZmzHkTWkSzpynZo/FC9WW0J",
+	"RdEmV5zrKEo+W+eB835dGYu21yEmNB7irS/Jk6K9vLCIVwVv2o3L5ZXb5RWIqXftB3C84+Hi64kG6w8R",
+	"u7y8gORXukS0ZyHNR1qxJ7lA+NWuk0XQHqNYNNjZjwt8scokgTHRG+mG9ZTY285E2M5E2M5E2M5ECJmJ",
+	"EOW01Zcl7TfzRLXoICpDE+KhDdUOk2/AEgwMYjXqIOENzRleVcEh9INIGhhMJXP+Syk3Lo259m88BaDo",
+	"iEH4ksGmRj/qsMobWZKCamSJSNoJtUTWmnCD1gcL6wjsypVVBhDPUM17UGHhPcBQxKtwzAtFVBJq5Jo7",
+	"8ggyaKqKsEsKq80srpZ/FnuFej4pt2aeQXMeEs3teWGey3RQcgrkiyod2U//asN4VCJQOCbmIOjrHYra",
+	"iq+YBX0Xz6ONoJLGp0hHy9HG2FOURS8UgGACKpGG0TOqjnH/C3nLrtCfBK1j5BHKYEKG+CfUJIn9UP7K",
+	"SIX9JGscU7R1uVi5AdYfiUaE+gpkrf6mHQyefSdpwdrAELbOAteIsSzUh4Qga7umspzcIV+ifoQooirp",
+	"TWfa5pKjT/fBi1utn5MvB1jHrB4Mss6UPA5Br6TEmIldWxn9GRGYbxdXb95BeD8cT3wVP2Hm+gop8Ccq",
+	"r6InJfTEqbsjT14tlRAB3GGQonPOBPh5sSp+F4e6NG5PExwUTa1IWZpfvYjN/9Al3CnRisPLC/dd+wnx",
+	"g47+TIsSowqwiHThbht8XVVcVJxUrOYeVzHsJQ2BZxlw7kD+yAnTyscRRE/H0YunzXQ6g4pIDxeyw7hZ",
+	"XNaE3mxpWRrix81SnXivoHcHdsXktkD/5+exfmgL9MX/t/Pz2I5dX/xfA5/HduzBj7SNgT6xdA1XVkcq",
+	"rec/e7Mm//CI0QFCgGNiXzxvnshkT2+uMs1jeja8AkpmaDhuoWDwLgIs22qhfHS6gLafhN1gZwUl+Pu+",
+	"kFif2iLYY5bAt6yTbFH5drbTtlJiuIX0h75cRkANEelGeI4wRLkSz5YDb7yv97zLi7++F7rTW7f2O3Oa",
+	"6lpda0ZBxVR010Jd8xc692wOqfSp/GkU5zKED+yYGc+a2b2F/En+158ocf/zZ0ciqs3sw9PJbNwQVBUI",
+	"nkUNXHM5I5/5yoSmK89/blyeeLVUOnR45563kUPfeB/9C1fBS+VybtGOF5LIWf/1sFu0rWPHoW0BiXRm",
+	"uaxf5grHcMdSqvY0v7lDSieXbuIa8vij5kIJF8cyvgRzPnyF9SL2E7NyS1XeYKrWr+daT78FLaFO6iCM",
+	"3Hq1VHJHLrojU67zAFmeUI/0uvFlJntiMJX8Eu3FLnN5yJmUU4RJTOYQeCIArpxFnsznhyNn0ZFQt7zO",
+	"0dKaHV959Lscuczt363a7dblCxhYxt6DB2DSo9YOXJ64bux822heu9h4hAyzxid/gaeiZLXDaBTvgqSn",
+	"pkOTfxOJbdy1r9NWFmJ44Q6D5jPWjb/97W9/2/HRRzv270eGfxIeUjc+/HDgo4880wp5y3UDEnxA8nx+",
+	"RxyfNautG1L/ZNyKXuyf7BZt1j8ZXSUaneYWbdo/Gd050j/ZwF6no5ZhsOZRXjdV8+oECKk1Q9NsGQ2s",
+	"abYsPpabLQtz7o69C5v9Zq5x4xaULrqA76Aht2MWB5PbMbtF29uOGW1QasfMHyhNjDDKedoxk+VpWzLD",
+	"J74tmXn4PQl1kBYoKJdCFXe1HTeFTrt2LTVDbN6MYOTbvFn4UW7erHylDMSbN+OgznPIjEBcT/It/rLv",
+	"VD/cT5LtW7TbU8ZXS6U/f3YER34aXyKim8mm/hVHSD9gvAc0AuhW87EjEBLDELU1hrGoVeHd2ZXKEsS6",
+	"P25OTeMZWVMYY3es38AhifIANUrtKsxQI1CYMrx/BYXZ2rVm+aJrzwi/4l5ZF8RJdqFJJMIglRN16oDw",
+	"D18tlZZfjAMF/b+/NHhJXgfZ6nF1A9z9RhqMhZsP4IAag94bRPKQ3GJmcRX3SOyt/rdi0Cty2LTiw6nI",
+	"QGTXW7G3dmGx6iRwu76T0JD2X+jf2iIuyy9uNh591zhfErgRL8sfgcGzcGAHkii03Mx/SEZE/Do3nLFy",
+	"mK/ujMWwmcTKk6AcwJgEfNv3vyRQHUsA7eQDPAXmF6oN4Ed0TiM3wT3ylILuBvRXExh+ZODzL5Dlcgih",
+	"Bnw3DRazRTjlcsAwEDxDDgQMpidySB7BcIx8gSbpA7zyh+n+9yB0+fEYonT2T8bOWAzx78djtPULdZvt",
+	"Ua6SDtyH8FybBO2H5DYjYJWEFn6QHYB72u2J7dqApQgwHafBl4Hn3WblYY75VH8f40mEXub6zqiPBlPJ",
+	"s308kXU4k8vrvHxXvcRdKSXPrESahC+/mAM10FqIRWnUXzRezopdWqXpnUkDLxrYtX/LLoEU+oYROpMe",
+	"RlaltPkF/D/K6aDWukrr/DwqDGPXDZ5gZpBkBPtl67frTEp1nXOkSzxkOCFCjajnheWFYuPZfdJDnh0p",
+	"Wi63xBNpkXhvXi2VgEm/NRS34idMzJKgQv9d+gnpVdK4soQ7jVByLKMkTkFWi+0ikpuND5l5M5vzVeP4",
+	"K33K90SxWzcUV5erw3UGauGWIPzeHYv5Dc/W2/dePMkCZ9En/e0/+cSKE3nATOKPdrX/6E9U8MVf7G7/",
+	"xceZ/J8gdwM+eDcESJlplPpbI6r8FIlGhsxcLn7C9EFtpFQgjMItz2pliKPB+ADBRQTW2Kv/ApGgs9GQ",
+	"R0kKBHgPUGmYR1sCzrNYHXUXKJwX6HeI8z1AtAk6u0hr2wixziTZrjMuEFqew9kxqcXyaipj5fzprS+h",
+	"Ukhwc7YE673Jyl4hUciu0Yo284Qm3fgFk1BRMUUiL9LPJ5cXr4GH4ZE7MoK4Du4Dh/0DRVtdA+3L3PwR",
+	"PKW7oEihbArQkGHWa1ApjU1SP2l2b7N0uTE2J5WLLzrSHnjKeJkJ8hqeAZTRtcc1XUDsCtH7+VDz0Bwr",
+	"fIpfGcXZYQDxnlfOUUtdiF2jTYcqQmMi+qyMszNkRQW6J87BAn6SDoyWOxeC3aveQ5VYEjtjXw5KdCeB",
+	"hUIYHJwGu/hFG9r+TYCzFYLBCOOSVzwlyoZoWc+nXMehHQNRhibp1uvV3bDPSh7oXID/d3mhuHJ/ngpA",
+	"up3Rku+UgYsF19afx4J/RGFa+xjevwHcVuQJ2wwXM1xsP2Z3Gv3FmQwFWI3QSWdSue1INY4jh6mXbQtj",
+	"stCdz2lEXGRnbOfbO/r7d/THxEiygUh/DPtFlQQviAry68QZifV/tOvIvj0fxmL/82n/O+/ti/353U93",
+	"7Xp3198PRrRtDCPxY4n+nbt4d4cBtT+wUo9Dm8HKfQ90AUcOfbBnZyz233/77MjfP3v7/UO7PvtYTmof",
+	"iDR+vt369idj5cqvcjgd7DwWAxThUg6Df/PmbZR47Uy2ozYs9QT3HB7Dgo7SI44ypfuY+aoCPseS+5Aa",
+	"dwumw6qflcmjthfKNQkUggLuyHqKdmfPRrujHAf4xQ2gIb4ooWUVbtEBFDCgZDKwAdoVGrjIuMoMOhAl",
+	"d+/c2Z4+0D1+wnOou5RC0VcdTchM14LdIty3H2fy+5h5u1P5lx7UTGgRGJulRQkYPwEBmBiqrYQZIAB7",
+	"a+hIMohcC8K/YMTiGNoOKVJQRbHKKFim5BVpUIQ8rd3CMgh5RRLavEzpWQaCFav44lsYBl6bwoUAWHEa",
+	"Rl6IHQMbMsChwhM6xISbsrE7thtcc7v7YwYWWj1z1Ykplw7BqtCyTXnCs5lcRF7RW0NmIBmPCJqvlkqS",
+	"LErL69SDDoMcgzMJKRz3cbyf1oEBJvXxSejC5dEkpNfKND+4Jl8PUqV4Zf4HZovZYKnvfdjYXnbXuxb6",
+	"8EAbJfPh2XTkut25hkEve+4PLyAC3hzEaCPzftGlYwTiIteONRKBFqM0YoEuB1vInqZYojZuC4XhQmMu",
+	"jOukHM8L8FFcFWgs/caexzdGEKi88tJevh8Jcm2v5jwhBH5SVHiY8aoFmwaFAxYunyTDoB3DnA+zeeZe",
+	"brP3EJPVBakZ7RZWL7ihQ54gY/M+1Z30G/J1fkv76mGdqe6PdO2G05An/2qppDtpJjR3hkSeKUitBS0m",
+	"sTn8ZSQOcyN0ZS+8pYBAB4d0A6XeHOZ28iufhYSTpSm2SboAUs7/qPXHVRLaXDJn0gh5fy71QIPImvls",
+	"ag3aQxulgRlx7442b/yCpMH6t0jwAxumRBIWx3wQfabx4jwqBirYHRX9pXHxPvBXFL2BTemNKxUwguNx",
+	"LnWqUtBeP2N4AZsl8R4y81BNpffC7s4NFHZ9jnJ6W4I981qLIFuB2xYdZn8LuGaYYZIXRO1pzf7O9qQ8",
+	"UIaZCSTgvOpGru8M/wORbSHeyBMltF8s1qGQjhQxG5+kuR0DEWngiBh5jSPKw50xJKeup1INWUWaO0Ty",
+	"it4sQrLme4mhAqFO1xovpj32xkz2RNwi0ZcRlNI6XPDN2UJ3FxfzcCabsz82r13EyXFqZ5WN8gh+AklS",
+	"m3zL4Qq9l0me7uiCy/kiNLFHLWo3lLLo3/3tEst8ErTOnlW3eHYTcJPZfN9IJO06gog2AhGZMoaQgbMe",
+	"VkcqUMBXtS1VGbMT3Wi9iBeC4Al5JlLSF//Eq/kQkkDcRL0kVgKZYdXf/UkW4ZEe32uu74zOH3sWUzfq",
+	"TNZEEvOmoEQfABUFOkLJnkrnqmvf4qWHizbLpeAPedRKnZSRogY/DE9vMJKYlsPsG/hl0vLemZTXMI/c",
+	"o9ylUSe5yLTr3sYQ40PmUOaU+T6BOFUGOtZZ1AH0Wstu79Gxjl3bEoCMVJpwN7jKgRJnaGzqkxNsAswH",
+	"mvwifJ099kiEHPyCFwGNHkC6xUMlSBtS8cm3PCYKZW5Mw1xX3ZF7eK7Wr5eb38+6jrP8EuU2iPkMRy3J",
+	"FMbr0tdZfPLy4lRz/juYQbBkSEF3VRZutsEWggNwAAeZftcjfOtOrgmUmWChh6BuwQbLJTKMtEkN+gvz",
+	"pkkqf0gzq4SozqTnrNuGYHRKDXtCBVl4sWe9pAA5JVPzMvkSY3crQRKJM2n0s2boJUhGfeI6v0GKDOt+",
+	"LtpNseCnJKgo4pBnwjqly4Ta+vdxqkLPYzORQqls0GVOnKp5TYhy2JyYU0xFNpvEhqwKIBJbT1U5BmWd",
+	"CKxSQkMMPjSEOHg9K2xeexq6GBoscj9ZTNv0f75qXTWuMBylv9fMzMwV0nqNV47IX6l8t1r++Q9v5Sbp",
+	"17KF23vjcP6CP6UoI7XQuYQT4zSWb33St2z79plU1OK8tLr9koguDsbmoiPGrXpm1IYi4Pzt9qEsnSbd",
+	"+Ye2eEr2h4tp8XWiqTEuNMI3xKfLz2ebpctwBOAk1IOIJPcrMb5abVrlVuXV4s9EZfYDh1xBQAOOzuag",
+	"uyfFgu0f/MKaw1yPtdt3Ose1cZ4dTwoPStj3aqmkxzYeN9zVyfBxyUmw8XqBBq+WSvK1xy4kIbnmnJiG",
+	"tC06E9G5decZQLWtxEwqnKXMXN8ZodpZoLvqT+S9jgUs+uF6h3OyBWoQi93KbfOTGgjPc+3C+aDaXCFP",
+	"Tugg7yyhr2YhZvLRFDY5m4EYb9Wq2lTO1RAvklsJtV2f2HgEXWYI78QpZGHOKWiFjVmasGz9aqUy67xs",
+	"i0Fr3fqFsdeMdDyXH8R0VX6bp0quu071gZlXMloO02YRWxPtNas12+dak5uxtcnBeqd5M/zwxf3wrMOb",
+	"C95FpneYJAyvZADopH4qhSKLm3bGkRx779GrpZL4HGMMy/LVYLuiM1LDEDSTgaA4Y28uFe87kvnqdMYI",
+	"k6eO7NekScUYxdY5we7NFkPol09SumSPh6V5TVJYMni1VGKrNoTOhJCXrRSxEn5GJa9pr0L0KtAlDHjJ",
+	"EYDW7C0Y4slNq4GTzDFCBCNC/2NPU2vSAhVP2BFf4Bn5Acn3iE1U0HngrEkhnHHdie9hBO611ikJJrz9",
+	"G5oyjW/wdr60Gkz4QUg7QvcpMf5V50LaENhMUvas2GpwBrhNxpPQ6yMWkUgE/6X65PKKLfE19MSZZIuj",
+	"101K5I1GUG09eYXt6YA+P7r9HuQ6ftJu1jYpCSJBXIslgdMOTtrhgOFwgPTYUtHNLVWSkDWMHBkQAm+P",
+	"MATJYaZJFms8UmFg+QhZDsT619xh/H6NAhjNGsjlCqa/3uXHfiurP8yhWqv2FDYhsWWDi/+2kAtQCWDh",
+	"C7eRR8ieF41R7XJuaOoBF9yC29sfRbUqaZQWuwpgH7oivvdqqXQ8nkpjoxdUcsTZELw/n7BIKO5fFYo7",
+	"8v2LCTRFmyXQoP7zWnUO17iFoXh3znWXIf6SyuWV1AJ8ETZTgVMK4FPvUyg3lGYz7auWw8D6eMtOYtvf",
+	"cP2wbVg8rTbRA7WQFv+OJxKZgpX3pUus/aG/9bhx/nFzdhSvqnVjoTkKYXvUwiMKM67zK/pk5CpUDL2D",
+	"hnLuw1Al2ll3CXri30EhhbjCqBC9FPh5XZiIqmJy++X+nZhD9xbng0w2pOn+XgLjrYPyrJWzpzlzcNw0",
+	"fisMIgec1ZuHxT30IYRFrwBU6IX5SEii8fVCINa2X3hvM693KNaFA+49vCpImqaR20pn1m23hY/bggHM",
+	"l1l5c2i0RskNilYKyofp9Pq+Ackt/eue3MJKNG8nt7xuyS0bl9NCW1V27/b0BqH6Srhek7WXB4NvQGgA",
+	"41FM11mmRKxWjYx8fVVIdSe91B/lU1JO8o33L3I2HAyIULpkNNhfSE8PddVAFmhePqXfAE8NutgsR0Uo",
+	"CkccOkKvDGIf9fZY4g6lOZ/IKFLBmPVpAmJEXP2e5LANLEmx5tyudREvpFKr4ew8rO946N5suqaxpMec",
+	"MP1mCyheIvRmUZMu4o0pJOSAY42JniS56pqjnQv0gkkNq8KEi2JvV4j5uH8J97xSNkGFpI5XKnfSCr/k",
+	"q+J6g6bnC2ftmfm6hREIDLzHEXZL3hZgmt0IE0qgDzVtx8V6fYXPrvdNqbi0T+aM6PouI8+G0mzNYZxJ",
+	"Y7KBNlWCOyz4/omjy/ftD17yi1+DwMTvrq1cmlS1xEkz8VXbWKnQsg+ExchsZF08TyGlkH2wu9dZFFGE",
+	"i7VLFGtRexiaDZyhLcfRJHwhxzKZtBm3PMtmH4bRaWhrvK2erP+HJFFeyiRoOuNKV5ruqBTpVxBsiD9I",
+	"X1oLckdJEaB/FEwITCJVgGhDaIYFHvuj/rvhrHnczGZN0hAirFRwkH4GnfZDjH7CtJIQmdfh+B/g72AG",
+	"pfje+HlInmViAS2yYs8jvfniLxBDcAMfqW5xcr/ldsCTJyf1xFFNEhzVAOq8gzsVSIVCL1fJTSs60Hf3",
+	"EirNDu01pO+XFx5JX7La5LR3n24HKSuRLiQhytRMShtImsfjKJGTNvLw0jpPMUyyuIqBBodo3O8uIj+K",
+	"fuocipc5njLT8ryEwtLrmMia3q7/IlTbXPzDmWz+r1m4ABvifSIY2qkDih3bttPJ39olYoWPYYtQ0Q1z",
+	"OflIZPQWbAkZrMvW+105qaJegt0pnY6qHKUzRtJVl36dby3q5Ww6ZqRMpmvCv9lGMEaTAhx1nROgvbDP",
+	"PwgZkkjP81k/otNWyMvkUqwjo7+Ux97a8sEWdKkd87vnT1Hi9HbARWjehwG2tQIuyKJQUN9Fd2TKdR6g",
+	"uL6REhsWiZ/UurN6foK2lJ4DTZenWPpxUXq5Xt+gDXQO6VQCYb+msAyDHwOSB5Dzywvf4Aw6AtGi06i/",
+	"WHl8m3+FDuoiy0Hn50n64b9VyJnZt/6dNGhSx6/COUywitnhitTsb+vM3RLhKZw6BXE+OITtEBX/EBUM",
+	"IcMdsSEa8RZqGj+yhE0hWyxchWJUL8NVOOldY7gKxchwefmNie9aM8/EOmU+TYJ5kggL4165Pw41wUq8",
+	"uYgQYS38egkjPi9owgqmztylNc64og75J/BnBqnUkGlRedy4VCfO++JdwiZQcOq0a18h1nDBxQTv1I3d",
+	"sZghLikZz5uDx7OZIZgC/sqjhN66BwpkfCn7ePre8uJ3r5ZKq9fGUT4PPMG5sq1fv6cufHGKGr4tuGcL",
+	"fPICXdOiLb5UpYnC44bU21RoGeM4QtJK7zOsceIdza3CmbmuPdcui9c3eVeTYO1zp+oKLFDghnAsL2B1",
+	"tcaN7xH8Hk+tXhsn7ZFvfM8C85WjQywpU8gmcDs9sl/JeVfBYSIMpFkzUcgiPjrIMAddidaDZ3J9Bmmh",
+	"fJXOJLNIuUVb7FftTC6/vAnSDXBMSM9GSX6jE27xvDeFHHqPjzdnSzjZrTlbas5WYcW1VrUOhOElwkEp",
+	"ksU/xVrNTmJdEJSz6KRRODovlI1XukmPpUZ7Sdaot4p08ZYa5QIsiMvqvnCX5e7eUjnCD94/YiAyx86k",
+	"7wz9J6JyBi3Gcckt2ilEMuq8izb2laGstCecdkO1fFLIFtGkC0ILc161ke4JVotOBVNj/3ysw3R962Es",
+	"ZzsG+SYsX6NLOnJ62Pw4Ts3eSkoFMFN096iH2cd+ym69ND1L9UA/R6Lt7dCdzZfPrG02biNGX3AbMWEB",
+	"6LbQMyZluDhNn3EapUWQiO9jDaQ7wzJZqtDJeUtZmX38pyhBVqNByGzDUDO3fUQCXRgEhD7pSv60r/RD",
+	"SJjvKjQkuzlbhExQ0sUGaP9L+PdMc8bB1TJoWYty8/Ez5gE5aoVVUlh61mkrQcrpeJSWKM0hD19FFPXS",
+	"9lRh+CLa6bmELp1Cw0dwQVx9saaiI5Y/IqVCRFaPkKOQxn5R0tRDVsyika93ZIYQXIfztHk7aGYeDhza",
+	"NHSIfkupng78nQ8bOBrIF4NDoMu0GQZe/Qi96QllFBiHDgDyPFEVR/mdCuP2x/dg2/Llb/li+ouP5Yse",
+	"jGT10pmT2M3ZJHNS4HVMZ/LsYDfWSMIRKsBI0uE1fZ18A8RUEvyBXDumJ1YFRbHVmBeEmx3atNDHKJYY",
+	"3qZDBy993iS8CMd3JQyJemO0KJ3OFtJmaNZ0CN97NWxLGmvzC2trOGkAqmo1xG3M7R3m6lXwteFv3owP",
+	"BTsFj8AbW94hiJbZqTOQG5a3/YFhpSIOs62Wg53IpDNZ1fqmX7pdBsvZD7wOoPBTc7boOk7jJxJMvTL6",
+	"Mzb7kr5fUz/h4DcD3bh9eE5UA+k+2JZquOwj/qhx/h7xPOLaQlwRQ9MjC29ZVHjRR8SBQFLMXPsmHnL1",
+	"1iNuqwrICwMs2BoB2AgyYZAWQNh13M9W9P5hUhTAKdlt23b++Tv/GJCMlcrDxtQlnKi+xdx+It3ooedP",
+	"IrJrdP4hL3wwh/8E3lijsVoFXEfxzGiNYcLAfaIYOpxtmId3dDCb2hAz7GxJsQZIB/MJV6vTKfOYC3Qw",
+	"GTePF4aTxCKN2NrqzETXgdTCoQpm7miEz/B6RFYfhhj7DkVLLKlsC5L+giQLIvIzrwHY24qPhEAiH3qY",
+	"qDAW1eQWHVp8yRb0ADZI3UP7a6ScpF2FodajRjQqIjlyzR15BP77KvpflJ3osL22ZhZXyz/TXnTKm+XW",
+	"zLOV22XsBmZLg8qUzqSRKxwDG78gk/LR+PuQl8tK5dnzaArnJ6iF+YSEbJHFeuaviWPwGDGpwz9tuKMd",
+	"FZywYg1uLzDEJWM/XePu4+bUNH4C7pwJFr4AbXpxb/T5VZSfO8aa+GJ/lNxlQdg2DMBbqwmC+0Kxee6S",
+	"7FM6lcql8jlV88BSC94KnYIEGtBNzMjRjAAYu068Trw0vI+sj9j21pD15T7uoWL4WIlAhaX/dKl57WLj",
+	"0TTcgpuuM4FvDe8UW7RJ5caRm9Aj8SnuuSx8OM/CCRp35+nDivACQT0oentBPXS4NcJD7h+MRL31DAVd",
+	"ZdfOWPuYzJMZyxy0CkPHzKx38/39RvO2vbx4r3HhPCIlUz+h5RYdqv/VjP+AMJRZm6R3wx2WV9G/09fj",
+	"JiyDCEChTwsJFKFfZnxf1uX6d/5nW/hgTJKywPAWFNIvoBbkwDs0K00iQUIxX9WTzBPvStPUUIBfrrDk",
+	"vEZxZuWHWURhLj7D2Bhpm3kryDz0isjIwWEpH8Nm66wg5Ow382jNQarrGynX9FhvJbTDABHgv8hnbyVw",
+	"ACC/oEFa7Ll1V2EFEsfWVKZNMcZ1lJC/1nx0B+IiRrkBi36FLVaar7jsIoR990KmlOVAnQRJNOQhU9CC",
+	"FfWHRnwAexFFE1E0qoj9s1pz94SUgirIcb/5FOz9yIysY0+kNqjLVo9F09ep4hiUX19CTZBHnog3yacA",
+	"rXLeNLG97wz5l9L0Tu0YxROtUODis2dcjAhKk3aIP6ZoQyoz1purnk9wb4Q5EkummoY3otGXb2ooqPbD",
+	"8fxJwULCABZRmVBYggTZjevZCiwguXA7qTlENqEPEkmJzIVARGF2qaLdWCg3Z2/gYMnVa1cbC3VEcIrz",
+	"jdI9KIwklpN+Av9GPVfVOgjOJFXXcLh+tfW85toTzUs3RJ29UQIEufELBPLVvZ20AtEVtX9g/SWKtufl",
+	"OnmBj0dW6UyizQgpU3SkcVHrpI1Zx1eLRSnFypnEuQf2fHN8EhfuwY3EGBCA5b/AziUBOGXPkEjfQYPY",
+	"L4RVrjsJ+QTMdptGRbYT0v+wCekbwzMI2m8npIdlIQL5lwg84wY6As+IZlAau1Zy6zOtJO0r4l9BTeJw",
+	"GiFsRmzZsbOfNNUS9gTWJcqi7HrztxJ4W66DRqTfroaN1cZpQksQNyLGVtVYLS6HGsexEeK6aNUQXquy",
+	"7kbN8kVI2bkuhODXGC+i1aLm6ZKrEM4gcjuswEEeW0mq+HvpRWP2JyHpbXR58d7qzISQK8P1P3gH/8qT",
+	"2XwyiMoIWDITBZPxONqEXTV2x959tVSiFwEVXmQxhzhbDX/Pc314MlGb+kZ6Gf0+4q6smxjPbmov07NT",
+	"X3de/L6VJKSM9ID540j1Xvi/qdJ+t1YpLaooxVgVJOUoHIykCunSnQi27rwA//RVJOTSKEXXeeSO/AA2",
+	"+0V3hJBiTDSkSZ1JwVckNDJUcja0GSKffyG99fkZnHQ1ENkZ2/n2jv7+HbGdkWjEtIgcMxDpjw3EYpFo",
+	"BAlHkVj/R7uO7NvzYSz2P5/2v/Pevtif3/101653d/39oJy2NRCJvYs+O/tFB7VorSRB1X3UaKi54l0f",
+	"jB+FdIuOmMJalWglb4c42nvt0of3ds72s8iQbnlSgdoacfxWAIEUVZFVdc7pKt1wOok10SPQolGtLdMr",
+	"46HoKBVSpp4k7s6zFNXl51OInRF+ulFdCbm16RA9vICk2NebU/GNhcFnioCBlRW2rVa+KocMP6HGZMdE",
+	"JVcYMrtRJ6DaZbVZWsTNyhnuNi5MrF4bB30iyK4lFW33VUUkkXV0Qsm3JzGIopbAK3IgGxKRqAXjleB3",
+	"arw879rXaeWe6SCbFa2XIdis9CU/nUkMEI30TI1nOAxENOVtgM3qEBzzZovKm2a6Uow5r5c9xoNt27aZ",
+	"cIQyWN8VIBpMN1H5sJTZrmAgeWljSv6hgmZhAjHBkf4UB2/x6mWeBJ/XwwkqhC6GybZRjq/vDKsDd9b3",
+	"KJG8Bm+Fo410wC0sm5Gr4r0aohN8W8Ly3DEfp6DfHSPlQvvO0H+2v2Z+lRW1F40NupWvmn+pvzeywl/v",
+	"ytp1dNmkwkfBXEmsdrQxrEmcMVymAJHXW5Xa6u3vX68ugNLSQ5XHUI5QqBXQd8Zrx2tHQ9ZeP8AzQi+y",
+	"lNecSL9tC1hDDrxfSNhaLmFfJoEem1bCzPmbCPyKYxqZbOpECrV/ohXHUCk5yCTmUS4XzjdqT3U1NzWh",
+	"L0etxvkRMoxdN8yvE+lCDrFHND5Ydxtjt8AAiZJhlAoq6AvtLpF2j8f1Ay24FGd8MhFOxq0T5l8ZnHqI",
+	"iptX00M6OM2ByycjFQgsOr61FJEVZg5VfYTanziFSEwp8KtkJ6nw8tI2v0JIID0T4WTPKVf8TS4M0kFX",
+	"zBNSlRCpO6PgkygbHdV4nQ5q1ChXiNM0adTUwELVN/ULsOep7W5abNPIHX9Bny4/n22WLkPxv9Emy8wS",
+	"nX74Ng+n4wlvz01WcbTO+x/KV06ze23IPvYOxnb07zTajCmGvPeuH2WYvaAujmTtrPNjL26IrgTwOnJq",
+	"qAqLGaFCR0Ny7TNhxcSupcONEgoDiyptC3+hSpe1F/t8opg5Unx/S4o7JhKZRv6iWWe15sj5xq3HtPax",
+	"8iH2vY6xhuC+la5rGiwQpDVIQPUXy+wFuQv7BK4t7dp3g6J3e4cTW6ASYWwzpJht4UVq6W0lzHTaw5rl",
+	"SJ/mQsm1X4blxdqPRUlECuCngUZAKLZlqTayVA8kFd3pvHaiiZeP9EAW6cPYEFD9En7fbBLsaTFM3lhL",
+	"1S0yymbnMGMAh7i2f+RA0fUj3PZVjlGCHuOJ+5zyqlDbtHubdndNu7WBxYEUHIqe9p0hlRgCtUh9QUWN",
+	"s5KXddiijkq/qoRvajHCnhbhC+eq9NE1dZXcKrhCaC/yXTco83MTMOE1r0MaJZNvdpSdH+azlMfteqSv",
+	"bT1S3t9ugwuTekiZLrNTH8oBFUn7zqD/tGO/+hpnGqJDBtu67LebKi3bvNhT5KdN6RcfDszLfdEU3tUb",
+	"iysPHremHjYu/Y7+1JWCVMuMrYldo4RcsfybWC5wHDonGbzyoV2R1udMQhoyNieTpdoVAReFgot2xUMk",
+	"NIUrxap3hq7qZBkLCvDZvKckhiQaiWUwRAA6k7RhcFWugkhjcoUGoo1Ld9HYwrc46oCM4EzSBGfhHbva",
+	"ml/EUGFUUKJPZPa6kI3dW1mJJk4IyRVydRGaUCEV2JTeEcQ4b71IZ5I+nJbbpeprj/hmDyoZlsJzXuyO",
+	"Z5PglEJSgV6Tio2zB1BOGk4oGEJ4jFOxj1p+ydjkiV1r1c81bvyMF0zBQ66sWFVTv3FnUgMlGs3OQEGz",
+	"3KeDamhioXYT+MsmFdxcj9KTKNxFJWGoeo2WeHVRp3Izyk6+dnUm/etLkm1ttvrRRvJhWsibLQJ1rIsI",
+	"xBX9SfMYcZL71sh+j1KFScsSJO2J5bH7c5xxqXy0D+PzFhhQq3IhZWSsWa5L1Z4lW2o0dNRuPpUNzNfX",
+	"8HcuEOFi1rjkszZ8JyDbvz2U2ssG0vxHLT/O7RYd4a+gIgFC6jgIMSjUdBRPftTqpZi/Zjldp4sq1SEV",
+	"JbQvbcZPBSQC8yqjRObjRcq9UqCmujnI/57SosRYTgd33KL9T/MY9CmPJxJmLmfkM1+Z0Cy7cekaDysB",
+	"SefVUmmP0ShdwFwbblUV2hphSf2S0C2IB1/tPXjAkCvV1YT65w9RrU2nAuW1S7hk3S65ZJ3ykQSPaY5v",
+	"chKw+A4vmMNL7V3HBRmQGMdz43GTfNJ1X5c9rHu9DorNHdzqluGXa1dXLj5sjE/hpsDoQ6ENei/FZtxS",
+	"ipfnQy9zYfjR/caVMW+7+V6rJWivpQue/lfzfrOwMVGpI9JpfrQx9tS1H0piDj9FXsKXqIPiva6BH2bE",
+	"dX53R+bxE3x5QQ6cDijZr71UrGeAsQflogs6hVDSH6GENAlyC52T47A8KsBhxNSQBvAXwP3XTw3ImvlC",
+	"1vIJU9ehR42gB8jtral7jGaK0rvoYNAEqLeR2s9uBWkTt93GyQna8EqZIPH2DLqyLkrJDi/ub1vN/a3m",
+	"hBY5k54iE8zWdRVIQF2R7HpgLSdz2+O9o4PjeqOOQrFk0avHVc5l+SO8gCMm9Ac3ZKwycBj9BmI1vz1Z",
+	"n7p2XGSWDYV8VKLNvIV28da/YxkHmSzz8ewJMz9INge9V4Jtj94hkZ4sDHnUImMS/TlnsP0vL95bXhij",
+	"FVNo0xZmmWSVVIBiEtjZVWqTe4AsnMjY59A3Je7JrJRhzLYaJrY3mUQsrIP8/a3Fw3g1gXCdSORDCp2h",
+	"S75W+vYr12hNoykWGr6vLd7agyE7oPn0tiGmI/bGu3kQjy+GmUF5Dw/3b/1eWb1xwaCU8Qc5BG7tzI42",
+	"5yB9r+ip8oWJs/bIHezlGJhXdM6VyCO5WEnSTJs60dbjSOKCGyPLjbvX1odp9UySgGZfXOKkH8LCbwS5",
+	"Lg6ZQ5lT5mZQ/aj/0K9BVZiwhBBOYJsQdkUIu8UEBQ3sOkWD3qkDvURcPdbeFMV+t+iwzWAVsrcmUnnq",
+	"jkguqVgzcKZdtASr1IINdUXbOztzzLfvvolBh4qrfwvesWlmnKHDfgvQqzJJhNF37sv/rSSYANsK/HJo",
+	"RK05Wmw8/l7pYq98uHVZRo31JvXeP9FoQ1+r+kQa+FRxwAylg/pMW02R6KipoUdcX2svvo1zmCpYuc2n",
+	"NoZPrRH9thwj4+S9w/2UFDZHX6gIzFvyDvbYN6jc/06MYFkzZeXyxF6ut4J5XVwUcjTOSHCDin40XFhc",
+	"yMm+gvKFF8aav9pgzLmDwkOc+xAeUhI9VKTxk0+jZfXcnMnGiweSd4Q722bWp7KuNowNgCHqKdrm1Y3H",
+	"Y7T0OPaOzWm6ZXGR28/VgwG1eu2qwM21blayGsU15NuqmhQunvFTtMht+cOEIctXa5uxhGcs+lBPAs5e",
+	"ezb0cSfi2a2DC8JLGIUZZzokw7SngxLlpO3q4PF9qD6kHrR06MjX79vJgS6wQhe45fs0IMrGmjTslYK3",
+	"3hRqJ+6qmx4Nb7zDt4dm4HaQ07VsaEsrUBReiMgs1bHsI7f4BWcp8gyLQCM2g6LNxH+0S4hrWrW/aXyz",
+	"KPaFaZ2fb1wu4dI8ze9nEYovLOL4NLR7Fvrz8BE00KZWDJaMIed9EHMHmkonXNWFyC0+gq/EKWSReHp7",
+	"I2GUWXJ4OAQslvbtxuaaG2zVvcw2aNf+LSDnwL/9m5ZLCrdELzz33Mm9PtFYwj7WOxpLBdn6RGPhaNs3",
+	"TNJuF4gkg5be0qLTnpDa9daDZ9sx8n/YGHkP/m+NiPjuYtp7EJsOoVmc2vYu5kuhf0Fh/b2NgvdINP4y",
+	"E2T6DKas45lcn9iHuU2dfNqQMLlRZfL5hKHauOjaxr9OtfK1G/CvmA+nqD9U/O9EPG+eyGTbdeX5FL28",
+	"j7+7EUcrzhmqRw+rptkoP2uUXquOPMrSQxwo+hxxo1T+NPCcY2Y8a2b3FlBC4udfIDEEYS2VdgrZdGQg",
+	"cjKfHx7o60tnEvH0yUwuP/Cfsf+MQek3Mrwn4PvRYvOXRSQtPLvWcGZYu2cuM5004+n8Sah47udR8Emx",
+	"IbpP0SaGQDakVOHBOzAmZfx1TLe873HVWm3BphtULcRac0e+BxR7yT/HsNdtFbEj1LkPF5JStJWirZST",
+	"QnWr+PJZoVDvDu5eWx2peJNAXy2V9CW0gGnVZHdBRervDRL0yoslXISNLCERT5tWMp5FssX/PwA=",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

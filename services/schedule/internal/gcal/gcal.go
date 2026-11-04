@@ -26,7 +26,7 @@ func NewReader(svc *calendarv3.Service) *Reader {
 	return &Reader{svc: svc}
 }
 
-// Events は、calendarID のカレンダーの、timeMin から timeMax までに重なる予定を、全てのページを読んで返す。
+// Events は、calendarID のカレンダーの、timeMin から timeMax までに重なる予定を、全てのページを読んで返す。timeMax が零の時刻なら、終わりで絞らない。
 // 繰り返しの予定は展開せず（singleEvents=false）、親の予定と、変えた回と取り消した回を返す。日時は Asia/Tokyo で返る。
 // Calendar API が 403 か 404 を返すと calendar.ErrUnreadable を、ほかの失敗では calendar.ErrUnavailable を包んだエラーを返す。
 // HTTP のエラーのレスポンスでは、*googleapi.Error も包む。エラーの文はカレンダー ID（職員のメールアドレスのことがある）を含まない。
@@ -34,9 +34,11 @@ func (r *Reader) Events(ctx context.Context, calendarID string, timeMin, timeMax
 	var events []calendar.Event
 	// singleEvents と showDeleted が false のとき、繰り返しの予定の取り消した回は cancelled で返る。
 	// 出典: https://developers.google.com/workspace/calendar/api/v3/reference/events/list
-	err := r.svc.Events.List(calendarID).
-		TimeMin(timeMin.Format(time.RFC3339)).
-		TimeMax(timeMax.Format(time.RFC3339)).
+	call := r.svc.Events.List(calendarID).TimeMin(timeMin.Format(time.RFC3339))
+	if !timeMax.IsZero() {
+		call = call.TimeMax(timeMax.Format(time.RFC3339))
+	}
+	err := call.
 		TimeZone(calendar.TimeZone).
 		SingleEvents(false).
 		ShowDeleted(false).
@@ -57,13 +59,15 @@ func (r *Reader) Events(ctx context.Context, calendarID string, timeMin, timeMax
 }
 
 // Instances は、繰り返しの親の予定 eventID の、timeMin から timeMax までに重なる回を、全てのページを読んで返す。
-// 取り消した回は返さない（showDeleted=false）。エラーは Events と同じである。
+// timeMax が零の時刻なら、終わりで絞らない。取り消した回は返さない（showDeleted=false）。エラーは Events と同じである。
 // 出典: https://developers.google.com/workspace/calendar/api/v3/reference/events/instances
 func (r *Reader) Instances(ctx context.Context, calendarID, eventID string, timeMin, timeMax time.Time) ([]calendar.Event, error) {
 	var events []calendar.Event
-	err := r.svc.Events.Instances(calendarID, eventID).
-		TimeMin(timeMin.Format(time.RFC3339)).
-		TimeMax(timeMax.Format(time.RFC3339)).
+	call := r.svc.Events.Instances(calendarID, eventID).TimeMin(timeMin.Format(time.RFC3339))
+	if !timeMax.IsZero() {
+		call = call.TimeMax(timeMax.Format(time.RFC3339))
+	}
+	err := call.
 		TimeZone(calendar.TimeZone).
 		ShowDeleted(false).
 		MaxResults(2500).

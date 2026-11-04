@@ -100,4 +100,44 @@ describe('createFakeBuddyApi', () => {
       code: 'google_primary',
     })
   })
+
+  it('予定の正本の切り替えを、始める、終わりの無い期間で取り込む、完了するの順に進め、完了すると buddy を正本にする', async () => {
+    const api = createFakeBuddyApi({ baseDate, sourceMode: 'google_primary', calendarSyncs: [] })
+    const cutover = await api.calendars.startCutover(MOCK_FACILITY_ID)
+    expect(cutover).toMatchObject({ status: 'open', range_start: '2026-10-01' })
+    expect((await api.schedules.list(MOCK_FACILITY_ID, range)).cutover).toMatchObject({
+      range_start: '2026-10-01',
+    })
+    await expect(
+      api.calendars.preview(MOCK_FACILITY_ID, 'calendar-1', {
+        range_start: '2026-10-01',
+        range_end: '2026-10-31',
+      }),
+    ).rejects.toMatchObject({ status: 400 })
+
+    const first = await api.calendars.completeCutover(MOCK_FACILITY_ID, cutover.id)
+    expect('unmet' in first && first.unmet.map((u) => u.reason)).toEqual([
+      'not_imported',
+      'not_imported',
+    ])
+    for (const id of ['calendar-1', 'calendar-2']) {
+      const cutoverRange = { range_start: '2026-10-01', range_end: null }
+      const preview = await api.calendars.preview(MOCK_FACILITY_ID, id, cutoverRange)
+      expect(preview.range_end).toBeNull()
+      await api.calendars.import(MOCK_FACILITY_ID, id, {
+        ...cutoverRange,
+        decisions: preview.needs_review.map((r) => ({
+          external_event_id: r.external_event_id,
+          revision: r.revision,
+          action: 'skip',
+        })),
+      })
+    }
+    const status = await api.calendars.cutoverStatus(MOCK_FACILITY_ID)
+    expect(status.calendars.every((c) => c.last_import?.range_end === null)).toBe(true)
+    const done = await api.calendars.completeCutover(MOCK_FACILITY_ID, cutover.id)
+    expect('completed' in done && done.completed.status).toBe('completed')
+    expect((await api.facilities.get(MOCK_FACILITY_ID)).sourceMode).toBe('buddy_primary')
+    expect((await api.calendars.cutoverStatus(MOCK_FACILITY_ID)).cutover).toBeNull()
+  })
 })

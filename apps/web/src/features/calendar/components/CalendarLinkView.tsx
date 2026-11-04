@@ -22,7 +22,7 @@ export type CalendarLinkViewProps = {
   copy?: (text: string) => Promise<void>
 }
 
-/** カレンダーの連携の画面の本文。タイトルと説明の文の下に、共有の手順と職員の一覧を並べる。 */
+/** カレンダーの連携の画面の本文。タイトル、予定の正本の切り替えへのリンク、説明の文の下に、共有の手順と職員の一覧を並べる。 */
 export const CalendarLinkView = ({
   state,
   onRetry,
@@ -32,7 +32,16 @@ export const CalendarLinkView = ({
   copy,
 }: CalendarLinkViewProps) => (
   <div className="flex flex-col gap-6">
-    <h1 className="text-heading-md">カレンダーの連携</h1>
+    <div className="flex flex-wrap items-baseline justify-between gap-3">
+      <h1 className="text-heading-md">カレンダーの連携</h1>
+      <a
+        className="inline-flex min-h-11 items-center rounded-8 px-2 text-label text-primary underline underline-offset-4 focus-visible:focus-ring"
+        data-testid="calendar-link-cutover"
+        href="/schedule/link/cutover"
+      >
+        予定の正本の切り替え
+      </a>
+    </div>
     <p className="max-w-3xl text-body">職員ごとに Google カレンダーを結び付けます。</p>
     {state.status === 'loading' && (
       <div data-testid="calendar-link-loading">

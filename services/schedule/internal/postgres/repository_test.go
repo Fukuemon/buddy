@@ -31,6 +31,8 @@ const (
 	seedGoogleFacility = "01MA0GP0000000000000000FAC"
 	seedOkada          = "01MA0GP0000000000000000STF"
 	seedOkadaCalendar  = "01MA0GP0000000000000000GCA"
+	// seedIshidaCalendar は、4 つ目の事業所（google_primary）の石田のカレンダーである。予定の正本の切り替えの E2E が使う。
+	seedIshidaCalendar = "01MA0CT0000000000000000GCA"
 	seedDepartment     = "01M3TC5HZ8A18D2TP3PTKDXJMN"
 	seedTeam           = "01M3TC5KXRSEVXQZ2MTJK9FS45"
 	seedLeader         = "01M3TC5PVG7W2H1H20W0T1ZVEJ"

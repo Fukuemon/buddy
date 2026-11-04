@@ -198,7 +198,7 @@ func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
 	source := gcal.NewReader(gcaltest.Start(t, srv))
 	tx := NewTransactor(testDB)
 	importCalendar := calendarimport.NewImport(calendars, sameAccount{source}, staffRefs, NewFacilityRepository(testDB), patients, recurring, masters,
-		types, recurring, schedules, visits, tx, ids, principal.RequireStaffManage)
+		types, recurring, schedules, visits, NewCalendarCutoverRepository(testDB), tx, ids, principal.RequireStaffManage)
 	rng, err := calendarimport.NewRange(civil.Date{Year: 2026, Month: 11, Day: 1}, civil.Date{Year: 2026, Month: 11, Day: 30})
 	if err != nil {
 		t.Fatal(err)
@@ -320,7 +320,7 @@ func TestCalendarSyncKeepsEndedPatientOnlyInPast(t *testing.T) {
 	source := gcal.NewReader(gcaltest.Start(t, srv))
 	tx := NewTransactor(testDB)
 	importCalendar := calendarimport.NewImport(calendars, sameAccount{source}, staffRefs, NewFacilityRepository(testDB), patients, recurring, masters,
-		types, recurring, schedules, visits, tx, ids, principal.RequireStaffManage)
+		types, recurring, schedules, visits, NewCalendarCutoverRepository(testDB), tx, ids, principal.RequireStaffManage)
 	rng, err := calendarimport.NewRange(civil.Date{Year: 2026, Month: 10, Day: 1}, civil.Date{Year: 2026, Month: 10, Day: 31})
 	if err != nil {
 		t.Fatal(err)

@@ -27,6 +27,16 @@ func (q *Queries) DeleteCalendarEventProjection(ctx context.Context, arg DeleteC
 	return err
 }
 
+const deleteCalendarEventProjectionsByFacility = `-- name: DeleteCalendarEventProjectionsByFacility :exec
+DELETE FROM calendar_event_projections WHERE facility_id = $1
+`
+
+// 事業所の全ての行を消す。切り替えを完了して、事業所を buddy_primary にするときに使う。
+func (q *Queries) DeleteCalendarEventProjectionsByFacility(ctx context.Context, facilityID string) error {
+	_, err := q.db.Exec(ctx, deleteCalendarEventProjectionsByFacility, facilityID)
+	return err
+}
+
 const deleteCalendarEventProjectionsEndedBefore = `-- name: DeleteCalendarEventProjectionsEndedBefore :exec
 DELETE FROM calendar_event_projections
 WHERE external_calendar_id = $1 AND last_end_date < $2::date

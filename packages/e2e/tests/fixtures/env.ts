@@ -71,6 +71,16 @@ export const OKADA = {
   externalCalendarId: '01MA0GP0000000000000000GCA',
 }
 
+/**
+ * シードの 4 つ目の事業所の職員。事業所は Google カレンダーを予定の正本にし（google_primary）、石田には calendarpit のカレンダーを
+ * 結び付けてある。予定の正本の切り替えの spec だけが使う。切り替えを完了すると事業所は buddy_primary に移り、戻せない。
+ */
+export const ISHIDA = {
+  email: 'ren.ishida@example.com',
+  staff: { id: '01MA0CT0000000000000000STF', name: '石田 蓮' },
+  calendarId: 'ren.ishida@example.com',
+}
+
 /** シードの職員の佐藤。Google カレンダーとの同期の spec が、佐藤にカレンダーを結び付ける。 */
 export const SATO = { ...TEAM_MEMBER, calendarId: 'misaki.sato@example.com' }
 
@@ -133,6 +143,9 @@ export const LOGIN_STATE = savedLoginPath(AUTH_DIR, BASE_URL, 'aoki')
 
 /** Google カレンダーを正本にする事業所の岡田でログインした状態のファイル。setup が書き、その事業所の spec が storageState に渡す。 */
 export const OKADA_STATE = savedLoginPath(AUTH_DIR, BASE_URL, 'okada')
+
+/** 予定の正本の切り替えを確認する事業所の石田でログインした状態のファイル。setup が書き、切り替えの spec が storageState に渡す。 */
+export const ISHIDA_STATE = savedLoginPath(AUTH_DIR, BASE_URL, 'ishida')
 
 /** リーダーでログインした状態のファイル。setup が書き、リーダーの spec が storageState に渡す。 */
 export const LEADER_STATE = savedLoginPath(AUTH_DIR, BASE_URL, 'mori')

@@ -11,6 +11,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
@@ -342,5 +343,34 @@ func TestSchedulesListGooglePrimaryReviewReasons(t *testing.T) {
 	if v.ReviewReason != "" || v.TypeName != schedule.Visit || v.TypeID != visitTypeID || v.Title != nil || v.Visit == nil ||
 		v.Visit.PatientID != patientID || v.Visit.PatientName != patientName || v.Visit.ServiceCodeID != codeID || v.Visit.AssignedStaffID != staffID {
 		t.Errorf("訪問の予定 = %+v, Visit = %+v", v, v.Visit)
+	}
+}
+
+// TestSchedulesListGooglePrimaryCutover は、google_primary の事業所の一覧が、open の切り替えの間だけ切り替えを返し、
+// 切り替えの間も Projection を読むことを確認する（ADR-0035）。
+func TestSchedulesListGooglePrimaryCutover(t *testing.T) {
+	s := googleStore()
+	putEvent(s, ownCalendarID, "own", "研修", tokyo(10, 20, 13), 60, nil)
+	list, err := newSchedules(s).List(viewerCtx(), facilityID, october())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if list.Cutover != nil {
+		t.Errorf("切り替えの前 = %+v, want nil", list.Cutover)
+	}
+	started := tokyo(10, 5, 9)
+	s.Cutovers["CUT"] = calendarimport.Cutover{
+		ID: "CUT", FacilityID: facilityID, Status: calendarimport.CutoverOpen, RangeStart: civil.Date{Year: 2026, Month: 10, Day: 1}, StartedAt: started,
+	}
+	s.Cutovers["OLD"] = calendarimport.Cutover{ID: "OLD", FacilityID: facilityID, Status: calendarimport.CutoverCanceled}
+	list, err = newSchedules(s).List(viewerCtx(), facilityID, october())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if list.Cutover == nil || !list.Cutover.StartedAt.Equal(started) || list.Cutover.RangeStart != (civil.Date{Year: 2026, Month: 10, Day: 1}) {
+		t.Errorf("切り替え = %+v", list.Cutover)
+	}
+	if len(list.Schedules) != 1 || list.Schedules[0].Source != scheduleview.SourceGoogleCalendar {
+		t.Errorf("予定 = %+v, want 切り替えの間も Projection を読む", list.Schedules)
 	}
 }

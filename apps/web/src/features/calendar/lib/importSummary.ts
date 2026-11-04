@@ -46,9 +46,11 @@ export const toDecisions = (
     ]
   })
 
-/** 確定して取り込むを押せるかを返す。取り込む予定か確認が必要な予定があり、全てを選び終えたときに押せる。 */
+/**
+ * 確定して取り込むを押せるかを返す。取り込む予定か、確認が必要な予定か、切り替えの取り込みで上書きする予定があり、全てを選び終えたときに押せる。
+ */
 export const canSubmitImport = (preview: ImportPreview, choices: ReviewChoices) =>
-  (preview.counts.import > 0 || preview.needs_review.length > 0) &&
+  (preview.counts.import > 0 || preview.needs_review.length > 0 || preview.counts.overwrite > 0) &&
   countRemaining(preview.needs_review, choices) === 0
 
 /**
@@ -58,6 +60,7 @@ export const canSubmitImport = (preview: ImportPreview, choices: ReviewChoices) 
 export const isAllImported = (preview: ImportPreview) =>
   preview.counts.import === 0 &&
   preview.needs_review.length === 0 &&
+  preview.counts.overwrite === 0 &&
   preview.counts.already_imported > 0 &&
   !preview.skipped.some(
     (item) => item.reason === 'staff_on_leave' || item.reason === 'staff_non_visiting',
@@ -105,6 +108,12 @@ export const previewCountBoxes = ({ counts }: ImportPreview): CountBox[] => {
       note: `繰り返しとして ${counts.recurring_as_rule} 件、1 回ずつに分ける ${counts.recurring_expanded} 件`,
     },
     { key: 'needs_review', label: '確認が必要', count: counts.needs_review, note: '' },
+    {
+      key: 'overwrite',
+      label: '上書き',
+      count: counts.overwrite,
+      note: '取り込んだ後に Google で変わったか消えた予定を、Google の今の内容で取り込み直す',
+    },
     { key: 'already_imported', label: '取り込み済み', count: counts.already_imported, note: '' },
   ])
 }

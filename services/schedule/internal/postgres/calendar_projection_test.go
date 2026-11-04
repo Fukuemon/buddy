@@ -293,8 +293,8 @@ func TestCalendarSyncClaimsByMode(t *testing.T) {
 	if _, err := r.Claim(ctx, 0, time.Minute, nil); err != nil {
 		t.Fatal(err)
 	}
-	if b, err := r.Backlog(ctx, googlePrimary); err != nil || b.OverdueCount != 1 {
-		t.Errorf("google_primary の Backlog = %+v, %v, want 岡田のカレンダーの 1 件", b, err)
+	if b, err := r.Backlog(ctx, googlePrimary); err != nil || b.OverdueCount != 2 {
+		t.Errorf("google_primary の Backlog = %+v, %v, want 岡田と石田のカレンダーの 2 件", b, err)
 	}
 	if b, err := r.Backlog(ctx, buddyPrimary); err != nil || b.OverdueCount != 1 {
 		t.Errorf("buddy_primary の Backlog = %+v, %v, want 森のカレンダーの 1 件", b, err)
@@ -303,10 +303,11 @@ func TestCalendarSyncClaimsByMode(t *testing.T) {
 		t.Errorf("モードを渡さない Backlog = %+v, %v, want 0 件", b, err)
 	}
 	claimed, err := r.Claim(ctx, 10, time.Minute, googlePrimary)
-	if err != nil || !slices.Equal(ids(claimed), []string{seedOkadaCalendar}) {
-		t.Fatalf("google_primary の Claim = %v, %v, want 岡田のカレンダーだけ", ids(claimed), err)
+	if err != nil || !slices.Equal(ids(claimed), []string{seedIshidaCalendar, seedOkadaCalendar}) {
+		t.Fatalf("google_primary の Claim = %v, %v, want 石田と岡田のカレンダーだけ", ids(claimed), err)
 	}
-	if st := claimed[0]; st.Calendar.FacilityID != seedGoogleFacility || st.Calendar.StaffID != seedOkada || st.Calendar.CalendarID != "aoi.okada@example.com" {
+	okada := slices.IndexFunc(claimed, func(s calendarsync.SyncState) bool { return s.Calendar.ID == seedOkadaCalendar })
+	if st := claimed[okada]; st.Calendar.FacilityID != seedGoogleFacility || st.Calendar.StaffID != seedOkada || st.Calendar.CalendarID != "aoi.okada@example.com" {
 		t.Errorf("取った岡田のカレンダー = %+v", st.Calendar)
 	}
 	if claimed, err := r.Claim(ctx, 10, time.Minute, nil); err != nil || len(claimed) != 0 {

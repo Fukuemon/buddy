@@ -1,7 +1,8 @@
-import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
+import { type QueryClient, queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import type {
+  CalendarCutover,
   CalendarExport,
   ExternalCalendar,
   FacilityId,
@@ -137,7 +138,7 @@ export const usePreviewImport = () => {
   })
 }
 
-/** 予定を取り込む mutation。成功したら、カレンダーの最後の取り込みと予定を読み直す。 */
+/** 予定を取り込む mutation。成功したら、カレンダーの最後の取り込みと予定と、切り替えの最後の取り込みを読み直す。 */
 export const useImportCalendar = () => {
   const { api, facilityId } = useBuddyApi()
   const queryClient = useQueryClient()
@@ -155,6 +156,60 @@ export const useImportCalendar = () => {
       Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.calendars.list(facilityId) }),
         queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all(facilityId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.calendars.cutover(facilityId) }),
       ]),
+  })
+}
+
+/** 予定の正本の切り替えの状況の query。open の切り替えが無ければ cutover は null である。 */
+export const cutoverStatusQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
+  queryOptions({
+    queryKey: queryKeys.calendars.cutover(facilityId),
+    queryFn: () => api.calendars.cutoverStatus(facilityId),
+  })
+
+/** 切り替えの操作の後に読み直す query。切り替えの状況、事業所の正本、カレンダーの最後の取り込み、予定の一覧の「切り替え中」の表示である。 */
+const invalidateCutover = (queryClient: QueryClient, facilityId: FacilityId) =>
+  Promise.all(
+    [
+      queryKeys.calendars.cutover(facilityId),
+      queryKeys.facilityDetail(facilityId),
+      queryKeys.calendars.list(facilityId),
+      queryKeys.schedules.all(facilityId),
+    ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+  )
+
+/** 予定の正本の切り替えを始める mutation。成否によらず、切り替えの状況と予定を読み直す。 */
+export const useStartCutover = () => {
+  const { api, facilityId } = useBuddyApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.calendars.startCutover(facilityId),
+    onSettled: () => invalidateCutover(queryClient, facilityId),
+  })
+}
+
+/**
+ * 切り替えを完了する mutation。完了の確認を満たさなければ、data に満たさないカレンダーと予定（unmet）を持つ。
+ * 成否によらず、切り替えの状況、事業所の正本、予定を読み直す。
+ */
+export const useCompleteCutover = () => {
+  const { api, facilityId } = useBuddyApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (cutoverId: CalendarCutover['id']) =>
+      api.calendars.completeCutover(facilityId, cutoverId),
+    onSettled: () => invalidateCutover(queryClient, facilityId),
+  })
+}
+
+/** 切り替えをやめる mutation。成否によらず、切り替えの状況と予定を読み直す。 */
+export const useCancelCutover = () => {
+  const { api, facilityId } = useBuddyApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (cutoverId: CalendarCutover['id']) =>
+      api.calendars.cancelCutover(facilityId, cutoverId),
+    onSettled: () => invalidateCutover(queryClient, facilityId),
   })
 }

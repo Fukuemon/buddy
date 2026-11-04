@@ -429,7 +429,7 @@ func TestCalendarSyncFinishesAfterShutdown(t *testing.T) {
 	}, calendarsync.Appliers{
 		organization.SourceGooglePrimary: calendarsync.NewProjectionApplier(NewCalendarProjectionRepository(pool), log),
 	}, NewTransactor(pool), time.Hour, log)
-	if n, err := syncer.SyncDue(ctx); err != nil || n != 1 {
+	if n, err := syncer.SyncDue(ctx); err != nil || n != 2 {
 		t.Fatalf("SyncDue = %d, %v", n, err)
 	}
 	var status string
@@ -443,7 +443,7 @@ func TestCalendarSyncFinishesAfterShutdown(t *testing.T) {
 	if status != string(calendarsync.SyncNever) || locked {
 		t.Errorf("止めた後の同期の状態: last_status = %s, locked = %v", status, locked)
 	}
-	if again, err := NewCalendarSyncRepository(pool).Claim(context.Background(), 5, time.Minute, googlePrimary); err != nil || len(again) != 1 {
+	if again, err := NewCalendarSyncRepository(pool).Claim(context.Background(), 5, time.Minute, googlePrimary); err != nil || len(again) != 2 {
 		t.Errorf("止めた後に次の処理が取れない: %+v, %v", again, err)
 	}
 }

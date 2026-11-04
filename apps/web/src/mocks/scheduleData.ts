@@ -581,7 +581,8 @@ export const exportOfIssue = (
 export const createMockImportPreview = (
   range: Schemas['ImportRange'],
 ): Schemas['ImportPreview'] => ({
-  ...range,
+  range_start: range.range_start,
+  range_end: range.range_end ?? null,
   counts: {
     import: 18,
     import_visit: 15,
@@ -593,6 +594,7 @@ export const createMockImportPreview = (
     needs_review: 2,
     skipped: 3,
     already_imported: 0,
+    overwrite: 0,
   },
   needs_review: [
     {
@@ -700,5 +702,40 @@ export const createMockImportResult = (
     already_imported_count: preview.counts.already_imported,
     started_at: '2026-10-22T01:00:00Z',
     finished_at: '2026-10-22T01:00:03Z',
+  }
+}
+
+/**
+ * 予定の正本の切り替えの間のプレビューの結果。期間は終わりを持たず、隔週の繰り返しの予定を、規則を buddy に写せない確認が必要な予定にする。
+ * 取り込んだ後に Google で変わった予定が 1 件ある。
+ */
+export const createMockCutoverPreview = (rangeStart: string): Schemas['ImportPreview'] => {
+  const preview = createMockImportPreview({ range_start: rangeStart, range_end: null })
+  return {
+    ...preview,
+    counts: {
+      ...preview.counts,
+      expanded_occurrences: 0,
+      recurring: 2,
+      recurring_expanded: 0,
+      needs_review: preview.counts.needs_review + 1,
+      overwrite: 1,
+    },
+    needs_review: [
+      ...preview.needs_review,
+      {
+        external_event_id: 'event-biweekly',
+        revision: 'rev-biweekly',
+        date: '2026-11-10',
+        start_time: '16:00',
+        end_time: '17:00',
+        ends_next_day: false,
+        service: '',
+        client_name: '',
+        reason: 'recurrence_unsupported',
+        recurrence: null,
+        candidates: [],
+      },
+    ],
   }
 }

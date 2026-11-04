@@ -85,6 +85,7 @@ func (s server) ListSchedules(ctx context.Context, req openapi.ListSchedulesRequ
 		RecurringSchedules: mapSlice(list.RecurringSchedules, toRecurringSchedule),
 		SourceMode:         openapi.SourceMode(list.SourceMode),
 		CalendarSyncs:      mapSlice(list.CalendarSyncs, toCalendarSyncStatus),
+		Cutover:            toOpenCalendarCutover(list.Cutover),
 	}, nil
 }
 

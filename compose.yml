@@ -70,7 +70,7 @@ services:
       postgres: { condition: service_healthy }
 
   # 事業所の上流の IdP のフェイク（mock-oauth2-server）。パスの最初の部分が issuer になるので、
-  # 1 つのコンテナで 3 つの事業所の IdP（/office-a、/office-b、/office-c）を立てる。
+  # 1 つのコンテナで 4 つの事業所の IdP（/office-a、/office-b、/office-c、/office-d）を立てる。
   # ログインの画面で入れた名前が sub に、クレームの欄に書いた JSON（email と email_verified）が ID token のクレームになる
   idp:
     image: ghcr.io/navikt/mock-oauth2-server:6.0.4

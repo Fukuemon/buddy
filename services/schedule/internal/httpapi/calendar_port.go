@@ -17,6 +17,10 @@ type CalendarApp struct {
 	Unlink           func(ctx context.Context, id string) error
 	Preview          func(ctx context.Context, id string, rng calendarimport.Range) (calendarimport.ImportPreview, error)
 	Import           func(ctx context.Context, id string, rng calendarimport.Range, decisions []calendarimport.Decision) (calendarimport.ImportResult, error)
+	GetCutover       func(ctx context.Context, facilityID string) (calendarimport.CutoverState, error)
+	StartCutover     func(ctx context.Context, facilityID string) (calendarimport.Cutover, error)
+	CompleteCutover  func(ctx context.Context, id string) (calendarimport.Cutover, error)
+	CancelCutover    func(ctx context.Context, id string) (calendarimport.Cutover, error)
 	ListExportIssues func(ctx context.Context, facilityID string) ([]calendar.ExportIssue, error)
 	RetryExport      func(ctx context.Context, id string) (calendar.Export, error)
 	AcceptExport     func(ctx context.Context, id string) (calendar.Export, error)

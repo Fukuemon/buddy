@@ -32,6 +32,7 @@ import { Route as StaffNewRouteImport } from './routes/staff.new'
 import { Route as StaffStaffIdRouteImport } from './routes/staff_.$staffId'
 import { Route as ScheduleScheduleIdIndexRouteImport } from './routes/schedule.$scheduleId.index'
 import { Route as ScheduleScheduleIdEditRouteImport } from './routes/schedule.$scheduleId.edit'
+import { Route as ScheduleLinkCutoverRouteImport } from './routes/schedule_.link_.cutover'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -148,6 +149,11 @@ const ScheduleScheduleIdEditRoute = ScheduleScheduleIdEditRouteImport.update({
   path: '/$scheduleId/edit',
   getParentRoute: () => ScheduleRoute,
 } as any)
+const ScheduleLinkCutoverRoute = ScheduleLinkCutoverRouteImport.update({
+  id: '/schedule_/link_/cutover',
+  path: '/schedule/link/cutover',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -172,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/staff/$staffId': typeof StaffStaffIdRoute
   '/receipt/': typeof ReceiptIndexRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
+  '/schedule/link/cutover': typeof ScheduleLinkCutoverRoute
   '/schedule/$scheduleId/': typeof ScheduleScheduleIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -197,6 +204,7 @@ export interface FileRoutesByTo {
   '/staff/$staffId': typeof StaffStaffIdRoute
   '/receipt': typeof ReceiptIndexRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
+  '/schedule/link/cutover': typeof ScheduleLinkCutoverRoute
   '/schedule/$scheduleId': typeof ScheduleScheduleIdIndexRoute
 }
 export interface FileRoutesById {
@@ -223,6 +231,7 @@ export interface FileRoutesById {
   '/staff_/$staffId': typeof StaffStaffIdRoute
   '/receipt/': typeof ReceiptIndexRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
+  '/schedule_/link_/cutover': typeof ScheduleLinkCutoverRoute
   '/schedule/$scheduleId/': typeof ScheduleScheduleIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -250,6 +259,7 @@ export interface FileRouteTypes {
     | '/staff/$staffId'
     | '/receipt/'
     | '/schedule/$scheduleId/edit'
+    | '/schedule/link/cutover'
     | '/schedule/$scheduleId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -275,6 +285,7 @@ export interface FileRouteTypes {
     | '/staff/$staffId'
     | '/receipt'
     | '/schedule/$scheduleId/edit'
+    | '/schedule/link/cutover'
     | '/schedule/$scheduleId'
   id:
     | '__root__'
@@ -300,6 +311,7 @@ export interface FileRouteTypes {
     | '/staff_/$staffId'
     | '/receipt/'
     | '/schedule/$scheduleId/edit'
+    | '/schedule_/link_/cutover'
     | '/schedule/$scheduleId/'
   fileRoutesById: FileRoutesById
 }
@@ -322,6 +334,7 @@ export interface RootRouteChildren {
   ScheduleReviewRoute: typeof ScheduleReviewRoute
   StaffStaffIdRoute: typeof StaffStaffIdRoute
   ReceiptIndexRoute: typeof ReceiptIndexRoute
+  ScheduleLinkCutoverRoute: typeof ScheduleLinkCutoverRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -487,6 +500,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ScheduleScheduleIdEditRouteImport
       parentRoute: typeof ScheduleRoute
     }
+    '/schedule_/link_/cutover': {
+      id: '/schedule_/link_/cutover'
+      path: '/schedule/link/cutover'
+      fullPath: '/schedule/link/cutover'
+      preLoaderRoute: typeof ScheduleLinkCutoverRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -547,17 +567,8 @@ const rootRouteChildren: RootRouteChildren = {
   ScheduleReviewRoute: ScheduleReviewRoute,
   StaffStaffIdRoute: StaffStaffIdRoute,
   ReceiptIndexRoute: ReceiptIndexRoute,
+  ScheduleLinkCutoverRoute: ScheduleLinkCutoverRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

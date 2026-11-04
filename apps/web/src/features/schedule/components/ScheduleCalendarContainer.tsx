@@ -129,6 +129,7 @@ export const ScheduleCalendarContainer = ({
         <div className="px-2 pb-2 desktop:px-6">
           <SourceNoticesWithNow
             calendarSyncs={schedulesQuery.data?.calendarSyncs ?? []}
+            cutover={schedulesQuery.data?.cutover ?? null}
             needsReview={schedulesQuery.data?.needsReview ?? []}
             onOpenSchedule={openDetail}
             sourceMode={sourceMode}

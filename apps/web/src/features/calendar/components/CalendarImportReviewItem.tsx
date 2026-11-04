@@ -21,13 +21,20 @@ const ACTIONS: { action: ImportAction; label: string; testid: string }[] = [
   { action: 'skip', label: '取り込まない', testid: 'skip' },
 ]
 
-const reasonLabel = (item: ImportReviewItem) =>
-  item.reason === 'patient_ambiguous'
-    ? `同じ名前の利用者が ${item.candidates.length} 人いる`
-    : '利用者が見つからない'
+const reasonLabel = (item: ImportReviewItem) => {
+  switch (item.reason) {
+    case 'patient_ambiguous':
+      return `同じ名前の利用者が ${item.candidates.length} 人いる`
+    case 'recurrence_unsupported':
+      return '繰り返しの規則を buddy に写せない'
+    default:
+      return '利用者が見つからない'
+  }
+}
 
 /**
- * タイトルから利用者を 1 人に決められなかった予定 1 件と、その取り込み方の選択。
+ * タイトルから利用者を 1 人に決められなかった予定か、繰り返しの規則を buddy に写せない予定 1 件と、その取り込み方の選択。
+ * 規則に写せない予定（予定の正本の切り替えの取り込みだけが返す）は、取り込まないだけを選べる。
  * 「利用者を選ぶ」を選ぶと、利用者の欄を出す。同じ名前の利用者は、担当の職員の名前を添えて先に並べる。
  */
 export const CalendarImportReviewItem = ({
@@ -42,6 +49,8 @@ export const CalendarImportReviewItem = ({
   const patientFieldId = useId()
   const [filter, setFilter] = useState('')
   const dateTime = formatReviewDateTime(item)
+  const isUnsupported = item.reason === 'recurrence_unsupported'
+  const actions = isUnsupported ? ACTIONS.filter(({ action }) => action === 'skip') : ACTIONS
   const candidateIds = new Set(item.candidates.map((c) => c.patient_id))
   const query = filter.trim()
   const matches = (name: string) => query === '' || name.includes(query)
@@ -59,10 +68,18 @@ export const CalendarImportReviewItem = ({
     >
       <div className="flex flex-col gap-0.5">
         <strong className="text-label">{dateTime}</strong>
-        <span className="text-body">
-          タイトルから読んだ利用者: {item.client_name}（{item.service}）
-        </span>
+        {item.client_name !== '' && (
+          <span className="text-body">
+            タイトルから読んだ利用者: {item.client_name}（{item.service}）
+          </span>
+        )}
         <span className="text-label">{reasonLabel(item)}</span>
+        {isUnsupported && (
+          <span className="text-caption text-text-secondary">
+            隔週や複数の曜日のような規則は、buddy の繰り返しにできません。Google
+            カレンダーで規則を直してから取り込み直すか、取り込まないを選んでください
+          </span>
+        )}
         {item.recurrence !== null && (
           <span className="text-caption text-text-secondary">
             {formatRecurrence(item.recurrence)}。選んだ取り込み方は全ての回に当てる
@@ -73,7 +90,7 @@ export const CalendarImportReviewItem = ({
         <legend className="sr-only" id={legendId}>
           {dateTime}の予定の取り込み方
         </legend>
-        {ACTIONS.map(({ action, label, testid }) => (
+        {actions.map(({ action, label, testid }) => (
           <label className="flex min-h-11 cursor-pointer items-center gap-2 text-body" key={action}>
             <input
               checked={choice?.action === action}

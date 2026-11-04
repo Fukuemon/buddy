@@ -93,9 +93,9 @@ type Changes struct {
 // EventSource は、外部のカレンダーから期間の予定を読む。エラーは ErrUnreadable か ErrUnavailable を包む。
 type EventSource interface {
 	// Events は、calendarID のカレンダーの、timeMin から timeMax までに重なる予定を、
-	// 繰り返しの親の予定と例外の回を展開せずに返す。
+	// 繰り返しの親の予定と例外の回を展開せずに返す。timeMax が零の時刻なら、終わりで絞らない。
 	Events(ctx context.Context, calendarID string, timeMin, timeMax time.Time) ([]Event, error)
-	// Instances は、繰り返しの親の予定 eventID の、timeMin から timeMax までに重なる回を返す。
+	// Instances は、繰り返しの親の予定 eventID の、timeMin から timeMax までに重なる回を返す。timeMax が零の時刻なら、終わりで絞らない。
 	// 変えた回は例外の回の値で返り、取り消した回は返らない。
 	Instances(ctx context.Context, calendarID, eventID string, timeMin, timeMax time.Time) ([]Event, error)
 	// Check は、calendarID のカレンダーの予定を読めるかを確認する。

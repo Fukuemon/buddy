@@ -932,6 +932,99 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/facilities/{facility_id}/calendar_cutover_status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 予定の正本の切り替えの状況を取得する
+         * @description 事業所の open の切り替えと、外していない全てのカレンダーの同期の状況と、この切り替えで最後に成功した取り込みを返す（ADR-0035）。
+         *     open の切り替えが無ければ、cutover は null で、カレンダーの last_import は null である。
+         *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        get: operations["getCalendarCutoverStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/facilities/{facility_id}/calendar_cutovers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 予定の正本の切り替えを始める
+         * @description Google カレンダーを予定の正本にする事業所（google_primary）で、予定の正本を buddy に切り替える作業（切り替え）を始める（ADR-0035）。
+         *     取り込みの期間は、今の Asia/Tokyo の月の初日から先の全てで、終わりを持たない。
+         *     始めると、カレンダーごとに、取り込みのプレビューと確定（期間は range_start が切り替えの range_start、range_end が null）で取り込む。
+         *     画面と照合は、切り替えの間も Google カレンダーの予定の写し（Projection）を読む。
+         *     外していない全てのカレンダーの最後の同期が成功していることを条件にする。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        post: operations["startCalendarCutover"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/calendar_cutovers/{calendar_cutover_id}/completions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 予定の正本の切り替えを完了する
+         * @description Google カレンダーを切り替えの月の初日から先の全てで読み直し、事業所の行を排他のロックで取って、カレンダーごとに次の 3 つを確認する（ADR-0035）。
+         *     最後の取り込みの後に同期が成功している。読み直した予定が全て、予定の対応を持つか取り込まないと決めた予定で、規則に写せない繰り返しの予定が残っていない。
+         *     予定の対応の etag と Google の etag が同じである。
+         *     満たせば、事業所を buddy_primary にし、事業所の Projection の行を消し、切り替えを completed にする。同期をやめ、書き出しを始める。
+         *     満たさなければ、何も書かずに 409（cutover_incomplete）で満たさないカレンダーと予定の一覧を返し、切り替えを open のままにする。
+         *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        post: operations["createCalendarCutoverCompletion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/calendar_cutovers/{calendar_cutover_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 予定の正本の切り替えをやめる
+         * @description この切り替えの取り込みで作った buddy の予定、繰り返しの予定、訪問の情報、予定の対応を消し、切り替えを canceled にする（ADR-0035）。
+         *     事業所は Google カレンダーを予定の正本にしたままで、画面と照合は Projection を読み続ける。やめた後に、もう一度始められる。
+         *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         */
+        post: operations["cancelCalendarCutover"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -948,7 +1041,7 @@ export interface components {
         Time: string;
         Error: {
             /** @enum {string} */
-            code: "invalid_input" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "internal" | "calendar_unreadable" | "calendar_unavailable" | "calendar_not_configured" | "calendar_taken" | "calendar_already_linked" | "staff_has_calendar" | "import_running" | "import_preview_changed" | "export_not_in_review" | "export_not_acceptable" | "external_change_unappliable" | "google_primary" | "staff_has_assignments" | "patient_has_schedules";
+            code: "invalid_input" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "internal" | "calendar_unreadable" | "calendar_unavailable" | "calendar_not_configured" | "calendar_taken" | "calendar_already_linked" | "staff_has_calendar" | "import_running" | "import_preview_changed" | "export_not_in_review" | "export_not_acceptable" | "external_change_unappliable" | "google_primary" | "staff_has_assignments" | "patient_has_schedules" | "cutover_open" | "cutover_not_google_primary" | "cutover_sync_not_ready" | "cutover_not_open" | "cutover_incomplete";
             /** @description 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う */
             message: string;
         };
@@ -1347,8 +1440,8 @@ export interface components {
         ImportRun: {
             id: components["schemas"]["ID"];
             range_start: components["schemas"]["Date"];
-            /** @description この日を含む */
-            range_end: components["schemas"]["Date"];
+            /** @description この日を含む。切り替えの取り込みでは、期間が終わりを持たないので null */
+            range_end: (string & components["schemas"]["Date"]) | null;
             /** @enum {string} */
             status: "running" | "succeeded" | "failed";
             imported_count: number;
@@ -1416,11 +1509,15 @@ export interface components {
             /** @description 最も新しく始めた取り込み。取り込んだことが無ければ null */
             last_import: components["schemas"]["ImportRun"] | null;
         };
+        /**
+         * @description 事業所に open の予定の正本の切り替えがあるときは、range_start を切り替えの range_start にし、range_end を省くか null にする（ADR-0035）。
+         *     ほかの期間は 400 になる。open の切り替えが無いときは、range_end を省けない。
+         */
         ImportRange: {
             /** @description 期間の最初の日。この日から range_end までに始まる予定を取り込む */
             range_start: components["schemas"]["Date"];
-            /** @description 期間の最後の日。この日を含む。range_start 以降で、range_start から 1 年未満の日 */
-            range_end: components["schemas"]["Date"];
+            /** @description 期間の最後の日。この日を含む。range_start 以降で、range_start から 1 年未満の日。切り替えの取り込みでは null */
+            range_end?: (string & components["schemas"]["Date"]) | null;
         };
         /** @description 件数は Google の予定の数で数え、繰り返しのまま取り込む予定は 1 件、回ごとにした予定は 1 回を 1 件に数える。 */
         ImportCounts: {
@@ -1444,6 +1541,8 @@ export interface components {
             skipped: number;
             /** @description 前の取り込みで取り込んだ予定の数 */
             already_imported: number;
+            /** @description 切り替えの取り込みで、取り込んだ後に Google で変わったか消えた予定の数。確定すると buddy の写しを消し、Google の今の内容で取り込み直す。ほかの取り込みでは 0 */
+            overwrite: number;
         };
         PatientCandidate: {
             patient_id: components["schemas"]["ID"];
@@ -1466,10 +1565,11 @@ export interface components {
             /** @description タイトルから読んだ利用者名 */
             client_name: string;
             /**
-             * @description patient_not_found は利用者がいない、patient_ambiguous は同じ名前の利用者が 2 人以上いる
+             * @description patient_not_found は利用者がいない、patient_ambiguous は同じ名前の利用者が 2 人以上いる。
+             *     recurrence_unsupported は buddy の繰り返しの規則に写せない繰り返しの予定で、切り替えの取り込みだけが返し、回に展開しない。取り込み方は skip だけを選べる
              * @enum {string}
              */
-            reason: "patient_not_found" | "patient_ambiguous";
+            reason: "patient_not_found" | "patient_ambiguous" | "recurrence_unsupported";
             /** @description 繰り返しのまま取り込む予定の規則。ほかの予定では null */
             recurrence: components["schemas"]["RecurringRule"] | null;
             /** @description 同じ名前の利用者。patient_not_found では空 */
@@ -1496,7 +1596,8 @@ export interface components {
         };
         ImportPreview: {
             range_start: components["schemas"]["Date"];
-            range_end: components["schemas"]["Date"];
+            /** @description 切り替えの取り込みでは、期間が終わりを持たないので null */
+            range_end: (string & components["schemas"]["Date"]) | null;
             counts: components["schemas"]["ImportCounts"];
             /** @description 取り込み方を選ぶ予定。日時の順 */
             needs_review: components["schemas"]["ImportReviewItem"][];
@@ -1508,7 +1609,8 @@ export interface components {
             /** @description 取り込み方を選んだプレビューの needs_review の revision。確定のときのバージョンと違えば 409（import_preview_changed）になる */
             revision: string;
             /**
-             * @description patient は選んだ利用者の訪問の予定に、normal は外部の予定のタイトルを buddy の予定のタイトルにした通常の予定にし、skip は取り込まない
+             * @description patient は選んだ利用者の訪問の予定に、normal は外部の予定のタイトルを buddy の予定のタイトルにした通常の予定にし、skip は取り込まない。
+             *     reason が recurrence_unsupported の予定は skip だけを受ける
              * @enum {string}
              */
             action: "patient" | "normal" | "skip";
@@ -1519,6 +1621,76 @@ export interface components {
             external_calendar_id: components["schemas"]["ID"];
             /** @description 前の取り込みで取り込んでいて、今回は書かなかった予定の数 */
             already_imported_count: number;
+        };
+        /** @description 事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（ADR-0035） */
+        CalendarCutover: {
+            id: components["schemas"]["ID"];
+            facility_id: components["schemas"]["ID"];
+            /**
+             * @description open は切り替え中、completed は完了して事業所を buddy_primary にした、canceled はやめた
+             * @enum {string}
+             */
+            status: "open" | "completed" | "canceled";
+            /** @description 取り込みの期間の最初の日。切り替えを始めた月の初日で、期間は終わりを持たない */
+            range_start: components["schemas"]["Date"];
+            started_by: components["schemas"]["ID"];
+            /** Format: date-time */
+            started_at: string;
+            /**
+             * Format: date-time
+             * @description 完了したかやめた時刻。open なら null
+             */
+            finished_at: string | null;
+        };
+        /** @description 切り替えの状況のうち、結び付けたカレンダー 1 つの同期の状況と、この切り替えで最後に成功した取り込み */
+        CalendarCutoverCalendar: components["schemas"]["CalendarSyncStatus"] & {
+            /** @description この切り替えで最後に成功した取り込み。取り込んでいないか、open の切り替えが無ければ null */
+            last_import: components["schemas"]["ImportRun"] | null;
+        };
+        CalendarCutoverState: {
+            /** @description open の切り替え。無ければ null */
+            cutover: components["schemas"]["CalendarCutover"] | null;
+            /** @description 事業所の外していない全てのカレンダー */
+            calendars: components["schemas"]["CalendarCutoverCalendar"][];
+        };
+        /** @description 切り替えの完了の確認を満たさないカレンダーか予定。予定のタイトルは利用者名を含むので返さない */
+        CalendarCutoverUnmet: {
+            external_calendar_id: components["schemas"]["ID"];
+            staff_id: components["schemas"]["ID"];
+            staff_name: string;
+            /**
+             * @description not_imported はカレンダーをこの切り替えで取り込んでいない、sync_stale は最後の取り込みの後に同期が成功していない。
+             *     event_not_imported は取り込んでいない Google の予定（取り込んだ後に作った予定、取り消した回を含む）、
+             *     needs_review は確認が必要な予定の取り込み方を決めていないか決めた後に変わった（規則に写せない繰り返しを含む）、
+             *     changed は取り込んだ後に Google で変わった、deleted は取り込んだ後に Google で消えた予定である。
+             *     not_imported と sync_stale は、予定の項目を持たない
+             * @enum {string}
+             */
+            reason: "not_imported" | "sync_stale" | "event_not_imported" | "needs_review" | "changed" | "deleted";
+            /** @description Google の予定の ID。カレンダーの理由と、取り消した回では null */
+            external_event_id: string | null;
+            /** @description 予定の日付。読めなかった予定と、Google で消えた予定では null */
+            date: (string & components["schemas"]["Date"]) | null;
+            start_time: (string & components["schemas"]["Time"]) | null;
+            end_time: (string & components["schemas"]["Time"]) | null;
+            /** @description date の翌日の end_time に終わる予定のとき true */
+            ends_next_day: boolean;
+            /**
+             * @description needs_review のときの確認が必要な理由。ほかの理由では null
+             * @enum {string|null}
+             */
+            review_reason: "patient_not_found" | "patient_ambiguous" | "recurrence_unsupported" | null;
+        };
+        CalendarCutoverIncomplete: components["schemas"]["Error"] & {
+            /** @description code が cutover_incomplete のとき、満たさないカレンダーと予定。カレンダーの順に、カレンダーの中は日時の順（日時の無い予定は最後） */
+            items?: components["schemas"]["CalendarCutoverUnmet"][];
+        };
+        /** @description 予定の正本を buddy に切り替えている間の、open の切り替え */
+        OpenCalendarCutover: {
+            /** Format: date-time */
+            started_at: string;
+            /** @description 取り込みの期間の最初の日 */
+            range_start: components["schemas"]["Date"];
         };
     };
     responses: {
@@ -1669,6 +1841,7 @@ export interface components {
         /** @description buddy の外部のカレンダーの ID。Google のカレンダーの ID ではない */
         ExternalCalendarID: components["schemas"]["ID"];
         CalendarExportID: components["schemas"]["ID"];
+        CalendarCutoverID: components["schemas"]["ID"];
         /** @description 省くと昇順。sort_field を省いたときはデフォルトのカラムに向きだけを当てる */
         SortOrder: "asc" | "desc";
     };
@@ -3109,6 +3282,8 @@ export interface operations {
                          *     最新でないとみなす時間は画面が決める。
                          */
                         calendar_syncs: components["schemas"]["CalendarSyncStatus"][];
+                        /** @description google_primary の事業所で、予定の正本を buddy に切り替えている間の open の切り替え。無ければ null（ADR-0035） */
+                        cutover: components["schemas"]["OpenCalendarCutover"] | null;
                     };
                 };
             };
@@ -3723,6 +3898,152 @@ export interface operations {
             500: components["responses"]["InternalError"];
             502: components["responses"]["CalendarUnavailable"];
             503: components["responses"]["CalendarNotConfigured"];
+        };
+    };
+    getCalendarCutoverStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                facility_id: components["parameters"]["FacilityID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 切り替えの状況 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarCutoverState"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    startCalendarCutover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                facility_id: components["parameters"]["FacilityID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 始めた切り替え */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarCutover"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description 事業所が buddy を予定の正本にしている（cutover_not_google_primary）か、open の切り替えがある（cutover_open）か、
+             *     最後の同期が成功していないカレンダーがある（cutover_sync_not_ready）
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    createCalendarCutoverCompletion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                calendar_cutover_id: components["parameters"]["CalendarCutoverID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 完了した切り替え */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarCutover"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description 完了の確認を満たさない（cutover_incomplete。items に一覧がある）か、切り替えが open でない（cutover_not_open） */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarCutoverIncomplete"];
+                };
+            };
+            422: components["responses"]["CalendarUnreadable"];
+            500: components["responses"]["InternalError"];
+            502: components["responses"]["CalendarUnavailable"];
+            503: components["responses"]["CalendarNotConfigured"];
+        };
+    };
+    cancelCalendarCutover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                calendar_cutover_id: components["parameters"]["CalendarCutoverID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description やめた切り替え */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarCutover"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description 切り替えが open でない（cutover_not_open） */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "cutover_not_open",
+                     *       "message": "この切り替えは、すでに完了したか、やめています"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            500: components["responses"]["InternalError"];
         };
     };
 }

@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './ScheduleSourceNotices.stories'
 
-const { BuddyPrimary, Default, GuideOnly } = composeStories(stories)
+const { BuddyPrimary, Cutover, Default, GuideOnly } = composeStories(stories)
 
 describe('ScheduleSourceNotices', () => {
   it('同期に失敗したカレンダーと、まだ同期していないカレンダーを、職員と最後に同期できた時刻とともに出す', () => {
@@ -52,5 +52,17 @@ describe('ScheduleSourceNotices', () => {
   it('buddy_primary の事業所では何も出さない', () => {
     const { container } = render(<BuddyPrimary />)
     expect(container).toBeEmptyDOMElement()
+  })
+
+  it('予定の正本を buddy に切り替えている間は、切り替え中であることと、Google カレンダーで予定を変えないよう頼む文を出す', () => {
+    render(<Cutover />)
+    const notice = screen.getByTestId('schedule-calendar-cutover')
+    expect(notice).toHaveTextContent('予定の正本を buddy に切り替えています')
+    expect(notice).toHaveTextContent('Google カレンダーで予定を作成、変更しないでください')
+  })
+
+  it('切り替えていないときは、切り替え中を出さない', () => {
+    render(<GuideOnly />)
+    expect(screen.queryByTestId('schedule-calendar-cutover')).toBeNull()
   })
 })

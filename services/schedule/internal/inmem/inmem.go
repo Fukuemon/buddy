@@ -15,6 +15,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
@@ -71,6 +72,10 @@ type Store struct {
 	SyncedAt map[string]time.Time
 	// Projections は、ProjectionKey ごとの、Google カレンダーの予定の写しである。
 	Projections map[ProjectionKey]scheduleview.Projection
+	// Cutovers は、切り替えの ID ごとの切り替えである。
+	Cutovers map[string]calendarimport.Cutover
+	// CutoverSkips は、切り替えの取り込みで、取り込まないを選んだ予定の記録である。
+	CutoverSkips []calendarimport.CutoverSkip
 }
 
 // NewStore は、空の Store を作る。
@@ -99,6 +104,7 @@ func NewStore() *Store {
 		SyncResults:   map[string]calendarsync.SyncResult{},
 		SyncedAt:      map[string]time.Time{},
 		Projections:   map[ProjectionKey]scheduleview.Projection{},
+		Cutovers:      map[string]calendarimport.Cutover{},
 	}
 }
 

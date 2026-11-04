@@ -1,4 +1,10 @@
-import type { CalendarSyncStatus, Schedule, SourceMode, Staff } from '#/api/types'
+import type {
+  CalendarSyncStatus,
+  OpenCalendarCutover,
+  Schedule,
+  SourceMode,
+  Staff,
+} from '#/api/types'
 
 import { SCHEDULE_REVIEW_REASON_LABEL } from '../constants/scheduleLabels'
 import { CALENDAR_SYNC_PROBLEM_LABEL, calendarSyncProblemsOf } from '../lib/calendarSync'
@@ -7,6 +13,8 @@ import { formatDateTime, formatDateTimeRange } from '../lib/dateTime'
 export type ScheduleSourceNoticesProps = {
   sourceMode: SourceMode
   calendarSyncs: CalendarSyncStatus[]
+  /** 予定の正本を buddy に切り替えている間の、open の切り替え。無ければ null である。 */
+  cutover?: OpenCalendarCutover | null
   /** 確認が必要な予定。期間の外の予定も含む。 */
   needsReview: Schedule[]
   /** 確認が必要な予定の職員の名前を引く職員。 */
@@ -20,11 +28,13 @@ export type ScheduleSourceNoticesProps = {
 /**
  * Google カレンダーを予定の正本にする事業所（google_primary）で、カレンダーの上に出す通知。
  * Google カレンダーで予定を編集する案内を常に出し、同期が失敗しているか古いカレンダーがあれば同期の警告を、
- * 確認が必要な予定があれば、予定ごとの日時、職員、理由を出す。buddy_primary の事業所では何も出さない。
+ * 確認が必要な予定があれば、予定ごとの日時、職員、理由を出す。予定の正本を buddy に切り替えている間は、切り替え中であることと、
+ * Google カレンダーで予定を変えないよう頼む文を出す。buddy_primary の事業所では何も出さない。
  */
 export const ScheduleSourceNotices = ({
   sourceMode,
   calendarSyncs,
+  cutover = null,
   needsReview,
   staffList,
   now,
@@ -45,6 +55,19 @@ export const ScheduleSourceNotices = ({
           には、同期した予定を表示します。
         </p>
       </section>
+      {cutover !== null && (
+        <section
+          className="rounded-8 border-l-4 border-primary bg-primary-surface px-4 py-3"
+          data-testid="schedule-calendar-cutover"
+        >
+          <h2 className="text-label">予定の正本を buddy に切り替えています</h2>
+          <p className="mt-2 text-body-dense">
+            切り替えが終わるまで、Google
+            カレンダーで予定を作成、変更しないでください。切り替えの間も、buddy には Google
+            カレンダーの予定を表示します。
+          </p>
+        </section>
+      )}
       {problems.length > 0 && (
         <section
           className="rounded-8 bg-warning-surface px-4 py-3"

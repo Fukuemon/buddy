@@ -37,6 +37,12 @@
       "userId": "schedule",
       "summary": "aoi.okada@example.com",
       "timeZone": "Asia/Tokyo"
+    },
+    {
+      "id": "ren.ishida@example.com",
+      "userId": "schedule",
+      "summary": "ren.ishida@example.com",
+      "timeZone": "Asia/Tokyo"
     }
   ],
   "events": [

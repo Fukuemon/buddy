@@ -162,6 +162,27 @@ func (q *Queries) GetFacilityForShare(ctx context.Context, id string) (Facility,
 	return i, err
 }
 
+const getFacilityForUpdate = `-- name: GetFacilityForUpdate :one
+SELECT id, name, org_id, time_zone, created_at, updated_at, source_mode FROM facilities WHERE id = $1 FOR UPDATE
+`
+
+// LockFacility と同じ排他のロックを取り、事業所の行を返す。正本のモードを変える操作（切り替えの完了）が、ロックの中でモードを読む。
+// 予定を書く操作は GetFacilityForShare で同じ行を読むので、モードを変えるまでの間に、前のモードで予定を書けない。
+func (q *Queries) GetFacilityForUpdate(ctx context.Context, id string) (Facility, error) {
+	row := q.db.QueryRow(ctx, getFacilityForUpdate, id)
+	var i Facility
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.OrgID,
+		&i.TimeZone,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.SourceMode,
+	)
+	return i, err
+}
+
 const getPolicy = `-- name: GetPolicy :one
 SELECT id, code, name, needs_target, created_at, updated_at FROM policies WHERE id = $1
 `
@@ -479,6 +500,20 @@ func (q *Queries) UpdateDepartment(ctx context.Context, arg UpdateDepartmentPara
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const updateFacilitySourceMode = `-- name: UpdateFacilitySourceMode :exec
+UPDATE facilities SET source_mode = $2 WHERE id = $1
+`
+
+type UpdateFacilitySourceModeParams struct {
+	ID         string
+	SourceMode string
+}
+
+func (q *Queries) UpdateFacilitySourceMode(ctx context.Context, arg UpdateFacilitySourceModeParams) error {
+	_, err := q.db.Exec(ctx, updateFacilitySourceMode, arg.ID, arg.SourceMode)
+	return err
 }
 
 const updateTeam = `-- name: UpdateTeam :execrows

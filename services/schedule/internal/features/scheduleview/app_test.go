@@ -156,7 +156,7 @@ func newSchedules(s *inmem.Store) *app {
 // projectionDeps は、s の Projection とマスタを読み、取り込みと同じ読み替えの規則を使う、List の依存を返す。
 func projectionDeps(s *inmem.Store, now func() time.Time) scheduleview.ProjectionDeps {
 	return scheduleview.ProjectionDeps{
-		Projections: inmem.Projections{Store: s}, Syncs: inmem.Projections{Store: s}, Rules: calendar.ProjectionRules{},
+		Projections: inmem.Projections{Store: s}, Syncs: inmem.Projections{Store: s}, Cutovers: inmem.Projections{Store: s}, Rules: calendar.ProjectionRules{},
 		Patients: inmem.Patients{Store: s}, ServiceCodes: inmem.ServiceCodes{Store: s}, Types: inmem.ScheduleTypes{Store: s}, Now: now,
 	}
 }

@@ -2,7 +2,9 @@ package httpapi
 
 import (
 	"context"
+	"errors"
 
+	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi/openapi"
@@ -12,7 +14,7 @@ func toImportRun(r calendar.ImportRun) openapi.ImportRun {
 	return openapi.ImportRun{
 		Id:            r.ID,
 		RangeStart:    r.RangeStart.String(),
-		RangeEnd:      r.RangeEnd.String(),
+		RangeEnd:      rangeEnd(r.RangeEnd),
 		Status:        openapi.ImportRunStatus(r.Status),
 		ImportedCount: r.ImportedCount,
 		SkippedCount:  r.SkippedCount,
@@ -42,7 +44,7 @@ func toImportPreview(p calendarimport.ImportPreview) openapi.ImportPreview {
 	c := p.Counts
 	return openapi.ImportPreview{
 		RangeStart: p.Range.Start.String(),
-		RangeEnd:   p.Range.End.String(),
+		RangeEnd:   rangeEnd(p.Range.End),
 		Counts: openapi.ImportCounts{
 			Import:              c.Import,
 			ImportVisit:         c.ImportVisit,
@@ -54,6 +56,7 @@ func toImportPreview(p calendarimport.ImportPreview) openapi.ImportPreview {
 			NeedsReview:         c.NeedsReview,
 			Skipped:             c.Skipped,
 			AlreadyImported:     c.AlreadyImported,
+			Overwrite:           c.Overwrite,
 		},
 		NeedsReview: mapSlice(p.ReviewItems, toImportReviewItem),
 		Skipped:     mapSlice(p.SkippedItems, toImportSkippedItem),
@@ -93,13 +96,26 @@ func toImportSkippedItem(s calendarimport.Skipped) openapi.ImportSkippedItem {
 	}
 }
 
-// importRange は、本文の期間を読み、期間の規則を検証する。
-func importRange(start, end string) (calendarimport.Range, error) {
+// rangeEnd は、期間の最後の日を返す。終わりを持たない期間（零の値）では nil を返す。
+func rangeEnd(d civil.Date) *string {
+	if d.IsZero() {
+		return nil
+	}
+	s := d.String()
+	return &s
+}
+
+// importRange は、本文の期間を読み、期間の規則を検証する。end が nil なら、終わりを持たない期間（切り替えの取り込み）にする。
+// 終わりを持たない期間を受けるかは、取り込みの操作が事業所の切り替えで決める。
+func importRange(start string, end *string) (calendarimport.Range, error) {
 	s, err := bodyDate(start)
 	if err != nil {
 		return calendarimport.Range{}, err
 	}
-	e, err := bodyDate(end)
+	if end == nil {
+		return calendarimport.Range{Start: s}, nil
+	}
+	e, err := bodyDate(*end)
 	if err != nil {
 		return calendarimport.Range{}, err
 	}
@@ -257,4 +273,88 @@ func (s server) CreateCalendarExportAcceptance(ctx context.Context, req openapi.
 		return nil, err
 	}
 	return openapi.CreateCalendarExportAcceptance200JSONResponse(toCalendarExport(e)), nil
+}
+
+func toCalendarCutover(c calendarimport.Cutover) openapi.CalendarCutover {
+	return openapi.CalendarCutover{
+		Id: c.ID, FacilityId: c.FacilityID, Status: openapi.CalendarCutoverStatus(c.Status), RangeStart: c.RangeStart.String(),
+		StartedBy: c.StartedBy, StartedAt: c.StartedAt, FinishedAt: c.FinishedAt,
+	}
+}
+
+func toCalendarCutoverCalendar(c calendarimport.CutoverCalendar) openapi.CalendarCutoverCalendar {
+	s := toCalendarSyncStatus(c.Sync)
+	out := openapi.CalendarCutoverCalendar{
+		ExternalCalendarId: s.ExternalCalendarId, StaffId: s.StaffId, StaffName: s.StaffName,
+		LastStatus: openapi.CalendarCutoverCalendarLastStatus(s.LastStatus), LastSucceededAt: s.LastSucceededAt,
+	}
+	if s.LastError != nil {
+		code := openapi.CalendarCutoverCalendarLastError(*s.LastError)
+		out.LastError = &code
+	}
+	if c.LastImport != nil {
+		run := toImportRun(*c.LastImport)
+		out.LastImport = &run
+	}
+	return out
+}
+
+func toCalendarCutoverUnmet(u calendarimport.Unmet) openapi.CalendarCutoverUnmet {
+	out := openapi.CalendarCutoverUnmet{
+		ExternalCalendarId: u.ExternalCalendarID, StaffId: u.StaffID, StaffName: u.StaffName,
+		Reason: openapi.CalendarCutoverUnmetReason(u.Reason), ExternalEventId: nonEmpty(&u.ExternalEventID),
+		Date: stringPtr(u.Date), StartTime: stringPtr(u.StartTime), EndTime: stringPtr(u.EndTime), EndsNextDay: u.EndsNextDay,
+	}
+	if u.ReviewReason != "" {
+		r := openapi.CalendarCutoverUnmetReviewReason(u.ReviewReason)
+		out.ReviewReason = &r
+	}
+	return out
+}
+
+// GetCalendarCutoverStatus は、事業所の切り替えの状況を返す。
+func (s server) GetCalendarCutoverStatus(ctx context.Context, req openapi.GetCalendarCutoverStatusRequestObject) (openapi.GetCalendarCutoverStatusResponseObject, error) {
+	st, err := s.u.Calendars.GetCutover(ctx, req.FacilityId)
+	if err != nil {
+		return nil, err
+	}
+	out := openapi.GetCalendarCutoverStatus200JSONResponse{Calendars: mapSlice(st.Calendars, toCalendarCutoverCalendar)}
+	if st.Cutover != nil {
+		c := toCalendarCutover(*st.Cutover)
+		out.Cutover = &c
+	}
+	return out, nil
+}
+
+// StartCalendarCutover は、事業所の切り替えを始め、始めた切り替えを返す。
+func (s server) StartCalendarCutover(ctx context.Context, req openapi.StartCalendarCutoverRequestObject) (openapi.StartCalendarCutoverResponseObject, error) {
+	c, err := s.u.Calendars.StartCutover(ctx, req.FacilityId)
+	if err != nil {
+		return nil, err
+	}
+	return openapi.StartCalendarCutover201JSONResponse(toCalendarCutover(c)), nil
+}
+
+// CreateCalendarCutoverCompletion は、切り替えを完了し、完了した切り替えを返す。完了の確認を満たさないときは、一覧を付けた 409 を返す。
+func (s server) CreateCalendarCutoverCompletion(ctx context.Context, req openapi.CreateCalendarCutoverCompletionRequestObject) (openapi.CreateCalendarCutoverCompletionResponseObject, error) {
+	c, err := s.u.Calendars.CompleteCutover(ctx, req.CalendarCutoverId)
+	if ie, ok := errors.AsType[*calendarimport.IncompleteError](err); ok {
+		items := mapSlice(ie.Items, toCalendarCutoverUnmet)
+		return openapi.CreateCalendarCutoverCompletion409JSONResponse{
+			Code: openapi.CalendarCutoverIncompleteCode(calendarimport.CodeCutoverIncomplete), Message: ie.Error(), Items: &items,
+		}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return openapi.CreateCalendarCutoverCompletion200JSONResponse(toCalendarCutover(c)), nil
+}
+
+// CancelCalendarCutover は、切り替えをやめ、やめた切り替えを返す。
+func (s server) CancelCalendarCutover(ctx context.Context, req openapi.CancelCalendarCutoverRequestObject) (openapi.CancelCalendarCutoverResponseObject, error) {
+	c, err := s.u.Calendars.CancelCutover(ctx, req.CalendarCutoverId)
+	if err != nil {
+		return nil, err
+	}
+	return openapi.CancelCalendarCutover200JSONResponse(toCalendarCutover(c)), nil
 }

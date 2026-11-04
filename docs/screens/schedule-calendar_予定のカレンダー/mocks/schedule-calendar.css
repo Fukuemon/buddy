@@ -384,3 +384,9 @@
   margin-right: 4px;
   font-weight: 700;
 }
+
+/* 予定の正本を buddy に切り替えている間の案内 */
+.sc-notice--cutover {
+  border-left: 4px solid var(--wf-primary);
+  background: var(--wf-primary-surface);
+}

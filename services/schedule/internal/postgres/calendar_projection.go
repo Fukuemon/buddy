@@ -2,7 +2,9 @@ package postgres
 
 import (
 	"context"
+	"errors"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
@@ -105,4 +107,23 @@ func (r *CalendarProjectionRepository) ListSyncsByFacility(ctx context.Context, 
 		}
 	}
 	return out, nil
+}
+
+// DeleteByFacility は、calendarimport.Projections の DeleteByFacility を実装する。事業所 facilityID の行を全て消す。
+func (r *CalendarProjectionRepository) DeleteByFacility(ctx context.Context, facilityID string) error {
+	return translate("delete calendar event projections by facility", r.q(ctx).DeleteCalendarEventProjectionsByFacility(ctx, facilityID))
+}
+
+var _ scheduleview.Cutovers = (*CalendarProjectionRepository)(nil)
+
+// FindOpenCutover は、scheduleview.Cutovers の FindOpenCutover を実装する。open の切り替えが無ければ nil を返す。
+func (r *CalendarProjectionRepository) FindOpenCutover(ctx context.Context, facilityID string) (*scheduleview.OpenCutover, error) {
+	c, err := r.q(ctx).FindOpenCalendarCutover(ctx, facilityID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, translate("find open calendar cutover", err)
+	}
+	return &scheduleview.OpenCutover{StartedAt: c.StartedAt, RangeStart: civil.DateOf(c.RangeStart)}, nil
 }
