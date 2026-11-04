@@ -117,6 +117,7 @@ nav = [
     "adr/0032-schedule-api-calendar-split.md",
     "adr/0033-schedule-write-read-models-and-source-mode.md",
     "adr/0034-service-code-rules.md",
+    "adr/0035-google-calendar-source-modes.md",
   ] },
 ]
 
