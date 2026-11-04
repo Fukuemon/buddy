@@ -5,6 +5,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
@@ -132,10 +133,11 @@ func scheduleApp(
 	}
 }
 
-// calendarApp は、calendar、calendarsync、calendarexport の操作の型を作り、CalendarApp に入れる。accounts が nil なら、外部のカレンダーを読む操作は ErrNotConfigured を返す。
+// calendarApp は、calendar、calendarimport、calendarsync、calendarexport の操作の型を作り、CalendarApp に入れる。accounts が nil なら、外部のカレンダーを読む操作は ErrNotConfigured を返す。
 func calendarApp(
 	calendars interface {
 		calendar.Repository
+		calendarimport.Calendars
 		calendarsync.Calendars
 	},
 	accounts calendar.Accounts,
@@ -144,7 +146,7 @@ func calendarApp(
 	serviceCodes calendar.ServiceCodes,
 	types calendar.Types,
 	schedules calendar.ScheduleStore,
-	recurring calendar.Recurring,
+	recurring calendarimport.Recurring,
 	recurringSchedules kernel.Finder[schedule.RecurringDetail],
 	visits calendar.VisitStore,
 	exports interface {
@@ -161,8 +163,8 @@ func calendarApp(
 		Check:            calendar.NewCheck(accounts, guard).Do,
 		Link:             calendar.NewLink(accounts, staffRefs, calendars, tx, ids, guard).Do,
 		Unlink:           calendar.NewUnlink(calendars, guard).Do,
-		Preview:          calendar.NewPreview(calendars, accounts, staffRefs, patients, recurringSchedules, serviceCodes, guard).Do,
-		Import:           calendar.NewImport(calendars, accounts, staffRefs, patients, recurringSchedules, serviceCodes, types, recurring, schedules, visits, tx, ids, guard).Do,
+		Preview:          calendarimport.NewPreview(calendars, accounts, staffRefs, patients, recurringSchedules, serviceCodes, guard).Do,
+		Import:           calendarimport.NewImport(calendars, accounts, staffRefs, patients, recurringSchedules, serviceCodes, types, recurring, schedules, visits, tx, ids, guard).Do,
 		ListExportIssues: calendarexport.NewListExportIssues(exports, guard).Do,
 		RetryExport:      calendarexport.NewRetryExport(exports, guard).Do,
 		AcceptExport:     calendarsync.NewAcceptExport(exports, schedules, calendars, accounts, staffRefs, types, patients, serviceCodes, visits, tx, ids, guard).Do,

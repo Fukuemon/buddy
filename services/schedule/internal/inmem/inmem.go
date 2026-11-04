@@ -825,7 +825,7 @@ func (s RecurringSchedules) AddExclusion(_ context.Context, id string, d civil.D
 	return nil
 }
 
-// Calendars は、calendar.Repository のメモリ上の実装である。ロックは取らない。
+// Calendars は、calendar.Repository、calendarimport.Calendars、calendarsync.Calendars、calendarexport.ExportCalendars と calendarexport.ExporterCalendars のメモリ上の実装である。ロックは取らない。
 type Calendars struct{ *Store }
 
 // Get は、外したものも含めてカレンダーを返す。
@@ -920,7 +920,7 @@ func (s Calendars) DetachByStaff(ctx context.Context, staffID string) error {
 	return nil
 }
 
-// RunningSince は、calendar.Repository の RunningSince を実装する。
+// RunningSince は、calendarimport.Calendars の RunningSince を実装する。
 func (s Calendars) RunningSince(_ context.Context, externalCalendarID string, since time.Time) (bool, error) {
 	for _, r := range s.Runs {
 		if r.ExternalCalendarID == externalCalendarID && r.Status == calendar.RunRunning && r.StartedAt.After(since) {
@@ -930,14 +930,14 @@ func (s Calendars) RunningSince(_ context.Context, externalCalendarID string, si
 	return false, nil
 }
 
-// CreateRun は、calendar.Repository の CreateRun を実装する。
+// CreateRun は、calendarimport.Calendars の CreateRun を実装する。
 func (s Calendars) CreateRun(_ context.Context, r calendar.ImportRun) error {
 	r.StartedAt = time.Now()
 	s.Runs[r.ID] = r
 	return nil
 }
 
-// FinishRun は、calendar.Repository の FinishRun を実装する。
+// FinishRun は、calendarimport.Calendars の FinishRun を実装する。
 func (s Calendars) FinishRun(_ context.Context, r calendar.ImportRun) (calendar.ImportRun, error) {
 	cur, err := get(s.Runs, r.ID)
 	if err != nil {
@@ -949,7 +949,7 @@ func (s Calendars) FinishRun(_ context.Context, r calendar.ImportRun) (calendar.
 	return cur, nil
 }
 
-// ListLinks は、calendar.Repository の ListLinks を実装する。
+// ListLinks は、calendarimport.Calendars と calendarexport.ExporterCalendars の ListLinks を実装する。
 func (s Calendars) ListLinks(_ context.Context, externalCalendarID string) ([]calendar.EventLink, error) {
 	var out []calendar.EventLink
 	for _, l := range s.Links {
@@ -971,7 +971,7 @@ func (s Calendars) CreateLink(_ context.Context, l calendar.EventLink) error {
 	return nil
 }
 
-// ActiveByStaff は、calendar.Repository の ActiveByStaff を実装する。
+// ActiveByStaff は、calendarexport.ExportCalendars の ActiveByStaff を実装する。
 func (s Calendars) ActiveByStaff(_ context.Context, staffID string) (calendar.ExternalCalendar, error) {
 	for _, c := range s.Calendars {
 		if c.StaffID == staffID && c.DisabledAt == nil {
@@ -981,12 +981,12 @@ func (s Calendars) ActiveByStaff(_ context.Context, staffID string) (calendar.Ex
 	return calendar.ExternalCalendar{}, apperr.ErrNotFound
 }
 
-// LinkBySchedule は、calendar.Repository の LinkBySchedule を実装する。
+// LinkBySchedule は、calendarsync.Calendars と calendarexport.ExportCalendars の LinkBySchedule を実装する。
 func (s Calendars) LinkBySchedule(_ context.Context, scheduleID string) (calendar.EventLink, error) {
 	return s.linkBy(func(l calendar.EventLink) *string { return l.ScheduleID }, scheduleID)
 }
 
-// LinkByRecurringSchedule は、calendar.Repository の LinkByRecurringSchedule を実装する。
+// LinkByRecurringSchedule は、calendarexport.ExportCalendars の LinkByRecurringSchedule を実装する。
 func (s Calendars) LinkByRecurringSchedule(_ context.Context, recurringScheduleID string) (calendar.EventLink, error) {
 	return s.linkBy(func(l calendar.EventLink) *string { return l.RecurringScheduleID }, recurringScheduleID)
 }
@@ -1010,7 +1010,7 @@ func (s Calendars) linkBy(target func(calendar.EventLink) *string, id string) (c
 	return calendar.EventLink{}, apperr.ErrNotFound
 }
 
-// UpdateLink は、calendar.Repository の UpdateLink を実装する。
+// UpdateLink は、calendarsync.Calendars と calendarexport.ExporterCalendars の UpdateLink を実装する。
 func (s Calendars) UpdateLink(_ context.Context, id, etag string, version int) error {
 	l, err := get(s.Links, id)
 	if err != nil {
@@ -1021,7 +1021,7 @@ func (s Calendars) UpdateLink(_ context.Context, id, etag string, version int) e
 	return nil
 }
 
-// DeleteLink は、calendar.Repository の DeleteLink を実装する。
+// DeleteLink は、calendarexport.ExporterCalendars の DeleteLink を実装する。
 func (s Calendars) DeleteLink(_ context.Context, id string) error {
 	delete(s.Links, id)
 	return nil

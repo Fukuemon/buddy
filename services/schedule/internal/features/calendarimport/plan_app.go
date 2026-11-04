@@ -1,9 +1,10 @@
-package calendar
+package calendarimport
 
 import (
 	"context"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
@@ -13,7 +14,7 @@ import (
 // staffBlocked は、カレンダー c を結び付けた職員に新しい予定を作らない理由を返す。休職なら SkipStaffOnLeave を、
 // 訪問しない職員なら SkipStaffNonVisiting を、どちらでもなければ空を返す。退職した職員は、カレンダーを外したものとみなし、
 // apperr.ErrNotFound を返す。退職はカレンダーを外すが、外す前に退職にした職員のカレンダーが残っていても取り込まないためである。
-func staffBlocked(ctx context.Context, staffRefs StaffRefs, c ExternalCalendar) (SkipReason, error) {
+func staffBlocked(ctx context.Context, staffRefs calendar.StaffRefs, c calendar.ExternalCalendar) (calendar.SkipReason, error) {
 	st, err := staffRefs.Get(ctx, c.StaffID)
 	if err != nil {
 		return "", err
@@ -31,7 +32,7 @@ func staffBlocked(ctx context.Context, staffRefs StaffRefs, c ExternalCalendar) 
 
 // planEvents は、カレンダー c の期間 rng の予定を src で読み、読み替えた plan と、事業所の利用者を返す。
 // blocked は、カレンダーを結び付けた職員に新しい予定を作らない理由で、空でなければ新しい予定をその理由の取り込まない予定にする。
-func planEvents(ctx context.Context, calendars Repository, patients Patients, recurringSchedules kernel.Finder[schedule.RecurringDetail], serviceCodes ServiceCodes, src EventSource, c ExternalCalendar, rng Range, blocked SkipReason) (plan, []PatientRef, error) {
+func planEvents(ctx context.Context, calendars Calendars, patients calendar.Patients, recurringSchedules kernel.Finder[schedule.RecurringDetail], serviceCodes calendar.ServiceCodes, src calendar.EventSource, c calendar.ExternalCalendar, rng Range, blocked calendar.SkipReason) (plan, []PatientRef, error) {
 	events, err := src.Events(ctx, c.CalendarID, rng.TimeMin(), rng.TimeMax())
 	if err != nil {
 		return plan{}, nil, err
@@ -48,7 +49,7 @@ func planEvents(ctx context.Context, calendars Repository, patients Patients, re
 		return plan{}, nil, err
 	}
 	in := planInput{
-		rng: rng, events: events, links: make(map[string]EventLink, len(links)), instances: map[string][]Event{},
+		rng: rng, events: events, links: make(map[string]calendar.EventLink, len(links)), instances: map[string][]calendar.Event{},
 		linkedRecurring: map[string]schedule.RecurringDetail{}, staffBlocked: blocked, staffID: c.StaffID,
 	}
 	for _, l := range links {

@@ -1,4 +1,4 @@
-package calendar_test
+package calendarimport_test
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
@@ -22,7 +23,7 @@ func TestPreview(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := calendar.Counts{
+	want := calendarimport.Counts{
 		// visit、meeting、weekly、weekly の 11-16 の置き換え、biweekly の 2 回
 		Import: 6, ImportVisit: 3, ImportNormal: 3, ExpandedOccurrences: 2,
 		Recurring: 2, RecurringAsRule: 1, RecurringExpanded: 1,
@@ -35,17 +36,17 @@ func TestPreview(t *testing.T) {
 		t.Errorf("NeedsReview = %v", got)
 	}
 	amb := p.ReviewItems[0]
-	if amb.Reason != calendar.ReviewPatientAmbiguous || len(amb.Candidates) != 2 || amb.Client != "利用者B" || amb.Service != "訪看I2" {
+	if amb.Reason != calendarimport.ReviewPatientAmbiguous || len(amb.Candidates) != 2 || amb.Client != "利用者B" || amb.Service != "訪看I2" {
 		t.Errorf("ambiguous = %+v", amb)
 	}
-	if p.ReviewItems[1].Reason != calendar.ReviewPatientNotFound || len(p.ReviewItems[1].Candidates) != 0 {
+	if p.ReviewItems[1].Reason != calendarimport.ReviewPatientNotFound || len(p.ReviewItems[1].Candidates) != 0 {
 		t.Errorf("missing = %+v", p.ReviewItems[1])
 	}
 	var reasons []calendar.SkipReason
 	for _, s := range p.SkippedItems {
 		reasons = append(reasons, s.Reason)
 	}
-	if !slices.Equal(reasons, []calendar.SkipReason{calendar.SkipAllDay, calendar.SkipServiceNotFound}) {
+	if !slices.Equal(reasons, []calendar.SkipReason{calendar.SkipAllDay, calendarimport.SkipServiceNotFound}) {
 		t.Errorf("Skipped = %v", reasons)
 	}
 	if len(e.store.Schedules)+len(e.store.Links) != 0 {

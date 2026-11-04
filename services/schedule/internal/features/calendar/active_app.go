@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
 
-// active は、外していないカレンダーを返す。無いか外したときは apperr.ErrNotFound を返す。
-func active(ctx context.Context, calendars Repository, id string) (ExternalCalendar, error) {
+// Active は、calendars から id のカレンダーを読み、外していなければ返す。
+// カレンダーが無いか外したときは apperr.ErrNotFound を返す。
+func Active(ctx context.Context, calendars kernel.Finder[ExternalCalendar], id string) (ExternalCalendar, error) {
 	c, err := calendars.Get(ctx, id)
 	if err != nil {
 		return ExternalCalendar{}, err

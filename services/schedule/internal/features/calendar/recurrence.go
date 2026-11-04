@@ -124,7 +124,7 @@ func tokyoStart(w When) (civil.Date, civil.Time, error) {
 	if _, offset := t.Zone(); w.TimeZone == "" && offset != 9*60*60 {
 		return civil.Date{}, civil.Time{}, expansion("開始の日時 %s のオフセットが +09:00 でない", w.DateTime)
 	}
-	t = t.In(tokyo)
+	t = t.In(Tokyo)
 	return civil.DateOf(t), clockOf(t), nil
 }
 
@@ -209,14 +209,14 @@ func parseRRule(value string) (rule schedule.Rule, until string, count int, err 
 // untilDate は、UNTIL の時刻までに start に始まる最後の回の日付を返す。
 // UNTIL は、日付、UTC の日時、タイムゾーンの無い日時（Asia/Tokyo として読む）のどれかである。
 func untilDate(until string, start civil.Time) (civil.Date, error) {
-	if d, err := time.ParseInLocation("20060102", until, tokyo); err == nil {
+	if d, err := time.ParseInLocation("20060102", until, Tokyo); err == nil {
 		return civil.DateOf(d), nil
 	}
-	u, err := parseDateTime(until, tokyo)
+	u, err := parseDateTime(until, Tokyo)
 	if err != nil {
 		return civil.Date{}, expansion("UNTIL=%s を読めない", until)
 	}
-	u = u.In(tokyo)
+	u = u.In(Tokyo)
 	d := civil.DateOf(u)
 	if clockOf(u).Before(start) {
 		d = civil.DateOf(d.Time().AddDate(0, 0, -1))
@@ -243,7 +243,7 @@ func lastOccurrence(rs schedule.RecurringSchedule, count int) (civil.Date, bool)
 // params の TZID（名前の大文字と小文字を区別せず、値の引用符を外す）はタイムゾーンの無い日時のタイムゾーンで、
 // 無ければ Asia/Tokyo とする。
 func parseDates(params, value string) ([]civil.Date, error) {
-	loc := tokyo
+	loc := Tokyo
 	for _, p := range strings.Split(params, ";") {
 		if k, tz, ok := strings.Cut(p, "="); ok && strings.EqualFold(k, "TZID") {
 			tz = strings.Trim(tz, `"`)
@@ -264,7 +264,7 @@ func parseDates(params, value string) ([]civil.Date, error) {
 		if err != nil {
 			return nil, expansion("EXDATE の %s を読めない", v)
 		}
-		dates = append(dates, civil.DateOf(t.In(tokyo)))
+		dates = append(dates, civil.DateOf(t.In(Tokyo)))
 	}
 	return dates, nil
 }
@@ -285,7 +285,7 @@ func OriginalDate(ev Event) (civil.Date, bool) {
 		if err != nil {
 			return civil.Date{}, false
 		}
-		return civil.DateOf(t.In(tokyo)), true
+		return civil.DateOf(t.In(Tokyo)), true
 	}
 	d, err := civil.ParseDate(ev.OriginalStart.Date)
 	return d, err == nil

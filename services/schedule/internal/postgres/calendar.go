@@ -8,11 +8,13 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres/sqlcgen"
 )
 
-// CalendarRepository は、calendar.Repository と calendarsync.Calendars を実装する。
+// CalendarRepository は、calendar.Repository、calendarimport.Calendars、calendarsync.Calendars、calendarexport.ExportCalendars と calendarexport.ExporterCalendars を実装する。
 type CalendarRepository struct{ conn }
 
 // NewCalendarRepository は CalendarRepository を作る。
@@ -21,8 +23,11 @@ func NewCalendarRepository(pool *pgxpool.Pool) *CalendarRepository {
 }
 
 var (
-	_ calendar.Repository    = (*CalendarRepository)(nil)
-	_ calendarsync.Calendars = (*CalendarRepository)(nil)
+	_ calendar.Repository              = (*CalendarRepository)(nil)
+	_ calendarimport.Calendars         = (*CalendarRepository)(nil)
+	_ calendarsync.Calendars           = (*CalendarRepository)(nil)
+	_ calendarexport.ExportCalendars   = (*CalendarRepository)(nil)
+	_ calendarexport.ExporterCalendars = (*CalendarRepository)(nil)
 )
 
 func toExternalCalendar(c sqlcgen.ExternalCalendar) calendar.ExternalCalendar {

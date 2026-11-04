@@ -142,7 +142,7 @@ func RecurrenceOf(rs schedule.RecurringSchedule, exdates []civil.Date) []string 
 		rule = fmt.Sprintf("FREQ=MONTHLY;BYMONTHDAY=%d", day)
 	}
 	if r.EndDate != nil {
-		end := time.Date(r.EndDate.Year, r.EndDate.Month, r.EndDate.Day, 23, 59, 59, 0, tokyo).UTC()
+		end := time.Date(r.EndDate.Year, r.EndDate.Month, r.EndDate.Day, 23, 59, 59, 0, Tokyo).UTC()
 		rule += ";UNTIL=" + end.Format("20060102T150405Z")
 	}
 	lines := []string{"RRULE:" + rule}

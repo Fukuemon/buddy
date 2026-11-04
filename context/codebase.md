@@ -77,10 +77,10 @@ status: stable
     - ADR-0033: [予定の書き込みのモデルと読み取りのモデルを分け、正本のモードを事業所の状態にする](../docs/adr/0033-schedule-write-read-models-and-source-mode.md)
     - `calendarimport`、`calendarsync`、`calendarexport` は `calendar` まで import してよく、3 つの間では import しない。
     - ADR-0032: [予定の API の calendar を、結び付け、取り込み、同期、書き出しの 4 つの機能に分ける](../docs/adr/0032-schedule-api-calendar-split.md)
-  - `principal` は `organization` と `staff` に依存し、`schedule`、`calendar`、`access`、`httpapi`、`cmd` から使う。
+  - `principal` は `organization` と `staff` に依存し、`schedule`、`calendarimport`、`access`、`httpapi`、`cmd` から使う。
   - 機能のパッケージは、自分の集約のリポジトリのインターフェースと、使う側で定義したインターフェースだけに依存する。
     - ほかの機能のデータを読むだけなら、`kernel.Finder` か 1〜2 のメソッドにする。
-    - ほかの機能の集約を 1 つのトランザクションで書くかロックするなら（`calendar` の `applier`、`schedule` の `StaffRefs`）、使うメソッドだけを並べた 1 つのインターフェースにする。
+    - ほかの機能の集約を 1 つのトランザクションで書くかロックするなら（`calendarsync` の `reconcileApplier`、`schedule` の `StaffRefs`）、使うメソッドだけを並べた 1 つのインターフェースにする。
       - ADR-0029: [予定の API の機能のパッケージの中で、操作でないファイルとテストの配置先と、ほかの機能を書くインターフェースの大きさを決める](../docs/adr/0029-schedule-api-feature-package-layout.md)
     - ほかの機能のリポジトリのインターフェースは import しない。
     - トランザクションは `tx.Transactor` で受ける。
@@ -101,7 +101,7 @@ status: stable
   - `postgres` は `login` と `internalapi` を import しない。
   - `login` と `internalapi` は、互いと `postgres` を import しない。DB はそれぞれが定義したインターフェースで受ける。
 - 2 つの Go の API と ID ブローカーの次の規則は、golangci-lint の depguard が止める。設定は各サービスの `.golangci.yml` にある。
-  - 予定の API の機能のパッケージの間の順と、機能のパッケージから `principal`（`schedule` と `calendar` を除く）、アダプタ、`access`、`config` への import
+  - 予定の API の機能のパッケージの間の順と、機能のパッケージから `principal`（`schedule` と `calendarimport` を除く）、アダプタ、`access`、`config` への import
   - 予定の API の共通のパッケージから、標準ライブラリと共通のパッケージ以外（外のモジュールを含む）への import
   - 予定の API の `httpapi` と `config` から `postgres` への import、`httpapi` から `packages/go/oidc` への import、テストのファイル以外から `inmem` への import
   - 照合の API の段の順
@@ -216,7 +216,7 @@ status: stable
       - 操作の型は `httpapi` に依存しないので、API と Worker のどちらの実行単位でも作れる。
     - 操作を束ねるのは、使う側の `httpapi` の `<機能>App`（`StaffApp`）で、操作の `Do` のメソッド値を関数のフィールドに持つ。
   - 複数の操作が使う補助は、使う依存を引数で受けるパッケージの関数にし、`<まとまり>_app.go`（`status_change_app.go`）に置く。
-    - 自分の依存をフィールドに持つ補助の型（`calendar` の `applier`）は型のまま残し、使う操作の型と常駐の処理がフィールドに持つ。
+    - 自分の依存をフィールドに持つ補助の型（`calendarsync` の `reconcileApplier`）は型のまま残し、使う操作の型と常駐の処理がフィールドに持つ。
   - ADR-0031: [Go の API の操作を、使う依存だけを持つ操作ごとの型にし、機能のパッケージの App をやめる](../docs/adr/0031-go-operation-types.md)
   - ほかの機能と外部のシステムのインターフェースは、使う側のパッケージの `<相手>_port.go`（`identity_port.go`）に置く。
     - `<相手>` は、ほかの機能の名前（`staff_port.go`、`schedule_port.go`）か、外部のシステムの名前（`google_calendar_port.go`、`identity_port.go`）にする。

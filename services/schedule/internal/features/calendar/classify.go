@@ -64,8 +64,8 @@ type Candidate struct {
 // maxTitleRunes は、通常の予定のタイトルの長さの上限である。予定の API のタイトルの上限と同じにする。
 const maxTitleRunes = 255
 
-// normalTitle は、外部の予定のタイトルを通常の予定のタイトルにする。上限を超える分は切る。
-func normalTitle(summary string) string {
+// NormalTitle は、外部の予定のタイトルを通常の予定のタイトルにする。上限を超える分は切る。
+func NormalTitle(summary string) string {
 	if r := []rune(summary); len(r) > maxTitleRunes {
 		return string(r[:maxTitleRunes])
 	}
@@ -96,7 +96,7 @@ func Classify(ev Event) Candidate {
 	if err != nil {
 		return skipped(SkipUnreadableTime)
 	}
-	start, end = start.In(tokyo), end.In(tokyo)
+	start, end = start.In(Tokyo), end.In(Tokyo)
 	c := Candidate{
 		Date:      civil.DateOf(start),
 		StartTime: clockOf(start),
@@ -118,7 +118,7 @@ func Classify(ev Event) Candidate {
 		return c
 	}
 	if !gcaltitle.IsVisitTitle(ev.Summary) {
-		c.Kind, c.Title = KindNormal, normalTitle(ev.Summary)
+		c.Kind, c.Title = KindNormal, NormalTitle(ev.Summary)
 		return c
 	}
 	service, client, err := gcaltitle.ParseTitle(ev.Summary)

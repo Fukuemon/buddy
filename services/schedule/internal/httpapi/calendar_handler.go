@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi/openapi"
 )
 
@@ -37,7 +38,7 @@ func toExternalCalendar(c calendar.ExternalCalendar) openapi.ExternalCalendar {
 	return out
 }
 
-func toImportPreview(p calendar.ImportPreview) openapi.ImportPreview {
+func toImportPreview(p calendarimport.ImportPreview) openapi.ImportPreview {
 	c := p.Counts
 	return openapi.ImportPreview{
 		RangeStart: p.Range.Start.String(),
@@ -59,7 +60,7 @@ func toImportPreview(p calendar.ImportPreview) openapi.ImportPreview {
 	}
 }
 
-func toImportReviewItem(r calendar.ReviewItem) openapi.ImportReviewItem {
+func toImportReviewItem(r calendarimport.ReviewItem) openapi.ImportReviewItem {
 	out := openapi.ImportReviewItem{
 		ExternalEventId: r.ExternalEventID,
 		Revision:        r.Revision,
@@ -70,7 +71,7 @@ func toImportReviewItem(r calendar.ReviewItem) openapi.ImportReviewItem {
 		Service:         r.Service,
 		ClientName:      r.Client,
 		Reason:          openapi.ImportReviewItemReason(r.Reason),
-		Candidates: mapSlice(r.Candidates, func(p calendar.PatientRef) openapi.PatientCandidate {
+		Candidates: mapSlice(r.Candidates, func(p calendarimport.PatientRef) openapi.PatientCandidate {
 			return openapi.PatientCandidate{PatientId: p.ID, Name: p.Name, AssignedStaffName: p.AssignedStaffName}
 		}),
 	}
@@ -81,7 +82,7 @@ func toImportReviewItem(r calendar.ReviewItem) openapi.ImportReviewItem {
 	return out
 }
 
-func toImportSkippedItem(s calendar.Skipped) openapi.ImportSkippedItem {
+func toImportSkippedItem(s calendarimport.Skipped) openapi.ImportSkippedItem {
 	return openapi.ImportSkippedItem{
 		Date:        stringPtr(s.Date),
 		StartTime:   stringPtr(s.StartTime),
@@ -93,16 +94,16 @@ func toImportSkippedItem(s calendar.Skipped) openapi.ImportSkippedItem {
 }
 
 // importRange は、本文の期間を読み、期間の規則を検証する。
-func importRange(start, end string) (calendar.Range, error) {
+func importRange(start, end string) (calendarimport.Range, error) {
 	s, err := bodyDate(start)
 	if err != nil {
-		return calendar.Range{}, err
+		return calendarimport.Range{}, err
 	}
 	e, err := bodyDate(end)
 	if err != nil {
-		return calendar.Range{}, err
+		return calendarimport.Range{}, err
 	}
-	return calendar.NewRange(s, e)
+	return calendarimport.NewRange(s, e)
 }
 
 func (s server) GetCalendarServiceAccount(ctx context.Context, req openapi.GetCalendarServiceAccountRequestObject) (openapi.GetCalendarServiceAccountResponseObject, error) {
@@ -161,9 +162,9 @@ func (s server) CreateCalendarImport(ctx context.Context, req openapi.CreateCale
 	if err != nil {
 		return nil, err
 	}
-	decisions := make([]calendar.Decision, len(b.Decisions))
+	decisions := make([]calendarimport.Decision, len(b.Decisions))
 	for i, d := range b.Decisions {
-		decisions[i] = calendar.Decision{ExternalEventID: d.ExternalEventId, Action: calendar.Action(d.Action), Revision: d.Revision}
+		decisions[i] = calendarimport.Decision{ExternalEventID: d.ExternalEventId, Action: calendarimport.Action(d.Action), Revision: d.Revision}
 		if d.PatientId != nil {
 			decisions[i].PatientID = *d.PatientId
 		}

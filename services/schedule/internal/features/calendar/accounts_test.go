@@ -125,22 +125,3 @@ func TestLinkRejectsCalendarSharedWithOtherFacility(t *testing.T) {
 		t.Errorf("自分の事業所のアカウントに共有したカレンダー: err = %v", err)
 	}
 }
-
-// 取り込みは、結び付けたカレンダーの行の事業所のアカウントで読む。
-func TestPreviewUsesCalendarFacilityAccount(t *testing.T) {
-	e := newEnv(t, nil)
-	acc := &accounts{byID: map[string]account{inmem.FacilityID: {source: gcal.NewReader(gcaltest.Start(t, fixture()))}}}
-	e.uc = withAccounts(e, acc)
-	if _, err := e.uc.Preview(e.ctx, calID, e.rng); err != nil {
-		t.Fatal(err)
-	}
-	if got := acc.usedFacilities(); !slices.Equal(got, []string{inmem.FacilityID}) {
-		t.Errorf("引いた事業所 = %v", got)
-	}
-	c := e.store.Calendars[calID]
-	c.FacilityID = inmem.OtherFacilityID
-	e.store.Calendars[calID] = c
-	if _, err := e.uc.Preview(e.ctx, calID, e.rng); !errors.Is(err, calendar.ErrNotConfigured) {
-		t.Errorf("設定の無い事業所のカレンダー: err = %v, want ErrNotConfigured", err)
-	}
-}
