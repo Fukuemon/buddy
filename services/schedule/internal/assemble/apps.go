@@ -1,8 +1,15 @@
-package main
+package assemble
 
 import (
 	"context"
+	"log/slog"
+	"net/http"
 
+	"github.com/Fukuemon/buddy/packages/go/oidc"
+
+	"github.com/Fukuemon/buddy/services/schedule/internal/access"
+	"github.com/Fukuemon/buddy/services/schedule/internal/broker"
+	"github.com/Fukuemon/buddy/services/schedule/internal/config"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
@@ -13,10 +20,78 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
+	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
+	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
+
+// HandlerConfig は、NewHandler がリポジトリのほかに受ける値である。
+type HandlerConfig struct {
+	// API は予定の API の設定で、NewHandler は AllowOrigins、Broker、Calendar の ExportEnabled を使う。
+	// ExportEnabled が false なら、予定の変更を書き出しの待ちに積まない。
+	API config.API
+	// Accounts は NewCalendarAccounts の戻り値である。nil なら、外部のカレンダーを読む操作は ErrNotConfigured を返す。
+	Accounts *gcal.Accounts
+	// Verifier は、リクエストの access token を検証する。
+	Verifier *oidc.Verifier
+	Logger   *slog.Logger
+	// Ready は GET /readyz が依存先を確認する関数で、nil なら常にリクエストを受けられるとみなす。
+	Ready func(ctx context.Context) error
+}
+
+// NewHandler は、r と cfg から全ての機能の操作の型を作り、予定の API の全てのパスを受ける http.Handler を返す。
+func NewHandler(r Repositories, cfg HandlerConfig) http.Handler {
+	return httpapi.NewRouter(newApps(r, cfg.Accounts, cfg.API), httpapi.RouterConfig{
+		Logger: cfg.Logger, AllowOrigins: cfg.API.AllowOrigins, Verifier: tokenVerifier{cfg.Verifier}, Ready: cfg.Ready,
+	})
+}
+
+func newApps(r Repositories, accounts *gcal.Accounts, cfg config.API) httpapi.Apps {
+	var outbox schedule.Exports
+	if cfg.Calendar.ExportEnabled {
+		outbox = calendarexport.NewOutbox(r.exports, r.calendars, r.ids)
+	}
+	visitInfos := r.visitWriter()
+	return httpapi.Apps{
+		Organization: organizationApp(r.facilities, r.departments, r.teams, r.positions, r.policies, r.tx, r.ids, principal.RequireStaffManage),
+		Staff: staffApp(r.facilities, r.departments, r.teams, r.positions, r.policies, r.staff, r.facilities,
+			broker.New(broker.Config(cfg.Broker), nil), r.staffAssignments, r.calendars,
+			func(ctx context.Context) (string, bool) {
+				p, ok := principal.From(ctx)
+				return p.Staff.ID, ok
+			},
+			r.tx, r.ids, principal.RequireStaffManage),
+		Patients:     patientApp(r.facilities, r.staffRefs, r.visitMasters, r.patients, r.patientSchedules, r.facilities, r.tx, r.ids, principal.RequireStaffManage),
+		VisitMasters: visitMasterApp(r.visitMasters),
+		Schedules:    scheduleApp(r.facilities, r.staffRefs, r.facilities, visitInfos, r.schedules, r.recurring, r.scheduleTypes, outbox, r.tx, r.ids),
+		Calendars: calendarApp(r.calendars, calendarAccounts(accounts), r.staffRefs, r.facilities, r.patients, r.visitMasters, r.scheduleTypes,
+			r.schedules, r.recurring, r.recurring, visitInfos, r.exports, r.tx, r.ids, principal.RequireStaffManage),
+		Auth: access.NewService(access.Deps{
+			Facilities: r.facilities, Departments: r.departments, Teams: r.teams, Positions: r.positions,
+			Staff: r.staff, StaffRefs: r.staffRefs, Patients: r.patients, Schedules: r.schedules, Recurring: r.recurring, Calendars: r.calendars,
+			Exports: r.exports,
+		}),
+	}
+}
+
+// calendarAccounts は、設定が無いときに、nil の *gcal.Accounts を入れた calendar.Accounts でなく nil を返す。
+func calendarAccounts(a *gcal.Accounts) calendar.Accounts {
+	if a == nil {
+		return nil
+	}
+	return a
+}
+
+// tokenVerifier は、共有の oidc.Verifier を httpapi.TokenVerifier にする。httpapi は oidc を import しないので、主張の型をここで写す。
+type tokenVerifier struct{ v *oidc.Verifier }
+
+// Verify は、トークンを検証し、主張を principal.Identity にして返す。
+func (t tokenVerifier) Verify(ctx context.Context, raw string) (principal.Identity, error) {
+	id, err := t.v.Verify(ctx, raw)
+	return principal.Identity{Subject: id.Subject, OrgID: id.OrgID}, err
+}
 
 // organizationApp は、organization の操作の型を作り、OrganizationApp に入れる。
 func organizationApp(

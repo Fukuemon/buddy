@@ -34,12 +34,13 @@ status: stable
   - DB と HTTP のアダプタ（`postgres`、`httpapi`）は 1 つずつ置く。
   - ADR-0005: [予定の API の規則と手順を機能ごとのパッケージにまとめる](../docs/adr/0005-schedule-api-packages.md)
   - 機能のパッケージは `internal/features/` に置く。
-    - アダプタ、共通のパッケージ、`access`、`principal`、`config` は `internal/` の直下に置く。
+    - アダプタ、共通のパッケージ、`access`、`principal`、`config`、`assemble` は `internal/` の直下に置く。
   - `internal/` の直下のパッケージは次のとおり。
     - アダプタ: `httpapi`（HTTP）、`postgres`（DB）、`gcal`（Google カレンダー）、`broker`（ID ブローカーの内部の API）、`ulid`（ID の発行）
     - 共通のパッケージ: `apperr`、`tx`、`kernel`、`civil`
     - 認証と認可: `access`、`principal`
     - 設定: `config`
+    - 組み立て: `assemble`
     - テストのためのメモリ上の実装: `inmem`
     - 機能のパッケージ: `features/`（予定の API の 11 の機能）
   - OIDC の ID トークンの検証は、`packages/go/oidc` を使う。
@@ -77,7 +78,7 @@ status: stable
     - ADR-0033: [予定の書き込みのモデルと読み取りのモデルを分け、正本のモードを事業所の状態にする](../docs/adr/0033-schedule-write-read-models-and-source-mode.md)
     - `calendarimport`、`calendarsync`、`calendarexport` は `calendar` まで import してよく、3 つの間では import しない。
     - ADR-0032: [予定の API の calendar を、結び付け、取り込み、同期、書き出しの 4 つの機能に分ける](../docs/adr/0032-schedule-api-calendar-split.md)
-  - `principal` は `organization` と `staff` に依存し、`schedule`、`scheduleview`、`calendarimport`、`access`、`httpapi`、`cmd` から使う。
+  - `principal` は `organization` と `staff` に依存し、`schedule`、`scheduleview`、`calendarimport`、`access`、`httpapi`、`assemble` から使う。
   - 機能のパッケージは、自分の集約のリポジトリのインターフェースと、使う側で定義したインターフェースだけに依存する。
     - ほかの機能のデータを読むだけなら、`kernel.Finder` か 1〜2 のメソッドにする。
     - ほかの機能の集約を 1 つのトランザクションで書くかロックするなら（`calendarsync` の `reconcileApplier`、各機能の `FacilityLock`）、使うメソッドだけを並べた 1 つのインターフェースにする。
@@ -87,12 +88,16 @@ status: stable
     - アダプタを import しない。
     - `access` は機能のパッケージではないので、機能のパッケージの依存の規則の対象の外にする。
   - `config` は DB のアダプタを import しない。
-    - `cmd` が `config` の値をアダプタの設定にコピーする。
+    - `assemble` と `cmd/migrate` が `config` の値をアダプタの設定にコピーする。
   - `postgres`、`ulid`、`gcal`、`broker` は、機能のパッケージと `access` のインターフェースを実装する。
-  - `packages/go/oidc` の ID トークンの検証は、`cmd` が `httpapi` の `TokenVerifier` に包んで渡す。
+  - `packages/go/oidc` の ID トークンの検証は、`assemble` が `httpapi` の `TokenVerifier` に包んで渡す。
     - `httpapi` から `postgres` と `packages/go/oidc` を import するのは、テストのファイルだけにする。
     - `httpapi` は、パスの ID の形の確認に `ulid` を使う。
   - `inmem` を import するのは、テストのファイルだけにする。
+  - 全ての機能のパッケージとアダプタを import してよいのは、`assemble` だけにする。
+    - `assemble` を import するのは `cmd` だけにする。
+    - `cmd/api` は、機能のパッケージ、アダプタ、`access`、`principal` を import しない。`assemble` が作った値で、サーバーと常駐の処理を起動する。
+    - ADR-0031: [Go の API の操作を、使う依存だけを持つ操作ごとの型にし、機能のパッケージの App をやめる](../docs/adr/0031-go-operation-types.md)
 - `services/receipt` の依存は、`record`、`civil`、`servicerule` を末端にして、読み込み（`csvio`）、正規化、対の作成、判定、つなぐ段（`check`）、データソース、HTTP の順の 1 方向に限る。
   - 正規化と判定はサービスの規則（`servicerule` と `packages/go/servicecode`）を、データソースは Google カレンダー（`gcal`）を使う。
   - 照合の権限の確認（`permission`）は、HTTP と同じ段に置き、`httpapi` から使う。
@@ -104,6 +109,7 @@ status: stable
   - 予定の API の機能のパッケージの間の順と、機能のパッケージから `principal`（`schedule`、`scheduleview`、`calendarimport` を除く）、アダプタ、`access`、`config` への import
   - 予定の API の共通のパッケージから、標準ライブラリと共通のパッケージ以外（外のモジュールを含む）への import
   - 予定の API の `httpapi` と `config` から `postgres` への import、`httpapi` から `packages/go/oidc` への import、テストのファイル以外から `inmem` への import
+  - 予定の API の `cmd/api` から機能のパッケージ、アダプタ、`access`、`principal` への import と、`cmd` 以外から `assemble` への import
   - 照合の API の段の順
   - ID ブローカーの `staff`、`postgres`、`login`、`internalapi` の向き
 - depguard は、テストのファイルを対象の外にする。
@@ -212,7 +218,8 @@ status: stable
     - コンストラクタは `New<操作>` にし、使う依存を引数で受けて値を返す。
     - 実行のメソッドは `Do` にする。
     - 操作の型の名前が集約や読み取りのモデルの型と重なるときは、集約や読み取りのモデルの型を名詞に改める。
-    - 全ての依存を知るのは、組み立ての場所だけにする。
+    - 全ての依存を知るのは、組み立ての場所（`internal/assemble`）だけにする。
+      - `assemble` は、`httpapi` の `<機能>App` ごとに、その束を作る関数を 1 つ置く。
       - 操作の型は `httpapi` に依存しないので、API と Worker のどちらの実行単位でも作れる。
     - 操作を束ねるのは、使う側の `httpapi` の `<機能>App`（`StaffApp`）で、操作の `Do` のメソッド値を関数のフィールドに持つ。
   - 複数の操作が使う補助は、使う依存を引数で受けるパッケージの関数にし、`<まとまり>_app.go`（`status_change_app.go`）に置く。
