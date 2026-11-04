@@ -55,13 +55,20 @@ func NewExporter(deps ExporterDeps, ids kernel.IDGenerator, log *slog.Logger) *E
 	return &Exporter{deps: deps, ids: ids, log: log}
 }
 
-// Run は、ctx が終わるまで、interval ごとに ExportDue を呼ぶ。
+// Run は、ctx が終わるまで、interval ごとに ExportDue を呼ぶ。取った数が exportBatch に届く間は、interval を待たずに続けて呼ぶ。
+// ExportDue がエラーを返すか、ctx が終わったら、続けて呼ばずに interval を待つ。
 func (x *Exporter) Run(ctx context.Context, interval time.Duration) {
 	t := time.NewTicker(interval)
 	defer t.Stop()
 	for {
-		if _, err := x.ExportDue(ctx); err != nil && ctx.Err() == nil {
-			x.log.ErrorContext(ctx, "calendar export", slog.Any("error", err))
+		for ctx.Err() == nil {
+			n, err := x.ExportDue(ctx)
+			if err != nil && ctx.Err() == nil {
+				x.log.ErrorContext(ctx, "calendar export", slog.Any("error", err))
+			}
+			if err != nil || n < exportBatch {
+				break
+			}
 		}
 		select {
 		case <-ctx.Done():

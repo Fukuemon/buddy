@@ -61,6 +61,8 @@ type exportEnv struct {
 	srv       *gcaltest.Server
 	schedules scheduleOps
 	exporter  *calendarexport.Exporter
+	// deps は、exporter の依存である。常駐のテストが、待ちのリポジトリを包んだ Exporter を作るのに使う。
+	deps calendarexport.ExporterDeps
 	// writers は、書き出しの処理が書く手段を引いた事業所の、引いた順の一覧である。
 	writers *[]string
 	// logs は、書き出しの処理が Debug から書いた JSON のログである。
@@ -118,12 +120,13 @@ func newExportEnv(t *testing.T) exportEnv {
 		Update:           schedule.NewUpdate(schedules, refs, facilities, types, nil, nil, outbox, tx).Do,
 	}
 	writers, logs := &[]string{}, &bytes.Buffer{}
-	exporter := calendarexport.NewExporter(calendarexport.ExporterDeps{
+	deps := calendarexport.ExporterDeps{
 		Facilities: inmem.Facilities{Store: s},
 		Exports:    exports, Calendars: inmem.Calendars{Store: s}, Writers: writerOf(gcal.NewWriter(gcaltest.Start(t, srv)), writers),
 		Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s},
-	}, ids, slog.New(slog.NewJSONHandler(logs, &slog.HandlerOptions{Level: slog.LevelDebug})))
-	return exportEnv{store: s, ctx: ctx, uc: uc, srv: srv, schedules: sched, exporter: exporter, writers: writers, logs: logs}
+	}
+	exporter := calendarexport.NewExporter(deps, ids, slog.New(slog.NewJSONHandler(logs, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	return exportEnv{store: s, ctx: ctx, uc: uc, srv: srv, schedules: sched, exporter: exporter, deps: deps, writers: writers, logs: logs}
 }
 
 func (e exportEnv) create(t *testing.T, title string) schedule.Schedule {
