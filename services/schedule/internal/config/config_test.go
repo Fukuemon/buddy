@@ -41,6 +41,40 @@ func TestLoad(t *testing.T) {
 	}
 }
 
+func TestLoadAllVariables(t *testing.T) {
+	c, err := config.Load(env(map[string]string{
+		"PORT": "9090", "DB_HOST": "db", "DB_PORT": "15432", "DB_USER": "app", "DB_PASSWORD": "secret", "DB_NAME": "buddy",
+		"OIDC_ISSUER": "http://idp:9000", "OIDC_AUDIENCE": "schedule", "OIDC_ORG_CLAIM": "organization",
+		"CORS_ALLOW_ORIGINS": "http://localhost:3000", "LOG_LEVEL": "warn",
+		"BROKER_URL": " http://broker:8080 ", "BROKER_TOKEN_URL": "http://hydra:4444/oauth2/token", "BROKER_CLIENT_ID": "schedule-api",
+		"BROKER_CLIENT_SECRET": "broker-secret", "BROKER_AUDIENCE": "internal",
+		"GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE": "/config/accounts.json", "GOOGLE_CALENDAR_ENDPOINT": "http://gcalhold:8080/calendar/v3/",
+		"GOOGLE_CALENDAR_EXPORT_ENABLED": "true", "GOOGLE_CALENDAR_EXPORT_INTERVAL": "5s",
+		"GOOGLE_CALENDAR_SYNC_ENABLED": "true", "GOOGLE_CALENDAR_SYNC_INTERVAL": "1m",
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Port != "9090" || c.DB != (config.DB{Host: "db", Port: "15432", User: "app", Password: "secret", Name: "buddy"}) {
+		t.Errorf("Port = %q, DB = %+v", c.Port, c.DB)
+	}
+	if c.OIDC.Issuer != "http://idp:9000" || c.OIDC.Audience != "schedule" || c.OIDC.OrgClaim != "organization" {
+		t.Errorf("OIDC = %+v", c.OIDC)
+	}
+	if !slices.Equal(c.AllowOrigins, []string{"http://localhost:3000"}) || c.LogLevel != slog.LevelWarn {
+		t.Errorf("AllowOrigins = %v, LogLevel = %v", c.AllowOrigins, c.LogLevel)
+	}
+	if c.Broker != (config.Broker{URL: "http://broker:8080", TokenURL: "http://hydra:4444/oauth2/token", ClientID: "schedule-api", ClientSecret: "broker-secret", Audience: "internal"}) {
+		t.Errorf("Broker = %+v", c.Broker)
+	}
+	if c.Calendar != (config.Calendar{
+		ServiceAccountsFile: "/config/accounts.json", Endpoint: "http://gcalhold:8080/calendar/v3/",
+		ExportEnabled: true, ExportInterval: 5 * time.Second, SyncEnabled: true, SyncInterval: time.Minute,
+	}) {
+		t.Errorf("Calendar = %+v", c.Calendar)
+	}
+}
+
 func TestLoadCalendar(t *testing.T) {
 	c, err := config.Load(env(map[string]string{
 		"DB_USER": "app", "DB_PASSWORD": "secret", "DB_NAME": "buddy",
