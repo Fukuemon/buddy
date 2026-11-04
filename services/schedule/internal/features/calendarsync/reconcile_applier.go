@@ -99,6 +99,9 @@ func (a reconcileApplier) syncSchedule(ctx context.Context, c calendar.ExternalC
 	if err != nil {
 		return err
 	}
+	if isOverwriteChosen(open) {
+		return nil
+	}
 	if isSameSchedule(d, c.StaffID, ev) {
 		return a.sameContent(ctx, l, d.Version, ev, open)
 	}
@@ -150,6 +153,9 @@ func (a reconcileApplier) syncRecurring(ctx context.Context, l calendar.EventLin
 	if err != nil {
 		return err
 	}
+	if isOverwriteChosen(open) {
+		return nil
+	}
 	if isSameRecurring(rs, ev) {
 		return a.sameContent(ctx, l, rs.Version, ev, open)
 	}
@@ -174,8 +180,13 @@ func (a reconcileApplier) syncOccurrence(ctx context.Context, c calendar.Externa
 		return err
 	}
 	t := calendar.Target{FacilityID: rs.FacilityID, RecurringScheduleID: rs.ID}
-	if _, err := a.open(ctx, t); err != nil {
+	open, err := a.open(ctx, t)
+	if err != nil {
 		return err
+	}
+	// 回は親とは別の Google の予定で、親を書き直しても戻らない。捨てずに、書き直しが終わった後に読み直す
+	if isOverwriteChosen(open) {
+		return errExportWriting
 	}
 	date, ok := calendar.OriginalDate(ev)
 	occurs := ok && rs.HasOccurrenceOn(date)
@@ -284,6 +295,13 @@ func (a reconcileApplier) open(ctx context.Context, t calendar.Target) (*calenda
 		return nil, errExportWriting
 	}
 	return &e, nil
+}
+
+// isOverwriteChosen は、マネージャーが buddy の内容で書き直すと選び、まだ書いていない待ちかを返す。
+// 単発の予定と繰り返しの予定の親には Google の変更を当てず、保留にも戻さない。書き直しの後に読んだ Google の変更で、選んだ書き直しを打ち消さないためである。
+// 繰り返しの回の変更は、書き直しが終わるまで読み直しを待つ。
+func isOverwriteChosen(open *calendar.Export) bool {
+	return open != nil && open.Overwrite && open.Status == calendar.ExportPending
 }
 
 // resolve は、外部と buddy の予定が同じになったので、確認が必要な待ち open を終える。
