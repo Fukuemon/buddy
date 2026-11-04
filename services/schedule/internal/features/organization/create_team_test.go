@@ -12,22 +12,21 @@ import (
 
 func TestOrganizationCreateTeam(t *testing.T) {
 	s := inmem.Seeded()
-	uc := organization.NewApp(organization.Deps{
-		Facilities: inmem.Facilities{Store: s}, Teams: inmem.Teams{Store: s},
-	}, &inmem.Tx{}, &inmem.SeqIDs{}, func(context.Context) error { return nil })
+	guard := func(context.Context) error { return nil }
+	createTeam := organization.NewCreateTeam(inmem.Facilities{Store: s}, inmem.Teams{Store: s}, &inmem.SeqIDs{}, guard)
 	ctx := context.Background()
-	got, err := uc.CreateTeam(ctx, facilityID, "訪問", organization.TeamColorCyan)
+	got, err := createTeam.Do(ctx, facilityID, "訪問", organization.TeamColorCyan)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if got.Color != organization.TeamColorCyan {
 		t.Errorf("色を指定: Color = %s, want cyan", got.Color)
 	}
-	if _, err := uc.CreateTeam(ctx, facilityID, "訪問", ""); !errors.Is(err, apperr.ErrConflict) ||
+	if _, err := createTeam.Do(ctx, facilityID, "訪問", ""); !errors.Is(err, apperr.ErrConflict) ||
 		err.Error() != "チーム 訪問 はこの事業所にすでにあります" {
 		t.Errorf("同じ名前: err = %v, want 名前の重なりの ErrConflict", err)
 	}
-	if _, err := uc.CreateTeam(ctx, facilityID, "外来", "red"); !errors.Is(err, apperr.ErrInvalidInput) {
+	if _, err := createTeam.Do(ctx, facilityID, "外来", "red"); !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Errorf("8 色にない色: err = %v, want ErrInvalidInput", err)
 	}
 }
@@ -37,14 +36,13 @@ func TestOrganizationCreateTeam(t *testing.T) {
 func TestOrganizationCreateTeamDefaultColor(t *testing.T) {
 	s := inmem.Seeded()
 	s.Teams["OTHER"] = organization.Team{ID: "OTHER", FacilityID: "OTHERFACILITY", Name: "B", Color: organization.TeamColorOrange}
-	uc := organization.NewApp(organization.Deps{
-		Facilities: inmem.Facilities{Store: s}, Teams: inmem.Teams{Store: s},
-	}, &inmem.Tx{}, &inmem.SeqIDs{}, func(context.Context) error { return nil })
+	guard := func(context.Context) error { return nil }
+	createTeam := organization.NewCreateTeam(inmem.Facilities{Store: s}, inmem.Teams{Store: s}, &inmem.SeqIDs{}, guard)
 	ctx := context.Background()
-	if _, err := uc.CreateTeam(ctx, facilityID, "A", organization.TeamColorBlue); err != nil {
+	if _, err := createTeam.Do(ctx, facilityID, "A", organization.TeamColorBlue); err != nil {
 		t.Fatal(err)
 	}
-	got, err := uc.CreateTeam(ctx, facilityID, "B", "")
+	got, err := createTeam.Do(ctx, facilityID, "B", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,10 +55,9 @@ func TestOrganizationCreateTeamDefaultColor(t *testing.T) {
 func TestOrganizationCreateTeamForbidden(t *testing.T) {
 	s := inmem.Seeded()
 	before := len(s.Teams)
-	uc := organization.NewApp(organization.Deps{
-		Facilities: inmem.Facilities{Store: s}, Teams: inmem.Teams{Store: s},
-	}, &inmem.Tx{}, &inmem.SeqIDs{}, func(context.Context) error { return apperr.ErrForbidden })
-	if _, err := uc.CreateTeam(context.Background(), facilityID, "訪問", ""); !errors.Is(err, apperr.ErrForbidden) {
+	guard := func(context.Context) error { return apperr.ErrForbidden }
+	createTeam := organization.NewCreateTeam(inmem.Facilities{Store: s}, inmem.Teams{Store: s}, &inmem.SeqIDs{}, guard)
+	if _, err := createTeam.Do(context.Background(), facilityID, "訪問", ""); !errors.Is(err, apperr.ErrForbidden) {
 		t.Fatalf("err = %v, want ErrForbidden", err)
 	}
 	if len(s.Teams) != before {

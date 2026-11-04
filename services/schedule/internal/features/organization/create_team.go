@@ -4,16 +4,30 @@ import (
 	"context"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
 
-// CreateTeam は、事業所にチームを作り、保存したチームを返す。color が空なら NextTeamColor で事業所のチームの色から選ぶ。
+// CreateTeam は、事業所にチームを作り、保存したチームを返す。
+type CreateTeam struct {
+	facilities FacilityRepository
+	teams      TeamRepository
+	ids        kernel.IDGenerator
+	guard      Guard
+}
+
+// NewCreateTeam は CreateTeam を作る。
+func NewCreateTeam(facilities FacilityRepository, teams TeamRepository, ids kernel.IDGenerator, guard Guard) CreateTeam {
+	return CreateTeam{facilities: facilities, teams: teams, ids: ids, guard: guard}
+}
+
+// Do は、事業所にチームを作り、保存したチームを返す。color が空なら NextTeamColor で事業所のチームの色から選ぶ。
 // 職員の管理の権限が無いときは apperr.ErrForbidden を、color が 8 色にないときは入力のエラーを、
 // 同じ事業所に同じ名前のチームがあるときは apperr.ErrConflict を返す。
-func (o *App) CreateTeam(ctx context.Context, facilityID, name string, color TeamColor) (Team, error) {
+func (o CreateTeam) Do(ctx context.Context, facilityID, name string, color TeamColor) (Team, error) {
 	if err := o.guard(ctx); err != nil {
 		return Team{}, err
 	}
-	if _, err := o.deps.Facilities.Get(ctx, facilityID); err != nil {
+	if _, err := o.facilities.Get(ctx, facilityID); err != nil {
 		return Team{}, err
 	}
 	color, err := o.teamColorOf(ctx, facilityID, color)
@@ -24,18 +38,18 @@ func (o *App) CreateTeam(ctx context.Context, facilityID, name string, color Tea
 	if err != nil {
 		return Team{}, err
 	}
-	if err := o.deps.Teams.Create(ctx, t); err != nil {
+	if err := o.teams.Create(ctx, t); err != nil {
 		return Team{}, apperr.AsConflict(err, "チーム %s はこの事業所にすでにあります", t.Name)
 	}
-	return o.deps.Teams.Get(ctx, t.ID)
+	return o.teams.Get(ctx, t.ID)
 }
 
 // teamColorOf は、color が空でなければそのまま返し、空なら事業所 facilityID のチームが使っていない色を NextTeamColor で選ぶ。
-func (o *App) teamColorOf(ctx context.Context, facilityID string, color TeamColor) (TeamColor, error) {
+func (o CreateTeam) teamColorOf(ctx context.Context, facilityID string, color TeamColor) (TeamColor, error) {
 	if color != "" {
 		return color, nil
 	}
-	teams, err := o.deps.Teams.ListByFacility(ctx, facilityID)
+	teams, err := o.teams.ListByFacility(ctx, facilityID)
 	if err != nil {
 		return "", err
 	}
