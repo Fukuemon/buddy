@@ -86,7 +86,7 @@ func TestCalendarRepository(t *testing.T) {
 		t.Fatalf("ListByFacility = %+v", list)
 	}
 
-	link := calendar.Link{
+	link := calendar.EventLink{
 		ID: linkID, FacilityID: seedFacility, ExternalCalendarID: calID, ExternalEventID: "ev1",
 		ETag: `"1"`, RecurringScheduleID: ptr(seedRecurring),
 	}
@@ -191,21 +191,18 @@ func TestCalendarImportInOneTransaction(t *testing.T) {
 	schedules := NewScheduleRepository(testDB)
 	recurring := NewRecurringScheduleRepository(testDB)
 	ids := ulid.Generator{}
-	uc := calendar.NewApp(calendar.Deps{
-		Calendars: calendars, Accounts: sameAccount{gcal.NewReader(gcaltest.Start(t, srv))},
-		Staff: staffRefs, Patients: patients, ServiceCodes: masters, Types: NewScheduleTypeRepository(testDB),
-		Schedules: schedules, Recurring: recurring, RecurringSchedules: recurring,
-		Visits: visit.NewWriter(visit.WriterDeps{
-			Staff:    staffRefs,
-			Patients: patient.VisitFinder(patients),
-			Infos:    NewVisitInfoRepository(testDB), Masters: masters,
-		}, ids),
-	}, NewTransactor(testDB), ids, principal.RequireStaffManage)
+	visits := visit.NewWriter(visit.WriterDeps{
+		Staff:    staffRefs,
+		Patients: patient.VisitFinder(patients),
+		Infos:    NewVisitInfoRepository(testDB), Masters: masters,
+	}, ids)
+	importCalendar := calendar.NewImport(calendars, sameAccount{gcal.NewReader(gcaltest.Start(t, srv))}, staffRefs, patients, recurring, masters,
+		NewScheduleTypeRepository(testDB), recurring, schedules, visits, NewTransactor(testDB), ids, principal.RequireStaffManage)
 	rng, err := calendar.NewRange(civil.Date{Year: 2026, Month: 11, Day: 1}, civil.Date{Year: 2026, Month: 11, Day: 30})
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := uc.Import(ctx, calID, rng, nil)
+	res, err := importCalendar.Do(ctx, calID, rng, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -216,7 +213,7 @@ func TestCalendarImportInOneTransaction(t *testing.T) {
 	if err != nil || len(links) != 5 {
 		t.Fatalf("ListLinks = %d 件, %v", len(links), err)
 	}
-	byEvent := map[string]calendar.Link{}
+	byEvent := map[string]calendar.EventLink{}
 	for _, l := range links {
 		byEvent[l.ExternalEventID] = l
 	}
@@ -237,7 +234,7 @@ func TestCalendarImportInOneTransaction(t *testing.T) {
 	if l := byEvent["biweekly_1117"]; l.RecurringEventID == nil || *l.RecurringEventID != "biweekly" {
 		t.Errorf("回ごとにした予定の対応 = %+v", l)
 	}
-	again, err := uc.Import(ctx, calID, rng, nil)
+	again, err := importCalendar.Do(ctx, calID, rng, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

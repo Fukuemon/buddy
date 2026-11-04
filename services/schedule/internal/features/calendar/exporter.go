@@ -167,7 +167,7 @@ func (x *Exporter) exportRecurring(ctx context.Context, e Export) error {
 
 // exportedExclusions は、繰り返しの予定 parent の除外する日 dates から、外部の例外の回と対応する予定が置き換えた日を除き、
 // 外部の予定の EXDATE に書く日を返す。その日を EXDATE にすると、外部の例外の回が消えるためである。
-func (x *Exporter) exportedExclusions(ctx context.Context, parent Link, dates []civil.Date) ([]civil.Date, error) {
+func (x *Exporter) exportedExclusions(ctx context.Context, parent EventLink, dates []civil.Date) ([]civil.Date, error) {
 	all, err := x.deps.Calendars.ListLinks(ctx, parent.ExternalCalendarID)
 	if err != nil {
 		return nil, err
@@ -199,7 +199,7 @@ type item struct {
 	staffID             string
 	id                  string
 	version             int
-	link                *Link
+	link                *EventLink
 	body                *EventBody
 	scheduleID          *string
 	recurringScheduleID *string
@@ -276,21 +276,21 @@ func (x *Exporter) sync(ctx context.Context, e Export, it item) error {
 		return err
 	}
 	version := it.version
-	return x.deps.Calendars.CreateLink(ctx, Link{
+	return x.deps.Calendars.CreateLink(ctx, EventLink{
 		ID: x.ids.NewID(), FacilityID: cal.FacilityID, ExternalCalendarID: cal.ID, ExternalEventID: eventID,
 		ETag: etag, SyncedVersion: &version, ScheduleID: it.scheduleID, RecurringScheduleID: it.recurringScheduleID,
 	})
 }
 
 // ifMatch は、待ち e で外部の予定に付ける If-Match の etag を返す。buddy の内容で書き直す待ちでは付けない。
-func ifMatch(e Export, l Link) string {
+func ifMatch(e Export, l EventLink) string {
 	if e.Overwrite {
 		return ""
 	}
 	return l.ETag
 }
 
-func optionalLink(l Link, err error) (*Link, error) {
+func optionalLink(l EventLink, err error) (*EventLink, error) {
 	if errors.Is(err, apperr.ErrNotFound) {
 		return nil, nil
 	}

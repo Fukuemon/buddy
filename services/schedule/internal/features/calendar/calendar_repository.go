@@ -30,18 +30,18 @@ type Repository interface {
 	FinishRun(ctx context.Context, r ImportRun) (ImportRun, error)
 
 	// ListLinks は、カレンダーの予定の対応を返す。
-	ListLinks(ctx context.Context, externalCalendarID string) ([]Link, error)
+	ListLinks(ctx context.Context, externalCalendarID string) ([]EventLink, error)
 	// CreateLink は、同じ外部の予定の対応があるときに apperr.ErrConflict を返す。
-	CreateLink(ctx context.Context, l Link) error
+	CreateLink(ctx context.Context, l EventLink) error
 
 	// ActiveByStaff は、職員 staffID に結び付けた外していないカレンダーを返す。
 	ActiveByStaff(ctx context.Context, staffID string) (ExternalCalendar, error)
 	// LinkBySchedule は、単発の予定 scheduleID の予定の対応を返す。
-	LinkBySchedule(ctx context.Context, scheduleID string) (Link, error)
+	LinkBySchedule(ctx context.Context, scheduleID string) (EventLink, error)
 	// LinkByRecurringSchedule は、繰り返しの予定 recurringScheduleID の予定の対応を返す。
-	LinkByRecurringSchedule(ctx context.Context, recurringScheduleID string) (Link, error)
+	LinkByRecurringSchedule(ctx context.Context, recurringScheduleID string) (EventLink, error)
 	// LinkByEvent は、カレンダー externalCalendarID の外部の予定 eventID の予定の対応を返す。
-	LinkByEvent(ctx context.Context, externalCalendarID, eventID string) (Link, error)
+	LinkByEvent(ctx context.Context, externalCalendarID, eventID string) (EventLink, error)
 	// UpdateLink は、予定の対応 id の etag と、同じにした時点の更新の番号を書く。
 	UpdateLink(ctx context.Context, id, etag string, syncedVersion int) error
 	// DeleteLink は、予定の対応 id を消す。無くてもエラーにしない。

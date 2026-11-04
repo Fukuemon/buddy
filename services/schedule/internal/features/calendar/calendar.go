@@ -6,6 +6,7 @@ package calendar
 import (
 	"time"
 
+	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 )
 
@@ -52,8 +53,8 @@ type ImportRun struct {
 	FinishedAt         *time.Time
 }
 
-// Link は、取り込んだ外部の予定と、buddy の単発か繰り返しの予定の対応である。ScheduleID と RecurringScheduleID のどちらか 1 つを持つ。
-type Link struct {
+// EventLink は、取り込んだ外部の予定と、buddy の単発か繰り返しの予定の対応である。ScheduleID と RecurringScheduleID のどちらか 1 つを持つ。
+type EventLink struct {
 	ID                 string
 	FacilityID         string
 	ExternalCalendarID string
@@ -65,3 +66,30 @@ type Link struct {
 	ScheduleID          *string
 	RecurringScheduleID *string
 }
+
+// 衝突の原因の code。httpapi が 409 のレスポンスの code にする。
+const (
+	// CodeCalendarTaken は、カレンダーがほかの職員に結び付いていることを表す。外したカレンダーを含む。
+	CodeCalendarTaken = "calendar_taken"
+	// CodeCalendarLinked は、カレンダーがその職員にすでに結び付いていることを表す。
+	CodeCalendarLinked = "calendar_already_linked"
+	// CodeStaffHasCalendar は、職員にほかのカレンダーが結び付いていることを表す。
+	CodeStaffHasCalendar = "staff_has_calendar"
+	// CodeImportRunning は、同じカレンダーの取り込みが進んでいることを表す。
+	CodeImportRunning = "import_running"
+	// CodeReviewChanged は、プレビューの後に確認が必要な予定が変わったことを表す。
+	CodeReviewChanged = "import_preview_changed"
+	// CodeExportNotInReview は、書き直そうとした書き出しが、確認が必要な状態でないことを表す。
+	CodeExportNotInReview = "export_not_in_review"
+	// CodeExportNotAcceptable は、外部のカレンダーの内容を buddy に当てられない書き出しであることを表す。
+	// 繰り返しの予定と、書けなかった（failed）書き出しが当たる。
+	CodeExportNotAcceptable = "export_not_acceptable"
+	// CodeExternalChangeUnappliable は、外部のカレンダーの予定を buddy の予定に読み替えられないことを表す。
+	CodeExternalChangeUnappliable = "external_change_unappliable"
+)
+
+var (
+	errNotInReview   = apperr.ConflictCode(CodeExportNotInReview, "この予定は、確認が必要な書き出しではありません")
+	errNotAcceptable = apperr.ConflictCode(CodeExportNotAcceptable,
+		"この予定は、Google カレンダーの内容を buddy に当てられません。buddy の内容で書き直してください")
+)

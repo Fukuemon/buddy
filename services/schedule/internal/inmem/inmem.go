@@ -58,7 +58,7 @@ type Store struct {
 	Cancels       map[string]schedule.Cancellation
 	Calendars     map[string]calendar.ExternalCalendar
 	Runs          map[string]calendar.ImportRun
-	Links         map[string]calendar.Link
+	Links         map[string]calendar.EventLink
 	Exports       map[string]calendar.Export
 	// SyncResults は、カレンダーの ID ごとの、最後に同期した結果である。
 	SyncResults map[string]calendar.SyncResult
@@ -85,7 +85,7 @@ func NewStore() *Store {
 		Cancels:       map[string]schedule.Cancellation{},
 		Calendars:     map[string]calendar.ExternalCalendar{},
 		Runs:          map[string]calendar.ImportRun{},
-		Links:         map[string]calendar.Link{},
+		Links:         map[string]calendar.EventLink{},
 		Exports:       map[string]calendar.Export{},
 		SyncResults:   map[string]calendar.SyncResult{},
 	}
@@ -949,8 +949,8 @@ func (s Calendars) FinishRun(_ context.Context, r calendar.ImportRun) (calendar.
 }
 
 // ListLinks は、calendar.Repository の ListLinks を実装する。
-func (s Calendars) ListLinks(_ context.Context, externalCalendarID string) ([]calendar.Link, error) {
-	var out []calendar.Link
+func (s Calendars) ListLinks(_ context.Context, externalCalendarID string) ([]calendar.EventLink, error) {
+	var out []calendar.EventLink
 	for _, l := range s.Links {
 		if l.ExternalCalendarID == externalCalendarID {
 			out = append(out, l)
@@ -960,7 +960,7 @@ func (s Calendars) ListLinks(_ context.Context, externalCalendarID string) ([]ca
 }
 
 // CreateLink は、予定の対応を保存する。同じ外部の予定の対応があるときは apperr.ErrConflict を返す。
-func (s Calendars) CreateLink(_ context.Context, l calendar.Link) error {
+func (s Calendars) CreateLink(_ context.Context, l calendar.EventLink) error {
 	for _, cur := range s.Links {
 		if cur.ExternalCalendarID == l.ExternalCalendarID && cur.ExternalEventID == l.ExternalEventID {
 			return apperr.ErrConflict
@@ -981,32 +981,32 @@ func (s Calendars) ActiveByStaff(_ context.Context, staffID string) (calendar.Ex
 }
 
 // LinkBySchedule は、calendar.Repository の LinkBySchedule を実装する。
-func (s Calendars) LinkBySchedule(_ context.Context, scheduleID string) (calendar.Link, error) {
-	return s.linkBy(func(l calendar.Link) *string { return l.ScheduleID }, scheduleID)
+func (s Calendars) LinkBySchedule(_ context.Context, scheduleID string) (calendar.EventLink, error) {
+	return s.linkBy(func(l calendar.EventLink) *string { return l.ScheduleID }, scheduleID)
 }
 
 // LinkByRecurringSchedule は、calendar.Repository の LinkByRecurringSchedule を実装する。
-func (s Calendars) LinkByRecurringSchedule(_ context.Context, recurringScheduleID string) (calendar.Link, error) {
-	return s.linkBy(func(l calendar.Link) *string { return l.RecurringScheduleID }, recurringScheduleID)
+func (s Calendars) LinkByRecurringSchedule(_ context.Context, recurringScheduleID string) (calendar.EventLink, error) {
+	return s.linkBy(func(l calendar.EventLink) *string { return l.RecurringScheduleID }, recurringScheduleID)
 }
 
 // LinkByEvent は、calendar.Repository の LinkByEvent を実装する。
-func (s Calendars) LinkByEvent(_ context.Context, externalCalendarID, eventID string) (calendar.Link, error) {
+func (s Calendars) LinkByEvent(_ context.Context, externalCalendarID, eventID string) (calendar.EventLink, error) {
 	for _, l := range s.Links {
 		if l.ExternalCalendarID == externalCalendarID && l.ExternalEventID == eventID {
 			return l, nil
 		}
 	}
-	return calendar.Link{}, apperr.ErrNotFound
+	return calendar.EventLink{}, apperr.ErrNotFound
 }
 
-func (s Calendars) linkBy(target func(calendar.Link) *string, id string) (calendar.Link, error) {
+func (s Calendars) linkBy(target func(calendar.EventLink) *string, id string) (calendar.EventLink, error) {
 	for _, l := range s.Links {
 		if t := target(l); t != nil && *t == id {
 			return l, nil
 		}
 	}
-	return calendar.Link{}, apperr.ErrNotFound
+	return calendar.EventLink{}, apperr.ErrNotFound
 }
 
 // UpdateLink は、calendar.Repository の UpdateLink を実装する。

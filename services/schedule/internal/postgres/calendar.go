@@ -170,20 +170,20 @@ func (r *CalendarRepository) FinishRun(ctx context.Context, run calendar.ImportR
 }
 
 // ListLinks は、カレンダーの予定の対応を返す。
-func (r *CalendarRepository) ListLinks(ctx context.Context, externalCalendarID string) ([]calendar.Link, error) {
+func (r *CalendarRepository) ListLinks(ctx context.Context, externalCalendarID string) ([]calendar.EventLink, error) {
 	rows, err := r.q(ctx).ListExternalEventLinks(ctx, externalCalendarID)
 	if err != nil {
 		return nil, translate("list external event links", err)
 	}
-	out := make([]calendar.Link, len(rows))
+	out := make([]calendar.EventLink, len(rows))
 	for i, l := range rows {
 		out[i] = toLink(l)
 	}
 	return out, nil
 }
 
-func toLink(l sqlcgen.ExternalEventLink) calendar.Link {
-	out := calendar.Link{
+func toLink(l sqlcgen.ExternalEventLink) calendar.EventLink {
+	out := calendar.EventLink{
 		ID:                  l.ID,
 		FacilityID:          l.FacilityID,
 		ExternalCalendarID:  l.ExternalCalendarID,
@@ -217,30 +217,30 @@ func (r *CalendarRepository) ActiveByStaff(ctx context.Context, staffID string) 
 }
 
 // LinkBySchedule は、単発の予定 scheduleID の予定の対応を返す。無いときは apperr.ErrNotFound を返す。
-func (r *CalendarRepository) LinkBySchedule(ctx context.Context, scheduleID string) (calendar.Link, error) {
+func (r *CalendarRepository) LinkBySchedule(ctx context.Context, scheduleID string) (calendar.EventLink, error) {
 	l, err := r.q(ctx).GetExternalEventLinkBySchedule(ctx, &scheduleID)
 	if err != nil {
-		return calendar.Link{}, translate("get external event link", err)
+		return calendar.EventLink{}, translate("get external event link", err)
 	}
 	return toLink(l), nil
 }
 
 // LinkByEvent は、カレンダー externalCalendarID の外部の予定 eventID の予定の対応を返す。無いときは apperr.ErrNotFound を返す。
-func (r *CalendarRepository) LinkByEvent(ctx context.Context, externalCalendarID, eventID string) (calendar.Link, error) {
+func (r *CalendarRepository) LinkByEvent(ctx context.Context, externalCalendarID, eventID string) (calendar.EventLink, error) {
 	l, err := r.q(ctx).GetExternalEventLinkByEvent(ctx, sqlcgen.GetExternalEventLinkByEventParams{
 		ExternalCalendarID: externalCalendarID, ExternalEventID: eventID,
 	})
 	if err != nil {
-		return calendar.Link{}, translate("get external event link", err)
+		return calendar.EventLink{}, translate("get external event link", err)
 	}
 	return toLink(l), nil
 }
 
 // LinkByRecurringSchedule は、繰り返しの予定 recurringScheduleID の予定の対応を返す。無いときは apperr.ErrNotFound を返す。
-func (r *CalendarRepository) LinkByRecurringSchedule(ctx context.Context, recurringScheduleID string) (calendar.Link, error) {
+func (r *CalendarRepository) LinkByRecurringSchedule(ctx context.Context, recurringScheduleID string) (calendar.EventLink, error) {
 	l, err := r.q(ctx).GetExternalEventLinkByRecurringSchedule(ctx, &recurringScheduleID)
 	if err != nil {
-		return calendar.Link{}, translate("get external event link", err)
+		return calendar.EventLink{}, translate("get external event link", err)
 	}
 	return toLink(l), nil
 }
@@ -262,7 +262,7 @@ func (r *CalendarRepository) DeleteLink(ctx context.Context, id string) error {
 }
 
 // CreateLink は、予定の対応を書く。同じ外部の予定の対応があるときは apperr.ErrConflict を返す。
-func (r *CalendarRepository) CreateLink(ctx context.Context, l calendar.Link) error {
+func (r *CalendarRepository) CreateLink(ctx context.Context, l calendar.EventLink) error {
 	v, err := syncedVersion(l.SyncedVersion)
 	if err != nil {
 		return err

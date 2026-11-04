@@ -27,7 +27,7 @@ func TestStaffRetire(t *testing.T) {
 	s.Schedules["PAST"] = schedule.Detail{Schedule: schedule.Schedule{ID: "PAST", Slot: schedule.Slot{
 		FacilityID: facilityID, StaffID: staffID, Date: civil.Date{Year: 2026, Month: 10, Day: 22}}}}
 	s.Calendars["CAL"] = calendar.ExternalCalendar{ID: "CAL", FacilityID: facilityID, StaffID: staffID, Provider: calendar.ProviderGoogle, CalendarID: "staff@example.com"}
-	s.Links["LINK"] = calendar.Link{ID: "LINK", FacilityID: facilityID, ExternalCalendarID: "CAL", ExternalEventID: "EV", ScheduleID: ptr("PAST")}
+	s.Links["LINK"] = calendar.EventLink{ID: "LINK", FacilityID: facilityID, ExternalCalendarID: "CAL", ExternalEventID: "EV", ScheduleID: ptr("PAST")}
 
 	got, err := stopApp(s, ids, allow).Retire(ctx, staffID)
 	if err != nil {

@@ -181,7 +181,7 @@ func TestCalendarLinksForExport(t *testing.T) {
 		t.Errorf("ActiveByStaff = %+v, %v", c, err)
 	}
 	sid := seedConference
-	if err := r.CreateLink(ctx, calendar.Link{ID: linkID, FacilityID: seedFacility, ExternalCalendarID: calID, ExternalEventID: "ev1", ETag: `"1"`, ScheduleID: &sid}); err != nil {
+	if err := r.CreateLink(ctx, calendar.EventLink{ID: linkID, FacilityID: seedFacility, ExternalCalendarID: calID, ExternalEventID: "ev1", ETag: `"1"`, ScheduleID: &sid}); err != nil {
 		t.Fatal(err)
 	}
 	if err := r.UpdateLink(ctx, linkID, `"2"`, 4); err != nil {

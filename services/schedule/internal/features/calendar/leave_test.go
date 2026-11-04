@@ -42,7 +42,7 @@ func retire(t *testing.T, s *inmem.Store) {
 	}
 }
 
-func skipReasons(p calendar.Preview) map[calendar.SkipReason]int {
+func skipReasons(p calendar.ImportPreview) map[calendar.SkipReason]int {
 	out := map[calendar.SkipReason]int{}
 	for _, s := range p.SkippedItems {
 		out[s.Reason]++
@@ -305,7 +305,7 @@ func TestAcceptExportRejectsDetachedCalendar(t *testing.T) {
 	t.Run("予定の行をロックした後に退職", func(t *testing.T) {
 		e, scheduleID, exportID := setup(t)
 		s := e.store
-		uc := calendar.NewApp(calendar.Deps{
+		uc := build(deps{
 			Calendars: inmem.Calendars{Store: s}, Accounts: oneAccount(gcal.NewReader(gcaltest.Start(t, e.srv)), nil),
 			Exports: inmem.Exports{Store: s}, Schedules: inmem.Schedules{Store: s}, Types: inmem.ScheduleTypes{Store: s},
 			Staff: lockHook{StaffRefs: inmem.StaffRefs{Store: s}, run: func() { retire(t, s) }},

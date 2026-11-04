@@ -10,6 +10,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
@@ -17,7 +18,9 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
+	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
 const (
@@ -85,7 +88,7 @@ func fixture() *gcaltest.Server {
 
 type env struct {
 	store *inmem.Store
-	uc    *calendar.App
+	uc    *app
 	ctx   context.Context
 	rng   calendar.Range
 }
@@ -112,24 +115,24 @@ func newEnv(t *testing.T, srv *gcaltest.Server) env {
 }
 
 // withSource は、e の Store の上で、自分の事業所のサービスアカウントの source で予定を読む App を作る。
-func withSource(e env, source calendar.EventSource) *calendar.App {
+func withSource(e env, source calendar.EventSource) *app {
 	return withStaff(e, source, inmem.StaffRefs{Store: e.store})
 }
 
 // withStaff は、withSource と同じ App を、職員を st で読むようにして作る。
-func withStaff(e env, source calendar.EventSource, st calendar.StaffRefs) *calendar.App {
+func withStaff(e env, source calendar.EventSource, st calendar.StaffRefs) *app {
 	return newApp(e, oneAccount(source, nil), st)
 }
 
 // withAccounts は、e の Store の上で、事業所ごとのサービスアカウント acc で予定を読む App を作る。
-func withAccounts(e env, acc calendar.Accounts) *calendar.App {
+func withAccounts(e env, acc calendar.Accounts) *app {
 	return newApp(e, acc, inmem.StaffRefs{Store: e.store})
 }
 
-func newApp(e env, acc calendar.Accounts, st calendar.StaffRefs) *calendar.App {
+func newApp(e env, acc calendar.Accounts, st calendar.StaffRefs) *app {
 	s := e.store
 	ids := &inmem.SeqIDs{}
-	return calendar.NewApp(calendar.Deps{
+	return build(deps{
 		Calendars: inmem.Calendars{Store: s}, Accounts: acc,
 		Staff: st, Patients: inmem.Patients{Store: s}, ServiceCodes: inmem.VisitMasters{Store: s},
 		Types: inmem.ScheduleTypes{Store: s}, Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, RecurringSchedules: inmem.RecurringSchedules{Store: s},
@@ -239,4 +242,51 @@ func (s startFiltered) Events(ctx context.Context, id string, timeMin, timeMax t
 		}
 	}
 	return out, err
+}
+
+// deps は、テストが calendar の操作の型に渡す依存である。テストが使わない依存は nil のままにする。
+type deps struct {
+	Calendars          calendar.Repository
+	Accounts           calendar.Accounts
+	Staff              calendar.StaffRefs
+	Patients           calendar.Patients
+	ServiceCodes       calendar.ServiceCodes
+	Types              calendar.Types
+	Schedules          calendar.ScheduleStore
+	Recurring          calendar.Recurring
+	RecurringSchedules kernel.Finder[schedule.RecurringDetail]
+	Visits             calendar.VisitStore
+	Exports            calendar.ExportRepository
+}
+
+// app は、テストが呼ぶ calendar の操作の Do である。
+type app struct {
+	ServiceAccount   func(ctx context.Context, facilityID string) (string, error)
+	List             func(ctx context.Context, facilityID string) ([]calendar.ExternalCalendar, error)
+	Check            func(ctx context.Context, facilityID, calendarID string) error
+	Link             func(ctx context.Context, facilityID, staffID, calendarID string) (calendar.ExternalCalendar, error)
+	Unlink           func(ctx context.Context, id string) error
+	Preview          func(ctx context.Context, id string, rng calendar.Range) (calendar.ImportPreview, error)
+	Import           func(ctx context.Context, id string, rng calendar.Range, decisions []calendar.Decision) (calendar.ImportResult, error)
+	ListExportIssues func(ctx context.Context, facilityID string) ([]calendar.ExportIssue, error)
+	RetryExport      func(ctx context.Context, id string) (calendar.Export, error)
+	AcceptExport     func(ctx context.Context, id string) (calendar.Export, error)
+}
+
+// build は、d の依存で calendar の全ての操作の型を作る。
+func build(d deps, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) *app {
+	return &app{
+		ServiceAccount: calendar.NewServiceAccount(d.Accounts, guard).Do,
+		List:           calendar.NewList(d.Calendars, guard).Do,
+		Check:          calendar.NewCheck(d.Accounts, guard).Do,
+		Link:           calendar.NewLink(d.Accounts, d.Staff, d.Calendars, tx, ids, guard).Do,
+		Unlink:         calendar.NewUnlink(d.Calendars, guard).Do,
+		Preview:        calendar.NewPreview(d.Calendars, d.Accounts, d.Staff, d.Patients, d.RecurringSchedules, d.ServiceCodes, guard).Do,
+		Import: calendar.NewImport(d.Calendars, d.Accounts, d.Staff, d.Patients, d.RecurringSchedules, d.ServiceCodes,
+			d.Types, d.Recurring, d.Schedules, d.Visits, tx, ids, guard).Do,
+		ListExportIssues: calendar.NewListExportIssues(d.Exports, guard).Do,
+		RetryExport:      calendar.NewRetryExport(d.Exports, guard).Do,
+		AcceptExport: calendar.NewAcceptExport(d.Exports, d.Schedules, d.Calendars, d.Accounts, d.Staff,
+			d.Types, d.Patients, d.ServiceCodes, d.Visits, tx, ids, guard).Do,
+	}
 }

@@ -7,8 +7,8 @@ import (
 )
 
 // active は、外していないカレンダーを返す。無いか外したときは apperr.ErrNotFound を返す。
-func (u *App) active(ctx context.Context, id string) (ExternalCalendar, error) {
-	c, err := u.deps.Calendars.Get(ctx, id)
+func active(ctx context.Context, calendars Repository, id string) (ExternalCalendar, error) {
+	c, err := calendars.Get(ctx, id)
 	if err != nil {
 		return ExternalCalendar{}, err
 	}

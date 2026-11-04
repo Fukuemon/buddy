@@ -23,7 +23,7 @@ type fakeCalendars struct {
 	err           error
 	lastRange     calendar.Range
 	lastDecisions []calendar.Decision
-	preview       calendar.Preview
+	preview       calendar.ImportPreview
 	lastFacility  string
 }
 
@@ -47,7 +47,7 @@ func (f *fakeCalendars) Link(_ context.Context, facilityID, staffID, calendarID 
 
 func (f *fakeCalendars) Unlink(context.Context, string) error { return f.err }
 
-func (f *fakeCalendars) Preview(_ context.Context, _ string, rng calendar.Range) (calendar.Preview, error) {
+func (f *fakeCalendars) Preview(_ context.Context, _ string, rng calendar.Range) (calendar.ImportPreview, error) {
 	f.lastRange = rng
 	p := f.preview
 	p.Range = rng
@@ -78,8 +78,16 @@ func (f *fakeCalendars) AcceptExport(_ context.Context, id string) (calendar.Exp
 	return calendar.Export{ID: id, Target: calendar.Target{ScheduleID: scheduleID}, Status: calendar.ExportSucceeded}, f.err
 }
 
+// app は、f のメソッド値を CalendarApp に入れる。
+func (f *fakeCalendars) app() httpapi.CalendarApp {
+	return httpapi.CalendarApp{
+		ServiceAccount: f.ServiceAccount, List: f.List, Check: f.Check, Link: f.Link, Unlink: f.Unlink, Preview: f.Preview,
+		Import: f.Import, ListExportIssues: f.ListExportIssues, RetryExport: f.RetryExport, AcceptExport: f.AcceptExport,
+	}
+}
+
 func newCalendarRouter(c *fakeCalendars) http.Handler {
-	return httpapi.NewRouter(httpapi.Apps{Calendars: c, Auth: fakeAuth{}}, httpapi.RouterConfig{
+	return httpapi.NewRouter(httpapi.Apps{Calendars: c.app(), Auth: fakeAuth{}}, httpapi.RouterConfig{
 		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
 		Verifier: testVerifier,
 	})
@@ -158,7 +166,7 @@ func TestCalendarAccountOfFacility(t *testing.T) {
 func TestPreviewCalendarImport(t *testing.T) {
 	d := civil.Date{Year: 2026, Month: 11, Day: 3}
 	day := 2
-	f := &fakeCalendars{preview: calendar.Preview{
+	f := &fakeCalendars{preview: calendar.ImportPreview{
 		Counts: calendar.Counts{Import: 1, ImportVisit: 1, NeedsReview: 1, Skipped: 1},
 		ReviewItems: []calendar.ReviewItem{{
 			ExternalEventID: "weekly", Date: d, StartTime: civil.Time{Hour: 10}, EndTime: civil.Time{Hour: 10, Minute: 30},

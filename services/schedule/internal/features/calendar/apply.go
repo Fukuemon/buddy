@@ -82,7 +82,7 @@ func (a applier) applyEvent(ctx context.Context, c ExternalCalendar, ev Event) e
 }
 
 // syncSchedule は、カレンダー c の単発の予定に対応する外部の予定 ev の変更を当てる。
-func (a applier) syncSchedule(ctx context.Context, c ExternalCalendar, l Link, ev Event) error {
+func (a applier) syncSchedule(ctx context.Context, c ExternalCalendar, l EventLink, ev Event) error {
 	d, err := a.schedules.GetForUpdate(ctx, *l.ScheduleID)
 	if err != nil {
 		return err
@@ -117,7 +117,7 @@ func (a applier) syncSchedule(ctx context.Context, c ExternalCalendar, l Link, e
 
 // acceptSchedule は、カレンダー c の予定の対応 l の単発の予定を、buddy での変更によらず外部の予定 ev の内容にする。
 // トランザクションの中で呼ぶ。外部の変更を読み替えられないときは errUnappliable を返す。
-func (a applier) acceptSchedule(ctx context.Context, c ExternalCalendar, l Link, ev Event) error {
+func (a applier) acceptSchedule(ctx context.Context, c ExternalCalendar, l EventLink, ev Event) error {
 	d, err := a.schedules.GetForUpdate(ctx, *l.ScheduleID)
 	if err != nil {
 		return err
@@ -133,7 +133,7 @@ func (a applier) acceptSchedule(ctx context.Context, c ExternalCalendar, l Link,
 
 // syncRecurring は、繰り返しの予定に対応する外部の繰り返しの予定 ev の変更を確認する。
 // 繰り返しの予定そのもの（規則、時刻、タイトル）の外部での変更と削除は buddy に当てず、確認が必要な待ちにする。
-func (a applier) syncRecurring(ctx context.Context, l Link, ev Event) error {
+func (a applier) syncRecurring(ctx context.Context, l EventLink, ev Event) error {
 	rs, err := a.recurring.GetForUpdate(ctx, *l.RecurringScheduleID)
 	if err != nil {
 		return err
@@ -161,7 +161,7 @@ func (a applier) syncRecurring(ctx context.Context, l Link, ev Event) error {
 // buddy でもその回を除外していれば、変えた回は両方が変わったので、確認が必要な待ちにする。取り消した回は、buddy がその回を
 // 置き換え、親の予定の EXDATE をまだ書き出していないときだけ、確認が必要な待ちにする。書き出した後なら、親の EXDATE が
 // 戻ってきたものとみなす。
-func (a applier) syncOccurrence(ctx context.Context, c ExternalCalendar, parent Link, ev Event) error {
+func (a applier) syncOccurrence(ctx context.Context, c ExternalCalendar, parent EventLink, ev Event) error {
 	rs, err := a.recurring.GetForUpdate(ctx, *parent.RecurringScheduleID)
 	if err != nil {
 		return err
@@ -213,7 +213,7 @@ func (a applier) syncOccurrence(ctx context.Context, c ExternalCalendar, parent 
 		return err
 	}
 	version, recurringEventID := createdVersion, parent.ExternalEventID
-	if err := a.calendars.CreateLink(ctx, Link{
+	if err := a.calendars.CreateLink(ctx, EventLink{
 		ID: a.ids.NewID(), FacilityID: rs.FacilityID, ExternalCalendarID: c.ID, ExternalEventID: ev.ID,
 		RecurringEventID: &recurringEventID, ETag: ev.ETag, SyncedVersion: &version, ScheduleID: &sc.ID,
 	}); err != nil {
@@ -226,7 +226,7 @@ func (a applier) syncOccurrence(ctx context.Context, c ExternalCalendar, parent 
 // buddy の更新の番号 version が対応と同じなら、対応の番号も進め、確認が必要な待ち open を終える。
 // 違えば、比べない項目（説明、繰り返しの除外の日）に書き出していない buddy の変更があるので、番号は進めず、
 // 確認が必要な待ちを書き直す待ちにして、buddy の変更を書き出させる。
-func (a applier) sameContent(ctx context.Context, l Link, version int, ev Event, open *Export) error {
+func (a applier) sameContent(ctx context.Context, l EventLink, version int, ev Event, open *Export) error {
 	if isSynced(l, version) || l.SyncedVersion == nil {
 		if err := a.calendars.UpdateLink(ctx, l.ID, ev.ETag, version); err != nil {
 			return err
@@ -244,7 +244,7 @@ func (a applier) sameContent(ctx context.Context, l Link, version int, ev Event,
 
 // syncedParent は、外部の回を当てる前の繰り返しの予定の更新の番号 before が予定の対応と同じなら、予定の対応を今の更新の番号にする。
 // 外部の回を当てて増えた番号を、buddy の変更と見誤らないためである。
-func (a applier) syncedParent(ctx context.Context, parent Link, before int) error {
+func (a applier) syncedParent(ctx context.Context, parent EventLink, before int) error {
 	if !isSynced(parent, before) {
 		return nil
 	}
@@ -528,7 +528,7 @@ func isSameSchedule(d schedule.Detail, staffID string, ev Event) bool {
 }
 
 // isSynced は、予定の対応 l が、更新の番号 version の時点で外部の予定と同じにしたものかを返す。
-func isSynced(l Link, version int) bool {
+func isSynced(l EventLink, version int) bool {
 	return l.SyncedVersion != nil && *l.SyncedVersion == version
 }
 
