@@ -45,10 +45,6 @@ type Config struct {
 	Now func() time.Time
 }
 
-type handler struct {
-	Config
-}
-
 // NewHandler は、次の経路を持つ http.Handler を返す。
 //   - POST /internal/staff: 職員を登録の途中の状態で登録する。同じ事業所に同じメールの職員がいれば、その職員を返す
 //   - POST /internal/staff/{id}/activate: 登録の途中の職員を有効にする。予定の API が職員を書き終えてから呼ぶ
@@ -65,41 +61,45 @@ func NewHandler(cfg Config) http.Handler {
 	if cfg.Now == nil {
 		cfg.Now = time.Now
 	}
-	h := handler{cfg}
+	client := func(next http.Handler) http.Handler {
+		return requireClient(cfg.Logger, cfg.Verifier, cfg.Clients, next)
+	}
 	mux := http.NewServeMux()
-	mux.Handle("POST /internal/staff", h.requireClient(h.register))
-	mux.Handle("POST /internal/staff/{id}/activate", h.requireClient(h.activate))
-	mux.Handle("DELETE /internal/staff/{id}", h.requireClient(h.delete))
-	mux.Handle("POST /internal/staff/{id}/suspend", h.requireClient(h.suspend))
-	mux.Handle("POST /internal/staff/{id}/resume", h.requireClient(h.resume))
-	mux.Handle("POST /internal/staff/{id}/retire", h.requireClient(h.retire))
-	mux.HandleFunc("POST /internal/token-hook", h.tokenHook)
+	mux.Handle("POST /internal/staff", client(register{logger: cfg.Logger, staff: cfg.Staff, knownOrg: cfg.KnownOrg, newID: cfg.NewID}))
+	mux.Handle("POST /internal/staff/{id}/activate", client(activate{logger: cfg.Logger, staff: cfg.Staff}))
+	mux.Handle("DELETE /internal/staff/{id}", client(deleteStaff{logger: cfg.Logger, staff: cfg.Staff}))
+	mux.Handle("POST /internal/staff/{id}/suspend", client(suspend{logger: cfg.Logger, staff: cfg.Staff, hydra: cfg.Hydra}))
+	mux.Handle("POST /internal/staff/{id}/resume", client(resume{logger: cfg.Logger, staff: cfg.Staff}))
+	mux.Handle("POST /internal/staff/{id}/retire", client(retire{logger: cfg.Logger, staff: cfg.Staff, hydra: cfg.Hydra}))
+	mux.Handle("POST /internal/token-hook", tokenHook{
+		logger: cfg.Logger, staff: cfg.Staff, clients: cfg.Clients, tokenHookKey: cfg.TokenHookKey, now: cfg.Now,
+	})
 	return mux
 }
 
 // requireClient は、Bearer の access token を検証してから next を呼ぶ。トークンが無いか検証できなければ 401 を返す。
 // トークンの sub が cfg.Clients に無いか、トークンが組織の ID を持てば 403 を返す。client credentials のトークンの sub は
 // クライアントの ID で、組織の ID は同意で職員のトークンにだけ入る。
-func (h handler) requireClient(next http.HandlerFunc) http.Handler {
+func requireClient(logger *slog.Logger, verifier TokenVerifier, clients []string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		raw, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
 		if !ok || strings.TrimSpace(raw) == "" {
 			w.Header().Set("WWW-Authenticate", `Bearer`)
-			h.writeError(w, r, http.StatusUnauthorized, "unauthenticated", "access token がありません", nil)
+			writeError(logger, w, r, http.StatusUnauthorized, "unauthenticated", "access token がありません", nil)
 			return
 		}
-		id, err := h.Verifier.Verify(r.Context(), strings.TrimSpace(raw))
+		id, err := verifier.Verify(r.Context(), strings.TrimSpace(raw))
 		if err != nil {
 			w.Header().Set("WWW-Authenticate", `Bearer error="invalid_token"`)
-			h.writeError(w, r, http.StatusUnauthorized, "unauthenticated", "access token が正しくありません", err)
+			writeError(logger, w, r, http.StatusUnauthorized, "unauthenticated", "access token が正しくありません", err)
 			return
 		}
-		if !slices.Contains(h.Clients, id.Subject) || id.OrgID != "" {
-			h.writeError(w, r, http.StatusForbidden, "forbidden", "このクライアントは内部の API を呼べません", nil)
+		if !slices.Contains(clients, id.Subject) || id.OrgID != "" {
+			writeError(logger, w, r, http.StatusForbidden, "forbidden", "このクライアントは内部の API を呼べません", nil)
 			return
 		}
-		h.Logger.InfoContext(r.Context(), "内部の API を受けた", "client", id.Subject, "method", r.Method, "path", r.URL.Path)
-		next(w, r)
+		logger.InfoContext(r.Context(), "内部の API を受けた", "client", id.Subject, "method", r.Method, "path", r.URL.Path)
+		next.ServeHTTP(w, r)
 	})
 }
 
@@ -123,23 +123,23 @@ var storeErrors = map[*staff.Error]struct {
 }
 
 // writeStoreError は、Store が返した err を応答にする。storeErrors に無いエラーは、文を internalMsg にした internal の 500 にする。
-func (h handler) writeStoreError(w http.ResponseWriter, r *http.Request, err error, internalMsg string) {
+func writeStoreError(logger *slog.Logger, w http.ResponseWriter, r *http.Request, err error, internalMsg string) {
 	if se, ok := errors.AsType[*staff.Error](err); ok {
 		if e, ok := storeErrors[se]; ok {
-			h.writeError(w, r, e.status, se.Code, e.message, err)
+			writeError(logger, w, r, e.status, se.Code, e.message, err)
 			return
 		}
 	}
-	h.writeError(w, r, http.StatusInternalServerError, "internal", internalMsg, err)
+	writeError(logger, w, r, http.StatusInternalServerError, "internal", internalMsg, err)
 }
 
-func (h handler) writeError(w http.ResponseWriter, r *http.Request, code int, kind, msg string, err error) {
+func writeError(logger *slog.Logger, w http.ResponseWriter, r *http.Request, code int, kind, msg string, err error) {
 	level := slog.LevelWarn
 	if code >= http.StatusInternalServerError {
 		level = slog.LevelError
 	}
-	h.Logger.Log(r.Context(), level, "内部の API がエラーを返す", "status", code, "reason", msg, "error", err)
-	WriteJSON(h.Logger, w, code, ErrorBody{Code: kind, Message: msg})
+	logger.Log(r.Context(), level, "内部の API がエラーを返す", "status", code, "reason", msg, "error", err)
+	WriteJSON(logger, w, code, ErrorBody{Code: kind, Message: msg})
 }
 
 // WriteJSON は、body を JSON にして code で書く。書けなければ logger にエラーを書く。
