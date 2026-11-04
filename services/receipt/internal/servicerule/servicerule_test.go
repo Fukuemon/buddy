@@ -7,14 +7,14 @@ func TestHasScheduleEndAdjustment(t *testing.T) {
 		"訪看I２", "予防看I２", "予訪看I２", "予防訪看I２",
 		"訪看I３", "予防看I３", "予訪看I３", "予防訪看I３",
 		"訪看I４", "予防看I４", "予訪看I４", "予防訪看I４",
-		"訪看I２・夜", "予訪看I３・深",
+		"訪看I２・夜", "予訪看I３・深", "予防訪看I４・夜",
 	}
 	for _, s := range adjusted {
 		if !HasScheduleEndAdjustment(s) {
 			t.Errorf("%s を調整しない", s)
 		}
 	}
-	for _, s := range []string{"訪看I５", "訪看I５・２超", "医", "基本療養費", "難病等複数回訪問加算(２回)"} {
+	for _, s := range []string{"訪看I５", "訪看I５・２超", "予訪看I５２超", "訪看I１", "医", "基本療養費", "難病等複数回訪問加算(２回)"} {
 		if HasScheduleEndAdjustment(s) {
 			t.Errorf("%s を調整する", s)
 		}
