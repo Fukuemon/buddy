@@ -43,6 +43,8 @@ ADR-0026 は、操作を `usecase.go` の 1 つにまとめる例外を決めた
 - 常駐の処理と、`Usecase` 以外で操作を持つ型は、同じ機能のパッケージに、型の名前のファイル（`exporter.go`、`syncer.go`、`visit` の `writer.go`）で置く。これらの型と操作は、同じ集約のリポジトリと規則を使うためである。
   - この判断のうち、`calendar` の `Exporter` と `Syncer` を操作と同じパッケージに置く部分は ADR-0032 で置き換えた。
     - ADR-0032: [予定の API の calendar を、結び付け、取り込み、同期、書き出しの 4 つの機能に分ける](0032-schedule-api-calendar-split.md)
+  - この判断のうち、常駐の繰り返し（`Run`）を機能のパッケージに置く部分は ADR-0037 で置き換えた。
+    - ADR-0037: [Worker の常駐と 1 回の繰り返しを cmd/calendar-worker に集め、機能のパッケージは 1 回の処理だけを持つ](0037-calendar-worker-loop.md)
   - 外部のシステムの手段の型が多く、`Usecase` と常駐の処理が共有する `calendar` は、`EventSource`、`EventWriter`、`SourceFor`、`WriterFor`、`Accounts` を `event.go` にまとめる。
     - この判断は ADR-0030 で置き換えた。
       - ADR-0030: [Go の 3 つの API で、パッケージをフラットに保ち、ファイルの名前の末尾の語で役割を表す](0030-go-file-names-by-role.md)

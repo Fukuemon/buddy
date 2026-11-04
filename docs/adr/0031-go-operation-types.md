@@ -94,7 +94,10 @@ func (o Leave) Do(ctx context.Context, id string, in LeaveInput) (StatusChange, 
 - ハンドラの呼び出し（`s.u.Staff.Leave(ctx, id, in)`）は変わらない。
 - `httpapi` のテストは、フェイクのメソッド値を struct に入れて渡す。フェイクの型は今のまま使う。
 
-常駐の処理と、`App` 以外で操作を持つ型（`calendar` の `Exporter`、`Syncer`、`Outbox`、`visit` の `Writer`）は、1 つの型が 1 つの役割を持つので、今の形のまま変えない。
+常駐の処理と、`App` 以外で操作を持つ型（`calendar` の `Exporter`、`Syncer`、`Outbox`、`visit` の `Writer`）は、1 つの型が 1 つの役割を持つので、今の形のまま変えない。  
+この判断のうち、`Exporter` と `Syncer` が常駐の繰り返し（`Run`）を持つ部分は ADR-0037 で置き換えた。
+
+- ADR-0037: [Worker の常駐と 1 回の繰り返しを cmd/calendar-worker に集め、機能のパッケージは 1 回の処理だけを持つ](0037-calendar-worker-loop.md)
 
 照合の API と ID ブローカーには、次のとおり当てる。
 
