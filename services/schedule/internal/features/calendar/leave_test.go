@@ -38,18 +38,18 @@ func retire(t *testing.T, s *inmem.Store) {
 	}
 }
 
-// lockHook は、LockStatuses の前に run を呼ぶ StaffRefs である。ロックを待つ間に、ほかのトランザクションが職員を書いて
+// lockHook は、Share の前に run を呼ぶ FacilityLock である。ロックを待つ間に、ほかのトランザクションが職員を書いて
 // コミットしたことを表す。
 type lockHook struct {
-	inmem.StaffRefs
+	inmem.Facilities
 	run func()
 }
 
-func (h lockHook) LockStatuses(ctx context.Context, facilityID string) error {
+func (h lockHook) Share(ctx context.Context, facilityID string) error {
 	if h.run != nil {
 		h.run()
 	}
-	return h.StaffRefs.LockStatuses(ctx, facilityID)
+	return h.Facilities.Share(ctx, facilityID)
 }
 
 // 退職した職員には、カレンダーを結び付けられない。休職の職員には結び付けられる（#278）。
@@ -66,8 +66,8 @@ func TestLinkRejectsRetiredStaff(t *testing.T) {
 	d := e.store.Staff[inmem.StaffID]
 	d.RetiredAt = nil
 	e.store.Staff[inmem.StaffID] = d
-	uc := withStaff(e, gcal.NewReader(gcaltest.Start(t, srv)),
-		lockHook{StaffRefs: inmem.StaffRefs{Store: e.store}, run: func() { retire(t, e.store) }})
+	uc := withLocks(e, gcal.NewReader(gcaltest.Start(t, srv)),
+		lockHook{Facilities: inmem.Facilities{Store: e.store}, run: func() { retire(t, e.store) }})
 	if _, err := uc.Link(e.ctx, inmem.FacilityID, inmem.StaffID, googleCalID); !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Errorf("確認の後に退職した職員: err = %v, want ErrInvalidInput", err)
 	}

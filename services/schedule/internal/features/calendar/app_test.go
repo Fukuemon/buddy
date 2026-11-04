@@ -35,22 +35,22 @@ func newEnv(t *testing.T, srv *gcaltest.Server) env {
 	if srv != nil {
 		source = gcal.NewReader(gcaltest.Start(t, srv))
 	}
-	e.uc = withStaff(e, source, inmem.StaffRefs{Store: e.store})
+	e.uc = withLocks(e, source, inmem.Facilities{Store: e.store})
 	return e
 }
 
-// withStaff は、e の Store の上で、自分の事業所のサービスアカウントの source で予定を読み、職員を st で読む App を作る。
-func withStaff(e env, source calendar.EventSource, st calendar.StaffRefs) *app {
-	return newApp(e, oneAccount(source, nil), st)
+// withLocks は、e の Store の上で、自分の事業所のサービスアカウントの source で予定を読み、事業所を locks でロックする App を作る。
+func withLocks(e env, source calendar.EventSource, locks calendar.FacilityLock) *app {
+	return newApp(e, oneAccount(source, nil), locks)
 }
 
 // withAccounts は、e の Store の上で、事業所ごとのサービスアカウント acc で予定を読む App を作る。
 func withAccounts(e env, acc calendar.Accounts) *app {
-	return newApp(e, acc, inmem.StaffRefs{Store: e.store})
+	return newApp(e, acc, inmem.Facilities{Store: e.store})
 }
 
-func newApp(e env, acc calendar.Accounts, st calendar.StaffRefs) *app {
-	return build(deps{Calendars: inmem.Calendars{Store: e.store}, Accounts: acc, Staff: st}, &inmem.Tx{}, &inmem.SeqIDs{}, principal.RequireStaffManage)
+func newApp(e env, acc calendar.Accounts, locks calendar.FacilityLock) *app {
+	return build(deps{Calendars: inmem.Calendars{Store: e.store}, Accounts: acc, Staff: inmem.StaffRefs{Store: e.store}, Locks: locks}, &inmem.Tx{}, &inmem.SeqIDs{}, principal.RequireStaffManage)
 }
 
 func manager() context.Context {
@@ -65,6 +65,7 @@ type deps struct {
 	Calendars calendar.Repository
 	Accounts  calendar.Accounts
 	Staff     calendar.StaffRefs
+	Locks     calendar.FacilityLock
 }
 
 // app は、テストが呼ぶ calendar の操作の Do である。
@@ -82,7 +83,7 @@ func build(d deps, tx tx.Transactor, ids kernel.IDGenerator, guard organization.
 		ServiceAccount: calendar.NewServiceAccount(d.Accounts, guard).Do,
 		List:           calendar.NewList(d.Calendars, guard).Do,
 		Check:          calendar.NewCheck(d.Accounts, guard).Do,
-		Link:           calendar.NewLink(d.Accounts, d.Staff, d.Calendars, tx, ids, guard).Do,
+		Link:           calendar.NewLink(d.Accounts, d.Staff, d.Locks, d.Calendars, tx, ids, guard).Do,
 		Unlink:         calendar.NewUnlink(d.Calendars, guard).Do,
 	}
 }

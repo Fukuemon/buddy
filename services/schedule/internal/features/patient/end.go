@@ -11,7 +11,7 @@ import (
 // End は、利用者を利用の終了にし、利用の終了にした利用者を返す。
 type End struct {
 	patients  Repository
-	locks     FacilityLocker
+	locks     FacilityLock
 	schedules ScheduleReader
 	now       func() time.Time
 	tx        tx.Transactor
@@ -19,7 +19,7 @@ type End struct {
 }
 
 // NewEnd は End を作る。
-func NewEnd(patients Repository, locks FacilityLocker, schedules ScheduleReader, now func() time.Time, tx tx.Transactor, guard organization.Guard) End {
+func NewEnd(patients Repository, locks FacilityLock, schedules ScheduleReader, now func() time.Time, tx tx.Transactor, guard organization.Guard) End {
 	if now == nil {
 		now = time.Now
 	}

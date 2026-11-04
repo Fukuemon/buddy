@@ -15,6 +15,7 @@ import (
 type Link struct {
 	accounts  Accounts
 	staff     StaffRefs
+	locks     FacilityLock
 	calendars Repository
 	tx        tx.Transactor
 	ids       kernel.IDGenerator
@@ -22,8 +23,8 @@ type Link struct {
 }
 
 // NewLink は Link を作る。
-func NewLink(accounts Accounts, staff StaffRefs, calendars Repository, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) Link {
-	return Link{accounts: accounts, staff: staff, calendars: calendars, tx: tx, ids: ids, guard: guard}
+func NewLink(accounts Accounts, staff StaffRefs, locks FacilityLock, calendars Repository, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) Link {
+	return Link{accounts: accounts, staff: staff, locks: locks, calendars: calendars, tx: tx, ids: ids, guard: guard}
 }
 
 // Do は、事業所の職員 staffID に、calendarID のカレンダーを結び付ける。事業所のサービスアカウントで読めるかを確認してから書く。
@@ -54,7 +55,7 @@ func (u Link) Do(ctx context.Context, facilityID, staffID, calendarID string) (E
 	var linked ExternalCalendar
 	err = u.tx.WithinTx(ctx, func(ctx context.Context) error {
 		// 退職はカレンダーを外すので、確認した後に退職した職員へ結び付けないよう、ロックしてから読み直す
-		if err := u.staff.LockStatuses(ctx, facilityID); err != nil {
+		if err := u.locks.Share(ctx, facilityID); err != nil {
 			return err
 		}
 		if st, err := u.staff.Get(ctx, st.ID); err != nil {

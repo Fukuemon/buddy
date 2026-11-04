@@ -102,7 +102,7 @@ func get[T any](m map[string]T, id string) (T, error) {
 	return v, nil
 }
 
-// Facilities は、organization.FacilityRepository のメモリ上の実装である。
+// Facilities は、organization.FacilityRepository と、機能のパッケージの FacilityLock のメモリ上の実装である。
 type Facilities struct{ *Store }
 
 // Get は、organization.FacilityRepository の Get を実装する。
@@ -113,6 +113,18 @@ func (s Facilities) Get(_ context.Context, id string) (organization.Facility, er
 // GetByOrgID は、organization.FacilityRepository の GetByOrgID を実装する。
 func (s Facilities) GetByOrgID(_ context.Context, orgID string) (organization.Facility, error) {
 	return get(s.Facilities, s.FacilityByOrg[orgID])
+}
+
+// Lock は、事業所があるかだけを確認する。メモリ上の実装はロックを取らない。
+func (s Facilities) Lock(_ context.Context, facilityID string) error {
+	_, err := get(s.Facilities, facilityID)
+	return err
+}
+
+// Share は、事業所があるかだけを確認する。メモリ上の実装はロックを取らない。
+func (s Facilities) Share(_ context.Context, facilityID string) error {
+	_, err := get(s.Facilities, facilityID)
+	return err
 }
 
 // Departments は、organization.DepartmentRepository のメモリ上の実装である。
@@ -442,12 +454,6 @@ func (s Staff) Retire(_ context.Context, id string) error {
 	return nil
 }
 
-// LockFacility は、事業所があるかだけを確認する。メモリ上の実装はロックを取らない。
-func (s Staff) LockFacility(_ context.Context, facilityID string) error {
-	_, err := get(s.Facilities, facilityID)
-	return err
-}
-
 // ActiveManagers は、事業所で職員の管理の権限を Policies か Grants に持つ有効な職員の ID を、ID の順に返す。
 func (s Staff) ActiveManagers(_ context.Context, facilityID string) ([]string, error) {
 	var out []string
@@ -516,12 +522,6 @@ func (s StaffRefs) Get(_ context.Context, id string) (staff.Ref, error) {
 
 func ref(d staff.Detail) staff.Ref {
 	return staff.Ref{ID: d.ID, FacilityID: d.FacilityID, TeamID: d.TeamID, Status: d.Status(), NonVisiting: d.NonVisiting}
-}
-
-// LockStatuses は、事業所があるかだけを確認する。メモリ上の実装はロックを取らない。
-func (s StaffRefs) LockStatuses(_ context.Context, facilityID string) error {
-	_, err := get(s.Facilities, facilityID)
-	return err
 }
 
 // ListByFacility は、schedule.StaffRefs の ListByFacility を実装する。

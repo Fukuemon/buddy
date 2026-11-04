@@ -380,6 +380,32 @@ func (q *Queries) ListTeamsByFacility(ctx context.Context, facilityID string) ([
 	return items, nil
 }
 
+const lockFacility = `-- name: LockFacility :one
+SELECT id FROM facilities WHERE id = $1 FOR UPDATE
+`
+
+// 事業所の職員の休職、退職、役職とチームを変える操作、権限を外す操作を 1 つずつにする。職員の管理の権限を持つ有効な職員を数えてから書くまでの間に、ほかの操作が割り込まない。
+// 予定と担当の新しい割り振り（ShareFacility）とも 1 つずつにし、退職の残る予定の確認と予定の作成が行き違わない。
+func (q *Queries) LockFacility(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRow(ctx, lockFacility, id)
+	var id_2 string
+	err := row.Scan(&id_2)
+	return id_2, err
+}
+
+const shareFacility = `-- name: ShareFacility :one
+SELECT id FROM facilities WHERE id = $1 FOR SHARE
+`
+
+// 予定と担当の新しい割り振りが、職員の状態を確認してから書き終えるまでの間、LockFacility を待たせる。
+// 割り振りどうしは待たせない。
+func (q *Queries) ShareFacility(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRow(ctx, shareFacility, id)
+	var id_2 string
+	err := row.Scan(&id_2)
+	return id_2, err
+}
+
 const updateDepartment = `-- name: UpdateDepartment :execrows
 UPDATE departments SET name = $2, updated_at = now() WHERE id = $1
 `

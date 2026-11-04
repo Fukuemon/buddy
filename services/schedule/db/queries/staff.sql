@@ -124,11 +124,6 @@ SET retired_at = coalesce(retired_at, now()), leave_started_at = NULL, leave_ret
     email = NULL, phone_number = NULL
 WHERE id = $1;
 
--- name: LockFacility :one
--- 事業所の職員の休職、退職、役職とチームを変える操作、権限を外す操作を 1 つずつにする。職員の管理の権限を持つ有効な職員を数えてから書くまでの間に、ほかの操作が割り込まない。
--- 予定と担当の新しい割り振り（ShareFacility）とも 1 つずつにし、退職の残る予定の確認と予定の作成が行き違わない。
-SELECT id FROM facilities WHERE id = $1 FOR UPDATE;
-
 -- name: ListActiveStaffManagers :many
 -- 事業所で職員の管理の権限を持つ、休職でも退職でもない職員の ID を返す。
 SELECT DISTINCT u.id
@@ -169,8 +164,3 @@ SELECT id, facility_id, team_id, visits, leave_started_at, retired_at FROM users
 
 -- name: ListUserRefsByFacility :many
 SELECT id, facility_id, team_id, visits, leave_started_at, retired_at FROM users WHERE facility_id = $1 ORDER BY id;
-
--- name: ShareFacility :one
--- 予定と担当の新しい割り振りが、職員の状態を確認してから書き終えるまでの間、LockFacility を待たせる。
--- 割り振りどうしは待たせない。
-SELECT id FROM facilities WHERE id = $1 FOR SHARE;

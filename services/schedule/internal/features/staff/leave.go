@@ -21,6 +21,7 @@ type LeaveInput struct {
 type Leave struct {
 	self        func(ctx context.Context) (string, bool)
 	staff       Repository
+	locks       FacilityLock
 	assignments AssignmentReader
 	now         func() time.Time
 	identities  Identities
@@ -30,11 +31,11 @@ type Leave struct {
 
 // NewLeave は Leave を作る。self は、ctx のリクエストを送った職員の ID を返し、職員が自分を休職か退職にするのを拒むのに使う。nil なら拒まない。
 // now は、残る予定を数え始める日を決める時刻である。nil なら time.Now を使う。
-func NewLeave(self func(ctx context.Context) (string, bool), staff Repository, assignments AssignmentReader, now func() time.Time, identities Identities, tx tx.Transactor, guard organization.Guard) Leave {
+func NewLeave(self func(ctx context.Context) (string, bool), staff Repository, locks FacilityLock, assignments AssignmentReader, now func() time.Time, identities Identities, tx tx.Transactor, guard organization.Guard) Leave {
 	if now == nil {
 		now = time.Now
 	}
-	return Leave{self: self, staff: staff, assignments: assignments, now: now, identities: identities, tx: tx, guard: guard}
+	return Leave{self: self, staff: staff, locks: locks, assignments: assignments, now: now, identities: identities, tx: tx, guard: guard}
 }
 
 // Do は、職員を休職にし、休職にした職員と、その日以降に残る予定と担当の利用者を返す。残る予定があっても拒まない。
@@ -49,7 +50,7 @@ func NewLeave(self func(ctx context.Context) (string, bool), staff Repository, a
 func (s Leave) Do(ctx context.Context, id string, in LeaveInput) (StatusChange, error) {
 	var out StatusChange
 	var revokeErr error
-	err := stop(ctx, s.guard, s.self, s.tx, s.staff, id, func(ctx context.Context, cur Detail) error {
+	err := stop(ctx, s.guard, s.self, s.tx, s.staff, s.locks, id, func(ctx context.Context, cur Detail) error {
 		if err := cur.RequireLeavable(); err != nil {
 			return err
 		}

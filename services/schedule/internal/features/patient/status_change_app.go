@@ -15,12 +15,12 @@ func remaining(ctx context.Context, schedules ScheduleReader, now func() time.Ti
 
 // locked は、トランザクションの中で利用者 id の事業所をロックし、ロックの後に読み直した利用者を返す。
 // 利用の終了と再開を、職員の退職の担当の確認と、予定と担当の新しい割り振りと 1 つずつにする。
-func locked(ctx context.Context, patients Repository, locks FacilityLocker, id string) (Detail, error) {
+func locked(ctx context.Context, patients Repository, locks FacilityLock, id string) (Detail, error) {
 	cur, err := patients.Get(ctx, id)
 	if err != nil {
 		return Detail{}, err
 	}
-	if err := locks.LockFacility(ctx, cur.FacilityID); err != nil {
+	if err := locks.Lock(ctx, cur.FacilityID); err != nil {
 		return Detail{}, err
 	}
 	return patients.Get(ctx, id)

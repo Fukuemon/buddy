@@ -15,6 +15,7 @@ import (
 type Retire struct {
 	self        func(ctx context.Context) (string, bool)
 	staff       Repository
+	locks       FacilityLock
 	assignments AssignmentReader
 	now         func() time.Time
 	identities  Identities
@@ -25,11 +26,11 @@ type Retire struct {
 
 // NewRetire は Retire を作る。self は、ctx のリクエストを送った職員の ID を返し、職員が自分を休職か退職にするのを拒むのに使う。nil なら拒まない。
 // now は、残る予定を数え始める日を決める時刻である。nil なら time.Now を使う。
-func NewRetire(self func(ctx context.Context) (string, bool), staff Repository, assignments AssignmentReader, now func() time.Time, identities Identities, calendars CalendarDetacher, tx tx.Transactor, guard organization.Guard) Retire {
+func NewRetire(self func(ctx context.Context) (string, bool), staff Repository, locks FacilityLock, assignments AssignmentReader, now func() time.Time, identities Identities, calendars CalendarDetacher, tx tx.Transactor, guard organization.Guard) Retire {
 	if now == nil {
 		now = time.Now
 	}
-	return Retire{self: self, staff: staff, assignments: assignments, now: now, identities: identities, calendars: calendars, tx: tx, guard: guard}
+	return Retire{self: self, staff: staff, locks: locks, assignments: assignments, now: now, identities: identities, calendars: calendars, tx: tx, guard: guard}
 }
 
 // Do は、職員を退職にし、名前、所属、役職を残してメールと電話番号を消し、職員の外部のカレンダーを外す。
@@ -43,7 +44,7 @@ func NewRetire(self func(ctx context.Context) (string, bool), staff Repository, 
 func (s Retire) Do(ctx context.Context, id string) (StatusChange, error) {
 	var out StatusChange
 	var revokeErr error
-	err := stop(ctx, s.guard, s.self, s.tx, s.staff, id, func(ctx context.Context, cur Detail) error {
+	err := stop(ctx, s.guard, s.self, s.tx, s.staff, s.locks, id, func(ctx context.Context, cur Detail) error {
 		a, err := remaining(ctx, s.assignments, s.now, cur)
 		if err != nil {
 			return err

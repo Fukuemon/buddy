@@ -108,11 +108,11 @@ func newExportEnv(t *testing.T) exportEnv {
 	facilities, refs, schedules, recurring, types := inmem.Facilities{Store: s}, inmem.StaffRefs{Store: s}, inmem.Schedules{Store: s}, inmem.RecurringSchedules{Store: s}, inmem.ScheduleTypes{Store: s}
 	outbox, tx := calendarexport.NewOutbox(exports, inmem.Calendars{Store: s}, ids), &inmem.Tx{}
 	sched := scheduleOps{
-		Create:           schedule.NewCreate(facilities, schedules, types, refs, nil, nil, outbox, tx, ids).Do,
-		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, nil, nil, recurring, outbox, tx, ids).Do,
-		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, refs, schedules, types, nil, nil, outbox, tx, ids).Do,
+		Create:           schedule.NewCreate(facilities, schedules, types, refs, facilities, nil, nil, outbox, tx, ids).Do,
+		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, facilities, nil, nil, recurring, outbox, tx, ids).Do,
+		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, refs, facilities, schedules, types, nil, nil, outbox, tx, ids).Do,
 		Cancel:           schedule.NewCancel(schedules, refs, outbox, tx, ids).Do,
-		Update:           schedule.NewUpdate(schedules, refs, types, nil, nil, outbox, tx).Do,
+		Update:           schedule.NewUpdate(schedules, refs, facilities, types, nil, nil, outbox, tx).Do,
 	}
 	writers := &[]string{}
 	exporter := calendarexport.NewExporter(calendarexport.ExporterDeps{

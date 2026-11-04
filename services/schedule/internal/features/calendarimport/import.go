@@ -31,6 +31,7 @@ type Import struct {
 	calendars          Calendars
 	accounts           calendar.Accounts
 	staff              calendar.StaffRefs
+	locks              calendar.FacilityLock
 	patients           calendar.Patients
 	recurringSchedules kernel.Finder[scheduleview.RecurringDetail]
 	serviceCodes       calendar.ServiceCodes
@@ -44,8 +45,8 @@ type Import struct {
 }
 
 // NewImport は Import を作る。
-func NewImport(calendars Calendars, accounts calendar.Accounts, staff calendar.StaffRefs, patients calendar.Patients, recurringSchedules kernel.Finder[scheduleview.RecurringDetail], serviceCodes calendar.ServiceCodes, types calendar.Types, recurring Recurring, schedules calendar.ScheduleStore, visits calendar.VisitStore, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) Import {
-	return Import{calendars: calendars, accounts: accounts, staff: staff, patients: patients, recurringSchedules: recurringSchedules, serviceCodes: serviceCodes, types: types, recurring: recurring, schedules: schedules, visits: visits, tx: tx, ids: ids, guard: guard}
+func NewImport(calendars Calendars, accounts calendar.Accounts, staff calendar.StaffRefs, locks calendar.FacilityLock, patients calendar.Patients, recurringSchedules kernel.Finder[scheduleview.RecurringDetail], serviceCodes calendar.ServiceCodes, types calendar.Types, recurring Recurring, schedules calendar.ScheduleStore, visits calendar.VisitStore, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) Import {
+	return Import{calendars: calendars, accounts: accounts, staff: staff, locks: locks, patients: patients, recurringSchedules: recurringSchedules, serviceCodes: serviceCodes, types: types, recurring: recurring, schedules: schedules, visits: visits, tx: tx, ids: ids, guard: guard}
 }
 
 // Do は、カレンダー id の期間 rng の予定を読み直し、プレビューと同じ規則で読み替えて、1 つのトランザクションで書く。
@@ -138,7 +139,7 @@ func (u Import) importPlan(ctx context.Context, src calendar.EventSource, c cale
 // 訪問しない職員への変更も事業所の行に排他のロックを取るので、この取り込みと行き違わない。
 // カレンダーが外れていれば apperr.ErrNotFound を、休職か訪問しない職員かが変わっていれば apperr.ErrConflict を返す。
 func (u Import) recheck(ctx context.Context, c calendar.ExternalCalendar, blocked calendar.SkipReason) error {
-	if err := u.staff.LockStatuses(ctx, c.FacilityID); err != nil {
+	if err := u.locks.Share(ctx, c.FacilityID); err != nil {
 		return err
 	}
 	if _, err := calendar.Active(ctx, u.calendars, c.ID); err != nil {

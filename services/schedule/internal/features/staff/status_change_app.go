@@ -25,7 +25,7 @@ func remaining(ctx context.Context, assignments AssignmentReader, now func() tim
 // stop は、休職と退職に共通の確認をしてから、事業所をロックしたトランザクションの中で、読み直した職員で write を呼ぶ。
 // 自分と、事業所で職員の管理の権限を持つ最後の有効な職員は、apperr.ErrConflict で拒む。
 // 事業所のロックで、同じ事業所の休職と退職を 1 つずつにし、管理者どうしが同時に休職にし合って有効な管理者がいなくなるのを防ぐ。
-func stop(ctx context.Context, guard organization.Guard, self func(ctx context.Context) (string, bool), tx tx.Transactor, staff Repository, id string, write func(ctx context.Context, cur Detail) error) error {
+func stop(ctx context.Context, guard organization.Guard, self func(ctx context.Context) (string, bool), tx tx.Transactor, staff Repository, locks FacilityLock, id string, write func(ctx context.Context, cur Detail) error) error {
 	if err := guard(ctx); err != nil {
 		return err
 	}
@@ -35,7 +35,7 @@ func stop(ctx context.Context, guard organization.Guard, self func(ctx context.C
 		}
 	}
 	return tx.WithinTx(ctx, func(ctx context.Context) error {
-		cur, err := locked(ctx, staff, id)
+		cur, err := locked(ctx, staff, locks, id)
 		if err != nil {
 			return err
 		}

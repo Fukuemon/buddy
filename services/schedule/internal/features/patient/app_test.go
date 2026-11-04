@@ -30,12 +30,12 @@ type app struct {
 
 func newApp(s *inmem.Store, guard organization.Guard) app {
 	facilities, staffRefs, codes, patients := inmem.Facilities{Store: s}, inmem.StaffRefs{Store: s}, inmem.VisitMasters{Store: s}, inmem.Patients{Store: s}
-	schedules, locks := inmem.PatientSchedules{Store: s}, inmem.Staff{Store: s}
+	schedules, locks := inmem.PatientSchedules{Store: s}, facilities
 	now := func() time.Time { return today.Time().Add(9 * time.Hour) }
 	tx, ids := &inmem.Tx{}, &inmem.SeqIDs{}
 	return app{
-		Create:             patient.NewCreate(facilities, codes, staffRefs, patients, tx, ids, guard).Do,
-		Update:             patient.NewUpdate(codes, patients, staffRefs, tx, guard).Do,
+		Create:             patient.NewCreate(facilities, codes, staffRefs, locks, patients, tx, ids, guard).Do,
+		Update:             patient.NewUpdate(codes, patients, staffRefs, locks, tx, guard).Do,
 		End:                patient.NewEnd(patients, locks, schedules, now, tx, guard).Do,
 		RemainingSchedules: patient.NewRemainingSchedules(patients, schedules, now, guard).Do,
 		Resume:             patient.NewResume(patients, locks, staffRefs, tx, guard).Do,

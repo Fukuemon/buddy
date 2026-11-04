@@ -197,7 +197,7 @@ func TestCalendarImportInOneTransaction(t *testing.T) {
 		Patients: patient.VisitFinder(patients),
 		Infos:    NewVisitInfoRepository(testDB), Masters: masters,
 	}, ids)
-	importCalendar := calendarimport.NewImport(calendars, sameAccount{gcal.NewReader(gcaltest.Start(t, srv))}, staffRefs, patients, recurring, masters,
+	importCalendar := calendarimport.NewImport(calendars, sameAccount{gcal.NewReader(gcaltest.Start(t, srv))}, staffRefs, NewFacilityRepository(testDB), patients, recurring, masters,
 		NewScheduleTypeRepository(testDB), recurring, schedules, visits, NewTransactor(testDB), ids, principal.RequireStaffManage)
 	rng, err := calendarimport.NewRange(civil.Date{Year: 2026, Month: 11, Day: 1}, civil.Date{Year: 2026, Month: 11, Day: 30})
 	if err != nil {

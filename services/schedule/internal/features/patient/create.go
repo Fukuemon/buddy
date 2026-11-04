@@ -24,6 +24,7 @@ type Create struct {
 	facilities   kernel.Finder[organization.Facility]
 	serviceCodes ServiceCodes
 	staff        StaffRefs
+	locks        FacilityLock
 	patients     Repository
 	tx           tx.Transactor
 	ids          kernel.IDGenerator
@@ -31,8 +32,8 @@ type Create struct {
 }
 
 // NewCreate は Create を作る。
-func NewCreate(facilities kernel.Finder[organization.Facility], serviceCodes ServiceCodes, staff StaffRefs, patients Repository, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) Create {
-	return Create{facilities: facilities, serviceCodes: serviceCodes, staff: staff, patients: patients, tx: tx, ids: ids, guard: guard}
+func NewCreate(facilities kernel.Finder[organization.Facility], serviceCodes ServiceCodes, staff StaffRefs, locks FacilityLock, patients Repository, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) Create {
+	return Create{facilities: facilities, serviceCodes: serviceCodes, staff: staff, locks: locks, patients: patients, tx: tx, ids: ids, guard: guard}
 }
 
 // Do は、利用者を作る。事業所が見つからないときは apperr.ErrNotFound を、
@@ -51,7 +52,7 @@ func (p Create) Do(ctx context.Context, in CreateInput) (Detail, error) {
 	}
 	var created Detail
 	err := p.tx.WithinTx(ctx, func(ctx context.Context) error {
-		if err := p.staff.LockStatuses(ctx, in.FacilityID); err != nil {
+		if err := p.locks.Share(ctx, in.FacilityID); err != nil {
 			return err
 		}
 		if err := requireAssignable(ctx, p.staff, in.AssignedStaffID, in.FacilityID); err != nil {

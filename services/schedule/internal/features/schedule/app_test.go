@@ -50,10 +50,10 @@ func editorCtx() context.Context {
 var today = civil.Date{Year: 2026, Month: 10, Day: 21}
 
 func newSchedules(s *inmem.Store) (*app, *inmem.Tx) {
-	return newSchedulesWithRefs(s, inmem.StaffRefs{Store: s})
+	return newSchedulesWithRefs(s, inmem.StaffRefs{Store: s}, inmem.Facilities{Store: s})
 }
 
-func newSchedulesWithRefs(s *inmem.Store, refs schedule.StaffRefs) (*app, *inmem.Tx) {
+func newSchedulesWithRefs(s *inmem.Store, refs schedule.StaffRefs, locks schedule.FacilityLock) (*app, *inmem.Tx) {
 	tx := &inmem.Tx{}
 	ids := &inmem.SeqIDs{}
 	visits := visit.NewWriter(visit.WriterDeps{
@@ -65,6 +65,7 @@ func newSchedulesWithRefs(s *inmem.Store, refs schedule.StaffRefs) (*app, *inmem
 	return build(deps{
 		Facilities: inmem.Facilities{Store: s},
 		Staff:      refs,
+		Locks:      locks,
 		Visits:     visits,
 		Schedules:  inmem.Schedules{Store: s},
 		Recurring:  inmem.RecurringSchedules{Store: s},
@@ -395,9 +396,10 @@ func TestSchedulesEndedPatient(t *testing.T) {
 	}
 }
 
-// lockOrder は、職員の参照の呼び出しの順を記録する。
+// lockOrder は、職員の参照と事業所のロックの呼び出しの順を記録する。
 type lockOrder struct {
 	inmem.StaffRefs
+	inmem.Facilities
 	calls *[]string
 }
 
@@ -406,21 +408,22 @@ func (r lockOrder) Get(ctx context.Context, id string) (staff.Ref, error) {
 	return r.StaffRefs.Get(ctx, id)
 }
 
-func (r lockOrder) LockStatuses(ctx context.Context, facilityID string) error {
-	*r.calls = append(*r.calls, "LockStatuses")
-	return r.StaffRefs.LockStatuses(ctx, facilityID)
+func (r lockOrder) Share(ctx context.Context, facilityID string) error {
+	*r.calls = append(*r.calls, "Share")
+	return r.Facilities.Share(ctx, facilityID)
 }
 
 // 職員の状態を読む前に、事業所の職員の休職と退職を待たせるロックを取る。
 func TestSchedulesLockStatusesBeforeReadingStaff(t *testing.T) {
 	s := inmem.Seeded()
 	var calls []string
-	uc, _ := newSchedulesWithRefs(s, lockOrder{StaffRefs: inmem.StaffRefs{Store: s}, calls: &calls})
+	lo := lockOrder{StaffRefs: inmem.StaffRefs{Store: s}, Facilities: inmem.Facilities{Store: s}, calls: &calls}
+	uc, _ := newSchedulesWithRefs(s, lo, lo)
 	if _, err := uc.Create(editorCtx(), facilityID, visitSlot(validVisit())); err != nil {
 		t.Fatal(err)
 	}
-	if len(calls) == 0 || calls[0] != "LockStatuses" || slices.Index(calls[1:], "LockStatuses") >= 0 {
-		t.Errorf("呼び出しの順 = %v, want LockStatuses を最初に 1 回", calls)
+	if len(calls) == 0 || calls[0] != "Share" || slices.Index(calls[1:], "Share") >= 0 {
+		t.Errorf("呼び出しの順 = %v, want Share を最初に 1 回", calls)
 	}
 }
 
@@ -428,6 +431,7 @@ func TestSchedulesLockStatusesBeforeReadingStaff(t *testing.T) {
 type deps struct {
 	Facilities kernel.Finder[organization.Facility]
 	Staff      schedule.StaffRefs
+	Locks      schedule.FacilityLock
 	Visits     schedule.VisitInfos
 	Schedules  schedule.Repository
 	Recurring  schedule.RecurringRepository
@@ -450,10 +454,10 @@ type app struct {
 func build(d deps, tx tx.Transactor, ids kernel.IDGenerator) *app {
 	return &app{
 		ListTypes:        schedule.NewListTypes(d.Types).Do,
-		Create:           schedule.NewCreate(d.Facilities, d.Schedules, d.Types, d.Staff, d.Visits, d.Now, d.Exports, tx, ids).Do,
-		CreateRecurring:  schedule.NewCreateRecurring(d.Facilities, d.Types, d.Staff, d.Visits, d.Now, d.Recurring, d.Exports, tx, ids).Do,
-		ChangeOccurrence: schedule.NewChangeOccurrence(d.Recurring, d.Staff, d.Schedules, d.Types, d.Visits, d.Now, d.Exports, tx, ids).Do,
+		Create:           schedule.NewCreate(d.Facilities, d.Schedules, d.Types, d.Staff, d.Locks, d.Visits, d.Now, d.Exports, tx, ids).Do,
+		CreateRecurring:  schedule.NewCreateRecurring(d.Facilities, d.Types, d.Staff, d.Locks, d.Visits, d.Now, d.Recurring, d.Exports, tx, ids).Do,
+		ChangeOccurrence: schedule.NewChangeOccurrence(d.Recurring, d.Staff, d.Locks, d.Schedules, d.Types, d.Visits, d.Now, d.Exports, tx, ids).Do,
 		Cancel:           schedule.NewCancel(d.Schedules, d.Staff, d.Exports, tx, ids).Do,
-		Update:           schedule.NewUpdate(d.Schedules, d.Staff, d.Types, d.Visits, d.Now, d.Exports, tx).Do,
+		Update:           schedule.NewUpdate(d.Schedules, d.Staff, d.Locks, d.Types, d.Visits, d.Now, d.Exports, tx).Do,
 	}
 }

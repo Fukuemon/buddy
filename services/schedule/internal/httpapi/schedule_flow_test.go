@@ -72,11 +72,11 @@ func flowRouter() http.Handler {
 		Get:              scheduleview.NewGet(schedules, refs).Do,
 		GetRecurring:     scheduleview.NewGetRecurring(recurring, refs).Do,
 		List:             scheduleview.NewList(facilities, schedules, recurring, refs).Do,
-		Create:           schedule.NewCreate(facilities, schedules, types, refs, visits, nil, nil, tx, ids).Do,
-		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, visits, nil, recurring, nil, tx, ids).Do,
-		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, refs, schedules, types, visits, nil, nil, tx, ids).Do,
+		Create:           schedule.NewCreate(facilities, schedules, types, refs, facilities, visits, nil, nil, tx, ids).Do,
+		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, facilities, visits, nil, recurring, nil, tx, ids).Do,
+		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, refs, facilities, schedules, types, visits, nil, nil, tx, ids).Do,
 		Cancel:           schedule.NewCancel(schedules, refs, nil, tx, ids).Do,
-		Update:           schedule.NewUpdate(schedules, refs, types, visits, nil, nil, tx).Do,
+		Update:           schedule.NewUpdate(schedules, refs, facilities, types, visits, nil, nil, tx).Do,
 	}
 	auth := flowAuth{svc: access.NewService(access.Deps{Schedules: schedules, Recurring: recurring})}
 	return httpapi.NewRouter(httpapi.Apps{Schedules: app, Auth: auth}, httpapi.RouterConfig{

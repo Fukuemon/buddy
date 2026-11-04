@@ -22,13 +22,14 @@ type Update struct {
 	serviceCodes ServiceCodes
 	patients     Repository
 	staff        StaffRefs
+	locks        FacilityLock
 	tx           tx.Transactor
 	guard        organization.Guard
 }
 
 // NewUpdate は Update を作る。
-func NewUpdate(serviceCodes ServiceCodes, patients Repository, staff StaffRefs, tx tx.Transactor, guard organization.Guard) Update {
-	return Update{serviceCodes: serviceCodes, patients: patients, staff: staff, tx: tx, guard: guard}
+func NewUpdate(serviceCodes ServiceCodes, patients Repository, staff StaffRefs, locks FacilityLock, tx tx.Transactor, guard organization.Guard) Update {
+	return Update{serviceCodes: serviceCodes, patients: patients, staff: staff, locks: locks, tx: tx, guard: guard}
 }
 
 // Do は、利用者の名前、希望、サービスコード、担当の職員を in の値にし、変えた利用者を返す。利用の終了の利用者も変えられ、利用の終了は変えない。
@@ -50,7 +51,7 @@ func (p Update) Do(ctx context.Context, id string, in UpdateInput) (Detail, erro
 		if err != nil {
 			return err
 		}
-		if err := p.staff.LockStatuses(ctx, cur.FacilityID); err != nil {
+		if err := p.locks.Share(ctx, cur.FacilityID); err != nil {
 			return err
 		}
 		if cur, err = p.patients.Get(ctx, id); err != nil {

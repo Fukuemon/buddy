@@ -15,8 +15,6 @@ import (
 // 戻る予定の日だけを書き換える。EndLeave は、休職を外す。Retire は、職員を退職にし、メールと電話番号を消す。
 // 退職し直しても、最初に退職にした時刻を残す。StartLeave と EndLeave は、退職した職員では apperr.ErrConflict を返す。
 //
-// LockFacility は、トランザクションが終わるまで、事業所の職員の休職、退職、役職とチームを変える操作、権限を外す操作と、予定と担当の新しい割り振りを、
-// ほかのトランザクションに待たせる。
 // ActiveManagers は、事業所で職員の管理の権限を持つ有効な職員の ID を返す。
 //
 // ChangePosition は、職員の役職を positionID にし、職員の権限と対象を全て消してから grants を書く。
@@ -39,6 +37,5 @@ type Repository interface {
 	StartLeave(ctx context.Context, id string, returnDate *civil.Date) error
 	EndLeave(ctx context.Context, id string) error
 	Retire(ctx context.Context, id string) error
-	LockFacility(ctx context.Context, facilityID string) error
 	ActiveManagers(ctx context.Context, facilityID string) ([]string, error)
 }

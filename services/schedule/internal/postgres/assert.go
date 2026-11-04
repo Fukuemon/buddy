@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
@@ -22,7 +23,10 @@ var (
 	_ schedule.StaffRefs                = (*StaffRefRepository)(nil)
 	_ patient.Repository                = (*PatientRepository)(nil)
 	_ patient.ScheduleReader            = (*PatientScheduleReader)(nil)
-	_ patient.FacilityLocker            = (*StaffRepository)(nil)
+	_ staff.FacilityLock                = (*FacilityRepository)(nil)
+	_ patient.FacilityLock              = (*FacilityRepository)(nil)
+	_ schedule.FacilityLock             = (*FacilityRepository)(nil)
+	_ calendar.FacilityLock             = (*FacilityRepository)(nil)
 	_ visit.InfoRepository              = (*VisitInfoRepository)(nil)
 	_ visit.MasterRepository            = (*VisitMasterRepository)(nil)
 	_ schedule.Repository               = (*ScheduleRepository)(nil)

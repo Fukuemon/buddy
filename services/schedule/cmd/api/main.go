@@ -108,17 +108,17 @@ func run() error {
 
 	router := httpapi.NewRouter(httpapi.Apps{
 		Organization: organizationApp(facilities, departments, teams, positions, policies, tx, ids, principal.RequireStaffManage),
-		Staff: staffApp(facilities, departments, teams, positions, policies, staffRepo,
+		Staff: staffApp(facilities, departments, teams, positions, policies, staffRepo, facilities,
 			broker.New(broker.Config(cfg.Broker), nil), postgres.NewStaffAssignmentReader(db), calendars,
 			func(ctx context.Context) (string, bool) {
 				p, ok := principal.From(ctx)
 				return p.Staff.ID, ok
 			},
 			tx, ids, principal.RequireStaffManage),
-		Patients:     patientApp(facilities, staffRefs, visitMasters, patients, postgres.NewPatientScheduleReader(db), staffRepo, tx, ids, principal.RequireStaffManage),
+		Patients:     patientApp(facilities, staffRefs, visitMasters, patients, postgres.NewPatientScheduleReader(db), facilities, tx, ids, principal.RequireStaffManage),
 		VisitMasters: visitMasterApp(visitMasters),
-		Schedules:    scheduleApp(facilities, staffRefs, visitInfos, schedules, recurring, scheduleTypes, outbox, tx, ids),
-		Calendars: calendarApp(calendars, calendarAccounts(accounts), staffRefs, patients, visitMasters, scheduleTypes,
+		Schedules:    scheduleApp(facilities, staffRefs, facilities, visitInfos, schedules, recurring, scheduleTypes, outbox, tx, ids),
+		Calendars: calendarApp(calendars, calendarAccounts(accounts), staffRefs, facilities, patients, visitMasters, scheduleTypes,
 			schedules, recurring, recurring, visitInfos, exports, tx, ids, principal.RequireStaffManage),
 		Auth: access.NewService(access.Deps{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions,
@@ -160,7 +160,7 @@ func run() error {
 	}
 	if accounts != nil && cfg.Calendar.SyncEnabled {
 		syncer := calendarsync.NewSyncer(calendarsync.SyncerDeps{
-			Syncs: postgres.NewCalendarSyncRepository(db), Calendars: calendars, Staff: staffRefs, Exports: exports,
+			Syncs: postgres.NewCalendarSyncRepository(db), Calendars: calendars, Staff: staffRefs, Locks: facilities, Exports: exports,
 			Sources:   accounts.Source,
 			Schedules: schedules, Recurring: recurring, Types: scheduleTypes, Patients: patients, ServiceCodes: visitMasters, Visits: visitInfos,
 		}, tx, ids, cfg.Calendar.SyncInterval, log)

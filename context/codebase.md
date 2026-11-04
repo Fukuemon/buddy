@@ -80,7 +80,7 @@ status: stable
   - `principal` は `organization` と `staff` に依存し、`schedule`、`scheduleview`、`calendarimport`、`access`、`httpapi`、`cmd` から使う。
   - 機能のパッケージは、自分の集約のリポジトリのインターフェースと、使う側で定義したインターフェースだけに依存する。
     - ほかの機能のデータを読むだけなら、`kernel.Finder` か 1〜2 のメソッドにする。
-    - ほかの機能の集約を 1 つのトランザクションで書くかロックするなら（`calendarsync` の `reconcileApplier`、`schedule` の `StaffRefs`）、使うメソッドだけを並べた 1 つのインターフェースにする。
+    - ほかの機能の集約を 1 つのトランザクションで書くかロックするなら（`calendarsync` の `reconcileApplier`、各機能の `FacilityLock`）、使うメソッドだけを並べた 1 つのインターフェースにする。
       - ADR-0029: [予定の API の機能のパッケージの中で、操作でないファイルとテストの配置先と、ほかの機能を書くインターフェースの大きさを決める](../docs/adr/0029-schedule-api-feature-package-layout.md)
     - ほかの機能のリポジトリのインターフェースは import しない。
     - トランザクションは `tx.Transactor` で受ける。
