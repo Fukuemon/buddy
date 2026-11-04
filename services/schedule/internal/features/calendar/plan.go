@@ -278,7 +278,7 @@ func newPlan(in planInput) plan {
 	}
 	b.serviceIDs = make(map[string]string, len(in.serviceCodes))
 	for _, sc := range in.serviceCodes {
-		b.serviceIDs[serviceKey(sc.Code)] = sc.ID
+		b.serviceIDs[ServiceKey(sc.Code)] = sc.ID
 	}
 	var exceptions []Event
 	for _, ev := range in.events {
@@ -428,7 +428,7 @@ func (b *planner) addException(ev Event) {
 		return
 	}
 	c := Classify(ev)
-	if original, ok := originalDate(ev); (c.Date.IsZero() || !b.in.rng.Contains(c.Date)) && (!ok || !b.in.rng.Contains(original)) {
+	if original, ok := OriginalDate(ev); (c.Date.IsZero() || !b.in.rng.Contains(c.Date)) && (!ok || !b.in.rng.Contains(original)) {
 		return
 	}
 	if b.isLinked(ev.ID) {
@@ -459,7 +459,7 @@ func (b *planner) addException(ev Event) {
 // replacementTarget は、例外の回 ev が置き換える、繰り返しのまま取り込む予定の回を返す。
 // 親を繰り返しのまま取り込まないか、元の日付が規則の回に当たらないか、前の取り込みの繰り返しの予定でその日をすでに除外したときは false を返す。
 func (b *planner) replacementTarget(ev Event) (replacement, bool) {
-	date, ok := originalDate(ev)
+	date, ok := OriginalDate(ev)
 	if !ok {
 		return replacement{}, false
 	}
@@ -481,25 +481,12 @@ func (b *planner) replacementTarget(ev Event) (replacement, bool) {
 
 // isExcludedBefore は、例外の回 ev の親が前の取り込みの繰り返しの予定で、その元の日付をすでに除外しているかを返す。
 func (b *planner) isExcludedBefore(ev Event) bool {
-	date, ok := originalDate(ev)
+	date, ok := OriginalDate(ev)
 	if !ok {
 		return false
 	}
 	rs, ok := b.in.linkedRecurring[ev.RecurringEventID]
 	return ok && slices.Contains(rs.ExclusionDates, date)
-}
-
-// originalDate は、例外の回が元の規則で始まるはずだった Asia/Tokyo の日付を返す。
-func originalDate(ev Event) (civil.Date, bool) {
-	if ev.OriginalStart.DateTime != "" {
-		t, err := ev.OriginalStart.Instant()
-		if err != nil {
-			return civil.Date{}, false
-		}
-		return civil.DateOf(t.In(tokyo)), true
-	}
-	d, err := civil.ParseDate(ev.OriginalStart.Date)
-	return d, err == nil
 }
 
 // add は、予定を取り込む予定か確認が必要な予定に足し、取り込まない予定なら取り込まない予定に足す。取り込む予定に足したときは true を返す。
@@ -513,7 +500,7 @@ func (b *planner) add(e entry) bool {
 		return false
 	}
 	if e.cand.Kind == KindVisit {
-		id, ok := b.serviceIDs[serviceKey(e.cand.Service)]
+		id, ok := b.serviceIDs[ServiceKey(e.cand.Service)]
 		if !ok {
 			b.skipAs(e.cand, SkipServiceNotFound)
 			return false
@@ -656,14 +643,6 @@ func compareSlot(da *civil.Date, ta *civil.Time, db *civil.Date, tb *civil.Time)
 	return ma - mb
 }
 
-// serviceAliases は、照合の API が同じサービス内容とみなす、マスタに無い書き方である。
-var serviceAliases = strings.NewReplacer("予防訪看", "予防看", "予訪看", "予防看", "I５２超", "I５・２超")
-
-// serviceKey は、サービス内容を、照合の API と同じ規則で表記をそろえ、マスタのコードと比べる値にする。
-func serviceKey(s string) string {
-	return serviceAliases.Replace(gcaltitle.NormalizeService(strings.TrimSpace(s)))
-}
-
 // applyDecisions は、確認が必要な予定に decisions の取り込み方を当てる。
 // decisions の予定の集合と、確認が必要な予定の集合が違うときは apperr.ErrConflict を、
 // 取り込み方の値が誤っているか、選んだ利用者が patients にいないときは入力のエラーを返す。
@@ -732,7 +711,7 @@ func withMovedExceptions(events, aroundEvents []Event, rng Range) []Event {
 		if ev.RecurringEventID == "" || seen[ev.ID] {
 			continue
 		}
-		if d, ok := originalDate(ev); ok && rng.Contains(d) {
+		if d, ok := OriginalDate(ev); ok && rng.Contains(d) {
 			events = append(events, ev)
 			seen[ev.ID] = true
 		}

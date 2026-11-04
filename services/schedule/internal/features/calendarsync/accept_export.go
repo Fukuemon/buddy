@@ -1,4 +1,4 @@
-package calendar
+package calendarsync
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
@@ -15,31 +16,33 @@ import (
 // acceptCallTimeout は、Google の内容に合わせる操作が、予定の行をロックしたまま外部のカレンダーを読む時間の上限である。
 const acceptCallTimeout = 20 * time.Second
 
+// errNotAcceptable は、外部のカレンダーの内容を当てられない書き出しの待ちであることを表す。コードは calendar.CodeExportNotAcceptable である。
+var errNotAcceptable = apperr.ConflictCode(calendar.CodeExportNotAcceptable,
+	"この予定は、Google カレンダーの内容を buddy に当てられません。buddy の内容で書き直してください")
+
 // AcceptExport は、確認が必要な書き出し id の予定を、buddy での変更によらず外部のカレンダーの今の内容にし、待ちを終えて返す。
 type AcceptExport struct {
 	exports   ExportRepository
-	schedules ScheduleStore
-	calendars Repository
-	accounts  Accounts
-	staff     StaffRefs
+	schedules calendar.ScheduleStore
+	calendars Calendars
+	accounts  calendar.Accounts
+	staff     calendar.StaffRefs
 	tx        tx.Transactor
 	ids       kernel.IDGenerator
 	guard     organization.Guard
-	apply     applier
+	apply     reconcileApplier
 }
 
-// NewAcceptExport は AcceptExport を作る。types、patients、serviceCodes、visits は、外部のカレンダーの今の内容を予定に当てる規則（applier）が使う。
+// NewAcceptExport は AcceptExport を作る。types、patients、serviceCodes、visits は、外部のカレンダーの今の内容を予定に当てる規則（reconcileApplier）が使う。
+// 単発の予定だけを当てるので、繰り返しの予定のリポジトリは渡さない。
 func NewAcceptExport(
-	exports ExportRepository, schedules ScheduleStore, calendars Repository, accounts Accounts, staff StaffRefs,
-	types Types, patients Patients, serviceCodes ServiceCodes, visits VisitStore,
+	exports ExportRepository, schedules calendar.ScheduleStore, calendars Calendars, accounts calendar.Accounts, staff calendar.StaffRefs,
+	types calendar.Types, patients calendar.Patients, serviceCodes calendar.ServiceCodes, visits calendar.VisitStore,
 	tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard,
 ) AcceptExport {
 	return AcceptExport{
 		exports: exports, schedules: schedules, calendars: calendars, accounts: accounts, staff: staff, tx: tx, ids: ids, guard: guard,
-		apply: applier{
-			calendars: calendars, exports: exports, schedules: schedules, types: types,
-			patients: patients, serviceCodes: serviceCodes, visits: visits, ids: ids, now: time.Now,
-		},
+		apply: newReconcileApplier(calendars, exports, schedules, nil, types, patients, serviceCodes, visits, ids),
 	}
 }
 
@@ -49,43 +52,43 @@ func NewAcceptExport(
 // 待ちが見つからないときは apperr.ErrNotFound を、確認が必要な待ちでないとき、外部の内容を当てられない待ちのとき、
 // 予定の対応のカレンダーを外したとき（退職を含む）、
 // 外部の予定を buddy の予定に読み替えられないときは apperr.ErrConflict を返す。外部のカレンダーを読めないときは Preview と同じである。
-func (u AcceptExport) Do(ctx context.Context, id string) (Export, error) {
+func (u AcceptExport) Do(ctx context.Context, id string) (calendar.Export, error) {
 	if err := u.guard(ctx); err != nil {
-		return Export{}, err
+		return calendar.Export{}, err
 	}
 	e, err := u.exports.Get(ctx, id)
 	if err != nil {
-		return Export{}, err
+		return calendar.Export{}, err
 	}
 	if !e.IsInReview() {
-		return Export{}, ErrExportNotInReview
+		return calendar.Export{}, calendar.ErrExportNotInReview
 	}
 	if !e.IsAcceptable() {
-		return Export{}, errNotAcceptable
+		return calendar.Export{}, errNotAcceptable
 	}
 	// buddy でキャンセルした予定は、外部の内容に戻せない。
 	if d, err := u.schedules.Get(ctx, e.ScheduleID); err != nil {
-		return Export{}, err
+		return calendar.Export{}, err
 	} else if d.Cancel != nil {
-		return Export{}, errNotAcceptable
+		return calendar.Export{}, errNotAcceptable
 	}
 	l, err := u.calendars.LinkBySchedule(ctx, e.ScheduleID)
 	if errors.Is(err, apperr.ErrNotFound) {
-		return Export{}, errNotAcceptable
+		return calendar.Export{}, errNotAcceptable
 	}
 	if err != nil {
-		return Export{}, err
+		return calendar.Export{}, err
 	}
 	c, err := u.calendars.Get(ctx, l.ExternalCalendarID)
 	if err != nil {
-		return Export{}, err
+		return calendar.Export{}, err
 	}
 	if c.DisabledAt != nil {
-		return Export{}, errNotAcceptable
+		return calendar.Export{}, errNotAcceptable
 	}
-	src, err := source(ctx, u.accounts, c.FacilityID)
+	src, err := calendar.Source(ctx, u.accounts, c.FacilityID)
 	if err != nil {
-		return Export{}, err
+		return calendar.Export{}, err
 	}
 	err = u.tx.WithinTx(ctx, func(ctx context.Context) error {
 		// 予定の行をロックしてから Google の予定を読む。同期の処理も同じ行をロックして Google の変更を当てるので、
@@ -116,7 +119,7 @@ func (u AcceptExport) Do(ctx context.Context, id string) (Export, error) {
 		}
 		switch {
 		case !cur.IsInReview():
-			return ErrExportNotInReview
+			return calendar.ErrExportNotInReview
 		case !cur.IsAcceptable() || locked.Cancel != nil:
 			return errNotAcceptable
 		}
@@ -128,13 +131,13 @@ func (u AcceptExport) Do(ctx context.Context, id string) (Export, error) {
 		}
 		// ロックを取らない RetryExport が、確認した後に書き直す待ちにしたときに当たる。
 		if err := u.exports.Resolve(ctx, id, cur.Revision); errors.Is(err, apperr.ErrConflict) {
-			return ErrExportNotInReview
+			return calendar.ErrExportNotInReview
 		} else if err != nil {
 			return err
 		}
 		err = u.apply.acceptSchedule(ctx, c, l, ev)
 		if errors.Is(err, errUnappliable) {
-			return apperr.ConflictCode(CodeExternalChangeUnappliable,
+			return apperr.ConflictCode(calendar.CodeExternalChangeUnappliable,
 				"Google カレンダーの予定を、buddy の予定に読み替えられません。buddy の内容で書き直してください")
 		}
 		if err != nil {
@@ -148,20 +151,20 @@ func (u AcceptExport) Do(ctx context.Context, id string) (Export, error) {
 		return u.exports.Enqueue(ctx, u.ids.NewID(), e.Target)
 	})
 	if err != nil {
-		return Export{}, err
+		return calendar.Export{}, err
 	}
 	return u.exports.Get(ctx, id)
 }
 
 // externalEvent は、予定の対応 l の外部の予定を読む。予定が見つからず、カレンダーは読めるときは、予定が消されたとみなし、
 // 取り消した予定を返す。Google は、消した予定に 404 を返すことがあるためである。
-func externalEvent(ctx context.Context, src EventSource, c ExternalCalendar, l EventLink) (Event, error) {
+func externalEvent(ctx context.Context, src calendar.EventSource, c calendar.ExternalCalendar, l calendar.EventLink) (calendar.Event, error) {
 	ev, err := src.Event(ctx, c.CalendarID, l.ExternalEventID)
-	if !errors.Is(err, ErrEventNotFound) {
+	if !errors.Is(err, calendar.ErrEventNotFound) {
 		return ev, err
 	}
 	if cerr := src.Check(ctx, c.CalendarID); cerr != nil {
-		return Event{}, err
+		return calendar.Event{}, err
 	}
-	return Event{ID: l.ExternalEventID, Status: StatusCancelled, ETag: l.ETag}, nil
+	return calendar.Event{ID: l.ExternalEventID, Status: calendar.StatusCancelled, ETag: l.ETag}, nil
 }

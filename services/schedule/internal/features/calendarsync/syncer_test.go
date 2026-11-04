@@ -1,4 +1,4 @@
-package calendar_test
+package calendarsync_test
 
 import (
 	"context"
@@ -15,9 +15,12 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
@@ -25,19 +28,57 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
 
-const otherGoogleCalID = "companion@example.com"
+const (
+	calID            = "CAL"
+	googleCalID      = "staff@example.com"
+	otherGoogleCalID = "companion@example.com"
+	codeI2           = "CODEI2"
+)
 
-// exportEnv は、予定の操作と、書き出しの処理と、フェイクの Calendar API を同じ Store の上で動かす。
-type exportEnv struct {
-	env
+func gevent(id, summary, start, end string) *calendarv3.Event {
+	return &calendarv3.Event{
+		Id: id, Status: "confirmed", Summary: summary, Etag: `"` + id + `"`,
+		Start: &calendarv3.EventDateTime{DateTime: start},
+		End:   &calendarv3.EventDateTime{DateTime: end},
+	}
+}
+
+func gexception(id, parent, summary, start, end, original string) *calendarv3.Event {
+	ev := gevent(id, summary, start, end)
+	ev.RecurringEventId = parent
+	ev.OriginalStartTime = &calendarv3.EventDateTime{DateTime: original}
+	return ev
+}
+
+func gcancelled(id, parent, original string) *calendarv3.Event {
+	return &calendarv3.Event{
+		Id: id, Status: "cancelled", RecurringEventId: parent,
+		OriginalStartTime: &calendarv3.EventDateTime{DateTime: original},
+	}
+}
+
+// syncEnv は、予定の操作と、書き出しの処理と、Google カレンダーの変更を当てる同期の処理と、確認が必要な予定を解く操作と、
+// フェイクの Calendar API を、同じ Store の上で動かす。
+type syncEnv struct {
+	store     *inmem.Store
+	ctx       context.Context
+	uc        syncOps
 	srv       *gcaltest.Server
 	schedules scheduleOps
 	exporter  *calendarexport.Exporter
-	// writers は、書き出しの処理が書く手段を引いた事業所の、引いた順の一覧である。
-	writers *[]string
+	syncer    *calendarsync.Syncer
+	// sources は、同期の処理が読む手段を引いた事業所の、引いた順の一覧である。
+	sources *[]string
 }
 
-// scheduleOps は、書き出しのテストが呼ぶ schedule の操作の Do である。
+// syncOps は、同期のテストが呼ぶ、確認が必要な書き出しの待ちの操作の Do である。
+type syncOps struct {
+	ListExportIssues func(ctx context.Context, facilityID string) ([]calendar.ExportIssue, error)
+	RetryExport      func(ctx context.Context, id string) (calendar.Export, error)
+	AcceptExport     func(ctx context.Context, id string) (calendar.Export, error)
+}
+
+// scheduleOps は、同期のテストが呼ぶ schedule の操作の Do である。
 type scheduleOps struct {
 	Create           func(ctx context.Context, facilityID string, in schedule.SlotInput) (schedule.Detail, error)
 	CreateRecurring  func(ctx context.Context, facilityID string, in schedule.SlotInput, rule schedule.RuleInput) (schedule.RecurringDetail, error)
@@ -46,31 +87,54 @@ type scheduleOps struct {
 	Update           func(ctx context.Context, scheduleID string, in schedule.SlotInput) (schedule.Detail, error)
 }
 
-// writerOf は、事業所によらず w で書く calendar.WriterFor を返し、引かれた事業所を used に足す。
-func writerOf(w calendar.EventWriter, used *[]string) calendar.WriterFor {
-	return func(_ context.Context, facilityID string) (calendar.EventWriter, error) {
-		*used = append(*used, facilityID)
-		return w, nil
+// oneAccount は、inmem.FacilityID の事業所だけに、source で読むサービスアカウントがある calendar.Accounts を返す。
+type oneAccount struct{ source calendar.EventSource }
+
+func (a oneAccount) ServiceAccount(_ context.Context, facilityID string) (string, error) {
+	if facilityID != inmem.FacilityID {
+		return "", calendar.ErrNotConfigured
 	}
+	return "buddy@example.iam.gserviceaccount.com", nil
 }
 
-func newExportEnv(t *testing.T) exportEnv {
+func (a oneAccount) Source(_ context.Context, facilityID string) (calendar.EventSource, error) {
+	if facilityID != inmem.FacilityID {
+		return nil, calendar.ErrNotConfigured
+	}
+	return a.source, nil
+}
+
+func (a oneAccount) Writer(_ context.Context, _ string) (calendar.EventWriter, error) {
+	return nil, calendar.ErrNotConfigured
+}
+
+func newSyncEnv(t *testing.T) syncEnv {
 	t.Helper()
 	srv := &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{googleCalID: {}, otherGoogleCalID: {}}}
-	e := newEnv(t, nil)
-	s := e.store
+	s := inmem.Seeded()
+	s.Codes[codeI2] = visit.ServiceCode{ID: codeI2, Code: "訪看I2"}
+	for id, name := range map[string]string{"PA": "利用者A", "PB1": "利用者B", "PB2": "利用者 B"} {
+		s.Patients[id] = patient.Detail{Patient: patient.Patient{ID: id, FacilityID: inmem.FacilityID, Name: name}}
+	}
+	s.Calendars[calID] = calendar.ExternalCalendar{ID: calID, FacilityID: inmem.FacilityID, StaffID: inmem.StaffID, Provider: calendar.ProviderGoogle, CalendarID: googleCalID}
 	// 外部の予定の ID を予定の ID から決めるので、予定の ID は ULID にする。
 	ids := ulid.Generator{}
-	e.ctx = principal.With(context.Background(), principal.Principal{Staff: staff.Detail{
+	ctx := principal.With(context.Background(), principal.Principal{Staff: staff.Detail{
 		Summary: staff.Summary{Staff: staff.Staff{ID: inmem.StaffID, FacilityID: inmem.FacilityID}},
 		Policies: []staff.PolicyGrant{
 			{PolicyCode: organization.StaffManage}, {PolicyCode: organization.ScheduleAllEdit},
 		},
 	}})
-	exports := inmem.Exports{Store: s}
-	e.uc = build(deps{Calendars: inmem.Calendars{Store: s}, Exports: exports}, &inmem.Tx{}, ids, principal.RequireStaffManage)
-	facilities, refs, schedules, recurring, types := inmem.Facilities{Store: s}, inmem.StaffRefs{Store: s}, inmem.Schedules{Store: s}, inmem.RecurringSchedules{Store: s}, inmem.ScheduleTypes{Store: s}
-	outbox, tx := calendarexport.NewOutbox(exports, inmem.Calendars{Store: s}, ids), &inmem.Tx{}
+	source := gcal.NewReader(gcaltest.Start(t, srv))
+	exports, calendars, refs, tx := inmem.Exports{Store: s}, inmem.Calendars{Store: s}, inmem.StaffRefs{Store: s}, &inmem.Tx{}
+	facilities, schedules, recurring, types := inmem.Facilities{Store: s}, inmem.Schedules{Store: s}, inmem.RecurringSchedules{Store: s}, inmem.ScheduleTypes{Store: s}
+	uc := syncOps{
+		ListExportIssues: calendarexport.NewListExportIssues(exports, principal.RequireStaffManage).Do,
+		RetryExport:      calendarexport.NewRetryExport(exports, principal.RequireStaffManage).Do,
+		AcceptExport: calendarsync.NewAcceptExport(exports, schedules, calendars, oneAccount{source}, refs,
+			types, nil, nil, nil, tx, ids, principal.RequireStaffManage).Do,
+	}
+	outbox := calendarexport.NewOutbox(exports, calendars, ids)
 	sched := scheduleOps{
 		Create:           schedule.NewCreate(facilities, schedules, types, refs, nil, nil, outbox, tx, ids).Do,
 		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, nil, nil, recurring, outbox, tx, ids).Do,
@@ -78,15 +142,33 @@ func newExportEnv(t *testing.T) exportEnv {
 		Cancel:           schedule.NewCancel(schedules, refs, outbox, tx, ids).Do,
 		Update:           schedule.NewUpdate(schedules, refs, types, nil, nil, outbox, tx).Do,
 	}
-	writers := &[]string{}
+	writer := gcal.NewWriter(gcaltest.Start(t, srv))
 	exporter := calendarexport.NewExporter(calendarexport.ExporterDeps{
-		Exports: exports, Calendars: inmem.Calendars{Store: s}, Writers: writerOf(gcal.NewWriter(gcaltest.Start(t, srv)), writers),
-		Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s},
+		Exports: exports, Calendars: calendars,
+		Writers:   func(context.Context, string) (calendar.EventWriter, error) { return writer, nil },
+		Schedules: schedules, Recurring: recurring,
 	}, ids, slog.New(slog.NewTextHandler(io.Discard, nil)))
-	return exportEnv{env: e, srv: srv, schedules: sched, exporter: exporter, writers: writers}
+	sources := &[]string{}
+	return syncEnv{
+		store: s, ctx: ctx, uc: uc, srv: srv, schedules: sched, exporter: exporter,
+		syncer: newSyncer(s, source, sources, refs), sources: sources,
+	}
 }
 
-func (e exportEnv) create(t *testing.T, title string) schedule.Detail {
+// newSyncer は、Store s の上で、source で読み、職員の休職、復職、退職を st で待たせて職員を st で読む同期の処理を作る。
+// 読む手段を引いた事業所を sources に足す。
+func newSyncer(s *inmem.Store, source calendar.EventSource, sources *[]string, st calendar.StaffRefs) *calendarsync.Syncer {
+	return calendarsync.NewSyncer(calendarsync.SyncerDeps{
+		Syncs: inmem.Syncs{Store: s}, Calendars: inmem.Calendars{Store: s}, Staff: st, Exports: inmem.Exports{Store: s},
+		Sources: func(_ context.Context, facilityID string) (calendar.EventSource, error) {
+			*sources = append(*sources, facilityID)
+			return source, nil
+		},
+		Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, Types: inmem.ScheduleTypes{Store: s},
+	}, &inmem.Tx{}, ulid.Generator{}, time.Minute, slog.New(slog.NewTextHandler(io.Discard, nil)))
+}
+
+func (e syncEnv) create(t *testing.T, title string) schedule.Detail {
 	t.Helper()
 	d, err := e.schedules.Create(e.ctx, inmem.FacilityID, schedule.SlotInput{
 		TypeID: inmem.NormalTypeID, Date: civil.Date{Year: 2026, Month: 11, Day: 4},
@@ -98,7 +180,7 @@ func (e exportEnv) create(t *testing.T, title string) schedule.Detail {
 	return d
 }
 
-func (e exportEnv) update(t *testing.T, id, title string, staffID string) {
+func (e syncEnv) update(t *testing.T, id, title string, staffID string) {
 	t.Helper()
 	_, err := e.schedules.Update(e.ctx, id, schedule.SlotInput{
 		TypeID: inmem.NormalTypeID, Date: civil.Date{Year: 2026, Month: 11, Day: 5},
@@ -109,7 +191,8 @@ func (e exportEnv) update(t *testing.T, id, title string, staffID string) {
 	}
 }
 
-func (e exportEnv) run(t *testing.T) int {
+// run は、書く時刻を過ぎた書き出しの待ちを書き、書いた待ちの数を返す。
+func (e syncEnv) run(t *testing.T) int {
 	t.Helper()
 	n, err := e.exporter.ExportDue(t.Context())
 	if err != nil {
@@ -119,7 +202,7 @@ func (e exportEnv) run(t *testing.T) int {
 }
 
 // export は、予定 id の最後の書き出しの待ちを返す。
-func (e exportEnv) export(t *testing.T, id string) calendar.Export {
+func (e syncEnv) export(t *testing.T, id string) calendar.Export {
 	t.Helper()
 	var last calendar.Export
 	for _, x := range e.store.Exports {
@@ -134,7 +217,7 @@ func (e exportEnv) export(t *testing.T, id string) calendar.Export {
 }
 
 // due は、書き直しを待つ待ちの書く時刻を今にする。
-func (e exportEnv) due() {
+func (e syncEnv) due() {
 	for id, x := range e.store.Exports {
 		x.NextAttemptAt = time.Now().Add(-time.Second)
 		e.store.Exports[id] = x
@@ -148,45 +231,6 @@ func eventID(t *testing.T, id string) string {
 		t.Fatal(err)
 	}
 	return ev
-}
-
-// syncEnv は、書き出しの環境に、Google カレンダーの変更を当てる同期の処理と、確認が必要な予定を解く App を足す。
-type syncEnv struct {
-	exportEnv
-	syncer *calendar.Syncer
-	// sources は、同期の処理が読む手段を引いた事業所の、引いた順の一覧である。
-	sources *[]string
-}
-
-func newSyncEnv(t *testing.T) syncEnv {
-	t.Helper()
-	e := newExportEnv(t)
-	s := e.store
-	ids := ulid.Generator{}
-	source := gcal.NewReader(gcaltest.Start(t, e.srv))
-	e.uc = build(deps{
-		Calendars: inmem.Calendars{Store: s}, Accounts: oneAccount(source, nil), Exports: inmem.Exports{Store: s}, Staff: inmem.StaffRefs{Store: s},
-		Schedules: inmem.Schedules{Store: s}, Types: inmem.ScheduleTypes{Store: s},
-	}, &inmem.Tx{}, ids, principal.RequireStaffManage)
-	sources := &[]string{}
-	return syncEnv{exportEnv: e, syncer: newSyncer(e, source, sources, inmem.StaffRefs{Store: s}), sources: sources}
-}
-
-// newSyncer は、e の Store の上で、source で読み、職員の休職、復職、退職を st で待たせて職員を st で読む同期の処理を作る。
-func newSyncer(e exportEnv, source calendar.EventSource, sources *[]string, st calendar.StaffRefs) *calendar.Syncer {
-	s := e.store
-	return calendar.NewSyncer(calendar.SyncerDeps{
-		Syncs: inmem.Syncs{Store: s}, Calendars: inmem.Calendars{Store: s}, Staff: st, Exports: inmem.Exports{Store: s}, Sources: sourceOf(source, sources),
-		Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, Types: inmem.ScheduleTypes{Store: s},
-	}, &inmem.Tx{}, ulid.Generator{}, time.Minute, slog.New(slog.NewTextHandler(io.Discard, nil)))
-}
-
-// sourceOf は、事業所によらず src で読む calendar.SourceFor を返し、引かれた事業所を used に足す。
-func sourceOf(src calendar.EventSource, used *[]string) calendar.SourceFor {
-	return func(_ context.Context, facilityID string) (calendar.EventSource, error) {
-		*used = append(*used, facilityID)
-		return src, nil
-	}
 }
 
 func (e syncEnv) sync(t *testing.T) {
@@ -405,7 +449,7 @@ func TestSyncReadsAllEventsWhenTokenExpired(t *testing.T) {
 		t.Fatalf("全ての予定を読み直して当てた予定 = %+v", got.Slot)
 	}
 	r := e.store.SyncResults[calID]
-	if r.Status != calendar.SyncSucceeded || r.SyncToken == "" {
+	if r.Status != calendarsync.SyncSucceeded || r.SyncToken == "" {
 		t.Errorf("同期の結果 = %+v", r)
 	}
 	queries := e.srv.Queries()
@@ -481,7 +525,7 @@ func TestSyncReportsUnreadableCalendar(t *testing.T) {
 	e.srv.Status = http.StatusNotFound
 	e.sync(t)
 	r := e.store.SyncResults[calID]
-	if r.Status != calendar.SyncFailed || r.ErrorCode == nil || *r.ErrorCode != calendar.SyncUnreadable || r.SyncToken == "" {
+	if r.Status != calendarsync.SyncFailed || r.ErrorCode == nil || *r.ErrorCode != calendarsync.SyncUnreadable || r.SyncToken == "" {
 		t.Errorf("読めないカレンダーの同期の結果 = %+v", r)
 	}
 }

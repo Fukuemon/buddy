@@ -1,4 +1,4 @@
-package calendar
+package calendarsync
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
@@ -28,27 +29,34 @@ const (
 // SyncerDeps は、Syncer が使うリポジトリと、外部のカレンダーを読む EventSource を事業所ごとに返す Sources である。
 type SyncerDeps struct {
 	Syncs     SyncRepository
-	Calendars Repository
+	Calendars Calendars
 	// Staff は、予定を当てる前に事業所の職員の休職、復職、退職を待たせ、カレンダーの職員が退職したかを読む。
 	// 退職がカレンダーを外した後に、当てないためである。
-	Staff        StaffRefs
+	Staff        calendar.StaffRefs
 	Exports      ExportRepository
-	Sources      SourceFor
-	Schedules    ScheduleStore
-	Recurring    RecurringStore
-	Types        Types
-	Patients     Patients
-	ServiceCodes ServiceCodes
-	Visits       VisitStore
+	Sources      calendar.SourceFor
+	Schedules    calendar.ScheduleStore
+	Recurring    calendar.RecurringStore
+	Types        calendar.Types
+	Patients     calendar.Patients
+	ServiceCodes calendar.ServiceCodes
+	Visits       calendar.VisitStore
+}
+
+// Applier は、外部のカレンダーの 1 つの予定の変更を、buddy の予定に当てる規則である。
+type Applier interface {
+	// Apply は、カレンダー c の外部の予定 ev の変更を buddy の予定に当てる。Syncer が 1 つの予定ごとに開くトランザクションの中で呼ぶ。
+	// 予定を書いている書き出しの処理があれば、当てずに errExportWriting を返し、Syncer はカレンダーを後で読み直す。
+	Apply(ctx context.Context, c calendar.ExternalCalendar, ev calendar.Event) error
 }
 
 // Syncer は、職員が結び付けた外部のカレンダーの変わった予定を、増分の取得（syncToken）で読み、buddy の予定に当てる処理である。
-// ADR-0009 の段階 3 に当たる。当て方の規則は applier にある。
+// ADR-0009 の段階 3 に当たる。当て方の規則は Applier にある。
 // トークンが切れていれば（410）、全ての予定を読み直す。予定の対応の etag と比べるので、読み直しても同じ変更を 2 回は当てない。
 type Syncer struct {
 	deps     SyncerDeps
 	tx       tx.Transactor
-	apply    applier
+	apply    Applier
 	interval time.Duration
 	log      *slog.Logger
 }
@@ -57,10 +65,9 @@ type Syncer struct {
 func NewSyncer(deps SyncerDeps, tx tx.Transactor, ids kernel.IDGenerator, interval time.Duration, log *slog.Logger) *Syncer {
 	return &Syncer{
 		deps: deps, tx: tx, interval: interval, log: log,
-		apply: applier{
-			calendars: deps.Calendars, exports: deps.Exports, schedules: deps.Schedules, recurring: deps.Recurring,
-			types: deps.Types, patients: deps.Patients, serviceCodes: deps.ServiceCodes, visits: deps.Visits, ids: ids, now: time.Now,
-		},
+		apply: newReconcileApplier(
+			deps.Calendars, deps.Exports, deps.Schedules, deps.Recurring, deps.Types, deps.Patients, deps.ServiceCodes, deps.Visits, ids,
+		),
 	}
 }
 
@@ -117,7 +124,7 @@ func (s *Syncer) sync(ctx context.Context, st SyncState) SyncResult {
 	token := st.SyncToken
 	src, err := s.deps.Sources(ctx, st.Calendar.FacilityID)
 	if err == nil && src == nil {
-		err = ErrNotConfigured
+		err = calendar.ErrNotConfigured
 	}
 	if err != nil {
 		s.log.ErrorContext(ctx, "calendar sync source", append(attrs, slog.Any("error", err))...)
@@ -125,7 +132,7 @@ func (s *Syncer) sync(ctx context.Context, st SyncState) SyncResult {
 		return SyncResult{SyncToken: token, Status: SyncFailed, ErrorCode: &code, After: s.interval}
 	}
 	ch, err := src.Changes(ctx, st.Calendar.CalendarID, token)
-	if errors.Is(err, ErrSyncTokenExpired) {
+	if errors.Is(err, calendar.ErrSyncTokenExpired) {
 		s.log.InfoContext(ctx, "calendar sync token expired", attrs...)
 		token = ""
 		ch, err = src.Changes(ctx, st.Calendar.CalendarID, "")
@@ -133,7 +140,7 @@ func (s *Syncer) sync(ctx context.Context, st SyncState) SyncResult {
 	if err != nil {
 		s.log.WarnContext(ctx, "calendar sync failed", append(attrs, slog.Any("error", err))...)
 		code := SyncUnavailable
-		if errors.Is(err, ErrUnreadable) {
+		if errors.Is(err, calendar.ErrUnreadable) {
 			code = SyncUnreadable
 		}
 		return SyncResult{SyncToken: token, Status: SyncFailed, ErrorCode: &code, After: s.interval}
@@ -143,7 +150,7 @@ func (s *Syncer) sync(ctx context.Context, st SyncState) SyncResult {
 			if err := s.stillLinked(ctx, st.Calendar); err != nil {
 				return err
 			}
-			return s.apply.applyEvent(ctx, st.Calendar, ev)
+			return s.apply.Apply(ctx, st.Calendar, ev)
 		})
 		if errors.Is(err, errCalendarUnlinked) {
 			// 外したカレンダーは次から取らないので、トークンと状態は前のまま返す
@@ -167,7 +174,7 @@ var errCalendarUnlinked = errors.New("同期の途中でカレンダーが外れ
 // stillLinked は、事業所の職員の休職、復職、退職をトランザクションの終わりまで待たせてから、カレンダー c を外していないかを
 // 読み直す。外していれば errCalendarUnlinked を返す。退職は同じ事業所の行に排他のロックを取ってカレンダーを外すので、
 // カレンダーを取った後に職員が退職しても、退職した職員の予定に外部の変更を当てない。トランザクションの中で呼ぶ。
-func (s *Syncer) stillLinked(ctx context.Context, c ExternalCalendar) error {
+func (s *Syncer) stillLinked(ctx context.Context, c calendar.ExternalCalendar) error {
 	if err := s.deps.Staff.LockStatuses(ctx, c.FacilityID); err != nil {
 		return err
 	}

@@ -13,6 +13,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
@@ -61,7 +62,7 @@ type Store struct {
 	Links         map[string]calendar.EventLink
 	Exports       map[string]calendar.Export
 	// SyncResults は、カレンダーの ID ごとの、最後に同期した結果である。
-	SyncResults map[string]calendar.SyncResult
+	SyncResults map[string]calendarsync.SyncResult
 }
 
 // NewStore は、空の Store を作る。
@@ -87,7 +88,7 @@ func NewStore() *Store {
 		Runs:          map[string]calendar.ImportRun{},
 		Links:         map[string]calendar.EventLink{},
 		Exports:       map[string]calendar.Export{},
-		SyncResults:   map[string]calendar.SyncResult{},
+		SyncResults:   map[string]calendarsync.SyncResult{},
 	}
 }
 
@@ -990,7 +991,7 @@ func (s Calendars) LinkByRecurringSchedule(_ context.Context, recurringScheduleI
 	return s.linkBy(func(l calendar.EventLink) *string { return l.RecurringScheduleID }, recurringScheduleID)
 }
 
-// LinkByEvent は、calendar.Repository の LinkByEvent を実装する。
+// LinkByEvent は、calendarsync.Calendars の LinkByEvent を実装する。
 func (s Calendars) LinkByEvent(_ context.Context, externalCalendarID, eventID string) (calendar.EventLink, error) {
 	for _, l := range s.Links {
 		if l.ExternalCalendarID == externalCalendarID && l.ExternalEventID == eventID {
@@ -1026,7 +1027,7 @@ func (s Calendars) DeleteLink(_ context.Context, id string) error {
 	return nil
 }
 
-// Exports は、calendar.ExportRepository と calendarexport.ExportRepository のメモリ上の実装である。時刻は time.Now で比べる。
+// Exports は、calendarsync.ExportRepository と calendarexport.ExportRepository のメモリ上の実装である。時刻は time.Now で比べる。
 type Exports struct{ *Store }
 
 // open は、t の終わっていない待ちを返す。
@@ -1039,7 +1040,7 @@ func (s Exports) open(t calendar.Target) (calendar.Export, bool) {
 	return calendar.Export{}, false
 }
 
-// Enqueue は、calendar.ExportRepository と calendarexport.ExportRepository の Enqueue を実装する。
+// Enqueue は、calendarsync.ExportRepository と calendarexport.ExportRepository の Enqueue を実装する。
 func (s Exports) Enqueue(_ context.Context, id string, t calendar.Target) error {
 	e, ok := s.open(t)
 	if !ok {
@@ -1096,7 +1097,7 @@ func (s Exports) Finish(_ context.Context, e calendar.Export, r calendar.ExportR
 	return nil
 }
 
-// Get は、calendar.ExportRepository と calendarexport.ExportRepository の Get を実装する。
+// Get は、calendarsync.ExportRepository と calendarexport.ExportRepository の Get を実装する。
 func (s Exports) Get(_ context.Context, id string) (calendar.Export, error) {
 	return get(s.Exports, id)
 }
@@ -1124,7 +1125,7 @@ func (s Exports) ListIssues(_ context.Context, facilityID string) ([]calendar.Ex
 	return out, nil
 }
 
-// Retry は、calendar.ExportRepository と calendarexport.ExportRepository の Retry を実装する。
+// Retry は、calendarsync.ExportRepository と calendarexport.ExportRepository の Retry を実装する。
 func (s Exports) Retry(_ context.Context, id string) error {
 	e, err := get(s.Exports, id)
 	if err != nil {
@@ -1138,7 +1139,7 @@ func (s Exports) Retry(_ context.Context, id string) error {
 	return nil
 }
 
-// Open は、calendar.ExportRepository の Open を実装する。
+// Open は、calendarsync.ExportRepository の Open を実装する。
 func (s Exports) Open(_ context.Context, t calendar.Target) (calendar.Export, error) {
 	if e, ok := s.open(t); ok {
 		return e, nil
@@ -1146,7 +1147,7 @@ func (s Exports) Open(_ context.Context, t calendar.Target) (calendar.Export, er
 	return calendar.Export{}, apperr.ErrNotFound
 }
 
-// Hold は、calendar.ExportRepository の Hold を実装する。
+// Hold は、calendarsync.ExportRepository の Hold を実装する。
 func (s Exports) Hold(_ context.Context, id string, t calendar.Target, code calendar.ExportErrorCode) error {
 	e, ok := s.open(t)
 	if !ok {
@@ -1158,7 +1159,7 @@ func (s Exports) Hold(_ context.Context, id string, t calendar.Target, code cale
 	return nil
 }
 
-// Resolve は、calendar.ExportRepository の Resolve を実装する。
+// Resolve は、calendarsync.ExportRepository の Resolve を実装する。
 func (s Exports) Resolve(_ context.Context, id string, revision int) error {
 	e, err := get(s.Exports, id)
 	if err != nil {
@@ -1172,28 +1173,28 @@ func (s Exports) Resolve(_ context.Context, id string, revision int) error {
 	return nil
 }
 
-// Syncs は、calendar.SyncRepository のメモリ上の実装である。読む時刻と lease を持たず、取るたびに外していない全てのカレンダーを返す。
+// Syncs は、calendarsync.SyncRepository のメモリ上の実装である。読む時刻と lease を持たず、取るたびに外していない全てのカレンダーを返す。
 type Syncs struct{ *Store }
 
 // Claim は、外していないカレンダーを ID の順に max 件まで、最後に同期した結果のトークンを付けて返す。
-func (s Syncs) Claim(_ context.Context, max int, _ time.Duration) ([]calendar.SyncState, error) {
-	var out []calendar.SyncState
+func (s Syncs) Claim(_ context.Context, max int, _ time.Duration) ([]calendarsync.SyncState, error) {
+	var out []calendarsync.SyncState
 	for _, c := range s.Calendars {
 		if c.DisabledAt != nil {
 			continue
 		}
-		st := calendar.SyncState{Calendar: c, LastStatus: calendar.SyncNever}
+		st := calendarsync.SyncState{Calendar: c, LastStatus: calendarsync.SyncNever}
 		if r, ok := s.SyncResults[c.ID]; ok {
 			st.SyncToken, st.LastStatus, st.LastError = r.SyncToken, r.Status, r.ErrorCode
 		}
 		out = append(out, st)
 	}
-	slices.SortFunc(out, func(a, b calendar.SyncState) int { return strings.Compare(a.Calendar.ID, b.Calendar.ID) })
+	slices.SortFunc(out, func(a, b calendarsync.SyncState) int { return strings.Compare(a.Calendar.ID, b.Calendar.ID) })
 	return out[:min(max, len(out))], nil
 }
 
-// Finish は、calendar.SyncRepository の Finish を実装する。
-func (s Syncs) Finish(_ context.Context, st calendar.SyncState, r calendar.SyncResult) error {
+// Finish は、calendarsync.SyncRepository の Finish を実装する。
+func (s Syncs) Finish(_ context.Context, st calendarsync.SyncState, r calendarsync.SyncResult) error {
 	s.SyncResults[st.Calendar.ID] = r
 	return nil
 }

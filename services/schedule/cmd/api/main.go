@@ -25,6 +25,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/config"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
@@ -158,7 +159,7 @@ func run() error {
 		close(exporterDone)
 	}
 	if accounts != nil && cfg.Calendar.SyncEnabled {
-		syncer := calendar.NewSyncer(calendar.SyncerDeps{
+		syncer := calendarsync.NewSyncer(calendarsync.SyncerDeps{
 			Syncs: postgres.NewCalendarSyncRepository(db), Calendars: calendars, Staff: staffRefs, Exports: exports,
 			Sources:   accounts.Source,
 			Schedules: schedules, Recurring: recurring, Types: scheduleTypes, Patients: patients, ServiceCodes: visitMasters, Visits: visitInfos,

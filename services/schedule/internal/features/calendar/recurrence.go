@@ -276,3 +276,17 @@ func parseDateTime(v string, loc *time.Location) (time.Time, error) {
 	}
 	return time.ParseInLocation("20060102T150405", v, loc)
 }
+
+// OriginalDate は、繰り返しの予定の例外の回 ev が、元の規則で始まるはずだった Asia/Tokyo の日付を返す。
+// ev が元の開始（OriginalStart）を持たないか、読めないときは false を返す。
+func OriginalDate(ev Event) (civil.Date, bool) {
+	if ev.OriginalStart.DateTime != "" {
+		t, err := ev.OriginalStart.Instant()
+		if err != nil {
+			return civil.Date{}, false
+		}
+		return civil.DateOf(t.In(tokyo)), true
+	}
+	d, err := civil.ParseDate(ev.OriginalStart.Date)
+	return d, err == nil
+}

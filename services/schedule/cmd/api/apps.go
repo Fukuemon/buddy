@@ -5,6 +5,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
@@ -131,9 +132,12 @@ func scheduleApp(
 	}
 }
 
-// calendarApp は、calendar の操作の型を作り、CalendarApp に入れる。accounts が nil なら、外部のカレンダーを読む操作は ErrNotConfigured を返す。
+// calendarApp は、calendar、calendarsync、calendarexport の操作の型を作り、CalendarApp に入れる。accounts が nil なら、外部のカレンダーを読む操作は ErrNotConfigured を返す。
 func calendarApp(
-	calendars calendar.Repository,
+	calendars interface {
+		calendar.Repository
+		calendarsync.Calendars
+	},
 	accounts calendar.Accounts,
 	staffRefs calendar.StaffRefs,
 	patients calendar.Patients,
@@ -144,7 +148,7 @@ func calendarApp(
 	recurringSchedules kernel.Finder[schedule.RecurringDetail],
 	visits calendar.VisitStore,
 	exports interface {
-		calendar.ExportRepository
+		calendarsync.ExportRepository
 		calendarexport.ExportRepository
 	},
 	tx tx.Transactor,
@@ -161,6 +165,6 @@ func calendarApp(
 		Import:           calendar.NewImport(calendars, accounts, staffRefs, patients, recurringSchedules, serviceCodes, types, recurring, schedules, visits, tx, ids, guard).Do,
 		ListExportIssues: calendarexport.NewListExportIssues(exports, guard).Do,
 		RetryExport:      calendarexport.NewRetryExport(exports, guard).Do,
-		AcceptExport:     calendar.NewAcceptExport(exports, schedules, calendars, accounts, staffRefs, types, patients, serviceCodes, visits, tx, ids, guard).Do,
+		AcceptExport:     calendarsync.NewAcceptExport(exports, schedules, calendars, accounts, staffRefs, types, patients, serviceCodes, visits, tx, ids, guard).Do,
 	}
 }

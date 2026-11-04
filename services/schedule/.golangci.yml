@@ -23,17 +23,19 @@ linters:
             - "!$test"
           deny:
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/staff
-              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarexport の順にだけ import する
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/visit
-              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarexport の順にだけ import する
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/patient
-              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarexport の順にだけ import する
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/schedule
-              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarexport の順にだけ import する
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendar
-              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarexport の順にだけ import する
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport
-              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarexport の順にだけ import する
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/principal
               desc: principal を使うのは schedule と calendar だけにする
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/httpapi
@@ -56,15 +58,17 @@ linters:
             - "!$test"
           deny:
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/visit
-              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarexport の順にだけ import する
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/patient
-              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarexport の順にだけ import する
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/schedule
-              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarexport の順にだけ import する
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendar
-              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarexport の順にだけ import する
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport
-              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarexport の順にだけ import する
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/principal
               desc: principal を使うのは schedule と calendar だけにする
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/httpapi
@@ -87,13 +91,15 @@ linters:
             - "!$test"
           deny:
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/patient
-              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarexport の順にだけ import する
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/schedule
-              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarexport の順にだけ import する
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendar
-              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarexport の順にだけ import する
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport
-              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarexport の順にだけ import する
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/principal
               desc: principal を使うのは schedule と calendar だけにする
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/httpapi
@@ -116,11 +122,13 @@ linters:
             - "!$test"
           deny:
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/schedule
-              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarexport の順にだけ import する
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendar
-              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarexport の順にだけ import する
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport
-              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarexport の順にだけ import する
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/principal
               desc: principal を使うのは schedule と calendar だけにする
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/httpapi
@@ -143,9 +151,11 @@ linters:
             - "!$test"
           deny:
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendar
-              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarexport の順にだけ import する
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport
-              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarexport の順にだけ import する
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/httpapi
               desc: 機能のパッケージはアダプタと access と config を import しない
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/postgres
@@ -165,8 +175,35 @@ linters:
             - "**/internal/features/calendar/**"
             - "!$test"
           deny:
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport
-              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarexport の順にだけ import する
+              desc: 機能のパッケージは organization、staff、visit、patient、schedule、calendar、calendarsync、calendarexport の順にだけ import する
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/httpapi
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/postgres
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/gcal
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/broker
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/ulid
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/access
+              desc: 機能のパッケージはアダプタと access と config を import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/config
+              desc: 機能のパッケージはアダプタと access と config を import しない
+        features-calendarsync:
+          files:
+            - "**/internal/features/calendarsync/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport
+              desc: calendarimport、calendarsync、calendarexport は calendar まで import してよく、3 つの間では import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport
+              desc: calendarimport、calendarsync、calendarexport は calendar まで import してよく、3 つの間では import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/principal
+              desc: principal を使うのは schedule と calendar だけにする
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/httpapi
               desc: 機能のパッケージはアダプタと access と config を import しない
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/postgres

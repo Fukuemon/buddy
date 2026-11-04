@@ -14,6 +14,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
@@ -51,7 +52,7 @@ func TestCalendarSyncRepository(t *testing.T) {
 	}
 	st := claimed[0]
 	if st.Calendar.ID != calID || st.Calendar.CalendarID != "mori@example.com" || st.Calendar.StaffID != seedMori ||
-		st.SyncToken != "" || st.LastStatus != calendar.SyncNever || st.LockedUntil.IsZero() {
+		st.SyncToken != "" || st.LastStatus != calendarsync.SyncNever || st.LockedUntil.IsZero() {
 		t.Fatalf("取ったカレンダー = %+v", st)
 	}
 	if again, err := r.Claim(ctx, 10, time.Minute); err != nil || len(again) != 0 {
@@ -61,19 +62,19 @@ func TestCalendarSyncRepository(t *testing.T) {
 	// ほかの処理が取り直したカレンダーには書かない
 	stale := st
 	stale.LockedUntil = st.LockedUntil.Add(-time.Second)
-	if err := r.Finish(ctx, stale, calendar.SyncResult{SyncToken: "stale", Status: calendar.SyncSucceeded}); err != nil {
+	if err := r.Finish(ctx, stale, calendarsync.SyncResult{SyncToken: "stale", Status: calendarsync.SyncSucceeded}); err != nil {
 		t.Fatal(err)
 	}
-	if err := r.Finish(ctx, st, calendar.SyncResult{SyncToken: "t1", Status: calendar.SyncSucceeded}); err != nil {
+	if err := r.Finish(ctx, st, calendarsync.SyncResult{SyncToken: "t1", Status: calendarsync.SyncSucceeded}); err != nil {
 		t.Fatal(err)
 	}
 	claimed, err = r.Claim(ctx, 10, time.Minute)
-	if err != nil || len(claimed) != 1 || claimed[0].SyncToken != "t1" || claimed[0].LastStatus != calendar.SyncSucceeded {
+	if err != nil || len(claimed) != 1 || claimed[0].SyncToken != "t1" || claimed[0].LastStatus != calendarsync.SyncSucceeded {
 		t.Fatalf("同期した後の Claim = %+v, %v", claimed, err)
 	}
 
-	code := calendar.SyncUnreadable
-	if err := r.Finish(ctx, claimed[0], calendar.SyncResult{SyncToken: "t1", Status: calendar.SyncFailed, ErrorCode: &code, After: time.Hour}); err != nil {
+	code := calendarsync.SyncUnreadable
+	if err := r.Finish(ctx, claimed[0], calendarsync.SyncResult{SyncToken: "t1", Status: calendarsync.SyncFailed, ErrorCode: &code, After: time.Hour}); err != nil {
 		t.Fatal(err)
 	}
 	if again, err := r.Claim(ctx, 10, time.Minute); err != nil || len(again) != 0 {
@@ -190,7 +191,7 @@ func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
 	if _, err := importCalendar.Do(ctx, calID, rng, nil); err != nil {
 		t.Fatal(err)
 	}
-	syncer := calendar.NewSyncer(calendar.SyncerDeps{
+	syncer := calendarsync.NewSyncer(calendarsync.SyncerDeps{
 		Syncs: NewCalendarSyncRepository(testDB), Calendars: calendars, Staff: NewStaffRefRepository(testDB), Exports: NewCalendarExportRepository(testDB), Sources: func(context.Context, string) (calendar.EventSource, error) { return source, nil },
 		Schedules: schedules, Recurring: recurring, Types: types, Patients: patients, ServiceCodes: masters, Visits: visits,
 	}, tx, ids, 0, slog.New(slog.NewTextHandler(io.Discard, nil)))
@@ -309,7 +310,7 @@ func TestCalendarSyncKeepsEndedPatientOnlyInPast(t *testing.T) {
 	if _, err := importCalendar.Do(ctx, calID, rng, nil); err != nil {
 		t.Fatal(err)
 	}
-	syncer := calendar.NewSyncer(calendar.SyncerDeps{
+	syncer := calendarsync.NewSyncer(calendarsync.SyncerDeps{
 		Syncs: NewCalendarSyncRepository(testDB), Calendars: calendars, Staff: staffRefs, Exports: NewCalendarExportRepository(testDB), Sources: func(context.Context, string) (calendar.EventSource, error) { return source, nil },
 		Schedules: schedules, Recurring: recurring, Types: types, Patients: patients, ServiceCodes: masters, Visits: visits,
 	}, tx, ids, 0, slog.New(slog.NewTextHandler(io.Discard, nil)))
