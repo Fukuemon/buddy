@@ -16,6 +16,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/config"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres"
@@ -51,6 +52,7 @@ type Repositories struct {
 	calendars        *postgres.CalendarRepository
 	exports          *postgres.CalendarExportRepository
 	calendarSyncs    *postgres.CalendarSyncRepository
+	projections      *postgres.CalendarProjectionRepository
 }
 
 // NewRepositories は、db の上に Repositories を作る。db に接続せず、失敗しない。
@@ -77,6 +79,7 @@ func NewRepositories(db *pgxpool.Pool) Repositories {
 		calendars:        postgres.NewCalendarRepository(db),
 		exports:          postgres.NewCalendarExportRepository(db),
 		calendarSyncs:    postgres.NewCalendarSyncRepository(db),
+		projections:      postgres.NewCalendarProjectionRepository(db),
 	}
 }
 
@@ -126,12 +129,14 @@ func NewExporter(r Repositories, accounts *gcal.Accounts, log *slog.Logger) *cal
 	}, r.ids, log)
 }
 
-// NewSyncer は、accounts の Google カレンダーの変更を interval ごとに読み、buddy の予定に当てる Syncer を作る。
+// NewSyncer は、accounts の Google カレンダーの変更を interval ごとに読む Syncer を作る。
+// Google カレンダーを予定の正本にする事業所（google_primary）のカレンダーの変更を、ProjectionApplier で予定の写し（Projection）に写す。
+// buddy を予定の正本にする事業所（buddy_primary）の Applier は渡さないので、そのカレンダーは読まない（ADR-0035）。
 // accounts は nil にしない。cmd/calendar-worker が、同期を有効にした設定（config.Calendar の SyncEnabled）のときだけ作って動かす。
 func NewSyncer(r Repositories, accounts *gcal.Accounts, interval time.Duration, log *slog.Logger) *calendarsync.Syncer {
 	return calendarsync.NewSyncer(calendarsync.SyncerDeps{
-		Syncs: r.calendarSyncs, Calendars: r.calendars, Staff: r.staffRefs, Locks: r.facilities, Exports: r.exports,
-		Sources:   accounts.Source,
-		Schedules: r.schedules, Recurring: r.recurring, Types: r.scheduleTypes, Patients: r.patients, ServiceCodes: r.serviceCodes, Visits: r.visitWriter(),
-	}, r.tx, r.ids, interval, log)
+		Syncs: r.calendarSyncs, Calendars: r.calendars, Staff: r.staffRefs, Locks: r.facilities, Sources: accounts.Source,
+	}, calendarsync.Appliers{
+		organization.SourceGooglePrimary: calendarsync.NewProjectionApplier(r.projections, log),
+	}, r.tx, interval, log)
 }

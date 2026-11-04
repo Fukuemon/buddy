@@ -68,6 +68,8 @@ type Event struct {
 	// OriginalStart は、例外の回が元の規則で始まるはずだった日時である。
 	OriginalStart When
 	ETag          string
+	// Updated は、外部のカレンダーで予定を最後に変えた時刻で、RFC 3339 の形である。返らなければ空である。
+	Updated string
 }
 
 // EventSource が返すエラー。httpapi が状態コードに対応させる。

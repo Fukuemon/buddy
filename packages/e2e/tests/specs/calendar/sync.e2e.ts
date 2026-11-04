@@ -1,7 +1,7 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
 import { SATO } from '../../fixtures/env'
-import { findGoogleEvent, holdGoogleChanges, shiftGoogleEvent } from '../../fixtures/googleCalendar'
+import { findGoogleEvent, shiftGoogleEvent } from '../../fixtures/googleCalendar'
 import { detailDateTime, SCHEDULE_DETAIL_URL, scheduleIdFromUrl } from '../../fixtures/schedule'
 
 const findEvent = (request: APIRequestContext, summary: string) =>
@@ -24,11 +24,12 @@ const openSchedule = async (page: Page, title: string) => {
 const reviewRow = (page: Page, scheduleId: string) =>
   page.getByTestId(`calendar-review-row-schedule-${scheduleId}`)
 
+// シードの 1 つ目の事業所は buddy を予定の正本にする（buddy_primary）。同期はこの事業所のカレンダーを読まず、
+// Google カレンダーでの変更を buddy の予定に当てない（ADR-0035）。
 test.describe('確認が必要な予定', () => {
   test.describe('Google カレンダーとの同期', () => {
-    // 途中で落ちても、後の spec が Google の変更を受け取れ、やり直しで佐藤にもう一度結び付けられるようにする
-    test.afterEach(async ({ page, request }) => {
-      await holdGoogleChanges(request, false)
+    // 途中で落ちても、やり直しで佐藤にもう一度結び付けられるようにする
+    test.afterEach(async ({ page }) => {
       await page.goto('/schedule/link')
       const menu = page.getByTestId(`calendar-link-menu-${SATO.id}`)
       await expect(page.getByTestId(`calendar-link-row-${SATO.id}`)).toBeVisible()
@@ -40,7 +41,7 @@ test.describe('確認が必要な予定', () => {
       }
     })
 
-    test('Google カレンダーで直した予定が buddy に出て、両方で変わった予定は Google の内容に合わせられず、確認が必要なまま残ること', async ({
+    test('buddy を正本にする事業所で Google カレンダーの予定を直した場合、buddy の予定に当たらず、buddy で変えると確認が必要な予定に出て、Google の内容には合わせられないこと', async ({
       page,
       request,
     }) => {
@@ -49,6 +50,7 @@ test.describe('確認が必要な予定', () => {
       const changed = `E2E の同期（buddy で変更）${stamp}`
       let eventId = ''
       let scheduleId = ''
+      let createdDateTime = ''
 
       await test.step('佐藤に Google カレンダーを結び付け、buddy で作った予定を Google カレンダーに出す', async () => {
         await page.goto('/schedule/link')
@@ -73,22 +75,12 @@ test.describe('確認が必要な予定', () => {
         await expect(page.getByTestId('schedule-form-modal')).toBeHidden()
 
         await expect.poll(async () => (await findEvent(request, created))?.status).toBe('confirmed')
-        eventId = (await findEvent(request, created))?.id ?? ''
+        const event = await findEvent(request, created)
+        eventId = event?.id ?? ''
+        createdDateTime = detailDateTime(event)
       })
 
-      await test.step('職員が Google カレンダーで予定を遅らせると、buddy の予定も遅れる', async () => {
-        await shiftGoogleEvent(request, SATO.calendarId, eventId)
-        const shifted = detailDateTime(await findEvent(request, created))
-
-        // 予定の API が数秒ごとに Google の変更を読むので、出るまで開き直す
-        await expect(async () => {
-          await openSchedule(page, created)
-          await expect(page.getByTestId('schedule-detail-datetime')).toHaveText(shifted)
-        }).toPass()
-      })
-
-      await test.step('buddy と Google カレンダーの両方で変えると、確認が必要な予定に出る', async () => {
-        await holdGoogleChanges(request, true)
+      await test.step('職員が Google カレンダーで予定を遅らせた後に buddy で変えると、確認が必要な予定に出る', async () => {
         await shiftGoogleEvent(request, SATO.calendarId, eventId)
         scheduleId = await openSchedule(page, created)
         await page.getByTestId('schedule-detail-edit').click()
@@ -97,6 +89,7 @@ test.describe('確認が必要な予定', () => {
         await page.getByTestId('schedule-edit-submit').click()
         await expect(page.getByTestId('schedule-detail-modal')).toBeVisible()
 
+        // 書き出しが Google の変更を見つけて（412）確認が必要な予定にするまで、一覧を開き直す
         await page.goto('/schedule/review')
         const row = reviewRow(page, scheduleId)
         await expect(async () => {
@@ -106,11 +99,15 @@ test.describe('確認が必要な予定', () => {
         await expect(row.getByTestId(/^calendar-review-reason-/)).toHaveText(
           'buddy と Google カレンダーの両方で予定が変わりました。',
         )
-        await holdGoogleChanges(request, false)
       })
 
-      // シードの事業所は buddy を予定の正本にする（buddy_primary）ので、Google の内容を buddy の予定に当てない（ADR-0035）
+      await test.step('確認が必要な予定に出た後も、buddy の予定の日時は Google で遅らせる前のままである', async () => {
+        await openSchedule(page, changed)
+        await expect(page.getByTestId('schedule-detail-datetime')).toHaveText(createdDateTime)
+      })
+
       await test.step('Google の内容に合わせようとすると拒まれ、一覧に残り、buddy の予定は buddy で変えたタイトルのままになる', async () => {
+        await page.goto('/schedule/review')
         await reviewRow(page, scheduleId).click()
         await page
           .getByTestId('calendar-review-dialog')

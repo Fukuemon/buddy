@@ -61,7 +61,8 @@ func gcancelled(id, parent, original string) *calendarv3.Event {
 }
 
 // syncEnv は、予定の操作と、書き出しの処理と、Google カレンダーの変更を当てる同期の処理と、確認が必要な予定を解く操作と、
-// フェイクの Calendar API を、同じ Store の上で動かす。
+// フェイクの Calendar API を、同じ Store の上で動かす。同期の処理は、testAppliers の Applier で当てる。
+// 事業所 inmem.FacilityID は buddy_primary で、同期は ReconcileApplier で buddy の予定に当てる。
 type syncEnv struct {
 	store     *inmem.Store
 	ctx       context.Context
@@ -159,17 +160,37 @@ func newSyncEnv(t *testing.T) syncEnv {
 	}
 }
 
-// newSyncer は、Store s の上で、source で読み、職員の休職、復職、退職を locks で待たせる同期の処理を作る。
+// discardLog は、テストの同期の処理が書くログを捨てる。
+var discardLog = slog.New(slog.NewTextHandler(io.Discard, nil))
+
+// testAppliers は、Store s の上で、google_primary の事業所の変更を ProjectionApplier で Projection に写し、buddy_primary の事業所の変更を
+// ReconcileApplier で buddy の予定に当てる Applier である。組み立て（assemble）は buddy_primary の Applier を渡さず、buddy_primary の
+// 事業所のカレンダーを読まない（ADR-0035）。ReconcileApplier は、使わなくなった後も規則を残すので、このテストで確認し続ける。
+func testAppliers(s *inmem.Store) calendarsync.Appliers {
+	return calendarsync.Appliers{
+		organization.SourceGooglePrimary: calendarsync.NewProjectionApplier(inmem.Projections{Store: s}, discardLog),
+		organization.SourceBuddyPrimary: calendarsync.NewReconcileApplier(calendarsync.ReconcileDeps{
+			Calendars: inmem.Calendars{Store: s}, Exports: inmem.Exports{Store: s},
+			Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, Types: inmem.ScheduleTypes{Store: s},
+		}, ulid.Generator{}),
+	}
+}
+
+// syncerDeps は、Store s の上で、source で読み、職員の休職、復職、退職とモードの切り替えを locks で待たせる同期の処理の依存である。
 // 読む手段を引いた事業所を sources に足す。
-func newSyncer(s *inmem.Store, source calendar.EventSource, sources *[]string, locks calendar.FacilityLock) *calendarsync.Syncer {
-	return calendarsync.NewSyncer(calendarsync.SyncerDeps{
-		Syncs: inmem.Syncs{Store: s}, Calendars: inmem.Calendars{Store: s}, Staff: inmem.StaffRefs{Store: s}, Locks: locks, Exports: inmem.Exports{Store: s},
+func syncerDeps(s *inmem.Store, source calendar.EventSource, sources *[]string, locks calendarsync.FacilityLock) calendarsync.SyncerDeps {
+	return calendarsync.SyncerDeps{
+		Syncs: inmem.Syncs{Store: s}, Calendars: inmem.Calendars{Store: s}, Staff: inmem.StaffRefs{Store: s}, Locks: locks,
 		Sources: func(_ context.Context, facilityID string) (calendar.EventSource, error) {
 			*sources = append(*sources, facilityID)
 			return source, nil
 		},
-		Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, Types: inmem.ScheduleTypes{Store: s},
-	}, &inmem.Tx{}, ulid.Generator{}, time.Minute, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	}
+}
+
+// newSyncer は、syncerDeps の依存と testAppliers の Applier で同期の処理を作る。
+func newSyncer(s *inmem.Store, source calendar.EventSource, sources *[]string, locks calendarsync.FacilityLock) *calendarsync.Syncer {
+	return calendarsync.NewSyncer(syncerDeps(s, source, sources, locks), testAppliers(s), &inmem.Tx{}, time.Minute, discardLog)
 }
 
 func (e syncEnv) create(t *testing.T, title string) schedule.Schedule {
@@ -1103,9 +1124,8 @@ func TestSyncFailsWithoutAccount(t *testing.T) {
 			s := e.store
 			syncer := calendarsync.NewSyncer(calendarsync.SyncerDeps{
 				Syncs: inmem.Syncs{Store: s}, Calendars: inmem.Calendars{Store: s}, Staff: inmem.StaffRefs{Store: s},
-				Locks: inmem.Facilities{Store: s}, Exports: inmem.Exports{Store: s}, Sources: sources,
-				Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, Types: inmem.ScheduleTypes{Store: s},
-			}, &inmem.Tx{}, ulid.Generator{}, time.Minute, slog.New(slog.NewTextHandler(io.Discard, nil)))
+				Locks: inmem.Facilities{Store: s}, Sources: sources,
+			}, testAppliers(s), &inmem.Tx{}, time.Minute, discardLog)
 			if _, err := syncer.SyncDue(t.Context()); err != nil {
 				t.Fatal(err)
 			}

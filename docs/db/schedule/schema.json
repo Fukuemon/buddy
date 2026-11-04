@@ -5956,6 +5956,333 @@
           "def": "CREATE TRIGGER calendar_exports_set_updated_at BEFORE UPDATE ON public.calendar_exports FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
         }
       ]
+    },
+    {
+      "name": "public.calendar_event_projections",
+      "type": "BASE TABLE",
+      "comment": "Google カレンダーを予定の正本にする事業所の、Google カレンダーの予定の写し（Projection）。1 つの予定を 1 行にする",
+      "columns": [
+        {
+          "name": "external_calendar_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "external_event_id",
+          "type": "varchar(1024)",
+          "nullable": false,
+          "comment": "Google の予定の ID"
+        },
+        {
+          "name": "facility_id",
+          "type": "text",
+          "nullable": false,
+          "comment": "写した時点のカレンダーの事業所"
+        },
+        {
+          "name": "staff_id",
+          "type": "text",
+          "nullable": false,
+          "comment": "写した時点のカレンダーの職員"
+        },
+        {
+          "name": "recurring_event_id",
+          "type": "varchar(1024)",
+          "nullable": true,
+          "comment": "繰り返しの予定の例外の回のとき、親の予定の ID"
+        },
+        {
+          "name": "original_start_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "comment": "例外の回が元の規則で始まるはずだった日時。終日の予定は original_start_date に持つ"
+        },
+        {
+          "name": "original_start_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "comment": "confirmed、cancelled。cancelled は繰り返しの予定の取り消した回で、取り消した単発の予定と親の予定は行を消す"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": false,
+          "comment": "Google の予定のタイトル。利用者名を含むが、表示と照合に要るので持つ。取り消した回は空"
+        },
+        {
+          "name": "start_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "comment": "開始の日時。終日の予定は start_date に持つ。取り消した回はどちらも NULL"
+        },
+        {
+          "name": "start_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "end_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "comment": "終了の日時。終日の予定は end_date（Google と同じく、終わる日の翌日）に持つ"
+        },
+        {
+          "name": "end_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "time_zone",
+          "type": "text",
+          "nullable": true,
+          "comment": "Google の予定の開始のタイムゾーン（IANA）。繰り返しの規則はこの暦で数える"
+        },
+        {
+          "name": "recurrence",
+          "type": "text[]",
+          "nullable": false,
+          "default": "'{}'::text[]",
+          "comment": "繰り返しの親の予定の RRULE、EXDATE、RDATE の行"
+        },
+        {
+          "name": "etag",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "google_updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "comment": "Google で予定を最後に変えた時刻"
+        },
+        {
+          "name": "last_end_date",
+          "type": "date",
+          "nullable": true,
+          "comment": "Asia/Tokyo で予定が終わる日。繰り返しは最後の回、取り消した回は元の開始の日。終わりの無い繰り返しと、最後の回を決められない繰り返しは NULL。保持する期間より前に終わった行を消すのに使う"
+        },
+        {
+          "name": "projected_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()",
+          "comment": "同期が行を書いた時刻"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "calendar_event_projections_pkey",
+          "def": "CREATE UNIQUE INDEX calendar_event_projections_pkey ON public.calendar_event_projections USING btree (external_calendar_id, external_event_id)",
+          "table": "public.calendar_event_projections",
+          "columns": [
+            "external_calendar_id",
+            "external_event_id"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_facility_end_idx",
+          "def": "CREATE INDEX calendar_event_projections_facility_end_idx ON public.calendar_event_projections USING btree (facility_id, last_end_date)",
+          "table": "public.calendar_event_projections",
+          "columns": [
+            "facility_id",
+            "last_end_date"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "calendar_event_projections_cancelled_check",
+          "type": "CHECK",
+          "def": "CHECK (((status = 'confirmed'::text) OR (recurring_event_id IS NOT NULL)))",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "status",
+            "recurring_event_id"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_end_check",
+          "type": "CHECK",
+          "def": "CHECK (((status = 'cancelled'::text) OR (num_nonnulls(end_at, end_date) = 1)))",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "status",
+            "end_at",
+            "end_date"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_etag_not_null",
+          "type": "n",
+          "def": "NOT NULL etag",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "etag"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_external_calendar_id_not_null",
+          "type": "n",
+          "def": "NOT NULL external_calendar_id",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "external_calendar_id"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_external_event_id_not_null",
+          "type": "n",
+          "def": "NOT NULL external_event_id",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "external_event_id"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_facility_id_not_null",
+          "type": "n",
+          "def": "NOT NULL facility_id",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "facility_id"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_original_check",
+          "type": "CHECK",
+          "def": "CHECK ((num_nonnulls(original_start_at, original_start_date) \u003c= 1))",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "original_start_at",
+            "original_start_date"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_projected_at_not_null",
+          "type": "n",
+          "def": "NOT NULL projected_at",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "projected_at"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_recurrence_not_null",
+          "type": "n",
+          "def": "NOT NULL recurrence",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "recurrence"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_staff_id_not_null",
+          "type": "n",
+          "def": "NOT NULL staff_id",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "staff_id"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_start_check",
+          "type": "CHECK",
+          "def": "CHECK (((status = 'cancelled'::text) OR (num_nonnulls(start_at, start_date) = 1)))",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "status",
+            "start_at",
+            "start_date"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_status_check",
+          "type": "CHECK",
+          "def": "CHECK ((status = ANY (ARRAY['confirmed'::text, 'cancelled'::text])))",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "status"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_status_not_null",
+          "type": "n",
+          "def": "NOT NULL status",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "status"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_title_not_null",
+          "type": "n",
+          "def": "NOT NULL title",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "title"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_staff_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id) ON DELETE CASCADE",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "public.users",
+          "columns": [
+            "facility_id",
+            "staff_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_calendar_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "public.external_calendars",
+          "columns": [
+            "facility_id",
+            "external_calendar_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (external_calendar_id, external_event_id)",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "external_calendar_id",
+            "external_event_id"
+          ]
+        }
+      ]
     }
   ],
   "relations": [
@@ -6580,6 +6907,36 @@
       ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (facility_id, schedule_id) REFERENCES schedules(facility_id, id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.calendar_event_projections",
+      "columns": [
+        "facility_id",
+        "staff_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.users",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.calendar_event_projections",
+      "columns": [
+        "facility_id",
+        "external_calendar_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.external_calendars",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
     }
   ],
   "functions": [
@@ -6680,10 +7037,11 @@
     {
       "id": "calendar-sync",
       "name": "外部のカレンダーの取り込みと書き出し",
-      "desc": "職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち。書き出しは、予定の正本のモードが buddy_primary の事業所に限る",
+      "desc": "職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち、Google カレンダーの予定の写し（Projection）。書き出しは、予定の正本のモードが buddy_primary の事業所に限る。同期は google_primary の事業所のカレンダーだけを読み、予定の写しに書く",
       "tables": [
         "public.external_calendars",
         "public.calendar_sync_states",
+        "public.calendar_event_projections",
         "public.external_event_links",
         "public.import_runs",
         "public.calendar_exports",
