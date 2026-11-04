@@ -24,6 +24,33 @@ type Key struct {
 	Staff  string
 }
 
+// 予定と実績の項目の名前。正規化の誤りの Column に入れ、実績と予定の CSV の列の名前にも使う。
+const (
+	ColumnDate     = "訪問日"
+	ColumnClient   = "利用者名"
+	ColumnStart    = "開始時間"
+	ColumnEnd      = "終了時間"
+	ColumnDuration = "提供時間"
+	ColumnService  = "サービス内容"
+	ColumnStaff    = "主訪問者"
+)
+
+// Fields は、予定か実績の 1 行の、正規化する前の値である。
+// データソース（CSV、Google カレンダー）が文字列のまま詰め、normalize が Record にする。
+type Fields struct {
+	// Line は、入力の CSV の行番号（ヘッダーが 1 行目）である。CSV 以外から来た行では 0 にする。
+	Line     int
+	Date     string
+	Client   string
+	Start    string
+	End      string
+	Duration string
+	Service  string
+	Staff    string
+	// Additions は、実績の加算①〜加算⑤の値を列の順に並べたものである。空の値を含めてよい。予定では使わない。
+	Additions []string
+}
+
 // Record は、予定か実績の 1 行である。
 type Record struct {
 	// Line は、入力の CSV の行番号（ヘッダーが 1 行目）である。CSV 以外から来た行では 0 にする。

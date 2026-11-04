@@ -18,7 +18,6 @@ import (
 	"github.com/Fukuemon/buddy/packages/go/gcaltitle"
 
 	"github.com/Fukuemon/buddy/services/receipt/internal/check"
-	"github.com/Fukuemon/buddy/services/receipt/internal/csvio"
 	"github.com/Fukuemon/buddy/services/receipt/internal/normalize"
 	"github.com/Fukuemon/buddy/services/receipt/internal/record"
 )
@@ -207,16 +206,15 @@ func (s monthSource) toRecord(ev *calendar.Event, staff string) (rec record.Reco
 		return skip(record.ReasonSpansDays, "", "終了が開始の翌日より後か、24 時間以上の予定は扱わない")
 	}
 
-	row := csvio.NewRow(0, map[string]string{
-		csvio.ColDate:     start.Format(time.DateOnly),
-		csvio.ColClient:   client,
-		csvio.ColStart:    start.Format("15:04"),
-		csvio.ColEnd:      end.Format("15:04"),
-		csvio.ColDuration: strconv.Itoa(int(end.Sub(start) / time.Minute)),
-		csvio.ColService:  service,
-		csvio.ColStaff:    staff,
-	})
-	recs, rowErrs := normalize.Schedules([]csvio.Row{row})
+	recs, rowErrs := normalize.Schedules([]record.Fields{{
+		Date:     start.Format(time.DateOnly),
+		Client:   client,
+		Start:    start.Format("15:04"),
+		End:      end.Format("15:04"),
+		Duration: strconv.Itoa(int(end.Sub(start) / time.Minute)),
+		Service:  service,
+		Staff:    staff,
+	}})
 	if len(rowErrs) > 0 {
 		// 画面は 1 つの予定に 1 つの理由を出す。直して照合し直せば、残りの誤りも次の警告に出る
 		e := rowErrs[0]

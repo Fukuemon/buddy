@@ -2,6 +2,7 @@ package csvio
 
 import (
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -100,5 +101,22 @@ func TestReadTable(t *testing.T) {
 	}
 	if rows[1].Line != 4 || rows[1].Get(ColClient) != "" {
 		t.Errorf("rows[1] = %+v", rows[1])
+	}
+}
+
+func TestRowFields(t *testing.T) {
+	data := "主訪問者,訪問日,利用者名,開始時間,終了時間,提供時間,サービス内容,加算①,加算②,加算③,加算④,加算⑤\n" +
+		"職員B,2024/04/01,利用者A,9:00,9:30,30,訪看I2,通常,,特別管理加算,,\n"
+	rows, err := ReadTable([]byte(data), record.InputVisit, VisitColumns())
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := rows[0].Fields()
+	want := record.Fields{
+		Line: 2, Date: "2024/04/01", Client: "利用者A", Start: "9:00", End: "9:30", Duration: "30", Service: "訪看I2", Staff: "職員B",
+		Additions: []string{"通常", "", "特別管理加算", "", ""},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Fields = %+v, want %+v", got, want)
 	}
 }
