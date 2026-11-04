@@ -59,6 +59,18 @@ export const OFFICE_CLERK = {
   email: 'yui.nakamura@example.com',
 }
 
+/**
+ * シードの 3 つ目の事業所の職員。事業所は Google カレンダーを予定の正本にし（google_primary）、岡田には calendarpit のカレンダーを結び付けてある。
+ * 同期の Worker が、このカレンダーの予定を Projection に写す。
+ */
+export const OKADA = {
+  email: 'aoi.okada@example.com',
+  staff: { id: '01MA0GP0000000000000000STF', name: '岡田 葵' },
+  calendarId: 'aoi.okada@example.com',
+  /** シードで岡田に結び付けたカレンダー（external_calendars）の ID。同期の状況の行を指すのに使う。 */
+  externalCalendarId: '01MA0GP0000000000000000GCA',
+}
+
 /** シードの職員の佐藤。Google カレンダーとの同期の spec が、佐藤にカレンダーを結び付ける。 */
 export const SATO = { ...TEAM_MEMBER, calendarId: 'misaki.sato@example.com' }
 
@@ -118,6 +130,9 @@ export const TIMEZONE_ID = 'Asia/Tokyo'
 
 /** ログインした状態のファイル。setup が書き、spec の project の storageState に渡す。 */
 export const LOGIN_STATE = savedLoginPath(AUTH_DIR, BASE_URL, 'aoki')
+
+/** Google カレンダーを正本にする事業所の岡田でログインした状態のファイル。setup が書き、その事業所の spec が storageState に渡す。 */
+export const OKADA_STATE = savedLoginPath(AUTH_DIR, BASE_URL, 'okada')
 
 /** リーダーでログインした状態のファイル。setup が書き、リーダーの spec が storageState に渡す。 */
 export const LEADER_STATE = savedLoginPath(AUTH_DIR, BASE_URL, 'mori')

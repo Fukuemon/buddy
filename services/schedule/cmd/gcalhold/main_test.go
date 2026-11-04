@@ -53,3 +53,37 @@ func TestHeldChanges(t *testing.T) {
 		})
 	}
 }
+
+func TestFailedReads(t *testing.T) {
+	var passed int
+	next := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		passed++
+		w.WriteHeader(http.StatusTeapot)
+	})
+	failing := &failingCalendars{ids: map[string]bool{}}
+	h := failedReads(failing, next)
+	const target = "/calendar/v3/calendars/staff%40example.com/events?syncToken=t1"
+
+	tests := []struct {
+		name, method, target string
+		fail                 bool
+		wantCode             int
+	}{
+		{name: "失敗させていなければ渡す", method: http.MethodGet, target: target, wantCode: http.StatusTeapot},
+		{name: "失敗させていれば予定の取得に 503 を返す", method: http.MethodGet, target: target, fail: true, wantCode: http.StatusServiceUnavailable},
+		{name: "失敗させていても書き込みは渡す", method: http.MethodPost, target: target, fail: true, wantCode: http.StatusTeapot},
+		{name: "失敗させていても回の取得は渡す", method: http.MethodGet, target: "/calendar/v3/calendars/staff%40example.com/events/ev1/instances", fail: true, wantCode: http.StatusTeapot},
+		{name: "ほかのカレンダーは渡す", method: http.MethodGet, target: "/calendar/v3/calendars/other%40example.com/events", fail: true, wantCode: http.StatusTeapot},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			passed = 0
+			failing.set("staff@example.com", tt.fail)
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, httptest.NewRequest(tt.method, tt.target, nil))
+			if rec.Code != tt.wantCode || (tt.wantCode == http.StatusTeapot) != (passed == 1) {
+				t.Fatalf("code = %d, passed = %d, want %d", rec.Code, passed, tt.wantCode)
+			}
+		})
+	}
+}
