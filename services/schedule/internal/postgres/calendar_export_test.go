@@ -1,14 +1,24 @@
 package postgres
 
 import (
+	"context"
 	"errors"
+	"io"
+	"log/slog"
+	"slices"
 	"testing"
 	"time"
+
+	calendarv3 "google.golang.org/api/calendar/v3"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
+	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
+	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
 
 func TestCalendarExportRepository(t *testing.T) {
@@ -205,5 +215,61 @@ func TestCalendarLinksForExport(t *testing.T) {
 	}
 	if _, err := r.ActiveByStaff(ctx, seedMori); !errors.Is(err, apperr.ErrNotFound) {
 		t.Errorf("外したカレンダー: %v", err)
+	}
+}
+
+// TestCalendarExportWritesStoredSchedules は、書き出しの処理が、DB の予定から、訪問の予定のタイトルをサービス内容と利用者名にし、
+// 繰り返しの予定を RRULE にして、外部のカレンダーに書くことを確認する。
+func TestCalendarExportWritesStoredSchedules(t *testing.T) {
+	ctx := txContext(t)
+	srv := &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{"mori@example.com": {}, "aoki@example.com": {}}}
+	calendars := NewCalendarRepository(testDB)
+	for id, c := range map[string][2]string{
+		"01M3TD000000000000000000C7": {seedMori, "mori@example.com"},
+		"01M3TD000000000000000000C8": {seedAoki, "aoki@example.com"},
+	} {
+		if err := calendars.Create(ctx, calendar.ExternalCalendar{ID: id, FacilityID: seedFacility, StaffID: c[0], Provider: calendar.ProviderGoogle, CalendarID: c[1]}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	exports := NewCalendarExportRepository(testDB)
+	ids := ulid.Generator{}
+	outbox := calendarexport.NewOutbox(exports, calendars, ids)
+	if err := outbox.ScheduleChanged(ctx, seedFacility, seedMori, seedVisitSchedule); err != nil {
+		t.Fatal(err)
+	}
+	if err := outbox.RecurringChanged(ctx, seedFacility, seedAoki, seedRecurring); err != nil {
+		t.Fatal(err)
+	}
+	writer := gcal.NewWriter(gcaltest.Start(t, srv))
+	exporter := calendarexport.NewExporter(calendarexport.ExporterDeps{
+		Exports: exports, Calendars: calendars,
+		Writers:   func(context.Context, string) (calendar.EventWriter, error) { return writer, nil },
+		Schedules: NewScheduleRepository(testDB), Recurring: NewRecurringScheduleRepository(testDB),
+	}, ids, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if n, err := exporter.ExportDue(ctx); err != nil || n != 2 {
+		t.Fatalf("ExportDue = %d, %v, want 2 件", n, err)
+	}
+	eventOf := func(calendarID, id string) *calendarv3.Event {
+		t.Helper()
+		eid, err := calendar.EventIDOf(id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ev := srv.Event(calendarID, eid)
+		if ev == nil {
+			t.Fatalf("%s に予定 %s が書かれていない", calendarID, id)
+		}
+		return ev
+	}
+	single := eventOf("mori@example.com", seedVisitSchedule)
+	if single.Summary != "【訪看I2】見本 一郎" || single.Description != "初回の訪問" ||
+		single.Start.DateTime != "2026-10-21T09:30:00" || single.End.DateTime != "2026-10-21T10:00:00" {
+		t.Errorf("訪問の予定 = %q, %q, %v - %v", single.Summary, single.Description, single.Start.DateTime, single.End.DateTime)
+	}
+	weekly := eventOf("aoki@example.com", seedRecurring)
+	if weekly.Summary != "週次の申し送り" || !slices.Equal(weekly.Recurrence, []string{"RRULE:FREQ=WEEKLY;BYDAY=MO"}) ||
+		weekly.Start.DateTime != "2026-10-05T17:30:00" {
+		t.Errorf("繰り返しの予定 = %q, %v, %v", weekly.Summary, weekly.Recurrence, weekly.Start.DateTime)
 	}
 }
