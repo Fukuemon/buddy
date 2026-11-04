@@ -130,22 +130,16 @@ func work(ctx context.Context, cfg config.Worker, opts options, log *slog.Logger
 	if err != nil {
 		return err
 	}
-	if accounts == nil {
-		return errors.New("GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE が無い")
-	}
-	var due func(context.Context) (int, error)
-	var resident func(context.Context)
+	var due dueFunc
 	switch opts.name {
 	case "export":
-		x := assemble.NewExporter(repos, accounts, log)
-		due, resident = x.ExportDue, func(ctx context.Context) { x.Run(ctx, cfg.Calendar.ExportInterval) }
+		due = assemble.NewExporter(repos, accounts, log).ExportDue
 	case "sync":
-		s := assemble.NewSyncer(repos, accounts, cfg.Calendar.SyncInterval, log)
-		due, resident = s.SyncDue, s.Run
+		due = assemble.NewSyncer(repos, accounts, cfg.Calendar.SyncInterval, log).SyncDue
 	}
 	if !opts.once {
 		log.Info("calendar worker started")
-		resident(ctx)
+		resident(ctx, due, pollInterval(opts.name, cfg.Calendar), log)
 		log.Info("calendar worker stopped")
 		return nil
 	}
@@ -155,29 +149,4 @@ func work(ctx context.Context, cfg config.Worker, opts options, log *slog.Logger
 	}
 	log.Info("calendar worker finished", slog.Int("claimed", n))
 	return nil
-}
-
-// drain は、due を、何も取らなくなるか、ctx が終わるか、始めてから maxDuration が過ぎるまで繰り返し、取った数の和を返す。
-// maxDuration が 0 なら長さで止めない。止める条件は due を呼ぶ前に確認し、呼んだ due は取ったものの結果を書くまで待つ。
-// due が何も取らずにエラーを返したら（待ちとカレンダーを取れなかったら）、そのエラーを返す。ctx が終わった後のエラーは返さない。
-// 取った後のエラー（結果を書けなかった）は、ログに書いて続ける。
-func drain(ctx context.Context, due func(context.Context) (int, error), maxDuration time.Duration, log *slog.Logger) (int, error) {
-	start := time.Now()
-	total := 0
-	for ctx.Err() == nil && (maxDuration == 0 || time.Since(start) < maxDuration) {
-		n, err := due(ctx)
-		total += n
-		switch {
-		case err != nil && n == 0:
-			if ctx.Err() != nil {
-				return total, nil
-			}
-			return total, err
-		case err != nil:
-			log.ErrorContext(ctx, "calendar worker batch", slog.Any("error", err))
-		case n == 0:
-			return total, nil
-		}
-	}
-	return total, nil
 }
