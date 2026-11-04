@@ -31,3 +31,12 @@ WHERE external_calendar_id = sqlc.arg(external_calendar_id) AND locked_until = s
 
 -- name: GetExternalEventLinkByEvent :one
 SELECT * FROM external_event_links WHERE external_calendar_id = $1 AND external_event_id = $2;
+
+-- name: CalendarSyncBacklog :one
+-- 外していないカレンダーのうち、読む時刻を過ぎたものの数と、最も古い最後の成功からの秒数を返す。
+-- 1 回も成功していないカレンダーは、同期の状態の行を足した時刻から数える。カレンダーが無ければ秒数は 0 である。
+SELECT count(*) FILTER (WHERE s.next_sync_at <= now())::int AS overdue_count,
+       COALESCE(EXTRACT(EPOCH FROM now() - min(COALESCE(s.last_synced_at, s.created_at))), 0)::float8 AS oldest_success_age_seconds
+FROM calendar_sync_states s
+JOIN external_calendars c ON c.id = s.external_calendar_id
+WHERE c.disabled_at IS NULL;

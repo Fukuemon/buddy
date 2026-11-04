@@ -12,6 +12,27 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const calendarExportBacklog = `-- name: CalendarExportBacklog :one
+SELECT count(*)::int AS pending_count,
+       COALESCE(EXTRACT(EPOCH FROM now() - min(created_at)), 0)::float8 AS oldest_age_seconds
+FROM calendar_exports
+WHERE status = 'pending'
+`
+
+type CalendarExportBacklogRow struct {
+	PendingCount     int32
+	OldestAgeSeconds float64
+}
+
+// 書いていない待ち（pending）の数と、最も古い待ちを積んでからの秒数を返す。確認が必要な待ち（conflict と failed）は、
+// 職員が選ぶまで書かないので数えない。待ちが無ければ秒数は 0 である。
+func (q *Queries) CalendarExportBacklog(ctx context.Context) (CalendarExportBacklogRow, error) {
+	row := q.db.QueryRow(ctx, calendarExportBacklog)
+	var i CalendarExportBacklogRow
+	err := row.Scan(&i.PendingCount, &i.OldestAgeSeconds)
+	return i, err
+}
+
 const claimCalendarExports = `-- name: ClaimCalendarExports :many
 UPDATE calendar_exports
 SET locked_until = now() + make_interval(secs => $1::float8), attempts = attempts + 1

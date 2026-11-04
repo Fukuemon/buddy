@@ -69,3 +69,17 @@ func (r *CalendarSyncRepository) Finish(ctx context.Context, s calendarsync.Sync
 	})
 	return translate("finish calendar sync", err)
 }
+
+// Backlog は、読む時刻を過ぎた外していないカレンダーの数と、最も古い最後の成功からの時間を返す。
+func (r *CalendarSyncRepository) Backlog(ctx context.Context) (calendarsync.SyncBacklog, error) {
+	row, err := r.q(ctx).CalendarSyncBacklog(ctx)
+	if err != nil {
+		return calendarsync.SyncBacklog{}, translate("calendar sync backlog", err)
+	}
+	return calendarsync.SyncBacklog{OverdueCount: int(row.OverdueCount), OldestSuccessAge: secondsOf(row.OldestSuccessAgeSeconds)}, nil
+}
+
+// secondsOf は、DB が返した秒数 s を time.Duration にする。
+func secondsOf(s float64) time.Duration {
+	return time.Duration(s * float64(time.Second))
+}

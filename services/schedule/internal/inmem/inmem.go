@@ -13,6 +13,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
@@ -1070,7 +1071,8 @@ func (s Exports) open(t calendar.Target) (calendar.Export, bool) {
 func (s Exports) Enqueue(_ context.Context, id string, t calendar.Target) error {
 	e, ok := s.open(t)
 	if !ok {
-		s.Exports[id] = calendar.Export{ID: id, Target: t, Status: calendar.ExportPending, Revision: 1, NextAttemptAt: time.Now()}
+		now := time.Now()
+		s.Exports[id] = calendar.Export{ID: id, Target: t, Status: calendar.ExportPending, Revision: 1, NextAttemptAt: now, CreatedAt: now}
 		return nil
 	}
 	e.Revision++
@@ -1177,7 +1179,8 @@ func (s Exports) Open(_ context.Context, t calendar.Target) (calendar.Export, er
 func (s Exports) Hold(_ context.Context, id string, t calendar.Target, code calendar.ExportErrorCode) error {
 	e, ok := s.open(t)
 	if !ok {
-		e = calendar.Export{ID: id, Target: t, NextAttemptAt: time.Now()}
+		now := time.Now()
+		e = calendar.Export{ID: id, Target: t, NextAttemptAt: now, CreatedAt: now}
 	}
 	e.Revision++
 	e.Status, e.ErrorCode, e.Overwrite, e.LockedUntil = calendar.ExportConflict, &code, false, nil
@@ -1197,6 +1200,19 @@ func (s Exports) Resolve(_ context.Context, id string, revision int) error {
 	e.Status, e.ErrorCode, e.Overwrite = calendar.ExportSucceeded, nil, false
 	s.Exports[id] = e
 	return nil
+}
+
+// Backlog は、calendarexport.ExportRepository の Backlog を実装する。
+func (s Exports) Backlog(_ context.Context) (calendarexport.Backlog, error) {
+	var b calendarexport.Backlog
+	for _, e := range s.Exports {
+		if e.Status != calendar.ExportPending {
+			continue
+		}
+		b.PendingCount++
+		b.OldestAge = max(b.OldestAge, time.Since(e.CreatedAt))
+	}
+	return b, nil
 }
 
 // Syncs は、calendarsync.SyncRepository のメモリ上の実装である。読む時刻と lease を持たず、取るたびに外していない全てのカレンダーを返す。
@@ -1223,6 +1239,18 @@ func (s Syncs) Claim(_ context.Context, max int, _ time.Duration) ([]calendarsyn
 func (s Syncs) Finish(_ context.Context, st calendarsync.SyncState, r calendarsync.SyncResult) error {
 	s.SyncResults[st.Calendar.ID] = r
 	return nil
+}
+
+// Backlog は、calendarsync.SyncRepository の Backlog を実装する。メモリ上の実装は読む時刻と成功の時刻を持たないので、
+// 外していない全てのカレンダーを読む時刻を過ぎたものとして数え、最後の成功からの時間は 0 を返す。
+func (s Syncs) Backlog(_ context.Context) (calendarsync.SyncBacklog, error) {
+	var b calendarsync.SyncBacklog
+	for _, c := range s.Calendars {
+		if c.DisabledAt == nil {
+			b.OverdueCount++
+		}
+	}
+	return b, nil
 }
 
 // Identity は、Identities が持つブローカーの職員である。Pending は登録の途中で、Activate で外れる。

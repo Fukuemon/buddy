@@ -23,6 +23,16 @@ type ExportRepository interface {
 	ListIssues(ctx context.Context, facilityID string) ([]calendar.ExportIssue, error)
 	// Retry は、確認が必要な待ち id を、buddy の内容で書き直す pending の待ちにする。確認が必要な待ちでなければ apperr.ErrConflict を返す。
 	Retry(ctx context.Context, id string) error
+	// Backlog は、書いていない待ち（pending）の滞留を返す。確認が必要な待ちは数えない。
+	Backlog(ctx context.Context) (Backlog, error)
+}
+
+// Backlog は、書き出しの待ちの滞留である。
+type Backlog struct {
+	// PendingCount は、書いていない待ち（pending）の数である。
+	PendingCount int
+	// OldestAge は、書いていない待ちのうち最も古いものを足してからの時間で、待ちが無ければ 0 である。
+	OldestAge time.Duration
 }
 
 // ExportCalendars は、書き出しの待ちを積むかを決めるために、職員のカレンダーと予定の対応を読む。

@@ -63,7 +63,9 @@ type Export struct {
 	NextAttemptAt time.Time
 	// LockedUntil は、書いている処理が待ちを持つ期限で、取られていなければ nil である。
 	LockedUntil *time.Time
-	UpdatedAt   time.Time
+	// CreatedAt は、待ちを足した時刻である。終わっていない待ちに積み直しても変わらない。
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 // IsInReview は、待ちの状態が、確認が必要な状態（conflict か failed）かを返す。

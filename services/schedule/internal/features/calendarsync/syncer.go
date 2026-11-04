@@ -96,20 +96,28 @@ func (s *Syncer) Run(ctx context.Context) {
 }
 
 // SyncDue は、読む時刻を過ぎたカレンダーを取って同期し、取ったカレンダーの数を返す。1 つのカレンダーを同期できなくても、残りを同期する。
+// 取った後は、結果ごとの数の要約（calendar sync batch）と、同期の滞留（calendar sync backlog）をログに書く。
 func (s *Syncer) SyncDue(ctx context.Context) (int, error) {
+	start := time.Now()
 	states, err := s.deps.Syncs.Claim(ctx, syncBatch, syncLease)
 	if err != nil {
 		return 0, err
 	}
+	b := calendar.Batch{Claimed: len(states)}
+	defer func() {
+		b.Log(ctx, s.log, "calendar sync batch", time.Since(start))
+		s.logBacklog(ctx)
+	}()
 	var finishErr error
 	for _, st := range states {
 		callCtx, cancel := context.WithTimeout(ctx, syncCallTimeout)
-		r := s.sync(callCtx, st)
+		r, o := s.sync(callCtx, st)
 		cancel()
 		// 止める合図で終えられなかったカレンダーは、前の状態のまま返し、次に起動したときにすぐ読む。
 		if ctx.Err() != nil {
-			r = SyncResult{SyncToken: st.SyncToken, Status: st.LastStatus, ErrorCode: st.LastError}
+			r, o = SyncResult{SyncToken: st.SyncToken, Status: st.LastStatus, ErrorCode: st.LastError}, outcomeRequeued
 		}
+		o.count(&b)
 		// 取ったカレンダーは、ctx が終わっても結果を書き、lease の間ほかの処理が読めないままにしない。
 		if err := s.deps.Syncs.Finish(context.WithoutCancel(ctx), st, r); err != nil {
 			finishErr = errors.Join(finishErr, err)
@@ -118,9 +126,48 @@ func (s *Syncer) SyncDue(ctx context.Context) (int, error) {
 	return len(states), finishErr
 }
 
+// outcome は、1 つのカレンダーを同期した結果を、バッチの要約のどの数に足すかである。
+type outcome int
+
+const (
+	outcomeSynced outcome = iota
+	outcomeFailed
+	// outcomeHeld は、当てずに置いたことを表す。書き出しを待って読み直すときと、途中でカレンダーが外れたときである。
+	outcomeHeld
+	// outcomeRequeued は、止める合図で、前の状態のまま返したことを表す。
+	outcomeRequeued
+)
+
+func (o outcome) count(b *calendar.Batch) {
+	switch o {
+	case outcomeSynced:
+		b.Succeeded++
+	case outcomeFailed:
+		b.Failed++
+	case outcomeHeld:
+		b.Held++
+	case outcomeRequeued:
+		b.Requeued++
+	}
+}
+
+// logBacklog は、読む時刻を過ぎたカレンダーの数と、最も古い最後の成功からの時間をログに書く。止める合図の後は数えない。
+func (s *Syncer) logBacklog(ctx context.Context) {
+	if ctx.Err() != nil {
+		return
+	}
+	bl, err := s.deps.Syncs.Backlog(ctx)
+	if err != nil {
+		s.log.WarnContext(ctx, "calendar sync backlog", slog.Any("error", err))
+		return
+	}
+	s.log.InfoContext(ctx, "calendar sync backlog",
+		slog.Int("overdue_count", bl.OverdueCount), slog.Int64("oldest_success_age_seconds", int64(bl.OldestSuccessAge.Seconds())))
+}
+
 // sync は、カレンダー st の変わった予定を読み、1 つずつトランザクションで当てる。
 // 当てられなかった予定があれば、トークンを進めずに返し、次に同じ予定から読み直す。
-func (s *Syncer) sync(ctx context.Context, st SyncState) SyncResult {
+func (s *Syncer) sync(ctx context.Context, st SyncState) (SyncResult, outcome) {
 	attrs := []any{slog.String("external_calendar_id", st.Calendar.ID)}
 	token := st.SyncToken
 	src, err := s.deps.Sources(ctx, st.Calendar.FacilityID)
@@ -130,7 +177,7 @@ func (s *Syncer) sync(ctx context.Context, st SyncState) SyncResult {
 	if err != nil {
 		s.log.ErrorContext(ctx, "calendar sync source", append(attrs, slog.Any("error", err))...)
 		code := SyncUnavailable
-		return SyncResult{SyncToken: token, Status: SyncFailed, ErrorCode: &code, After: s.interval}
+		return SyncResult{SyncToken: token, Status: SyncFailed, ErrorCode: &code, After: s.interval}, outcomeFailed
 	}
 	ch, err := src.Changes(ctx, st.Calendar.CalendarID, token)
 	if errors.Is(err, calendar.ErrSyncTokenExpired) {
@@ -144,7 +191,7 @@ func (s *Syncer) sync(ctx context.Context, st SyncState) SyncResult {
 		if errors.Is(err, calendar.ErrUnreadable) {
 			code = SyncUnreadable
 		}
-		return SyncResult{SyncToken: token, Status: SyncFailed, ErrorCode: &code, After: s.interval}
+		return SyncResult{SyncToken: token, Status: SyncFailed, ErrorCode: &code, After: s.interval}, outcomeFailed
 	}
 	for _, ev := range ch.Events {
 		err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
@@ -155,18 +202,18 @@ func (s *Syncer) sync(ctx context.Context, st SyncState) SyncResult {
 		})
 		if errors.Is(err, errCalendarUnlinked) {
 			// 外したカレンダーは次から取らないので、トークンと状態は前のまま返す
-			return SyncResult{SyncToken: st.SyncToken, Status: st.LastStatus, ErrorCode: st.LastError, After: s.interval}
+			return SyncResult{SyncToken: st.SyncToken, Status: st.LastStatus, ErrorCode: st.LastError, After: s.interval}, outcomeHeld
 		}
 		if errors.Is(err, errExportWriting) {
-			return SyncResult{SyncToken: token, Status: st.LastStatus, ErrorCode: st.LastError, After: syncRetryAfter}
+			return SyncResult{SyncToken: token, Status: st.LastStatus, ErrorCode: st.LastError, After: syncRetryAfter}, outcomeHeld
 		}
 		if err != nil {
 			s.log.ErrorContext(ctx, "calendar sync failed", append(attrs, slog.String("event_id", ev.ID), slog.Any("error", err))...)
 			code := SyncApplyFailed
-			return SyncResult{SyncToken: token, Status: SyncFailed, ErrorCode: &code, After: s.interval}
+			return SyncResult{SyncToken: token, Status: SyncFailed, ErrorCode: &code, After: s.interval}, outcomeFailed
 		}
 	}
-	return SyncResult{SyncToken: ch.NextSyncToken, Status: SyncSucceeded, After: s.interval}
+	return SyncResult{SyncToken: ch.NextSyncToken, Status: SyncSucceeded, After: s.interval}, outcomeSynced
 }
 
 // errCalendarUnlinked は、同期の途中でカレンダーが外れたので、残りの予定を当てないことを表す。

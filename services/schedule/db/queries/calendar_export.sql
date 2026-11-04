@@ -108,3 +108,11 @@ SELECT * FROM calendar_exports WHERE recurring_schedule_id = $1 AND status <> 's
 UPDATE calendar_exports
 SET status = 'succeeded', error_code = NULL, overwrite = false, locked_until = NULL, finished_at = now()
 WHERE id = sqlc.arg(id) AND revision = sqlc.arg(revision) AND status IN ('conflict', 'failed');
+
+-- name: CalendarExportBacklog :one
+-- 書いていない待ち（pending）の数と、最も古い待ちを積んでからの秒数を返す。確認が必要な待ち（conflict と failed）は、
+-- 職員が選ぶまで書かないので数えない。待ちが無ければ秒数は 0 である。
+SELECT count(*)::int AS pending_count,
+       COALESCE(EXTRACT(EPOCH FROM now() - min(created_at)), 0)::float8 AS oldest_age_seconds
+FROM calendar_exports
+WHERE status = 'pending';
