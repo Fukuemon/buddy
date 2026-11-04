@@ -122,19 +122,19 @@ func New(id string, s Slot, typ Type) (Schedule, error) {
 	return Schedule{ID: id, Slot: slot}, nil
 }
 
-// Cancel は、予定のキャンセルである。
-type Cancel struct {
+// Cancellation は、予定のキャンセルである。
+type Cancellation struct {
 	ID         string
 	ScheduleID string
 	Reason     string
 }
 
-// NewCancel は、理由を検証して Cancel を作る。
-func NewCancel(id, scheduleID, reason string) (Cancel, error) {
+// NewCancellation は、理由を検証して Cancellation を作る。
+func NewCancellation(id, scheduleID, reason string) (Cancellation, error) {
 	if err := kernel.ValidateText("キャンセルの理由", reason, maxReasonLen); err != nil {
-		return Cancel{}, err
+		return Cancellation{}, err
 	}
-	return Cancel{ID: id, ScheduleID: scheduleID, Reason: reason}, nil
+	return Cancellation{ID: id, ScheduleID: scheduleID, Reason: reason}, nil
 }
 
 // Detail は、単発の予定と、種類、職員、訪問の情報、キャンセルの内容である。Visit と Cancel は、ないときに nil である。
@@ -144,7 +144,7 @@ type Detail struct {
 	TypeName  TypeName
 	StaffName string
 	Visit     *visit.Detail
-	Cancel    *Cancel
+	Cancel    *Cancellation
 	Version   int
 	CreatedAt time.Time
 	UpdatedAt time.Time

@@ -29,7 +29,7 @@ func TestPatientEndRejectsRemainingSchedules(t *testing.T) {
 	s := inmem.Seeded()
 	visitSchedule(s, "PAST", inmem.PatientID, civil.Date{Year: 2026, Month: 10, Day: 30})
 	visitSchedule(s, "CANCELLED", inmem.PatientID, today)
-	s.Cancels["CANCELLED"] = schedule.Cancel{ID: "C", ScheduleID: "CANCELLED"}
+	s.Cancels["CANCELLED"] = schedule.Cancellation{ID: "C", ScheduleID: "CANCELLED"}
 	visitSchedule(s, "OTHER", "ANOTHER", today)
 	visitSchedule(s, "TODAY", inmem.PatientID, today)
 	recInfo := "INFOREC"
@@ -63,7 +63,7 @@ func TestPatientEndRejectsRemainingSchedules(t *testing.T) {
 	rs := s.Recurring["REC"]
 	rs.Rule.EndDate = &end
 	s.Recurring["REC"] = rs
-	s.Cancels["TODAY"] = schedule.Cancel{ID: "C2", ScheduleID: "TODAY"}
+	s.Cancels["TODAY"] = schedule.Cancellation{ID: "C2", ScheduleID: "TODAY"}
 	got, err := uc.End(ctx, inmem.PatientID)
 	if err != nil || !got.IsEnded() {
 		t.Fatalf("予定をキャンセルし、繰り返しを終えた後: got = %+v, err = %v", got.Patient, err)

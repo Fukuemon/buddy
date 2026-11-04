@@ -29,7 +29,7 @@ func toVisitInfo(v *visit.Detail) *openapi.VisitInfo {
 	}
 }
 
-func toCancel(c schedule.Cancel) openapi.Cancel {
+func toCancel(c schedule.Cancellation) openapi.Cancel {
 	return openapi.Cancel{Id: c.ID, ScheduleId: c.ScheduleID, Reason: c.Reason}
 }
 

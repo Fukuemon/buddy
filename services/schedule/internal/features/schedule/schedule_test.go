@@ -272,10 +272,10 @@ func TestNewRecurringFirstDate(t *testing.T) {
 }
 
 func TestNewCancel(t *testing.T) {
-	if _, err := schedule.NewCancel("ID", "S", "体調不良"); err != nil {
+	if _, err := schedule.NewCancellation("ID", "S", "体調不良"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := schedule.NewCancel("ID", "S", ""); !errors.Is(err, apperr.ErrInvalidInput) {
+	if _, err := schedule.NewCancellation("ID", "S", ""); !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Fatalf("err = %v, want ErrInvalidInput", err)
 	}
 }

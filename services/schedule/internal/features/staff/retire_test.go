@@ -136,7 +136,7 @@ func TestStaffRetireRejectsAssignments(t *testing.T) {
 		clearAssignments(s)
 		s.Schedules["CANCELLED"] = schedule.Detail{Schedule: schedule.Schedule{ID: "CANCELLED", Slot: schedule.Slot{
 			FacilityID: facilityID, StaffID: staffID, Date: civil.Date{Year: 2026, Month: 11, Day: 1}}}}
-		s.Cancels["CANCELLED"] = schedule.Cancel{ScheduleID: "CANCELLED"}
+		s.Cancels["CANCELLED"] = schedule.Cancellation{ScheduleID: "CANCELLED"}
 		if _, err := stopApp(s, ids, allow).Retire(ctx, staffID); err != nil {
 			t.Errorf("err = %v, want 成功", err)
 		}

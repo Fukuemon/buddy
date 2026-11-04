@@ -7,30 +7,30 @@ import (
 )
 
 // List は、事業所の予定のうち、見てよい職員の予定を返す。事業所が見つからないときは apperr.ErrNotFound を返す。
-func (s *App) List(ctx context.Context, facilityID string, q ListQuery) (List, error) {
+func (s *App) List(ctx context.Context, facilityID string, q ListQuery) (Listing, error) {
 	if err := q.Validate(); err != nil {
-		return List{}, err
+		return Listing{}, err
 	}
 	p, err := current(ctx)
 	if err != nil {
-		return List{}, err
+		return Listing{}, err
 	}
 	if _, err := s.deps.Facilities.Get(ctx, facilityID); err != nil {
-		return List{}, err
+		return Listing{}, err
 	}
 	readable, err := s.readableStaff(ctx, p, facilityID)
 	if err != nil {
-		return List{}, err
+		return Listing{}, err
 	}
 	single, err := s.deps.Schedules.ListByFacility(ctx, facilityID, q)
 	if err != nil {
-		return List{}, err
+		return Listing{}, err
 	}
 	recurring, err := s.deps.Recurring.ListByFacility(ctx, facilityID, q)
 	if err != nil {
-		return List{}, err
+		return Listing{}, err
 	}
-	return List{
+	return Listing{
 		Schedules:          filter(single, func(d Detail) bool { return readable(d.StaffID) }),
 		RecurringSchedules: filter(recurring, func(d RecurringDetail) bool { return readable(d.StaffID) }),
 	}, nil
@@ -58,8 +58,8 @@ func filter[T any](items []T, keep func(T) bool) []T {
 	return out
 }
 
-// List は、事業所の単発の予定と繰り返しの予定である。
-type List struct {
+// Listing は、事業所の単発の予定と繰り返しの予定である。
+type Listing struct {
 	Schedules          []Detail
 	RecurringSchedules []RecurringDetail
 }

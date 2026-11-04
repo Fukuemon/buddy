@@ -13,5 +13,5 @@ type Repository interface {
 	Update(ctx context.Context, s Schedule) error
 	Get(ctx context.Context, id string) (Detail, error)
 	ListByFacility(ctx context.Context, facilityID string, q ListQuery) ([]Detail, error)
-	CreateCancel(ctx context.Context, c Cancel) error
+	CreateCancel(ctx context.Context, c Cancellation) error
 }

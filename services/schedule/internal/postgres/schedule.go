@@ -186,7 +186,7 @@ func (r *ScheduleRepository) scheduleDetails(ctx context.Context, rows []sqlcgen
 			UpdatedAt: s.UpdatedAt,
 		}
 		if s.CancelID != nil {
-			d.Cancel = &schedule.Cancel{ID: *s.CancelID, ScheduleID: s.ID, Reason: deref(s.CancelReason)}
+			d.Cancel = &schedule.Cancellation{ID: *s.CancelID, ScheduleID: s.ID, Reason: deref(s.CancelReason)}
 		}
 		out[i] = d
 	}
@@ -195,7 +195,7 @@ func (r *ScheduleRepository) scheduleDetails(ctx context.Context, rows []sqlcgen
 
 // CreateCancel は、予定のキャンセルを書き、予定の更新の番号を 1 つ増やす。キャンセル済みのときは apperr.ErrConflict を、
 // 予定が無いときは apperr.ErrInvalidInput のエラーを返す。2 つの書き込みを揃えるため、トランザクションの中で呼ぶ。
-func (r *ScheduleRepository) CreateCancel(ctx context.Context, c schedule.Cancel) error {
+func (r *ScheduleRepository) CreateCancel(ctx context.Context, c schedule.Cancellation) error {
 	err := r.q(ctx).CreateScheduleCancel(ctx, sqlcgen.CreateScheduleCancelParams{
 		ID: c.ID, ScheduleID: c.ScheduleID, Reason: c.Reason,
 	})

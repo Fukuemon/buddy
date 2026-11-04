@@ -55,10 +55,10 @@ func (f *fakeSchedules) GetRecurring(context.Context, string) (schedule.Recurrin
 	return schedule.RecurringDetail{}, f.err
 }
 
-func (f *fakeSchedules) List(_ context.Context, _ string, q schedule.ListQuery) (schedule.List, error) {
+func (f *fakeSchedules) List(_ context.Context, _ string, q schedule.ListQuery) (schedule.Listing, error) {
 	f.listCalls++
 	f.lastQuery = q
-	return schedule.List{Schedules: []schedule.Detail{f.detail}, RecurringSchedules: []schedule.RecurringDetail{}}, f.err
+	return schedule.Listing{Schedules: []schedule.Detail{f.detail}, RecurringSchedules: []schedule.RecurringDetail{}}, f.err
 }
 
 func (f *fakeSchedules) Create(_ context.Context, _ string, in schedule.SlotInput) (schedule.Detail, error) {
@@ -74,8 +74,8 @@ func (f *fakeSchedules) ChangeOccurrence(context.Context, string, civil.Date, sc
 	return f.detail, f.err
 }
 
-func (f *fakeSchedules) Cancel(context.Context, string, string) (schedule.Cancel, error) {
-	return schedule.Cancel{}, f.err
+func (f *fakeSchedules) Cancel(context.Context, string, string) (schedule.Cancellation, error) {
+	return schedule.Cancellation{}, f.err
 }
 
 func (f *fakeSchedules) Update(_ context.Context, _ string, in schedule.SlotInput) (schedule.Detail, error) {

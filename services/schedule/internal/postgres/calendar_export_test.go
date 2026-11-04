@@ -140,7 +140,7 @@ func TestScheduleVersion(t *testing.T) {
 	if err := schedules.Update(ctx, d.Schedule); err != nil {
 		t.Fatal(err)
 	}
-	if err := schedules.CreateCancel(ctx, schedule.Cancel{ID: "01M3TD000000000000000000Y0", ScheduleID: seedConference, Reason: "中止"}); err != nil {
+	if err := schedules.CreateCancel(ctx, schedule.Cancellation{ID: "01M3TD000000000000000000Y0", ScheduleID: seedConference, Reason: "中止"}); err != nil {
 		t.Fatal(err)
 	}
 	if d, _ := schedules.Get(ctx, seedConference); d.Version != 3 {
