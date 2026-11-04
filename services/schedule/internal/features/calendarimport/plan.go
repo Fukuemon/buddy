@@ -476,7 +476,9 @@ func (b *planner) addException(ev calendar.Event) {
 		return
 	}
 	if !ok {
-		if b.isExcludedBefore(ev) {
+		// 切り替えの取り込みでは、除外した日を取り込んだことと見なさない。取り消した回は予定の対応を持たないので、
+		// 取り込んだ後に Google で戻した回を見落とし、Projection を消すと予定が失われるためである。
+		if !b.in.cutover && b.isExcludedBefore(ev) {
 			// 前の取り込みか buddy で、その回をすでに除外か置き換えにした。
 			b.p.counts.AlreadyImported++
 			return

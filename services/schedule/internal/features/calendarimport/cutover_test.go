@@ -311,6 +311,34 @@ func TestImportDuringCutoverOverwrites(t *testing.T) {
 	}
 }
 
+// TestCutoverRestoredOccurrence は、取り込んだ後に、取り消した回を Google で戻すと、完了を拒み、
+// 取り込み直すとその回を単発の予定として取り込んで完了できることを確認する。取り消した回は除外する日だけになり、予定の対応を持たないので、
+// 前の取り込みで除外したことを、取り込んだことと見なさない。
+func TestCutoverRestoredOccurrence(t *testing.T) {
+	c := newCutoverEnv(t, fixture())
+	cut := c.start(t)
+	c.importAll(t, cutoverDecisions())
+	c.srv.Put(googleCalID, gexception("weekly_20261109", "weekly", "【訪看I2】利用者A",
+		"2026-11-09T09:00:00+09:00", "2026-11-09T09:30:00+09:00", "2026-11-09T09:00:00+09:00"))
+	c.synced(time.Now().Add(time.Minute))
+
+	_, err := c.uc.CompleteCutover(c.ctx, cut.ID)
+	items := requireIncomplete(t, err, calendarimport.UnmetEventNotImported)
+	if items[0].ExternalEventID != "weekly_20261109" || *items[0].Date != (civil.Date{Year: 2026, Month: 11, Day: 9}) {
+		t.Errorf("戻した回 = %+v", items[0])
+	}
+	c.requireStillOpen(t, cut.ID)
+
+	c.importAll(t, cutoverDecisions()[2:])
+	if s := scheduleOf(t, c.env, "weekly_20261109"); s.Date != (civil.Date{Year: 2026, Month: 11, Day: 9}) || s.StartTime != (civil.Time{Hour: 9}) {
+		t.Errorf("戻した回の予定 = %+v", s.Slot)
+	}
+	c.synced(time.Now().Add(2 * time.Minute))
+	if _, err := c.uc.CompleteCutover(c.ctx, cut.ID); err != nil {
+		t.Fatalf("取り込み直した後の完了: err = %v", err)
+	}
+}
+
 // TestCancelCutover は、切り替えをやめると、この切り替えの取り込みで作った予定、繰り返しの予定、訪問の情報、予定の対応を消し、
 // 事業所を google_primary のままにして、切り替えを canceled にすることを確認する。やめた後は、取り込みを拒む。
 func TestCancelCutover(t *testing.T) {
