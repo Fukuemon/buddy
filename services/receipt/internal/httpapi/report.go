@@ -1,11 +1,12 @@
 package httpapi
 
 import (
+	"github.com/Fukuemon/buddy/packages/go/servicecode"
+
 	"github.com/Fukuemon/buddy/services/receipt/internal/check"
 	"github.com/Fukuemon/buddy/services/receipt/internal/httpapi/openapi"
 	"github.com/Fukuemon/buddy/services/receipt/internal/judge"
 	"github.com/Fukuemon/buddy/services/receipt/internal/record"
-	"github.com/Fukuemon/buddy/services/receipt/internal/servicerule"
 )
 
 func report(rep check.Report) openapi.Report {
@@ -74,7 +75,7 @@ func rangeCheck(c judge.RangeCheck) openapi.RangeCheck {
 	return openapi.RangeCheck{Ok: c.OK, Minutes: c.Minutes, Range: rangeOf(c.Range)}
 }
 
-func rangeOf(r *servicerule.Range) *openapi.Range {
+func rangeOf(r *servicecode.Range) *openapi.Range {
 	if r == nil {
 		return nil
 	}

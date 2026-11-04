@@ -5,6 +5,8 @@ import (
 	"cmp"
 	"slices"
 
+	"github.com/Fukuemon/buddy/packages/go/servicecode"
+
 	"github.com/Fukuemon/buddy/services/receipt/internal/civil"
 	"github.com/Fukuemon/buddy/services/receipt/internal/match"
 	"github.com/Fukuemon/buddy/services/receipt/internal/record"
@@ -78,7 +80,7 @@ type RangeCheck struct {
 	// Minutes は判定した分である。提供時間が空なら nil である。
 	Minutes *int
 	// Range は許容範囲である。範囲を持たないサービス内容なら nil である。
-	Range *servicerule.Range
+	Range *servicecode.Range
 }
 
 // Checks は、予定と実績の対の、項目ごとの判定である。
@@ -218,7 +220,7 @@ func check(s, v record.Record) Checks {
 
 func inRange(service string, minutes *int) RangeCheck {
 	c := RangeCheck{Minutes: minutes}
-	r, ok := servicerule.Lookup(service)
+	r, ok := servicecode.Lookup(service)
 	if !ok {
 		return c
 	}
