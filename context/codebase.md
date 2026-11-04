@@ -40,8 +40,9 @@ status: stable
     - 機能のパッケージ: `features/`（`organization`、`staff`、`visit`、`patient`、`schedule`、`calendar`）
   - OIDC の ID トークンの検証は、`packages/go/oidc` を使う。
   - ADR-0026: [予定の API の機能のパッケージを internal/features/ に置き、usecase のメソッドを操作ごとのファイルに分ける](../docs/adr/0026-schedule-api-features-directory.md)
-  - 機能のパッケージの中は、手順（`App`）、規則の関数、集約の単位のリポジトリに分ける。
+  - 機能のパッケージの中は、手順（操作ごとの型）、規則の関数、集約の単位のリポジトリに分ける。
   - ADR-0010: [予定の API の機能のパッケージで、手順を usecase、規則を関数、リポジトリを集約の単位に分ける](../docs/adr/0010-schedule-api-usecase-boundaries.md)
+  - ADR-0031: [Go の API の操作を、使う依存だけを持つ操作ごとの型にし、機能のパッケージの App をやめる](../docs/adr/0031-go-operation-types.md)
 - `services/receipt` では、照合の段（読み込み、正規化、対の作成、判定）ごとにパッケージを分ける。
 
 ## Dependency Rules
@@ -187,15 +188,24 @@ status: stable
   - クエリは `db/queries`、マイグレーションは `db/migrations`、シードは `db/seed` に置く。
 - `services/schedule` に機能を足すときは、`internal/features/<機能>/` にパッケージを作る。
 - Go の 3 つの API のパッケージはフラットに保ち、ファイルの名前の末尾に付ける役割の語で、そのファイルが持つものの役割を表す。
-  - 操作（書き込みと読み取り）は、メソッドの名前を snake_case にした `<動詞>_<対象>.go`（`cancel.go`、`retire.go`、`list_departments.go`）に 1 つずつ置く。
-    - 対象がパッケージの集約のときは、メソッドの名前と同じく対象を省く。
+  - 操作（書き込みと読み取り）は、操作の型の名前を snake_case にした `<動詞>_<対象>.go`（`cancel.go`、`retire.go`、`list_departments.go`）に 1 つずつ置く。
+    - 対象がパッケージの集約のときは、操作の型の名前と同じく対象を省く。
     - 書き込みか読み取りかは、[コードと文書の規約](conventions.md#関数とメソッドの動詞) の動詞で表す。
     - 1 つの操作だけが使う補助は、その操作のファイルに置く。
     - 操作の数と大きさによらず、全ての機能で、公開の操作を操作のファイルに分ける。
   - 集約、エンティティ、値オブジェクト、読み取りのモデルは `<集約>.go` に置く。
   - リポジトリのインターフェースは `<集約>_repository.go`（`staff_repository.go`）に置く。
   - 集約をまたぐ規則（ドメインサービス）は `<規則>_service.go`（`assignable_service.go`）に置く。
-  - 機能のパッケージの組み立て（`App`、`Deps`、`NewApp`）は `app.go` に、複数の操作が使う補助は `<まとまり>_app.go`（`status_change_app.go`）に置く。
+  - 操作は、使う依存だけをフィールドに持つ操作ごとの型（`type Leave struct`）にし、機能のパッケージに `App` と `Deps` を置かない。
+    - コンストラクタは `New<操作>` にし、使う依存を引数で受けて値を返す。
+    - 実行のメソッドは `Do` にする。
+    - 操作の型の名前が集約や読み取りのモデルの型と重なるときは、集約や読み取りのモデルの型を名詞に改める。
+    - 全ての依存を知るのは、組み立ての場所だけにする。
+      - 操作の型は `httpapi` に依存しないので、API と Worker のどちらの実行単位でも作れる。
+    - 操作を束ねるのは、使う側の `httpapi` の `<機能>App`（`StaffApp`）で、操作の `Do` のメソッド値を関数のフィールドに持つ。
+  - 複数の操作が使う補助は、使う依存を引数で受けるパッケージの関数にし、`<まとまり>_app.go`（`status_change_app.go`）に置く。
+    - 自分の依存をフィールドに持つ補助の型（`calendar` の `applier`）は型のまま残し、使う操作の型と常駐の処理がフィールドに持つ。
+  - ADR-0031: [Go の API の操作を、使う依存だけを持つ操作ごとの型にし、機能のパッケージの App をやめる](../docs/adr/0031-go-operation-types.md)
   - ほかの機能と外部のシステムのインターフェースは、使う側のパッケージの `<相手>_port.go`（`identity_port.go`）に置く。
     - `<相手>` は、ほかの機能の名前（`staff_port.go`、`schedule_port.go`）か、外部のシステムの名前（`google_calendar_port.go`、`identity_port.go`）にする。
     - 1 つの相手のインターフェースは、1 つのファイルにまとめる。
@@ -203,9 +213,12 @@ status: stable
   - HTTP のハンドラは `<機能>_handler.go`（`staff_handler.go`）に置く。
   - 役割の語（`repository`、`service`、`app`、`port`、`handler`）は GOOS と GOARCH の値に当たらないので、末尾に付けてもビルドの条件にならない。
   - 役割が 1 つのパッケージ（照合の API の段、ID ブローカーの `hydra`）は、役割の語を付けず、パッケージの名前のファイルの 1 つにする。
-  - アダプタのパッケージ（`httpapi`、`login`、`internalapi`、`postgres`）は、`Config` と `NewHandler` の組み立てをパッケージの名前のファイルに置く。`app.go` は、手順の型 `App` を持つ機能のパッケージにだけ使う。
+  - アダプタのパッケージ（`httpapi`、`login`、`internalapi`、`postgres`）は、`Config` と `NewHandler` の組み立てをパッケージの名前のファイルに置く。
+    - ID ブローカーの `login` と `internalapi` は、ハンドラが手順を持つので、パスごとのハンドラを操作の型として扱う。
+      - ハンドラの型は、使う依存だけを持ち、パッケージの外に出さない（`submitEmail`、`register`）。`http.Handler` を実装する。
+    - 照合の API と予定の API の `httpapi` は、生成した `StrictServerInterface` を 1 つの型で実装するので、ハンドラを型に分けない。
   - パッケージのドキュメントコメントと、複数の集約が使う定数は、パッケージの名前のファイル（`organization.go`、`visit.go`）に置く。
-  - 常駐の処理と、`App` 以外で操作を持つ型は、同じ機能のパッケージに、型の名前のファイル（`exporter.go`、`syncer.go`、`visit` の `writer.go`）で置く。
+  - 常駐の処理と、操作の型のほかに操作を持つ型は、同じ機能のパッケージに、型の名前のファイル（`exporter.go`、`syncer.go`、`visit` の `writer.go`）で置く。
   - テストは、確認する対象のファイルの名前に `_test` を付けたファイルに置く。
     - 複数の操作を 1 つの観点でまとめて確認するテストは、観点の名前のファイル（`calendar` の `accounts_test.go`、`schedule` の `authorization_test.go`）に置く。
     - 観点に名前が付かないものは `app_test.go` に置く。
