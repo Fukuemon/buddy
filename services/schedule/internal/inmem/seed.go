@@ -52,7 +52,7 @@ func Seeded() *Store {
 	return s
 }
 
-// PutVisitInfo は、職員 StaffID が事業所 FacilityID の利用者 patientID を訪問する訪問の情報 id を s に入れる。
+// PutVisitInfo は、利用者 patientID の訪問の情報 id を s に入れる。事業所は FacilityID、担当の職員は StaffID にする。
 // visit を import しないテストが、訪問の予定の前提を作るために使う。
 func (s *Store) PutVisitInfo(id, patientID string) {
 	s.Infos[id] = visit.Info{ID: id, FacilityID: FacilityID, PatientID: patientID, AssignedStaffID: StaffID}
