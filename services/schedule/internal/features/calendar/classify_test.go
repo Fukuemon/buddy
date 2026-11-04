@@ -289,3 +289,26 @@ func TestClassify(t *testing.T) {
 		})
 	}
 }
+
+func TestServiceKey(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{name: "マスタの表記", in: "訪看I2", want: "訪看I２"},
+		{name: "前後の空白と全角の数字", in: " 訪看Ⅰ２ ", want: "訪看I２"},
+		{name: "予防訪看", in: "予防訪看I3", want: "予防看I３"},
+		{name: "予訪看", in: "予訪看I4", want: "予防看I４"},
+		{name: "I52超", in: "訪看I52超", want: "訪看I５・２超"},
+		{name: "半角の中黒", in: "訪看I5･2超", want: "訪看I５・２超"},
+		{name: "マスタに無い表記", in: "医", want: "医"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := calendar.ServiceKey(tt.in); got != tt.want {
+				t.Errorf("ServiceKey(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
