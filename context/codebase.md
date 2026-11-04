@@ -27,7 +27,10 @@ status: stable
   - 業務の名前（予定、照合など）を持つ Domain のコンポーネントは、`apps/web` に置く。配置先は [Placement Rules](#placement-rules) の表で決める。
   - ADR-0004: [デザインシステムのトークンとコンポーネントの配置先](../docs/adr/0004-design-system.md)
 - `services/schedule` では、規則と手順を機能ごとのパッケージに置く。
-  - 10 の機能は、`organization`、`staff`、`patient`、`visit`、`schedule`、`scheduleview`、`calendar`、`calendarimport`、`calendarsync`、`calendarexport` である。
+  - 機能は次の 11 である。
+    - 組織と人: `organization`、`staff`、`patient`
+    - 訪問と予定: `servicecode`、`visit`、`schedule`、`scheduleview`
+    - 外部のカレンダー: `calendar`、`calendarimport`、`calendarsync`、`calendarexport`
   - DB と HTTP のアダプタ（`postgres`、`httpapi`）は 1 つずつ置く。
   - ADR-0005: [予定の API の規則と手順を機能ごとのパッケージにまとめる](../docs/adr/0005-schedule-api-packages.md)
   - 機能のパッケージは `internal/features/` に置く。
@@ -38,7 +41,7 @@ status: stable
     - 認証と認可: `access`、`principal`
     - 設定: `config`
     - テストのためのメモリ上の実装: `inmem`
-    - 機能のパッケージ: `features/`（予定の API の 10 の機能）
+    - 機能のパッケージ: `features/`（予定の API の 11 の機能）
   - OIDC の ID トークンの検証は、`packages/go/oidc` を使う。
   - ADR-0026: [予定の API の機能のパッケージを internal/features/ に置き、usecase のメソッドを操作ごとのファイルに分ける](../docs/adr/0026-schedule-api-features-directory.md)
   - 機能のパッケージの中は、手順（操作ごとの型）、規則の関数、集約の単位のリポジトリに分ける。
@@ -53,6 +56,9 @@ status: stable
   - 2 つの Go の API が共有するコードは、別の module の `packages/go` にだけ置き、`go.mod` の `replace` で読む。
   - ADR-0007: [2 つの Go の API が共有するコードを、別の module にまとめる](../docs/adr/0007-go-shared-module.md)
   - `packages/go` は `services/` を import しない。
+  - サービスコードの表記と提供時間の範囲は、`packages/go/servicecode` に置く。照合の API と予定の API は、この表を写さない。
+    - 照合だけの規則（予定の終了時間の調整、予定と実績のサービス内容の対応）は、照合の API の `servicerule` に置く。
+    - ADR-0034: [サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける](../docs/adr/0034-service-code-rules.md)
 - web は `@buddy/ui` に依存してよい。
   - `packages/ui` から `apps/` へは依存しない。
 - web は `@buddy/broker` の `AuthCard` と `loginFailedMessage` だけに依存してよい。`apps/broker` は `@buddy/ui` に依存し、web には依存しない。
@@ -65,7 +71,8 @@ status: stable
   - テスト、story、story のデータ（`storyData.ts`）だけは、`api/fake/` と `api/http/` を import してよい。
 - `services/schedule` の依存は、アダプタ（`httpapi`、`postgres`）、`access`、機能のパッケージ、共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）の 1 方向に限る。
   - 共通のパッケージは、標準ライブラリと、共通のパッケージの間（`kernel` から `apperr`）だけに依存する。
-  - 機能のパッケージの間は、`organization`、`staff`、`visit`、`patient`、`schedule`、`scheduleview`、`calendar` の順にだけ import する。
+  - 機能のパッケージの間は、`organization`、`staff`、`servicecode`、`patient`、`visit`、`schedule`、`scheduleview`、`calendar` の順にだけ import する。
+    - サービスコードは `servicecode` に、訪問の区分は `visit` に置く。`visit` は利用者を `patient` から受ける。
     - `scheduleview` は `schedule` まで import してよい。`calendarsync` は、Projection を書くために `scheduleview` を import してよい。
     - ADR-0033: [予定の書き込みのモデルと読み取りのモデルを分け、正本のモードを事業所の状態にする](../docs/adr/0033-schedule-write-read-models-and-source-mode.md)
     - `calendarimport`、`calendarsync`、`calendarexport` は `calendar` まで import してよく、3 つの間では import しない。
