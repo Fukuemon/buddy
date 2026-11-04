@@ -308,7 +308,7 @@ sequenceDiagram
 ### 利用者の変更、利用の終了、利用の再開
 
 利用者の変更は `PUT /v1/patients/{patient_id}`、利用の終了と利用の再開は `POST /v1/patients/{patient_id}/` の下の `end_service` と `resume_service` で行う。  
-どれも、`patient.App` が職員の管理の権限を確認してから行う。  
+どれも、`patient` の操作が職員の管理の権限を確認してから行う。  
 利用の終了の規則は [利用者](https://github.com/Fukuemon/buddy/blob/develop/context/domain/patient.md) にある。
 
 利用者の変更は、名前、希望、サービスコード、担当の職員を本文の値に置き換え、部分の更新は持たない。  
@@ -332,10 +332,10 @@ sequenceDiagram
 
 利用の終了を確定する前の残る一覧は、`GET /v1/patients/{patient_id}/remaining_schedules` で返す。  
 何も書かない。  
-一覧は、利用の終了と同じ `patient.App` の関数で作り、同じ規則の一覧を同じ形（`PatientSchedules`）で返す。
+一覧は、利用の終了と同じ `patient` の関数（`remaining`）で作り、同じ規則の一覧を同じ形（`PatientSchedules`）で返す。
 
 利用者を 1 人読むのは `GET /v1/patients/{patient_id}` で、利用の終了の利用者も `ended_at` と一緒に返す。  
-2 つの読み取りも、`patient.App` が職員の管理の権限を確認してから行う。  
+2 つの読み取りも、`patient` の操作が職員の管理の権限を確認してから行う。  
 ほかの事業所の利用者は、職員と同じく、ミドルウェアがパスの `patient_id` の事業所で 403 にする。
 
 利用の終了の利用者は、`patients.ended_at` に利用の終了にした時刻を持つ。  

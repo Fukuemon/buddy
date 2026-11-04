@@ -4,6 +4,9 @@ import (
 	"context"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
+	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
 // CreateInput は、利用者の作成の入力である。
@@ -16,26 +19,42 @@ type CreateInput struct {
 	AssignedStaffID string
 }
 
-// Create は、利用者を作る。事業所が見つからないときは apperr.ErrNotFound を、
+// Create は、利用者を作る。
+type Create struct {
+	facilities   kernel.Finder[organization.Facility]
+	serviceCodes ServiceCodes
+	staff        StaffRefs
+	patients     Repository
+	tx           tx.Transactor
+	ids          kernel.IDGenerator
+	guard        organization.Guard
+}
+
+// NewCreate は Create を作る。
+func NewCreate(facilities kernel.Finder[organization.Facility], serviceCodes ServiceCodes, staff StaffRefs, patients Repository, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) Create {
+	return Create{facilities: facilities, serviceCodes: serviceCodes, staff: staff, patients: patients, tx: tx, ids: ids, guard: guard}
+}
+
+// Do は、利用者を作る。事業所が見つからないときは apperr.ErrNotFound を、
 // サービスコードか担当の職員が見つからないか、職員が別の事業所に属するときは入力のエラーを返す。
 // 担当の職員が休職か退職のときも入力のエラーを返す（ADR-0018）。職員の管理の権限が無いときは apperr.ErrForbidden を返す。
 // 予定の作成と同じく、担当の職員の状態を確認する前に、事業所の職員の休職と退職をトランザクションの終わりまで待たせる。
-func (p *App) Create(ctx context.Context, in CreateInput) (Detail, error) {
+func (p Create) Do(ctx context.Context, in CreateInput) (Detail, error) {
 	if err := p.guard(ctx); err != nil {
 		return Detail{}, err
 	}
-	if _, err := p.deps.Facilities.Get(ctx, in.FacilityID); err != nil {
+	if _, err := p.facilities.Get(ctx, in.FacilityID); err != nil {
 		return Detail{}, err
 	}
-	if _, err := p.deps.ServiceCodes.GetServiceCode(ctx, in.ServiceCodeID); err != nil {
+	if _, err := p.serviceCodes.GetServiceCode(ctx, in.ServiceCodeID); err != nil {
 		return Detail{}, apperr.Reference("サービスコード", in.ServiceCodeID, err)
 	}
 	var created Detail
 	err := p.tx.WithinTx(ctx, func(ctx context.Context) error {
-		if err := p.deps.Staff.LockStatuses(ctx, in.FacilityID); err != nil {
+		if err := p.staff.LockStatuses(ctx, in.FacilityID); err != nil {
 			return err
 		}
-		if err := p.requireAssignable(ctx, in.AssignedStaffID, in.FacilityID); err != nil {
+		if err := requireAssignable(ctx, p.staff, in.AssignedStaffID, in.FacilityID); err != nil {
 			return err
 		}
 		pa, err := New(Patient{
@@ -50,10 +69,10 @@ func (p *App) Create(ctx context.Context, in CreateInput) (Detail, error) {
 		if err != nil {
 			return err
 		}
-		if err := p.deps.Patients.Create(ctx, pa); err != nil {
+		if err := p.patients.Create(ctx, pa); err != nil {
 			return err
 		}
-		created, err = p.deps.Patients.Get(ctx, pa.ID)
+		created, err = p.patients.Get(ctx, pa.ID)
 		return err
 	})
 	return created, err
