@@ -22,6 +22,57 @@ const (
 	StatusRetired   = "retired"
 )
 
+// Transition は、職員の状態の遷移である。From のいずれかの状態の職員だけを To にする。
+// To の状態の職員も From に含め、同じ遷移を送り直しても成功させる。
+type Transition struct {
+	To   string
+	From []string
+	// refuse は、From にない状態の職員の遷移を拒むエラーを返す。
+	refuse func(status string) error
+}
+
+// Refuse は、From にない状態 status の職員の遷移を拒む番兵のエラーを返す。status が From にあるときの値は決めない。
+func (t Transition) Refuse(status string) error {
+	return t.refuse(status)
+}
+
+// Activation は、登録の途中の職員を有効にする遷移を返す。止めた職員は ErrSuspended で、退職した職員は ErrRetired で拒む。
+func Activation() Transition {
+	return Transition{
+		To:   StatusActive,
+		From: []string{StatusPending, StatusActive},
+		refuse: func(status string) error {
+			if status == StatusRetired {
+				return ErrRetired
+			}
+			return ErrSuspended
+		},
+	}
+}
+
+// Resumption は、止めた職員を有効に戻す復職の遷移を返す。退職した職員は ErrRetired で、登録の途中の職員は ErrNotSuspended で拒む。
+func Resumption() Transition {
+	return Transition{
+		To:   StatusActive,
+		From: []string{StatusSuspended, StatusActive},
+		refuse: func(status string) error {
+			if status == StatusRetired {
+				return ErrRetired
+			}
+			return ErrNotSuspended
+		},
+	}
+}
+
+// Suspension は、職員を止める休職の遷移を返す。退職した職員を ErrRetired で拒む。
+func Suspension() Transition {
+	return Transition{
+		To:     StatusSuspended,
+		From:   []string{StatusPending, StatusActive, StatusSuspended},
+		refuse: func(string) error { return ErrRetired },
+	}
+}
+
 // UpstreamAccount は、職員に結び付けた上流の IdP のアカウントである。結び付けていなければ値は空である。
 type UpstreamAccount struct {
 	Issuer  string
