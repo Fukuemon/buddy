@@ -53,7 +53,7 @@ func (s server) GetFacility(ctx context.Context, req openapi.GetFacilityRequestO
 	if err != nil {
 		return nil, err
 	}
-	return openapi.GetFacility200JSONResponse{Id: f.ID, Name: f.Name, CreatedAt: f.CreatedAt, UpdatedAt: f.UpdatedAt}, nil
+	return openapi.GetFacility200JSONResponse{Id: f.ID, Name: f.Name, SourceMode: openapi.SourceMode(f.SourceMode), CreatedAt: f.CreatedAt, UpdatedAt: f.UpdatedAt}, nil
 }
 
 func (s server) GetDepartment(ctx context.Context, req openapi.GetDepartmentRequestObject) (openapi.GetDepartmentResponseObject, error) {

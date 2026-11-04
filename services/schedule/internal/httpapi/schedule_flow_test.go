@@ -77,7 +77,7 @@ func flowRouterWith(mode organization.SourceMode) http.Handler {
 		ListTypes:        schedule.NewListTypes(types).Do,
 		Get:              scheduleview.NewGet(schedules, refs).Do,
 		GetRecurring:     scheduleview.NewGetRecurring(recurring, refs).Do,
-		List:             scheduleview.NewList(facilities, schedules, recurring, refs).Do,
+		List:             scheduleview.NewList(facilities, schedules, recurring, refs, scheduleview.ProjectionDeps{}).Do,
 		Create:           schedule.NewCreate(facilities, schedules, types, refs, facilities, visits, nil, nil, tx, ids).Do,
 		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, facilities, visits, nil, recurring, nil, tx, ids).Do,
 		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, refs, facilities, schedules, types, visits, nil, nil, tx, ids).Do,

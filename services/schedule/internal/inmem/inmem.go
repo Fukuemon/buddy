@@ -67,6 +67,8 @@ type Store struct {
 	Exports       map[string]calendar.Export
 	// SyncResults は、カレンダーの ID ごとの、最後に同期した結果である。
 	SyncResults map[string]calendarsync.SyncResult
+	// SyncedAt は、カレンダーの ID ごとの、変わった予定を最後まで読んで当てた最後の同期の時刻である。
+	SyncedAt map[string]time.Time
 	// Projections は、ProjectionKey ごとの、Google カレンダーの予定の写しである。
 	Projections map[ProjectionKey]scheduleview.Projection
 }
@@ -95,6 +97,7 @@ func NewStore() *Store {
 		Links:         map[string]calendar.EventLink{},
 		Exports:       map[string]calendar.Export{},
 		SyncResults:   map[string]calendarsync.SyncResult{},
+		SyncedAt:      map[string]time.Time{},
 		Projections:   map[ProjectionKey]scheduleview.Projection{},
 	}
 }
@@ -1248,6 +1251,9 @@ func (s Syncs) Claim(_ context.Context, max int, _ time.Duration, modes []organi
 // Finish は、calendarsync.SyncRepository の Finish を実装する。
 func (s Syncs) Finish(_ context.Context, st calendarsync.SyncState, r calendarsync.SyncResult) error {
 	s.SyncResults[st.Calendar.ID] = r
+	if r.Synced {
+		s.SyncedAt[st.Calendar.ID] = time.Now()
+	}
 	return nil
 }
 
@@ -1438,4 +1444,46 @@ func (s *Identities) revoked() error {
 		return fmt.Errorf("%w: %w", staff.ErrRevokeFailed, s.RevokeErr)
 	}
 	return nil
+}
+
+// ListByFacility は、scheduleview.Projections の ListByFacility を実装する。行は、カレンダーの ID と Google の予定の ID の順に返す。
+func (s Projections) ListByFacility(_ context.Context, facilityID string, from civil.Date) ([]scheduleview.ProjectionDetail, error) {
+	var out []scheduleview.ProjectionDetail
+	for _, p := range s.Projections {
+		c, ok := s.Calendars[p.ExternalCalendarID]
+		if p.FacilityID != facilityID || !ok || c.FacilityID != facilityID || c.DisabledAt != nil || (p.LastEndDate != nil && p.LastEndDate.Before(from)) {
+			continue
+		}
+		out = append(out, scheduleview.ProjectionDetail{Projection: p, StaffName: s.Staff[p.StaffID].Username})
+	}
+	slices.SortFunc(out, func(a, b scheduleview.ProjectionDetail) int {
+		return cmp.Or(strings.Compare(a.ExternalCalendarID, b.ExternalCalendarID), strings.Compare(a.EventID, b.EventID))
+	})
+	return out, nil
+}
+
+// ListSyncsByFacility は、scheduleview.CalendarSyncs の ListSyncsByFacility を実装する。SyncResults と SyncedAt から作る。
+func (s Projections) ListSyncsByFacility(_ context.Context, facilityID string) ([]scheduleview.CalendarSync, error) {
+	var out []scheduleview.CalendarSync
+	for _, c := range s.Calendars {
+		if c.FacilityID != facilityID || c.DisabledAt != nil {
+			continue
+		}
+		cs := scheduleview.CalendarSync{ExternalCalendarID: c.ID, StaffID: c.StaffID, StaffName: s.Staff[c.StaffID].Username, LastStatus: scheduleview.SyncNever}
+		if r, ok := s.SyncResults[c.ID]; ok {
+			cs.LastStatus = scheduleview.SyncStatus(r.Status)
+			if r.ErrorCode != nil {
+				code := string(*r.ErrorCode)
+				cs.LastError = &code
+			}
+		}
+		if at, ok := s.SyncedAt[c.ID]; ok {
+			cs.LastSucceededAt = &at
+		}
+		out = append(out, cs)
+	}
+	slices.SortFunc(out, func(a, b scheduleview.CalendarSync) int {
+		return strings.Compare(a.ExternalCalendarID, b.ExternalCalendarID)
+	})
+	return out, nil
 }

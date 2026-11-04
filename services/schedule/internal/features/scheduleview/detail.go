@@ -5,6 +5,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
@@ -21,7 +22,39 @@ type Detail struct {
 	Version   int
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	// Source は予定の読み元で、buddy の予定のテーブルの予定では SourceBuddy である。
+	Source Source
+	// ReviewReason は、Projection の予定のうち、確認が必要な予定の理由で、ほかの予定では空である。
+	ReviewReason ReviewReason
 }
+
+// Source は、予定の読み元である。
+type Source string
+
+// Source の値。
+const (
+	// SourceBuddy は、buddy の予定のテーブルの予定である。ゼロ値にし、リポジトリが値を入れなくてよいようにする。
+	SourceBuddy Source = ""
+	// SourceGoogleCalendar は、google_primary の事業所で、同期が写した Google カレンダーの予定（Projection）である。
+	SourceGoogleCalendar Source = "google_calendar"
+)
+
+// ReviewReason は、Projection の予定を、buddy の予定に読み替えられなかった理由である。
+type ReviewReason string
+
+// ReviewReason の値。
+const (
+	// ReviewRecurrenceUnsupported は、buddy の繰り返しの規則に写せない繰り返しの予定である。回に展開せず、最初の回の 1 件で返す。
+	ReviewRecurrenceUnsupported ReviewReason = "recurrence_unsupported"
+	// ReviewPatientNotFound は、タイトルの利用者名の利用者がいない予定である。
+	ReviewPatientNotFound ReviewReason = "patient_not_found"
+	// ReviewPatientAmbiguous は、タイトルの利用者名の利用者が 2 人以上いる予定である。
+	ReviewPatientAmbiguous ReviewReason = "patient_ambiguous"
+	// ReviewServiceCodeNotFound は、タイトルのサービス内容が、サービスコードのマスタに無い予定である。
+	ReviewServiceCodeNotFound ReviewReason = "service_code_not_found"
+	// ReviewTitleUnreadable は、タイトルが空白だけか、訪問のタイトルを読めない予定である。
+	ReviewTitleUnreadable ReviewReason = "title_unreadable"
+)
 
 // RecurringDetail は、繰り返しの予定と、種類、職員、訪問の情報の名前と、除外した日付である。Visit は、ないときに nil である。
 // Version は更新の番号で、作ったときに 1 で、回を除外するたびに 1 つ増える。
@@ -62,8 +95,12 @@ func (q ListQuery) Validate() error {
 	return nil
 }
 
-// Listing は、事業所の単発の予定と繰り返しの予定である。
+// Listing は、事業所の単発の予定と繰り返しの予定と、事業所の予定の正本のモードと、カレンダーの同期の状況である。
+// google_primary の事業所では、Projection の繰り返しの予定を回に展開して Schedules に入れ、RecurringSchedules は空である。
+// CalendarSyncs は google_primary の事業所でだけ持ち、見てよい職員のカレンダーに限る。
 type Listing struct {
 	Schedules          []Detail
 	RecurringSchedules []RecurringDetail
+	SourceMode         organization.SourceMode
+	CalendarSyncs      []CalendarSync
 }

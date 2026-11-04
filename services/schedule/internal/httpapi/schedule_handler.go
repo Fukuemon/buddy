@@ -83,6 +83,8 @@ func (s server) ListSchedules(ctx context.Context, req openapi.ListSchedulesRequ
 	return openapi.ListSchedules200JSONResponse{
 		Schedules:          mapSlice(list.Schedules, toSchedule),
 		RecurringSchedules: mapSlice(list.RecurringSchedules, toRecurringSchedule),
+		SourceMode:         openapi.SourceMode(list.SourceMode),
+		CalendarSyncs:      mapSlice(list.CalendarSyncs, toCalendarSyncStatus),
 	}, nil
 }
 

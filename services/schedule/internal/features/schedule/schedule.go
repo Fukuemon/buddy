@@ -84,8 +84,13 @@ func newSlot(s Slot, typ Type) (Slot, error) {
 		}
 	}
 	s.TypeID = typ.ID
-	s.IsOverTimeWork = s.StartTime.Hour >= overtimeStartHour
+	s.IsOverTimeWork = IsOverTimeWork(s.StartTime)
 	return s, nil
+}
+
+// IsOverTimeWork は、start に始まる予定が時間外の勤務（17 時以降に始まる予定）かを返す。
+func IsOverTimeWork(start civil.Time) bool {
+	return start.Hour >= overtimeStartHour
 }
 
 // validateTimes は、終了が翌日でない予定は終了の時刻が開始の時刻より後であることを、翌日の予定は前であることを確認する。

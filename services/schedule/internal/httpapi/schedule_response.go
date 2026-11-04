@@ -51,12 +51,32 @@ func toSchedule(d scheduleview.Detail) openapi.Schedule {
 		Description:         d.Description,
 		RecurringScheduleId: d.RecurringScheduleID,
 		VisitInfo:           toVisitInfo(d.Visit),
+		Source:              openapi.Buddy,
 		CreatedAt:           d.CreatedAt,
 		UpdatedAt:           d.UpdatedAt,
 	}
 	if d.Cancel != nil {
 		c := toCancel(*d.Cancel)
 		r.Cancel = &c
+	}
+	if d.Source == scheduleview.SourceGoogleCalendar {
+		r.Source = openapi.GoogleCalendar
+	}
+	if d.ReviewReason != "" {
+		reason := openapi.ScheduleReviewReason(d.ReviewReason)
+		r.ReviewReason = &reason
+	}
+	return r
+}
+
+func toCalendarSyncStatus(c scheduleview.CalendarSync) openapi.CalendarSyncStatus {
+	r := openapi.CalendarSyncStatus{
+		ExternalCalendarId: c.ExternalCalendarID, StaffId: c.StaffID, StaffName: c.StaffName,
+		LastStatus: openapi.CalendarSyncStatusLastStatus(c.LastStatus), LastSucceededAt: c.LastSucceededAt,
+	}
+	if c.LastError != nil {
+		code := openapi.CalendarSyncStatusLastError(*c.LastError)
+		r.LastError = &code
 	}
 	return r
 }

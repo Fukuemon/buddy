@@ -33,3 +33,27 @@ WHERE external_calendar_id = sqlc.arg(external_calendar_id) AND NOT (external_ev
 DELETE FROM calendar_event_projections
 WHERE external_calendar_id = sqlc.arg(external_calendar_id) AND last_end_date < sqlc.arg(before)::date;
 
+
+-- name: ListCalendarEventProjectionsByFacility :many
+-- 予定の表示の読み出し（scheduleview）が、事業所の外していないカレンダーの行のうち、終わる日が from_date より前でない行（終わる日の無い行を含む）を、
+-- 職員の名前を付けて読む。外したカレンダー（退職した職員のカレンダーを含む）の行は返さない。
+SELECT p.external_calendar_id, p.external_event_id, p.facility_id, p.staff_id, p.recurring_event_id, p.original_start_at, p.original_start_date,
+       p.status, p.title, p.start_at, p.start_date, p.end_at, p.end_date, p.time_zone, p.recurrence, p.etag, p.google_updated_at,
+       p.last_end_date, p.projected_at, u.username AS staff_name
+FROM calendar_event_projections p
+JOIN external_calendars c ON c.id = p.external_calendar_id AND c.facility_id = p.facility_id
+JOIN users u ON u.id = p.staff_id AND u.facility_id = p.facility_id
+WHERE p.facility_id = sqlc.arg(facility_id) AND c.disabled_at IS NULL
+  AND (p.last_end_date IS NULL OR p.last_end_date >= sqlc.arg(from_date)::date)
+ORDER BY p.external_calendar_id, p.external_event_id;
+
+-- name: ListCalendarSyncStatusesByFacility :many
+-- 事業所の外していないカレンダーの同期の状況を、職員の名前を付けて返す。同期の状態の行が無いカレンダーは never にする。
+-- last_synced_at は、変わった予定を最後まで読んで当てた最後の同期の時刻である。
+SELECT c.id AS external_calendar_id, c.staff_id, u.username AS staff_name,
+       COALESCE(s.last_status, 'never')::text AS last_status, s.last_synced_at, s.last_error
+FROM external_calendars c
+JOIN users u ON u.id = c.staff_id AND u.facility_id = c.facility_id
+LEFT JOIN calendar_sync_states s ON s.external_calendar_id = c.id
+WHERE c.facility_id = sqlc.arg(facility_id) AND c.disabled_at IS NULL
+ORDER BY c.id;

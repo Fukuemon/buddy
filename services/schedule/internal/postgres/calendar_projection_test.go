@@ -316,3 +316,98 @@ func TestCalendarSyncClaimsByMode(t *testing.T) {
 		t.Errorf("buddy_primary の Claim = %v, %v, want 森のカレンダーだけ", ids(claimed), err)
 	}
 }
+
+// TestCalendarProjectionRepositoryListByFacility は、予定の表示の読み出しが、事業所の外していないカレンダーの行を職員の名前を付けて読み、
+// from より前に終わった行とほかの事業所の行と外したカレンダーの行を返さないことと、カレンダーの同期の状況を読むことを確認する。
+func TestCalendarProjectionRepositoryListByFacility(t *testing.T) {
+	ctx := txContext(t)
+	r := NewCalendarProjectionRepository(testDB)
+	const otherCal = "01M3TD000000000000000000CA"
+	if err := NewCalendarRepository(testDB).Create(ctx, calendar.ExternalCalendar{
+		ID: otherCal, FacilityID: seedFacility, StaffID: seedMori, Provider: calendar.ProviderGoogle, CalendarID: "mori@example.com",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	base := scheduleview.Projection{
+		ExternalCalendarID: seedOkadaCalendar, FacilityID: seedGoogleFacility, StaffID: seedOkada, Status: scheduleview.ProjectionConfirmed,
+	}
+	single := base
+	single.EventID, single.Title, single.ETag = "single", "担当者会議", `"1"`
+	single.Start.At, single.End.At = timeAt(t, "2099-11-04T10:00:00+09:00"), timeAt(t, "2099-11-04T10:30:00+09:00")
+	single.LastEndDate = civilDate(2099, 11, 4)
+	weekly := base
+	weekly.EventID, weekly.Title, weekly.ETag, weekly.TimeZone = "weekly", "定例", `"2"`, calendar.TimeZone
+	weekly.Start.At, weekly.End.At = timeAt(t, "2099-11-02T09:00:00+09:00"), timeAt(t, "2099-11-02T10:00:00+09:00")
+	weekly.Recurrence = []string{"RRULE:FREQ=WEEKLY;BYDAY=MO"}
+	moved := base
+	moved.EventID, moved.RecurringEventID, moved.Title, moved.ETag = "weekly_1109", "weekly", "定例（変更）", `"3"`
+	moved.OriginalStart.At, moved.Start.At, moved.End.At = timeAt(t, "2099-11-09T09:00:00+09:00"), timeAt(t, "2099-11-10T09:00:00+09:00"), timeAt(t, "2099-11-10T10:00:00+09:00")
+	moved.LastEndDate = civilDate(2099, 11, 10)
+	ended := base
+	ended.EventID, ended.Title, ended.ETag = "ended", "終わった予定", `"4"`
+	ended.Start.At, ended.End.At, ended.LastEndDate = timeAt(t, "2020-01-06T10:00:00+09:00"), timeAt(t, "2020-01-06T11:00:00+09:00"), civilDate(2020, 1, 6)
+	other := single
+	other.ExternalCalendarID, other.FacilityID, other.StaffID = otherCal, seedFacility, seedMori
+	for _, p := range []scheduleview.Projection{single, weekly, moved, ended, other} {
+		if err := r.Put(ctx, p); err != nil {
+			t.Fatalf("Put %s: %v", p.EventID, err)
+		}
+	}
+
+	got, err := r.ListByFacility(ctx, seedGoogleFacility, civil.Date{Year: 2099, Month: 1, Day: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ids []string
+	for _, p := range got {
+		ids = append(ids, p.EventID)
+		if p.StaffName != "岡田 葵" || p.FacilityID != seedGoogleFacility {
+			t.Errorf("%s: 職員の名前 = %q, 事業所 = %s", p.EventID, p.StaffName, p.FacilityID)
+		}
+	}
+	if want := []string{"single", "weekly", "weekly_1109"}; !slices.Equal(ids, want) {
+		t.Fatalf("行 = %v, want %v", ids, want)
+	}
+	if m := got[2]; m.RecurringEventID != "weekly" || !sameTime(m.OriginalStart.At, moved.OriginalStart.At) || !sameTime(m.Start.At, moved.Start.At) ||
+		m.LastEndDate == nil || *m.LastEndDate != *moved.LastEndDate || m.ProjectedAt.IsZero() {
+		t.Errorf("変えた回の行 = %+v", m)
+	}
+	if w := got[1]; !slices.Equal(w.Recurrence, weekly.Recurrence) || w.TimeZone != calendar.TimeZone || w.LastEndDate != nil {
+		t.Errorf("繰り返しの親の行 = %+v", w)
+	}
+
+	syncs, err := r.ListSyncsByFacility(ctx, seedGoogleFacility)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(syncs) != 1 || syncs[0].ExternalCalendarID != seedOkadaCalendar || syncs[0].StaffName != "岡田 葵" {
+		t.Fatalf("同期の状況 = %+v", syncs)
+	}
+	tx := ctx.Value(txKey{}).(pgx.Tx)
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO calendar_sync_states (external_calendar_id, facility_id, last_status, last_error, last_synced_at)
+		VALUES ($1, $2, 'failed', 'unavailable', '2099-11-01T00:00:00Z')
+		ON CONFLICT (external_calendar_id) DO UPDATE SET last_status = 'failed', last_error = 'unavailable', last_synced_at = '2099-11-01T00:00:00Z'`,
+		seedOkadaCalendar, seedGoogleFacility); err != nil {
+		t.Fatal(err)
+	}
+	syncs, err = r.ListSyncsByFacility(ctx, seedGoogleFacility)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s := syncs[0]; s.LastStatus != scheduleview.SyncFailed || s.LastError == nil || *s.LastError != "unavailable" ||
+		!sameTime(s.LastSucceededAt, timeAt(t, "2099-11-01T00:00:00Z")) {
+		t.Errorf("失敗した同期の状況 = %+v", s)
+	}
+
+	// 外したカレンダー（退職した職員のカレンダーを含む）の行と同期の状況は返さない
+	if err := NewCalendarRepository(testDB).Disable(ctx, seedOkadaCalendar); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := r.ListByFacility(ctx, seedGoogleFacility, civil.Date{Year: 2099, Month: 1, Day: 1}); err != nil || len(got) != 0 {
+		t.Errorf("外したカレンダーの行 = %+v, err = %v", got, err)
+	}
+	if syncs, err := r.ListSyncsByFacility(ctx, seedGoogleFacility); err != nil || len(syncs) != 0 {
+		t.Errorf("外したカレンダーの同期の状況 = %+v, err = %v", syncs, err)
+	}
+}
