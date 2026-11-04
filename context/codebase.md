@@ -89,7 +89,7 @@ status: stable
     - `httpapi` は、パスの ID の形の確認に `ulid` を使う。
   - `inmem` を import するのは、テストのファイルだけにする。
 - `services/receipt` の依存は、`record`、`civil`、`servicerule` を末端にして、読み込み（`csvio`）、正規化、対の作成、判定、つなぐ段（`check`）、データソース、HTTP の順の 1 方向に限る。
-  - 正規化と判定はサービスの規則（`servicerule`）を、データソースは Google カレンダー（`gcal`）を使う。
+  - 正規化と判定はサービスの規則（`servicerule` と `packages/go/servicecode`）を、データソースは Google カレンダー（`gcal`）を使う。
   - 照合の権限の確認（`permission`）は、HTTP と同じ段に置き、`httpapi` から使う。
 - `services/broker` の職員の型、状態、規則、番兵のエラーは `staff` に置き、`login`、`internalapi`、`postgres` が読む。
   - `staff`、`hydra`、`upstream`、`config` は、ブローカーのほかの内部のパッケージを import しない。
