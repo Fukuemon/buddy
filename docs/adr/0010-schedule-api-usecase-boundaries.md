@@ -39,6 +39,8 @@
     - ADR-0026: [予定の API の機能のパッケージを internal/features/ に置き、usecase のメソッドを操作ごとのファイルに分ける](0026-schedule-api-features-directory.md)
 - 規則: `Service` を名前に付けず、状態を持たない関数かエンティティのメソッドにする。予定の閲覧と編集の判定と、見てよい職員の絞り込みは、`schedule` の 1 つのファイルに集める。役職のデフォルトの権限をコピーする規則は `staff` の公開の関数にする。
 - リポジトリ: 自分の集約のリポジトリだけを、そのパッケージに置く。単発の予定（キャンセルを含む）、繰り返しの予定（規則と除外の日を含む）、マスタで分け、テーブルごとには分けない。レコードをロックして読む操作は `GetForUpdate` の 1 つにし、名前でロックを示す。
+  - この判断のうち、`GetForUpdate` が表示の型を返す部分は ADR-0033 で置き換えた。予定の表示の読み出しは `scheduleview` に分ける。
+    - ADR-0033: [予定の書き込みのモデルと読み取りのモデルを分け、正本のモードを事業所の状態にする](0033-schedule-write-read-models-and-source-mode.md)
 - ほかの機能のデータ: 使う側で、1〜2 のメソッドの小さなインターフェースを定義して受ける。例えば `schedule` は、職員の ID、事業所、チームだけを返すインターフェースで職員を受ける。`Repositories` の束はやめ、`NewUsecase` は使うインターフェースだけを受ける。
   - Go は、インターフェースを、値を実装する側ではなく使う側に置くことを勧める。
     - 出典: [Go Code Review Comments の Interfaces](https://go.dev/wiki/CodeReviewComments#interfaces)
