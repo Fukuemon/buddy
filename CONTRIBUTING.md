@@ -62,6 +62,7 @@ docker compose up --build --wait
 | --- | --- | --- |
 | web | `http://localhost:3000` | `WEB_PORT` |
 | schedule | `http://localhost:8080` | `SCHEDULE_PORT` |
+| schedule-calendar-export、schedule-calendar-sync（Google カレンダーの書き出しと同期の Worker） | 公開しない | なし |
 | receipt | `http://localhost:8090` | `RECEIPT_PORT` |
 | broker（ログインの画面） | `http://localhost:8100` | `BROKER_PORT` |
 | broker（内部の API） | `http://localhost:8101` | `BROKER_INTERNAL_PORT` |

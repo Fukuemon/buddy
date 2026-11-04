@@ -96,7 +96,7 @@ status: stable
   - `inmem` を import するのは、テストのファイルだけにする。
   - 全ての機能のパッケージとアダプタを import してよいのは、`assemble` だけにする。
     - `assemble` を import するのは `cmd` だけにする。
-    - `cmd/api` は、機能のパッケージ、アダプタ、`access`、`principal` を import しない。`assemble` が作った値で、サーバーと常駐の処理を起動する。
+    - `cmd/api` と `cmd/calendar-worker` は、機能のパッケージ、アダプタ、`access`、`principal` を import しない。`assemble` が作った値で、`cmd/api` はサーバーを、`cmd/calendar-worker` は書き出しか同期の処理を起動する。
     - ADR-0031: [Go の API の操作を、使う依存だけを持つ操作ごとの型にし、機能のパッケージの App をやめる](../docs/adr/0031-go-operation-types.md)
 - `services/receipt` の依存は、`record`、`civil`、`servicerule` を末端にして、読み込み（`csvio`）、正規化、対の作成、判定、つなぐ段（`check`）、データソース、HTTP の順の 1 方向に限る。
   - 正規化と判定はサービスの規則（`servicerule` と `packages/go/servicecode`）を、データソースは Google カレンダー（`gcal`）を使う。
@@ -109,7 +109,7 @@ status: stable
   - 予定の API の機能のパッケージの間の順と、機能のパッケージから `principal`（`schedule`、`scheduleview`、`calendarimport` を除く）、アダプタ、`access`、`config` への import
   - 予定の API の共通のパッケージから、標準ライブラリと共通のパッケージ以外（外のモジュールを含む）への import
   - 予定の API の `httpapi` と `config` から `postgres` への import、`httpapi` から `packages/go/oidc` への import、テストのファイル以外から `inmem` への import
-  - 予定の API の `cmd/api` から機能のパッケージ、アダプタ、`access`、`principal` への import と、`cmd` 以外から `assemble` への import
+  - 予定の API の `cmd/api` と `cmd/calendar-worker` から機能のパッケージ、アダプタ、`access`、`principal` への import と、`cmd` 以外から `assemble` への import
   - 照合の API の段の順
   - ID ブローカーの `staff`、`postgres`、`login`、`internalapi` の向き
 - depguard は、テストのファイルを対象の外にする。

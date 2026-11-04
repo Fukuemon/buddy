@@ -1,7 +1,9 @@
 // Command api は、予定の API の HTTP サーバーを起動する。SIGINT か SIGTERM を受けると、
 // 処理中のリクエストを最大 30 秒待ってから止まる。設定は internal/config の LoadAPI が読む環境変数である。
 // `api healthcheck` は、サーバーを起動せず、動いているサーバーの GET /readyz を確認して終わる。
-// 組み立ては internal/assemble にあり、このコマンドはサーバーと、Google カレンダーの書き出しと同期の処理を起動して止める。
+// 組み立ては internal/assemble にあり、このコマンドはサーバーを起動して止める。
+// Google カレンダーの書き出しと同期の常駐の処理は起動せず、cmd/calendar-worker が動かす（ADR-0036）。
+// 書き出しを有効にした設定では、予定の変更を書き出しの待ちに積み、待ちは cmd/calendar-worker が書く。
 package main
 
 import (
@@ -42,7 +44,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel}))
+	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel})).With(slog.String("component", "api"))
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -84,32 +86,6 @@ func run() error {
 	go func() {
 		log.Info("listening", slog.String("addr", srv.Addr))
 		serveErr <- srv.ListenAndServe()
-	}()
-
-	// 書き出しと同期の処理は、止まる合図の後、取った待ちとカレンダーの結果を書いてから止まる。DB を閉じる前に止めて待つ。
-	exporterDone, syncerDone := make(chan struct{}), make(chan struct{})
-	if accounts != nil && cfg.Calendar.ExportEnabled {
-		exporter := assemble.NewExporter(repos, accounts, log)
-		go func() {
-			defer close(exporterDone)
-			exporter.Run(ctx, cfg.Calendar.ExportInterval)
-		}()
-	} else {
-		close(exporterDone)
-	}
-	if accounts != nil && cfg.Calendar.SyncEnabled {
-		syncer := assemble.NewSyncer(repos, accounts, cfg.Calendar.SyncInterval, log)
-		go func() {
-			defer close(syncerDone)
-			syncer.Run(ctx)
-		}()
-	} else {
-		close(syncerDone)
-	}
-	defer func() {
-		stop()
-		<-exporterDone
-		<-syncerDone
 	}()
 
 	select {

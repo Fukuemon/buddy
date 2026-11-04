@@ -1,6 +1,6 @@
 // Package assemble は、予定の API の実行の単位が使う値を、アダプタと機能のパッケージから組み立てる。
 // 全ての機能とアダプタを import してよいのは、このパッケージだけである。cmd はこのパッケージの関数を呼び、
-// 作った値でサーバーと常駐の処理を起動する。
+// 作った値で、cmd/api はサーバーを、cmd/calendar-worker は書き出しか同期の処理を起動する。
 package assemble
 
 import (
@@ -91,6 +91,7 @@ func (r Repositories) visitWriter() visit.Writer {
 }
 
 // NewCalendarAccounts は、事業所の組織のサービスアカウントで Google カレンダーを読み書きする gcal.Accounts を返す。
+// cmd/api は NewHandler のカレンダーの操作に、cmd/calendar-worker は NewExporter と NewSyncer に渡す。
 // サービスアカウントの設定が無ければ nil を返す。認証は Application Default Credentials で読み、事業所のアカウントになりすます。
 // ローカル環境の calendarpit に向けるときは、GOOGLE_APPLICATION_CREDENTIALS の認証情報をなりすまさずに使い、無ければ認証をしない。
 // 予定を書き出すときは、スコープを calendar.events にする。書き出さないときは、読むだけの calendar.readonly にする。
@@ -118,7 +119,7 @@ func NewCalendarAccounts(ctx context.Context, cfg config.Calendar, r Repositorie
 }
 
 // NewExporter は、書き出しの待ちの予定を accounts の Google カレンダーに書く Exporter を作る。accounts は nil にしない。
-// 書き出しを有効にした設定（config.Calendar の ExportEnabled）のときだけ作って動かす。
+// cmd/calendar-worker が、書き出しを有効にした設定（config.Calendar の ExportEnabled）のときだけ作って動かす。
 func NewExporter(r Repositories, accounts *gcal.Accounts, log *slog.Logger) *calendarexport.Exporter {
 	return calendarexport.NewExporter(calendarexport.ExporterDeps{
 		Exports: r.exports, Calendars: r.calendars, Writers: accounts.Writer, Schedules: r.schedules, Recurring: r.recurring,
@@ -126,7 +127,7 @@ func NewExporter(r Repositories, accounts *gcal.Accounts, log *slog.Logger) *cal
 }
 
 // NewSyncer は、accounts の Google カレンダーの変更を interval ごとに読み、buddy の予定に当てる Syncer を作る。
-// accounts は nil にしない。同期を有効にした設定（config.Calendar の SyncEnabled）のときだけ作って動かす。
+// accounts は nil にしない。cmd/calendar-worker が、同期を有効にした設定（config.Calendar の SyncEnabled）のときだけ作って動かす。
 func NewSyncer(r Repositories, accounts *gcal.Accounts, interval time.Duration, log *slog.Logger) *calendarsync.Syncer {
 	return calendarsync.NewSyncer(calendarsync.SyncerDeps{
 		Syncs: r.calendarSyncs, Calendars: r.calendars, Staff: r.staffRefs, Locks: r.facilities, Exports: r.exports,

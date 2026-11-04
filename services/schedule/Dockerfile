@@ -12,6 +12,7 @@ COPY packages/go/ /src/packages/go/
 COPY services/schedule/ /src/services/schedule/
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/api ./cmd/api && \
+    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/calendar-worker ./cmd/calendar-worker && \
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/migrate ./cmd/migrate
 
 # ローカル環境の compose が予定の API と calendarpit の間に置く中継。docker build --target gcalhold で作り、本番のイメージには入れない。
@@ -24,8 +25,9 @@ COPY --from=gcalhold-build /out/gcalhold /usr/local/bin/
 USER nonroot:nonroot
 ENTRYPOINT ["/usr/local/bin/gcalhold"]
 
+# Google カレンダーの書き出しと同期は、同じイメージの calendar-worker を entrypoint にして動かす（ADR-0036）。
 FROM gcr.io/distroless/static-debian12:nonroot
-COPY --from=build /out/api /out/migrate /usr/local/bin/
+COPY --from=build /out/api /out/calendar-worker /out/migrate /usr/local/bin/
 EXPOSE 8080
 USER nonroot:nonroot
 ENTRYPOINT ["/usr/local/bin/api"]

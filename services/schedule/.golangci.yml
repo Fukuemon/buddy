@@ -410,6 +410,27 @@ linters:
               desc: cmd/api は機能とアダプタを assemble で組み立て、直接 import しない
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/principal
               desc: cmd/api は機能とアダプタを assemble で組み立て、直接 import しない
+        cmd-calendar-worker:
+          files:
+            - "**/cmd/calendar-worker/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features
+              desc: cmd/calendar-worker は機能とアダプタを assemble で組み立て、直接 import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/httpapi
+              desc: cmd/calendar-worker は機能とアダプタを assemble で組み立て、直接 import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/postgres
+              desc: cmd/calendar-worker は機能とアダプタを assemble で組み立て、直接 import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/gcal
+              desc: cmd/calendar-worker は機能とアダプタを assemble で組み立て、直接 import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/broker
+              desc: cmd/calendar-worker は機能とアダプタを assemble で組み立て、直接 import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/ulid
+              desc: cmd/calendar-worker は機能とアダプタを assemble で組み立て、直接 import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/access
+              desc: cmd/calendar-worker は機能とアダプタを assemble で組み立て、直接 import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/principal
+              desc: cmd/calendar-worker は機能とアダプタを assemble で組み立て、直接 import しない
         assemble:
           files:
             - "$all"
