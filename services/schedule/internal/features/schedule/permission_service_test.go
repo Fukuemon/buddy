@@ -96,10 +96,10 @@ func TestReadable(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ok := readable(subject(tt.grant), members)
+			ok := Readable(subject(tt.grant), members)
 			for id, want := range tt.want {
 				if got := ok(id); got != want {
-					t.Errorf("readable(%s) = %v, want %v", id, got, want)
+					t.Errorf("Readable(%s) = %v, want %v", id, got, want)
 				}
 			}
 		})

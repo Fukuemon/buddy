@@ -1,4 +1,4 @@
-package schedule_test
+package scheduleview_test
 
 import (
 	"errors"
@@ -15,7 +15,7 @@ import (
 // TestSchedulesGetRecurring は、繰り返しの予定を作った後と回を置き換えた後に、GetRecurring が書いた内容を返すことを確認する。
 func TestSchedulesGetRecurring(t *testing.T) {
 	s := inmem.Seeded()
-	uc, _ := newSchedules(s)
+	uc := newSchedules(s)
 	ctx := editorCtx()
 
 	created, err := uc.CreateRecurring(ctx, facilityID, visitSlot(validVisit()), schedule.RuleInput{Frequency: schedule.Weekly})

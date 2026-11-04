@@ -38,16 +38,17 @@ verified_commit: 4e53ca5
 
 ### コードの構成
 
-パッケージの分け方は ADR-0005、ADR-0010、ADR-0026、ADR-0032 で決めた。  
+パッケージの分け方は ADR-0005、ADR-0010、ADR-0026、ADR-0032、ADR-0033 で決めた。  
 依存してよい向きは [コードベースの構造](https://github.com/Fukuemon/buddy/blob/develop/context/codebase.md) にある。
 
 - ADR-0005: [予定の API の規則と手順を機能ごとのパッケージにまとめる](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0005-schedule-api-packages.md)
 - ADR-0010: [予定の API の機能のパッケージで、手順を usecase、規則を関数、リポジトリを集約の単位に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0010-schedule-api-usecase-boundaries.md)
 - ADR-0026: [予定の API の機能のパッケージを internal/features/ に置き、usecase のメソッドを操作ごとのファイルに分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0026-schedule-api-features-directory.md)
 - ADR-0032: [予定の API の calendar を、結び付け、取り込み、同期、書き出しの 4 つの機能に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0032-schedule-api-calendar-split.md)
+- ADR-0033: [予定の書き込みのモデルと読み取りのモデルを分け、正本のモードを事業所の状態にする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0033-schedule-write-read-models-and-source-mode.md)
 
 - `internal/features/` には、次の機能のパッケージを置く。
-  - `organization`、`staff`、`patient`、`visit`、`schedule`
+  - `organization`、`staff`、`patient`、`visit`、`schedule`、`scheduleview`
   - Google カレンダーとの連携: `calendar`、`calendarimport`、`calendarsync`、`calendarexport`
 - `internal/` の直下には、アダプタ（`httpapi`、`postgres`、`gcal`、`broker`、`ulid`）と共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）を置く。
   - `access`、`principal`、`config`、テストの `inmem` も、`internal/` の直下に置く。
@@ -238,7 +239,7 @@ CHECK が 8 つ以外を拒み、API は 400 を返す。
 sequenceDiagram
   participant W as web
   participant M as 認証のミドルウェア
-  participant U as schedule.List
+  participant U as scheduleview.List
   participant DB as PostgreSQL
 
   W->>M: GET /v1/facilities/{facility_id}/schedules（Bearer）

@@ -35,7 +35,7 @@ func (s Cancel) Do(ctx context.Context, scheduleID, reason string) (Cancellation
 		if err != nil {
 			return err
 		}
-		if err := requireScheduleAccess(ctx, s.staff, cur.StaffID, true); err != nil {
+		if err := RequireScheduleAccess(ctx, s.staff, cur.StaffID, true); err != nil {
 			return err
 		}
 		if err := apperr.AsConflict(s.schedules.CreateCancel(ctx, c), "この予定はすでにキャンセルされています"); err != nil {

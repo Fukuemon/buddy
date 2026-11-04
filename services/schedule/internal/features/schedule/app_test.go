@@ -438,9 +438,6 @@ type deps struct {
 // app は、テストが呼ぶ schedule の操作の Do である。
 type app struct {
 	ListTypes        func(ctx context.Context) ([]schedule.Type, error)
-	Get              func(ctx context.Context, id string) (schedule.Detail, error)
-	GetRecurring     func(ctx context.Context, id string) (schedule.RecurringDetail, error)
-	List             func(ctx context.Context, facilityID string, q schedule.ListQuery) (schedule.Listing, error)
 	Create           func(ctx context.Context, facilityID string, in schedule.SlotInput) (schedule.Detail, error)
 	CreateRecurring  func(ctx context.Context, facilityID string, in schedule.SlotInput, rule schedule.RuleInput) (schedule.RecurringDetail, error)
 	ChangeOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in schedule.SlotInput) (schedule.Detail, error)
@@ -452,9 +449,6 @@ type app struct {
 func build(d deps, tx tx.Transactor, ids kernel.IDGenerator) *app {
 	return &app{
 		ListTypes:        schedule.NewListTypes(d.Types).Do,
-		Get:              schedule.NewGet(d.Schedules, d.Staff).Do,
-		GetRecurring:     schedule.NewGetRecurring(d.Recurring, d.Staff).Do,
-		List:             schedule.NewList(d.Facilities, d.Schedules, d.Recurring, d.Staff).Do,
 		Create:           schedule.NewCreate(d.Facilities, d.Schedules, d.Types, d.Staff, d.Visits, d.Now, d.Exports, tx, ids).Do,
 		CreateRecurring:  schedule.NewCreateRecurring(d.Facilities, d.Types, d.Staff, d.Visits, d.Now, d.Recurring, d.Exports, tx, ids).Do,
 		ChangeOccurrence: schedule.NewChangeOccurrence(d.Recurring, d.Staff, d.Schedules, d.Types, d.Visits, d.Now, d.Exports, tx, ids).Do,

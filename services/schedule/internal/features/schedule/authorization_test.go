@@ -61,7 +61,7 @@ func checkAllowed(t *testing.T, op string, err error, want bool) {
 }
 
 // TestSchedulesAuthorization は、7 つの権限ごとに、ほかの職員の予定の編集と、自分の予定の編集の許可と拒否を確認する。
-// 閲覧の許可と拒否は TestSchedulesReadAuthorization が確認する。
+// 閲覧の許可と拒否は、scheduleview の TestSchedulesReadAuthorization が確認する。
 func TestSchedulesAuthorization(t *testing.T) {
 	tests := []struct {
 		name      string

@@ -38,7 +38,7 @@ func (s Update) Do(ctx context.Context, scheduleID string, in SlotInput) (Detail
 		if err != nil {
 			return err
 		}
-		if err := requireScheduleAccess(ctx, s.staff, cur.StaffID, true); err != nil {
+		if err := RequireScheduleAccess(ctx, s.staff, cur.StaffID, true); err != nil {
 			return err
 		}
 		if cur.Cancel != nil {

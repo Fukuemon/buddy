@@ -1,9 +1,10 @@
-package schedule
+package scheduleview
 
 import (
 	"context"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
 )
@@ -11,56 +12,56 @@ import (
 // List は、事業所の予定のうち、見てよい職員の予定を返す。
 type List struct {
 	facilities kernel.Finder[organization.Facility]
-	schedules  Repository
-	recurring  RecurringRepository
+	schedules  Schedules
+	recurring  RecurringSchedules
 	staff      StaffRefs
 }
 
 // NewList は List を作る。
-func NewList(facilities kernel.Finder[organization.Facility], schedules Repository, recurring RecurringRepository, staff StaffRefs) List {
+func NewList(facilities kernel.Finder[organization.Facility], schedules Schedules, recurring RecurringSchedules, staff StaffRefs) List {
 	return List{facilities: facilities, schedules: schedules, recurring: recurring, staff: staff}
 }
 
 // Do は、事業所の予定のうち、見てよい職員の予定を返す。事業所が見つからないときは apperr.ErrNotFound を返す。
-func (s List) Do(ctx context.Context, facilityID string, q ListQuery) (Listing, error) {
+func (s List) Do(ctx context.Context, facilityID string, q schedule.ListQuery) (schedule.Listing, error) {
 	if err := q.Validate(); err != nil {
-		return Listing{}, err
+		return schedule.Listing{}, err
 	}
-	p, err := current(ctx)
+	p, err := schedule.Current(ctx)
 	if err != nil {
-		return Listing{}, err
+		return schedule.Listing{}, err
 	}
 	if _, err := s.facilities.Get(ctx, facilityID); err != nil {
-		return Listing{}, err
+		return schedule.Listing{}, err
 	}
 	readable, err := s.readableStaff(ctx, p, facilityID)
 	if err != nil {
-		return Listing{}, err
+		return schedule.Listing{}, err
 	}
 	single, err := s.schedules.ListByFacility(ctx, facilityID, q)
 	if err != nil {
-		return Listing{}, err
+		return schedule.Listing{}, err
 	}
 	recurring, err := s.recurring.ListByFacility(ctx, facilityID, q)
 	if err != nil {
-		return Listing{}, err
+		return schedule.Listing{}, err
 	}
-	return Listing{
-		Schedules:          filter(single, func(d Detail) bool { return readable(d.StaffID) }),
-		RecurringSchedules: filter(recurring, func(d RecurringDetail) bool { return readable(d.StaffID) }),
+	return schedule.Listing{
+		Schedules:          filter(single, func(d schedule.Detail) bool { return readable(d.StaffID) }),
+		RecurringSchedules: filter(recurring, func(d schedule.RecurringDetail) bool { return readable(d.StaffID) }),
 	}, nil
 }
 
 // readableStaff は、事業所の職員のうち、p が予定を見てよい職員かを返す関数を返す。
 func (s List) readableStaff(ctx context.Context, p principal.Principal, facilityID string) (func(staffID string) bool, error) {
-	if CanReadAll(p) {
+	if schedule.CanReadAll(p) {
 		return func(string) bool { return true }, nil
 	}
 	members, err := s.staff.ListByFacility(ctx, facilityID)
 	if err != nil {
 		return nil, err
 	}
-	return readable(p, members), nil
+	return schedule.Readable(p, members), nil
 }
 
 func filter[T any](items []T, keep func(T) bool) []T {
@@ -71,10 +72,4 @@ func filter[T any](items []T, keep func(T) bool) []T {
 		}
 	}
 	return out
-}
-
-// Listing は、事業所の単発の予定と繰り返しの予定である。
-type Listing struct {
-	Schedules          []Detail
-	RecurringSchedules []RecurringDetail
 }

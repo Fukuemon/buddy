@@ -1,4 +1,4 @@
-package schedule_test
+package scheduleview_test
 
 import (
 	"errors"
@@ -14,7 +14,7 @@ import (
 
 func TestSchedulesList(t *testing.T) {
 	s := inmem.Seeded()
-	uc, _ := newSchedules(s)
+	uc := newSchedules(s)
 	ctx := editorCtx()
 	from, to := civil.Date{Year: 2026, Month: 10, Day: 20}, civil.Date{Year: 2026, Month: 10, Day: 1}
 	if _, err := uc.List(ctx, facilityID, schedule.ListQuery{DateFrom: &from, DateTo: &to}); !errors.Is(err, apperr.ErrInvalidInput) {
@@ -28,7 +28,7 @@ func TestSchedulesList(t *testing.T) {
 // TestSchedulesListContents は、一覧が、事業所の単発の予定と繰り返しの予定を、Get と GetRecurring と同じ枠、種類、更新の番号で返し、ほかの事業所の予定を返さないことを確認する。
 func TestSchedulesListContents(t *testing.T) {
 	s := inmem.Seeded()
-	uc, _ := newSchedules(s)
+	uc := newSchedules(s)
 	ctx := editorCtx()
 	single, err := uc.Create(ctx, facilityID, visitSlot(validVisit()))
 	if err != nil {

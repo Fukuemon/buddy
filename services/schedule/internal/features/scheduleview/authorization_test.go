@@ -1,4 +1,4 @@
-package schedule_test
+package scheduleview_test
 
 import (
 	"context"
@@ -33,7 +33,7 @@ func TestSchedulesReadAuthorization(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := viewerCtx(tt.grants...)
-			uc, _ := newSchedules(authzStore())
+			uc := newSchedules(authzStore())
 			_, err := uc.Get(ctx, targetScheduleID)
 			checkAllowed(t, "Get", err, tt.readOther)
 			_, err = uc.GetRecurring(ctx, targetRecurringID)
@@ -66,7 +66,7 @@ func TestSchedulesReadOtherFacilityStaff(t *testing.T) {
 	d := s.Schedules[targetScheduleID]
 	d.ID, d.StaffID = otherScheduleID, otherStaffID
 	s.Schedules[otherScheduleID] = d
-	uc, _ := newSchedules(s)
+	uc := newSchedules(s)
 	ctx := viewerCtx(staff.PolicyGrant{PolicyCode: organization.ScheduleUserRead, TargetUserIDs: []string{staffID, otherStaffID}})
 	list, err := uc.List(ctx, facilityID, schedule.ListQuery{})
 	if err != nil {
@@ -81,7 +81,7 @@ func TestSchedulesReadOtherFacilityStaff(t *testing.T) {
 func TestSchedulesReadStaffNotFound(t *testing.T) {
 	s := authzStore()
 	delete(s.Staff, staffID)
-	uc, _ := newSchedules(s)
+	uc := newSchedules(s)
 	ctx := viewerCtx(staff.PolicyGrant{PolicyCode: organization.ScheduleAllRead})
 	if _, err := uc.Get(ctx, targetScheduleID); !errors.Is(err, apperr.ErrNotFound) {
 		t.Errorf("Get: err = %v, want ErrNotFound", err)
@@ -92,7 +92,7 @@ func TestSchedulesReadStaffNotFound(t *testing.T) {
 }
 
 func TestSchedulesWithoutPrincipal(t *testing.T) {
-	uc, _ := newSchedules(authzStore())
+	uc := newSchedules(authzStore())
 	if _, err := uc.Get(context.Background(), ownScheduleID); !errors.Is(err, apperr.ErrForbidden) {
 		t.Errorf("Get: err = %v, want ErrForbidden", err)
 	}

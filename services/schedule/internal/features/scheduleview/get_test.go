@@ -1,4 +1,4 @@
-package schedule_test
+package scheduleview_test
 
 import (
 	"errors"
@@ -13,7 +13,7 @@ import (
 // TestSchedulesGet は、予定を作り、変え、キャンセルし、繰り返しの予定の回を置き換えた後に、Get が書いた操作の応答と同じ予定を返すことを確認する。
 func TestSchedulesGet(t *testing.T) {
 	s := inmem.Seeded()
-	uc, _ := newSchedules(s)
+	uc := newSchedules(s)
 	ctx := editorCtx()
 
 	created, err := uc.Create(ctx, facilityID, visitSlot(validVisit()))

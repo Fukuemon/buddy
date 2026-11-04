@@ -8,7 +8,7 @@ import (
 )
 
 // ScheduleApp は、予定のハンドラが使う操作である。
-// 組み立ての場所が、schedule の操作の型の Do を入れる。入れていない操作を呼ぶと panic する（ADR-0031）。
+// 組み立ての場所が、schedule と scheduleview の操作の型の Do を入れる。入れていない操作を呼ぶと panic する（ADR-0031）。
 type ScheduleApp struct {
 	ListTypes        func(ctx context.Context) ([]schedule.Type, error)
 	Get              func(ctx context.Context, id string) (schedule.Detail, error)

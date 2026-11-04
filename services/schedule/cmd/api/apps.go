@@ -10,6 +10,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi"
@@ -108,7 +109,7 @@ func staffApp(
 	}
 }
 
-// scheduleApp は、schedule の操作の型を作り、ScheduleApp に入れる。exports が nil なら、予定の変更を書き出しの待ちに積まない。
+// scheduleApp は、schedule と scheduleview の操作の型を作り、ScheduleApp に入れる。exports が nil なら、予定の変更を書き出しの待ちに積まない。
 func scheduleApp(
 	facilities kernel.Finder[organization.Facility],
 	staffRefs schedule.StaffRefs,
@@ -122,9 +123,9 @@ func scheduleApp(
 ) httpapi.ScheduleApp {
 	return httpapi.ScheduleApp{
 		ListTypes:        schedule.NewListTypes(types).Do,
-		Get:              schedule.NewGet(schedules, staffRefs).Do,
-		GetRecurring:     schedule.NewGetRecurring(recurring, staffRefs).Do,
-		List:             schedule.NewList(facilities, schedules, recurring, staffRefs).Do,
+		Get:              scheduleview.NewGet(schedules, staffRefs).Do,
+		GetRecurring:     scheduleview.NewGetRecurring(recurring, staffRefs).Do,
+		List:             scheduleview.NewList(facilities, schedules, recurring, staffRefs).Do,
 		Create:           schedule.NewCreate(facilities, schedules, types, staffRefs, visits, nil, exports, tx, ids).Do,
 		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, staffRefs, visits, nil, recurring, exports, tx, ids).Do,
 		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, staffRefs, schedules, types, visits, nil, exports, tx, ids).Do,

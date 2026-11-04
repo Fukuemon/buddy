@@ -41,7 +41,7 @@ func (s ChangeOccurrence) Do(ctx context.Context, recurringScheduleID string, or
 	if err != nil {
 		return Detail{}, err
 	}
-	if err := requireScheduleAccess(ctx, s.staff, rs.StaffID, true); err != nil {
+	if err := RequireScheduleAccess(ctx, s.staff, rs.StaffID, true); err != nil {
 		return Detail{}, err
 	}
 	if !rs.HasOccurrenceOn(originalDate) {

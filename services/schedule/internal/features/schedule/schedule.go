@@ -175,3 +175,9 @@ func (q ListQuery) Validate() error {
 	}
 	return nil
 }
+
+// Listing は、事業所の単発の予定と繰り返しの予定である。
+type Listing struct {
+	Schedules          []Detail
+	RecurringSchedules []RecurringDetail
+}
