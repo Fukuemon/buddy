@@ -116,3 +116,7 @@ SELECT count(*)::int AS pending_count,
        COALESCE(EXTRACT(EPOCH FROM now() - min(created_at)), 0)::float8 AS oldest_age_seconds
 FROM calendar_exports
 WHERE status = 'pending';
+
+-- name: GetCalendarExportFacilityID :one
+-- access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
+SELECT facility_id FROM calendar_exports WHERE id = $1;

@@ -1,4 +1,5 @@
 // Package access は、検証したトークンから職員を特定する手順と、パスの ID が指すリソースが属する事業所を引く手順を持つ。
+// 機能のパッケージを import せず、ほかの機能のデータは、事業所と職員の認可に要る項目だけを小さなインターフェースで読む。
 package access
 
 import (
@@ -7,39 +8,31 @@ import (
 	"fmt"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
-	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
 )
 
-// Facilities は、組織に結び付けた事業所を読む。見つからないときは apperr.ErrNotFound を返す。
+// Facilities は、組織に結び付けた事業所の ID を読む。見つからないときは apperr.ErrNotFound を返す。
 type Facilities interface {
-	GetByOrgID(ctx context.Context, orgID string) (organization.Facility, error)
+	GetIDByOrgID(ctx context.Context, orgID string) (string, error)
 }
 
-// Staff は、トークンの sub から職員を探す。各メソッドの約束は staff.Repository と同じである。
+// Staff は、トークンの sub から職員を探し、認可に要る項目を読む。見つからないときは apperr.ErrNotFound を返す。
 type Staff interface {
 	FindIDBySub(ctx context.Context, sub string) (string, error)
-	Get(ctx context.Context, id string) (staff.Detail, error)
+	GetPrincipal(ctx context.Context, id string) (principal.Staff, error)
+}
+
+// FacilityReader は、ID が id のリソースが属する事業所の ID を読む。見つからないときは apperr.ErrNotFound を返す。
+type FacilityReader interface {
+	FacilityOf(ctx context.Context, id string) (string, error)
 }
 
 // Deps は、Service が使う、ほかの機能のデータを読む小さなインターフェースである。
+// Resources は、ResourceFacility を除くリソースの種類ごとに、事業所を読むものを持つ。
 type Deps struct {
-	Facilities  Facilities
-	Departments kernel.Finder[organization.Department]
-	Teams       kernel.Finder[organization.Team]
-	Positions   kernel.Finder[organization.Position]
-	Staff       Staff
-	StaffRefs   kernel.Finder[staff.Ref]
-	Patients    kernel.Finder[patient.Detail]
-	Schedules   kernel.Finder[scheduleview.Detail]
-	Recurring   kernel.Finder[scheduleview.RecurringDetail]
-	Calendars   kernel.Finder[calendar.ExternalCalendar]
-	Exports     kernel.Finder[calendar.Export]
+	Facilities Facilities
+	Staff      Staff
+	Resources  map[Resource]FacilityReader
 }
 
 // Resource は、パスの ID が指すリソースの種類である。
@@ -76,7 +69,7 @@ func (a *Service) Authenticate(ctx context.Context, id principal.Identity) (prin
 	if id.OrgID == "" {
 		return principal.Principal{}, fmt.Errorf("%w: トークンに組織がありません", apperr.ErrForbidden)
 	}
-	f, err := a.deps.Facilities.GetByOrgID(ctx, id.OrgID)
+	facilityID, err := a.deps.Facilities.GetIDByOrgID(ctx, id.OrgID)
 	if errors.Is(err, apperr.ErrNotFound) {
 		return principal.Principal{}, fmt.Errorf("%w: 組織に結び付いた事業所がありません", apperr.ErrForbidden)
 	}
@@ -90,53 +83,28 @@ func (a *Service) Authenticate(ctx context.Context, id principal.Identity) (prin
 	if err != nil {
 		return principal.Principal{}, err
 	}
-	d, err := a.deps.Staff.Get(ctx, staffID)
+	s, err := a.deps.Staff.GetPrincipal(ctx, staffID)
 	if err != nil {
 		return principal.Principal{}, err
 	}
-	if d.FacilityID != f.ID {
+	if s.FacilityID != facilityID {
 		return principal.Principal{}, fmt.Errorf("%w: 職員の事業所が組織の事業所と違います", apperr.ErrForbidden)
 	}
-	if d.Status() != staff.StatusActive {
+	if !s.Active() {
 		return principal.Principal{}, fmt.Errorf("%w: 職員は休職か退職しています", apperr.ErrForbidden)
 	}
-	return principal.Principal{Staff: d}, nil
+	return principal.Principal{Staff: s}, nil
 }
 
 // FacilityOf は、種類 r の ID が id のリソースが属する事業所の ID を返す。ResourceFacility なら id をそのまま返す。
-// リソースが見つからないときは apperr.ErrNotFound を返す。
+// リソースが見つからないときは apperr.ErrNotFound を返す。Deps.Resources に r が無いときはエラーを返す。
 func (a *Service) FacilityOf(ctx context.Context, r Resource, id string) (string, error) {
-	switch r {
-	case ResourceFacility:
+	if r == ResourceFacility {
 		return id, nil
-	case ResourceDepartment:
-		d, err := a.deps.Departments.Get(ctx, id)
-		return d.FacilityID, err
-	case ResourceTeam:
-		t, err := a.deps.Teams.Get(ctx, id)
-		return t.FacilityID, err
-	case ResourcePosition:
-		p, err := a.deps.Positions.Get(ctx, id)
-		return p.FacilityID, err
-	case ResourceStaff:
-		s, err := a.deps.StaffRefs.Get(ctx, id)
-		return s.FacilityID, err
-	case ResourceSchedule:
-		s, err := a.deps.Schedules.Get(ctx, id)
-		return s.FacilityID, err
-	case ResourceRecurringSchedule:
-		s, err := a.deps.Recurring.Get(ctx, id)
-		return s.FacilityID, err
-	case ResourceExternalCalendar:
-		c, err := a.deps.Calendars.Get(ctx, id)
-		return c.FacilityID, err
-	case ResourceCalendarExport:
-		e, err := a.deps.Exports.Get(ctx, id)
-		return e.FacilityID, err
-	case ResourcePatient:
-		p, err := a.deps.Patients.Get(ctx, id)
-		return p.FacilityID, err
-	default:
+	}
+	reader, ok := a.deps.Resources[r]
+	if !ok {
 		return "", fmt.Errorf("事業所を求められないリソースの種類 %d です", r)
 	}
+	return reader.FacilityOf(ctx, id)
 }

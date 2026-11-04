@@ -189,6 +189,18 @@ func (q *Queries) GetCalendarExport(ctx context.Context, id string) (CalendarExp
 	return i, err
 }
 
+const getCalendarExportFacilityID = `-- name: GetCalendarExportFacilityID :one
+SELECT facility_id FROM calendar_exports WHERE id = $1
+`
+
+// access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
+func (q *Queries) GetCalendarExportFacilityID(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRow(ctx, getCalendarExportFacilityID, id)
+	var facility_id string
+	err := row.Scan(&facility_id)
+	return facility_id, err
+}
+
 const getOpenRecurringScheduleExport = `-- name: GetOpenRecurringScheduleExport :one
 SELECT id, facility_id, schedule_id, recurring_schedule_id, status, revision, attempts, next_attempt_at, locked_until, overwrite, error_code, finished_at, created_at, updated_at FROM calendar_exports WHERE recurring_schedule_id = $1 AND status <> 'succeeded'
 `

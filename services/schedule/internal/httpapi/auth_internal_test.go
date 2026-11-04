@@ -76,8 +76,8 @@ func (s stubAuth) Authenticate(context.Context, principal.Identity) (principal.P
 func (stubAuth) FacilityOf(context.Context, access.Resource, string) (string, error) { return "", nil }
 
 func TestAuthenticatePutsPrincipalInContext(t *testing.T) {
-	want := principal.Principal{Staff: staff.Detail{
-		Summary:  staff.Summary{Staff: staff.Staff{ID: "STAFF", FacilityID: "FACILITY"}},
+	want := principal.Principal{Staff: principal.Staff{
+		ID: "STAFF", FacilityID: "FACILITY",
 		Policies: []staff.PolicyGrant{{PolicyID: "POLICY", PolicyName: "すべてのカレンダーの閲覧"}},
 	}}
 	m := authMiddleware{verifier: stubVerifier{}, uc: stubAuth{principal: want}, log: slog.New(slog.NewTextHandler(io.Discard, nil))}

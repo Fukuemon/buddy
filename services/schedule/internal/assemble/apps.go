@@ -71,9 +71,13 @@ func newApps(r Repositories, accounts *gcal.Accounts, cfg config.API) httpapi.Ap
 		Calendars: calendarApp(r.calendars, calendarAccounts(accounts), r.staffRefs, r.facilities, r.patients, r.serviceCodes, r.scheduleTypes,
 			r.schedules, r.recurring, r.recurring, visitInfos, r.exports, r.tx, r.ids, principal.RequireStaffManage),
 		Auth: access.NewService(access.Deps{
-			Facilities: r.facilities, Departments: r.departments, Teams: r.teams, Positions: r.positions,
-			Staff: r.staff, StaffRefs: r.staffRefs, Patients: r.patients, Schedules: r.schedules, Recurring: r.recurring, Calendars: r.calendars,
-			Exports: r.exports,
+			Facilities: r.facilities, Staff: r.staff,
+			Resources: map[access.Resource]access.FacilityReader{
+				access.ResourceDepartment: r.departments, access.ResourceTeam: r.teams, access.ResourcePosition: r.positions,
+				access.ResourceStaff: r.staffRefs, access.ResourcePatient: r.patients,
+				access.ResourceSchedule: r.schedules, access.ResourceRecurringSchedule: r.recurring,
+				access.ResourceExternalCalendar: r.calendars, access.ResourceCalendarExport: r.exports,
+			},
 		}),
 	}
 }

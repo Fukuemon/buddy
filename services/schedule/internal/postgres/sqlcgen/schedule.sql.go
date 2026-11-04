@@ -195,6 +195,18 @@ func (q *Queries) GetRecurringScheduleDetail(ctx context.Context, id string) (Re
 	return i, err
 }
 
+const getRecurringScheduleFacilityID = `-- name: GetRecurringScheduleFacilityID :one
+SELECT facility_id FROM recurring_schedules WHERE id = $1
+`
+
+// access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
+func (q *Queries) GetRecurringScheduleFacilityID(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRow(ctx, getRecurringScheduleFacilityID, id)
+	var facility_id string
+	err := row.Scan(&facility_id)
+	return facility_id, err
+}
+
 const getReplacingScheduleID = `-- name: GetReplacingScheduleID :one
 SELECT id FROM schedules WHERE recurring_schedule_id = $1 AND original_date = $2
 `
@@ -251,6 +263,18 @@ func (q *Queries) GetScheduleDetail(ctx context.Context, id string) (ScheduleDet
 		&i.EndsNextDay,
 	)
 	return i, err
+}
+
+const getScheduleFacilityID = `-- name: GetScheduleFacilityID :one
+SELECT facility_id FROM schedules WHERE id = $1
+`
+
+// access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
+func (q *Queries) GetScheduleFacilityID(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRow(ctx, getScheduleFacilityID, id)
+	var facility_id string
+	err := row.Scan(&facility_id)
+	return facility_id, err
 }
 
 const getScheduleType = `-- name: GetScheduleType :one

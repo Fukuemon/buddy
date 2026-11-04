@@ -54,8 +54,8 @@ func newApp(e env, acc calendar.Accounts, locks calendar.FacilityLock) *app {
 }
 
 func manager() context.Context {
-	return principal.With(context.Background(), principal.Principal{Staff: staff.Detail{
-		Summary:  staff.Summary{Staff: staff.Staff{ID: inmem.StaffID, FacilityID: inmem.FacilityID}},
+	return principal.With(context.Background(), principal.Principal{Staff: principal.Staff{
+		ID: inmem.StaffID, FacilityID: inmem.FacilityID,
 		Policies: []staff.PolicyGrant{{PolicyCode: "staff.manage"}},
 	}})
 }

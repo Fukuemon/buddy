@@ -35,8 +35,8 @@ const (
 type flowAuth struct{ svc *access.Service }
 
 func (flowAuth) Authenticate(context.Context, principal.Identity) (principal.Principal, error) {
-	return principal.Principal{Staff: staff.Detail{
-		Summary:  staff.Summary{Staff: staff.Staff{ID: staffID, FacilityID: facilityID}},
+	return principal.Principal{Staff: principal.Staff{
+		ID: staffID, FacilityID: facilityID,
 		Policies: []staff.PolicyGrant{{PolicyCode: organization.ScheduleAllEdit}},
 	}}, nil
 }
@@ -84,7 +84,9 @@ func flowRouterWith(mode organization.SourceMode) http.Handler {
 		Cancel:           schedule.NewCancel(schedules, refs, facilities, nil, tx, ids).Do,
 		Update:           schedule.NewUpdate(schedules, refs, facilities, types, visits, nil, nil, tx).Do,
 	}
-	auth := flowAuth{svc: access.NewService(access.Deps{Schedules: schedules, Recurring: recurring})}
+	auth := flowAuth{svc: access.NewService(access.Deps{Resources: map[access.Resource]access.FacilityReader{
+		access.ResourceSchedule: schedules, access.ResourceRecurringSchedule: recurring,
+	}})}
 	return httpapi.NewRouter(httpapi.Apps{Schedules: app, Auth: auth}, httpapi.RouterConfig{
 		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
 		Verifier: testVerifier,

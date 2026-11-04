@@ -16,7 +16,6 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/access"
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
 )
 
@@ -77,7 +76,7 @@ func (fakeAuth) Authenticate(_ context.Context, id principal.Identity) (principa
 	if id.OrgID != testOrgID {
 		return principal.Principal{}, apperr.ErrForbidden
 	}
-	return principal.Principal{Staff: staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: staffID, FacilityID: facilityID}}}}, nil
+	return principal.Principal{Staff: principal.Staff{ID: staffID, FacilityID: facilityID}}, nil
 }
 
 func (fakeAuth) FacilityOf(_ context.Context, r access.Resource, id string) (string, error) {

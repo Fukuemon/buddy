@@ -164,3 +164,7 @@ SELECT id, facility_id, team_id, visits, leave_started_at, retired_at FROM users
 
 -- name: ListUserRefsByFacility :many
 SELECT id, facility_id, team_id, visits, leave_started_at, retired_at FROM users WHERE facility_id = $1 ORDER BY id;
+
+-- name: GetUserFacilityID :one
+-- access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
+SELECT facility_id FROM users WHERE id = $1;

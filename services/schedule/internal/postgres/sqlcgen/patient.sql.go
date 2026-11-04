@@ -101,6 +101,18 @@ func (q *Queries) GetPatient(ctx context.Context, id string) (GetPatientRow, err
 	return i, err
 }
 
+const getPatientFacilityID = `-- name: GetPatientFacilityID :one
+SELECT facility_id FROM patients WHERE id = $1
+`
+
+// access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
+func (q *Queries) GetPatientFacilityID(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRow(ctx, getPatientFacilityID, id)
+	var facility_id string
+	err := row.Scan(&facility_id)
+	return facility_id, err
+}
+
 const listPatientRecurringSchedulesFrom = `-- name: ListPatientRecurringSchedulesFrom :many
 SELECT r.id, r.date, r.end_date, r.start_time, r.end_time
 FROM recurring_schedules r

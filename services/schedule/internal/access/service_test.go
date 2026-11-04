@@ -47,9 +47,13 @@ func authStore() *inmem.Store {
 
 func newAuth(s *inmem.Store) *access.Service {
 	return access.NewService(access.Deps{
-		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s}, Teams: inmem.Teams{Store: s}, Positions: inmem.Positions{Store: s},
-		Staff: inmem.Staff{Store: s}, StaffRefs: inmem.StaffRefs{Store: s}, Patients: inmem.Patients{Store: s}, Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s},
-		Calendars: inmem.Calendars{Store: s}, Exports: inmem.Exports{Store: s},
+		Facilities: inmem.Facilities{Store: s}, Staff: inmem.Staff{Store: s},
+		Resources: map[access.Resource]access.FacilityReader{
+			access.ResourceDepartment: inmem.Departments{Store: s}, access.ResourceTeam: inmem.Teams{Store: s}, access.ResourcePosition: inmem.Positions{Store: s},
+			access.ResourceStaff: inmem.StaffRefs{Store: s}, access.ResourcePatient: inmem.Patients{Store: s},
+			access.ResourceSchedule: inmem.Schedules{Store: s}, access.ResourceRecurringSchedule: inmem.RecurringSchedules{Store: s},
+			access.ResourceExternalCalendar: inmem.Calendars{Store: s}, access.ResourceCalendarExport: inmem.Exports{Store: s},
+		},
 	})
 }
 

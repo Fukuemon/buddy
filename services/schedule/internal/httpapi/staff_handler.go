@@ -61,13 +61,17 @@ func toStaffDetail(d staff.Detail) openapi.StaffDetail {
 	}
 }
 
-// GetMe は、認証のミドルウェアが特定した職員を返す。
+// GetMe は、認証のミドルウェアが特定した職員の詳細を、staff の取得の操作で読んで返す。
 func (s server) GetMe(ctx context.Context, _ openapi.GetMeRequestObject) (openapi.GetMeResponseObject, error) {
 	p, ok := principal.From(ctx)
 	if !ok {
 		return nil, errors.New("認証のミドルウェアを通らずに GET /v1/me を呼びました")
 	}
-	return openapi.GetMe200JSONResponse(toStaffDetail(p.Staff)), nil
+	d, err := s.u.Staff.Get(ctx, p.Staff.ID)
+	if err != nil {
+		return nil, err
+	}
+	return openapi.GetMe200JSONResponse(toStaffDetail(d)), nil
 }
 
 func (s server) GetUser(ctx context.Context, req openapi.GetUserRequestObject) (openapi.GetUserResponseObject, error) {

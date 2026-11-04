@@ -149,8 +149,8 @@ func TestCalendarExportHoldAndResolve(t *testing.T) {
 // 同期の処理が表の制約に合う形で当てられることを確認する。
 func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
 	ctx := txContext(t)
-	ctx = principal.With(ctx, principal.Principal{Staff: staff.Detail{
-		Summary:  staff.Summary{Staff: staff.Staff{ID: seedAoki, FacilityID: seedFacility}},
+	ctx = principal.With(ctx, principal.Principal{Staff: principal.Staff{
+		ID: seedAoki, FacilityID: seedFacility,
 		Policies: []staff.PolicyGrant{{PolicyCode: organization.StaffManage}},
 	}})
 	ev := func(id, summary, start, end string) *calendarv3.Event {
@@ -275,8 +275,8 @@ func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
 // 利用者を変えずに今日以降へ動かす変更は当てないことを確認する（ADR-0021）。
 func TestCalendarSyncKeepsEndedPatientOnlyInPast(t *testing.T) {
 	ctx := txContext(t)
-	ctx = principal.With(ctx, principal.Principal{Staff: staff.Detail{
-		Summary:  staff.Summary{Staff: staff.Staff{ID: seedAoki, FacilityID: seedFacility}},
+	ctx = principal.With(ctx, principal.Principal{Staff: principal.Staff{
+		ID: seedAoki, FacilityID: seedFacility,
 		Policies: []staff.PolicyGrant{{PolicyCode: organization.StaffManage}},
 	}})
 	const futaba = "01M3TC67EREWP3ED55WDTKD23Z"

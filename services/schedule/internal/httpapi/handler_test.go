@@ -147,7 +147,9 @@ func (f *fakeStaff) Create(_ context.Context, in staff.CreateInput) (staff.Detai
 	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{NonVisiting: in.NonVisiting}}, Policies: []staff.PolicyGrant{}}, f.err
 }
 
-func (f *fakeStaff) Get(context.Context, string) (staff.Detail, error) { return staff.Detail{}, nil }
+func (f *fakeStaff) Get(_ context.Context, id string) (staff.Detail, error) {
+	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: id, FacilityID: facilityID}}}, nil
+}
 
 func (f *fakeStaff) List(_ context.Context, _ string, q staff.ListQuery) ([]staff.Summary, error) {
 	f.listCalls++

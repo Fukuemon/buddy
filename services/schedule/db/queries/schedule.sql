@@ -112,3 +112,11 @@ SELECT rs.id, rs.facility_id, rs.staff_id, rs.schedule_type_id, rs.date, rs.star
 FROM recurring_schedules rs
 LEFT JOIN visit_infos vi ON vi.id = rs.visit_info_id
 WHERE rs.id = $1;
+
+-- name: GetScheduleFacilityID :one
+-- access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
+SELECT facility_id FROM schedules WHERE id = $1;
+
+-- name: GetRecurringScheduleFacilityID :one
+-- access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
+SELECT facility_id FROM recurring_schedules WHERE id = $1;

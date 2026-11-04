@@ -282,8 +282,8 @@ func TestCalendarExportWritesStoredSchedules(t *testing.T) {
 // 予定の職員がカレンダーを結び付けていれば、書き出しの待ちを積むことを確認する。
 func TestScheduleWritesEnqueueExports(t *testing.T) {
 	base := txContext(t)
-	ctx := principal.With(base, principal.Principal{Staff: staff.Detail{
-		Summary:  staff.Summary{Staff: staff.Staff{ID: seedMori, FacilityID: seedFacility}},
+	ctx := principal.With(base, principal.Principal{Staff: principal.Staff{
+		ID: seedMori, FacilityID: seedFacility,
 		Policies: []staff.PolicyGrant{{PolicyCode: organization.ScheduleAllEdit}},
 	}})
 	calendars := NewCalendarRepository(testDB)

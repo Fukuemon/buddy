@@ -40,8 +40,8 @@ const (
 
 // editorCtx は、事業所の全ての予定を編集できる職員を持つ ctx を返す。権限の判定のほかのテストに使う。
 func editorCtx() context.Context {
-	return principal.With(context.Background(), principal.Principal{Staff: staff.Detail{
-		Summary:  staff.Summary{Staff: staff.Staff{ID: "EDITOR", FacilityID: facilityID}},
+	return principal.With(context.Background(), principal.Principal{Staff: principal.Staff{
+		ID: "EDITOR", FacilityID: facilityID,
 		Policies: []staff.PolicyGrant{{PolicyCode: organization.ScheduleAllEdit}},
 	}})
 }
