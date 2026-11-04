@@ -256,6 +256,18 @@ func (q *Queries) GetExternalCalendar(ctx context.Context, id string) (ExternalC
 	return i, err
 }
 
+const getExternalCalendarFacilityID = `-- name: GetExternalCalendarFacilityID :one
+SELECT facility_id FROM external_calendars WHERE id = $1
+`
+
+// access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
+func (q *Queries) GetExternalCalendarFacilityID(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRow(ctx, getExternalCalendarFacilityID, id)
+	var facility_id string
+	err := row.Scan(&facility_id)
+	return facility_id, err
+}
+
 const getExternalEventLinkByRecurringSchedule = `-- name: GetExternalEventLinkByRecurringSchedule :one
 SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version FROM external_event_links WHERE recurring_schedule_id = $1
 `

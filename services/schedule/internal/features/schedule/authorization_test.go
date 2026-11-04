@@ -44,8 +44,8 @@ func authzStore() *inmem.Store {
 }
 
 func viewerCtx(grants ...staff.PolicyGrant) context.Context {
-	return principal.With(context.Background(), principal.Principal{Staff: staff.Detail{
-		Summary:  staff.Summary{Staff: staff.Staff{ID: viewerID, FacilityID: facilityID, TeamID: viewerTeam}},
+	return principal.With(context.Background(), principal.Principal{Staff: principal.Staff{
+		ID: viewerID, FacilityID: facilityID, TeamID: viewerTeam,
 		Policies: grants,
 	}})
 }

@@ -153,8 +153,8 @@ func TestCalendarRepository(t *testing.T) {
 // 訪問の情報、予定の対応を、テーブルの制約に合う形で書けることを確認する。
 func TestCalendarImportInOneTransaction(t *testing.T) {
 	ctx := txContext(t)
-	ctx = principal.With(ctx, principal.Principal{Staff: staff.Detail{
-		Summary:  staff.Summary{Staff: staff.Staff{ID: seedAoki, FacilityID: seedFacility}},
+	ctx = principal.With(ctx, principal.Principal{Staff: principal.Staff{
+		ID: seedAoki, FacilityID: seedFacility,
 		Policies: []staff.PolicyGrant{{PolicyCode: organization.StaffManage}},
 	}})
 	ev := func(id, summary, start, end string) *calendarv3.Event {

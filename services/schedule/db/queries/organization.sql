@@ -69,3 +69,15 @@ SELECT * FROM policies ORDER BY name, id;
 
 -- name: ListPoliciesByIDs :many
 SELECT * FROM policies WHERE id = ANY (sqlc.arg(ids)::text[]) ORDER BY name, id;
+
+-- name: GetDepartmentFacilityID :one
+-- access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
+SELECT facility_id FROM departments WHERE id = $1;
+
+-- name: GetTeamFacilityID :one
+-- access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
+SELECT facility_id FROM teams WHERE id = $1;
+
+-- name: GetPositionFacilityID :one
+-- access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
+SELECT facility_id FROM positions WHERE id = $1;

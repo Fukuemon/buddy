@@ -71,3 +71,7 @@ WHERE r.facility_id = sqlc.arg(facility_id)
   AND v.patient_id = sqlc.arg(patient_id)
   AND (r.end_date IS NULL OR r.end_date >= sqlc.arg(from_date)::date)
 ORDER BY r.date, r.start_time, r.id;
+
+-- name: GetPatientFacilityID :one
+-- access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
+SELECT facility_id FROM patients WHERE id = $1;

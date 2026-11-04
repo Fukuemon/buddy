@@ -19,9 +19,29 @@ type Identity struct {
 }
 
 // Principal は、リクエストを送った職員である。Staff.FacilityID は、トークンの組織に結び付けた事業所と一致する。
-// 権限は Staff.Policies にある。予定の閲覧と編集の判定は schedule の permission.go にある。
+// 権限は Staff.Policies にある。予定の閲覧と編集の判定は schedule の permission_service.go にある。
 type Principal struct {
-	Staff staff.Detail
+	Staff Staff
+}
+
+// Staff は、認可に要る職員の項目である。職員の名前や所属の名前のような表示の項目は持たない。
+// 表示の項目が要るときは、ID で staff の取得の操作を呼ぶ。
+type Staff struct {
+	ID         string
+	FacilityID string
+	TeamID     string
+	Status     staff.Status
+	Policies   []staff.PolicyGrant
+}
+
+// StaffOf は、職員の詳細 d から、認可に要る項目を写した Staff を返す。
+func StaffOf(d staff.Detail) Staff {
+	return Staff{ID: d.ID, FacilityID: d.FacilityID, TeamID: d.TeamID, Status: d.Status(), Policies: d.Policies}
+}
+
+// IsActive は、職員が休職も退職もしていないかを返す。
+func (s Staff) IsActive() bool {
+	return s.Status == staff.StatusActive
 }
 
 // CanManageStaff は、職員の権限を足し外し、役職を変えてよいかを返す。

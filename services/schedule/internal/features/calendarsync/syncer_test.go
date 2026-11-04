@@ -121,8 +121,8 @@ func newSyncEnv(t *testing.T) syncEnv {
 	s.Calendars[calID] = calendar.ExternalCalendar{ID: calID, FacilityID: inmem.FacilityID, StaffID: inmem.StaffID, Provider: calendar.ProviderGoogle, CalendarID: googleCalID}
 	// 外部の予定の ID を予定の ID から決めるので、予定の ID は ULID にする。
 	ids := ulid.Generator{}
-	ctx := principal.With(context.Background(), principal.Principal{Staff: staff.Detail{
-		Summary: staff.Summary{Staff: staff.Staff{ID: inmem.StaffID, FacilityID: inmem.FacilityID}},
+	ctx := principal.With(context.Background(), principal.Principal{Staff: principal.Staff{
+		ID: inmem.StaffID, FacilityID: inmem.FacilityID,
 		Policies: []staff.PolicyGrant{
 			{PolicyCode: organization.StaffManage}, {PolicyCode: organization.ScheduleAllEdit},
 		},

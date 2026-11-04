@@ -92,6 +92,18 @@ func (q *Queries) GetDepartment(ctx context.Context, id string) (Department, err
 	return i, err
 }
 
+const getDepartmentFacilityID = `-- name: GetDepartmentFacilityID :one
+SELECT facility_id FROM departments WHERE id = $1
+`
+
+// access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
+func (q *Queries) GetDepartmentFacilityID(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRow(ctx, getDepartmentFacilityID, id)
+	var facility_id string
+	err := row.Scan(&facility_id)
+	return facility_id, err
+}
+
 const getFacility = `-- name: GetFacility :one
 SELECT id, name, org_id, time_zone, created_at, updated_at, source_mode FROM facilities WHERE id = $1
 `
@@ -185,6 +197,18 @@ func (q *Queries) GetPosition(ctx context.Context, id string) (Position, error) 
 	return i, err
 }
 
+const getPositionFacilityID = `-- name: GetPositionFacilityID :one
+SELECT facility_id FROM positions WHERE id = $1
+`
+
+// access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
+func (q *Queries) GetPositionFacilityID(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRow(ctx, getPositionFacilityID, id)
+	var facility_id string
+	err := row.Scan(&facility_id)
+	return facility_id, err
+}
+
 const getTeam = `-- name: GetTeam :one
 SELECT id, facility_id, name, created_at, updated_at, color FROM teams WHERE id = $1
 `
@@ -201,6 +225,18 @@ func (q *Queries) GetTeam(ctx context.Context, id string) (Team, error) {
 		&i.Color,
 	)
 	return i, err
+}
+
+const getTeamFacilityID = `-- name: GetTeamFacilityID :one
+SELECT facility_id FROM teams WHERE id = $1
+`
+
+// access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
+func (q *Queries) GetTeamFacilityID(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRow(ctx, getTeamFacilityID, id)
+	var facility_id string
+	err := row.Scan(&facility_id)
+	return facility_id, err
 }
 
 const listDepartmentsByFacility = `-- name: ListDepartmentsByFacility :many

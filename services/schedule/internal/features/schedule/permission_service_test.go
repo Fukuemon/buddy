@@ -16,8 +16,8 @@ const (
 )
 
 func subject(grants ...staff.PolicyGrant) principal.Principal {
-	return principal.Principal{Staff: staff.Detail{
-		Summary:  staff.Summary{Staff: staff.Staff{ID: self, TeamID: selfTeam}},
+	return principal.Principal{Staff: principal.Staff{
+		ID: self, TeamID: selfTeam,
 		Policies: grants,
 	}}
 }

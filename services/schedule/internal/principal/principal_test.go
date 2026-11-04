@@ -12,8 +12,8 @@ import (
 )
 
 func subject(grants ...staff.PolicyGrant) principal.Principal {
-	return principal.Principal{Staff: staff.Detail{
-		Summary:  staff.Summary{Staff: staff.Staff{ID: "SELF", TeamID: "TEAM-A"}},
+	return principal.Principal{Staff: principal.Staff{
+		ID: "SELF", TeamID: "TEAM-A",
 		Policies: grants,
 	}}
 }

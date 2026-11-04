@@ -221,6 +221,18 @@ func (q *Queries) GetUser(ctx context.Context, id string) (GetUserRow, error) {
 	return i, err
 }
 
+const getUserFacilityID = `-- name: GetUserFacilityID :one
+SELECT facility_id FROM users WHERE id = $1
+`
+
+// access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
+func (q *Queries) GetUserFacilityID(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRow(ctx, getUserFacilityID, id)
+	var facility_id string
+	err := row.Scan(&facility_id)
+	return facility_id, err
+}
+
 const getUserIDBySub = `-- name: GetUserIDBySub :one
 SELECT id FROM users WHERE sub = $1
 `

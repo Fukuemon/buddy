@@ -87,6 +87,9 @@ status: stable
     - トランザクションは `tx.Transactor` で受ける。
     - アダプタを import しない。
     - `access` は機能のパッケージではないので、機能のパッケージの依存の規則の対象の外にする。
+    - `access` は機能のパッケージを直接 import しない。`principal` を通した `organization` と `staff` への依存は除く。
+      - パスの ID が指すリソースの事業所は、各リポジトリの `GetFacilityID` で事業所の ID だけを読む。
+      - 職員は、認可に要る項目だけを持つ `principal.Staff` で読む。
   - `config` は DB のアダプタを import しない。
     - `assemble` と `cmd/migrate` が `config` の値をアダプタの設定にコピーする。
   - `postgres`、`ulid`、`gcal`、`broker` は、機能のパッケージと `access` のインターフェースを実装する。
@@ -108,6 +111,7 @@ status: stable
 - 2 つの Go の API と ID ブローカーの次の規則は、golangci-lint の depguard が止める。設定は各サービスの `.golangci.yml` にある。
   - 予定の API の機能のパッケージの間の順と、機能のパッケージから `principal`（`schedule`、`scheduleview`、`calendarimport` を除く）、アダプタ、`access`、`config` への import
   - 予定の API の共通のパッケージから、標準ライブラリと共通のパッケージ以外（外のモジュールを含む）への import
+  - 予定の API の `access` から機能のパッケージへの import
   - 予定の API の `httpapi` と `config` から `postgres` への import、`httpapi` から `packages/go/oidc` への import、テストのファイル以外から `inmem` への import
   - 予定の API の `cmd/api` と `cmd/calendar-worker` から機能のパッケージ、アダプタ、`access`、`principal` への import と、`cmd` 以外から `assemble` への import
   - 照合の API の段の順
