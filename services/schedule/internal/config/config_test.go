@@ -16,7 +16,7 @@ func env(m map[string]string) func(string) string {
 }
 
 func TestLoad(t *testing.T) {
-	c, err := config.Load(env(map[string]string{
+	c, err := config.LoadAPI(env(map[string]string{
 		"DB_USER": "app", "DB_PASSWORD": "secret", "DB_NAME": "buddy",
 		"OIDC_ISSUER": "https://auth.example.com/realms/buddy", "OIDC_AUDIENCE": "schedule", "BROKER_URL": "http://broker:8080", "BROKER_TOKEN_URL": "http://hydra:4444/oauth2/token", "BROKER_CLIENT_SECRET": "broker-secret",
 		"CORS_ALLOW_ORIGINS": "http://localhost:3000, http://localhost:5173", "LOG_LEVEL": "debug",
@@ -42,7 +42,7 @@ func TestLoad(t *testing.T) {
 }
 
 func TestLoadAllVariables(t *testing.T) {
-	c, err := config.Load(env(map[string]string{
+	c, err := config.LoadAPI(env(map[string]string{
 		"PORT": "9090", "DB_HOST": "db", "DB_PORT": "15432", "DB_USER": "app", "DB_PASSWORD": "secret", "DB_NAME": "buddy",
 		"OIDC_ISSUER": "http://idp:9000", "OIDC_AUDIENCE": "schedule", "OIDC_ORG_CLAIM": "organization",
 		"CORS_ALLOW_ORIGINS": "http://localhost:3000", "LOG_LEVEL": "warn",
@@ -76,7 +76,7 @@ func TestLoadAllVariables(t *testing.T) {
 }
 
 func TestLoadCalendar(t *testing.T) {
-	c, err := config.Load(env(map[string]string{
+	c, err := config.LoadAPI(env(map[string]string{
 		"DB_USER": "app", "DB_PASSWORD": "secret", "DB_NAME": "buddy",
 		"OIDC_ISSUER": "http://localhost:9000", "OIDC_AUDIENCE": "schedule", "BROKER_URL": "http://broker:8080", "BROKER_TOKEN_URL": "http://hydra:4444/oauth2/token", "BROKER_CLIENT_SECRET": "broker-secret",
 		"GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE": " /config/accounts.json ", "GOOGLE_CALENDAR_ENDPOINT": "http://gcalhold:8080/calendar/v3/",
@@ -115,7 +115,7 @@ func TestLoadErrors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := maps.Clone(base)
 			tt.edit(m)
-			_, err := config.Load(env(m))
+			_, err := config.LoadAPI(env(m))
 			if err == nil || !strings.Contains(err.Error(), tt.want) {
 				t.Fatalf("err = %v, want %q を含む", err, tt.want)
 			}
@@ -127,7 +127,7 @@ func TestLoadErrors(t *testing.T) {
 }
 
 func TestLoadOrgClaim(t *testing.T) {
-	c, err := config.Load(env(map[string]string{
+	c, err := config.LoadAPI(env(map[string]string{
 		"DB_USER": "app", "DB_PASSWORD": "secret", "DB_NAME": "buddy",
 		"OIDC_ISSUER": "http://localhost:9000", "OIDC_AUDIENCE": "schedule", "BROKER_URL": "http://broker:8080", "BROKER_TOKEN_URL": "http://hydra:4444/oauth2/token", "BROKER_CLIENT_SECRET": "broker-secret", "OIDC_ORG_CLAIM": "organization",
 	}))
@@ -164,22 +164,22 @@ func TestLoadExportInterval(t *testing.T) {
 			return base[k]
 		}
 	}
-	c, err := config.Load(getenv(nil))
+	c, err := config.LoadAPI(getenv(nil))
 	if err != nil || c.Calendar.ExportInterval != 30*time.Second {
 		t.Fatalf("デフォルトの間隔 = %v, %v", c.Calendar.ExportInterval, err)
 	}
-	c, err = config.Load(getenv(map[string]string{"GOOGLE_CALENDAR_EXPORT_INTERVAL": "2s"}))
+	c, err = config.LoadAPI(getenv(map[string]string{"GOOGLE_CALENDAR_EXPORT_INTERVAL": "2s"}))
 	if err != nil || c.Calendar.ExportInterval != 2*time.Second {
 		t.Errorf("2s = %v, %v", c.Calendar.ExportInterval, err)
 	}
-	c, err = config.Load(getenv(map[string]string{"GOOGLE_CALENDAR_EXPORT_ENABLED": "true", "GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE": "/config/accounts.json"}))
+	c, err = config.LoadAPI(getenv(map[string]string{"GOOGLE_CALENDAR_EXPORT_ENABLED": "true", "GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE": "/config/accounts.json"}))
 	if err != nil || !c.Calendar.ExportEnabled {
 		t.Errorf("書き出しを有効にする = %v, %v", c.Calendar.ExportEnabled, err)
 	}
 	if c.Calendar.SyncEnabled || c.Calendar.SyncInterval != 2*time.Minute {
 		t.Errorf("デフォルトの同期 = %v, %v", c.Calendar.SyncEnabled, c.Calendar.SyncInterval)
 	}
-	c, err = config.Load(getenv(map[string]string{
+	c, err = config.LoadAPI(getenv(map[string]string{
 		"GOOGLE_CALENDAR_EXPORT_ENABLED": "true", "GOOGLE_CALENDAR_SYNC_ENABLED": "true", "GOOGLE_CALENDAR_SYNC_INTERVAL": "3m",
 		"GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE": "/config/accounts.json",
 	}))
@@ -192,13 +192,64 @@ func TestLoadExportInterval(t *testing.T) {
 		{"GOOGLE_CALENDAR_SYNC_ENABLED": "true", "GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE": "/config/accounts.json"},
 		{"GOOGLE_CALENDAR_SYNC_INTERVAL": "500ms"},
 	} {
-		if _, err := config.Load(getenv(extra)); err == nil {
+		if _, err := config.LoadAPI(getenv(extra)); err == nil {
 			t.Errorf("%v を受けた", extra)
 		}
 	}
 	for _, v := range []string{"500ms", "soon"} {
-		if _, err := config.Load(getenv(map[string]string{"GOOGLE_CALENDAR_EXPORT_INTERVAL": v})); err == nil {
+		if _, err := config.LoadAPI(getenv(map[string]string{"GOOGLE_CALENDAR_EXPORT_INTERVAL": v})); err == nil {
 			t.Errorf("%s を受けた", v)
 		}
+	}
+}
+
+func TestLoadWorkerDoesNotRequireOIDCOrBroker(t *testing.T) {
+	c, err := config.LoadWorker(env(map[string]string{
+		"DB_HOST": "db", "DB_USER": "app", "DB_PASSWORD": "secret", "DB_NAME": "buddy", "LOG_LEVEL": "debug",
+		"GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE": "/config/accounts.json", "GOOGLE_CALENDAR_EXPORT_ENABLED": "true",
+		"GOOGLE_CALENDAR_SYNC_ENABLED": "true", "GOOGLE_CALENDAR_SYNC_INTERVAL": "1m",
+		"PORT": "http", "CORS_ALLOW_ORIGINS": "http://localhost:3000",
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := config.Worker{
+		DB:       config.DB{Host: "db", Port: "5432", User: "app", Password: "secret", Name: "buddy"},
+		LogLevel: slog.LevelDebug,
+		Calendar: config.Calendar{
+			ServiceAccountsFile: "/config/accounts.json", ExportEnabled: true, ExportInterval: 30 * time.Second,
+			SyncEnabled: true, SyncInterval: time.Minute,
+		},
+	}
+	if c != want {
+		t.Errorf("got %+v, want %+v", c, want)
+	}
+}
+
+func TestLoadWorkerErrors(t *testing.T) {
+	base := map[string]string{"DB_USER": "app", "DB_PASSWORD": "secret", "DB_NAME": "buddy"}
+	tests := []struct {
+		name string
+		edit func(map[string]string)
+		want string
+	}{
+		{name: "全部ない", edit: func(m map[string]string) { clear(m) }, want: "環境変数 DB_USER, DB_PASSWORD, DB_NAME が必要です"},
+		{name: "DB のポートが数でない", edit: func(m map[string]string) { m["DB_PORT"] = "db" }, want: "ポート"},
+		{name: "ログの水準", edit: func(m map[string]string) { m["LOG_LEVEL"] = "verbose" }, want: "LOG_LEVEL"},
+		{name: "サービスアカウントの無い書き出し", edit: func(m map[string]string) { m["GOOGLE_CALENDAR_EXPORT_ENABLED"] = "true" }, want: "GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE"},
+		{name: "書き出しの無い同期", edit: func(m map[string]string) {
+			m["GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE"] = "/config/accounts.json"
+			m["GOOGLE_CALENDAR_SYNC_ENABLED"] = "true"
+		}, want: "GOOGLE_CALENDAR_EXPORT_ENABLED"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := maps.Clone(base)
+			tt.edit(m)
+			_, err := config.LoadWorker(env(m))
+			if err == nil || !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("err = %v, want %q を含む", err, tt.want)
+			}
+		})
 	}
 }

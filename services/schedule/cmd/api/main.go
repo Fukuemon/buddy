@@ -1,6 +1,7 @@
 // Command api は、予定の API の HTTP サーバーを起動する。SIGINT か SIGTERM を受けると、
-// 処理中のリクエストを最大 30 秒待ってから止まる。設定は internal/config の Load が読む環境変数である。
+// 処理中のリクエストを最大 30 秒待ってから止まる。設定は internal/config の LoadAPI が読む環境変数である。
 // `api healthcheck` は、サーバーを起動せず、動いているサーバーの GET /readyz を確認して終わる。
+// 組み立ては internal/assemble にあり、このコマンドはサーバーと、Google カレンダーの書き出しと同期の処理を起動して止める。
 package main
 
 import (
@@ -14,26 +15,11 @@ import (
 	"syscall"
 	"time"
 
-	calendarv3 "google.golang.org/api/calendar/v3"
-
-	"github.com/Fukuemon/buddy/packages/go/gcalauth"
 	"github.com/Fukuemon/buddy/packages/go/healthcheck"
 	"github.com/Fukuemon/buddy/packages/go/oidc"
 
-	"github.com/Fukuemon/buddy/services/schedule/internal/access"
-	"github.com/Fukuemon/buddy/services/schedule/internal/broker"
+	"github.com/Fukuemon/buddy/services/schedule/internal/assemble"
 	"github.com/Fukuemon/buddy/services/schedule/internal/config"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
-	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
-	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi"
-	"github.com/Fukuemon/buddy/services/schedule/internal/postgres"
-	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
-	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
 
 const (
@@ -52,7 +38,7 @@ func main() {
 }
 
 func run() error {
-	cfg, err := config.Load(os.Getenv)
+	cfg, err := config.LoadAPI(os.Getenv)
 	if err != nil {
 		return err
 	}
@@ -61,7 +47,7 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	db, err := postgres.Open(ctx, postgres.Config(cfg.DB))
+	db, err := assemble.OpenDB(ctx, cfg.DB)
 	if err != nil {
 		return err
 	}
@@ -72,64 +58,19 @@ func run() error {
 		return err
 	}
 
-	tx := postgres.NewTransactor(db)
-	ids := ulid.Generator{}
-	facilities := postgres.NewFacilityRepository(db)
-	accounts, err := newCalendarAccounts(ctx, cfg.Calendar, func(ctx context.Context, facilityID string) (string, error) {
-		f, err := facilities.Get(ctx, facilityID)
-		return f.OrgID, err
-	})
+	repos := assemble.NewRepositories(db)
+	accounts, err := assemble.NewCalendarAccounts(ctx, cfg.Calendar, repos)
 	if err != nil {
 		return err
 	}
-	departments := postgres.NewDepartmentRepository(db)
-	teams := postgres.NewTeamRepository(db)
-	positions := postgres.NewPositionRepository(db)
-	policies := postgres.NewPolicyRepository(db)
-	staffRepo := postgres.NewStaffRepository(db)
-	staffRefs := postgres.NewStaffRefRepository(db)
-	patients := postgres.NewPatientRepository(db)
-	visitMasters := postgres.NewVisitMasterRepository(db)
-	schedules := postgres.NewScheduleRepository(db)
-	recurring := postgres.NewRecurringScheduleRepository(db)
-	scheduleTypes := postgres.NewScheduleTypeRepository(db)
-	calendars := postgres.NewCalendarRepository(db)
-	exports := postgres.NewCalendarExportRepository(db)
-	var outbox schedule.Exports
-	if cfg.Calendar.ExportEnabled {
-		outbox = calendarexport.NewOutbox(exports, calendars, ids)
-	}
-	visitInfos := visit.NewWriter(visit.WriterDeps{
-		Staff:    staffRefs,
-		Patients: patient.VisitFinder(patients),
-		Infos:    postgres.NewVisitInfoRepository(db),
-		Masters:  visitMasters,
-	}, ids)
-
-	router := httpapi.NewRouter(httpapi.Apps{
-		Organization: organizationApp(facilities, departments, teams, positions, policies, tx, ids, principal.RequireStaffManage),
-		Staff: staffApp(facilities, departments, teams, positions, policies, staffRepo, facilities,
-			broker.New(broker.Config(cfg.Broker), nil), postgres.NewStaffAssignmentReader(db), calendars,
-			func(ctx context.Context) (string, bool) {
-				p, ok := principal.From(ctx)
-				return p.Staff.ID, ok
-			},
-			tx, ids, principal.RequireStaffManage),
-		Patients:     patientApp(facilities, staffRefs, visitMasters, patients, postgres.NewPatientScheduleReader(db), facilities, tx, ids, principal.RequireStaffManage),
-		VisitMasters: visitMasterApp(visitMasters),
-		Schedules:    scheduleApp(facilities, staffRefs, facilities, visitInfos, schedules, recurring, scheduleTypes, outbox, tx, ids),
-		Calendars: calendarApp(calendars, calendarAccounts(accounts), staffRefs, facilities, patients, visitMasters, scheduleTypes,
-			schedules, recurring, recurring, visitInfos, exports, tx, ids, principal.RequireStaffManage),
-		Auth: access.NewService(access.Deps{
-			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions,
-			Staff: staffRepo, StaffRefs: staffRefs, Patients: patients, Schedules: schedules, Recurring: recurring, Calendars: calendars,
-			Exports: exports,
-		}),
-	}, httpapi.RouterConfig{Logger: log, AllowOrigins: cfg.AllowOrigins, Verifier: tokenVerifier{verifier}, Ready: func(ctx context.Context) error {
-		ctx, cancel := context.WithTimeout(ctx, readyTimeout)
-		defer cancel()
-		return db.Ping(ctx)
-	}})
+	router := assemble.NewHandler(repos, assemble.HandlerConfig{
+		API: cfg, Accounts: accounts, Verifier: verifier, Logger: log,
+		Ready: func(ctx context.Context) error {
+			ctx, cancel := context.WithTimeout(ctx, readyTimeout)
+			defer cancel()
+			return db.Ping(ctx)
+		},
+	})
 
 	srv := &http.Server{
 		Addr:              net.JoinHostPort("", cfg.Port),
@@ -148,9 +89,7 @@ func run() error {
 	// 書き出しと同期の処理は、止まる合図の後、取った待ちとカレンダーの結果を書いてから止まる。DB を閉じる前に止めて待つ。
 	exporterDone, syncerDone := make(chan struct{}), make(chan struct{})
 	if accounts != nil && cfg.Calendar.ExportEnabled {
-		exporter := calendarexport.NewExporter(calendarexport.ExporterDeps{
-			Exports: exports, Calendars: calendars, Writers: accounts.Writer, Schedules: schedules, Recurring: recurring,
-		}, ids, log)
+		exporter := assemble.NewExporter(repos, accounts, log)
 		go func() {
 			defer close(exporterDone)
 			exporter.Run(ctx, cfg.Calendar.ExportInterval)
@@ -159,11 +98,7 @@ func run() error {
 		close(exporterDone)
 	}
 	if accounts != nil && cfg.Calendar.SyncEnabled {
-		syncer := calendarsync.NewSyncer(calendarsync.SyncerDeps{
-			Syncs: postgres.NewCalendarSyncRepository(db), Calendars: calendars, Staff: staffRefs, Locks: facilities, Exports: exports,
-			Sources:   accounts.Source,
-			Schedules: schedules, Recurring: recurring, Types: scheduleTypes, Patients: patients, ServiceCodes: visitMasters, Visits: visitInfos,
-		}, tx, ids, cfg.Calendar.SyncInterval, log)
+		syncer := assemble.NewSyncer(repos, accounts, cfg.Calendar.SyncInterval, log)
 		go func() {
 			defer close(syncerDone)
 			syncer.Run(ctx)
@@ -192,44 +127,4 @@ func run() error {
 		return err
 	}
 	return nil
-}
-
-// newCalendarAccounts は、事業所の組織のサービスアカウントで Google カレンダーを読み書きする gcal.Accounts を返す。
-// サービスアカウントの設定が無ければ nil を返す。認証は Application Default Credentials で読み、事業所のアカウントになりすます。
-// ローカル環境の calendarpit に向けるときは、GOOGLE_APPLICATION_CREDENTIALS の認証情報をなりすまさずに使い、無ければ認証をしない。
-// 予定を書き出すときは、スコープを calendar.events にする。書き出さないときは、読むだけの calendar.readonly にする。
-func newCalendarAccounts(ctx context.Context, cfg config.Calendar, orgOf gcal.OrgOf) (*gcal.Accounts, error) {
-	if cfg.ServiceAccountsFile == "" {
-		return nil, nil
-	}
-	accounts, err := gcalauth.LoadAccounts(cfg.ServiceAccountsFile)
-	if err != nil {
-		return nil, err
-	}
-	scope := calendarv3.CalendarReadonlyScope
-	if cfg.ExportEnabled {
-		scope = calendarv3.CalendarEventsScope
-	}
-	clients, err := gcalauth.New(ctx, gcalauth.Config{Accounts: accounts, Scope: scope, Endpoint: cfg.Endpoint})
-	if err != nil {
-		return nil, err
-	}
-	return gcal.NewAccounts(clients, orgOf), nil
-}
-
-// calendarAccounts は、設定が無いときに、nil の *gcal.Accounts を入れた calendar.Accounts でなく nil を返す。
-func calendarAccounts(a *gcal.Accounts) calendar.Accounts {
-	if a == nil {
-		return nil
-	}
-	return a
-}
-
-// tokenVerifier は、共有の oidc.Verifier を httpapi.TokenVerifier にする。httpapi は oidc を import しないので、主張の型をここで写す。
-type tokenVerifier struct{ v *oidc.Verifier }
-
-// Verify は、トークンを検証し、主張を principal.Identity にして返す。
-func (t tokenVerifier) Verify(ctx context.Context, raw string) (principal.Identity, error) {
-	id, err := t.v.Verify(ctx, raw)
-	return principal.Identity{Subject: id.Subject, OrgID: id.OrgID}, err
 }

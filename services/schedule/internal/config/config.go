@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -13,7 +14,7 @@ import (
 	"github.com/Fukuemon/buddy/packages/go/oidc"
 )
 
-// DB は、DB への接続の値である。DB のアダプタは、cmd がこの値から自分の設定を作る。
+// DB は、DB への接続の値である。DB のアダプタの設定は、assemble と cmd/migrate がこの値から作る。
 type DB struct {
 	Host     string
 	Port     string
@@ -52,8 +53,8 @@ type Broker struct {
 	Audience string
 }
 
-// Config は、API とマイグレーションの設定である。
-type Config struct {
+// API は、予定の API の HTTP サーバーの設定である。
+type API struct {
 	Port         string
 	DB           DB
 	OIDC         oidc.Config
@@ -63,7 +64,14 @@ type Config struct {
 	Broker       Broker
 }
 
-// Load は、getenv（本番では os.Getenv）から設定を読む。DB_USER、DB_PASSWORD、DB_NAME、OIDC_ISSUER、
+// Worker は、Google カレンダーの書き出しと同期を動かす実行の単位の設定である。HTTP のサーバー、OIDC、ブローカーの値を持たない。
+type Worker struct {
+	DB       DB
+	LogLevel slog.Level
+	Calendar Calendar
+}
+
+// LoadAPI は、getenv（本番では os.Getenv）から予定の API の設定を読む。DB_USER、DB_PASSWORD、DB_NAME、OIDC_ISSUER、
 // OIDC_AUDIENCE、BROKER_URL、BROKER_TOKEN_URL、BROKER_CLIENT_SECRET は必須で、欠けているときは欠けた名前を並べたエラーを返す。
 // パスワードと client secret にデフォルト値はない。
 //
@@ -92,32 +100,51 @@ type Config struct {
 //   - GOOGLE_CALENDAR_SYNC_ENABLED: true なら、Google カレンダーの変更を buddy の予定に当てる。デフォルトは false。
 //     GOOGLE_CALENDAR_EXPORT_ENABLED を true にして渡す
 //   - GOOGLE_CALENDAR_SYNC_INTERVAL: Google カレンダーの変わった予定を読む間隔（Go の時間の書式）。デフォルトは 2m。1s 以上にする
-func Load(getenv func(string) string) (Config, error) {
+func LoadAPI(getenv func(string) string) (API, error) {
 	return load(getenv, true)
 }
 
-// LoadDB は、Load と同じ規則で DB の接続の値だけを読む。マイグレーションのコマンドが使い、OIDC の環境変数を求めない。
+// LoadWorker は、LoadAPI と同じ規則とデフォルト値で、DB_ と GOOGLE_CALENDAR_ で始まる変数と LOG_LEVEL だけを読む。
+// 必須は DB_USER、DB_PASSWORD、DB_NAME だけで、OIDC、ブローカー、PORT、CORS_ALLOW_ORIGINS の変数を読まない。
+func LoadWorker(getenv func(string) string) (Worker, error) {
+	db := dbOf(getenv)
+	if err := requireVars(getenv, dbRequired); err != nil {
+		return Worker{}, err
+	}
+	if err := validatePort(db.Port); err != nil {
+		return Worker{}, err
+	}
+	level, err := logLevelOf(getenv)
+	if err != nil {
+		return Worker{}, err
+	}
+	cal, err := calendarOf(getenv)
+	if err != nil {
+		return Worker{}, err
+	}
+	return Worker{DB: db, LogLevel: level, Calendar: cal}, nil
+}
+
+// LoadDB は、LoadAPI と同じ規則で DB の接続の値だけを読む。マイグレーションのコマンドが使い、OIDC の環境変数を求めない。
 func LoadDB(getenv func(string) string) (DB, error) {
 	c, err := load(getenv, false)
 	return c.DB, err
 }
 
-func load(getenv func(string) string, includesAPI bool) (Config, error) {
-	get := func(key, def string) string {
-		if v := getenv(key); v != "" {
-			return v
-		}
-		return def
+var dbRequired = []string{"DB_USER", "DB_PASSWORD", "DB_NAME"}
+
+func getOr(getenv func(string) string, key, def string) string {
+	if v := getenv(key); v != "" {
+		return v
 	}
-	c := Config{
+	return def
+}
+
+func load(getenv func(string) string, includesAPI bool) (API, error) {
+	get := func(key, def string) string { return getOr(getenv, key, def) }
+	c := API{
 		Port: get("PORT", "8080"),
-		DB: DB{
-			Host:     get("DB_HOST", "localhost"),
-			Port:     get("DB_PORT", "5432"),
-			User:     getenv("DB_USER"),
-			Password: getenv("DB_PASSWORD"),
-			Name:     getenv("DB_NAME"),
-		},
+		DB:   dbOf(getenv),
 		OIDC: oidc.Config{
 			Issuer:   getenv("OIDC_ISSUER"),
 			Audience: getenv("OIDC_AUDIENCE"),
@@ -131,22 +158,16 @@ func load(getenv func(string) string, includesAPI bool) (Config, error) {
 			Audience:     get("BROKER_AUDIENCE", "broker"),
 		},
 	}
-	required := []string{"DB_USER", "DB_PASSWORD", "DB_NAME"}
+	required := dbRequired
 	if includesAPI {
-		required = append(required, "OIDC_ISSUER", "OIDC_AUDIENCE", "BROKER_URL", "BROKER_TOKEN_URL", "BROKER_CLIENT_SECRET")
+		required = append(slices.Clone(required), "OIDC_ISSUER", "OIDC_AUDIENCE", "BROKER_URL", "BROKER_TOKEN_URL", "BROKER_CLIENT_SECRET")
 	}
-	var missingNames []string
-	for _, key := range required {
-		if getenv(key) == "" {
-			missingNames = append(missingNames, key)
-		}
-	}
-	if len(missingNames) > 0 {
-		return Config{}, fmt.Errorf("環境変数 %s が必要です", strings.Join(missingNames, ", "))
+	if err := requireVars(getenv, required); err != nil {
+		return API{}, err
 	}
 	for _, p := range []string{c.Port, c.DB.Port} {
-		if n, err := strconv.Atoi(p); err != nil || n < 1 || n > 65535 {
-			return Config{}, fmt.Errorf("ポート %q は 1 から 65535 の数です", p)
+		if err := validatePort(p); err != nil {
+			return API{}, err
 		}
 	}
 	if includesAPI {
@@ -156,7 +177,7 @@ func load(getenv func(string) string, includesAPI bool) (Config, error) {
 			{"BROKER_TOKEN_URL", c.Broker.TokenURL},
 		} {
 			if u, err := url.Parse(v.value); err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" {
-				return Config{}, fmt.Errorf("%s %q は http か https の URL です", v.key, v.value)
+				return API{}, fmt.Errorf("%s %q は http か https の URL です", v.key, v.value)
 			}
 		}
 	}
@@ -165,38 +186,84 @@ func load(getenv func(string) string, includesAPI bool) (Config, error) {
 			c.AllowOrigins = append(c.AllowOrigins, o)
 		}
 	}
-	if err := c.LogLevel.UnmarshalText([]byte(get("LOG_LEVEL", "info"))); err != nil {
-		return Config{}, errors.New("LOG_LEVEL は debug、info、warn、error のいずれかです")
+	var err error
+	if c.LogLevel, err = logLevelOf(getenv); err != nil {
+		return API{}, err
 	}
-	c.Calendar = Calendar{
+	if c.Calendar, err = calendarOf(getenv); err != nil {
+		return API{}, err
+	}
+	return c, nil
+}
+
+func dbOf(getenv func(string) string) DB {
+	return DB{
+		Host:     getOr(getenv, "DB_HOST", "localhost"),
+		Port:     getOr(getenv, "DB_PORT", "5432"),
+		User:     getenv("DB_USER"),
+		Password: getenv("DB_PASSWORD"),
+		Name:     getenv("DB_NAME"),
+	}
+}
+
+func requireVars(getenv func(string) string, keys []string) error {
+	var missingNames []string
+	for _, key := range keys {
+		if getenv(key) == "" {
+			missingNames = append(missingNames, key)
+		}
+	}
+	if len(missingNames) > 0 {
+		return fmt.Errorf("環境変数 %s が必要です", strings.Join(missingNames, ", "))
+	}
+	return nil
+}
+
+func validatePort(p string) error {
+	if n, err := strconv.Atoi(p); err != nil || n < 1 || n > 65535 {
+		return fmt.Errorf("ポート %q は 1 から 65535 の数です", p)
+	}
+	return nil
+}
+
+func logLevelOf(getenv func(string) string) (slog.Level, error) {
+	var level slog.Level
+	if err := level.UnmarshalText([]byte(getOr(getenv, "LOG_LEVEL", "info"))); err != nil {
+		return 0, errors.New("LOG_LEVEL は debug、info、warn、error のいずれかです")
+	}
+	return level, nil
+}
+
+func calendarOf(getenv func(string) string) (Calendar, error) {
+	c := Calendar{
 		ServiceAccountsFile: strings.TrimSpace(getenv("GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE")),
 		Endpoint:            strings.TrimSpace(getenv("GOOGLE_CALENDAR_ENDPOINT")),
 	}
-	interval, err := time.ParseDuration(get("GOOGLE_CALENDAR_EXPORT_INTERVAL", "30s"))
+	interval, err := time.ParseDuration(getOr(getenv, "GOOGLE_CALENDAR_EXPORT_INTERVAL", "30s"))
 	if err != nil || interval < time.Second {
-		return Config{}, errors.New("GOOGLE_CALENDAR_EXPORT_INTERVAL は 1s 以上の時間（例は 30s）です")
+		return Calendar{}, errors.New("GOOGLE_CALENDAR_EXPORT_INTERVAL は 1s 以上の時間（例は 30s）です")
 	}
-	c.Calendar.ExportInterval = interval
-	if c.Calendar.ExportEnabled, err = boolOf(getenv, "GOOGLE_CALENDAR_EXPORT_ENABLED"); err != nil {
-		return Config{}, err
+	c.ExportInterval = interval
+	if c.ExportEnabled, err = boolOf(getenv, "GOOGLE_CALENDAR_EXPORT_ENABLED"); err != nil {
+		return Calendar{}, err
 	}
-	if c.Calendar.ExportEnabled && c.Calendar.ServiceAccountsFile == "" {
-		return Config{}, errors.New("GOOGLE_CALENDAR_EXPORT_ENABLED は GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE と一緒に渡します")
+	if c.ExportEnabled && c.ServiceAccountsFile == "" {
+		return Calendar{}, errors.New("GOOGLE_CALENDAR_EXPORT_ENABLED は GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE と一緒に渡します")
 	}
-	syncInterval, err := time.ParseDuration(get("GOOGLE_CALENDAR_SYNC_INTERVAL", "2m"))
+	syncInterval, err := time.ParseDuration(getOr(getenv, "GOOGLE_CALENDAR_SYNC_INTERVAL", "2m"))
 	if err != nil || syncInterval < time.Second {
-		return Config{}, errors.New("GOOGLE_CALENDAR_SYNC_INTERVAL は 1s 以上の時間（例は 2m）です")
+		return Calendar{}, errors.New("GOOGLE_CALENDAR_SYNC_INTERVAL は 1s 以上の時間（例は 2m）です")
 	}
-	c.Calendar.SyncInterval = syncInterval
-	if c.Calendar.SyncEnabled, err = boolOf(getenv, "GOOGLE_CALENDAR_SYNC_ENABLED"); err != nil {
-		return Config{}, err
+	c.SyncInterval = syncInterval
+	if c.SyncEnabled, err = boolOf(getenv, "GOOGLE_CALENDAR_SYNC_ENABLED"); err != nil {
+		return Calendar{}, err
 	}
 	// buddy の変更を書き出さずに Google の変更だけを当てると、buddy で変えた予定は全て両方の変更になり、確認が必要な予定に出続ける。
-	if c.Calendar.SyncEnabled && !c.Calendar.ExportEnabled {
-		return Config{}, errors.New("GOOGLE_CALENDAR_SYNC_ENABLED は GOOGLE_CALENDAR_EXPORT_ENABLED を true にして渡します")
+	if c.SyncEnabled && !c.ExportEnabled {
+		return Calendar{}, errors.New("GOOGLE_CALENDAR_SYNC_ENABLED は GOOGLE_CALENDAR_EXPORT_ENABLED を true にして渡します")
 	}
-	if c.Calendar.Endpoint != "" && c.Calendar.ServiceAccountsFile == "" {
-		return Config{}, errors.New("GOOGLE_CALENDAR_ENDPOINT は GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE と一緒に渡します")
+	if c.Endpoint != "" && c.ServiceAccountsFile == "" {
+		return Calendar{}, errors.New("GOOGLE_CALENDAR_ENDPOINT は GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE と一緒に渡します")
 	}
 	return c, nil
 }

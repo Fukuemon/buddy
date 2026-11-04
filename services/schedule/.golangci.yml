@@ -348,6 +348,35 @@ linters:
           deny:
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/postgres
               desc: config は DB のアダプタを import しない。cmd が値をアダプタの設定にコピーする
+        cmd-api:
+          files:
+            - "**/cmd/api/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features
+              desc: cmd/api は機能とアダプタを assemble で組み立て、直接 import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/httpapi
+              desc: cmd/api は機能とアダプタを assemble で組み立て、直接 import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/postgres
+              desc: cmd/api は機能とアダプタを assemble で組み立て、直接 import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/gcal
+              desc: cmd/api は機能とアダプタを assemble で組み立て、直接 import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/broker
+              desc: cmd/api は機能とアダプタを assemble で組み立て、直接 import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/ulid
+              desc: cmd/api は機能とアダプタを assemble で組み立て、直接 import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/access
+              desc: cmd/api は機能とアダプタを assemble で組み立て、直接 import しない
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/principal
+              desc: cmd/api は機能とアダプタを assemble で組み立て、直接 import しない
+        assemble:
+          files:
+            - "$all"
+            - "!**/cmd/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/assemble
+              desc: assemble を import するのは cmd だけにする
         inmem:
           files:
             - "$all"
