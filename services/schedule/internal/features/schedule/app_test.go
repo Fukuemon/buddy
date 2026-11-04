@@ -414,7 +414,7 @@ func (r lockOrder) Share(ctx context.Context, facilityID string) error {
 }
 
 // 職員の状態を読む前に、事業所の職員の休職と退職を待たせるロックを取る。
-func TestSchedulesLockStatusesBeforeReadingStaff(t *testing.T) {
+func TestSchedulesShareFacilityBeforeReadingStaff(t *testing.T) {
 	s := inmem.Seeded()
 	var calls []string
 	lo := lockOrder{StaffRefs: inmem.StaffRefs{Store: s}, Facilities: inmem.Facilities{Store: s}, calls: &calls}

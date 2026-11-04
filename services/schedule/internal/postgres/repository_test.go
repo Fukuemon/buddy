@@ -1021,7 +1021,7 @@ func TestScheduleGetForUpdateBlocksCancel(t *testing.T) {
 
 // 予定と担当の新しい割り振りの Share と、休職と退職の Lock は、互いをトランザクションの終わりまで待たせる。
 // 割り振りどうしは待たせない。退職の残る予定の確認と、予定の作成が行き違わないことを確認する（#269）。
-func TestStaffLockStatusesAndLockFacilityWaitForEachOther(t *testing.T) {
+func TestFacilityShareAndLockWaitForEachOther(t *testing.T) {
 	if testDB == nil {
 		t.Skip("PostgreSQL を使うテストは -short では動かさない")
 	}
