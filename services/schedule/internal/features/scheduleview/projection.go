@@ -1,9 +1,13 @@
 package scheduleview
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
+	"slices"
 	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 )
 
 // ProjectionStatus は、Projection の予定の状態である。
@@ -54,4 +58,130 @@ type Projection struct {
 	LastEndDate *civil.Date
 	// ProjectedAt は、同期が行を書いた時刻である。
 	ProjectedAt time.Time
+}
+
+// ProjectionDetail は、Projection の行と、行のカレンダーの職員の名前である。
+type ProjectionDetail struct {
+	Projection
+	StaffName string
+}
+
+// IsParent は、行が繰り返しの親の予定かを返す。
+func (p Projection) IsParent() bool { return len(p.Recurrence) > 0 }
+
+// IsException は、行が繰り返しの予定の例外の回（変えた回か取り消した回）かを返す。
+func (p Projection) IsException() bool { return p.RecurringEventID != "" }
+
+// day は、t の Asia/Tokyo の日付を返す。開始と終了の無い t（取り消した回の開始）では false を返す。
+func (t ProjectionTime) day() (civil.Date, bool) {
+	switch {
+	case t.At != nil:
+		return civil.Today(*t.At), true
+	case t.Date != nil:
+		return *t.Date, true
+	}
+	return civil.Date{}, false
+}
+
+// projectedEvent は、Projection の 1 つの予定か、繰り返しの親を展開した 1 回を、読み替えた結果である。
+type projectedEvent struct {
+	row     ProjectionDetail
+	reading EventReading
+	// occurrence は、繰り返しの親を展開した回の日付で、展開した回でなければゼロ値である。
+	occurrence civil.Date
+	// unsupported は、buddy の繰り返しの規則に写せない繰り返しの親を、最初の回の 1 件にしたときに true である。
+	unsupported bool
+}
+
+// expandProjections は、Projection の行 rows を読み替え、from から to までの日に始まる予定と、from の前の日に始まり from に終わる予定を返す。
+// 繰り返しの親は、規則（rules.Recurrence）で from から to までの回に展開し、除外する日（EXDATE）と、例外の回が置き換えた元の日を除く。
+// 規則に写せない繰り返しの親は、回に展開せず、最初の回を、回が期間に重なりうるときに 1 件で返す。
+// 例外の回は、変えた回を単発の予定と同じく読み替え、取り消した回は返さない。rules.Read が読み替えない予定（終日の予定など）は返さない。
+func expandProjections(rows []ProjectionDetail, rules EventRules, from, to civil.Date) []projectedEvent {
+	replaced := map[string]map[civil.Date]bool{}
+	for _, r := range rows {
+		if !r.IsException() {
+			continue
+		}
+		d, ok := r.OriginalStart.day()
+		if !ok {
+			continue
+		}
+		key := r.ExternalCalendarID + "\x00" + r.RecurringEventID
+		if replaced[key] == nil {
+			replaced[key] = map[civil.Date]bool{}
+		}
+		replaced[key][d] = true
+	}
+	var out []projectedEvent
+	for _, r := range rows {
+		switch {
+		case r.Status != ProjectionConfirmed:
+		case r.IsParent():
+			out = append(out, expandParent(r, rules, replaced[r.ExternalCalendarID+"\x00"+r.EventID], from, to)...)
+		default:
+			if rd := rules.Read(r.Projection); rd.Kind != EventSkipped && startsIn(rd, from, to) {
+				out = append(out, projectedEvent{row: r, reading: rd})
+			}
+		}
+	}
+	return out
+}
+
+// expandParent は、繰り返しの親の予定 r を、from から to までの回に展開する。replaced は、例外の回が置き換えた元の日である。
+func expandParent(r ProjectionDetail, rules EventRules, replaced map[civil.Date]bool, from, to civil.Date) []projectedEvent {
+	first := rules.Read(r.Projection)
+	if first.Kind == EventSkipped {
+		return nil
+	}
+	rule, exclusions, err := rules.Recurrence(r.Projection)
+	if err != nil {
+		if first.Date.After(to) || (r.LastEndDate != nil && r.LastEndDate.Before(dayBefore(from))) {
+			return nil
+		}
+		return []projectedEvent{{row: r, reading: first, unsupported: true}}
+	}
+	rs := schedule.RecurringSchedule{Slot: schedule.Slot{Date: first.Date}, Rule: rule}
+	var out []projectedEvent
+	for d := dayBefore(from); !d.After(to); d = civil.DateOf(d.Time().AddDate(0, 0, 1)) {
+		if !rs.HasOccurrenceOn(d) || replaced[d] || slices.Contains(exclusions, d) {
+			continue
+		}
+		occ := first
+		occ.Date = d
+		if startsIn(occ, from, to) {
+			out = append(out, projectedEvent{row: r, reading: occ, occurrence: d})
+		}
+	}
+	return out
+}
+
+// startsIn は、rd が from から to までの日に始まるか、from の前の日に始まり from に終わる予定かを返す（ADR-0023）。
+func startsIn(rd EventReading, from, to civil.Date) bool {
+	if rd.EndsNextDay && rd.Date == dayBefore(from) {
+		return true
+	}
+	return !rd.Date.Before(from) && !rd.Date.After(to)
+}
+
+func dayBefore(d civil.Date) civil.Date { return civil.DateOf(d.Time().AddDate(0, 0, -1)) }
+
+// projectedID は、Projection の予定 e の、一覧を読むたびに同じになる ID を、ULID と同じ 26 文字の Crockford の Base32 で返す。
+// Google の予定の ID は ULID の形でなく、繰り返しの回は行を持たないので、カレンダー、Google の予定の ID、回の日付から作る。
+func projectedID(e projectedEvent) string {
+	key := e.row.ExternalCalendarID + "\x00" + e.row.EventID
+	if !e.occurrence.IsZero() {
+		key += "\x00" + e.occurrence.String()
+	}
+	sum := sha256.Sum256([]byte(key))
+	const alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+	// 128 ビットを 5 ビットずつ 26 文字にする。先頭の文字は上位の 3 ビットだけなので、ULID と同じく 0〜7 になる。
+	hi, lo := binary.BigEndian.Uint64(sum[:8]), binary.BigEndian.Uint64(sum[8:16])
+	var b [26]byte
+	for i := 25; i >= 0; i-- {
+		b[i] = alphabet[lo&31]
+		lo = lo>>5 | hi<<59
+		hi >>= 5
+	}
+	return string(b[:])
 }

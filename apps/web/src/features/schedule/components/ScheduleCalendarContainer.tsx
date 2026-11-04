@@ -17,6 +17,7 @@ import { toDateKey } from '../lib/dateTime'
 import { nowForDay, useNow } from '../lib/useNow'
 import { toCalendarEvents } from '../lib/toCalendarEvents'
 import {
+  facilityQueryOptions,
   patientListQueryOptions,
   scheduleListQueryOptions,
   staffListQueryOptions,
@@ -24,12 +25,19 @@ import {
 import { pickCalendarSearch, type ScheduleSearch } from '../schema/scheduleSearch'
 import { ScheduleCalendar } from './ScheduleCalendar'
 import { ScheduleCalendarToolbar, type StaffFilterToggle } from './ScheduleCalendarToolbar'
+import { ScheduleSourceNotices } from './ScheduleSourceNotices'
 import { StaffScheduleDayGrid } from './StaffScheduleDayGrid'
 
 /** 日の表示だけが 1 分ごとに描き直されるよう、今の時刻をここで読んで日の表に渡す。 */
 const DayGridWithNow = (props: Omit<ComponentProps<typeof StaffScheduleDayGrid>, 'now'>) => {
   const now = useNow()
   return <StaffScheduleDayGrid {...props} now={nowForDay(props.date, now)} />
+}
+
+/** 同期が古いかを 1 分ごとに決め直すよう、今の時刻をここで読んで通知に渡す。 */
+const SourceNoticesWithNow = (props: Omit<ComponentProps<typeof ScheduleSourceNotices>, 'now'>) => {
+  const now = useNow()
+  return <ScheduleSourceNotices {...props} now={now} />
 }
 
 export type ScheduleCalendarContainerProps = {
@@ -41,6 +49,8 @@ export type ScheduleCalendarContainerProps = {
  * `/schedule` の search params を読み、予定を取ってカレンダーに出す。
  * 職員の列は、ログインした職員が予定を見てよい職員に限る。「予定を作成」は誰かの予定を編集できる職員にだけ出し、
  * 時間の枠は、予定を編集できる職員の列でだけ押せる。
+ * Google カレンダーを予定の正本にする事業所（google_primary）では、予定を作る操作を出さず、カレンダーの上に、
+ * Google カレンダーで編集する案内、同期の警告、確認が必要な予定の通知を出す。事業所の正本は、予定の一覧か事業所から読む。
  */
 export const ScheduleCalendarContainer = ({
   staffFilterToggle,
@@ -67,6 +77,10 @@ export const ScheduleCalendarContainer = ({
     }),
   )
   const patientsQuery = useQuery(patientListQueryOptions(api, facilityId))
+  const facilityQuery = useQuery(facilityQueryOptions(api, facilityId))
+  // 日付を移ると一覧を読み直す間は一覧の値が無いので、事業所の値で予定を作る操作を出し分け、ちらつかせない
+  const sourceMode = schedulesQuery.data?.sourceMode ?? facilityQuery.data?.sourceMode
+  const canWriteSchedules = sourceMode === 'buddy_primary'
 
   const updateSearch = (patch: Partial<ScheduleSearch>) =>
     navigate({ search: (prev) => ({ ...prev, ...patch }) })
@@ -86,13 +100,13 @@ export const ScheduleCalendarContainer = ({
 
   const allStaff = staffQuery.data ?? []
   const staffList = readableStaff(viewer, activeStaff(allStaff))
-  const canCreate = canEditAnySchedule(viewer)
+  const canCreate = canWriteSchedules && canEditAnySchedule(viewer)
   const visibleStaff =
     selectedStaffIds.length === 0
       ? staffList
       : staffList.filter((staff) => selectedStaffIds.includes(staff.id))
   const events = toCalendarEvents(
-    excludeInactiveStaffSchedules(schedulesQuery.data ?? [], allStaff),
+    excludeInactiveStaffSchedules(schedulesQuery.data?.schedules ?? [], allStaff),
     staffList,
     patientsQuery.data ?? [],
   )
@@ -111,6 +125,17 @@ export const ScheduleCalendarContainer = ({
           view={search.view}
         />
       </div>
+      {sourceMode === 'google_primary' && (
+        <div className="px-2 pb-2 desktop:px-6">
+          <SourceNoticesWithNow
+            calendarSyncs={schedulesQuery.data?.calendarSyncs ?? []}
+            needsReview={schedulesQuery.data?.needsReview ?? []}
+            onOpenSchedule={openDetail}
+            sourceMode={sourceMode}
+            staffList={allStaff}
+          />
+        </div>
+      )}
       <div className="min-h-0 grow px-2 pb-4 desktop:px-6">
         {schedulesQuery.isPending || staffQuery.isPending ? (
           <Loading description="カレンダーを表示中..." />
@@ -123,7 +148,7 @@ export const ScheduleCalendarContainer = ({
             date={date}
             events={events}
             onEventClick={openDetail}
-            canCreateFor={(staff) => canEditScheduleOf(viewer, staff)}
+            canCreateFor={(staff) => canWriteSchedules && canEditScheduleOf(viewer, staff)}
             onSlotClick={(staffId, time) => openCreate(date, time, staffId)}
             staffList={visibleStaff}
           />

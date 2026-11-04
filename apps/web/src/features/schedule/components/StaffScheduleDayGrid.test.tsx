@@ -28,6 +28,7 @@ describe('StaffScheduleDayGrid', () => {
       end: '2026-10-20T09:30:00+09:00',
       color: 'red',
       isCancelled: false,
+      needsReview: false,
     }
     render(<Default events={[event]} />)
     expect(screen.getByTestId('day-grid-slot-staff-1-09:00').style.height).toBe('44px')
@@ -84,6 +85,7 @@ describe('StaffScheduleDayGrid', () => {
       end: '2026-10-20T09:30:00+09:00',
       color: 'red',
       isCancelled: true,
+      needsReview: false,
     }
     render(<Default events={[event]} />)
     const button = screen.getByTestId('schedule-event-e1')
@@ -91,5 +93,21 @@ describe('StaffScheduleDayGrid', () => {
     expect(screen.getByText('キャンセル、')).toHaveClass('sr-only')
     expect(screen.getByTestId('schedule-event-e1-cancelled')).toHaveClass('line-through')
     expect(screen.getByTestId('schedule-event-e1-cancelled')).toHaveTextContent('09:00-09:30 訪問')
+  })
+
+  it('確認が必要な予定に「要確認」の印を付ける', () => {
+    const event = {
+      id: 'e1',
+      title: '佐藤 花子 訪看I2',
+      staffId: 'staff-1',
+      start: '2026-10-20T09:00:00+09:00',
+      end: '2026-10-20T09:30:00+09:00',
+      color: 'red',
+      isCancelled: false,
+      needsReview: true,
+    }
+    render(<Default events={[event]} />)
+    expect(screen.getByTestId('schedule-event-e1')).toHaveAccessibleName(/^要確認、09:00/)
+    expect(screen.getByTestId('schedule-event-e1-needs-review')).toHaveTextContent('要確認')
   })
 })

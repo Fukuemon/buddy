@@ -41,7 +41,7 @@ test.describe('確認が必要な予定', () => {
       }
     })
 
-    test('buddy を正本にする事業所で Google カレンダーの予定を直した場合、buddy の予定に当たらず、buddy で変えると確認が必要な予定に出て、Google の内容には合わせられないこと', async ({
+    test('buddy を正本にする事業所で Google カレンダーの予定を直した場合、buddy の予定に当たらず、buddy で変えると確認が必要な予定に出て、Google の内容に合わせる操作が出ないこと', async ({
       page,
       request,
     }) => {
@@ -106,21 +106,13 @@ test.describe('確認が必要な予定', () => {
         await expect(page.getByTestId('schedule-detail-datetime')).toHaveText(createdDateTime)
       })
 
-      await test.step('Google の内容に合わせようとすると拒まれ、一覧に残り、buddy の予定は buddy で変えたタイトルのままになる', async () => {
+      await test.step('予定の確認のダイアログに Google の内容に合わせる操作が出ず、buddy の予定は buddy で変えたタイトルのままになる', async () => {
         await page.goto('/schedule/review')
         await reviewRow(page, scheduleId).click()
-        await page
-          .getByTestId('calendar-review-dialog')
-          .getByTestId(/^calendar-review-accept-/)
-          .click()
-        const dialog = page.getByTestId('calendar-accept-dialog')
-        await expect(dialog).toContainText('buddy で変えたタイトルと日時は消えます。')
-        await page.getByTestId('calendar-accept-submit').click()
-        await expect(dialog.getByTestId('calendar-accept-error')).toHaveText(
-          'この予定は、Google カレンダーの内容に合わせられません。buddy の内容で書き直してください。',
-        )
-        await page.goto('/schedule/review')
-        await expect(reviewRow(page, scheduleId)).toBeVisible()
+        const dialog = page.getByTestId('calendar-review-dialog')
+        // 書き直す操作が出たことで、ダイアログを描き終えたとみなしてから、合わせる操作が無いことを確認する
+        await expect(dialog.getByTestId(/^calendar-review-rewrite-/)).toBeVisible()
+        await expect(dialog.getByTestId(/^calendar-review-accept-/)).toHaveCount(0)
 
         await openSchedule(page, changed)
         await expect(page.getByTestId('schedule-detail-modal')).toContainText(changed)

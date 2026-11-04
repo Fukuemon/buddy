@@ -11,6 +11,7 @@ import type { CalendarView } from '../constants/calendarView'
 import { nextDayPrefix, toDateKey, toTimeKey, WEEKDAYS } from '../lib/dateTime'
 import type { ScheduleCalendarEvent } from '../lib/toCalendarEvents'
 import { CancelledMark } from './CancelledMark'
+import { NeedsReviewMark } from './NeedsReviewMark'
 
 const FULL_CALENDAR_VIEW = {
   month: 'dayGridMonth',
@@ -109,6 +110,9 @@ export const ScheduleCalendar = ({
               data-testid={`schedule-event-${arg.event.id}`}
             >
               {isCancelled && <CancelledMark />}
+              {arg.event.extendedProps.needsReview === true && (
+                <NeedsReviewMark scheduleId={arg.event.id} />
+              )}
               <span
                 className={isCancelled ? 'line-through' : undefined}
                 data-testid={isCancelled ? `schedule-event-${arg.event.id}-cancelled` : undefined}
@@ -131,7 +135,7 @@ export const ScheduleCalendar = ({
           textColor: event.isCancelled
             ? 'var(--buddy-color-text-secondary)'
             : 'var(--buddy-color-text-inverse)',
-          extendedProps: { isCancelled: event.isCancelled },
+          extendedProps: { isCancelled: event.isCancelled, needsReview: event.needsReview },
         }))}
         headerToolbar={false}
         height="100%"

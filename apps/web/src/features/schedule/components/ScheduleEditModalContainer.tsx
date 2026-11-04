@@ -10,6 +10,7 @@ import { Loading, Modal } from '@buddy/ui'
 
 import {
   SCHEDULE_EDIT_FORBIDDEN_MESSAGE,
+  SCHEDULE_GOOGLE_PRIMARY_MESSAGE,
   SCHEDULE_LOAD_ERROR_MESSAGE,
   scheduleLoadErrorMessage,
   scheduleSubmitErrorMessage,
@@ -17,6 +18,7 @@ import {
 import { toScheduleFormValues, toScheduleInput } from '../lib/scheduleFormMapper'
 import { canEditScheduleOf, editableStaff } from '../lib/schedulePermission'
 import {
+  facilityQueryOptions,
   patientListQueryOptions,
   scheduleQueryOptions,
   serviceCodeListQueryOptions,
@@ -90,15 +92,34 @@ const ScheduleEditForm = ({
  * ログインした職員が予定の職員の予定を編集できないときは、フォームを出さずに権限が無いことを出す。
  * 職員の候補は、ログインした職員が予定を編集できる職員に限る。
  * 一度読めた後の読み直しが失敗しても、読めた値でフォームを出したままにし、入力を消さない。
+ * Google カレンダーを予定の正本にする事業所（google_primary）では、フォームの代わりに Google カレンダーで変更する案内を出す。
  */
 export const ScheduleEditModalContainer = ({ scheduleId }: { scheduleId: Schedule['id'] }) => {
   const navigate = useNavigate()
   const calendarSearch = pickCalendarSearch(useSearch({ from: '/schedule' }))
   const { api, facilityId, viewer } = useBuddyApi()
-  const scheduleQuery = useQuery(scheduleQueryOptions(api, facilityId, scheduleId))
+  const facilityQuery = useQuery(facilityQueryOptions(api, facilityId))
+  // Google カレンダーの予定には 1 件の取得が無く 404 になるので、正本が buddy と分かってから読む。事業所を読めなければ、今までどおり読む
+  const scheduleQuery = useQuery({
+    ...scheduleQueryOptions(api, facilityId, scheduleId),
+    enabled: facilityQuery.isError || facilityQuery.data?.sourceMode === 'buddy_primary',
+  })
   const staffQuery = useQuery(staffListQueryOptions(api, facilityId))
   const patientsQuery = useQuery(patientListQueryOptions(api, facilityId))
   const serviceCodesQuery = useQuery(serviceCodeListQueryOptions(api, facilityId))
+
+  if (facilityQuery.data?.sourceMode === 'google_primary') {
+    return (
+      <Modal
+        data-testid="schedule-edit-google-primary"
+        isOpen
+        onCloseRequest={() => navigate({ to: '/schedule', search: calendarSearch })}
+        title="予定の編集"
+      >
+        <p className="p-5">{SCHEDULE_GOOGLE_PRIMARY_MESSAGE}</p>
+      </Modal>
+    )
+  }
 
   const schedule = scheduleQuery.data
   const staffList = staffQuery.data

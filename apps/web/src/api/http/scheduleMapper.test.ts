@@ -4,6 +4,7 @@ import type { ScheduleInput } from '../types'
 import {
   type ApiSchedule,
   type ScheduleMasters,
+  fromApiFacility,
   fromApiMe,
   fromApiSchedule,
   splitDateTime,
@@ -27,6 +28,8 @@ const apiSchedule = (overrides: Partial<ApiSchedule> = {}): ApiSchedule => ({
   recurring_schedule_id: null,
   visit_info: null,
   cancel: null,
+  source: 'buddy',
+  review_reason: null,
   created_at: '2026-10-01T00:00:00Z',
   updated_at: '2026-10-01T00:00:00Z',
   ...overrides,
@@ -81,6 +84,17 @@ describe('fromApiSchedule', () => {
     ).toEqual({ reason: '体調不良' })
   })
 
+  it('Google カレンダーの予定は印を持ち、確認が必要な予定は理由を持つ', () => {
+    const schedule = fromApiSchedule(
+      apiSchedule({ source: 'google_calendar', review_reason: 'patient_not_found' }),
+    )
+    expect(schedule.fromGoogleCalendar).toBe(true)
+    expect(schedule.reviewReason).toBe('patient_not_found')
+    const plain = fromApiSchedule(apiSchedule({ source: 'google_calendar' }))
+    expect(plain.fromGoogleCalendar).toBe(true)
+    expect(plain).not.toHaveProperty('reviewReason')
+  })
+
   it('訪問の予定は訪問の情報を持つ', () => {
     const schedule = fromApiSchedule(
       apiSchedule({
@@ -126,6 +140,20 @@ describe('fromApiSchedule', () => {
       fromApiSchedule(apiSchedule({ schedule_type: '訪問', visit_info: visitInfo })).visit
         ?.serviceCode,
     ).toBe('訪看I２')
+  })
+})
+
+describe('fromApiFacility', () => {
+  it('事業所の ID、名前、予定の正本を画面の値にする', () => {
+    expect(
+      fromApiFacility({
+        id: 'facility-1',
+        name: '事業所',
+        source_mode: 'google_primary',
+        created_at: '2026-10-01T00:00:00Z',
+        updated_at: '2026-10-01T00:00:00Z',
+      }),
+    ).toEqual({ id: 'facility-1', name: '事業所', sourceMode: 'google_primary' })
   })
 })
 

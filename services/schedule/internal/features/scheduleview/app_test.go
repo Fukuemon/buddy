@@ -8,6 +8,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
@@ -143,11 +144,19 @@ func newSchedules(s *inmem.Store) *app {
 	return &app{
 		Get:              scheduleview.NewGet(schedules, refs).Do,
 		GetRecurring:     scheduleview.NewGetRecurring(recurring, refs).Do,
-		List:             scheduleview.NewList(facilities, schedules, recurring, refs).Do,
+		List:             scheduleview.NewList(facilities, schedules, recurring, refs, projectionDeps(s, now)).Do,
 		Create:           schedule.NewCreate(facilities, schedules, types, refs, facilities, visits, now, nil, tx, ids).Do,
 		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, facilities, visits, now, recurring, nil, tx, ids).Do,
 		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, refs, facilities, schedules, types, visits, now, nil, tx, ids).Do,
 		Cancel:           schedule.NewCancel(schedules, refs, facilities, nil, tx, ids).Do,
 		Update:           schedule.NewUpdate(schedules, refs, facilities, types, visits, now, nil, tx).Do,
+	}
+}
+
+// projectionDeps は、s の Projection とマスタを読み、取り込みと同じ読み替えの規則を使う、List の依存を返す。
+func projectionDeps(s *inmem.Store, now func() time.Time) scheduleview.ProjectionDeps {
+	return scheduleview.ProjectionDeps{
+		Projections: inmem.Projections{Store: s}, Syncs: inmem.Projections{Store: s}, Rules: calendar.ProjectionRules{},
+		Patients: inmem.Patients{Store: s}, ServiceCodes: inmem.ServiceCodes{Store: s}, Types: inmem.ScheduleTypes{Store: s}, Now: now,
 	}
 }

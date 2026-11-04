@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
+import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import {
   emptyBuddyApi,
   failingBuddyApi,
@@ -47,4 +48,20 @@ export const Failed: Story = { parameters: route({ api: failingBuddyApi() }) }
 /** 自分の予定だけを編集でき、A チームの予定を見られる職員。A チームの列だけを出し、「予定を作成」を出し、自分の列の枠だけを押せる。 */
 export const DaySelfEditOnly: Story = {
   parameters: route({ url: '/schedule?view=day', viewer: selfEditViewer }),
+}
+
+/**
+ * Google カレンダーを予定の正本にする事業所。「予定を作成」を出さず、カレンダーの上に、Google カレンダーで編集する案内、
+ * 同期の警告（石川 二葉は失敗、上田 三奈は未同期）、確認が必要な予定の 3 件を出す。予定には「要確認」の印を付ける。
+ */
+export const GooglePrimary: Story = {
+  parameters: route({ api: createFakeBuddyApi({ sourceMode: 'google_primary' }) }),
+}
+
+/** Google カレンダーを予定の正本にする事業所の日の表示。時間の枠を押して予定を作れない。 */
+export const GooglePrimaryDay: Story = {
+  parameters: route({
+    url: '/schedule?view=day',
+    api: createFakeBuddyApi({ sourceMode: 'google_primary' }),
+  }),
 }

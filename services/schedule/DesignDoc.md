@@ -419,6 +419,42 @@ Google カレンダーの手動の取り込みの確定も、同じ規則で拒�
 
 - ADR-0033: [予定の書き込みのモデルと読み取りのモデルを分け、正本のモードを事業所の状態にする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0033-schedule-write-read-models-and-source-mode.md)
 
+### 予定の一覧の読み元
+
+予定の一覧（`scheduleview.List`、`listSchedules`）は、事業所の予定の正本のモードで読み元を選ぶ。  
+`buddy_primary` の事業所では、buddy の予定のテーブルを読む。  
+`google_primary` の事業所では、同期が写した Google カレンダーの予定（Projection、`calendar_event_projections`）を読む。  
+どちらの読み元でも `scheduleview.Detail` の同じ型で返すので、画面と照合は読み元を知らずに予定を出せる。  
+予定には読み元（`source`）を付け、画面は `google_calendar` の予定に変更の操作を出さない。
+
+- ADR-0035: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0035-google-calendar-source-modes.md)
+
+`google_primary` の事業所の一覧は、次の順で Projection を読む。
+
+1. 読む期間を決める。`date_from` と `date_to` を使い、省いた端は、Projection を保持する期間（前々月の初日から 3 か月後の月末）の端にする。
+2. 事業所の外していないカレンダーの行のうち、期間の初日の前の日より前に終わった行を除いて読む（`scheduleview.Projections` の `ListByFacility`）。
+   - 外したカレンダーの行は読まない。退職はカレンダーを外すので、退職した職員の行もこれで除く。
+3. 行の職員（写した時点のカレンダーの職員）を予定の職員とみなし、buddy の予定と同じ閲覧の判定（`schedule.Readable`）で絞る。行の事業所が一覧の事業所と違う行も除く。
+4. 行を、取り込みと同じ読み替えの規則（`calendar.Classify`）で、buddy の予定の日付と時刻に読み替える。
+   - 読み替えの規則は `calendar` にあり、`scheduleview` は `calendar` を import できない。組み立ての場所が、`calendar.ProjectionRules` を `scheduleview.EventRules` として渡す。
+   - 終日の予定、日をまたぐ予定、時刻を読めない予定、長さが 0 以下の予定は、取り込みと同じく一覧に出さない。
+5. 繰り返しの親の行は、取り込みと同じ規則（`calendar.RuleFromRecurrence`）で buddy の繰り返しの規則に写し、期間の回に展開する。
+   - 除外する日（EXDATE）と、例外の回が置き換えた元の日の回は作らない。変えた回は、例外の回の行を単発の予定と同じく読み替える。取り消した回は出さない。
+   - 規則に写せない親は、回に展開せず、最初の回の日時の 1 件にして、確認が必要な理由（`recurrence_unsupported`）を付ける。最初の回が期間の外でも、回が期間に重なりうるなら返す。
+6. 訪問のタイトルの予定は、タイトルのサービス内容と利用者名で、サービスコードのマスタと事業所の利用者（利用の終了を除く）を引く。
+   - 引けた予定は、利用者とサービスコードの訪問の情報を付けた訪問の予定にする。主訪問者は予定の職員にし、同行者と訪問の区分は付けない。
+   - 引けない予定は、訪問の情報を付けず、Google のタイトルの通常の予定にして、理由（`service_code_not_found`、`patient_not_found`、`patient_ambiguous`）を付ける。タイトルを読めない予定には `title_unreadable` を付ける。
+7. 期間で絞った予定を `sort_field` と `sort_order` の順に並べ、カレンダーごとの同期の状況（`calendar_syncs`）を付けて返す。同期の状況も、閲覧の判定で見てよい職員のカレンダーに絞る。
+
+Projection の予定の `id` は、カレンダー、Google の予定の ID、回の日付から作る ULID の形の値で、一覧を読むたびに同じになる。  
+Google の予定の ID は ULID の形でなく、展開した回は行を持たないためである。  
+Projection の予定の 1 件の読み出し（`getSchedule`）は持たない。  
+予定の詳細の画面は、一覧の同じ予定を出す。
+
+一覧の応答は、事業所の正本のモード（`source_mode`）と、カレンダーごとの同期の状況（`calendar_syncs`）を持つ。  
+同期の状況は、最後の結果、変わった予定を最後まで読んで写した最後の同期の時刻、最後の失敗の理由を持つ。  
+最新でないとみなす時間は、画面が決める。
+
 ### 休職と退職の職員と、訪問しない職員への割り振り
 
 予定の作成、予定の変更、繰り返しの予定の作成、繰り返しの回の置き換え、利用者の登録が、休職と退職の職員と、訪問しない職員への新しい割り振りを 400 で拒む規則は、[職員とログイン](https://github.com/Fukuemon/buddy/blob/develop/context/domain/staff-login.md) にある。

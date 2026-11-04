@@ -44,3 +44,8 @@
 .sn-placeholder {
   color: var(--wf-muted);
 }
+
+/* Google カレンダーを予定の正本にする事業所で、フォームの代わりに出す文 */
+.sn-message {
+  margin: 0;
+}

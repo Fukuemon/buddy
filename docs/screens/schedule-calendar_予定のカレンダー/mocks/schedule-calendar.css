@@ -321,3 +321,66 @@
   background: var(--wf-fill);
   color: var(--wf-muted);
 }
+
+/* Google カレンダーを予定の正本にする事業所で、ツールバーとカレンダーの間に出す通知（apps/web の ScheduleSourceNotices） */
+.sc-notices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 8px;
+}
+
+.sc-notice {
+  padding: 12px 16px;
+  border: 1px solid var(--wf-line-soft);
+  border-radius: var(--wf-radius);
+  background: var(--wf-surface);
+  font-size: 14px;
+}
+
+.sc-notice--warning {
+  border-color: transparent;
+  background: var(--wf-warning-surface);
+}
+
+.sc-notice__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.sc-notice--warning .sc-notice__title {
+  color: var(--wf-warning);
+}
+
+.sc-notice__text {
+  margin: 8px 0 0;
+}
+
+.sc-notice__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 確認が必要な予定のリストは、実装では高さ 160px を超えるとスクロールする。モックはスクロールさせず、全ての行を描く */
+.sc-notice__list--review {
+  gap: 0;
+}
+
+.sc-notice__item {
+  min-height: 44px;
+  color: var(--wf-primary);
+  font-size: 14px;
+  text-align: left;
+  white-space: normal;
+}
+
+/* 確認が必要な予定の名前の前の「要確認」の印。色ではなく太字の文字で示す */
+.sc-review-mark {
+  margin-right: 4px;
+  font-weight: 700;
+}

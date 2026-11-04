@@ -16,7 +16,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 最後に変わった日時 | 日時 | `CalendarExportIssue.updated_at` | `CalendarExport` の `updated_at` |
 | 予定の確認のダイアログ | どの予定を開いたか | 押した行の `CalendarExportIssue` | `listCalendarExportIssues` の `items` の 1 件。ダイアログを開くときに API は呼ばない |
 | ダイアログの予定の日時、ダイアログの職員、ダイアログの最後に変わった日時、ダイアログの理由 | 一覧の行と同じ値 | 一覧の行と同じ項目 | 一覧の行と同じ項目 |
-| Google の内容に合わせる | 出すか | `CalendarExportIssue.acceptable` | `CalendarExportIssue` の `acceptable` |
+| Google の内容に合わせる | 出すか | `CalendarExportIssue.acceptable` と、`Facility.sourceMode` が `google_primary` か | `CalendarExportIssue` の `acceptable` と、`getFacility` の `Facility.source_mode` |
 | 予定を開く | 出すかと、移る先の予定 | `CalendarExportIssue.schedule_id` | `CalendarExport` の `schedule_id`。繰り返しの予定では `null` |
 | buddy の内容で書き直す | なし | `CalendarExportIssue.id` | `CalendarExport` の `id` |
 | 書き直す予定 | 日時と職員の名前 | `CalendarExportIssue` の日時の項目と `staff_name` | 予定の日時と職員と同じ |
@@ -27,6 +27,13 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 合わせる予定 | 日時と職員の名前 | `CalendarExportIssue` の日時の項目と `staff_name` | 予定の日時と職員と同じ |
 | ダイアログの合わせる | 合わせて終えた書き出し | `calendars.acceptExport` の戻り値 | `createCalendarExportAcceptance` のレスポンスの `CalendarExport` |
 | 合わせるの失敗の文 | 理由ごとの文 | `ApiError.status`、`ApiError.code` | レスポンスの status と `Error.code` |
+
+- 「Google の内容に合わせる」は、`acceptable` が true で、事業所の `source_mode` が `google_primary` のときだけ出す。
+  - 事業所は `getFacility`（`GET /v1/facilities/{facility_id}`）で読み、web の `BuddyApi.facilities.get` が `Facility` にする。
+  - `buddy_primary` の事業所では、`createCalendarExportAcceptance` が 409 `export_not_acceptable` で拒むためである（#638）。
+  - `getFacility` を読み終える前と、失敗したときは出さない。`getFacility` の失敗は、この画面の状態にしない。
+  - 処理は `apps/web/src/features/calendar/components/CalendarReviewContainer.tsx` にある。
+  - `CalendarReviewDialog` は、`onAccept` を省くとボタンを出さない。
 
 ## 状態と失敗の要因
 

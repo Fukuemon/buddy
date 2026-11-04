@@ -7,6 +7,16 @@ import type {
 /** 事業所の ID。API の `/v1/facilities/{facility_id}` に入る。 */
 export type FacilityId = string
 
+/** 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0035）。 */
+export type SourceMode = ScheduleComponents['schemas']['SourceMode']
+
+/** 事業所。API の型の ID、名前、予定の正本だけを使う。 */
+export type Facility = {
+  id: FacilityId
+  name: string
+  sourceMode: SourceMode
+}
+
 /** ログインした職員。 */
 export type Viewer = {
   staffId: string
@@ -116,10 +126,40 @@ export type Schedule = {
   visit?: VisitDetail
   /** キャンセルした予定のときだけある。 */
   cancel?: { reason: string }
+  /**
+   * google_primary の事業所で、同期が写した Google カレンダーの予定（Projection）のときだけ true を持つ。
+   * buddy から変えられず、予定の API の 1 件の取得（GET /v1/schedules/{id}）も無い。
+   */
+  fromGoogleCalendar?: true
+  /** Google カレンダーの予定のうち、buddy の予定に読み替えられず確認が必要な予定のときだけ、その理由を持つ。 */
+  reviewReason?: ScheduleReviewReason
+}
+
+/** Google カレンダーの予定を、buddy の予定に読み替えられなかった理由。予定の API の ScheduleReviewReason をそのまま使う。 */
+export type ScheduleReviewReason = ScheduleComponents['schemas']['ScheduleReviewReason']
+
+/** 結び付けたカレンダーの同期の状況。予定の API の CalendarSyncStatus をそのまま使う。 */
+export type CalendarSyncStatus = ScheduleComponents['schemas']['CalendarSyncStatus']
+
+/** 予定の一覧の結果。 */
+export type ScheduleList = {
+  /** 期間と職員で絞った予定。 */
+  schedules: Schedule[]
+  /**
+   * 確認が必要な予定（reviewReason を持つ予定）。期間で絞らず、職員の絞り込みだけを当てる。
+   * 繰り返しの規則を写せない予定（recurrence_unsupported）は最初の回の日時で返り、表示の期間の外のことがある。
+   */
+  needsReview: Schedule[]
+  sourceMode: SourceMode
+  /** google_primary の事業所のカレンダーの同期の状況。職員の絞り込みを当てる。buddy_primary の事業所では空である。 */
+  calendarSyncs: CalendarSyncStatus[]
 }
 
 /** 予定の作成と更新で送る値。 */
-export type ScheduleInput = Omit<Schedule, 'id' | 'facilityId'>
+export type ScheduleInput = Omit<
+  Schedule,
+  'id' | 'facilityId' | 'fromGoogleCalendar' | 'reviewReason'
+>
 
 /** 予定の一覧の条件。 */
 export type ScheduleListParams = {

@@ -16,6 +16,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
@@ -40,6 +41,8 @@ type fakeSchedules struct {
 	lastQuery scheduleview.ListQuery
 	lastSlot  schedule.SlotInput
 	detail    scheduleview.Detail
+	// listing は、List が返す値である。nil なら、detail の 1 件の buddy_primary の一覧を返す。
+	listing *scheduleview.Listing
 }
 
 func (f *fakeSchedules) ListTypes(ctx context.Context) ([]schedule.Type, error) {
@@ -59,7 +62,13 @@ func (f *fakeSchedules) GetRecurring(context.Context, string) (scheduleview.Recu
 func (f *fakeSchedules) List(_ context.Context, _ string, q scheduleview.ListQuery) (scheduleview.Listing, error) {
 	f.listCalls++
 	f.lastQuery = q
-	return scheduleview.Listing{Schedules: []scheduleview.Detail{f.detail}, RecurringSchedules: []scheduleview.RecurringDetail{}}, f.err
+	if f.listing != nil {
+		return *f.listing, f.err
+	}
+	return scheduleview.Listing{
+		Schedules: []scheduleview.Detail{f.detail}, RecurringSchedules: []scheduleview.RecurringDetail{},
+		SourceMode: organization.SourceBuddyPrimary, CalendarSyncs: []scheduleview.CalendarSync{},
+	}, f.err
 }
 
 func (f *fakeSchedules) Create(_ context.Context, _ string, in schedule.SlotInput) (schedule.Schedule, error) {
@@ -323,6 +332,53 @@ func TestListSchedules(t *testing.T) {
 	}
 	if rs, ok := body["recurring_schedules"].([]any); !ok || len(rs) != 0 {
 		t.Errorf("recurring_schedules = %v", body["recurring_schedules"])
+	}
+	if got["source"] != "buddy" || got["review_reason"] != nil {
+		t.Errorf("source = %v, review_reason = %v, want buddy, null", got["source"], got["review_reason"])
+	}
+	if cs, ok := body["calendar_syncs"].([]any); body["source_mode"] != "buddy_primary" || !ok || len(cs) != 0 {
+		t.Errorf("source_mode = %v, calendar_syncs = %v", body["source_mode"], body["calendar_syncs"])
+	}
+}
+
+// TestListSchedulesProjected は、google_primary の事業所の一覧の応答が、正本のモード、カレンダーの同期の状況、
+// Projection の予定の読み元と確認が必要な理由を返すことを確認する。
+func TestListSchedulesProjected(t *testing.T) {
+	succeeded := time.Date(2026, 10, 20, 9, 0, 0, 0, time.UTC)
+	code := "unavailable"
+	s := &fakeSchedules{listing: &scheduleview.Listing{
+		Schedules: []scheduleview.Detail{{
+			Schedule: schedule.Schedule{ID: scheduleID, Slot: schedule.Slot{Date: civil.Date{Year: 2026, Month: 10, Day: 20}, StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10}}},
+			Source:   scheduleview.SourceGoogleCalendar, ReviewReason: scheduleview.ReviewPatientNotFound,
+		}},
+		RecurringSchedules: []scheduleview.RecurringDetail{},
+		SourceMode:         organization.SourceGooglePrimary,
+		CalendarSyncs: []scheduleview.CalendarSync{
+			{ExternalCalendarID: typeID, StaffID: staffID, StaffName: "岡田 葵", LastStatus: scheduleview.SyncFailed, LastSucceededAt: &succeeded, LastError: &code},
+			{ExternalCalendarID: scheduleID, StaffID: staffID, StaffName: "岡田 葵", LastStatus: scheduleview.SyncNever},
+		},
+	}}
+	rec, body := do(t, newRouter(s, nil, nil), http.MethodGet, "/v1/facilities/"+facilityID+"/schedules", "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
+	}
+	if body["source_mode"] != "google_primary" {
+		t.Errorf("source_mode = %v", body["source_mode"])
+	}
+	got := body["schedules"].([]any)[0].(map[string]any)
+	if got["source"] != "google_calendar" || got["review_reason"] != "patient_not_found" {
+		t.Errorf("source = %v, review_reason = %v", got["source"], got["review_reason"])
+	}
+	syncs := body["calendar_syncs"].([]any)
+	failed, never := syncs[0].(map[string]any), syncs[1].(map[string]any)
+	if failed["external_calendar_id"] != typeID || failed["staff_name"] != "岡田 葵" || failed["last_status"] != "failed" ||
+		failed["last_error"] != "unavailable" || failed["last_succeeded_at"] != "2026-10-20T09:00:00Z" {
+		t.Errorf("失敗したカレンダー = %v", failed)
+	}
+	for _, key := range []string{"last_error", "last_succeeded_at"} {
+		if v, ok := never[key]; !ok || v != nil {
+			t.Errorf("同期していないカレンダーの %s = %v, want null", key, v)
+		}
 	}
 }
 
@@ -1027,5 +1083,22 @@ func TestCreateUserVisits(t *testing.T) {
 		if rec.Code != http.StatusCreated || st.lastCreate.NonVisiting != c.nonVisiting || body["visits"] != !c.nonVisiting {
 			t.Errorf("%s: status = %d, 入力 = %+v, body = %v", name, rec.Code, st.lastCreate, body)
 		}
+	}
+}
+
+// TestGetFacility は、事業所の応答が、事業所の予定の正本のモードを返すことを確認する。
+func TestGetFacility(t *testing.T) {
+	h := httpapi.NewRouter(httpapi.Apps{
+		Organization: httpapi.OrganizationApp{GetFacility: func(_ context.Context, id string) (organization.Facility, error) {
+			return organization.Facility{ID: id, Name: "事業所", SourceMode: organization.SourceGooglePrimary}, nil
+		}},
+		Auth: fakeAuth{},
+	}, httpapi.RouterConfig{Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), Verifier: testVerifier})
+	rec, body := do(t, h, http.MethodGet, "/v1/facilities/"+facilityID, "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
+	}
+	if body["id"] != facilityID || body["source_mode"] != "google_primary" {
+		t.Errorf("body = %v", body)
 	}
 }

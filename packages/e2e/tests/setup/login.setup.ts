@@ -8,6 +8,8 @@ import {
   LOGIN_EMAIL,
   LOGIN_STAFF,
   LOGIN_STATE,
+  OKADA,
+  OKADA_STATE,
 } from '../fixtures/env'
 import { TIMEOUT_MS } from '../fixtures/timeouts'
 import { signInAtBroker } from '../screens/login'
@@ -36,6 +38,13 @@ const ACCOUNTS = [
     path: LEADER_STATE,
     email: LEADER.email,
     staffName: LEADER.staff.name,
+  },
+  {
+    title:
+      'compose のブローカーに Google カレンダーを正本にする事業所の職員でログインした状態を保存する',
+    path: OKADA_STATE,
+    email: OKADA.email,
+    staffName: OKADA.staff.name,
   },
 ]
 

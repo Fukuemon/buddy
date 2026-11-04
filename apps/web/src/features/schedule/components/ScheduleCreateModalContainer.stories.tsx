@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
+import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import {
   failingBuddyApi,
   pendingBuddyApi,
@@ -51,3 +52,8 @@ export const Loading: Story = { parameters: route({ api: pendingBuddyApi() }) }
 
 /** 自分の予定だけを編集できる職員。主訪問者の候補は自分だけになる。 */
 export const SelfEditOnly: Story = { parameters: route({ viewer: selfEditViewer }) }
+
+/** Google カレンダーを予定の正本にする事業所で URL から開いた。フォームの代わりに、Google カレンダーで作る案内を出す。 */
+export const GooglePrimary: Story = {
+  parameters: route({ api: createFakeBuddyApi({ sourceMode: 'google_primary' }) }),
+}

@@ -134,3 +134,18 @@ export const moveGoogleEvent = async (
   })
   await ensureOk(res, '予定を直せない')
 }
+
+/**
+ * 中継の gcalhold が、カレンダー calendarId の予定の取得を 503 で失敗させるかを変える。
+ * Google カレンダーに届かないときの代わりで、同期はそのカレンダーを unavailable で失敗にする。
+ */
+export const failGoogleReads = async (
+  request: APIRequestContext,
+  calendarId: string,
+  isFailing: boolean,
+) => {
+  const res = await request.post(`${GCALHOLD_URL}/fail`, {
+    data: { calendar_id: calendarId, fail: isFailing },
+  })
+  await ensureOk(res, '予定の取得を失敗させられない')
+}

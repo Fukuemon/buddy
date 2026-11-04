@@ -22,7 +22,12 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 | 職員の一覧 | 予定を作れる職員か | `Viewer.schedulePolicies`、`Staff.teamId` | `getMe` の `policies` の `code`、`target_user_ids`、`target_team_ids` |
 | 訪問の区分 | 夜勤、緊急、入院 | `ScheduleInput.visit.categories` | `visit_info.visit_category_ids` |
 | メモ | メモ | `ScheduleInput.description` | `description` |
+| Google カレンダーで管理していることの文 | 事業所が予定を Google カレンダーで管理しているか | `Facility.sourceMode` | `getFacility` の `Facility.source_mode` |
 
+- 事業所は `getFacility`（`GET /v1/facilities/{facility_id}`）で読み、web の `BuddyApi.facilities.get` が `Facility` にする。
+  - `source_mode` が `google_primary` なら、フォームの代わりに `SCHEDULE_GOOGLE_PRIMARY_MESSAGE` を出す。文は `apps/web/src/features/schedule/lib/errorMessage.ts` にある。
+  - `getFacility` の失敗は状態にせず、フォームを出す。保存のときは、`createSchedule` が 409 の `google_primary` で拒む。
+  - 処理は `apps/web/src/features/schedule/components/ScheduleCreateModalContainer.tsx` にある。
 - 訪問の予定の `title` は、画面で入れず「訪問」を送る。
 - 職員、利用者、サービスコードの一覧は、`listUsers`、`listPatients`、`listServiceCodes` から取る。
   - 3 つを取り終えるまでフォームを出さない。
@@ -71,6 +76,7 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 | 状態 | 出す文 | 要因 |
 | --- | --- | --- |
 | 読み込み中 | なし（ログインの画面へ移るまで続く） | `listUsers`、`listPatients`、`listServiceCodes` のどれかが終わっていないか、401 |
+| Google カレンダーで管理している | 「この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください。」 | API の失敗ではない。`getFacility` の `source_mode` が `google_primary` |
 | 読み込みの失敗 | 「職員と利用者を読み込めませんでした。閉じてから、開き直してください。」 | `listUsers`、`listPatients`、`listServiceCodes` のどれかが 401 以外で失敗。API に届かない |
 | 作成の失敗 | 「この操作をする権限がありません。」 | `createSchedule` が 403 |
 | 作成の失敗 | 「入力の内容では予定を作成できません。内容を直してください。」 | `createSchedule` が 400。休職か退職の職員か、訪問しない職員を主訪問者か予定者にしたときと、利用の終了の利用者を指したときを含む |

@@ -2,10 +2,13 @@ import {
   createMockImportPreview,
   createMockImportResult,
   createMockImportedPreview,
+  createMockCalendarSyncs,
+  createMockProjectionSchedules,
   exportOfIssue,
   mockDepartments,
   mockExportIssues,
   mockExternalCalendars,
+  mockFacility,
   mockServiceAccount,
 } from '#/mocks/scheduleData'
 
@@ -17,10 +20,12 @@ import type {
   FacilityId,
   ImportPreview,
   Schedule,
+  SourceMode,
   Team,
   TeamInput,
 } from '../types'
 import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
+import { fromApiSchedule } from '../http/scheduleMapper'
 import { FAKE_VIEWER, createFakeSchedules, fakeTeams } from './fixtures'
 import { createFakePatientApi, createFakePatientRecords } from './fakePatientApi'
 import { createFakeStaffApi } from './fakeStaffApi'
@@ -29,6 +34,11 @@ import { createFakeStaffApi } from './fakeStaffApi'
 export type FakeBuddyApiOptions = {
   /** 予定のダミーデータを散らす基準の日。デフォルトは呼んだ時の日付。 */
   baseDate?: Date
+  /**
+   * 事業所の予定の正本。デフォルトは buddy_primary。google_primary にすると、予定を同期が写した Google カレンダーの予定にし、
+   * 同期の状況と確認が必要な予定を返し、予定の 1 件の取得を 404 で、作成と更新を 409（google_primary）で拒む。
+   */
+  sourceMode?: SourceMode
 }
 
 const assertFacility = (facilityId: FacilityId) => {
@@ -48,10 +58,27 @@ const FAKE_READABLE_CALENDAR_SUFFIX = '@example.com'
  */
 export const createFakeBuddyApi = ({
   baseDate = new Date(),
+  sourceMode = 'buddy_primary',
 }: FakeBuddyApiOptions = {}): BuddyApi => {
+  const isGooglePrimary = sourceMode === 'google_primary'
   const schedules = new Map<Schedule['id'], Schedule>(
-    createFakeSchedules(baseDate).map((schedule) => [schedule.id, schedule]),
+    (isGooglePrimary
+      ? createMockProjectionSchedules(baseDate).map(fromApiSchedule)
+      : createFakeSchedules(baseDate)
+    ).map((schedule) => [schedule.id, schedule]),
   )
+  const calendarSyncs = isGooglePrimary ? createMockCalendarSyncs(baseDate) : []
+  // 本物の API と同じく、google_primary の事業所では予定の作成と更新を 409 で拒む
+  const assertBuddyPrimary = () => {
+    if (isGooglePrimary) {
+      throw new ApiError(
+        409,
+        'この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください',
+        [],
+        'google_primary',
+      )
+    }
+  }
   let sequence = schedules.size
   const calendars = new Map<ExternalCalendar['id'], ExternalCalendar>(
     mockExternalCalendars.map((c) => [c.id, structuredClone(c)]),
@@ -142,27 +169,44 @@ export const createFakeBuddyApi = ({
   }
 
   return {
+    facilities: {
+      get: async (facilityId) => {
+        assertFacility(facilityId)
+        return { id: mockFacility.id, name: mockFacility.name, sourceMode }
+      },
+    },
     schedules: {
       list: async (facilityId, { from, to, staffIds, includeCancelled }) => {
         assertFacility(facilityId)
         const fromTime = Date.parse(from)
         const toTime = Date.parse(to)
-        return [...schedules.values()].filter(
+        const isSelectedStaff = (staffId: string) =>
+          staffIds === undefined || staffIds.length === 0 || staffIds.includes(staffId)
+        const all = [...schedules.values()].filter(
           (schedule) =>
             (includeCancelled === true || schedule.cancel === undefined) &&
-            Date.parse(schedule.endsAt) > fromTime &&
-            Date.parse(schedule.startsAt) < toTime &&
-            (staffIds === undefined ||
-              staffIds.length === 0 ||
-              staffIds.includes(schedule.staffId)),
+            isSelectedStaff(schedule.staffId),
         )
+        return {
+          schedules: all.filter(
+            (schedule) =>
+              Date.parse(schedule.endsAt) > fromTime && Date.parse(schedule.startsAt) < toTime,
+          ),
+          needsReview: all.filter((schedule) => schedule.reviewReason !== undefined),
+          sourceMode,
+          calendarSyncs: calendarSyncs.filter((sync) => isSelectedStaff(sync.staff_id)),
+        }
       },
       get: async (facilityId, scheduleId) => {
         assertFacility(facilityId)
+        // 本物の API と同じく、Google カレンダーの予定には 1 件の取得が無い
+        if (isGooglePrimary)
+          throw new ApiError(404, `予定 ${scheduleId} が見つかりません`, [], 'not_found')
         return findSchedule(scheduleId)
       },
       create: async (facilityId, input) => {
         assertFacility(facilityId)
+        assertBuddyPrimary()
         sequence += 1
         const schedule: Schedule = { ...input, id: `schedule-${sequence}`, facilityId }
         schedules.set(schedule.id, schedule)
@@ -170,6 +214,7 @@ export const createFakeBuddyApi = ({
       },
       update: async (facilityId, scheduleId, input) => {
         assertFacility(facilityId)
+        assertBuddyPrimary()
         // 本物の API と同じく、キャンセルした予定の更新は 409 で拒む
         if (findSchedule(scheduleId).cancel !== undefined) {
           throw new ApiError(409, 'キャンセル済みの予定は変えられません', [], 'conflict')

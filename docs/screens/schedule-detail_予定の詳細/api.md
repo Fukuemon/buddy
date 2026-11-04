@@ -14,6 +14,9 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 | 主訪問者、予定者 | 職員の名前 | `Schedule.staffId` を、職員の一覧（`Staff.name`）で引く | `staff_id` を、`listUsers` の `Staff.username` で引く |
 | メモ | メモ | `Schedule.description` | `description` |
 | キャンセルの理由 | 理由 | `Schedule.cancel.reason` | `cancel.reason` |
+| Google カレンダーの案内、編集 | Google カレンダーの予定か | `Schedule.fromGoogleCalendar` | `listSchedules` の `Schedule.source` が `google_calendar` |
+| 確認が必要な理由 | 理由 | `Schedule.reviewReason` | `listSchedules` の `Schedule.review_reason` |
+| （画面に出さない） | 事業所が予定を Google カレンダーで管理しているか | `Facility.sourceMode` | `getFacility` の `Facility.source_mode` |
 
 - 種類の文言は `SCHEDULE_KIND_LABEL`、訪問の区分の文言は `SCHEDULE_CATEGORY_LABEL` で決める。
   - どちらも `apps/web/src/features/schedule/constants/scheduleLabels.ts` にある。
@@ -31,6 +34,23 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 - 繰り返しの予定の回は、回の ID（`occurrenceId`）で開く。
   - web のサーバーは、`getRecurringSchedule`（`GET /v1/schedules/recurring/{recurring_schedule_id}`）で繰り返しの予定を取り、その回を単発の予定の形にする。
   - 回が無いか除外した日なら、web のサーバーは status が 404 の `ApiError` にする。
+
+## Google カレンダーで予定を管理する事業所
+
+- 画面は、先に `getFacility`（`GET /v1/facilities/{facility_id}`）で事業所を読み、`source_mode` で予定の読み方を決める。
+  - web の `BuddyApi.facilities.get` が `Facility` にする。
+  - `buddy_primary` なら、`BuddyApi.schedules.get` で予定を読む。
+  - `google_primary` なら、`BuddyApi.schedules.list`（`listSchedules`）で読む。Google カレンダーの予定（Projection）には `getSchedule` が無く、404 になるためである。
+- `google_primary` の事業所の一覧は、カレンダーの search params の `view` と `date` から `getCalendarRange` で決めた期間で読み、`staffIds` は渡さない。
+  - `includeCancelled` には search params の `cancelled` を渡す。
+  - 予定は、`ScheduleList.schedules` と `ScheduleList.needsReview` を合わせた中から id で探す。`needsReview` は期間で絞らないので、最初の回が期間の外の `recurrence_unsupported` の予定も見つかる。
+  - 見つからなければ、`SCHEDULE_NOT_FOUND_MESSAGE` を出す。
+  - 処理は `apps/web/src/features/schedule/components/ScheduleDetailModalContainer.tsx` にある。
+- `Schedule.source` が `google_calendar` の予定は、web のサーバーが `Schedule.fromGoogleCalendar` を `true` にする。
+  - 画面は案内を出し、編集のボタンを出さない。
+- `review_reason` が `null` でない予定は、web のサーバーが `Schedule.reviewReason` に写す。
+  - 理由の文は `apps/web/src/features/schedule/constants/scheduleLabels.ts` の `SCHEDULE_REVIEW_REASON_LABEL` で決める。
+  - `recurrence_unsupported` のほかの予定は、`visit_info` が `null` の通常の予定で、`title` に Google カレンダーのタイトルが入る。
 
 ## 編集のボタンの出し分け
 
@@ -56,9 +76,10 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 
 | 状態 | 出す文 | 要因 |
 | --- | --- | --- |
-| 見つからない | 「予定が見つかりません。」 | `getSchedule` か `getRecurringSchedule` が 404。繰り返しの予定に回が無い（web のサーバーが 404 にする） |
+| 見つからない | 「予定が見つかりません。」 | `getSchedule` か `getRecurringSchedule` が 404。繰り返しの予定に回が無い（web のサーバーが 404 にする）。`google_primary` の事業所で、`listSchedules` の期間の予定と確認が必要な予定に、URL の予定が無い。`getFacility` か、`google_primary` の事業所の `listSchedules` が 404 |
 | 見る権限が無い | 「この予定を見る権限がありません。」 | `getSchedule` か `getRecurringSchedule` が 403。予定の `facility_id` がログインした職員の事業所と違う（web のサーバーが 403 にする） |
-| 読み込みの失敗 | 「予定を取得できませんでした。」 | `getSchedule` か `getRecurringSchedule` が 404 と 403 のほかの失敗（400、500）。API に届かない |
+| 見る権限が無い | 「この予定を見る権限がありません。」 | `getFacility` か、`google_primary` の事業所の `listSchedules` が 403 |
+| 読み込みの失敗 | 「予定を取得できませんでした。」 | `getSchedule` か `getRecurringSchedule` が 404 と 403 のほかの失敗（400、500）。`getFacility` か、`google_primary` の事業所の `listSchedules` が 404 と 403 のほかの失敗。API に届かない |
 | 読み込み中 | なし（ログインの画面へ移るまで続く） | 予定の API か web のサーバーが 401 |
 
 - 文は `apps/web/src/features/schedule/lib/errorMessage.ts` の `scheduleLoadErrorMessage` が、`ApiError.status` で選ぶ。

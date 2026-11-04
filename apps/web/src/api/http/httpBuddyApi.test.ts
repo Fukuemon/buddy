@@ -56,10 +56,15 @@ const schedule = (
   recurring_schedule_id: null,
   visit_info: null,
   cancel: null,
+  source: 'buddy',
+  review_reason: null,
   created_at: '2026-10-01T00:00:00Z',
   updated_at: '2026-10-01T00:00:00Z',
   ...overrides,
 })
+
+/** buddy_primary の事業所の一覧の応答の、予定のほかの項目。 */
+const BUDDY_PRIMARY_LIST = { source_mode: 'buddy_primary' as const, calendar_syncs: [] }
 
 describe('createHttpBuddyApi', () => {
   it('期間を日付にして予定を取り、キャンセル、期間の外、ほかの職員の予定を除く', async () => {
@@ -76,6 +81,7 @@ describe('createHttpBuddyApi', () => {
                 schedule('outside', { start_time: '23:00', end_time: '23:30' }),
               ],
               recurring_schedules: [],
+              ...BUDDY_PRIMARY_LIST,
             })
           : response(400).json(invalid('期間が日付になっていない')),
       ),
@@ -85,7 +91,76 @@ describe('createHttpBuddyApi', () => {
       to: '2026-10-20T12:00:00+09:00',
       staffIds: ['staff-1'],
     })
-    expect(list.map((s) => s.id)).toEqual(['keep'])
+    expect(list.schedules.map((s) => s.id)).toEqual(['keep'])
+  })
+
+  it('google_primary の事業所では、確認が必要な予定を期間で絞らず、予定と同期の状況を職員で絞って返す', async () => {
+    const sync = (staffId: string): components['schemas']['CalendarSyncStatus'] => ({
+      external_calendar_id: `calendar-${staffId}`,
+      staff_id: staffId,
+      staff_name: staffId,
+      last_status: 'succeeded',
+      last_succeeded_at: '2026-10-20T00:00:00Z',
+      last_error: null,
+    })
+    const fromGoogle = { source: 'google_calendar' } as const
+    server.use(
+      scheduleHttp.get('/v1/facilities/{facility_id}/schedules', ({ response }) =>
+        response(200).json({
+          schedules: [
+            schedule('projection', fromGoogle),
+            schedule('review', { ...fromGoogle, review_reason: 'patient_not_found' }),
+            schedule('recurrence', {
+              ...fromGoogle,
+              date: '2026-09-01',
+              review_reason: 'recurrence_unsupported',
+            }),
+            schedule('other-staff', {
+              ...fromGoogle,
+              staff_id: 'staff-2',
+              review_reason: 'title_unreadable',
+            }),
+          ],
+          recurring_schedules: [],
+          source_mode: 'google_primary',
+          calendar_syncs: [sync('staff-1'), sync('staff-2')],
+        }),
+      ),
+    )
+    const list = await api().schedules.list('facility-1', {
+      from: '2026-10-20T00:00:00+09:00',
+      to: '2026-10-21T00:00:00+09:00',
+      staffIds: ['staff-1'],
+    })
+    expect(list.sourceMode).toBe('google_primary')
+    expect(list.schedules.map((s) => [s.id, s.fromGoogleCalendar])).toEqual([
+      ['projection', true],
+      ['review', true],
+    ])
+    expect(list.needsReview.map((s) => [s.id, s.reviewReason])).toEqual([
+      ['review', 'patient_not_found'],
+      ['recurrence', 'recurrence_unsupported'],
+    ])
+    expect(list.calendarSyncs.map((s) => s.staff_id)).toEqual(['staff-1'])
+  })
+
+  it('事業所を読み、予定の正本を返す', async () => {
+    server.use(
+      scheduleHttp.get('/v1/facilities/{facility_id}', ({ params, response }) =>
+        response(200).json({
+          id: params.facility_id,
+          name: '事業所',
+          source_mode: 'google_primary',
+          created_at: '2026-10-01T00:00:00Z',
+          updated_at: '2026-10-01T00:00:00Z',
+        }),
+      ),
+    )
+    expect(await api().facilities.get('facility-1')).toEqual({
+      id: 'facility-1',
+      name: '事業所',
+      sourceMode: 'google_primary',
+    })
   })
 
   it('前の日に始まり期間に終わる、翌日に終わる予定と繰り返しの予定の回を返す', async () => {
@@ -111,6 +186,7 @@ describe('createHttpBuddyApi', () => {
             }),
           ],
           recurring_schedules: [rs],
+          ...BUDDY_PRIMARY_LIST,
         }),
       ),
     )
@@ -118,7 +194,7 @@ describe('createHttpBuddyApi', () => {
       from: '2026-10-20T00:00:00+09:00',
       to: '2026-10-21T00:00:00+09:00',
     })
-    expect(list.map((s) => [s.startsAt, s.endsAt])).toEqual([
+    expect(list.schedules.map((s) => [s.startsAt, s.endsAt])).toEqual([
       ['2026-10-19T22:00:00+09:00', '2026-10-20T01:00:00+09:00'],
       ['2026-10-19T23:00:00+09:00', '2026-10-20T02:00:00+09:00'],
     ])
@@ -135,6 +211,7 @@ describe('createHttpBuddyApi', () => {
             }),
           ],
           recurring_schedules: [],
+          ...BUDDY_PRIMARY_LIST,
         }),
       ),
     )
@@ -143,7 +220,7 @@ describe('createHttpBuddyApi', () => {
       to: '2026-10-20T12:00:00+09:00',
       includeCancelled: true,
     })
-    expect(list.map((s) => [s.id, s.cancel])).toEqual([
+    expect(list.schedules.map((s) => [s.id, s.cancel])).toEqual([
       ['keep', undefined],
       ['cancelled', { reason: '体調不良' }],
     ])
@@ -157,7 +234,7 @@ describe('createHttpBuddyApi', () => {
     }
     server.use(
       scheduleHttp.get('/v1/facilities/{facility_id}/schedules', ({ response }) =>
-        response(200).json({ schedules: [], recurring_schedules: [rs] }),
+        response(200).json({ schedules: [], recurring_schedules: [rs], ...BUDDY_PRIMARY_LIST }),
       ),
       scheduleHttp.get('/v1/schedules/recurring/{recurring_schedule_id}', ({ response }) =>
         response(200).json(rs),
@@ -177,19 +254,19 @@ describe('createHttpBuddyApi', () => {
       from: '2026-10-01T00:00:00+09:00',
       to: '2026-11-01T00:00:00+09:00',
     })
-    expect(listed.map((s) => s.startsAt.slice(0, 10))).toEqual([
+    expect(listed.schedules.map((s) => s.startsAt.slice(0, 10))).toEqual([
       '2026-10-06',
       '2026-10-20',
       '2026-10-27',
     ])
-    const occurrence = await api().schedules.get('facility-1', listed[1].id)
+    const occurrence = await api().schedules.get('facility-1', listed.schedules[1].id)
     expect(occurrence.startsAt).toBe('2026-10-20T09:00:00+09:00')
     await expect(
-      api().schedules.get('facility-1', listed[1].id.replace('10-20', '10-13')),
+      api().schedules.get('facility-1', listed.schedules[1].id.replace('10-20', '10-13')),
     ).rejects.toMatchObject({
       status: 404,
     })
-    const replaced = await api().schedules.update('facility-1', listed[1].id, {
+    const replaced = await api().schedules.update('facility-1', listed.schedules[1].id, {
       ...occurrence,
       startsAt: '2026-10-20T10:00:00+09:00',
       endsAt: '2026-10-20T11:00:00+09:00',

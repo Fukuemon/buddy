@@ -49,3 +49,20 @@
   background: var(--buddy-color-warning-surface);
   color: var(--buddy-color-warning);
 }
+
+/* Google カレンダーの予定で、先頭に出す案内（apps/web の ScheduleDetailModal の枠線の帯） */
+.sd-google {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--wf-line-soft);
+  border-radius: var(--wf-radius);
+}
+
+/* 確認が必要な予定の理由（apps/web の ScheduleDetailModal の warning-surface の帯） */
+.sd-review {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border-radius: var(--wf-radius);
+  background: var(--wf-warning-surface);
+  color: var(--wf-warning);
+}

@@ -11,6 +11,7 @@ import { Loading, Modal } from '@buddy/ui'
 import { activeStaffId } from '../lib/activeStaff'
 import { toDateKey } from '../lib/dateTime'
 import {
+  SCHEDULE_GOOGLE_PRIMARY_MESSAGE,
   SCHEDULE_OPTIONS_LOAD_ERROR_MESSAGE,
   scheduleSubmitErrorMessage,
 } from '../lib/errorMessage'
@@ -21,6 +22,7 @@ import {
 } from '../lib/scheduleFormMapper'
 import { editableStaff } from '../lib/schedulePermission'
 import {
+  facilityQueryOptions,
   patientListQueryOptions,
   serviceCodeListQueryOptions,
   staffListQueryOptions,
@@ -117,6 +119,7 @@ const ScheduleCreateForm = ({
  * 職員、利用者、サービスコードの一覧を読み終えるまでは読み込み中の表示を出し、読めなければフォームの代わりに失敗の文を出す。
  * 一度読めた後の読み直しが失敗しても、読めた一覧でフォームを出したままにし、入力を消さない。
  * 職員の候補は、ログインした職員が予定を作れる職員に限る。URL の staffId が候補の外の職員を指すときは、未選択で開く。
+ * Google カレンダーを予定の正本にする事業所（google_primary）では、フォームの代わりに Google カレンダーで作る案内を出す。
  */
 export const ScheduleCreateModalContainer = () => {
   const search = useSearch({ from: '/schedule/new' })
@@ -125,9 +128,23 @@ export const ScheduleCreateModalContainer = () => {
 
   const staffQuery = useQuery(staffListQueryOptions(api, facilityId))
   const patientsQuery = useQuery(patientListQueryOptions(api, facilityId))
+  const facilityQuery = useQuery(facilityQueryOptions(api, facilityId))
   const serviceCodesQuery = useQuery(serviceCodeListQueryOptions(api, facilityId))
 
   const close = () => navigate({ to: '/schedule', search: pickCalendarSearch(search) })
+
+  if (facilityQuery.data?.sourceMode === 'google_primary') {
+    return (
+      <Modal
+        data-testid="schedule-new-google-primary"
+        isOpen
+        onCloseRequest={close}
+        title="予定の作成"
+      >
+        <p className="p-5">{SCHEDULE_GOOGLE_PRIMARY_MESSAGE}</p>
+      </Modal>
+    )
+  }
 
   const staffList = staffQuery.data
   const patients = patientsQuery.data

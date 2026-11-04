@@ -514,6 +514,17 @@ Projection（`calendar_event_projections`）は、Google カレンダーの 1 �
 トークンが無いか切れた（410）ときに全ての予定を読み直したら、カレンダーの行のうち、読み直しに無かった行を消す。  
 増分の取得で取り消しを取りこぼした行は、これで消える。
 
+#### Projection を読む側
+
+Projection を読むのは、予定の表示の読み出し（`scheduleview` の `List`）だけである。  
+読む手順は、[予定の管理の Design Doc の予定の一覧の読み元](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#予定の一覧の読み元) にある。
+
+- 行を buddy の予定に読み替える規則は、取り込みと同じ `Classify` と `RuleFromRecurrence` を使う。
+  - `calendar.ProjectionRules` が、行を Google の予定の形（`calendar.Event`）にして 2 つの規則を呼ぶ。`scheduleview` は `calendar` を import できないので、組み立ての場所がこの値を渡す。
+  - 行の日時は DB から UTC で読むので、Asia/Tokyo のオフセットの日時にしてから規則に渡す。`RuleFromRecurrence` が、タイムゾーンの無い予定をオフセットで Asia/Tokyo かを確認するためである。
+- 利用者名とサービス内容は、取り込みと同じ規則（`gcaltitle.NormalizeClient`、`ServiceKey`）でそろえて比べる。
+- 一覧は、カレンダーごとの同期の状況（`calendar_sync_states` の最後の結果、`last_synced_at`、最後の失敗の理由）を一緒に返す。`last_synced_at` は、変わった予定を最後まで読んで当てた同期のときだけ進む。
+
 #### buddy の予定に当てる規則（使わない）
 
 次の「当て方」「単発の予定に当てる内容」「繰り返しの予定に当てる内容」は、`reconcileApplier` の規則である。  
@@ -667,6 +678,7 @@ calendarpit で足りない振る舞いと、その扱い
 | サービスアカウント、カレンダーの共有と、共有の権限（閲覧だけ、空き時間だけ） | 残す。fixture の利用者 1 人が職員のカレンダーを全て持つ。書けないカレンダーと `freeBusyReader` は、`gcaltest` のユニットテストで確認する |
 | 事業所ごとのサービスアカウントのなりすまし（ADR-0012） | 残す。なりすましを作るときは、`GOOGLE_CALENDAR_ENDPOINT` のときになりすまさず、ADC のファイルの token を全ての事業所に使う |
 | 403 の rate limit と 5xx | 残す。`gcaltest` の `Failures` と `Status` で確認する |
+| 1 つのカレンダーの予定の取得の失敗 | 中継の `cmd/gcalhold` で補う。E2E が `POST /fail` で失敗させている間は、そのカレンダーの `events.list` に 503 を返す。同期の失敗を予定のカレンダーの画面で確認するために要る |
 
 - Go のユニットテストは、`gcaltest` のフェイクのまま置き換えない。テストの中で誤りの応答とトークンの切れを作れ、Docker が要らないためである。
 - calendarpit の `syncToken` は、workspace 全体で 100 個までで、古いものから消える。消えたトークンには 410 を返すので、予定の API は全ての予定を読み直す。

@@ -3,6 +3,7 @@ import type {
   CalendarExportIssue,
   Department,
   ExternalCalendar,
+  Facility,
   FacilityId,
   ImportDecision,
   ImportPreview,
@@ -20,6 +21,7 @@ import type {
   ReceiptCsvError,
   Schedule,
   ScheduleInput,
+  ScheduleList,
   ScheduleListParams,
   ServiceCodeRecord,
   Staff,
@@ -80,8 +82,16 @@ export interface ReceiptApi {
  * どの操作も、事業所が見つからない、ほかの事業所のものを指した、のような失敗で ApiError を投げる。
  */
 export interface BuddyApi {
+  facilities: {
+    /** 事業所を返す。画面は予定の正本（sourceMode）で、予定を書く操作を出すかを決める。 */
+    get(facilityId: FacilityId): Promise<Facility>
+  }
+  /**
+   * 予定。google_primary の事業所では、list は同期が写した Google カレンダーの予定（fromGoogleCalendar が true）を返し、
+   * get は status が 404 の、create と update は status が 409 で code が google_primary の ApiError を投げる。
+   */
   schedules: {
-    list(facilityId: FacilityId, params: ScheduleListParams): Promise<Schedule[]>
+    list(facilityId: FacilityId, params: ScheduleListParams): Promise<ScheduleList>
     /** 予定がなければ status が 404 の ApiError を投げる。 */
     get(facilityId: FacilityId, scheduleId: Schedule['id']): Promise<Schedule>
     create(facilityId: FacilityId, input: ScheduleInput): Promise<Schedule>

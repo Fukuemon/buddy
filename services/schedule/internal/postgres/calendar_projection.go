@@ -11,7 +11,8 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres/sqlcgen"
 )
 
-// CalendarProjectionRepository は、calendarsync.Projections を実装する。Google カレンダーの予定の写し（Projection）を読み書きする。
+// CalendarProjectionRepository は、calendarsync.Projections と、scheduleview.Projections と scheduleview.CalendarSyncs を実装する。
+// Google カレンダーの予定の写し（Projection）を読み書きし、カレンダーの同期の状況を読む。
 type CalendarProjectionRepository struct{ conn }
 
 // NewCalendarProjectionRepository は CalendarProjectionRepository を作る。
@@ -56,4 +57,52 @@ func (r *CalendarProjectionRepository) DeleteEndedBefore(ctx context.Context, ex
 		ExternalCalendarID: externalCalendarID, Before: before.Time(),
 	})
 	return translate("delete ended calendar event projections", err)
+}
+
+var (
+	_ scheduleview.Projections   = (*CalendarProjectionRepository)(nil)
+	_ scheduleview.CalendarSyncs = (*CalendarProjectionRepository)(nil)
+)
+
+// ListByFacility は、scheduleview.Projections の ListByFacility を実装する。
+func (r *CalendarProjectionRepository) ListByFacility(ctx context.Context, facilityID string, from civil.Date) ([]scheduleview.ProjectionDetail, error) {
+	rows, err := r.q(ctx).ListCalendarEventProjectionsByFacility(ctx, sqlcgen.ListCalendarEventProjectionsByFacilityParams{
+		FacilityID: facilityID, FromDate: from.Time(),
+	})
+	if err != nil {
+		return nil, translate("list calendar event projections", err)
+	}
+	out := make([]scheduleview.ProjectionDetail, len(rows))
+	for i, row := range rows {
+		out[i] = scheduleview.ProjectionDetail{
+			Projection: scheduleview.Projection{
+				ExternalCalendarID: row.ExternalCalendarID, EventID: row.ExternalEventID, FacilityID: row.FacilityID, StaffID: row.StaffID,
+				RecurringEventID: deref(row.RecurringEventID),
+				OriginalStart:    scheduleview.ProjectionTime{At: row.OriginalStartAt, Date: datePtr(row.OriginalStartDate)},
+				Status:           scheduleview.ProjectionStatus(row.Status), Title: row.Title,
+				Start:    scheduleview.ProjectionTime{At: row.StartAt, Date: datePtr(row.StartDate)},
+				End:      scheduleview.ProjectionTime{At: row.EndAt, Date: datePtr(row.EndDate)},
+				TimeZone: deref(row.TimeZone), Recurrence: row.Recurrence, ETag: row.Etag, GoogleUpdatedAt: row.GoogleUpdatedAt,
+				LastEndDate: datePtr(row.LastEndDate), ProjectedAt: row.ProjectedAt,
+			},
+			StaffName: row.StaffName,
+		}
+	}
+	return out, nil
+}
+
+// ListSyncsByFacility は、scheduleview.CalendarSyncs の ListSyncsByFacility を実装する。
+func (r *CalendarProjectionRepository) ListSyncsByFacility(ctx context.Context, facilityID string) ([]scheduleview.CalendarSync, error) {
+	rows, err := r.q(ctx).ListCalendarSyncStatusesByFacility(ctx, facilityID)
+	if err != nil {
+		return nil, translate("list calendar sync statuses", err)
+	}
+	out := make([]scheduleview.CalendarSync, len(rows))
+	for i, row := range rows {
+		out[i] = scheduleview.CalendarSync{
+			ExternalCalendarID: row.ExternalCalendarID, StaffID: row.StaffID, StaffName: row.StaffName,
+			LastStatus: scheduleview.SyncStatus(row.LastStatus), LastSucceededAt: row.LastSyncedAt, LastError: row.LastError,
+		}
+	}
+	return out, nil
 }

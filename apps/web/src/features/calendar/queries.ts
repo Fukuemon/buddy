@@ -19,6 +19,13 @@ export const externalCalendarListQueryOptions = (api: BuddyApi, facilityId: Faci
     queryFn: () => api.calendars.list(facilityId),
   })
 
+/** 事業所を読む query。予定の正本（sourceMode）で、Google の内容に合わせる操作を出すかを決める。予定の画面と cache を共有する。 */
+export const facilityQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
+  queryOptions({
+    queryKey: queryKeys.facilityDetail(facilityId),
+    queryFn: () => api.facilities.get(facilityId),
+  })
+
 /** サービスアカウントのメールアドレスの query。サービスアカウントが設定されていなければ null になる。 */
 export const serviceAccountQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({

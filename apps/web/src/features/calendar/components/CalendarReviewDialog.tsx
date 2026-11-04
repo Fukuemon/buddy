@@ -14,8 +14,11 @@ export type CalendarReviewDialogProps = {
   issue: CalendarExportIssue
   /** 単発の予定の詳細を開く。繰り返しの予定には出さない。 */
   onOpenSchedule: (scheduleId: string) => void
-  /** Google カレンダーの内容に合わせる確認のダイアログを開く。acceptable の予定にだけ出す。 */
-  onAccept: () => void
+  /**
+   * Google カレンダーの内容に合わせる確認のダイアログを開く。acceptable の予定にだけ出す。
+   * 省くと出さない。予定の API が合わせる操作を拒む buddy_primary の事業所で省く。
+   */
+  onAccept?: () => void
   /** buddy の内容で書き直す確認のダイアログを開く。 */
   onRewrite: () => void
   /** ×、覆い、Escape キーで呼ぶ。 */
@@ -79,7 +82,7 @@ export const CalendarReviewDialog = ({
         )}
       </DialogBody>
       <DialogFooter>
-        {issue.acceptable && (
+        {issue.acceptable && onAccept !== undefined && (
           <Button
             data-testid={`calendar-review-accept-${issue.id}`}
             onClick={onAccept}

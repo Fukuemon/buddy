@@ -59,6 +59,137 @@ func (q *Queries) DeleteCalendarEventProjectionsExcept(ctx context.Context, arg 
 	return err
 }
 
+const listCalendarEventProjectionsByFacility = `-- name: ListCalendarEventProjectionsByFacility :many
+SELECT p.external_calendar_id, p.external_event_id, p.facility_id, p.staff_id, p.recurring_event_id, p.original_start_at, p.original_start_date,
+       p.status, p.title, p.start_at, p.start_date, p.end_at, p.end_date, p.time_zone, p.recurrence, p.etag, p.google_updated_at,
+       p.last_end_date, p.projected_at, u.username AS staff_name
+FROM calendar_event_projections p
+JOIN external_calendars c ON c.id = p.external_calendar_id AND c.facility_id = p.facility_id
+JOIN users u ON u.id = p.staff_id AND u.facility_id = p.facility_id
+WHERE p.facility_id = $1 AND c.disabled_at IS NULL
+  AND (p.last_end_date IS NULL OR p.last_end_date >= $2::date)
+ORDER BY p.external_calendar_id, p.external_event_id
+`
+
+type ListCalendarEventProjectionsByFacilityParams struct {
+	FacilityID string
+	FromDate   time.Time
+}
+
+type ListCalendarEventProjectionsByFacilityRow struct {
+	ExternalCalendarID string
+	ExternalEventID    string
+	FacilityID         string
+	StaffID            string
+	RecurringEventID   *string
+	OriginalStartAt    *time.Time
+	OriginalStartDate  *time.Time
+	Status             string
+	Title              string
+	StartAt            *time.Time
+	StartDate          *time.Time
+	EndAt              *time.Time
+	EndDate            *time.Time
+	TimeZone           *string
+	Recurrence         []string
+	Etag               string
+	GoogleUpdatedAt    *time.Time
+	LastEndDate        *time.Time
+	ProjectedAt        time.Time
+	StaffName          string
+}
+
+// 予定の表示の読み出し（scheduleview）が、事業所の外していないカレンダーの行のうち、終わる日が from_date より前でない行（終わる日の無い行を含む）を、
+// 職員の名前を付けて読む。外したカレンダー（退職した職員のカレンダーを含む）の行は返さない。
+func (q *Queries) ListCalendarEventProjectionsByFacility(ctx context.Context, arg ListCalendarEventProjectionsByFacilityParams) ([]ListCalendarEventProjectionsByFacilityRow, error) {
+	rows, err := q.db.Query(ctx, listCalendarEventProjectionsByFacility, arg.FacilityID, arg.FromDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListCalendarEventProjectionsByFacilityRow{}
+	for rows.Next() {
+		var i ListCalendarEventProjectionsByFacilityRow
+		if err := rows.Scan(
+			&i.ExternalCalendarID,
+			&i.ExternalEventID,
+			&i.FacilityID,
+			&i.StaffID,
+			&i.RecurringEventID,
+			&i.OriginalStartAt,
+			&i.OriginalStartDate,
+			&i.Status,
+			&i.Title,
+			&i.StartAt,
+			&i.StartDate,
+			&i.EndAt,
+			&i.EndDate,
+			&i.TimeZone,
+			&i.Recurrence,
+			&i.Etag,
+			&i.GoogleUpdatedAt,
+			&i.LastEndDate,
+			&i.ProjectedAt,
+			&i.StaffName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCalendarSyncStatusesByFacility = `-- name: ListCalendarSyncStatusesByFacility :many
+SELECT c.id AS external_calendar_id, c.staff_id, u.username AS staff_name,
+       COALESCE(s.last_status, 'never')::text AS last_status, s.last_synced_at, s.last_error
+FROM external_calendars c
+JOIN users u ON u.id = c.staff_id AND u.facility_id = c.facility_id
+LEFT JOIN calendar_sync_states s ON s.external_calendar_id = c.id
+WHERE c.facility_id = $1 AND c.disabled_at IS NULL
+ORDER BY c.id
+`
+
+type ListCalendarSyncStatusesByFacilityRow struct {
+	ExternalCalendarID string
+	StaffID            string
+	StaffName          string
+	LastStatus         string
+	LastSyncedAt       *time.Time
+	LastError          *string
+}
+
+// 事業所の外していないカレンダーの同期の状況を、職員の名前を付けて返す。同期の状態の行が無いカレンダーは never にする。
+// last_synced_at は、変わった予定を最後まで読んで当てた最後の同期の時刻である。
+func (q *Queries) ListCalendarSyncStatusesByFacility(ctx context.Context, facilityID string) ([]ListCalendarSyncStatusesByFacilityRow, error) {
+	rows, err := q.db.Query(ctx, listCalendarSyncStatusesByFacility, facilityID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListCalendarSyncStatusesByFacilityRow{}
+	for rows.Next() {
+		var i ListCalendarSyncStatusesByFacilityRow
+		if err := rows.Scan(
+			&i.ExternalCalendarID,
+			&i.StaffID,
+			&i.StaffName,
+			&i.LastStatus,
+			&i.LastSyncedAt,
+			&i.LastError,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const putCalendarEventProjection = `-- name: PutCalendarEventProjection :exec
 INSERT INTO calendar_event_projections (
     external_calendar_id, external_event_id, facility_id, staff_id, recurring_event_id, original_start_at, original_start_date,

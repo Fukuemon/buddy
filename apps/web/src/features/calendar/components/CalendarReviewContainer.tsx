@@ -13,7 +13,12 @@ import {
   rewriteErrorMessage,
 } from '../lib/errorMessage'
 import { formatExportIssueDateTime, isCancelledSingleIssue } from '../lib/exportIssue'
-import { exportIssueListQueryOptions, useAcceptExport, useRetryExport } from '../queries'
+import {
+  exportIssueListQueryOptions,
+  facilityQueryOptions,
+  useAcceptExport,
+  useRetryExport,
+} from '../queries'
 import { CalendarAcceptDialog } from './CalendarAcceptDialog'
 import { CalendarReviewDialog } from './CalendarReviewDialog'
 import { CalendarReviewView, type CalendarReviewViewState } from './CalendarReviewView'
@@ -30,6 +35,9 @@ const CalendarReviewContent = () => {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const issuesQuery = useQuery(exportIssueListQueryOptions(api, facilityId))
+  const facilityQuery = useQuery(facilityQueryOptions(api, facilityId))
+  // buddy_primary の事業所では、予定の API が Google の内容に合わせる操作を拒む（#638）。事業所を読むまでは出さない
+  const canAccept = facilityQuery.data?.sourceMode === 'google_primary'
   const rewrite = useRetryExport()
   const accept = useAcceptExport()
   const [target, setTarget] = useState<DialogTarget | null>(null)
@@ -65,7 +73,7 @@ const CalendarReviewContent = () => {
       {target?.step === 'detail' && (
         <CalendarReviewDialog
           issue={target.issue}
-          onAccept={() => show('accept', target.issue)}
+          onAccept={canAccept ? () => show('accept', target.issue) : undefined}
           onClose={() => show(null)}
           onOpenSchedule={(scheduleId) =>
             navigate({ to: '/schedule/$scheduleId', params: { scheduleId } })
@@ -100,6 +108,7 @@ const CalendarReviewContent = () => {
  * 確認が必要な予定の画面。
  * 行を押すと予定の確認のダイアログを開き、buddy の内容で書き直すか Google の内容に合わせるかを、確認のダイアログで確定してから行う。
  * 確認のダイアログの「キャンセル」は、予定の確認のダイアログに戻る。
+ * 「Google の内容に合わせる」は、Google カレンダーを予定の正本にする事業所（google_primary）でだけ出す。
  */
 export const CalendarReviewContainer = () => {
   return <CalendarReviewContent />

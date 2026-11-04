@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
+import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import {
   failingBuddyApi,
   pendingBuddyApi,
@@ -50,3 +51,27 @@ export const ReadOnly: Story = {
 
 /** 見る権限の無い予定。読み直しても変わらないので、権限が無いことを出す。 */
 export const Forbidden: Story = { parameters: route({ api: failingBuddyApi(403) }) }
+
+/** Google カレンダーを予定の正本にする事業所の予定。一覧から引いて出し、Google カレンダーで変更する案内を出し、編集のボタンを出さない。 */
+export const GoogleCalendar: Story = {
+  parameters: route({
+    url: '/schedule/gcal-schedule-3',
+    api: createFakeBuddyApi({ sourceMode: 'google_primary' }),
+  }),
+}
+
+/** 確認が必要な Google カレンダーの予定。理由を出す。 */
+export const GoogleCalendarNeedsReview: Story = {
+  parameters: route({
+    url: '/schedule/gcal-review-1',
+    api: createFakeBuddyApi({ sourceMode: 'google_primary' }),
+  }),
+}
+
+/** 繰り返しの規則を写せない予定。最初の回が表示の期間の外でも、確認が必要な予定から引いて出す。 */
+export const GoogleCalendarRecurrenceUnsupported: Story = {
+  parameters: route({
+    url: '/schedule/gcal-review-3',
+    api: createFakeBuddyApi({ sourceMode: 'google_primary' }),
+  }),
+}

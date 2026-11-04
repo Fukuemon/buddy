@@ -627,6 +627,11 @@ export interface paths {
          * @description 事業所の単発の予定と繰り返しの予定のうち、職員が見てよい予定を返す。見てよくない職員の予定は除く。
          *     sort_field と sort_order は許可した値だけを受け付け、ほかの値は 400 を返す。date_from と date_to は単発の予定だけを、予定の日付（開始の日）で絞る。
          *     date_from の前の日に始まり、date_from に終わる ends_next_day の予定も返す。
+         *     Google カレンダーを予定の正本にする事業所（google_primary）では、同期が写した Google カレンダーの予定（Projection）を読む（ADR-0035）。
+         *     繰り返しの予定は、date_from から date_to までの回に展開し、回ごとに単発の予定（source が google_calendar）として返す。recurring_schedules は空である。
+         *     date_from か date_to を省くと、Projection を保持する期間（前々月の初日から 3 か月後の月末）の端を使う。
+         *     外したカレンダーの予定は返さない。buddy の繰り返しの規則に写せない繰り返しの予定は、最初の回の日時の 1 件にし、review_reason を付けて返す。
+         *     Projection の予定には GET /v1/schedules/{schedule_id} が無く、id は一覧を読むたびに同じ値になるよう Google の予定と回の日付から作る。
          */
         get: operations["listSchedules"];
         put?: never;
@@ -950,6 +955,7 @@ export interface components {
         Facility: {
             id: components["schemas"]["ID"];
             name: string;
+            source_mode: components["schemas"]["SourceMode"];
             /** Format: date-time */
             created_at: string;
             /** Format: date-time */
@@ -1237,10 +1243,61 @@ export interface components {
             recurring_schedule_id: (string & components["schemas"]["ID"]) | null;
             visit_info: components["schemas"]["VisitInfo"] | null;
             cancel: components["schemas"]["Cancel"] | null;
-            /** Format: date-time */
+            /**
+             * @description 予定の読み元。buddy は buddy の予定、google_calendar は google_primary の事業所で同期が写した Google カレンダーの予定（Projection）である。
+             *     google_calendar の予定は buddy から変えられず、Google カレンダーで変える。
+             * @enum {string}
+             */
+            source: "buddy" | "google_calendar";
+            /** @description google_calendar の予定のうち、確認が必要な予定の理由。ほかの予定では null */
+            review_reason: (string & components["schemas"]["ScheduleReviewReason"]) | null;
+            /**
+             * Format: date-time
+             * @description google_calendar の予定では、Google で最後に変えた時刻（無ければ写した時刻）
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description google_calendar の予定では、Google で最後に変えた時刻（無ければ写した時刻）
+             */
             updated_at: string;
+        };
+        /**
+         * @description Google カレンダーの予定を、buddy の予定に読み替えられなかった理由。
+         *     recurrence_unsupported は buddy の繰り返しの規則に写せない繰り返しの予定で、回に展開せず最初の回の 1 件で返す。
+         *     patient_not_found と patient_ambiguous はタイトルの利用者名の利用者がいないか 2 人以上いる予定、
+         *     service_code_not_found はタイトルのサービス内容がサービスコードのマスタに無い予定、title_unreadable はタイトルが空か、訪問のタイトルを読めない予定である。
+         *     recurrence_unsupported のほかの予定は、訪問の情報（visit_info）を空にし、Google のタイトルを title に入れた通常の予定として返す。
+         * @enum {string}
+         */
+        ScheduleReviewReason: "recurrence_unsupported" | "patient_not_found" | "patient_ambiguous" | "service_code_not_found" | "title_unreadable";
+        /**
+         * @description 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0035）
+         * @enum {string}
+         */
+        SourceMode: "google_primary" | "buddy_primary";
+        /** @description 結び付けたカレンダーの同期の状況 */
+        CalendarSyncStatus: {
+            external_calendar_id: components["schemas"]["ID"];
+            staff_id: components["schemas"]["ID"];
+            staff_name: string;
+            /**
+             * @description 最後の同期の結果。never はまだ同期していない
+             * @enum {string}
+             */
+            last_status: "never" | "succeeded" | "failed";
+            /**
+             * Format: date-time
+             * @description 変わった予定を最後まで読んで写した、最後の同期の時刻。成功したことが無ければ null
+             */
+            last_succeeded_at: string | null;
+            /**
+             * @description 最後の同期の失敗の理由。最後の同期が成功したか、まだ同期していなければ null。
+             *     unreadable はカレンダーが無いかサービスアカウントに共有されていない、unavailable は Google カレンダーに届かないかエラーが返った、
+             *     apply は読んだ予定を写せなかったことを表す
+             * @enum {string|null}
+             */
+            last_error: "unreadable" | "unavailable" | "apply" | null;
         };
         /**
          * @description weekly は day_of_week だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
@@ -3046,6 +3103,12 @@ export interface operations {
                     "application/json": {
                         schedules: components["schemas"]["Schedule"][];
                         recurring_schedules: components["schemas"]["RecurringSchedule"][];
+                        source_mode: components["schemas"]["SourceMode"];
+                        /**
+                         * @description google_primary の事業所で、職員が見てよい職員に結び付けた、外していないカレンダーの同期の状況。buddy_primary の事業所では空である。
+                         *     最新でないとみなす時間は画面が決める。
+                         */
+                        calendar_syncs: components["schemas"]["CalendarSyncStatus"][];
                     };
                 };
             };

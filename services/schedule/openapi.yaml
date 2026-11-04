@@ -1108,6 +1108,11 @@ paths:
         事業所の単発の予定と繰り返しの予定のうち、職員が見てよい予定を返す。見てよくない職員の予定は除く。
         sort_field と sort_order は許可した値だけを受け付け、ほかの値は 400 を返す。date_from と date_to は単発の予定だけを、予定の日付（開始の日）で絞る。
         date_from の前の日に始まり、date_from に終わる ends_next_day の予定も返す。
+        Google カレンダーを予定の正本にする事業所（google_primary）では、同期が写した Google カレンダーの予定（Projection）を読む（ADR-0035）。
+        繰り返しの予定は、date_from から date_to までの回に展開し、回ごとに単発の予定（source が google_calendar）として返す。recurring_schedules は空である。
+        date_from か date_to を省くと、Projection を保持する期間（前々月の初日から 3 か月後の月末）の端を使う。
+        外したカレンダーの予定は返さない。buddy の繰り返しの規則に写せない繰り返しの予定は、最初の回の日時の 1 件にし、review_reason を付けて返す。
+        Projection の予定には GET /v1/schedules/{schedule_id} が無く、id は一覧を読むたびに同じ値になるよう Google の予定と回の日付から作る。
       parameters:
         - $ref: "#/components/parameters/FacilityID"
         - { name: schedule_type, in: query, schema: { $ref: "#/components/schemas/ScheduleTypeName" } }
@@ -1125,7 +1130,7 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [schedules, recurring_schedules]
+                required: [schedules, recurring_schedules, source_mode, calendar_syncs]
                 properties:
                   schedules:
                     type: array
@@ -1133,6 +1138,13 @@ paths:
                   recurring_schedules:
                     type: array
                     items: { $ref: "#/components/schemas/RecurringSchedule" }
+                  source_mode: { $ref: "#/components/schemas/SourceMode" }
+                  calendar_syncs:
+                    type: array
+                    description: |
+                      google_primary の事業所で、職員が見てよい職員に結び付けた、外していないカレンダーの同期の状況。buddy_primary の事業所では空である。
+                      最新でないとみなす時間は画面が決める。
+                    items: { $ref: "#/components/schemas/CalendarSyncStatus" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -1879,10 +1891,11 @@ components:
           description: 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う
     Facility:
       type: object
-      required: [id, name, created_at, updated_at]
+      required: [id, name, source_mode, created_at, updated_at]
       properties:
         id: { $ref: "#/components/schemas/ID" }
         name: { type: string }
+        source_mode: { $ref: "#/components/schemas/SourceMode" }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
     Unit:
@@ -2289,6 +2302,8 @@ components:
         - recurring_schedule_id
         - visit_info
         - cancel
+        - source
+        - review_reason
         - created_at
         - updated_at
       properties:
@@ -2325,8 +2340,64 @@ components:
           nullable: true
           allOf:
             - $ref: "#/components/schemas/Cancel"
-        created_at: { type: string, format: date-time }
-        updated_at: { type: string, format: date-time }
+        source:
+          type: string
+          enum: [buddy, google_calendar]
+          description: |
+            予定の読み元。buddy は buddy の予定、google_calendar は google_primary の事業所で同期が写した Google カレンダーの予定（Projection）である。
+            google_calendar の予定は buddy から変えられず、Google カレンダーで変える。
+        review_reason:
+          description: google_calendar の予定のうち、確認が必要な予定の理由。ほかの予定では null
+          type: string
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/ScheduleReviewReason"
+        created_at:
+          type: string
+          format: date-time
+          description: google_calendar の予定では、Google で最後に変えた時刻（無ければ写した時刻）
+        updated_at:
+          type: string
+          format: date-time
+          description: google_calendar の予定では、Google で最後に変えた時刻（無ければ写した時刻）
+    ScheduleReviewReason:
+      type: string
+      enum: [recurrence_unsupported, patient_not_found, patient_ambiguous, service_code_not_found, title_unreadable]
+      description: |
+        Google カレンダーの予定を、buddy の予定に読み替えられなかった理由。
+        recurrence_unsupported は buddy の繰り返しの規則に写せない繰り返しの予定で、回に展開せず最初の回の 1 件で返す。
+        patient_not_found と patient_ambiguous はタイトルの利用者名の利用者がいないか 2 人以上いる予定、
+        service_code_not_found はタイトルのサービス内容がサービスコードのマスタに無い予定、title_unreadable はタイトルが空か、訪問のタイトルを読めない予定である。
+        recurrence_unsupported のほかの予定は、訪問の情報（visit_info）を空にし、Google のタイトルを title に入れた通常の予定として返す。
+    SourceMode:
+      type: string
+      enum: [google_primary, buddy_primary]
+      description: 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0035）
+    CalendarSyncStatus:
+      type: object
+      description: 結び付けたカレンダーの同期の状況
+      required: [external_calendar_id, staff_id, staff_name, last_status, last_succeeded_at, last_error]
+      properties:
+        external_calendar_id: { $ref: "#/components/schemas/ID" }
+        staff_id: { $ref: "#/components/schemas/ID" }
+        staff_name: { type: string }
+        last_status:
+          type: string
+          enum: [never, succeeded, failed]
+          description: 最後の同期の結果。never はまだ同期していない
+        last_succeeded_at:
+          description: 変わった予定を最後まで読んで写した、最後の同期の時刻。成功したことが無ければ null
+          type: string
+          format: date-time
+          nullable: true
+        last_error:
+          description: |
+            最後の同期の失敗の理由。最後の同期が成功したか、まだ同期していなければ null。
+            unreadable はカレンダーが無いかサービスアカウントに共有されていない、unavailable は Google カレンダーに届かないかエラーが返った、
+            apply は読んだ予定を写せなかったことを表す
+          type: string
+          nullable: true
+          enum: [unreadable, unavailable, apply]
     RecurringRule:
       type: object
       required: [frequency]

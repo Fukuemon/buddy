@@ -31,6 +31,8 @@ export const queryKeys = {
   receiptResult: () => ['receipt', 'result'] as const,
   /** 事業所の全てのデータ。 */
   facility,
+  /** 事業所そのもの（名前と予定の正本）。予定の画面とカレンダーの画面で cache を共有する。 */
+  facilityDetail: (facilityId: FacilityId) => [...facility(facilityId), 'detail'] as const,
 
   departments: (facilityId: FacilityId) => [...facility(facilityId), 'departments'] as const,
   teams: (facilityId: FacilityId) => [...facility(facilityId), 'teams'] as const,

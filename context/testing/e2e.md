@@ -81,8 +81,9 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
 
 - テストのデータは予定の API に作り、消さない。
   - spec は、タイトルに時刻を入れて自分の作ったデータを見分ける。
-- `setup` は、青木 陽菜（マネージャー）と森 健太（チームリーダー）の 2 人のログインの状態を保存する。
+- `setup` は、青木 陽菜（マネージャー）、森 健太（チームリーダー）、岡田 葵（Google カレンダーを正本にする 3 つ目の事業所のマネージャー）の 3 人のログインの状態を保存する。
   - リーダーで確認する spec は、`test.use({ storageState: LEADER_STATE })` で切り替える。
+  - Google カレンダーを正本にする事業所で確認する spec は、`test.use({ storageState: OKADA_STATE })` で切り替える。
   - ログインのメールは、`packages/e2e/tests/fixtures/env.ts` の `LOGIN_EMAIL` と `LEADER.email` である。
   - ログインの状態を保存したアカウントを、並列の worker で共有しない。保存したファイルを書き合うためである。
 - E2E は、メールの @ の前の部分を上流の `sub` にして入る。
