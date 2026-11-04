@@ -45,6 +45,8 @@ Google カレンダーを予定の正本にする変更（#594）では、Google
   - モードの遷移の規則（どのモードからどのモードへ移れるか）は `organization` に置く。遷移の条件と手順は #594 の ADR で決める。
 - 予定を書く操作は、トランザクションの最初に、事業所の行を共有のロックで読み、`schedule` の規則の関数（`requireWritable(f organization.Facility) error`）でモードを確認する。
   - `buddy_primary` のときだけ書ける。`google_primary` と `migrating` では拒む。
+    - `migrating` で手動の取り込みだけが書ける例外を、ADR-0035 で足した。
+      - ADR-0035: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](0035-google-calendar-source-modes.md)
   - モードの切り替えは、同じ事業所の行を排他のロックで取る。切り替えの途中の書き込みは、切り替えの後に入り、切り替えの前のモードで書かれない。
   - 規則は 1 つの関数で、テストに DB とフェイクが要らない。
 - 手動の取り込み（`calendarimport`）と、外部の変更を当てる同期（`calendarsync` の `ReconcileApplier`）も、buddy の予定のテーブルを書く前に同じ規則を呼ぶ。
@@ -56,6 +58,10 @@ Google カレンダーを予定の正本にする変更（#594）では、Google
 - #594 は、buddy を正本にした後も、Google カレンダーでの変更を buddy の予定に自動で取り込まないとする。`buddy_primary` で同期が `ReconcileApplier` を使うかは、#594 の ADR で決める。
 - `scheduleview` は、Projection の予定にも、buddy の予定と同じ閲覧の判定と事業所の分離を当てる。Projection の予定を職員に結び付ける項目は、#594 の ADR で決める。
 - #594 は、最新でない予定を最新であるかのように表示しないことを求める。`scheduleview` が Projection を読むときに、同期の最終の成功時刻を一緒に返すかは、#594 の ADR で決める。
+
+3 つと、モードの遷移の条件と手順は、ADR-0035 で決めた。
+
+- ADR-0035: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](0035-google-calendar-source-modes.md)
 
 ## Considered Options
 

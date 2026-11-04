@@ -65,6 +65,8 @@ ADR-0030 の、パッケージをフラットに保ち、ファイルの名前�
 - `Syncer` は、1 つの予定を当てるトランザクションの中で事業所の正本のモードを読み、モードごとの `Applier` を選ぶ。
   - モードごとの `Applier` は、組み立ての場所が `Syncer` に渡す。`Syncer` はモードの値と `Applier` の対応だけを持ち、モードごとの規則を持たない。
   - 正本のモードの値と、`migrating` のときに当てるかは、#594 の ADR で決める。
+  - モードごとの同期の向きは ADR-0035 で決めた。`buddy_primary` では同期をせず、`ReconcileApplier` はどのモードでも使わない。
+    - ADR-0035: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](0035-google-calendar-source-modes.md)
 
 `calendarexport` は、事業所の正本のモードが buddy を正本にするときだけ書く。
 
