@@ -42,10 +42,12 @@ Google カレンダーを予定の正本にする変更（#594）では、Google
 正本のモードと、書き込みを拒む規則は、次のとおり置く。
 
 - 正本のモード（`google_primary`、`migrating`、`buddy_primary`）を、`organization` の `Facility` の状態にする。
+  - `migrating` をやめ、モードを `google_primary` と `buddy_primary` の 2 つにする判断を、ADR-0035 で決めた。切り替えの途中は、モードではなく切り替えの記録で表す。
+    - ADR-0035: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](0035-google-calendar-source-modes.md)
   - モードの遷移の規則（どのモードからどのモードへ移れるか）は `organization` に置く。遷移の条件と手順は #594 の ADR で決める。
 - 予定を書く操作は、トランザクションの最初に、事業所の行を共有のロックで読み、`schedule` の規則の関数（`requireWritable(f organization.Facility) error`）でモードを確認する。
   - `buddy_primary` のときだけ書ける。`google_primary` と `migrating` では拒む。
-    - `migrating` で手動の取り込みだけが書ける例外を、ADR-0035 で足した。
+    - `open` の切り替えがある `google_primary` の事業所で、切り替えの取り込みだけが書ける例外を、ADR-0035 で足した。
       - ADR-0035: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](0035-google-calendar-source-modes.md)
   - モードの切り替えは、同じ事業所の行を排他のロックで取る。切り替えの途中の書き込みは、切り替えの後に入り、切り替えの前のモードで書かれない。
   - 規則は 1 つの関数で、テストに DB とフェイクが要らない。
