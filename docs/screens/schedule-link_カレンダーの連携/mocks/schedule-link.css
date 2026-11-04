@@ -80,3 +80,12 @@
     display: none;
   }
 }
+
+/* 見出しと、予定の正本の切り替えへのリンクを並べる */
+.sl-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}

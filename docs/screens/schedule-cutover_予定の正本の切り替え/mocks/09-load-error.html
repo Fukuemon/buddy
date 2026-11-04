@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>schedule-cutover 読み込みの失敗</title>
+    <link rel="stylesheet" href="../../_common/mock.css" />
+    <link rel="stylesheet" href="../../_common/tokens.css" />
+    <link rel="stylesheet" href="../../_common/wireframe.css" />
+    <link rel="stylesheet" href="schedule-cutover.css" />
+  </head>
+  <body data-view="desktop">
+    <div class="stage">
+      <div class="screen">
+        <div class="screen-body">
+          <main class="wf-page">
+            <div class="sc-title">
+              <h1 class="wf-heading" data-m="1">予定の正本の切り替え</h1>
+              <span class="wf-btn wf-btn--text" data-m="2" data-testid="calendar-cutover-link-settings" data-go="../../schedule-link_カレンダーの連携/mocks/01-list.html">カレンダーの連携</span>
+            </div>
+            <p class="wf-lead" data-m="3">Google カレンダーで管理している予定を buddy に取り込み、この事業所の予定の正本を buddy に切り替えます。切り替えた後は、予定を buddy で作成、変更し、Google カレンダーには buddy の予定を書き出します。</p>
+            <div class="wf-message">
+              <p class="wf-alert" role="alert" data-m="4" data-testid="calendar-cutover-load-error">予定の正本の切り替えの状況を読み込めませんでした。時間をおいて、読み直してください。</p>
+              <span class="wf-btn" data-m="5" data-testid="calendar-cutover-retry" data-go="02-open.html">読み直す</span>
+            </div>
+          </main>
+
+        </div>
+      </div>
+      <div class="markers"></div>
+    </div>
+    <script src="../../_common/mock.js"></script>
+    <script src="../../_common/interact.js"></script>
+  </body>
+</html>

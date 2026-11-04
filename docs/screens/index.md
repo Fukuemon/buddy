@@ -16,6 +16,7 @@ PRD がカレンダーにまとめているモーダルは、URL が違うので
 | `schedule-link` | カレンダーの連携（職員と Google カレンダーの結び付け） | `/schedule/link` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [カレンダーの連携](schedule-link_カレンダーの連携/index.md) |
 | `schedule-import` | 予定の取り込み（期間の選択、プレビュー、確定） | `/schedule/import` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [予定の取り込み](schedule-import_予定の取り込み/index.md) |
 | `schedule-review` | 確認が必要な予定（Google カレンダーと食い違った予定） | `/schedule/review` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [確認が必要な予定](schedule-review_確認が必要な予定/index.md) |
+| `schedule-cutover` | 予定の正本の切り替え（Google カレンダーから buddy へ） | `/schedule/link/cutover` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [予定の正本の切り替え](schedule-cutover_予定の正本の切り替え/index.md) |
 | `patient-list` | 利用者の一覧 | `/patients` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [利用者の一覧](patient-list_利用者の一覧/index.md) |
 | `patient-new` | 利用者の登録 | `/patients/new` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [利用者の登録](patient-new_利用者の登録/index.md) |
 | `patient-detail` | 利用者の詳細（利用者の編集、利用の終了、利用の再開を含む） | `/patients/$patientId` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [利用者の詳細](patient-detail_利用者の詳細/index.md) |
@@ -62,6 +63,7 @@ PRD がカレンダーにまとめているモーダルは、URL が違うので
 | `link` | 外部のサービスとの結び付け |
 | `import` | 外部のサービスからの取り込み |
 | `review` | 人が確認して決める必要があるものの一覧 |
+| `cutover` | 正本の切り替え |
 | `login`、`profile`、`error` | `account` のドメインだけで使う。`error` はログインの失敗 |
 
 - 固有の URL を持つものを 1 つの画面に数える。
@@ -118,6 +120,11 @@ flowchart TB
   calendar -- "ナビゲーションの「連携」" --> link
   import -- "「カレンダーの連携」" --> link
   link -- "「取り込む」" --> import
+  cutover["予定の正本の切り替え<br/>/schedule/link/cutover"]
+  link -- "「予定の正本の切り替え」" --> cutover
+  cutover -- "「取り込む」" --> import
+  import -- "「切り替えの状況に戻る」" --> cutover
+  cutover -- "「カレンダーの連携」" --> link
   import -- "「予定のカレンダーで見る」、ナビゲーションの「カレンダー」" --> calendar
   link -- "ナビゲーションの「カレンダー」" --> calendar
   calendar -- "ナビゲーションの「要確認」" --> review
