@@ -69,11 +69,3 @@ func Reference(label, id string, err error) error {
 	}
 	return err
 }
-
-// SameFacility は、参照した ownerFacilityID が facilityID と違うときに入力のエラーを返す。
-func SameFacility(label, id, ownerFacilityID, facilityID string) error {
-	if ownerFacilityID != facilityID {
-		return Invalid("%s %s はこの事業所に属していません", label, id)
-	}
-	return nil
-}

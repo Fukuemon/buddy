@@ -11,7 +11,6 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/servicecode"
@@ -282,7 +281,7 @@ type app struct {
 }
 
 // build は、d の依存で app の操作の型を作る。
-func build(d deps, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) *app {
+func build(d deps, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) *app {
 	return &app{
 		ServiceAccount: calendar.NewServiceAccount(d.Accounts, guard).Do,
 		Unlink:         calendar.NewUnlink(d.Calendars, guard).Do,

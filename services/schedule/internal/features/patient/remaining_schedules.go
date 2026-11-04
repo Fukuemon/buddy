@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
 
 // RemainingSchedules は、利用者の、今日（事業所の現地の日付）以降の予定と、今日以降に終わる繰り返しの予定を返す。
@@ -12,11 +12,11 @@ type RemainingSchedules struct {
 	patients  Repository
 	schedules ScheduleReader
 	now       func() time.Time
-	guard     organization.Guard
+	guard     kernel.Guard
 }
 
 // NewRemainingSchedules は RemainingSchedules を作る。
-func NewRemainingSchedules(patients Repository, schedules ScheduleReader, now func() time.Time, guard organization.Guard) RemainingSchedules {
+func NewRemainingSchedules(patients Repository, schedules ScheduleReader, now func() time.Time, guard kernel.Guard) RemainingSchedules {
 	if now == nil {
 		now = time.Now
 	}

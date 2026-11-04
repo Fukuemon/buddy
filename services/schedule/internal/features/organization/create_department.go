@@ -12,11 +12,11 @@ type CreateDepartment struct {
 	facilities  FacilityRepository
 	departments DepartmentRepository
 	ids         kernel.IDGenerator
-	guard       Guard
+	guard       kernel.Guard
 }
 
 // NewCreateDepartment は CreateDepartment を作る。
-func NewCreateDepartment(facilities FacilityRepository, departments DepartmentRepository, ids kernel.IDGenerator, guard Guard) CreateDepartment {
+func NewCreateDepartment(facilities FacilityRepository, departments DepartmentRepository, ids kernel.IDGenerator, guard kernel.Guard) CreateDepartment {
 	return CreateDepartment{facilities: facilities, departments: departments, ids: ids, guard: guard}
 }
 

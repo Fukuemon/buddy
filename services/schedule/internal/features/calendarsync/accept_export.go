@@ -7,7 +7,6 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
@@ -35,7 +34,7 @@ type AcceptExport struct {
 	locks     FacilityLock
 	tx        tx.Transactor
 	ids       kernel.IDGenerator
-	guard     organization.Guard
+	guard     kernel.Guard
 	apply     reconcileApplier
 }
 
@@ -44,7 +43,7 @@ type AcceptExport struct {
 func NewAcceptExport(
 	exports ExportRepository, schedules calendar.ScheduleStore, calendars Calendars, accounts calendar.Accounts, staff calendar.StaffRefs, locks FacilityLock,
 	types calendar.Types, patients calendar.Patients, serviceCodes calendar.ServiceCodes, visits calendar.VisitStore,
-	tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard,
+	tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard,
 ) AcceptExport {
 	return AcceptExport{
 		exports: exports, schedules: schedules, calendars: calendars, accounts: accounts, staff: staff, locks: locks, tx: tx, ids: ids, guard: guard,

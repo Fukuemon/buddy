@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
@@ -13,11 +13,11 @@ type CancelCutover struct {
 	facilities FacilityModes
 	cutovers   CutoverRepository
 	tx         tx.Transactor
-	guard      organization.Guard
+	guard      kernel.Guard
 }
 
 // NewCancelCutover は CancelCutover を作る。
-func NewCancelCutover(facilities FacilityModes, cutovers CutoverRepository, tx tx.Transactor, guard organization.Guard) CancelCutover {
+func NewCancelCutover(facilities FacilityModes, cutovers CutoverRepository, tx tx.Transactor, guard kernel.Guard) CancelCutover {
 	return CancelCutover{facilities: facilities, cutovers: cutovers, tx: tx, guard: guard}
 }
 

@@ -14,18 +14,6 @@ func TestConflict(t *testing.T) {
 	}
 }
 
-// TestSameFacility は、参照した ID の事業所が違うときだけ、ID を含む入力のエラーを返すことを確認する。
-func TestSameFacility(t *testing.T) {
-	if err := apperr.SameFacility("チーム", "T1", "F1", "F1"); err != nil {
-		t.Errorf("同じ事業所: err = %v, want nil", err)
-	}
-	err := apperr.SameFacility("チーム", "T1", "F2", "F1")
-	var ve *apperr.ValidationError
-	if !errors.As(err, &ve) || !errors.Is(err, apperr.ErrInvalidInput) || err.Error() != "チーム T1 はこの事業所に属していません" {
-		t.Errorf("違う事業所: err = %v", err)
-	}
-}
-
 func TestAsConflict(t *testing.T) {
 	tests := []struct {
 		name    string

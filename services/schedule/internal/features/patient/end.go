@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
@@ -15,11 +15,11 @@ type End struct {
 	schedules ScheduleReader
 	now       func() time.Time
 	tx        tx.Transactor
-	guard     organization.Guard
+	guard     kernel.Guard
 }
 
 // NewEnd は End を作る。
-func NewEnd(patients Repository, locks FacilityLock, schedules ScheduleReader, now func() time.Time, tx tx.Transactor, guard organization.Guard) End {
+func NewEnd(patients Repository, locks FacilityLock, schedules ScheduleReader, now func() time.Time, tx tx.Transactor, guard kernel.Guard) End {
 	if now == nil {
 		now = time.Now
 	}

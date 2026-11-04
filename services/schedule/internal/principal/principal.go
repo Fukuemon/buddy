@@ -51,7 +51,7 @@ func (p Principal) CanManageStaff() bool {
 	})
 }
 
-// RequireStaffManage は、ctx の職員が職員の管理の権限を持たないときに apperr.ErrForbidden を返す。organization.Guard として機能のパッケージに渡す。
+// RequireStaffManage は、ctx の職員が職員の管理の権限を持たないときに apperr.ErrForbidden を返す。kernel.Guard として機能のパッケージに渡す。
 func RequireStaffManage(ctx context.Context) error {
 	p, ok := From(ctx)
 	if !ok || !p.CanManageStaff() {

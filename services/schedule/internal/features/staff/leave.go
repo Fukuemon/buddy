@@ -8,7 +8,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
@@ -26,12 +26,12 @@ type Leave struct {
 	now         func() time.Time
 	identities  Identities
 	tx          tx.Transactor
-	guard       organization.Guard
+	guard       kernel.Guard
 }
 
 // NewLeave は Leave を作る。self は、ctx のリクエストを送った職員の ID を返し、職員が自分を休職か退職にするのを拒むのに使う。nil なら拒まない。
 // now は、残る予定を数え始める日を決める時刻である。nil なら time.Now を使う。
-func NewLeave(self func(ctx context.Context) (string, bool), staff Repository, locks FacilityLock, assignments AssignmentReader, now func() time.Time, identities Identities, tx tx.Transactor, guard organization.Guard) Leave {
+func NewLeave(self func(ctx context.Context) (string, bool), staff Repository, locks FacilityLock, assignments AssignmentReader, now func() time.Time, identities Identities, tx tx.Transactor, guard kernel.Guard) Leave {
 	if now == nil {
 		now = time.Now
 	}

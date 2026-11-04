@@ -23,11 +23,11 @@ type StartCutover struct {
 	tx         tx.Transactor
 	ids        kernel.IDGenerator
 	now        func() time.Time
-	guard      organization.Guard
+	guard      kernel.Guard
 }
 
 // NewStartCutover は StartCutover を作る。now が nil なら time.Now を使う。
-func NewStartCutover(facilities FacilityModes, syncs scheduleview.CalendarSyncs, cutovers CutoverRepository, tx tx.Transactor, ids kernel.IDGenerator, now func() time.Time, guard organization.Guard) StartCutover {
+func NewStartCutover(facilities FacilityModes, syncs scheduleview.CalendarSyncs, cutovers CutoverRepository, tx tx.Transactor, ids kernel.IDGenerator, now func() time.Time, guard kernel.Guard) StartCutover {
 	if now == nil {
 		now = time.Now
 	}

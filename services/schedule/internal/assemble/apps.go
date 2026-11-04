@@ -117,7 +117,7 @@ func organizationApp(
 	policies organization.PolicyRepository,
 	tx tx.Transactor,
 	ids kernel.IDGenerator,
-	guard organization.Guard,
+	guard kernel.Guard,
 ) httpapi.OrganizationApp {
 	return httpapi.OrganizationApp{
 		GetFacility:      organization.NewGetFacility(facilities).Do,
@@ -147,7 +147,7 @@ func patientApp(
 	locks patient.FacilityLock,
 	tx tx.Transactor,
 	ids kernel.IDGenerator,
-	guard organization.Guard,
+	guard kernel.Guard,
 ) httpapi.PatientApp {
 	return httpapi.PatientApp{
 		Create:             patient.NewCreate(facilities, serviceCodes, staffRefs, locks, patients, tx, ids, guard).Do,
@@ -175,7 +175,7 @@ func staffApp(
 	self func(ctx context.Context) (string, bool),
 	tx tx.Transactor,
 	ids kernel.IDGenerator,
-	guard organization.Guard,
+	guard kernel.Guard,
 ) httpapi.StaffApp {
 	return httpapi.StaffApp{
 		Create:               staff.NewCreate(facilities, departments, teams, positions, identities, staffRepo, tx, ids, guard).Do,
@@ -253,7 +253,7 @@ func calendarApp(
 	cut cutoverDeps,
 	tx tx.Transactor,
 	ids kernel.IDGenerator,
-	guard organization.Guard,
+	guard kernel.Guard,
 ) httpapi.CalendarApp {
 	return httpapi.CalendarApp{
 		ServiceAccount: calendar.NewServiceAccount(accounts, guard).Do,

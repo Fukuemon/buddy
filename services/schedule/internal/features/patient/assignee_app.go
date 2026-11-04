@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 )
 
 // requireAssignable は、職員 staffID が事業所 facilityID にいて、担当を新しく割り振れるかを確認する。
@@ -13,7 +14,7 @@ func requireAssignable(ctx context.Context, staff StaffRefs, staffID, facilityID
 	if err != nil {
 		return apperr.Reference("職員", staffID, err)
 	}
-	if err := apperr.SameFacility("職員", st.ID, st.FacilityID, facilityID); err != nil {
+	if err := organization.RequireSameFacility("職員", st.ID, st.FacilityID, facilityID); err != nil {
 		return err
 	}
 	return st.RequireAssignable()

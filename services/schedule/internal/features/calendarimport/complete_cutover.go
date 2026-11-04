@@ -28,11 +28,11 @@ type CompleteCutover struct {
 	cutovers           CutoverRepository
 	projections        Projections
 	tx                 tx.Transactor
-	guard              organization.Guard
+	guard              kernel.Guard
 }
 
 // NewCompleteCutover は CompleteCutover を作る。
-func NewCompleteCutover(calendars Calendars, accounts calendar.Accounts, staff calendar.StaffRefs, patients calendar.Patients, recurringSchedules kernel.Finder[scheduleview.RecurringDetail], serviceCodes calendar.ServiceCodes, facilities FacilityModes, syncs scheduleview.CalendarSyncs, cutovers CutoverRepository, projections Projections, tx tx.Transactor, guard organization.Guard) CompleteCutover {
+func NewCompleteCutover(calendars Calendars, accounts calendar.Accounts, staff calendar.StaffRefs, patients calendar.Patients, recurringSchedules kernel.Finder[scheduleview.RecurringDetail], serviceCodes calendar.ServiceCodes, facilities FacilityModes, syncs scheduleview.CalendarSyncs, cutovers CutoverRepository, projections Projections, tx tx.Transactor, guard kernel.Guard) CompleteCutover {
 	return CompleteCutover{
 		calendars: calendars, accounts: accounts, staff: staff, patients: patients, recurringSchedules: recurringSchedules, serviceCodes: serviceCodes,
 		facilities: facilities, syncs: syncs, cutovers: cutovers, projections: projections, tx: tx, guard: guard,

@@ -15,11 +15,11 @@ type CreatePosition struct {
 	positions  PositionRepository
 	tx         tx.Transactor
 	ids        kernel.IDGenerator
-	guard      Guard
+	guard      kernel.Guard
 }
 
 // NewCreatePosition は CreatePosition を作る。
-func NewCreatePosition(facilities FacilityRepository, policies PolicyRepository, positions PositionRepository, tx tx.Transactor, ids kernel.IDGenerator, guard Guard) CreatePosition {
+func NewCreatePosition(facilities FacilityRepository, policies PolicyRepository, positions PositionRepository, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) CreatePosition {
 	return CreatePosition{facilities: facilities, policies: policies, positions: positions, tx: tx, ids: ids, guard: guard}
 }
 

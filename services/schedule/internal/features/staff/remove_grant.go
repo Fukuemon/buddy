@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
@@ -13,11 +14,11 @@ type RemoveGrant struct {
 	staff Repository
 	locks FacilityLock
 	tx    tx.Transactor
-	guard organization.Guard
+	guard kernel.Guard
 }
 
 // NewRemoveGrant は RemoveGrant を作る。
-func NewRemoveGrant(staff Repository, locks FacilityLock, tx tx.Transactor, guard organization.Guard) RemoveGrant {
+func NewRemoveGrant(staff Repository, locks FacilityLock, tx tx.Transactor, guard kernel.Guard) RemoveGrant {
 	return RemoveGrant{staff: staff, locks: locks, tx: tx, guard: guard}
 }
 

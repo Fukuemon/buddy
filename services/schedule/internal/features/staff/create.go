@@ -33,11 +33,11 @@ type Create struct {
 	staff       Repository
 	tx          tx.Transactor
 	ids         kernel.IDGenerator
-	guard       organization.Guard
+	guard       kernel.Guard
 }
 
 // NewCreate は Create を作る。
-func NewCreate(facilities kernel.Finder[organization.Facility], departments kernel.Finder[organization.Department], teams kernel.Finder[organization.Team], positions kernel.Finder[organization.Position], identities Identities, staff Repository, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) Create {
+func NewCreate(facilities kernel.Finder[organization.Facility], departments kernel.Finder[organization.Department], teams kernel.Finder[organization.Team], positions kernel.Finder[organization.Position], identities Identities, staff Repository, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) Create {
 	return Create{facilities: facilities, departments: departments, teams: teams, positions: positions, identities: identities, staff: staff, tx: tx, ids: ids, guard: guard}
 }
 
@@ -63,21 +63,21 @@ func (s Create) Do(ctx context.Context, in CreateInput) (Detail, error) {
 	if err != nil {
 		return Detail{}, apperr.Reference("部署", in.DepartmentID, err)
 	}
-	if err := apperr.SameFacility("部署", dep.ID, dep.FacilityID, in.FacilityID); err != nil {
+	if err := organization.RequireSameFacility("部署", dep.ID, dep.FacilityID, in.FacilityID); err != nil {
 		return Detail{}, err
 	}
 	team, err := s.teams.Get(ctx, in.TeamID)
 	if err != nil {
 		return Detail{}, apperr.Reference("チーム", in.TeamID, err)
 	}
-	if err := apperr.SameFacility("チーム", team.ID, team.FacilityID, in.FacilityID); err != nil {
+	if err := organization.RequireSameFacility("チーム", team.ID, team.FacilityID, in.FacilityID); err != nil {
 		return Detail{}, err
 	}
 	pos, err := s.positions.Get(ctx, in.PositionID)
 	if err != nil {
 		return Detail{}, apperr.Reference("役職", in.PositionID, err)
 	}
-	if err := apperr.SameFacility("役職", pos.ID, pos.FacilityID, in.FacilityID); err != nil {
+	if err := organization.RequireSameFacility("役職", pos.ID, pos.FacilityID, in.FacilityID); err != nil {
 		return Detail{}, err
 	}
 	st, err := New(NewParams{

@@ -3,7 +3,7 @@ package patient
 import (
 	"context"
 
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
@@ -13,11 +13,11 @@ type Resume struct {
 	locks    FacilityLock
 	staff    StaffRefs
 	tx       tx.Transactor
-	guard    organization.Guard
+	guard    kernel.Guard
 }
 
 // NewResume は Resume を作る。
-func NewResume(patients Repository, locks FacilityLock, staff StaffRefs, tx tx.Transactor, guard organization.Guard) Resume {
+func NewResume(patients Repository, locks FacilityLock, staff StaffRefs, tx tx.Transactor, guard kernel.Guard) Resume {
 	return Resume{patients: patients, locks: locks, staff: staff, tx: tx, guard: guard}
 }
 

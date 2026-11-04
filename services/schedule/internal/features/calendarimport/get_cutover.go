@@ -4,19 +4,19 @@ import (
 	"context"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
 
 // GetCutover は、事業所の切り替えの状況を返す。
 type GetCutover struct {
 	syncs    scheduleview.CalendarSyncs
 	cutovers CutoverRepository
-	guard    organization.Guard
+	guard    kernel.Guard
 }
 
 // NewGetCutover は GetCutover を作る。
-func NewGetCutover(syncs scheduleview.CalendarSyncs, cutovers CutoverRepository, guard organization.Guard) GetCutover {
+func NewGetCutover(syncs scheduleview.CalendarSyncs, cutovers CutoverRepository, guard kernel.Guard) GetCutover {
 	return GetCutover{syncs: syncs, cutovers: cutovers, guard: guard}
 }
 

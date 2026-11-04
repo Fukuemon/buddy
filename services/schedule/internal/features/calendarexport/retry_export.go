@@ -5,19 +5,19 @@ import (
 	"errors"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 )
 
 // RetryExport は、確認が必要な書き出し id を、外部の予定の変更を比べずに buddy の内容で書き直す待ちにして、待ちを返す。
 type RetryExport struct {
 	exports ExportRepository
-	guard   organization.Guard
+	guard   kernel.Guard
 }
 
 // NewRetryExport は RetryExport を作る。
-func NewRetryExport(exports ExportRepository, guard organization.Guard) RetryExport {
+func NewRetryExport(exports ExportRepository, guard kernel.Guard) RetryExport {
 	return RetryExport{exports: exports, guard: guard}
 }
 
