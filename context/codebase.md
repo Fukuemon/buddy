@@ -26,7 +26,8 @@ status: stable
 - `packages/ui` は、BCD Design の Base と Case のコンポーネントとトークンだけを持つ。
   - 業務の名前（予定、照合など）を持つ Domain のコンポーネントは、`apps/web` に置く。配置先は [Placement Rules](#placement-rules) の表で決める。
   - ADR-0004: [デザインシステムのトークンとコンポーネントの配置先](../docs/adr/0004-design-system.md)
-- `services/schedule` では、規則と手順を機能ごとのパッケージ（`organization`、`staff`、`patient`、`visit`、`schedule`、`calendar`）に置く。
+- `services/schedule` では、規則と手順を機能ごとのパッケージに置く。
+  - 機能は、`organization`、`staff`、`patient`、`visit`、`schedule`、`calendar`、`calendarimport`、`calendarsync`、`calendarexport` である。
   - DB と HTTP のアダプタ（`postgres`、`httpapi`）は 1 つずつ置く。
   - ADR-0005: [予定の API の規則と手順を機能ごとのパッケージにまとめる](../docs/adr/0005-schedule-api-packages.md)
   - 機能のパッケージは `internal/features/` に置く。
@@ -37,7 +38,7 @@ status: stable
     - 認証と認可: `access`、`principal`
     - 設定: `config`
     - テストのためのメモリ上の実装: `inmem`
-    - 機能のパッケージ: `features/`（`organization`、`staff`、`visit`、`patient`、`schedule`、`calendar`）
+    - 機能のパッケージ: `features/`（`organization`、`staff`、`visit`、`patient`、`schedule`、`calendar`、`calendarimport`、`calendarsync`、`calendarexport`）
   - OIDC の ID トークンの検証は、`packages/go/oidc` を使う。
   - ADR-0026: [予定の API の機能のパッケージを internal/features/ に置き、usecase のメソッドを操作ごとのファイルに分ける](../docs/adr/0026-schedule-api-features-directory.md)
   - 機能のパッケージの中は、手順（操作ごとの型）、規則の関数、集約の単位のリポジトリに分ける。
@@ -69,6 +70,8 @@ status: stable
   - 共通のパッケージは、標準ライブラリと、共通のパッケージの間（`kernel` から `apperr`）だけに依存する。
   - 機能のパッケージの間は、`organization`、`staff`、`servicecode`、`patient`、`visit`、`schedule`、`calendar` の順にだけ import する。
     - サービスコードは `servicecode` に、訪問の区分は `visit` に置く。`visit` は利用者を `patient` から受ける。
+    - `calendarimport`、`calendarsync`、`calendarexport` は `calendar` まで import してよく、3 つの間では import しない。
+    - ADR-0032: [予定の API の calendar を、結び付け、取り込み、同期、書き出しの 4 つの機能に分ける](../docs/adr/0032-schedule-api-calendar-split.md)
   - `principal` は `organization` と `staff` に依存し、`schedule`、`calendar`、`access`、`httpapi`、`cmd` から使う。
   - 機能のパッケージは、自分の集約のリポジトリのインターフェースと、使う側で定義したインターフェースだけに依存する。
     - ほかの機能のデータを読むだけなら、`kernel.Finder` か 1〜2 のメソッドにする。

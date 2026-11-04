@@ -30,6 +30,8 @@
 
 予定の API の 6 つの機能のパッケージを `internal/features/` に移し、`calendar`、`staff`、`schedule`、`patient` の usecase のメソッドを、操作ごとのファイルに分ける。
 
+- この判断のうち、機能のパッケージを 6 つとする部分は ADR-0032 で置き換えた。
+  - ADR-0032: [予定の API の calendar を、結び付け、取り込み、同期、書き出しの 4 つの機能に分ける](0032-schedule-api-calendar-split.md)
 - 配置: 機能のパッケージを `internal/features/<機能>/` に置く。アダプタ、共通のパッケージ、`access`、`config`、`principal`、`inmem` は `internal/` の直下に残す。パッケージの名前は変えない。
   - Go の module の配置の指針は、サーバーのコードを `internal/` に置くことだけを勧め、その下の分け方を決めていない。
     - Organizing a Go module: [Server project](https://go.dev/doc/modules/layout#server-project)
