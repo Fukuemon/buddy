@@ -35,7 +35,7 @@ func (u Preview) Do(ctx context.Context, id string, rng Range) (ImportPreview, e
 	if err != nil {
 		return ImportPreview{}, err
 	}
-	src, err := source(ctx, u.accounts, c.FacilityID)
+	src, err := Source(ctx, u.accounts, c.FacilityID)
 	if err != nil {
 		return ImportPreview{}, err
 	}

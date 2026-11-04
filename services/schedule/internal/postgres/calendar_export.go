@@ -10,10 +10,11 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres/sqlcgen"
 )
 
-// CalendarExportRepository は、calendar.ExportRepository と calendarexport.ExportRepository を実装する。
+// CalendarExportRepository は、calendarsync.ExportRepository と calendarexport.ExportRepository を実装する。
 type CalendarExportRepository struct{ conn }
 
 // NewCalendarExportRepository は CalendarExportRepository を作る。
@@ -22,7 +23,7 @@ func NewCalendarExportRepository(pool *pgxpool.Pool) *CalendarExportRepository {
 }
 
 var (
-	_ calendar.ExportRepository       = (*CalendarExportRepository)(nil)
+	_ calendarsync.ExportRepository   = (*CalendarExportRepository)(nil)
 	_ calendarexport.ExportRepository = (*CalendarExportRepository)(nil)
 )
 

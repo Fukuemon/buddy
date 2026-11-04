@@ -10,8 +10,9 @@ import (
 // maxCalendarIDLen は、外部のカレンダーの ID の長さの上限である。テーブルのカラムの長さと同じにする。
 const maxCalendarIDLen = 1024
 
-// source は、事業所 facilityID のサービスアカウントで外部のカレンダーを読む EventSource を返す。設定が無ければ ErrNotConfigured を返す。
-func source(ctx context.Context, accounts Accounts, facilityID string) (EventSource, error) {
+// Source は、事業所 facilityID のサービスアカウントで外部のカレンダーを読む EventSource を返す。
+// accounts が nil（サービスアカウントの設定が無い）ときは ErrNotConfigured を返す。
+func Source(ctx context.Context, accounts Accounts, facilityID string) (EventSource, error) {
 	if accounts == nil {
 		return nil, ErrNotConfigured
 	}
@@ -19,7 +20,7 @@ func source(ctx context.Context, accounts Accounts, facilityID string) (EventSou
 }
 
 func requireSource(ctx context.Context, accounts Accounts, facilityID, calendarID string) (EventSource, string, error) {
-	src, err := source(ctx, accounts, facilityID)
+	src, err := Source(ctx, accounts, facilityID)
 	if err != nil {
 		return nil, "", err
 	}

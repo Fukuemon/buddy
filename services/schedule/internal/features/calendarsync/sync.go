@@ -1,7 +1,9 @@
-package calendar
+package calendarsync
 
 import (
 	"time"
+
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 )
 
 // SyncStatus は、カレンダーの最後の同期の結果である。
@@ -29,7 +31,7 @@ const (
 
 // SyncState は、同期の処理が取った 1 つのカレンダーと、その同期の状態である。
 type SyncState struct {
-	Calendar ExternalCalendar
+	Calendar calendar.ExternalCalendar
 	// SyncToken は、次の増分の取得に使うトークンで、全ての予定を読むときは空である。
 	SyncToken  string
 	LastStatus SyncStatus

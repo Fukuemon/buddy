@@ -64,7 +64,7 @@ func (u Import) Do(ctx context.Context, id string, rng Range, decisions []Decisi
 	if err != nil {
 		return ImportResult{}, err
 	}
-	src, err := source(ctx, u.accounts, c.FacilityID)
+	src, err := Source(ctx, u.accounts, c.FacilityID)
 	if err != nil {
 		return ImportResult{}, err
 	}
@@ -284,7 +284,7 @@ func (u Import) slot(ctx context.Context, c ExternalCalendar, e entry, types map
 }
 
 func (u Import) link(ctx context.Context, c ExternalCalendar, e entry, scheduleID, recurringScheduleID *string) error {
-	synced := createdVersion
+	synced := CreatedVersion
 	l := EventLink{
 		ID: u.ids.NewID(), FacilityID: c.FacilityID, ExternalCalendarID: c.ID, ExternalEventID: e.event.ID,
 		ETag: e.event.ETag, SyncedVersion: &synced, ScheduleID: scheduleID, RecurringScheduleID: recurringScheduleID,
