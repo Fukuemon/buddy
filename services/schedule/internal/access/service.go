@@ -10,7 +10,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
@@ -36,8 +36,8 @@ type Deps struct {
 	Staff       Staff
 	StaffRefs   kernel.Finder[staff.Ref]
 	Patients    kernel.Finder[patient.Detail]
-	Schedules   kernel.Finder[schedule.Detail]
-	Recurring   kernel.Finder[schedule.RecurringDetail]
+	Schedules   kernel.Finder[scheduleview.Detail]
+	Recurring   kernel.Finder[scheduleview.RecurringDetail]
 	Calendars   kernel.Finder[calendar.ExternalCalendar]
 	Exports     kernel.Finder[calendar.Export]
 }

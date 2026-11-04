@@ -270,6 +270,134 @@ func (q *Queries) GetScheduleType(ctx context.Context, id string) (ScheduleType,
 	return i, err
 }
 
+const getStoredRecurringSchedule = `-- name: GetStoredRecurringSchedule :one
+SELECT rs.id, rs.facility_id, rs.staff_id, rs.schedule_type_id, rs.date, rs.start_time, rs.end_time, rs.ends_next_day,
+       rs.is_over_time_work, rs.visit_info_id, rs.title, rs.description,
+       rs.frequency, rs.day_of_week, rs.day_of_month, rs.week_of_month, rs.end_date, rs.version,
+       vi.patient_id, vi.assigned_staff_id, vi.companion_id, vi.service_code_id
+FROM recurring_schedules rs
+LEFT JOIN visit_infos vi ON vi.id = rs.visit_info_id
+WHERE rs.id = $1
+`
+
+type GetStoredRecurringScheduleRow struct {
+	ID              string
+	FacilityID      string
+	StaffID         string
+	ScheduleTypeID  string
+	Date            time.Time
+	StartTime       pgtype.Time
+	EndTime         pgtype.Time
+	EndsNextDay     bool
+	IsOverTimeWork  bool
+	VisitInfoID     *string
+	Title           *string
+	Description     *string
+	Frequency       string
+	DayOfWeek       *int16
+	DayOfMonth      *int16
+	WeekOfMonth     *int16
+	EndDate         *time.Time
+	Version         int32
+	PatientID       *string
+	AssignedStaffID *string
+	CompanionID     *string
+	ServiceCodeID   *string
+}
+
+// 予定を書く前の確認に使う繰り返しの予定を読む。種類、職員、訪問の情報の名前は結合しない（ADR-0033）。
+func (q *Queries) GetStoredRecurringSchedule(ctx context.Context, id string) (GetStoredRecurringScheduleRow, error) {
+	row := q.db.QueryRow(ctx, getStoredRecurringSchedule, id)
+	var i GetStoredRecurringScheduleRow
+	err := row.Scan(
+		&i.ID,
+		&i.FacilityID,
+		&i.StaffID,
+		&i.ScheduleTypeID,
+		&i.Date,
+		&i.StartTime,
+		&i.EndTime,
+		&i.EndsNextDay,
+		&i.IsOverTimeWork,
+		&i.VisitInfoID,
+		&i.Title,
+		&i.Description,
+		&i.Frequency,
+		&i.DayOfWeek,
+		&i.DayOfMonth,
+		&i.WeekOfMonth,
+		&i.EndDate,
+		&i.Version,
+		&i.PatientID,
+		&i.AssignedStaffID,
+		&i.CompanionID,
+		&i.ServiceCodeID,
+	)
+	return i, err
+}
+
+const getStoredSchedule = `-- name: GetStoredSchedule :one
+SELECT s.id, s.facility_id, s.staff_id, s.schedule_type_id, s.date, s.start_time, s.end_time, s.ends_next_day,
+       s.is_over_time_work, s.recurring_schedule_id, s.original_date, s.visit_info_id, s.title, s.description, s.version,
+       vi.patient_id, vi.assigned_staff_id, vi.companion_id, vi.service_code_id,
+       EXISTS (SELECT 1 FROM schedule_cancels c WHERE c.schedule_id = s.id) AS cancelled
+FROM schedules s
+LEFT JOIN visit_infos vi ON vi.id = s.visit_info_id
+WHERE s.id = $1
+`
+
+type GetStoredScheduleRow struct {
+	ID                  string
+	FacilityID          string
+	StaffID             string
+	ScheduleTypeID      string
+	Date                time.Time
+	StartTime           pgtype.Time
+	EndTime             pgtype.Time
+	EndsNextDay         bool
+	IsOverTimeWork      bool
+	RecurringScheduleID *string
+	OriginalDate        *time.Time
+	VisitInfoID         *string
+	Title               *string
+	Description         *string
+	Version             int32
+	PatientID           *string
+	AssignedStaffID     *string
+	CompanionID         *string
+	ServiceCodeID       *string
+	Cancelled           bool
+}
+
+// 予定を書く前の確認に使う予定を読む。種類、職員、訪問の情報の名前は結合しない（ADR-0033）。
+func (q *Queries) GetStoredSchedule(ctx context.Context, id string) (GetStoredScheduleRow, error) {
+	row := q.db.QueryRow(ctx, getStoredSchedule, id)
+	var i GetStoredScheduleRow
+	err := row.Scan(
+		&i.ID,
+		&i.FacilityID,
+		&i.StaffID,
+		&i.ScheduleTypeID,
+		&i.Date,
+		&i.StartTime,
+		&i.EndTime,
+		&i.EndsNextDay,
+		&i.IsOverTimeWork,
+		&i.RecurringScheduleID,
+		&i.OriginalDate,
+		&i.VisitInfoID,
+		&i.Title,
+		&i.Description,
+		&i.Version,
+		&i.PatientID,
+		&i.AssignedStaffID,
+		&i.CompanionID,
+		&i.ServiceCodeID,
+		&i.Cancelled,
+	)
+	return i, err
+}
+
 const listRecurringScheduleDetailsByFacility = `-- name: ListRecurringScheduleDetailsByFacility :many
 SELECT id, facility_id, schedule_type_id, schedule_type_code, schedule_type_name, date, start_time, end_time, is_over_time_work, staff_id, staff_name, title, description, frequency, day_of_week, day_of_month, week_of_month, end_date, visit_info_id, patient_id, patient_name, assigned_staff_id, assigned_staff_name, companion_id, companion_name, service_code_id, service_code, created_at, updated_at, version, ends_next_day FROM recurring_schedule_details
 WHERE facility_id = $1

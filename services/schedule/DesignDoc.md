@@ -376,7 +376,19 @@ sequenceDiagram
 
 変更は、最初に予定のレコードに排他のロックを取る。  
 読んだ後の訪問の情報とキャンセルの有無が、同時の変更とキャンセルで食い違わないためである。  
-同時の変更は、後に来た方の内容になる。
+同時の変更は、後に来た方の内容になる。  
+キャンセルも、同じロックを取ってから予定を読む。  
+繰り返しの回の置き換えは、最初に繰り返しの予定のレコードに排他のロックを取ってから、権限と回の日付を確認する。
+
+ロックを取って読む予定（`GetForUpdate`）は、書き込みのモデル（`schedule.Stored`、`schedule.StoredRecurring`）である。  
+書き込みのモデルは、予定の枠、訪問の情報の ID、キャンセルの有無、更新の番号を持ち、種類、職員、訪問の情報の名前を結合しない。  
+名前を結合した予定（`scheduleview.Detail`、`scheduleview.RecurringDetail`）は、`scheduleview` だけが読み取りのモデルとして返す。
+
+- ADR-0033: [予定の書き込みのモデルと読み取りのモデルを分け、正本のモードを事業所の状態にする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0033-schedule-write-read-models-and-source-mode.md)
+
+予定の作成、変更、繰り返しの予定の作成、回の置き換えの操作は、書いた予定を名前を結合しない形（`schedule.Schedule`、`schedule.RecurringSchedule`）で返す。  
+`httpapi` は、書いたトランザクションを終えた後に、`scheduleview` の `Get` か `GetRecurring` で予定を読み直し、レスポンスを作る。  
+書き込みと読み出しは別のトランザクションになる。
 
 ### 休職と退職の職員と、訪問しない職員への割り振り
 

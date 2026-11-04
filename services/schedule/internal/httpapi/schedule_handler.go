@@ -5,6 +5,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi/openapi"
 )
@@ -57,11 +58,11 @@ func (s server) ListScheduleTypes(ctx context.Context, _ openapi.ListScheduleTyp
 
 func (s server) ListSchedules(ctx context.Context, req openapi.ListSchedulesRequestObject) (openapi.ListSchedulesResponseObject, error) {
 	p := req.Params
-	sort, err := schedule.ParseSort(value(p.SortField), value(p.SortOrder))
+	sort, err := scheduleview.ParseSort(value(p.SortField), value(p.SortOrder))
 	if err != nil {
 		return nil, err
 	}
-	q := schedule.ListQuery{Sort: sort}
+	q := scheduleview.ListQuery{Sort: sort}
 	if v := value(p.ScheduleType); v != "" {
 		name := schedule.TypeName(v)
 		if name != schedule.Normal && name != schedule.Visit {
@@ -106,7 +107,11 @@ func (s server) CreateSchedule(ctx context.Context, req openapi.CreateScheduleRe
 	if err != nil {
 		return nil, err
 	}
-	d, err := s.u.Schedules.Create(ctx, req.FacilityId, in)
+	sc, err := s.u.Schedules.Create(ctx, req.FacilityId, in)
+	if err != nil {
+		return nil, err
+	}
+	d, err := s.u.Schedules.Get(ctx, sc.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -131,13 +136,17 @@ func (s server) CreateRecurringSchedule(ctx context.Context, req openapi.CreateR
 		}
 		endDate = &d
 	}
-	d, err := s.u.Schedules.CreateRecurring(ctx, req.FacilityId, in, schedule.RuleInput{
+	rs, err := s.u.Schedules.CreateRecurring(ctx, req.FacilityId, in, schedule.RuleInput{
 		Frequency:   schedule.Frequency(rule.Frequency),
 		DayOfWeek:   rule.DayOfWeek,
 		DayOfMonth:  rule.DayOfMonth,
 		WeekOfMonth: rule.WeekOfMonth,
 		EndDate:     endDate,
 	})
+	if err != nil {
+		return nil, err
+	}
+	d, err := s.u.Schedules.GetRecurring(ctx, rs.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +166,11 @@ func (s server) ChangeOccurrence(ctx context.Context, req openapi.ChangeOccurren
 	if err != nil {
 		return nil, err
 	}
-	d, err := s.u.Schedules.ChangeOccurrence(ctx, req.RecurringScheduleId, original, in)
+	sc, err := s.u.Schedules.ChangeOccurrence(ctx, req.RecurringScheduleId, original, in)
+	if err != nil {
+		return nil, err
+	}
+	d, err := s.u.Schedules.Get(ctx, sc.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +182,11 @@ func (s server) UpdateSchedule(ctx context.Context, req openapi.UpdateScheduleRe
 	if err != nil {
 		return nil, err
 	}
-	d, err := s.u.Schedules.Update(ctx, req.ScheduleId, in)
+	sc, err := s.u.Schedules.Update(ctx, req.ScheduleId, in)
+	if err != nil {
+		return nil, err
+	}
+	d, err := s.u.Schedules.Get(ctx, sc.ID)
 	if err != nil {
 		return nil, err
 	}

@@ -120,7 +120,7 @@ func (u AcceptExport) Do(ctx context.Context, id string) (calendar.Export, error
 		switch {
 		case !cur.IsInReview():
 			return calendar.ErrExportNotInReview
-		case !cur.IsAcceptable() || locked.Cancel != nil:
+		case !cur.IsAcceptable() || locked.Cancelled:
 			return errNotAcceptable
 		}
 		callCtx, cancel := context.WithTimeout(ctx, acceptCallTimeout)

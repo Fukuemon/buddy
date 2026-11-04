@@ -67,9 +67,9 @@ func authzStore() *inmem.Store {
 		return schedule.Slot{FacilityID: facilityID, StaffID: staffID, TypeID: normalTypeID, Date: civil.Date{Year: 2026, Month: 10, Day: 20},
 			StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10}}
 	}
-	s.Schedules[targetScheduleID] = schedule.Detail{Schedule: schedule.Schedule{ID: targetScheduleID, Slot: slot(staffID)}, TypeName: schedule.Normal}
-	s.Schedules[ownScheduleID] = schedule.Detail{Schedule: schedule.Schedule{ID: ownScheduleID, Slot: slot(viewerID)}, TypeName: schedule.Normal}
-	s.Recurring[targetRecurringID] = schedule.RecurringDetail{RecurringSchedule: schedule.RecurringSchedule{
+	s.Schedules[targetScheduleID] = scheduleview.Detail{Schedule: schedule.Schedule{ID: targetScheduleID, Slot: slot(staffID)}, TypeName: schedule.Normal}
+	s.Schedules[ownScheduleID] = scheduleview.Detail{Schedule: schedule.Schedule{ID: ownScheduleID, Slot: slot(viewerID)}, TypeName: schedule.Normal}
+	s.Recurring[targetRecurringID] = scheduleview.RecurringDetail{RecurringSchedule: schedule.RecurringSchedule{
 		ID: targetRecurringID, Slot: slot(staffID), Rule: schedule.Rule{Frequency: schedule.Weekly},
 	}}
 	return s
@@ -114,14 +114,14 @@ func validVisit() visit.Input {
 
 // app は、テストが呼ぶ scheduleview の読む操作と、読む予定を用意する schedule の書く操作の Do である。
 type app struct {
-	Get              func(ctx context.Context, id string) (schedule.Detail, error)
-	GetRecurring     func(ctx context.Context, id string) (schedule.RecurringDetail, error)
-	List             func(ctx context.Context, facilityID string, q schedule.ListQuery) (schedule.Listing, error)
-	Create           func(ctx context.Context, facilityID string, in schedule.SlotInput) (schedule.Detail, error)
-	CreateRecurring  func(ctx context.Context, facilityID string, in schedule.SlotInput, rule schedule.RuleInput) (schedule.RecurringDetail, error)
-	ChangeOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in schedule.SlotInput) (schedule.Detail, error)
+	Get              func(ctx context.Context, id string) (scheduleview.Detail, error)
+	GetRecurring     func(ctx context.Context, id string) (scheduleview.RecurringDetail, error)
+	List             func(ctx context.Context, facilityID string, q scheduleview.ListQuery) (scheduleview.Listing, error)
+	Create           func(ctx context.Context, facilityID string, in schedule.SlotInput) (schedule.Schedule, error)
+	CreateRecurring  func(ctx context.Context, facilityID string, in schedule.SlotInput, rule schedule.RuleInput) (schedule.RecurringSchedule, error)
+	ChangeOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in schedule.SlotInput) (schedule.Schedule, error)
 	Cancel           func(ctx context.Context, scheduleID, reason string) (schedule.Cancellation, error)
-	Update           func(ctx context.Context, scheduleID string, in schedule.SlotInput) (schedule.Detail, error)
+	Update           func(ctx context.Context, scheduleID string, in schedule.SlotInput) (schedule.Schedule, error)
 }
 
 // newSchedules は、s を読み書きする操作を、今日を 2026-10-21 にして作る。

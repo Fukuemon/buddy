@@ -18,13 +18,13 @@ func NewGetRecurring(recurring RecurringSchedules, staff StaffRefs) GetRecurring
 }
 
 // Do は、繰り返しの予定を返す。
-func (s GetRecurring) Do(ctx context.Context, id string) (schedule.RecurringDetail, error) {
+func (s GetRecurring) Do(ctx context.Context, id string) (RecurringDetail, error) {
 	d, err := s.recurring.Get(ctx, id)
 	if err != nil {
-		return schedule.RecurringDetail{}, err
+		return RecurringDetail{}, err
 	}
 	if err := schedule.RequireScheduleAccess(ctx, s.staff, d.StaffID, false); err != nil {
-		return schedule.RecurringDetail{}, err
+		return RecurringDetail{}, err
 	}
 	return d, nil
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 )
@@ -54,8 +55,8 @@ type Store struct {
 	Categories    map[string]visit.Category
 	Infos         map[string]visit.Info
 	Types         map[string]schedule.Type
-	Schedules     map[string]schedule.Detail
-	Recurring     map[string]schedule.RecurringDetail
+	Schedules     map[string]scheduleview.Detail
+	Recurring     map[string]scheduleview.RecurringDetail
 	Cancels       map[string]schedule.Cancellation
 	Calendars     map[string]calendar.ExternalCalendar
 	Runs          map[string]calendar.ImportRun
@@ -81,8 +82,8 @@ func NewStore() *Store {
 		Categories:    map[string]visit.Category{},
 		Infos:         map[string]visit.Info{},
 		Types:         map[string]schedule.Type{},
-		Schedules:     map[string]schedule.Detail{},
-		Recurring:     map[string]schedule.RecurringDetail{},
+		Schedules:     map[string]scheduleview.Detail{},
+		Recurring:     map[string]scheduleview.RecurringDetail{},
 		Cancels:       map[string]schedule.Cancellation{},
 		Calendars:     map[string]calendar.ExternalCalendar{},
 		Runs:          map[string]calendar.ImportRun{},
@@ -696,18 +697,23 @@ func (s ScheduleTypes) List(context.Context) ([]schedule.Type, error) {
 	return out, nil
 }
 
-// Schedules は、schedule.Repository のメモリ上の実装である。
+// Schedules は、schedule.Repository と scheduleview.Schedules のメモリ上の実装である。
 type Schedules struct{ *Store }
 
 // Create は、schedule.Repository の Create を実装する。
 func (s Schedules) Create(_ context.Context, sc schedule.Schedule) error {
-	s.Schedules[sc.ID] = schedule.Detail{Schedule: sc, TypeName: s.Types[sc.TypeID].Name, Version: 1}
+	s.Schedules[sc.ID] = scheduleview.Detail{Schedule: sc, TypeName: s.Types[sc.TypeID].Name, Version: 1}
 	return nil
 }
 
-// GetForUpdate は、Get と同じ値を返す。メモリ上の実装はロックを取らない。
-func (s Schedules) GetForUpdate(ctx context.Context, id string) (schedule.Detail, error) {
-	return s.Get(ctx, id)
+// GetForUpdate は、単発の予定を、名前を結合しない書き込みのモデルで返す。メモリ上の実装はロックを取らない。
+func (s Schedules) GetForUpdate(_ context.Context, id string) (schedule.Stored, error) {
+	d, err := get(s.Schedules, id)
+	if err != nil {
+		return schedule.Stored{}, err
+	}
+	_, cancelled := s.Cancels[id]
+	return schedule.Stored{Schedule: d.Schedule, Visit: s.info(d.VisitInfoID), Cancelled: cancelled, Version: d.Version}, nil
 }
 
 // Update は、単発の予定を置き換える。繰り返しの予定と元の回の日付は前のままにする。
@@ -718,12 +724,12 @@ func (s Schedules) Update(_ context.Context, sc schedule.Schedule) error {
 	}
 	sc.RecurringScheduleID = cur.RecurringScheduleID
 	sc.OriginalDate = cur.OriginalDate
-	s.Schedules[sc.ID] = schedule.Detail{Schedule: sc, TypeName: s.Types[sc.TypeID].Name, Version: cur.Version + 1}
+	s.Schedules[sc.ID] = scheduleview.Detail{Schedule: sc, TypeName: s.Types[sc.TypeID].Name, Version: cur.Version + 1}
 	return nil
 }
 
 // Get は、単発の予定と、あれば訪問の情報とキャンセルを返す。訪問の情報は、ID と職員と利用者とサービスコードだけを持つ。
-func (s Schedules) Get(_ context.Context, id string) (schedule.Detail, error) {
+func (s Schedules) Get(_ context.Context, id string) (scheduleview.Detail, error) {
 	d, err := get(s.Schedules, id)
 	d.Visit = s.visit(d.VisitInfoID)
 	if c, ok := s.Cancels[id]; ok {
@@ -732,9 +738,9 @@ func (s Schedules) Get(_ context.Context, id string) (schedule.Detail, error) {
 	return d, err
 }
 
-// ListByFacility は、schedule.Repository の ListByFacility を実装する。
-func (s Schedules) ListByFacility(_ context.Context, facilityID string, _ schedule.ListQuery) ([]schedule.Detail, error) {
-	var out []schedule.Detail
+// ListByFacility は、scheduleview.Schedules の ListByFacility を実装する。
+func (s Schedules) ListByFacility(_ context.Context, facilityID string, _ scheduleview.ListQuery) ([]scheduleview.Detail, error) {
+	var out []scheduleview.Detail
 	for _, d := range s.Schedules {
 		if d.FacilityID == facilityID {
 			out = append(out, d)
@@ -755,35 +761,51 @@ func (s Schedules) CreateCancel(_ context.Context, c schedule.Cancellation) erro
 	return nil
 }
 
-// ReplacementOf は、繰り返しの予定の d の回を置き換えた単発の予定を返す。
-func (s Schedules) ReplacementOf(ctx context.Context, recurringScheduleID string, d civil.Date) (schedule.Detail, error) {
+// ReplacementOf は、繰り返しの予定の d の回を置き換えた単発の予定を、名前を結合しない書き込みのモデルで返す。
+func (s Schedules) ReplacementOf(ctx context.Context, recurringScheduleID string, d civil.Date) (schedule.Stored, error) {
 	for id, sc := range s.Schedules {
 		if sc.RecurringScheduleID != nil && *sc.RecurringScheduleID == recurringScheduleID && sc.OriginalDate != nil && *sc.OriginalDate == d {
-			return s.Get(ctx, id)
+			return s.GetForUpdate(ctx, id)
 		}
 	}
-	return schedule.Detail{}, apperr.ErrNotFound
+	return schedule.Stored{}, apperr.ErrNotFound
 }
 
-// RecurringSchedules は、schedule.RecurringRepository のメモリ上の実装である。
+// RecurringSchedules は、schedule.RecurringRepository と scheduleview.RecurringSchedules のメモリ上の実装である。
 type RecurringSchedules struct{ *Store }
 
 // Create は、schedule.RecurringRepository の Create を実装する。
 func (s RecurringSchedules) Create(_ context.Context, rs schedule.RecurringSchedule) error {
-	s.Recurring[rs.ID] = schedule.RecurringDetail{RecurringSchedule: rs, TypeName: s.Types[rs.TypeID].Name, Version: 1}
+	s.Recurring[rs.ID] = scheduleview.RecurringDetail{RecurringSchedule: rs, TypeName: s.Types[rs.TypeID].Name, Version: 1}
 	return nil
 }
 
-// GetForUpdate は、Get と同じ値を返す。メモリ上の実装はロックを取らない。
-func (s RecurringSchedules) GetForUpdate(ctx context.Context, id string) (schedule.RecurringDetail, error) {
-	return s.Get(ctx, id)
+// GetForUpdate は、繰り返しの予定を、名前を結合しない書き込みのモデルで返す。メモリ上の実装はロックを取らない。
+func (s RecurringSchedules) GetForUpdate(_ context.Context, id string) (schedule.StoredRecurring, error) {
+	d, err := get(s.Recurring, id)
+	if err != nil {
+		return schedule.StoredRecurring{}, err
+	}
+	return schedule.StoredRecurring{RecurringSchedule: d.RecurringSchedule, Visit: s.info(d.VisitInfoID), Version: d.Version}, nil
 }
 
 // Get は、繰り返しの予定と、あれば訪問の情報を返す。訪問の情報は、Schedules.Get と同じ項目だけを持つ。
-func (s RecurringSchedules) Get(_ context.Context, id string) (schedule.RecurringDetail, error) {
+func (s RecurringSchedules) Get(_ context.Context, id string) (scheduleview.RecurringDetail, error) {
 	d, err := get(s.Recurring, id)
 	d.Visit = s.visit(d.VisitInfoID)
 	return d, err
+}
+
+// info は、ID が id の訪問の情報を返す。id が nil か、訪問の情報が無ければ nil を返す。
+func (s *Store) info(id *string) *visit.Info {
+	if id == nil {
+		return nil
+	}
+	i, ok := s.Infos[*id]
+	if !ok {
+		return nil
+	}
+	return &i
 }
 
 // visit は、ID が id の訪問の情報を返す。id が nil か、訪問の情報が無ければ nil を返す。
@@ -800,9 +822,9 @@ func (s *Store) visit(id *string) *visit.Detail {
 	}
 }
 
-// ListByFacility は、schedule.RecurringRepository の ListByFacility を実装する。
-func (s RecurringSchedules) ListByFacility(_ context.Context, facilityID string, _ schedule.ListQuery) ([]schedule.RecurringDetail, error) {
-	var out []schedule.RecurringDetail
+// ListByFacility は、scheduleview.RecurringSchedules の ListByFacility を実装する。
+func (s RecurringSchedules) ListByFacility(_ context.Context, facilityID string, _ scheduleview.ListQuery) ([]scheduleview.RecurringDetail, error) {
+	var out []scheduleview.RecurringDetail
 	for _, d := range s.Recurring {
 		if d.FacilityID == facilityID {
 			out = append(out, d)

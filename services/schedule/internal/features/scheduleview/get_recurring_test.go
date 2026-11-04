@@ -26,9 +26,10 @@ func TestSchedulesGetRecurring(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(got, created) || got.Visit == nil || got.Version != 1 {
+	if !reflect.DeepEqual(got.RecurringSchedule, created) || got.Visit == nil || got.Version != 1 {
 		t.Errorf("作った後の GetRecurring = %+v, want %+v", got, created)
 	}
+	first := got
 
 	date := civil.Date{Year: 2026, Month: 10, Day: 27}
 	if _, err := uc.ChangeOccurrence(ctx, created.ID, date, normalSlot()); err != nil {
@@ -38,11 +39,11 @@ func TestSchedulesGetRecurring(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !slices.Equal(got.ExclusionDates, []civil.Date{date}) || got.Version != created.Version+1 {
+	if !slices.Equal(got.ExclusionDates, []civil.Date{date}) || got.Version != first.Version+1 {
 		t.Errorf("回を置き換えた後の ExclusionDates = %v, Version = %d", got.ExclusionDates, got.Version)
 	}
-	got.ExclusionDates, got.Version = created.ExclusionDates, created.Version
-	if !reflect.DeepEqual(got, created) {
+	got.ExclusionDates, got.Version = first.ExclusionDates, first.Version
+	if !reflect.DeepEqual(got, first) {
 		t.Errorf("回を置き換えた後の GetRecurring が、除外した日付と更新の番号のほかに変わった: %+v", got)
 	}
 

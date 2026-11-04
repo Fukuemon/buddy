@@ -28,11 +28,11 @@ func NewUpdate(schedules Repository, staff StaffRefs, types TypeRepository, visi
 	return Update{schedules: schedules, staff: staff, types: types, visits: visits, now: now, exports: exports, tx: tx}
 }
 
-// Do は、単発の予定の枠を in の内容に置き換える。訪問の情報は in の内容で作り直し、前の訪問の情報は消す。
+// Do は、単発の予定の枠を in の内容に置き換え、書いた予定を返す。訪問の情報は in の内容で作り直し、前の訪問の情報は消す。
 // 予定が見つからないときは apperr.ErrNotFound を、キャンセル済みのときは apperr.ErrConflict を、
 // 参照が見つからないか別の事業所のものであるときは入力のエラーを返す。
-func (s Update) Do(ctx context.Context, scheduleID string, in SlotInput) (Detail, error) {
-	var updated Detail
+func (s Update) Do(ctx context.Context, scheduleID string, in SlotInput) (Schedule, error) {
+	var updated Schedule
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
 		cur, err := s.schedules.GetForUpdate(ctx, scheduleID)
 		if err != nil {
@@ -41,7 +41,7 @@ func (s Update) Do(ctx context.Context, scheduleID string, in SlotInput) (Detail
 		if err := RequireScheduleAccess(ctx, s.staff, cur.StaffID, true); err != nil {
 			return err
 		}
-		if cur.Cancel != nil {
+		if cur.Cancelled {
 			return apperr.Conflict("キャンセル済みの予定は変えられません")
 		}
 		slot, typ, err := prepareSlot(ctx, s.types, s.staff, s.visits, s.now, cur.FacilityID, in, assignedOf(cur.StaffID, cur.Visit))
@@ -64,8 +64,9 @@ func (s Update) Do(ctx context.Context, scheduleID string, in SlotInput) (Detail
 		if err := scheduleChanged(ctx, s.exports, sc.Slot, sc.ID); err != nil {
 			return err
 		}
-		updated, err = s.schedules.Get(ctx, cur.ID)
-		return err
+		sc.RecurringScheduleID, sc.OriginalDate = cur.RecurringScheduleID, cur.OriginalDate
+		updated = sc
+		return nil
 	})
 	return updated, err
 }

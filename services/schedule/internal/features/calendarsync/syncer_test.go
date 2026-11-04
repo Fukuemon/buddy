@@ -19,6 +19,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
@@ -80,11 +81,11 @@ type syncOps struct {
 
 // scheduleOps は、同期のテストが呼ぶ schedule の操作の Do である。
 type scheduleOps struct {
-	Create           func(ctx context.Context, facilityID string, in schedule.SlotInput) (schedule.Detail, error)
-	CreateRecurring  func(ctx context.Context, facilityID string, in schedule.SlotInput, rule schedule.RuleInput) (schedule.RecurringDetail, error)
-	ChangeOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in schedule.SlotInput) (schedule.Detail, error)
+	Create           func(ctx context.Context, facilityID string, in schedule.SlotInput) (schedule.Schedule, error)
+	CreateRecurring  func(ctx context.Context, facilityID string, in schedule.SlotInput, rule schedule.RuleInput) (schedule.RecurringSchedule, error)
+	ChangeOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in schedule.SlotInput) (schedule.Schedule, error)
 	Cancel           func(ctx context.Context, scheduleID, reason string) (schedule.Cancellation, error)
-	Update           func(ctx context.Context, scheduleID string, in schedule.SlotInput) (schedule.Detail, error)
+	Update           func(ctx context.Context, scheduleID string, in schedule.SlotInput) (schedule.Schedule, error)
 }
 
 // oneAccount は、inmem.FacilityID の事業所だけに、source で読むサービスアカウントがある calendar.Accounts を返す。
@@ -168,7 +169,7 @@ func newSyncer(s *inmem.Store, source calendar.EventSource, sources *[]string, s
 	}, &inmem.Tx{}, ulid.Generator{}, time.Minute, slog.New(slog.NewTextHandler(io.Discard, nil)))
 }
 
-func (e syncEnv) create(t *testing.T, title string) schedule.Detail {
+func (e syncEnv) create(t *testing.T, title string) schedule.Schedule {
 	t.Helper()
 	d, err := e.schedules.Create(e.ctx, inmem.FacilityID, schedule.SlotInput{
 		TypeID: inmem.NormalTypeID, Date: civil.Date{Year: 2026, Month: 11, Day: 4},
@@ -240,7 +241,7 @@ func (e syncEnv) sync(t *testing.T) {
 	}
 }
 
-func (e syncEnv) schedule(t *testing.T, id string) schedule.Detail {
+func (e syncEnv) schedule(t *testing.T, id string) scheduleview.Detail {
 	t.Helper()
 	d, err := inmem.Schedules{Store: e.store}.Get(t.Context(), id)
 	if err != nil {
@@ -270,7 +271,7 @@ func (e syncEnv) shift(t *testing.T, eventID string) {
 }
 
 // created は、buddy で作って書き出した予定「カンファレンス」と、最初の同期を終えた状態を作る。
-func (e syncEnv) created(t *testing.T) schedule.Detail {
+func (e syncEnv) created(t *testing.T) schedule.Schedule {
 	t.Helper()
 	d := e.create(t, "カンファレンス")
 	e.run(t)
@@ -531,7 +532,7 @@ func TestSyncReportsUnreadableCalendar(t *testing.T) {
 }
 
 // recurring は、毎週月曜の繰り返しの予定を buddy で作って書き出し、最初の同期を終えた状態を作る。
-func (e syncEnv) recurring(t *testing.T) schedule.RecurringDetail {
+func (e syncEnv) recurring(t *testing.T) schedule.RecurringSchedule {
 	t.Helper()
 	title := "定例"
 	end := civil.Date{Year: 2026, Month: 12, Day: 31}
@@ -561,7 +562,7 @@ func TestSyncAppliesOccurrenceChanges(t *testing.T) {
 	if len(got.ExclusionDates) != 2 {
 		t.Fatalf("除外した日 = %v", got.ExclusionDates)
 	}
-	var moved *schedule.Detail
+	var moved *scheduleview.Detail
 	for _, d := range e.store.Schedules {
 		if d.RecurringScheduleID != nil && *d.RecurringScheduleID == rs.ID {
 			moved = &d
@@ -627,6 +628,7 @@ func TestSyncHoldsOccurrenceReplacedOnBothSides(t *testing.T) {
 func TestSyncHoldsRecurringChangedInGoogle(t *testing.T) {
 	e := newSyncEnv(t)
 	rs := e.recurring(t)
+	before, _ := inmem.RecurringSchedules{Store: e.store}.Get(t.Context(), rs.ID)
 	parent := eventID(t, rs.ID)
 	// 職員が Google カレンダーで、繰り返しの曜日を変えた
 	e.srv.Edit(googleCalID, parent, func(ev *calendarv3.Event) {
@@ -638,7 +640,7 @@ func TestSyncHoldsRecurringChangedInGoogle(t *testing.T) {
 		t.Fatalf("待ち = %+v", x)
 	}
 	got, _ := inmem.RecurringSchedules{Store: e.store}.Get(t.Context(), rs.ID)
-	if got.Version != rs.Version {
+	if got.Version != before.Version {
 		t.Errorf("繰り返しの予定を変えた: %+v", got)
 	}
 
@@ -867,13 +869,14 @@ func TestSyncOvernight(t *testing.T) {
 		t.Fatal(err)
 	}
 	e.run(t)
+	created := e.schedule(t, d.ID)
 	id := eventID(t, d.ID)
 	if ev := e.srv.Event(googleCalID, id); ev.Start.DateTime != "2026-11-04T22:00:00" || ev.End.DateTime != "2026-11-05T01:00:00" {
 		t.Fatalf("書き出した日時 = %s〜%s", ev.Start.DateTime, ev.End.DateTime)
 	}
 	e.sync(t)
-	if got := e.schedule(t, d.ID); got.Version != d.Version {
-		t.Fatalf("書き出した予定を当て直した: 更新の番号 %d → %d", d.Version, got.Version)
+	if got := e.schedule(t, d.ID); got.Version != created.Version {
+		t.Fatalf("書き出した予定を当て直した: 更新の番号 %d → %d", created.Version, got.Version)
 	}
 
 	edit := func(start, end string) {

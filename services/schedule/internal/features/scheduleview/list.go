@@ -23,32 +23,32 @@ func NewList(facilities kernel.Finder[organization.Facility], schedules Schedule
 }
 
 // Do は、事業所の予定のうち、見てよい職員の予定を返す。事業所が見つからないときは apperr.ErrNotFound を返す。
-func (s List) Do(ctx context.Context, facilityID string, q schedule.ListQuery) (schedule.Listing, error) {
+func (s List) Do(ctx context.Context, facilityID string, q ListQuery) (Listing, error) {
 	if err := q.Validate(); err != nil {
-		return schedule.Listing{}, err
+		return Listing{}, err
 	}
 	p, err := schedule.Current(ctx)
 	if err != nil {
-		return schedule.Listing{}, err
+		return Listing{}, err
 	}
 	if _, err := s.facilities.Get(ctx, facilityID); err != nil {
-		return schedule.Listing{}, err
+		return Listing{}, err
 	}
 	readable, err := s.readableStaff(ctx, p, facilityID)
 	if err != nil {
-		return schedule.Listing{}, err
+		return Listing{}, err
 	}
 	single, err := s.schedules.ListByFacility(ctx, facilityID, q)
 	if err != nil {
-		return schedule.Listing{}, err
+		return Listing{}, err
 	}
 	recurring, err := s.recurring.ListByFacility(ctx, facilityID, q)
 	if err != nil {
-		return schedule.Listing{}, err
+		return Listing{}, err
 	}
-	return schedule.Listing{
-		Schedules:          filter(single, func(d schedule.Detail) bool { return readable(d.StaffID) }),
-		RecurringSchedules: filter(recurring, func(d schedule.RecurringDetail) bool { return readable(d.StaffID) }),
+	return Listing{
+		Schedules:          filter(single, func(d Detail) bool { return readable(d.StaffID) }),
+		RecurringSchedules: filter(recurring, func(d RecurringDetail) bool { return readable(d.StaffID) }),
 	}, nil
 }
 

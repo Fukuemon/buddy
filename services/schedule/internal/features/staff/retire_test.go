@@ -10,6 +10,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
@@ -24,7 +25,7 @@ func TestStaffRetire(t *testing.T) {
 	d.Username = "青木 陽菜"
 	d.LeaveStartedAt = ptr(time.Now())
 	s.Staff[staffID] = d
-	s.Schedules["PAST"] = schedule.Detail{Schedule: schedule.Schedule{ID: "PAST", Slot: schedule.Slot{
+	s.Schedules["PAST"] = scheduleview.Detail{Schedule: schedule.Schedule{ID: "PAST", Slot: schedule.Slot{
 		FacilityID: facilityID, StaffID: staffID, Date: civil.Date{Year: 2026, Month: 10, Day: 22}}}}
 	s.Calendars["CAL"] = calendar.ExternalCalendar{ID: "CAL", FacilityID: facilityID, StaffID: staffID, Provider: calendar.ProviderGoogle, CalendarID: "staff@example.com"}
 	s.Links["LINK"] = calendar.EventLink{ID: "LINK", FacilityID: facilityID, ExternalCalendarID: "CAL", ExternalEventID: "EV", ScheduleID: ptr("PAST")}
@@ -84,13 +85,13 @@ func TestStaffRetireRejectsAssignments(t *testing.T) {
 		{"繰り返しの予定", func(*inmem.Store) {}},
 		{"その日の予定", func(s *inmem.Store) {
 			clearAssignments(s)
-			s.Schedules["TODAY"] = schedule.Detail{Schedule: schedule.Schedule{ID: "TODAY", Slot: schedule.Slot{
+			s.Schedules["TODAY"] = scheduleview.Detail{Schedule: schedule.Schedule{ID: "TODAY", Slot: schedule.Slot{
 				FacilityID: facilityID, StaffID: staffID, Date: civil.Date{Year: 2026, Month: 10, Day: 23}}}}
 		}},
 		{"同行者の予定", func(s *inmem.Store) {
 			clearAssignments(s)
 			s.Infos["INFO"] = visit.Info{ID: "INFO", AssignedStaffID: companionID, CompanionID: ptr(staffID)}
-			s.Schedules["VISIT"] = schedule.Detail{Schedule: schedule.Schedule{ID: "VISIT", Slot: schedule.Slot{
+			s.Schedules["VISIT"] = scheduleview.Detail{Schedule: schedule.Schedule{ID: "VISIT", Slot: schedule.Slot{
 				FacilityID: facilityID, StaffID: companionID, Date: civil.Date{Year: 2026, Month: 11, Day: 1}, VisitInfoID: ptr("INFO")}}}
 		}},
 		{"担当の利用者", func(s *inmem.Store) {
@@ -134,7 +135,7 @@ func TestStaffRetireRejectsAssignments(t *testing.T) {
 	t.Run("キャンセルした予定は数えない", func(t *testing.T) {
 		s, ids := stopFixture()
 		clearAssignments(s)
-		s.Schedules["CANCELLED"] = schedule.Detail{Schedule: schedule.Schedule{ID: "CANCELLED", Slot: schedule.Slot{
+		s.Schedules["CANCELLED"] = scheduleview.Detail{Schedule: schedule.Schedule{ID: "CANCELLED", Slot: schedule.Slot{
 			FacilityID: facilityID, StaffID: staffID, Date: civil.Date{Year: 2026, Month: 11, Day: 1}}}}
 		s.Cancels["CANCELLED"] = schedule.Cancellation{ScheduleID: "CANCELLED"}
 		if _, err := stopApp(s, ids, allow).Retire(ctx, staffID); err != nil {

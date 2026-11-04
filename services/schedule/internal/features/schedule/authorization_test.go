@@ -9,6 +9,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
@@ -34,9 +35,9 @@ func authzStore() *inmem.Store {
 		return schedule.Slot{FacilityID: facilityID, StaffID: staffID, TypeID: normalTypeID, Date: civil.Date{Year: 2026, Month: 10, Day: 20},
 			StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10}}
 	}
-	s.Schedules[targetScheduleID] = schedule.Detail{Schedule: schedule.Schedule{ID: targetScheduleID, Slot: slot(staffID)}, TypeName: schedule.Normal}
-	s.Schedules[ownScheduleID] = schedule.Detail{Schedule: schedule.Schedule{ID: ownScheduleID, Slot: slot(viewerID)}, TypeName: schedule.Normal}
-	s.Recurring[targetRecurringID] = schedule.RecurringDetail{RecurringSchedule: schedule.RecurringSchedule{
+	s.Schedules[targetScheduleID] = scheduleview.Detail{Schedule: schedule.Schedule{ID: targetScheduleID, Slot: slot(staffID)}, TypeName: schedule.Normal}
+	s.Schedules[ownScheduleID] = scheduleview.Detail{Schedule: schedule.Schedule{ID: ownScheduleID, Slot: slot(viewerID)}, TypeName: schedule.Normal}
+	s.Recurring[targetRecurringID] = scheduleview.RecurringDetail{RecurringSchedule: schedule.RecurringSchedule{
 		ID: targetRecurringID, Slot: slot(staffID), Rule: schedule.Rule{Frequency: schedule.Weekly},
 	}}
 	return s

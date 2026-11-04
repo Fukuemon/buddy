@@ -17,6 +17,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
@@ -71,11 +72,11 @@ type exportOps struct {
 
 // scheduleOps は、書き出しのテストが呼ぶ schedule の操作の Do である。
 type scheduleOps struct {
-	Create           func(ctx context.Context, facilityID string, in schedule.SlotInput) (schedule.Detail, error)
-	CreateRecurring  func(ctx context.Context, facilityID string, in schedule.SlotInput, rule schedule.RuleInput) (schedule.RecurringDetail, error)
-	ChangeOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in schedule.SlotInput) (schedule.Detail, error)
+	Create           func(ctx context.Context, facilityID string, in schedule.SlotInput) (schedule.Schedule, error)
+	CreateRecurring  func(ctx context.Context, facilityID string, in schedule.SlotInput, rule schedule.RuleInput) (schedule.RecurringSchedule, error)
+	ChangeOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in schedule.SlotInput) (schedule.Schedule, error)
 	Cancel           func(ctx context.Context, scheduleID, reason string) (schedule.Cancellation, error)
-	Update           func(ctx context.Context, scheduleID string, in schedule.SlotInput) (schedule.Detail, error)
+	Update           func(ctx context.Context, scheduleID string, in schedule.SlotInput) (schedule.Schedule, error)
 }
 
 // writerOf は、事業所によらず w で書く calendar.WriterFor を返し、引かれた事業所を used に足す。
@@ -121,7 +122,7 @@ func newExportEnv(t *testing.T) exportEnv {
 	return exportEnv{store: s, ctx: ctx, uc: uc, srv: srv, schedules: sched, exporter: exporter, writers: writers}
 }
 
-func (e exportEnv) create(t *testing.T, title string) schedule.Detail {
+func (e exportEnv) create(t *testing.T, title string) schedule.Schedule {
 	t.Helper()
 	d, err := e.schedules.Create(e.ctx, inmem.FacilityID, schedule.SlotInput{
 		TypeID: inmem.NormalTypeID, Date: civil.Date{Year: 2026, Month: 11, Day: 4},
@@ -664,7 +665,7 @@ func TestExportRecurringKeepsImportedExceptions(t *testing.T) {
 	moved, skipped := civil.Date{Year: 2026, Month: 11, Day: 9}, civil.Date{Year: 2026, Month: 11, Day: 16}
 	const rsID, replacementID = "01K8CCCCCCCCCCCCCCCCCCCCCC", "01K8DDDDDDDDDDDDDDDDDDDDDD"
 	title := "定例"
-	e.store.Recurring[rsID] = schedule.RecurringDetail{
+	e.store.Recurring[rsID] = scheduleview.RecurringDetail{
 		RecurringSchedule: schedule.RecurringSchedule{ID: rsID, Slot: schedule.Slot{
 			FacilityID: inmem.FacilityID, StaffID: inmem.StaffID, TypeID: inmem.NormalTypeID, Title: &title,
 			Date: civil.Date{Year: 2026, Month: 11, Day: 2}, StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10},
@@ -672,7 +673,7 @@ func TestExportRecurringKeepsImportedExceptions(t *testing.T) {
 		ExclusionDates: []civil.Date{moved, skipped}, Version: 3,
 	}
 	rid := rsID
-	e.store.Schedules[replacementID] = schedule.Detail{Schedule: schedule.Schedule{
+	e.store.Schedules[replacementID] = scheduleview.Detail{Schedule: schedule.Schedule{
 		ID: replacementID, RecurringScheduleID: &rid, OriginalDate: &moved,
 		Slot: schedule.Slot{FacilityID: inmem.FacilityID, StaffID: inmem.StaffID, Date: moved},
 	}}

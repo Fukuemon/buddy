@@ -10,6 +10,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
@@ -31,7 +32,7 @@ type Import struct {
 	accounts           calendar.Accounts
 	staff              calendar.StaffRefs
 	patients           calendar.Patients
-	recurringSchedules kernel.Finder[schedule.RecurringDetail]
+	recurringSchedules kernel.Finder[scheduleview.RecurringDetail]
 	serviceCodes       calendar.ServiceCodes
 	types              calendar.Types
 	recurring          Recurring
@@ -43,7 +44,7 @@ type Import struct {
 }
 
 // NewImport は Import を作る。
-func NewImport(calendars Calendars, accounts calendar.Accounts, staff calendar.StaffRefs, patients calendar.Patients, recurringSchedules kernel.Finder[schedule.RecurringDetail], serviceCodes calendar.ServiceCodes, types calendar.Types, recurring Recurring, schedules calendar.ScheduleStore, visits calendar.VisitStore, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) Import {
+func NewImport(calendars Calendars, accounts calendar.Accounts, staff calendar.StaffRefs, patients calendar.Patients, recurringSchedules kernel.Finder[scheduleview.RecurringDetail], serviceCodes calendar.ServiceCodes, types calendar.Types, recurring Recurring, schedules calendar.ScheduleStore, visits calendar.VisitStore, tx tx.Transactor, ids kernel.IDGenerator, guard organization.Guard) Import {
 	return Import{calendars: calendars, accounts: accounts, staff: staff, patients: patients, recurringSchedules: recurringSchedules, serviceCodes: serviceCodes, types: types, recurring: recurring, schedules: schedules, visits: visits, tx: tx, ids: ids, guard: guard}
 }
 

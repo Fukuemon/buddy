@@ -125,15 +125,11 @@ func (rs RecurringSchedule) HasOccurrenceOn(d civil.Date) bool {
 	return false
 }
 
-// RecurringDetail は、繰り返しの予定と、種類、職員、訪問の情報、除外した日付である。Visit は、ないときに nil である。
+// StoredRecurring は、保存した繰り返しの予定を、予定を書く前の確認に使う値と読んだものである。名前を結合しない（ADR-0033）。
+// Visit は訪問の情報で、訪問の予定でなければ nil である。
 // Version は更新の番号で、作ったときに 1 で、回を除外するたびに 1 つ増える。
-type RecurringDetail struct {
+type StoredRecurring struct {
 	RecurringSchedule
-	TypeName       TypeName
-	StaffName      string
-	Visit          *visit.Detail
-	ExclusionDates []civil.Date
-	Version        int
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	Visit   *visit.Info
+	Version int
 }

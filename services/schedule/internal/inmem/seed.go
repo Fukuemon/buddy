@@ -5,6 +5,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 )
@@ -42,7 +43,7 @@ func Seeded() *Store {
 	s.Categories[CategoryID] = visit.Category{ID: CategoryID}
 	s.Types[NormalTypeID] = schedule.Type{ID: NormalTypeID, Code: schedule.CodeNormal, Name: schedule.Normal}
 	s.Types[VisitTypeID] = schedule.Type{ID: VisitTypeID, Code: schedule.CodeVisit, Name: schedule.Visit}
-	s.Recurring[RecurringID] = schedule.RecurringDetail{RecurringSchedule: schedule.RecurringSchedule{
+	s.Recurring[RecurringID] = scheduleview.RecurringDetail{RecurringSchedule: schedule.RecurringSchedule{
 		ID:   RecurringID,
 		Slot: schedule.Slot{FacilityID: FacilityID, StaffID: StaffID, Date: civil.Date{Year: 2026, Month: 10, Day: 5}},
 		Rule: schedule.Rule{Frequency: schedule.Weekly},

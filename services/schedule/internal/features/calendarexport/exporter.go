@@ -10,7 +10,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
 
@@ -33,8 +33,8 @@ type ExporterDeps struct {
 	Exports   ExportRepository
 	Calendars ExporterCalendars
 	Writers   calendar.WriterFor
-	Schedules kernel.Finder[schedule.Detail]
-	Recurring kernel.Finder[schedule.RecurringDetail]
+	Schedules kernel.Finder[scheduleview.Detail]
+	Recurring kernel.Finder[scheduleview.RecurringDetail]
 }
 
 // Exporter は、書き出しの待ちを、予定の職員が結び付けた外部のカレンダーに書く処理である。ADR-0009 の段階 2 に当たる。

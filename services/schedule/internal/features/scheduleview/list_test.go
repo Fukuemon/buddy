@@ -9,6 +9,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 )
 
@@ -17,10 +18,10 @@ func TestSchedulesList(t *testing.T) {
 	uc := newSchedules(s)
 	ctx := editorCtx()
 	from, to := civil.Date{Year: 2026, Month: 10, Day: 20}, civil.Date{Year: 2026, Month: 10, Day: 1}
-	if _, err := uc.List(ctx, facilityID, schedule.ListQuery{DateFrom: &from, DateTo: &to}); !errors.Is(err, apperr.ErrInvalidInput) {
+	if _, err := uc.List(ctx, facilityID, scheduleview.ListQuery{DateFrom: &from, DateTo: &to}); !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Fatalf("err = %v, want ErrInvalidInput", err)
 	}
-	if _, err := uc.List(ctx, "MISSING", schedule.ListQuery{}); !errors.Is(err, apperr.ErrNotFound) {
+	if _, err := uc.List(ctx, "MISSING", scheduleview.ListQuery{}); !errors.Is(err, apperr.ErrNotFound) {
 		t.Fatalf("err = %v, want ErrNotFound", err)
 	}
 }
@@ -40,10 +41,10 @@ func TestSchedulesListContents(t *testing.T) {
 	}
 	const otherScheduleID, otherRecurringID = "OTHER-SCHEDULE", "OTHER-RECURRING"
 	otherSlot := schedule.Slot{FacilityID: otherFacilityID, StaffID: otherStaffID, TypeID: normalTypeID, Date: civil.Date{Year: 2026, Month: 10, Day: 20}}
-	s.Schedules[otherScheduleID] = schedule.Detail{Schedule: schedule.Schedule{ID: otherScheduleID, Slot: otherSlot}}
-	s.Recurring[otherRecurringID] = schedule.RecurringDetail{RecurringSchedule: schedule.RecurringSchedule{ID: otherRecurringID, Slot: otherSlot}}
+	s.Schedules[otherScheduleID] = scheduleview.Detail{Schedule: schedule.Schedule{ID: otherScheduleID, Slot: otherSlot}}
+	s.Recurring[otherRecurringID] = scheduleview.RecurringDetail{RecurringSchedule: schedule.RecurringSchedule{ID: otherRecurringID, Slot: otherSlot}}
 
-	list, err := uc.List(ctx, facilityID, schedule.ListQuery{})
+	list, err := uc.List(ctx, facilityID, scheduleview.ListQuery{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,7 +77,7 @@ func TestSchedulesListContents(t *testing.T) {
 	}
 }
 
-func scheduleIDs(ds []schedule.Detail) []string {
+func scheduleIDs(ds []scheduleview.Detail) []string {
 	ids := make([]string, len(ds))
 	for i, d := range ds {
 		ids[i] = d.ID

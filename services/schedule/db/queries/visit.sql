@@ -30,3 +30,6 @@ DELETE FROM visit_infos vi
 WHERE vi.id = $1
   AND NOT EXISTS (SELECT 1 FROM schedules s WHERE s.visit_info_id = vi.id)
   AND NOT EXISTS (SELECT 1 FROM recurring_schedules rs WHERE rs.visit_info_id = vi.id);
+
+-- name: ListVisitInfoCategoryIDs :many
+SELECT visit_category_id FROM visit_info_visit_categories WHERE visit_info_id = $1 ORDER BY visit_category_id;

@@ -8,6 +8,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 )
 
@@ -15,9 +16,9 @@ import (
 func TestStaffRemainingAssignments(t *testing.T) {
 	ctx := context.Background()
 	s, ids := stopFixture()
-	s.Schedules["PAST"] = schedule.Detail{Schedule: schedule.Schedule{ID: "PAST", Slot: schedule.Slot{
+	s.Schedules["PAST"] = scheduleview.Detail{Schedule: schedule.Schedule{ID: "PAST", Slot: schedule.Slot{
 		FacilityID: facilityID, StaffID: staffID, Date: civil.Date{Year: 2026, Month: 10, Day: 22}}}}
-	s.Schedules["TODAY"] = schedule.Detail{Schedule: schedule.Schedule{ID: "TODAY", Slot: schedule.Slot{
+	s.Schedules["TODAY"] = scheduleview.Detail{Schedule: schedule.Schedule{ID: "TODAY", Slot: schedule.Slot{
 		FacilityID: facilityID, StaffID: staffID, Date: civil.Date{Year: 2026, Month: 10, Day: 23}}}}
 
 	got, err := stopApp(s, ids, allow).RemainingAssignments(ctx, staffID)

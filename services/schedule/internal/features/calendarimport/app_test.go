@@ -13,7 +13,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
@@ -184,7 +184,7 @@ func reviewIDs(items []calendarimport.ReviewItem) []string {
 	return out
 }
 
-func recurringOf(t *testing.T, e env, eventID string) schedule.RecurringDetail {
+func recurringOf(t *testing.T, e env, eventID string) scheduleview.RecurringDetail {
 	t.Helper()
 	for _, l := range e.store.Links {
 		if l.ExternalEventID == eventID && l.RecurringScheduleID != nil {
@@ -192,10 +192,10 @@ func recurringOf(t *testing.T, e env, eventID string) schedule.RecurringDetail {
 		}
 	}
 	t.Fatalf("%s の繰り返しの予定が無い", eventID)
-	return schedule.RecurringDetail{}
+	return scheduleview.RecurringDetail{}
 }
 
-func scheduleOf(t *testing.T, e env, eventID string) schedule.Detail {
+func scheduleOf(t *testing.T, e env, eventID string) scheduleview.Detail {
 	t.Helper()
 	for _, l := range e.store.Links {
 		if l.ExternalEventID == eventID && l.ScheduleID != nil {
@@ -203,7 +203,7 @@ func scheduleOf(t *testing.T, e env, eventID string) schedule.Detail {
 		}
 	}
 	t.Fatalf("%s の予定が無い", eventID)
-	return schedule.Detail{}
+	return scheduleview.Detail{}
 }
 
 func TestNewRange(t *testing.T) {
@@ -258,7 +258,7 @@ type deps struct {
 	Types              calendar.Types
 	Schedules          calendar.ScheduleStore
 	Recurring          calendarimport.Recurring
-	RecurringSchedules kernel.Finder[schedule.RecurringDetail]
+	RecurringSchedules kernel.Finder[scheduleview.RecurringDetail]
 	Visits             calendar.VisitStore
 }
 

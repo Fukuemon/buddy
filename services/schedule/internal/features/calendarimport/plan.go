@@ -13,6 +13,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 )
 
@@ -205,7 +206,7 @@ type planInput struct {
 	// links は、前の取り込みの予定の対応を、外部の予定の ID で引く。
 	links map[string]calendar.EventLink
 	// linkedRecurring は、前の取り込みで繰り返しのまま取り込んだ予定を、親の予定の ID で引く。
-	linkedRecurring map[string]schedule.RecurringDetail
+	linkedRecurring map[string]scheduleview.RecurringDetail
 	patients        []PatientRef
 	serviceCodes    []visit.ServiceCode
 	// staffBlocked は、カレンダーを結び付けた職員に新しい予定を作らない理由である。職員が休職なら SkipStaffOnLeave、

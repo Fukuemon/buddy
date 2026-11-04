@@ -114,8 +114,14 @@ func scheduleApp(
 	facilities kernel.Finder[organization.Facility],
 	staffRefs schedule.StaffRefs,
 	visits schedule.VisitInfos,
-	schedules schedule.Repository,
-	recurring schedule.RecurringRepository,
+	schedules interface {
+		schedule.Repository
+		scheduleview.Schedules
+	},
+	recurring interface {
+		schedule.RecurringRepository
+		scheduleview.RecurringSchedules
+	},
 	types schedule.TypeRepository,
 	exports schedule.Exports,
 	tx tx.Transactor,
@@ -148,7 +154,7 @@ func calendarApp(
 	types calendar.Types,
 	schedules calendar.ScheduleStore,
 	recurring calendarimport.Recurring,
-	recurringSchedules kernel.Finder[schedule.RecurringDetail],
+	recurringSchedules kernel.Finder[scheduleview.RecurringDetail],
 	visits calendar.VisitStore,
 	exports interface {
 		calendarsync.ExportRepository
