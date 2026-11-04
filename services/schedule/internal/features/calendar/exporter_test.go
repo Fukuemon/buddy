@@ -30,10 +30,19 @@ const otherGoogleCalID = "companion@example.com"
 type exportEnv struct {
 	env
 	srv       *gcaltest.Server
-	schedules *schedule.App
+	schedules scheduleOps
 	exporter  *calendar.Exporter
 	// writers は、書き出しの処理が書く手段を引いた事業所の、引いた順の一覧である。
 	writers *[]string
+}
+
+// scheduleOps は、書き出しのテストが呼ぶ schedule の操作の Do である。
+type scheduleOps struct {
+	Create           func(ctx context.Context, facilityID string, in schedule.SlotInput) (schedule.Detail, error)
+	CreateRecurring  func(ctx context.Context, facilityID string, in schedule.SlotInput, rule schedule.RuleInput) (schedule.RecurringDetail, error)
+	ChangeOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in schedule.SlotInput) (schedule.Detail, error)
+	Cancel           func(ctx context.Context, scheduleID, reason string) (schedule.Cancellation, error)
+	Update           func(ctx context.Context, scheduleID string, in schedule.SlotInput) (schedule.Detail, error)
 }
 
 // writerOf は、事業所によらず w で書く calendar.WriterFor を返し、引かれた事業所を used に足す。
@@ -59,11 +68,15 @@ func newExportEnv(t *testing.T) exportEnv {
 	}})
 	exports := inmem.Exports{Store: s}
 	e.uc = calendar.NewApp(calendar.Deps{Calendars: inmem.Calendars{Store: s}, Exports: exports}, &inmem.Tx{}, ids, principal.RequireStaffManage)
-	sched := schedule.NewApp(schedule.Deps{
-		Facilities: inmem.Facilities{Store: s}, Staff: inmem.StaffRefs{Store: s}, Visits: nil,
-		Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, Types: inmem.ScheduleTypes{Store: s},
-		Exports: calendar.NewOutbox(exports, inmem.Calendars{Store: s}, ids),
-	}, &inmem.Tx{}, ids)
+	facilities, refs, schedules, recurring, types := inmem.Facilities{Store: s}, inmem.StaffRefs{Store: s}, inmem.Schedules{Store: s}, inmem.RecurringSchedules{Store: s}, inmem.ScheduleTypes{Store: s}
+	outbox, tx := calendar.NewOutbox(exports, inmem.Calendars{Store: s}, ids), &inmem.Tx{}
+	sched := scheduleOps{
+		Create:           schedule.NewCreate(facilities, schedules, types, refs, nil, nil, outbox, tx, ids).Do,
+		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, nil, nil, recurring, outbox, tx, ids).Do,
+		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, refs, schedules, types, nil, nil, outbox, tx, ids).Do,
+		Cancel:           schedule.NewCancel(schedules, refs, outbox, tx, ids).Do,
+		Update:           schedule.NewUpdate(schedules, refs, types, nil, nil, outbox, tx).Do,
+	}
 	writers := &[]string{}
 	exporter := calendar.NewExporter(calendar.ExporterDeps{
 		Exports: exports, Calendars: inmem.Calendars{Store: s}, Writers: writerOf(gcal.NewWriter(gcaltest.Start(t, srv)), writers),

@@ -235,7 +235,7 @@ CHECK が 8 つ以外を拒み、API は 400 を返す。
 sequenceDiagram
   participant W as web
   participant M as 認証のミドルウェア
-  participant U as schedule.App
+  participant U as schedule.List
   participant DB as PostgreSQL
 
   W->>M: GET /v1/facilities/{facility_id}/schedules（Bearer）
@@ -401,7 +401,7 @@ Google カレンダーの取り込みの確定、同期の予定ごとのトラ�
 予定の作成、予定の変更、繰り返しの予定の作成、繰り返しの回の置き換えは、利用の終了の利用者を予定の利用者に新しく指すと 400 で拒む。
 
 - 確認は、訪問の情報を書く `visit.Writer` が行う。`visit.Input.KeptPatientID` は、利用の終了のまま保存してよい利用者である。
-  - `schedule.App` は、保存した後の日付が今日より前の予定でだけ、元の予定か繰り返しの予定の利用者を `KeptPatientID` に入れる。退職した職員と同じく、利用の終了の利用者に今日以降の予定を残さないためである。
+  - `schedule` の操作は、保存した後の日付が今日より前の予定でだけ、元の予定か繰り返しの予定の利用者を `KeptPatientID` に入れる。退職した職員と同じく、利用の終了の利用者に今日以降の予定を残さないためである。
   - Google カレンダーとの同期が予定を外部の内容に合わせるときも、外部の予定の日付が今日より前なら、元の訪問の情報の利用者を `KeptPatientID` に入れる。
   - 同期がタイトルの同じ予定で前の訪問の情報を使うときも、外部の予定の日付が今日以降なら、利用者が利用中のときだけ当てる。利用の終了の利用者なら、当てられない変更にする。
   - 取り込みと同期がタイトルの利用者名で利用者を探すときは、利用中の利用者だけから探す。利用の終了の利用者の名前の予定は、利用者を 1 人に決められない予定として扱う。

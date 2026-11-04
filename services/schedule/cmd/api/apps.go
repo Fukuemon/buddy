@@ -5,6 +5,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi"
@@ -100,5 +101,30 @@ func staffApp(
 		Reinstate:            staff.NewReinstate(staffRepo, identities, tx, guard).Do,
 		Retire:               staff.NewRetire(self, staffRepo, assignments, nil, identities, calendars, tx, guard).Do,
 		RemainingAssignments: staff.NewRemainingAssignments(staffRepo, assignments, nil, guard).Do,
+	}
+}
+
+// scheduleApp は、schedule の操作の型を作り、ScheduleApp に入れる。exports が nil なら、予定の変更を書き出しの待ちに積まない。
+func scheduleApp(
+	facilities kernel.Finder[organization.Facility],
+	staffRefs schedule.StaffRefs,
+	visits schedule.VisitInfos,
+	schedules schedule.Repository,
+	recurring schedule.RecurringRepository,
+	types schedule.TypeRepository,
+	exports schedule.Exports,
+	tx tx.Transactor,
+	ids kernel.IDGenerator,
+) httpapi.ScheduleApp {
+	return httpapi.ScheduleApp{
+		ListTypes:        schedule.NewListTypes(types).Do,
+		Get:              schedule.NewGet(schedules, staffRefs).Do,
+		GetRecurring:     schedule.NewGetRecurring(recurring, staffRefs).Do,
+		List:             schedule.NewList(facilities, schedules, recurring, staffRefs).Do,
+		Create:           schedule.NewCreate(facilities, schedules, types, staffRefs, visits, nil, exports, tx, ids).Do,
+		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, staffRefs, visits, nil, recurring, exports, tx, ids).Do,
+		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, staffRefs, schedules, types, visits, nil, exports, tx, ids).Do,
+		Cancel:           schedule.NewCancel(schedules, staffRefs, exports, tx, ids).Do,
+		Update:           schedule.NewUpdate(schedules, staffRefs, types, visits, nil, exports, tx).Do,
 	}
 }

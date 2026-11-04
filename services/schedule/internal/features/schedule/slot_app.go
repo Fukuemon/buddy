@@ -2,10 +2,12 @@ package schedule
 
 import (
 	"context"
+	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
 
 // SlotInput は、単発と繰り返しの予定に共通の入力である。Visit は、訪問の予定のときに指定する。
@@ -41,16 +43,16 @@ type occurrence struct {
 
 // createSchedule は、単発の予定を作る。replaces は、繰り返しの予定の回を置き換えるときだけ指定する。
 // 回を置き換えるときは、繰り返しの予定に割り振った職員を、休職か退職でも同じ役割のまま保存できる（requireAssignable）。
-func (s *App) createSchedule(ctx context.Context, facilityID string, in SlotInput, replaces *occurrence) (Detail, error) {
+func createSchedule(ctx context.Context, schedules Repository, ids kernel.IDGenerator, types TypeRepository, staff StaffRefs, visits VisitInfos, now func() time.Time, exports Exports, facilityID string, in SlotInput, replaces *occurrence) (Detail, error) {
 	var kept assignment
 	if replaces != nil {
 		kept = replaces.kept
 	}
-	slot, typ, err := s.prepareSlot(ctx, facilityID, in, kept)
+	slot, typ, err := prepareSlot(ctx, types, staff, visits, now, facilityID, in, kept)
 	if err != nil {
 		return Detail{}, err
 	}
-	sc, err := New(s.ids.NewID(), slot, typ)
+	sc, err := New(ids.NewID(), slot, typ)
 	if err != nil {
 		return Detail{}, err
 	}
@@ -58,29 +60,29 @@ func (s *App) createSchedule(ctx context.Context, facilityID string, in SlotInpu
 		sc.RecurringScheduleID = &replaces.recurringScheduleID
 		sc.OriginalDate = &replaces.originalDate
 	}
-	if err := s.deps.Schedules.Create(ctx, sc); err != nil {
+	if err := schedules.Create(ctx, sc); err != nil {
 		return Detail{}, err
 	}
-	if err := s.scheduleChanged(ctx, sc.Slot, sc.ID); err != nil {
+	if err := scheduleChanged(ctx, exports, sc.Slot, sc.ID); err != nil {
 		return Detail{}, err
 	}
-	return s.deps.Schedules.Get(ctx, sc.ID)
+	return schedules.Get(ctx, sc.ID)
 }
 
 // scheduleChanged は、単発の予定 id の変更を書き出しの待ちに積む。トランザクションの中で呼ぶ。
-func (s *App) scheduleChanged(ctx context.Context, slot Slot, id string) error {
-	if s.deps.Exports == nil {
+func scheduleChanged(ctx context.Context, exports Exports, slot Slot, id string) error {
+	if exports == nil {
 		return nil
 	}
-	return s.deps.Exports.ScheduleChanged(ctx, slot.FacilityID, slot.StaffID, id)
+	return exports.ScheduleChanged(ctx, slot.FacilityID, slot.StaffID, id)
 }
 
 // recurringChanged は、繰り返しの予定 id の変更を書き出しの待ちに積む。トランザクションの中で呼ぶ。
-func (s *App) recurringChanged(ctx context.Context, slot Slot, id string) error {
-	if s.deps.Exports == nil {
+func recurringChanged(ctx context.Context, exports Exports, slot Slot, id string) error {
+	if exports == nil {
 		return nil
 	}
-	return s.deps.Exports.RecurringChanged(ctx, slot.FacilityID, slot.StaffID, id)
+	return exports.RecurringChanged(ctx, slot.FacilityID, slot.StaffID, id)
 }
 
 // prepareSlot は、予定の種類と職員と、職員の予定を編集する権限を確認し、訪問の情報があれば保存して、予定の属性を組み立てる。
@@ -88,16 +90,16 @@ func (s *App) recurringChanged(ctx context.Context, slot Slot, id string) error 
 // 利用の終了の利用者は、kept の利用者のまま、今日より前の予定でだけ保存できる（ADR-0021）。退職した職員と同じく、利用の終了の利用者に今日以降の予定を残さない。
 // 職員の状態を確認する前に、事業所の職員の休職と退職をトランザクションの終わりまで待たせ、確認した後に状態が変わらないようにする。
 // 訪問の情報を保存するので、トランザクションの中で呼ぶ。
-func (s *App) prepareSlot(ctx context.Context, facilityID string, in SlotInput, kept assignment) (Slot, Type, error) {
-	typ, err := s.deps.Types.Get(ctx, in.TypeID)
+func prepareSlot(ctx context.Context, types TypeRepository, staff StaffRefs, visits VisitInfos, now func() time.Time, facilityID string, in SlotInput, kept assignment) (Slot, Type, error) {
+	typ, err := types.Get(ctx, in.TypeID)
 	if err != nil {
 		return Slot{}, Type{}, apperr.Reference("予定の種類", in.TypeID, err)
 	}
-	if err := s.deps.Staff.LockStatuses(ctx, facilityID); err != nil {
+	if err := staff.LockStatuses(ctx, facilityID); err != nil {
 		return Slot{}, Type{}, err
 	}
-	today := civil.Today(s.deps.Now())
-	st, err := s.deps.Staff.Get(ctx, in.StaffID)
+	today := civil.Today(now())
+	st, err := staff.Get(ctx, in.StaffID)
 	if err != nil {
 		return Slot{}, Type{}, apperr.Reference("職員", in.StaffID, err)
 	}
@@ -133,7 +135,7 @@ func (s *App) prepareSlot(ctx context.Context, facilityID string, in SlotInput, 
 		if in.Date.Before(today) {
 			vin.KeptPatientID = kept.patientID
 		}
-		id, err := s.deps.Visits.Create(ctx, facilityID, vin)
+		id, err := visits.Create(ctx, facilityID, vin)
 		if err != nil {
 			return Slot{}, Type{}, err
 		}
@@ -143,7 +145,7 @@ func (s *App) prepareSlot(ctx context.Context, facilityID string, in SlotInput, 
 			visitStaff[*in.Visit.CompanionID] = kept.companionID
 		}
 		for staffID, keptID := range visitStaff {
-			ref, err := s.deps.Staff.Get(ctx, staffID)
+			ref, err := staff.Get(ctx, staffID)
 			if err != nil {
 				return Slot{}, Type{}, err
 			}
