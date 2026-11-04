@@ -1,4 +1,4 @@
-package calendar_test
+package calendarexport_test
 
 import (
 	"context"
@@ -14,6 +14,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
@@ -24,16 +25,48 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
 
-const otherGoogleCalID = "companion@example.com"
+const (
+	calID            = "CAL"
+	googleCalID      = "staff@example.com"
+	otherGoogleCalID = "companion@example.com"
+)
+
+func gevent(id, summary, start, end string) *calendarv3.Event {
+	return &calendarv3.Event{
+		Id: id, Status: "confirmed", Summary: summary, Etag: `"` + id + `"`,
+		Start: &calendarv3.EventDateTime{DateTime: start},
+		End:   &calendarv3.EventDateTime{DateTime: end},
+	}
+}
+
+func gexception(id, parent, summary, start, end, original string) *calendarv3.Event {
+	ev := gevent(id, summary, start, end)
+	ev.RecurringEventId = parent
+	ev.OriginalStartTime = &calendarv3.EventDateTime{DateTime: original}
+	return ev
+}
+
+func grecurring(ev *calendarv3.Event, rrule ...string) *calendarv3.Event {
+	ev.Recurrence = rrule
+	return ev
+}
 
 // exportEnv は、予定の操作と、書き出しの処理と、フェイクの Calendar API を同じ Store の上で動かす。
 type exportEnv struct {
-	env
+	store     *inmem.Store
+	ctx       context.Context
+	uc        exportOps
 	srv       *gcaltest.Server
 	schedules scheduleOps
-	exporter  *calendar.Exporter
+	exporter  *calendarexport.Exporter
 	// writers は、書き出しの処理が書く手段を引いた事業所の、引いた順の一覧である。
 	writers *[]string
+}
+
+// exportOps は、書き出しのテストが呼ぶ calendarexport の操作の Do である。
+type exportOps struct {
+	ListExportIssues func(ctx context.Context, facilityID string) ([]calendar.ExportIssue, error)
+	RetryExport      func(ctx context.Context, id string) (calendar.Export, error)
 }
 
 // scheduleOps は、書き出しのテストが呼ぶ schedule の操作の Do である。
@@ -56,20 +89,23 @@ func writerOf(w calendar.EventWriter, used *[]string) calendar.WriterFor {
 func newExportEnv(t *testing.T) exportEnv {
 	t.Helper()
 	srv := &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{googleCalID: {}, otherGoogleCalID: {}}}
-	e := newEnv(t, nil)
-	s := e.store
+	s := inmem.Seeded()
+	s.Calendars[calID] = calendar.ExternalCalendar{ID: calID, FacilityID: inmem.FacilityID, StaffID: inmem.StaffID, Provider: calendar.ProviderGoogle, CalendarID: googleCalID}
 	// 外部の予定の ID を予定の ID から決めるので、予定の ID は ULID にする。
 	ids := ulid.Generator{}
-	e.ctx = principal.With(context.Background(), principal.Principal{Staff: staff.Detail{
+	ctx := principal.With(context.Background(), principal.Principal{Staff: staff.Detail{
 		Summary: staff.Summary{Staff: staff.Staff{ID: inmem.StaffID, FacilityID: inmem.FacilityID}},
 		Policies: []staff.PolicyGrant{
 			{PolicyCode: organization.StaffManage}, {PolicyCode: organization.ScheduleAllEdit},
 		},
 	}})
 	exports := inmem.Exports{Store: s}
-	e.uc = build(deps{Calendars: inmem.Calendars{Store: s}, Exports: exports}, &inmem.Tx{}, ids, principal.RequireStaffManage)
+	uc := exportOps{
+		ListExportIssues: calendarexport.NewListExportIssues(exports, principal.RequireStaffManage).Do,
+		RetryExport:      calendarexport.NewRetryExport(exports, principal.RequireStaffManage).Do,
+	}
 	facilities, refs, schedules, recurring, types := inmem.Facilities{Store: s}, inmem.StaffRefs{Store: s}, inmem.Schedules{Store: s}, inmem.RecurringSchedules{Store: s}, inmem.ScheduleTypes{Store: s}
-	outbox, tx := calendar.NewOutbox(exports, inmem.Calendars{Store: s}, ids), &inmem.Tx{}
+	outbox, tx := calendarexport.NewOutbox(exports, inmem.Calendars{Store: s}, ids), &inmem.Tx{}
 	sched := scheduleOps{
 		Create:           schedule.NewCreate(facilities, schedules, types, refs, nil, nil, outbox, tx, ids).Do,
 		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, nil, nil, recurring, outbox, tx, ids).Do,
@@ -78,11 +114,11 @@ func newExportEnv(t *testing.T) exportEnv {
 		Update:           schedule.NewUpdate(schedules, refs, types, nil, nil, outbox, tx).Do,
 	}
 	writers := &[]string{}
-	exporter := calendar.NewExporter(calendar.ExporterDeps{
+	exporter := calendarexport.NewExporter(calendarexport.ExporterDeps{
 		Exports: exports, Calendars: inmem.Calendars{Store: s}, Writers: writerOf(gcal.NewWriter(gcaltest.Start(t, srv)), writers),
 		Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s},
 	}, ids, slog.New(slog.NewTextHandler(io.Discard, nil)))
-	return exportEnv{env: e, srv: srv, schedules: sched, exporter: exporter, writers: writers}
+	return exportEnv{store: s, ctx: ctx, uc: uc, srv: srv, schedules: sched, exporter: exporter, writers: writers}
 }
 
 func (e exportEnv) create(t *testing.T, title string) schedule.Detail {
@@ -324,16 +360,16 @@ func TestExportRetriesTransientErrors(t *testing.T) {
 
 func TestExportGivesUpAfterMaxAttempts(t *testing.T) {
 	e := newExportEnv(t)
-	for range calendar.MaxExportAttempts {
+	for range calendarexport.MaxExportAttempts {
 		e.srv.Failures = append(e.srv.Failures, http.StatusInternalServerError)
 	}
 	d := e.create(t, "カンファレンス")
-	for range calendar.MaxExportAttempts {
+	for range calendarexport.MaxExportAttempts {
 		e.due()
 		e.run(t)
 	}
 	x := e.export(t, d.ID)
-	if x.Status != calendar.ExportFailed || x.Attempts != calendar.MaxExportAttempts || *x.ErrorCode != calendar.ErrorUnavailable {
+	if x.Status != calendar.ExportFailed || x.Attempts != calendarexport.MaxExportAttempts || *x.ErrorCode != calendar.ErrorUnavailable {
 		t.Fatalf("待ち = %+v", x)
 	}
 	// 上限の後に buddy で変えると、数え直して書く

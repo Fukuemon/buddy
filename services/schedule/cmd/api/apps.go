@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
@@ -142,7 +143,10 @@ func calendarApp(
 	recurring calendar.Recurring,
 	recurringSchedules kernel.Finder[schedule.RecurringDetail],
 	visits calendar.VisitStore,
-	exports calendar.ExportRepository,
+	exports interface {
+		calendar.ExportRepository
+		calendarexport.ExportRepository
+	},
 	tx tx.Transactor,
 	ids kernel.IDGenerator,
 	guard organization.Guard,
@@ -155,8 +159,8 @@ func calendarApp(
 		Unlink:           calendar.NewUnlink(calendars, guard).Do,
 		Preview:          calendar.NewPreview(calendars, accounts, staffRefs, patients, recurringSchedules, serviceCodes, guard).Do,
 		Import:           calendar.NewImport(calendars, accounts, staffRefs, patients, recurringSchedules, serviceCodes, types, recurring, schedules, visits, tx, ids, guard).Do,
-		ListExportIssues: calendar.NewListExportIssues(exports, guard).Do,
-		RetryExport:      calendar.NewRetryExport(exports, guard).Do,
+		ListExportIssues: calendarexport.NewListExportIssues(exports, guard).Do,
+		RetryExport:      calendarexport.NewRetryExport(exports, guard).Do,
 		AcceptExport:     calendar.NewAcceptExport(exports, schedules, calendars, accounts, staffRefs, types, patients, serviceCodes, visits, tx, ids, guard).Do,
 	}
 }

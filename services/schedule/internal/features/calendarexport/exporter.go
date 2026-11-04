@@ -1,10 +1,12 @@
-package calendar
+package calendarexport
 
 import (
 	"context"
 	"errors"
 	"log/slog"
 	"time"
+
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
@@ -29,8 +31,8 @@ const (
 // ExporterDeps は、Exporter が使うリポジトリと、外部のカレンダーに書く EventWriter を事業所ごとに返す Writers である。
 type ExporterDeps struct {
 	Exports   ExportRepository
-	Calendars Repository
-	Writers   WriterFor
+	Calendars calendar.Repository
+	Writers   calendar.WriterFor
 	Schedules kernel.Finder[schedule.Detail]
 	Recurring kernel.Finder[schedule.RecurringDetail]
 }
@@ -79,7 +81,7 @@ func (x *Exporter) ExportDue(ctx context.Context) (int, error) {
 		r := resultOf(e, err)
 		// 止める合図で書けなかった待ちは、書こうとした回数に数えずに返す。
 		if err != nil && ctx.Err() != nil {
-			r = ExportResult{Status: ExportPending, Released: true}
+			r = calendar.ExportResult{Status: calendar.ExportPending, Released: true}
 		}
 		if err != nil && !r.Released {
 			x.log.WarnContext(ctx, "calendar export failed",
@@ -94,27 +96,27 @@ func (x *Exporter) ExportDue(ctx context.Context) (int, error) {
 }
 
 // resultOf は、待ち e を書いたエラー err を、待ちの次の状態にする。
-func resultOf(e Export, err error) ExportResult {
-	code := func(c ExportErrorCode) *ExportErrorCode { return &c }
+func resultOf(e calendar.Export, err error) calendar.ExportResult {
+	code := func(c calendar.ExportErrorCode) *calendar.ExportErrorCode { return &c }
 	switch {
 	case err == nil:
-		return ExportResult{Status: ExportSucceeded}
-	case errors.Is(err, ErrEventChanged):
-		return ExportResult{Status: ExportConflict, ErrorCode: code(ErrorPreconditionFailed)}
-	case errors.Is(err, ErrEventGone), errors.Is(err, ErrEventNotFound):
-		return ExportResult{Status: ExportConflict, ErrorCode: code(ErrorNotFound)}
-	case errors.Is(err, ErrUnwritable):
-		return ExportResult{Status: ExportFailed, ErrorCode: code(ErrorForbidden)}
-	case errors.Is(err, ErrEventRejected):
-		return ExportResult{Status: ExportFailed, ErrorCode: code(ErrorRejected)}
+		return calendar.ExportResult{Status: calendar.ExportSucceeded}
+	case errors.Is(err, calendar.ErrEventChanged):
+		return calendar.ExportResult{Status: calendar.ExportConflict, ErrorCode: code(calendar.ErrorPreconditionFailed)}
+	case errors.Is(err, calendar.ErrEventGone), errors.Is(err, calendar.ErrEventNotFound):
+		return calendar.ExportResult{Status: calendar.ExportConflict, ErrorCode: code(calendar.ErrorNotFound)}
+	case errors.Is(err, calendar.ErrUnwritable):
+		return calendar.ExportResult{Status: calendar.ExportFailed, ErrorCode: code(calendar.ErrorForbidden)}
+	case errors.Is(err, calendar.ErrEventRejected):
+		return calendar.ExportResult{Status: calendar.ExportFailed, ErrorCode: code(calendar.ErrorRejected)}
 	case e.Attempts >= MaxExportAttempts:
-		return ExportResult{Status: ExportFailed, ErrorCode: code(ErrorUnavailable)}
+		return calendar.ExportResult{Status: calendar.ExportFailed, ErrorCode: code(calendar.ErrorUnavailable)}
 	default:
-		return ExportResult{Status: ExportPending, ErrorCode: code(ErrorUnavailable), RetryAfter: exportBackoff << (max(e.Attempts, 1) - 1)}
+		return calendar.ExportResult{Status: calendar.ExportPending, ErrorCode: code(calendar.ErrorUnavailable), RetryAfter: exportBackoff << (max(e.Attempts, 1) - 1)}
 	}
 }
 
-func (x *Exporter) export(ctx context.Context, e Export) error {
+func (x *Exporter) export(ctx context.Context, e calendar.Export) error {
 	if e.ScheduleID != "" {
 		return x.exportSchedule(ctx, e)
 	}
@@ -122,7 +124,7 @@ func (x *Exporter) export(ctx context.Context, e Export) error {
 }
 
 // exportSchedule は、単発の予定を書く。キャンセルした予定は、外部の予定を消す。
-func (x *Exporter) exportSchedule(ctx context.Context, e Export) error {
+func (x *Exporter) exportSchedule(ctx context.Context, e calendar.Export) error {
 	d, err := x.deps.Schedules.Get(ctx, e.ScheduleID)
 	if errors.Is(err, apperr.ErrNotFound) {
 		return nil
@@ -134,16 +136,16 @@ func (x *Exporter) exportSchedule(ctx context.Context, e Export) error {
 	if err != nil {
 		return err
 	}
-	var body *EventBody
+	var body *calendar.EventBody
 	if d.Cancel == nil {
-		b := ScheduleBody(d)
+		b := calendar.ScheduleBody(d)
 		body = &b
 	}
 	return x.sync(ctx, e, item{staffID: d.StaffID, id: d.ID, version: d.Version, link: link, body: body, scheduleID: &d.ID})
 }
 
 // exportRecurring は、繰り返しの予定を、規則と除外する日の RRULE と EXDATE で書く。
-func (x *Exporter) exportRecurring(ctx context.Context, e Export) error {
+func (x *Exporter) exportRecurring(ctx context.Context, e calendar.Export) error {
 	rs, err := x.deps.Recurring.Get(ctx, e.RecurringScheduleID)
 	if errors.Is(err, apperr.ErrNotFound) {
 		return nil
@@ -161,13 +163,13 @@ func (x *Exporter) exportRecurring(ctx context.Context, e Export) error {
 			return err
 		}
 	}
-	b := RecurringBody(rs, exdates)
+	b := calendar.RecurringBody(rs, exdates)
 	return x.sync(ctx, e, item{staffID: rs.StaffID, id: rs.ID, version: rs.Version, link: link, body: &b, recurringScheduleID: &rs.ID})
 }
 
 // exportedExclusions は、繰り返しの予定 parent の除外する日 dates から、外部の例外の回と対応する予定が置き換えた日を除き、
 // 外部の予定の EXDATE に書く日を返す。その日を EXDATE にすると、外部の例外の回が消えるためである。
-func (x *Exporter) exportedExclusions(ctx context.Context, parent EventLink, dates []civil.Date) ([]civil.Date, error) {
+func (x *Exporter) exportedExclusions(ctx context.Context, parent calendar.EventLink, dates []civil.Date) ([]civil.Date, error) {
 	all, err := x.deps.Calendars.ListLinks(ctx, parent.ExternalCalendarID)
 	if err != nil {
 		return nil, err
@@ -199,8 +201,8 @@ type item struct {
 	staffID             string
 	id                  string
 	version             int
-	link                *EventLink
-	body                *EventBody
+	link                *calendar.EventLink
+	body                *calendar.EventBody
 	scheduleID          *string
 	recurringScheduleID *string
 }
@@ -214,7 +216,7 @@ type item struct {
 //
 // 外部が 404 を返したときは、予定が消されたのか、カレンダーの共有が外れたのかを見分けられないので、対応を消さない。
 // 対応を消すのは、予定が消されたこと（410 か、消された予定への 412）か、消せたことが分かったときだけである。
-func (x *Exporter) sync(ctx context.Context, e Export, it item) error {
+func (x *Exporter) sync(ctx context.Context, e calendar.Export, it item) error {
 	cal, err := x.deps.Calendars.ActiveByStaff(ctx, it.staffID)
 	hasCal := err == nil
 	if err != nil && !errors.Is(err, apperr.ErrNotFound) {
@@ -240,7 +242,7 @@ func (x *Exporter) sync(ctx context.Context, e Export, it item) error {
 				return x.deps.Calendars.UpdateLink(ctx, it.link.ID, etag, it.version)
 			}
 			// 書き直すと選んだ予定が外部で消されていたら、対応を消して作り直す。
-			if !e.Overwrite || !errors.Is(err, ErrEventGone) {
+			if !e.Overwrite || !errors.Is(err, calendar.ErrEventGone) {
 				return err
 			}
 		default:
@@ -248,7 +250,7 @@ func (x *Exporter) sync(ctx context.Context, e Export, it item) error {
 			if err != nil {
 				return err
 			}
-			if err := w.Delete(ctx, lc.CalendarID, it.link.ExternalEventID, ifMatch(e, *it.link)); err != nil && !errors.Is(err, ErrEventGone) {
+			if err := w.Delete(ctx, lc.CalendarID, it.link.ExternalEventID, ifMatch(e, *it.link)); err != nil && !errors.Is(err, calendar.ErrEventGone) {
 				return err
 			}
 		}
@@ -259,7 +261,7 @@ func (x *Exporter) sync(ctx context.Context, e Export, it item) error {
 	if it.body == nil || !hasCal {
 		return nil
 	}
-	eventID, err := EventIDOf(it.id)
+	eventID, err := calendar.EventIDOf(it.id)
 	if err != nil {
 		return err
 	}
@@ -268,7 +270,7 @@ func (x *Exporter) sync(ctx context.Context, e Export, it item) error {
 		return err
 	}
 	etag, err := w.Insert(ctx, cal.CalendarID, eventID, *it.body)
-	if errors.Is(err, ErrEventExists) {
+	if errors.Is(err, calendar.ErrEventExists) {
 		// 前に作った後で対応を書けなかったか、消した予定である。ID が buddy の予定から決まるので、buddy の内容で書き直す。
 		etag, err = w.Update(ctx, cal.CalendarID, eventID, "", *it.body)
 	}
@@ -276,21 +278,21 @@ func (x *Exporter) sync(ctx context.Context, e Export, it item) error {
 		return err
 	}
 	version := it.version
-	return x.deps.Calendars.CreateLink(ctx, EventLink{
+	return x.deps.Calendars.CreateLink(ctx, calendar.EventLink{
 		ID: x.ids.NewID(), FacilityID: cal.FacilityID, ExternalCalendarID: cal.ID, ExternalEventID: eventID,
 		ETag: etag, SyncedVersion: &version, ScheduleID: it.scheduleID, RecurringScheduleID: it.recurringScheduleID,
 	})
 }
 
 // ifMatch は、待ち e で外部の予定に付ける If-Match の etag を返す。buddy の内容で書き直す待ちでは付けない。
-func ifMatch(e Export, l EventLink) string {
+func ifMatch(e calendar.Export, l calendar.EventLink) string {
 	if e.Overwrite {
 		return ""
 	}
 	return l.ETag
 }
 
-func optionalLink(l EventLink, err error) (*EventLink, error) {
+func optionalLink(l calendar.EventLink, err error) (*calendar.EventLink, error) {
 	if errors.Is(err, apperr.ErrNotFound) {
 		return nil, nil
 	}

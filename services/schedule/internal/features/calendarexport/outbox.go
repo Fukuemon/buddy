@@ -1,8 +1,10 @@
-package calendar
+package calendarexport
 
 import (
 	"context"
 	"errors"
+
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
@@ -24,19 +26,19 @@ func NewOutbox(exports ExportRepository, calendars ExportCalendars, ids kernel.I
 
 // ScheduleChanged は、単発の予定 scheduleID の変更を積む。
 func (o *Outbox) ScheduleChanged(ctx context.Context, facilityID, staffID, scheduleID string) error {
-	return o.enqueue(ctx, staffID, Target{FacilityID: facilityID, ScheduleID: scheduleID}, func(ctx context.Context) (EventLink, error) {
+	return o.enqueue(ctx, staffID, calendar.Target{FacilityID: facilityID, ScheduleID: scheduleID}, func(ctx context.Context) (calendar.EventLink, error) {
 		return o.calendars.LinkBySchedule(ctx, scheduleID)
 	})
 }
 
 // RecurringChanged は、繰り返しの予定 recurringScheduleID の変更を積む。
 func (o *Outbox) RecurringChanged(ctx context.Context, facilityID, staffID, recurringScheduleID string) error {
-	return o.enqueue(ctx, staffID, Target{FacilityID: facilityID, RecurringScheduleID: recurringScheduleID}, func(ctx context.Context) (EventLink, error) {
+	return o.enqueue(ctx, staffID, calendar.Target{FacilityID: facilityID, RecurringScheduleID: recurringScheduleID}, func(ctx context.Context) (calendar.EventLink, error) {
 		return o.calendars.LinkByRecurringSchedule(ctx, recurringScheduleID)
 	})
 }
 
-func (o *Outbox) enqueue(ctx context.Context, staffID string, t Target, linkOf func(context.Context) (EventLink, error)) error {
+func (o *Outbox) enqueue(ctx context.Context, staffID string, t calendar.Target, linkOf func(context.Context) (calendar.EventLink, error)) error {
 	ok, err := o.writable(ctx, staffID, linkOf)
 	if err != nil || !ok {
 		return err
@@ -45,7 +47,7 @@ func (o *Outbox) enqueue(ctx context.Context, staffID string, t Target, linkOf f
 }
 
 // writable は、職員 staffID の予定の変更を書く先のカレンダーがあるかを返す。linkOf は予定の対応を読む。
-func (o *Outbox) writable(ctx context.Context, staffID string, linkOf func(context.Context) (EventLink, error)) (bool, error) {
+func (o *Outbox) writable(ctx context.Context, staffID string, linkOf func(context.Context) (calendar.EventLink, error)) (bool, error) {
 	_, err := o.calendars.ActiveByStaff(ctx, staffID)
 	if err == nil {
 		return true, nil

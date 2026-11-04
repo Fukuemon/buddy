@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"slices"
 	"testing"
 	"time"
 
@@ -236,6 +237,36 @@ func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
 	}
 	if len(rs.ExclusionDates) != 1 || rs.ExclusionDates[0] != (civil.Date{Year: 2026, Month: 11, Day: 9}) || *parent.SyncedVersion != rs.Version {
 		t.Errorf("取り消した回を除外した繰り返しの予定 = %v, 版 %d, 対応 %+v", rs.ExclusionDates, rs.Version, parent)
+	}
+
+	// 職員が Google カレンダーで、予定のサービス内容を別のサービスコードに変えた
+	srv.Edit("mori@example.com", "single", func(e *calendarv3.Event) { e.Summary = "【訪看I3】見本 二葉" })
+	sync()
+	if d, err = schedules.Get(ctx, *single.ScheduleID); err != nil {
+		t.Fatal(err)
+	}
+	if d.Visit == nil || d.Visit.ServiceCode != "訪看I3" || d.Visit.PatientName != "見本 二葉" {
+		t.Errorf("サービス内容を変えた訪問の予定 = %+v", d.Visit)
+	}
+
+	// どのサービスコードにも当たらないサービス内容は当てず、確認が必要な待ちにする
+	srv.Edit("mori@example.com", "single", func(e *calendarv3.Event) { e.Summary = "【訪看Z9】見本 二葉" })
+	sync()
+	kept, err := schedules.Get(ctx, *single.ScheduleID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if kept.Visit == nil || kept.Visit.ServiceCode != "訪看I3" || kept.Version != d.Version {
+		t.Errorf("当たらないサービス内容を当てた: 訪問 %+v, 更新の番号 %d → %d", kept.Visit, d.Version, kept.Version)
+	}
+	issues, err := NewCalendarExportRepository(testDB).ListIssues(ctx, seedFacility)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.ContainsFunc(issues, func(i calendar.ExportIssue) bool {
+		return i.ScheduleID == d.ID && i.ErrorCode != nil && *i.ErrorCode == calendar.ErrorUnappliable
+	}) {
+		t.Errorf("確認が必要な待ち = %+v, want 予定 %s の unappliable", issues, d.ID)
 	}
 }
 

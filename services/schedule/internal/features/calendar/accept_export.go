@@ -58,7 +58,7 @@ func (u AcceptExport) Do(ctx context.Context, id string) (Export, error) {
 		return Export{}, err
 	}
 	if !e.IsInReview() {
-		return Export{}, errNotInReview
+		return Export{}, ErrExportNotInReview
 	}
 	if !e.IsAcceptable() {
 		return Export{}, errNotAcceptable
@@ -116,7 +116,7 @@ func (u AcceptExport) Do(ctx context.Context, id string) (Export, error) {
 		}
 		switch {
 		case !cur.IsInReview():
-			return errNotInReview
+			return ErrExportNotInReview
 		case !cur.IsAcceptable() || locked.Cancel != nil:
 			return errNotAcceptable
 		}
@@ -128,7 +128,7 @@ func (u AcceptExport) Do(ctx context.Context, id string) (Export, error) {
 		}
 		// ロックを取らない RetryExport が、確認した後に書き直す待ちにしたときに当たる。
 		if err := u.exports.Resolve(ctx, id, cur.Revision); errors.Is(err, apperr.ErrConflict) {
-			return errNotInReview
+			return ErrExportNotInReview
 		} else if err != nil {
 			return err
 		}
