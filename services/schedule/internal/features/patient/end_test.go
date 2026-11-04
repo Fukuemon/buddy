@@ -11,14 +11,13 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 )
 
 // visitSchedule は、利用者 patientID の date の訪問の予定を s に入れる。
 func visitSchedule(s *inmem.Store, id, patientID string, date civil.Date) {
 	infoID := "INFO" + id
-	s.Infos[infoID] = visit.Info{ID: infoID, FacilityID: inmem.FacilityID, PatientID: patientID, AssignedStaffID: inmem.StaffID}
+	s.PutVisitInfo(infoID, patientID)
 	s.Schedules[id] = scheduleview.Detail{Schedule: schedule.Schedule{ID: id, Slot: schedule.Slot{
 		FacilityID: inmem.FacilityID, StaffID: inmem.StaffID, Date: date, StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10}, VisitInfoID: &infoID,
 	}}}
@@ -34,7 +33,7 @@ func TestPatientEndRejectsRemainingSchedules(t *testing.T) {
 	visitSchedule(s, "OTHER", "ANOTHER", today)
 	visitSchedule(s, "TODAY", inmem.PatientID, today)
 	recInfo := "INFOREC"
-	s.Infos[recInfo] = visit.Info{ID: recInfo, FacilityID: inmem.FacilityID, PatientID: inmem.PatientID, AssignedStaffID: inmem.StaffID}
+	s.PutVisitInfo(recInfo, inmem.PatientID)
 	s.Recurring["REC"] = scheduleview.RecurringDetail{RecurringSchedule: schedule.RecurringSchedule{
 		ID: "REC", Slot: schedule.Slot{FacilityID: inmem.FacilityID, StaffID: inmem.StaffID, Date: civil.Date{Year: 2026, Month: 9, Day: 1}, VisitInfoID: &recInfo},
 		Rule: schedule.Rule{Frequency: schedule.Weekly},

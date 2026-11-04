@@ -14,7 +14,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/servicecode"
 )
 
 // SkipServiceNotFound は、タイトルから読んだサービス内容が、サービスコードのマスタに無い予定である。
@@ -208,7 +208,7 @@ type planInput struct {
 	// linkedRecurring は、前の取り込みで繰り返しのまま取り込んだ予定を、親の予定の ID で引く。
 	linkedRecurring map[string]scheduleview.RecurringDetail
 	patients        []PatientRef
-	serviceCodes    []visit.ServiceCode
+	serviceCodes    []servicecode.ServiceCode
 	// staffBlocked は、カレンダーを結び付けた職員に新しい予定を作らない理由である。職員が休職なら SkipStaffOnLeave、
 	// 訪問しない職員なら SkipStaffNonVisiting で、どちらでもなければ空である。
 	staffBlocked calendar.SkipReason

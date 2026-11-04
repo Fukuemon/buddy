@@ -57,10 +57,10 @@ func newSchedulesWithRefs(s *inmem.Store, refs schedule.StaffRefs, locks schedul
 	tx := &inmem.Tx{}
 	ids := &inmem.SeqIDs{}
 	visits := visit.NewWriter(visit.WriterDeps{
-		Staff:    inmem.StaffRefs{Store: s},
-		Patients: patient.VisitFinder(inmem.Patients{Store: s}),
-		Infos:    inmem.VisitInfos{Store: s},
-		Masters:  inmem.VisitMasters{Store: s},
+		Staff:        inmem.StaffRefs{Store: s},
+		Patients:     inmem.Patients{Store: s},
+		Infos:        inmem.VisitInfos{Store: s},
+		ServiceCodes: inmem.ServiceCodes{Store: s}, Categories: inmem.VisitCategories{Store: s},
 	}, ids)
 	return build(deps{
 		Facilities: inmem.Facilities{Store: s},

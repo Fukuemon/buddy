@@ -13,6 +13,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/servicecode"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi"
@@ -52,7 +53,7 @@ func flowRouter() http.Handler {
 		s.Staff[id] = staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: id, FacilityID: facilityID}}}
 	}
 	s.Patients[flowPatientID] = patient.Detail{Patient: patient.Patient{ID: flowPatientID, FacilityID: facilityID}}
-	s.Codes[flowCodeID] = visit.ServiceCode{ID: flowCodeID}
+	s.Codes[flowCodeID] = servicecode.ServiceCode{ID: flowCodeID}
 	s.Categories[flowCategoryID] = visit.Category{ID: flowCategoryID}
 	s.Types[typeID] = schedule.Type{ID: typeID, Code: schedule.CodeNormal, Name: schedule.Normal}
 	s.Types[flowVisitTypeID] = schedule.Type{ID: flowVisitTypeID, Code: schedule.CodeVisit, Name: schedule.Visit}
@@ -65,7 +66,7 @@ func flowRouter() http.Handler {
 	recurring := inmem.RecurringSchedules{Store: s}
 	types := inmem.ScheduleTypes{Store: s}
 	visits := visit.NewWriter(visit.WriterDeps{
-		Staff: refs, Patients: patient.VisitFinder(inmem.Patients{Store: s}), Infos: inmem.VisitInfos{Store: s}, Masters: inmem.VisitMasters{Store: s},
+		Staff: refs, Patients: inmem.Patients{Store: s}, Infos: inmem.VisitInfos{Store: s}, ServiceCodes: inmem.ServiceCodes{Store: s}, Categories: inmem.VisitCategories{Store: s},
 	}, ids)
 	app := httpapi.ScheduleApp{
 		ListTypes:        schedule.NewListTypes(types).Do,

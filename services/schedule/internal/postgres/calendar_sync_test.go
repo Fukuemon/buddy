@@ -17,7 +17,6 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
@@ -170,7 +169,7 @@ func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
 		t.Fatal(err)
 	}
 	patients := NewPatientRepository(testDB)
-	masters := NewVisitMasterRepository(testDB)
+	masters := NewServiceCodeRepository(testDB)
 	staffRefs := NewStaffRefRepository(testDB)
 	schedules := NewScheduleRepository(testDB)
 	recurring := NewRecurringScheduleRepository(testDB)
@@ -178,8 +177,8 @@ func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
 	ids := ulid.Generator{}
 	visits := visit.NewWriter(visit.WriterDeps{
 		Staff:    staffRefs,
-		Patients: patient.VisitFinder(patients),
-		Infos:    NewVisitInfoRepository(testDB), Masters: masters,
+		Patients: patients,
+		Infos:    NewVisitInfoRepository(testDB), ServiceCodes: masters, Categories: NewVisitCategoryRepository(testDB),
 	}, ids)
 	source := gcal.NewReader(gcaltest.Start(t, srv))
 	tx := NewTransactor(testDB)
@@ -291,14 +290,14 @@ func TestCalendarSyncKeepsEndedPatientOnlyInPast(t *testing.T) {
 		t.Fatal(err)
 	}
 	patients := NewPatientRepository(testDB)
-	masters := NewVisitMasterRepository(testDB)
+	masters := NewServiceCodeRepository(testDB)
 	staffRefs := NewStaffRefRepository(testDB)
 	schedules := NewScheduleRepository(testDB)
 	recurring := NewRecurringScheduleRepository(testDB)
 	types := NewScheduleTypeRepository(testDB)
 	ids := ulid.Generator{}
 	visits := visit.NewWriter(visit.WriterDeps{
-		Staff: staffRefs, Patients: patient.VisitFinder(patients), Infos: NewVisitInfoRepository(testDB), Masters: masters,
+		Staff: staffRefs, Patients: patients, Infos: NewVisitInfoRepository(testDB), ServiceCodes: masters, Categories: NewVisitCategoryRepository(testDB),
 	}, ids)
 	source := gcal.NewReader(gcaltest.Start(t, srv))
 	tx := NewTransactor(testDB)

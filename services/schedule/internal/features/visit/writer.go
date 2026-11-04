@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/servicecode"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
@@ -19,19 +21,13 @@ type Input struct {
 	KeptPatientID   string
 }
 
-// PatientRef は、訪問の情報が参照する利用者の ID、事業所、利用の終了かである。
-type PatientRef struct {
-	ID         string
-	FacilityID string
-	Ended      bool
-}
-
 // WriterDeps は、Writer が使うリポジトリと、ほかの機能のデータを読むインターフェースである。
 type WriterDeps struct {
-	Staff    kernel.Finder[staff.Ref]
-	Patients PatientFinder
-	Infos    InfoRepository
-	Masters  MasterRepository
+	Staff        kernel.Finder[staff.Ref]
+	Patients     patient.Getter
+	Infos        InfoRepository
+	ServiceCodes kernel.Finder[servicecode.ServiceCode]
+	Categories   CategoryRepository
 }
 
 // Writer は、参照を検証して訪問の情報を保存し、使われなくなった訪問の情報を消す。予定の操作の手順から呼ぶ。
@@ -48,14 +44,14 @@ func NewWriter(deps WriterDeps, ids kernel.IDGenerator) Writer {
 // Create は、in の参照が facilityID の事業所に属することを確認して訪問の情報を保存し、その ID を返す。
 // 利用者が利用の終了で、in.KeptPatientID と違うときは、入力のエラーを返す（ADR-0021）。
 func (w Writer) Create(ctx context.Context, facilityID string, in Input) (string, error) {
-	pa, err := w.deps.Patients(ctx, in.PatientID)
+	pa, err := w.deps.Patients.Get(ctx, in.PatientID)
 	if err != nil {
 		return "", apperr.Reference("利用者", in.PatientID, err)
 	}
 	if err := apperr.SameFacility("利用者", pa.ID, pa.FacilityID, facilityID); err != nil {
 		return "", err
 	}
-	if pa.Ended && pa.ID != in.KeptPatientID {
+	if pa.IsEnded() && pa.ID != in.KeptPatientID {
 		return "", apperr.Invalid("利用の終了の利用者 %s には、今日以降の予定と新しい予定を作れません", pa.ID)
 	}
 	patientID := pa.ID
@@ -72,11 +68,11 @@ func (w Writer) Create(ctx context.Context, facilityID string, in Input) (string
 			return "", err
 		}
 	}
-	if _, err := w.deps.Masters.GetServiceCode(ctx, in.ServiceCodeID); err != nil {
+	if _, err := w.deps.ServiceCodes.Get(ctx, in.ServiceCodeID); err != nil {
 		return "", apperr.Reference("サービスコード", in.ServiceCodeID, err)
 	}
 	if len(in.CategoryIDs) > 0 {
-		found, err := w.deps.Masters.ListCategoriesByIDs(ctx, in.CategoryIDs)
+		found, err := w.deps.Categories.ListByIDs(ctx, in.CategoryIDs)
 		if err != nil {
 			return "", err
 		}

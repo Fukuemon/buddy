@@ -19,13 +19,14 @@ import (
 
 // Apps は、ルーターがハンドラに渡す操作である。
 type Apps struct {
-	Organization OrganizationApp
-	Staff        StaffApp
-	Patients     PatientApp
-	VisitMasters VisitMasterApp
-	Schedules    ScheduleApp
-	Calendars    CalendarApp
-	Auth         AuthApp
+	Organization    OrganizationApp
+	Staff           StaffApp
+	Patients        PatientApp
+	ServiceCodes    ServiceCodeApp
+	VisitCategories VisitCategoryApp
+	Schedules       ScheduleApp
+	Calendars       CalendarApp
+	Auth            AuthApp
 }
 
 // RouterConfig は、ルーターの設定である。AllowOrigins が空なら CORS のヘッダーを返さない。

@@ -18,6 +18,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/servicecode"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 )
@@ -51,7 +52,7 @@ type Store struct {
 	Staff         map[string]staff.Detail
 	Grants        map[string][]staff.Grant
 	Patients      map[string]patient.Detail
-	Codes         map[string]visit.ServiceCode
+	Codes         map[string]servicecode.ServiceCode
 	Categories    map[string]visit.Category
 	Infos         map[string]visit.Info
 	Types         map[string]schedule.Type
@@ -78,7 +79,7 @@ func NewStore() *Store {
 		Staff:         map[string]staff.Detail{},
 		Grants:        map[string][]staff.Grant{},
 		Patients:      map[string]patient.Detail{},
-		Codes:         map[string]visit.ServiceCode{},
+		Codes:         map[string]servicecode.ServiceCode{},
 		Categories:    map[string]visit.Category{},
 		Infos:         map[string]visit.Info{},
 		Types:         map[string]schedule.Type{},
@@ -647,29 +648,32 @@ func (s VisitInfos) DeleteIfUnused(_ context.Context, id string) error {
 	return nil
 }
 
-// VisitMasters は、visit.MasterRepository のメモリ上の実装である。
-type VisitMasters struct{ *Store }
+// ServiceCodes は、servicecode.Repository のメモリ上の実装である。
+type ServiceCodes struct{ *Store }
 
-// GetServiceCode は、visit.MasterRepository の GetServiceCode を実装する。
-func (s VisitMasters) GetServiceCode(_ context.Context, id string) (visit.ServiceCode, error) {
+// Get は、servicecode.Repository の Get を実装する。
+func (s ServiceCodes) Get(_ context.Context, id string) (servicecode.ServiceCode, error) {
 	return get(s.Codes, id)
 }
 
-// ListServiceCodes は、サービスコードを ID の順に返す。
-func (s VisitMasters) ListServiceCodes(context.Context) ([]visit.ServiceCode, error) {
-	out := make([]visit.ServiceCode, 0, len(s.Codes))
+// List は、サービスコードを ID の順に返す。
+func (s ServiceCodes) List(context.Context) ([]servicecode.ServiceCode, error) {
+	out := make([]servicecode.ServiceCode, 0, len(s.Codes))
 	for _, c := range s.Codes {
 		out = append(out, c)
 	}
-	slices.SortFunc(out, func(a, b visit.ServiceCode) int { return strings.Compare(a.ID, b.ID) })
+	slices.SortFunc(out, func(a, b servicecode.ServiceCode) int { return strings.Compare(a.ID, b.ID) })
 	return out, nil
 }
 
-// ListCategories は、常に空を返す。
-func (s VisitMasters) ListCategories(context.Context) ([]visit.Category, error) { return nil, nil }
+// VisitCategories は、visit.CategoryRepository のメモリ上の実装である。
+type VisitCategories struct{ *Store }
 
-// ListCategoriesByIDs は、visit.MasterRepository の ListCategoriesByIDs を実装する。
-func (s VisitMasters) ListCategoriesByIDs(_ context.Context, ids []string) ([]visit.Category, error) {
+// List は、常に空を返す。
+func (s VisitCategories) List(context.Context) ([]visit.Category, error) { return nil, nil }
+
+// ListByIDs は、visit.CategoryRepository の ListByIDs を実装する。
+func (s VisitCategories) ListByIDs(_ context.Context, ids []string) ([]visit.Category, error) {
 	var out []visit.Category
 	for _, id := range ids {
 		if c, ok := s.Categories[id]; ok {

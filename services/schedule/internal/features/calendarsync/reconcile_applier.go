@@ -429,7 +429,7 @@ func isSameVisit(v *visit.Detail, ev calendar.Event) bool {
 }
 
 func (a reconcileApplier) serviceCodeID(ctx context.Context, service string) (string, error) {
-	codes, err := a.serviceCodes.ListServiceCodes(ctx)
+	codes, err := a.serviceCodes.List(ctx)
 	if err != nil {
 		return "", err
 	}

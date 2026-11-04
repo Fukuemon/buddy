@@ -13,6 +13,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/servicecode"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
@@ -370,5 +371,30 @@ func TestImportOvernight(t *testing.T) {
 	}
 	if s := scheduleOf(t, e, "weekly_20261117"); s.Date != nov(17) || s.StartTime != (civil.Time{Hour: 20}) || s.EndsNextDay || s.OriginalDate == nil {
 		t.Errorf("日をまたがない回の置き換え = %+v", s)
+	}
+}
+
+// TestImportServiceAliases は、別の表記のサービス内容の予定が、マスタの表記のサービスコードに結び付くことを確認する。
+func TestImportServiceAliases(t *testing.T) {
+	e := newEnv(t, &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{googleCalID: {{
+		gevent("yobo", "【予防訪看I2】利用者A", "2026-11-02T09:00:00+09:00", "2026-11-02T09:30:00+09:00"),
+		gevent("yokan", "【予訪看I2】利用者A", "2026-11-03T09:00:00+09:00", "2026-11-03T09:30:00+09:00"),
+		gevent("roman", "【訪看Ⅰ２】利用者A", "2026-11-04T09:00:00+09:00", "2026-11-04T09:30:00+09:00"),
+		gevent("over", "【訪看I52超】利用者A", "2026-11-05T09:00:00+09:00", "2026-11-05T10:00:00+09:00"),
+	}}}})
+	e.store.Codes["CODEYOBO"] = servicecode.ServiceCode{ID: "CODEYOBO", Code: "予防看I2"}
+	e.store.Codes["CODEOVER"] = servicecode.ServiceCode{ID: "CODEOVER", Code: "訪看I5・2超"}
+	if _, err := e.importDecided(t, e.rng, nil); err != nil {
+		t.Fatal(err)
+	}
+	for id, want := range map[string]string{"yobo": "CODEYOBO", "yokan": "CODEYOBO", "roman": codeI2, "over": "CODEOVER"} {
+		s := scheduleOf(t, e, id)
+		if s.VisitInfoID == nil {
+			t.Errorf("%s が訪問の予定にならない: %+v", id, s)
+			continue
+		}
+		if got := e.store.Infos[*s.VisitInfoID].ServiceCodeID; got != want {
+			t.Errorf("%s のサービスコード = %s, want %s", id, got, want)
+		}
 	}
 }

@@ -6,15 +6,15 @@ import (
 
 // ListCategories は、すべての訪問の区分を返す。
 type ListCategories struct {
-	masters MasterRepository
+	categories CategoryRepository
 }
 
 // NewListCategories は ListCategories を作る。
-func NewListCategories(masters MasterRepository) ListCategories {
-	return ListCategories{masters: masters}
+func NewListCategories(categories CategoryRepository) ListCategories {
+	return ListCategories{categories: categories}
 }
 
 // Do は、すべての訪問の区分を返す。
 func (o ListCategories) Do(ctx context.Context) ([]Category, error) {
-	return o.masters.ListCategories(ctx)
+	return o.categories.List(ctx)
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
@@ -134,10 +133,10 @@ func newSchedules(s *inmem.Store) *app {
 	recurring := inmem.RecurringSchedules{Store: s}
 	types := inmem.ScheduleTypes{Store: s}
 	visits := visit.NewWriter(visit.WriterDeps{
-		Staff:    refs,
-		Patients: patient.VisitFinder(inmem.Patients{Store: s}),
-		Infos:    inmem.VisitInfos{Store: s},
-		Masters:  inmem.VisitMasters{Store: s},
+		Staff:        refs,
+		Patients:     inmem.Patients{Store: s},
+		Infos:        inmem.VisitInfos{Store: s},
+		ServiceCodes: inmem.ServiceCodes{Store: s}, Categories: inmem.VisitCategories{Store: s},
 	}, ids)
 	today := civil.Date{Year: 2026, Month: 10, Day: 21}
 	now := func() time.Time { return today.Time().Add(9 * time.Hour) }
