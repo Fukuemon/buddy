@@ -19,14 +19,14 @@ func TestOrganizationDepartmentForbidden(t *testing.T) {
 	s := inmem.Seeded()
 	s.Departments["DEP"] = organization.Department{ID: "DEP", FacilityID: facilityID, Name: "A"}
 	before := len(s.Departments)
-	uc := organization.NewApp(organization.Deps{
-		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s},
-	}, &inmem.Tx{}, &inmem.SeqIDs{}, func(context.Context) error { return apperr.ErrForbidden })
+	guard := func(context.Context) error { return apperr.ErrForbidden }
+	createDepartment := organization.NewCreateDepartment(inmem.Facilities{Store: s}, inmem.Departments{Store: s}, &inmem.SeqIDs{}, guard)
+	updateDepartment := organization.NewUpdateDepartment(inmem.Departments{Store: s}, guard)
 	ctx := context.Background()
-	if _, err := uc.CreateDepartment(ctx, facilityID, "看護部"); !errors.Is(err, apperr.ErrForbidden) {
+	if _, err := createDepartment.Do(ctx, facilityID, "看護部"); !errors.Is(err, apperr.ErrForbidden) {
 		t.Errorf("作成: err = %v, want ErrForbidden", err)
 	}
-	if _, err := uc.UpdateDepartment(ctx, "DEP", "B"); !errors.Is(err, apperr.ErrForbidden) {
+	if _, err := updateDepartment.Do(ctx, "DEP", "B"); !errors.Is(err, apperr.ErrForbidden) {
 		t.Errorf("名前の変更: err = %v, want ErrForbidden", err)
 	}
 	if len(s.Departments) != before || s.Departments["DEP"].Name != "A" {

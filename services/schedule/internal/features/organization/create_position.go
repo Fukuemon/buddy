@@ -4,15 +4,32 @@ import (
 	"context"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
+	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
-// CreatePosition は、事業所に役職を作り、保存した役職を返す。policyIDs に見つからない権限があると入力のエラーを、職員の管理の権限が無いときは apperr.ErrForbidden を、
+// CreatePosition は、事業所に役職を作り、保存した役職を返す。
+type CreatePosition struct {
+	facilities FacilityRepository
+	policies   PolicyRepository
+	positions  PositionRepository
+	tx         tx.Transactor
+	ids        kernel.IDGenerator
+	guard      Guard
+}
+
+// NewCreatePosition は CreatePosition を作る。
+func NewCreatePosition(facilities FacilityRepository, policies PolicyRepository, positions PositionRepository, tx tx.Transactor, ids kernel.IDGenerator, guard Guard) CreatePosition {
+	return CreatePosition{facilities: facilities, policies: policies, positions: positions, tx: tx, ids: ids, guard: guard}
+}
+
+// Do は、事業所に役職を作り、保存した役職を返す。policyIDs に見つからない権限があると入力のエラーを、職員の管理の権限が無いときは apperr.ErrForbidden を、
 // 同じ事業所に同じ名前の役職があるときは apperr.ErrConflict を返す。
-func (o *App) CreatePosition(ctx context.Context, facilityID, name string, policyIDs []string) (Position, error) {
+func (o CreatePosition) Do(ctx context.Context, facilityID, name string, policyIDs []string) (Position, error) {
 	if err := o.guard(ctx); err != nil {
 		return Position{}, err
 	}
-	if _, err := o.deps.Facilities.Get(ctx, facilityID); err != nil {
+	if _, err := o.facilities.Get(ctx, facilityID); err != nil {
 		return Position{}, err
 	}
 	policies, err := o.requirePolicies(ctx, policyIDs)
@@ -27,8 +44,8 @@ func (o *App) CreatePosition(ctx context.Context, facilityID, name string, polic
 }
 
 // requirePolicies は、ids の全ての権限を返す。見つからない権限が 1 つでもあれば、その ID を書いた入力のエラーを返す。
-func (o *App) requirePolicies(ctx context.Context, ids []string) ([]Policy, error) {
-	policies, err := o.deps.Policies.ListByIDs(ctx, ids)
+func (o CreatePosition) requirePolicies(ctx context.Context, ids []string) ([]Policy, error) {
+	policies, err := o.policies.ListByIDs(ctx, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -45,14 +62,14 @@ func (o *App) requirePolicies(ctx context.Context, ids []string) ([]Policy, erro
 }
 
 // savePosition は、1 つのトランザクションで役職 p を保存して読み直す。同じ事業所に同じ名前の役職があるときは apperr.ErrConflict を返す。
-func (o *App) savePosition(ctx context.Context, p Position) (Position, error) {
+func (o CreatePosition) savePosition(ctx context.Context, p Position) (Position, error) {
 	var created Position
 	err := o.tx.WithinTx(ctx, func(ctx context.Context) error {
-		if err := o.deps.Positions.Create(ctx, p); err != nil {
+		if err := o.positions.Create(ctx, p); err != nil {
 			return apperr.AsConflict(err, "役職 %s はこの事業所にすでにあります", p.Name)
 		}
 		var err error
-		created, err = o.deps.Positions.Get(ctx, p.ID)
+		created, err = o.positions.Get(ctx, p.ID)
 		return err
 	})
 	return created, err

@@ -24,7 +24,6 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/broker"
 	"github.com/Fukuemon/buddy/services/schedule/internal/config"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
@@ -107,9 +106,7 @@ func run() error {
 	}, ids)
 
 	router := httpapi.NewRouter(httpapi.Apps{
-		Organization: organization.NewApp(organization.Deps{
-			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions, Policies: policies,
-		}, tx, ids, principal.RequireStaffManage),
+		Organization: organizationApp(facilities, departments, teams, positions, policies, tx, ids, principal.RequireStaffManage),
 		Staff: staff.NewApp(staff.Deps{
 			Facilities: facilities, Departments: departments, Teams: teams, Positions: positions, Policies: policies, Staff: staffRepo,
 			Identities:  broker.New(broker.Config(cfg.Broker), nil),

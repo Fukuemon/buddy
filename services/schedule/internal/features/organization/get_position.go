@@ -4,7 +4,17 @@ import (
 	"context"
 )
 
-// GetPosition は、役職 id を、デフォルトの権限とともに返す。見つからないときは apperr.ErrNotFound を返す。
-func (o *App) GetPosition(ctx context.Context, id string) (Position, error) {
-	return o.deps.Positions.Get(ctx, id)
+// GetPosition は、役職 id を、デフォルトの権限とともに返す。
+type GetPosition struct {
+	positions PositionRepository
+}
+
+// NewGetPosition は GetPosition を作る。
+func NewGetPosition(positions PositionRepository) GetPosition {
+	return GetPosition{positions: positions}
+}
+
+// Do は、役職 id を、デフォルトの権限とともに返す。見つからないときは apperr.ErrNotFound を返す。
+func (o GetPosition) Do(ctx context.Context, id string) (Position, error) {
+	return o.positions.Get(ctx, id)
 }

@@ -12,25 +12,24 @@ import (
 
 func TestOrganizationCreateDepartment(t *testing.T) {
 	s := inmem.Seeded()
-	uc := organization.NewApp(organization.Deps{
-		Facilities: inmem.Facilities{Store: s}, Departments: inmem.Departments{Store: s},
-	}, &inmem.Tx{}, &inmem.SeqIDs{}, func(context.Context) error { return nil })
+	guard := func(context.Context) error { return nil }
+	createDepartment := organization.NewCreateDepartment(inmem.Facilities{Store: s}, inmem.Departments{Store: s}, &inmem.SeqIDs{}, guard)
 	ctx := context.Background()
-	got, err := uc.CreateDepartment(ctx, facilityID, "看護部")
+	got, err := createDepartment.Do(ctx, facilityID, "看護部")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if got.Name != "看護部" || got.FacilityID != facilityID {
 		t.Errorf("CreateDepartment = %+v", got)
 	}
-	if _, err := uc.CreateDepartment(ctx, facilityID, "看護部"); !errors.Is(err, apperr.ErrConflict) ||
+	if _, err := createDepartment.Do(ctx, facilityID, "看護部"); !errors.Is(err, apperr.ErrConflict) ||
 		err.Error() != "部署 看護部 はこの事業所にすでにあります" {
 		t.Errorf("同じ名前: err = %v, want 名前の重なりの ErrConflict", err)
 	}
-	if _, err := uc.CreateDepartment(ctx, facilityID, ""); !errors.Is(err, apperr.ErrInvalidInput) {
+	if _, err := createDepartment.Do(ctx, facilityID, ""); !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Errorf("空の名前: err = %v, want ErrInvalidInput", err)
 	}
-	if _, err := uc.CreateDepartment(ctx, "MISSING", "外来"); !errors.Is(err, apperr.ErrNotFound) {
+	if _, err := createDepartment.Do(ctx, "MISSING", "外来"); !errors.Is(err, apperr.ErrNotFound) {
 		t.Errorf("無い事業所: err = %v, want ErrNotFound", err)
 	}
 }
