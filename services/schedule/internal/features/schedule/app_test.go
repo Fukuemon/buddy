@@ -110,11 +110,7 @@ func TestSchedulesEndsNextDay(t *testing.T) {
 	uc, _ := newSchedules(s)
 	ctx := editorCtx()
 
-	created, err := uc.Create(ctx, facilityID, overnightSlot())
-	if err != nil {
-		t.Fatal(err)
-	}
-	got, err := uc.Get(ctx, created.ID)
+	got, err := uc.Create(ctx, facilityID, overnightSlot())
 	if err != nil {
 		t.Fatal(err)
 	}
