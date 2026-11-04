@@ -4,10 +4,9 @@ import (
 	"context"
 	"errors"
 
+	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
-
-	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 )
 
 // RetryExport は、確認が必要な書き出し id を、外部の予定の変更を比べずに buddy の内容で書き直す待ちにして、待ちを返す。
