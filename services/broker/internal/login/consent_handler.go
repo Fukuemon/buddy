@@ -13,11 +13,16 @@ type consent struct {
 	logger             *slog.Logger
 	staff              Staff
 	hydra              Hydra
+	limiter            *Limiter
+	clientIPHeader     string
 	autoConsentClients []string
 }
 
 func (h consent) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	if !admitClient(h.logger, h.limiter, h.clientIPHeader, fail, w, r) {
+		return
+	}
 	challenge := r.URL.Query().Get("consent_challenge")
 	if challenge == "" {
 		fail(h.logger, w, r, http.StatusBadRequest, "consent_challenge がない", nil)

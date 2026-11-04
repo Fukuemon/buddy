@@ -40,13 +40,14 @@ import (
 // readyTimeout は、GET /readyz が DB の疎通を待つ上限である。
 const readyTimeout = 2 * time.Second
 
-// ログインの画面を開く試行とメールを送る試行は、送信元の IP アドレスごとに loginBurst 回まで続けられ、loginEvery ごとに 1 回ずつ戻る。
-// 1 回のログインで GET と POST の 2 回を数えるので、ログインの回数では、続けて 20 回、以後は 10 秒に 1 回になる。
+// ログインの画面、上流の IdP のコールバック、同意、ログアウトの試行は、送信元の IP アドレスごとに loginBurst 回まで続けられ、
+// loginEvery ごとに 1 回ずつ戻る。1 回のログインで GET /login、POST /login、コールバック、同意の 4 回を数えるので、
+// ログインの回数では、続けて 20 回、以後は 10 秒に 1 回になる。
 // 入れたメールごとには emailBurst 回まで続けられ、emailEvery ごとに 1 回ずつ戻る。
 // 上限を超えた職員に web が出す「30 秒ほどおいてから」の文（apps/web の AuthErrorMessage）は、長い方の emailEvery に合わせている。
 const (
-	loginBurst = 40
-	loginEvery = 5 * time.Second
+	loginBurst = 80
+	loginEvery = 2500 * time.Millisecond
 	emailBurst = 10
 	emailEvery = 30 * time.Second
 )
