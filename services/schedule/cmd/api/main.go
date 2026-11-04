@@ -116,11 +116,8 @@ func run() error {
 				return p.Staff.ID, ok
 			},
 		}, tx, ids, principal.RequireStaffManage),
-		Patients: patient.NewApp(patient.Deps{
-			Facilities: facilities, Staff: staffRefs, ServiceCodes: visitMasters, Patients: patients,
-			Schedules: postgres.NewPatientScheduleReader(db), Locks: staffRepo,
-		}, tx, ids, principal.RequireStaffManage),
-		VisitMasters: visit.NewApp(visitMasters),
+		Patients:     patientApp(facilities, staffRefs, visitMasters, patients, postgres.NewPatientScheduleReader(db), staffRepo, tx, ids, principal.RequireStaffManage),
+		VisitMasters: visitMasterApp(visitMasters),
 		Schedules: schedule.NewApp(schedule.Deps{
 			Facilities: facilities, Staff: staffRefs, Visits: visitInfos,
 			Schedules: schedules, Recurring: recurring, Types: scheduleTypes,

@@ -204,8 +204,16 @@ func (f *fakePatients) List(_ context.Context, _ string, q patient.ListQuery) ([
 	return []patient.Detail{}, nil
 }
 
+// app は、f のメソッド値を PatientApp に入れる。
+func (f *fakePatients) app() httpapi.PatientApp {
+	return httpapi.PatientApp{
+		Create: f.Create, Update: f.Update, End: f.End, RemainingSchedules: f.RemainingSchedules,
+		Resume: f.Resume, Get: f.Get, List: f.List,
+	}
+}
+
 func newRouter(s *fakeSchedules, st *fakeStaff, p *fakePatients) http.Handler {
-	return httpapi.NewRouter(httpapi.Apps{Schedules: s, Staff: st, Patients: p, Auth: fakeAuth{}}, httpapi.RouterConfig{
+	return httpapi.NewRouter(httpapi.Apps{Schedules: s, Staff: st, Patients: p.app(), Auth: fakeAuth{}}, httpapi.RouterConfig{
 		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
 		Verifier: testVerifier,
 	})

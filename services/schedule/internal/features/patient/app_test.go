@@ -14,15 +14,34 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 )
 
-// today は、newApp の App の今日（2026-10-31）である。
+// today は、newApp の操作の今日（2026-10-31）である。
 var today = civil.Date{Year: 2026, Month: 10, Day: 31}
 
-func newApp(s *inmem.Store, guard organization.Guard) *patient.App {
-	return patient.NewApp(patient.Deps{
-		Facilities: inmem.Facilities{Store: s}, Staff: inmem.StaffRefs{Store: s}, ServiceCodes: inmem.VisitMasters{Store: s}, Patients: inmem.Patients{Store: s},
-		Schedules: inmem.PatientSchedules{Store: s}, Locks: inmem.Staff{Store: s},
-		Now: func() time.Time { return today.Time().Add(9 * time.Hour) },
-	}, &inmem.Tx{}, &inmem.SeqIDs{}, guard)
+// app は、テストが呼ぶ patient の操作の Do である。
+type app struct {
+	Create             func(ctx context.Context, in patient.CreateInput) (patient.Detail, error)
+	Update             func(ctx context.Context, id string, in patient.UpdateInput) (patient.Detail, error)
+	End                func(ctx context.Context, id string) (patient.Detail, error)
+	RemainingSchedules func(ctx context.Context, id string) (patient.Remaining, error)
+	Resume             func(ctx context.Context, id, assignedStaffID string) (patient.Detail, error)
+	Get                func(ctx context.Context, id string) (patient.Detail, error)
+	List               func(ctx context.Context, facilityID string, q patient.ListQuery) ([]patient.Detail, error)
+}
+
+func newApp(s *inmem.Store, guard organization.Guard) app {
+	facilities, staffRefs, codes, patients := inmem.Facilities{Store: s}, inmem.StaffRefs{Store: s}, inmem.VisitMasters{Store: s}, inmem.Patients{Store: s}
+	schedules, locks := inmem.PatientSchedules{Store: s}, inmem.Staff{Store: s}
+	now := func() time.Time { return today.Time().Add(9 * time.Hour) }
+	tx, ids := &inmem.Tx{}, &inmem.SeqIDs{}
+	return app{
+		Create:             patient.NewCreate(facilities, codes, staffRefs, patients, tx, ids, guard).Do,
+		Update:             patient.NewUpdate(codes, patients, staffRefs, tx, guard).Do,
+		End:                patient.NewEnd(patients, locks, schedules, now, tx, guard).Do,
+		RemainingSchedules: patient.NewRemainingSchedules(patients, schedules, now, guard).Do,
+		Resume:             patient.NewResume(patients, locks, staffRefs, tx, guard).Do,
+		Get:                patient.NewGet(patients, guard).Do,
+		List:               patient.NewList(facilities, patients).Do,
+	}
 }
 
 func allow(context.Context) error { return nil }

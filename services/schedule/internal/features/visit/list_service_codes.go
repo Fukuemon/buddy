@@ -5,6 +5,16 @@ import (
 )
 
 // ListServiceCodes は、すべてのサービスコードを返す。
-func (v *App) ListServiceCodes(ctx context.Context) ([]ServiceCode, error) {
-	return v.masters.ListServiceCodes(ctx)
+type ListServiceCodes struct {
+	masters MasterRepository
+}
+
+// NewListServiceCodes は ListServiceCodes を作る。
+func NewListServiceCodes(masters MasterRepository) ListServiceCodes {
+	return ListServiceCodes{masters: masters}
+}
+
+// Do は、すべてのサービスコードを返す。
+func (o ListServiceCodes) Do(ctx context.Context) ([]ServiceCode, error) {
+	return o.masters.ListServiceCodes(ctx)
 }
