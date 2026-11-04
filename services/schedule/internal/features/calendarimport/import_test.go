@@ -439,3 +439,118 @@ func TestImportRejectsGooglePrimary(t *testing.T) {
 		requireRejected(t, e, err, 1)
 	})
 }
+
+// TestImportLinksCarryGoogleETags は、取り込みが、取り込んだ全ての予定の対応に、読んだ時点の Google の etag と、
+// 作ったばかりの予定の更新の番号を書くことを確認する。切り替えの完了は、この etag と Google の今の etag を比べる（ADR-0035）。
+func TestImportLinksCarryGoogleETags(t *testing.T) {
+	e := newEnv(t, fixture())
+	if _, err := e.importDecided(t, e.rng, decisions()); err != nil {
+		t.Fatal(err)
+	}
+	if len(e.store.Links) == 0 {
+		t.Fatal("予定の対応が無い")
+	}
+	for _, l := range e.store.Links {
+		if l.ETag != `"`+l.ExternalEventID+`"` {
+			t.Errorf("%s の etag = %s, want Google の etag", l.ExternalEventID, l.ETag)
+		}
+		if l.SyncedVersion == nil || *l.SyncedVersion != calendar.CreatedVersion {
+			t.Errorf("%s の SyncedVersion = %v, want %d", l.ExternalEventID, l.SyncedVersion, calendar.CreatedVersion)
+		}
+	}
+	if l := linkOf(t, e, "weekly_20261116"); l.RecurringEventID == nil || *l.RecurringEventID != "weekly" {
+		t.Errorf("変えた回の対応の親 = %v, want weekly", l.RecurringEventID)
+	}
+	if l := linkOf(t, e, "weekly"); l.RecurringEventID != nil {
+		t.Errorf("親の予定の対応の親 = %v, want nil", *l.RecurringEventID)
+	}
+}
+
+// TestImportKeepsRecurrenceAsRule は、写せる繰り返しの予定を回に展開せず、終わりの無い規則は終わりの無いまま、
+// UNTIL のある規則は最後の回の日付を終了日にして、1 件の繰り返しの予定に取り込むことを確認する。
+func TestImportKeepsRecurrenceAsRule(t *testing.T) {
+	e := newEnv(t, &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{googleCalID: {{
+		grecurring(gevent("endless", "定例", "2026-11-02T09:00:00+09:00", "2026-11-02T10:00:00+09:00"), "RRULE:FREQ=WEEKLY;BYDAY=MO"),
+		grecurring(gevent("until", "月例", "2026-11-04T09:00:00+09:00", "2026-11-04T10:00:00+09:00"), "RRULE:FREQ=MONTHLY;BYMONTHDAY=4;UNTIL=20270304T000000Z"),
+	}}}})
+	res, err := e.importDecided(t, e.rng, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Run.ImportedCount != 2 || len(e.store.Links) != 2 {
+		t.Fatalf("Run = %+v、対応 %d, want 2 件の繰り返しの予定だけ", res.Run, len(e.store.Links))
+	}
+	if rs := recurringOf(t, e, "endless"); rs.Rule.Frequency != schedule.Weekly || rs.Rule.EndDate != nil {
+		t.Errorf("終わりの無い繰り返し = %+v", rs.Rule)
+	}
+	if rs := recurringOf(t, e, "until"); rs.Rule.Frequency != schedule.Monthly || rs.Rule.EndDate == nil || *rs.Rule.EndDate != (civil.Date{Year: 2027, Month: 3, Day: 4}) {
+		t.Errorf("UNTIL のある繰り返し = %+v", rs.Rule)
+	}
+}
+
+// TestImportSkipDecisionWritesNothing は、確認が必要な予定に取り込まないを選ぶと、予定も予定の対応も書かず、
+// 次のプレビューで同じバージョンの確認が必要な予定として返すことを確認する。切り替えの完了は、この予定を取り込まないと決めた予定として扱う。
+func TestImportSkipDecisionWritesNothing(t *testing.T) {
+	e := newEnv(t, fixture())
+	before, err := e.uc.Preview(e.ctx, calID, e.rng)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := e.importDecided(t, e.rng, []calendarimport.Decision{
+		{ExternalEventID: "ambiguous", Action: calendarimport.ActionSkip},
+		{ExternalEventID: "missing", Action: calendarimport.ActionSkip},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 取り込まない予定 2 件と、取り込まないを選んだ予定 2 件
+	if res.Run.SkippedCount != 4 {
+		t.Errorf("Run = %+v", res.Run)
+	}
+	for _, l := range e.store.Links {
+		if l.ExternalEventID == "ambiguous" || l.ExternalEventID == "missing" {
+			t.Errorf("取り込まないを選んだ %s の対応がある", l.ExternalEventID)
+		}
+	}
+	after, err := e.uc.Preview(e.ctx, calID, e.rng)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(reviewIDs(after.ReviewItems), []string{"ambiguous", "missing"}) {
+		t.Fatalf("2 回目の確認が必要な予定 = %v", reviewIDs(after.ReviewItems))
+	}
+	for i := range after.ReviewItems {
+		if after.ReviewItems[i].Revision != before.ReviewItems[i].Revision {
+			t.Errorf("%s のバージョンが変わった", after.ReviewItems[i].ExternalEventID)
+		}
+	}
+}
+
+// TestImportOnlyEventsStartingInRange は、期間より前に始まる単発の予定を取り込まないことを確認する。
+func TestImportOnlyEventsStartingInRange(t *testing.T) {
+	e := newEnv(t, fixture())
+	if _, err := e.importDecided(t, e.rng, decisions()); err != nil {
+		t.Fatal(err)
+	}
+	for _, l := range e.store.Links {
+		if l.ExternalEventID == "before" {
+			t.Errorf("期間より前の 10-31 に始まる予定を取り込んだ")
+		}
+	}
+	for _, s := range e.store.Schedules {
+		if s.Date.Before(e.rng.Start) {
+			t.Errorf("期間より前の予定 = %+v", s.Slot)
+		}
+	}
+}
+
+func linkOf(t *testing.T, e env, eventID string) calendar.EventLink {
+	t.Helper()
+	for _, l := range e.store.Links {
+		if l.ExternalEventID == eventID {
+			return l
+		}
+	}
+	t.Fatalf("%s の予定の対応が無い", eventID)
+	return calendar.EventLink{}
+}
