@@ -109,6 +109,12 @@ func projectionOf(c calendar.ExternalCalendar, ev calendar.Event) (scheduleview.
 	}
 	p.Start, p.End = start, end
 	p.LastEndDate = lastEndDate(ev, dayOf(start), dayOf(end))
+	// 動かした例外の回は、元の回を置き換える記録なので、元の回が期間の中にある間は残す
+	if ev.RecurringEventID != "" && p.LastEndDate != nil {
+		if orig := dayOf(p.OriginalStart); p.LastEndDate.Before(orig) {
+			p.LastEndDate = &orig
+		}
+	}
 	return p, nil
 }
 
@@ -141,8 +147,8 @@ func dayOf(t scheduleview.ProjectionTime) civil.Date {
 
 // lastEndDate は、開始が startDay、終了が endDay の予定 ev が終わる日を返す。終日の予定の終了は、Google と同じく終わる日の翌日である。
 // 繰り返しの親の予定は、最後の回が終わる日を返す。最後の回は、取り込みと同じ読み替えの規則（calendar.RuleFromRecurrence）で決め、
-// 規則に写せないときは RRULE の UNTIL で決める。終わりの無い繰り返しと、UNTIL の無い写せない繰り返し（COUNT など）は nil を返し、
-// 保持する期間で消さない。
+// 規則に写せないときは RRULE の UNTIL で決める。終わりの無い繰り返しと、UNTIL の無い写せない繰り返し（COUNT など）と、
+// RDATE で回を足した写せない繰り返しは nil を返し、保持する期間で消さない。
 func lastEndDate(ev calendar.Event, startDay, endDay civil.Date) *civil.Date {
 	if len(ev.Recurrence) == 0 {
 		return &endDay
@@ -154,6 +160,10 @@ func lastEndDate(ev calendar.Event, startDay, endDay civil.Date) *civil.Date {
 		}
 		last := civil.DateOf(rec.Rule.EndDate.Time().AddDate(0, 0, span))
 		return &last
+	}
+	// RDATE の回は UNTIL の後にも足せるので、UNTIL では終わる日を決めない
+	if hasRDate(ev.Recurrence) {
+		return nil
 	}
 	until, ok := rruleUntil(ev.Recurrence)
 	if !ok {
@@ -184,4 +194,15 @@ func rruleUntil(recurrence []string) (civil.Date, bool) {
 		}
 	}
 	return civil.Date{}, false
+}
+
+// hasRDate は、繰り返しの規則の行 recurrence に、回を足す RDATE の行があるかを返す。
+func hasRDate(recurrence []string) bool {
+	for _, line := range recurrence {
+		head, _, _ := strings.Cut(line, ":")
+		if strings.EqualFold(strings.SplitN(head, ";", 2)[0], "RDATE") {
+			return true
+		}
+	}
+	return false
 }

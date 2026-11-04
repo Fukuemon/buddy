@@ -383,3 +383,30 @@ func TestSyncDoesNotProjectAfterRetirement(t *testing.T) {
 		t.Errorf("退職した職員の予定を写した: %+v", e.store.Projections)
 	}
 }
+
+// TestSyncProjectionKeepsRetainedOccurrences は、保持する期間の中に回が残る予定の行を、期間で消さないことを確認する。
+// RRULE の UNTIL が古くても RDATE の回が期間の中にある親と、期間の中の回を期間より前に動かした例外の回が当たる。
+func TestSyncProjectionKeepsRetainedOccurrences(t *testing.T) {
+	e := newProjectionEnv(t)
+	rdate := weeklyEvent("rdate", "足した回のある隔週", "2020-01-06T09:00:00+09:00", "2020-01-06T09:30:00+09:00",
+		"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO;UNTIL=20200131T145959Z")
+	rdate.Recurrence = append(rdate.Recurrence, "RDATE;TZID=Asia/Tokyo:20991102T090000")
+	for _, ev := range []*calendarv3.Event{
+		rdate,
+		weeklyEvent("forever", "終わらない繰り返し", "2099-11-02T09:00:00+09:00", "2099-11-02T09:30:00+09:00", "RRULE:FREQ=WEEKLY;BYDAY=MO"),
+		// 期間の中の 2099-11-09 の回を、期間より前の日に動かした
+		gexception("forever_20991109T000000Z", "forever", "動かした回",
+			"2020-01-07T09:00:00+09:00", "2020-01-07T09:30:00+09:00", "2099-11-09T09:00:00+09:00"),
+	} {
+		e.srv.Put(googleCalID, ev)
+	}
+	e.sync(t)
+	for _, id := range []string{"rdate", "forever", "forever_20991109T000000Z"} {
+		e.mustRow(t, id)
+	}
+	// 写した後の同期でも、期間で消さない
+	e.sync(t)
+	for _, id := range []string{"rdate", "forever_20991109T000000Z"} {
+		e.mustRow(t, id)
+	}
+}
