@@ -66,7 +66,7 @@ func TestStaffReinstate(t *testing.T) {
 	})
 	t.Run("休職を外した後に休職にし直されていれば、ブローカーの職員を戻さない", func(t *testing.T) {
 		s, ids := onLeave()
-		u := staff.NewApp(staff.Deps{
+		u := build(deps{
 			Facilities: inmem.Facilities{Store: s}, Staff: inmem.Staff{Store: s}, Identities: ids,
 			Assignments: inmem.StaffAssignments{Store: s},
 		}, &betweenTx{after: 1, run: func() {

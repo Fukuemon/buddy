@@ -31,7 +31,7 @@ var pathResources = map[string]struct {
 	"calendar_export_id":    {resource: access.ResourceCalendarExport},
 	"patient_id":            {resource: access.ResourcePatient},
 	"policy_id":             {global: true},
-	// 職員の権限の ID は、同じパスの user_id で事業所を確認し、staff.App が職員の権限かを確認する。
+	// 職員の権限の ID は、同じパスの user_id で事業所を確認し、staff の RemoveGrant が職員の権限かを確認する。
 	"user_policy_id": {global: true},
 }
 

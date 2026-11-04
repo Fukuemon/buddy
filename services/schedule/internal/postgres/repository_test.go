@@ -1117,10 +1117,9 @@ func TestStaffConcurrentRemovalKeepsManager(t *testing.T) {
 	}
 	t.Cleanup(func() { cleanup(t) })
 
-	uc := staff.NewApp(staff.Deps{
-		Facilities: NewFacilityRepository(testDB), Departments: NewDepartmentRepository(testDB), Teams: NewTeamRepository(testDB),
-		Positions: NewPositionRepository(testDB), Policies: NewPolicyRepository(testDB), Staff: NewStaffRepository(testDB),
-	}, NewTransactor(testDB), ulid.Generator{}, func(context.Context) error { return nil })
+	allow := func(context.Context) error { return nil }
+	removeGrant := staff.NewRemoveGrant(NewStaffRepository(testDB), NewTransactor(testDB), allow)
+	changePosition := staff.NewChangePosition(NewStaffRepository(testDB), NewPositionRepository(testDB), NewTransactor(testDB), ulid.Generator{}, allow)
 	// race は、first と second を同時に始め、片方だけが成功して片方が ErrConflict になり、権限を持つ有効な職員が 1 人残ることを確認する。
 	race := func(t *testing.T, first, second func(ctx context.Context) error) {
 		t.Helper()
@@ -1155,13 +1154,13 @@ func TestStaffConcurrentRemovalKeepsManager(t *testing.T) {
 			}
 		}
 	}
-	removeA := func(ctx context.Context) error { _, err := uc.RemoveGrant(ctx, a, upA); return err }
+	removeA := func(ctx context.Context) error { _, err := removeGrant.Do(ctx, a, upA); return err }
 
 	t.Run("2 人の職員の管理の権限を同時に外しても 1 人に権限が残る", func(t *testing.T) {
-		race(t, removeA, func(ctx context.Context) error { _, err := uc.RemoveGrant(ctx, b, upB); return err })
+		race(t, removeA, func(ctx context.Context) error { _, err := removeGrant.Do(ctx, b, upB); return err })
 	})
 	t.Run("権限を外す操作と役職を変える操作が同時でも 1 人に権限が残る", func(t *testing.T) {
-		race(t, removeA, func(ctx context.Context) error { _, err := uc.ChangePosition(ctx, b, memberP); return err })
+		race(t, removeA, func(ctx context.Context) error { _, err := changePosition.Do(ctx, b, memberP); return err })
 	})
 }
 

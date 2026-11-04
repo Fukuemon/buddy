@@ -204,6 +204,15 @@ func (f *fakePatients) List(_ context.Context, _ string, q patient.ListQuery) ([
 	return []patient.Detail{}, nil
 }
 
+// app は、f のメソッド値を StaffApp に入れる。
+func (f *fakeStaff) app() httpapi.StaffApp {
+	return httpapi.StaffApp{
+		Create: f.Create, Get: f.Get, List: f.List, ChangePosition: f.ChangePosition, UpdateProfile: f.UpdateProfile,
+		AddGrant: f.AddGrant, RemoveGrant: f.RemoveGrant, Leave: f.Leave, Reinstate: f.Reinstate, Retire: f.Retire,
+		RemainingAssignments: f.RemainingAssignments,
+	}
+}
+
 // app は、f のメソッド値を PatientApp に入れる。
 func (f *fakePatients) app() httpapi.PatientApp {
 	return httpapi.PatientApp{
@@ -213,7 +222,7 @@ func (f *fakePatients) app() httpapi.PatientApp {
 }
 
 func newRouter(s *fakeSchedules, st *fakeStaff, p *fakePatients) http.Handler {
-	return httpapi.NewRouter(httpapi.Apps{Schedules: s, Staff: st, Patients: p.app(), Auth: fakeAuth{}}, httpapi.RouterConfig{
+	return httpapi.NewRouter(httpapi.Apps{Schedules: s, Staff: st.app(), Patients: p.app(), Auth: fakeAuth{}}, httpapi.RouterConfig{
 		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
 		Verifier: testVerifier,
 	})

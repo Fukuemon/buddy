@@ -288,7 +288,7 @@ sequenceDiagram
 | `department_id`、`team_id`、`position_id`、`user_id`、`patient_id` | 組織、職員、利用者 | リソースを読んでその事業所と比べる |
 | `schedule_id`、`recurring_schedule_id`、`external_calendar_id`、`calendar_export_id` | 予定とカレンダー | リソースを読んでその事業所と比べる |
 | `policy_id` | 権限 | 事業所に属さないので確認しない |
-| `user_policy_id` | 職員の権限 | 同じパスの `user_id` で事業所を確認し、`staff.App` が職員の権限かを確認する |
+| `user_policy_id` | 職員の権限 | 同じパスの `user_id` で事業所を確認し、`staff` の `RemoveGrant` が職員の権限かを確認する |
 
 表に無い引数を持つパスは、事業所を確認できないので 500 を返す。
 
