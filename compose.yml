@@ -17,6 +17,19 @@ x-broker-db-env: &broker-db-env
   DB_PASSWORD: buddy-dev
   DB_NAME: broker
 
+# 予定の API と calendar-worker が Google カレンダー（calendarpit）を読み書きする設定
+x-calendar-env: &calendar-env
+  # 事業所の組織と、ダミーのサービスアカウントの対応
+  GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE: /config/google-calendar-service-accounts.json
+  # calendarpit はサービスアカウントの token を出さないので、calendarpit-authorize が書いた fixture の利用者の認証の情報で呼ぶ
+  GOOGLE_CALENDAR_ENDPOINT: http://gcalhold:8080/calendar/v3/
+  GOOGLE_APPLICATION_CREDENTIALS: /credentials/google-calendar.json
+  GOOGLE_CALENDAR_EXPORT_ENABLED: 'true'
+
+x-calendar-volumes: &calendar-volumes
+  - ./compose/google-calendar-service-accounts.json:/config/google-calendar-service-accounts.json:ro
+  - calendarpit-credentials:/credentials:ro
+
 services:
   postgres:
     image: postgres:18.6
@@ -246,7 +259,8 @@ services:
     # イメージは schedule-migrate がビルドする
     pull_policy: never
     environment:
-      <<: *db-env
+      # 書き出しの設定（calendar-env）で、予定の変更を書き出しの待ちに積む。待ちを書くのは schedule-calendar-export である
+      <<: [*db-env, *calendar-env]
       # トークンの iss は Hydra の urls.self.issuer で、API はコンテナの間の名前 hydra で JWKS を読む
       OIDC_ISSUER: http://hydra:4444
       OIDC_AUDIENCE: schedule
@@ -257,20 +271,7 @@ services:
       BROKER_CLIENT_SECRET: schedule-dev
       # web と、API の仕様のページでリクエストを試すローカル環境のドキュメントサイト（zensical serve）に許す
       CORS_ALLOW_ORIGINS: http://localhost:${WEB_PORT:-3000},http://localhost:8000
-      # 事業所の組織と、ダミーのサービスアカウントの対応
-      GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE: /config/google-calendar-service-accounts.json
-      # calendarpit はサービスアカウントの token を出さないので、calendarpit-authorize が書いた fixture の利用者の認証の情報で呼ぶ
-      GOOGLE_CALENDAR_ENDPOINT: http://gcalhold:8080/calendar/v3/
-      GOOGLE_APPLICATION_CREDENTIALS: /credentials/google-calendar.json
-      GOOGLE_CALENDAR_EXPORT_ENABLED: 'true'
-      # E2E が書き出しを待つ時間を短くする
-      GOOGLE_CALENDAR_EXPORT_INTERVAL: 2s
-      GOOGLE_CALENDAR_SYNC_ENABLED: 'true'
-      # E2E が Google の変更の反映を待つ時間を短くする
-      GOOGLE_CALENDAR_SYNC_INTERVAL: 2s
-    volumes:
-      - ./compose/google-calendar-service-accounts.json:/config/google-calendar-service-accounts.json:ro
-      - calendarpit-credentials:/credentials:ro
+    volumes: *calendar-volumes
     ports: ['127.0.0.1:${SCHEDULE_PORT:-8080}:8080']
     healthcheck:
       test: ['CMD', '/usr/local/bin/api', 'healthcheck']
@@ -284,6 +285,37 @@ services:
       broker: { condition: service_healthy }
       calendarpit-authorize: { condition: service_completed_successfully }
       gcalhold: { condition: service_healthy }
+
+  # 予定の API と同じイメージの calendar-worker が、書き出しと同期を役割ごとのプロセスで常駐して動かす（ADR-0036）
+  schedule-calendar-export:
+    image: ${COMPOSE_PROJECT_NAME}-schedule
+    # イメージは schedule-migrate がビルドする
+    pull_policy: never
+    entrypoint: ['/usr/local/bin/calendar-worker']
+    command: ['export']
+    environment:
+      <<: [*db-env, *calendar-env]
+      # E2E が書き出しを待つ時間を短くする
+      GOOGLE_CALENDAR_EXPORT_INTERVAL: 2s
+    volumes: *calendar-volumes
+    depends_on: &calendar-worker-depends
+      schedule-seed: { condition: service_completed_successfully }
+      calendarpit-authorize: { condition: service_completed_successfully }
+      gcalhold: { condition: service_healthy }
+
+  schedule-calendar-sync:
+    image: ${COMPOSE_PROJECT_NAME}-schedule
+    # イメージは schedule-migrate がビルドする
+    pull_policy: never
+    entrypoint: ['/usr/local/bin/calendar-worker']
+    command: ['sync']
+    environment:
+      <<: [*db-env, *calendar-env]
+      GOOGLE_CALENDAR_SYNC_ENABLED: 'true'
+      # E2E が Google の変更の反映を待つ時間を短くする
+      GOOGLE_CALENDAR_SYNC_INTERVAL: 2s
+    volumes: *calendar-volumes
+    depends_on: *calendar-worker-depends
 
   receipt:
     build: { context: ., dockerfile: services/receipt/Dockerfile }

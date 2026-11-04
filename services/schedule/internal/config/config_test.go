@@ -43,7 +43,7 @@ func TestLoad(t *testing.T) {
 
 func TestLoadAllVariables(t *testing.T) {
 	c, err := config.LoadAPI(env(map[string]string{
-		"PORT": "9090", "DB_HOST": "db", "DB_PORT": "15432", "DB_USER": "app", "DB_PASSWORD": "secret", "DB_NAME": "buddy",
+		"PORT": "9090", "DB_HOST": "db", "DB_PORT": "15432", "DB_USER": "app", "DB_PASSWORD": "secret", "DB_NAME": "buddy", "DB_MAX_CONNS": "10",
 		"OIDC_ISSUER": "http://idp:9000", "OIDC_AUDIENCE": "schedule", "OIDC_ORG_CLAIM": "organization",
 		"CORS_ALLOW_ORIGINS": "http://localhost:3000", "LOG_LEVEL": "warn",
 		"BROKER_URL": " http://broker:8080 ", "BROKER_TOKEN_URL": "http://hydra:4444/oauth2/token", "BROKER_CLIENT_ID": "schedule-api",
@@ -55,7 +55,7 @@ func TestLoadAllVariables(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Port != "9090" || c.DB != (config.DB{Host: "db", Port: "15432", User: "app", Password: "secret", Name: "buddy"}) {
+	if c.Port != "9090" || c.DB != (config.DB{Host: "db", Port: "15432", User: "app", Password: "secret", Name: "buddy", MaxConns: 10}) {
 		t.Errorf("Port = %q, DB = %+v", c.Port, c.DB)
 	}
 	if c.OIDC.Issuer != "http://idp:9000" || c.OIDC.Audience != "schedule" || c.OIDC.OrgClaim != "organization" {
@@ -205,7 +205,7 @@ func TestLoadExportInterval(t *testing.T) {
 
 func TestLoadWorkerDoesNotRequireOIDCOrBroker(t *testing.T) {
 	c, err := config.LoadWorker(env(map[string]string{
-		"DB_HOST": "db", "DB_USER": "app", "DB_PASSWORD": "secret", "DB_NAME": "buddy", "LOG_LEVEL": "debug",
+		"DB_HOST": "db", "DB_USER": "app", "DB_PASSWORD": "secret", "DB_NAME": "buddy", "DB_MAX_CONNS": "4", "LOG_LEVEL": "debug",
 		"GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE": "/config/accounts.json", "GOOGLE_CALENDAR_EXPORT_ENABLED": "true",
 		"GOOGLE_CALENDAR_SYNC_ENABLED": "true", "GOOGLE_CALENDAR_SYNC_INTERVAL": "1m",
 		"PORT": "http", "CORS_ALLOW_ORIGINS": "http://localhost:3000",
@@ -214,7 +214,7 @@ func TestLoadWorkerDoesNotRequireOIDCOrBroker(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := config.Worker{
-		DB:       config.DB{Host: "db", Port: "5432", User: "app", Password: "secret", Name: "buddy"},
+		DB:       config.DB{Host: "db", Port: "5432", User: "app", Password: "secret", Name: "buddy", MaxConns: 4},
 		LogLevel: slog.LevelDebug,
 		Calendar: config.Calendar{
 			ServiceAccountsFile: "/config/accounts.json", ExportEnabled: true, ExportInterval: 30 * time.Second,
@@ -236,6 +236,8 @@ func TestLoadWorkerErrors(t *testing.T) {
 		{name: "全部ない", edit: func(m map[string]string) { clear(m) }, want: "環境変数 DB_USER, DB_PASSWORD, DB_NAME が必要です"},
 		{name: "DB のポートが数でない", edit: func(m map[string]string) { m["DB_PORT"] = "db" }, want: "ポート"},
 		{name: "ログの水準", edit: func(m map[string]string) { m["LOG_LEVEL"] = "verbose" }, want: "LOG_LEVEL"},
+		{name: "接続の数の上限が 0", edit: func(m map[string]string) { m["DB_MAX_CONNS"] = "0" }, want: "DB_MAX_CONNS"},
+		{name: "接続の数の上限が数でない", edit: func(m map[string]string) { m["DB_MAX_CONNS"] = "many" }, want: "DB_MAX_CONNS"},
 		{name: "サービスアカウントの無い書き出し", edit: func(m map[string]string) { m["GOOGLE_CALENDAR_EXPORT_ENABLED"] = "true" }, want: "GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE"},
 		{name: "書き出しの無い同期", edit: func(m map[string]string) {
 			m["GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE"] = "/config/accounts.json"

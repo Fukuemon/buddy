@@ -10,7 +10,7 @@ PostgreSQL 18 とテストは Docker を使う。
 
 ## Configuration
 
-API とマイグレーションは、次の環境変数を読む。
+API、Google カレンダーの Worker、マイグレーションは、次の環境変数を読む。
 
 | 名前 | 必須 | デフォルト | 中身 |
 | --- | --- | --- | --- |
@@ -19,6 +19,7 @@ API とマイグレーションは、次の環境変数を読む。
 | `DB_USER` | はい | なし | PostgreSQL の利用者 |
 | `DB_PASSWORD` | はい | なし | PostgreSQL のパスワード |
 | `DB_NAME` | はい | なし | データベースの名前 |
+| `DB_MAX_CONNS` | いいえ | `25` | 接続のプールの接続の数の上限。1 以上の数 |
 | `OIDC_ISSUER` | はい | なし | Hydra の Issuer の URL。トークンの `iss` と一致させ、`<OIDC_ISSUER>/.well-known/openid-configuration` から JWKS の場所を読む |
 | `OIDC_AUDIENCE` | はい | なし | トークンの `aud` に求める値 |
 | `OIDC_ORG_CLAIM` | いいえ | `org_id` | 組織の ID を持つクレームの名前 |
@@ -30,17 +31,19 @@ API とマイグレーションは、次の環境変数を読む。
 | `PORT` | いいえ | `8080` | API が待ち受けるポート |
 | `CORS_ALLOW_ORIGINS` | いいえ | 空 | カンマで区切ったオリジン。空なら CORS のヘッダーを返さない |
 | `LOG_LEVEL` | いいえ | `info` | `debug`、`info`、`warn`、`error` のいずれか |
-| `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` | いいえ | 空 | 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応（JSON）のパス。形は `[{"org_id": "...", "service_account": "..."}]` で、照合の API と同じ。空なら Google カレンダーを読み書きせず、カレンダーを読む操作は 503 を返し、予定の書き出しの処理を動かさない。対応の無い事業所のカレンダーの操作も 503 を返す。書き出すときのスコープは `calendar.events` |
+| `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` | いいえ | 空 | 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応（JSON）のパス。形は `[{"org_id": "...", "service_account": "..."}]` で、照合の API と同じ。空なら Google カレンダーを読み書きせず、カレンダーを読む操作は 503 を返し、予定を書き出さない。対応の無い事業所のカレンダーの操作も 503 を返す。書き出すときのスコープは `calendar.events` |
 | `GOOGLE_CALENDAR_ENDPOINT` | いいえ | 空 | Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit で試すためのもので、`GOOGLE_APPLICATION_CREDENTIALS` を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使い、渡さなければ認証をしない。`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` と一緒に渡す |
-| `GOOGLE_CALENDAR_EXPORT_ENABLED` | いいえ | `false` | `true` なら、予定を Google カレンダーに書き出す。`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` と一緒に渡す。`false` のときは書き出しの待ちを積まず、スコープは `calendar.readonly` で読む |
-| `GOOGLE_CALENDAR_EXPORT_INTERVAL` | いいえ | `30s` | 予定の書き出しの待ちを確認する間隔。Go の時間の書式で、`1s` 以上 |
-| `GOOGLE_CALENDAR_SYNC_ENABLED` | いいえ | `false` | `true` なら、Google カレンダーの変わった予定を読み、buddy の予定に当てる。`GOOGLE_CALENDAR_EXPORT_ENABLED` を `true` にして渡す |
-| `GOOGLE_CALENDAR_SYNC_INTERVAL` | いいえ | `2m` | Google カレンダーの変わった予定を読む間隔。Go の時間の書式で、`1s` 以上 |
+| `GOOGLE_CALENDAR_EXPORT_ENABLED` | いいえ | `false` | `true` なら、予定を Google カレンダーに書き出す。API は予定の変更を書き出しの待ちに積み、`calendar-worker export` が待ちを書く。`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` と一緒に渡す。`false` のときは書き出しの待ちを積まず、スコープは `calendar.readonly` で読む |
+| `GOOGLE_CALENDAR_EXPORT_INTERVAL` | いいえ | `30s` | `calendar-worker export` が予定の書き出しの待ちを確認する間隔。Go の時間の書式で、`1s` 以上 |
+| `GOOGLE_CALENDAR_SYNC_ENABLED` | いいえ | `false` | `true` なら、`calendar-worker sync` が Google カレンダーの変わった予定を読み、buddy の予定に当てる。`GOOGLE_CALENDAR_EXPORT_ENABLED` を `true` にして渡す |
+| `GOOGLE_CALENDAR_SYNC_INTERVAL` | いいえ | `2m` | `calendar-worker sync` が Google カレンダーの変わった予定を読む間隔。Go の時間の書式で、`1s` 以上 |
 
 パスワードはコードにデフォルト値を持たない。  
 ログは標準出力に JSON で書き、接続の設定とトークンは書かない。  
 `cmd/migrate` は OIDC とブローカーの変数を求めず、必須として確認するのは `DB_USER`、`DB_PASSWORD`、`DB_NAME` だけである。  
-ほかの変数も API と同じ規則で読むので、`PORT`、`LOG_LEVEL`、`GOOGLE_CALENDAR_` で始まる変数の値が正しくないときは、マイグレーションも失敗する。
+ほかの変数も API と同じ規則で読むので、`PORT`、`LOG_LEVEL`、`GOOGLE_CALENDAR_` で始まる変数の値が正しくないときは、マイグレーションも失敗する。  
+`cmd/calendar-worker` は、`DB_` と `GOOGLE_CALENDAR_` で始まる変数と `LOG_LEVEL` だけを読み、OIDC、ブローカー、`PORT`、`CORS_ALLOW_ORIGINS` を読まない。  
+ログの項目 `component` は、書いたプロセスを示し、API が `api`、Worker が `calendar-export` か `calendar-sync` である。
 
 ## Running
 
@@ -122,7 +125,8 @@ compose の calendarpit は、予定と token を volume に残す。
 書き出し（`GOOGLE_CALENDAR_EXPORT_ENABLED`）は、サービスアカウントが持つ検証のカレンダーでだけ有効にする。  
 職員が共有したカレンダーに「予定の変更」の共有で書けるかは、まだ確認していない。
 
-compose の予定の API を実際の Google カレンダーに向けるときは、Git で追跡しない上書きの compose のファイルを `-f` で重ね、次のように変える。
+compose の予定の API と Google カレンダーの Worker を実際の Google カレンダーに向けるときは、Git で追跡しない上書きの compose のファイルを `-f` で重ねる。  
+重ねたファイルで、`schedule`、`schedule-calendar-export`、`schedule-calendar-sync` の 3 つのサービスを次のように変える。
 
 - `GOOGLE_CALENDAR_ENDPOINT` と `GOOGLE_APPLICATION_CREDENTIALS` を空にする。
 - `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` を、検証の対応のファイルに替え、そのファイルをマウントする。
@@ -140,9 +144,36 @@ compose の予定の API を実際の Google カレンダーに向けるとき�
 docker build -f Dockerfile -t schedule:local ../..
 ```
 
-イメージは、distroless の上に `api` と `migrate` の 2 つのバイナリを持つ。  
+イメージは、distroless の上に `api`、`calendar-worker`、`migrate` の 3 つのバイナリを持つ。  
 エントリポイントは `api` である。  
+Google カレンダーの Worker は、`--entrypoint /usr/local/bin/calendar-worker` を指定して実行する。  
 マイグレーションは、`--entrypoint /usr/local/bin/migrate` を指定して実行する。
+
+### Google カレンダーの Worker
+
+API は、Google カレンダーの書き出しと同期を動かさない。  
+書き出しと同期は、`cmd/calendar-worker` が役割ごとのプロセスで動かす。  
+ADR-0036: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで動かす](../../docs/adr/0036-calendar-worker.md)
+
+API と同じ `DB_` と `GOOGLE_CALENDAR_` の変数を入れた別のターミナルで、役割を引数に渡して起動する。
+
+```sh
+export GOOGLE_CALENDAR_EXPORT_ENABLED=true
+go run ./cmd/calendar-worker export          # 常駐して、予定の書き出しの待ちを書く
+go run ./cmd/calendar-worker export --once   # 取れる待ちが無くなるまで書いて終わる
+
+export GOOGLE_CALENDAR_SYNC_ENABLED=true
+go run ./cmd/calendar-worker sync --once --max-duration 5m
+```
+
+- `--once` を付けなければ常駐し、役割の間隔（`GOOGLE_CALENDAR_EXPORT_INTERVAL`、`GOOGLE_CALENDAR_SYNC_INTERVAL`）ごとに取れるものを処理する。
+- `--max-duration` は `--once` の長さの上限で、上限に達したら新しく取るのをやめる。
+- SIGINT か SIGTERM を受けると、新しく取るのをやめ、取った待ちとカレンダーの結果を書いてから終わる。
+- 役割のフラグ（`GOOGLE_CALENDAR_EXPORT_ENABLED`、`GOOGLE_CALENDAR_SYNC_ENABLED`）が `false` なら、DB に繋がずに終了のコード 0 で終わる。
+- 終了のコードは、最後まで処理したら 0、設定の誤りと DB に繋がらないときは 1、引数の誤りは 2 になる。
+  - 1 つの予定やカレンダーの失敗は、待ちと同期の状態に書き、終了のコードには出さない。
+- 同じ役割の Worker を 2 つ以上起動しても、同じ待ちとカレンダーを 2 回処理しない。
+- ルートの compose は、`schedule-calendar-export` と `schedule-calendar-sync` で、2 つの役割を常駐の形で起動する。
 
 ## マイグレーション
 

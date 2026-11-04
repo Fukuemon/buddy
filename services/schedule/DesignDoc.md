@@ -53,8 +53,11 @@ verified_commit: 4e53ca5
 - `internal/` の直下には、アダプタ（`httpapi`、`postgres`、`gcal`、`broker`、`ulid`）と共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）を置く。
   - `access`、`principal`、`config`、`assemble`、テストの `inmem` も、`internal/` の直下に置く。
 - `assemble` は、リポジトリ、HTTP のハンドラ、書き出しの `Exporter`、同期の `Syncer` を組み立てる。
-  - `cmd/api` は、`assemble` が作った値で、HTTP のサーバーと、書き出しと同期の処理を起動する。
+  - `cmd/api` は、`assemble` が作った値で、HTTP のサーバーを起動する。
   - ADR-0031: [Go の API の操作を、使う依存だけを持つ操作ごとの型にし、機能のパッケージの App をやめる](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0031-go-operation-types.md)
+  - `cmd/calendar-worker` は、`assemble` が作った `Exporter` か `Syncer` を、役割（`export`、`sync`）ごとのプロセスで、常駐か 1 回の形で動かす。
+    - `cmd/api` と同じイメージに入れ、HTTP のポートを持たない。
+    - ADR-0036: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで動かす](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0036-calendar-worker.md)
 
 `kernel` は、ADR-0010 の「`apperr` と同じ段の小さなパッケージ」に当たる。  
 `kernel.Finder[T]` は、ID で 1 件を読むメソッドを 1 つだけ持つインターフェースである。  

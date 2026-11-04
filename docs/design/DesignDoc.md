@@ -212,15 +212,16 @@ buddy がデプロイのために満たす要件は、コンテナのイメー�
 | `RECEIPT_URL` | 使う | 使わない | 使わない | 照合の API の URL |
 | `DB_HOST`、`DB_PORT` | 使わない | 任意 | 使わない | PostgreSQL のホストとポート。デフォルトは `localhost` と `5432` |
 | `DB_USER`、`DB_PASSWORD`、`DB_NAME` | 使わない | 使う | 使わない | PostgreSQL の利用者、パスワード、データベースの名前 |
+| `DB_MAX_CONNS` | 使わない | 任意 | 使わない | PostgreSQL の接続のプールの接続の数の上限。デフォルトは 25 |
 | `CORS_ALLOW_ORIGINS` | 使わない | 任意 | 任意 | CORS を許すオリジン。カンマで区切る。空なら CORS のヘッダーを返さない |
 | `MAX_UPLOAD_BYTES` | 使わない | 使わない | 任意 | 照合のリクエストの本文の上限。デフォルトは 10 MiB |
 | `GOOGLE_CALENDARS_FILE` | 使わない | 使わない | 任意 | 職員とカレンダーと組織の対応の JSON。空なら Google カレンダーから予定を取らない |
 | `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` | 使わない | 任意 | 任意 | 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応の JSON。2 つの API で同じ形 |
 | `GOOGLE_CALENDAR_ENDPOINT` | 使わない | 任意 | 任意 | Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit に向けるときだけ渡す |
 | `GOOGLE_CALENDAR_EXPORT_ENABLED` | 使わない | 任意 | 使わない | `true` なら予定を Google カレンダーに書き出す。デフォルトは `false` |
-| `GOOGLE_CALENDAR_EXPORT_INTERVAL` | 使わない | 任意 | 使わない | 予定の書き出しの待ちを確認する間隔。デフォルトは 30 秒 |
+| `GOOGLE_CALENDAR_EXPORT_INTERVAL` | 使わない | 任意 | 使わない | `calendar-worker export` が予定の書き出しの待ちを確認する間隔。デフォルトは 30 秒 |
 | `GOOGLE_CALENDAR_SYNC_ENABLED` | 使わない | 任意 | 使わない | `true` なら Google カレンダーの変更を buddy の予定に当てる。デフォルトは `false`。`GOOGLE_CALENDAR_EXPORT_ENABLED` を `true` にして渡す |
-| `GOOGLE_CALENDAR_SYNC_INTERVAL` | 使わない | 任意 | 使わない | Google カレンダーの変わった予定を読む間隔。デフォルトは 2 分 |
+| `GOOGLE_CALENDAR_SYNC_INTERVAL` | 使わない | 任意 | 使わない | `calendar-worker sync` が Google カレンダーの変わった予定を読む間隔。デフォルトは 2 分 |
 
 `OIDC_AUTHORIZATION_ENDPOINT` は、web とブラウザから届く IdP の URL が違うローカル環境だけで渡す。  
 `OIDC_END_SESSION_ENDPOINT` は、ブラウザが Issuer の URL に届かないときに渡す。  
@@ -240,7 +241,9 @@ Hydra は discovery の `end_session_endpoint` を Issuer の URL から作る�
   読んだ認証情報で、事業所のサービスアカウントになりすます。  
   `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` があるときだけ読み、読めなければ起動しない。
 - Application Default Credentials で認証する主体に付けるロールと、有効にする API は、[基盤と運用の Adding a Facility](https://github.com/Fukuemon/buddy/blob/develop/context/operations.md#adding-a-facility) にある。
-- 予定の API は、同じプロセスの中で予定の書き出しの処理を実行する。複数のレプリカで実行しても、同じ書き出しの待ちは 1 つのレプリカだけが書く。
+- Google カレンダーの書き出しと同期は、予定の API と同じイメージの `calendar-worker` が、役割（`export`、`sync`）ごとのプロセスで実行する。
+  - 同じ役割の Worker を 2 つ以上動かしても、同じ書き出しの待ちと同期のカレンダーは 1 つの Worker だけが処理する。
+  - ADR-0036: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで動かす](../adr/0036-calendar-worker.md)
 
 シークレットと、その渡し方は、[基盤と運用の Secrets](https://github.com/Fukuemon/buddy/blob/develop/context/operations.md#secrets) にある。
 

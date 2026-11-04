@@ -21,6 +21,8 @@ type DB struct {
 	User     string
 	Password string
 	Name     string
+	// MaxConns は、接続のプールの接続の数の上限である。0 なら、DB のアダプタのデフォルトの数にする。
+	MaxConns int32
 }
 
 // Calendar は、Google カレンダーを読む設定である。ServiceAccountsFile が空なら、Google カレンダーを読まない。
@@ -79,6 +81,7 @@ type Worker struct {
 //   - PORT: HTTP の待ち受けのポート。デフォルトは 8080
 //   - DB_HOST: デフォルトは localhost
 //   - DB_PORT: デフォルトは 5432
+//   - DB_MAX_CONNS: 接続のプールの接続の数の上限。1 以上の数で、空なら DB のアダプタのデフォルトの数（25）にする
 //   - DB_USER、DB_PASSWORD、DB_NAME
 //   - OIDC_ISSUER: Hydra の Issuer の URL。トークンの iss と一致させ、discovery の文書をここから読む
 //   - OIDC_AUDIENCE: トークンの aud に求める値
@@ -112,6 +115,10 @@ func LoadWorker(getenv func(string) string) (Worker, error) {
 		return Worker{}, err
 	}
 	if err := validatePort(db.Port); err != nil {
+		return Worker{}, err
+	}
+	var err error
+	if db.MaxConns, err = maxConnsOf(getenv); err != nil {
 		return Worker{}, err
 	}
 	level, err := logLevelOf(getenv)
@@ -170,6 +177,10 @@ func load(getenv func(string) string, includesAPI bool) (API, error) {
 			return API{}, err
 		}
 	}
+	var err error
+	if c.DB.MaxConns, err = maxConnsOf(getenv); err != nil {
+		return API{}, err
+	}
 	if includesAPI {
 		for _, v := range []struct{ key, value string }{
 			{"OIDC_ISSUER", c.OIDC.Issuer},
@@ -186,7 +197,6 @@ func load(getenv func(string) string, includesAPI bool) (API, error) {
 			c.AllowOrigins = append(c.AllowOrigins, o)
 		}
 	}
-	var err error
 	if c.LogLevel, err = logLevelOf(getenv); err != nil {
 		return API{}, err
 	}
@@ -204,6 +214,19 @@ func dbOf(getenv func(string) string) DB {
 		Password: getenv("DB_PASSWORD"),
 		Name:     getenv("DB_NAME"),
 	}
+}
+
+// maxConnsOf は、DB_MAX_CONNS を接続の数の上限として読む。空なら 0 である。
+func maxConnsOf(getenv func(string) string) (int32, error) {
+	v := strings.TrimSpace(getenv("DB_MAX_CONNS"))
+	if v == "" {
+		return 0, nil
+	}
+	n, err := strconv.ParseInt(v, 10, 32)
+	if err != nil || n < 1 {
+		return 0, fmt.Errorf("DB_MAX_CONNS %q は 1 以上の数です", v)
+	}
+	return int32(n), nil
 }
 
 func requireVars(getenv func(string) string, keys []string) error {
