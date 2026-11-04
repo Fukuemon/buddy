@@ -7,8 +7,6 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
-
-	"github.com/Fukuemon/buddy/packages/go/servicecode"
 )
 
 // GAS の splitTitle の正規表現 /【(.*?)】\s*(.*)/ を移植した。
@@ -43,12 +41,6 @@ func ParseTitle(title string) (service, client string, err error) {
 // Format は、訪問の予定のタイトルを `【サービス内容】利用者名` の形で作る。ParseTitle で読むと、service と client に戻る。
 func Format(service, client string) string {
 	return "【" + service + "】" + client
-}
-
-// NormalizeService は、servicecode.Normalize でサービス内容の表記をそろえる。
-// 予定の API の calendar が servicecode を直接使うようになったら消す。
-func NormalizeService(s string) string {
-	return servicecode.Normalize(s)
 }
 
 // NormalizeClient は、利用者名の全角と半角のスペースを除く。照合の API が予定と実績を比べるときと、予定の API が利用者を引くときに使う。

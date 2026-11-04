@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Fukuemon/buddy/packages/go/gcaltitle"
+	"github.com/Fukuemon/buddy/packages/go/servicecode"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 )
@@ -145,11 +146,8 @@ func clockOf(t time.Time) civil.Time {
 	return civil.Time{Hour: t.Hour(), Minute: t.Minute()}
 }
 
-// serviceAliases は、照合の API が同じサービス内容とみなす、マスタに無い書き方である。
-var serviceAliases = strings.NewReplacer("予防訪看", "予防看", "予訪看", "予防看", "I５２超", "I５・２超")
-
 // ServiceKey は、サービス内容 s を、照合の API と同じ規則で表記をそろえた値にする。
 // 2 つのサービス内容（タイトルのサービス内容とマスタのコード）は、ServiceKey の値が同じときに同じとみなす。
 func ServiceKey(s string) string {
-	return serviceAliases.Replace(gcaltitle.NormalizeService(strings.TrimSpace(s)))
+	return servicecode.Canonical(servicecode.Normalize(strings.TrimSpace(s)))
 }
