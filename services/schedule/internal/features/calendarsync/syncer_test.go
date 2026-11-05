@@ -165,7 +165,7 @@ var discardLog = slog.New(slog.NewTextHandler(io.Discard, nil))
 
 // testAppliers は、Store s の上で、google_primary の事業所の変更を ProjectionApplier で Projection に写し、buddy_primary の事業所の変更を
 // ReconcileApplier で buddy の予定に当てる Applier である。組み立て（assemble）は buddy_primary の Applier を渡さず、buddy_primary の
-// 事業所のカレンダーを読まない（ADR-0009）。ReconcileApplier は、使わなくなった後も規則を残すので、このテストで確認し続ける。
+// 事業所のカレンダーを読まない（ADR-0009）。ReconcileApplier は、消すまで規則を残すので、このテストで確認し続ける。
 func testAppliers(s *inmem.Store) calendarsync.Appliers {
 	return calendarsync.Appliers{
 		organization.SourceGooglePrimary: calendarsync.NewProjectionApplier(inmem.Projections{Store: s}, discardLog),
@@ -266,7 +266,7 @@ func (e syncEnv) sync(t *testing.T) {
 }
 
 // accept は、事業所を google_primary にして、確認が必要な待ち id を Google の内容で解き、事業所を buddy_primary に戻す。
-// AcceptExport は buddy_primary の事業所で拒む（ADR-0009）。Google の内容を当てる規則は消さずに残すので、呼ぶ間だけモードを変えて確認する。
+// AcceptExport は buddy_primary の事業所で拒む（ADR-0009）。Google の内容を当てる規則は、消すまで残すので、呼ぶ間だけモードを変えて確認する。
 func (e syncEnv) accept(id string) (calendar.Export, error) {
 	defer setSourceMode(e.store, organization.SourceBuddyPrimary)
 	setSourceMode(e.store, organization.SourceGooglePrimary)

@@ -28,7 +28,7 @@ var errUnappliable = errors.New("外部の予定の変更を buddy の予定に�
 // 書いた予定が増分に戻ってきたときに、予定の対応の etag を書く前に比べて、buddy と外部の両方が変わったと見誤らないためである。
 var errExportWriting = errors.New("予定を外部のカレンダーに書いている")
 
-// reconcileApplier は、外部のカレンダーの予定の変更を、予定の対応の etag と更新の番号で比べ、buddy の予定に当てる。ADR-0009 の段階 3 の規則である。
+// reconcileApplier は、外部のカレンダーの予定の変更を、予定の対応の etag と更新の番号で比べ、buddy の予定に当てる。双方向の同期の規則である。
 //   - 外部の予定の etag が予定の対応と同じなら、何もしない。buddy が書いた変更が増分に戻ってきたときもこれに当たる。
 //   - 外部の予定の内容が buddy の予定と同じなら、予定の対応を今の etag と更新の番号にする。buddy に比べない項目（説明）の
 //     書き出していない変更があれば、etag だけを進めて書き出させる。
@@ -62,7 +62,7 @@ type ReconcileDeps struct {
 }
 
 // NewReconcileApplier は、外部の予定の変更を予定の対応と比べて buddy の予定に当てる Applier（reconcileApplier）を作る。
-// ADR-0009 で、どのモードの事業所の同期にも使わないことにした。緊急の編集の要求で使い道を決めるまで、規則とテストを残す。
+// ADR-0009 で、どのモードでも使わないので消すと決めた。消すまで規則とテストを残す。
 func NewReconcileApplier(d ReconcileDeps, ids kernel.IDGenerator) Applier {
 	return newReconcileApplier(d.Calendars, d.Exports, d.Schedules, d.Recurring, d.Types, d.Patients, d.ServiceCodes, d.Visits, ids)
 }

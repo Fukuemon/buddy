@@ -23,7 +23,7 @@ func findOpen(ctx context.Context, cutovers CutoverRepository, facilityID string
 }
 
 // requireImportable は、事業所 f に予定を取り込めるかを確認する。buddy を予定の正本にする事業所と、open の切り替え open がある
-// Google カレンダーを予定の正本にする事業所で取り込める（ADR-0009 の RequireWritable の例外、ADR-0009）。
+// Google カレンダーを予定の正本にする事業所で取り込める（ADR-0009 の RequireWritable の例外）。
 // 取り込めないときは、schedule.RequireWritable と同じく code が schedule.CodeGooglePrimary の apperr.ErrConflict を返す。
 func requireImportable(f organization.Facility, open *Cutover) error {
 	if open != nil && open.FacilityID == f.ID && f.SourceMode == organization.SourceGooglePrimary {
