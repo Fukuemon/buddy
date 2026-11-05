@@ -70,7 +70,7 @@ status: stable
 | 予定の取り込み | 結び付けたカレンダーの予定を、期間を選んで buddy の予定にすること。確定の前にプレビューする | テーブル `import_runs`、`external_event_links`、API `createCalendarImportPreview`、`createCalendarImport` |
 | 予定の書き出し | buddy で作り、変え、キャンセルした予定を、結び付けたカレンダーに書くこと | テーブル `calendar_exports`、API `listCalendarExportIssues`、`createCalendarExportRetry` |
 | 正本のモード | 事業所の予定の正本が、Google カレンダー（`google_primary`）か buddy（`buddy_primary`）かを表す事業所の状態。`google_primary` の事業所では buddy から予定を書けない | Go `organization.SourceMode`、カラム `facilities.source_mode`、API `SourceMode` |
-| 予定の写し | `google_primary` の事業所で、Google カレンダーの予定を buddy の画面と照合のために写したもの。画面の予定はここから読む | テーブル `calendar_event_projections`、Go `calendarsync.NewProjectionApplier` |
+| 予定の写し | `google_primary` の事業所で、Google カレンダーの予定を buddy のカレンダーの画面のために写したもの。照合はこれを読まず、Google カレンダーを直接読む | テーブル `calendar_event_projections`、Go `calendarsync.NewProjectionApplier` |
 | 同期 | `google_primary` の事業所で、職員が Google カレンダーで変えた予定を、増分で読んで予定の写しに当てること。`buddy_primary` の事業所のカレンダーは読まない | テーブル `calendar_sync_states`、Go `calendarsync.Syncer` |
 | 切り替え | `google_primary` の事業所の予定を buddy に取り込み、確認してから正本のモードを `buddy_primary` にする作業。画面の名前は「予定の正本の切り替え」 | テーブル `calendar_cutovers`、Go `calendarimport.Cutover`、API `startCalendarCutover`、`createCalendarCutoverCompletion`、`cancelCalendarCutover` |
 | 確認が必要な予定（取り込みの） | 取り込みのプレビューで、タイトルの利用者を 1 人に決められず、取り込む前に取り込み方を選ぶ予定 | API `ImportPreview.needs_review`、`ImportReviewItem` |
