@@ -58,9 +58,12 @@ flowchart TB
   schedule -->|職員の登録、休職、復職、退職| broker
 ```
 
-- ブローカーの内部の API を呼ぶのは予定の API だけである。照合の API は、ブローカーを呼ばない。
-- ブローカーの DB は、ブローカーの職員と上流のアカウントを持つ。Hydra の DB とは分ける。
-- access token は JWT で、期限は 5 分である。`org_id` は `oauth2.allowed_top_level_claims` で JWT の top level に出す。
+- ブローカーの内部の API を呼ぶのは予定の API だけである。
+  - 照合の API は、ブローカーを呼ばない。
+- ブローカーの DB は、ブローカーの職員と上流のアカウントを持つ。
+  - Hydra の DB とは分ける。
+- access token は JWT で、期限は 5 分である。
+  - `org_id` は `oauth2.allowed_top_level_claims` で JWT の top level に出す。
 - Hydra の web のクライアントは `skip_consent` を持ち、許す audience は `schedule` と `receipt` である。
 
 #### パッケージの構成
@@ -124,7 +127,8 @@ erDiagram
   }
 ```
 
-- 事業所のテーブルは持たない。`org_id` は、上流の IdP の設定のファイルの `org_id` と同じ値で、access token の `org_id` にもなる。
+- 事業所のテーブルは持たない。
+  - `org_id` は、上流の IdP の設定のファイルの `org_id` と同じ値で、access token の `org_id` にもなる。
 - メールを全ての事業所で一意にする。
   - 事業所の中だけで一意にすると、ほかの事業所の管理者が同じメールの職員を登録でき、ログインで事業所を 1 つに決められなくなる。もとの職員もログインできなくなる。
 - 職員の状態の意味と移り方、メールと上流のアカウントの不変条件は、[職員とログイン](https://github.com/Fukuemon/buddy/blob/develop/context/domain/staff-login.md) にある。
@@ -278,7 +282,8 @@ web は、トークンと交換せずに `reason=too_many_attempts` へリダイ
 - ログアウトの `GET /logout`
 
 超えていれば、ログアウトはログアウトの失敗の画面を、ほかはログインの失敗の画面を 429 で出す。  
-コールバックでは、ブローカーが cookie `broker_login` に署名しないので、送る側が cookie とクエリの `state` を合わせて書ける。上限で数えないと、認証の無いリクエストで Hydra の reject と職員の読み出しを増やせる。  
+コールバックでは、ブローカーが cookie `broker_login` に署名しないので、送る側が cookie とクエリの `state` を合わせて書ける。  
+上限で数えないと、認証の無いリクエストで Hydra の reject と職員の読み出しを増やせる。  
 1 回のログインは、`GET /login`、`POST /login`、コールバック、同意の 4 回を数える。  
 数えるのはプロセスの中だけである。  
 2 つの上限は、メールで職員を引く前に確認するので、上限を超えたことを分けて返しても、登録の有無は伝わらない。
@@ -351,13 +356,15 @@ cookie は署名しない。
 - Hydra へ accept か reject を返せないとき（502）
 
 ブローカーの画面のソースは `apps/broker`（`@buddy/broker`）にあり、web と同じ `packages/ui` のコンポーネントとトークンで書く。  
-画面の背景の中央に白いカード（`AuthCard`）を置き、上端にロゴを出す。web のログインの失敗の画面も、同じカードを使う。  
+画面の背景の中央に白いカード（`AuthCard`）を置き、上端にロゴを出す。  
+web のログインの失敗の画面も、同じカードを使う。  
 ログインの失敗の文言は `apps/broker` の定数（`loginFailedMessage`）にあり、ブローカーの画面と web の画面が同じ定数を読む。
 
 - ADR-0027: [ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0027-broker-login-pages-source.md)
 
 `apps/broker` の `pnpm generate` が、画面を React で静的な HTML に書き出し、`packages/ui` の `theme.css` を読む Tailwind で CSS を生成する。  
-書き出したテンプレートと CSS は `internal/login/pages/` に置いてコミットし、ブローカーは `go:embed` で読む。ブローカーのビルドに Node.js は要らない。  
+書き出したテンプレートと CSS は `internal/login/pages/` に置いてコミットし、ブローカーは `go:embed` で読む。  
+ブローカーのビルドに Node.js は要らない。  
 テンプレートの `{{css}}` に CSS を、ログインの画面の `{{.Challenge}}` に `login_challenge` を、ブローカーが `html/template` で埋める。  
 `pnpm check:generated` が、画面のソースと `packages/ui` との食い違いを見つける。  
 書体は Noto Sans JP を名指すだけで、ブローカーは書体のファイルを配らない。  
@@ -390,24 +397,33 @@ Hydra は、トークンを発行するたびに `oauth2.token_hook` でブロ�
 ブローカーは、職員が有効でないとき（休職と退職の職員と登録の途中の職員）と、上流でのログインから 12 時間を過ぎたときに 403 を返し、Hydra はトークンの要求に `access_denied` を返す。  
 発行してよいときは 204 を返す。
 
-- 上流でのログインの時刻には、Hydra が本文の `session.id_token.id_token_claims.auth_time` に入れる値を使う。ブローカーは時刻を DB に持たない。
+- 上流でのログインの時刻には、Hydra が本文の `session.id_token.id_token_claims.auth_time` に入れる値を使う。
+  - ブローカーは時刻を DB に持たない。
   - `auth_time` は、Hydra がログインの accept を受けた時刻である。ブローカーは上流の IdP の ID token を受けた直後に accept するので、上流でのログインの時刻と同じとみなせる。
   - refresh でも、Hydra は最初のログインのセッションを読み直すので、`auth_time` は変わらない。ログインのたびに別の `auth_time` を持つので、ログインのセッションごとに 12 時間を数えられる。
   - ログインのセッションを保たせると、Hydra は保ったセッションのログインの時刻を `auth_time` に入れる。保ったセッションも 12 時間で切れるので、上流でのログインから 12 時間の判定は変わらない。
-- 職員の ID は `session.id_token.subject` で読む。`auth_time` か職員の ID が無いトークンは拒む。
-- client credentials のトークン（`request.grant_types` が `client_credentials` だけ）は、職員のものでないので、職員を見ない。`request.client_id` が内部の API を呼んでよいクライアント（`INTERNAL_API_CLIENTS`）にあれば 204 を、無ければ 403 を返す。
-- 200 を返すと、Hydra は access token の追加のクレームを本文の値で置き換え、同意で入れた `org_id` が消える。ブローカーは 200 を返さない。
-- Hydra は、token_hook の設定のヘッダー `Token-Hook-Key` に、ブローカーと共有する値（`TOKEN_HOOK_KEY`）を入れて呼ぶ。値が違えば 401 を返す。
-- 休職と退職の職員の refresh token は、休職と退職のときに取り消すので、token_hook より前に `invalid_grant` で拒まれる。web の BFF は、`invalid_grant` と `access_denied` のどちらでもセッションを消す。
+- 職員の ID は `session.id_token.subject` で読む。
+  - `auth_time` か職員の ID が無いトークンは拒む。
+- client credentials のトークン（`request.grant_types` が `client_credentials` だけ）は、職員のものでないので、職員を見ない。
+  - `request.client_id` が内部の API を呼んでよいクライアント（`INTERNAL_API_CLIENTS`）にあれば 204 を、無ければ 403 を返す。
+- 200 を返すと、Hydra は access token の追加のクレームを本文の値で置き換え、同意で入れた `org_id` が消える。
+  - ブローカーは 200 を返さない。
+- Hydra は、token_hook の設定のヘッダー `Token-Hook-Key` に、ブローカーと共有する値（`TOKEN_HOOK_KEY`）を入れて呼ぶ。
+  - 値が違えば 401 を返す。
+- 休職と退職の職員の refresh token は、休職と退職のときに取り消すので、token_hook より前に `invalid_grant` で拒まれる。
+  - web の BFF は、`invalid_grant` と `access_denied` のどちらでもセッションを消す。
 
 ### 職員の登録、休職、復職、退職
 
 予定の API が職員の管理の権限を確認してから、ブローカーの内部の API を呼ぶ（ADR-0017）。
 
-- 内部の API と token_hook は、ログインの画面（`PORT`）と別のポート（`INTERNAL_PORT`、デフォルトは 8081）で待ち受ける。ログインの画面のポートは `/internal/` の下に 404 を返す。
+- 内部の API と token_hook は、ログインの画面（`PORT`）と別のポート（`INTERNAL_PORT`、デフォルトは 8081）で待ち受ける。
+  - ログインの画面のポートは `/internal/` の下に 404 を返す。
   - 内部のポートは、ブラウザとリバースプロキシに開かず、予定の API と Hydra だけが届くようにする。
-- 内部の API は、Hydra の client credentials の access token（`aud` は `broker`）だけを受け、Hydra の JWKS で検証する。トークンが無いか検証できなければ 401 を返す。
-- 検証できても、トークンの `sub`（client credentials ではクライアントの ID）が `INTERNAL_API_CLIENTS`（デフォルトは `schedule`）に無いか、トークンが `org_id` を持てば 403 を返す。`org_id` は同意で職員のトークンにだけ入る。
+- 内部の API は、Hydra の client credentials の access token（`aud` は `broker`）だけを受け、Hydra の JWKS で検証する。
+  - トークンが無いか検証できなければ 401 を返す。
+- 検証できても、トークンの `sub`（client credentials ではクライアントの ID）が `INTERNAL_API_CLIENTS`（デフォルトは `schedule`）に無いか、トークンが `org_id` を持てば 403 を返す。
+  - `org_id` は同意で職員のトークンにだけ入る。
 
 | パス | 働き | 主な応答 |
 | --- | --- | --- |
@@ -418,7 +434,8 @@ Hydra は、トークンを発行するたびに `oauth2.token_hook` でブロ�
 | `POST /internal/staff/{id}/resume` | 休職の職員を有効に戻す。上流のアカウントの結び付けは残すので、職員は同じ上流のアカウントでログインできる。有効な職員を戻しても成功する | 204、いなければ 404、退職した職員なら 409（`retired`）、登録の途中の職員なら 409（`not_suspended`） |
 | `POST /internal/staff/{id}/retire` | 職員を退職にし、メールと上流のアカウントを消してから、`suspend` と同じく取り消す。退職した職員を退職にしても成功し、取り消しをやり直す | 204、いなければ 404、退職にしたが取り消しに失敗すれば 502（`revoke_failed`） |
 
-予定の API の職員の登録、休職、復職、退職は、ブローカーと予定の API の DB の 2 か所に書く。1 つのトランザクションにできないので、片方だけが書けたときに、ログインできる職員が予定の API で有効でない状態に残らない順に書く。  
+予定の API の職員の登録、休職、復職、退職は、ブローカーと予定の API の DB の 2 か所に書く。  
+1 つのトランザクションにできないので、片方だけが書けたときに、ログインできる職員が予定の API で有効でない状態に残らない順に書く。  
 ログインを許す書き込み（登録の有効化、復職）は最後にし、ログインを止める書き込み（休職、退職）はブローカーを先にする。  
 登録では、ブローカーの職員を登録の途中の状態で作り、予定の API が書き終えてから有効にする。
 
@@ -460,12 +477,16 @@ sequenceDiagram
   end
 ```
 
-- 登録の途中の職員は、ログインの画面と token_hook で拒まれる。予定の API に書けずにブローカーにだけ残った職員は、ログインできず、照合の API も使えない。
-- 登録は、同じ事業所の同じメールで送り直しても、ブローカーの職員が 1 人にまとまる。予定の API の書き込みに失敗したら、同じ本文で送り直せる。
+- 登録の途中の職員は、ログインの画面と token_hook で拒まれる。
+  - 予定の API に書けずにブローカーにだけ残った職員は、ログインできず、照合の API も使えない。
+- 登録は、同じ事業所の同じメールで送り直しても、ブローカーの職員が 1 人にまとまる。
+  - 予定の API の書き込みに失敗したら、同じ本文で送り直せる。
   - ブローカーにだけ残った登録の途中の職員は、送り直すと、その ID で予定の API に書いてから有効にする。
   - 予定の API に書いた後に有効にできなかったときは、予定の API は 500 を返す。送り直すと、予定の API に同じ ID の職員がいるので、書かずに有効にしてから返す。
-- 予定の API に書けなかったときは、この呼び出しでブローカーの職員を作っていて、その ID の職員が予定の API にまだいなければ、ブローカーの職員を消す。消せなくても、職員は登録の途中のままでログインできない。
-- ほかの事業所に同じメールの職員がいるときは、予定の API は事業所を示さない 409 を返す。メールが登録済みかを試す手段になるが、事業所の名前と職員は示さない。
+- 予定の API に書けなかったときは、この呼び出しでブローカーの職員を作っていて、その ID の職員が予定の API にまだいなければ、ブローカーの職員を消す。
+  - 消せなくても、職員は登録の途中のままでログインできない。
+- ほかの事業所に同じメールの職員がいるときは、予定の API は事業所を示さない 409 を返す。
+  - メールが登録済みかを試す手段になるが、事業所の名前と職員は示さない。
 - 同じメールの登録を同時に受けたときの戻しの競合は、登録の途中の状態で害が無くなる。
   - ブローカーは登録の途中の職員だけを消す。ほかの登録が書き終えて有効にした職員は、戻しで消えない。
   - 戻しが、予定の API にその ID の職員がいないことを確認してから消すまでの間に、ほかの登録が書くと、ほかの登録の有効化は 404 で失敗し、予定の API は 500 を返す。
@@ -517,7 +538,8 @@ sequenceDiagram
   end
 ```
 
-- 休職と退職は、ブローカーを先に書いてから、予定の API に書く。ブローカーの休職と退職は何度呼んでも成功する。
+- 休職と退職は、ブローカーを先に書いてから、予定の API に書く。
+  - ブローカーの休職と退職は何度呼んでも成功する。
   - 予定の API に書けなければ、トランザクションを戻す。職員はブローカーで止めたままなのでログインできず、送り直すとブローカーの書き込みと取り消しをやり直してから書く。
   - ブローカーで書いた後に Hydra の取り消しに失敗したときは、ブローカーは `revoke_failed` の 502 を返す。
     - 予定の API は休職か退職を書いてから 500 を返し、送り直しで取り消しをやり直させる。職員は止めたままなので、その間も token_hook がトークンを拒む。
@@ -566,7 +588,8 @@ sequenceDiagram
   end
 ```
 
-- 復職は、予定の API で休職を外してコミットしてから、ブローカーの職員を戻す。ログインを許す書き込みを最後にするためである。
+- 復職は、予定の API で休職を外してコミットしてから、ブローカーの職員を戻す。
+  - ログインを許す書き込みを最後にするためである。
   - ブローカーは、事業所の行をロックした 2 つ目のトランザクションの中で、職員を読み直して有効なままのときだけ呼ぶ。間に休職にし直されていれば、戻さずに 409 を返す。
   - 2 つ目のトランザクションは、ブローカーが戻したときに予定の API に書かない。ブローカーが戻した後に接続が切れても、状態は食い違わない。
   - ブローカーが `retired` か `not_suspended` の 409 を返したときは、予定の API で外した休職を書き戻して 409 を返す。
@@ -607,11 +630,13 @@ sequenceDiagram
   H-->>B: web の / へリダイレクト
 ```
 
-- ブローカーは、ログアウトの確認の画面を出さずに accept する。職員は web のログアウトのボタンでログアウトを選んでいる。
+- ブローカーは、ログアウトの確認の画面を出さずに accept する。
+  - 職員は web のログアウトのボタンでログアウトを選んでいる。
 - `logout_challenge` が無いとき（400）と、Hydra へ accept を返せないとき（502）は、ブローカーはログアウトの失敗の画面を出す。
 - web は、ID token をセッションに置く。
   - refresh で Hydra が ID token を返さなければ、前の ID token を使う。Hydra は、期限の切れた ID token もログアウトの `id_token_hint` として受ける。
-- ID token の無いセッション（ID token を置く前に作ったセッション）と、セッションの無いログアウトは、web の / へリダイレクトする。ID token を置く前のログインは、Hydra にセッションを保たせていない。
+- ID token の無いセッション（ID token を置く前に作ったセッション）と、セッションの無いログアウトは、web の / へリダイレクトする。
+  - ID token を置く前のログインは、Hydra にセッションを保たせていない。
 - Hydra の web のクライアントは、ログアウトの後に戻る先（`post_logout_redirect_uris`）に web の / を持つ。
 
 ### ローカル環境
@@ -621,7 +646,8 @@ mock-oauth2-server はパスの最初の部分を issuer にするので、1 つ
 
 - compose は、E2E がトークンなしの呼び出しを試せるよう、内部のポートを `127.0.0.1` の 8101 に公開する。
 - 上流の IdP ごとの違い（署名の方式、Google の `hd`）は、フェイクで確認せず、ブローカーの単体テストで確認する。
-- ブローカーと予定の API のシードは、同じ職員の ID を持つ。3 つの事業所（`org-sample`、`org-sample-b`、`org-sample-c`）の職員がいる。
+- ブローカーと予定の API のシードは、同じ職員の ID を持つ。
+  - 3 つの事業所（`org-sample`、`org-sample-b`、`org-sample-c`）の職員がいる。
   - `org-sample-b` には、両方で休職にした職員もいる。E2E は、この職員のログインが拒まれることを確認する。
 
 ## Interface
@@ -629,5 +655,7 @@ mock-oauth2-server はパスの最初の部分を issuer にするので、1 つ
 - 読む設定と、起動しない条件は [README](https://github.com/Fukuemon/buddy/blob/develop/services/broker/README.md#configuration) にある
 - ヘルスチェック: `GET /healthz`（依存先を確認しない）、`GET /readyz`（DB に届かなければ 503）、`broker healthcheck` のサブコマンド
 - 公開する画面: ログイン（`GET` と `POST /login`）、上流の IdP のコールバック（`GET /login/callback`）、同意（`GET /consent`）、ログアウト（`GET /logout`）
-- 内部の API: 職員の登録、有効化、削除、休職、復職、退職と、Hydra の `oauth2.token_hook`（`POST /internal/token-hook`）。`INTERNAL_PORT` で待ち受ける。パスは [職員の登録、休職、復職、退職](#職員の登録休職復職退職) の表にある
-- マイグレーションとシード: `migrate up`、`migrate down [N]`、`migrate seed`。シードは職員がいない DB にだけ入る
+- 内部の API: 職員の登録、有効化、削除、休職、復職、退職と、Hydra の `oauth2.token_hook`（`POST /internal/token-hook`）。
+  - `INTERNAL_PORT` で待ち受ける。パスは [職員の登録、休職、復職、退職](#職員の登録休職復職退職) の表にある
+- マイグレーションとシード: `migrate up`、`migrate down [N]`、`migrate seed`。
+  - シードは職員がいない DB にだけ入る
