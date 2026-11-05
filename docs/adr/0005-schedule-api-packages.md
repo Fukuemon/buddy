@@ -27,7 +27,6 @@ Go の API は 3 つある。予定の API（`services/schedule`）、照合の 
 - 外部のカレンダーは、結び付け、手動の取り込み、同期の変更の取得、取った変更を当てる規則、書き出しの 5 つの理由で変わる。Google カレンダーの書き出しと同期を Worker に分ける変更（#593）と、Google カレンダーを予定の正本にする変更（#594）は、同期と書き出しだけを変える。
 - 外部のカレンダーの機能の間には、次の共有がある。
   - 同期の適用の規則は、書き出しの待ちを読んで、待ちを保留か解決にする。
-  - 書き出しの確認の解決（`AcceptExport`）は、同期の適用の規則で、外部のカレンダーの内容を予定に当てる。
   - 同期と取り込みは、外部の予定と buddy の予定を読み替える規則を共有する。
 
 ## Decision
@@ -41,8 +40,8 @@ Go の API は 3 つある。予定の API（`services/schedule`）、照合の 
     - ADR-0027: [予定の書き込みのモデルと読み取りのモデルを分け、正本のモードを事業所の状態にする](0027-schedule-write-read-models-and-source-mode.md)
     - ADR-0028: [サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける](0028-service-code-rules.md)
 - `internal/` の直下には、機能でないパッケージを置く。
-  - アダプタ（`httpapi`、`postgres`、`gcal`、`broker`、`ulid`）
-  - 共通のパッケージ。共通のエラーと検証のエラーは `apperr`、`Transactor` は `tx` に置く。ID の発行と並べ替えは、使う機能のパッケージか、`apperr` と同じ段の小さなパッケージ（`kernel`）に置く。
+  - アダプタ（`httpapi`、`postgres`、`gcal` など）
+  - 共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）。共通のエラーと検証のエラーは `apperr`、`Transactor` は `tx` に置く。ID の発行と並べ替えは、使う機能のパッケージか、`apperr` と同じ段の小さなパッケージ（`kernel`）に置く。
   - 認証と、パスが指すリソースの事業所の確認は、全ての機能を読むので `access` に置く。
   - リクエストを送った職員と権限の一覧は `principal` に置く。`principal` はリポジトリと操作を持たず、`access` と `httpapi` が認証の後に作るリクエストの文脈なので、`features/` に置かない。
     - `principal` は `organization` と `staff` に依存する。予定に固有の判定は `principal` に置かず、`schedule` に置く。
@@ -56,16 +55,18 @@ Go の API は 3 つある。予定の API（`services/schedule`）、照合の 
 ```mermaid
 flowchart TB
     cmd["cmd/api、cmd/calendar-worker"] --> assemble
-    assemble --> adapters["アダプタ（httpapi、postgres、gcal、broker、ulid）"]
+    assemble --> adapters["アダプタ（httpapi、postgres、gcal など）"]
     assemble --> access
-    adapters --> features["機能のパッケージ（internal/features/）"]
+    assemble --> features["機能のパッケージ（internal/features/）"]
+    adapters --> features
     access --> principal
     adapters --> principal
     principal -->|organization と staff| features
+    features -.->|schedule、scheduleview、calendarimport| principal
     features --> common["共通のパッケージ（apperr、tx、kernel、civil）"]
 ```
 
-- `principal` は機能のパッケージの `organization` と `staff` に依存し、それより後の機能のうち予定を扱うものが `principal` を使う。使ってよい機能は `context/codebase.md` にある。
+- `principal` は `organization` と `staff` に依存し、`schedule`、`scheduleview`、`calendarimport`、`access`、`httpapi`、`assemble` から使う。点線は、`principal` を使ってよい 3 つの機能のパッケージから `principal` への向きである。
 
 機能のパッケージの間は、決めた順の前の機能だけを import する。
 
@@ -90,25 +91,25 @@ flowchart BT
 
 ### 外部のカレンダーの 4 つの機能
 
-外部のカレンダーを、次の 4 つの機能のパッケージに分ける。3 つの機能（`calendarimport`、`calendarsync`、`calendarexport`）は `calendar` だけを import する。
+外部のカレンダーを、次の 4 つの機能のパッケージに分ける。3 つの機能（`calendarimport`、`calendarsync`、`calendarexport`）は `calendar` までの機能を import し、互いには import しない。
 
 | パッケージ | 責務 | 置くもの |
 | --- | --- | --- |
 | `calendar` | 結び付けたカレンダー、予定の対応、外部の予定と buddy の予定を読み替える規則、書き出しの待ちの記録 | `ExternalCalendar`、`EventLink`、`ImportRun`、Google の口（`EventSource`、`EventWriter`、`Accounts`）、`classify.go`、`recurrence.go`、`eventbody.go`、`Export` と `Target`、結び付けの操作（`ServiceAccount`、`List`、`Check`、`Link`、`Unlink`） |
 | `calendarimport` | 期間を決めた手動の取り込み | `Preview`、`Import`、`plan.go` |
-| `calendarsync` | 同期の変更の取得と、取った変更を当てる規則 | `Syncer`（取得）、`Applier`（当てる規則）、`AcceptExport` |
+| `calendarsync` | 同期の変更の取得と、取った変更を当てる規則 | `Syncer`（取得）、`Applier`（当てる規則） |
 | `calendarexport` | buddy の予定の変更の書き出し | `Outbox`、`Exporter`、`ListExportIssues`、`RetryExport` |
 
 - 取り込みと同期の両方が使う読み替えの規則（`Classify`、`RuleFromRecurrence`、`serviceKey`、`originalDate`、`createdVersion`）は、`calendar` に置いて公開する。外部の予定と buddy の予定を互いに読み替える規則は、3 つの機能の共通の規則であるためである。
 - 書き出しの待ちの記録（`Export`、`Target`、`ExportStatus`、`ExportErrorCode`）は `calendar` に置く。同期は、書いている途中の待ちを見て、外部の変更を当てるか保留にするかを決めるので、待ちの記録は書き出しと同期が共有する状態である。
-- `AcceptExport` は、確認が必要な待ちを、外部のカレンダーの今の内容を buddy の予定に当てて解決する。外部の内容を当てる操作なので、同期の適用の規則と同じ `calendarsync` に置く。書き出しの待ちの一覧と書き直しは、buddy の内容を書く側なので `calendarexport` に置く。
-  - `ReconcileApplier` と `AcceptExport` を消す判断は ADR-0032 にある。
-    - ADR-0032: [Google カレンダーを正本にする事業所でも、buddy は予定を Google カレンダーへ同期の呼び出しで書き、訪問の情報を buddy の DB に持つ](0032-google-primary-write-through.md)
+- 書き出しの待ちの一覧と書き直しは、buddy の内容を書く側なので `calendarexport` に置く。
+- 外部の変更と buddy の予定を比べて当てる `ReconcileApplier` と、確認が必要な待ちを外部の内容で解決する `AcceptExport` は、どのモードでも使わないので消す。この判断は ADR-0032 にある。
+  - ADR-0032: [Google カレンダーを正本にする事業所でも、buddy は予定を Google カレンダーへ同期の呼び出しで書き、訪問の情報を buddy の DB に持つ](0032-google-primary-write-through.md)
 
 同期は、取得と、当てる規則の 2 つの型に分ける。
 
 - `Syncer` は、同期の状態の Claim と Finish、`EventSource` の変更の読み取り、syncToken の失効（410）の読み直しを持つ。正本のモードを知らない。
-- `Applier` は、1 つの外部の予定を 1 つのトランザクションで当てるインターフェースにする。外部の変更と buddy の予定を比べて当てる型は `ReconcileApplier`、Google カレンダーを正本にする事業所の参照のモデルを書く型は `ProjectionApplier` である。
+- `Applier` は、1 つの外部の予定を 1 つのトランザクションで当てるインターフェースにする。Google カレンダーを正本にする事業所の参照のモデルを書く型は `ProjectionApplier` である。
 - `Syncer` は、1 つの予定を当てるトランザクションの中で事業所の正本のモードを読み、モードごとの `Applier` を選ぶ。モードごとの `Applier` は組み立ての場所が渡し、`Syncer` はモードの値と `Applier` の対応だけを持つ。
   - モードごとの同期の向きは ADR-0029 にある。
     - ADR-0029: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](0029-google-calendar-source-modes.md)
@@ -140,7 +141,7 @@ flowchart BT
 - リポジトリは、自分の集約のものだけを、そのパッケージに置く。単発の予定（キャンセルを含む）、繰り返しの予定（規則と除外の日を含む）、マスタで分け、テーブルごとには分けない。
   - レコードをロックして読む操作は `GetForUpdate` の 1 つにし、名前でロックを示す。`GetForUpdate` が返す型は ADR-0027 にある。
 - ほかの機能のデータは、使う側で定義したインターフェースで受ける。ほかの機能のリポジトリのインターフェースと、リポジトリの束は受けない。
-  - 読むだけなら、`kernel.Finder` か 1〜2 のメソッドにする。
+  - 読むだけなら、`kernel.Finder` か 1〜2 のメソッドにする。例えば `schedule` は、職員の ID、事業所、チームだけを返すインターフェースで職員を受ける。
   - ほかの機能の集約を 1 つのトランザクションで書くかロックするなら、使うメソッドだけを並べた 1 つのインターフェースにする。
     - 例は、`calendar` の `ScheduleStore` と `RecurringStore`、`schedule` の `StaffRefs`。
     - 1 つのトランザクションの中で使うメソッドを分けると、同じ実装を指す項目が増えるだけで、使う側から読める依存は減らないためである。
@@ -222,11 +223,11 @@ func (o Leave) Do(ctx context.Context, id string, in LeaveInput) (StatusChange, 
 - 常駐の処理と、操作の型以外で操作を持つ型は、型の名前のファイル（`exporter.go`、`syncer.go`、`writer.go`）に置く。
 - 役割の語は、ファイルの名前の末尾に付ける。Go で多い付け方で、テストのファイルが `staff_repository_test.go` のように対象のファイルと並ぶためである。
   - 出典: [Three Dots Labs: Basic CQRS in Go](https://threedots.tech/post/basic-cqrs-in-go/)（例の Wild Workouts の `trainings_firestore_repository.go`）
-- 役割の語（`repository`、`service`、`app`、`port`、`handler`）は、GOOS と GOARCH の値に当たらないので、暗黙のビルドの条件にならない。
+- 役割の語（`repository`、`service`、`app`、`port`、`handler`）は、GOOS と GOARCH の値に当たらないので、暗黙のビルドの条件にならない。Go は、ファイルの名前の末尾が GOOS か GOARCH の値（`linux`、`amd64` など）に合うときだけ、ビルドの条件にする。
   - 出典: [Build constraints](https://pkg.go.dev/cmd/go#hdr-Build_constraints)
 - CQRS は、書き込みと読み取りを動詞で区別するところまでにする。読み取りの DB と、その同期は足さない。
-- ドメインイベントは足さない。Google カレンダーへの書き出し（予定の変更と同じトランザクションで積む書き出しの待ち）が、ドメインイベントにする将来の候補になる。
   - 出典: [Fowler: CQRS](https://martinfowler.com/bliki/CQRS.html)
+- ドメインイベントは足さない。Google カレンダーへの書き出し（予定の変更と同じトランザクションで積む書き出しの待ち）が、ドメインイベントにする将来の候補になる。
 
 テストのファイルは、次のとおり置く。
 
@@ -251,8 +252,13 @@ func (o Leave) Do(ctx context.Context, id string, in LeaveInput) (StatusChange, 
 | DB と HTTP のアダプタも機能ごとに分ける | 1 つの機能が 1 つのディレクトリに収まる | sqlc の生成物が機能ごとに重なる。strict server のインターフェースを組み立て直す |
 | 機能のパッケージを `domain`、`app`、`port` のようなサブパッケージに分ける | ディレクトリで役割が分かる | 種類でパッケージをまとめる形になる。パッケージの数が増え、1 つの機能の変更が複数のパッケージにまたがる |
 | 機能のパッケージに、操作を束ねる型（`App`）を置き、操作をそのメソッドにする | 機能の操作の一覧を 1 つの型から読める | どの操作からも全ての依存に触れ、操作のシグネチャから依存を読めない。1 つの操作のテストにも全ての依存を用意する |
-| `AcceptExport` を `calendarexport` に置き、`calendarexport` が `calendarsync` を import する | 書き出しの待ちの操作が 1 つのパッケージに集まる | 同期が書き出しの待ちを読むので、`calendarexport` から `calendarsync` への向きが残り、同期を変えると書き出しも変わる |
+| 操作ごとの型にし、依存を `<操作>Deps` の struct で受ける | 依存の多い操作でも引数が並ばない | 操作ごとに型が 2 つになる。フィールドの入れ忘れがコンパイルで分からない |
+| 操作ごとの型にし、機能のパッケージに束（Wild Workouts の `Application`）を置く | 機能の操作の一覧を 1 つの型から読める | 束が操作の具体の型を持つと、`httpapi` のテストがフェイクを渡せない |
+| `principal` を `features/principal/` に置く | 職員を表す型と同じ階層に置ける | 機能の一覧に、リポジトリと操作を持たないパッケージが並ぶ |
+| 役割の語をファイルの名前の先頭に付ける（`repository_staff.go`） | ファイルの一覧が役割ごとに並ぶ | Go で少ない付け方で、同じ対象の集約とリポジトリが離れて並ぶ |
+| ほかの機能を書くインターフェース（`ScheduleStore`、`RecurringStore`）も 1〜2 のメソッドに分ける | 読むだけのときと同じ規則で済む | 使う型の項目が 3〜4 つずつ増え、同じ `schedule.Repository` を何度も渡す |
 | `calendar` を 1 つのパッケージのまま、ファイルの名前の先頭で分ける | import のパスが変わらない | 非公開の型の共有が残り、同期と書き出しの変更が取り込みと結び付けのパッケージに広がる |
+| `calendar` の下にサブパッケージ（`calendar/sync` など）を置く | ディレクトリで束ねて読める | パッケージをフラットに保つ規則に反する。depguard の規則のパターンが増える |
 
 ## Consequences
 
