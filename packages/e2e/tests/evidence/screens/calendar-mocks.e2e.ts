@@ -94,7 +94,7 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
         {
           name: 'review-mock-detail',
           title:
-            '行を押すと、予定の日時、職員、理由、予定を開くと、主ボタンの色でない 2 つの選択肢を入れたダイアログが出る',
+            '行を押すと、予定の日時、職員、理由、予定を開くと、主ボタンの色でない「buddy の内容で書き直す」を入れたダイアログが出る',
           actor: 'ログインなし',
           variant,
         },
@@ -112,14 +112,12 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
             '2026/11/04（水）09:00〜09:29',
           )
           await expect(page.getByTestId('calendar-review-open-export-1')).toBeVisible()
-          await expect(page.getByTestId('calendar-review-accept-export-1')).not.toHaveClass(
-            /wf-btn--primary/,
-          )
+          await expect(page.getByTestId(/^calendar-review-accept-/)).toHaveCount(0)
           await expect(page.getByTestId('calendar-review-rewrite-export-1')).not.toHaveClass(
             /wf-btn--primary/,
           )
           await check(
-            '予定の確認のダイアログ（05-detail.html）に、予定の日時、職員、最後に変わった日時、理由、予定を開くと、同じ形の「Google の内容に合わせる」「buddy の内容で書き直す」が出る',
+            '予定の確認のダイアログ（05-detail.html）に、予定の日時、職員、最後に変わった日時、理由、予定を開くと、主ボタンの色でない「buddy の内容で書き直す」が出て、「Google の内容に合わせる」が無い',
           )
 
           await step('右上の × を押す')
@@ -160,35 +158,6 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
           await page.getByTestId('calendar-rewrite-cancel').click()
           await expect(page).toHaveURL(/05-detail\.html/)
           await check('予定の確認のダイアログ（05-detail.html）へ戻る')
-        },
-      )
-    })
-
-    test(`${prefix}予定の確認のダイアログのモックで Google の内容に合わせるを押した場合、赤の確定のボタンの確認のダイアログが出ること`, async ({
-      browser,
-    }) => {
-      await recordPrEvidence(
-        browser,
-        {
-          name: 'review-mock-accept',
-          title:
-            '合わせるの確認のダイアログは、確定の「合わせる」が赤で、buddy で変えた内容が消えることを示す',
-          actor: 'ログインなし',
-          variant,
-        },
-        async (page) => {
-          await page.goto(mockUrl(`${REVIEW}05-detail.html`))
-        },
-        async ({ page, step, check }) => {
-          await page.goto(mockUrl(`${REVIEW}05-detail.html`))
-          await step('「Google の内容に合わせる」を押す')
-          await page.getByTestId('calendar-review-accept-export-1').click()
-          await expect(page).toHaveURL(/09-accept\.html/)
-          await expect(page.getByTestId('calendar-accept-dialog')).toContainText(
-            'buddy で変えたタイトルと日時は消えます。',
-          )
-          await expect(page.getByTestId('calendar-accept-submit')).toHaveClass(/wf-btn--danger/)
-          await check('合わせるダイアログ（09-accept.html）の確定の「合わせる」が赤である')
         },
       )
     })
@@ -252,32 +221,6 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
           )
           await check(
             '書き直しの失敗のモック（08-rewrite-error.html）に「この予定は、すでに書き直しを始めたか、書き直し終えています。一覧を読み直してください。」が出る',
-          )
-        },
-      )
-    })
-
-    test(`${prefix}合わせるの失敗のモックを開いた場合、読み替えの語を使わない文が出ること`, async ({
-      browser,
-    }) => {
-      await recordPrEvidence(
-        browser,
-        {
-          name: 'review-mock-accept-error',
-          title: '合わせるの失敗の文は、「読み替えられません」ではなく「取り込めません」で書く',
-          actor: 'ログインなし',
-          variant,
-        },
-        async (page) => {
-          await page.goto(mockUrl(`${REVIEW}11-accept-error.html`))
-        },
-        async ({ page, check }) => {
-          await page.goto(mockUrl(`${REVIEW}11-accept-error.html`))
-          await expect(page.getByTestId('calendar-accept-error')).toContainText(
-            'Google カレンダーの予定を、buddy の予定として取り込めません。',
-          )
-          await check(
-            '合わせるの失敗のモック（11-accept-error.html）に「Google カレンダーの予定を、buddy の予定として取り込めません。」で始まる文が出る',
           )
         },
       )

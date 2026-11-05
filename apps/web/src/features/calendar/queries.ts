@@ -20,7 +20,7 @@ export const externalCalendarListQueryOptions = (api: BuddyApi, facilityId: Faci
     queryFn: () => api.calendars.list(facilityId),
   })
 
-/** 事業所を読む query。予定の正本（sourceMode）で、Google の内容に合わせる操作を出すかを決める。予定の画面と cache を共有する。 */
+/** 事業所を読む query。予定の正本の切り替えの画面が、正本のモード（sourceMode）を読む。予定の画面と cache を共有する。 */
 export const facilityQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
     queryKey: queryKeys.facilityDetail(facilityId),
@@ -56,21 +56,6 @@ export const useRetryExport = () => {
     mutationFn: (exportId: CalendarExport['id']) => api.calendars.retryExport(facilityId, exportId),
     onSettled: () =>
       queryClient.invalidateQueries({ queryKey: queryKeys.calendars.exportIssues(facilityId) }),
-  })
-}
-
-/** 確認が必要な書き出しの予定を、Google カレンダーの内容に合わせる mutation。成否によらず、一覧と予定を読み直す。 */
-export const useAcceptExport = () => {
-  const { api, facilityId } = useBuddyApi()
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (exportId: CalendarExport['id']) =>
-      api.calendars.acceptExport(facilityId, exportId),
-    onSettled: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.calendars.exportIssues(facilityId) }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all(facilityId) }),
-      ]),
   })
 }
 

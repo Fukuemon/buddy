@@ -312,7 +312,6 @@ const buddyApiOf = (operation: () => Promise<never>): BuddyApi => ({
     import: operation,
     exportIssues: operation,
     retryExport: operation,
-    acceptExport: operation,
     cutoverStatus: operation,
     startCutover: operation,
     completeCutover: operation,

@@ -131,7 +131,6 @@ const ARGS = {
   ]),
   'calendars.exportIssues': z.tuple([id]),
   'calendars.retryExport': z.tuple([id, id]),
-  'calendars.acceptExport': z.tuple([id, id]),
   'calendars.cutoverStatus': z.tuple([id]),
   'calendars.startCutover': z.tuple([id]),
   'calendars.completeCutover': z.tuple([id, id]),

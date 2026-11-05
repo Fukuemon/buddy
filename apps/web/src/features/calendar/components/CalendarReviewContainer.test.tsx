@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './CalendarReviewContainer.stories'
 
-const { AcceptFailed, Default, Empty, GooglePrimary, LoadError } = composeStories(stories)
+const { Default, Empty, LoadError } = composeStories(stories)
 
 /**
  * 一覧の行を押し、予定の確認のダイアログを開く。
@@ -37,58 +37,41 @@ describe('CalendarReviewContainer', () => {
   })
 
   it('行を押すと、予定と理由と、その予定で選べる操作をダイアログに出す', async () => {
-    render(<GooglePrimary />)
+    render(<Default />)
     const dialog = await openRow('calendar-review-row-schedule-schedule-1')
     expect(within(dialog).getByTestId('calendar-review-dialog-datetime')).toHaveTextContent(
       '2026/11/04（水）09:00〜09:29',
     )
     expect(within(dialog).getByTestId('calendar-review-open-export-1')).toBeInTheDocument()
-    const accept = within(dialog).getByTestId('calendar-review-accept-export-1')
-    const rewrite = within(dialog).getByTestId('calendar-review-rewrite-export-1')
-    expect(accept.compareDocumentPosition(rewrite) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(within(dialog).getByTestId('calendar-review-rewrite-export-1')).toBeInTheDocument()
 
     await userEvent.click(within(dialog).getByTestId('calendar-review-close'))
     expect(screen.queryByTestId('calendar-review-dialog')).toBeNull()
   })
 
-  it('Google の内容に合わせるは、合わせられる予定にだけ出す', async () => {
+  it('buddy でキャンセルした予定は、書き直すと Google カレンダーの予定を消すことを示す', async () => {
     render(<Default />)
     const dialog = await openRow('calendar-review-row-schedule-schedule-4')
-    expect(within(dialog).queryByTestId('calendar-review-accept-export-5')).toBeNull()
     expect(within(dialog).getByTestId('calendar-review-rewrite-export-5')).toBeInTheDocument()
     expect(within(dialog).getByTestId('calendar-review-dialog-reason')).toHaveTextContent(
       'buddy でキャンセルした予定が、Google カレンダーで変わっていました。書き直すと Google カレンダーの予定を消すので、消してよいかを職員に確認してください。',
     )
   })
 
-  it('buddy_primary の事業所では、合わせられる予定にも Google の内容に合わせるを出さない', async () => {
+  it('両方で変わった予定にも、buddy の内容で書き直すだけを出し、Google の内容に合わせるを出さない', async () => {
     render(<Default />)
     const dialog = await openRow('calendar-review-row-schedule-schedule-1')
+    expect(within(dialog).getByTestId('calendar-review-rewrite-export-1')).toHaveTextContent(
+      'buddy の内容で書き直す',
+    )
     expect(within(dialog).queryByTestId('calendar-review-accept-export-1')).toBeNull()
-    expect(within(dialog).getByTestId('calendar-review-rewrite-export-1')).toBeInTheDocument()
+    expect(dialog).not.toHaveTextContent('Google の内容に合わせる')
   })
 
   it('繰り返しの予定には、予定を開くを出さない', async () => {
     render(<Default />)
     const dialog = await openRow('calendar-review-row-recurring-recurring-1')
     expect(within(dialog).queryByTestId('calendar-review-open-export-3')).toBeNull()
-  })
-
-  it('確認してから Google の内容に合わせると、一覧から消える', async () => {
-    render(<GooglePrimary />)
-    const detail = await openRow('calendar-review-row-schedule-schedule-1')
-    await userEvent.click(within(detail).getByTestId('calendar-review-accept-export-1'))
-    const dialog = screen.getByTestId('calendar-accept-dialog')
-    expect(screen.queryByTestId('calendar-review-dialog')).toBeNull()
-    expect(within(dialog).getByTestId('calendar-accept-target')).toHaveTextContent(
-      '2026/11/04（水）09:00〜09:29、青木 一郎',
-    )
-    expect(dialog).toHaveTextContent('buddy で変えたタイトルと日時は消えます。')
-    await userEvent.click(within(dialog).getByTestId('calendar-accept-submit'))
-
-    expect(await screen.findByTestId('calendar-review-row-schedule-schedule-5')).toBeInTheDocument()
-    expect(screen.queryByTestId('calendar-review-row-schedule-schedule-1')).toBeNull()
-    expect(screen.queryByTestId('calendar-accept-dialog')).toBeNull()
   })
 
   it('確認してから buddy の内容で書き直すと、一覧から消える', async () => {
@@ -125,18 +108,6 @@ describe('CalendarReviewContainer', () => {
     expect(screen.queryByTestId('calendar-rewrite-dialog')).toBeNull()
     expect(screen.getByTestId('calendar-review-dialog')).toBeInTheDocument()
     expect(screen.getByTestId('calendar-review-row-schedule-schedule-5')).toBeInTheDocument()
-  })
-
-  it('Google の内容に合わせられなければ、ダイアログを開いたまま理由を出す', async () => {
-    render(<AcceptFailed />)
-    const detail = await openRow('calendar-review-row-schedule-schedule-1')
-    await userEvent.click(within(detail).getByTestId('calendar-review-accept-export-1'))
-    await userEvent.click(screen.getByTestId('calendar-accept-submit'))
-    expect(await screen.findByTestId('calendar-accept-error')).toHaveTextContent(
-      'Google カレンダーの予定を、buddy の予定として取り込めません。',
-    )
-    expect(screen.getByTestId('calendar-accept-dialog')).toBeInTheDocument()
-    expect(screen.getByTestId('calendar-accept-submit')).not.toHaveAttribute('aria-disabled')
   })
 
   it('確認が必要な予定が無ければ、そう示す', async () => {

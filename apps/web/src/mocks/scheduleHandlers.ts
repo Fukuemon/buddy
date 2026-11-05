@@ -223,24 +223,5 @@ export const createScheduleHandlers = (baseUrl: string) => {
         })
       }),
     ),
-    http.post(
-      '/v1/calendar_exports/{calendar_export_id}/acceptances',
-      withAuth(({ params, response }) => {
-        const found = mockExportIssues.find((i) => i.id === params.calendar_export_id)
-        if (found === undefined)
-          return response(404).json({ code: 'not_found', message: 'リソースが見つかりません' })
-        if (!found.acceptable)
-          return response(409).json({
-            code: 'export_not_acceptable',
-            message:
-              'この予定は、Google カレンダーの内容を buddy に当てられません。buddy の内容で書き直してください',
-          })
-        return response(200).json({
-          ...exportOfIssue(found),
-          status: 'succeeded',
-          error_code: null,
-        })
-      }),
-    ),
   ]
 }

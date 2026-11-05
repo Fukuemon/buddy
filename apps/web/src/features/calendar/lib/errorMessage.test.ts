@@ -4,7 +4,6 @@ import { ApiError } from '#/api/BuddyApi'
 import { FORBIDDEN_MESSAGE } from '#/api/forbiddenMessage'
 
 import {
-  acceptErrorMessage,
   cutoverErrorMessage,
   importErrorMessage,
   linkErrorMessage,
@@ -88,26 +87,6 @@ describe('rewriteErrorMessage', () => {
     [apiError(500), '書き直せませんでした。時間をおいて、もう一度書き直してください。'],
   ])('%s を文にする', (error, expected) => {
     expect(rewriteErrorMessage(error)).toBe(expected)
-  })
-})
-
-describe('acceptErrorMessage', () => {
-  it.each([
-    [
-      apiError(409, 'export_not_in_review'),
-      'この予定は、すでに書き直しを始めたか、書き直し終えています。',
-    ],
-    [apiError(409, 'export_not_acceptable'), 'buddy の内容で書き直してください。'],
-    [apiError(409, 'external_change_unappliable'), 'buddy の予定として取り込めません。'],
-    [apiError(422, 'calendar_unreadable'), 'カレンダーの共有が外れていないか'],
-    [
-      apiError(503, 'calendar_not_configured'),
-      'まだ Google カレンダーを使う準備ができていません。事業所の管理者に',
-    ],
-    [apiError(403, 'forbidden'), FORBIDDEN_MESSAGE],
-    [apiError(502, 'calendar_unavailable'), 'Google カレンダーの内容に合わせられませんでした。'],
-  ])('%s を文にする', (error, expected) => {
-    expect(acceptErrorMessage(error)).toContain(expected)
   })
 })
 
