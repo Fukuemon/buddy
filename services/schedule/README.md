@@ -153,7 +153,7 @@ Google カレンダーの Worker は、`--entrypoint /usr/local/bin/calendar-wor
 
 API は、Google カレンダーの書き出しと同期を動かさない。  
 書き出しと同期は、`cmd/calendar-worker` が役割ごとのプロセスで動かす。  
-ADR-0017: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](../../docs/adr/0017-calendar-worker.md)
+ADR-0029: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](../../docs/adr/0029-calendar-worker.md)
 
 API と同じ `DB_` と `GOOGLE_CALENDAR_` の変数を入れた別のターミナルで、役割を引数に渡して起動する。
 
@@ -256,4 +256,4 @@ sqlc diff
 - [DesignDoc.md](DesignDoc.md): コードの構成、テーブルの構成、認証から事業所の確認までの流れ、繰り返しの予定
 - [コードベースの構造](../../context/codebase.md): パッケージの間の依存してよい向き
 - [全体の Design Doc](../../docs/design/DesignDoc.md): 画面と 2 つの API の責務、デプロイの要件
-- [ADR-0002](../../docs/adr/0002-pbac.md): 権限を役職のデフォルトと職員ごとの上書きで持つ判断
+- [ADR-0007](../../docs/adr/0007-pbac.md): 権限を役職のデフォルトと職員ごとの上書きで持つ判断

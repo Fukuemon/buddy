@@ -14,7 +14,7 @@ type Types interface {
 }
 
 // ScheduleStore は、外部の予定の変更を当てる単発の予定を読み書きする。実装は schedule.Repository と scheduleview.Schedules である。
-// Get は名前を結合した予定を、GetForUpdate と ReplacementOf は名前を結合しない書き込みのモデルを返す（ADR-0008）。
+// Get は名前を結合した予定を、GetForUpdate と ReplacementOf は名前を結合しない書き込みのモデルを返す（ADR-0023）。
 type ScheduleStore interface {
 	Create(ctx context.Context, s schedule.Schedule) error
 	Get(ctx context.Context, id string) (scheduleview.Detail, error)

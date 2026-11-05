@@ -1,4 +1,4 @@
-// Package broker は、ID ブローカーの内部の API（職員の登録、有効化、削除、休職、復職、退職）を呼ぶ（ADR-0001）。
+// Package broker は、ID ブローカーの内部の API（職員の登録、有効化、削除、休職、復職、退職）を呼ぶ（ADR-0001、ADR-0004）。
 // 内部の API は、Hydra の client credentials の access token（aud は broker）で呼ぶ。
 package broker
 

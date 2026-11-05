@@ -20,7 +20,7 @@ import (
 )
 
 // このファイルのテストは、組み立て（assemble）と同じく google_primary の事業所にだけ ProjectionApplier を渡した同期の処理で、
-// Google カレンダーの予定を Projection に写すことと、buddy_primary の事業所のカレンダーを読まないことを確認する（ADR-0008）。
+// Google カレンダーの予定を Projection に写すことと、buddy_primary の事業所のカレンダーを読まないことを確認する（ADR-0026）。
 // 予定の日付は、保持する期間（前々月の初日から）に、テストを流す日によらず入るよう、先の年にする。
 
 // projectionEnv は、Store の事業所 inmem.FacilityID を google_primary にし、同期の処理を newProjectionSyncer で作った syncEnv である。

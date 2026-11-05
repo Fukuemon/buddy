@@ -19,7 +19,7 @@
 - `packages/ui/src/case/ListTools/ListTools.tsx`
 - `apps/web/src/components/page/PageForbiddenMessage.tsx`
 
-ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元と停止をブローカーが、権限と業務のデータを予定の API が持つ](../../adr/0001-auth.md)
+ADR-0005: [利用者を、戻せる利用の終了にでき、終了の利用者を予定の候補と職員の退職の確認から外す](../../adr/0005-patient-service-end.md)
 
 ## 構成
 

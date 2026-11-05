@@ -21,8 +21,8 @@ const (
 // Staff は、事業所の職員である。Sub は、登録のときにブローカーが発行した職員の ID で、access token の sub になる。
 // ブローカーで職員を作る前に登録した職員では nil のことがある。PhoneNumber は、先頭に "+" を付けた数字の列である。
 // LeaveStartedAt は休職にした時刻で、休職でなければ nil である。LeaveReturnDate は戻る予定の日のメモで、その日に自動では戻さない。
-// RetiredAt は退職にした時刻で、退職していなければ nil である。退職した職員は、Email が空で、PhoneNumber が nil である（ADR-0001）。
-// NonVisiting は訪問しない職員かで、true の職員は予定のカレンダーの職員の列と、予定と担当の候補に出ず、予定と担当を新しく割り振れない（ADR-0002）。
+// RetiredAt は退職にした時刻で、退職していなければ nil である。退職した職員は、Email が空で、PhoneNumber が nil である（ADR-0004）。
+// NonVisiting は訪問しない職員かで、true の職員は予定のカレンダーの職員の列と、予定と担当の候補に出ず、予定と担当を新しく割り振れない（ADR-0006）。
 // ゼロ値を訪問する職員にするため、訪問するかの逆を持つ。
 type Staff struct {
 	ID              string
@@ -62,7 +62,7 @@ func (s Staff) Status() Status {
 	}
 }
 
-// RequireLeavable は、職員を休職にできるかを確認する。退職した職員は休職にできず、競合のエラーを返す（ADR-0001）。
+// RequireLeavable は、職員を休職にできるかを確認する。退職した職員は休職にできず、競合のエラーを返す（ADR-0004）。
 func (s Staff) RequireLeavable() error {
 	if s.Status() == StatusRetired {
 		return apperr.Conflict("退職した職員は休職にできません")
@@ -70,7 +70,7 @@ func (s Staff) RequireLeavable() error {
 	return nil
 }
 
-// RequireReinstatable は、職員を復職できるかを確認する。退職した職員は復職できず、競合のエラーを返す（ADR-0001）。
+// RequireReinstatable は、職員を復職できるかを確認する。退職した職員は復職できず、競合のエラーを返す（ADR-0004）。
 func (s Staff) RequireReinstatable() error {
 	if s.Status() == StatusRetired {
 		return apperr.Conflict("退職した職員は復職できません")
@@ -79,7 +79,7 @@ func (s Staff) RequireReinstatable() error {
 }
 
 // RequireProfileEditable は、職員の名前、電話番号、部署、チーム、訪問しない職員かを変えられるかを確認する。
-// 退職した職員は変えられず、競合のエラーを返す（ADR-0001）。
+// 退職した職員は変えられず、競合のエラーを返す（ADR-0004）。
 func (s Staff) RequireProfileEditable() error {
 	if s.Status() == StatusRetired {
 		return apperr.Conflict("退職した職員は変えられません")
@@ -193,7 +193,7 @@ type Ref struct {
 	NonVisiting bool
 }
 
-// RequireAssignable は、職員に予定と担当を新しく割り振れるかを確認する。休職と退職の職員（ADR-0001）と、訪問しない職員（ADR-0002）には
+// RequireAssignable は、職員に予定と担当を新しく割り振れるかを確認する。休職と退職の職員（ADR-0004）と、訪問しない職員（ADR-0006）には
 // 割り振れず、入力のエラーを返す。
 func (r Ref) RequireAssignable() error {
 	switch r.Status {

@@ -8,7 +8,7 @@ import (
 )
 
 // CalendarApp は、外部のカレンダーのハンドラが使う操作である。
-// 組み立ての場所が、calendar、calendarimport、calendarsync、calendarexport の操作の型の Do を入れる。入れていない操作を呼ぶと panic する（ADR-0005）。
+// 組み立ての場所が、calendar、calendarimport、calendarsync、calendarexport の操作の型の Do を入れる。入れていない操作を呼ぶと panic する（ADR-0021）。
 type CalendarApp struct {
 	ServiceAccount   func(ctx context.Context, facilityID string) (string, error)
 	List             func(ctx context.Context, facilityID string) ([]calendar.ExternalCalendar, error)

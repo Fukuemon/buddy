@@ -39,7 +39,7 @@ const (
 	// ErrorUnappliable は、外部のカレンダーでの予定の変更を、buddy の予定に読み替えられなかったことを表す。
 	// 終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更が当たる。
 	ErrorUnappliable ExportErrorCode = "unappliable"
-	// ErrorNotBuddyPrimary は、事業所が buddy を予定の正本にしていない（buddy_primary でない）ので、書かずに保留にしたことを表す（ADR-0008）。
+	// ErrorNotBuddyPrimary は、事業所が buddy を予定の正本にしていない（buddy_primary でない）ので、書かずに保留にしたことを表す（ADR-0026）。
 	ErrorNotBuddyPrimary ExportErrorCode = "not_buddy_primary"
 )
 

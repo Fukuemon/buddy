@@ -88,7 +88,7 @@ func recurringChanged(ctx context.Context, exports Exports, slot Slot, id string
 
 // prepareSlot は、予定の種類と職員と、職員の予定を編集する権限を確認し、訪問の情報があれば保存して、予定の属性を組み立てる。
 // 予定の職員、主訪問者、同行者のうち、kept の同じ役割の職員と違う職員が休職か退職なら、入力のエラーを返す。kept は、予定に既に割り振った職員と利用者である。
-// 利用の終了の利用者は、kept の利用者のまま、今日より前の予定でだけ保存できる（ADR-0001）。退職した職員と同じく、利用の終了の利用者に今日以降の予定を残さない。
+// 利用の終了の利用者は、kept の利用者のまま、今日より前の予定でだけ保存できる（ADR-0005）。退職した職員と同じく、利用の終了の利用者に今日以降の予定を残さない。
 // 呼び出し側は、先に lockWritable で事業所の行を共有のロックで読み、確認した後に職員の状態が変わらないようにしておく。
 // 訪問の情報を保存するので、トランザクションの中で呼ぶ。
 func prepareSlot(ctx context.Context, types TypeRepository, staff StaffRefs, visits VisitInfos, now func() time.Time, facilityID string, in SlotInput, kept assignment) (Slot, Type, error) {

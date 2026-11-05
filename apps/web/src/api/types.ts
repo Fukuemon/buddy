@@ -7,7 +7,7 @@ import type {
 /** 事業所の ID。API の `/v1/facilities/{facility_id}` に入る。 */
 export type FacilityId = string
 
-/** 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0008）。 */
+/** 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0026）。 */
 export type SourceMode = ScheduleComponents['schemas']['SourceMode']
 
 /** 事業所。API の型の ID、名前、予定の正本だけを使う。 */
@@ -24,7 +24,7 @@ export type Viewer = {
   facilityId: FacilityId
   /**
    * 職員が持つ権限の code の一覧。予定の API の code をそのまま写す。
-   * 画面の出し分けだけに使い、hasPermission で読む。拒むのは API である（ADR-0013）。
+   * 画面の出し分けだけに使い、hasPermission で読む。拒むのは API である（ADR-0008）。
    */
   policyCodes: readonly string[]
   /** 予定の権限（schedule.*）と対象。画面の出し分けだけに使い、拒むのは予定の API である。 */
@@ -82,13 +82,13 @@ export type Staff = {
   email: string | null
   /** 休職（on_leave）か退職（retired）の職員の状態。有効な職員は持たない。 */
   status?: Exclude<ScheduleComponents['schemas']['StaffStatus'], 'active'>
-  /** 訪問しない職員は true を持つ。訪問する職員は持たない（ADR-0002）。 */
+  /** 訪問しない職員は true を持つ。訪問する職員は持たない（ADR-0006）。 */
   nonVisiting?: true
 }
 
 /** 利用者。API の型の ID と名前と、利用の終了かだけを使う。 */
 export type Patient = Pick<ScheduleComponents['schemas']['Patient'], 'id' | 'name'> & {
-  /** 利用の終了の利用者は true を持つ。利用中の利用者は持たない（ADR-0001）。 */
+  /** 利用の終了の利用者は true を持つ。利用中の利用者は持たない（ADR-0005）。 */
   ended?: true
 }
 

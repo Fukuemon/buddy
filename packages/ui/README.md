@@ -31,4 +31,5 @@ pnpm --filter @buddy/ui exec playwright install chromium
 ## Documentation
 
 - [DESIGN.md](DESIGN.md): トークンとコンポーネントの使い方、カタログの組み方
-- [ADR-0004](../../docs/adr/0004-design-system.md): トークンの段の分け方とコンポーネントの配置先の判断
+- [ADR-0012](../../docs/adr/0012-design-system.md): トークンの段の分け方の判断
+- [ADR-0013](../../docs/adr/0013-ui-components.md): コンポーネントの配置先の判断

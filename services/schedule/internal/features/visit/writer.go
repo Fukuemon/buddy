@@ -12,7 +12,7 @@ import (
 )
 
 // Input は、訪問の予定に付ける訪問の情報の入力である。
-// KeptPatientID は、利用の終了の利用者のまま保存してよい、予定に既に付けた利用者である。呼ぶ側は、今日より前の予定でだけ指定する（ADR-0001）。
+// KeptPatientID は、利用の終了の利用者のまま保存してよい、予定に既に付けた利用者である。呼ぶ側は、今日より前の予定でだけ指定する（ADR-0005）。
 type Input struct {
 	PatientID       string
 	AssignedStaffID string
@@ -43,7 +43,7 @@ func NewWriter(deps WriterDeps, ids kernel.IDGenerator) Writer {
 }
 
 // Create は、in の参照が facilityID の事業所に属することを確認して訪問の情報を保存し、その ID を返す。
-// 利用者が利用の終了で、in.KeptPatientID と違うときは、入力のエラーを返す（ADR-0001）。
+// 利用者が利用の終了で、in.KeptPatientID と違うときは、入力のエラーを返す（ADR-0005）。
 func (w Writer) Create(ctx context.Context, facilityID string, in Input) (string, error) {
 	pa, err := w.deps.Patients.Get(ctx, in.PatientID)
 	if err != nil {

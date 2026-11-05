@@ -151,7 +151,7 @@ func TestSchedulesEndsNextDay(t *testing.T) {
 	}
 }
 
-// nonVisiting は、stop に渡して、職員を訪問しない職員にする。職員の状態ではない（ADR-0002）。
+// nonVisiting は、stop に渡して、職員を訪問しない職員にする。職員の状態ではない（ADR-0006）。
 const nonVisiting staff.Status = "non_visiting"
 
 // stop は、職員 id を休職か退職か、訪問しない職員にする。
@@ -174,7 +174,7 @@ func stop(t *testing.T, s *inmem.Store, id string, status staff.Status) {
 }
 
 // 予定の作成、職員の変更、繰り返しの予定の作成と回の置き換えは、休職か退職の職員と訪問しない職員を予定の職員、主訪問者、同行者に指すと
-// 入力のエラーで拒む（#269 の検証の観点 1、3、ADR-0002）。
+// 入力のエラーで拒む（#269 の検証の観点 1、3、ADR-0004、ADR-0006）。
 func TestSchedulesRejectInactiveStaff(t *testing.T) {
 	slots := map[string]func() schedule.SlotInput{
 		"予定の職員": func() schedule.SlotInput {
@@ -330,7 +330,7 @@ func TestSchedulesKeepRulesForInactiveStaff(t *testing.T) {
 	}
 }
 
-// 利用の終了の利用者は、新しい予定に指せない。既に付けた予定は、利用者を変えずに、今日より前の日付でだけ保存できる（ADR-0001）。
+// 利用の終了の利用者は、新しい予定に指せない。既に付けた予定は、利用者を変えずに、今日より前の日付でだけ保存できる（ADR-0005）。
 func TestSchedulesEndedPatient(t *testing.T) {
 	const activePatientID = "ACTIVEPATIENT"
 	tests := []struct {

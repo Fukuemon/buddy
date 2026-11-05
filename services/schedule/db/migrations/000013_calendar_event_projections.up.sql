@@ -1,4 +1,4 @@
--- Google カレンダーを予定の正本にする事業所（google_primary）の予定の写し（Projection、ADR-0008）。
+-- Google カレンダーを予定の正本にする事業所（google_primary）の予定の写し（Projection、ADR-0026）。
 -- 同期の処理（calendarsync の ProjectionApplier）だけが書き、予定の表示の読み出し（scheduleview）だけが読む。
 -- Google カレンダーの 1 つの予定を 1 行にし、繰り返しの予定は展開せずに親の予定と例外の回を別の行に持つ。
 -- 説明、場所、参加者、作成者と主催者のメール、添付は持たない。

@@ -62,10 +62,10 @@ verified_commit: dcf8e78
 - ドメインの型（`check.Report`、`judge.Result` など）は JSON タグを持たない。
   - レスポンスの形は `openapi.yaml` だけで決め、`httpapi` が詰め替える。
 - access token の検証は、共有の module の `packages/go/oidc` を使う
-  - ADR-0006: [2 つの Go の API が共有するコードを、別の module にまとめる](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0006-go-shared-module.md)
+  - ADR-0010: [2 つの Go の API が共有するコードを、別の module にまとめる](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0010-go-shared-module.md)
 - タイトルの解釈と利用者名の表記をそろえる処理は、予定の API と共有する `packages/go/gcaltitle` を使う
 - サービス内容の表記をそろえる処理と、サービス内容ごとの許容範囲の表は、予定の API と共有する `packages/go/servicecode` を使う
-  - ADR-0016: [サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0016-service-code-rules.md)
+  - ADR-0020: [サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0020-service-code-rules.md)
 - 組織ごとのサービスアカウントで Calendar API を呼ぶクライアントは、予定の API と共有する `packages/go/gcalauth` を使う
 
 ### 処理の流れ
@@ -130,7 +130,7 @@ Google カレンダーは、今も職員が予定を入れる場所なので、�
 
 - 認証は Application Default Credentials で、カレンダーの組織のサービスアカウントになりすました token で読む。
   - スコープは `calendar.readonly` だけにする。
-  - ADR-0008: [Google カレンダーとの連携を事業所ごとの正本のモードで分け、職員のカレンダーを事業所ごとのサービスアカウントへの共有で読み書きする](https://github.com/Fukuemon/buddy/blob/876381365355f7e4dab03f6dfdb3d6fb8a9f6947/docs/adr/0008-google-calendar-sync.md)
+  - ADR-0027: [職員のカレンダーを、事業所ごとのサービスアカウントへの共有で読み書きする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0027-google-calendar-service-accounts.md)
   - Application Default Credentials が事業所のサービスアカウントそのものとして動くとき（そのアカウントになりすました認証情報か、そのアカウントのキー）は、重ねてなりすまさない。サービスアカウント自身へのトークン作成者のロールを求めないためである。
     - 見分けは、認証情報のファイルの `client_email` か、なりすます先の URL のメールアドレスで行う。
   - `GOOGLE_CALENDAR_ENDPOINT` で Calendar API の代わりにフェイク（ローカル環境の calendarpit）を呼ぶときは、なりすまさない。フェイクはなりすましの token を出せないためである。
@@ -167,7 +167,7 @@ Google カレンダーは、今も職員が予定を入れる場所なので、�
 - 終了が開始の翌日で、長さが 24 時間未満の予定も使う。
   - 翌日の 0:00 に終わる予定も同じである。
   - この予定の終了時間は開始時間より前になり、正規化が翌日に終わる訪問として読む。
-  - ADR-0011: [日をまたぐ予定を、開始の日の予定に「終了が翌日か」の印を付けて持ち、取り込み、カレンダー、照合で扱う](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0011-overnight-schedule.md#照合の訪問日仮の決定)
+  - ADR-0030: [日をまたぐ予定を、開始の日の予定に「終了が翌日か」の印を付けて持ち、取り込み、カレンダー、照合で扱う](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0030-overnight-schedule.md#照合の訪問日仮の決定)
 - 開始と終了の日時は、秒を切り捨てて分までにする。
 - 提供時間は、秒を切り捨てた終了の日時から、秒を切り捨てた開始の日時を引いた分にする。
   - 秒を含む予定でも、提供時間は開始時間と終了時間の差と同じ整数になる。`invalid_duration` の警告にはならない。
@@ -236,7 +236,7 @@ Google カレンダーは、今も職員が予定を入れる場所なので、�
    - 主訪問者の空白は残す。
 
 終了時間が開始時間より前の行は、訪問日の翌日のその時刻に終わる訪問として読む。  
-訪問日は開始の日のままにする（[ADR-0011](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0011-overnight-schedule.md#照合の訪問日仮の決定)）。  
+訪問日は開始の日のままにする（[ADR-0030](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0030-overnight-schedule.md#照合の訪問日仮の決定)）。  
 開始時間と終了時間が同じ行は、日をまたがない 0 分の行として読む。
 
 予定だけに、次を適用する。

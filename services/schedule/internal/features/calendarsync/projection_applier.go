@@ -12,14 +12,14 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 )
 
-// retainedMonths は、Projection に行を残す期間の始まりを、今月から何か月前の初日にするかである。照合で前月の予定を読むためである（ADR-0008）。
+// retainedMonths は、Projection に行を残す期間の始まりを、今月から何か月前の初日にするかである。照合で前月の予定を読むためである（ADR-0026）。
 const retainedMonths = 2
 
 // errNoTime は、Google の予定の日時が無いことを表す。
 var errNoTime = errors.New("予定の日時が無い")
 
 // projectionApplier は、Google カレンダーを予定の正本にする事業所（google_primary）で、Google カレンダーの予定の変更を
-// 予定の写し（Projection）に写す（ADR-0008）。予定の対応（EventLink）の有無によらず、Google で新しく作った予定も写す。
+// 予定の写し（Projection）に写す（ADR-0026）。予定の対応（EventLink）の有無によらず、Google で新しく作った予定も写す。
 //   - 新しい予定と変わった予定は、カレンダーと Google の予定の ID の組の行に書く。同じ予定を何度読んでも、行は 1 つになる。
 //   - 取り消した単発の予定と繰り返しの親の予定は、行を消す。親の予定の行を消すときは、その例外の回の行も消す。
 //   - 繰り返しの予定は展開せず、親の予定と例外の回を別の行に写す。取り消した回は、状態を取り消しにした行に写す。

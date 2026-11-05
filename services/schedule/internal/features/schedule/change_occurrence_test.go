@@ -64,7 +64,7 @@ func TestSchedulesChangeOccurrence(t *testing.T) {
 }
 
 // 回の置き換えは、繰り返しの予定の訪問の情報に既に割り振った利用者と職員を、同じ役割のまま保存できる。
-// 利用の終了の利用者と退職した職員は、今日より前の回でだけ保存できる（ADR-0001）。
+// 利用の終了の利用者と退職した職員は、今日より前の回でだけ保存できる（ADR-0005、ADR-0004）。
 func TestSchedulesChangeOccurrenceKeepsRecurringVisit(t *testing.T) {
 	past, next := civil.Date{Year: 2026, Month: 10, Day: 20}, civil.Date{Year: 2026, Month: 10, Day: 27}
 	tests := []struct {

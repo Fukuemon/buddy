@@ -1,5 +1,5 @@
 // Package oidc は、Hydra が発行した access token の JWT を、Hydra の JWKS で検証する。
-// 予定の API と照合の API が共有する module packages/go にある（ADR-0006）。
+// 予定の API と照合の API が共有する module packages/go にある（ADR-0010）。
 package oidc
 
 import (

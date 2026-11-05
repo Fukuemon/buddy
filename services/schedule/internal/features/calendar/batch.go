@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// Batch は、書き出しか同期の処理が 1 回に取った待ちかカレンダー（1 つのバッチ）の結果ごとの数である（ADR-0017）。
+// Batch は、書き出しか同期の処理が 1 回に取った待ちかカレンダー（1 つのバッチ）の結果ごとの数である（ADR-0029）。
 // Succeeded、Failed、Held、Requeued の和は Claimed になる。
 type Batch struct {
 	// Claimed は、取った数である。

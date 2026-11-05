@@ -814,7 +814,7 @@ func TestExportLogsRequeuedOnShutdown(t *testing.T) {
 }
 
 // 取った待ちの事業所が buddy を予定の正本にしていなければ、書かずに確認が必要な待ち（conflict、not_buddy_primary）にして保留にする。
-// 保留にした待ちは、要約の held_count に数え、書いていない待ちの滞留（pending）には数えない（ADR-0008）。
+// 保留にした待ちは、要約の held_count に数え、書いていない待ちの滞留（pending）には数えない（ADR-0026）。
 func TestExportHoldsNotBuddyPrimary(t *testing.T) {
 	e := newExportEnv(t)
 	d := e.create(t, "カンファレンス")

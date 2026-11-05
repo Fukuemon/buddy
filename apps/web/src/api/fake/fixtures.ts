@@ -16,7 +16,7 @@ import {
 import { type Patient, type Schedule, type Staff, type Team, type Viewer } from '../types'
 
 // ダミーデータの正本は、MSW の handler と共有する API の形のデータ（src/mocks/scheduleData.ts）である。
-// ここでは、それを本物の API と同じ変換で画面の型にする（ADR-0007）。
+// ここでは、それを本物の API と同じ変換で画面の型にする（ADR-0024）。
 
 /** フェイクの API のときにログインしているとみなす職員。 */
 export const FAKE_VIEWER: Viewer = {

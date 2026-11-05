@@ -6,7 +6,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 )
 
-// SourceMode は、事業所の予定の正本のモードである（ADR-0008）。
+// SourceMode は、事業所の予定の正本のモードである（ADR-0026）。
 type SourceMode string
 
 // SourceMode の値。遷移は google_primary から buddy_primary の 1 つだけで、切り替え（Cutover）を完了したときに起きる。
@@ -38,7 +38,7 @@ const CodeSourceModeTransition = "source_mode_transition"
 
 // RequireSourceModeTransition は、事業所の正本のモードを from から to に移せるかを確認する。
 // 移せるのは google_primary から buddy_primary の 1 つだけで、ほかの組み合わせは code が CodeSourceModeTransition の
-// apperr.ErrConflict を返す（ADR-0008）。
+// apperr.ErrConflict を返す（ADR-0026）。
 func RequireSourceModeTransition(from, to SourceMode) error {
 	if from == SourceGooglePrimary && to == SourceBuddyPrimary {
 		return nil

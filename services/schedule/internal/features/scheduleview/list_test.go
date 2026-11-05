@@ -347,7 +347,7 @@ func TestSchedulesListGooglePrimaryReviewReasons(t *testing.T) {
 }
 
 // TestSchedulesListGooglePrimaryCutover は、google_primary の事業所の一覧が、open の切り替えの間だけ切り替えを返し、
-// 切り替えの間も Projection を読むことを確認する（ADR-0008）。
+// 切り替えの間も Projection を読むことを確認する（ADR-0028）。
 func TestSchedulesListGooglePrimaryCutover(t *testing.T) {
 	s := googleStore()
 	putEvent(s, ownCalendarID, "own", "研修", tokyo(10, 20, 13), 60, nil)
