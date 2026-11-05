@@ -112,7 +112,7 @@ ADR-0032 と ADR-0033 は、この ADR が前提にする配置を決めた。
 
 Projection は、Google カレンダーを正本にする事業所の予定の写しで、`calendarsync` の `ProjectionApplier` だけが書き、`scheduleview` だけが読む（ADR-0033）。
 
-- `ProjectionApplier` だけが書く判断は、ADR-0038 で置き換えた。予定の API の書き込みも、Google に書いた予定を同じ規則で写す。
+- `ProjectionApplier` だけが書く判断は、ADR-0038 で置き換えた。予定の API の書き込みも、Google に書いた予定を写す。2 つが写す順は、Google の更新の時刻で決める。
   - ADR-0038: [Google カレンダーを正本にする事業所でも、buddy は予定を Google カレンダーへ同期の呼び出しで書き、訪問の情報を buddy の DB に持つ](0038-google-primary-write-through.md)
 - テーブルは `calendar_event_projections` にし、Google カレンダーの 1 つの予定を 1 行にする。結び付けたカレンダーの ID と Google の予定の ID の組で一意にする。
 - 保存する項目は次のとおり。
