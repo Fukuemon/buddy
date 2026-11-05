@@ -28,6 +28,9 @@ type fakeCalendars struct {
 	lastDecisions []calendarimport.Decision
 	preview       calendarimport.ImportPreview
 	lastFacility  string
+	lastStaff     string
+	// mine は、Mine が返すカレンダーである。
+	mine *calendar.ExternalCalendar
 	// incomplete は、CompleteCutover が返す満たさない一覧で、nil でなければ IncompleteError を返す。
 	incomplete []calendarimport.Unmet
 }
@@ -39,6 +42,11 @@ func (f *fakeCalendars) ServiceAccount(_ context.Context, facilityID string) (st
 
 func (f *fakeCalendars) List(context.Context, string) ([]calendar.ExternalCalendar, error) {
 	return []calendar.ExternalCalendar{{ID: calendarID, Provider: calendar.ProviderGoogle}}, f.err
+}
+
+func (f *fakeCalendars) Mine(_ context.Context, facilityID, staffID string) (*calendar.ExternalCalendar, error) {
+	f.lastFacility, f.lastStaff = facilityID, staffID
+	return f.mine, f.err
 }
 
 func (f *fakeCalendars) Check(_ context.Context, facilityID, _ string) error {
@@ -86,7 +94,7 @@ func (f *fakeCalendars) AcceptExport(_ context.Context, id string) (calendar.Exp
 // app は、f のメソッド値を CalendarApp に入れる。
 func (f *fakeCalendars) app() httpapi.CalendarApp {
 	return httpapi.CalendarApp{
-		ServiceAccount: f.ServiceAccount, List: f.List, Check: f.Check, Link: f.Link, Unlink: f.Unlink, Preview: f.Preview,
+		ServiceAccount: f.ServiceAccount, List: f.List, Mine: f.Mine, Check: f.Check, Link: f.Link, Unlink: f.Unlink, Preview: f.Preview,
 		Import: f.Import, ListExportIssues: f.ListExportIssues, RetryExport: f.RetryExport, AcceptExport: f.AcceptExport,
 		GetCutover: f.GetCutover, StartCutover: f.StartCutover, CompleteCutover: f.CompleteCutover, CancelCutover: f.CancelCutover,
 	}
@@ -156,6 +164,20 @@ func TestCalendarErrorStatus(t *testing.T) {
 }
 
 // サービスアカウントとカレンダーの確認は、パスの事業所のアカウントで行う。
+func TestGetMyExternalCalendar(t *testing.T) {
+	f := &fakeCalendars{mine: &calendar.ExternalCalendar{ID: calendarID, FacilityID: facilityID, StaffID: staffID, Provider: calendar.ProviderGoogle}}
+	rec, body := do(t, newCalendarRouter(f), http.MethodGet, "/v1/me/external_calendar", "")
+	got, _ := body["external_calendar"].(map[string]any)
+	if rec.Code != http.StatusOK || got["id"] != calendarID || f.lastFacility != facilityID || f.lastStaff != staffID {
+		t.Errorf("結び付いた職員: status = %d, body = %s, facility = %q, staff = %q", rec.Code, rec.Body, f.lastFacility, f.lastStaff)
+	}
+
+	rec, body = do(t, newCalendarRouter(&fakeCalendars{}), http.MethodGet, "/v1/me/external_calendar", "")
+	if v, ok := body["external_calendar"]; rec.Code != http.StatusOK || !ok || v != nil {
+		t.Errorf("結び付いていない職員: status = %d, body = %s", rec.Code, rec.Body)
+	}
+}
+
 func TestCalendarAccountOfFacility(t *testing.T) {
 	f := &fakeCalendars{}
 	rec, body := do(t, newCalendarRouter(f), http.MethodGet, "/v1/facilities/"+facilityID+"/calendar_service_account", "")
