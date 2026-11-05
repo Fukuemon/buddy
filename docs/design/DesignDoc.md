@@ -124,13 +124,13 @@ PRD の 3 つの業務の領域は、次のコンテナが持つ。
 - 事業所、部署、チーム、役職、権限、職員、利用者、予定を持つ。
 - access token の検証、職員の特定、事業所の確認、職員の権限による予定の閲覧と編集の判定を行う。
 - 職員に結び付けた Google カレンダーの予定を読み、予定に取り込む。正本の切り替えの完了でも、Google カレンダーの予定を読み直して比べる。
-- 予定を変えたときに、書き出しの待ちを DB に積む。Google カレンダーに書くのは calendar-worker である。
+- 予定を変えたときに、書き出しの待ちを DB に積む。Google カレンダーには calendar-worker が書く。
 - 持たないもの: 照合の規則、Google カレンダーへの書き込み。
 - 内部の構成と ER は [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md) にある。
 
 ### calendar-worker
 
-- 予定の API と同じイメージのコマンドで、予定の API と同じ DB を使う。HTTP のポートで待ち受けない。
+- calendar-worker は、予定の API と同じイメージのコマンドで、予定の API と同じ DB を使う。HTTP のポートで待ち受けない。
 - 書き出し（`calendar-worker export`）は、予定の API が積んだ書き出しの待ちを読み、Google カレンダーに書く。
 - 同期（`calendar-worker sync`）は、Google カレンダーを正本にする事業所のカレンダーの変わった予定を読み、予定の写しに当てる。
 - 持たないもの: 予定の API の HTTP の操作と認証。
