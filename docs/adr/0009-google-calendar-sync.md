@@ -2,7 +2,7 @@
 
 ## Status
 
-承認
+[ADR-0035](0035-google-calendar-source-modes.md) に置換
 
 ## Context
 
