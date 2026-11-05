@@ -44,6 +44,7 @@ export type StoryRouteId =
   | '/staff/new'
   | '/staff_/$staffId'
   | '/organization'
+  | '/me'
   | '/patients'
   | '/patients/new'
   | '/patients_/$patientId'
@@ -167,6 +168,7 @@ const createStoryRouter = (Story: StoryFn, params: AppRouterParameters) => {
     path: 'staff/$staffId',
     component: StaffIdRoute,
   })
+  const me = createRoute({ getParentRoute: () => root, path: 'me', component: at('/me') })
   const organization = createRoute({
     getParentRoute: () => root,
     path: 'organization',
@@ -205,6 +207,7 @@ const createStoryRouter = (Story: StoryFn, params: AppRouterParameters) => {
       staff.addChildren([staffNew]),
       staffDetail,
       organization,
+      me,
       patients.addChildren([patientsNew]),
       patientDetail,
     ]),
@@ -268,6 +271,7 @@ export const suspendedStaffBuddyApi = (base: BuddyApi = createFakeBuddyApi()): B
 /** 全ての操作を operation にしたフェイクの API を作る。 */
 const buddyApiOf = (operation: () => Promise<never>): BuddyApi => ({
   facilities: { get: operation },
+  me: { get: operation, externalCalendar: operation },
   schedules: { list: operation, get: operation, create: operation, update: operation },
   staff: {
     list: operation,

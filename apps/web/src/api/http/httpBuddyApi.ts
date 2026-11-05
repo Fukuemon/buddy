@@ -99,6 +99,22 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
           ),
         ),
     },
+    me: {
+      get: async (facilityId) => {
+        const me = await unwrap(client.GET('/v1/me'))
+        if (me.facility_id !== facilityId) {
+          throw new ApiError(403, `事業所 ${facilityId} の操作は許可されていません`)
+        }
+        return me
+      },
+      externalCalendar: async (facilityId) => {
+        const { external_calendar } = await unwrap(client.GET('/v1/me/external_calendar'))
+        if (external_calendar !== null && external_calendar.facility_id !== facilityId) {
+          throw new ApiError(403, `事業所 ${facilityId} の操作は許可されていません`)
+        }
+        return external_calendar
+      },
+    },
     schedules: {
       list: async (facilityId, { from, to, staffIds, includeCancelled }) => {
         const fromTime = Date.parse(from)

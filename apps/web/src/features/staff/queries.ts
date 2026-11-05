@@ -214,3 +214,17 @@ export const useRetire = (staffId: Staff['id']) => {
     onSuccess: (result) => ('retired' in result ? changed(result.retired) : undefined),
   })
 }
+
+/** ログインした職員と、持っている権限を読む query。 */
+export const meQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
+  queryOptions({
+    queryKey: queryKeys.me.detail(facilityId),
+    queryFn: () => api.me.get(facilityId),
+  })
+
+/** ログインした職員に結び付いたカレンダーを読む query。結び付いていなければ data は null である。 */
+export const myExternalCalendarQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
+  queryOptions({
+    queryKey: queryKeys.me.calendar(facilityId),
+    queryFn: () => api.me.externalCalendar(facilityId),
+  })

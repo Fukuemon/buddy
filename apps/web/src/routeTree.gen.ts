@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as HealthzRouteImport } from './routes/healthz'
+import { Route as MeRouteImport } from './routes/me'
 import { Route as OrganizationRouteImport } from './routes/organization'
 import { Route as PatientsRouteImport } from './routes/patients'
 import { Route as ReadyzRouteImport } from './routes/readyz'
@@ -42,6 +43,11 @@ const IndexRoute = IndexRouteImport.update({
 const HealthzRoute = HealthzRouteImport.update({
   id: '/healthz',
   path: '/healthz',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeRoute = MeRouteImport.update({
+  id: '/me',
+  path: '/me',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrganizationRoute = OrganizationRouteImport.update({
@@ -158,6 +164,7 @@ const ScheduleLinkCutoverRoute = ScheduleLinkCutoverRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/healthz': typeof HealthzRoute
+  '/me': typeof MeRoute
   '/organization': typeof OrganizationRoute
   '/patients': typeof PatientsRouteWithChildren
   '/readyz': typeof ReadyzRoute
@@ -184,6 +191,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/healthz': typeof HealthzRoute
+  '/me': typeof MeRoute
   '/organization': typeof OrganizationRoute
   '/patients': typeof PatientsRouteWithChildren
   '/readyz': typeof ReadyzRoute
@@ -211,6 +219,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/healthz': typeof HealthzRoute
+  '/me': typeof MeRoute
   '/organization': typeof OrganizationRoute
   '/patients': typeof PatientsRouteWithChildren
   '/readyz': typeof ReadyzRoute
@@ -239,6 +248,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/healthz'
+    | '/me'
     | '/organization'
     | '/patients'
     | '/readyz'
@@ -265,6 +275,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/healthz'
+    | '/me'
     | '/organization'
     | '/patients'
     | '/readyz'
@@ -291,6 +302,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/healthz'
+    | '/me'
     | '/organization'
     | '/patients'
     | '/readyz'
@@ -318,6 +330,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HealthzRoute: typeof HealthzRoute
+  MeRoute: typeof MeRoute
   OrganizationRoute: typeof OrganizationRoute
   PatientsRoute: typeof PatientsRouteWithChildren
   ReadyzRoute: typeof ReadyzRoute
@@ -351,6 +364,13 @@ declare module '@tanstack/react-router' {
       path: '/healthz'
       fullPath: '/healthz'
       preLoaderRoute: typeof HealthzRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/me': {
+      id: '/me'
+      path: '/me'
+      fullPath: '/me'
+      preLoaderRoute: typeof MeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/organization': {
@@ -551,6 +571,7 @@ const StaffRouteWithChildren = StaffRoute._addFileChildren(StaffRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HealthzRoute: HealthzRoute,
+  MeRoute: MeRoute,
   OrganizationRoute: OrganizationRoute,
   PatientsRoute: PatientsRouteWithChildren,
   ReadyzRoute: ReadyzRoute,

@@ -16,12 +16,11 @@
 | 最後の取り込み | 日時、期間、失敗か | `ExternalCalendar.last_import` | `getMyExternalCalendar` の `external_calendar.last_import` の `finished_at`（`null` なら `started_at`）、`range_start`、`range_end`、`status` |
 | 連携していないことの文 | 出すか | `getMyExternalCalendar` の戻り値 | `getMyExternalCalendar` の `external_calendar` が `null` |
 
-- web には、`getMe` の `StaffDetail` を画面に渡す型と関数が無い。
-  - 今の `Viewer` は、名前、職員の ID、事業所、権限の code、予定の権限と対象だけを持ち、メールアドレス、部署、チーム、役職、権限の名前を持たない。
-  - [#713](https://github.com/Fukuemon/buddy/issues/713) で、`StaffDetail` を読む関数を足すか、`Viewer` に項目を足すかを決める。
-- `getMyExternalCalendar` は、[#712](https://github.com/Fukuemon/buddy/issues/712) で予定の API に足す `GET /v1/me/external_calendar` である。
+- 画面は、`BuddyApi` の `me.get` で `getMe` の `StaffDetail` を、`me.externalCalendar` で `getMyExternalCalendar` の `external_calendar` を読む。
+  - `Viewer` には項目を足さない。`Viewer` は全ての画面の権限の確認で読み直すので、この画面だけが使う項目を持たせない。
+- `getMyExternalCalendar` は、予定の API の `GET /v1/me/external_calendar` である。
   - 設計は [Google カレンダーとの連携の Design Doc の自分のカレンダーの連携の状態](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#自分のカレンダーの連携の状態) にある。
-- 最後の取り込みの形は、カレンダーの連携の画面と同じ `apps/web/src/features/calendar/lib/format.ts` の `formatLastImport` で作る。
+- 最後の取り込みの形は、カレンダーの連携の画面と同じ `apps/web/src/components/lastImport.ts` の `formatLastImport` で作る。
   - `formatLastImport` は取り込んだことが無いと「なし」を返すが、この画面は `last_import` が `null` なら行ごと出さない。
 
 ## 状態と失敗の要因
