@@ -148,8 +148,3 @@ flowchart TB
 - 1 回の形を定期的な起動で動かすと、書き出しの遅れが起動の間隔だけ増える。
 - メトリクスはログから作るので、インフラの側にログを集計する設定が要る。
 - 常駐は、取った数が上限に届かなかった後も、何も取らなくなるまでもう 1 回呼ぶ。間隔ごとの Claim の問い合わせが、取るものがあった間隔だけ 1 回増える。
-
-## 統合した ADR
-
-- ADR-0021: Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで動かす（[統合の前](https://github.com/Fukuemon/buddy/blob/b77ee63b57eec4ee3c78f40b350b5acc0851da6d/docs/adr/0021-calendar-worker.md)）
-- ADR-0022: Worker の常駐と 1 回の繰り返しを cmd/calendar-worker に集め、機能のパッケージは 1 回の処理だけを持つ（[統合の前](https://github.com/Fukuemon/buddy/blob/b77ee63b57eec4ee3c78f40b350b5acc0851da6d/docs/adr/0022-calendar-worker-loop.md)）
