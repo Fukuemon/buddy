@@ -181,7 +181,7 @@ export const ScheduleCalendar = ({
         slotMaxTime="24:00:00"
         slotMinTime="00:00:00"
         tableHeaderClass={(arg) => clsx(arg.isSticky && 'shadow-1')}
-        // FullCalendar 7 の日本語の週の見出しの既定は「18日(日)」なので、FullCalendar 6 と同じ「10/18(日)」にそろえる
+        // FullCalendar 7 の日本語の週の見出しのデフォルトは「18日(日)」なので、FullCalendar 6 と同じ「10/18(日)」にそろえる
         views={{
           [FULL_CALENDAR_VIEW.week]: {
             dayHeaderFormat: { month: 'numeric', day: 'numeric', weekday: 'short' },
