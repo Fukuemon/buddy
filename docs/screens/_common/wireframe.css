@@ -480,7 +480,7 @@ body {
   height: 44px;
 }
 
-/* ログインした職員のメニュー（ViewerMenu）。名前の頭文字の丸と名前を並べたボタンで、名前とログアウトを入れたメニューを開く */
+/* ログインした職員のメニュー（ViewerMenu）。名前の頭文字の丸と名前を並べたボタンで、名前、自分の情報、ログアウトを入れたメニューを開く */
 .wf-site-header__viewer {
   display: flex;
   align-items: center;
