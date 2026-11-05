@@ -53,7 +53,7 @@ verified_commit: c0514f20
 役職のデフォルトの権限をコピーする規則、役職を変えたときにコピーし直す規則、`staff.manage` の扱いは [権限](https://github.com/Fukuemon/buddy/blob/develop/context/domain/permission.md) にある。  
 職員の権限（`schedule.user.*`）は、コピーするときに対象を決められないので、役職のデフォルトの権限にできない。  
 `receipt.check` は、予定の API の判定には使わない。  
-照合の API が、受けたトークンで `GET /v1/me` を呼び、返った権限で照合を許す。
+照合の API が照合を許す確認の仕方は、[照合の API の権限の確認](#照合の-api-の権限の確認) にある。
 
 - ADR-0002: [権限を役職のデフォルトと職員ごとの上書きで持つ（PBAC）](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0002-pbac.md)
 - ADR-0022: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0022-receipt-check-policy-and-non-visiting-staff.md)
@@ -67,7 +67,7 @@ verified_commit: c0514f20
 - `staff.manage` をデフォルトに持つ役職に、`receipt.check` を足す。
   - 役職の名前は事業所ごとに変えてよいので、名前でマネージャーの役職を探せない。PRD の役職ごとの権限の表で `staff.manage` をデフォルトに持つのはマネージャーだけである。
 - `staff.manage` を持つ退職していない職員に、`receipt.check` を職員ごとの権限として足す。
-  - マイグレーションの前は全ての職員が照合を使える。役職のデフォルトだけを変えると、デプロイの直後に、マネージャーを含めて誰も照合できず、照合の権限を足せる職員の画面もまだ無いためである。
+  - マイグレーションの前は全ての職員が照合を使える。役職のデフォルトだけを変えると、デプロイの直後に、マネージャーを含めて誰も照合できなくなるためである。マイグレーションを足した時点では、照合の権限を足せる職員の画面も無かった。
   - ほかの職員は、`staff.manage` を持つ職員が職員ごとに足す。
 - 戻すと、`receipt.check` の権限と、役職と職員の `receipt.check` の行を消す。
   - 事務の役職は残す。同じ名前の役職が前からあった事業所と、名前を変えた役職があり、このマイグレーションが足した役職を見分けられないためである。
