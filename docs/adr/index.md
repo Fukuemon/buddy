@@ -9,24 +9,22 @@
 | ADR | 題 | Status |
 | --- | --- | --- |
 | [ADR-0001](0001-auth.md) | 認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元と停止をブローカーが、権限と業務のデータを予定の API が持つ | 承認 |
-| [ADR-0012](0012-id-broker-hydra.md) | OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る | 承認 |
-| [ADR-0016](0016-broker-login-pages-source.md) | ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する | 承認 |
+| [ADR-0010](0010-id-broker-hydra.md) | OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る | 承認 |
+| [ADR-0014](0014-broker-login-pages-source.md) | ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する | 承認 |
 
 ### 権限
 
 | ADR | 題 | Status |
 | --- | --- | --- |
 | [ADR-0002](0002-pbac.md) | 権限を役職のデフォルトと職員ごとの上書きで持ち、職員の管理と照合も権限で許し、訪問するかを職員に持つ | 承認 |
-| [ADR-0015](0015-web-permission-checks.md) | web の画面の権限の確認を、route の beforeLoad と PermissionGuard で宣言し、1 つの関数で評価する | 承認 |
+| [ADR-0013](0013-web-permission-checks.md) | web の画面の権限の確認を、route の beforeLoad と PermissionGuard で宣言し、1 つの関数で評価する | 承認 |
 
 ### リポジトリの構成とリリース
 
 | ADR | 題 | Status |
 | --- | --- | --- |
-| [ADR-0003](0003-branch-and-release.md) | git flow でマージし、アプリごとのバージョンでリリースする | 承認 |
+| [ADR-0003](0003-branch-and-release.md) | モノレポを git flow でマージし、画面を apps/ に、API を services/ に置き、ディレクトリの名前でタグとサービスの名前をそろえる | 承認 |
 | [ADR-0006](0006-go-shared-module.md) | 2 つの Go の API が共有するコードを、別の module にまとめる | 承認 |
-| [ADR-0010](0010-services-directory.md) | 2 つの API を services/ に置き、画面と API をトップのディレクトリで分ける | 承認 |
-| [ADR-0011](0011-service-names.md) | 2 つの API のサービスの名前とトークンの aud を、ディレクトリの名前にそろえる | 承認 |
 
 ### デザインシステムとドキュメントサイト
 
@@ -40,14 +38,14 @@
 | --- | --- | --- |
 | [ADR-0005](0005-schedule-api-packages.md) | 予定の API を機能ごとのパッケージに分け、Go の API の操作を使う依存だけを持つ型にし、ファイルの名前の末尾の語で役割を表す | 承認 |
 | [ADR-0009](0009-schedule-api-postgresql.md) | 予定の API の DB を PostgreSQL にし、見直したテーブルでマイグレーションを作り直す | 承認 |
-| [ADR-0018](0018-service-code-rules.md) | サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける | 承認 |
+| [ADR-0016](0016-service-code-rules.md) | サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける | 承認 |
 
 ### web の画面の構成
 
 | ADR | 題 | Status |
 | --- | --- | --- |
 | [ADR-0007](0007-web-view-types.md) | web の画面の型を API の型と分けて持ち、ダミーデータを API の形で 1 か所に置く | 承認 |
-| [ADR-0017](0017-web-site-frame-in-root-route.md) | web の画面の枠を root の route の component で包み、左の欄を持つ画面だけを staticData で外す | 承認 |
+| [ADR-0015](0015-web-site-frame-in-root-route.md) | web の画面の枠を root の route の component で包み、左の欄を持つ画面だけを staticData で外す | 承認 |
 
 ### Google カレンダーとの連携と正本のモード
 
@@ -59,19 +57,19 @@
 
 | ADR | 題 | Status |
 | --- | --- | --- |
-| [ADR-0019](0019-calendar-worker.md) | Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める | 承認 |
+| [ADR-0017](0017-calendar-worker.md) | Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める | 承認 |
 
 ### 日をまたぐ予定
 
 | ADR | 題 | Status |
 | --- | --- | --- |
-| [ADR-0013](0013-overnight-schedule.md) | 日をまたぐ予定を、開始の日の予定に「終了が翌日か」の印を付けて持ち、取り込み、カレンダー、照合で扱う | 提案 |
+| [ADR-0011](0011-overnight-schedule.md) | 日をまたぐ予定を、開始の日の予定に「終了が翌日か」の印を付けて持ち、取り込み、カレンダー、照合で扱う | 提案 |
 
 ### E2E のテスト
 
 | ADR | 題 | Status |
 | --- | --- | --- |
-| [ADR-0014](0014-e2e-functions-without-page-object.md) | E2E のテストのコードを、Page Object を使わず page を受け取る関数で書き、描画の完了の信号をアプリに足さない | 承認 |
+| [ADR-0012](0012-e2e-functions-without-page-object.md) | E2E のテストのコードを、Page Object を使わず page を受け取る関数で書き、描画の完了の信号をアプリに足さない | 承認 |
 
 ## ADR の間の依存
 
@@ -81,18 +79,16 @@
 flowchart TB
     subgraph auth["認証と、職員と利用者の状態"]
         A0001["0001"]
-        A0012["0012"]
-        A0016["0016"]
+        A0010["0010"]
+        A0014["0014"]
     end
     subgraph perm["権限"]
         A0002["0002"]
-        A0015["0015"]
+        A0013["0013"]
     end
     subgraph repo["リポジトリの構成とリリース"]
         A0003["0003"]
         A0006["0006"]
-        A0010["0010"]
-        A0011["0011"]
     end
     subgraph ds["デザインシステムとドキュメントサイト"]
         A0004["0004"]
@@ -100,42 +96,38 @@ flowchart TB
     subgraph api["予定の API の構成"]
         A0005["0005"]
         A0009["0009"]
-        A0018["0018"]
+        A0016["0016"]
     end
     subgraph web["web の画面の構成"]
-        A0017["0017"]
+        A0015["0015"]
     end
     subgraph gcal["Google カレンダーとの連携と正本のモード"]
         A0008["0008"]
     end
     subgraph worker["calendar-worker"]
-        A0019["0019"]
+        A0017["0017"]
     end
 
+    A0003 --> A0001
+    A0010 --> A0001
     A0010 --> A0003
-    A0011 --> A0001
-    A0011 --> A0010
-    A0012 --> A0001
-    A0012 --> A0010
-    A0012 --> A0011
     A0001 --> A0002
     A0002 --> A0001
-    A0015 --> A0002
-    A0016 --> A0004
-    A0016 --> A0010
-    A0016 --> A0011
-    A0016 --> A0012
-    A0017 --> A0015
+    A0013 --> A0002
+    A0014 --> A0004
+    A0014 --> A0003
+    A0014 --> A0010
+    A0015 --> A0013
     A0009 --> A0008
     A0008 --> A0005
     A0008 --> A0002
-    A0018 --> A0005
-    A0018 --> A0006
-    A0019 --> A0005
-    A0019 --> A0008
+    A0016 --> A0005
+    A0016 --> A0006
+    A0017 --> A0005
+    A0017 --> A0008
 ```
 
-- ADR-0007、ADR-0013、ADR-0014 は、ほかの ADR を前提にせず、前提にもされないので、図に描かない。
+- ADR-0007、ADR-0011、ADR-0012 は、ほかの ADR を前提にせず、前提にもされないので、図に描かない。
 
 ## 旧番号と新番号
 
@@ -239,3 +231,13 @@ flowchart TB
 | ADR-0019 | ADR-0017 | #748 |
 | ADR-0020 | ADR-0018 | #748 |
 | ADR-0021 | ADR-0019 | #748 |
+| ADR-0010 | ADR-0003 に統合 | #749 |
+| ADR-0011 | ADR-0003 に統合 | #749 |
+| ADR-0012 | ADR-0010 | #749 |
+| ADR-0013 | ADR-0011 | #749 |
+| ADR-0014 | ADR-0012 | #749 |
+| ADR-0015 | ADR-0013 | #749 |
+| ADR-0016 | ADR-0014 | #749 |
+| ADR-0017 | ADR-0015 | #749 |
+| ADR-0018 | ADR-0016 | #749 |
+| ADR-0019 | ADR-0017 | #749 |
