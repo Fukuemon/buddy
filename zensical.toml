@@ -109,7 +109,6 @@ nav = [
     "adr/0019-web-site-frame-in-root-route.md",
     "adr/0020-service-code-rules.md",
     "adr/0021-calendar-worker.md",
-    "adr/0022-calendar-worker-loop.md",
   ] },
 ]
 

@@ -244,7 +244,7 @@ status: stable
   - パッケージのドキュメントコメントと、複数の集約が使う定数は、パッケージの名前のファイル（`organization.go`、`visit.go`）に置く。
   - 常駐の処理と、操作の型のほかに操作を持つ型は、同じ機能のパッケージに、型の名前のファイル（`exporter.go`、`syncer.go`、`visit` の `writer.go`）で置く。
     - 常駐の処理の型は、1 回の取得と処理（`ExportDue`、`SyncDue`）だけを持つ。次のバッチをいつ呼ぶか（常駐と 1 回の繰り返し）は、`cmd/calendar-worker` の `loop.go` に置く。
-    - ADR-0022: [Worker の常駐と 1 回の繰り返しを cmd/calendar-worker に集め、機能のパッケージは 1 回の処理だけを持つ](../docs/adr/0022-calendar-worker-loop.md)
+    - ADR-0021: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](../docs/adr/0021-calendar-worker.md)
   - テストは、確認する対象のファイルの名前に `_test` を付けたファイルに置く。
     - 複数の操作を 1 つの観点でまとめて確認するテストは、観点の名前のファイル（`calendar` の `accounts_test.go`、`schedule` の `authorization_test.go`）に置く。
     - 観点に名前が付かないものは `app_test.go` に置く。
