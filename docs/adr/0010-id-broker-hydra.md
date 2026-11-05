@@ -8,12 +8,12 @@
 
 ADR-0001 は、外部の IdP の前に OIDC のブローカーを置き、buddy の全てのアプリはブローカーの 1 つの Issuer のトークンだけを検証すると決めた。ブローカーを何で作るかは決めていない。
 
-ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元と停止をブローカーが、権限と業務のデータを予定の API が持つ](0001-auth.md)
+ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元をブローカーが、権限と業務のデータを予定の API が持つ](0001-auth.md)
 
 - ローカル環境の compose は、開発用の IdP（mock-oauth2-server）をブローカーの位置に置いているだけで、本番で使えるブローカーが無い。
 - 事業所ごとに上流の IdP が違う。Google、LINE、Entra ID のような OIDC の IdP を想定する。
 - ブローカーは、事業所と職員の所属のような buddy の業務のデータを扱う。持つものの範囲は ADR-0001 で決める。
-  - ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元と停止をブローカーが、権限と業務のデータを予定の API が持つ](0001-auth.md)
+  - ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元をブローカーが、権限と業務のデータを予定の API が持つ](0001-auth.md)
 - 認可コード、トークンの発行、鍵のローテーション、refresh token のローテーションと再利用の検出、失効は、どのプロダクトでも同じ処理で、誤ると被害が大きい。
 - 2 つの API は、access token の JWT を、discovery の `jwks_uri` で検証している（`packages/go/oidc`）。
 - インフラは別のリポジトリが持ち、buddy はデプロイ先のクラウドを知らない。
@@ -33,11 +33,12 @@ ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッ�
 - access token は JWT（`strategies.access_token: jwt`）にし、期限を 5 分にする。組織の ID などのクレームは、`oauth2.allowed_top_level_claims` で JWT の top level に出す。
   - 理由: 2 つの API は検証の作りを変えずに、Issuer を替えるだけで済む。opaque にすると、全ての API のリクエストが Hydra の introspection を呼び、Hydra が止まると buddy の全体が止まる。OSS 版の introspection は admin API にあり、クライアントと鍵とセッションの管理と同じポートなので、API にこのポートを開くことになる。
   - 理由: JWT はすぐに失効できないが、トークンは BFF のサーバー側にだけあり、ブラウザに出ない。失効が遅れるのは最大 5 分である。
-- `aud` は、ADR-0003 のとおり `schedule` と `receipt` にする。ブローカーが同意の accept で付け、Hydra の web のクライアントに許す audience として登録する。
-  - ADR-0003: [モノレポを git flow でマージし、画面を apps/ に、API を services/ に置き、ディレクトリの名前でタグとサービスの名前をそろえる](0003-branch-and-release.md)
+- `aud` は、ADR-0021 のとおり `schedule` と `receipt` にする。ブローカーが同意の accept で付け、Hydra の web のクライアントに許す audience として登録する。
+  - ADR-0021: [画面を apps/ に、API を services/ に置き、ディレクトリの名前でサービスの名前をそろえる](0021-directories-and-service-names.md)
 - ブローカーは、モノレポの `services/broker` に置く。
   - 理由: `packages/go`、compose、E2E を、web と 2 つの API と共有する。ログインの流れを変える変更を、1 つの pull request で web、API、ブローカーにわたって直せる。
-  - ADR-0003: [モノレポを git flow でマージし、画面を apps/ に、API を services/ に置き、ディレクトリの名前でタグとサービスの名前をそろえる](0003-branch-and-release.md)
+  - ADR-0003: [モノレポを git flow でマージし、アプリごとのバージョンでリリースする](0003-branch-and-release.md)
+  - ADR-0021: [画面を apps/ に、API を services/ に置き、ディレクトリの名前でサービスの名前をそろえる](0021-directories-and-service-names.md)
 - 事業所ごとの上流の IdP の設定（組織の ID、issuer、client ID）は、インフラからファイルで渡し、client secret はシークレットとして渡す。ブローカーは管理の画面を持たない。
   - 理由: 事業所と Google のサービスアカウントの対応のファイル（`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`）と同じ扱いにし、事業所を足す手順を運営側の 1 か所にまとめる。
 

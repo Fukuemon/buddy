@@ -1,4 +1,4 @@
-# ADR-0004: デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にし、カタログをドキュメントサイトと同じ Worker で出す
+# ADR-0004: デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にする
 
 ## Status
 
@@ -6,7 +6,7 @@
 
 ## Context
 
-画面の見た目をそろえる基準と、アクセシビリティの基準を決める必要がある。
+画面の見た目をそろえる基準を決める必要がある。
 
 - receipt-front からコピーしたもとの画面のテーマには、白の上で 4.5:1 に届かない文字の色と、文字でないものの基準の 3:1 に届かない入力欄の枠があった。フォーカスの表示はコンポーネントごとに違い、色相を人数で等分した職員の色は、色相によって白の文字が読めなかった。
 
@@ -19,9 +19,6 @@
 - buddy のもともとのデザイン案は、くすんだ青（`#4d89c0`）を主の色にし、画面の背景をわずかに温かい白（`#fdfcfb`）にしている。
   - この青は、白の文字を載せると 4.5:1 に届かない。DADS の light-blue-800 は色相がほぼ同じで、白の文字で 4.5:1 以上になる。
   - DADS の基本のトークンには、温かい白の値が無い。白の次に明るい灰色の solid-gray-50 は、白との差が `#fdfcfb` より大きい。
-- ドキュメントサイト（Worker `buddy-docs`）は、文書、Storybook のカタログ、表の ER 図を 1 つの URL で出す。サイトに並べるものは、どれもリポジトリの文書とコードから組み立てる。
-- 同じリポジトリの pull request には GitHub が secret を渡すので、書き込みの権限を持つ人は、ワークフローを書き換えてリポジトリの単位の secret を読める。
-- パッケージ design-system は、意味のトークンの組のコントラスト比を計算するスクリプト `check-contrast.mjs` を配る。
 
 ## Decision
 
@@ -80,96 +77,6 @@ flowchart TB
 照合の結果の区分と印は、新しい色のトークンを作らず、状態の色に当てる。対応は DESIGN.md に書く。  
 照合のドメインの名前を packages/ui に持ち込まないためである。
 
-### packages/ui には、ドメインを持たない Base と Case のコンポーネントを置く
-
-コンポーネントは BCD Design で分類し、名前はドメイン、場面、基本の語の順に並べる。  
-packages/ui には Base と Case だけを置き、Domain のコンポーネントは apps/web の `features/<機能>/components` に置く。
-
-- 出典: [BCD Design によるコンポーネントの分類](https://qiita.com/misuken/items/19f9f603ab165e228fe1)
-
-| コンポーネント | 分類 | 配置先 |
-| --- | --- | --- |
-| `Button`、`Modal`、`SegmentedControl`、`Table`、`Loading`、`DatePicker`、`TimePicker`、`NumberPicker`、`TextareaField` | Base | `packages/ui/src/base/<名前>/` |
-| `FieldFrame` | Base。コンポーネントの中だけで使い、export しない | `packages/ui/src/base/FieldFrame/` |
-| `SearchBox` | Case（Search が場面） | `packages/ui/src/case/SearchBox/` |
-| `SiteHeader` | Domain（buddy の画面の帯） | `apps/web/src/components/layout/` |
-| Schedule で始まるコンポーネント、職員と利用者の選択の一覧 | Domain | `apps/web/src/features/schedule/components/` |
-
-- 表示の単位と予定の種類の、値を 1 つ選ぶ操作は、切り替える領域（tabpanel）を持たないので、ラジオボタンの役割を持つ `SegmentedControl` にする。DADS のタブは同じ主題の内容を観点で切り替えるコンポーネントなので、タブのコンポーネントは、切り替える領域を持つ画面ができるまで作らない。
-  - 出典: [DADS のタブ](https://design.digital.go.jp/dads/components/tab/)
-- 入力のコンポーネントは、React Hook Form の `control` と `name` を受ける。packages/ui は `react-hook-form` を peer dependency にする。
-
-### アクセシビリティは WCAG 2.2 の AA を基準にし、自動で確認する
-
-DADS が参照する WCAG 2.2 の AA を基準にし、DADS の指針の値を使う。
-
-- 出典: [DADS のアクセシビリティ](https://design.digital.go.jp/dads/guidance/accessibility/)
-
-| 項目 | 基準 | 確認の方法 |
-| --- | --- | --- |
-| 文字のコントラスト | 4.5:1 以上。面の上の状態の色の文字も含む | Storybook の a11y のアドオン（axe）を全ての story で実行し、違反をテストの失敗にする |
-| 文字でないもののコントラスト | 入力欄と押せる枠の境界、フォーカスの表示が 3:1 以上 | 意味のトークンの組のコントラストを、ルートの `pnpm check:contrast`（`scripts/check-contrast.mjs`）で計算し、CI で流す。axe は枠の色を確認しないため |
-| フォーカスの見え方 | 全ての操作できる要素で `focus-ring` を `:focus-visible` に出す | story の play 関数で Tab キーを押し、フォーカスの位置を確認する |
-| ターゲットの大きさ | ボタンは 44×44 CSS px 以上。S のボタンとアイコンのボタンは、見た目の外に押せる領域を広げる | コンポーネントの Vitest のテストで、押せる領域の大きさを確認する |
-| キーボードの操作 | コンポーネントごとの操作を DESIGN.md のコンポーネントのセクションに書き、その通りに動く | story の play 関数と Vitest で、キーを押した結果を確認する |
-
-- 出典: [DADS の色](https://design.digital.go.jp/dads/foundations/color/)
-- 出典: [DADS のボタンのアクセシビリティ](https://design.digital.go.jp/dads/components/button/accessibility/)
-- コントラストの計算は、パッケージ design-system のスクリプトを使い、計算の直しが agent-harness から届くようにする。組は `scripts/check-contrast.mjs` の冒頭に置く。
-- story をテストとして実行するのは、Storybook の Vitest のアドオンにする。`pnpm --filter @buddy/ui test` が、コンポーネントの単体テストと story のテストの両方を実行する。
-
-### DADS の指針から外れる 3 点は、理由を DESIGN.md に書いて残す
-
-- 予定の作成と編集は、URL を持つモーダルのダイアログに入力のコンポーネントを置く。DADS はモーダルのダイアログをフォームに使わないとしているが、カレンダーの上で予定を作り、閉じてカレンダーに戻る操作を画面仕様が決めている。
-  - 出典: [DADS のモーダルダイアログ](https://design.digital.go.jp/dads/components/modal-dialog/)
-- 日付と時刻は、ブラウザの `input type="date"` と `type="time"` を使う。DADS は年、月、日を分けた 3 つの入力欄を勧めるが、buddy の日付は近い日を選ぶことが多く、ブラウザのカレンダーから選べる方が手数が少ない。
-  - 出典: [DADS の日付ピッカー](https://design.digital.go.jp/dads/components/date-picker/)
-- ダイアログの中身を読み込む間も、回転する `Loading` を出す。DADS は回転する表示を画面全体の待ちに限るが、ダイアログは開いている間ほかを操作できないので、画面全体の待ちと同じに扱う。
-  - 出典: [DADS のプログレスインジケーター](https://design.digital.go.jp/dads/components/progress-indicator/)
-
-### 文書は、使う側の DESIGN.md と、保守の判断の ADR に分ける
-
-`packages/ui/DESIGN.md` は、画面を作る人とコーディングエージェントが読む。原則、トークンの使い分け、コンポーネントの選び方、Storybook の title の規則を書く。  
-トークンの値とコンポーネントの振る舞いはコードを参照先にし、DESIGN.md には値を書き写さない。  
-packages/ui の構成を変える判断は ADR に書く。
-
-mitame-ai/design-system（Tezawari）の DESIGN.md と DESIGN.local.md の分け方は採らない。  
-mitame-ai/design-system は、パッケージとして配る DESIGN.md と、配らない保守の資料を分けている。packages/ui は外に配らず、保守の判断はこのリポジトリの規則で ADR に書くため、2 つ目の文書を持つ理由がない。  
-mitame-ai/design-system の DESIGN.md から、知りたいことごとに参照するファイルを示す表だけを採る。
-
-### Storybook は、apps/web の Storybook を 1 つのカタログにする
-
-カタログは apps/web の Storybook で組み、packages/ui の MDX と story も読み込む。  
-apps/web は packages/ui に依存するので、依存の向きを変えずに 1 つのサイドバーと検索で全てを読める。
-
-- packages/ui は自分の Storybook も持つ。コンポーネントを単独で開発し、`pnpm --filter @buddy/ui build-storybook` と story のテストを packages/ui の中で完結させるためである。
-- a11y のアドオンの設定と decorator は packages/ui の `.storybook/preview` に置き、apps/web の preview はそれを読み込む。2 つの Storybook で確認する基準が分かれないようにするためである。
-- カタログのページは、はじめに、トークン、コンポーネント、パターン、画面の 5 つに分ける。DADS のサイトと SmartHR Design System のように、原則とトークンとコンポーネントの使い方を読めるサイトにする。
-  - 出典: [SmartHR Design System](https://smarthr.design/)
-- title は、ファイルの配置先から機械的に決める。規則は DESIGN.md にある。
-- カタログに載せるのは、コンポーネントとダミーデータだけにする。サイトを開ける人の範囲は変わりうるので、実際のデータを載せない。
-
-### ドキュメントサイトは、develop に入ったときだけ出す
-
-カタログは、ドキュメントサイトと 1 つの Cloudflare Worker の静的なファイルとして出す（`/storybook/`）。デプロイの構成は `apps/docs-site/README.md` にある。
-
-develop に入った変更は、次の流れで本番に出る。
-
-```mermaid
-flowchart TB
-    pr["pull request"] --> prbuild["pnpm site:build で組み立てるだけ。トークンを読まず、出さない"]
-    push["develop への push"] --> env["environment docs-site のジョブ（develop だけが使える）"]
-    env --> build["pnpm site:build で文書、カタログ、ER 図を組み立てる"]
-    build --> deploy["secret の Cloudflare のトークンで、Worker buddy-docs に本番として出す"]
-```
-
-- pull request ごとのプレビューは出さない。Cloudflare のトークンを、pull request のコードから読めないようにするためである。
-- Cloudflare のトークンは、GitHub の environment `docs-site` の secret に置き、environment にデプロイできるブランチを develop だけにする。
-  - ワークフローの条件だけで develop に絞ると、条件を外したワークフローを別のブランチへ push してトークンを読める。environment のブランチの制限は、ワークフローを書き換えても外せない。
-  - トークンは、Worker の中身を書き換えられるためである。
-  - トークンの範囲はこの Worker に絞り、漏れたときに書き換えられるものを、このサイトの中身と設定に限る。
-- ワークフローは、パッケージ docs-site のテンプレートを元にする。
-
 ## Considered Options
 
 ### トークンの値の配置先
@@ -190,60 +97,15 @@ flowchart TB
 | もともとのデザイン案の `#4d89c0` をそのまま使う | もともとのデザイン案と同じ色になる | 白の文字で 4.5:1 に届かず、ボタンの文字に使えない |
 | 背景を白か solid-gray-50 にする | DADS の値だけで済む | 白はもともとのデザイン案の背景と違う。solid-gray-50 は灰色が強く、カードとの差が大きすぎる |
 
-### コントラストの確認
-
-| 選択肢 | 強み | 弱み |
-| --- | --- | --- |
-| **採用:** パッケージのスクリプト（`pnpm check:contrast`） | 計算の直しがパッケージから届く。条件つきのブロックと解けない値を報告する | パッケージを上げたときに、写したスクリプトとの差分を取り込む手間がある |
-| Vitest のテスト（`contrast.test.ts`） | packages/ui のテストと一緒に流れる | 計算を buddy で保守する |
-
-### カタログの組み方
-
-| 選択肢 | 強み | 弱み |
-| --- | --- | --- |
-| **採用:** apps/web の Storybook に packages/ui の MDX と story も読ませる | 1 回のビルドで 1 つのサイトになる。原則から画面までを 1 つのサイドバーと検索でたどれる | packages/ui の story を 2 つの Storybook でビルドする |
-| Storybook の refs で、apps/web から packages/ui の Storybook を合成する | 2 つの Storybook を独立にビルドできる | 2 つのビルドと公開先を揃える必要がある。refs の URL は開発の時と公開先とで違う。相対の URL で動くかは未確認 |
-| 2 つの Storybook を別々に公開し、一覧のページから 2 つへリンクする | 公開の仕組みが単純になる | 原則とトークンとコンポーネントのサイトと、画面のサイトが分かれ、行き来できない |
-| packages/ui の Storybook に apps/web の story も読ませる | packages/ui の中でカタログが完結する | packages/ui が apps/web の import のエイリアスと plugin に依存し、依存の向きが逆になる |
-
-### カタログとドキュメントサイトの公開
-
-| 選択肢 | 強み | 弱み |
-| --- | --- | --- |
-| **採用:** ドキュメントサイトと 1 つの Worker にまとめ、develop に入ったときだけ出す | トークンを develop の実行だけが読める | 文書の見た目は、マージする前にローカルの `pnpm site:build` か `zensical serve` で確認する |
-| ドキュメントサイトとカタログを、別々の Worker に出す | 変えた方だけを出せる | Worker の作成、URL、設定が 2 つずつになる。文書からカタログへ相対のリンクで行き来できない |
-| pull request ごとのプレビューを残し、トークンをリポジトリの単位の secret に置く | マージする前に、公開した形で確認できる | 書き込みの権限を持つ人が、ワークフローを書き換えてトークンを読める |
-| サイトをやめ、リポジトリの Markdown だけを読ませる | Cloudflare のアカウントとトークンが要らない | カタログと ER 図は組み立てた成果物で、リポジトリでは読めない。文書の検索と目次がなくなる |
-
-### 文書の分け方
-
-| 選択肢 | 強み | 弱み |
-| --- | --- | --- |
-| **採用:** 使う側の DESIGN.md と、保守の判断の ADR | 使う側は 1 つの文書を読めばよい。判断の経緯は ADR の規則で残る | DESIGN.md に経緯を書かない規則を、書く人が守る必要がある |
-| mitame-ai/design-system と同じく DESIGN.md と DESIGN.local.md に分ける | 保守の資料を自由に書ける | 配らないパッケージでは分ける境界がない。ADR と保守の資料に同じ判断が並ぶ |
-
-### 入力のコンポーネントとフォームのライブラリ
-
-| 選択肢 | 強み | 弱み |
-| --- | --- | --- |
-| **採用:** `control` と `name` を受け、`react-hook-form` を peer dependency にする | 呼び出す側を直さずに移せる | packages/ui がフォームのライブラリに依存する |
-| `value` と `onChange` だけを受けるコンポーネントにし、React Hook Form との結び付けは apps/web に置く | packages/ui がフォームのライブラリに依存しない | 全ての呼び出す側と結び付けのコンポーネントを書き直す |
-
 ## Consequences
 
 ### Positive
 
-- 画面の全ての文字が白の面で 4.5:1 以上、入力欄の枠とフォーカスの表示が 3:1 以上になる。主の色も、白の文字で 4.5:1 以上を保つ。
 - 画面は Tailwind のユーティリティで意味のトークンしか書けなくなり、色の値を直に書くと見つけられる。
 - 主のボタン、リンク、選択、ドキュメントサイトのアクセントが、もともとのデザイン案と同じ色相にそろう。
-- 原則、トークン、コンポーネント、画面を 1 つのカタログで読める。
-- Cloudflare のトークンを読めるのは、develop の実行だけになる。
-- コントラストの計算と、トークンの CSS の生成と、サイトの組み立てを、同じパッケージの手順で更新できる。
+- トークンの CSS の生成を、パッケージの手順で更新できる。
 
 ### Negative
 
 - DADS のバージョンを上げるたびに、`tokens.css` の名前と値の差分を確認する必要がある。`surface-canvas` は DADS の値に追従しないので、canvas の上のコントラストも確認する。
 - 背景を指定しない要素は canvas の色になる。白にする要素には `bg-surface` を付ける。
-- pull request の段階で、公開した形のサイトを確認できない。
-- コントラストのチェックは `pnpm --filter @buddy/ui test` では流れない。トークンを変えたら `pnpm check:contrast` を流す。
-- story のデータを作る人が、ダミーデータに限る規則を守る必要がある。

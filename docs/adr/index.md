@@ -8,37 +8,49 @@
 
 | ADR | 題 | Status |
 | --- | --- | --- |
-| [ADR-0001](0001-auth.md) | 認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元と停止をブローカーが、権限と業務のデータを予定の API が持つ | 承認 |
+| [ADR-0001](0001-auth.md) | 認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元をブローカーが、権限と業務のデータを予定の API が持つ | 承認 |
 | [ADR-0010](0010-id-broker-hydra.md) | OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る | 承認 |
 | [ADR-0014](0014-broker-login-pages-source.md) | ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する | 承認 |
+| [ADR-0018](0018-staff-leave-and-retirement.md) | 職員の停止を、戻せる休職と、戻せない退職に分ける | 承認 |
+| [ADR-0019](0019-patient-service-end.md) | 利用者を、戻せる利用の終了にでき、終了の利用者を予定の候補と職員の退職の確認から外す | 承認 |
+| [ADR-0020](0020-non-visiting-staff.md) | 訪問するかを職員に持ち、訪問しない職員を予定と担当から外す | 承認 |
 
 ### 権限
 
 | ADR | 題 | Status |
 | --- | --- | --- |
-| [ADR-0002](0002-pbac.md) | 権限を役職のデフォルトと職員ごとの上書きで持ち、職員の管理と照合も権限で許し、訪問するかを職員に持つ | 承認 |
+| [ADR-0002](0002-pbac.md) | 権限を役職のデフォルトと職員ごとの上書きで持ち、職員の管理と照合も権限で許す | 承認 |
 | [ADR-0013](0013-web-permission-checks.md) | web の画面の権限の確認を、route の beforeLoad と PermissionGuard で宣言し、1 つの関数で評価する | 承認 |
 
 ### リポジトリの構成とリリース
 
 | ADR | 題 | Status |
 | --- | --- | --- |
-| [ADR-0003](0003-branch-and-release.md) | モノレポを git flow でマージし、画面を apps/ に、API を services/ に置き、ディレクトリの名前でタグとサービスの名前をそろえる | 承認 |
+| [ADR-0003](0003-branch-and-release.md) | モノレポを git flow でマージし、アプリごとのバージョンでリリースする | 承認 |
 | [ADR-0006](0006-go-shared-module.md) | 2 つの Go の API が共有するコードを、別の module にまとめる | 承認 |
+| [ADR-0021](0021-directories-and-service-names.md) | 画面を apps/ に、API を services/ に置き、ディレクトリの名前でサービスの名前をそろえる | 承認 |
 
 ### デザインシステムとドキュメントサイト
 
 | ADR | 題 | Status |
 | --- | --- | --- |
-| [ADR-0004](0004-design-system.md) | デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にし、カタログをドキュメントサイトと同じ Worker で出す | 承認 |
+| [ADR-0004](0004-design-system.md) | デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にする | 承認 |
+| [ADR-0022](0022-ui-components.md) | packages/ui に、ドメインを持たない Base と Case のコンポーネントを置き、DADS の指針から外れる 3 点は理由を DESIGN.md に書く | 承認 |
+| [ADR-0023](0023-accessibility.md) | アクセシビリティは WCAG 2.2 の AA を基準にし、自動で確認する | 承認 |
+| [ADR-0024](0024-design-system-documents.md) | デザインシステムの文書を、使う側の DESIGN.md と、保守の判断の ADR に分ける | 承認 |
+| [ADR-0025](0025-storybook-catalog.md) | apps/web の Storybook を 1 つのカタログにする | 承認 |
+| [ADR-0026](0026-docs-site-publish.md) | カタログをドキュメントサイトと同じ Worker で、develop に入ったときだけ出す | 承認 |
 
 ### 予定の API の構成
 
 | ADR | 題 | Status |
 | --- | --- | --- |
-| [ADR-0005](0005-schedule-api-packages.md) | 予定の API を機能ごとのパッケージに分け、Go の API の操作を使う依存だけを持つ型にし、ファイルの名前の末尾の語で役割を表す | 承認 |
+| [ADR-0005](0005-schedule-api-packages.md) | 予定の API を機能ごとのパッケージに分ける | 承認 |
 | [ADR-0009](0009-schedule-api-postgresql.md) | 予定の API の DB を PostgreSQL にし、見直したテーブルでマイグレーションを作り直す | 承認 |
 | [ADR-0016](0016-service-code-rules.md) | サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける | 承認 |
+| [ADR-0027](0027-go-operation-types.md) | Go の API の操作を、使う依存だけを持つ操作ごとの型にする | 承認 |
+| [ADR-0028](0028-go-file-names.md) | Go の API のパッケージをフラットに保ち、ファイルの名前の末尾の語で役割を表す | 承認 |
+| [ADR-0030](0030-schedule-write-read-models.md) | 予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く | 承認 |
 
 ### web の画面の構成
 
@@ -51,7 +63,9 @@
 
 | ADR | 題 | Status |
 | --- | --- | --- |
-| [ADR-0008](0008-google-calendar-sync.md) | Google カレンダーとの連携を事業所ごとの正本のモードで分け、職員のカレンダーを事業所ごとのサービスアカウントへの共有で読み書きする | 承認 |
+| [ADR-0008](0008-google-calendar-sync.md) | Google カレンダーとの連携を、事業所ごとの正本のモードで分ける | 承認 |
+| [ADR-0029](0029-google-calendar-service-accounts.md) | 職員のカレンダーを、事業所ごとのサービスアカウントへの共有で読み書きする | 承認 |
+| [ADR-0031](0031-calendar-cutover.md) | 事業所の予定の正本を、期間のある切り替えの記録で Google カレンダーから buddy へ移す | 承認 |
 
 ### calendar-worker
 
@@ -81,6 +95,9 @@ flowchart TB
         A0001["0001"]
         A0010["0010"]
         A0014["0014"]
+        A0018["0018"]
+        A0019["0019"]
+        A0020["0020"]
     end
     subgraph perm["権限"]
         A0002["0002"]
@@ -89,39 +106,65 @@ flowchart TB
     subgraph repo["リポジトリの構成とリリース"]
         A0003["0003"]
         A0006["0006"]
+        A0021["0021"]
     end
     subgraph ds["デザインシステムとドキュメントサイト"]
         A0004["0004"]
+        A0022["0022"]
+        A0023["0023"]
+        A0025["0025"]
+        A0026["0026"]
     end
     subgraph api["予定の API の構成"]
         A0005["0005"]
         A0009["0009"]
         A0016["0016"]
+        A0027["0027"]
+        A0028["0028"]
+        A0030["0030"]
     end
     subgraph gcal["Google カレンダーとの連携と正本のモード"]
         A0008["0008"]
+        A0031["0031"]
     end
     subgraph worker["calendar-worker"]
         A0017["0017"]
     end
 
-    A0010 --> A0001
-    A0001 --> A0010
     A0001 --> A0002
+    A0001 --> A0010
     A0002 --> A0001
+    A0010 --> A0001
     A0013 --> A0002
-    A0014 --> A0004
-    A0014 --> A0003
     A0014 --> A0010
-    A0009 --> A0008
+    A0014 --> A0021
+    A0014 --> A0022
+    A0018 --> A0002
+    A0019 --> A0002
+    A0019 --> A0018
+    A0020 --> A0002
+    A0020 --> A0018
+    A0021 --> A0003
+    A0022 --> A0004
+    A0023 --> A0004
+    A0025 --> A0022
+    A0025 --> A0023
+    A0026 --> A0025
     A0008 --> A0005
+    A0009 --> A0008
     A0016 --> A0005
     A0016 --> A0006
+    A0027 --> A0005
+    A0028 --> A0005
+    A0030 --> A0005
+    A0030 --> A0008
+    A0031 --> A0008
     A0017 --> A0005
     A0017 --> A0008
+    A0017 --> A0028
 ```
 
-- ADR-0007、ADR-0011、ADR-0012、ADR-0015 は、ほかの ADR を前提にせず、前提にもされないので、図に描かない。
+- ADR-0007、ADR-0011、ADR-0012、ADR-0015、ADR-0024、ADR-0029 は、ほかの ADR を前提にせず、前提にもされないので、図に描かない。
 
 ## 旧番号と新番号
 
