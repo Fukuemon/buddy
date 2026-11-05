@@ -50,17 +50,17 @@
 
 | 種類 | 意味 |
 | --- | --- |
-| `list` |  |  |
-| `calendar` |  |  |
-| `detail` |  |  |
-| `new` |  |  |
-| `edit` |  |  |
-| `upload` |  |  |
-| `result` |  |  |
-| `link` |  |  |
-| `import` |  |  |
-| `review` |  |  |
-| `cutover` |  |  |
+| `list` | 一覧 |
+| `calendar` | カレンダーの表示 |
+| `detail` | 1 件の詳細 |
+| `new` | 作成 |
+| `edit` | 編集 |
+| `upload` | ファイルを受け取る |
+| `result` | 処理の結果 |
+| `link` | 外部のサービスとの結び付け |
+| `import` | 外部のサービスからの取り込み |
+| `review` | 人が確認して決める必要があるものの一覧 |
+| `cutover` | 正本の切り替え |
 | `login`、`profile`、`error` | `account` のドメインだけで使う。`error` はログインの失敗 |
 
 - 固有の URL を持つものを 1 つの画面に数える。
