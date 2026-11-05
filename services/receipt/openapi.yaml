@@ -55,7 +55,7 @@ paths:
       operationId: createCheck
       summary: 実訪問の CSV と予定を照合する
       description: |
-        照合の権限（`receipt.check`）を持つ職員だけが呼べる。受けたトークンを付けて予定の API の `GET /v1/me` を呼び、返った権限で確認する（ADR-0018）。
+        照合の権限（`receipt.check`）を持つ職員だけが呼べる。受けたトークンを付けて予定の API の `GET /v1/me` を呼び、返った権限で確認する（ADR-0015）。
         予定は、ファイル `schedules` があればそれを使う。無くてフォームの値 `month` があれば、その月の予定を Google カレンダーから取る。
         Google カレンダーは、トークンの組織に結び付けたカレンダーだけを読む。
         結果は Accept によらず JSON で返す。入力の CSV は、UTF-8（BOM の有無を問わない）と CP932 を受ける。

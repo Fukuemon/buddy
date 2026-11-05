@@ -4,7 +4,7 @@ import "context"
 
 // Repository は、単発の予定とキャンセルを書く。見つからないときは apperr.ErrNotFound を返す。
 // CreateCancel は、予定の更新の番号を 1 つ増やす。キャンセル済みのときは apperr.ErrConflict を返す。
-// 名前を結合した予定は scheduleview が読む（ADR-0024）。
+// 名前を結合した予定は scheduleview が読む（ADR-0021）。
 type Repository interface {
 	Create(ctx context.Context, s Schedule) error
 	// GetForUpdate は、トランザクションの終わりまで予定の行に排他のロックを取り、ロックを取った後の値を返す。

@@ -44,7 +44,7 @@ buddy のコードと設定は、特定のデプロイ先を前提にしない�
 ## Calendar Worker
 
 Google カレンダーの書き出しと同期は、予定の API と同じイメージの `calendar-worker` が、役割ごとのプロセスで動かす。  
-ADR-0027: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで動かす](../docs/adr/0027-calendar-worker.md)
+ADR-0024: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで動かす](../docs/adr/0024-calendar-worker.md)
 
 - 役割は `calendar-worker export`（書き出し）と `calendar-worker sync`（同期）で、1 つのプロセスは 1 つの役割だけを持つ。
 - 常駐で動かすか、`--once` を付けて定期的に起動するかは、インフラのリポジトリが決める。
@@ -56,7 +56,7 @@ ADR-0027: [Google カレンダーの書き出しと同期を、予定の API と
   - 復旧のために DB を直す必要はない。
 - 同期の Worker は、Google カレンダーを予定の正本にする事業所（`google_primary`）のカレンダーだけを取る。
   - buddy を正本にする事業所（`buddy_primary`）のカレンダーは読まない。
-  - ADR-0026: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](../docs/adr/0026-google-calendar-source-modes.md)
+  - ADR-0023: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](../docs/adr/0023-google-calendar-source-modes.md)
 - 処理の回数、成功と失敗、滞留は、Worker のログ（`component` が `calendar-export` か `calendar-sync`）から見る。
   - メトリクスは、インフラの側でこのログから作る。
 

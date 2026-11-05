@@ -1,4 +1,4 @@
-# ADR-0029: Google カレンダーを正本にする事業所でも、buddy は予定を Google カレンダーへ同期の呼び出しで書き、訪問の情報を buddy の DB に持つ
+# ADR-0026: Google カレンダーを正本にする事業所でも、buddy は予定を Google カレンダーへ同期の呼び出しで書き、訪問の情報を buddy の DB に持つ
 
 ## Status
 
@@ -6,13 +6,13 @@
 
 ## Context
 
-ADR-0026 は、Google カレンダーを予定の正本にする事業所（`google_primary`）では、buddy からの予定の書き込みを拒むと決めた。  
+ADR-0023 は、Google カレンダーを予定の正本にする事業所（`google_primary`）では、buddy からの予定の書き込みを拒むと決めた。  
 利用者の要求は、`google_primary` の事業所でも、職員が buddy の画面で予定を作成し、変更し、取り消すことである。  
 Google カレンダーは正本のままで、Google カレンダーでの変更も今のとおり buddy に反映する。
 
-- ADR-0026: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](0026-google-calendar-source-modes.md)
+- ADR-0023: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](0023-google-calendar-source-modes.md)
 
-この ADR は、ADR-0026 の次の判断を置き換える。
+この ADR は、ADR-0023 の次の判断を置き換える。
 
 - `google_primary` の事業所で、buddy からの書き込みを拒み、書き出しをしない判断
 - `ReconcileApplier` のコードを消さずに、緊急の編集の要求で使い道を決める判断
@@ -20,9 +20,9 @@ Google カレンダーは正本のままで、Google カレンダーでの変更
 - Projection を `ProjectionApplier` だけが書く判断
 - Projection の予定の訪問の情報を、タイトルの読み替えだけで引く判断
 
-ADR-0024 の、予定を書けるのは `buddy_primary` の事業所だけとする判断と、Projection を `ProjectionApplier` だけが書く判断も置き換える。
+ADR-0021 の、予定を書けるのは `buddy_primary` の事業所だけとする判断と、Projection を `ProjectionApplier` だけが書く判断も置き換える。
 
-- ADR-0024: [予定の書き込みのモデルと読み取りのモデルを分け、正本のモードを事業所の状態にする](0024-schedule-write-read-models-and-source-mode.md)
+- ADR-0021: [予定の書き込みのモデルと読み取りのモデルを分け、正本のモードを事業所の状態にする](0021-schedule-write-read-models-and-source-mode.md)
 
 決定に関わる事実は次のとおり。
 
@@ -34,7 +34,7 @@ ADR-0024 の、予定を書けるのは `buddy_primary` の事業所だけとす
   - 出典: [Version resources](https://developers.google.com/workspace/calendar/api/guides/version-resources)
 - `calendar.EventIDOf` は、buddy の予定の ULID から Google の予定の ID を作る。同じ ID の作成は 409（`ErrEventExists`）になるので、書き直しても予定は 2 つにならない。
 - `EventWriter` は、404 を `ErrEventNotFound` で返す。書き出しは、カレンダーの共有が外れたときの 404 と予定が無いときの 404 を見分けられないとみなし、404 で予定の対応を消さない。
-- ADR-0024 の機能の順は `schedule`、`scheduleview`、`calendar` で、`schedule` は `calendar` を import できない。
+- ADR-0021 の機能の順は `schedule`、`scheduleview`、`calendar` で、`schedule` は `calendar` を import できない。
 - 書き出しの待ち（Outbox）と `Exporter` は、buddy の予定のテーブルの予定を書く。`ReconcileApplier` と `AcceptExport` は、Google の変更を buddy の予定のテーブルに当てる。どれも buddy の予定のテーブルを正本にする前提である。
 - 切り替え（`Cutover`）の取り込みは、`open` の間に buddy からの書き込みが止まっていることを前提に、Google の内容で buddy の写しを上書きする。
 - buddy は公開する前で、運用している事業所の予定は無い。
@@ -119,7 +119,7 @@ Google に書けたのに応答を受けられず、職員が同じ入力を送�
 
 - 切り替えを始める操作と完了する操作は、事業所の行を排他のロックで取った後に、事業所に保留の版があれば 409（`google_write_pending`）で拒む。
   - 予定の API の書き込みは、手順 1 で事業所の行を共有のロックで読み、`open` の切り替えが無いことを確認してから保留の版を書く。始める操作が排他のロックを取った後は、新しい書き込みは `open` の切り替えを見て拒まれ、それより前の書き込みは保留の版を残している。
-  - 完了の確認の etag の比べ方（ADR-0026）は、まだ Google に書いていない書き込みを見つけられない。保留の版で、処理中の書き込みを数える。
+  - 完了の確認の etag の比べ方（ADR-0023）は、まだ Google に書いていない書き込みを見つけられない。保留の版で、処理中の書き込みを数える。
 - マネージャーは、保留の版が確定するか消えるまで待ってから、切り替えを始めるか完了する。結果が分からない書き込みの保留の版は、同期の読み戻しで解ける。
 
 ### 切り替えの運用
@@ -145,7 +145,7 @@ Google に書けたのに応答を受けられず、職員が同じ入力を送�
 - Google でタイトルを変え、タイトルの利用者かサービス内容が buddy の訪問の情報と違うときは、訪問の情報を消さずに、確認が必要な予定として理由を付けて返す。職員が buddy で直すと、両方がそろう。
 - 主訪問者を替えると、予定を新しい職員のカレンダーに移し、訪問の情報の行のカレンダーと Google の予定の ID を書き換える。主キーは変わらない。移す方法（`events.move` か、作り直しか）は実装の issue で決める。
 - 訪問の情報の行は、Projection の行と同じ期間だけ残し、Google で取り消した予定の行は消す。
-- 照合の API が、構造の訪問の情報（同行者と訪問の区分）を使うには、予定の API から予定を読む形が要る。ADR-0026 が別の要求で決めるとした形で、この ADR では決めない。
+- 照合の API が、構造の訪問の情報（同行者と訪問の区分）を使うには、予定の API から予定を読む形が要る。ADR-0023 が別の要求で決めるとした形で、この ADR では決めない。
   - その要求を決めるまで、照合はタイトルの利用者とサービス内容だけを使い、要求の受け入れ条件の「照合で使える」は、タイトルの 2 つの項目だけで満たす。
   - 照合で過去の月を読み直すために、行を残す期間を延ばすかも、その要求で決める。
   - 当面はタイトルの 2 つの項目だけを使う扱いを、利用者が選んだ。

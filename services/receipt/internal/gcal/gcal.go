@@ -223,7 +223,7 @@ func (s monthSource) toRecord(ev *calendar.Event, staff string) (rec record.Reco
 	return recs[0], true, nil
 }
 
-// isWithinNextDay は、終了が開始と同じ日か、開始の翌日で 24 時間未満の予定かを返す（ADR-0019）。
+// isWithinNextDay は、終了が開始と同じ日か、開始の翌日で 24 時間未満の予定かを返す（ADR-0016）。
 // 翌日に終わる予定は、終了時間が開始時間より前の行として normalize が読む。
 func isWithinNextDay(start, end time.Time) bool {
 	switch end.Format(time.DateOnly) {

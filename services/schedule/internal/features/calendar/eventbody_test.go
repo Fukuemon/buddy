@@ -50,7 +50,7 @@ func TestScheduleBodyVisitTitle(t *testing.T) {
 	}
 }
 
-// TestBodyEndsNextDay は、終了が翌日の予定と繰り返しの予定の終了の日時を、予定の日付の翌日から作ることを確認する（ADR-0019）。
+// TestBodyEndsNextDay は、終了が翌日の予定と繰り返しの予定の終了の日時を、予定の日付の翌日から作ることを確認する（ADR-0016）。
 func TestBodyEndsNextDay(t *testing.T) {
 	title := "夜勤"
 	slot := schedule.Slot{

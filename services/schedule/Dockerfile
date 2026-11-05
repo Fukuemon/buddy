@@ -25,7 +25,7 @@ COPY --from=gcalhold-build /out/gcalhold /usr/local/bin/
 USER nonroot:nonroot
 ENTRYPOINT ["/usr/local/bin/gcalhold"]
 
-# Google カレンダーの書き出しと同期は、同じイメージの calendar-worker を entrypoint にして動かす（ADR-0027）。
+# Google カレンダーの書き出しと同期は、同じイメージの calendar-worker を entrypoint にして動かす（ADR-0024）。
 FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=build /out/api /out/calendar-worker /out/migrate /usr/local/bin/
 EXPOSE 8080

@@ -1,5 +1,5 @@
 // Package servicerule は、照合だけが使うサービス内容の規則を持つ。
-// サービス内容の表記と提供時間の範囲は、予定の API と共有する packages/go/servicecode が持つ（ADR-0025）。
+// サービス内容の表記と提供時間の範囲は、予定の API と共有する packages/go/servicecode が持つ（ADR-0022）。
 // サービス内容は normalize で正規化した後の値を受ける。
 package servicerule
 

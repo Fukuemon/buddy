@@ -23,8 +23,7 @@ ID ブローカーは、職員の身元として、ID、メール、所属の事
 ブローカーは、初回のログインで上流の IdP のアカウント（`iss` と `sub`）を職員に結び付ける。  
 access token の `sub` はブローカーの職員の ID で、予定の API の `users.sub` がブローカーの職員の ID を指す。
 
-- ADR-0015: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](../../docs/adr/0015-identity-boundary.md)
-- ADR-0016: [職員の停止を、戻せる休職と、戻せない退職に分ける](../../docs/adr/0016-staff-leave-and-retirement.md)
+- ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元と停止をブローカーが、権限と業務のデータを予定の API が持つ](../../docs/adr/0001-auth.md)
 
 ## States and Transitions
 
@@ -121,7 +120,7 @@ stateDiagram-v2
 - 「訪問する」から「訪問しない」へは、職員の変更（`PUT /v1/users/{user_id}`）で変える。
   - その日以降の予定、繰り返しの予定、担当の利用者が残れば、退職と同じ一覧を付けた 409 で拒む。過去の予定は職員を変えずに残す。
 - 「訪問しない」から「訪問する」へは、確認なしで変えられる。
-- ADR-0018: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../../docs/adr/0018-receipt-check-policy-and-non-visiting-staff.md)
+- ADR-0015: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../../docs/adr/0015-receipt-check-policy-and-non-visiting-staff.md)
 
 ### ログインのセッションとトークン
 

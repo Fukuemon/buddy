@@ -15,7 +15,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
-// StartCutover は、事業所の予定の正本を Google カレンダーから buddy に切り替える作業（切り替え）を始める（ADR-0026）。
+// StartCutover は、事業所の予定の正本を Google カレンダーから buddy に切り替える作業（切り替え）を始める（ADR-0023）。
 type StartCutover struct {
 	facilities FacilityModes
 	syncs      scheduleview.CalendarSyncs
