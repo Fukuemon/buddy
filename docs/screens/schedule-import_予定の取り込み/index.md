@@ -679,8 +679,8 @@
 休職と退職の職員と、訪問しない職員には、新しい予定を割り振らない。  
 職員の状態ごとの選択肢とプレビューの結果は、次のとおり。
 
-- ADR-0018: [職員の停止を、戻せる休職と、戻せない退職に分ける](../../adr/0018-staff-leave-and-retirement.md)
-- ADR-0022: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../../adr/0022-receipt-check-policy-and-non-visiting-staff.md)
+- ADR-0017: [職員の停止を、戻せる休職と、戻せない退職に分ける](../../adr/0017-staff-leave-and-retirement.md)
+- ADR-0021: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../../adr/0021-receipt-check-policy-and-non-visiting-staff.md)
 
 | 職員の状態 | 選択肢とプレビューの結果 |
 | --- | --- |

@@ -1,4 +1,4 @@
-# ADR-0015: キーの色を light-blue にし、画面の背景だけ DADS に無い値を持つ
+# ADR-0014: キーの色を light-blue にし、画面の背景だけ DADS に無い値を持つ
 
 ## Status
 
@@ -33,7 +33,7 @@ buddy のもともとのデザイン案は、くすんだ青（`#4d89c0`）を�
 
 `surface-canvas` に `#fdfcfb` を直に書き、`body` の背景にする。カード、表、入力欄、ダイアログ、ヘッダーは `surface`（白）のままにする。  
 白との差は小さく、文字と線のコントラストは白の上とほぼ変わらない。`contrast.test.ts` で、canvas の上の文字と線の組を確認する。  
-この判断は [ADR-0019](0019-docs-site-publish-and-contrast-check.md) で置き換えた。  
+この判断は [ADR-0018](0018-docs-site-publish-and-contrast-check.md) で置き換えた。  
 値を直に持つトークンは `surface-canvas` だけにし、ほかの意味のトークンは ADR-0004 のとおり参照だけにする。
 
 ## Considered Options

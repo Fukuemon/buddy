@@ -1,4 +1,4 @@
-// Package internalapi は、ブローカーの内部の API を持つ（ADR-0017）。
+// Package internalapi は、ブローカーの内部の API を持つ（ADR-0016）。
 //
 // 職員の登録、有効化、削除、停止は、予定の API が職員の管理の権限を確認してから呼ぶ。Hydra の client credentials の
 // access token（aud は broker）のうち、許したクライアントのものだけを受ける。Hydra の oauth2.token_hook は、

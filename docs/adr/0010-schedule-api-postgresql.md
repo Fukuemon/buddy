@@ -1,4 +1,4 @@
-# ADR-0011: 予定の API の DB を PostgreSQL にし、見直したテーブルでマイグレーションを作り直す
+# ADR-0010: 予定の API の DB を PostgreSQL にし、見直したテーブルでマイグレーションを作り直す
 
 ## Status
 

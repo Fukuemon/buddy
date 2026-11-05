@@ -52,7 +52,7 @@ verified_commit: 8254dde
 `calendarimport`、`calendarsync`、`calendarexport` は `calendar` だけを import し、互いには import しない。  
 取り込みと同期が共有する読み替えの規則と、書き出しと同期が共有する待ちの記録を、`calendar` に置くためである。
 
-- ADR-0032: [予定の API の calendar を、結び付け、取り込み、同期、書き出しの 4 つの機能に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0032-schedule-api-calendar-split.md)
+- ADR-0005: [予定の API を機能ごとのパッケージに分け、Go の API の操作を使う依存だけを持つ型にし、ファイルの名前の末尾の語で役割を表す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0005-schedule-api-packages.md)
 
 カレンダーと予定の対応を読み書きするインターフェースは、使う側のパッケージが、使うメソッドだけを並べて持つ。
 
@@ -68,7 +68,7 @@ verified_commit: 8254dde
 予定の API は、Google Calendar API を、事業所ごとのサービスアカウントになりすました token で呼ぶ。  
 職員は自分の事業所のアカウントにカレンダーを共有するので、ほかの事業所の職員が共有したカレンダーは、ID を入れても読めず、結び付けられない。
 
-- ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](https://github.com/Fukuemon/buddy/blob/876381365355f7e4dab03f6dfdb3d6fb8a9f6947/docs/adr/0012-google-calendar-facility-service-accounts.md)
+- ADR-0011: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](https://github.com/Fukuemon/buddy/blob/876381365355f7e4dab03f6dfdb3d6fb8a9f6947/docs/adr/0011-google-calendar-facility-service-accounts.md)
 
 - 組織の ID とサービスアカウントの対応は、運営側が設定のファイル（`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`）で渡す。
   - 予定の API は、事業所の `facilities.org_id` で対応を引く。
@@ -86,7 +86,7 @@ verified_commit: 8254dde
   - 職員が共有したカレンダーに「予定の変更」の権限で書けるかは、未確認である。確認するまで、本番で書き出しを有効にしない。
   - この確認は、PRD の [Open Questions](https://github.com/Fukuemon/buddy/blob/develop/docs/PRD.md#open-questions) にある。
   - 出典: [#180 の実際の API での確認](https://github.com/Fukuemon/buddy/issues/180#issuecomment-6333280999)
-  - ADR-0012: [承認の条件](https://github.com/Fukuemon/buddy/blob/876381365355f7e4dab03f6dfdb3d6fb8a9f6947/docs/adr/0012-google-calendar-facility-service-accounts.md#承認の条件)
+  - ADR-0011: [承認の条件](https://github.com/Fukuemon/buddy/blob/876381365355f7e4dab03f6dfdb3d6fb8a9f6947/docs/adr/0011-google-calendar-facility-service-accounts.md#承認の条件)
 - token を作れないときのエラーの文は、状態コードだけを持つ。
   - IAM のレスポンスはなりすます先のリソースの名前を含むことがあり、サービスアカウントのメールアドレスをログに出さないためである。
 
@@ -206,7 +206,7 @@ web は、プレビューの結果と選んだ取り込み方を画面の中だ�
 切り替えの無い `google_primary` の事業所では 409（`google_primary`）を返す。  
 プレビューは書かないので、モードによらず動く。
 
-- ADR-0035: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0035-google-calendar-source-modes.md)
+- ADR-0029: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-source-modes.md)
 
 取り込んだ Google の予定は、`external_event_links` の対応を持つ。  
 対応のある予定は取り込み済みに数え、もう一度は書かない。
@@ -238,7 +238,7 @@ Calendar API は元の日時で予定を絞れず、上限なしに探すと回�
 日付と時刻は Asia/Tokyo で読む。  
 終了が開始の翌日で、長さが 24 時間未満の予定は、開始の日の予定に「終了が翌日か」の印（`ends_next_day`）を付けて取り込む。
 
-- ADR-0023: [日をまたぐ予定を、開始の日の予定に「終了が翌日か」の印を付けて持ち、取り込み、カレンダー、照合で扱う](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0023-overnight-schedule.md)
+- ADR-0022: [日をまたぐ予定を、開始の日の予定に「終了が翌日か」の印を付けて持ち、取り込み、カレンダー、照合で扱う](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0022-overnight-schedule.md)
 
 印の付け方は次のとおり。
 
@@ -274,7 +274,7 @@ web は、印の付いた予定と `multi_day` の予定の終了の時刻に「
 前の取り込みで繰り返しのまま取り込んだ予定の、取り消した回と変えた回は、既に割り振った予定の変更なので、休職でも除外の日と回の置き換えにする。  
 繰り返しの予定をほかの職員に割り振り直していれば、変えた回は新しい予定とみなし、取り込まない予定にする。
 
-訪問しない職員（ADR-0022）のカレンダーも、休職と同じく扱う。  
+訪問しない職員（ADR-0021）のカレンダーも、休職と同じく扱う。  
 新しい予定は、取り込まない予定（`staff_non_visiting`）にする。
 
 退職した職員に結び付けようとすると 400 を返す。  
@@ -291,9 +291,9 @@ web は、印の付いた予定と `multi_day` の予定の終了の時刻に「
 
 Google カレンダーを正本にする事業所（`google_primary`）の予定を buddy に取り込み、正本を buddy（`buddy_primary`）に移す作業を、切り替え（`Cutover`）の記録で行う。  
 切り替えの操作と記録は `calendarimport` に置き、最後のモードの変更だけを `organization` に頼む。  
-決定の背景は ADR-0035 にあり、画面の動きは画面仕様書の [予定の正本の切り替え](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-cutover_予定の正本の切り替え/index.md) にある。
+決定の背景は ADR-0029 にあり、画面の動きは画面仕様書の [予定の正本の切り替え](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-cutover_予定の正本の切り替え/index.md) にある。
 
-- ADR-0035: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0035-google-calendar-source-modes.md)
+- ADR-0029: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-source-modes.md)
 
 切り替えの操作は次の 4 つで、どれも職員の管理の権限（`staff.manage`）を求める。
 
@@ -436,7 +436,7 @@ sequenceDiagram
 - 常駐の形では、取れるものが無くなるまで続けて取ってから、`GOOGLE_CALENDAR_EXPORT_INTERVAL` を待つ。
   - 待ちを取れなかったときは、間隔を待ってから取り直す。止める合図を受けたら、新しく取らない。
   - 常駐と 1 回の形の繰り返しは `cmd/calendar-worker` が持ち、`Exporter` は 1 回の取得と処理（`ExportDue`）だけを持つ。
-  - ADR-0037: [Worker の常駐と 1 回の繰り返しを cmd/calendar-worker に集め、機能のパッケージは 1 回の処理だけを持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0037-calendar-worker-loop.md)
+  - ADR-0031: [Worker の常駐と 1 回の繰り返しを cmd/calendar-worker に集め、機能のパッケージは 1 回の処理だけを持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0031-calendar-worker-loop.md)
 - 結果は、取ったときの回数（`attempts`）と比べて書き、期限が切れた後にほかの Worker が取り直した待ちを変えない。
   - 外部の API はトランザクションの外で呼ぶ。
 - 止める合図で書けなかった待ちは、書こうとした回数に数えずに返す。
@@ -444,7 +444,7 @@ sequenceDiagram
   - 保留にした待ちは、要約のログの `held_count` に数え、書いていない待ちの滞留（`pending` だけを数える）には数えない。
   - 確認が必要な予定の一覧に出る。「buddy の内容で書き直す」を選んでも、事業所が `buddy_primary` になるまでは、また保留にする。
 
-- ADR-0035: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0035-google-calendar-source-modes.md)
+- ADR-0029: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-source-modes.md)
 
 予定の更新の番号（`version`）は、単発の予定の変更とキャンセル、繰り返しの予定の回の除外のたびに 1 つ増える。  
 書いた後に、予定の対応（`external_event_links`）に Google の etag と更新の番号（`synced_version`）を書く。  
@@ -541,7 +541,7 @@ Google は、消された予定に、消す前の etag を `If-Match` に付け�
   - Google カレンダーで直された予定は、書き出しが `If-Match` の 412 で見つけ、確認が必要な予定に出す。
 - 外部の変更を buddy の予定に当てる規則（`reconcileApplier`）は、どのモードの同期にも使わない。
   - 緊急の編集の要求で使い道を決めるまで、規則とテストを残す。
-  - ADR-0035: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0035-google-calendar-source-modes.md)
+  - ADR-0029: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-source-modes.md)
 
 次の図は、同期の Worker（`calendar-worker sync`）が `google_primary` の事業所のカレンダーの変わった予定を読み、予定ごとに Projection に写すまでを示す。
 
@@ -585,7 +585,7 @@ sequenceDiagram
 組み立ては、`google_primary` に `projectionApplier` だけを渡し、`buddy_primary` には渡さない。  
 同期の処理は、API と別のプロセスの `calendar-worker sync` で動く。
 
-- ADR-0032: [予定の API の calendar を、結び付け、取り込み、同期、書き出しの 4 つの機能に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0032-schedule-api-calendar-split.md)
+- ADR-0005: [予定の API を機能ごとのパッケージに分け、Go の API の操作を使う依存だけを持つ型にし、ファイルの名前の末尾の語で役割を表す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0005-schedule-api-packages.md)
 
 - 読む時刻（`next_sync_at`）を過ぎたカレンダーがあるかを 5 秒（間隔がそれより短ければ間隔）ごとに確認し、取れるものが無くなるまで続けて取る。
   - 確認の間隔と繰り返しは `cmd/calendar-worker` が持ち、`Syncer` は 1 回の取得と処理（`SyncDue`）だけを持つ。
@@ -610,7 +610,7 @@ sequenceDiagram
 
 Projection（`calendar_event_projections`）は、Google カレンダーの 1 つの予定を 1 行にし、結び付けたカレンダーの ID と Google の予定の ID の組で一意にする。  
 同じ予定を何度読んでも、行を書き直すので、行は重ならない。  
-保存する項目と保存しない項目は、ADR-0035 のとおりにする。
+保存する項目と保存しない項目は、ADR-0029 のとおりにする。
 
 - 行は、写した時点のカレンダーの事業所と職員の ID を持つ。
 - 新しい予定と変わった予定は、タイトル、開始と終了（日時か、終日の日付）、開始のタイムゾーン、繰り返しの規則、etag、Google での更新の時刻を書く。
@@ -736,7 +736,7 @@ Google で新しく作った予定は、取り込みで buddy に移す。
 マネージャーは、buddy の内容で書き直す。  
 モードは、予定の行をロックした後に、事業所の行を共有のロックで読んで確認する。
 
-- ADR-0035: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0035-google-calendar-source-modes.md)
+- ADR-0029: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-source-modes.md)
 
 単発の予定で、理由が `precondition_failed` か `not_found` の待ちだけに使える。  
 buddy でキャンセルした予定には使えない（`acceptable` が false）。  
@@ -806,7 +806,7 @@ calendarpit で足りない振る舞いと、その扱い
 | --- | --- |
 | Google の変更を、増分の取得に渡さずに止める操作 | 中継の `cmd/gcalhold` で補う。E2E が `POST /hold` で止めている間は、`syncToken` を付けた `events.list` に、変わった予定が無いと答える。calendarpit のトークンは使っても消えないので、止めるのをやめた後に止めていた間の変更が返る。buddy と Google の両方で変わった予定を、決まった順で作るために要る |
 | サービスアカウント、カレンダーの共有と、共有の権限（閲覧だけ、空き時間だけ） | 残す。fixture の利用者 1 人が職員のカレンダーを全て持つ。書けないカレンダーと `freeBusyReader` は、`gcaltest` のユニットテストで確認する |
-| 事業所ごとのサービスアカウントのなりすまし（ADR-0012） | 残す。なりすましを作るときは、`GOOGLE_CALENDAR_ENDPOINT` のときになりすまさず、ADC のファイルの token を全ての事業所に使う |
+| 事業所ごとのサービスアカウントのなりすまし（ADR-0011） | 残す。なりすましを作るときは、`GOOGLE_CALENDAR_ENDPOINT` のときになりすまさず、ADC のファイルの token を全ての事業所に使う |
 | 403 の rate limit と 5xx | 残す。`gcaltest` の `Failures` と `Status` で確認する |
 | 1 つのカレンダーの予定の取得の失敗 | 中継の `cmd/gcalhold` で補う。E2E が `POST /fail` で失敗させている間は、そのカレンダーの `events.list` に 503 を返す。同期の失敗を予定のカレンダーの画面で確認するために要る |
 

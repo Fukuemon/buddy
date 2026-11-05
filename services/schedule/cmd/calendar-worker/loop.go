@@ -24,7 +24,7 @@ func pollInterval(name string, c config.Calendar) time.Duration {
 // dueFunc は、取れるものを 1 回の上限まで取って処理し、取った数を返す処理（Exporter.ExportDue、Syncer.SyncDue）である。
 type dueFunc func(context.Context) (int, error)
 
-// resident は、ctx が終わるまで、drain で取れるものが無くなるまで due を呼んでから、interval を待つことを繰り返す（ADR-0037）。
+// resident は、ctx が終わるまで、drain で取れるものが無くなるまで due を呼んでから、interval を待つことを繰り返す（ADR-0031）。
 // 待ちとカレンダーを取れなかったときは、ログに書き、interval を待ってから取り直す。
 func resident(ctx context.Context, due dueFunc, interval time.Duration, log *slog.Logger) {
 	t := time.NewTicker(interval)

@@ -55,7 +55,7 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 - `listUsers` は、休職と退職の職員も返す。
   - この画面は、`status` を持つ職員と、`visits` が false の職員を主訪問者と予定者の候補から除く。
 - `createSchedule` は、`staff_id` か `visit_info.assigned_staff_id` が休職か退職の職員か、訪問しない職員を指すと 400 を返す。
-  - ADR-0022: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../../adr/0022-receipt-check-policy-and-non-visiting-staff.md)
+  - ADR-0021: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../../adr/0021-receipt-check-policy-and-non-visiting-staff.md)
 
 ## 権限の判定
 

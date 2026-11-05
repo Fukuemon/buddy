@@ -121,8 +121,8 @@ PRD の 4 つの業務の領域は、次のコンテナが持つ。
 - access token の `sub` は職員の ID で、予定の API の `users.sub` に入る。
 - 持たないもの: 職員の名前、役職、権限。
   - 職員の名前、役職、権限は、予定の API が持つ。
-  - ADR-0016: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](../adr/0016-id-broker-hydra.md)
-  - ADR-0017: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](../adr/0017-identity-boundary.md)
+  - ADR-0015: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](../adr/0015-id-broker-hydra.md)
+  - ADR-0016: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](../adr/0016-identity-boundary.md)
 - 内部の構成と流れは [ID ブローカーの Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md) にある。
 
 ### 予定の API
@@ -143,7 +143,7 @@ PRD の 4 つの業務の領域は、次のコンテナが持つ。
 - 書き出し（`calendar-worker export`）は、予定の API が積んだ書き出しの待ちを読み、Google カレンダーに書く。
 - 同期（`calendar-worker sync`）は、Google カレンダーを正本にする事業所のカレンダーの変わった予定を読み、予定の写しに当てる。
 - 持たないもの: 予定の API の HTTP の操作と認証。
-  - ADR-0036: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで動かす](../adr/0036-calendar-worker.md)
+  - ADR-0030: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで動かす](../adr/0030-calendar-worker.md)
 - 役割ごとのプロセス、多重起動、止め方は、[基盤と運用の Calendar Worker](https://github.com/Fukuemon/buddy/blob/develop/context/operations.md#calendar-worker) にある。
 
 ### 照合の API
@@ -179,7 +179,7 @@ PRD の 4 つの業務の領域は、次のコンテナが持つ。
 | web | 予定の API、照合の API | `Authorization` に access token を Bearer で付ける | [予定の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/openapi.yaml)、[照合の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/openapi.yaml) |
 | 照合の API | 予定の API | web から受けた access token をそのまま Bearer で付けて、照合の権限を問い合わせる | [権限の Design Doc の照合の API の権限の確認](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md#照合の-api-の権限の確認) |
 | 予定の API、照合の API | Hydra | Issuer の discovery と JWKS を読み、access token を検証する | - |
-| 照合の API、予定の API、calendar-worker | Google Calendar API | 事業所ごとのサービスアカウントになりすまして得たトークンで、そのアカウントに共有されたカレンダーの予定を読む | [ADR-0012](../adr/0012-google-calendar-facility-service-accounts.md) |
+| 照合の API、予定の API、calendar-worker | Google Calendar API | 事業所ごとのサービスアカウントになりすまして得たトークンで、そのアカウントに共有されたカレンダーの予定を読む | [ADR-0011](../adr/0011-google-calendar-facility-service-accounts.md) |
 | 予定の API、calendar-worker | PostgreSQL | 予定の API と calendar-worker だけが、予定の API のデータベースを読み書きする | - |
 
 表のつなぎ方に足す規則は次のとおり。
@@ -190,7 +190,7 @@ PRD の 4 つの業務の領域は、次のコンテナが持つ。
 - 2 つの API は、access token の検証に失敗したら 401 を返す。
 - Google Calendar API に予定を書くのは、calendar-worker だけである。
   - サービスアカウントのキーは使わない。
-  - ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](../adr/0012-google-calendar-facility-service-accounts.md)
+  - ADR-0011: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](../adr/0011-google-calendar-facility-service-accounts.md)
 
 ブラウザと web の間の cookie には、セッションの ID を入れ、トークンは入れない。  
 画面の操作は、web のサーバーの関数（BFF）を呼ぶ。  
@@ -272,7 +272,7 @@ Hydra は discovery の `end_session_endpoint` を Issuer の URL から作る�
 `GOOGLE_CALENDAR_ENDPOINT` を渡し、`GOOGLE_APPLICATION_CREDENTIALS` を渡さなければ、認証をしない。  
 予定の API と calendar-worker では、`GOOGLE_CALENDAR_ENDPOINT` を `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` と一緒に渡す。
 
-サービスアカウントが「予定の変更」の共有だけで書けるかを確認するまで、本番では `GOOGLE_CALENDAR_EXPORT_ENABLED` を `false` にする（ADR-0012 の承認の条件）。
+サービスアカウントが「予定の変更」の共有だけで書けるかを確認するまで、本番では `GOOGLE_CALENDAR_EXPORT_ENABLED` を `false` にする（ADR-0011 の承認の条件）。
 
 - web の `VITE_API_MODE` は、イメージのビルドのときに埋め込む値で、実行のときには読まない。
   - イメージは `bff` でビルドする。

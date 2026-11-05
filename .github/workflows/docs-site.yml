@@ -1,7 +1,7 @@
 # ドキュメントサイトと、Storybook のカタログと、表の ER 図を、1 つの Worker（buddy-docs）として Cloudflare に出す。
 # agent-harness のパッケージ docs-site のテンプレート（cloudflare-workers）を元にした。手順は apps/docs-site/README.md にある。
-# pull request ではサイトを組み立てるだけで、プレビューは出さない。プレビューは pull request のコードへトークンを渡すことになる（ADR-0019）。
-# develop に入ったら本番に出し、ログインなしで開けることを確認する。サイトは Access で守らず、誰でも開ける（ADR-0020）。
+# pull request ではサイトを組み立てるだけで、プレビューは出さない。プレビューは pull request のコードへトークンを渡すことになる（ADR-0018）。
+# develop に入ったら本番に出し、ログインなしで開けることを確認する。サイトは Access で守らず、誰でも開ける（ADR-0019）。
 # 並べるものは context/project.yml の docs_site.parts にあり、pnpm site:build（scripts/build-docs-site.mjs）が並べる。
 # 文書の元は docs/ のほか、services/ と packages/ の Design Doc にも散るので、変えた場所で絞らない。
 #

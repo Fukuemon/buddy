@@ -97,7 +97,7 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 
 背景を指定しない要素は `surface-canvas` の色になるので、カード、表、入力欄には `bg-surface` を付ける。
 
-- ADR-0015: [キーの色を light-blue にし、画面の背景だけ DADS に無い値を持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0015-key-color-and-canvas.md)
+- ADR-0014: [キーの色を light-blue にし、画面の背景だけ DADS に無い値を持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0014-key-color-and-canvas.md)
 
 `*-surface` の面の上の文字は、同じ系統の文字の色（`danger-surface` の上なら `danger`）か `text` にする。  
 どちらも 4.5:1 以上になる。

@@ -1,4 +1,4 @@
-# ADR-0020: ドキュメントサイトを Cloudflare Access で守らず、誰でも開けるようにする
+# ADR-0019: ドキュメントサイトを Cloudflare Access で守らず、誰でも開けるようにする
 
 ## Status
 
@@ -10,7 +10,7 @@
 この ADR は、次の 2 つの判断を置き換える。
 
 - [ADR-0004](0004-design-system.md) の、カタログを Cloudflare Access で許可した人だけが開けるようにする判断
-- [ADR-0019](0019-docs-site-publish-and-contrast-check.md) の、公開の後に文書、カタログ、ER 図の保護を確認する判断
+- [ADR-0018](0018-docs-site-publish-and-contrast-check.md) の、公開の後に文書、カタログ、ER 図の保護を確認する判断
 
 ADR-0004 の時点では、リポジトリは private で、Access は private のリポジトリの中身を許可した人にだけ見せるために使った。  
 リポジトリは 2026-10-22 に public にした。サイトに並べるものは、どれもリポジトリの文書とコードから組み立てるので、Access を外しても、新しく見えるようになる中身はない。
@@ -28,7 +28,7 @@ Access を残すと、次の手間が続く。
   - 確認は、リダイレクトをたどらずに取った応答に、それぞれの中身にだけある文字列があるかで行う。Access を掛け直したときや、公開した中身が欠けたときに失敗する。
 - カタログに載せるのは、コンポーネントとダミーデータだけにする規則（ADR-0004）は残す。
   - サイトを誰でも開けるので、実際のデータを載せない理由は強くなる。
-- Cloudflare のトークンを develop に限った environment に置く判断（ADR-0019）は残す。
+- Cloudflare のトークンを develop に限った environment に置く判断（ADR-0018）は残す。
   - トークンは、Access と関係なく、Worker の中身を書き換えられるためである。
 
 ## Considered Options

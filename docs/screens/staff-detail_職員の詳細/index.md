@@ -38,9 +38,9 @@
 幅 768px 未満では、編集のボタンと「…」のメニューを見出しの下に置き、プロフィールの項目の名前と値を縦に積む。  
 権限の一覧は、どの幅でも同じ形にする。
 
-ADR-0018: [職員の停止を、戻せる休職と、戻せない退職に分ける](../../adr/0018-staff-leave-and-retirement.md)
+ADR-0017: [職員の停止を、戻せる休職と、戻せない退職に分ける](../../adr/0017-staff-leave-and-retirement.md)
 
-ADR-0022: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../../adr/0022-receipt-check-policy-and-non-visiting-staff.md)
+ADR-0021: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../../adr/0021-receipt-check-policy-and-non-visiting-staff.md)
 
 === "プロフィール"
 

@@ -1,4 +1,4 @@
-# ADR-0025: web の画面の権限の確認を、route の beforeLoad と PermissionGuard で宣言し、1 つの関数で評価する
+# ADR-0024: web の画面の権限の確認を、route の beforeLoad と PermissionGuard で宣言し、1 つの関数で評価する
 
 ## Status
 

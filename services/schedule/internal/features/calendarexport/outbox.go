@@ -42,7 +42,7 @@ func (o *Outbox) RecurringChanged(ctx context.Context, facilityID, staffID, recu
 }
 
 func (o *Outbox) enqueue(ctx context.Context, staffID string, t calendar.Target, linkOf func(context.Context) (calendar.EventLink, error)) error {
-	// google_primary の事業所は Google カレンダーが正本なので、buddy から書き出さない（ADR-0035）。
+	// google_primary の事業所は Google カレンダーが正本なので、buddy から書き出さない（ADR-0029）。
 	f, err := o.facilities.Get(ctx, t.FacilityID)
 	if err != nil || !f.IsBuddyPrimary() {
 		return err

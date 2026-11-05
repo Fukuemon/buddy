@@ -7,7 +7,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
-// Limiter は、メールの有無を確認する試行の回数を、送信元の IP アドレスか入れたメールのようなキーごとに制限する（ADR-0017）。
+// Limiter は、メールの有無を確認する試行の回数を、送信元の IP アドレスか入れたメールのようなキーごとに制限する（ADR-0016）。
 // 1 つのプロセスの中だけで数える。複数のプロセスで動かすときは、プロセスの数だけ上限が増える。
 type Limiter struct {
 	every time.Duration

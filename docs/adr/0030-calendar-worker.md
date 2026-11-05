@@ -1,4 +1,4 @@
-# ADR-0036: Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで動かす
+# ADR-0030: Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで動かす
 
 ## Status
 
@@ -13,11 +13,11 @@ Cloud Run のようなリクエストで動く環境では、スケールゼロ�
 決定に関わる事実は次のとおり。
 
 - 組み立ては `internal/assemble` にあり、`cmd/api` と次の実行単位が共有する。設定は `config.LoadAPI` と `config.LoadWorker` に分かれ、`LoadWorker` は OIDC とブローカーの値を読まない。
-  - ADR-0031: [Go の API の操作を、使う依存だけを持つ操作ごとの型にし、機能のパッケージの App をやめる](0031-go-operation-types.md)
+  - ADR-0005: [予定の API を機能ごとのパッケージに分け、Go の API の操作を使う依存だけを持つ型にし、ファイルの名前の末尾の語で役割を表す](0005-schedule-api-packages.md)
 - 書き出しの待ちと同期の状態は、`FOR UPDATE SKIP LOCKED` とリースで取る（Claim）。取った処理が終わらずにリースが切れると、別の処理が取り直す。書き出しは 1 回に 5 件、リース 2 分、同期は 1 回に 5 件、リース 6 分である。
 - 書き出しは、buddy の予定の ID から Google の予定の ID を決め（`EventIDOf`）、作り直しの 409 を同じ予定とみなす。外部への書き込みが成功した後に DB の更新が失敗し、書き出しの待ちを取り直しても、同じ予定を 2 つ作らない。
 - 書き出しと同期の向きは、事業所の正本のモードで決まる。`google_primary` の事業所は同期だけ、`buddy_primary` の事業所は書き出しだけを行う。
-  - ADR-0035: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](0035-google-calendar-source-modes.md)
+  - ADR-0029: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](0029-google-calendar-source-modes.md)
 - 今のデフォルトの確認の間隔は、書き出しが 30 秒、同期が 2 分である。ADR-0009 は、同期を 2〜5 分ごとのポーリングで行うとした。
   - ADR-0009: [Google カレンダーとの連携を、buddy をマスターにする段階の同期にし、サービスアカウントとカレンダーの共有で認証する](0009-google-calendar-sync.md)
 - ログは JSON で書き、集める先と通知の条件はインフラのリポジトリが決める。予定の API に、メトリクスのライブラリは無い。
@@ -46,7 +46,7 @@ Cloud Run のようなリクエストで動く環境では、スケールゼロ�
 ### 正本と逆の向きに書かない守り方
 
 - 設定のフラグ（`GOOGLE_CALENDAR_EXPORT_ENABLED`、`GOOGLE_CALENDAR_SYNC_ENABLED`）は残す。フラグが無効の役割で起動した Worker は、処理をせずに終了のコード 0 で終わり、そのことをログに書く。
-- フラグを誤って有効にしても、正本のモードが向きを守る（ADR-0035）。
+- フラグを誤って有効にしても、正本のモードが向きを守る（ADR-0029）。
   - `Outbox` は、`buddy_primary` でない事業所の予定の変更を積まない。`Exporter` は、取った待ちの事業所が `buddy_primary` でなければ書かずに保留にする。
   - `Syncer` は、`google_primary` でない事業所のカレンダーを読まない。
 
