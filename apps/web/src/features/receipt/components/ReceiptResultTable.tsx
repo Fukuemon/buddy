@@ -51,7 +51,8 @@ export const ReceiptResultTable = ({ rows }: ReceiptResultTableProps) => {
   return (
     <div
       className={clsx(
-        'overflow-auto rounded-8 ring-1 ring-border',
+        // relative は、空のセルの sr-only（absolute）の位置の基準を箱にし、overflow-auto で切り取るためである。無いと sr-only がページを横に広げる
+        'relative overflow-auto rounded-8 ring-1 ring-border',
         '[&_tr>:nth-child(2)]:sticky [&_tr>:nth-child(2)]:left-(--receipt-first-column-width) [&_tr>:nth-child(2)]:bg-surface',
         // 狭い幅では、長い利用者名で固定する 2 列が送る箱を覆わないよう、利用者名の列を 8rem にして折り返す。下限が無いと、表が縮んで 1 文字ずつ折り返す
         '[&_tr>:nth-child(2)]:max-w-32 [&_tr>:nth-child(2)]:min-w-32 [&_tr>:nth-child(2)]:whitespace-normal desktop:[&_tr>:nth-child(2)]:max-w-none desktop:[&_tr>:nth-child(2)]:min-w-0 desktop:[&_tr>:nth-child(2)]:whitespace-nowrap',
