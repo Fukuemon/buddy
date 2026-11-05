@@ -30,7 +30,7 @@
 
 | ADR | 題 | Status |
 | --- | --- | --- |
-| [ADR-0004](0004-design-system.md) | デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にし、カタログをドキュメントサイトと同じ Worker で誰でも開けるように出す | 承認 |
+| [ADR-0004](0004-design-system.md) | デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にし、カタログをドキュメントサイトと同じ Worker で出す | 承認 |
 
 ### 予定の API の構成
 

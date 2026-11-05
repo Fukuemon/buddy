@@ -17,7 +17,7 @@ ID ブローカーは、ログインの画面、ログインの失敗の画面�
   - ログインの失敗の画面の文言は、web の `AuthErrorMessage` の `failed` から手で写している。登録されていないメールとブローカーの中の失敗を区別させないため、2 つの文言は同じでなければならない。
 - 画面を web に移すと、Hydra の admin API でログインを確定させる資格を、web の BFF が持つことになる。
 - `packages/ui` には、業務と buddy に固有の名前を持たない Base と Case のコンポーネントだけを置く。buddy の画面の帯（`SiteHeader`）も Domain として `apps/web` に残した。
-  - ADR-0004: [デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にし、カタログをドキュメントサイトと同じ Worker で誰でも開けるように出す](0004-design-system.md)
+  - ADR-0004: [デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にし、カタログをドキュメントサイトと同じ Worker で出す](0004-design-system.md)
 
 ## Decision
 

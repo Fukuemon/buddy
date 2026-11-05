@@ -152,7 +152,7 @@ pnpm e2e
 
 pull request では、ドキュメントサイトのプレビューを出さない。  
 変更が develop に入ると、本番のドキュメントサイトに出る。  
-ADR-0004: [デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にし、カタログをドキュメントサイトと同じ Worker で誰でも開けるように出す](docs/adr/0004-design-system.md)
+ADR-0004: [デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にし、カタログをドキュメントサイトと同じ Worker で出す](docs/adr/0004-design-system.md)
 
 - マージする前に公開した形で見るときは、ルートでサイトを組み立て、静的なファイルとして配信して開く。
 
