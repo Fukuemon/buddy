@@ -1,4 +1,4 @@
-# ADR-0019: ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する
+# ADR-0018: ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する
 
 ## Status
 
@@ -8,10 +8,10 @@
 
 ID ブローカーは、ログインの画面、ログインの失敗の画面、ログアウトの失敗の画面の 3 つを出す。
 
-- ADR-0014 は、ブローカーがログインと同意とログアウトの画面を持つと決めた。web は Hydra のクライアントに `skip_consent` を設定するので、同意の画面は出ない。
-  - ADR-0014: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](0014-id-broker-hydra.md)
-- ADR-0012 は、画面と BFF を `apps/` に、Go の API を `services/` に置くと決めた。
-  - ADR-0012: [2 つの API を services/ に置き、画面と API をトップのディレクトリで分ける](0012-services-directory.md)
+- ADR-0013 は、ブローカーがログインと同意とログアウトの画面を持つと決めた。web は Hydra のクライアントに `skip_consent` を設定するので、同意の画面は出ない。
+  - ADR-0013: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](0013-id-broker-hydra.md)
+- ADR-0011 は、画面と BFF を `apps/` に、Go の API を `services/` に置くと決めた。
+  - ADR-0011: [2 つの API を services/ に置き、画面と API をトップのディレクトリで分ける](0011-services-directory.md)
 - 今の 3 つの画面は、HTML と CSS を Go の文字列として `services/broker/internal/login/pages.go` に持つ。
   - `packages/ui` のコンポーネントと `focus-ring` を使えず、フォーカスの表示とカードの見た目を CSS で書き写している。
   - ログインの失敗の画面の文言は、web の `AuthErrorMessage` の `failed` から手で写している。登録されていないメールとブローカーの中の失敗を区別させないため、2 つの文言は同じでなければならない。
@@ -23,14 +23,14 @@ ID ブローカーは、ログインの画面、ログインの失敗の画面�
 
 ログインの画面のソースを `apps/broker`（パッケージの名前は `@buddy/broker`）に置き、`@buddy/ui` のコンポーネントで書く。ID ブローカーは、`apps/broker` が生成したテンプレートと CSS を埋め込んで配信する。
 
-- ディレクトリの名前は、ADR-0012 と同じく役割の接尾辞（`-pages`）を付けず、`services/broker` と同じ `broker` にする。トップのディレクトリで、画面か Go のサーバーかを区別する。
+- ディレクトリの名前は、ADR-0011 と同じく役割の接尾辞（`-pages`）を付けず、`services/broker` と同じ `broker` にする。トップのディレクトリで、画面か Go のサーバーかを区別する。
 - `apps/broker` は、ビルドのときに React のコンポーネントを `renderToStaticMarkup` で静的な HTML に書き出し、Go の `html/template` のテンプレートにする。CSS は、`packages/ui` の `theme.css` を読む Tailwind で生成する。
   - `login_challenge` のような実行のときの値は、`{{.Challenge}}` のようなテンプレートの式として書き出し、ID ブローカーが埋める。
 - 生成物は `services/broker/internal/login/` に置いてコミットし、ID ブローカーは `go:embed` で読む。`pnpm check:generated` が、生成し直した結果との差分を確認する。
   - 理由: 今の `tokens.css` と同じく、ID ブローカーのビルドとコンテナのイメージに Node.js を要しない。
-- 認証の確定（Hydra の admin API の呼び出し）と画面の配信は、ADR-0014 のとおり ID ブローカーに残す。ID ブローカーが動くときには、`apps/broker` のコードは動かない。
-- `apps/broker` はコンテナを持たないので、ADR-0013 のコンテナとサービスの名前の規則の対象の外にする。
-  - ADR-0013: [2 つの API のサービスの名前とトークンの aud を、ディレクトリの名前にそろえる](0013-service-names.md)
+- 認証の確定（Hydra の admin API の呼び出し）と画面の配信は、ADR-0013 のとおり ID ブローカーに残す。ID ブローカーが動くときには、`apps/broker` のコードは動かない。
+- `apps/broker` はコンテナを持たないので、ADR-0012 のコンテナとサービスの名前の規則の対象の外にする。
+  - ADR-0012: [2 つの API のサービスの名前とトークンの aud を、ディレクトリの名前にそろえる](0012-service-names.md)
 - ロゴと理由を出すカードのコンポーネントと、ログインの失敗（web の `failed`）の文言は `apps/broker` に置き、web は `@buddy/broker` から読む。web だけが出す理由（事業所に登録されていない、試行の回数の上限を超えた）の文言は web に残し、カードに渡す。
   - 理由: 文言とカードは buddy に固有なので、ADR-0004 の規則で `packages/ui` の Case にできない。web とブローカーのどちらかに置くなら、ID ブローカーが出す画面のソースの側に置き、web が読む向きにする。web の側に置くと、`apps/broker` のビルドが web のコードを読むことになる。
 

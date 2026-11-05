@@ -276,7 +276,7 @@ func countFacilities(t *testing.T, pool *pgxpool.Pool) int {
 }
 
 // TestMigrateReceiptCheckPolicy は、照合の権限のマイグレーションが、今ある事業所に事務の役職を足し、
-// 職員の管理の権限をデフォルトに持つ役職と、職員の管理の権限を持つ退職していない職員に、照合の権限を足すことを確認する（ADR-0015、#376）。
+// 職員の管理の権限をデフォルトに持つ役職と、職員の管理の権限を持つ退職していない職員に、照合の権限を足すことを確認する（ADR-0014、#376）。
 func TestMigrateReceiptCheckPolicy(t *testing.T) {
 	cfg := newDatabase(t, "migrate_receipt_check")
 	ctx := context.Background()
@@ -467,7 +467,7 @@ func TestMigrateTeamColor(t *testing.T) {
 }
 
 // TestMigrateFacilitySourceMode は、正本のモードのマイグレーションが、今ある事業所を buddy_primary にし、
-// 後から足す事業所のデフォルトを google_primary にし、2 つの値のほかを拒むことを確認する（ADR-0023）。
+// 後から足す事業所のデフォルトを google_primary にし、2 つの値のほかを拒むことを確認する（ADR-0009）。
 func TestMigrateFacilitySourceMode(t *testing.T) {
 	cfg := newDatabase(t, "migrate_facility_source_mode")
 	ctx := context.Background()

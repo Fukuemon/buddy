@@ -94,7 +94,7 @@ type Worker struct {
 //   - BROKER_CLIENT_SECRET: Hydra に登録した予定の API のクライアントの secret
 //   - BROKER_AUDIENCE: 内部の API を呼ぶ access token の aud。デフォルトは broker
 //   - GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE: 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応（JSON）のパス。
-//     空なら Google カレンダーを読まない。Application Default Credentials で認証し、事業所のサービスアカウントになりすます（ADR-0011）
+//     空なら Google カレンダーを読まない。Application Default Credentials で認証し、事業所のサービスアカウントになりすます（ADR-0009）
 //   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit で試すためのもので、GOOGLE_APPLICATION_CREDENTIALS を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使い、渡さなければ認証をしない。
 //     GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE と一緒に渡す
 //   - GOOGLE_CALENDAR_EXPORT_ENABLED: true なら、予定を Google カレンダーに書き出す。デフォルトは false。

@@ -60,7 +60,7 @@ verified_commit: c0514f20
 照合の API が照合の権限を確認する仕方は、[照合の API の権限の確認](#照合の-api-の権限の確認) にある。
 
 - ADR-0002: [権限を役職のデフォルトと職員ごとの上書きで持つ（PBAC）](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0002-pbac.md)
-- ADR-0015: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0015-receipt-check-policy-and-non-visiting-staff.md)
+- ADR-0014: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0014-receipt-check-policy-and-non-visiting-staff.md)
 
 照合の権限を足したマイグレーション（`000009_receipt_check_policy`）は、役職のデフォルトの権限と、職員の管理の権限を持つ今いる職員の権限を変える。
 
@@ -135,7 +135,7 @@ verified_commit: c0514f20
 
 - 照合の権限（`receipt.check`）を持つ職員だけに許す。
   - 本文を読む前に、受けた access token をそのまま付けて予定の API の `GET /v1/me` を呼び、返った権限で確認する。
-  - ADR-0015: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0015-receipt-check-policy-and-non-visiting-staff.md)
+  - ADR-0014: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0014-receipt-check-policy-and-non-visiting-staff.md)
   - 照合の API は権限を保存しない。権限を外すと、その職員の次の照合から拒む。
 - 照合の権限が無いか、予定の API が 401 か 403 を返した: 403 の `forbidden`。
   - 予定の API は、休職と退職の職員を 403 で拒む

@@ -137,5 +137,5 @@ Docker が無い環境では、`go test -short ./...` で `internal/postgres` �
 ## Documentation
 
 - [DesignDoc.md](DesignDoc.md): ブローカーの責務、Hydra との分担、ログイン、職員の登録、休職、復職、退職、ログアウトの流れ
-- ADR-0014: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](../../docs/adr/0014-id-broker-hydra.md)
+- ADR-0013: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](../../docs/adr/0013-id-broker-hydra.md)
 - ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元と停止をブローカーが、権限と業務のデータを予定の API が持つ](../../docs/adr/0001-auth.md)

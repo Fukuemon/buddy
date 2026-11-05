@@ -256,6 +256,6 @@ flowchart TB
 ## 統合した ADR
 
 - ADR-0004: デザインシステムのトークンとコンポーネントの配置先（[統合の前](https://github.com/Fukuemon/buddy/blob/24bb45dd420e8bbbf41d4ae71205171b39943e66/docs/adr/0004-design-system.md)）
-- ADR-0014: キーの色を light-blue にし、画面の背景だけ DADS に無い値を持つ（[統合の前](https://github.com/Fukuemon/buddy/blob/24bb45dd420e8bbbf41d4ae71205171b39943e66/docs/adr/0014-key-color-and-canvas.md)）
-- ADR-0015: ドキュメントサイトのプレビューをやめ、トークンの組のコントラストを pnpm check:contrast で確認する（[統合の前](https://github.com/Fukuemon/buddy/blob/24bb45dd420e8bbbf41d4ae71205171b39943e66/docs/adr/0018-docs-site-publish-and-contrast-check.md)）
-- ADR-0016: ドキュメントサイトを Cloudflare Access で守らず、誰でも開けるようにする（[統合の前](https://github.com/Fukuemon/buddy/blob/24bb45dd420e8bbbf41d4ae71205171b39943e66/docs/adr/0019-docs-site-without-access.md)）
+- ADR-0013: キーの色を light-blue にし、画面の背景だけ DADS に無い値を持つ（[統合の前](https://github.com/Fukuemon/buddy/blob/24bb45dd420e8bbbf41d4ae71205171b39943e66/docs/adr/0014-key-color-and-canvas.md)）
+- ADR-0014: ドキュメントサイトのプレビューをやめ、トークンの組のコントラストを pnpm check:contrast で確認する（[統合の前](https://github.com/Fukuemon/buddy/blob/24bb45dd420e8bbbf41d4ae71205171b39943e66/docs/adr/0018-docs-site-publish-and-contrast-check.md)）
+- ADR-0015: ドキュメントサイトを Cloudflare Access で守らず、誰でも開けるようにする（[統合の前](https://github.com/Fukuemon/buddy/blob/24bb45dd420e8bbbf41d4ae71205171b39943e66/docs/adr/0019-docs-site-without-access.md)）

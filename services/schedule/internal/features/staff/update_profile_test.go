@@ -87,7 +87,7 @@ func TestStaffUpdateProfile(t *testing.T) {
 }
 
 // 訪問する職員を訪問しない職員に変えるときは、退職と同じ範囲で残る予定と担当の利用者を数え、残れば書かずに一覧を返す。
-// 訪問しない職員を訪問する職員に戻すときは確認しない（ADR-0015、#377）。
+// 訪問しない職員を訪問する職員に戻すときは確認しない（ADR-0014、#377）。
 func TestStaffUpdateProfileNonVisiting(t *testing.T) {
 	ctx := context.Background()
 	profile := func(s *inmem.Store, nonVisiting bool) staff.Profile {

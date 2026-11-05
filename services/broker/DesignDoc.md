@@ -16,7 +16,7 @@ ID ブローカー（`services/broker`、以下ブローカー）は、Hydra と
 web と 2 つの API から見える Issuer は Hydra だけである。
 
 - 全体の責務と依存は [buddy Design Doc](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md) にある。
-- ADR-0014: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0014-id-broker-hydra.md)
+- ADR-0013: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0013-id-broker-hydra.md)
 - ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元と停止をブローカーが、権限と業務のデータを予定の API が持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0001-auth.md)
 
 ## Scope
@@ -360,7 +360,7 @@ cookie は署名しない。
 web のログインの失敗の画面も、同じカードを使う。  
 ログインの失敗の文言は `apps/broker` の定数（`loginFailedMessage`）にあり、ブローカーの画面と web の画面が同じ定数を読む。
 
-- ADR-0019: [ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0019-broker-login-pages-source.md)
+- ADR-0018: [ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0018-broker-login-pages-source.md)
 
 `apps/broker` の `pnpm generate` が、画面を React で静的な HTML に書き出し、`packages/ui` の `theme.css` を読む Tailwind で CSS を生成する。  
 書き出したテンプレートと CSS は `internal/login/pages/` に置いてコミットし、ブローカーは `go:embed` で読む。  
