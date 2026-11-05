@@ -1,4 +1,4 @@
-# ADR-0034: サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける
+# ADR-0028: サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける
 
 ## Status
 
@@ -22,8 +22,8 @@
 
 - ADR-0007 の、2 つの API が共有するのはトークンの検証、テストのフェイク、ヘルスチェックのような基盤のコードだという前提。業務の規則も共有の範囲に入れる。
   - ADR-0007: [2 つの Go の API が共有するコードを、別の module にまとめる](0007-go-shared-module.md)
-- ADR-0026 の、機能のパッケージの一覧のうち、サービスコードを `visit` に置く部分。機能の間の import の順は `context/codebase.md` の規則を直す。
-  - ADR-0026: [予定の API の機能のパッケージを internal/features/ に置き、usecase のメソッドを操作ごとのファイルに分ける](0026-schedule-api-features-directory.md)
+- ADR-0005 の、機能のパッケージの一覧のうち、サービスコードを `visit` に置く部分。機能の間の import の順は `context/codebase.md` の規則を直す。
+  - ADR-0005: [予定の API を機能ごとのパッケージに分け、Go の API の操作を使う依存だけを持つ型にし、ファイルの名前の末尾の語で役割を表す](0005-schedule-api-packages.md)
 
 ## Decision
 

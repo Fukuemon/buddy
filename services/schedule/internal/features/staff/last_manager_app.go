@@ -9,7 +9,7 @@ import (
 )
 
 // lastManager は、cur が事業所で職員の管理の権限を持つ最後の有効な職員なら、msg の apperr.ErrConflict を返す。
-// 戻す操作をする職員がいなくなると、DB を直すほかに戻せないためである（ADR-0018）。呼び出し側は、事業所をロックしてから呼ぶ。
+// 戻す操作をする職員がいなくなると、DB を直すほかに戻せないためである（ADR-0017）。呼び出し側は、事業所をロックしてから呼ぶ。
 func lastManager(ctx context.Context, staff Repository, cur Detail, msg string) error {
 	if cur.Status() != StatusActive || !slices.ContainsFunc(cur.Policies, func(g PolicyGrant) bool {
 		return g.PolicyCode == organization.StaffManage

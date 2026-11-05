@@ -1,5 +1,5 @@
 // Package hydra は、Ory Hydra の admin API のうち、ログインと同意の要求を読み、accept と reject を返す呼び出しと、
-// ログアウトの要求を accept する呼び出しと、職員のログインのセッションと同意を取り消す呼び出しを持つ（ADR-0016、ADR-0017）。
+// ログアウトの要求を accept する呼び出しと、職員のログインのセッションと同意を取り消す呼び出しを持つ（ADR-0015、ADR-0016）。
 package hydra
 
 import (

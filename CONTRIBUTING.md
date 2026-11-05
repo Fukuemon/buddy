@@ -152,7 +152,7 @@ pnpm e2e
 
 pull request では、ドキュメントサイトのプレビューを出さない。  
 変更が develop に入ると、本番のドキュメントサイトに出る。  
-ADR-0019: [ドキュメントサイトのプレビューをやめ、トークンの組のコントラストを pnpm check:contrast で確認する](docs/adr/0019-docs-site-publish-and-contrast-check.md)
+ADR-0018: [ドキュメントサイトのプレビューをやめ、トークンの組のコントラストを pnpm check:contrast で確認する](docs/adr/0018-docs-site-publish-and-contrast-check.md)
 
 - マージする前に公開した形で見るときは、ルートでサイトを組み立て、静的なファイルとして配信して開く。
 

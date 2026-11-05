@@ -7,7 +7,7 @@
 - ADR-0004: [デザインシステムのトークンとコンポーネントの配置先](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0004-design-system.md)
 
 サイトは、誰でもログインなしで開ける。  
-ADR-0020: [ドキュメントサイトを Cloudflare Access で守らず、誰でも開けるようにする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0020-docs-site-without-access.md)
+ADR-0019: [ドキュメントサイトを Cloudflare Access で守らず、誰でも開けるようにする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0019-docs-site-without-access.md)
 
 | 環境 | ドキュメントサイト | カタログ | ER 図 | 出す契機 |
 | --- | --- | --- | --- | --- |
@@ -38,7 +38,7 @@ ADR-0020: [ドキュメントサイトを Cloudflare Access で守らず、誰�
 
 Worker には Cloudflare Access を掛けない。  
 Access を掛けると、ログインなしで開けるかをワークフローが確認したときに失敗する。  
-ADR-0020: [ドキュメントサイトを Cloudflare Access で守らず、誰でも開けるようにする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0020-docs-site-without-access.md)
+ADR-0019: [ドキュメントサイトを Cloudflare Access で守らず、誰でも開けるようにする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0019-docs-site-without-access.md)
 
 ワークフローは、本番に出すたびに、文書、カタログ、ER 図の URL ごとに、ログインなしで開けるかを確認する。  
 ローカルで本番の文書を確認するときは、次を流す。  
@@ -80,7 +80,7 @@ pnpm site:build
 
 - pull request では、サイトを組み立てるだけにする。
   - pull request ごとのプレビューは出さない。
-  - ADR-0019: [ドキュメントサイトのプレビューをやめ、トークンの組のコントラストを pnpm check:contrast で確認する](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0019-docs-site-publish-and-contrast-check.md)
+  - ADR-0018: [ドキュメントサイトのプレビューをやめ、トークンの組のコントラストを pnpm check:contrast で確認する](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0018-docs-site-publish-and-contrast-check.md)
   - 文書の元は docs/ のほか、services/ と packages/ の Design Doc にもあるので、変えた場所で絞らずに全ての pull request で組み立てる。
 - develop への push では、`cf deploy --prebuilt --mode production` で本番にデプロイし、ログインなしで開けることを確認する。
 - トークンは、GitHub の environment `docs-site` の secret にある。

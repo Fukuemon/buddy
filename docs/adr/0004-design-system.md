@@ -31,7 +31,7 @@ DADS の値を替えても、意味のトークンの参照先を 1 か所直せ
 | buddy の意味 | `packages/ui/src/tokens/semantic.css` | `--buddy-color-primary`、`--buddy-color-border-field` | 用途ごとの名前と、DADS の基本への参照。値は書かない |
 | Tailwind のテーマ | `packages/ui/src/tokens/theme.css` | `bg-primary`、`text-caption`、`rounded-8`、`desktop:` | `@theme inline` で意味のトークンをユーティリティにする。Tailwind のデフォルトの色、文字の大きさ、角丸、影、ブレークポイントは消す |
 
-この表の「値は書かない」の判断は [ADR-0015](0015-key-color-and-canvas.md) で置き換えた。
+この表の「値は書かない」の判断は [ADR-0014](0014-key-color-and-canvas.md) で置き換えた。
 
 - 値は CSS の変数で持ち、JSON から生成しない。DADS が生成済みの CSS を配っており、buddy が足すのは参照だけなので、生成の手順を持つ理由がない。
 - DADS の `@digital-go-jp/design-tokens` は依存にし、バージョンを `2.1.0` に固定する。値をコピーすると、DADS の修正を手で追い、MIT の表示を自分で持つ必要がある。バージョンを上げるときは、`tokens.css` の差分と、意味のトークンのコントラストを確認する。
@@ -49,7 +49,7 @@ DADS の値を替えても、意味のトークンの参照先を 1 か所直せ
 置き換えると、次の箇所の見た目が大きく変わる。
 
 - 主の色が、くすんだ青 `#4d89c0` から DADS のキーカラーの blue-800 `#0031d8` になる。主のボタン、ロゴ、選ばれている選択肢が対象である。
-  - この判断は [ADR-0015](0015-key-color-and-canvas.md) で置き換えた。
+  - この判断は [ADR-0014](0014-key-color-and-canvas.md) で置き換えた。
 - 入力欄、副のボタン、選択肢の枠が、薄い灰色から solid-gray-600 `#666666` になる。
 - フォーカスの表示が、青の 1 重の枠から、DADS の黄と黒の 2 重の枠になる。
 - 角丸が、ボタンと入力欄で 15px から 8px、幅の広い画面のダイアログで 24px から 8px になる。
@@ -98,7 +98,7 @@ DADS が参照する WCAG 2.2 の AA を基準にし、DADS の指針の値を�
 | ターゲットの大きさ | ボタンは 44×44 CSS px 以上。S のボタンとアイコンのボタンは、見た目の外に押せる領域を広げる | コンポーネントの Vitest のテストで、押せる領域の大きさを確認する |
 | キーボードの操作 | コンポーネントごとの操作を DESIGN.md のコンポーネントのセクションに書き、その通りに動く | story の play 関数と Vitest で、キーを押した結果を確認する |
 
-文字でないもののコントラストの確認の方法について、この判断は [ADR-0019](0019-docs-site-publish-and-contrast-check.md) で置き換えた。
+文字でないもののコントラストの確認の方法について、この判断は [ADR-0018](0018-docs-site-publish-and-contrast-check.md) で置き換えた。
 
 - 出典: [DADS の色](https://design.digital.go.jp/dads/foundations/color/)
 - 出典: [DADS のボタンのアクセシビリティ](https://design.digital.go.jp/dads/components/button/accessibility/)
@@ -135,10 +135,10 @@ apps/web は packages/ui に依存するので、依存の向きを変えずに 
   - 出典: [SmartHR Design System](https://smarthr.design/)
 - title は、ファイルの配置先から機械的に決める。規則は DESIGN.md にある。
 - カタログは、ドキュメントサイトと 1 つの Cloudflare Worker の静的なファイルとして公開し（`/storybook/`）、Cloudflare Access で許可した人だけが開けるようにする。pull request ごとにプレビューを出し、develop に入ったら本番に出す。デプロイの構成は `apps/docs-site/README.md` にある。
-  - pull request ごとのプレビューについて、この判断は [ADR-0019](0019-docs-site-publish-and-contrast-check.md) で置き換えた。
-  - Cloudflare Access で許可した人だけが開けるようにすることについて、この判断は [ADR-0020](0020-docs-site-without-access.md) で置き換えた。
+  - pull request ごとのプレビューについて、この判断は [ADR-0018](0018-docs-site-publish-and-contrast-check.md) で置き換えた。
+  - Cloudflare Access で許可した人だけが開けるようにすることについて、この判断は [ADR-0019](0019-docs-site-without-access.md) で置き換えた。
 - Access で絞っても、カタログに載せるのはコンポーネントとダミーデータだけにする。許可した人の範囲は変わりうるためである。
-  - Access で絞ることは [ADR-0020](0020-docs-site-without-access.md) で置き換えた。カタログに載せるものをコンポーネントとダミーデータに限る規則は、ADR-0020 でも残した。
+  - Access で絞ることは [ADR-0019](0019-docs-site-without-access.md) で置き換えた。カタログに載せるものをコンポーネントとダミーデータに限る規則は、ADR-0019 でも残した。
 
 ## Considered Options
 
@@ -199,7 +199,7 @@ apps/web は packages/ui に依存するので、依存の向きを変えずに 
 - コンポーネントを移すときに、Tailwind のデフォルトのユーティリティ（`text-sm`、`rounded-xl` など）を使う箇所を全て書き換える必要がある。
 - DADS のバージョンを上げるたびに、`tokens.css` の名前と値の差分を確認する必要がある。
 - カタログを Access で許可した人に見せるため、Cloudflare のアカウント、API トークン、Access の許可の設定を保つ必要がある。カタログの Worker の名前を変えると、新しい Worker は Access なしで出る。
-  - Access の許可の設定を保つことは、[ADR-0020](0020-docs-site-without-access.md) で Access を外したので要らなくなった。
+  - Access の許可の設定を保つことは、[ADR-0019](0019-docs-site-without-access.md) で Access を外したので要らなくなった。
 - pull request のプレビューのため、書き込みの権限を持つ人は Cloudflare のトークンを読める。トークンの範囲をこの Worker に絞り、漏れたときに書き換えられるものを、このサイトの中身と設定に限る。
-  - pull request のプレビューは [ADR-0019](0019-docs-site-publish-and-contrast-check.md) でやめ、トークンを develop に限った environment に置いた。
+  - pull request のプレビューは [ADR-0018](0018-docs-site-publish-and-contrast-check.md) でやめ、トークンを develop に限った environment に置いた。
 - story のデータを作る人が、ダミーデータに限る規則を守る必要がある。

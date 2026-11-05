@@ -1,4 +1,4 @@
-# ADR-0019: ドキュメントサイトのプレビューをやめ、トークンの組のコントラストを pnpm check:contrast で確認する
+# ADR-0018: ドキュメントサイトのプレビューをやめ、トークンの組のコントラストを pnpm check:contrast で確認する
 
 ## Status
 
@@ -11,7 +11,7 @@
 
 - [ADR-0004](0004-design-system.md) の、pull request ごとにドキュメントサイトのプレビューを出す判断
 - [ADR-0004](0004-design-system.md) の、文字でないもののコントラストを Vitest のテストで計算する判断
-- [ADR-0015](0015-key-color-and-canvas.md) の、canvas の上の組を `contrast.test.ts` で確認する判断
+- [ADR-0014](0014-key-color-and-canvas.md) の、canvas の上の組を `contrast.test.ts` で確認する判断
 
 プレビューの手順は、pull request のコードに Cloudflare のトークンを渡す。  
 同じリポジトリの pull request には GitHub が secret を渡すので、書き込みの権限を持つ人は、ワークフローを書き換えてトークンを読める。  
@@ -27,7 +27,7 @@ buddy の `contrast.test.ts` と同じ 44 組を、同じ結果で確認でき�
 - Cloudflare のトークンは、GitHub の environment `docs-site` の secret に置き、environment にデプロイできるブランチを develop だけにする。
   - ワークフローの条件だけで develop に絞ると、条件を外したワークフローを別のブランチへ push してトークンを読める。environment のブランチの制限は、ワークフローを書き換えても外せない。
 - ワークフローは、パッケージ docs-site のテンプレートを元にし、公開の後に文書、カタログ、ER 図の保護を確認する。
-  - 保護の確認について、この判断は [ADR-0020](0020-docs-site-without-access.md) で置き換えた。
+  - 保護の確認について、この判断は [ADR-0019](0019-docs-site-without-access.md) で置き換えた。
 - 意味のトークンの組のコントラストは、ルートの `pnpm check:contrast`（`scripts/check-contrast.mjs`）で計算し、CI で流す。Vitest のテスト `contrast.test.ts` は消す。
   - 計算の直しが agent-harness から届くようにするためである。組は `scripts/check-contrast.mjs` の冒頭に置く。
 

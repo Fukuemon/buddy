@@ -1,5 +1,5 @@
 /**
- * ID ブローカーの画面のテンプレートと CSS を、services/broker/internal/login/pages/ に書き出す（ADR-0027）。
+ * ID ブローカーの画面のテンプレートと CSS を、services/broker/internal/login/pages/ に書き出す（ADR-0025）。
  * テンプレートは src/pages.tsx を React で静的な HTML にしたもので、CSS は src/pages.css を Tailwind で生成して圧縮したものである。
  * ID ブローカーは、書き出したファイルを go:embed で読む。pnpm check:generated が、コミットした生成物と食い違っていないかを確認する。
  *

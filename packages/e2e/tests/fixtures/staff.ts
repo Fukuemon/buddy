@@ -153,7 +153,7 @@ export const updateStaff = (
   })
 
 /**
- * 職員 userId を、名前、部署、チームを変えずに訪問しない職員にし（ADR-0022）、レスポンスを返す。
+ * 職員 userId を、名前、部署、チームを変えずに訪問しない職員にし（ADR-0021）、レスポンスを返す。
  * 電話番号は消す。今日以降の予定か担当の利用者が残れば、予定の API が 409 を返す。
  */
 export const setNonVisiting = async (request: APIRequestContext, token: string, userId: string) => {

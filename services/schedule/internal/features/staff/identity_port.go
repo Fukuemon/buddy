@@ -9,7 +9,7 @@ type Registration struct {
 	Pending bool
 }
 
-// Identities は、ブローカーの職員の身元を書く（ADR-0017）。約束は broker.Client と同じである。
+// Identities は、ブローカーの職員の身元を書く（ADR-0016）。約束は broker.Client と同じである。
 type Identities interface {
 	// Register は、組織 orgID にメール email（NormalizeEmail でそろえた値）の職員を登録の途中の状態で登録する。
 	// 同じ組織に同じメールの職員がいれば、作らずにその職員を返す。その職員が止められていれば ErrIdentitySuspended を、

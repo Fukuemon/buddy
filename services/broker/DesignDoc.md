@@ -16,8 +16,8 @@ ID ブローカー（`services/broker`、以下ブローカー）は、Hydra と
 web と 2 つの API から見える Issuer は Hydra だけである。
 
 - 全体の責務と依存は [buddy Design Doc](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md) にある。
-- ADR-0016: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0016-id-broker-hydra.md)
-- ADR-0017: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0017-identity-boundary.md)
+- ADR-0015: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0015-id-broker-hydra.md)
+- ADR-0016: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0016-identity-boundary.md)
 
 ## Scope
 
@@ -109,7 +109,7 @@ flowchart LR
 ### 職員の身元のテーブル
 
 ブローカーの DB のテーブルを示す。  
-名前、役職、権限などの業務のデータは予定の API が持ち、ここには置かない（ADR-0017）。
+名前、役職、権限などの業務のデータは予定の API が持ち、ここには置かない（ADR-0016）。
 
 ```mermaid
 erDiagram
@@ -132,7 +132,7 @@ erDiagram
 - メールを全ての事業所で一意にする。
   - 事業所の中だけで一意にすると、ほかの事業所の管理者が同じメールの職員を登録でき、ログインで事業所を 1 つに決められなくなる。もとの職員もログインできなくなる。
 - 職員の状態の意味と移り方、メールと上流のアカウントの不変条件は、[職員とログイン](https://github.com/Fukuemon/buddy/blob/develop/context/domain/staff-login.md) にある。
-  - ADR-0018: [職員の停止を、戻せる休職と、戻せない退職に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0018-staff-leave-and-retirement.md)
+  - ADR-0017: [職員の停止を、戻せる休職と、戻せない退職に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0017-staff-leave-and-retirement.md)
 
 ### ログイン
 
@@ -360,7 +360,7 @@ cookie は署名しない。
 web のログインの失敗の画面も、同じカードを使う。  
 ログインの失敗の文言は `apps/broker` の定数（`loginFailedMessage`）にあり、ブローカーの画面と web の画面が同じ定数を読む。
 
-- ADR-0027: [ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0027-broker-login-pages-source.md)
+- ADR-0025: [ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0025-broker-login-pages-source.md)
 
 `apps/broker` の `pnpm generate` が、画面を React で静的な HTML に書き出し、`packages/ui` の `theme.css` を読む Tailwind で CSS を生成する。  
 書き出したテンプレートと CSS は `internal/login/pages/` に置いてコミットし、ブローカーは `go:embed` で読む。  
@@ -415,7 +415,7 @@ Hydra は、トークンを発行するたびに `oauth2.token_hook` でブロ�
 
 ### 職員の登録、休職、復職、退職
 
-予定の API が職員の管理の権限を確認してから、ブローカーの内部の API を呼ぶ（ADR-0017）。
+予定の API が職員の管理の権限を確認してから、ブローカーの内部の API を呼ぶ（ADR-0016）。
 
 - 内部の API と token_hook は、ログインの画面（`PORT`）と別のポート（`INTERNAL_PORT`、デフォルトは 8081）で待ち受ける。
   - ログインの画面のポートは `/internal/` の下に 404 を返す。
