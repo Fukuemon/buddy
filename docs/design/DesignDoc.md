@@ -18,7 +18,8 @@ buddy は、訪問看護の事業所の職員が使う、予定の管理とレ�
 
 ### Goals
 
-- 照合を、予定の管理と別の照合の API に分ける。事業所と職員と予定は、同じ DB を使う予定の API が持つ。
+- 照合を、予定の管理と別の照合の API に分ける。
+  - 事業所と職員と予定は、同じ DB を使う予定の API が持つ。
 - web と API の間の契約は、API ごとの `openapi.yaml` に置く。
 - 認証は OIDC のブローカーに任せ、トークンは web のサーバーの側だけが持つ。
 - 事業所のデータは予定の API だけが持ち、ほかの事業所のデータを返さない。
@@ -30,7 +31,8 @@ buddy は、訪問看護の事業所の職員が使う、予定の管理とレ�
 
 ## Assumptions and Constraints
 
-- 職員の IdP は事業所ごとに違い、事業所の外にある。buddy は、Hydra が発行するトークンだけを受ける。
+- 職員の IdP は事業所ごとに違い、事業所の外にある。
+  - buddy は、Hydra が発行するトークンだけを受ける。
 - 1 つの事業所の職員は 100 人前後で、同時に使う職員は事業所あたり数十人である。
 - 日付と時刻は日本の時間（Asia/Tokyo）だけを扱う。
 - 電子カルテ（iBow）とは API でつながず、職員が書き出した CSV を受ける。
@@ -117,7 +119,8 @@ PRD の 4 つの業務の領域は、次のコンテナが持つ。
 - ブローカーは、Hydra の login and consent app として、ログインと同意の画面を持つ。
 - ブローカーは、職員の ID、メール、所属の事業所、有効か休職か退職か、上流のアカウントを持つ。
 - access token の `sub` は職員の ID で、予定の API の `users.sub` に入る。
-- 持たないもの: 職員の名前、役職、権限。予定の API が持つ。
+- 持たないもの: 職員の名前、役職、権限。
+  - 職員の名前、役職、権限は、予定の API が持つ。
   - ADR-0016: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](../adr/0016-id-broker-hydra.md)
   - ADR-0017: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](../adr/0017-identity-boundary.md)
 - 内部の構成と流れは [ID ブローカーの Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md) にある。
@@ -126,14 +129,17 @@ PRD の 4 つの業務の領域は、次のコンテナが持つ。
 
 - 事業所、部署、チーム、役職、権限、職員、利用者、予定を持つ。
 - access token の検証、職員の特定、事業所の確認、職員の権限による予定の閲覧と編集の判定を行う。
-- 職員に結び付けた Google カレンダーの予定を読み、予定に取り込む。正本の切り替えの完了でも、Google カレンダーの予定を読み直して比べる。
-- 予定を変えたときに、書き出しの待ちを DB に積む。Google カレンダーには calendar-worker が書く。
+- 職員に結び付けた Google カレンダーの予定を読み、予定に取り込む。
+  - 正本の切り替えの完了でも、Google カレンダーの予定を読み直して比べる。
+- 予定を変えたときに、書き出しの待ちを DB に積む。
+  - Google カレンダーには calendar-worker が書く。
 - 持たないもの: 照合の規則、Google カレンダーへの書き込み。
 - 内部の構成と ER は [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md) にある。
 
 ### calendar-worker
 
-- calendar-worker は、予定の API と同じイメージのコマンドで、予定の API と同じ DB を使う。HTTP のポートで待ち受けない。
+- calendar-worker は、予定の API と同じイメージのコマンドで、予定の API と同じ DB を使う。
+  - HTTP のポートで待ち受けない。
 - 書き出し（`calendar-worker export`）は、予定の API が積んだ書き出しの待ちを読み、Google カレンダーに書く。
 - 同期（`calendar-worker sync`）は、Google カレンダーを正本にする事業所のカレンダーの変わった予定を読み、予定の写しに当てる。
 - 持たないもの: 予定の API の HTTP の操作と認証。
@@ -146,9 +152,11 @@ PRD の 4 つの業務の領域は、次のコンテナが持つ。
 - 予定は、予定の CSV か Google カレンダーから取る。
   - Google カレンダーから予定を取るときだけ、トークンの組織に結び付けたカレンダーを読む。規則は [事業所の分離](#事業所の分離) にある。
 - access token を検証するが、職員の特定と事業所の確認はしない。
-- 照合の前に、予定の API に照合の権限を問い合わせる。予定の API が止まっていると、照合できない。
+- 照合の前に、予定の API に照合の権限を問い合わせる。
+  - 予定の API が止まっていると、照合できない。
   - 確認の仕方は、[権限の Design Doc の照合の API の権限の確認](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md#照合の-api-の権限の確認) にある。
-- 持たないもの: 予定と職員のデータ、DB。上げた CSV と照合の結果を保存しない。
+- 持たないもの: 予定と職員のデータ、DB。
+  - 上げた CSV と照合の結果を保存しない。
 - 規則は [レセプトの照合の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/DesignDoc.md) にある。
 
 ## Interfaces
@@ -180,7 +188,8 @@ PRD の 4 つの業務の領域は、次のコンテナが持つ。
 - ブローカーは、同意の accept で、access token の `aud`（`schedule`、`receipt`）と `org_id` を決める。
 - 予定の API は、ブローカーを呼ぶときに、Hydra の client credentials で `aud` が `broker` の access token を取って付ける。
 - 2 つの API は、access token の検証に失敗したら 401 を返す。
-- Google Calendar API に予定を書くのは、calendar-worker だけである。サービスアカウントのキーは使わない。
+- Google Calendar API に予定を書くのは、calendar-worker だけである。
+  - サービスアカウントのキーは使わない。
   - ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](../adr/0012-google-calendar-facility-service-accounts.md)
 
 ブラウザと web の間の cookie には、セッションの ID を入れ、トークンは入れない。  
@@ -211,10 +220,13 @@ buddy がデプロイのために満たす要件は、コンテナのイメー�
 
 #### コンテナのイメージ
 
-- イメージは、web、予定の API、照合の API、ブローカーのアプリごとに 1 つ作る。Hydra は Ory の公開のイメージを使う。
-- ブローカーのイメージは、ヘルスチェックのための `broker healthcheck` のサブコマンドを持つ。ブローカーの環境変数は [ブローカーの README](https://github.com/Fukuemon/buddy/blob/develop/services/broker/README.md#configuration) にある。
+- イメージは、web、予定の API、照合の API、ブローカーのアプリごとに 1 つ作る。
+  - Hydra は Ory の公開のイメージを使う。
+- ブローカーのイメージは、ヘルスチェックのための `broker healthcheck` のサブコマンドを持つ。
+  - ブローカーの環境変数は [ブローカーの README](https://github.com/Fukuemon/buddy/blob/develop/services/broker/README.md#configuration) にある。
 - API のイメージは、ヘルスチェックのための `api healthcheck` のサブコマンドを持つ。
-- 予定の API のイメージは、`calendar-worker` のバイナリも持つ。calendar-worker は、同じイメージでエントリポイントを `/usr/local/bin/calendar-worker` にして起動する。
+- 予定の API のイメージは、`calendar-worker` のバイナリも持つ。
+  - calendar-worker は、同じイメージでエントリポイントを `/usr/local/bin/calendar-worker` にして起動する。
 - イメージは設定を持たず、全ての設定を環境変数で受ける。
 - プロセスは 1 つの HTTP のポートで待ち受け、ポートは環境変数 `PORT` で受ける。
 
@@ -262,10 +274,11 @@ Hydra は discovery の `end_session_endpoint` を Issuer の URL から作る�
 
 サービスアカウントが「予定の変更」の共有だけで書けるかを確認するまで、本番では `GOOGLE_CALENDAR_EXPORT_ENABLED` を `false` にする（ADR-0012 の承認の条件）。
 
-- web の `VITE_API_MODE` は、イメージのビルドのときに埋め込む値で、実行のときには読まない。イメージは `bff` でビルドする。
-- 照合の API、予定の API、calendar-worker は、Google の認証情報を Application Default Credentials（`GOOGLE_APPLICATION_CREDENTIALS` など）で読む。  
-  読んだ認証情報で、事業所のサービスアカウントになりすます。  
-  `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` があるときだけ読み、読めなければ起動しない。
+- web の `VITE_API_MODE` は、イメージのビルドのときに埋め込む値で、実行のときには読まない。
+  - イメージは `bff` でビルドする。
+- 照合の API、予定の API、calendar-worker は、Google の認証情報を Application Default Credentials（`GOOGLE_APPLICATION_CREDENTIALS` など）で読む。
+  - 読んだ認証情報で、事業所のサービスアカウントになりすます。
+  - `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` があるときだけ読み、読めなければ起動しない。
 - Application Default Credentials で認証する主体に付けるロールと、有効にする API は、[基盤と運用の Adding a Facility](https://github.com/Fukuemon/buddy/blob/develop/context/operations.md#adding-a-facility) にある。
 - calendar-worker の動かし方は、[基盤と運用の Calendar Worker](https://github.com/Fukuemon/buddy/blob/develop/context/operations.md#calendar-worker) にある。
 
@@ -273,8 +286,10 @@ Hydra は discovery の `end_session_endpoint` を Issuer の URL から作る�
 
 #### ヘルスチェック
 
-- `GET /healthz`: プロセスが動いていれば 200 を返す。依存先を確認しない。
-- `GET /readyz`: 依存先に届けば 200、届かなければ 503 を返す。予定の API は PostgreSQL、web は Valkey を確認する。
+- `GET /healthz`: プロセスが動いていれば 200 を返す。
+  - 依存先を確認しない。
+- `GET /readyz`: 依存先に届けば 200、届かなければ 503 を返す。
+  - 予定の API は PostgreSQL、web は Valkey を確認する。
   - 照合の API は起動のときに Hydra の discovery を読み、読めなければ起動しない。起動した後は依存先を確認せず、プロセスが動いていれば 200 を返す。
 - 2 つとも認証を求めない。
 
@@ -282,7 +297,8 @@ Hydra は discovery の `end_session_endpoint` を Issuer の URL から作る�
 
 - 予定の API のイメージは、`api` と `migrate` の 2 つのバイナリを持ち、エントリポイントは `api` である。
   - マイグレーションは、エントリポイントを `/usr/local/bin/migrate` にして `up` を渡すと適用して終わる。
-- インフラは、新しいイメージを起動する前に、同じイメージで `migrate up` を 1 回実行する。マイグレーションは、前のバージョンのアプリが動いたまま適用できる変更だけにする。
+- インフラは、新しいイメージを起動する前に、同じイメージで `migrate up` を 1 回実行する。
+  - マイグレーションは、前のバージョンのアプリが動いたまま適用できる変更だけにする。
 - ブローカーのイメージも、`broker` と `migrate` の 2 つのバイナリを持ち、同じ手順でマイグレーションを適用する。
 - Hydra のマイグレーションは、Hydra のイメージの `migrate sql up` で適用する。
 
@@ -290,24 +306,30 @@ Hydra は discovery の `end_session_endpoint` を Issuer の URL から作る�
 
 ### 認証
 
-- 職員のログインは、web の BFF と Hydra の認可コードフローで行い、トークンはブラウザに渡さない。上流の IdP で職員が誰かを確認するのは、ブローカーである。
+- 職員のログインは、web の BFF と Hydra の認可コードフローで行い、トークンはブラウザに渡さない。
+  - 上流の IdP で職員が誰かを確認するのは、ブローカーである。
   - ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにする](../adr/0001-auth.md)
-- 2 つの API は、access token の検証を同じ規則で行う。確認する項目は、各 API の Design Doc にある。
+- 2 つの API は、access token の検証を同じ規則で行う。
+  - 確認する項目は、各 API の Design Doc にある。
 - 職員とログインのアカウントの結び付け方は、[職員とログイン](https://github.com/Fukuemon/buddy/blob/develop/context/domain/staff-login.md) にある。
 
 ### 事業所の分離
 
-- 事業所は、ブローカーの組織に対応する。ブローカーは、職員の事業所の組織の ID を access token の `org_id` に入れる。
+- 事業所は、ブローカーの組織に対応する。
+  - ブローカーは、職員の事業所の組織の ID を access token の `org_id` に入れる。
 - 予定の API は、リクエストが指す事業所がトークンの組織の事業所と違えば、403 を返す。
   - 拒否する規則は [事業所の分離](https://github.com/Fukuemon/buddy/blob/develop/context/domain/facility.md) に、パスの形は [予定の管理の Design Doc の Interface](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#interface) にある。
-- 照合の API は、カレンダーに組織を結び付け、トークンの組織のカレンダーだけを読む。予定の CSV での照合は、組織を問わない。
+- 照合の API は、カレンダーに組織を結び付け、トークンの組織のカレンダーだけを読む。
+  - 予定の CSV での照合は、組織を問わない。
 
 ### 認可
 
-- 予定の閲覧と編集は、職員の権限で予定の API が判定する。職員が見てはいけない予定は一覧から除き、1 件を指す操作には 403 を返す。
+- 予定の閲覧と編集は、職員の権限で予定の API が判定する。
+  - 職員が見てはいけない予定は一覧から除き、1 件を指す操作には 403 を返す。
   - 規則は [権限の Design Doc の予定の認可](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md#予定の認可) にある。
   - ADR-0002: [権限を役職のデフォルトと職員ごとの上書きで持つ（PBAC）](../adr/0002-pbac.md)
-- 照合は、照合の権限を持つ職員だけに照合の API が許す。照合の API は権限を持たず、照合のたびに予定の API に問い合わせる。
+- 照合は、照合の権限を持つ職員だけに照合の API が許す。
+  - 照合の API は権限を持たず、照合のたびに予定の API に問い合わせる。
   - 確認の仕方は [権限の Design Doc の照合の API の権限の確認](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md#照合の-api-の権限の確認) にある。
   - web は、同じ権限で、ナビゲーションの照合と照合の画面を出し分ける。拒むのは照合の API である。
 
