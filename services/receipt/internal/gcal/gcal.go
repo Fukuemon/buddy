@@ -84,7 +84,7 @@ type Services interface {
 	Service(orgID string) (*calendar.Service, error)
 }
 
-// Reader は、Calendar API で、設定したカレンダーの予定を、カレンダーの組織のサービスアカウントで読む（ADR-0011）。
+// Reader は、Calendar API で、設定したカレンダーの予定を、カレンダーの組織のサービスアカウントで読む（ADR-0009）。
 type Reader struct {
 	services  Services
 	calendars []Calendar
@@ -223,7 +223,7 @@ func (s monthSource) toRecord(ev *calendar.Event, staff string) (rec record.Reco
 	return recs[0], true, nil
 }
 
-// isWithinNextDay は、終了が開始と同じ日か、開始の翌日で 24 時間未満の予定かを返す（ADR-0016）。
+// isWithinNextDay は、終了が開始と同じ日か、開始の翌日で 24 時間未満の予定かを返す（ADR-0015）。
 // 翌日に終わる予定は、終了時間が開始時間より前の行として normalize が読む。
 func isWithinNextDay(start, end time.Time) bool {
 	switch end.Format(time.DateOnly) {

@@ -1,4 +1,4 @@
--- 事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（切り替え、Cutover、ADR-0023）。
+-- 事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（切り替え、Cutover、ADR-0009）。
 -- 状態は open から completed か canceled に移る。1 つの事業所に open の切り替えは 1 つまでにする。
 CREATE TABLE calendar_cutovers (
     id          text COLLATE "C" NOT NULL CHECK (id ~ '^[0-7][0-9A-HJKMNP-TV-Z]{25}$'),

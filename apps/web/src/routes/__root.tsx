@@ -123,7 +123,7 @@ function RootError({ error }: ErrorComponentProps) {
   const href = useRouterState({ select: (state) => state.location.href })
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const denied = deniedPermissionOf(error)
-  // 権限が無いときは、URL を変えずに画面の枠の中で示す（ADR-0018）
+  // 権限が無いときは、URL を変えずに画面の枠の中で示す（ADR-0017）
   if (denied !== undefined)
     return (
       <SiteFrame pathname={pathname}>

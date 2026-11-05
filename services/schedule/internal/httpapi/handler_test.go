@@ -1045,7 +1045,7 @@ func TestRequestValidationMessages(t *testing.T) {
 	}
 }
 
-// 職員の変更は、訪問するかを受け取る。予定か担当の利用者が残る職員を訪問しない職員に変えようとしたときは、409 で残る一覧を返す（ADR-0015）。
+// 職員の変更は、訪問するかを受け取る。予定か担当の利用者が残る職員を訪問しない職員に変えようとしたときは、409 で残る一覧を返す（ADR-0014）。
 func TestUpdateUserVisits(t *testing.T) {
 	const depID, teamID = "01M3TC5HZ8A18D2TP3PTKDXJMN", "01M3TC5MX04QJ19X6XR1ZCBZRJ"
 	nonVisiting := `{"username":"青木","department_id":"` + depID + `","team_id":"` + teamID + `","visits":false}`
@@ -1067,7 +1067,7 @@ func TestUpdateUserVisits(t *testing.T) {
 	}
 }
 
-// 職員の登録は、visits を省くと訪問する職員として登録する（ADR-0015）。
+// 職員の登録は、visits を省くと訪問する職員として登録する（ADR-0014）。
 func TestCreateUserVisits(t *testing.T) {
 	user := `{"username":"新人","email":"new@example.com","department_id":"` + staffID + `","team_id":"` + staffID + `","position_id":"` + staffID + `"`
 	for name, c := range map[string]struct {

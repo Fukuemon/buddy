@@ -13,7 +13,7 @@ export type AuthErrorMessageProps = {
   loginHref: string
 }
 
-/** failed の文言は、ID ブローカーのログインの失敗の画面と同じ定数を使う（ADR-0019）。 */
+/** failed の文言は、ID ブローカーのログインの失敗の画面と同じ定数を使う（ADR-0018）。 */
 const messages: Record<AuthErrorReason, AuthMessage> = {
   failed: loginFailedMessage,
   forbidden: {

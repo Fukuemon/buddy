@@ -238,7 +238,7 @@ func TestImportWithholdsReplacementOfReassignedRecurring(t *testing.T) {
 	}
 }
 
-// 訪問しない職員のカレンダーの取り込みでは、休職と同じく新しい予定を取り込まない予定に出し、確定しても作らない（ADR-0015、#377）。
+// 訪問しない職員のカレンダーの取り込みでは、休職と同じく新しい予定を取り込まない予定に出し、確定しても作らない（ADR-0014、#377）。
 func TestImportWithholdsNewEventsOfNonVisitingStaff(t *testing.T) {
 	setNonVisiting := func(s *inmem.Store, on bool) {
 		d := s.Staff[inmem.StaffID]

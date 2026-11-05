@@ -63,7 +63,7 @@ verified_commit: 4e53ca5
 職員の登録の route は職員の一覧の route の子なので、権限が無ければ親の職員の一覧の route で止まる。  
 この判定は表示のためだけで、変える操作は予定の API が [予定の認可](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md#予定の認可) で拒む。
 
-- ADR-0018: [web の画面の権限の確認を、route の beforeLoad と PermissionGuard で宣言し、1 つの関数で評価する](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0018-web-permission-checks.md)
+- ADR-0017: [web の画面の権限の確認を、route の beforeLoad と PermissionGuard で宣言し、1 つの関数で評価する](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0017-web-permission-checks.md)
 
 画面とダイアログごとの、読む時点、読むもの、読む理由は次のとおり。
 

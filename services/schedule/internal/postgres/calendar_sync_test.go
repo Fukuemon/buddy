@@ -34,7 +34,7 @@ var (
 )
 
 // reconcileSyncer は、buddy_primary の事業所の外部の変更を ReconcileApplier で buddy の予定に当てる同期の処理を作る。
-// 組み立て（assemble）は buddy_primary の Applier を渡さず、buddy_primary の事業所のカレンダーを読まない（ADR-0023）。
+// 組み立て（assemble）は buddy_primary の Applier を渡さず、buddy_primary の事業所のカレンダーを読まない（ADR-0009）。
 // ReconcileApplier は、使わなくなった後も規則を残すので、表の制約に合う形で当てられるかを確認し続ける。
 func reconcileSyncer(deps calendarsync.SyncerDeps, rd calendarsync.ReconcileDeps, tx *Transactor, ids ulid.Generator) *calendarsync.Syncer {
 	return calendarsync.NewSyncer(deps, calendarsync.Appliers{organization.SourceBuddyPrimary: calendarsync.NewReconcileApplier(rd, ids)},
@@ -383,7 +383,7 @@ func TestCalendarSyncKeepsEndedPatientOnlyInPast(t *testing.T) {
 func TestCalendarSyncForgetsTokenToReadAll(t *testing.T) {
 	ctx := txContext(t)
 	tx := ctx.Value(txKey{}).(pgx.Tx)
-	// 同期は、Google カレンダーを正本にする事業所のカレンダーを読む（ADR-0023）
+	// 同期は、Google カレンダーを正本にする事業所のカレンダーを読む（ADR-0009）
 	if _, err := tx.Exec(ctx, "UPDATE facilities SET source_mode = 'google_primary' WHERE id = $1", seedFacility); err != nil {
 		t.Fatal(err)
 	}

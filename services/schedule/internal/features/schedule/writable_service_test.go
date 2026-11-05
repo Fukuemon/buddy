@@ -46,7 +46,7 @@ func (r recordedExports) RecurringChanged(context.Context, string, string, strin
 	return nil
 }
 
-// Google カレンダーを予定の正本にする事業所では、予定を書く 5 つの操作が 409 で拒まれ、予定も書き出しの待ちも書かない（ADR-0023）。
+// Google カレンダーを予定の正本にする事業所では、予定を書く 5 つの操作が 409 で拒まれ、予定も書き出しの待ちも書かない（ADR-0009）。
 func TestSchedulesRejectGooglePrimary(t *testing.T) {
 	s := inmem.Seeded()
 	var queued int

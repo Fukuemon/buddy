@@ -151,7 +151,7 @@ func TestSchedulesEndsNextDay(t *testing.T) {
 	}
 }
 
-// nonVisiting は、stop に渡して、職員を訪問しない職員にする。職員の状態ではない（ADR-0015）。
+// nonVisiting は、stop に渡して、職員を訪問しない職員にする。職員の状態ではない（ADR-0014）。
 const nonVisiting staff.Status = "non_visiting"
 
 // stop は、職員 id を休職か退職か、訪問しない職員にする。
@@ -174,7 +174,7 @@ func stop(t *testing.T, s *inmem.Store, id string, status staff.Status) {
 }
 
 // 予定の作成、職員の変更、繰り返しの予定の作成と回の置き換えは、休職か退職の職員と訪問しない職員を予定の職員、主訪問者、同行者に指すと
-// 入力のエラーで拒む（#269 の検証の観点 1、3、ADR-0015）。
+// 入力のエラーで拒む（#269 の検証の観点 1、3、ADR-0014）。
 func TestSchedulesRejectInactiveStaff(t *testing.T) {
 	slots := map[string]func() schedule.SlotInput{
 		"予定の職員": func() schedule.SlotInput {

@@ -1,4 +1,4 @@
-# ADR-0022: サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける
+# ADR-0020: サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける
 
 ## Status
 
