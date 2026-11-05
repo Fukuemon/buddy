@@ -1,38 +1,35 @@
 # 画面仕様書
 
 画面ごとに、何を表示し、何ができるかを書く。  
-画面の一覧は、[PRD の画面の一覧](../PRD.md#画面の一覧) を元にした。  
-PRD がカレンダーにまとめているモーダルは、URL が違うので、別の画面に分けた。  
+画面を開ける職員は、[PRD の画面の一覧](../PRD.md#画面の一覧) にある。  
 新しい画面の仕様書は、テンプレートの `docs/screens/_template/` をコピーし、[画面仕様書の規約](rules.md) に従って書く。
 
 ## 画面の一覧
 
-| 画面の ID | 名前 | URL | 使う人 | 仕様書 |
-| --- | --- | --- | --- | --- |
-| `schedule-calendar` | 予定のカレンダー | `/schedule` | 全ての職員。表示する予定は権限で決まる | [予定のカレンダー](schedule-calendar_予定のカレンダー/index.md) |
-| `schedule-new` | 予定の作成 | `/schedule/new` | 全ての職員。予定を作れる職員の範囲は権限で決まる | [予定の作成](schedule-new_予定の作成/index.md) |
-| `schedule-detail` | 予定の詳細 | `/schedule/$scheduleId` | 予定を見る権限を持つ職員 | [予定の詳細](schedule-detail_予定の詳細/index.md) |
-| `schedule-edit` | 予定の編集 | `/schedule/$scheduleId/edit` | 予定を編集する権限を持つ職員 | [予定の編集](schedule-edit_予定の編集/index.md) |
-| `schedule-link` | カレンダーの連携（職員と Google カレンダーの結び付け） | `/schedule/link` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [カレンダーの連携](schedule-link_カレンダーの連携/index.md) |
-| `schedule-import` | 予定の取り込み（期間の選択、プレビュー、確定） | `/schedule/import` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [予定の取り込み](schedule-import_予定の取り込み/index.md) |
-| `schedule-review` | 確認が必要な予定（Google カレンダーと食い違った予定） | `/schedule/review` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [確認が必要な予定](schedule-review_確認が必要な予定/index.md) |
-| `schedule-cutover` | 予定の正本の切り替え（Google カレンダーから buddy へ） | `/schedule/link/cutover` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [予定の正本の切り替え](schedule-cutover_予定の正本の切り替え/index.md) |
-| `patient-list` | 利用者の一覧 | `/patients` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [利用者の一覧](patient-list_利用者の一覧/index.md) |
-| `patient-new` | 利用者の登録 | `/patients/new` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [利用者の登録](patient-new_利用者の登録/index.md) |
-| `patient-detail` | 利用者の詳細（利用者の編集、利用の終了、利用の再開を含む） | `/patients/$patientId` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [利用者の詳細](patient-detail_利用者の詳細/index.md) |
-| `staff-list` | 職員の一覧 | `/staff` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [職員の一覧](staff-list_職員の一覧/index.md) |
-| `staff-new` | 職員の登録 | `/staff/new` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [職員の登録](staff-new_職員の登録/index.md) |
-| `staff-detail` | 職員の詳細（基本の情報の編集、役職と権限の変更、休職、復職、退職を含む） | `/staff/$staffId` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [職員の詳細](staff-detail_職員の詳細/index.md) |
-| `organization-list` | 部署とチーム（部署とチームの作成、名前とチームの色の変更を含む） | `/organization` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [部署とチーム](organization-list_部署とチーム/index.md) |
-| `receipt-upload` | 照合（対象の月の選択、CSV のアップロード） | `/receipt` | 全ての職員 | [照合](receipt-upload_照合/index.md) |
-| `receipt-result` | 照合の結果 | `/receipt/result` | 全ての職員 | [照合の結果](receipt-result_照合の結果/index.md) |
-| `account-login` | ログイン | `/auth/login` | 全ての職員 | [ログイン](account-login_ログイン/index.md)。Hydra を通して、ID ブローカー（`services/broker`）のメールの入力の画面へリダイレクトする。ブローカーの画面は web の画面ではない |
-| `account-error` | ログインの失敗 | `/auth/error` | 全ての職員 | [ログインの失敗](account-error_ログインの失敗/index.md) |
-| `account-profile` | プロフィール | 未決 | 全ての職員 | なし |
+| 画面の ID | URL | 仕様書 |
+| --- | --- | --- |
+| `schedule-calendar` | `/schedule` | [予定のカレンダー](schedule-calendar_予定のカレンダー/index.md) |
+| `schedule-new` | `/schedule/new` | [予定の作成](schedule-new_予定の作成/index.md) |
+| `schedule-detail` | `/schedule/$scheduleId` | [予定の詳細](schedule-detail_予定の詳細/index.md) |
+| `schedule-edit` | `/schedule/$scheduleId/edit` | [予定の編集](schedule-edit_予定の編集/index.md) |
+| `schedule-link` | `/schedule/link` | [カレンダーの連携](schedule-link_カレンダーの連携/index.md) |
+| `schedule-import` | `/schedule/import` | [予定の取り込み](schedule-import_予定の取り込み/index.md) |
+| `schedule-review` | `/schedule/review` | [確認が必要な予定](schedule-review_確認が必要な予定/index.md) |
+| `schedule-cutover` | `/schedule/link/cutover` | [予定の正本の切り替え](schedule-cutover_予定の正本の切り替え/index.md) |
+| `patient-list` | `/patients` | [利用者の一覧](patient-list_利用者の一覧/index.md) |
+| `patient-new` | `/patients/new` | [利用者の登録](patient-new_利用者の登録/index.md) |
+| `patient-detail` | `/patients/$patientId` | [利用者の詳細](patient-detail_利用者の詳細/index.md) |
+| `staff-list` | `/staff` | [職員の一覧](staff-list_職員の一覧/index.md) |
+| `staff-new` | `/staff/new` | [職員の登録](staff-new_職員の登録/index.md) |
+| `staff-detail` | `/staff/$staffId` | [職員の詳細](staff-detail_職員の詳細/index.md) |
+| `organization-list` | `/organization` | [部署とチーム](organization-list_部署とチーム/index.md) |
+| `receipt-upload` | `/receipt` | [照合](receipt-upload_照合/index.md) |
+| `receipt-result` | `/receipt/result` | [照合の結果](receipt-result_照合の結果/index.md) |
+| `account-login` | `/auth/login` | [ログイン](account-login_ログイン/index.md) |
+| `account-error` | `/auth/error` | [ログインの失敗](account-error_ログインの失敗/index.md) |
+| `account-profile` | 未決 | プロフィールの仕様書は無い |
 
-- 役職と権限の対応は、PRD の役職ごとの権限にある。
-  - 利用者と職員の登録と編集は、職員の管理の権限を持つ職員だけが開ける。
-  - 役職のデフォルトで職員の管理の権限をマネージャーに付けることは、PRD が仮に決めている。
+- 役職と権限の対応は、[PRD の役職ごとの権限](../PRD.md#役職ごとの権限) にある。
 - 予定の作成、詳細、編集は、予定のカレンダーの上にモーダルとして重ねて出す。
   - URL は `/schedule` の子で、カレンダーの search params を引き継ぐ。
 - 職員の登録は、職員の一覧の上にモーダルとして重ねて出す。
@@ -53,17 +50,17 @@ PRD がカレンダーにまとめているモーダルは、URL が違うので
 
 | 種類 | 意味 |
 | --- | --- |
-| `list` | 一覧 |
-| `calendar` | カレンダーの表示 |
-| `detail` | 1 件の詳細 |
-| `new` | 作成 |
-| `edit` | 編集 |
-| `upload` | ファイルを受け取る |
-| `result` | 処理の結果 |
-| `link` | 外部のサービスとの結び付け |
-| `import` | 外部のサービスからの取り込み |
-| `review` | 人が確認して決める必要があるものの一覧 |
-| `cutover` | 正本の切り替え |
+| `list` |  |  |
+| `calendar` |  |  |
+| `detail` |  |  |
+| `new` |  |  |
+| `edit` |  |  |
+| `upload` |  |  |
+| `result` |  |  |
+| `link` |  |  |
+| `import` |  |  |
+| `review` |  |  |
+| `cutover` |  |  |
 | `login`、`profile`、`error` | `account` のドメインだけで使う。`error` はログインの失敗 |
 
 - 固有の URL を持つものを 1 つの画面に数える。
