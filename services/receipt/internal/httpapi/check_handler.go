@@ -15,7 +15,7 @@ import (
 )
 
 // CreateCheck は、multipart の visits（実績の CSV）と予定を照合する。
-// トークンの職員が照合の権限を持たなければ、本文を読まずに 403 を返す（ADR-0018）。
+// トークンの職員が照合の権限を持たなければ、本文を読まずに 403 を返す（ADR-0015）。
 // 予定のデータソースは、schedules（予定の CSV）か month（対象の月）から Config.Sources が選ぶ。
 func (s *server) CreateCheck(ctx context.Context, req openapi.CreateCheckRequestObject) (openapi.CreateCheckResponseObject, error) {
 	if err := s.cfg.Permission.RequireReceiptCheck(ctx, tokenFrom(ctx)); err != nil {

@@ -36,7 +36,7 @@ const (
 func (g PreferredGender) IsValid() bool { return g == Male || g == Female }
 
 // Patient は、利用者である。AssignedStaffID は担当の職員、ServiceCodeID はデフォルトのサービスコードである。
-// EndedAt は利用の終了にした時刻で、利用中なら nil である（ADR-0017）。
+// EndedAt は利用の終了にした時刻で、利用中なら nil である（ADR-0001）。
 type Patient struct {
 	ID              string
 	FacilityID      string

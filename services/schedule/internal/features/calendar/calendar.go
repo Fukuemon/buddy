@@ -47,7 +47,7 @@ type ImportRun struct {
 	RangeStart         civil.Date
 	// RangeEnd は、期間の最後の日で、その日を含む。切り替えの取り込みでは、期間が終わりを持たないので零の値である。
 	RangeEnd civil.Date
-	// CutoverID は、切り替えの取り込みのときの切り替えで、ほかの取り込みでは nil である（ADR-0026）。
+	// CutoverID は、切り替えの取り込みのときの切り替えで、ほかの取り込みでは nil である（ADR-0023）。
 	CutoverID     *string
 	Status        RunStatus
 	ImportedCount int

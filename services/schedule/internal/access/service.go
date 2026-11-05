@@ -63,7 +63,7 @@ func NewService(deps Deps) *Service {
 	return &Service{deps: deps}
 }
 
-// Authenticate は、id の組織に結び付けた事業所の職員を返す。職員は sub（ブローカーの職員の ID）で探す（ADR-0015）。
+// Authenticate は、id の組織に結び付けた事業所の職員を返す。職員は sub（ブローカーの職員の ID）で探す（ADR-0001）。
 // 組織がないか事業所に結び付いていないとき、職員が見つからないとき、職員の事業所が組織の事業所と違うとき、
 // 職員が休職か退職しているときは apperr.ErrForbidden を返す。休職と退職の職員は、手元の access token の期限が切れる前でも拒む。
 func (a *Service) Authenticate(ctx context.Context, id principal.Identity) (principal.Principal, error) {

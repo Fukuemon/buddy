@@ -8,7 +8,7 @@
 //   - OIDC_ISSUER: 必須。Hydra の Issuer の URL。トークンの iss と一致させ、discovery の文書をここから読む。
 //   - OIDC_AUDIENCE: 必須。トークンの aud に求める値。
 //   - OIDC_ORG_CLAIM: 組織の ID を持つクレームの名前。デフォルトは org_id。
-//   - SCHEDULE_URL: 必須。予定の API の URL（`http://schedule:8080` の形）。照合の前に、受けたトークンで GET /v1/me を呼び、照合の権限を確認する（ADR-0018）。
+//   - SCHEDULE_URL: 必須。予定の API の URL（`http://schedule:8080` の形）。照合の前に、受けたトークンで GET /v1/me を呼び、照合の権限を確認する（ADR-0015）。
 //   - CORS_ALLOW_ORIGINS: CORS でレスポンスを読ませるオリジンを、カンマで区切って並べる。空なら CORS のヘッダーを返さない。
 //   - GOOGLE_CALENDARS_FILE: 照合の対象のカレンダーの設定（JSON）のパス。空なら Google カレンダーを使わない。
 //     形は gcal.LoadCalendars にある。トークンの組織に結び付けたカレンダーだけを読む。

@@ -79,7 +79,7 @@ route は、`src/routes/` のファイルから TanStack Router が生成する�
 - `/auth/login` は、Hydra の認可のエンドポイントへリダイレクトする。
 - `/auth/callback` は、トークンを取り、予定の API の `GET /v1/me` で職員と事業所を引いてセッションを作る。
 - セッションは Valkey に置き、ブラウザには署名つきの cookie でセッションの ID だけを渡す。
-  - ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにする](../../docs/adr/0001-auth.md)
+  - ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元と停止をブローカーが、権限と業務のデータを予定の API が持つ](../../docs/adr/0001-auth.md)
 - 画面の API の呼び出しは、server function（`src/api/bff/serverFns.ts`）を通る。
   - サーバーは、画面が渡した事業所の代わりに、セッションの事業所を使う。
 - access token の期限が 1 分を切ったら、refresh token で更新する。

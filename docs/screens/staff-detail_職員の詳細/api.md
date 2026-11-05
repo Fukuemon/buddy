@@ -97,4 +97,4 @@
   - 画面は、返った `StaffDetail.policies` で権限の一覧を出し直す。
 - `updateUser` は、訪問する職員を訪問しない職員に変えるときだけ、退職と同じ範囲で今日以降の予定と担当の利用者を数え、残れば書かずに 409 を返す。
   - 訪問しない職員を訪問する職員に戻すときは数えない。
-  - ADR-0018: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../../adr/0018-receipt-check-policy-and-non-visiting-staff.md)
+  - ADR-0015: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../../adr/0015-receipt-check-policy-and-non-visiting-staff.md)

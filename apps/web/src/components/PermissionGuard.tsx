@@ -14,7 +14,7 @@ export type PermissionGuardProps = {
 /**
  * 画面の中のボタンとダイアログを、ログインした職員の権限で出し分ける。
  * 職員は query から読むので、権限を変えて Viewer を取り直すと、画面を読み直さずに出し分けが変わる。
- * 画面の出し分けだけで、拒むのは API である（ADR-0021）。
+ * 画面の出し分けだけで、拒むのは API である（ADR-0018）。
  */
 export const PermissionGuard = ({ permission, fallback = null, children }: PermissionGuardProps) =>
   hasPermission(useViewer(), permission) ? children : fallback

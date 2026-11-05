@@ -63,7 +63,7 @@ type Appliers map[organization.SourceMode]Applier
 var errModeChanged = errors.New("同期の途中で事業所の正本のモードが変わった")
 
 // Syncer は、職員が結び付けた外部のカレンダーの変わった予定を、増分の取得（syncToken）で読み、事業所の正本のモードの Applier で
-// 当てる処理である。Applier の無いモードの事業所のカレンダーは取らない（ADR-0026）。
+// 当てる処理である。Applier の無いモードの事業所のカレンダーは取らない（ADR-0023）。
 // トークンが切れていれば（410）、全ての予定を読み直す。
 type Syncer struct {
 	deps     SyncerDeps

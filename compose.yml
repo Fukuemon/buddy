@@ -286,7 +286,7 @@ services:
       calendarpit-authorize: { condition: service_completed_successfully }
       gcalhold: { condition: service_healthy }
 
-  # 予定の API と同じイメージの calendar-worker が、書き出しと同期を役割ごとのプロセスで常駐して動かす（ADR-0027）
+  # 予定の API と同じイメージの calendar-worker が、書き出しと同期を役割ごとのプロセスで常駐して動かす（ADR-0024）
   schedule-calendar-export:
     image: ${COMPOSE_PROJECT_NAME}-schedule
     # イメージは schedule-migrate がビルドする
@@ -322,7 +322,7 @@ services:
     environment:
       OIDC_ISSUER: http://hydra:4444
       OIDC_AUDIENCE: receipt
-      # 照合の前に、受けたトークンで予定の API の GET /v1/me を呼び、照合の権限を確認する（ADR-0018）
+      # 照合の前に、受けたトークンで予定の API の GET /v1/me を呼び、照合の権限を確認する（ADR-0015）
       SCHEDULE_URL: http://schedule:8080
       # API の仕様のページでリクエストを試すローカル環境のドキュメントサイト（zensical serve）に許す
       CORS_ALLOW_ORIGINS: http://localhost:8000

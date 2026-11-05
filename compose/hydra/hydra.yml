@@ -28,7 +28,7 @@ ttl:
 oauth2:
   # ブローカーが同意の accept で足す組織の ID を、access token の JWT の top level に出す（ADR-0014）
   allowed_top_level_claims: [org_id]
-  # トークンを発行するたびにブローカーを呼び、休職と退職の職員と、上流でのログインから 12 時間を過ぎたトークンを拒ませる（ADR-0015）
+  # トークンを発行するたびにブローカーを呼び、休職と退職の職員と、上流でのログインから 12 時間を過ぎたトークンを拒ませる（ADR-0001）
   token_hook:
     # ブローカーは、内部の API と token_hook を、ログインの画面と別のポート 8081 で待ち受ける
     url: http://broker:8081/internal/token-hook

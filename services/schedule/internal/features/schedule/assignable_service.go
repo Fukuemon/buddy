@@ -29,7 +29,7 @@ func assignedOf(staffID string, v *visit.Info) assignment {
 
 // requireAssignable は、date の予定に職員 st を割り振れるかを確認する。keptID は、同じ役割に既に割り振った職員である。
 // 既に割り振った職員は、休職でも割り振ったまま保存できる。退職した職員は、今日 today より前の予定でだけ保存できる。
-// 退職した職員に、誰も行かない今日以降の予定を残さないためである（ADR-0016）。
+// 退職した職員に、誰も行かない今日以降の予定を残さないためである（ADR-0001）。
 func requireAssignable(st staff.Ref, keptID string, date, today civil.Date) error {
 	if keptID != "" && st.ID == keptID && (st.Status != staff.StatusRetired || date.Before(today)) {
 		return nil

@@ -78,7 +78,7 @@ func ParseSort(field, order string) (kernel.Sort, error) {
 }
 
 // ListQuery は、予定の一覧の絞り込みと並べ替えである。nil の絞り込みは使わない。
-// DateFrom と DateTo は、予定の日付（開始の日）で両端を含む。DateFrom の前の日に始まり DateFrom に終わる予定も含む（ADR-0019）。
+// DateFrom と DateTo は、予定の日付（開始の日）で両端を含む。DateFrom の前の日に始まり DateFrom に終わる予定も含む（ADR-0016）。
 // 繰り返しの予定には、日付の絞り込みを使わない。
 type ListQuery struct {
 	TypeName *schedule.TypeName
@@ -103,6 +103,6 @@ type Listing struct {
 	RecurringSchedules []RecurringDetail
 	SourceMode         organization.SourceMode
 	CalendarSyncs      []CalendarSync
-	// Cutover は、google_primary の事業所の open の切り替えで、無ければ nil である。画面は「切り替え中」を出す（ADR-0026）。
+	// Cutover は、google_primary の事業所の open の切り替えで、無ければ nil である。画面は「切り替え中」を出す（ADR-0023）。
 	Cutover *OpenCutover
 }

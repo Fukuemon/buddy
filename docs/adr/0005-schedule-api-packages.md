@@ -36,9 +36,9 @@ Go の API は 3 つある。予定の API（`services/schedule`）、照合の 
 予定の API の規則と手順を、機能ごとのパッケージに置く。DB と HTTP のアダプタ（`postgres`、`httpapi`）は、生成物が 1 つのパッケージなので、機能に分けずに 1 つずつ置く。
 
 - 機能のパッケージは `internal/features/<機能>/` に置く。ディレクトリの一覧から機能を読み取れ、依存の規則を `features/` の下と外のパスのパターンで書ける。
-  - 機能の一覧は `context/codebase.md` にある。サービスコードの `servicecode` は ADR-0025 で、予定の読み取りのモデルの `scheduleview` は ADR-0024 で決めた。
-    - ADR-0024: [予定の書き込みのモデルと読み取りのモデルを分け、正本のモードを事業所の状態にする](0024-schedule-write-read-models-and-source-mode.md)
-    - ADR-0025: [サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける](0025-service-code-rules.md)
+  - 機能の一覧は `context/codebase.md` にある。サービスコードの `servicecode` は ADR-0022 で、予定の読み取りのモデルの `scheduleview` は ADR-0021 で決めた。
+    - ADR-0021: [予定の書き込みのモデルと読み取りのモデルを分け、正本のモードを事業所の状態にする](0021-schedule-write-read-models-and-source-mode.md)
+    - ADR-0022: [サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける](0022-service-code-rules.md)
 - `internal/` の直下には、機能でないパッケージを置く。
   - アダプタ（`httpapi`、`postgres`、`gcal` など）
   - 共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）。共通のエラーと検証のエラーは `apperr`、`Transactor` は `tx` に置く。ID の発行と並べ替えは、使う機能のパッケージか、`apperr` と同じ段の小さなパッケージ（`kernel`）に置く。
@@ -103,16 +103,16 @@ flowchart BT
 - 取り込みと同期の両方が使う読み替えの規則（`Classify`、`RuleFromRecurrence`、`serviceKey`、`originalDate`、`createdVersion`）は、`calendar` に置いて公開する。外部の予定と buddy の予定を互いに読み替える規則は、3 つの機能の共通の規則であるためである。
 - 書き出しの待ちの記録（`Export`、`Target`、`ExportStatus`、`ExportErrorCode`）は `calendar` に置く。同期は、書いている途中の待ちを見て、外部の変更を当てるか保留にするかを決めるので、待ちの記録は書き出しと同期が共有する状態である。
 - 書き出しの待ちの一覧と書き直しは、buddy の内容を書く側なので `calendarexport` に置く。
-- 外部の変更と buddy の予定を比べて当てる `ReconcileApplier` と、確認が必要な待ちを外部の内容で解決する `AcceptExport` は、どのモードでも使わないので消す。この判断は ADR-0029 にある。
-  - ADR-0029: [Google カレンダーを正本にする事業所でも、buddy は予定を Google カレンダーへ同期の呼び出しで書き、訪問の情報を buddy の DB に持つ](0029-google-primary-write-through.md)
+- 外部の変更と buddy の予定を比べて当てる `ReconcileApplier` と、確認が必要な待ちを外部の内容で解決する `AcceptExport` は、どのモードでも使わないので消す。この判断は ADR-0026 にある。
+  - ADR-0026: [Google カレンダーを正本にする事業所でも、buddy は予定を Google カレンダーへ同期の呼び出しで書き、訪問の情報を buddy の DB に持つ](0026-google-primary-write-through.md)
 
 同期は、取得と、当てる規則の 2 つの型に分ける。
 
 - `Syncer` は、同期の状態の Claim と Finish、`EventSource` の変更の読み取り、syncToken の失効（410）の読み直しを持つ。正本のモードを知らない。
 - `Applier` は、1 つの外部の予定を 1 つのトランザクションで当てるインターフェースにする。Google カレンダーを正本にする事業所の参照のモデルを書く型は `ProjectionApplier` である。
 - `Syncer` は、1 つの予定を当てるトランザクションの中で事業所の正本のモードを読み、モードごとの `Applier` を選ぶ。モードごとの `Applier` は組み立ての場所が渡し、`Syncer` はモードの値と `Applier` の対応だけを持つ。
-  - モードごとの同期の向きは ADR-0026 にある。
-    - ADR-0026: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](0026-google-calendar-source-modes.md)
+  - モードごとの同期の向きは ADR-0023 にある。
+    - ADR-0023: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](0023-google-calendar-source-modes.md)
 
 `calendarexport` は、事業所の正本のモードが buddy を正本にするときだけ書く。
 
@@ -139,7 +139,7 @@ flowchart BT
   - 予定の閲覧と編集の判定と、見てよい職員の絞り込みは、`schedule` の 1 つのファイルに集める。
   - 役職のデフォルトの権限をコピーする規則は、`staff` の公開の関数にする。
 - リポジトリは、自分の集約のものだけを、そのパッケージに置く。単発の予定（キャンセルを含む）、繰り返しの予定（規則と除外の日を含む）、マスタで分け、テーブルごとには分けない。
-  - レコードをロックして読む操作は `GetForUpdate` の 1 つにし、名前でロックを示す。`GetForUpdate` が返す型は ADR-0024 にある。
+  - レコードをロックして読む操作は `GetForUpdate` の 1 つにし、名前でロックを示す。`GetForUpdate` が返す型は ADR-0021 にある。
 - ほかの機能のデータは、使う側で定義したインターフェースで受ける。ほかの機能のリポジトリのインターフェースと、リポジトリの束は受けない。
   - 読むだけなら、`kernel.Finder` か 1〜2 のメソッドにする。例えば `schedule` は、職員の ID、事業所、チームだけを返すインターフェースで職員を受ける。
   - ほかの機能の集約を 1 つのトランザクションで書くかロックするなら、使うメソッドだけを並べた 1 つのインターフェースにする。
@@ -188,8 +188,8 @@ func (o Leave) Do(ctx context.Context, id string, in LeaveInput) (StatusChange, 
 常駐の処理と、操作の型以外で操作を持つ型（`calendarexport` の `Exporter`、`Outbox`、`calendarsync` の `Syncer`、`visit` の `Writer`）は、1 つの型が 1 つの役割を持つ型にする。
 
 - これらの型は、同じ集約のリポジトリと規則を使うので、同じ機能のパッケージに置く。
-- 常駐と 1 回の繰り返しの配置先は ADR-0028 にある。
-  - ADR-0028: [Worker の常駐と 1 回の繰り返しを cmd/calendar-worker に集め、機能のパッケージは 1 回の処理だけを持つ](0028-calendar-worker-loop.md)
+- 常駐と 1 回の繰り返しの配置先は ADR-0025 にある。
+  - ADR-0025: [Worker の常駐と 1 回の繰り返しを cmd/calendar-worker に集め、機能のパッケージは 1 回の処理だけを持つ](0025-calendar-worker-loop.md)
 
 照合の API と ID ブローカーには、次のとおり当てる。
 
@@ -284,8 +284,8 @@ func (o Leave) Do(ctx context.Context, id string, in LeaveInput) (StatusChange, 
 
 - ADR-0005: 予定の API の規則と手順を機能ごとのパッケージにまとめる（[統合の前](https://github.com/Fukuemon/buddy/blob/ef1f289c1edf1257fa20c25b9c2ed4756c790010/docs/adr/0005-schedule-api-packages.md)）
 - ADR-0010: 予定の API の機能のパッケージで、手順を usecase、規則を関数、リポジトリを集約の単位に分ける（[統合の前](https://github.com/Fukuemon/buddy/blob/ef1f289c1edf1257fa20c25b9c2ed4756c790010/docs/adr/0010-schedule-api-usecase-boundaries.md)）
-- ADR-0023: 予定の API の機能のパッケージを internal/features/ に置き、usecase のメソッドを操作ごとのファイルに分ける（[統合の前](https://github.com/Fukuemon/buddy/blob/ef1f289c1edf1257fa20c25b9c2ed4756c790010/docs/adr/0026-schedule-api-features-directory.md)）
-- ADR-0026: 予定の API の機能のパッケージの中で、操作でないファイルとテストの配置先と、ほかの機能を書くインターフェースの大きさを決める（[統合の前](https://github.com/Fukuemon/buddy/blob/ef1f289c1edf1257fa20c25b9c2ed4756c790010/docs/adr/0029-schedule-api-feature-package-layout.md)）
-- ADR-0027: Go の 3 つの API で、パッケージをフラットに保ち、ファイルの名前の末尾の語で役割を表す（[統合の前](https://github.com/Fukuemon/buddy/blob/ef1f289c1edf1257fa20c25b9c2ed4756c790010/docs/adr/0030-go-file-names-by-role.md)）
-- ADR-0028: Go の API の操作を、使う依存だけを持つ操作ごとの型にし、機能のパッケージの App をやめる（[統合の前](https://github.com/Fukuemon/buddy/blob/ef1f289c1edf1257fa20c25b9c2ed4756c790010/docs/adr/0031-go-operation-types.md)）
-- ADR-0029: 予定の API の calendar を、結び付け、取り込み、同期、書き出しの 4 つの機能に分ける（[統合の前](https://github.com/Fukuemon/buddy/blob/ef1f289c1edf1257fa20c25b9c2ed4756c790010/docs/adr/0032-schedule-api-calendar-split.md)）
+- ADR-0020: 予定の API の機能のパッケージを internal/features/ に置き、usecase のメソッドを操作ごとのファイルに分ける（[統合の前](https://github.com/Fukuemon/buddy/blob/ef1f289c1edf1257fa20c25b9c2ed4756c790010/docs/adr/0026-schedule-api-features-directory.md)）
+- ADR-0023: 予定の API の機能のパッケージの中で、操作でないファイルとテストの配置先と、ほかの機能を書くインターフェースの大きさを決める（[統合の前](https://github.com/Fukuemon/buddy/blob/ef1f289c1edf1257fa20c25b9c2ed4756c790010/docs/adr/0029-schedule-api-feature-package-layout.md)）
+- ADR-0024: Go の 3 つの API で、パッケージをフラットに保ち、ファイルの名前の末尾の語で役割を表す（[統合の前](https://github.com/Fukuemon/buddy/blob/ef1f289c1edf1257fa20c25b9c2ed4756c790010/docs/adr/0030-go-file-names-by-role.md)）
+- ADR-0025: Go の API の操作を、使う依存だけを持つ操作ごとの型にし、機能のパッケージの App をやめる（[統合の前](https://github.com/Fukuemon/buddy/blob/ef1f289c1edf1257fa20c25b9c2ed4756c790010/docs/adr/0031-go-operation-types.md)）
+- ADR-0026: 予定の API の calendar を、結び付け、取り込み、同期、書き出しの 4 つの機能に分ける（[統合の前](https://github.com/Fukuemon/buddy/blob/ef1f289c1edf1257fa20c25b9c2ed4756c790010/docs/adr/0032-schedule-api-calendar-split.md)）

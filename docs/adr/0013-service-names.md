@@ -29,7 +29,7 @@ ADR-0012: [2 つの API を services/ に置き、画面と API をトップの�
 - compose のサービスは `schedule`、`schedule-migrate`、`schedule-seed`、`receipt` にし、イメージは `<プロジェクト>-schedule` にする。
 - トークンの `aud` は `schedule` と `receipt` にする。
   - 理由: 2 つの API は、ブローカーの 1 つの Issuer のトークンだけを受けるので、`aud` の値は buddy の API の間で区別できればよい。サービスの名前と同じにすると、API の `OIDC_AUDIENCE` と IdP の設定を名前から書ける。
-  - ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにする](0001-auth.md)
+  - ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元と停止をブローカーが、権限と業務のデータを予定の API が持つ](0001-auth.md)
 - 環境変数は、ほかのサービスの `WEB_PORT`、`IDP_PORT`、`E2E_GCALHOLD_URL` と同じく、サービスの名前を接頭辞にする（`SCHEDULE_PORT`、`SCHEDULE_URL`、`E2E_SCHEDULE_URL` など）。
 - テーブル定義書の出力先は `docs/db/schedule/`、API の仕様のページは `docs/api/schedule.html` と `docs/api/receipt.html` にする。
 - GitHub のラベルは `pkg:schedule` と `pkg:receipt` にする。名前を変えるので、付いている issue と pull request のラベルも変わる。

@@ -1,4 +1,4 @@
-# ADR-0026: 事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す
+# ADR-0023: 事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す
 
 ## Status
 
@@ -14,12 +14,12 @@ ADR-0009 は、buddy の DB を正本にし、取り込み、書き出し、双�
 
 - ADR-0009: [Google カレンダーとの連携を、buddy をマスターにする段階の同期にし、サービスアカウントとカレンダーの共有で認証する](0009-google-calendar-sync.md)
 
-ADR-0005 と ADR-0024 は、この ADR が前提にする配置を決めた。
+ADR-0005 と ADR-0021 は、この ADR が前提にする配置を決めた。
 
 - 同期は、変更の取得（`calendarsync` の `Syncer`）と、取った変更を当てる規則（`Applier`）に分かれる。
   - ADR-0005: [予定の API を機能ごとのパッケージに分け、Go の API の操作を使う依存だけを持つ型にし、ファイルの名前の末尾の語で役割を表す](0005-schedule-api-packages.md)
 - 正本のモードは事業所の状態で、予定を書けるのは `buddy_primary` の事業所だけである。表示の読み出し（`scheduleview`）は、モードで読み元を選ぶ。
-  - ADR-0024: [予定の書き込みのモデルと読み取りのモデルを分け、正本のモードを事業所の状態にする](0024-schedule-write-read-models-and-source-mode.md)
+  - ADR-0021: [予定の書き込みのモデルと読み取りのモデルを分け、正本のモードを事業所の状態にする](0021-schedule-write-read-models-and-source-mode.md)
 
 決定に関わる事実は次のとおり。
 
@@ -42,8 +42,8 @@ ADR-0005 と ADR-0024 は、この ADR が前提にする配置を決めた。
 | `google_primary` | Google カレンダー | 拒む。切り替えの取り込みだけを許す | Google の変更を Projection に写す | しない | Projection |
 | `buddy_primary` | buddy | 書ける | しない | buddy から Google へ一方向 | buddy の予定 |
 
-- `google_primary` の「buddy からの書き込み」と「書き出し」の判断は、ADR-0029 で置き換えた。
-  - ADR-0029: [Google カレンダーを正本にする事業所でも、buddy は予定を Google カレンダーへ同期の呼び出しで書き、訪問の情報を buddy の DB に持つ](0029-google-primary-write-through.md)
+- `google_primary` の「buddy からの書き込み」と「書き出し」の判断は、ADR-0026 で置き換えた。
+  - ADR-0026: [Google カレンダーを正本にする事業所でも、buddy は予定を Google カレンダーへ同期の呼び出しで書き、訪問の情報を buddy の DB に持つ](0026-google-primary-write-through.md)
 - 遷移は、`google_primary` から `buddy_primary` の 1 つだけにする。切り替え（`Cutover`）を完了したときにだけ起きる。
 - `buddy_primary` では、Google カレンダーへの書き出しを常に行う。Google カレンダーは、buddy が使えないときの参照用の控えになる。
 - 新しい事業所のデフォルトのモードは `google_primary` にする。マイグレーションは、今ある事業所を `buddy_primary` にし、今の動作を変えない。ローカル環境と E2E のシードの事業所は `buddy_primary` にし、`google_primary` の確認のための事業所を別に足す。
@@ -101,19 +101,19 @@ ADR-0005 と ADR-0024 は、この ADR が前提にする配置を決めた。
 - `google_primary` では、`Syncer` は `ProjectionApplier` で Google カレンダーの変更を Projection に写す。予定の対応の有無によらず、新しく作った予定も写す。
 - `buddy_primary` では、`Syncer` はその事業所のカレンダーを読まない。Google カレンダーでの変更は buddy に取り込まない。
   - ADR-0005 が `buddy_primary` で使うとした `ReconcileApplier` は、どのモードでも使わない。コードは消さず、緊急の編集の要求で使い道を決める。
-    - この判断は ADR-0029 で置き換えた。`ReconcileApplier` を消す。
-      - ADR-0029: [Google カレンダーを正本にする事業所でも、buddy は予定を Google カレンダーへ同期の呼び出しで書き、訪問の情報を buddy の DB に持つ](0029-google-primary-write-through.md)
+    - この判断は ADR-0026 で置き換えた。`ReconcileApplier` を消す。
+      - ADR-0026: [Google カレンダーを正本にする事業所でも、buddy は予定を Google カレンダーへ同期の呼び出しで書き、訪問の情報を buddy の DB に持つ](0026-google-primary-write-through.md)
   - `buddy_primary` の書き出しは、buddy の内容を Google カレンダーに書く。Google カレンダーでの変更と衝突したとき（412）は、今と同じく確認が必要な予定にし、マネージャーは buddy の内容で書き直す（`RetryExport`）。Google の内容を当てる操作（`AcceptExport`）は、`buddy_primary` では拒む。
-    - `AcceptExport` を残す判断は、ADR-0029 で置き換えた。どのモードでも使わないので消す。
-      - ADR-0029: [Google カレンダーを正本にする事業所でも、buddy は予定を Google カレンダーへ同期の呼び出しで書き、訪問の情報を buddy の DB に持つ](0029-google-primary-write-through.md)
+    - `AcceptExport` を残す判断は、ADR-0026 で置き換えた。どのモードでも使わないので消す。
+      - ADR-0026: [Google カレンダーを正本にする事業所でも、buddy は予定を Google カレンダーへ同期の呼び出しで書き、訪問の情報を buddy の DB に持つ](0026-google-primary-write-through.md)
 - `Syncer` は、1 つの予定を当てるトランザクションの中で事業所のモードを読み、`ProjectionApplier` を使うか読まないかを決める（ADR-0005）。
 
 ### Projection
 
-Projection は、Google カレンダーを正本にする事業所の予定の写しで、`calendarsync` の `ProjectionApplier` だけが書き、`scheduleview` だけが読む（ADR-0024）。
+Projection は、Google カレンダーを正本にする事業所の予定の写しで、`calendarsync` の `ProjectionApplier` だけが書き、`scheduleview` だけが読む（ADR-0021）。
 
-- `ProjectionApplier` だけが書く判断は、ADR-0029 で置き換えた。予定の API の書き込みも、Google に書いた予定を写す。2 つが写す順は、Google の更新の時刻で決める。
-  - ADR-0029: [Google カレンダーを正本にする事業所でも、buddy は予定を Google カレンダーへ同期の呼び出しで書き、訪問の情報を buddy の DB に持つ](0029-google-primary-write-through.md)
+- `ProjectionApplier` だけが書く判断は、ADR-0026 で置き換えた。予定の API の書き込みも、Google に書いた予定を写す。2 つが写す順は、Google の更新の時刻で決める。
+  - ADR-0026: [Google カレンダーを正本にする事業所でも、buddy は予定を Google カレンダーへ同期の呼び出しで書き、訪問の情報を buddy の DB に持つ](0026-google-primary-write-through.md)
 - テーブルは `calendar_event_projections` にし、Google カレンダーの 1 つの予定を 1 行にする。結び付けたカレンダーの ID と Google の予定の ID の組で一意にする。
 - 保存する項目は次のとおり。
   - Google の予定の ID、繰り返しの予定の親の ID と元の開始の時刻（例外の回）、状態（確定か取り消し）
@@ -128,8 +128,8 @@ Projection は、Google カレンダーを正本にする事業所の予定の�
 - Projection の行は、結び付けたカレンダー（`external_calendars`）を通して、職員と事業所に結び付く。行には、写した時点の職員と事業所の ID を持たせ、事業所で絞る読み出しに使う。
 - `scheduleview` は、Projection の予定にも、buddy の予定と同じ閲覧の判定（`schedule.Readable`）と事業所の分離を当てる。カレンダーの職員を、予定の職員とみなす。
 - Projection の予定の訪問の情報（利用者とサービスコード）は、読み出しのときにタイトルを読み替えて引く（`calendar.Classify`）。引けない予定は、訪問の情報を空にし、理由（利用者が見つからない、サービスコードが見つからない）を付けて返す。
-  - この判断は ADR-0029 で置き換えた。buddy の DB に訪問の情報の行がある予定は、その行を使う。
-    - ADR-0029: [Google カレンダーを正本にする事業所でも、buddy は予定を Google カレンダーへ同期の呼び出しで書き、訪問の情報を buddy の DB に持つ](0029-google-primary-write-through.md)
+  - この判断は ADR-0026 で置き換えた。buddy の DB に訪問の情報の行がある予定は、その行を使う。
+    - ADR-0026: [Google カレンダーを正本にする事業所でも、buddy は予定を Google カレンダーへ同期の呼び出しで書き、訪問の情報を buddy の DB に持つ](0026-google-primary-write-through.md)
 
 ### 同期の状況の返し方と失敗のとき
 
@@ -150,7 +150,7 @@ Projection は、Google カレンダーを正本にする事業所の予定の�
 | 選択肢 | 強み | 弱み |
 | --- | --- | --- |
 | **採用:** 事業所ごとの 2 つのモードにし、Google を正本にする間は Projection に写し、期間のある切り替えの記録で取り込んで確認してから buddy に切り替える | 正本が常に 1 つで、モードは正本だけを表す。切り替えをやめても、モードを変えずに Projection のまま残る。今の取り込みの画面と規則を切り替えに使える | Projection のテーブルと、それを読む `scheduleview` の処理が増える。切り替えの取り込みはマネージャーの手作業である |
-| Google を正本にする間も、Google の予定を buddy の予定のテーブルに自動で取り込み、書き込みだけを止める | 読み出しが 1 つのテーブルで済む | 訪問の情報に読み替えられない予定を書き込みのモデルに入れられず、不変条件を外す分岐が要る（ADR-0024） |
+| Google を正本にする間も、Google の予定を buddy の予定のテーブルに自動で取り込み、書き込みだけを止める | 読み出しが 1 つのテーブルで済む | 訪問の情報に読み替えられない予定を書き込みのモデルに入れられず、不変条件を外す分岐が要る（ADR-0021） |
 | 切り替えの途中を表す 3 つ目のモード（`migrating`）を持つ | モードを見れば切り替えの途中か分かる | モードが正本と作業の状態の 2 つを表し、同期、書き出し、書き込み、読み取りの分かれ方が 3 通りになる。やめるときにモードを戻す遷移が要る |
 | 画面と照合が Google カレンダーを毎回直接読み、Projection を持たない | テーブルが要らない | 画面の表示のたびに Google の API を呼び、クォータと遅さが画面に出る。Google の障害のときに何も表示できない |
 | `buddy_primary` でも、今の双方向の同期で Google の変更を buddy に当てる | 今のコードがそのまま動く | #594 は、切り替えた後に Google の変更を自動で取り込まないとする。正本が 2 つになる |
