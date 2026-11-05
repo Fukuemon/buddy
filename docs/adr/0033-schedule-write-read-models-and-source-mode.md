@@ -35,6 +35,8 @@ Google カレンダーを予定の正本にする変更（#594）では、Google
   - 事業所のモードで、buddy の予定のテーブルか Projection のテーブルを読み、同じ型を返す。画面と照合は、どちらから読んだかを知らない。
   - 閲覧の判定と絞り込みは、`schedule` の公開の関数を呼ぶ。規則を 2 か所に書かない。
 - Projection は、Google カレンダーの同期の適用の規則（`calendarsync` の `ProjectionApplier`）だけが書き、`scheduleview` だけが読む。
+  - `ProjectionApplier` だけが書く判断は、ADR-0038 で置き換えた。予定の API の書き込みも、Google に書いた予定を写す。2 つが写す順は、Google の更新の時刻で決める。
+    - ADR-0038: [Google カレンダーを正本にする事業所でも、buddy は予定を Google カレンダーへ同期の呼び出しで書き、訪問の情報を buddy の DB に持つ](0038-google-primary-write-through.md)
   - Projection のテーブルと、保存する項目は、#594 の ADR と実装で決める。
 - 予定の種類のマスタ（`ListTypes`）は、予定を書くときの参照なので `schedule` に残す。
 - 機能の順は、`schedule`、`scheduleview`、`calendar` の順にする。`scheduleview` は `schedule` まで import してよい。`calendarsync` は Projection を書くために `scheduleview` を import してよい。
@@ -47,6 +49,8 @@ Google カレンダーを予定の正本にする変更（#594）では、Google
   - モードの遷移の規則（どのモードからどのモードへ移れるか）は `organization` に置く。遷移の条件と手順は #594 の ADR で決める。
 - 予定を書く操作は、トランザクションの最初に、事業所の行を共有のロックで読み、`schedule` の規則の関数（`requireWritable(f organization.Facility) error`）でモードを確認する。
   - `buddy_primary` のときだけ書ける。`google_primary` と `migrating` では拒む。
+    - この判断は ADR-0038 で置き換えた。`google_primary` の事業所でも、予定の API は予定を Google カレンダーへ書く。
+      - ADR-0038: [Google カレンダーを正本にする事業所でも、buddy は予定を Google カレンダーへ同期の呼び出しで書き、訪問の情報を buddy の DB に持つ](0038-google-primary-write-through.md)
     - `open` の切り替えがある `google_primary` の事業所で、切り替えの取り込みだけが書ける例外を、ADR-0035 で足した。
       - ADR-0035: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](0035-google-calendar-source-modes.md)
   - モードの切り替えは、同じ事業所の行を排他のロックで取る。切り替えの途中の書き込みは、切り替えの後に入り、切り替えの前のモードで書かれない。
