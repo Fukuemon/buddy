@@ -8,6 +8,8 @@
 
 画面の見た目をそろえる基準と、アクセシビリティの基準を決める必要がある。
 
+- receipt-front からコピーしたもとの画面のテーマには、白の上で 4.5:1 に届かない文字の色と、文字でないものの基準の 3:1 に届かない入力欄の枠があった。フォーカスの表示はコンポーネントごとに違い、色相を人数で等分した職員の色は、色相によって白の文字が読めなかった。
+
 - デジタル庁デザインシステム（DADS）は、トークンを npm の `@digital-go-jp/design-tokens` で配っている。2.1.0 は MIT で、`dist/tokens.css` に CSS の変数として色、文字、角丸、影を持つ。余白とフォーカスのトークンは持たない。
   - 出典: [@digital-go-jp/design-tokens](https://www.npmjs.com/package/@digital-go-jp/design-tokens)
 - DADS の Tailwind の plugin `@digital-go-jp/tailwind-theme-plugin` 1.0.1 は、v4 の `@theme` を持つ。原色の全ての段を `--color-blue-900` のような名前で Tailwind のテーマに入れる。
@@ -93,7 +95,7 @@ packages/ui には Base と Case だけを置き、Domain のコンポーネン�
 | `SiteHeader` | Domain（buddy の画面の帯） | `apps/web/src/components/layout/` |
 | Schedule で始まるコンポーネント、職員と利用者の選択の一覧 | Domain | `apps/web/src/features/schedule/components/` |
 
-- 値を 1 つ選ぶ操作で、切り替える領域（tabpanel）を持たないものは、ラジオボタンの役割を持つ `SegmentedControl` にする。DADS のタブは同じ主題の内容を観点で切り替えるコンポーネントなので、タブのコンポーネントは、切り替える領域を持つ画面ができるまで作らない。
+- 表示の単位と予定の種類の、値を 1 つ選ぶ操作は、切り替える領域（tabpanel）を持たないので、ラジオボタンの役割を持つ `SegmentedControl` にする。DADS のタブは同じ主題の内容を観点で切り替えるコンポーネントなので、タブのコンポーネントは、切り替える領域を持つ画面ができるまで作らない。
   - 出典: [DADS のタブ](https://design.digital.go.jp/dads/components/tab/)
 - 入力のコンポーネントは、React Hook Form の `control` と `name` を受ける。packages/ui は `react-hook-form` を peer dependency にする。
 
@@ -155,18 +157,20 @@ develop に入った変更は、次の流れで本番に出る。
 
 ```mermaid
 flowchart TB
-    push["develop への push"] --> build["pnpm site:build で文書、カタログ、ER 図を組み立てる"]
-    build --> env["environment docs-site の secret の Cloudflare のトークンを読む（develop だけ）"]
-    env --> deploy["Worker buddy-docs に本番として出す"]
+    pr["pull request"] --> prbuild["pnpm site:build で組み立てるだけ。トークンを読まず、出さない"]
+    push["develop への push"] --> env["environment docs-site のジョブ（develop だけが使える）"]
+    env --> build["pnpm site:build で文書、カタログ、ER 図を組み立てる"]
+    build --> deploy["secret の Cloudflare のトークンで、Worker buddy-docs に本番として出す"]
     deploy --> check["ログインなしで文書、カタログ、ER 図を開けることを確認する"]
 ```
 
 - pull request ごとのプレビューは出さない。Cloudflare のトークンを、pull request のコードから読めないようにするためである。
 - Cloudflare のトークンは、GitHub の environment `docs-site` の secret に置き、environment にデプロイできるブランチを develop だけにする。
   - ワークフローの条件だけで develop に絞ると、条件を外したワークフローを別のブランチへ push してトークンを読める。environment のブランチの制限は、ワークフローを書き換えても外せない。
-  - トークンは、Access と関係なく、Worker の中身を書き換えられる。
+  - トークンは、Worker の中身を書き換えられるためである。
+  - トークンの範囲はこの Worker に絞り、漏れたときに書き換えられるものを、このサイトの中身と設定に限る。
 - ワークフローは、パッケージ docs-site のテンプレートを元にする。
-- ドキュメントサイトは Cloudflare Access で守らず、誰でも開けるようにする。リポジトリは public で、サイトの中身はすでに誰でも読めるためである。
+- ドキュメントサイトは Cloudflare Access で守らず、誰でも開けるようにする。リポジトリを public にしたので、サイトの中身はすでに誰でも読めるためである。
   - 本番に出した後の確認は、リダイレクトをたどらずに取った応答に、文書、カタログ、ER 図のそれぞれの中身にだけある文字列があるかで行う。Access を掛け直したときや、公開した中身が欠けたときに失敗する。
 
 ## Considered Options
