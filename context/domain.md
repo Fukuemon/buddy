@@ -79,7 +79,6 @@ status: stable
 | 確認が必要な予定（取り込みの） | 取り込みのプレビューで、タイトルの利用者を 1 人に決められず、取り込む前に取り込み方を選ぶ予定 | API `ImportPreview.needs_review`、`ImportReviewItem` |
 | 確認が必要な予定（書き出しの） | 書き出しで Google カレンダーに書かずに止めた予定で、Google で変わっていたか消された予定と、書けなかった予定が当たる。画面の名前は「確認が必要な予定」 | `calendar_exports` の `conflict` と `failed`、API `listCalendarExportIssues` |
 | buddy の内容で書き直す | 確認が必要な予定（書き出しの）を、buddy の内容で Google カレンダーに書き直すこと | API `createCalendarExportRetry` |
-| Google の内容に合わせる | `google_primary` の事業所で、確認が必要な単発の予定（書き出しの）を、Google カレンダーの今の内容にそろえること。Google で消された予定は buddy でキャンセルする | API `createCalendarExportAcceptance` |
 | 事業所のサービスアカウント | 事業所の職員がカレンダーを共有する相手の Google のサービスアカウント。予定の API と照合の API が同じアカウントで読み書きする | API `getCalendarServiceAccount`、`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` |
 
 ### 画面

@@ -45,8 +45,8 @@ verified_commit: 8254dde
   - Google の口（`EventSource`、`EventWriter`、`Accounts`）と、外部の予定と buddy の予定を読み替える規則（`classify.go`、`recurrence.go`、`eventbody.go`）
   - 結び付けの操作（`ServiceAccount`、`List`、`Check`、`Link`、`Unlink`）
 - `calendarimport`: 期間を決めた手動の取り込み（`Preview`、`Import`、`plan.go`）
-- `calendarsync`: 変わった予定の取得（`Syncer`）、取った変更を当てる規則（`Applier`）、確認が必要な待ちを Google の内容で解く操作（`AcceptExport`）
-  - `Applier` の実装は、Projection に写す `projectionApplier` と、buddy の予定に当てる `reconcileApplier` の 2 つ。
+- `calendarsync`: 変わった予定の取得（`Syncer`）と、取った変更を当てる規則（`Applier`）
+  - `Applier` の実装は、Projection に写す `projectionApplier` だけである。
 - `calendarexport`: 書き出しの待ちを積む `Outbox`、待ちを Google に書く `Exporter`、確認が必要な待ちの一覧と書き直し（`ListExportIssues`、`RetryExport`）
 
 `calendarimport`、`calendarsync`、`calendarexport` は `calendar` だけを import し、互いには import しない。  
@@ -58,7 +58,7 @@ verified_commit: 8254dde
 
 - `calendar` の `Repository` は、結び付けの操作が使う、結び付けたカレンダーの読み書きだけを持つ。
 - `calendarimport` の `Calendars` は、取り込みの記録（`RunningSince`、`CreateRun`、`FinishRun`）と、予定の対応の読み取りと作成（`ListLinks`、`CreateLink`）を持つ。
-- `calendarsync` の `Calendars` と、`calendarexport` の `ExportCalendars` と `ExporterCalendars` は、同期と書き出しが使う予定の対応の読み書きを持つ。
+- `calendarexport` の `ExportCalendars` と `ExporterCalendars` は、書き出しが使う予定の対応の読み書きを持つ。
 - `calendarsync` の `CalendarReader` は、同期が予定を当てる前にカレンダーを読み直す `Get` だけを持つ。
 - `calendarsync` の `Projections` は、`projectionApplier` が使う参照のモデル（Projection）の書き込みだけを持つ。
 - postgres の `CalendarRepository` は 1 つで、全てのインターフェースを満たす。
@@ -526,7 +526,6 @@ Google は、消された予定に、消す前の etag を `If-Match` に付け�
 - 職員の管理の権限を持つ職員が、確認が必要な予定の一覧から「buddy の内容で書き直す」を選ぶと、`If-Match` を付けずに書き直す。
 - 消された予定は、`status` を `confirmed` にした部分更新で戻す。
   - 実際の API は、`If-Match` の無い patch を、消された予定にも 200 で返す。410 を受けたときは、予定の対応を消して作り直す。
-- 単発の予定では「Google の内容に合わせる」も選べる（[Google カレンダーとの同期](#google-カレンダーとの同期)）。
 
 `failed` の待ちは、buddy で予定を変えると数え直して書く。  
 待ちのエラーは決まった値（`error_code`）だけを持ち、確認が必要な予定の一覧とログに、予定のタイトル、利用者名、カレンダーの ID を出さない。
@@ -540,8 +539,7 @@ Google は、消された予定に、消す前の etag を `If-Match` に付け�
 - buddy を正本にする事業所（`buddy_primary`）では、同期はカレンダーを読まない。
   - Google カレンダーでの変更は、buddy に取り込まない。
   - Google カレンダーで直された予定は、書き出しが `If-Match` の 412 で見つけ、確認が必要な予定に出す。
-- 外部の変更を buddy の予定に当てる規則（`reconcileApplier`）は、どのモードの同期にも使わない。
-  - 緊急の編集の要求で使い道を決めるまで、規則とテストを残す。
+- 同期は、どのモードでも、外部の変更を buddy の予定のテーブルに当てない。
   - ADR-0026: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0026-google-calendar-sync.md)
 
 次の図は、同期の Worker（`calendar-worker sync`）が `google_primary` の事業所のカレンダーの変わった予定を読み、予定ごとに Projection に写すまでを示す。
@@ -651,108 +649,11 @@ Projection を読むのは、予定の表示の読み出し（`scheduleview` の
 - 一覧は、カレンダーごとの同期の状況（`calendar_sync_states` の最後の結果、`last_synced_at`、最後の失敗の理由）を一緒に返す。
   - `last_synced_at` は、変わった予定を最後まで読んで当てた同期のときだけ進む。
 
-#### buddy の予定に当てる規則（使わない）
-
-次の「当て方」「単発の予定に当てる内容」「繰り返しの予定に当てる内容」は、`reconcileApplier` の規則である。  
-同期はどのモードでもこの規則を使わない。「Google の内容に合わせる」（`AcceptExport`）は、単発の予定に当てる規則を使う。
-
-#### 当て方
-
-単発の予定に Google の変更を当てるかは、次の順に決める。
-
-```mermaid
-flowchart TB
-  start["Google で変わった予定"] --> etag{"予定の対応の etag が<br/>Google の予定と同じか"}
-  etag -->|同じ| none["何もしない"]
-  etag -->|違う| writing{"書き出しの処理が<br/>予定の待ちを持っているか"}
-  writing -->|持っている| later["5 秒後にカレンダーを読み直す"]
-  writing -->|持っていない| same{"Google の予定の内容が<br/>書き出した内容と同じか"}
-  same -->|同じ| ver{"buddy の更新の番号が<br/>予定の対応と同じか"}
-  ver -->|同じ| adv["予定の対応を今の etag と更新の番号にし、<br/>確認が必要な待ちがあれば終える"]
-  ver -->|違う| retry["etag だけを進め、<br/>確認が必要な待ちを書き直す待ちにする"]
-  same -->|違う| synced{"buddy の更新の番号が<br/>予定の対応の synced_version と同じか"}
-  synced -->|違う| both["待ちを conflict（precondition_failed、<br/>消された予定は not_found）にする"]
-  synced -->|同じ| apply{"buddy の予定に<br/>読み替えられるか"}
-  apply -->|はい| applied["Google の内容を buddy に当てる"]
-  apply -->|いいえ| un["待ちを conflict（unappliable）にする"]
-```
-
-- etag が同じ予定には、buddy が書いた変更が増分に戻ってきたとき（エコー）も当たる。
-- 書き出しの処理が予定の待ちを持っている間（`locked_until` の前）に読み直すのは、etag を書く前のエコーを、両側の変更と見誤らないためである。
-- 書き出した内容と比べるのは、タイトル、日付、時刻、終了が翌日かと、予定の職員のカレンダーである。
-  - buddy の更新の番号が対応と違えば、比べない項目（説明、繰り返しの除外の日）に書き出していない buddy の変更がある。
-- buddy の更新の番号が `synced_version` と同じなら、Google だけが変わったので、Google の内容を buddy に当てる。当てた予定は書き出しの待ちに積まない。
-- 両方が変わったときは、待ちが無ければ足す。書いている処理の結果を捨てさせるため、`revision` を 1 つ増やす。
-- 読み替えられないときは、職員が Google で読み替えられる形に直すと、次の同期で当てて、待ちを終える。
-
-#### 単発の予定に当てる内容
-
-- 日付と時刻は、取り込みと同じ規則で読む。
-  - Google で翌日に終わる 24 時間未満の予定に変えた予定には印を付け、日をまたがない予定に戻した予定からは印を外して当てる。
-  - 終日の予定、2 日以上にわたる予定と 24 時間以上の予定、長さが 0 の予定は読み替えられない。
-  - 職員、説明、予定の種類は変えない。訪問の予定と通常の予定は入れ替えない。
-- 通常の予定は、Google の予定のタイトルを buddy の予定のタイトルにする。
-- 訪問の予定は、Google の予定のタイトルのサービス内容と利用者名が前と同じなら訪問の情報を残す。
-  - 違えば取り込みと同じ規則でサービスコードと利用者を引いて、訪問の情報を作り直す。主訪問者、同行者、訪問の区分は前のままにする。
-  - 利用者を 1 人に引けなければ読み替えられない。
-- Google で消された予定は、理由を「Google カレンダーで消されました」にしてキャンセルする。
-  - buddy でキャンセルした予定を Google で戻しても、buddy には戻さない（読み替えられない）。
-
-#### 繰り返しの予定に当てる内容
-
-予定の対応が無く、親の予定の対応が繰り返しの予定を指す例外の回は、buddy の回の変更として当てる。
-
-- 元の日付が規則の回に当たらない取り消しは何もせず、変更は `conflict`（`unappliable`）にする。
-- 取り消した回は除外の日にする。
-- 変えた回は、元の回を除外し、元の回の日付を持つ単発の予定を作って、例外の回との対応を書く。
-- 当てる前に親の予定の対応が buddy と同じ（`synced_version` が更新の番号と同じ）なら、対応の `synced_version` も進め、当てた変更を buddy の変更と見誤らないようにする。
-
-buddy でもその回を除外していれば、変えた回は両方が変わったので、繰り返しの予定の待ちを `conflict`（`precondition_failed`）にする。  
-取り消した回は、buddy がその回を置き換え、親の予定の `EXDATE` をまだ書き出していない（親の対応の `synced_version` が更新の番号と違う）ときだけ `conflict` にし、書き出した後なら何もしない。  
-書き出した親の `EXDATE` が、取り消した回として戻ってくることがあるためである。
-
-親の予定そのもの（規則、時刻、タイトル）の変更と削除は、buddy に当てない。  
-書き出した内容と同じでなければ、`conflict`（`unappliable`、消されたときは `not_found`。buddy でも変えていれば `precondition_failed`）にする。  
-規則は、両方を `RecurrenceOf` で同じ形にしてから比べる。  
-`EXDATE` は比べない。  
-Google で取り消した回は親の `EXDATE` ではなく例外の回で来るので、buddy の除外の日と親の `EXDATE` は一致しないためである。
-
-#### 当てない予定と、職員の退職
-
-`reconcileApplier` は、予定の対応の無い予定を当てない。  
-Google で新しく作った予定は、取り込みで buddy に移す。  
-休職の職員の新しい予定も、`reconcileApplier` では作らない。
+#### 職員の退職と同期
 
 同期は、予定ごとのトランザクションの始めに、事業所の行に共有のロックを取ってから、カレンダーを外していないかと、カレンダーの職員が退職していないかを読み直す。  
 どちらかなら、残りの予定を当てずに、トークンと状態を前のまま返す。  
-退職は同じ行に排他のロックを取ってカレンダーを外すので、カレンダーを取った後に職員が退職しても、退職した職員の予定に外部の変更を当てず、Projection にも写さない。
-
-#### 確認が必要な待ちの解き方
-
-「buddy の内容で書き直す」（`createCalendarExportRetry`）は、書き出しと同じく `If-Match` を付けずに書き直す。
-
-「Google の内容に合わせる」（`createCalendarExportAcceptance`）は、`calendarsync` の `AcceptExport` が、同期と同じ当てる規則で行う。  
-予定の正本のモードが `buddy_primary` の事業所では、Google の内容を当てずに 409（`export_not_acceptable`）を返す。  
-`buddy_primary` の事業所は buddy が正本で、Google カレンダーでの変更を予定に取り込まないためである。  
-マネージャーは、buddy の内容で書き直す。  
-モードは、予定の行をロックした後に、事業所の行を共有のロックで読んで確認する。
-
-- ADR-0026: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0026-google-calendar-sync.md)
-
-単発の予定で、理由が `precondition_failed` か `not_found` の待ちだけに使える。  
-buddy でキャンセルした予定には使えない（`acceptable` が false）。  
-Google の今の予定を `events.get` で読み、buddy の予定に当てて、待ちを終える（`succeeded`）。  
-読み替えられなければ 409（`external_change_unappliable`）を返す。
-
-- Google が予定を `status` が `cancelled` で返したときと、予定に 404 か 410 を返し、カレンダーは読めるときは、予定が消されたとみなしてキャンセルする。
-  - 実際の API は、消された予定の `events.get` に 200 と `cancelled` を返す。403 は消されたとみなさない。
-  - キャンセルした予定は、職員を替えていても書き出し直さない。
-- Google を読む時間の上限は 20 秒である。
-- 予定の行をロックしてから Google の予定を読む。
-- buddy で職員を替えた予定は、合わせた後に書き出しの待ちを積み直し、今の職員のカレンダーへ移させる。
-- 予定の対応のカレンダーを外していれば、409（`export_not_acceptable`）を返す。
-  - 予定の職員が退職していても同じである。
-  - 予定の行をロックした後に事業所の行に共有のロックを取り、カレンダーと予定の職員を読み直してから当てる。退職でカレンダーが外れた後に、退職した職員の予定を今日以降へ動かさないためである。
+退職は同じ行に排他のロックを取ってカレンダーを外すので、カレンダーを取った後に職員が退職しても、退職した職員の予定を Projection に写さない。
 
 #### 同期の状態
 

@@ -80,7 +80,7 @@ status: stable
   - `principal` は `organization` と `staff` に依存し、`schedule`、`scheduleview`、`calendarimport`、`access`、`httpapi`、`assemble` から使う。
   - 機能のパッケージは、自分の集約のリポジトリのインターフェースと、使う側で定義したインターフェースだけに依存する。
     - ほかの機能のデータを読むだけなら、`kernel.Finder` か 1〜2 のメソッドにする。
-    - ほかの機能の集約を 1 つのトランザクションで書くかロックするなら（`calendarsync` の `reconcileApplier`、各機能の `FacilityLock`）、使うメソッドだけを並べた 1 つのインターフェースにする。
+    - ほかの機能の集約を 1 つのトランザクションで書くかロックするなら（`calendarimport` の `Recurring`、各機能の `FacilityLock`）、使うメソッドだけを並べた 1 つのインターフェースにする。
       - ADR-0018: [予定の API を機能ごとのパッケージに分ける](../docs/adr/0018-schedule-api-packages.md)
     - ほかの機能のリポジトリのインターフェースは import しない。
     - トランザクションは `tx.Transactor` で受ける。
@@ -229,7 +229,7 @@ status: stable
       - 操作の型は `httpapi` に依存しないので、API と Worker のどちらの実行単位でも作れる。
     - 操作を束ねるのは、使う側の `httpapi` の `<機能>App`（`StaffApp`）で、操作の `Do` のメソッド値を関数のフィールドに持つ。
   - 複数の操作が使う補助は、使う依存を引数で受けるパッケージの関数にし、`<まとまり>_app.go`（`status_change_app.go`）に置く。
-    - 自分の依存をフィールドに持つ補助の型（`calendarsync` の `reconcileApplier`）は型のまま残し、使う操作の型と常駐の処理がフィールドに持つ。
+    - 自分の依存をフィールドに持つ補助の型は型のまま残し、使う操作の型と常駐の処理がフィールドに持つ。
   - ADR-0021: [Go の API の操作を、使う依存だけを持つ操作ごとの型にする](../docs/adr/0021-go-operation-types.md)
   - ほかの機能と外部のシステムのインターフェースは、使う側のパッケージの `<相手>_port.go`（`identity_port.go`）に置く。
     - `<相手>` は、ほかの機能の名前（`staff_port.go`、`schedule_port.go`）か、外部のシステムの名前（`google_calendar_port.go`、`identity_port.go`）にする。
