@@ -56,7 +56,7 @@ ADR-0017: [Google カレンダーの書き出しと同期を、予定の API と
   - 復旧のために DB を直す必要はない。
 - 同期の Worker は、Google カレンダーを予定の正本にする事業所（`google_primary`）のカレンダーだけを取る。
   - buddy を正本にする事業所（`buddy_primary`）のカレンダーは読まない。
-  - ADR-0008: [Google カレンダーとの連携を事業所ごとの正本のモードで分け、職員のカレンダーを事業所ごとのサービスアカウントへの共有で読み書きする](../docs/adr/0008-google-calendar-sync.md)
+  - ADR-0008: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](../docs/adr/0008-google-calendar-sync.md)
 - 処理の回数、成功と失敗、滞留は、Worker のログ（`component` が `calendar-export` か `calendar-sync`）から見る。
   - メトリクスは、インフラの側でこのログから作る。
 
@@ -115,7 +115,7 @@ Worker は、待ちかカレンダーを取って処理する 1 回（バッチ�
   - ブローカーでは、上流の IdP の client secret のファイル（`UPSTREAM_IDP_CLIENT_SECRETS_FILE`）と、token_hook のヘッダーの値（`TOKEN_HOOK_KEY`）もシークレットである。
 - Google のサービスアカウントのキーは作らず、どこにも置かない。
   - API は、Application Default Credentials で認証し、事業所のサービスアカウントの権限を借用する。
-  - ADR-0008: [Google カレンダーとの連携を事業所ごとの正本のモードで分け、職員のカレンダーを事業所ごとのサービスアカウントへの共有で読み書きする](../docs/adr/0008-google-calendar-sync.md)
+  - ADR-0029: [職員のカレンダーを、事業所ごとのサービスアカウントへの共有で読み書きする](../docs/adr/0029-google-calendar-service-accounts.md)
 - 組織とサービスアカウントの対応のファイル（`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`）は、buddy のリポジトリに置かない。
   - シークレットではないが、サービスアカウントのメールアドレスを持つためである。
   - 照合の対象のカレンダーのファイル（`GOOGLE_CALENDARS_FILE`）も、職員のカレンダー ID を持つので同じ扱いにする。
@@ -141,7 +141,7 @@ Worker は、待ちかカレンダーを取って処理する 1 回（バッチ�
    - 予定の API が予定を書き出すので、閲覧だけの権限では足りない。
    - 「予定の変更」の共有だけで、ドメイン全体の委任なしに予定を書けるかは、未確認である。PRD の [Open Questions](../docs/PRD.md#open-questions) にある。
      - 確認するまで、本番で書き出しを有効にしない。
-   - ADR-0008: [Google カレンダーとの連携を事業所ごとの正本のモードで分け、職員のカレンダーを事業所ごとのサービスアカウントへの共有で読み書きする](../docs/adr/0008-google-calendar-sync.md)
+   - ADR-0029: [職員のカレンダーを、事業所ごとのサービスアカウントへの共有で読み書きする](../docs/adr/0029-google-calendar-service-accounts.md)
 
 事業所のアカウントに切り替える前の 1 つのアカウントに共有したカレンダーは、切り替えると読めなくなる。  
 職員が事業所のアカウントに共有し直した後に、運営側は前のアカウントへの共有を外してもらい、前のアカウントを止める。

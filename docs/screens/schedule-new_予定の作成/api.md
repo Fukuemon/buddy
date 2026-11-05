@@ -55,7 +55,8 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 - `listUsers` は、休職と退職の職員も返す。
   - この画面は、`status` を持つ職員と、`visits` が false の職員を主訪問者と予定者の候補から除く。
 - `createSchedule` は、`staff_id` か `visit_info.assigned_staff_id` が休職か退職の職員か、訪問しない職員を指すと 400 を返す。
-  - ADR-0002: [権限を役職のデフォルトと職員ごとの上書きで持ち、職員の管理と照合も権限で許し、訪問するかを職員に持つ](../../adr/0002-pbac.md)
+  - ADR-0018: [職員の停止を、戻せる休職と、戻せない退職に分ける](../../adr/0018-staff-leave-and-retirement.md)
+  - ADR-0020: [訪問するかを職員に持ち、訪問しない職員を予定と担当から外す](../../adr/0020-non-visiting-staff.md)
 
 ## 権限の判定
 

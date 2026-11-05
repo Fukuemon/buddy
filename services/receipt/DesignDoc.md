@@ -130,7 +130,7 @@ Google カレンダーは、今も職員が予定を入れる場所なので、�
 
 - 認証は Application Default Credentials で、カレンダーの組織のサービスアカウントになりすました token で読む。
   - スコープは `calendar.readonly` だけにする。
-  - ADR-0008: [Google カレンダーとの連携を事業所ごとの正本のモードで分け、職員のカレンダーを事業所ごとのサービスアカウントへの共有で読み書きする](https://github.com/Fukuemon/buddy/blob/876381365355f7e4dab03f6dfdb3d6fb8a9f6947/docs/adr/0008-google-calendar-sync.md)
+  - ADR-0029: [職員のカレンダーを、事業所ごとのサービスアカウントへの共有で読み書きする](https://github.com/Fukuemon/buddy/blob/876381365355f7e4dab03f6dfdb3d6fb8a9f6947/docs/adr/0029-google-calendar-service-accounts.md)
   - Application Default Credentials が事業所のサービスアカウントそのものとして動くとき（そのアカウントになりすました認証情報か、そのアカウントのキー）は、重ねてなりすまさない。サービスアカウント自身へのトークン作成者のロールを求めないためである。
     - 見分けは、認証情報のファイルの `client_email` か、なりすます先の URL のメールアドレスで行う。
   - `GOOGLE_CALENDAR_ENDPOINT` で Calendar API の代わりにフェイク（ローカル環境の calendarpit）を呼ぶときは、なりすまさない。フェイクはなりすましの token を出せないためである。

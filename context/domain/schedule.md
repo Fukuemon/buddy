@@ -60,7 +60,8 @@ status: stable
       - 取り込んだ後に、Google で予定が変わっていない。
   - `buddy_primary` の事業所は buddy が正本で、Google カレンダーでの変更を予定に取り込まない。
     - 確認が必要な書き出しを Google の内容に合わせる操作（`createCalendarExportAcceptance`）は、409（code は `export_not_acceptable`）で拒む。
-  - ADR-0008: [Google カレンダーとの連携を事業所ごとの正本のモードで分け、職員のカレンダーを事業所ごとのサービスアカウントへの共有で読み書きする](../../docs/adr/0008-google-calendar-sync.md)
+  - ADR-0008: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](../../docs/adr/0008-google-calendar-sync.md)
+  - ADR-0031: [事業所の予定の正本を、期間のある切り替えの記録で Google カレンダーから buddy へ移す](../../docs/adr/0031-calendar-cutover.md)
 
 ## Prohibitions
 

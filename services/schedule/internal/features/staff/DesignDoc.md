@@ -54,7 +54,7 @@ verified_commit: 4e53ca5
 - 休職と退職は、`staff` の操作が事業所の行をロックしたトランザクションの中で、職員を読み直してから行う。
   - 自分と、事業所で職員の管理の権限を持つ最後の有効な職員は、409 で拒む。
 - 休職、退職、復職の呼び出しの順と、2 か所の書き込みの片方だけが残ったときの扱いは、[ID ブローカーの Design Doc の職員の登録、休職、復職、退職](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#職員の登録休職復職退職) の図と文にある。
-- ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元と停止をブローカーが、権限と業務のデータを予定の API が持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0001-auth.md)
+- ADR-0018: [職員の停止を、戻せる休職と、戻せない退職に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0018-staff-leave-and-retirement.md)
 
 ### 職員の管理の画面の読み込みと保存
 

@@ -17,7 +17,7 @@ web と 2 つの API から見える Issuer は Hydra だけである。
 
 - 全体の責務と依存は [buddy Design Doc](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md) にある。
 - ADR-0010: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0010-id-broker-hydra.md)
-- ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元と停止をブローカーが、権限と業務のデータを予定の API が持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0001-auth.md)
+- ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元をブローカーが、権限と業務のデータを予定の API が持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0001-auth.md)
 
 ## Scope
 
@@ -132,7 +132,8 @@ erDiagram
 - メールを全ての事業所で一意にする。
   - 事業所の中だけで一意にすると、ほかの事業所の管理者が同じメールの職員を登録でき、ログインで事業所を 1 つに決められなくなる。もとの職員もログインできなくなる。
 - 職員の状態の意味と移り方、メールと上流のアカウントの不変条件は、[職員とログイン](https://github.com/Fukuemon/buddy/blob/develop/context/domain/staff-login.md) にある。
-  - ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元と停止をブローカーが、権限と業務のデータを予定の API が持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0001-auth.md)
+  - ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元をブローカーが、権限と業務のデータを予定の API が持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0001-auth.md)
+  - ADR-0018: [職員の停止を、戻せる休職と、戻せない退職に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0018-staff-leave-and-retirement.md)
 
 ### ログイン
 

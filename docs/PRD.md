@@ -261,9 +261,10 @@ flowchart TB
 | 照合 | あり | なし | なし | あり |
 
 事務の職員は、照合の食い違いを予定表で直すので、事業所の全ての予定を見て直せる。  
-照合の権限と事務の役職と訪問しない職員の扱いは、ADR-0002 にある。
+照合の権限と事務の役職は ADR-0002 に、訪問しない職員の扱いは ADR-0020 にある。
 
-- ADR-0002: [権限を役職のデフォルトと職員ごとの上書きで持ち、職員の管理と照合も権限で許し、訪問するかを職員に持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0002-pbac.md)
+- ADR-0002: [権限を役職のデフォルトと職員ごとの上書きで持ち、職員の管理と照合も権限で許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0002-pbac.md)
+- ADR-0020: [訪問するかを職員に持ち、訪問しない職員を予定と担当から外す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0020-non-visiting-staff.md)
 
 登録と役職の変更で付く、指定したチームの権限は、職員の所属のチームを指す。  
 権限の付き方と判定の規則は、[権限](https://github.com/Fukuemon/buddy/blob/develop/context/domain/permission.md) にある。
@@ -296,7 +297,7 @@ flowchart TB
   - 正本が buddy の事業所（`buddy_primary`）では、職員は buddy で予定を直し、buddy が Google カレンダーに書き出す。Google カレンダーで直した予定は、buddy に反映しない。
   - 新しい事業所は、Google カレンダーを正本にして始める。
   - 正本は、Google カレンダーから buddy への向きにだけ切り替える。
-  - ADR-0008: [Google カレンダーとの連携を事業所ごとの正本のモードで分け、職員のカレンダーを事業所ごとのサービスアカウントへの共有で読み書きする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0008-google-calendar-sync.md)
+  - ADR-0008: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0008-google-calendar-sync.md)
 - 職員の Google のアカウントは、事業所の Google Workspace のものである。
   - カレンダーを共有する手順は、Workspace のアカウントだけを前提にする。
 - マネージャーは、職員ごとに、その職員の Google カレンダーを buddy に結び付ける。
@@ -326,8 +327,8 @@ flowchart TB
   - 取り込みの期間は、切り替えの月の初日から先の全てにする。繰り返しの予定は、終わりの無いものも、規則のまま移す。
   - 取り込んでいない予定、buddy の繰り返しの規則に写せない予定、取り込んだ後に Google カレンダーで直された予定が残る間は、切り替えを完了しない。残った予定を一覧で示す。
   - 切り替えをやめると、切り替えで取り込んだ予定を消し、正本は Google カレンダーのままにする。
-- 認証の方式は、ADR-0008 にある。
-  - ADR-0008: [Google カレンダーとの連携を事業所ごとの正本のモードで分け、職員のカレンダーを事業所ごとのサービスアカウントへの共有で読み書きする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0008-google-calendar-sync.md)
+- 認証の方式は、ADR-0029 にある。
+  - ADR-0029: [職員のカレンダーを、事業所ごとのサービスアカウントへの共有で読み書きする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-service-accounts.md)
 
 ### 照合
 
