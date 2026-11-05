@@ -61,6 +61,36 @@ verified_commit: 4e53ca5
     - `cmd/api` と同じイメージに入れ、HTTP のポートを持たない。
     - ADR-0036: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで動かす](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0036-calendar-worker.md)
 
+次の図は、2 つのコマンドが `assemble` を通して機能のパッケージとアダプタを使う構成を示す。  
+矢印は、呼ぶ向きか、組み立てる向きである。  
+依存してよい向きの規則は、[コードベースの構造](https://github.com/Fukuemon/buddy/blob/develop/context/codebase.md) にある。
+
+```mermaid
+flowchart TB
+  subgraph cmd["cmd"]
+    api["cmd/api<br/>[component]<br/>HTTP のサーバーの開始と停止"]
+    worker["cmd/calendar-worker<br/>[component]<br/>main.go、loop.go の resident と drain"]
+  end
+  subgraph assemble["assemble"]
+    asmapi["api.go<br/>[component]<br/>NewHandler"]
+    asmworker["worker.go<br/>[component]<br/>NewExporter、NewSyncer"]
+    asmshared["assemble.go<br/>[component]<br/>OpenDB、NewRepositories、NewCalendarAccounts"]
+  end
+  httpapi["httpapi<br/>[component]<br/>HTTP のハンドラ"]
+  features["機能のパッケージ<br/>[component]<br/>organization、staff、patient、schedule、scheduleview、calendar、calendarimport、calendarexport、calendarsync など"]
+  adapters["アダプタ<br/>[component]<br/>postgres、gcal、broker、ulid"]
+  api -- "ハンドラを作らせ、サーバーを起動する" --> asmapi
+  api -- "DB を開き、リポジトリとカレンダーのアカウントを作らせる" --> asmshared
+  worker -- "ExportDue か SyncDue を作らせ、取れるものが無くなるまで呼ぶ" --> asmworker
+  worker -- "DB を開き、リポジトリとカレンダーのアカウントを作らせる" --> asmshared
+  asmapi -- "組み立てる" --> httpapi
+  asmapi -- "操作の型を組み立てる" --> features
+  asmworker -- "Exporter と Syncer を組み立てる" --> features
+  asmshared -- "組み立てる" --> adapters
+  httpapi -- "操作を呼ぶ" --> features
+  adapters -- "インターフェースを実装する" --> features
+```
+
 `kernel` は、ADR-0010 の「`apperr` と同じ段の小さなパッケージ」に当たる。  
 `kernel.Finder[T]` は、ID で 1 件を読むメソッドを 1 つだけ持つインターフェースである。  
 機能のパッケージは、ほかの機能のエンティティをこの形で受ける。  
