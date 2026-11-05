@@ -27,7 +27,7 @@ type ProjectionTime struct {
 	Date *civil.Date
 }
 
-// Projection は、Google カレンダーを予定の正本にする事業所（google_primary）の、Google カレンダーの 1 つの予定の写しである（ADR-0029）。
+// Projection は、Google カレンダーを予定の正本にする事業所（google_primary）の、Google カレンダーの 1 つの予定の写しである（ADR-0026）。
 // calendarsync の同期の処理だけが書き、scheduleview だけが読む。繰り返しの予定は展開せず、親の予定と例外の回を別の行に持つ。
 // 説明、場所、参加者、作成者と主催者のメール、添付は持たない。タイトルは利用者名を含むが、表示と照合に要るので持つ。
 type Projection struct {
@@ -156,7 +156,7 @@ func expandParent(r ProjectionDetail, rules EventRules, replaced map[civil.Date]
 	return out
 }
 
-// startsIn は、rd が from から to までの日に始まるか、from の前の日に始まり from に終わる予定かを返す（ADR-0022）。
+// startsIn は、rd が from から to までの日に始まるか、from の前の日に始まり from に終わる予定かを返す（ADR-0019）。
 func startsIn(rd EventReading, from, to civil.Date) bool {
 	if rd.EndsNextDay && rd.Date == dayBefore(from) {
 		return true

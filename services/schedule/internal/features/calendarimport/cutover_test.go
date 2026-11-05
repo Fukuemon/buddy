@@ -112,7 +112,7 @@ func (c cutoverEnv) requireStillOpen(t *testing.T, id string) {
 }
 
 // TestCutover は、切り替えを始め、切り替えの期間で取り込み、同期の後に完了すると、事業所が buddy を予定の正本にし、
-// Projection の行を消し、切り替えを completed にすることを確認する（ADR-0029）。
+// Projection の行を消し、切り替えを completed にすることを確認する（ADR-0026）。
 func TestCutover(t *testing.T) {
 	c := newCutoverEnv(t, fixture())
 	cut := c.start(t)

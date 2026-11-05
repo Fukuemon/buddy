@@ -208,7 +208,7 @@ func TestScheduleWritesRespondWithStoredSchedule(t *testing.T) {
 }
 
 // TestScheduleWritesRejectGooglePrimary は、Google カレンダーを予定の正本にする事業所で、予定の作成と繰り返しの予定の作成が
-// 409 と code の google_primary を返すことを確認する（ADR-0029）。
+// 409 と code の google_primary を返すことを確認する（ADR-0026）。
 func TestScheduleWritesRejectGooglePrimary(t *testing.T) {
 	h := flowRouterWith(organization.SourceGooglePrimary)
 	body := `{"schedule_type_id":"` + typeID + `","date":"2099-01-05","start_time":"09:00","end_time":"10:00","staff_id":"` + staffID + `","title":"カンファレンス"}`

@@ -25,7 +25,7 @@ const reviewRow = (page: Page, scheduleId: string) =>
   page.getByTestId(`calendar-review-row-schedule-${scheduleId}`)
 
 // シードの 1 つ目の事業所は buddy を予定の正本にする（buddy_primary）。同期はこの事業所のカレンダーを読まず、
-// Google カレンダーでの変更を buddy の予定に当てない（ADR-0029）。
+// Google カレンダーでの変更を buddy の予定に当てない（ADR-0026）。
 test.describe('確認が必要な予定', () => {
   test.describe('Google カレンダーとの同期', () => {
     // 途中で落ちても、やり直しで佐藤にもう一度結び付けられるようにする

@@ -1,4 +1,4 @@
-# ADR-0025: ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する
+# ADR-0022: ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する
 
 ## Status
 
@@ -8,8 +8,8 @@
 
 ID ブローカーは、ログインの画面、ログインの失敗の画面、ログアウトの失敗の画面の 3 つを出す。
 
-- ADR-0015 は、ブローカーがログインと同意とログアウトの画面を持つと決めた。web は Hydra のクライアントに `skip_consent` を設定するので、同意の画面は出ない。
-  - ADR-0015: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](0015-id-broker-hydra.md)
+- ADR-0014 は、ブローカーがログインと同意とログアウトの画面を持つと決めた。web は Hydra のクライアントに `skip_consent` を設定するので、同意の画面は出ない。
+  - ADR-0014: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](0014-id-broker-hydra.md)
 - ADR-0012 は、画面と BFF を `apps/` に、Go の API を `services/` に置くと決めた。
   - ADR-0012: [2 つの API を services/ に置き、画面と API をトップのディレクトリで分ける](0012-services-directory.md)
 - 今の 3 つの画面は、HTML と CSS を Go の文字列として `services/broker/internal/login/pages.go` に持つ。
@@ -17,7 +17,7 @@ ID ブローカーは、ログインの画面、ログインの失敗の画面�
   - ログインの失敗の画面の文言は、web の `AuthErrorMessage` の `failed` から手で写している。登録されていないメールとブローカーの中の失敗を区別させないため、2 つの文言は同じでなければならない。
 - 画面を web に移すと、Hydra の admin API でログインを確定させる資格を、web の BFF が持つことになる。
 - `packages/ui` には、業務と buddy に固有の名前を持たない Base と Case のコンポーネントだけを置く。buddy の画面の帯（`SiteHeader`）も Domain として `apps/web` に残した。
-  - ADR-0004: [デザインシステムのトークンとコンポーネントの配置先](0004-design-system.md)
+  - ADR-0004: [デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にし、カタログをドキュメントサイトと同じ Worker で誰でも開けるように出す](0004-design-system.md)
 
 ## Decision
 
@@ -28,7 +28,7 @@ ID ブローカーは、ログインの画面、ログインの失敗の画面�
   - `login_challenge` のような実行のときの値は、`{{.Challenge}}` のようなテンプレートの式として書き出し、ID ブローカーが埋める。
 - 生成物は `services/broker/internal/login/` に置いてコミットし、ID ブローカーは `go:embed` で読む。`pnpm check:generated` が、生成し直した結果との差分を確認する。
   - 理由: 今の `tokens.css` と同じく、ID ブローカーのビルドとコンテナのイメージに Node.js を要しない。
-- 認証の確定（Hydra の admin API の呼び出し）と画面の配信は、ADR-0015 のとおり ID ブローカーに残す。ID ブローカーが動くときには、`apps/broker` のコードは動かない。
+- 認証の確定（Hydra の admin API の呼び出し）と画面の配信は、ADR-0014 のとおり ID ブローカーに残す。ID ブローカーが動くときには、`apps/broker` のコードは動かない。
 - `apps/broker` はコンテナを持たないので、ADR-0013 のコンテナとサービスの名前の規則の対象の外にする。
   - ADR-0013: [2 つの API のサービスの名前とトークンの aud を、ディレクトリの名前にそろえる](0013-service-names.md)
 - ロゴと理由を出すカードのコンポーネントと、ログインの失敗（web の `failed`）の文言は `apps/broker` に置き、web は `@buddy/broker` から読む。web だけが出す理由（事業所に登録されていない、試行の回数の上限を超えた）の文言は web に残し、カードに渡す。

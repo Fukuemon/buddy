@@ -1,6 +1,6 @@
 /*
  * buddy の意味のトークン。値は持たず、DADS の基本のトークンを参照するだけにする。
- * 例外は surface-canvas だけで、DADS に無い値を直に持つ（docs/adr/0014-key-color-and-canvas.md）。
+ * 例外は surface-canvas だけで、DADS に無い値を直に持つ（docs/adr/0004-design-system.md）。
  * DADS の基本のトークンは @digital-go-jp/design-tokens の dist/tokens.css が :root に定義する。
  * コンポーネントと画面は、この層を Tailwind のユーティリティ（theme.css）を通して使い、DADS の名前を直に書かない。
  */
@@ -8,7 +8,7 @@
 @import '@digital-go-jp/design-tokens/dist/tokens.css';
 
 :root {
-  /* DADS のキーの色を、もともとのデザイン案のくすんだ青に色相が近い light-blue に当て直す（ADR-0014） */
+  /* DADS のキーの色を、もともとのデザイン案のくすんだ青に色相が近い light-blue に当て直す（ADR-0004） */
   --color-key-50: var(--color-primitive-light-blue-50);
   --color-key-100: var(--color-primitive-light-blue-100);
   --color-key-200: var(--color-primitive-light-blue-200);

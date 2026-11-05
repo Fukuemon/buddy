@@ -23,8 +23,8 @@
 - ディレクトリの名前だけを変え、コンテナとサービスの名前、`aud`、テーブル定義書の出力先（`docs/db/schedule-api/`）、API の仕様のページの名前は `schedule-api` と `receipt-api` のまま残す。これらはディレクトリと違い、web には同じ名前のものが無く、インフラと IdP の設定が名前で指すので、変えると利点よりも直す範囲が大きい。
   - この判断は、ADR-0013 で置き換えた。
   - ADR-0013: [2 つの API のサービスの名前とトークンの aud を、ディレクトリの名前にそろえる](0013-service-names.md)
-- ID ブローカーのログインの画面のソースの配置先は、ADR-0025 で決めた。
-  - ADR-0025: [ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する](0025-broker-login-pages-source.md)
+- ID ブローカーのログインの画面のソースの配置先は、ADR-0022 で決めた。
+  - ADR-0022: [ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する](0022-broker-login-pages-source.md)
 
 ## Considered Options
 

@@ -19,7 +19,7 @@
 - `packages/ui/src/case/ListTools/ListTools.tsx`
 - `apps/web/src/components/page/PageForbiddenMessage.tsx`
 
-ADR-0020: [利用者を、戻せる利用の終了にでき、終了の利用者を予定の候補と職員の退職の確認から外す](../../adr/0020-patient-service-end.md)
+ADR-0017: [利用者を、戻せる利用の終了にでき、終了の利用者を予定の候補と職員の退職の確認から外す](../../adr/0017-patient-service-end.md)
 
 ## 構成
 

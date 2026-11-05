@@ -49,7 +49,7 @@ func (h consent) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	to, err := h.hydra.AcceptConsent(ctx, challenge, hydra.AcceptConsent{
 		GrantScope: req.RequestedScope,
-		// web のクライアントに許した audience（schedule と receipt）を、そのまま access token の aud にする（ADR-0015）
+		// web のクライアントに許した audience（schedule と receipt）を、そのまま access token の aud にする（ADR-0014）
 		GrantAudience: req.Client.Audience,
 		Session:       hydra.Session{AccessToken: map[string]any{"org_id": m.OrgID}},
 	})
