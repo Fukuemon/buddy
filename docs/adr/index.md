@@ -61,8 +61,7 @@
 
 | ADR | 題 | Status |
 | --- | --- | --- |
-| [ADR-0021](0021-calendar-worker.md) | Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで動かす | 承認 |
-| [ADR-0022](0022-calendar-worker-loop.md) | Worker の常駐と 1 回の繰り返しを cmd/calendar-worker に集め、機能のパッケージは 1 回の処理だけを持つ | 承認 |
+| [ADR-0021](0021-calendar-worker.md) | Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める | 承認 |
 
 ### 日をまたぐ予定
 
@@ -115,7 +114,6 @@ flowchart TB
     end
     subgraph worker["calendar-worker"]
         A0021["0021"]
-        A0022["0022"]
     end
 
     A0011 --> A0003
@@ -141,8 +139,6 @@ flowchart TB
     A0020 --> A0007
     A0021 --> A0005
     A0021 --> A0009
-    A0022 --> A0005
-    A0022 --> A0021
 ```
 
 - ADR-0008、ADR-0015、ADR-0016 は、ほかの ADR を前提にせず、前提にもされないので、図に描かない。
@@ -232,3 +228,4 @@ flowchart TB
 | ADR-0024 | ADR-0021 | #734 |
 | ADR-0025 | ADR-0022 | #734 |
 | ADR-0026 | ADR-0009 に統合 | #734 |
+| ADR-0022 | ADR-0021 に統合 | #735 |
