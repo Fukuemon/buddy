@@ -312,7 +312,7 @@ CREATE TABLE schedule_cancels (
     CONSTRAINT schedule_cancels_schedule_fkey FOREIGN KEY (schedule_id) REFERENCES schedules (id) ON DELETE CASCADE
 );
 
--- Google カレンダーの取り込み（ADR-0026 の段階 1）の表。外部の予定の題名と本文は利用者の名前を含むので保存しない。
+-- Google カレンダーの取り込み（ADR-0026 の取り込み）の表。外部の予定の題名と本文は利用者の名前を含むので保存しない。
 
 CREATE TABLE external_calendars (
     id                   text COLLATE "C" NOT NULL CHECK (id ~ '^[0-7][0-9A-HJKMNP-TV-Z]{25}$'),

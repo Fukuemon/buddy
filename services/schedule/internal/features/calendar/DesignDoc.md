@@ -136,7 +136,7 @@ verified_commit: 8254dde
 
 ### Google カレンダーの取り込み
 
-職員の管理の権限を持つ職員が、職員に Google カレンダーを結び付け、期間を選んでプレビューし、確定して予定に取り込む（ADR-0026 の段階 1）。  
+職員の管理の権限を持つ職員が、職員に Google カレンダーを結び付け、期間を選んでプレビューし、確定して予定に取り込む（ADR-0026 の取り込み）。  
 プレビューは `calendarimport` の `Preview` が、確定は `Import` が行う。  
 画面の動きと、職員から見た取り込みの結果は、画面仕様書の [予定の取り込み](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-import_予定の取り込み/index.md) と [カレンダーの連携](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-link_カレンダーの連携/index.md) にある。
 
@@ -375,7 +375,7 @@ Google の予定と同じ内容なので、完了の後に変えた予定から�
 
 ### Google カレンダーへの書き出し
 
-buddy で作り、変え、キャンセルした予定を、予定の職員が結び付けた Google カレンダーに書く（ADR-0026 の段階 2）。  
+buddy で作り、変え、キャンセルした予定を、予定の職員が結び付けた Google カレンダーに書く（ADR-0026 の書き出し）。  
 Google カレンダーで直された予定は、書き出しでは buddy に当てず、確認が必要な予定に出す。  
 Google カレンダーで変わった予定は、buddy の予定に当てない。  
 同期は、buddy を予定の正本にする事業所のカレンダーを読まない（[Google カレンダーとの同期](#google-カレンダーとの同期)）。

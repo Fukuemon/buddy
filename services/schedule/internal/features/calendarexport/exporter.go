@@ -40,7 +40,7 @@ type ExporterDeps struct {
 	Recurring  kernel.Finder[scheduleview.RecurringDetail]
 }
 
-// Exporter は、書き出しの待ちを、予定の職員が結び付けた外部のカレンダーに書く処理である。ADR-0026 の段階 2 に当たる。
+// Exporter は、書き出しの待ちを、予定の職員が結び付けた外部のカレンダーに書く処理である。ADR-0026 の書き出しに当たる。
 // 待ちは予定の変更と同じトランザクションで積まれ（Outbox）、Exporter はトランザクションの外で外部のカレンダーを呼ぶ。
 // 外部のカレンダーで変わった予定は buddy に当てず、確認が必要な待ち（conflict）にする。
 // 事業所が buddy を予定の正本にしていない（buddy_primary でない）待ちは、書かずに確認が必要な待ち（conflict）にして保留にする。
