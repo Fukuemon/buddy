@@ -24,5 +24,4 @@ type CalendarApp struct {
 	CancelCutover    func(ctx context.Context, id string) (calendarimport.Cutover, error)
 	ListExportIssues func(ctx context.Context, facilityID string) ([]calendar.ExportIssue, error)
 	RetryExport      func(ctx context.Context, id string) (calendar.Export, error)
-	AcceptExport     func(ctx context.Context, id string) (calendar.Export, error)
 }

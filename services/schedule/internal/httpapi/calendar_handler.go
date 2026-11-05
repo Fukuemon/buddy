@@ -286,14 +286,6 @@ func (s server) CreateCalendarExportRetry(ctx context.Context, req openapi.Creat
 	return openapi.CreateCalendarExportRetry202JSONResponse(toCalendarExport(e)), nil
 }
 
-func (s server) CreateCalendarExportAcceptance(ctx context.Context, req openapi.CreateCalendarExportAcceptanceRequestObject) (openapi.CreateCalendarExportAcceptanceResponseObject, error) {
-	e, err := s.u.Calendars.AcceptExport(ctx, req.CalendarExportId)
-	if err != nil {
-		return nil, err
-	}
-	return openapi.CreateCalendarExportAcceptance200JSONResponse(toCalendarExport(e)), nil
-}
-
 func toCalendarCutover(c calendarimport.Cutover) openapi.CalendarCutover {
 	return openapi.CalendarCutover{
 		Id: c.ID, FacilityId: c.FacilityID, Status: openapi.CalendarCutoverStatus(c.Status), RangeStart: c.RangeStart.String(),

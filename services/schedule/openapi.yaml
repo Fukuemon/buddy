@@ -11,7 +11,7 @@ info:
     - エラーは Error の形で返す。`code` は invalid_input、unauthenticated、forbidden、not_found、conflict、internal と、
       外部のカレンダーの操作の calendar_unreadable、calendar_unavailable、calendar_not_configured と、
       409 の原因を分ける calendar_taken、calendar_already_linked、staff_has_calendar、import_running、import_preview_changed、export_not_in_review、
-      export_not_acceptable、external_change_unappliable、google_primary、staff_has_assignments、patient_has_schedules と、
+      google_primary、staff_has_assignments、patient_has_schedules と、
       予定の正本の切り替えの cutover_open、cutover_not_google_primary、cutover_sync_not_ready、cutover_not_open、cutover_incomplete のいずれかである。
     - `/v1` は全て、Hydra が発行した access token（JWT）を `Authorization: Bearer` で求める。
       トークンがないか検証に失敗したときは 401 を、トークンの組織と職員の事業所が、パスの指す事業所と違うときは 403 を返す。
@@ -1684,51 +1684,6 @@ paths:
                   value: { code: export_not_in_review, message: "この予定は、確認が必要な書き出しではありません" }
         "500": { $ref: "#/components/responses/InternalError" }
 
-  /v1/calendar_exports/{calendar_export_id}/acceptances:
-    post:
-      tags: [calendar]
-      operationId: createCalendarExportAcceptance
-      summary: 確認が必要な書き出しを Google カレンダーの内容で解く
-      description: |
-        確認が必要な書き出しの予定を、Google カレンダーの今の内容にそろえ、書き出しを終える。buddy で変えた日時とタイトルは消える。
-        Google カレンダーで消された予定（予定が cancelled で返るときと、予定が 404 か 410 で、カレンダーは読めるとき）は、buddy でキャンセルする。
-        buddy を予定の正本にする事業所（buddy_primary）では、Google カレンダーの内容を当てず、export_not_acceptable で拒む（ADR-0026）。
-        acceptable が true の書き出しだけを解ける。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
-      parameters: [$ref: "#/components/parameters/CalendarExportID"]
-      responses:
-        "200":
-          description: Google カレンダーの内容にそろえ、書き出しを終えた
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/CalendarExport" }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
-        "404": { $ref: "#/components/responses/NotFound" }
-        "409":
-          description: |
-            確認が必要な書き出しでない（export_not_in_review）か、Google カレンダーの内容で解けない書き出しである（export_not_acceptable）か、
-            Google カレンダーの予定を buddy の予定に読み替えられない（external_change_unappliable。終日にした予定、タイトルの利用者を引けない予定など）
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/Error" }
-              examples:
-                notInReview:
-                  summary: 確認が必要な書き出しでない
-                  value: { code: export_not_in_review, message: "この予定は、確認が必要な書き出しではありません" }
-                notAcceptable:
-                  summary: Google カレンダーの内容で解けない
-                  value: { code: export_not_acceptable, message: "この予定は、Google カレンダーの内容を buddy に当てられません。buddy の内容で書き直してください" }
-                buddyPrimary:
-                  summary: 事業所が buddy を予定の正本にしている
-                  value: { code: export_not_acceptable, message: "この事業所の予定は buddy で管理しているので、Google カレンダーの内容を buddy に当てられません。buddy の内容で書き直してください" }
-                unappliable:
-                  summary: Google カレンダーの予定を読み替えられない
-                  value: { code: external_change_unappliable, message: "Google カレンダーの予定を、buddy の予定に読み替えられません。buddy の内容で書き直してください" }
-        "422": { $ref: "#/components/responses/CalendarUnreadable" }
-        "500": { $ref: "#/components/responses/InternalError" }
-        "502": { $ref: "#/components/responses/CalendarUnavailable" }
-        "503": { $ref: "#/components/responses/CalendarNotConfigured" }
 
   /v1/facilities/{facility_id}/calendar_cutover_status:
     get:
@@ -2065,8 +2020,6 @@ components:
             - import_running
             - import_preview_changed
             - export_not_in_review
-            - export_not_acceptable
-            - external_change_unappliable
             - google_primary
             - staff_has_assignments
             - patient_has_schedules
@@ -2758,8 +2711,8 @@ components:
             acceptable:
               type: boolean
               description: |
-                Google カレンダーの内容で解けるか（POST /v1/calendar_exports/{calendar_export_id}/acceptances）。
-                単発の予定で、buddy でキャンセルしておらず、error_code が precondition_failed か not_found のときに true
+                Google カレンダーで予定が変わったか消えたので書けなかった、buddy でキャンセルしていない単発の予定か。
+                error_code が precondition_failed か not_found のときに true
     ExternalCalendar:
       type: object
       required: [id, facility_id, staff_id, provider, calendar_id, created_at, updated_at, last_import]

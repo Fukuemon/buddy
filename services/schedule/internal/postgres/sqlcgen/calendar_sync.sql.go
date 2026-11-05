@@ -148,32 +148,3 @@ func (q *Queries) FinishCalendarSync(ctx context.Context, arg FinishCalendarSync
 	}
 	return result.RowsAffected(), nil
 }
-
-const getExternalEventLinkByEvent = `-- name: GetExternalEventLinkByEvent :one
-SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version, cutover_id FROM external_event_links WHERE external_calendar_id = $1 AND external_event_id = $2
-`
-
-type GetExternalEventLinkByEventParams struct {
-	ExternalCalendarID string
-	ExternalEventID    string
-}
-
-func (q *Queries) GetExternalEventLinkByEvent(ctx context.Context, arg GetExternalEventLinkByEventParams) (ExternalEventLink, error) {
-	row := q.db.QueryRow(ctx, getExternalEventLinkByEvent, arg.ExternalCalendarID, arg.ExternalEventID)
-	var i ExternalEventLink
-	err := row.Scan(
-		&i.ID,
-		&i.FacilityID,
-		&i.ExternalCalendarID,
-		&i.ExternalEventID,
-		&i.RecurringEventID,
-		&i.Etag,
-		&i.ScheduleID,
-		&i.RecurringScheduleID,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.SyncedVersion,
-		&i.CutoverID,
-	)
-	return i, err
-}
