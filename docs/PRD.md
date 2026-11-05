@@ -356,7 +356,7 @@ flowchart TB
 | --- | --- |
 | [ログイン](screens/account-login_ログイン/index.md) | 全ての職員。ログインしていなくても開ける |
 | [ログインの失敗](screens/account-error_ログインの失敗/index.md) | 全ての職員。ログインしていなくても開ける |
-| プロフィール | 全ての職員 |
+| [自分の情報](screens/account-profile_自分の情報/index.md) | 全ての職員 |
 | [予定のカレンダー](screens/schedule-calendar_予定のカレンダー/index.md) | 全ての職員。表示する職員と予定は、予定を見る権限の範囲で決まる |
 | [予定の作成](screens/schedule-new_予定の作成/index.md) | 誰かの予定を編集できる職員。主訪問者と予定者に選べる職員は、予定の権限で決まる |
 | [予定の詳細](screens/schedule-detail_予定の詳細/index.md) | 予定を見る権限を持つ職員。自分の予定は全ての職員が見られる |

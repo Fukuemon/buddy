@@ -61,6 +61,7 @@ nav = [
     { "照合の結果" = "screens/receipt-result_照合の結果/index.md" },
     { "ログイン" = "screens/account-login_ログイン/index.md" },
     { "ログインの失敗" = "screens/account-error_ログインの失敗/index.md" },
+    { "自分の情報" = "screens/account-profile_自分の情報/index.md" },
   ] },
   { "デザインシステム" = [
     { "使い方" = "design/packages/ui.md" },
