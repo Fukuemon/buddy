@@ -53,7 +53,7 @@ verified_commit: c0514f20
 役職のデフォルトの権限をコピーする規則、役職を変えたときにコピーし直す規則、`staff.manage` の扱いは [権限](https://github.com/Fukuemon/buddy/blob/develop/context/domain/permission.md) にある。  
 職員の権限（`schedule.user.*`）は、コピーするときに対象を決められないので、役職のデフォルトの権限にできない。  
 `receipt.check` は、予定の API の判定には使わない。  
-照合の API が照合を許す確認の仕方は、[照合の API の権限の確認](#照合の-api-の権限の確認) にある。
+照合の API が照合の権限を確認する仕方は、[照合の API の権限の確認](#照合の-api-の権限の確認) にある。
 
 - ADR-0002: [権限を役職のデフォルトと職員ごとの上書きで持つ（PBAC）](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0002-pbac.md)
 - ADR-0022: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0022-receipt-check-policy-and-non-visiting-staff.md)
