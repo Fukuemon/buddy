@@ -1,4 +1,4 @@
-// Package upstream は、事業所ごとの上流の IdP の設定を読む（ADR-0013）。
+// Package upstream は、事業所ごとの上流の IdP の設定を読む（ADR-0012）。
 // 組織の ID、issuer、client ID の対応はインフラが設定のファイルで渡し、client secret はシークレットのファイルで渡す。
 package upstream
 

@@ -1,4 +1,4 @@
--- 予定と繰り返しの予定に、終了が翌日かを持たせる（ADR-0015）。
+-- 予定と繰り返しの予定に、終了が翌日かを持たせる（ADR-0013）。
 -- 前のバージョンのアプリが動いたまま当てられるよう、列は既定値を持たせて足し、ビューは列を末尾に足す。
 
 ALTER TABLE schedules ADD COLUMN ends_next_day boolean NOT NULL DEFAULT false;

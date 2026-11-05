@@ -65,7 +65,7 @@ type Record struct {
 	Additions []string
 }
 
-// Elapsed は、終了時間から開始時間を引いた分を返す。終了時間が開始時間より前の行は、翌日の終了時間までの分にする（ADR-0015）。
+// Elapsed は、終了時間から開始時間を引いた分を返す。終了時間が開始時間より前の行は、翌日の終了時間までの分にする（ADR-0013）。
 func (r Record) Elapsed() int {
 	return r.Start.MinutesUntil(r.End)
 }

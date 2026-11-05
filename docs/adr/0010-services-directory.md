@@ -1,4 +1,4 @@
-# ADR-0011: 2 つの API を services/ に置き、画面と API をトップのディレクトリで分ける
+# ADR-0010: 2 つの API を services/ に置き、画面と API をトップのディレクトリで分ける
 
 ## Status
 
@@ -21,10 +21,10 @@
 - 理由: トップのディレクトリで画面と API が分かれるので、同じ機能の名前を使っても区別できる。Go の module のパスも `github.com/Fukuemon/buddy/services/schedule` と短くなる。
 - タグは `<ディレクトリ>/vX.Y.Z` の形にする（`apps/web/v1.0.0`、`services/schedule/v1.0.0`）。ディレクトリとタグを 1 対 1 に対応させる ADR-0003 の方針を保つ。リリースのタグがまだ無いので、付け直すタグは無い。
 - ディレクトリの名前だけを変え、コンテナとサービスの名前、`aud`、テーブル定義書の出力先（`docs/db/schedule-api/`）、API の仕様のページの名前は `schedule-api` と `receipt-api` のまま残す。これらはディレクトリと違い、web には同じ名前のものが無く、インフラと IdP の設定が名前で指すので、変えると利点よりも直す範囲が大きい。
-  - この判断は、ADR-0012 で置き換えた。
-  - ADR-0012: [2 つの API のサービスの名前とトークンの aud を、ディレクトリの名前にそろえる](0012-service-names.md)
-- ID ブローカーのログインの画面のソースの配置先は、ADR-0018 で決めた。
-  - ADR-0018: [ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する](0018-broker-login-pages-source.md)
+  - この判断は、ADR-0011 で置き換えた。
+  - ADR-0011: [2 つの API のサービスの名前とトークンの aud を、ディレクトリの名前にそろえる](0011-service-names.md)
+- ID ブローカーのログインの画面のソースの配置先は、ADR-0016 で決めた。
+  - ADR-0016: [ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する](0016-broker-login-pages-source.md)
 
 ## Considered Options
 

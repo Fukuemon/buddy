@@ -15,7 +15,7 @@ import (
 // acceptCallTimeout は、Google の内容に合わせる操作が、予定の行をロックしたまま外部のカレンダーを読む時間の上限である。
 const acceptCallTimeout = 20 * time.Second
 
-// errBuddyPrimary は、buddy を予定の正本にする事業所では、外部のカレンダーの内容を buddy の予定に当てないことを表す（ADR-0009）。
+// errBuddyPrimary は、buddy を予定の正本にする事業所では、外部のカレンダーの内容を buddy の予定に当てないことを表す（ADR-0008）。
 // コードは calendar.CodeExportNotAcceptable で、buddy の内容で書き直す（RetryExport）よう促す。
 var errBuddyPrimary = apperr.ConflictCode(calendar.CodeExportNotAcceptable,
 	"この事業所の予定は buddy で管理しているので、Google カレンダーの内容を buddy に当てられません。buddy の内容で書き直してください")
@@ -54,7 +54,7 @@ func NewAcceptExport(
 // Do は、確認が必要な書き出し id の予定を、buddy での変更によらず外部のカレンダーの今の内容にし、待ちを終えて返す。
 // 外部のカレンダーで消された予定は、キャンセルする。予定の職員が、外部の予定のカレンダーの職員と違えば、書き出しの待ちを積み直し、
 // 今の職員のカレンダーへ移させる。
-// 事業所が buddy を予定の正本にしているとき（ADR-0009）は、code が calendar.CodeExportNotAcceptable の apperr.ErrConflict を返す。
+// 事業所が buddy を予定の正本にしているとき（ADR-0008）は、code が calendar.CodeExportNotAcceptable の apperr.ErrConflict を返す。
 // 待ちが見つからないときは apperr.ErrNotFound を、確認が必要な待ちでないとき、外部の内容を当てられない待ちのとき、
 // 予定の対応のカレンダーを外したとき（退職を含む）、
 // 外部の予定を buddy の予定に読み替えられないときは apperr.ErrConflict を返す。外部のカレンダーを読めないときは Preview と同じである。

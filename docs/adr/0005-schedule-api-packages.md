@@ -36,9 +36,9 @@ Go の API は 3 つある。予定の API（`services/schedule`）、照合の 
 予定の API の規則と手順を、機能ごとのパッケージに置く。DB と HTTP のアダプタ（`postgres`、`httpapi`）は、生成物が 1 つのパッケージなので、機能に分けずに 1 つずつ置く。
 
 - 機能のパッケージは `internal/features/<機能>/` に置く。ディレクトリの一覧から機能を読み取れ、依存の規則を `features/` の下と外のパスのパターンで書ける。
-  - 機能の一覧は `context/codebase.md` にある。サービスコードの `servicecode` は ADR-0020 で、予定の読み取りのモデルの `scheduleview` は ADR-0009 で決めた。
-    - ADR-0009: [Google カレンダーとの連携を事業所ごとの正本のモードで分け、職員のカレンダーを事業所ごとのサービスアカウントへの共有で読み書きする](0009-google-calendar-sync.md)
-    - ADR-0020: [サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける](0020-service-code-rules.md)
+  - 機能の一覧は `context/codebase.md` にある。サービスコードの `servicecode` は ADR-0018 で、予定の読み取りのモデルの `scheduleview` は ADR-0008 で決めた。
+    - ADR-0008: [Google カレンダーとの連携を事業所ごとの正本のモードで分け、職員のカレンダーを事業所ごとのサービスアカウントへの共有で読み書きする](0008-google-calendar-sync.md)
+    - ADR-0018: [サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける](0018-service-code-rules.md)
 - `internal/` の直下には、機能でないパッケージを置く。
   - アダプタ（`httpapi`、`postgres`、`gcal` など）
   - 共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）。共通のエラーと検証のエラーは `apperr`、`Transactor` は `tx` に置く。ID の発行と並べ替えは、使う機能のパッケージか、`apperr` と同じ段の小さなパッケージ（`kernel`）に置く。
@@ -103,16 +103,16 @@ flowchart BT
 - 取り込みと同期の両方が使う読み替えの規則（`Classify`、`RuleFromRecurrence`、`serviceKey`、`originalDate`、`createdVersion`）は、`calendar` に置いて公開する。外部の予定と buddy の予定を互いに読み替える規則は、3 つの機能の共通の規則であるためである。
 - 書き出しの待ちの記録（`Export`、`Target`、`ExportStatus`、`ExportErrorCode`）は `calendar` に置く。同期は、書いている途中の待ちを見て、外部の変更を当てるか保留にするかを決めるので、待ちの記録は書き出しと同期が共有する状態である。
 - 書き出しの待ちの一覧と書き直しは、buddy の内容を書く側なので `calendarexport` に置く。
-- 外部の変更と buddy の予定を比べて当てる `ReconcileApplier` と、確認が必要な待ちを外部の内容で解決する `AcceptExport` は、どのモードでも使わないので消す。この判断は ADR-0009 にある。
-  - ADR-0009: [Google カレンダーとの連携を事業所ごとの正本のモードで分け、職員のカレンダーを事業所ごとのサービスアカウントへの共有で読み書きする](0009-google-calendar-sync.md)
+- 外部の変更と buddy の予定を比べて当てる `ReconcileApplier` と、確認が必要な待ちを外部の内容で解決する `AcceptExport` は、どのモードでも使わないので消す。この判断は ADR-0008 にある。
+  - ADR-0008: [Google カレンダーとの連携を事業所ごとの正本のモードで分け、職員のカレンダーを事業所ごとのサービスアカウントへの共有で読み書きする](0008-google-calendar-sync.md)
 
 同期は、取得と、当てる規則の 2 つの型に分ける。
 
 - `Syncer` は、同期の状態の Claim と Finish、`EventSource` の変更の読み取り、syncToken の失効（410）の読み直しを持つ。正本のモードを知らない。
 - `Applier` は、1 つの外部の予定を 1 つのトランザクションで当てるインターフェースにする。Google カレンダーを正本にする事業所の参照のモデルを書く型は `ProjectionApplier` である。
 - `Syncer` は、1 つの予定を当てるトランザクションの中で事業所の正本のモードを読み、モードごとの `Applier` を選ぶ。モードごとの `Applier` は組み立ての場所が渡し、`Syncer` はモードの値と `Applier` の対応だけを持つ。
-  - モードごとの同期の向きは ADR-0009 にある。
-    - ADR-0009: [Google カレンダーとの連携を事業所ごとの正本のモードで分け、職員のカレンダーを事業所ごとのサービスアカウントへの共有で読み書きする](0009-google-calendar-sync.md)
+  - モードごとの同期の向きは ADR-0008 にある。
+    - ADR-0008: [Google カレンダーとの連携を事業所ごとの正本のモードで分け、職員のカレンダーを事業所ごとのサービスアカウントへの共有で読み書きする](0008-google-calendar-sync.md)
 
 `calendarexport` は、事業所の正本のモードが buddy を正本にするときだけ書く。
 
@@ -139,7 +139,7 @@ flowchart BT
   - 予定の閲覧と編集の判定と、見てよい職員の絞り込みは、`schedule` の 1 つのファイルに集める。
   - 役職のデフォルトの権限をコピーする規則は、`staff` の公開の関数にする。
 - リポジトリは、自分の集約のものだけを、そのパッケージに置く。単発の予定（キャンセルを含む）、繰り返しの予定（規則と除外の日を含む）、マスタで分け、テーブルごとには分けない。
-  - レコードをロックして読む操作は `GetForUpdate` の 1 つにし、名前でロックを示す。`GetForUpdate` が返す型は ADR-0009 にある。
+  - レコードをロックして読む操作は `GetForUpdate` の 1 つにし、名前でロックを示す。`GetForUpdate` が返す型は ADR-0008 にある。
 - ほかの機能のデータは、使う側で定義したインターフェースで受ける。ほかの機能のリポジトリのインターフェースと、リポジトリの束は受けない。
   - 読むだけなら、`kernel.Finder` か 1〜2 のメソッドにする。例えば `schedule` は、職員の ID、事業所、チームだけを返すインターフェースで職員を受ける。
   - ほかの機能の集約を 1 つのトランザクションで書くかロックするなら、使うメソッドだけを並べた 1 つのインターフェースにする。
@@ -188,8 +188,8 @@ func (o Leave) Do(ctx context.Context, id string, in LeaveInput) (StatusChange, 
 常駐の処理と、操作の型以外で操作を持つ型（`calendarexport` の `Exporter`、`Outbox`、`calendarsync` の `Syncer`、`visit` の `Writer`）は、1 つの型が 1 つの役割を持つ型にする。
 
 - これらの型は、同じ集約のリポジトリと規則を使うので、同じ機能のパッケージに置く。
-- 常駐と 1 回の繰り返しの配置先は ADR-0021 にある。
-  - ADR-0021: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](0021-calendar-worker.md)
+- 常駐と 1 回の繰り返しの配置先は ADR-0019 にある。
+  - ADR-0019: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](0019-calendar-worker.md)
 
 照合の API と ID ブローカーには、次のとおり当てる。
 

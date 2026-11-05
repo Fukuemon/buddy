@@ -89,6 +89,6 @@
 - 保存の失敗の文は、同じ `errorMessage.ts` の `scheduleSubmitErrorMessage` が status で選ぶ。
 - 権限が無いことの文は、同じ `errorMessage.ts` の `SCHEDULE_EDIT_FORBIDDEN_MESSAGE` にある。
 - 400 の `invalid_input` には、休職か退職の職員か、訪問しない職員を新しく割り振ったときと、利用の終了の利用者を新しく指したときを含む。
-  - ADR-0014: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../../adr/0014-receipt-check-policy-and-non-visiting-staff.md)
+  - ADR-0002: [権限を役職のデフォルトと職員ごとの上書きで持ち、職員の管理と照合も権限で許し、訪問するかを職員に持つ](../../adr/0002-pbac.md)
 - 読み込みは、4xx なら取り直さずにすぐ失敗にし、ほかの失敗は取り直してから失敗にする。
   - 処理は `apps/web/src/appContext.ts` の `shouldRetryQuery` にある。

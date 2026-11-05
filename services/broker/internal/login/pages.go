@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-// pageFiles は、apps/broker が src/pages.tsx から生成した画面のテンプレートと CSS である（ADR-0018）。
+// pageFiles は、apps/broker が src/pages.tsx から生成した画面のテンプレートと CSS である（ADR-0016）。
 // ファイルの名前（拡張子を除く）が、render に渡す画面の名前になる。
 //
 //go:embed pages/*.html pages/pages.css

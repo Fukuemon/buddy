@@ -22,7 +22,7 @@ const (
 // ブローカーで職員を作る前に登録した職員では nil のことがある。PhoneNumber は、先頭に "+" を付けた数字の列である。
 // LeaveStartedAt は休職にした時刻で、休職でなければ nil である。LeaveReturnDate は戻る予定の日のメモで、その日に自動では戻さない。
 // RetiredAt は退職にした時刻で、退職していなければ nil である。退職した職員は、Email が空で、PhoneNumber が nil である（ADR-0001）。
-// NonVisiting は訪問しない職員かで、true の職員は予定のカレンダーの職員の列と、予定と担当の候補に出ず、予定と担当を新しく割り振れない（ADR-0014）。
+// NonVisiting は訪問しない職員かで、true の職員は予定のカレンダーの職員の列と、予定と担当の候補に出ず、予定と担当を新しく割り振れない（ADR-0002）。
 // ゼロ値を訪問する職員にするため、訪問するかの逆を持つ。
 type Staff struct {
 	ID              string
@@ -193,7 +193,7 @@ type Ref struct {
 	NonVisiting bool
 }
 
-// RequireAssignable は、職員に予定と担当を新しく割り振れるかを確認する。休職と退職の職員（ADR-0001）と、訪問しない職員（ADR-0014）には
+// RequireAssignable は、職員に予定と担当を新しく割り振れるかを確認する。休職と退職の職員（ADR-0001）と、訪問しない職員（ADR-0002）には
 // 割り振れず、入力のエラーを返す。
 func (r Ref) RequireAssignable() error {
 	switch r.Status {

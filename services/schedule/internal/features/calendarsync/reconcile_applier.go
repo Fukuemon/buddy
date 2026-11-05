@@ -62,7 +62,7 @@ type ReconcileDeps struct {
 }
 
 // NewReconcileApplier は、外部の予定の変更を予定の対応と比べて buddy の予定に当てる Applier（reconcileApplier）を作る。
-// ADR-0009 で、どのモードでも使わないので消すと決めた。消すまで規則とテストを残す。
+// ADR-0008 で、どのモードでも使わないので消すと決めた。消すまで規則とテストを残す。
 func NewReconcileApplier(d ReconcileDeps, ids kernel.IDGenerator) Applier {
 	return newReconcileApplier(d.Calendars, d.Exports, d.Schedules, d.Recurring, d.Types, d.Patients, d.ServiceCodes, d.Visits, ids)
 }

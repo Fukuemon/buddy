@@ -26,7 +26,7 @@ ttl:
   authentication_session: 12h
 
 oauth2:
-  # ブローカーが同意の accept で足す組織の ID を、access token の JWT の top level に出す（ADR-0013）
+  # ブローカーが同意の accept で足す組織の ID を、access token の JWT の top level に出す（ADR-0012）
   allowed_top_level_claims: [org_id]
   # トークンを発行するたびにブローカーを呼び、休職と退職の職員と、上流でのログインから 12 時間を過ぎたトークンを拒ませる（ADR-0001）
   token_hook:

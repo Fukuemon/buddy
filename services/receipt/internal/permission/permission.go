@@ -1,4 +1,4 @@
-// Package permission は、職員が照合の権限を持つかを、予定の API に問い合わせて確認する（ADR-0014）。
+// Package permission は、職員が照合の権限を持つかを、予定の API に問い合わせて確認する（ADR-0002）。
 // 権限は予定の API だけが持つので、照合の API は職員の権限を保存しない。
 package permission
 

@@ -40,7 +40,7 @@ func Schedules(rows []record.Fields) ([]record.Record, []record.CSVError) {
 }
 
 // Visits は、実績の行の値を Record にする。加算は空でない値だけを残す。誤りのある行は Record にせず、項目ごとの record.CSVError で返す。
-// 予定と実績のどちらも、終了時間が開始時間より前の行は、訪問日の翌日のその時刻に終わる訪問として読む（ADR-0015）。
+// 予定と実績のどちらも、終了時間が開始時間より前の行は、訪問日の翌日のその時刻に終わる訪問として読む（ADR-0013）。
 func Visits(rows []record.Fields) ([]record.Record, []record.CSVError) {
 	return toRecords(rows, record.InputVisit, true)
 }
