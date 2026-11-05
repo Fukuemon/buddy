@@ -1,8 +1,10 @@
-import jaLocale from '@fullcalendar/core/locales/ja'
-import dayGridPlugin from '@fullcalendar/daygrid'
-import interactionPlugin from '@fullcalendar/interaction'
 import FullCalendar from '@fullcalendar/react'
-import timeGridPlugin from '@fullcalendar/timegrid'
+import dayGridPlugin from '@fullcalendar/react/daygrid'
+import interactionPlugin from '@fullcalendar/react/interaction'
+import jaLocale from '@fullcalendar/react/locales/ja'
+import classicTheme from '@fullcalendar/react/themes/classic'
+import timeGridPlugin from '@fullcalendar/react/timegrid'
+import { clsx } from 'clsx'
 import { useEffect, useRef, useState } from 'react'
 
 import { useIsDesktop } from '@buddy/ui'
@@ -28,13 +30,20 @@ const hourMinute = (date: Date) =>
   `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`
 
 /**
- * 予定に出す時刻の文を返す。翌日に終わる予定は、開始の日と翌日の両方に予定の全体の時刻を `22:00 - 翌 1:00` の形で出す。
- * ほかの予定は、FullCalendar が作る `9:00 - 9:30` の形の文をそのまま使う。
+ * 週の表示の予定に出す時刻の文を、`9:00 - 9:30` の形で返す。翌日に終わる予定は、開始の日と翌日の両方に予定の全体の時刻を `22:00 - 翌 1:00` の形で出す。
+ * FullCalendar 7 の日本語の時刻の文は `9時00分～9時30分` の形で、区切りを変えるオプションが無いので、ここで作る。
  */
 const eventTimeText = (start: Date | null, end: Date | null, timeText: string) =>
-  start === null || end === null || nextDayPrefix(start, end) === ''
+  start === null || end === null
     ? timeText
     : `${hourMinute(start)} - ${nextDayPrefix(start, end)}${hourMinute(end)}`
+
+/** 時刻の見出しの `data-time` に入れる `HH:mm:ss`。E2E の spec が時刻の見出しを指すのに使う。 */
+const slotTime = (milliseconds: number) => {
+  const minutes = Math.floor(milliseconds / 60000)
+  const pad = (value: number) => String(value).padStart(2, '0')
+  return `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}:00`
+}
 
 export type ScheduleCalendarProps = {
   view: keyof typeof FULL_CALENDAR_VIEW
@@ -46,7 +55,10 @@ export type ScheduleCalendarProps = {
   onEventClick: (scheduleId: string) => void
 }
 
-/** 月と週の表示の予定のカレンダー。日の表示は StaffScheduleDayGrid が受け持つ。 */
+/**
+ * 月と週の表示の予定のカレンダー。日の表示は StaffScheduleDayGrid が受け持つ。
+ * FullCalendar 7 の DOM は `fc-` のクラスを持たないので、`schedule-calendar-` のクラスを各部に付け、見た目の上書きと E2E の spec が指す。
+ */
 export const ScheduleCalendar = ({
   view,
   date,
@@ -55,7 +67,6 @@ export const ScheduleCalendar = ({
   onEventClick,
 }: ScheduleCalendarProps) => {
   const containerRef = useRef<HTMLDivElement>(null)
-  const calendarRef = useRef<FullCalendar>(null)
   const isDesktop = useIsDesktop()
   // 枠の幅を測れない間（jsdom と描く前）は、枠の幅では 2 行に切り替えない
   const [containerWidth, setContainerWidth] = useState<number | null>(null)
@@ -63,13 +74,12 @@ export const ScheduleCalendar = ({
   const twoLineDayHeader =
     !isDesktop || (containerWidth !== null && containerWidth < WIDE_DAY_HEADER_MIN_WIDTH_PX)
 
-  // FullCalendar は画面の幅の変化でしか描き直さないので、サイドバーの開閉で枠の幅が変わったときにも描き直させる
+  // FullCalendar 7 は枠の大きさの変化を自分で追うので、ここでは見出しの行数を決める枠の幅だけを測る
   useEffect(() => {
     const container = containerRef.current
     if (container === null || typeof ResizeObserver === 'undefined') return
     const observer = new ResizeObserver(([entry]) => {
       if (entry !== undefined) setContainerWidth(entry.contentRect.width)
-      calendarRef.current?.getApi().updateSize()
     })
     observer.observe(container)
     return () => observer.disconnect()
@@ -82,24 +92,30 @@ export const ScheduleCalendar = ({
       ref={containerRef}
     >
       <FullCalendar
-        ref={calendarRef}
         allDaySlot={false}
         dateClick={(arg) =>
           onDateClick(toDateKey(arg.date), arg.allDay ? undefined : toTimeKey(arg.date))
         }
-        dayCellContent={(arg) => arg.dayNumberText.replace('日', '')}
+        dayCellClass="schedule-calendar-day"
+        dayCellTopClass="schedule-calendar-day-top"
+        dayCellTopContent={(arg) => arg.dayNumberText.replace('日', '')}
+        dayCellTopInnerClass="schedule-calendar-day-number"
+        dayHeaderClass="schedule-calendar-day-header"
+        dayHeaderInnerClass="schedule-calendar-day-header-inner"
         dayHeaderContent={(arg) =>
           // 月の表示の見出しは曜日だけなので、狭い幅でも FullCalendar の書式のままにする
           arg.view.type === FULL_CALENDAR_VIEW.week && twoLineDayHeader ? (
-            <span className="flex flex-col items-center">
+            <span className="flex flex-col items-center" data-testid="schedule-calendar-day-header">
               <span>{WEEKDAYS[arg.dow]}</span>
               <span>{arg.date.getDate()}</span>
             </span>
           ) : (
             // 文字列を返すと、FullCalendar は React で描いた 2 行の見出しを残したまま描き直さないので、要素で返す
-            <span>{arg.text}</span>
+            <span data-testid="schedule-calendar-day-header">{arg.text}</span>
           )
         }
+        dayLaneClass="schedule-calendar-week-column"
+        eventClass="schedule-calendar-event"
         eventDisplay="block"
         eventClick={(arg) => onEventClick(arg.event.id)}
         eventContent={(arg) => {
@@ -130,12 +146,16 @@ export const ScheduleCalendar = ({
           title: event.title,
           start: event.start,
           end: event.end,
-          backgroundColor: event.isCancelled ? 'var(--buddy-color-surface-subtle)' : event.color,
-          borderColor: event.color,
-          textColor: event.isCancelled
+          // FullCalendar 7 の予定は枠と背景に同じ色を使うので、キャンセルした予定は職員の色を枠に残し、背景を CSS で薄い色にする
+          color: event.color,
+          className: event.isCancelled ? 'schedule-calendar-event-cancelled' : undefined,
+          contrastColor: event.isCancelled
             ? 'var(--buddy-color-text-secondary)'
             : 'var(--buddy-color-text-inverse)',
-          extendedProps: { isCancelled: event.isCancelled, needsReview: event.needsReview },
+          extendedProps: {
+            isCancelled: event.isCancelled,
+            needsReview: event.needsReview,
+          },
         }))}
         headerToolbar={false}
         height="100%"
@@ -144,10 +164,29 @@ export const ScheduleCalendar = ({
         key={`${view}-${date}`}
         locale={jaLocale}
         nowIndicator
-        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+        plugins={[classicTheme, dayGridPlugin, timeGridPlugin, interactionPlugin]}
         scrollTime="06:00:00"
+        slotHeaderClass="schedule-calendar-time-label"
+        slotHeaderInnerClass="schedule-calendar-time-label-inner"
+        slotHeaderContent={(arg) => (
+          <span
+            // FullCalendar 7 は時刻の見出しの高さから 30 分の枠の高さを決めるので、押せる領域の下限の 44px をここで持たせる（packages/ui/DESIGN.md）。5px は、見出しの内側の上下の余白の 4px と枠の線の 1px である
+            className="schedule-calendar-time-label-text block min-h-[calc(--spacing(11)-5px)]"
+            data-time={arg.time === undefined ? undefined : slotTime(arg.time.milliseconds)}
+          >
+            {arg.text}
+          </span>
+        )}
+        slotLaneClass="schedule-calendar-slot"
         slotMaxTime="24:00:00"
         slotMinTime="00:00:00"
+        tableHeaderClass={(arg) => clsx(arg.isSticky && 'shadow-1')}
+        // FullCalendar 7 の日本語の週の見出しの既定は「18日(日)」なので、FullCalendar 6 と同じ「10/18(日)」にそろえる
+        views={{
+          [FULL_CALENDAR_VIEW.week]: {
+            dayHeaderFormat: { month: 'numeric', day: 'numeric', weekday: 'short' },
+          },
+        }}
       />
     </div>
   )

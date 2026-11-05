@@ -31,7 +31,7 @@ describe('ScheduleCalendar', () => {
     const viewport = stubViewport(false)
     render(<Week />)
     const headerTexts = () =>
-      screen.getAllByRole('columnheader').map((header) => header.textContent)
+      screen.getAllByTestId('schedule-calendar-day-header').map((header) => header.textContent)
     expect(headerTexts()).toEqual(['日18', '月19', '火20', '水21', '木22', '金23', '土24'])
 
     viewport.resize(true)
@@ -42,14 +42,8 @@ describe('ScheduleCalendar', () => {
   it('幅 768px 未満の月の表示では、列の見出しを曜日のまま出す', () => {
     stubViewport(false)
     render(<Month />)
-    expect(screen.getAllByRole('columnheader').map((header) => header.textContent)).toEqual([
-      '日',
-      '月',
-      '火',
-      '水',
-      '木',
-      '金',
-      '土',
-    ])
+    expect(
+      screen.getAllByTestId('schedule-calendar-day-header').map((header) => header.textContent),
+    ).toEqual(['日', '月', '火', '水', '木', '金', '土'])
   })
 })
