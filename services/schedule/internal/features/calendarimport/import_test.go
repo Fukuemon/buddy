@@ -328,7 +328,7 @@ func TestImportExcludesSkippedReplacement(t *testing.T) {
 	})
 }
 
-// TestImportOvernight は、翌日に終わる 24 時間未満の予定を、終了が翌日の予定として取り込み、2 日にわたる予定を取り込まないことを確認する（ADR-0013）。
+// TestImportOvernight は、翌日に終わる 24 時間未満の予定を、終了が翌日の予定として取り込み、2 日にわたる予定を取り込まないことを確認する（ADR-0011）。
 // 繰り返しの予定は親の予定の印で取り込み、親と印が違う変えた回は、その回の印を持つ置き換えにする。
 func TestImportOvernight(t *testing.T) {
 	e := newEnv(t, &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{googleCalID: {{

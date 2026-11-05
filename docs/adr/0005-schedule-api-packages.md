@@ -36,9 +36,9 @@ Go の API は 3 つある。予定の API（`services/schedule`）、照合の 
 予定の API の規則と手順を、機能ごとのパッケージに置く。DB と HTTP のアダプタ（`postgres`、`httpapi`）は、生成物が 1 つのパッケージなので、機能に分けずに 1 つずつ置く。
 
 - 機能のパッケージは `internal/features/<機能>/` に置く。ディレクトリの一覧から機能を読み取れ、依存の規則を `features/` の下と外のパスのパターンで書ける。
-  - 機能の一覧は `context/codebase.md` にある。サービスコードの `servicecode` は ADR-0018 で、予定の読み取りのモデルの `scheduleview` は ADR-0008 で決めた。
+  - 機能の一覧は `context/codebase.md` にある。サービスコードの `servicecode` は ADR-0016 で、予定の読み取りのモデルの `scheduleview` は ADR-0008 で決めた。
     - ADR-0008: [Google カレンダーとの連携を事業所ごとの正本のモードで分け、職員のカレンダーを事業所ごとのサービスアカウントへの共有で読み書きする](0008-google-calendar-sync.md)
-    - ADR-0018: [サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける](0018-service-code-rules.md)
+    - ADR-0016: [サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける](0016-service-code-rules.md)
 - `internal/` の直下には、機能でないパッケージを置く。
   - アダプタ（`httpapi`、`postgres`、`gcal` など）
   - 共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）。共通のエラーと検証のエラーは `apperr`、`Transactor` は `tx` に置く。ID の発行と並べ替えは、使う機能のパッケージか、`apperr` と同じ段の小さなパッケージ（`kernel`）に置く。
@@ -188,8 +188,8 @@ func (o Leave) Do(ctx context.Context, id string, in LeaveInput) (StatusChange, 
 常駐の処理と、操作の型以外で操作を持つ型（`calendarexport` の `Exporter`、`Outbox`、`calendarsync` の `Syncer`、`visit` の `Writer`）は、1 つの型が 1 つの役割を持つ型にする。
 
 - これらの型は、同じ集約のリポジトリと規則を使うので、同じ機能のパッケージに置く。
-- 常駐と 1 回の繰り返しの配置先は ADR-0019 にある。
-  - ADR-0019: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](0019-calendar-worker.md)
+- 常駐と 1 回の繰り返しの配置先は ADR-0017 にある。
+  - ADR-0017: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](0017-calendar-worker.md)
 
 照合の API と ID ブローカーには、次のとおり当てる。
 

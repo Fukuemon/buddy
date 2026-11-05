@@ -11,7 +11,7 @@ import { useEffect } from 'react'
 import { queryKeys } from './queryKeys'
 import type { Viewer } from './types'
 
-/** Viewer を古いとみなすまでの時間。ほかの職員が権限を変えたときに、取り直すまでの長さの下限になる（ADR-0015）。 */
+/** Viewer を古いとみなすまでの時間。ほかの職員が権限を変えたときに、取り直すまでの長さの下限になる（ADR-0013）。 */
 export const VIEWER_STALE_TIME_MS = 5 * 60 * 1000
 
 /**
@@ -51,7 +51,7 @@ export const redirectToLogin = (): Promise<never> => {
 
 /**
  * Viewer の query を取り直す関数を返す。
- * 職員の権限、役職、チームを変えた後に呼ぶ。対象が自分かを見分けずに呼び、自分を変えたときの取り直しを欠かさない（ADR-0015）。
+ * 職員の権限、役職、チームを変えた後に呼ぶ。対象が自分かを見分けずに呼び、自分を変えたときの取り直しを欠かさない（ADR-0013）。
  * 権限が変われば、useRecheckPermissionsOnViewerChange が route の権限の確認をやり直す。
  */
 export const useRefreshViewer = () => {
@@ -80,7 +80,7 @@ export const watchViewerPermissions = (queryClient: QueryClient, onChange: () =>
 
 /**
  * Viewer の権限が変わったときに、route の beforeLoad の権限の確認をやり直す。root の route で 1 度だけ呼ぶ。
- * 権限を足された職員の権限が無い表示を消し、外された職員の開いている画面を権限が無い表示に替える（ADR-0015）。
+ * 権限を足された職員の権限が無い表示を消し、外された職員の開いている画面を権限が無い表示に替える（ADR-0013）。
  */
 export const useRecheckPermissionsOnViewerChange = () => {
   const router = useRouter()

@@ -44,7 +44,7 @@ buddy のコードと設定は、特定のデプロイ先を前提にしない�
 ## Calendar Worker
 
 Google カレンダーの書き出しと同期は、予定の API と同じイメージの `calendar-worker` が、役割ごとのプロセスで動かす。  
-ADR-0019: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](../docs/adr/0019-calendar-worker.md)
+ADR-0017: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](../docs/adr/0017-calendar-worker.md)
 
 - 役割は `calendar-worker export`（書き出し）と `calendar-worker sync`（同期）で、1 つのプロセスは 1 つの役割だけを持つ。
 - 常駐で動かすか、`--once` を付けて定期的に起動するかは、インフラのリポジトリが決める。

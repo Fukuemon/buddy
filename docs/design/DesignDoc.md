@@ -121,7 +121,7 @@ PRD の 4 つの業務の領域は、次のコンテナが持つ。
 - access token の `sub` は職員の ID で、予定の API の `users.sub` に入る。
 - 持たないもの: 職員の名前、役職、権限。
   - 職員の名前、役職、権限は、予定の API が持つ。
-  - ADR-0012: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](../adr/0012-id-broker-hydra.md)
+  - ADR-0010: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](../adr/0010-id-broker-hydra.md)
   - ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元と停止をブローカーが、権限と業務のデータを予定の API が持つ](../adr/0001-auth.md)
 - 内部の構成と流れは [ID ブローカーの Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md) にある。
 
@@ -143,7 +143,7 @@ PRD の 4 つの業務の領域は、次のコンテナが持つ。
 - 書き出し（`calendar-worker export`）は、予定の API が積んだ書き出しの待ちを読み、Google カレンダーに書く。
 - 同期（`calendar-worker sync`）は、Google カレンダーを正本にする事業所のカレンダーの変わった予定を読み、予定の写しに当てる。
 - 持たないもの: 予定の API の HTTP の操作と認証。
-  - ADR-0019: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](../adr/0019-calendar-worker.md)
+  - ADR-0017: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](../adr/0017-calendar-worker.md)
 - 役割ごとのプロセス、多重起動、止め方は、[基盤と運用の Calendar Worker](https://github.com/Fukuemon/buddy/blob/develop/context/operations.md#calendar-worker) にある。
 
 ### 照合の API
@@ -205,7 +205,7 @@ web のセッションは、トークンと ID token のほかに、ログイン
 
 web と予定の API、照合の API の契約を変えるときの互換の規則は ADR-0003 にある。
 
-- ADR-0003: [git flow でマージし、アプリごとのバージョンでリリースする](../adr/0003-branch-and-release.md)
+- ADR-0003: [モノレポを git flow でマージし、画面を apps/ に、API を services/ に置き、ディレクトリの名前でタグとサービスの名前をそろえる](../adr/0003-branch-and-release.md)
 
 照合の API は、予定の API が返した権限に照合（`receipt.check`）が無ければ、403 を返す。  
 access token の `aud` に `schedule` と `receipt` の両方が入るので、同じトークンで 2 つの API を呼べる。

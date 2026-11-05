@@ -43,7 +43,7 @@ type Type struct {
 }
 
 // Slot は、単発と繰り返しの予定が共通に持つ属性である。VisitInfoID、Title、Description は、ないときに nil である。
-// Date は開始の日である。EndsNextDay が true の予定は、Date の翌日の EndTime に終わる（ADR-0013）。
+// Date は開始の日である。EndsNextDay が true の予定は、Date の翌日の EndTime に終わる（ADR-0011）。
 type Slot struct {
 	FacilityID     string
 	StaffID        string
