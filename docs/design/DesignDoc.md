@@ -1,7 +1,7 @@
 ---
 type: design-doc
 title: buddy Design Doc
-description: web と予定の API と照合の API と ID ブローカーの責務と依存、業務の領域とコンテナの対応、コンテナの間の通信、デプロイの要件
+description: web、予定の API、calendar-worker、照合の API、ID ブローカーの責務と依存、業務の領域とコンテナの対応、コンテナの間の通信、デプロイの要件
 status: draft
 ---
 
@@ -53,6 +53,7 @@ flowchart TB
     web["web<br/>[コンテナ: TanStack Start]<br/>画面と BFF"]
     valkey[("Valkey<br/>[データの保存先]<br/>web のセッション")]
     schedule["schedule<br/>[コンテナ: Go]<br/>事業所、職員、予定、権限"]
+    worker["calendar-worker<br/>[コンテナ: Go、予定の API と同じイメージ]<br/>Google カレンダーへの書き出しと同期"]
     receipt["receipt<br/>[コンテナ: Go]<br/>照合"]
     postgres[("PostgreSQL 18<br/>[データの保存先]<br/>予定の API、ブローカー、Hydra のデータ")]
   end
@@ -71,12 +72,14 @@ flowchart TB
   receipt -- "受けた access token で権限を読む" --> schedule
   schedule -- "SQL" --> postgres
   receipt -- "予定を読む" --> gcal
-  schedule -- "予定を読み書きする" --> gcal
+  schedule -- "予定を読む" --> gcal
+  worker -- "SQL" --> postgres
+  worker -- "予定を書き出し、変わった予定を読む" --> gcal
   classDef person fill:#08427b,stroke:#052e56,color:#fff
   classDef container fill:#438dd5,stroke:#2e6295,color:#fff
   classDef external fill:#8a8a8a,stroke:#6b6b6b,color:#fff
   class staff person
-  class hydra,broker,web,valkey,schedule,receipt,postgres container
+  class hydra,broker,web,valkey,schedule,worker,receipt,postgres container
   class upstream,gcal external
   style buddy fill:none,stroke:#0b4884,stroke-dasharray:5 5
 ```
@@ -120,10 +123,19 @@ PRD の 3 つの業務の領域は、次のコンテナが持つ。
 
 - 事業所、部署、チーム、役職、権限、職員、利用者、予定を持つ。
 - access token の検証、職員の特定、事業所の確認、職員の権限による予定の閲覧と編集の判定を行う。
-- 職員に結び付けた Google カレンダーの予定を、期間を選んで予定に取り込む（ADR-0009 の段階 1）。
-- buddy の予定を、職員に結び付けた Google カレンダーに書き出す（段階 2）。Google カレンダーで変わった予定を読み、buddy の予定に当てる（段階 3）。
-- 持たないもの: 照合の規則。
+- 職員に結び付けた Google カレンダーの予定を読み、予定に取り込む。正本の切り替えの完了でも、Google カレンダーの予定を読み直して比べる。
+- 予定を変えたときに、書き出しの待ちを DB に積む。Google カレンダーに書くのは calendar-worker である。
+- 持たないもの: 照合の規則、Google カレンダーへの書き込み。
 - 内部の構成と ER は [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md) にある。
+
+### calendar-worker
+
+- 予定の API と同じイメージのコマンドで、予定の API と同じ DB を使う。HTTP のポートで待ち受けない。
+- 書き出し（`calendar-worker export`）は、予定の API が積んだ書き出しの待ちを読み、Google カレンダーに書く。
+- 同期（`calendar-worker sync`）は、Google カレンダーを正本にする事業所のカレンダーの変わった予定を読み、予定の写しに当てる。
+- 持たないもの: 予定の API の HTTP の操作と認証。
+  - ADR-0036: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで動かす](../adr/0036-calendar-worker.md)
+- 役割ごとのプロセス、多重起動、止め方は、[基盤と運用の Calendar Worker](https://github.com/Fukuemon/buddy/blob/develop/context/operations.md#calendar-worker) にある。
 
 ### 照合の API
 
@@ -155,8 +167,8 @@ PRD の 3 つの業務の領域は、次のコンテナが持つ。
 | web | 予定の API、照合の API | `Authorization` に access token を Bearer で付ける | 契約の正本は [予定の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/openapi.yaml) と [照合の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/openapi.yaml) である |
 | 照合の API | 予定の API | 照合の API が、web から受けた access token をそのまま Bearer で付けて、予定の API の `GET /v1/me` を呼ぶ | ADR-0022: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../adr/0022-receipt-check-policy-and-non-visiting-staff.md) |
 | 予定の API、照合の API | Hydra | Issuer の discovery と JWKS を読み、access token を検証する。検証に失敗したら 401 を返す | - |
-| 照合の API、予定の API | Google Calendar API | 事業所ごとのサービスアカウントになりすまして得たトークンで、そのアカウントに共有されたカレンダーの予定を読み書きする。サービスアカウントのキーは使わない | ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](../adr/0012-google-calendar-facility-service-accounts.md) |
-| 予定の API | PostgreSQL | 予定の API だけが読み書きする | - |
+| 照合の API、予定の API、calendar-worker | Google Calendar API | 事業所ごとのサービスアカウントになりすまして得たトークンで、そのアカウントに共有されたカレンダーの予定を読む。書くのは calendar-worker だけである。サービスアカウントのキーは使わない | ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](../adr/0012-google-calendar-facility-service-accounts.md) |
+| 予定の API、calendar-worker | PostgreSQL | 予定の API と calendar-worker だけが、予定の API のデータベースを読み書きする | - |
 
 ブラウザと web の間の cookie には、セッションの ID を入れ、トークンは入れない。  
 画面の操作は、web のサーバーの関数（BFF）を呼ぶ。  
@@ -177,7 +189,7 @@ web と予定の API、照合の API の契約を変えるときの互換の規�
 access token の `aud` に `schedule` と `receipt` の両方が入るので、同じトークンで 2 つの API を呼べる。
 
 照合の API と予定の API が Google Calendar API を呼ぶときの事業所は、リクエストの職員かトークンの組織から決める。  
-リクエストを受けない書き出しと増分の取得は、結び付けたカレンダーのレコードの事業所で決める。
+calendar-worker の書き出しと増分の取得は、リクエストを受けないので、結び付けたカレンダーのレコードの事業所で決める。
 
 ### デプロイの要件
 
@@ -189,61 +201,60 @@ buddy がデプロイのために満たす要件は、コンテナのイメー�
 - イメージは、web、予定の API、照合の API、ブローカーのアプリごとに 1 つ作る。Hydra は Ory の公開のイメージを使う。
 - ブローカーのイメージは、ヘルスチェックのための `broker healthcheck` のサブコマンドを持つ。ブローカーの環境変数は [ブローカーの README](https://github.com/Fukuemon/buddy/blob/develop/services/broker/README.md#configuration) にある。
 - API のイメージは、ヘルスチェックのための `api healthcheck` のサブコマンドを持つ。
+- 予定の API のイメージは、`calendar-worker` のバイナリも持つ。calendar-worker は、同じイメージでエントリポイントを `/usr/local/bin/calendar-worker` にして起動する。
 - イメージは設定を持たず、全ての設定を環境変数で受ける。
 - プロセスは 1 つの HTTP のポートで待ち受け、ポートは環境変数 `PORT` で受ける。
 
 #### 環境変数
 
-| 変数 | web | 予定の API | 照合の API | 中身 |
-| --- | --- | --- | --- | --- |
-| `PORT` | 使う | 任意 | 任意 | 待ち受けるポート。API のデフォルトは `8080`。web のイメージは `3000` を入れる |
-| `LOG_LEVEL` | 使わない | 任意 | 任意 | ログの段階。デフォルトは `info` |
-| `OIDC_ISSUER` | 使う | 使う | 使う | Hydra の Issuer の URL。JWKS の場所もここから求める |
-| `OIDC_AUDIENCE` | 使わない | 使う | 使う | access token の `aud` に求める値 |
-| `OIDC_ORG_CLAIM` | 使わない | 任意 | 任意 | access token で組織の ID を持つクレームの名前。デフォルトは `org_id` |
-| `OIDC_CLIENT_ID` | 使う | 使わない | 使わない | web のクライアントの ID |
-| `OIDC_CLIENT_SECRET` | 使う | 使わない | 使わない | web のクライアントのシークレット |
-| `OIDC_AUTHORIZATION_ENDPOINT` | 任意 | 使わない | 使わない | ブラウザをリダイレクトする認可の URL |
-| `OIDC_END_SESSION_ENDPOINT` | 任意 | 使わない | 使わない | ログアウトでブラウザをリダイレクトする RP-Initiated Logout の URL |
-| `SESSION_STORE_URL` | 使う | 使わない | 使わない | Valkey の接続先 |
-| `SESSION_SECRET` | 使う | 使わない | 使わない | cookie の署名の鍵。32 バイト以上 |
-| `SESSION_COOKIE_SECURE` | 任意 | 使わない | 使わない | `false` のときだけ、セッションの cookie に Secure を付けない。https でないローカル環境で使う |
-| `SCHEDULE_URL` | 使う | 使わない | 使う | 予定の API の URL。照合の API は、照合の権限を確認するために `GET /v1/me` を呼ぶ |
-| `RECEIPT_URL` | 使う | 使わない | 使わない | 照合の API の URL |
-| `DB_HOST`、`DB_PORT` | 使わない | 任意 | 使わない | PostgreSQL のホストとポート。デフォルトは `localhost` と `5432` |
-| `DB_USER`、`DB_PASSWORD`、`DB_NAME` | 使わない | 使う | 使わない | PostgreSQL の利用者、パスワード、データベースの名前 |
-| `DB_MAX_CONNS` | 使わない | 任意 | 使わない | PostgreSQL の接続のプールの接続の数の上限。デフォルトは 25 |
-| `CORS_ALLOW_ORIGINS` | 使わない | 任意 | 任意 | CORS を許すオリジン。カンマで区切る。空なら CORS のヘッダーを返さない |
-| `MAX_UPLOAD_BYTES` | 使わない | 使わない | 任意 | 照合のリクエストの本文の上限。デフォルトは 10 MiB |
-| `GOOGLE_CALENDARS_FILE` | 使わない | 使わない | 任意 | 職員とカレンダーと組織の対応の JSON。空なら Google カレンダーから予定を取らない |
-| `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` | 使わない | 任意 | 任意 | 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応の JSON。2 つの API で同じ形 |
-| `GOOGLE_CALENDAR_ENDPOINT` | 使わない | 任意 | 任意 | Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit に向けるときだけ渡す |
-| `GOOGLE_CALENDAR_EXPORT_ENABLED` | 使わない | 任意 | 使わない | `true` なら予定を Google カレンダーに書き出す。デフォルトは `false` |
-| `GOOGLE_CALENDAR_EXPORT_INTERVAL` | 使わない | 任意 | 使わない | `calendar-worker export` が予定の書き出しの待ちを確認する間隔。デフォルトは 30 秒 |
-| `GOOGLE_CALENDAR_SYNC_ENABLED` | 使わない | 任意 | 使わない | `true` なら Google カレンダーの変更を buddy の予定に当てる。デフォルトは `false`。`GOOGLE_CALENDAR_EXPORT_ENABLED` を `true` にして渡す |
-| `GOOGLE_CALENDAR_SYNC_INTERVAL` | 使わない | 任意 | 使わない | `calendar-worker sync` が Google カレンダーの変わった予定を読む間隔。デフォルトは 2 分 |
+| 変数 | web | 予定の API | calendar-worker | 照合の API | 中身 |
+| --- | --- | --- | --- | --- | --- |
+| `PORT` | 使う | 任意 | 使わない | 任意 | 待ち受けるポート。API のデフォルトは `8080`。web のイメージは `3000` を入れる |
+| `LOG_LEVEL` | 使わない | 任意 | 任意 | 任意 | ログの段階。デフォルトは `info` |
+| `OIDC_ISSUER` | 使う | 使う | 使わない | 使う | Hydra の Issuer の URL。JWKS の場所もここから求める |
+| `OIDC_AUDIENCE` | 使わない | 使う | 使わない | 使う | access token の `aud` に求める値 |
+| `OIDC_ORG_CLAIM` | 使わない | 任意 | 使わない | 任意 | access token で組織の ID を持つクレームの名前。デフォルトは `org_id` |
+| `OIDC_CLIENT_ID` | 使う | 使わない | 使わない | 使わない | web のクライアントの ID |
+| `OIDC_CLIENT_SECRET` | 使う | 使わない | 使わない | 使わない | web のクライアントのシークレット |
+| `OIDC_AUTHORIZATION_ENDPOINT` | 任意 | 使わない | 使わない | 使わない | ブラウザをリダイレクトする認可の URL |
+| `OIDC_END_SESSION_ENDPOINT` | 任意 | 使わない | 使わない | 使わない | ログアウトでブラウザをリダイレクトする RP-Initiated Logout の URL |
+| `SESSION_STORE_URL` | 使う | 使わない | 使わない | 使わない | Valkey の接続先 |
+| `SESSION_SECRET` | 使う | 使わない | 使わない | 使わない | cookie の署名の鍵。32 バイト以上 |
+| `SESSION_COOKIE_SECURE` | 任意 | 使わない | 使わない | 使わない | `false` のときだけ、セッションの cookie に Secure を付けない。https でないローカル環境で使う |
+| `SCHEDULE_URL` | 使う | 使わない | 使わない | 使う | 予定の API の URL。照合の API は、照合の権限を確認するために `GET /v1/me` を呼ぶ |
+| `RECEIPT_URL` | 使う | 使わない | 使わない | 使わない | 照合の API の URL |
+| `DB_HOST`、`DB_PORT` | 使わない | 任意 | 任意 | 使わない | PostgreSQL のホストとポート。デフォルトは `localhost` と `5432` |
+| `DB_USER`、`DB_PASSWORD`、`DB_NAME` | 使わない | 使う | 使う | 使わない | PostgreSQL の利用者、パスワード、データベースの名前 |
+| `DB_MAX_CONNS` | 使わない | 任意 | 任意 | 使わない | PostgreSQL の接続のプールの接続の数の上限。デフォルトは 25 |
+| `CORS_ALLOW_ORIGINS` | 使わない | 任意 | 使わない | 任意 | CORS を許すオリジン。カンマで区切る。空なら CORS のヘッダーを返さない |
+| `MAX_UPLOAD_BYTES` | 使わない | 使わない | 使わない | 任意 | 照合のリクエストの本文の上限。デフォルトは 10 MiB |
+| `GOOGLE_CALENDARS_FILE` | 使わない | 使わない | 使わない | 任意 | 職員とカレンダーと組織の対応の JSON。空なら Google カレンダーから予定を取らない |
+| `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` | 使わない | 任意 | 任意 | 任意 | 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応の JSON。2 つの API と calendar-worker で同じ形 |
+| `GOOGLE_CALENDAR_ENDPOINT` | 使わない | 任意 | 任意 | 任意 | Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit に向けるときだけ渡す |
+| `GOOGLE_CALENDAR_EXPORT_ENABLED` | 使わない | 任意 | 任意 | 使わない | `true` なら、予定の API が書き出しの待ちを積み、`calendar-worker export` が Google カレンダーに書き出す。デフォルトは `false` |
+| `GOOGLE_CALENDAR_EXPORT_INTERVAL` | 使わない | 使わない | 任意 | 使わない | `calendar-worker export` が予定の書き出しの待ちを確認する間隔。デフォルトは 30 秒 |
+| `GOOGLE_CALENDAR_SYNC_ENABLED` | 使わない | 使わない | 任意 | 使わない | `true` なら、`calendar-worker sync` が Google カレンダーの変更を予定の写しに当てる。デフォルトは `false`。`GOOGLE_CALENDAR_EXPORT_ENABLED` を `true` にして渡す |
+| `GOOGLE_CALENDAR_SYNC_INTERVAL` | 使わない | 使わない | 任意 | 使わない | `calendar-worker sync` が Google カレンダーの変わった予定を読む間隔。デフォルトは 2 分 |
 
 `OIDC_AUTHORIZATION_ENDPOINT` は、web とブラウザから届く IdP の URL が違うローカル環境だけで渡す。  
 `OIDC_END_SESSION_ENDPOINT` は、ブラウザが Issuer の URL に届かないときに渡す。  
 Hydra は discovery の `end_session_endpoint` を Issuer の URL から作るためである。
 
-予定の API では、`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` が空なら、カレンダーを読む操作は 503 を返し、予定を Google カレンダーに書き出さない。  
+予定の API では、`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` が空なら、カレンダーを読む操作は 503 を返す。  
 照合の API では、`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` を `GOOGLE_CALENDARS_FILE` と一緒に渡す。
 
 `GOOGLE_CALENDAR_ENDPOINT` を渡したときは、`GOOGLE_APPLICATION_CREDENTIALS` を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使う。  
 `GOOGLE_CALENDAR_ENDPOINT` を渡し、`GOOGLE_APPLICATION_CREDENTIALS` を渡さなければ、認証をしない。  
-予定の API では、`GOOGLE_CALENDAR_ENDPOINT` を `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` と一緒に渡す。
+予定の API と calendar-worker では、`GOOGLE_CALENDAR_ENDPOINT` を `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` と一緒に渡す。
 
 サービスアカウントが「予定の変更」の共有だけで書けるかを確認するまで、本番では `GOOGLE_CALENDAR_EXPORT_ENABLED` を `false` にする（ADR-0012 の承認の条件）。
 
 - web の `VITE_API_MODE` は、イメージのビルドのときに埋め込む値で、実行のときには読まない。イメージは `bff` でビルドする。
-- 照合の API と予定の API は、Google の認証情報を Application Default Credentials（`GOOGLE_APPLICATION_CREDENTIALS` など）で読む。  
+- 照合の API、予定の API、calendar-worker は、Google の認証情報を Application Default Credentials（`GOOGLE_APPLICATION_CREDENTIALS` など）で読む。  
   読んだ認証情報で、事業所のサービスアカウントになりすます。  
   `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` があるときだけ読み、読めなければ起動しない。
 - Application Default Credentials で認証する主体に付けるロールと、有効にする API は、[基盤と運用の Adding a Facility](https://github.com/Fukuemon/buddy/blob/develop/context/operations.md#adding-a-facility) にある。
-- Google カレンダーの書き出しと同期は、予定の API と同じイメージの `calendar-worker` が、役割（`export`、`sync`）ごとのプロセスで実行する。
-  - 同じ役割の Worker を 2 つ以上動かしても、同じ書き出しの待ちと同期のカレンダーは 1 つの Worker だけが処理する。
-  - ADR-0036: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで動かす](../adr/0036-calendar-worker.md)
+- calendar-worker の動かし方は、[基盤と運用の Calendar Worker](https://github.com/Fukuemon/buddy/blob/develop/context/operations.md#calendar-worker) にある。
 
 シークレットと、その渡し方は、[基盤と運用の Secrets](https://github.com/Fukuemon/buddy/blob/develop/context/operations.md#secrets) にある。
 
@@ -298,6 +309,7 @@ Hydra は discovery の `end_session_endpoint` を Issuer の URL から作る�
 .
 ├── apps/
 │   ├── web/             # 画面と BFF
+│   ├── broker/          # ID ブローカーのログインと同意の画面のソース
 │   └── docs-site/       # ドキュメントサイトとカタログを公開する Cloudflare Worker
 ├── services/
 │   ├── schedule/        # 予定の API
