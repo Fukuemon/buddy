@@ -131,8 +131,9 @@ buddy だけの規則は次のとおり。
 - PRD は `docs/PRD.md`、全体の Design Doc は `docs/design/`、ADR は `docs/adr/`、画面仕様書は `docs/screens/` に置き、Zensical のサイトで読む。
   - Design Doc と ADR の配置先は、`context/project.yml` の `docs` と同じにする。
 - アプリとパッケージの README の見出しは、Setup、Configuration、Running、Tests and Checks、Code Generation、Documentation の順に置く。当てはまらないセクションは省く。
-- 機能ごとの Design Doc は、コードの隣（`services/<API>/DesignDoc.md`、`packages/<パッケージ>/DesignDoc.md`）に置く。
-  - サイトには、`docs/design/services/` か `docs/design/packages/` のファイル単位のシンボリックリンクで載せる。リンク先は `zensical.toml` の `watch` にも並べる。
+- 機能ごとの Design Doc は、コードの隣に置く。
+  - 配置先は、`services/<API>/DesignDoc.md`、`packages/<パッケージ>/DesignDoc.md`、`apps/<アプリ>/src/features/<機能>/DesignDoc.md` である。
+  - サイトには、`docs/design/services/`、`docs/design/packages/`、`docs/design/apps/` のファイル単位のシンボリックリンクで載せる。リンク先は `zensical.toml` の `watch` にも並べる。
 - 機能ごとの Design Doc と ADR から `docs/`、`apps/`、`services/` の文書へのリンクは、GitHub の `develop` の URL で書く。
   - 相対リンクは、GitHub とサイトで指す先が変わり、どちらかで切れる。
 - 見出しには比喩と擬人化を使わず、セクションが扱う物と操作の名詞で書く。
