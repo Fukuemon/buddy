@@ -17,7 +17,7 @@ status: stable
 | 用語 | 意味 | コードの識別子 |
 | --- | --- | --- |
 | 事業所 | 訪問看護の事業所。データを分ける単位 | Go `organization.Facility`、テーブル `facilities`、API `Facility` |
-| 組織 | ID ブローカーが持つ組織。事業所と 1 対 1 に対応し、access token に組織の ID が入る。組織の ID（`org_id`）は、同じ事業所を認証の側から指す。予定の API の Go のパッケージ `organization` は、名前が似ているが組織とは別のもので、事業所と、その中の部署、チーム、役職、権限を持つ | `facilities.org_id`、`principal.Identity.OrgID`、ブローカーの `staff.org_id`、クレームの名前は `OIDC_ORG_CLAIM` |
+| 組織 | ID ブローカーが持つ組織で、事業所と 1 対 1 に対応する。access token に入る組織の ID（`org_id`）は、同じ事業所を認証の側から指す | `facilities.org_id`、`principal.Identity.OrgID`、ブローカーの `staff.org_id`、クレームの名前は `OIDC_ORG_CLAIM` |
 | 部署、チーム | 事業所の中の職員の所属 | `organization.Department`、`organization.Team`、テーブル `departments`、`teams` |
 | 役職 | 職員の役割。職員に付けるデフォルトの権限を持つ | `organization.Position`、テーブル `positions`、`position_policies` |
 | マネージャー、チームリーダー、メンバー | PRD が使う役職の 3 つの呼び方。デフォルトの権限が違う | テーブル `positions` のレコード。名前は事業所ごとに決める |
@@ -26,6 +26,9 @@ status: stable
 | 利用者 | 事業所が訪問する相手 | Go `patient.Patient`、テーブル `patients`、API `Patient` |
 | 担当の職員 | 利用者を主に担当する職員 | `Patient.AssignedStaffID`、`patients.assigned_staff_id` |
 | 利用の終了 | サービスを終えた利用者の状態。利用の再開で利用中に戻せる | `Patient.EndedAt`、`patients.ended_at`、API `Patient.ended_at`、`end_service`、`resume_service`、web `Patient.ended` |
+
+予定の API の Go のパッケージ `organization` は、ID ブローカーの組織とは別のものである。  
+`organization` は、事業所と、その中の部署、チーム、役職、権限を持つ。
 
 ### 予定
 
@@ -37,7 +40,7 @@ status: stable
 | キャンセル | 予定の取り消し。理由を持つ | `schedule.Cancel`、テーブル `schedule_cancels` |
 | 時間外の勤務 | 17 時以降に始まる予定 | `Slot.IsOverTimeWork`、カラム `is_over_time_work`（開始の時刻から DB が生成する） |
 | 訪問の情報 | 訪問の予定に付く、利用者、主訪問者、同行者、サービスコード、訪問の区分 | Go `visit.Info`、テーブル `visit_infos`、API `VisitInfo`、web `VisitDetail` |
-| 主訪問者 | 訪問する職員。業務の役割で、役職を問わない。予定の管理では訪問の情報の担当の職員、照合では実績の CSV の「主訪問者」のカラム | `Info.AssignedStaffID`、照合の `Key.Staff` |
+| 主訪問者 | 訪問する職員で、役職を問わない業務の役割。予定の管理では訪問の情報の担当の職員、照合では実績の CSV の「主訪問者」のカラム | `Info.AssignedStaffID`、照合の `Key.Staff` |
 | 同行者 | 訪問に同行する職員 | `Info.CompanionID` |
 | 予定者 | 通常の予定に割り当てた職員。訪問の予定では、同じ枠を主訪問者と呼ぶ | Go `Slot.StaffID`、web `Schedule.staffId` |
 | サービスコード | レセプトのサービスの種類と、提供時間の範囲（分） | Go `servicecode.ServiceCode`、テーブル `service_codes`、API `ServiceCode`、web `ServiceCodeRecord` |
@@ -74,9 +77,9 @@ status: stable
 | 同期 | `google_primary` の事業所で、職員が Google カレンダーで変えた予定を、増分で読んで予定の写しに当てること。`buddy_primary` の事業所のカレンダーは読まない | テーブル `calendar_sync_states`、Go `calendarsync.Syncer` |
 | 切り替え | `google_primary` の事業所の予定を buddy に取り込み、確認してから正本のモードを `buddy_primary` にする作業。画面の名前は「予定の正本の切り替え」 | テーブル `calendar_cutovers`、Go `calendarimport.Cutover`、API `startCalendarCutover`、`createCalendarCutoverCompletion`、`cancelCalendarCutover` |
 | 確認が必要な予定（取り込みの） | 取り込みのプレビューで、タイトルの利用者を 1 人に決められず、取り込む前に取り込み方を選ぶ予定 | API `ImportPreview.needs_review`、`ImportReviewItem` |
-| 確認が必要な予定（書き出しの） | 書き出しで、Google カレンダーに書かずに止めた予定。Google で変わっていた、Google で消された、書けなかった予定が当たる。画面の名前は「確認が必要な予定」 | `calendar_exports` の `conflict` と `failed`、API `listCalendarExportIssues` |
+| 確認が必要な予定（書き出しの） | 書き出しで Google カレンダーに書かずに止めた予定で、Google で変わっていたか消された予定と、書けなかった予定が当たる。画面の名前は「確認が必要な予定」 | `calendar_exports` の `conflict` と `failed`、API `listCalendarExportIssues` |
 | buddy の内容で書き直す | 確認が必要な予定（書き出しの）を、buddy の内容で Google カレンダーに書き直すこと | API `createCalendarExportRetry` |
-| Google の内容に合わせる | 確認が必要な単発の予定（書き出しの）を、Google カレンダーの今の内容にそろえること。Google で消された予定は buddy でキャンセルする。`buddy_primary` の事業所では予定の API が拒む | API `createCalendarExportAcceptance` |
+| Google の内容に合わせる | `google_primary` の事業所で、確認が必要な単発の予定（書き出しの）を、Google カレンダーの今の内容にそろえること。Google で消された予定は buddy でキャンセルする | API `createCalendarExportAcceptance` |
 | 事業所のサービスアカウント | 事業所の職員がカレンダーを共有する相手の Google のサービスアカウント。予定の API と照合の API が同じアカウントで読み書きする | API `getCalendarServiceAccount`、`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` |
 
 ### 画面
@@ -90,7 +93,7 @@ status: stable
 | 用語 | 意味 | コードの識別子 |
 | --- | --- | --- |
 | フェイク | 本物の代わりに動き、作った値を残す置き換え。web では、画面から見た API をブラウザのメモリで動かすものだけを指す | web `src/api/fake/`（`createFakeBuddyApi`）、Go `internal/inmem`、`<パッケージ>test`、compose の IdP と calendarpit |
-| MSW の handler | web のサーバーから 2 つの API への HTTP を受け、決まった応答を返す置き換え。値を残さない。web ではフェイクと呼ばない | web `src/mocks/`（`createScheduleHandlers`、`createReceiptHandlers`） |
+| MSW の handler | web のサーバーから 2 つの API への HTTP を受け、値を残さずに決まった応答を返す置き換え。web ではフェイクと呼ばない | web `src/mocks/`（`createScheduleHandlers`、`createReceiptHandlers`） |
 
 ### 予定の管理と照合で表記が違う語
 
