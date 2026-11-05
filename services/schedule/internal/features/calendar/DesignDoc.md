@@ -29,8 +29,10 @@ verified_commit: 8254dde
 
 持たないもの
 
-- 予定、繰り返しの予定の規則。[予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md) が持つ
-- 職員の休職と退職の規則。[職員の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/staff/DesignDoc.md) が持つ
+- 予定、繰り返しの予定の規則。
+  - [予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md) が持つ
+- 職員の休職と退職の規則。
+  - [職員の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/staff/DesignDoc.md) が持つ
 
 ## Design
 
@@ -68,35 +70,45 @@ verified_commit: 8254dde
 
 - ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](https://github.com/Fukuemon/buddy/blob/876381365355f7e4dab03f6dfdb3d6fb8a9f6947/docs/adr/0012-google-calendar-facility-service-accounts.md)
 
-- 組織の ID とサービスアカウントの対応は、運営側が設定のファイル（`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`）で渡す。予定の API は、事業所の `facilities.org_id` で対応を引く。
-- 事業所は、次のどちらかで決める。リクエストの本文からは受けない。
+- 組織の ID とサービスアカウントの対応は、運営側が設定のファイル（`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`）で渡す。
+  - 予定の API は、事業所の `facilities.org_id` で対応を引く。
+- 事業所は、次のどちらかで決める。
+  - リクエストの本文からは受けない。
   - リクエストを受ける操作: パスの事業所か、結び付けたカレンダーのレコードの事業所。パスの事業所は、認証のミドルウェアがトークンの職員の事業所と一致することを確認する
   - リクエストを受けない書き出しと増分の取得: カレンダーのレコードの事業所（`external_calendars.facility_id`）
-- 対応の無い事業所と、組織に結び付けていない事業所のカレンダーの操作は、503 の `calendar_not_configured` を返す。書き出しは、書き直しの回数の上限まで待ちを残す。
+- 対応の無い事業所と、組織に結び付けていない事業所のカレンダーの操作は、503 の `calendar_not_configured` を返す。
+  - 書き出しは、書き直しの回数の上限まで待ちを残す。
 - サービスアカウントごとの Calendar API のクライアントを起動のときに作り、token は有効期限まで使い回す。
 - Application Default Credentials が事業所のサービスアカウントそのものとして動くときは、重ねてなりすまさず、その token を使う。
   - ローカルで検証の事業所のアカウントになりすました Application Default Credentials を使うと、サービスアカウント自身へのトークン作成者のロールが要るためである。
   - 見分けは、認証情報のファイルの `client_email`（キー）か、なりすます先の URL（なりすましと Workload Identity Federation）のメールアドレスで行う。メタデータサーバーの認証情報は、別のアカウントとみなす。
-- 実際の Google Calendar API では、サービスアカウントが持つカレンダーに対して、取り込み、書き出し、増分の取得、確認が必要な予定の解き方が動く。職員が共有したカレンダーに「予定の変更」の権限で書けるかは、未確認である。確認するまで、本番で書き出しを有効にしない。この確認は、PRD の [Open Questions](https://github.com/Fukuemon/buddy/blob/develop/docs/PRD.md#open-questions) にある。
+- 実際の Google Calendar API では、サービスアカウントが持つカレンダーに対して、取り込み、書き出し、増分の取得、確認が必要な予定の解き方が動く。
+  - 職員が共有したカレンダーに「予定の変更」の権限で書けるかは、未確認である。確認するまで、本番で書き出しを有効にしない。
+  - この確認は、PRD の [Open Questions](https://github.com/Fukuemon/buddy/blob/develop/docs/PRD.md#open-questions) にある。
   - 出典: [#180 の実際の API での確認](https://github.com/Fukuemon/buddy/issues/180#issuecomment-6333280999)
   - ADR-0012: [承認の条件](https://github.com/Fukuemon/buddy/blob/876381365355f7e4dab03f6dfdb3d6fb8a9f6947/docs/adr/0012-google-calendar-facility-service-accounts.md#承認の条件)
-- token を作れないときのエラーの文は、状態コードだけを持つ。IAM のレスポンスはなりすます先のリソースの名前を含むことがあり、サービスアカウントのメールアドレスをログに出さないためである。
+- token を作れないときのエラーの文は、状態コードだけを持つ。
+  - IAM のレスポンスはなりすます先のリソースの名前を含むことがあり、サービスアカウントのメールアドレスをログに出さないためである。
 
 ### 連携の操作の権限
 
 結び付け、取り込み、確認が必要な予定の操作は、全て職員の管理の権限（`staff.manage`）を求める。  
 連携の 4 つのパッケージの操作は、始めに `principal.RequireStaffManage` で確認し、持たない職員を 403（`forbidden`）で拒む。
 
-- web は、`getMe` の権限で職員の管理の権限が無いと分かれば、カレンダーの連携、予定の取り込み、確認が必要な予定の画面で連携の API を呼ばず、権限が無いことを出す。画面の判定は表示のためだけで、拒むのは予定の API である。
-- 画面を開いた後に権限を外された職員の操作は、予定の API が 403 で拒む。web は、どの操作の 403 も「この操作をする権限がありません。」にする（`apps/web/src/features/calendar/lib/errorMessage.ts`）。
+- web は、`getMe` の権限で職員の管理の権限が無いと分かれば、カレンダーの連携、予定の取り込み、確認が必要な予定の画面で連携の API を呼ばず、権限が無いことを出す。
+  - 画面の判定は表示のためだけで、拒むのは予定の API である。
+- 画面を開いた後に権限を外された職員の操作は、予定の API が 403 で拒む。
+  - web は、どの操作の 403 も「この操作をする権限がありません。」にする（`apps/web/src/features/calendar/lib/errorMessage.ts`）。
 
 ### カレンダーの結び付け
 
 職員の管理の権限を持つ職員が、職員に Google カレンダーを結び付け、外す。  
 画面の動きは、画面仕様書の [カレンダーの連携](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-link_カレンダーの連携/index.md) にある。
 
-- 画面は、開くと職員の一覧、結び付けたカレンダーの一覧、サービスアカウントのメールアドレス（`getCalendarServiceAccount`）を並べて読む。メールアドレスが 503 の `calendar_not_configured` なら、結び付けの準備ができていないことを出し、ほかの失敗なら読み込みの失敗にする。
-- 読めるかの確認（`createExternalCalendarCheck`）は、事業所のサービスアカウントで予定の一覧を 1 件だけ読む。予定は取り込まない。
+- 画面は、開くと職員の一覧、結び付けたカレンダーの一覧、サービスアカウントのメールアドレス（`getCalendarServiceAccount`）を並べて読む。
+  - メールアドレスが 503 の `calendar_not_configured` なら、結び付けの準備ができていないことを出し、ほかの失敗なら読み込みの失敗にする。
+- 読めるかの確認（`createExternalCalendarCheck`）は、事業所のサービスアカウントで予定の一覧を 1 件だけ読む。
+  - 予定は取り込まない。
   - Google が 403 か 404 を返せば 422 の `calendar_unreadable` に、Google に届かないかほかのエラーなら 502 の `calendar_unavailable` にする。
   - レスポンスとエラーの文に、Google のレスポンスの本文とカレンダーの ID を入れない。
 - 結び付け（`createExternalCalendar`）は、職員が事業所にいて退職していないことを確認し、もう一度読めるかを確認してから書く。
@@ -106,7 +118,8 @@ verified_commit: 8254dde
     - `calendar_taken`: カレンダーがほかの職員に結び付いている。外したカレンダーを含む
     - `calendar_already_linked`: カレンダーがその職員にすでに結び付いている
   - 外した同じカレンダーを同じ職員に結び付けると、外したレコードを使い直す。
-- 外す（`removeExternalCalendar`）は、レコードを消さずに `disabled_at` を入れる。取り込んだ予定、予定の対応、取り込みの記録は残るので、結び付け直して同じ期間を取り込んでも、予定は重ならない。
+- 外す（`removeExternalCalendar`）は、レコードを消さずに `disabled_at` を入れる。
+  - 取り込んだ予定、予定の対応、取り込みの記録は残るので、結び付け直して同じ期間を取り込んでも、予定は重ならない。
 
 ### Google カレンダーの取り込み
 
@@ -271,15 +284,19 @@ Google カレンダーを正本にする事業所（`google_primary`）の予定
 
 切り替えの操作は次の 4 つで、どれも職員の管理の権限（`staff.manage`）を求める。
 
-- `StartCutover`（始める）: 事業所の行を排他のロックで取り、`google_primary` で、`open` の切り替えが無く、外していない全てのカレンダーの最後の同期が成功していることを確認して、`open` の切り替えを作る。取り込みの期間は、今の Asia/Tokyo の月の初日から先の全てにする。
+- `StartCutover`（始める）: 事業所の行を排他のロックで取り、`google_primary` で、`open` の切り替えが無く、外していない全てのカレンダーの最後の同期が成功していることを確認して、`open` の切り替えを作る。
+  - 取り込みの期間は、今の Asia/Tokyo の月の初日から先の全てにする。
 - `GetCutover`（状況を読む）: `open` の切り替えと、カレンダーごとの同期の状況と、この切り替えで最後に成功した取り込みを返す。
 - `CompleteCutover`（完了する）: 下の「完了の確認」をし、満たせば事業所を `buddy_primary` にし、事業所の Projection の行を消し、切り替えを `completed` にする。
-- `CancelCutover`（やめる）: 事業所の行を排他のロックで取り、この切り替えの取り込みで作った予定、繰り返しの予定、訪問の情報、予定の対応を消して、切り替えを `canceled` にする。モードは `google_primary` のままにする。
+- `CancelCutover`（やめる）: 事業所の行を排他のロックで取り、この切り替えの取り込みで作った予定、繰り返しの予定、訪問の情報、予定の対応を消して、切り替えを `canceled` にする。
+  - モードは `google_primary` のままにする。
 
 記録は 2 つのテーブルに持つ。
 
-- `calendar_cutovers`: 事業所、状態（`open`、`completed`、`canceled`）、取り込みの期間の最初の日、始めた職員と時刻、終えた時刻。`open` の行は、事業所ごとに一意の部分索引で 1 つまでにする。
-- `calendar_cutover_skips`: 切り替えの取り込みで、確認が必要な予定に取り込まないを選んだ記録。カレンダーの取り込みのたびに、そのカレンダーの記録を、その取り込みで選んだものに置き換える。
+- `calendar_cutovers`: 事業所、状態（`open`、`completed`、`canceled`）、取り込みの期間の最初の日、始めた職員と時刻、終えた時刻。
+  - `open` の行は、事業所ごとに一意の部分索引で 1 つまでにする。
+- `calendar_cutover_skips`: 切り替えの取り込みで、確認が必要な予定に取り込まないを選んだ記録。
+  - カレンダーの取り込みのたびに、そのカレンダーの記録を、その取り込みで選んだものに置き換える。
 
 切り替えの取り込みの記録（`import_runs`）と、取り込みで作った予定の対応（`external_event_links`）は、切り替えの ID（`cutover_id`）を持つ。  
 取り込みの記録の期間の終わり（`range_end`）は NULL にする。
@@ -289,10 +306,14 @@ Google カレンダーを正本にする事業所（`google_primary`）の予定
 取り込みは、今の取り込みの操作（`Preview`、`Import`）を使う。  
 事業所に `open` の切り替えがあれば、切り替えの取り込みの規則で読み替える。
 
-- 期間は、切り替えの期間（最初の日から先の全て）だけを受ける。Google の予定は `timeMax` を付けずに読む。ほかの期間は 400 を返す。
-- 書き込みの確認は、`schedule.RequireWritable` の例外として、`open` の切り替えがある `google_primary` の事業所も通す（`requireImportable`）。確定は 2 回のトランザクションの始めで、事業所の行を共有のロックで読んでから `open` の切り替えを読む。2 回目に切り替えが終わっていれば 409（`cutover_not_open`）を返し、何も書かない。
-- 繰り返しの予定は、回に展開しない。buddy の規則に写せない繰り返しの予定は、確認が必要な予定（`recurrence_unsupported`）にし、取り込み方は取り込まないだけを受ける。
-- 親の予定を規則のまま取り込まないとき（取り込まない予定、写せない予定、取り込まないを選んだ予定）は、その変えた回も取り込まない。繰り返しの一部だけを単発の予定にして移さないためである。
+- 期間は、切り替えの期間（最初の日から先の全て）だけを受ける。
+  - Google の予定は `timeMax` を付けずに読む。ほかの期間は 400 を返す。
+- 書き込みの確認は、`schedule.RequireWritable` の例外として、`open` の切り替えがある `google_primary` の事業所も通す（`requireImportable`）。
+  - 確定は 2 回のトランザクションの始めで、事業所の行を共有のロックで読んでから `open` の切り替えを読む。2 回目に切り替えが終わっていれば 409（`cutover_not_open`）を返し、何も書かない。
+- 繰り返しの予定は、回に展開しない。
+  - buddy の規則に写せない繰り返しの予定は、確認が必要な予定（`recurrence_unsupported`）にし、取り込み方は取り込まないだけを受ける。
+- 親の予定を規則のまま取り込まないとき（取り込まない予定、写せない予定、取り込まないを選んだ予定）は、その変えた回も取り込まない。
+  - 繰り返しの一部だけを単発の予定にして移さないためである。
 - 前の取り込みの後に Google で変わったか消えた予定は、buddy の写しを消し、Google の今の内容で取り込み直す（上書き）。
   - 予定の対応の etag と Google の etag が違うか、読み直した予定に無い対応を、食い違う対応にする。
   - 繰り返しの親か回の 1 つが食い違えば、親と回の全ての対応を食い違うものにする。回の置き換えは親の繰り返しの予定を指すので、親だけを取り込み直せないためである。
@@ -327,22 +348,25 @@ sequenceDiagram
 カレンダーごとに、次の 3 つを確認する。
 
 - この切り替えで取り込み（`not_imported`）、最後の取り込みの後に同期が成功している（`sync_stale`）。
-- 読み直した予定を切り替えの取り込みの規則で読み替え、取り込む予定と除外の日が残っていない（`event_not_imported`）。確認が必要な予定は、取り込まないと決めた記録があり、記録のバージョンが今のバージョンと同じである（`needs_review`）。
+- 読み直した予定を切り替えの取り込みの規則で読み替え、取り込む予定と除外の日が残っていない（`event_not_imported`）。
+  - 確認が必要な予定は、取り込まないと決めた記録があり、記録のバージョンが今のバージョンと同じである（`needs_review`）。
 - 予定の対応の etag と Google の etag が同じで（`changed`）、読み直した予定に無い対応が無い（`deleted`）。
 
 満たさない一覧は、カレンダーの順に、カレンダーの中は日時の順（日時の無い予定は最後）に並べる。  
 予定のタイトルは利用者名を含むので返さず、日時と理由だけを返す。
 
 完了の後は、同期が事業所のカレンダーを読まなくなり、予定の変更を書き出すようになる。  
-切り替えの取り込みで作った予定は、書き出しの待ちを持たない。Google の予定と同じ内容なので、完了の後に変えた予定から書き出す。
+切り替えの取り込みで作った予定は、書き出しの待ちを持たない。  
+Google の予定と同じ内容なので、完了の後に変えた予定から書き出す。
 
 ### Google カレンダーへの書き出し
 
 buddy で作り、変え、キャンセルした予定を、予定の職員が結び付けた Google カレンダーに書く（ADR-0009 の段階 2）。  
 Google カレンダーで直された予定は、書き出しでは buddy に当てず、確認が必要な予定に出す。  
-Google カレンダーで変わった予定は、buddy の予定に当てない。同期は、buddy を予定の正本にする事業所のカレンダーを読まない（[Google カレンダーとの同期](#google-カレンダーとの同期)）。
+Google カレンダーで変わった予定は、buddy の予定に当てない。  
+同期は、buddy を予定の正本にする事業所のカレンダーを読まない（[Google カレンダーとの同期](#google-カレンダーとの同期)）。
 
-次の図は、予定の操作が書き出しの待ちを積み、書き出しの処理が Google に書くまでを示す。  
+次の図は、予定の操作が書き出しの待ちを積み、書き出しの Worker（`calendar-worker export`）が Google に書くまでを示す。  
 Google の応答ごとの扱いは、[衝突とエラー](#衝突とエラー) の表にある。
 
 ```mermaid
@@ -350,7 +374,7 @@ sequenceDiagram
   participant web
   participant api as schedule
   participant db as PostgreSQL
-  participant x as 書き出しの処理
+  participant x as calendar-worker export
   participant g as Google Calendar API
   web->>api: 予定の作成、変更、キャンセル、回の置き換え
   api->>db: 予定と、書き出しの待ち（calendar_exports）を 1 つのトランザクションで書く
@@ -396,7 +420,8 @@ sequenceDiagram
 書き出しの処理は、API と別のプロセスの `calendar-worker export` で動く。
 
 - 待ちは `FOR UPDATE SKIP LOCKED` と期限（`locked_until`、2 分）で 5 件ずつ取り、1 件を 20 秒で打ち切るので、期限のうちに書き終える。
-- 常駐の形では、取れるものが無くなるまで続けて取ってから、`GOOGLE_CALENDAR_EXPORT_INTERVAL` を待つ。待ちを取れなかったときは、間隔を待ってから取り直す。止める合図を受けたら、新しく取らない。
+- 常駐の形では、取れるものが無くなるまで続けて取ってから、`GOOGLE_CALENDAR_EXPORT_INTERVAL` を待つ。
+  - 待ちを取れなかったときは、間隔を待ってから取り直す。止める合図を受けたら、新しく取らない。
   - 常駐と 1 回の形の繰り返しは `cmd/calendar-worker` が持ち、`Exporter` は 1 回の取得と処理（`ExportDue`）だけを持つ。
   - ADR-0037: [Worker の常駐と 1 回の繰り返しを cmd/calendar-worker に集め、機能のパッケージは 1 回の処理だけを持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0037-calendar-worker-loop.md)
 - 結果は、取ったときの回数（`attempts`）と比べて書き、期限が切れた後にほかの Worker が取り直した待ちを変えない。
@@ -421,7 +446,8 @@ sequenceDiagram
   - 取り込んだ予定もこの形で更新する。
 - キャンセルした予定と、職員を替えた予定は、対応の Google の予定を消し、対応も消す。
   - 職員を替えた予定は、新しい職員のカレンダーに作る。
-- 対応のカレンダーを外していれば、そのカレンダーには書かない。外したカレンダーの予定は残る。
+- 対応のカレンダーを外していれば、そのカレンダーには書かない。
+  - 外したカレンダーの予定は残る。
   - 職員に今のカレンダーがあれば、対応を消してそのカレンダーに作る。
   - キャンセルした予定と、職員に今のカレンダーが無い予定は、何も書かずに待ちを終える。確認が必要な予定の一覧で「buddy の内容で書き直す」を選んだ予定も同じで、外したカレンダーの予定を消さず、書き直さずに一覧から消える。
 - 対応が無く、職員にカレンダーがあれば作る。
@@ -497,16 +523,18 @@ Google は、消された予定に、消す前の etag を `If-Match` に付け�
 
 - Google カレンダーを正本にする事業所（`google_primary`）では、職員が Google カレンダーで作り、変え、取り消した予定を、参照のモデル（Projection）に写す。
   - 予定の対応の有無によらず、Google で新しく作った予定も写す。buddy の予定のテーブルには書かない。
-- buddy を正本にする事業所（`buddy_primary`）では、同期はカレンダーを読まない。Google カレンダーでの変更は、buddy に取り込まない。
+- buddy を正本にする事業所（`buddy_primary`）では、同期はカレンダーを読まない。
+  - Google カレンダーでの変更は、buddy に取り込まない。
   - Google カレンダーで直された予定は、書き出しが `If-Match` の 412 で見つけ、確認が必要な予定に出す。
-- 外部の変更を buddy の予定に当てる規則（`reconcileApplier`）は、どのモードの同期にも使わない。緊急の編集の要求で使い道を決めるまで、規則とテストを残す。
+- 外部の変更を buddy の予定に当てる規則（`reconcileApplier`）は、どのモードの同期にも使わない。
+  - 緊急の編集の要求で使い道を決めるまで、規則とテストを残す。
   - ADR-0035: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0035-google-calendar-source-modes.md)
 
-次の図は、同期の処理が `google_primary` の事業所のカレンダーの変わった予定を読み、予定ごとに Projection に写すまでを示す。
+次の図は、同期の Worker（`calendar-worker sync`）が `google_primary` の事業所のカレンダーの変わった予定を読み、予定ごとに Projection に写すまでを示す。
 
 ```mermaid
 sequenceDiagram
-  participant s as 同期の処理
+  participant s as calendar-worker sync
   participant db as PostgreSQL
   participant g as Google Calendar API
   loop 読む時刻を過ぎたカレンダーがあるかを、5 秒ごとに確認する
@@ -536,7 +564,8 @@ sequenceDiagram
 
 同期は、`GOOGLE_CALENDAR_SYNC_ENABLED` が `true` のときだけ動く。  
 設定は、書き出し（`GOOGLE_CALENDAR_EXPORT_ENABLED`）を有効にしないと同期を有効にできない。  
-この制約は、`buddy_primary` の事業所で Google の変更を buddy に当てていたときのものである。`google_primary` の事業所の同期は、書き出しを使わない。
+この制約は、`buddy_primary` の事業所で Google の変更を buddy に当てていたときのものである。  
+`google_primary` の事業所の同期は、書き出しを使わない。
 
 同期の処理は、`calendarsync` の `Syncer` が変わった予定を読み、事業所の正本のモードの `Applier` が 1 つの予定ずつ当てる。  
 モードと `Applier` の対応（`Appliers`）は、組み立て（`internal/assemble`）が決めて `Syncer` に渡す。  
@@ -572,14 +601,16 @@ Projection（`calendar_event_projections`）は、Google カレンダーの 1 �
 
 - 行は、写した時点のカレンダーの事業所と職員の ID を持つ。
 - 新しい予定と変わった予定は、タイトル、開始と終了（日時か、終日の日付）、開始のタイムゾーン、繰り返しの規則、etag、Google での更新の時刻を書く。
-- 取り消した単発の予定と繰り返しの親の予定は、行を消す。親の予定の行を消すときは、その例外の回の行も消す。
+- 取り消した単発の予定と繰り返しの親の予定は、行を消す。
+  - 親の予定の行を消すときは、その例外の回の行も消す。
 - 繰り返しの予定は展開せず、親の予定と例外の回を別の行に写す。
   - 例外の回は、親の予定の ID と元の開始の日時を持つ。
   - 取り消した回は、状態を `cancelled` にした行に写す。タイトルと日時は持たない。
 - 日時を読めない予定は、写さずに前の行を消し、ほかの予定を写し続ける。
   - ログの `calendar projection skipped` に、事業所、カレンダー、Google の予定の ID だけを書き、タイトルと利用者名を書かない。
 
-行を残す期間は、前々月の初日からにする。照合で前月の予定を読むためである。
+行を残す期間は、前々月の初日からにする。  
+照合で前月の予定を読むためである。
 
 - 行は、Asia/Tokyo で予定が終わる日（`last_end_date`）を持つ。
   - 繰り返しの予定は最後の回が終わる日、取り消した回は元の開始の日である。
@@ -603,7 +634,8 @@ Projection を読むのは、予定の表示の読み出し（`scheduleview` の
   - `calendar.ProjectionRules` が、行を Google の予定の形（`calendar.Event`）にして 2 つの規則を呼ぶ。`scheduleview` は `calendar` を import できないので、組み立ての場所がこの値を渡す。
   - 行の日時は DB から UTC で読むので、Asia/Tokyo のオフセットの日時にしてから規則に渡す。`RuleFromRecurrence` が、タイムゾーンの無い予定をオフセットで Asia/Tokyo かを確認するためである。
 - 利用者名とサービス内容は、取り込みと同じ規則（`gcaltitle.NormalizeClient`、`ServiceKey`）でそろえて比べる。
-- 一覧は、カレンダーごとの同期の状況（`calendar_sync_states` の最後の結果、`last_synced_at`、最後の失敗の理由）を一緒に返す。`last_synced_at` は、変わった予定を最後まで読んで当てた同期のときだけ進む。
+- 一覧は、カレンダーごとの同期の状況（`calendar_sync_states` の最後の結果、`last_synced_at`、最後の失敗の理由）を一緒に返す。
+  - `last_synced_at` は、変わった予定を最後まで読んで当てた同期のときだけ進む。
 
 #### buddy の予定に当てる規則（使わない）
 
@@ -704,14 +736,16 @@ Google の今の予定を `events.get` で読み、buddy の予定に当てて�
 - Google を読む時間の上限は 20 秒である。
 - 予定の行をロックしてから Google の予定を読む。
 - buddy で職員を替えた予定は、合わせた後に書き出しの待ちを積み直し、今の職員のカレンダーへ移させる。
-- 予定の対応のカレンダーを外していれば、409（`export_not_acceptable`）を返す。予定の職員が退職していても同じである。
+- 予定の対応のカレンダーを外していれば、409（`export_not_acceptable`）を返す。
+  - 予定の職員が退職していても同じである。
   - 予定の行をロックした後に事業所の行に共有のロックを取り、カレンダーと予定の職員を読み直してから当てる。退職でカレンダーが外れた後に、退職した職員の予定を今日以降へ動かさないためである。
 
 #### 同期の状態
 
 カレンダーの同期の状態（`calendar_sync_states`）は、最後の結果（`never`、`succeeded`、`failed`）と、失敗の理由を決まった値（`unreadable`、`unavailable`、`apply`）で持つ。  
 ログと理由に、予定のタイトル、利用者名、カレンダーの ID を出さない。  
-同期の状態の行は、モードによらず、外していない全てのカレンダーに足す。`buddy_primary` の事業所のカレンダーは同期が取らないので、行は前の結果のままになる。
+同期の状態の行は、モードによらず、外していない全てのカレンダーに足す。  
+`buddy_primary` の事業所のカレンダーは同期が取らないので、行は前の結果のままになる。
 
 ### ローカル環境と E2E の Google カレンダー
 
@@ -719,7 +753,8 @@ compose と E2E では、Google Calendar API の代わりに [calendarpit](https
 イメージは版と digest で固定する。  
 職員のカレンダーと予定は `compose/calendarpit/fixture.json` にある。  
 シードの 3 つ目の事業所（`google_primary`）の岡田 葵には、calendarpit のカレンダー `aoi.okada@example.com` を結び付けてある。  
-同期の Worker は、起動するとこのカレンダーの予定を Projection に写す。予定は fixture に置かず、確認するテストが作る。
+同期の Worker は、起動するとこのカレンダーの予定を Projection に写す。  
+予定は fixture に置かず、確認するテストが作る。
 
 ```mermaid
 flowchart LR
@@ -732,9 +767,11 @@ flowchart LR
   e2e -->|変更を渡さない| hold
 ```
 
-- calendarpit は、全ての Calendar API の要求に bearer token を求め、token の利用者が持つカレンダーだけを読ませる。サービスアカウントの token は出さない。
+- calendarpit は、全ての Calendar API の要求に bearer token を求め、token の利用者が持つカレンダーだけを読ませる。
+  - サービスアカウントの token は出さない。
   - compose の `calendarpit-authorize` が、fixture の利用者 `schedule` として同意を通す。取った refresh token を、`authorized_user` の Application Default Credentials のファイルに書く。
-- E2E は、calendarpit の管理の API（`/__calendarpit/calendars/{id}/events`）で、予定の API が書いた予定を読む。職員が Google で予定を直したときの代わりに、同じ API で予定を直す。手で確認するときは、calendarpit の管理の画面を使う。
+- E2E は、calendarpit の管理の API（`/__calendarpit/calendars/{id}/events`）で、予定の API が書いた予定を読む。
+  - 職員が Google で予定を直したときの代わりに、同じ API で予定を直す。手で確認するときは、calendarpit の管理の画面を使う。
 
 calendarpit 0.9.5 と本物の振る舞いの比べ方は、次のとおり。
 
@@ -760,8 +797,10 @@ calendarpit で足りない振る舞いと、その扱い
 | 403 の rate limit と 5xx | 残す。`gcaltest` の `Failures` と `Status` で確認する |
 | 1 つのカレンダーの予定の取得の失敗 | 中継の `cmd/gcalhold` で補う。E2E が `POST /fail` で失敗させている間は、そのカレンダーの `events.list` に 503 を返す。同期の失敗を予定のカレンダーの画面で確認するために要る |
 
-- Go のユニットテストは、`gcaltest` のフェイクのまま置き換えない。テストの中で誤りの応答とトークンの切れを作れ、Docker が要らないためである。
-- calendarpit の `syncToken` は、workspace 全体で 100 個までで、古いものから消える。消えたトークンには 410 を返すので、予定の API は全ての予定を読み直す。
+- Go のユニットテストは、`gcaltest` のフェイクのまま置き換えない。
+  - テストの中で誤りの応答とトークンの切れを作れ、Docker が要らないためである。
+- calendarpit の `syncToken` は、workspace 全体で 100 個までで、古いものから消える。
+  - 消えたトークンには 410 を返すので、予定の API は全ての予定を読み直す。
 
 ## Interface
 
