@@ -27,7 +27,7 @@ status: stable
 | 担当の職員 | 利用者を主に担当する職員 | `Patient.AssignedStaffID`、`patients.assigned_staff_id` |
 | 利用の終了 | サービスを終えた利用者の状態。利用の再開で利用中に戻せる | `Patient.EndedAt`、`patients.ended_at`、API `Patient.ended_at`、`end_service`、`resume_service`、web `Patient.ended` |
 
-予定の API の Go のパッケージ `organization` は、名前が組織に似ているが、組織とは別のものである。  
+予定の API の Go のパッケージ `organization` は、ID ブローカーの組織とは別のものである。  
 `organization` は、事業所と、その中の部署、チーム、役職、権限を持つ。
 
 ### 予定

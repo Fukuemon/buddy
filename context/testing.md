@@ -48,11 +48,12 @@ status: stable
 | web の画面から見た API（`BuddyApi`） | `src/api/fake/` のフェイク | compose の本物 |
 | web のサーバーから見た 2 つの API | MSW の handler（`apps/web/src/mocks/`、`src/test/server.ts`） | compose の本物 |
 
-E2E の Google Calendar API の置き換えは、calendarpit を次のとおりに使う。
+E2E の Google Calendar API の置き換えでの、calendarpit の使い方は次のとおり。
 
 - 予定の API は、calendarpit の予定を読み書きする。
   - 最初の予定は `compose/calendarpit/fixture.json` にある。
-  - 書いた予定と token は volume に残り、`docker compose down -v` で消える。予定は calendarpit の管理の画面で見る。
+  - 書いた予定と token は volume に残り、`docker compose down -v` で消える。
+  - 予定は calendarpit の管理の画面で見る。
 - E2E は、calendarpit の管理の API で予定を読んで直す。
   - 中継の `gcalhold` が、Google の変更を予定の API に渡さないようにする。
 - 照合の API は、同じ calendarpit の森のカレンダー（`compose/receipt-calendars.json`）を、`gcalhold` を通さずに読む。
