@@ -7,9 +7,19 @@
 | --- | --- |
 | URL | `/schedule/import` |
 | 使う人 | 職員の管理の権限を持つ職員。デフォルトはマネージャー |
-| 実装 | `apps/web/src/routes/schedule_.import.tsx`、`apps/web/src/features/calendar/components/CalendarImportContainer.tsx`、`apps/web/src/features/calendar/components/CalendarImportView.tsx`、`apps/web/src/features/calendar/components/CalendarImportForm.tsx`、`apps/web/src/features/calendar/components/CalendarImportPreview.tsx`、`apps/web/src/features/calendar/components/CalendarImportReviewItem.tsx`、`apps/web/src/features/calendar/components/CalendarImportCounts.tsx`、`apps/web/src/features/calendar/components/CalendarImportDone.tsx`、`apps/web/src/components/page/PageForbiddenMessage.tsx` |
+| 実装 | `apps/web/src/routes/schedule_.import.tsx`、`apps/web/src/features/calendar/components/CalendarImportContainer.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
+
+画面を描くコンポーネントのうち、実装の行のほかのものは次のとおり。
+
+- `apps/web/src/features/calendar/components/CalendarImportView.tsx`
+- `apps/web/src/features/calendar/components/CalendarImportForm.tsx`
+- `apps/web/src/features/calendar/components/CalendarImportPreview.tsx`
+- `apps/web/src/features/calendar/components/CalendarImportReviewItem.tsx`
+- `apps/web/src/features/calendar/components/CalendarImportCounts.tsx`
+- `apps/web/src/features/calendar/components/CalendarImportDone.tsx`
+- `apps/web/src/components/page/PageForbiddenMessage.tsx`
 
 ## 構成
 
@@ -739,7 +749,8 @@
 
 ## 切り替えの期間
 
-**概要**: 事業所が予定の正本を buddy に切り替えている間の、取り込みの期間を示す。期間は変えられない。
+**概要**: 事業所が予定の正本を buddy に切り替えている間の、取り込みの期間を示す。  
+期間は変えられない。
 
 **値のソース**: 次の文言。
 
@@ -749,7 +760,8 @@
 
 **活性条件**: 常に活性
 
-**表示条件**: 事業所が予定の正本を buddy に切り替えている間。期間の開始日と期間の終了日の代わりに出す
+**表示条件**: 事業所が予定の正本を buddy に切り替えている間。  
+期間の開始日と期間の終了日の代わりに出す
 
 ## プレビューする
 
@@ -1074,7 +1086,9 @@
 
 **活性条件**: 常に活性
 
-**表示条件**: 事業所が予定の正本を buddy に切り替えている間に、取り込みが成功した後。予定のカレンダーで見るの代わりに出す。切り替えの間の予定のカレンダーは Google カレンダーの予定を出し、取り込んだ予定を出さないためである
+**表示条件**: 事業所が予定の正本を buddy に切り替えている間に、取り込みが成功した後。  
+予定のカレンダーで見るの代わりに出す。  
+切り替えの間の予定のカレンダーは Google カレンダーの予定を出し、取り込んだ予定を出さないためである
 
 ### インタラクション
 

@@ -8,9 +8,14 @@
 | --- | --- |
 | URL | `/schedule/$scheduleId/edit`。`/schedule` の子で、カレンダーの search params を引き継ぐ |
 | 使う人 | 予定の職員の予定を編集できる職員 |
-| 実装 | `apps/web/src/routes/schedule.$scheduleId.edit.tsx`、`apps/web/src/features/schedule/components/ScheduleEditModalContainer.tsx`、`apps/web/src/features/schedule/components/ScheduleFormModal.tsx`、`apps/web/src/features/schedule/components/ScheduleForm.tsx` |
+| 実装 | `apps/web/src/routes/schedule.$scheduleId.edit.tsx`、`apps/web/src/features/schedule/components/ScheduleEditModalContainer.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
+
+画面を描くコンポーネントのうち、実装の行のほかのものは次のとおり。
+
+- `apps/web/src/features/schedule/components/ScheduleFormModal.tsx`
+- `apps/web/src/features/schedule/components/ScheduleForm.tsx`
 
 ## 構成
 

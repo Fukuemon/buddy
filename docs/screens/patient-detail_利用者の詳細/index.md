@@ -7,9 +7,19 @@
 | --- | --- |
 | URL | `/patients/$patientId` |
 | 使う人 | 職員の管理の権限を持つ職員。デフォルトはマネージャー |
-| 実装 | `apps/web/src/routes/patients_.$patientId.tsx`、`apps/web/src/features/patient/components/PatientDetailContainer.tsx`、`apps/web/src/features/patient/components/PatientDetailView.tsx`、`apps/web/src/features/patient/components/PatientEditDialog.tsx`、`apps/web/src/features/patient/components/PatientEndDialog.tsx`、`apps/web/src/features/patient/components/PatientResumeDialog.tsx`、`packages/ui/src/base/ActionMenu/ActionMenu.tsx`、`packages/ui/src/patterns/InputDialog.tsx`、`packages/ui/src/patterns/ConfirmDialog.tsx` |
+| 実装 | `apps/web/src/routes/patients_.$patientId.tsx`、`apps/web/src/features/patient/components/PatientDetailContainer.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
+
+画面を描くコンポーネントのうち、実装の行のほかのものは次のとおり。
+
+- `apps/web/src/features/patient/components/PatientDetailView.tsx`
+- `apps/web/src/features/patient/components/PatientEditDialog.tsx`
+- `apps/web/src/features/patient/components/PatientEndDialog.tsx`
+- `apps/web/src/features/patient/components/PatientResumeDialog.tsx`
+- `packages/ui/src/base/ActionMenu/ActionMenu.tsx`
+- `packages/ui/src/patterns/InputDialog.tsx`
+- `packages/ui/src/patterns/ConfirmDialog.tsx`
 
 ## 構成
 

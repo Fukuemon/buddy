@@ -7,9 +7,18 @@
 | --- | --- |
 | URL | `/schedule/link` |
 | 使う人 | 職員の管理の権限を持つ職員。デフォルトはマネージャー |
-| 実装 | `apps/web/src/routes/schedule_.link.tsx`、`apps/web/src/features/calendar/components/CalendarLinkContainer.tsx`、`apps/web/src/features/calendar/components/CalendarLinkView.tsx`、`apps/web/src/features/calendar/components/CalendarShareGuide.tsx`、`apps/web/src/features/calendar/components/CalendarLinkTable.tsx`、`apps/web/src/features/calendar/components/CalendarLinkDialog.tsx`、`apps/web/src/features/calendar/components/CalendarUnlinkDialog.tsx`、`apps/web/src/components/page/PageForbiddenMessage.tsx` |
+| 実装 | `apps/web/src/routes/schedule_.link.tsx`、`apps/web/src/features/calendar/components/CalendarLinkContainer.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
+
+画面を描くコンポーネントのうち、実装の行のほかのものは次のとおり。
+
+- `apps/web/src/features/calendar/components/CalendarLinkView.tsx`
+- `apps/web/src/features/calendar/components/CalendarShareGuide.tsx`
+- `apps/web/src/features/calendar/components/CalendarLinkTable.tsx`
+- `apps/web/src/features/calendar/components/CalendarLinkDialog.tsx`
+- `apps/web/src/features/calendar/components/CalendarUnlinkDialog.tsx`
+- `apps/web/src/components/page/PageForbiddenMessage.tsx`
 
 ## 構成
 
@@ -436,7 +445,8 @@
 
 ## 予定の正本の切り替え
 
-**概要**: 予定の正本の切り替えの画面を開くリンク。Google カレンダーで予定を管理している事業所が、予定を buddy で管理するときに使う。
+**概要**: 予定の正本の切り替えの画面を開くリンク。  
+Google カレンダーで予定を管理している事業所が、予定を buddy で管理するときに使う。
 
 **値のソース**: 「予定の正本の切り替え」
 

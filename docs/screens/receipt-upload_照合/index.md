@@ -7,9 +7,14 @@
 | --- | --- |
 | URL | `/receipt` |
 | 使う人 | 照合の権限を持つ職員。デフォルトでは、マネージャーと事務の役職の職員である |
-| 実装 | `apps/web/src/routes/receipt.index.tsx`、`apps/web/src/features/receipt/components/ReceiptCheckFormContainer.tsx`、`apps/web/src/features/receipt/components/ReceiptCheckForm.tsx`、`apps/web/src/features/receipt/components/CsvFileField.tsx` |
+| 実装 | `apps/web/src/routes/receipt.index.tsx`、`apps/web/src/features/receipt/components/ReceiptCheckFormContainer.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
+
+画面を描くコンポーネントのうち、実装の行のほかのものは次のとおり。
+
+- `apps/web/src/features/receipt/components/ReceiptCheckForm.tsx`
+- `apps/web/src/features/receipt/components/CsvFileField.tsx`
 
 ## 構成
 
