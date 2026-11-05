@@ -34,7 +34,7 @@ MISE_AQUA_GITHUB_ATTESTATIONS=false mise install aqua:cli/cli
 ### スキルとフック
 
 agent-harness のスキルとフックは apm で配置し、Git で追跡しない。  
-文書のチェックのスクリプト（`.claude/hooks/docs/`）も apm が配置する。  
+文書の編集の後のフック（`.claude/hooks/docs/`）も apm が配置する。  
 Claude Code か Codex を使うときは、clone した後の最初のセッションで、セッションの開始のフックが配置する。  
 コーディングエージェントを使わないときは、手で配置する。
 
@@ -188,14 +188,18 @@ uv run zensical build   # 出力の最後が "No issues found" になること�
     - ディレクトリを指定すると、E2E の testid の照合は流れない。
   - モックの `data-testid` を実装に合わせるときは、実装の testid を `rg -n 'data-testid' apps/web/src` で集める。
 
-文書のチェックは次の 3 つ。
+文書のチェックは次の 3 つ。  
+CI の `docs` のジョブが、pull request と develop への push で、同じ 3 つを流す。
 
 ```sh
 pnpm exec textlint "**/*.md"
-node .claude/hooks/docs/hooks/check-history.mjs
-node .claude/hooks/docs/hooks/check-links.mjs
+node scripts/check-history.mjs
+node scripts/check-links.mjs
 ```
 
+- `scripts/check-history.mjs`、`scripts/check-links.mjs`、`scripts/doc-checks.mjs` は、agent-harness の docs のパッケージから写したものである。
+  - apm が置く `.claude/hooks/docs/` は Git の外にあり、CI の機械に無いためである。
+  - `apm.yml` の docs のパッケージを上げたときは、3 つのファイルを `.claude/hooks/docs/hooks/` の同じ名前のファイルと読み比べ、変わった処理を写す。
 - textlint に指摘された語は言い換える。
 - textlint の `--fix` は使わない。
 - プロジェクトの用語と見出しの語が指摘されたときは、言い換えずに、`.textlintrc.json` の `allows` に足すかをメンテナーと決める。
@@ -271,8 +275,9 @@ pull request では、CI（[ci.yml](.github/workflows/ci.yml)）が通るまで�
 - pull request の変更が文書だけのときは、`e2e` と `go` のジョブを飛ばす。
   - 文書だけの変更は、`docs/` の下のファイルと、リポジトリの中の `*.md` だけを変えた変更である。
   - 飛ばしたジョブは、`gh pr checks` で `skipping` と表示され、`--watch` の終了コードを 1 にしない。
-  - `typescript`、`generated`、`db-docs` のジョブは飛ばさない。
+  - `typescript`、`generated`、`db-docs`、`docs` のジョブは飛ばさない。
     - `docs/screens/` の画面仕様書とモックは、文書だけの変更でも `typescript` のジョブの `pnpm check:screens` が確認する。
+    - `docs` のジョブは、[Editing Documents](#editing-documents) の文書のチェックの 3 つを流す。
 - develop への push では、`e2e` のジョブを流さず、ほかのジョブを流す。
   - push の CI は、2 つの pull request を組み合わせたときにだけ起きる失敗を見つけるために流す。
     - `typescript`、`go`、`generated` は、型、テスト、生成物の食い違いを見つける。
