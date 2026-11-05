@@ -9,24 +9,41 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | --- | --- | --- | --- |
 | ナビゲーション | 「取り込み」「要確認」「連携」を出すか | `Viewer.policyCodes` に `staff.manage` があるか（`hasPermission`） | `getMe` の `policies[].code` に `staff.manage` があるか |
 | ログインした職員 | 職員の名前 | `Viewer.staffName` | `getMe` の `username` |
-| 予定の一覧 | 行と並びと、行がどの予定か | `calendars.exportIssues` の戻り値。行がどの予定かは `CalendarExportIssue.schedule_id`、`recurring_schedule_id` | `listCalendarExportIssues` の `items`。新しく変わった順。確認が必要な書き出しは予定ごとに 1 件なので、行は単発の予定の `schedule_id` か、繰り返しの予定の `recurring_schedule_id` で 1 行に決まる |
-| 予定の日時 | 日付、時刻、繰り返しか | `CalendarExportIssue.date`、`start_time`、`end_time`、`ends_next_day`、`recurring_schedule_id` | `CalendarExportIssue` の `date`、`start_time`、`end_time`、`ends_next_day`、`recurring_schedule_id`。繰り返しの予定の `date` は最初の回の日付 |
+| 予定の一覧 | 行と並びと、行がどの予定か | `calendars.exportIssues` の戻り値と、`CalendarExportIssue.schedule_id`、`recurring_schedule_id` | `listCalendarExportIssues` の `items` |
+| 予定の日時 | 日付、時刻、繰り返しか | `CalendarExportIssue.date`、`start_time`、`end_time`、`ends_next_day`、`recurring_schedule_id` | `CalendarExportIssue` の `date`、`start_time`、`end_time`、`ends_next_day`、`recurring_schedule_id` |
 | 職員 | 職員の名前 | `CalendarExportIssue.staff_name` | `CalendarExportIssue` の `staff_name` |
-| 理由 | 理由ごとの文 | `CalendarExportIssue.error_code`、`status`、`acceptable`、`recurring_schedule_id` | `CalendarExport` の `error_code`（`precondition_failed`、`not_found`、`forbidden`、`rejected`、`unavailable`、`unappliable`）と `status`（`conflict`、`failed`）。`precondition_failed` は、`CalendarExportIssue` の `acceptable` と `recurring_schedule_id` でも文を分ける。単発の予定で `acceptable` が false なのは、buddy でキャンセルした予定である |
+| 理由 | 理由ごとの文 | `CalendarExportIssue.error_code`、`status`、`acceptable`、`recurring_schedule_id` | `CalendarExport` の `error_code` と `status`、`CalendarExportIssue` の `acceptable` と `recurring_schedule_id` |
 | 最後に変わった日時 | 日時 | `CalendarExportIssue.updated_at` | `CalendarExport` の `updated_at` |
-| 予定の確認のダイアログ | どの予定を開いたか | 押した行の `CalendarExportIssue` | `listCalendarExportIssues` の `items` の 1 件。ダイアログを開くときに API は呼ばない |
-| ダイアログの予定の日時、ダイアログの職員、ダイアログの最後に変わった日時、ダイアログの理由 | 一覧の行と同じ値 | 一覧の行と同じ項目 | 一覧の行と同じ項目 |
+| 予定の確認のダイアログ | どの予定を開いたか | 押した行の `CalendarExportIssue` | `listCalendarExportIssues` の `items` の 1 件 |
+| ダイアログの予定の日時 | 一覧の行と同じ値 | 一覧の行と同じ項目 | 一覧の行と同じ項目 |
+| ダイアログの職員 | 一覧の行と同じ値 | 一覧の行と同じ項目 | 一覧の行と同じ項目 |
+| ダイアログの最後に変わった日時 | 一覧の行と同じ値 | 一覧の行と同じ項目 | 一覧の行と同じ項目 |
+| ダイアログの理由 | 一覧の行と同じ値 | 一覧の行と同じ項目 | 一覧の行と同じ項目 |
 | Google の内容に合わせる | 出すか | `CalendarExportIssue.acceptable` と、`Facility.sourceMode` が `google_primary` か | `CalendarExportIssue` の `acceptable` と、`getFacility` の `Facility.source_mode` |
-| 予定を開く | 出すかと、移る先の予定 | `CalendarExportIssue.schedule_id` | `CalendarExport` の `schedule_id`。繰り返しの予定では `null` |
+| 予定を開く | 出すかと、移る先の予定 | `CalendarExportIssue.schedule_id` | `CalendarExport` の `schedule_id` |
 | buddy の内容で書き直す | なし | `CalendarExportIssue.id` | `CalendarExport` の `id` |
 | 書き直す予定 | 日時と職員の名前 | `CalendarExportIssue` の日時の項目と `staff_name` | 予定の日時と職員と同じ |
-| 書き直すときの注意 | buddy でキャンセルした単発の予定か | `CalendarExportIssue.status`、`error_code`、`acceptable`、`recurring_schedule_id` | `CalendarExportIssue` の `status`、`error_code`、`acceptable`、`recurring_schedule_id`。`status` が `conflict`、`error_code` が `precondition_failed` か `not_found`、`acceptable` が false、`recurring_schedule_id` が `null` なら、buddy でキャンセルした単発の予定である |
+| 書き直すときの注意 | buddy でキャンセルした単発の予定か | `CalendarExportIssue.status`、`error_code`、`acceptable`、`recurring_schedule_id` | `CalendarExportIssue` の `status`、`error_code`、`acceptable`、`recurring_schedule_id` |
 | ダイアログの書き直す | 書き直す待ちにした書き出し | `calendars.retryExport` の戻り値 | `createCalendarExportRetry` のレスポンスの `CalendarExport` |
 | 読み込みの失敗の文 | 権限で拒まれたか | `ApiError.status` | レスポンスの status |
 | 書き直しの失敗の文 | 理由ごとの文 | `ApiError.status`、`ApiError.code` | レスポンスの status と `Error.code` |
 | 合わせる予定 | 日時と職員の名前 | `CalendarExportIssue` の日時の項目と `staff_name` | 予定の日時と職員と同じ |
 | ダイアログの合わせる | 合わせて終えた書き出し | `calendars.acceptExport` の戻り値 | `createCalendarExportAcceptance` のレスポンスの `CalendarExport` |
 | 合わせるの失敗の文 | 理由ごとの文 | `ApiError.status`、`ApiError.code` | レスポンスの status と `Error.code` |
+
+表の項目の値と、値から表示を決める規則は次のとおり。
+
+- 予定の一覧の `items` は、新しく変わった順に並ぶ。
+  - 確認が必要な書き出しは予定ごとに 1 件なので、行は単発の予定の `schedule_id` か、繰り返しの予定の `recurring_schedule_id` で 1 行に決まる。
+- 繰り返しの予定の `date` は、最初の回の日付である。
+- 理由の文は、`error_code`（`precondition_failed`、`not_found`、`forbidden`、`rejected`、`unavailable`、`unappliable`）と `status`（`conflict`、`failed`）で分ける。
+  - `precondition_failed` は、`CalendarExportIssue` の `acceptable` と `recurring_schedule_id` でも文を分ける。
+  - 単発の予定で `acceptable` が false なのは、buddy でキャンセルした予定である。
+- 予定の確認のダイアログを開くときに、API は呼ばない。
+- 予定を開くの `schedule_id` は、繰り返しの予定では `null` になる。
+- 書き直すときの注意は、buddy でキャンセルした単発の予定に出す。
+  - buddy でキャンセルした単発の予定は、`status` が `conflict` で、`error_code` が `precondition_failed` か `not_found` の予定である。
+  - そのうえ、`acceptable` が false で、`recurring_schedule_id` が `null` になる。
 
 - 「Google の内容に合わせる」は、`acceptable` が true で、事業所の `source_mode` が `google_primary` のときだけ出す。
   - 事業所は `getFacility`（`GET /v1/facilities/{facility_id}`）で読み、web の `BuddyApi.facilities.get` が `Facility` にする。
@@ -39,20 +56,22 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 
 | 状態 | 出す文 | 要因 |
 | --- | --- | --- |
-| 権限が無い | 「この画面を開く権限がありません」 | `getMe` の `policies[].code` に `staff.manage` が無い。web は、ほかの操作を呼ばない |
+| 権限が無い | 「この画面を開く権限がありません」 | `getMe` の `policies[].code` に `staff.manage` が無い |
 | 読み込みの失敗 | 「この操作をする権限がありません。」 | `listCalendarExportIssues` が 403 |
-| 読み込みの失敗 | 「確認が必要な予定を読み込めませんでした。時間をおいて、読み直してください。」 | `listCalendarExportIssues` が 403 以外の失敗。API に届かないときを含む |
+| 読み込みの失敗 | 「確認が必要な予定を読み込めませんでした。時間をおいて、読み直してください。」 | `listCalendarExportIssues` が 403 でない status で失敗したか、API に届かない |
 | 書き直しの失敗 | 「この操作をする権限がありません。」 | `createCalendarExportRetry` が 403 |
 | 書き直しの失敗 | 「この予定は、すでに書き直しを始めたか、書き直し終えています。一覧を読み直してください。」 | `createCalendarExportRetry` が 409 `export_not_in_review` か 404 `not_found` |
-| 書き直しの失敗 | 「書き直せませんでした。時間をおいて、もう一度書き直してください。」 | `createCalendarExportRetry` のほかの失敗。API に届かないときを含む |
+| 書き直しの失敗 | 「書き直せませんでした。時間をおいて、もう一度書き直してください。」 | `createCalendarExportRetry` がほかの理由で失敗したか、API に届かない |
 | 合わせるの失敗 | 「この操作をする権限がありません。」 | `createCalendarExportAcceptance` が 403 |
 | 合わせるの失敗 | 「この予定は、すでに書き直しを始めたか、書き直し終えています。一覧を読み直してください。」 | `createCalendarExportAcceptance` が 409 `export_not_in_review` か 404 `not_found` |
-| 合わせるの失敗 | 「この予定は、Google カレンダーの内容に合わせられません。buddy の内容で書き直してください。」 | `createCalendarExportAcceptance` が 409 `export_not_acceptable`。事業所が buddy を予定の正本にしているときも、この code で拒む |
+| 合わせるの失敗 | 「この予定は、Google カレンダーの内容に合わせられません。buddy の内容で書き直してください。」 | `createCalendarExportAcceptance` が 409 `export_not_acceptable` |
 | 合わせるの失敗 | 「Google カレンダーの予定を、buddy の予定として取り込めません。終日の予定か、タイトルの利用者が見つからない予定です。buddy の内容で書き直すか、Google カレンダーで直すよう職員に頼んでください。」 | `createCalendarExportAcceptance` が 409 `external_change_unappliable` |
 | 合わせるの失敗 | 「Google カレンダーを読めません。カレンダーの共有が外れていないかを、職員に確認してください。」 | `createCalendarExportAcceptance` が 422 `calendar_unreadable` |
 | 合わせるの失敗 | 「この事業所では、まだ Google カレンダーを使う準備ができていません。事業所の管理者に、設定を頼んでください。」 | `createCalendarExportAcceptance` が 503 `calendar_not_configured` |
-| 合わせるの失敗 | 「Google カレンダーの内容に合わせられませんでした。時間をおいて、もう一度試してください。」 | `createCalendarExportAcceptance` のほかの失敗。502 `calendar_unavailable`、API に届かないときを含む |
+| 合わせるの失敗 | 「Google カレンダーの内容に合わせられませんでした。時間をおいて、もう一度試してください。」 | `createCalendarExportAcceptance` が 502 `calendar_unavailable` かほかの理由で失敗したか、API に届かない |
 
+- 権限が無いときは、web は、ほかの操作を呼ばない。
+- `export_not_acceptable` は、事業所が buddy を予定の正本にしているときにも返る。
 - 文を選ぶ処理は、`apps/web/src/features/calendar/lib/errorMessage.ts` にある。
   - `loadErrorMessage`、`rewriteErrorMessage`、`acceptErrorMessage` が文を選ぶ。
 
@@ -62,10 +81,15 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 
 | operationId | メソッドとパス | リクエスト | 成功のレスポンス | エラー |
 | --- | --- | --- | --- | --- |
-| `listCalendarExportIssues` | `GET /v1/facilities/{facility_id}/calendar_export_issues` | なし | 200。`items` に `CalendarExportIssue` の配列 | なし |
-| `createCalendarExportRetry` | `POST /v1/calendar_exports/{calendar_export_id}/retries` | なし | 202。`CalendarExport` | 404 `not_found`: 書き出しが無い。409 `export_not_in_review`: 確認が必要な書き出しでない。すでに書き直す待ちにしたか、書き終えた |
-| `createCalendarExportAcceptance` | `POST /v1/calendar_exports/{calendar_export_id}/acceptances` | なし | 200。`status` が `succeeded` の `CalendarExport` | 404 `not_found`。409 `export_not_in_review`、`export_not_acceptable`（`acceptable` が false）、`external_change_unappliable`（Google の予定を読み替えられない）。422 `calendar_unreadable`、502 `calendar_unavailable`、503 `calendar_not_configured` |
+| `listCalendarExportIssues` | `GET /v1/facilities/{facility_id}/calendar_export_issues` | なし | 200 と、`items` に `CalendarExportIssue` の配列 | なし |
+| `createCalendarExportRetry` | `POST /v1/calendar_exports/{calendar_export_id}/retries` | なし | 202 と `CalendarExport` | 404 `not_found`、409 `export_not_in_review` |
+| `createCalendarExportAcceptance` | `POST /v1/calendar_exports/{calendar_export_id}/acceptances` | なし | 200 と、`status` が `succeeded` の `CalendarExport` | 404 `not_found`、409 `export_not_in_review`、`export_not_acceptable`、`external_change_unappliable`、422 `calendar_unreadable`、502 `calendar_unavailable`、503 `calendar_not_configured` |
 
+- エラーの code の意味は次のとおり。
+  - `not_found`: 書き出しが無い。
+  - `export_not_in_review`: 確認が必要な書き出しでない。すでに書き直す待ちにしたか、書き終えた。
+  - `export_not_acceptable`: `acceptable` が false である。
+  - `external_change_unappliable`: Google の予定を読み替えられない。
 - `listCalendarExportIssues` は、書き出しのうち `status` が `conflict` か `failed` のものを返す。
   - 予定のタイトル、利用者名、カレンダーの ID は返さない。
 - `CalendarExport` は、`id`、`schedule_id`、`recurring_schedule_id`、`status`、`error_code`、`attempts`、`updated_at` を持つ。
