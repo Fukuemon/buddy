@@ -436,7 +436,7 @@ sequenceDiagram
 - 常駐の形では、取れるものが無くなるまで続けて取ってから、`GOOGLE_CALENDAR_EXPORT_INTERVAL` を待つ。
   - 待ちを取れなかったときは、間隔を待ってから取り直す。止める合図を受けたら、新しく取らない。
   - 常駐と 1 回の形の繰り返しは `cmd/calendar-worker` が持ち、`Exporter` は 1 回の取得と処理（`ExportDue`）だけを持つ。
-  - ADR-0022: [Worker の常駐と 1 回の繰り返しを cmd/calendar-worker に集め、機能のパッケージは 1 回の処理だけを持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0022-calendar-worker-loop.md)
+  - ADR-0021: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0021-calendar-worker.md)
 - 結果は、取ったときの回数（`attempts`）と比べて書き、期限が切れた後にほかの Worker が取り直した待ちを変えない。
   - 外部の API はトランザクションの外で呼ぶ。
 - 止める合図で書けなかった待ちは、書こうとした回数に数えずに返す。

@@ -188,8 +188,8 @@ func (o Leave) Do(ctx context.Context, id string, in LeaveInput) (StatusChange, 
 常駐の処理と、操作の型以外で操作を持つ型（`calendarexport` の `Exporter`、`Outbox`、`calendarsync` の `Syncer`、`visit` の `Writer`）は、1 つの型が 1 つの役割を持つ型にする。
 
 - これらの型は、同じ集約のリポジトリと規則を使うので、同じ機能のパッケージに置く。
-- 常駐と 1 回の繰り返しの配置先は ADR-0022 にある。
-  - ADR-0022: [Worker の常駐と 1 回の繰り返しを cmd/calendar-worker に集め、機能のパッケージは 1 回の処理だけを持つ](0022-calendar-worker-loop.md)
+- 常駐と 1 回の繰り返しの配置先は ADR-0021 にある。
+  - ADR-0021: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](0021-calendar-worker.md)
 
 照合の API と ID ブローカーには、次のとおり当てる。
 

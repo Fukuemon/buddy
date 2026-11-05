@@ -143,7 +143,7 @@ PRD の 4 つの業務の領域は、次のコンテナが持つ。
 - 書き出し（`calendar-worker export`）は、予定の API が積んだ書き出しの待ちを読み、Google カレンダーに書く。
 - 同期（`calendar-worker sync`）は、Google カレンダーを正本にする事業所のカレンダーの変わった予定を読み、予定の写しに当てる。
 - 持たないもの: 予定の API の HTTP の操作と認証。
-  - ADR-0021: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで動かす](../adr/0021-calendar-worker.md)
+  - ADR-0021: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](../adr/0021-calendar-worker.md)
 - 役割ごとのプロセス、多重起動、止め方は、[基盤と運用の Calendar Worker](https://github.com/Fukuemon/buddy/blob/develop/context/operations.md#calendar-worker) にある。
 
 ### 照合の API
