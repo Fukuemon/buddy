@@ -12,6 +12,7 @@ watch = [
   "services/schedule/internal/features/staff/DesignDoc.md",
   "services/receipt/DesignDoc.md",
   "services/broker/DesignDoc.md",
+  "apps/web/src/features/schedule/DesignDoc.md",
   "packages/ui/DESIGN.md",
   "packages/e2e/DesignDoc.md",
 ]
@@ -33,6 +34,7 @@ nav = [
     { "Google カレンダーとの連携" = "design/services/schedule-calendar.md" },
     { "権限" = "design/services/schedule-access.md" },
     { "職員の管理" = "design/services/schedule-staff.md" },
+    { "予定の画面" = "design/apps/web-schedule.md" },
     { "レセプトの照合" = "design/services/receipt.md" },
     { "ID ブローカー" = "design/services/broker.md" },
     { "E2E のテストのコード" = "design/packages/e2e.md" },
