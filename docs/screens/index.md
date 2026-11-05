@@ -27,7 +27,7 @@
 | `receipt-result` | `/receipt/result` | [照合の結果](receipt-result_照合の結果/index.md) |
 | `account-login` | `/auth/login` | [ログイン](account-login_ログイン/index.md) |
 | `account-error` | `/auth/error` | [ログインの失敗](account-error_ログインの失敗/index.md) |
-| `account-profile` | 未決 | プロフィールの仕様書は無い |
+| `account-profile` | `/me` | [自分の情報](account-profile_自分の情報/index.md) |
 
 - 役職と権限の対応は、[PRD の役職ごとの権限](../PRD.md#役職ごとの権限) にある。
 - 予定の作成、詳細、編集は、予定のカレンダーの上にモーダルとして重ねて出す。
@@ -173,6 +173,9 @@ flowchart TB
   patient -- "利用の終了の確認の、残る予定" --> scheduleDetail
   list -- "ナビゲーションの「カレンダー」" --> calendar
 ```
+
+自分の情報の画面は、ヘッダーを出す全ての画面の、アカウントのメニューの「自分の情報」から開く。  
+職員の管理の権限を持つ職員は、自分の情報の「職員の詳細を開く」で、自分の職員の詳細へ移れる。
 
 ログアウトすると `/` へ移り、ログインしていないので、`/` からそのままログインへ進む。  
 ログインした後は、`/` を経て予定のカレンダーに戻る。  

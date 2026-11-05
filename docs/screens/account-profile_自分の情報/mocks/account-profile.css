@@ -1,0 +1,92 @@
+/* 自分の情報のモックだけの見た目。状態をまたいで使う。幅による切り替えは @container screen で書く */
+.ap-section {
+  display: grid;
+  gap: 12px;
+  padding: 16px 20px;
+}
+
+.ap-section p {
+  margin: 0;
+}
+
+.ap-h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.ap-muted {
+  color: var(--wf-muted);
+}
+
+/* 左に名前の頭文字の丸を、右に名前とメールアドレスを縦に置く */
+.ap-person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ap-person__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ap-avatar {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  font-size: 18px;
+}
+
+.ap-name {
+  font-size: 17px;
+}
+
+/* 項目の名前と値の組 */
+.ap-dl {
+  display: grid;
+  grid-template-columns: 10em 1fr;
+  gap: 12px 16px;
+  margin: 0;
+}
+
+.ap-dl dt {
+  color: var(--wf-muted);
+}
+
+.ap-dl dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* 持っている権限。1 行目に権限の名前、対象を持つ権限だけ 2 行目に対象を置く。どの幅でも同じ形にする */
+.ap-policy-items {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ap-policy-item {
+  display: grid;
+  gap: 2px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--wf-line-soft);
+}
+
+.ap-policy-item__targets {
+  color: var(--wf-muted);
+  font-size: 12px;
+}
+
+@container screen (width < 768px) {
+  .ap-dl {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .ap-dl dd {
+    margin-bottom: 10px;
+  }
+}
