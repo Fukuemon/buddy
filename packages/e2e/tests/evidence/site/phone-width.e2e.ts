@@ -126,8 +126,6 @@ test.describe('スマートフォンの幅', () => {
     test(`${prefix}幅 390px で照合の結果を開いた場合、表の中の横送りを除いてページが横にスクロールしないこと`, async ({
       browser,
     }) => {
-      // 表の空のセルの読み上げ用の文字が表の箱で切り取られず、ページが 1647px に広がる（#701）。直ったら外す
-      test.fail()
       await recordPrEvidence(
         browser,
         {
@@ -153,10 +151,9 @@ test.describe('スマートフォンの幅', () => {
 
           await step('(撮影のため、ページを右端まで横に送る)')
           await page.evaluate(() => window.scrollTo(document.documentElement.scrollWidth, 0))
-          await check(
-            'ページが横にスクロールしない。#701 が直るまでは、表の右の何も無い領域までページが送れる',
-          )
           await expectNoHorizontalScroll(page)
+          await expect.poll(() => page.evaluate(() => window.scrollX)).toBe(0)
+          await check('ページが横にスクロールしない。結果の表は表の箱の中で横に送る')
         },
       )
     })
