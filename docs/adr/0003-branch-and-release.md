@@ -114,9 +114,3 @@ API と画面のバージョンは別々に進むので、API の互換を次の
 - リリースの仕組みが無い間は、タグを手で付ける。
 - 互換なしの変更では、古いパスと新しいパスを並べて持つ期間がある。
 - 非公開のインフラは、2 つの API を `schedule` と `receipt` の名前で設定する必要がある。
-
-## 統合した ADR
-
-- ADR-0003: git flow でマージし、アプリごとのバージョンでリリースする（[統合の前](https://github.com/Fukuemon/buddy/blob/0c5d348b6c562f7032c46ef7a5faaca6725a6a68/docs/adr/0003-branch-and-release.md)）
-- ADR-0010: 2 つの API を services/ に置き、画面と API をトップのディレクトリで分ける（[統合の前](https://github.com/Fukuemon/buddy/blob/0c5d348b6c562f7032c46ef7a5faaca6725a6a68/docs/adr/0010-services-directory.md)）
-- ADR-0011: 2 つの API のサービスの名前とトークンの aud を、ディレクトリの名前にそろえる（[統合の前](https://github.com/Fukuemon/buddy/blob/0c5d348b6c562f7032c46ef7a5faaca6725a6a68/docs/adr/0011-service-names.md)）

@@ -1,4 +1,4 @@
-# ADR-0004: デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にし、カタログをドキュメントサイトと同じ Worker で誰でも開けるように出す
+# ADR-0004: デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にし、カタログをドキュメントサイトと同じ Worker で出す
 
 ## Status
 
@@ -147,9 +147,9 @@ apps/web は packages/ui に依存するので、依存の向きを変えずに 
 - カタログのページは、はじめに、トークン、コンポーネント、パターン、画面の 5 つに分ける。DADS のサイトと SmartHR Design System のように、原則とトークンとコンポーネントの使い方を読めるサイトにする。
   - 出典: [SmartHR Design System](https://smarthr.design/)
 - title は、ファイルの配置先から機械的に決める。規則は DESIGN.md にある。
-- カタログに載せるのは、コンポーネントとダミーデータだけにする。サイトは誰でも開けるので、実際のデータを載せない。
+- カタログに載せるのは、コンポーネントとダミーデータだけにする。サイトを開ける人の範囲は変わりうるので、実際のデータを載せない。
 
-### ドキュメントサイトは、develop に入ったときだけ、誰でも開けるように出す
+### ドキュメントサイトは、develop に入ったときだけ出す
 
 カタログは、ドキュメントサイトと 1 つの Cloudflare Worker の静的なファイルとして出す（`/storybook/`）。デプロイの構成は `apps/docs-site/README.md` にある。
 
@@ -161,7 +161,6 @@ flowchart TB
     push["develop への push"] --> env["environment docs-site のジョブ（develop だけが使える）"]
     env --> build["pnpm site:build で文書、カタログ、ER 図を組み立てる"]
     build --> deploy["secret の Cloudflare のトークンで、Worker buddy-docs に本番として出す"]
-    deploy --> check["ログインなしで文書、カタログ、ER 図を開けることを確認する"]
 ```
 
 - pull request ごとのプレビューは出さない。Cloudflare のトークンを、pull request のコードから読めないようにするためである。
@@ -170,8 +169,6 @@ flowchart TB
   - トークンは、Worker の中身を書き換えられるためである。
   - トークンの範囲はこの Worker に絞り、漏れたときに書き換えられるものを、このサイトの中身と設定に限る。
 - ワークフローは、パッケージ docs-site のテンプレートを元にする。
-- ドキュメントサイトは Cloudflare Access で守らず、誰でも開けるようにする。リポジトリを public にしたので、サイトの中身はすでに誰でも読めるためである。
-  - 本番に出した後の確認は、リダイレクトをたどらずに取った応答に、文書、カタログ、ER 図のそれぞれの中身にだけある文字列があるかで行う。Access を掛け直したときや、公開した中身が欠けたときに失敗する。
 
 ## Considered Options
 
@@ -213,9 +210,8 @@ flowchart TB
 
 | 選択肢 | 強み | 弱み |
 | --- | --- | --- |
-| **採用:** ドキュメントサイトと 1 つの Worker にまとめ、Access で守らず、develop に入ったときだけ出す | 誰でもログインなしで読める。Access の設定と保護の確認を保たなくてよい。トークンを develop の実行だけが読める | サイトの URL が検索に載りうる。文書の見た目は、マージする前にローカルの `pnpm site:build` か `zensical serve` で確認する |
+| **採用:** ドキュメントサイトと 1 つの Worker にまとめ、develop に入ったときだけ出す | トークンを develop の実行だけが読める | 文書の見た目は、マージする前にローカルの `pnpm site:build` か `zensical serve` で確認する |
 | ドキュメントサイトとカタログを、別々の Worker に出す | 変えた方だけを出せる | Worker の作成、URL、設定が 2 つずつになる。文書からカタログへ相対のリンクで行き来できない |
-| Access を残す | 開ける人を絞れる | 中身はリポジトリで誰でも読めるので、絞っても隠せるものがない。読む人にログインを求め続ける |
 | pull request ごとのプレビューを残し、トークンをリポジトリの単位の secret に置く | マージする前に、公開した形で確認できる | 書き込みの権限を持つ人が、ワークフローを書き換えてトークンを読める |
 | サイトをやめ、リポジトリの Markdown だけを読ませる | Cloudflare のアカウントとトークンが要らない | カタログと ER 図は組み立てた成果物で、リポジトリでは読めない。文書の検索と目次がなくなる |
 
@@ -240,7 +236,7 @@ flowchart TB
 - 画面の全ての文字が白の面で 4.5:1 以上、入力欄の枠とフォーカスの表示が 3:1 以上になる。主の色も、白の文字で 4.5:1 以上を保つ。
 - 画面は Tailwind のユーティリティで意味のトークンしか書けなくなり、色の値を直に書くと見つけられる。
 - 主のボタン、リンク、選択、ドキュメントサイトのアクセントが、もともとのデザイン案と同じ色相にそろう。
-- 原則、トークン、コンポーネント、画面を 1 つのカタログで読める。誰でもログインなしで、文書、カタログ、ER 図を読める。
+- 原則、トークン、コンポーネント、画面を 1 つのカタログで読める。
 - Cloudflare のトークンを読めるのは、develop の実行だけになる。
 - コントラストの計算と、トークンの CSS の生成と、サイトの組み立てを、同じパッケージの手順で更新できる。
 
@@ -250,12 +246,4 @@ flowchart TB
 - 背景を指定しない要素は canvas の色になる。白にする要素には `bg-surface` を付ける。
 - pull request の段階で、公開した形のサイトを確認できない。
 - コントラストのチェックは `pnpm --filter @buddy/ui test` では流れない。トークンを変えたら `pnpm check:contrast` を流す。
-- サイトの URL が検索に載りうる。リポジトリを private に戻すときは、Worker に Access を掛け直し、ワークフローの確認を保護の確認に戻す。
 - story のデータを作る人が、ダミーデータに限る規則を守る必要がある。
-
-## 統合した ADR
-
-- ADR-0004: デザインシステムのトークンとコンポーネントの配置先（[統合の前](https://github.com/Fukuemon/buddy/blob/24bb45dd420e8bbbf41d4ae71205171b39943e66/docs/adr/0004-design-system.md)）
-- ADR-0014: キーの色を light-blue にし、画面の背景だけ DADS に無い値を持つ（[統合の前](https://github.com/Fukuemon/buddy/blob/24bb45dd420e8bbbf41d4ae71205171b39943e66/docs/adr/0014-key-color-and-canvas.md)）
-- ADR-0018: ドキュメントサイトのプレビューをやめ、トークンの組のコントラストを pnpm check:contrast で確認する（[統合の前](https://github.com/Fukuemon/buddy/blob/24bb45dd420e8bbbf41d4ae71205171b39943e66/docs/adr/0018-docs-site-publish-and-contrast-check.md)）
-- ADR-0019: ドキュメントサイトを Cloudflare Access で守らず、誰でも開けるようにする（[統合の前](https://github.com/Fukuemon/buddy/blob/24bb45dd420e8bbbf41d4ae71205171b39943e66/docs/adr/0019-docs-site-without-access.md)）

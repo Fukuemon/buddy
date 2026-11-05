@@ -5,7 +5,7 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 トークンの段の分け方、コンポーネントの配置先、カタログの組み方を決めた理由は ADR-0004 にある。
 
 - 出典: [デジタル庁デザインシステム](https://design.digital.go.jp/dads/)
-- ADR-0004: [デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にし、カタログをドキュメントサイトと同じ Worker で誰でも開けるように出す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0004-design-system.md)
+- ADR-0004: [デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にし、カタログをドキュメントサイトと同じ Worker で出す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0004-design-system.md)
 
 トークンとコンポーネントの見た目と使い方は、[カタログ（Storybook）](https://buddy-docs.emon-apps.workers.dev/storybook/)で見る。  
 ローカルでは `pnpm --filter @buddy/web storybook` で開く。
@@ -97,7 +97,7 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 
 背景を指定しない要素は `surface-canvas` の色になるので、カード、表、入力欄には `bg-surface` を付ける。
 
-- ADR-0004: [デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にし、カタログをドキュメントサイトと同じ Worker で誰でも開けるように出す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0004-design-system.md)
+- ADR-0004: [デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にし、カタログをドキュメントサイトと同じ Worker で出す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0004-design-system.md)
 
 `*-surface` の面の上の文字は、同じ系統の文字の色（`danger-surface` の上なら `danger`）か `text` にする。  
 どちらも 4.5:1 以上になる。
