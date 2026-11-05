@@ -1,11 +1,9 @@
-import type { ExternalCalendar, ImportReviewItem, ImportSkippedItem } from '#/api/types'
+import type { ImportReviewItem, ImportSkippedItem } from '#/api/types'
+import { formatDate } from '#/components/lastImport'
+
+export { formatDateRange, formatDateTime, formatLastImport } from '#/components/lastImport'
 
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'] as const
-
-const pad = (value: number) => String(value).padStart(2, '0')
-
-/** `YYYY-MM-DD` を「2026/11/04」の形にする。 */
-const formatDate = (date: string) => date.replaceAll('-', '/')
 
 /** `YYYY-MM-DD` を「2026/11/04（水）」の形にする。 */
 export const formatDateWithWeekday = (date: string) => {
@@ -14,24 +12,7 @@ export const formatDateWithWeekday = (date: string) => {
   return `${formatDate(date)}（${WEEKDAYS[weekday]}）`
 }
 
-/** 期間を「2026/11/01〜2026/11/30」の形にする。終わりの無い期間（切り替えの取り込み）は「2026/11/01〜」にする。 */
-export const formatDateRange = (start: string, end: string | null | undefined) =>
-  `${formatDate(start)}〜${end == null ? '' : formatDate(end)}`
-
 const formatTime = (time: string) => time.slice(0, 5)
-
-/** オフセットつきの日時を、デバイスの時間帯で「2026/10/20 15:42」の形にする。 */
-export const formatDateTime = (iso: string) => {
-  const date = new Date(iso)
-  return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
-
-/** カレンダーの最後の取り込みを「2026/10/20 15:42（2026/10/01〜2026/10/31）」の形にする。取り込んだことが無ければ「なし」。 */
-export const formatLastImport = (run: ExternalCalendar['last_import']) => {
-  if (run === null) return 'なし'
-  const failed = run.status === 'failed' ? '（失敗）' : ''
-  return `${formatDateTime(run.finished_at ?? run.started_at)}${failed}（${formatDateRange(run.range_start, run.range_end)}）`
-}
 
 /** 確認が必要な予定の日時を「2026/11/04（水）10:00〜11:00」の形にする。終了が翌日の予定は「22:00〜翌 01:00」にする。 */
 export const formatReviewDateTime = (item: ImportReviewItem) =>

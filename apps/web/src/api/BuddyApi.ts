@@ -90,6 +90,16 @@ export interface BuddyApi {
     get(facilityId: FacilityId): Promise<Facility>
   }
   /**
+   * ログインした職員の自分の情報。どの操作も権限を求めない。
+   * facilityId はログインした職員の事業所で、ほかの事業所を指すと status が 403 の ApiError を投げる。
+   */
+  me: {
+    /** ログインした職員と、持っている権限を返す。 */
+    get(facilityId: FacilityId): Promise<StaffDetail>
+    /** ログインした職員に結び付いた、外していないカレンダーを、最後の取り込みを付けて返す。結び付いていなければ null を返す。 */
+    externalCalendar(facilityId: FacilityId): Promise<ExternalCalendar | null>
+  }
+  /**
    * 予定。google_primary の事業所では、list は同期が写した Google カレンダーの予定（fromGoogleCalendar が true）を返し、
    * get は status が 404 の、create と update は status が 409 で code が google_primary の ApiError を投げる。
    */

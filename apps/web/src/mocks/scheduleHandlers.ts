@@ -34,6 +34,14 @@ export const createScheduleHandlers = (baseUrl: string) => {
       withAuth(({ response }) => response(200).json(mockMe)),
     ),
     http.get(
+      '/v1/me/external_calendar',
+      withAuth(({ response }) =>
+        response(200).json({
+          external_calendar: mockExternalCalendars.find((c) => c.staff_id === mockMe.id) ?? null,
+        }),
+      ),
+    ),
+    http.get(
       '/v1/facilities/{facility_id}',
       withAuth(({ response }) => response(200).json(mockFacility)),
     ),

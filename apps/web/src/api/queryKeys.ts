@@ -34,6 +34,12 @@ export const queryKeys = {
   /** 事業所そのもの（名前と予定の正本）。予定の画面とカレンダーの画面で cache を共有する。 */
   facilityDetail: (facilityId: FacilityId) => [...facility(facilityId), 'detail'] as const,
 
+  /** 自分の情報の画面が読む、ログインした職員の詳細と、結び付いたカレンダー。 */
+  me: {
+    detail: (facilityId: FacilityId) => [...facility(facilityId), 'me', 'detail'] as const,
+    calendar: (facilityId: FacilityId) => [...facility(facilityId), 'me', 'calendar'] as const,
+  },
+
   departments: (facilityId: FacilityId) => [...facility(facilityId), 'departments'] as const,
   teams: (facilityId: FacilityId) => [...facility(facilityId), 'teams'] as const,
   positions: (facilityId: FacilityId) => [...facility(facilityId), 'positions'] as const,

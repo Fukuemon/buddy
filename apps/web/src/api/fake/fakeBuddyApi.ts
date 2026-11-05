@@ -234,6 +234,13 @@ export const createFakeBuddyApi = ({
         return { id: mockFacility.id, name: mockFacility.name, sourceMode: mode }
       },
     },
+    me: {
+      get: (facilityId) => staffApi.staff.get(facilityId, FAKE_VIEWER.staffId),
+      externalCalendar: async (facilityId) => {
+        assertFacility(facilityId)
+        return [...calendars.values()].find((c) => c.staff_id === FAKE_VIEWER.staffId) ?? null
+      },
+    },
     schedules: {
       list: async (facilityId, { from, to, staffIds, includeCancelled }) => {
         assertFacility(facilityId)
