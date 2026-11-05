@@ -258,6 +258,7 @@ func calendarApp(
 	return httpapi.CalendarApp{
 		ServiceAccount: calendar.NewServiceAccount(accounts, guard).Do,
 		List:           calendar.NewList(calendars, guard).Do,
+		Mine:           calendar.NewMine(calendars).Do,
 		Check:          calendar.NewCheck(accounts, guard).Do,
 		Link:           calendar.NewLink(accounts, staffRefs, locks, calendars, tx, ids, guard).Do,
 		Unlink:         calendar.NewUnlink(calendars, guard).Do,

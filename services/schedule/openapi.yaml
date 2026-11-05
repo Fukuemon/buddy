@@ -839,6 +839,34 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "500": { $ref: "#/components/responses/InternalError" }
 
+  /v1/me/external_calendar:
+    get:
+      tags: [calendar]
+      operationId: getMyExternalCalendar
+      summary: トークンの職員に結び付いたカレンダーを取得する
+      description: |
+        外していないカレンダーを、最も新しく始めた取り込みを付けて返す。権限は求めない。
+        トークンの職員の分だけを返し、ほかの職員のカレンダーは返さない。結び付いていなければ external_calendar を null にする。
+      responses:
+        "200":
+          description: 結び付いたカレンダー
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [external_calendar]
+                properties:
+                  external_calendar:
+                    description: 結び付いたカレンダー。結び付いていなければ null
+                    type: object
+                    nullable: true
+                    x-omitempty: false
+                    allOf:
+                      - $ref: "#/components/schemas/ExternalCalendar"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
   /v1/facilities/{facility_id}/patients:
     get:
       tags: [patient]

@@ -12,6 +12,7 @@ import (
 type CalendarApp struct {
 	ServiceAccount   func(ctx context.Context, facilityID string) (string, error)
 	List             func(ctx context.Context, facilityID string) ([]calendar.ExternalCalendar, error)
+	Mine             func(ctx context.Context, facilityID, staffID string) (*calendar.ExternalCalendar, error)
 	Check            func(ctx context.Context, facilityID, calendarID string) error
 	Link             func(ctx context.Context, facilityID, staffID, calendarID string) (calendar.ExternalCalendar, error)
 	Unlink           func(ctx context.Context, id string) error

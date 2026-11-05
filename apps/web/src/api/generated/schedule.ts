@@ -449,6 +449,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/external_calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * トークンの職員に結び付いたカレンダーを取得する
+         * @description 外していないカレンダーを、最も新しく始めた取り込みを付けて返す。権限は求めない。
+         *     トークンの職員の分だけを返し、ほかの職員のカレンダーは返さない。結び付いていなければ external_calendar を null にする。
+         */
+        get: operations["getMyExternalCalendar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/facilities/{facility_id}/patients": {
         parameters: {
             query?: never;
@@ -2917,6 +2938,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    getMyExternalCalendar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 結び付いたカレンダー */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description 結び付いたカレンダー。結び付いていなければ null */
+                        external_calendar: components["schemas"]["ExternalCalendar"] | null;
+                    };
                 };
             };
             401: components["responses"]["Unauthorized"];
