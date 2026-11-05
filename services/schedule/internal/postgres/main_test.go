@@ -276,7 +276,7 @@ func countFacilities(t *testing.T, pool *pgxpool.Pool) int {
 }
 
 // TestMigrateReceiptCheckPolicy は、照合の権限のマイグレーションが、今ある事業所に事務の役職を足し、
-// 職員の管理の権限をデフォルトに持つ役職と、職員の管理の権限を持つ退職していない職員に、照合の権限を足すことを確認する（ADR-0002、#376）。
+// 職員の管理の権限をデフォルトに持つ役職と、職員の管理の権限を持つ退職していない職員に、照合の権限を足すことを確認する（#376）。
 func TestMigrateReceiptCheckPolicy(t *testing.T) {
 	cfg := newDatabase(t, "migrate_receipt_check")
 	ctx := context.Background()
