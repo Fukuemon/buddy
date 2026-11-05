@@ -25,8 +25,6 @@ const (
 	syncLease = 6 * time.Minute
 	// syncRetryAfter は、予定を書いている書き出しの処理を待って、カレンダーを読み直すまでの時間である。
 	syncRetryAfter = 5 * time.Second
-	// syncPollTick は、読む時刻を過ぎたカレンダーがあるかを確認する間隔の上限である。読む間隔は、カレンダーごとの読む時刻で決まる。
-	syncPollTick = 5 * time.Second
 )
 
 // CalendarReader は、Syncer が、予定を当てる前に結び付けたカレンダーを読み直す。見つからないときは apperr.ErrNotFound を返す。
@@ -76,33 +74,10 @@ type Syncer struct {
 	log      *slog.Logger
 }
 
-// NewSyncer は、カレンダーを interval ごとに読み、appliers の Applier で当てる Syncer を作る。
+// NewSyncer は、カレンダーを読み、appliers の Applier で当てる Syncer を作る。カレンダーを読み終えたら、interval の後を次に読む時刻にする。
 func NewSyncer(deps SyncerDeps, appliers Appliers, tx tx.Transactor, interval time.Duration, log *slog.Logger) *Syncer {
 	return &Syncer{
 		deps: deps, tx: tx, appliers: appliers, modes: slices.SortedFunc(maps.Keys(appliers), cmp.Compare), interval: interval, log: log,
-	}
-}
-
-// Run は、ctx が終わるまで、読む時刻を過ぎたカレンダーを全て同期する。読む時刻は、カレンダーを読み終えた時刻に
-// interval を足した時刻で、確認する間隔は interval と syncPollTick の短い方である。
-func (s *Syncer) Run(ctx context.Context) {
-	t := time.NewTicker(min(s.interval, syncPollTick))
-	defer t.Stop()
-	for {
-		for {
-			n, err := s.SyncDue(ctx)
-			if err != nil && ctx.Err() == nil {
-				s.log.ErrorContext(ctx, "calendar sync", slog.Any("error", err))
-			}
-			if err != nil || n < syncBatch {
-				break
-			}
-		}
-		select {
-		case <-ctx.Done():
-			return
-		case <-t.C:
-		}
 	}
 }
 

@@ -55,7 +55,9 @@ verified_commit: 4e53ca5
 - `assemble` は、リポジトリ、HTTP のハンドラ、書き出しの `Exporter`、同期の `Syncer` を組み立てる。
   - `cmd/api` は、`assemble` が作った値で、HTTP のサーバーを起動する。
   - ADR-0031: [Go の API の操作を、使う依存だけを持つ操作ごとの型にし、機能のパッケージの App をやめる](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0031-go-operation-types.md)
-  - `cmd/calendar-worker` は、`assemble` が作った `Exporter` か `Syncer` を、役割（`export`、`sync`）ごとのプロセスで、常駐か 1 回の形で動かす。
+  - `cmd/calendar-worker` は、`assemble` が作った `Exporter` の `ExportDue` か `Syncer` の `SyncDue` を、役割（`export`、`sync`）ごとのプロセスで、常駐か 1 回の形で繰り返し呼ぶ。
+    - 常駐も 1 回の形も、取れるものが無くなるまで呼ぶ。常駐は、その後に間隔を待つ。
+    - ADR-0037: [Worker の常駐と 1 回の繰り返しを cmd/calendar-worker に集め、機能のパッケージは 1 回の処理だけを持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0037-calendar-worker-loop.md)
     - `cmd/api` と同じイメージに入れ、HTTP のポートを持たない。
     - ADR-0036: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで動かす](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0036-calendar-worker.md)
 

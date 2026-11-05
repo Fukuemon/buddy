@@ -2,14 +2,11 @@ package main
 
 import (
 	"context"
-	"errors"
 	"io"
-	"log/slog"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
@@ -54,62 +51,6 @@ func TestRunDisabledRole(t *testing.T) {
 			t.Errorf("無効な %s の run = %d, want 0", r, code)
 		}
 	}
-}
-
-func TestDrain(t *testing.T) {
-	log := slog.New(slog.NewTextHandler(io.Discard, nil))
-	t.Run("何も取らなくなるまで繰り返す", func(t *testing.T) {
-		batches := []int{5, 5, 2, 0}
-		calls := 0
-		n, err := drain(t.Context(), func(context.Context) (int, error) {
-			calls++
-			return batches[calls-1], nil
-		}, 0, log)
-		if err != nil || n != 12 || calls != 4 {
-			t.Errorf("drain = %d, %v, 呼んだ回数 %d", n, err, calls)
-		}
-	})
-	t.Run("結果を書けなくても続ける", func(t *testing.T) {
-		calls := 0
-		n, err := drain(t.Context(), func(context.Context) (int, error) {
-			calls++
-			if calls == 1 {
-				return 3, errors.New("finish")
-			}
-			return 0, nil
-		}, 0, log)
-		if err != nil || n != 3 || calls != 2 {
-			t.Errorf("drain = %d, %v, 呼んだ回数 %d", n, err, calls)
-		}
-	})
-	t.Run("取れなければエラーを返す", func(t *testing.T) {
-		if _, err := drain(t.Context(), func(context.Context) (int, error) { return 0, errors.New("claim") }, 0, log); err == nil {
-			t.Error("エラーを返さない")
-		}
-	})
-	t.Run("止める合図の後は取らない", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(t.Context())
-		calls := 0
-		n, err := drain(ctx, func(ctx context.Context) (int, error) {
-			calls++
-			cancel()
-			return 5, ctx.Err()
-		}, 0, log)
-		if err != nil || n != 5 || calls != 1 {
-			t.Errorf("drain = %d, %v, 呼んだ回数 %d", n, err, calls)
-		}
-	})
-	t.Run("長さの上限を過ぎたら取らない", func(t *testing.T) {
-		calls := 0
-		n, err := drain(t.Context(), func(context.Context) (int, error) {
-			calls++
-			time.Sleep(20 * time.Millisecond)
-			return 5, nil
-		}, 10*time.Millisecond, log)
-		if err != nil || n != 5 || calls != 1 {
-			t.Errorf("drain = %d, %v, 呼んだ回数 %d", n, err, calls)
-		}
-	})
 }
 
 const (

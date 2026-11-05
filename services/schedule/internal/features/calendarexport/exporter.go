@@ -55,29 +55,6 @@ func NewExporter(deps ExporterDeps, ids kernel.IDGenerator, log *slog.Logger) *E
 	return &Exporter{deps: deps, ids: ids, log: log}
 }
 
-// Run は、ctx が終わるまで、interval ごとに ExportDue を呼ぶ。取った数が exportBatch に届く間は、interval を待たずに続けて呼ぶ。
-// ExportDue がエラーを返すか、ctx が終わったら、続けて呼ばずに interval を待つ。
-func (x *Exporter) Run(ctx context.Context, interval time.Duration) {
-	t := time.NewTicker(interval)
-	defer t.Stop()
-	for {
-		for ctx.Err() == nil {
-			n, err := x.ExportDue(ctx)
-			if err != nil && ctx.Err() == nil {
-				x.log.ErrorContext(ctx, "calendar export", slog.Any("error", err))
-			}
-			if err != nil || n < exportBatch {
-				break
-			}
-		}
-		select {
-		case <-ctx.Done():
-			return
-		case <-t.C:
-		}
-	}
-}
-
 // ExportDue は、書く時刻を過ぎた待ちを取って書き、取った待ちの数を返す。1 つの待ちが書けなくても、残りの待ちを書く。
 // 取った後は、結果ごとの数の要約（calendar export batch）と、書いていない待ちの滞留（calendar export backlog）をログに書く。
 func (x *Exporter) ExportDue(ctx context.Context) (int, error) {
