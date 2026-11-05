@@ -48,15 +48,13 @@ web と予定の API の責務と依存は、[buddy Design Doc](https://github.c
   - 予定が見つからないとき、権限が無いとき、入力が規則に合わないときは、取り直しても結果が変わらないためである。
   - 文の選び方は [画面仕様書の規約のエラーの見せ方](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/rules.md#エラーの見せ方) にある。
 - 画面の出し分けに使う予定の権限は、画面を読み込むたびに web のサーバーが `GET /v1/me` で読む。
-  - web のサーバーは、`policies` のうち予定の権限と対象を、`Viewer` の `schedulePolicies` に入れる。
-    - 変換は `apps/web/src/api/http/scheduleMapper.ts` の `fromApiSchedulePolicies` にある。
-  - 画面は、職員ごとに見られるかと編集できるかを、予定の API の `schedule.CanRead` と `schedule.CanEdit` と同じ規則で決める。
-  - 判定の処理は `apps/web/src/features/schedule/lib/schedulePermission.ts` にある。
+  - web のサーバーは、`policies` のうち予定の権限と対象を、`Viewer` の `schedulePolicies` に入れる。変換は `apps/web/src/api/http/scheduleMapper.ts` の `fromApiSchedulePolicies` にある。
+  - 画面は、職員ごとに見られるかと編集できるかを、予定の API の `schedule.CanRead` と `schedule.CanEdit` と同じ規則で決める。判定の処理は `apps/web/src/features/schedule/lib/schedulePermission.ts` にある。
 - 予定の取得（`getSchedule`）は、パスに事業所を持たない。
   - BFF は、返った予定の `facility_id` がセッションの事業所と違えば、status が 403 の `ApiError` にする（`apps/web/src/api/http/httpBuddyApi.ts`）。
   - 予定の API のミドルウェアも、パスの `schedule_id` の事業所で 403 を返す（[予定の管理の Design Doc の認証から事業所の確認までの流れ](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#認証から事業所の確認までの流れ)）。
 - 予定の詳細と予定の編集は、予定と同時に職員と利用者の一覧を読み、名前を一覧で探す。
-  - 予定の詳細は一覧を待たずに予定を出し、一覧に無い職員と利用者を「職員不明」「利用者不明」と出す。
+  - 予定の詳細は一覧を待たずに予定を出す。一覧に無い職員と利用者を「職員不明」「利用者不明」と出す。
 - 予定の作成と予定の編集は、職員、利用者、サービスコードの一覧（`listServiceCodes`）を読み終えてからフォームを出す。
   - サービスコードの選択肢と提供時間の範囲は、`listServiceCodes` の順と値を使う。
 
