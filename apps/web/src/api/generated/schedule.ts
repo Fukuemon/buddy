@@ -508,11 +508,11 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 利用者を利用の終了にする
-         * @description 利用者を利用の終了にする（ADR-0021）。利用者のレコードは消さず、名前、サービス、担当の職員を残す。
+         * 利用者の利用を終了する
+         * @description 利用者の利用を終了する（ADR-0021）。利用者のレコードは消さず、名前、サービス、担当の職員を残す。
          *     利用の終了の利用者は、デフォルトの利用者の一覧に出ず、予定の利用者に新しく指せず、職員の退職の確認で担当に数えない。
          *     その日（事業所の現地の日付）以降の予定か、その日以降に終わる繰り返しの予定が残るときは、書かずに 409（patient_has_schedules）で残る一覧を返す。
-         *     利用の終了の利用者を利用の終了にしても成功し、最初に利用の終了にした時刻を残す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         *     利用の終了の利用者の利用を終了しても成功し、最初に利用を終了した時刻を残す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         post: operations["endPatientService"];
         delete?: never;
@@ -530,7 +530,7 @@ export interface paths {
         };
         /**
          * 利用者に残る予定を返す
-         * @description 利用者を利用の終了にする前に、その日（事業所の現地の日付）以降の予定と、その日以降に終わる繰り返しの予定を返す。
+         * @description 利用者の利用を終了する前に、その日（事業所の現地の日付）以降の予定と、その日以降に終わる繰り返しの予定を返す。
          *     一覧は、利用の終了の 409（patient_has_schedules）が返す一覧と同じ規則で作る。何も書かない。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         get: operations["getPatientRemainingSchedules"];
@@ -1231,7 +1231,7 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
-        /** @description 利用者を利用の終了にするときに残る、その日以降の予定と繰り返しの予定。訪問の情報の利用者がその利用者の予定を含める */
+        /** @description 利用者の利用を終了するときに残る、その日以降の予定と繰り返しの予定。訪問の情報の利用者がその利用者の予定を含める */
         PatientSchedules: {
             /** @description その日以降のキャンセルしていない単発の予定。日時の順 */
             schedules: {
@@ -3075,7 +3075,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 利用の終了にした利用者 */
+            /** @description 利用を終了した利用者 */
             200: {
                 headers: {
                     [name: string]: unknown;
