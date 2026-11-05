@@ -31,8 +31,10 @@ verified_commit: 4e53ca5
 持たないもの
 
 - 住所とエリア、訪問の順路、経営数値、月の稼働時間の集計の表
-- ログインとパスワード。ブローカーが持つ
-- 照合の規則。照合の API が持つ
+- ログインとパスワード。
+  - ブローカーが持つ
+- 照合の規則。
+  - 照合の API が持つ
 
 ## Design
 
@@ -269,11 +271,14 @@ CHECK が 8 つ以外を拒み、API は 400 を返す。
 | 7 | `green` |
 | 8 | `lime` |
 
-- 同じ事業所のチームの色は重なってよい。チームが 9 個を超えると、8 色では分けられないためである。
+- 同じ事業所のチームの色は重なってよい。
+  - チームが 9 個を超えると、8 色では分けられないためである。
 - チームを作る（`POST /v1/facilities/{facility_id}/teams`）ときに色を省くと、事業所のチームが使っているチームが最も少ない色を、同じ数なら表の順の先の色を入れる。
   - 事業所でまだ使っていない色があれば、その先頭になる。
-- チームの名前と色は `PUT /v1/teams/{team_id}` で変える。`staff.manage` を持つ職員だけが呼べる。
-- 色を足す前からあるチームには、マイグレーションで、事業所ごとに名前の順で表の順に入れた。9 個目からは表の先頭に戻る。
+- チームの名前と色は `PUT /v1/teams/{team_id}` で変える。
+  - `staff.manage` を持つ職員だけが呼べる。
+- 色を足す前からあるチームには、マイグレーションで、事業所ごとに名前の順で表の順に入れた。
+  - 9 個目からは表の先頭に戻る。
 - 色の選び方とコントラストは、[デザインシステム](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/DESIGN.md) のチームの色にある。
 
 ### 権限のレコード
@@ -345,9 +350,12 @@ sequenceDiagram
 
 表に無い引数を持つパスは、事業所を確認できないので 500 を返す。
 
-- パスの ID が ULID でないときと、リソースが見つからないときは、ミドルウェアは通す。ULID でない ID は次のミドルウェアが 400 を返し、見つからないリソースはハンドラが 404 を返す。
-- `/v1` のリクエストは、次の順に確認する。先に失敗した段のレスポンスを返すので、トークンの 401 と事業所の 403 は、パスの ID と定義の 400 より先に返る。
-  1. Origin を許すか（403）。`CORS_ALLOW_ORIGINS` を設定したときだけ適用する。規則は [Interface](#interface) の CORS にある
+- パスの ID が ULID でないときと、リソースが見つからないときは、ミドルウェアは通す。
+  - ULID でない ID は次のミドルウェアが 400 を返し、見つからないリソースはハンドラが 404 を返す。
+- `/v1` のリクエストは、次の順に確認する。
+  - 先に失敗した段のレスポンスを返すので、トークンの 401 と事業所の 403 は、パスの ID と定義の 400 より先に返る。
+  1. Origin を許すか（403）。
+     - `CORS_ALLOW_ORIGINS` を設定したときだけ適用する。規則は [Interface](#interface) の CORS にある
   2. クエリを読めるか（400）。`/v1` 以外のパスにも適用する
   3. トークン（401）と、職員と組織の事業所（403）
   4. パスが指す事業所（403）
@@ -406,17 +414,21 @@ sequenceDiagram
 
 ### 繰り返しの予定
 
-- 繰り返しの予定は、最初の回の日付（`recurring_schedules.date`）と、同じレコードの規則のカラム（`frequency` から `end_date`）で回を決める。頻度ごとのカラムの組み合わせは CHECK で確認する。
+- 繰り返しの予定は、最初の回の日付（`recurring_schedules.date`）と、同じレコードの規則のカラム（`frequency` から `end_date`）で回を決める。
+  - 頻度ごとのカラムの組み合わせは CHECK で確認する。
 - 繰り返しの規則は次の 3 つ。
   - `weekly`: `day_of_week` の曜日ごと
   - `monthly` で `day_of_month` がある: 毎月のその日。その日がない月は回にしない
-  - `monthly` で `week_of_month` と `day_of_week` がある: 毎月の n 回目のその曜日。n は日から `(日 - 1) / 7 + 1` で決め、1 から 5 を受ける。5 回目のない月は回にしない
-- 繰り返しの 1 回だけを変えるときは、その日を `recurring_schedule_exclusions` に足し、`recurring_schedule_id` と元の回の日付（`original_date`）で元を指す単発の予定を作る。2 つのカラムは組で持ち、同じ回は 1 度だけ置き換えられる（一意の制約）。
+  - `monthly` で `week_of_month` と `day_of_week` がある: 毎月の n 回目のその曜日。
+    - n は日から `(日 - 1) / 7 + 1` で決め、1 から 5 を受ける。5 回目のない月は回にしない
+- 繰り返しの 1 回だけを変えるときは、その日を `recurring_schedule_exclusions` に足し、`recurring_schedule_id` と元の回の日付（`original_date`）で元を指す単発の予定を作る。
+  - 2 つのカラムは組で持ち、同じ回は 1 度だけ置き換えられる（一意の制約）。
 - 予定の一覧の API は、単発の予定と繰り返しの予定を別々に返す。
   - 繰り返しの予定を期間の回に展開しない。
   - `date_from` と `date_to` は単発の予定だけを、予定の日付で絞る。
   - `date_from` の前の日に始まり、`ends_next_day` が true の単発の予定も返す。期間の初日に、前の日の夜から続く予定があるためである。
-- 繰り返しの予定の `ends_next_day` は、全ての回に当たる。回の置き換えで作った単発の予定は、自分の `ends_next_day` を持つ。
+- 繰り返しの予定の `ends_next_day` は、全ての回に当たる。
+  - 回の置き換えで作った単発の予定は、自分の `ends_next_day` を持つ。
 
 ### 予定の変更
 
@@ -469,20 +481,24 @@ Google カレンダーの手動の取り込みの確定も、同じ規則で拒�
 
 `google_primary` の事業所の一覧は、次の順で Projection を読む。
 
-1. 読む期間を決める。`date_from` と `date_to` を使い、省いた端は、Projection を保持する期間（前々月の初日から 3 か月後の月末）の端にする。
+1. 読む期間を決める。
+   - `date_from` と `date_to` を使い、省いた端は、Projection を保持する期間（前々月の初日から 3 か月後の月末）の端にする。
 2. 事業所の外していないカレンダーの行のうち、期間の初日の前の日より前に終わった行を除いて読む（`scheduleview.Projections` の `ListByFacility`）。
    - 外したカレンダーの行は読まない。退職はカレンダーを外すので、退職した職員の行もこれで除く。
-3. 行の職員（写した時点のカレンダーの職員）を予定の職員とみなし、buddy の予定と同じ閲覧の判定（`schedule.Readable`）で絞る。行の事業所が一覧の事業所と違う行も除く。
+3. 行の職員（写した時点のカレンダーの職員）を予定の職員とみなし、buddy の予定と同じ閲覧の判定（`schedule.Readable`）で絞る。
+   - 行の事業所が一覧の事業所と違う行も除く。
 4. 行を、取り込みと同じ読み替えの規則（`calendar.Classify`）で、buddy の予定の日付と時刻に読み替える。
    - 読み替えの規則は `calendar` にあり、`scheduleview` は `calendar` を import できない。組み立ての場所が、`calendar.ProjectionRules` を `scheduleview.EventRules` として渡す。
    - 終日の予定、日をまたぐ予定、時刻を読めない予定、長さが 0 以下の予定は、取り込みと同じく一覧に出さない。
 5. 繰り返しの親の行は、取り込みと同じ規則（`calendar.RuleFromRecurrence`）で buddy の繰り返しの規則に写し、期間の回に展開する。
-   - 除外する日（EXDATE）と、例外の回が置き換えた元の日の回は作らない。変えた回は、例外の回の行を単発の予定と同じく読み替える。取り消した回は出さない。
+   - 除外する日（EXDATE）と、例外の回が置き換えた元の日の回は作らない。
+   - 変えた回は、例外の回の行を単発の予定と同じく読み替える。取り消した回は出さない。
    - 規則に写せない親は、回に展開せず、最初の回の日時の 1 件にして、確認が必要な理由（`recurrence_unsupported`）を付ける。最初の回が期間の外でも、回が期間に重なりうるなら返す。
 6. 訪問のタイトルの予定は、タイトルのサービス内容と利用者名で、サービスコードのマスタと事業所の利用者（利用の終了を除く）を引く。
    - 引けた予定は、利用者とサービスコードの訪問の情報を付けた訪問の予定にする。主訪問者は予定の職員にし、同行者と訪問の区分は付けない。
    - 引けない予定は、訪問の情報を付けず、Google のタイトルの通常の予定にして、理由（`service_code_not_found`、`patient_not_found`、`patient_ambiguous`）を付ける。タイトルを読めない予定には `title_unreadable` を付ける。
-7. 期間で絞った予定を `sort_field` と `sort_order` の順に並べ、カレンダーごとの同期の状況（`calendar_syncs`）を付けて返す。同期の状況も、閲覧の判定で見てよい職員のカレンダーに絞る。
+7. 期間で絞った予定を `sort_field` と `sort_order` の順に並べ、カレンダーごとの同期の状況（`calendar_syncs`）を付けて返す。
+   - 同期の状況も、閲覧の判定で見てよい職員のカレンダーに絞る。
 
 Projection の予定の `id` は、カレンダー、Google の予定の ID、回の日付から作る ULID の形の値で、一覧を読むたびに同じになる。  
 Google の予定の ID は ULID の形でなく、展開した回は行を持たないためである。  
@@ -492,7 +508,8 @@ Projection の予定の 1 件の読み出し（`getSchedule`）は持たない�
 一覧の応答は、事業所の正本のモード（`source_mode`）と、カレンダーごとの同期の状況（`calendar_syncs`）を持つ。  
 同期の状況は、最後の結果、変わった予定を最後まで読んで写した最後の同期の時刻、最後の失敗の理由を持つ。  
 最新でないとみなす時間は、画面が決める。  
-`google_primary` の事業所の応答は、`open` の予定の正本の切り替え（`cutover`）も持つ。画面は「切り替え中」の表示を出す。  
+`google_primary` の事業所の応答は、`open` の予定の正本の切り替え（`cutover`）も持つ。  
+画面は「切り替え中」の表示を出す。  
 切り替えの間も、一覧は Projection を読み、切り替えの取り込みで作った buddy の予定を読まない。
 
 ### 休職と退職の職員と、訪問しない職員への割り振り
@@ -521,7 +538,8 @@ Google カレンダーの取り込みの確定、同期の予定ごとのトラ�
 
 予定の作成、予定の変更、繰り返しの予定の作成、繰り返しの回の置き換えは、利用の終了の利用者を予定の利用者に新しく指すと 400 で拒む。
 
-- 確認は、訪問の情報を書く `visit.Writer` が行う。`visit.Input.KeptPatientID` は、利用の終了のまま保存してよい利用者である。
+- 確認は、訪問の情報を書く `visit.Writer` が行う。
+  - `visit.Input.KeptPatientID` は、利用の終了のまま保存してよい利用者である。
   - `schedule` の操作は、保存した後の日付が今日より前の予定でだけ、元の予定か繰り返しの予定の利用者を `KeptPatientID` に入れる。退職した職員と同じく、利用の終了の利用者に今日以降の予定を残さないためである。
   - 「Google の内容に合わせる」（`AcceptExport`）が予定を外部の内容に合わせるときも、外部の予定の日付が今日より前なら、元の訪問の情報の利用者を `KeptPatientID` に入れる。
   - 「Google の内容に合わせる」がタイトルの同じ予定で前の訪問の情報を使うときも、外部の予定の日付が今日以降なら、利用者が利用中のときだけ当てる。利用の終了の利用者なら、当てられない変更にする。
@@ -553,7 +571,8 @@ Google カレンダーの取り込みの確定、同期の予定ごとのトラ�
   - リソースごとにどのパスを持つかは `openapi.yaml` にある。
 - 事業所に属さないマスタは `/v1/policies`、`/v1/schedule_types`、`/v1/visit_infos/service_codes`、`/v1/visit_infos/visit_categories` で読む。
 - 一覧の並べ替えは、許可したカラムの名前だけを受け、それ以外は 400 を返す。
-- `GET /v1/me` は、トークンの職員と権限を返す。画面は、ログインの後にこれを呼んで事業所を決める。
+- `GET /v1/me` は、トークンの職員と権限を返す。
+  - 画面は、ログインの後にこれを呼んで事業所を決める。
 
 エラーは `{"code","message"}` の JSON で返す。  
 エラーの status と `code` ごとの、返すときの条件は次のとおり。
@@ -579,7 +598,8 @@ Google カレンダーの取り込みの確定、同期の予定ごとのトラ�
 | 502 | `calendar_unavailable` | Google に届かないか、Google がエラーを返した | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md) |
 | 503 | `calendar_not_configured` | 事業所のサービスアカウントが設定されていない | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md) |
 
-- CORS は、`CORS_ALLOW_ORIGINS` に並べた Origin だけに許す。空なら CORS のヘッダーを返さない。
+- CORS は、`CORS_ALLOW_ORIGINS` に並べた Origin だけに許す。
+  - 空なら CORS のヘッダーを返さない。
   - 許す Origin の事前のリクエストには、トークンを求めずに 204 を返す。許すメソッドは GET、POST、PUT、DELETE、OPTIONS、ヘッダーは `Content-Type` と `Authorization` にする。
   - 許さない Origin のリクエストは、本文を持たない 403 で止める。Origin がリクエストの Host と同じリクエストは、CORS のリクエストとして扱わずに通す。
 - 環境変数とマイグレーションのコマンドは [README](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/README.md) に、デプロイの要件は [buddy Design Doc のデプロイの要件](https://github.com/Fukuemon/buddy/blob/develop/docs/design/DesignDoc.md#デプロイの要件) にある。
