@@ -1,4 +1,4 @@
-# ADR-0013: OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る
+# ADR-0012: OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る
 
 ## Status
 
@@ -24,8 +24,8 @@ ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッ�
 
 - Hydra は、認可コード、トークンの発行、JWKS、refresh token のローテーション、失効、ログアウトを持つ。
 - 自作のブローカーは、ログインと同意とログアウトの画面、上流の IdP への振り分けと RP の処理、職員の身元を持つ。RP の処理は `go-oidc` と `golang.org/x/oauth2` で書く。
-  - 画面のソースの配置先と配信の仕方は、ADR-0018 で決めた。
-  - ADR-0018: [ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する](0018-broker-login-pages-source.md)
+  - 画面のソースの配置先と配信の仕方は、ADR-0016 で決めた。
+  - ADR-0016: [ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する](0016-broker-login-pages-source.md)
 - web は自社のアプリなので、Hydra のクライアントに `skip_consent` を設定し、同意の画面を出さない。
 - 本番も OSS 版の Hydra を、インフラのリポジトリで運用する。
   - OSS 版はパッチ版が出ず、セキュリティの修正は最新版にだけ出る。年 1〜2 回のメジャーなアップグレードを、停止を含めて回す。
@@ -33,11 +33,11 @@ ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッ�
 - access token は JWT（`strategies.access_token: jwt`）にし、期限を 5 分にする。組織の ID などのクレームは、`oauth2.allowed_top_level_claims` で JWT の top level に出す。
   - 理由: 2 つの API は検証の作りを変えずに、Issuer を替えるだけで済む。opaque にすると、全ての API のリクエストが Hydra の introspection を呼び、Hydra が止まると buddy の全体が止まる。OSS 版の introspection は admin API にあり、クライアントと鍵とセッションの管理と同じポートなので、API にこのポートを開くことになる。
   - 理由: JWT はすぐに失効できないが、トークンは BFF のサーバー側にだけあり、ブラウザに出ない。失効が遅れるのは最大 5 分である。
-- `aud` は、ADR-0012 のとおり `schedule` と `receipt` にする。ブローカーが同意の accept で付け、Hydra の web のクライアントに許す audience として登録する。
-  - ADR-0012: [2 つの API のサービスの名前とトークンの aud を、ディレクトリの名前にそろえる](0012-service-names.md)
+- `aud` は、ADR-0011 のとおり `schedule` と `receipt` にする。ブローカーが同意の accept で付け、Hydra の web のクライアントに許す audience として登録する。
+  - ADR-0011: [2 つの API のサービスの名前とトークンの aud を、ディレクトリの名前にそろえる](0011-service-names.md)
 - ブローカーは、モノレポの `services/broker` に置く。
   - 理由: `packages/go`、compose、E2E を、web と 2 つの API と共有する。ログインの流れを変える変更を、1 つの pull request で web、API、ブローカーにわたって直せる。
-  - ADR-0011: [2 つの API を services/ に置き、画面と API をトップのディレクトリで分ける](0011-services-directory.md)
+  - ADR-0010: [2 つの API を services/ に置き、画面と API をトップのディレクトリで分ける](0010-services-directory.md)
 - 事業所ごとの上流の IdP の設定（組織の ID、issuer、client ID）は、インフラからファイルで渡し、client secret はシークレットとして渡す。ブローカーは管理の画面を持たない。
   - 理由: 事業所と Google のサービスアカウントの対応のファイル（`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`）と同じ扱いにし、事業所を足す手順を運営側の 1 か所にまとめる。
 

@@ -546,7 +546,7 @@ Google カレンダーで予定を管理している事業所で、予定を bud
 
 事業所が Google カレンダーでの予定の管理に慣れ、buddy で予定を管理すると決めたときに、マネージャーが 1 度だけ使う。  
 切り替えの間は、職員に Google カレンダーで予定を変えないよう頼み、職員ごとに取り込んでから完了する。  
-手順と確認の条件は [ADR-0009 の切り替え](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0009-google-calendar-sync.md#切り替えcutover) にある。
+手順と確認の条件は [ADR-0008 の切り替え](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0008-google-calendar-sync.md#切り替えcutover) にある。
 
 ### 初期処理
 

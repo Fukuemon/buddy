@@ -80,7 +80,7 @@ type CalendarSyncs interface {
 	ListSyncsByFacility(ctx context.Context, facilityID string) ([]CalendarSync, error)
 }
 
-// OpenCutover は、事業所の予定の正本を buddy に切り替えている間の、open の切り替えである（ADR-0009）。
+// OpenCutover は、事業所の予定の正本を buddy に切り替えている間の、open の切り替えである（ADR-0008）。
 type OpenCutover struct {
 	StartedAt time.Time
 	// RangeStart は、切り替えの取り込みの期間の最初の日である。

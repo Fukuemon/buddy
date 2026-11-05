@@ -1,4 +1,4 @@
-# ADR-0012: 2 つの API のサービスの名前とトークンの aud を、ディレクトリの名前にそろえる
+# ADR-0011: 2 つの API のサービスの名前とトークンの aud を、ディレクトリの名前にそろえる
 
 ## Status
 
@@ -6,11 +6,11 @@
 
 ## Context
 
-ADR-0011 は、2 つの API のディレクトリを `services/schedule` と `services/receipt` にした。  
+ADR-0010 は、2 つの API のディレクトリを `services/schedule` と `services/receipt` にした。  
 コンテナとサービスの名前、`aud`、テーブル定義書の出力先、API の仕様のページの名前は、`schedule-api` と `receipt-api` のまま残すと決めた。  
-この ADR は、ADR-0011 の決定のうち、名前を残す判断だけを置き換える。
+この ADR は、ADR-0010 の決定のうち、名前を残す判断だけを置き換える。
 
-ADR-0011: [2 つの API を services/ に置き、画面と API をトップのディレクトリで分ける](0011-services-directory.md)
+ADR-0010: [2 つの API を services/ に置き、画面と API をトップのディレクトリで分ける](0010-services-directory.md)
 
 - ディレクトリの名前とサービスの名前が違うので、コードと文書を読む人は 2 つの名前を読み替えている。
 - `schedule-api` と `receipt-api` の名前を使うものは、次のとおり。
@@ -35,14 +35,14 @@ ADR-0011: [2 つの API を services/ に置き、画面と API をトップの�
 - GitHub のラベルは `pkg:schedule` と `pkg:receipt` にする。名前を変えるので、付いている issue と pull request のラベルも変わる。
 - 文書の地の文では、2 つの API を「予定の API」「照合の API」と書く。名前そのものを指すときだけ、`schedule` と `receipt` をコードスパンで書く。
   - 理由: web にも予定と照合の画面があるので、地の文の `schedule` は API か画面かが分からない。
-- ADR のファイル名と ADR-0011 の本文は変えない。ほかの承認した ADR の本文は、用語の置き換えとして新しい名前に変える。
+- ADR のファイル名と ADR-0010 の本文は変えない。ほかの承認した ADR の本文は、用語の置き換えとして新しい名前に変える。
 
 ## Considered Options
 
 | 選択肢 | 強み | 弱み |
 | --- | --- | --- |
 | **採用:** サービスの名前、`aud`、環境変数、文書とラベルの名前を全て `schedule` と `receipt` にする | ディレクトリとサービスの名前を読み替えずに済む | compose、IdP、web、E2E、ドキュメントサイトの設定を一度に変える |
-| ADR-0011 のとおり `schedule-api` と `receipt-api` を残す | 変更が無い | ディレクトリとサービスの名前の読み替えが残る |
+| ADR-0010 のとおり `schedule-api` と `receipt-api` を残す | 変更が無い | ディレクトリとサービスの名前の読み替えが残る |
 | `aud` だけを `buddy-schedule` のように buddy の接頭辞を付けた名前にする | ほかのプロダクトと同じ IdP の組織を使っても `aud` が重ならない | `aud` だけがサービスの名前と違い、読み替えが残る。buddy の Issuer は buddy の組織だけを扱う |
 | 環境変数は `SCHEDULE_API_URL` のように `_API_` を残す | web の設定の中で、API の URL であることが名前から分かる | 環境変数だけがサービスの名前と違い、ほかのサービスの環境変数の付け方ともずれる |
 

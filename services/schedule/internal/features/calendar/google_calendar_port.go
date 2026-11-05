@@ -115,7 +115,7 @@ type SourceFor func(ctx context.Context, facilityID string) (EventSource, error)
 // WriterFor は、事業所 facilityID の外部のカレンダーに書く EventWriter を返す。
 type WriterFor func(ctx context.Context, facilityID string) (EventWriter, error)
 
-// Accounts は、事業所ごとのサービスアカウントで外部のカレンダーを読み書きする手段である（ADR-0009）。
+// Accounts は、事業所ごとのサービスアカウントで外部のカレンダーを読み書きする手段である（ADR-0008）。
 // 事業所にサービスアカウントの設定が無ければ、どのメソッドも ErrNotConfigured を返す。
 type Accounts interface {
 	// ServiceAccount は、事業所 facilityID の職員がカレンダーを共有する相手のメールアドレスを返す。

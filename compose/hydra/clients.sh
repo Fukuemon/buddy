@@ -14,7 +14,7 @@ upsert() {
   echo "registered $id"
 }
 
-# web は自社のアプリなので、同意の画面を出さない（ADR-0013）
+# web は自社のアプリなので、同意の画面を出さない（ADR-0012）
 upsert web --name web --secret web-dev \
   --grant-type authorization_code,refresh_token --response-type code \
   --scope openid,email,offline_access --audience schedule,receipt \

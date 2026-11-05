@@ -48,7 +48,7 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
   - web は、`status` が `active` でない職員だけに `Staff.status` を写す。
   - この画面は、`status` を持つ職員とその予定を除く。
   - `visits` が false の職員には `Staff.nonVisiting` を写し、同じく職員とその予定を除く。
-  - ADR-0014: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../../adr/0014-receipt-check-policy-and-non-visiting-staff.md)
+  - ADR-0002: [権限を役職のデフォルトと職員ごとの上書きで持ち、職員の管理と照合も権限で許し、訪問するかを職員に持つ](../../adr/0002-pbac.md)
 - PRD の時間外の勤務の印の `Schedule.is_over_time_work` は、web の型に無く、画面に出していない。
 - 予定の一覧は、閲覧の権限で見てよい職員の予定だけを返す。
   - 自分の予定は常に返す。
