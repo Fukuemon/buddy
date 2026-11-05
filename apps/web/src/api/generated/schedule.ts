@@ -1585,7 +1585,7 @@ export interface components {
             ends_next_day: boolean;
             all_day: boolean;
             /**
-             * @description all_day は終日、multi_day は日をまたぐ（24:00 に終わる予定を含む）、unreadable_time は日時を読めない、
+             * @description all_day は終日、multi_day は終了が開始の翌日より後か、長さが 24 時間以上（翌日に終わる 24 時間未満の予定は含まない）、unreadable_time は日時を読めない、
              *     zero_length は長さが無い、unreadable_title はタイトルが空白だけか訪問のタイトルを読めない、
              *     service_not_found はタイトルのサービス内容がサービスコードに無い、
              *     staff_on_leave はカレンダーを結び付けた職員が休職しているので作らない新しい予定、
