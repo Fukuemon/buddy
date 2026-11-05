@@ -35,8 +35,7 @@
      - `DOCS_SITE_MARKER`: トップのページにだけある文字列
 
 Worker には Cloudflare Access を掛けない。  
-Access を掛けると、ログインなしで開けるかをワークフローが確認したときに失敗する。  
-ADR-0004: [デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にし、カタログをドキュメントサイトと同じ Worker で出す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0004-design-system.md)
+Access を掛けると、ログインなしで開けるかをワークフローが確認したときに失敗する。
 
 ワークフローは、本番に出すたびに、文書、カタログ、ER 図の URL ごとに、ログインなしで開けるかを確認する。  
 ローカルで本番の文書を確認するときは、次を流す。  
