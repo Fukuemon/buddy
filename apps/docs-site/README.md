@@ -2,11 +2,11 @@
 
 ドキュメントサイト（Zensical）、apps/web の Storybook（デザインシステムのカタログ）、予定の管理の ER 図（Liam ERD）を公開する。  
 3 つは、1 つの Cloudflare Worker（`buddy-docs`）の静的なファイルである。  
-カタログの組み方は ADR-0025 に、公開先を選んだ理由は ADR-0026 にある。  
+カタログの組み方は ADR-0016 に、公開先を選んだ理由は ADR-0017 にある。  
 サイトは、誰でもログインなしで開ける。
 
-- ADR-0025: [apps/web の Storybook を 1 つのカタログにする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0025-storybook-catalog.md)
-- ADR-0026: [カタログをドキュメントサイトと同じ Worker で、develop に入ったときだけ出す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0026-docs-site-publish.md)
+- ADR-0016: [apps/web の Storybook を 1 つのカタログにする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0016-storybook-catalog.md)
+- ADR-0017: [カタログをドキュメントサイトと同じ Worker で、develop に入ったときだけ出す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0017-docs-site-publish.md)
 
 | 環境 | ドキュメントサイト | カタログ | ER 図 | 出す契機 |
 | --- | --- | --- | --- | --- |
@@ -78,7 +78,7 @@ pnpm site:build
 
 - pull request では、サイトを組み立てるだけにする。
   - pull request ごとのプレビューは出さない。
-  - ADR-0026: [カタログをドキュメントサイトと同じ Worker で、develop に入ったときだけ出す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0026-docs-site-publish.md)
+  - ADR-0017: [カタログをドキュメントサイトと同じ Worker で、develop に入ったときだけ出す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0017-docs-site-publish.md)
   - 文書の元は docs/ のほか、services/ と packages/ の Design Doc にもあるので、変えた場所で絞らずに全ての pull request で組み立てる。
 - develop への push では、`cf deploy --prebuilt --mode production` で本番にデプロイし、ログインなしで開けることを確認する。
 - トークンは、GitHub の environment `docs-site` の secret にある。

@@ -1,4 +1,4 @@
-# ADR-0008: Google カレンダーとの連携を、事業所ごとの正本のモードで分ける
+# ADR-0026: Google カレンダーとの連携を、事業所ごとの正本のモードで分ける
 
 ## Status
 
@@ -29,7 +29,7 @@ buddy を初めから予定の正本にし、Google カレンダーと双方を�
 予定の API の構成について、決定に関わる事実は次のとおり。
 
 - 同期は、変更の取得（`calendarsync` の `Syncer`）と、取った変更を当てる規則（`Applier`）に分かれる。`Syncer` は、1 つの予定を当てるトランザクションの中で事業所の正本のモードを読み、モードごとの `Applier` を選ぶ。
-  - ADR-0005: [予定の API を機能ごとのパッケージに分ける](0005-schedule-api-packages.md)
+  - ADR-0018: [予定の API を機能ごとのパッケージに分ける](0018-schedule-api-packages.md)
 - Google カレンダーに書く口（`calendar.EventWriter`）は、作成、部分更新、削除を持つ。412 のとき `ErrEventChanged` を、消された予定への 412 のとき `ErrEventGone` を、404 のとき `ErrEventNotFound` を返す。
 - 書き出しは、カレンダーの共有が外れたときの 404 と予定が無いときの 404 を見分けられないとみなし、404 で予定の対応を消さない。
 - `calendar.EventIDOf` は、buddy の予定の ULID から Google の予定の ID を作る。同じ ID の作成は 409（`ErrEventExists`）になるので、書き直しても予定は 2 つにならない。

@@ -8,7 +8,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 )
 
-// TestRequireSourceModeTransition は、正本のモードを google_primary から buddy_primary にだけ移せることを確認する（ADR-0008）。
+// TestRequireSourceModeTransition は、正本のモードを google_primary から buddy_primary にだけ移せることを確認する（ADR-0026）。
 func TestRequireSourceModeTransition(t *testing.T) {
 	google, buddy := organization.SourceGooglePrimary, organization.SourceBuddyPrimary
 	for _, tt := range []struct {

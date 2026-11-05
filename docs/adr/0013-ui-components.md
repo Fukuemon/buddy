@@ -1,4 +1,4 @@
-# ADR-0022: packages/ui に、ドメインを持たない Base と Case のコンポーネントを置き、DADS の指針から外れる 3 点は理由を DESIGN.md に書く
+# ADR-0013: packages/ui に、ドメインを持たない Base と Case のコンポーネントを置き、DADS の指針から外れる 3 点は理由を DESIGN.md に書く
 
 ## Status
 
@@ -9,7 +9,7 @@
 packages/ui に置くコンポーネントと、DADS の指針から外れる使い方の扱いを決める必要がある。
 
 - コンポーネントと画面は、意味のトークンだけを使う。
-  - ADR-0004: [デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にする](0004-design-system.md)
+  - ADR-0012: [デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にする](0012-design-system.md)
 
 ## Decision
 

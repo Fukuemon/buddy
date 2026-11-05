@@ -32,7 +32,7 @@ func TestOrganizationCreatePosition(t *testing.T) {
 }
 
 // TestOrganizationCreatePositionForbidden は、職員の管理を許されない職員が役職を作れないことを確認する。
-// 役職のデフォルトの権限に職員の管理の権限を入れて、ほかの職員に配れないようにするためである（ADR-0002）。
+// 役職のデフォルトの権限に職員の管理の権限を入れて、ほかの職員に配れないようにするためである（ADR-0007）。
 func TestOrganizationCreatePositionForbidden(t *testing.T) {
 	s := inmem.Seeded()
 	createPosition := organization.NewCreatePosition(inmem.Facilities{Store: s}, inmem.Policies{Store: s}, inmem.Positions{Store: s}, &inmem.Tx{}, &inmem.SeqIDs{}, func(context.Context) error { return apperr.ErrForbidden })

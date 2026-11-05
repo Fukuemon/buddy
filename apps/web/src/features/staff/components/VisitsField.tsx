@@ -16,7 +16,7 @@ export type VisitsFieldProps = {
 }
 
 /**
- * 職員の登録と編集で、訪問するかを選ぶ欄。訪問しない職員は、予定のカレンダーの列と、予定と担当の候補に出ない（ADR-0020）。
+ * 職員の登録と編集で、訪問するかを選ぶ欄。訪問しない職員は、予定のカレンダーの列と、予定と担当の候補に出ない（ADR-0006）。
  * 役職からは決めないので、事務の職員を登録するときは「訪問しない」を選ぶ。
  */
 export const VisitsField = ({ value, onChange, testId }: VisitsFieldProps) => (

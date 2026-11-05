@@ -70,7 +70,7 @@ export const editStaffOptions = (
   ]
 }
 
-/** 担当に選べる、有効で訪問する職員を、名前の順に返す。訪問しない職員は担当にできない（ADR-0020）。 */
+/** 担当に選べる、有効で訪問する職員を、名前の順に返す。訪問しない職員は担当にできない（ADR-0006）。 */
 export const activeStaffOptions = (staff: readonly StaffRecord[]) =>
   staff.filter(isActiveStaffRecord).sort((a, b) => a.username.localeCompare(b.username, 'ja'))
 

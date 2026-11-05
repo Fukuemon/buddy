@@ -197,7 +197,7 @@ func TestStaffRef(t *testing.T) {
 			t.Errorf("%s の状態 = %q, %v, want %q", id, ref.Status, err, want)
 		}
 	}
-	// 訪問しない職員は、Ref で割り振りを拒む（ADR-0020）
+	// 訪問しない職員は、Ref で割り振りを拒む（ADR-0006）
 	p := staff.Profile{Username: "森 健太", DepartmentID: seedDepartment, TeamID: seedTeamB, NonVisiting: true}
 	if err := staffRepo.UpdateProfile(ctx, seedMori, p, seedTeamB); err != nil {
 		t.Fatal(err)
@@ -522,7 +522,7 @@ func TestPatientList(t *testing.T) {
 	}
 }
 
-// 利用者の変更、利用の終了、利用の再開を書き、利用の終了の利用者は、デフォルトの一覧と職員の担当の利用者から除く（#346、ADR-0019）。
+// 利用者の変更、利用の終了、利用の再開を書き、利用の終了の利用者は、デフォルトの一覧と職員の担当の利用者から除く（#346、ADR-0005）。
 func TestPatientUpdateEndResume(t *testing.T) {
 	ctx := txContext(t)
 	r := NewPatientRepository(testDB)
@@ -581,7 +581,7 @@ func TestPatientUpdateEndResume(t *testing.T) {
 	}
 }
 
-// 利用者に残る予定は、訪問の情報の利用者がその利用者の、その日以降のキャンセルしていない予定である（ADR-0019）。
+// 利用者に残る予定は、訪問の情報の利用者がその利用者の、その日以降のキャンセルしていない予定である（ADR-0005）。
 func TestPatientSchedules(t *testing.T) {
 	ctx := txContext(t)
 	rd := NewPatientScheduleReader(testDB)
@@ -720,7 +720,7 @@ func TestScheduleList(t *testing.T) {
 }
 
 // TestScheduleEndsNextDay は、翌日に終わる予定の印を保存して読み、期間の一覧が前の日に始まる印の付いた予定も返し、
-// 時刻の制約が印に合わない予定を拒むことを確認する（ADR-0011）。
+// 時刻の制約が印に合わない予定を拒むことを確認する（ADR-0030）。
 func TestScheduleEndsNextDay(t *testing.T) {
 	ctx := txContext(t)
 	r := NewScheduleRepository(testDB)

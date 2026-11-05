@@ -2,12 +2,12 @@
 
 buddy の画面を作る人とコーディングエージェントが、画面を作る前に読む文書。  
 デジタル庁デザインシステム（DADS）のトークンとコンポーネントの指針に基づき、packages/ui のトークンとコンポーネントの使い方を決める。  
-トークンの段の分け方を決めた理由は ADR-0004 に、コンポーネントの配置先は ADR-0022 に、カタログの組み方は ADR-0025 にある。
+トークンの段の分け方を決めた理由は ADR-0012 に、コンポーネントの配置先は ADR-0013 に、カタログの組み方は ADR-0016 にある。
 
 - 出典: [デジタル庁デザインシステム](https://design.digital.go.jp/dads/)
-- ADR-0004: [デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0004-design-system.md)
-- ADR-0022: [packages/ui に、ドメインを持たない Base と Case のコンポーネントを置き、DADS の指針から外れる 3 点は理由を DESIGN.md に書く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0022-ui-components.md)
-- ADR-0025: [apps/web の Storybook を 1 つのカタログにする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0025-storybook-catalog.md)
+- ADR-0012: [デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0012-design-system.md)
+- ADR-0013: [packages/ui に、ドメインを持たない Base と Case のコンポーネントを置き、DADS の指針から外れる 3 点は理由を DESIGN.md に書く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0013-ui-components.md)
+- ADR-0016: [apps/web の Storybook を 1 つのカタログにする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0016-storybook-catalog.md)
 
 トークンとコンポーネントの見た目と使い方は、[カタログ（Storybook）](https://buddy-docs.emon-apps.workers.dev/storybook/)で見る。  
 ローカルでは `pnpm --filter @buddy/web storybook` で開く。
@@ -99,7 +99,7 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 
 背景を指定しない要素は `surface-canvas` の色になるので、カード、表、入力欄には `bg-surface` を付ける。
 
-- ADR-0004: [デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0004-design-system.md)
+- ADR-0012: [デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0012-design-system.md)
 
 `*-surface` の面の上の文字は、同じ系統の文字の色（`danger-surface` の上なら `danger`）か `text` にする。  
 どちらも 4.5:1 以上になる。

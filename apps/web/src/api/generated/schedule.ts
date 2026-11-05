@@ -530,7 +530,7 @@ export interface paths {
         put?: never;
         /**
          * 利用者の利用を終了する
-         * @description 利用者の利用を終了する（ADR-0019）。利用者のレコードは消さず、名前、サービス、担当の職員を残す。
+         * @description 利用者の利用を終了する（ADR-0005）。利用者のレコードは消さず、名前、サービス、担当の職員を残す。
          *     利用の終了の利用者は、デフォルトの利用者の一覧に出ず、予定の利用者に新しく指せず、職員の退職の確認で担当に数えない。
          *     その日（事業所の現地の日付）以降の予定か、その日以降に終わる繰り返しの予定が残るときは、書かずに 409（patient_has_schedules）で残る一覧を返す。
          *     利用の終了の利用者の利用を終了しても成功し、最初に利用を終了した時刻を残す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
@@ -574,7 +574,7 @@ export interface paths {
         put?: never;
         /**
          * 利用の終了の利用者を利用中に戻す
-         * @description 利用者を利用中に戻し（利用の再開）、担当の職員を本文の職員にする（ADR-0019）。利用の終了の前の予定は、同じ利用者の予定のまま残る。
+         * @description 利用者を利用中に戻し（利用の再開）、担当の職員を本文の職員にする（ADR-0005）。利用の終了の前の予定は、同じ利用者の予定のまま残る。
          *     担当の職員は必ず指定し、休職か退職の職員は 400 で拒む。利用中の利用者を戻しても成功し、担当を書き換える。
          *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
@@ -648,7 +648,7 @@ export interface paths {
          * @description 事業所の単発の予定と繰り返しの予定のうち、職員が見てよい予定を返す。見てよくない職員の予定は除く。
          *     sort_field と sort_order は許可した値だけを受け付け、ほかの値は 400 を返す。date_from と date_to は単発の予定だけを、予定の日付（開始の日）で絞る。
          *     date_from の前の日に始まり、date_from に終わる ends_next_day の予定も返す。
-         *     Google カレンダーを予定の正本にする事業所（google_primary）では、同期が写した Google カレンダーの予定（Projection）を読む（ADR-0008）。
+         *     Google カレンダーを予定の正本にする事業所（google_primary）では、同期が写した Google カレンダーの予定（Projection）を読む（ADR-0026）。
          *     繰り返しの予定は、date_from から date_to までの回に展開し、回ごとに単発の予定（source が google_calendar）として返す。recurring_schedules は空である。
          *     date_from か date_to を省くと、Projection を保持する期間（前々月の初日から 3 か月後の月末）の端を使う。
          *     外したカレンダーの予定は返さない。buddy の繰り返しの規則に写せない繰り返しの予定は、最初の回の日時の 1 件にし、review_reason を付けて返す。
@@ -767,7 +767,7 @@ export interface paths {
         };
         /**
          * カレンダーを共有する相手のサービスアカウントを取得する
-         * @description 職員が Google カレンダーを共有する相手の、この事業所のサービスアカウントのメールアドレスを返す。サービスアカウントは事業所ごとにある（ADR-0029）。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         * @description 職員が Google カレンダーを共有する相手の、この事業所のサービスアカウントのメールアドレスを返す。サービスアカウントは事業所ごとにある（ADR-0027）。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         get: operations["getCalendarServiceAccount"];
         put?: never;
@@ -943,7 +943,7 @@ export interface paths {
          * 確認が必要な書き出しを Google カレンダーの内容で解く
          * @description 確認が必要な書き出しの予定を、Google カレンダーの今の内容にそろえ、書き出しを終える。buddy で変えた日時とタイトルは消える。
          *     Google カレンダーで消された予定（予定が cancelled で返るときと、予定が 404 か 410 で、カレンダーは読めるとき）は、buddy でキャンセルする。
-         *     buddy を予定の正本にする事業所（buddy_primary）では、Google カレンダーの内容を当てず、export_not_acceptable で拒む（ADR-0008）。
+         *     buddy を予定の正本にする事業所（buddy_primary）では、Google カレンダーの内容を当てず、export_not_acceptable で拒む（ADR-0026）。
          *     acceptable が true の書き出しだけを解ける。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         post: operations["createCalendarExportAcceptance"];
@@ -962,7 +962,7 @@ export interface paths {
         };
         /**
          * 予定の正本の切り替えの状況を取得する
-         * @description 事業所の open の切り替えと、外していない全てのカレンダーの同期の状況と、この切り替えで最後に成功した取り込みを返す（ADR-0031）。
+         * @description 事業所の open の切り替えと、外していない全てのカレンダーの同期の状況と、この切り替えで最後に成功した取り込みを返す（ADR-0028）。
          *     open の切り替えが無ければ、cutover は null で、カレンダーの last_import は null である。
          *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
@@ -986,7 +986,7 @@ export interface paths {
         put?: never;
         /**
          * 予定の正本の切り替えを始める
-         * @description Google カレンダーを予定の正本にする事業所（google_primary）で、予定の正本を buddy に切り替える作業（切り替え）を始める（ADR-0031）。
+         * @description Google カレンダーを予定の正本にする事業所（google_primary）で、予定の正本を buddy に切り替える作業（切り替え）を始める（ADR-0028）。
          *     取り込みの期間は、今の Asia/Tokyo の月の初日から先の全てで、終わりを持たない。
          *     始めると、カレンダーごとに、取り込みのプレビューと確定（期間は range_start が切り替えの range_start、range_end が null）で取り込む。
          *     画面と照合は、切り替えの間も Google カレンダーの予定の写し（Projection）を読む。
@@ -1010,7 +1010,7 @@ export interface paths {
         put?: never;
         /**
          * 予定の正本の切り替えを完了する
-         * @description Google カレンダーを切り替えの月の初日から先の全てで読み直し、事業所の行を排他のロックで取って、カレンダーごとに次の 3 つを確認する（ADR-0031）。
+         * @description Google カレンダーを切り替えの月の初日から先の全てで読み直し、事業所の行を排他のロックで取って、カレンダーごとに次の 3 つを確認する（ADR-0028）。
          *     最後の取り込みの後に同期が成功している。読み直した予定が全て、予定の対応を持つか取り込まないと決めた予定で、規則に写せない繰り返しの予定が残っていない。
          *     予定の対応の etag と Google の etag が同じである。
          *     満たせば、事業所を buddy_primary にし、事業所の Projection の行を消し、切り替えを completed にする。同期をやめ、書き出しを始める。
@@ -1035,7 +1035,7 @@ export interface paths {
         put?: never;
         /**
          * 予定の正本の切り替えをやめる
-         * @description この切り替えの取り込みで作った buddy の予定、繰り返しの予定、訪問の情報、予定の対応を消し、切り替えを canceled にする（ADR-0031）。
+         * @description この切り替えの取り込みで作った buddy の予定、繰り返しの予定、訪問の情報、予定の対応を消し、切り替えを canceled にする（ADR-0028）。
          *     事業所は Google カレンダーを予定の正本にしたままで、画面と照合は Projection を読み続ける。やめた後に、もう一度始められる。
          *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
@@ -1199,7 +1199,7 @@ export interface components {
                 start_time: components["schemas"]["Time"];
                 end_time: components["schemas"]["Time"];
             }[];
-            /** @description 職員が主に担当する利用中の利用者。利用の終了の利用者は含めない（ADR-0019）。名前の順 */
+            /** @description 職員が主に担当する利用中の利用者。利用の終了の利用者は含めない（ADR-0005）。名前の順 */
             patients: {
                 id: components["schemas"]["ID"];
                 name: string;
@@ -1386,7 +1386,7 @@ export interface components {
          */
         ScheduleReviewReason: "recurrence_unsupported" | "patient_not_found" | "patient_ambiguous" | "service_code_not_found" | "title_unreadable";
         /**
-         * @description 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0008）
+         * @description 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0026）
          * @enum {string}
          */
         SourceMode: "google_primary" | "buddy_primary";
@@ -1492,7 +1492,7 @@ export interface components {
              *     forbidden はサービスアカウントがカレンダーに書けない、rejected は Google が予定の内容を受け付けなかった（400）、
              *     unavailable は Google に届かないか一時的なエラーが続いた、unappliable は Google カレンダーの変更を buddy の予定に読み替えられない
              *     （終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更）。
-             *     not_buddy_primary は事業所が buddy を予定の正本にしていないので、書かずに保留にした（ADR-0008）
+             *     not_buddy_primary は事業所が buddy を予定の正本にしていないので、書かずに保留にした（ADR-0026）
              * @enum {string|null}
              */
             error_code: "precondition_failed" | "not_found" | "forbidden" | "rejected" | "unavailable" | "unappliable" | "not_buddy_primary" | null;
@@ -1531,7 +1531,7 @@ export interface components {
             last_import: components["schemas"]["ImportRun"] | null;
         };
         /**
-         * @description 事業所に open の予定の正本の切り替えがあるときは、range_start を切り替えの range_start にし、range_end を省くか null にする（ADR-0031）。
+         * @description 事業所に open の予定の正本の切り替えがあるときは、range_start を切り替えの range_start にし、range_end を省くか null にする（ADR-0028）。
          *     ほかの期間は 400 になる。open の切り替えが無いときは、range_end を省けない。
          */
         ImportRange: {
@@ -1643,7 +1643,7 @@ export interface components {
             /** @description 前の取り込みで取り込んでいて、今回は書かなかった予定の数 */
             already_imported_count: number;
         };
-        /** @description 事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（ADR-0031） */
+        /** @description 事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（ADR-0028） */
         CalendarCutover: {
             id: components["schemas"]["ID"];
             facility_id: components["schemas"]["ID"];
@@ -1824,7 +1824,7 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
-        /** @description 事業所が Google カレンダーを予定の正本にしている（google_primary）ので、予定を書けない（ADR-0030） */
+        /** @description 事業所が Google カレンダーを予定の正本にしている（google_primary）ので、予定を書けない（ADR-0023） */
         GooglePrimary: {
             headers: {
                 [name: string]: unknown;
@@ -3329,7 +3329,7 @@ export interface operations {
                          *     最新でないとみなす時間は画面が決める。
                          */
                         calendar_syncs: components["schemas"]["CalendarSyncStatus"][];
-                        /** @description google_primary の事業所で、予定の正本を buddy に切り替えている間の open の切り替え。無ければ null（ADR-0031） */
+                        /** @description google_primary の事業所で、予定の正本を buddy に切り替えている間の open の切り替え。無ければ null（ADR-0028） */
                         cutover: components["schemas"]["OpenCalendarCutover"] | null;
                     };
                 };

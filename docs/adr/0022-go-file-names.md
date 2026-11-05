@@ -1,4 +1,4 @@
-# ADR-0028: Go の API のパッケージをフラットに保ち、ファイルの名前の末尾の語で役割を表す
+# ADR-0022: Go の API のパッケージをフラットに保ち、ファイルの名前の末尾の語で役割を表す
 
 ## Status
 
@@ -19,7 +19,7 @@ Go の API は 3 つある。予定の API（`services/schedule`）、照合の 
 - Google Go Style は、1 つの領域とその複数の責務を 1 つのパッケージに持つ形を例に挙げ、ファイルは、どのファイルに何があるかが分かる程度に分けるとする。Go の blog は、`types` や `interfaces` のように、種類でパッケージをまとめることを誤りとする。
   - 出典: [Google Go Style Best Practices の Package size](https://google.github.io/styleguide/go/best-practices#package-size)、[Package names](https://go.dev/blog/package-names)
 - 予定の API の規則と手順は、`internal/features/` の機能ごとのパッケージに置く。
-  - ADR-0005: [予定の API を機能ごとのパッケージに分ける](0005-schedule-api-packages.md)
+  - ADR-0018: [予定の API を機能ごとのパッケージに分ける](0018-schedule-api-packages.md)
 
 ## Decision
 

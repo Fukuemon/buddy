@@ -1,4 +1,4 @@
--- Google カレンダーとの双方向の同期（ADR-0008 の段階 3）の列。
+-- Google カレンダーとの双方向の同期（ADR-0026 の段階 3）の列。
 -- 前のバージョンのアプリが動いたまま当てられるよう、列は既定値を持たせて足す。
 
 ALTER TABLE calendar_sync_states ADD COLUMN next_sync_at timestamptz NOT NULL DEFAULT now();

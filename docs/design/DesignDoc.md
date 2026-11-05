@@ -121,7 +121,7 @@ PRD の 4 つの業務の領域は、次のコンテナが持つ。
 - access token の `sub` は職員の ID で、予定の API の `users.sub` に入る。
 - 持たないもの: 職員の名前、役職、権限。
   - 職員の名前、役職、権限は、予定の API が持つ。
-  - ADR-0010: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](../adr/0010-id-broker-hydra.md)
+  - ADR-0002: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](../adr/0002-id-broker-hydra.md)
   - ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元をブローカーが、権限と業務のデータを予定の API が持つ](../adr/0001-auth.md)
 - 内部の構成と流れは [ID ブローカーの Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md) にある。
 
@@ -143,7 +143,7 @@ PRD の 4 つの業務の領域は、次のコンテナが持つ。
 - 書き出し（`calendar-worker export`）は、予定の API が積んだ書き出しの待ちを読み、Google カレンダーに書く。
 - 同期（`calendar-worker sync`）は、Google カレンダーを正本にする事業所のカレンダーの変わった予定を読み、予定の写しに当てる。
 - 持たないもの: 予定の API の HTTP の操作と認証。
-  - ADR-0017: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](../adr/0017-calendar-worker.md)
+  - ADR-0029: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](../adr/0029-calendar-worker.md)
 - 役割ごとのプロセス、多重起動、止め方は、[基盤と運用の Calendar Worker](https://github.com/Fukuemon/buddy/blob/develop/context/operations.md#calendar-worker) にある。
 
 ### 照合の API
@@ -179,7 +179,7 @@ PRD の 4 つの業務の領域は、次のコンテナが持つ。
 | web | 予定の API、照合の API | `Authorization` に access token を Bearer で付ける | [予定の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/openapi.yaml)、[照合の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/openapi.yaml) |
 | 照合の API | 予定の API | web から受けた access token をそのまま Bearer で付けて、照合の権限を問い合わせる | [権限の Design Doc の照合の API の権限の確認](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md#照合の-api-の権限の確認) |
 | 予定の API、照合の API | Hydra | Issuer の discovery と JWKS を読み、access token を検証する | - |
-| 照合の API、予定の API、calendar-worker | Google Calendar API | 事業所ごとのサービスアカウントになりすまして得たトークンで、そのアカウントに共有されたカレンダーの予定を読む | [ADR-0029](../adr/0029-google-calendar-service-accounts.md) |
+| 照合の API、予定の API、calendar-worker | Google Calendar API | 事業所ごとのサービスアカウントになりすまして得たトークンで、そのアカウントに共有されたカレンダーの予定を読む | [ADR-0027](../adr/0027-google-calendar-service-accounts.md) |
 | 予定の API、calendar-worker | PostgreSQL | 予定の API と calendar-worker だけが、予定の API のデータベースを読み書きする | - |
 
 表のつなぎ方に足す規則は次のとおり。
@@ -190,7 +190,7 @@ PRD の 4 つの業務の領域は、次のコンテナが持つ。
 - 2 つの API は、access token の検証に失敗したら 401 を返す。
 - Google Calendar API に予定を書くのは、calendar-worker だけである。
   - サービスアカウントのキーは使わない。
-  - ADR-0029: [職員のカレンダーを、事業所ごとのサービスアカウントへの共有で読み書きする](../adr/0029-google-calendar-service-accounts.md)
+  - ADR-0027: [職員のカレンダーを、事業所ごとのサービスアカウントへの共有で読み書きする](../adr/0027-google-calendar-service-accounts.md)
 
 ブラウザと web の間の cookie には、セッションの ID を入れ、トークンは入れない。  
 画面の操作は、web のサーバーの関数（BFF）を呼ぶ。  
@@ -203,9 +203,9 @@ web のセッションは、トークンと ID token のほかに、ログイン
 `GET /v1/me` が失敗したときは、セッションの値を渡す。  
 リクエストを拒否するのは API なので、拒否の判定は変わった値で行われる。
 
-web と予定の API、照合の API の契約を変えるときの互換の規則は ADR-0003 にある。
+web と予定の API、照合の API の契約を変えるときの互換の規則は ADR-0009 にある。
 
-- ADR-0003: [モノレポを git flow でマージし、アプリごとのバージョンでリリースする](../adr/0003-branch-and-release.md)
+- ADR-0009: [モノレポを git flow でマージし、アプリごとのバージョンでリリースする](../adr/0009-branch-and-release.md)
 
 照合の API は、予定の API が返した権限に照合（`receipt.check`）が無ければ、403 を返す。  
 access token の `aud` に `schedule` と `receipt` の両方が入るので、同じトークンで 2 つの API を呼べる。
@@ -272,7 +272,7 @@ Hydra は discovery の `end_session_endpoint` を Issuer の URL から作る�
 `GOOGLE_CALENDAR_ENDPOINT` を渡し、`GOOGLE_APPLICATION_CREDENTIALS` を渡さなければ、認証をしない。  
 予定の API と calendar-worker では、`GOOGLE_CALENDAR_ENDPOINT` を `GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` と一緒に渡す。
 
-サービスアカウントが「予定の変更」の共有だけで書けるかを確認するまで、本番では `GOOGLE_CALENDAR_EXPORT_ENABLED` を `false` にする（ADR-0029 の承認の条件）。
+サービスアカウントが「予定の変更」の共有だけで書けるかを確認するまで、本番では `GOOGLE_CALENDAR_EXPORT_ENABLED` を `false` にする（ADR-0027 の承認の条件）。
 
 - web の `VITE_API_MODE` は、イメージのビルドのときに埋め込む値で、実行のときには読まない。
   - イメージは `bff` でビルドする。
@@ -327,7 +327,7 @@ Hydra は discovery の `end_session_endpoint` を Issuer の URL から作る�
 - 予定の閲覧と編集は、職員の権限で予定の API が判定する。
   - 職員が見てはいけない予定は一覧から除き、1 件を指す操作には 403 を返す。
   - 規則は [権限の Design Doc の予定の認可](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md#予定の認可) にある。
-  - ADR-0002: [権限を役職のデフォルトと職員ごとの上書きで持ち、職員の管理と照合も権限で許す](../adr/0002-pbac.md)
+  - ADR-0007: [権限を役職のデフォルトと職員ごとの上書きで持ち、職員の管理と照合も権限で許す](../adr/0007-pbac.md)
 - 照合は、照合の権限を持つ職員だけに照合の API が許す。
   - 照合の API は権限を持たず、照合のたびに予定の API に問い合わせる。
   - 確認の仕方は [権限の Design Doc の照合の API の権限の確認](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md#照合の-api-の権限の確認) にある。

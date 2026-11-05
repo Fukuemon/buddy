@@ -45,7 +45,7 @@ func NewList(facilities kernel.Finder[organization.Facility], schedules Schedule
 }
 
 // Do は、事業所の予定のうち、見てよい職員の予定を返す。事業所が見つからないときは apperr.ErrNotFound を返す。
-// buddy_primary の事業所では buddy の予定のテーブルを、google_primary の事業所では Projection を読む（ADR-0030）。
+// buddy_primary の事業所では buddy の予定のテーブルを、google_primary の事業所では Projection を読む（ADR-0023）。
 func (s List) Do(ctx context.Context, facilityID string, q ListQuery) (Listing, error) {
 	if err := q.Validate(); err != nil {
 		return Listing{}, err
@@ -138,7 +138,7 @@ func (s List) listProjected(ctx context.Context, f organization.Facility, q List
 	}, nil
 }
 
-// retainedMonthsBefore と retainedMonthsAfter は、Projection を保持する期間（前々月の初日から 3 か月後の月末）の、今月からの月の数である（ADR-0008）。
+// retainedMonthsBefore と retainedMonthsAfter は、Projection を保持する期間（前々月の初日から 3 か月後の月末）の、今月からの月の数である（ADR-0026）。
 const (
 	retainedMonthsBefore = 2
 	retainedMonthsAfter  = 3

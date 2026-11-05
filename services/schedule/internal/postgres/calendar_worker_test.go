@@ -24,7 +24,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
 
-// このファイルのテストは、書き出しと同期の処理を別のプロセスで並べて動かすときの、Claim とリースの動作を確認する（ADR-0017）。
+// このファイルのテストは、書き出しと同期の処理を別のプロセスで並べて動かすときの、Claim とリースの動作を確認する（ADR-0029）。
 // 処理ごとに別の接続で取り合うので、ロールバックする txContext ではなく、テストごとに作ったデータベースに書いて確定する。
 
 const workerCalendar = "mori@example.com"

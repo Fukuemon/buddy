@@ -10,7 +10,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 )
 
-// TestPatientCreateGuard は、職員の管理を許された職員だけが利用者を登録できることを確認する（ADR-0002）。
+// TestPatientCreateGuard は、職員の管理を許された職員だけが利用者を登録できることを確認する（ADR-0007）。
 func TestPatientCreateGuard(t *testing.T) {
 	ctx := context.Background()
 	in := patient.CreateInput{

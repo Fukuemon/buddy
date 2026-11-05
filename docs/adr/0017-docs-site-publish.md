@@ -1,4 +1,4 @@
-# ADR-0026: カタログをドキュメントサイトと同じ Worker で、develop に入ったときだけ出す
+# ADR-0017: カタログをドキュメントサイトと同じ Worker で、develop に入ったときだけ出す
 
 ## Status
 
@@ -11,7 +11,7 @@
 - ドキュメントサイト（Worker `buddy-docs`）は、文書、Storybook のカタログ、表の ER 図を 1 つの URL で出す。サイトに並べるものは、どれもリポジトリの文書とコードから組み立てる。
 - 同じリポジトリの pull request には GitHub が secret を渡すので、書き込みの権限を持つ人は、ワークフローを書き換えてリポジトリの単位の secret を読める。
 - カタログは、apps/web の Storybook で組む。
-  - ADR-0025: [apps/web の Storybook を 1 つのカタログにする](0025-storybook-catalog.md)
+  - ADR-0016: [apps/web の Storybook を 1 つのカタログにする](0016-storybook-catalog.md)
 
 ## Decision
 

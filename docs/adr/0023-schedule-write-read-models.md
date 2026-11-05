@@ -1,4 +1,4 @@
-# ADR-0030: 予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く
+# ADR-0023: 予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く
 
 ## Status
 
@@ -11,9 +11,9 @@
 - 予定の書き込みの前の確認と、表示のための読み出しで、読むものが違う。表示は種類、職員、訪問の情報の名前を結合し、Google カレンダーを正本にする事業所では、buddy の予定のテーブルでない写しから同じ形を返す。
 - 事業所の行のロックは `organization` にあり、職員の状態の変更と予定と担当の割り振りが同じロックを使う。
 - 事業所の正本のモードは `google_primary` と `buddy_primary` の 2 つで、`google_primary` の事業所の予定は Projection に写す。
-  - ADR-0008: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](0008-google-calendar-sync.md)
+  - ADR-0026: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](0026-google-calendar-sync.md)
 - 予定の API は、機能ごとのパッケージに分ける。
-  - ADR-0005: [予定の API を機能ごとのパッケージに分ける](0005-schedule-api-packages.md)
+  - ADR-0018: [予定の API を機能ごとのパッケージに分ける](0018-schedule-api-packages.md)
 
 ## Decision
 

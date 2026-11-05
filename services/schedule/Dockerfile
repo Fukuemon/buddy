@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# ビルドの文脈はリポジトリの直下である。go.mod の replace が ../../packages/go を指すため（ADR-0006）。
+# ビルドの文脈はリポジトリの直下である。go.mod の replace が ../../packages/go を指すため（ADR-0010）。
 # 例: docker build -f services/schedule/Dockerfile -t schedule:local .
 
 FROM golang:1.27 AS build
@@ -25,7 +25,7 @@ COPY --from=gcalhold-build /out/gcalhold /usr/local/bin/
 USER nonroot:nonroot
 ENTRYPOINT ["/usr/local/bin/gcalhold"]
 
-# Google カレンダーの書き出しと同期は、同じイメージの calendar-worker を entrypoint にして動かす（ADR-0017）。
+# Google カレンダーの書き出しと同期は、同じイメージの calendar-worker を entrypoint にして動かす（ADR-0029）。
 FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=build /out/api /out/calendar-worker /out/migrate /usr/local/bin/
 EXPOSE 8080

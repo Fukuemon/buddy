@@ -89,8 +89,8 @@
 - 保存の失敗の文は、同じ `errorMessage.ts` の `scheduleSubmitErrorMessage` が status で選ぶ。
 - 権限が無いことの文は、同じ `errorMessage.ts` の `SCHEDULE_EDIT_FORBIDDEN_MESSAGE` にある。
 - 400 の `invalid_input` には、休職か退職の職員か、訪問しない職員を新しく割り振ったときと、利用の終了の利用者を新しく指したときを含む。
-  - ADR-0018: [職員の停止を、戻せる休職と、戻せない退職に分ける](../../adr/0018-staff-leave-and-retirement.md)
-  - ADR-0019: [利用者を、戻せる利用の終了にでき、終了の利用者を予定の候補と職員の退職の確認から外す](../../adr/0019-patient-service-end.md)
-  - ADR-0020: [訪問するかを職員に持ち、訪問しない職員を予定と担当から外す](../../adr/0020-non-visiting-staff.md)
+  - ADR-0004: [職員の停止を、戻せる休職と、戻せない退職に分ける](../../adr/0004-staff-leave-and-retirement.md)
+  - ADR-0005: [利用者を、戻せる利用の終了にでき、終了の利用者を予定の候補と職員の退職の確認から外す](../../adr/0005-patient-service-end.md)
+  - ADR-0006: [訪問するかを職員に持ち、訪問しない職員を予定と担当から外す](../../adr/0006-non-visiting-staff.md)
 - 読み込みは、4xx なら取り直さずにすぐ失敗にし、ほかの失敗は取り直してから失敗にする。
   - 処理は `apps/web/src/appContext.ts` の `shouldRetryQuery` にある。

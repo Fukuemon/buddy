@@ -1,4 +1,4 @@
-# ADR-0021: 画面を apps/ に、API を services/ に置き、ディレクトリの名前でサービスの名前をそろえる
+# ADR-0011: 画面を apps/ に、API を services/ に置き、ディレクトリの名前でサービスの名前をそろえる
 
 ## Status
 
@@ -9,7 +9,7 @@
 ディレクトリの配置と、アプリの名前を決める必要がある。
 
 - buddy は、web、予定の API、照合の API のアプリと、共有のパッケージを 1 つのリポジトリに持つ。
-  - ADR-0003: [モノレポを git flow でマージし、アプリごとのバージョンでリリースする](0003-branch-and-release.md)
+  - ADR-0009: [モノレポを git flow でマージし、アプリごとのバージョンでリリースする](0009-branch-and-release.md)
 - web にも予定と照合の機能があるので、API のディレクトリを `apps/schedule` のように機能の名前だけにすると、API か画面かが名前から分からない。
 - アプリの名前は、compose のサービス、コンテナ、イメージ、環境変数、トークンの `aud` と IdP の開発用の設定、テーブル定義書の出力先、ドキュメントサイトの API の仕様のページ、GitHub のラベルが使う。
 - web は、トークンを取るときに audience を指定しない。`aud` を決めるのは IdP の設定で、確認するのは各 API の `OIDC_AUDIENCE` である。
@@ -21,8 +21,8 @@
 画面と BFF、ドキュメントサイトは `apps/` に、Go の API は `services/` に、共有のコードは `packages/` に置く。API のディレクトリは、接尾辞を付けず機能の名前にする（`services/schedule`、`services/receipt`）。
 
 - 理由: トップのディレクトリで画面と API が分かれるので、同じ機能の名前を使っても区別できる。Go の module のパスも `github.com/Fukuemon/buddy/services/schedule` と短くなる。
-- ID ブローカーのログインの画面のソースの配置先は、ADR-0014 で決めた。
-  - ADR-0014: [ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する](0014-broker-login-pages-source.md)
+- ID ブローカーのログインの画面のソースの配置先は、ADR-0003 で決めた。
+  - ADR-0003: [ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する](0003-broker-login-pages-source.md)
 
 ### API の名前
 

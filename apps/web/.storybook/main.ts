@@ -1,7 +1,7 @@
 import type { StorybookConfig } from '@storybook/react-vite'
 
 const config: StorybookConfig = {
-  // packages/ui の原則、トークン、コンポーネントと、apps/web の画面を 1 つのカタログにする（ADR-0025）。
+  // packages/ui の原則、トークン、コンポーネントと、apps/web の画面を 1 つのカタログにする（ADR-0016）。
   stories: [
     '../../../packages/ui/src/**/*.mdx',
     '../../../packages/ui/src/**/*.stories.@(ts|tsx)',

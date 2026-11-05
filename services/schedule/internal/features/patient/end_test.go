@@ -23,7 +23,7 @@ func visitSchedule(s *inmem.Store, id, patientID string, date civil.Date) {
 	}}}
 }
 
-// 今日以降の予定か繰り返しの予定が残る利用者は、利用の終了にできず、残る一覧を返す。過去の予定とキャンセルした予定は数えない（ADR-0019）。
+// 今日以降の予定か繰り返しの予定が残る利用者は、利用の終了にできず、残る一覧を返す。過去の予定とキャンセルした予定は数えない（ADR-0005）。
 func TestPatientEndRejectsRemainingSchedules(t *testing.T) {
 	ctx := context.Background()
 	s := inmem.Seeded()

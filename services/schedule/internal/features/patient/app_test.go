@@ -48,7 +48,7 @@ func allow(context.Context) error { return nil }
 
 func deny(context.Context) error { return apperr.ErrForbidden }
 
-// nonVisiting は、stopStaff に渡して、職員を訪問しない職員にする。職員の状態ではない（ADR-0020）。
+// nonVisiting は、stopStaff に渡して、職員を訪問しない職員にする。職員の状態ではない（ADR-0006）。
 const nonVisiting staff.Status = "non_visiting"
 
 // stopStaff は、職員 id を休職か退職か、訪問しない職員にする。

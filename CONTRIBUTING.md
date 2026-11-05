@@ -152,7 +152,7 @@ pnpm e2e
 
 pull request では、ドキュメントサイトのプレビューを出さない。  
 変更が develop に入ると、本番のドキュメントサイトに出る。  
-ADR-0026: [カタログをドキュメントサイトと同じ Worker で、develop に入ったときだけ出す](docs/adr/0026-docs-site-publish.md)
+ADR-0017: [カタログをドキュメントサイトと同じ Worker で、develop に入ったときだけ出す](docs/adr/0017-docs-site-publish.md)
 
 - マージする前に公開した形で見るときは、ルートでサイトを組み立て、静的なファイルとして配信して開く。
 
@@ -245,7 +245,7 @@ pnpm check:design   # 色の値、DADS の変数の名前、14px より小さい
 openapi.yaml を変えたら、`pnpm lint:openapi` を流し、同じコミットで生成物も生成し直す。  
 定義の書き方の規約は、[コードと文書の規約](context/conventions.md#api-definitions) にある。  
 項目の削除と意味の変更は、互換なしとして新しいパスで出す。  
-ADR-0003: [モノレポを git flow でマージし、アプリごとのバージョンでリリースする](docs/adr/0003-branch-and-release.md)
+ADR-0009: [モノレポを git flow でマージし、アプリごとのバージョンでリリースする](docs/adr/0009-branch-and-release.md)
 
 | 変えたもの | 生成のコマンド | 生成物 |
 | --- | --- | --- |
@@ -299,7 +299,7 @@ pull request では、CI（[ci.yml](.github/workflows/ci.yml)）が通るまで�
 ## Branches and Releases
 
 ブランチは、`main`、`develop`、issue ごとの作業用のブランチにする。  
-ADR-0003: [モノレポを git flow でマージし、アプリごとのバージョンでリリースする](docs/adr/0003-branch-and-release.md)
+ADR-0009: [モノレポを git flow でマージし、アプリごとのバージョンでリリースする](docs/adr/0009-branch-and-release.md)
 
 - `main` はリリース済みの状態を指す。
 - `develop` は、次のリリースに向けて変更を集める。

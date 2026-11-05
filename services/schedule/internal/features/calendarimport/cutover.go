@@ -33,7 +33,7 @@ const (
 	CutoverCanceled  CutoverStatus = "canceled"
 )
 
-// Cutover は、事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（切り替え）である（ADR-0031）。
+// Cutover は、事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（切り替え）である（ADR-0028）。
 // 1 つの事業所に open の切り替えは 1 つまでである。
 type Cutover struct {
 	ID         string

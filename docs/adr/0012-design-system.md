@@ -1,4 +1,4 @@
-# ADR-0004: デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にする
+# ADR-0012: デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にする
 
 ## Status
 
