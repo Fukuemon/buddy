@@ -12,13 +12,13 @@ status: stable
 実行の単位の責務と、実行の単位の間の通信は [buddy Design Doc](../docs/design/DesignDoc.md) にある。
 
 - 画面と BFF（web）とドキュメントサイトは `apps/`、Go の API は `services/`、共有のコードは `packages/` に置く。
-  - ADR-0010: [2 つの API を services/ に置き、画面と API をトップのディレクトリで分ける](../docs/adr/0010-services-directory.md)
+  - ADR-0003: [モノレポを git flow でマージし、画面を apps/ に、API を services/ に置き、ディレクトリの名前でタグとサービスの名前をそろえる](../docs/adr/0003-branch-and-release.md)
 - ID ブローカーのログインの画面のソースは `apps/broker`（`@buddy/broker`）に置く。
   - `apps/broker` はコンテナを持たず、生成したテンプレートと CSS を `services/broker/internal/login/pages/` に書き出す。ID ブローカーはそれを埋め込んで配信する。
-  - ADR-0016: [ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する](../docs/adr/0016-broker-login-pages-source.md)
+  - ADR-0014: [ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する](../docs/adr/0014-broker-login-pages-source.md)
 - API のディレクトリは機能の名前（`schedule`、`receipt`）にする。
   - コンテナ、サービス、`aud`、テーブル定義書の出力先の名前も、ディレクトリと同じにする。
-  - ADR-0011: [2 つの API のサービスの名前とトークンの aud を、ディレクトリの名前にそろえる](../docs/adr/0011-service-names.md)
+  - ADR-0003: [モノレポを git flow でマージし、画面を apps/ に、API を services/ に置き、ディレクトリの名前でタグとサービスの名前をそろえる](../docs/adr/0003-branch-and-release.md)
 - web と 2 つの API は、HTTP だけでつながる。
   - web と API の間の型は、各 API の `openapi.yaml` から生成し、手で書かない。
 - 業務の規則と認可は API が持つ。
@@ -57,7 +57,7 @@ status: stable
   - `packages/go` は `services/` を import しない。
   - サービスコードの表記と提供時間の範囲は、`packages/go/servicecode` に置く。照合の API と予定の API は、この表を写さない。
     - 照合だけの規則（予定の終了時間の調整、予定と実績のサービス内容の対応）は、照合の API の `servicerule` に置く。
-    - ADR-0018: [サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける](../docs/adr/0018-service-code-rules.md)
+    - ADR-0016: [サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける](../docs/adr/0016-service-code-rules.md)
 - web は `@buddy/ui` に依存してよい。
   - `packages/ui` から `apps/` へは依存しない。
 - web は `@buddy/broker` の `AuthCard` と `loginFailedMessage` だけに依存してよい。`apps/broker` は `@buddy/ui` に依存し、web には依存しない。
@@ -153,7 +153,7 @@ status: stable
 - web の route のファイル（`src/routes/`）は、URL と Container か機能の画面のコンポーネントを結び、search params の検証、SSR の有無、loader の prefetch だけを持つ。
   - 画面の枠（ヘッダー、ナビゲーション、照合待ちのバッジ、余白を付けた `main`）は、`routes/__root.tsx` の component が包む。route のファイルは枠を描かない。
     - 左の欄を持つ画面（予定の画面）は、route の `staticData` の `ownsSiteLayout` を true にし、機能の Layout が `SiteLayoutContainer` を使う。
-    - ADR-0017: [web の画面の枠を root の route の component で包み、左の欄を持つ画面だけを staticData で外す](../docs/adr/0017-web-site-frame-in-root-route.md)
+    - ADR-0015: [web の画面の枠を root の route の component で包み、左の欄を持つ画面だけを staticData で外す](../docs/adr/0015-web-site-frame-in-root-route.md)
   - 見出しとリード文は、機能のコンポーネントに置く。
   - 画面のコードは `features/<機能>/` に置く。URL の階層と機能の境界が一致しないためである。
     - たとえば `/schedule/import`、`/schedule/link`、`/schedule/review` の画面は、calendar の機能にある。
@@ -197,7 +197,7 @@ status: stable
     - ディレクトリは、同じ役割のものが 3 つ以上あるときだけ作る。1〜2 個で作ると、後から入るものでディレクトリの意味がずれる。
     - 役割のまとまりが無いものは、`src/components/` の直下に置く（チームの色の `teamColor.ts`）。
 - web の権限の確認は、段ごとに次の場所に置く。拒む判断は API が持ち、web の確認は画面の出し分けだけにする。
-  - ADR-0015: [web の画面の権限の確認を、route の beforeLoad と PermissionGuard で宣言し、1 つの関数で評価する](../docs/adr/0015-web-permission-checks.md)
+  - ADR-0013: [web の画面の権限の確認を、route の beforeLoad と PermissionGuard で宣言し、1 つの関数で評価する](../docs/adr/0013-web-permission-checks.md)
   - 認証は `routes/__root.tsx` の `beforeLoad` に置く。
   - 画面の段は、各 route の `beforeLoad` で `requirePermission` を呼んで宣言する。権限の要らない画面も `requirePermission('none')` と宣言する。
   - 画面の中のボタンとダイアログは `PermissionGuard` で出し分け、Container に権限の三項演算子を書かない。
@@ -244,7 +244,7 @@ status: stable
   - パッケージのドキュメントコメントと、複数の集約が使う定数は、パッケージの名前のファイル（`organization.go`、`visit.go`）に置く。
   - 常駐の処理と、操作の型のほかに操作を持つ型は、同じ機能のパッケージに、型の名前のファイル（`exporter.go`、`syncer.go`、`visit` の `writer.go`）で置く。
     - 常駐の処理の型は、1 回の取得と処理（`ExportDue`、`SyncDue`）だけを持つ。次のバッチをいつ呼ぶか（常駐と 1 回の繰り返し）は、`cmd/calendar-worker` の `loop.go` に置く。
-    - ADR-0019: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](../docs/adr/0019-calendar-worker.md)
+    - ADR-0017: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](../docs/adr/0017-calendar-worker.md)
   - テストは、確認する対象のファイルの名前に `_test` を付けたファイルに置く。
     - 複数の操作を 1 つの観点でまとめて確認するテストは、観点の名前のファイル（`calendar` の `accounts_test.go`、`schedule` の `authorization_test.go`）に置く。
     - 観点に名前が付かないものは `app_test.go` に置く。

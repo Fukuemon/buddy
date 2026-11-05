@@ -2,7 +2,7 @@
 // 処理中のリクエストを最大 30 秒待ってから止まる。設定は internal/config の LoadAPI が読む環境変数である。
 // `api healthcheck` は、サーバーを起動せず、動いているサーバーの GET /readyz を確認して終わる。
 // 組み立ては internal/assemble にあり、このコマンドはサーバーを起動して止める。
-// Google カレンダーの書き出しと同期の常駐の処理は起動せず、cmd/calendar-worker が動かす（ADR-0019）。
+// Google カレンダーの書き出しと同期の常駐の処理は起動せず、cmd/calendar-worker が動かす（ADR-0017）。
 // 書き出しを有効にした設定では、予定の変更を書き出しの待ちに積み、待ちは cmd/calendar-worker が書く。
 package main
 

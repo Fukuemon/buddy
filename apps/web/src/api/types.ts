@@ -24,7 +24,7 @@ export type Viewer = {
   facilityId: FacilityId
   /**
    * 職員が持つ権限の code の一覧。予定の API の code をそのまま写す。
-   * 画面の出し分けだけに使い、hasPermission で読む。拒むのは API である（ADR-0015）。
+   * 画面の出し分けだけに使い、hasPermission で読む。拒むのは API である（ADR-0013）。
    */
   policyCodes: readonly string[]
   /** 予定の権限（schedule.*）と対象。画面の出し分けだけに使い、拒むのは予定の API である。 */

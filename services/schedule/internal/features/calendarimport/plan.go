@@ -129,7 +129,7 @@ type Skipped struct {
 	Date      *civil.Date
 	StartTime *civil.Time
 	EndTime   *civil.Time
-	// EndsNextDay は、終了が翌日の予定に読み替えた予定（ADR-0013）のときに true である。取り込まない理由が日をまたぐ予定では false である。
+	// EndsNextDay は、終了が翌日の予定に読み替えた予定（ADR-0011）のときに true である。取り込まない理由が日をまたぐ予定では false である。
 	EndsNextDay bool
 	AllDay      bool
 	Reason      calendar.SkipReason

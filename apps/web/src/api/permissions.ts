@@ -19,7 +19,7 @@ export const SCREEN_PERMISSION_NAMES: Readonly<Record<ScreenPermission, string>>
 export type Permission = ScreenPermission | 'none'
 
 /**
- * 職員が権限を持つかを返す。画面の出し分けだけに使い、拒むのは API である（ADR-0015）。
+ * 職員が権限を持つかを返す。画面の出し分けだけに使い、拒むのは API である（ADR-0013）。
  * ログインしていなければ、'none' のほかは持たないとみなす。
  */
 export const hasPermission = (viewer: Viewer | null, permission: Permission): boolean =>

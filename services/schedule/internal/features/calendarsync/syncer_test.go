@@ -896,7 +896,7 @@ func TestSyncUsesCalendarFacilityAccount(t *testing.T) {
 }
 
 // TestSyncOvernight は、buddy で作った終了が翌日の予定を書き出し、戻ってきた予定を buddy の変更と見誤らないことと、
-// Google カレンダーで日をまたぐ予定に変えた予定と、日をまたがない予定に戻した予定に、印を付け直して当てることを確認する（ADR-0013）。
+// Google カレンダーで日をまたぐ予定に変えた予定と、日をまたがない予定に戻した予定に、印を付け直して当てることを確認する（ADR-0011）。
 func TestSyncOvernight(t *testing.T) {
 	e := newSyncEnv(t)
 	title := "夜勤"

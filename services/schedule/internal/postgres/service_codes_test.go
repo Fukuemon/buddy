@@ -9,7 +9,7 @@ import (
 )
 
 // TestServiceCodesMatchServicecode は、マイグレーションが入れた service_codes の全ての行の提供時間の範囲が、
-// 照合の API と共有する servicecode の表と同じことを確認する（ADR-0018）。servicecode の表の範囲を変えてシードを直し忘れると失敗する。
+// 照合の API と共有する servicecode の表と同じことを確認する（ADR-0016）。servicecode の表の範囲を変えてシードを直し忘れると失敗する。
 // 表にだけあるサービス内容（シードに無い医療保険の項目など）は確認しない。
 func TestServiceCodesMatchServicecode(t *testing.T) {
 	ctx := txContext(t)

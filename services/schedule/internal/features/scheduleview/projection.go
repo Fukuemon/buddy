@@ -156,7 +156,7 @@ func expandParent(r ProjectionDetail, rules EventRules, replaced map[civil.Date]
 	return out
 }
 
-// startsIn は、rd が from から to までの日に始まるか、from の前の日に始まり from に終わる予定かを返す（ADR-0013）。
+// startsIn は、rd が from から to までの日に始まるか、from の前の日に始まり from に終わる予定かを返す（ADR-0011）。
 func startsIn(rd EventReading, from, to civil.Date) bool {
 	if rd.EndsNextDay && rd.Date == dayBefore(from) {
 		return true

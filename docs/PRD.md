@@ -281,8 +281,8 @@ flowchart TB
 - 予定は、翌日に終わる 24 時間未満の予定も扱う。
   - 事業所には、夜勤の訪問のように日をまたぐ訪問がある。
   - 日をまたぐ予定は、開始の日の予定として持ち、開始の日の一覧に出る。カレンダーは、0 時から 24 時を出し、日をまたぐ予定を開始の日と翌日の両方に描く。
-  - 扱いの設計は、ADR-0013 にある。
-    - ADR-0013: [日をまたぐ予定を、開始の日の予定に「終了が翌日か」の印を付けて持ち、取り込み、カレンダー、照合で扱う](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0013-overnight-schedule.md)
+  - 扱いの設計は、ADR-0011 にある。
+    - ADR-0011: [日をまたぐ予定を、開始の日の予定に「終了が翌日か」の印を付けて持ち、取り込み、カレンダー、照合で扱う](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0011-overnight-schedule.md)
   - 終了が翌日の予定の規則は、[予定の不変条件](https://github.com/Fukuemon/buddy/blob/develop/context/domain/schedule.md#invariants) にある。
 - カレンダーは、表示する職員をチームと職員で絞れる。
   - 初めて開いたときに表示する職員は未決である。
@@ -433,7 +433,7 @@ flowchart TB
   - 開発者が、事業所で役職を増やす必要があるかを事業所の責任者に確認して、事業所で職員の管理を使い始めるまでに決める。
 - 日をまたぐ訪問の時間帯と、電子カルテの実績で日をまたぐ訪問の訪問日をどう数えるか。
   - 今の照合は、仮に、予定と実績の訪問日を開始の日として比べる。
-    - ADR-0013: [日をまたぐ予定を、開始の日の予定に「終了が翌日か」の印を付けて持ち、取り込み、カレンダー、照合で扱う](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0013-overnight-schedule.md)
+    - ADR-0011: [日をまたぐ予定を、開始の日の予定に「終了が翌日か」の印を付けて持ち、取り込み、カレンダー、照合で扱う](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0011-overnight-schedule.md)
   - 開発者が、事業所の責任者に確認して、事業所で照合を使い始めるまでに決める。
 - 未提供の要求を、どの段階で提供するか。
   - 繰り返しの予定の作成は、画面は未提供で、API は提供済み。

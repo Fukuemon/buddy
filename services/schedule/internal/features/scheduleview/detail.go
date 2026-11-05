@@ -78,7 +78,7 @@ func ParseSort(field, order string) (kernel.Sort, error) {
 }
 
 // ListQuery は、予定の一覧の絞り込みと並べ替えである。nil の絞り込みは使わない。
-// DateFrom と DateTo は、予定の日付（開始の日）で両端を含む。DateFrom の前の日に始まり DateFrom に終わる予定も含む（ADR-0013）。
+// DateFrom と DateTo は、予定の日付（開始の日）で両端を含む。DateFrom の前の日に始まり DateFrom に終わる予定も含む（ADR-0011）。
 // 繰り返しの予定には、日付の絞り込みを使わない。
 type ListQuery struct {
 	TypeName *schedule.TypeName
