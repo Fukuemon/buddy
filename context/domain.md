@@ -69,11 +69,14 @@ status: stable
 | 結び付け | 職員に Google カレンダーを対応させること。画面の名前は「カレンダーの連携」 | テーブル `external_calendars`、API `createExternalCalendar`、`removeExternalCalendar` |
 | 予定の取り込み | 結び付けたカレンダーの予定を、期間を選んで buddy の予定にすること。確定の前にプレビューする | テーブル `import_runs`、`external_event_links`、API `createCalendarImportPreview`、`createCalendarImport` |
 | 予定の書き出し | buddy で作り、変え、キャンセルした予定を、結び付けたカレンダーに書くこと | テーブル `calendar_exports`、API `listCalendarExportIssues`、`createCalendarExportRetry` |
-| 同期 | 職員が Google カレンダーで変えた予定を、増分で読んで buddy の予定に当てること。buddy と Google の両方で変わった予定は当てない | テーブル `calendar_sync_states`、Go `calendar.Syncer` |
+| 正本のモード | 事業所の予定の正本が、Google カレンダー（`google_primary`）か buddy（`buddy_primary`）かを表す事業所の状態。`google_primary` の事業所では buddy から予定を書けない | Go `organization.SourceMode`、カラム `facilities.source_mode`、API `SourceMode` |
+| 予定の写し | `google_primary` の事業所で、Google カレンダーの予定を buddy のカレンダーの画面のために写したもの。照合はこれを読まず、Google カレンダーを直接読む | テーブル `calendar_event_projections`、Go `calendarsync.NewProjectionApplier` |
+| 同期 | `google_primary` の事業所で、職員が Google カレンダーで変えた予定を、増分で読んで予定の写しに当てること。`buddy_primary` の事業所のカレンダーは読まない | テーブル `calendar_sync_states`、Go `calendarsync.Syncer` |
+| 切り替え | `google_primary` の事業所の予定を buddy に取り込み、確認してから正本のモードを `buddy_primary` にする作業。画面の名前は「予定の正本の切り替え」 | テーブル `calendar_cutovers`、Go `calendarimport.Cutover`、API `startCalendarCutover`、`createCalendarCutoverCompletion`、`cancelCalendarCutover` |
 | 確認が必要な予定（取り込みの） | 取り込みのプレビューで、タイトルの利用者を 1 人に決められず、取り込む前に取り込み方を選ぶ予定 | API `ImportPreview.needs_review`、`ImportReviewItem` |
-| 確認が必要な予定（書き出しの） | 書き出しか同期で、buddy に当てず、Google にも書かずに止めた予定。両方で変わった、Google で消された、Google の変更を読み替えられない、書けなかった予定が当たる。画面の名前は「確認が必要な予定」 | `calendar_exports` の `conflict` と `failed`、API `listCalendarExportIssues` |
+| 確認が必要な予定（書き出しの） | 書き出しで、Google カレンダーに書かずに止めた予定。Google で変わっていた、Google で消された、書けなかった予定が当たる。画面の名前は「確認が必要な予定」 | `calendar_exports` の `conflict` と `failed`、API `listCalendarExportIssues` |
 | buddy の内容で書き直す | 確認が必要な予定（書き出しの）を、buddy の内容で Google カレンダーに書き直すこと | API `createCalendarExportRetry` |
-| Google の内容に合わせる | 確認が必要な単発の予定（書き出しの）を、Google カレンダーの今の内容にそろえること。Google で消された予定は buddy でキャンセルする | API `createCalendarExportAcceptance` |
+| Google の内容に合わせる | 確認が必要な単発の予定（書き出しの）を、Google カレンダーの今の内容にそろえること。Google で消された予定は buddy でキャンセルする。`buddy_primary` の事業所では予定の API が拒む | API `createCalendarExportAcceptance` |
 | 事業所のサービスアカウント | 事業所の職員がカレンダーを共有する相手の Google のサービスアカウント。予定の API と照合の API が同じアカウントで読み書きする | API `getCalendarServiceAccount`、`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` |
 
 ### 画面
