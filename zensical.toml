@@ -124,6 +124,7 @@ nav = [
     "adr/0035-google-calendar-source-modes.md",
     "adr/0036-calendar-worker.md",
     "adr/0037-calendar-worker-loop.md",
+    "adr/0038-google-primary-write-through.md",
   ] },
 ]
 
