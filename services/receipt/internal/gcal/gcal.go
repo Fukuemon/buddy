@@ -84,7 +84,7 @@ type Services interface {
 	Service(orgID string) (*calendar.Service, error)
 }
 
-// Reader は、Calendar API で、設定したカレンダーの予定を、カレンダーの組織のサービスアカウントで読む（ADR-0008）。
+// Reader は、Calendar API で、設定したカレンダーの予定を、カレンダーの組織のサービスアカウントで読む（ADR-0029）。
 type Reader struct {
 	services  Services
 	calendars []Calendar

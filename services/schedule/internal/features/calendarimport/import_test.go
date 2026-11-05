@@ -400,7 +400,7 @@ func TestImportServiceAliases(t *testing.T) {
 	}
 }
 
-// Google カレンダーを予定の正本にする事業所では、手動の取り込みを 409 で拒み、取り込みの記録、予定、予定の対応を書かない（ADR-0008）。
+// Google カレンダーを予定の正本にする事業所では、手動の取り込みを 409 で拒み、取り込みの記録、予定、予定の対応を書かない（ADR-0030）。
 // 読み替えた後に、書くトランザクションの前にモードが変わったときも、同じく拒む。
 func TestImportRejectsGooglePrimary(t *testing.T) {
 	toGooglePrimary := func(s *inmem.Store) {
@@ -441,7 +441,7 @@ func TestImportRejectsGooglePrimary(t *testing.T) {
 }
 
 // TestImportLinksCarryGoogleETags は、取り込みが、取り込んだ全ての予定の対応に、読んだ時点の Google の etag と、
-// 作ったばかりの予定の更新の番号を書くことを確認する。切り替えの完了は、この etag と Google の今の etag を比べる（ADR-0008）。
+// 作ったばかりの予定の更新の番号を書くことを確認する。切り替えの完了は、この etag と Google の今の etag を比べる（ADR-0031）。
 func TestImportLinksCarryGoogleETags(t *testing.T) {
 	e := newEnv(t, fixture())
 	if _, err := e.importDecided(t, e.rng, decisions()); err != nil {

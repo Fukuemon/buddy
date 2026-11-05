@@ -290,7 +290,7 @@ func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
 }
 
 // TestCalendarSyncKeepsEndedPatientOnlyInPast は、利用の終了の利用者の取り込んだ予定に、Google での今日より前の変更は当て、
-// 利用者を変えずに今日以降へ動かす変更は当てないことを確認する（ADR-0001）。
+// 利用者を変えずに今日以降へ動かす変更は当てないことを確認する（ADR-0019）。
 func TestCalendarSyncKeepsEndedPatientOnlyInPast(t *testing.T) {
 	ctx := txContext(t)
 	ctx = principal.With(ctx, principal.Principal{Staff: principal.Staff{

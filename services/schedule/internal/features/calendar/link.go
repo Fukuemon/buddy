@@ -88,7 +88,7 @@ func (u Link) Do(ctx context.Context, facilityID, staffID, calendarID string) (E
 	return linked, err
 }
 
-// requireLinkable は、職員 st にカレンダーを結び付けられるかを確認する。退職した職員には結び付けられない（ADR-0001）。
+// requireLinkable は、職員 st にカレンダーを結び付けられるかを確認する。退職した職員には結び付けられない（ADR-0018）。
 func requireLinkable(st staff.Ref) error {
 	if st.Status == staff.StatusRetired {
 		return apperr.Invalid("退職した職員には、カレンダーを結び付けられません")

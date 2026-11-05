@@ -795,7 +795,7 @@ func TestGetPatientRemainingSchedules(t *testing.T) {
 	}
 }
 
-// 利用の再開は、本文の担当の職員を App に渡す。担当の職員を省くと 400 を返す（ADR-0001）。
+// 利用の再開は、本文の担当の職員を App に渡す。担当の職員を省くと 400 を返す（ADR-0019）。
 func TestResumePatientService(t *testing.T) {
 	p := &fakePatients{}
 	rec, body := do(t, newRouter(nil, &fakeStaff{}, p), http.MethodPost, "/v1/patients/"+patientID+"/resume_service", `{"assigned_staff_id":"`+staffID+`"}`)
@@ -1045,7 +1045,7 @@ func TestRequestValidationMessages(t *testing.T) {
 	}
 }
 
-// 職員の変更は、訪問するかを受け取る。予定か担当の利用者が残る職員を訪問しない職員に変えようとしたときは、409 で残る一覧を返す（ADR-0002）。
+// 職員の変更は、訪問するかを受け取る。予定か担当の利用者が残る職員を訪問しない職員に変えようとしたときは、409 で残る一覧を返す（ADR-0020）。
 func TestUpdateUserVisits(t *testing.T) {
 	const depID, teamID = "01M3TC5HZ8A18D2TP3PTKDXJMN", "01M3TC5MX04QJ19X6XR1ZCBZRJ"
 	nonVisiting := `{"username":"青木","department_id":"` + depID + `","team_id":"` + teamID + `","visits":false}`
@@ -1067,7 +1067,7 @@ func TestUpdateUserVisits(t *testing.T) {
 	}
 }
 
-// 職員の登録は、visits を省くと訪問する職員として登録する（ADR-0002）。
+// 職員の登録は、visits を省くと訪問する職員として登録する（ADR-0020）。
 func TestCreateUserVisits(t *testing.T) {
 	user := `{"username":"新人","email":"new@example.com","department_id":"` + staffID + `","team_id":"` + staffID + `","position_id":"` + staffID + `"`
 	for name, c := range map[string]struct {

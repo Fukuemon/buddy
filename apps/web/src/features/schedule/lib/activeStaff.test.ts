@@ -88,7 +88,7 @@ describe('activeStaffId', () => {
   })
 })
 
-describe('訪問しない職員（ADR-0002）', () => {
+describe('訪問しない職員（ADR-0020）', () => {
   const nonVisiting: Staff = { ...staff('staff-5'), nonVisiting: true }
   const list = [staff('staff-1'), nonVisiting]
 

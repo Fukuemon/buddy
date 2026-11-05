@@ -82,13 +82,13 @@ export type Staff = {
   email: string | null
   /** 休職（on_leave）か退職（retired）の職員の状態。有効な職員は持たない。 */
   status?: Exclude<ScheduleComponents['schemas']['StaffStatus'], 'active'>
-  /** 訪問しない職員は true を持つ。訪問する職員は持たない（ADR-0002）。 */
+  /** 訪問しない職員は true を持つ。訪問する職員は持たない（ADR-0020）。 */
   nonVisiting?: true
 }
 
 /** 利用者。API の型の ID と名前と、利用の終了かだけを使う。 */
 export type Patient = Pick<ScheduleComponents['schemas']['Patient'], 'id' | 'name'> & {
-  /** 利用の終了の利用者は true を持つ。利用中の利用者は持たない（ADR-0001）。 */
+  /** 利用の終了の利用者は true を持つ。利用中の利用者は持たない（ADR-0019）。 */
   ended?: true
 }
 

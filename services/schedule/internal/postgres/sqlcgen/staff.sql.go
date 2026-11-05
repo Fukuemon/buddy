@@ -316,7 +316,7 @@ type ListStaffAssignedPatientsRow struct {
 	Name string
 }
 
-// 利用の終了の利用者は、担当に数えない（ADR-0001）。
+// 利用の終了の利用者は、担当に数えない（ADR-0019）。
 func (q *Queries) ListStaffAssignedPatients(ctx context.Context, arg ListStaffAssignedPatientsParams) ([]ListStaffAssignedPatientsRow, error) {
 	rows, err := q.db.Query(ctx, listStaffAssignedPatients, arg.FacilityID, arg.AssignedStaffID)
 	if err != nil {

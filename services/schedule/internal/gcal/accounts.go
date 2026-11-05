@@ -21,7 +21,7 @@ type Clients interface {
 	Service(orgID string) (*calendarv3.Service, error)
 }
 
-// Accounts は、事業所の組織のサービスアカウントで Google Calendar API を呼ぶ calendar.Accounts である（ADR-0008）。
+// Accounts は、事業所の組織のサービスアカウントで Google Calendar API を呼ぶ calendar.Accounts である（ADR-0029）。
 // 事業所は、呼ぶ側がリクエストの職員か結び付けたカレンダーの行から決める。
 type Accounts struct {
 	clients Clients

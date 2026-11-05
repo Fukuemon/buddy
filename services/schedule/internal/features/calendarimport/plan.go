@@ -20,16 +20,16 @@ import (
 // SkipServiceNotFound は、タイトルから読んだサービス内容が、サービスコードのマスタに無い予定である。
 const SkipServiceNotFound calendar.SkipReason = "service_not_found"
 
-// SkipStaffOnLeave は、カレンダーを結び付けた職員が休職しているので作らない、新しい予定である（ADR-0001）。
+// SkipStaffOnLeave は、カレンダーを結び付けた職員が休職しているので作らない、新しい予定である（ADR-0018）。
 // 前の取り込みで繰り返しのまま取り込み、今もカレンダーの職員に割り振った予定の回の置き換えは、既に割り振った予定の変更なので、これに当てない。
 const SkipStaffOnLeave calendar.SkipReason = "staff_on_leave"
 
-// SkipStaffNonVisiting は、カレンダーを結び付けた職員が訪問しない職員なので作らない、新しい予定である（ADR-0002）。
+// SkipStaffNonVisiting は、カレンダーを結び付けた職員が訪問しない職員なので作らない、新しい予定である（ADR-0020）。
 // 休職と同じく、今もカレンダーの職員に割り振った予定の回の置き換えには当てない。
 const SkipStaffNonVisiting calendar.SkipReason = "staff_non_visiting"
 
 // Range は、取り込む予定の期間で、両端の日を含む。予定はこの期間に始まるものを取り込む。
-// End が零の値の期間は終わりを持たず、Start から先の全てである。切り替えの取り込みだけが使う（ADR-0008）。
+// End が零の値の期間は終わりを持たず、Start から先の全てである。切り替えの取り込みだけが使う（ADR-0031）。
 type Range struct {
 	Start civil.Date
 	End   civil.Date
@@ -100,7 +100,7 @@ const (
 	// ReviewPatientAmbiguous は、タイトルの利用者名の利用者が 2 人以上いる予定である。
 	ReviewPatientAmbiguous ReviewReason = "patient_ambiguous"
 	// ReviewRecurrenceUnsupported は、buddy の繰り返しの規則に写せない繰り返しの予定である。切り替えの取り込みだけが返し、
-	// 回に展開しない。取り込み方は取り込まないだけを選べる（ADR-0008）。
+	// 回に展開しない。取り込み方は取り込まないだけを選べる（ADR-0031）。
 	ReviewRecurrenceUnsupported ReviewReason = "recurrence_unsupported"
 )
 
@@ -243,7 +243,7 @@ type planInput struct {
 	// staffID は、カレンダーを結び付けた職員である。休職か訪問しない職員でも、この職員に割り振った繰り返しの予定の回の置き換えは当てる。
 	staffID string
 	// cutover は、切り替えの取り込みかである。切り替えの取り込みは、繰り返しの予定を回に展開せず、写せない繰り返しの予定を
-	// 確認が必要な予定にし、規則のまま取り込まない親の予定の回を取り込まない（ADR-0008）。
+	// 確認が必要な予定にし、規則のまま取り込まない親の予定の回を取り込まない（ADR-0031）。
 	cutover bool
 }
 

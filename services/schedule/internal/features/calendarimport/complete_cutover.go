@@ -15,7 +15,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
-// CompleteCutover は、切り替えを完了し、事業所の予定の正本を buddy にする（ADR-0008）。
+// CompleteCutover は、切り替えを完了し、事業所の予定の正本を buddy にする（ADR-0031）。
 type CompleteCutover struct {
 	calendars          Calendars
 	accounts           calendar.Accounts

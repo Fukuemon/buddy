@@ -429,7 +429,7 @@ func (a reconcileApplier) slotOf(ctx context.Context, base schedule.Slot, v *vis
 
 // createVisit は、訪問の情報 v を、外部の予定 ev のタイトルのサービス内容と利用者名にして書き、ID を返す。担当、同行、訪問の区分は v のままにする。
 // タイトルがサービス内容か利用者名を変えていて、サービスコードか利用者を 1 つに引けないときは errUnappliable を返す。
-// 利用の終了の利用者は、今日より前の予定で、v の利用者のままのときだけ書ける（ADR-0001）。書けないときも errUnappliable を返す。
+// 利用の終了の利用者は、今日より前の予定で、v の利用者のままのときだけ書ける（ADR-0019）。書けないときも errUnappliable を返す。
 func (a reconcileApplier) createVisit(ctx context.Context, facilityID string, v *visit.Detail, ev calendar.Event) (*string, error) {
 	in := visit.Input{
 		PatientID: v.PatientID, AssignedStaffID: v.AssignedStaffID, CompanionID: v.CompanionID, ServiceCodeID: v.ServiceCodeID,
@@ -483,7 +483,7 @@ func (a reconcileApplier) serviceCodeID(ctx context.Context, service string) (st
 }
 
 // requireKeepable は、利用者 patientID の訪問の情報を、date の予定に付けたまま保存できるかを確認する。
-// 利用の終了の利用者は、今日より前の予定でだけ保存でき、今日以降なら errUnappliable を返す（ADR-0001）。
+// 利用の終了の利用者は、今日より前の予定でだけ保存でき、今日以降なら errUnappliable を返す（ADR-0019）。
 func (a reconcileApplier) requireKeepable(ctx context.Context, facilityID, patientID string, date civil.Date) error {
 	if date.Before(civil.Today(a.now())) {
 		return nil

@@ -1,4 +1,4 @@
-// Package gcalauth は、組織ごとのサービスアカウントで Google Calendar API を呼ぶクライアントを作る（ADR-0008）。
+// Package gcalauth は、組織ごとのサービスアカウントで Google Calendar API を呼ぶクライアントを作る（ADR-0029）。
 // 予定の API と照合の API は、同じ形の設定（組織の ID とサービスアカウントのメールアドレスの対応）を読む。
 package gcalauth
 
@@ -39,7 +39,7 @@ type account struct {
 // LoadAccounts は、組織とサービスアカウントの対応を JSON のファイルから読む。
 // 形は [{"org_id": "...", "service_account": "..."}] である。
 // 一覧が空、org_id が空か重なる、service_account がメールアドレスの形でないか重なる、知らないキーがある、のいずれかではエラーを返す。
-// 2 つの組織に同じサービスアカウントを割り当てると、組織の間でカレンダーを読めるので拒む（ADR-0008）。
+// 2 つの組織に同じサービスアカウントを割り当てると、組織の間でカレンダーを読めるので拒む（ADR-0029）。
 // エラーの文には、サービスアカウントのメールアドレスを出さない。
 func LoadAccounts(path string) (Accounts, error) {
 	f, err := os.Open(path) //nolint:gosec // G304: 運営側が環境変数で渡す設定のファイルを読む
