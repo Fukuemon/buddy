@@ -16,6 +16,8 @@
 
 ## Decision
 
+### ディレクトリの配置
+
 画面と BFF、ドキュメントサイトは `apps/` に、Go の API は `services/` に、共有のコードは `packages/` に置く。API のディレクトリは、接尾辞を付けず機能の名前にする（`services/schedule`、`services/receipt`）。
 
 - 理由: トップのディレクトリで画面と API が分かれるので、同じ機能の名前を使っても区別できる。Go の module のパスも `github.com/Fukuemon/buddy/services/schedule` と短くなる。
