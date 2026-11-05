@@ -8,9 +8,14 @@
 | --- | --- |
 | URL | `/staff/new`。`/staff` の子 |
 | 使う人 | 職員の管理の権限を持つ職員。デフォルトはマネージャー |
-| 実装 | `apps/web/src/routes/staff.new.tsx`、`apps/web/src/features/staff/components/StaffCreateDialogContainer.tsx`、`apps/web/src/features/staff/components/StaffCreateDialog.tsx`、`packages/ui/src/patterns/InputDialog.tsx` |
+| 実装 | `apps/web/src/routes/staff.new.tsx`、`apps/web/src/features/staff/components/StaffCreateDialogContainer.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
+
+画面を描くコンポーネントのうち、実装の行のほかのものは次のとおり。
+
+- `apps/web/src/features/staff/components/StaffCreateDialog.tsx`
+- `packages/ui/src/patterns/InputDialog.tsx`
 
 ## 構成
 

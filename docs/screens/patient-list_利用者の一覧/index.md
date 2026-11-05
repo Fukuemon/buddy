@@ -7,10 +7,17 @@
 | --- | --- |
 | URL | `/patients` |
 | 使う人 | 職員の管理の権限を持つ職員。デフォルトはマネージャー |
-| 実装 | `apps/web/src/routes/patients.tsx`、`apps/web/src/features/patient/components/PatientListContainer.tsx`、`apps/web/src/features/patient/components/PatientListView.tsx`、`packages/ui/src/base/RowTable/RowTable.tsx`、`packages/ui/src/case/ListTools/ListTools.tsx`、`apps/web/src/components/page/PageForbiddenMessage.tsx` |
+| 実装 | `apps/web/src/routes/patients.tsx`、`apps/web/src/features/patient/components/PatientListContainer.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。  
 カラム、絞り込み、並び順は、[使う場面](#使う場面) から決めた。
+
+画面を描くコンポーネントのうち、実装の行のほかのものは次のとおり。
+
+- `apps/web/src/features/patient/components/PatientListView.tsx`
+- `packages/ui/src/base/RowTable/RowTable.tsx`
+- `packages/ui/src/case/ListTools/ListTools.tsx`
+- `apps/web/src/components/page/PageForbiddenMessage.tsx`
 
 ADR-0021: [利用者を、戻せる利用の終了にでき、終了の利用者を予定の候補と職員の退職の確認から外す](../../adr/0021-patient-service-end.md)
 

@@ -8,9 +8,14 @@
 | --- | --- |
 | URL | `/schedule/new`。`/schedule` の子で、カレンダーの search params を引き継ぐ |
 | 使う人 | 誰かの予定を編集できる職員。主訪問者と予定者に選べる職員は、予定の権限で決まる |
-| 実装 | `apps/web/src/routes/schedule.new.tsx`、`apps/web/src/features/schedule/components/ScheduleCreateModalContainer.tsx`、`apps/web/src/features/schedule/components/ScheduleFormModal.tsx`、`apps/web/src/features/schedule/components/ScheduleForm.tsx` |
+| 実装 | `apps/web/src/routes/schedule.new.tsx`、`apps/web/src/features/schedule/components/ScheduleCreateModalContainer.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
+
+画面を描くコンポーネントのうち、実装の行のほかのものは次のとおり。
+
+- `apps/web/src/features/schedule/components/ScheduleFormModal.tsx`
+- `apps/web/src/features/schedule/components/ScheduleForm.tsx`
 
 ## 構成
 

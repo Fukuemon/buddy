@@ -7,9 +7,13 @@
 | --- | --- |
 | URL | `/schedule/$scheduleId`。`/schedule` の子で、カレンダーの search params を引き継ぐ |
 | 使う人 | 予定を見る権限を持つ職員。自分の予定は全ての職員が見られる |
-| 実装 | `apps/web/src/routes/schedule.$scheduleId.index.tsx`、`apps/web/src/features/schedule/components/ScheduleDetailModalContainer.tsx`、`apps/web/src/features/schedule/components/ScheduleDetailModal.tsx` |
+| 実装 | `apps/web/src/routes/schedule.$scheduleId.index.tsx`、`apps/web/src/features/schedule/components/ScheduleDetailModalContainer.tsx` |
 
 画面の項目と、web の型、OpenAPI の項目の対応は [API との対応](api.md) にある。
+
+画面を描くコンポーネントのうち、実装の行のほかのものは次のとおり。
+
+- `apps/web/src/features/schedule/components/ScheduleDetailModal.tsx`
 
 ## 構成
 
