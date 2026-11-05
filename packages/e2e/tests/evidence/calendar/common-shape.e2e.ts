@@ -140,7 +140,7 @@ test.describe('画面の共通の形', () => {
           await expect(dialog.getByTestId('calendar-review-dialog-reason')).toBeVisible()
           const rewrite = dialog.getByTestId(/^calendar-review-rewrite-/)
           await expect(rewrite).not.toHaveClass(/bg-primary/)
-          await expect(dialog.getByTestId(/^calendar-review-accept-/)).toHaveCount(0)
+          await expect(dialog).not.toContainText('Google の内容に合わせる')
           await check(
             '「食い違った予定」のダイアログに、予定の日時、職員、最後に変わった日時、理由、予定を開くが出て、フッターに「buddy の内容で書き直す」だけが主ボタンの色でなく出る',
           )

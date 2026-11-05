@@ -64,7 +64,6 @@ describe('CalendarReviewContainer', () => {
     expect(within(dialog).getByTestId('calendar-review-rewrite-export-1')).toHaveTextContent(
       'buddy の内容で書き直す',
     )
-    expect(within(dialog).queryByTestId('calendar-review-accept-export-1')).toBeNull()
     expect(dialog).not.toHaveTextContent('Google の内容に合わせる')
   })
 

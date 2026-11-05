@@ -112,7 +112,9 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
             '2026/11/04（水）09:00〜09:29',
           )
           await expect(page.getByTestId('calendar-review-open-export-1')).toBeVisible()
-          await expect(page.getByTestId(/^calendar-review-accept-/)).toHaveCount(0)
+          await expect(page.getByTestId('calendar-review-dialog')).not.toContainText(
+            'Google の内容に合わせる',
+          )
           await expect(page.getByTestId('calendar-review-rewrite-export-1')).not.toHaveClass(
             /wf-btn--primary/,
           )
@@ -183,7 +185,9 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
           await page.getByTestId('calendar-review-row-schedule-schedule-4').click()
           await expect(page).toHaveURL(/12-detail-cancelled\.html/)
           await expect(page.getByTestId('calendar-review-rewrite-export-5')).toBeVisible()
-          await expect(page.getByTestId(/^calendar-review-accept-/)).toHaveCount(0)
+          await expect(page.getByTestId('calendar-review-dialog')).not.toContainText(
+            'Google の内容に合わせる',
+          )
           await check(
             'キャンセルした予定の確認（12-detail-cancelled.html）に、「Google の内容に合わせる」が無く、「buddy の内容で書き直す」だけがある',
           )

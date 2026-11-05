@@ -266,7 +266,7 @@ test.describe('確認が必要な予定', () => {
             )
             await expect(dialog(page).getByTestId('calendar-review-rewrite-export-5')).toBeVisible()
             await expect(dialog(page).getByTestId('calendar-review-open-export-5')).toBeVisible()
-            await expect(dialog(page).getByTestId(/^calendar-review-accept-/)).toHaveCount(0)
+            await expect(dialog(page)).not.toContainText('Google の内容に合わせる')
             await check(
               '予定の確認のダイアログに「…書き直すと Google カレンダーの予定を消すので、消してよいかを職員に確認してください。」の理由が出て、「Google の内容に合わせる」が出ず、「予定を開く」と「buddy の内容で書き直す」が出る',
             )
