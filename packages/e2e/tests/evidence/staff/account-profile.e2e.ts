@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 import { LEADER, LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
-import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
+import { EVIDENCE_VARIANTS, PHONE_VIEWPORT, recordPrEvidence } from '../../fixtures/evidence'
 import { signInAtBroker } from '../../screens/login'
 
 test.describe('自分の情報', () => {
@@ -18,13 +18,15 @@ test.describe('自分の情報', () => {
           title: '管理の権限を持たない職員が、アカウントのメニューから自分の情報を開く',
           actor: `${LEADER.staff.name}（チームリーダー、職員の管理の権限なし）`,
           variant,
+          viewport: PHONE_VIEWPORT,
         },
         async (page) => {
           await page.goto('/schedule')
           await signInAtBroker(page, LEADER.email)
         },
         async ({ page, step, check }) => {
-          await step('アカウントのメニューを開く')
+          await page.goto('/schedule')
+          await step('幅 390px で予定のカレンダーを開いている。アカウントのメニューを開く')
           await page.getByTestId('viewer-menu-open').click()
           await expect(page.getByTestId('viewer-profile')).toBeVisible()
           await check('メニューの名前とログアウトの間に「自分の情報」が出る')
