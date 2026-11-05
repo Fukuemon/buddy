@@ -119,7 +119,7 @@ func TestStaffRetireRejectsAssignments(t *testing.T) {
 			}
 		})
 	}
-	// 担当の利用者が利用の終了の利用者だけなら、退職できる（#346 の検証の観点 4、ADR-0020）
+	// 担当の利用者が利用の終了の利用者だけなら、退職できる（#346 の検証の観点 4、ADR-0017）
 	t.Run("利用の終了の担当の利用者は数えない", func(t *testing.T) {
 		s, ids := stopFixture()
 		clearAssignments(s)

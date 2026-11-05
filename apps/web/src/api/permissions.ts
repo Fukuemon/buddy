@@ -3,7 +3,7 @@ import type { Viewer } from './types'
 /** 職員の管理の権限の code。予定の API のマイグレーションが入れる値と同じにする。 */
 export const STAFF_MANAGE = 'staff.manage'
 
-/** 照合の権限の code。予定の API のマイグレーションが入れる値と同じにする（ADR-0021）。 */
+/** 照合の権限の code。予定の API のマイグレーションが入れる値と同じにする（ADR-0018）。 */
 export const RECEIPT_CHECK = 'receipt.check'
 
 /** 画面を開けるかと、画面の中のボタンとダイアログを出すかに使う権限。値は予定の API の権限の code と同じにする。 */
@@ -19,7 +19,7 @@ export const SCREEN_PERMISSION_NAMES: Readonly<Record<ScreenPermission, string>>
 export type Permission = ScreenPermission | 'none'
 
 /**
- * 職員が権限を持つかを返す。画面の出し分けだけに使い、拒むのは API である（ADR-0024）。
+ * 職員が権限を持つかを返す。画面の出し分けだけに使い、拒むのは API である（ADR-0021）。
  * ログインしていなければ、'none' のほかは持たないとみなす。
  */
 export const hasPermission = (viewer: Viewer | null, permission: Permission): boolean =>

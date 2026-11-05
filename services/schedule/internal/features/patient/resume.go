@@ -23,7 +23,7 @@ func NewResume(patients Repository, locks FacilityLock, staff StaffRefs, tx tx.T
 
 // Do は、利用者を利用中に戻し（利用の再開）、担当の職員を assignedStaffID にして、戻した利用者を返す。利用中の利用者を戻しても成功し、担当を書き換える。
 // 利用者が見つからないときは apperr.ErrNotFound を、職員の管理の権限が無いときは apperr.ErrForbidden を、
-// 職員が見つからないか、別の事業所の職員か、休職か退職の職員のときは入力のエラーを返す（ADR-0020）。
+// 職員が見つからないか、別の事業所の職員か、休職か退職の職員のときは入力のエラーを返す（ADR-0017）。
 // 利用の終了の間に担当の職員が退職することがあるので、再開では担当を必ず決め直す。
 func (p Resume) Do(ctx context.Context, id, assignedStaffID string) (Detail, error) {
 	if err := p.guard(ctx); err != nil {

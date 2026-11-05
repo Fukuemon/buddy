@@ -27,7 +27,7 @@ iBow から出した実訪問の CSV と予定（予定の CSV か Google カレ
 - `SCHEDULE_URL`: 予定の API の URL。
   - 必須。
   - 照合の API は、照合の前に、受けたトークンで `GET /v1/me` を呼び、照合の権限（`receipt.check`）を持つかを確認する。
-  - ADR-0021: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../../docs/adr/0021-receipt-check-policy-and-non-visiting-staff.md)
+  - ADR-0018: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../../docs/adr/0018-receipt-check-policy-and-non-visiting-staff.md)
 - `CORS_ALLOW_ORIGINS`: CORS でレスポンスを読ませるオリジンを、カンマで区切って並べた値。
   - 空なら CORS のヘッダーを返さない。
 - `GOOGLE_CALENDARS_FILE`: 照合の対象のカレンダーの設定を書いた JSON のパス。
@@ -50,7 +50,7 @@ compose を起動しているときは、重なる 2 つを `docker compose stop
 予定の API はフェイクの Issuer のトークンを受けないので、この起動の仕方では、照合は 502 か 403 を返す。  
 照合を試すときは、ルートの compose で起動する。
 
-- ADR-0021: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../../docs/adr/0021-receipt-check-policy-and-non-visiting-staff.md)
+- ADR-0018: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../../docs/adr/0018-receipt-check-policy-and-non-visiting-staff.md)
 
 ```sh
 # Hydra の代わりに、フェイクの Issuer を別のターミナルで起動する

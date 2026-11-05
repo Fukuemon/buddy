@@ -1,4 +1,4 @@
-# ADR-0015: OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る
+# ADR-0014: OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る
 
 ## Status
 
@@ -12,8 +12,8 @@ ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッ�
 
 - ローカル環境の compose は、開発用の IdP（mock-oauth2-server）をブローカーの位置に置いているだけで、本番で使えるブローカーが無い。
 - 事業所ごとに上流の IdP が違う。Google、LINE、Entra ID のような OIDC の IdP を想定する。
-- ブローカーは、事業所と職員の所属のような buddy の業務のデータを扱う。持つものの範囲は ADR-0016 で決める。
-  - ADR-0016: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](0016-identity-boundary.md)
+- ブローカーは、事業所と職員の所属のような buddy の業務のデータを扱う。持つものの範囲は ADR-0015 で決める。
+  - ADR-0015: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](0015-identity-boundary.md)
 - 認可コード、トークンの発行、鍵のローテーション、refresh token のローテーションと再利用の検出、失効は、どのプロダクトでも同じ処理で、誤ると被害が大きい。
 - 2 つの API は、access token の JWT を、discovery の `jwks_uri` で検証している（`packages/go/oidc`）。
 - インフラは別のリポジトリが持ち、buddy はデプロイ先のクラウドを知らない。
@@ -24,8 +24,8 @@ ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッ�
 
 - Hydra は、認可コード、トークンの発行、JWKS、refresh token のローテーション、失効、ログアウトを持つ。
 - 自作のブローカーは、ログインと同意とログアウトの画面、上流の IdP への振り分けと RP の処理、職員の身元を持つ。RP の処理は `go-oidc` と `golang.org/x/oauth2` で書く。
-  - 画面のソースの配置先と配信の仕方は、ADR-0025 で決めた。
-  - ADR-0025: [ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する](0025-broker-login-pages-source.md)
+  - 画面のソースの配置先と配信の仕方は、ADR-0022 で決めた。
+  - ADR-0022: [ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する](0022-broker-login-pages-source.md)
 - web は自社のアプリなので、Hydra のクライアントに `skip_consent` を設定し、同意の画面を出さない。
 - 本番も OSS 版の Hydra を、インフラのリポジトリで運用する。
   - OSS 版はパッチ版が出ず、セキュリティの修正は最新版にだけ出る。年 1〜2 回のメジャーなアップグレードを、停止を含めて回す。

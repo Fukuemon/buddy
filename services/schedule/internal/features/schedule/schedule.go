@@ -43,7 +43,7 @@ type Type struct {
 }
 
 // Slot は、単発と繰り返しの予定が共通に持つ属性である。VisitInfoID、Title、Description は、ないときに nil である。
-// Date は開始の日である。EndsNextDay が true の予定は、Date の翌日の EndTime に終わる（ADR-0022）。
+// Date は開始の日である。EndsNextDay が true の予定は、Date の翌日の EndTime に終わる（ADR-0019）。
 type Slot struct {
 	FacilityID     string
 	StaffID        string
@@ -140,7 +140,7 @@ func NewCancellation(id, scheduleID, reason string) (Cancellation, error) {
 	return Cancellation{ID: id, ScheduleID: scheduleID, Reason: reason}, nil
 }
 
-// Stored は、保存した単発の予定を、予定を書く前の確認に使う値と読んだものである。名前を結合しない（ADR-0027）。
+// Stored は、保存した単発の予定を、予定を書く前の確認に使う値と読んだものである。名前を結合しない（ADR-0024）。
 // Visit は訪問の情報で、訪問の予定でなければ nil である。Cancelled は、キャンセル済みかである。
 // Version は更新の番号で、作ったときに 1 で、変えるかキャンセルするたびに 1 つ増える。
 type Stored struct {

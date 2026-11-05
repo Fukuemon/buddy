@@ -30,7 +30,7 @@ status: stable
 - 終了が翌日の印が無い予定は、終了の時刻が開始の時刻より後である。
 - 終了が翌日の印がある予定は、終了の時刻が開始の時刻より前で、日付の翌日のその時刻に終わる。
   - 翌日の 0:00 に終わる予定は、終了の時刻を 0:00 にして印を付ける。
-  - ADR-0022: [日をまたぐ予定を、開始の日の予定に「終了が翌日か」の印を付けて持ち、取り込み、カレンダー、照合で扱う](../../docs/adr/0022-overnight-schedule.md)
+  - ADR-0019: [日をまたぐ予定を、開始の日の予定に「終了が翌日か」の印を付けて持ち、取り込み、カレンダー、照合で扱う](../../docs/adr/0019-overnight-schedule.md)
 - 開始と終了の時刻が同じ予定は、24 時間になるので持てない。
   - 予定の長さは 24 時間未満である。
 - 種類は通常か訪問である。
@@ -60,7 +60,7 @@ status: stable
       - 取り込んだ後に、Google で予定が変わっていない。
   - `buddy_primary` の事業所は buddy が正本で、Google カレンダーでの変更を予定に取り込まない。
     - 確認が必要な書き出しを Google の内容に合わせる操作（`createCalendarExportAcceptance`）は、409（code は `export_not_acceptable`）で拒む。
-  - ADR-0029: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](../../docs/adr/0029-google-calendar-source-modes.md)
+  - ADR-0026: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](../../docs/adr/0026-google-calendar-source-modes.md)
 
 ## Prohibitions
 

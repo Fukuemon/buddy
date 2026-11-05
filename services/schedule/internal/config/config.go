@@ -42,7 +42,7 @@ type Calendar struct {
 	SyncInterval time.Duration
 }
 
-// Broker は、ID ブローカーの内部の API（職員の登録、休職、復職、退職）を呼ぶ設定である（ADR-0016）。
+// Broker は、ID ブローカーの内部の API（職員の登録、休職、復職、退職）を呼ぶ設定である（ADR-0015）。
 type Broker struct {
 	// URL は、ブローカーの URL である。
 	URL string

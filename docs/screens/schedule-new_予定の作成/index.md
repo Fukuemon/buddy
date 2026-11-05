@@ -865,7 +865,7 @@
 
 職員の一覧は、休職と退職の職員と、訪問しない職員も含めて読む。  
 主訪問者と予定者の候補からは、休職と退職の職員と、訪問しない職員を除く。  
-訪問しない職員の扱いは [ADR-0021](../../adr/0021-receipt-check-policy-and-non-visiting-staff.md) にある。
+訪問しない職員の扱いは [ADR-0018](../../adr/0018-receipt-check-policy-and-non-visiting-staff.md) にある。
 
 開くと、ダイアログのタイトルにフォーカスを移す。  
 Tab はモーダルの中だけを回る。  

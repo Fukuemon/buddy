@@ -36,7 +36,7 @@ func NewUpdate(serviceCodes ServiceCodes, patients Repository, staff StaffRefs, 
 // 利用者が見つからないときは apperr.ErrNotFound を、職員の管理の権限が無いときは apperr.ErrForbidden を、
 // サービスコードか担当の職員が見つからないか、職員が別の事業所に属するときは入力のエラーを返す。
 // 担当を別の職員に変えるときは、休職か退職の職員を入力のエラーで拒む。今の担当のままなら、休職か退職でも拒まない。
-// 予定の既に割り振った職員と同じく、担当の職員の休職と退職が、担当を変えない変更を止めないようにする（ADR-0017）。
+// 予定の既に割り振った職員と同じく、担当の職員の休職と退職が、担当を変えない変更を止めないようにする（ADR-0016）。
 // 担当は、事業所の共有のロックの後に読み直した利用者と比べる。ロックの前に読んだ担当と比べると、同時の再開が書いた担当を見落とし、退職した職員を確認せずに担当へ戻すためである。
 func (p Update) Do(ctx context.Context, id string, in UpdateInput) (Detail, error) {
 	if err := p.guard(ctx); err != nil {

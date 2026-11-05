@@ -23,8 +23,8 @@
 - 依存のバージョンと Go のバージョンは、API ごとに決めたままにする。共有の module の依存は、各 API の `go.mod` で、高い方のバージョンに解決される。
 - `replace` はローカルのディレクトリを指すので、Docker のビルドの文脈をリポジトリの直下にする。Dockerfile ごとの `.dockerignore`（`Dockerfile.dockerignore`）で、文脈を自分のアプリと `packages/go` に絞る。
 - 共有の module の変更は、次のビルドで 2 つの API に同時に入る。トークンの検証は、2 つの API でずれないことを求めるので、この動きを選ぶ。
-  - この判断のうち、共有するものを基盤のコードとする前提は ADR-0028 で置き換えた。2 つの API でずれてはならない業務の規則（サービスの規則）も共有する。
-    - ADR-0028: [サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける](0028-service-code-rules.md)
+  - この判断のうち、共有するものを基盤のコードとする前提は ADR-0025 で置き換えた。2 つの API でずれてはならない業務の規則（サービスの規則）も共有する。
+    - ADR-0025: [サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける](0025-service-code-rules.md)
 - API 同士は、互いのパッケージを import しない。2 つの API が共有するのは `packages/go` だけにする。
 
 ## Considered Options

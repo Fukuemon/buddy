@@ -34,7 +34,7 @@ var (
 )
 
 // reconcileSyncer は、buddy_primary の事業所の外部の変更を ReconcileApplier で buddy の予定に当てる同期の処理を作る。
-// 組み立て（assemble）は buddy_primary の Applier を渡さず、buddy_primary の事業所のカレンダーを読まない（ADR-0029）。
+// 組み立て（assemble）は buddy_primary の Applier を渡さず、buddy_primary の事業所のカレンダーを読まない（ADR-0026）。
 // ReconcileApplier は、使わなくなった後も規則を残すので、表の制約に合う形で当てられるかを確認し続ける。
 func reconcileSyncer(deps calendarsync.SyncerDeps, rd calendarsync.ReconcileDeps, tx *Transactor, ids ulid.Generator) *calendarsync.Syncer {
 	return calendarsync.NewSyncer(deps, calendarsync.Appliers{organization.SourceBuddyPrimary: calendarsync.NewReconcileApplier(rd, ids)},
@@ -290,7 +290,7 @@ func TestCalendarSyncAppliesVisitChanges(t *testing.T) {
 }
 
 // TestCalendarSyncKeepsEndedPatientOnlyInPast は、利用の終了の利用者の取り込んだ予定に、Google での今日より前の変更は当て、
-// 利用者を変えずに今日以降へ動かす変更は当てないことを確認する（ADR-0020）。
+// 利用者を変えずに今日以降へ動かす変更は当てないことを確認する（ADR-0017）。
 func TestCalendarSyncKeepsEndedPatientOnlyInPast(t *testing.T) {
 	ctx := txContext(t)
 	ctx = principal.With(ctx, principal.Principal{Staff: principal.Staff{
@@ -383,7 +383,7 @@ func TestCalendarSyncKeepsEndedPatientOnlyInPast(t *testing.T) {
 func TestCalendarSyncForgetsTokenToReadAll(t *testing.T) {
 	ctx := txContext(t)
 	tx := ctx.Value(txKey{}).(pgx.Tx)
-	// 同期は、Google カレンダーを正本にする事業所のカレンダーを読む（ADR-0029）
+	// 同期は、Google カレンダーを正本にする事業所のカレンダーを読む（ADR-0026）
 	if _, err := tx.Exec(ctx, "UPDATE facilities SET source_mode = 'google_primary' WHERE id = $1", seedFacility); err != nil {
 		t.Fatal(err)
 	}

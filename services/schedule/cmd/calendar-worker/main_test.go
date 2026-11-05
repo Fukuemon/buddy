@@ -66,7 +66,7 @@ const (
 )
 
 // TestRunOnce は、export --once と sync --once が、取れるものを処理して 0 で終わることを確認する。
-// sync --once は、google_primary の事業所のカレンダーの予定を Projection に写し、buddy_primary の事業所のカレンダーを読まない（ADR-0029）。
+// sync --once は、google_primary の事業所のカレンダーの予定を Projection に写し、buddy_primary の事業所のカレンダーを読まない（ADR-0026）。
 func TestRunOnce(t *testing.T) {
 	if testing.Short() {
 		t.Skip("PostgreSQL を使うテストは -short では動かさない")

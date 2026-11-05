@@ -54,8 +54,8 @@ verified_commit: 4e53ca5
 - 休職と退職は、`staff` の操作が事業所の行をロックしたトランザクションの中で、職員を読み直してから行う。
   - 自分と、事業所で職員の管理の権限を持つ最後の有効な職員は、409 で拒む。
 - 休職、退職、復職の呼び出しの順と、2 か所の書き込みの片方だけが残ったときの扱いは、[ID ブローカーの Design Doc の職員の登録、休職、復職、退職](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#職員の登録休職復職退職) の図と文にある。
-- ADR-0016: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0016-identity-boundary.md)
-- ADR-0017: [職員の停止を、戻せる休職と、戻せない退職に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0017-staff-leave-and-retirement.md)
+- ADR-0015: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0015-identity-boundary.md)
+- ADR-0016: [職員の停止を、戻せる休職と、戻せない退職に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0016-staff-leave-and-retirement.md)
 
 ### 職員の管理の画面の読み込みと保存
 
@@ -64,7 +64,7 @@ verified_commit: 4e53ca5
 職員の登録の route は職員の一覧の route の子なので、権限が無ければ親の職員の一覧の route で止まる。  
 この判定は表示のためだけで、変える操作は予定の API が [予定の認可](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md#予定の認可) で拒む。
 
-- ADR-0024: [web の画面の権限の確認を、route の beforeLoad と PermissionGuard で宣言し、1 つの関数で評価する](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0024-web-permission-checks.md)
+- ADR-0021: [web の画面の権限の確認を、route の beforeLoad と PermissionGuard で宣言し、1 つの関数で評価する](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0021-web-permission-checks.md)
 
 画面とダイアログごとの、読む時点、読むもの、読む理由は次のとおり。
 

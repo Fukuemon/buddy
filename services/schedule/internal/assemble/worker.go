@@ -20,7 +20,7 @@ func NewExporter(r Repositories, accounts *gcal.Accounts, log *slog.Logger) *cal
 
 // NewSyncer は、accounts の Google カレンダーの変更を interval ごとに読む Syncer を作る。
 // Google カレンダーを予定の正本にする事業所（google_primary）のカレンダーの変更を、ProjectionApplier で予定の写し（Projection）に写す。
-// buddy を予定の正本にする事業所（buddy_primary）の Applier は渡さないので、そのカレンダーは読まない（ADR-0029）。
+// buddy を予定の正本にする事業所（buddy_primary）の Applier は渡さないので、そのカレンダーは読まない（ADR-0026）。
 // accounts は nil にしない。cmd/calendar-worker が、同期を有効にした設定（config.Calendar の SyncEnabled）のときだけ作って動かす。
 func NewSyncer(r Repositories, accounts *gcal.Accounts, interval time.Duration, log *slog.Logger) *calendarsync.Syncer {
 	return calendarsync.NewSyncer(calendarsync.SyncerDeps{

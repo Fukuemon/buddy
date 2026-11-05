@@ -102,7 +102,7 @@ func summary(v *visit.Detail, title *string) string {
 	return ""
 }
 
-// endDate は、予定の枠 s の終わる日を返す。終了が翌日の予定は、予定の日付の翌日に終わる（ADR-0022）。
+// endDate は、予定の枠 s の終わる日を返す。終了が翌日の予定は、予定の日付の翌日に終わる（ADR-0019）。
 // 繰り返しの予定では、最初の回の終わる日である。
 func endDate(s schedule.Slot) civil.Date {
 	if s.EndsNextDay {

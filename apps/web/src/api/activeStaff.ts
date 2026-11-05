@@ -1,6 +1,6 @@
 import type { Staff, StaffRecord } from './types'
 
-/** 予定の担当の候補にする職員の規則。有効（休職でも退職でもない）で、訪問する職員だけを候補にする（ADR-0021）。 */
+/** 予定の担当の候補にする職員の規則。有効（休職でも退職でもない）で、訪問する職員だけを候補にする（ADR-0018）。 */
 const isAssignable = (status: StaffRecord['status'], isVisiting: boolean) =>
   status === 'active' && isVisiting
 
