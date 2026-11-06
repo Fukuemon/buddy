@@ -50,6 +50,19 @@ describe('CalendarLinkContainer', () => {
       'aria-disabled',
       'true',
     )
+    expect(within(dialog).getByTestId('calendar-link-submit')).toHaveAccessibleDescription(
+      '「読めるか確認する」で読めることを確認すると、結び付けられます。',
+    )
+  })
+
+  it('カレンダーの ID を空にすると、確認のボタンの横に押せるようにする条件を出す', async () => {
+    render(<Default />)
+    const dialog = await openLinkDialog('staff-3')
+    await userEvent.clear(within(dialog).getByTestId('calendar-link-input'))
+
+    expect(within(dialog).getByTestId('calendar-link-check')).toHaveAccessibleDescription(
+      'カレンダーの ID を入れると確認できます。',
+    )
   })
 
   it('確認した後に入力を変えると、結果を消して結び付けを押せなくする', async () => {

@@ -98,6 +98,21 @@ describe('InputDialog', () => {
     expect(onSubmit).not.toHaveBeenCalled()
   })
 
+  it('canSubmit が false の間は、submitHint の文をボタンの上に出し、ボタンの説明にする', () => {
+    render(<CannotSubmit />)
+    expect(screen.getByTestId('reason-submit-hint')).toHaveTextContent('理由を入れてください。')
+    expect(screen.getByRole('button', { name: '保存' })).toHaveAccessibleDescription(
+      '理由を入れてください。',
+    )
+  })
+
+  it('押せるときと送っている間は、submitHint の文を出さない', () => {
+    const { rerender } = render(<CannotSubmit canSubmit />)
+    expect(screen.queryByTestId('reason-submit-hint')).toBeNull()
+    rerender(<CannotSubmit isSubmitting />)
+    expect(screen.queryByTestId('reason-submit-hint')).toBeNull()
+  })
+
   it('formId を渡すと、確定のボタンでその form を送る', async () => {
     const onFormSubmit = fn((event: SubmitEvent) => event.preventDefault())
     render(

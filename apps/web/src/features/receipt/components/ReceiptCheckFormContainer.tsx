@@ -62,6 +62,13 @@ export const ReceiptCheckFormContainer = () => {
       onSchedulesChange={changed(setSchedules)}
       onVisitsChange={changed(setVisits)}
       canSubmit={ready && !tooLarge}
+      submitHint={
+        ready
+          ? undefined
+          : source === 'calendar'
+            ? '対象の月と実績の CSV を選んでください。'
+            : '予定の CSV と実績の CSV を選んでください。'
+      }
       isSubmitting={check.isPending}
       onSubmit={submit}
       errorMessage={
