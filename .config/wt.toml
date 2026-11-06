@@ -4,10 +4,14 @@
 
 # worktree を消す前に、その worktree の compose を、DB の volume とビルドしたイメージごと消す。起動していなければ何もしない。
 # フックは wt を流したシェルの環境変数を受け継ぎ、compose はシェルの環境変数を .env より優先する。
-# 別の worktree の COMPOSE_PROJECT_NAME が残ったシェルから消すと、その worktree の環境を消してしまうので、プロジェクトの名前をブランチから決めて渡す。
+# 別の worktree の COMPOSE_PROJECT_NAME が残ったシェルから消すと、その worktree の環境を消してしまうので、消す worktree の .env の名前を明示して渡す。
+# ブランチ名から計算し直さないのは、作った後にブランチ名を変えると、起動した環境の名前とずれるためである。.env が無ければ何もしない。
 # --rmi local は compose の image で名前を付けた broker と schedule のイメージを消さないので、名前で消す。
 # --rmi all は postgres などの取得したイメージも消し、メインの checkout の環境が使うイメージまで消えるので使わない
-pre-remove = "COMPOSE_PROJECT_NAME=buddy-{{ branch | sanitize_db }} docker compose -p buddy-{{ branch | sanitize_db }} down -v --remove-orphans --rmi local && docker image rm -f buddy-{{ branch | sanitize_db }}-broker buddy-{{ branch | sanitize_db }}-schedule"
+pre-remove = '''
+p=$(sed -n 's/^COMPOSE_PROJECT_NAME=//p' .env 2>/dev/null)
+[ -z "$p" ] || { COMPOSE_PROJECT_NAME="$p" docker compose -p "$p" down -v --remove-orphans --rmi local && docker image rm -f "$p-broker" "$p-schedule"; }
+'''
 
 # lefthook の commitlint と E2E が、worktree の node_modules を使う
 post-start = "pnpm install --frozen-lockfile"
