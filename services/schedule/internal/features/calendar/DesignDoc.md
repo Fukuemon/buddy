@@ -25,7 +25,7 @@ verified_commit: 8254dde
 
 - 職員と Google カレンダーの結び付け
 - Google カレンダーの予定の取り込み、buddy の予定の Google カレンダーへの書き出し、Google カレンダーの変更の buddy の予定への反映
-- `google_primary` の事業所で、buddy で作る予定の Google カレンダーへの書き込み
+- `google_primary` の事業所で、buddy で作り、変え、取り消す予定の Google カレンダーへの書き込み
 - 事業所ごとのサービスアカウントでの Calendar API の呼び出し（`internal/gcal`）
 - ローカル環境と E2E で Google Calendar API の代わりに動かすもの
 
@@ -659,7 +659,7 @@ Google は、取り消した予定に ID のほかを返さないことがある
 
 #### Projection を読む側
 
-Projection を読むのは、予定の表示の読み出し（`scheduleview` の `List`）だけである。  
+Projection を読むのは、予定の表示の読み出し（`scheduleview` の `List` と `GetProjected`）と、予定の API の書き込み（`calendarwrite`）である。  
 読む手順は、[予定の管理の Design Doc の予定の一覧の読み元](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#予定の一覧の読み元) にある。
 
 - `cancelled` の行と、`cancelled` の親の例外の回は、一覧に出さない。
@@ -690,14 +690,17 @@ Projection を読むのは、予定の表示の読み出し（`scheduleview` の
 
 ### Google カレンダーへの書き込み
 
-`google_primary` の事業所では、予定の API は職員が buddy で作る予定を、リクエストの中で Google カレンダーに書く。  
-書く操作は機能のパッケージ `calendarwrite` に置き、`httpapi` の `createSchedule` が事業所のモードで `schedule` か `calendarwrite` を呼ぶ。  
-単発の予定は `calendarwrite.Create` が作る。
+`google_primary` の事業所では、予定の API は職員が buddy で作り、変え、取り消す予定を、リクエストの中で Google カレンダーに書く。  
+書く操作は機能のパッケージ `calendarwrite` に置く。  
+`httpapi` の `createSchedule`、`updateSchedule`、`cancelSchedule` は、事業所のモードで `schedule` か `calendarwrite` を呼ぶ。  
+単発の予定は、`calendarwrite.Create` が作り、`calendarwrite.Update` が変え、`calendarwrite.Cancel` が取り消す。  
+`updateSchedule`、`cancelSchedule`、`getSchedule` のパスは事業所を持たないので、`httpapi` は認証した職員の事業所のモードで呼び分ける。  
+予定がほかの事業所のものなら、認証のミドルウェアが予定の ID から事業所を引いて 403 を返す。
 
 - ADR-0026: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0026-google-calendar-sync.md)
 
 `calendarwrite` は `calendar` まで import し、`calendarimport`、`calendarsync`、`calendarexport` を import しない。  
-入力と権限は `schedule.PrepareSchedule` で確認し、`schedule.Create` と同じ規則を当てる。  
+入力と権限は、作成では `schedule.PrepareSchedule` で、変更では `schedule.PrepareChange` で確認し、`schedule.Create` と `schedule.Update` と同じ規則を当てる。  
 予定の職員のカレンダーに書き、カレンダーの職員を予定の職員とみなす。  
 予定の職員に外していないカレンダーが無ければ、Google に書かずに 409（`calendar_not_linked`）を返す。  
 Google の予定の本文は書き出しと同じ `calendar.ScheduleBody` で作り、訪問の予定のタイトルは `【サービス内容】利用者名` にする。  
@@ -708,17 +711,39 @@ Projection の行は、同期と同じ `calendar.ProjectionOf` で作る。
 `calendar_event_records` は、buddy から書いた Google の予定の 1 つを 1 行にし、訪問の情報と書き込みの保留の版を持つ。  
 主キーは buddy の予定の ID で、画面が作成のリクエストの `id` に付ける ULID である。  
 Google の予定の ID は、この ID から `calendar.EventIDOf` で決め、カレンダーとの組を一意にする。  
-通常の予定も、保留の版を持つために行を作り、訪問の情報を持たない。
+通常の予定も、保留の版を持つために行を作り、訪問の情報を持たない。  
+Google で作った予定を buddy で初めて変えると、その予定の一覧での ID を主キーにして行を作る。Google の予定の ID は Google が決めたままである。
 
 | カラム | 持つもの |
 | --- | --- |
+| `external_calendar_id`、`external_event_id` | Google が受けたと分かった版の予定の場所。主訪問者を替えて予定を移すと変わる |
 | `visit_info_id`、`version` | Google が受けたと分かった版と、その版の訪問の情報。`version` が 0 の行は、まだ作成を Google が受けたと分かっていない |
 | `pending_version`、`pending_state`、`pending_visit_info_id`、`pending_deadline` | 保留の版、状態（`writing` か `unknown`）、その版の訪問の情報、書く期限。保留が無ければ全て NULL |
+| `pending_external_calendar_id`、`pending_external_event_id` | 予定を別のカレンダーに移す保留の版の、移す先。移さない書き込みと、保留が無い行は NULL。版を確定すると `external_calendar_id` と `external_event_id` に移す |
 | `pending_locked_until` | 同期が保留の版を読み戻す間、ほかの Worker に記録を渡さない期限。保留の版を解いても NULL に戻さない |
 
 Google の予定の `extendedProperties.private` には、buddy の予定の ID（`buddyScheduleId`）と保留の版（`buddyVersion`）を置く。  
 訪問の情報は `visit_infos` の行で持ち、`visit.Writer.Create` で作る。  
 `visit_infos` の行は、予定、繰り返しの予定、記録のどれも指さなくなったときに消す（`DeleteIfUnused`）。
+
+#### Projection の予定の ID
+
+一覧（`listSchedules`）が返す ID、作成の応答の ID、`getSchedule`、`updateSchedule`、`cancelSchedule` が受ける ID は、同じ値にする。  
+buddy で作った予定を作った後に一覧から開いて変えられ、一覧を読み直しても 1 つの予定の ID は変わらない。
+
+- 記録が指す予定は、記録の主キー（buddy の予定の ID）を ID にする。
+  - 一覧は、Projection の行に、行のカレンダーと Google の予定の ID の組で記録を結び付けて読む。
+  - 主訪問者を替えて予定を移しても、記録の主キーは変わらないので、ID も変わらない。
+- 記録の無い予定は、結び付けたカレンダーの ID と Google の予定の ID から作る値を ID にする（`scheduleview.ProjectedScheduleID`）。
+  - SHA-256 の先頭の 128 ビットを、ULID と同じ 26 文字の Crockford の Base32 にする。パスの ID の形の確認（ULID）を通る。
+  - Google の予定の ID は ULID の形でなく、同じ予定を招待した職員のカレンダーに同じ ID の予定ができるので、カレンダーの ID も含める。
+  - DB の関数 `projected_schedule_id` が同じ値を返し、式の索引で 1 件を引く。2 つが同じ値を返すことは、リポジトリのテストで確認する。
+- 繰り返しの回の ID は、回の日付も含めて作る。回の変更と取り消しは、繰り返しの予定の書き込みで扱う。
+
+1 件の読み出し（`scheduleview.GetProjected`）は、ID が記録の主キーなら記録が指す行を、記録の無い行は `projected_schedule_id` で行を引き、一覧と同じ規則で予定にする。  
+閲覧の判定と事業所の分離は一覧と同じで、カレンダーの職員を予定の職員とみなす。  
+取り消した予定と繰り返しの予定の親は返さない。  
+認証のミドルウェアは、予定の ID の事業所を、buddy の予定、記録の主キー、`projected_schedule_id` の順に引き、職員の事業所と違えば 403 を返す。
 
 #### 書き込みの手順
 
@@ -779,11 +804,88 @@ sequenceDiagram
 応答の予定は、入力と Google が返した予定から作る。  
 応答の予定の ID は buddy の予定の ID で、`source` は `google_calendar` にする。
 
+#### 変更と取り消し
+
+`calendarwrite.Update` は単発の予定を変え、作成と同じ手順 1 から 5 と保留の版で書く。  
+画面は、読んだ予定の `etag` をリクエストに付ける。`getSchedule`、`listSchedules`、書いた応答の予定が `etag` を返す。  
+`google_primary` では `etag` が必須で、`buddy_primary` では読まない。  
+予定の API は、`etag` を `If-Match` に付けて Google の予定を部分更新する（`events.patch`）。
+
+- 記録に保留の版があれば、Google に書かずに 409（`google_write_pending`）で拒む。
+  - 予定の ID で書き込みを見分けられない変更には、作成の送り直しの扱いを当てない。
+- 記録の無い予定（Google で作った予定）を変えると、手順 1 で、一覧での ID を主キーにし、確定した版を 0 にした記録を作る。
+  - 訪問の情報を足して保存すると、保留の版の訪問の情報になり、Google が受けると確定する。
+  - Google が拒めば、記録ごと消し、Google で作った予定の扱いに戻る。
+- 確定した版のある記録では、版を 1 つ進めた保留の版を書く。拒まれたら保留の版を消し、確定した版の訪問の情報に戻す。
+- 読んだ後に Google で予定が変わっていれば（412）、Google は書き込みを受けない。予定の API は、保留の版を消し、Google の今の予定を読んで Projection に写し、409（`google_event_changed`）を返す。
+- 繰り返しの予定の親と例外の回は、409（`conflict`）で拒む。
+
+`calendarwrite.Cancel` は、`etag` を `If-Match` に付けて Google の予定を消す（`events.delete`）。
+
+- 消せたら、Google の予定を読み、Projection の行を取り消しの状態にする。読めなければ、取り消しの行は同期が写す。
+- 消した予定の記録と、その訪問の情報を消す。ADR-0026 の、Google で取り消した予定の訪問の情報の行は消す規則に従う。
+- 取り消しの理由は、Google の予定に書く項目が無く、記録も消すので保存しない。応答のキャンセルの ID は、予定の ID と同じにする。
+- 保留の版は書かない。Google の予定の `extendedProperties.private` に版を置けないためである。結果が分からないときは 503（`google_write_unknown`）を返し、同期が取り消しを写す。
+- 記録に保留の版があれば、409（`google_write_pending`）で拒む。412 は変更と同じく扱う。
+
+#### 主訪問者を替えるときの移し方
+
+予定の職員（主訪問者）を替えると、新しい職員のカレンダーに予定を作り直し、前の職員のカレンダーの予定を消す。  
+`events.move` は使わない。
+
+- calendarpit 0.9.5 は `events.move` に 501 を返し、`gcaltest` も答えない。E2E と単体テストで確認できない。
+- `events.move` は予定の内容を変えないので、移した後に部分更新が要り、2 回の書き込みになる。公式の文書は `events.move` の `If-Match` を書いていない。
+  - 出典: [Events: move](https://developers.google.com/workspace/calendar/api/v3/reference/events/move)
+
+移す先の Google の予定の ID は、新しい ULID から `calendar.EventIDOf` で作る。  
+同じカレンダーに戻すとき、Google は消した予定と同じ ID の作成を 409 で拒むためである。  
+移す先は保留の版に持ち（`pending_external_calendar_id`、`pending_external_event_id`）、確定すると記録のカレンダーと Google の予定の ID を移す先にする。  
+記録の主キーは変わらない。
+
+次の図は、予定を移す変更で、Google の呼び出しの順と、保留の版の扱いを示す。
+
+```mermaid
+sequenceDiagram
+  participant h as httpapi
+  participant w as calendarwrite.Update
+  participant db as PostgreSQL
+  participant g as Google Calendar API
+  h->>w: Do（事業所、予定の ID、etag、入力）
+  w->>db: 1 つ目のトランザクション。記録に、移す先を持つ「書いている途中」の保留の版を書く
+  alt 確認で拒んだ
+    w-->>h: 400、403、404、409（cutover_open、calendar_not_linked、google_write_pending）
+  end
+  w->>g: events.get（前のカレンダーの予定）
+  alt 読めない、無い、取り消し、etag が違う
+    w->>db: 保留の版を消す。読めた予定は Projection に写す
+    w-->>h: 409（google_event_changed、google_event_not_found）か 503（google_unavailable）
+  end
+  w->>g: events.insert（新しいカレンダー、新しい ID）
+  alt 結果が分からない
+    w->>db: 保留の版を unknown にして残す
+    w-->>h: 503（google_write_unknown）
+  else 拒んだことが確かな 4xx
+    w->>db: 保留の版を消す
+    w-->>h: 409 か 503（google_unavailable）
+  end
+  w->>g: events.delete（前のカレンダーの予定、If-Match）
+  alt 消せなかった
+    w-->>w: ログ calendar write previous event left に書き、前の予定を残す
+  end
+  w->>db: 2 つ目のトランザクション。保留の版を確定し、記録を移す先にする。作った予定と、消した前の予定を Projection に写す
+  w-->>h: 書いた予定
+```
+
+- 前の予定を作る前に読み、`etag` を比べる。読んだ後に Google で変わっていれば、どちらのカレンダーにも書かない。
+- 前の予定を消せなかったときは、作った予定で保留の版を確定し、前の予定を残す。前の予定は記録を持たない Google の予定として一覧に出て、職員が取り消せる。
+- 作成の結果が分からず、同期が移す先の予定で保留の版を確定したときも、前の予定は残る。
+
 #### 書く期限
 
 1 回の Google の呼び出しは 20 秒（`calendarwrite.CallTimeout`）で打ち切り、結果が分からないとみなす。  
 書く期限は、保留の版を書いた時刻の 2 分後（`calendarwrite.WriteDeadline`）にする。  
-手順 1 の後に、Google の作成と読み出しを 1 回ずつ呼び、2 つ目のトランザクションを終えるまでを、呼び出しの上限の 2 回分に余裕を足して収める。  
+手順 1 の後に Google を呼び、2 つ目のトランザクションを終えるまでを、呼び出しの上限の 4 回分に余裕を足して収める。  
+呼ぶ回数は、作成で 2 回（作成と読み出し）、予定を移す変更で 4 回（読み出し、作成、削除、読み出し）までである。  
 書く期限を過ぎた「書いている途中」の保留の版は、予定の API が手順 3 から 5 のどれにも進まずに止まったものとみなし、「結果が分からない」と同じく扱う。
 
 #### 同期での保留の版の確定と読み戻し
@@ -796,7 +898,8 @@ sequenceDiagram
 
 同期の増分は、読んだ予定を Projection に写すのと同じトランザクションで、保留の版を確定する。
 
-- 予定の `extendedProperties.private` の `buddyScheduleId` の記録が、このカレンダーのこの予定の記録で、`buddyVersion` が保留の版と同じなら確定する。
+- 予定の `extendedProperties.private` の `buddyScheduleId` の記録が、このカレンダーのこの予定に保留の版を書く記録で、`buddyVersion` が保留の版と同じなら確定する。
+  - 予定を移す保留の版では、移す先のカレンダーと Google の予定の ID で比べる。読み戻しも、移す先の予定を読む。
   - 確定は、保留の訪問の情報を確定した訪問の情報に移し、前の訪問の情報を使われていなければ消す。
   - 書く期限の前でも確定する。予定の API の 2 つ目のトランザクションは、保留の版が解かれていれば記録を変えない。
 - 版が違うか、予定が取り消されていれば、保留の版を消さない。
@@ -859,16 +962,17 @@ sequenceDiagram
 
 #### エラーと応答
 
-`EventWriter` のエラーと応答の対応は次のとおり。
+作成と変更の、`EventWriter` のエラーと応答の対応は次のとおり。取り消しは、保留の版の列のほかは同じである。
 
 | `EventWriter` のエラー | 応答 | 保留の版 |
 | --- | --- | --- |
-| 無し | 201 と書いた予定 | 確定する |
+| 無し | 201（変更は 200）と書いた予定 | 確定する |
 | `ErrEventExists` | Google の予定の ID と版と内容が同じなら 201、版か内容が違えば 409（`google_event_changed`）、ID が違えば 409（`conflict`） | 版が同じなら確定し、違えば消す |
 | `ErrOutcomeUnknown` | 503（`google_write_unknown`） | 「結果が分からない」にして残す |
 | `ErrUnavailable` | 503（`google_unavailable`） | 消す |
-| `ErrEventChanged` | 409（`google_event_changed`） | 消す |
-| `ErrEventGone`、`ErrEventNotFound` | 409（`google_event_not_found`） | 消す |
+| `ErrEventChanged` | 409（`google_event_changed`）。変更と取り消しでは、Google の今の予定を読んで Projection に写す | 消す |
+| `ErrEventGone` | 409（`google_event_not_found`）。変更と取り消しでは、Google の予定を読み、Projection の行を取り消しの状態にする | 消す |
+| `ErrEventNotFound` | 409（`google_event_not_found`）。Projection の行を変えない | 消す |
 | `ErrUnwritable` | 409（`google_calendar_unwritable`） | 消す |
 | `ErrEventRejected` | 409（`google_event_rejected`） | 消す |
 
@@ -912,6 +1016,7 @@ calendarpit 0.9.5 と本物の振る舞いの比べ方は、次のとおり。
 | 消した予定に、消す前の etag を `If-Match` に付けた patch、update、delete の 412。`If-Match` の無い delete の 410。消した予定の get の `cancelled` | 実際の API | 同じ |
 | 消した予定と同じ ID の insert の 409 | 公式の文書。実際の API では未確認 | 同じ |
 | `fields` の指定と、知らない query の項目 | 公式の文書 | 400 で拒む。予定の API は `fields` を付けない |
+| `events.move` | 公式の文書 | 501 を返す。予定の API は使わない |
 
 - 出典（実際の API）: [#180 の実際の API での確認](https://github.com/Fukuemon/buddy/issues/180#issuecomment-6332187503)
 
