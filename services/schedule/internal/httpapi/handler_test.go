@@ -241,8 +241,13 @@ func (f *fakePatients) app() httpapi.PatientApp {
 	}
 }
 
+// buddyPrimary は、どの事業所も buddy_primary にする OrganizationApp である。予定の作成が事業所のモードを読む。
+var buddyPrimary = httpapi.OrganizationApp{GetFacility: func(_ context.Context, id string) (organization.Facility, error) {
+	return organization.Facility{ID: id, SourceMode: organization.SourceBuddyPrimary}, nil
+}}
+
 func newRouter(s *fakeSchedules, st *fakeStaff, p *fakePatients) http.Handler {
-	return httpapi.NewRouter(httpapi.Apps{Schedules: s.app(), Staff: st.app(), Patients: p.app(), Auth: fakeAuth{}}, httpapi.RouterConfig{
+	return httpapi.NewRouter(httpapi.Apps{Organization: buddyPrimary, Schedules: s.app(), Staff: st.app(), Patients: p.app(), Auth: fakeAuth{}}, httpapi.RouterConfig{
 		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
 		Verifier: testVerifier,
 	})

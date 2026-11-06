@@ -656,7 +656,14 @@ export interface paths {
          */
         get: operations["listSchedules"];
         put?: never;
-        /** 単発の予定を作る */
+        /**
+         * 単発の予定を作る
+         * @description buddy_primary の事業所では、buddy の予定のテーブルに予定を作る。
+         *     google_primary の事業所では、予定の職員のカレンダーに Google カレンダーの予定を作り、書けたときだけ成功を返す（ADR-0026）。
+         *     訪問の情報は buddy に持ち、Google の予定のタイトルは `【サービス内容】利用者名` にする。応答の source は google_calendar である。
+         *     google_primary の事業所では id が必須で、同じ id で送り直しても Google の予定は 1 つのままである。
+         *     Google の予定が送った内容と同じなら成功を返し、違えば 409（google_event_changed）を返す。
+         */
         post: operations["createSchedule"];
         delete?: never;
         options?: never;
@@ -1039,7 +1046,7 @@ export interface components {
         Time: string;
         Error: {
             /** @enum {string} */
-            code: "invalid_input" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "internal" | "calendar_unreadable" | "calendar_unavailable" | "calendar_not_configured" | "calendar_taken" | "calendar_already_linked" | "staff_has_calendar" | "import_running" | "import_preview_changed" | "export_not_in_review" | "google_primary" | "staff_has_assignments" | "patient_has_schedules" | "cutover_open" | "cutover_not_google_primary" | "cutover_sync_not_ready" | "cutover_not_open" | "cutover_incomplete";
+            code: "invalid_input" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "internal" | "calendar_unreadable" | "calendar_unavailable" | "calendar_not_configured" | "calendar_taken" | "calendar_already_linked" | "staff_has_calendar" | "import_running" | "import_preview_changed" | "export_not_in_review" | "google_primary" | "staff_has_assignments" | "patient_has_schedules" | "cutover_open" | "cutover_not_google_primary" | "cutover_sync_not_ready" | "cutover_not_open" | "cutover_incomplete" | "calendar_not_linked" | "google_write_pending" | "google_event_changed" | "google_event_not_found" | "google_calendar_unwritable" | "google_event_rejected" | "google_write_unknown" | "google_unavailable";
             /** @description 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う */
             message: string;
         };
@@ -3329,7 +3336,13 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SlotRequest"];
+                "application/json": components["schemas"]["SlotRequest"] & {
+                    /**
+                     * @description 画面が決める予定の ID（ULID）。google_primary の事業所では必須で、Google の予定の ID をこの ID から決める。
+                     *     buddy_primary の事業所では、送れば予定の ID にし、省けばサーバーが決める。
+                     */
+                    id?: components["schemas"]["ID"];
+                };
             };
         };
         responses: {
@@ -3346,8 +3359,36 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            409: components["responses"]["GooglePrimary"];
+            /**
+             * @description google_primary の事業所で、予定を書けない。code は次のいずれかである。
+             *     conflict（id がほかの予定に使われているか、事業所の予定の正本が変わった）、cutover_open（予定の正本を切り替えている）、
+             *     calendar_not_linked（予定の職員が外していないカレンダーを持たない。Google に書かない）、
+             *     google_write_pending（同じ id の書き込みが途中である）、google_event_changed（Google の予定が送った内容と違う）、
+             *     google_event_not_found（Google で予定が見つからない）、google_calendar_unwritable（サービスアカウントがカレンダーに書けない）、
+             *     google_event_rejected（Google が予定の内容を受け付けない）
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             500: components["responses"]["InternalError"];
+            /**
+             * @description google_primary の事業所で、Google カレンダーに書けない。code は次のいずれかである。
+             *     google_write_unknown（Google が受けたかが分からない。時間をおいて予定を開き直す）、
+             *     google_unavailable（Google が一時的に拒んだ。書いていない）、calendar_not_configured（サービスアカウントの設定が無い）
+             */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     createRecurringSchedule: {

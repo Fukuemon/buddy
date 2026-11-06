@@ -24,16 +24,16 @@ func NewWriter(svc *calendarv3.Service) *Writer {
 
 var _ calendar.EventWriter = (*Writer)(nil)
 
-// Insert は、ID が eventID の予定を作り、etag を返す。参加者に通知を送らない。
+// Insert は、ID が eventID の予定を作り、Google が返した予定を返す。参加者に通知を送らない。
 // 出典: https://developers.google.com/workspace/calendar/api/v3/reference/events/insert
-func (w *Writer) Insert(ctx context.Context, calendarID, eventID string, b calendar.EventBody) (string, error) {
+func (w *Writer) Insert(ctx context.Context, calendarID, eventID string, b calendar.EventBody) (calendar.Event, error) {
 	ev := toEventBody(b)
 	ev.Id = eventID
 	got, err := w.svc.Events.Insert(calendarID, ev).SendUpdates("none").Context(ctx).Do()
 	if err != nil {
-		return "", writeError("予定を作れない", err)
+		return calendar.Event{}, writeError("予定を作れない", err)
 	}
-	return got.Etag, nil
+	return toEvent(got), nil
 }
 
 // Update は、予定 eventID を b の内容で部分更新し、新しい etag を返す。etag が空でなければ If-Match に付ける。

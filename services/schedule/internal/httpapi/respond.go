@@ -10,6 +10,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarwrite"
 )
 
 // bodyErrorPrefix は、本文を読めないときの 400 の文の先頭である。
@@ -51,6 +52,10 @@ func writeError(c *gin.Context, log *slog.Logger, err error) {
 		c.AbortWithStatusJSON(http.StatusConflict, errorResponse{Code: code, Message: ce.Message})
 	case errors.Is(err, apperr.ErrConflict):
 		c.AbortWithStatusJSON(http.StatusConflict, errorResponse{Code: "conflict", Message: apperr.ErrConflict.Error()})
+	case errors.Is(err, calendarwrite.ErrWriteUnknown):
+		calendarError(c, log, err, http.StatusServiceUnavailable, "google_write_unknown", calendarwrite.ErrWriteUnknown)
+	case errors.Is(err, calendarwrite.ErrGoogleUnavailable):
+		calendarError(c, log, err, http.StatusServiceUnavailable, "google_unavailable", calendarwrite.ErrGoogleUnavailable)
 	case errors.Is(err, calendar.ErrUnreadable):
 		calendarError(c, log, err, http.StatusUnprocessableEntity, "calendar_unreadable", calendar.ErrUnreadable)
 	case errors.Is(err, calendar.ErrUnavailable):

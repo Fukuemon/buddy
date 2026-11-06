@@ -13,6 +13,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarwrite"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
@@ -76,6 +77,10 @@ func newApps(r Repositories, accounts *gcal.Accounts, cfg config.API) httpapi.Ap
 			r.schedules, r.recurring, r.recurring, visitInfos, r.exports,
 			cutoverDeps{cutovers: r.cutovers, syncs: r.projections, projections: r.projections, facilities: r.facilities},
 			r.tx, r.ids, principal.RequireStaffManage),
+		CalendarWrites: httpapi.CalendarWriteApp{
+			Create: calendarwrite.NewCreate(r.facilities, r.projections, r.scheduleTypes, r.staffRefs, r.staff, visitInfos, r.visitInfos,
+				r.calendars, r.records, r.projections, calendarAccounts(accounts), nil, r.tx).Do,
+		},
 		Auth: access.NewService(access.Deps{Facilities: r.facilities, Staff: r.staff, Resources: accessResources(r)}),
 	}
 }

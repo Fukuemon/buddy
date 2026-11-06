@@ -12,7 +12,9 @@ info:
       外部のカレンダーの操作の calendar_unreadable、calendar_unavailable、calendar_not_configured と、
       409 の原因を分ける calendar_taken、calendar_already_linked、staff_has_calendar、import_running、import_preview_changed、export_not_in_review、
       google_primary、staff_has_assignments、patient_has_schedules と、
-      予定の正本の切り替えの cutover_open、cutover_not_google_primary、cutover_sync_not_ready、cutover_not_open、cutover_incomplete のいずれかである。
+      予定の正本の切り替えの cutover_open、cutover_not_google_primary、cutover_sync_not_ready、cutover_not_open、cutover_incomplete と、
+      google_primary の事業所で Google カレンダーに予定を書く calendar_not_linked、google_write_pending、google_event_changed、google_event_not_found、
+      google_calendar_unwritable、google_event_rejected、google_write_unknown、google_unavailable のいずれかである。
     - `/v1` は全て、Hydra が発行した access token（JWT）を `Authorization: Bearer` で求める。
       トークンがないか検証に失敗したときは 401 を、トークンの組織と職員の事業所が、パスの指す事業所と違うときは 403 を返す。
     - 読めないクエリ（例は `;` を含むもの）は 400 を返す。
@@ -1190,12 +1192,28 @@ paths:
       tags: [schedule]
       operationId: createSchedule
       summary: 単発の予定を作る
+      description: |
+        buddy_primary の事業所では、buddy の予定のテーブルに予定を作る。
+        google_primary の事業所では、予定の職員のカレンダーに Google カレンダーの予定を作り、書けたときだけ成功を返す（ADR-0026）。
+        訪問の情報は buddy に持ち、Google の予定のタイトルは `【サービス内容】利用者名` にする。応答の source は google_calendar である。
+        google_primary の事業所では id が必須で、同じ id で送り直しても Google の予定は 1 つのままである。
+        Google の予定が送った内容と同じなら成功を返し、違えば 409（google_event_changed）を返す。
       parameters: [$ref: "#/components/parameters/FacilityID"]
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/SlotRequest" }
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/SlotRequest"
+                - type: object
+                  properties:
+                    id:
+                      description: |
+                        画面が決める予定の ID（ULID）。google_primary の事業所では必須で、Google の予定の ID をこの ID から決める。
+                        buddy_primary の事業所では、送れば予定の ID にし、省けばサーバーが決める。
+                      allOf:
+                        - $ref: "#/components/schemas/ID"
       responses:
         "201":
           description: 作った予定
@@ -1206,8 +1224,40 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
-        "409": { $ref: "#/components/responses/GooglePrimary" }
+        "409":
+          description: |
+            google_primary の事業所で、予定を書けない。code は次のいずれかである。
+            conflict（id がほかの予定に使われているか、事業所の予定の正本が変わった）、cutover_open（予定の正本を切り替えている）、
+            calendar_not_linked（予定の職員が外していないカレンダーを持たない。Google に書かない）、
+            google_write_pending（同じ id の書き込みが途中である）、google_event_changed（Google の予定が送った内容と違う）、
+            google_event_not_found（Google で予定が見つからない）、google_calendar_unwritable（サービスアカウントがカレンダーに書けない）、
+            google_event_rejected（Google が予定の内容を受け付けない）
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                calendarNotLinked:
+                  summary: 予定の職員がカレンダーを結び付けていない
+                  value: { code: calendar_not_linked, message: "予定の職員が Google カレンダーを結び付けていません。カレンダーを結び付けてから予定を作ってください" }
+                googleEventChanged:
+                  summary: Google の予定が送った内容と違う
+                  value: { code: google_event_changed, message: "Google カレンダーで予定が変わっていました。最新の予定を確認してください" }
         "500": { $ref: "#/components/responses/InternalError" }
+        "503":
+          description: |
+            google_primary の事業所で、Google カレンダーに書けない。code は次のいずれかである。
+            google_write_unknown（Google が受けたかが分からない。時間をおいて予定を開き直す）、
+            google_unavailable（Google が一時的に拒んだ。書いていない）、calendar_not_configured（サービスアカウントの設定が無い）
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                googleWriteUnknown:
+                  summary: Google が受けたかが分からない
+                  value: { code: google_write_unknown, message: "予定を Google カレンダーに書けたかを確認できませんでした。時間をおいて予定を開き直してください" }
+                googleUnavailable:
+                  summary: Google が一時的に拒んだ
+                  value: { code: google_unavailable, message: "予定を Google カレンダーに書けませんでした。時間をおいてやり直してください" }
 
   /v1/facilities/{facility_id}/schedules/recurring:
     post:
@@ -2028,6 +2078,14 @@ components:
             - cutover_sync_not_ready
             - cutover_not_open
             - cutover_incomplete
+            - calendar_not_linked
+            - google_write_pending
+            - google_event_changed
+            - google_event_not_found
+            - google_calendar_unwritable
+            - google_event_rejected
+            - google_write_unknown
+            - google_unavailable
         message:
           type: string
           description: 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う

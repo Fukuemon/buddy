@@ -7,13 +7,16 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
 
 // SlotInput は、単発と繰り返しの予定に共通の入力である。Visit は、訪問の予定のときに指定する。
+// ID は、単発の予定の作成（Create）でだけ読む、画面が決めた予定の ID（ULID）である。空なら Create が発行する。
 // EndsNextDay は、Date の翌日の EndTime に終わる予定のときに true にする。
 type SlotInput struct {
+	ID          string
 	TypeID      string
 	Date        civil.Date
 	StartTime   civil.Time
@@ -53,7 +56,11 @@ func createSchedule(ctx context.Context, schedules Repository, ids kernel.IDGene
 	if err != nil {
 		return Schedule{}, err
 	}
-	sc, err := New(ids.NewID(), slot, typ)
+	id := in.ID
+	if id == "" || replaces != nil {
+		id = ids.NewID()
+	}
+	sc, err := New(id, slot, typ)
 	if err != nil {
 		return Schedule{}, err
 	}
@@ -68,6 +75,23 @@ func createSchedule(ctx context.Context, schedules Repository, ids kernel.IDGene
 		return Schedule{}, err
 	}
 	return sc, nil
+}
+
+// PrepareSchedule は、事業所 facilityID に作る単発の予定 id を、Create と同じ規則で組み立てて返す。予定の種類、職員、
+// ctx の職員が予定の職員の予定を編集する権限、休職と退職の職員と利用の終了の利用者への割り振りを確認し、訪問の情報があれば
+// visits で保存する。予定のテーブルには書かない。google_primary の事業所で、Google カレンダーに予定を書く calendarwrite が使う。
+// 入力と参照のエラーと apperr.ErrForbidden は Create と同じである。呼び出し側は、先に事業所の行を共有のロックで読み、
+// トランザクションの中で呼ぶ。
+func PrepareSchedule(ctx context.Context, types kernel.Finder[Type], staffRefs kernel.Finder[staff.Ref], visits VisitInfos, now func() time.Time, facilityID, id string, in SlotInput) (Schedule, Type, error) {
+	slot, typ, err := prepareSlot(ctx, types, staffRefs, visits, now, facilityID, in, assignment{})
+	if err != nil {
+		return Schedule{}, Type{}, err
+	}
+	sc, err := New(id, slot, typ)
+	if err != nil {
+		return Schedule{}, Type{}, err
+	}
+	return sc, typ, nil
 }
 
 // scheduleChanged は、単発の予定 id の変更を書き出しの待ちに積む。トランザクションの中で呼ぶ。
@@ -91,7 +115,7 @@ func recurringChanged(ctx context.Context, exports Exports, slot Slot, id string
 // 利用の終了の利用者は、kept の利用者のまま、今日より前の予定でだけ保存できる（ADR-0005）。退職した職員と同じく、利用の終了の利用者に今日以降の予定を残さない。
 // 呼び出し側は、先に lockWritable で事業所の行を共有のロックで読み、確認した後に職員の状態が変わらないようにしておく。
 // 訪問の情報を保存するので、トランザクションの中で呼ぶ。
-func prepareSlot(ctx context.Context, types TypeRepository, staff StaffRefs, visits VisitInfos, now func() time.Time, facilityID string, in SlotInput, kept assignment) (Slot, Type, error) {
+func prepareSlot(ctx context.Context, types kernel.Finder[Type], staff kernel.Finder[staff.Ref], visits VisitInfos, now func() time.Time, facilityID string, in SlotInput, kept assignment) (Slot, Type, error) {
 	typ, err := types.Get(ctx, in.TypeID)
 	if err != nil {
 		return Slot{}, Type{}, apperr.Reference("予定の種類", in.TypeID, err)

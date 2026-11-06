@@ -1,13 +1,14 @@
 ---
 type: feature-design
 title: Google カレンダーとの連携
-description: 事業所のサービスアカウントでの Calendar API の呼び出し、Google カレンダーの取り込み、書き出し、同期、ローカル環境と E2E の Google カレンダー
+description: 事業所のサービスアカウントでの Calendar API の呼び出し、Google カレンダーの取り込み、書き出し、同期、書き込み、ローカル環境と E2E の Google カレンダー
 status: stable
 governs:
   - services/schedule/internal/features/calendar
   - services/schedule/internal/features/calendarimport
   - services/schedule/internal/features/calendarsync
   - services/schedule/internal/features/calendarexport
+  - services/schedule/internal/features/calendarwrite
 verified_commit: 8254dde
 ---
 
@@ -24,6 +25,7 @@ verified_commit: 8254dde
 
 - 職員と Google カレンダーの結び付け
 - Google カレンダーの予定の取り込み、buddy の予定の Google カレンダーへの書き出し、Google カレンダーの変更の buddy の予定への反映
+- `google_primary` の事業所で、buddy で作る予定の Google カレンダーへの書き込み
 - 事業所ごとのサービスアカウントでの Calendar API の呼び出し（`internal/gcal`）
 - ローカル環境と E2E で Google Calendar API の代わりに動かすもの
 
@@ -48,6 +50,8 @@ verified_commit: 8254dde
 - `calendarsync`: 変わった予定の取得（`Syncer`）と、取った変更を当てる規則（`Applier`）
   - `Applier` の実装は、Projection に写す `projectionApplier` だけである。
 - `calendarexport`: 書き出しの待ちを積む `Outbox`、待ちを Google に書く `Exporter`、確認が必要な待ちの一覧と書き直し（`ListExportIssues`、`RetryExport`）
+
+`google_primary` の事業所で buddy から Google カレンダーに書く操作は、5 つ目のパッケージ `calendarwrite` に置く（[Google カレンダーへの書き込み](#google-カレンダーへの書き込み)）。
 
 `calendarimport`、`calendarsync`、`calendarexport` は `calendar` だけを import し、互いには import しない。  
 取り込みと同期が共有する読み替えの規則と、書き出しと同期が共有する待ちの記録を、`calendar` に置くためである。
@@ -676,6 +680,121 @@ Projection を読むのは、予定の表示の読み出し（`scheduleview` の
 ログと理由に、予定のタイトル、利用者名、カレンダーの ID を出さない。  
 同期の状態の行は、モードによらず、外していない全てのカレンダーに足す。  
 `buddy_primary` の事業所のカレンダーは同期が取らないので、行は前の結果のままになる。
+
+### Google カレンダーへの書き込み
+
+`google_primary` の事業所では、予定の API は職員が buddy で作る予定を、リクエストの中で Google カレンダーに書く。  
+書く操作は機能のパッケージ `calendarwrite` に置き、`httpapi` の `createSchedule` が事業所のモードで `schedule` か `calendarwrite` を呼ぶ。  
+単発の予定は `calendarwrite.Create` が作る。
+
+- ADR-0026: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0026-google-calendar-sync.md)
+
+`calendarwrite` は `calendar` まで import し、`calendarimport`、`calendarsync`、`calendarexport` を import しない。  
+入力と権限は `schedule.PrepareSchedule` で確認し、`schedule.Create` と同じ規則を当てる。  
+予定の職員のカレンダーに書き、カレンダーの職員を予定の職員とみなす。  
+予定の職員に外していないカレンダーが無ければ、Google に書かずに 409（`calendar_not_linked`）を返す。  
+Google の予定の本文は書き出しと同じ `calendar.ScheduleBody` で作り、訪問の予定のタイトルは `【サービス内容】利用者名` にする。  
+Projection の行は、同期と同じ `calendar.ProjectionOf` で作る。
+
+#### 記録のテーブル
+
+`calendar_event_records` は、buddy から書いた Google の予定の 1 つを 1 行にし、訪問の情報と書き込みの保留の版を持つ。  
+主キーは buddy の予定の ID で、画面が作成のリクエストの `id` に付ける ULID である。  
+Google の予定の ID は、この ID から `calendar.EventIDOf` で決め、カレンダーとの組を一意にする。  
+通常の予定も、保留の版を持つために行を作り、訪問の情報を持たない。
+
+| カラム | 持つもの |
+| --- | --- |
+| `visit_info_id`、`version` | Google が受けたと分かった版と、その版の訪問の情報。`version` が 0 の行は、まだ作成を Google が受けたと分かっていない |
+| `pending_version`、`pending_state`、`pending_visit_info_id`、`pending_deadline` | 保留の版、状態（`writing` か `unknown`）、その版の訪問の情報、書く期限。保留が無ければ全て NULL |
+
+Google の予定の `extendedProperties.private` には、buddy の予定の ID（`buddyScheduleId`）と保留の版（`buddyVersion`）を置く。  
+訪問の情報は `visit_infos` の行で持ち、`visit.Writer.Create` で作る。  
+`visit_infos` の行は、予定、繰り返しの予定、記録のどれも指さなくなったときに消す（`DeleteIfUnused`）。
+
+#### 書き込みの手順
+
+次の図は、単発の予定の作成で、2 つのトランザクションと Google の呼び出しの順を示す。
+
+```mermaid
+sequenceDiagram
+  participant h as httpapi
+  participant w as calendarwrite.Create
+  participant db as PostgreSQL
+  participant g as Google Calendar API
+  h->>w: Do（事業所、予定の ID、入力）
+  w->>db: 1 つ目のトランザクション。事業所の行を共有のロックで読み、google_primary で open の切り替えが無いことを確認する
+  w->>db: 入力と権限を確認し、訪問の情報を作り、記録に「書いている途中」の保留の版と書く期限を書く
+  alt 確認で拒んだ
+    w-->>h: 400、403、409（cutover_open、calendar_not_linked、google_write_pending）
+  end
+  w->>g: events.insert（buddyScheduleId と buddyVersion を付ける）
+  alt 書けた
+    w->>db: 2 つ目のトランザクション。返した予定を Projection に写し、保留の版を確定する
+    w-->>h: 書いた予定
+  else 409（同じ ID の予定がある）
+    w->>g: events.get
+    w->>db: 版が同じなら保留の版を確定し、違えば保留の版を消す。読んだ予定を Projection に写す
+    w-->>h: 内容も同じなら書いた予定、違えば 409（google_event_changed）
+  else 結果が分からない（5xx、通信のエラー、時間切れ）
+    w->>db: 保留の版を unknown にして残す
+    w-->>h: 503（google_write_unknown）
+  else 拒んだことが確かな 4xx
+    w->>db: 保留の版と訪問の情報を消す。確定した版の無い記録は行ごと消す
+    w-->>h: 409 か 503（google_unavailable）
+  end
+```
+
+- Google の呼び出しは、トランザクションの外で行う。
+  - 保留の版を書いた後は、リクエストが取り消されても、Google の結果を記録に残すまで続ける。
+- 同じ ID の予定があるときは、読んだ etag で上書きしない。
+  - 最初の作成の後に Google で変えた内容を、職員に知らせずに失うためである。
+- 同じ予定の ID で送り直したときは、記録の状態で扱いを分ける。
+  - 保留の版が「書いている途中」で、書く期限を過ぎていなければ、409（`google_write_pending`）で拒む。
+  - 確定した版だけを持つ記録では、Google に作らずに予定を読んで比べ、入力の訪問の情報は使わない。
+  - ほかの保留の版がある記録では、Google に作る前に予定を読み（`events.get`）、最初の書き込みが届いたかで分ける。
+    - 保留の版の訪問の情報は変えず、送り直しの入力から作った訪問の情報は、最初の書き込みが届かないと分かったときだけ使う。Google が受けた版の訪問の情報を失わないためである。
+
+保留の版がある記録への送り直しは、読んだ Google の予定で次のとおり扱う。
+
+- buddy の予定の ID と版が保留の版と同じなら、保留の版の訪問の情報で確定し、Projection に写す。
+  - 送り直しの内容も同じなら成功を返し、違えば 409（`google_event_changed`）を返す。
+- buddy の予定の ID が違えば、保留の版はそのままにし、409（`conflict`）を返す。
+- 版が違うか、予定が取り消されていれば、Projection に写して 409（`google_event_changed` か `google_event_not_found`）を返す。
+  - 書く期限を過ぎていれば、保留の版を消す。作成なので、記録と保留の版の訪問の情報も消す。
+- 予定が無ければ、書く期限で分ける。
+  - 書く期限を過ぎていれば、最初の書き込みは届かない。保留の版を消し、送り直しの入力の訪問の情報で次の番号の保留の版を書いて、作り直す。
+  - 書く期限の前なら、最初の書き込みが届く途中のことがあるので、409（`google_write_pending`）を返す。
+- 読めなければ、保留の版はそのままにし、503（`google_write_unknown`）を返す。
+- 読んでいる間に、ほかの送り直しが保留の版を解いていれば、記録を変えずに 409（`google_write_pending`）を返す。
+
+応答の予定は、入力と Google が返した予定から作る。  
+応答の予定の ID は buddy の予定の ID で、`source` は `google_calendar` にする。
+
+#### 書く期限
+
+1 回の Google の呼び出しは 20 秒（`calendarwrite.CallTimeout`）で打ち切り、結果が分からないとみなす。  
+書く期限は、保留の版を書いた時刻の 2 分後（`calendarwrite.WriteDeadline`）にする。  
+手順 1 の後に、Google の作成と読み出しを 1 回ずつ呼び、2 つ目のトランザクションを終えるまでを、呼び出しの上限の 2 回分に余裕を足して収める。  
+書く期限を過ぎた「書いている途中」の保留の版は、予定の API が手順 3 から 5 のどれにも進まずに止まったものとみなし、「結果が分からない」と同じく扱う。
+
+#### エラーと応答
+
+`EventWriter` のエラーと応答の対応は次のとおり。
+
+| `EventWriter` のエラー | 応答 | 保留の版 |
+| --- | --- | --- |
+| 無し | 201 と書いた予定 | 確定する |
+| `ErrEventExists` | Google の予定の ID と版と内容が同じなら 201、版か内容が違えば 409（`google_event_changed`）、ID が違えば 409（`conflict`） | 版が同じなら確定し、違えば消す |
+| `ErrOutcomeUnknown` | 503（`google_write_unknown`） | 「結果が分からない」にして残す |
+| `ErrUnavailable` | 503（`google_unavailable`） | 消す |
+| `ErrEventChanged` | 409（`google_event_changed`） | 消す |
+| `ErrEventGone`、`ErrEventNotFound` | 409（`google_event_not_found`） | 消す |
+| `ErrUnwritable` | 409（`google_calendar_unwritable`） | 消す |
+| `ErrEventRejected` | 409（`google_event_rejected`） | 消す |
+
+`ErrEventExists` の後の読み出しが失敗したときは、保留の版を「結果が分からない」にして残し、503（`google_write_unknown`）を返す。  
+サービスアカウントの設定が無い事業所では、保留の版を書かずに 503（`calendar_not_configured`）を返す。
 
 ### ローカル環境と E2E の Google カレンダー
 

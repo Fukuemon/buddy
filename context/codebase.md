@@ -27,10 +27,10 @@ status: stable
   - 業務の名前（予定、照合など）を持つ Domain のコンポーネントは、`apps/web` に置く。配置先は [Placement Rules](#placement-rules) の表で決める。
   - ADR-0013: [packages/ui に、ドメインを持たない Base と Case のコンポーネントを置き、DADS の指針から外れる 3 点は理由を DESIGN.md に書く](../docs/adr/0013-ui-components.md)
 - `services/schedule` では、規則と手順を機能ごとのパッケージに置く。
-  - 機能は次の 11 である。
+  - 機能は次の 12 である。
     - 組織と人: `organization`、`staff`、`patient`
     - 訪問と予定: `servicecode`、`visit`、`schedule`、`scheduleview`
-    - 外部のカレンダー: `calendar`、`calendarimport`、`calendarsync`、`calendarexport`
+    - 外部のカレンダー: `calendar`、`calendarimport`、`calendarsync`、`calendarexport`、`calendarwrite`
   - DB と HTTP のアダプタ（`postgres`、`httpapi`）は 1 つずつ置く。
   - ADR-0018: [予定の API を機能ごとのパッケージに分ける](../docs/adr/0018-schedule-api-packages.md)
   - 機能のパッケージは `internal/features/` に置く。
@@ -42,7 +42,7 @@ status: stable
     - 設定: `config`
     - 組み立て: `assemble`
     - テストのためのメモリ上の実装: `inmem`
-    - 機能のパッケージ: `features/`（予定の API の 11 の機能）
+    - 機能のパッケージ: `features/`（予定の API の 12 の機能）
   - OIDC の ID トークンの検証は、`packages/go/oidc` を使う。
   - 機能のパッケージの中は、手順（操作ごとの型）、規則の関数、集約の単位のリポジトリに分ける。
   - ADR-0018: [予定の API を機能ごとのパッケージに分ける](../docs/adr/0018-schedule-api-packages.md)
@@ -76,6 +76,8 @@ status: stable
     - `scheduleview` は `schedule` まで import してよい。`calendarsync` は、Projection を書くために `scheduleview` を import してよい。
     - ADR-0023: [予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く](../docs/adr/0023-schedule-write-read-models.md)
     - `calendarimport`、`calendarsync`、`calendarexport` は `calendar` まで import してよく、3 つの間では import しない。
+    - `calendarwrite` は、`google_primary` の事業所で buddy から Google カレンダーに予定を書くために、`calendar` まで import してよい。`calendarimport`、`calendarsync`、`calendarexport` を import せず、ほかの機能のパッケージから import されない。
+      - ADR-0026: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](../docs/adr/0026-google-calendar-sync.md)
     - ADR-0018: [予定の API を機能ごとのパッケージに分ける](../docs/adr/0018-schedule-api-packages.md)
   - `principal` は `organization` と `staff` に依存し、`schedule`、`scheduleview`、`calendarimport`、`access`、`httpapi`、`assemble` から使う。
   - 機能のパッケージは、自分の集約のリポジトリのインターフェースと、使う側で定義したインターフェースだけに依存する。

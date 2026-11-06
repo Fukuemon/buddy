@@ -307,7 +307,8 @@ func (x *Exporter) sync(ctx context.Context, e calendar.Export, it item) error {
 	if err != nil {
 		return err
 	}
-	etag, err := w.Insert(ctx, cal.CalendarID, eventID, *it.body)
+	created, err := w.Insert(ctx, cal.CalendarID, eventID, *it.body)
+	etag := created.ETag
 	if errors.Is(err, calendar.ErrEventExists) {
 		// 前に作った後で対応を書けなかったか、消した予定である。ID が buddy の予定から決まるので、buddy の内容で書き直す。
 		etag, err = w.Update(ctx, cal.CalendarID, eventID, "", *it.body)

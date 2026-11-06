@@ -105,7 +105,8 @@ func (w Writer) Create(ctx context.Context, facilityID string, in Input) (string
 	return info.ID, nil
 }
 
-// DeleteIfUnused は、どの予定と繰り返しの予定も指していない訪問の情報 id を消す。指されているか、無いときは何もしない。
+// DeleteIfUnused は、どの予定、繰り返しの予定、Google カレンダーに書いた予定の記録（calendarwrite.Record）も指していない
+// 訪問の情報 id を消す。指されているか、無いときは何もしない。
 func (w Writer) DeleteIfUnused(ctx context.Context, id string) error {
 	return w.deps.Infos.DeleteIfUnused(ctx, id)
 }

@@ -49,6 +49,7 @@ type Repositories struct {
 	calendarSyncs    *postgres.CalendarSyncRepository
 	projections      *postgres.CalendarProjectionRepository
 	cutovers         *postgres.CalendarCutoverRepository
+	records          *postgres.CalendarEventRecordRepository
 }
 
 // NewRepositories は、db の上に Repositories を作る。db に接続せず、失敗しない。
@@ -77,6 +78,7 @@ func NewRepositories(db *pgxpool.Pool) Repositories {
 		calendarSyncs:    postgres.NewCalendarSyncRepository(db),
 		projections:      postgres.NewCalendarProjectionRepository(db),
 		cutovers:         postgres.NewCalendarCutoverRepository(db),
+		records:          postgres.NewCalendarEventRecordRepository(db),
 	}
 }
 

@@ -10,6 +10,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarwrite"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
@@ -69,6 +70,8 @@ type Store struct {
 	Cutovers map[string]calendarimport.Cutover
 	// CutoverSkips は、切り替えの取り込みで、取り込まないを選んだ予定の記録である。
 	CutoverSkips []calendarimport.CutoverSkip
+	// Records は、予定の ID ごとの、Google カレンダーに書いた予定の記録である。
+	Records map[string]calendarwrite.Record
 }
 
 // NewStore は、空の Store を作る。
@@ -98,6 +101,7 @@ func NewStore() *Store {
 		SyncedAt:      map[string]time.Time{},
 		Projections:   map[ProjectionKey]scheduleview.Projection{},
 		Cutovers:      map[string]calendarimport.Cutover{},
+		Records:       map[string]calendarwrite.Record{},
 	}
 }
 

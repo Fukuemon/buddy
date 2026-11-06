@@ -35,6 +35,9 @@ type Server struct {
 	Status int
 	// Failures は、次からの書き込みのリクエストに順に返すエラーの状態である。返した値は消す。
 	Failures []int
+	// LostResponses は、次からの書き込みのリクエストを書いた後に、成功の代わりに順に返すエラーの状態である。返した値は消す。
+	// Google が書いた後に応答だけが失われたときを再現する。
+	LostResponses []int
 
 	mu      sync.Mutex
 	queries []url.Values
@@ -387,6 +390,17 @@ func (s *Server) beginWrite(w http.ResponseWriter, r *http.Request) bool {
 	return true
 }
 
+// loseResponse は、書いた後に返すエラーがあればレスポンスを書いて true を返す。s.mu を持って呼ぶ。
+func (s *Server) loseResponse(w http.ResponseWriter) bool {
+	if len(s.LostResponses) == 0 {
+		return false
+	}
+	status := s.LostResponses[0]
+	s.LostResponses = s.LostResponses[1:]
+	writeError(w, status, http.StatusText(status))
+	return true
+}
+
 // serveInsert は、events.insert に答える。ID が無ければ決め、消した予定を含めて同じ ID があれば 409 を返す。
 func (s *Server) serveInsert(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
@@ -413,6 +427,9 @@ func (s *Server) serveInsert(w http.ResponseWriter, r *http.Request) {
 	}
 	s.appendEvent(cal, &ev)
 	s.touch(cal, ev.Id)
+	if s.loseResponse(w) {
+		return
+	}
 	writeJSON(w, http.StatusOK, &ev)
 }
 
@@ -471,6 +488,9 @@ func (s *Server) servePatch(w http.ResponseWriter, r *http.Request) {
 		s.appendEvent(cal, ev)
 	}
 	s.touch(cal, id)
+	if s.loseResponse(w) {
+		return
+	}
 	writeJSON(w, http.StatusOK, ev)
 }
 
@@ -500,6 +520,9 @@ func (s *Server) serveDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.remove(cal, ev)
+	if s.loseResponse(w) {
+		return
+	}
 	w.WriteHeader(http.StatusNoContent)
 }
 

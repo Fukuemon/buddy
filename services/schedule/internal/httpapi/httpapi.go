@@ -26,6 +26,7 @@ type Apps struct {
 	VisitCategories VisitCategoryApp
 	Schedules       ScheduleApp
 	Calendars       CalendarApp
+	CalendarWrites  CalendarWriteApp
 	Auth            AuthApp
 }
 

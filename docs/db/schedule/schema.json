@@ -6771,6 +6771,352 @@
           ]
         }
       ]
+    },
+    {
+      "name": "public.calendar_event_records",
+      "type": "BASE TABLE",
+      "comment": "google_primary の事業所で、予定の API が Google カレンダーに書いた予定の、訪問の情報と書き込みの保留の版（ADR-0026）。通常の予定も保留の版を持つために行を作る",
+      "columns": [
+        {
+          "name": "schedule_id",
+          "type": "text",
+          "nullable": false,
+          "comment": "buddy の予定の ID。画面が作成のリクエストに付ける。Google の予定の ID はこの ID から決める"
+        },
+        {
+          "name": "facility_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "external_calendar_id",
+          "type": "text",
+          "nullable": false,
+          "comment": "予定を書いた、結び付けたカレンダー"
+        },
+        {
+          "name": "external_event_id",
+          "type": "varchar(1024)",
+          "nullable": false,
+          "comment": "Google の予定の ID"
+        },
+        {
+          "name": "visit_info_id",
+          "type": "text",
+          "nullable": true,
+          "comment": "Google が受けた版の訪問の情報。通常の予定と、まだ版を確定していない行は NULL"
+        },
+        {
+          "name": "version",
+          "type": "integer",
+          "nullable": false,
+          "default": "0",
+          "comment": "Google が受けたと分かった最後の版。0 は、まだ受けたと分かっていない。0 の行は保留の版を持つ"
+        },
+        {
+          "name": "pending_version",
+          "type": "integer",
+          "nullable": true,
+          "comment": "書き込みの保留の版。Google の予定の extendedProperties.private の buddyVersion に置く。保留が無ければ NULL で、保留の状態、訪問の情報、書く期限も NULL"
+        },
+        {
+          "name": "pending_state",
+          "type": "text",
+          "nullable": true,
+          "comment": "writing（書いている途中）、unknown（Google が受けたかが分からない）"
+        },
+        {
+          "name": "pending_visit_info_id",
+          "type": "text",
+          "nullable": true,
+          "comment": "保留の版の訪問の情報。版を確定すると visit_info_id に移す"
+        },
+        {
+          "name": "pending_deadline",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "comment": "書く期限。保留の版を書いた時刻に、Google を呼ぶ時間の上限と余裕を足した時刻"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "calendar_event_records_pkey",
+          "def": "CREATE UNIQUE INDEX calendar_event_records_pkey ON public.calendar_event_records USING btree (schedule_id)",
+          "table": "public.calendar_event_records",
+          "columns": [
+            "schedule_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_event_key",
+          "def": "CREATE UNIQUE INDEX calendar_event_records_event_key ON public.calendar_event_records USING btree (external_calendar_id, external_event_id)",
+          "table": "public.calendar_event_records",
+          "columns": [
+            "external_calendar_id",
+            "external_event_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_calendar_idx",
+          "def": "CREATE INDEX calendar_event_records_calendar_idx ON public.calendar_event_records USING btree (facility_id, external_calendar_id)",
+          "table": "public.calendar_event_records",
+          "columns": [
+            "facility_id",
+            "external_calendar_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_visit_info_idx",
+          "def": "CREATE INDEX calendar_event_records_visit_info_idx ON public.calendar_event_records USING btree (visit_info_id) WHERE (visit_info_id IS NOT NULL)",
+          "table": "public.calendar_event_records",
+          "columns": [
+            "visit_info_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_pending_visit_info_idx",
+          "def": "CREATE INDEX calendar_event_records_pending_visit_info_idx ON public.calendar_event_records USING btree (pending_visit_info_id) WHERE (pending_visit_info_id IS NOT NULL)",
+          "table": "public.calendar_event_records",
+          "columns": [
+            "pending_visit_info_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "calendar_event_records_created_at_not_null",
+          "type": "n",
+          "def": "NOT NULL created_at",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "created_at"
+          ]
+        },
+        {
+          "name": "calendar_event_records_external_calendar_id_not_null",
+          "type": "n",
+          "def": "NOT NULL external_calendar_id",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "external_calendar_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_external_event_id_not_null",
+          "type": "n",
+          "def": "NOT NULL external_event_id",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "external_event_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_facility_id_not_null",
+          "type": "n",
+          "def": "NOT NULL facility_id",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "facility_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_pending_check",
+          "type": "CHECK",
+          "def": "CHECK ((((pending_version IS NULL) AND (pending_state IS NULL) AND (pending_visit_info_id IS NULL) AND (pending_deadline IS NULL)) OR ((pending_version IS NOT NULL) AND (pending_state IS NOT NULL) AND (pending_deadline IS NOT NULL))))",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "pending_version",
+            "pending_state",
+            "pending_visit_info_id",
+            "pending_deadline"
+          ]
+        },
+        {
+          "name": "calendar_event_records_pending_state_check",
+          "type": "CHECK",
+          "def": "CHECK ((pending_state = ANY (ARRAY['writing'::text, 'unknown'::text])))",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "pending_state"
+          ]
+        },
+        {
+          "name": "calendar_event_records_pending_version_check",
+          "type": "CHECK",
+          "def": "CHECK ((pending_version \u003e version))",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "pending_version",
+            "version"
+          ]
+        },
+        {
+          "name": "calendar_event_records_schedule_id_check",
+          "type": "CHECK",
+          "def": "CHECK ((schedule_id ~ '^[0-7][0-9A-HJKMNP-TV-Z]{25}$'::text))",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "schedule_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_schedule_id_not_null",
+          "type": "n",
+          "def": "NOT NULL schedule_id",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "schedule_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_unconfirmed_check",
+          "type": "CHECK",
+          "def": "CHECK (((version \u003e 0) OR ((pending_version IS NOT NULL) AND (visit_info_id IS NULL))))",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "version",
+            "pending_version",
+            "visit_info_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_updated_at_not_null",
+          "type": "n",
+          "def": "NOT NULL updated_at",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "updated_at"
+          ]
+        },
+        {
+          "name": "calendar_event_records_version_check",
+          "type": "CHECK",
+          "def": "CHECK ((version \u003e= 0))",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "version"
+          ]
+        },
+        {
+          "name": "calendar_event_records_version_not_null",
+          "type": "n",
+          "def": "NOT NULL version",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "version"
+          ]
+        },
+        {
+          "name": "calendar_event_records_facility_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id) REFERENCES facilities(id)",
+          "table": "public.calendar_event_records",
+          "referenced_table": "public.facilities",
+          "columns": [
+            "facility_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_pending_visit_info_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, pending_visit_info_id) REFERENCES visit_infos(facility_id, id)",
+          "table": "public.calendar_event_records",
+          "referenced_table": "public.visit_infos",
+          "columns": [
+            "facility_id",
+            "pending_visit_info_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_visit_info_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, visit_info_id) REFERENCES visit_infos(facility_id, id)",
+          "table": "public.calendar_event_records",
+          "referenced_table": "public.visit_infos",
+          "columns": [
+            "facility_id",
+            "visit_info_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_calendar_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE",
+          "table": "public.calendar_event_records",
+          "referenced_table": "public.external_calendars",
+          "columns": [
+            "facility_id",
+            "external_calendar_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (schedule_id)",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "schedule_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_event_key",
+          "type": "UNIQUE",
+          "def": "UNIQUE (external_calendar_id, external_event_id)",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "external_calendar_id",
+            "external_event_id"
+          ]
+        }
+      ],
+      "triggers": [
+        {
+          "name": "calendar_event_records_set_updated_at",
+          "def": "CREATE TRIGGER calendar_event_records_set_updated_at BEFORE UPDATE ON public.calendar_event_records FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+        }
+      ]
     }
   ],
   "relations": [
@@ -7513,6 +7859,64 @@
       ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (facility_id, cutover_id) REFERENCES calendar_cutovers(facility_id, id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.calendar_event_records",
+      "columns": [
+        "facility_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.facilities",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+    },
+    {
+      "table": "public.calendar_event_records",
+      "columns": [
+        "facility_id",
+        "pending_visit_info_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.visit_infos",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, pending_visit_info_id) REFERENCES visit_infos(facility_id, id)"
+    },
+    {
+      "table": "public.calendar_event_records",
+      "columns": [
+        "facility_id",
+        "visit_info_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.visit_infos",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, visit_info_id) REFERENCES visit_infos(facility_id, id)"
+    },
+    {
+      "table": "public.calendar_event_records",
+      "columns": [
+        "facility_id",
+        "external_calendar_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.external_calendars",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
     }
   ],
   "functions": [
@@ -7613,11 +8017,13 @@
     {
       "id": "calendar-sync",
       "name": "外部のカレンダーの取り込みと書き出し",
-      "desc": "職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち、Google カレンダーの予定の写し（Projection）。書き出しは、予定の正本のモードが buddy_primary の事業所に限る。同期は google_primary の事業所のカレンダーだけを読み、予定の写しに書く。切り替えは、google_primary の事業所の予定を取り込み、完了で事業所を buddy_primary にする",
+      "desc": "職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち、Google カレンダーの予定の写し（Projection）。書き出しは、予定の正本のモードが buddy_primary の事業所に限る。同期は google_primary の事業所のカレンダーだけを読み、予定の写しに書く。google_primary の事業所で buddy から Google カレンダーに書いた予定は、訪問の情報と書き込みの保留の版を記録に持つ。切り替えは、google_primary の事業所の予定を取り込み、完了で事業所を buddy_primary にする",
       "tables": [
         "public.external_calendars",
         "public.calendar_sync_states",
         "public.calendar_event_projections",
+        "public.calendar_event_records",
+        "public.visit_infos",
         "public.external_event_links",
         "public.import_runs",
         "public.calendar_cutovers",
