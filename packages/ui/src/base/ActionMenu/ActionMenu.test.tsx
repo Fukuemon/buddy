@@ -126,6 +126,36 @@ describe('ActionMenu', () => {
     expect(openButton()).toHaveFocus()
   })
 
+  it('staysOpenUntilSettled の項目を送っている間に閉じて開き直したら、決着しても開き直したメニューを閉じない', async () => {
+    let settle = () => {}
+    render(
+      <Default
+        items={[
+          {
+            label: '復職にする',
+            onSelect: () =>
+              new Promise<void>((resolve) => {
+                settle = resolve
+              }),
+            'data-testid': 'reinstate',
+            staysOpenUntilSettled: true,
+          },
+        ]}
+      />,
+    )
+    await userEvent.click(openButton())
+    await userEvent.keyboard('{Enter}')
+    await userEvent.keyboard('{Escape}')
+    await userEvent.click(openButton())
+    const item = screen.getByRole('menuitem', { name: '復職にする' })
+    expect(item).toHaveFocus()
+
+    settle()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+    expect(item).toHaveFocus()
+  })
+
   it('staysOpenUntilSettled の項目は、onSelect の Promise が拒まれても閉じる', async () => {
     let reject = () => {}
     render(

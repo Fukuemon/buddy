@@ -93,9 +93,11 @@ export const ActionMenu = ({
               onClick={() => {
                 if (item.disabled) return
                 if (item.staysOpenUntilSettled) {
-                  // 決着したら、閉じると消える項目から開くボタンへフォーカスを戻す。送っている間に外を押して閉じていたら、フォーカスを動かさない
+                  // 決着したら、閉じると消える項目から開くボタンへフォーカスを戻す。
+                  // 送っている間に閉じたか、閉じて開き直していたら、押したときのメニューの要素と違うので、閉じずにフォーカスも動かさない
+                  const menu = menuRef.current
                   const settled = () => {
-                    if (menuRef.current === null) return
+                    if (menu === null || menuRef.current !== menu) return
                     buttonRef.current?.focus()
                     setOpen(false)
                   }
