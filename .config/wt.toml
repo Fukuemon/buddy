@@ -1,0 +1,35 @@
+# worktrunk（wt）のプロジェクトの設定。
+# worktree ごとに compose のプロジェクトの名前とポートの組を .env に書き、worktree を並べて起動できるようにする。
+# compose は .env を読み、mise は .env を環境変数に入れる（mise.toml の [env]）。
+
+# ポートの組は、ブランチ名のハッシュから 20000〜29980 の 20 刻みの先頭を決め、そこから順に割り当てる。
+# 2 つの worktree の先頭が同じになる確率は 1/500 で、そのときは .env を手で直す。
+pre-start = '''
+{% set base = ((branch | hash_port) % 500) * 20 + 20000 -%}
+cat > .env <<EOF
+COMPOSE_PROJECT_NAME=buddy-{{ branch | sanitize | lower }}
+WEB_PORT={{ base }}
+SCHEDULE_PORT={{ base + 1 }}
+RECEIPT_PORT={{ base + 2 }}
+BROKER_PORT={{ base + 3 }}
+BROKER_INTERNAL_PORT={{ base + 4 }}
+HYDRA_PUBLIC_PORT={{ base + 5 }}
+HYDRA_ADMIN_PORT={{ base + 6 }}
+IDP_PORT={{ base + 7 }}
+POSTGRES_PORT={{ base + 8 }}
+VALKEY_PORT={{ base + 9 }}
+CALENDARPIT_PORT={{ base + 10 }}
+GCALHOLD_PORT={{ base + 11 }}
+E2E_BASE_URL=http://localhost:{{ base }}
+E2E_SCHEDULE_URL=http://localhost:{{ base + 1 }}
+E2E_RECEIPT_URL=http://localhost:{{ base + 2 }}
+E2E_BROKER_URL=http://localhost:{{ base + 3 }}
+E2E_BROKER_INTERNAL_URL=http://localhost:{{ base + 4 }}
+E2E_HYDRA_URL=http://localhost:{{ base + 5 }}
+E2E_CALENDARPIT_URL=http://localhost:{{ base + 10 }}
+E2E_GCALHOLD_URL=http://localhost:{{ base + 11 }}
+EOF
+'''
+
+# worktree を消す前に、その worktree の compose を、DB の volume ごと消す。起動していなければ何もしない
+pre-remove = "docker compose down -v --remove-orphans"
