@@ -681,7 +681,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 繰り返しの予定を作る */
+        /**
+         * 繰り返しの予定を作る
+         * @description buddy_primary の事業所では、buddy の繰り返しの予定のテーブルに予定を作る。
+         *     google_primary の事業所では、予定の職員のカレンダーに、RRULE の繰り返しの予定を 1 つ作り、書けたときだけ成功を返す（ADR-0026）。
+         *     訪問の情報は buddy に持ち、手順、送り直し、409 と 503 の code は createSchedule と同じである。id が必須である。
+         */
         post: operations["createRecurringSchedule"];
         delete?: never;
         options?: never;
@@ -770,6 +775,10 @@ export interface paths {
          * 繰り返しの予定の 1 回を置き換える
          * @description 繰り返しの予定の original_date の回を、本文の内容の単発の予定に置き換える。
          *     元の回は exclusion_dates に加わり、作った予定は recurring_schedule_id で元の繰り返しの予定を指す。
+         *     google_primary の事業所では、recurring_schedule_id は Google カレンダーの繰り返しの予定の id（createRecurringSchedule の応答の id）である。
+         *     Google の回（events.instances で読んだ回）を例外の回として書き換え、親の予定の EXDATE は変えない（ADR-0026）。
+         *     応答の予定の id は、変えた回の listSchedules での id である。予定の職員は替えられない。
+         *     訪問の情報は繰り返しの予定のものを引き継ぎ、変えたときだけ回に持つ。409 と 503 の code は updateSchedule と同じである。
          */
         post: operations["changeOccurrence"];
         delete?: never;
@@ -1359,7 +1368,7 @@ export interface components {
             cancel: components["schemas"]["Cancel"] | null;
             /**
              * @description 予定の読み元。buddy は buddy の予定、google_calendar は google_primary の事業所で同期が写した Google カレンダーの予定（Projection）である。
-             *     google_calendar の単発の予定は、etag を付けて変更と取り消しができる。繰り返しの予定とその回は、Google カレンダーで変える。
+             *     google_calendar の単発の予定は、etag を付けて変更と取り消しができる。変えた回（Google の例外の回）も同じである。展開した回は、changeOccurrence で変える。
              * @enum {string}
              */
             source: "buddy" | "google_calendar";
@@ -1827,21 +1836,6 @@ export interface components {
                  * @example {
                  *       "code": "calendar_unavailable",
                  *       "message": "外部のカレンダーから予定を読めませんでした"
-                 *     }
-                 */
-                "application/json": components["schemas"]["Error"];
-            };
-        };
-        /** @description 事業所が Google カレンダーを予定の正本にしている（google_primary）ので、予定を書けない（ADR-0023） */
-        GooglePrimary: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                /**
-                 * @example {
-                 *       "code": "google_primary",
-                 *       "message": "この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください"
                  *     }
                  */
                 "application/json": components["schemas"]["Error"];
@@ -3428,6 +3422,11 @@ export interface operations {
             content: {
                 "application/json": components["schemas"]["SlotRequest"] & {
                     recurring_rule: components["schemas"]["RecurringRule"];
+                    /**
+                     * @description 画面が決める繰り返しの予定の ID（ULID）。google_primary の事業所では必須で、Google の予定の ID をこの ID から決める。
+                     *     buddy_primary の事業所では読まない。
+                     */
+                    id?: components["schemas"]["ID"];
                 };
             };
         };
@@ -3445,8 +3444,25 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            409: components["responses"]["GooglePrimary"];
+            /** @description google_primary の事業所で、予定を書けない。code は createSchedule の 409 と同じである */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             500: components["responses"]["InternalError"];
+            /** @description google_primary の事業所で、Google カレンダーに書けない。code は createSchedule の 503 と同じである */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     getSchedule: {
@@ -3510,7 +3526,7 @@ export interface operations {
             /**
              * @description キャンセル済み（conflict）か、予定を書いている間に事業所の予定の正本が変わった（google_primary、conflict）。
              *     google_primary の事業所では、createSchedule の 409 と同じ code も返す。google_write_pending は、予定の前の書き込みの結果がまだ分からないことを表す。
-             *     繰り返しの予定とその回は、conflict で拒む。
+             *     繰り返しの予定の全体は、conflict で拒む。変えた回（Google の例外の回）は変えられるが、予定の職員を替える入力は conflict で拒む。
              */
             409: {
                 headers: {
@@ -3567,7 +3583,7 @@ export interface operations {
             /**
              * @description キャンセル済み（conflict）か、予定を書いている間に事業所の予定の正本が変わった（google_primary、conflict）。
              *     google_primary の事業所では、createSchedule の 409 と同じ code も返す。Google で消されていた予定は google_event_not_found である。
-             *     繰り返しの予定とその回は、conflict で拒む。
+             *     繰り返しの予定の全体は、conflict で拒む。変えた回（Google の例外の回）は取り消せる。
              */
             409: {
                 headers: {
@@ -3650,7 +3666,10 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description その回はすでに置き換えた（conflict）か、事業所が Google カレンダーを予定の正本にしている（google_primary） */
+            /**
+             * @description その回はすでに置き換えた（conflict）。google_primary の事業所では、予定の職員を替える入力も conflict で、
+             *     createSchedule の 409 と同じ code も返す。
+             */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -3660,6 +3679,15 @@ export interface operations {
                 };
             };
             500: components["responses"]["InternalError"];
+            /** @description google_primary の事業所で、Google カレンダーに書けない。code は createSchedule の 503 と同じである */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     getCalendarServiceAccount: {

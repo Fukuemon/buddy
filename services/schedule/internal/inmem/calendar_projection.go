@@ -10,7 +10,9 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 )
 
 // ProjectionKey は、Projections の行のキーで、結び付けたカレンダーの ID と Google の予定の ID の組である。
@@ -98,22 +100,40 @@ func (s Projections) GetBySchedule(_ context.Context, facilityID, id string) (sc
 }
 
 // detail は、行 p に、職員の名前と、一覧での予定の ID と、記録の確定した版の訪問の情報を付ける。
+// 例外の回の行で、回の記録が無いか確定した版を持たないときは、親の予定の記録の確定した版の訪問の情報を付ける。
 func (s Projections) detail(p scheduleview.Projection) scheduleview.ProjectionDetail {
 	d := scheduleview.ProjectionDetail{Projection: p, StaffName: s.Staff[p.StaffID].Username}
+	confirmed := false
+	if r, ok := s.recordAt(p.ExternalCalendarID, p.EventID); ok {
+		d.ScheduleID, d.Visit, confirmed = r.ScheduleID, s.visitOf(r.VisitInfoID), r.Version > 0
+	} else {
+		_, taken := s.Records[scheduleview.ProjectedScheduleID(p.ExternalCalendarID, p.EventID)]
+		d.ScheduleID = scheduleview.ListScheduleID(p.ExternalCalendarID, p.EventID, taken)
+	}
+	if parent, ok := s.recordAt(p.ExternalCalendarID, p.RecurringEventID); ok && !confirmed && p.IsException() {
+		d.Visit = s.visitOf(parent.VisitInfoID)
+	}
+	return d
+}
+
+func (s Projections) recordAt(externalCalendarID, eventID string) (calendar.EventRecord, bool) {
 	for _, r := range s.Records {
-		if r.ExternalCalendarID == p.ExternalCalendarID && r.ExternalEventID == p.EventID {
-			d.ScheduleID = r.ScheduleID
-			if r.VisitInfoID != nil {
-				if v, err := VisitInfos(s).GetDetail(context.Background(), *r.VisitInfoID); err == nil {
-					d.Visit = &v
-				}
-			}
-			return d
+		if r.ExternalCalendarID == externalCalendarID && r.ExternalEventID == eventID {
+			return r, true
 		}
 	}
-	_, taken := s.Records[scheduleview.ProjectedScheduleID(p.ExternalCalendarID, p.EventID)]
-	d.ScheduleID = scheduleview.ListScheduleID(p.ExternalCalendarID, p.EventID, taken)
-	return d
+	return calendar.EventRecord{}, false
+}
+
+func (s Projections) visitOf(id *string) *visit.Detail {
+	if id == nil {
+		return nil
+	}
+	v, err := VisitInfos(s).GetDetail(context.Background(), *id)
+	if err != nil {
+		return nil
+	}
+	return &v
 }
 
 // ListSyncsByFacility は、scheduleview.CalendarSyncs の ListSyncsByFacility を実装する。SyncResults と SyncedAt から作る。

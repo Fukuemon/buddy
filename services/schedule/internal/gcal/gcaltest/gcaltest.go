@@ -28,6 +28,8 @@ type Server struct {
 	// 無いカレンダーには 404 を返す。作った予定は最後のページに足す。
 	Calendars map[string][][]*calendar.Event
 	// Instances は、繰り返しの親の予定の ID ごとの回である。1 ページで返す。無い予定には 404 を返す。
+	// 回を変える（events.patch）と、回をカレンダーのページに足し、例外の回として一覧と増分で返す。回を消す（events.delete）と、
+	// 取り消した回にして events.instances で返さない。回の ID、recurringEventId、originalStartTime は、テストが決めて持たせる。
 	Instances map[string][]*calendar.Event
 	// AccessRoles は、カレンダー ID ごとのレスポンスの accessRole である。無ければ reader を返す。
 	AccessRoles map[string]string
@@ -193,12 +195,22 @@ func (s *Server) find(calendarID, eventID string) *calendar.Event {
 	}
 	for _, items := range s.Instances {
 		for _, ev := range items {
-			if ev.Id == eventID {
+			if ev.Id == eventID && ev.Status != "cancelled" {
 				return ev
 			}
 		}
 	}
 	return nil
+}
+
+// listed は、予定 ev がカレンダーのページにあるかを返す。繰り返しの回（Instances）だけにある予定では false である。s.mu を持って呼ぶ。
+func (s *Server) listed(calendarID string, ev *calendar.Event) bool {
+	for _, page := range s.Calendars[calendarID] {
+		if slices.Contains(page, ev) {
+			return true
+		}
+	}
+	return false
 }
 
 // stamp は、Google と同じく、変えた予定 ev の etag を新しくし、更新の時刻を前の時刻 prev より後にする。
@@ -347,7 +359,13 @@ func (s *Server) serveInstances(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.queries = append(s.queries, r.URL.Query())
-	writeJSON(w, http.StatusOK, calendar.Events{Items: items})
+	live := []*calendar.Event{}
+	for _, ev := range items {
+		if ev.Status != "cancelled" {
+			live = append(live, ev)
+		}
+	}
+	writeJSON(w, http.StatusOK, calendar.Events{Items: live})
 }
 
 // serveGet は、events.get に答える。消した予定は status が cancelled で返る。
@@ -485,7 +503,7 @@ func (s *Server) servePatch(w http.ResponseWriter, r *http.Request) {
 		ev.Status = patch.Status
 	}
 	s.stamp(ev, ev.Updated)
-	if wasDeleted && ev.Status != "cancelled" {
+	if (wasDeleted && ev.Status != "cancelled") || (!wasDeleted && !s.listed(cal, ev)) {
 		delete(s.deleted[cal], id)
 		s.appendEvent(cal, ev)
 	}

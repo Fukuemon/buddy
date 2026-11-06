@@ -196,10 +196,18 @@ func (q *Queries) GetRecurringScheduleDetail(ctx context.Context, id string) (Re
 }
 
 const getRecurringScheduleFacilityID = `-- name: GetRecurringScheduleFacilityID :one
-SELECT facility_id FROM recurring_schedules WHERE id = $1
+SELECT s.facility_id FROM recurring_schedules s WHERE s.id = $1
+UNION ALL
+SELECT r.facility_id FROM calendar_event_records r WHERE r.schedule_id = $1
+UNION ALL
+SELECT p.facility_id FROM calendar_event_projections p WHERE projected_schedule_id(p.external_calendar_id, p.external_event_id) = $1
+UNION ALL
+SELECT p.facility_id FROM calendar_event_projections p WHERE detached_schedule_id(p.external_calendar_id, p.external_event_id) = $1
+LIMIT 1
 `
 
 // access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
+// google_primary の事業所の繰り返しの予定は、記録の予定の ID か、記録の無い Projection の予定の一覧での ID でも引く。
 func (q *Queries) GetRecurringScheduleFacilityID(ctx context.Context, id string) (string, error) {
 	row := q.db.QueryRow(ctx, getRecurringScheduleFacilityID, id)
 	var facility_id string

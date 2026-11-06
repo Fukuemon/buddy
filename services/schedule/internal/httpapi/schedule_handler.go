@@ -153,6 +153,7 @@ func (s server) CreateSchedule(ctx context.Context, req openapi.CreateScheduleRe
 	return openapi.CreateSchedule201JSONResponse(toSchedule(d)), nil
 }
 
+// CreateRecurringSchedule は、事業所の正本のモードで、buddy_primary なら schedule の作成を、google_primary なら calendarwrite の作成を呼ぶ。
 func (s server) CreateRecurringSchedule(ctx context.Context, req openapi.CreateRecurringScheduleRequestObject) (openapi.CreateRecurringScheduleResponseObject, error) {
 	b := req.Body
 	in, err := slotInput(openapi.SlotRequest{
@@ -171,13 +172,25 @@ func (s server) CreateRecurringSchedule(ctx context.Context, req openapi.CreateR
 		}
 		endDate = &d
 	}
-	rs, err := s.u.Schedules.CreateRecurring(ctx, req.FacilityId, in, schedule.RuleInput{
+	ruleIn := schedule.RuleInput{
 		Frequency:   schedule.Frequency(rule.Frequency),
 		DayOfWeek:   rule.DayOfWeek,
 		DayOfMonth:  rule.DayOfMonth,
 		WeekOfMonth: rule.WeekOfMonth,
 		EndDate:     endDate,
-	})
+	}
+	f, err := s.u.Organization.GetFacility(ctx, req.FacilityId)
+	if err != nil {
+		return nil, err
+	}
+	if f.SourceMode == organization.SourceGooglePrimary {
+		d, err := s.u.CalendarWrites.CreateRecurring(ctx, req.FacilityId, value(b.Id), in, ruleIn)
+		if err != nil {
+			return nil, err
+		}
+		return openapi.CreateRecurringSchedule201JSONResponse(toRecurringSchedule(d)), nil
+	}
+	rs, err := s.u.Schedules.CreateRecurring(ctx, req.FacilityId, in, ruleIn)
 	if err != nil {
 		return nil, err
 	}
@@ -188,6 +201,7 @@ func (s server) CreateRecurringSchedule(ctx context.Context, req openapi.CreateR
 	return openapi.CreateRecurringSchedule201JSONResponse(toRecurringSchedule(d)), nil
 }
 
+// ChangeOccurrence は、職員の事業所の正本のモードで、buddy_primary なら schedule の回の置き換えを、google_primary なら calendarwrite の回の変更を呼ぶ。
 func (s server) ChangeOccurrence(ctx context.Context, req openapi.ChangeOccurrenceRequestObject) (openapi.ChangeOccurrenceResponseObject, error) {
 	b := req.Body
 	in, err := slotInput(openapi.SlotRequest{
@@ -200,6 +214,17 @@ func (s server) ChangeOccurrence(ctx context.Context, req openapi.ChangeOccurren
 	original, err := bodyDate(b.OriginalDate)
 	if err != nil {
 		return nil, err
+	}
+	f, err := s.staffFacility(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if f.SourceMode == organization.SourceGooglePrimary {
+		d, err := s.u.CalendarWrites.ChangeOccurrence(ctx, f.ID, req.RecurringScheduleId, original, in)
+		if err != nil {
+			return nil, err
+		}
+		return openapi.ChangeOccurrence201JSONResponse(toSchedule(d)), nil
 	}
 	sc, err := s.u.Schedules.ChangeOccurrence(ctx, req.RecurringScheduleId, original, in)
 	if err != nil {

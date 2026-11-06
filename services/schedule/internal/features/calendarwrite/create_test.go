@@ -60,9 +60,14 @@ func (a accounts) Writer(context.Context, string) (calendar.EventWriter, error) 
 type fixture struct {
 	store  *inmem.Store
 	google *gcaltest.Server
-	create calendarwrite.Create
-	update calendarwrite.Update
-	cancel calendarwrite.Cancel
+	// svc は、google に向けた Calendar API のクライアントである。
+	svc              *calendarv3.Service
+	create           calendarwrite.Create
+	update           calendarwrite.Update
+	cancel           calendarwrite.Cancel
+	createRecurring  calendarwrite.CreateRecurring
+	changeOccurrence calendarwrite.ChangeOccurrence
+	cancelOccurrence calendarwrite.CancelOccurrence
 	// now は、Create が読む今の時刻である。
 	now time.Time
 }
@@ -92,7 +97,7 @@ func newFixture(t *testing.T) *fixture {
 	}
 	google := &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{calendarID: {nil}, calendarID2: {nil}}}
 	svc := gcaltest.Start(t, google)
-	fx := &fixture{store: s, google: google, now: today.Time().Add(9 * time.Hour)}
+	fx := &fixture{store: s, google: google, svc: svc, now: today.Time().Add(9 * time.Hour)}
 	ids := &inmem.SeqIDs{}
 	visits := visit.NewWriter(visit.WriterDeps{
 		Staff: inmem.StaffRefs{Store: s}, Patients: inmem.Patients{Store: s}, Infos: inmem.VisitInfos{Store: s},
@@ -106,6 +111,15 @@ func newFixture(t *testing.T) *fixture {
 		inmem.CalendarEventRecords{Store: s}, inmem.Projections{Store: s}, accounts{svc}, ulid.Generator{}, slog.New(slog.DiscardHandler),
 		func() time.Time { return fx.now }, &inmem.Tx{})
 	fx.cancel = calendarwrite.NewCancel(inmem.Facilities{Store: s}, inmem.Projections{Store: s}, inmem.StaffRefs{Store: s}, visits,
+		inmem.Calendars{Store: s}, inmem.CalendarEventRecords{Store: s}, inmem.Projections{Store: s}, accounts{svc}, func() time.Time { return fx.now }, &inmem.Tx{})
+	fx.createRecurring = calendarwrite.NewCreateRecurring(inmem.Facilities{Store: s}, inmem.Projections{Store: s}, inmem.ScheduleTypes{Store: s},
+		inmem.StaffRefs{Store: s}, inmem.Staff{Store: s}, visits, inmem.VisitInfos{Store: s}, inmem.Calendars{Store: s},
+		inmem.CalendarEventRecords{Store: s}, inmem.Projections{Store: s}, accounts{svc}, func() time.Time { return fx.now }, &inmem.Tx{})
+	fx.changeOccurrence = calendarwrite.NewChangeOccurrence(inmem.Facilities{Store: s}, inmem.Projections{Store: s}, inmem.ScheduleTypes{Store: s},
+		inmem.StaffRefs{Store: s}, inmem.Staff{Store: s}, visits, inmem.VisitInfos{Store: s}, inmem.Calendars{Store: s},
+		inmem.CalendarEventRecords{Store: s}, inmem.Projections{Store: s}, accounts{svc}, ulid.Generator{}, slog.New(slog.DiscardHandler),
+		func() time.Time { return fx.now }, &inmem.Tx{})
+	fx.cancelOccurrence = calendarwrite.NewCancelOccurrence(inmem.Facilities{Store: s}, inmem.Projections{Store: s}, inmem.StaffRefs{Store: s}, visits,
 		inmem.Calendars{Store: s}, inmem.CalendarEventRecords{Store: s}, inmem.Projections{Store: s}, accounts{svc}, func() time.Time { return fx.now }, &inmem.Tx{})
 	return fx
 }

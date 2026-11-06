@@ -111,6 +111,27 @@ func PrepareChange(ctx context.Context, types kernel.Finder[Type], staffRefs ker
 	return sc, typ, nil
 }
 
+// PrepareRecurring は、事業所 facilityID に作る繰り返しの予定 id を、CreateRecurring と同じ規則で組み立てて返す。
+// 規則を検証してから、PrepareSchedule と同じく予定の種類、職員、権限、割り振りを確認し、訪問の情報があれば visits で保存する。
+// 繰り返しの予定のテーブルには書かない。google_primary の事業所で、Google カレンダーに繰り返しの予定を書く calendarwrite が使う。
+// 入力と参照のエラーと apperr.ErrForbidden は CreateRecurring と同じである。呼び出しの前提は PrepareSchedule と同じである。
+func PrepareRecurring(ctx context.Context, types kernel.Finder[Type], staffRefs kernel.Finder[staff.Ref], visits VisitInfos, now func() time.Time,
+	facilityID, id string, in SlotInput, rule RuleInput) (RecurringSchedule, Type, error) {
+	r, err := NewRule(Rule(rule))
+	if err != nil {
+		return RecurringSchedule{}, Type{}, err
+	}
+	slot, typ, err := prepareSlot(ctx, types, staffRefs, visits, now, facilityID, in, assignment{})
+	if err != nil {
+		return RecurringSchedule{}, Type{}, err
+	}
+	rs, err := NewRecurring(id, slot, typ, r)
+	if err != nil {
+		return RecurringSchedule{}, Type{}, err
+	}
+	return rs, typ, nil
+}
+
 // scheduleChanged は、単発の予定 id の変更を書き出しの待ちに積む。トランザクションの中で呼ぶ。
 func scheduleChanged(ctx context.Context, exports Exports, slot Slot, id string) error {
 	if exports == nil {

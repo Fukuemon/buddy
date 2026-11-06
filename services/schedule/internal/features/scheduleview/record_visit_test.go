@@ -92,3 +92,50 @@ func TestProjectedRecordVisit(t *testing.T) {
 		})
 	}
 }
+
+// TestProjectedExceptionVisit は、繰り返しの予定の例外の回が、回の記録が無ければ親の予定の記録の訪問の情報を返し、
+// 回の記録の確定した版があればその訪問の情報を返すことを確認する。展開した回は、親の予定の記録の訪問の情報を返す。
+func TestProjectedExceptionVisit(t *testing.T) {
+	s := googleStore()
+	const parentInfoID, ownInfoID = "VISIT-PARENT", "VISIT-OWN"
+	s.Infos[parentInfoID] = visit.Info{
+		ID: parentInfoID, FacilityID: facilityID, PatientID: patientID, AssignedStaffID: staffID, CompanionID: ptr(companionID), ServiceCodeID: codeID,
+	}
+	s.Infos[ownInfoID] = visit.Info{ID: ownInfoID, FacilityID: facilityID, PatientID: patientID, AssignedStaffID: staffID, ServiceCodeID: codeID}
+	title := "【" + visitCode + "】" + patientName
+	putEvent(s, targetCalendarID, "series", title, tokyo(10, 6, 9), 60, func(p *scheduleview.Projection) {
+		p.Recurrence, p.LastEndDate = []string{"RRULE:FREQ=WEEKLY;UNTIL=20261027T145959Z"}, nil
+	})
+	for _, ex := range []struct {
+		id    string
+		day   int
+		moved time.Time
+	}{{"series_a", 13, tokyo(10, 14, 13)}, {"series_b", 20, tokyo(10, 21, 13)}} {
+		original := tokyo(10, ex.day, 9)
+		putEvent(s, targetCalendarID, ex.id, title, ex.moved, 60, func(p *scheduleview.Projection) {
+			p.RecurringEventID, p.OriginalStart = "series", scheduleview.ProjectionTime{At: &original}
+		})
+	}
+	s.Records = map[string]calendar.EventRecord{
+		"01M3TC5H00QV17BC0J9V3393ZP": {ScheduleID: "01M3TC5H00QV17BC0J9V3393ZP", FacilityID: facilityID, ExternalCalendarID: targetCalendarID,
+			ExternalEventID: "series", Version: 1, VisitInfoID: ptr(parentInfoID)},
+		"01M3TC5H00QV17BC0J9V3393ZQ": {ScheduleID: "01M3TC5H00QV17BC0J9V3393ZQ", FacilityID: facilityID, ExternalCalendarID: targetCalendarID,
+			ExternalEventID: "series_b", Version: 1, VisitInfoID: ptr(ownInfoID)},
+	}
+
+	list, err := newSchedules(s).List(editorCtx(), facilityID, october())
+	if err != nil {
+		t.Fatal(err)
+	}
+	visits := map[int]string{}
+	for _, d := range list.Schedules {
+		if d.Visit == nil {
+			t.Fatalf("予定 %s の訪問の情報が無い: %+v", d.Date, d)
+		}
+		visits[d.Date.Day] = d.Visit.ID
+	}
+	want := map[int]string{6: parentInfoID, 14: parentInfoID, 21: ownInfoID, 27: parentInfoID}
+	if !reflect.DeepEqual(visits, want) {
+		t.Errorf("日ごとの訪問の情報 = %v, want %v", visits, want)
+	}
+}

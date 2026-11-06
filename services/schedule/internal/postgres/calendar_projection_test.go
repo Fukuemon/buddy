@@ -669,3 +669,82 @@ func TestCalendarProjectionRepositoryRecordVisit(t *testing.T) {
 		t.Errorf("保留の版だけの記録の 1 件の読み出し = %+v, %v, want 訪問の情報の無い行", got.Visit, err)
 	}
 }
+
+// TestCalendarProjectionRepositoryExceptionVisit は、繰り返しの予定の例外の回の行が、回の記録が無いか確定した版を持たなければ
+// 親の予定の記録の訪問の情報を返し、回の記録の確定した版があればその訪問の情報を返すことを確認する。
+// 繰り返しの予定の記録の ID で、GetFacilityID が事業所を引けることも確認する。
+func TestCalendarProjectionRepositoryExceptionVisit(t *testing.T) {
+	ctx := txContext(t)
+	const exCalID = "01M3TD000000000000000000CD"
+	if err := NewCalendarRepository(testDB).Create(ctx, calendar.ExternalCalendar{
+		ID: exCalID, FacilityID: seedFacility, StaffID: seedMori, Provider: calendar.ProviderGoogle, CalendarID: "mori@example.com",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	infos := NewVisitInfoRepository(testDB)
+	const parentInfo, ownInfo, pendingInfo = "01M3TD000000000000000000V5", "01M3TD000000000000000000V6", "01M3TD000000000000000000V7"
+	for _, id := range []string{parentInfo, ownInfo, pendingInfo} {
+		if err := infos.Create(ctx, visit.Info{ID: id, FacilityID: seedFacility, PatientID: seedPatient, AssignedStaffID: seedMori, ServiceCodeID: seedServiceCode}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	r := NewCalendarProjectionRepository(testDB)
+	base := scheduleview.Projection{
+		ExternalCalendarID: exCalID, FacilityID: seedFacility, StaffID: seedMori, Status: scheduleview.ProjectionConfirmed,
+		Title: "【訪看I2】見本 一郎", ETag: `"1"`, Start: scheduleview.ProjectionTime{At: timeAt(t, "2099-11-04T10:00:00+09:00")},
+		End: scheduleview.ProjectionTime{At: timeAt(t, "2099-11-04T10:30:00+09:00")},
+	}
+	parent := base
+	parent.EventID, parent.Recurrence = "series", []string{"RRULE:FREQ=WEEKLY"}
+	rows := []scheduleview.Projection{parent}
+	for _, id := range []string{"series_inherited", "series_own", "series_pending"} {
+		ex := base
+		ex.EventID, ex.RecurringEventID, ex.OriginalStart, ex.LastEndDate = id, parent.EventID, base.Start, civilDate(2099, 11, 4)
+		rows = append(rows, ex)
+	}
+	for _, p := range rows {
+		if err := r.Put(ctx, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	records := NewCalendarEventRecordRepository(testDB)
+	const parentID, ownID, pendingID = "01M3TD000000000000000000SA", "01M3TD000000000000000000SB", "01M3TD000000000000000000SC"
+	for _, rec := range []calendar.EventRecord{
+		{ScheduleID: parentID, FacilityID: seedFacility, ExternalCalendarID: exCalID, ExternalEventID: "series", Version: 1, VisitInfoID: ptr(parentInfo)},
+		{ScheduleID: ownID, FacilityID: seedFacility, ExternalCalendarID: exCalID, ExternalEventID: "series_own", Version: 1, VisitInfoID: ptr(ownInfo)},
+		{ScheduleID: pendingID, FacilityID: seedFacility, ExternalCalendarID: exCalID, ExternalEventID: "series_pending",
+			Pending: &calendar.PendingWrite{Version: 1, State: calendar.PendingUnknown, VisitInfoID: ptr(pendingInfo), Deadline: time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC)}},
+	} {
+		if err := records.Create(ctx, rec); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	got, err := r.ListByFacility(ctx, seedFacility, civil.Date{Year: 2099, Month: 1, Day: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	visits := map[string]string{}
+	for _, p := range got {
+		if p.Visit != nil {
+			visits[p.EventID] = p.Visit.ID
+		}
+	}
+	want := map[string]string{"series": parentInfo, "series_inherited": parentInfo, "series_own": ownInfo, "series_pending": parentInfo}
+	for id, info := range want {
+		if visits[id] != info {
+			t.Errorf("行 %s の訪問の情報 = %q, want %q", id, visits[id], info)
+		}
+	}
+	inherited, err := r.GetBySchedule(ctx, seedFacility, scheduleview.ProjectedScheduleID(exCalID, "series_inherited"))
+	if err != nil || inherited.Visit == nil || inherited.Visit.ID != parentInfo {
+		t.Errorf("記録の無い例外の回の 1 件 = %+v, %v", inherited.Visit, err)
+	}
+	own, err := r.GetBySchedule(ctx, seedFacility, ownID)
+	if err != nil || own.Visit == nil || own.Visit.ID != ownInfo {
+		t.Errorf("記録のある例外の回の 1 件 = %+v, %v", own.Visit, err)
+	}
+	if f, err := NewRecurringScheduleRepository(testDB).GetFacilityID(ctx, parentID); err != nil || f != seedFacility {
+		t.Errorf("繰り返しの予定の記録の GetFacilityID = %s, %v, want %s", f, err, seedFacility)
+	}
+}

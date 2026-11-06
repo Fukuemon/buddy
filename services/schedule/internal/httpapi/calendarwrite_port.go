@@ -3,6 +3,7 @@ package httpapi
 import (
 	"context"
 
+	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 )
@@ -16,4 +17,8 @@ type CalendarWriteApp struct {
 	Update func(ctx context.Context, facilityID, id, etag string, in schedule.SlotInput) (scheduleview.Detail, error)
 	// Cancel は、一覧での ID が id の単発の予定を、画面が読んだ etag を If-Match に付けて Google カレンダーから消す。
 	Cancel func(ctx context.Context, facilityID, id, etag, reason string) (schedule.Cancellation, error)
+	// CreateRecurring は、画面が決めた ID が id の繰り返しの予定を Google カレンダーの 1 つの繰り返しの予定として書き、書いた予定を返す。
+	CreateRecurring func(ctx context.Context, facilityID, id string, in schedule.SlotInput, rule schedule.RuleInput) (scheduleview.RecurringDetail, error)
+	// ChangeOccurrence は、繰り返しの予定 recurringScheduleID の originalDate の回を、Google カレンダーの例外の回にして変え、変えた回を返す。
+	ChangeOccurrence func(ctx context.Context, facilityID, recurringScheduleID string, originalDate civil.Date, in schedule.SlotInput) (scheduleview.Detail, error)
 }
