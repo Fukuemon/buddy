@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 
 import { BusyLabel } from '../base/Button/BusyLabel'
 import { Button, type ButtonVariant } from '../base/Button/Button'
@@ -16,6 +16,11 @@ export type DialogSubmitProps = {
   submitVariant?: ButtonVariant
   /** false の間は、確定のボタンを押せない。 */
   canSubmit: boolean
+  /**
+   * canSubmit が false の間に、確定のボタンを押せるようにする条件の文。ボタンの左に出し、ボタンの説明として結び付ける。
+   * 選択肢を読み込む間のように、待てば押せるようになるときは渡さない。
+   */
+  submitHint?: ReactNode
   /** true の間は、確定のボタンに回転の印を出し、閉じる操作を全て止める。 */
   isSubmitting: boolean
   /** 送れなかったときの文。フッターのボタンの左に出す。isBlock なら、ボタンの上に幅いっぱいで出す。 */
@@ -30,6 +35,7 @@ export const SubmitButtons = ({
   busyLabel,
   submitVariant = 'primary',
   canSubmit,
+  submitHint,
   isSubmitting,
   formId,
   onSubmit,
@@ -38,27 +44,41 @@ export const SubmitButtons = ({
   formId?: string
   onSubmit?: () => void
   onCancel: () => void
-}) => (
-  <>
-    <Button
-      data-testid={`${testIdPrefix}-cancel`}
-      disabled={isSubmitting}
-      onClick={onCancel}
-      size="S"
-      variant="secondary"
-    >
-      キャンセル
-    </Button>
-    <Button
-      data-testid={submitTestId}
-      disabled={!canSubmit || isSubmitting}
-      form={formId}
-      onClick={formId === undefined ? onSubmit : undefined}
-      size="S"
-      type={formId === undefined ? 'button' : 'submit'}
-      variant={submitVariant}
-    >
-      <BusyLabel busy={isSubmitting}>{isSubmitting ? busyLabel : submitLabel}</BusyLabel>
-    </Button>
-  </>
-)
+}) => {
+  const hintId = useId()
+  const showsHint = !canSubmit && !isSubmitting && submitHint !== undefined
+  return (
+    <>
+      {showsHint && (
+        <p
+          className="mr-auto text-caption text-text-secondary"
+          data-testid={`${testIdPrefix}-submit-hint`}
+          id={hintId}
+        >
+          {submitHint}
+        </p>
+      )}
+      <Button
+        data-testid={`${testIdPrefix}-cancel`}
+        disabled={isSubmitting}
+        onClick={onCancel}
+        size="S"
+        variant="secondary"
+      >
+        キャンセル
+      </Button>
+      <Button
+        aria-describedby={showsHint ? hintId : undefined}
+        data-testid={submitTestId}
+        disabled={!canSubmit || isSubmitting}
+        form={formId}
+        onClick={formId === undefined ? onSubmit : undefined}
+        size="S"
+        type={formId === undefined ? 'button' : 'submit'}
+        variant={submitVariant}
+      >
+        <BusyLabel busy={isSubmitting}>{isSubmitting ? busyLabel : submitLabel}</BusyLabel>
+      </Button>
+    </>
+  )
+}
