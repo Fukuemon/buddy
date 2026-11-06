@@ -19,12 +19,31 @@ post-start = "pnpm install --frozen-lockfile"
 [pre-start]
 # mise は信頼していないディレクトリの mise.toml を読まないので、worktree ごとに信頼する
 trust = "mise trust --quiet"
-# ポートの組は、ブランチ名のハッシュから 20000〜29980 の 20 刻みの先頭を決め、そこから順に割り当てる。
+# ブラウザが開く URL と E2E の URL は、portless compose up が出す https://<サービス>.<ホスト>.localhost にする（ADR-0032）。
+# portless は、compose のプロジェクトの名前の _ を - にしてホスト名に使う。
+# ポートの組は、portless が変えない postgres と valkey のポートに使う。HTTP のサービスのポートは portless が選び直す。
+# ブランチ名のハッシュから 20000〜29980 の 20 刻みの先頭を決め、そこから順に割り当てる。
 # 2 つの worktree の先頭が同じになる確率は 1/500 で、そのときは .env を手で直す。
 env = '''
+{% set project = "buddy-" ~ (branch | sanitize_db) -%}
+{% set host = project | replace("_", "-") -%}
 {% set base = ((branch | hash_port) % 500) * 20 + 20000 -%}
 cat > .env <<EOF
-COMPOSE_PROJECT_NAME=buddy-{{ branch | sanitize_db }}
+COMPOSE_PROJECT_NAME={{ project }}
+WEB_ORIGIN=https://web.{{ host }}.localhost
+HYDRA_PUBLIC_ORIGIN=https://hydra.{{ host }}.localhost
+BROKER_ORIGIN=https://broker.{{ host }}.localhost
+IDP_ORIGIN=https://idp.{{ host }}.localhost
+SESSION_COOKIE_SECURE=true
+E2E_BASE_URL=https://web.{{ host }}.localhost
+E2E_SCHEDULE_URL=https://schedule.{{ host }}.localhost
+E2E_RECEIPT_URL=https://receipt.{{ host }}.localhost
+E2E_BROKER_URL=https://broker.{{ host }}.localhost
+E2E_BROKER_INTERNAL_URL=https://8081.broker.{{ host }}.localhost
+E2E_HYDRA_URL=https://hydra.{{ host }}.localhost
+E2E_CALENDARPIT_URL=https://calendarpit.{{ host }}.localhost
+E2E_GCALHOLD_URL=https://gcalhold.{{ host }}.localhost
+NODE_EXTRA_CA_CERTS=$HOME/.portless/ca.pem
 WEB_PORT={{ base }}
 SCHEDULE_PORT={{ base + 1 }}
 RECEIPT_PORT={{ base + 2 }}
@@ -37,13 +56,5 @@ POSTGRES_PORT={{ base + 8 }}
 VALKEY_PORT={{ base + 9 }}
 CALENDARPIT_PORT={{ base + 10 }}
 GCALHOLD_PORT={{ base + 11 }}
-E2E_BASE_URL=http://localhost:{{ base }}
-E2E_SCHEDULE_URL=http://localhost:{{ base + 1 }}
-E2E_RECEIPT_URL=http://localhost:{{ base + 2 }}
-E2E_BROKER_URL=http://localhost:{{ base + 3 }}
-E2E_BROKER_INTERNAL_URL=http://localhost:{{ base + 4 }}
-E2E_HYDRA_URL=http://localhost:{{ base + 5 }}
-E2E_CALENDARPIT_URL=http://localhost:{{ base + 10 }}
-E2E_GCALHOLD_URL=http://localhost:{{ base + 11 }}
 EOF
 '''
