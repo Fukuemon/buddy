@@ -216,6 +216,37 @@ func (q *Queries) GetCalendarEventRecordForUpdate(ctx context.Context, scheduleI
 	return i, err
 }
 
+const listCalendarEventRecordIDs = `-- name: ListCalendarEventRecordIDs :many
+SELECT schedule_id FROM calendar_event_records WHERE facility_id = $1 AND schedule_id = ANY($2::text[])
+`
+
+type ListCalendarEventRecordIDsParams struct {
+	FacilityID  string
+	ScheduleIds []string
+}
+
+// 一覧（scheduleview）が、展開した繰り返しの回の ID のうち、記録の主キーである ID を 1 回で引く。回を別の職員のカレンダーに移した後に
+// 元のカレンダーに残った回に、別の一覧の ID を付けるためである。
+func (q *Queries) ListCalendarEventRecordIDs(ctx context.Context, arg ListCalendarEventRecordIDsParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, listCalendarEventRecordIDs, arg.FacilityID, arg.ScheduleIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var schedule_id string
+		if err := rows.Scan(&schedule_id); err != nil {
+			return nil, err
+		}
+		items = append(items, schedule_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const releaseCalendarEventRecord = `-- name: ReleaseCalendarEventRecord :exec
 UPDATE calendar_event_records SET pending_locked_until = NULL
 WHERE schedule_id = $1 AND pending_locked_until = $2

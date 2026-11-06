@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"reflect"
 	"slices"
 	"testing"
 	"time"
@@ -558,6 +559,12 @@ func TestCalendarProjectionRepositoryDetachedOccurrenceID(t *testing.T) {
 	}
 	if f, err := NewScheduleRepository(testDB).GetFacilityID(ctx, detachedID); err != nil || f != seedGoogleFacility {
 		t.Errorf("GetFacilityID(%s) = %s, %v, want %s", detachedID, f, err, seedGoogleFacility)
+	}
+	if got, err := r.ListRecordedIDs(ctx, seedGoogleFacility, []string{occID, detachedID}); err != nil || !reflect.DeepEqual(got, map[string]bool{occID: true}) {
+		t.Errorf("ListRecordedIDs = %v, %v, want 記録の主キーの %s だけ", got, err, occID)
+	}
+	if got, err := r.ListRecordedIDs(ctx, seedFacility, []string{occID}); err != nil || len(got) != 0 {
+		t.Errorf("ほかの事業所の ListRecordedIDs = %v, %v, want 空", got, err)
 	}
 }
 

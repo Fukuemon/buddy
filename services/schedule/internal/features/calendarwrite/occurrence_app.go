@@ -214,8 +214,7 @@ func findListedOccurrence(ctx context.Context, projections Projections, now func
 	if err != nil {
 		return scheduleview.Occurrence{}, false, err
 	}
-	occ, ok := scheduleview.FindOccurrence(rows, calendar.ProjectionRules{}, id, from, to)
-	return occ, ok, nil
+	return scheduleview.FindOccurrence(ctx, projections, facilityID, rows, calendar.ProjectionRules{}, id, from, to)
 }
 
 // requireParentETag は、繰り返しの予定の親 parent を Google から読み直し、etag が画面の読んだ etag と同じことを確認する。

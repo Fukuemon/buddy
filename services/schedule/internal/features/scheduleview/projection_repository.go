@@ -16,4 +16,12 @@ type Projections interface {
 	// 記録の予定の ID が id なら、記録が指すカレンダーと Google の予定の ID の行を返す。記録の無い行は ListScheduleID の値で引く。
 	// 無いときは apperr.ErrNotFound を返す。
 	GetBySchedule(ctx context.Context, facilityID, id string) (ProjectionDetail, error)
+	RecordedIDs
+}
+
+// RecordedIDs は、予定の API が Google カレンダーに書いた予定の記録（calendar.EventRecord）の主キーを引く。
+// 実装は postgres.CalendarProjectionRepository である。
+type RecordedIDs interface {
+	// ListRecordedIDs は、ids のうち、事業所 facilityID の記録の主キーである ID を返す。1 回の問い合わせで引く。
+	ListRecordedIDs(ctx context.Context, facilityID string, ids []string) (map[string]bool, error)
 }

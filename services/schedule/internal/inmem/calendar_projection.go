@@ -85,6 +85,17 @@ func (s Projections) ListByFacility(_ context.Context, facilityID string, from c
 	return out, nil
 }
 
+// ListRecordedIDs は、scheduleview.RecordedIDs の ListRecordedIDs を実装する。
+func (s Projections) ListRecordedIDs(_ context.Context, facilityID string, ids []string) (map[string]bool, error) {
+	out := map[string]bool{}
+	for _, id := range ids {
+		if r, ok := s.Records[id]; ok && r.FacilityID == facilityID {
+			out[id] = true
+		}
+	}
+	return out, nil
+}
+
 // GetBySchedule は、scheduleview.Projections の GetBySchedule を実装する。
 // postgres の実装と同じく、記録の予定の ID なら記録が指す行を、ほかの行より先に返す。
 func (s Projections) GetBySchedule(_ context.Context, facilityID, id string) (scheduleview.ProjectionDetail, error) {

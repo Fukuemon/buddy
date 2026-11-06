@@ -1,6 +1,11 @@
 -- name: GetCalendarEventRecordForUpdate :one
 SELECT * FROM calendar_event_records WHERE schedule_id = $1 FOR UPDATE;
 
+-- name: ListCalendarEventRecordIDs :many
+-- 一覧（scheduleview）が、展開した繰り返しの回の ID のうち、記録の主キーである ID を 1 回で引く。回を別の職員のカレンダーに移した後に
+-- 元のカレンダーに残った回に、別の一覧の ID を付けるためである。
+SELECT schedule_id FROM calendar_event_records WHERE facility_id = sqlc.arg(facility_id) AND schedule_id = ANY(sqlc.arg(schedule_ids)::text[]);
+
 -- name: FindCalendarEventRecordAtForUpdate :one
 -- 繰り返しの予定の例外の回を変える書き込みが、親の予定の記録を、親の予定の場所で引く。
 SELECT * FROM calendar_event_records WHERE external_calendar_id = sqlc.arg(external_calendar_id) AND external_event_id = sqlc.arg(external_event_id) FOR UPDATE;

@@ -53,7 +53,11 @@ func (g GetProjected) find(ctx context.Context, facilityID, id string) (projecte
 		if err != nil {
 			return projectedEvent{}, err
 		}
-		e, ok := findOccurrence(filter(rows, func(r ProjectionDetail) bool { return r.FacilityID == facilityID }), g.deps.Rules, id, from, to)
+		rows = filter(rows, func(r ProjectionDetail) bool { return r.FacilityID == facilityID })
+		e, ok, err := findOccurrence(ctx, g.deps.Projections, facilityID, rows, g.deps.Rules, id, from, to)
+		if err != nil {
+			return projectedEvent{}, err
+		}
 		if !ok {
 			return projectedEvent{}, apperr.ErrNotFound
 		}

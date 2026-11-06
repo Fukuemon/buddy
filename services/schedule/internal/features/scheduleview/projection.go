@@ -1,6 +1,7 @@
 package scheduleview
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/binary"
 	"slices"
@@ -109,8 +110,8 @@ type projectedEvent struct {
 // 規則に写せない繰り返しの親は、回に展開せず、最初の回を、回が期間に重なりうるときに 1 件で返す。
 // 例外の回は、変えた回を単発の予定と同じく読み替え、取り消した回は返さない。rules.Read が読み替えない予定（終日の予定など）は返さない。
 // 取り消した単発の予定と繰り返しの親は返さず、取り消した親の例外の回も返さない。
-// taken は、行の一覧での ID（listedIDs）で、展開した回の ID がこれに当たれば、その回を残った回（left）にする。
-func expandProjections(rows []ProjectionDetail, taken map[string]bool, rules EventRules, from, to civil.Date) []projectedEvent {
+// 展開した回の残った回（left）は、markLeft で決める。
+func expandProjections(rows []ProjectionDetail, rules EventRules, from, to civil.Date) []projectedEvent {
 	replaced := map[string]map[civil.Date]bool{}
 	cancelled := map[string]bool{}
 	for _, r := range rows {
@@ -135,7 +136,7 @@ func expandProjections(rows []ProjectionDetail, taken map[string]bool, rules Eve
 		switch {
 		case r.Status != ProjectionConfirmed, r.IsException() && cancelled[r.ExternalCalendarID+"\x00"+r.RecurringEventID]:
 		case r.IsParent():
-			out = append(out, expandParent(r, rules, replaced[r.ExternalCalendarID+"\x00"+r.EventID], taken, from, to)...)
+			out = append(out, expandParent(r, rules, replaced[r.ExternalCalendarID+"\x00"+r.EventID], from, to)...)
 		default:
 			if rd := rules.Read(r.Projection); rd.Kind != EventSkipped && startsIn(rd, from, to) {
 				out = append(out, projectedEvent{row: r, reading: rd})
@@ -146,8 +147,7 @@ func expandProjections(rows []ProjectionDetail, taken map[string]bool, rules Eve
 }
 
 // expandParent は、繰り返しの親の予定 r を、from から to までの回に展開する。replaced は、例外の回が置き換えた元の日である。
-// taken は expandProjections と同じである。
-func expandParent(r ProjectionDetail, rules EventRules, replaced map[civil.Date]bool, taken map[string]bool, from, to civil.Date) []projectedEvent {
+func expandParent(r ProjectionDetail, rules EventRules, replaced map[civil.Date]bool, from, to civil.Date) []projectedEvent {
 	first := rules.Read(r.Projection)
 	if first.Kind == EventSkipped {
 		return nil
@@ -168,7 +168,7 @@ func expandParent(r ProjectionDetail, rules EventRules, replaced map[civil.Date]
 		occ := first
 		occ.Date = d
 		if startsIn(occ, from, to) {
-			out = append(out, projectedEvent{row: r, reading: occ, occurrence: d, left: taken[OccurrenceScheduleID(r.ExternalCalendarID, r.EventID, d)]})
+			out = append(out, projectedEvent{row: r, reading: occ, occurrence: d})
 		}
 	}
 	return out
@@ -196,13 +196,33 @@ func projectedID(e projectedEvent) string {
 	return OccurrenceScheduleID(e.row.ExternalCalendarID, e.row.EventID, e.occurrence)
 }
 
-// listedIDs は、行 rows の一覧での ID（ScheduleID）の集まりを返す。
-func listedIDs(rows []ProjectionDetail) map[string]bool {
-	out := make(map[string]bool, len(rows))
-	for _, r := range rows {
-		out[r.ScheduleID] = true
+// occurrenceIDOf は、展開した回 e の OccurrenceScheduleID を返す。
+func occurrenceIDOf(e projectedEvent) string {
+	return OccurrenceScheduleID(e.row.ExternalCalendarID, e.row.EventID, e.occurrence)
+}
+
+// markLeft は、展開した回 events のうち、回の OccurrenceScheduleID を主キーに持つ記録がある回を、残った回（left）にする。
+// 記録は recorded で 1 回にまとめて引く。移した先の単発の予定が読む日付の範囲の外にあっても、残った回の ID を変えないためである。
+func markLeft(ctx context.Context, recorded RecordedIDs, facilityID string, events []projectedEvent) error {
+	var ids []string
+	for _, e := range events {
+		if !e.occurrence.IsZero() {
+			ids = append(ids, occurrenceIDOf(e))
+		}
 	}
-	return out
+	if len(ids) == 0 {
+		return nil
+	}
+	taken, err := recorded.ListRecordedIDs(ctx, facilityID, ids)
+	if err != nil {
+		return err
+	}
+	for i, e := range events {
+		if !e.occurrence.IsZero() && taken[occurrenceIDOf(e)] {
+			events[i].left = true
+		}
+	}
+	return nil
 }
 
 // OccurrenceScheduleID は、結び付けたカレンダー externalCalendarID の繰り返しの予定 parentEventID の、元の規則で d に始まる回の、
@@ -233,20 +253,44 @@ type Occurrence struct {
 	Left   bool
 }
 
-// FindOccurrence は、Projection の行 rows の繰り返しの親を from から to までの回に展開し、一覧での ID が id の回を返す。
-// 変えた回と取り消した回は、展開した回に含めない。見つからなければ false を返す。
-func FindOccurrence(rows []ProjectionDetail, rules EventRules, id string, from, to civil.Date) (Occurrence, bool) {
-	e, ok := findOccurrence(rows, rules, id, from, to)
-	return Occurrence{Parent: e.row, Date: e.occurrence, ID: id, Left: e.left}, ok
+// FindOccurrence は、事業所 facilityID の Projection の行 rows の繰り返しの親を from から to までの回に展開し、一覧での ID が id の回を返す。
+// 変えた回と取り消した回は、展開した回に含めない。残った回かは、一覧と同じく recorded の記録で決める。見つからなければ false を返す。
+func FindOccurrence(ctx context.Context, recorded RecordedIDs, facilityID string, rows []ProjectionDetail, rules EventRules, id string,
+	from, to civil.Date) (Occurrence, bool, error) {
+	e, ok, err := findOccurrence(ctx, recorded, facilityID, rows, rules, id, from, to)
+	return Occurrence{Parent: e.row, Date: e.occurrence, ID: id, Left: e.left}, ok, err
 }
 
-func findOccurrence(rows []ProjectionDetail, rules EventRules, id string, from, to civil.Date) (projectedEvent, bool) {
-	for _, e := range expandProjections(rows, listedIDs(rows), rules, from, to) {
-		if !e.occurrence.IsZero() && projectedID(e) == id {
-			return e, true
+// findOccurrence は、OccurrenceScheduleID か DetachedOccurrenceScheduleID が id の展開した回を候補にし、候補の回の記録を 1 回で引いて、
+// 一覧と同じ ID になる回を返す。
+func findOccurrence(ctx context.Context, recorded RecordedIDs, facilityID string, rows []ProjectionDetail, rules EventRules, id string,
+	from, to civil.Date) (projectedEvent, bool, error) {
+	var candidates []projectedEvent
+	var ids []string
+	for _, e := range expandProjections(rows, rules, from, to) {
+		if e.occurrence.IsZero() {
+			continue
+		}
+		e.left = true
+		if projectedID(e) == id || occurrenceIDOf(e) == id {
+			candidates = append(candidates, e)
+			ids = append(ids, occurrenceIDOf(e))
 		}
 	}
-	return projectedEvent{}, false
+	if len(candidates) == 0 {
+		return projectedEvent{}, false, nil
+	}
+	taken, err := recorded.ListRecordedIDs(ctx, facilityID, ids)
+	if err != nil {
+		return projectedEvent{}, false, err
+	}
+	for _, e := range candidates {
+		e.left = taken[occurrenceIDOf(e)]
+		if projectedID(e) == id {
+			return e, true, nil
+		}
+	}
+	return projectedEvent{}, false, nil
 }
 
 // RetainedRange は、今の時刻 now の、Projection を保持する期間（前々月の初日から 3 か月後の月末）の最初の日と最後の日を返す（ADR-0026）。
