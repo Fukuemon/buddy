@@ -12,6 +12,8 @@ export type FormFieldControlProps = {
   'aria-labelledby'?: string
   'aria-invalid'?: true
   'aria-describedby'?: string
+  /** isGroup で誤りがあるときだけ -1 を渡す。送った後に、組の要素へフォーカスを移せるようにする（useFocusFirstInvalid）。 */
+  tabIndex?: -1
 }
 
 export type FormFieldProps = {
@@ -62,6 +64,7 @@ export const FormField = ({
         id,
         ...(isGroup && { 'aria-labelledby': labelId }),
         ...(error !== undefined && { 'aria-invalid': true }),
+        ...(isGroup && error !== undefined && { tabIndex: -1 as const }),
         ...(describedBy !== '' && { 'aria-describedby': describedBy }),
       })}
       {hint !== undefined && (

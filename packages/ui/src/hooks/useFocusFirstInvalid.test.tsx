@@ -34,7 +34,52 @@ const TwoFieldForm = () => {
   )
 }
 
+/** 希望の時間帯を選ばずに送ると、ラジオボタンの組に誤りを出すフォーム。 */
+const RadioGroupForm = () => {
+  const { ref, focusFirstInvalid } = useFocusFirstInvalid<HTMLFormElement>()
+  const [isInvalid, setInvalid] = useState(false)
+  return (
+    <form
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault()
+        setInvalid(true)
+        focusFirstInvalid()
+      }}
+      ref={ref}
+    >
+      <FormField
+        error={isInvalid ? '希望の時間帯を選んでください' : undefined}
+        isGroup
+        label="希望の時間帯"
+      >
+        {(field) => (
+          <div {...field} role="radiogroup">
+            <label>
+              <input name="time" type="radio" />
+              午前
+            </label>
+            <label>
+              <input name="time" type="radio" />
+              午後
+            </label>
+          </div>
+        )}
+      </FormField>
+      <button type="submit">登録</button>
+    </form>
+  )
+}
+
 describe('useFocusFirstInvalid', () => {
+  it('最初の誤りがラジオボタンの組なら、組の要素へフォーカスを移し、組の説明で誤りの文を伝える', async () => {
+    render(<RadioGroupForm />)
+    await userEvent.click(screen.getByRole('button', { name: '登録' }))
+    const group = screen.getByRole('radiogroup', { name: '希望の時間帯' })
+    expect(group).toHaveFocus()
+    expect(group).toHaveAccessibleDescription('希望の時間帯を選んでください')
+  })
+
   it('送った後に、最初の誤りの欄へフォーカスを移し、欄の説明で誤りの文を伝える', async () => {
     render(<TwoFieldForm />)
     await userEvent.click(screen.getByRole('button', { name: '登録' }))
