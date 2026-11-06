@@ -267,7 +267,13 @@ export const createFakeBuddyApi = ({
           cutover:
             cutover === null
               ? null
-              : { started_at: cutover.started_at, range_start: cutover.range_start },
+              : {
+                  started_at: cutover.started_at,
+                  started_by: cutover.started_by,
+                  started_by_name:
+                    mockStaffList.find((s) => s.id === cutover?.started_by)?.username ?? '',
+                  range_start: cutover.range_start,
+                },
         }
       },
       get: async (facilityId, scheduleId) => {

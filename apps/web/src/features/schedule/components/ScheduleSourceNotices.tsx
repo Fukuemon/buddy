@@ -29,7 +29,8 @@ export type ScheduleSourceNoticesProps = {
  * Google カレンダーを予定の正本にする事業所（google_primary）で、カレンダーの上に出す通知。
  * Google カレンダーで予定を編集する案内を常に出し、同期が失敗しているか古いカレンダーがあれば同期の警告を、
  * 確認が必要な予定があれば、予定ごとの日時、職員、理由を出す。予定の正本を buddy に切り替えている間は、切り替え中であることと、
- * Google カレンダーで予定を変えないよう頼む文を出す。buddy_primary の事業所では何も出さない。
+ * Google カレンダーで予定を変えないよう頼み、buddy でも予定を変えられないことを伝える文と、切り替えを始めた職員と時刻を出す。
+ * buddy_primary の事業所では何も出さない。
  */
 export const ScheduleSourceNotices = ({
   sourceMode,
@@ -63,8 +64,12 @@ export const ScheduleSourceNotices = ({
           <h2 className="text-label">予定の正本を buddy に切り替えています</h2>
           <p className="mt-2 text-body-dense">
             切り替えが終わるまで、Google
-            カレンダーで予定を作成、変更しないでください。切り替えの間も、buddy には Google
+            カレンダーで予定を作成、変更しないでください。切り替えが終わるまで、buddy
+            でも予定を作成、変更できません。切り替えの間も、buddy には Google
             カレンダーの予定を表示します。
+          </p>
+          <p className="mt-1 text-body-dense" data-testid="schedule-calendar-cutover-started">
+            開始: {cutover.started_by_name}、{formatDateTime(new Date(cutover.started_at))}
           </p>
         </section>
       )}

@@ -1729,6 +1729,10 @@ export interface components {
         OpenCalendarCutover: {
             /** Format: date-time */
             started_at: string;
+            /** @description 切り替えを始めた職員 */
+            started_by: components["schemas"]["ID"];
+            /** @description 切り替えを始めた職員の名前。職員の状態（休職、退職）によらず返し、予定の一覧を読める全ての職員に返す */
+            started_by_name: string;
             /** @description 取り込みの期間の最初の日 */
             range_start: components["schemas"]["Date"];
         };
