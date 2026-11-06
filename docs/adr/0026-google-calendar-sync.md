@@ -179,7 +179,7 @@ Google に書けたのに応答を受けられず、職員が同じ入力を送�
 | --- | --- | --- |
 | 無し | 書いた予定 | 書いた予定 |
 | `ErrEventChanged` | 409（`google_event_changed`）。Google の今の予定を Projection に写す | Google カレンダーで変更されたことと最新の予定を示し、入力を残す |
-| `ErrEventGone` | 409（`google_event_not_found`）。Projection の行を消す | Google カレンダーで消されたことを示す |
+| `ErrEventGone` | 409（`google_event_not_found`）。Projection の行を、取り消しの状態にして残す | Google カレンダーで消されたことを示す |
 | `ErrEventNotFound` | 409（`google_event_not_found`）。Projection の行を消さない | Google カレンダーで予定が見つからないことを示す |
 | `ErrUnavailable` | 503（`google_unavailable`）。保留の版を消す | 書けなかったことを示し、入力を残す |
 | `ErrOutcomeUnknown` | 503（`google_write_unknown`）。保留の版を残す | 書けたかを確認できなかったことを示し、時間をおいて予定を開き直すよう案内する |
