@@ -366,6 +366,9 @@ apps/web の画面だけが使うアイコンは、`apps/web/src/assets/icons/` 
 - select は `Select` を使う。input と textarea には `fieldControlClassName`（`FormField` の中では `formFieldControlClassName`）を付ける。
 - 中に input を置く枠（`SearchBox` の枠、`DatePicker` の label）には `fieldBoxClassName` を付け、中の input の状態を `:has` で読む。
 - 確認: 全ての入力のコンポーネントの hover、無効、エラーの枠は、コンポーネントのテスト（`pnpm --filter @buddy/ui test` の `fieldStates.test.tsx`）が確認する。
+- 編集できない値は、欄にせず本文の文字で出す。
+- 欄を無効にするのは、送っている間、選択肢を読み込む間、ほかの処理を進める間に限り、終わったら編集できる状態に戻す。
+  - DADS のインプットテキストは無効の欄を使わないとしているが、送っている間に欄を編集できると、送った値と画面の値が食い違う。選択肢を読み込む間に `Select` を開けると、空の選択肢が見える。
 - エラーの枠は 2px にする。DADS のインプットテキストは 1px の赤だが、1px にすると、デフォルトの枠との違いが色だけになる。太さが違えば、色を見分けにくい人も誤りの欄を見つけられる。
 - 出典: [DADS のインプットテキストの CSS](https://github.com/digital-go-jp/design-system-example-components-html/blob/caa50d731cf515cfa5eae0093121f11ac5299235/src/components/input-text/input-text.css)
 
@@ -380,6 +383,9 @@ DADS から外れる規則は、外れることと理由を、その規則に書
 - ラベルは文字にする。アイコンだけのボタンには、`aria-label` で名前を付ける。
 - 操作の重要度の違いを、色だけで示さない。塗りと枠線の違いでも示す。
 - 押せない間は `aria-disabled` を付け、押しても実行しない。`Button` は、`disabled` を渡すと `aria-disabled` を付け、クリックと送信を止める。
+- 入力が条件を満たさない間に押せなくするボタンは、ボタンのすぐ近くに、押せるようにする条件を文で書き、`aria-describedby` でボタンに結び付ける。ダイアログの確定のボタンは、`InputDialog` と `ConfirmDialog` の `submitHint` に渡す。
+- 送っている間と、選択肢やデータを読み込む間は、条件の文を書かずに押せなくする。
+  - DADS は押せないボタンの近くに理由を書くとしているが、この 2 つは数秒で終わり、ボタンに回転の印か、送っていることを示す文を出す。理由の文を出しても、読む前に消える。
 - 出典: [DADS のボタンの使い方](https://design.digital.go.jp/dads/components/button/usage/)、[DADS のボタンのアクセシビリティ](https://design.digital.go.jp/dads/components/button/accessibility/)
 
 #### `Modal`、`Dialog`
@@ -456,7 +462,10 @@ DADS から外れる規則は、外れることと理由を、その規則に書
 
 - 開かないと操作できない情報を入れない。閉じたままでも、画面の本文だけで操作できるようにする。
 - キーボードだけで開閉でき、`aria-expanded` で開閉を伝える。
-- 出典: [DADS のディスクロージャーの使い方](https://design.digital.go.jp/dads/components/disclosure/usage/)
+- `HelpToggle` は、見出しの意味を補う説明を見出しの下に重ねて出すコンポーネントで、ディスクロージャーではない。開閉のアイコンを見出しの左に置かず、見出しの右に ? のボタンを置く。
+  - DADS のディスクロージャーは、タイトルの左の開閉のアイコンを必須にする。`HelpToggle` はタイトルと本文を持たず、説明は画面の流れを押し下げない。見出しの左にアイコンを置くと、`HelpToggle` を置く見出しと置かない見出しで、文字の位置がずれる。
+- `MoreText` は、文の下の「詳しく」で続きの説明を画面の流れの中に開く。
+  - 出典: [DADS のディスクロージャーの使い方](https://design.digital.go.jp/dads/components/disclosure/usage/)
 
 ## Storybook のカタログ
 
