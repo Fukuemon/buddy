@@ -1,4 +1,4 @@
-import { InputDialog } from '@buddy/ui'
+import { InputDialog, useFocusFirstInvalid } from '@buddy/ui'
 import { useId, useRef, useState } from 'react'
 
 import type { PatientInput, PatientRecord, ServiceCodeRecord } from '#/api/types'
@@ -36,6 +36,7 @@ export const PatientEditDialog = ({
   onClose,
 }: PatientEditDialogProps) => {
   const formId = useId()
+  const { ref: formRef, focusFirstInvalid } = useFocusFirstInvalid<HTMLFormElement>()
   const nameRef = useRef<HTMLInputElement>(null)
   const [values, setValues] = useState<PatientFormValues>({
     name: patient.name,
@@ -50,6 +51,7 @@ export const PatientEditDialog = ({
     const result = validatePatientForm(values)
     if ('errors' in result) {
       setErrors(result.errors)
+      focusFirstInvalid()
       return
     }
     onSubmit(result.input)
@@ -82,6 +84,7 @@ export const PatientEditDialog = ({
           event.preventDefault()
           submit()
         }}
+        ref={formRef}
       >
         <PatientFormFields
           disabled={isSubmitting}

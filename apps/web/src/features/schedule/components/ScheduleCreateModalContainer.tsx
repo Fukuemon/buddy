@@ -64,6 +64,8 @@ const ScheduleCreateForm = ({
   const form = useForm<ScheduleFormValues>({
     defaultValues: createScheduleFormValues({ kind: search.kind, ...initial }),
     resolver: zodResolver(schema),
+    // 誤りの欄へのフォーカスは ScheduleForm が移す。react-hook-form は閉じた編集の欄の誤りにフォーカスを移せない
+    shouldFocusError: false,
   })
 
   const changeKind = (kind: ScheduleKind) => {

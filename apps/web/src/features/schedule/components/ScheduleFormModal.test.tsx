@@ -9,7 +9,7 @@ import * as stories from './ScheduleFormModal.stories'
 const { Visit, Normal, SubmitError } = composeStories(stories)
 
 describe('ScheduleFormModal', () => {
-  it('必須の項目が空なら送らず、項目の一覧にエラーを出す', async () => {
+  it('必須の項目が空なら送らず、項目の一覧にエラーを出し、最初の誤りの項目へフォーカスを移す', async () => {
     const onSubmit = fn()
     render(<Visit onSubmit={onSubmit} />)
 
@@ -22,6 +22,8 @@ describe('ScheduleFormModal', () => {
     expect(
       within(screen.getByTestId('schedule-field-staff')).getByText('主訪問者を選んでください'),
     ).toBeInTheDocument()
+    expect(screen.getByTestId('schedule-field-patient')).toHaveFocus()
+    expect(screen.queryByRole('alert')).toBeNull()
     expect(onSubmit).not.toHaveBeenCalled()
   })
 
