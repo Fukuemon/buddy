@@ -7,7 +7,7 @@
 # 別の worktree の COMPOSE_PROJECT_NAME が残ったシェルから消すと、その worktree の環境を消してしまうので、プロジェクトの名前をブランチから決めて渡す。
 # --rmi local は compose の image で名前を付けた broker と schedule のイメージを消さないので、名前で消す。
 # --rmi all は postgres などの取得したイメージも消し、メインの checkout の環境が使うイメージまで消えるので使わない
-pre-remove = "COMPOSE_PROJECT_NAME=buddy-{{ branch | sanitize | lower }} docker compose -p buddy-{{ branch | sanitize | lower }} down -v --remove-orphans --rmi local && docker image rm -f buddy-{{ branch | sanitize | lower }}-broker buddy-{{ branch | sanitize | lower }}-schedule"
+pre-remove = "COMPOSE_PROJECT_NAME=buddy-{{ branch | sanitize_db }} docker compose -p buddy-{{ branch | sanitize_db }} down -v --remove-orphans --rmi local && docker image rm -f buddy-{{ branch | sanitize_db }}-broker buddy-{{ branch | sanitize_db }}-schedule"
 
 # lefthook の commitlint と E2E が、worktree の node_modules を使う
 post-start = "pnpm install --frozen-lockfile"
@@ -20,7 +20,7 @@ trust = "mise trust --quiet"
 env = '''
 {% set base = ((branch | hash_port) % 500) * 20 + 20000 -%}
 cat > .env <<EOF
-COMPOSE_PROJECT_NAME=buddy-{{ branch | sanitize | lower }}
+COMPOSE_PROJECT_NAME=buddy-{{ branch | sanitize_db }}
 WEB_PORT={{ base }}
 SCHEDULE_PORT={{ base + 1 }}
 RECEIPT_PORT={{ base + 2 }}
