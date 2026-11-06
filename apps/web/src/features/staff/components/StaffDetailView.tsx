@@ -35,7 +35,8 @@ export type StaffDetailViewProps = {
   onChangePolicies: () => void
   onLeave: () => void
   onRetire: () => void
-  onReinstate: () => void
+  /** 復職にする。送った結果が返るまで「…」のメニューを開いたままにするので、送る処理の Promise を返す。 */
+  onReinstate: () => Promise<unknown>
   isReinstating: boolean
   /** 復職にできなかったときの文。 */
   reinstateErrorMessage?: string
@@ -104,6 +105,7 @@ const StaffDetailBody = ({
             onSelect: onReinstate,
             disabled: isReinstating,
             'data-testid': 'staff-detail-reinstate',
+            staysOpenUntilSettled: true,
           },
           {
             label: '退職にする',
@@ -368,14 +370,16 @@ const PolicyList = ({
                     key={policy.id}
                   >
                     {policy.name}
-                    {grant !== undefined && policyTargetKind(policy) !== undefined && (
-                      <span
-                        className="text-caption text-text-secondary"
-                        data-testid={`staff-policy-targets-${policy.code}`}
-                      >
-                        {policyTargetText(grant, targetNames)}
-                      </span>
-                    )}
+                    {grant !== undefined &&
+                      policyTargetKind(policy) !== undefined &&
+                      grant.target_user_ids.length + grant.target_team_ids.length > 0 && (
+                        <span
+                          className="text-caption text-text-secondary"
+                          data-testid={`staff-policy-targets-${policy.code}`}
+                        >
+                          {policyTargetText(grant, targetNames)}
+                        </span>
+                      )}
                   </li>
                 )
               })}

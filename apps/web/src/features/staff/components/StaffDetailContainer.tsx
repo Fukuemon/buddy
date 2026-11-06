@@ -10,6 +10,7 @@ import {
   ASSIGNMENTS_LOAD_ERROR_MESSAGE,
   DETAIL_LOAD_ERROR_MESSAGE,
   DETAIL_NOT_FOUND_MESSAGE,
+  POLICY_ALL_REFUSED_LEAD,
   POLICY_PARTIAL_ERROR_LEAD,
   POLICY_SAVE_ERROR_MESSAGE,
   leaveErrorMessage,
@@ -18,7 +19,7 @@ import {
   retireErrorMessage,
   staffSubmitErrorMessage,
 } from '../lib/errorMessage'
-import { orderPolicies } from '../lib/policyChanges'
+import { orderPolicies } from '../lib/policyOrder'
 import {
   assignmentsQueryOptions,
   departmentsQueryOptions,
@@ -53,7 +54,11 @@ const StaffDetailContent = ({ staffId, viewerId }: { staffId: Staff['id']; viewe
   const queryClient = useQueryClient()
   const [open, setOpen] = useState<Open>(null)
   const [refusedAssignments, setRefusedAssignments] = useState<StaffAssignments>()
-  const [policyFailures, setPolicyFailures] = useState<PolicySaveFailure[]>([])
+  /** 権限の保存で変えられなかった変更と、送った変更の全てを変えられなかったか。 */
+  const [policyFailure, setPolicyFailure] = useState<{
+    failures: PolicySaveFailure[]
+    isAll: boolean
+  }>()
 
   const detail = useQuery(staffDetailQueryOptions(api, facilityId, staffId))
   const staffList = useQuery(staffListQueryOptions(api, facilityId))
@@ -80,7 +85,7 @@ const StaffDetailContent = ({ staffId, viewerId }: { staffId: Staff['id']; viewe
     for (const mutation of [update, changePosition, savePolicies, startLeave, retire])
       mutation.reset()
     setRefusedAssignments(undefined)
-    setPolicyFailures([])
+    setPolicyFailure(undefined)
     setOpen(next)
   }
   const close = () => openDialog(null)
@@ -103,9 +108,9 @@ const StaffDetailContent = ({ staffId, viewerId }: { staffId: Staff['id']; viewe
   const assignmentsError = assignments.isError ? ASSIGNMENTS_LOAD_ERROR_MESSAGE : undefined
   const policiesError = savePolicies.isError
     ? POLICY_SAVE_ERROR_MESSAGE
-    : policyFailures.length > 0
-      ? `${POLICY_PARTIAL_ERROR_LEAD}${policyFailures.map((f) => `${f.name}: ${f.reason}`).join('')}`
-      : undefined
+    : policyFailure === undefined
+      ? undefined
+      : `${policyFailure.isAll ? POLICY_ALL_REFUSED_LEAD : POLICY_PARTIAL_ERROR_LEAD}${policyFailure.failures.map((f) => `${f.name}: ${f.reason}`).join('')}`
 
   return (
     <>
@@ -116,7 +121,7 @@ const StaffDetailContent = ({ staffId, viewerId }: { staffId: Staff['id']; viewe
         onChangePosition={() => openDialog('position')}
         onEdit={() => openDialog('profile')}
         onLeave={() => openDialog('leave')}
-        onReinstate={() => reinstate.mutate()}
+        onReinstate={() => reinstate.mutateAsync()}
         onRetire={() => openDialog('retire')}
         onRetry={() =>
           queryClient.resetQueries({ queryKey: queryKeys.staff.detail(facilityId, staffId) })
@@ -166,14 +171,18 @@ const StaffDetailContent = ({ staffId, viewerId }: { staffId: Staff['id']; viewe
           onSubmit={(changes) =>
             savePolicies.mutate(changes, {
               onSuccess: (failures) =>
-                failures.length === 0 ? close() : setPolicyFailures(failures),
+                failures.length === 0
+                  ? close()
+                  : setPolicyFailure({ failures, isAll: failures.length === changes.length }),
             })
           }
           policies={orderedPolicies}
           position={position}
           staff={staff}
-          staffOptions={byName((staffList.data ?? []).filter((s) => s.status === undefined))}
-          teamOptions={byName(teams.data ?? [])}
+          staffOptions={
+            staffList.data && byName(staffList.data.filter((s) => s.status === undefined))
+          }
+          teamOptions={teams.data && byName(teams.data)}
         />
       )}
       {staff !== undefined && open === 'leave' && (

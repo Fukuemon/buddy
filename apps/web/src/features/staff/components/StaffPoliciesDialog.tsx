@@ -22,10 +22,10 @@ export type StaffPoliciesDialogProps = {
   policies: readonly Policy[]
   /** 職員の今の役職。付いた理由を出すのに使う。 */
   position?: Position
-  /** 職員を対象にする権限の候補。事業所の有効な職員である。 */
-  staffOptions: readonly PolicyTargetOption[]
-  /** チームを対象にする権限の候補。 */
-  teamOptions: readonly PolicyTargetOption[]
+  /** 職員を対象にする権限の候補。事業所の有効な職員である。読み終えるまでは undefined にし、対象を足すを押せなくする。 */
+  staffOptions?: readonly PolicyTargetOption[]
+  /** チームを対象にする権限の候補。読み終えるまでは undefined にし、対象を足すを押せなくする。 */
+  teamOptions?: readonly PolicyTargetOption[]
   isSubmitting: boolean
   /** 保存できなかったときの文。一部の失敗は、権限ごとの理由を並べる。 */
   errorMessage?: string

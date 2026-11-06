@@ -73,14 +73,14 @@ export const employmentText = (
 
 /**
  * 権限の対象の名前を「、」でつなぐ。職員を対象にする権限は職員の名前を、チームを対象にする権限はチームの名前を出す。
- * 対象を指定しない権限は「なし」にする。名前を引けない ID は、ID のまま出す。
+ * 名前を引けない ID は、ID のまま出す。対象が無ければ空の文字列を返すので、呼ぶ側は対象の行ごと出さない。
  */
 export const policyTargetText = (
   policy: Pick<StaffPolicy, 'target_user_ids' | 'target_team_ids'>,
   names: ReadonlyMap<string, string>,
 ) => {
   const ids = [...policy.target_user_ids, ...policy.target_team_ids]
-  return ids.length === 0 ? 'なし' : ids.map((id) => names.get(id) ?? id).join('、')
+  return ids.map((id) => names.get(id) ?? id).join('、')
 }
 
 /** 職員の権限のうち、役職に決まっていない、個別に足した権限の名前。役職を読み終えるまでは空にする。 */

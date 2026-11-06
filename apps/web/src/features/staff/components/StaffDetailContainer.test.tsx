@@ -4,12 +4,28 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vite-plus/test'
 
+import { ApiError, type BuddyApi } from '#/api/BuddyApi'
+import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import { FAKE_VIEWER } from '#/api/fake/fixtures'
 import { queryKeys } from '#/api/queryKeys'
 
 import * as stories from './StaffDetailContainer.stories'
+import { onLeaveApi } from './StaffDetailContainer.stories'
 
 const { Default, NoAssignments, NotFound, OnLeave, Retired, Self } = composeStories(stories)
+
+/** フェイクの API を差し替えた職員の詳細の story を作る。 */
+const storyWith = (api: BuddyApi, staffId = 'staff-2') =>
+  composeStory(
+    {
+      ...stories.Default,
+      args: { staffId },
+      parameters: {
+        appRouter: { route: '/staff_/$staffId', url: `/staff/${staffId}`, api },
+      },
+    },
+    stories.default,
+  )
 
 const openPolicies = async () => {
   await userEvent.click(await screen.findByTestId('staff-detail-tab-policies'))
@@ -231,6 +247,127 @@ describe('StaffDetailContainer', () => {
     await userEvent.click(screen.getByTestId('staff-detail-menu'))
     await userEvent.click(screen.getByTestId('staff-detail-reinstate'))
     await expect.poll(() => screen.queryByTestId('staff-detail-status')).toBeNull()
+  })
+
+  it('復職にするを送っている間は、メニューを開いたまま「復職にしています」を出し、復職にできたら閉じる', async () => {
+    const base = onLeaveApi()
+    let settle = () => {}
+    const api: BuddyApi = {
+      ...base,
+      staff: {
+        ...base.staff,
+        reinstate: async (facilityId, staffId) => {
+          await new Promise<void>((resolve) => {
+            settle = resolve
+          })
+          return base.staff.reinstate(facilityId, staffId)
+        },
+      },
+    }
+    const Story = storyWith(api, 'staff-4')
+    render(<Story />)
+    await userEvent.click(await screen.findByTestId('staff-detail-menu'))
+    await userEvent.click(screen.getByTestId('staff-detail-reinstate'))
+
+    expect(await screen.findByTestId('staff-detail-reinstate')).toHaveTextContent(
+      '復職にしています',
+    )
+    expect(screen.getByTestId('staff-detail-reinstate')).toHaveAttribute('aria-disabled', 'true')
+    settle()
+    await expect.poll(() => screen.queryByTestId('staff-detail-menu-list')).toBeNull()
+    expect(screen.queryByTestId('staff-detail-status')).toBeNull()
+    expect(screen.getByTestId('staff-detail-menu')).toHaveFocus()
+  })
+
+  it('復職にできなかったら、メニューを閉じてタブの上に理由を出す', async () => {
+    const base = onLeaveApi()
+    const api: BuddyApi = {
+      ...base,
+      staff: {
+        ...base.staff,
+        reinstate: async () => {
+          throw new ApiError(500, '失敗', [], 'internal')
+        },
+      },
+    }
+    const Story = storyWith(api, 'staff-4')
+    render(<Story />)
+    await userEvent.click(await screen.findByTestId('staff-detail-menu'))
+    await userEvent.click(screen.getByTestId('staff-detail-reinstate'))
+
+    expect(await screen.findByTestId('staff-detail-reinstate-error')).toHaveTextContent(
+      '復職にできませんでした。時間をおいて、もう一度復職にしてください。',
+    )
+    await expect.poll(() => screen.queryByTestId('staff-detail-menu-list')).toBeNull()
+  })
+
+  it('権限を変えるで、対象の職員の選択肢を読んでいる間は、対象を足すを押せず、対象を外すは押せる', async () => {
+    const base = createFakeBuddyApi()
+    const api: BuddyApi = {
+      ...base,
+      staff: { ...base.staff, list: () => new Promise<never>(() => {}) },
+    }
+    const Story = storyWith(api)
+    render(<Story />)
+    const dialog = await openPolicies()
+    const option = within(dialog).getByTestId('staff-policies-option-schedule.user.read')
+    await userEvent.click(option)
+    const row = within(option.closest('li') as HTMLElement)
+
+    expect(row.getByTestId('staff-policies-target-add')).toBeDisabled()
+    expect(within(dialog).getByTestId('staff-policies-target-remove-team-a')).toBeEnabled()
+  })
+
+  it('権限を変えるダイアログは、予定の 7 つの権限、職員の管理、照合の順に並べる', async () => {
+    render(<Default />)
+    const dialog = await openPolicies()
+    const codes = within(dialog)
+      .getAllByRole('checkbox')
+      .map((box) => box.dataset.testid?.replace('staff-policies-option-', ''))
+
+    expect(codes.slice(-2)).toEqual(['staff.manage', 'receipt.check'])
+  })
+
+  it('送った権限の変更が全て拒まれたら、ほかの変更を保存したとは示さない', async () => {
+    render(<Self />)
+    const dialog = await openPolicies()
+    await userEvent.click(within(dialog).getByTestId('staff-policies-option-staff.manage'))
+    await userEvent.click(within(dialog).getByTestId('staff-policies-submit'))
+
+    expect(await within(dialog).findByTestId('staff-policies-error')).toHaveTextContent(
+      '権限を変えられませんでした。職員の管理: 職員の管理の権限を持つ最後の有効な職員から、その権限は外せません。',
+    )
+  })
+
+  it('部署の選択肢を読んでいる間も、プロフィールの編集を保存できる', async () => {
+    const base = createFakeBuddyApi()
+    const api: BuddyApi = {
+      ...base,
+      departments: { ...base.departments, list: () => new Promise<never>(() => {}) },
+    }
+    const Story = storyWith(api)
+    render(<Story />)
+    await userEvent.click(await screen.findByTestId('staff-detail-edit'))
+    const dialog = screen.getByTestId('staff-detail-edit-dialog')
+    expect(within(dialog).getByTestId('staff-detail-department-input')).toBeDisabled()
+    await userEvent.type(within(dialog).getByTestId('staff-detail-name-input'), '子')
+    await userEvent.click(within(dialog).getByTestId('staff-detail-save'))
+
+    expect(await screen.findByTestId('staff-detail-name')).toHaveTextContent('石川 二葉子')
+  })
+
+  it('役職の選択肢を読んでいる間は、役職を変えるときの注意を出さない', async () => {
+    const base = createFakeBuddyApi()
+    const api: BuddyApi = {
+      ...base,
+      positions: { ...base.positions, list: () => new Promise<never>(() => {}) },
+    }
+    const Story = storyWith(api)
+    render(<Story />)
+    await userEvent.click(await screen.findByTestId('staff-detail-position-change'))
+
+    expect(screen.getByTestId('staff-position-dialog')).toBeInTheDocument()
+    expect(screen.queryByTestId('staff-position-note')).toBeNull()
   })
 
   it('退職した職員と自分の詳細では、出さない操作がある', async () => {

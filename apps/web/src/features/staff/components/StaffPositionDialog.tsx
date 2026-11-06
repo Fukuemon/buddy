@@ -71,13 +71,15 @@ export const StaffPositionDialog = ({
           </label>
         ))}
       </fieldset>
-      <p
-        className="border-l-4 border-warning bg-warning-surface px-3 py-2 text-body"
-        data-testid="staff-position-note"
-      >
-        {`役職を変えると、${staff.username} の権限は全て、新しい役職に決まっている権限に置き換わります。`}
-        {added.length > 0 && `個別に足した権限（${added.join('、')}）は消えます。`}
-      </p>
+      {positions !== undefined && (
+        <p
+          className="border-l-4 border-warning bg-warning-surface px-3 py-2 text-body"
+          data-testid="staff-position-note"
+        >
+          {`役職を変えると、${staff.username} の権限は全て、新しい役職に決まっている権限に置き換わります。`}
+          {added.length > 0 && `個別に足した権限（${added.join('、')}）は消えます。`}
+        </p>
+      )}
     </InputDialog>
   )
 }
