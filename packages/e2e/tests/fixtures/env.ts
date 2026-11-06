@@ -66,6 +66,8 @@ export const OFFICE_CLERK = {
 export const OKADA = {
   email: 'aoi.okada@example.com',
   staff: { id: '01MA0GP0000000000000000STF', name: '岡田 葵' },
+  /** シードの 3 つ目の事業所（google_primary）の ID。 */
+  facilityId: '01MA0GP0000000000000000FAC',
   calendarId: 'aoi.okada@example.com',
   /** シードで岡田に結び付けたカレンダー（external_calendars）の ID。同期の状況の行を指すのに使う。 */
   externalCalendarId: '01MA0GP0000000000000000GCA',

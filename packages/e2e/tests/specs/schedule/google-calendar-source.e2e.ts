@@ -19,7 +19,7 @@ test.describe('予定のカレンダー', () => {
   test.describe('Google カレンダーを正本にする事業所', () => {
     test.use({ storageState: OKADA_STATE })
 
-    test('Google カレンダーに予定を作った場合、手動の取り込みをせずに予定のカレンダーに出て、詳細に変更の操作が出ないこと', async ({
+    test('Google カレンダーに予定を作った場合、手動の取り込みをせずに予定のカレンダーに出て、詳細に編集とキャンセルの操作が出ること', async ({
       page,
       request,
     }) => {
@@ -50,18 +50,19 @@ test.describe('予定のカレンダー', () => {
         detailDateTimeText(date, '06:00', '07:00'),
       )
       await expect(detail.getByTestId('schedule-detail-google-calendar')).toBeVisible()
-      await expect(detail.getByTestId('schedule-detail-edit')).toHaveCount(0)
+      await expect(detail.getByTestId('schedule-detail-edit')).toBeVisible()
+      await expect(detail.getByTestId('schedule-detail-cancel-schedule')).toBeVisible()
     })
 
-    test('予定のカレンダーを開いた場合、予定の作成の操作が出ず、Google カレンダーで編集する案内が出ること', async ({
+    test('予定のカレンダーを開いた場合、予定の作成の操作と、buddy と Google カレンダーのどちらでも作成、変更できる案内が出ること', async ({
       page,
     }) => {
       await openDay(page, todayInTokyo())
-      // 案内が出たことで、事業所のモードを読んで描き終えたとみなしてから、作成の操作が無いことを確認する
+      // 案内が出たことで、事業所のモードを読んで描き終えたとみなしてから、作成の操作を確認する
       await expect(page.getByTestId('schedule-calendar-google-primary')).toContainText(
-        '予定は Google カレンダーで管理しています',
+        'Google カレンダーと buddy のどちらでも作成、変更できます',
       )
-      await expect(page.getByTestId('schedule-create-open')).toHaveCount(0)
+      await expect(page.getByTestId('schedule-create-open')).toBeVisible()
     })
 
     test.describe('同期の失敗', () => {
