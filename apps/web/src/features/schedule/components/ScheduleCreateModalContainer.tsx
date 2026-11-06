@@ -84,7 +84,12 @@ const ScheduleCreateForm = ({
   }
 
   const submit = async (values: ScheduleFormValues) => {
-    await createSchedule.mutateAsync(toScheduleInput(values))
+    try {
+      await createSchedule.mutateAsync(toScheduleInput(values))
+    } catch {
+      // 失敗の文は createSchedule.error から出す。
+      return
+    }
     await navigate({
       to: '/schedule',
       search: { ...pickCalendarSearch(search), date: values.scheduleDate },
