@@ -236,17 +236,26 @@ ID ブローカーの画面（`apps/broker/src`）か、`packages/ui` のトー�
 pnpm --filter @buddy/broker generate   # ID ブローカーの画面のテンプレートと CSS を作り直す
 ```
 
-画面（`apps/web/src`）と `packages/ui/src` のコンポーネントのコードを変えたら、DESIGN.md の「画面を作るときの原則」に反する書き方がないかを確認する。  
+画面（`apps/web/src`）と `packages/ui/src` のコンポーネントのコードを変えたら、DESIGN.md の「画面を作るときの手順」に沿って確認し、原則の ID ごとに報告する。  
 pre-commit のフックと CI も同じチェックを流す。
 
 ```sh
 pnpm check:design   # 色の値、プリミティブトークンの名前、14px より小さい文字、focus-ring 以外のフォーカスの表示、余白の任意値
 ```
 
+- 違反の行には、DESIGN.md の原則の ID が出る。
 - ロゴのように値が外で決まる行だけは、同じ行のコメントに `design-system-allow` と理由を書いて外す。
-- 次の 3 つは、agent-harness のパッケージ design-system のテンプレートを写したものである。
-  - `scripts/check-contrast.mjs`、`scripts/build-static-tokens.mjs`、`scripts/check-raw-values.mjs`
+- 次の 4 つは、agent-harness のパッケージ design-system のテンプレートを写したものである。
+  - `scripts/check-contrast.mjs`、`scripts/build-static-tokens.mjs`、`scripts/check-raw-values.mjs`、`scripts/check-utilities.mjs`
+  - `scripts/check-raw-values.mjs` には、違反の行に原則の ID を出す変更を足してある。
   - パッケージを上げたら、スキル setup-design-system の手順で差分を見て取り込む。
+
+デザインシステムへのレビューの指摘は、スキル write-design-system の「指摘を扱う」の手順で、提案として扱う。  
+採用するかは利用者が決める。
+
+- 却下した指摘は、指摘を受けた pull request のレビューのスレッドに、却下した理由を返信して残す。
+- 1 つの pull request に収まらない、デザインシステムの全体に関わる指摘は、issue に起票し、却下するときは理由を書いて閉じる。
+- DESIGN.md とスキルには、却下した指摘を書かない。画面を作るモデルが、却下した提案を規則として読まないためである。
 
 ## Changing the API Definition
 
