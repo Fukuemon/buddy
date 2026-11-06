@@ -111,8 +111,8 @@ test.describe('予定のカレンダー', () => {
               await createGoogleEvent(page.request, OKADA.calendarId, {
                 summary: title,
                 date,
-                start: '16:00',
-                end: '17:00',
+                start: '10:00',
+                end: '11:00',
               })
             ).id
             await openDay(page, date)
@@ -126,7 +126,7 @@ test.describe('予定のカレンダー', () => {
             await expect(event(page)).toBeVisible()
             await event(page).scrollIntoViewIfNeeded()
             await step(
-              `予定のカレンダーを日の表示で開いている。${OKADA.staff.name} の列の 16:00〜17:00 に、Google カレンダーで作った「${title}」が出ている`,
+              `予定のカレンダーを日の表示で開いている。${OKADA.staff.name} の列の 10:00〜11:00 に、Google カレンダーで作った「${title}」が出ている`,
             )
 
             await page.goto(
