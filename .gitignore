@@ -70,3 +70,6 @@ apps/docs-site/.cloudflare/
 packages/e2e/.auth/
 packages/e2e/test-results/
 packages/e2e/playwright-report/
+
+# worktree ごとのポートの組。.config/wt.toml が書く
+.env

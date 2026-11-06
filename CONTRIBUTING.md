@@ -99,7 +99,15 @@ docker compose up --build --wait
     - シードを変えた後は、`docker compose down -v` で作り直す。
 - 照合の画面で、予定の取り方に「Google カレンダー」を、対象の月に `2026-11` を選ぶと、calendarpit の森 健太のカレンダーの予定で照合できる。
 - データを消して最初からにするときは、`docker compose down -v` でボリュームを消す。
-- 別の worktree で同時に起動するときは、`docker compose -p <名前> up --build --wait` でプロジェクトの名前を変え、表の環境変数でポートをずらす。
+- 別の worktree で同時に起動するときは、worktree を `wt switch --create <ブランチ>` で作る。
+  - worktrunk のフック（`.config/wt.toml`）が、compose のプロジェクトの名前と、20000 番台からのポートの組を、worktree の `.env` に書く。
+    - compose は `.env` を読むので、`docker compose up --build --wait` をそのまま流す。
+    - mise が `.env` を環境変数に入れるので、`pnpm e2e` と `compose/dev-token.sh` も、その worktree の環境に向く。mise を有効にしていないシェルでは `mise exec -- pnpm e2e` で流す。
+    - 起動した後の URL は `.env` の `E2E_BASE_URL` にある。
+    - 2 つの worktree のポートがぶつかったときは、片方の `.env` のポートを手で直す。
+  - 初めてフックを流すときは、worktrunk が承認を求める。コーディングエージェントは `--yes` を付ける。
+  - `wt remove <ブランチ>` で worktree を消すと、フックがその worktree の compose を、DB のボリュームとビルドしたイメージごと消す。
+- worktrunk を使わずに並べるときは、`docker compose -p <名前> up --build --wait` でプロジェクトの名前を変え、表の環境変数でポートをずらす。
   - E2E は、ずらしたポートに URL の環境変数を合わせて流す。
     - 画面と外部のサービスは `E2E_BASE_URL`、`E2E_CALENDARPIT_URL`、`E2E_GCALHOLD_URL`、`E2E_HYDRA_URL`
     - API とブローカーは `E2E_SCHEDULE_URL`、`E2E_BROKER_URL`、`E2E_BROKER_INTERNAL_URL`
