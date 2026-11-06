@@ -52,7 +52,7 @@ func NewCancel(locks FacilityLock, cutovers Cutovers, staffRefs kernel.Finder[st
 // 理由の入力のエラーと apperr.ErrForbidden は schedule.Cancel と同じである。予定が無いときは apperr.ErrNotFound を返す。
 // 次のときは apperr.ErrConflict を返す: 事業所が google_primary でない、open の切り替えがある（CodeCutoverOpen）、予定に保留の版が
 // ある（CodeWritePending）、読んだ後に Google で予定が変わった（CodeEventChanged）、Google で予定が消されたか見つからない
-// （CodeEventNotFound）、カレンダーに書けない（CodeCalendarUnwritable）、繰り返しの予定の親である。
+// （CodeEventNotFound）、カレンダーに書けない（CodeCalendarUnwritable）、繰り返しの予定の親である、例外の回か展開した回の親の記録に保留の版がある（CodeWritePending）。
 // CodeEventChanged と、Google で消されていたときは、Google の今の予定を Projection に写す。
 // Google が受けたかが分からないときは ErrWriteUnknown を、Google が一時的に拒んだときは ErrGoogleUnavailable を包んだエラーを返す。
 func (c Cancel) Do(ctx context.Context, facilityID, id, etag, reason string) (schedule.Cancellation, error) {
@@ -71,7 +71,7 @@ func (c Cancel) Do(ctx context.Context, facilityID, id, etag, reason string) (sc
 		return schedule.Cancellation{}, err
 	}
 	if ok {
-		return c.cancelOccurrence(ctx, facilityID, occ.Parent.ScheduleID, occ.Date, etag, reason)
+		return c.cancelOccurrence(ctx, facilityID, occ.Parent.ScheduleID, occ.Date, occ.ID, etag, reason)
 	}
 	writer, err := c.accounts.Writer(ctx, facilityID)
 	if err != nil {
@@ -97,8 +97,13 @@ func (c Cancel) Do(ctx context.Context, facilityID, id, etag, reason string) (sc
 			return err
 		}
 		eventID = row.EventID
-		cal, err = c.calendars.Get(ctx, row.ExternalCalendarID)
-		return err
+		if cal, err = c.calendars.Get(ctx, row.ExternalCalendarID); err != nil {
+			return err
+		}
+		if row.IsException() {
+			return requireParentSettled(ctx, c.records, cal, row.RecurringEventID)
+		}
+		return nil
 	})
 	if err != nil {
 		return schedule.Cancellation{}, err

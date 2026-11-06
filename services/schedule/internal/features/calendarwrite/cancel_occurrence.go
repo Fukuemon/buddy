@@ -36,12 +36,14 @@ func (o CancelOccurrence) Do(ctx context.Context, facilityID, recurringScheduleI
 	if _, err := schedule.NewCancellation(recurringScheduleID, recurringScheduleID, reason); err != nil {
 		return schedule.Cancellation{}, err
 	}
-	return o.cancel.cancelOccurrence(ctx, facilityID, recurringScheduleID, originalDate, "", reason)
+	return o.cancel.cancelOccurrence(ctx, facilityID, recurringScheduleID, originalDate, "", "", reason)
 }
 
 // cancelOccurrence は、CancelOccurrence.Do と、展開した回への Cancel.Do の取り消しを行う。etag が空でなければ、親の予定を読み直して
 // etag と比べ、違えば回を消さない（requireParentETag）。
-func (c Cancel) cancelOccurrence(ctx context.Context, facilityID, recurringScheduleID string, originalDate civil.Date, etag, reason string) (schedule.Cancellation, error) {
+// listID は、取り消す回の一覧での ID で、空なら回の OccurrenceScheduleID にする。回を移した後に元のカレンダーに残った回では、
+// 一覧での ID（DetachedOccurrenceScheduleID）を渡す。回の記録が移した予定を指すので、残った回をすでに変えた回とみなさないためである。
+func (c Cancel) cancelOccurrence(ctx context.Context, facilityID, recurringScheduleID string, originalDate civil.Date, listID, etag, reason string) (schedule.Cancellation, error) {
 	if c.accounts == nil {
 		return schedule.Cancellation{}, calendar.ErrNotConfigured
 	}
@@ -73,7 +75,10 @@ func (c Cancel) cancelOccurrence(ctx context.Context, facilityID, recurringSched
 	if err != nil {
 		return schedule.Cancellation{}, err
 	}
-	id := scheduleview.OccurrenceScheduleID(parent.cal.ID, parent.row.EventID, originalDate)
+	id := listID
+	if id == "" {
+		id = scheduleview.OccurrenceScheduleID(parent.cal.ID, parent.row.EventID, originalDate)
+	}
 	err = c.tx.WithinTx(ctx, func(ctx context.Context) error {
 		if err := requireGooglePrimary(ctx, c.locks, c.cutovers, facilityID); err != nil {
 			return err

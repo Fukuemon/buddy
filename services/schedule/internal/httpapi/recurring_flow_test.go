@@ -203,3 +203,80 @@ func TestRecurringOccurrenceMoveLeftGooglePrimary(t *testing.T) {
 		t.Errorf("残った元の回を取り消した後の一覧 = %v, want 移した予定だけ", listed)
 	}
 }
+
+// TestRecurringUnchangedOccurrenceMoveLeftGooglePrimary は、変えていない回の予定の職員を替えた後に、元のカレンダーの回を消せなかったとき、
+// listSchedules が移した単発の予定と、展開した残った元の回を違う id で返すことを確認する。残った元の回は id で読め、updateSchedule で
+// 変えられ（変えた回の 409 にならない）、変えた後も id が変わらず、cancelSchedule で取り消せる。移した単発の予定は、回の id のままである。
+func TestRecurringUnchangedOccurrenceMoveLeftGooglePrimary(t *testing.T) {
+	const (
+		calendarAddr, companionAddr = "staff@example.com", "companion@example.com"
+		newID                       = "01M3TC6CX4Y3D0KCGJ5A9N0WQZ"
+	)
+	google := &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{calendarAddr: {nil}, companionAddr: {nil}}}
+	h, s := flowRouterOn(organization.SourceGooglePrimary, googleAccounts{gcaltest.Start(t, google)})
+	s.Calendars["CAL"] = calendar.ExternalCalendar{ID: "CAL", FacilityID: facilityID, StaffID: staffID, Provider: calendar.ProviderGoogle, CalendarID: calendarAddr}
+	s.Calendars["CAL2"] = calendar.ExternalCalendar{ID: "CAL2", FacilityID: facilityID, StaffID: flowCompanionID, Provider: calendar.ProviderGoogle, CalendarID: companionAddr}
+	today := civil.Today(time.Now())
+	first := civil.DateOf(today.Time().AddDate(0, 0, 7+(8-int(today.Weekday()))%7))
+	day := civil.DateOf(first.Time().AddDate(0, 0, 7))
+	slot := func(d civil.Date, staff, start, end string) string {
+		return `"schedule_type_id":"` + typeID + `","date":"` + d.String() + `","start_time":"` + start + `","end_time":"` + end +
+			`","staff_id":"` + staff + `","title":"カンファレンス"`
+	}
+	request(t, h, http.MethodPost, "/v1/facilities/"+facilityID+"/schedules/recurring",
+		`{"id":"`+newID+`",`+slot(first, staffID, "09:00", "10:00")+`,"recurring_rule":{"frequency":"weekly"}}`, http.StatusCreated)
+	parentID, err := calendar.EventIDOf(newID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	start := time.Date(day.Year, day.Month, day.Day, 9, 0, 0, 0, calendar.Tokyo)
+	instance := &calendarv3.Event{
+		Id: parentID + "_" + start.UTC().Format("20060102T150405Z"), Status: "confirmed", Summary: "カンファレンス", RecurringEventId: parentID, Etag: `"i1"`,
+		OriginalStartTime: &calendarv3.EventDateTime{DateTime: start.Format(time.RFC3339), TimeZone: calendar.TimeZone},
+		Start:             &calendarv3.EventDateTime{DateTime: start.Format(time.RFC3339), TimeZone: calendar.TimeZone},
+		End:               &calendarv3.EventDateTime{DateTime: start.Add(time.Hour).Format(time.RFC3339), TimeZone: calendar.TimeZone},
+	}
+	google.Instances = map[string][]*calendarv3.Event{parentID: {instance}}
+	onDay := func() map[string]map[string]any {
+		got := request(t, h, http.MethodGet, "/v1/facilities/"+facilityID+"/schedules?date_from="+day.String()+"&date_to="+day.String(), "", http.StatusOK)
+		out := map[string]map[string]any{}
+		for _, v := range got["schedules"].([]any) {
+			sc := v.(map[string]any)
+			out[sc["staff_id"].(string)] = sc
+		}
+		return out
+	}
+	listed := onDay()[staffID]
+	id := listed["id"].(string)
+
+	google.Failures = []int{0, http.StatusInternalServerError}
+	moved := request(t, h, http.MethodPut, "/v1/schedules/"+id, `{"etag":`+strconv.Quote(listed["etag"].(string))+`,`+slot(day, flowCompanionID, "09:00", "10:00")+`}`, http.StatusOK)
+	if moved["id"] != id || moved["staff_id"] != flowCompanionID || len(google.Events(companionAddr)) != 1 {
+		t.Fatalf("移した予定 = %v, 新しいカレンダー = %d 件", moved, len(google.Events(companionAddr)))
+	}
+	if ev := google.Event(calendarAddr, instance.Id); ev.Status != "confirmed" || len(google.Events(calendarAddr)) != 1 {
+		t.Fatalf("元の回 = %+v, 元のカレンダーの予定 = %d 件, want 消せずに残った変えていない回と親の予定だけ", ev, len(google.Events(calendarAddr)))
+	}
+	byStaff := onDay()
+	left := byStaff[staffID]
+	if len(byStaff) != 2 || byStaff[flowCompanionID]["id"] != id || left == nil || left["id"] == id {
+		t.Fatalf("移した後の一覧 = %v, want 移した予定 %s と、違う id の残った元の回", byStaff, id)
+	}
+	leftID := left["id"].(string)
+	request(t, h, http.MethodGet, "/v1/schedules/"+leftID, "", http.StatusOK)
+
+	changed := request(t, h, http.MethodPut, "/v1/schedules/"+leftID, `{"etag":`+strconv.Quote(left["etag"].(string))+`,`+slot(day, staffID, "13:00", "14:00")+`}`, http.StatusOK)
+	if changed["id"] != leftID || changed["start_time"] != "13:00" {
+		t.Errorf("残った元の回の変更 = %v", changed)
+	}
+	if got := onDay()[staffID]; got["id"] != leftID || got["start_time"] != "13:00" {
+		t.Errorf("変えた後の残った元の回 = %v, want id %s の 13:00", got, leftID)
+	}
+	request(t, h, http.MethodPost, "/v1/schedules/"+leftID+"/cancel", `{"reason":"重複","etag":`+strconv.Quote(changed["etag"].(string))+`}`, http.StatusCreated)
+	if ev := google.Event(calendarAddr, instance.Id); ev.Status != "cancelled" {
+		t.Errorf("残った元の回の状態 = %s, want cancelled", ev.Status)
+	}
+	if byStaff = onDay(); len(byStaff) != 1 || byStaff[flowCompanionID]["id"] != id {
+		t.Errorf("残った元の回を取り消した後の一覧 = %v, want 移した予定だけ", byStaff)
+	}
+}

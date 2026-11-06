@@ -188,6 +188,20 @@ func requireUnchanged(ctx context.Context, records RecordRepository, projections
 	return nil
 }
 
+// requireParentSettled は、カレンダー cal の繰り返しの予定 parentEventID の記録に保留の版が無いことを確認する。記録を排他のロックで読み、
+// 保留の版があれば errWritePending を返す。例外の回の変更と取り消しが、親の予定の書き込みが終わるまで回に書かないために使う。
+// トランザクションの中で呼ぶ。
+func requireParentSettled(ctx context.Context, records RecordRepository, cal calendar.ExternalCalendar, parentEventID string) error {
+	parent, ok, err := records.FindAtForUpdate(ctx, calendar.EventLocation{ExternalCalendarID: cal.ID, ExternalEventID: parentEventID})
+	if err != nil {
+		return err
+	}
+	if ok && parent.Pending != nil {
+		return errWritePending
+	}
+	return nil
+}
+
 // findListedOccurrence は、事業所 facilityID の一覧での ID が id の予定が、繰り返しの予定の展開した回なら、その回を返す。
 // Projection の行の一覧での ID なら ok を false にする。回は、Projection を保持する期間（scheduleview.RetainedRange）の中で親を展開して探す。
 func findListedOccurrence(ctx context.Context, projections Projections, now func() time.Time, facilityID, id string) (scheduleview.Occurrence, bool, error) {

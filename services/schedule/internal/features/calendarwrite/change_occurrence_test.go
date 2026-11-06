@@ -245,3 +245,30 @@ func TestUpdateAndCancelListedOccurrence(t *testing.T) {
 		t.Errorf("親に保留の版がある例外の回の変更: err = %v", err)
 	}
 }
+
+// TestCancelOccurrenceRejectsParentPending は、親の予定の記録に保留の版があるとき、変えた回（例外の回）と変えていない回の
+// cancelSchedule（Cancel.Do）が、updateSchedule と同じく CodeWritePending を返し、Google に書かないことを確認する。
+func TestCancelOccurrenceRejectsParentPending(t *testing.T) {
+	fx := newFixture(t)
+	fx.seedRecurring(t)
+	parentETag := fx.google.Event(calendarID, eventID(t)).Etag
+	changed, err := fx.update.Do(editorCtx(), inmem.FacilityID, exceptionID(t), parentETag, movedSlot())
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, _ := fx.record(t)
+	r.Pending = &calendar.PendingWrite{Version: 2, State: calendar.PendingUnknown, Deadline: fx.now}
+	fx.store.Records[scheduleID] = r
+	writes := fx.google.Writes()
+
+	if _, err := fx.cancel.Do(editorCtx(), inmem.FacilityID, changed.ID, changed.ETag, "利用者の都合"); !isConflict(err, calendarwrite.CodeWritePending) {
+		t.Errorf("親に保留の版がある例外の回の取り消し: err = %v", err)
+	}
+	thirdID := scheduleview.OccurrenceScheduleID(externalID, eventID(t), occurrenceDates[2])
+	if _, err := fx.cancel.Do(editorCtx(), inmem.FacilityID, thirdID, parentETag, "利用者の都合"); !isConflict(err, calendarwrite.CodeWritePending) {
+		t.Errorf("親に保留の版がある変えていない回の取り消し: err = %v", err)
+	}
+	if fx.google.Writes() != writes {
+		t.Errorf("Google への書き込み = %d, want %d", fx.google.Writes(), writes)
+	}
+}

@@ -98,7 +98,7 @@ func (u Update) Do(ctx context.Context, facilityID, id, etag string, in schedule
 		return scheduleview.Detail{}, err
 	}
 	if ok {
-		return u.changeOccurrence(ctx, facilityID, occ.Parent.ScheduleID, occ.Date, etag, in)
+		return u.changeOccurrence(ctx, facilityID, occ.Parent.ScheduleID, occ.Date, occ.ID, etag, in)
 	}
 	writer, err := u.accounts.Writer(ctx, facilityID)
 	if err != nil {
@@ -151,12 +151,8 @@ func (u Update) begin(ctx context.Context, facilityID, id, etag string, in sched
 		if err != nil {
 			return change{}, err
 		}
-		parent, ok, err := u.records.FindAtForUpdate(ctx, calendar.EventLocation{ExternalCalendarID: cal.ID, ExternalEventID: row.RecurringEventID})
-		if err != nil {
+		if err := requireParentSettled(ctx, u.records, cal, row.RecurringEventID); err != nil {
 			return change{}, err
-		}
-		if ok && parent.Pending != nil {
-			return change{}, errWritePending
 		}
 		return u.beginOccurrence(ctx, facilityID, id, rec, cal, row.EventID, etag, row.StaffID, row.Visit, in)
 	}

@@ -38,12 +38,14 @@ func NewChangeOccurrence(locks FacilityLock, cutovers Cutovers, types kernel.Fin
 // 入力のエラーを返す。その回をすでに変えたとき、親か回の記録に保留の版があるとき（CodeWritePending）は apperr.ErrConflict を返す。
 // 回を読めないときは ErrGoogleUnavailable を包んだエラーを返す。ほかのエラーは Update.Do と同じである。
 func (o ChangeOccurrence) Do(ctx context.Context, facilityID, recurringScheduleID string, originalDate civil.Date, in schedule.SlotInput) (scheduleview.Detail, error) {
-	return o.update.changeOccurrence(ctx, facilityID, recurringScheduleID, originalDate, "", in)
+	return o.update.changeOccurrence(ctx, facilityID, recurringScheduleID, originalDate, "", "", in)
 }
 
 // changeOccurrence は、ChangeOccurrence.Do と、展開した回への Update.Do の書き込みを行う。etag が空でなければ、親の予定を読み直して
 // etag と比べ、違えば回に書かない（requireParentETag）。
-func (u Update) changeOccurrence(ctx context.Context, facilityID, recurringScheduleID string, originalDate civil.Date, etag string,
+// listID は、変える回の一覧での ID で、空なら回の OccurrenceScheduleID にする。回を移した後に元のカレンダーに残った回では、
+// 一覧での ID（DetachedOccurrenceScheduleID）を渡す。回の記録が移した予定を指すので、残った回をすでに変えた回とみなさないためである。
+func (u Update) changeOccurrence(ctx context.Context, facilityID, recurringScheduleID string, originalDate civil.Date, listID, etag string,
 	in schedule.SlotInput) (scheduleview.Detail, error) {
 	if u.accounts == nil {
 		return scheduleview.Detail{}, calendar.ErrNotConfigured
@@ -76,7 +78,10 @@ func (u Update) changeOccurrence(ctx context.Context, facilityID, recurringSched
 	if err != nil {
 		return scheduleview.Detail{}, err
 	}
-	id := scheduleview.OccurrenceScheduleID(parent.cal.ID, parent.row.EventID, originalDate)
+	id := listID
+	if id == "" {
+		id = scheduleview.OccurrenceScheduleID(parent.cal.ID, parent.row.EventID, originalDate)
+	}
 	var c change
 	err = u.tx.WithinTx(ctx, func(ctx context.Context) error {
 		if err := requireGooglePrimary(ctx, u.locks, u.cutovers, facilityID); err != nil {

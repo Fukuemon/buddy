@@ -99,6 +99,9 @@ type projectedEvent struct {
 	occurrence civil.Date
 	// unsupported は、buddy の繰り返しの規則に写せない繰り返しの親を、最初の回の 1 件にしたときに true である。
 	unsupported bool
+	// left は、展開した回の OccurrenceScheduleID が、ほかの予定を指す記録の主キーと同じときに true である。回を別の職員の
+	// カレンダーに移した後に、元のカレンダーの回を Google から消せずに残ったときに当たる。一覧での ID を DetachedOccurrenceScheduleID にする。
+	left bool
 }
 
 // expandProjections は、Projection の行 rows を読み替え、from から to までの日に始まる予定と、from の前の日に始まり from に終わる予定を返す。
@@ -106,7 +109,8 @@ type projectedEvent struct {
 // 規則に写せない繰り返しの親は、回に展開せず、最初の回を、回が期間に重なりうるときに 1 件で返す。
 // 例外の回は、変えた回を単発の予定と同じく読み替え、取り消した回は返さない。rules.Read が読み替えない予定（終日の予定など）は返さない。
 // 取り消した単発の予定と繰り返しの親は返さず、取り消した親の例外の回も返さない。
-func expandProjections(rows []ProjectionDetail, rules EventRules, from, to civil.Date) []projectedEvent {
+// taken は、行の一覧での ID（listedIDs）で、展開した回の ID がこれに当たれば、その回を残った回（left）にする。
+func expandProjections(rows []ProjectionDetail, taken map[string]bool, rules EventRules, from, to civil.Date) []projectedEvent {
 	replaced := map[string]map[civil.Date]bool{}
 	cancelled := map[string]bool{}
 	for _, r := range rows {
@@ -131,7 +135,7 @@ func expandProjections(rows []ProjectionDetail, rules EventRules, from, to civil
 		switch {
 		case r.Status != ProjectionConfirmed, r.IsException() && cancelled[r.ExternalCalendarID+"\x00"+r.RecurringEventID]:
 		case r.IsParent():
-			out = append(out, expandParent(r, rules, replaced[r.ExternalCalendarID+"\x00"+r.EventID], from, to)...)
+			out = append(out, expandParent(r, rules, replaced[r.ExternalCalendarID+"\x00"+r.EventID], taken, from, to)...)
 		default:
 			if rd := rules.Read(r.Projection); rd.Kind != EventSkipped && startsIn(rd, from, to) {
 				out = append(out, projectedEvent{row: r, reading: rd})
@@ -142,7 +146,8 @@ func expandProjections(rows []ProjectionDetail, rules EventRules, from, to civil
 }
 
 // expandParent は、繰り返しの親の予定 r を、from から to までの回に展開する。replaced は、例外の回が置き換えた元の日である。
-func expandParent(r ProjectionDetail, rules EventRules, replaced map[civil.Date]bool, from, to civil.Date) []projectedEvent {
+// taken は expandProjections と同じである。
+func expandParent(r ProjectionDetail, rules EventRules, replaced map[civil.Date]bool, taken map[string]bool, from, to civil.Date) []projectedEvent {
 	first := rules.Read(r.Projection)
 	if first.Kind == EventSkipped {
 		return nil
@@ -163,7 +168,7 @@ func expandParent(r ProjectionDetail, rules EventRules, replaced map[civil.Date]
 		occ := first
 		occ.Date = d
 		if startsIn(occ, from, to) {
-			out = append(out, projectedEvent{row: r, reading: occ, occurrence: d})
+			out = append(out, projectedEvent{row: r, reading: occ, occurrence: d, left: taken[OccurrenceScheduleID(r.ExternalCalendarID, r.EventID, d)]})
 		}
 	}
 	return out
@@ -182,10 +187,22 @@ func dayBefore(d civil.Date) civil.Date { return civil.DateOf(d.Time().AddDate(0
 // projectedID は、Projection の予定 e の、一覧を読むたびに同じになる ID を返す。展開した回でなければ、行の一覧での ID（ScheduleID）にする。
 // 繰り返しの回は OccurrenceScheduleID にする。
 func projectedID(e projectedEvent) string {
-	if e.occurrence.IsZero() {
+	switch {
+	case e.occurrence.IsZero():
 		return e.row.ScheduleID
+	case e.left:
+		return DetachedOccurrenceScheduleID(e.row.ExternalCalendarID, e.row.EventID, e.occurrence)
 	}
 	return OccurrenceScheduleID(e.row.ExternalCalendarID, e.row.EventID, e.occurrence)
+}
+
+// listedIDs は、行 rows の一覧での ID（ScheduleID）の集まりを返す。
+func listedIDs(rows []ProjectionDetail) map[string]bool {
+	out := make(map[string]bool, len(rows))
+	for _, r := range rows {
+		out[r.ScheduleID] = true
+	}
+	return out
 }
 
 // OccurrenceScheduleID は、結び付けたカレンダー externalCalendarID の繰り返しの予定 parentEventID の、元の規則で d に始まる回の、
@@ -208,20 +225,23 @@ func DetachedOccurrenceScheduleID(externalCalendarID, parentEventID string, d ci
 func (p Projection) OriginalDate() (civil.Date, bool) { return p.OriginalStart.day() }
 
 // Occurrence は、繰り返しの予定の親の行 Parent を展開した、元の規則で Date に始まる 1 回である。
+// ID は回の一覧での ID で、Left は、回を別の職員のカレンダーに移した後に元のカレンダーに残った回（ID が DetachedOccurrenceScheduleID）かである。
 type Occurrence struct {
 	Parent ProjectionDetail
 	Date   civil.Date
+	ID     string
+	Left   bool
 }
 
 // FindOccurrence は、Projection の行 rows の繰り返しの親を from から to までの回に展開し、一覧での ID が id の回を返す。
 // 変えた回と取り消した回は、展開した回に含めない。見つからなければ false を返す。
 func FindOccurrence(rows []ProjectionDetail, rules EventRules, id string, from, to civil.Date) (Occurrence, bool) {
 	e, ok := findOccurrence(rows, rules, id, from, to)
-	return Occurrence{Parent: e.row, Date: e.occurrence}, ok
+	return Occurrence{Parent: e.row, Date: e.occurrence, ID: id, Left: e.left}, ok
 }
 
 func findOccurrence(rows []ProjectionDetail, rules EventRules, id string, from, to civil.Date) (projectedEvent, bool) {
-	for _, e := range expandProjections(rows, rules, from, to) {
+	for _, e := range expandProjections(rows, listedIDs(rows), rules, from, to) {
 		if !e.occurrence.IsZero() && projectedID(e) == id {
 			return e, true
 		}

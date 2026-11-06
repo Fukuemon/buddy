@@ -105,8 +105,9 @@ func (s List) listProjected(ctx context.Context, f organization.Facility, q List
 	if err != nil {
 		return Listing{}, err
 	}
+	taken := listedIDs(rows)
 	rows = filter(rows, func(r ProjectionDetail) bool { return r.FacilityID == f.ID && readable(r.StaffID) })
-	events := expandProjections(rows, s.projected.Rules, from, to)
+	events := expandProjections(rows, taken, s.projected.Rules, from, to)
 	b, err := newProjectionBuilder(ctx, s.projected, f.ID, events)
 	if err != nil {
 		return Listing{}, err
