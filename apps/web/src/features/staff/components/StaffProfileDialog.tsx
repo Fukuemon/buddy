@@ -69,7 +69,7 @@ export const StaffProfileDialog = ({
     <InputDialog
       initialFocusRef={nameRef}
       busyLabel="保存しています"
-      canSubmit={departments !== undefined && teams !== undefined}
+      canSubmit
       error={
         errorMessage === undefined
           ? undefined

@@ -25,6 +25,7 @@ import * as Stories from './ActionMenu.stories'
 - データを失う操作には `isDanger` を付ける。赤くし、線で分けて最後に置く
 - 今は選べない項目は `disabled` にし、理由を画面の近くに出す
 - データを失う操作は、選んだ後に `ConfirmDialog` で確認する
+- ダイアログを開かずにその場で送る操作には `staysOpenUntilSettled` を付け、`onSelect` から送る処理の Promise を返す。送っている間は、項目の文言を送っていることを示す文言にし、`disabled` にする
 
 ## Don't
 
@@ -49,7 +50,7 @@ import * as Stories from './ActionMenu.stories'
 
 - Tab で「…」のボタンに移り、Enter と Space で開く
 - 開くと最初の項目にフォーカスが移る。Tab で次の項目に移る
-- Enter と Space で項目を選ぶと、メニューを閉じる
+- Enter と Space で項目を選ぶと、メニューを閉じる。`staysOpenUntilSettled` の項目は、送った結果が返ってから閉じ、フォーカスを「…」のボタンに戻す
 - Esc で閉じ、フォーカスを「…」のボタンに戻す
 - メニューの外を押すと閉じる
 

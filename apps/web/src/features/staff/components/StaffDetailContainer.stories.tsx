@@ -29,6 +29,9 @@ export const noAssignmentsApi = (base: BuddyApi = createFakeBuddyApi()): BuddyAp
   },
 })
 
+/** 読み込みと送信の間の表示を見るために、フェイクの API の応答を ms ミリ秒遅らせる。 */
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
 /** 江藤 四郎（staff-4）を、戻る予定の日を付けて休職にしたフェイクの API を作る。 */
 export const onLeaveApi = (): BuddyApi => {
   const base = createFakeBuddyApi()
@@ -93,6 +96,110 @@ export const Self: Story = {
 export const NoAssignments: Story = { parameters: route('staff-2', { api: noAssignmentsApi() }) }
 
 export const Loading: Story = { parameters: route('staff-2', { api: pendingBuddyApi() }) }
+
+/** 権限の対象の候補にする職員とチームを、読み終えるまで 8 秒かかる。読んでいる間は、権限を変えるの対象を足すを押せない。 */
+export const SlowTargetOptions: Story = {
+  parameters: route('staff-2', {
+    api: ((): BuddyApi => {
+      const base = createFakeBuddyApi()
+      return {
+        ...base,
+        staff: {
+          ...base.staff,
+          list: async (...args) => {
+            await wait(8000)
+            return base.staff.list(...args)
+          },
+        },
+        teams: {
+          ...base.teams,
+          list: async (...args) => {
+            await wait(8000)
+            return base.teams.list(...args)
+          },
+        },
+      }
+    })(),
+  }),
+}
+
+/** 休職の職員の復職に 4 秒かかる。送っている間は、「…」のメニューを開いたまま「復職にしています」を出す。 */
+export const SlowReinstate: Story = {
+  args: { staffId: 'staff-4' },
+  parameters: route('staff-4', {
+    api: ((): BuddyApi => {
+      const base = onLeaveApi()
+      return {
+        ...base,
+        staff: {
+          ...base.staff,
+          reinstate: async (...args) => {
+            await wait(4000)
+            return base.staff.reinstate(...args)
+          },
+        },
+      }
+    })(),
+  }),
+}
+
+/** 休職の職員を、ほかの職員の操作で退職にしていたので、1 秒後に復職を拒む。 */
+export const ReinstateRefused: Story = {
+  args: { staffId: 'staff-4' },
+  parameters: route('staff-4', {
+    api: ((): BuddyApi => {
+      const base = onLeaveApi()
+      return {
+        ...base,
+        staff: {
+          ...base.staff,
+          reinstate: async () => {
+            await wait(1000)
+            throw new ApiError(409, '退職した職員は変えられません', [], 'conflict')
+          },
+        },
+      }
+    })(),
+  }),
+}
+
+/** 部署の選択肢を読み終えるまで 8 秒かかる。読んでいる間も、プロフィールの編集を保存できる。 */
+export const SlowDepartments: Story = {
+  parameters: route('staff-2', {
+    api: ((): BuddyApi => {
+      const base = createFakeBuddyApi()
+      return {
+        ...base,
+        departments: {
+          ...base.departments,
+          list: async (...args) => {
+            await wait(8000)
+            return base.departments.list(...args)
+          },
+        },
+      }
+    })(),
+  }),
+}
+
+/** 役職を読み終えるまで 8 秒かかる。読んでいる間は、役職を変えるときの注意を出さない。 */
+export const SlowPositions: Story = {
+  parameters: route('staff-2', {
+    api: ((): BuddyApi => {
+      const base = createFakeBuddyApi()
+      return {
+        ...base,
+        positions: {
+          ...base.positions,
+          list: async (...args) => {
+            await wait(8000)
+            return base.positions.list(...args)
+          },
+        },
+      }
+    })(),
+  }),
+}
 
 export const NotFound: Story = {
   args: { staffId: 'missing' },

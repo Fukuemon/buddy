@@ -62,6 +62,9 @@ export const policyChangeErrorReason = (error: unknown) => {
 export const POLICY_PARTIAL_ERROR_LEAD =
   '次の権限を変えられませんでした。ほかの変更は保存しました。'
 
+/** 権限の保存で、予定の API が全ての変更を拒み、1 つも変えられなかったときの文の前置き。 */
+export const POLICY_ALL_REFUSED_LEAD = '権限を変えられませんでした。'
+
 /** 権限の保存で、予定の API に届かず、何も変えられなかったときの文。 */
 export const POLICY_SAVE_ERROR_MESSAGE =
   '権限を変えられませんでした。時間をおいて、もう一度保存してください。'

@@ -5,7 +5,7 @@ import type { ExternalCalendar, StaffDetail, StaffPolicy } from '#/api/types'
 import { formatLastImport } from '#/components/lastImport'
 import { policyTargetText } from '../lib/format'
 
-import { orderOwnPolicies } from '../lib/ownPolicies'
+import { orderPolicies } from '../lib/policyOrder'
 
 /** 読み込みの失敗の文。 */
 export const ACCOUNT_PROFILE_LOAD_ERROR_MESSAGE =
@@ -145,7 +145,7 @@ const Policies = ({
         className="flex flex-col divide-y divide-border"
         data-testid="account-profile-policy-list"
       >
-        {orderOwnPolicies(policies).map((policy) => (
+        {orderPolicies(policies).map((policy) => (
           <li
             className="flex flex-col gap-0.5 py-2 text-body"
             data-testid={`account-profile-policy-${policy.code}`}

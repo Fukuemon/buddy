@@ -54,7 +54,7 @@ describe('formatRemainingRecurring', () => {
 })
 
 describe('policyTargetText', () => {
-  it('対象の名前を「、」でつなぎ、対象が無ければ「なし」にする', () => {
+  it('対象の名前を「、」でつなぎ、対象が無ければ空にする', () => {
     const names = new Map([
       ['staff-1', '森 健太'],
       ['staff-2', '佐藤 美咲'],
@@ -62,6 +62,6 @@ describe('policyTargetText', () => {
     expect(
       policyTargetText({ target_user_ids: ['staff-1', 'staff-2'], target_team_ids: [] }, names),
     ).toBe('森 健太、佐藤 美咲')
-    expect(policyTargetText({ target_user_ids: [], target_team_ids: [] }, names)).toBe('なし')
+    expect(policyTargetText({ target_user_ids: [], target_team_ids: [] }, names)).toBe('')
   })
 })

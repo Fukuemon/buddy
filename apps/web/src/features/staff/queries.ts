@@ -190,6 +190,7 @@ export const useStartLeave = (staffId: Staff['id']) => {
 /**
  * 休職の職員を復職にする mutation。
  * 成功すると、返った職員で職員の詳細の query を置き換え、職員の管理の一覧と、予定の画面の職員の一覧を読み直す。
+ * 一覧の読み直しは待たずに決着させる。職員の詳細は「…」のメニューを決着で閉じるので、待つと復職の後の項目を出したまま開いている。
  * 退職した職員では、status が 409 の ApiError を error に持つ。
  */
 export const useReinstate = (staffId: Staff['id']) => {
@@ -197,7 +198,9 @@ export const useReinstate = (staffId: Staff['id']) => {
   const changed = useStaffChanged()
   return useMutation({
     mutationFn: () => api.staff.reinstate(facilityId, staffId),
-    onSuccess: changed,
+    onSuccess: (staff) => {
+      void changed(staff)
+    },
   })
 }
 

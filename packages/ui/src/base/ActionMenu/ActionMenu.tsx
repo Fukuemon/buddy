@@ -3,13 +3,18 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react'
 
 import { useDismiss } from '../../hooks/useDismiss'
 
-/** メニューの項目。isDanger の項目はデータを失う操作で、赤くし、ほかの項目と線で分けて最後に置く。 */
+/**
+ * メニューの項目。isDanger の項目はデータを失う操作で、赤くし、ほかの項目と線で分けて最後に置く。
+ * staysOpenUntilSettled の項目は、ダイアログを開かずにその場で送る操作で、押してもメニューを閉じず、
+ * onSelect が返す Promise が決着してから閉じる。拒まれても閉じ、理由は呼び出す側が出す。送っている間は、項目の文言を送っていることを示す文言にし、disabled にする。
+ */
 export type ActionMenuItem = {
   label: string
-  onSelect: () => void
+  onSelect: () => void | Promise<unknown>
   'data-testid': string
   isDanger?: boolean
   disabled?: boolean
+  staysOpenUntilSettled?: boolean
 }
 
 export type ActionMenuProps = {
@@ -24,7 +29,7 @@ export type ActionMenuProps = {
 
 /**
  * 「…」のボタンと、押すとボタンの下の右端にそろえて開くメニュー。
- * 項目を選ぶか、もう一度押すか、メニューの外を押すか、Escape キーを押すと閉じ、Escape キーではフォーカスをボタンに戻す。
+ * 項目を選ぶ（staysOpenUntilSettled の項目は、送った結果が返る）か、もう一度押すか、メニューの外を押すか、Escape キーを押すと閉じ、Escape キーではフォーカスをボタンに戻す。
  * 開くと、最初の項目にフォーカスを移す。
  */
 export const ActionMenu = ({
@@ -87,10 +92,22 @@ export const ActionMenu = ({
               key={item['data-testid']}
               onClick={() => {
                 if (item.disabled) return
+                if (item.staysOpenUntilSettled) {
+                  // 決着したら、閉じると消える項目から開くボタンへフォーカスを戻す。
+                  // 送っている間に閉じたか、閉じて開き直していたら、押したときのメニューの要素と違うので、閉じずにフォーカスも動かさない
+                  const menu = menuRef.current
+                  const settled = () => {
+                    if (menu === null || menuRef.current !== menu) return
+                    buttonRef.current?.focus()
+                    setOpen(false)
+                  }
+                  void Promise.resolve(item.onSelect()).then(settled, settled)
+                  return
+                }
                 // 項目は閉じると消えるので、先に開くボタンへ戻す。onSelect が開くダイアログは、このボタンへフォーカスを返す
                 buttonRef.current?.focus()
                 setOpen(false)
-                item.onSelect()
+                void item.onSelect()
               }}
               role="menuitem"
               type="button"
