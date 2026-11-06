@@ -477,6 +477,9 @@ func TestCutoverRejectsPendingWrites(t *testing.T) {
 		t.Fatalf("完了: err = %v, want %s", err, calendarimport.CodeWritePending)
 	}
 	c.requireStillOpen(t, cut.ID)
+	if _, ok := c.store.Records["PENDING"]; !ok {
+		t.Error("409 の完了で記録が消えた")
+	}
 	delete(c.store.Records, "PENDING")
 	if _, err := c.uc.CompleteCutover(c.ctx, cut.ID); err != nil {
 		t.Fatalf("保留の版が解けた後の完了: err = %v", err)
@@ -498,7 +501,7 @@ func TestCutoverImportUsesRecordVisit(t *testing.T) {
 		ScheduleID: "RECORD", FacilityID: inmem.FacilityID, ExternalCalendarID: calID, ExternalEventID: "missing",
 		VisitInfoID: &recorded.ID, Version: 1,
 	}
-	c.start(t)
+	cut := c.start(t)
 	p, err := c.uc.Preview(c.ctx, calID, cutoverRange())
 	if err != nil {
 		t.Fatal(err)
@@ -520,7 +523,22 @@ func TestCutoverImportUsesRecordVisit(t *testing.T) {
 		t.Errorf("訪問の情報 = %+v, want 記録の訪問の情報 %+v を写したもの", got, recorded)
 	}
 	if _, ok := c.store.Infos[recorded.ID]; !ok {
-		t.Error("記録の訪問の情報が消えた")
+		t.Error("取り込みで記録の訪問の情報が消えた")
+	}
+
+	// 完了すると、記録と記録だけが指していた訪問の情報を消し、予定が指す写した訪問の情報は残す
+	c.synced(time.Now().Add(time.Minute))
+	if _, err := c.uc.CompleteCutover(c.ctx, cut.ID); err != nil {
+		t.Fatal(err)
+	}
+	if len(c.store.Records) != 0 {
+		t.Errorf("記録 = %d 件, want 0", len(c.store.Records))
+	}
+	if _, ok := c.store.Infos[recorded.ID]; ok {
+		t.Error("記録だけが指していた訪問の情報が残った")
+	}
+	if _, ok := c.store.Infos[*sc.VisitInfoID]; !ok {
+		t.Error("予定が指す訪問の情報が消えた")
 	}
 }
 

@@ -82,6 +82,38 @@ func (q *Queries) DeleteCalendarCutoverSkips(ctx context.Context, arg DeleteCale
 	return err
 }
 
+const deleteCalendarEventRecordsByFacility = `-- name: DeleteCalendarEventRecordsByFacility :many
+DELETE FROM calendar_event_records WHERE facility_id = $1
+RETURNING visit_info_id, pending_visit_info_id
+`
+
+type DeleteCalendarEventRecordsByFacilityRow struct {
+	VisitInfoID        *string
+	PendingVisitInfoID *string
+}
+
+// 切り替えの完了が、事業所の記録を消し、記録が指していた訪問の情報を返す。訪問の情報は、呼ぶ側が使われていなければ消す。
+// 同じ文の中では消した記録がまだ見えるので、訪問の情報は別の文（DeleteUnusedVisitInfo）で消す。
+func (q *Queries) DeleteCalendarEventRecordsByFacility(ctx context.Context, facilityID string) ([]DeleteCalendarEventRecordsByFacilityRow, error) {
+	rows, err := q.db.Query(ctx, deleteCalendarEventRecordsByFacility, facilityID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []DeleteCalendarEventRecordsByFacilityRow{}
+	for rows.Next() {
+		var i DeleteCalendarEventRecordsByFacilityRow
+		if err := rows.Scan(&i.VisitInfoID, &i.PendingVisitInfoID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const deleteExternalEventLinksByID = `-- name: DeleteExternalEventLinksByID :many
 DELETE FROM external_event_links WHERE id = ANY($1::text[])
 RETURNING schedule_id, recurring_schedule_id

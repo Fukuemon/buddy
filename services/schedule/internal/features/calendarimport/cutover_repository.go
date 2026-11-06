@@ -31,6 +31,9 @@ type CutoverRepository interface {
 	// ListRecordVisits は、カレンダー externalCalendarID の記録のうち、Google が受けたと分かった版の訪問の情報を持つ記録の
 	// 訪問の情報を、Google の予定の ID ごとに返す。保留の版の訪問の情報は返さない。
 	ListRecordVisits(ctx context.Context, externalCalendarID string) (map[string]visit.Info, error)
+	// DeleteRecords は、事業所 facilityID の記録を全て消し、記録が指していた訪問の情報（確定した版と保留の版）のうち、
+	// どの予定、繰り返しの予定、記録も指さなくなったものを消す。トランザクションの中で呼ぶ。
+	DeleteRecords(ctx context.Context, facilityID string) error
 	// DeleteImported は、予定の対応 links と、対応する単発の予定と繰り返しの予定と、それらの訪問の情報を消す。
 	// 繰り返しの予定の回を置き換えた予定も消す。予定のキャンセル、除外する日、書き出しの待ちも一緒に消える。トランザクションの中で呼ぶ。
 	DeleteImported(ctx context.Context, links []calendar.EventLink) error

@@ -163,6 +163,29 @@ func (s Cutovers) ListRecordVisits(_ context.Context, externalCalendarID string)
 	return out, nil
 }
 
+// DeleteRecords は、calendarimport.CutoverRepository の DeleteRecords を実装する。
+func (s Cutovers) DeleteRecords(ctx context.Context, facilityID string) error {
+	var infos []string
+	for id, r := range s.Records {
+		if r.FacilityID != facilityID {
+			continue
+		}
+		if r.VisitInfoID != nil {
+			infos = append(infos, *r.VisitInfoID)
+		}
+		if r.Pending != nil && r.Pending.VisitInfoID != nil {
+			infos = append(infos, *r.Pending.VisitInfoID)
+		}
+		delete(s.Records, id)
+	}
+	for _, id := range infos {
+		if err := VisitInfos(s).DeleteIfUnused(ctx, id); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // DeleteImported は、calendarimport.CutoverRepository の DeleteImported を実装する。
 func (s Cutovers) DeleteImported(_ context.Context, links []calendar.EventLink) error {
 	recurring := map[string]bool{}

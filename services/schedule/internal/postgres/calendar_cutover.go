@@ -155,6 +155,27 @@ func (r *CalendarCutoverRepository) ListRecordVisits(ctx context.Context, extern
 	return out, nil
 }
 
+// DeleteRecords は、事業所 facilityID の記録を全て消し、記録が指していた訪問の情報のうち、どの予定、繰り返しの予定、記録も
+// 指さなくなったものを消す。トランザクションの中で呼ぶ。
+func (r *CalendarCutoverRepository) DeleteRecords(ctx context.Context, facilityID string) error {
+	q := r.q(ctx)
+	rows, err := q.DeleteCalendarEventRecordsByFacility(ctx, facilityID)
+	if err != nil {
+		return translate("delete calendar event records", err)
+	}
+	for _, row := range rows {
+		for _, id := range []*string{row.VisitInfoID, row.PendingVisitInfoID} {
+			if id == nil {
+				continue
+			}
+			if err := q.DeleteUnusedVisitInfo(ctx, *id); err != nil {
+				return translate("delete unused visit info", err)
+			}
+		}
+	}
+	return nil
+}
+
 // DeleteImported は、予定の対応 links と、対応する単発の予定と繰り返しの予定と、それらの訪問の情報を消す。
 // 繰り返しの予定の回を置き換えた予定も消す。トランザクションの中で呼ぶ。
 func (r *CalendarCutoverRepository) DeleteImported(ctx context.Context, links []calendar.EventLink) error {

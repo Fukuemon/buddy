@@ -39,7 +39,8 @@ func NewCompleteCutover(calendars Calendars, accounts calendar.Accounts, staff c
 	}
 }
 
-// Do は、切り替え id の完了の確認をし、満たせば事業所を buddy_primary にし、事業所の Projection の行を消し、切り替えを completed にして返す。
+// Do は、切り替え id の完了の確認をし、満たせば事業所を buddy_primary にし、事業所の Projection の行と、予定の API の記録と、
+// 記録だけが指していた訪問の情報を消し、切り替えを completed にして返す。
 // Google カレンダーを、切り替えの月の初日から先の全てで、トランザクションの前に読み直す。事業所の行を排他のロックで取った
 // トランザクションの中で、外していないカレンダーごとに、次の 3 つを確認する。
 //   - この切り替えで取り込み、最後の取り込みの後に同期が成功している。
@@ -92,6 +93,9 @@ func (u CompleteCutover) Do(ctx context.Context, id string) (Cutover, error) {
 			return err
 		}
 		if err := u.projections.DeleteByFacility(ctx, f.ID); err != nil {
+			return err
+		}
+		if err := u.cutovers.DeleteRecords(ctx, f.ID); err != nil {
 			return err
 		}
 		out, err = u.cutovers.Finish(ctx, c.ID, CutoverCompleted)

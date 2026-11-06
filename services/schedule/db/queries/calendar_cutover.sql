@@ -76,3 +76,9 @@ FROM calendar_event_records r
 JOIN visit_infos vi ON vi.id = r.visit_info_id
 WHERE r.external_calendar_id = sqlc.arg(external_calendar_id)
 ORDER BY r.external_event_id;
+
+-- name: DeleteCalendarEventRecordsByFacility :many
+-- 切り替えの完了が、事業所の記録を消し、記録が指していた訪問の情報を返す。訪問の情報は、呼ぶ側が使われていなければ消す。
+-- 同じ文の中では消した記録がまだ見えるので、訪問の情報は別の文（DeleteUnusedVisitInfo）で消す。
+DELETE FROM calendar_event_records WHERE facility_id = sqlc.arg(facility_id)
+RETURNING visit_info_id, pending_visit_info_id;
