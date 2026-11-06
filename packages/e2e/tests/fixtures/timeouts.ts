@@ -13,6 +13,9 @@ export const TIMEOUT_MS = {
   evidence: 180_000,
 }
 
+/** Storybook の、応答を遅らせた story の読み込みと送信が終わるのを待つ expect に渡す。 */
+export const SLOW_STORY_WAIT = { timeout: TIMEOUT_MS.action }
+
 /** 止めた職員がログインの画面へ戻るまで開き直す toPass に渡す。 */
 export const SUSPENSION_WAIT = { timeout: TIMEOUT_MS.suspension }
 
