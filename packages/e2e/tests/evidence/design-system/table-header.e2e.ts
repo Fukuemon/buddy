@@ -1,23 +1,23 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 
 import { EVIDENCE_VARIANTS, recordPrEvidence, storyUrl } from '../../fixtures/evidence'
 
 const ACTOR = 'ログインなし（Storybook の story）'
 
-/** 撮る画面。story の ID、表が出たことを示す testid、表を出すまでの操作。 */
+/** 撮る画面。story の ID、表が出たことを示す要素、測る表を含む要素（省くと ready）、表を出すまでの操作。 */
 const SCREENS = [
   {
     name: 'table-header-receipt-result',
     label: '照合の結果',
     story: '画面-receipt-receiptresultview--default',
-    ready: 'receipt-result-table',
+    ready: (page: Page) => page.getByTestId('receipt-result-table'),
   },
   {
     name: 'table-header-option-search',
     label: '予定の作成の利用者の選択',
     story: '画面-schedule-scheduleformmodal--visit',
-    ready: 'schedule-field-patient',
-    table: 'schedule-form',
+    ready: (page: Page) => page.getByTestId('schedule-field-patient'),
+    table: (page: Page) => page.getByTestId('schedule-form'),
     open: async (page: Page) => {
       await page.getByTestId('schedule-field-patient').click()
     },
@@ -26,40 +26,40 @@ const SCREENS = [
     name: 'table-header-patient-list',
     label: '利用者の一覧',
     story: '画面-patient-patientlistcontainer--default',
-    ready: 'patient-list-table',
+    ready: (page: Page) => page.getByTestId('patient-list-table'),
   },
   {
     name: 'table-header-staff-list',
     label: '職員の一覧',
     story: '画面-staff-stafflistcontainer--default',
-    ready: 'staff-list-table',
+    ready: (page: Page) => page.getByTestId('staff-list-table'),
   },
   {
     name: 'table-header-organization-list',
     label: '部署とチームの一覧',
     story: '画面-organization-organizationlistcontainer--default',
-    ready: 'organization-list-department-table',
+    ready: (page: Page) => page.getByTestId('organization-list-department-table'),
   },
   {
     name: 'table-header-calendar-link',
     label: 'カレンダーの連携の一覧',
     story: '画面-calendar-calendarlinkcontainer--default',
-    ready: 'calendar-link-table',
+    ready: (page: Page) => page.getByTestId('calendar-link-table'),
   },
   {
     name: 'table-header-calendar-review',
     label: '確認が必要な予定の一覧',
     story: '画面-calendar-calendarreviewcontainer--default',
-    ready: 'calendar-review-table',
+    ready: (page: Page) => page.getByTestId('calendar-review-table'),
   },
 ] as const
 
 /**
- * testid の要素の中の、文字のある最初の見出しのセルの太さと、見出しの行の下の線の色を返す。
+ * scope の要素の中の、文字のある最初の見出しのセルの太さと、見出しの行の下の線の色を返す。
  * 線は、セルに線があればセルの線を、無ければ行の線を読む。表は border-collapse なので、どちらかが見える線になる。
  */
-const headerStyle = (page: Page, testId: string) =>
-  page.getByTestId(testId).evaluate((element) => {
+const headerStyle = (scope: Locator) =>
+  scope.evaluate((element) => {
     const th = Array.from(element.querySelectorAll('th')).find(
       (cell) => (cell.textContent ?? '').trim() !== '',
     )
@@ -80,7 +80,7 @@ test.describe('表の見出しのセル', () => {
       }) => {
         const open = async (page: Page) => {
           await page.goto(storyUrl(screen.story))
-          await expect(page.getByTestId(screen.ready)).toBeVisible()
+          await expect(screen.ready(page)).toBeVisible()
           if ('open' in screen) await screen.open(page)
         }
         await recordPrEvidence(
@@ -95,7 +95,9 @@ test.describe('表の見出しのセル', () => {
           async ({ page, step, check }) => {
             await open(page)
             await step(`${screen.label}の画面（Storybook の story）を開いている`)
-            const style = await headerStyle(page, 'table' in screen ? screen.table : screen.ready)
+            const style = await headerStyle(
+              'table' in screen ? screen.table(page) : screen.ready(page),
+            )
             expect(style).not.toBe('none')
             await check(`最初の見出しのセルは ${style}`)
           },
