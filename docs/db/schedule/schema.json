@@ -6848,6 +6848,12 @@
           "type": "timestamp with time zone",
           "nullable": false,
           "default": "now()"
+        },
+        {
+          "name": "pending_locked_until",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "comment": "同期が保留の版を読み戻す間、ほかの Worker に記録を渡さない期限。読み戻せなかった記録は、この時刻の後に取り直す。保留の版を解いても NULL に戻さない"
         }
       ],
       "indexes": [
@@ -6891,6 +6897,14 @@
           "table": "public.calendar_event_records",
           "columns": [
             "pending_visit_info_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_pending_deadline_idx",
+          "def": "CREATE INDEX calendar_event_records_pending_deadline_idx ON public.calendar_event_records USING btree (pending_deadline) WHERE (pending_version IS NOT NULL)",
+          "table": "public.calendar_event_records",
+          "columns": [
+            "pending_deadline"
           ]
         }
       ],

@@ -10,6 +10,93 @@ import (
 	"time"
 )
 
+const claimExpiredCalendarEventRecords = `-- name: ClaimExpiredCalendarEventRecords :many
+UPDATE calendar_event_records r
+SET pending_locked_until = $1
+FROM external_calendars c
+WHERE c.id = r.external_calendar_id AND r.schedule_id IN (
+    SELECT r2.schedule_id FROM calendar_event_records r2
+    JOIN external_calendars c2 ON c2.id = r2.external_calendar_id
+    JOIN facilities f ON f.id = r2.facility_id
+    WHERE r2.pending_version IS NOT NULL AND r2.pending_deadline <= $2
+      AND (r2.pending_locked_until IS NULL OR r2.pending_locked_until <= $2)
+      AND c2.disabled_at IS NULL AND f.source_mode = ANY($3::text[])
+    ORDER BY r2.pending_deadline, r2.schedule_id
+    LIMIT $4
+    FOR UPDATE OF r2 SKIP LOCKED
+)
+RETURNING r.schedule_id, r.facility_id, r.external_calendar_id, r.external_event_id, r.visit_info_id, r.version,
+          r.pending_version, r.pending_state, r.pending_visit_info_id, r.pending_deadline, r.pending_locked_until,
+          c.staff_id, c.provider, c.external_calendar_id AS calendar_id
+`
+
+type ClaimExpiredCalendarEventRecordsParams struct {
+	LockedUntil *time.Time
+	Now         *time.Time
+	Modes       []string
+	MaxCount    int32
+}
+
+type ClaimExpiredCalendarEventRecordsRow struct {
+	ScheduleID         string
+	FacilityID         string
+	ExternalCalendarID string
+	ExternalEventID    string
+	VisitInfoID        *string
+	Version            int32
+	PendingVersion     *int32
+	PendingState       *string
+	PendingVisitInfoID *string
+	PendingDeadline    *time.Time
+	PendingLockedUntil *time.Time
+	StaffID            string
+	Provider           string
+	CalendarID         string
+}
+
+// 書く期限を過ぎた保留の版を持つ記録を、同期が読み戻すために取る（ADR-0026）。保留の版の状態（writing、unknown）では絞らない。
+// 複数の処理が同時に取っても同じ記録を渡さないよう、行をロックできたものだけを取り、locked_until までほかの処理に渡さない。
+// 外したカレンダーの記録と、事業所の正本のモードが modes に無い記録は取らない。
+func (q *Queries) ClaimExpiredCalendarEventRecords(ctx context.Context, arg ClaimExpiredCalendarEventRecordsParams) ([]ClaimExpiredCalendarEventRecordsRow, error) {
+	rows, err := q.db.Query(ctx, claimExpiredCalendarEventRecords,
+		arg.LockedUntil,
+		arg.Now,
+		arg.Modes,
+		arg.MaxCount,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ClaimExpiredCalendarEventRecordsRow{}
+	for rows.Next() {
+		var i ClaimExpiredCalendarEventRecordsRow
+		if err := rows.Scan(
+			&i.ScheduleID,
+			&i.FacilityID,
+			&i.ExternalCalendarID,
+			&i.ExternalEventID,
+			&i.VisitInfoID,
+			&i.Version,
+			&i.PendingVersion,
+			&i.PendingState,
+			&i.PendingVisitInfoID,
+			&i.PendingDeadline,
+			&i.PendingLockedUntil,
+			&i.StaffID,
+			&i.Provider,
+			&i.CalendarID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const createCalendarEventRecord = `-- name: CreateCalendarEventRecord :exec
 INSERT INTO calendar_event_records (
     schedule_id, facility_id, external_calendar_id, external_event_id, visit_info_id, version,
@@ -60,7 +147,7 @@ func (q *Queries) DeleteCalendarEventRecord(ctx context.Context, scheduleID stri
 }
 
 const getCalendarEventRecordForUpdate = `-- name: GetCalendarEventRecordForUpdate :one
-SELECT schedule_id, facility_id, external_calendar_id, external_event_id, visit_info_id, version, pending_version, pending_state, pending_visit_info_id, pending_deadline, created_at, updated_at FROM calendar_event_records WHERE schedule_id = $1 FOR UPDATE
+SELECT schedule_id, facility_id, external_calendar_id, external_event_id, visit_info_id, version, pending_version, pending_state, pending_visit_info_id, pending_deadline, created_at, updated_at, pending_locked_until FROM calendar_event_records WHERE schedule_id = $1 FOR UPDATE
 `
 
 func (q *Queries) GetCalendarEventRecordForUpdate(ctx context.Context, scheduleID string) (CalendarEventRecord, error) {
@@ -79,8 +166,25 @@ func (q *Queries) GetCalendarEventRecordForUpdate(ctx context.Context, scheduleI
 		&i.PendingDeadline,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.PendingLockedUntil,
 	)
 	return i, err
+}
+
+const releaseCalendarEventRecord = `-- name: ReleaseCalendarEventRecord :exec
+UPDATE calendar_event_records SET pending_locked_until = NULL
+WHERE schedule_id = $1 AND pending_locked_until = $2
+`
+
+type ReleaseCalendarEventRecordParams struct {
+	ScheduleID  string
+	LockedUntil *time.Time
+}
+
+// 取ったときの locked_until と比べ、ほかの処理が取り直した記録を変えない。
+func (q *Queries) ReleaseCalendarEventRecord(ctx context.Context, arg ReleaseCalendarEventRecordParams) error {
+	_, err := q.db.Exec(ctx, releaseCalendarEventRecord, arg.ScheduleID, arg.LockedUntil)
+	return err
 }
 
 const updateCalendarEventRecord = `-- name: UpdateCalendarEventRecord :exec

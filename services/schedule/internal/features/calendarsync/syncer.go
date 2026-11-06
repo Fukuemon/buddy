@@ -41,6 +41,11 @@ type SyncerDeps struct {
 	// モードの切り替えを待たせる。退職がカレンダーを外した後と、モードを切り替えた後に、当てないためである。
 	Locks   FacilityLock
 	Sources calendar.SourceFor
+	// Records と Visits は、読み戻し（ReadBackDue）が、書く期限を過ぎた保留の版を取って確定するか消し、使われなくなった訪問の情報を消す。
+	Records PendingRecords
+	Visits  calendar.UnusedVisits
+	// Now は、読み戻しが書く期限と比べる時刻を返す。nil なら time.Now を使う。
+	Now func() time.Time
 }
 
 // Applier は、外部のカレンダーの予定の変更を当てる規則である。
@@ -73,6 +78,9 @@ type Syncer struct {
 
 // NewSyncer は、カレンダーを読み、appliers の Applier で当てる Syncer を作る。カレンダーを読み終えたら、interval の後を次に読む時刻にする。
 func NewSyncer(deps SyncerDeps, appliers Appliers, tx tx.Transactor, interval time.Duration, log *slog.Logger) *Syncer {
+	if deps.Now == nil {
+		deps.Now = time.Now
+	}
 	return &Syncer{
 		deps: deps, tx: tx, appliers: appliers, modes: slices.SortedFunc(maps.Keys(appliers), cmp.Compare), interval: interval, log: log,
 	}

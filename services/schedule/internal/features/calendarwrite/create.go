@@ -185,9 +185,9 @@ func (c Create) begin(ctx context.Context, facilityID, id, eventID string, in sc
 	switch {
 	case errors.Is(err, apperr.ErrNotFound):
 		w.version = 1
-		rec = Record{
+		rec = calendar.EventRecord{
 			ScheduleID: id, FacilityID: facilityID, ExternalCalendarID: cal.ID, ExternalEventID: eventID,
-			Pending: &Pending{Version: w.version, State: PendingWriting, VisitInfoID: sc.VisitInfoID, Deadline: now.Add(WriteDeadline)},
+			Pending: &calendar.PendingWrite{Version: w.version, State: calendar.PendingWriting, VisitInfoID: sc.VisitInfoID, Deadline: now.Add(WriteDeadline)},
 		}
 		if err := c.records.Create(ctx, rec); errors.Is(err, apperr.ErrConflict) {
 			return write{}, errWritePending
@@ -339,7 +339,7 @@ func (c Create) resend(ctx context.Context, source calendar.EventSource, writer 
 				return err
 			}
 			prev := rec.Pending.VisitInfoID
-			rec.Pending = &Pending{Version: w.version + 1, State: PendingWriting, VisitInfoID: w.candidate, Deadline: c.now().Add(WriteDeadline)}
+			rec.Pending = &calendar.PendingWrite{Version: w.version + 1, State: calendar.PendingWriting, VisitInfoID: w.candidate, Deadline: c.now().Add(WriteDeadline)}
 			if err := c.records.Update(ctx, rec); err != nil {
 				return err
 			}
@@ -426,55 +426,32 @@ func (c Create) settle(ctx context.Context, w write, rejected bool) error {
 		if err != nil || !ok {
 			return err
 		}
-		rec.Pending.State = PendingUnknown
+		rec.Pending.State = calendar.PendingUnknown
 		return c.records.Update(ctx, rec)
 	})
 }
 
-// pendingRecord は、記録を排他のロックで読み、w の版の保留の版を持つときだけ ok を true にして返す。
-// 記録が無いか、保留の版がほかの手順で解かれていれば、ok を false にする。
-func (c Create) pendingRecord(ctx context.Context, w write) (Record, bool, error) {
-	rec, err := c.records.GetForUpdate(ctx, w.scheduleID)
-	if errors.Is(err, apperr.ErrNotFound) {
-		return Record{}, false, nil
-	}
-	if err != nil {
-		return Record{}, false, err
-	}
-	return rec, rec.Pending != nil && rec.Pending.Version == w.version, nil
+// pendingRecord は、記録を排他のロックで読み、w の版の保留の版を持つときだけ ok を true にして返す（calendar.LockPending）。
+func (c Create) pendingRecord(ctx context.Context, w write) (calendar.EventRecord, bool, error) {
+	return calendar.LockPending(ctx, c.records, w.scheduleID, w.version)
 }
 
-// confirmRecord は、w の版の保留の版を確定し、保留の訪問の情報を確定した訪問の情報に移して、前の訪問の情報を消す。
+// confirmRecord は、w の版の保留の版がまだあれば、calendar.ConfirmPending で確定する。
 func (c Create) confirmRecord(ctx context.Context, w write) error {
 	rec, ok, err := c.pendingRecord(ctx, w)
 	if err != nil || !ok {
 		return err
 	}
-	prev := rec.VisitInfoID
-	rec.Version, rec.VisitInfoID, rec.Pending = rec.Pending.Version, rec.Pending.VisitInfoID, nil
-	if err := c.records.Update(ctx, rec); err != nil {
-		return err
-	}
-	return deleteVisit(ctx, c.visits, prev)
+	return calendar.ConfirmPending(ctx, c.records, c.visits, rec)
 }
 
-// rejectRecord は、w の版の保留の版を消し、保留の訪問の情報を消す。確定した版の無い記録は、作成を Google が受けていないので記録ごと消す。
+// rejectRecord は、w の版の保留の版がまだあれば、calendar.RejectPending で消す。
 func (c Create) rejectRecord(ctx context.Context, w write) error {
 	rec, ok, err := c.pendingRecord(ctx, w)
 	if err != nil || !ok {
 		return err
 	}
-	pendingVisit := rec.Pending.VisitInfoID
-	if rec.Version == 0 {
-		err = c.records.Delete(ctx, rec.ScheduleID)
-	} else {
-		rec.Pending = nil
-		err = c.records.Update(ctx, rec)
-	}
-	if err != nil {
-		return err
-	}
-	return deleteVisit(ctx, c.visits, pendingVisit)
+	return calendar.RejectPending(ctx, c.records, c.visits, rec)
 }
 
 // project は、カレンダー cal の Google の予定 ev を Projection の行に写す。

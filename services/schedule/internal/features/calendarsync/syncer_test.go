@@ -108,7 +108,7 @@ var discardLog = slog.New(slog.NewTextHandler(io.Discard, nil))
 // Applier である。buddy_primary の事業所のカレンダーは読まない（ADR-0026）。
 func testAppliers(s *inmem.Store) calendarsync.Appliers {
 	return calendarsync.Appliers{
-		organization.SourceGooglePrimary: calendarsync.NewProjectionApplier(inmem.Projections{Store: s}, discardLog),
+		organization.SourceGooglePrimary: calendarsync.NewProjectionApplier(inmem.Projections{Store: s}, inmem.CalendarEventRecords{Store: s}, inmem.VisitInfos{Store: s}, discardLog),
 	}
 }
 
@@ -117,6 +117,7 @@ func testAppliers(s *inmem.Store) calendarsync.Appliers {
 func syncerDeps(s *inmem.Store, source calendar.EventSource, sources *[]string, locks calendarsync.FacilityLock) calendarsync.SyncerDeps {
 	return calendarsync.SyncerDeps{
 		Syncs: inmem.Syncs{Store: s}, Calendars: inmem.Calendars{Store: s}, Staff: inmem.StaffRefs{Store: s}, Locks: locks,
+		Records: inmem.CalendarEventRecords{Store: s}, Visits: inmem.VisitInfos{Store: s},
 		Sources: func(_ context.Context, facilityID string) (calendar.EventSource, error) {
 			*sources = append(*sources, facilityID)
 			return source, nil

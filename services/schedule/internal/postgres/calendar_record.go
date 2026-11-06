@@ -6,11 +6,14 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarwrite"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres/sqlcgen"
 )
 
-// CalendarEventRecordRepository は、calendarwrite.RecordRepository を実装する。
+// CalendarEventRecordRepository は、calendarwrite.RecordRepository と calendarsync.PendingRecords を実装する。
 type CalendarEventRecordRepository struct{ conn }
 
 // NewCalendarEventRecordRepository は CalendarEventRecordRepository を作る。
@@ -18,29 +21,75 @@ func NewCalendarEventRecordRepository(pool *pgxpool.Pool) *CalendarEventRecordRe
 	return &CalendarEventRecordRepository{conn{pool}}
 }
 
-var _ calendarwrite.RecordRepository = (*CalendarEventRecordRepository)(nil)
+var (
+	_ calendarwrite.RecordRepository = (*CalendarEventRecordRepository)(nil)
+	_ calendarsync.PendingRecords    = (*CalendarEventRecordRepository)(nil)
+)
 
-// GetForUpdate は、calendarwrite.RecordRepository の GetForUpdate を実装する。行を FOR UPDATE で読む。
-func (r *CalendarEventRecordRepository) GetForUpdate(ctx context.Context, scheduleID string) (calendarwrite.Record, error) {
+// GetForUpdate は、calendar.EventRecords の GetForUpdate を実装する。行を FOR UPDATE で読む。
+func (r *CalendarEventRecordRepository) GetForUpdate(ctx context.Context, scheduleID string) (calendar.EventRecord, error) {
 	row, err := r.q(ctx).GetCalendarEventRecordForUpdate(ctx, scheduleID)
 	if err != nil {
-		return calendarwrite.Record{}, translate("get calendar event record", err)
+		return calendar.EventRecord{}, translate("get calendar event record", err)
 	}
-	rec := calendarwrite.Record{
-		ScheduleID: row.ScheduleID, FacilityID: row.FacilityID, ExternalCalendarID: row.ExternalCalendarID, ExternalEventID: row.ExternalEventID,
-		VisitInfoID: row.VisitInfoID, Version: int(row.Version),
+	return recordOf(row.ScheduleID, row.FacilityID, row.ExternalCalendarID, row.ExternalEventID, row.VisitInfoID, row.Version,
+		row.PendingVersion, row.PendingState, row.PendingVisitInfoID, row.PendingDeadline), nil
+}
+
+// ClaimExpired は、calendarsync.PendingRecords の ClaimExpired を実装する。行を FOR UPDATE SKIP LOCKED で取る。
+func (r *CalendarEventRecordRepository) ClaimExpired(ctx context.Context, now time.Time, max int, lease time.Duration,
+	modes []organization.SourceMode) ([]calendarsync.PendingCheck, error) {
+	n, err := int32Of(max)
+	if err != nil {
+		return nil, err
 	}
-	if row.PendingVersion != nil && row.PendingState != nil && row.PendingDeadline != nil {
-		rec.Pending = &calendarwrite.Pending{
-			Version: int(*row.PendingVersion), State: calendarwrite.PendingState(*row.PendingState),
-			VisitInfoID: row.PendingVisitInfoID, Deadline: *row.PendingDeadline,
+	until := now.Add(lease)
+	rows, err := r.q(ctx).ClaimExpiredCalendarEventRecords(ctx, sqlcgen.ClaimExpiredCalendarEventRecordsParams{
+		LockedUntil: &until, Now: &now, Modes: modeStrings(modes), MaxCount: n,
+	})
+	if err != nil {
+		return nil, translate("claim expired calendar event records", err)
+	}
+	out := make([]calendarsync.PendingCheck, len(rows))
+	for i, row := range rows {
+		out[i] = calendarsync.PendingCheck{
+			Record: recordOf(row.ScheduleID, row.FacilityID, row.ExternalCalendarID, row.ExternalEventID, row.VisitInfoID, row.Version,
+				row.PendingVersion, row.PendingState, row.PendingVisitInfoID, row.PendingDeadline),
+			Calendar: calendar.ExternalCalendar{
+				ID: row.ExternalCalendarID, FacilityID: row.FacilityID, StaffID: row.StaffID, Provider: row.Provider, CalendarID: row.CalendarID,
+			},
+			LockedUntil: until,
+		}
+		if row.PendingLockedUntil != nil {
+			out[i].LockedUntil = *row.PendingLockedUntil
 		}
 	}
-	return rec, nil
+	return out, nil
+}
+
+// Release は、calendarsync.PendingRecords の Release を実装する。
+func (r *CalendarEventRecordRepository) Release(ctx context.Context, p calendarsync.PendingCheck) error {
+	err := r.q(ctx).ReleaseCalendarEventRecord(ctx, sqlcgen.ReleaseCalendarEventRecordParams{ScheduleID: p.Record.ScheduleID, LockedUntil: &p.LockedUntil})
+	return translate("release calendar event record", err)
+}
+
+// recordOf は、記録の行のカラムから記録を作る。保留のカラムが揃っていなければ、保留の版を持たない。
+func recordOf(scheduleID, facilityID, calendarID, eventID string, visitInfoID *string, version int32,
+	pendingVersion *int32, pendingState, pendingVisitInfoID *string, pendingDeadline *time.Time) calendar.EventRecord {
+	rec := calendar.EventRecord{
+		ScheduleID: scheduleID, FacilityID: facilityID, ExternalCalendarID: calendarID, ExternalEventID: eventID,
+		VisitInfoID: visitInfoID, Version: int(version),
+	}
+	if pendingVersion != nil && pendingState != nil && pendingDeadline != nil {
+		rec.Pending = &calendar.PendingWrite{
+			Version: int(*pendingVersion), State: calendar.PendingState(*pendingState), VisitInfoID: pendingVisitInfoID, Deadline: *pendingDeadline,
+		}
+	}
+	return rec
 }
 
 // Create は、calendarwrite.RecordRepository の Create を実装する。
-func (r *CalendarEventRecordRepository) Create(ctx context.Context, rec calendarwrite.Record) error {
+func (r *CalendarEventRecordRepository) Create(ctx context.Context, rec calendar.EventRecord) error {
 	cols, err := recordColumnsOf(rec)
 	if err != nil {
 		return err
@@ -53,8 +102,8 @@ func (r *CalendarEventRecordRepository) Create(ctx context.Context, rec calendar
 	return translate("create calendar event record", err)
 }
 
-// Update は、calendarwrite.RecordRepository の Update を実装する。
-func (r *CalendarEventRecordRepository) Update(ctx context.Context, rec calendarwrite.Record) error {
+// Update は、calendar.EventRecords の Update を実装する。
+func (r *CalendarEventRecordRepository) Update(ctx context.Context, rec calendar.EventRecord) error {
 	cols, err := recordColumnsOf(rec)
 	if err != nil {
 		return err
@@ -66,7 +115,7 @@ func (r *CalendarEventRecordRepository) Update(ctx context.Context, rec calendar
 	return translate("update calendar event record", err)
 }
 
-// Delete は、calendarwrite.RecordRepository の Delete を実装する。
+// Delete は、calendar.EventRecords の Delete を実装する。
 func (r *CalendarEventRecordRepository) Delete(ctx context.Context, scheduleID string) error {
 	return translate("delete calendar event record", r.q(ctx).DeleteCalendarEventRecord(ctx, scheduleID))
 }
@@ -80,7 +129,7 @@ type recordColumns struct {
 	pendingDeadline    *time.Time
 }
 
-func recordColumnsOf(rec calendarwrite.Record) (recordColumns, error) {
+func recordColumnsOf(rec calendar.EventRecord) (recordColumns, error) {
 	v, err := int32Of(rec.Version)
 	if err != nil {
 		return recordColumns{}, err

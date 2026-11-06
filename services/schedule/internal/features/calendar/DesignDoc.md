@@ -44,6 +44,7 @@ verified_commit: 8254dde
 
 - `calendar`: 3 つの機能が共有する記録と規則と、結び付けの操作
   - 結び付けたカレンダー（`ExternalCalendar`）、予定の対応（`EventLink`）、取り込みの記録（`ImportRun`）、書き出しの待ちの記録（`Export`、`Target`）
+  - Google カレンダーに書いた予定の記録（`EventRecord`）と、保留の版を確定するか消す規則（`LockPending`、`ConfirmPending`、`RejectPending`）。書き込み（`calendarwrite`）と同期（`calendarsync`）が使う
   - Google の口（`EventSource`、`EventWriter`、`Accounts`）と、外部の予定と buddy の予定を読み替える規則（`classify.go`、`recurrence.go`、`eventbody.go`）
   - 結び付けの操作（`ServiceAccount`、`List`、`Check`、`Link`、`Unlink`）
 - `calendarimport`: 期間を決めた手動の取り込み（`Preview`、`Import`、`plan.go`）
@@ -65,6 +66,7 @@ verified_commit: 8254dde
 - `calendarexport` の `ExportCalendars` と `ExporterCalendars` は、書き出しが使う予定の対応の読み書きを持つ。
 - `calendarsync` の `CalendarReader` は、同期が予定を当てる前にカレンダーを読み直す `Get` だけを持つ。
 - `calendarsync` の `Projections` は、`projectionApplier` が使う参照のモデル（Projection）の書き込みだけを持つ。
+- `calendarsync` の `PendingRecords` は、記録の読み書き（`calendar.EventRecords`）と、読み戻しが記録を取る `ClaimExpired` と `Release` を持つ。
 - postgres の `CalendarRepository` は 1 つで、全てのインターフェースを満たす。
 
 ### Google カレンダーは事業所のサービスアカウントで読み書きする
@@ -674,6 +676,11 @@ Projection を読むのは、予定の表示の読み出し（`scheduleview` の
 どちらかなら、残りの予定を当てずに、トークンと状態を前のまま返す。  
 退職は同じ行に排他のロックを取ってカレンダーを外すので、カレンダーを取った後に職員が退職しても、退職した職員の予定を Projection に写さない。
 
+#### 予定の API が書いた予定の保留の版
+
+同期は、予定の API が Google に書いた予定の保留の版を、増分で読んだ予定で確定し、書く期限を過ぎた保留の版を読み戻して確定するか消す。  
+規則、件数の上限、周期、ログは、[同期での保留の版の確定と読み戻し](#同期での保留の版の確定と読み戻し) にある。
+
 #### 同期の状態
 
 カレンダーの同期の状態（`calendar_sync_states`）は、最後の結果（`never`、`succeeded`、`failed`）と、失敗の理由を決まった値（`unreadable`、`unavailable`、`apply`）で持つ。  
@@ -707,6 +714,7 @@ Google の予定の ID は、この ID から `calendar.EventIDOf` で決め、�
 | --- | --- |
 | `visit_info_id`、`version` | Google が受けたと分かった版と、その版の訪問の情報。`version` が 0 の行は、まだ作成を Google が受けたと分かっていない |
 | `pending_version`、`pending_state`、`pending_visit_info_id`、`pending_deadline` | 保留の版、状態（`writing` か `unknown`）、その版の訪問の情報、書く期限。保留が無ければ全て NULL |
+| `pending_locked_until` | 同期が保留の版を読み戻す間、ほかの Worker に記録を渡さない期限。保留の版を解いても NULL に戻さない |
 
 Google の予定の `extendedProperties.private` には、buddy の予定の ID（`buddyScheduleId`）と保留の版（`buddyVersion`）を置く。  
 訪問の情報は `visit_infos` の行で持ち、`visit.Writer.Create` で作る。  
@@ -777,6 +785,77 @@ sequenceDiagram
 書く期限は、保留の版を書いた時刻の 2 分後（`calendarwrite.WriteDeadline`）にする。  
 手順 1 の後に、Google の作成と読み出しを 1 回ずつ呼び、2 つ目のトランザクションを終えるまでを、呼び出しの上限の 2 回分に余裕を足して収める。  
 書く期限を過ぎた「書いている途中」の保留の版は、予定の API が手順 3 から 5 のどれにも進まずに止まったものとみなし、「結果が分からない」と同じく扱う。
+
+#### 同期での保留の版の確定と読み戻し
+
+予定の API が解けなかった保留の版は、同期（`calendar-worker sync`）が確定するか消す。  
+確定と消す規則は `calendar` の `ConfirmPending` と `RejectPending` にあり、予定の API の書き込みと同期が同じ規則を使う。  
+`calendarsync` は `calendarwrite` を import できないためである。
+
+- ADR-0026: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0026-google-calendar-sync.md)
+
+同期の増分は、読んだ予定を Projection に写すのと同じトランザクションで、保留の版を確定する。
+
+- 予定の `extendedProperties.private` の `buddyScheduleId` の記録が、このカレンダーのこの予定の記録で、`buddyVersion` が保留の版と同じなら確定する。
+  - 確定は、保留の訪問の情報を確定した訪問の情報に移し、前の訪問の情報を使われていなければ消す。
+  - 書く期限の前でも確定する。予定の API の 2 つ目のトランザクションは、保留の版が解かれていれば記録を変えない。
+- 版が違うか、予定が取り消されていれば、保留の版を消さない。
+  - 増分の読み取りは、予定の API が Google に書く前のことがあるためである。
+
+書く期限を過ぎた保留の版は、同期の読み戻し（`Syncer.ReadBackDue`）が `events.get` で予定を読み、次のとおり解く。  
+「結果が分からない」と、書く期限を過ぎた「書いている途中」の両方を読み戻す。
+
+- `buddyScheduleId` と `buddyVersion` が保留の版と同じなら確定し、読んだ予定を Projection に写す。
+- 版か `buddyScheduleId` が違うか、予定が取り消されていれば、保留の版を消し、読んだ予定を Projection に写す。
+- 予定が無ければ、保留の版を消す。
+  - Google は、カレンダーを読めないときも 404 を返す。そのため、予定が無いと答えたときは、カレンダーを読めることを確認してから消す。
+- 保留の版を消すと、保留の訪問の情報も、使われていなければ消す。
+  - 確定した版の無い記録（作成）は、Google が作成を受けていないので記録ごと消す。確定した版のある記録は、保留のカラムだけを消す。
+- 読めないときは、記録を変えず、後で取り直す。
+
+次の図は、読み戻しの 1 回で、記録を取ってから保留の版を解くまでを示す。
+
+```mermaid
+sequenceDiagram
+  participant s as calendar-worker sync
+  participant db as PostgreSQL
+  participant g as Google Calendar API
+  s->>db: 書く期限を過ぎた保留の版の記録を 10 件まで取る（FOR UPDATE SKIP LOCKED と pending_locked_until の 6 分）
+  loop 取った記録ごと
+    s->>g: events.get
+    alt 予定が無いと答えた
+      s->>g: events.list（カレンダーを読めることの確認）
+    end
+    alt 読めない
+      s-->>s: 記録を変えず、ログに書く。6 分の後に取り直す
+    else 読めた
+      s->>db: 事業所の行を共有のロックで読み、カレンダーと職員とモードを読み直す
+      alt カレンダーを外した、職員が退職した、google_primary でない
+        s-->>s: 記録を変えない
+      else 保留の版が読み戻しの間に解かれた
+        s-->>s: 記録を変えない
+      else 版が同じ
+        s->>db: 保留の版を確定し、読んだ予定を Projection に写す
+      else 版が違う、取り消し、予定が無い
+        s->>db: 保留の版と保留の訪問の情報を消す。予定があれば Projection に写す
+      end
+    end
+  end
+```
+
+- 読み戻しは、同期の役割の 1 回ごとに、`SyncDue` の後に呼ぶ。同期と同じ周期で動く。
+- 1 回に取る記録は 10 件までにし、1 件を 30 秒で打ち切る。
+- 取った記録は、`pending_locked_until` の 6 分の間、ほかの Worker に渡さない。
+  - Google の呼び出しはトランザクションの外で行うので、行のロックだけでは同じ記録を 2 つの Worker が読むことを防げないためである。
+  - 読めなかった記録は、6 分の後に取り直す。
+  - 止める合図で解けなかった記録は、`pending_locked_until` を戻し、次に起動したときにすぐ取る。
+- 外したカレンダーの記録と、`google_primary` でない事業所の記録は取らない。
+  - 同期がそのカレンダーの変更を当てないのと同じ扱いにする。保留の版と訪問の情報は残る。
+  - カレンダーを外すようにする前の予定の API で退職にした職員の記録は、取っても変えない。
+- 読み戻しの間に、予定の API の送り直しが保留の版を解いていれば、記録を変えない。
+  - 読み戻しは、取ったときと同じ保留の版の番号を持つ記録だけを解く。送り直しが番号を進めた保留の版は消さない。
+- 結果ごとの数は、要約のログ `calendar pending readback batch` に書く。項目は、同期の要約と同じ名前にする。
+- 1 つの記録の失敗は、`calendar pending readback failed` に、事業所、カレンダー、Google の予定の ID だけを書く。タイトルと利用者名を書かない。
 
 #### エラーと応答
 
