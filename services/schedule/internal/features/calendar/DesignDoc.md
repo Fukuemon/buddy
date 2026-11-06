@@ -931,6 +931,7 @@ sequenceDiagram
 - 画面が送った親の予定の `etag` は、親の予定を `events.get` で読み直して比べる。違えば回に書かず、読んだ親を Projection に写して 409（`google_event_changed`）を返す。
   - 回の予定の `If-Match` には、`events.instances` で読んだ回の `etag` を付け、親の予定の `etag` を付けない。公式の文書は、変えていない回の `etag` が親の予定の `etag` と同じかを書いていないためである。
   - 出典: [Events: instances](https://developers.google.com/workspace/calendar/api/v3/reference/events/instances)
+  - 引いた回のタイトル、開始、長さが、親の予定を展開した回と違えば、一覧で読んだ後に Google で回が変わったとみなし、回に書かずに読んだ回を Projection に写して 409（`google_event_changed`）を返す。取り消しも同じである。
 - 回の訪問の情報は、親の予定の記録の確定した版を引き継ぐ。
   - 回で訪問の情報を変えたときだけ回の記録を作り、単発の予定の変更と同じく保留の版を書く。親の予定の保留の版とは別に持つ。
   - 訪問の情報を変えない回は、記録も保留の版も書かない。DB に残す訪問の情報が無いので、Google の結果が分からなくても失うものが無いためである。
