@@ -12,6 +12,7 @@
 //   言語の構文は読まず、文字列とコメントの区切りを近似で見分ける。見つからない書き方と、誤って色と判定する書き方がありうる。
 //     mdx と HTML の本文の「PR #165」のように、16 進に見える番号は色と判定する。その行は ALLOW_MARK で外す。
 //     JSX の本文の ' （Don't）の後と、正規表現のリテラルの中の ` の後は、文字列の中として読むので、同じ行のコメントの中の色を判定する。
+// 違反の行には、PRINCIPLE_ID（デザインシステムの文書の原則の ID）を出す。
 // 終了コード: 0 は見つからなかった、1 は見つかった、2 はパスが読めないか、引数が正しくない
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { extname, join, relative, resolve, sep } from "node:path";
@@ -24,6 +25,8 @@ const EXCLUDES = ["./packages/ui/src/tokens", "./apps/web/src/api/generated"];
 const BASE_PREFIXES = ["--buddy-primitive-"];
 const EXTENSIONS = [".css", ".scss", ".js", ".jsx", ".ts", ".tsx", ".vue", ".svelte", ".astro", ".html", ".mdx"];
 const ALLOW_MARK = "design-system-allow";
+// 違反の行に出す、デザインシステムの文書の原則の ID
+const PRINCIPLE_ID = "COLOR-TOKEN";
 
 const prefixes = [];
 const excludes = [];
@@ -174,7 +177,7 @@ for (const file of files) {
     for (const { label, re } of patterns) {
       for (const m of line.matchAll(re)) {
         found++;
-        console.log(`${relative(".", file)}:${i + 1}: ${label} ${m[0]}`);
+        console.log(`${relative(".", file)}:${i + 1}: ${PRINCIPLE_ID} ${label} ${m[0]}`);
       }
     }
   });
