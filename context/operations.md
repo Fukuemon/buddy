@@ -68,6 +68,7 @@ Worker は、待ちかカレンダーを取って処理する 1 回（バッチ�
 停止の合図を受けた後のバッチでは、滞留を数えない。
 
 要約の `msg` は、書き出しが `calendar export batch`、同期が `calendar sync batch` である。  
+同期の Worker は、書く期限を過ぎた保留の版の読み戻しの要約も、`calendar pending readback batch` に書く。読み戻しでは、取った数は Google カレンダーに書いた予定の記録の数になる。  
 項目は次のとおり。
 
 - `claimed_count`: 取った待ちかカレンダーの数
@@ -100,7 +101,8 @@ Worker は、待ちかカレンダーを取って処理する 1 回（バッチ�
 予定のタイトル、利用者名、カレンダーの ID のメールは、どのログにも書かない。  
 1 つの待ちやカレンダーの失敗は、要約とは別に、`calendar export failed` と `calendar sync failed` の行に書く。  
 失敗の行には、待ちの ID（`export_id`）か、事業所の ID（`facility_id`）と buddy のカレンダーの ID（`external_calendar_id`）を付ける。  
-日時を読めずに参照のモデル（Projection）に写さなかった予定は、`calendar projection skipped` の行に、事業所、カレンダー、Google の予定の ID（`event_id`）を付けて書く。
+日時を読めずに参照のモデル（Projection）に写さなかった予定は、`calendar projection skipped` の行に、事業所、カレンダー、Google の予定の ID（`event_id`）を付けて書く。  
+保留の版を読み戻せなかった記録は、`calendar pending readback failed` の行に、事業所、カレンダー、Google の予定の ID を付けて書く。
 
 ## Rollback
 

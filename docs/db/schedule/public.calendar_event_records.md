@@ -20,6 +20,7 @@ google_primary の事業所で、予定の API が Google カレンダーに書�
 | pending_deadline      | timestamp with time zone |         | true     |          |                                                                                                                                                 | 書く期限。保留の版を書いた時刻に、Google を呼ぶ時間の上限と余裕を足した時刻                                                                            |
 | created_at            | timestamp with time zone | now()   | false    |          |                                                                                                                                                 |                                                                                                                                                        |
 | updated_at            | timestamp with time zone | now()   | false    |          |                                                                                                                                                 |                                                                                                                                                        |
+| pending_locked_until  | timestamp with time zone |         | true     |          |                                                                                                                                                 | 同期が保留の版を読み戻す間、ほかの Worker に記録を渡さない期限。読み戻せなかった記録は、この時刻の後に取り直す。保留の版を解いても NULL に戻さない     |
 
 ## Viewpoints
 
@@ -60,6 +61,7 @@ google_primary の事業所で、予定の API が Google カレンダーに書�
 | calendar_event_records_calendar_idx           | CREATE INDEX calendar_event_records_calendar_idx ON public.calendar_event_records USING btree (facility_id, external_calendar_id)                                         |
 | calendar_event_records_visit_info_idx         | CREATE INDEX calendar_event_records_visit_info_idx ON public.calendar_event_records USING btree (visit_info_id) WHERE (visit_info_id IS NOT NULL)                         |
 | calendar_event_records_pending_visit_info_idx | CREATE INDEX calendar_event_records_pending_visit_info_idx ON public.calendar_event_records USING btree (pending_visit_info_id) WHERE (pending_visit_info_id IS NOT NULL) |
+| calendar_event_records_pending_deadline_idx   | CREATE INDEX calendar_event_records_pending_deadline_idx ON public.calendar_event_records USING btree (pending_deadline) WHERE (pending_version IS NOT NULL)              |
 
 ## Triggers
 
@@ -90,6 +92,7 @@ erDiagram
   timestamp_with_time_zone pending_deadline
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  timestamp_with_time_zone pending_locked_until
 }
 "public.facilities" {
   text id

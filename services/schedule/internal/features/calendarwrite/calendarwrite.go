@@ -1,5 +1,5 @@
 // Package calendarwrite は、Google カレンダーを予定の正本にする事業所（google_primary）で、職員が buddy から作る予定を、
-// リクエストの中で Google カレンダーに書く（ADR-0026）。書いた予定の訪問の情報と書き込みの保留の版は、記録（Record）に持つ。
+// リクエストの中で Google カレンダーに書く（ADR-0026）。書いた予定の訪問の情報と書き込みの保留の版は、記録（calendar.EventRecord）に持つ。
 // 予定の閲覧と編集の判定、訪問の情報の規則は schedule の規則を使い、予定の本文と Projection の行は calendar の規則で作る。
 package calendarwrite
 

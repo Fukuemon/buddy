@@ -135,7 +135,8 @@ func work(ctx context.Context, cfg config.Worker, opts options, log *slog.Logger
 	case "export":
 		due = assemble.NewExporter(repos, accounts, log).ExportDue
 	case "sync":
-		due = assemble.NewSyncer(repos, accounts, cfg.Calendar.SyncInterval, log).SyncDue
+		s := assemble.NewSyncer(repos, accounts, cfg.Calendar.SyncInterval, log)
+		due = sequence(s.SyncDue, s.ReadBackDue)
 	}
 	if !opts.once {
 		log.Info("calendar worker started")

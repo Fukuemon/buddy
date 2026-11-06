@@ -256,7 +256,7 @@ func TestCalendarSyncProjectsGooglePrimaryCalendar(t *testing.T) {
 			return source, nil
 		},
 	}, calendarsync.Appliers{
-		organization.SourceGooglePrimary: calendarsync.NewProjectionApplier(NewCalendarProjectionRepository(testDB), log),
+		organization.SourceGooglePrimary: calendarsync.NewProjectionApplier(NewCalendarProjectionRepository(testDB), NewCalendarEventRecordRepository(testDB), NewVisitInfoRepository(testDB), log),
 	}, NewTransactor(testDB), 0, log)
 	sync := func() {
 		t.Helper()

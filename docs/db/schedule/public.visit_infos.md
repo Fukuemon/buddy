@@ -144,6 +144,7 @@ erDiagram
   timestamp_with_time_zone pending_deadline
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  timestamp_with_time_zone pending_locked_until
 }
 "public.users" {
   text id

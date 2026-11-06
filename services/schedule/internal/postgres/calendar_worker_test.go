@@ -427,7 +427,7 @@ func TestCalendarSyncFinishesAfterShutdown(t *testing.T) {
 			return nil, ctx.Err()
 		},
 	}, calendarsync.Appliers{
-		organization.SourceGooglePrimary: calendarsync.NewProjectionApplier(NewCalendarProjectionRepository(pool), log),
+		organization.SourceGooglePrimary: calendarsync.NewProjectionApplier(NewCalendarProjectionRepository(pool), NewCalendarEventRecordRepository(pool), NewVisitInfoRepository(pool), log),
 	}, NewTransactor(pool), time.Hour, log)
 	if n, err := syncer.SyncDue(ctx); err != nil || n != 2 {
 		t.Fatalf("SyncDue = %d, %v", n, err)

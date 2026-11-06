@@ -99,6 +99,8 @@ type CalendarEventRecord struct {
 	PendingDeadline *time.Time
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
+	// 同期が保留の版を読み戻す間、ほかの Worker に記録を渡さない期限。読み戻せなかった記録は、この時刻の後に取り直す。保留の版を解いても NULL に戻さない
+	PendingLockedUntil *time.Time
 }
 
 // 予定を外部のカレンダーに書き出す待ち。予定の変更と同じトランザクションで積む

@@ -136,7 +136,7 @@ func isConflict(err error, code string) bool {
 	return errors.As(err, &ce) && ce.Code == code
 }
 
-func (fx *fixture) record(t *testing.T) (calendarwrite.Record, bool) {
+func (fx *fixture) record(t *testing.T) (calendar.EventRecord, bool) {
 	t.Helper()
 	r, ok := fx.store.Records[scheduleID]
 	return r, ok
@@ -231,7 +231,7 @@ func TestCreateFailures(t *testing.T) {
 			}
 			r, ok := fx.record(t)
 			if tt.wantPending {
-				if !ok || r.Version != 0 || r.Pending == nil || r.Pending.State != calendarwrite.PendingUnknown || r.Pending.VisitInfoID == nil {
+				if !ok || r.Version != 0 || r.Pending == nil || r.Pending.State != calendar.PendingUnknown || r.Pending.VisitInfoID == nil {
 					t.Fatalf("記録 = %+v, ok = %v", r, ok)
 				}
 				if _, ok := fx.store.Infos[*r.Pending.VisitInfoID]; !ok {
@@ -388,9 +388,9 @@ func TestCreateResend(t *testing.T) {
 	})
 	t.Run("書いている途中に送り直す", func(t *testing.T) {
 		fx := newFixture(t)
-		fx.store.Records[scheduleID] = calendarwrite.Record{
+		fx.store.Records[scheduleID] = calendar.EventRecord{
 			ScheduleID: scheduleID, FacilityID: inmem.FacilityID, ExternalCalendarID: externalID, ExternalEventID: eventID(t),
-			Pending: &calendarwrite.Pending{Version: 1, State: calendarwrite.PendingWriting, Deadline: fx.now.Add(time.Minute)},
+			Pending: &calendar.PendingWrite{Version: 1, State: calendar.PendingWriting, Deadline: fx.now.Add(time.Minute)},
 		}
 		if _, err := fx.create.Do(editorCtx(), inmem.FacilityID, scheduleID, normalSlot()); !isConflict(err, calendarwrite.CodeWritePending) {
 			t.Fatalf("err = %v", err)

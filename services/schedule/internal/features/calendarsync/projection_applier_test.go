@@ -34,7 +34,7 @@ type projectionEnv struct {
 func newProjectionSyncer(t *testing.T, e syncEnv, locks calendarsync.FacilityLock, log *slog.Logger) *calendarsync.Syncer {
 	t.Helper()
 	return calendarsync.NewSyncer(syncerDeps(e.store, gcal.NewReader(gcaltest.Start(t, e.srv)), e.sources, locks), calendarsync.Appliers{
-		organization.SourceGooglePrimary: calendarsync.NewProjectionApplier(inmem.Projections{Store: e.store}, log),
+		organization.SourceGooglePrimary: calendarsync.NewProjectionApplier(inmem.Projections{Store: e.store}, inmem.CalendarEventRecords{Store: e.store}, inmem.VisitInfos{Store: e.store}, log),
 	}, &inmem.Tx{}, time.Minute, log)
 }
 
