@@ -97,12 +97,17 @@ func (s Projections) GetBySchedule(_ context.Context, facilityID, id string) (sc
 	return scheduleview.ProjectionDetail{}, apperr.ErrNotFound
 }
 
-// detail は、行 p に、職員の名前と、一覧での予定の ID を付ける。
+// detail は、行 p に、職員の名前と、一覧での予定の ID と、記録の確定した版の訪問の情報を付ける。
 func (s Projections) detail(p scheduleview.Projection) scheduleview.ProjectionDetail {
 	d := scheduleview.ProjectionDetail{Projection: p, StaffName: s.Staff[p.StaffID].Username}
 	for _, r := range s.Records {
 		if r.ExternalCalendarID == p.ExternalCalendarID && r.ExternalEventID == p.EventID {
 			d.ScheduleID = r.ScheduleID
+			if r.VisitInfoID != nil {
+				if v, err := VisitInfos(s).GetDetail(context.Background(), *r.VisitInfoID); err == nil {
+					d.Visit = &v
+				}
+			}
 			return d
 		}
 	}

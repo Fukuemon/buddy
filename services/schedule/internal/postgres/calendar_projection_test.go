@@ -18,6 +18,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
 )
@@ -587,5 +588,84 @@ func TestCalendarProjectionRepositoryDetachedID(t *testing.T) {
 	}
 	if f, err := NewScheduleRepository(testDB).GetFacilityID(ctx, leftID); err != nil || f != seedGoogleFacility {
 		t.Errorf("GetFacilityID(%s) = %s, %v", leftID, f, err)
+	}
+}
+
+// TestCalendarProjectionRepositoryRecordVisit は、一覧と 1 件の読み出しが、記録の確定した版の訪問の情報を、利用者、主訪問者、同行者、
+// サービスコードの名前と区分を付けて返し、保留の版の訪問の情報だけを持つ記録と、記録の無い行には訪問の情報を付けないことを確認する。
+func TestCalendarProjectionRepositoryRecordVisit(t *testing.T) {
+	ctx := txContext(t)
+	const calID = "01M3TD000000000000000000CC"
+	if err := NewCalendarRepository(testDB).Create(ctx, calendar.ExternalCalendar{
+		ID: calID, FacilityID: seedFacility, StaffID: seedMori, Provider: calendar.ProviderGoogle, CalendarID: "mori@example.com",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	infos := NewVisitInfoRepository(testDB)
+	const confirmedInfo, pendingInfo = "01M3TD000000000000000000V3", "01M3TD000000000000000000V4"
+	for _, i := range []visit.Info{
+		{ID: confirmedInfo, FacilityID: seedFacility, PatientID: seedPatient, AssignedStaffID: seedMori, CompanionID: ptr(seedAoki),
+			ServiceCodeID: seedServiceCode, CategoryIDs: []string{seedEmergency, seedNight}},
+		{ID: pendingInfo, FacilityID: seedFacility, PatientID: seedPatient, AssignedStaffID: seedMori, ServiceCodeID: seedServiceCode},
+	} {
+		if err := infos.Create(ctx, i); err != nil {
+			t.Fatal(err)
+		}
+	}
+	r := NewCalendarProjectionRepository(testDB)
+	base := scheduleview.Projection{
+		ExternalCalendarID: calID, FacilityID: seedFacility, StaffID: seedMori, Status: scheduleview.ProjectionConfirmed,
+		Title: "【訪看I2】見本 一郎", ETag: `"1"`, Start: scheduleview.ProjectionTime{At: timeAt(t, "2099-11-04T10:00:00+09:00")},
+		End: scheduleview.ProjectionTime{At: timeAt(t, "2099-11-04T10:30:00+09:00")}, LastEndDate: civilDate(2099, 11, 4),
+	}
+	confirmed, pending, google := base, base, base
+	confirmed.EventID, pending.EventID, google.EventID = "confirmed", "pending", "google"
+	for _, p := range []scheduleview.Projection{confirmed, pending, google} {
+		if err := r.Put(ctx, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	records := NewCalendarEventRecordRepository(testDB)
+	const confirmedID, pendingID = "01M3TD000000000000000000S8", "01M3TD000000000000000000S9"
+	for _, rec := range []calendar.EventRecord{
+		{ScheduleID: confirmedID, FacilityID: seedFacility, ExternalCalendarID: calID, ExternalEventID: confirmed.EventID, Version: 1, VisitInfoID: ptr(confirmedInfo)},
+		{ScheduleID: pendingID, FacilityID: seedFacility, ExternalCalendarID: calID, ExternalEventID: pending.EventID,
+			Pending: &calendar.PendingWrite{Version: 1, State: calendar.PendingUnknown, VisitInfoID: ptr(pendingInfo), Deadline: time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC)}},
+	} {
+		if err := records.Create(ctx, rec); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	rows, err := r.ListByFacility(ctx, seedFacility, civil.Date{Year: 2099, Month: 1, Day: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	visits := map[string]*visit.Detail{}
+	for _, p := range rows {
+		visits[p.EventID] = p.Visit
+	}
+	if len(visits) != 3 || visits[pending.EventID] != nil || visits[google.EventID] != nil {
+		t.Errorf("保留の版だけの記録と記録の無い行の訪問の情報 = %+v, %+v, want nil（行 = %d 件）", visits[pending.EventID], visits[google.EventID], len(visits))
+	}
+	v := visits[confirmed.EventID]
+	want := visit.Detail{
+		ID: confirmedInfo, PatientID: seedPatient, PatientName: "見本 一郎", AssignedStaffID: seedMori, AssignedStaffName: "森 健太",
+		CompanionID: ptr(seedAoki), CompanionName: ptr("青木 陽菜"), ServiceCodeID: seedServiceCode, ServiceCode: "訪看I2",
+	}
+	if v == nil || v.ID != want.ID || v.PatientID != want.PatientID || v.PatientName != want.PatientName || v.AssignedStaffID != want.AssignedStaffID ||
+		v.AssignedStaffName != want.AssignedStaffName || v.CompanionID == nil || *v.CompanionID != seedAoki || v.CompanionName == nil ||
+		*v.CompanionName != *want.CompanionName || v.ServiceCodeID != want.ServiceCodeID || v.ServiceCode != want.ServiceCode || len(v.Categories) != 2 {
+		t.Fatalf("確定した版の訪問の情報 = %+v, want %+v と区分 2 つ", v, want)
+	}
+	got, err := r.GetBySchedule(ctx, seedFacility, confirmedID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Visit == nil || got.Visit.ID != confirmedInfo || got.Visit.CompanionName == nil || len(got.Visit.Categories) != 2 {
+		t.Errorf("1 件の読み出しの訪問の情報 = %+v", got.Visit)
+	}
+	if got, err := r.GetBySchedule(ctx, seedFacility, pendingID); err != nil || got.Visit != nil {
+		t.Errorf("保留の版だけの記録の 1 件の読み出し = %+v, %v, want 訪問の情報の無い行", got.Visit, err)
 	}
 }

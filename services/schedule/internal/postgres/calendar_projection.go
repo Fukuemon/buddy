@@ -10,6 +10,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres/sqlcgen"
 )
 
@@ -82,31 +83,48 @@ func (r *CalendarProjectionRepository) ListByFacility(ctx context.Context, facil
 	if err != nil {
 		return nil, translate("list calendar event projections", err)
 	}
-	out := make([]scheduleview.ProjectionDetail, len(rows))
-	for i, row := range rows {
-		out[i] = projectionDetailOf(row)
-	}
-	return out, nil
+	return r.projectionDetails(ctx, rows)
 }
 
 // GetBySchedule は、scheduleview.Projections の GetBySchedule を実装する。記録の予定の ID で引き、無ければ記録の無い行を一覧での ID で引く。
 func (r *CalendarProjectionRepository) GetBySchedule(ctx context.Context, facilityID, id string) (scheduleview.ProjectionDetail, error) {
-	row, err := r.q(ctx).GetCalendarEventProjectionByRecord(ctx, sqlcgen.GetCalendarEventProjectionByRecordParams{ScheduleID: id, FacilityID: facilityID})
-	if err == nil {
-		return projectionDetailOf(sqlcgen.ListCalendarEventProjectionsByFacilityRow(row)), nil
-	}
-	if !errors.Is(err, pgx.ErrNoRows) {
+	var row sqlcgen.ListCalendarEventProjectionsByFacilityRow
+	byRecord, err := r.q(ctx).GetCalendarEventProjectionByRecord(ctx, sqlcgen.GetCalendarEventProjectionByRecordParams{ScheduleID: id, FacilityID: facilityID})
+	switch {
+	case err == nil:
+		row = sqlcgen.ListCalendarEventProjectionsByFacilityRow(byRecord)
+	case !errors.Is(err, pgx.ErrNoRows):
 		return scheduleview.ProjectionDetail{}, translate("get calendar event projection by record", err)
+	default:
+		byID, err := r.q(ctx).GetCalendarEventProjectionByListID(ctx, sqlcgen.GetCalendarEventProjectionByListIDParams{ScheduleID: id, FacilityID: facilityID})
+		if err != nil {
+			return scheduleview.ProjectionDetail{}, translate("get calendar event projection by list id", err)
+		}
+		row = sqlcgen.ListCalendarEventProjectionsByFacilityRow(byID)
 	}
-	byID, err := r.q(ctx).GetCalendarEventProjectionByListID(ctx, sqlcgen.GetCalendarEventProjectionByListIDParams{ScheduleID: id, FacilityID: facilityID})
+	out, err := r.projectionDetails(ctx, []sqlcgen.ListCalendarEventProjectionsByFacilityRow{row})
 	if err != nil {
-		return scheduleview.ProjectionDetail{}, translate("get calendar event projection by list id", err)
+		return scheduleview.ProjectionDetail{}, err
 	}
-	return projectionDetailOf(sqlcgen.ListCalendarEventProjectionsByFacilityRow(byID)), nil
+	return out[0], nil
 }
 
-// projectionDetailOf は、Projection の行を、職員の名前と一覧での予定の ID を付けた行にする。
-func projectionDetailOf(row sqlcgen.ListCalendarEventProjectionsByFacilityRow) scheduleview.ProjectionDetail {
+// projectionDetails は、Projection の行に、記録の訪問の情報の区分を 1 回の問い合わせでまとめて引いて付ける。
+func (r *CalendarProjectionRepository) projectionDetails(ctx context.Context, rows []sqlcgen.ListCalendarEventProjectionsByFacilityRow) ([]scheduleview.ProjectionDetail, error) {
+	cats, err := r.visitCategories(ctx, visitInfoIDs(rows, func(row sqlcgen.ListCalendarEventProjectionsByFacilityRow) *string { return row.VisitInfoID }))
+	if err != nil {
+		return nil, err
+	}
+	out := make([]scheduleview.ProjectionDetail, len(rows))
+	for i, row := range rows {
+		out[i] = projectionDetailOf(row, cats)
+	}
+	return out, nil
+}
+
+// projectionDetailOf は、Projection の行を、職員の名前、一覧での予定の ID、記録の訪問の情報を付けた行にする。
+// 訪問の情報の区分は categories から引く。
+func projectionDetailOf(row sqlcgen.ListCalendarEventProjectionsByFacilityRow, categories map[string][]visit.Category) scheduleview.ProjectionDetail {
 	return scheduleview.ProjectionDetail{
 		Projection: scheduleview.Projection{
 			ExternalCalendarID: row.ExternalCalendarID, EventID: row.ExternalEventID, FacilityID: row.FacilityID, StaffID: row.StaffID,
@@ -120,6 +138,12 @@ func projectionDetailOf(row sqlcgen.ListCalendarEventProjectionsByFacilityRow) s
 		},
 		StaffName:  row.StaffName,
 		ScheduleID: row.ScheduleID,
+		Visit: visitDetailColumns{
+			VisitInfoID: row.VisitInfoID, PatientID: row.PatientID, PatientName: row.PatientName,
+			AssignedStaffID: row.AssignedStaffID, AssignedStaffName: row.AssignedStaffName,
+			CompanionID: row.CompanionID, CompanionName: row.CompanionName,
+			ServiceCodeID: row.ServiceCodeID, ServiceCode: row.ServiceCode,
+		}.detail(categories),
 	}
 }
 

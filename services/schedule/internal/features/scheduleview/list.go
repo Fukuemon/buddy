@@ -183,7 +183,7 @@ func newProjectionBuilder(ctx context.Context, deps ProjectionDeps, facilityID s
 			b.visit = t
 		}
 	}
-	if !slices.ContainsFunc(events, func(e projectedEvent) bool { return e.reading.Kind == EventVisit }) {
+	if !slices.ContainsFunc(events, func(e projectedEvent) bool { return e.reading.Kind == EventVisit && e.row.Visit == nil }) {
 		return b, nil
 	}
 	codes, err := deps.ServiceCodes.List(ctx)
@@ -204,7 +204,9 @@ func newProjectionBuilder(ctx context.Context, deps ProjectionDeps, facilityID s
 	return b, nil
 }
 
-// detail は、e を Detail にする。訪問の予定は、タイトルのサービス内容と利用者名でサービスコードと利用者を引き、
+// detail は、e を Detail にする。記録の訪問の情報（ProjectionDetail.Visit）がある予定は、その訪問の情報の訪問の予定にし、
+// タイトルの利用者かサービス内容が訪問の情報と違えば ReviewTitleMismatch を付ける。
+// 記録の訪問の情報が無い訪問の予定は、タイトルのサービス内容と利用者名でサービスコードと利用者を引き、
 // 引けないときは訪問の情報を付けず、Google のタイトルの通常の予定にして理由を付ける。
 func (b projectionBuilder) detail(e projectedEvent) Detail {
 	rd := e.reading
@@ -229,9 +231,18 @@ func (b projectionBuilder) detail(e projectedEvent) Detail {
 		title := rd.Title
 		d.Title = &title
 	}
+	if e.row.Visit != nil {
+		v := *e.row.Visit
+		d.TypeID, d.TypeName, d.Title = b.visit.ID, b.visit.Name, nil
+		d.VisitInfoID, d.Visit = &v.ID, &v
+	}
 	switch {
 	case e.unsupported:
 		d.ReviewReason = ReviewRecurrenceUnsupported
+	case e.row.Visit != nil:
+		if !b.titleMatches(rd, *e.row.Visit) {
+			d.ReviewReason = ReviewTitleMismatch
+		}
 	case rd.Kind == EventUnreadableTitle:
 		d.ReviewReason = ReviewTitleUnreadable
 	case rd.Kind == EventVisit:
@@ -255,6 +266,12 @@ func (b projectionBuilder) detail(e projectedEvent) Detail {
 		}
 	}
 	return d
+}
+
+// titleMatches は、rd が訪問のタイトルで、タイトルの利用者名とサービス内容が、訪問の情報 v の利用者とサービスコードと同じかを返す。
+// 比べる前に、取り込みと同じ規則（EventRules の ClientKey と ServiceKey）で表記をそろえる。
+func (b projectionBuilder) titleMatches(rd EventReading, v visit.Detail) bool {
+	return rd.Kind == EventVisit && rd.ClientKey == b.rules.ClientKey(v.PatientName) && rd.ServiceKey == b.rules.ServiceKey(v.ServiceCode)
 }
 
 // sortDetails は、Projection の予定を、buddy の予定の一覧と同じく sort の順に並べる。date は日付の後に開始の時刻で並べる。

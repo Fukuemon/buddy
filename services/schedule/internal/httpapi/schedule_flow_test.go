@@ -88,15 +88,16 @@ func flowRouterOn(mode organization.SourceMode, accounts calendar.Accounts) (htt
 	visits := visit.NewWriter(visit.WriterDeps{
 		Staff: refs, Patients: inmem.Patients{Store: s}, Infos: inmem.VisitInfos{Store: s}, ServiceCodes: inmem.ServiceCodes{Store: s}, Categories: inmem.VisitCategories{Store: s},
 	}, ids)
+	projected := scheduleview.ProjectionDeps{
+		Projections: inmem.Projections{Store: s}, Syncs: inmem.Projections{Store: s}, Rules: calendar.ProjectionRules{},
+		Patients: inmem.Patients{Store: s}, ServiceCodes: inmem.ServiceCodes{Store: s}, Types: types,
+	}
 	app := httpapi.ScheduleApp{
-		ListTypes: schedule.NewListTypes(types).Do,
-		Get:       scheduleview.NewGet(schedules, refs).Do,
-		GetProjected: scheduleview.NewGetProjected(scheduleview.ProjectionDeps{
-			Projections: inmem.Projections{Store: s}, Rules: calendar.ProjectionRules{}, Patients: inmem.Patients{Store: s},
-			ServiceCodes: inmem.ServiceCodes{Store: s}, Types: types,
-		}, refs).Do,
+		ListTypes:        schedule.NewListTypes(types).Do,
+		Get:              scheduleview.NewGet(schedules, refs).Do,
+		GetProjected:     scheduleview.NewGetProjected(projected, refs).Do,
 		GetRecurring:     scheduleview.NewGetRecurring(recurring, refs).Do,
-		List:             scheduleview.NewList(facilities, schedules, recurring, refs, scheduleview.ProjectionDeps{}).Do,
+		List:             scheduleview.NewList(facilities, schedules, recurring, refs, projected).Do,
 		Create:           schedule.NewCreate(facilities, schedules, types, refs, facilities, visits, nil, nil, tx, ids).Do,
 		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, facilities, visits, nil, recurring, nil, tx, ids).Do,
 		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, refs, facilities, schedules, types, visits, nil, nil, tx, ids).Do,
@@ -364,4 +365,52 @@ func TestUpdateAndCancelScheduleGooglePrimary(t *testing.T) {
 		t.Errorf("取り消し = %v, 新しいカレンダー = %d 件", cancelled, len(google.Events(companionAddr)))
 	}
 	request(t, h, http.MethodGet, target, "", http.StatusNotFound)
+}
+
+// TestReadScheduleGooglePrimaryRecordVisit は、google_primary の事業所で同行者と訪問の区分を付けて作った予定を、getSchedule と
+// listSchedules が、作成の応答と同じ訪問の情報で返すことと、Google でタイトルの利用者名を変えた後は、buddy の訪問の情報のまま
+// review_reason を title_mismatch にして返すことを確認する。
+func TestReadScheduleGooglePrimaryRecordVisit(t *testing.T) {
+	const (
+		calendarAddr = "staff@example.com"
+		newID        = "01M3TC6CX4Y3D0KCGJ5A9N0WQZ"
+	)
+	google := &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{calendarAddr: {nil}}}
+	h, s := flowRouterOn(organization.SourceGooglePrimary, googleAccounts{gcaltest.Start(t, google)})
+	s.Calendars["CAL"] = calendar.ExternalCalendar{ID: "CAL", FacilityID: facilityID, StaffID: staffID, Provider: calendar.ProviderGoogle, CalendarID: calendarAddr}
+	p := s.Patients[flowPatientID]
+	p.Name = "山田 花子"
+	s.Patients[flowPatientID] = p
+	s.Codes[flowCodeID] = servicecode.ServiceCode{ID: flowCodeID, Code: "訪看I3"}
+	created := request(t, h, http.MethodPost, "/v1/facilities/"+facilityID+"/schedules",
+		`{"id":"`+newID+`","schedule_type_id":"`+flowVisitTypeID+`","date":"2099-01-05","start_time":"09:00","end_time":"10:00",`+
+			`"staff_id":"`+staffID+`","visit_info":{"patient_id":"`+flowPatientID+`","assigned_staff_id":"`+staffID+
+			`","companion_id":"`+flowCompanionID+`","service_code_id":"`+flowCodeID+`","visit_category_ids":["`+flowCategoryID+`"]}}`, http.StatusCreated)
+	target := "/v1/schedules/" + newID
+	requireSameAsRead(t, h, created, target)
+	list := "/v1/facilities/" + facilityID + "/schedules?date_from=2099-01-05&date_to=2099-01-05"
+	listed := request(t, h, http.MethodGet, list, "", http.StatusOK)["schedules"].([]any)
+	if len(listed) != 1 || !reflect.DeepEqual(listed[0], created) {
+		t.Errorf("一覧の予定 = %v, want 作成の応答 %v", listed, created)
+	}
+	if field(t, created, "visit_info", "companion_id") != flowCompanionID || len(field(t, created, "visit_info", "visit_categories").([]any)) != 1 {
+		t.Fatalf("作成の応答の visit_info = %v, want 同行者と区分 1 つ", created["visit_info"])
+	}
+
+	eventID, err := calendar.EventIDOf(newID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	key := inmem.ProjectionKey{ExternalCalendarID: "CAL", EventID: eventID}
+	row := s.Projections[key]
+	row.Title = "【訪看I3】佐藤 一郎"
+	s.Projections[key] = row
+	for name, got := range map[string]map[string]any{
+		"getSchedule":   request(t, h, http.MethodGet, target, "", http.StatusOK),
+		"listSchedules": request(t, h, http.MethodGet, list, "", http.StatusOK)["schedules"].([]any)[0].(map[string]any),
+	} {
+		if got["review_reason"] != "title_mismatch" || !reflect.DeepEqual(got["visit_info"], created["visit_info"]) || got["title"] != nil {
+			t.Errorf("%s: review_reason = %v, visit_info = %v, title = %v, want title_mismatch と作成の応答の visit_info", name, got["review_reason"], got["visit_info"], got["title"])
+		}
+	}
 }
