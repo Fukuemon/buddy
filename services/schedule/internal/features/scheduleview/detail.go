@@ -57,6 +57,9 @@ const (
 	ReviewServiceCodeNotFound ReviewReason = "service_code_not_found"
 	// ReviewTitleUnreadable は、タイトルが空白だけか、訪問のタイトルを読めない予定である。
 	ReviewTitleUnreadable ReviewReason = "title_unreadable"
+	// ReviewTitleMismatch は、buddy の DB に訪問の情報がある予定のうち、タイトルの利用者かサービス内容が訪問の情報と違う予定である。
+	// Google でタイトルを変えたときに当たる。訪問の情報は DB の内容で返す（ADR-0026）。
+	ReviewTitleMismatch ReviewReason = "title_mismatch"
 )
 
 // RecurringDetail は、繰り返しの予定と、種類、職員、訪問の情報の名前と、除外した日付である。Visit は、ないときに nil である。

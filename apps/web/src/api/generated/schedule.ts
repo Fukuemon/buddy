@@ -1383,10 +1383,13 @@ export interface components {
          *     recurrence_unsupported は buddy の繰り返しの規則に写せない繰り返しの予定で、回に展開せず最初の回の 1 件で返す。
          *     patient_not_found と patient_ambiguous はタイトルの利用者名の利用者がいないか 2 人以上いる予定、
          *     service_code_not_found はタイトルのサービス内容がサービスコードのマスタに無い予定、title_unreadable はタイトルが空か、訪問のタイトルを読めない予定である。
-         *     recurrence_unsupported のほかの予定は、訪問の情報（visit_info）を空にし、Google のタイトルを title に入れた通常の予定として返す。
+         *     patient_not_found、patient_ambiguous、service_code_not_found、title_unreadable の予定は、訪問の情報（visit_info）を空にし、
+         *     Google のタイトルを title に入れた通常の予定として返す。
+         *     title_mismatch は、buddy で訪問の情報を入力した予定のうち、Google でタイトルを変え、タイトルの利用者かサービス内容が
+         *     buddy の訪問の情報と違う予定である。訪問の情報は buddy の内容で返す（ADR-0026）。
          * @enum {string}
          */
-        ScheduleReviewReason: "recurrence_unsupported" | "patient_not_found" | "patient_ambiguous" | "service_code_not_found" | "title_unreadable";
+        ScheduleReviewReason: "recurrence_unsupported" | "patient_not_found" | "patient_ambiguous" | "service_code_not_found" | "title_unreadable" | "title_mismatch";
         /**
          * @description 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0026）
          * @enum {string}

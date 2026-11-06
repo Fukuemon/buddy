@@ -8,6 +8,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 )
 
 // ProjectionStatus は、Projection の予定の状態である。
@@ -68,6 +69,9 @@ type ProjectionDetail struct {
 	// ScheduleID は、行の予定の一覧での ID である。予定の API が Google に書いた予定の記録（calendar.EventRecord）が行の予定を指せば
 	// 記録の予定の ID で、記録が無ければ ListScheduleID の値である。
 	ScheduleID string
+	// Visit は、記録の、Google が受けたと分かった版の訪問の情報（calendar.EventRecord.VisitInfoID）を、名前と区分を付けたものである。
+	// 記録が無いか、記録が訪問の情報を持たない（通常の予定、確定した版の無い記録）ときは nil である。保留の版の訪問の情報は使わない。
+	Visit *visit.Detail
 }
 
 // IsParent は、行が繰り返しの親の予定かを返す。

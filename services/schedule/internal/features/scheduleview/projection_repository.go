@@ -7,6 +7,7 @@ import (
 )
 
 // Projections は、Google カレンダーの予定の写し（Projection）を読む。実装は postgres.CalendarProjectionRepository である。
+// どのメソッドも、記録のある行には、記録の確定した版の訪問の情報（ProjectionDetail.Visit）を付けて返す。
 type Projections interface {
 	// ListByFacility は、事業所の外していないカレンダーの行のうち、終わる日が from より前でない行（終わる日の無い行を含む）を返す。
 	// 外したカレンダー（退職した職員のカレンダーを含む）の行は返さない。
