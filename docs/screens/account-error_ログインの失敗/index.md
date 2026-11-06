@@ -64,22 +64,18 @@
 
 ## ロゴ
 
-**概要**: buddy の画面であることを示す。
+**概要**: buddy の画面であることを示すラベル。
 
 **値のソース**: 「buddy」。  
 カードの上端の中央に、主の色で出す。  
 支援技術には読ませない。  
 ページのタイトルが画面の内容を示すためである。
 
-**活性条件**: 常に活性
-
-**表示条件**: 常に表示
-
 **カタログ**: [AuthErrorMessage の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--failed)
 
 ## ページのタイトル
 
-**概要**: ログインできなかった理由を示す。
+**概要**: ログインできなかった理由を示すラベル。
 
 **値のソース**: 理由ごとに次の文を出す。  
 ブラウザのタブのタイトルは、理由によらず「ログインできません | buddy」。
@@ -90,15 +86,11 @@
 | 事業所に登録されていない | 「この事業所に登録されていません」 |
 | 試行の回数の上限を超えた | 「しばらくログインできません」 |
 
-**活性条件**: 常に活性
-
-**表示条件**: 常に表示
-
 **カタログ**: [AuthErrorMessage の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--failed)、[AuthErrorMessage の Forbidden](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--forbidden)、[AuthErrorMessage の TooManyAttempts](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--too-many-attempts)
 
 ## 説明の文
 
-**概要**: 職員が次にすることを伝える。
+**概要**: 職員が次にすることを伝えるラベル。
 
 **値のソース**: 理由ごとに次の文を出す。
 
@@ -117,15 +109,11 @@
   - すぐにログインし直しても同じ画面に戻るので、待つ長さを伝える。
   - ID ブローカーは、メールアドレスで職員を引く前に上限で止めるので、この文からは登録の有無が分からない。
 
-**活性条件**: 常に活性
-
-**表示条件**: 常に表示
-
 **カタログ**: [AuthErrorMessage の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--failed)、[AuthErrorMessage の Forbidden](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--forbidden)、[AuthErrorMessage の TooManyAttempts](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--too-many-attempts)
 
 ## もう一度ログインする
 
-**概要**: ログインをやり直す。
+**概要**: ログインをやり直すリンク。
 
 **値のソース**: 「もう一度ログインする」  
 カードの幅いっぱいの、主の操作のボタンの見た目のリンクにする。
@@ -134,20 +122,13 @@
   - 登録を頼んだ後に、この画面からログインし直せるようにするためである。
   - 登録されるまでは、ログインし直してもこの画面に戻る。
 
-**活性条件**: 常に活性
-
-**表示条件**: 常に表示
-
 **カタログ**: [AuthErrorMessage の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--failed)、[AuthErrorMessage の Forbidden](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--forbidden)、[AuthErrorMessage の TooManyAttempts](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--too-many-attempts)
 
-### インタラクション
+**操作**: 押すと、[ログイン](../account-login_ログイン/index.md) のメールの入力の画面へ移る。
 
-#### 1. 押す
-
-1. [ログイン](../account-login_ログイン/index.md) のメールの入力の画面へ移る。
-   - ログインした後に戻る先は付けない。
-   - 前にログインしてから 12 時間の間でも、メールの入力の画面を出す。前のログインのまま進むと、失敗した職員でまたログインして、この画面に戻るためである。
-2. ログインに成功すると、予定のカレンダーに移る。
+1. ログインした後に戻る先は付けない。
+2. 前にログインしてから 12 時間の間でも、メールの入力の画面を出す。前のログインのまま進むと、失敗した職員でまたログインして、この画面に戻るためである。
+3. ログインに成功すると、予定のカレンダーに移る。
    - ログインにまた失敗すると、この画面に戻る。
 
 ## 全体動作
