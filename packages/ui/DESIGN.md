@@ -2,7 +2,7 @@
 
 buddy の画面を作る人とコーディングエージェントが、画面を作る前に読む文書。  
 デジタル庁デザインシステム（DADS）のトークンとコンポーネントの指針に基づき、packages/ui のトークンとコンポーネントの使い方を決める。  
-トークンの段の分け方を決めた理由は ADR-0013 に、コンポーネントの配置先は ADR-0014 に、カタログの組み方は ADR-0018 にある。
+トークンの層の分け方を決めた理由は ADR-0013 に、コンポーネントの配置先は ADR-0014 に、カタログの組み方は ADR-0018 にある。
 
 - 出典: [デジタル庁デザインシステム](https://design.digital.go.jp/dads/)
 - ADR-0013: [デザインシステムのトークンを、buddy に持つプリミティブトークン、セマンティックトークン、テーマ変数の 3 つの層にする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0013-design-system-primitive-tokens.md)
@@ -17,7 +17,7 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 | 知りたいこと | 参照先 |
 | --- | --- |
 | 色、文字、角丸、影の値 | [`src/tokens/primitive.css`](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/src/tokens/primitive.css) |
-| 意味のトークンの名前と、どのプリミティブトークンを指すか | [`src/tokens/semantic.css`](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/src/tokens/semantic.css) |
+| セマンティックトークンの名前と、どのプリミティブトークンを指すか | [`src/tokens/semantic.css`](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/src/tokens/semantic.css) |
 | Tailwind のユーティリティの名前 | [`src/tokens/theme.css`](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/src/tokens/theme.css) |
 | トークンに置き換える前の apps/web の値が、どのトークンになったか | [置き換える前のテーマとトークンの対応表](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/src/tokens/current-theme-map.md) |
 | コンポーネントの props と振る舞い | `src/base/` と `src/case/` のコンポーネントのコードと story |
@@ -27,7 +27,7 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 
 各原則の「確認」は、守られているかを確認する方法である。  
 `pnpm check:design` は、`apps/web/src` と `packages/ui/src` のコードを読み、pre-commit のフックと CI でも流れる。  
-トークンの段のファイル（`packages/ui/src/tokens/`）と生成物は、チェックの対象から外している。
+トークンの層のファイル（`packages/ui/src/tokens/`）と生成物は、チェックの対象から外している。
 
 - 色、文字、角丸、影は、`theme.css` のユーティリティだけで書く。
   - 色の値と、プリミティブトークンの名前を、画面のコードに直に書かない。
@@ -68,6 +68,19 @@ buddy の画面を作る人とコーディングエージェントが、画面�
       - 悪い例: 見出しと欄を `gap-1`（4px）で並べ、フォーカスの表示が見出しの文字に重なる。
 
 ## トークン
+
+トークンは 3 つの層に分かれる。画面とコンポーネントは、テーマ変数のユーティリティだけを書く。
+
+| 層 | ファイル | 持つもの |
+| --- | --- | --- |
+| プリミティブトークン | `src/tokens/primitive.css` | DADS からコピーした色の階調、文字の大きさと行高、角丸、影の値。名前は `--buddy-primitive-` で始まる |
+| セマンティックトークン | `src/tokens/semantic.css` | 面、文字、枠、操作、フォーカス、状態、区別の役割の名前。名前は `--buddy-color-` で始まり、プリミティブトークンを参照する |
+| テーマ変数 | `src/tokens/theme.css` | Tailwind の `@theme` に渡す名前。色はセマンティックトークンを、文字、角丸、影はプリミティブトークンを参照する |
+
+- セマンティックトークンは、DADS のセマンティックカラー（成功、エラー、警告の色）より広い。面、文字、枠、操作の役割を表す変数も含む。
+- 層の呼び名は、DADS の変数の名前（`--color-primitive-*`、`--color-semantic-*`）と、Tailwind CSS の theme variables に合わせている。
+  - 出典: [DADS のカラー](https://design.digital.go.jp/dads/foundations/color/)
+  - 出典: [Tailwind CSS の Theme variables](https://tailwindcss.com/docs/theme)
 
 ### 色
 
@@ -293,7 +306,7 @@ apps/web の画面だけが使うアイコンは、`apps/web/src/assets/icons/` 
 | ページ | 書くこと | 配置先 |
 | --- | --- | --- |
 | はじめに | 原則、アクセシビリティの基準 | `packages/ui/src/docs/*.mdx` |
-| トークン | 色の階調と意味のトークン（`ColorPalette`）、文字（`Typeset`）、余白、角丸、影 | `packages/ui/src/tokens/*.mdx` |
+| トークン | 色の階調とセマンティックトークン（`ColorPalette`）、文字（`Typeset`）、余白、角丸、影 | `packages/ui/src/tokens/*.mdx` |
 | コンポーネント | コンポーネントごとの MDX。使う場面、使わない場面、Do と Don't、状態、キーボードの操作 | `packages/ui/src/base/<コンポーネント>/`、`packages/ui/src/case/<コンポーネント>/` |
 | パターン | コンポーネントを組み合わせた形（入力のダイアログの `InputDialog`、確認のダイアログの `ConfirmDialog`） | `packages/ui/src/patterns/` |
 | 画面 | apps/web のコンポーネントと画面の story | `apps/web/src/features/<機能>/components/`、`apps/web/src/components/` |

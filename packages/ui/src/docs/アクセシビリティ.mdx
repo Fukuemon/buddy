@@ -13,12 +13,12 @@ DADS が参照する WCAG 2.2 の AA を基準にする。
 
 文字と背景の組は 4.5:1 以上にする。面の上の状態の色の文字も含む。
 全ての story で a11y のアドオン（axe）を動かし、違反を `pnpm --filter @buddy/ui test` の失敗にする。
-意味のトークンの組は、ルートの `pnpm check:contrast`（`scripts/check-contrast.mjs`）でも計算する。
+セマンティックトークンの組は、ルートの `pnpm check:contrast`（`scripts/check-contrast.mjs`）でも計算する。
 
 ## 文字でないもののコントラスト
 
 入力欄と押せるものの枠（`border-field`）と、フォーカスの表示は 3:1 以上にする。
-axe は枠の色を確認しないので、意味のトークンの組のコントラストを `pnpm check:contrast` で計算する。
+axe は枠の色を確認しないので、セマンティックトークンの組のコントラストを `pnpm check:contrast` で計算する。
 
 ## フォーカスの見え方
 
