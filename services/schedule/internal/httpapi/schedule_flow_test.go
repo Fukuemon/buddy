@@ -6,9 +6,14 @@ import (
 	"log/slog"
 	"net/http"
 	"reflect"
+	"strings"
 	"testing"
 
+	calendarv3 "google.golang.org/api/calendar/v3"
+
 	"github.com/Fukuemon/buddy/services/schedule/internal/access"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarwrite"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
@@ -16,6 +21,8 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/servicecode"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
+	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
+	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
@@ -52,6 +59,13 @@ func flowRouter() http.Handler {
 
 // flowRouterWith は、事業所の正本のモードを mode にした flowRouter を返す。
 func flowRouterWith(mode organization.SourceMode) http.Handler {
+	h, _ := flowRouterOn(mode, nil)
+	return h
+}
+
+// flowRouterOn は、事業所の正本のモードを mode にし、google_primary の予定の作成が accounts で Google カレンダーに書く
+// flowRouter と、そのメモリ上のリポジトリを返す。
+func flowRouterOn(mode organization.SourceMode, accounts calendar.Accounts) (http.Handler, *inmem.Store) {
 	s := inmem.NewStore()
 	s.Facilities[facilityID] = organization.Facility{ID: facilityID, OrgID: testOrgID, SourceMode: mode}
 	for _, id := range []string{staffID, flowCompanionID} {
@@ -87,10 +101,13 @@ func flowRouterWith(mode organization.SourceMode) http.Handler {
 	auth := flowAuth{svc: access.NewService(access.Deps{Resources: map[access.Resource]access.FacilityReader{
 		access.ResourceSchedule: schedules, access.ResourceRecurringSchedule: recurring,
 	}})}
-	return httpapi.NewRouter(httpapi.Apps{Schedules: app, Auth: auth}, httpapi.RouterConfig{
+	writes := httpapi.CalendarWriteApp{Create: calendarwrite.NewCreate(facilities, inmem.Projections{Store: s}, types, refs, inmem.Staff{Store: s},
+		visits, inmem.VisitInfos{Store: s}, inmem.Calendars{Store: s}, inmem.CalendarEventRecords{Store: s}, inmem.Projections{Store: s}, accounts, nil, tx).Do}
+	org := httpapi.OrganizationApp{GetFacility: organization.NewGetFacility(facilities).Do}
+	return httpapi.NewRouter(httpapi.Apps{Organization: org, Schedules: app, CalendarWrites: writes, Auth: auth}, httpapi.RouterConfig{
 		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
 		Verifier: testVerifier,
-	})
+	}), s
 }
 
 // request は、h にリクエストを送り、応答の状態が status でないときに止める。
@@ -207,19 +224,89 @@ func TestScheduleWritesRespondWithStoredSchedule(t *testing.T) {
 	}
 }
 
-// TestScheduleWritesRejectGooglePrimary は、Google カレンダーを予定の正本にする事業所で、予定の作成と繰り返しの予定の作成が
-// 409 と code の google_primary を返すことを確認する（ADR-0023）。
+// TestScheduleWritesRejectGooglePrimary は、Google カレンダーを予定の正本にする事業所で、繰り返しの予定の作成が
+// 409 と code の google_primary を返すことを確認する（ADR-0023）。単発の予定の作成は Google カレンダーに書く。
 func TestScheduleWritesRejectGooglePrimary(t *testing.T) {
 	h := flowRouterWith(organization.SourceGooglePrimary)
-	body := `{"schedule_type_id":"` + typeID + `","date":"2099-01-05","start_time":"09:00","end_time":"10:00","staff_id":"` + staffID + `","title":"カンファレンス"}`
-	for _, target := range []string{"/v1/facilities/" + facilityID + "/schedules", "/v1/facilities/" + facilityID + "/schedules/recurring"} {
-		b := body
-		if target != "/v1/facilities/"+facilityID+"/schedules" {
-			b = b[:len(b)-1] + `,"recurring_rule":{"frequency":"weekly"}}`
-		}
-		got := request(t, h, http.MethodPost, target, b, http.StatusConflict)
-		if got["code"] != schedule.CodeGooglePrimary {
-			t.Errorf("%s の code = %v, want %s", target, got["code"], schedule.CodeGooglePrimary)
-		}
+	body := `{"schedule_type_id":"` + typeID + `","date":"2099-01-05","start_time":"09:00","end_time":"10:00","staff_id":"` + staffID +
+		`","title":"カンファレンス","recurring_rule":{"frequency":"weekly"}}`
+	got := request(t, h, http.MethodPost, "/v1/facilities/"+facilityID+"/schedules/recurring", body, http.StatusConflict)
+	if got["code"] != schedule.CodeGooglePrimary {
+		t.Errorf("code = %v, want %s", got["code"], schedule.CodeGooglePrimary)
+	}
+}
+
+// googleAccounts は、どの事業所にも gcaltest のフェイクで読み書きする calendar.Accounts である。
+type googleAccounts struct{ svc *calendarv3.Service }
+
+func (googleAccounts) ServiceAccount(context.Context, string) (string, error) {
+	return "sa@example.com", nil
+}
+
+func (a googleAccounts) Source(context.Context, string) (calendar.EventSource, error) {
+	return gcal.NewReader(a.svc), nil
+}
+
+func (a googleAccounts) Writer(context.Context, string) (calendar.EventWriter, error) {
+	return gcal.NewWriter(a.svc), nil
+}
+
+// TestCreateScheduleGooglePrimary は、google_primary の事業所で createSchedule を呼ぶと、予定の職員のカレンダーに
+// `【サービス内容】利用者名` の予定ができ、応答と、Projection と訪問の情報の記録ができることを確認する。
+// カレンダーが無いときと、Google が結果の分からないエラーを返したときの応答も確認する。
+func TestCreateScheduleGooglePrimary(t *testing.T) {
+	const (
+		calendarAddr = "staff@example.com"
+		newID        = "01M3TC6CX4Y3D0KCGJ5A9N0WQZ"
+	)
+	google := &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{calendarAddr: {nil}}}
+	h, s := flowRouterOn(organization.SourceGooglePrimary, googleAccounts{gcaltest.Start(t, google)})
+	p := s.Patients[flowPatientID]
+	p.Name = "山田 花子"
+	s.Patients[flowPatientID] = p
+	s.Codes[flowCodeID] = servicecode.ServiceCode{ID: flowCodeID, Code: "訪看I3"}
+	body := func(id string) string {
+		return `{"id":"` + id + `","schedule_type_id":"` + flowVisitTypeID + `","date":"2099-01-05","start_time":"09:00","end_time":"10:00",` +
+			`"staff_id":"` + staffID + `","visit_info":{"patient_id":"` + flowPatientID + `","assigned_staff_id":"` + staffID +
+			`","service_code_id":"` + flowCodeID + `"}}`
+	}
+	target := "/v1/facilities/" + facilityID + "/schedules"
+
+	got := request(t, h, http.MethodPost, target, body(newID), http.StatusConflict)
+	if got["code"] != calendarwrite.CodeCalendarNotLinked || google.Writes() != 0 {
+		t.Fatalf("カレンダーが無い: code = %v, Google への書き込み = %d", got["code"], google.Writes())
+	}
+
+	s.Calendars["CAL"] = calendar.ExternalCalendar{ID: "CAL", FacilityID: facilityID, StaffID: staffID, Provider: calendar.ProviderGoogle, CalendarID: calendarAddr}
+	got = request(t, h, http.MethodPost, target, body(newID), http.StatusCreated)
+	if got["id"] != newID || got["source"] != "google_calendar" {
+		t.Errorf("応答 = %v", got)
+	}
+	if v, _ := got["visit_info"].(map[string]any); v == nil || v["patient_name"] != "山田 花子" {
+		t.Errorf("visit_info = %v", got["visit_info"])
+	}
+	eventID, err := calendar.EventIDOf(newID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ev := google.Event(calendarAddr, eventID); ev == nil || ev.Summary != "【訪看I3】山田 花子" {
+		t.Errorf("Google の予定 = %+v", ev)
+	}
+	if _, ok := s.Projections[inmem.ProjectionKey{ExternalCalendarID: "CAL", EventID: eventID}]; !ok {
+		t.Errorf("Projection の行が無い")
+	}
+	if r, ok := s.Records[newID]; !ok || r.Version != 1 || r.VisitInfoID == nil {
+		t.Errorf("記録 = %+v", r)
+	}
+
+	google.Failures = []int{http.StatusServiceUnavailable}
+	got = request(t, h, http.MethodPost, target, body("01M3TC6D7K0QJ8J3V7Q5S2N4XB"), http.StatusServiceUnavailable)
+	if got["code"] != "google_write_unknown" {
+		t.Errorf("5xx: code = %v", got["code"])
+	}
+
+	got = request(t, h, http.MethodPost, target, strings.Replace(body(""), `"id":"",`, "", 1), http.StatusBadRequest)
+	if got["code"] != "invalid_input" {
+		t.Errorf("id が無い: code = %v", got["code"])
 	}
 }

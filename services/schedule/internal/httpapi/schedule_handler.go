@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
@@ -105,11 +106,28 @@ func (s server) GetRecurringSchedule(ctx context.Context, req openapi.GetRecurri
 	return openapi.GetRecurringSchedule200JSONResponse(toRecurringSchedule(d)), nil
 }
 
+// CreateSchedule は、事業所の正本のモードで、buddy_primary なら schedule の作成を、google_primary なら calendarwrite の作成を呼ぶ。
 func (s server) CreateSchedule(ctx context.Context, req openapi.CreateScheduleRequestObject) (openapi.CreateScheduleResponseObject, error) {
-	in, err := slotInput(*req.Body)
+	b := req.Body
+	in, err := slotInput(openapi.SlotRequest{
+		ScheduleTypeId: b.ScheduleTypeId, Date: b.Date, StartTime: b.StartTime, EndTime: b.EndTime, EndsNextDay: b.EndsNextDay, StaffId: b.StaffId,
+		Title: b.Title, Description: b.Description, VisitInfo: b.VisitInfo,
+	})
 	if err != nil {
 		return nil, err
 	}
+	f, err := s.u.Organization.GetFacility(ctx, req.FacilityId)
+	if err != nil {
+		return nil, err
+	}
+	if f.SourceMode == organization.SourceGooglePrimary {
+		d, err := s.u.CalendarWrites.Create(ctx, req.FacilityId, value(b.Id), in)
+		if err != nil {
+			return nil, err
+		}
+		return openapi.CreateSchedule201JSONResponse(toSchedule(d)), nil
+	}
+	in.ID = value(b.Id)
 	sc, err := s.u.Schedules.Create(ctx, req.FacilityId, in)
 	if err != nil {
 		return nil, err

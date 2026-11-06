@@ -76,6 +76,31 @@ type CalendarEventProjection struct {
 	ProjectedAt time.Time
 }
 
+// google_primary の事業所で、予定の API が Google カレンダーに書いた予定の、訪問の情報と書き込みの保留の版（ADR-0026）。通常の予定も保留の版を持つために行を作る
+type CalendarEventRecord struct {
+	// buddy の予定の ID。画面が作成のリクエストに付ける。Google の予定の ID はこの ID から決める
+	ScheduleID string
+	FacilityID string
+	// 予定を書いた、結び付けたカレンダー
+	ExternalCalendarID string
+	// Google の予定の ID
+	ExternalEventID string
+	// Google が受けた版の訪問の情報。通常の予定と、まだ版を確定していない行は NULL
+	VisitInfoID *string
+	// Google が受けたと分かった最後の版。0 は、まだ受けたと分かっていない。0 の行は保留の版を持つ
+	Version int32
+	// 書き込みの保留の版。Google の予定の extendedProperties.private の buddyVersion に置く。保留が無ければ NULL で、保留の状態、訪問の情報、書く期限も NULL
+	PendingVersion *int32
+	// writing（書いている途中）、unknown（Google が受けたかが分からない）
+	PendingState *string
+	// 保留の版の訪問の情報。版を確定すると visit_info_id に移す
+	PendingVisitInfoID *string
+	// 書く期限。保留の版を書いた時刻に、Google を呼ぶ時間の上限と余裕を足した時刻
+	PendingDeadline *time.Time
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+}
+
 // 予定を外部のカレンダーに書き出す待ち。予定の変更と同じトランザクションで積む
 type CalendarExport struct {
 	ID                  string

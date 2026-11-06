@@ -21,6 +21,8 @@ import (
 const (
 	PropScheduleID          = "buddyScheduleId"
 	PropRecurringScheduleID = "buddyRecurringScheduleId"
+	// PropVersion は、予定の API が google_primary の事業所で書いた予定の、書き込みの保留の版のキーである（ADR-0026）。
+	PropVersion = "buddyVersion"
 )
 
 // EventBody は、外部のカレンダーに書く予定の内容である。
